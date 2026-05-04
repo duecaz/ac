@@ -1,0 +1,20 @@
+/* Kahoot-style live mode styles. Used in Fase 2+. */
+.ww-pin {
+  font-family: ui-monospace, monospace;
+  font-size: clamp(2rem, 8vw, 5rem);
+  letter-spacing: .35em;
+  font-weight: 700;
+}
+.ww-kahoot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+.ww-kahoot-grid .btn { font-size: 1.5rem; padding: 2rem; font-weight: 600; }
+.ww-kahoot-grid .btn:nth-child(1) { background: #e21b3c; border-color: #e21b3c; color: #fff; }
+.ww-kahoot-grid .btn:nth-child(2) { background: #1368ce; border-color: #1368ce; color: #fff; }
+.ww-kahoot-grid .btn:nth-child(3) { background: #d89e00; border-color: #d89e00; color: #fff; }
+.ww-kahoot-grid .btn:nth-child(4) { background: #26890c; border-color: #26890c; color: #fff; }
+.ww-countdown { font-size: clamp(3rem, 12vw, 8rem); font-weight: 800; }
+.ww-leaderboard .row { padding: .5rem; border-bottom: 1px solid rgba(255,255,255,.1); }
+.ww-podium { display: flex; align-items: flex-end; gap: 1rem; justify-content: center; }
+.ww-podium .step { background: linear-gradient(180deg, #fbbf24, #d97706); border-radius: 8px 8px 0 0; min-width: 100px; padding: 1rem; text-align: center; }
+.ww-podium .step.s1 { height: 220px; }
+.ww-podium .step.s2 { height: 160px; }
+.ww-podium .step.s3 { height: 120px; }

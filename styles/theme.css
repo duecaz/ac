@@ -1,0 +1,9 @@
+:root {
+  --ww-primary: #6366f1;
+  --ww-accent: #ec4899;
+  --ww-success: #10b981;
+  --ww-warning: #f59e0b;
+  --ww-danger: #ef4444;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+.card { border: 0; box-shadow: 0 1px 3px rgba(0,0,0,.08); }

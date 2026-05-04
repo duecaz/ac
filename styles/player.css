@@ -1,0 +1,14 @@
+.ww-player .ww-opt {
+  border: 2px solid #dee2e6;
+  background: #fff;
+  font-weight: 500;
+  padding: 1rem;
+  text-align: left;
+  white-space: normal;
+  transition: transform .1s, box-shadow .1s;
+}
+.ww-player .ww-opt:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,.1);
+}
+.ww-player .ww-opt:disabled { opacity: .9; }
