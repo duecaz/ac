@@ -12,6 +12,7 @@ import { renderPlayerView } from './views/playerView.js';
 import { renderEditView } from './views/editView.js';
 import { renderHostLaunch, renderHostByCode } from './views/hostLive.js';
 import { renderReports, renderActivityReport, renderSessionReport } from './views/reports.js';
+import { renderAssignmentsForActivity, renderAttempts } from './views/assignments.js';
 import { sync } from './core/storage.js';
 import { ensureAuth } from './core/supabase.js';
 import { html, mount } from './core/html.js';
@@ -32,6 +33,8 @@ route('#/host/:code', ({ code }) => renderHostByCode(APP, code));
 route('#/reports', () => renderReports(APP));
 route('#/reports/session/:id', ({ id }) => renderSessionReport(APP, id));
 route('#/reports/:id', ({ id }) => renderActivityReport(APP, id));
+route('#/tasks/:id', ({ id }) => renderAssignmentsForActivity(APP, id));
+route('#/task/:id/attempts', ({ id }) => renderAttempts(APP, id));
 
 setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encontrada. <a href="#/home">Inicio</a></div>`));
 

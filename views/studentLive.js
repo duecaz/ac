@@ -3,6 +3,7 @@ import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { joinSession, submitAnswer, getOwnAnswer, subscribeRoom, pingPresence } from '../core/transport/live.js';
 import { findRoomByCode } from '../core/transport/room.js';
+import { findAssignmentByCode } from '../core/transport/assignments.js';
 import { isAcceptableNickname } from '../core/nicknameFilter.js';
 
 const NICK_KEY = 'ww.nick';
@@ -28,8 +29,15 @@ export function renderJoin(rootSel, prefilledCode = '') {
     if (!f.ok) { err.textContent = 'Apodo: ' + f.reason; return; }
     document.getElementById('btn-join').disabled = true;
     try {
+      // Try live session first; if not found, try async assignment.
+      const task = await findAssignmentByCode(code);
+      if (task) {
+        localStorage.setItem(NICK_KEY, f.value);
+        location.hash = `#/task/${code}`;
+        return;
+      }
       const r = await joinSession(code, nick);
-      localStorage.setItem(NICK_KEY, nick);
+      localStorage.setItem(NICK_KEY, f.value);
       sessionStorage.setItem(`ww.player.${code}`, JSON.stringify(r));
       location.hash = `#/play/${code}`;
     } catch (e) {

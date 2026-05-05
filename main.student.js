@@ -6,6 +6,7 @@ installErrorHandlers('student');
 import { html, mount } from './core/html.js';
 import { ensureAuth } from './core/supabase.js';
 import { renderJoin, renderPlay } from './views/studentLive.js';
+import { renderTask } from './views/studentTask.js';
 
 const APP = '#app';
 
@@ -13,6 +14,7 @@ route('#/', () => renderJoin(APP));
 route('#/join', () => renderJoin(APP));
 route('#/join/:code', ({ code }) => renderJoin(APP, code));
 route('#/play/:code', ({ code }) => renderPlay(APP, code));
+route('#/task/:code', ({ code }) => renderTask(APP, code));
 
 setNotFound(() => mount(APP, html`<div class="alert alert-warning m-4">Ruta no encontrada.</div>`));
 
