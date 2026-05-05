@@ -1,4 +1,7 @@
-// Quiz scorer used by settle-item. Mirrors templates/quiz/scorer.js.
+// Quiz scorer used by settle-item. Mirrors templates/quiz/scorer.js semantics.
+// Note: streak bonus, when enabled, is computed by the dispatcher (index.ts)
+// because it needs the player's prior answers, which the dispatcher already
+// knows. This scorer remains pure (no side reads).
 function norm(s: unknown) {
   return String(s ?? "").trim().toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
 }

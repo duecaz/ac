@@ -10,6 +10,10 @@ import { toast } from '../core/toast.js';
 import { submit as queuedSubmit, flush as flushQueue, pendingCount } from '../core/submitQueue.js';
 import { applySkin } from '../core/skins.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
+import { GameEvents, emitGame } from '../core/gameEvents.js';
+import * as Streaks from '../core/streaks.js';
+
+const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
 
 const NICK_KEY = 'ww.nick';
 
@@ -114,21 +118,23 @@ export async function renderPlay(rootSel, code) {
     const item = activity.content.items[idx];
     const own = await getOwnAnswer(session.id, player.playerId, idx);
     if (own) return paintWaiting('Respuesta enviada. Espera al resto.');
+    emitGame(GameEvents.QUESTION_SHOWN, { idx, total: activity.content.items.length, item });
+    const streak = Streaks.get(session.id, player.playerId);
     lastQuestionShownAt = Date.now();
     const deadlineMs = session.deadline ? new Date(session.deadline).getTime() : 0;
     const total = activity?.live?.questionTimer ? activity.live.questionTimer * 1000 : 0;
     mount(rootSel, html`
       <div class="d-flex justify-content-between align-items-center mb-2">
         <span class="badge bg-info text-dark">Pregunta ${idx+1} / ${activity.content.items.length}</span>
+        ${streak >= 2 ? `<span class="badge bg-warning text-dark fs-5">🔥 ${streak}</span>` : ''}
         <span id="s-time" class="badge bg-warning text-dark fs-5"></span>
       </div>
       <div class="progress mb-3" style="height:6px"><div id="s-bar" class="progress-bar bg-warning" style="width:100%"></div></div>
       <h4 class="text-center mb-3">${escapeHtml(item.question)}</h4>
       <div class="ww-kahoot-grid">
         ${(item.options||[]).map((o, i) => `
-          <button class="btn btn-lg ww-ans" data-value="${escapeHtml(o)}">
-            <div class="small text-start opacity-75">${'ABCD'[i]}</div>
-            <div>${escapeHtml(o)}</div>
+          <button class="btn btn-lg ww-ans ww-shape-${(i % 4) + 1}" data-value="${escapeHtml(o)}">
+            <i class="bi ${SHAPE_ICONS[i % 4]} me-2"></i>${escapeHtml(o)}
           </button>`).join('')}
       </div>
     `);
@@ -138,6 +144,7 @@ export async function renderPlay(rootSel, code) {
       btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enviando…';
       const ms = Date.now() - lastQuestionShownAt;
       const r = await queuedSubmit(session.id, player.playerId, idx, btn.dataset.value, ms);
+      emitGame(GameEvents.PLAYER_ANSWERED, { idx });
       if (r.queued) {
         paintWaiting('Respuesta guardada (sin red). Se enviará al reconectar.');
       } else {
@@ -165,6 +172,17 @@ export async function renderPlay(rootSel, code) {
     const own = await getOwnAnswer(session.id, player.playerId, idx);
     const ok = own?.correct === true;
     const skipped = !own;
+    // Update local streak counter and emit feedback events.
+    if (own) {
+      const newStreak = Streaks.bump(session.id, player.playerId, ok);
+      if (ok) {
+        emitGame(GameEvents.ANSWER_CORRECT, { idx, points: own.points || 0, streak: newStreak });
+        if (newStreak >= 2) emitGame(GameEvents.STREAK, { count: newStreak });
+      } else {
+        emitGame(GameEvents.ANSWER_WRONG, { idx });
+      }
+    }
+    const streak = Streaks.get(session.id, player.playerId);
     mount(rootSel, html`
       <div class="text-center py-5">
         ${skipped
@@ -173,6 +191,7 @@ export async function renderPlay(rootSel, code) {
             ? `<i class="bi bi-check-circle-fill display-1 text-success"></i><h2 class="mt-3">¡Correcto!</h2>`
             : `<i class="bi bi-x-circle-fill display-1 text-danger"></i><h2 class="mt-3">Incorrecto</h2>`}
         <p class="lead">+${own?.points || 0} puntos</p>
+        ${ok && streak >= 2 ? `<p class="h4">🔥 Racha de ${streak}</p>` : ''}
       </div>
     `);
   }
@@ -187,12 +206,13 @@ export async function renderPlay(rootSel, code) {
   }
 
   function paintEnded() {
+    Streaks.reset(session.id, player.playerId);
     mount(rootSel, html`
       <div class="text-center py-5">
         <i class="bi bi-trophy-fill display-1 text-warning"></i>
         <h2 class="mt-3">¡Fin de la partida!</h2>
-        <p class="text-light">Mira el podio en la pantalla del profesor.</p>
-        <a href="#/join" class="btn btn-outline-light"><i class="bi bi-arrow-left"></i> Otra sala</a>
+        <p>Mira el podio en la pantalla del profesor.</p>
+        <a href="#/join" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Otra sala</a>
       </div>
     `);
   }

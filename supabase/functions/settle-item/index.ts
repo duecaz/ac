@@ -63,8 +63,43 @@ Deno.serve(async (req: Request) => {
       .eq("session_id", session_id).eq("item_index", item_index);
     if (aErr) return json({ error: aErr.message }, 500);
 
-    // Score and update all answers in parallel.
+    // Score each answer.
     const scored = (answers || []).map(a => ({ a, r: scorer(activity, item, a) }));
+
+    // Streak bonus (server-side, anti-cheat). When live.streakBonus enabled,
+    // look up each player's prior answers up to item_index-1 ordered, count
+    // consecutive corrects ending right before this item, and add a flat
+    // bonus per streak step. Default bonus = 50 pts per consecutive prior.
+    if (activity?.live?.streakBonus && item_index > 0) {
+      const playerIds = scored.filter(({ r }) => r.correct === true).map(({ a }) => a.player_id);
+      if (playerIds.length) {
+        const { data: history } = await admin.from("answers")
+          .select("player_id, item_index, correct")
+          .eq("session_id", session_id)
+          .in("player_id", playerIds)
+          .lt("item_index", item_index);
+        const byPlayer = new Map<string, Array<{i: number; c: boolean | null}>>();
+        for (const h of history || []) {
+          const arr = byPlayer.get(h.player_id) || [];
+          arr.push({ i: h.item_index, c: h.correct });
+          byPlayer.set(h.player_id, arr);
+        }
+        const bonusPerStep = Number(activity.live.streakBonusPerStep ?? 50);
+        for (const { a, r } of scored) {
+          if (r.correct !== true) continue;
+          const arr = (byPlayer.get(a.player_id) || []).sort((x, y) => x.i - y.i);
+          // Count tail of consecutive corrects.
+          let streak = 0;
+          for (let i = arr.length - 1; i >= 0; i--) {
+            if (arr[i].c === true) streak++;
+            else break;
+          }
+          if (streak >= 1) r.points = (r.points || 0) + bonusPerStep * streak;
+        }
+      }
+    }
+
+    // Update answers in parallel.
     await Promise.all(scored.map(({ a, r }) =>
       admin.from("answers").update({ correct: r.correct, points: r.points }).eq("id", a.id)
     ));

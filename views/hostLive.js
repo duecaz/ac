@@ -11,6 +11,9 @@ import { acquire } from '../core/lifecycle.js';
 import { toast, confirmModal } from '../core/toast.js';
 import { applySkin } from '../core/skins.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
+import { GameEvents, emitGame } from '../core/gameEvents.js';
+
+const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
 
 const STUDENT_BASE = location.origin + location.pathname.replace(/teacher\.html.*/, 'student.html');
 
@@ -91,6 +94,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
   }
 
   function paintLobby() {
+    emitGame(GameEvents.LOBBY_START, { sessionId });
     const now = Date.now();
     mount(rootSel, html`
       <div class="text-center py-3">
@@ -139,6 +143,8 @@ async function renderHost(rootSel, code, sessionId, activity) {
   async function paintQuestion() {
     const idx = session.current_item;
     const item = activity.content.items[idx];
+    emitGame(GameEvents.LOBBY_END);
+    emitGame(GameEvents.QUESTION_SHOWN, { idx, total: activity.content.items.length, item });
     answers = await listAnswers(sessionId, idx);
     const total = players.length;
     const answered = answers.length;
@@ -154,9 +160,8 @@ async function renderHost(rootSel, code, sessionId, activity) {
       ${item.image ? `<div class="text-center mb-3"><img src="${escapeHtml(item.image)}" class="img-fluid" style="max-height:240px"></div>` : ''}
       <div class="ww-kahoot-grid mb-4">
         ${(item.options||[]).map((o, i) => `
-          <button class="btn btn-lg" disabled>
-            <div class="small text-start opacity-75">${'ABCD'[i]}</div>
-            <div>${escapeHtml(o)}</div>
+          <button class="btn btn-lg ww-shape-${(i % 4) + 1}" disabled>
+            <i class="bi ${SHAPE_ICONS[i % 4]} me-2"></i>${escapeHtml(o)}
           </button>
         `).join('')}
       </div>
@@ -241,6 +246,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
   async function paintReveal() {
     const idx = session.current_item;
     const item = activity.content.items[idx];
+    emitGame(GameEvents.REVEAL, { idx, item });
     answers = await listAnswers(sessionId, idx);
     const counts = (item.options||[]).map(o => answers.filter(a => a.value === o).length);
     const max = Math.max(1, ...counts);
@@ -294,6 +300,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
 
   async function paintPodium() {
     const lb = await leaderboard(sessionId, 3);
+    emitGame(GameEvents.PODIUM, { top: lb.map(p => ({ name: p.name, score: p.score })) });
     mount(rootSel, html`
       <h2 class="text-center mb-4"><i class="bi bi-trophy-fill text-warning"></i> Podio</h2>
       <div class="ww-podium mb-4">

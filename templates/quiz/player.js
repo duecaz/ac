@@ -6,6 +6,10 @@ import { on } from '../../core/events.js';
 import { saveResult } from '../../core/results.js';
 import { FEEDBACK_DELAY } from '../../core/constants.js';
 import { scoreQuizSubmission } from './scorer.js';
+import { GameEvents, emitGame } from '../../core/gameEvents.js';
+import * as Streaks from '../../core/streaks.js';
+
+const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
 
 export async function renderQuizPlayer(rootSel, activity, opts = {}) {
   const items = (activity.rules?.randomize ? shuffle(activity.content.items.slice()) : activity.content.items).slice();
@@ -21,16 +25,22 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
     const item = items[state.idx];
     const opts2 = (item.options || []).slice();
     if (activity.rules?.shuffleOptions) shuffle(opts2);
+    const streak = Streaks.get('solo', activity.id);
+    emitGame(GameEvents.QUESTION_SHOWN, { idx: state.idx, total: items.length, item });
     mount(rootSel, html`
       <div class="ww-player">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <span class="badge bg-secondary">${state.idx + 1} / ${items.length}</span>
+          ${streak >= 2 ? `<span class="badge bg-warning text-dark">🔥 ${streak}</span>` : ''}
           <span class="badge bg-primary">★ ${state.score}</span>
         </div>
         <h3 class="mb-3">${escapeHtml(item.question)}</h3>
         ${item.image ? `<div class="text-center mb-3"><img src="${escapeHtml(item.image)}" class="img-fluid" style="max-height:240px"></div>` : ''}
-        <div class="row g-2 ww-options">
-          ${opts2.map(o => `<div class="col-6"><button class="btn btn-lg w-100 ww-opt" data-value="${escapeHtml(o)}">${escapeHtml(o)}</button></div>`).join('')}
+        <div class="ww-kahoot-grid ww-options">
+          ${opts2.map((o, i) => `
+            <button class="btn btn-lg w-100 ww-opt ww-shape-${(i % 4) + 1}" data-value="${escapeHtml(o)}">
+              <i class="bi ${SHAPE_ICONS[i % 4]} me-2"></i>${escapeHtml(o)}
+            </button>`).join('')}
         </div>
       </div>
     `);
@@ -50,6 +60,13 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
           if (b.dataset.value === String(item.answer)) b.classList.add('btn-success');
         });
       }
+      const newStreak = Streaks.bump('solo', activity.id, r.correct === true);
+      if (r.correct === true) {
+        emitGame(GameEvents.ANSWER_CORRECT, { idx: state.idx, points: r.points, streak: newStreak });
+        if (newStreak >= 2) emitGame(GameEvents.STREAK, { count: newStreak });
+      } else if (r.correct === false) {
+        emitGame(GameEvents.ANSWER_WRONG, { idx: state.idx });
+      }
       setTimeout(() => { state.idx++; renderItem(); }, FEEDBACK_DELAY);
     });
   }
@@ -57,6 +74,8 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
   function finish() {
     const timeUsed = Math.round((Date.now() - state.startedAt) / 1000);
     const max = maxScore();
+    Streaks.reset('solo', activity.id);
+    emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: state.score }] });
     mount(rootSel, html`
       <div class="text-center py-5">
         <i class="bi bi-trophy-fill display-1 text-warning"></i>

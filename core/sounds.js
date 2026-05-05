@@ -2,8 +2,10 @@
 // Web Audio API for our needs). All playback is best-effort: browsers block
 // audio until first user interaction, so silently swallow errors.
 //
-// Sound URLs come from the active skin OR a default CDN pack (CC0). Set via
-// setSoundPack({lobby, tick, reveal, correct, wrong, podium}).
+// Subscribes to gameEvents so callers don't need to know sound names. To
+// disable sounds globally, call setMuted(true). To swap pack, setSoundPack().
+
+import { GameEvents, onGame } from './gameEvents.js';
 
 let _pack = {};
 const _cache = new Map();           // name -> HTMLAudioElement
@@ -66,3 +68,13 @@ export function stop(name) {
 export function stopAll() {
   for (const a of _cache.values()) { try { a.pause(); } catch {} }
 }
+
+// Wire game events to sound effects. Subscriptions live for the page lifetime.
+onGame(GameEvents.LOBBY_START,    () => loop('lobby'));
+onGame(GameEvents.LOBBY_END,      () => stop('lobby'));
+onGame(GameEvents.QUESTION_SHOWN, () => stop('lobby'));
+onGame(GameEvents.TICK,           () => play('tick'));
+onGame(GameEvents.REVEAL,         () => play('reveal'));
+onGame(GameEvents.ANSWER_CORRECT, () => play('correct'));
+onGame(GameEvents.ANSWER_WRONG,   () => play('wrong'));
+onGame(GameEvents.PODIUM,         () => { stopAll(); play('podium'); });

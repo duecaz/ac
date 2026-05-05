@@ -23,6 +23,10 @@ import { onAuthChange } from './core/auth.js';
 import { sync, setStorageUser } from './core/storage.js';
 import { ensureAuth } from './core/supabase.js';
 import { applySkin } from './core/skins.js';
+// Side-effect imports: subscribe to GameEvents bus for sounds + visual effects.
+import './core/sounds.js';
+import './core/effects.js';
+import { isMuted, setMuted } from './core/sounds.js';
 import { html, mount } from './core/html.js';
 
 const APP = '#app';
@@ -54,6 +58,13 @@ setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encon
     console.warn('[boot] auth failed:', err.message);
   }
   const v = document.getElementById('ww-version'); if (v) v.textContent = 'v' + VERSION;
+  // Mute toggle in navbar.
+  const muteSlot = document.getElementById('ww-mute-slot');
+  if (muteSlot) {
+    const paint = () => muteSlot.innerHTML = `<button class="btn btn-sm btn-outline-light" id="ww-mute-btn" title="${isMuted()?'Activar sonido':'Silenciar'}"><i class="bi ${isMuted()?'bi-volume-mute-fill':'bi-volume-up-fill'}"></i></button>`;
+    paint();
+    muteSlot.addEventListener('click', (e) => { if (e.target.closest('#ww-mute-btn')) { setMuted(!isMuted()); paint(); } });
+  }
   await renderAuthBadge('#ww-auth-slot');
   onAuthChange(() => renderAuthBadge('#ww-auth-slot'));
   start();

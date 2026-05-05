@@ -27,7 +27,10 @@ export function renderQuizEditor(root, activity, onChange) {
         <div class="tab-content border border-top-0 p-3 rounded-bottom">
           <div class="tab-pane fade show active" id="tab-content">
             ${renderItems(a)}
-            <button class="btn btn-outline-primary" id="add-item"><i class="bi bi-plus-lg"></i> Añadir pregunta</button>
+            <div class="d-flex gap-2 flex-wrap">
+              <button class="btn btn-outline-primary" id="add-item"><i class="bi bi-plus-lg"></i> Añadir pregunta</button>
+              <button class="btn btn-outline-secondary" id="add-tf"><i class="bi bi-check2-square"></i> + Verdadero/Falso</button>
+            </div>
           </div>
           <div class="tab-pane fade" id="tab-rules">${renderRules(a)}</div>
           <div class="tab-pane fade" id="tab-scoring">${renderScoring(a)}</div>
@@ -41,6 +44,10 @@ export function renderQuizEditor(root, activity, onChange) {
     on(root, 'input', '#f-subtitle', e => { a.subtitle = e.target.value; onChange(a); });
     on(root, 'click', '#add-item', () => {
       a.content.items.push({ id:'q_'+Math.random().toString(36).slice(2,8), question:'', answer:'', options:['','','',''], points:1, image:null, audio:null });
+      commit();
+    });
+    on(root, 'click', '#add-tf', () => {
+      a.content.items.push({ id:'q_'+Math.random().toString(36).slice(2,8), question:'', answer:'Verdadero', options:['Verdadero','Falso'], points:1, image:null, audio:null, kind: 'truefalse' });
       commit();
     });
     on(root, 'click', '.del-item', (_, btn) => { a.content.items.splice(+btn.dataset.i, 1); commit(); });
@@ -76,6 +83,8 @@ export function renderQuizEditor(root, activity, onChange) {
     on(root, 'change', '#l-after', e => { a.live.showAnswerAfterEach = e.target.checked; onChange(a); });
     on(root, 'change', '#l-lb', e => { a.live.showLeaderboardBetween = e.target.checked; onChange(a); });
     on(root, 'change', '#l-nick', e => { a.live.nicknameFilter = e.target.checked; onChange(a); });
+    on(root, 'change', '#l-streak', e => { a.live.streakBonus = e.target.checked; onChange(a); });
+    on(root, 'input', '#l-streak-step', e => { a.live.streakBonusPerStep = +e.target.value || 0; onChange(a); });
     // Presentation: skin picker.
     on(root, 'click', '.skin-pick', (_, b) => {
       a.presentation.skin = b.dataset.name;
@@ -153,6 +162,12 @@ function renderLive(a) {
     <div class="col-md-4 form-check pt-4"><input id="l-after" class="form-check-input" type="checkbox" ${a.live.showAnswerAfterEach?'checked':''}><label class="form-check-label" for="l-after">Mostrar respuesta tras cada</label></div>
     <div class="col-md-4 form-check pt-4"><input id="l-lb" class="form-check-input" type="checkbox" ${a.live.showLeaderboardBetween?'checked':''}><label class="form-check-label" for="l-lb">Leaderboard entre preguntas</label></div>
     <div class="col-md-4 form-check pt-4"><input id="l-nick" class="form-check-input" type="checkbox" ${a.live.nicknameFilter?'checked':''}><label class="form-check-label" for="l-nick">Filtro de apodos</label></div>
+    <div class="col-md-12">
+      <hr>
+      <div class="form-check"><input id="l-streak" class="form-check-input" type="checkbox" ${a.live.streakBonus?'checked':''}><label class="form-check-label" for="l-streak"><b>Bonus por racha</b> — suma puntos extra por aciertos consecutivos</label></div>
+      <div class="row mt-2"><div class="col-md-4"><label class="form-label small">Puntos extra por paso de racha</label><input id="l-streak-step" type="number" min="0" max="500" class="form-control form-control-sm" value="${a.live.streakBonusPerStep ?? 50}"></div></div>
+      <small class="text-muted d-block mt-1">Ej: con paso 50, una racha de 3 aciertos seguidos da +50 al 2º, +100 al 3º.</small>
+    </div>
   </div>`;
 }
 
