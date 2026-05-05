@@ -1,3 +1,18 @@
 .ww-editor .nav-tabs .nav-link { color: #495057; }
 .ww-editor .nav-tabs .nav-link.active { font-weight: 600; }
 .ww-editor .tab-content { background: #fff; min-height: 300px; }
+
+.ww-skin-tile {
+  width: 160px;
+  cursor: pointer;
+  padding: .5rem;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  transition: border-color .15s, transform .1s;
+}
+.ww-skin-tile:hover { transform: translateY(-2px); }
+.ww-skin-tile.is-active { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.2); }
+.ww-skin-preview { padding: .75rem; border-radius: 6px; height: 80px; display: flex; flex-direction: column; justify-content: space-between; }
+.ww-skin-preview .d-flex { gap: 4px; }
+.ww-skin-preview span { width: 22px; height: 22px; border-radius: 4px; }
+.ww-skin-preview small { font-weight: 600; }

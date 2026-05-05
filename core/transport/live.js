@@ -119,8 +119,20 @@ export async function pingPresence(playerId) {
   await sb.from('players').update({ last_seen: new Date().toISOString() }).eq('id', playerId);
 }
 
+// Host heartbeat. Updates sessions.host_seen_at via RPC (RLS already
+// restricts to host_id=auth.uid()).
+export async function pingHost(sessionId) {
+  const sb = await getClient();
+  await sb.rpc('ping_host_session', { p_session_id: sessionId });
+}
+
 // Subscribe to realtime changes for a session: sessions row + players + answers.
 // onChange({ table, eventType, new, old }).
+// Subscribe to realtime changes for a session: sessions row + players + answers.
+// onChange({ table, eventType, new, old }).
+// Connection state changes are forwarded to setConnectionState (banner UI).
+import { setConnectionState } from '../connection.js';
+
 export async function subscribeRoom(sessionId, onChange) {
   const sb = await getClient();
   // Unique channel name so two simultaneous mounts don't collide on the same
@@ -134,6 +146,11 @@ export async function subscribeRoom(sessionId, onChange) {
         (p) => onChange({ table: 'players', eventType: p.eventType, new: p.new, old: p.old }))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'answers', filter: `session_id=eq.${sessionId}` },
         (p) => onChange({ table: 'answers', eventType: p.eventType, new: p.new, old: p.old }));
-  await ch.subscribe();
+  await ch.subscribe((status) => {
+    // status: SUBSCRIBED | TIMED_OUT | CHANNEL_ERROR | CLOSED
+    if (status === 'SUBSCRIBED') setConnectionState('connected');
+    else if (status === 'TIMED_OUT' || status === 'CHANNEL_ERROR') setConnectionState('reconnecting');
+    else if (status === 'CLOSED') setConnectionState('reconnecting');
+  });
   return () => sb.removeChannel(ch);
 }

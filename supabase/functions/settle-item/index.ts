@@ -37,9 +37,19 @@ Deno.serve(async (req: Request) => {
     if (!session_id || typeof item_index !== "number") return json({ error: "bad body" }, 400);
 
     const { data: sess, error: sErr } = await admin.from("sessions")
-      .select("id, host_id, activity_snap").eq("id", session_id).single();
+      .select("id, host_id, activity_snap, phase, current_item, status").eq("id", session_id).single();
     if (sErr || !sess) return json({ error: "session not found" }, 404);
     if (sess.host_id !== userId) return json({ error: "not host" }, 403);
+
+    // Idempotent: if we're already in reveal for THIS item (or beyond), don't
+    // re-score. Saves work and avoids races on double-click.
+    if (sess.status === 'ended') return json({ ok: true, alreadySettled: true, reason: 'session ended' });
+    if (sess.phase === 'reveal' && sess.current_item === item_index) {
+      return json({ ok: true, alreadySettled: true });
+    }
+    if (sess.phase === 'leaderboard' && sess.current_item >= item_index) {
+      return json({ ok: true, alreadySettled: true });
+    }
 
     const activity = sess.activity_snap as any;
     const scorer = SCORERS[activity?.template];

@@ -4,11 +4,13 @@ import { on } from '../core/events.js';
 import { get } from '../core/storage.js';
 import { createRoom, findRoomByCode, fetchSession } from '../core/transport/room.js';
 import { startSession, setSessionState, endSession, settleItem,
-         listPlayers, listAnswers, leaderboard, kickPlayer, subscribeRoom }
+         listPlayers, listAnswers, leaderboard, kickPlayer, subscribeRoom, pingHost }
        from '../core/transport/live.js';
 import { getTemplate } from '../core/registry.js';
 import { acquire } from '../core/lifecycle.js';
 import { toast, confirmModal } from '../core/toast.js';
+import { applySkin } from '../core/skins.js';
+import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
 
 const STUDENT_BASE = location.origin + location.pathname.replace(/teacher\.html.*/, 'student.html');
 
@@ -35,6 +37,13 @@ export async function renderHostByCode(rootSel, code) {
 
 async function renderHost(rootSel, code, sessionId, activity) {
   const ctx = acquire('hostLive');
+  // Apply per-activity skin during the host live view.
+  applySkin(activity.presentation?.skin || 'kahoot');
+  ctx.add(() => applySkin('default'));
+  // Stage class for big-screen typography.
+  document.body.classList.add('ww-stage');
+  ctx.add(() => document.body.classList.remove('ww-stage'));
+
   const tpl = getTemplate(activity.template);
   const live = activity.live || {};
   const timerSec = Math.max(5, live.questionTimer || 20);
@@ -44,6 +53,12 @@ async function renderHost(rootSel, code, sessionId, activity) {
   let answers = [];
   let tickHandle = null;
   let settling = false;
+  let paused = false;
+  let pauseRemainMs = 0;
+
+  // Host heartbeat every 10s so cleanup_zombie_sessions doesn't reap us.
+  pingHost(sessionId).catch(() => {});
+  ctx.setInterval(() => pingHost(sessionId).catch(() => {}), 10000);
 
   function onChange(ev) {
     if (ev.table === 'sessions') { session = { ...session, ...ev.new }; paint(); }
@@ -76,8 +91,10 @@ async function renderHost(rootSel, code, sessionId, activity) {
   }
 
   function paintLobby() {
+    const now = Date.now();
     mount(rootSel, html`
       <div class="text-center py-3">
+        <div class="d-flex justify-content-end mb-2">${fullscreenButtonHtml()}</div>
         <h5 class="text-muted mb-1">Únete en</h5>
         <div class="h3"><b>${escapeHtml(STUDENT_BASE.replace(/^https?:\/\//,''))}</b></div>
         <h5 class="text-muted mt-3 mb-1">PIN</h5>
@@ -87,13 +104,18 @@ async function renderHost(rootSel, code, sessionId, activity) {
           <span class="badge bg-info text-dark fs-5"><i class="bi bi-people-fill"></i> ${players.length} jugadores</span>
         </div>
         <div class="row mt-4 g-2 ww-host-players">
-          ${players.map(p => `
+          ${players.map(p => {
+            const seen = p.last_seen ? (now - new Date(p.last_seen).getTime()) : Infinity;
+            const online = seen < 30000;
+            const dot = online ? '<span class="text-success">●</span>' : '<span class="text-muted">○</span>';
+            return `
             <div class="col-md-3 col-6">
               <div class="card"><div class="card-body py-2 d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-person-fill"></i> ${escapeHtml(p.name)}</span>
+                <span>${dot} ${escapeHtml(p.name)}</span>
                 <button class="btn btn-sm btn-outline-danger kick" data-id="${p.id}" title="Expulsar"><i class="bi bi-x"></i></button>
               </div></div>
-            </div>`).join('')}
+            </div>`;
+          }).join('')}
         </div>
         <button class="btn btn-success btn-lg mt-4 px-5" id="btn-start" ${players.length===0?'disabled':''}>
           <i class="bi bi-play-fill"></i> Empezar
@@ -101,6 +123,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
         <button class="btn btn-link text-muted ms-2" id="btn-cancel">Cancelar sala</button>
       </div>
     `);
+    attachFullscreenButton(rootSel);
     on(rootSel, 'click', '#btn-start', async () => {
       const deadline = new Date(Date.now() + timerSec * 1000).toISOString();
       await setSessionState(sessionId, { status: 'running', phase: 'question', current_item: 0, started_at: new Date().toISOString(), deadline });
@@ -137,17 +160,52 @@ async function renderHost(rootSel, code, sessionId, activity) {
           </button>
         `).join('')}
       </div>
-      <div class="text-center">
+      <div class="text-center d-flex gap-2 justify-content-center flex-wrap">
         <button class="btn btn-warning btn-lg" id="btn-reveal"><i class="bi bi-stop-fill"></i> Bloquear y revelar</button>
+        <button class="btn btn-outline-secondary btn-lg" id="btn-pause"><i class="bi ${paused?'bi-play-fill':'bi-pause-fill'}"></i> ${paused?'Reanudar':'Pausa'}</button>
+        <button class="btn btn-outline-secondary btn-lg" id="btn-skip" title="Saltar pregunta sin puntuar"><i class="bi bi-skip-forward-fill"></i> Saltar</button>
+        ${fullscreenButtonHtml()}
       </div>
     `);
+    attachFullscreenButton(rootSel);
 
     on(rootSel, 'click', '#btn-reveal', () => doSettle(idx));
+    on(rootSel, 'click', '#btn-pause', async () => {
+      if (paused) {
+        // Resume: extend deadline by the pauseRemainMs we saved.
+        const newDeadline = new Date(Date.now() + pauseRemainMs).toISOString();
+        await setSessionState(sessionId, { deadline: newDeadline });
+        paused = false;
+      } else {
+        pauseRemainMs = Math.max(0, deadline - Date.now());
+        await setSessionState(sessionId, { deadline: null });
+        paused = true;
+      }
+    });
+    on(rootSel, 'click', '#btn-skip', async () => {
+      const ok = await confirmModal('¿Saltar esta pregunta? Se cerrará sin puntuar.', { okText: 'Saltar', danger: false });
+      if (!ok) return;
+      const isLast = idx + 1 >= activity.content.items.length;
+      if (isLast) await endSession(sessionId);
+      else {
+        const newDeadline = new Date(Date.now() + timerSec * 1000).toISOString();
+        await setSessionState(sessionId, { phase: 'question', current_item: idx + 1, deadline: newDeadline });
+      }
+    });
 
     if (tickHandle) clearInterval(tickHandle);
     tickHandle = ctx.setInterval(() => {
       if (session.phase !== 'question') { clearInterval(tickHandle); tickHandle = null; return; }
-      const remain = Math.max(0, deadline - Date.now());
+      // If host paused (deadline cleared server-side), freeze the bar.
+      if (!session.deadline) {
+        const t = document.getElementById('time-left');
+        const ac = document.getElementById('ans-count');
+        if (t) t.textContent = 'Pausa';
+        if (ac) ac.textContent = String(answers.length);
+        return;
+      }
+      const liveDeadline = new Date(session.deadline).getTime();
+      const remain = Math.max(0, liveDeadline - Date.now());
       const pct = Math.max(0, Math.min(100, 100 * remain / (timerSec * 1000)));
       const t = document.getElementById('time-left');
       const bar = document.getElementById('time-bar');

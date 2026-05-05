@@ -1,0 +1,25 @@
+/* Touch and large-screen tuning. Disable double-tap zoom, kill 300ms tap
+   delay, scope :hover to mouse only. Min target sizes for buttons. */
+
+* { touch-action: manipulation; }
+
+@media (hover: none) {
+  /* Drop hover effects on touch devices (otherwise they "stick"). */
+  .btn:hover, .ww-card:hover, .mc:hover, .ww-opt:hover, .ww-ans:hover {
+    transform: none !important;
+    box-shadow: none !important;
+    border-color: inherit !important;
+  }
+}
+
+.btn { min-height: 38px; }
+.btn-lg { min-height: 48px; }
+
+/* Large-screen presenter mode for the host live view. Activates when the
+   viewport is wide enough OR when we add .ww-stage manually. */
+.ww-stage h1, .ww-stage h2 { font-size: clamp(2rem, 4vw, 4rem); }
+.ww-stage .ww-pin { font-size: clamp(3rem, 10vw, 7rem); }
+.ww-stage .ww-kahoot-grid .btn { font-size: clamp(1.4rem, 3vw, 2.5rem); padding: clamp(1rem, 3vw, 3rem); }
+
+/* Prevent overscroll while playing live; keeps the question fixed. */
+body.ww-play-noscroll { overscroll-behavior: none; }

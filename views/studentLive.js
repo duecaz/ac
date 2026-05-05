@@ -1,12 +1,15 @@
 // Student-side live view. Routes: #/join, #/play/:code.
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
-import { joinSession, submitAnswer, getOwnAnswer, subscribeRoom, pingPresence } from '../core/transport/live.js';
+import { joinSession, getOwnAnswer, subscribeRoom, pingPresence } from '../core/transport/live.js';
 import { findRoomByCode } from '../core/transport/room.js';
 import { findAssignmentByCode } from '../core/transport/assignments.js';
 import { isAcceptableNickname } from '../core/nicknameFilter.js';
 import { acquire } from '../core/lifecycle.js';
 import { toast } from '../core/toast.js';
+import { submit as queuedSubmit, flush as flushQueue, pendingCount } from '../core/submitQueue.js';
+import { applySkin } from '../core/skins.js';
+import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
 
 const NICK_KEY = 'ww.nick';
 
@@ -69,10 +72,19 @@ export async function renderPlay(rootSel, code) {
     mount(rootSel, html`<div class="alert alert-danger m-3">${escapeHtml(e.message)}</div>`); return;
   }
 
+  // Per-activity skin during play.
+  applySkin(activity.presentation?.skin || 'kahoot');
+  ctx.add(() => applySkin('default'));
+  // Prevent overscroll while playing.
+  document.body.classList.add('ww-play-noscroll');
+  ctx.add(() => document.body.classList.remove('ww-play-noscroll'));
+
   ctx.add(await subscribeRoom(session.id, (ev) => {
     if (ev.table === 'sessions') { session = { ...session, ...ev.new }; paint(); }
   }));
   ctx.setInterval(() => pingPresence(player.playerId).catch(()=>{}), 15000);
+  // Try to flush any pending submissions (in case we just regained network).
+  flushQueue().catch(() => {});
 
   function paint() {
     if (session.status === 'lobby') return paintLobby();
@@ -86,13 +98,15 @@ export async function renderPlay(rootSel, code) {
   function paintLobby() {
     mount(rootSel, html`
       <div class="text-center py-5">
+        <div class="d-flex justify-content-end mb-2">${fullscreenButtonHtml()}</div>
         <h1 class="display-4">${escapeHtml(player.name)}</h1>
         <p class="lead">¡Estás dentro!</p>
-        <p class="text-light">PIN: <b>${escapeHtml(code)}</b></p>
-        <p class="text-light">Esperando a que el profesor empiece…</p>
-        <div class="spinner-border text-warning"></div>
+        <p>PIN: <b>${escapeHtml(code)}</b></p>
+        <p>Esperando a que el profesor empiece…</p>
+        <div class="spinner-border"></div>
       </div>
     `);
+    attachFullscreenButton(rootSel);
   }
 
   async function paintQuestion() {
@@ -121,16 +135,13 @@ export async function renderPlay(rootSel, code) {
     on(rootSel, 'click', '.ww-ans', async (_, btn) => {
       document.querySelectorAll('.ww-ans').forEach(b => b.disabled = true);
       btn.classList.add('border', 'border-light', 'border-3');
-      const original = btn.innerHTML;
       btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enviando…';
       const ms = Date.now() - lastQuestionShownAt;
-      try {
-        await submitAnswer(session.id, player.playerId, idx, btn.dataset.value, ms);
+      const r = await queuedSubmit(session.id, player.playerId, idx, btn.dataset.value, ms);
+      if (r.queued) {
+        paintWaiting('Respuesta guardada (sin red). Se enviará al reconectar.');
+      } else {
         paintWaiting('¡Respuesta enviada!');
-      } catch (e) {
-        document.querySelectorAll('.ww-ans').forEach(b => b.disabled = false);
-        btn.innerHTML = original;
-        toast('Error al enviar: ' + e.message, 'danger', 5000);
       }
     });
 

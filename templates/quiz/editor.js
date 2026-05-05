@@ -2,6 +2,7 @@
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { renderImagePicker, attachImagePicker } from '../../core/imagePicker.js';
+import { listSkins, skinPreviewHtml } from '../../core/skins.js';
 
 export function renderQuizEditor(root, activity, onChange) {
   const a = activity;
@@ -20,6 +21,7 @@ export function renderQuizEditor(root, activity, onChange) {
           <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-rules">Reglas</button></li>
           <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-scoring">Puntuación</button></li>
           <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-live">Live <i class="bi bi-broadcast"></i></button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-pres">Presentación <i class="bi bi-palette"></i></button></li>
         </ul>
 
         <div class="tab-content border border-top-0 p-3 rounded-bottom">
@@ -30,6 +32,7 @@ export function renderQuizEditor(root, activity, onChange) {
           <div class="tab-pane fade" id="tab-rules">${renderRules(a)}</div>
           <div class="tab-pane fade" id="tab-scoring">${renderScoring(a)}</div>
           <div class="tab-pane fade" id="tab-live">${renderLive(a)}</div>
+          <div class="tab-pane fade" id="tab-pres">${renderPresentation(a)}</div>
         </div>
       </div>
     `);
@@ -73,6 +76,12 @@ export function renderQuizEditor(root, activity, onChange) {
     on(root, 'change', '#l-after', e => { a.live.showAnswerAfterEach = e.target.checked; onChange(a); });
     on(root, 'change', '#l-lb', e => { a.live.showLeaderboardBetween = e.target.checked; onChange(a); });
     on(root, 'change', '#l-nick', e => { a.live.nicknameFilter = e.target.checked; onChange(a); });
+    // Presentation: skin picker.
+    on(root, 'click', '.skin-pick', (_, b) => {
+      a.presentation.skin = b.dataset.name;
+      onChange(a);
+      paint();
+    });
   }
   paint();
 }
@@ -145,4 +154,20 @@ function renderLive(a) {
     <div class="col-md-4 form-check pt-4"><input id="l-lb" class="form-check-input" type="checkbox" ${a.live.showLeaderboardBetween?'checked':''}><label class="form-check-label" for="l-lb">Leaderboard entre preguntas</label></div>
     <div class="col-md-4 form-check pt-4"><input id="l-nick" class="form-check-input" type="checkbox" ${a.live.nicknameFilter?'checked':''}><label class="form-check-label" for="l-nick">Filtro de apodos</label></div>
   </div>`;
+}
+
+function renderPresentation(a) {
+  const current = a.presentation?.skin || 'default';
+  const skins = listSkins();
+  return `
+    <p class="small text-muted">Elige el aspecto que verán los alumnos al jugar (en SOLO, async y LIVE).</p>
+    <div class="d-flex flex-wrap gap-3">
+      ${skins.map(s => `
+        <div class="ww-skin-tile skin-pick ${current===s.name?'is-active':''}" data-name="${s.name}" role="button">
+          ${skinPreviewHtml(s.name)}
+          <div class="text-center small mt-1">${escapeHtml(s.description || '')}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
 }
