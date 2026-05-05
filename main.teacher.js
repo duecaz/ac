@@ -8,6 +8,7 @@ installErrorHandlers('teacher');
 import './templates/quiz/index.js';
 import './templates/wheel/index.js';
 import './templates/match/index.js';
+import './templates/memory/index.js';
 
 import { renderHome } from './views/home.js';
 import { renderTemplateSelector } from './views/templateSelector.js';

@@ -1,0 +1,25 @@
+.ww-memory .ww-memo-grid {
+  display: grid;
+  gap: .6rem;
+  max-width: 720px;
+  margin: 0 auto;
+}
+.ww-memory .mc {
+  border: 2px solid #6366f1;
+  background: #6366f1;
+  color: #fff;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 0;
+  height: 90px;
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform .15s, background .2s;
+}
+.ww-memory .mc:hover:not(:disabled) { transform: scale(1.05); }
+.ww-memory .mc.mc-open { background: #fff; color: #1f2937; border-color: #f59e0b; }
+.ww-memory .mc.mc-locked { background: #d1fae5; color: #065f46; border-color: #10b981; opacity: .8; cursor: default; }
+.ww-memory .mc-text { font-size: 1rem; padding: .25rem; text-align: center; word-break: break-word; }

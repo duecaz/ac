@@ -11,7 +11,7 @@ export function renderTemplateSelector(rootSel) {
     { name: 'wordsearch', label: 'Sopa de letras', icon: 'bi-grid-3x3-gap' },
     { name: 'flashcards', label: 'Tarjetas', icon: 'bi-card-text' },
     { name: 'crossword', label: 'Crucigrama', icon: 'bi-grid-3x3' },
-    { name: 'memory', label: 'Memoria', icon: 'bi-shuffle' }
+    { name: 'groupsort', label: 'Agrupar', icon: 'bi-collection' }
   ];
 
   mount(rootSel, html`
