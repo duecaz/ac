@@ -8,10 +8,10 @@ export function renderTemplateSelector(rootSel) {
   const templates = listTemplates();
   // Stub "coming soon" tiles for inspiration.
   const COMING = [
-    { name: 'match', label: 'Emparejar', icon: 'bi-link-45deg' },
     { name: 'wordsearch', label: 'Sopa de letras', icon: 'bi-grid-3x3-gap' },
     { name: 'flashcards', label: 'Tarjetas', icon: 'bi-card-text' },
-    { name: 'crossword', label: 'Crucigrama', icon: 'bi-grid-3x3' }
+    { name: 'crossword', label: 'Crucigrama', icon: 'bi-grid-3x3' },
+    { name: 'memory', label: 'Memoria', icon: 'bi-shuffle' }
   ];
 
   mount(rootSel, html`

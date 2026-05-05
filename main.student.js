@@ -7,6 +7,7 @@ installErrorHandlers('student');
 // Templates: needed because async tasks render the template's player on this page.
 import './templates/quiz/index.js';
 import './templates/wheel/index.js';
+import './templates/match/index.js';
 
 import { html, mount } from './core/html.js';
 import { ensureAuth } from './core/supabase.js';

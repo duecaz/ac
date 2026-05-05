@@ -1,0 +1,13 @@
+.ww-match .ww-card {
+  border: 2px solid #dee2e6;
+  background: #fff;
+  font-weight: 500;
+  padding: 1rem;
+  white-space: normal;
+  transition: transform .1s, background .15s, border-color .15s;
+}
+.ww-match .ww-card:hover:not(:disabled) { transform: translateY(-2px); border-color: #6366f1; }
+.ww-match .ww-card-sel { background: #fff3cd; border-color: #f59e0b; }
+.ww-match .ww-card-wrong { background: #fee2e2; border-color: #ef4444; animation: shake .2s; }
+.ww-match .ww-card-done { opacity: .35; background: #d1fae5; border-color: #10b981; text-decoration: line-through; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
