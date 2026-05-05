@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WW · Bot tester</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+</head>
+<body class="bg-dark text-light">
+<div class="container py-4">
+  <h1><i class="bi bi-robot"></i> Bot tester</h1>
+  <p class="text-light-50">Lanza N bots que se unen a una sala y responden al azar.</p>
+
+  <div class="row g-2 mb-3">
+    <div class="col-md-3"><label class="form-label">PIN</label><input id="pin" class="form-control" maxlength="6" style="text-transform:uppercase"></div>
+    <div class="col-md-2"><label class="form-label">N bots</label><input id="n" class="form-control" type="number" value="5" min="1" max="50"></div>
+    <div class="col-md-3"><label class="form-label">% acierto</label><input id="acc" class="form-control" type="number" value="70" min="0" max="100"></div>
+    <div class="col-md-2"><label class="form-label">Lag (ms)</label><input id="lag" class="form-control" type="number" value="2000" min="0"></div>
+    <div class="col-md-2 d-flex align-items-end"><button id="go" class="btn btn-warning w-100">Lanzar</button></div>
+  </div>
+
+  <div id="log" class="bg-black p-3 rounded font-monospace small" style="height:60vh;overflow:auto"></div>
+</div>
+
+<script type="module">
+import { getClient, ensureAuth } from '../core/supabase.js';
+import { joinSession, submitAnswer, subscribeRoom } from '../core/transport/live.js';
+import { findRoomByCode } from '../core/transport/room.js';
+
+const log = (msg, cls='text-light') => {
+  const el = document.getElementById('log');
+  const line = document.createElement('div');
+  line.className = cls;
+  line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+};
+
+const NAMES = ['Ana','Luis','Sara','Pedro','Marta','Iván','Lucia','Carlos','Eva','Diego','Nuria','Pablo','Rosa','Hugo','Clara','Bruno','Inés','Adrián','Lola','Mateo'];
+
+document.getElementById('go').onclick = async () => {
+  const code = document.getElementById('pin').value.trim().toUpperCase();
+  const n = +document.getElementById('n').value;
+  const acc = +document.getElementById('acc').value / 100;
+  const lag = +document.getElementById('lag').value;
+  if (code.length !== 6) return log('PIN inválido', 'text-danger');
+  await ensureAuth();
+  const sess = await findRoomByCode(code);
+  if (!sess) return log('Sala no encontrada', 'text-danger');
+  const activity = sess.activity_snap;
+  log(`Sala ${code} OK · ${activity.content.items.length} preguntas`, 'text-info');
+
+  // Spawn bots. Each bot gets its own anon UUID so the (session_id, user_id) unique works.
+  const bots = [];
+  for (let i = 0; i < n; i++) {
+    const name = NAMES[i % NAMES.length] + (i >= NAMES.length ? Math.floor(i/NAMES.length) : '') + Math.floor(Math.random()*100);
+    bots.push(spawnBot(name, code, activity, acc, lag));
+    await sleep(150);
+  }
+  log(`Lanzados ${n} bots`, 'text-success');
+};
+
+async function spawnBot(name, code, activity, acc, lag) {
+  // Each bot uses an isolated client to get its own anon JWT.
+  const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+  const cfg = await import('../supabase.config.js');
+  const sb = createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
+    auth: { storageKey: `ww.bot.${name}.${Math.random()}`, persistSession: false }
+  });
+  const { error: aErr } = await sb.auth.signInAnonymously();
+  if (aErr) return log(`[${name}] auth fail: ${aErr.message}`, 'text-danger');
+  const { data: { user } } = await sb.auth.getUser();
+
+  // Join
+  let player;
+  const { data: existing } = await sb.from('players').select('id').eq('session_id', (await sb.from('sessions').select('id').eq('code', code).single()).data.id).eq('user_id', user.id).maybeSingle();
+  const sess = await sb.from('sessions').select('id').eq('code', code).single();
+  if (existing) player = existing;
+  else {
+    const { data: p, error } = await sb.from('players').insert({ session_id: sess.data.id, user_id: user.id, name }).select('id').single();
+    if (error) return log(`[${name}] join fail: ${error.message}`, 'text-danger');
+    player = p;
+  }
+  log(`[${name}] joined`, 'text-info');
+
+  // Subscribe and answer.
+  let lastAnswered = -1;
+  const ch = sb.channel(`bot:${name}:${sess.data.id}`)
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'sessions', filter: `id=eq.${sess.data.id}` },
+        async (p) => {
+          const s = p.new;
+          if (s.phase === 'question' && s.current_item !== lastAnswered) {
+            lastAnswered = s.current_item;
+            const item = activity.content.items[s.current_item];
+            const correct = Math.random() < acc;
+            const value = correct ? item.answer : (item.options.filter(o => o !== item.answer)[Math.floor(Math.random() * (item.options.length - 1))] || item.options[0]);
+            const wait = Math.random() * lag;
+            setTimeout(async () => {
+              await sb.from('answers').upsert({
+                session_id: sess.data.id, player_id: player.id, item_index: s.current_item,
+                value, ms_taken: Math.round(wait), correct: null, points: 0
+              }, { onConflict: 'session_id,player_id,item_index' });
+              log(`[${name}] q${s.current_item+1} → ${value}${correct?' ✓':' ✗'}`);
+            }, wait);
+          }
+        });
+  await ch.subscribe();
+}
+
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+</script>
+</body>
+</html>

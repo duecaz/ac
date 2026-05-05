@@ -33,10 +33,15 @@ export async function renderHostByCode(rootSel, code) {
 
 async function renderHost(rootSel, code, sessionId, activity) {
   const tpl = getTemplate(activity.template);
+  const live = activity.live || {};
+  const timerSec = Math.max(5, live.questionTimer || 20);
+  const advanceMode = live.advanceMode || 'manual'; // manual | autoOnAllAnswered | autoOnTimer
   let session = await fetchSession(sessionId);
   let players = await listPlayers(sessionId);
   let answers = [];
   let unsub = null;
+  let tickHandle = null;
+  let settling = false;
 
   function onChange(ev) {
     if (ev.table === 'sessions') { session = { ...session, ...ev.new }; paint(); }
@@ -49,7 +54,8 @@ async function renderHost(rootSel, code, sessionId, activity) {
     else if (ev.table === 'answers') {
       if (ev.eventType === 'INSERT') answers = [...answers, ev.new];
       else if (ev.eventType === 'UPDATE') answers = answers.map(a => a.id === ev.new.id ? ev.new : a);
-      paint();
+      // While in question phase, don't repaint (the ticker updates count).
+      if (session.phase !== 'question') paint();
     }
   }
   unsub = await subscribeRoom(sessionId, onChange);
@@ -94,7 +100,10 @@ async function renderHost(rootSel, code, sessionId, activity) {
         <button class="btn btn-link text-muted ms-2" id="btn-cancel">Cancelar sala</button>
       </div>
     `);
-    on(rootSel, 'click', '#btn-start', () => startSession(sessionId));
+    on(rootSel, 'click', '#btn-start', async () => {
+      const deadline = new Date(Date.now() + timerSec * 1000).toISOString();
+      await setSessionState(sessionId, { status: 'running', phase: 'question', current_item: 0, started_at: new Date().toISOString(), deadline });
+    });
     on(rootSel, 'click', '#btn-cancel', async () => {
       if (!confirm('¿Cancelar sala?')) return;
       await endSession(sessionId); location.hash = '#/home';
@@ -108,11 +117,14 @@ async function renderHost(rootSel, code, sessionId, activity) {
     answers = await listAnswers(sessionId, idx);
     const total = players.length;
     const answered = answers.length;
+    const deadline = session.deadline ? new Date(session.deadline).getTime() : Date.now() + timerSec * 1000;
     mount(rootSel, html`
       <div class="d-flex justify-content-between align-items-center mb-2">
         <span class="badge bg-secondary fs-6">Pregunta ${idx + 1} / ${activity.content.items.length}</span>
-        <span class="badge bg-info text-dark fs-6"><i class="bi bi-check2-circle"></i> ${answered} / ${total}</span>
+        <span id="time-left" class="badge bg-warning text-dark fs-5"></span>
+        <span class="badge bg-info text-dark fs-6"><i class="bi bi-check2-circle"></i> <span id="ans-count">${answered}</span> / ${total}</span>
       </div>
+      <div class="progress mb-3" style="height:8px"><div id="time-bar" class="progress-bar bg-warning" style="width:100%"></div></div>
       <h2 class="text-center my-4">${escapeHtml(item.question)}</h2>
       ${item.image ? `<div class="text-center mb-3"><img src="${escapeHtml(item.image)}" class="img-fluid" style="max-height:240px"></div>` : ''}
       <div class="ww-kahoot-grid mb-4">
@@ -127,12 +139,43 @@ async function renderHost(rootSel, code, sessionId, activity) {
         <button class="btn btn-warning btn-lg" id="btn-reveal"><i class="bi bi-stop-fill"></i> Bloquear y revelar</button>
       </div>
     `);
-    on(rootSel, 'click', '#btn-reveal', async () => {
-      const btn = document.getElementById('btn-reveal');
-      btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Calculando…';
-      try { await settleItem(sessionId, idx); }
-      catch (e) { alert('Error al revelar: ' + e.message); btn.disabled = false; btn.innerHTML = 'Reintentar'; }
-    });
+
+    on(rootSel, 'click', '#btn-reveal', () => doSettle(idx));
+
+    if (tickHandle) clearInterval(tickHandle);
+    tickHandle = setInterval(() => {
+      if (session.phase !== 'question') { clearInterval(tickHandle); tickHandle = null; return; }
+      const remain = Math.max(0, deadline - Date.now());
+      const pct = Math.max(0, Math.min(100, 100 * remain / (timerSec * 1000)));
+      const t = document.getElementById('time-left');
+      const bar = document.getElementById('time-bar');
+      const ac = document.getElementById('ans-count');
+      if (t) t.textContent = `${Math.ceil(remain / 1000)}s`;
+      if (bar) bar.style.width = pct + '%';
+      if (ac) ac.textContent = String(answers.length);
+      // Auto-advance triggers.
+      const allAnswered = total > 0 && answers.length >= total;
+      if (allAnswered && (advanceMode === 'autoOnAllAnswered' || (live.lockAnswersOn === 'allAnswered'))) {
+        return doSettle(idx);
+      }
+      if (remain <= 0 && (advanceMode === 'autoOnTimer' || advanceMode === 'autoOnAllAnswered' || advanceMode === 'manual')) {
+        // Even in manual, expiring the timer settles to avoid stuck rooms.
+        return doSettle(idx);
+      }
+    }, 250);
+  }
+
+  async function doSettle(idx) {
+    if (settling || session.phase !== 'question') return;
+    settling = true;
+    if (tickHandle) { clearInterval(tickHandle); tickHandle = null; }
+    const btn = document.getElementById('btn-reveal');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Calculando…'; }
+    try { await settleItem(sessionId, idx); }
+    catch (e) {
+      alert('Error al revelar: ' + e.message);
+      if (btn) { btn.disabled = false; btn.innerHTML = 'Reintentar'; }
+    } finally { settling = false; }
   }
 
   async function paintReveal() {
@@ -182,7 +225,10 @@ async function renderHost(rootSel, code, sessionId, activity) {
           : `<button class="btn btn-primary btn-lg" id="btn-next"><i class="bi bi-arrow-right"></i> Siguiente pregunta</button>`}
       </div>
     `);
-    on(rootSel, 'click', '#btn-next', () => setSessionState(sessionId, { phase: 'question', current_item: idx + 1 }));
+    on(rootSel, 'click', '#btn-next', () => {
+      const deadline = new Date(Date.now() + timerSec * 1000).toISOString();
+      setSessionState(sessionId, { phase: 'question', current_item: idx + 1, deadline });
+    });
     on(rootSel, 'click', '#btn-end', () => endSession(sessionId));
   }
 

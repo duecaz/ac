@@ -26,11 +26,7 @@ export class QuizEditor extends BaseEditor {
             <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-content">Contenido</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-rules">Reglas</button></li>
             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-scoring">Puntuación</button></li>
-            <li class="nav-item">
-              <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-live">
-                Live <span class="badge bg-warning text-dark ms-1">Fase 2</span>
-              </button>
-            </li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-live">Live <i class="bi bi-broadcast"></i></button></li>
           </ul>
 
           <div class="tab-content border border-top-0 p-3 rounded-bottom">
@@ -71,6 +67,17 @@ export class QuizEditor extends BaseEditor {
       on(root, 'change', '#f-mode', e => { a.scoring.mode = e.target.value; onChange(a); });
       on(root, 'input', '#f-ppc', e => { a.scoring.pointsPerCorrect = +e.target.value || 1; onChange(a); });
       on(root, 'input', '#f-ppw', e => { a.scoring.pointsPerWrong = +e.target.value || 0; onChange(a); });
+      // Live
+      on(root, 'change', '#l-advance', e => { a.live.advanceMode = e.target.value; onChange(a); });
+      on(root, 'input', '#l-qtimer', e => { a.live.questionTimer = +e.target.value || 20; onChange(a); });
+      on(root, 'change', '#l-lock', e => { a.live.lockAnswersOn = e.target.value; onChange(a); });
+      on(root, 'change', '#l-points', e => { a.live.pointsModel = e.target.value; onChange(a); });
+      on(root, 'input', '#l-bonus', e => { a.live.speedBonusMax = +e.target.value || 0; onChange(a); });
+      on(root, 'input', '#l-max', e => { a.live.maxPlayers = +e.target.value || 60; onChange(a); });
+      on(root, 'change', '#l-late', e => { a.live.allowLateJoin = e.target.checked; onChange(a); });
+      on(root, 'change', '#l-after', e => { a.live.showAnswerAfterEach = e.target.checked; onChange(a); });
+      on(root, 'change', '#l-lb', e => { a.live.showLeaderboardBetween = e.target.checked; onChange(a); });
+      on(root, 'change', '#l-nick', e => { a.live.nicknameFilter = e.target.checked; onChange(a); });
     }
     paint();
   }
@@ -119,35 +126,31 @@ function renderScoring(a) {
 }
 
 function renderLive(a) {
-  // All controls disabled (Fase 2). Values still persisted via the shared
-  // activity object, so they survive when Fase 2 enables this tab.
-  const d = 'disabled';
   return `
-    <div class="alert alert-warning"><i class="bi bi-info-circle"></i> Estos ajustes se activan en Fase 2 (modo Live).</div>
     <div class="row g-3">
       <div class="col-md-4"><label class="form-label">Modo de avance</label>
-        <select class="form-select" ${d}>
-          <option ${a.live.advanceMode==='manual'?'selected':''}>manual</option>
-          <option ${a.live.advanceMode==='autoOnAllAnswered'?'selected':''}>autoOnAllAnswered</option>
-          <option ${a.live.advanceMode==='autoOnTimer'?'selected':''}>autoOnTimer</option>
+        <select class="form-select" id="l-advance">
+          <option value="manual" ${a.live.advanceMode==='manual'?'selected':''}>manual</option>
+          <option value="autoOnAllAnswered" ${a.live.advanceMode==='autoOnAllAnswered'?'selected':''}>autoOnAllAnswered</option>
+          <option value="autoOnTimer" ${a.live.advanceMode==='autoOnTimer'?'selected':''}>autoOnTimer</option>
         </select></div>
-      <div class="col-md-4"><label class="form-label">Timer pregunta (s)</label><input ${d} type="number" class="form-control" value="${a.live.questionTimer}"></div>
+      <div class="col-md-4"><label class="form-label">Timer pregunta (s)</label><input id="l-qtimer" type="number" min="5" max="300" class="form-control" value="${a.live.questionTimer}"></div>
       <div class="col-md-4"><label class="form-label">Bloquear respuestas</label>
-        <select class="form-select" ${d}>
-          <option ${a.live.lockAnswersOn==='firstOf'?'selected':''}>firstOf</option>
-          <option ${a.live.lockAnswersOn==='timer'?'selected':''}>timer</option>
-          <option ${a.live.lockAnswersOn==='allAnswered'?'selected':''}>allAnswered</option>
+        <select class="form-select" id="l-lock">
+          <option value="firstOf" ${a.live.lockAnswersOn==='firstOf'?'selected':''}>firstOf</option>
+          <option value="timer" ${a.live.lockAnswersOn==='timer'?'selected':''}>timer</option>
+          <option value="allAnswered" ${a.live.lockAnswersOn==='allAnswered'?'selected':''}>allAnswered</option>
         </select></div>
       <div class="col-md-4"><label class="form-label">Modelo de puntos</label>
-        <select class="form-select" ${d}>
-          <option ${a.live.pointsModel==='kahoot'?'selected':''}>kahoot</option>
-          <option ${a.live.pointsModel==='flat'?'selected':''}>flat</option>
+        <select class="form-select" id="l-points">
+          <option value="kahoot" ${a.live.pointsModel==='kahoot'?'selected':''}>kahoot</option>
+          <option value="flat" ${a.live.pointsModel==='flat'?'selected':''}>flat</option>
         </select></div>
-      <div class="col-md-4"><label class="form-label">Speed bonus máx</label><input ${d} type="number" class="form-control" value="${a.live.speedBonusMax}"></div>
-      <div class="col-md-4"><label class="form-label">Máx. jugadores</label><input ${d} type="number" class="form-control" value="${a.live.maxPlayers}"></div>
-      <div class="col-md-4 form-check pt-4"><input ${d} class="form-check-input" type="checkbox" ${a.live.allowLateJoin?'checked':''}><label class="form-check-label">Permitir unirse tarde</label></div>
-      <div class="col-md-4 form-check pt-4"><input ${d} class="form-check-input" type="checkbox" ${a.live.showAnswerAfterEach?'checked':''}><label class="form-check-label">Mostrar respuesta tras cada</label></div>
-      <div class="col-md-4 form-check pt-4"><input ${d} class="form-check-input" type="checkbox" ${a.live.showLeaderboardBetween?'checked':''}><label class="form-check-label">Leaderboard entre preguntas</label></div>
-      <div class="col-md-4 form-check pt-4"><input ${d} class="form-check-input" type="checkbox" ${a.live.nicknameFilter?'checked':''}><label class="form-check-label">Filtro de apodos</label></div>
+      <div class="col-md-4"><label class="form-label">Speed bonus máx</label><input id="l-bonus" type="number" min="0" class="form-control" value="${a.live.speedBonusMax}"></div>
+      <div class="col-md-4"><label class="form-label">Máx. jugadores</label><input id="l-max" type="number" min="1" max="500" class="form-control" value="${a.live.maxPlayers}"></div>
+      <div class="col-md-4 form-check pt-4"><input id="l-late" class="form-check-input" type="checkbox" ${a.live.allowLateJoin?'checked':''}><label class="form-check-label" for="l-late">Permitir unirse tarde</label></div>
+      <div class="col-md-4 form-check pt-4"><input id="l-after" class="form-check-input" type="checkbox" ${a.live.showAnswerAfterEach?'checked':''}><label class="form-check-label" for="l-after">Mostrar respuesta tras cada</label></div>
+      <div class="col-md-4 form-check pt-4"><input id="l-lb" class="form-check-input" type="checkbox" ${a.live.showLeaderboardBetween?'checked':''}><label class="form-check-label" for="l-lb">Leaderboard entre preguntas</label></div>
+      <div class="col-md-4 form-check pt-4"><input id="l-nick" class="form-check-input" type="checkbox" ${a.live.nicknameFilter?'checked':''}><label class="form-check-label" for="l-nick">Filtro de apodos</label></div>
     </div>`;
 }

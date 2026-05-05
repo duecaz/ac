@@ -92,10 +92,14 @@ export async function renderPlay(rootSel, code) {
     const own = await getOwnAnswer(session.id, player.playerId, idx);
     if (own) return paintWaiting('Respuesta enviada. Espera al resto.');
     lastQuestionShownAt = Date.now();
+    const deadlineMs = session.deadline ? new Date(session.deadline).getTime() : 0;
+    const total = activity?.live?.questionTimer ? activity.live.questionTimer * 1000 : 0;
     mount(rootSel, html`
-      <div class="text-center mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-2">
         <span class="badge bg-info text-dark">Pregunta ${idx+1} / ${activity.content.items.length}</span>
+        <span id="s-time" class="badge bg-warning text-dark fs-5"></span>
       </div>
+      <div class="progress mb-3" style="height:6px"><div id="s-bar" class="progress-bar bg-warning" style="width:100%"></div></div>
       <h4 class="text-center mb-3">${escapeHtml(item.question)}</h4>
       <div class="ww-kahoot-grid">
         ${(item.options||[]).map((o, i) => `
@@ -117,6 +121,19 @@ export async function renderPlay(rootSel, code) {
         alert('Error: ' + e.message);
       }
     });
+
+    if (deadlineMs && total) {
+      const tick = setInterval(() => {
+        if (session.phase !== 'question') { clearInterval(tick); return; }
+        const remain = Math.max(0, deadlineMs - Date.now());
+        const pct = Math.max(0, Math.min(100, 100 * remain / total));
+        const t = document.getElementById('s-time');
+        const b = document.getElementById('s-bar');
+        if (t) t.textContent = `${Math.ceil(remain / 1000)}s`;
+        if (b) b.style.width = pct + '%';
+        if (remain <= 0) clearInterval(tick);
+      }, 250);
+    }
   }
 
   async function paintRevealOwn() {

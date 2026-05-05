@@ -85,6 +85,7 @@ export async function joinSession(code, nickname) {
   }).select('id').single();
   if (iErr) {
     if (iErr.code === '23505') throw new Error('Ese apodo o usuario ya está unido');
+    if (iErr.message?.includes('MAX_PLAYERS_REACHED')) throw new Error('La sala está llena');
     throw iErr;
   }
   return { sessionId: sess.id, playerId: ins.id, name: f.value };
