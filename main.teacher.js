@@ -1,3 +1,4 @@
+import { VERSION } from './core/constants.js';
 import { route, start, navigate, setNotFound } from './core/router.js';
 import { registerTemplate, registerEditor } from './core/registry.js';
 import { QuizTemplate } from './templates/quiz.js';
@@ -35,6 +36,7 @@ setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encon
     console.warn('[boot] auth failed:', err.message);
     // Keep the app usable in offline/local mode.
   }
+  const v = document.getElementById('ww-version'); if (v) v.textContent = 'v' + VERSION;
   start();
   window.__APP_READY__ = true;
 })();

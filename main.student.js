@@ -1,3 +1,4 @@
+import { VERSION } from './core/constants.js';
 import { route, start, setNotFound } from './core/router.js';
 import { html, mount } from './core/html.js';
 import { ensureAuth } from './core/supabase.js';
@@ -15,6 +16,7 @@ setNotFound(() => mount(APP, html`<div class="alert alert-warning m-4">Ruta no e
 (async function boot() {
   try { await ensureAuth(); }
   catch (err) { console.warn('[boot] auth failed:', err.message); }
+  const v = document.getElementById('ww-version'); if (v) v.textContent = 'v' + VERSION;
   start();
   window.__APP_READY__ = true;
 })();

@@ -18,8 +18,8 @@ export async function renderHostLaunch(rootSel, activityId) {
   mount(rootSel, html`<div class="text-center py-5"><div class="spinner-border"></div><p class="mt-2">Creando sala…</p></div>`);
   try {
     const room = await createRoom(a);
+    // Just navigate. The router will pick #/host/:code and call renderHostByCode.
     location.hash = `#/host/${room.code}`;
-    renderHost(rootSel, room.code, room.id, a);
   } catch (e) {
     mount(rootSel, html`<div class="alert alert-danger">No se pudo crear la sala: ${escapeHtml(e.message)}</div>`);
   }

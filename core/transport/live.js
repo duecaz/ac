@@ -121,7 +121,11 @@ export async function pingPresence(playerId) {
 // onChange({ table, eventType, new, old }).
 export async function subscribeRoom(sessionId, onChange) {
   const sb = await getClient();
-  const ch = sb.channel(`room:${sessionId}`)
+  // Unique channel name so two simultaneous mounts don't collide on the same
+  // already-subscribed channel (which throws "cannot add postgres_changes").
+  const tag = Math.random().toString(36).slice(2, 8);
+  const name = `room:${sessionId}:${tag}`;
+  const ch = sb.channel(name)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` },
         (p) => onChange({ table: 'sessions', eventType: p.eventType, new: p.new, old: p.old }))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `session_id=eq.${sessionId}` },
