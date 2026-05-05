@@ -1,8 +1,15 @@
-// Deployed via MCP. Mirror for repo history.
-// Server-side scoring: clients can only INSERT answers with correct=null/points=0
-// (RLS). This function (service role) computes correct + points and updates rows.
+// Dispatcher. Loads activity_snap, picks the scorer for activity.template,
+// scores all answers for the round, updates rows, recomputes player totals,
+// flips phase to 'reveal'. Adding a new template only requires a new scorer
+// in _scorers/ and an entry in the SCORERS map below.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { scoreOne as quizScoreOne } from "./_scorers/quiz.ts";
+
+type Scorer = (activity: any, item: any, ans: any) => { correct: boolean | null; points: number };
+const SCORERS: Record<string, Scorer> = {
+  quiz: quizScoreOne
+};
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -35,48 +42,25 @@ Deno.serve(async (req: Request) => {
     if (sess.host_id !== userId) return json({ error: "not host" }, 403);
 
     const activity = sess.activity_snap as any;
+    const scorer = SCORERS[activity?.template];
+    if (!scorer) return json({ error: `no scorer for template ${activity?.template}` }, 400);
+
     const item = activity?.content?.items?.[item_index];
     if (!item) return json({ error: "item out of range" }, 400);
-
-    const live = activity?.live || {};
-    const scoring = activity?.scoring || {};
-    const pointsModel = live.pointsModel || "flat";
-    const speedBonusMax = live.speedBonusMax ?? 1000;
-    const questionTimer = live.questionTimer || 20;
-    const ppc = scoring.pointsPerCorrect ?? 1;
-    const ppw = scoring.pointsPerWrong ?? 0;
 
     const { data: answers, error: aErr } = await admin.from("answers")
       .select("id, player_id, value, ms_taken")
       .eq("session_id", session_id).eq("item_index", item_index);
     if (aErr) return json({ error: aErr.message }, 500);
 
-    const updates: Array<{ id: string; player_id: string; correct: boolean | null; points: number }> = [];
+    let settled = 0;
     for (const a of answers || []) {
-      const ok = isCorrect(item, a.value);
-      let points = 0;
-      let correct: boolean | null = null;
-      if (ok === null) { correct = null; points = 0; }
-      else if (!ok) { correct = false; points = ppw < 0 ? ppw : 0; }
-      else {
-        correct = true;
-        if (pointsModel === "kahoot") {
-          const ms = a.ms_taken || 0;
-          const max = questionTimer * 1000;
-          const remain = Math.max(0, 1 - ms / max);
-          const base = item.points || ppc || 1;
-          points = Math.round(base * 500 + speedBonusMax * remain);
-        } else {
-          points = item.points || ppc || 1;
-        }
-      }
-      updates.push({ id: a.id, player_id: a.player_id, correct, points });
+      const r = scorer(activity, item, a);
+      await admin.from("answers").update({ correct: r.correct, points: r.points }).eq("id", a.id);
+      settled++;
     }
 
-    for (const u of updates) {
-      await admin.from("answers").update({ correct: u.correct, points: u.points }).eq("id", u.id);
-    }
-
+    // Recompute player totals from the answers table.
     const { data: tally } = await admin.from("answers")
       .select("player_id, points").eq("session_id", session_id);
     const totals = new Map<string, number>();
@@ -87,20 +71,11 @@ Deno.serve(async (req: Request) => {
 
     await admin.from("sessions").update({ phase: "reveal", deadline: null }).eq("id", session_id);
 
-    return json({ ok: true, settled: updates.length });
+    return json({ ok: true, settled, template: activity.template });
   } catch (e) {
     return json({ error: String((e as Error).message || e) }, 500);
   }
 });
-
-function norm(s: unknown) {
-  return String(s ?? "").trim().toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "");
-}
-function isCorrect(item: any, value: any): boolean | null {
-  if (item.answer == null) return null;
-  if (Array.isArray(item.answer)) return item.answer.map(norm).includes(norm(value));
-  return norm(item.answer) === norm(value);
-}
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: { ...CORS, "Content-Type": "application/json" } });

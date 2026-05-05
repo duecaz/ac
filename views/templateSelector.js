@@ -1,28 +1,46 @@
+// Template gallery driven by the registry. Auto-discovers anything registered.
 import { html, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { navigate } from '../core/router.js';
-
-const TEMPLATES = [
-  { name: 'quiz', label: 'Quiz', icon: 'bi-question-circle-fill', color: 'primary', enabled: true },
-  { name: 'match', label: 'Emparejar', icon: 'bi-link-45deg', color: 'secondary', enabled: false },
-  { name: 'fill', label: 'Rellenar', icon: 'bi-input-cursor-text', color: 'secondary', enabled: false },
-  { name: 'wheel', label: 'Ruleta', icon: 'bi-bullseye', color: 'secondary', enabled: false }
-];
+import { listTemplates } from '../core/registry.js';
 
 export function renderTemplateSelector(rootSel) {
+  const templates = listTemplates();
+  // Stub "coming soon" tiles for inspiration.
+  const COMING = [
+    { name: 'match', label: 'Emparejar', icon: 'bi-link-45deg' },
+    { name: 'wordsearch', label: 'Sopa de letras', icon: 'bi-grid-3x3-gap' },
+    { name: 'flashcards', label: 'Tarjetas', icon: 'bi-card-text' },
+    { name: 'crossword', label: 'Crucigrama', icon: 'bi-grid-3x3' }
+  ];
+
   mount(rootSel, html`
     <h2 class="mb-3">Elige una plantilla</h2>
     <div class="row g-3">
-      ${TEMPLATES.map(t => `
+      ${templates.map(T => `
         <div class="col-md-3 col-6">
-          <button class="btn btn-${t.enabled?'outline-':''}${t.color} w-100 py-4 tpl-pick" data-name="${t.name}" ${t.enabled?'':'disabled'}>
-            <i class="bi ${t.icon} display-4 d-block"></i>
-            <span class="mt-2 d-block">${t.label}</span>
-            ${t.enabled ? '' : '<small class="d-block text-muted">Próximamente</small>'}
+          <button class="btn btn-outline-${T.meta.color || 'primary'} w-100 py-4 tpl-pick" data-name="${T.meta.name}">
+            <i class="bi ${T.meta.icon} display-4 d-block"></i>
+            <span class="mt-2 d-block">${T.meta.label}</span>
+            <small class="d-block text-muted">${modesLabel(T.meta.modes)}</small>
+          </button>
+        </div>
+      `).join('')}
+      ${COMING.filter(c => !templates.find(t => t.meta.name === c.name)).map(c => `
+        <div class="col-md-3 col-6">
+          <button class="btn btn-outline-secondary w-100 py-4" disabled>
+            <i class="bi ${c.icon} display-4 d-block"></i>
+            <span class="mt-2 d-block">${c.label}</span>
+            <small class="d-block text-muted">Próximamente</small>
           </button>
         </div>
       `).join('')}
     </div>
   `);
   on(rootSel, 'click', '.tpl-pick', (_, b) => navigate(`#/edit-new/${b.dataset.name}`));
+}
+
+function modesLabel(m) {
+  if (!m) return '';
+  return ['solo', 'live', 'async'].filter(k => m[k]).join(' · ');
 }

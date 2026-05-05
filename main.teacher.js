@@ -3,9 +3,11 @@ import { installErrorHandlers } from './core/errorLog.js';
 import { route, start, navigate, setNotFound } from './core/router.js';
 
 installErrorHandlers('teacher');
-import { registerTemplate, registerEditor } from './core/registry.js';
-import { QuizTemplate } from './templates/quiz.js';
-import { QuizEditor } from './editors/quizEditor.js';
+
+// Templates: each module self-registers via registerTemplate(...).
+import './templates/quiz/index.js';
+import './templates/wheel/index.js';
+
 import { renderHome } from './views/home.js';
 import { renderTemplateSelector } from './views/templateSelector.js';
 import { renderPlayerView } from './views/playerView.js';
@@ -15,10 +17,8 @@ import { renderReports, renderActivityReport, renderSessionReport } from './view
 import { renderAssignmentsForActivity, renderAttempts } from './views/assignments.js';
 import { sync } from './core/storage.js';
 import { ensureAuth } from './core/supabase.js';
+import { applySkin } from './core/skins.js';
 import { html, mount } from './core/html.js';
-
-registerTemplate('quiz', QuizTemplate);
-registerEditor('quiz', QuizEditor);
 
 const APP = '#app';
 
@@ -39,12 +39,12 @@ route('#/task/:id/attempts', ({ id }) => renderAttempts(APP, id));
 setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encontrada. <a href="#/home">Inicio</a></div>`));
 
 (async function boot() {
+  applySkin(localStorage.getItem('ww.skin') || 'default');
   try {
     await ensureAuth();
     sync().catch(err => console.warn('[sync]', err.message));
   } catch (err) {
     console.warn('[boot] auth failed:', err.message);
-    // Keep the app usable in offline/local mode.
   }
   const v = document.getElementById('ww-version'); if (v) v.textContent = 'v' + VERSION;
   start();

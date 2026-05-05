@@ -2,6 +2,12 @@ import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { list, remove } from '../core/storage.js';
 import { navigate } from '../core/router.js';
+import { getTemplate } from '../core/registry.js';
+
+function itemCount(a) {
+  const c = a.content || {};
+  return (c.items?.length ?? c.entries?.length ?? c.pairs?.length ?? c.groups?.length ?? c.words?.length ?? 0);
+}
 
 export function renderHome(rootSel) {
   const acts = list();
@@ -16,27 +22,30 @@ export function renderHome(rootSel) {
         <p class="mt-3">Aún no hay actividades. Crea la primera.</p>
       </div>` : `
       <div class="row g-3">
-        ${acts.map(a => `
+        ${acts.map(a => {
+          const T = getTemplate(a.template);
+          const m = T?.meta?.modes || { solo: true, live: false, async: false };
+          return `
           <div class="col-md-6 col-lg-4">
             <div class="card h-100">
               <div class="card-body">
                 <div class="d-flex justify-content-between">
-                  <span class="badge bg-info text-dark">${escapeHtml(a.template)}</span>
-                  <small class="text-muted">${a.content.items.length} pregs.</small>
+                  <span class="badge bg-${T?.meta?.color || 'info'}"><i class="bi ${T?.meta?.icon || 'bi-puzzle'}"></i> ${escapeHtml(T?.meta?.label || a.template)}</span>
+                  <small class="text-muted">${itemCount(a)} elem.</small>
                 </div>
                 <h5 class="card-title mt-2">${escapeHtml(a.title)}</h5>
                 <p class="card-text small text-muted">${escapeHtml(a.subtitle || '')}</p>
               </div>
               <div class="card-footer d-flex gap-1 flex-wrap">
-                <button class="btn btn-success btn-sm flex-grow-1 act-play" data-id="${a.id}"><i class="bi bi-play-fill"></i> Empezar</button>
-                <button class="btn btn-warning btn-sm flex-grow-1 act-pin" data-id="${a.id}"><i class="bi bi-broadcast"></i> PIN</button>
-                <button class="btn btn-info btn-sm flex-grow-1 act-task" data-id="${a.id}" title="Tareas"><i class="bi bi-clipboard-check"></i></button>
+                ${m.solo ? `<button class="btn btn-success btn-sm flex-grow-1 act-play" data-id="${a.id}"><i class="bi bi-play-fill"></i> Empezar</button>` : ''}
+                ${m.live ? `<button class="btn btn-warning btn-sm flex-grow-1 act-pin" data-id="${a.id}"><i class="bi bi-broadcast"></i> PIN</button>` : ''}
+                ${m.async ? `<button class="btn btn-info btn-sm flex-grow-1 act-task" data-id="${a.id}" title="Tareas"><i class="bi bi-clipboard-check"></i></button>` : ''}
                 <button class="btn btn-outline-primary btn-sm act-edit" data-id="${a.id}"><i class="bi bi-pencil"></i></button>
                 <button class="btn btn-outline-danger btn-sm act-del" data-id="${a.id}"><i class="bi bi-trash"></i></button>
               </div>
             </div>
-          </div>
-        `).join('')}
+          </div>`;
+        }).join('')}
       </div>`}
   `);
 

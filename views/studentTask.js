@@ -6,11 +6,6 @@ import { isAcceptableNickname } from '../core/nicknameFilter.js';
 import { getTemplate } from '../core/registry.js';
 import { ensureAuth } from '../core/supabase.js';
 import { runPlayer } from '../core/player.js';
-import { QuizTemplate } from '../templates/quiz.js';
-import { registerTemplate } from '../core/registry.js';
-
-// Ensure quiz template is registered (student app doesn't import it elsewhere).
-registerTemplate('quiz', QuizTemplate);
 
 const NICK_KEY = 'ww.nick';
 

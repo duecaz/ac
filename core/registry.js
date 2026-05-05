@@ -1,9 +1,15 @@
-// Template registry. Each template registers itself by name.
+// Unified template registry. registerTemplate(TemplateClass) is enough — it
+// reads meta + renderPlayer + renderEditor from the class. No more separate
+// editor registration.
 const _templates = {};
-const _editors = {};
-
-export function registerTemplate(name, mod) { _templates[name] = mod; }
-export function registerEditor(name, mod) { _editors[name] = mod; }
+export function registerTemplate(T) {
+  if (!T?.meta?.name) throw new Error('Template must declare static meta.name');
+  _templates[T.meta.name] = T;
+}
 export function getTemplate(name) { return _templates[name]; }
-export function getEditor(name) { return _editors[name]; }
-export function listTemplates() { return Object.keys(_templates); }
+export function getEditor(name) {
+  const T = _templates[name];
+  return T ? { render: (root, a, oc) => T.renderEditor(root, a, oc) } : null;
+}
+export function listTemplates() { return Object.values(_templates); }
+export function listTemplateNames() { return Object.keys(_templates); }

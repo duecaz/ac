@@ -1,57 +1,79 @@
+// Activity migration. Each step is idempotent.
+//   v1: { items[] }
+//   v2: + rules, scoring, review, presentation
+//   v3: + live, author, visibility, forkOf, schemaVersion
+//   v4: + templateVersion, tags[], language, media{}; per-template content migration via T.migrateContent
+//
+// normalize() runs after migration and fills any missing default. Templates
+// supply their own default factories via T.meta.defaultRules / defaultScoring /
+// defaultLive / defaultContent.
 import { SCHEMA_VERSION, DEFAULT_RULES, DEFAULT_SCORING, DEFAULT_REVIEW, DEFAULT_PRESENTATION, DEFAULT_LIVE, DEFAULT_AUTHOR } from './constants.js';
+import { getTemplate } from './registry.js';
 
-// v1: { id, title, items: [...] }
-// v2: introduced rules, scoring, review, presentation
-// v3: added live, author, visibility, forkOf, schemaVersion
+const STEPS = {
+  1: (a) => {
+    a = { ...a, content: { items: a.items || [] }, rules: { ...DEFAULT_RULES }, scoring: { ...DEFAULT_SCORING }, review: { ...DEFAULT_REVIEW }, presentation: { ...DEFAULT_PRESENTATION } };
+    delete a.items;
+    a.schemaVersion = 2;
+    return a;
+  },
+  2: (a) => {
+    a = { ...a, live: { ...DEFAULT_LIVE }, author: { ...DEFAULT_AUTHOR }, visibility: 'private', forkOf: null };
+    a.schemaVersion = 3;
+    return a;
+  },
+  3: (a) => {
+    a = { ...a, templateVersion: a.templateVersion || 1, tags: a.tags || [], language: a.language || 'es', media: a.media || {} };
+    a.schemaVersion = 4;
+    return a;
+  }
+};
+
 export function migrate(a) {
   if (!a || typeof a !== 'object') throw new Error('migrate: not an object');
   let v = a.schemaVersion || (a.live ? 3 : a.rules ? 2 : 1);
-
-  if (v < 2) {
-    a = { ...a, content: { items: a.items || [] }, rules: { ...DEFAULT_RULES }, scoring: { ...DEFAULT_SCORING }, review: { ...DEFAULT_REVIEW }, presentation: { ...DEFAULT_PRESENTATION } };
-    delete a.items;
-    v = 2;
+  while (v < SCHEMA_VERSION) {
+    a = STEPS[v](a);
+    v = a.schemaVersion;
   }
-  if (v < 3) {
-    a = { ...a, live: { ...DEFAULT_LIVE }, author: { ...DEFAULT_AUTHOR }, visibility: 'private', forkOf: null };
-    v = 3;
+  // Per-template content migration if the template knows how.
+  const T = getTemplate(a.template);
+  if (T?.migrateContent) {
+    a.content = T.migrateContent(a.content, a.templateVersion || 1);
+    a.templateVersion = T.meta?.templateVersion || a.templateVersion || 1;
   }
-  a.schemaVersion = SCHEMA_VERSION;
   return normalize(a);
 }
 
-// Fills missing defaults so legacy or partial activities don't crash the Player.
+// Fills missing defaults using the template's factories when available, falling
+// back to generic constants. This way each template controls its own defaults.
 export function normalize(a) {
-  const out = {
+  const T = getTemplate(a.template);
+  const ruleDefs = T?.meta?.defaultRules?.() || { ...DEFAULT_RULES };
+  const scoreDefs = T?.meta?.defaultScoring?.() || { ...DEFAULT_SCORING };
+  const liveDefs = T?.meta?.defaultLive?.() || { ...DEFAULT_LIVE };
+  const contentDefs = T?.meta?.defaultContent?.() || {};
+  return {
     id: a.id,
     title: a.title || 'Sin título',
     subtitle: a.subtitle || '',
     template: a.template || 'quiz',
+    templateVersion: a.templateVersion || T?.meta?.templateVersion || 1,
     schemaVersion: SCHEMA_VERSION,
-    content: { items: Array.isArray(a.content?.items) ? a.content.items.map(normalizeItem) : [] },
-    rules: { ...DEFAULT_RULES, ...(a.rules || {}) },
-    scoring: { ...DEFAULT_SCORING, ...(a.scoring || {}) },
+    content: { ...contentDefs, ...(a.content || {}) },
+    rules: { ...ruleDefs, ...(a.rules || {}) },
+    scoring: { ...scoreDefs, ...(a.scoring || {}) },
     review: { ...DEFAULT_REVIEW, ...(a.review || {}) },
     presentation: { ...DEFAULT_PRESENTATION, ...(a.presentation || {}) },
-    live: { ...DEFAULT_LIVE, ...(a.live || {}) },
+    live: { ...liveDefs, ...(a.live || {}) },
     author: { ...DEFAULT_AUTHOR, ...(a.author || {}) },
     visibility: a.visibility || 'private',
     forkOf: a.forkOf || null,
+    tags: Array.isArray(a.tags) ? a.tags : [],
+    language: a.language || 'es',
+    media: a.media || {},
     createdAt: a.createdAt || new Date().toISOString(),
     updatedAt: a.updatedAt || new Date().toISOString()
-  };
-  return out;
-}
-
-function normalizeItem(it, idx) {
-  return {
-    id: it.id || `q_${idx}_${Math.random().toString(36).slice(2,8)}`,
-    question: it.question || '',
-    answer: it.answer ?? null,
-    options: Array.isArray(it.options) ? it.options : [],
-    points: typeof it.points === 'number' ? it.points : 1,
-    image: it.image || null,
-    audio: it.audio || null
   };
 }
 
@@ -63,10 +85,13 @@ export function newActivityId() {
 }
 
 export function newActivity(template = 'quiz') {
+  const T = getTemplate(template);
+  const content = T?.meta?.defaultContent?.() || {};
   return normalize({
     id: newActivityId(),
     title: 'Nueva actividad',
     template,
-    content: { items: [] }
+    templateVersion: T?.meta?.templateVersion || 1,
+    content
   });
 }
