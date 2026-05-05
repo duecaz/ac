@@ -15,6 +15,9 @@ import { renderEditView } from './views/editView.js';
 import { renderHostLaunch, renderHostByCode } from './views/hostLive.js';
 import { renderReports, renderActivityReport, renderSessionReport } from './views/reports.js';
 import { renderAssignmentsForActivity, renderAttempts } from './views/assignments.js';
+import { renderExplore } from './views/explore.js';
+import { renderAuthBadge } from './views/authView.js';
+import { onAuthChange } from './core/auth.js';
 import { sync } from './core/storage.js';
 import { ensureAuth } from './core/supabase.js';
 import { applySkin } from './core/skins.js';
@@ -35,6 +38,7 @@ route('#/reports/session/:id', ({ id }) => renderSessionReport(APP, id));
 route('#/reports/:id', ({ id }) => renderActivityReport(APP, id));
 route('#/tasks/:id', ({ id }) => renderAssignmentsForActivity(APP, id));
 route('#/task/:id/attempts', ({ id }) => renderAttempts(APP, id));
+route('#/explore', () => renderExplore(APP));
 
 setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encontrada. <a href="#/home">Inicio</a></div>`));
 
@@ -47,6 +51,8 @@ setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encon
     console.warn('[boot] auth failed:', err.message);
   }
   const v = document.getElementById('ww-version'); if (v) v.textContent = 'v' + VERSION;
+  await renderAuthBadge('#ww-auth-slot');
+  onAuthChange(() => renderAuthBadge('#ww-auth-slot'));
   start();
   window.__APP_READY__ = true;
 })();

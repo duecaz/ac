@@ -15,15 +15,31 @@ export function renderEditView(rootSel, { id, template }) {
   if (!Editor) { mount(rootSel, html`<div class="alert alert-danger">Editor no disponible para "${activity.template}".</div>`); return; }
 
   mount(rootSel, html`
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
       <a href="#/home" class="btn btn-link"><i class="bi bi-arrow-left"></i> Volver</a>
-      <div>
-        <button class="btn btn-outline-success" id="btn-test"><i class="bi bi-play-fill"></i> Probar</button>
-        <button class="btn btn-primary" id="btn-save"><i class="bi bi-cloud-arrow-up"></i> Guardar</button>
+      <div class="d-flex gap-2 align-items-center flex-wrap">
+        <select id="meta-vis" class="form-select form-select-sm" style="width:140px" title="Visibilidad">
+          <option value="private" ${activity.visibility==='private'?'selected':''}>Privada</option>
+          <option value="unlisted" ${activity.visibility==='unlisted'?'selected':''}>No listada</option>
+          <option value="public" ${activity.visibility==='public'?'selected':''}>Pública</option>
+        </select>
+        <input id="meta-tags" class="form-control form-control-sm" style="width:200px" placeholder="tags (coma)" value="${(activity.tags||[]).join(', ')}">
+        <select id="meta-lang" class="form-select form-select-sm" style="width:100px">
+          <option value="es" ${activity.language==='es'?'selected':''}>es</option>
+          <option value="en" ${activity.language==='en'?'selected':''}>en</option>
+          <option value="fr" ${activity.language==='fr'?'selected':''}>fr</option>
+          <option value="pt" ${activity.language==='pt'?'selected':''}>pt</option>
+        </select>
+        <button class="btn btn-outline-success btn-sm" id="btn-test"><i class="bi bi-play-fill"></i> Probar</button>
+        <button class="btn btn-primary btn-sm" id="btn-save"><i class="bi bi-cloud-arrow-up"></i> Guardar</button>
       </div>
     </div>
     <div id="editor-root"></div>
   `);
+
+  document.getElementById('meta-vis').onchange = e => { activity.visibility = e.target.value; dirty = true; };
+  document.getElementById('meta-tags').oninput = e => { activity.tags = e.target.value.split(',').map(s=>s.trim()).filter(Boolean); dirty = true; };
+  document.getElementById('meta-lang').onchange = e => { activity.language = e.target.value; dirty = true; };
 
   Editor.render(document.getElementById('editor-root'), activity, (a) => { activity = a; dirty = true; });
 
