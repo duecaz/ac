@@ -20,7 +20,7 @@ import { renderAssignmentsForActivity, renderAttempts } from './views/assignment
 import { renderExplore } from './views/explore.js';
 import { renderAuthBadge } from './views/authView.js';
 import { onAuthChange } from './core/auth.js';
-import { sync } from './core/storage.js';
+import { sync, setStorageUser } from './core/storage.js';
 import { ensureAuth } from './core/supabase.js';
 import { applySkin } from './core/skins.js';
 import { html, mount } from './core/html.js';
@@ -47,7 +47,8 @@ setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encon
 (async function boot() {
   applySkin(localStorage.getItem('ww.skin') || 'default');
   try {
-    await ensureAuth();
+    const user = await ensureAuth();
+    setStorageUser(user.id);
     sync().catch(err => console.warn('[sync]', err.message));
   } catch (err) {
     console.warn('[boot] auth failed:', err.message);

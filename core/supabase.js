@@ -13,12 +13,18 @@ export async function getClient() {
     auth: { persistSession: true, autoRefreshToken: true, storageKey: 'ww.auth' },
     realtime: { params: { eventsPerSecond: 10 } }
   });
+  // Invalidate _user whenever auth state changes (signOut, token refresh,
+  // OAuth callback, anonymous sign-in). Without this, code calling ensureAuth
+  // after a logout would keep returning the previous user.
+  _client.auth.onAuthStateChange((_evt, session) => {
+    _user = session?.user || null;
+  });
   return _client;
 }
 
 export async function ensureAuth() {
-  if (_user) return _user;
   const sb = await getClient();
+  if (_user) return _user;
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user) { _user = session.user; return _user; }
   const { data, error } = await sb.auth.signInAnonymously();

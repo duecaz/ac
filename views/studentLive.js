@@ -5,6 +5,8 @@ import { joinSession, submitAnswer, getOwnAnswer, subscribeRoom, pingPresence } 
 import { findRoomByCode } from '../core/transport/room.js';
 import { findAssignmentByCode } from '../core/transport/assignments.js';
 import { isAcceptableNickname } from '../core/nicknameFilter.js';
+import { acquire } from '../core/lifecycle.js';
+import { toast } from '../core/toast.js';
 
 const NICK_KEY = 'ww.nick';
 
@@ -12,7 +14,7 @@ export function renderJoin(rootSel, prefilledCode = '') {
   mount(rootSel, html`
     <div class="text-center py-4" style="max-width:420px;margin:0 auto">
       <h2 class="mb-4">Unirme a la sala</h2>
-      <input id="f-code" class="form-control form-control-lg text-center mb-3" style="font-size:2.5rem;letter-spacing:.4rem;text-transform:uppercase" maxlength="6" placeholder="PIN" value="${escapeHtml(prefilledCode)}">
+      <input id="f-code" class="form-control form-control-lg text-center mb-3 ww-pin-input" maxlength="6" placeholder="PIN" autocomplete="off" autocapitalize="characters" value="${escapeHtml(prefilledCode)}">
       <input id="f-nick" class="form-control form-control-lg text-center mb-3" placeholder="Tu apodo" value="${escapeHtml(localStorage.getItem(NICK_KEY) || '')}">
       <button id="btn-join" class="btn btn-warning btn-lg w-100">Entrar</button>
       <div id="err" class="text-danger mt-3"></div>
@@ -48,6 +50,7 @@ export function renderJoin(rootSel, prefilledCode = '') {
 }
 
 export async function renderPlay(rootSel, code) {
+  const ctx = acquire('studentLive');
   const cached = sessionStorage.getItem(`ww.player.${code}`);
   if (!cached) return renderJoin(rootSel, code);
   const player = JSON.parse(cached);
@@ -55,8 +58,7 @@ export async function renderPlay(rootSel, code) {
   let session = null;
   let activity = null;
   let lastQuestionShownAt = 0;
-  let unsub = null;
-  let pingTimer = null;
+  let questionTickHandle = null;
 
   try {
     const sess = await findRoomByCode(code);
@@ -67,11 +69,10 @@ export async function renderPlay(rootSel, code) {
     mount(rootSel, html`<div class="alert alert-danger m-3">${escapeHtml(e.message)}</div>`); return;
   }
 
-  unsub = await subscribeRoom(session.id, (ev) => {
+  ctx.add(await subscribeRoom(session.id, (ev) => {
     if (ev.table === 'sessions') { session = { ...session, ...ev.new }; paint(); }
-  });
-  window.addEventListener('hashchange', () => { if (unsub) unsub(); if (pingTimer) clearInterval(pingTimer); }, { once: true });
-  pingTimer = setInterval(() => pingPresence(player.playerId).catch(()=>{}), 15000);
+  }));
+  ctx.setInterval(() => pingPresence(player.playerId).catch(()=>{}), 15000);
 
   function paint() {
     if (session.status === 'lobby') return paintLobby();
@@ -120,26 +121,30 @@ export async function renderPlay(rootSel, code) {
     on(rootSel, 'click', '.ww-ans', async (_, btn) => {
       document.querySelectorAll('.ww-ans').forEach(b => b.disabled = true);
       btn.classList.add('border', 'border-light', 'border-3');
+      const original = btn.innerHTML;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enviando…';
       const ms = Date.now() - lastQuestionShownAt;
       try {
         await submitAnswer(session.id, player.playerId, idx, btn.dataset.value, ms);
         paintWaiting('¡Respuesta enviada!');
       } catch (e) {
         document.querySelectorAll('.ww-ans').forEach(b => b.disabled = false);
-        alert('Error: ' + e.message);
+        btn.innerHTML = original;
+        toast('Error al enviar: ' + e.message, 'danger', 5000);
       }
     });
 
+    if (questionTickHandle) clearInterval(questionTickHandle);
     if (deadlineMs && total) {
-      const tick = setInterval(() => {
-        if (session.phase !== 'question') { clearInterval(tick); return; }
+      questionTickHandle = ctx.setInterval(() => {
+        if (session.phase !== 'question') { clearInterval(questionTickHandle); questionTickHandle = null; return; }
         const remain = Math.max(0, deadlineMs - Date.now());
         const pct = Math.max(0, Math.min(100, 100 * remain / total));
         const t = document.getElementById('s-time');
         const b = document.getElementById('s-bar');
         if (t) t.textContent = `${Math.ceil(remain / 1000)}s`;
         if (b) b.style.width = pct + '%';
-        if (remain <= 0) clearInterval(tick);
+        if (remain <= 0) { clearInterval(questionTickHandle); questionTickHandle = null; }
       }, 250);
     }
   }

@@ -2,6 +2,7 @@ import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { get } from '../core/storage.js';
 import { createAssignment, listAssignmentsForActivity, listAttempts, closeAssignment } from '../core/transport/assignments.js';
+import { toast, confirmModal } from '../core/toast.js';
 
 const STUDENT_BASE = location.origin + location.pathname.replace(/teacher\.html.*/, 'student.html');
 
@@ -64,8 +65,9 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
       const max = +document.getElementById('t-max').value || 1;
       try {
         await createAssignment(a, { title, dueAt: due ? new Date(due).toISOString() : null, maxAttempts: max });
+        toast('Tarea creada.', 'success');
         refresh();
-      } catch (e) { alert('Error: ' + e.message); }
+      } catch (e) { toast('Error: ' + e.message, 'danger', 5000); }
     });
     on(rootSel, 'click', '.copy', (_, b) => {
       navigator.clipboard?.writeText(b.dataset.url);
@@ -73,8 +75,11 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
       setTimeout(() => b.innerHTML = '<i class="bi bi-clipboard"></i>', 1200);
     });
     on(rootSel, 'click', '.close-t', async (_, b) => {
-      if (!confirm('¿Cerrar esta tarea?')) return;
-      await closeAssignment(b.dataset.id); refresh();
+      const ok = await confirmModal('¿Cerrar esta tarea?', { okText: 'Cerrar tarea', danger: true });
+      if (!ok) return;
+      await closeAssignment(b.dataset.id);
+      toast('Tarea cerrada.', 'info');
+      refresh();
     });
   }
 

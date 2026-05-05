@@ -33,7 +33,11 @@
       </a>
     </div>
   </div>
-  <p class="text-center text-white-50 mt-5 mb-0 small">v1.2.0</p>
+  <p class="text-center text-white-50 mt-5 mb-0 small" id="ww-version">v—</p>
 </main>
+<script type="module">
+  import { VERSION } from './core/constants.js';
+  document.getElementById('ww-version').textContent = 'v' + VERSION;
+</script>
 </body>
 </html>

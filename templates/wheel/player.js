@@ -3,7 +3,9 @@ import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
 
 export async function renderWheelPlayer(rootSel, activity, opts = {}) {
-  let entries = (activity.content?.entries || []).filter(e => String(e).trim());
+  // Snapshot to avoid mutating activity.content.entries when removeAfterSpin
+  // is enabled (otherwise re-entering the player keeps the trimmed list).
+  let entries = (activity.content?.entries || []).slice().filter(e => String(e).trim());
   if (!entries.length) entries = ['(vacío)'];
   const dur = activity.rules?.spinDurationMs ?? 4000;
   const remove = !!activity.rules?.removeAfterSpin;

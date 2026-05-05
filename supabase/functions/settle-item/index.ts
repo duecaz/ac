@@ -53,21 +53,21 @@ Deno.serve(async (req: Request) => {
       .eq("session_id", session_id).eq("item_index", item_index);
     if (aErr) return json({ error: aErr.message }, 500);
 
-    let settled = 0;
-    for (const a of answers || []) {
-      const r = scorer(activity, item, a);
-      await admin.from("answers").update({ correct: r.correct, points: r.points }).eq("id", a.id);
-      settled++;
-    }
+    // Score and update all answers in parallel.
+    const scored = (answers || []).map(a => ({ a, r: scorer(activity, item, a) }));
+    await Promise.all(scored.map(({ a, r }) =>
+      admin.from("answers").update({ correct: r.correct, points: r.points }).eq("id", a.id)
+    ));
+    const settled = scored.length;
 
-    // Recompute player totals from the answers table.
+    // Recompute player totals from the answers table and update in parallel.
     const { data: tally } = await admin.from("answers")
       .select("player_id, points").eq("session_id", session_id);
     const totals = new Map<string, number>();
     for (const r of tally || []) totals.set(r.player_id, (totals.get(r.player_id) || 0) + (r.points || 0));
-    for (const [pid, score] of totals) {
-      await admin.from("players").update({ score }).eq("id", pid);
-    }
+    await Promise.all([...totals].map(([pid, score]) =>
+      admin.from("players").update({ score }).eq("id", pid)
+    ));
 
     await admin.from("sessions").update({ phase: "reveal", deadline: null }).eq("id", session_id);
 

@@ -82,11 +82,14 @@ export async function renderExplore(rootSel) {
   on(rootSel, 'input', '#exp-q', () => paint());
   on(rootSel, 'change', '#exp-lang', () => load());
   on(rootSel, 'click', '.exp-play', async (_, b) => {
-    // Snapshot to local and play.
+    // Don't pollute local store with the foreign id; play it transient via
+    // sessionStorage and a special preview route would be better, but for
+    // simplicity we fork it ephemerally with a new id.
     const row = cache.find(r => r.data?.id === b.dataset.id);
     if (!row) return;
-    save({ ...row.data });
-    navigate(`#/play/${row.data.id}`);
+    const preview = { ...row.data, id: newActivityId(), forkOf: row.data.id, visibility: 'private' };
+    save(preview);
+    navigate(`#/play/${preview.id}`);
   });
   on(rootSel, 'click', '.exp-fork', async (_, b) => {
     const row = cache.find(r => r.data?.id === b.dataset.id);

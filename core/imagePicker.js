@@ -2,6 +2,7 @@
 // to the 'media' bucket and calls back with the public URL.
 import { uploadMedia } from './upload.js';
 import { escapeHtml } from './html.js';
+import { toast } from './toast.js';
 
 export function renderImagePicker(currentUrl) {
   return `
@@ -30,7 +31,7 @@ export function attachImagePicker(root, containerSel, currentUrl, onChange) {
         container.innerHTML = renderImagePicker(url);
         attachImagePicker(root, containerSel, url, onChange);
       } catch (err) {
-        alert('Error subiendo imagen: ' + err.message);
+        toast('Error subiendo imagen: ' + err.message, 'danger', 5000);
         fileInput.disabled = false;
       }
     });

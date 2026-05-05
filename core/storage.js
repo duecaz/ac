@@ -1,15 +1,34 @@
 // Storage layer: localStorage is the source of truth for read; Supabase syncs
-// in background. list/get are sync. save/delete are fire-and-forget remote.
+// in background. list/get are sync. save returns a promise; remote errors
+// are surfaced.
+//
+// LocalStorage is scoped per user via the cached _userId (read once at boot
+// after ensureAuth). When the user signs out/in, the active key switches.
+// Old unscoped key 'ww.activities' is migrated on first scoped access.
 import { getClient } from './supabase.js';
 import { migrate, normalize } from './migrate.js';
 
-const LS_KEY = 'ww.activities';
+const LEGACY_KEY = 'ww.activities';
+let _userId = 'guest';
+let _migratedLegacy = false;
+
+export function setStorageUser(userId) {
+  _userId = userId || 'guest';
+  // One-time legacy migration: if a user-scoped bucket doesn't exist yet,
+  // fold the unscoped legacy bucket into it (so existing pre-1.3 work survives).
+  if (!_migratedLegacy && !localStorage.getItem(currentKey()) && localStorage.getItem(LEGACY_KEY)) {
+    localStorage.setItem(currentKey(), localStorage.getItem(LEGACY_KEY));
+  }
+  _migratedLegacy = true;
+}
+
+function currentKey() { return `ww.activities.${_userId}`; }
 
 function readLS() {
-  try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); }
+  try { return JSON.parse(localStorage.getItem(currentKey()) || '{}'); }
   catch { return {}; }
 }
-function writeLS(map) { localStorage.setItem(LS_KEY, JSON.stringify(map)); }
+function writeLS(map) { localStorage.setItem(currentKey(), JSON.stringify(map)); }
 
 export function list() {
   const map = readLS();
@@ -21,21 +40,29 @@ export function get(id) {
   return map[id] ? migrate(map[id]) : null;
 }
 
+// Saves locally immediately and to remote in the background.
+// Returns { activity, remote } where `remote` is a Promise that resolves
+// when the remote upsert completes, or rejects with the error (so callers
+// can surface it). Callers can ignore `remote` for fire-and-forget.
 export function save(activity) {
   const a = normalize({ ...activity, updatedAt: new Date().toISOString() });
   const map = readLS();
   map[a.id] = a;
   writeLS(map);
-  // Fire-and-forget remote sync.
-  remoteSave(a).catch(err => console.warn('[storage] remote save failed:', err.message));
-  return a;
+  const remote = remoteSave(a);
+  // Always attach a default rejection handler so we don't get unhandled
+  // rejection warnings if a caller drops the promise.
+  remote.catch(err => console.warn('[storage] remote save failed:', err.message));
+  return { activity: a, remote };
 }
 
 export function remove(id) {
   const map = readLS();
   delete map[id];
   writeLS(map);
-  remoteDelete(id).catch(err => console.warn('[storage] remote delete failed:', err.message));
+  const remote = remoteDelete(id);
+  remote.catch(err => console.warn('[storage] remote delete failed:', err.message));
+  return remote;
 }
 
 async function remoteSave(a) {

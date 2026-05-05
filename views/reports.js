@@ -82,17 +82,47 @@ export async function renderSessionReport(rootSel, sessionId) {
     (ansByPlayer[a.player_id] ||= {})[a.item_index] = a;
   }
 
+  // Aggregates per item: correct%, answered count.
+  const itemStats = items.map((_, i) => {
+    let correct = 0, answered = 0;
+    for (const p of players) {
+      const a = ansByPlayer[p.id]?.[i];
+      if (!a) continue;
+      answered++;
+      if (a.correct === true) correct++;
+    }
+    return { answered, correct, pct: answered ? Math.round(100 * correct / answered) : null };
+  });
+  const avgScore = players.length ? Math.round(players.reduce((s, p) => s + (p.score || 0), 0) / players.length) : 0;
+  const overallPct = (() => {
+    const total = items.length * players.length;
+    if (!total) return 0;
+    let c = 0;
+    for (const p of players) for (let i = 0; i < items.length; i++) {
+      if (ansByPlayer[p.id]?.[i]?.correct === true) c++;
+    }
+    return Math.round(100 * c / total);
+  })();
+
   mount(rootSel, html`
     <a href="#/reports/${sess.activity_id}" class="btn btn-link"><i class="bi bi-arrow-left"></i> Volver</a>
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
       <h2 class="mb-0">Sesión <code>${escapeHtml(sess.code)}</code></h2>
       <button id="btn-csv" class="btn btn-outline-success"><i class="bi bi-download"></i> Exportar CSV</button>
     </div>
     <p class="text-muted">${sess.started_at ? new Date(sess.started_at).toLocaleString() : '—'} · ${players.length} jugadores · ${items.length} preguntas</p>
 
+    <div class="row g-2 mb-3">
+      <div class="col-md-4"><div class="card text-center"><div class="card-body p-2"><div class="small text-muted">Promedio</div><div class="h4 mb-0">${avgScore}</div></div></div></div>
+      <div class="col-md-4"><div class="card text-center"><div class="card-body p-2"><div class="small text-muted">% acierto</div><div class="h4 mb-0">${overallPct}%</div></div></div></div>
+      <div class="col-md-4"><div class="card text-center"><div class="card-body p-2"><div class="small text-muted">Mejor</div><div class="h4 mb-0">${players[0]?.score ?? 0}</div></div></div></div>
+    </div>
+
     <div class="table-responsive">
       <table class="table table-sm table-bordered align-middle">
-        <thead><tr><th>Jugador</th>${items.map((_, i) => `<th class="text-center">Q${i+1}</th>`).join('')}<th class="text-center">Total</th></tr></thead>
+        <thead>
+          <tr><th>Jugador</th>${items.map((_, i) => `<th class="text-center" title="${itemStats[i].correct}/${itemStats[i].answered} aciertos">Q${i+1}<br><small class="text-muted">${itemStats[i].pct == null ? '—' : itemStats[i].pct + '%'}</small></th>`).join('')}<th class="text-center">Total</th></tr>
+        </thead>
         <tbody>
           ${players.map(p => `
             <tr>
@@ -101,7 +131,7 @@ export async function renderSessionReport(rootSel, sessionId) {
                 const a = ansByPlayer[p.id]?.[i];
                 if (!a) return `<td class="text-center text-muted">—</td>`;
                 const cls = a.correct === true ? 'text-bg-success' : a.correct === false ? 'text-bg-danger' : 'text-bg-secondary';
-                return `<td class="text-center ${cls}" title="${escapeHtml(JSON.stringify(a.value))} · ${a.points}pts">${a.points || 0}</td>`;
+                return `<td class="text-center ${cls}" title="${escapeHtml(JSON.stringify(a.value))} · ${a.points}pts · ${a.ms_taken ?? '?'}ms">${a.points || 0}</td>`;
               }).join('')}
               <td class="text-center fw-bold">${p.score}</td>
             </tr>
@@ -133,7 +163,8 @@ function downloadCsv(sess, players, items, ansByPlayer) {
     row.push(p.score);
     rows.push(row.join(','));
   }
-  const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+  // BOM so Excel reads UTF-8 correctly.
+  const blob = new Blob(['﻿' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = `ww-session-${sess.code}.csv`;

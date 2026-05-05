@@ -7,6 +7,8 @@ import { startSession, setSessionState, endSession, settleItem,
          listPlayers, listAnswers, leaderboard, kickPlayer, subscribeRoom }
        from '../core/transport/live.js';
 import { getTemplate } from '../core/registry.js';
+import { acquire } from '../core/lifecycle.js';
+import { toast, confirmModal } from '../core/toast.js';
 
 const STUDENT_BASE = location.origin + location.pathname.replace(/teacher\.html.*/, 'student.html');
 
@@ -32,14 +34,14 @@ export async function renderHostByCode(rootSel, code) {
 }
 
 async function renderHost(rootSel, code, sessionId, activity) {
+  const ctx = acquire('hostLive');
   const tpl = getTemplate(activity.template);
   const live = activity.live || {};
   const timerSec = Math.max(5, live.questionTimer || 20);
-  const advanceMode = live.advanceMode || 'manual'; // manual | autoOnAllAnswered | autoOnTimer
+  const advanceMode = live.advanceMode || 'manual';
   let session = await fetchSession(sessionId);
   let players = await listPlayers(sessionId);
   let answers = [];
-  let unsub = null;
   let tickHandle = null;
   let settling = false;
 
@@ -58,8 +60,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
       if (session.phase !== 'question') paint();
     }
   }
-  unsub = await subscribeRoom(sessionId, onChange);
-  window.addEventListener('hashchange', () => unsub && unsub(), { once: true });
+  ctx.add(await subscribeRoom(sessionId, onChange));
 
   function joinUrl() { return `${STUDENT_BASE}#/play/${code}`; }
   function qrUrl() { return `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(joinUrl())}`; }
@@ -105,7 +106,8 @@ async function renderHost(rootSel, code, sessionId, activity) {
       await setSessionState(sessionId, { status: 'running', phase: 'question', current_item: 0, started_at: new Date().toISOString(), deadline });
     });
     on(rootSel, 'click', '#btn-cancel', async () => {
-      if (!confirm('¿Cancelar sala?')) return;
+      const ok = await confirmModal('¿Cancelar sala?', { okText: 'Cancelar sala', danger: true });
+      if (!ok) return;
       await endSession(sessionId); location.hash = '#/home';
     });
     on(rootSel, 'click', '.kick', (_, b) => kickPlayer(sessionId, b.dataset.id));
@@ -143,7 +145,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     on(rootSel, 'click', '#btn-reveal', () => doSettle(idx));
 
     if (tickHandle) clearInterval(tickHandle);
-    tickHandle = setInterval(() => {
+    tickHandle = ctx.setInterval(() => {
       if (session.phase !== 'question') { clearInterval(tickHandle); tickHandle = null; return; }
       const remain = Math.max(0, deadline - Date.now());
       const pct = Math.max(0, Math.min(100, 100 * remain / (timerSec * 1000)));
@@ -173,7 +175,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Calculando…'; }
     try { await settleItem(sessionId, idx); }
     catch (e) {
-      alert('Error al revelar: ' + e.message);
+      toast('Error al revelar: ' + e.message, 'danger', 5000);
       if (btn) { btn.disabled = false; btn.innerHTML = 'Reintentar'; }
     } finally { settling = false; }
   }

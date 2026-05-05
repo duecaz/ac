@@ -5,6 +5,12 @@
   letter-spacing: .35em;
   font-weight: 700;
 }
+.ww-pin-input {
+  font-size: clamp(1.5rem, 7vw, 2.5rem);
+  letter-spacing: clamp(.15rem, 1vw, .4rem);
+  text-transform: uppercase;
+  font-family: ui-monospace, monospace;
+}
 .ww-kahoot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
 .ww-kahoot-grid .btn { font-size: 1.5rem; padding: 2rem; font-weight: 600; }
 .ww-kahoot-grid .btn:nth-child(1) { background: #e21b3c; border-color: #e21b3c; color: #fff; }
