@@ -1,5 +1,8 @@
 import { VERSION } from './core/constants.js';
+import { installErrorHandlers } from './core/errorLog.js';
 import { route, start, navigate, setNotFound } from './core/router.js';
+
+installErrorHandlers('teacher');
 import { registerTemplate, registerEditor } from './core/registry.js';
 import { QuizTemplate } from './templates/quiz.js';
 import { QuizEditor } from './editors/quizEditor.js';
@@ -8,6 +11,7 @@ import { renderTemplateSelector } from './views/templateSelector.js';
 import { renderPlayerView } from './views/playerView.js';
 import { renderEditView } from './views/editView.js';
 import { renderHostLaunch, renderHostByCode } from './views/hostLive.js';
+import { renderReports, renderActivityReport, renderSessionReport } from './views/reports.js';
 import { sync } from './core/storage.js';
 import { ensureAuth } from './core/supabase.js';
 import { html, mount } from './core/html.js';
@@ -25,6 +29,9 @@ route('#/edit/:id', ({ id }) => renderEditView(APP, { id }));
 route('#/play/:id', ({ id }) => renderPlayerView(APP, id));
 route('#/launch/:id', ({ id }) => renderHostLaunch(APP, id));
 route('#/host/:code', ({ code }) => renderHostByCode(APP, code));
+route('#/reports', () => renderReports(APP));
+route('#/reports/session/:id', ({ id }) => renderSessionReport(APP, id));
+route('#/reports/:id', ({ id }) => renderActivityReport(APP, id));
 
 setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encontrada. <a href="#/home">Inicio</a></div>`));
 

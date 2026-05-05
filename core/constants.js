@@ -1,4 +1,4 @@
-export const VERSION = '0.4.1';
+export const VERSION = '0.5.0';
 export const SCHEMA_VERSION = 3;
 
 // PIN alphabet: no O/I/0/1 to avoid ambiguity. 6 chars => 32^6 ≈ 1.07B combos.

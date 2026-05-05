@@ -1,5 +1,8 @@
 import { VERSION } from './core/constants.js';
+import { installErrorHandlers } from './core/errorLog.js';
 import { route, start, setNotFound } from './core/router.js';
+
+installErrorHandlers('student');
 import { html, mount } from './core/html.js';
 import { ensureAuth } from './core/supabase.js';
 import { renderJoin, renderPlay } from './views/studentLive.js';

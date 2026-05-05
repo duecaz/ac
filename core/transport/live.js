@@ -20,6 +20,8 @@ export async function setSessionState(sessionId, patch) {
 export async function endSession(sessionId) {
   const sb = await getClient();
   await sb.from('sessions').update({ status: 'ended', phase: 'ended', ended_at: new Date().toISOString() }).eq('id', sessionId);
+  // Persist final results per player for this session.
+  await sb.rpc('finalize_session_results', { p_session_id: sessionId });
 }
 
 // Calls the settle-item Edge Function. Server-side anti-cheat: scoring
