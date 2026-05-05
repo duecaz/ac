@@ -29,7 +29,7 @@ export function renderHome(rootSel) {
               </div>
               <div class="card-footer d-flex gap-1 flex-wrap">
                 <button class="btn btn-success btn-sm flex-grow-1 act-play" data-id="${a.id}"><i class="bi bi-play-fill"></i> Empezar</button>
-                <button class="btn btn-warning btn-sm flex-grow-1 act-pin" data-id="${a.id}" disabled title="Fase 2"><i class="bi bi-broadcast"></i> PIN</button>
+                <button class="btn btn-warning btn-sm flex-grow-1 act-pin" data-id="${a.id}"><i class="bi bi-broadcast"></i> PIN</button>
                 <button class="btn btn-outline-primary btn-sm act-edit" data-id="${a.id}"><i class="bi bi-pencil"></i></button>
                 <button class="btn btn-outline-danger btn-sm act-del" data-id="${a.id}"><i class="bi bi-trash"></i></button>
               </div>
@@ -40,6 +40,7 @@ export function renderHome(rootSel) {
   `);
 
   on(rootSel, 'click', '.act-play', (_, b) => navigate(`#/play/${b.dataset.id}`));
+  on(rootSel, 'click', '.act-pin', (_, b) => navigate(`#/launch/${b.dataset.id}`));
   on(rootSel, 'click', '.act-edit', (_, b) => navigate(`#/edit/${b.dataset.id}`));
   on(rootSel, 'click', '.act-del', (_, b) => {
     if (!confirm('¿Eliminar esta actividad?')) return;

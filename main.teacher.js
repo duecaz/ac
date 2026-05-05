@@ -6,6 +6,7 @@ import { renderHome } from './views/home.js';
 import { renderTemplateSelector } from './views/templateSelector.js';
 import { renderPlayerView } from './views/playerView.js';
 import { renderEditView } from './views/editView.js';
+import { renderHostLaunch, renderHostByCode } from './views/hostLive.js';
 import { sync } from './core/storage.js';
 import { ensureAuth } from './core/supabase.js';
 import { html, mount } from './core/html.js';
@@ -21,9 +22,8 @@ route('#/new', () => renderTemplateSelector(APP));
 route('#/edit-new/:template', ({ template }) => renderEditView(APP, { template }));
 route('#/edit/:id', ({ id }) => renderEditView(APP, { id }));
 route('#/play/:id', ({ id }) => renderPlayerView(APP, id));
-route('#/host/:code', ({ code }) => {
-  mount(APP, html`<div class="alert alert-info">Modo Live disponible en Fase 2. Código: <b>${code}</b></div>`);
-});
+route('#/launch/:id', ({ id }) => renderHostLaunch(APP, id));
+route('#/host/:code', ({ code }) => renderHostByCode(APP, code));
 
 setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encontrada. <a href="#/home">Inicio</a></div>`));
 

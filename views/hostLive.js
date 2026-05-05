@@ -1,0 +1,209 @@
+// Host view for live mode. Drives the phase machine over sessions.phase.
+import { html, escapeHtml, mount } from '../core/html.js';
+import { on } from '../core/events.js';
+import { get } from '../core/storage.js';
+import { createRoom, findRoomByCode, fetchSession } from '../core/transport/room.js';
+import { startSession, setSessionState, endSession, settleItem,
+         listPlayers, listAnswers, leaderboard, kickPlayer, subscribeRoom }
+       from '../core/transport/live.js';
+import { getTemplate } from '../core/registry.js';
+
+const STUDENT_BASE = location.origin + location.pathname.replace(/teacher\.html.*/, 'student.html');
+
+export async function renderHostLaunch(rootSel, activityId) {
+  const a = get(activityId);
+  if (!a) { mount(rootSel, html`<div class="alert alert-danger">Actividad no encontrada.</div>`); return; }
+  if (!a.content.items.length) { mount(rootSel, html`<div class="alert alert-warning">La actividad no tiene preguntas.</div>`); return; }
+
+  mount(rootSel, html`<div class="text-center py-5"><div class="spinner-border"></div><p class="mt-2">Creando sala…</p></div>`);
+  try {
+    const room = await createRoom(a);
+    location.hash = `#/host/${room.code}`;
+    renderHost(rootSel, room.code, room.id, a);
+  } catch (e) {
+    mount(rootSel, html`<div class="alert alert-danger">No se pudo crear la sala: ${escapeHtml(e.message)}</div>`);
+  }
+}
+
+export async function renderHostByCode(rootSel, code) {
+  const sess = await findRoomByCode(code);
+  if (!sess) { mount(rootSel, html`<div class="alert alert-warning">Sala no encontrada.</div>`); return; }
+  renderHost(rootSel, sess.code, sess.id, sess.activity_snap);
+}
+
+async function renderHost(rootSel, code, sessionId, activity) {
+  const tpl = getTemplate(activity.template);
+  let session = await fetchSession(sessionId);
+  let players = await listPlayers(sessionId);
+  let answers = [];
+  let unsub = null;
+
+  function onChange(ev) {
+    if (ev.table === 'sessions') { session = { ...session, ...ev.new }; paint(); }
+    else if (ev.table === 'players') {
+      if (ev.eventType === 'DELETE') players = players.filter(p => p.id !== ev.old.id);
+      else if (ev.eventType === 'INSERT') players = [...players, ev.new];
+      else players = players.map(p => p.id === ev.new.id ? ev.new : p);
+      paint();
+    }
+    else if (ev.table === 'answers') {
+      if (ev.eventType === 'INSERT') answers = [...answers, ev.new];
+      else if (ev.eventType === 'UPDATE') answers = answers.map(a => a.id === ev.new.id ? ev.new : a);
+      paint();
+    }
+  }
+  unsub = await subscribeRoom(sessionId, onChange);
+  window.addEventListener('hashchange', () => unsub && unsub(), { once: true });
+
+  function joinUrl() { return `${STUDENT_BASE}#/play/${code}`; }
+  function qrUrl() { return `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(joinUrl())}`; }
+
+  function paint() {
+    if (session.status === 'lobby') return paintLobby();
+    if (session.status === 'ended') return paintPodium();
+    // running
+    if (session.phase === 'question') return paintQuestion();
+    if (session.phase === 'reveal') return paintReveal();
+    if (session.phase === 'leaderboard') return paintLeaderboard();
+    paintLobby();
+  }
+
+  function paintLobby() {
+    mount(rootSel, html`
+      <div class="text-center py-3">
+        <h5 class="text-muted mb-1">Únete en</h5>
+        <div class="h3"><b>${escapeHtml(STUDENT_BASE.replace(/^https?:\/\//,''))}</b></div>
+        <h5 class="text-muted mt-3 mb-1">PIN</h5>
+        <div class="ww-pin">${escapeHtml(code)}</div>
+        <img src="${qrUrl()}" alt="QR" class="my-3" style="max-width:240px">
+        <div>
+          <span class="badge bg-info text-dark fs-5"><i class="bi bi-people-fill"></i> ${players.length} jugadores</span>
+        </div>
+        <div class="row mt-4 g-2 ww-host-players">
+          ${players.map(p => `
+            <div class="col-md-3 col-6">
+              <div class="card"><div class="card-body py-2 d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-person-fill"></i> ${escapeHtml(p.name)}</span>
+                <button class="btn btn-sm btn-outline-danger kick" data-id="${p.id}" title="Expulsar"><i class="bi bi-x"></i></button>
+              </div></div>
+            </div>`).join('')}
+        </div>
+        <button class="btn btn-success btn-lg mt-4 px-5" id="btn-start" ${players.length===0?'disabled':''}>
+          <i class="bi bi-play-fill"></i> Empezar
+        </button>
+        <button class="btn btn-link text-muted ms-2" id="btn-cancel">Cancelar sala</button>
+      </div>
+    `);
+    on(rootSel, 'click', '#btn-start', () => startSession(sessionId));
+    on(rootSel, 'click', '#btn-cancel', async () => {
+      if (!confirm('¿Cancelar sala?')) return;
+      await endSession(sessionId); location.hash = '#/home';
+    });
+    on(rootSel, 'click', '.kick', (_, b) => kickPlayer(sessionId, b.dataset.id));
+  }
+
+  async function paintQuestion() {
+    const idx = session.current_item;
+    const item = activity.content.items[idx];
+    answers = await listAnswers(sessionId, idx);
+    const total = players.length;
+    const answered = answers.length;
+    mount(rootSel, html`
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="badge bg-secondary fs-6">Pregunta ${idx + 1} / ${activity.content.items.length}</span>
+        <span class="badge bg-info text-dark fs-6"><i class="bi bi-check2-circle"></i> ${answered} / ${total}</span>
+      </div>
+      <h2 class="text-center my-4">${escapeHtml(item.question)}</h2>
+      ${item.image ? `<div class="text-center mb-3"><img src="${escapeHtml(item.image)}" class="img-fluid" style="max-height:240px"></div>` : ''}
+      <div class="ww-kahoot-grid mb-4">
+        ${(item.options||[]).map((o, i) => `
+          <button class="btn btn-lg" disabled>
+            <div class="small text-start opacity-75">${'ABCD'[i]}</div>
+            <div>${escapeHtml(o)}</div>
+          </button>
+        `).join('')}
+      </div>
+      <div class="text-center">
+        <button class="btn btn-warning btn-lg" id="btn-reveal"><i class="bi bi-stop-fill"></i> Bloquear y revelar</button>
+      </div>
+    `);
+    on(rootSel, 'click', '#btn-reveal', async () => {
+      const btn = document.getElementById('btn-reveal');
+      btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Calculando…';
+      try { await settleItem(sessionId, idx); }
+      catch (e) { alert('Error al revelar: ' + e.message); btn.disabled = false; btn.innerHTML = 'Reintentar'; }
+    });
+  }
+
+  async function paintReveal() {
+    const idx = session.current_item;
+    const item = activity.content.items[idx];
+    answers = await listAnswers(sessionId, idx);
+    const counts = (item.options||[]).map(o => answers.filter(a => a.value === o).length);
+    const max = Math.max(1, ...counts);
+    mount(rootSel, html`
+      <h3 class="text-center mb-3">${escapeHtml(item.question)}</h3>
+      <p class="text-center text-success fw-bold fs-4"><i class="bi bi-check-circle-fill"></i> ${escapeHtml(item.answer ?? '')}</p>
+      <div class="mb-4">
+        ${(item.options||[]).map((o, i) => {
+          const isOk = String(o) === String(item.answer);
+          const w = Math.round(100 * counts[i] / max);
+          return `
+            <div class="mb-2">
+              <div class="d-flex justify-content-between"><span>${'ABCD'[i]}. ${escapeHtml(o)} ${isOk?'<i class="bi bi-check-circle-fill text-success"></i>':''}</span><b>${counts[i]}</b></div>
+              <div class="progress" style="height:24px"><div class="progress-bar ${isOk?'bg-success':'bg-secondary'}" style="width:${w}%"></div></div>
+            </div>`;
+        }).join('')}
+      </div>
+      <div class="text-center">
+        <button class="btn btn-primary btn-lg" id="btn-lb"><i class="bi bi-bar-chart-fill"></i> Ver clasificación</button>
+      </div>
+    `);
+    on(rootSel, 'click', '#btn-lb', () => setSessionState(sessionId, { phase: 'leaderboard' }));
+  }
+
+  async function paintLeaderboard() {
+    const lb = await leaderboard(sessionId, 10);
+    const idx = session.current_item;
+    const isLast = idx + 1 >= activity.content.items.length;
+    mount(rootSel, html`
+      <h2 class="text-center mb-4"><i class="bi bi-bar-chart-fill"></i> Clasificación</h2>
+      <div class="ww-leaderboard mx-auto" style="max-width:600px">
+        ${lb.map((p, i) => `
+          <div class="row align-items-center bg-dark text-light rounded mb-2 p-2">
+            <div class="col-1"><b>${i+1}</b></div>
+            <div class="col-7">${escapeHtml(p.name)}</div>
+            <div class="col-4 text-end"><b>${p.score}</b> pts</div>
+          </div>`).join('')}
+      </div>
+      <div class="text-center mt-4">
+        ${isLast
+          ? `<button class="btn btn-warning btn-lg" id="btn-end"><i class="bi bi-trophy-fill"></i> Terminar y mostrar podio</button>`
+          : `<button class="btn btn-primary btn-lg" id="btn-next"><i class="bi bi-arrow-right"></i> Siguiente pregunta</button>`}
+      </div>
+    `);
+    on(rootSel, 'click', '#btn-next', () => setSessionState(sessionId, { phase: 'question', current_item: idx + 1 }));
+    on(rootSel, 'click', '#btn-end', () => endSession(sessionId));
+  }
+
+  async function paintPodium() {
+    const lb = await leaderboard(sessionId, 3);
+    mount(rootSel, html`
+      <h2 class="text-center mb-4"><i class="bi bi-trophy-fill text-warning"></i> Podio</h2>
+      <div class="ww-podium mb-4">
+        ${[1,0,2].map(i => lb[i] ? `
+          <div class="step s${i===0?1:i===1?2:3}">
+            <div class="display-6">${i+1}</div>
+            <div class="fw-bold">${escapeHtml(lb[i].name)}</div>
+            <div>${lb[i].score} pts</div>
+          </div>` : '<div></div>').join('')}
+      </div>
+      <div class="text-center">
+        <a href="#/home" class="btn btn-outline-primary btn-lg"><i class="bi bi-house"></i> Volver a inicio</a>
+      </div>
+    `);
+  }
+
+  paint();
+}
+

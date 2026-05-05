@@ -8,8 +8,8 @@ Plataforma de actividades. Cada actividad puede lanzarse en dos modos:
 HTML + CSS + JS vanilla (ES Modules). Bootstrap 5.3 + Bootstrap Icons por CDN. Supabase como único backend. Sin bundler. GitHub Pages.
 
 ## Estado por fases
-- **v0.1.0 / v0.2.0 (actual)** — Fase 0+1: SOLO mode quiz, editor 4 pestañas (Live disabled), sync con Supabase.
-- v0.3.0 — Fase 2: LIVE quiz (PIN+QR, lobby, settleItem en Edge Function).
+- v0.2.0 — Fase 0+1: SOLO mode quiz, editor 4 pestañas, sync con Supabase.
+- **v0.3.0 (actual)** — Fase 2: LIVE quiz (PIN+QR, lobby, settle-item Edge Function, anti-cheat real).
 - v0.4.0 — Fase 3: endurecer LIVE (timer, kick, heartbeat, reconnect).
 - v0.5.0 — Fase 4: reportes y CSV.
 - v0.6.0 — Fase 5: tareas asíncronas.
