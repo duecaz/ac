@@ -16,9 +16,9 @@ HTML + CSS + JS vanilla (ES Modules). Bootstrap 5.3 + Bootstrap Icons por CDN. S
 - v1.0.0 — Fase 6: auth real, /explore, fork.
 
 ## Setup (una vez)
-1. Repo `duecaz/ac` con Pages → Source = GitHub Actions.
+1. Repo `duecaz/ww` con Pages → Source = **Deploy from branch** → Branch: `main` / `(root)`.
 2. Schema aplicado en proyecto `www` (klecbdjbrsyshjqzdxhw) vía MCP.
-3. Activar **Anonymous Sign-Ins** en Supabase → Auth → Providers.
+3. Anonymous Sign-Ins activo en Supabase → Auth → Providers.
 4. Bucket `media` ya creado (público, 5MB max).
 
 ## Local
