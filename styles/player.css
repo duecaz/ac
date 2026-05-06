@@ -12,3 +12,16 @@
   box-shadow: 0 4px 12px rgba(0,0,0,.1);
 }
 .ww-player .ww-opt:disabled { opacity: .9; }
+
+/* The player widget on the play page keeps its own surface so any background
+   skin doesn't bleed onto the activity rendering. */
+.ww-play-page #ww-player-widget {
+  background: var(--ww-card-bg, #ffffff);
+  color: var(--ww-fg, inherit);
+}
+.ww-play-page .ww-skin-row,
+.ww-play-page .ww-bg-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}

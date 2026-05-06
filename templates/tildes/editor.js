@@ -4,7 +4,7 @@
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { newPassage } from '../../core/contentModels/textCorrection.js';
-import { applyMarks, isVowel } from '../../core/textMarks.js';
+import { applyMarks, parseAccentedText } from '../../core/textMarks.js';
 import { itemControlsHtml, reorderArray } from '../../core/editorPrimitives.js';
 import { listSkins, skinPreviewHtml } from '../../core/skins.js';
 import { listBackgrounds, backgroundPreviewHtml } from '../../core/backgrounds.js';
@@ -47,23 +47,18 @@ export function renderTildesEditor(root, activity, onChange) {
 
     on(root, 'input', '#f-title', e => { a.title = e.target.value; onChange(a); });
     on(root, 'input', '#f-subtitle', e => { a.subtitle = e.target.value; onChange(a); });
-    on(root, 'input', '.tp-text', (e, el) => {
+    on(root, 'input', '.tp-accented', (e, el) => {
       const idx = +el.dataset.i;
-      const newText = e.target.value;
-      const old = a.content.passages[idx];
-      // If text shortens, drop marks past the new end.
-      old.text = newText;
-      old.marks = (old.marks || []).filter(m => m.pos < newText.length && isVowel(newText[m.pos]));
+      const { text, marks } = parseAccentedText(e.target.value);
+      const p = a.content.passages[idx];
+      p.text = text;
+      p.marks = marks;
       onChange(a);
-      paint();
-    });
-    on(root, 'click', '.tp-vowel', (_, el) => {
-      const i = +el.dataset.i, pos = +el.dataset.pos;
-      const p = a.content.passages[i];
-      const exists = p.marks?.find(m => m.pos === pos && m.kind === 'tilde');
-      if (exists) p.marks = p.marks.filter(m => !(m.pos === pos && m.kind === 'tilde'));
-      else (p.marks ||= []).push({ pos, kind: 'tilde' });
-      commit();
+      // Update only the preview line, not the textarea (would lose cursor).
+      const preview = document.querySelector(`[data-preview="${idx}"]`);
+      if (preview) preview.textContent = text || '(vacío)';
+      const expected = document.querySelector(`[data-expected="${idx}"]`);
+      if (expected) expected.textContent = applyMarks(text, marks);
     });
     on(root, 'click', '#t-add', () => { a.content.passages.push(newPassage()); commit(); });
     on(root, 'click', '.item-del',  (_, b) => { a.content.passages.splice(+b.dataset.i, 1); commit(); });
@@ -80,25 +75,22 @@ export function renderTildesEditor(root, activity, onChange) {
   }
 
   function renderPassage(p, i, total) {
-    const expected = new Set((p.marks || []).filter(m => m.kind === 'tilde').map(m => m.pos));
-    const preview = applyMarks(p.text, p.marks || []);
+    // Reconstruct the accented version for the textarea by re-applying the
+    // marks on top of the stored stripped text. This way reload/edit shows
+    // the author's original input.
+    const accented = applyMarks(p.text || '', p.marks || []);
     return `
       <div class="card mb-3"><div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <span class="badge bg-secondary">Frase ${i + 1}</span>
           ${itemControlsHtml(i, total)}
         </div>
-        <input class="form-control mb-2 tp-text" data-i="${i}" placeholder="Texto sin tildes" value="${escapeHtml(p.text)}">
-        <div class="ww-tildes-edit-line fs-4 mb-2 user-select-none">
-          ${[...p.text].map((ch, pos) => {
-            if (isVowel(ch)) {
-              const on = expected.has(pos);
-              return `<span class="tp-vowel ${on?'is-tilded':''}" data-i="${i}" data-pos="${pos}" role="button" title="Click para alternar tilde">${escapeHtml(ch)}</span>`;
-            }
-            return ch === ' ' ? '&nbsp;' : escapeHtml(ch);
-          }).join('')}
+        <label class="form-label small text-muted">Escribe la frase <b>con tildes</b>. La app las quita automáticamente y guarda dónde van.</label>
+        <textarea class="form-control mb-2 tp-accented" data-i="${i}" rows="2" placeholder="ej. canción popular">${escapeHtml(accented)}</textarea>
+        <div class="row small">
+          <div class="col-md-6"><span class="text-muted">Lo que verá el alumno:</span> <span data-preview="${i}" class="font-monospace">${escapeHtml(p.text || '(vacío)')}</span></div>
+          <div class="col-md-6"><span class="text-muted">Solución:</span> <b data-expected="${i}">${escapeHtml(accented)}</b></div>
         </div>
-        <div class="small text-muted">Vista previa: <b>${escapeHtml(preview)}</b></div>
       </div></div>`;
   }
 
