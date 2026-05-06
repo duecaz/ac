@@ -5,11 +5,7 @@ import { navigate } from '../core/router.js';
 import { getTemplate, listTemplates } from '../core/registry.js';
 import { confirmModal, toast } from '../core/toast.js';
 import { downloadActivitiesJson, pickAndImport } from '../core/io.js';
-
-function itemCount(a) {
-  const c = a.content || {};
-  return (c.items?.length ?? c.entries?.length ?? c.pairs?.length ?? c.groups?.length ?? c.words?.length ?? 0);
-}
+import { activityItemCount as itemCount } from '../core/migrate.js';
 
 let _filter = { q: '', template: '' };
 

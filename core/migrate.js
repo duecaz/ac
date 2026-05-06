@@ -84,6 +84,14 @@ export function newActivityId() {
   return `act_${s}`;
 }
 
+// Counts whatever is the "items" of an activity, regardless of content shape.
+// Used by views to display "N elementos" without assuming the template.
+export function activityItemCount(a) {
+  const c = a?.content || {};
+  return (c.items?.length ?? c.entries?.length ?? c.pairs?.length
+        ?? c.groups?.length ?? c.words?.length ?? c.passages?.length ?? 0);
+}
+
 export function newActivity(template = 'quiz') {
   const T = getTemplate(template);
   const content = T?.meta?.defaultContent?.() || {};

@@ -3,6 +3,7 @@ import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { getClient } from '../core/supabase.js';
 import { list as listActivities } from '../core/storage.js';
+import { activityItemCount } from '../core/migrate.js';
 
 export async function renderReports(rootSel) {
   const sb = await getClient();
@@ -20,7 +21,7 @@ export async function renderReports(rootSel) {
           <a href="#/reports/${a.id}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
             <div>
               <b>${escapeHtml(a.title)}</b>
-              <div class="small text-muted">${(a.content.items?.length ?? a.content.entries?.length ?? 0)} elementos · ${escapeHtml(a.template)}</div>
+              <div class="small text-muted">${activityItemCount(a)} elementos · ${escapeHtml(a.template)}</div>
             </div>
             <span class="badge bg-primary rounded-pill">${counts[a.id] || 0} partidas</span>
           </a>
