@@ -22,10 +22,9 @@
 }
 
 /* The "embed" frame — bounded width, fixed aspect ratio, scrolls inside.
-   Acts like a YouTube embed: the page layout stays normal, the activity
-   lives inside a card. */
+   Like a YouTube embed: small box inside the page, not the whole page. */
 .ww-play-page .ww-player-frame {
-  max-width: 960px;
+  max-width: 720px;
   width: 100%;
   margin: 0 auto;
   position: relative;
@@ -95,8 +94,8 @@
   .ww-pick-tile { width: 76px; }
 }
 
-/* Tablet / interactive board target (1280x800 fullscreen): give the frame
-   a bit more breathing room. */
+/* Modest cap on big screens. Fullscreen still expands to the full viewport
+   (1280x800 on the interactive board) thanks to :fullscreen rules above. */
 @media (min-width: 1100px) {
-  .ww-play-page .ww-player-frame { max-width: 1024px; }
+  .ww-play-page .ww-player-frame { max-width: 800px; }
 }

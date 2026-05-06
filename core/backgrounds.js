@@ -18,12 +18,24 @@ export const BACKGROUNDS = {
 };
 
 const ALL_CLS = Object.keys(BACKGROUNDS).map(k => `bg-${k}`);
+let _current = 'none';
 
 export function applyBackground(name) {
   const valid = name in BACKGROUNDS ? name : 'none';
+  _current = valid;
+  const cls = `bg-${valid}`;
   document.body.classList.remove(...ALL_CLS);
-  document.body.classList.add(`bg-${valid}`);
+  document.body.classList.add(cls);
+  // Mirror onto the player frame so :fullscreen keeps the same texture.
+  document.querySelectorAll('.ww-player-frame').forEach(el => {
+    el.classList.remove(...ALL_CLS);
+    el.classList.add(cls);
+  });
 }
+
+// Re-apply the cached current bg. Call after dynamically inserting a frame
+// (e.g. when playerView paints) so the freshly-rendered frame inherits.
+export function reapplyBackground() { applyBackground(_current); }
 
 export function listBackgrounds() {
   return Object.entries(BACKGROUNDS).map(([name, b]) => ({ name, ...b }));

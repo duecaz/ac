@@ -1,18 +1,19 @@
-/* Background classes. Apply on <body>. SVG inline as data URIs to avoid
-   network round-trips. Keep visuals subtle so player content stays readable. */
+/* Background classes. Apply on <body> AND on .ww-player-frame so
+   :fullscreen on the embed shows the same texture. SVG inline / CSS
+   gradients as data URIs to avoid network round-trips. */
 
 body.bg-none { /* default; nothing */ }
 
-body.bg-notebook {
+body.bg-notebook,
+.ww-player-frame.bg-notebook {
   background:
-    /* red margin line */
     linear-gradient(to right, transparent 0, transparent 60px, rgba(220,38,38,.5) 60px, rgba(220,38,38,.5) 62px, transparent 62px),
-    /* horizontal blue lines every 32px */
     repeating-linear-gradient(to bottom, #fdfcf6 0, #fdfcf6 31px, rgba(99,102,241,.25) 31px, rgba(99,102,241,.25) 32px);
-  background-attachment: fixed;
 }
+body.bg-notebook { background-attachment: fixed; }
 
-body.bg-blackboard {
+body.bg-blackboard,
+.ww-player-frame.bg-blackboard {
   background: #2d3a2e;
   color: #f5f5dc;
   background-image:
@@ -20,38 +21,41 @@ body.bg-blackboard {
     radial-gradient(rgba(255,255,255,.03) 1px, transparent 1px);
   background-size: 4px 4px, 7px 7px;
   background-position: 0 0, 2px 3px;
-  background-attachment: fixed;
 }
+body.bg-blackboard { background-attachment: fixed; }
 body.bg-blackboard .card { background: rgba(245,245,220,.95); color: #1f2937; }
 
-body.bg-paper {
+body.bg-paper,
+.ww-player-frame.bg-paper {
   background: #f5f1e6;
-  background-image:
-    radial-gradient(rgba(180, 150, 90, .15) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(180, 150, 90, .15) 1px, transparent 1px);
   background-size: 6px 6px;
-  background-attachment: fixed;
 }
+body.bg-paper { background-attachment: fixed; }
 
-body.bg-grid {
+body.bg-grid,
+.ww-player-frame.bg-grid {
   background:
     linear-gradient(to right, rgba(99,102,241,.15) 1px, transparent 1px) 0 0/24px 24px,
     linear-gradient(to bottom, rgba(99,102,241,.15) 1px, transparent 1px) 0 0/24px 24px,
     #fafafa;
-  background-attachment: fixed;
 }
+body.bg-grid { background-attachment: fixed; }
 
-body.bg-corkboard {
+body.bg-corkboard,
+.ww-player-frame.bg-corkboard {
   background: #c8985a;
   background-image:
     radial-gradient(rgba(80,50,20,.25) 1.5px, transparent 1.5px),
     radial-gradient(rgba(120,80,40,.18) 1px, transparent 1px);
   background-size: 5px 5px, 8px 8px;
   background-position: 0 0, 3px 4px;
-  background-attachment: fixed;
 }
+body.bg-corkboard { background-attachment: fixed; }
 
-body.bg-stars {
-  background: radial-gradient(ellipse at top, #1e1b4b 0%, #0c0a1f 70%) fixed;
+body.bg-stars,
+.ww-player-frame.bg-stars {
+  background: radial-gradient(ellipse at top, #1e1b4b 0%, #0c0a1f 70%);
   color: #e0e7ff;
   background-image:
     radial-gradient(white 0.5px, transparent 0.5px),
@@ -59,6 +63,7 @@ body.bg-stars {
   background-size: 80px 80px, 120px 120px;
   background-position: 0 0, 40px 60px;
 }
+body.bg-stars { background-attachment: fixed; }
 body.bg-stars .card { background: rgba(30, 27, 75, .85); color: #e0e7ff; border-color: #6366f1; }
 
 /* Preview tiles (editor picker) — same backgrounds but contained. */

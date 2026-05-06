@@ -10,7 +10,7 @@ import { runPlayer } from '../core/player.js';
 import { activityItemCount, newActivityId } from '../core/migrate.js';
 import { getTemplate, compatibleTemplates } from '../core/registry.js';
 import { listSkins, applySkin, skinPreviewHtml } from '../core/skins.js';
-import { listBackgrounds, applyBackground, backgroundPreviewHtml } from '../core/backgrounds.js';
+import { listBackgrounds, applyBackground, reapplyBackground, backgroundPreviewHtml } from '../core/backgrounds.js';
 import { toggleFullscreen } from '../core/fullscreen.js';
 import { acquire } from '../core/lifecycle.js';
 import { getUser } from '../core/auth.js';
@@ -102,6 +102,9 @@ export async function renderPlayerView(rootSel, id) {
       </div>
     `);
 
+    // Mirror the body's bg class onto the freshly-rendered frame so
+    // :fullscreen inherits the texture.
+    reapplyBackground();
     runPlayer('#ww-player-widget', { ...a, template: liveTemplate }, { skipChrome: true });
     wireHandlers();
   }
@@ -123,9 +126,8 @@ export async function renderPlayerView(rootSel, id) {
       document.getElementById('ww-player-widget').innerHTML = '';
       runPlayer('#ww-player-widget', { ...a, template: liveTemplate }, { skipChrome: true });
     });
-    // Doc-level fullscreen so the body background (notebook, blackboard…)
-    // fills the interactive whiteboard, not just the activity card.
-    on(rootSel, 'click', '#btn-fs', () => toggleFullscreen());
+    // Frame-level fullscreen: only the embed expands, not the page (YouTube-like).
+    on(rootSel, 'click', '#btn-fs', () => toggleFullscreen(document.getElementById('ww-frame')));
     on(rootSel, 'click', '#btn-link', async () => {
       try { await navigator.clipboard.writeText(location.href); toast('Link copiado.', 'success'); }
       catch { toast('No se pudo copiar — copia manualmente: ' + location.href, 'warning', 6000); }
