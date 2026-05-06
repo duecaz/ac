@@ -1,6 +1,7 @@
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { newPair } from '../../core/contentModels/pairs.js';
+import { itemControlsHtml, reorderArray } from '../../core/editorPrimitives.js';
 
 export function renderMatchEditor(root, activity, onChange) {
   const a = activity;
@@ -29,7 +30,7 @@ export function renderMatchEditor(root, activity, onChange) {
             <div class="row g-2 mb-2">
               <div class="col-5"><input class="form-control mp-l" data-i="${i}" placeholder="Pareja ${i+1} izq" value="${escapeHtml(p.left || '')}"></div>
               <div class="col-5"><input class="form-control mp-r" data-i="${i}" placeholder="Pareja ${i+1} der" value="${escapeHtml(p.right || '')}"></div>
-              <div class="col-2"><button class="btn btn-outline-danger w-100 mp-del" data-i="${i}"><i class="bi bi-x"></i></button></div>
+              <div class="col-2 d-flex">${itemControlsHtml(i, a.content.pairs.length)}</div>
             </div>
           `).join('')}
           <button class="btn btn-outline-primary mt-2" id="mp-add"><i class="bi bi-plus-lg"></i> Añadir par</button>
@@ -53,7 +54,9 @@ export function renderMatchEditor(root, activity, onChange) {
     on(root, 'input', '#f-subtitle', e => { a.subtitle = e.target.value; onChange(a); });
     on(root, 'input', '.mp-l', (e, el) => { a.content.pairs[+el.dataset.i].left = e.target.value; onChange(a); });
     on(root, 'input', '.mp-r', (e, el) => { a.content.pairs[+el.dataset.i].right = e.target.value; onChange(a); });
-    on(root, 'click', '.mp-del', (_, b) => { a.content.pairs.splice(+b.dataset.i, 1); onChange(a); paint(); });
+    on(root, 'click', '.item-del',  (_, b) => { a.content.pairs.splice(+b.dataset.i, 1); onChange(a); paint(); });
+    on(root, 'click', '.item-up',   (_, b) => { reorderArray(a.content.pairs, +b.dataset.i, -1); onChange(a); paint(); });
+    on(root, 'click', '.item-down', (_, b) => { reorderArray(a.content.pairs, +b.dataset.i, +1); onChange(a); paint(); });
     on(root, 'click', '#mp-add', () => { a.content.pairs.push(newPair()); onChange(a); paint(); });
     on(root, 'change', '#m-rand', e => { a.rules.randomize = e.target.checked; onChange(a); });
     on(root, 'input', '#m-timer', e => { a.rules.timer = +e.target.value || 0; onChange(a); });

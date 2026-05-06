@@ -1,5 +1,6 @@
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
+import { itemControlsHtml, reorderArray } from '../../core/editorPrimitives.js';
 
 export function renderWheelEditor(root, activity, onChange) {
   const a = activity;
@@ -22,7 +23,7 @@ export function renderWheelEditor(root, activity, onChange) {
             ${a.content.entries.map((e, i) => `
               <div class="col-md-6 d-flex gap-2">
                 <input class="form-control we-entry" data-i="${i}" placeholder="Entrada ${i+1}" value="${escapeHtml(e)}">
-                <button class="btn btn-outline-danger we-del" data-i="${i}"><i class="bi bi-x"></i></button>
+                ${itemControlsHtml(i, a.content.entries.length)}
               </div>
             `).join('')}
           </div>
@@ -39,7 +40,9 @@ export function renderWheelEditor(root, activity, onChange) {
     on(root, 'input', '#f-title', e => { a.title = e.target.value; onChange(a); });
     on(root, 'input', '#f-subtitle', e => { a.subtitle = e.target.value; onChange(a); });
     on(root, 'input', '.we-entry', (e, el) => { a.content.entries[+el.dataset.i] = e.target.value; onChange(a); });
-    on(root, 'click', '.we-del', (_, b) => { a.content.entries.splice(+b.dataset.i, 1); onChange(a); paint(); });
+    on(root, 'click', '.item-del',  (_, b) => { a.content.entries.splice(+b.dataset.i, 1); onChange(a); paint(); });
+    on(root, 'click', '.item-up',   (_, b) => { reorderArray(a.content.entries, +b.dataset.i, -1); onChange(a); paint(); });
+    on(root, 'click', '.item-down', (_, b) => { reorderArray(a.content.entries, +b.dataset.i, +1); onChange(a); paint(); });
     on(root, 'click', '#we-add', () => { a.content.entries.push(''); onChange(a); paint(); });
     on(root, 'input', '#we-dur', e => { a.rules.spinDurationMs = +e.target.value || 4000; onChange(a); });
     on(root, 'change', '#we-rm', e => { a.rules.removeAfterSpin = e.target.checked; onChange(a); });

@@ -4,6 +4,7 @@ import { list, remove } from '../core/storage.js';
 import { navigate } from '../core/router.js';
 import { getTemplate, listTemplates } from '../core/registry.js';
 import { confirmModal, toast } from '../core/toast.js';
+import { downloadActivitiesJson, pickAndImport } from '../core/io.js';
 
 function itemCount(a) {
   const c = a.content || {};
@@ -29,7 +30,11 @@ export function renderHome(rootSel) {
     mount(rootSel, html`
       <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <h2 class="mb-0">Mis actividades</h2>
-        <a href="#/new" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Nueva</a>
+        <div class="d-flex gap-2 flex-wrap">
+          <button class="btn btn-outline-secondary" id="h-import" title="Importar JSON"><i class="bi bi-upload"></i> Importar</button>
+          <button class="btn btn-outline-secondary" id="h-export-all" title="Exportar todas a JSON" ${all.length===0?'disabled':''}><i class="bi bi-download"></i> Exportar</button>
+          <a href="#/new" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Nueva</a>
+        </div>
       </div>
       ${all.length === 0 ? '' : `
         <div class="row g-2 mb-3">
@@ -79,12 +84,23 @@ export function renderHome(rootSel) {
             ${m.live ? `<button class="btn btn-warning btn-sm flex-grow-1 act-pin" data-id="${a.id}"><i class="bi bi-broadcast"></i> PIN</button>` : ''}
             ${m.async ? `<button class="btn btn-info btn-sm flex-grow-1 act-task" data-id="${a.id}" title="Tareas"><i class="bi bi-clipboard-check"></i></button>` : ''}
             <button class="btn btn-outline-primary btn-sm act-edit" data-id="${a.id}"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-outline-secondary btn-sm act-export" data-id="${a.id}" title="Exportar JSON"><i class="bi bi-download"></i></button>
             <button class="btn btn-outline-danger btn-sm act-del" data-id="${a.id}"><i class="bi bi-trash"></i></button>
           </div>
         </div>
       </div>`;
   }
 
+  on(rootSel, 'click', '#h-export-all', () => downloadActivitiesJson());
+  on(rootSel, 'click', '#h-import', () => {
+    pickAndImport({ strategy: 'duplicate' }, (r) => {
+      if (r.ok) toast(`Importadas ${r.count} actividades.`, 'success');
+      else if (r.count) toast(`${r.count} importadas, ${r.errors.length} fallaron.`, 'warning', 6000);
+      else toast('Error al importar: ' + r.errors.join('; '), 'danger', 6000);
+      renderHome(rootSel);
+    });
+  });
+  on(rootSel, 'click', '.act-export', (_, b) => downloadActivitiesJson([b.dataset.id]));
   on(rootSel, 'click', '.act-play', (_, b) => navigate(`#/play/${b.dataset.id}`));
   on(rootSel, 'click', '.act-pin', (_, b) => navigate(`#/launch/${b.dataset.id}`));
   on(rootSel, 'click', '.act-task', (_, b) => navigate(`#/tasks/${b.dataset.id}`));

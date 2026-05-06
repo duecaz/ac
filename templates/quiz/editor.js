@@ -3,6 +3,7 @@ import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { renderImagePicker, attachImagePicker } from '../../core/imagePicker.js';
 import { listSkins, skinPreviewHtml } from '../../core/skins.js';
+import { itemControlsHtml, reorderArray } from '../../core/editorPrimitives.js';
 
 export function renderQuizEditor(root, activity, onChange) {
   const a = activity;
@@ -50,7 +51,9 @@ export function renderQuizEditor(root, activity, onChange) {
       a.content.items.push({ id:'q_'+Math.random().toString(36).slice(2,8), question:'', answer:'Verdadero', options:['Verdadero','Falso'], points:1, image:null, audio:null, kind: 'truefalse' });
       commit();
     });
-    on(root, 'click', '.del-item', (_, btn) => { a.content.items.splice(+btn.dataset.i, 1); commit(); });
+    on(root, 'click', '.item-del', (_, btn) => { a.content.items.splice(+btn.dataset.i, 1); commit(); });
+    on(root, 'click', '.item-up',  (_, btn) => { reorderArray(a.content.items, +btn.dataset.i, -1); commit(); });
+    on(root, 'click', '.item-down',(_, btn) => { reorderArray(a.content.items, +btn.dataset.i, +1); commit(); });
     on(root, 'input', '.it-q', (e, el) => { a.content.items[+el.dataset.i].question = e.target.value; onChange(a); });
     on(root, 'input', '.it-a', (e, el) => { a.content.items[+el.dataset.i].answer = e.target.value; onChange(a); });
     on(root, 'input', '.it-opt', (e, el) => {
@@ -97,11 +100,12 @@ export function renderQuizEditor(root, activity, onChange) {
 
 function renderItems(a) {
   if (!a.content.items.length) return `<p class="text-muted">No hay preguntas todavía.</p>`;
+  const total = a.content.items.length;
   return a.content.items.map((it, i) => `
     <div class="card mb-2"><div class="card-body">
       <div class="d-flex justify-content-between align-items-center mb-2">
-        <span class="badge bg-secondary">#${i+1}</span>
-        <button class="btn btn-sm btn-outline-danger del-item" data-i="${i}"><i class="bi bi-trash"></i></button>
+        <span class="badge bg-secondary">#${i+1}${it.kind==='truefalse'?' · V/F':''}</span>
+        ${itemControlsHtml(i, total)}
       </div>
       <input class="form-control mb-2 it-q" data-i="${i}" placeholder="Pregunta" value="${escapeHtml(it.question)}">
       <div class="row g-2 mb-2">
