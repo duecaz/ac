@@ -3,6 +3,7 @@ import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { renderImagePicker, attachImagePicker } from '../../core/imagePicker.js';
 import { listSkins, skinPreviewHtml } from '../../core/skins.js';
+import { listBackgrounds, backgroundPreviewHtml } from '../../core/backgrounds.js';
 import { itemControlsHtml, reorderArray } from '../../core/editorPrimitives.js';
 
 export function renderQuizEditor(root, activity, onChange) {
@@ -94,6 +95,11 @@ export function renderQuizEditor(root, activity, onChange) {
       onChange(a);
       paint();
     });
+    on(root, 'click', '.bg-pick', (_, b) => {
+      a.presentation.background = b.dataset.name;
+      onChange(a);
+      paint();
+    });
   }
   paint();
 }
@@ -176,15 +182,26 @@ function renderLive(a) {
 }
 
 function renderPresentation(a) {
-  const current = a.presentation?.skin || 'default';
+  const currentSkin = a.presentation?.skin || 'default';
+  const currentBg = a.presentation?.background || 'none';
   const skins = listSkins();
+  const bgs = listBackgrounds();
   return `
-    <p class="small text-muted">Elige el aspecto que verán los alumnos al jugar (en SOLO, async y LIVE).</p>
-    <div class="d-flex flex-wrap gap-3">
+    <h6 class="mb-2">Skin (colores y sonidos)</h6>
+    <div class="d-flex flex-wrap gap-3 mb-4">
       ${skins.map(s => `
-        <div class="ww-skin-tile skin-pick ${current===s.name?'is-active':''}" data-name="${s.name}" role="button">
+        <div class="ww-skin-tile skin-pick ${currentSkin===s.name?'is-active':''}" data-name="${s.name}" role="button">
           ${skinPreviewHtml(s.name)}
           <div class="text-center small mt-1">${escapeHtml(s.description || '')}</div>
+        </div>
+      `).join('')}
+    </div>
+    <h6 class="mb-2">Fondo</h6>
+    <div class="d-flex flex-wrap gap-3">
+      ${bgs.map(b => `
+        <div class="ww-skin-tile bg-pick ${currentBg===b.name?'is-active':''}" data-name="${b.name}" role="button" style="width:120px">
+          ${backgroundPreviewHtml(b.name)}
+          <div class="text-center small text-muted">${escapeHtml(b.description || '')}</div>
         </div>
       `).join('')}
     </div>

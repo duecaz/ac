@@ -9,6 +9,7 @@ import { acquire } from '../core/lifecycle.js';
 import { toast } from '../core/toast.js';
 import { submit as queuedSubmit, flush as flushQueue, pendingCount } from '../core/submitQueue.js';
 import { applySkin } from '../core/skins.js';
+import { applyBackground } from '../core/backgrounds.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import * as Streaks from '../core/streaks.js';
@@ -76,9 +77,10 @@ export async function renderPlay(rootSel, code) {
     mount(rootSel, html`<div class="alert alert-danger m-3">${escapeHtml(e.message)}</div>`); return;
   }
 
-  // Per-activity skin during play.
+  // Per-activity skin + background during play.
   applySkin(activity.presentation?.skin || 'kahoot');
-  ctx.add(() => applySkin('default'));
+  applyBackground(activity.presentation?.background || 'none');
+  ctx.add(() => { applySkin('default'); applyBackground('none'); });
   // Prevent overscroll while playing.
   document.body.classList.add('ww-play-noscroll');
   ctx.add(() => document.body.classList.remove('ww-play-noscroll'));

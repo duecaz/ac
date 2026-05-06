@@ -10,6 +10,7 @@ import { getTemplate } from '../core/registry.js';
 import { acquire } from '../core/lifecycle.js';
 import { toast, confirmModal } from '../core/toast.js';
 import { applySkin } from '../core/skins.js';
+import { applyBackground } from '../core/backgrounds.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 
@@ -42,7 +43,8 @@ async function renderHost(rootSel, code, sessionId, activity) {
   const ctx = acquire('hostLive');
   // Apply per-activity skin during the host live view.
   applySkin(activity.presentation?.skin || 'kahoot');
-  ctx.add(() => applySkin('default'));
+  applyBackground(activity.presentation?.background || 'none');
+  ctx.add(() => { applySkin('default'); applyBackground('none'); });
   // Stage class for big-screen typography.
   document.body.classList.add('ww-stage');
   ctx.add(() => document.body.classList.remove('ww-stage'));

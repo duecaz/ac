@@ -1,0 +1,71 @@
+/* Background classes. Apply on <body>. SVG inline as data URIs to avoid
+   network round-trips. Keep visuals subtle so player content stays readable. */
+
+body.bg-none { /* default; nothing */ }
+
+body.bg-notebook {
+  background:
+    /* red margin line */
+    linear-gradient(to right, transparent 0, transparent 60px, rgba(220,38,38,.5) 60px, rgba(220,38,38,.5) 62px, transparent 62px),
+    /* horizontal blue lines every 32px */
+    repeating-linear-gradient(to bottom, #fdfcf6 0, #fdfcf6 31px, rgba(99,102,241,.25) 31px, rgba(99,102,241,.25) 32px);
+  background-attachment: fixed;
+}
+
+body.bg-blackboard {
+  background: #2d3a2e;
+  color: #f5f5dc;
+  background-image:
+    radial-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+    radial-gradient(rgba(255,255,255,.03) 1px, transparent 1px);
+  background-size: 4px 4px, 7px 7px;
+  background-position: 0 0, 2px 3px;
+  background-attachment: fixed;
+}
+body.bg-blackboard .card { background: rgba(245,245,220,.95); color: #1f2937; }
+
+body.bg-paper {
+  background: #f5f1e6;
+  background-image:
+    radial-gradient(rgba(180, 150, 90, .15) 1px, transparent 1px);
+  background-size: 6px 6px;
+  background-attachment: fixed;
+}
+
+body.bg-grid {
+  background:
+    linear-gradient(to right, rgba(99,102,241,.15) 1px, transparent 1px) 0 0/24px 24px,
+    linear-gradient(to bottom, rgba(99,102,241,.15) 1px, transparent 1px) 0 0/24px 24px,
+    #fafafa;
+  background-attachment: fixed;
+}
+
+body.bg-corkboard {
+  background: #c8985a;
+  background-image:
+    radial-gradient(rgba(80,50,20,.25) 1.5px, transparent 1.5px),
+    radial-gradient(rgba(120,80,40,.18) 1px, transparent 1px);
+  background-size: 5px 5px, 8px 8px;
+  background-position: 0 0, 3px 4px;
+  background-attachment: fixed;
+}
+
+body.bg-stars {
+  background: radial-gradient(ellipse at top, #1e1b4b 0%, #0c0a1f 70%) fixed;
+  color: #e0e7ff;
+  background-image:
+    radial-gradient(white 0.5px, transparent 0.5px),
+    radial-gradient(rgba(200,220,255,.5) 1px, transparent 1px);
+  background-size: 80px 80px, 120px 120px;
+  background-position: 0 0, 40px 60px;
+}
+body.bg-stars .card { background: rgba(30, 27, 75, .85); color: #e0e7ff; border-color: #6366f1; }
+
+/* Preview tiles (editor picker) — same backgrounds but contained. */
+.ww-bg-preview.bg-notebook    { background: linear-gradient(to right, transparent 0, transparent 12px, rgba(220,38,38,.5) 12px, rgba(220,38,38,.5) 13px, transparent 13px), repeating-linear-gradient(to bottom, #fdfcf6 0, #fdfcf6 7px, rgba(99,102,241,.25) 7px, rgba(99,102,241,.25) 8px); }
+.ww-bg-preview.bg-blackboard  { background: #2d3a2e; }
+.ww-bg-preview.bg-paper       { background: #f5f1e6; }
+.ww-bg-preview.bg-grid        { background: linear-gradient(to right, rgba(99,102,241,.3) 1px, transparent 1px) 0 0/8px 8px, linear-gradient(to bottom, rgba(99,102,241,.3) 1px, transparent 1px) 0 0/8px 8px, #fafafa; }
+.ww-bg-preview.bg-corkboard   { background: #c8985a; }
+.ww-bg-preview.bg-stars       { background: radial-gradient(ellipse at top, #1e1b4b, #0c0a1f); }
+.ww-bg-preview.bg-none        { background: repeating-linear-gradient(45deg, #f3f4f6 0 6px, #e5e7eb 6px 12px); }
