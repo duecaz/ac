@@ -1,7 +1,7 @@
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { get } from '../core/storage.js';
-import { createAssignment, listAssignmentsForActivity, listAttempts, closeAssignment } from '../core/transport/assignments.js';
+import { createAssignment, listAssignmentsForActivity, listAttempts, closeAssignment, rotateAssignmentCode } from '../core/transport/assignments.js';
 import { toast, confirmModal } from '../core/toast.js';
 
 const STUDENT_BASE = location.origin + location.pathname.replace(/teacher\.html.*/, 'student.html');
@@ -50,8 +50,9 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
                   </div>
                   <div class="d-flex gap-2">
                     <a href="#/task/${t.id}/attempts" class="btn btn-sm btn-outline-primary">Intentos</a>
-                    <button class="btn btn-sm btn-outline-secondary copy" data-url="${escapeHtml(url)}"><i class="bi bi-clipboard"></i></button>
-                    ${t.status !== 'closed' ? `<button class="btn btn-sm btn-outline-danger close-t" data-id="${t.id}"><i class="bi bi-x-lg"></i></button>` : ''}
+                    <button class="btn btn-sm btn-outline-secondary copy" data-url="${escapeHtml(url)}" title="Copiar URL"><i class="bi bi-clipboard"></i></button>
+                    ${t.status !== 'closed' ? `<button class="btn btn-sm btn-outline-warning rotate-t" data-id="${t.id}" title="Rotar PIN"><i class="bi bi-arrow-repeat"></i></button>` : ''}
+                    ${t.status !== 'closed' ? `<button class="btn btn-sm btn-outline-danger close-t" data-id="${t.id}" title="Cerrar tarea"><i class="bi bi-x-lg"></i></button>` : ''}
                   </div>
                 </div>
               </div>`;
@@ -73,6 +74,15 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
       navigator.clipboard?.writeText(b.dataset.url);
       b.innerHTML = '<i class="bi bi-check"></i>';
       setTimeout(() => b.innerHTML = '<i class="bi bi-clipboard"></i>', 1200);
+    });
+    on(rootSel, 'click', '.rotate-t', async (_, b) => {
+      const ok = await confirmModal('¿Rotar el PIN? El antiguo dejará de funcionar.', { okText: 'Rotar', danger: false });
+      if (!ok) return;
+      try {
+        const code = await rotateAssignmentCode(b.dataset.id);
+        toast(`PIN nuevo: ${code}`, 'success', 4000);
+        refresh();
+      } catch (e) { toast('Error rotando PIN: ' + e.message, 'danger'); }
     });
     on(rootSel, 'click', '.close-t', async (_, b) => {
       const ok = await confirmModal('¿Cerrar esta tarea?', { okText: 'Cerrar tarea', danger: true });

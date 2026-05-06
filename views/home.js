@@ -75,7 +75,7 @@ export function renderHome(rootSel) {
               <span class="badge bg-${T?.meta?.color || 'info'}"><i class="bi ${T?.meta?.icon || 'bi-puzzle'}"></i> ${escapeHtml(T?.meta?.label || a.template)}</span>
               <small class="text-muted">${itemCount(a)} elem.</small>
             </div>
-            <h5 class="card-title mt-2">${escapeHtml(a.title)}</h5>
+            <h5 class="card-title mt-2">${escapeHtml(a.title)}${a._unsynced ? ' <i class="bi bi-cloud-slash text-warning" title="No sincronizada"></i>' : ''}</h5>
             <p class="card-text small text-muted">${escapeHtml(a.subtitle || '')}</p>
             ${(a.tags || []).length ? `<div>${a.tags.slice(0,4).map(t => `<span class="badge bg-light text-dark border me-1">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
           </div>

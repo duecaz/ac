@@ -41,20 +41,42 @@ export function get(id) {
 }
 
 // Saves locally immediately and to remote in the background.
-// Returns { activity, remote } where `remote` is a Promise that resolves
-// when the remote upsert completes, or rejects with the error (so callers
-// can surface it). Callers can ignore `remote` for fire-and-forget.
+// On remote failure, marks the local copy with _unsynced=true so the UI
+// can show a sync status. Returns { activity, remote }.
 export function save(activity) {
   const a = normalize({ ...activity, updatedAt: new Date().toISOString() });
+  // Optimistically clear stale flag.
+  delete a._unsynced;
   const map = readLS();
   map[a.id] = a;
   writeLS(map);
   const remote = remoteSave(a);
-  // Always attach a default rejection handler so we don't get unhandled
-  // rejection warnings if a caller drops the promise.
-  remote.catch(err => console.warn('[storage] remote save failed:', err.message));
+  remote.then(() => {
+    // Confirmed synced — make sure the flag is off (in case it was on before).
+    const m = readLS();
+    if (m[a.id]?._unsynced) { delete m[a.id]._unsynced; writeLS(m); }
+  }).catch(err => {
+    console.warn('[storage] remote save failed:', err.message);
+    const m = readLS();
+    if (m[a.id]) { m[a.id]._unsynced = true; writeLS(m); }
+  });
   return { activity: a, remote };
 }
+
+// Retry pending unsynced rows. Call on online, on boot, on demand.
+export async function retryUnsynced() {
+  const map = readLS();
+  const pending = Object.values(map).filter(a => a._unsynced);
+  let ok = 0;
+  for (const a of pending) {
+    try { await remoteSave(a); delete a._unsynced; ok++; }
+    catch { /* keep flag */ }
+  }
+  writeLS(map);
+  return { tried: pending.length, ok };
+}
+// Auto-retry when network returns.
+window.addEventListener('online', () => { retryUnsynced().catch(() => {}); });
 
 export function remove(id) {
   const map = readLS();

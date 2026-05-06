@@ -41,6 +41,16 @@ export async function closeAssignment(id) {
   await sb.from('assignments').update({ status: 'closed' }).eq('id', id);
 }
 
+// Rotate the public code (atomic via RPC). Useful when a code leaks.
+export async function rotateAssignmentCode(id) {
+  const sb = await getClient();
+  const { data: codeRes, error: cErr } = await sb.rpc('generate_assignment_code');
+  if (cErr) throw cErr;
+  const { data, error } = await sb.from('assignments').update({ code: codeRes }).eq('id', id).select('code').single();
+  if (error) throw error;
+  return data.code;
+}
+
 export async function listAttempts(assignmentId) {
   const sb = await getClient();
   const { data, error } = await sb.from('results').select('*').eq('assignment_id', assignmentId).order('created_at', { ascending: false });

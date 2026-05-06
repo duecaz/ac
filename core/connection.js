@@ -1,5 +1,7 @@
 // Connection state banner. Shows a sticky message when realtime/network drops.
 // Subscribed to from transport/live.js subscribeRoom (system events).
+// On transition back to 'connected', flashes a brief green toast.
+import { toast } from './toast.js';
 
 let _state = 'connected';
 let _bannerEl = null;
@@ -15,10 +17,12 @@ function ensureBanner() {
 }
 
 export function setConnectionState(state) {
+  const prev = _state;
   _state = state;
   const b = ensureBanner();
   if (state === 'connected') {
     b.className = 'd-none position-fixed start-50 translate-middle-x';
+    if (prev !== 'connected') toast('Conexión recuperada.', 'success', 2000);
     return;
   }
   const cfg = {
