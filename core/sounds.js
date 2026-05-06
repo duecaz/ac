@@ -11,15 +11,16 @@ let _pack = {};
 const _cache = new Map();           // name -> HTMLAudioElement
 let _muted = localStorage.getItem('ww.muted') === '1';
 
-// Default CC0 pack on jsdelivr (mirror of public sound libraries).
-// These are short, royalty-free game sounds.
+// Default pack on jsDelivr serving from the public repo duecaz/ww-assets.
+// Three CC0 files are mapped onto the six game events (some events share).
+const ASSET_BASE = 'https://cdn.jsdelivr.net/gh/duecaz/ww-assets@main/sounds';
 const DEFAULT_PACK = {
-  lobby:   'https://cdn.jsdelivr.net/gh/duecaz/ww-assets@main/sounds/lobby.mp3',
-  tick:    'https://cdn.jsdelivr.net/gh/duecaz/ww-assets@main/sounds/tick.mp3',
-  reveal:  'https://cdn.jsdelivr.net/gh/duecaz/ww-assets@main/sounds/reveal.mp3',
-  correct: 'https://cdn.jsdelivr.net/gh/duecaz/ww-assets@main/sounds/correct.mp3',
-  wrong:   'https://cdn.jsdelivr.net/gh/duecaz/ww-assets@main/sounds/wrong.mp3',
-  podium:  'https://cdn.jsdelivr.net/gh/duecaz/ww-assets@main/sounds/podium.mp3'
+  lobby:   null,                          // intentionally silent
+  tick:    `${ASSET_BASE}/click.mp3`,     // soft click for ticks/UI
+  reveal:  `${ASSET_BASE}/click.mp3`,
+  correct: `${ASSET_BASE}/win.mp3`,
+  wrong:   `${ASSET_BASE}/fail.mp3`,
+  podium:  `${ASSET_BASE}/win.mp3`
 };
 
 export function setSoundPack(pack) {
