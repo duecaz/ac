@@ -16,6 +16,7 @@ export class TildesTemplate extends BaseTemplate {
     color: 'warning',
     contentModel: 'textCorrection',
     templateVersion: 1,
+    aspectRatio: 'auto',
     modes: { solo: true, live: false, async: true, practice: true },
     needsImageUpload: false,
     needsAudioUpload: false,

@@ -13,6 +13,7 @@ export class MemoryTemplate extends BaseTemplate {
     color: 'primary',
     contentModel: 'pairs',
     templateVersion: 1,
+    aspectRatio: '1/1',
     modes: { solo: true, live: false, async: true, practice: true },
     needsImageUpload: false,
     needsAudioUpload: false,

@@ -13,15 +13,90 @@
 }
 .ww-player .ww-opt:disabled { opacity: .9; }
 
-/* The player widget on the play page keeps its own surface so any background
-   skin doesn't bleed onto the activity rendering. */
-.ww-play-page #ww-player-widget {
+/* === Wordwall-style activity page === */
+
+.ww-play-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 .5rem;
+}
+
+/* The "embed" frame — bounded width, fixed aspect ratio, scrolls inside.
+   Acts like a YouTube embed: the page layout stays normal, the activity
+   lives inside a card. */
+.ww-play-page .ww-player-frame {
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+  position: relative;
   background: var(--ww-card-bg, #ffffff);
   color: var(--ww-fg, inherit);
+  border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.12);
+  overflow: hidden;
 }
-.ww-play-page .ww-skin-row,
-.ww-play-page .ww-bg-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+
+/* Inner widget fills the frame absolutely and scrolls if content overflows.
+   When aspect-ratio is 'auto', the wrapper has min-height set inline and
+   the widget uses static positioning so height grows naturally. */
+.ww-play-page .ww-player-frame > #ww-player-widget {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  padding: 1.25rem;
+}
+.ww-play-page .ww-player-frame[style*="auto"] > #ww-player-widget {
+  position: static;
+  inset: auto;
+  min-height: inherit;
+}
+
+/* Fullscreen mode: frame fills the screen, widget loses padding so the
+   activity uses every pixel (interactive board / projector). */
+.ww-play-page .ww-player-frame:fullscreen,
+.ww-play-page .ww-player-frame:-webkit-full-screen {
+  max-width: none;
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  box-shadow: none;
+}
+.ww-play-page .ww-player-frame:fullscreen > #ww-player-widget,
+.ww-play-page .ww-player-frame:-webkit-full-screen > #ww-player-widget {
+  padding: 1rem;
+}
+
+/* Pickable tiles for skin and background. */
+.ww-pick-tile {
+  width: 96px;
+  cursor: pointer;
+  padding: .35rem;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  transition: border-color .12s, transform .1s;
+}
+.ww-pick-tile:hover { transform: translateY(-2px); }
+.ww-pick-tile.is-active {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99,102,241,.18);
+}
+
+/* Mobile portrait: collapse aspect-ratio and let the activity grow. */
+@media (max-width: 600px) {
+  .ww-play-page .ww-player-frame {
+    aspect-ratio: auto !important;
+    min-height: 70vh;
+  }
+  .ww-play-page .ww-player-frame > #ww-player-widget {
+    position: static;
+    inset: auto;
+    padding: .75rem;
+  }
+  .ww-pick-tile { width: 76px; }
+}
+
+/* Tablet / interactive board target (1280x800 fullscreen): give the frame
+   a bit more breathing room. */
+@media (min-width: 1100px) {
+  .ww-play-page .ww-player-frame { max-width: 1024px; }
 }

@@ -14,6 +14,11 @@ export class BaseTemplate {
     color: 'secondary',
     contentModel: null,
     templateVersion: 1,
+    // Player frame aspect ratio. Use '4/3', '16/9', '1/1', or 'auto' (no
+    // forced ratio, height grows with content). The page chrome wraps the
+    // player in a max-width 960 box and applies this. Mobile portrait
+    // collapses to 'auto' regardless.
+    aspectRatio: '4/3',
     modes: { solo: false, live: false, async: false, practice: false },
     needsImageUpload: false,
     needsAudioUpload: false,

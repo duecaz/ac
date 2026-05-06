@@ -13,3 +13,14 @@ export function getEditor(name) {
 }
 export function listTemplates() { return Object.values(_templates); }
 export function listTemplateNames() { return Object.keys(_templates); }
+
+// Templates that accept the same content as `name` (same contentModel).
+// Excludes `name` itself. Returns Template classes ordered by label.
+export function compatibleTemplates(name) {
+  const T = _templates[name];
+  const cm = T?.meta?.contentModel;
+  if (!cm) return [];
+  return Object.values(_templates)
+    .filter(t => t.meta.name !== name && t.meta.contentModel === cm)
+    .sort((a, b) => (a.meta.label || '').localeCompare(b.meta.label || ''));
+}

@@ -11,6 +11,7 @@ export class WheelTemplate extends BaseTemplate {
     color: 'success',
     contentModel: 'entries',
     templateVersion: 1,
+    aspectRatio: '1/1',
     modes: { solo: true, live: false, async: true, practice: true },
     needsImageUpload: false,
     needsAudioUpload: false,

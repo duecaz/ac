@@ -12,6 +12,7 @@ export class QuizTemplate extends BaseTemplate {
     color: 'primary',
     contentModel: 'qa',
     templateVersion: 1,
+    aspectRatio: '4/3',
     modes: { solo: true, live: true, async: true, practice: false },
     needsImageUpload: true,
     needsAudioUpload: true,
