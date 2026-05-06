@@ -9,6 +9,7 @@ import './templates/quiz/index.js';
 import './templates/wheel/index.js';
 import './templates/match/index.js';
 import './templates/memory/index.js';
+import './templates/tildes/index.js';
 
 import { html, mount } from './core/html.js';
 import { ensureAuth } from './core/supabase.js';

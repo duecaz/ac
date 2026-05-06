@@ -87,11 +87,13 @@ export function newActivityId() {
 export function newActivity(template = 'quiz') {
   const T = getTemplate(template);
   const content = T?.meta?.defaultContent?.() || {};
+  const presentation = T?.meta?.defaultPresentation?.() || {};
   return normalize({
     id: newActivityId(),
     title: 'Nueva actividad',
     template,
     templateVersion: T?.meta?.templateVersion || 1,
-    content
+    content,
+    presentation
   });
 }
