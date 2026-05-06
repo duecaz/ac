@@ -24,13 +24,25 @@
     <div class="d-flex gap-2 align-items-center">
       <span class="badge bg-secondary" id="ww-version">v…</span>
       <span id="ww-mute-slot"></span>
-      <button class="btn btn-sm btn-outline-warning" onclick="if(confirm('¿Borrar caché local?')){localStorage.clear();sessionStorage.clear();location.reload(true);}" title="Borrar caché"><i class="bi bi-eraser"></i></button>
+      <button class="btn btn-sm btn-outline-warning" onclick="window.__wwClearAll && window.__wwClearAll()" title="Borrar caché y recargar"><i class="bi bi-eraser"></i></button>
     </div>
   </div>
 </nav>
 <div id="app" class="container py-3"></div>
 
 <script>
+window.__wwClearAll = async function() {
+  if (!confirm('¿Borrar todo (caché del navegador + datos locales) y recargar?')) return;
+  try { localStorage.clear(); } catch {}
+  try { sessionStorage.clear(); } catch {}
+  if ('caches' in window) {
+    try { const names = await caches.keys(); await Promise.all(names.map(n => caches.delete(n))); } catch {}
+  }
+  if ('serviceWorker' in navigator) {
+    try { const regs = await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(r => r.unregister())); } catch {}
+  }
+  location.href = location.pathname + '?_=' + Date.now() + location.hash;
+};
 (function(){
   let shown = false;
   function show(msg){

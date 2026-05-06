@@ -30,13 +30,28 @@
       <a href="#/reports" class="btn btn-sm btn-outline-light"><i class="bi bi-bar-chart-fill"></i> Reportes</a>
       <span id="ww-mute-slot"></span>
       <span id="ww-auth-slot"></span>
-      <button class="btn btn-sm btn-outline-warning" onclick="if(confirm('¿Borrar caché local?')){localStorage.clear();sessionStorage.clear();location.reload(true);}" title="Borrar caché"><i class="bi bi-eraser"></i></button>
+      <button class="btn btn-sm btn-outline-warning" onclick="window.__wwClearAll && window.__wwClearAll()" title="Borrar caché y recargar"><i class="bi bi-eraser"></i></button>
     </div>
   </div>
 </nav>
 <div id="app" class="container py-3"></div>
 
 <script>
+// Cache buster + error boundary. Loaded INLINE before any module so it
+// keeps working even if module fetch fails.
+window.__wwClearAll = async function() {
+  if (!confirm('¿Borrar todo (caché del navegador + datos locales) y recargar?')) return;
+  try { localStorage.clear(); } catch {}
+  try { sessionStorage.clear(); } catch {}
+  if ('caches' in window) {
+    try { const names = await caches.keys(); await Promise.all(names.map(n => caches.delete(n))); } catch {}
+  }
+  if ('serviceWorker' in navigator) {
+    try { const regs = await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(r => r.unregister())); } catch {}
+  }
+  // Bypass disk cache by adding a unique query string.
+  location.href = location.pathname + '?_=' + Date.now() + location.hash;
+};
 // Error boundary: any uncaught error or rejection paints a red banner.
 (function(){
   let shown = false;
