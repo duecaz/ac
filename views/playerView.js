@@ -16,6 +16,7 @@ import { acquire } from '../core/lifecycle.js';
 import { getUser } from '../core/auth.js';
 import { toast, confirmModal } from '../core/toast.js';
 import { downloadActivitiesJson } from '../core/io.js';
+import { openEmbedModal } from './embedModal.js';
 
 export async function renderPlayerView(rootSel, id) {
   const a = get(id);
@@ -70,6 +71,7 @@ export async function renderPlayerView(rootSel, id) {
           <button class="btn btn-sm btn-outline-secondary" id="btn-fs"><i class="bi bi-arrows-fullscreen"></i> Pantalla completa</button>
           ${canEdit ? `<a href="#/edit/${a.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>` : ''}
           <button class="btn btn-sm btn-outline-secondary" id="btn-link"><i class="bi bi-link-45deg"></i> Copiar link</button>
+          <button class="btn btn-sm btn-outline-secondary" id="btn-embed"><i class="bi bi-code-square"></i> Embed</button>
           <button class="btn btn-sm btn-outline-secondary" id="btn-json"><i class="bi bi-download"></i> JSON</button>
           <button class="btn btn-sm btn-outline-secondary" id="btn-fork"><i class="bi bi-files"></i> Duplicar</button>
         </div>
@@ -139,6 +141,7 @@ export async function renderPlayerView(rootSel, id) {
       try { await navigator.clipboard.writeText(location.href); toast('Link copiado.', 'success'); }
       catch { toast('No se pudo copiar — copia manualmente: ' + location.href, 'warning', 6000); }
     });
+    on(rootSel, 'click', '#btn-embed', () => openEmbedModal(a));
     on(rootSel, 'click', '#btn-json', () => downloadActivitiesJson([a.id]));
     on(rootSel, 'click', '#btn-fork', async () => {
       const fork = {

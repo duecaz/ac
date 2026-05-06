@@ -40,6 +40,16 @@ export function get(id) {
   return map[id] ? migrate(map[id]) : null;
 }
 
+// Pull a single activity straight from Supabase by id. Used by the embed
+// page where the visitor doesn't have the activity in localStorage. Returns
+// null if not found or visibility is private (RLS hides it).
+export async function getRemote(id) {
+  const sb = await getClient();
+  const { data, error } = await sb.from('activities').select('data, visibility').eq('id', id).maybeSingle();
+  if (error || !data) return null;
+  return migrate(data.data || {});
+}
+
 // Saves locally immediately and to remote in the background.
 // On remote failure, marks the local copy with _unsynced=true so the UI
 // can show a sync status. Returns { activity, remote }.
