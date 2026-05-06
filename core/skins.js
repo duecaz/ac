@@ -121,21 +121,38 @@ export const SKINS = {
 };
 
 const ALL_CLS = Object.keys(SKINS).map(k => `skin-${k}`);
+let _current = 'default';
 
-export function applySkin(name) {
-  const skin = SKINS[name] ? SKINS[name] : SKINS.default;
-  const root = document.documentElement;
-  // Apply CSS variables.
-  for (const [k, v] of Object.entries(skin.cssVars || {})) root.style.setProperty(k, v);
-  // Body class for skin-specific overrides in CSS.
-  document.body.classList.remove(...ALL_CLS);
-  document.body.classList.add(`skin-${name in SKINS ? name : 'default'}`);
-  // Background.
-  if (skin.bgImage) document.body.style.background = skin.bgImage;
-  else document.body.style.background = '';
-  if (skin.fontFamily) document.body.style.fontFamily = skin.fontFamily;
-  else document.body.style.fontFamily = '';
+// Apply skin globally (page-wide) when target=null, or scoped to a single
+// element (e.g. the player frame) when target is an Element.
+//
+// Scoped mode sets CSS vars on the target itself, so its descendants
+// inherit them. The rest of the page reads :root and stays unaffected.
+// This is what makes Wordwall feel right: changing skin in the player
+// doesn't repaint the website around it.
+export function applySkin(name, target = null) {
+  const valid = name in SKINS ? name : 'default';
+  _current = valid;
+  const skin = SKINS[valid];
+  const cls = `skin-${valid}`;
+  const el = target || document.documentElement;
+  for (const [k, v] of Object.entries(skin.cssVars || {})) el.style.setProperty(k, v);
+  // Class-based mode (no inline style.background): CSS rules in
+  // styles/skins.css handle the visual via the skin-X class. Same selector
+  // works for both body and .ww-player-frame.
+  if (target) {
+    target.classList.remove(...ALL_CLS);
+    target.classList.add(cls);
+    target.style.fontFamily = skin.fontFamily || '';
+  } else {
+    document.body.classList.remove(...ALL_CLS);
+    document.body.classList.add(cls);
+    document.body.style.background = '';   // clear any prior inline
+    document.body.style.fontFamily = skin.fontFamily || '';
+  }
 }
+
+export function reapplySkin(target = null) { applySkin(_current, target); }
 
 export function listSkins() { return Object.entries(SKINS).map(([name, s]) => ({ name, ...s })); }
 

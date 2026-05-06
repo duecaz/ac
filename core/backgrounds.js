@@ -20,22 +20,24 @@ export const BACKGROUNDS = {
 const ALL_CLS = Object.keys(BACKGROUNDS).map(k => `bg-${k}`);
 let _current = 'none';
 
-export function applyBackground(name) {
+// target=null applies globally (body); target=Element scopes the bg to that
+// element only (e.g. the player frame). Scoped is what playerView uses so
+// the website chrome stays neutral while the activity embed shows the
+// chosen texture.
+export function applyBackground(name, target = null) {
   const valid = name in BACKGROUNDS ? name : 'none';
   _current = valid;
   const cls = `bg-${valid}`;
-  document.body.classList.remove(...ALL_CLS);
-  document.body.classList.add(cls);
-  // Mirror onto the player frame so :fullscreen keeps the same texture.
-  document.querySelectorAll('.ww-player-frame').forEach(el => {
-    el.classList.remove(...ALL_CLS);
-    el.classList.add(cls);
-  });
+  if (target) {
+    target.classList.remove(...ALL_CLS);
+    target.classList.add(cls);
+  } else {
+    document.body.classList.remove(...ALL_CLS);
+    document.body.classList.add(cls);
+  }
 }
 
-// Re-apply the cached current bg. Call after dynamically inserting a frame
-// (e.g. when playerView paints) so the freshly-rendered frame inherits.
-export function reapplyBackground() { applyBackground(_current); }
+export function reapplyBackground(target = null) { applyBackground(_current, target); }
 
 export function listBackgrounds() {
   return Object.entries(BACKGROUNDS).map(([name, b]) => ({ name, ...b }));

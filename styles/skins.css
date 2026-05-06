@@ -1,15 +1,41 @@
-/* Visual skins applied to <body>. */
-body.skin-default {}
+/* Visual skins. Same rules apply to <body> (global) and to .ww-player-frame
+   (scoped). When scoped, only the embed gets the styling — the page chrome
+   stays neutral, like Wordwall. CSS variables propagate via inheritance,
+   so children of the scoped element pick them up automatically. */
 
-body.skin-classroom {
+body.skin-default,
+.ww-player-frame.skin-default { /* empty — defaults from cssVars only */ }
+
+body.skin-classroom,
+.ww-player-frame.skin-classroom {
   background: #f5f1e6 url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40"><circle cx="20" cy="20" r="1" fill="%23c9b88a" opacity=".4"/></svg>');
 }
+body.skin-classroom { background-attachment: fixed; }
 
-body.skin-space {
-  background: radial-gradient(ellipse at top, #1e1b4b 0%, #0c0a1f 70%) fixed;
+body.skin-space,
+.ww-player-frame.skin-space {
+  background: radial-gradient(ellipse at top, #1e1b4b 0%, #0c0a1f 70%);
   color: #e0e7ff;
 }
-body.skin-space .card { background: rgba(30,27,75,.85); color: #e0e7ff; border-color: #6366f1; }
+body.skin-space { background-attachment: fixed; }
+body.skin-space .card,
+.ww-player-frame.skin-space .card { background: rgba(30,27,75,.85); color: #e0e7ff; border-color: #6366f1; }
 
-body.skin-kahoot { background: linear-gradient(135deg, #46178f 0%, #1368ce 100%) fixed; }
-body.skin-kahoot .card { background: rgba(255,255,255,.95); }
+body.skin-kahoot,
+.ww-player-frame.skin-kahoot { background: linear-gradient(135deg, #46178f 0%, #1368ce 100%); }
+body.skin-kahoot { background-attachment: fixed; }
+body.skin-kahoot .card,
+.ww-player-frame.skin-kahoot .card { background: rgba(255,255,255,.95); }
+
+body.skin-retro,
+.ww-player-frame.skin-retro { background: #0a0a23; color: #39ff14; }
+body.skin-retro,
+.ww-player-frame.skin-retro,
+body.skin-retro *,
+.ww-player-frame.skin-retro * { font-family: "Courier New", monospace; }
+
+body.skin-jungle,
+.ww-player-frame.skin-jungle { background: linear-gradient(180deg, #0f3a26 0%, #1a4d36 100%); color: #ecfccb; }
+body.skin-jungle { background-attachment: fixed; }
+body.skin-jungle .card,
+.ww-player-frame.skin-jungle .card { background: #1a4d36; color: #ecfccb; border-color: #84cc16; }

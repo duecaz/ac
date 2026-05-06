@@ -27,8 +27,11 @@ export async function renderPlayerView(rootSel, id) {
   let liveTemplate = a.template;
   let currentSkin = a.presentation?.skin || 'default';
   let currentBg = a.presentation?.background || 'none';
-  applySkin(currentSkin);
-  applyBackground(currentBg);
+  // Reset any prior global skin/bg from other views (host live, etc.) so the
+  // page chrome stays neutral. Scoped apply happens after paint() once the
+  // frame element exists.
+  applySkin('default');
+  applyBackground('none');
   ctx.add(() => { applySkin('default'); applyBackground('none'); });
 
   // Auth check for "Edit" visibility.
@@ -102,20 +105,24 @@ export async function renderPlayerView(rootSel, id) {
       </div>
     `);
 
-    // Mirror the body's bg class onto the freshly-rendered frame so
-    // :fullscreen inherits the texture.
-    reapplyBackground();
+    // Scope skin + bg to the freshly-rendered frame so the page chrome
+    // around the embed doesn't change when the user picks a theme.
+    const frame = document.getElementById('ww-frame');
+    applySkin(currentSkin, frame);
+    applyBackground(currentBg, frame);
     runPlayer('#ww-player-widget', { ...a, template: liveTemplate }, { skipChrome: true });
     wireHandlers();
   }
 
   function wireHandlers() {
     on(rootSel, 'click', '.skin-pick', (_, b) => {
-      currentSkin = b.dataset.name; applySkin(currentSkin);
+      currentSkin = b.dataset.name;
+      applySkin(currentSkin, document.getElementById('ww-frame'));
       document.querySelectorAll('.skin-pick').forEach(p => p.classList.toggle('is-active', p.dataset.name === currentSkin));
     });
     on(rootSel, 'click', '.bg-pick', (_, b) => {
-      currentBg = b.dataset.name; applyBackground(currentBg);
+      currentBg = b.dataset.name;
+      applyBackground(currentBg, document.getElementById('ww-frame'));
       document.querySelectorAll('.bg-pick').forEach(p => p.classList.toggle('is-active', p.dataset.name === currentBg));
     });
     on(rootSel, 'click', '.tpl-switch', (_, b) => {
