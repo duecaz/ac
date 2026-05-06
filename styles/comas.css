@@ -1,0 +1,47 @@
+/* Comas drag-drop. Drop zones are slim "gaps" between letters in the
+   passage line. Hover state during drag highlights the gap. */
+
+.ww-comas-passages { line-height: 2.4; }
+.ww-comas .ww-coma-line { white-space: pre-wrap; word-spacing: .1em; }
+.ww-comas .ww-char { display: inline; }
+
+/* Slim insertable gap. Wider hit area than visual width so it's tap-friendly. */
+.ww-comas .ww-gap {
+  display: inline-block;
+  width: .6em;
+  padding: 0 .2em;
+  vertical-align: middle;
+  border-radius: 4px;
+  border-bottom: 2px dashed transparent;
+  transition: background .12s, border-color .12s, transform .1s;
+}
+.ww-comas .ww-gap:not(.placed) {
+  border-bottom-color: rgba(99,102,241,.35);
+}
+.ww-comas .ww-gap.ww-drop-hover {
+  background: rgba(245,158,11,.25);
+  border-bottom-color: #f59e0b;
+  transform: scaleY(1.4);
+}
+.ww-comas .ww-gap.placed { border-bottom-color: transparent; }
+.ww-comas .ww-gap.placed.correct .ww-coma-placed { color: #059669; font-weight: 700; }
+.ww-comas .ww-gap.placed.wrong   { background: rgba(239,68,68,.15); border-bottom-color: #ef4444; animation: comaShake .2s; }
+@keyframes comaShake { 0%,100% { transform: translateX(0);} 25%{ transform: translateX(-4px);} 75%{ transform: translateX(4px);} }
+
+/* Comma palette chip — same family as tilde-src. */
+.ww-coma-src {
+  width: 56px;
+  height: 56px;
+  background: #fff;
+  border: 2px solid #10b981;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.6rem;
+  font-weight: 700;
+  color: #10b981;
+  user-select: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,.08);
+}
+.ww-coma-mark { line-height: .5; transform: translateY(-.18em); pointer-events: none; }

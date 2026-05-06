@@ -65,3 +65,40 @@ export function parseAccentedText(accented) {
 export function stripAccents(s) {
   return [...String(s || '')].map(c => STRIP_MAP[c] ?? c).join('');
 }
+
+// Reverse of applyMarks for kind='coma': given an input where the author
+// already typed commas, produce { text: without commas, marks: [{pos, kind:'coma'}] }.
+// pos refers to the index of the character BEFORE the comma in the
+// stripped text (so applyMarks then re-inserts the comma at pos+1).
+//
+// Combined with parseAccentedText this lets a single textarea capture
+// both tildes and commas — useful for combined exercises.
+export function parseTextWithCommas(input) {
+  let stripped = '';
+  const marks = [];
+  for (const c of [...String(input || '')]) {
+    if (c === ',') {
+      if (stripped.length > 0) marks.push({ pos: stripped.length - 1, kind: 'coma' });
+    } else {
+      stripped += c;
+    }
+  }
+  return { text: stripped, marks };
+}
+
+// Combined rich parse: tildes AND commas (and periods) in one pass.
+export function parseRichText(input) {
+  let stripped = '';
+  const marks = [];
+  for (const c of [...String(input || '')]) {
+    if (c === ',') {
+      if (stripped.length > 0) marks.push({ pos: stripped.length - 1, kind: 'coma' });
+    } else if (STRIP_MAP[c]) {
+      stripped += STRIP_MAP[c];
+      marks.push({ pos: stripped.length - 1, kind: 'tilde' });
+    } else {
+      stripped += c;
+    }
+  }
+  return { text: stripped, marks };
+}
