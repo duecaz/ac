@@ -60,6 +60,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
   let settling = false;
   let paused = false;
   let pauseRemainMs = 0;
+  let lastPhaseKey = '';
 
   // Host heartbeat every 10s so cleanup_zombie_sessions doesn't reap us.
   pingHost(sessionId).catch(() => {});
@@ -86,9 +87,14 @@ async function renderHost(rootSel, code, sessionId, activity) {
   function qrUrl() { return `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(joinUrl())}`; }
 
   function paint() {
+    // Skip paints triggered by side-channel updates (host_seen_at every 10 s)
+    // that don't change the visible phase. Otherwise sounds and effects would
+    // re-fire periodically (REVEAL emit, PODIUM emit, etc.).
+    const key = `${session.status}-${session.phase}-${session.current_item}-${session.deadline||''}`;
+    if (key === lastPhaseKey) return;
+    lastPhaseKey = key;
     if (session.status === 'lobby') return paintLobby();
     if (session.status === 'ended') return paintPodium();
-    // running
     if (session.phase === 'question') return paintQuestion();
     if (session.phase === 'reveal') return paintReveal();
     if (session.phase === 'leaderboard') return paintLeaderboard();

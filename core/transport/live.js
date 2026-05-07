@@ -139,6 +139,7 @@ export async function subscribeRoom(sessionId, onChange) {
   // already-subscribed channel (which throws "cannot add postgres_changes").
   const tag = Math.random().toString(36).slice(2, 8);
   const name = `room:${sessionId}:${tag}`;
+  let torndown = false;
   const ch = sb.channel(name)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` },
         (p) => onChange({ table: 'sessions', eventType: p.eventType, new: p.new, old: p.old }))
@@ -147,10 +148,12 @@ export async function subscribeRoom(sessionId, onChange) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'answers', filter: `session_id=eq.${sessionId}` },
         (p) => onChange({ table: 'answers', eventType: p.eventType, new: p.new, old: p.old }));
   await ch.subscribe((status) => {
-    // status: SUBSCRIBED | TIMED_OUT | CHANNEL_ERROR | CLOSED
+    // Ignore status updates after we've manually torn the channel down —
+    // those CLOSED events would otherwise trigger a false "reconnecting".
+    if (torndown) return;
     if (status === 'SUBSCRIBED') setConnectionState('connected');
     else if (status === 'TIMED_OUT' || status === 'CHANNEL_ERROR') setConnectionState('reconnecting');
     else if (status === 'CLOSED') setConnectionState('reconnecting');
   });
-  return () => sb.removeChannel(ch);
+  return () => { torndown = true; sb.removeChannel(ch); };
 }

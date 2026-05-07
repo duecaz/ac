@@ -1,10 +1,19 @@
 // Connection state banner. Shows a sticky message when realtime/network drops.
 // Subscribed to from transport/live.js subscribeRoom (system events).
-// On transition back to 'connected', flashes a brief green toast.
+//
+// Debounced: Supabase Realtime cycles CLOSED → SUBSCRIBED several times a
+// minute during normal heartbeats. Without debounce the user sees the
+// "Reconectando…" banner blink and a "Conexión recuperada" toast every time
+// even with a perfect connection. We hold off showing anything until the
+// disconnected state has lasted at least DEBOUNCE_MS.
 import { toast } from './toast.js';
 
+const DEBOUNCE_MS = 1500;
+
 let _state = 'connected';
+let _displayed = false;        // is the banner currently visible?
 let _bannerEl = null;
+let _debounceTimer = null;
 
 function ensureBanner() {
   if (_bannerEl) return _bannerEl;
@@ -16,15 +25,8 @@ function ensureBanner() {
   return _bannerEl;
 }
 
-export function setConnectionState(state) {
-  const prev = _state;
-  _state = state;
+function showBanner(state) {
   const b = ensureBanner();
-  if (state === 'connected') {
-    b.className = 'd-none position-fixed start-50 translate-middle-x';
-    if (prev !== 'connected') toast('Conexión recuperada.', 'success', 2000);
-    return;
-  }
   const cfg = {
     reconnecting: { cls: 'bg-warning text-dark', html: '<span class="spinner-border spinner-border-sm me-1"></span> Reconectando…' },
     offline:      { cls: 'bg-danger text-white',  html: '<i class="bi bi-wifi-off"></i> Sin conexión' },
@@ -33,10 +35,37 @@ export function setConnectionState(state) {
   b.className = `position-fixed start-50 translate-middle-x ${cfg.cls}`;
   b.style.top = '60px'; b.style.zIndex = 1040; b.style.borderRadius = '999px'; b.style.padding = '.4rem 1rem';
   b.innerHTML = cfg.html;
+  _displayed = true;
+}
+
+function hideBanner() {
+  const b = ensureBanner();
+  b.className = 'd-none position-fixed start-50 translate-middle-x';
+  _displayed = false;
+}
+
+export function setConnectionState(state) {
+  if (state === 'connected') {
+    if (_debounceTimer) { clearTimeout(_debounceTimer); _debounceTimer = null; }
+    if (_displayed) {
+      hideBanner();
+      toast('Conexión recuperada.', 'success', 2000);
+    }
+    _state = 'connected';
+    return;
+  }
+  _state = state;
+  if (_displayed) {
+    showBanner(state);
+  } else if (!_debounceTimer) {
+    _debounceTimer = setTimeout(() => {
+      _debounceTimer = null;
+      if (_state !== 'connected') showBanner(_state);
+    }, DEBOUNCE_MS);
+  }
 }
 
 export function getConnectionState() { return _state; }
 
-// Wire window online/offline.
 window.addEventListener('offline', () => setConnectionState('offline'));
 window.addEventListener('online', () => setConnectionState('connected'));

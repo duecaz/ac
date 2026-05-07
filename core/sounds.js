@@ -46,10 +46,23 @@ function get(name) {
   return a;
 }
 
+// Per-sound cooldown (ms). Prevents duplicate fires when the same event
+// gets emitted multiple times in quick succession (e.g. realtime UPDATE
+// coalescing or any stray re-render). Lobby has no cooldown — it loops.
+const COOLDOWN_MS = { tick: 800, reveal: 1500, correct: 1500, wrong: 1500, podium: 5000, lobby: 0 };
+const _lastPlayed = new Map();
+
 export function play(name) {
   if (_muted) return;
   const a = get(name);
   if (!a) return;
+  const cooldown = COOLDOWN_MS[name] ?? 1000;
+  if (cooldown > 0) {
+    const now = Date.now();
+    const last = _lastPlayed.get(name) || 0;
+    if (now - last < cooldown) return;
+    _lastPlayed.set(name, now);
+  }
   try { a.currentTime = 0; a.loop = false; a.play().catch(() => {}); } catch {}
 }
 

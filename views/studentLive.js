@@ -67,6 +67,11 @@ export async function renderPlay(rootSel, code) {
   let activity = null;
   let lastQuestionShownAt = 0;
   let questionTickHandle = null;
+  let lastPhaseKey = '';
+  // Tracks items we've already emitted ANSWER_CORRECT/WRONG + bumped streak
+  // for. Without this, host_seen_at pings re-trigger paintRevealOwn and
+  // sound/streak/confetti would replay every ~10 s.
+  const revealedItems = new Set();
 
   try {
     const sess = await findRoomByCode(code);
@@ -93,6 +98,12 @@ export async function renderPlay(rootSel, code) {
   flushQueue().catch(() => {});
 
   function paint() {
+    // Short-circuit: ignore session UPDATEs that don't change the visible
+    // state (e.g. host_seen_at heartbeats every 10 s). Without this, every
+    // ping repaints, replays sounds, and bumps streaks.
+    const key = `${session.status}-${session.phase}-${session.current_item}-${session.deadline||''}`;
+    if (key === lastPhaseKey) return;
+    lastPhaseKey = key;
     if (session.status === 'lobby') return paintLobby();
     if (session.status === 'ended') return paintEnded();
     if (session.phase === 'question') return paintQuestion();
@@ -174,8 +185,11 @@ export async function renderPlay(rootSel, code) {
     const own = await getOwnAnswer(session.id, player.playerId, idx);
     const ok = own?.correct === true;
     const skipped = !own;
-    // Update local streak counter and emit feedback events.
-    if (own) {
+    // Bump streak + emit events ONCE per item. Subsequent paints for the
+    // same idx (caused by unrelated session UPDATEs) skip the side effects
+    // and just re-render visuals.
+    if (own && !revealedItems.has(idx)) {
+      revealedItems.add(idx);
       const newStreak = Streaks.bump(session.id, player.playerId, ok);
       if (ok) {
         emitGame(GameEvents.ANSWER_CORRECT, { idx, points: own.points || 0, streak: newStreak });
