@@ -15,6 +15,19 @@ obtener checkeo en editor/CI contra estos contratos sin necesidad de build.
 - `dataPort.js` — `DataPort` (persistencia de actividades, sin backend concreto).
 - `realtimePort.js` — `RealtimePort` (juego LIVE, sin backend concreto).
 
+## content/ (motor de contenido — columna vertebral del "switch")
+Núcleo puro y testeable en Node (sin DOM ni backend):
+- `models.js` — registro normalizado de modelos (`qa`, `pairs`, `entries`,
+  `textCorrection`) con `newEmpty()` y `validate() → {ok, errors}`. Envuelve los
+  módulos hoja `core/contentModels/*` sin moverlos.
+- `convert.js` — conversores de alta confianza entre modelos con degradación
+  elegante (`qa↔pairs`, `qa→entries`, `pairs→entries`).
+- `switch.js` — `switchOptions(activity, templates)` y `applySwitch(...)`: la lógica
+  Wordwall "cambia de formato en un clic". Desacoplado del registry (recibe la lista
+  de plantillas) para poder testearse en Node.
+
+Pruebas: `node tests/run.mjs` (registry + content).
+
 ## Estado de la migración (ruta de viaje)
 - **F0 (hecho):** contratos + `jsconfig.json` + validación estricta en el registry.
 - **F1:** mover Supabase a `adapters/` detrás de `DataPort`/`RealtimePort`; `core/storage`

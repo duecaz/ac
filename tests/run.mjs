@@ -1,0 +1,6 @@
+// Runs every test suite. Usage: node tests/run.mjs
+// Each suite asserts on import and prints its own checklist; a thrown
+// AssertionError aborts with a non-zero exit code (CI-friendly).
+console.log('▶ registry'); await import('./registry.test.mjs');
+console.log('\n▶ content');  await import('./content.test.mjs');
+console.log('\n✅ all suites passed');
