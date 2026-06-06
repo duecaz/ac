@@ -2,10 +2,10 @@
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { get } from '../core/storage.js';
-import { createRoom, findRoomByCode, fetchSession } from '../core/transport/room.js';
-import { startSession, setSessionState, endSession, settleItem,
+import { createRoom, findRoomByCode, fetchSession,
+         startSession, setSessionState, endSession, settleItem,
          listPlayers, listAnswers, leaderboard, kickPlayer, subscribeRoom, pingHost }
-       from '../core/transport/live.js';
+       from '../core/liveTransport.js';
 import { getTemplate } from '../core/registry.js';
 import { acquire } from '../core/lifecycle.js';
 import { toast, confirmModal } from '../core/toast.js';

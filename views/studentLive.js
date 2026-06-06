@@ -1,8 +1,7 @@
 // Student-side live view. Routes: #/join, #/play/:code.
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
-import { joinSession, getOwnAnswer, subscribeRoom, pingPresence } from '../core/transport/live.js';
-import { findRoomByCode } from '../core/transport/room.js';
+import { joinSession, getOwnAnswer, subscribeRoom, pingPresence, findRoomByCode } from '../core/liveTransport.js';
 import { findAssignmentByCode } from '../core/transport/assignments.js';
 import { isAcceptableNickname } from '../core/nicknameFilter.js';
 import { acquire } from '../core/lifecycle.js';

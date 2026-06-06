@@ -28,8 +28,15 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
   const write = (code, room) => { const k = PREFIX + code; if (kv) kv.setItem(k, JSON.stringify(room)); else mem.set(k, room); };
 
   const channels = new Map();
+  const subs = new Map(); // code -> Set<onChange>  (this tab's own subscribers)
   const chan = (code) => { let c = channels.get(code); if (!c) { c = makeChannel(PREFIX + code); channels.set(code, c); } return c; };
-  const notify = (code, table) => chan(code)?.postMessage?.({ table });
+  // Notify other tabs (channel) AND this tab's own subscribers — Supabase echoes
+  // postgres_changes to every client including the one that made the change, so
+  // the host UI relies on seeing its own actions reflected.
+  const notify = (code, table) => {
+    chan(code)?.postMessage?.({ table });
+    for (const fn of subs.get(code) || []) fn({ table, eventType: '*' });
+  };
 
   // Load shared room → rebuild engine over its state → mutate → persist.
   function load(code) {
@@ -84,6 +91,23 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
       save(code, room, engine); notify(code, 'answers');
     },
 
+    async findRoomByCode(code) {
+      try { return await this.fetchSession(code); } catch { return null; }
+    },
+
+    async getOwnAnswer(code, playerId, itemIndex) {
+      return load(code).engine.state.answers[`${itemIndex}:${playerId}`] || null;
+    },
+
+    async kickPlayer(code, playerId) {
+      const { room, engine } = load(code);
+      engine.state.players = engine.state.players.filter(p => p.id !== playerId);
+      save(code, room, engine); notify(code, 'players');
+    },
+
+    async pingPresence(/* playerId */) { /* no-op locally */ },
+    async pingHost(/* code */) { /* no-op locally */ },
+
     async listPlayers(code) { return load(code).engine.state.players.slice(); },
 
     async listAnswers(code, itemIndex) {
@@ -100,11 +124,15 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
     },
 
     // onChange({ table }) — the view re-fetches players/answers/session on notice.
+    // Registers both a same-tab subscriber (self-echo) and a cross-tab channel
+    // listener; the returned function tears both down.
     subscribeRoom(code, onChange) {
+      const set = subs.get(code) || new Set();
+      set.add(onChange); subs.set(code, set);
       const c = chan(code);
       const h = (ev) => onChange({ table: ev?.data?.table, eventType: '*' });
       c?.addEventListener?.('message', h);
-      return () => c?.removeEventListener?.('message', h);
+      return () => { set.delete(onChange); c?.removeEventListener?.('message', h); };
     },
   };
 }

@@ -1,7 +1,7 @@
 // Offline-resilient submit queue for the student. If submitAnswer fails
 // (network), enqueue and flush on online or on next attempt. Persisted in
 // localStorage so a refresh during a flaky moment still recovers.
-import { submitAnswer as transportSubmit } from './transport/live.js';
+import { submitAnswer as transportSubmit } from './liveTransport.js';
 
 const KEY = 'ww.submitQueue';
 

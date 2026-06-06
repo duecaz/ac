@@ -3,11 +3,12 @@
 // (Step toward moving transport fully under adapters/; for now it composes the
 // current functions to keep behaviour identical.)
 import * as live from '../../core/transport/live.js';
-import { createRoom, fetchSession } from '../../core/transport/room.js';
+import { createRoom, findRoomByCode, fetchSession } from '../../core/transport/room.js';
 
 export function createSupabaseRealtime() {
   return {
     createRoom,
+    findRoomByCode,
     fetchSession,
     joinSession: live.joinSession,
     setSessionState: live.setSessionState,
