@@ -26,7 +26,7 @@ export async function uploadMedia(file) {
   // Path: <userId>/<uuid>.<safeExt>. RLS on storage.objects requires the
   // first path segment to equal auth.uid().
   const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
-  const { error } = await sb.storage.from('media').upload(path, file, { contentType: file.type, upsert: false });
+  const { error } = await sb.storage.from('repo-ac-media').upload(path, file, { contentType: file.type, upsert: false });
   if (error) throw error;
-  return sb.storage.from('media').getPublicUrl(path).data.publicUrl;
+  return sb.storage.from('repo-ac-media').getPublicUrl(path).data.publicUrl;
 }
