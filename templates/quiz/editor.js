@@ -56,10 +56,26 @@ export function renderQuizEditor(root, activity, onChange) {
     on(root, 'click', '.item-up',  (_, btn) => { reorderArray(a.content.items, +btn.dataset.i, -1); commit(); });
     on(root, 'click', '.item-down',(_, btn) => { reorderArray(a.content.items, +btn.dataset.i, +1); commit(); });
     on(root, 'input', '.it-q', (e, el) => { a.content.items[+el.dataset.i].question = e.target.value; onChange(a); });
-    on(root, 'input', '.it-a', (e, el) => { a.content.items[+el.dataset.i].answer = e.target.value; onChange(a); });
     on(root, 'input', '.it-opt', (e, el) => {
-      const i = +el.dataset.i, k = +el.dataset.k;
-      a.content.items[i].options[k] = e.target.value; onChange(a);
+      const i = +el.dataset.i, k = +el.dataset.k, item = a.content.items[i];
+      const old = item.options[k];
+      item.options[k] = e.target.value;
+      // Keep the correct answer in sync when renaming an option that's marked correct.
+      if (Array.isArray(item.answer)) {
+        const at = item.answer.indexOf(old); if (at >= 0) item.answer[at] = e.target.value;
+      } else if (item.answer === old) {
+        item.answer = e.target.value;
+      }
+      onChange(a);
+    });
+    // Checkbox marks an option as correct. The answer is the option text (so the
+    // scorer matches by value); multiple checks → array of acceptable answers.
+    on(root, 'change', '.it-correct', (_, el) => {
+      const i = +el.dataset.i, item = a.content.items[i];
+      const checked = [...root.querySelectorAll(`.it-correct[data-i="${i}"]`)]
+        .filter(c => c.checked).map(c => item.options[+c.dataset.k]);
+      item.answer = checked.length <= 1 ? (checked[0] ?? '') : checked;
+      commit(); // repaint so the green highlight follows the selection
     });
     on(root, 'input', '.it-pts', (e, el) => {
       a.content.items[+el.dataset.i].points = +e.target.value || 1;
@@ -124,6 +140,12 @@ function pointsWarningHtml(a) {
   </div>`;
 }
 
+// Is option text `o` (one of) the correct answer(s) for item `it`?
+function isCorrectOption(it, o) {
+  if (it.answer == null || it.answer === '') return false;
+  return Array.isArray(it.answer) ? it.answer.includes(o) : it.answer === o;
+}
+
 function renderItems(a) {
   if (!a.content.items.length) return `<p class="text-muted">No hay preguntas todavía.</p>`;
   const total = a.content.items.length;
@@ -134,14 +156,30 @@ function renderItems(a) {
         ${itemControlsHtml(i, total)}
       </div>
       <input class="form-control mb-2 it-q" data-i="${i}" placeholder="Pregunta" value="${escapeHtml(it.question)}">
+      <div class="form-text mb-1"><i class="bi bi-check-circle text-success"></i> Marca la opción correcta.</div>
       <div class="row g-2 mb-2">
-        ${(it.options||['','','','']).map((o,k)=>`<div class="col-6"><input class="form-control it-opt" data-i="${i}" data-k="${k}" placeholder="Opción ${k+1}" value="${escapeHtml(o)}"></div>`).join('')}
+        ${(it.options||['','','','']).map((o,k)=>{
+          const corr = isCorrectOption(it, o);
+          return `<div class="col-12 col-md-6"><div class="input-group">
+            <div class="input-group-text" title="Marcar como correcta">
+              <input class="form-check-input mt-0 it-correct" type="checkbox" data-i="${i}" data-k="${k}" ${corr?'checked':''}>
+            </div>
+            <input class="form-control it-opt ${corr?'border-success bg-success-subtle fw-semibold':''}" data-i="${i}" data-k="${k}" placeholder="Opción ${k+1}" value="${escapeHtml(o)}">
+          </div></div>`;
+        }).join('')}
       </div>
-      <div class="row g-2 mb-2">
-        <div class="col-md-8"><input class="form-control it-a" data-i="${i}" placeholder="Respuesta correcta (texto exacto de una opción)" value="${escapeHtml(it.answer ?? '')}"></div>
-        <div class="col-md-4"><input type="number" min="1" class="form-control it-pts" data-i="${i}" placeholder="Puntos" value="${it.points||1}"></div>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <button class="btn btn-sm btn-link text-muted p-0 text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#adv-${i}">
+          <i class="bi bi-sliders"></i> Avanzado
+        </button>
+        <div class="collapse" id="adv-${i}">
+          <div class="d-flex align-items-center gap-2">
+            <label class="form-label small text-muted mb-0">Puntos</label>
+            <input type="number" min="1" class="form-control form-control-sm it-pts" style="width:5rem" data-i="${i}" value="${it.points||1}">
+          </div>
+        </div>
       </div>
-      <div id="img-${i}">${renderImagePicker(it.image)}</div>
+      <div id="img-${i}" class="mt-2">${renderImagePicker(it.image)}</div>
     </div></div>
   `).join('');
 }
