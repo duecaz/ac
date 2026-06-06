@@ -12,8 +12,9 @@ import { html, escapeHtml, mount, $, $$ } from '../core/html.js';
 import { on } from '../core/events.js';
 import { get } from '../core/storage.js';
 import { getTemplate } from '../core/registry.js';
-import { createSession, FORMATS } from '../kernel/session/engine.js';
+import { createSession, FORMATS, sessionItems } from '../kernel/session/engine.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
+import { applyMarks } from '../core/textMarks.js';
 
 const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
 const TEAM_COLORS = ['danger', 'primary', 'success', 'warning'];
@@ -24,7 +25,7 @@ export function renderTeamsView(rootSel, id) {
     mount(rootSel, html`<div class="alert alert-warning m-3">Actividad no encontrada. <a href="#/home">Volver</a></div>`);
     return;
   }
-  const total = a.content?.items?.length || 0;
+  const total = sessionItems(a).length;
   if (!total) {
     mount(rootSel, html`<div class="alert alert-info m-3">Esta actividad no tiene preguntas. <a href="#/edit/${a.id}">Editar</a></div>`);
     return;
@@ -107,7 +108,7 @@ export function renderTeamsView(rootSel, id) {
       const teams = session.state.teams;
       const active = session.activeTeam();
       const idx = session.currentItem;
-      const item = a.content.items[idx];
+      const item = sessionItems(a)[idx];
       const payload = session.roundPayload();
 
       mount(rootSel, html`
@@ -147,7 +148,7 @@ export function renderTeamsView(rootSel, id) {
     // render a generic prompt for the teacher-judge flow.
     function roundBody(item, payload, phase) {
       if (phase === 'ended') return podium();
-      const prompt = payload?.question || item?.question || item?.text || item?.prompt || '';
+      const prompt = payload?.question || promptOf(item);
       let media = '';
       if (payload?.image || item?.image) media = `<div class="text-center mb-2"><img src="${escapeHtml(payload?.image || item.image)}" style="max-height:150px" class="img-fluid"></div>`;
 
@@ -161,18 +162,35 @@ export function renderTeamsView(rootSel, id) {
         </div>`;
       }
 
-      // On reveal, surface the right answer so the class sees it.
+      // On reveal, surface the right answer so the class sees it; in judge mode
+      // offer it as a discreet teacher-only hint beforehand.
+      const ans = answerOf(item);
       let reveal = '';
-      if (phase === 'reveal' && item?.answer != null) {
+      if (phase === 'reveal' && ans) {
         reveal = `<div class="teams-answer"><i class="bi bi-check-circle-fill text-success"></i>
-          Respuesta: <b>${escapeHtml(Array.isArray(item.answer) ? item.answer.join(' / ') : item.answer)}</b></div>`;
-      } else if (scoring === 'judge' && item?.answer != null) {
-        // Judge mode: a discreet, teacher-only hint to rule with.
+          Respuesta: <b>${escapeHtml(ans)}</b></div>`;
+      } else if (scoring === 'judge' && ans) {
         reveal = `<details class="teams-hint"><summary>Ver respuesta (docente)</summary>
-          <b>${escapeHtml(Array.isArray(item.answer) ? item.answer.join(' / ') : item.answer)}</b></details>`;
+          <b>${escapeHtml(ans)}</b></details>`;
       }
 
       return `<div class="teams-q">${escapeHtml(prompt)}</div>${media}${opts}${reveal}`;
+    }
+
+    // Prompt/answer adapt to the content model so judge mode works everywhere:
+    // quiz→question/answer, tildes/comas→passage text / corrected text,
+    // match/memory→left / right, ruleta→the entry string.
+    function promptOf(item) {
+      if (item == null) return '';
+      if (typeof item === 'string') return item;
+      return item.question || item.text || item.prompt || item.left || '';
+    }
+    function answerOf(item) {
+      if (item == null || typeof item === 'string') return '';
+      if (Array.isArray(item.marks)) return applyMarks(item.text || '', item.marks); // textCorrection
+      if (item.answer != null) return Array.isArray(item.answer) ? item.answer.join(' / ') : String(item.answer);
+      if (item.right != null) return String(item.right); // pairs
+      return '';
     }
 
     function controls(phase) {

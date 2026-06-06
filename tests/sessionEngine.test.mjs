@@ -2,7 +2,7 @@
 // memory — no DOM, no backend — to prove the unified engine's new formats.
 // Run: node tests/sessionEngine.test.mjs
 import assert from 'node:assert';
-import { createSession, isVsCompatible, FORMATS } from '../kernel/session/engine.js';
+import { createSession, isVsCompatible, FORMATS, sessionItems } from '../kernel/session/engine.js';
 import { registerTemplate, getTemplate } from '../core/registry.js';
 import { scoreQuizSubmission } from '../templates/quiz/scorer.js';
 
@@ -150,6 +150,30 @@ const quizActivity = {
   assert.strictEqual(st.leader, 'left', 'Ana wins the duel 6–3');
   assert.throws(() => s.answer('right', 'x'), /no está en curso/, 'no answers past the end');
   ok('vs: duel ends when both finish and declares the leader');
+}
+
+// ──────────── sessionItems + TEAMS judge over a non-`items` model ────────────
+{
+  // textCorrection stores rounds under `passages`, not `items`.
+  const passagesAct = {
+    id: 'tc', template: 'canvas_judge',
+    content: { passages: [
+      { id: 'p1', text: 'la cancion popular', marks: [{ pos: 6, kind: 'tilde' }] },
+      { id: 'p2', text: 'mi mama me ama', marks: [{ pos: 4, kind: 'tilde' }] },
+    ] },
+  };
+  assert.strictEqual(sessionItems(passagesAct).length, 2, 'sessionItems resolves passages as rounds');
+  assert.strictEqual(sessionItems({ content: { entries: ['a', 'b', 'c'] } }).length, 3, 'and entries');
+
+  const s = createSession(passagesAct, { format: FORMATS.TEAMS });
+  assert.strictEqual(s.totalItems, 2, 'teams session counts passages');
+  assert.strictEqual(s.state.scoring, 'judge', 'no scorer → judge');
+  s.dispatch('start');
+  s.judge({ correct: true });
+  assert.strictEqual(s.activeTeam().score, 1, 'judge scores a passage round');
+  s.dispatch('reveal'); s.dispatch('next');
+  assert.strictEqual(s.currentItem, 1, 'advances to the 2nd passage');
+  ok('teams (judge): plays a textCorrection activity (passages) end-to-end');
 }
 
 console.log(`\nsessionEngine.test: ${passed} checks passed`);

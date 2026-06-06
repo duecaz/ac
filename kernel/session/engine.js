@@ -22,11 +22,20 @@ import { getTemplate } from '../../core/registry.js';
 
 export const FORMATS = Object.freeze({ SOLO: 'solo', LIVE: 'live', TEAMS: 'teams', VS: 'vs' });
 
+// The ordered list of "rounds" for a session, independent of content model.
+// Each model names its list differently (quiz→items, ruleta→entries,
+// match/memory→pairs, tildes/comas→passages); a session treats any of them as
+// the sequence of rounds. Mirrors core/migrate.js activityItemCount.
+export function sessionItems(activity) {
+  const c = activity?.content || {};
+  return c.items ?? c.entries ?? c.pairs ?? c.groups ?? c.words ?? c.passages ?? [];
+}
+
 /** VS pits two sides head-to-head with no host to judge, so it only works on
  *  self-scoring templates with enough items for a real race. */
 export function isVsCompatible(activity) {
   const T = getTemplate(activity?.template);
-  const total = activity?.content?.items?.length || 0;
+  const total = sessionItems(activity).length;
   return !!(T && typeof T.scoreSubmission === 'function' && total >= 2);
 }
 
@@ -54,7 +63,7 @@ function autoScore(T, { value, item, msTaken, activity, mode }) {
 // Kept faithful to the original engine so the local driver, the Node tests and
 // the Edge-Function mirror keep working unchanged. createLiveRoom delegates here.
 function createLiveSession(activity, T, opts) {
-  const items = activity?.content?.items || [];
+  const items = sessionItems(activity);
   const total = items.length;
   const maxPlayers = activity?.live?.maxPlayers || 60;
   const allowLateJoin = activity?.live?.allowLateJoin !== false;
@@ -145,7 +154,7 @@ function createLiveSession(activity, T, opts) {
 // `judge` (the teacher marks the active team's answer right/wrong) — judge mode
 // lets ANY content be played in teams, which is the whole point for a classroom.
 function createTeamsSession(activity, T, opts) {
-  const items = activity?.content?.items || [];
+  const items = sessionItems(activity);
   const total = items.length;
   const canAuto = typeof T.scoreSubmission === 'function';
   // Default to auto when possible; fall back to teacher judge otherwise.
@@ -278,7 +287,7 @@ function createTeamsSession(activity, T, opts) {
 // on submit and advances only that side's own cursor. standings() exposes the
 // live gap so the UI can animate who's ahead; the match ends when both finish.
 function createVsSession(activity, T, opts) {
-  const items = activity?.content?.items || [];
+  const items = sessionItems(activity);
   const total = items.length;
   if (!isVsCompatible(activity)) {
     throw new Error('VS requiere una plantilla con scoreSubmission y ≥2 ítems');
@@ -353,7 +362,7 @@ function createVsSession(activity, T, opts) {
 // Thin single-participant tracker: a scored cursor over the items. Useful as a
 // uniform wrapper for Solo/Tarea attempts on top of the per-template player.
 function createSoloSession(activity, T, opts) {
-  const items = activity?.content?.items || [];
+  const items = sessionItems(activity);
   const total = items.length;
   const canAuto = typeof T.scoreSubmission === 'function';
 

@@ -9,7 +9,7 @@ import { html, escapeHtml, mount, $ } from '../core/html.js';
 import { on } from '../core/events.js';
 import { get } from '../core/storage.js';
 import { getTemplate } from '../core/registry.js';
-import { createSession, isVsCompatible, FORMATS } from '../kernel/session/engine.js';
+import { createSession, isVsCompatible, FORMATS, sessionItems } from '../kernel/session/engine.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 
 const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
@@ -40,7 +40,7 @@ export function renderVsView(rootSel, id) {
       <div class="vs-setup text-center py-5">
         <a href="#/play/${a.id}" class="btn btn-sm btn-link"><i class="bi bi-arrow-left"></i> Volver</a>
         <h3 class="mt-2 mb-1"><i class="bi bi-fire text-danger"></i> Duelo VS</h3>
-        <p class="text-muted">${escapeHtml(a.title)} · ${a.content.items.length} preguntas</p>
+        <p class="text-muted">${escapeHtml(a.title)} · ${sessionItems(a).length} preguntas</p>
         <div class="row justify-content-center g-3 my-3" style="max-width:520px;margin:auto">
           <div class="col-6">
             <label class="form-label small text-muted">Alumno 1 (izquierda)</label>
