@@ -214,6 +214,13 @@ const quizActivity = {
   assert.strictEqual(st.left.score, 2, 'A scored both passages in VS');
   assert.strictEqual(st.leader, 'left');
   ok('vs: a renderRound template (tildes) is auto-scored end-to-end');
+
+  // Comas binds the same shared scorer to the 'coma' kind.
+  const { scoreComasSubmission } = await import('../templates/comas/scorer.js');
+  const comaItem = { text: 'Hola como estas', marks: [{ pos: 3, kind: 'coma' }] };
+  assert.deepStrictEqual(scoreComasSubmission({ value: [3], item: comaItem, activity: {} }), { correct: true, points: 1 });
+  assert.deepStrictEqual(scoreComasSubmission({ value: [], item: comaItem, activity: {} }), { correct: false, points: 0 });
+  ok('comas: shared mark scorer bound to the coma kind');
 }
 
 console.log(`\nsessionEngine.test: ${passed} checks passed`);
