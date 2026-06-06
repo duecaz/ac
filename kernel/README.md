@@ -28,6 +28,28 @@ Núcleo puro y testeable en Node (sin DOM ni backend):
 
 Pruebas: `node tests/run.mjs` (registry + content).
 
+## session/ (motor de sesión unificado)
+Un único cerebro puro (sin DOM ni backend, estado JSON-serializable e hidratable)
+que conduce **todos** los formatos de juego, para que el flujo y la puntuación
+vivan en un solo sitio (y en paridad con las Edge Functions de Supabase):
+
+- `engine.js` — `createSession(activity, { format, ... })` con `FORMATS`:
+  - **live** — sala estilo Kahoot: muchos jugadores, flujo sincronizado
+    question→reveal→leaderboard, scoring anti-trampa en `settle()`. Idéntico al
+    antiguo `createLiveRoom` (que ahora es un alias delgado en `live/engine.js`).
+  - **teams** — una sola pantalla, por **turnos** (estilo Baamboozle/Factile):
+    los equipos responden por turnos rotatorios. Puntuación `auto` (scorer de la
+    plantilla) o **`judge`** (el docente marca ✓/✗) → así *cualquier* contenido se
+    juega en equipos aunque la plantilla no tenga scorer. `award()` para bonus.
+  - **vs** — duelo 1‑contra‑1: dos lados corren la **misma** secuencia en
+    **paralelo**, auto‑puntuados al responder; `standings()` da la diferencia en
+    vivo para la animación central de "quién va ganando". Requiere scorer y ≥2
+    ítems (`isVsCompatible`).
+  - **solo** — participante único autocronometrado (cursor puntuado sobre los ítems).
+
+Pruebas: `node tests/sessionEngine.test.mjs` (teams + vs) y `liveEngine`/`liveLocal`
+(formato live sin regresión).
+
 ## Estado de la migración (ruta de viaje)
 - **F0 (hecho):** contratos + `jsconfig.json` + validación estricta en el registry.
 - **F1:** mover Supabase a `adapters/` detrás de `DataPort`/`RealtimePort`; `core/storage`
