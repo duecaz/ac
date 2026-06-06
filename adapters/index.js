@@ -20,8 +20,9 @@ export function backendName() {
 }
 
 let _store = null; // cached promise
+let _realtime = null;
 
-/** @returns {Promise<any>} the selected RemoteStore. */
+/** @returns {Promise<any>} the selected RemoteStore (activity/result persistence). */
 export function getRemoteStore() {
   if (_store) return _store;
   const name = backendName();
@@ -31,6 +32,18 @@ export function getRemoteStore() {
     return (await import('./supabase/remoteStore.js')).createSupabaseRemoteStore();
   })();
   return _store;
+}
+
+/** @returns {Promise<any>} the selected RealtimePort (LIVE sessions). */
+export function getRealtime() {
+  if (_realtime) return _realtime;
+  const name = backendName();
+  _realtime = (async () => {
+    if (name === 'local') return (await import('./local/realtime.js')).createLocalRealtime();
+    if (name === 'pocketbase') throw new Error('PocketBase realtime aún no implementado — usa backend local o supabase.');
+    return (await import('./supabase/realtime.js')).createSupabaseRealtime();
+  })();
+  return _realtime;
 }
 
 // Allow flipping backend at runtime in dev: ww.setBackend('local').

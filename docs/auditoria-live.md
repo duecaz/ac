@@ -70,9 +70,17 @@ moverlos a `adapters/supabase/` tras el Port (como hicimos con datos). Pendiente
   (cross-tab) y el `supabase`.
 
 ## Cómo probar LIVE en local (sin Supabase)
-- **Ya hoy**: `node tests/run.mjs` simula partidas completas con `kernel/live/engine.js`.
-- **Siguiente (LIVE-2)**: driver `local` de `RealtimePort` sobre el engine + `BroadcastChannel`
-  → host y alumno en dos pestañas del navegador, sin backend. Lo verificas tú en navegador.
+- **Lógica/flujo**: `node tests/run.mjs` simula partidas completas con
+  `kernel/live/engine.js` (`tests/liveEngine.test.mjs`) y con el **driver local**
+  multi-pestaña (`adapters/local/realtime.js`, `tests/liveLocal.test.mjs`).
+- ✅ **LIVE-2a (hecho)**: driver `local` de `RealtimePort` sobre el engine, con estado
+  compartido (KV/localStorage) y notificaciones (canal/BroadcastChannel). Selector
+  `getRealtime()` en `adapters/index.js` (local | supabase). El driver supabase
+  (`adapters/supabase/realtime.js`) envuelve el transporte existente tras el mismo Port.
+- ⏳ **LIVE-2b (siguiente)**: cablear las vistas (`hostLive.js`/`studentLive.js`/joins)
+  para usar `getRealtime()` en vez de importar `transport/live.js` directo → host y
+  alumno en dos pestañas reales del navegador, sin backend. **Cambio DOM → lo verificas
+  tú en navegador.**
 - **Migración 0013 / Edge Function reales**: requieren Postgres → stack local de Supabase
   (Docker + `supabase start`) o desplegar. No verificable en este entorno Node.
 

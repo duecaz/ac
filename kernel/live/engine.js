@@ -18,14 +18,16 @@ export function createLiveRoom(activity, opts = {}) {
   const T = getTemplate(activity?.template);
   if (!T) throw new Error(`Plantilla desconocida: ${activity?.template}`);
 
-  let seq = 0;
-  const state = {
+  // State is plain & JSON-serializable so it can be shared across tabs (local
+  // driver) or rebuilt from a snapshot. Hydrate from opts.state when resuming.
+  const state = opts.state ? { players: [], answers: {}, _seq: 0, ...opts.state } : {
     code: opts.code || 'LOCAL1',
     status: 'lobby',
     phase: PHASES.IDLE,
     currentItem: -1,
     players: [],          // { id, userId, name, score }
-    answers: new Map(),   // `${itemIndex}:${playerId}` → { playerId, value, msTaken, correct, points }
+    answers: {},          // `${itemIndex}:${playerId}` → { playerId, value, msTaken, correct, points }
+    _seq: 0,              // monotonic id counter (persisted)
   };
 
   const session = () => ({ phase: state.phase, current_item: state.currentItem, status: state.status });
@@ -39,7 +41,7 @@ export function createLiveRoom(activity, opts = {}) {
     if (state.status === 'ended') throw new Error('La sala ha terminado');
     if (state.status !== 'lobby' && !allowLateJoin) throw new Error('La partida ya empezó');
     if (state.players.length >= maxPlayers) throw new Error('La sala está llena');
-    const p = { id: 'p' + (++seq), userId, name: f.value, score: 0 };
+    const p = { id: 'p' + (++state._seq), userId, name: f.value, score: 0 };
     state.players.push(p);
     return p;
   }
@@ -62,14 +64,14 @@ export function createLiveRoom(activity, opts = {}) {
       throw new Error('No se aceptan respuestas en esta fase');
     }
     // Upsert (a player may change their answer before settle). Never scored here.
-    state.answers.set(answerKey(itemIndex, playerId), { playerId, value, msTaken, correct: null, points: 0 });
+    state.answers[answerKey(itemIndex, playerId)] = { playerId, value, msTaken, correct: null, points: 0 };
   }
 
   // Server-side scoring (anti-cheat). Idempotent per item.
   function settle(itemIndex) {
     const item = items[itemIndex];
     let settled = 0;
-    for (const [key, ans] of state.answers) {
+    for (const [key, ans] of Object.entries(state.answers)) {
       if (!key.startsWith(itemIndex + ':')) continue;
       const r = T.scoreSubmission({ value: ans.value, item, msTaken: ans.msTaken, activity, mode: 'live' });
       const wasUnscored = ans.correct === null;

@@ -55,7 +55,7 @@ assert.ok(!('answer' in room.roundPayload()), 'round payload strips the answer (
 // answers are NOT scored on submit
 room.submit(ana.id, 0, '4', 500);
 room.submit(beto.id, 0, '3', 800);
-assert.strictEqual(room.state.answers.get(`0:${ana.id}`).correct, null, 'no scoring on submit');
+assert.strictEqual(room.state.answers[`0:${ana.id}`].correct, null, 'no scoring on submit');
 ok('round1: start, answer-stripped payload, submissions unscored until settle');
 
 // can't submit to the wrong item / phase
