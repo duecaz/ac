@@ -18,18 +18,19 @@
 
 ## Hallazgos
 
-### 🟠 1. El filtro de apodos es solo de cliente
+### 🟠 1. El filtro de apodos es solo de cliente ✅ MITIGADO (pendiente deploy)
 `live.joinSession:66` valida con `isAcceptableNickname`, pero el **servidor no
-re-valida**: un cliente modificado puede insertar cualquier `name` (la RLS permite el
-insert). Riesgo de nombres ofensivos/inyección visual en la pantalla del aula.
-**Mitigación sugerida**: re-validar en una Edge Function de join o en un trigger SQL.
+re-validaba**: un cliente modificado podía insertar cualquier `name`.
+**Resuelto** en `migrations/0013`: trigger `validate_player_name` (BEFORE INSERT/UPDATE)
+bloquea el abuso estructural server-side (vacío, >40, caracteres de control). La
+blocklist de insultos sigue en cliente (defensa en profundidad). *Falta aplicar la
+migración.*
 
-### 🟠 2. `settle-item`: actualización de `players.score` con read-modify-write
-`settle-item/index.ts:114-120` lee `score`, suma el delta y reescribe (el propio
-comentario lo admite). Dentro de una llamada está bien (un update por jugador), pero
-**dos settles concurrentes** (p. ej. auto-timer + clic manual) podrían pisarse. La
-guarda de idempotencia (`:44-52`) cubre re-settle del **mismo** ítem, no carreras entre
-distintos. **Mitigación**: un RPC atómico `increment_score(player, delta)`.
+### 🟠 2. `settle-item`: `players.score` con read-modify-write ✅ ARREGLADO (pendiente deploy)
+Leía `score`, sumaba el delta y reescribía en JS → carrera entre settles concurrentes.
+**Resuelto**: `migrations/0013` añade `increment_player_score(player, delta)` (UPDATE
+atómico) y `settle-item/index.ts` ahora lo llama vía RPC. *Falta aplicar la migración y
+redeplegar la Edge Function.*
 
 ### 🟡 3. Scorers del servidor solo para `quiz`
 `settle-item` solo registra `SCORERS = { quiz }`. Las demás plantillas tienen
