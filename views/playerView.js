@@ -71,6 +71,7 @@ export async function renderPlayerView(rootSel, id) {
           <button class="btn btn-sm btn-outline-secondary" id="btn-restart"><i class="bi bi-arrow-clockwise"></i> Reiniciar</button>
           <button class="btn btn-sm btn-outline-secondary" id="btn-fs"><i class="bi bi-arrows-fullscreen"></i> Pantalla completa</button>
           ${isVsCompatible(a) ? `<a href="#/vs/${a.id}" class="btn btn-sm btn-outline-danger"><i class="bi bi-fire"></i> Duelo VS</a>` : ''}
+          <a href="#/teams/${a.id}" class="btn btn-sm btn-outline-success"><i class="bi bi-people-fill"></i> Equipos</a>
           ${canEdit ? `<a href="#/edit/${a.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>` : ''}
           <button class="btn btn-sm btn-outline-secondary" id="btn-link"><i class="bi bi-link-45deg"></i> Copiar link</button>
           <button class="btn btn-sm btn-outline-secondary" id="btn-embed"><i class="bi bi-code-square"></i> Embed</button>

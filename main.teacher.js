@@ -16,6 +16,7 @@ import { renderHome } from './views/home.js';
 import { renderTemplateSelector } from './views/templateSelector.js';
 import { renderPlayerView } from './views/playerView.js';
 import { renderVsView } from './views/vsView.js';
+import { renderTeamsView } from './views/teamsView.js';
 import { renderEditView } from './views/editView.js';
 import { renderHostLaunch, renderHostByCode } from './views/hostLive.js';
 import { renderReports, renderActivityReport, renderSessionReport } from './views/reports.js';
@@ -41,6 +42,7 @@ route('#/edit-new/:template', ({ template }) => renderEditView(APP, { template }
 route('#/edit/:id', ({ id }) => renderEditView(APP, { id }));
 route('#/play/:id', ({ id }) => renderPlayerView(APP, id));
 route('#/vs/:id', ({ id }) => renderVsView(APP, id));
+route('#/teams/:id', ({ id }) => renderTeamsView(APP, id));
 route('#/launch/:id', ({ id }) => renderHostLaunch(APP, id));
 route('#/host/:code', ({ code }) => renderHostByCode(APP, code));
 route('#/reports', () => renderReports(APP));
