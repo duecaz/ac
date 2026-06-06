@@ -60,10 +60,21 @@ moverlos a `adapters/supabase/` tras el Port (como hicimos con datos). Pendiente
   zombis; banner de conexión con debounce (`core/connection.js`).
 - **Bonus de racha** server-side calculado desde el historial (no manipulable).
 
-## Extracción de lógica pura (esta tanda)
-- ✅ `core/livePhases.js` — `planTransition` + `isLastItem` + `PHASES`. Codifica el flujo
-  legal del host (start/reveal/leaderboard/next/end) con rechazo de transiciones
-  inválidas. **8 checks** en `tests/live.test.mjs` (incluye el filtro de apodos).
+## Extracción de lógica pura
+- ✅ `core/livePhases.js` — `planTransition` + `isLastItem` + `PHASES`. Flujo legal del
+  host con rechazo de transiciones inválidas. `tests/live.test.mjs` (8 checks).
+- ✅ `kernel/live/engine.js` — **motor LIVE en memoria, backend-agnóstico**: join/
+  reconnect, maxPlayers, fases, respuestas, scoring server-side (anti-trampa) en
+  `settle` (idempotente), leaderboard. `tests/liveEngine.test.mjs` simula una **partida
+  completa sin Supabase** (8 checks). Es el núcleo que reusarán el driver `local`
+  (cross-tab) y el `supabase`.
+
+## Cómo probar LIVE en local (sin Supabase)
+- **Ya hoy**: `node tests/run.mjs` simula partidas completas con `kernel/live/engine.js`.
+- **Siguiente (LIVE-2)**: driver `local` de `RealtimePort` sobre el engine + `BroadcastChannel`
+  → host y alumno en dos pestañas del navegador, sin backend. Lo verificas tú en navegador.
+- **Migración 0013 / Edge Function reales**: requieren Postgres → stack local de Supabase
+  (Docker + `supabase start`) o desplegar. No verificable en este entorno Node.
 
 ## Próximos pasos LIVE (orden sugerido, paso seguro)
 1. **Cablear `hostLive.js`** para decidir transiciones con `planTransition` (cambio de
