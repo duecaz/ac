@@ -68,13 +68,16 @@ export function renderQuizEditor(root, activity, onChange) {
       }
       onChange(a);
     });
-    // Checkbox marks an option as correct. The answer is the option text (so the
-    // scorer matches by value); multiple checks → array of acceptable answers.
-    on(root, 'change', '.it-correct', (_, el) => {
-      const i = +el.dataset.i, item = a.content.items[i];
-      const checked = [...root.querySelectorAll(`.it-correct[data-i="${i}"]`)]
-        .filter(c => c.checked).map(c => item.options[+c.dataset.k]);
-      item.answer = checked.length <= 1 ? (checked[0] ?? '') : checked;
+    // Toggle an option as correct. Stored as the option text so the scorer
+    // matches by value; one correct → string, several → array. Toggling off
+    // an already-correct option removes it (clears to '' when none remain).
+    on(root, 'click', '.it-correct', (_, el) => {
+      const i = +el.dataset.i, k = +el.dataset.k, item = a.content.items[i];
+      const opt = item.options[k];
+      const arr = Array.isArray(item.answer) ? [...item.answer] : (item.answer ? [item.answer] : []);
+      const at = arr.indexOf(opt);
+      if (at >= 0) arr.splice(at, 1); else arr.push(opt);
+      item.answer = arr.length === 0 ? '' : (arr.length === 1 ? arr[0] : arr);
       commit(); // repaint so the green highlight follows the selection
     });
     on(root, 'input', '.it-pts', (e, el) => {
@@ -156,14 +159,14 @@ function renderItems(a) {
         ${itemControlsHtml(i, total)}
       </div>
       <input class="form-control mb-2 it-q" data-i="${i}" placeholder="Pregunta" value="${escapeHtml(it.question)}">
-      <div class="form-text mb-1"><i class="bi bi-check-circle text-success"></i> Marca la opción correcta.</div>
+      <div class="form-text mb-1"><i class="bi bi-check-circle text-success"></i> Toca el botón de una opción para marcarla correcta (verde). Tócalo de nuevo para quitarla.</div>
       <div class="row g-2 mb-2">
         ${(it.options||['','','','']).map((o,k)=>{
           const corr = isCorrectOption(it, o);
           return `<div class="col-12 col-md-6"><div class="input-group">
-            <div class="input-group-text" title="Marcar como correcta">
-              <input class="form-check-input mt-0 it-correct" type="checkbox" data-i="${i}" data-k="${k}" ${corr?'checked':''}>
-            </div>
+            <button type="button" class="btn it-correct ${corr?'btn-success':'btn-outline-secondary'}" data-i="${i}" data-k="${k}" title="Marcar/quitar como correcta" aria-pressed="${corr}">
+              <i class="bi ${corr?'bi-check-circle-fill':'bi-circle'}"></i>
+            </button>
             <input class="form-control it-opt ${corr?'border-success bg-success-subtle fw-semibold':''}" data-i="${i}" data-k="${k}" placeholder="Opción ${k+1}" value="${escapeHtml(o)}">
           </div></div>`;
         }).join('')}
