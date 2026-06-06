@@ -1,18 +1,20 @@
 // SVG-based spinning wheel. No scoring; just lands on a random entry.
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
+import { normalizeEntries, pickIndex, landingRotation, removeAt, truncLabel } from './logic.js';
 
 export async function renderWheelPlayer(rootSel, activity, opts = {}) {
   // Snapshot to avoid mutating activity.content.entries when removeAfterSpin
   // is enabled (otherwise re-entering the player keeps the trimmed list).
-  let entries = (activity.content?.entries || []).slice().filter(e => String(e).trim());
-  if (!entries.length) entries = ['(vacío)'];
+  let entries = normalizeEntries(activity.content?.entries);
   const dur = activity.rules?.spinDurationMs ?? 4000;
   const remove = !!activity.rules?.removeAfterSpin;
   const startedAt = Date.now();
   let history = [];
 
-  function paint(rotation = 0, landedIdx = null, spinning = false) {
+  // `winner` is the captured label (not an index) so the banner stays correct
+  // even after removeAfterSpin trims the entries array.
+  function paint(rotation = 0, winner = null, spinning = false) {
     const r = 180, cx = 200, cy = 200;
     const arc = (2 * Math.PI) / entries.length;
     const palette = ['#ef4444','#f59e0b','#10b981','#3b82f6','#a855f7','#ec4899','#14b8a6','#eab308'];
@@ -27,7 +29,7 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
       const ly = cy + (r * 0.65) * Math.sin(labelA);
       const deg = (labelA * 180 / Math.PI);
       return `<path d="M ${cx} ${cy} L ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1} Z" fill="${palette[i % palette.length]}" stroke="#fff" stroke-width="2"/>
-              <text x="${lx}" y="${ly}" fill="#fff" font-weight="700" font-size="14" text-anchor="middle" transform="rotate(${deg + 90} ${lx} ${ly})">${escapeHtml(String(e).slice(0,16))}</text>`;
+              <text x="${lx}" y="${ly}" fill="#fff" font-weight="700" font-size="14" text-anchor="middle" transform="rotate(${deg + 90} ${lx} ${ly})">${escapeHtml(truncLabel(e))}</text>`;
     }).join('');
 
     mount(rootSel, html`
@@ -41,7 +43,7 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
           <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:36px;color:#000">▼</div>
         </div>
         <div class="mt-3">
-          ${landedIdx != null ? `<div class="alert alert-success d-inline-block"><b>${escapeHtml(entries[landedIdx])}</b></div>` : ''}
+          ${winner != null ? `<div class="alert alert-success d-inline-block"><b>${escapeHtml(winner)}</b></div>` : ''}
         </div>
         <div class="mt-2">
           <button class="btn btn-primary btn-lg" id="btn-spin" ${spinning?'disabled':''}><i class="bi bi-arrow-repeat"></i> Girar</button>
@@ -62,17 +64,21 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
 
   let rotation = 0;
   function spin() {
-    const target = Math.floor(Math.random() * entries.length);
-    const arc = 360 / entries.length;
-    // Spin at least 5 full turns + land at target's center on top.
-    const final = 360 * 5 + (360 - (target * arc + arc / 2));
-    rotation = final;
+    const target = pickIndex(entries.length);
+    const winner = entries[target]; // capture BEFORE any mutation
+    rotation = landingRotation(target, entries.length);
     paint(rotation, null, true);
     setTimeout(() => {
-      history.push(entries[target]);
-      if (remove) entries = entries.filter((_, i) => i !== target);
-      if (!entries.length) entries = ['(vacío)'];
-      paint(rotation % 360, target, false);
+      history.push(winner);
+      if (remove) {
+        // New (smaller) wheel: reset to a fresh orientation so the pointer
+        // matches the redrawn slices; the banner still shows the real winner.
+        entries = removeAt(entries, target);
+        rotation = 0;
+        paint(0, winner, false);
+      } else {
+        paint(rotation, winner, false);
+      }
     }, dur);
   }
 
