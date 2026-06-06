@@ -8,4 +8,6 @@ console.log('\n▶ solo');      await import('./solo.test.mjs');
 console.log('\n▶ textMarks'); await import('./textMarks.test.mjs');
 console.log('\n▶ wheel');     await import('./wheel.test.mjs');
 console.log('\n▶ core');      await import('./core.test.mjs');
+console.log('\n▶ routing');   await import('./routing.test.mjs');
+console.log('\n▶ storageMerge'); await import('./storageMerge.test.mjs');
 console.log('\n✅ all suites passed');

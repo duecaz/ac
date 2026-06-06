@@ -7,6 +7,7 @@
 // Old unscoped key 'ww.activities' is migrated on first scoped access.
 import { getRemoteStore } from '../adapters/index.js';
 import { migrate, normalize } from './migrate.js';
+import { mergeRemote } from './storageMerge.js';
 
 const LEGACY_KEY = 'ww.activities';
 let _userId = 'guest';
@@ -114,14 +115,6 @@ async function remoteDelete(id) {
 export async function sync() {
   const rs = await getRemoteStore();
   const rows = await rs.listActivities();
-  const map = readLS();
-  for (const row of rows || []) {
-    const remote = migrate(row.data || {});
-    const local = map[row.id];
-    if (!local || (remote.updatedAt || '') >= (local.updatedAt || '')) {
-      map[row.id] = remote;
-    }
-  }
-  writeLS(map);
+  writeLS(mergeRemote(readLS(), rows, migrate));
   return list();
 }

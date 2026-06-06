@@ -1,10 +1,12 @@
 // Tiny hash router. Patterns: '#/home', '#/edit/:id', '#/play/:id'.
+// Matching logic lives in routing.js (pure, tested); this file is browser glue.
+import { compileRoute, matchRoute } from './routing.js';
+
 const routes = [];
 let notFound = () => {};
 
 export function route(pattern, handler) {
-  const keys = [];
-  const rx = new RegExp('^#?' + pattern.replace(/:([\w]+)/g, (_, k) => { keys.push(k); return '([^/]+)'; }) + '/?$');
+  const { rx, keys } = compileRoute(pattern);
   routes.push({ rx, keys, handler });
 }
 
@@ -16,15 +18,8 @@ export function navigate(hash) {
 }
 
 export function resolve() {
-  const h = location.hash || '#/';
-  for (const r of routes) {
-    const m = h.match(r.rx);
-    if (m) {
-      const params = {};
-      r.keys.forEach((k, i) => params[k] = decodeURIComponent(m[i + 1]));
-      return r.handler(params);
-    }
-  }
+  const hit = matchRoute(location.hash, routes);
+  if (hit) return hit.handler(hit.params);
   notFound();
 }
 
