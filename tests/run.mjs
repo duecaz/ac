@@ -3,4 +3,5 @@
 // AssertionError aborts with a non-zero exit code (CI-friendly).
 console.log('▶ registry'); await import('./registry.test.mjs');
 console.log('\n▶ content');  await import('./content.test.mjs');
+console.log('\n▶ adapters'); await import('./adapters.test.mjs');
 console.log('\n✅ all suites passed');

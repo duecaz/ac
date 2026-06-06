@@ -5,7 +5,7 @@
 // LocalStorage is scoped per user via the cached _userId (read once at boot
 // after ensureAuth). When the user signs out/in, the active key switches.
 // Old unscoped key 'ww.activities' is migrated on first scoped access.
-import { getClient } from './supabase.js';
+import { getRemoteStore } from '../adapters/index.js';
 import { migrate, normalize } from './migrate.js';
 
 const LEGACY_KEY = 'ww.activities';
@@ -44,10 +44,9 @@ export function get(id) {
 // page where the visitor doesn't have the activity in localStorage. Returns
 // null if not found or visibility is private (RLS hides it).
 export async function getRemote(id) {
-  const sb = await getClient();
-  const { data, error } = await sb.from('activities').select('data, visibility').eq('id', id).maybeSingle();
-  if (error || !data) return null;
-  return migrate(data.data || {});
+  const rs = await getRemoteStore();
+  const data = await rs.getActivity(id);
+  return data ? migrate(data) : null;
 }
 
 // Saves locally immediately and to remote in the background.
@@ -98,39 +97,22 @@ export function remove(id) {
 }
 
 async function remoteSave(a) {
-  const sb = await getClient();
-  const { data: { user } } = await sb.auth.getUser();
-  const authorId = a.author?.id || user?.id || null;
-  // Stamp author info in the JSONB too so it round-trips.
-  if (authorId && !a.author?.id) a.author = { ...(a.author || {}), id: authorId, signedAt: new Date().toISOString() };
-  const { error } = await sb.from('activities').upsert({
-    id: a.id, data: a,
-    visibility: a.visibility,
-    author_id: authorId,
-    tags: a.tags || [],
-    language: a.language || 'es'
-  });
-  if (error) throw error;
+  const rs = await getRemoteStore();
+  await rs.saveActivity(a);
 }
 
 async function remoteDelete(id) {
-  const sb = await getClient();
-  const { error } = await sb.from('activities').delete().eq('id', id);
-  if (error) throw error;
+  const rs = await getRemoteStore();
+  await rs.deleteActivity(id);
 }
 
-// Pull all activities from Supabase, merging into localStorage.
+// Pull all activities from the backend, merging into localStorage.
 // Last-write-wins by updatedAt.
 export async function sync() {
-  const sb = await getClient();
-  const { data: { user } } = await sb.auth.getUser();
-  // Pull rows the user owns. Public/explore is fetched separately by /explore.
-  let q = sb.from('activities').select('id, data, updated_at').order('updated_at', { ascending: false });
-  if (user) q = q.or(`author_id.eq.${user.id},author_id.is.null`);
-  const { data, error } = await q;
-  if (error) throw error;
+  const rs = await getRemoteStore();
+  const rows = await rs.listActivities();
   const map = readLS();
-  for (const row of data || []) {
+  for (const row of rows || []) {
     const remote = migrate(row.data || {});
     const local = map[row.id];
     if (!local || (remote.updatedAt || '') >= (local.updatedAt || '')) {
