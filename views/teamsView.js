@@ -16,7 +16,6 @@ import { createSession, FORMATS, sessionItems } from '../kernel/session/engine.j
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { applyMarks } from '../core/textMarks.js';
 
-const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
 const TEAM_COLORS = ['danger', 'primary', 'success', 'warning'];
 
 export function renderTeamsView(rootSel, id) {
@@ -144,23 +143,20 @@ export function renderTeamsView(rootSel, id) {
         </div>`;
     }
 
-    // Question body. Auto-capable templates show tappable options; otherwise we
-    // render a generic prompt for the teacher-judge flow.
+    // Question body. In AUTO mode the template paints the interactive round
+    // itself (renderRound) while answering; in JUDGE mode — and on reveal — we
+    // render a generic prompt plus the answer (model-aware).
     function roundBody(item, payload, phase) {
       if (phase === 'ended') return podium();
+
+      // AUTO + answering → the template owns the round DOM (filled after mount).
+      if (scoring === 'auto' && phase === 'question' && payload && typeof T.renderRound === 'function') {
+        return `<div id="teams-round"></div>`;
+      }
+
       const prompt = payload?.question || promptOf(item);
       let media = '';
       if (payload?.image || item?.image) media = `<div class="text-center mb-2"><img src="${escapeHtml(payload?.image || item.image)}" style="max-height:150px" class="img-fluid"></div>`;
-
-      let opts = '';
-      if (scoring === 'auto' && payload?.options) {
-        opts = `<div class="ww-kahoot-grid teams-opts">
-          ${payload.options.map((o, i) => `
-            <button class="btn vs-opt teams-opt" data-value="${escapeHtml(o)}">
-              <i class="bi ${SHAPE_ICONS[i % 4]} me-2"></i>${escapeHtml(o)}
-            </button>`).join('')}
-        </div>`;
-      }
 
       // On reveal, surface the right answer so the class sees it; in judge mode
       // offer it as a discreet teacher-only hint beforehand.
@@ -174,7 +170,7 @@ export function renderTeamsView(rootSel, id) {
           <b>${escapeHtml(ans)}</b></details>`;
       }
 
-      return `<div class="teams-q">${escapeHtml(prompt)}</div>${media}${opts}${reveal}`;
+      return `<div class="teams-q">${escapeHtml(prompt)}</div>${media}${reveal}`;
     }
 
     // Prompt/answer adapt to the content model so judge mode works everywhere:
@@ -229,15 +225,17 @@ export function renderTeamsView(rootSel, id) {
     }
 
     function wire(item, payload, phase) {
-      // Auto mode: active team taps an option (stored, not scored until reveal).
-      on(rootSel, 'click', '.teams-opt', (_, btn) => {
-        if (btn.disabled) return;
-        selected = btn.dataset.value;
-        session.submit(session.activeTeam().id, session.currentItem, selected);
-        $$('.teams-opt').forEach(b => b.classList.toggle('teams-picked', b === btn));
-        const rev = $('#teams-reveal');
-        if (rev) rev.disabled = false;
-      });
+      // Auto mode: the template renders the round; on submit we store the active
+      // team's answer (scored later at reveal) and enable the Revelar button.
+      const roundEl = $('#teams-round');
+      if (roundEl && scoring === 'auto' && phase === 'question' && payload) {
+        T.renderRound(roundEl, payload, { onSubmit: (value) => {
+          selected = value;
+          session.submit(session.activeTeam().id, session.currentItem, value);
+          const rev = $('#teams-reveal');
+          if (rev) rev.disabled = false;
+        } });
+      }
 
       on(rootSel, 'click', '#teams-reveal', () => {
         session.dispatch('reveal'); // auto → settle scores

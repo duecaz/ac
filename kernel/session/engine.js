@@ -32,11 +32,13 @@ export function sessionItems(activity) {
 }
 
 /** VS pits two sides head-to-head with no host to judge, so it only works on
- *  self-scoring templates with enough items for a real race. */
+ *  templates that can both render a single round (renderRound) and self-score
+ *  it (scoreSubmission), with enough items for a real race. */
 export function isVsCompatible(activity) {
   const T = getTemplate(activity?.template);
   const total = sessionItems(activity).length;
-  return !!(T && typeof T.scoreSubmission === 'function' && total >= 2);
+  return !!(T && typeof T.scoreSubmission === 'function'
+            && typeof T.renderRound === 'function' && total >= 2);
 }
 
 /** Single entry point. `opts.format` selects the flow; `opts.state` hydrates. */

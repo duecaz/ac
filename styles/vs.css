@@ -46,10 +46,24 @@
   align-items: center; justify-content: center; font-weight: 800; font-style: italic;
 }
 
-/* Answer feedback */
-.vs-opt.vs-ok { outline: 4px solid #198754; outline-offset: -2px; }
-.vs-opt.vs-no { outline: 4px solid #dc3545; outline-offset: -2px; opacity: .75; }
+/* Panel-level answer feedback (template owns the round DOM, view flashes ✓/✗) */
+.vs-body.vs-flash-ok { animation: vs-flash-ok .7s ease-out; }
+.vs-body.vs-flash-no { animation: vs-flash-no .7s ease-out; }
+@keyframes vs-flash-ok { from { background: rgba(25,135,84,.28); } to { background: transparent; } }
+@keyframes vs-flash-no { from { background: rgba(220,53,69,.28); } to { background: transparent; } }
+.rq-opt.rq-picked { outline: 4px solid #ffc107; outline-offset: -2px; }
 .vs-done { margin: auto; }
+
+/* Shared "round" render bits (used by VS and Equipos-auto) */
+.rt-passage { line-height: 1.9; }
+.rt-vowel {
+  display: inline-block; min-width: 1.1em; text-align: center;
+  border-bottom: 2px dashed #adb5bd; border-radius: 4px; cursor: pointer;
+}
+.rt-vowel:hover { background: #fff3cd; }
+.rt-vowel.rt-on {
+  color: #664d03; background: #ffe69c; border-bottom-color: #ffc107; font-weight: 700;
+}
 
 .vs-overlay { flex: 1; display: flex; align-items: center; justify-content: center; }
 

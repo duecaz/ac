@@ -84,12 +84,6 @@ export function renderVsView(rootSel, id) {
             ${panelShell('right', st.right.name)}
           </div>
         </div>`);
-      // One delegated handler for both panels; the side is read off the DOM.
-      on(rootSel, 'click', '.vs-opt', (_, btn) => {
-        const side = btn.closest('[data-side]')?.dataset.side;
-        if (!side || flashing[side] || btn.disabled) return;
-        answer(side, btn);
-      });
       on(rootSel, 'click', '#vs-again', () => renderSetup());
     }
 
@@ -124,29 +118,25 @@ export function renderVsView(rootSel, id) {
           </div>`;
         return;
       }
-      body.innerHTML = `
-        <div class="vs-q">${escapeHtml(payload.question)}</div>
-        ${payload.image ? `<div class="text-center mb-2"><img src="${escapeHtml(payload.image)}" style="max-height:120px" class="img-fluid"></div>` : ''}
-        <div class="ww-kahoot-grid">
-          ${(payload.options || []).map((o, i) => `
-            <button class="btn vs-opt" data-value="${escapeHtml(o)}">
-              <i class="bi ${SHAPE_ICONS[i % 4]} me-2"></i>${escapeHtml(o)}
-            </button>`).join('')}
-        </div>`;
+      // The template owns the round's DOM (options, tap-vowels, …) and reports
+      // the answer via onSubmit; the view only handles scoring + feedback.
+      body.innerHTML = '';
+      T.renderRound(body, payload, { onSubmit: (value) => onAnswer(side, value) });
     }
 
-    function answer(side, btn) {
+    function onAnswer(side, value) {
+      if (flashing[side]) return;
       flashing[side] = true;
-      const r = session.answer(side, btn.dataset.value);
-      // Reflect score immediately; flash the chosen button; then next round.
+      const r = session.answer(side, value);
       const scoreEl = document.getElementById('vs-score-' + side);
       if (scoreEl) scoreEl.textContent = session.standings()[side].score;
-      btn.classList.add(r.correct ? 'vs-ok' : 'vs-no');
-      btn.closest('.ww-kahoot-grid')?.querySelectorAll('.vs-opt').forEach(b => b.disabled = true);
+      const body = document.getElementById('vs-body-' + side);
+      if (body) body.classList.add(r.correct ? 'vs-flash-ok' : 'vs-flash-no');
       emitGame(r.correct ? GameEvents.ANSWER_CORRECT : GameEvents.ANSWER_WRONG, { idx: r.cursor - 1 });
       updateCenter();
       setTimeout(() => {
         flashing[side] = false;
+        if (body) body.classList.remove('vs-flash-ok', 'vs-flash-no');
         renderSide(side);
         const st = session.standings();
         if (st.finished) finish(st);

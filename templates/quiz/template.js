@@ -3,6 +3,9 @@ import { BaseTemplate } from '../base.js';
 import { renderQuizPlayer } from './player.js';
 import { renderQuizEditor } from './editor.js';
 import { scoreQuizSubmission } from './scorer.js';
+import { escapeHtml } from '../../core/html.js';
+
+const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
 
 export class QuizTemplate extends BaseTemplate {
   static meta = {
@@ -36,6 +39,31 @@ export class QuizTemplate extends BaseTemplate {
     const opts = (item.options || []).slice();
     if (activity.rules?.shuffleOptions) shuffle(opts);
     return { id: item.id, question: item.question, image: item.image || null, audio: item.audio || null, options: opts, points: item.points || 1 };
+  }
+
+  // Render ONE round (question + options) into `root` for the session formats
+  // (VS / Equipos-auto). Calls onSubmit(value) once when an option is chosen and
+  // then locks itself; the surrounding view shows ✓/✗ feedback. `payload` is the
+  // answer-stripped getRoundPayload output.
+  static renderRound(root, payload, { onSubmit } = {}) {
+    const opts = payload?.options || [];
+    root.innerHTML = `
+      <div class="rq-q text-center fs-4 fw-semibold mb-3">${escapeHtml(payload?.question || '')}</div>
+      ${payload?.image ? `<div class="text-center mb-2"><img src="${escapeHtml(payload.image)}" style="max-height:130px" class="img-fluid"></div>` : ''}
+      <div class="ww-kahoot-grid">
+        ${opts.map((o, i) => `
+          <button class="btn vs-opt rq-opt" data-value="${escapeHtml(o)}">
+            <i class="bi ${SHAPE_ICONS[i % 4]} me-2"></i>${escapeHtml(o)}
+          </button>`).join('')}
+      </div>`;
+    let done = false;
+    root.querySelectorAll('.rq-opt').forEach(btn => btn.addEventListener('click', () => {
+      if (done) return;
+      done = true;
+      root.querySelectorAll('.rq-opt').forEach(b => { b.disabled = true; });
+      btn.classList.add('rq-picked');
+      onSubmit?.(btn.dataset.value);
+    }));
   }
 
   // Migrate this template's content from older templateVersion if needed.

@@ -19,6 +19,7 @@ if (!getTemplate('quiz_sess')) registerTemplate({
     const it = activity.content.items[ctx.itemIndex];
     return it ? { question: it.question, options: it.options } : null;
   },
+  renderRound() {}, // present so isVsCompatible passes (DOM-rendered in views)
 });
 
 // A scorer-less template — only valid for teacher-judged teams play.
@@ -174,6 +175,45 @@ const quizActivity = {
   s.dispatch('reveal'); s.dispatch('next');
   assert.strictEqual(s.currentItem, 1, 'advances to the 2nd passage');
   ok('teams (judge): plays a textCorrection activity (passages) end-to-end');
+}
+
+// ───────────── F3: renderRound templates are VS-playable & auto-scored ───────
+{
+  // Register a tildes-like template with the REAL pure scorer + getRoundPayload.
+  const { scoreTildesSubmission } = await import('../templates/tildes/scorer.js');
+  if (!getTemplate('tildes_sess')) registerTemplate({
+    meta: { name: 'tildes_sess', contentModel: 'textCorrection', modes: { solo: true },
+            defaultRules: () => ({}), defaultScoring: () => ({}) },
+    renderPlayer() {}, renderEditor() {},
+    scoreSubmission: scoreTildesSubmission,
+    getRoundPayload(activity, ctx) { const p = activity.content.passages[ctx.itemIndex]; return p ? { id: p.id, text: p.text } : null; },
+    renderRound() {}, // present so isVsCompatible passes
+  });
+
+  const tildesAct = {
+    id: 'ta', template: 'tildes_sess', scoring: { pointsPerCorrect: 1 },
+    content: { passages: [
+      { id: 'p1', text: 'cancion', marks: [{ pos: 4, kind: 'tilde' }] },   // canción → 'o' at 4
+      { id: 'p2', text: 'arbol', marks: [{ pos: 0, kind: 'tilde' }] },      // árbol → 'a' at 0
+    ] },
+  };
+
+  assert.strictEqual(isVsCompatible(tildesAct), true, 'tildes is VS-compatible (renderRound + scorer + ≥2)');
+  // Exact-match scoring: right positions → correct; extra/missing → wrong.
+  assert.deepStrictEqual(scoreTildesSubmission({ value: [4], item: tildesAct.content.passages[0], activity: tildesAct }), { correct: true, points: 1 });
+  assert.deepStrictEqual(scoreTildesSubmission({ value: [], item: tildesAct.content.passages[0], activity: tildesAct }), { correct: false, points: 0 });
+  assert.deepStrictEqual(scoreTildesSubmission({ value: [3, 4], item: tildesAct.content.passages[0], activity: tildesAct }), { correct: false, points: 0 });
+
+  // A VS duel over tildes scores via the engine.
+  const vs = createSession(tildesAct, { format: FORMATS.VS, left: 'A', right: 'B' });
+  vs.start();
+  vs.answer('left', [4]);   // correct → +1
+  vs.answer('left', [0]);   // correct → +1  (A done: 2)
+  vs.answer('right', [1]);  // wrong   → 0
+  const st = vs.standings();
+  assert.strictEqual(st.left.score, 2, 'A scored both passages in VS');
+  assert.strictEqual(st.leader, 'left');
+  ok('vs: a renderRound template (tildes) is auto-scored end-to-end');
 }
 
 console.log(`\nsessionEngine.test: ${passed} checks passed`);

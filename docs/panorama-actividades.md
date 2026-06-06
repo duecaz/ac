@@ -114,10 +114,13 @@ Eso permite jugar **Tildes/Comas/cualquier cosa en Equipos hoy**.
   `standings()`), ruta `#/vs/:id`. Verificado en navegador.
 - **F2 — Equipos** ✅ hecho: `views/teamsView.js` por turnos, marcador, modo
   **auto** (Quiz) y **juez docente ✓/✗** (cualquier contenido), ruta `#/teams/:id`.
-- **F3 — interfaz `renderRound`** 🟡 parcial: el motor ya resuelve rondas con
-  cualquier modelo (`sessionItems`) y Equipos-juez juega Tildes/Comas (passages).
-  **Falta** `renderRound(root, payload, {onSubmit})` para que Tildes/Comas/Match/
-  Memory sean *jugables* en VS y en Equipos-**auto** (hoy solo Quiz se renderiza).
+- **F3 — interfaz `renderRound`** 🟢 hecho para Quiz + Tildes: contrato
+  `renderRound(root, payload, {onSubmit})` (la plantilla pinta UN ítem y reporta
+  la respuesta; el motor puntúa con `scoreSubmission`). VS y Equipos-auto usan
+  `renderRound` genéricamente; `isVsCompatible` exige `renderRound`+scorer+≥2.
+  **Quiz** (rejilla) y **Tildes** (tocar vocales + scorer por pasaje) ya juegan
+  en VS y Equipos-auto. **Falta** dar `renderRound`/scorer a **Comas** (análogo a
+  Tildes) y a Match/Memory (ver F4). Equipos-juez sigue jugando cualquier cosa.
 - **F4 — Tableros** ⬜ pendiente: Match/Memory como "carrera" (VS) y Memoria por
   turnos (Equipos). Ruleta como utilidad de sorteo.
 - **F5 — Barra de modos** ✅ hecho: `views/playerView.js` expone
