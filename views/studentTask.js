@@ -1,16 +1,16 @@
 // Async assignment: student plays SOLO at their own pace.
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
-import { findAssignmentByCode, countOwnAttempts, recordAttempt } from '../core/transport/assignments.js';
+import { findAssignmentByCode, countOwnAttempts, recordAttempt } from '../core/assignmentsTransport.js';
 import { isAcceptableNickname } from '../core/nicknameFilter.js';
 import { getTemplate } from '../core/registry.js';
-import { ensureAuth } from '../core/supabase.js';
+import { ensureIdentity } from '../core/identity.js';
 import { runPlayer } from '../core/player.js';
 
 const NICK_KEY = 'ww.nick';
 
 export async function renderTask(rootSel, code) {
-  await ensureAuth();
+  await ensureIdentity();
   const t = await findAssignmentByCode(code);
   if (!t) { mount(rootSel, html`<div class="alert alert-warning m-3">Tarea no encontrada.</div>`); return; }
   if (t.status === 'closed') { mount(rootSel, html`<div class="alert alert-secondary m-3">Esta tarea está cerrada.</div>`); return; }

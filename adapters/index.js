@@ -46,6 +46,24 @@ export function getRealtime() {
   return _realtime;
 }
 
+let _assignments = null;
+
+/** @returns {Promise<any>} the selected assignments (tareas) driver. */
+export function getAssignments() {
+  if (_assignments) return _assignments;
+  const name = backendName();
+  _assignments = (async () => {
+    if (name === 'local') {
+      let userId;
+      try { userId = (await import('../core/state.js')).getAnonId(); } catch { userId = 'local-anon'; }
+      return (await import('./local/assignments.js')).createLocalAssignments({ userId });
+    }
+    if (name === 'pocketbase') throw new Error('PocketBase assignments aún no implementado — usa backend local o supabase.');
+    return (await import('./supabase/assignments.js')).createSupabaseAssignments();
+  })();
+  return _assignments;
+}
+
 // Allow flipping backend at runtime in dev: ww.setBackend('local').
 try {
   globalThis.ww = globalThis.ww || {};

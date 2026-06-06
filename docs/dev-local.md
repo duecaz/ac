@@ -39,6 +39,14 @@ python3 -m http.server 8000
    (server-side en el engine, anti-trampa) → leaderboard. Avanza a la siguiente.
 5. Repite hasta terminar; comprueba el podio final.
 
+## Probar el modo ASYNC (tareas) — sin Supabase
+1. **Profesor** (`teacher.html`): abre una actividad → **Tareas** → crea una tarea
+   (define intentos y fecha límite). Aparece un código.
+2. **Alumno** (`student.html`): **Unirse** con ese código (o abre `#/task/<code>`) →
+   escribe tu apodo → juega SOLO a tu ritmo. Al terminar queda registrado el intento.
+3. Reintenta: al agotar `max_attempts` la tarea se bloquea. El profesor ve los intentos.
+> En localhost todo corre contra el backend `local` (offline).
+
 ### Qué NO cubre el modo local
 - El driver `local` simula realtime entre pestañas del mismo navegador; **no** sincroniza
   entre dispositivos distintos (para eso es Supabase).
