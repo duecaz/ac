@@ -45,4 +45,7 @@ export function acquire(key) {
 // Tear down EVERY tracked view. Called on hashchange so leaving any view
 // drains its resources.
 function disposeEverything() { for (const k of [..._bag.keys()]) disposeAll(k); }
-window.addEventListener('hashchange', disposeEverything);
+// Guarded so lifecycle is importable/testable outside a browser.
+if (typeof window !== 'undefined') {
+  window.addEventListener('hashchange', disposeEverything);
+}

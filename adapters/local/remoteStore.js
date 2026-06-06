@@ -15,6 +15,7 @@
 // unit-testable in Node without a DOM.
 
 const KEY = 'ww.remote.activities';
+const KEY_RESULTS = 'ww.remote.results';
 
 function defaultKV() {
   try { return globalThis.localStorage || null; } catch { return null; }
@@ -27,20 +28,25 @@ function defaultKV() {
 export function createLocalRemoteStore(kv = defaultKV()) {
   const mem = new Map(); // fallback when no KV (e.g. Node without a shim)
 
-  const read = () => {
-    if (kv) { try { return JSON.parse(kv.getItem(KEY) || '{}'); } catch { return {}; } }
-    return Object.fromEntries(mem);
+  const read = (key) => {
+    if (kv) { try { return JSON.parse(kv.getItem(key) || 'null'); } catch { return null; } }
+    return mem.has(key) ? mem.get(key) : null;
   };
-  const write = (map) => {
-    if (kv) kv.setItem(KEY, JSON.stringify(map));
-    else { mem.clear(); for (const [k, v] of Object.entries(map)) mem.set(k, v); }
+  const write = (key, val) => {
+    if (kv) kv.setItem(key, JSON.stringify(val));
+    else mem.set(key, val);
   };
+  const readMap = () => read(KEY) || {};
 
   return {
-    async saveActivity(a) { const m = read(); m[a.id] = a; write(m); },
-    async deleteActivity(id) { const m = read(); delete m[id]; write(m); },
-    async getActivity(id) { return read()[id] || null; },
-    async listActivities() { return Object.entries(read()).map(([id, data]) => ({ id, data })); },
+    async saveActivity(a) { const m = readMap(); m[a.id] = a; write(KEY, m); },
+    async deleteActivity(id) { const m = readMap(); delete m[id]; write(KEY, m); },
+    async getActivity(id) { return readMap()[id] || null; },
+    async listActivities() { return Object.entries(readMap()).map(([id, data]) => ({ id, data })); },
+
+    // Results: append-only log so reports work offline / on any backend.
+    async saveResult(r) { const log = read(KEY_RESULTS) || []; log.push(r); write(KEY_RESULTS, log); },
+    async listResults() { return read(KEY_RESULTS) || []; },
   };
 }
 

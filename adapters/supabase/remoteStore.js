@@ -45,6 +45,23 @@ export function createSupabaseRemoteStore() {
       if (error) throw error;
       return (data || []).map(row => ({ id: row.id, data: row.data }));
     },
+
+    // Results table. Column mapping lives here (was inline in core/results.js).
+    async saveResult(r) {
+      const sb = await getClient();
+      const { error } = await sb.from('results').insert({
+        activity_id: r.activityId || null,
+        session_id: r.sessionId || null,
+        user_id: r.userId || null,
+        player_name: r.playerName || null,
+        score_auto: r.scoreAuto ?? null,
+        score_final: r.scoreFinal ?? null,
+        max_score: r.maxScore ?? null,
+        time_used: r.timeUsed ?? null,
+        overrides: r.overrides || [],
+      });
+      if (error) throw error;
+    },
   };
 }
 

@@ -10,6 +10,11 @@ Todos los métodos son async y operan sobre el JSONB de la actividad:
 - `deleteActivity(id) → Promise<void>`
 - `getActivity(id) → Promise<Object|null>`
 - `listActivities() → Promise<{id, data}[]>`
+- `saveResult(result) → Promise<void>` — persiste un resultado de partida
+- `listResults() → Promise<Object[]>` — resultados (para reportes)
+
+`core/results.js` también pasa por aquí (antes iba directo a Supabase): así los
+resultados se capturan en cualquier backend y sobreviven offline.
 
 ## Drivers
 - `local/` — sin red; simula un backend con un blob clave-valor (localStorage en el

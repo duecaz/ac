@@ -10,6 +10,8 @@ export function createPocketbaseRemoteStore() {
     deleteActivity: todo('deleteActivity'),
     getActivity: todo('getActivity'),
     listActivities: todo('listActivities'),
+    saveResult: todo('saveResult'),
+    listResults: todo('listResults'),
   };
 }
 

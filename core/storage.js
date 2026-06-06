@@ -84,8 +84,11 @@ export async function retryUnsynced() {
   writeLS(map);
   return { tried: pending.length, ok };
 }
-// Auto-retry when network returns.
-window.addEventListener('online', () => { retryUnsynced().catch(() => {}); });
+// Auto-retry when network returns. Guarded so importing storage outside a
+// browser (tests, non-DOM contexts) doesn't crash.
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => { retryUnsynced().catch(() => {}); });
+}
 
 export function remove(id) {
   const map = readLS();
