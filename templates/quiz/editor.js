@@ -161,15 +161,22 @@ function renderItems(a) {
       <input class="form-control mb-2 it-q" data-i="${i}" placeholder="Pregunta" value="${escapeHtml(it.question)}">
       <div class="form-text mb-1"><i class="bi bi-check-circle text-success"></i> Toca el botón de una opción para marcarla correcta (verde). Tócalo de nuevo para quitarla.</div>
       <div class="row g-2 mb-2">
-        ${(it.options||['','','','']).map((o,k)=>{
-          const corr = isCorrectOption(it, o);
-          return `<div class="col-12 col-md-6"><div class="input-group">
-            <button type="button" class="btn it-correct ${corr?'btn-success':'btn-outline-secondary'}" data-i="${i}" data-k="${k}" title="Marcar/quitar como correcta" aria-pressed="${corr}">
-              <i class="bi ${corr?'bi-check-circle-fill':'bi-circle'}"></i>
-            </button>
-            <input class="form-control it-opt ${corr?'border-success bg-success-subtle fw-semibold':''}" data-i="${i}" data-k="${k}" placeholder="Opción ${k+1}" value="${escapeHtml(o)}">
-          </div></div>`;
-        }).join('')}
+        <div class="col-md-8">
+          <div class="row g-2">
+            ${(it.options||['','','','']).map((o,k)=>{
+              const corr = isCorrectOption(it, o);
+              return `<div class="col-12 col-md-6"><div class="input-group">
+                <button type="button" class="btn it-correct ${corr?'btn-success':'btn-outline-secondary'}" data-i="${i}" data-k="${k}" title="Marcar/quitar como correcta" aria-pressed="${corr}">
+                  <i class="bi ${corr?'bi-check-circle-fill':'bi-circle'}"></i>
+                </button>
+                <input class="form-control it-opt ${corr?'border-success bg-success-subtle fw-semibold':''}" data-i="${i}" data-k="${k}" placeholder="Opción ${k+1}" value="${escapeHtml(o)}">
+              </div></div>`;
+            }).join('')}
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div id="img-${i}">${renderImagePicker(it.image)}</div>
+        </div>
       </div>
       <div class="d-flex align-items-center gap-2 flex-wrap">
         <button class="btn btn-sm btn-link text-muted p-0 text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#adv-${i}">
@@ -182,7 +189,6 @@ function renderItems(a) {
           </div>
         </div>
       </div>
-      <div id="img-${i}" class="mt-2">${renderImagePicker(it.image)}</div>
     </div></div>
   `).join('');
 }
