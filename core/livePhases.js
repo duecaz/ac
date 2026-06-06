@@ -62,3 +62,25 @@ export function planTransition(session, action, total) {
 }
 
 function invalid(reason) { return { type: 'invalid', reason }; }
+
+/** Stable key for a session's visible phase (used to dedupe host effects). */
+export function sessionPhaseKey(session) {
+  return `${session?.status}-${session?.phase}-${session?.current_item}-${session?.deadline || ''}`;
+}
+
+/**
+ * Decide how the host should react to a state change.
+ * - `phaseChanged`: did the visible phase change? (gate sounds/effects on this)
+ * - `skip`: don't repaint at all. Only true for non-phase-changing updates while
+ *   a question is live, so heartbeats/answers don't reset the timer. Lobby player
+ *   joins (session key unchanged) are NOT skipped → the roster refreshes live.
+ * @param {string} prevKey  the last applied phase key
+ * @param {{status:string, phase:string, current_item:number, deadline?:any}} session
+ * @returns {{ key:string, phaseChanged:boolean, skip:boolean }}
+ */
+export function hostPaintDecision(prevKey, session) {
+  const key = sessionPhaseKey(session);
+  const phaseChanged = key !== prevKey;
+  const skip = !phaseChanged && session?.phase === PHASES.QUESTION;
+  return { key, phaseChanged, skip };
+}

@@ -1,7 +1,7 @@
 // Student-side live view. Routes: #/join, #/play/:code.
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
-import { joinSession, getOwnAnswer, subscribeRoom, pingPresence, findRoomByCode } from '../core/liveTransport.js';
+import { joinSession, getOwnAnswer, subscribeRoom, pingPresence, findRoomByCode, fetchSession } from '../core/liveTransport.js';
 import { findAssignmentByCode } from '../core/assignmentsTransport.js';
 import { isAcceptableNickname } from '../core/nicknameFilter.js';
 import { acquire } from '../core/lifecycle.js';
@@ -89,8 +89,12 @@ export async function renderPlay(rootSel, code) {
   document.body.classList.add('ww-play-noscroll');
   ctx.add(() => document.body.classList.remove('ww-play-noscroll'));
 
-  ctx.add(await subscribeRoom(session.id, (ev) => {
-    if (ev.table === 'sessions') { session = { ...session, ...ev.new }; paint(); }
+  ctx.add(await subscribeRoom(session.id, async (ev) => {
+    if (ev.table === 'sessions') {
+      // Full diff (Supabase) or re-fetch on a bare ping (local driver).
+      session = ev.new ? { ...session, ...ev.new } : { ...session, ...(await fetchSession(session.id)) };
+      paint();
+    }
   }));
   ctx.setInterval(() => pingPresence(player.playerId).catch(()=>{}), 15000);
   // Try to flush any pending submissions (in case we just regained network).

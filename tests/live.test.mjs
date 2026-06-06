@@ -1,6 +1,6 @@
 // LIVE pure-logic tests: phase machine + nickname filter. Run: node tests/live.test.mjs
 import assert from 'node:assert';
-import { PHASES, isLastItem, planTransition } from '../core/livePhases.js';
+import { PHASES, isLastItem, planTransition, sessionPhaseKey, hostPaintDecision } from '../core/livePhases.js';
 import { isAcceptableNickname } from '../core/nicknameFilter.js';
 
 let passed = 0;
@@ -58,5 +58,27 @@ assert.strictEqual(isAcceptableNickname('IDIÓTA').ok, false, 'blocklist after a
 assert.strictEqual(isAcceptableNickname(42).ok, false, 'non-string rejected');
 assert.strictEqual(isAcceptableNickname('  Ana  ').value, 'Ana', 'trims and returns clean value');
 ok('nickname filter: length, charset, accent/case-insensitive blocklist, trimming');
+
+// ---------- host paint decision (lobby roster bug fix) ----------
+// A player joining does NOT change the session phase key → must still repaint
+// the lobby (the bug: it was being skipped, so joins didn't show until refresh).
+const lobby = { status: 'lobby', phase: 'idle', current_item: -1 };
+const key0 = sessionPhaseKey(lobby);
+let d = hostPaintDecision(key0, lobby); // same session, a player just joined
+assert.strictEqual(d.skip, false, 'lobby player-join is NOT skipped (roster refreshes live)');
+assert.strictEqual(d.phaseChanged, false, 'no phase change → no LOBBY_START re-emit');
+ok('host repaints the lobby on join without re-firing phase effects');
+
+// A real phase change repaints AND fires effects once.
+d = hostPaintDecision(key0, { status: 'running', phase: 'question', current_item: 0 });
+assert.ok(d.phaseChanged && !d.skip, 'phase change → repaint + effects');
+ok('phase change → repaint and effects fire');
+
+// During an active question, a non-phase-changing update (heartbeat/answer) is
+// skipped so the timer/answer count are not reset.
+const q = { status: 'running', phase: 'question', current_item: 0, deadline: 'D' };
+d = hostPaintDecision(sessionPhaseKey(q), q);
+assert.strictEqual(d.skip, true, 'question heartbeat is skipped (timer preserved)');
+ok('active question is protected from heartbeat repaints');
 
 console.log(`\nlive.test: ${passed} checks passed`);
