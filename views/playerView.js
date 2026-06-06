@@ -9,6 +9,7 @@ import { get, save, remove as removeActivity } from '../core/storage.js';
 import { runPlayer } from '../core/player.js';
 import { activityItemCount, newActivityId } from '../core/migrate.js';
 import { getTemplate, compatibleTemplates } from '../core/registry.js';
+import { isVsCompatible } from '../kernel/session/engine.js';
 import { listSkins, applySkin, skinPreviewHtml } from '../core/skins.js';
 import { listBackgrounds, applyBackground, reapplyBackground, backgroundPreviewHtml } from '../core/backgrounds.js';
 import { toggleFullscreen } from '../core/fullscreen.js';
@@ -69,6 +70,7 @@ export async function renderPlayerView(rootSel, id) {
         <div class="d-flex flex-wrap gap-2 mb-4">
           <button class="btn btn-sm btn-outline-secondary" id="btn-restart"><i class="bi bi-arrow-clockwise"></i> Reiniciar</button>
           <button class="btn btn-sm btn-outline-secondary" id="btn-fs"><i class="bi bi-arrows-fullscreen"></i> Pantalla completa</button>
+          ${isVsCompatible(a) ? `<a href="#/vs/${a.id}" class="btn btn-sm btn-outline-danger"><i class="bi bi-fire"></i> Duelo VS</a>` : ''}
           ${canEdit ? `<a href="#/edit/${a.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>` : ''}
           <button class="btn btn-sm btn-outline-secondary" id="btn-link"><i class="bi bi-link-45deg"></i> Copiar link</button>
           <button class="btn btn-sm btn-outline-secondary" id="btn-embed"><i class="bi bi-code-square"></i> Embed</button>
