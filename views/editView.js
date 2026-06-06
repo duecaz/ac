@@ -2,10 +2,11 @@ import { html, mount, escapeHtml } from '../core/html.js';
 import { on } from '../core/events.js';
 import { get, save } from '../core/storage.js';
 import { newActivity } from '../core/migrate.js';
-import { getEditor } from '../core/registry.js';
+import { getEditor, getTemplate } from '../core/registry.js';
 import { navigate } from '../core/router.js';
 import { toast, confirmModal } from '../core/toast.js';
 import { acquire } from '../core/lifecycle.js';
+import { buildSwitchOptions, applyAndSave } from './switchTemplate.js';
 
 const AUTOSAVE_DELAY_MS = 2000;
 
@@ -21,6 +22,9 @@ export function renderEditView(rootSel, { id, template }) {
 
   const Editor = getEditor(activity.template);
   if (!Editor) { mount(rootSel, html`<div class="alert alert-danger">Editor no disponible para "${activity.template}".</div>`); return; }
+
+  const curT = getTemplate(activity.template);
+  const switchOpts = buildSwitchOptions(activity);
 
   mount(rootSel, html`
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
@@ -40,6 +44,28 @@ export function renderEditView(rootSel, { id, template }) {
         </select>
       </div>
     </div>
+
+    <details class="ww-switch mb-3" id="switch-format">
+      <summary class="d-inline-flex align-items-center gap-2 small text-muted" style="cursor:pointer; list-style:none">
+        <span class="badge bg-${curT?.meta?.color || 'secondary'}"><i class="bi ${curT?.meta?.icon || 'bi-puzzle'}"></i> ${escapeHtml(curT?.meta?.label || activity.template)}</span>
+        <i class="bi bi-arrow-left-right"></i> Cambiar formato
+      </summary>
+      ${switchOpts.length ? html`
+        <div class="mt-2">
+          <div class="text-muted small mb-1">Reutiliza este contenido en otro formato — como Wordwall.</div>
+          <div class="d-flex flex-wrap gap-2">
+            ${switchOpts.filter(o => o.valid).map(o => html`
+              <button type="button" class="btn btn-sm btn-outline-${o.template.meta.color || 'secondary'} tpl-switch-opt"
+                      data-name="${o.template.meta.name}" data-kind="${o.kind}"
+                      title="${o.kind === 'direct' ? 'Mismo contenido' : 'Convierte el contenido a este formato'}">
+                <i class="bi ${o.template.meta.icon}"></i> ${escapeHtml(o.template.meta.label)}
+                ${o.kind === 'convert' ? '<i class="bi bi-shuffle ms-1 opacity-50"></i>' : ''}
+              </button>
+            `).join('')}
+          </div>
+        </div>` : html`<div class="text-muted small mt-2">No hay otros formatos compatibles con este contenido.</div>`}
+    </details>
+
     <div id="editor-root" style="padding-bottom:90px"></div>
 
     <div id="ww-savebar" class="position-fixed bottom-0 start-0 end-0 bg-light border-top p-2 d-flex justify-content-between align-items-center" style="z-index:1030">
@@ -94,6 +120,26 @@ export function renderEditView(rootSel, { id, template }) {
   on(rootSel, 'change', '#meta-vis', e => { activity.visibility = e.target.value; markDirty(); });
   on(rootSel, 'input', '#meta-tags', e => { activity.tags = e.target.value.split(',').map(s=>s.trim()).filter(Boolean); markDirty(); });
   on(rootSel, 'change', '#meta-lang', e => { activity.language = e.target.value; markDirty(); });
+
+  // Switch format (Wordwall-style). 'direct' keeps content as-is; 'convert'
+  // transforms it to the target model, so confirm first (it may drop fields).
+  on(rootSel, 'click', '.tpl-switch-opt', async (_, btn) => {
+    const name = btn.dataset.name;
+    const kind = btn.dataset.kind;
+    const label = btn.textContent.trim();
+    if (kind === 'convert') {
+      const ok = await confirmModal(
+        `Convertir "${activity.title || 'esta actividad'}" al formato “${label}”. El contenido se adaptará y algunos datos podrían no trasladarse. ¿Continuar?`,
+        { title: 'Cambiar formato', okText: 'Convertir', cancelText: 'Cancelar' });
+      if (!ok) return;
+    }
+    if (autosaveTimer) clearTimeout(autosaveTimer);
+    const next = applyAndSave(activity, name);
+    if (!next) { toast('No se pudo cambiar a ese formato.', 'danger'); return; }
+    dirty = false;
+    toast(`Formato cambiado a “${label}”.`, 'success');
+    navigate(`#/edit/${next.id}`); // same hash → re-renders the editor cleanly
+  });
 
   on(rootSel, 'click', '#btn-save', () => doSave(false));
   on(rootSel, 'click', '#btn-test', async () => {
