@@ -9,6 +9,7 @@ import { get, save, remove as removeActivity } from '../core/storage.js';
 import { runPlayer } from '../core/player.js';
 import { activityItemCount, newActivityId } from '../core/migrate.js';
 import { getTemplate, compatibleTemplates } from '../core/registry.js';
+import { isVsCompatible } from '../kernel/session/engine.js';
 import { listSkins, applySkin, skinPreviewHtml } from '../core/skins.js';
 import { listBackgrounds, applyBackground, reapplyBackground, backgroundPreviewHtml } from '../core/backgrounds.js';
 import { toggleFullscreen } from '../core/fullscreen.js';
@@ -64,6 +65,23 @@ export async function renderPlayerView(rootSel, id) {
 
         <div class="ww-player-frame mb-3" style="${aspectStyle(aspect)}" id="ww-frame">
           <div id="ww-player-widget"></div>
+        </div>
+
+        <h6 class="text-muted text-uppercase small mb-2">Modos de juego</h6>
+        <div class="d-flex flex-wrap gap-2 mb-4 ww-modes">
+          <button class="btn btn-success" id="mode-solo" title="Jugar aquí, en este dispositivo">
+            <i class="bi bi-person-fill"></i> Individual
+          </button>
+          ${isVsCompatible(a)
+            ? `<a href="#/vs/${a.id}" class="btn btn-outline-danger"><i class="bi bi-fire"></i> VS (duelo)</a>`
+            : `<button class="btn btn-outline-secondary" disabled title="Necesita autocorrección y 2+ preguntas"><i class="bi bi-fire"></i> VS</button>`}
+          <a href="#/${a.template === 'memory' ? 'memory' : 'teams'}/${a.id}" class="btn btn-outline-primary"><i class="bi bi-people-fill"></i> Equipos</a>
+          ${T?.meta?.modes?.live
+            ? `<a href="#/launch/${a.id}" class="btn btn-outline-info"><i class="bi bi-broadcast"></i> En vivo</a>`
+            : `<button class="btn btn-outline-secondary" disabled title="Esta plantilla no admite En vivo"><i class="bi bi-broadcast"></i> En vivo</button>`}
+          ${T?.meta?.modes?.async
+            ? `<a href="#/tasks/${a.id}" class="btn btn-outline-warning"><i class="bi bi-journal-check"></i> Tarea</a>`
+            : ''}
         </div>
 
         <div class="d-flex flex-wrap gap-2 mb-4">
@@ -131,9 +149,15 @@ export async function renderPlayerView(rootSel, id) {
       liveTemplate = b.dataset.name;
       paint();
     });
-    on(rootSel, 'click', '#btn-restart', () => {
+    const restartSolo = () => {
       document.getElementById('ww-player-widget').innerHTML = '';
       runPlayer('#ww-player-widget', { ...a, template: liveTemplate }, { skipChrome: true });
+    };
+    on(rootSel, 'click', '#btn-restart', restartSolo);
+    // "Individual" is this very page; restart the activity and scroll to it.
+    on(rootSel, 'click', '#mode-solo', () => {
+      restartSolo();
+      document.getElementById('ww-frame')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
     // Frame-level fullscreen: only the embed expands, not the page (YouTube-like).
     on(rootSel, 'click', '#btn-fs', () => toggleFullscreen(document.getElementById('ww-frame')));

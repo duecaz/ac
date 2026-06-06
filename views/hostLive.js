@@ -2,10 +2,10 @@
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { get } from '../core/storage.js';
-import { createRoom, findRoomByCode, fetchSession } from '../core/transport/room.js';
-import { startSession, setSessionState, endSession, settleItem,
+import { createRoom, findRoomByCode, fetchSession,
+         startSession, setSessionState, endSession, settleItem,
          listPlayers, listAnswers, leaderboard, kickPlayer, subscribeRoom, pingHost }
-       from '../core/transport/live.js';
+       from '../core/liveTransport.js';
 import { getTemplate } from '../core/registry.js';
 import { acquire } from '../core/lifecycle.js';
 import { toast, confirmModal } from '../core/toast.js';
@@ -13,6 +13,7 @@ import { applySkin } from '../core/skins.js';
 import { applyBackground } from '../core/backgrounds.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
+import { hostPaintDecision } from '../core/livePhases.js';
 
 const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
 
@@ -66,16 +67,25 @@ async function renderHost(rootSel, code, sessionId, activity) {
   pingHost(sessionId).catch(() => {});
   ctx.setInterval(() => pingHost(sessionId).catch(() => {}), 10000);
 
-  function onChange(ev) {
-    if (ev.table === 'sessions') { session = { ...session, ...ev.new }; paint(); }
+  async function onChange(ev) {
+    // Some backends deliver a full row diff (Supabase postgres_changes); the
+    // local driver sends only { table } as a "something changed" ping. When the
+    // payload is missing, re-fetch the affected list so both backends work.
+    const hasPayload = ev.new || ev.old;
+    if (ev.table === 'sessions') {
+      session = ev.new ? { ...session, ...ev.new } : { ...session, ...(await fetchSession(sessionId)) };
+      paint();
+    }
     else if (ev.table === 'players') {
-      if (ev.eventType === 'DELETE') players = players.filter(p => p.id !== ev.old.id);
+      if (!hasPayload) players = await listPlayers(sessionId);
+      else if (ev.eventType === 'DELETE') players = players.filter(p => p.id !== ev.old.id);
       else if (ev.eventType === 'INSERT') players = [...players, ev.new];
       else players = players.map(p => p.id === ev.new.id ? ev.new : p);
       paint();
     }
     else if (ev.table === 'answers') {
-      if (ev.eventType === 'INSERT') answers = [...answers, ev.new];
+      if (!hasPayload) answers = await listAnswers(sessionId, session.current_item);
+      else if (ev.eventType === 'INSERT') answers = [...answers, ev.new];
       else if (ev.eventType === 'UPDATE') answers = answers.map(a => a.id === ev.new.id ? ev.new : a);
       // While in question phase, don't repaint (the ticker updates count).
       if (session.phase !== 'question') paint();
@@ -87,22 +97,23 @@ async function renderHost(rootSel, code, sessionId, activity) {
   function qrUrl() { return `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(joinUrl())}`; }
 
   function paint() {
-    // Skip paints triggered by side-channel updates (host_seen_at every 10 s)
-    // that don't change the visible phase. Otherwise sounds and effects would
-    // re-fire periodically (REVEAL emit, PODIUM emit, etc.).
-    const key = `${session.status}-${session.phase}-${session.current_item}-${session.deadline||''}`;
-    if (key === lastPhaseKey) return;
+    // Always re-render when data changes (e.g. a player joins the lobby), but
+    // only re-fire phase sounds/effects when the visible phase actually changes
+    // (phaseChanged). `skip` protects an active question from being reset by
+    // heartbeats/answers. Decision logic is pure + tested in core/livePhases.js.
+    const { key, phaseChanged, skip } = hostPaintDecision(lastPhaseKey, session);
+    if (skip) return;
     lastPhaseKey = key;
-    if (session.status === 'lobby') return paintLobby();
-    if (session.status === 'ended') return paintPodium();
-    if (session.phase === 'question') return paintQuestion();
-    if (session.phase === 'reveal') return paintReveal();
-    if (session.phase === 'leaderboard') return paintLeaderboard();
-    paintLobby();
+    if (session.status === 'lobby') return paintLobby(phaseChanged);
+    if (session.status === 'ended') return paintPodium(phaseChanged);
+    if (session.phase === 'question') return paintQuestion(phaseChanged);
+    if (session.phase === 'reveal') return paintReveal(phaseChanged);
+    if (session.phase === 'leaderboard') return paintLeaderboard(phaseChanged);
+    paintLobby(phaseChanged);
   }
 
-  function paintLobby() {
-    emitGame(GameEvents.LOBBY_START, { sessionId });
+  function paintLobby(phaseChanged = true) {
+    if (phaseChanged) emitGame(GameEvents.LOBBY_START, { sessionId });
     const now = Date.now();
     mount(rootSel, html`
       <div class="text-center py-3">
@@ -148,11 +159,13 @@ async function renderHost(rootSel, code, sessionId, activity) {
     on(rootSel, 'click', '.kick', (_, b) => kickPlayer(sessionId, b.dataset.id));
   }
 
-  async function paintQuestion() {
+  async function paintQuestion(phaseChanged = true) {
     const idx = session.current_item;
     const item = activity.content.items[idx];
-    emitGame(GameEvents.LOBBY_END);
-    emitGame(GameEvents.QUESTION_SHOWN, { idx, total: activity.content.items.length, item });
+    if (phaseChanged) {
+      emitGame(GameEvents.LOBBY_END);
+      emitGame(GameEvents.QUESTION_SHOWN, { idx, total: activity.content.items.length, item });
+    }
     answers = await listAnswers(sessionId, idx);
     const total = players.length;
     const answered = answers.length;
@@ -251,10 +264,10 @@ async function renderHost(rootSel, code, sessionId, activity) {
     } finally { settling = false; }
   }
 
-  async function paintReveal() {
+  async function paintReveal(phaseChanged = true) {
     const idx = session.current_item;
     const item = activity.content.items[idx];
-    emitGame(GameEvents.REVEAL, { idx, item });
+    if (phaseChanged) emitGame(GameEvents.REVEAL, { idx, item });
     answers = await listAnswers(sessionId, idx);
     const counts = (item.options||[]).map(o => answers.filter(a => a.value === o).length);
     const max = Math.max(1, ...counts);
@@ -279,7 +292,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     on(rootSel, 'click', '#btn-lb', () => setSessionState(sessionId, { phase: 'leaderboard' }));
   }
 
-  async function paintLeaderboard() {
+  async function paintLeaderboard(/* phaseChanged */) {
     const lb = await leaderboard(sessionId, 10);
     const idx = session.current_item;
     const isLast = idx + 1 >= activity.content.items.length;
@@ -306,9 +319,9 @@ async function renderHost(rootSel, code, sessionId, activity) {
     on(rootSel, 'click', '#btn-end', () => endSession(sessionId));
   }
 
-  async function paintPodium() {
+  async function paintPodium(phaseChanged = true) {
     const lb = await leaderboard(sessionId, 3);
-    emitGame(GameEvents.PODIUM, { top: lb.map(p => ({ name: p.name, score: p.score })) });
+    if (phaseChanged) emitGame(GameEvents.PODIUM, { top: lb.map(p => ({ name: p.name, score: p.score })) });
     mount(rootSel, html`
       <h2 class="text-center mb-4"><i class="bi bi-trophy-fill text-warning"></i> Podio</h2>
       <div class="ww-podium mb-4">

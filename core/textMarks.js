@@ -46,6 +46,18 @@ export function hasMarks(passage) {
   return Array.isArray(passage?.marks) && passage.marks.length > 0;
 }
 
+// Per-passage scoring for the session formats (VS / Equipos-auto / Solo):
+// the whole passage is ONE round, correct iff the student's marked positions
+// (value: number[]) exactly match the answer-key positions for `kinds`. Pure.
+// Tildes binds kinds=['tilde']; Comas binds kinds=['coma'].
+export function scoreMarks(value, item, kinds, activity) {
+  const want = new Set((item?.marks || []).filter(m => kinds.includes(m.kind)).map(m => m.pos));
+  const got = new Set(Array.isArray(value) ? value.map(Number) : []);
+  const correct = want.size === got.size && [...want].every(p => got.has(p));
+  const scoring = activity?.scoring || {};
+  return { correct, points: correct ? (item?.points || scoring.pointsPerCorrect || 1) : 0 };
+}
+
 // Reverse of applyMarks for kind='tilde': given an accented input from the
 // author, produce { text: stripped, marks: [{pos, kind:'tilde'}, ...] }.
 // Positions match positions in the stripped text (lengths are equal because

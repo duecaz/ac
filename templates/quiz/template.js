@@ -3,6 +3,7 @@ import { BaseTemplate } from '../base.js';
 import { renderQuizPlayer } from './player.js';
 import { renderQuizEditor } from './editor.js';
 import { scoreQuizSubmission } from './scorer.js';
+import { renderChoiceRound } from '../../core/roundRender.js';
 
 export class QuizTemplate extends BaseTemplate {
   static meta = {
@@ -37,6 +38,9 @@ export class QuizTemplate extends BaseTemplate {
     if (activity.rules?.shuffleOptions) shuffle(opts);
     return { id: item.id, question: item.question, image: item.image || null, audio: item.audio || null, options: opts, points: item.points || 1 };
   }
+
+  // One multiple-choice round for the session formats (VS / Equipos-auto).
+  static renderRound(root, payload, opts) { renderChoiceRound(root, payload, opts); }
 
   // Migrate this template's content from older templateVersion if needed.
   static migrateContent(content /*, fromVersion */) { return content; }

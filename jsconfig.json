@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "target": "ES2022",
+    "moduleResolution": "Bundler",
+    "checkJs": false,
+    "allowJs": true,
+    "strict": true,
+    "noEmit": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+  },
+  "include": ["core/**/*.js", "kernel/**/*.js", "templates/**/*.js", "views/**/*.js", "adapters/**/*.js", "main.*.js"],
+  "exclude": ["node_modules", "supabase/functions"]
+}

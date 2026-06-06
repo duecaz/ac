@@ -67,5 +67,8 @@ export function setConnectionState(state) {
 
 export function getConnectionState() { return _state; }
 
-window.addEventListener('offline', () => setConnectionState('offline'));
-window.addEventListener('online', () => setConnectionState('connected'));
+// Guarded so the module is importable outside a browser (tests, non-DOM).
+if (typeof window !== 'undefined') {
+  window.addEventListener('offline', () => setConnectionState('offline'));
+  window.addEventListener('online', () => setConnectionState('connected'));
+}

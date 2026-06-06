@@ -15,6 +15,10 @@ import './templates/comas/index.js';
 import { renderHome } from './views/home.js';
 import { renderTemplateSelector } from './views/templateSelector.js';
 import { renderPlayerView } from './views/playerView.js';
+import { renderVsView } from './views/vsView.js';
+import { renderTeamsView } from './views/teamsView.js';
+import { renderMemoryView } from './views/memoryView.js';
+import { renderSorteoView } from './views/sorteoView.js';
 import { renderEditView } from './views/editView.js';
 import { renderHostLaunch, renderHostByCode } from './views/hostLive.js';
 import { renderReports, renderActivityReport, renderSessionReport } from './views/reports.js';
@@ -39,6 +43,9 @@ route('#/new', () => renderTemplateSelector(APP));
 route('#/edit-new/:template', ({ template }) => renderEditView(APP, { template }));
 route('#/edit/:id', ({ id }) => renderEditView(APP, { id }));
 route('#/play/:id', ({ id }) => renderPlayerView(APP, id));
+route('#/vs/:id', ({ id }) => renderVsView(APP, id));
+route('#/teams/:id', ({ id }) => renderTeamsView(APP, id));
+route('#/memory/:id', ({ id }) => renderMemoryView(APP, id));
 route('#/launch/:id', ({ id }) => renderHostLaunch(APP, id));
 route('#/host/:code', ({ code }) => renderHostByCode(APP, code));
 route('#/reports', () => renderReports(APP));
@@ -47,6 +54,7 @@ route('#/reports/:id', ({ id }) => renderActivityReport(APP, id));
 route('#/tasks/:id', ({ id }) => renderAssignmentsForActivity(APP, id));
 route('#/task/:id/attempts', ({ id }) => renderAttempts(APP, id));
 route('#/explore', () => renderExplore(APP));
+route('#/sorteo', () => renderSorteoView(APP));
 
 setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encontrada. <a href="#/home">Inicio</a></div>`));
 
