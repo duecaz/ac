@@ -61,7 +61,12 @@ export function renderQuizEditor(root, activity, onChange) {
       const i = +el.dataset.i, k = +el.dataset.k;
       a.content.items[i].options[k] = e.target.value; onChange(a);
     });
-    on(root, 'input', '.it-pts', (e, el) => { a.content.items[+el.dataset.i].points = +e.target.value || 1; onChange(a); });
+    on(root, 'input', '.it-pts', (e, el) => {
+      a.content.items[+el.dataset.i].points = +e.target.value || 1;
+      // Toggle the "uneven points" warning live without repainting (keeps focus).
+      root.querySelector('#pts-warn')?.classList.toggle('d-none', !pointsAreUneven(a));
+      onChange(a);
+    });
 
     // Image pickers per item.
     a.content.items.forEach((item, i) => {
@@ -104,10 +109,25 @@ export function renderQuizEditor(root, activity, onChange) {
   paint();
 }
 
+// Are all per-question points equal? Unequal points unbalance turn-based Teams.
+function pointsAreUneven(a) {
+  return new Set((a.content.items || []).map(it => it.points || 1)).size > 1;
+}
+
+function pointsWarningHtml(a) {
+  return `<div id="pts-warn" class="alert alert-danger d-flex align-items-start gap-2 py-2 mb-2 ${pointsAreUneven(a) ? '' : 'd-none'}" role="alert">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <div><b>No recomendado:</b> tus preguntas tienen <b>puntos distintos</b>. En el modo
+    <b>Equipos</b> (por turnos) cada equipo responde preguntas diferentes, así que valores
+    desiguales hacen que gane quien tuvo la pregunta más valiosa, no quien más sabe.
+    Usa los mismos puntos en todas salvo que sea intencional.</div>
+  </div>`;
+}
+
 function renderItems(a) {
   if (!a.content.items.length) return `<p class="text-muted">No hay preguntas todavía.</p>`;
   const total = a.content.items.length;
-  return a.content.items.map((it, i) => `
+  return pointsWarningHtml(a) + a.content.items.map((it, i) => `
     <div class="card mb-2"><div class="card-body">
       <div class="d-flex justify-content-between align-items-center mb-2">
         <span class="badge bg-secondary">#${i+1}${it.kind==='truefalse'?' · V/F':''}</span>
