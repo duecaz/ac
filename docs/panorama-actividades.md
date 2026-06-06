@@ -129,6 +129,10 @@ Eso permite jugar **Tildes/Comas/cualquier cosa en Equipos hoy**.
   **Memoria** ✅ con su mecánica nativa por turnos (voltear cartas): núcleo puro
   `kernel/session/memory.js` (acierto = punto y sigues; fallo = pasa el turno) +
   `views/memoryView.js`, ruta `#/memory/:id` (el botón Equipos para Memoria lleva
-  ahí). **Pendiente menor**: Ruleta como utilidad de sorteo de turno/equipo.
+  ahí).
+  **Ruleta / Sorteo** ✅ utilidad de aula independiente: `views/sorteoView.js`
+  (ruta `#/sorteo`, enlace en la barra) — gira para elegir equipo/turno/alumno,
+  lista editable, presets y "quitar al elegido" (sorteo sin repetición). Reutiliza
+  la lógica pura de la ruleta y un dibujo SVG compartido (`templates/wheel/render.js`).
 - **F5 — Barra de modos** ✅ hecho: `views/playerView.js` expone
   Individual · VS · Equipos · En vivo · Tarea, gateados por compatibilidad (§2).

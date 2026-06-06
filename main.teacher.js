@@ -18,6 +18,7 @@ import { renderPlayerView } from './views/playerView.js';
 import { renderVsView } from './views/vsView.js';
 import { renderTeamsView } from './views/teamsView.js';
 import { renderMemoryView } from './views/memoryView.js';
+import { renderSorteoView } from './views/sorteoView.js';
 import { renderEditView } from './views/editView.js';
 import { renderHostLaunch, renderHostByCode } from './views/hostLive.js';
 import { renderReports, renderActivityReport, renderSessionReport } from './views/reports.js';
@@ -53,6 +54,7 @@ route('#/reports/:id', ({ id }) => renderActivityReport(APP, id));
 route('#/tasks/:id', ({ id }) => renderAssignmentsForActivity(APP, id));
 route('#/task/:id/attempts', ({ id }) => renderAttempts(APP, id));
 route('#/explore', () => renderExplore(APP));
+route('#/sorteo', () => renderSorteoView(APP));
 
 setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encontrada. <a href="#/home">Inicio</a></div>`));
 

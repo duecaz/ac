@@ -1,7 +1,8 @@
 // SVG-based spinning wheel. No scoring; just lands on a random entry.
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { normalizeEntries, pickIndex, landingRotation, removeAt, truncLabel } from './logic.js';
+import { normalizeEntries, pickIndex, landingRotation, removeAt } from './logic.js';
+import { wheelSvg } from './render.js';
 
 export async function renderWheelPlayer(rootSel, activity, opts = {}) {
   // Snapshot to avoid mutating activity.content.entries when removeAfterSpin
@@ -15,31 +16,11 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
   // `winner` is the captured label (not an index) so the banner stays correct
   // even after removeAfterSpin trims the entries array.
   function paint(rotation = 0, winner = null, spinning = false) {
-    const r = 180, cx = 200, cy = 200;
-    const arc = (2 * Math.PI) / entries.length;
-    const palette = ['#ef4444','#f59e0b','#10b981','#3b82f6','#a855f7','#ec4899','#14b8a6','#eab308'];
-    const slices = entries.map((e, i) => {
-      const a0 = -Math.PI/2 + i * arc;
-      const a1 = a0 + arc;
-      const x0 = cx + r * Math.cos(a0), y0 = cy + r * Math.sin(a0);
-      const x1 = cx + r * Math.cos(a1), y1 = cy + r * Math.sin(a1);
-      const large = arc > Math.PI ? 1 : 0;
-      const labelA = a0 + arc / 2;
-      const lx = cx + (r * 0.65) * Math.cos(labelA);
-      const ly = cy + (r * 0.65) * Math.sin(labelA);
-      const deg = (labelA * 180 / Math.PI);
-      return `<path d="M ${cx} ${cy} L ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1} Z" fill="${palette[i % palette.length]}" stroke="#fff" stroke-width="2"/>
-              <text x="${lx}" y="${ly}" fill="#fff" font-weight="700" font-size="14" text-anchor="middle" transform="rotate(${deg + 90} ${lx} ${ly})">${escapeHtml(truncLabel(e))}</text>`;
-    }).join('');
-
     mount(rootSel, html`
       <div class="text-center py-3">
         <h3 class="mb-3">${escapeHtml(activity.title)}</h3>
         <div style="position:relative;display:inline-block">
-          <svg width="400" height="400" style="transform:rotate(${rotation}deg);transition:transform ${spinning ? dur : 0}ms cubic-bezier(.17,.67,.21,.99)">
-            ${slices}
-            <circle cx="${cx}" cy="${cy}" r="20" fill="#fff" stroke="#000" stroke-width="2"/>
-          </svg>
+          ${wheelSvg(entries, { rotation, dur, spinning })}
           <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:36px;color:#000">▼</div>
         </div>
         <div class="mt-3">
