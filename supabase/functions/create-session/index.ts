@@ -20,7 +20,7 @@ Deno.serve(async (req: Request) => {
     const anonClient = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: auth } }
     });
-    const admin = createClient(url, serviceKey);
+    const admin = createClient(url, serviceKey, { db: { schema: "repo_ac" } });
 
     const { data: userRes, error: uErr } = await anonClient.auth.getUser();
     if (uErr || !userRes?.user) return json({ error: "invalid token" }, 401);

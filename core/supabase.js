@@ -10,6 +10,10 @@ export async function getClient() {
     import('../supabase.config.js')
   ]);
   _client = createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, {
+    // All app tables live in the dedicated `repo_ac` schema (namespaced so this
+    // shared Supabase project clearly identifies the `ac` repo's data). The
+    // schema must be added to API → Exposed schemas in the dashboard.
+    db: { schema: 'repo_ac' },
     auth: { persistSession: true, autoRefreshToken: true, storageKey: 'ww.auth' },
     realtime: { params: { eventsPerSecond: 10 } }
   });

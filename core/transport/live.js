@@ -141,11 +141,11 @@ export async function subscribeRoom(sessionId, onChange) {
   const name = `room:${sessionId}:${tag}`;
   let torndown = false;
   const ch = sb.channel(name)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions', filter: `id=eq.${sessionId}` },
+    .on('postgres_changes', { event: '*', schema: 'repo_ac', table: 'sessions', filter: `id=eq.${sessionId}` },
         (p) => onChange({ table: 'sessions', eventType: p.eventType, new: p.new, old: p.old }))
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'players', filter: `session_id=eq.${sessionId}` },
+    .on('postgres_changes', { event: '*', schema: 'repo_ac', table: 'players', filter: `session_id=eq.${sessionId}` },
         (p) => onChange({ table: 'players', eventType: p.eventType, new: p.new, old: p.old }))
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'answers', filter: `session_id=eq.${sessionId}` },
+    .on('postgres_changes', { event: '*', schema: 'repo_ac', table: 'answers', filter: `session_id=eq.${sessionId}` },
         (p) => onChange({ table: 'answers', eventType: p.eventType, new: p.new, old: p.old }));
   await ch.subscribe((status) => {
     // Ignore status updates after we've manually torn the channel down —
