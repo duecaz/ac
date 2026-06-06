@@ -125,9 +125,10 @@ Eso permite jugar **Tildes/Comas/cualquier cosa en Equipos hoy**.
 - **F4 — Pares / tableros** 🟢 Match hecho: en vez de "carrera de tablero",
   **Emparejar** juega como *pregunta de emparejado* por par (prompt = izquierda,
   opciones = derechas + distractores), encajando en el motor por-ítem y
-  reutilizando `renderChoiceRound`. Ya juega VS y Equipos-auto. **Pendiente**:
-  **Memoria** con su mecánica nativa por turnos (voltear cartas) en Equipos —
-  requiere un bucle de juego propio, no el flujo pregunta→revelar. Ruleta como
-  utilidad de sorteo de turno/equipo.
+  reutilizando `renderChoiceRound`. Ya juega VS y Equipos-auto.
+  **Memoria** ✅ con su mecánica nativa por turnos (voltear cartas): núcleo puro
+  `kernel/session/memory.js` (acierto = punto y sigues; fallo = pasa el turno) +
+  `views/memoryView.js`, ruta `#/memory/:id` (el botón Equipos para Memoria lleva
+  ahí). **Pendiente menor**: Ruleta como utilidad de sorteo de turno/equipo.
 - **F5 — Barra de modos** ✅ hecho: `views/playerView.js` expone
   Individual · VS · Equipos · En vivo · Tarea, gateados por compatibilidad (§2).

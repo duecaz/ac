@@ -75,7 +75,7 @@ export async function renderPlayerView(rootSel, id) {
           ${isVsCompatible(a)
             ? `<a href="#/vs/${a.id}" class="btn btn-outline-danger"><i class="bi bi-fire"></i> VS (duelo)</a>`
             : `<button class="btn btn-outline-secondary" disabled title="Necesita autocorrección y 2+ preguntas"><i class="bi bi-fire"></i> VS</button>`}
-          <a href="#/teams/${a.id}" class="btn btn-outline-primary"><i class="bi bi-people-fill"></i> Equipos</a>
+          <a href="#/${a.template === 'memory' ? 'memory' : 'teams'}/${a.id}" class="btn btn-outline-primary"><i class="bi bi-people-fill"></i> Equipos</a>
           ${T?.meta?.modes?.live
             ? `<a href="#/launch/${a.id}" class="btn btn-outline-info"><i class="bi bi-broadcast"></i> En vivo</a>`
             : `<button class="btn btn-outline-secondary" disabled title="Esta plantilla no admite En vivo"><i class="bi bi-broadcast"></i> En vivo</button>`}

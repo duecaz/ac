@@ -13,6 +13,7 @@ console.log('\n▶ storageMerge'); await import('./storageMerge.test.mjs');
 console.log('\n▶ live');      await import('./live.test.mjs');
 console.log('\n▶ liveEngine'); await import('./liveEngine.test.mjs');
 console.log('\n▶ sessionEngine'); await import('./sessionEngine.test.mjs');
+console.log('\n▶ memory'); await import('./memory.test.mjs');
 console.log('\n▶ liveLocal'); await import('./liveLocal.test.mjs');
 console.log('\n▶ assignments'); await import('./assignments.test.mjs');
 console.log('\n✅ all suites passed');
