@@ -221,6 +221,26 @@ const quizActivity = {
   assert.deepStrictEqual(scoreComasSubmission({ value: [3], item: comaItem, activity: {} }), { correct: true, points: 1 });
   assert.deepStrictEqual(scoreComasSubmission({ value: [], item: comaItem, activity: {} }), { correct: false, points: 0 });
   ok('comas: shared mark scorer bound to the coma kind');
+
+  // Match: each pair is a matching round, scored by the chosen right side.
+  const { scoreMatchSubmission } = await import('../templates/match/scorer.js');
+  if (!getTemplate('match_sess')) registerTemplate({
+    meta: { name: 'match_sess', contentModel: 'pairs', modes: { solo: true },
+            defaultRules: () => ({}), defaultScoring: () => ({}) },
+    renderPlayer() {}, renderEditor() {},
+    scoreSubmission: scoreMatchSubmission,
+    getRoundPayload(activity, ctx) { const p = activity.content.pairs[ctx.itemIndex]; return p ? { question: p.left, options: [p.right] } : null; },
+    renderRound() {},
+  });
+  const matchAct = { id: 'ma', template: 'match_sess', scoring: { pointsPerCorrect: 1 },
+    content: { pairs: [{ id: 'm1', left: 'dog', right: 'perro' }, { id: 'm2', left: 'cat', right: 'gato' }] } };
+  assert.strictEqual(isVsCompatible(matchAct), true, 'match is VS-compatible');
+  assert.deepStrictEqual(scoreMatchSubmission({ value: 'perro', item: matchAct.content.pairs[0], activity: matchAct }), { correct: true, points: 1 });
+  assert.deepStrictEqual(scoreMatchSubmission({ value: 'gato', item: matchAct.content.pairs[0], activity: matchAct }), { correct: false, points: 0 });
+  const mvs = createSession(matchAct, { format: FORMATS.VS, left: 'A', right: 'B' });
+  mvs.start(); mvs.answer('left', 'perro'); mvs.answer('left', 'gato');
+  assert.strictEqual(mvs.standings().left.score, 2, 'match VS scores correct picks');
+  ok('match: pairs play as matching rounds in VS');
 }
 
 console.log(`\nsessionEngine.test: ${passed} checks passed`);
