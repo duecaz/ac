@@ -4,4 +4,5 @@
 console.log('▶ registry'); await import('./registry.test.mjs');
 console.log('\n▶ content');  await import('./content.test.mjs');
 console.log('\n▶ adapters'); await import('./adapters.test.mjs');
+console.log('\n▶ solo');     await import('./solo.test.mjs');
 console.log('\n✅ all suites passed');
