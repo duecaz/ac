@@ -10,6 +10,7 @@ export function createSupabaseRealtime() {
     createRoom,
     findRoomByCode,
     fetchSession,
+    fetchSessionKey: live.fetchSessionKey,
     joinSession: live.joinSession,
     setSessionState: live.setSessionState,
     startSession: live.startSession,

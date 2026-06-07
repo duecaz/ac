@@ -8,6 +8,16 @@ const CORS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS"
 };
 
+// Strip the answer key from the snapshot students will be able to read
+// (sessions.activity_snap). The full snapshot is stored separately in
+// session_keys (host + service_role only).
+function sanitizeSnap(activity: any) {
+  const c = JSON.parse(JSON.stringify(activity));
+  const items = c?.content?.items;
+  if (Array.isArray(items)) for (const it of items) { delete it.answer; delete it.answerIdx; }
+  return c;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   try {
@@ -40,13 +50,20 @@ Deno.serve(async (req: Request) => {
       code,
       host_id: userId,
       activity_id: activity_id || null,
-      activity_snap: activity,
+      activity_snap: sanitizeSnap(activity),
       rules: rules || {},
       status: "lobby",
       phase: "idle",
       current_item: -1
     }).select("id, code").single();
     if (sErr) return json({ error: sErr.message }, 500);
+
+    // Store the full snapshot (with answers) out of the student-readable row.
+    const { error: kErr } = await admin.from("session_keys").insert({ session_id: session.id, snap: activity });
+    if (kErr) {
+      await admin.from("sessions").delete().eq("id", session.id);
+      return json({ error: "key store failed: " + kErr.message }, 500);
+    }
     return json({ id: session.id, code: session.code });
   } catch (e) {
     return json({ error: String((e as Error).message || e) }, 500);

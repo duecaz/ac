@@ -1,7 +1,6 @@
-// Dispatcher. Loads activity_snap, picks the scorer for activity.template,
-// scores all answers for the round, updates rows, recomputes player totals,
-// flips phase to 'reveal'. Adding a new template only requires a new scorer
-// in _scorers/ and an entry in the SCORERS map below.
+// Dispatcher. Loads the answer key (session_keys), picks the scorer for
+// activity.template, scores all answers for the round, updates rows, recomputes
+// player totals, flips phase to 'reveal'.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { scoreOne as quizScoreOne } from "./_scorers/quiz.ts";
@@ -41,8 +40,6 @@ Deno.serve(async (req: Request) => {
     if (sErr || !sess) return json({ error: "session not found" }, 404);
     if (sess.host_id !== userId) return json({ error: "not host" }, 403);
 
-    // Idempotent: if we're already in reveal for THIS item (or beyond), don't
-    // re-score. Saves work and avoids races on double-click.
     if (sess.status === 'ended') return json({ ok: true, alreadySettled: true, reason: 'session ended' });
     if (sess.phase === 'reveal' && sess.current_item === item_index) {
       return json({ ok: true, alreadySettled: true });
@@ -51,7 +48,11 @@ Deno.serve(async (req: Request) => {
       return json({ ok: true, alreadySettled: true });
     }
 
-    const activity = sess.activity_snap as any;
+    // Score with the FULL snapshot (answers live in session_keys, not in the
+    // student-readable sessions.activity_snap). Fallback to the snap for old
+    // sessions created before the split.
+    const { data: keyRow } = await admin.from("session_keys").select("snap").eq("session_id", session_id).maybeSingle();
+    const activity = ((keyRow?.snap) ?? sess.activity_snap) as any;
     const scorer = SCORERS[activity?.template];
     if (!scorer) return json({ error: `no scorer for template ${activity?.template}` }, 400);
 
@@ -63,13 +64,8 @@ Deno.serve(async (req: Request) => {
       .eq("session_id", session_id).eq("item_index", item_index);
     if (aErr) return json({ error: aErr.message }, 500);
 
-    // Score each answer.
     const scored = (answers || []).map(a => ({ a, r: scorer(activity, item, a) }));
 
-    // Streak bonus (server-side, anti-cheat). When live.streakBonus enabled,
-    // look up each player's prior answers up to item_index-1 ordered, count
-    // consecutive corrects ending right before this item, and add a flat
-    // bonus per streak step. Default bonus = 50 pts per consecutive prior.
     if (activity?.live?.streakBonus && item_index > 0) {
       const playerIds = scored.filter(({ r }) => r.correct === true).map(({ a }) => a.player_id);
       if (playerIds.length) {
@@ -88,7 +84,6 @@ Deno.serve(async (req: Request) => {
         for (const { a, r } of scored) {
           if (r.correct !== true) continue;
           const arr = (byPlayer.get(a.player_id) || []).sort((x, y) => x.i - y.i);
-          // Count tail of consecutive corrects.
           let streak = 0;
           for (let i = arr.length - 1; i >= 0; i--) {
             if (arr[i].c === true) streak++;
@@ -99,15 +94,11 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Update answers in parallel.
     await Promise.all(scored.map(({ a, r }) =>
       admin.from("answers").update({ correct: r.correct, points: r.points }).eq("id", a.id)
     ));
     const settled = scored.length;
 
-    // Incremental score update: add this round's delta per player. Atomic via
-    // the increment_player_score RPC (single UPDATE) so concurrent settles can't
-    // lose a delta to a read-modify-write race.
     const deltas = new Map<string, number>();
     for (const { a, r } of scored) deltas.set(a.player_id, (deltas.get(a.player_id) || 0) + (r.points || 0));
     await Promise.all([...deltas].map(([pid, delta]) =>

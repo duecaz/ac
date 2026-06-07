@@ -6,16 +6,15 @@
 // disable sounds globally, call setMuted(true). To swap pack, setSoundPack().
 
 import { GameEvents, onGame } from './gameEvents.js';
-import { SUPABASE_URL } from '../supabase.config.js';
 
 let _pack = {};
 const _cache = new Map();           // name -> HTMLAudioElement
 let _muted = localStorage.getItem('ww.muted') === '1';
 
-// Default pack served from this project's own Supabase Storage (public bucket
-// `repo-ac-sounds`), so audio no longer depends on an external CDN. Upload three
-// files there: click.mp3, win.mp3, fail.mp3. Missing files just play silently.
-const ASSET_BASE = `${SUPABASE_URL}/storage/v1/object/public/repo-ac-sounds`;
+// Default pack on jsDelivr serving from the public repo duecaz/ww-assets.
+// Three CC0 files are mapped onto the six game events (some events share).
+// (We can move these to our own Supabase Storage bucket for production later.)
+const ASSET_BASE = 'https://cdn.jsdelivr.net/gh/duecaz/ww-assets@main/sounds';
 const DEFAULT_PACK = {
   lobby:   null,                          // intentionally silent
   tick:    `${ASSET_BASE}/click.mp3`,     // soft click for ticks/UI

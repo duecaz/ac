@@ -24,6 +24,15 @@ export async function endSession(sessionId) {
   await sb.rpc('finalize_session_results', { p_session_id: sessionId });
 }
 
+// Full activity snapshot WITH the answer key. sessions.activity_snap is
+// sanitized (no answers) so students can't read them; the host (RLS-allowed)
+// fetches the real key here to show the correct answer on reveal.
+export async function fetchSessionKey(sessionId) {
+  const sb = await getClient();
+  const { data } = await sb.from('session_keys').select('snap').eq('session_id', sessionId).maybeSingle();
+  return data?.snap || null;
+}
+
 // Calls the settle-item Edge Function. Server-side anti-cheat: scoring
 // happens with service role; clients can't write correct/points.
 export async function settleItem(sessionId, itemIndex) {

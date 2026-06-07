@@ -4,7 +4,7 @@ import { on } from '../core/events.js';
 import { get } from '../core/storage.js';
 import { createRoom, findRoomByCode, fetchSession,
          startSession, setSessionState, endSession, settleItem,
-         listPlayers, listAnswers, leaderboard, kickPlayer, subscribeRoom, pingHost }
+         listPlayers, listAnswers, leaderboard, kickPlayer, subscribeRoom, pingHost, fetchSessionKey }
        from '../core/liveTransport.js';
 import { getTemplate } from '../core/registry.js';
 import { acquire } from '../core/lifecycle.js';
@@ -43,6 +43,11 @@ export async function renderHostByCode(rootSel, code) {
 
 async function renderHost(rootSel, code, sessionId, activity) {
   const ctx = acquire('hostLive');
+  // sessions.activity_snap is sanitized (no answers) so students can't read the
+  // key. The host IS allowed to see answers (to show the correct one on reveal),
+  // so swap in the full snapshot from session_keys when available. Falls back to
+  // the (possibly full, for older/local sessions) snap we were handed.
+  try { const full = await fetchSessionKey(sessionId); if (full) activity = full; } catch { /* keep fallback */ }
   // Apply per-activity skin during the host live view.
   applySkin(activity.presentation?.skin || 'kahoot');
   applyBackground(activity.presentation?.background || 'none');

@@ -14,6 +14,7 @@ const call = (method) => async (...args) => {
 export const createRoom = call('createRoom');
 export const findRoomByCode = call('findRoomByCode');
 export const fetchSession = call('fetchSession');
+export const fetchSessionKey = call('fetchSessionKey');
 
 // Host flow
 export const startSession = call('startSession');
