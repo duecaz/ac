@@ -31,7 +31,7 @@ export function renderWheelEditor(root, activity, onChange) {
         </div>
         <div class="tab-pane fade" id="tab-rules">
           <div class="row g-3">
-            <div class="col-md-4"><label class="form-label">Duración del giro (ms)</label><input id="we-dur" type="number" min="500" max="20000" class="form-control" value="${a.rules.spinDurationMs ?? 4000}"></div>
+            <div class="col-md-4"><label class="form-label">Duración del giro (ms)</label><input id="we-dur" type="number" min="500" max="30000" step="500" class="form-control" value="${a.rules.spinDurationMs ?? 4000}"><div class="form-text">Máximo 30000 ms (30 s).</div></div>
             <div class="col-md-4 form-check pt-4"><input class="form-check-input" type="checkbox" id="we-rm" ${a.rules.removeAfterSpin?'checked':''}><label class="form-check-label" for="we-rm">Quitar tras girar</label></div>
           </div>
         </div>
@@ -44,7 +44,7 @@ export function renderWheelEditor(root, activity, onChange) {
     on(root, 'click', '.item-up',   (_, b) => { reorderArray(a.content.entries, +b.dataset.i, -1); onChange(a); paint(); });
     on(root, 'click', '.item-down', (_, b) => { reorderArray(a.content.entries, +b.dataset.i, +1); onChange(a); paint(); });
     on(root, 'click', '#we-add', () => { a.content.entries.push(''); onChange(a); paint(); });
-    on(root, 'input', '#we-dur', e => { a.rules.spinDurationMs = +e.target.value || 4000; onChange(a); });
+    on(root, 'input', '#we-dur', e => { a.rules.spinDurationMs = Math.min(30000, +e.target.value || 4000); onChange(a); });
     on(root, 'change', '#we-rm', e => { a.rules.removeAfterSpin = e.target.checked; onChange(a); });
   }
   paint();
