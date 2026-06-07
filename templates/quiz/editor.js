@@ -106,16 +106,17 @@ export function renderQuizEditor(root, activity, onChange) {
     on(root, 'change', '#l-nick', e => { a.live.nicknameFilter = e.target.checked; onChange(a); });
     on(root, 'change', '#l-streak', e => { a.live.streakBonus = e.target.checked; onChange(a); });
     on(root, 'input', '#l-streak-step', e => { a.live.streakBonusPerStep = +e.target.value || 0; onChange(a); });
-    // Presentation: skin picker.
+    // Presentation: skin/background pickers. Update the selection IN PLACE
+    // (don't paint() — a full re-mount would reset the tabs back to Contenido).
     on(root, 'click', '.skin-pick', (_, b) => {
       a.presentation.skin = b.dataset.name;
       onChange(a);
-      paint();
+      root.querySelectorAll('.skin-pick').forEach(x => x.classList.toggle('is-active', x === b));
     });
     on(root, 'click', '.bg-pick', (_, b) => {
       a.presentation.background = b.dataset.name;
       onChange(a);
-      paint();
+      root.querySelectorAll('.bg-pick').forEach(x => x.classList.toggle('is-active', x === b));
     });
   }
   paint();
