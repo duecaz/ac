@@ -6,6 +6,7 @@ import { isAcceptableNickname } from '../core/nicknameFilter.js';
 import { getTemplate } from '../core/registry.js';
 import { ensureIdentity } from '../core/identity.js';
 import { runPlayer } from '../core/player.js';
+import { activityItemCount } from '../core/migrate.js';
 
 const NICK_KEY = 'ww.nick';
 
@@ -55,7 +56,9 @@ export async function renderTask(rootSel, code) {
 
   await runPlayer(rootSel, activity, {
     onFinish: (state) => {
-      const max = activity.scoring?.maxScore || ((activity.scoring?.pointsPerCorrect || 1) * activity.content.items.length);
+      // Not every template has content.items (tildes/comas/memory/wheel use
+      // other shapes) — use the generic item counter so this never throws.
+      const max = activity.scoring?.maxScore || ((activity.scoring?.pointsPerCorrect || 1) * activityItemCount(activity));
       const timeUsed = Math.round((Date.now() - state.startedAt) / 1000);
       recordAttempt(t.id, t.activity_id, nick, state.score, max, timeUsed).catch(e => console.warn('record failed', e.message));
       // Override the template's own finish screen (which links to #/home — a

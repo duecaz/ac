@@ -12,7 +12,7 @@ export class WheelTemplate extends BaseTemplate {
     contentModel: 'entries',
     templateVersion: 1,
     aspectRatio: '1/1',
-    modes: { solo: true, live: false, async: true, practice: true },
+    modes: { solo: true, live: false, async: false, practice: true },
     needsImageUpload: false,
     needsAudioUpload: false,
     defaultRules: () => ({ spinDurationMs: 4000, removeAfterSpin: false }),
