@@ -8,6 +8,13 @@ const PALETTE = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#a855f7', '#ec4899
 /** Returns the spinning <svg> (slices + hub) rotated to `rotation` degrees. */
 export function wheelSvg(entries, { rotation = 0, dur = 4000, spinning = false, size = 400 } = {}) {
   const r = 180, cx = 200, cy = 200;
+  // Empty wheel (all options drawn): just the rim + central hub point.
+  if (!entries || entries.length === 0) {
+    return `<svg width="${size}" height="${size}">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#dee2e6" stroke-width="2" stroke-dasharray="6 6"/>
+      <circle cx="${cx}" cy="${cy}" r="20" fill="#fff" stroke="#000" stroke-width="2"/>
+    </svg>`;
+  }
   const arc = (2 * Math.PI) / entries.length;
   const slices = entries.map((e, i) => {
     const a0 = -Math.PI / 2 + i * arc;

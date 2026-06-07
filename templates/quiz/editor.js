@@ -58,26 +58,19 @@ export function renderQuizEditor(root, activity, onChange) {
     on(root, 'input', '.it-q', (e, el) => { a.content.items[+el.dataset.i].question = e.target.value; onChange(a); });
     on(root, 'input', '.it-opt', (e, el) => {
       const i = +el.dataset.i, k = +el.dataset.k, item = a.content.items[i];
-      const old = item.options[k];
       item.options[k] = e.target.value;
-      // Keep the correct answer in sync when renaming an option that's marked correct.
-      if (Array.isArray(item.answer)) {
-        const at = item.answer.indexOf(old); if (at >= 0) item.answer[at] = e.target.value;
-      } else if (item.answer === old) {
-        item.answer = e.target.value;
-      }
+      syncAnswerFromIdx(item); // refresh answer text from the correct indices
       onChange(a);
     });
-    // Toggle an option as correct. Stored as the option text so the scorer
-    // matches by value; one correct → string, several → array. Toggling off
-    // an already-correct option removes it (clears to '' when none remain).
+    // Toggle an option correct BY INDEX (so duplicate/empty option texts don't
+    // mark each other). The answer text is derived from the chosen indices for
+    // the scorer/player: one correct → string, several → array.
     on(root, 'click', '.it-correct', (_, el) => {
       const i = +el.dataset.i, k = +el.dataset.k, item = a.content.items[i];
-      const opt = item.options[k];
-      const arr = Array.isArray(item.answer) ? [...item.answer] : (item.answer ? [item.answer] : []);
-      const at = arr.indexOf(opt);
-      if (at >= 0) arr.splice(at, 1); else arr.push(opt);
-      item.answer = arr.length === 0 ? '' : (arr.length === 1 ? arr[0] : arr);
+      const set = correctIdxSet(item);
+      if (set.has(k)) set.delete(k); else set.add(k);
+      item.answerIdx = [...set].sort((x, y) => x - y);
+      syncAnswerFromIdx(item);
       commit(); // repaint so the green highlight follows the selection
     });
     on(root, 'input', '.it-pts', (e, el) => {
@@ -143,10 +136,29 @@ function pointsWarningHtml(a) {
   </div>`;
 }
 
-// Is option text `o` (one of) the correct answer(s) for item `it`?
-function isCorrectOption(it, o) {
-  if (it.answer == null || it.answer === '') return false;
-  return Array.isArray(it.answer) ? it.answer.includes(o) : it.answer === o;
+// Which option INDICES are correct. Source of truth in the editor is
+// `item.answerIdx` (a list of indices); if absent (older activities) we derive
+// it from the answer text — but indices avoid the duplicate/empty-text trap
+// where marking one option highlighted another with the same text.
+function correctIdxSet(it) {
+  if (Array.isArray(it.answerIdx)) {
+    return new Set(it.answerIdx.filter(k => k >= 0 && k < (it.options || []).length));
+  }
+  const ans = it.answer;
+  const set = new Set();
+  (it.options || []).forEach((o, k) => {
+    const match = Array.isArray(ans) ? ans.includes(o) : (ans != null && ans !== '' && ans === o);
+    if (match) set.add(k);
+  });
+  return set;
+}
+
+// Rebuild the scorer-facing answer (text|array) from the correct indices.
+function syncAnswerFromIdx(it) {
+  const idxs = [...correctIdxSet(it)].sort((a, b) => a - b);
+  it.answerIdx = idxs;
+  const texts = idxs.map(k => it.options[k]);
+  it.answer = texts.length === 0 ? '' : (texts.length === 1 ? texts[0] : texts);
 }
 
 function renderItems(a) {
@@ -163,15 +175,15 @@ function renderItems(a) {
       <div class="row g-2 mb-2">
         <div class="col-md-8">
           <div class="row g-2">
-            ${(it.options||['','','','']).map((o,k)=>{
-              const corr = isCorrectOption(it, o);
+            ${(() => { const cset = correctIdxSet(it); return (it.options||['','','','']).map((o,k)=>{
+              const corr = cset.has(k);
               return `<div class="col-12 col-md-6"><div class="input-group">
                 <button type="button" class="btn it-correct ${corr?'btn-success':'btn-outline-secondary'}" data-i="${i}" data-k="${k}" title="Marcar/quitar como correcta" aria-pressed="${corr}">
                   <i class="bi ${corr?'bi-check-circle-fill':'bi-circle'}"></i>
                 </button>
                 <input class="form-control it-opt ${corr?'border-success bg-success-subtle fw-semibold':''}" data-i="${i}" data-k="${k}" placeholder="Opción ${k+1}" value="${escapeHtml(o)}">
               </div></div>`;
-            }).join('')}
+            }).join(''); })()}
           </div>
         </div>
         <div class="col-md-4">

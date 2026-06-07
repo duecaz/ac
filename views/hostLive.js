@@ -62,12 +62,17 @@ async function renderHost(rootSel, code, sessionId, activity) {
   let paused = false;
   let pauseRemainMs = 0;
   let lastPhaseKey = '';
+  // Once we're leaving (cancel/navigation), ignore late realtime echoes so the
+  // 'ended' status change from our own endSession() can't paint a stray podium.
+  let disposed = false;
+  ctx.add(() => { disposed = true; });
 
   // Host heartbeat every 10s so cleanup_zombie_sessions doesn't reap us.
   pingHost(sessionId).catch(() => {});
   ctx.setInterval(() => pingHost(sessionId).catch(() => {}), 10000);
 
   async function onChange(ev) {
+    if (disposed) return;
     // Some backends deliver a full row diff (Supabase postgres_changes); the
     // local driver sends only { table } as a "something changed" ping. When the
     // payload is missing, re-fetch the affected list so both backends work.
@@ -97,6 +102,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
   function qrUrl() { return `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(joinUrl())}`; }
 
   function paint() {
+    if (disposed) return;
     // Always re-render when data changes (e.g. a player joins the lobby), but
     // only re-fire phase sounds/effects when the visible phase actually changes
     // (phaseChanged). `skip` protects an active question from being reset by
@@ -154,7 +160,9 @@ async function renderHost(rootSel, code, sessionId, activity) {
     on(rootSel, 'click', '#btn-cancel', async () => {
       const ok = await confirmModal('¿Cancelar sala?', { okText: 'Cancelar sala', danger: true });
       if (!ok) return;
-      await endSession(sessionId); location.hash = '#/home';
+      disposed = true; // stop reacting to the 'ended' echo before it can paint a podium
+      try { await endSession(sessionId); } catch {}
+      location.hash = '#/home';
     });
     on(rootSel, 'click', '.kick', (_, b) => kickPlayer(sessionId, b.dataset.id));
   }
