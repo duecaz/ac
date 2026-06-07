@@ -14,6 +14,7 @@ import { applyBackground } from '../core/backgrounds.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { hostPaintDecision } from '../core/livePhases.js';
+import { podiumHtml } from '../core/podium.js';
 
 const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
 
@@ -332,14 +333,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     if (phaseChanged) emitGame(GameEvents.PODIUM, { top: lb.map(p => ({ name: p.name, score: p.score })) });
     mount(rootSel, html`
       <h2 class="text-center mb-4"><i class="bi bi-trophy-fill text-warning"></i> Podio</h2>
-      <div class="ww-podium mb-4">
-        ${[1,0,2].map(i => lb[i] ? `
-          <div class="step s${i===0?1:i===1?2:3}">
-            <div class="display-6">${i+1}</div>
-            <div class="fw-bold">${escapeHtml(lb[i].name)}</div>
-            <div>${lb[i].score} pts</div>
-          </div>` : '<div></div>').join('')}
-      </div>
+      ${podiumHtml(lb)}
       <div class="text-center">
         <a href="#/home" class="btn btn-outline-primary btn-lg"><i class="bi bi-house"></i> Volver a inicio</a>
       </div>

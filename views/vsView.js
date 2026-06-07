@@ -11,6 +11,7 @@ import { get } from '../core/storage.js';
 import { getTemplate } from '../core/registry.js';
 import { createSession, isVsCompatible, FORMATS, sessionItems } from '../kernel/session/engine.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
+import { podiumHtml } from '../core/podium.js';
 
 const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
 const FLASH_MS = 700;
@@ -160,16 +161,19 @@ export function renderVsView(rootSel, id) {
     }
 
     function finish(st) {
-      const winner = st.leader === 'tie' ? null : st[st.leader];
-      const loser = st.leader === 'tie' ? null : st[st.leader === 'left' ? 'right' : 'left'];
+      const tie = st.leader === 'tie';
+      const winner = tie ? null : st[st.leader];
+      // Same podium component as live mode; tied players get equal-height bars.
+      const ranked = [st.left, st.right]
+        .map(s => ({ name: s.name, score: s.score }))
+        .sort((a, b) => b.score - a.score);
+      const heading = tie
+        ? `<i class="bi bi-emoji-neutral text-secondary"></i> ¡Empate a ${st.left.score}!`
+        : `<i class="bi bi-trophy-fill text-warning"></i> 🏆 ¡${escapeHtml(winner.name)} gana!`;
       const body = `
         <div class="vs-result text-center py-4">
-          ${winner
-            ? `<i class="bi bi-trophy-fill display-1 text-warning"></i>
-               <h2 class="mt-2">🏆 ¡${escapeHtml(winner.name)} gana!</h2>
-               <p class="lead">${escapeHtml(winner.name)} ${winner.score} — ${loser.score} ${escapeHtml(loser.name)}</p>`
-            : `<i class="bi bi-emoji-neutral display-1 text-secondary"></i>
-               <h2 class="mt-2">¡Empate a ${st.left.score}!</h2>`}
+          <h2 class="mb-3">${heading}</h2>
+          ${podiumHtml(ranked)}
           <button id="vs-again" class="btn btn-danger btn-lg mt-2"><i class="bi bi-arrow-repeat"></i> Otra vez</button>
           <a href="#/play/${a.id}" class="btn btn-outline-secondary btn-lg mt-2 ms-2">Salir</a>
         </div>`;
