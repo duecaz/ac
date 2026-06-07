@@ -58,6 +58,17 @@ export async function renderTask(rootSel, code) {
       const max = activity.scoring?.maxScore || ((activity.scoring?.pointsPerCorrect || 1) * activity.content.items.length);
       const timeUsed = Math.round((Date.now() - state.startedAt) / 1000);
       recordAttempt(t.id, t.activity_id, nick, state.score, max, timeUsed).catch(e => console.warn('record failed', e.message));
+      // Override the template's own finish screen (which links to #/home — a
+      // teacher-only route absent from the student app, hence "ruta no
+      // encontrada"). Show a student-safe completion screen instead.
+      mount(rootSel, html`
+        <div class="text-center py-5">
+          <i class="bi bi-check-circle-fill display-1 text-success"></i>
+          <h2 class="mt-3">¡Tarea enviada!</h2>
+          <p class="lead">Puntos: <b>${state.score}</b> / ${max}</p>
+          <p class="text-muted">Tu profe verá tu resultado. Ya puedes cerrar esta página.</p>
+          <a href="#/join" class="btn btn-primary"><i class="bi bi-arrow-left"></i> Volver</a>
+        </div>`);
     }
   });
 }

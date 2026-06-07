@@ -26,6 +26,7 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
   const rootEl = () => (typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel);
 
   function paint(winner = null) {
+    if (!rootEl()) return; // view was left (e.g. spin finished after navigating away)
     const exhausted = entries.length === 0; // all options drawn (removeAfterSpin)
     mount(rootSel, html`
       <div class="ww-wheel text-center py-3">
@@ -83,6 +84,7 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
 
     setTimeout(() => {
       spinning = false;
+      if (!rootEl()) return; // left the view mid-spin — nothing to repaint
       history.push(winner);
       if (remove) {
         // Draw without replacement. Keep the wheel oriented where it landed

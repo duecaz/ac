@@ -174,7 +174,9 @@ export function renderVsView(rootSel, id) {
           <a href="#/play/${a.id}" class="btn btn-outline-secondary btn-lg mt-2 ms-2">Salir</a>
         </div>`;
       mount(rootSel, html`<div class="vs-arena"><div class="vs-overlay">${body}</div></div>`);
-      emitGame(GameEvents.PODIUM, { top: winner ? [{ name: winner.name, score: winner.score }] : [] });
+      // Only celebrate a real winner. On a tie, no victory fanfare/confetti
+      // (PODIUM triggers win.mp3 + confetti) — a draw isn't a win.
+      if (winner) emitGame(GameEvents.PODIUM, { top: [{ name: winner.name, score: winner.score }] });
       on(rootSel, 'click', '#vs-again', () => renderSetup());
     }
   }
