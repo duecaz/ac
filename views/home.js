@@ -76,9 +76,9 @@ export function renderHome(rootSel) {
             ${(a.tags || []).length ? `<div>${a.tags.slice(0,4).map(t => `<span class="badge bg-light text-dark border me-1">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
           </div>
           <div class="card-footer d-flex gap-1 flex-wrap">
-            ${m.solo ? `<button class="btn btn-success btn-sm flex-grow-1 act-play" data-id="${a.id}"><i class="bi bi-play-fill"></i> Empezar</button>` : ''}
-            ${m.live ? `<button class="btn btn-warning btn-sm flex-grow-1 act-pin" data-id="${a.id}"><i class="bi bi-broadcast"></i> PIN</button>` : ''}
-            ${m.async ? `<button class="btn btn-info btn-sm flex-grow-1 act-task" data-id="${a.id}" title="Tareas"><i class="bi bi-clipboard-check"></i></button>` : ''}
+            ${m.solo ? `<button class="btn btn-success btn-sm flex-grow-1 act-play" data-id="${a.id}"><i class="bi bi-person-fill"></i> Individual</button>` : ''}
+            ${m.live ? `<button class="btn btn-warning btn-sm flex-grow-1 act-pin" data-id="${a.id}"><i class="bi bi-broadcast"></i> En vivo</button>` : ''}
+            ${m.async ? `<button class="btn btn-info btn-sm flex-grow-1 act-task" data-id="${a.id}" title="Tarea"><i class="bi bi-clipboard-check"></i> Tarea</button>` : ''}
             <button class="btn btn-outline-primary btn-sm act-edit" data-id="${a.id}"><i class="bi bi-pencil"></i></button>
             <button class="btn btn-outline-secondary btn-sm act-export" data-id="${a.id}" title="Exportar JSON"><i class="bi bi-download"></i></button>
             <button class="btn btn-outline-danger btn-sm act-del" data-id="${a.id}"><i class="bi bi-trash"></i></button>
