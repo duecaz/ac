@@ -3,7 +3,7 @@
 // it is in Equipos, or to draw names. Reuses the pure wheel logic + SVG drawing.
 import { html, escapeHtml, mount, $ } from '../core/html.js';
 import { on } from '../core/events.js';
-import { normalizeEntries, pickIndex, landingRotation, removeAt } from '../templates/wheel/logic.js';
+import { normalizeEntries, pickIndex, removeAt } from '../templates/wheel/logic.js';
 import { wheelSvg } from '../templates/wheel/render.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 
@@ -20,6 +20,7 @@ export function renderSorteoView(rootSel) {
   paint();
 
   function paint(winner = null) {
+    if (!document.querySelector(rootSel)) return; // left the view mid-spin
     mount(rootSel, html`
       <div class="sorteo container py-3">
         <a href="#/home" class="btn btn-sm btn-link"><i class="bi bi-arrow-left"></i> Inicio</a>
@@ -41,7 +42,7 @@ export function renderSorteoView(rootSel) {
           </div>
           <div class="col-12 col-lg-7 text-center">
             <div style="position:relative;display:inline-block">
-              ${wheelSvg(normalizeEntries(entries), { rotation, dur: DUR, spinning })}
+              ${wheelSvg(normalizeEntries(entries), { rotation, dur: DUR, spinning: false })}
               <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:36px;color:#000">▼</div>
             </div>
             <div class="mt-3" style="min-height:3rem">
@@ -74,18 +75,32 @@ export function renderSorteoView(rootSel) {
   }
 
   function spin() {
+    if (spinning) return;
     readList();
     const list = normalizeEntries(entries);
-    const target = pickIndex(list.length);
+    const count = list.length;
+    const target = pickIndex(count);
     const winner = list[target];
     spinning = true;
-    rotation = landingRotation(target, list.length);
-    paint();
+    // Spin forward from the current angle so the SVG actually animates (a fresh
+    // re-mount would jump). Mirror of templates/wheel/player.js.
+    const arc = 360 / count;
+    const base = Math.ceil((rotation + 1) / 360) * 360;
+    rotation = base + 360 * 5 + (360 - (target * arc + arc / 2));
+    const svg = document.querySelector(rootSel + ' .sorteo svg');
+    const btn = $('#sorteo-spin');
+    if (btn) btn.disabled = true;
+    if (svg) {
+      svg.style.transition = `transform ${DUR}ms cubic-bezier(.17,.67,.21,.99)`;
+      svg.getBoundingClientRect?.();
+      svg.style.transform = `rotate(${rotation}deg)`;
+    }
     setTimeout(() => {
       spinning = false;
+      if (!document.querySelector(rootSel)) return; // left the view mid-spin
       history.push(winner);
       emitGame(GameEvents.ANSWER_CORRECT, {}); // a little flourish
-      if (remove) { entries = removeAt(list, target); rotation = 0; }
+      if (remove) { entries = removeAt(list, target); rotation = ((rotation % 360) + 360) % 360; }
       paint(winner);
     }, DUR);
   }
