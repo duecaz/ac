@@ -43,7 +43,24 @@ export class QuizTemplate extends BaseTemplate {
   static renderRound(root, payload, opts) { renderChoiceRound(root, payload, opts); }
 
   // Migrate this template's content from older templateVersion if needed.
-  static migrateContent(content /*, fromVersion */) { return content; }
+  static migrateContent(content /*, fromVersion */) {
+    // Ensure each item carries answerIdx (the correct option INDICES) so the
+    // editor never re-derives correctness from option TEXT — which mismarks
+    // options that share text. Idempotent: only fills it when missing.
+    if (content && Array.isArray(content.items)) {
+      for (const it of content.items) {
+        if (it && !Array.isArray(it.answerIdx)) {
+          const ans = it.answer;
+          it.answerIdx = (it.options || []).reduce((acc, o, k) => {
+            const hit = Array.isArray(ans) ? ans.includes(o) : (ans != null && ans !== '' && ans === o);
+            if (hit) acc.push(k);
+            return acc;
+          }, []);
+        }
+      }
+    }
+    return content;
+  }
 }
 
 function shuffle(a){ for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]; } return a; }

@@ -15,6 +15,7 @@ import { getTemplate } from '../core/registry.js';
 import { createSession, FORMATS, sessionItems } from '../kernel/session/engine.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { applyMarks } from '../core/textMarks.js';
+import { podiumHtml } from '../core/podium.js';
 
 const TEAM_COLORS = ['danger', 'primary', 'success', 'warning'];
 
@@ -213,14 +214,14 @@ export function renderTeamsView(rootSel, id) {
       const lb = session.leaderboard();
       const top = lb[0];
       const tie = lb.length > 1 && lb[1].score === top.score;
+      const ranked = lb.map(t => ({ name: t.name, score: t.score }));
+      // Same bar podium as En vivo / VS (tied teams → equal height). Teams
+      // beyond the top 3 are listed compactly below.
       return `
         <div class="teams-podium text-center">
-          <i class="bi bi-trophy-fill display-1 text-warning"></i>
-          <h2 class="mt-2">${tie ? '¡Empate!' : `🏆 ¡${escapeHtml(top.name)} gana!`}</h2>
-          <div class="teams-ranking">
-            ${lb.map(t => `<div class="d-flex justify-content-between teams-rank-row">
-              <span>${t.rank}. ${escapeHtml(t.name)}</span><b>${t.score}</b></div>`).join('')}
-          </div>
+          <h2 class="mb-3"><i class="bi bi-trophy-fill text-warning"></i> ${tie ? '¡Empate!' : `🏆 ¡${escapeHtml(top.name)} gana!`}</h2>
+          ${podiumHtml(ranked)}
+          ${lb.length > 3 ? `<div class="teams-ranking mt-3">${lb.slice(3).map(t => `<div class="d-flex justify-content-between teams-rank-row"><span>${t.rank}. ${escapeHtml(t.name)}</span><b>${t.score}</b></div>`).join('')}</div>` : ''}
         </div>`;
     }
 
