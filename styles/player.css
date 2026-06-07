@@ -37,17 +37,59 @@
 
 /* Inner widget fills the frame absolutely and scrolls if content overflows.
    When aspect-ratio is 'auto', the wrapper has min-height set inline and
-   the widget uses static positioning so height grows naturally. */
+   the widget uses static positioning so height grows naturally.
+   container-type:size makes it a query container so the activity can size
+   itself to the frame (cq* units) and fit without a scrollbar. */
 .ww-play-page .ww-player-frame > #ww-player-widget {
   position: absolute;
   inset: 0;
   overflow: auto;
   padding: 1.25rem;
+  container-type: size;
+}
+
+/* Quiz/solo player: a flex column that exactly fills the frame, so it never
+   needs a scrollbar. The image is the flexible middle (shrinks to fit); the
+   question and options keep natural size. Text/buttons scale with the frame
+   via container-query units → crisp on a 1280x800 board and in fullscreen. */
+.ww-play-page .ww-player-frame .ww-player {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 1.4cqh;
+}
+.ww-play-page .ww-player-frame .ww-player .ww-phead { flex: 0 0 auto; }
+.ww-play-page .ww-player-frame .ww-player .ww-q {
+  flex: 0 0 auto;
+  margin: 0;
+  line-height: 1.15;
+  font-size: clamp(1rem, 5cqmin, 2.4rem);
+}
+.ww-play-page .ww-player-frame .ww-player .ww-q-media {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ww-play-page .ww-player-frame .ww-player .ww-q-media img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.ww-play-page .ww-player-frame .ww-player .ww-options { flex: 0 0 auto; gap: 1.2cqh; }
+.ww-play-page .ww-player-frame .ww-player .ww-kahoot-grid .btn {
+  font-size: clamp(.9rem, 3.4cqmin, 1.9rem);
+  padding: clamp(.45rem, 2.2cqh, 1.6rem);
+  min-height: 0;
+  white-space: normal;
 }
 .ww-play-page .ww-player-frame[style*="auto"] > #ww-player-widget {
   position: static;
   inset: auto;
   min-height: inherit;
+  container-type: normal; /* indefinite height: size containment would collapse it */
 }
 
 /* Fullscreen mode: frame fills the screen, widget loses padding so the
@@ -90,6 +132,18 @@
     position: static;
     inset: auto;
     padding: .75rem;
+    container-type: normal; /* height is indefinite here → cq* would be 0 */
+  }
+  /* Phone: stack naturally and use fixed sizes (the page scrolls if needed,
+     instead of squeezing everything into a fixed box). */
+  .ww-play-page .ww-player-frame .ww-player { height: auto; gap: .75rem; }
+  .ww-play-page .ww-player-frame .ww-player .ww-q { font-size: 1.3rem; }
+  .ww-play-page .ww-player-frame .ww-player .ww-q-media { flex: 0 0 auto; }
+  .ww-play-page .ww-player-frame .ww-player .ww-q-media img { max-height: 38vh; }
+  .ww-play-page .ww-player-frame .ww-player .ww-options { gap: .6rem; }
+  .ww-play-page .ww-player-frame .ww-player .ww-kahoot-grid .btn {
+    font-size: 1.1rem;
+    padding: 1rem;
   }
   .ww-pick-tile { width: 76px; }
 }

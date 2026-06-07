@@ -29,13 +29,13 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
     emitGame(GameEvents.QUESTION_SHOWN, { idx: state.idx, total: items.length, item });
     mount(rootSel, html`
       <div class="ww-player">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="ww-phead d-flex justify-content-between align-items-center">
           <span class="badge bg-secondary">${state.idx + 1} / ${items.length}</span>
           ${streak >= 2 ? `<span class="badge bg-warning text-dark">🔥 ${streak}</span>` : ''}
           <span class="badge bg-primary">★ ${state.score}</span>
         </div>
-        <h3 class="mb-3">${escapeHtml(item.question)}</h3>
-        ${item.image ? `<div class="text-center mb-3"><img src="${escapeHtml(item.image)}" class="img-fluid" style="max-height:240px"></div>` : ''}
+        <h3 class="ww-q">${escapeHtml(item.question)}</h3>
+        <div class="ww-q-media">${item.image ? `<img src="${escapeHtml(item.image)}" alt="">` : ''}</div>
         <div class="ww-kahoot-grid ww-options">
           ${opts2.map((o, i) => `
             <button class="btn btn-lg w-100 ww-opt ww-shape-${(i % 4) + 1}" data-value="${escapeHtml(o)}">
