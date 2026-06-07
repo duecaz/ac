@@ -63,8 +63,8 @@ export function renderComasEditor(root, activity, onChange) {
     on(root, 'change', '#t-overflow', e => { a.rules.allowOverflow = e.target.checked; onChange(a); });
     on(root, 'input', '#t-ppc', e => { a.scoring.pointsPerCorrect = +e.target.value || 0; onChange(a); });
     on(root, 'input', '#t-ppw', e => { a.scoring.pointsPerWrong = +e.target.value || 0; onChange(a); });
-    on(root, 'click', '.skin-pick', (_, b) => { a.presentation.skin = b.dataset.name; onChange(a); paint(); });
-    on(root, 'click', '.bg-pick',   (_, b) => { a.presentation.background = b.dataset.name; onChange(a); paint(); });
+    on(root, 'click', '.skin-pick', (_, b) => { a.presentation.skin = b.dataset.name; onChange(a); root.querySelectorAll('.skin-pick').forEach(x => x.classList.toggle('is-active', x === b)); });
+    on(root, 'click', '.bg-pick',   (_, b) => { a.presentation.background = b.dataset.name; onChange(a); root.querySelectorAll('.bg-pick').forEach(x => x.classList.toggle('is-active', x === b)); });
   }
 
   function renderPassage(p, i, total) {
