@@ -15,6 +15,15 @@ export function wheelSvg(entries, { rotation = 0, dur = 4000, spinning = false, 
       <circle cx="${cx}" cy="${cy}" r="20" fill="#fff" stroke="#000" stroke-width="2"/>
     </svg>`;
   }
+  // Single option left: a full-circle arc path degenerates (start === end and
+  // draws nothing), so render a solid disc that fills 100% of the wheel.
+  if (entries.length === 1) {
+    return `<svg width="${size}" height="${size}" style="transform:rotate(${rotation}deg);transition:transform ${spinning ? dur : 0}ms cubic-bezier(.17,.67,.21,.99)">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="${PALETTE[0]}" stroke="#fff" stroke-width="2"/>
+      <text x="${cx}" y="${cy - r * 0.45}" fill="#fff" font-weight="700" font-size="18" text-anchor="middle">${escapeHtml(truncLabel(entries[0]))}</text>
+      <circle cx="${cx}" cy="${cy}" r="20" fill="#fff" stroke="#000" stroke-width="2"/>
+    </svg>`;
+  }
   const arc = (2 * Math.PI) / entries.length;
   const slices = entries.map((e, i) => {
     const a0 = -Math.PI / 2 + i * arc;
