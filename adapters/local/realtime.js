@@ -123,6 +123,10 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
       return { id: code, code, status: r.state.status, phase: r.state.phase, current_item: r.state.currentItem, activity_snap: r.activity };
     },
 
+    // Single-device local mode: no separate answer key — the host already holds
+    // the full activity in its session. Return null so callers fall back to it.
+    async fetchSessionKey() { return null; },
+
     // onChange({ table }) — the view re-fetches players/answers/session on notice.
     // Registers both a same-tab subscriber (self-echo) and a cross-tab channel
     // listener; the returned function tears both down.
