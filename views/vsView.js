@@ -77,7 +77,14 @@ export function renderVsView(rootSel, id) {
         <div class="vs-arena">
           <div class="vs-tug" id="vs-tug">
             <div class="vs-tug-label" id="vs-tug-label">¡Empate!</div>
-            <div class="vs-tug-track"><div class="vs-tug-knob" id="vs-tug-knob"></div></div>
+            <div class="vs-tug-scene" id="vs-tug-scene">
+              <div class="vs-tug-team vs-tug-team-left"><span class="vs-puller">💪</span><span class="vs-puller">💪</span></div>
+              <div class="vs-tug-rope">
+                <div class="vs-tug-center"></div>
+                <div class="vs-tug-knob" id="vs-tug-knob">🚩</div>
+              </div>
+              <div class="vs-tug-team vs-tug-team-right"><span class="vs-puller">💪</span><span class="vs-puller">💪</span></div>
+            </div>
           </div>
           <div class="vs-panels">
             ${panelShell('left', st.left.name)}
@@ -135,6 +142,15 @@ export function renderVsView(rootSel, id) {
       if (body) body.classList.add(r.correct ? 'vs-flash-ok' : 'vs-flash-no');
       emitGame(r.correct ? GameEvents.ANSWER_CORRECT : GameEvents.ANSWER_WRONG, { idx: r.cursor - 1 });
       updateCenter();
+      // A correct answer yanks the rope: the scoring team gives a visible tug.
+      if (r.correct) {
+        const scene = document.getElementById('vs-tug-scene');
+        if (scene) {
+          scene.classList.remove('pull-left', 'pull-right');
+          void scene.offsetWidth; // restart the animation
+          scene.classList.add(side === 'left' ? 'pull-left' : 'pull-right');
+        }
+      }
       setTimeout(() => {
         flashing[side] = false;
         if (body) body.classList.remove('vs-flash-ok', 'vs-flash-no');
@@ -148,14 +164,18 @@ export function renderVsView(rootSel, id) {
     // normalized so an early lead still visibly tugs the bar.
     function updateCenter() {
       const st = session.standings();
+      const scene = document.getElementById('vs-tug-scene');
       const knob = document.getElementById('vs-tug-knob');
       const label = document.getElementById('vs-tug-label');
       if (!knob || !label) return;
       const signed = st.left.score - st.right.score;          // + → left ahead
       const lead = signed / (st.left.score + st.right.score + 1);
-      const pct = 50 - Math.max(-42, Math.min(42, lead * 60)); // left ahead → knob moves left
+      const pct = 50 - Math.max(-42, Math.min(42, lead * 60)); // left ahead → flag moves left
       knob.style.left = pct + '%';
-      knob.className = 'vs-tug-knob ' + (signed > 0 ? 'lead-left' : signed < 0 ? 'lead-right' : '');
+      if (scene) {
+        scene.classList.toggle('lead-left', signed > 0);
+        scene.classList.toggle('lead-right', signed < 0);
+      }
       label.textContent = signed === 0 ? '¡Empate!'
         : `${(signed > 0 ? st.left.name : st.right.name)} va ganando (+${Math.abs(signed)})`;
     }

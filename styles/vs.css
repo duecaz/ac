@@ -2,24 +2,46 @@
    viewport so two students can play side by side on one touchscreen. */
 .vs-arena { display: flex; flex-direction: column; height: calc(100vh - 70px); min-height: 480px; }
 
-/* Central "who's winning" bar */
-.vs-tug { padding: .6rem 1rem .2rem; text-align: center; }
-.vs-tug-label { font-weight: 700; margin-bottom: .35rem; transition: color .2s; }
-.vs-tug-track {
-  position: relative; height: 14px; border-radius: 999px;
-  background: linear-gradient(90deg, #cfe2ff 0%, #e9ecef 50%, #f8d7da 100%);
-  box-shadow: inset 0 1px 3px rgba(0,0,0,.15);
+/* Central tug-of-war (TV-friendly): two teams pull a rope; the flag slides
+   toward whoever leads and the scoring team yanks on a correct answer. */
+.vs-tug { padding: .5rem 1rem; text-align: center; }
+.vs-tug-label { font-weight: 800; font-size: clamp(1rem, 2.6vw, 1.7rem); margin-bottom: .4rem; transition: color .2s; }
+.vs-tug-scene { display: flex; align-items: center; gap: .5rem; height: clamp(72px, 13vh, 130px); }
+
+.vs-tug-team { flex: 0 0 auto; display: flex; gap: .2rem; transition: transform .35s cubic-bezier(.34,1.56,.64,1); }
+.vs-tug-team-left  { color: #0d6efd; }
+.vs-tug-team-right { color: #dc3545; }
+.vs-puller {
+  width: clamp(34px, 7vw, 60px); height: clamp(34px, 7vw, 60px);
+  border-radius: 50%; display: grid; place-items: center;
+  border: 3px solid currentColor; background: color-mix(in srgb, currentColor 14%, transparent);
+  font-size: clamp(1rem, 3vw, 1.9rem); line-height: 1;
 }
-.vs-tug-knob {
-  position: absolute; top: 50%; left: 50%;
-  width: 26px; height: 26px; border-radius: 50%;
-  background: #6c757d; border: 3px solid #fff;
-  box-shadow: 0 2px 6px rgba(0,0,0,.3);
-  transform: translate(-50%, -50%);
-  transition: left .5s cubic-bezier(.34,1.56,.64,1), background .3s;
+
+.vs-tug-rope { position: relative; flex: 1; height: 100%; min-width: 0; }
+.vs-tug-rope::before { /* the rope */
+  content: ''; position: absolute; left: 0; right: 0; top: 50%; height: clamp(8px, 1.6vh, 14px);
+  transform: translateY(-50%);
+  background: repeating-linear-gradient(45deg, #d2a857 0 9px, #a97f2e 9px 18px);
+  border-radius: 999px; box-shadow: inset 0 1px 2px rgba(0,0,0,.35);
 }
-.vs-tug-knob.lead-left  { background: #0d6efd; }
-.vs-tug-knob.lead-right { background: #dc3545; }
+.vs-tug-center { position: absolute; left: 50%; top: 8%; bottom: 8%; width: 0; border-left: 2px dashed #adb5bd; transform: translateX(-50%); }
+.vs-tug-knob { /* the flag knot */
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  font-size: clamp(1.8rem, 5vw, 3rem); line-height: 1; z-index: 2;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,.4));
+  transition: left .6s cubic-bezier(.34,1.56,.64,1);
+}
+
+/* The leading team leans out (pulling harder). */
+.vs-tug-scene.lead-left  .vs-tug-team-left  { transform: translateX(-6px) scale(1.12); }
+.vs-tug-scene.lead-right .vs-tug-team-right { transform: translateX(6px) scale(1.12); }
+
+/* Yank on a correct answer. */
+@keyframes vs-yank-left  { 0%,100% { transform: translateX(0); } 35% { transform: translateX(-12px) scale(1.2); } }
+@keyframes vs-yank-right { 0%,100% { transform: translateX(0); } 35% { transform: translateX(12px) scale(1.2); } }
+.vs-tug-scene.pull-left  .vs-tug-team-left  { animation: vs-yank-left .5s ease; }
+.vs-tug-scene.pull-right .vs-tug-team-right { animation: vs-yank-right .5s ease; }
 
 /* The two activity panels */
 .vs-panels { flex: 1; display: flex; align-items: stretch; min-height: 0; }
