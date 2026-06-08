@@ -16,6 +16,78 @@ import { podiumHtml } from '../core/podium.js';
 const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
 const FLASH_MS = 700;
 
+// ── Tug-of-war scene (SVG) ───────────────────────────────────────────────
+// Two pullers lean on a rope; the knot/flag slides toward whoever leads. The
+// rope is a sagging Bézier redrawn each frame so the motion is smooth, and the
+// scorer gives a visible yank (handled in CSS via .pull-left/.pull-right).
+const TUG = { LHX: 260, LHY: 155, RHX: 740, RHY: 155, KY: 155, SAG: 24, CX: 500, MAXOFF: 155 };
+let _knotX = TUG.CX, _knotRaf = 0;
+
+// One puller, feet at local (0,0), reaching to a rope hand at (110,-95). The
+// right puller reuses this mirrored via scale(-1,1), so the scene stays exactly
+// symmetric and the lean keyframes work for both sides.
+const FIGURE = `
+  <ellipse class="tug-shadow" cx="-6" cy="3" rx="46" ry="8"/>
+  <line class="tug-limb" x1="-8" y1="-64" x2="-46" y2="0"/>
+  <line class="tug-limb" x1="-8" y1="-64" x2="20" y2="0"/>
+  <line class="tug-torso" x1="-8" y1="-64" x2="-26" y2="-112"/>
+  <line class="tug-limb" x1="-12" y1="-80" x2="110" y2="-95"/>
+  <line class="tug-limb" x1="-26" y1="-112" x2="110" y2="-95"/>
+  <circle class="tug-head" cx="-32" cy="-130" r="16"/>
+  <circle class="tug-eye" cx="-39" cy="-132" r="2.6"/>
+  <circle class="tug-hand" cx="110" cy="-95" r="9"/>`;
+
+function tugRopeD(kx) {
+  const { LHX, LHY, RHX, RHY, KY, SAG } = TUG;
+  return `M${LHX},${LHY} Q${(LHX + kx) / 2},${KY + SAG} ${kx},${KY} Q${(kx + RHX) / 2},${KY + SAG} ${RHX},${RHY}`;
+}
+
+function tugScene() {
+  return `
+    <svg class="vs-tug-svg" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+      <line class="tug-ground" x1="40" y1="250" x2="960" y2="250"/>
+      <g class="tug-zone">
+        <rect class="tug-pit" x="466" y="243" width="68" height="13" rx="5"/>
+        <line class="tug-centerline" x1="500" y1="118" x2="500" y2="246"/>
+        <path class="tug-mark" d="M348,250 L348,224 L372,234 L348,244"/>
+        <path class="tug-mark" d="M652,250 L652,224 L628,234 L652,244"/>
+      </g>
+      <g transform="translate(150,250)"><g class="tug-fig tug-fig-left">${FIGURE}</g></g>
+      <g transform="translate(850,250) scale(-1,1)"><g class="tug-fig tug-fig-right">${FIGURE}</g></g>
+      <g id="tug-dynamic">
+        <path id="tug-rope" d="${tugRopeD(TUG.CX)}"/>
+        <g id="tug-knot" transform="translate(${TUG.CX},${TUG.KY})">
+          <line class="tug-pole" x1="0" y1="2" x2="0" y2="-46"/>
+          <path class="tug-flag" d="M0,-46 L30,-39 L0,-31 Z"/>
+          <circle class="tug-knotball" cx="0" cy="0" r="11"/>
+        </g>
+      </g>
+      <g class="tug-dust tug-dust-left"><circle cx="120" cy="247" r="5"/><circle cx="138" cy="245" r="7"/><circle cx="104" cy="244" r="4"/></g>
+      <g class="tug-dust tug-dust-right"><circle cx="880" cy="247" r="5"/><circle cx="862" cy="245" r="7"/><circle cx="896" cy="244" r="4"/></g>
+    </svg>`;
+}
+
+function tugDraw(kx) {
+  const rope = document.getElementById('tug-rope');
+  const knot = document.getElementById('tug-knot');
+  if (rope) rope.setAttribute('d', tugRopeD(kx));
+  if (knot) knot.setAttribute('transform', `translate(${kx},${TUG.KY})`);
+}
+
+// Smoothly slide the knot to a target x, redrawing the sagging rope each frame.
+function tugTweenTo(target) {
+  cancelAnimationFrame(_knotRaf);
+  const from = _knotX, t0 = performance.now(), dur = 600;
+  const ease = t => 1 - Math.pow(1 - t, 3);
+  const step = now => {
+    const k = Math.min(1, (now - t0) / dur);
+    _knotX = from + (target - from) * ease(k);
+    tugDraw(_knotX);
+    if (k < 1) _knotRaf = requestAnimationFrame(step);
+  };
+  _knotRaf = requestAnimationFrame(step);
+}
+
 export function renderVsView(rootSel, id) {
   const a = get(id);
   if (!a) {
@@ -77,14 +149,7 @@ export function renderVsView(rootSel, id) {
         <div class="vs-arena">
           <div class="vs-tug" id="vs-tug">
             <div class="vs-tug-label" id="vs-tug-label">¡Empate!</div>
-            <div class="vs-tug-scene" id="vs-tug-scene">
-              <div class="vs-tug-team vs-tug-team-left"><span class="vs-puller">💪</span><span class="vs-puller">💪</span></div>
-              <div class="vs-tug-rope">
-                <div class="vs-tug-center"></div>
-                <div class="vs-tug-knob" id="vs-tug-knob">🚩</div>
-              </div>
-              <div class="vs-tug-team vs-tug-team-right"><span class="vs-puller">💪</span><span class="vs-puller">💪</span></div>
-            </div>
+            <div class="vs-tug-scene" id="vs-tug-scene">${tugScene()}</div>
           </div>
           <div class="vs-panels">
             ${panelShell('left', st.left.name)}
@@ -93,6 +158,7 @@ export function renderVsView(rootSel, id) {
           </div>
         </div>`);
       on(rootSel, 'click', '#vs-again', () => renderSetup());
+      _knotX = TUG.CX; tugDraw(TUG.CX);
     }
 
     function panelShell(side, name) {
@@ -165,13 +231,12 @@ export function renderVsView(rootSel, id) {
     function updateCenter() {
       const st = session.standings();
       const scene = document.getElementById('vs-tug-scene');
-      const knob = document.getElementById('vs-tug-knob');
       const label = document.getElementById('vs-tug-label');
-      if (!knob || !label) return;
+      if (!label) return;
       const signed = st.left.score - st.right.score;          // + → left ahead
       const lead = signed / (st.left.score + st.right.score + 1);
-      const pct = 50 - Math.max(-42, Math.min(42, lead * 60)); // left ahead → flag moves left
-      knob.style.left = pct + '%';
+      const off = Math.max(-TUG.MAXOFF, Math.min(TUG.MAXOFF, lead * 320));
+      tugTweenTo(TUG.CX - off);                                // left ahead → knot pulled left
       if (scene) {
         scene.classList.toggle('lead-left', signed > 0);
         scene.classList.toggle('lead-right', signed < 0);
