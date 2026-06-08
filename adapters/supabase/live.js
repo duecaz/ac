@@ -1,7 +1,7 @@
 // Live session operations and realtime subscriptions.
-import { getClient, ensureAuth } from '../supabase.js';
-import { getAnonId } from '../state.js';
-import { isAcceptableNickname } from '../nicknameFilter.js';
+import { getClient, ensureAuth } from '../../core/supabase.js';
+import { getAnonId } from '../../core/state.js';
+import { isAcceptableNickname } from '../../core/nicknameFilter.js';
 import { SUPABASE_URL } from '../../supabase.config.js';
 
 export async function startSession(sessionId) {
@@ -140,7 +140,7 @@ export async function pingHost(sessionId) {
 // Subscribe to realtime changes for a session: sessions row + players + answers.
 // onChange({ table, eventType, new, old }).
 // Connection state changes are forwarded to setConnectionState (banner UI).
-import { setConnectionState } from '../connection.js';
+import { setConnectionState } from '../../core/connection.js';
 
 export async function subscribeRoom(sessionId, onChange) {
   const sb = await getClient();

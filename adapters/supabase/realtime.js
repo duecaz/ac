@@ -1,9 +1,9 @@
-// Supabase RealtimePort driver — wraps the existing transport modules behind the
-// same surface as the local driver, so views can switch backends transparently.
-// (Step toward moving transport fully under adapters/; for now it composes the
-// current functions to keep behaviour identical.)
-import * as live from '../../core/transport/live.js';
-import { createRoom, findRoomByCode, fetchSession } from '../../core/transport/room.js';
+// Supabase RealtimePort driver. Composes the Supabase live/room operations
+// (now colocated here under adapters/supabase/) into the Port surface, so the
+// views — which talk to the facade in core/liveTransport.js — never import
+// Supabase directly. A PocketBase driver can implement the same surface later.
+import * as live from './live.js';
+import { createRoom, findRoomByCode, fetchSession } from './room.js';
 
 export function createSupabaseRealtime() {
   return {
