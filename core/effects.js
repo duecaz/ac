@@ -47,3 +47,8 @@ async function correctBurst() {
 
 onGame(GameEvents.PODIUM, podiumBurst);
 onGame(GameEvents.ANSWER_CORRECT, correctBurst);
+
+// Manual trigger for views that drive feedback themselves (e.g. VS, which
+// opts out of the global ANSWER_CORRECT burst and fires this only when the
+// teacher enables "confeti por pregunta").
+export function answerConfetti() { return correctBurst(); }
