@@ -11,6 +11,7 @@ import { activityItemCount, newActivityId } from '../core/migrate.js';
 import { getTemplate, compatibleTemplates } from '../core/registry.js';
 import { isVsCompatible } from '../kernel/session/engine.js';
 import { listSkins, applySkin, skinPreviewHtml } from '../core/skins.js';
+import { listVsAnimations } from '../core/vsAnimations.js';
 import { listBackgrounds, applyBackground, reapplyBackground, backgroundPreviewHtml } from '../core/backgrounds.js';
 import { toggleFullscreen } from '../core/fullscreen.js';
 import { acquire } from '../core/lifecycle.js';
@@ -29,6 +30,7 @@ export async function renderPlayerView(rootSel, id) {
   let liveTemplate = a.template;
   let currentSkin = a.presentation?.skin || 'default';
   let currentBg = a.presentation?.background || 'none';
+  const vsCapable = isVsCompatible(a);
   // Reset any prior global skin/bg from other views (host live, etc.) so the
   // page chrome stays neutral. Scoped apply happens after paint() once the
   // frame element exists.
@@ -112,6 +114,21 @@ export async function renderPlayerView(rootSel, id) {
           `).join('')}
         </div>
 
+        ${vsCapable ? `
+          <h6 class="text-muted text-uppercase small mb-2">Animación del duelo VS</h6>
+          <div class="d-flex flex-wrap gap-2 mb-2">
+            ${listVsAnimations().map(v => `
+              <div class="ww-pick-tile vsanim-pick ${(a.presentation?.vsAnimation || 'svg-tug') === v.id ? 'is-active' : ''}" data-id="${v.id}" data-needssrc="${v.needsSrc ? '1' : ''}" role="button" title="${escapeHtml(v.description || '')}" style="width:150px">
+                <div class="vsanim-tile-body"><i class="bi ${v.kind === 'lottie' ? 'bi-filetype-json' : 'bi-people-fill'}"></i><div class="small fw-semibold mt-1">${escapeHtml(v.label)}</div></div>
+              </div>
+            `).join('')}
+          </div>
+          <div id="vsanim-src-row" class="mb-4 ${listVsAnimations().find(v => v.id === (a.presentation?.vsAnimation))?.needsSrc ? '' : 'd-none'}" style="max-width:520px">
+            <label class="form-label small text-muted">URL del archivo Lottie (.json) de tu animación</label>
+            <input id="vsanim-src" class="form-control form-control-sm" placeholder="https://…/animacion.json" value="${escapeHtml(a.presentation?.vsAnimationSrc || '')}">
+            <div class="form-text">Línea de tiempo: fotograma 0 = gana izquierda · último = gana derecha · centro = empate.</div>
+          </div>` : ''}
+
         ${compat.length ? `
           <h6 class="text-muted text-uppercase small mb-2">Cambiar plantilla (mismo contenido)</h6>
           <div class="d-flex flex-wrap gap-2 mb-4">
@@ -148,6 +165,20 @@ export async function renderPlayerView(rootSel, id) {
     on(rootSel, 'click', '.tpl-switch', (_, b) => {
       liveTemplate = b.dataset.name;
       paint();
+    });
+    // VS animation: persisted per-activity (like skin/bg in the editor). The
+    // duel reads activity.presentation.vsAnimation / .vsAnimationSrc on launch.
+    on(rootSel, 'click', '.vsanim-pick', (_, b) => {
+      if (!a.presentation) a.presentation = {};
+      a.presentation.vsAnimation = b.dataset.id;
+      save(a);
+      document.querySelectorAll('.vsanim-pick').forEach(p => p.classList.toggle('is-active', p === b));
+      document.getElementById('vsanim-src-row')?.classList.toggle('d-none', !b.dataset.needssrc);
+    });
+    on(rootSel, 'input', '#vsanim-src', (e) => {
+      if (!a.presentation) a.presentation = {};
+      a.presentation.vsAnimationSrc = e.target.value.trim();
+      save(a);
     });
     const restartSolo = () => {
       document.getElementById('ww-player-widget').innerHTML = '';
