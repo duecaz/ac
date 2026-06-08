@@ -8,6 +8,10 @@
 //
 // All flow/scoring lives in kernel/session/engine.js; this view paints the
 // board, the scoreboard and the host controls.
+//
+// EMBEDDING: mountTeams(host, activity, ctx, opts) renders setup + game INTO
+// `host` (the activity stage). renderTeamsView(rootSel, id) is the thin wrapper
+// for the standalone deep-link route (#/teams/:id). Both share the same code.
 import { html, escapeHtml, mount, $, $$ } from '../core/html.js';
 import { on } from '../core/events.js';
 import { get } from '../core/storage.js';
@@ -16,19 +20,28 @@ import { createSession, FORMATS, sessionItems } from '../kernel/session/engine.j
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { applyMarks } from '../core/textMarks.js';
 import { podiumHtml } from '../core/podium.js';
+import { renderModeSetup } from './modeSetup.js';
 
 const TEAM_COLORS = ['danger', 'primary', 'success', 'warning'];
 
+// Standalone route wrapper (#/teams/:id).
 export function renderTeamsView(rootSel, id) {
+  const host = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
   const a = get(id);
   if (!a) {
-    mount(rootSel, html`<div class="alert alert-warning m-3">Actividad no encontrada. <a href="#/home">Volver</a></div>`);
+    mount(host, html`<div class="alert alert-warning m-3">Actividad no encontrada. <a href="#/home">Volver</a></div>`);
     return;
   }
+  mountTeams(host, a, null, { backHref: `#/play/${a.id}` });
+}
+
+// Embedded entry point. `host` is a DOM element. Returns { dispose }.
+export function mountTeams(host, a, ctx, opts = {}) {
+  const backHref = opts.backHref;
   const total = sessionItems(a).length;
   if (!total) {
-    mount(rootSel, html`<div class="alert alert-info m-3">Esta actividad no tiene preguntas. <a href="#/edit/${a.id}">Editar</a></div>`);
-    return;
+    mount(host, html`<div class="alert alert-info m-3">Esta actividad no tiene preguntas. <a href="#/edit/${a.id}">Editar</a></div>`);
+    return { dispose() {} };
   }
   const T = getTemplate(a.template);
   const canAuto = typeof T?.scoreSubmission === 'function' && typeof T?.getRoundPayload === 'function';
@@ -37,53 +50,50 @@ export function renderTeamsView(rootSel, id) {
   renderSetup();
 
   function renderSetup() {
-    mount(rootSel, html`
-      <div class="teams-setup text-center py-5">
-        <a href="#/play/${a.id}" class="btn btn-sm btn-link"><i class="bi bi-arrow-left"></i> Volver</a>
-        <h3 class="mt-2 mb-1"><i class="bi bi-people-fill text-success"></i> Modo Equipos</h3>
-        <p class="text-muted">${escapeHtml(a.title)} · ${total} preguntas · por turnos</p>
-
-        <div class="my-3">
-          <label class="form-label small text-muted d-block">¿Cuántos equipos?</label>
-          <div class="btn-group" role="group" id="teams-count">
-            ${[2, 3, 4].map(n => `<button class="btn btn-outline-success ${n === 2 ? 'active' : ''}" data-n="${n}">${n}</button>`).join('')}
-          </div>
+    const body = `
+      <div class="my-3">
+        <label class="form-label small text-muted d-block">¿Cuántos equipos?</label>
+        <div class="btn-group" role="group" id="teams-count">
+          ${[2, 3, 4].map(n => `<button class="btn btn-outline-success ${n === 2 ? 'active' : ''}" data-n="${n}">${n}</button>`).join('')}
         </div>
-
-        <div id="teams-names" class="row justify-content-center g-2 my-3" style="max-width:560px;margin:auto"></div>
-
-        <div class="my-3">
-          <label class="form-label small text-muted d-block">Puntuación</label>
-          <div class="btn-group" role="group" id="teams-scoring">
-            <button class="btn btn-outline-secondary ${canAuto ? 'active' : 'd-none'}" data-mode="auto" ${canAuto ? '' : 'disabled'}>
-              <i class="bi bi-cpu"></i> Automática
-            </button>
-            <button class="btn btn-outline-secondary ${canAuto ? '' : 'active'}" data-mode="judge">
-              <i class="bi bi-person-check"></i> Juez docente
-            </button>
-          </div>
-          <div class="form-text">${canAuto
-            ? 'Automática: el equipo toca la opción. Juez: tú marcas ✓/✗.'
-            : 'Esta plantilla no se autocorrige: el docente marca ✓/✗.'}</div>
+      </div>
+      <div id="teams-names" class="row justify-content-center g-2 my-3" style="max-width:560px;margin:auto"></div>
+      <div class="my-3">
+        <label class="form-label small text-muted d-block">Puntuación</label>
+        <div class="btn-group" role="group" id="teams-scoring">
+          <button class="btn btn-outline-secondary ${canAuto ? 'active' : 'd-none'}" data-mode="auto" ${canAuto ? '' : 'disabled'}>
+            <i class="bi bi-cpu"></i> Automática
+          </button>
+          <button class="btn btn-outline-secondary ${canAuto ? '' : 'active'}" data-mode="judge">
+            <i class="bi bi-person-check"></i> Juez docente
+          </button>
         </div>
+        <div class="form-text">${canAuto
+          ? 'Automática: el equipo toca la opción. Juez: tú marcas ✓/✗.'
+          : 'Esta plantilla no se autocorrige: el docente marca ✓/✗.'}</div>
+      </div>`;
 
-        <button id="teams-start" class="btn btn-success btn-lg px-5"><i class="bi bi-play-fill"></i> ¡Empezar!</button>
-      </div>`);
-
-    renderNameInputs();
-    on(rootSel, 'click', '#teams-count button', (_, b) => {
-      teamCount = Number(b.dataset.n);
-      $('#teams-count').querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
-      renderNameInputs();
-    });
-    on(rootSel, 'click', '#teams-scoring button', (_, b) => {
-      if (b.disabled) return;
-      $('#teams-scoring').querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
-    });
-    on(rootSel, 'click', '#teams-start', () => {
-      const names = $$('#teams-names input').map((el, i) => (el.value || '').trim() || `Equipo ${i + 1}`);
-      const scoring = $('#teams-scoring .active')?.dataset.mode || (canAuto ? 'auto' : 'judge');
-      startGame(names, scoring);
+    renderModeSetup(host, {
+      icon: 'bi-people-fill', color: 'success', title: 'Modo Equipos',
+      subtitle: `${a.title} · ${total} preguntas · por turnos`,
+      body, backHref,
+      onMount: () => {
+        renderNameInputs();
+        on(host, 'click', '#teams-count button', (_, b) => {
+          teamCount = Number(b.dataset.n);
+          $('#teams-count').querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+          renderNameInputs();
+        });
+        on(host, 'click', '#teams-scoring button', (_, b) => {
+          if (b.disabled) return;
+          $('#teams-scoring').querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+        });
+      },
+      onStart: () => {
+        const names = $$('#teams-names input').map((el, i) => (el.value || '').trim() || `Equipo ${i + 1}`);
+        const scoring = $('#teams-scoring .active')?.dataset.mode || (canAuto ? 'auto' : 'judge');
+        startGame(names, scoring);
+      }
     });
   }
 
@@ -111,7 +121,7 @@ export function renderTeamsView(rootSel, id) {
       const item = sessionItems(a)[idx];
       const payload = session.roundPayload();
 
-      mount(rootSel, html`
+      mount(host, html`
         <div class="teams-arena">
           ${scoreboard(teams, active, phase)}
           <div class="teams-stage">
@@ -206,7 +216,7 @@ export function renderTeamsView(rootSel, id) {
         return `<button class="btn btn-success btn-lg" id="teams-next">
           ${last ? '<i class="bi bi-flag-fill"></i> Ver resultado' : '<i class="bi bi-arrow-right"></i> Siguiente equipo'}</button>`;
       }
-      return `<a href="#/play/${a.id}" class="btn btn-outline-secondary">Salir</a>
+      return `${backHref ? `<a href="${backHref}" class="btn btn-outline-secondary">Salir</a>` : ''}
               <button class="btn btn-success" id="teams-restart"><i class="bi bi-arrow-repeat"></i> Otra vez</button>`;
     }
 
@@ -238,7 +248,7 @@ export function renderTeamsView(rootSel, id) {
         } });
       }
 
-      on(rootSel, 'click', '#teams-reveal', () => {
+      on(host, 'click', '#teams-reveal', () => {
         session.dispatch('reveal'); // auto → settle scores
         const ans = session.state.answers[`${session.currentItem}:${session.activeTeam().id}`];
         emitGame(ans?.correct ? GameEvents.ANSWER_CORRECT : GameEvents.ANSWER_WRONG, {});
@@ -247,7 +257,7 @@ export function renderTeamsView(rootSel, id) {
       });
 
       // Judge mode: teacher rules, then we flip to reveal.
-      on(rootSel, 'click', '.teams-judge', (_, btn) => {
+      on(host, 'click', '.teams-judge', (_, btn) => {
         const correct = btn.dataset.correct === '1';
         session.judge({ correct });
         session.dispatch('reveal'); // judge → just flips phase
@@ -255,7 +265,7 @@ export function renderTeamsView(rootSel, id) {
         paint();
       });
 
-      on(rootSel, 'click', '#teams-next', () => {
+      on(host, 'click', '#teams-next', () => {
         const last = session.currentItem >= total - 1;
         session.dispatch(last ? 'end' : 'next'); // 'next' rotates the turn
         selected = null;
@@ -263,7 +273,7 @@ export function renderTeamsView(rootSel, id) {
         paint();
       });
 
-      on(rootSel, 'click', '#teams-restart', () => renderSetup());
+      on(host, 'click', '#teams-restart', () => renderSetup());
     }
 
     function colorOf(team) {
@@ -271,4 +281,6 @@ export function renderTeamsView(rootSel, id) {
       return TEAM_COLORS[i % TEAM_COLORS.length];
     }
   }
+
+  return { dispose() {} };
 }

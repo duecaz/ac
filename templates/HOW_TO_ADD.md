@@ -90,10 +90,30 @@ Redeploya con:
 mcp deploy_edge_function settle-item
 ```
 
-## 6. Listo
+## 6. Modos de juego (qué desbloquea cada método)
+
+Los modos de la página de actividad (Individual · VS · Equipos · En vivo ·
+Tarea) **se derivan** de lo que tu plantilla declara/implementa — no se
+configuran por actividad. Esta es la única tabla que necesitas; el contrato
+completo está en **`docs/modos-de-juego.md`** y el gateo en **`core/modes.js`**.
+
+| Para que la actividad ofrezca… | Implementa / declara… |
+|---|---|
+| **Individual** | nada extra (siempre) — `renderPlayer` |
+| **VS** y **Equipos‑auto** | `scoreSubmission(...)` **y** `renderRound(root, payload, {onSubmit})` (VS además exige ≥2 ítems) |
+| **Equipos‑juez** | nada — el docente marca ✓/✗ sobre cualquier contenido |
+| **En vivo** | `meta.modes.live = true` + `getRoundPayload` + `scoreSubmission` |
+| **Tarea** | `meta.modes.async = true` |
+
+`core/registry.js` valida esto al arrancar y **falla ruidosamente** si declaras
+`modes.live` sin `getRoundPayload`/`scoreSubmission`. No escribas pantallas de
+modo propias: VS/Equipos/Memoria usan el andamiaje común `views/modeSetup.js`.
+
+## 7. Listo
 
 - Aparecerá automáticamente en `#/new` (selector de plantilla).
 - El home pintará Empezar/PIN/Tareas según `meta.modes`.
+- La barra de modos de la actividad se gatea sola (tabla §6).
 - El editor cargará `renderEditor`. El player, `renderPlayer`.
 - Si soporta image upload, usa `core/imagePicker.js` dentro del editor.
 

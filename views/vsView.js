@@ -5,6 +5,13 @@
 //
 // The flow/scoring live entirely in kernel/session/engine.js (format 'vs'); this
 // view only paints panels and reflects standings — no game logic here.
+//
+// EMBEDDING: mountVs(host, activity, ctx, opts) renders setup + duel INTO `host`
+// (the activity stage) and returns { dispose } so the page can stop the central
+// animation when switching modes. renderVsView(rootSel, id) is a thin wrapper
+// kept for the standalone deep-link route (#/vs/:id), rendering full-page with a
+// "Volver" link. Both share the SAME code below — embedded and standalone never
+// diverge.
 import { html, escapeHtml, mount, $ } from '../core/html.js';
 import { on } from '../core/events.js';
 import { get, save } from '../core/storage.js';
@@ -15,8 +22,8 @@ import { podiumHtml } from '../core/podium.js';
 import { getVsAnimation } from '../core/vsAnimations.js';
 import { play as playSound } from '../core/sounds.js';
 import { answerConfetti } from '../core/effects.js';
+import { renderModeSetup } from './modeSetup.js';
 
-const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
 const FLASH_MS = 700;
 
 // Per-answer feedback in VS, configurable from the setup panel. Default: the
@@ -24,29 +31,42 @@ const FLASH_MS = 700;
 // and NO confetti popping on every question (that reads as noise on a duel).
 const FX_DEFAULTS = { sound: true, confetti: false, flash: true };
 
+// Standalone route wrapper (#/vs/:id): resolve element + activity, then mount
+// full-page with a back link to the activity page.
 export function renderVsView(rootSel, id) {
+  const host = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
   const a = get(id);
   if (!a) {
-    mount(rootSel, html`<div class="alert alert-warning m-3">Actividad no encontrada. <a href="#/home">Volver</a></div>`);
+    mount(host, html`<div class="alert alert-warning m-3">Actividad no encontrada. <a href="#/home">Volver</a></div>`);
     return;
   }
+  mountVs(host, a, null, { backHref: `#/play/${a.id}` });
+}
+
+// Embedded entry point. `host` is a DOM element. Returns { dispose }.
+export function mountVs(host, a, ctx, opts = {}) {
+  const backHref = opts.backHref;
   if (!isVsCompatible(a)) {
-    mount(rootSel, html`
+    mount(host, html`
       <div class="alert alert-info m-3">
         <h5><i class="bi bi-people"></i> Modo VS no disponible para esta actividad</h5>
         <p class="mb-2">El duelo 1‑contra‑1 necesita una plantilla que se pueda puntuar
         automáticamente y <b>2 o más preguntas</b> para que sea una carrera justa.</p>
-        <a href="#/play/${a.id}" class="btn btn-sm btn-outline-secondary">Volver a la actividad</a>
+        ${backHref ? `<a href="${backHref}" class="btn btn-sm btn-outline-secondary">Volver a la actividad</a>` : ''}
       </div>`);
-    return;
+    return { dispose() {} };
   }
 
   const fxCfg = () => ({ ...FX_DEFAULTS, ...(a.presentation?.vsFeedback || {}) });
+  let currentAnim = null; // the running central animation (destroyed on dispose)
 
   renderSetup();
 
-  // Names + start. Defaults let the teacher launch in one tap.
+  // Names + start. Defaults let the teacher launch in one tap. The header,
+  // subtitle and Start button come from the shared scaffold; this only supplies
+  // the VS-specific options (names + feedback toggles).
   function renderSetup() {
+    if (currentAnim) { currentAnim.destroy(); currentAnim = null; }
     const fx = fxCfg();
     const sw = (key, label, hint) => `
       <label class="vs-fx-row" title="${escapeHtml(hint)}">
@@ -55,44 +75,44 @@ export function renderVsView(rootSel, id) {
         </span>
         <span class="vs-fx-label">${label}<small class="d-block text-muted">${escapeHtml(hint)}</small></span>
       </label>`;
-    mount(rootSel, html`
-      <div class="vs-setup text-center py-5">
-        <a href="#/play/${a.id}" class="btn btn-sm btn-link"><i class="bi bi-arrow-left"></i> Volver</a>
-        <h3 class="mt-2 mb-1"><i class="bi bi-fire text-danger"></i> Duelo VS</h3>
-        <p class="text-muted">${escapeHtml(a.title)} · ${sessionItems(a).length} preguntas</p>
-        <div class="row justify-content-center g-3 my-3" style="max-width:520px;margin:auto">
-          <div class="col-6">
-            <label class="form-label small text-muted">Alumno 1 (izquierda)</label>
-            <input id="vs-name-left" class="form-control text-center" value="Alumno 1" maxlength="16">
-          </div>
-          <div class="col-6">
-            <label class="form-label small text-muted">Alumno 2 (derecha)</label>
-            <input id="vs-name-right" class="form-control text-center" value="Alumno 2" maxlength="16">
-          </div>
+    const body = `
+      <div class="row justify-content-center g-3 my-3" style="max-width:520px;margin:auto">
+        <div class="col-6">
+          <label class="form-label small text-muted">Alumno 1 (izquierda)</label>
+          <input id="vs-name-left" class="form-control text-center" value="Alumno 1" maxlength="16">
         </div>
-        <button id="vs-start" class="btn btn-danger btn-lg px-5"><i class="bi bi-play-fill"></i> ¡Empezar!</button>
-        <p class="text-muted small mt-3">Cada jugador responde en su lado. Gana quien sume más puntos.</p>
+        <div class="col-6">
+          <label class="form-label small text-muted">Alumno 2 (derecha)</label>
+          <input id="vs-name-right" class="form-control text-center" value="Alumno 2" maxlength="16">
+        </div>
+      </div>
+      <details class="vs-fx-panel mx-auto mt-3">
+        <summary><i class="bi bi-sliders"></i> Sonido y efectos</summary>
+        <div class="vs-fx-grid">
+          ${sw('sound', 'Sonido', 'Un sonido corto al acertar o fallar.')}
+          ${sw('flash', 'Destello de color', 'Fondo verde al acertar, rojo al fallar.')}
+          ${sw('confetti', 'Confeti por pregunta', 'Lluvia de confeti en cada acierto (desactivado por defecto).')}
+        </div>
+      </details>`;
 
-        <details class="vs-fx-panel mx-auto mt-3">
-          <summary><i class="bi bi-sliders"></i> Sonido y efectos</summary>
-          <div class="vs-fx-grid">
-            ${sw('sound', 'Sonido', 'Un sonido corto al acertar o fallar.')}
-            ${sw('flash', 'Destello de color', 'Fondo verde al acertar, rojo al fallar.')}
-            ${sw('confetti', 'Confeti por pregunta', 'Lluvia de confeti en cada acierto (desactivado por defecto).')}
-          </div>
-        </details>
-      </div>`);
-    on(rootSel, 'click', '#vs-start', () => {
-      const left = ($('#vs-name-left')?.value || '').trim() || 'Alumno 1';
-      const right = ($('#vs-name-right')?.value || '').trim() || 'Alumno 2';
-      startMatch(left, right);
-    });
-    // Feedback toggles persist per-activity (presentation.vsFeedback).
-    on(rootSel, 'change', '.vs-fx', (_, el) => {
-      if (!a.presentation) a.presentation = {};
-      const cfg = { ...fxCfg(), [el.dataset.fx]: el.checked };
-      a.presentation.vsFeedback = cfg;
-      save(a);
+    renderModeSetup(host, {
+      icon: 'bi-fire', color: 'danger', title: 'Duelo VS',
+      subtitle: `${a.title} · ${sessionItems(a).length} preguntas`,
+      body, backHref,
+      note: 'Cada jugador responde en su lado. Gana quien sume más puntos.',
+      onMount: () => {
+        // Feedback toggles persist per-activity (presentation.vsFeedback).
+        on(host, 'change', '.vs-fx', (_, el) => {
+          if (!a.presentation) a.presentation = {};
+          a.presentation.vsFeedback = { ...fxCfg(), [el.dataset.fx]: el.checked };
+          save(a);
+        });
+      },
+      onStart: () => {
+        const left = ($('#vs-name-left')?.value || '').trim() || 'Alumno 1';
+        const right = ($('#vs-name-right')?.value || '').trim() || 'Alumno 2';
+        startMatch(left, right);
+      }
     });
   }
 
@@ -105,7 +125,6 @@ export function renderVsView(rootSel, id) {
     // The central stage is a pluggable animation chosen by the teacher in
     // Presentación (default: the built-in SVG tug-of-war).
     const animDef = getVsAnimation(a.presentation?.vsAnimation || 'svg-tug');
-    let anim = null;
 
     paintArena();
     renderSide('left'); renderSide('right'); updateCenter();
@@ -115,7 +134,7 @@ export function renderVsView(rootSel, id) {
     // only feeds it the lead and yanks, and updates the textual label.
     function paintArena() {
       const st = session.standings();
-      mount(rootSel, html`
+      mount(host, html`
         <div class="vs-arena">
           ${panelShell('left', st.left.name)}
           <div class="vs-stage" id="vs-stage">
@@ -124,9 +143,9 @@ export function renderVsView(rootSel, id) {
           </div>
           ${panelShell('right', st.right.name)}
         </div>`);
-      on(rootSel, 'click', '#vs-again', () => { if (anim) anim.destroy(); renderSetup(); });
-      if (anim) anim.destroy();
-      anim = animDef.create(document.getElementById('vs-stage-canvas'), { src: a.presentation?.vsAnimationSrc });
+      on(host, 'click', '#vs-again', () => renderSetup());
+      if (currentAnim) currentAnim.destroy();
+      currentAnim = animDef.create(document.getElementById('vs-stage-canvas'), { src: a.presentation?.vsAnimationSrc });
     }
 
     function panelShell(side, name) {
@@ -182,7 +201,7 @@ export function renderVsView(rootSel, id) {
       updateCenter();
       // The chosen animation reacts to the scorer; its sound (above) is what
       // ties feedback to the animation rather than a detached jingle.
-      if (r.correct && anim) anim.yank(side);
+      if (r.correct && currentAnim) currentAnim.yank(side);
       if (r.correct && fx.confetti) answerConfetti();
       setTimeout(() => {
         flashing[side] = false;
@@ -200,7 +219,7 @@ export function renderVsView(rootSel, id) {
       const label = document.getElementById('vs-tug-label');
       const signed = st.left.score - st.right.score;          // + → left ahead
       const lead = signed / (st.left.score + st.right.score + 1);
-      if (anim) anim.setProgress(Math.max(-1, Math.min(1, lead * 2.1)));
+      if (currentAnim) currentAnim.setProgress(Math.max(-1, Math.min(1, lead * 2.1)));
       if (label) {
         label.textContent = signed === 0 ? '¡Empate!'
           : `${(signed > 0 ? st.left.name : st.right.name)} va ganando (+${Math.abs(signed)})`;
@@ -208,7 +227,7 @@ export function renderVsView(rootSel, id) {
     }
 
     function finish(st) {
-      if (anim) { anim.destroy(); anim = null; }
+      if (currentAnim) { currentAnim.destroy(); currentAnim = null; }
       const tie = st.leader === 'tie';
       const winner = tie ? null : st[st.leader];
       // Same podium component as live mode; tied players get equal-height bars.
@@ -223,13 +242,15 @@ export function renderVsView(rootSel, id) {
           <h2 class="mb-3">${heading}</h2>
           ${podiumHtml(ranked)}
           <button id="vs-again" class="btn btn-danger btn-lg mt-2"><i class="bi bi-arrow-repeat"></i> Otra vez</button>
-          <a href="#/play/${a.id}" class="btn btn-outline-secondary btn-lg mt-2 ms-2">Salir</a>
+          ${backHref ? `<a href="${backHref}" class="btn btn-outline-secondary btn-lg mt-2 ms-2">Salir</a>` : ''}
         </div>`;
-      mount(rootSel, html`<div class="vs-arena"><div class="vs-overlay">${body}</div></div>`);
+      mount(host, html`<div class="vs-arena"><div class="vs-overlay">${body}</div></div>`);
       // Only celebrate a real winner. On a tie, no victory fanfare/confetti
       // (PODIUM triggers win.mp3 + confetti) — a draw isn't a win.
       if (winner) emitGame(GameEvents.PODIUM, { top: [{ name: winner.name, score: winner.score }] });
-      on(rootSel, 'click', '#vs-again', () => renderSetup());
+      on(host, 'click', '#vs-again', () => renderSetup());
     }
   }
+
+  return { dispose() { if (currentAnim) { currentAnim.destroy(); currentAnim = null; } } };
 }
