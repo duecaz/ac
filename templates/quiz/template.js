@@ -4,6 +4,9 @@ import { renderQuizPlayer } from './player.js';
 import { renderQuizEditor } from './editor.js';
 import { scoreQuizSubmission } from './scorer.js';
 import { renderChoiceRound, shuffle } from '../../core/roundRender.js';
+import { escapeHtml } from '../../core/html.js';
+
+const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
 
 export class QuizTemplate extends BaseTemplate {
   static meta = {
@@ -41,6 +44,36 @@ export class QuizTemplate extends BaseTemplate {
 
   // One multiple-choice round for the session formats (VS / Equipos-auto).
   static renderRound(root, payload, opts) { renderChoiceRound(root, payload, opts); }
+
+  // Projector view for LIVE: the Kahoot-style colour grid (question phase) and
+  // the per-option answer distribution + correct option (reveal phase).
+  static renderRoundHost(root, { phase, item, answers = [] } = {}) {
+    const opts = item?.options || [];
+    if (phase === 'reveal') {
+      const counts = opts.map(o => answers.filter(a => String(a.value) === String(o)).length);
+      const max = Math.max(1, ...counts);
+      root.innerHTML = `
+        <h3 class="text-center mb-3">${escapeHtml(item?.question || '')}</h3>
+        <p class="text-center text-success fw-bold fs-4"><i class="bi bi-check-circle-fill"></i> ${escapeHtml(String(item?.answer ?? ''))}</p>
+        <div class="mb-4">
+          ${opts.map((o, i) => {
+            const isOk = String(o) === String(item?.answer);
+            const w = Math.round(100 * counts[i] / max);
+            return `<div class="mb-2">
+              <div class="d-flex justify-content-between"><span>${'ABCD'[i] || ''}. ${escapeHtml(o)} ${isOk ? '<i class="bi bi-check-circle-fill text-success"></i>' : ''}</span><b>${counts[i]}</b></div>
+              <div class="progress" style="height:24px"><div class="progress-bar ${isOk ? 'bg-success' : 'bg-secondary'}" style="width:${w}%"></div></div>
+            </div>`;
+          }).join('')}
+        </div>`;
+      return;
+    }
+    root.innerHTML = `
+      <h2 class="text-center my-4">${escapeHtml(item?.question || '')}</h2>
+      ${item?.image ? `<div class="text-center mb-3"><img src="${escapeHtml(item.image)}" class="img-fluid" style="max-height:240px"></div>` : ''}
+      <div class="ww-kahoot-grid mb-4">
+        ${opts.map((o, i) => `<button class="btn btn-lg ww-shape-${(i % 4) + 1}" disabled><i class="bi ${SHAPE_ICONS[i % 4]} me-2"></i>${escapeHtml(o)}</button>`).join('')}
+      </div>`;
+  }
 
   // Migrate this template's content from older templateVersion if needed.
   static migrateContent(content /*, fromVersion */) {

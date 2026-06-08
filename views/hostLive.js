@@ -7,6 +7,7 @@ import { createRoom, findRoomByCode, fetchSession,
          listPlayers, listAnswers, leaderboard, kickPlayer, subscribeRoom, pingHost, fetchSessionKey }
        from '../core/liveTransport.js';
 import { getTemplate } from '../core/registry.js';
+import { sessionItems } from '../kernel/session/engine.js';
 import { acquire } from '../core/lifecycle.js';
 import { toast, confirmModal } from '../core/toast.js';
 import { applySkin } from '../core/skins.js';
@@ -16,14 +17,12 @@ import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { hostPaintDecision } from '../core/livePhases.js';
 import { podiumHtml } from '../core/podium.js';
 
-const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
-
 const STUDENT_BASE = location.origin + location.pathname.replace(/teacher\.html.*/, 'student.html');
 
 export async function renderHostLaunch(rootSel, activityId) {
   const a = get(activityId);
   if (!a) { mount(rootSel, html`<div class="alert alert-danger">Actividad no encontrada.</div>`); return; }
-  if (!a.content.items.length) { mount(rootSel, html`<div class="alert alert-warning">La actividad no tiene preguntas.</div>`); return; }
+  if (!sessionItems(a).length) { mount(rootSel, html`<div class="alert alert-warning">La actividad no tiene preguntas.</div>`); return; }
 
   mount(rootSel, html`<div class="text-center py-5"><div class="spinner-border"></div><p class="mt-2">Creando sala…</p></div>`);
   try {
@@ -57,6 +56,8 @@ async function renderHost(rootSel, code, sessionId, activity) {
   ctx.add(() => document.body.classList.remove('ww-stage'));
 
   const tpl = getTemplate(activity.template);
+  // Template-agnostic item list (quiz→items, tildes/comas→passages, …).
+  const items = sessionItems(activity);
   const live = activity.live || {};
   const timerSec = Math.max(5, live.questionTimer || 20);
   const advanceMode = live.advanceMode || 'manual';
@@ -175,31 +176,24 @@ async function renderHost(rootSel, code, sessionId, activity) {
 
   async function paintQuestion(phaseChanged = true) {
     const idx = session.current_item;
-    const item = activity.content.items[idx];
+    const item = items[idx];
     if (phaseChanged) {
       emitGame(GameEvents.LOBBY_END);
-      emitGame(GameEvents.QUESTION_SHOWN, { idx, total: activity.content.items.length, item });
+      emitGame(GameEvents.QUESTION_SHOWN, { idx, total: items.length, item });
     }
     answers = await listAnswers(sessionId, idx);
     const total = players.length;
     const answered = answers.length;
     const deadline = session.deadline ? new Date(session.deadline).getTime() : Date.now() + timerSec * 1000;
+    const payload = tpl.getRoundPayload ? tpl.getRoundPayload(activity, { itemIndex: idx }) : item;
     mount(rootSel, html`
       <div class="d-flex justify-content-between align-items-center mb-2">
-        <span class="badge bg-secondary fs-6">Pregunta ${idx + 1} / ${activity.content.items.length}</span>
+        <span class="badge bg-secondary fs-6">Pregunta ${idx + 1} / ${items.length}</span>
         <span id="time-left" class="badge bg-warning text-dark fs-5"></span>
         <span class="badge bg-info text-dark fs-6"><i class="bi bi-check2-circle"></i> <span id="ans-count">${answered}</span> / ${total}</span>
       </div>
       <div class="progress mb-3" style="height:8px"><div id="time-bar" class="progress-bar bg-warning" style="width:100%"></div></div>
-      <h2 class="text-center my-4">${escapeHtml(item.question)}</h2>
-      ${item.image ? `<div class="text-center mb-3"><img src="${escapeHtml(item.image)}" class="img-fluid" style="max-height:240px"></div>` : ''}
-      <div class="ww-kahoot-grid mb-4">
-        ${(item.options||[]).map((o, i) => `
-          <button class="btn btn-lg ww-shape-${(i % 4) + 1}" disabled>
-            <i class="bi ${SHAPE_ICONS[i % 4]} me-2"></i>${escapeHtml(o)}
-          </button>
-        `).join('')}
-      </div>
+      <div id="host-round" class="mb-4"></div>
       <div class="text-center d-flex gap-2 justify-content-center flex-wrap">
         <button class="btn btn-warning btn-lg" id="btn-reveal"><i class="bi bi-stop-fill"></i> Bloquear y revelar</button>
         <button class="btn btn-outline-secondary btn-lg" id="btn-pause"><i class="bi ${paused?'bi-play-fill':'bi-pause-fill'}"></i> ${paused?'Reanudar':'Pausa'}</button>
@@ -207,6 +201,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
         ${fullscreenButtonHtml()}
       </div>
     `);
+    tpl.renderRoundHost(document.getElementById('host-round'), { phase: 'question', item, payload });
     attachFullscreenButton(rootSel);
 
     on(rootSel, 'click', '#btn-reveal', () => doSettle(idx));
@@ -225,7 +220,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     on(rootSel, 'click', '#btn-skip', async () => {
       const ok = await confirmModal('¿Saltar esta pregunta? Se cerrará sin puntuar.', { okText: 'Saltar', danger: false });
       if (!ok) return;
-      const isLast = idx + 1 >= activity.content.items.length;
+      const isLast = idx + 1 >= items.length;
       if (isLast) await endSession(sessionId);
       else {
         const newDeadline = new Date(Date.now() + timerSec * 1000).toISOString();
@@ -280,36 +275,23 @@ async function renderHost(rootSel, code, sessionId, activity) {
 
   async function paintReveal(phaseChanged = true) {
     const idx = session.current_item;
-    const item = activity.content.items[idx];
+    const item = items[idx];
     if (phaseChanged) emitGame(GameEvents.REVEAL, { idx, item });
     answers = await listAnswers(sessionId, idx);
-    const counts = (item.options||[]).map(o => answers.filter(a => a.value === o).length);
-    const max = Math.max(1, ...counts);
     mount(rootSel, html`
-      <h3 class="text-center mb-3">${escapeHtml(item.question)}</h3>
-      <p class="text-center text-success fw-bold fs-4"><i class="bi bi-check-circle-fill"></i> ${escapeHtml(item.answer ?? '')}</p>
-      <div class="mb-4">
-        ${(item.options||[]).map((o, i) => {
-          const isOk = String(o) === String(item.answer);
-          const w = Math.round(100 * counts[i] / max);
-          return `
-            <div class="mb-2">
-              <div class="d-flex justify-content-between"><span>${'ABCD'[i]}. ${escapeHtml(o)} ${isOk?'<i class="bi bi-check-circle-fill text-success"></i>':''}</span><b>${counts[i]}</b></div>
-              <div class="progress" style="height:24px"><div class="progress-bar ${isOk?'bg-success':'bg-secondary'}" style="width:${w}%"></div></div>
-            </div>`;
-        }).join('')}
-      </div>
+      <div id="host-round" class="mb-4"></div>
       <div class="text-center">
         <button class="btn btn-primary btn-lg" id="btn-lb"><i class="bi bi-bar-chart-fill"></i> Ver clasificación</button>
       </div>
     `);
+    tpl.renderRoundHost(document.getElementById('host-round'), { phase: 'reveal', item, answers });
     on(rootSel, 'click', '#btn-lb', () => setSessionState(sessionId, { phase: 'leaderboard' }));
   }
 
   async function paintLeaderboard(/* phaseChanged */) {
     const lb = await leaderboard(sessionId, 10);
     const idx = session.current_item;
-    const isLast = idx + 1 >= activity.content.items.length;
+    const isLast = idx + 1 >= items.length;
     mount(rootSel, html`
       <h2 class="text-center mb-4"><i class="bi bi-bar-chart-fill"></i> Clasificación</h2>
       <div class="ww-leaderboard mx-auto" style="max-width:600px">

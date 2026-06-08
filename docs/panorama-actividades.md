@@ -42,8 +42,8 @@ grano**: cómo se divide la jugada en unidades.
 | Plantilla | Solo | Tarea | En vivo | **VS** (paralelo) | **Equipos** (turnos / juez) |
 |---|:--:|:--:|:--:|:--:|:--:|
 | **Quiz** | ✅ | ✅ | ✅ | ✅ *(listo: scorer + ≥2 ítems)* | ✅ auto **o** juez |
-| **Tildes** | ✅ | ✅ | ⚠️ scorer listo (cliente+server); falta generalizar `hostLive`/`studentLive` (hoy quiz-only) | ✅ auto (tap-toggle, `renderRound`) | ✅ auto **o** juez |
-| **Comas** | ✅ | ✅ | ⚠️ ídem | ✅ auto (tap-toggle, `renderRound`) | ✅ auto **o** juez |
+| **Tildes** | ✅ | ✅ | ✅ (host/alumno genéricos vía `renderRound`/`renderRoundHost`; Supabase requiere redeploy de Edge) | ✅ auto (tap-toggle) | ✅ auto **o** juez |
+| **Comas** | ✅ | ✅ | ✅ ídem | ✅ auto (tap-toggle) | ✅ auto **o** juez |
 | **Emparejar** | ✅ | ✅ | ❌ (no es secuencia) | ✅ **carrera** (2 tableros) tras adaptador | ⚠️ raro por turnos; sí como reto |
 | **Memoria** | ✅ | ✅ | ❌ | ✅ **carrera** o tableros espejo | ✅ **natural por turnos** (volteo) |
 | **Ruleta** | ✅ | ✅ | ❌ | ❌ | 🔧 utilidad: "gira para elegir equipo/turno" |

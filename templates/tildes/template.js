@@ -5,7 +5,7 @@ import { renderTildesPlayer } from './player.js';
 import { renderTildesEditor } from './editor.js';
 import { newPassage } from '../../core/contentModels/textCorrection.js';
 import { parseAccentedText } from '../../core/textMarks.js';
-import { renderTextCorrectionRound } from '../../core/textCorrectionRound.js';
+import { renderTextCorrectionRound, renderTextCorrectionHost } from '../../core/textCorrectionRound.js';
 import { scoreTildesSubmission } from './scorer.js';
 
 export class TildesTemplate extends BaseTemplate {
@@ -17,7 +17,7 @@ export class TildesTemplate extends BaseTemplate {
     contentModel: 'textCorrection',
     templateVersion: 1,
     aspectRatio: 'auto',
-    modes: { solo: true, live: false, async: true, practice: true },
+    modes: { solo: true, live: true, async: true, practice: true },
     needsImageUpload: false,
     needsAudioUpload: false,
     defaultRules: () => ({ randomize: false, allowOverflow: true, showHints: false }),
@@ -44,6 +44,11 @@ export class TildesTemplate extends BaseTemplate {
   // One passage = one round (tap the accented vowels). Shared renderer.
   static renderRound(root, payload, { onSubmit } = {}) {
     renderTextCorrectionRound(root, payload, { kind: 'tilde', onSubmit });
+  }
+
+  // Projector view for LIVE (passage big; solution on reveal).
+  static renderRoundHost(root, ctx) {
+    renderTextCorrectionHost(root, { ...ctx, kind: 'tilde' });
   }
 
   static migrateContent(content) { return content; }

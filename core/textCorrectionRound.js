@@ -83,6 +83,22 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
   });
 }
 
+// Projector (host) view for LIVE: the passage big and read-only. In the reveal
+// phase, show the solution with the correct marks highlighted (green).
+export function renderTextCorrectionHost(root, { phase, item, kind = 'tilde' } = {}) {
+  const text = item?.text || '';
+  if (phase === 'reveal') {
+    const want = new Set((item?.marks || []).filter((m) => m.kind === kind).map((m) => m.pos));
+    root.innerHTML = `
+      <div class="tc-passage">${passageHtml(text, kind, { got: want, want })}</div>
+      <p class="text-center text-success fw-bold mt-2"><i class="bi bi-check-circle-fill"></i> Solución</p>`;
+    return;
+  }
+  root.innerHTML = `
+    <div class="tc-passage">${escapeHtml(text)}</div>
+    <p class="text-center text-muted mt-2">${HINTS[kind]}</p>`;
+}
+
 // Full SOLO runner shared by Tildes and Comas: paginate passages one per
 // screen, tap to mark, "Listo" reveals the correct/wrong/missed marks, then
 // advance. Final summary + saveResult, identical scoring to VS (scoreMarks).
