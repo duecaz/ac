@@ -8,6 +8,7 @@ import { FEEDBACK_DELAY } from '../../core/constants.js';
 import { scoreQuizSubmission } from './scorer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import * as Streaks from '../../core/streaks.js';
+import { shuffle } from '../../core/roundRender.js';
 
 const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
 
@@ -93,5 +94,3 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
 
   renderItem();
 }
-
-function shuffle(a){ for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]; } return a; }
