@@ -136,3 +136,12 @@
 .vsanim-pick { display: flex; align-items: center; justify-content: center; }
 .vsanim-tile-body { padding: .55rem; text-align: center; line-height: 1.1; }
 .vsanim-tile-body .bi { font-size: 1.7rem; }
+
+/* VS setup: sonido y efectos (config panel) */
+.vs-fx-panel { max-width: 420px; text-align: left; border: 1px solid #e9ecef; border-radius: .6rem; background: #f8f9fa; }
+.vs-fx-panel > summary { cursor: pointer; padding: .55rem .9rem; font-weight: 600; list-style: none; }
+.vs-fx-panel > summary::-webkit-details-marker { display: none; }
+.vs-fx-grid { padding: .2rem .9rem .7rem; display: flex; flex-direction: column; gap: .35rem; }
+.vs-fx-row { display: flex; align-items: center; gap: .7rem; cursor: pointer; margin: 0; }
+.vs-fx-label { font-weight: 600; line-height: 1.15; }
+.vs-fx-label small { font-weight: 400; }

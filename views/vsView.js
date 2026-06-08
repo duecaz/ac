@@ -7,15 +7,22 @@
 // view only paints panels and reflects standings — no game logic here.
 import { html, escapeHtml, mount, $ } from '../core/html.js';
 import { on } from '../core/events.js';
-import { get } from '../core/storage.js';
+import { get, save } from '../core/storage.js';
 import { getTemplate } from '../core/registry.js';
 import { createSession, isVsCompatible, FORMATS, sessionItems } from '../kernel/session/engine.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { podiumHtml } from '../core/podium.js';
 import { getVsAnimation } from '../core/vsAnimations.js';
+import { play as playSound } from '../core/sounds.js';
+import { answerConfetti } from '../core/effects.js';
 
 const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
 const FLASH_MS = 700;
+
+// Per-answer feedback in VS, configurable from the setup panel. Default: the
+// quiet, focused combo the teacher asked for — colour flash + a short sound,
+// and NO confetti popping on every question (that reads as noise on a duel).
+const FX_DEFAULTS = { sound: true, confetti: false, flash: true };
 
 export function renderVsView(rootSel, id) {
   const a = get(id);
@@ -36,8 +43,18 @@ export function renderVsView(rootSel, id) {
 
   renderSetup();
 
+  const fxCfg = () => ({ ...FX_DEFAULTS, ...(a.presentation?.vsFeedback || {}) });
+
   // Names + start. Defaults let the teacher launch in one tap.
   function renderSetup() {
+    const fx = fxCfg();
+    const sw = (key, label, hint) => `
+      <label class="vs-fx-row" title="${escapeHtml(hint)}">
+        <span class="form-check form-switch m-0">
+          <input class="form-check-input vs-fx" type="checkbox" role="switch" data-fx="${key}" ${fx[key] ? 'checked' : ''}>
+        </span>
+        <span class="vs-fx-label">${label}<small class="d-block text-muted">${escapeHtml(hint)}</small></span>
+      </label>`;
     mount(rootSel, html`
       <div class="vs-setup text-center py-5">
         <a href="#/play/${a.id}" class="btn btn-sm btn-link"><i class="bi bi-arrow-left"></i> Volver</a>
@@ -55,11 +72,27 @@ export function renderVsView(rootSel, id) {
         </div>
         <button id="vs-start" class="btn btn-danger btn-lg px-5"><i class="bi bi-play-fill"></i> ¡Empezar!</button>
         <p class="text-muted small mt-3">Cada jugador responde en su lado. Gana quien sume más puntos.</p>
+
+        <details class="vs-fx-panel mx-auto mt-3">
+          <summary><i class="bi bi-sliders"></i> Sonido y efectos</summary>
+          <div class="vs-fx-grid">
+            ${sw('sound', 'Sonido', 'Un sonido corto al acertar o fallar.')}
+            ${sw('flash', 'Destello de color', 'Fondo verde al acertar, rojo al fallar.')}
+            ${sw('confetti', 'Confeti por pregunta', 'Lluvia de confeti en cada acierto (desactivado por defecto).')}
+          </div>
+        </details>
       </div>`);
     on(rootSel, 'click', '#vs-start', () => {
       const left = ($('#vs-name-left')?.value || '').trim() || 'Alumno 1';
       const right = ($('#vs-name-right')?.value || '').trim() || 'Alumno 2';
       startMatch(left, right);
+    });
+    // Feedback toggles persist per-activity (presentation.vsFeedback).
+    on(rootSel, 'change', '.vs-fx', (_, el) => {
+      if (!a.presentation) a.presentation = {};
+      const cfg = { ...fxCfg(), [el.dataset.fx]: el.checked };
+      a.presentation.vsFeedback = cfg;
+      save(a);
     });
   }
 
@@ -68,6 +101,7 @@ export function renderVsView(rootSel, id) {
     const session = createSession(a, { format: FORMATS.VS, left: leftName, right: rightName });
     session.start();
     const flashing = { left: false, right: false };
+    const fx = fxCfg();
     // The central stage is a pluggable animation chosen by the teacher in
     // Presentación (default: the built-in SVG tug-of-war).
     const animDef = getVsAnimation(a.presentation?.vsAnimation || 'svg-tug');
@@ -139,11 +173,17 @@ export function renderVsView(rootSel, id) {
       const scoreEl = document.getElementById('vs-score-' + side);
       if (scoreEl) scoreEl.textContent = session.standings()[side].score;
       const body = document.getElementById('vs-body-' + side);
-      if (body) body.classList.add(r.correct ? 'vs-flash-ok' : 'vs-flash-no');
-      emitGame(r.correct ? GameEvents.ANSWER_CORRECT : GameEvents.ANSWER_WRONG, { idx: r.cursor - 1 });
+      // Per-answer feedback is driven locally (not via the global game-event
+      // bus) so VS controls exactly what fires: colour flash, a short sound,
+      // and the central animation's reaction — but no per-question confetti
+      // unless the teacher turned it on. Each piece honours its own toggle.
+      if (fx.flash && body) body.classList.add(r.correct ? 'vs-flash-ok' : 'vs-flash-no');
+      if (fx.sound) playSound(r.correct ? 'correct' : 'wrong');
       updateCenter();
-      // A correct answer yanks the stage toward the scorer.
+      // The chosen animation reacts to the scorer; its sound (above) is what
+      // ties feedback to the animation rather than a detached jingle.
       if (r.correct && anim) anim.yank(side);
+      if (r.correct && fx.confetti) answerConfetti();
       setTimeout(() => {
         flashing[side] = false;
         if (body) body.classList.remove('vs-flash-ok', 'vs-flash-no');
