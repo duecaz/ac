@@ -6,7 +6,7 @@ import { renderComasPlayer } from './player.js';
 import { renderComasEditor } from './editor.js';
 import { newPassage } from '../../core/contentModels/textCorrection.js';
 import { parseTextWithCommas } from '../../core/textMarks.js';
-import { escapeHtml } from '../../core/html.js';
+import { renderTextCorrectionRound } from '../../core/textCorrectionRound.js';
 import { scoreComasSubmission } from './scorer.js';
 
 export class ComasTemplate extends BaseTemplate {
@@ -40,30 +40,9 @@ export class ComasTemplate extends BaseTemplate {
     return p ? { id: p.id, text: p.text } : null;
   }
 
-  // Render ONE passage with tappable gaps between characters for the session
-  // formats (VS / Equipos-auto). The student toggles a comma in each gap, then
-  // "Listo" commits the chosen positions via onSubmit(value:number[]).
+  // One passage = one round (tap the gap where a comma is missing). Shared renderer.
   static renderRound(root, payload, { onSubmit } = {}) {
-    const chars = [...(payload?.text || '')];
-    const marked = new Set();
-    root.innerHTML = `
-      <div class="rc-line fs-3 text-center mb-3">${chars.map((ch, i) =>
-        `${escapeHtml(ch)}${i < chars.length - 1 ? `<span class="rc-gap" data-pos="${i}" role="button"></span>` : ''}`
-      ).join('')}</div>
-      <div class="text-center"><button class="btn btn-success rt-done"><i class="bi bi-check2-circle"></i> Listo</button></div>
-      <p class="text-muted small text-center mt-2">Toca el espacio donde falta una coma.</p>`;
-    root.querySelectorAll('.rc-gap').forEach(el => el.addEventListener('click', () => {
-      const pos = +el.dataset.pos;
-      if (marked.has(pos)) { marked.delete(pos); el.classList.remove('rc-on'); el.textContent = ''; }
-      else { marked.add(pos); el.classList.add('rc-on'); el.textContent = ','; }
-    }));
-    let done = false;
-    root.querySelector('.rt-done').addEventListener('click', () => {
-      if (done) return;
-      done = true;
-      root.querySelectorAll('.rc-gap').forEach(el => { el.style.pointerEvents = 'none'; });
-      onSubmit?.([...marked].sort((a, b) => a - b));
-    });
+    renderTextCorrectionRound(root, payload, { kind: 'coma', onSubmit });
   }
 
   static migrateContent(content) { return content; }

@@ -42,8 +42,8 @@ grano**: cómo se divide la jugada en unidades.
 | Plantilla | Solo | Tarea | En vivo | **VS** (paralelo) | **Equipos** (turnos / juez) |
 |---|:--:|:--:|:--:|:--:|:--:|
 | **Quiz** | ✅ | ✅ | ✅ | ✅ *(listo: scorer + ≥2 ítems)* | ✅ auto **o** juez |
-| **Tildes** | ✅ | ✅ | ⚠️ falta `getRoundPayload`+`scoreSubmission` | ⚠️ tras extraer scorer | ✅ **juez ya**, auto tras extraer scorer |
-| **Comas** | ✅ | ✅ | ⚠️ ídem | ⚠️ tras extraer scorer | ✅ **juez ya**, auto tras extraer scorer |
+| **Tildes** | ✅ | ✅ | ⚠️ scorer listo (cliente+server); falta generalizar `hostLive`/`studentLive` (hoy quiz-only) | ✅ auto (tap-toggle, `renderRound`) | ✅ auto **o** juez |
+| **Comas** | ✅ | ✅ | ⚠️ ídem | ✅ auto (tap-toggle, `renderRound`) | ✅ auto **o** juez |
 | **Emparejar** | ✅ | ✅ | ❌ (no es secuencia) | ✅ **carrera** (2 tableros) tras adaptador | ⚠️ raro por turnos; sí como reto |
 | **Memoria** | ✅ | ✅ | ❌ | ✅ **carrera** o tableros espejo | ✅ **natural por turnos** (volteo) |
 | **Ruleta** | ✅ | ✅ | ❌ | ❌ | 🔧 utilidad: "gira para elegir equipo/turno" |
