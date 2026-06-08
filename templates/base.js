@@ -4,8 +4,12 @@
 //   - static renderEditor(root, activity, onChange)
 // Optional but recommended:
 //   - static getRoundPayload(activity, ctx)          // strip server-only data for LIVE
+//   - static renderRound(root, payload, { onSubmit }) // interactive device round (LIVE/VS/Equipos)
+//   - static renderRoundHost(root, ctx)              // read-only projector view (LIVE host)
 //   - static scoreSubmission({ value, item, msTaken, activity })
 //   - static migrateContent(content, fromVersion)
+import { escapeHtml } from '../core/html.js';
+
 export class BaseTemplate {
   static meta = {
     name: 'base',
@@ -28,4 +32,18 @@ export class BaseTemplate {
   };
   static renderPlayer() { throw new Error('renderPlayer not implemented'); }
   static renderEditor() { throw new Error('renderEditor not implemented'); }
+
+  // Projector (host) view for LIVE. The host owns the chrome (timer, answered
+  // count, controls); this only paints the round CONTENT into `root`.
+  //   ctx = { phase:'question'|'reveal', item, payload, answers }
+  // `item` is the FULL item (the host holds the key); `payload` is sanitized.
+  // Default: prompt big + the answer on reveal. Live templates override for a
+  // richer, branded projector display (quiz: colour grid + bars; text: passage).
+  static renderRoundHost(root, { phase, item, payload } = {}) {
+    const prompt = payload?.question ?? payload?.text ?? item?.question ?? item?.text ?? '';
+    const answer = (phase === 'reveal' && item?.answer != null)
+      ? `<p class="text-center text-success fw-bold fs-4"><i class="bi bi-check-circle-fill"></i> ${escapeHtml(String(item.answer))}</p>`
+      : '';
+    root.innerHTML = `<h2 class="text-center my-4">${escapeHtml(String(prompt))}</h2>${answer}`;
+  }
 }

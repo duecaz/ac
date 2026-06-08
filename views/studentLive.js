@@ -12,8 +12,8 @@ import { applyBackground } from '../core/backgrounds.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import * as Streaks from '../core/streaks.js';
-
-const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
+import { getTemplate } from '../core/registry.js';
+import { sessionItems } from '../kernel/session/engine.js';
 
 const NICK_KEY = 'ww.nick';
 
@@ -131,40 +131,39 @@ export async function renderPlay(rootSel, code) {
 
   async function paintQuestion() {
     const idx = session.current_item;
-    const item = activity.content.items[idx];
+    const items = sessionItems(activity);
+    const item = items[idx];
     const own = await getOwnAnswer(session.id, player.playerId, idx);
     if (own) return paintWaiting('Respuesta enviada. Espera al resto.');
-    emitGame(GameEvents.QUESTION_SHOWN, { idx, total: activity.content.items.length, item });
+    emitGame(GameEvents.QUESTION_SHOWN, { idx, total: items.length, item });
     const streak = Streaks.get(session.id, player.playerId);
     lastQuestionShownAt = Date.now();
     const deadlineMs = session.deadline ? new Date(session.deadline).getTime() : 0;
     const total = activity?.live?.questionTimer ? activity.live.questionTimer * 1000 : 0;
+    // The DEVICE renders the round via the template contract (same as VS),
+    // so every template — quiz, tildes, comas, math… — works without a
+    // per-template branch here. The host's projector shows the prompt.
+    const tpl = getTemplate(activity.template);
+    const payload = tpl.getRoundPayload ? tpl.getRoundPayload(activity, { itemIndex: idx }) : item;
     mount(rootSel, html`
       <div class="d-flex justify-content-between align-items-center mb-2">
-        <span class="badge bg-info text-dark">Pregunta ${idx+1} / ${activity.content.items.length}</span>
+        <span class="badge bg-info text-dark">Pregunta ${idx+1} / ${items.length}</span>
         ${streak >= 2 ? `<span class="badge bg-warning text-dark fs-5">🔥 ${streak}</span>` : ''}
         <span id="s-time" class="badge bg-warning text-dark fs-5"></span>
       </div>
       <div class="progress mb-3" style="height:6px"><div id="s-bar" class="progress-bar bg-warning" style="width:100%"></div></div>
-      <h4 class="text-center mb-3">${escapeHtml(item.question)}</h4>
-      <div class="ww-kahoot-grid">
-        ${(item.options||[]).map((o, i) => `
-          <button class="btn btn-lg ww-ans ww-shape-${(i % 4) + 1}" data-value="${escapeHtml(o)}">
-            <i class="bi ${SHAPE_ICONS[i % 4]} me-2"></i>${escapeHtml(o)}
-          </button>`).join('')}
-      </div>
+      <div id="s-round"></div>
     `);
-    on(rootSel, 'click', '.ww-ans', async (_, btn) => {
-      document.querySelectorAll('.ww-ans').forEach(b => b.disabled = true);
-      btn.classList.add('border', 'border-light', 'border-3');
-      btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enviando…';
-      const ms = Date.now() - lastQuestionShownAt;
-      const r = await queuedSubmit(session.id, player.playerId, idx, btn.dataset.value, ms);
-      emitGame(GameEvents.PLAYER_ANSWERED, { idx });
-      if (r.queued) {
-        paintWaiting('Respuesta guardada (sin red). Se enviará al reconectar.');
-      } else {
-        paintWaiting('¡Respuesta enviada!');
+    let sent = false;
+    tpl.renderRound(document.getElementById('s-round'), payload, {
+      mode: 'live',
+      onSubmit: async (value) => {
+        if (sent) return;
+        sent = true;
+        const ms = Date.now() - lastQuestionShownAt;
+        const r = await queuedSubmit(session.id, player.playerId, idx, value, ms);
+        emitGame(GameEvents.PLAYER_ANSWERED, { idx });
+        paintWaiting(r.queued ? 'Respuesta guardada (sin red). Se enviará al reconectar.' : '¡Respuesta enviada!');
       }
     });
 

@@ -6,7 +6,7 @@ import { renderComasPlayer } from './player.js';
 import { renderComasEditor } from './editor.js';
 import { newPassage } from '../../core/contentModels/textCorrection.js';
 import { parseTextWithCommas } from '../../core/textMarks.js';
-import { renderTextCorrectionRound } from '../../core/textCorrectionRound.js';
+import { renderTextCorrectionRound, renderTextCorrectionHost } from '../../core/textCorrectionRound.js';
 import { scoreComasSubmission } from './scorer.js';
 
 export class ComasTemplate extends BaseTemplate {
@@ -18,7 +18,7 @@ export class ComasTemplate extends BaseTemplate {
     contentModel: 'textCorrection',
     templateVersion: 1,
     aspectRatio: 'auto',
-    modes: { solo: true, live: false, async: true, practice: true },
+    modes: { solo: true, live: true, async: true, practice: true },
     needsImageUpload: false,
     needsAudioUpload: false,
     defaultRules: () => ({ randomize: false, allowOverflow: true }),
@@ -43,6 +43,11 @@ export class ComasTemplate extends BaseTemplate {
   // One passage = one round (tap the gap where a comma is missing). Shared renderer.
   static renderRound(root, payload, { onSubmit } = {}) {
     renderTextCorrectionRound(root, payload, { kind: 'coma', onSubmit });
+  }
+
+  // Projector view for LIVE (passage big; solution on reveal).
+  static renderRoundHost(root, ctx) {
+    renderTextCorrectionHost(root, { ...ctx, kind: 'coma' });
   }
 
   static migrateContent(content) { return content; }
