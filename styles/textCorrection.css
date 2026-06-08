@@ -1,0 +1,50 @@
+/* Text correction (Tildes + Comas) — shared touch-first round.
+   One passage per screen, big tap targets, tap to toggle. Works the same on
+   mouse, touch and IR pen. Driven by core/textCorrectionRound.js for solo, VS,
+   Equipos and LIVE. (Replaces the old per-template drag-drop styles.) */
+
+.tc-solo { max-width: 900px; margin: 0 auto; padding: .25rem 1rem 2rem; }
+.tc-round { text-align: center; }
+
+.tc-passage {
+  font-size: clamp(1.5rem, 4.5vw, 2.6rem);
+  line-height: 2.1;
+  text-align: center;
+  word-break: break-word;
+  margin: 1rem 0;
+}
+.tc-ch { white-space: pre-wrap; }
+
+/* Tap target: a vowel (tilde) or a between-words gap (coma). ≥44px hit area. */
+.tc-tap {
+  display: inline-block;
+  font: inherit; color: inherit;
+  min-width: 1.4em; min-height: 1.7em; line-height: 1.5;
+  padding: .05em .2em; margin: 0 .05em;
+  border: 2px dashed rgba(99,102,241,.45); border-radius: .5rem;
+  background: #fff; cursor: pointer; vertical-align: baseline;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  transition: background .12s, border-color .12s, transform .08s;
+}
+.tc-gap { min-width: .9em; padding: .05em .1em; background: #f7f8ff; }
+.tc-tap:active { transform: scale(.9); }
+@media (hover: hover) { .tc-tap:not(.is-revealed):hover { background: #fff3cd; border-color: #ffc107; } }
+
+/* Chosen (marked) state */
+.tc-vowel.on { background: #ffe69c; border-color: #ffc107; border-style: solid; color: #664d03; font-weight: 700; }
+.tc-gap.on   { background: #d1e7dd; border-color: #198754; border-style: solid; color: #0f5132; font-weight: 700; min-width: 1.1em; }
+
+/* Read-only reveal: ok = right mark · bad = wrong mark · miss = should've marked */
+.tc-tap.is-revealed { cursor: default; }
+.tc-tap.ok   { background: rgba(25,135,84,.16); border-color: #198754; border-style: solid; color: #0f5132; font-weight: 700; }
+.tc-tap.bad  { background: rgba(220,53,69,.16); border-color: #dc3545; border-style: solid; color: #842029; font-weight: 700; text-decoration: line-through; }
+.tc-tap.miss { background: rgba(255,193,7,.20); border-color: #dc3545; border-style: dashed; color: #842029; font-weight: 700; }
+
+.tc-hint { font-size: .95rem; }
+.tc-verdict { font-weight: 700; font-size: 1.1rem; }
+.tc-verdict.ok { color: #198754; }
+.tc-verdict.bad { color: #dc3545; }
+.tc-tts { margin-bottom: .75rem; }
+
+/* Paper-like dark text on the notebook background skin. */
+body.bg-notebook .tc-passage { color: #1f2937; }

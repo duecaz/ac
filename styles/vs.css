@@ -102,24 +102,6 @@
 .rq-opt.rq-picked { outline: 4px solid #ffc107; outline-offset: -2px; }
 .vs-done { margin: auto; }
 
-/* Shared "round" render bits (used by VS and Equipos-auto) */
-.rt-passage { line-height: 1.9; }
-.rt-vowel {
-  display: inline-block; min-width: 1.1em; text-align: center;
-  border-bottom: 2px dashed #adb5bd; border-radius: 4px; cursor: pointer;
-}
-.rt-vowel:hover { background: #fff3cd; }
-.rt-vowel.rt-on {
-  color: #664d03; background: #ffe69c; border-bottom-color: #ffc107; font-weight: 700;
-}
-.rc-line { line-height: 2; }
-.rc-gap {
-  display: inline-block; min-width: .5em; height: 1.4em; vertical-align: bottom;
-  border-bottom: 2px dashed #adb5bd; border-radius: 3px; cursor: pointer; margin: 0 1px;
-}
-.rc-gap:hover { background: #d1e7dd; }
-.rc-gap.rc-on { color: #0f5132; background: #d1e7dd; border-bottom-color: #198754; font-weight: 700; min-width: .7em; }
-
 .vs-overlay { flex: 1; display: flex; align-items: center; justify-content: center; }
 
 /* Portrait / narrow: stack alumno 1 → animación → alumno 2 in three rows. */

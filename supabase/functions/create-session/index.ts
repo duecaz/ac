@@ -15,7 +15,19 @@ function sanitizeSnap(activity: any) {
   const c = JSON.parse(JSON.stringify(activity));
   const items = c?.content?.items;
   if (Array.isArray(items)) for (const it of items) { delete it.answer; delete it.answerIdx; }
+  // Text-correction (tildes/comas): the answer key is passages[].marks — strip
+  // it from the student-readable snap so the solution can't be read.
+  const passages = c?.content?.passages;
+  if (Array.isArray(passages)) for (const p of passages) { delete p.marks; }
   return c;
+}
+
+// A round-based activity is valid if it has items (quiz) OR passages (tildes/comas).
+function roundCount(activity: any): number {
+  const c = activity?.content;
+  if (Array.isArray(c?.items)) return c.items.length;
+  if (Array.isArray(c?.passages)) return c.passages.length;
+  return 0;
 }
 
 Deno.serve(async (req: Request) => {
@@ -38,8 +50,8 @@ Deno.serve(async (req: Request) => {
 
     const body = await req.json();
     const { activity_id, activity, rules } = body;
-    if (!activity || !Array.isArray(activity?.content?.items) || activity.content.items.length === 0) {
-      return json({ error: "activity required with items" }, 400);
+    if (!activity || roundCount(activity) === 0) {
+      return json({ error: "activity required with items or passages" }, 400);
     }
 
     const { data: codeData, error: cErr } = await admin.rpc("generate_session_code");

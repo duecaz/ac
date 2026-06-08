@@ -4,10 +4,13 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { scoreOne as quizScoreOne } from "./_scorers/quiz.ts";
+import { scoreTilde, scoreComa } from "./_scorers/textCorrection.ts";
 
 type Scorer = (activity: any, item: any, ans: any) => { correct: boolean | null; points: number };
 const SCORERS: Record<string, Scorer> = {
-  quiz: quizScoreOne
+  quiz: quizScoreOne,
+  tildes: scoreTilde,
+  comas: scoreComa
 };
 
 const CORS = {
@@ -56,7 +59,10 @@ Deno.serve(async (req: Request) => {
     const scorer = SCORERS[activity?.template];
     if (!scorer) return json({ error: `no scorer for template ${activity?.template}` }, 400);
 
-    const item = activity?.content?.items?.[item_index];
+    // Quiz uses content.items; text-correction (tildes/comas) uses
+    // content.passages. Resolve generically so any round-based template works.
+    const roundItems = activity?.content?.items ?? activity?.content?.passages ?? [];
+    const item = roundItems[item_index];
     if (!item) return json({ error: "item out of range" }, 400);
 
     const { data: answers, error: aErr } = await admin.from("answers")
