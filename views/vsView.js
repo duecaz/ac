@@ -41,9 +41,9 @@ export function renderVsView(rootSel, id) {
     return;
   }
 
-  renderSetup();
-
   const fxCfg = () => ({ ...FX_DEFAULTS, ...(a.presentation?.vsFeedback || {}) });
+
+  renderSetup();
 
   // Names + start. Defaults let the teacher launch in one tap.
   function renderSetup() {
