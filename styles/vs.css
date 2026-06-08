@@ -1,13 +1,34 @@
 /* VS duel — split-screen layout + central tug-of-war. Two panels fill the
    viewport so two students can play side by side on one touchscreen. */
-.vs-arena { display: flex; flex-direction: column; height: calc(100vh - 70px); min-height: 480px; }
+/* 4-column duel: alumno 1 | animación (2 cols) | alumno 2. The centre stage
+   holds a pluggable animation; in portrait/narrow it stacks to 3 rows. */
+.vs-arena {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "s1 stage stage s2";
+  height: calc(100vh - 70px); min-height: 480px;
+}
+.vs-panel.vs-left  { grid-area: s1; }
+.vs-panel.vs-right { grid-area: s2; }
+
+/* Centre stage (animation + who's-winning label) */
+.vs-stage {
+  grid-area: stage; display: flex; flex-direction: column; min-width: 0; min-height: 0;
+  border-left: 1px solid #dee2e6; border-right: 1px solid #dee2e6;
+  padding: .4rem .6rem; text-align: center;
+}
+.vs-stage-canvas { flex: 1; min-height: 0; position: relative; display: flex; align-items: center; justify-content: center; }
+.vs-stage-canvas > * { width: 100%; height: 100%; }
+.vs-anim-fallback {
+  margin: auto; max-width: 18rem; padding: 1rem; color: #6c757d; font-size: .95rem;
+  border: 2px dashed #ced4da; border-radius: .6rem;
+}
+.vs-tug-label { font-weight: 800; font-size: clamp(1rem, 2vw, 1.6rem); margin: 0 0 .1rem; transition: color .2s; }
 
 /* Central tug-of-war (SVG, TV-friendly): two pullers heave a sagging rope; the
    knot/flag slides toward whoever leads, the leader digs in and the scorer
    yanks with a puff of dust. Pure CSS/SVG — no image assets, scales crisply. */
-.vs-tug { padding: .4rem 1rem .1rem; text-align: center; }
-.vs-tug-label { font-weight: 800; font-size: clamp(1rem, 2.6vw, 1.7rem); margin-bottom: .1rem; transition: color .2s; }
-.vs-tug-scene { height: clamp(120px, 22vh, 220px); }
+.vs-tug-scene { width: 100%; height: 100%; }
 .vs-tug-svg { width: 100%; height: 100%; display: block; overflow: visible; }
 
 /* Scene furniture */
@@ -29,7 +50,7 @@
 .tug-shadow{ fill: rgba(0,0,0,.13); }
 
 /* Rope + knot/flag */
-#tug-rope { fill: none; stroke: #b9863b; stroke-width: 11; stroke-linecap: round;
+.tug-rope { fill: none; stroke: #b9863b; stroke-width: 11; stroke-linecap: round;
   filter: drop-shadow(0 2px 1px rgba(0,0,0,.25)); }
 .tug-knotball { fill: #7a4e16; }
 .tug-pole { stroke: #555; stroke-width: 3; stroke-linecap: round; }
@@ -47,8 +68,8 @@
 /* Yank on a correct answer: the rope jerks toward the scorer + dust puffs. */
 @keyframes tug-yank-l { 0%,100% { transform: translateX(0); } 45% { transform: translateX(-30px); } }
 @keyframes tug-yank-r { 0%,100% { transform: translateX(0); } 45% { transform: translateX(30px); } }
-.vs-tug-scene.pull-left  #tug-dynamic { animation: tug-yank-l .45s ease; }
-.vs-tug-scene.pull-right #tug-dynamic { animation: tug-yank-r .45s ease; }
+.vs-tug-scene.pull-left  .tug-dynamic { animation: tug-yank-l .45s ease; }
+.vs-tug-scene.pull-right .tug-dynamic { animation: tug-yank-r .45s ease; }
 
 .tug-dust { opacity: 0; transform-box: fill-box; transform-origin: center; }
 .tug-dust circle { fill: rgba(140,110,70,.55); }
@@ -57,12 +78,11 @@
 .vs-tug-scene.pull-right .tug-dust-right { animation: tug-puff .5s ease-out; }
 
 @media (prefers-reduced-motion: reduce) {
-  .tug-fig, #tug-dynamic, .tug-dust { animation: none !important; }
+  .tug-fig, .tug-dynamic, .tug-dust { animation: none !important; }
 }
 
 /* The two activity panels */
-.vs-panels { flex: 1; display: flex; align-items: stretch; min-height: 0; }
-.vs-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; padding: .5rem .75rem 1rem; }
+.vs-panel { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: .5rem .75rem 1rem; }
 .vs-head {
   display: flex; justify-content: space-between; align-items: center;
   padding: .5rem .9rem; border-radius: .6rem; font-weight: 700;
@@ -73,17 +93,6 @@
 .vs-prog-bar { height: 100%; width: 0; background: #198754; transition: width .4s ease; }
 .vs-body { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: auto; }
 .vs-q { font-size: clamp(1.1rem, 2.4vw, 1.8rem); font-weight: 600; text-align: center; margin-bottom: 1rem; }
-
-.vs-divider {
-  display: flex; align-items: center; justify-content: center;
-  width: 56px; position: relative;
-}
-.vs-divider::before { content: ""; position: absolute; top: 0; bottom: 0; width: 2px; background: #dee2e6; }
-.vs-divider span {
-  position: relative; z-index: 1; background: #212529; color: #fff;
-  border-radius: 50%; width: 44px; height: 44px; display: flex;
-  align-items: center; justify-content: center; font-weight: 800; font-style: italic;
-}
 
 /* Panel-level answer feedback (template owns the round DOM, view flashes ✓/✗) */
 .vs-body.vs-flash-ok { animation: vs-flash-ok .7s ease-out; }
@@ -113,9 +122,17 @@
 
 .vs-overlay { flex: 1; display: flex; align-items: center; justify-content: center; }
 
-/* Portrait phones: stack the two panels vertically. */
-@media (max-width: 640px) {
-  .vs-panels { flex-direction: column; }
-  .vs-divider { width: auto; height: 40px; }
-  .vs-divider::before { top: auto; bottom: auto; left: 0; right: 0; height: 2px; width: auto; }
+/* Portrait / narrow: stack alumno 1 → animación → alumno 2 in three rows. */
+@media (max-width: 860px), (orientation: portrait) {
+  .vs-arena {
+    grid-template-columns: 1fr;
+    grid-template-areas: "s1" "stage" "s2";
+    height: auto; min-height: calc(100vh - 70px);
+  }
+  .vs-stage { border: none; border-top: 1px solid #dee2e6; border-bottom: 1px solid #dee2e6; min-height: 30vh; }
 }
+
+/* VS animation picker tiles (Presentación) */
+.vsanim-pick { display: flex; align-items: center; justify-content: center; }
+.vsanim-tile-body { padding: .55rem; text-align: center; line-height: 1.1; }
+.vsanim-tile-body .bi { font-size: 1.7rem; }
