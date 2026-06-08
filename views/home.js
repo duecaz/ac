@@ -6,6 +6,7 @@ import { getTemplate, listTemplates } from '../core/registry.js';
 import { confirmModal, toast } from '../core/toast.js';
 import { downloadActivitiesJson, pickAndImport } from '../core/io.js';
 import { activityItemCount as itemCount } from '../core/migrate.js';
+import { isVsCompatible } from '../kernel/session/engine.js';
 
 let _filter = { q: '', template: '' };
 
@@ -77,6 +78,8 @@ export function renderHome(rootSel) {
           </div>
           <div class="card-footer d-flex gap-1 flex-wrap">
             ${m.solo ? `<button class="btn btn-success btn-sm flex-grow-1 act-play" data-id="${a.id}"><i class="bi bi-person-fill"></i> Individual</button>` : ''}
+            ${isVsCompatible(a) ? `<button class="btn btn-danger btn-sm flex-grow-1 act-vs" data-id="${a.id}"><i class="bi bi-fire"></i> VS</button>` : ''}
+            <button class="btn btn-primary btn-sm flex-grow-1 act-teams" data-id="${a.id}" data-tpl="${a.template}"><i class="bi bi-people-fill"></i> Equipos</button>
             ${m.live ? `<button class="btn btn-warning btn-sm flex-grow-1 act-pin" data-id="${a.id}"><i class="bi bi-broadcast"></i> En vivo</button>` : ''}
             ${m.async ? `<button class="btn btn-info btn-sm flex-grow-1 act-task" data-id="${a.id}" title="Tarea"><i class="bi bi-clipboard-check"></i> Tarea</button>` : ''}
             <button class="btn btn-outline-primary btn-sm act-edit" data-id="${a.id}"><i class="bi bi-pencil"></i></button>
@@ -98,6 +101,8 @@ export function renderHome(rootSel) {
   });
   on(rootSel, 'click', '.act-export', (_, b) => downloadActivitiesJson([b.dataset.id]));
   on(rootSel, 'click', '.act-play', (_, b) => navigate(`#/play/${b.dataset.id}`));
+  on(rootSel, 'click', '.act-vs', (_, b) => navigate(`#/vs/${b.dataset.id}`));
+  on(rootSel, 'click', '.act-teams', (_, b) => navigate(`#/${b.dataset.tpl === 'memory' ? 'memory' : 'teams'}/${b.dataset.id}`));
   on(rootSel, 'click', '.act-pin', (_, b) => navigate(`#/launch/${b.dataset.id}`));
   on(rootSel, 'click', '.act-task', (_, b) => navigate(`#/tasks/${b.dataset.id}`));
   on(rootSel, 'click', '.act-edit', (_, b) => navigate(`#/edit/${b.dataset.id}`));
