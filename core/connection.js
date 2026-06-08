@@ -1,5 +1,5 @@
 // Connection state banner. Shows a sticky message when realtime/network drops.
-// Subscribed to from transport/live.js subscribeRoom (system events).
+// Subscribed to from adapters/supabase/live.js subscribeRoom (system events).
 //
 // Debounced: Supabase Realtime cycles CLOSED → SUBSCRIBED several times a
 // minute during normal heartbeats. Without debounce the user sees the

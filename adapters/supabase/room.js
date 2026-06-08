@@ -1,5 +1,5 @@
 // Room operations: create via Edge Function, lookup, fetch.
-import { getClient, ensureAuth } from '../supabase.js';
+import { getClient, ensureAuth } from '../../core/supabase.js';
 import { SUPABASE_URL } from '../../supabase.config.js';
 
 export async function createRoom(activity) {
