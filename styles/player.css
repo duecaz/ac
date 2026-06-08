@@ -107,6 +107,40 @@
   padding: 1rem;
 }
 
+/* Embedded modes (VS / Equipos / Memoria) need more room than the solo
+   aspect-ratio box. When one is active the frame drops its ratio for a taller,
+   wider definite-height box; the inner widget keeps filling it (absolute
+   inset:0, scrolls if needed). The arenas — designed for the full viewport —
+   are re-scoped just below to fill THIS frame instead of 100vh, so they sit
+   neatly inside the activity page (and grow with the Pantalla completa button). */
+.ww-play-page .ww-player-frame.is-expanded {
+  aspect-ratio: auto !important;
+  max-width: 1100px;
+  height: min(80vh, 720px);
+}
+.ww-play-page .ww-player-frame.is-expanded > #ww-player-widget {
+  padding: 0;                /* arenas manage their own padding */
+}
+/* Re-scope the full-viewport arenas to the embed frame. In real fullscreen the
+   frame is 100vh, so 100% still fills the screen — one rule covers both. */
+.ww-play-page .ww-player-frame .vs-arena,
+.ww-play-page .ww-player-frame .teams-arena {
+  height: 100%;
+  min-height: 0;
+}
+
+/* Active mode button gets a subtle "you are here" cue beyond the solid fill. */
+.ww-modes .ww-mode.is-active {
+  box-shadow: 0 0 0 3px rgba(0,0,0,.08);
+  font-weight: 600;
+}
+
+/* Shared SETUP scaffold (views/modeSetup.js) — ONE look for every mode's setup
+   so they never drift. Lives inside the stage when embedded. */
+.ww-mode-setup { padding: 1.5rem 1rem; }
+.ww-mode-setup .ww-mode-setup-body { margin: 0 auto; }
+.ww-mode-setup .form-control { max-width: 100%; }
+
 /* Pickable tiles for skin and background. */
 .ww-pick-tile {
   width: 96px;

@@ -2,6 +2,7 @@
 // Each suite asserts on import and prints its own checklist; a thrown
 // AssertionError aborts with a non-zero exit code (CI-friendly).
 console.log('▶ registry'); await import('./registry.test.mjs');
+console.log('\n▶ modes');    await import('./modes.test.mjs');
 console.log('\n▶ content');  await import('./content.test.mjs');
 console.log('\n▶ adapters'); await import('./adapters.test.mjs');
 console.log('\n▶ solo');      await import('./solo.test.mjs');

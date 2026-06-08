@@ -136,3 +136,13 @@ Eso permite jugar **Tildes/Comas/cualquier cosa en Equipos hoy**.
   la lógica pura de la ruleta y un dibujo SVG compartido (`templates/wheel/render.js`).
 - **F5 — Barra de modos** ✅ hecho: `views/playerView.js` expone
   Individual · VS · Equipos · En vivo · Tarea, gateados por compatibilidad (§2).
+- **F6 — Modos embebidos + contrato único** ✅ hecho: el gateo se unificó en un
+  registro (`core/modes.js`, fuente única de verdad), y los modos de pantalla
+  compartida (Individual · VS · Equipos · Memoria) ahora corren **dentro del
+  escenario de la actividad** (mismo `#/play/:id`, mismo tema), no en páginas
+  sueltas. En vivo y Tarea siguen abriendo su página propia (otro montaje
+  físico) pero comparten barra y estética. Las pantallas de inicio comparten un
+  andamiaje común (`views/modeSetup.js`) para que no se desincronicen. Las rutas
+  `#/vs/:id`, `#/teams/:id`, `#/memory/:id` siguen vivas como deep-links.
+  **Contrato y recetas (añadir modo / que una plantilla nueva ofrezca cada
+  modo): `docs/modos-de-juego.md`.** Tests de gateo: `tests/modes.test.mjs`.

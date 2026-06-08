@@ -6,10 +6,10 @@
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { get, save, remove as removeActivity } from '../core/storage.js';
-import { runPlayer } from '../core/player.js';
 import { activityItemCount, newActivityId } from '../core/migrate.js';
 import { getTemplate, compatibleTemplates } from '../core/registry.js';
 import { isVsCompatible } from '../kernel/session/engine.js';
+import { availableModes, getMode, runMode } from '../core/modes.js';
 import { listSkins, applySkin, skinPreviewHtml } from '../core/skins.js';
 import { listVsAnimations } from '../core/vsAnimations.js';
 import { listBackgrounds, applyBackground, reapplyBackground, backgroundPreviewHtml } from '../core/backgrounds.js';
@@ -31,6 +31,12 @@ export async function renderPlayerView(rootSel, id) {
   let currentSkin = a.presentation?.skin || 'default';
   let currentBg = a.presentation?.background || 'none';
   const vsCapable = isVsCompatible(a);
+  // The currently selected embedded mode and its teardown handle. The activity
+  // stage hosts ONE mode at a time (Individual by default); switching modes
+  // disposes the previous one (stops VS animations, etc.). See core/modes.js.
+  let currentMode = 'solo';
+  let currentDisposer = null;
+  ctx.add(() => { if (currentDisposer) { try { currentDisposer.dispose(); } catch {} currentDisposer = null; } });
   // Reset any prior global skin/bg from other views (host live, etc.) so the
   // page chrome stays neutral. Scoped apply happens after paint() once the
   // frame element exists.
@@ -43,6 +49,48 @@ export async function renderPlayerView(rootSel, id) {
   const canEdit = !a.author?.id || (user && user.id === a.author?.id);
 
   paint();
+
+  // The activity as it will be PLAYED: the chosen "switch template" wins over
+  // the stored one, so mode gating + the running game both follow the preview.
+  function playActivity() { return { ...a, template: liveTemplate }; }
+
+  // The "Modos de juego" bar, built entirely from the mode registry so gating
+  // lives in ONE place (core/modes.js). Embedded modes are buttons that mount
+  // into the stage; embed:false modes (En vivo, Tarea) are links to their page.
+  function modeBarHtml(act) {
+    return availableModes(act).map(m => {
+      const ok = m.isAvailable(act);
+      if (!m.embed) {
+        return ok
+          ? `<a href="${m.href(a)}" class="btn btn-outline-${m.color}"><i class="bi ${m.icon}"></i> ${escapeHtml(m.label)}</a>`
+          : `<button class="btn btn-outline-secondary" disabled title="${escapeHtml(m.disabledHint || '')}"><i class="bi ${m.icon}"></i> ${escapeHtml(m.label)}</button>`;
+      }
+      if (!ok) {
+        return `<button class="btn btn-outline-secondary" disabled title="${escapeHtml(m.disabledHint || '')}"><i class="bi ${m.icon}"></i> ${escapeHtml(m.label)}</button>`;
+      }
+      const active = m.id === currentMode;
+      return `<button class="btn btn-${active ? '' : 'outline-'}${m.color} ww-mode${active ? ' is-active' : ''}" data-mode="${m.id}" title="${escapeHtml(m.title || '')}"><i class="bi ${m.icon}"></i> ${escapeHtml(m.label)}</button>`;
+    }).join('');
+  }
+
+  // Swap the stage to a different embedded mode: tear down the previous one,
+  // expand the frame for shared-screen modes (VS/Equipos need room), highlight
+  // the active button, and mount. Solo keeps the template's fixed aspect ratio.
+  async function selectMode(id) {
+    const m = getMode(id);
+    if (!m || !m.embed) return; // embed:false modes navigate via their link
+    if (currentDisposer) { try { currentDisposer.dispose(); } catch {} currentDisposer = null; }
+    currentMode = id;
+    document.querySelectorAll('.ww-mode').forEach(btn => {
+      const on = btn.dataset.mode === id;
+      btn.classList.toggle('is-active', on);
+      const color = getMode(btn.dataset.mode)?.color || 'secondary';
+      btn.classList.toggle('btn-' + color, on);
+      btn.classList.toggle('btn-outline-' + color, !on);
+    });
+    document.getElementById('ww-frame')?.classList.toggle('is-expanded', id !== 'solo');
+    currentDisposer = await runMode(id, '#ww-player-widget', playActivity(), ctx);
+  }
 
   function paint() {
     const T = getTemplate(liveTemplate) || getTemplate(a.template);
@@ -71,19 +119,7 @@ export async function renderPlayerView(rootSel, id) {
 
         <h6 class="text-muted text-uppercase small mb-2">Modos de juego</h6>
         <div class="d-flex flex-wrap gap-2 mb-4 ww-modes">
-          <button class="btn btn-success" id="mode-solo" title="Jugar aquí, en este dispositivo">
-            <i class="bi bi-person-fill"></i> Individual
-          </button>
-          ${isVsCompatible(a)
-            ? `<a href="#/vs/${a.id}" class="btn btn-outline-danger"><i class="bi bi-fire"></i> VS (duelo)</a>`
-            : `<button class="btn btn-outline-secondary" disabled title="Necesita autocorrección y 2+ preguntas"><i class="bi bi-fire"></i> VS</button>`}
-          <a href="#/${a.template === 'memory' ? 'memory' : 'teams'}/${a.id}" class="btn btn-outline-primary"><i class="bi bi-people-fill"></i> Equipos</a>
-          ${T?.meta?.modes?.live
-            ? `<a href="#/launch/${a.id}" class="btn btn-outline-info"><i class="bi bi-broadcast"></i> En vivo</a>`
-            : `<button class="btn btn-outline-secondary" disabled title="Esta plantilla no admite En vivo"><i class="bi bi-broadcast"></i> En vivo</button>`}
-          ${T?.meta?.modes?.async
-            ? `<a href="#/tasks/${a.id}" class="btn btn-outline-warning"><i class="bi bi-journal-check"></i> Tarea</a>`
-            : ''}
+          ${modeBarHtml(playActivity())}
         </div>
 
         <div class="d-flex flex-wrap gap-2 mb-4">
@@ -147,7 +183,11 @@ export async function renderPlayerView(rootSel, id) {
     const frame = document.getElementById('ww-frame');
     applySkin(currentSkin, frame);
     applyBackground(currentBg, frame);
-    runPlayer('#ww-player-widget', { ...a, template: liveTemplate }, { skipChrome: true });
+    // Re-mount the active mode (default Individual). If a template switch made
+    // the active mode incompatible (e.g. VS off after switching), fall back.
+    const act = playActivity();
+    if (!getMode(currentMode)?.isAvailable(act)) currentMode = 'solo';
+    selectMode(currentMode);
     wireHandlers();
   }
 
@@ -180,16 +220,14 @@ export async function renderPlayerView(rootSel, id) {
       a.presentation.vsAnimationSrc = e.target.value.trim();
       save(a);
     });
-    const restartSolo = () => {
-      document.getElementById('ww-player-widget').innerHTML = '';
-      runPlayer('#ww-player-widget', { ...a, template: liveTemplate }, { skipChrome: true });
-    };
-    on(rootSel, 'click', '#btn-restart', restartSolo);
-    // "Individual" is this very page; restart the activity and scroll to it.
-    on(rootSel, 'click', '#mode-solo', () => {
-      restartSolo();
+    // Mode bar: embedded modes mount into the stage (embed:false modes are
+    // plain links and navigate on their own).
+    on(rootSel, 'click', '.ww-mode', (_, b) => {
+      selectMode(b.dataset.mode);
       document.getElementById('ww-frame')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
+    // Restart re-mounts whatever mode is active (new game / fresh setup).
+    on(rootSel, 'click', '#btn-restart', () => selectMode(currentMode));
     // Frame-level fullscreen: only the embed expands, not the page (YouTube-like).
     on(rootSel, 'click', '#btn-fs', () => toggleFullscreen(document.getElementById('ww-frame')));
     on(rootSel, 'click', '#btn-link', async () => {

@@ -2,55 +2,70 @@
 // by turns. A match scores and keeps the turn; a miss passes it to the next
 // team. All rules live in kernel/session/memory.js (pure); this view paints the
 // board, scoreboard and turn, and times the "cover" after a miss.
+//
+// EMBEDDING: mountMemory(host, activity, ctx, opts) renders setup + game INTO
+// `host` (the activity stage). renderMemoryView(rootSel, id) is the thin wrapper
+// for the standalone deep-link route (#/memory/:id). Both share the same code.
 import { html, escapeHtml, mount, $, $$ } from '../core/html.js';
 import { on } from '../core/events.js';
 import { get } from '../core/storage.js';
 import { createMemoryGame } from '../kernel/session/memory.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
+import { renderModeSetup } from './modeSetup.js';
 
 const TEAM_COLORS = ['danger', 'primary', 'success', 'warning'];
 const COVER_MS = 1100;
 
+// Standalone route wrapper (#/memory/:id).
 export function renderMemoryView(rootSel, id) {
+  const host = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
   const a = get(id);
   if (!a) {
-    mount(rootSel, html`<div class="alert alert-warning m-3">Actividad no encontrada. <a href="#/home">Volver</a></div>`);
+    mount(host, html`<div class="alert alert-warning m-3">Actividad no encontrada. <a href="#/home">Volver</a></div>`);
     return;
   }
+  mountMemory(host, a, null, { backHref: `#/play/${a.id}` });
+}
+
+// Embedded entry point. `host` is a DOM element. Returns { dispose }.
+export function mountMemory(host, a, ctx, opts = {}) {
+  const backHref = opts.backHref;
   const pairs = (a.content?.pairs || []).filter(p => p?.left && p?.right);
   if (pairs.length < 2) {
-    mount(rootSel, html`<div class="alert alert-info m-3">La memoria necesita al menos 2 pares. <a href="#/edit/${a.id}">Editar</a></div>`);
-    return;
+    mount(host, html`<div class="alert alert-info m-3">La memoria necesita al menos 2 pares. <a href="#/edit/${a.id}">Editar</a></div>`);
+    return { dispose() {} };
   }
 
   let teamCount = 2;
   renderSetup();
 
   function renderSetup() {
-    mount(rootSel, html`
-      <div class="teams-setup text-center py-5">
-        <a href="#/play/${a.id}" class="btn btn-sm btn-link"><i class="bi bi-arrow-left"></i> Volver</a>
-        <h3 class="mt-2 mb-1"><i class="bi bi-grid-3x3-gap-fill text-primary"></i> Memoria por equipos</h3>
-        <p class="text-muted">${escapeHtml(a.title)} · ${pairs.length} pares</p>
-        <div class="my-3">
-          <label class="form-label small text-muted d-block">¿Cuántos equipos?</label>
-          <div class="btn-group" id="mem-count">
-            ${[2, 3, 4].map(n => `<button class="btn btn-outline-primary ${n === 2 ? 'active' : ''}" data-n="${n}">${n}</button>`).join('')}
-          </div>
+    const body = `
+      <div class="my-3">
+        <label class="form-label small text-muted d-block">¿Cuántos equipos?</label>
+        <div class="btn-group" id="mem-count">
+          ${[2, 3, 4].map(n => `<button class="btn btn-outline-primary ${n === 2 ? 'active' : ''}" data-n="${n}">${n}</button>`).join('')}
         </div>
-        <div id="mem-names" class="row justify-content-center g-2 my-3" style="max-width:560px;margin:auto"></div>
-        <button id="mem-start" class="btn btn-primary btn-lg px-5"><i class="bi bi-play-fill"></i> ¡Empezar!</button>
-        <p class="text-muted small mt-3">Acierto: sumas y sigues. Fallo: pasa el turno.</p>
-      </div>`);
-    renderNames();
-    on(rootSel, 'click', '#mem-count button', (_, b) => {
-      teamCount = Number(b.dataset.n);
-      $('#mem-count').querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
-      renderNames();
-    });
-    on(rootSel, 'click', '#mem-start', () => {
-      const names = $$('#mem-names input').map((el, i) => (el.value || '').trim() || `Equipo ${i + 1}`);
-      startGame(names);
+      </div>
+      <div id="mem-names" class="row justify-content-center g-2 my-3" style="max-width:560px;margin:auto"></div>`;
+
+    renderModeSetup(host, {
+      icon: 'bi-grid-3x3-gap-fill', color: 'primary', title: 'Memoria por equipos',
+      subtitle: `${a.title} · ${pairs.length} pares`,
+      body, backHref,
+      note: 'Acierto: sumas y sigues. Fallo: pasa el turno.',
+      onMount: () => {
+        renderNames();
+        on(host, 'click', '#mem-count button', (_, b) => {
+          teamCount = Number(b.dataset.n);
+          $('#mem-count').querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+          renderNames();
+        });
+      },
+      onStart: () => {
+        const names = $$('#mem-names input').map((el, i) => (el.value || '').trim() || `Equipo ${i + 1}`);
+        startGame(names);
+      }
     });
   }
 
@@ -73,7 +88,7 @@ export function renderMemoryView(rootSel, id) {
       const teams = game.state.teams;
       const active = game.activeTeam();
       const ended = game.status === 'ended';
-      mount(rootSel, html`
+      mount(host, html`
         <div class="teams-arena">
           <div class="teams-scoreboard">
             ${teams.map(t => `
@@ -115,13 +130,13 @@ export function renderMemoryView(rootSel, id) {
           <div class="teams-ranking">
             ${lb.map(t => `<div class="d-flex justify-content-between teams-rank-row"><span>${t.rank}. ${escapeHtml(t.name)}</span><b>${t.score}</b></div>`).join('')}
           </div>
-          <a href="#/play/${a.id}" class="btn btn-outline-secondary mt-3">Salir</a>
+          ${backHref ? `<a href="${backHref}" class="btn btn-outline-secondary mt-3">Salir</a>` : ''}
           <button class="btn btn-primary mt-3 ms-2" id="mem-again"><i class="bi bi-arrow-repeat"></i> Otra vez</button>
         </div>`;
     }
 
     function wire() {
-      on(rootSel, 'click', '.mem-card', (_, btn) => {
+      on(host, 'click', '.mem-card', (_, btn) => {
         if (busy || btn.disabled) return;
         const r = game.flip(btn.dataset.id);
         if (!r.ok) return;
@@ -137,7 +152,7 @@ export function renderMemoryView(rootSel, id) {
         if (r.ended) emitGame(GameEvents.PODIUM, { top: game.leaderboard().slice(0, 1).map(t => ({ name: t.name, score: t.score })) });
         paint();
       });
-      on(rootSel, 'click', '#mem-again', () => renderSetup());
+      on(host, 'click', '#mem-again', () => renderSetup());
     }
 
     function colorOf(team) {
@@ -145,4 +160,6 @@ export function renderMemoryView(rootSel, id) {
       return TEAM_COLORS[i % TEAM_COLORS.length];
     }
   }
+
+  return { dispose() {} };
 }
