@@ -7,10 +7,6 @@ export function toggleFullscreen(el = document.documentElement) {
   }
 }
 
-export function isFullscreen() {
-  return !!(document.fullscreenElement || document.webkitFullscreenElement);
-}
-
 export function fullscreenButtonHtml() {
   return `<button class="btn btn-sm btn-outline-light ww-fs-btn" title="Pantalla completa"><i class="bi bi-arrows-fullscreen"></i></button>`;
 }

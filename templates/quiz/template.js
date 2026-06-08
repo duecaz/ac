@@ -3,7 +3,7 @@ import { BaseTemplate } from '../base.js';
 import { renderQuizPlayer } from './player.js';
 import { renderQuizEditor } from './editor.js';
 import { scoreQuizSubmission } from './scorer.js';
-import { renderChoiceRound } from '../../core/roundRender.js';
+import { renderChoiceRound, shuffle } from '../../core/roundRender.js';
 
 export class QuizTemplate extends BaseTemplate {
   static meta = {
@@ -62,5 +62,3 @@ export class QuizTemplate extends BaseTemplate {
     return content;
   }
 }
-
-function shuffle(a){ for (let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]; } return a; }

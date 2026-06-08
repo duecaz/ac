@@ -4,6 +4,7 @@
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { saveResult } from '../../core/results.js';
+import { shuffle } from '../../core/roundRender.js';
 
 export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
   const pairs = (activity.content?.pairs || []).filter(p => String(p.left||'').trim() && String(p.right||'').trim());
@@ -102,5 +103,3 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
 
   paint();
 }
-
-function shuffle(a) { const x = a.slice(); for (let i=x.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1));[x[i],x[j]]=[x[j],x[i]]; } return x; }
