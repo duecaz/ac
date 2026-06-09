@@ -3,6 +3,7 @@ import { html, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { navigate } from '../core/router.js';
 import { listTemplates } from '../core/registry.js';
+import { modesForTemplate } from '../core/modes.js';
 
 export function renderTemplateSelector(rootSel) {
   const templates = listTemplates();
@@ -22,7 +23,7 @@ export function renderTemplateSelector(rootSel) {
           <button class="btn btn-outline-${T.meta.color || 'primary'} w-100 py-4 tpl-pick" data-name="${T.meta.name}">
             <i class="bi ${T.meta.icon} display-4 d-block"></i>
             <span class="mt-2 d-block">${T.meta.label}</span>
-            <small class="d-block text-muted">${modesLabel(T.meta.modes)}</small>
+            <small class="d-block text-muted">${modesForTemplate(T).map(m => m.short).join(' · ')}</small>
           </button>
         </div>
       `).join('')}
@@ -38,9 +39,4 @@ export function renderTemplateSelector(rootSel) {
     </div>
   `);
   on(rootSel, 'click', '.tpl-pick', (_, b) => navigate(`#/edit-new/${b.dataset.name}`));
-}
-
-function modesLabel(m) {
-  if (!m) return '';
-  return ['solo', 'live', 'async'].filter(k => m[k]).join(' · ');
 }

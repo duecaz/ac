@@ -25,7 +25,7 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
         <div class="row g-2">
           <div class="col-md-4"><input id="t-title" class="form-control" placeholder="Título (opcional)"></div>
           <div class="col-md-4"><input id="t-due" type="datetime-local" class="form-control"></div>
-          <div class="col-md-2"><input id="t-max" type="number" class="form-control" min="1" value="1" title="Intentos máx."></div>
+          <div class="col-md-2"><input id="t-max" type="number" class="form-control" min="1" value="${a.presentation?.taskMaxAttempts || 1}" title="Intentos máx."></div>
           <div class="col-md-2"><button id="t-create" class="btn btn-primary w-100"><i class="bi bi-plus-lg"></i> Crear</button></div>
         </div>
       </div></div>

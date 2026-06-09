@@ -46,7 +46,10 @@ export function mountTeams(host, a, ctx, opts = {}) {
   const T = getTemplate(a.template);
   const canAuto = typeof T?.scoreSubmission === 'function' && typeof T?.getRoundPayload === 'function';
 
-  let teamCount = 2;
+  // Defaults configured in the editor's "Modos" tab (presentation.*); still
+  // changeable here before starting.
+  let teamCount = a.presentation?.teamsCount || 2;
+  const defScoring = a.presentation?.teamsScoring;
   renderSetup();
 
   function renderSetup() {
@@ -54,17 +57,17 @@ export function mountTeams(host, a, ctx, opts = {}) {
       <div class="my-3">
         <label class="form-label small text-muted d-block">¿Cuántos equipos?</label>
         <div class="btn-group" role="group" id="teams-count">
-          ${[2, 3, 4].map(n => `<button class="btn btn-outline-success ${n === 2 ? 'active' : ''}" data-n="${n}">${n}</button>`).join('')}
+          ${[2, 3, 4].map(n => `<button class="btn btn-outline-success ${n === teamCount ? 'active' : ''}" data-n="${n}">${n}</button>`).join('')}
         </div>
       </div>
       <div id="teams-names" class="row justify-content-center g-2 my-3" style="max-width:560px;margin:auto"></div>
       <div class="my-3">
         <label class="form-label small text-muted d-block">Puntuación</label>
         <div class="btn-group" role="group" id="teams-scoring">
-          <button class="btn btn-outline-secondary ${canAuto ? 'active' : 'd-none'}" data-mode="auto" ${canAuto ? '' : 'disabled'}>
+          <button class="btn btn-outline-secondary ${canAuto && defScoring !== 'judge' ? 'active' : ''} ${canAuto ? '' : 'd-none'}" data-mode="auto" ${canAuto ? '' : 'disabled'}>
             <i class="bi bi-cpu"></i> Automática
           </button>
-          <button class="btn btn-outline-secondary ${canAuto ? '' : 'active'}" data-mode="judge">
+          <button class="btn btn-outline-secondary ${!canAuto || defScoring === 'judge' ? 'active' : ''}" data-mode="judge">
             <i class="bi bi-person-check"></i> Juez docente
           </button>
         </div>

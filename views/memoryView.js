@@ -36,7 +36,7 @@ export function mountMemory(host, a, ctx, opts = {}) {
     return { dispose() {} };
   }
 
-  let teamCount = 2;
+  let teamCount = a.presentation?.teamsCount || 2; // default from editor "Modos" tab
   renderSetup();
 
   function renderSetup() {

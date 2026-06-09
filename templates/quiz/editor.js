@@ -5,6 +5,7 @@ import { renderImagePicker, attachImagePicker } from '../../core/imagePicker.js'
 import { listSkins, skinPreviewHtml } from '../../core/skins.js';
 import { listBackgrounds, backgroundPreviewHtml } from '../../core/backgrounds.js';
 import { itemControlsHtml, reorderArray } from '../../core/editorPrimitives.js';
+import { renderModesTab, wireModesTab } from '../../core/editorModes.js';
 
 export function renderQuizEditor(root, activity, onChange) {
   const a = activity;
@@ -22,6 +23,7 @@ export function renderQuizEditor(root, activity, onChange) {
           <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-content">Contenido</button></li>
           <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-rules">Reglas</button></li>
           <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-scoring">Puntuación</button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-modes">Modos <i class="bi bi-controller"></i></button></li>
           <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-live">Live <i class="bi bi-broadcast"></i></button></li>
           <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-pres">Presentación <i class="bi bi-palette"></i></button></li>
         </ul>
@@ -36,6 +38,7 @@ export function renderQuizEditor(root, activity, onChange) {
           </div>
           <div class="tab-pane fade" id="tab-rules">${renderRules(a)}</div>
           <div class="tab-pane fade" id="tab-scoring">${renderScoring(a)}</div>
+          <div class="tab-pane fade" id="tab-modes">${renderModesTab(a)}</div>
           <div class="tab-pane fade" id="tab-live">${renderLive(a)}</div>
           <div class="tab-pane fade" id="tab-pres">${renderPresentation(a)}</div>
         </div>
@@ -106,6 +109,8 @@ export function renderQuizEditor(root, activity, onChange) {
     on(root, 'change', '#l-nick', e => { a.live.nicknameFilter = e.target.checked; onChange(a); });
     on(root, 'change', '#l-streak', e => { a.live.streakBonus = e.target.checked; onChange(a); });
     on(root, 'input', '#l-streak-step', e => { a.live.streakBonusPerStep = +e.target.value || 0; onChange(a); });
+    // Modos: VS animation + feedback, Equipos defaults, Tarea attempts.
+    wireModesTab(root, a, onChange);
     // Presentation: skin/background pickers. Update the selection IN PLACE
     // (don't paint() — a full re-mount would reset the tabs back to Contenido).
     on(root, 'click', '.skin-pick', (_, b) => {

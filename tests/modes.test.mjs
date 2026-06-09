@@ -6,7 +6,7 @@
 // Run: node tests/modes.test.mjs
 import assert from 'node:assert';
 import { registerTemplate } from '../core/registry.js';
-import { MODE_DEFS, availableModes, isModeAvailable, getMode, runMode } from '../core/modes.js';
+import { MODE_DEFS, availableModes, isModeAvailable, getMode, runMode, modesForTemplate } from '../core/modes.js';
 
 let passed = 0;
 const ok = (msg) => { passed++; console.log('  ✓', msg); };
@@ -65,6 +65,23 @@ ok('tool template hides Tarea but keeps others visible/disabled');
 const empty = { id: 'a4', template: 'm_full', content: { items: [] } };
 assert.ok(!isModeAvailable('teams', empty), 'teams needs at least one round');
 ok('empty activity disables teams');
+
+// ---- modesForTemplate: capability per template (no content yet) ----
+// Drives the template-selector chips: depends only on what the CLASS can do.
+const Tfull = { meta: { name: 'm_full', modes: { live: true, async: true } },
+  renderRound() {}, getRoundPayload() {}, scoreSubmission() {} };
+const Ttool = { meta: { name: 'm_tool', modes: {} }, renderPlayer() {} };
+assert.deepStrictEqual(modesForTemplate(Tfull).map(m => m.id), ['solo', 'vs', 'teams', 'live', 'task'],
+  'full template can offer every mode');
+assert.deepStrictEqual(modesForTemplate(Ttool).map(m => m.id), ['solo'],
+  'a tool template (no scorer/renderRound/live/async) offers only solo');
+// Memory is teams-capable by name even without renderRound (native mechanic).
+assert.ok(modesForTemplate({ meta: { name: 'memory', modes: {} } }).some(m => m.id === 'teams'),
+  'memory is teams-capable via its native mechanic');
+// Every mode exposes a short label for the selector chips.
+assert.ok(MODE_DEFS.every(m => typeof m.short === 'string' && m.short),
+  'every mode has a short label');
+ok('modesForTemplate derives template capability from the same registry');
 
 // ---- getMode + runMode guardrails ----
 assert.strictEqual(getMode('vs').id, 'vs', 'getMode finds by id');

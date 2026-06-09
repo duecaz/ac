@@ -74,6 +74,42 @@ Importante: el gateo usa la actividad **tal como se va a jugar**, respetando el
 "Cambiar plantilla" de la página (`playActivity()` en `playerView.js`). Si el
 docente cambia Quiz→Ruleta, VS desaparece solo.
 
+### Dos niveles de compatibilidad (la forma recomendada)
+
+Cada modo en `MODE_DEFS` declara **dos** predicados, y todo lo demás se deriva de
+esa única tabla (los modos "se inscriben" ahí; nadie los lista a mano):
+
+- **`supportsTemplate(T)`** — *capacidad*: ¿puede esta **plantilla** (la clase)
+  ofrecer el modo en principio? Depende solo de lo que implementa/declara
+  (`scoreSubmission`+`renderRound` → VS; `renderRound` o ser Memoria → Equipos;
+  `meta.modes.live`/`async` → En vivo/Tarea). **No** mira el contenido.
+- **`isAvailable(activity)`** — *disponibilidad*: para una **actividad** concreta
+  (con contenido), ¿está disponible ya? (p. ej. VS exige además ≥2 ítems).
+
+Quién usa cuál:
+- **Selector de plantillas** (`views/templateSelector.js`, las tarjetas con
+  "solo · vs · equipos · …") → `modesForTemplate(T)` (capacidad; aún no hay
+  contenido).
+- **Página de actividad** (barra de modos) → `availableModes(activity)`
+  (disponibilidad real).
+
+Regla: si añades un modo o cambias cuándo aplica, edita **solo** su entrada en
+`MODE_DEFS` (`supportsTemplate` + `isAvailable`). El selector y la barra se
+actualizan solos.
+
+### Configuración por modo en el editor
+
+El editor expone una pestaña **"Modos"** (`core/editorModes.js`, incluida por el
+editor de cada plantilla con un `renderModesTab`/`wireModesTab`) con los ajustes
+de cada modo, gateada por las **mismas** reglas:
+- **VS** (si `isVsCompatible`): animación central + feedback por respuesta
+  (sonido/destello/confeti) → `presentation.vsAnimation` / `.vsAnimationSrc` /
+  `.vsFeedback` (lo lee `vsView`).
+- **Equipos**: nº de equipos y puntuación por defecto → `presentation.teamsCount`
+  / `.teamsScoring` (los toma como valores iniciales `teamsView`/`memoryView`).
+- **Tarea**: intentos por defecto → `presentation.taskMaxAttempts` (lo usa el
+  formulario de creación de tareas). En vivo conserva su propia pestaña.
+
 ---
 
 ## 4. Contrato de una vista de modo embebido

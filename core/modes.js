@@ -25,45 +25,61 @@ import { isVsCompatible, sessionItems } from '../kernel/session/engine.js';
 
 export const MODE_DEFS = [
   {
-    id: 'solo', label: 'Individual', icon: 'bi-person-fill', color: 'success',
+    id: 'solo', label: 'Individual', short: 'solo', icon: 'bi-person-fill', color: 'success',
     embed: true,
     title: 'Jugar aquí, en este dispositivo',
+    supportsTemplate: () => true,           // todo template implementa renderPlayer
     isAvailable: () => true
   },
   {
-    id: 'vs', label: 'VS (duelo)', icon: 'bi-fire', color: 'danger',
+    id: 'vs', label: 'VS (duelo)', short: 'vs', icon: 'bi-fire', color: 'danger',
     embed: true,
+    // CAPACIDAD (¿puede esta plantilla?): sabe puntuar un ítem y pintarlo.
+    supportsTemplate: (T) => typeof T?.scoreSubmission === 'function' && typeof T?.renderRound === 'function',
+    // DISPONIBLE (¿esta actividad concreta?): además, ≥2 ítems para una carrera justa.
     isAvailable: (a) => isVsCompatible(a),
     disabledHint: 'Necesita autocorrección y 2+ preguntas'
   },
   {
-    id: 'teams', label: 'Equipos', icon: 'bi-people-fill', color: 'primary',
+    id: 'teams', label: 'Equipos', short: 'equipos', icon: 'bi-people-fill', color: 'primary',
     embed: true,
-    // Memoria juega Equipos con su mecánica nativa (ver runMode) y necesita ≥2
-    // pares válidos; el resto, por turnos, con ≥1 ronda. Así el gateo coincide
-    // con lo que cada vista exige (no ofrecer un modo que luego no arranca).
+    // Capacidad: auto vía renderRound, o Memoria con su mecánica nativa por
+    // turnos. (No se ofrece en herramientas como la ruleta, que no tienen ronda.)
+    supportsTemplate: (T) => typeof T?.renderRound === 'function' || T?.meta?.name === 'memory',
+    // Disponible: Memoria necesita ≥2 pares; el resto, ≥1 ronda. Coincide con lo
+    // que cada vista exige (no ofrecer un modo que luego no arranca).
     isAvailable: (a) => a?.template === 'memory'
       ? (a?.content?.pairs || []).filter(p => p?.left && p?.right).length >= 2
       : sessionItems(a).length >= 1,
     disabledHint: 'Esta actividad no tiene preguntas suficientes'
   },
   {
-    id: 'live', label: 'En vivo', icon: 'bi-broadcast', color: 'info',
+    id: 'live', label: 'En vivo', short: 'live', icon: 'bi-broadcast', color: 'info',
     embed: false,
     href: (a) => `#/launch/${a.id}`,
+    supportsTemplate: (T) => !!T?.meta?.modes?.live,
     isAvailable: (a) => !!getTemplate(a?.template)?.meta?.modes?.live,
     disabledHint: 'Esta plantilla no admite En vivo'
   },
   {
-    id: 'task', label: 'Tarea', icon: 'bi-journal-check', color: 'warning',
+    id: 'task', label: 'Tarea', short: 'tarea', icon: 'bi-journal-check', color: 'warning',
     embed: false,
     href: (a) => `#/tasks/${a.id}`,
+    supportsTemplate: (T) => !!T?.meta?.modes?.async,
     isAvailable: (a) => !!getTemplate(a?.template)?.meta?.modes?.async,
     // Tarea no tiene sentido si la plantilla no la soporta: se OCULTA en vez de
     // mostrarse deshabilitada (las demás se muestran grises con su pista).
     hideWhenUnavailable: true
   }
 ];
+
+/** Modos que una PLANTILLA puede ofrecer en principio (capacidad), derivados de
+ *  lo que la clase implementa/declara. Lo usa el selector de plantillas para
+ *  mostrar "solo · vs · equipos · …" sin contenido todavía. Para una actividad
+ *  concreta (con contenido) usa availableModes(). T es la clase de plantilla. */
+export function modesForTemplate(T) {
+  return MODE_DEFS.filter(m => m.supportsTemplate(T));
+}
 
 /** Modes to render in the bar: all of them, minus those flagged to hide when
  *  unavailable (today only Tarea). Disabled-but-visible state is decided by the
