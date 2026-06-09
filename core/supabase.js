@@ -3,6 +3,7 @@
 let _client = null;
 let _clientPromise = null; // in-flight init, so concurrent callers share one client
 let _user = null;
+let _authPromise = null; // in-flight ensureAuth(), shared by concurrent callers
 
 export async function getClient() {
   if (_client) return _client;
@@ -36,12 +37,23 @@ export async function getClient() {
 }
 
 export async function ensureAuth() {
-  const sb = await getClient();
   if (_user) return _user;
-  const { data: { session } } = await sb.auth.getSession();
-  if (session?.user) { _user = session.user; return _user; }
-  const { data, error } = await sb.auth.signInAnonymously();
-  if (error) throw new Error('Anonymous Sign-In no está activado en Supabase. Auth → Providers.');
-  _user = data.user;
-  return _user;
+  // Cache the in-flight auth so concurrent callers (boot + realtime + uploads
+  // all call ensureAuth at once) share ONE resolution. Without this, several
+  // parallel callers each saw no session and each ran signInAnonymously(),
+  // minting a fresh anonymous user every time — which is how a single teacher
+  // ended up scattered across dozens of anon identities (and "lost" their
+  // private activities, since each identity only sees its own rows).
+  if (_authPromise) return _authPromise;
+  _authPromise = (async () => {
+    const sb = await getClient();
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.user) { _user = session.user; return _user; }
+    const { data, error } = await sb.auth.signInAnonymously();
+    if (error) throw new Error('Anonymous Sign-In no está activado en Supabase. Auth → Providers.');
+    _user = data.user;
+    return _user;
+  })();
+  try { return await _authPromise; }
+  finally { _authPromise = null; }
 }
