@@ -3,6 +3,22 @@
 > Revisión de los 6 `templates/*/player.js` y su lógica compartida, de simple a
 > complejo. **No se modificó código.** Severidad: 🔴 alta · 🟠 media · 🟡 baja.
 
+## Estado (actualizado 2026-06-09) — TODOS los bugs listados resueltos
+- **Bug 1 (ruleta)** ✅ resuelto por reescritura: `wheel/player.js` captura
+  `const winner = entries[target]` ANTES de mutar y pinta ese valor.
+- **Bug 2 (quiz kahoot maxScore)** ✅ resuelto: `quiz/player.js maxScore()` calcula
+  el techo real en modo kahoot (`base*500 + speedBonus` por ítem puntuable).
+- **Bug 3 (tildes/comas inacabable)** ✅ resuelto por reescritura a la mecánica
+  táctil compartida (`core/textCorrectionRound.js`): el botón **Listo** existe
+  siempre, así que una frase sin marcas es completable.
+- **Bug 4 (quiz resaltado de respuesta múltiple)** ✅ resuelto: resalta cada
+  opción correcta tratando `item.answer` como valor o array.
+- **Bug 5 (etiquetas ruleta a 16 chars)** 🟡 cosmético, sin cambios.
+- **Estructural:** `shuffle` unificado en `core/roundRender.js` (lo importan quiz/
+  match/memory); `core/textMarks.js` ya tiene tests (`tests/textMarks.test.mjs`).
+
+> Lo de abajo es la auditoría original (lectura), conservada como histórico.
+
 ## Bugs reales
 
 ### 🔴 1. Ruleta: muestra el ganador equivocado con "quitar tras girar"

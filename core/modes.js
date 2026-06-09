@@ -39,10 +39,13 @@ export const MODE_DEFS = [
   {
     id: 'teams', label: 'Equipos', icon: 'bi-people-fill', color: 'primary',
     embed: true,
-    // Memoria juega Equipos con su mecánica nativa (ver runMode); el resto, por
-    // turnos. Solo necesita al menos 1 ronda para tener algo que jugar.
-    isAvailable: (a) => sessionItems(a).length >= 1,
-    disabledHint: 'Esta actividad no tiene preguntas'
+    // Memoria juega Equipos con su mecánica nativa (ver runMode) y necesita ≥2
+    // pares válidos; el resto, por turnos, con ≥1 ronda. Así el gateo coincide
+    // con lo que cada vista exige (no ofrecer un modo que luego no arranca).
+    isAvailable: (a) => a?.template === 'memory'
+      ? (a?.content?.pairs || []).filter(p => p?.left && p?.right).length >= 2
+      : sessionItems(a).length >= 1,
+    disabledHint: 'Esta actividad no tiene preguntas suficientes'
   },
   {
     id: 'live', label: 'En vivo', icon: 'bi-broadcast', color: 'info',

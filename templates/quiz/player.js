@@ -17,8 +17,18 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
   const state = { idx: 0, score: 0, startedAt: Date.now(), answers: [] };
 
   function maxScore() {
-    if (activity.scoring?.maxScore) return activity.scoring.maxScore;
-    return (activity.scoring?.pointsPerCorrect || 1) * items.length;
+    const scoring = activity.scoring || {};
+    if (scoring.maxScore) return scoring.maxScore;
+    // Kahoot scoring gives base*500 + speedBonus per correct, so the flat
+    // pointsPerCorrect*items max read "7000 / 5". Compute the real ceiling:
+    // every scorable item answered correctly and instantly.
+    if (scoring.mode === 'kahoot') {
+      const speedBonus = activity.live?.speedBonusMax ?? 1000;
+      const ppc = scoring.pointsPerCorrect || 1;
+      return items.reduce((sum, it) =>
+        it.answer != null ? sum + (it.points || ppc) * 500 + speedBonus : sum, 0);
+    }
+    return (scoring.pointsPerCorrect || 1) * items.length;
   }
 
   function renderItem() {
@@ -57,8 +67,11 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
       document.querySelectorAll('.ww-opt').forEach(b => b.disabled = true);
       btn.classList.add(r.correct ? 'btn-success' : 'btn-danger');
       if (!r.correct && item.answer != null) {
+        // answer may be a single value OR an array (multi-correct); highlight
+        // every correct option, not just when String(array) accidentally matches.
+        const correct = (Array.isArray(item.answer) ? item.answer : [item.answer]).map(String);
         document.querySelectorAll('.ww-opt').forEach(b => {
-          if (b.dataset.value === String(item.answer)) b.classList.add('btn-success');
+          if (correct.includes(b.dataset.value)) b.classList.add('btn-success');
         });
       }
       const newStreak = Streaks.bump('solo', activity.id, r.correct === true);
