@@ -15,7 +15,7 @@ export function renderWheelEditor(root, activity, onChange) {
 
       <ul class="nav nav-tabs">
         <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-content">Entradas</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-rules">Reglas</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-rules">Individual <i class="bi bi-person-fill"></i></button></li>
       </ul>
       <div class="tab-content border border-top-0 p-3 rounded-bottom">
         <div class="tab-pane fade show active" id="tab-content">

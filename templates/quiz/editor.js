@@ -1,4 +1,5 @@
-// Editor for the quiz template. 4 tabs: Contenido / Reglas / Puntuación / Live.
+// Editor for the quiz template. Tabs (nombres alineados a los modos):
+// Contenido · Individual · Puntuación · Modos (VS/Equipos/Tarea) · En vivo · Presentación.
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { renderImagePicker, attachImagePicker } from '../../core/imagePicker.js';
@@ -21,10 +22,10 @@ export function renderQuizEditor(root, activity, onChange) {
 
         <ul class="nav nav-tabs" role="tablist">
           <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-content">Contenido</button></li>
-          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-rules">Reglas</button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-rules">Individual <i class="bi bi-person-fill"></i></button></li>
           <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-scoring">Puntuación</button></li>
           <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-modes">Modos <i class="bi bi-controller"></i></button></li>
-          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-live">Live <i class="bi bi-broadcast"></i></button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-live">En vivo <i class="bi bi-broadcast"></i></button></li>
           <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-pres">Presentación <i class="bi bi-palette"></i></button></li>
         </ul>
 

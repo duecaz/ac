@@ -2,6 +2,7 @@ import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { newPair } from '../../core/contentModels/pairs.js';
 import { itemControlsHtml, reorderArray } from '../../core/editorPrimitives.js';
+import { renderModesTab, wireModesTab } from '../../core/editorModes.js';
 
 export function renderMatchEditor(root, activity, onChange) {
   const a = activity;
@@ -16,8 +17,9 @@ export function renderMatchEditor(root, activity, onChange) {
 
       <ul class="nav nav-tabs">
         <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-content">Pares</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-rules">Reglas</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-rules">Individual <i class="bi bi-person-fill"></i></button></li>
         <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-scoring">Puntuación</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-modes">Modos <i class="bi bi-controller"></i></button></li>
       </ul>
       <div class="tab-content border border-top-0 p-3 rounded-bottom">
         <div class="tab-pane fade show active" id="tab-content">
@@ -47,6 +49,7 @@ export function renderMatchEditor(root, activity, onChange) {
             <div class="col-md-4"><label class="form-label">Puntos por error</label><input id="m-ppw" type="number" class="form-control" value="${a.scoring.pointsPerWrong ?? 0}"></div>
           </div>
         </div>
+        <div class="tab-pane fade" id="tab-modes">${renderModesTab(a)}</div>
       </div>
     `);
 
@@ -62,6 +65,7 @@ export function renderMatchEditor(root, activity, onChange) {
     on(root, 'input', '#m-timer', e => { a.rules.timer = +e.target.value || 0; onChange(a); });
     on(root, 'input', '#m-ppc', e => { a.scoring.pointsPerCorrect = +e.target.value || 0; onChange(a); });
     on(root, 'input', '#m-ppw', e => { a.scoring.pointsPerWrong = +e.target.value || 0; onChange(a); });
+    wireModesTab(root, a, onChange);
   }
   paint();
 }

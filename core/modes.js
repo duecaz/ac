@@ -25,7 +25,7 @@ import { isVsCompatible, sessionItems } from '../kernel/session/engine.js';
 
 export const MODE_DEFS = [
   {
-    id: 'solo', label: 'Individual', short: 'solo', icon: 'bi-person-fill', color: 'success',
+    id: 'solo', label: 'Individual', short: 'individual', icon: 'bi-person-fill', color: 'success',
     embed: true,
     title: 'Jugar aquí, en este dispositivo',
     supportsTemplate: () => true,           // todo template implementa renderPlayer
@@ -54,7 +54,7 @@ export const MODE_DEFS = [
     disabledHint: 'Esta actividad no tiene preguntas suficientes'
   },
   {
-    id: 'live', label: 'En vivo', short: 'live', icon: 'bi-broadcast', color: 'info',
+    id: 'live', label: 'En vivo', short: 'en vivo', icon: 'bi-broadcast', color: 'info',
     embed: false,
     href: (a) => `#/launch/${a.id}`,
     supportsTemplate: (T) => !!T?.meta?.modes?.live,

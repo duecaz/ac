@@ -7,6 +7,7 @@ import { applyMarks, parseTextWithCommas } from '../../core/textMarks.js';
 import { itemControlsHtml, reorderArray } from '../../core/editorPrimitives.js';
 import { listSkins, skinPreviewHtml } from '../../core/skins.js';
 import { listBackgrounds, backgroundPreviewHtml } from '../../core/backgrounds.js';
+import { renderModesTab, wireModesTab } from '../../core/editorModes.js';
 
 export function renderComasEditor(root, activity, onChange) {
   const a = activity;
@@ -21,7 +22,8 @@ export function renderComasEditor(root, activity, onChange) {
       </div>
       <ul class="nav nav-tabs">
         <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-content">Frases</button></li>
-        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-rules">Reglas</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-rules">Individual <i class="bi bi-person-fill"></i></button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-modes">Modos <i class="bi bi-controller"></i></button></li>
         <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-pres">Presentación</button></li>
       </ul>
       <div class="tab-content border border-top-0 p-3 rounded-bottom">
@@ -38,6 +40,7 @@ export function renderComasEditor(root, activity, onChange) {
             <div class="col-md-4"><label class="form-label">Puntos por error</label><input id="t-ppw" type="number" class="form-control" value="${a.scoring.pointsPerWrong ?? 0}"></div>
           </div>
         </div>
+        <div class="tab-pane fade" id="tab-modes">${renderModesTab(a)}</div>
         <div class="tab-pane fade" id="tab-pres">${renderPresentation(a)}</div>
       </div>
     `);
@@ -65,6 +68,7 @@ export function renderComasEditor(root, activity, onChange) {
     on(root, 'input', '#t-ppw', e => { a.scoring.pointsPerWrong = +e.target.value || 0; onChange(a); });
     on(root, 'click', '.skin-pick', (_, b) => { a.presentation.skin = b.dataset.name; onChange(a); root.querySelectorAll('.skin-pick').forEach(x => x.classList.toggle('is-active', x === b)); });
     on(root, 'click', '.bg-pick',   (_, b) => { a.presentation.background = b.dataset.name; onChange(a); root.querySelectorAll('.bg-pick').forEach(x => x.classList.toggle('is-active', x === b)); });
+    wireModesTab(root, a, onChange);
   }
 
   function renderPassage(p, i, total) {
