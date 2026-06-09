@@ -128,8 +128,10 @@ Eso permite jugar **Tildes/Comas/cualquier cosa en Equipos hoy**.
   reutilizando `renderChoiceRound`. Ya juega VS y Equipos-auto.
   **Memoria** ✅ con su mecánica nativa por turnos (voltear cartas): núcleo puro
   `kernel/session/memory.js` (acierto = punto y sigues; fallo = pasa el turno) +
-  `views/memoryView.js`, ruta `#/memory/:id` (el botón Equipos para Memoria lleva
-  ahí).
+  `views/memoryView.js`. Desde F6 el botón **Equipos** para Memoria la monta
+  **embebida** en la página de actividad (la ruta `#/memory/:id` sigue como
+  deep-link). Regla de fin de VS: ver `docs/modos-de-juego.md §9` (gana el
+  primero en terminar; la carrera no espera al otro).
   **Ruleta / Sorteo** ✅ utilidad de aula independiente: `views/sorteoView.js`
   (ruta `#/sorteo`, enlace en la barra) — gira para elegir equipo/turno/alumno,
   lista editable, presets y "quitar al elegido" (sorteo sin repetición). Reutiliza

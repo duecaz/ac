@@ -178,3 +178,31 @@ Detalles del contrato de plantilla en `templates/HOW_TO_ADD.md` y `templates/bas
 El registro (`core/registry.js`) **falla ruidosamente** al arrancar si declaras
 `modes.live` sin los métodos necesarios — así no descubres el fallo a mitad de
 una clase en vivo.
+
+---
+
+## 9. Reglas de juego de cada modo (esto es ley)
+
+Cómo se gana en cada modo. La lógica vive en `kernel/session/engine.js`
+(`vs`/`teams`/`solo`) y `kernel/session/memory.js`, y está cubierta por
+`tests/sessionEngine.test.mjs` / `tests/memory.test.mjs`. **Si cambias una
+regla, cambia el test que la fija — no al revés.**
+
+- **VS (duelo)** — es una **carrera en paralelo**: ambos responden la MISMA
+  secuencia, cada uno a su ritmo. **El duelo termina en cuanto el PRIMERO
+  completa todos los ítems** (no se espera al otro; el perdedor no sigue
+  jugando). Gana **quien más puntos tenga** en ese momento (puede haber
+  empate). Como ambos recorren la misma secuencia en orden y los puntos no son
+  negativos por defecto, el que termina primero suele ir igual o por delante.
+- **Equipos (por turnos)** — los equipos se turnan sobre un único flujo de
+  preguntas. Termina al agotar los ítems; gana el equipo con más puntos.
+  Puntuación **automática** (la plantilla puntúa) o **juez docente** (✓/✗).
+- **Memoria (equipos)** — voltear dos cartas: acierto = suma y **repites**
+  turno; fallo = pasa el turno. Termina al emparejar todo; gana más parejas.
+- **Individual** — cursor puntuado sobre los ítems; sin condición de victoria
+  (es práctica personal).
+
+> Invariante de VS/Equipos/Solo: una vez `status === 'ended'`, `answer()` /
+> `dispatch()` rechazan más jugadas. Las vistas deben ignorar toques tardíos en
+> la ventana de feedback (ver `onAnswer` en `vsView.js`) para no chocar con esa
+> ley.

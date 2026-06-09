@@ -110,8 +110,9 @@ Las conversiones piden confirmación porque pueden transformar el contenido.
 
 ## 9. Qué está probado (lo corre el agente en cada cambio: `node tests/run.mjs`)
 
-registry · migrate/normalize · kernel/content (validar/convertir/switch) · adapters ·
-results (vía adapter) · events · lifecycle · routing · storageMerge · scoring del quiz ·
+registry · modos (gateo por plantilla) · migrate/normalize · kernel/content
+(validar/convertir/switch) · motor de sesión (vs·teams·solo) · adapters · results
+(vía adapter) · events · lifecycle · routing · storageMerge · scoring del quiz ·
 textMarks (tildes/comas) · lógica de la ruleta.
 
 Lo **no** automatizable aquí (sin navegador headless): el render DOM y la interacción

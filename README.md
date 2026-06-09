@@ -1,39 +1,65 @@
-# WW — Wordwall + Kahoot
+# AC — plataforma de actividades (Wordwall + Kahoot)
 
-Plataforma de actividades. Cada actividad puede lanzarse en dos modos:
-- **Empezar** → modo Wordwall (un solo dispositivo).
-- **PIN** → modo Kahoot (sala con código, alumnos en sus móviles). _Disponible en Fase 2._
+Plataforma de actividades educativas en **JS vanilla (ES Modules)**, sin bundler,
+desplegada en **GitHub Pages** con **Supabase** como backend. Una misma actividad
+(contenido como dato) se juega en varios **modos**:
+
+- **Individual** — un dispositivo, sin red, puntuación local (estilo Wordwall).
+- **VS (duelo)** — dos alumnos compiten en la misma pantalla (carrera).
+- **Equipos** — por turnos en pantalla compartida (auto o juez docente); Memoria juega su variante nativa.
+- **En vivo** — sala con código/QR, alumnos en sus móviles (estilo Kahoot).
+- **Tarea** — asignación asíncrona con intentos.
+
+Qué modo ofrece cada actividad se **deriva** de la plantilla — contrato y reglas
+en **`docs/modos-de-juego.md`** (es la fuente única; el gateo vive en `core/modes.js`).
 
 ## Stack
-HTML + CSS + JS vanilla (ES Modules). Bootstrap 5.3 + Bootstrap Icons por CDN. Supabase como único backend. Sin bundler. GitHub Pages.
+HTML + CSS + JS vanilla (ES Modules). Bootstrap 5.3 + Bootstrap Icons por CDN.
+Supabase (auth anónima + Postgres con RLS, esquema `repo_ac` + Edge Functions).
+Sin bundler. GitHub Pages.
 
-## Estado por fases
-- v0.2.0 — Fase 0+1: SOLO mode quiz, editor 4 pestañas, sync con Supabase.
-- **v0.3.0 (actual)** — Fase 2: LIVE quiz (PIN+QR, lobby, settle-item Edge Function, anti-cheat real).
-- v0.4.0 — Fase 3: endurecer LIVE (timer, kick, heartbeat, reconnect).
-- v0.5.0 — Fase 4: reportes y CSV.
-- v0.6.0 — Fase 5: tareas asíncronas.
-- v1.0.0 — Fase 6: auth real, /explore, fork.
+## Páginas
+- `teacher.html` (`main.teacher.js`) — crear/editar/jugar/lanzar, reportes, tareas.
+- `student.html` (`main.student.js`) — unirse a En vivo / hacer una Tarea.
+- `embed.html` (`main.embed.js`) — incrustar una actividad.
 
-## Setup (una vez)
-1. Repo `duecaz/ww` con Pages → Source = **Deploy from branch** → Branch: `main` / `(root)`.
-2. Schema aplicado en proyecto `www` (klecbdjbrsyshjqzdxhw) vía MCP.
-3. Anonymous Sign-Ins activo en Supabase → Auth → Providers.
-4. Bucket `media` ya creado (público, 5MB max).
+## Plantillas
+quiz · match (emparejar) · memory · tildes · comas · math · wheel (ruleta).
+Cada una es autocontenida en `templates/<name>/`. Añadir una: **`templates/HOW_TO_ADD.md`**
+(no se toca el core; el registro valida el contrato y falla ruidosamente).
 
 ## Local
 ```bash
+cd ac
 python3 -m http.server 8000
-# abrir http://localhost:8000
+# Profesor: http://localhost:8000/teacher.html
+# Alumno:   http://localhost:8000/student.html
 ```
+En `localhost` el backend es **`local`** (sin Supabase). Forzar: `ww.setBackend('local'|'supabase')`
+en consola y recargar. Detalles: **`docs/dev-local.md`**.
+
+## Tests
+```bash
+node tests/run.mjs      # núcleo puro: registry, modes, motor de sesión, contenido, live…
+```
+Lo no automatizable aquí (render DOM / táctil) se verifica en navegador.
 
 ## Estructura
 ```
-core/        router, storage, supabase, migrate, registry…
-templates/   quiz (única en F0–F4)
-editors/     quizEditor (4 tabs)
-views/       home, templateSelector, playerView, editView
-ui/          hud, controls, start, end (placeholders)
-styles/      theme, player, quiz, editor, review, live
-supabase/    schema.sql, migrations/
+core/        router, storage, supabase, migrate, registry, modes, skins, sounds…
+kernel/      session/ (motor vs·teams·solo·live), content/ (modelos + conversores)
+templates/   quiz, match, memory, tildes, comas, math, wheel  (+ HOW_TO_ADD.md)
+views/       home, editView, playerView, modeSetup, vsView, teamsView, memoryView, hostLive…
+adapters/    backend intercambiable: local · supabase · pocketbase(stub)
+styles/      theme, player, quiz, vs, teams, memory, live…
+supabase/    migrations/ + Edge Functions (settle-item)
+docs/        modos-de-juego.md, panorama-actividades.md, modo-wordwall.md, dev-local.md, auditoria-*.md
 ```
+
+## Supabase (setup, una vez)
+1. Pages: repo `duecaz/ac` → Deploy from branch `main` / `(root)`.
+2. Esquema `repo_ac` aplicado en el proyecto `www` (`klecbdjbrsyshjqzdxhw`) y **expuesto** en API → Exposed schemas.
+3. **Anonymous Sign-Ins** activo (Auth → Providers).
+4. Bucket `media` (público, 5MB máx).
+
+> Versión actual: ver `core/constants.js` (`VERSION`).

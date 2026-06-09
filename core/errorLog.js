@@ -1,4 +1,8 @@
-// Logs uncaught errors to public.client_errors via REST. Best-effort, fire-and-forget.
+// Logs uncaught errors to repo_ac.client_errors via REST. Best-effort,
+// fire-and-forget. NOTE: the table lives in the `repo_ac` schema, so the
+// request MUST carry the `Content-Profile: repo_ac` header — without it
+// PostgREST targets `public`, where the table doesn't exist, and every log
+// silently 404s (which is exactly what was happening).
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../supabase.config.js';
 
 let lastSent = 0;
@@ -15,6 +19,7 @@ export function logClientError({ message, stack, page }) {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         'Content-Type': 'application/json',
+        'Content-Profile': 'repo_ac',
         'Prefer': 'return=minimal'
       },
       body: JSON.stringify({
