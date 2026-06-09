@@ -137,20 +137,17 @@ const quizActivity = {
   assert.strictEqual(st.right.correct, 1, 'Beto has 1 correct of 2 attempted');
   ok('vs: sides advance independently and standings track the live gap');
 
-  // Ana finishes first; her side is done while the match is still running.
-  s.answer('left', '10'); s.answer('left', '8');   // Ana done: +1 +2 = 6
-  assert.strictEqual(s.status, 'running', 'match continues while Beto plays on');
-  assert.throws(() => s.answer('left', 'x'), /ya terminó/, 'a finished side cannot answer more');
-
-  // Beto finishes → match ends.
-  s.answer('right', '10'); s.answer('right', '9'); // Beto done: +1 +0 = 3 (9-1≠9)
+  // Ana finishes first → the duel ENDS immediately (it's a race). Beto, who is
+  // mid-duel (2 of 4 done), does NOT get to play on.
+  s.answer('left', '10'); s.answer('left', '8');   // Ana done: +1 +2 → 6
   st = s.standings();
-  assert.strictEqual(st.finished, true, 'duel ends when both sides finish');
-  assert.strictEqual(s.status, 'ended');
+  assert.strictEqual(s.status, 'ended', 'duel ends the instant the first side finishes');
+  assert.strictEqual(st.finished, true, 'standings report finished as soon as one side completes');
   assert.strictEqual(st.left.score, 6);
-  assert.strictEqual(st.leader, 'left', 'Ana wins the duel 6–3');
-  assert.throws(() => s.answer('right', 'x'), /no está en curso/, 'no answers past the end');
-  ok('vs: duel ends when both finish and declares the leader');
+  assert.strictEqual(st.leader, 'left', 'Ana wins the race 6–2');
+  assert.throws(() => s.answer('right', 'x'), /no está en curso/,
+    'the other side cannot keep playing after the win');
+  ok('vs: the race ends when the FIRST side finishes (no playing on after the win)');
 }
 
 // ──────────── sessionItems + TEAMS judge over a non-`items` model ────────────
@@ -207,11 +204,12 @@ const quizActivity = {
   // A VS duel over tildes scores via the engine.
   const vs = createSession(tildesAct, { format: FORMATS.VS, left: 'A', right: 'B' });
   vs.start();
-  vs.answer('left', [4]);   // correct → +1
-  vs.answer('left', [0]);   // correct → +1  (A done: 2)
-  vs.answer('right', [1]);  // wrong   → 0
+  vs.answer('left', [4]);   // A passage 0 correct → +1
+  vs.answer('right', [1]);  // B passage 0 wrong   → 0   (interleaved, before A finishes)
+  vs.answer('left', [0]);   // A passage 1 correct → +1  (A done: 2) → race ends
   const st = vs.standings();
   assert.strictEqual(st.left.score, 2, 'A scored both passages in VS');
+  assert.strictEqual(st.finished, true, 'tildes VS ends the moment A finishes first');
   assert.strictEqual(st.leader, 'left');
   ok('vs: a renderRound template (tildes) is auto-scored end-to-end');
 

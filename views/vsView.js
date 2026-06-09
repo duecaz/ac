@@ -121,6 +121,7 @@ export function mountVs(host, a, ctx, opts = {}) {
     const session = createSession(a, { format: FORMATS.VS, left: leftName, right: rightName });
     session.start();
     const flashing = { left: false, right: false };
+    let finished = false; // guards finish() against double-fire from pending timers
     const fx = fxCfg();
     // The central stage is a pluggable animation chosen by the teacher in
     // Presentación (default: the built-in SVG tug-of-war).
@@ -187,6 +188,10 @@ export function mountVs(host, a, ctx, opts = {}) {
 
     function onAnswer(side, value) {
       if (flashing[side]) return;
+      // The duel may have just ended (the other side finished the race). Ignore
+      // late taps on the losing side during the winner's brief flash window —
+      // otherwise session.answer() would throw "el duelo no está en curso".
+      if (session.status !== 'running') return;
       flashing[side] = true;
       const r = session.answer(side, value);
       const scoreEl = document.getElementById('vs-score-' + side);
@@ -227,6 +232,8 @@ export function mountVs(host, a, ctx, opts = {}) {
     }
 
     function finish(st) {
+      if (finished) return; // idempotent: both sides' pending timers may call this
+      finished = true;
       if (currentAnim) { currentAnim.destroy(); currentAnim = null; }
       const tie = st.leader === 'tie';
       const winner = tie ? null : st[st.leader];

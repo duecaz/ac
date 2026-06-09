@@ -287,7 +287,8 @@ function createTeamsSession(activity, T, opts) {
 // ────────────────────────────── VS ──────────────────────────────
 // Two sides race the SAME items in parallel. No host: each answer is auto-scored
 // on submit and advances only that side's own cursor. standings() exposes the
-// live gap so the UI can animate who's ahead; the match ends when both finish.
+// live gap so the UI can animate who's ahead; the match ends as soon as the
+// FIRST side finishes all items (a race) — the other side stops there.
 function createVsSession(activity, T, opts) {
   const items = sessionItems(activity);
   const total = items.length;
@@ -326,7 +327,9 @@ function createVsSession(activity, T, opts) {
     s.score += r.points;
     if (r.correct) s.correct += 1;
     s.cursor += 1;
-    if (state.sides.left.cursor >= total && state.sides.right.cursor >= total) {
+    // VS is a RACE: the duel ends the moment the FIRST side finishes all items.
+    // The other side does NOT play on (that was the bug — both had to finish).
+    if (state.sides.left.cursor >= total || state.sides.right.cursor >= total) {
       state.status = 'ended';
     }
     return { correct: r.correct, points: r.points, cursor: s.cursor, done: s.cursor >= total };
