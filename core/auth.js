@@ -46,10 +46,26 @@ export async function signIn(email, password) {
 
 export async function signInWithGoogle() {
   const sb = await getClient();
-  const { error } = await sb.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: location.origin + location.pathname }
-  });
+  const options = { redirectTo: location.origin + location.pathname };
+  // MIGRACIÓN: si el usuario es anónimo, ENLAZAMOS Google a ESTE usuario en vez
+  // de crear una cuenta nueva. Así se preserva el MISMO user.id y todas sus
+  // actividades (que ya cuelgan de ese id) pasan a la cuenta permanente sin
+  // mover datos ni chocar con RLS. Requiere "Manual linking" activo en Supabase
+  // (Auth → Settings). Si no es anónimo (ya hay cuenta), login OAuth normal.
+  const u = await getUser();
+  if (u?.is_anonymous) {
+    const { error } = await sb.auth.linkIdentity({ provider: 'google', options });
+    if (error) {
+      // El mensaje de GoTrue cuando el linking manual está desactivado es poco
+      // claro; lo traducimos para que se sepa qué activar en el panel.
+      if (/manual linking|not enabled|disabled/i.test(error.message || '')) {
+        throw new Error('Activa "Manual linking" en Supabase (Auth → Settings) para conservar tus actividades al entrar con Google.');
+      }
+      throw error;
+    }
+    return;
+  }
+  const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options });
   if (error) throw error;
 }
 

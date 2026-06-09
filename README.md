@@ -60,6 +60,7 @@ docs/        modos-de-juego.md, panorama-actividades.md, modo-wordwall.md, dev-l
 1. Pages: repo `duecaz/ac` → Deploy from branch `main` / `(root)`.
 2. Esquema `repo_ac` aplicado en el proyecto `www` (`klecbdjbrsyshjqzdxhw`) y **expuesto** en API → Exposed schemas.
 3. **Anonymous Sign-Ins** activo (Auth → Providers).
-4. Bucket `media` (público, 5MB máx).
+4. **Google provider** configurado + **Manual linking** activo (Auth → Settings) — necesario para migrar anónimo→cuenta conservando las actividades. Ver `docs/identidad.md`.
+5. Bucket `media` (público, 5MB máx).
 
 > Versión actual: ver `core/constants.js` (`VERSION`).
