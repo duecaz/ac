@@ -67,7 +67,7 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
           state.selectedLeft = null; state.selectedRight = null; state.busy = false;
           if (state.matched >= all.length) finish();
         } else {
-          state.score += ppw < 0 ? ppw : 0;
+          state.score = Math.max(0, state.score + (ppw < 0 ? ppw : 0)); // never below 0
           state.mistakes += 1;
           paint('wrong');
           setTimeout(() => {

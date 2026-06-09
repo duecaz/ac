@@ -77,7 +77,7 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
         if (state.matched >= pairs.length) finish();
       } else {
         state.busy = true;
-        state.score += ppw < 0 ? ppw : 0;
+        state.score = Math.max(0, state.score + (ppw < 0 ? ppw : 0)); // never below 0
         state.mistakes += 1;
         setTimeout(() => { state.open = []; state.busy = false; paint(); }, revealMs);
       }
