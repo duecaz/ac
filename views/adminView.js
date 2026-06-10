@@ -13,7 +13,6 @@ import { list } from '../core/storage.js';
 import { activityItemCount } from '../core/migrate.js';
 import { runSelfTests } from '../core/selftest.js';
 
-const ADMIN_USER = 'admin';
 const ADMIN_PASSWORD = 'fernando';
 const SESSION_KEY = 'ww.admin.ok';
 const yes = '<span class="text-success fw-bold">✓</span>';
@@ -35,27 +34,24 @@ function renderGate(rootSel) {
       <a href="#/home" class="btn btn-sm btn-link p-0 mb-2"><i class="bi bi-arrow-left"></i> Inicio</a>
       <div class="card shadow-sm"><div class="card-body">
         <h4 class="mb-3"><i class="bi bi-shield-lock"></i> Panel de administración</h4>
-        <p class="text-muted small">Introduce usuario y contraseña para ver detalles del sistema y ejecutar los tests.</p>
-        <input id="admin-user" class="form-control mb-2" placeholder="Usuario" autofocus>
-        <input id="admin-pass" type="password" class="form-control mb-2" placeholder="Contraseña">
+        <p class="text-muted small">Introduce la contraseña para ver detalles del sistema y ejecutar los tests.</p>
+        <input id="admin-pass" type="password" class="form-control mb-2" placeholder="Contraseña" autofocus>
         <button id="admin-go" class="btn btn-primary w-100">Entrar</button>
         <div id="admin-err" class="text-danger small mt-2"></div>
       </div></div>
     </div>`);
   const submit = () => {
-    const u = document.getElementById('admin-user')?.value.trim() || '';
     const v = document.getElementById('admin-pass')?.value || '';
-    if (u === ADMIN_USER && v === ADMIN_PASSWORD) {
+    if (v === ADMIN_PASSWORD) {
       try { sessionStorage.setItem(SESSION_KEY, '1'); } catch {}
       renderPanel(rootSel);
     } else {
       const err = document.getElementById('admin-err');
-      if (err) err.textContent = 'Usuario o contraseña incorrectos.';
+      if (err) err.textContent = 'Contraseña incorrecta.';
     }
   };
   on(rootSel, 'click', '#admin-go', submit);
   on(rootSel, 'keydown', '#admin-pass', (e) => { if (e.key === 'Enter') submit(); });
-  on(rootSel, 'keydown', '#admin-user', (e) => { if (e.key === 'Enter') submit(); });
 }
 
 function renderPanel(rootSel) {
