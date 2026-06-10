@@ -13,6 +13,7 @@ import { list, remove } from '../core/storage.js';
 import { confirmModal, toast } from '../core/toast.js';
 import { activityItemCount } from '../core/migrate.js';
 import { runSelfTests } from '../core/selftest.js';
+import { canConvert } from '../kernel/content/convert.js';
 
 const ADMIN_PASSWORD = 'fernando';
 const SESSION_KEY = 'ww.admin.ok';
@@ -60,6 +61,16 @@ function renderPanel(rootSel) {
   const acts = list();
   const avail = activityAvailability(acts);
   const countById = Object.fromEntries(acts.map(a => [a.id, activityItemCount(a)]));
+
+  const conv = caps.map(src => ({
+    label: src.label, color: src.color, icon: src.icon,
+    targets: caps.filter(dst => dst.name !== src.name && canConvert(src.contentModel, dst.contentModel))
+      .map(dst => ({ label: dst.label, kind: dst.contentModel === src.contentModel ? 'directo' : 'conversión' })),
+  }));
+  const convRows = conv.map(c => `<tr>
+      <td><span class="badge bg-${c.color || 'secondary'}"><i class="bi ${c.icon}"></i> ${escapeHtml(c.label)}</span></td>
+      <td>${c.targets.length ? c.targets.map(t => `<span class="badge ${t.kind === 'directo' ? 'bg-success' : 'bg-info'} me-1 mb-1">${escapeHtml(t.label)} · ${t.kind}</span>`).join('') : '<span class="text-muted">—</span>'}</td>
+    </tr>`).join('');
 
   const capRows = caps.map(c => `
     <tr>
@@ -118,6 +129,17 @@ function renderPanel(rootSel) {
       ${acts.length ? `<div class="table-responsive"><table class="table table-sm table-bordered align-middle">
         <thead class="table-light"><tr><th>Actividad</th>${MODE_DEFS.map(m => `<th class="text-center">${escapeHtml(m.short)}</th>`).join('')}<th></th></tr></thead>
         <tbody>${actRows}</tbody></table></div>` : '<p class="text-muted">No hay actividades guardadas.</p>'}
+
+      <h5 class="mt-4">Conversiones de formato <small class="text-muted">(¿a qué puede cambiar cada plantilla conservando el contenido?)</small></h5>
+      <div class="table-responsive"><table class="table table-sm table-bordered align-middle">
+        <thead class="table-light"><tr><th>Plantilla</th><th>Puede convertirse a</th></tr></thead>
+        <tbody>${convRows}</tbody></table></div>
+      <div class="small text-muted">
+        <b>directo</b> = mismo modelo de contenido (no transforma). <b>conversión</b> = transforma el contenido (puede perder datos).<br>
+        <b>Matemáticas ⇄ Quiz</b> (modelo <code>qa</code>): de <b>Matemáticas → Quiz</b> se generan opciones automáticamente
+        (la respuesta + distractores numéricos); de <b>Quiz → Matemáticas</b> se conserva pregunta y respuesta y se quitan las opciones.
+        Reglas en <code>kernel/content/qaAdapt.js</code> · grafo por modelo en <code>kernel/content/convert.js</code>.
+      </div>
     </div>`);
 
   on(rootSel, 'click', '#admin-lock', () => { try { sessionStorage.removeItem(SESSION_KEY); } catch {} renderGate(rootSel); });
