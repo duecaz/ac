@@ -49,6 +49,31 @@ export class MyTemplate extends BaseTemplate {
 }
 ```
 
+## 2b. `editor.js` — usa el SHELL (no armes pestañas a mano)
+
+El editor **debe** delegar el chasis en `core/editorShell.js`. Aporta solo tus
+paneles; las pestañas **Modos** y **Presentación** (y su gateo) son automáticas.
+NO construyas tu propia barra `nav-tabs` (eso es lo que causaba que "cada editor
+hiciera lo suyo").
+
+```js
+import { renderEditorShell } from '../../core/editorShell.js';
+
+export function renderMyEditor(root, activity, onChange) {
+  renderEditorShell(root, activity, onChange, {
+    content: { label: 'Contenido', html: (a) => `…`, wire: (root, a, ctx) => { /* ctx.onChange(a); ctx.repaint(); */ } },
+    rules:   { html: (a) => `…`, wire: (root, a, ctx) => {} },  // pestaña "Individual" (opcional)
+    scoring: { html: (a) => `…`, wire: (root, a, ctx) => {} },  // opcional
+    live:    { html: (a) => `…`, wire: (root, a, ctx) => {} },  // opcional; solo si meta.modes.live
+    // presentation: false  // para ocultar la pestaña Presentación (por defecto true)
+  });
+}
+```
+
+`ctx = { onChange, repaint }`. Usa `ctx.repaint()` tras alta/baja/reordenado de
+ítems (re-renderiza), y `ctx.onChange(a)` en cambios de campo. El título, el
+subtítulo, la pestaña **Modos** y la **Presentación** los cablea el shell.
+
 ## 3. `index.js` — registro
 
 ```js

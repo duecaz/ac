@@ -97,11 +97,23 @@ Regla: si añades un modo o cambias cuándo aplica, edita **solo** su entrada en
 `MODE_DEFS` (`supportsTemplate` + `isAvailable`). El selector y la barra se
 actualizan solos.
 
-### Configuración por modo en el editor
+### El editor es un SHELL compartido (anti-deriva)
 
-El editor expone una pestaña **"Modos"** (`core/editorModes.js`, incluida por el
-editor de cada plantilla con un `renderModesTab`/`wireModesTab`) con los ajustes
-de cada modo, gateada por las **mismas** reglas:
+`core/editorShell.js` (`renderEditorShell`) renderiza **una sola vez** el chasis
+de TODOS los editores: título/subtítulo + las pestañas estándar **Contenido ·
+Individual · Puntuación · Modos · En vivo · Presentación**. Cada plantilla
+aporta **solo** sus paneles propios (su `content`, y opcionalmente `rules`,
+`scoring`, `live`); las pestañas **Modos** y **Presentación** y el gateo salen
+del registro automáticamente.
+
+Por qué: antes cada `editor.js` armaba a mano su barra de pestañas y derivaban
+(Math no tenía pestañas; otro se quedó sin "Modos"; nombres distintos). Con el
+shell **es imposible que un editor "haga lo suyo"** u olvide un modo: todos
+heredan el mismo esqueleto y los nombres salen del registro. Un editor nuevo
+NO debe construir `nav-tabs` propias — llama a `renderEditorShell`.
+
+La pestaña **"Modos"** (contenido en `core/editorModes.js`) reúne los ajustes de
+cada modo, gateada por las **mismas** reglas:
 - **VS** (si `isVsCompatible`): animación central + feedback por respuesta
   (sonido/destello/confeti) → `presentation.vsAnimation` / `.vsAnimationSrc` /
   `.vsFeedback` (lo lee `vsView`).
