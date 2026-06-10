@@ -25,7 +25,7 @@ import { renderHostLaunch, renderHostByCode } from './views/hostLive.js';
 import { renderReports, renderActivityReport, renderSessionReport } from './views/reports.js';
 import { renderAssignmentsForActivity, renderAttempts } from './views/assignments.js';
 import { renderExplore } from './views/explore.js';
-import { renderModesAdmin } from './views/modesAdmin.js';
+import { renderAdmin } from './views/adminView.js';
 import { renderAuthBadge } from './views/authView.js';
 import { onAuthChange } from './core/auth.js';
 import { sync, setStorageUser } from './core/storage.js';
@@ -56,7 +56,8 @@ route('#/reports/:id', ({ id }) => renderActivityReport(APP, id));
 route('#/tasks/:id', ({ id }) => renderAssignmentsForActivity(APP, id));
 route('#/task/:id/attempts', ({ id }) => renderAttempts(APP, id));
 route('#/explore', () => renderExplore(APP));
-route('#/modos', () => renderModesAdmin(APP));
+route('#/admin', () => renderAdmin(APP));
+route('#/modos', () => renderAdmin(APP));
 route('#/sorteo', () => renderSorteoView(APP));
 
 setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encontrada. <a href="#/home">Inicio</a></div>`));

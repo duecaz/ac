@@ -30,7 +30,7 @@ export function renderHome(rootSel) {
         <div class="d-flex gap-2 flex-wrap">
           <button class="btn btn-outline-secondary" id="h-import" title="Importar JSON"><i class="bi bi-upload"></i> Importar</button>
           <button class="btn btn-outline-secondary" id="h-export-all" title="Exportar todas a JSON" ${all.length===0?'disabled':''}><i class="bi bi-download"></i> Exportar</button>
-          <a href="#/modos" class="btn btn-outline-secondary" title="Ver qué modos soporta cada plantilla/actividad"><i class="bi bi-diagram-3"></i> Modos</a>
+          <a href="#/admin" class="btn btn-outline-secondary" title="Panel de administración (modos, detalles, tests)"><i class="bi bi-shield-lock"></i> Admin</a>
           <a href="#/new" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Nueva</a>
         </div>
       </div>
