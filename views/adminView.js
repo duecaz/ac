@@ -9,7 +9,8 @@ import { VERSION } from '../core/constants.js';
 import { backendName } from '../adapters/index.js';
 import { MODE_DEFS } from '../core/modes.js';
 import { templateCapabilities, activityAvailability, CONTRACT_METHODS } from '../core/modeMatrix.js';
-import { list } from '../core/storage.js';
+import { list, remove } from '../core/storage.js';
+import { confirmModal, toast } from '../core/toast.js';
 import { activityItemCount } from '../core/migrate.js';
 import { runSelfTests } from '../core/selftest.js';
 
@@ -93,6 +94,10 @@ function renderPanel(rootSel) {
         </tbody>
       </table>
 
+      <h5 class="mt-4">Mantenimiento</h5>
+      <button id="admin-wipe" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Borrar TODAS mis actividades (este dispositivo + nube)</button>
+      <p class="small text-muted mt-1">Empieza de cero. No se puede deshacer. Mantiene tu identidad (no hace falta borrar la caché).</p>
+
       <h5 class="mt-4">Tests <small class="text-muted">(humo en vivo; la suite completa es <code>node tests/run.mjs</code>)</small></h5>
       <button id="admin-run" class="btn btn-success"><i class="bi bi-play-circle"></i> Ejecutar tests</button>
       <div id="admin-tests" class="mt-2"></div>
@@ -116,6 +121,14 @@ function renderPanel(rootSel) {
     </div>`);
 
   on(rootSel, 'click', '#admin-lock', () => { try { sessionStorage.removeItem(SESSION_KEY); } catch {} renderGate(rootSel); });
+  on(rootSel, 'click', '#admin-wipe', async () => {
+    const ok = await confirmModal('¿Borrar TODAS tus actividades de este dispositivo y de la nube? No se puede deshacer.', { okText: 'Borrar todo', danger: true });
+    if (!ok) return;
+    const ids = list().map(a => a.id);
+    for (const id of ids) { try { await remove(id); } catch {} }
+    toast(`Listo: ${ids.length} actividades borradas.`, 'success');
+    renderPanel(rootSel);
+  });
   on(rootSel, 'click', '#admin-run', async () => {
     const box = document.getElementById('admin-tests');
     box.innerHTML = '<span class="text-muted"><span class="spinner-border spinner-border-sm"></span> Ejecutando…</span>';
