@@ -2,6 +2,7 @@
 // quick multiplication-table generator.
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
+import { renderModesTab, wireModesTab } from '../../core/editorModes.js';
 
 export function renderMathEditor(root, activity, onChange) {
   const a = activity;
@@ -31,6 +32,9 @@ export function renderMathEditor(root, activity, onChange) {
         </div>
         <div class="form-text mb-2">Escribe la operaci&oacute;n (ej. <code>2 &times; 6</code>) y su resultado. El alumno responde con el teclado num&eacute;rico.</div>
         ${renderItems(a)}
+        <hr class="my-4">
+        <h6 class="text-muted text-uppercase small mb-2"><i class="bi bi-controller"></i> Modos de juego</h6>
+        ${renderModesTab(a)}
       </div>`);
 
     on(root, 'input', '#f-title', e => { a.title = e.target.value; onChange(a); });
@@ -48,6 +52,7 @@ export function renderMathEditor(root, activity, onChange) {
     on(root, 'input', '.it-q', (e, el) => { a.content.items[+el.dataset.i].question = e.target.value; onChange(a); });
     on(root, 'input', '.it-a', (e, el) => { a.content.items[+el.dataset.i].answer = e.target.value.trim(); onChange(a); });
     on(root, 'click', '.it-del', (_, b) => { a.content.items.splice(+b.dataset.i, 1); commit(); });
+    wireModesTab(root, a, onChange);
   }
   paint();
 }
