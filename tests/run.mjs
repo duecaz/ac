@@ -3,6 +3,7 @@
 // AssertionError aborts with a non-zero exit code (CI-friendly).
 console.log('▶ registry'); await import('./registry.test.mjs');
 console.log('\n▶ modes');    await import('./modes.test.mjs');
+console.log('\n▶ modeMatrix'); await import('./modeMatrix.test.mjs');
 console.log('\n▶ content');  await import('./content.test.mjs');
 console.log('\n▶ adapters'); await import('./adapters.test.mjs');
 console.log('\n▶ solo');      await import('./solo.test.mjs');
@@ -17,5 +18,6 @@ console.log('\n▶ sessionEngine'); await import('./sessionEngine.test.mjs');
 console.log('\n▶ memory'); await import('./memory.test.mjs');
 console.log('\n▶ liveLocal'); await import('./liveLocal.test.mjs');
 console.log('\n▶ liveText'); await import('./liveText.test.mjs');
+console.log('\n▶ simPlay'); await import('./simPlay.test.mjs');
 console.log('\n▶ assignments'); await import('./assignments.test.mjs');
 console.log('\n✅ all suites passed');

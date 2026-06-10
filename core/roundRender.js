@@ -20,7 +20,12 @@ export function renderChoiceRound(root, payload, { onSubmit } = {}) {
         </button>`).join('')}
     </div>`;
   let done = false;
-  root.querySelectorAll('.rq-opt').forEach(btn => btn.addEventListener('click', () => {
+  // MULTITÁCTIL: usamos pointerdown (no click) para que en una pizarra
+  // interactiva cada toque se procese por puntero e inmediatamente — dos
+  // alumnos en los dos paneles VS pueden responder a la vez sin que el clic de
+  // uno serialice/bloquee al otro. preventDefault evita selección/zoom.
+  root.querySelectorAll('.rq-opt').forEach(btn => btn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
     if (done) return;
     done = true;
     root.querySelectorAll('.rq-opt').forEach(b => { b.disabled = true; });
@@ -48,7 +53,9 @@ export function renderKeypadRound(root, payload, { onSubmit } = {}) {
   let val = '';
   let done = false;
   const draw = () => { disp.textContent = val === '' ? '0' : val; };
-  root.querySelectorAll('.ww-key').forEach(btn => btn.addEventListener('click', () => {
+  // pointerdown (no click) → respuesta táctil inmediata y por puntero (multitáctil).
+  root.querySelectorAll('.ww-key').forEach(btn => btn.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
     if (done) return;
     const k = btn.dataset.k;
     if (k === 'back') { val = val.slice(0, -1); draw(); return; }
