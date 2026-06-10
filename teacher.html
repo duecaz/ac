@@ -38,6 +38,7 @@
       <a href="#/sorteo" class="btn btn-sm btn-outline-light"><i class="bi bi-bullseye"></i> Sorteo</a>
       <span id="ww-mute-slot"></span>
       <span id="ww-auth-slot"></span>
+      <button class="btn btn-sm btn-outline-light" onclick="window.__wwRefresh && window.__wwRefresh()" title="Actualizar app (cargar la versión nueva, sin borrar tus datos)"><i class="bi bi-arrow-clockwise"></i></button>
       <button class="btn btn-sm btn-outline-warning" onclick="window.__wwClearAll && window.__wwClearAll()" title="Borrar caché y recargar"><i class="bi bi-eraser"></i></button>
     </div>
   </div>
@@ -60,6 +61,12 @@ window.__wwClearAll = async function() {
   // Bypass disk cache by adding a unique query string.
   location.href = location.pathname + '?_=' + Date.now() + location.hash;
 };
+// Actualizar SOLO el código (cargar versión nueva) SIN borrar datos locales.
+window.__wwRefresh = async function() {
+  if ('caches' in window) { try { const ns = await caches.keys(); await Promise.all(ns.map(n => caches.delete(n))); } catch {} }
+  if ('serviceWorker' in navigator) { try { const rs = await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r => r.unregister())); } catch {} }
+  location.href = location.pathname + '?_=' + Date.now() + location.hash;
+};
 // Error boundary: any uncaught error or rejection paints a red banner.
 (function(){
   let shown = false;
@@ -74,7 +81,10 @@ window.__wwClearAll = async function() {
   setTimeout(()=>{ if (!window.__APP_READY__) show('La aplicación no inició en 8s. Revisa consola.'); }, 8000);
 })();
 </script>
-<script type="module" src="main.teacher.js"></script>
+<script type="module">
+  const b = new URLSearchParams(location.search).get('_');
+  import('./main.teacher.js' + (b ? '?_=' + b : '')).catch(e => { console.error(e); });
+</script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
