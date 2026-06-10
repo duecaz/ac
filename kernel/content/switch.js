@@ -61,8 +61,11 @@ export function applySwitch(activity, targetName, templates) {
   const target = templates.find(t => t.meta?.name === targetName);
   const toModel = target?.meta?.contentModel;
   if (!fromModel || !toModel || !canConvert(fromModel, toModel)) return null;
-  const content = convert(fromModel, toModel, activity.content);
+  let content = convert(fromModel, toModel, activity.content);
   if (content == null) return null;
+  // Afinado por plantilla: adapta la FORMA del ítem a la plantilla destino
+  // (Matemáticas→Quiz genera opciones; Quiz→Matemáticas las quita).
+  if (typeof target.adoptContent === 'function') content = target.adoptContent(content, fromModel) ?? content;
   return {
     ...activity,
     template: targetName,

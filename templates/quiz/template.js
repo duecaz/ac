@@ -5,6 +5,7 @@ import { renderQuizEditor } from './editor.js';
 import { scoreQuizSubmission } from './scorer.js';
 import { renderChoiceRound, shuffle } from '../../core/roundRender.js';
 import { escapeHtml } from '../../core/html.js';
+import { adoptForQuiz } from '../../kernel/content/qaAdapt.js';
 
 const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
 
@@ -32,6 +33,9 @@ export class QuizTemplate extends BaseTemplate {
   static renderPlayer = renderQuizPlayer;
   static renderEditor = renderQuizEditor;
   static scoreSubmission = scoreQuizSubmission;
+
+  // Adapta el contenido al cambiar de formato HACIA Quiz (genera opciones).
+  static adoptContent(content) { return adoptForQuiz(content); }
 
   // Per-round payload sent to LIVE clients. Strips the answer.
   static getRoundPayload(activity, ctx) {

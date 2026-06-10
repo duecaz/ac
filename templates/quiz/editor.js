@@ -9,6 +9,9 @@ import { renderEditorShell } from '../../core/editorShell.js';
 
 export function renderQuizEditor(root, activity, onChange) {
   const a = activity;
+  // Auto-cura ítems sin opciones (p. ej. convertidos desde Matemáticas) para que
+  // el editor no falle al escribir en item.options[k].
+  (a.content?.items || []).forEach(it => { if (!Array.isArray(it.options)) it.options = ['', '', '', '']; });
   renderEditorShell(root, a, onChange, {
     content: { label: 'Contenido', html: contentHtml, wire: wireContent },
     rules: { html: rulesHtml, wire: wireRules },
