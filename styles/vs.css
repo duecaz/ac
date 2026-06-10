@@ -127,3 +127,11 @@
 .vs-fx-row { display: flex; align-items: center; gap: .7rem; cursor: pointer; margin: 0; }
 .vs-fx-label { font-weight: 600; line-height: 1.15; }
 .vs-fx-label small { font-weight: 400; }
+
+/* Pantalla de resultado (¡gana! / ¡empate!) — ocupa todo el escenario y centra,
+   en vez de heredar el grid partido del duelo (que la empujaba a la izquierda). */
+.vs-result-screen {
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; min-height: 100%; height: 100%; padding: 1rem;
+}
+.vs-result-screen .vs-result { width: 100%; max-width: 640px; }

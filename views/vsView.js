@@ -251,7 +251,7 @@ export function mountVs(host, a, ctx, opts = {}) {
           <button id="vs-again" class="btn btn-danger btn-lg mt-2"><i class="bi bi-arrow-repeat"></i> Otra vez</button>
           ${backHref ? `<a href="${backHref}" class="btn btn-outline-secondary btn-lg mt-2 ms-2">Salir</a>` : ''}
         </div>`;
-      mount(host, html`<div class="vs-arena"><div class="vs-overlay">${body}</div></div>`);
+      mount(host, html`<div class="vs-result-screen">${body}</div>`);
       // Only celebrate a real winner. On a tie, no victory fanfare/confetti
       // (PODIUM triggers win.mp3 + confetti) — a draw isn't a win.
       if (winner) emitGame(GameEvents.PODIUM, { top: [{ name: winner.name, score: winner.score }] });

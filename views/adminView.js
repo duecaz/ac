@@ -1,8 +1,8 @@
-// Página ADMIN (protegida con contraseña). Reúne TODO en un sitio: detalles del
-// sistema, la matriz de modos/compatibilidad (de core/modeMatrix.js) y los
-// self-tests EJECUTABLES (core/selftest.js, incluida la simulación de alumnos
-// virtuales para VS y En vivo). La contraseña es un candado simple del lado
-// cliente (sessionStorage), no seguridad real — la protección de datos es la RLS.
+// Página ADMIN (protegida con usuario + contraseña). Reúne TODO en un sitio:
+// detalles del sistema, la matriz de modos/compatibilidad (core/modeMatrix.js) y
+// los self-tests EJECUTABLES (core/selftest.js, con simulación de alumnos
+// virtuales VS y En vivo). El login es un candado simple del lado cliente
+// (sessionStorage), no seguridad real — la protección de datos es la RLS.
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { VERSION } from '../core/constants.js';
@@ -13,6 +13,7 @@ import { list } from '../core/storage.js';
 import { activityItemCount } from '../core/migrate.js';
 import { runSelfTests } from '../core/selftest.js';
 
+const ADMIN_USER = 'admin';
 const ADMIN_PASSWORD = 'fernando';
 const SESSION_KEY = 'ww.admin.ok';
 const yes = '<span class="text-success fw-bold">✓</span>';
@@ -34,24 +35,27 @@ function renderGate(rootSel) {
       <a href="#/home" class="btn btn-sm btn-link p-0 mb-2"><i class="bi bi-arrow-left"></i> Inicio</a>
       <div class="card shadow-sm"><div class="card-body">
         <h4 class="mb-3"><i class="bi bi-shield-lock"></i> Panel de administración</h4>
-        <p class="text-muted small">Introduce la contraseña para ver detalles del sistema y ejecutar los tests.</p>
-        <input id="admin-pass" type="password" class="form-control mb-2" placeholder="Contraseña" autofocus>
+        <p class="text-muted small">Introduce usuario y contraseña para ver detalles del sistema y ejecutar los tests.</p>
+        <input id="admin-user" class="form-control mb-2" placeholder="Usuario" autofocus>
+        <input id="admin-pass" type="password" class="form-control mb-2" placeholder="Contraseña">
         <button id="admin-go" class="btn btn-primary w-100">Entrar</button>
         <div id="admin-err" class="text-danger small mt-2"></div>
       </div></div>
     </div>`);
   const submit = () => {
+    const u = document.getElementById('admin-user')?.value.trim() || '';
     const v = document.getElementById('admin-pass')?.value || '';
-    if (v === ADMIN_PASSWORD) {
+    if (u === ADMIN_USER && v === ADMIN_PASSWORD) {
       try { sessionStorage.setItem(SESSION_KEY, '1'); } catch {}
       renderPanel(rootSel);
     } else {
       const err = document.getElementById('admin-err');
-      if (err) err.textContent = 'Contraseña incorrecta.';
+      if (err) err.textContent = 'Usuario o contraseña incorrectos.';
     }
   };
   on(rootSel, 'click', '#admin-go', submit);
   on(rootSel, 'keydown', '#admin-pass', (e) => { if (e.key === 'Enter') submit(); });
+  on(rootSel, 'keydown', '#admin-user', (e) => { if (e.key === 'Enter') submit(); });
 }
 
 function renderPanel(rootSel) {
