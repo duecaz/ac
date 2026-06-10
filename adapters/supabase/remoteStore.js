@@ -8,14 +8,15 @@ export function createSupabaseRemoteStore() {
   return {
     async saveActivity(a) {
       const sb = await getClient();
-      const { data: { user } } = await sb.auth.getUser();
-      const authorId = a.author?.id || user?.id || null;
-      // Stamp author info into the JSONB so it round-trips.
-      if (authorId && !a.author?.id) a.author = { ...(a.author || {}), id: authorId, signedAt: new Date().toISOString() };
+      // BANCO COMPARTIDO: las actividades NO tienen dueño (author_id = null), así
+      // cualquiera las ve/edita por URL y NO dependen de la identidad anónima del
+      // navegador (sobreviven a limpiar la caché). visibility al menos 'unlisted'
+      // para que sean compartibles.
+      a.author = null;
       const { error } = await sb.from('activities').upsert({
         id: a.id, data: a,
-        visibility: a.visibility,
-        author_id: authorId,
+        visibility: a.visibility === 'public' ? 'public' : 'unlisted',
+        author_id: null,
         tags: a.tags || [],
         language: a.language || 'es',
       });
@@ -37,11 +38,11 @@ export function createSupabaseRemoteStore() {
 
     async listActivities() {
       const sb = await getClient();
-      const { data: { user } } = await sb.auth.getUser();
-      let q = sb.from('activities').select('id, data, updated_at').order('updated_at', { ascending: false });
-      // Owned rows + legacy null-author rows. Public/explore is fetched elsewhere.
-      if (user) q = q.or(`author_id.eq.${user.id},author_id.is.null`);
-      const { data, error } = await q;
+      // BANCO COMPARTIDO: traemos todo lo que la RLS permite ver (público/unlisted
+      // + sin dueño + propio). Sin filtrar por identidad → tras limpiar la caché,
+      // sync() repuebla el banco y las actividades reaparecen.
+      const { data, error } = await sb.from('activities')
+        .select('id, data, updated_at').order('updated_at', { ascending: false });
       if (error) throw error;
       return (data || []).map(row => ({ id: row.id, data: row.data }));
     },

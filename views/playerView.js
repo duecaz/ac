@@ -5,7 +5,7 @@
 // auto-height frame on mobile portrait.
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
-import { get, save, remove as removeActivity } from '../core/storage.js';
+import { get, save, getRemote, remove as removeActivity } from '../core/storage.js';
 import { activityItemCount, newActivityId } from '../core/migrate.js';
 import { getTemplate, compatibleTemplates } from '../core/registry.js';
 import { isVsCompatible } from '../kernel/session/engine.js';
@@ -21,7 +21,13 @@ import { downloadActivitiesJson } from '../core/io.js';
 import { openEmbedModal } from './embedModal.js';
 
 export async function renderPlayerView(rootSel, id) {
-  const a = get(id);
+  let a = get(id);
+  // Banco compartido: si no está en local, tráela de la nube (acceso por URL
+  // desde cualquier dispositivo/profe) y cachéala localmente.
+  if (!a) {
+    a = await getRemote(id).catch(() => null);
+    if (a) save(a);
+  }
   if (!a) {
     mount(rootSel, html`<div class="alert alert-warning">Actividad no encontrada. <a href="#/home">Volver</a></div>`);
     return;
