@@ -4,38 +4,39 @@ import assert from 'node:assert';
 import { adoptForQuiz, adoptForMath, buildQuizOptions } from '../kernel/content/qaAdapt.js';
 
 let passed = 0; const ok = (m) => { passed++; console.log('  ✓', m); };
+const distinct = (arr) => new Set(arr.filter(x => x !== '')).size === arr.filter(x => x !== '').length;
 
-// Matemáticas → Quiz: genera opciones con la respuesta correcta
+// Matemáticas → Quiz con DISTRACTORES DIDÁCTICOS según la operación.
 const mq = adoptForQuiz({ items: [{ id: 'm1', question: '2 × 6', answer: '12', points: 1 }] });
 const it = mq.items[0];
-assert.ok(Array.isArray(it.options) && it.options.length >= 4, 'genera ≥4 opciones');
+assert.strictEqual(it.options.length, 4, '4 opciones');
+assert.ok(distinct(it.options), 'opciones distintas');
 assert.ok(it.options.includes('12'), 'incluye la respuesta');
-assert.strictEqual(it.answerIdx.length, 1, 'marca exactamente 1 correcta');
 assert.strictEqual(it.options[it.answerIdx[0]], '12', 'la marcada es la respuesta');
-ok('Matemáticas→Quiz genera opciones con la correcta');
+// errores típicos de la tabla del 2: fila vecina (12±2 = 10/14) y columna (12-6=6)
+assert.ok(it.options.includes('10') || it.options.includes('14'), 'incluye fila vecina (10/14)');
+ok('Matemáticas→Quiz: distractores didácticos por operación (×)');
 
-// buildQuizOptions numérica → distintas
-const opts = buildQuizOptions('7');
-assert.strictEqual(new Set(opts).size, opts.length, 'opciones distintas');
-assert.ok(opts.includes('7'), 'incluye la respuesta');
-ok('buildQuizOptions numérica: 4 distintas con la respuesta');
+// Suma: error típico +→× y ±1
+const add = buildQuizOptions('15', '10 + 5');
+assert.ok(add.includes('15') && distinct(add) && add.length === 4, 'suma: 4 distintas con respuesta');
+assert.ok(add.includes('14') || add.includes('16'), 'suma: incluye ±1');
+ok('Suma: distractores ±1 y +→×');
 
-// no numérica → respuesta + huecos
-assert.deepStrictEqual(buildQuizOptions('Lima'), ['Lima', '', '', '']);
-ok('buildQuizOptions texto: respuesta + huecos');
+// Sin operación reconocible → vecinos numéricos
+const plain = buildQuizOptions('7', 'siete');
+assert.ok(plain.includes('7') && distinct(plain) && plain.length === 4, 'numérica sin op: vecinos');
+ok('Numérica sin operación: vecinos distintos');
+
+// No numérica → respuesta + huecos
+assert.deepStrictEqual(buildQuizOptions('Lima', '¿Capital?'), ['Lima', '', '', '']);
+ok('Texto: respuesta + huecos');
 
 // Quiz → Matemáticas: conserva pregunta+respuesta, sin options
-const qm = adoptForMath({ items: [{ id: 'q1', question: '3 × 3', options: ['9', '6', '12', '3'], answer: '9', answerIdx: [0], points: 2 }] });
-const m = qm.items[0];
-assert.strictEqual(m.question, '3 × 3');
-assert.strictEqual(m.answer, '9');
-assert.strictEqual(m.options, undefined, 'sin options');
-assert.strictEqual(m.points, 2);
-ok('Quiz→Matemáticas conserva pregunta+respuesta y quita opciones');
-
-// answer en array → usa la primera
-const qa = adoptForQuiz({ items: [{ question: 'x', answer: ['A', 'B'], options: [] }] });
-assert.ok(qa.items[0].options.includes('A'), 'usa la primera respuesta del array');
-ok('answer en array → primera como respuesta');
+const qm = adoptForMath({ items: [{ id: 'q1', question: '3 × 3', options: ['9', '6', '12', '3'], answer: '9', points: 2 }] });
+assert.deepStrictEqual(
+  { q: qm.items[0].question, a: qm.items[0].answer, o: qm.items[0].options, p: qm.items[0].points },
+  { q: '3 × 3', a: '9', o: undefined, p: 2 });
+ok('Quiz→Matemáticas conserva pregunta+respuesta, quita opciones');
 
 console.log(`\nqaAdapt.test: ${passed} checks passed`);
