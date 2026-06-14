@@ -13,6 +13,7 @@ import { createMemoryGame } from '../kernel/session/memory.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { renderModeSetup } from './modeSetup.js';
 import { teamColor, teamNameInputsHtml } from '../core/teams.js';
+import { podiumHtml } from '../core/podium.js';
 
 const COVER_MS = 1100;
 
@@ -120,13 +121,12 @@ export function mountMemory(host, a, ctx, opts = {}) {
       const lb = game.leaderboard();
       const top = lb[0];
       const tie = lb.length > 1 && lb[1].score === top.score;
+      const ranked = lb.map(t => ({ name: t.name, score: t.score }));
       return `
         <div class="teams-podium text-center">
-          <i class="bi bi-trophy-fill display-1 text-warning"></i>
-          <h2 class="mt-2">${tie ? '¡Empate!' : `🏆 ¡${escapeHtml(top.name)} gana!`}</h2>
-          <div class="teams-ranking">
-            ${lb.map(t => `<div class="d-flex justify-content-between teams-rank-row"><span>${t.rank}. ${escapeHtml(t.name)}</span><b>${t.score}</b></div>`).join('')}
-          </div>
+          <h2 class="mb-3"><i class="bi bi-trophy-fill text-warning"></i> ${tie ? '¡Empate!' : `🏆 ¡${escapeHtml(top.name)} gana!`}</h2>
+          ${podiumHtml(ranked)}
+          ${lb.length > 3 ? `<div class="teams-ranking mt-3">${lb.slice(3).map(t => `<div class="d-flex justify-content-between teams-rank-row"><span>${t.rank}. ${escapeHtml(t.name)}</span><b>${t.score}</b></div>`).join('')}</div>` : ''}
           ${backHref ? `<a href="${backHref}" class="btn btn-outline-secondary mt-3">Salir</a>` : ''}
           <button class="btn btn-primary mt-3 ms-2" id="mem-again"><i class="bi bi-arrow-repeat"></i> Otra vez</button>
         </div>`;
