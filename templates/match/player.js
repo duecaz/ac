@@ -2,7 +2,7 @@
 // Correct → both consumed (fade out) + points. Wrong → brief red flash, reset.
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { saveResult } from '../../core/results.js';
+import { saveResult, applyPoints } from '../../core/results.js';
 import { resultScreenHtml } from '../../core/resultScreen.js';
 import { FEEDBACK_DELAY } from '../../core/constants.js';
 import { shuffle } from '../../core/roundRender.js';
@@ -15,7 +15,6 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   }
 
   const ppc = activity.scoring?.pointsPerCorrect || 1;
-  const ppw = activity.scoring?.pointsPerWrong || 0;
   const maxScore = activity.scoring?.maxScore || ppc * all.length;
 
   const state = {
@@ -61,14 +60,14 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
       if (state.selectedLeft && state.selectedRight) {
         state.busy = true;
         if (state.selectedLeft === state.selectedRight) {
-          state.score += ppc;
+          state.score = applyPoints(state.score, activity.scoring, true);
           state.matched += 1;
           state.consumed.add(state.selectedLeft);
           paint();
           state.selectedLeft = null; state.selectedRight = null; state.busy = false;
           if (state.matched >= all.length) finish();
         } else {
-          state.score = Math.max(0, state.score + (ppw < 0 ? ppw : 0)); // never below 0
+          state.score = applyPoints(state.score, activity.scoring, false);
           state.mistakes += 1;
           paint('wrong');
           setTimeout(() => {

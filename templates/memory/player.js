@@ -3,7 +3,7 @@
 // ids match, both stay; else they flip back after revealMs.
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { saveResult } from '../../core/results.js';
+import { saveResult, applyPoints } from '../../core/results.js';
 import { resultScreenHtml } from '../../core/resultScreen.js';
 import { shuffle } from '../../core/roundRender.js';
 
@@ -12,7 +12,6 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
   if (!pairs.length) { mount(rootSel, html`<div class="alert alert-warning m-4">Sin pares.</div>`); return; }
 
   const ppc = activity.scoring?.pointsPerCorrect || 1;
-  const ppw = activity.scoring?.pointsPerWrong || 0;
   const maxScore = activity.scoring?.maxScore || ppc * pairs.length;
   const revealMs = activity.rules?.revealMs ?? 900;
   const columns = Math.max(2, Math.min(8, activity.rules?.columns || 4));
@@ -72,13 +71,13 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
       if (pa === pb && a !== b) {
         state.locked.add(a); state.locked.add(b);
         state.matched += 1;
-        state.score += ppc;
+        state.score = applyPoints(state.score, activity.scoring, true);
         state.open = [];
         paint();
         if (state.matched >= pairs.length) finish();
       } else {
         state.busy = true;
-        state.score = Math.max(0, state.score + (ppw < 0 ? ppw : 0)); // never below 0
+        state.score = applyPoints(state.score, activity.scoring, false);
         state.mistakes += 1;
         setTimeout(() => { state.open = []; state.busy = false; paint(); }, revealMs);
       }
