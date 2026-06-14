@@ -8,6 +8,10 @@
 //   - static renderRoundHost(root, ctx)              // read-only projector view (LIVE host)
 //   - static scoreSubmission({ value, item, msTaken, activity })
 //   - static migrateContent(content, fromVersion)
+//   - static adoptContent(content, fromTemplate)  // adapta el contenido al CONVERTIR
+//       hacia esta plantilla desde otra del MISMO contentModel pero distinta forma de
+//       ítem (p. ej. Matemáticas→Quiz genera options[]). Lo invoca kernel/content/switch.js
+//       (applySwitch). Reglas concretas en kernel/content/qaAdapt.js.
 import { escapeHtml } from '../core/html.js';
 
 export class BaseTemplate {
