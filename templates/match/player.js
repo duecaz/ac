@@ -3,6 +3,7 @@
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { saveResult } from '../../core/results.js';
+import { resultScreenHtml } from '../../core/resultScreen.js';
 import { FEEDBACK_DELAY } from '../../core/constants.js';
 import { shuffle } from '../../core/roundRender.js';
 
@@ -87,15 +88,7 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
 
   function finish() {
     const timeUsed = Math.round((Date.now() - state.startedAt) / 1000);
-    mount(rootSel, html`
-      <div class="text-center py-5">
-        <i class="bi bi-trophy-fill display-1 text-warning"></i>
-        <h2 class="mt-3">¡Completado!</h2>
-        <p class="lead">Puntos: <b>${state.score}</b> / ${maxScore}</p>
-        <p class="text-muted">${all.length} pares · ${state.mistakes} fallos · ${timeUsed}s</p>
-        <a href="#/home" class="btn btn-primary"><i class="bi bi-house"></i> Inicio</a>
-      </div>
-    `);
+    mount(rootSel, resultScreenHtml({ title: '¡Completado!', lead: `Puntos: <b>${state.score}</b> / ${maxScore}`, stats: `${all.length} pares · ${state.mistakes} fallos · ${timeUsed}s` }));
     if (opts.mode !== 'async-tracked') {
       saveResult({ activityId: activity.id, scoreAuto: state.score, scoreFinal: state.score, maxScore, timeUsed });
     }

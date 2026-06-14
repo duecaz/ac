@@ -11,6 +11,7 @@
 import { html, escapeHtml, mount } from './html.js';
 import { isVowel, applyTilde, applyMarks, scoreMarks } from './textMarks.js';
 import { saveResult } from './results.js';
+import { resultScreenHtml } from './resultScreen.js';
 import { GameEvents, emitGame } from './gameEvents.js';
 import { speak, isAvailable as ttsAvailable } from './tts.js';
 
@@ -177,14 +178,7 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
   function finish() {
     const timeUsed = Math.round((Date.now() - startedAt) / 1000);
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score }] });
-    mount(rootSel, html`
-      <div class="text-center py-5">
-        <i class="bi bi-trophy-fill display-1 text-warning"></i>
-        <h2 class="mt-3">¡Listo!</h2>
-        <p class="lead">Puntos: <b>${score}</b> / ${maxScore}</p>
-        <p class="text-muted">${correct} aciertos · ${wrong} fallos · ${timeUsed}s</p>
-        <a href="#/home" class="btn btn-primary"><i class="bi bi-house"></i> Inicio</a>
-      </div>`);
+    mount(rootSel, resultScreenHtml({ title: '¡Listo!', lead: `Puntos: <b>${score}</b> / ${maxScore}`, stats: `${correct} aciertos · ${wrong} fallos · ${timeUsed}s` }));
     if (opts.mode !== 'async-tracked') {
       saveResult({ activityId: activity.id, scoreAuto: score, scoreFinal: score, maxScore, timeUsed });
     }

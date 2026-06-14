@@ -1,5 +1,6 @@
 // SVG-based spinning wheel. No scoring; just lands on a random entry.
 import { html, escapeHtml, mount } from '../../core/html.js';
+import { resultScreenHtml } from '../../core/resultScreen.js';
 import { on } from '../../core/events.js';
 import { normalizeEntries, pickIndex } from './logic.js';
 import { wheelSvg } from './render.js';
@@ -49,9 +50,7 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
 
     on(rootSel, 'click', '#btn-spin', spin);
     on(rootSel, 'click', '#btn-end', () => {
-      mount(rootSel, html`<div class="text-center py-5"><i class="bi bi-trophy-fill display-1 text-warning"></i><h2 class="mt-3">Listo</h2>
-        <p class="text-muted">${history.length} giro(s).</p>
-        <a href="#/home" class="btn btn-primary"><i class="bi bi-house"></i> Inicio</a></div>`);
+      mount(rootSel, resultScreenHtml({ title: 'Listo', stats: `${history.length} giro(s).` }));
       if (opts.onFinish) opts.onFinish({ score: history.length, history, startedAt });
     });
   }

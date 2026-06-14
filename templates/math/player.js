@@ -3,6 +3,7 @@ import { html, escapeHtml, mount } from '../../core/html.js';
 import { renderKeypadRound, shuffle } from '../../core/roundRender.js';
 import { scoreMathSubmission } from './scorer.js';
 import { saveResult } from '../../core/results.js';
+import { resultScreenHtml } from '../../core/resultScreen.js';
 import { FEEDBACK_DELAY } from '../../core/constants.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 
@@ -44,14 +45,7 @@ export async function renderMathPlayer(rootSel, activity, opts = {}) {
     const timeUsed = Math.round((Date.now() - state.startedAt) / 1000);
     const max = maxScore();
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: state.score }] });
-    mount(rootSel, html`
-      <div class="text-center py-5">
-        <i class="bi bi-trophy-fill display-1 text-warning"></i>
-        <h2 class="mt-3">¡Terminado!</h2>
-        <p class="lead">Puntos: <b>${state.score}</b> / ${max}</p>
-        <p class="text-muted">Tiempo: ${timeUsed}s</p>
-        <a href="#/home" class="btn btn-primary"><i class="bi bi-house"></i> Inicio</a>
-      </div>`);
+    mount(rootSel, resultScreenHtml({ title: '¡Terminado!', lead: `Puntos: <b>${state.score}</b> / ${max}`, stats: `Tiempo: ${timeUsed}s` }));
     if (opts.mode !== 'async-tracked') {
       saveResult({ activityId: activity.id, scoreAuto: state.score, scoreFinal: state.score, maxScore: max, timeUsed });
     }
