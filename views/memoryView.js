@@ -12,8 +12,8 @@ import { get } from '../core/storage.js';
 import { createMemoryGame } from '../kernel/session/memory.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { renderModeSetup } from './modeSetup.js';
+import { teamColor, teamNameInputsHtml } from '../core/teams.js';
 
-const TEAM_COLORS = ['danger', 'primary', 'success', 'warning'];
 const COVER_MS = 1100;
 
 // Standalone route wrapper (#/memory/:id).
@@ -72,10 +72,7 @@ export function mountMemory(host, a, ctx, opts = {}) {
   function renderNames() {
     const box = $('#mem-names');
     if (!box) return;
-    box.innerHTML = Array.from({ length: teamCount }, (_, i) => `
-      <div class="col-6 col-md-3">
-        <input class="form-control text-center border-${TEAM_COLORS[i]}" value="Equipo ${i + 1}" maxlength="14">
-      </div>`).join('');
+    box.innerHTML = teamNameInputsHtml(teamCount);
   }
 
   function startGame(names) {
@@ -156,8 +153,7 @@ export function mountMemory(host, a, ctx, opts = {}) {
     }
 
     function colorOf(team) {
-      const i = game.state.teams.findIndex(t => t.id === team.id);
-      return TEAM_COLORS[i % TEAM_COLORS.length];
+      return teamColor(team.id, game.state.teams);
     }
   }
 

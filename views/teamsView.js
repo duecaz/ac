@@ -21,8 +21,8 @@ import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { applyMarks } from '../core/textMarks.js';
 import { podiumHtml } from '../core/podium.js';
 import { renderModeSetup } from './modeSetup.js';
+import { teamColor, teamNameInputsHtml } from '../core/teams.js';
 
-const TEAM_COLORS = ['danger', 'primary', 'success', 'warning'];
 
 // Standalone route wrapper (#/teams/:id).
 export function renderTeamsView(rootSel, id) {
@@ -103,10 +103,7 @@ export function mountTeams(host, a, ctx, opts = {}) {
   function renderNameInputs() {
     const box = $('#teams-names');
     if (!box) return;
-    box.innerHTML = Array.from({ length: teamCount }, (_, i) => `
-      <div class="col-6 col-md-3">
-        <input class="form-control text-center border-${TEAM_COLORS[i]}" value="Equipo ${i + 1}" maxlength="14">
-      </div>`).join('');
+    box.innerHTML = teamNameInputsHtml(teamCount);
   }
 
   function startGame(names, scoring) {
@@ -280,8 +277,7 @@ export function mountTeams(host, a, ctx, opts = {}) {
     }
 
     function colorOf(team) {
-      const i = session.state.teams.findIndex(t => t.id === team.id);
-      return TEAM_COLORS[i % TEAM_COLORS.length];
+      return teamColor(team.id, session.state.teams);
     }
   }
 
