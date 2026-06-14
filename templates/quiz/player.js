@@ -3,7 +3,7 @@
 // In live-student mode, opts handles network calls (submit). In solo, scoring is local.
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { saveResult } from '../../core/results.js';
+import { trySaveResult } from '../../core/results.js';
 import { resultScreenHtml } from '../../core/resultScreen.js';
 import { FEEDBACK_DELAY } from '../../core/constants.js';
 import { scoreQuizSubmission } from './scorer.js';
@@ -92,9 +92,7 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
     Streaks.reset('solo', activity.id);
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: state.score }] });
     mount(rootSel, resultScreenHtml({ title: '¡Terminado!', lead: `Puntos: <b>${state.score}</b> / ${max}`, stats: `Tiempo: ${timeUsed}s` }));
-    if (opts.mode !== 'async-tracked') {
-      saveResult({ activityId: activity.id, scoreAuto: state.score, scoreFinal: state.score, maxScore: max, timeUsed });
-    }
+    trySaveResult(opts, { activityId: activity.id, scoreAuto: state.score, scoreFinal: state.score, maxScore: max, timeUsed });
     if (opts.onFinish) opts.onFinish(state);
   }
 

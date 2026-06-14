@@ -14,6 +14,12 @@ export function applyPoints(score, scoring, correct) {
   return correct ? score + ppc : Math.max(0, score + (ppw < 0 ? ppw : 0));
 }
 
+/** Guarda el resultado salvo en modo TAREA (async-tracked), donde el contenedor
+ *  de la tarea registra su propio intento. Evita repetir el gateo en cada player. */
+export function trySaveResult(opts, payload) {
+  if (opts?.mode !== 'async-tracked') saveResult(payload);
+}
+
 export async function saveResult(r) {
   try {
     const rs = await getRemoteStore();

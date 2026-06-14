@@ -3,7 +3,7 @@
 // ids match, both stay; else they flip back after revealMs.
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { saveResult, applyPoints } from '../../core/results.js';
+import { trySaveResult, applyPoints } from '../../core/results.js';
 import { resultScreenHtml } from '../../core/resultScreen.js';
 import { shuffle } from '../../core/roundRender.js';
 
@@ -87,9 +87,7 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
   function finish() {
     const timeUsed = Math.round((Date.now() - state.startedAt) / 1000);
     mount(rootSel, resultScreenHtml({ title: '¡Memorizado!', lead: `Puntos: <b>${state.score}</b> / ${maxScore}`, stats: `${pairs.length} pares · ${state.flips} flips · ${state.mistakes} fallos · ${timeUsed}s` }));
-    if (opts.mode !== 'async-tracked') {
-      saveResult({ activityId: activity.id, scoreAuto: state.score, scoreFinal: state.score, maxScore, timeUsed });
-    }
+    trySaveResult(opts, { activityId: activity.id, scoreAuto: state.score, scoreFinal: state.score, maxScore, timeUsed });
     if (opts.onFinish) opts.onFinish({ score: state.score, startedAt: state.startedAt, mistakes: state.mistakes });
   }
 

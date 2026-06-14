@@ -2,7 +2,7 @@
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { renderKeypadRound, shuffle } from '../../core/roundRender.js';
 import { scoreMathSubmission } from './scorer.js';
-import { saveResult } from '../../core/results.js';
+import { trySaveResult } from '../../core/results.js';
 import { resultScreenHtml } from '../../core/resultScreen.js';
 import { FEEDBACK_DELAY } from '../../core/constants.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
@@ -46,9 +46,7 @@ export async function renderMathPlayer(rootSel, activity, opts = {}) {
     const max = maxScore();
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: state.score }] });
     mount(rootSel, resultScreenHtml({ title: '¡Terminado!', lead: `Puntos: <b>${state.score}</b> / ${max}`, stats: `Tiempo: ${timeUsed}s` }));
-    if (opts.mode !== 'async-tracked') {
-      saveResult({ activityId: activity.id, scoreAuto: state.score, scoreFinal: state.score, maxScore: max, timeUsed });
-    }
+    trySaveResult(opts, { activityId: activity.id, scoreAuto: state.score, scoreFinal: state.score, maxScore: max, timeUsed });
     if (opts.onFinish) opts.onFinish(state);
   }
 
