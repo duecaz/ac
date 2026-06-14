@@ -101,7 +101,7 @@ export async function renderExplore(rootSel) {
       title: row.data.title + ' (copia)',
       forkOf: row.data.id,
       visibility: 'private',
-      author: { id: u?.id || null, signedAt: new Date().toISOString() },
+      author: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };

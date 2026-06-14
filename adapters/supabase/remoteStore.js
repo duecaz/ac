@@ -1,7 +1,7 @@
-// Supabase RemoteStore — the existing remote persistence logic moved out of
-// core/storage.js, now behind the swappable RemoteStore contract. All
-// Supabase-specific concerns (auth, author stamping, the activities table,
-// author/visibility filtering) live here, nowhere else.
+// Supabase RemoteStore — persistencia remota tras el contrato RemoteStore.
+// BANCO COMPARTIDO: las actividades se guardan SIN dueño (author_id = null) y
+// listActivities trae lo que la RLS permite ver (público/sin dueño). No hay
+// stamping de autor ni filtrado por identidad aquí.
 import { getClient } from '../../core/supabase.js';
 
 export function createSupabaseRemoteStore() {

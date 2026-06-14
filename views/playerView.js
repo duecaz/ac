@@ -15,7 +15,6 @@ import { listVsAnimations } from '../core/vsAnimations.js';
 import { listBackgrounds, applyBackground, reapplyBackground, backgroundPreviewHtml } from '../core/backgrounds.js';
 import { toggleFullscreen } from '../core/fullscreen.js';
 import { acquire } from '../core/lifecycle.js';
-import { getUser } from '../core/auth.js';
 import { toast, confirmModal } from '../core/toast.js';
 import { downloadActivitiesJson } from '../core/io.js';
 import { openEmbedModal } from './embedModal.js';
@@ -51,8 +50,8 @@ export async function renderPlayerView(rootSel, id) {
   ctx.add(() => { applySkin('default'); applyBackground('none'); });
 
   // Auth check for "Edit" visibility.
-  const user = await getUser().catch(() => null);
-  const canEdit = !a.author?.id || (user && user.id === a.author?.id);
+  // Banco compartido sin dueño: cualquiera puede editar.
+  const canEdit = true;
 
   paint();
 
@@ -249,7 +248,7 @@ export async function renderPlayerView(rootSel, id) {
         title: a.title + ' (copia)',
         forkOf: a.id,
         visibility: 'private',
-        author: { id: user?.id || null, signedAt: new Date().toISOString() },
+        author: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };

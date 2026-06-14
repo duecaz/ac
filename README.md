@@ -64,3 +64,10 @@ docs/        modos-de-juego.md, panorama-actividades.md, modo-wordwall.md, dev-l
 5. Bucket `media` (público, 5MB máx).
 
 > Versión actual: ver `core/constants.js` (`VERSION`).
+
+## Modelo de datos — banco compartido
+Las actividades son un **banco común sin dueño** (`author_id = null`, lectura
+pública por RLS): cualquiera las ve/abre por URL sin login y NO dependen de la
+identidad del navegador → limpiar la caché no las pierde (`sync()` las repuebla
+desde la nube). Sin privacidad por cuenta (el login con Google queda para
+actividades privadas, si en el futuro se necesitan).

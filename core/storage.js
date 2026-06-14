@@ -2,28 +2,20 @@
 // in background. list/get are sync. save returns a promise; remote errors
 // are surfaced.
 //
-// LocalStorage is scoped per user via the cached _userId (read once at boot
-// after ensureAuth). When the user signs out/in, the active key switches.
-// Old unscoped key 'ww.activities' is migrated on first scoped access.
+// Banco COMPARTIDO: la caché local ya NO se scopea por identidad — todas las
+// sesiones ven el mismo banco (clave única 'ww.activities'). sync() lo repuebla
+// desde la nube, así que limpiar la caché no pierde actividades.
 import { getRemoteStore } from '../adapters/index.js';
 import { migrate, normalize } from './migrate.js';
 import { mergeRemote } from './storageMerge.js';
 
 const LEGACY_KEY = 'ww.activities';
 let _userId = 'guest';
-let _migratedLegacy = false;
 
-export function setStorageUser(userId) {
-  _userId = userId || 'guest';
-  // One-time legacy migration: if a user-scoped bucket doesn't exist yet,
-  // fold the unscoped legacy bucket into it (so existing pre-1.3 work survives).
-  if (!_migratedLegacy && !localStorage.getItem(currentKey()) && localStorage.getItem(LEGACY_KEY)) {
-    localStorage.setItem(currentKey(), localStorage.getItem(LEGACY_KEY));
-  }
-  _migratedLegacy = true;
-}
+// Firma conservada por compatibilidad con el boot; ya no afecta a la clave.
+export function setStorageUser(userId) { _userId = userId || 'guest'; }
 
-function currentKey() { return `ww.activities.${_userId}`; }
+function currentKey() { return LEGACY_KEY; }
 
 function readLS() {
   try { return JSON.parse(localStorage.getItem(currentKey()) || '{}'); }
