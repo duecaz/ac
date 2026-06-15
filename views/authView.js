@@ -79,8 +79,10 @@ export async function renderAuthBadge(targetSel) {
   const u = await getUser();
   const p = await getProfile();
   if (!u || !u.email) {
-    target.innerHTML = `<button id="ww-signin" class="btn btn-sm btn-outline-light"><i class="bi bi-box-arrow-in-right"></i> Entrar</button>`;
-    target.querySelector('#ww-signin').onclick = openAuthModal;
+    // Banco compartido anónimo: el login no hace falta (queda para el futuro
+    // "privado con Google"). Ocultamos el CTA "Entrar" para no confundir; el
+    // modal sigue accesible vía openAuthModal() si se reactiva.
+    target.innerHTML = '';
     return;
   }
   const name = p?.display_name || u.email.split('@')[0];
