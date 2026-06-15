@@ -5,6 +5,8 @@
 //   - If meta.modes.live === true, the template MUST provide getRoundPayload()
 //     AND scoreSubmission() — LIVE play strips answers per round and scores
 //     server-side, so both are mandatory there.
+//   - adoptContent() is OPTIONAL (no se valida): solo donde dos plantillas comparten
+//     contentModel pero distinta forma de ítem (quiz↔math).
 
 /**
  * @typedef {Object} TemplateModes
@@ -63,6 +65,10 @@
  * @property {(activity: Object, ctx: RoundContext) => (Object|null)} [getRoundPayload]  Required when modes.live.
  * @property {(input: ScoreInput) => ScoreResult} [scoreSubmission]                      Required when modes.live.
  * @property {(content: Object, fromVersion: number) => Object} [migrateContent]
+ * @property {(content: Object, fromTemplate: string) => Object} [adoptContent]  Adapta el
+ *   contenido al CONVERTIR hacia esta plantilla desde otra del MISMO contentModel pero
+ *   distinta forma de ítem (p. ej. Matemáticas→Quiz genera options[]). Lo invoca
+ *   kernel/content/switch.js (applySwitch). Reglas en kernel/content/qaAdapt.js.
  */
 
 export {};
