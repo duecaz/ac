@@ -38,8 +38,11 @@ export function renderJoin(rootSel, prefilledCode = '') {
     if (!f.ok) { err.textContent = 'Apodo: ' + f.reason; return; }
     document.getElementById('btn-join').disabled = true;
     try {
-      // Try live session first; if not found, try async assignment.
-      const task = await findAssignmentByCode(code);
+      // Try assignment first; if the check itself fails (transient network /
+      // Supabase-client-not-ready), treat the code as a live session so the
+      // student isn't blocked by an unrelated lookup error.
+      let task = null;
+      try { task = await findAssignmentByCode(code); } catch { /* fall through to live join */ }
       if (task) {
         localStorage.setItem(NICK_KEY, f.value);
         location.hash = `#/task/${code}`;
@@ -97,6 +100,13 @@ export async function renderPlay(rootSel, code) {
     }
   }));
   ctx.setInterval(() => pingPresence(player.playerId).catch(()=>{}), 15000);
+  // Polling fallback: mobile WebSockets drop when the tab goes to background
+  // or the network switches. Re-fetch session every 8 s so the student
+  // catches up even if the realtime event was missed. paint() is idempotent
+  // (the lastPhaseKey dedup skips re-renders when nothing changed).
+  ctx.setInterval(async () => {
+    try { session = await fetchSession(session.id); paint(); } catch { /* ignore transient */ }
+  }, 8000);
   // Try to flush any pending submissions (in case we just regained network).
   flushQueue().catch(() => {});
 

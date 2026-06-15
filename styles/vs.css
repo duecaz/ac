@@ -1,11 +1,12 @@
 /* VS duel — split-screen layout + central tug-of-war. Two panels fill the
    viewport so two students can play side by side on one touchscreen. */
-/* 4-column duel: alumno 1 | animación (2 cols) | alumno 2. The centre stage
-   holds a pluggable animation; in portrait/narrow it stacks to 3 rows. */
+/* 3-column duel: alumno 1 | animación | alumno 2. Equal thirds give each
+   player panel 33 % of the viewport — more room for quiz options. The centre
+   stage holds a pluggable animation; in portrait/narrow it stacks to 3 rows. */
 .vs-arena {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-areas: "s1 stage stage s2";
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "s1 stage s2";
   height: calc(100vh - 70px); min-height: 480px;
 }
 .vs-panel.vs-left  { grid-area: s1; }
