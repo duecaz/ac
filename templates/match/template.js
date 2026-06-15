@@ -21,7 +21,15 @@ export class MatchTemplate extends BaseTemplate {
     defaultRules: () => ({ timer: 0, randomize: true, livesPerMistake: 0 }),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
     defaultLive: () => ({}),
-    defaultContent: () => ({ pairs: [newPair(), newPair(), newPair(), newPair()] })
+    defaultContent: () => {
+      const id = () => 'p_' + Math.random().toString(36).slice(2, 8);
+      return { pairs: [
+        { id: id(), left: 'España',    right: 'Madrid' },
+        { id: id(), left: 'México',    right: 'Ciudad de México' },
+        { id: id(), left: 'Argentina', right: 'Buenos Aires' },
+        { id: id(), left: 'Colombia',  right: 'Bogotá' },
+      ]};
+    }
   };
   static renderPlayer = renderMatchPlayer;
   static renderEditor = renderMatchEditor;

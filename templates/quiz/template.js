@@ -26,8 +26,15 @@ export class QuizTemplate extends BaseTemplate {
     defaultLive: () => ({ enabled: true, advanceMode: 'manual', questionTimer: 20, lockAnswersOn: 'allAnswered',
                           showAnswerAfterEach: true, showLeaderboardBetween: true, pointsModel: 'kahoot',
                           speedBonusMax: 1000, allowLateJoin: true, maxPlayers: 60, nicknameFilter: true }),
-    defaultContent: () => ({ items: [{ id: 'q_'+Math.random().toString(36).slice(2,8),
-                                       question: '', answer: '', options: ['','','',''], points: 1, image: null, audio: null }] })
+    defaultContent: () => {
+      const id = () => 'q_' + Math.random().toString(36).slice(2, 8);
+      return { items: [
+        { id: id(), question: '¿Cuál es la capital de España?', answer: 'Madrid',
+          options: ['Madrid', 'Barcelona', 'Lisboa', 'París'], points: 1, image: null, audio: null },
+        { id: id(), question: '¿Cuántos días tiene una semana?', answer: '7',
+          options: ['5', '6', '7', '8'], points: 1, image: null, audio: null },
+      ]};
+    }
   };
 
   static renderPlayer = renderQuizPlayer;

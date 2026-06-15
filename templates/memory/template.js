@@ -20,7 +20,17 @@ export class MemoryTemplate extends BaseTemplate {
     defaultRules: () => ({ revealMs: 900, columns: 4 }),
     defaultScoring: () => ({ pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
     defaultLive: () => ({}),
-    defaultContent: () => ({ pairs: [newPair(), newPair(), newPair(), newPair(), newPair(), newPair()] })
+    defaultContent: () => {
+      const id = () => 'p_' + Math.random().toString(36).slice(2, 8);
+      return { pairs: [
+        { id: id(), left: 'grande',   right: 'pequeño' },
+        { id: id(), left: 'rápido',   right: 'lento'   },
+        { id: id(), left: 'caliente', right: 'frío'    },
+        { id: id(), left: 'alto',     right: 'bajo'    },
+        { id: id(), left: 'bonito',   right: 'feo'     },
+        { id: id(), left: 'día',      right: 'noche'   },
+      ]};
+    }
   };
   static renderPlayer = renderMemoryPlayer;
   static renderEditor = renderMemoryEditor;
