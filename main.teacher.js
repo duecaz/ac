@@ -67,7 +67,15 @@ setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encon
   try {
     const user = await ensureAuth();
     setStorageUser(user.id);
-    sync().catch(err => console.warn('[sync]', err.message));
+    // sync() completes after the router has already painted the home page with
+    // stale/empty localStorage. Re-render home when remote data arrives so the
+    // user sees their activities without needing to refresh.
+    sync()
+      .then(() => {
+        const h = location.hash;
+        if (!h || h === '#/' || h === '#/home') renderHome(APP);
+      })
+      .catch(err => console.warn('[sync]', err.message));
   } catch (err) {
     console.warn('[boot] auth failed:', err.message);
   }
