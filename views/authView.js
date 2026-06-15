@@ -77,7 +77,6 @@ export async function renderAuthBadge(targetSel) {
   const target = typeof targetSel === 'string' ? document.querySelector(targetSel) : targetSel;
   if (!target) return;
   const u = await getUser();
-  const p = await getProfile();
   if (!u || !u.email) {
     // Banco compartido anónimo: el login no hace falta (queda para el futuro
     // "privado con Google"). Ocultamos el CTA "Entrar" para no confundir; el
@@ -85,6 +84,7 @@ export async function renderAuthBadge(targetSel) {
     target.innerHTML = '';
     return;
   }
+  const p = await getProfile();
   const name = p?.display_name || u.email.split('@')[0];
   target.innerHTML = `
     <div class="dropdown">

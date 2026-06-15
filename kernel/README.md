@@ -57,4 +57,4 @@ Pruebas: `node tests/sessionEngine.test.mjs` (teams + vs) y `liveEngine`/`liveLo
   en desarrollo.
 - **F2:** motor de contenido (validación + conversores) y UI "Cambiar plantilla".
 
-Detalle completo en `../ESTRATEGIA.md` y en el plan de la rama.
+Detalle completo en `../docs/historico/ESTRATEGIA.md` y en el plan de la rama.
