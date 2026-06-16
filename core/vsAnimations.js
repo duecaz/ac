@@ -11,9 +11,11 @@
 //
 // Built-in: a hand-made SVG tug-of-war (no downloads). External animations made
 // in another tool are added as Lottie (.json): see lottieProvider(). A Lottie
-// file must be authored on a single timeline where frame 0 = LEFT has won and
-// the last frame = RIGHT has won (middle = tie); we seek the frame matching the
-// live lead, so the animation reacts to the score for free.
+// file must be authored on a single timeline where:
+//   frame 0        = RIGHT player has won (right side dominating)
+//   frame total/2  = tie
+//   frame total-1  = LEFT player has won (left side dominating)
+// The engine scrubs to the frame matching the live score lead automatically.
 
 const _providers = new Map();
 
@@ -156,7 +158,9 @@ function createLottie(container, src) {
     yank(side) {
       if (!anim || !total) return;
       clearTimeout(restore);
-      const dir = side === 'left' ? -1 : 1;
+      // left winning = last frame (lead → +1 → frameFor → total-1), so a left
+      // yank overshoots toward total-1; right yank overshoots toward 0.
+      const dir = side === 'left' ? 1 : -1;
       const over = Math.max(0, Math.min(total - 1, frameFor(lead) + dir * total * 0.06));
       anim.goToAndStop(over, true);
       restore = setTimeout(seek, 160);
