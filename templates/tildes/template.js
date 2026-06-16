@@ -24,9 +24,8 @@ export class TildesTemplate extends BaseTemplate {
     defaultScoring: () => ({ pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
     defaultLive: () => ({}),
     defaultContent: () => {
-      // Start with one example so the editor isn't empty.
-      const seed = parseAccentedText('canción popular');
-      return { passages: [{ ...newPassage(), ...seed }] };
+      const examples = ['canción popular', 'árbol frondoso', 'música alegre'];
+      return { passages: examples.map(s => ({ ...newPassage(), ...parseAccentedText(s) })) };
     },
     // Suggest a notebook background by default — author can override.
     defaultPresentation: () => ({ skin: 'default', background: 'notebook' })

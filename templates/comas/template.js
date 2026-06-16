@@ -25,8 +25,12 @@ export class ComasTemplate extends BaseTemplate {
     defaultScoring: () => ({ pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
     defaultLive: () => ({}),
     defaultContent: () => {
-      const seed = parseTextWithCommas('Hola, ¿cómo estás?');
-      return { passages: [{ ...newPassage(), ...seed }] };
+      const examples = [
+        'Hola, ¿cómo estás?',
+        'Fui al parque, compré frutas y regresé a casa.',
+        'Mi madre, mi padre y yo fuimos a la playa.',
+      ];
+      return { passages: examples.map(s => ({ ...newPassage(), ...parseTextWithCommas(s) })) };
     },
     defaultPresentation: () => ({ skin: 'default', background: 'notebook' })
   };
