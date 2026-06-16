@@ -46,7 +46,8 @@ function passageHtml(text, kind, reveal) {
       return `<button type="button" class="tc-tap tc-vowel" data-pos="${i}">${escapeHtml(c)}</button>`;
     }).join('');
   }
-  // coma: a gap after every char except the last
+  // coma: gaps only at word-end boundaries (after a non-space before a space)
+  // to prevent placing commas inside words.
   return chars.map((c, i) => {
     const last = i === chars.length - 1;
     if (last) return ch(c);
@@ -55,6 +56,7 @@ function passageHtml(text, kind, reveal) {
       const sym = (reveal.got.has(i) || reveal.want.has(i)) ? ',' : '';
       return ch(c) + `<span class="tc-tap tc-gap is-revealed${cls}">${sym}</span>`;
     }
+    if (c === ' ' || chars[i + 1] !== ' ') return ch(c);
     return ch(c) + `<button type="button" class="tc-tap tc-gap" data-pos="${i}" aria-label="hueco"></button>`;
   }).join('');
 }
@@ -113,6 +115,7 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
   const maxScore = activity.scoring?.maxScore || passages.length * ppc;
   const startedAt = Date.now();
   let idx = 0, score = 0, correct = 0, wrong = 0;
+  const passageResults = [];
 
   const shell = (bodyHtml) => mount(rootSel, html`
     <div class="tc-solo">
@@ -136,6 +139,8 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     const p = passages[idx];
     const r = scoreMarks(value, p, [kind], activity);
     score += r.points;
+    const want = new Set((p.marks || []).filter(m => m.kind === kind).map(m => m.pos));
+    passageResults.push({ p, got: new Set(value.map(Number)), want, correct: r.correct });
     if (r.correct) { correct++; emitGame(GameEvents.ANSWER_CORRECT, { points: r.points }); }
     else { wrong++; emitGame(GameEvents.ANSWER_WRONG, {}); }
     reveal(value, r);
@@ -178,7 +183,16 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
   function finish() {
     const timeUsed = Math.round((Date.now() - startedAt) / 1000);
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score }] });
-    mount(rootSel, resultScreenHtml({ title: '¡Listo!', lead: `Puntos: <b>${score}</b> / ${maxScore}`, stats: `${correct} aciertos · ${wrong} fallos · ${timeUsed}s` }));
+    const wrongResults = passageResults.filter(r => !r.correct);
+    const reviewHtml = wrongResults.length ? `
+      <div class="tc-review mt-4 text-start" style="max-width:900px;margin:0 auto;padding:0 1rem">
+        <h5 class="mb-3"><i class="bi bi-search"></i> Revisión de errores</h5>
+        ${wrongResults.map((r, i) => `
+          <div class="tc-review-item mb-4">
+            <div class="tc-passage tc-review-passage">${passageHtml(r.p.text, kind, { got: r.got, want: r.want })}</div>
+          </div>`).join('')}
+      </div>` : '';
+    mount(rootSel, resultScreenHtml({ lead: `Puntos: <b>${score}</b> / ${maxScore}`, stats: `${correct} aciertos · ${wrong} fallos · ${timeUsed}s`, score, maxScore }) + reviewHtml);
     trySaveResult(opts, { activityId: activity.id, scoreAuto: score, scoreFinal: score, maxScore, timeUsed });
     if (opts.onFinish) opts.onFinish({ score, startedAt, mistakes: wrong });
   }
