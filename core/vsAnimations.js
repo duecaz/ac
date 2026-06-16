@@ -185,3 +185,21 @@ registerVsAnimation({
   needsSrc: true,
   create(container, opts) { return createLottie(container, opts && opts.src); }
 });
+
+// ── Bundled animations ────────────────────────────────────────────────────
+registerVsAnimation(lottieProvider({
+  id:          'lottie-cuerda',
+  label:       'Cuerda (personajes)',
+  description: 'Tira y afloja ilustrado con dos personajes.',
+  src:         './assets/animations/cuerda.json',
+}));
+
+// ── Custom animations added from the Admin panel (localStorage) ───────────
+import { loadCustomAnims, blobSrc } from './vsAnimStore.js';
+
+export function initCustomAnims() {
+  for (const entry of loadCustomAnims()) {
+    if (_providers.has(entry.id)) continue; // already registered (hot reload guard)
+    registerVsAnimation(lottieProvider({ id: entry.id, label: entry.label, description: entry.description, src: blobSrc(entry) }));
+  }
+}

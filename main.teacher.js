@@ -35,6 +35,7 @@ import { applySkin } from './core/skins.js';
 import './core/sounds.js';
 import './core/effects.js';
 import { isMuted, setMuted } from './core/sounds.js';
+import { initCustomAnims } from './core/vsAnimations.js';
 import { html, mount } from './core/html.js';
 
 const APP = '#app';
@@ -89,6 +90,7 @@ setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encon
   }
   await renderAuthBadge('#ww-auth-slot');
   onAuthChange(() => renderAuthBadge('#ww-auth-slot'));
+  initCustomAnims(); // register any animations added from the Admin panel
   start();
   window.__APP_READY__ = true;
 })();
