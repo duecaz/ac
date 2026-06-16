@@ -91,11 +91,15 @@ export async function joinSession(code, nickname) {
     return { sessionId: sess.id, playerId: existing.id, name: existing.name };
   }
 
+  // Reject duplicate nickname to avoid displacing an existing player.
+  const { data: takenName } = await sb.from('players').select('id').eq('session_id', sess.id).eq('name', f.value).maybeSingle();
+  if (takenName) throw new Error(`El apodo "${f.value}" ya está en uso. Elige otro.`);
+
   const { data: ins, error: iErr } = await sb.from('players').insert({
     session_id: sess.id, user_id: userId, name: f.value
   }).select('id').single();
   if (iErr) {
-    if (iErr.code === '23505') throw new Error('Ese apodo o usuario ya está unido');
+    if (iErr.code === '23505') throw new Error('Ese apodo ya está en uso. Elige otro.');
     if (iErr.message?.includes('MAX_PLAYERS_REACHED')) throw new Error('La sala está llena');
     throw iErr;
   }
