@@ -16,6 +16,9 @@ const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'b
 export async function renderQuizPlayer(rootSel, activity, opts = {}) {
   const items = (activity.rules?.randomize ? shuffle(activity.content.items.slice()) : activity.content.items).slice();
   const state = { idx: 0, score: 0, startedAt: Date.now(), answers: [] };
+  const timerSecs = activity.rules?.timer ?? 0;
+  let timerHandle = null;
+  function stopTimer() { if (timerHandle) { clearInterval(timerHandle); timerHandle = null; } }
 
   function maxScore() {
     const scoring = activity.scoring || {};
@@ -33,6 +36,7 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
   }
 
   function renderItem() {
+    stopTimer();
     if (state.idx >= items.length) return finish();
     const item = items[state.idx];
     const opts2 = (item.options || []).slice();
@@ -44,6 +48,7 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
         <div class="ww-phead d-flex justify-content-between align-items-center">
           <span class="badge bg-secondary">${state.idx + 1} / ${items.length}</span>
           ${streak >= 2 ? `<span class="badge bg-warning text-dark">🔥 ${streak}</span>` : ''}
+          ${timerSecs > 0 ? `<span class="badge bg-danger ww-timer-badge">⏱ ${timerSecs}</span>` : ''}
           <span class="badge bg-primary">★ ${state.score}</span>
         </div>
         <h3 class="ww-q">${escapeHtml(item.question)}</h3>
@@ -58,8 +63,32 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
     `);
 
     const t0 = Date.now();
+
+    if (timerSecs > 0) {
+      let remaining = timerSecs;
+      timerHandle = setInterval(() => {
+        remaining--;
+        const el = document.querySelector('.ww-timer-badge');
+        if (el) el.textContent = `⏱ ${remaining}`;
+        if (remaining > 0) return;
+        stopTimer();
+        document.querySelectorAll('.ww-opt').forEach(b => { b.disabled = true; });
+        if (item.answer != null) {
+          const correct = (Array.isArray(item.answer) ? item.answer : [item.answer]).map(String);
+          document.querySelectorAll('.ww-opt').forEach(b => {
+            if (correct.includes(b.dataset.value)) b.classList.add('btn-success');
+          });
+        }
+        state.answers.push({ itemId: item.id, value: null, correct: false, points: 0, msTaken: timerSecs * 1000 });
+        Streaks.bump('solo', activity.id, false);
+        emitGame(GameEvents.ANSWER_WRONG, { idx: state.idx });
+        setTimeout(() => { state.idx++; renderItem(); }, FEEDBACK_DELAY);
+      }, 1000);
+    }
+
     on(rootSel, 'click', '.ww-opt', (_, btn) => {
       if (btn.disabled) return;
+      stopTimer();
       const ms = Date.now() - t0;
       const value = btn.dataset.value;
       const r = scoreQuizSubmission({ value, item, msTaken: ms, activity });
@@ -91,7 +120,7 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
     const max = maxScore();
     Streaks.reset('solo', activity.id);
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: state.score }] });
-    mount(rootSel, resultScreenHtml({ title: '¡Terminado!', lead: `Puntos: <b>${state.score}</b> / ${max}`, stats: `Tiempo: ${timeUsed}s` }));
+    mount(rootSel, resultScreenHtml({ lead: `Puntos: <b>${state.score}</b> / ${max}`, stats: `Tiempo: ${timeUsed}s`, score: state.score, maxScore: max }));
     trySaveResult(opts, { activityId: activity.id, scoreAuto: state.score, scoreFinal: state.score, maxScore: max, timeUsed });
     if (opts.onFinish) opts.onFinish(state);
   }

@@ -45,7 +45,7 @@ export async function renderMathPlayer(rootSel, activity, opts = {}) {
     const timeUsed = Math.round((Date.now() - state.startedAt) / 1000);
     const max = maxScore();
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: state.score }] });
-    mount(rootSel, resultScreenHtml({ title: '¡Terminado!', lead: `Puntos: <b>${state.score}</b> / ${max}`, stats: `Tiempo: ${timeUsed}s` }));
+    mount(rootSel, resultScreenHtml({ lead: `Puntos: <b>${state.score}</b> / ${max}`, stats: `Tiempo: ${timeUsed}s`, score: state.score, maxScore: max }));
     trySaveResult(opts, { activityId: activity.id, scoreAuto: state.score, scoreFinal: state.score, maxScore: max, timeUsed });
     if (opts.onFinish) opts.onFinish(state);
   }
