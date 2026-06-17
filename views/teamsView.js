@@ -74,7 +74,8 @@ export function mountTeams(host, a, ctx, opts = {}) {
         <div class="form-text">${canAuto
           ? 'Automática: el equipo toca la opción. Juez: tú marcas ✓/✗.'
           : 'Esta plantilla no se autocorrige: el docente marca ✓/✗.'}</div>
-      </div>`;
+      </div>
+      <div id="teams-hint" class="mt-2"></div>`;
 
     renderModeSetup(host, {
       icon: 'bi-people-fill', color: 'success', title: 'Modo Equipos',
@@ -82,10 +83,12 @@ export function mountTeams(host, a, ctx, opts = {}) {
       body, backHref,
       onMount: () => {
         renderNameInputs();
+        updateTeamsHint();
         on(host, 'click', '#teams-count button', (_, b) => {
           teamCount = Number(b.dataset.n);
           $('#teams-count').querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
           renderNameInputs();
+          updateTeamsHint();
         });
         on(host, 'click', '#teams-scoring button', (_, b) => {
           if (b.disabled) return;
@@ -98,6 +101,25 @@ export function mountTeams(host, a, ctx, opts = {}) {
         startGame(names, scoring);
       }
     });
+  }
+
+  function updateTeamsHint() {
+    const hint = $('#teams-hint');
+    if (!hint) return;
+    const turns = Math.floor(total / teamCount);
+    if (total < teamCount) {
+      hint.innerHTML = `<div class="alert alert-warning py-2 small mb-0">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        Con ${teamCount} equipos y solo ${total} pregunta${total !== 1 ? 's' : ''}, no todos los equipos podrán jugar.
+        Añade al menos ${teamCount} preguntas en el editor para que cada equipo tenga turno.
+      </div>`;
+    } else {
+      hint.innerHTML = `<div class="text-muted small">
+        <i class="bi bi-info-circle"></i>
+        Modo por turnos: cada pregunta la responde un equipo distinto en rotación.
+        Con ${total} preguntas y ${teamCount} equipos, cada equipo responde ~${turns} vez${turns !== 1 ? 'es' : ''}.
+      </div>`;
+    }
   }
 
   function renderNameInputs() {
