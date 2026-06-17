@@ -11,7 +11,7 @@ import { getTemplate, compatibleTemplates } from '../core/registry.js';
 import { isVsCompatible } from '../kernel/session/engine.js';
 import { availableModes, getMode, runMode } from '../core/modes.js';
 import { listSkins, applySkin, skinPreviewHtml } from '../core/skins.js';
-import { listVsAnimations } from '../core/vsAnimations.js';
+import { listVsAnimations, loadLottie } from '../core/vsAnimations.js';
 import { listBackgrounds, applyBackground, reapplyBackground, backgroundPreviewHtml } from '../core/backgrounds.js';
 import { toggleFullscreen } from '../core/fullscreen.js';
 import { acquire } from '../core/lifecycle.js';
@@ -19,7 +19,7 @@ import { toast, confirmModal } from '../core/toast.js';
 import { downloadActivitiesJson } from '../core/io.js';
 import { openEmbedModal } from './embedModal.js';
 
-export async function renderPlayerView(rootSel, id) {
+export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   let a = get(id);
   // Banco compartido: si no está en local, tráela de la nube (acceso por URL
   // desde cualquier dispositivo/profe) y cachéala localmente.
@@ -39,8 +39,9 @@ export async function renderPlayerView(rootSel, id) {
   // The currently selected embedded mode and its teardown handle. The activity
   // stage hosts ONE mode at a time (Individual by default); switching modes
   // disposes the previous one (stops VS animations, etc.). See core/modes.js.
-  let currentMode = 'solo';
+  let currentMode = initialMode;
   let currentDisposer = null;
+  let _previewAnims = [];
   ctx.add(() => { if (currentDisposer) { try { currentDisposer.dispose(); } catch {} currentDisposer = null; } });
   // Reset any prior global skin/bg from other views (host live, etc.) so the
   // page chrome stays neutral. Scoped apply happens after paint() once the
@@ -98,6 +99,8 @@ export async function renderPlayerView(rootSel, id) {
   }
 
   function paint() {
+    _previewAnims.forEach(p => { try { p.destroy(); } catch {} });
+    _previewAnims = [];
     const T = getTemplate(liveTemplate) || getTemplate(a.template);
     const aspect = T?.meta?.aspectRatio || '4/3';
     const compat = compatibleTemplates(liveTemplate);
@@ -158,11 +161,16 @@ export async function renderPlayerView(rootSel, id) {
         ${vsCapable ? `
           <h6 class="text-muted text-uppercase small mb-2">Animación del duelo VS</h6>
           <div class="d-flex flex-wrap gap-2 mb-2">
-            ${listVsAnimations().map(v => `
+            ${listVsAnimations().map(v => {
+              const hasSrc = v.kind === 'lottie' && v.src && !v.needsSrc;
+              return `
               <div class="ww-pick-tile vsanim-pick ${(a.presentation?.vsAnimation || 'svg-tug') === v.id ? 'is-active' : ''}" data-id="${v.id}" data-needssrc="${v.needsSrc ? '1' : ''}" role="button" title="${escapeHtml(v.description || '')}" style="width:150px">
-                <div class="vsanim-tile-body"><i class="bi ${v.kind === 'lottie' ? 'bi-filetype-json' : 'bi-people-fill'}"></i><div class="small fw-semibold mt-1">${escapeHtml(v.label)}</div></div>
-              </div>
-            `).join('')}
+                <div class="vsanim-tile-body">
+                  ${hasSrc ? `<div class="vsanim-preview" data-src="${escapeHtml(v.src)}"></div>` : `<i class="bi ${v.kind === 'lottie' ? 'bi-filetype-json' : 'bi-people-fill'}"></i>`}
+                  <div class="small fw-semibold mt-1">${escapeHtml(v.label)}</div>
+                </div>
+              </div>`;
+            }).join('')}
           </div>
           <div id="vsanim-src-row" class="mb-4 ${listVsAnimations().find(v => v.id === (a.presentation?.vsAnimation))?.needsSrc ? '' : 'd-none'}" style="max-width:520px">
             <label class="form-label small text-muted">URL del archivo Lottie (.json) de tu animación</label>
@@ -194,6 +202,19 @@ export async function renderPlayerView(rootSel, id) {
     if (!getMode(currentMode)?.isAvailable(act)) currentMode = 'solo';
     selectMode(currentMode);
     wireHandlers();
+    initAnimPreviews();
+  }
+
+  async function initAnimPreviews() {
+    const els = [...document.querySelectorAll('.vsanim-preview[data-src]')];
+    if (!els.length) return;
+    try {
+      const lottie = await loadLottie();
+      for (const el of els) {
+        const anim = lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: el.dataset.src });
+        _previewAnims.push(anim);
+      }
+    } catch { /* previews are optional */ }
   }
 
   function wireHandlers() {

@@ -119,6 +119,8 @@
 .vsanim-pick { display: flex; align-items: center; justify-content: center; }
 .vsanim-tile-body { padding: .55rem; text-align: center; line-height: 1.1; }
 .vsanim-tile-body .bi { font-size: 1.7rem; }
+.vsanim-preview { height: 76px; width: 100%; overflow: hidden; pointer-events: none; }
+.vsanim-preview svg { width: 100% !important; height: 100% !important; }
 
 /* VS setup: sonido y efectos (config panel) */
 .vs-fx-panel { max-width: 420px; text-align: left; border: 1px solid #e9ecef; border-radius: .6rem; background: #f8f9fa; }

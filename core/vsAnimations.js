@@ -126,7 +126,7 @@ registerVsAnimation({
 const LOTTIE_LOCAL = './assets/js/lottie_light.min.js';
 let _lottiePromise = null;
 
-function loadLottie() {
+export function loadLottie() {
   if (window.lottie) return Promise.resolve(window.lottie);
   if (_lottiePromise) return _lottiePromise;
   _lottiePromise = new Promise((resolve, reject) => {

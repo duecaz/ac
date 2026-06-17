@@ -37,7 +37,7 @@ export function renderModeSetup(host, opts) {
       <h3 class="mt-2 mb-1"><i class="bi ${icon} text-${color}"></i> ${escapeHtml(title)}</h3>
       ${subtitle ? `<p class="text-muted">${escapeHtml(subtitle)}</p>` : ''}
       <div class="ww-mode-setup-body">${body}</div>
-      <button class="btn btn-${color} btn-lg px-5 ww-mode-start"><i class="bi bi-play-fill"></i> ${escapeHtml(startLabel)}</button>
+      <button class="btn btn-${color} btn-lg px-5 mt-4 ww-mode-start"><i class="bi bi-play-fill"></i> ${escapeHtml(startLabel)}</button>
       ${note ? `<p class="text-muted small mt-3">${escapeHtml(note)}</p>` : ''}
     </div>`);
 
