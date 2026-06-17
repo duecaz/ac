@@ -89,7 +89,7 @@ export function renderEditorShell(root, a, onChange, spec) {
     // Common wiring (título/subtítulo, Modos, Presentación).
     on(root, 'input', '#f-title', e => { a.title = e.target.value; onChange(a); });
     on(root, 'input', '#f-subtitle', e => { a.subtitle = e.target.value; onChange(a); });
-    if (hasModes) wireModesTab(root, a, onChange);
+    if (showModes) wireModesTab(root, a, onChange);
     if (presOn) {
       on(root, 'click', '.skin-pick', (_, b) => {
         (a.presentation = a.presentation || {}).skin = b.dataset.name; onChange(a);

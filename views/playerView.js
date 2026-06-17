@@ -11,7 +11,7 @@ import { getTemplate, compatibleTemplates } from '../core/registry.js';
 import { isVsCompatible } from '../kernel/session/engine.js';
 import { availableModes, getMode, runMode } from '../core/modes.js';
 import { listSkins, applySkin, skinPreviewHtml } from '../core/skins.js';
-import { listVsAnimations, loadLottie } from '../core/vsAnimations.js';
+import { listVsAnimations, startPreviewAnims } from '../core/vsAnimations.js';
 import { listBackgrounds, applyBackground, reapplyBackground, backgroundPreviewHtml } from '../core/backgrounds.js';
 import { toggleFullscreen } from '../core/fullscreen.js';
 import { acquire } from '../core/lifecycle.js';
@@ -42,7 +42,9 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   let currentMode = initialMode;
   let currentDisposer = null;
   let _previewAnims = [];
+  let _previewGen = 0;
   ctx.add(() => { if (currentDisposer) { try { currentDisposer.dispose(); } catch {} currentDisposer = null; } });
+  ctx.add(() => { _previewAnims.forEach(p => { try { p.destroy(); } catch {} }); _previewAnims = []; });
   // Reset any prior global skin/bg from other views (host live, etc.) so the
   // page chrome stays neutral. Scoped apply happens after paint() once the
   // frame element exists.
@@ -101,6 +103,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   function paint() {
     _previewAnims.forEach(p => { try { p.destroy(); } catch {} });
     _previewAnims = [];
+    const myGen = ++_previewGen;
     const T = getTemplate(liveTemplate) || getTemplate(a.template);
     const aspect = T?.meta?.aspectRatio || '4/3';
     const compat = compatibleTemplates(liveTemplate);
@@ -158,13 +161,13 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
           `).join('')}
         </div>
 
-        ${vsCapable ? `
+        ${vsCapable ? (() => { const vsAnims = listVsAnimations(); const curVsId = a.presentation?.vsAnimation || 'svg-tug'; return `
           <h6 class="text-muted text-uppercase small mb-2">Animación del duelo VS</h6>
           <div class="d-flex flex-wrap gap-2 mb-2">
-            ${listVsAnimations().map(v => {
+            ${vsAnims.map(v => {
               const hasSrc = v.kind === 'lottie' && v.src && !v.needsSrc;
               return `
-              <div class="ww-pick-tile vsanim-pick ${(a.presentation?.vsAnimation || 'svg-tug') === v.id ? 'is-active' : ''}" data-id="${v.id}" data-needssrc="${v.needsSrc ? '1' : ''}" role="button" title="${escapeHtml(v.description || '')}" style="width:150px">
+              <div class="ww-pick-tile vsanim-pick ${curVsId === v.id ? 'is-active' : ''}" data-id="${v.id}" data-needssrc="${v.needsSrc ? '1' : ''}" role="button" title="${escapeHtml(v.description || '')}" style="width:150px">
                 <div class="vsanim-tile-body">
                   ${hasSrc ? `<div class="vsanim-preview" data-src="${escapeHtml(v.src)}"></div>` : `<i class="bi ${v.kind === 'lottie' ? 'bi-filetype-json' : 'bi-people-fill'}"></i>`}
                   <div class="small fw-semibold mt-1">${escapeHtml(v.label)}</div>
@@ -172,11 +175,11 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
               </div>`;
             }).join('')}
           </div>
-          <div id="vsanim-src-row" class="mb-4 ${listVsAnimations().find(v => v.id === (a.presentation?.vsAnimation))?.needsSrc ? '' : 'd-none'}" style="max-width:520px">
+          <div id="vsanim-src-row" class="mb-4 ${vsAnims.find(v => v.id === curVsId)?.needsSrc ? '' : 'd-none'}" style="max-width:520px">
             <label class="form-label small text-muted">URL del archivo Lottie (.json) de tu animación</label>
             <input id="vsanim-src" class="form-control form-control-sm" placeholder="https://…/animacion.json" value="${escapeHtml(a.presentation?.vsAnimationSrc || '')}">
             <div class="form-text">Línea de tiempo: fotograma 0 = gana izquierda · último = gana derecha · centro = empate.</div>
-          </div>` : ''}
+          </div>`; })() : ''}
 
         ${compat.length ? `
           <h6 class="text-muted text-uppercase small mb-2">Cambiar plantilla (mismo contenido)</h6>
@@ -199,33 +202,22 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     // Re-mount the active mode (default Individual). If a template switch made
     // the active mode incompatible (e.g. VS off after switching), fall back.
     const act = playActivity();
-    if (!getMode(currentMode)?.isAvailable(act)) currentMode = 'solo';
+    if (!getMode(currentMode)?.isAvailable(act)) {
+      if (currentMode !== 'solo') toast(`Modo "${currentMode}" no disponible para esta actividad.`, 'warning');
+      currentMode = 'solo';
+    }
     selectMode(currentMode);
     wireHandlers();
-    initAnimPreviews();
+    initAnimPreviews(myGen);
   }
 
-  async function initAnimPreviews() {
+  async function initAnimPreviews(gen) {
     const els = [...document.querySelectorAll('.vsanim-preview[data-src]')];
     if (!els.length) return;
     try {
-      const lottie = await loadLottie();
-      for (const el of els) {
-        const anim = lottie.loadAnimation({ container: el, renderer: 'svg', loop: false, autoplay: false, path: el.dataset.src });
-        // Ping-pong around the center (tie) frame: ~39%→72% of total and back.
-        // For a 90-frame animation this is frames 35→65 as the user specified.
-        anim.addEventListener('DOMLoaded', () => {
-          const n = anim.totalFrames;
-          const lo = Math.round(n / 6);        // center - 2/6 → frame 15 for 90-frame anim
-          const hi = Math.round(n * 5 / 6);    // center + 2/6 → frame 75
-          anim.setSpeed(2);
-          let fwd = true;
-          const tick = () => { anim.playSegments(fwd ? [lo, hi] : [hi, lo], true); fwd = !fwd; };
-          tick();
-          anim.addEventListener('complete', tick);
-        });
-        _previewAnims.push(anim);
-      }
+      const anims = await startPreviewAnims(els);
+      if (gen !== _previewGen) { anims.forEach(p => { try { p.destroy(); } catch {} }); return; }
+      _previewAnims.push(...anims);
     } catch { /* previews are optional */ }
   }
 

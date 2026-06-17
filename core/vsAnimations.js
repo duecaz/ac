@@ -154,11 +154,13 @@ function createLottie(container, src) {
   // setProgress/win re-call idle() to re-center; yank cancels it briefly.
   function idle() {
     cancelAnimationFrame(idleRaf);
+    idlePhase = 0;                              // reset so resume always starts from center
     if (!anim || !total || destroyed) return;
     const center = frameFor(lead);
     const swing = total / 3;   // ±30 frames for 90-frame anim (2/6 of total)
     const speed = 0.036;       // radians/frame → full cycle ≈ 2.9 s at 60 fps
     const step = () => {
+      if (document.hidden) { idleRaf = requestAnimationFrame(step); return; } // pause when tab invisible
       idlePhase += speed;
       anim.goToAndStop(Math.max(0, Math.min(total - 1, center + Math.sin(idlePhase) * swing)), true);
       if (!destroyed) idleRaf = requestAnimationFrame(step);
@@ -187,6 +189,23 @@ function createLottie(container, src) {
     win(side) { lead = side === 'left' ? 1 : -1; idle(); },
     destroy() { destroyed = true; cancelAnimationFrame(idleRaf); clearTimeout(restore); if (anim) anim.destroy(); container.innerHTML = ''; }
   };
+}
+
+// Shared helper: loads Lottie into a list of .vsanim-preview containers and
+// seeks each to its center (tie) frame — a static thumbnail, no animation.
+// Returns the created anim instances so the caller can destroy them later.
+// Generation-safe: caller checks whether its gen is still current before using
+// the returned array (see playerView.initAnimPreviews / editorModes.wireModesTab).
+export async function startPreviewAnims(containerEls) {
+  const anims = [];
+  if (!containerEls.length) return anims;
+  const lottie = await loadLottie();
+  for (const el of containerEls) {
+    const anim = lottie.loadAnimation({ container: el, renderer: 'svg', loop: false, autoplay: false, path: el.dataset.src });
+    anim.addEventListener('DOMLoaded', () => anim.goToAndStop(Math.round(anim.totalFrames / 2), true));
+    anims.push(anim);
+  }
+  return anims;
 }
 
 // Factory for a bundled/known Lottie file (fixed src).

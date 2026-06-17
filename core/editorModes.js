@@ -14,9 +14,10 @@
 import { escapeHtml } from './html.js';
 import { on } from './events.js';
 import { isVsCompatible, sessionItems } from '../kernel/session/engine.js';
-import { listVsAnimations, loadLottie } from './vsAnimations.js';
+import { listVsAnimations, startPreviewAnims } from './vsAnimations.js';
 
 let _editorPreviewAnims = [];
+let _editorPreviewGen = 0;
 import { getTemplate } from './registry.js';
 
 const VS_FX_DEFAULTS = { sound: true, flash: true, confetti: false };
@@ -125,25 +126,15 @@ export function renderModesTab(a) {
 export function wireModesTab(root, a, onChange) {
   const pres = () => (a.presentation = a.presentation || {});
 
-  // Destroy stale previews from previous render, start fresh ones.
+  // Destroy stale previews from previous render, start fresh static thumbnails.
   _editorPreviewAnims.forEach(p => { try { p.destroy(); } catch {} });
   _editorPreviewAnims = [];
+  const myGen = ++_editorPreviewGen;
   const previewEls = [...root.querySelectorAll('.vsanim-preview[data-src]')];
   if (previewEls.length) {
-    loadLottie().then(lottie => {
-      for (const el of previewEls) {
-        const anim = lottie.loadAnimation({ container: el, renderer: 'svg', loop: false, autoplay: false, path: el.dataset.src });
-        anim.addEventListener('DOMLoaded', () => {
-          const n = anim.totalFrames;
-          const lo = Math.round(n / 6), hi = Math.round(n * 5 / 6);
-          anim.setSpeed(2);
-          let fwd = true;
-          const tick = () => { anim.playSegments(fwd ? [lo, hi] : [hi, lo], true); fwd = !fwd; };
-          tick();
-          anim.addEventListener('complete', tick);
-        });
-        _editorPreviewAnims.push(anim);
-      }
+    startPreviewAnims(previewEls).then(anims => {
+      if (myGen !== _editorPreviewGen) { anims.forEach(p => { try { p.destroy(); } catch {} }); return; }
+      _editorPreviewAnims.push(...anims);
     }).catch(() => {});
   }
 

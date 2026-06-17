@@ -72,6 +72,7 @@ export async function renderPlay(rootSel, code) {
   let lastPhaseKey = '';
   let myScore = 0;      // accumulated locally; used for end-of-game display
   let endedFired = false;
+  let endingInProgress = false;
   // Tracks items we've already bumped streak for. Without this, host_seen_at
   // pings re-trigger paintRevealOwn and would replay every ~10 s.
   const revealedItems = new Set();
@@ -230,6 +231,8 @@ export async function renderPlay(rootSel, code) {
   }
 
   async function paintEnded() {
+    if (endingInProgress) return;
+    endingInProgress = true;
     Streaks.reset(session.id, player.playerId);
     // Fetch the real score from the server (may differ if reveal was missed).
     let finalScore = myScore;
