@@ -188,10 +188,9 @@ export function mountVs(host, a, ctx, opts = {}) {
 
     function onAnswer(side, value) {
       if (flashing[side]) return;
-      // The duel may have just ended (the other side finished the race). Ignore
-      // late taps on the losing side during the winner's brief flash window —
-      // otherwise session.answer() would throw "el duelo no está en curso".
-      if (session.status !== 'running') return;
+      // Guard against late taps after this side has already finished all items
+      // or after the whole duel has ended (both sides done).
+      if (session.standings()[side].done || session.status !== 'running') return;
       flashing[side] = true;
       const r = session.answer(side, value);
       const scoreEl = document.getElementById('vs-score-' + side);

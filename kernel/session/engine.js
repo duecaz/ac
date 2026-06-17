@@ -327,9 +327,9 @@ function createVsSession(activity, T, opts) {
     s.score += r.points;
     if (r.correct) s.correct += 1;
     s.cursor += 1;
-    // VS is a RACE: the duel ends the moment the FIRST side finishes all items.
-    // The other side does NOT play on (that was the bug — both had to finish).
-    if (state.sides.left.cursor >= total || state.sides.right.cursor >= total) {
+    // Each side plays independently at its own pace. The duel ends only when
+    // BOTH sides have finished all items.
+    if (state.sides.left.cursor >= total && state.sides.right.cursor >= total) {
       state.status = 'ended';
     }
     return { correct: r.correct, points: r.points, cursor: s.cursor, done: s.cursor >= total };
