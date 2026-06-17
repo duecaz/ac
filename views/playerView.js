@@ -211,7 +211,18 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     try {
       const lottie = await loadLottie();
       for (const el of els) {
-        const anim = lottie.loadAnimation({ container: el, renderer: 'svg', loop: true, autoplay: true, path: el.dataset.src });
+        const anim = lottie.loadAnimation({ container: el, renderer: 'svg', loop: false, autoplay: false, path: el.dataset.src });
+        // Ping-pong around the center (tie) frame: ~39%→72% of total and back.
+        // For a 90-frame animation this is frames 35→65 as the user specified.
+        anim.addEventListener('DOMLoaded', () => {
+          const n = anim.totalFrames;
+          const lo = Math.round(n * 0.39);
+          const hi = Math.round(n * 0.72);
+          let fwd = true;
+          const tick = () => { anim.playSegments(fwd ? [lo, hi] : [hi, lo], true); fwd = !fwd; };
+          tick();
+          anim.addEventListener('complete', tick);
+        });
         _previewAnims.push(anim);
       }
     } catch { /* previews are optional */ }
