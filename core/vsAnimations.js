@@ -141,34 +141,51 @@ export function loadLottie() {
 
 function createLottie(container, src) {
   let anim = null, total = 0, lead = 0, destroyed = false, restore = 0;
+  let idleRaf = 0, idlePhase = 0;
   if (!src) {
     container.innerHTML = '<div class="vs-anim-fallback">Pega la URL de tu animación Lottie (.json) en Presentación.</div>';
     return { setProgress() {}, yank() {}, win() {}, destroy() {} };
   }
   // frame 0 = left winning, frame total-1 = right winning → invert lead.
   const frameFor = l => (1 - Math.max(-1, Math.min(1, l))) / 2 * Math.max(0, total - 1);
-  const seek = () => { if (anim && total) anim.goToAndStop(frameFor(lead), true); };
+
+  // Sinusoidal idle: oscillate ±swing frames around the current lead frame so
+  // the characters are always gently swaying, even when the score hasn't changed.
+  // setProgress/win re-call idle() to re-center; yank cancels it briefly.
+  function idle() {
+    cancelAnimationFrame(idleRaf);
+    if (!anim || !total || destroyed) return;
+    const center = frameFor(lead);
+    const swing = Math.max(3, Math.min(10, total * 0.09)); // ≈8 frames for 90-frame anim
+    const speed = 0.018; // radians/frame → full cycle ≈ 5.8 s at 60 fps
+    const step = () => {
+      idlePhase += speed;
+      anim.goToAndStop(Math.max(0, Math.min(total - 1, center + Math.sin(idlePhase) * swing)), true);
+      if (!destroyed) idleRaf = requestAnimationFrame(step);
+    };
+    idleRaf = requestAnimationFrame(step);
+  }
 
   loadLottie().then(lottie => {
     if (destroyed) return;
     anim = lottie.loadAnimation({ container, renderer: 'svg', loop: false, autoplay: false, path: src });
-    anim.addEventListener('DOMLoaded', () => { total = anim.totalFrames; seek(); });
+    anim.addEventListener('DOMLoaded', () => { total = anim.totalFrames; idle(); });
     anim.addEventListener('data_failed', () => { container.innerHTML = '<div class="vs-anim-fallback">No se pudo cargar la animación Lottie.</div>'; });
   }).catch(() => { container.innerHTML = '<div class="vs-anim-fallback">No se pudo cargar lottie-web (¿sin conexión?).</div>'; });
 
   return {
-    setProgress(l) { lead = l; seek(); },
+    setProgress(l) { lead = l; idle(); },
     yank(side) {
       if (!anim || !total) return;
+      cancelAnimationFrame(idleRaf);
       clearTimeout(restore);
-      // frame 0 = left winning → left yank overshoots toward 0; right toward total-1.
       const dir = side === 'left' ? -1 : 1;
       const over = Math.max(0, Math.min(total - 1, frameFor(lead) + dir * total * 0.06));
       anim.goToAndStop(over, true);
-      restore = setTimeout(seek, 160);
+      restore = setTimeout(() => { if (!destroyed) idle(); }, 160);
     },
-    win(side) { lead = side === 'left' ? 1 : -1; seek(); },
-    destroy() { destroyed = true; clearTimeout(restore); if (anim) anim.destroy(); container.innerHTML = ''; }
+    win(side) { lead = side === 'left' ? 1 : -1; idle(); },
+    destroy() { destroyed = true; cancelAnimationFrame(idleRaf); clearTimeout(restore); if (anim) anim.destroy(); container.innerHTML = ''; }
   };
 }
 
