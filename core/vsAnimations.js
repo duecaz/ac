@@ -121,7 +121,9 @@ registerVsAnimation({
 });
 
 // ── Lottie provider (.json made in another tool) ─────────────────────────
-const LOTTIE_CDN = 'https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/build/player/lottie_light.min.js';
+// lottie_light.min.js is bundled locally so the animation works without
+// internet access and is not blocked by CDN restrictions.
+const LOTTIE_LOCAL = './assets/js/lottie_light.min.js';
 let _lottiePromise = null;
 
 function loadLottie() {
@@ -129,7 +131,7 @@ function loadLottie() {
   if (_lottiePromise) return _lottiePromise;
   _lottiePromise = new Promise((resolve, reject) => {
     const s = document.createElement('script');
-    s.src = LOTTIE_CDN;
+    s.src = LOTTIE_LOCAL;
     s.onload = () => resolve(window.lottie);
     s.onerror = () => reject(new Error('No se pudo cargar lottie-web'));
     document.head.appendChild(s);
