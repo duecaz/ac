@@ -1,7 +1,7 @@
 // Student-side live view. Routes: #/join, #/play/:code.
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
-import { joinSession, getOwnAnswer, subscribeRoom, pingPresence, findRoomByCode, fetchSession } from '../core/liveTransport.js';
+import { joinSession, getOwnAnswer, subscribeRoom, pingPresence, findRoomByCode, fetchSession, leaderboard } from '../core/liveTransport.js';
 import { findAssignmentByCode } from '../core/assignmentsTransport.js';
 import { isAcceptableNickname } from '../core/nicknameFilter.js';
 import { acquire } from '../core/lifecycle.js';
@@ -70,9 +70,10 @@ export async function renderPlay(rootSel, code) {
   let lastQuestionShownAt = 0;
   let questionTickHandle = null;
   let lastPhaseKey = '';
-  // Tracks items we've already emitted ANSWER_CORRECT/WRONG + bumped streak
-  // for. Without this, host_seen_at pings re-trigger paintRevealOwn and
-  // sound/streak/confetti would replay every ~10 s.
+  let myScore = 0;      // accumulated locally; used for end-of-game display
+  let endedFired = false;
+  // Tracks items we've already bumped streak for. Without this, host_seen_at
+  // pings re-trigger paintRevealOwn and would replay every ~10 s.
   const revealedItems = new Set();
 
   try {
@@ -197,18 +198,13 @@ export async function renderPlay(rootSel, code) {
     const own = await getOwnAnswer(session.id, player.playerId, idx);
     const ok = own?.correct === true;
     const skipped = !own;
-    // Bump streak + emit events ONCE per item. Subsequent paints for the
-    // same idx (caused by unrelated session UPDATEs) skip the side effects
-    // and just re-render visuals.
+    // Bump streak ONCE per item. No per-question sounds or confetti in live
+    // mode — celebration happens only at the end. Subsequent paints for the
+    // same idx (caused by unrelated session UPDATEs) skip the side effects.
     if (own && !revealedItems.has(idx)) {
       revealedItems.add(idx);
-      const newStreak = Streaks.bump(session.id, player.playerId, ok);
-      if (ok) {
-        emitGame(GameEvents.ANSWER_CORRECT, { idx, points: own.points || 0, streak: newStreak });
-        if (newStreak >= 2) emitGame(GameEvents.STREAK, { count: newStreak });
-      } else {
-        emitGame(GameEvents.ANSWER_WRONG, { idx });
-      }
+      myScore += own.points || 0;
+      Streaks.bump(session.id, player.playerId, ok);
     }
     const streak = Streaks.get(session.id, player.playerId);
     mount(rootSel, html`
@@ -233,14 +229,27 @@ export async function renderPlay(rootSel, code) {
     `);
   }
 
-  function paintEnded() {
+  async function paintEnded() {
     Streaks.reset(session.id, player.playerId);
+    // Fetch the real score from the server (may differ if reveal was missed).
+    let finalScore = myScore;
+    try {
+      const lb = await leaderboard(session.id);
+      const me = lb.find(p => p.id === player.playerId);
+      if (me != null) finalScore = me.score;
+    } catch { /* fall back to locally tracked score */ }
+    // Fire PODIUM celebration once (confetti + fanfare).
+    if (!endedFired) {
+      endedFired = true;
+      emitGame(GameEvents.PODIUM, { top: [{ name: player.name, score: finalScore }] });
+    }
     mount(rootSel, html`
       <div class="text-center py-5">
         <i class="bi bi-trophy-fill display-1 text-warning"></i>
         <h2 class="mt-3">¡Fin de la partida!</h2>
-        <p>Mira el podio en la pantalla del profesor.</p>
-        <a href="#/join" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> Otra sala</a>
+        <p class="lead">Tu puntuación: <b class="fs-2">${finalScore}</b> puntos</p>
+        <p class="text-muted">Mira el ranking completo en la pantalla del profesor.</p>
+        <a href="#/join" class="btn btn-warning btn-lg mt-2"><i class="bi bi-arrow-left"></i> Otra sala</a>
       </div>
     `);
   }
