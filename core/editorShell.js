@@ -1,13 +1,13 @@
 // Shell de editor COMPARTIDO. Antes cada plantilla armaba a mano su barra de
 // pestañas, y derivaban (una sin pestañas, otra sin "Modos", nombres distintos…).
 // Aquí el chasis se renderiza UNA vez para todas: título/subtítulo + pestañas
-//   Contenido · Individual · Puntuación · Modos · En vivo · Presentación
+//   Contenido · Puntuación · Modos (Individual + VS + Equipos + Tarea) · En vivo · Presentación
 // y cada plantilla aporta SOLO sus paneles propios. Así es imposible que un
 // editor "haga lo suyo" u olvide un modo: todos heredan el mismo esqueleto.
 //
 // spec = {
 //   content:  { label, html(a), wire(root, a, ctx) }        // obligatorio
-//   rules:    { label?, html(a), wire(root, a, ctx) } | null // "Individual"
+//   rules:    { label?, html(a), wire(root, a, ctx) } | null // sección Individual DENTRO de Modos
 //   scoring:  { html(a), wire(root, a, ctx) } | null          // "Puntuación"
 //   live:     { html(a), wire(root, a, ctx) } | null          // "En vivo" (si meta.modes.live)
 //   presentation: bool (def. true)                            // skin + fondo
@@ -45,17 +45,25 @@ function presentationHtml(a) {
 export function renderEditorShell(root, a, onChange, spec) {
   const T = getTemplate(a.template);
   const liveOn = !!T?.meta?.modes?.live && !!spec.live;
-  // "Modos" aparece si la plantilla soporta VS/Equipos/Tarea (En vivo va aparte).
+  // "Modos" aparece si la plantilla soporta VS/Equipos/Tarea (En vivo va aparte)
+  // O si hay un bloque Individual (spec.rules). Individual es la primera sección.
   const hasModes = modesForTemplate(T).some(m => ['vs', 'teams', 'task'].includes(m.id));
+  const showModes = hasModes || !!spec.rules;
   const presOn = spec.presentation !== false;
 
   // Pestañas en orden fijo. id = el data-bs-target; cada una se incluye solo si
   // su contenido existe (Contenido y Presentación según spec).
   const tabs = [
     { id: 'tab-content', label: spec.content.label || 'Contenido', body: () => spec.content.html(a) },
-    spec.rules && { id: 'tab-rules', label: spec.rules.label || 'Individual', icon: 'bi-person-fill', body: () => spec.rules.html(a) },
     spec.scoring && { id: 'tab-scoring', label: 'Puntuación', body: () => spec.scoring.html(a) },
-    hasModes && { id: 'tab-modes', label: 'Modos', icon: 'bi-controller', body: () => renderModesTab(a) },
+    showModes && { id: 'tab-modes', label: 'Modos', icon: 'bi-controller', body: () => {
+      const indiv = spec.rules ? `
+        <section class="ww-mode-cfg" data-mode="individual">
+          <h6 class="mb-1"><i class="bi bi-person-fill text-success"></i> ${escapeHtml(spec.rules.label || 'Individual')}</h6>
+          ${spec.rules.html(a)}
+        </section>${hasModes ? '<hr class="my-4">' : ''}` : '';
+      return indiv + (hasModes ? renderModesTab(a) : '');
+    }},
     liveOn && { id: 'tab-live', label: 'En vivo', icon: 'bi-broadcast', body: () => spec.live.html(a) },
     presOn && { id: 'tab-pres', label: 'Presentación', icon: 'bi-palette', body: () => presentationHtml(a) },
   ].filter(Boolean);

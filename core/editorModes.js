@@ -14,7 +14,9 @@
 import { escapeHtml } from './html.js';
 import { on } from './events.js';
 import { isVsCompatible, sessionItems } from '../kernel/session/engine.js';
-import { listVsAnimations } from './vsAnimations.js';
+import { listVsAnimations, loadLottie } from './vsAnimations.js';
+
+let _editorPreviewAnims = [];
 import { getTemplate } from './registry.js';
 
 const VS_FX_DEFAULTS = { sound: true, flash: true, confetti: false };
@@ -39,10 +41,16 @@ function vsBlock(a) {
       <p class="text-muted small mb-2">Cómo se ve y suena el duelo 1‑contra‑1 en pantalla compartida.</p>
       <label class="form-label small text-muted">Animación central del duelo</label>
       <div class="d-flex flex-wrap gap-2 mb-2">
-        ${anims.map(v => `
+        ${anims.map(v => {
+          const hasSrc = v.kind === 'lottie' && v.src && !v.needsSrc;
+          return `
           <div class="ww-pick-tile vsanim-pick ${cur === v.id ? 'is-active' : ''}" data-id="${v.id}" data-needssrc="${v.needsSrc ? '1' : ''}" role="button" title="${escapeHtml(v.description || '')}" style="width:150px">
-            <div class="vsanim-tile-body"><i class="bi ${v.kind === 'lottie' ? 'bi-filetype-json' : 'bi-people-fill'}"></i><div class="small fw-semibold mt-1">${escapeHtml(v.label)}</div></div>
-          </div>`).join('')}
+            <div class="vsanim-tile-body">
+              ${hasSrc ? `<div class="vsanim-preview" data-src="${escapeHtml(v.src)}"></div>` : `<i class="bi ${v.kind === 'lottie' ? 'bi-filetype-json' : 'bi-people-fill'}"></i>`}
+              <div class="small fw-semibold mt-1">${escapeHtml(v.label)}</div>
+            </div>
+          </div>`;
+        }).join('')}
       </div>
       <div id="vsanim-src-row" class="mb-3 ${needsSrcNow ? '' : 'd-none'}" style="max-width:520px">
         <label class="form-label small text-muted">URL del archivo Lottie (.json)</label>
@@ -116,6 +124,27 @@ export function renderModesTab(a) {
  *  selections IN PLACE (no repaint) so the active editor tab doesn't reset. */
 export function wireModesTab(root, a, onChange) {
   const pres = () => (a.presentation = a.presentation || {});
+
+  // Destroy stale previews from previous render, start fresh ones.
+  _editorPreviewAnims.forEach(p => { try { p.destroy(); } catch {} });
+  _editorPreviewAnims = [];
+  const previewEls = [...root.querySelectorAll('.vsanim-preview[data-src]')];
+  if (previewEls.length) {
+    loadLottie().then(lottie => {
+      for (const el of previewEls) {
+        const anim = lottie.loadAnimation({ container: el, renderer: 'svg', loop: false, autoplay: false, path: el.dataset.src });
+        anim.addEventListener('DOMLoaded', () => {
+          const n = anim.totalFrames;
+          const lo = Math.round(n * 0.39), hi = Math.round(n * 0.72);
+          let fwd = true;
+          const tick = () => { anim.playSegments(fwd ? [lo, hi] : [hi, lo], true); fwd = !fwd; };
+          tick();
+          anim.addEventListener('complete', tick);
+        });
+        _editorPreviewAnims.push(anim);
+      }
+    }).catch(() => {});
+  }
 
   // VS — animation tiles.
   on(root, 'click', '.vsanim-pick', (_, b) => {
