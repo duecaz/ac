@@ -216,8 +216,9 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
         // For a 90-frame animation this is frames 35→65 as the user specified.
         anim.addEventListener('DOMLoaded', () => {
           const n = anim.totalFrames;
-          const lo = Math.round(n * 0.39);
-          const hi = Math.round(n * 0.72);
+          const lo = Math.round(n / 6);        // center - 2/6 → frame 15 for 90-frame anim
+          const hi = Math.round(n * 5 / 6);    // center + 2/6 → frame 75
+          anim.setSpeed(2);
           let fwd = true;
           const tick = () => { anim.playSegments(fwd ? [lo, hi] : [hi, lo], true); fwd = !fwd; };
           tick();

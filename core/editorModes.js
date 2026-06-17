@@ -135,7 +135,8 @@ export function wireModesTab(root, a, onChange) {
         const anim = lottie.loadAnimation({ container: el, renderer: 'svg', loop: false, autoplay: false, path: el.dataset.src });
         anim.addEventListener('DOMLoaded', () => {
           const n = anim.totalFrames;
-          const lo = Math.round(n * 0.39), hi = Math.round(n * 0.72);
+          const lo = Math.round(n / 6), hi = Math.round(n * 5 / 6);
+          anim.setSpeed(2);
           let fwd = true;
           const tick = () => { anim.playSegments(fwd ? [lo, hi] : [hi, lo], true); fwd = !fwd; };
           tick();

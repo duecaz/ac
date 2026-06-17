@@ -156,8 +156,8 @@ function createLottie(container, src) {
     cancelAnimationFrame(idleRaf);
     if (!anim || !total || destroyed) return;
     const center = frameFor(lead);
-    const swing = Math.max(3, Math.min(10, total * 0.09)); // ≈8 frames for 90-frame anim
-    const speed = 0.018; // radians/frame → full cycle ≈ 5.8 s at 60 fps
+    const swing = total / 3;   // ±30 frames for 90-frame anim (2/6 of total)
+    const speed = 0.036;       // radians/frame → full cycle ≈ 2.9 s at 60 fps
     const step = () => {
       idlePhase += speed;
       anim.goToAndStop(Math.max(0, Math.min(total - 1, center + Math.sin(idlePhase) * swing)), true);
