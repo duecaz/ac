@@ -2,13 +2,21 @@
 // adapter it gets is decided here, lazily (the Supabase SDK only loads if chosen).
 //
 // Resolution order:
-//   1. localStorage 'ww.backend' override ('local' | 'supabase' | 'pocketbase')
-//   2. localhost / 127.0.0.1 / file → 'local'   (offline-first development)
-//   3. otherwise → 'supabase'                    (the deployed site is unchanged)
+//   1. URL query param  ?backend=pocketbase  (persiste en localStorage)
+//   2. localStorage 'ww.backend' override ('local' | 'supabase' | 'pocketbase')
+//   3. localhost / 127.0.0.1 / file → 'local'   (offline-first development)
+//   4. otherwise → 'supabase'                    (the deployed site is unchanged)
 
 const VALID = ['local', 'supabase', 'pocketbase'];
 
 export function backendName() {
+  try {
+    const qp = new URLSearchParams(globalThis.location?.search).get('backend');
+    if (qp && VALID.includes(qp)) {
+      globalThis.localStorage?.setItem('ww.backend', qp);
+      return qp;
+    }
+  } catch { /* no location / URLSearchParams */ }
   try {
     const o = globalThis.localStorage?.getItem('ww.backend');
     if (o && VALID.includes(o)) return o;
