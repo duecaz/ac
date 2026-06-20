@@ -108,6 +108,21 @@ function renderPanel(rootSel) {
         </tbody>
       </table>
 
+      <h5 class="mt-4">PocketBase — configuración de colecciones</h5>
+      <p class="small text-muted mb-2">Crea automáticamente las colecciones <code>live_sessions</code>, <code>assignments</code> y <code>assignment_attempts</code> en tu instancia de PocketBase. Solo se necesita una vez.</p>
+      <div class="d-flex gap-2 align-items-end flex-wrap mb-1">
+        <div>
+          <label class="form-label small mb-1">Email admin PocketBase</label>
+          <input id="pb-email" type="email" class="form-control form-control-sm" placeholder="admin@ejemplo.com" style="width:220px">
+        </div>
+        <div>
+          <label class="form-label small mb-1">Contraseña admin</label>
+          <input id="pb-pass" type="password" class="form-control form-control-sm" style="width:180px">
+        </div>
+        <button id="pb-setup" class="btn btn-warning btn-sm"><i class="bi bi-database-add"></i> Crear colecciones</button>
+      </div>
+      <div id="pb-setup-out" class="mt-2"></div>
+
       <h5 class="mt-4">Mantenimiento</h5>
       <button id="admin-wipe" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Borrar TODAS mis actividades (este dispositivo + nube)</button>
       <p class="small text-muted mt-1">Empieza de cero. No se puede deshacer. Mantiene tu identidad (no hace falta borrar la caché).</p>
@@ -350,5 +365,115 @@ function renderPanel(rootSel) {
     box.insertBefore(banner, box.querySelector('div'));
 
     btn.disabled = false;
+  });
+
+  on(rootSel, 'click', '#pb-setup', async () => {
+    const email = document.getElementById('pb-email')?.value?.trim();
+    const pass  = document.getElementById('pb-pass')?.value;
+    const out   = document.getElementById('pb-setup-out');
+    if (!email || !pass) { out.innerHTML = '<div class="alert alert-warning py-1 px-2 small">Introduce email y contraseña de admin de PocketBase.</div>'; return; }
+
+    out.innerHTML = '<div class="text-muted small"><span class="spinner-border spinner-border-sm me-1"></span>Autenticando…</div>';
+    const btn = document.getElementById('pb-setup');
+    btn.disabled = true;
+
+    try {
+      // 1. Authenticate as PocketBase admin
+      const { PB_URL } = await import('../pocketbase.config.js');
+      const authRes = await fetch(`${PB_URL}/api/admins/auth-with-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identity: email, password: pass }),
+      });
+      if (!authRes.ok) {
+        const b = await authRes.json().catch(() => ({}));
+        throw new Error(b.message || 'Credenciales incorrectas');
+      }
+      const { token } = await authRes.json();
+      const headers = { 'Content-Type': 'application/json', 'Authorization': token };
+
+      // 2. Collection schemas
+      const COLLECTIONS = [
+        {
+          name: 'live_sessions',
+          type: 'base',
+          schema: [
+            { name: 'code',     type: 'text',   required: true },
+            { name: 'activity', type: 'json',   required: false },
+            { name: 'state',    type: 'json',   required: false },
+          ],
+          listRule: '', viewRule: '', createRule: '', updateRule: '', deleteRule: '',
+        },
+        {
+          name: 'assignments',
+          type: 'base',
+          schema: [
+            { name: 'code',          type: 'text',   required: true },
+            { name: 'activity_id',   type: 'text',   required: false },
+            { name: 'activity_snap', type: 'json',   required: false },
+            { name: 'author_id',     type: 'text',   required: false },
+            { name: 'title',         type: 'text',   required: false },
+            { name: 'due_at',        type: 'text',   required: false },
+            { name: 'max_attempts',  type: 'number', required: false },
+            { name: 'status',        type: 'text',   required: false },
+            { name: 'created_at',    type: 'text',   required: false },
+          ],
+          listRule: '', viewRule: '', createRule: '', updateRule: '', deleteRule: '',
+        },
+        {
+          name: 'assignment_attempts',
+          type: 'base',
+          schema: [
+            { name: 'assignment_id', type: 'text',   required: false },
+            { name: 'activity_id',   type: 'text',   required: false },
+            { name: 'user_id',       type: 'text',   required: false },
+            { name: 'player_name',   type: 'text',   required: false },
+            { name: 'score_auto',    type: 'number', required: false },
+            { name: 'score_final',   type: 'number', required: false },
+            { name: 'max_score',     type: 'number', required: false },
+            { name: 'time_used',     type: 'number', required: false },
+            { name: 'created_at',    type: 'text',   required: false },
+          ],
+          listRule: '', viewRule: '', createRule: '', updateRule: '', deleteRule: '',
+        },
+      ];
+
+      // 3. Create each collection (skip if already exists)
+      const results = [];
+      for (const col of COLLECTIONS) {
+        out.innerHTML = `<div class="text-muted small"><span class="spinner-border spinner-border-sm me-1"></span>Creando <code>${col.name}</code>…</div>`;
+        try {
+          const r = await fetch(`${PB_URL}/api/collections`, {
+            method: 'POST', headers,
+            body: JSON.stringify(col),
+          });
+          if (r.ok) {
+            results.push({ name: col.name, ok: true, msg: 'creada' });
+          } else {
+            const b = await r.json().catch(() => ({}));
+            // 400 with "already exists" is fine
+            if (b.data?.name?.code === 'validation_not_unique' || b.message?.includes('already exists')) {
+              results.push({ name: col.name, ok: true, msg: 'ya existía' });
+            } else {
+              results.push({ name: col.name, ok: false, msg: b.message || `error ${r.status}` });
+            }
+          }
+        } catch (e) {
+          results.push({ name: col.name, ok: false, msg: e.message });
+        }
+      }
+
+      const allOk = results.every(r => r.ok);
+      out.innerHTML = `
+        <div class="alert ${allOk ? 'alert-success' : 'alert-warning'} py-2 px-3 small">
+          ${results.map(r => `<div>${r.ok ? '✓' : '✗'} <code>${r.name}</code> — ${r.msg}</div>`).join('')}
+          ${allOk ? '<div class="mt-1 fw-semibold">Listo. Recarga la página para activar Live y Tareas en PocketBase.</div>' : ''}
+        </div>`;
+    } catch (e) {
+      out.innerHTML = `<div class="alert alert-danger py-1 px-2 small">Error: ${escapeHtml(e.message)}</div>`;
+    } finally {
+      btn.disabled = false;
+      document.getElementById('pb-pass').value = '';
+    }
   });
 }
