@@ -53,8 +53,16 @@ export function confirmModal(message, { title = 'Confirmar', okText = 'Aceptar',
     const el = wrap.firstElementChild;
     document.body.appendChild(el);
     const m = new bootstrap.Modal(el);
-    el.querySelector('[data-act=ok]').onclick = () => { resolve(true); m.hide(); };
-    el.querySelector('[data-act=cancel]').onclick = () => { resolve(false); m.hide(); };
+    // Move focus out of the modal BEFORE hiding. Bootstrap sets aria-hidden on
+    // the modal while a button inside still holds focus, which the browser flags
+    // (hiding a focused element from assistive tech). Blurring first avoids it.
+    const close = (val) => {
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+      resolve(val);
+      m.hide();
+    };
+    el.querySelector('[data-act=ok]').onclick = () => close(true);
+    el.querySelector('[data-act=cancel]').onclick = () => close(false);
     el.addEventListener('hidden.bs.modal', () => el.remove());
     m.show();
   });
