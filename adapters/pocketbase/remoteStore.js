@@ -48,9 +48,12 @@ export function createPocketbaseRemoteStore() {
   return {
     async saveActivity(a) {
       const pbId = toId(a.id);
+      // Strip local-only fields before sending: preview_url (stored in the
+      // separate 'preview' file field) and _unsynced (internal flag).
+      const { preview_url, _unsynced, ...cleanData } = a;
       const payload = {
         id: pbId,
-        data: a,
+        data: cleanData,
         visibility: a.visibility === 'public' ? 'public' : 'unlisted',
         tags: a.tags || [],
         language: a.language || 'es',
@@ -98,8 +101,12 @@ export function createPocketbaseRemoteStore() {
 
     async getActivity(id) {
       try {
-        const rec = await pbFetch(`/api/collections/activities/records/${toId(id)}`);
-        return rec?.data ?? null;
+        const pbId = toId(id);
+        const rec = await pbFetch(`/api/collections/activities/records/${pbId}`);
+        if (!rec) return null;
+        const data = rec.data ?? {};
+        if (rec.preview) data.preview_url = `${PB_URL}/api/files/activities/${pbId}/${rec.preview}`;
+        return data;
       } catch (e) {
         if (e.status === 404) return null;
         throw e;
@@ -108,10 +115,11 @@ export function createPocketbaseRemoteStore() {
 
     async listActivities() {
       const rec = await pbFetch('/api/collections/activities/records?perPage=200');
-      return (rec?.items || []).map(row => ({
-        id: fromId(row.id, row.data?.id),
-        data: row.data,
-      }));
+      return (rec?.items || []).map(row => {
+        const data = row.data ?? {};
+        if (row.preview) data.preview_url = `${PB_URL}/api/files/activities/${row.id}/${row.preview}`;
+        return { id: fromId(row.id, row.data?.id), data };
+      });
     },
 
     async saveResult(r) {
