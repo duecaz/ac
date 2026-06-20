@@ -88,24 +88,23 @@ export function renderHome(rootSel) {
       <div class="col-sm-6 col-xl-4">
         <div class="card h-100 border-0 rounded-4 shadow-sm overflow-hidden">
           <div class="js-thumb" data-id="${escapeHtml(a.id)}"></div>
-          <div class="card-body pt-2 pb-0 px-3">
-            <div class="d-flex align-items-center gap-2 mb-1">
+          <div class="card-body pt-2 pb-3 px-3">
+            <div class="btn-group w-100 btn-group-sm mb-2" role="group">
+              ${playBtns}
+            </div>
+            <div class="d-flex align-items-center gap-2 mb-2">
               <span class="badge bg-${color}"><i class="bi ${icon}"></i> ${escapeHtml(label)}</span>
-              <small class="text-muted ms-auto">${itemCount(a)} elem.</small>
+              <button class="btn btn-sm btn-outline-primary rounded-circle act-edit" data-id="${a.id}" title="Editar"><i class="bi bi-pencil-fill"></i></button>
+              <button class="btn btn-sm btn-outline-danger rounded-circle act-del" data-id="${a.id}" title="Eliminar"><i class="bi bi-trash3"></i></button>
               ${a._unsynced ? '<i class="bi bi-cloud-slash text-warning" title="No sincronizada"></i>' : ''}
+              <span class="ms-auto d-flex align-items-center gap-3 text-muted small">
+                <span title="Elementos"><i class="bi bi-file-earmark-text"></i> ${itemCount(a)}</span>
+                <span title="Me gusta (próximamente)"><i class="bi bi-heart-fill text-danger"></i> ${a.likes ?? 0}</span>
+              </span>
             </div>
             <h6 class="card-title mb-0 fw-semibold">${escapeHtml(a.title)}</h6>
             ${a.subtitle ? `<p class="small text-muted mb-0 mt-1">${escapeHtml(a.subtitle)}</p>` : ''}
             ${(a.tags||[]).length ? `<div class="mt-1">${a.tags.slice(0,3).map(t=>`<span class="badge bg-light text-dark border me-1">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
-          </div>
-          <div class="card-footer bg-transparent border-0 pt-2 pb-3 px-3">
-            <div class="btn-group w-100 btn-group-sm mb-2" role="group">
-              ${playBtns}
-            </div>
-            <div class="d-flex justify-content-end gap-1">
-              <button class="btn btn-sm btn-outline-primary act-edit" data-id="${a.id}" title="Editar"><i class="bi bi-pencil-fill"></i> Editar</button>
-              <button class="btn btn-sm btn-outline-danger  act-del"  data-id="${a.id}" title="Eliminar"><i class="bi bi-trash3"></i></button>
-            </div>
           </div>
         </div>
       </div>`;
