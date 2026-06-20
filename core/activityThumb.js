@@ -7,7 +7,11 @@
 import { escapeHtml } from './html.js';
 import { applySkin } from './skins.js';
 
-const STAGE_W = 960, STAGE_H = 540;
+// Virtual stage = the interactive panel's native resolution (1280×800, 16:10).
+// The activity renders responsively at this size, then the whole stage is
+// scaled down to the card width — so the card shows exactly what the big
+// screen shows, just smaller (like viewing it on a phone).
+const STAGE_W = 1280, STAGE_H = 800;
 const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
 
 let _stylesInjected = false;
@@ -15,7 +19,7 @@ function injectStyles() {
   if (_stylesInjected) return;
   _stylesInjected = true;
   const css = `
-    .ww-thumb{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;
+    .ww-thumb{position:relative;width:100%;aspect-ratio:16/10;overflow:hidden;
       border-radius:.375rem .375rem 0 0;pointer-events:none;background:#0b1020;}
     .ww-thumb-stage{position:absolute;top:0;left:0;transform-origin:top left;
       width:${STAGE_W}px!important;height:${STAGE_H}px!important;max-width:none!important;
