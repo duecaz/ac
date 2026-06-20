@@ -238,8 +238,7 @@ export function mountThumb(container, activity) {
   stage.className = 'ww-thumb-stage ww-player-frame';
   stage.innerHTML = `<div class="ww-thumb-pad">${buildHtml(activity)}</div>`;
   container.appendChild(stage);
-  // Scoped skin + background — never page-wide; neither function touches
-  // _current when a target element is passed.
+  // Scoped skin + background — applied only to this stage, never page-wide.
   try { applySkin(activity.presentation?.skin || 'default', stage); } catch { /* skin optional */ }
   try { applyBackground(activity.presentation?.background || 'none', stage); } catch { /* bg optional */ }
   _mounted.add(container);

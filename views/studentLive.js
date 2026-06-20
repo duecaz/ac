@@ -7,8 +7,7 @@ import { isAcceptableNickname } from '../core/nicknameFilter.js';
 import { acquire } from '../core/lifecycle.js';
 import { toast } from '../core/toast.js';
 import { submit as queuedSubmit, flush as flushQueue, pendingCount } from '../core/submitQueue.js';
-import { applySkin } from '../core/skins.js';
-import { applyBackground } from '../core/backgrounds.js';
+import { applyScene } from '../core/presentation.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import * as Streaks from '../core/streaks.js';
@@ -87,10 +86,8 @@ export async function renderPlay(rootSel, code) {
     mount(rootSel, html`<div class="alert alert-danger m-3">${escapeHtml(e.message)}</div>`); return;
   }
 
-  // Per-activity skin + background during play.
-  applySkin(activity.presentation?.skin || 'kahoot');
-  applyBackground(activity.presentation?.background || 'none');
-  ctx.add(() => { applySkin('default'); applyBackground('none'); });
+  // Per-activity theme during play (Kahoot look by default).
+  applyScene(activity, ctx, { defaultSkin: 'kahoot' });
   // Prevent overscroll while playing.
   document.body.classList.add('ww-play-noscroll');
   ctx.add(() => document.body.classList.remove('ww-play-noscroll'));

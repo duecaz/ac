@@ -6,8 +6,7 @@
 // managing skin/background at the page level — avoids fighting the user's
 // live skin pills.
 import { getTemplate } from './registry.js';
-import { applySkin } from './skins.js';
-import { applyBackground } from './backgrounds.js';
+import { applyScene } from './presentation.js';
 import { acquire } from './lifecycle.js';
 
 export async function runPlayer(rootSel, activity, opts = {}) {
@@ -15,11 +14,7 @@ export async function runPlayer(rootSel, activity, opts = {}) {
   if (!T) throw new Error(`Plantilla desconocida: ${activity.template}`);
   if (!opts.skipChrome) {
     const ctx = acquire('player');
-    const skin = activity.presentation?.skin || 'default';
-    const bg = activity.presentation?.background || 'none';
-    applySkin(skin);
-    applyBackground(bg);
-    ctx.add(() => { applySkin('default'); applyBackground('none'); });
+    applyScene(activity, ctx);
   }
   return T.renderPlayer(rootSel, activity, opts);
 }

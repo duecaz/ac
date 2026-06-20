@@ -18,29 +18,22 @@ export const BACKGROUNDS = {
 };
 
 const ALL_CLS = Object.keys(BACKGROUNDS).map(k => `bg-${k}`);
-let _current = 'none';
 
 // target=null applies globally (body); target=Element scopes the bg to that
-// element only (e.g. the player frame). Scoped is what playerView uses so
-// the website chrome stays neutral while the activity embed shows the
-// chosen texture.
+// element only (e.g. the player frame). The two paths are independent — a
+// scoped apply NEVER touches <body> and vice versa — so a textured embed can't
+// leak its background onto the page chrome.
 export function applyBackground(name, target = null) {
   const valid = name in BACKGROUNDS ? name : 'none';
   const cls = `bg-${valid}`;
   if (target) {
-    // Scoped: paint ONLY this element. Do NOT touch _current — a scoped apply
-    // (player frame, thumbnails, editor preview) must never change what the
-    // page-wide "current" background is.
     target.classList.remove(...ALL_CLS);
     target.classList.add(cls);
   } else {
-    _current = valid;
     document.body.classList.remove(...ALL_CLS);
     document.body.classList.add(cls);
   }
 }
-
-export function reapplyBackground(target = null) { applyBackground(_current, target); }
 
 export function listBackgrounds() {
   return Object.entries(BACKGROUNDS).map(([name, b]) => ({ name, ...b }));

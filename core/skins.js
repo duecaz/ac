@@ -121,15 +121,16 @@ export const SKINS = {
 };
 
 const ALL_CLS = Object.keys(SKINS).map(k => `skin-${k}`);
-let _current = 'default';
 
 // Apply skin globally (page-wide) when target=null, or scoped to a single
-// element (e.g. the player frame) when target is an Element.
+// element (e.g. the player frame) when target is an Element. The two paths are
+// fully independent — a scoped apply NEVER touches <body>, and a global apply
+// NEVER touches a scoped element — so themes can't leak from one to the other.
 //
-// Scoped mode sets CSS vars on the target itself, so its descendants
-// inherit them. The rest of the page reads :root and stays unaffected.
-// This is what makes Wordwall feel right: changing skin in the player
-// doesn't repaint the website around it.
+// Scoped mode sets CSS vars on the target itself, so its descendants inherit
+// them. The rest of the page reads :root and stays unaffected. This is what
+// makes Wordwall feel right: changing skin in the player doesn't repaint the
+// website around it.
 export function applySkin(name, target = null) {
   const valid = name in SKINS ? name : 'default';
   const skin = SKINS[valid];
@@ -140,22 +141,16 @@ export function applySkin(name, target = null) {
   // styles/skins.css handle the visual via the skin-X class. Same selector
   // works for both body and .ww-player-frame.
   if (target) {
-    // Scoped: paint ONLY this element. Do NOT touch _current — a scoped apply
-    // (player frame, home thumbnails) must never change what the page-wide
-    // "current" skin is, or a later global reapply would repaint the whole body.
     target.classList.remove(...ALL_CLS);
     target.classList.add(cls);
     target.style.fontFamily = skin.fontFamily || '';
   } else {
-    _current = valid;
     document.body.classList.remove(...ALL_CLS);
     document.body.classList.add(cls);
     document.body.style.background = '';   // clear any prior inline
     document.body.style.fontFamily = skin.fontFamily || '';
   }
 }
-
-export function reapplySkin(target = null) { applySkin(_current, target); }
 
 export function listSkins() { return Object.entries(SKINS).map(([name, s]) => ({ name, ...s })); }
 

@@ -10,8 +10,7 @@ import { getTemplate } from '../core/registry.js';
 import { sessionItems } from '../kernel/session/engine.js';
 import { acquire } from '../core/lifecycle.js';
 import { toast, confirmModal } from '../core/toast.js';
-import { applySkin } from '../core/skins.js';
-import { applyBackground } from '../core/backgrounds.js';
+import { applyScene } from '../core/presentation.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { hostPaintDecision } from '../core/livePhases.js';
@@ -47,10 +46,8 @@ async function renderHost(rootSel, code, sessionId, activity) {
   // so swap in the full snapshot from session_keys when available. Falls back to
   // the (possibly full, for older/local sessions) snap we were handed.
   try { const full = await fetchSessionKey(sessionId); if (full) activity = full; } catch { /* keep fallback */ }
-  // Apply per-activity skin during the host live view.
-  applySkin(activity.presentation?.skin || 'kahoot');
-  applyBackground(activity.presentation?.background || 'none');
-  ctx.add(() => { applySkin('default'); applyBackground('none'); });
+  // Apply per-activity theme during the host live view (Kahoot look by default).
+  applyScene(activity, ctx, { defaultSkin: 'kahoot' });
   // Stage class for big-screen typography.
   document.body.classList.add('ww-stage');
   ctx.add(() => document.body.classList.remove('ww-stage'));

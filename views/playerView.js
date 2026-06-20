@@ -13,6 +13,7 @@ import { availableModes, getMode, runMode } from '../core/modes.js';
 import { listSkins, applySkin, skinPreviewHtml } from '../core/skins.js';
 import { listVsAnimations, startPreviewAnims } from '../core/vsAnimations.js';
 import { listBackgrounds, applyBackground, backgroundPreviewHtml } from '../core/backgrounds.js';
+import { resetScene } from '../core/presentation.js';
 import { toggleFullscreen } from '../core/fullscreen.js';
 import { acquire } from '../core/lifecycle.js';
 import { toast, confirmModal } from '../core/toast.js';
@@ -45,12 +46,11 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   let _previewGen = 0;
   ctx.add(() => { if (currentDisposer) { try { currentDisposer.dispose(); } catch {} currentDisposer = null; } });
   ctx.add(() => { _previewAnims.forEach(p => { try { p.destroy(); } catch {} }); _previewAnims = []; });
-  // Reset any prior global skin/bg from other views (host live, etc.) so the
-  // page chrome stays neutral. Scoped apply happens after paint() once the
-  // frame element exists.
-  applySkin('default');
-  applyBackground('none');
-  ctx.add(() => { applySkin('default'); applyBackground('none'); });
+  // This page themes only the embed frame (scoped, after paint()). Keep the
+  // page chrome neutral on enter AND restore it on teardown, clearing any
+  // global theme a prior view (host/student live) may have left on <body>.
+  resetScene();
+  ctx.add(() => resetScene());
 
   // Auth check for "Edit" visibility.
   // Banco compartido sin dueño: cualquiera puede editar.
