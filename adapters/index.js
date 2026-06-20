@@ -5,7 +5,7 @@
 //   1. URL query param  ?backend=pocketbase  (persiste en localStorage)
 //   2. localStorage 'ww.backend' override ('local' | 'supabase' | 'pocketbase')
 //   3. localhost / 127.0.0.1 / file → 'local'   (offline-first development)
-//   4. otherwise → 'supabase'                    (the deployed site is unchanged)
+//   4. otherwise → 'pocketbase'                  (Pi5 self-hosted en pb.lanube.uno)
 
 const VALID = ['local', 'supabase', 'pocketbase'];
 
@@ -24,7 +24,7 @@ export function backendName() {
   let host = '';
   try { host = globalThis.location?.hostname ?? ''; } catch { /* no location */ }
   if (host === 'localhost' || host === '127.0.0.1' || host === '') return 'local';
-  return 'supabase';
+  return 'pocketbase';
 }
 
 let _store = null; // cached promise
