@@ -20,9 +20,16 @@ function fromId(pbId, originalId) {
 }
 
 async function pbFetch(path, opts = {}) {
-  const { headers: extraHeaders, ...rest } = opts;
+  const { headers: extraHeaders, body, method, ...rest } = opts;
+  const headers = {};
+  // Only set Content-Type for requests that send a JSON body (POST/PATCH).
+  // Sending Content-Type on GET/DELETE causes 400 on PocketBase.
+  if (body && typeof body === 'string') headers['Content-Type'] = 'application/json';
+  if (extraHeaders) Object.assign(headers, extraHeaders);
   const r = await fetch(`${PB_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...extraHeaders },
+    method: method || 'GET',
+    headers,
+    ...(body !== undefined ? { body } : {}),
     ...rest,
   });
   if (r.status === 204) return null;
