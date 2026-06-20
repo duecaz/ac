@@ -99,12 +99,27 @@ async function remoteSave(a) {
 }
 
 async function remoteUpdatePreview(a) {
-  const rs = await getRemoteStore();
-  if (typeof rs.uploadPreview !== 'function') return;
   const { generatePreview } = await import('./preview.js');
   const blob = await generatePreview(a);
   if (!blob) return;
-  const url = await rs.uploadPreview(a.id, blob);
+
+  let url = null;
+  try {
+    const rs = await getRemoteStore();
+    if (typeof rs.uploadPreview === 'function') url = await rs.uploadPreview(a.id, blob);
+  } catch { /* silent — fall back to data URL */ }
+
+  // If remote upload failed or returned nothing, store as local data URL so
+  // the card preview is always visible regardless of backend state.
+  if (!url) {
+    url = await new Promise(res => {
+      const r = new FileReader();
+      r.onload = () => res(r.result);
+      r.onerror = () => res(null);
+      r.readAsDataURL(blob);
+    });
+  }
+
   if (url) {
     const m = readLS();
     if (m[a.id]) { m[a.id].preview_url = url; writeLS(m); }
