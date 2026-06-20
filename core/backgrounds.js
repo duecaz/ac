@@ -26,12 +26,15 @@ let _current = 'none';
 // chosen texture.
 export function applyBackground(name, target = null) {
   const valid = name in BACKGROUNDS ? name : 'none';
-  _current = valid;
   const cls = `bg-${valid}`;
   if (target) {
+    // Scoped: paint ONLY this element. Do NOT touch _current — a scoped apply
+    // (player frame, thumbnails, editor preview) must never change what the
+    // page-wide "current" background is.
     target.classList.remove(...ALL_CLS);
     target.classList.add(cls);
   } else {
+    _current = valid;
     document.body.classList.remove(...ALL_CLS);
     document.body.classList.add(cls);
   }

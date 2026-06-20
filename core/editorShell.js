@@ -18,13 +18,24 @@ import { on } from './events.js';
 import { getTemplate, listTemplates } from './registry.js';
 import { modesForTemplate } from './modes.js';
 import { renderModesTab, wireModesTab } from './editorModes.js';
-import { listSkins, skinPreviewHtml } from './skins.js';
-import { listBackgrounds, backgroundPreviewHtml } from './backgrounds.js';
+import { listSkins, skinPreviewHtml, applySkin } from './skins.js';
+import { listBackgrounds, backgroundPreviewHtml, applyBackground } from './backgrounds.js';
 
 function presentationHtml(a) {
   const cs = a.presentation?.skin || 'default';
   const cb = a.presentation?.background || 'none';
   return `
+    <div class="mb-4">
+      <div id="pres-preview" class="ww-player-frame rounded-3 p-3 d-flex align-items-center gap-2" style="height:72px;max-width:260px;">
+        <div class="d-flex gap-1">
+          <span style="width:14px;height:14px;border-radius:3px;background:var(--ww-shape-1)"></span>
+          <span style="width:14px;height:14px;border-radius:3px;background:var(--ww-shape-2)"></span>
+          <span style="width:14px;height:14px;border-radius:3px;background:var(--ww-shape-3)"></span>
+          <span style="width:14px;height:14px;border-radius:3px;background:var(--ww-shape-4)"></span>
+        </div>
+        <span class="small fw-semibold" style="color:var(--ww-fg)">Vista previa</span>
+      </div>
+    </div>
     <h6 class="mb-2">Skin (colores y sonidos)</h6>
     <div class="d-flex flex-wrap gap-3 mb-4">
       ${listSkins().map(s => `
@@ -39,7 +50,8 @@ function presentationHtml(a) {
         <div class="ww-skin-tile bg-pick ${cb === b.name ? 'is-active' : ''}" data-name="${b.name}" role="button" style="width:120px">
           ${backgroundPreviewHtml(b.name)}
           <div class="text-center small text-muted">${escapeHtml(b.description || '')}</div>
-        </div>`).join('')}`;
+        </div>`).join('')}
+    </div>`;
 }
 
 export function renderEditorShell(root, a, onChange, spec) {
@@ -91,13 +103,23 @@ export function renderEditorShell(root, a, onChange, spec) {
     on(root, 'input', '#f-subtitle', e => { a.subtitle = e.target.value; onChange(a); });
     if (showModes) wireModesTab(root, a, onChange);
     if (presOn) {
+      // Initialize the mini preview scoped to its own element — never touches the page.
+      const prev = root.querySelector('#pres-preview');
+      if (prev) {
+        applySkin(a.presentation?.skin || 'default', prev);
+        applyBackground(a.presentation?.background || 'none', prev);
+      }
       on(root, 'click', '.skin-pick', (_, b) => {
         (a.presentation = a.presentation || {}).skin = b.dataset.name; onChange(a);
         root.querySelectorAll('.skin-pick').forEach(x => x.classList.toggle('is-active', x === b));
+        const p = root.querySelector('#pres-preview');
+        if (p) applySkin(b.dataset.name, p);
       });
       on(root, 'click', '.bg-pick', (_, b) => {
         (a.presentation = a.presentation || {}).background = b.dataset.name; onChange(a);
         root.querySelectorAll('.bg-pick').forEach(x => x.classList.toggle('is-active', x === b));
+        const p = root.querySelector('#pres-preview');
+        if (p) applyBackground(b.dataset.name, p);
       });
     }
     // Template-specific wiring.

@@ -12,7 +12,7 @@ import { isVsCompatible } from '../kernel/session/engine.js';
 import { availableModes, getMode, runMode } from '../core/modes.js';
 import { listSkins, applySkin, skinPreviewHtml } from '../core/skins.js';
 import { listVsAnimations, startPreviewAnims } from '../core/vsAnimations.js';
-import { listBackgrounds, applyBackground, reapplyBackground, backgroundPreviewHtml } from '../core/backgrounds.js';
+import { listBackgrounds, applyBackground, backgroundPreviewHtml } from '../core/backgrounds.js';
 import { toggleFullscreen } from '../core/fullscreen.js';
 import { acquire } from '../core/lifecycle.js';
 import { toast, confirmModal } from '../core/toast.js';

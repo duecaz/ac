@@ -6,6 +6,7 @@
 // pure markup, so it is safe to mount many of them on the home grid.
 import { escapeHtml } from './html.js';
 import { applySkin } from './skins.js';
+import { applyBackground } from './backgrounds.js';
 import { isVowel } from './textMarks.js';
 
 // Virtual stage = the interactive panel's native resolution (1280×800, 16:10).
@@ -237,9 +238,10 @@ export function mountThumb(container, activity) {
   stage.className = 'ww-thumb-stage ww-player-frame';
   stage.innerHTML = `<div class="ww-thumb-pad">${buildHtml(activity)}</div>`;
   container.appendChild(stage);
-  // Scoped skin only — never page-wide (applySkin leaves _current untouched
-  // when a target element is passed).
+  // Scoped skin + background — never page-wide; neither function touches
+  // _current when a target element is passed.
   try { applySkin(activity.presentation?.skin || 'default', stage); } catch { /* skin optional */ }
+  try { applyBackground(activity.presentation?.background || 'none', stage); } catch { /* bg optional */ }
   _mounted.add(container);
   ensureBound();
   requestAnimationFrame(rescaleAll);
