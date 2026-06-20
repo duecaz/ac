@@ -11,7 +11,7 @@
 .ww-keypad-display {
   min-width: clamp(6rem, 22vmin, 11rem);
   font-size: clamp(1.6rem, 6vmin, 3rem); font-weight: 800; text-align: center;
-  padding: .15rem 1rem; border: 3px solid #dee2e6; border-radius: .6rem; background: #fff;
+  padding: .15rem 1rem; border: 3px solid #dee2e6; border-radius: .6rem; background: #fff; color: #212529;
   font-variant-numeric: tabular-nums;
 }
 .ww-keypad-display.is-ok { border-color: var(--ww-success, #198754); color: #198754; }
@@ -22,7 +22,7 @@
 }
 .ww-keypad .ww-key {
   font-size: clamp(1.1rem, 3.6vmin, 1.9rem); font-weight: 700;
-  padding: clamp(.4rem, 1.6vmin, 1rem) 0; border: 2px solid #ced4da; background: #fff;
+  padding: clamp(.4rem, 1.6vmin, 1rem) 0; border: 2px solid #ced4da; background: #fff; color: #212529;
   border-radius: .5rem;
 }
 .ww-keypad .ww-key:active { transform: translateY(1px); }
