@@ -27,7 +27,21 @@ export function backendName() {
   return 'pocketbase';
 }
 
-let _store = null; // cached promise
+// Probe a PocketBase collection. Returns true if the collection exists and is
+// reachable, false if PocketBase returns "Missing collection context" (not yet
+// created). Other errors (network, auth) are re-thrown so they surface normally.
+import { PB_URL } from '../pocketbase.config.js';
+async function pbCollectionExists(name) {
+  try {
+    const r = await fetch(`${PB_URL}/api/collections/${name}/records?perPage=1`);
+    if (r.status === 200) return true;
+    const body = await r.json().catch(() => ({}));
+    if (body?.message?.includes('Missing collection')) return false;
+    return r.ok;
+  } catch { return false; /* network unreachable */ }
+}
+
+let _store = null;
 let _realtime = null;
 
 /** @returns {Promise<any>} the selected RemoteStore (activity/result persistence). */
@@ -48,7 +62,13 @@ export function getRealtime() {
   const name = backendName();
   _realtime = (async () => {
     if (name === 'local') return (await import('./local/realtime.js')).createLocalRealtime();
-    if (name === 'pocketbase') return (await import('./pocketbase/realtime.js')).createPocketbaseRealtime();
+    if (name === 'pocketbase') {
+      if (await pbCollectionExists('live_sessions')) {
+        return (await import('./pocketbase/realtime.js')).createPocketbaseRealtime();
+      }
+      console.warn('[live] Colección live_sessions no existe en PocketBase → modo local (misma pestaña)');
+      return (await import('./local/realtime.js')).createLocalRealtime();
+    }
     return (await import('./supabase/realtime.js')).createSupabaseRealtime();
   })();
   return _realtime;
@@ -69,7 +89,11 @@ export function getAssignments() {
     if (name === 'pocketbase') {
       let userId;
       try { userId = (await import('../core/state.js')).getAnonId(); } catch { userId = 'local-anon'; }
-      return (await import('./pocketbase/assignments.js')).createPocketbaseAssignments({ userId });
+      if (await pbCollectionExists('assignments')) {
+        return (await import('./pocketbase/assignments.js')).createPocketbaseAssignments({ userId });
+      }
+      console.warn('[assignments] Colección assignments no existe en PocketBase → modo local');
+      return (await import('./local/assignments.js')).createLocalAssignments({ userId });
     }
     return (await import('./supabase/assignments.js')).createSupabaseAssignments();
   })();
@@ -82,7 +106,7 @@ try {
   globalThis.ww.setBackend = (name) => {
     if (!VALID.includes(name)) throw new Error(`backend must be one of ${VALID.join(', ')}`);
     globalThis.localStorage?.setItem('ww.backend', name);
-    _store = null; _realtime = null; _assignments = null; // force re-resolution on next call
+    _store = null; _realtime = null; _assignments = null;
     console.info(`[adapters] backend → ${name} (reload to fully apply)`);
   };
 } catch { /* non-browser */ }
