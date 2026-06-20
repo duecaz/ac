@@ -180,9 +180,9 @@ const TESTS = [
   // ── assignmentRules.js ─────────────────────────────────────────────────────
   { group: 'Assignments', name: 'normalizeCode, isPastDue, attemptsRemaining', fn: () => {
     eq(normalizeCode(' ab12 '), 'AB12', 'trim + mayúsculas');
-    assert(isPastDue({ due_at: '2000-01-01T00:00:00Z' }), 'fecha pasada → vencida');
-    assert(!isPastDue({ due_at: '2099-01-01T00:00:00Z' }), 'fecha futura → vigente');
-    assert(!isPastDue({}), 'sin due_at → siempre vigente');
+    assert(isPastDue('2000-01-01T00:00:00Z'), 'fecha pasada → vencida');
+    assert(!isPastDue('2099-01-01T00:00:00Z'), 'fecha futura → vigente');
+    assert(!isPastDue(null), 'sin fecha → siempre vigente');
     eq(attemptsRemaining(3, 2), 1, '3 max − 2 = 1');
     eq(attemptsRemaining(3, 3), 0, 'agotado → 0');
     eq(attemptsRemaining(3, 5), 0, 'nunca negativo');
@@ -251,9 +251,9 @@ const TESTS = [
     const items = sessionItems(a);
     const room = createLiveRoom(a, { code: 'SELFT1' });
     const studs = [
-      { p: room.join('u-a', 'A'), skill: () => true },
-      { p: room.join('u-b', 'B'), skill: (i) => i === 0 },
-      { p: room.join('u-c', 'C'), skill: () => false },
+      { p: room.join('u-a', 'Ana'),  skill: () => true },
+      { p: room.join('u-b', 'Bea'),  skill: (i) => i === 0 },
+      { p: room.join('u-c', 'Caro'), skill: () => false },
     ];
     room.dispatch('start');
     for (let i = 0; i < items.length; i++) {
@@ -265,7 +265,7 @@ const TESTS = [
     }
     assert(room.phase === 'ended', 'la partida no terminó');
     const order = room.leaderboard().map(r => `${r.name}:${r.score}`).join(',');
-    eq(order, 'A:4,B:1,C:0', 'ranking final inesperado: ' + order);
+    eq(order, 'Ana:4,Bea:1,Caro:0', 'ranking final inesperado: ' + order);
   } },
 ];
 
