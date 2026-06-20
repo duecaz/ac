@@ -231,9 +231,14 @@ export function mountThumb(container, activity) {
   container.classList.add('ww-thumb');
   container.innerHTML = '';
   const stage = document.createElement('div');
-  stage.className = 'ww-thumb-stage';
+  // ww-player-frame so the scoped skin/background CSS (.ww-player-frame.skin-*)
+  // paints the stage; the layout-breaking frame rules require a .ww-play-page
+  // ancestor we don't have, so they stay inert.
+  stage.className = 'ww-thumb-stage ww-player-frame';
   stage.innerHTML = `<div class="ww-thumb-pad">${buildHtml(activity)}</div>`;
   container.appendChild(stage);
+  // Scoped skin only — never page-wide (applySkin leaves _current untouched
+  // when a target element is passed).
   try { applySkin(activity.presentation?.skin || 'default', stage); } catch { /* skin optional */ }
   _mounted.add(container);
   ensureBound();

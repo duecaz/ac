@@ -132,7 +132,6 @@ let _current = 'default';
 // doesn't repaint the website around it.
 export function applySkin(name, target = null) {
   const valid = name in SKINS ? name : 'default';
-  _current = valid;
   const skin = SKINS[valid];
   const cls = `skin-${valid}`;
   const el = target || document.documentElement;
@@ -141,10 +140,14 @@ export function applySkin(name, target = null) {
   // styles/skins.css handle the visual via the skin-X class. Same selector
   // works for both body and .ww-player-frame.
   if (target) {
+    // Scoped: paint ONLY this element. Do NOT touch _current — a scoped apply
+    // (player frame, home thumbnails) must never change what the page-wide
+    // "current" skin is, or a later global reapply would repaint the whole body.
     target.classList.remove(...ALL_CLS);
     target.classList.add(cls);
     target.style.fontFamily = skin.fontFamily || '';
   } else {
+    _current = valid;
     document.body.classList.remove(...ALL_CLS);
     document.body.classList.add(cls);
     document.body.style.background = '';   // clear any prior inline
