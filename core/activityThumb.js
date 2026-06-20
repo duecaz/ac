@@ -6,6 +6,7 @@
 // pure markup, so it is safe to mount many of them on the home grid.
 import { escapeHtml } from './html.js';
 import { applySkin } from './skins.js';
+import { isVowel } from './textMarks.js';
 
 // Virtual stage = the interactive panel's native resolution (1280×800, 16:10).
 // The activity renders responsively at this size, then the whole stage is
@@ -18,14 +19,31 @@ let _stylesInjected = false;
 function injectStyles() {
   if (_stylesInjected) return;
   _stylesInjected = true;
+  // The stage replicates the real .ww-player-frame layout (white card bg,
+  // padding, flex-fill, container-query sizing) but with FIXED values — no
+  // responsive media queries — because the whole stage is transform-scaled.
   const css = `
     .ww-thumb{position:relative;width:100%;aspect-ratio:16/10;overflow:hidden;
-      border-radius:.375rem .375rem 0 0;pointer-events:none;background:#0b1020;}
+      border-radius:.375rem .375rem 0 0;pointer-events:none;background:#e9ecef;}
     .ww-thumb-stage{position:absolute;top:0;left:0;transform-origin:top left;
-      width:${STAGE_W}px!important;height:${STAGE_H}px!important;max-width:none!important;
-      margin:0!important;aspect-ratio:auto!important;overflow:hidden;}
-    .ww-thumb-stage .ww-player,.ww-thumb-stage .ww-match,
-    .ww-thumb-stage .ww-memory{height:100%;}`;
+      width:${STAGE_W}px;height:${STAGE_H}px;overflow:hidden;
+      background:var(--ww-card-bg,#fff);color:var(--ww-fg,#212529);
+      container-type:size;}
+    .ww-thumb-pad{position:absolute;inset:0;padding:1.75rem;overflow:hidden;}
+    .ww-thumb-pad > .ww-player,.ww-thumb-pad > .ww-match,
+    .ww-thumb-pad > .ww-memory,.ww-thumb-pad > .tc-solo{
+      display:flex;flex-direction:column;height:100%;gap:1.4cqh;}
+    .ww-thumb-pad .ww-q{flex:0 0 auto;margin:0;line-height:1.15;
+      font-size:clamp(1rem,5cqmin,2.4rem);}
+    .ww-thumb-pad .ww-q-media{flex:1 1 auto;min-height:0;display:flex;
+      align-items:center;justify-content:center;}
+    .ww-thumb-pad .ww-q-media img{max-height:100%;max-width:100%;
+      object-fit:contain;border-radius:8px;}
+    .ww-thumb-pad .ww-options{flex:0 0 auto;gap:1.2cqh;}
+    .ww-thumb-pad .ww-kahoot-grid .btn{font-size:clamp(.9rem,3.4cqmin,1.9rem);
+      padding:clamp(.45rem,2.2cqh,1.6rem);min-height:0;white-space:normal;}
+    .ww-thumb-pad .tc-passage{font-size:clamp(1rem,4cqmin,2rem);line-height:1.7;}
+    .ww-thumb-pad .ww-memo-grid,.ww-thumb-pad .row{flex:1 1 auto;min-height:0;}`;
   const el = document.createElement('style');
   el.textContent = css;
   document.head.appendChild(el);
@@ -115,14 +133,40 @@ function memoryHtml(act) {
   </div>`;
 }
 
+// Static reproduction of the text-correction passage (core/textCorrectionRound).
+// Vowels (tildes) / word-end gaps (comas) become tap targets — no handlers.
+function tcPassageHtml(text, kind) {
+  const chars = [...String(text)];
+  const ch = c => `<span class="tc-ch">${escapeHtml(c === ' ' ? ' ' : c)}</span>`;
+  if (kind === 'coma') {
+    return chars.map((c, i) => {
+      if (i === chars.length - 1 || c === ' ' || chars[i + 1] !== ' ') return ch(c);
+      return ch(c) + `<button type="button" class="tc-tap tc-gap" aria-label="hueco"></button>`;
+    }).join('');
+  }
+  return chars.map(c => isVowel(c)
+    ? `<button type="button" class="tc-tap tc-vowel">${escapeHtml(c)}</button>`
+    : ch(c)).join('');
+}
+
 function textHtml(act) {
-  const ps = act.content?.passages || act.content?.items || [];
-  const first = ps[0];
-  const text = typeof first === 'string' ? first : (first?.text || first?.passage || first?.question || '');
-  if (!text) return emptyHtml(act);
-  return `<div class="ww-player">
-    ${headHtml(1, ps.length)}
-    <h3 class="ww-q" style="line-height:1.7;font-weight:500">${escapeHtml(text)}</h3>
+  const passages = (act.content?.passages || []).filter(p => p && p.text);
+  if (!passages.length) return emptyHtml(act);
+  const kind = act.template === 'comas' ? 'coma' : 'tilde';
+  const hint = kind === 'coma'
+    ? 'Toca el hueco donde falta una coma.'
+    : 'Toca las vocales que llevan tilde.';
+  return `<div class="tc-solo">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="badge bg-secondary">Frase 1 / ${passages.length}</span>
+      <span class="badge bg-primary">★ 0</span></div>
+    <h4 class="text-center mb-1">${escapeHtml(act.title || '')}</h4>
+    <div class="tc-round">
+      <div class="tc-passage">${tcPassageHtml(passages[0].text, kind)}</div>
+      <div class="text-center mt-3"><button type="button" class="btn btn-success btn-lg">
+        <i class="bi bi-check2-circle"></i> Listo</button></div>
+      <p class="tc-hint text-muted text-center mt-2">${hint}</p>
+    </div>
   </div>`;
 }
 
@@ -187,8 +231,8 @@ export function mountThumb(container, activity) {
   container.classList.add('ww-thumb');
   container.innerHTML = '';
   const stage = document.createElement('div');
-  stage.className = 'ww-thumb-stage ww-player-frame';
-  stage.innerHTML = buildHtml(activity);
+  stage.className = 'ww-thumb-stage';
+  stage.innerHTML = `<div class="ww-thumb-pad">${buildHtml(activity)}</div>`;
   container.appendChild(stage);
   try { applySkin(activity.presentation?.skin || 'default', stage); } catch { /* skin optional */ }
   _mounted.add(container);
