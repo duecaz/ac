@@ -34,9 +34,12 @@ export function wheelSvg(entries, { rotation = 0, dur = 4000, spinning = false, 
     const labelA = a0 + arc / 2;
     const lx = cx + (r * 0.65) * Math.cos(labelA);
     const ly = cy + (r * 0.65) * Math.sin(labelA);
-    const deg = (labelA * 180 / Math.PI);
+    const baseDeg = (labelA * 180 / Math.PI) + 90;
+    // Labels in the lower half (90°–270°) would render upside-down; flip 180°.
+    const norm = ((baseDeg % 360) + 360) % 360;
+    const deg = (norm > 90 && norm <= 270) ? baseDeg + 180 : baseDeg;
     return `<path d="M ${cx} ${cy} L ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1} Z" fill="${PALETTE[i % PALETTE.length]}" stroke="#fff" stroke-width="2"/>
-            <text x="${lx}" y="${ly}" fill="#fff" font-weight="700" font-size="14" text-anchor="middle" transform="rotate(${deg + 90} ${lx} ${ly})">${escapeHtml(truncLabel(e))}</text>`;
+            <text x="${lx}" y="${ly}" fill="#fff" font-weight="700" font-size="14" text-anchor="middle" transform="rotate(${deg} ${lx} ${ly})">${escapeHtml(truncLabel(e))}</text>`;
   }).join('');
   return `<svg width="${size}" height="${size}" style="transform:rotate(${rotation}deg);transition:transform ${spinning ? dur : 0}ms cubic-bezier(.17,.67,.21,.99)">
     ${slices}
