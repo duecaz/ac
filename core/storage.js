@@ -1,10 +1,3 @@
-// Storage layer: localStorage is the source of truth for read; Supabase syncs
-// in background. list/get are sync. save returns a promise; remote errors
-// are surfaced.
-//
-// Banco COMPARTIDO: la caché local ya NO se scopea por identidad — todas las
-// sesiones ven el mismo banco (clave única 'ww.activities'). sync() lo repuebla
-// desde la nube, así que limpiar la caché no pierde actividades.
 import { getRemoteStore } from '../adapters/index.js';
 import { migrate, normalize } from './migrate.js';
 import { mergeRemote } from './storageMerge.js';
@@ -12,7 +5,6 @@ import { mergeRemote } from './storageMerge.js';
 const LEGACY_KEY = 'ww.activities';
 let _userId = 'guest';
 
-// Firma conservada por compatibilidad con el boot; ya no afecta a la clave.
 export function setStorageUser(userId) { _userId = userId || 'guest'; }
 
 function currentKey() { return LEGACY_KEY; }
@@ -33,31 +25,25 @@ export function get(id) {
   return map[id] ? migrate(map[id]) : null;
 }
 
-// Pull a single activity straight from Supabase by id. Used by the embed
-// page where the visitor doesn't have the activity in localStorage. Returns
-// null if not found or visibility is private (RLS hides it).
 export async function getRemote(id) {
   const rs = await getRemoteStore();
   const data = await rs.getActivity(id);
   return data ? migrate(data) : null;
 }
 
-// Saves locally immediately and to remote in the background.
-// On remote failure, marks the local copy with _unsynced=true so the UI
-// can show a sync status. Returns { activity, remote }.
+// Saves locally immediately; generates preview then saves to remote in one call.
+// preview_url is a compact data URL stored inside the activity data itself —
+// no separate file upload needed, no CORS/auth issues, syncs to PB automatically.
 export function save(activity) {
   const a = normalize({ ...activity, updatedAt: new Date().toISOString() });
-  // Optimistically clear stale flag.
   delete a._unsynced;
   const map = readLS();
   map[a.id] = a;
   writeLS(map);
-  const remote = remoteSave(a);
+  const remote = remoteSaveWithPreview(a);
   remote.then(() => {
     const m = readLS();
     if (m[a.id]?._unsynced) { delete m[a.id]._unsynced; writeLS(m); }
-    // Generate and upload preview async — doesn't block save or affect sync flag.
-    remoteUpdatePreview(a).catch(e => console.debug('[preview]', e.message));
   }).catch(err => {
     console.warn('[storage] remote save failed:', err.message);
     const m = readLS();
@@ -66,20 +52,42 @@ export function save(activity) {
   return { activity: a, remote };
 }
 
-// Retry pending unsynced rows. Call on online, on boot, on demand.
+async function remoteSaveWithPreview(a) {
+  let toSave = a;
+  if (typeof document !== 'undefined') {
+    try {
+      const { generatePreview } = await import('./preview.js');
+      const blob = await generatePreview(a);
+      if (blob) {
+        const url = await new Promise(res => {
+          const r = new FileReader();
+          r.onload = () => res(r.result);
+          r.onerror = () => res(null);
+          r.readAsDataURL(blob);
+        });
+        if (url) {
+          const m = readLS();
+          if (m[a.id]) { m[a.id].preview_url = url; writeLS(m); }
+          toSave = { ...a, preview_url: url };
+        }
+      }
+    } catch { /* preview failed — save without it */ }
+  }
+  const rs = await getRemoteStore();
+  await rs.saveActivity(toSave);
+}
+
 export async function retryUnsynced() {
   const map = readLS();
   const pending = Object.values(map).filter(a => a._unsynced);
   let ok = 0;
   for (const a of pending) {
-    try { await remoteSave(a); delete a._unsynced; ok++; }
+    try { await remoteSaveWithPreview(a); delete a._unsynced; ok++; }
     catch { /* keep flag */ }
   }
   writeLS(map);
   return { tried: pending.length, ok };
 }
-// Auto-retry when network returns. Guarded so importing storage outside a
-// browser (tests, non-DOM contexts) doesn't crash.
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => { retryUnsynced().catch(() => {}); });
 }
@@ -98,46 +106,11 @@ export function remove(id) {
   return remote;
 }
 
-async function remoteSave(a) {
-  const rs = await getRemoteStore();
-  await rs.saveActivity(a);
-}
-
-async function remoteUpdatePreview(a) {
-  const { generatePreview } = await import('./preview.js');
-  const blob = await generatePreview(a);
-  if (!blob) return;
-
-  let url = null;
-  try {
-    const rs = await getRemoteStore();
-    if (typeof rs.uploadPreview === 'function') url = await rs.uploadPreview(a.id, blob);
-  } catch { /* silent — fall back to data URL */ }
-
-  // If remote upload failed or returned nothing, store as local data URL so
-  // the card preview is always visible regardless of backend state.
-  if (!url) {
-    url = await new Promise(res => {
-      const r = new FileReader();
-      r.onload = () => res(r.result);
-      r.onerror = () => res(null);
-      r.readAsDataURL(blob);
-    });
-  }
-
-  if (url) {
-    const m = readLS();
-    if (m[a.id]) { m[a.id].preview_url = url; writeLS(m); }
-  }
-}
-
 async function remoteDelete(id) {
   const rs = await getRemoteStore();
   await rs.deleteActivity(id);
 }
 
-// Pull all activities from the backend, merging into localStorage.
-// Last-write-wins by updatedAt.
 export async function sync() {
   const rs = await getRemoteStore();
   const rows = await rs.listActivities();

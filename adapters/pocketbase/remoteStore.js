@@ -68,9 +68,9 @@ export function createPocketbaseRemoteStore() {
   return {
     async saveActivity(a) {
       const pbId = toId(a.id);
-      // Strip local-only fields: preview_url lives in the 'preview' file field,
-      // _unsynced is an internal flag — neither belongs in the JSON blob.
-      const { preview_url, _unsynced, ...cleanData } = a;
+      // Strip only the internal flag; preview_url is part of the data and
+      // must be stored in PB so other devices get it on sync.
+      const { _unsynced, ...cleanData } = a;
       const payload = {
         id: pbId,
         data: cleanData,
@@ -108,23 +108,6 @@ export function createPocketbaseRemoteStore() {
         }
         markSynced(pbId);
       }
-    },
-
-    // Uploads a preview blob and returns the public URL, or null on failure.
-    // Called by storage.js after a successful save.
-    async uploadPreview(id, blob) {
-      const pbId = toId(id);
-      const fd = new FormData();
-      fd.append('preview', blob, 'preview.jpg');
-      const r = await fetch(`${PB_URL}/api/collections/activities/records/${pbId}`, {
-        method: 'PATCH',
-        body: fd,
-      });
-      if (!r.ok) return null;
-      const data = await r.json();
-      return data.preview
-        ? `${PB_URL}/api/files/activities/${pbId}/${data.preview}`
-        : null;
     },
 
     async deleteActivity(id) {

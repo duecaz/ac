@@ -48,7 +48,7 @@ function fillWrapped(ctx, text, x, y, maxW, lineH, maxLines = 2) {
 // Generates a 480×300 JPEG thumbnail blob for the given activity.
 export function generatePreview(activity) {
   return new Promise(resolve => {
-    const W = 480, H = 300;
+    const W = 200, H = 125;
     const canvas = document.createElement('canvas');
     canvas.width = W; canvas.height = H;
     const ctx = canvas.getContext('2d');
@@ -74,29 +74,29 @@ export function generatePreview(activity) {
     ctx.fillRect(0, 0, W, H);
 
     // Top-left: template label
-    ctx.font = 'bold 13px system-ui,sans-serif';
+    ctx.font = 'bold 9px system-ui,sans-serif';
     ctx.fillStyle = 'rgba(255,255,255,0.88)';
-    ctx.fillText(label.toUpperCase(), 18, 28);
+    ctx.fillText(label.toUpperCase(), 8, 16);
 
     // Top-right: item count
-    ctx.font = '13px system-ui,sans-serif';
+    ctx.font = '9px system-ui,sans-serif';
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
     ctx.textAlign = 'right';
-    ctx.fillText(`${count} elem.`, W - 18, 28);
+    ctx.fillText(`${count} elem.`, W - 8, 16);
     ctx.textAlign = 'left';
 
-    // Title (large, with word-wrap)
-    ctx.font = 'bold 26px system-ui,sans-serif';
+    // Title
+    ctx.font = 'bold 16px system-ui,sans-serif';
     ctx.fillStyle = '#fff';
-    fillWrapped(ctx, activity.title || 'Sin título', 18, 160, W - 36, 34, 3);
+    fillWrapped(ctx, activity.title || 'Sin título', 8, 68, W - 16, 20, 2);
 
     // First-item excerpt
     if (first) {
-      ctx.font = '14px system-ui,sans-serif';
+      ctx.font = '9px system-ui,sans-serif';
       ctx.fillStyle = 'rgba(255,255,255,0.68)';
-      fillWrapped(ctx, first, 18, 248, W - 36, 20, 2);
+      fillWrapped(ctx, first, 8, 106, W - 16, 13, 2);
     }
 
-    canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.82);
+    canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.65);
   });
 }
