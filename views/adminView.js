@@ -12,7 +12,7 @@ import { templateCapabilities, activityAvailability, CONTRACT_METHODS } from '..
 import { list, remove } from '../core/storage.js';
 import { confirmModal, toast } from '../core/toast.js';
 import { activityItemCount } from '../core/migrate.js';
-import { runSelfTests } from '../core/selftest.js';
+import { runSelfTests, TOTAL_TESTS } from '../core/selftest.js';
 import { canConvert } from '../kernel/content/convert.js';
 import { listVsAnimations } from '../core/vsAnimations.js';
 import { loadCustomAnims, addCustomAnim, removeCustomAnim } from '../core/vsAnimStore.js';
@@ -111,7 +111,7 @@ function renderPanel(rootSel) {
       <button id="admin-wipe" class="btn btn-outline-danger"><i class="bi bi-trash"></i> Borrar TODAS mis actividades (este dispositivo + nube)</button>
       <p class="small text-muted mt-1">Empieza de cero. No se puede deshacer. Mantiene tu identidad (no hace falta borrar la caché).</p>
 
-      <h5 class="mt-4">Tests <small class="text-muted">(humo en vivo; la suite completa es <code>node tests/run.mjs</code>)</small></h5>
+      <h5 class="mt-4">Tests en vivo <small class="text-muted">(${TOTAL_TESTS} comprobaciones · la suite CI es <code>node tests/run.mjs</code>)</small></h5>
       <button id="admin-run" class="btn btn-success"><i class="bi bi-play-circle"></i> Ejecutar tests</button>
       <div id="admin-tests" class="mt-2"></div>
 
@@ -239,20 +239,70 @@ function renderPanel(rootSel) {
   });
   on(rootSel, 'click', '#admin-run', async () => {
     const box = document.getElementById('admin-tests');
-    box.innerHTML = '<span class="text-muted"><span class="spinner-border spinner-border-sm"></span> Ejecutando…</span>';
-    const results = await runSelfTests();
-    const passed = results.filter(r => r.pass).length;
-    const allOk = passed === results.length;
+    const btn = document.getElementById('admin-run');
+    btn.disabled = true;
+
+    // Build streaming UI: progress bar + live list.
     box.innerHTML = `
-      <div class="alert ${allOk ? 'alert-success' : 'alert-danger'} py-2">
-        <b>${passed}/${results.length}</b> tests pasados ${allOk ? '✓' : '— revisa los fallos'}
+      <div class="mb-2">
+        <div class="d-flex justify-content-between mb-1">
+          <small id="at-status" class="text-muted">Ejecutando…</small>
+          <small id="at-count" class="text-muted">0 / ${TOTAL_TESTS}</small>
+        </div>
+        <div class="progress" style="height:6px">
+          <div id="at-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+               role="progressbar" style="width:0%"></div>
+        </div>
       </div>
-      <ul class="list-group">
-        ${results.map(r => `<li class="list-group-item d-flex justify-content-between align-items-start">
-          <span><span class="badge bg-secondary me-2">${escapeHtml(r.group)}</span>${escapeHtml(r.name)}</span>
-          <span>${r.pass ? '<span class="text-success fw-bold">✓ pasó</span>'
-            : `<span class="text-danger fw-bold">✗ ${escapeHtml(r.error || 'falló')}</span>`}</span>
-        </li>`).join('')}
-      </ul>`;
+      <ul id="at-list" class="list-group list-group-flush" style="font-size:.875rem"></ul>`;
+
+    const bar   = document.getElementById('at-bar');
+    const count = document.getElementById('at-count');
+    const statusEl = document.getElementById('at-status');
+    const ul    = document.getElementById('at-list');
+    let failed  = 0;
+
+    const results = await runSelfTests((r, done, total) => {
+      if (!r.pass) failed++;
+      // Update progress.
+      const pct = Math.round(done / total * 100);
+      if (bar)   bar.style.width   = pct + '%';
+      if (count) count.textContent = `${done} / ${total}`;
+      if (bar && failed > 0) bar.className = 'progress-bar bg-danger';
+      // Append result row (streaming).
+      if (ul) {
+        const li = document.createElement('li');
+        li.className = 'list-group-item d-flex justify-content-between align-items-center py-1 px-2';
+        li.innerHTML = `
+          <span>
+            <span class="badge bg-secondary me-1" style="font-size:.7rem">${escapeHtml(r.group)}</span>
+            ${escapeHtml(r.name)}
+          </span>
+          <span class="ms-2 text-nowrap">
+            ${r.pass
+              ? '<span class="text-success fw-semibold">✓</span>'
+              : `<span class="text-danger fw-semibold" title="${escapeHtml(r.error || '')}">✗ <small>${escapeHtml((r.error||'').slice(0, 60))}</small></span>`}
+          </span>`;
+        ul.appendChild(li);
+        li.scrollIntoView({ block: 'nearest' });
+      }
+    });
+
+    // Final summary banner above the list.
+    const passed = results.filter(r => r.pass).length;
+    const allOk  = passed === results.length;
+    if (bar) {
+      bar.className = `progress-bar ${allOk ? 'bg-success' : 'bg-danger'}`;
+      bar.style.width = '100%';
+    }
+    if (statusEl) statusEl.className = allOk ? 'text-success fw-semibold' : 'text-danger fw-semibold';
+    if (statusEl) statusEl.textContent = allOk ? `✓ Todos pasaron` : `✗ ${failed} fallaron`;
+
+    const banner = document.createElement('div');
+    banner.className = `alert ${allOk ? 'alert-success' : 'alert-danger'} py-1 px-2 mb-2 small`;
+    banner.innerHTML = `<b>${passed} / ${results.length}</b> tests pasados ${allOk ? '✓' : '— revisa los detalles abajo'}`;
+    box.insertBefore(banner, box.querySelector('div'));
+
+    btn.disabled = false;
   });
 }
