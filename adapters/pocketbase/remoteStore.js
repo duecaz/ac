@@ -55,16 +55,17 @@ export function createPocketbaseRemoteStore() {
         tags: a.tags || [],
         language: a.language || 'es',
       };
-      // Upsert: intenta actualizar; si no existe (404) crea.
+      // Upsert: POST primero (registro nuevo); si ya existe (validation_not_unique) → PATCH.
       try {
-        await pbFetch(`/api/collections/activities/records/${pbId}`, {
-          method: 'PATCH',
+        await pbFetch('/api/collections/activities/records', {
+          method: 'POST',
           body: JSON.stringify(payload),
         });
       } catch (e) {
-        if (e.status !== 404) throw e;
-        await pbFetch('/api/collections/activities/records', {
-          method: 'POST',
+        const isConflict = e.status === 400 && e.pb?.data?.id?.code === 'validation_not_unique';
+        if (!isConflict) throw e;
+        await pbFetch(`/api/collections/activities/records/${pbId}`, {
+          method: 'PATCH',
           body: JSON.stringify(payload),
         });
       }
