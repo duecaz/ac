@@ -7,7 +7,7 @@
 import { PB_URL } from '../../pocketbase.config.js';
 
 function toId(id) {
-  const s = (id || '').replace(/[^a-zA-Z0-9]/g, '');
+  const s = (id || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
   return s.length >= 15 ? s : s.padEnd(15, '0');
 }
 
@@ -106,7 +106,7 @@ export function createPocketbaseRemoteStore() {
     },
 
     async listActivities() {
-      const rec = await pbFetch('/api/collections/activities/records?sort=-updated&perPage=200');
+      const rec = await pbFetch('/api/collections/activities/records?perPage=200');
       return (rec?.items || []).map(row => ({
         id: fromId(row.id, row.data?.id),
         data: row.data,
