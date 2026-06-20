@@ -44,12 +44,32 @@ async function pbFetch(path, opts = {}) {
   return body;
 }
 
+// Track which PocketBase IDs are known to exist so we can skip the
+// PATCH→404→POST dance after the first successful sync.
+const SYNCED_KEY = 'ww.pb.synced';
+function getSynced() {
+  try { return new Set(JSON.parse(localStorage.getItem(SYNCED_KEY) || '[]')); }
+  catch { return new Set(); }
+}
+function markSynced(pbId) {
+  try {
+    const s = getSynced(); s.add(pbId);
+    localStorage.setItem(SYNCED_KEY, JSON.stringify([...s]));
+  } catch { }
+}
+function unmarkSynced(pbId) {
+  try {
+    const s = getSynced(); s.delete(pbId);
+    localStorage.setItem(SYNCED_KEY, JSON.stringify([...s]));
+  } catch { }
+}
+
 export function createPocketbaseRemoteStore() {
   return {
     async saveActivity(a) {
       const pbId = toId(a.id);
-      // Strip local-only fields before sending: preview_url (stored in the
-      // separate 'preview' file field) and _unsynced (internal flag).
+      // Strip local-only fields: preview_url lives in the 'preview' file field,
+      // _unsynced is an internal flag — neither belongs in the JSON blob.
       const { preview_url, _unsynced, ...cleanData } = a;
       const payload = {
         id: pbId,
@@ -58,19 +78,35 @@ export function createPocketbaseRemoteStore() {
         tags: a.tags || [],
         language: a.language || 'es',
       };
-      // Upsert: PATCH actualiza si existe (solo falla 404 la primera vez); POST crea.
-      // El navegador muestra el 404 en consola pero está capturado — el guardado funciona.
-      try {
-        await pbFetch(`/api/collections/activities/records/${pbId}`, {
-          method: 'PATCH',
-          body: JSON.stringify(payload),
-        });
-      } catch (e) {
-        if (e.status !== 404) throw e;
-        await pbFetch('/api/collections/activities/records', {
-          method: 'POST',
-          body: JSON.stringify(payload),
-        });
+
+      if (getSynced().has(pbId)) {
+        // Record is known to exist in PB → PATCH directly, no 404 in console.
+        try {
+          await pbFetch(`/api/collections/activities/records/${pbId}`, {
+            method: 'PATCH', body: JSON.stringify(payload),
+          });
+        } catch (e) {
+          if (e.status !== 404) throw e;
+          // Was deleted from PB externally — recreate.
+          unmarkSynced(pbId);
+          await pbFetch('/api/collections/activities/records', {
+            method: 'POST', body: JSON.stringify(payload),
+          });
+          markSynced(pbId);
+        }
+      } else {
+        // Unknown state: try PATCH first; 404 means it doesn't exist yet → POST.
+        try {
+          await pbFetch(`/api/collections/activities/records/${pbId}`, {
+            method: 'PATCH', body: JSON.stringify(payload),
+          });
+        } catch (e) {
+          if (e.status !== 404) throw e;
+          await pbFetch('/api/collections/activities/records', {
+            method: 'POST', body: JSON.stringify(payload),
+          });
+        }
+        markSynced(pbId);
       }
     },
 
@@ -92,11 +128,13 @@ export function createPocketbaseRemoteStore() {
     },
 
     async deleteActivity(id) {
+      const pbId = toId(id);
       try {
-        await pbFetch(`/api/collections/activities/records/${toId(id)}`, { method: 'DELETE' });
+        await pbFetch(`/api/collections/activities/records/${pbId}`, { method: 'DELETE' });
       } catch (e) {
         if (e.status !== 404) throw e;
       }
+      unmarkSynced(pbId);
     },
 
     async getActivity(id) {
@@ -104,6 +142,7 @@ export function createPocketbaseRemoteStore() {
         const pbId = toId(id);
         const rec = await pbFetch(`/api/collections/activities/records/${pbId}`);
         if (!rec) return null;
+        markSynced(pbId);
         const data = rec.data ?? {};
         if (rec.preview) data.preview_url = `${PB_URL}/api/files/activities/${pbId}/${rec.preview}`;
         return data;
@@ -116,6 +155,7 @@ export function createPocketbaseRemoteStore() {
     async listActivities() {
       const rec = await pbFetch('/api/collections/activities/records?perPage=200');
       return (rec?.items || []).map(row => {
+        markSynced(row.id);
         const data = row.data ?? {};
         if (row.preview) data.preview_url = `${PB_URL}/api/files/activities/${row.id}/${row.preview}`;
         return { id: fromId(row.id, row.data?.id), data };
