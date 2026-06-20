@@ -7,6 +7,7 @@ import { navigate } from '../core/router.js';
 import { toast, confirmModal } from '../core/toast.js';
 import { acquire } from '../core/lifecycle.js';
 import { buildSwitchOptions, applyAndSave } from './switchTemplate.js';
+import { downloadActivitiesJson } from '../core/io.js';
 
 const AUTOSAVE_DELAY_MS = 2000;
 
@@ -73,6 +74,7 @@ export function renderEditView(rootSel, { id, template }) {
         <span id="save-state" class="badge bg-secondary"><i class="bi bi-check2"></i> Guardado</span>
       </div>
       <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary btn-sm" id="btn-export" title="Exportar JSON"><i class="bi bi-download"></i></button>
         <button class="btn btn-outline-success btn-sm" id="btn-test"><i class="bi bi-play-fill"></i> Probar</button>
         <button class="btn btn-primary btn-sm" id="btn-save"><i class="bi bi-cloud-arrow-up"></i> Guardar</button>
       </div>
@@ -141,6 +143,7 @@ export function renderEditView(rootSel, { id, template }) {
     navigate(`#/edit/${next.id}`); // same hash → re-renders the editor cleanly
   });
 
+  on(rootSel, 'click', '#btn-export', () => downloadActivitiesJson([activity.id]));
   on(rootSel, 'click', '#btn-save', () => doSave(false));
   on(rootSel, 'click', '#btn-test', async () => {
     if (dirty) await doSave(true);

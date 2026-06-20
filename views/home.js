@@ -72,28 +72,40 @@ export function renderHome(rootSel) {
   function card(a) {
     const T = getTemplate(a.template);
     const m = T?.meta?.modes || { solo: true, live: false, async: false };
+    const color = T?.meta?.color || 'info';
+    const icon  = T?.meta?.icon  || 'bi-puzzle';
+    const label = T?.meta?.label || a.template;
+
+    const playBtns = [
+      m.solo             ? `<button class="btn btn-success act-play"  data-id="${a.id}" title="Individual"><i class="bi bi-person-fill"></i></button>` : '',
+      isVsCompatible(a)  ? `<button class="btn btn-danger  act-vs"   data-id="${a.id}" title="VS"><i class="bi bi-fire"></i></button>` : '',
+                            `<button class="btn btn-primary act-teams" data-id="${a.id}" data-tpl="${a.template}" title="Equipos"><i class="bi bi-people-fill"></i></button>`,
+      m.live             ? `<button class="btn btn-warning  act-pin"  data-id="${a.id}" title="En vivo"><i class="bi bi-broadcast"></i></button>` : '',
+      m.async            ? `<button class="btn btn-info     act-task" data-id="${a.id}" title="Tarea"><i class="bi bi-clipboard-check"></i></button>` : '',
+    ].filter(Boolean).join('');
+
     return `
-      <div class="col-md-6 col-lg-4">
-        <div class="card h-100">
+      <div class="col-sm-6 col-xl-4">
+        <div class="card h-100 border-0 rounded-4 shadow-sm overflow-hidden">
           <div class="js-thumb" data-id="${escapeHtml(a.id)}"></div>
-          <div class="card-body">
-            <div class="d-flex justify-content-between">
-              <span class="badge bg-${T?.meta?.color || 'info'}"><i class="bi ${T?.meta?.icon || 'bi-puzzle'}"></i> ${escapeHtml(T?.meta?.label || a.template)}</span>
-              <small class="text-muted">${itemCount(a)} elem.</small>
+          <div class="card-body pt-2 pb-0 px-3">
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <span class="badge bg-${color}"><i class="bi ${icon}"></i> ${escapeHtml(label)}</span>
+              <small class="text-muted ms-auto">${itemCount(a)} elem.</small>
+              ${a._unsynced ? '<i class="bi bi-cloud-slash text-warning" title="No sincronizada"></i>' : ''}
             </div>
-            <h5 class="card-title mt-2">${escapeHtml(a.title)}${a._unsynced ? ' <i class="bi bi-cloud-slash text-warning" title="No sincronizada"></i>' : ''}</h5>
-            <p class="card-text small text-muted">${escapeHtml(a.subtitle || '')}</p>
-            ${(a.tags || []).length ? `<div>${a.tags.slice(0,4).map(t => `<span class="badge bg-light text-dark border me-1">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+            <h6 class="card-title mb-0 fw-semibold">${escapeHtml(a.title)}</h6>
+            ${a.subtitle ? `<p class="small text-muted mb-0 mt-1">${escapeHtml(a.subtitle)}</p>` : ''}
+            ${(a.tags||[]).length ? `<div class="mt-1">${a.tags.slice(0,3).map(t=>`<span class="badge bg-light text-dark border me-1">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
           </div>
-          <div class="card-footer d-flex gap-1 flex-wrap">
-            ${m.solo ? `<button class="btn btn-success btn-sm flex-grow-1 act-play" data-id="${a.id}"><i class="bi bi-person-fill"></i> Individual</button>` : ''}
-            ${isVsCompatible(a) ? `<button class="btn btn-danger btn-sm flex-grow-1 act-vs" data-id="${a.id}"><i class="bi bi-fire"></i> VS</button>` : ''}
-            <button class="btn btn-primary btn-sm flex-grow-1 act-teams" data-id="${a.id}" data-tpl="${a.template}"><i class="bi bi-people-fill"></i> Equipos</button>
-            ${m.live ? `<button class="btn btn-warning btn-sm flex-grow-1 act-pin" data-id="${a.id}"><i class="bi bi-broadcast"></i> En vivo</button>` : ''}
-            ${m.async ? `<button class="btn btn-info btn-sm flex-grow-1 act-task" data-id="${a.id}" title="Tarea"><i class="bi bi-clipboard-check"></i> Tarea</button>` : ''}
-            <button class="btn btn-outline-primary btn-sm act-edit" data-id="${a.id}"><i class="bi bi-pencil"></i></button>
-            <button class="btn btn-outline-secondary btn-sm act-export" data-id="${a.id}" title="Exportar JSON"><i class="bi bi-download"></i></button>
-            <button class="btn btn-outline-danger btn-sm act-del" data-id="${a.id}"><i class="bi bi-trash"></i></button>
+          <div class="card-footer bg-transparent border-0 pt-2 pb-3 px-3">
+            <div class="btn-group w-100 btn-group-sm mb-2" role="group">
+              ${playBtns}
+            </div>
+            <div class="d-flex justify-content-end gap-1">
+              <button class="btn btn-sm btn-outline-primary act-edit" data-id="${a.id}" title="Editar"><i class="bi bi-pencil-fill"></i> Editar</button>
+              <button class="btn btn-sm btn-outline-danger  act-del"  data-id="${a.id}" title="Eliminar"><i class="bi bi-trash3"></i></button>
+            </div>
           </div>
         </div>
       </div>`;
@@ -108,7 +120,6 @@ export function renderHome(rootSel) {
       renderHome(rootSel);
     });
   });
-  on(rootSel, 'click', '.act-export', (_, b) => downloadActivitiesJson([b.dataset.id]));
   on(rootSel, 'click', '.act-play', (_, b) => navigate(`#/play/${b.dataset.id}`));
   on(rootSel, 'click', '.act-vs', (_, b) => navigate(`#/vs/${b.dataset.id}`));
   on(rootSel, 'click', '.act-teams', (_, b) => navigate(`#/${b.dataset.tpl === 'memory' ? 'memory' : 'teams'}/${b.dataset.id}`));
