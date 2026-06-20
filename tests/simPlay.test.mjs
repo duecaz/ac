@@ -49,9 +49,9 @@ const wrongFor = (it) => it.options.find(o => o !== it.answer);
   assert.strictEqual(fin.finished, true);
   assert.strictEqual(fin.leader, 'left', 'Ana (acierta todo) gana');
   assert.strictEqual(fin.left.cursor, items.length, 'Ana terminó todas');
-  assert.ok(fin.right.cursor < items.length, 'la carrera acabó al ganar Ana: Beto NO siguió jugando');
+  assert.strictEqual(fin.right.cursor, items.length, 'Beto también completó: cada lado juega a su ritmo hasta acabar');
   assert.strictEqual(fin.right.score, 0, 'Beto falló todo → 0');
-  ok(`VS: 2 alumnos virtuales, gana ${fin.left.name} ${fin.left.score}–${fin.right.score} y el otro no juega de más`);
+  ok(`VS: 2 alumnos virtuales, gana ${fin.left.name} ${fin.left.score}–${fin.right.score} (ambos completan su carrera)`);
 }
 
 // ───────────────────── En vivo: varios alumnos virtuales ──────────────────────

@@ -36,9 +36,23 @@ async function pbFetch(path, opts = {}) {
     ...rest,
   });
   if (r.status === 204) return null;
-  const body = await r.json();
+  // PocketBase always speaks JSON. If the body fails to parse, a gateway /
+  // proxy / network-policy page intercepted the request — surface it as a
+  // PocketBase error so callers handle every failure uniformly (instead of an
+  // opaque SyntaxError from r.json()).
+  const text = await r.text();
+  let body = null;
+  if (text) {
+    try { body = JSON.parse(text); }
+    catch {
+      throw Object.assign(
+        new Error(`PocketBase error ${r.status}: respuesta no-JSON`),
+        { status: r.status, pb: { raw: text.slice(0, 200) } }
+      );
+    }
+  }
   if (!r.ok) throw Object.assign(
-    new Error(body.message || `PocketBase error ${r.status}`),
+    new Error(body?.message || `PocketBase error ${r.status}`),
     { status: r.status, pb: body }
   );
   return body;

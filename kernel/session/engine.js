@@ -287,8 +287,9 @@ function createTeamsSession(activity, T, opts) {
 // ────────────────────────────── VS ──────────────────────────────
 // Two sides race the SAME items in parallel. No host: each answer is auto-scored
 // on submit and advances only that side's own cursor. standings() exposes the
-// live gap so the UI can animate who's ahead; the match ends as soon as the
-// FIRST side finishes all items (a race) — the other side stops there.
+// live gap so the UI can animate who's ahead. Each side plays at its own pace; a
+// side that finishes stops there (shows its "done" card) while the other plays
+// on, and the match ends only once BOTH sides have completed every item.
 function createVsSession(activity, T, opts) {
   const items = sessionItems(activity);
   const total = items.length;

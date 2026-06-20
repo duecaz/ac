@@ -24,4 +24,5 @@ console.log('\n▶ liveLocal'); await import('./liveLocal.test.mjs');
 console.log('\n▶ liveText'); await import('./liveText.test.mjs');
 console.log('\n▶ simPlay'); await import('./simPlay.test.mjs');
 console.log('\n▶ assignments'); await import('./assignments.test.mjs');
+console.log('\n▶ stability'); await import('./stability.test.mjs');
 console.log('\n✅ all suites passed');

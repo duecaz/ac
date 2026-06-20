@@ -137,17 +137,31 @@ const quizActivity = {
   assert.strictEqual(st.right.correct, 1, 'Beto has 1 correct of 2 attempted');
   ok('vs: sides advance independently and standings track the live gap');
 
-  // Ana finishes first → the duel ENDS immediately (it's a race). Beto, who is
-  // mid-duel (2 of 4 done), does NOT get to play on.
+  // Ana finishes all her items first. Each side plays at its own pace, so the
+  // duel does NOT end yet — Ana's panel shows "done" and she can't answer again,
+  // but Beto keeps playing and the session stays running.
   s.answer('left', '10'); s.answer('left', '8');   // Ana done: +1 +2 → 6
   st = s.standings();
-  assert.strictEqual(s.status, 'ended', 'duel ends the instant the first side finishes');
-  assert.strictEqual(st.finished, true, 'standings report finished as soon as one side completes');
+  assert.strictEqual(s.status, 'running', 'session stays running until BOTH sides finish');
+  assert.strictEqual(st.finished, false, 'standings not finished while one side is mid-duel');
   assert.strictEqual(st.left.score, 6);
-  assert.strictEqual(st.leader, 'left', 'Ana wins the race 6–2');
+  assert.strictEqual(st.left.done, true, 'Ana is marked done');
+  assert.strictEqual(st.right.done, false, 'Beto is still playing');
+  assert.strictEqual(st.leader, 'left', 'Ana leads 6–2');
+  assert.throws(() => s.answer('left', 'x'), /ya terminó/,
+    'a finished side cannot keep answering');
+  ok('vs: a finished side stops, but the duel runs until BOTH sides complete');
+
+  // Beto plays out his remaining two items → now BOTH are done → duel ends.
+  s.answer('right', '10'); s.answer('right', '8'); // Beto: +1 +2 → 5
+  st = s.standings();
+  assert.strictEqual(s.status, 'ended', 'duel ends once both sides have finished');
+  assert.strictEqual(st.finished, true, 'standings report finished when both complete');
+  assert.strictEqual(st.right.score, 5, 'Beto finishes with 5');
+  assert.strictEqual(st.leader, 'left', 'Ana still wins 6–5');
   assert.throws(() => s.answer('right', 'x'), /no está en curso/,
-    'the other side cannot keep playing after the win');
-  ok('vs: the race ends when the FIRST side finishes (no playing on after the win)');
+    'no answers after the duel has ended');
+  ok('vs: the duel ends only when the SECOND (last) side finishes too');
 }
 
 // ──────────── sessionItems + TEAMS judge over a non-`items` model ────────────
@@ -206,10 +220,14 @@ const quizActivity = {
   vs.start();
   vs.answer('left', [4]);   // A passage 0 correct → +1
   vs.answer('right', [1]);  // B passage 0 wrong   → 0   (interleaved, before A finishes)
-  vs.answer('left', [0]);   // A passage 1 correct → +1  (A done: 2) → race ends
-  const st = vs.standings();
+  vs.answer('left', [0]);   // A passage 1 correct → +1  (A done: 2)
+  let st = vs.standings();
   assert.strictEqual(st.left.score, 2, 'A scored both passages in VS');
-  assert.strictEqual(st.finished, true, 'tildes VS ends the moment A finishes first');
+  assert.strictEqual(st.finished, false, 'duel keeps running until B also finishes');
+  assert.strictEqual(st.left.done, true, 'A is done while B plays on');
+  vs.answer('right', [0]);   // B passage 1 correct → +1 (B done: 1) → both done → ends
+  st = vs.standings();
+  assert.strictEqual(st.finished, true, 'tildes VS ends once BOTH sides finish');
   assert.strictEqual(st.leader, 'left');
   ok('vs: a renderRound template (tildes) is auto-scored end-to-end');
 
