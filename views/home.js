@@ -68,6 +68,9 @@ export function renderHome(rootSel) {
     return `
       <div class="col-md-6 col-lg-4">
         <div class="card h-100">
+          ${a.preview_url
+            ? `<img src="${escapeHtml(a.preview_url)}" class="card-img-top" style="height:140px;object-fit:cover;" alt="" loading="lazy">`
+            : `<div class="d-flex align-items-center justify-content-center bg-${T?.meta?.color||'secondary'} bg-opacity-10" style="height:100px;"><i class="bi ${T?.meta?.icon||'bi-puzzle'} text-${T?.meta?.color||'secondary'}" style="font-size:2.5rem;opacity:.6;"></i></div>`}
           <div class="card-body">
             <div class="d-flex justify-content-between">
               <span class="badge bg-${T?.meta?.color || 'info'}"><i class="bi ${T?.meta?.icon || 'bi-puzzle'}"></i> ${escapeHtml(T?.meta?.label || a.template)}</span>
