@@ -88,14 +88,14 @@ export function renderHome(rootSel) {
       <div class="col-sm-6 col-xl-4">
         <div class="card h-100 border-0 rounded-4 shadow-sm overflow-hidden">
           <div class="js-thumb" data-id="${escapeHtml(a.id)}"></div>
-          <div class="btn-group btn-group-sm w-100" role="group">
+          <div class="btn-group btn-group-sm w-100 card-modes" role="group">
             ${playBtns}
           </div>
           <div class="card-body pt-2 pb-3 px-3">
             <div class="d-flex align-items-center gap-2 mb-2">
               <span class="badge bg-${color}"><i class="bi ${icon}"></i> ${escapeHtml(label)}</span>
-              <button class="btn btn-sm btn-outline-primary act-edit" data-id="${a.id}" title="Editar"><i class="bi bi-pencil-fill"></i></button>
-              <button class="btn btn-sm btn-outline-danger act-del" data-id="${a.id}" title="Eliminar"><i class="bi bi-trash3"></i></button>
+              <button class="card-icon-btn text-primary act-edit" data-id="${a.id}" title="Editar"><i class="bi bi-pencil-fill"></i></button>
+              <button class="card-icon-btn text-danger act-del" data-id="${a.id}" title="Eliminar"><i class="bi bi-trash3"></i></button>
               ${a._unsynced ? '<i class="bi bi-cloud-slash text-warning" title="No sincronizada"></i>' : ''}
               <span class="ms-auto d-flex align-items-center gap-3 text-muted small">
                 <span title="Elementos"><i class="bi bi-file-earmark-text"></i> ${itemCount(a)}</span>

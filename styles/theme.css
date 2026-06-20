@@ -7,3 +7,10 @@
 }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 .card { border: 0; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+
+/* Play-mode strip sits flush against the thumbnail — no top border */
+.card-modes .btn { border-top: 0; border-radius: 0 !important; }
+
+/* Edit / delete shown as bare icons — no rectangle */
+.card-icon-btn { padding: 0 .25rem; background: none; border: none; line-height: 1; }
+.card-icon-btn:focus-visible { outline: 2px solid currentColor; border-radius: 3px; }
