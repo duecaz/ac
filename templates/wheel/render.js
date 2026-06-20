@@ -34,8 +34,11 @@ export function wheelSvg(entries, { rotation = 0, dur = 4000, spinning = false, 
     const labelA = a0 + arc / 2;
     const lx = cx + (r * 0.65) * Math.cos(labelA);
     const ly = cy + (r * 0.65) * Math.sin(labelA);
+    // Radial text: rotate by the slice angle. Segments in the left half
+    // (cos < 0) get +180° so the text never appears upside-down.
+    const deg = (labelA * 180 / Math.PI) + (Math.cos(labelA) < 0 ? 180 : 0);
     return `<path d="M ${cx} ${cy} L ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1} Z" fill="${PALETTE[i % PALETTE.length]}" stroke="#fff" stroke-width="2"/>
-            <text x="${lx}" y="${ly}" fill="#fff" font-weight="700" font-size="14" text-anchor="middle" dominant-baseline="middle">${escapeHtml(truncLabel(e))}</text>`;
+            <text x="${lx}" y="${ly}" fill="#fff" font-weight="700" font-size="14" text-anchor="middle" dominant-baseline="middle" transform="rotate(${deg} ${lx} ${ly})">${escapeHtml(truncLabel(e))}</text>`;
   }).join('');
   return `<svg width="${size}" height="${size}" style="transform:rotate(${rotation}deg);transition:transform ${spinning ? dur : 0}ms cubic-bezier(.17,.67,.21,.99)">
     ${slices}
