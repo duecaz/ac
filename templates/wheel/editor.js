@@ -14,15 +14,18 @@ export function renderWheelEditor(root, activity, onChange) {
 }
 
 function contentHtml(a) {
+  const n = a.content.entries.length;
   return `
-    <div class="row g-2">
+    <p class="text-muted small mb-2">${n} opción${n !== 1 ? 'es' : ''} · la ruleta acepta hasta 32</p>
+    <div class="d-flex flex-column gap-2">
       ${a.content.entries.map((e, i) => `
-        <div class="col-md-6 d-flex gap-2">
-          <input class="form-control we-entry" data-i="${i}" placeholder="Entrada ${i + 1}" value="${escapeHtml(e)}">
+        <div class="d-flex gap-2 align-items-center">
+          <span class="text-muted small" style="min-width:1.4rem">${i + 1}.</span>
+          <input class="form-control we-entry" data-i="${i}" placeholder="Opción ${i + 1}" value="${escapeHtml(e)}">
           ${itemControlsHtml(i, a.content.entries.length)}
         </div>`).join('')}
     </div>
-    <button class="btn btn-outline-primary mt-3" id="we-add"><i class="bi bi-plus-lg"></i> Añadir</button>`;
+    ${n < 32 ? `<button class="btn btn-outline-primary mt-3" id="we-add"><i class="bi bi-plus-lg"></i> Añadir opción</button>` : `<p class="text-muted small mt-2">Máximo 32 opciones alcanzado.</p>`}`;
 }
 function wireContent(root, a, ctx) {
   on(root, 'input', '.we-entry', (e, el) => { a.content.entries[+el.dataset.i] = e.target.value; ctx.onChange(a); });

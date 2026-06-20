@@ -48,7 +48,7 @@ export function getRealtime() {
   const name = backendName();
   _realtime = (async () => {
     if (name === 'local') return (await import('./local/realtime.js')).createLocalRealtime();
-    if (name === 'pocketbase') throw new Error('PocketBase realtime aún no implementado — usa backend local o supabase.');
+    if (name === 'pocketbase') return (await import('./pocketbase/realtime.js')).createPocketbaseRealtime();
     return (await import('./supabase/realtime.js')).createSupabaseRealtime();
   })();
   return _realtime;
@@ -66,7 +66,11 @@ export function getAssignments() {
       try { userId = (await import('../core/state.js')).getAnonId(); } catch { userId = 'local-anon'; }
       return (await import('./local/assignments.js')).createLocalAssignments({ userId });
     }
-    if (name === 'pocketbase') throw new Error('PocketBase assignments aún no implementado — usa backend local o supabase.');
+    if (name === 'pocketbase') {
+      let userId;
+      try { userId = (await import('../core/state.js')).getAnonId(); } catch { userId = 'local-anon'; }
+      return (await import('./pocketbase/assignments.js')).createPocketbaseAssignments({ userId });
+    }
     return (await import('./supabase/assignments.js')).createSupabaseAssignments();
   })();
   return _assignments;
@@ -78,7 +82,7 @@ try {
   globalThis.ww.setBackend = (name) => {
     if (!VALID.includes(name)) throw new Error(`backend must be one of ${VALID.join(', ')}`);
     globalThis.localStorage?.setItem('ww.backend', name);
-    _store = null; // force re-resolution on next call
+    _store = null; _realtime = null; _assignments = null; // force re-resolution on next call
     console.info(`[adapters] backend → ${name} (reload to fully apply)`);
   };
 } catch { /* non-browser */ }
