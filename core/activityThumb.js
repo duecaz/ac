@@ -8,6 +8,7 @@ import { escapeHtml } from './html.js';
 import { applySkin } from './skins.js';
 import { applyBackground } from './backgrounds.js';
 import { isVowel } from './textMarks.js';
+import { wheelSvg } from '../templates/wheel/render.js';
 
 // Virtual stage = the interactive panel's native resolution (1280×800, 16:10).
 // The activity renders responsively at this size, then the whole stage is
@@ -172,20 +173,11 @@ function textHtml(act) {
 }
 
 function wheelHtml(act) {
-  const items = act.content?.items || act.content?.words || [];
+  const items = act.content?.entries || act.content?.items || act.content?.words || [];
   const labels = items.map(i => typeof i === 'string' ? i : (i.text || i.label || i.question || ''))
     .filter(Boolean).slice(0, 8);
-  const colors = ['#0d6efd','#198754','#dc3545','#ffc107','#0dcaf0','#6610f2','#fd7e14','#20c997'];
-  const n = Math.max(1, labels.length);
-  const seg = 360 / n;
-  const stops = labels.length
-    ? labels.map((_, i) => `${colors[i % colors.length]} ${i*seg}deg ${(i+1)*seg}deg`).join(',')
-    : '#6c757d 0deg 360deg';
   return `<div class="ww-player" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem">
-    <div style="width:340px;height:340px;border-radius:50%;background:conic-gradient(${stops});
-      box-shadow:0 0 0 10px rgba(255,255,255,.15),0 10px 30px rgba(0,0,0,.35);position:relative">
-      <div style="position:absolute;inset:42%;background:#fff;border-radius:50%"></div>
-    </div>
+    ${wheelSvg(labels, { size: 520 })}
     <div class="fs-4 fw-semibold text-center">${escapeHtml(act.title || 'Ruleta')}</div>
   </div>`;
 }
