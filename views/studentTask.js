@@ -31,10 +31,13 @@ export async function renderTask(rootSel, code) {
   let nick = lsGet(NICK_KEY) || '';
   if (!isAcceptableNickname(nick).ok) nick = '';
   if (!nick) {
+    const attemptsInfo = t.max_attempts > 1
+      ? `<p class="text-muted small mb-0 mt-2">Intento ${taken + 1} de ${t.max_attempts}</p>` : '';
     mount(rootSel, html`
       <div class="text-center py-4" style="max-width:420px;margin:0 auto">
-        <h2 class="mb-3">${escapeHtml(t.title || '')}</h2>
-        <p class="text-light-50">Escribe tu nombre para comenzar:</p>
+        <h2 class="mb-1">${escapeHtml(t.title || '')}</h2>
+        ${attemptsInfo}
+        <p class="text-muted mt-3 mb-1">Escribe tu nombre para comenzar:</p>
         <input id="f-nick" class="form-control form-control-lg text-center mb-3" placeholder="Tu apodo">
         <button id="btn-go" class="btn btn-warning btn-lg w-100">Empezar</button>
         <div id="err" class="text-danger mt-3"></div>
@@ -49,6 +52,27 @@ export async function renderTask(rootSel, code) {
     });
     return;
   }
+
+  // Pre-start screen — always shown so the student sees attempt info before playing.
+  const left = t.max_attempts - taken;
+  const badgeHtml = t.max_attempts === 1
+    ? `<span class="badge bg-secondary fs-6">1 intento</span>`
+    : `<span class="badge bg-info text-dark fs-6">Intento ${taken + 1} de ${t.max_attempts} · te quedan ${left}</span>`;
+  const dueHtml = t.due_at
+    ? `<p class="text-muted small mb-3">Fecha límite: ${escapeHtml(new Date(t.due_at).toLocaleString())}</p>` : '';
+
+  await new Promise(resolve => {
+    mount(rootSel, html`
+      <div class="text-center py-4" style="max-width:420px;margin:0 auto">
+        <h2 class="mb-2">${escapeHtml(t.title || '')}</h2>
+        <p class="mb-3">Hola, <b>${escapeHtml(nick)}</b></p>
+        <div class="mb-3">${badgeHtml}</div>
+        ${dueHtml}
+        <button id="btn-start" class="btn btn-success btn-lg w-100"><i class="bi bi-play-fill"></i> Comenzar</button>
+      </div>
+    `);
+    on(rootSel, 'click', '#btn-start', resolve);
+  });
 
   // Run SOLO player and record attempt at finish.
   const activity = t.activity_snap;

@@ -22,11 +22,22 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
 
       <div class="card mb-4"><div class="card-body">
         <h5>Crear tarea</h5>
-        <div class="row g-2">
-          <div class="col-md-4"><input id="t-title" class="form-control" placeholder="Título (opcional)"></div>
-          <div class="col-md-4"><input id="t-due" type="datetime-local" class="form-control"></div>
-          <div class="col-md-2"><input id="t-max" type="number" class="form-control" min="1" value="${a.presentation?.taskMaxAttempts || 1}" title="Intentos máx."></div>
-          <div class="col-md-2"><button id="t-create" class="btn btn-primary w-100"><i class="bi bi-plus-lg"></i> Crear</button></div>
+        <div class="row g-2 align-items-end">
+          <div class="col-md-4">
+            <label class="form-label mb-1 small text-muted" for="t-title">Título (opcional)</label>
+            <input id="t-title" class="form-control" placeholder="Título de la tarea">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label mb-1 small text-muted" for="t-due">Fecha límite</label>
+            <input id="t-due" type="datetime-local" class="form-control">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label mb-1 small text-muted" for="t-max"><i class="bi bi-arrow-repeat"></i> Intentos máximos</label>
+            <input id="t-max" type="number" class="form-control" min="1" value="${a.presentation?.taskMaxAttempts || 1}">
+          </div>
+          <div class="col-md-2">
+            <button id="t-create" class="btn btn-primary w-100"><i class="bi bi-plus-lg"></i> Crear</button>
+          </div>
         </div>
       </div></div>
 
