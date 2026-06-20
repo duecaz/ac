@@ -34,7 +34,7 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
         <h3 class="mb-3">${escapeHtml(activity.title)}</h3>
         <div class="ww-wheel-stage" style="position:relative;display:inline-block">
           ${wheelSvg(entries, { rotation, dur, spinning: false })}
-          <div class="ww-wheel-pointer" style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);font-size:36px;color:#000">▼</div>
+          <div class="ww-wheel-pointer" style="position:absolute;top:50%;left:-18px;transform:translateY(-50%);font-size:36px;color:#e53935;line-height:1">▶</div>
         </div>
         <div class="mt-3" style="min-height:3.2rem">
           ${winner != null ? `<div class="alert alert-success d-inline-block mb-0 fs-5"><b>${escapeHtml(winner)}</b></div>`
@@ -65,7 +65,9 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
     // Always spin FORWARD from the current angle: round up to whole turns, add
     // the full spins, then the offset that centers `target` under the pointer.
     const base = Math.ceil((rotation + 1) / 360) * 360;
-    rotation = base + 360 * SPIN_TURNS + (360 - (target * arc + arc / 2));
+    // Pointer is on the LEFT (9 o'clock). Top pointer would need 0° offset;
+    // left pointer is 90° counterclockwise from top, so subtract 90°.
+    rotation = base + 360 * SPIN_TURNS + (360 - (target * arc + arc / 2)) - 90;
 
     // Animate the EXISTING svg (mount() creates it with transition:0 so the
     // first paint doesn't animate; here we turn the transition on and change
