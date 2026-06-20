@@ -84,6 +84,11 @@ if (typeof window !== 'undefined') {
   window.addEventListener('online', () => { retryUnsynced().catch(() => {}); });
 }
 
+export function setPreviewUrl(id, url) {
+  const m = readLS();
+  if (m[id]) { m[id].preview_url = url; writeLS(m); }
+}
+
 export function remove(id) {
   const map = readLS();
   delete map[id];

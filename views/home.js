@@ -1,6 +1,6 @@
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
-import { list, remove } from '../core/storage.js';
+import { list, remove, setPreviewUrl } from '../core/storage.js';
 import { navigate } from '../core/router.js';
 import { getTemplate, listTemplates } from '../core/registry.js';
 import { confirmModal, toast } from '../core/toast.js';
@@ -123,4 +123,26 @@ export function renderHome(rootSel) {
   });
 
   paint();
+  fillMissingPreviews(all, paint);
+}
+
+async function fillMissingPreviews(acts, repaint) {
+  const missing = acts.filter(a => !a.preview_url);
+  if (!missing.length) return;
+  const { generatePreview } = await import('../core/preview.js');
+  let updated = false;
+  for (const a of missing) {
+    try {
+      const blob = await generatePreview(a);
+      if (!blob) continue;
+      const url = await new Promise(res => {
+        const r = new FileReader();
+        r.onload = () => res(r.result);
+        r.onerror = () => res(null);
+        r.readAsDataURL(blob);
+      });
+      if (url) { setPreviewUrl(a.id, url); a.preview_url = url; updated = true; }
+    } catch { /* skip */ }
+  }
+  if (updated) repaint();
 }
