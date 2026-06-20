@@ -14,6 +14,17 @@ function hexDarken(hex, t) {
     .join('');
 }
 
+function firstImage(a) {
+  const lists = [a.content?.items, a.content?.pairs];
+  for (const arr of lists) {
+    if (!Array.isArray(arr)) continue;
+    for (const item of arr) {
+      if (item?.image) return item.image;
+    }
+  }
+  return null;
+}
+
 function clamp(text, max) {
   return text && text.length > max ? text.slice(0, max - 1) + '…' : (text || '');
 }
@@ -49,8 +60,9 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-// Generates a 200×125 JPEG thumbnail drawn entirely on canvas —
-// no uploaded images used; always looks consistent.
+// Generates a 200×125 JPEG thumbnail.
+// Background: first item's image (cover-cropped) when available, else gradient.
+// Content overlay: header bar, title, first question, answer pills.
 export function generatePreview(activity) {
   return new Promise(resolve => {
     const W = 200, H = 125;
@@ -65,63 +77,86 @@ export function generatePreview(activity) {
     const count = activityItemCount(activity);
     const c     = activity.content || {};
     const items = c.items || c.entries || c.pairs || c.words || [];
+    const imgUrl = firstImage(activity);
 
-    // ── Background: gradient ──────────────────────────────────────────
-    const bg = ctx.createLinearGradient(0, 0, W, H);
-    bg.addColorStop(0, hex);
-    bg.addColorStop(1, dark);
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, W, H);
+    function drawOverlayAndFinish() {
+      // Dark scrim so text is always readable
+      const scrim = ctx.createLinearGradient(0, 0, 0, H);
+      scrim.addColorStop(0,   'rgba(0,0,0,0.35)');
+      scrim.addColorStop(0.5, 'rgba(0,0,0,0.15)');
+      scrim.addColorStop(1,   'rgba(0,0,0,0.6)');
+      ctx.fillStyle = scrim;
+      ctx.fillRect(0, 0, W, H);
 
-    // ── Header bar ───────────────────────────────────────────────────
-    ctx.fillStyle = 'rgba(0,0,0,0.22)';
-    ctx.fillRect(0, 0, W, 22);
+      // Header bar
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.fillRect(0, 0, W, 22);
+      ctx.font = 'bold 9px system-ui,sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.fillText(label.toUpperCase(), 7, 14);
+      ctx.font = '9px system-ui,sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.65)';
+      ctx.textAlign = 'right';
+      ctx.fillText(`${count} elem.`, W - 7, 14);
+      ctx.textAlign = 'left';
 
-    ctx.font = 'bold 9px system-ui,sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    ctx.fillText(label.toUpperCase(), 7, 14);
+      // Title
+      ctx.font = 'bold 13px system-ui,sans-serif';
+      ctx.fillStyle = '#fff';
+      fillWrapped(ctx, activity.title || 'Sin título', 7, 40, W - 14, 16, 2);
 
-    ctx.font = '9px system-ui,sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.65)';
-    ctx.textAlign = 'right';
-    ctx.fillText(`${count} elem.`, W - 7, 14);
-    ctx.textAlign = 'left';
-
-    // ── Title ────────────────────────────────────────────────────────
-    ctx.font = 'bold 13px system-ui,sans-serif';
-    ctx.fillStyle = '#fff';
-    fillWrapped(ctx, activity.title || 'Sin título', 7, 40, W - 14, 16, 2);
-
-    // ── First item content ───────────────────────────────────────────
-    const first = items[0];
-    if (first) {
-      const q = first.question || first.text || first.term || first.front
-             || (typeof first === 'string' ? first : '');
-      if (q) {
-        ctx.font = '9px system-ui,sans-serif';
-        ctx.fillStyle = 'rgba(255,255,255,0.75)';
-        fillWrapped(ctx, q, 7, 72, W - 14, 12, 2);
+      // First item
+      const first = items[0];
+      if (first) {
+        const q = first.question || first.text || first.term || first.front
+               || (typeof first === 'string' ? first : '');
+        if (q) {
+          ctx.font = '9px system-ui,sans-serif';
+          ctx.fillStyle = 'rgba(255,255,255,0.8)';
+          fillWrapped(ctx, q, 7, 72, W - 14, 12, 2);
+        }
+        const opts = first.options;
+        if (Array.isArray(opts) && opts.length) {
+          const cols = 2, pillH = 14, gap = 4;
+          const pillW = (W - 14 - gap) / cols;
+          opts.slice(0, 4).forEach((o, i) => {
+            const col = i % cols, row = Math.floor(i / cols);
+            const px = 7 + col * (pillW + gap), py = 95 + row * (pillH + gap);
+            ctx.fillStyle = 'rgba(255,255,255,0.2)';
+            roundRect(ctx, px, py, pillW, pillH, 3);
+            ctx.fill();
+            ctx.font = '8px system-ui,sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.fillText(clamp(o.text || o, 14), px + 4, py + 10);
+          });
+        }
       }
 
-      // Answer options as mini pills (quiz / multiple choice)
-      const opts = first.options;
-      if (Array.isArray(opts) && opts.length) {
-        const cols = 2, pillH = 14, gap = 4;
-        const pillW = (W - 14 - gap) / cols;
-        opts.slice(0, 4).forEach((o, i) => {
-          const col = i % cols, row = Math.floor(i / cols);
-          const px = 7 + col * (pillW + gap);
-          const py = 95 + row * (pillH + gap);
-          ctx.fillStyle = 'rgba(255,255,255,0.18)';
-          roundRect(ctx, px, py, pillW, pillH, 3);
-          ctx.fill();
-          ctx.font = '8px system-ui,sans-serif';
-          ctx.fillStyle = 'rgba(255,255,255,0.85)';
-          ctx.fillText(clamp(o.text || o, 14), px + 4, py + 10);
-        });
-      }
+      canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.65);
     }
 
-    canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.65);
+    function drawGradient() {
+      const bg = ctx.createLinearGradient(0, 0, W, H);
+      bg.addColorStop(0, hex);
+      bg.addColorStop(1, dark);
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    if (imgUrl) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const scale = Math.max(W / img.width, H / img.height);
+        const sw = img.width * scale, sh = img.height * scale;
+        ctx.drawImage(img, (W - sw) / 2, (H - sh) / 2, sw, sh);
+        drawOverlayAndFinish();
+      };
+      img.onerror = () => { drawGradient(); drawOverlayAndFinish(); };
+      img.src = imgUrl;
+    } else {
+      drawGradient();
+      drawOverlayAndFinish();
+    }
   });
 }
