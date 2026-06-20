@@ -7,6 +7,7 @@ import { getTemplate } from '../core/registry.js';
 import { ensureIdentity } from '../core/identity.js';
 import { runPlayer } from '../core/player.js';
 import { activityItemCount } from '../core/migrate.js';
+import { lsGet, lsSet } from '../core/ls.js';
 
 const NICK_KEY = 'ww.nick';
 
@@ -27,7 +28,7 @@ export async function renderTask(rootSel, code) {
   }
 
   // Nickname gate.
-  let nick = localStorage.getItem(NICK_KEY) || '';
+  let nick = lsGet(NICK_KEY) || '';
   if (!isAcceptableNickname(nick).ok) nick = '';
   if (!nick) {
     mount(rootSel, html`
@@ -43,7 +44,7 @@ export async function renderTask(rootSel, code) {
       const v = document.getElementById('f-nick').value.trim();
       const f = isAcceptableNickname(v);
       if (!f.ok) { document.getElementById('err').textContent = 'Apodo: ' + f.reason; return; }
-      localStorage.setItem(NICK_KEY, f.value);
+      lsSet(NICK_KEY, f.value);
       renderTask(rootSel, code);
     });
     return;

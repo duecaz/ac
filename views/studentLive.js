@@ -14,6 +14,7 @@ import { GameEvents, emitGame } from '../core/gameEvents.js';
 import * as Streaks from '../core/streaks.js';
 import { getTemplate } from '../core/registry.js';
 import { sessionItems } from '../kernel/session/engine.js';
+import { lsGet, lsSet } from '../core/ls.js';
 
 const NICK_KEY = 'ww.nick';
 
@@ -22,7 +23,7 @@ export function renderJoin(rootSel, prefilledCode = '') {
     <div class="text-center py-4" style="max-width:420px;margin:0 auto">
       <h2 class="mb-4">Unirme a la sala</h2>
       <input id="f-code" class="form-control form-control-lg text-center mb-3 ww-pin-input" maxlength="6" placeholder="PIN" autocomplete="off" autocapitalize="characters" value="${escapeHtml(prefilledCode)}">
-      <input id="f-nick" class="form-control form-control-lg text-center mb-3" placeholder="Tu apodo" value="${escapeHtml(localStorage.getItem(NICK_KEY) || '')}">
+      <input id="f-nick" class="form-control form-control-lg text-center mb-3" placeholder="Tu apodo" value="${escapeHtml(lsGet(NICK_KEY) || '')}">
       <button id="btn-join" class="btn btn-warning btn-lg w-100">Entrar</button>
       <div id="err" class="text-danger mt-3"></div>
     </div>
@@ -44,7 +45,7 @@ export function renderJoin(rootSel, prefilledCode = '') {
       let task = null;
       try { task = await findAssignmentByCode(code); } catch { /* fall through to live join */ }
       if (task) {
-        localStorage.setItem(NICK_KEY, f.value);
+        lsSet(NICK_KEY, f.value);
         location.hash = `#/task/${code}`;
         return;
       }

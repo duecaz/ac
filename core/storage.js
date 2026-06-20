@@ -1,6 +1,7 @@
 import { getRemoteStore } from '../adapters/index.js';
 import { migrate, normalize } from './migrate.js';
 import { mergeRemote } from './storageMerge.js';
+import { lsGet, lsSet } from './ls.js';
 
 const LEGACY_KEY = 'ww.activities';
 let _userId = 'guest';
@@ -13,11 +14,11 @@ function readLS() {
   try { return JSON.parse(localStorage.getItem(currentKey()) || '{}'); }
   catch { return {}; }
 }
-function writeLS(map) { localStorage.setItem(currentKey(), JSON.stringify(map)); }
+function writeLS(map) { lsSet(currentKey(), JSON.stringify(map)); }
 
 export function list() {
   const map = readLS();
-  return Object.values(map).map(migrate).sort((a,b) => (b.updatedAt||'').localeCompare(a.updatedAt||''));
+  return Object.values(map).filter(Boolean).map(migrate).sort((a,b) => (b.updatedAt||'').localeCompare(a.updatedAt||''));
 }
 
 export function get(id) {

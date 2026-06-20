@@ -6,10 +6,11 @@
 // disable sounds globally, call setMuted(true). To swap pack, setSoundPack().
 
 import { GameEvents, onGame } from './gameEvents.js';
+import { lsGet, lsSet } from './ls.js';
 
 let _pack = {};
 const _cache = new Map();           // name -> HTMLAudioElement
-let _muted = localStorage.getItem('ww.muted') === '1';
+let _muted = lsGet('ww.muted') === '1';
 
 // Default pack on jsDelivr serving from the public repo duecaz/ww-assets.
 // Three CC0 files are mapped onto the six game events (some events share).
@@ -32,7 +33,7 @@ setSoundPack(null); // initialize default
 
 export function setMuted(m) {
   _muted = !!m;
-  localStorage.setItem('ww.muted', _muted ? '1' : '0');
+  lsSet('ww.muted', _muted ? '1' : '0');
   if (_muted) stopAll();
 }
 export function isMuted() { return _muted; }

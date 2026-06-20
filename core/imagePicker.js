@@ -24,7 +24,9 @@ export function renderImagePicker(currentUrl) {
 }
 
 export function attachImagePicker(root, containerSel, currentUrl, onChange) {
-  const container = (typeof root === 'string' ? document.querySelector(root) : root).querySelector(containerSel);
+  const el = typeof root === 'string' ? document.querySelector(root) : root;
+  if (!el) return;
+  const container = el.querySelector(containerSel);
   if (!container) return;
   const fileInput = container.querySelector('.ww-img-file');
   const changeBtn = container.querySelector('.ww-img-change');

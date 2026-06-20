@@ -5,12 +5,13 @@ export const getState = (k) => _state[k];
 export const clearState = (k) => { delete _state[k]; };
 
 // Stable anonymous user id, persisted in localStorage. Used for player rejoin.
+import { lsGet, lsSet } from './ls.js';
 const ANON_KEY = 'ww.anonId';
 export function getAnonId() {
-  let v = localStorage.getItem(ANON_KEY);
+  let v = lsGet(ANON_KEY);
   if (!v) {
     v = crypto.randomUUID();
-    localStorage.setItem(ANON_KEY, v);
+    lsSet(ANON_KEY, v);
   }
   return v;
 }
