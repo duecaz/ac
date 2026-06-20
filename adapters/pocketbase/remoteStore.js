@@ -55,17 +55,17 @@ export function createPocketbaseRemoteStore() {
         tags: a.tags || [],
         language: a.language || 'es',
       };
-      // Upsert: POST primero (registro nuevo); si ya existe (validation_not_unique) → PATCH.
+      // Upsert: PATCH actualiza si existe (solo falla 404 la primera vez); POST crea.
+      // El navegador muestra el 404 en consola pero está capturado — el guardado funciona.
       try {
-        await pbFetch('/api/collections/activities/records', {
-          method: 'POST',
+        await pbFetch(`/api/collections/activities/records/${pbId}`, {
+          method: 'PATCH',
           body: JSON.stringify(payload),
         });
       } catch (e) {
-        const isConflict = e.status === 400 && e.pb?.data?.id?.code === 'validation_not_unique';
-        if (!isConflict) throw e;
-        await pbFetch(`/api/collections/activities/records/${pbId}`, {
-          method: 'PATCH',
+        if (e.status !== 404) throw e;
+        await pbFetch('/api/collections/activities/records', {
+          method: 'POST',
           body: JSON.stringify(payload),
         });
       }
