@@ -68,8 +68,7 @@ export function createPocketbaseRemoteStore() {
   return {
     async saveActivity(a) {
       const pbId = toId(a.id);
-      // Strip only the internal flag; preview_url is part of the data and
-      // must be stored in PB so other devices get it on sync.
+      // Strip the internal sync flag; everything else is the activity content.
       const { _unsynced, ...cleanData } = a;
       const payload = {
         id: pbId,
@@ -126,9 +125,7 @@ export function createPocketbaseRemoteStore() {
         const rec = await pbFetch(`/api/collections/activities/records/${pbId}`);
         if (!rec) return null;
         markSynced(pbId);
-        const data = rec.data ?? {};
-        if (rec.preview) data.preview_url = `${PB_URL}/api/files/activities/${pbId}/${rec.preview}`;
-        return data;
+        return rec.data ?? null;
       } catch (e) {
         if (e.status === 404) return null;
         throw e;
@@ -139,9 +136,7 @@ export function createPocketbaseRemoteStore() {
       const rec = await pbFetch('/api/collections/activities/records?perPage=200');
       return (rec?.items || []).map(row => {
         markSynced(row.id);
-        const data = row.data ?? {};
-        if (row.preview) data.preview_url = `${PB_URL}/api/files/activities/${row.id}/${row.preview}`;
-        return { id: fromId(row.id, row.data?.id), data };
+        return { id: fromId(row.id, row.data?.id), data: row.data };
       });
     },
 

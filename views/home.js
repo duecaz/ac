@@ -1,6 +1,7 @@
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
-import { list, remove, setPreviewUrl } from '../core/storage.js';
+import { list, remove } from '../core/storage.js';
+import { mountThumb } from '../core/activityThumb.js';
 import { navigate } from '../core/router.js';
 import { getTemplate, listTemplates } from '../core/registry.js';
 import { confirmModal, toast } from '../core/toast.js';
@@ -60,6 +61,12 @@ export function renderHome(rootSel) {
     if (qEl) qEl.oninput = e => { _filter.q = e.target.value; paint(); qEl.focus(); };
     const tEl = document.getElementById('h-tpl');
     if (tEl) tEl.onchange = e => { _filter.template = e.target.value; paint(); };
+
+    // Mount a faithful 16:9 preview into each card.
+    acts.forEach(a => {
+      const el = document.querySelector(`.js-thumb[data-id="${a.id}"]`);
+      if (el) mountThumb(el, a);
+    });
   }
 
   function card(a) {
@@ -68,9 +75,7 @@ export function renderHome(rootSel) {
     return `
       <div class="col-md-6 col-lg-4">
         <div class="card h-100">
-          ${a.preview_url
-            ? `<img src="${escapeHtml(a.preview_url)}" class="card-img-top" style="height:140px;object-fit:cover;" alt="" loading="lazy">`
-            : `<div class="d-flex align-items-center justify-content-center bg-${T?.meta?.color||'secondary'} bg-opacity-10" style="height:100px;"><i class="bi ${T?.meta?.icon||'bi-puzzle'} text-${T?.meta?.color||'secondary'}" style="font-size:2.5rem;opacity:.6;"></i></div>`}
+          <div class="js-thumb" data-id="${escapeHtml(a.id)}"></div>
           <div class="card-body">
             <div class="d-flex justify-content-between">
               <span class="badge bg-${T?.meta?.color || 'info'}"><i class="bi ${T?.meta?.icon || 'bi-puzzle'}"></i> ${escapeHtml(T?.meta?.label || a.template)}</span>
@@ -123,26 +128,4 @@ export function renderHome(rootSel) {
   });
 
   paint();
-  fillMissingPreviews(all, paint);
-}
-
-async function fillMissingPreviews(acts, repaint) {
-  const missing = acts.filter(a => !a.preview_url);
-  if (!missing.length) return;
-  const { generatePreview } = await import('../core/preview.js');
-  let updated = false;
-  for (const a of missing) {
-    try {
-      const blob = await generatePreview(a);
-      if (!blob) continue;
-      const url = await new Promise(res => {
-        const r = new FileReader();
-        r.onload = () => res(r.result);
-        r.onerror = () => res(null);
-        r.readAsDataURL(blob);
-      });
-      if (url) { setPreviewUrl(a.id, url); a.preview_url = url; updated = true; }
-    } catch { /* skip */ }
-  }
-  if (updated) repaint();
 }

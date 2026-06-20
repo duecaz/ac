@@ -31,16 +31,16 @@ export async function getRemote(id) {
   return data ? migrate(data) : null;
 }
 
-// Saves locally immediately; generates preview then saves to remote in one call.
-// preview_url is a compact data URL stored inside the activity data itself —
-// no separate file upload needed, no CORS/auth issues, syncs to PB automatically.
+// Saves locally immediately and to remote in the background. The home preview
+// is rendered live from the activity content (see core/activityThumb.js), so
+// no image generation/upload happens here.
 export function save(activity) {
   const a = normalize({ ...activity, updatedAt: new Date().toISOString() });
   delete a._unsynced;
   const map = readLS();
   map[a.id] = a;
   writeLS(map);
-  const remote = remoteSaveWithPreview(a);
+  const remote = remoteSave(a);
   remote.then(() => {
     const m = readLS();
     if (m[a.id]?._unsynced) { delete m[a.id]._unsynced; writeLS(m); }
@@ -52,29 +52,9 @@ export function save(activity) {
   return { activity: a, remote };
 }
 
-async function remoteSaveWithPreview(a) {
-  let toSave = a;
-  if (typeof document !== 'undefined') {
-    try {
-      const { generatePreview } = await import('./preview.js');
-      const blob = await generatePreview(a);
-      if (blob) {
-        const url = await new Promise(res => {
-          const r = new FileReader();
-          r.onload = () => res(r.result);
-          r.onerror = () => res(null);
-          r.readAsDataURL(blob);
-        });
-        if (url) {
-          const m = readLS();
-          if (m[a.id]) { m[a.id].preview_url = url; writeLS(m); }
-          toSave = { ...a, preview_url: url };
-        }
-      }
-    } catch { /* preview failed — save without it */ }
-  }
+async function remoteSave(a) {
   const rs = await getRemoteStore();
-  await rs.saveActivity(toSave);
+  await rs.saveActivity(a);
 }
 
 export async function retryUnsynced() {
@@ -82,7 +62,7 @@ export async function retryUnsynced() {
   const pending = Object.values(map).filter(a => a._unsynced);
   let ok = 0;
   for (const a of pending) {
-    try { await remoteSaveWithPreview(a); delete a._unsynced; ok++; }
+    try { await remoteSave(a); delete a._unsynced; ok++; }
     catch { /* keep flag */ }
   }
   writeLS(map);
@@ -90,11 +70,6 @@ export async function retryUnsynced() {
 }
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => { retryUnsynced().catch(() => {}); });
-}
-
-export function setPreviewUrl(id, url) {
-  const m = readLS();
-  if (m[id]) { m[id].preview_url = url; writeLS(m); }
 }
 
 export function remove(id) {
