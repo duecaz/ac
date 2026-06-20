@@ -27,6 +27,18 @@ function firstText(a) {
   return '';
 }
 
+function firstImage(a) {
+  const c = a.content || {};
+  const lists = [c.items, c.pairs, c.entries];
+  for (const arr of lists) {
+    if (!Array.isArray(arr)) continue;
+    for (const item of arr) {
+      if (item && typeof item === 'object' && item.image) return item.image;
+    }
+  }
+  return null;
+}
+
 function fillWrapped(ctx, text, x, y, maxW, lineH, maxLines = 2) {
   const words = text.split(' ');
   let line = '', lc = 0;
@@ -45,7 +57,8 @@ function fillWrapped(ctx, text, x, y, maxW, lineH, maxLines = 2) {
   if (line) ctx.fillText(line, x, y);
 }
 
-// Generates a 480×300 JPEG thumbnail blob for the given activity.
+// Generates a 200×125 JPEG thumbnail. If the activity has an image on the
+// first item it is drawn as a cover background; otherwise a color gradient.
 export function generatePreview(activity) {
   return new Promise(resolve => {
     const W = 200, H = 125;
@@ -58,45 +71,62 @@ export function generatePreview(activity) {
     const label = T?.meta?.label || activity.template || 'Actividad';
     const count = activityItemCount(activity);
     const first = firstText(activity);
+    const imgUrl = firstImage(activity);
 
-    // Background: color → darker
-    const bg = ctx.createLinearGradient(0, 0, W, H);
-    bg.addColorStop(0, hex);
-    bg.addColorStop(1, hexDarken(hex, 0.38));
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, W, H);
-
-    // Bottom scrim for text contrast
-    const scrim = ctx.createLinearGradient(0, H * 0.28, 0, H);
-    scrim.addColorStop(0, 'rgba(0,0,0,0)');
-    scrim.addColorStop(1, 'rgba(0,0,0,0.58)');
-    ctx.fillStyle = scrim;
-    ctx.fillRect(0, 0, W, H);
-
-    // Top-left: template label
-    ctx.font = 'bold 9px system-ui,sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.88)';
-    ctx.fillText(label.toUpperCase(), 8, 16);
-
-    // Top-right: item count
-    ctx.font = '9px system-ui,sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.textAlign = 'right';
-    ctx.fillText(`${count} elem.`, W - 8, 16);
-    ctx.textAlign = 'left';
-
-    // Title
-    ctx.font = 'bold 16px system-ui,sans-serif';
-    ctx.fillStyle = '#fff';
-    fillWrapped(ctx, activity.title || 'Sin título', 8, 68, W - 16, 20, 2);
-
-    // First-item excerpt
-    if (first) {
-      ctx.font = '9px system-ui,sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,0.68)';
-      fillWrapped(ctx, first, 8, 106, W - 16, 13, 2);
+    function drawGradient() {
+      const bg = ctx.createLinearGradient(0, 0, W, H);
+      bg.addColorStop(0, hex);
+      bg.addColorStop(1, hexDarken(hex, 0.38));
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
     }
 
-    canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.65);
+    function drawScrimAndText() {
+      // Scrim so text is readable over any background
+      const scrim = ctx.createLinearGradient(0, H * 0.25, 0, H);
+      scrim.addColorStop(0, 'rgba(0,0,0,0)');
+      scrim.addColorStop(1, 'rgba(0,0,0,0.65)');
+      ctx.fillStyle = scrim;
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.font = 'bold 9px system-ui,sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.88)';
+      ctx.fillText(label.toUpperCase(), 8, 16);
+
+      ctx.font = '9px system-ui,sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.textAlign = 'right';
+      ctx.fillText(`${count} elem.`, W - 8, 16);
+      ctx.textAlign = 'left';
+
+      ctx.font = 'bold 16px system-ui,sans-serif';
+      ctx.fillStyle = '#fff';
+      fillWrapped(ctx, activity.title || 'Sin título', 8, 68, W - 16, 20, 2);
+
+      if (first) {
+        ctx.font = '9px system-ui,sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.68)';
+        fillWrapped(ctx, first, 8, 106, W - 16, 13, 2);
+      }
+
+      canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.65);
+    }
+
+    if (imgUrl) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        // Cover-crop: scale to fill W×H, centered
+        const scale = Math.max(W / img.width, H / img.height);
+        const sw = img.width * scale, sh = img.height * scale;
+        ctx.drawImage(img, (W - sw) / 2, (H - sh) / 2, sw, sh);
+        drawScrimAndText();
+      };
+      img.onerror = () => { drawGradient(); drawScrimAndText(); };
+      img.src = imgUrl;
+    } else {
+      drawGradient();
+      drawScrimAndText();
+    }
   });
 }
