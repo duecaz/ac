@@ -54,9 +54,10 @@ export function save(activity) {
   writeLS(map);
   const remote = remoteSave(a);
   remote.then(() => {
-    // Confirmed synced — make sure the flag is off (in case it was on before).
     const m = readLS();
     if (m[a.id]?._unsynced) { delete m[a.id]._unsynced; writeLS(m); }
+    // Generate and upload preview async — doesn't block save or affect sync flag.
+    remoteUpdatePreview(a).catch(e => console.debug('[preview]', e.message));
   }).catch(err => {
     console.warn('[storage] remote save failed:', err.message);
     const m = readLS();
@@ -95,6 +96,19 @@ export function remove(id) {
 async function remoteSave(a) {
   const rs = await getRemoteStore();
   await rs.saveActivity(a);
+}
+
+async function remoteUpdatePreview(a) {
+  const rs = await getRemoteStore();
+  if (typeof rs.uploadPreview !== 'function') return;
+  const { generatePreview } = await import('./preview.js');
+  const blob = await generatePreview(a);
+  if (!blob) return;
+  const url = await rs.uploadPreview(a.id, blob);
+  if (url) {
+    const m = readLS();
+    if (m[a.id]) { m[a.id].preview_url = url; writeLS(m); }
+  }
 }
 
 async function remoteDelete(id) {

@@ -73,7 +73,8 @@ export function normalize(a) {
     language: a.language || 'es',
     media: a.media || {},
     createdAt: a.createdAt || new Date().toISOString(),
-    updatedAt: a.updatedAt || new Date().toISOString()
+    updatedAt: a.updatedAt || new Date().toISOString(),
+    preview_url: a.preview_url || null
   };
 }
 
