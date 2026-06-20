@@ -14,33 +14,12 @@ function hexDarken(hex, t) {
     .join('');
 }
 
-function firstText(a) {
-  const c = a.content || {};
-  if (Array.isArray(c.items) && c.items.length) {
-    const i = c.items[0];
-    return i.question || i.text || i.term || i.front || '';
-  }
-  if (Array.isArray(c.entries) && c.entries.length)
-    return typeof c.entries[0] === 'string' ? c.entries[0] : '';
-  if (Array.isArray(c.pairs) && c.pairs.length)
-    return c.pairs[0].term || c.pairs[0].front || '';
-  return '';
-}
-
-function firstImage(a) {
-  const c = a.content || {};
-  const lists = [c.items, c.pairs, c.entries];
-  for (const arr of lists) {
-    if (!Array.isArray(arr)) continue;
-    for (const item of arr) {
-      if (item && typeof item === 'object' && item.image) return item.image;
-    }
-  }
-  return null;
+function clamp(text, max) {
+  return text && text.length > max ? text.slice(0, max - 1) + '…' : (text || '');
 }
 
 function fillWrapped(ctx, text, x, y, maxW, lineH, maxLines = 2) {
-  const words = text.split(' ');
+  const words = String(text).split(' ');
   let line = '', lc = 0;
   for (let i = 0; i < words.length; i++) {
     const test = line ? `${line} ${words[i]}` : words[i];
@@ -48,8 +27,7 @@ function fillWrapped(ctx, text, x, y, maxW, lineH, maxLines = 2) {
       ctx.fillText(line, x, y);
       line = words[i]; y += lineH; lc++;
       if (lc >= maxLines - 1) {
-        const more = i < words.length - 1;
-        ctx.fillText(more ? `${words[i]}…` : words[i], x, y);
+        ctx.fillText(words[i] + (i < words.length - 1 ? '…' : ''), x, y);
         return;
       }
     } else { line = test; }
@@ -57,8 +35,22 @@ function fillWrapped(ctx, text, x, y, maxW, lineH, maxLines = 2) {
   if (line) ctx.fillText(line, x, y);
 }
 
-// Generates a 200×125 JPEG thumbnail. If the activity has an image on the
-// first item it is drawn as a cover background; otherwise a color gradient.
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// Generates a 200×125 JPEG thumbnail drawn entirely on canvas —
+// no uploaded images used; always looks consistent.
 export function generatePreview(activity) {
   return new Promise(resolve => {
     const W = 200, H = 125;
@@ -68,65 +60,68 @@ export function generatePreview(activity) {
 
     const T     = getTemplate(activity.template);
     const hex   = BS5[T?.meta?.color || 'secondary'] || BS5.secondary;
+    const dark  = hexDarken(hex, 0.42);
     const label = T?.meta?.label || activity.template || 'Actividad';
     const count = activityItemCount(activity);
-    const first = firstText(activity);
-    const imgUrl = firstImage(activity);
+    const c     = activity.content || {};
+    const items = c.items || c.entries || c.pairs || c.words || [];
 
-    function drawGradient() {
-      const bg = ctx.createLinearGradient(0, 0, W, H);
-      bg.addColorStop(0, hex);
-      bg.addColorStop(1, hexDarken(hex, 0.38));
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, W, H);
-    }
+    // ── Background: gradient ──────────────────────────────────────────
+    const bg = ctx.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0, hex);
+    bg.addColorStop(1, dark);
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
 
-    function drawScrimAndText() {
-      // Scrim so text is readable over any background
-      const scrim = ctx.createLinearGradient(0, H * 0.25, 0, H);
-      scrim.addColorStop(0, 'rgba(0,0,0,0)');
-      scrim.addColorStop(1, 'rgba(0,0,0,0.65)');
-      ctx.fillStyle = scrim;
-      ctx.fillRect(0, 0, W, H);
+    // ── Header bar ───────────────────────────────────────────────────
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fillRect(0, 0, W, 22);
 
-      ctx.font = 'bold 9px system-ui,sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,0.88)';
-      ctx.fillText(label.toUpperCase(), 8, 16);
+    ctx.font = 'bold 9px system-ui,sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.fillText(label.toUpperCase(), 7, 14);
 
-      ctx.font = '9px system-ui,sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,0.7)';
-      ctx.textAlign = 'right';
-      ctx.fillText(`${count} elem.`, W - 8, 16);
-      ctx.textAlign = 'left';
+    ctx.font = '9px system-ui,sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.65)';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${count} elem.`, W - 7, 14);
+    ctx.textAlign = 'left';
 
-      ctx.font = 'bold 16px system-ui,sans-serif';
-      ctx.fillStyle = '#fff';
-      fillWrapped(ctx, activity.title || 'Sin título', 8, 68, W - 16, 20, 2);
+    // ── Title ────────────────────────────────────────────────────────
+    ctx.font = 'bold 13px system-ui,sans-serif';
+    ctx.fillStyle = '#fff';
+    fillWrapped(ctx, activity.title || 'Sin título', 7, 40, W - 14, 16, 2);
 
-      if (first) {
+    // ── First item content ───────────────────────────────────────────
+    const first = items[0];
+    if (first) {
+      const q = first.question || first.text || first.term || first.front
+             || (typeof first === 'string' ? first : '');
+      if (q) {
         ctx.font = '9px system-ui,sans-serif';
-        ctx.fillStyle = 'rgba(255,255,255,0.68)';
-        fillWrapped(ctx, first, 8, 106, W - 16, 13, 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.75)';
+        fillWrapped(ctx, q, 7, 72, W - 14, 12, 2);
       }
 
-      canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.65);
+      // Answer options as mini pills (quiz / multiple choice)
+      const opts = first.options;
+      if (Array.isArray(opts) && opts.length) {
+        const cols = 2, pillH = 14, gap = 4;
+        const pillW = (W - 14 - gap) / cols;
+        opts.slice(0, 4).forEach((o, i) => {
+          const col = i % cols, row = Math.floor(i / cols);
+          const px = 7 + col * (pillW + gap);
+          const py = 95 + row * (pillH + gap);
+          ctx.fillStyle = 'rgba(255,255,255,0.18)';
+          roundRect(ctx, px, py, pillW, pillH, 3);
+          ctx.fill();
+          ctx.font = '8px system-ui,sans-serif';
+          ctx.fillStyle = 'rgba(255,255,255,0.85)';
+          ctx.fillText(clamp(o.text || o, 14), px + 4, py + 10);
+        });
+      }
     }
 
-    if (imgUrl) {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        // Cover-crop: scale to fill W×H, centered
-        const scale = Math.max(W / img.width, H / img.height);
-        const sw = img.width * scale, sh = img.height * scale;
-        ctx.drawImage(img, (W - sw) / 2, (H - sh) / 2, sw, sh);
-        drawScrimAndText();
-      };
-      img.onerror = () => { drawGradient(); drawScrimAndText(); };
-      img.src = imgUrl;
-    } else {
-      drawGradient();
-      drawScrimAndText();
-    }
+    canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.65);
   });
 }
