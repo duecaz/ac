@@ -231,6 +231,45 @@ function wordsearchHtml(act) {
   </div>`;
 }
 
+function crosswordHtml(act) {
+  const words = (act.content?.words || []).filter(w => w.word && w.row != null && w.col != null && w.dir);
+  if (!words.length) return emptyHtml(act);
+
+  // Compute grid dimensions
+  let maxR = 0, maxC = 0;
+  for (const w of words) {
+    if (w.dir === 'H') { maxR = Math.max(maxR, w.row); maxC = Math.max(maxC, w.col + w.word.length - 1); }
+    else               { maxR = Math.max(maxR, w.row + w.word.length - 1); maxC = Math.max(maxC, w.col); }
+  }
+  const rows = maxR + 1, cols = maxC + 1;
+  if (rows > 20 || cols > 20) return emptyHtml(act);
+
+  // Build grid of letters
+  const grid = Array.from({ length: rows }, () => Array(cols).fill(null));
+  for (const w of words) {
+    for (let i = 0; i < w.word.length; i++) {
+      const r = w.dir === 'H' ? w.row : w.row + i;
+      const c = w.dir === 'H' ? w.col + i : w.col;
+      grid[r][c] = w.word[i];
+    }
+  }
+
+  const cellPx = Math.max(14, Math.min(28, Math.floor(300 / Math.max(rows, cols))));
+  const cellsHtml = grid.flatMap((row, r) => row.map((l, c) => {
+    if (l === null) return `<div style="width:${cellPx}px;height:${cellPx}px;background:#343a40"></div>`;
+    return `<div style="width:${cellPx}px;height:${cellPx}px;background:#fff;border:1px solid #adb5bd;display:flex;align-items:center;justify-content:center;font-size:${Math.max(7, cellPx * 0.52)}px;font-weight:800;color:#212529">${l}</div>`;
+  })).join('');
+
+  const wordList = words.slice(0, 5).map(w =>
+    `<span style="font-size:9px;font-weight:700;color:#0d6efd;margin-right:5px">${w.word}</span>`
+  ).join('') + (words.length > 5 ? `<span style="font-size:9px;color:#adb5bd">+${words.length - 5}</span>` : '');
+
+  return `<div style="display:flex;flex-direction:column;height:100%;padding:.5rem;gap:.4rem;align-items:center">
+    <div style="display:grid;grid-template-columns:repeat(${cols},${cellPx}px);gap:1px;background:#dee2e6;border:1px solid #dee2e6;border-radius:4px;overflow:hidden">${cellsHtml}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:2px;justify-content:center">${wordList}</div>
+  </div>`;
+}
+
 function buildHtml(act) {
   switch (act.template) {
     case 'quiz':        return quizHtml(act);
@@ -242,6 +281,7 @@ function buildHtml(act) {
     case 'wheel':       return wheelHtml(act);
     case 'wordsearch':  return wordsearchHtml(act);
     case 'froggy':      return froggyHtml(act);
+    case 'crossword':   return crosswordHtml(act);
     default:
       if (act.content?.items?.[0]?.options) return quizHtml(act);
       if (act.content?.pairs?.length)       return matchHtml(act);
