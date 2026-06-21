@@ -289,31 +289,13 @@ export async function renderFroggyPlayer(rootSel, activity, opts = {}) {
 }
 
 // ── VS / Equipos round renderer ───────────────────────────────────────────────
-// Compact: mini-track shows both frogs' progress as % of track width so it
-// scales to any panel size (wide desktop or narrow portrait half-panel).
+// VS already has its own central animation; just show question + options.
 export function renderFroggyRound(root, payload, { onSubmit } = {}) {
-  const { question, image, options = [], p1Score = 0, p2Score = 0, total = 1,
-          scene = 'swamp' } = payload || {};
+  const { question, image, options = [], scene = 'swamp' } = payload || {};
   const sc = SCENARIOS[scene] || SCENARIOS.swamp;
-
-  const maxPad = 8;
-  const p1Pad = Math.min(Math.round((p1Score / Math.max(total, 1)) * maxPad), maxPad);
-  const p2Pad = Math.min(Math.round((p2Score / Math.max(total, 1)) * maxPad), maxPad);
-  // Percentage positioning: pad i sits at i/maxPad * 100% of the track width.
-  const pct = (n) => `${(n / maxPad * 100).toFixed(1)}%`;
-
-  const pads = Array.from({ length: maxPad + 1 }, (_, i) =>
-    `<span class="froggy-mini-pad" style="left:${pct(i)}">${sc.pad}</span>`
-  ).join('');
 
   root.innerHTML = `
     <div class="froggy-game froggy-round ${sc.css}">
-      <div class="froggy-mini-track">
-        ${pads}
-        <span class="froggy-mini-frog froggy-mini-p1" style="left:${pct(p1Pad)}">🐸</span>
-        <span class="froggy-mini-frog froggy-mini-p2" style="left:${pct(p2Pad)}">🐸</span>
-        <span class="froggy-mini-finish">🏁</span>
-      </div>
       <div class="froggy-q-area">
         <div class="froggy-q-text" style="font-size:clamp(1rem,3cqmin,1.5rem)">${escapeHtml(question || '')}</div>
         ${image ? `<div class="froggy-q-img"><img src="${escapeHtml(image)}" alt=""></div>` : ''}
@@ -334,17 +316,6 @@ export function renderFroggyRound(root, payload, { onSubmit } = {}) {
     done = true;
     root.querySelectorAll('.froggy-opt').forEach(b => { b.disabled = true; });
     btn.classList.add('rq-picked');
-    // Jump animation: include translateX(-50%) so it doesn't override the CSS centering
-    const myFrog = root.querySelector('.froggy-mini-p1');
-    if (myFrog) {
-      const nxt = Math.min(p1Pad + 2, maxPad);
-      myFrog.animate([
-        { transform: 'translateX(-50%) translateY(0) scale(1)' },
-        { transform: 'translateX(-50%) translateY(-18px) scale(1.15)', offset: .4 },
-        { transform: 'translateX(-50%) translateY(0) scale(1)' },
-      ], { duration: 400 });
-      setTimeout(() => { myFrog.style.left = pct(nxt); }, 200);
-    }
     onSubmit?.(btn.dataset.value);
   }));
 }
