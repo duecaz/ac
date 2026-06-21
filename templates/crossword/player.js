@@ -93,7 +93,30 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
   }
 
   mount(rootSel, buildHtml());
+  fitGrid();
   attachInteraction();
+
+  // ── Fit grid to available space ──────────────────────────────────────────
+
+  function fitGrid() {
+    const wrap = document.querySelector(`${rootSel} .cw-grid-wrap`);
+    const grid = document.getElementById('cw-grid');
+    if (!wrap || !grid) return;
+    const availW = wrap.clientWidth  - 4;  // 4px = border*2
+    const availH = wrap.clientHeight - 4;
+    if (!availW || !availH) return;
+    const cellPx = Math.max(18, Math.floor(Math.min(availW / cols, availH / rows)));
+    grid.style.setProperty('--cw-cell', `${cellPx}px`);
+  }
+
+  // Recalculate if container resizes
+  if (typeof ResizeObserver !== 'undefined') {
+    const wrap = document.querySelector(`${rootSel} .cw-grid-wrap`);
+    if (wrap) {
+      const ro = new ResizeObserver(() => fitGrid());
+      ro.observe(wrap);
+    }
+  }
 
   // ── Interaction ──────────────────────────────────────────────────────────
 
