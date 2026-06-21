@@ -7,7 +7,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
   grid-template-areas: "s1 stage s2";
-  height: calc(100vh - 70px); min-height: 480px;
+  height: 100%; min-height: 0;
 }
 .vs-panel.vs-left  { grid-area: s1; }
 .vs-panel.vs-right { grid-area: s2; }
@@ -24,7 +24,7 @@
   margin: auto; max-width: 18rem; padding: 1rem; color: #6c757d; font-size: .95rem;
   border: 2px dashed #ced4da; border-radius: .6rem;
 }
-.vs-tug-label { font-weight: 800; font-size: clamp(1rem, 2vw, 1.6rem); margin: 0 0 .1rem; transition: color .2s; }
+.vs-tug-label { font-weight: 800; font-size: clamp(1rem, 2cqw, 1.6rem); margin: 0 0 .1rem; transition: color .2s; }
 
 /* Central tug-of-war (SVG, TV-friendly): two pullers heave a sagging rope; the
    knot/flag slides toward whoever leads, the leader digs in and the scorer
@@ -93,7 +93,7 @@
 .vs-prog { height: 6px; background: #e9ecef; border-radius: 999px; margin: .4rem 0 .8rem; overflow: hidden; }
 .vs-prog-bar { height: 100%; width: 0; background: #198754; transition: width .4s ease; }
 .vs-body { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: auto; }
-.vs-q { font-size: clamp(1.1rem, 2.4vw, 1.8rem); font-weight: 600; text-align: center; margin-bottom: 1rem; }
+.vs-q { font-size: clamp(1.1rem, 2.4cqw, 1.8rem); font-weight: 600; text-align: center; margin-bottom: 1rem; }
 
 /* Panel-level answer feedback (template owns the round DOM, view flashes ✓/✗) */
 .vs-body.vs-flash-ok { animation: vs-flash-ok .7s ease-out; }
@@ -105,14 +105,16 @@
 
 .vs-overlay { flex: 1; display: flex; align-items: center; justify-content: center; }
 
-/* Portrait / narrow: stack alumno 1 → animación → alumno 2 in three rows. */
-@media (max-width: 860px), (orientation: portrait) {
+/* Narrow frame: stack alumno 1 → animación → alumno 2 in three rows.
+   Uses container query (responds to the frame size, not the viewport).
+   align-content:stretch distributes the frame height across the 3 auto rows. */
+@container (max-width: 700px) {
   .vs-arena {
     grid-template-columns: 1fr;
     grid-template-areas: "s1" "stage" "s2";
-    height: auto; min-height: calc(100vh - 70px);
+    align-content: stretch;
   }
-  .vs-stage { border: none; border-top: 1px solid #dee2e6; border-bottom: 1px solid #dee2e6; min-height: 30vh; }
+  .vs-stage { border: none; border-top: 1px solid #dee2e6; border-bottom: 1px solid #dee2e6; min-height: 28cqh; }
 }
 
 /* VS animation picker tiles (Presentación) */
