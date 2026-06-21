@@ -13,6 +13,7 @@ import './templates/tildes/index.js';
 import './templates/comas/index.js';
 import './templates/math/index.js';
 import './templates/wordsearch/index.js';
+import './templates/froggy/index.js';
 
 import { html, mount } from './core/html.js';
 import { ensureAuth } from './core/supabase.js';
