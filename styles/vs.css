@@ -106,12 +106,12 @@
 
 .vs-overlay { flex: 1; display: flex; align-items: center; justify-content: center; }
 
-/* Narrow frame: animation on top (full width), then both panels side by side below. */
-@container (max-width: 700px) {
+/* Portrait / narrow: animation full-width on top, both panels side-by-side below. */
+@container (max-width: 860px) {
   .vs-arena {
     grid-template-columns: 1fr 1fr;
     grid-template-areas: "stage stage" "s1 s2";
-    grid-template-rows: 32cqh 1fr;
+    grid-template-rows: 30cqh 1fr;
     align-content: stretch;
   }
   .vs-stage { border: none; border-bottom: 1px solid #dee2e6; }
