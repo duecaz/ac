@@ -3,7 +3,7 @@
 /* 3-column duel: alumno 1 | animación | alumno 2. Equal thirds give each
    player panel 33 % of the viewport — more room for quiz options. The centre
    stage holds a pluggable animation; in portrait/narrow it stacks to 3 rows. */
-.vs-wrap { height: 100%; min-height: 0; container-type: size; }
+.vs-wrap { height: 100%; min-height: 0; container-type: size; container-name: vs; }
 .vs-arena {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
@@ -106,8 +106,10 @@
 
 .vs-overlay { flex: 1; display: flex; align-items: center; justify-content: center; }
 
-/* Portrait / narrow: animation full-width on top, both panels side-by-side below. */
-@container (max-width: 860px) {
+/* Portrait / narrow: animation full-width on top, both panels side-by-side below.
+   Triggers when the vs-wrap container is narrow (phone/tablet) OR when it has a
+   portrait/square aspect ratio (tall frame on any device). */
+@container vs ((max-width: 860px) or (max-aspect-ratio: 5/4)) {
   .vs-arena {
     grid-template-columns: 1fr 1fr;
     grid-template-areas: "stage stage" "s1 s2";
