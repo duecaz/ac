@@ -11,7 +11,7 @@ import { getTemplate, compatibleTemplates } from '../core/registry.js';
 import { isVsCompatible } from '../kernel/session/engine.js';
 import { availableModes, getMode, runMode } from '../core/modes.js';
 import { listSkins, applySkin, skinPreviewHtml } from '../core/skins.js';
-import { listVsAnimations, startPreviewAnims } from '../core/vsAnimations.js';
+
 import { listBackgrounds, applyBackground, backgroundPreviewHtml } from '../core/backgrounds.js';
 import { resetScene } from '../core/presentation.js';
 import { toggleFullscreen } from '../core/fullscreen.js';
@@ -42,10 +42,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   // disposes the previous one (stops VS animations, etc.). See core/modes.js.
   let currentMode = initialMode;
   let currentDisposer = null;
-  let _previewAnims = [];
-  let _previewGen = 0;
   ctx.add(() => { if (currentDisposer) { try { currentDisposer.dispose(); } catch {} currentDisposer = null; } });
-  ctx.add(() => { _previewAnims.forEach(p => { try { p.destroy(); } catch {} }); _previewAnims = []; });
   // This page themes only the embed frame (scoped, after paint()). Keep the
   // page chrome neutral on enter AND restore it on teardown, clearing any
   // global theme a prior view (host/student live) may have left on <body>.
@@ -101,9 +98,6 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   }
 
   function paint() {
-    _previewAnims.forEach(p => { try { p.destroy(); } catch {} });
-    _previewAnims = [];
-    const myGen = ++_previewGen;
     const T = getTemplate(liveTemplate) || getTemplate(a.template);
     const aspect = T?.meta?.aspectRatio || '4/3';
     const compat = compatibleTemplates(liveTemplate);
@@ -161,25 +155,6 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
           `).join('')}
         </div>
 
-        ${vsCapable ? (() => { const vsAnims = listVsAnimations(); const curVsId = a.presentation?.vsAnimation || 'svg-tug'; return `
-          <h6 class="text-muted text-uppercase small mb-2">Animación del duelo VS</h6>
-          <div class="d-flex flex-wrap gap-2 mb-2">
-            ${vsAnims.map(v => {
-              const hasSrc = v.kind === 'lottie' && v.src && !v.needsSrc;
-              return `
-              <div class="ww-pick-tile vsanim-pick ${curVsId === v.id ? 'is-active' : ''}" data-id="${v.id}" data-needssrc="${v.needsSrc ? '1' : ''}" role="button" title="${escapeHtml(v.description || '')}" style="width:150px">
-                <div class="vsanim-tile-body">
-                  ${hasSrc ? `<div class="vsanim-preview" data-src="${escapeHtml(v.src)}"></div>` : `<i class="bi ${v.kind === 'lottie' ? 'bi-filetype-json' : 'bi-people-fill'}"></i>`}
-                  <div class="small fw-semibold mt-1">${escapeHtml(v.label)}</div>
-                </div>
-              </div>`;
-            }).join('')}
-          </div>
-          <div id="vsanim-src-row" class="mb-4 ${vsAnims.find(v => v.id === curVsId)?.needsSrc ? '' : 'd-none'}" style="max-width:520px">
-            <label class="form-label small text-muted">URL del archivo Lottie (.json) de tu animación</label>
-            <input id="vsanim-src" class="form-control form-control-sm" placeholder="https://…/animacion.json" value="${escapeHtml(a.presentation?.vsAnimationSrc || '')}">
-            <div class="form-text">Línea de tiempo: fotograma 0 = gana izquierda · último = gana derecha · centro = empate.</div>
-          </div>`; })() : ''}
 
         ${compat.length ? `
           <h6 class="text-muted text-uppercase small mb-2">Cambiar plantilla (mismo contenido)</h6>
@@ -208,17 +183,6 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     }
     selectMode(currentMode);
     wireHandlers();
-    initAnimPreviews(myGen);
-  }
-
-  async function initAnimPreviews(gen) {
-    const els = [...document.querySelectorAll('.vsanim-preview[data-src]')];
-    if (!els.length) return;
-    try {
-      const anims = await startPreviewAnims(els);
-      if (gen !== _previewGen) { anims.forEach(p => { try { p.destroy(); } catch {} }); return; }
-      _previewAnims.push(...anims);
-    } catch { /* previews are optional */ }
   }
 
   function wireHandlers() {
@@ -235,20 +199,6 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     on(rootSel, 'click', '.tpl-switch', (_, b) => {
       liveTemplate = b.dataset.name;
       paint();
-    });
-    // VS animation: persisted per-activity (like skin/bg in the editor). The
-    // duel reads activity.presentation.vsAnimation / .vsAnimationSrc on launch.
-    on(rootSel, 'click', '.vsanim-pick', (_, b) => {
-      if (!a.presentation) a.presentation = {};
-      a.presentation.vsAnimation = b.dataset.id;
-      save(a);
-      document.querySelectorAll('.vsanim-pick').forEach(p => p.classList.toggle('is-active', p === b));
-      document.getElementById('vsanim-src-row')?.classList.toggle('d-none', !b.dataset.needssrc);
-    });
-    on(rootSel, 'input', '#vsanim-src', (e) => {
-      if (!a.presentation) a.presentation = {};
-      a.presentation.vsAnimationSrc = e.target.value.trim();
-      save(a);
     });
     // Mode bar: embedded modes mount into the stage (embed:false modes are
     // plain links and navigate on their own).

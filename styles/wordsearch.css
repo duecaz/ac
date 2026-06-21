@@ -181,7 +181,7 @@
 }
 
 /* ── Responsive: stack vertically on narrow screens ── */
-@media (max-width: 500px) {
+@container (max-width: 500px) {
   .ww-ws-body { flex-direction: column; }
   .ww-ws-words {
     flex-direction: row;

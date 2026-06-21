@@ -156,30 +156,21 @@
   box-shadow: 0 0 0 3px rgba(99,102,241,.18);
 }
 
-/* Mobile portrait: collapse aspect-ratio and let the activity grow. */
+/* Responsive tiles on small screens */
 @media (max-width: 600px) {
-  .ww-play-page .ww-player-frame {
-    aspect-ratio: auto !important;
-    min-height: 70vh;
-  }
-  .ww-play-page .ww-player-frame > #ww-player-widget {
-    position: static;
-    inset: auto;
-    padding: .75rem;
-    container-type: normal; /* height is indefinite here → cq* would be 0 */
-  }
-  /* Phone: stack naturally and use fixed sizes (the page scrolls if needed,
-     instead of squeezing everything into a fixed box). */
-  .ww-play-page .ww-player-frame .ww-player { height: auto; gap: .75rem; }
-  .ww-play-page .ww-player-frame .ww-player .ww-q { font-size: 1.3rem; }
-  .ww-play-page .ww-player-frame .ww-player .ww-q-media { flex: 0 0 auto; }
-  .ww-play-page .ww-player-frame .ww-player .ww-q-media img { max-height: 38vh; }
-  .ww-play-page .ww-player-frame .ww-player .ww-options { gap: .6rem; }
-  .ww-play-page .ww-player-frame .ww-player .ww-kahoot-grid .btn {
-    font-size: 1.1rem;
-    padding: 1rem;
-  }
   .ww-pick-tile { width: 76px; }
+}
+
+/* ── Player container queries (respond to the FRAME size, not the viewport) ── */
+
+/* Narrow frame: compact quiz layout */
+@container (max-width: 420px) {
+  .ww-play-page .ww-player-frame .ww-player { gap: .6rem; }
+  .ww-play-page .ww-player-frame .ww-player .ww-q { font-size: clamp(.85rem, 5cqmin, 1.4rem); }
+  .ww-play-page .ww-player-frame .ww-player .ww-kahoot-grid .btn {
+    font-size: clamp(.8rem, 3cqmin, 1.1rem);
+    padding: clamp(.35rem, 2cqh, .9rem);
+  }
 }
 
 /* Modest cap on big screens. Fullscreen still expands to the full viewport

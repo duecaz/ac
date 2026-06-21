@@ -369,6 +369,6 @@
 .froggy-thumb-frog { font-size: 1.6rem; margin: 0 4px; }
 
 /* Responsive: 1 column options on very narrow */
-@media (max-width: 380px) {
+@container (max-width: 380px) {
   .froggy-options { grid-template-columns: 1fr; }
 }
