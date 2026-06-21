@@ -22,7 +22,7 @@ export async function renderTask(rootSel, code) {
   }
 
   const taken = await countOwnAttempts(t.id);
-  if (taken >= t.max_attempts) {
+  if (t.max_attempts != null && taken >= t.max_attempts) {
     mount(rootSel, html`<div class="alert alert-info m-3">Ya usaste tus ${t.max_attempts} intento(s) en esta tarea.</div>`);
     return;
   }
@@ -31,7 +31,7 @@ export async function renderTask(rootSel, code) {
   let nick = lsGet(NICK_KEY) || '';
   if (!isAcceptableNickname(nick).ok) nick = '';
   if (!nick) {
-    const attemptsInfo = t.max_attempts > 1
+    const attemptsInfo = t.max_attempts != null && t.max_attempts > 1
       ? `<p class="text-muted small mb-0 mt-2">Intento ${taken + 1} de ${t.max_attempts}</p>` : '';
     mount(rootSel, html`
       <div class="text-center py-4" style="max-width:420px;margin:0 auto">
@@ -54,10 +54,13 @@ export async function renderTask(rootSel, code) {
   }
 
   // Pre-start screen — always shown so the student sees attempt info before playing.
-  const left = t.max_attempts - taken;
-  const badgeHtml = t.max_attempts === 1
+  const maxAttempts = t.max_attempts ?? null;
+  const left = maxAttempts != null ? maxAttempts - taken : null;
+  const badgeHtml = maxAttempts === 1
     ? `<span class="badge bg-secondary fs-6">1 intento</span>`
-    : `<span class="badge bg-info text-dark fs-6">Intento ${taken + 1} de ${t.max_attempts} · te quedan ${left}</span>`;
+    : maxAttempts == null
+    ? `<span class="badge bg-secondary fs-6">Intento ${taken + 1}</span>`
+    : `<span class="badge bg-info text-dark fs-6">Intento ${taken + 1} de ${maxAttempts} · te quedan ${left}</span>`;
   const dueHtml = t.due_at
     ? `<p class="text-muted small mb-3">Fecha límite: ${escapeHtml(new Date(t.due_at).toLocaleString())}</p>` : '';
 
@@ -84,7 +87,7 @@ export async function renderTask(rootSel, code) {
       // Not every template has content.items (tildes/comas/memory/wheel use
       // other shapes) — use the generic item counter so this never throws.
       const max = activity.scoring?.maxScore || ((activity.scoring?.pointsPerCorrect || 1) * activityItemCount(activity));
-      const timeUsed = Math.round((Date.now() - state.startedAt) / 1000);
+      const timeUsed = state.timeUsed ?? Math.round((Date.now() - (state.startedAt ?? Date.now())) / 1000);
       recordAttempt(t.id, t.activity_id, nick, state.score, max, timeUsed).catch(e => console.warn('record failed', e.message));
       // Override the template's own finish screen (which links to #/home — a
       // teacher-only route absent from the student app, hence "ruta no

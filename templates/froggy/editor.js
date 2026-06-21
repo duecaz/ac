@@ -110,7 +110,7 @@ function rulesHtml(a) {
   </div>`;
 }
 function wireRules(root, a, ctx) {
-  on(root, 'change', '#f-scene', e => { if (!a.presentation) a.presentation = {}; a.presentation.froggyScenario = e.target.value; ctx.onChange(a); });
+  on(root, 'change', '#f-scene', e => { if (!a.rules) a.rules = {}; a.rules.froggyScenario = e.target.value; ctx.onChange(a); });
   on(root, 'input',  '#f-timer', e => { a.rules.timer = +e.target.value || 0; ctx.onChange(a); });
   on(root, 'change', '#f-rand',  e => { a.rules.randomize = e.target.checked; ctx.onChange(a); });
   on(root, 'change', '#f-shuf',  e => { a.rules.shuffleOptions = e.target.checked; ctx.onChange(a); });

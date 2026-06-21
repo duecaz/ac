@@ -3,6 +3,7 @@
 /* 3-column duel: alumno 1 | animación | alumno 2. Equal thirds give each
    player panel 33 % of the viewport — more room for quiz options. The centre
    stage holds a pluggable animation; in portrait/narrow it stacks to 3 rows. */
+.vs-wrap { height: 100%; min-height: 0; container-type: size; }
 .vs-arena {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);

@@ -136,13 +136,15 @@ export function mountVs(host, a, ctx, opts = {}) {
     function paintArena() {
       const st = session.standings();
       mount(host, html`
-        <div class="vs-arena">
-          ${panelShell('left', st.left.name)}
-          <div class="vs-stage" id="vs-stage">
-            <div class="vs-tug-label" id="vs-tug-label">¡Empate!</div>
-            <div class="vs-stage-canvas" id="vs-stage-canvas"></div>
+        <div class="vs-wrap">
+          <div class="vs-arena">
+            ${panelShell('left', st.left.name)}
+            <div class="vs-stage" id="vs-stage">
+              <div class="vs-tug-label" id="vs-tug-label">¡Empate!</div>
+              <div class="vs-stage-canvas" id="vs-stage-canvas"></div>
+            </div>
+            ${panelShell('right', st.right.name)}
           </div>
-          ${panelShell('right', st.right.name)}
         </div>`);
       on(host, 'click', '#vs-again', () => renderSetup());
       if (currentAnim) currentAnim.destroy();

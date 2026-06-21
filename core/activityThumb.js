@@ -209,7 +209,7 @@ function wordsearchHtml(act) {
   if (!words.length) return emptyHtml(act);
   const n = 10; // always use 10x10 for thumbnail (fast)
   const { grid, placed, rows, cols } = generateGrid(words.slice(0, 12), { rows: n, cols: n, dirs: 'medium' });
-  const COLORS = ['#3b82f6','#ef4444','#10b981','#f59e0b','#a855f7','#ec4899','#14b8a6','#eab308'];
+  const COLORS = ['#3b82f6','#ef4444','#10b981','#f59e0b','#a855f7','#ec4899'];
   const foundCells = new Map();
   placed.forEach((p, i) => p.cells.forEach(({ r, c }) => foundCells.set(`${r},${c}`, COLORS[i % COLORS.length])));
 
@@ -232,7 +232,7 @@ function wordsearchHtml(act) {
 }
 
 function crosswordHtml(act) {
-  const words = (act.content?.words || []).filter(w => w.word && w.row != null && w.col != null && w.dir);
+  const words = (act.content?.words || []).filter(w => w.word && w.word.length >= 2 && w.row != null && w.col != null && w.dir);
   if (!words.length) return emptyHtml(act);
 
   // Compute grid dimensions

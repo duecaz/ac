@@ -93,14 +93,14 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
   }
 
   mount(rootSel, buildHtml());
-  fitGrid();
+  requestAnimationFrame(fitGrid);
   attachInteraction();
 
   // ── Fit grid to available space ──────────────────────────────────────────
 
   function fitGrid() {
     const wrap = document.querySelector(`${rootSel} .cw-grid-wrap`);
-    const grid = document.getElementById('cw-grid');
+    const grid = document.querySelector(`${rootSel} #cw-grid`);
     if (!wrap || !grid) return;
     const availW = wrap.clientWidth  - 4;  // 4px = border*2
     const availH = wrap.clientHeight - 4;
@@ -109,11 +109,12 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     grid.style.setProperty('--cw-cell', `${cellPx}px`);
   }
 
-  // Recalculate if container resizes
+  // Recalculate if container resizes; disconnect when game finishes
+  let ro = null;
   if (typeof ResizeObserver !== 'undefined') {
     const wrap = document.querySelector(`${rootSel} .cw-grid-wrap`);
     if (wrap) {
-      const ro = new ResizeObserver(() => fitGrid());
+      ro = new ResizeObserver(() => fitGrid());
       ro.observe(wrap);
     }
   }
@@ -210,8 +211,8 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
 
   function highlightActive() {
     // Clear all highlights
-    document.querySelectorAll('.cw-white').forEach(el => el.classList.remove('cw-active-word', 'cw-active-cell'));
-    document.querySelectorAll('.cw-clue').forEach(el => el.classList.remove('cw-clue-active'));
+    document.querySelectorAll(`${rootSel} .cw-white`).forEach(el => el.classList.remove('cw-active-word', 'cw-active-cell'));
+    document.querySelectorAll(`${rootSel} .cw-clue`).forEach(el => el.classList.remove('cw-clue-active'));
     if (activeR < 0) return;
 
     // Highlight all cells of active word
@@ -283,8 +284,8 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     const w = words.find(x => x.id === activeWordId);
     if (!w) { move(activeDir === 'H' ? 0 : 1, activeDir === 'H' ? 1 : 0); return; }
 
-    // Find current index in word
-    const idx = activeDir === 'H' ? activeC - w.col : activeR - w.row;
+    // Find current index in word using the word's own direction, not activeDir
+    const idx = w.dir === 'H' ? activeC - w.col : activeR - w.row;
     // Try next cells in word
     for (let i = idx + 1; i < w.word.length; i++) {
       const r = w.dir === 'H' ? w.row       : w.row + i;
@@ -300,7 +301,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
   function movePrev() {
     const w = words.find(x => x.id === activeWordId);
     if (!w) return;
-    const idx = activeDir === 'H' ? activeC - w.col : activeR - w.row;
+    const idx = w.dir === 'H' ? activeC - w.col : activeR - w.row;
     if (idx > 0) {
       const r = w.dir === 'H' ? w.row       : w.row + idx - 1;
       const c = w.dir === 'H' ? w.col + idx - 1 : w.col;
@@ -373,16 +374,10 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
         if (typed && !correct) letterEl(r, c)?.classList.add('cw-wrong-letter');
         else letterEl(r, c)?.classList.remove('cw-wrong-letter');
       }
-      if (wordOk && w.word.split('').every((ch, i) => {
-        const r = w.dir === 'H' ? w.row : w.row + i;
-        const c = w.dir === 'H' ? w.col + i : w.col;
-        return userGrid[r]?.[c] === ch;
-      })) {
+      if (wordOk) {
         solvedIds.add(w.id); markWord(w.id, 'correct');
-      } else if (!wordOk) {
-        allCorrect = false; markWord(w.id, 'wrong');
       } else {
-        allCorrect = false;
+        allCorrect = false; markWord(w.id, 'wrong');
       }
     }
     updateProgress();
@@ -417,7 +412,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
         cellEl(r, c)?.classList.remove('cw-correct-word', 'cw-wrong-word');
       }
     solvedIds.clear();
-    document.querySelectorAll('.cw-clue').forEach(el => el.classList.remove('cw-clue-solved','cw-clue-wrong'));
+    document.querySelectorAll(`${rootSel} .cw-clue`).forEach(el => el.classList.remove('cw-clue-solved','cw-clue-wrong'));
     updateProgress();
   }
 
@@ -432,6 +427,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
   }
 
   function finishGame() {
+    ro?.disconnect();
     const timeUsed = Math.round((Date.now() - startedAt) / 1000);
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: totalWords }] });
     const celebEl = document.createElement('div');
