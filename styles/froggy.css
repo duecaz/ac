@@ -292,15 +292,12 @@
   position: relative;
   height: 60px;
   border-radius: 10px;
-  overflow: hidden;
+  overflow: visible;          /* frogs at 0%/100% stay visible */
   background: linear-gradient(90deg, #0e7490, #0369a1);
   flex-shrink: 0;
-  margin-bottom: .4rem;
+  margin: 0 .75rem .4rem;    /* side margins give room to frogs at 0% / finish at 100% */
 }
-.froggy-mini-world {
-  position: relative;
-  height: 100%;
-}
+/* .froggy-mini-world removed — pads/frogs are direct children now, positioned by % */
 .froggy-mini-pad {
   position: absolute;
   bottom: 8px;
@@ -318,8 +315,8 @@
 .froggy-mini-finish {
   position: absolute;
   bottom: 20px;
+  right: -.6rem;
   font-size: 1.2rem;
-  transform: translateX(-50%);
 }
 
 /* ══════════════════════════════════════════════════════════

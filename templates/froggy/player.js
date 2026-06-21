@@ -289,29 +289,30 @@ export async function renderFroggyPlayer(rootSel, activity, opts = {}) {
 }
 
 // ── VS / Equipos round renderer ───────────────────────────────────────────────
-// Compact: mini-track shows both frogs' approximate progress + question below.
+// Compact: mini-track shows both frogs' progress as % of track width so it
+// scales to any panel size (wide desktop or narrow portrait half-panel).
 export function renderFroggyRound(root, payload, { onSubmit } = {}) {
   const { question, image, options = [], p1Score = 0, p2Score = 0, total = 1,
-          itemIndex = 0, scene = 'swamp' } = payload || {};
+          scene = 'swamp' } = payload || {};
   const sc = SCENARIOS[scene] || SCENARIOS.swamp;
 
-  // Estimate frog positions from score/total for a visual hint
   const maxPad = 8;
-  const p1Pad = Math.round((p1Score / Math.max(total, 1)) * maxPad);
-  const p2Pad = Math.round((p2Score / Math.max(total, 1)) * maxPad);
+  const p1Pad = Math.min(Math.round((p1Score / Math.max(total, 1)) * maxPad), maxPad);
+  const p2Pad = Math.min(Math.round((p2Score / Math.max(total, 1)) * maxPad), maxPad);
+  // Percentage positioning: pad i sits at i/maxPad * 100% of the track width.
+  const pct = (n) => `${(n / maxPad * 100).toFixed(1)}%`;
+
   const pads = Array.from({ length: maxPad + 1 }, (_, i) =>
-    `<span class="froggy-mini-pad" style="left:${i * 36}px">${sc.pad}</span>`
+    `<span class="froggy-mini-pad" style="left:${pct(i)}">${sc.pad}</span>`
   ).join('');
 
   root.innerHTML = `
     <div class="froggy-game froggy-round ${sc.css}">
       <div class="froggy-mini-track">
-        <div class="froggy-mini-world" style="width:${(maxPad + 1) * 36}px">
-          ${pads}
-          <span class="froggy-mini-frog froggy-mini-p1" style="left:${p1Pad * 36}px">🐸</span>
-          <span class="froggy-mini-frog froggy-mini-p2" style="left:${p2Pad * 36}px">🐸</span>
-        </div>
-        <div class="froggy-mini-finish" style="left:${maxPad * 36}px">🏁</div>
+        ${pads}
+        <span class="froggy-mini-frog froggy-mini-p1" style="left:${pct(p1Pad)}">🐸</span>
+        <span class="froggy-mini-frog froggy-mini-p2" style="left:${pct(p2Pad)}">🐸</span>
+        <span class="froggy-mini-finish">🏁</span>
       </div>
       <div class="froggy-q-area">
         <div class="froggy-q-text" style="font-size:clamp(1rem,3cqmin,1.5rem)">${escapeHtml(question || '')}</div>
@@ -333,16 +334,16 @@ export function renderFroggyRound(root, payload, { onSubmit } = {}) {
     done = true;
     root.querySelectorAll('.froggy-opt').forEach(b => { b.disabled = true; });
     btn.classList.add('rq-picked');
-    // Animate this player's frog forward
+    // Jump animation: include translateX(-50%) so it doesn't override the CSS centering
     const myFrog = root.querySelector('.froggy-mini-p1');
     if (myFrog) {
-      const cur = p1Pad, nxt = Math.min(cur + 2, maxPad);
+      const nxt = Math.min(p1Pad + 2, maxPad);
       myFrog.animate([
-        { transform: 'translateY(0) scale(1)' },
-        { transform: 'translateY(-18px) scale(1.1)', offset: .4 },
-        { transform: 'translateY(0) scale(1)', offset: 1 },
+        { transform: 'translateX(-50%) translateY(0) scale(1)' },
+        { transform: 'translateX(-50%) translateY(-18px) scale(1.15)', offset: .4 },
+        { transform: 'translateX(-50%) translateY(0) scale(1)' },
       ], { duration: 400 });
-      setTimeout(() => { myFrog.style.left = `${nxt * 36}px`; }, 200);
+      setTimeout(() => { myFrog.style.left = pct(nxt); }, 200);
     }
     onSubmit?.(btn.dataset.value);
   }));
