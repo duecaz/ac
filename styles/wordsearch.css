@@ -1,0 +1,227 @@
+/* ═══════════════════════════════════════════════════
+   Sopa de Letras — styles
+   ═══════════════════════════════════════════════════ */
+
+/* ── Layout shell ──────────────────────────────────── */
+.ww-ws {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: .5rem;
+  container-type: size;
+}
+
+/* Header: progress + timer + score */
+.ww-ws-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+.ww-ws-head-left { display: flex; align-items: center; gap: .5rem; }
+.ww-ws-progress  { width: clamp(60px, 12cqw, 140px); height: 7px; }
+
+/* Body: grid + word list side by side */
+.ww-ws-body {
+  display: flex;
+  gap: .75rem;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+/* ── Grid wrapper ──────────────────────────────────── */
+.ww-ws-grid-wrap {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Square CSS-grid of letter cells */
+.ww-ws-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--ws-cols, 15), 1fr);
+  gap: 1.5px;
+  background: #ced4da;
+  border: 2px solid #ced4da;
+  border-radius: 10px;
+  overflow: hidden;
+  width: min(100%, 100cqb, 580px);
+  aspect-ratio: 1;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0,0,0,.10);
+}
+
+/* Individual cells */
+.ws-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: clamp(.45rem, 2cqmin, 1.05rem);
+  line-height: 1;
+  background: #fff;
+  color: #212529;
+  cursor: default;
+  transition: background .07s, color .07s;
+  aspect-ratio: 1;
+}
+
+/* Dark-mode cells */
+[data-bs-theme="dark"] .ws-cell,
+.ww-player-frame.skin-dark .ws-cell {
+  background: #1e2533;
+  color: #e9ecef;
+}
+[data-bs-theme="dark"] .ww-ws-grid,
+.ww-player-frame.skin-dark .ww-ws-grid {
+  background: #2d3748;
+  border-color: #2d3748;
+}
+
+/* Selecting state (current drag) */
+.ws-cell.ws-sel {
+  background: rgba(99, 102, 241, .22);
+  color: #4f46e5;
+}
+
+/* Wrong selection flash */
+.ws-cell.ws-wrong {
+  background: rgba(239, 68, 68, .30) !important;
+  color: #b91c1c !important;
+}
+
+/* Found cells — one class per player color */
+.ws-cell.ws-found-0 { background: rgba(59,  130, 246, .20); }
+.ws-cell.ws-found-1 { background: rgba(239,  68,  68, .20); }
+.ws-cell.ws-found-2 { background: rgba(16,  185, 129, .20); }
+.ws-cell.ws-found-3 { background: rgba(245, 158,  11, .20); }
+.ws-cell.ws-found-4 { background: rgba(168,  85, 247, .20); }
+.ws-cell.ws-found-5 { background: rgba(236,  72, 153, .20); }
+
+/* SVG overlay (found-word lines) */
+.ww-ws-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  border-radius: 8px;
+  overflow: visible;
+}
+
+/* ── Word list sidebar ─────────────────────────────── */
+.ww-ws-words {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 100px;
+  max-width: 150px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+.ww-ws-words-title {
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: #6c757d;
+  margin-bottom: 2px;
+}
+
+.ws-word {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: clamp(.72rem, 1.4cqw, .88rem);
+  font-weight: 700;
+  background: #f1f3f5;
+  color: #495057;
+  letter-spacing: .02em;
+  transition: background .15s, color .15s;
+  line-height: 1.2;
+}
+.ws-word-dot { font-size: .85em; color: #adb5bd; flex-shrink: 0; }
+
+.ws-word.ws-word-found {
+  background: #d1fae5;
+  color: #065f46;
+  text-decoration: line-through;
+}
+.ws-word.ws-word-found .ws-word-dot { color: #10b981; }
+
+[data-bs-theme="dark"] .ws-word          { background: #2d3748; color: #cbd5e0; }
+[data-bs-theme="dark"] .ws-word.ws-word-found { background: #064e3b; color: #6ee7b7; }
+
+/* ── VS round target banner ────────────────────────── */
+.ww-ws-round-target {
+  text-align: center;
+  font-size: clamp(1rem, 3cqmin, 1.4rem);
+  font-weight: 600;
+  color: #6c757d;
+  padding: .25rem 0;
+}
+.ww-ws-target-word {
+  color: #4f46e5;
+  font-size: clamp(1.2rem, 4cqmin, 2rem);
+  font-weight: 900;
+  letter-spacing: .06em;
+  background: rgba(99,102,241,.10);
+  border-radius: 8px;
+  padding: .1em .4em;
+}
+
+/* ── Responsive: stack vertically on narrow screens ── */
+@media (max-width: 500px) {
+  .ww-ws-body { flex-direction: column; }
+  .ww-ws-words {
+    flex-direction: row;
+    flex-wrap: wrap;
+    max-width: none;
+    min-width: 0;
+    gap: 4px;
+  }
+  .ws-word { font-size: .7rem; padding: 3px 8px; }
+}
+
+/* ════════════════════════════════════════════════════
+   Editor preview grid (inside the editor tab)
+   ════════════════════════════════════════════════════ */
+.ws-ed-preview {
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8f9fa;
+  padding: 6px;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.ws-ed-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--ws-cols, 15), 1fr);
+  gap: 1px;
+  font-family: monospace;
+}
+
+.ws-ed-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  font-size: clamp(.45rem, 1.5vw, .85rem);
+  font-weight: 700;
+  color: #adb5bd;
+  border-radius: 2px;
+}
+
+.ws-ed-dot { font-size: 1rem; min-width: 1rem; text-align: center; }

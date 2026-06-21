@@ -9,6 +9,7 @@ import { applySkin } from './skins.js';
 import { applyBackground } from './backgrounds.js';
 import { isVowel } from './textMarks.js';
 import { wheelSvg } from '../templates/wheel/render.js';
+import { generateGrid } from '../templates/wordsearch/generator.js';
 
 // Virtual stage = the interactive panel's native resolution (1280×800, 16:10).
 // The activity renders responsively at this size, then the whole stage is
@@ -182,15 +183,43 @@ function wheelHtml(act) {
   </div>`;
 }
 
+function wordsearchHtml(act) {
+  const words = (act.content?.words || []).map(w => typeof w === 'string' ? w : (w?.word || '')).filter(Boolean);
+  if (!words.length) return emptyHtml(act);
+  const n = 10; // always use 10x10 for thumbnail (fast)
+  const { grid, placed, rows, cols } = generateGrid(words.slice(0, 12), { rows: n, cols: n, dirs: 'medium' });
+  const COLORS = ['#3b82f6','#ef4444','#10b981','#f59e0b','#a855f7','#ec4899','#14b8a6','#eab308'];
+  const foundCells = new Map();
+  placed.forEach((p, i) => p.cells.forEach(({ r, c }) => foundCells.set(`${r},${c}`, COLORS[i % COLORS.length])));
+
+  const cellSize = 100 / cols; // % per cell
+  const fontSize = Math.max(7, Math.floor(cellSize * 0.55));
+  const cellsHtml = grid.flatMap((row, r) => row.map((l, c) => {
+    const color = foundCells.get(`${r},${c}`);
+    const bg    = color ? `background:${color}22;color:${color};` : 'color:#adb5bd;';
+    return `<span style="display:flex;align-items:center;justify-content:center;aspect-ratio:1;font-weight:800;font-size:${fontSize}px;${bg}">${l}</span>`;
+  })).join('');
+
+  const wordList = placed.slice(0, 6).map((p, i) =>
+    `<span style="font-size:10px;font-weight:700;color:${COLORS[i % COLORS.length]};text-decoration:line-through;margin-right:6px">${p.word}</span>`
+  ).join('') + (placed.length > 6 ? `<span style="font-size:10px;color:#adb5bd">+${placed.length - 6}</span>` : '');
+
+  return `<div style="display:flex;flex-direction:column;height:100%;padding:.5rem;gap:.5rem">
+    <div style="flex:1;display:grid;grid-template-columns:repeat(${cols},1fr);gap:1px;background:#dee2e6;border:1px solid #dee2e6;border-radius:6px;overflow:hidden">${cellsHtml}</div>
+    <div style="display:flex;flex-wrap:wrap;gap:2px;flex-shrink:0">${wordList}</div>
+  </div>`;
+}
+
 function buildHtml(act) {
   switch (act.template) {
-    case 'quiz':   return quizHtml(act);
-    case 'math':   return mathHtml(act);
-    case 'match':  return matchHtml(act);
-    case 'memory': return memoryHtml(act);
+    case 'quiz':        return quizHtml(act);
+    case 'math':        return mathHtml(act);
+    case 'match':       return matchHtml(act);
+    case 'memory':      return memoryHtml(act);
     case 'tildes':
-    case 'comas':  return textHtml(act);
-    case 'wheel':  return wheelHtml(act);
+    case 'comas':       return textHtml(act);
+    case 'wheel':       return wheelHtml(act);
+    case 'wordsearch':  return wordsearchHtml(act);
     default:
       if (act.content?.items?.[0]?.options) return quizHtml(act);
       if (act.content?.pairs?.length)       return matchHtml(act);
