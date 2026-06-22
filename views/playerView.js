@@ -12,7 +12,7 @@ import { isVsCompatible } from '../kernel/session/engine.js';
 import { availableModes, getMode, runMode } from '../core/modes.js';
 import { listSkins, applySkin, skinPreviewHtml } from '../core/skins.js';
 
-import { listBackgrounds, applyBackground, backgroundPreviewHtml } from '../core/backgrounds.js';
+import { listBackgrounds, applyBackground, backgroundPreviewHtml, readBackgroundImage } from '../core/backgrounds.js';
 import { resetScene } from '../core/presentation.js';
 import { toggleFullscreen } from '../core/fullscreen.js';
 import { acquire } from '../core/lifecycle.js';
@@ -36,6 +36,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   let liveTemplate = a.template;
   let currentSkin = a.presentation?.skin || 'default';
   let currentBg = a.presentation?.background || 'none';
+  let currentBgImage = a.presentation?.backgroundImage || '';
   const vsCapable = isVsCompatible(a);
   // The currently selected embedded mode and its teardown handle. The activity
   // stage hosts ONE mode at a time (Individual by default); switching modes
@@ -148,11 +149,17 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
 
         <h6 class="text-muted text-uppercase small mb-2">Fondo</h6>
         <div class="d-flex flex-wrap gap-2 mb-4">
-          ${listBackgrounds().map(b => `
-            <div class="ww-pick-tile bg-pick ${currentBg===b.name?'is-active':''}" data-name="${b.name}" role="button" title="${escapeHtml(b.description||'')}" style="width:120px">
-              ${backgroundPreviewHtml(b.name)}
-            </div>
-          `).join('')}
+          ${listBackgrounds().map(b => b.name === 'custom'
+            ? `<div class="ww-pick-tile bg-pick ${currentBg==='custom'?'is-active':''}" data-name="custom" role="button" title="${escapeHtml(b.description||'')}" style="width:120px">
+                 ${backgroundPreviewHtml('custom', a.presentation?.backgroundImage || '')}
+                 <label class="btn btn-sm btn-outline-secondary w-100 mt-1" style="cursor:pointer" title="Máx 800 KB">
+                   <i class="bi bi-upload"></i> ${a.presentation?.backgroundImage ? 'Cambiar' : 'Subir'}
+                   <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" id="bg-custom-file" hidden>
+                 </label>
+               </div>`
+            : `<div class="ww-pick-tile bg-pick ${currentBg===b.name?'is-active':''}" data-name="${b.name}" role="button" title="${escapeHtml(b.description||'')}" style="width:120px">
+                 ${backgroundPreviewHtml(b.name)}
+               </div>`).join('')}
         </div>
 
 
@@ -173,7 +180,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     // around the embed doesn't change when the user picks a theme.
     const frame = document.getElementById('ww-frame');
     applySkin(currentSkin, frame);
-    applyBackground(currentBg, frame);
+    applyBackground(currentBg, frame, currentBgImage);
     // Re-mount the active mode (default Individual). If a template switch made
     // the active mode incompatible (e.g. VS off after switching), fall back.
     const act = playActivity();
@@ -192,9 +199,26 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
       document.querySelectorAll('.skin-pick').forEach(p => p.classList.toggle('is-active', p.dataset.name === currentSkin));
     });
     on(rootSel, 'click', '.bg-pick', (_, b) => {
+      // Custom selects only when an image exists; otherwise its upload button
+      // (the label inside) opens the file dialog and selects on success.
+      if (b.dataset.name === 'custom' && !currentBgImage) return;
       currentBg = b.dataset.name;
-      applyBackground(currentBg, document.getElementById('ww-frame'));
+      applyBackground(currentBg, document.getElementById('ww-frame'), currentBgImage);
       document.querySelectorAll('.bg-pick').forEach(p => p.classList.toggle('is-active', p.dataset.name === currentBg));
+    });
+    on(rootSel, 'change', '#bg-custom-file', async (e) => {
+      try {
+        currentBgImage = await readBackgroundImage(e.target.files[0]);
+        currentBg = 'custom';
+        applyBackground(currentBg, document.getElementById('ww-frame'), currentBgImage);
+        const tile = document.querySelector('.bg-pick[data-name="custom"]');
+        const pv = tile?.querySelector('.ww-bg-preview');
+        if (pv) { pv.style.background = `center/cover no-repeat url("${currentBgImage}")`; pv.innerHTML = ''; }
+        document.querySelectorAll('.bg-pick').forEach(p => p.classList.toggle('is-active', p.dataset.name === 'custom'));
+      } catch (err) {
+        toast(err.message, 'warning', 5000);
+        e.target.value = '';
+      }
     });
     on(rootSel, 'click', '.tpl-switch', (_, b) => {
       liveTemplate = b.dataset.name;

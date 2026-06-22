@@ -58,7 +58,7 @@ const templateOverride = params.get('template');
     const bg = bgOverride || a.presentation?.background || 'none';
     const frame = document.getElementById('ww-embed-frame');
     applySkin(skin, frame);
-    applyBackground(bg, frame);
+    applyBackground(bg, frame, a.presentation?.backgroundImage);
 
     // Title in the host page tab.
     document.title = `${a.title} · WW`;

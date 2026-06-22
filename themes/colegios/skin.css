@@ -5,7 +5,11 @@
    that depend on the panel-side context (left/right team colours) are here.
    ══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Arena background ────────────────────────────────────────────────────── */
+/* ── Arena background ──────────────────────────────────────────────────────
+   Default (no background chosen): the skin paints its own deep-blue arena.
+   When the teacher picks a background in the selector, the frame carries it and
+   the arena turns into a semi-transparent scrim so that chosen photo/texture
+   shows THROUGH, behind the floating device panels (uses the empty "air").   */
 .vs-skin-school {
   background: #09111e;
   background-image:
@@ -13,6 +17,14 @@
     radial-gradient(ellipse 55% 80% at 92% 50%, rgba(211,47,47,.12)  0%, transparent 100%),
     repeating-linear-gradient(135deg, transparent, transparent 30px,
       rgba(255,255,255,.014) 30px, rgba(255,255,255,.014) 31px);
+}
+/* A real background is chosen → reveal it; keep team glows + a readability scrim. */
+.ww-player-frame:not(.bg-none) .vs-skin-school {
+  background: transparent;
+  background-image:
+    radial-gradient(ellipse 55% 80% at 8% 50%,  rgba(25,118,210,.18) 0%, transparent 100%),
+    radial-gradient(ellipse 55% 80% at 92% 50%, rgba(211,47,47,.18)  0%, transparent 100%),
+    linear-gradient(180deg, rgba(7,12,24,.55) 0%, rgba(7,12,24,.7) 100%);
 }
 
 /* ── Scoreboard bar — TV game-show style ─────────────────────────────────── */

@@ -1,6 +1,6 @@
 # Arquitectura de la app — Referencia completa
 
-> Versión 1.51.5 · Vanilla JS ES Modules · Sin bundler · Bootstrap 5 via CDN
+> Versión 1.51.9 · Vanilla JS ES Modules · Sin bundler · Bootstrap 5 via CDN
 
 ---
 
@@ -54,7 +54,7 @@ ac/
 │   ├── modeMatrix.js     Qué modo soporta cada plantilla (matriz)
 │   ├── presentation.js   ◀ NUEVO: applyScene() + resetScene() — capa de tema central
 │   ├── skins.js          Registry de skins. registerSkin() + getSkin() + applySkin(name, target?)
-│   ├── backgrounds.js    Catálogo de fondos + applyBackground(name, target?)
+│   ├── backgrounds.js    Catálogo de fondos + applyBackground(name, target?, imageUrl?). Incluye 'custom' (imagen subida)
 │   ├── activityThumb.js  Miniatura live 16:10 (DOM escalado, skin+fondo scoped)
 │   ├── player.js         Wrapper: runPlayer(sel, activity, opts). Aplica tema global
 │   ├── editorShell.js    Chasis compartido de todos los editores (pestañas, preview)
@@ -693,4 +693,4 @@ Suites por área:
 
 ---
 
-*Actualizado: 2026-06-22 · v1.51.5*
+*Actualizado: 2026-06-22 · v1.51.9*

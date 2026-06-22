@@ -43,7 +43,7 @@ export function resetScene(target = null) {
  */
 export function applyScene(activity, ctx = null, { defaultSkin = NEUTRAL_SKIN, defaultBg = NEUTRAL_BG, target = null } = {}) {
   applySkin(activity?.presentation?.skin || defaultSkin, target);
-  applyBackground(activity?.presentation?.background || defaultBg, target);
+  applyBackground(activity?.presentation?.background || defaultBg, target, activity?.presentation?.backgroundImage);
   if (ctx) ctx.add(() => resetScene(target));
   return () => resetScene(target);
 }

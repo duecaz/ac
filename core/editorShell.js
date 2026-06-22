@@ -19,7 +19,7 @@ import { getTemplate, listTemplates } from './registry.js';
 import { modesForTemplate } from './modes.js';
 import { renderModesTab, wireModesTab } from './editorModes.js';
 import { listSkins, skinPreviewHtml, applySkin } from './skins.js';
-import { listBackgrounds, backgroundPreviewHtml, applyBackground } from './backgrounds.js';
+import { listBackgrounds, backgroundPreviewHtml, applyBackground, readBackgroundImage } from './backgrounds.js';
 
 function presentationHtml(a) {
   const cs = a.presentation?.skin || 'default';
@@ -46,12 +46,20 @@ function presentationHtml(a) {
     </div>
     <h6 class="mb-2">Fondo</h6>
     <div class="d-flex flex-wrap gap-3">
-      ${listBackgrounds().map(b => `
-        <div class="ww-skin-tile bg-pick ${cb === b.name ? 'is-active' : ''}" data-name="${b.name}" role="button" style="width:120px">
-          ${backgroundPreviewHtml(b.name)}
-          <div class="text-center small text-muted">${escapeHtml(b.description || '')}</div>
-        </div>`).join('')}
-    </div>`;
+      ${listBackgrounds().map(b => b.name === 'custom'
+        ? `<div class="ww-skin-tile bg-pick ${cb === 'custom' ? 'is-active' : ''}" data-name="custom" role="button" style="width:120px">
+             ${backgroundPreviewHtml('custom', a.presentation?.backgroundImage || '')}
+             <label class="btn btn-sm btn-outline-secondary w-100 mt-1" style="cursor:pointer" title="Máx 800 KB">
+               <i class="bi bi-upload"></i> ${a.presentation?.backgroundImage ? 'Cambiar' : 'Subir'}
+               <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" id="bg-custom-file" hidden>
+             </label>
+           </div>`
+        : `<div class="ww-skin-tile bg-pick ${cb === b.name ? 'is-active' : ''}" data-name="${b.name}" role="button" style="width:120px">
+             ${backgroundPreviewHtml(b.name)}
+             <div class="text-center small text-muted">${escapeHtml(b.description || '')}</div>
+           </div>`).join('')}
+    </div>
+    <div class="text-danger small mt-2" id="bg-custom-err" hidden></div>`;
 }
 
 export function renderEditorShell(root, a, onChange, spec) {
@@ -105,9 +113,13 @@ export function renderEditorShell(root, a, onChange, spec) {
     if (presOn) {
       // Initialize the mini preview scoped to its own element — never touches the page.
       const prev = root.querySelector('#pres-preview');
+      const applyPrevBg = () => {
+        const p = root.querySelector('#pres-preview');
+        if (p) applyBackground(a.presentation?.background || 'none', p, a.presentation?.backgroundImage);
+      };
       if (prev) {
         applySkin(a.presentation?.skin || 'default', prev);
-        applyBackground(a.presentation?.background || 'none', prev);
+        applyPrevBg();
       }
       on(root, 'click', '.skin-pick', (_, b) => {
         (a.presentation = a.presentation || {}).skin = b.dataset.name; onChange(a);
@@ -116,10 +128,35 @@ export function renderEditorShell(root, a, onChange, spec) {
         if (p) applySkin(b.dataset.name, p);
       });
       on(root, 'click', '.bg-pick', (_, b) => {
+        // The custom tile selects only once an image exists; otherwise its
+        // "Subir" button (below) opens the file dialog and selects on success.
+        if (b.dataset.name === 'custom' && !a.presentation?.backgroundImage) return;
         (a.presentation = a.presentation || {}).background = b.dataset.name; onChange(a);
         root.querySelectorAll('.bg-pick').forEach(x => x.classList.toggle('is-active', x === b));
-        const p = root.querySelector('#pres-preview');
-        if (p) applyBackground(b.dataset.name, p);
+        applyPrevBg();
+      });
+      // Custom background upload — read → validate size → store in the activity.
+      const bgFile = root.querySelector('#bg-custom-file');
+      if (bgFile) bgFile.addEventListener('change', async (e) => {
+        const errEl = root.querySelector('#bg-custom-err');
+        try {
+          const dataUrl = await readBackgroundImage(e.target.files[0]);
+          a.presentation = a.presentation || {};
+          a.presentation.backgroundImage = dataUrl;
+          a.presentation.background = 'custom';
+          onChange(a);
+          if (errEl) errEl.hidden = true;
+          // Update the custom tile in place (avoid a full repaint that would
+          // bounce the user off the Presentación tab).
+          const tile = root.querySelector('.bg-pick[data-name="custom"]');
+          const pv = tile?.querySelector('.ww-bg-preview');
+          if (pv) { pv.style.background = `center/cover no-repeat url("${dataUrl}")`; pv.innerHTML = ''; }
+          root.querySelectorAll('.bg-pick').forEach(x => x.classList.toggle('is-active', x === tile));
+          applyPrevBg();
+        } catch (err) {
+          if (errEl) { errEl.textContent = err.message; errEl.hidden = false; }
+          e.target.value = '';
+        }
       });
     }
     // Template-specific wiring.

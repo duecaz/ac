@@ -18,7 +18,7 @@ function makeClassList() {
     contains: (x) => s.has(x),
   };
 }
-const makeEl = () => ({ classList: makeClassList(), style: { setProperty() {} } });
+const makeEl = () => ({ classList: makeClassList(), style: { setProperty() {}, removeProperty() {} } });
 
 global.document = { body: makeEl(), documentElement: makeEl() };
 const act = { presentation: { skin: 'space', background: 'stars' } };

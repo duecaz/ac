@@ -323,7 +323,7 @@ export function mountThumb(container, activity) {
   container.appendChild(stage);
   // Scoped skin + background — applied only to this stage, never page-wide.
   try { applySkin(activity.presentation?.skin || 'default', stage); } catch { /* skin optional */ }
-  try { applyBackground(activity.presentation?.background || 'none', stage); } catch { /* bg optional */ }
+  try { applyBackground(activity.presentation?.background || 'none', stage, activity.presentation?.backgroundImage); } catch { /* bg optional */ }
   _mounted.add(container);
   ensureBound();
   requestAnimationFrame(rescaleAll);
