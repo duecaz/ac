@@ -97,12 +97,12 @@
   .vs-main {
     grid-template-columns: 1fr 1fr;
     grid-template-areas: "stage stage" "s1 s2";
-    grid-template-rows: 28cqh 1fr;
+    grid-template-rows: 18cqh 1fr;
     align-content: stretch;
   }
   .vs-skin-classic .vs-stage { border: none; border-bottom: 1px solid #dee2e6; }
-  .vs-body { padding: .35rem .4rem; }
-  .vs-q    { font-size: clamp(.9rem, 2cqw, 1.4rem); }
+  .vs-body { padding: .35rem .4rem; justify-content: flex-start; }
+  .vs-q    { font-size: clamp(.9rem, 2cqw, 1.4rem); margin-bottom: .4rem; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════

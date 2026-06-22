@@ -121,5 +121,6 @@
 
 /* ── Portrait / narrow ────────────────────────────────────────────────────── */
 @container vs ((max-width: 860px) or (max-aspect-ratio: 5/4)) {
-  .vs-skin-school .vs-body { max-width: 100%; border-radius: 1rem; }
+  .vs-skin-school .vs-panel { padding: .4rem .3rem; }
+  .vs-skin-school .vs-body  { max-width: 100%; width: 100%; border-radius: 1rem; }
 }
