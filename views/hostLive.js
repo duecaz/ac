@@ -4,7 +4,8 @@ import { on } from '../core/events.js';
 import { get } from '../core/storage.js';
 import { createRoom, findRoomByCode, fetchSession,
          startSession, setSessionState, endSession, settleItem,
-         listPlayers, listAnswers, leaderboard, kickPlayer, subscribeRoom, pingHost, fetchSessionKey }
+         listPlayers, listAnswers, leaderboard, kickPlayer, subscribeRoom, pingHost, fetchSessionKey,
+         realtimeKind }
        from '../core/liveTransport.js';
 import { getTemplate } from '../core/registry.js';
 import { sessionItems } from '../kernel/session/engine.js';
@@ -46,6 +47,12 @@ async function renderHost(rootSel, code, sessionId, activity) {
   // so swap in the full snapshot from session_keys when available. Falls back to
   // the (possibly full, for older/local sessions) snap we were handed.
   try { const full = await fetchSessionKey(sessionId); if (full) activity = full; } catch { /* keep fallback */ }
+  // Which Live backend is really in use. If it fell back to 'local' (e.g. the
+  // PocketBase live_sessions collection doesn't exist), the room only works on
+  // THIS device — warn the teacher in the lobby so it's not a silent failure.
+  let driverKind = 'unknown';
+  try { driverKind = await realtimeKind(); } catch { /* keep unknown */ }
+
   // Apply per-activity theme during the host live view (Kahoot look by default).
   applyScene(activity, ctx, { defaultSkin: 'kahoot' });
   // Stage class for big-screen typography.
@@ -128,6 +135,16 @@ async function renderHost(rootSel, code, sessionId, activity) {
     mount(rootSel, html`
       <div class="text-center py-3">
         <div class="d-flex justify-content-end mb-2">${fullscreenButtonHtml()}</div>
+        ${driverKind === 'local' ? html`
+          <div class="alert alert-warning d-flex align-items-start gap-2 text-start mx-auto mb-3" style="max-width:560px">
+            <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+            <div>
+              <b>Modo local: sin servidor de Live</b><br>
+              Esta sala solo funciona en <b>este mismo navegador</b>. Los alumnos en
+              otros dispositivos o redes (datos móviles) <b>no podrán entrar</b>.
+              Falta crear la colección <code>live_sessions</code> en el servidor.
+            </div>
+          </div>` : ''}
         <h5 class="text-muted mb-1">Únete en</h5>
         <div class="h3"><b>${escapeHtml(STUDENT_BASE.replace(/^https?:\/\//,''))}</b></div>
         <h5 class="text-muted mt-3 mb-1">PIN</h5>

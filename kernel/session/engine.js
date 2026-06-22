@@ -298,10 +298,15 @@ function createVsSession(activity, T, opts) {
   }
 
   const side = (id, name) => ({ id, name, score: 0, cursor: 0, correct: 0, answers: [] });
+  // Modo carrera (opt-in): el duelo termina en cuanto UN lado completa todos los
+  // ítems (gana quien acaba primero). Por defecto sigue el modo "puntos": termina
+  // cuando AMBOS lados acaban y gana quien sumó más. La vista VS activa carrera.
+  const raceToFinish = !!opts.raceToFinish;
   const state = opts.state ? { ...opts.state } : {
     format: FORMATS.VS,
     code: opts.code || 'VS1',
     status: 'lobby',
+    finishedBy: null,
     sides: {
       left: side('left', opts.left || 'Alumno 1'),
       right: side('right', opts.right || 'Alumno 2'),
@@ -328,9 +333,11 @@ function createVsSession(activity, T, opts) {
     s.score += r.points;
     if (r.correct) s.correct += 1;
     s.cursor += 1;
-    // Each side plays independently at its own pace. The duel ends only when
-    // BOTH sides have finished all items.
-    if (state.sides.left.cursor >= total && state.sides.right.cursor >= total) {
+    if (raceToFinish) {
+      // Carrera: el primero que completa todos los ítems gana y cierra el duelo.
+      if (s.cursor >= total) { state.status = 'ended'; state.finishedBy = sideId; }
+    } else if (state.sides.left.cursor >= total && state.sides.right.cursor >= total) {
+      // Puntos: cada lado va a su ritmo; termina cuando AMBOS acaban.
       state.status = 'ended';
     }
     return { correct: r.correct, points: r.points, cursor: s.cursor, done: s.cursor >= total };
@@ -348,6 +355,7 @@ function createVsSession(activity, T, opts) {
       left: { name: L.name, score: L.score, cursor: L.cursor, correct: L.correct, done: L.cursor >= total },
       right: { name: R.name, score: R.score, cursor: R.cursor, correct: R.correct, done: R.cursor >= total },
       leader, diff: Math.abs(diff), total, finished: state.status === 'ended',
+      finishedBy: state.finishedBy || null,
     };
   }
 

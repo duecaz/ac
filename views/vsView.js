@@ -180,7 +180,7 @@ export function mountVs(host, a, ctx, opts = {}) {
 
   function startMatch(leftName, rightName) {
     const T = getTemplate(a.template);
-    const session = createSession(a, { format: FORMATS.VS, left: leftName, right: rightName });
+    const session = createSession(a, { format: FORMATS.VS, left: leftName, right: rightName, raceToFinish: true });
     session.start();
     const flashing = { left: false, right: false };
     let finished = false; // guards finish() against double-fire from pending timers
@@ -317,9 +317,18 @@ export function mountVs(host, a, ctx, opts = {}) {
       setTimeout(() => {
         flashing[side] = false;
         if (body) body.classList.remove('vs-flash-ok', 'vs-flash-no');
-        renderSide(side);
         const st = session.standings();
-        if (st.finished) finish(st);
+        if (st.finished) {
+          // Carrera terminada: cerrar las calculadoras (paneles) y dejar la
+          // animación central celebrando al ganador un instante antes del podio.
+          const arena = host.querySelector('.vs-arena');
+          if (arena) arena.classList.add('vs-race-finished');
+          const ws = st.finishedBy || (st.leader !== 'tie' ? st.leader : null);
+          if (ws && currentAnim) currentAnim.setProgress(ws === 'left' ? 1 : -1);
+          setTimeout(() => finish(st), 1500);
+        } else {
+          renderSide(side);
+        }
       }, FLASH_MS);
     }
 
@@ -341,15 +350,20 @@ export function mountVs(host, a, ctx, opts = {}) {
       if (finished) return; // idempotent: both sides' pending timers may call this
       finished = true;
       if (currentAnim) { currentAnim.destroy(); currentAnim = null; }
-      const tie = st.leader === 'tie';
-      const winner = tie ? null : st[st.leader];
-      // Same podium component as live mode; tied players get equal-height bars.
-      const ranked = [st.left, st.right]
-        .map(s => ({ name: s.name, score: s.score }))
-        .sort((a, b) => b.score - a.score);
+      // Carrera: gana quien terminó primero (finishedBy). Si por alguna razón no
+      // hay finisher (estado heredado), cae al criterio de puntos.
+      const winnerSide = st.finishedBy || (st.leader !== 'tie' ? st.leader : null);
+      const tie = !winnerSide;
+      const winner = tie ? null : st[winnerSide];
+      // El ganador (quien acabó primero) encabeza el podio; el otro lado después.
+      const other = winnerSide === 'left' ? 'right' : 'left';
+      const ranked = (winnerSide
+        ? [st[winnerSide], st[other]]
+        : [st.left, st.right].sort((a, b) => b.score - a.score))
+        .map(s => ({ name: s.name, score: s.score }));
       const heading = tie
         ? `<i class="bi bi-emoji-neutral text-secondary"></i> ¡Empate a ${st.left.score}!`
-        : `<i class="bi bi-trophy-fill text-warning"></i> 🏆 ¡${escapeHtml(winner.name)} gana!`;
+        : `<i class="bi bi-trophy-fill text-warning"></i> 🏆 ¡${escapeHtml(winner.name)} gana la carrera!`;
       const body = `
         <div class="vs-result text-center py-4">
           <h2 class="mb-3">${heading}</h2>

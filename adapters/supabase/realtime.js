@@ -7,6 +7,7 @@ import { createRoom, findRoomByCode, fetchSession } from './room.js';
 
 export function createSupabaseRealtime() {
   return {
+    kind: 'supabase',
     createRoom,
     findRoomByCode,
     fetchSession,

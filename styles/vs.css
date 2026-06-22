@@ -134,6 +134,18 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   CARRERA TERMINADA — se cierran las calculadoras y la animación llena el centro
+   ══════════════════════════════════════════════════════════════════════════ */
+.vs-arena.vs-race-finished .vs-panel { display: none; }
+.vs-arena.vs-race-finished .vs-main {
+  grid-template-columns: 1fr !important;
+  grid-template-rows: 1fr !important;
+  grid-template-areas: "stage" !important;
+}
+.vs-arena.vs-race-finished .vs-stage { animation: vs-stage-pop .45s ease-out; }
+@keyframes vs-stage-pop { from { transform: scale(.85); opacity: .4; } to { transform: scale(1); opacity: 1; } }
+
+/* ══════════════════════════════════════════════════════════════════════════
    TUG-OF-WAR SVG ANIMATION
    ══════════════════════════════════════════════════════════════════════════ */
 .vs-tug-scene { width: 100%; height: 100%; }

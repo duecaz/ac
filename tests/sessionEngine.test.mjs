@@ -164,6 +164,32 @@ const quizActivity = {
   ok('vs: the duel ends only when the SECOND (last) side finishes too');
 }
 
+// ───────────────────── VS — modo carrera (raceToFinish) ──────────────────────
+{
+  const s = createSession(quizActivity, { format: FORMATS.VS, left: 'Ana', right: 'Beto', raceToFinish: true });
+  s.start();
+
+  // Ana races ahead through 3 of 4 items; Beto answers just 1. Still running.
+  s.answer('left', '4'); s.answer('left', '6'); s.answer('left', '10');
+  s.answer('right', '4');
+  let st = s.standings();
+  assert.strictEqual(s.status, 'running', 'race still running until someone finishes ALL items');
+  assert.strictEqual(st.finished, false, 'not finished mid-race');
+  assert.strictEqual(st.finishedBy, null, 'no finisher yet');
+
+  // Ana answers her 4th and LAST item → she finishes first → duel ends NOW,
+  // even though Beto has 3 items left.
+  s.answer('left', '8');
+  st = s.standings();
+  assert.strictEqual(s.status, 'ended', 'race ends the instant the first side completes');
+  assert.strictEqual(st.finished, true, 'standings finished on first finisher');
+  assert.strictEqual(st.finishedBy, 'left', 'Ana is crowned as the side that finished first');
+  assert.strictEqual(st.right.done, false, 'Beto never got to finish — race was already won');
+  assert.throws(() => s.answer('right', '6'), /no está en curso/,
+    'the trailing side cannot answer after the race is won');
+  ok('vs (carrera): the duel ends the moment the FIRST side finishes; winner = finishedBy');
+}
+
 // ──────────── sessionItems + TEAMS judge over a non-`items` model ────────────
 {
   // textCorrection stores rounds under `passages`, not `items`.

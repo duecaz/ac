@@ -35,3 +35,12 @@ export const pingPresence = call('pingPresence');
 
 // Realtime subscription. Returns (a promise resolving to) an unsubscribe fn.
 export const subscribeRoom = call('subscribeRoom');
+
+// Which concrete driver is active ('local' | 'pocketbase' | 'supabase'). The
+// host view uses this to warn when Live has silently fallen back to the local
+// (same-device only) driver — e.g. the PocketBase live_sessions collection is
+// missing — so the teacher knows why remote students can't join.
+export async function realtimeKind() {
+  const rt = await getRealtime();
+  return rt?.kind || 'unknown';
+}

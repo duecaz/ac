@@ -60,6 +60,8 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
   }
 
   return {
+    kind: 'pocketbase',
+
     async createRoom(activity) {
       const code = genCode();
       const engine = createLiveRoom(activity, { code });

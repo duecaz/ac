@@ -47,6 +47,10 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
   function save(code, room, engine) { room.state = engine.state; write(code, room); }
 
   return {
+    // Driver de mismo dispositivo (localStorage + BroadcastChannel). La vista lo
+    // usa para avisar que la sala NO funciona entre dispositivos/redes.
+    kind: 'local',
+
     async createRoom(activity) {
       const code = genCode();
       const engine = createLiveRoom(activity, { code });
