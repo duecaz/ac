@@ -1,14 +1,14 @@
-/* VS duel — split-screen layout + central tug-of-war. Two panels fill the
-   viewport so two students can play side by side on one touchscreen. */
+/* VS duel — split-screen layout + central animation. Two panels fill the
+   viewport so two students can play side by side on one shared touchscreen. */
 
-/* ── Wrap + Arena shell ──────────────────────────────────────────────────────
+/* ── Container + Arena shell ─────────────────────────────────────────────────
    .vs-arena is always flex-column: scoreboard bar on top, .vs-main below.
-   Skins add a class (vs-skin-classic / vs-skin-school) to .vs-arena and
-   override colours/backgrounds with CSS — no JS branching needed.          */
+   A skin class (vs-skin-classic / vs-skin-school) on .vs-arena overrides
+   colours, panel shapes and activity elements — no JS branching needed.     */
 .vs-wrap  { height: 100%; min-height: 0; container-type: size; container-name: vs; }
 .vs-arena { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 
-/* ── 3-column game area (below the bar) ─────────────────────────────────── */
+/* ── 3-column game area ──────────────────────────────────────────────────── */
 .vs-main {
   flex: 1; min-height: 0;
   display: grid;
@@ -18,20 +18,17 @@
 .vs-panel.vs-left  { grid-area: s1; }
 .vs-panel.vs-right { grid-area: s2; }
 
-/* ── Centre stage (animation + who's-winning label) ─────────────────────── */
+/* ── Centre stage ────────────────────────────────────────────────────────── */
 .vs-stage {
   grid-area: stage; display: flex; flex-direction: column; min-width: 0; min-height: 0;
   padding: .4rem .6rem; text-align: center;
 }
 .vs-stage-canvas { flex: 1; min-height: 0; position: relative; display: flex; align-items: center; justify-content: center; }
 .vs-stage-canvas > * { width: 100%; height: 100%; }
-.vs-anim-fallback {
-  margin: auto; max-width: 18rem; padding: 1rem; color: #6c757d; font-size: .95rem;
-  border: 2px dashed #ced4da; border-radius: .6rem;
-}
+.vs-anim-fallback { margin: auto; max-width: 18rem; padding: 1rem; color: #6c757d; font-size: .95rem; border: 2px dashed #ced4da; border-radius: .6rem; }
 .vs-tug-label { font-weight: 800; font-size: clamp(1rem, 2cqw, 1.6rem); margin: 0 0 .1rem; transition: color .2s; }
 
-/* ── Activity panels ────────────────────────────────────────────────────── */
+/* ── Activity panels ─────────────────────────────────────────────────────── */
 .vs-panel { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .vs-body  { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: auto; padding: .5rem .75rem; }
 .vs-q     { font-size: clamp(1.1rem, 2.4cqw, 1.8rem); font-weight: 600; text-align: center; margin-bottom: 1rem; }
@@ -45,57 +42,54 @@
 @keyframes vs-flash-no { from { background: rgba(220,53,69,.28); } to { background: transparent; } }
 .rq-opt.rq-picked { outline: 4px solid #ffc107; outline-offset: -2px; }
 
-/* Progress bar (lives inside .vss-bar, updated by renderSide) */
-.vs-prog     { height: 4px; border-radius: 999px; background: rgba(255,255,255,.22); margin-top: .3rem; overflow: hidden; }
-.vs-prog-bar { height: 100%; width: 0; background: rgba(255,255,255,.8); transition: width .4s ease; }
-
 /* ══════════════════════════════════════════════════════════════════════════
-   SCOREBOARD BAR  —  always present, skin-specific colours applied below
+   SCOREBOARD BAR  —  always present, skins override colours below
    ══════════════════════════════════════════════════════════════════════════ */
 .vss-bar {
   display: flex; flex-shrink: 0;
-  height: 68px;
-  position: relative; /* anchor for .vss-badge */
-  z-index: 10;
+  height: 68px; z-index: 10;
 }
+/* Left + right team halves */
 .vss-team {
-  flex: 1; display: flex; align-items: center; gap: .55rem;
-  padding: .4rem .9rem; overflow: hidden;
+  flex: 1; display: flex; align-items: center; gap: .5rem;
+  padding: .4rem .75rem; overflow: hidden;
 }
 .vss-right { flex-direction: row-reverse; }
 .vss-info   { flex: 1; min-width: 0; }
 .vss-info-r { text-align: right; }
 .vss-label  { font-size: .5rem; font-weight: 700; letter-spacing: .18em; color: rgba(255,255,255,.65); text-transform: uppercase; }
 .vss-name   { font-size: clamp(.78rem, 1.5cqw, 1.15rem); font-weight: 900; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.vss-score  {
-  font-size: clamp(1.5rem, 3cqw, 2.2rem); font-weight: 900; color: #fff;
-  font-variant-numeric: tabular-nums; flex-shrink: 0;
-  text-shadow: 0 2px 8px rgba(0,0,0,.35);
-}
-/* Avatar inside bar */
-.vs-avatar { width: 2.2rem; height: 2.2rem; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,.5); flex-shrink: 0; }
-.vs-avatar-init { display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.25); font-size: 1rem; font-weight: 800; color: #fff; }
-.vss-av { width: 2.8rem; height: 2.8rem; }
-
-/* VS gold badge — centred over the dividing point */
-.vss-badge {
-  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-  width: 52px; height: 52px; border-radius: 50%;
+.vss-score  { font-size: clamp(1.5rem, 3cqw, 2.2rem); font-weight: 900; color: #fff; font-variant-numeric: tabular-nums; flex-shrink: 0; text-shadow: 0 2px 8px rgba(0,0,0,.3); }
+/* Progress bar inside bar */
+.vs-prog     { height: 4px; border-radius: 999px; background: rgba(255,255,255,.22); margin-top: .3rem; overflow: hidden; }
+.vs-prog-bar { height: 100%; width: 0; background: rgba(255,255,255,.75); transition: width .4s ease; }
+/* Centred VS badge — lives in .vss-mid, a fixed-width flex child (not absolute) */
+.vss-mid {
+  width: 68px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  font-weight: 900; font-size: .92rem; letter-spacing: .04em; z-index: 20;
-  border: 3px solid #fff;
 }
+.vss-badge {
+  width: 50px; height: 50px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: .9rem; letter-spacing: .04em;
+  border: 3px solid rgba(255,255,255,.9);
+}
+/* Avatar in bar */
+.vs-avatar { width: 2.2rem; height: 2.2rem; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,.5); flex-shrink: 0; }
+.vs-avatar-init { display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.22); font-size: 1rem; font-weight: 800; color: #fff; }
+.vss-av { width: 2.6rem; height: 2.6rem; }
 
 /* ══════════════════════════════════════════════════════════════════════════
    SKIN: CLÁSICO
    ══════════════════════════════════════════════════════════════════════════ */
 .vs-skin-classic .vss-left  { background: #1565c0; }
 .vs-skin-classic .vss-right { background: #c62828; }
-.vs-skin-classic .vss-badge { background: #fff; color: #374151; box-shadow: 0 2px 10px rgba(0,0,0,.2); }
+.vs-skin-classic .vss-mid   { background: #1565c0; background: linear-gradient(90deg, #1565c0, #c62828); }
+.vs-skin-classic .vss-badge { background: #fff; color: #374151; box-shadow: 0 2px 8px rgba(0,0,0,.2); border-color: #dee2e6; }
 .vs-skin-classic .vs-stage  { border-left: 1px solid #dee2e6; border-right: 1px solid #dee2e6; }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   SKIN: COLEGIOS  —  dark sports-scoreboard
+   SKIN: COLEGIOS  —  dark sports-scoreboard + device-shaped panels
    ══════════════════════════════════════════════════════════════════════════ */
 .vs-skin-school {
   background: #0d1b2a;
@@ -104,30 +98,75 @@
     rgba(255,255,255,.018) 28px, rgba(255,255,255,.018) 29px
   );
 }
-.vs-skin-school .vss-bar   { box-shadow: 0 4px 20px rgba(0,0,0,.5); }
-.vs-skin-school .vss-left  { background: linear-gradient(95deg,  #1044a8, #1565c0 80%, #1976d2); }
-.vs-skin-school .vss-right { background: linear-gradient(265deg, #a81010, #c62828 80%, #d32f2f); }
-.vs-skin-school .vss-badge {
+/* Bar */
+.vs-skin-school .vss-bar  { box-shadow: 0 4px 20px rgba(0,0,0,.55); }
+.vs-skin-school .vss-left { background: linear-gradient(95deg,  #1044a8, #1565c0 80%, #1976d2); }
+.vs-skin-school .vss-mid  { background: linear-gradient(90deg,  #1565c0, #a81010); }
+.vs-skin-school .vss-right{ background: linear-gradient(265deg, #a81010, #c62828 80%, #d32f2f); }
+.vs-skin-school .vss-badge{
   background: radial-gradient(circle at 38% 32%, #ffe066, #f9a800 70%);
-  color: #5c2e00;
+  color: #5c2e00; border-color: #fff;
   box-shadow: 0 4px 16px rgba(0,0,0,.55), 0 0 0 3px rgba(249,168,0,.3);
 }
-.vs-skin-school .vs-stage  { border: none; }
-.vs-skin-school .vs-tug-label { display: none; }
-/* Panels: dark glass cards */
-.vs-skin-school .vs-body {
-  margin: .4rem;
-  border-radius: 1rem;
-  padding: .6rem .75rem;
-  background: rgba(8,18,38,.88);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,.07);
+/* Stage */
+.vs-skin-school .vs-stage      { border: none; }
+.vs-skin-school .vs-tug-label  { color: rgba(255,255,255,.75); }
+
+/* Device-shaped panels floating in the dark arena */
+.vs-skin-school .vs-panel {
+  align-items: center; justify-content: center;
+  padding: .6rem .35rem;
 }
-.vs-skin-school .vs-panel.vs-left  .vs-body { border-top: 3px solid #1976d2; }
-.vs-skin-school .vs-panel.vs-right .vs-body { border-top: 3px solid #d32f2f; }
+.vs-skin-school .vs-body {
+  container-type: inline-size;
+  flex: 1; width: 100%; max-width: 200px;
+  border-radius: 1.4rem; overflow: hidden;
+  padding: .6rem .65rem;
+}
+.vs-skin-school .vs-panel.vs-left  .vs-body {
+  background: #07101f;
+  border: 2px solid #1976d2;
+  box-shadow: 0 0 28px rgba(25,118,210,.4), inset 0 1px 0 rgba(25,118,210,.15);
+}
+.vs-skin-school .vs-panel.vs-right .vs-body {
+  background: #1a0707;
+  border: 2px solid #d32f2f;
+  box-shadow: 0 0 28px rgba(211,47,47,.4), inset 0 1px 0 rgba(211,47,47,.15);
+}
+
+/* ── School skin: Math keypad overrides ──────────────────────────────────── */
+.vs-skin-school .vs-body .ww-keypad-q     { color: #e2e8f0; font-size: clamp(.9rem, 14cqw, 1.3rem); }
+.vs-skin-school .vs-body .ww-keypad-display {
+  font-size: clamp(.9rem, 12cqw, 1.25rem);
+  background: rgba(255,255,255,.06); color: #f1f5f9;
+}
+.vs-skin-school .vs-panel.vs-left  .vs-body .ww-keypad-display { border-color: #1976d2; }
+.vs-skin-school .vs-panel.vs-right .vs-body .ww-keypad-display { border-color: #d32f2f; }
+.vs-skin-school .vs-body .ww-key {
+  font-size: clamp(.75rem, 9cqw, 1rem);
+  background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.14); color: #e2e8f0;
+}
+.vs-skin-school .vs-panel.vs-left  .vs-body .ww-key:not(.ww-key-ok):not(.ww-key-fn) { background: rgba(25,118,210,.22); border-color: rgba(25,118,210,.38); }
+.vs-skin-school .vs-panel.vs-right .vs-body .ww-key:not(.ww-key-ok):not(.ww-key-fn) { background: rgba(211,47,47,.22);  border-color: rgba(211,47,47,.38); }
+.vs-skin-school .vs-body .ww-key-ok  { background: #16a34a !important; border-color: transparent !important; color: #fff !important; }
+.vs-skin-school .vs-body .ww-key-fn  { background: rgba(255,255,255,.05) !important; }
+
+/* ── School skin: Quiz option overrides ─────────────────────────────────── */
+.vs-skin-school .vs-body .ww-opt {
+  color: #fff !important; border-radius: .75rem !important;
+  box-shadow: 0 3px 0 rgba(0,0,0,.4) !important;
+}
+/* Darken the standard Kahoot colours to fit the dark panels */
+.vs-skin-school .vs-body .ww-shape-1 { background: #b71c1c !important; }
+.vs-skin-school .vs-body .ww-shape-2 { background: #1565c0 !important; }
+.vs-skin-school .vs-body .ww-shape-3 { background: #2e7d32 !important; }
+.vs-skin-school .vs-body .ww-shape-4 { background: #e65100 !important; }
+
+/* ── School skin: Froggy option overrides ───────────────────────────────── */
+.vs-skin-school .vs-body .froggy-opt { border-radius: .75rem !important; }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   PORTRAIT / NARROW  —  bar stays on top, stage above panels side-by-side
+   PORTRAIT / NARROW
    ══════════════════════════════════════════════════════════════════════════ */
 @container vs ((max-width: 860px) or (max-aspect-ratio: 5/4)) {
   .vs-main {
@@ -137,8 +176,9 @@
     align-content: stretch;
   }
   .vs-skin-classic .vs-stage { border: none; border-bottom: 1px solid #dee2e6; }
-  .vs-body  { padding: .35rem .4rem; }
-  .vs-q     { font-size: clamp(.9rem, 2cqw, 1.4rem); }
+  .vs-body { padding: .35rem .4rem; }
+  .vs-q    { font-size: clamp(.9rem, 2cqw, 1.4rem); }
+  .vs-skin-school .vs-body { max-width: 100%; border-radius: 1rem; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -220,7 +260,7 @@
 .vsanim-preview svg { width: 100% !important; height: 100% !important; }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   RESULT SCREEN  —  full-area centred podium after duel ends
+   RESULT SCREEN
    ══════════════════════════════════════════════════════════════════════════ */
 .vs-result-screen {
   display: flex; align-items: center; justify-content: center;

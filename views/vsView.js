@@ -108,16 +108,7 @@ export function mountVs(host, a, ctx, opts = {}) {
         <div class="vs-av-err text-danger small mt-1" id="vs-av-err-${side}" hidden></div>
       </div>`;
 
-    const currentTheme = a.presentation?.vsTheme || 'classic';
     const body = `
-      <div class="d-flex justify-content-center gap-2 mb-3">
-        <button class="vs-theme-btn btn btn-sm ${currentTheme !== 'school' ? 'btn-secondary' : 'btn-outline-secondary'}" data-vst="classic">
-          <i class="bi bi-layout-split"></i> Clásico
-        </button>
-        <button class="vs-theme-btn btn btn-sm ${currentTheme === 'school' ? 'btn-danger' : 'btn-outline-danger'}" data-vst="school">
-          <i class="bi bi-building"></i> Colegios
-        </button>
-      </div>
       <div class="row justify-content-center g-3 mb-3" style="max-width:520px;margin:auto">
         ${avatarCol('left',  'Equipo izquierda', 'Alumno 1', avLeft)}
         ${avatarCol('right', 'Equipo derecha',   'Alumno 2', avRight)}
@@ -169,19 +160,6 @@ export function mountVs(host, a, ctx, opts = {}) {
           });
         });
 
-        // Theme selector — persists in presentation.vsTheme.
-        on(host, 'click', '.vs-theme-btn', (_, btn) => {
-          if (!a.presentation) a.presentation = {};
-          a.presentation.vsTheme = btn.dataset.vst;
-          save(a);
-          document.querySelectorAll('.vs-theme-btn').forEach(b => {
-            const active = b.dataset.vst === a.presentation.vsTheme;
-            const col = b.dataset.vst === 'school' ? 'danger' : 'secondary';
-            b.classList.toggle(`btn-${col}`, active);
-            b.classList.toggle(`btn-outline-${col}`, !active);
-          });
-        });
-
         // Clear avatar button (only rendered when an avatar exists).
         on(host, 'click', '.vs-av-clear', (_, btn) => {
           const side = btn.dataset.side;
@@ -218,30 +196,42 @@ export function mountVs(host, a, ctx, opts = {}) {
 
     function paintArena() {
       const st = session.standings();
-      mount(host, html`
-        <div class="vs-wrap">
-          <div class="vs-arena vs-skin-${vsTheme}">
-            ${vsBarHtml(st.left.name, st.right.name, avatars.left, avatars.right)}
-            <div class="vs-main">
-              <div class="vs-panel vs-left" data-side="left">
+      if (vsTheme === 'school') {
+        mount(host, html`
+          <div class="vs-wrap">
+            <div class="vs-arena vs-theme-school">
+              ${schoolBarHtml(st.left.name, st.right.name, avatars.left, avatars.right)}
+              <div class="vs-stage" id="vs-stage">
+                <div class="vs-tug-label" id="vs-tug-label"></div>
+                <div class="vs-stage-canvas" id="vs-stage-canvas"></div>
+              </div>
+              <div class="vs-panel vs-left vss-panel" data-side="left">
                 <div class="vs-body" id="vs-body-left"></div>
               </div>
+              <div class="vs-panel vs-right vss-panel" data-side="right">
+                <div class="vs-body" id="vs-body-right"></div>
+              </div>
+            </div>
+          </div>`);
+      } else {
+        mount(host, html`
+          <div class="vs-wrap">
+            <div class="vs-arena">
+              ${panelShell('left',  st.left.name,  avatars.left)}
               <div class="vs-stage" id="vs-stage">
                 <div class="vs-tug-label" id="vs-tug-label">¡Empate!</div>
                 <div class="vs-stage-canvas" id="vs-stage-canvas"></div>
               </div>
-              <div class="vs-panel vs-right" data-side="right">
-                <div class="vs-body" id="vs-body-right"></div>
-              </div>
+              ${panelShell('right', st.right.name, avatars.right)}
             </div>
-          </div>
-        </div>`);
+          </div>`);
+      }
       on(host, 'click', '#vs-again', () => renderSetup());
       if (currentAnim) currentAnim.destroy();
       currentAnim = animDef.create(document.getElementById('vs-stage-canvas'), { src: a.presentation?.vsAnimationSrc });
     }
 
-    function vsBarHtml(lName, rName, lAv, rAv) {
+    function schoolBarHtml(lName, rName, lAv, rAv) {
       const av = (src, name) => src
         ? `<img src="${escapeHtml(src)}" class="vs-avatar vss-av" alt="">`
         : `<span class="vs-avatar vss-av vs-avatar-init">${escapeHtml(name.charAt(0).toUpperCase())}</span>`;
@@ -256,7 +246,7 @@ export function mountVs(host, a, ctx, opts = {}) {
             </div>
             <span class="vss-score" id="vs-score-left">0</span>
           </div>
-          <div class="vss-badge">VS</div>
+          <div class="vss-mid"><div class="vss-badge">VS</div></div>
           <div class="vss-team vss-right">
             <span class="vss-score" id="vs-score-right">0</span>
             <div class="vss-info vss-info-r">
@@ -266,6 +256,24 @@ export function mountVs(host, a, ctx, opts = {}) {
             </div>
             ${av(rAv, rName)}
           </div>
+        </div>`;
+    }
+
+    function panelShell(side, name, avatar) {
+      const color = side === 'left' ? 'primary' : 'danger';
+      const avatarHtml = avatar
+        ? `<img src="${escapeHtml(avatar)}" class="vs-avatar" alt="">`
+        : `<span class="vs-avatar vs-avatar-init">${escapeHtml(name.charAt(0).toUpperCase())}</span>`;
+      return `
+        <div class="vs-panel vs-${side}" data-side="${side}">
+          <div class="vs-head text-bg-${color}">
+            ${side === 'left' ? avatarHtml : ''}
+            <span class="vs-name">${escapeHtml(name)}</span>
+            ${side === 'right' ? avatarHtml : ''}
+            <span class="vs-score" id="vs-score-${side}">0</span>
+          </div>
+          <div class="vs-prog"><div class="vs-prog-bar" id="vs-prog-${side}"></div></div>
+          <div class="vs-body" id="vs-body-${side}"></div>
         </div>`;
     }
 
