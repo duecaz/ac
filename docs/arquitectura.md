@@ -1,6 +1,6 @@
 # Arquitectura de la app — Referencia completa
 
-> Versión 1.43.0 · Vanilla JS ES Modules · Sin bundler · Bootstrap 5 via CDN
+> Versión 1.51.5 · Vanilla JS ES Modules · Sin bundler · Bootstrap 5 via CDN
 
 ---
 
@@ -53,7 +53,7 @@ ac/
 │   ├── modes.js          Catálogo de modos (Solo/VS/Equipos/Live/Tarea) y gating
 │   ├── modeMatrix.js     Qué modo soporta cada plantilla (matriz)
 │   ├── presentation.js   ◀ NUEVO: applyScene() + resetScene() — capa de tema central
-│   ├── skins.js          Catálogo de skins + applySkin(name, target?)
+│   ├── skins.js          Registry de skins. registerSkin() + getSkin() + applySkin(name, target?)
 │   ├── backgrounds.js    Catálogo de fondos + applyBackground(name, target?)
 │   ├── activityThumb.js  Miniatura live 16:10 (DOM escalado, skin+fondo scoped)
 │   ├── player.js         Wrapper: runPlayer(sel, activity, opts). Aplica tema global
@@ -167,19 +167,24 @@ ac/
 │       ├── live.js
 │       └── assignments.js
 │
-├── styles/               ← CSS temático (solo Bootstrap-safe y reglas propias)
+├── themes/               ← Skins externos. Cada carpeta es un skin autocontenido
+│   └── colegios/
+│       └── skin.css      Overrides VS school (barra TV, device panels, keypad per-side)
+│
+├── styles/               ← CSS base de actividades y chrome (estructura + vars con defaults)
 │   ├── theme.css         Variables CSS globales + reglas base
 │   ├── skins.css         Reglas de skin → body.skin-X y .ww-player-frame.skin-X
 │   ├── backgrounds.css   Reglas de fondo → body.bg-X y .ww-player-frame.bg-X
 │   ├── player.css        Layout del frame de juego (.ww-play-page, .ww-player-frame)
 │   ├── editor.css        Layout del editor y tiles de picking
-│   ├── live.css          Pantalla grande del anfitrión (big-screen)
-│   ├── vs.css            Animación del duelo VS
+│   ├── live.css          Pantalla grande del anfitrión; colores de opciones → --ww-shape-*
+│   ├── vs.css            Layout VS (clásico + base); skins viven en themes/*/skin.css
 │   ├── teams.css         Layout de turnos de equipos
-│   ├── quiz.css          Estilo de la grilla Kahoot (colores de formas)
+│   ├── quiz.css          Estilo de la grilla Kahoot
 │   ├── match.css         Tablero de pares de emparejar
 │   ├── memory.css        Tablero de cartas de memoria
-│   ├── math.css          Layout de ejercicios matemáticos
+│   ├── math.css          Keypad matemático; propiedades visuales → CSS vars (--key-*, --display-*)
+│   ├── froggy.css        Juego de rana; colores de opciones → --ww-shape-*
 │   ├── review.css        Pantalla de revisión de respuestas
 │   ├── textCorrection.css Texto con marcas de tildes/comas
 │   └── touch.css         Mejoras táctiles (botones más grandes en móvil)
@@ -241,6 +246,8 @@ ac/
 
 ## 5. El sistema de capas de presentación (temas)
 
+### 5a. Ejes y scope
+
 La presentación tiene **dos ejes independientes** que se aplican mediante clases CSS.
 Ambos entienden scope: global (body) o restringido a un elemento (frame, miniatura,
 preview del editor).
@@ -249,9 +256,10 @@ preview del editor).
 presentation.js  ← punto de entrada único para las vistas
     │
     ├── skins.js      applySkin(name, target?)
-    │     └── styles/skins.css   body.skin-X  /  .ww-player-frame.skin-X
+    │     ├── styles/skins.css          body.skin-X  /  .ww-player-frame.skin-X
+    │     └── themes/<name>/skin.css    cargado dinámicamente desde el manifiesto
     └── backgrounds.js applyBackground(name, target?)
-          └── styles/backgrounds.css  body.bg-X  /  .ww-player-frame.bg-X
+          └── styles/backgrounds.css    body.bg-X  /  .ww-player-frame.bg-X
 ```
 
 **Regla crítica:** un apply *scoped* (con `target`) **jamás** toca `<body>`.
@@ -263,6 +271,61 @@ applyScene(activity, ctx)               → tema la PÁGINA (vistas fullscreen)
 applyScene(activity, ctx, {target:frame}) → tema solo el FRAME (playerView)
 resetScene(target?)                     → restaura skin-default + bg-none
 ```
+
+### 5b. Registry de skins (`core/skins.js`)
+
+Los skins se **registran**, no se hardcodean en un objeto. El patrón es idéntico al
+de las plantillas (`registerTemplate`):
+
+```js
+// Registrar un skin (desde cualquier módulo, sin tocar core/skins.js)
+import { registerSkin } from '../../core/skins.js';
+registerSkin({
+  name:       'futbol',
+  label:      'Fútbol',
+  vsLayout:   'school',                    // layout VS que usar
+  stylesheet: 'themes/futbol/skin.css',    // CSS propio (opcional)
+  cssVars: {                               // tokens del contrato
+    '--ww-bg': '#1a472a',
+    '--key-radius': '50%',
+    // …
+  }
+});
+```
+
+`applySkin('futbol', frame)`:
+1. Aplica `cssVars` como estilos inline en el target (mayor prioridad que `:root`).
+2. Agrega clase `skin-futbol` al target.
+3. Si el manifiesto declara `stylesheet`, inyecta un `<link id="skin-css-futbol">`.
+
+**Para agregar un skin sin tocar ningún archivo del core:**
+1. Crear `themes/miskin/index.js` con `registerSkin({…})`
+2. Crear `themes/miskin/skin.css` (opcional) con overrides CSS
+3. Importar `themes/miskin/index.js` desde `themes/index.js`
+
+### 5c. Token Contract — CSS vars del contrato
+
+Las actividades leen **CSS vars con defaults** en lugar de valores hardcodeados.
+Skins solo necesitan declarar lo que cambian. El contrato completo está documentado
+como comentario al tope de `core/skins.js`.
+
+| Grupo | Variables | Ejemplo |
+|---|---|---|
+| **Global** | `--ww-bg`, `--ww-fg`, `--ww-card-bg`, `--ww-shape-1..4`, `--ww-success/danger` | colores base + formas |
+| **Keypad** | `--key-bg`, `--key-fg`, `--key-radius`, `--key-border`, `--key-cols`, `--key-shadow`, `--display-bg`… | teclado matemático |
+| **VS Panel** | `--panel-bg`, `--panel-glow`, `--panel-radius`, `--bar-team-l/r`, `--badge-bg` | duelo VS |
+
+### 5d. Layouts VS (`vsLayout`)
+
+El skin declara qué estructura HTML usa el duelo VS:
+
+| `vsLayout` | Descripción |
+|---|---|
+| `'classic'` (default) | Paneles laterales full-height, bar de 68px |
+| `'school'` | Dispositivos flotantes, barra 80px estilo TV, CSS en `themes/colegios/skin.css` |
+
+`vsView.js` lee `getSkin(skin)?.vsLayout \|\| 'classic'` — ningún nombre de skin
+está hardcodeado en el código JS.
 
 ---
 
@@ -624,10 +687,10 @@ Suites por área:
 |---|---|
 | PocketBase — campo `preview` | Borrar campo `preview` y archivos `preview_*.jpg` de la colección en la UI de admin de PB (pb.lanube.uno) |
 | PocketBase — Live | El transporte LIVE solo funciona con backend `supabase` o `local`; PocketBase aún no implementa `getRealtime()` |
-| CSS system | Las vistas usan clases Bootstrap en línea. Previsto mejorar con sistema de tokens/componentes propio |
+| CSS system | Token Contract implementado en math.css (--key-*, --display-*), froggy.css y live.css (--ww-shape-*). Pendiente: extender a quiz.css, match.css, memory.css |
 | Sistema de usuarios | `activity.likes` es un placeholder; el sistema de perfiles/likes está pendiente de implementar |
 | `reapply*` | Eliminados en v1.43.0. Si se necesita "restaurar el tema actual sin conocer el nombre", basta con guardar el nombre al aplicar y volver a llamar `applyScene` |
 
 ---
 
-*Generado: 2026-06-20 · v1.43.0*
+*Actualizado: 2026-06-22 · v1.51.5*
