@@ -24,6 +24,7 @@ import { getVsAnimation } from '../core/vsAnimations.js';
 import { play as playSound } from '../core/sounds.js';
 import { answerConfetti } from '../core/effects.js';
 import { renderModeSetup } from './modeSetup.js';
+import { getSkin } from '../core/skins.js';
 
 const FLASH_MS = 700;
 const AVATAR_MAX_BYTES = 150 * 1024; // 150 KB hard limit
@@ -189,7 +190,7 @@ export function mountVs(host, a, ctx, opts = {}) {
     // Presentación (default: the built-in SVG tug-of-war).
     const animDef = getVsAnimation(a.presentation?.vsAnimation || 'svg-tug');
 
-    const vsTheme = (a.presentation?.skin === 'colegios') ? 'school' : 'classic';
+    const vsTheme = getSkin(a.presentation?.skin)?.vsLayout || 'classic';
 
     paintArena();
     renderSide('left'); renderSide('right'); updateCenter();

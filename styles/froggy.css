@@ -227,11 +227,11 @@
 .froggy-opt i { font-size: 1.05em; flex-shrink: 0; }
 .froggy-opt span { flex: 1; word-break: break-word; }
 
-/* 4 distinct option colours */
-.froggy-opt-0 { background: #e53935; }
-.froggy-opt-1 { background: #1e88e5; }
-.froggy-opt-2 { background: #43a047; }
-.froggy-opt-3 { background: #fb8c00; }
+/* 4 distinct option colours — follow the skin's shape palette */
+.froggy-opt-0 { background: var(--ww-shape-1, #e53935); }
+.froggy-opt-1 { background: var(--ww-shape-2, #1e88e5); }
+.froggy-opt-2 { background: var(--ww-shape-3, #43a047); }
+.froggy-opt-3 { background: var(--ww-shape-4, #fb8c00); }
 
 .froggy-opt-correct { background: #16a34a !important; box-shadow: 0 0 0 3px #86efac, 0 4px 0 #14532d !important; }
 .froggy-opt-wrong   { background: #64748b !important; opacity: .65; }

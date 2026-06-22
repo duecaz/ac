@@ -1,30 +1,55 @@
-/* Operaciones (math) — keypad round. Sizes use viewport units so the pad reads
-   well everywhere: SOLO (in the player frame), VS/Equipos (full screen) and TV. */
+/* Operaciones (math) — keypad round.
+   All visual properties use CSS vars so skins override without !important.
+   Defaults reproduce the original look exactly — no visual change without a skin. */
+
 .ww-math { display: flex; flex-direction: column; height: 100%; }
 .ww-math-round { height: 100%; }
 .ww-keypad-round {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: clamp(.5rem, 1.6vh, 1.1rem); height: 100%;
+  gap: var(--math-gap, clamp(.5rem, 1.6vh, 1.1rem)); height: 100%;
 }
-.ww-keypad-q { font-size: clamp(1.6rem, 6vmin, 3.4rem); font-weight: 800; text-align: center; line-height: 1.1; }
+
+.ww-keypad-q {
+  font-size: var(--math-q-size, clamp(1.6rem, 6vmin, 3.4rem));
+  font-weight: var(--math-q-weight, 800);
+  color: var(--math-q-color, inherit);
+  text-align: center; line-height: 1.1;
+}
 .ww-keypad-eq { opacity: .55; }
+
 .ww-keypad-display {
   min-width: clamp(6rem, 22vmin, 11rem);
-  font-size: clamp(1.6rem, 6vmin, 3rem); font-weight: 800; text-align: center;
-  padding: .15rem 1rem; border: 3px solid #dee2e6; border-radius: .6rem; background: #fff; color: #212529;
-  font-variant-numeric: tabular-nums;
+  font-size: var(--display-size, clamp(1.6rem, 6vmin, 3rem));
+  font-weight: 800; text-align: center; font-variant-numeric: tabular-nums;
+  padding: var(--display-pad, .15rem 1rem);
+  border: var(--display-border, 3px solid #dee2e6);
+  border-radius: var(--display-radius, .6rem);
+  background: var(--display-bg, #fff);
+  color: var(--display-fg, #212529);
 }
-.ww-keypad-display.is-ok { border-color: var(--ww-success, #198754); color: #198754; }
-.ww-keypad-display.is-no { border-color: var(--ww-danger, #dc3545); color: #dc3545; }
+.ww-keypad-display.is-ok { border-color: var(--ww-success, #198754); color: var(--ww-success, #198754); }
+.ww-keypad-display.is-no { border-color: var(--ww-danger, #dc3545); color: var(--ww-danger, #dc3545); }
+
 .ww-keypad {
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: clamp(.3rem, 1.2vmin, .7rem); width: min(100%, 360px);
+  display: grid;
+  grid-template-columns: repeat(var(--key-cols, 3), 1fr);
+  gap: var(--key-gap, clamp(.3rem, 1.2vmin, .7rem));
+  width: min(100%, 360px);
 }
 .ww-keypad .ww-key {
-  font-size: clamp(1.1rem, 3.6vmin, 1.9rem); font-weight: 700;
-  padding: clamp(.4rem, 1.6vmin, 1rem) 0; border: 2px solid #ced4da; background: #fff; color: #212529;
-  border-radius: .5rem;
+  font-size: var(--key-size, clamp(1.1rem, 3.6vmin, 1.9rem));
+  font-weight: var(--key-weight, 700);
+  padding: var(--key-pad, clamp(.4rem, 1.6vmin, 1rem) 0);
+  border: var(--key-border, 2px solid #ced4da);
+  background: var(--key-bg, #fff);
+  color: var(--key-fg, #212529);
+  border-radius: var(--key-radius, .5rem);
+  box-shadow: var(--key-shadow, none);
 }
 .ww-keypad .ww-key:active { transform: translateY(1px); }
-.ww-keypad .ww-key-ok { background: var(--ww-success, #198754); color: #fff; border-color: transparent; }
-.ww-keypad .ww-key-fn { background: #f1f3f5; }
+.ww-keypad .ww-key-ok {
+  background: var(--key-ok-bg, var(--ww-success, #198754));
+  color: var(--key-ok-fg, #fff);
+  border-color: transparent;
+}
+.ww-keypad .ww-key-fn { background: var(--key-fn-bg, #f1f3f5); color: var(--key-fg, #212529); }
