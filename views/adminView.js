@@ -454,13 +454,30 @@ function renderPanel(rootSel) {
 
       // 2. Definición de campos por colección (neutra respecto a la versión).
       const DEFS = [
+        { name: 'activities', fields: [
+          { name: 'data',       type: 'json' },
+          { name: 'visibility', type: 'text' },
+          { name: 'tags',       type: 'json' },
+          { name: 'language',   type: 'text' },
+        ]},
+        { name: 'results', fields: [
+          { name: 'activity_id', type: 'text' },
+          { name: 'session_id',  type: 'text' },
+          { name: 'user_id',     type: 'text' },
+          { name: 'player_name', type: 'text' },
+          { name: 'score_auto',  type: 'number' },
+          { name: 'score_final', type: 'number' },
+          { name: 'max_score',   type: 'number' },
+          { name: 'time_used',   type: 'number' },
+          { name: 'overrides',   type: 'json' },
+        ]},
         { name: 'live_sessions', fields: [
           { name: 'code',     type: 'text', required: true },
           { name: 'activity', type: 'json' },
           { name: 'state',    type: 'json' },
         ]},
         { name: 'assignments', fields: [
-          { name: 'code',          type: 'text',   required: true },
+          { name: 'code',          type: 'text', required: true },
           { name: 'activity_id',   type: 'text' },
           { name: 'activity_snap', type: 'json' },
           { name: 'author_id',     type: 'text' },
@@ -494,33 +511,54 @@ function renderPanel(rootSel) {
         }
         return base;
       };
+      // Reglas públicas (sin auth) para todas las colecciones.
+      const publicRules = { listRule: '', viewRule: '', createRule: '', updateRule: '', deleteRule: '' };
       const COLLECTIONS = DEFS.map(d => ({
         name: d.name, type: 'base',
         [schemaKey]: d.fields.map(buildField),
-        listRule: '', viewRule: '', createRule: '', updateRule: '', deleteRule: '',
+        ...publicRules,
       }));
 
-      // 3. Create each collection (skip if already exists)
+      // Función auxiliar: busca la colección por nombre y devuelve su id o null.
+      async function findCollection(name) {
+        try {
+          const r = await fetch(`${PB_URL}/api/collections/${name}`, { headers });
+          if (r.ok) return (await r.json()).id;
+          return null;
+        } catch { return null; }
+      }
+
+      // 3. Para cada colección: si no existe → crear; si ya existe → solo
+      //    actualizar las reglas de acceso (sin tocar campos ni datos).
       const results = [];
       for (const col of COLLECTIONS) {
-        out.innerHTML = `<div class="text-muted small"><span class="spinner-border spinner-border-sm me-1"></span>Creando <code>${col.name}</code>…</div>`;
+        out.innerHTML = `<div class="text-muted small"><span class="spinner-border spinner-border-sm me-1"></span>Configurando <code>${col.name}</code>…</div>`;
         try {
-          const r = await fetch(`${PB_URL}/api/collections`, {
-            method: 'POST', headers,
-            body: JSON.stringify(col),
-          });
-          if (r.ok) {
-            results.push({ name: col.name, ok: true, msg: 'creada' });
-          } else {
-            const b = await r.json().catch(() => ({}));
-            // Una colección que ya existe no es error (idempotente). El código de
-            // validación difiere entre versiones, así que miramos varias señales.
-            const code = b.data?.name?.code || '';
-            const dup = code.includes('not_unique') || code.includes('exists') || /exist/i.test(b.message || '');
-            if (dup) {
-              results.push({ name: col.name, ok: true, msg: 'ya existía' });
+          const existingId = await findCollection(col.name);
+          if (existingId) {
+            // Colección ya existe: solo actualiza las reglas de acceso. PATCH sin
+            // `fields`/`schema` evita tocar la estructura de datos.
+            const pr = await fetch(`${PB_URL}/api/collections/${existingId}`, {
+              method: 'PATCH', headers,
+              body: JSON.stringify(publicRules),
+            });
+            if (pr.ok) {
+              results.push({ name: col.name, ok: true, msg: 'reglas actualizadas (ya existía)' });
             } else {
-              results.push({ name: col.name, ok: false, msg: b.message || `error ${r.status}` });
+              const b = await pr.json().catch(() => ({}));
+              results.push({ name: col.name, ok: false, msg: b.message || `error ${pr.status}` });
+            }
+          } else {
+            // No existe → crear completa.
+            const cr = await fetch(`${PB_URL}/api/collections`, {
+              method: 'POST', headers,
+              body: JSON.stringify(col),
+            });
+            if (cr.ok) {
+              results.push({ name: col.name, ok: true, msg: 'creada' });
+            } else {
+              const b = await cr.json().catch(() => ({}));
+              results.push({ name: col.name, ok: false, msg: b.message || `error ${cr.status}` });
             }
           }
         } catch (e) {
@@ -531,8 +569,8 @@ function renderPanel(rootSel) {
       const allOk = results.every(r => r.ok);
       out.innerHTML = `
         <div class="alert ${allOk ? 'alert-success' : 'alert-warning'} py-2 px-3 small">
-          ${results.map(r => `<div>${r.ok ? '✓' : '✗'} <code>${r.name}</code> — ${r.msg}</div>`).join('')}
-          ${allOk ? '<div class="mt-1 fw-semibold">Listo. Recarga la página para activar Live y Tareas en PocketBase.</div>' : ''}
+          ${results.map(r => `<div>${r.ok ? '✓' : '✗'} <code>${r.name}</code> — ${escapeHtml(r.msg)}</div>`).join('')}
+          ${allOk ? '<div class="mt-1 fw-semibold">Listo. Recarga la página para activar Live, actividades en nube y tareas.</div>' : ''}
         </div>`;
     } catch (e) {
       out.innerHTML = `<div class="alert alert-danger py-1 px-2 small">Error: ${escapeHtml(e.message)}</div>`;
