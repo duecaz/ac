@@ -9,16 +9,11 @@
 //   state    json
 // API rules: allow all (or at minimum Create/Read/Update without auth).
 import { createLiveRoom } from '../../kernel/live/engine.js';
-import { LETTERS, PIN_LENGTH } from '../../core/constants.js';
+import { pickWord } from '../../core/liveWords.js';
 import { PB_URL } from '../../pocketbase.config.js';
 
 const COLL = 'live_sessions';
 
-function genCode() {
-  let s = '';
-  for (let i = 0; i < PIN_LENGTH; i++) s += LETTERS[Math.floor(Math.random() * LETTERS.length)];
-  return s;
-}
 function genUserId() { return 'u_' + Math.random().toString(36).slice(2, 10); }
 
 async function pbFetch(path, opts = {}) {
@@ -63,13 +58,28 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
     kind: 'pocketbase',
 
     async createRoom(activity) {
-      const code = genCode();
-      const engine = createLiveRoom(activity, { code });
-      const rec = await pbFetch(`/api/collections/${COLL}/records`, {
-        method: 'POST',
-        body: JSON.stringify({ code, activity, state: engine.state }),
-      });
-      return { id: rec.id, code };
+      // Fetch currently active codes so pickWord avoids duplicates. On any
+      // network failure or uniqueness collision we retry once with another word.
+      let usedCodes = new Set();
+      try {
+        const res = await pbFetch(`/api/collections/${COLL}/records?fields=code&perPage=200`);
+        for (const rec of res?.items || []) usedCodes.add(rec.code);
+      } catch { /* proceed with empty set — collision handled by retry below */ }
+
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const code = pickWord(attempt === 0 ? usedCodes : new Set());
+        const engine = createLiveRoom(activity, { code });
+        try {
+          const rec = await pbFetch(`/api/collections/${COLL}/records`, {
+            method: 'POST',
+            body: JSON.stringify({ code, activity, state: engine.state }),
+          });
+          return { id: rec.id, code };
+        } catch (e) {
+          if (attempt < 4 && (e.status === 400 || e.status === 409)) continue;
+          throw e;
+        }
+      }
     },
 
     async findRoomByCode(code) {

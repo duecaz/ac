@@ -9,13 +9,12 @@
 // settle() (engine, anti-cheat parity) — fine for local dev. The Supabase driver
 // keeps true server-side scoring.
 import { createLiveRoom } from '../../kernel/live/engine.js';
-import { LETTERS, PIN_LENGTH } from '../../core/constants.js';
+import { pickWord } from '../../core/liveWords.js';
 
 const PREFIX = 'ww.live.';
 
 function defaultKV() { try { return globalThis.localStorage || null; } catch { return null; } }
 function defaultMakeChannel(name) { try { return new BroadcastChannel(name); } catch { return null; } }
-function genCode() { let s = ''; for (let i = 0; i < PIN_LENGTH; i++) s += LETTERS[Math.floor(Math.random() * LETTERS.length)]; return s; }
 function genUserId() { return 'u_' + Math.random().toString(36).slice(2, 10); }
 
 export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMakeChannel, userId = genUserId() } = {}) {
@@ -52,7 +51,20 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
     kind: 'local',
 
     async createRoom(activity) {
-      const code = genCode();
+      // Collect currently-active codes (localStorage keys under our prefix) so
+      // pickWord can avoid handing out a word that's already in use.
+      let usedCodes = new Set();
+      try {
+        if (kv) {
+          for (let i = 0; i < kv.length; i++) {
+            const k = kv.key(i);
+            if (k?.startsWith(PREFIX)) usedCodes.add(k.slice(PREFIX.length));
+          }
+        } else {
+          usedCodes = new Set(mem.keys()).difference ? new Set([...mem.keys()].map(k => k.slice(PREFIX.length))) : usedCodes;
+        }
+      } catch { /* ignore — worst case two rooms share a word (recycling) */ }
+      const code = pickWord(usedCodes);
       const engine = createLiveRoom(activity, { code });
       write(code, { activity, state: engine.state });
       return { id: code, code };
