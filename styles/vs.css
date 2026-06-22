@@ -87,10 +87,30 @@
 .vs-panel { display: flex; flex-direction: column; min-width: 0; min-height: 0; padding: .5rem .75rem 1rem; }
 .vs-head {
   display: flex; justify-content: space-between; align-items: center;
-  padding: .5rem .9rem; border-radius: .6rem; font-weight: 700;
+  padding: .4rem .7rem; border-radius: .6rem; font-weight: 700; gap: .4rem;
 }
-.vs-name { font-size: 1.1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.vs-score { font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+.vs-name { font-size: 1.1rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.vs-score { font-size: 1.6rem; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+
+/* Avatar — circular thumbnail shown in the panel header */
+.vs-avatar {
+  width: 2.2rem; height: 2.2rem; border-radius: 50%; object-fit: cover;
+  border: 2px solid rgba(255,255,255,.55); flex-shrink: 0;
+}
+.vs-avatar-init {
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.25); font-size: 1rem; font-weight: 800; color: #fff;
+}
+
+/* Setup: avatar upload area */
+.vs-av-upload-wrap { display: flex; align-items: center; gap: .5rem; }
+.vs-av-preview {
+  width: 52px; height: 52px; border-radius: 50%; overflow: hidden;
+  border: 2px dashed #ced4da; background: #f8f9fa;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.vs-av-thumb { width: 100%; height: 100%; object-fit: cover; }
+.vs-av-btn { flex-shrink: 0; }
 .vs-prog { height: 6px; background: #e9ecef; border-radius: 999px; margin: .4rem 0 .8rem; overflow: hidden; }
 .vs-prog-bar { height: 100%; width: 0; background: #198754; transition: width .4s ease; }
 .vs-body { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: auto; }

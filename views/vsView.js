@@ -15,6 +15,7 @@
 import { html, escapeHtml, mount, $ } from '../core/html.js';
 import { on } from '../core/events.js';
 import { get, save } from '../core/storage.js';
+import { lsGet, lsSet } from '../core/ls.js';
 import { getTemplate } from '../core/registry.js';
 import { createSession, isVsCompatible, FORMATS, sessionItems } from '../kernel/session/engine.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
@@ -25,11 +26,23 @@ import { answerConfetti } from '../core/effects.js';
 import { renderModeSetup } from './modeSetup.js';
 
 const FLASH_MS = 700;
+const AVATAR_MAX_BYTES = 150 * 1024; // 150 KB hard limit
 
 // Per-answer feedback in VS, configurable from the setup panel. Default: the
 // quiet, focused combo the teacher asked for — colour flash + a short sound,
 // and NO confetti popping on every question (that reads as noise on a duel).
 const FX_DEFAULTS = { sound: true, confetti: false, flash: true };
+
+// Avatar helpers — stored in localStorage keyed by activity id so they never
+// bloat the activity JSON and survive across sessions on the same device.
+function avatarKey(actId, side) { return `ww.vsavatar.${actId}.${side}`; }
+function loadAvatar(actId, side) { return lsGet(avatarKey(actId, side), ''); }
+function saveAvatar(actId, side, dataUrl) { lsSet(avatarKey(actId, side), dataUrl); }
+
+function avatarPreviewHtml(dataUrl, side) {
+  if (dataUrl) return `<img src="${escapeHtml(dataUrl)}" class="vs-av-thumb" alt="">`;
+  return `<span class="vs-av-empty"><i class="bi bi-${side === 'left' ? 'person' : 'person'}-circle fs-1 text-muted"></i></span>`;
+}
 
 // Standalone route wrapper (#/vs/:id): resolve element + activity, then mount
 // full-page with a back link to the activity page.
@@ -75,23 +88,37 @@ export function mountVs(host, a, ctx, opts = {}) {
         </span>
         <span class="vs-fx-label">${label}<small class="d-block text-muted">${escapeHtml(hint)}</small></span>
       </label>`;
+
+    const avLeft  = loadAvatar(a.id, 'left');
+    const avRight = loadAvatar(a.id, 'right');
+
+    const avatarCol = (side, label, defaultName, avData) => `
+      <div class="col-6">
+        <label class="form-label small text-muted fw-semibold">${label}</label>
+        <div class="vs-av-upload-wrap">
+          <div class="vs-av-preview" id="vs-av-${side}">${avatarPreviewHtml(avData, side)}</div>
+          <label class="btn btn-sm btn-outline-secondary vs-av-btn" title="Máx 150 KB · JPG/PNG/WebP">
+            <i class="bi bi-image"></i> Foto
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" id="vs-file-${side}" hidden>
+          </label>
+          ${avData ? `<button class="btn btn-sm btn-outline-danger vs-av-clear" data-side="${side}" title="Quitar imagen"><i class="bi bi-x-lg"></i></button>` : ''}
+        </div>
+        <input id="vs-name-${side}" class="form-control text-center mt-2"
+               value="${escapeHtml(defaultName)}" maxlength="20" placeholder="${escapeHtml(defaultName)}">
+        <div class="vs-av-err text-danger small mt-1" id="vs-av-err-${side}" hidden></div>
+      </div>`;
+
     const body = `
       <div class="row justify-content-center g-3 my-3" style="max-width:520px;margin:auto">
-        <div class="col-6">
-          <label class="form-label small text-muted">Alumno 1 (izquierda)</label>
-          <input id="vs-name-left" class="form-control text-center" value="Alumno 1" maxlength="16">
-        </div>
-        <div class="col-6">
-          <label class="form-label small text-muted">Alumno 2 (derecha)</label>
-          <input id="vs-name-right" class="form-control text-center" value="Alumno 2" maxlength="16">
-        </div>
+        ${avatarCol('left',  'Equipo izquierda', 'Alumno 1', avLeft)}
+        ${avatarCol('right', 'Equipo derecha',   'Alumno 2', avRight)}
       </div>
       <details class="vs-fx-panel mx-auto mt-3">
         <summary><i class="bi bi-sliders"></i> Sonido y efectos</summary>
         <div class="vs-fx-grid">
-          ${sw('sound', 'Sonido', 'Un sonido corto al acertar o fallar.')}
-          ${sw('flash', 'Destello de color', 'Fondo verde al acertar, rojo al fallar.')}
-          ${sw('confetti', 'Confeti por pregunta', 'Lluvia de confeti en cada acierto (desactivado por defecto).')}
+          ${sw('sound',    'Sonido',             'Un sonido corto al acertar o fallar.')}
+          ${sw('flash',    'Destello de color',  'Fondo verde al acertar, rojo al fallar.')}
+          ${sw('confetti', 'Confeti por pregunta','Lluvia de confeti en cada acierto (desactivado por defecto).')}
         </div>
       </details>`;
 
@@ -107,9 +134,43 @@ export function mountVs(host, a, ctx, opts = {}) {
           a.presentation.vsFeedback = { ...fxCfg(), [el.dataset.fx]: el.checked };
           save(a);
         });
+
+        // Avatar upload — validate size, read as data-URL, cache in localStorage.
+        ['left', 'right'].forEach(side => {
+          const fileInput = document.getElementById(`vs-file-${side}`);
+          if (!fileInput) return;
+          fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const errEl = document.getElementById(`vs-av-err-${side}`);
+            if (file.size > AVATAR_MAX_BYTES) {
+              if (errEl) { errEl.textContent = `Imagen demasiado grande (${Math.round(file.size/1024)} KB). Máximo: 150 KB.`; errEl.hidden = false; }
+              e.target.value = '';
+              return;
+            }
+            if (errEl) errEl.hidden = true;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+              const data = ev.target.result;
+              saveAvatar(a.id, side, data);
+              const preview = document.getElementById(`vs-av-${side}`);
+              if (preview) preview.innerHTML = `<img src="${escapeHtml(data)}" class="vs-av-thumb" alt="">`;
+            };
+            reader.readAsDataURL(file);
+          });
+        });
+
+        // Clear avatar button (only rendered when an avatar exists).
+        on(host, 'click', '.vs-av-clear', (_, btn) => {
+          const side = btn.dataset.side;
+          saveAvatar(a.id, side, '');
+          const preview = document.getElementById(`vs-av-${side}`);
+          if (preview) preview.innerHTML = avatarPreviewHtml('', side);
+          btn.remove();
+        });
       },
       onStart: () => {
-        const left = ($('#vs-name-left')?.value || '').trim() || 'Alumno 1';
+        const left  = ($('#vs-name-left')?.value  || '').trim() || 'Alumno 1';
         const right = ($('#vs-name-right')?.value || '').trim() || 'Alumno 2';
         startMatch(left, right);
       }
@@ -123,6 +184,7 @@ export function mountVs(host, a, ctx, opts = {}) {
     const flashing = { left: false, right: false };
     let finished = false; // guards finish() against double-fire from pending timers
     const fx = fxCfg();
+    const avatars = { left: loadAvatar(a.id, 'left'), right: loadAvatar(a.id, 'right') };
     // The central stage is a pluggable animation chosen by the teacher in
     // Presentación (default: the built-in SVG tug-of-war).
     const animDef = getVsAnimation(a.presentation?.vsAnimation || 'svg-tug');
@@ -138,12 +200,12 @@ export function mountVs(host, a, ctx, opts = {}) {
       mount(host, html`
         <div class="vs-wrap">
           <div class="vs-arena">
-            ${panelShell('left', st.left.name)}
+            ${panelShell('left',  st.left.name,  avatars.left)}
             <div class="vs-stage" id="vs-stage">
               <div class="vs-tug-label" id="vs-tug-label">¡Empate!</div>
               <div class="vs-stage-canvas" id="vs-stage-canvas"></div>
             </div>
-            ${panelShell('right', st.right.name)}
+            ${panelShell('right', st.right.name, avatars.right)}
           </div>
         </div>`);
       on(host, 'click', '#vs-again', () => renderSetup());
@@ -151,12 +213,17 @@ export function mountVs(host, a, ctx, opts = {}) {
       currentAnim = animDef.create(document.getElementById('vs-stage-canvas'), { src: a.presentation?.vsAnimationSrc });
     }
 
-    function panelShell(side, name) {
+    function panelShell(side, name, avatar) {
       const color = side === 'left' ? 'primary' : 'danger';
+      const avatarHtml = avatar
+        ? `<img src="${escapeHtml(avatar)}" class="vs-avatar" alt="">`
+        : `<span class="vs-avatar vs-avatar-init">${escapeHtml(name.charAt(0).toUpperCase())}</span>`;
       return `
         <div class="vs-panel vs-${side}" data-side="${side}">
           <div class="vs-head text-bg-${color}">
+            ${side === 'left' ? avatarHtml : ''}
             <span class="vs-name">${escapeHtml(name)}</span>
+            ${side === 'right' ? avatarHtml : ''}
             <span class="vs-score" id="vs-score-${side}">0</span>
           </div>
           <div class="vs-prog"><div class="vs-prog-bar" id="vs-prog-${side}"></div></div>
