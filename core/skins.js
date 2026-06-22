@@ -117,6 +117,27 @@ export const SKINS = {
     },
     bgImage: 'linear-gradient(180deg, #0f3a26 0%, #1a4d36 100%)',
     fontFamily: null
+  },
+  colegios: {
+    label: 'Colegios',
+    description: 'Concurso escolar: scoreboard oscuro y deportivo.',
+    cssVars: {
+      '--ww-bg': '#09111e',
+      '--ww-bg-soft': '#0d1b2a',
+      '--ww-fg': '#e2e8f0',
+      '--ww-card-bg': '#162236',
+      '--ww-card-border': '#1976d2',
+      '--ww-accent': '#f9a800',
+      '--ww-shape-1': '#b71c1c',
+      '--ww-shape-2': '#1565c0',
+      '--ww-shape-3': '#2e7d32',
+      '--ww-shape-4': '#e65100',
+      '--ww-success': '#16a34a',
+      '--ww-danger': '#dc2626',
+      '--ww-warning': '#f9a800'
+    },
+    bgImage: 'radial-gradient(ellipse at center, #0d1b2a 0%, #09111e 100%)',
+    fontFamily: null
   }
 };
 

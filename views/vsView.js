@@ -189,7 +189,7 @@ export function mountVs(host, a, ctx, opts = {}) {
     // Presentación (default: the built-in SVG tug-of-war).
     const animDef = getVsAnimation(a.presentation?.vsAnimation || 'svg-tug');
 
-    const vsTheme = a.presentation?.vsTheme || 'classic';
+    const vsTheme = (a.presentation?.skin === 'colegios') ? 'school' : 'classic';
 
     paintArena();
     renderSide('left'); renderSide('right'); updateCenter();

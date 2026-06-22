@@ -34,22 +34,12 @@ function vsBlock(a) {
   const cur = a.presentation?.vsAnimation || 'svg-tug';
   const curSrc = a.presentation?.vsAnimationSrc || '';
   const fx = { ...VS_FX_DEFAULTS, ...(a.presentation?.vsFeedback || {}) };
-  const curSkin = a.presentation?.vsTheme || 'classic';
   const anims = listVsAnimations();
   const needsSrcNow = anims.find(v => v.id === cur)?.needsSrc;
   return `
     <section class="ww-mode-cfg" data-mode="vs">
       <h6 class="mb-1"><i class="bi bi-fire text-danger"></i> VS (duelo)</h6>
       <p class="text-muted small mb-2">Cómo se ve y suena el duelo 1‑contra‑1 en pantalla compartida.</p>
-      <label class="form-label small text-muted">Apariencia del duelo</label>
-      <div class="d-flex gap-2 mb-3">
-        <button class="btn btn-sm ${curSkin === 'classic' ? 'btn-secondary' : 'btn-outline-secondary'} vs-skin-pick" data-skin="classic">
-          <i class="bi bi-layout-split"></i> Clásico
-        </button>
-        <button class="btn btn-sm ${curSkin === 'school' ? 'btn-danger' : 'btn-outline-danger'} vs-skin-pick" data-skin="school">
-          <i class="bi bi-building"></i> Colegios
-        </button>
-      </div>
       <label class="form-label small text-muted">Animación central del duelo</label>
       <div class="d-flex flex-wrap gap-2 mb-2">
         ${anims.map(v => {
@@ -147,18 +137,6 @@ export function wireModesTab(root, a, onChange) {
       _editorPreviewAnims.push(...anims);
     }).catch(() => {});
   }
-
-  // VS — skin picker.
-  on(root, 'click', '.vs-skin-pick', (_, btn) => {
-    pres().vsTheme = btn.dataset.skin;
-    onChange(a);
-    root.querySelectorAll('.vs-skin-pick').forEach(b => {
-      const active = b.dataset.skin === (a.presentation?.vsTheme || 'classic');
-      const col = b.dataset.skin === 'school' ? 'danger' : 'secondary';
-      b.classList.toggle(`btn-${col}`, active);
-      b.classList.toggle(`btn-outline-${col}`, !active);
-    });
-  });
 
   // VS — animation tiles.
   on(root, 'click', '.vsanim-pick', (_, b) => {
