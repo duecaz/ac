@@ -211,10 +211,10 @@ export function mountVs(host, a, ctx, opts = {}) {
     // Presentación (default: the built-in SVG tug-of-war).
     const animDef = getVsAnimation(a.presentation?.vsAnimation || 'svg-tug');
 
+    const vsTheme = a.presentation?.vsTheme || 'classic';
+
     paintArena();
     renderSide('left'); renderSide('right'); updateCenter();
-
-    const vsTheme = a.presentation?.vsTheme || 'classic';
 
     function paintArena() {
       const st = session.standings();
