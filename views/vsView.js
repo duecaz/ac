@@ -196,42 +196,30 @@ export function mountVs(host, a, ctx, opts = {}) {
 
     function paintArena() {
       const st = session.standings();
-      if (vsTheme === 'school') {
-        mount(host, html`
-          <div class="vs-wrap">
-            <div class="vs-arena vs-theme-school">
-              ${schoolBarHtml(st.left.name, st.right.name, avatars.left, avatars.right)}
-              <div class="vs-stage" id="vs-stage">
-                <div class="vs-tug-label" id="vs-tug-label"></div>
-                <div class="vs-stage-canvas" id="vs-stage-canvas"></div>
-              </div>
-              <div class="vs-panel vs-left vss-panel" data-side="left">
+      mount(host, html`
+        <div class="vs-wrap">
+          <div class="vs-arena vs-skin-${vsTheme}">
+            ${vsBarHtml(st.left.name, st.right.name, avatars.left, avatars.right)}
+            <div class="vs-main">
+              <div class="vs-panel vs-left" data-side="left">
                 <div class="vs-body" id="vs-body-left"></div>
               </div>
-              <div class="vs-panel vs-right vss-panel" data-side="right">
-                <div class="vs-body" id="vs-body-right"></div>
-              </div>
-            </div>
-          </div>`);
-      } else {
-        mount(host, html`
-          <div class="vs-wrap">
-            <div class="vs-arena">
-              ${panelShell('left',  st.left.name,  avatars.left)}
               <div class="vs-stage" id="vs-stage">
                 <div class="vs-tug-label" id="vs-tug-label">¡Empate!</div>
                 <div class="vs-stage-canvas" id="vs-stage-canvas"></div>
               </div>
-              ${panelShell('right', st.right.name, avatars.right)}
+              <div class="vs-panel vs-right" data-side="right">
+                <div class="vs-body" id="vs-body-right"></div>
+              </div>
             </div>
-          </div>`);
-      }
+          </div>
+        </div>`);
       on(host, 'click', '#vs-again', () => renderSetup());
       if (currentAnim) currentAnim.destroy();
       currentAnim = animDef.create(document.getElementById('vs-stage-canvas'), { src: a.presentation?.vsAnimationSrc });
     }
 
-    function schoolBarHtml(lName, rName, lAv, rAv) {
+    function vsBarHtml(lName, rName, lAv, rAv) {
       const av = (src, name) => src
         ? `<img src="${escapeHtml(src)}" class="vs-avatar vss-av" alt="">`
         : `<span class="vs-avatar vss-av vs-avatar-init">${escapeHtml(name.charAt(0).toUpperCase())}</span>`;
@@ -256,24 +244,6 @@ export function mountVs(host, a, ctx, opts = {}) {
             </div>
             ${av(rAv, rName)}
           </div>
-        </div>`;
-    }
-
-    function panelShell(side, name, avatar) {
-      const color = side === 'left' ? 'primary' : 'danger';
-      const avatarHtml = avatar
-        ? `<img src="${escapeHtml(avatar)}" class="vs-avatar" alt="">`
-        : `<span class="vs-avatar vs-avatar-init">${escapeHtml(name.charAt(0).toUpperCase())}</span>`;
-      return `
-        <div class="vs-panel vs-${side}" data-side="${side}">
-          <div class="vs-head text-bg-${color}">
-            ${side === 'left' ? avatarHtml : ''}
-            <span class="vs-name">${escapeHtml(name)}</span>
-            ${side === 'right' ? avatarHtml : ''}
-            <span class="vs-score" id="vs-score-${side}">0</span>
-          </div>
-          <div class="vs-prog"><div class="vs-prog-bar" id="vs-prog-${side}"></div></div>
-          <div class="vs-body" id="vs-body-${side}"></div>
         </div>`;
     }
 

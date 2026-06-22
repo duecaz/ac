@@ -120,7 +120,7 @@
 .vs-skin-school .vs-body {
   container-type: inline-size;
   flex: 1; width: 100%; max-width: 200px;
-  border-radius: 1.4rem; overflow: hidden;
+  border-radius: 1.4rem; overflow: auto;
   padding: .6rem .65rem;
 }
 .vs-skin-school .vs-panel.vs-left  .vs-body {
