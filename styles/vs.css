@@ -93,7 +93,7 @@
 /* ══════════════════════════════════════════════════════════════════════════
    PORTRAIT / NARROW
    ══════════════════════════════════════════════════════════════════════════ */
-@container vs ((max-width: 860px) or (max-aspect-ratio: 5/4)) {
+@container vs (max-aspect-ratio: 5/4) {
   /* Barra compacta — libera espacio vertical para los paneles */
   .vss-bar   { height: 46px; }
   .vss-label { display: none; }
