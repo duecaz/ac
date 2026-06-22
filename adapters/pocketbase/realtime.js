@@ -77,6 +77,10 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
           return { id: rec.id, code };
         } catch (e) {
           if (attempt < 4 && (e.status === 400 || e.status === 409)) continue;
+          if (e.status === 404) {
+            throw new Error('La colección "live_sessions" no existe en el servidor. '
+              + 'Créala una sola vez en Admin → "Crear colecciones".');
+          }
           throw e;
         }
       }

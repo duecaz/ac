@@ -63,11 +63,12 @@ export function getRealtime() {
   _realtime = (async () => {
     if (name === 'local') return (await import('./local/realtime.js')).createLocalRealtime();
     if (name === 'pocketbase') {
-      if (await pbCollectionExists('live_sessions')) {
-        return (await import('./pocketbase/realtime.js')).createPocketbaseRealtime();
-      }
-      console.warn('[live] Colección live_sessions no existe en PocketBase → modo local (misma pestaña)');
-      return (await import('./local/realtime.js')).createLocalRealtime();
+      // Live SIEMPRE usa el backend público (PocketBase). Nunca cae a local: cada
+      // alumno está en su propio móvil y en otra red, así que un modo "local"
+      // (mismo navegador) no serviría. Si falta la colección live_sessions,
+      // createRoom dará un error claro y el profesor la crea desde
+      // Admin → "Crear colecciones".
+      return (await import('./pocketbase/realtime.js')).createPocketbaseRealtime();
     }
     return (await import('./supabase/realtime.js')).createSupabaseRealtime();
   })();

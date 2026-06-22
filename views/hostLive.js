@@ -30,7 +30,20 @@ export async function renderHostLaunch(rootSel, activityId) {
     // Just navigate. The router will pick #/host/:code and call renderHostByCode.
     location.hash = `#/host/${room.code}`;
   } catch (e) {
-    mount(rootSel, html`<div class="alert alert-danger">No se pudo crear la sala: ${escapeHtml(e.message)}</div>`);
+    const needsSetup = /live_sessions/.test(e.message || '');
+    mount(rootSel, html`
+      <div class="container py-4" style="max-width:560px">
+        <div class="alert alert-danger">
+          <h5 class="alert-heading"><i class="bi bi-exclamation-octagon"></i> No se pudo crear la sala</h5>
+          <p class="mb-2">${escapeHtml(e.message)}</p>
+          ${needsSetup ? html`
+            <hr>
+            <p class="mb-2 small">El servidor de Live necesita la colección <code>live_sessions</code> (solo se crea una vez).</p>
+            <a href="#/admin" class="btn btn-warning btn-sm"><i class="bi bi-shield-lock"></i> Ir a Admin → Crear colecciones</a>
+          ` : ''}
+        </div>
+        <a href="#/play/${escapeHtml(a.id)}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Volver a la actividad</a>
+      </div>`);
   }
 }
 
