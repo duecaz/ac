@@ -321,7 +321,9 @@ export function mountVs(host, a, ctx, opts = {}) {
         if (st.finished) {
           // Carrera terminada: cerrar las calculadoras (paneles) y dejar la
           // animación central celebrando al ganador un instante antes del podio.
-          const arena = host.querySelector('.vs-arena');
+          // Nota: `host` puede ser un selector (string) — usar document, igual
+          // que el resto de la vista (getElementById/querySelector).
+          const arena = document.querySelector('.vs-arena');
           if (arena) arena.classList.add('vs-race-finished');
           const ws = st.finishedBy || (st.leader !== 'tie' ? st.leader : null);
           if (ws && currentAnim) currentAnim.setProgress(ws === 'left' ? 1 : -1);
