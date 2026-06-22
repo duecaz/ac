@@ -430,65 +430,75 @@ function renderPanel(rootSel) {
     btn.disabled = true;
 
     try {
-      // 1. Authenticate as PocketBase admin
+      // 1. Authenticate as PocketBase admin. La API cambió en PB 0.23:
+      //    ≥0.23 → /api/collections/_superusers/auth-with-password
+      //    <0.23 → /api/admins/auth-with-password
+      //    Probamos la nueva primero; si da 404 caemos a la antigua.
       const { PB_URL } = await import('../pocketbase.config.js');
-      const authRes = await fetch(`${PB_URL}/api/admins/auth-with-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identity: email, password: pass }),
-      });
-      if (!authRes.ok) {
-        const b = await authRes.json().catch(() => ({}));
-        throw new Error(b.message || 'Credenciales incorrectas');
-      }
-      const { token } = await authRes.json();
+      const tryAuth = async (url) => {
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identity: email, password: pass }),
+        });
+        if (r.ok) return (await r.json()).token;
+        if (r.status === 404) return null; // endpoint inexistente en esta versión
+        const b = await r.json().catch(() => ({}));
+        throw new Error(b.message || `Error de autenticación (${r.status})`);
+      };
+      let isV23 = true;
+      let token = await tryAuth(`${PB_URL}/api/collections/_superusers/auth-with-password`);
+      if (!token) { isV23 = false; token = await tryAuth(`${PB_URL}/api/admins/auth-with-password`); }
+      if (!token) throw new Error('No se pudo autenticar: el endpoint de admin no existe en ninguna versión conocida. Revisa la URL de PocketBase.');
       const headers = { 'Content-Type': 'application/json', 'Authorization': token };
 
-      // 2. Collection schemas
-      const COLLECTIONS = [
-        {
-          name: 'live_sessions',
-          type: 'base',
-          schema: [
-            { name: 'code',     type: 'text',   required: true },
-            { name: 'activity', type: 'json',   required: false },
-            { name: 'state',    type: 'json',   required: false },
-          ],
-          listRule: '', viewRule: '', createRule: '', updateRule: '', deleteRule: '',
-        },
-        {
-          name: 'assignments',
-          type: 'base',
-          schema: [
-            { name: 'code',          type: 'text',   required: true },
-            { name: 'activity_id',   type: 'text',   required: false },
-            { name: 'activity_snap', type: 'json',   required: false },
-            { name: 'author_id',     type: 'text',   required: false },
-            { name: 'title',         type: 'text',   required: false },
-            { name: 'due_at',        type: 'text',   required: false },
-            { name: 'max_attempts',  type: 'number', required: false },
-            { name: 'status',        type: 'text',   required: false },
-            { name: 'created_at',    type: 'text',   required: false },
-          ],
-          listRule: '', viewRule: '', createRule: '', updateRule: '', deleteRule: '',
-        },
-        {
-          name: 'assignment_attempts',
-          type: 'base',
-          schema: [
-            { name: 'assignment_id', type: 'text',   required: false },
-            { name: 'activity_id',   type: 'text',   required: false },
-            { name: 'user_id',       type: 'text',   required: false },
-            { name: 'player_name',   type: 'text',   required: false },
-            { name: 'score_auto',    type: 'number', required: false },
-            { name: 'score_final',   type: 'number', required: false },
-            { name: 'max_score',     type: 'number', required: false },
-            { name: 'time_used',     type: 'number', required: false },
-            { name: 'created_at',    type: 'text',   required: false },
-          ],
-          listRule: '', viewRule: '', createRule: '', updateRule: '', deleteRule: '',
-        },
+      // 2. Definición de campos por colección (neutra respecto a la versión).
+      const DEFS = [
+        { name: 'live_sessions', fields: [
+          { name: 'code',     type: 'text', required: true },
+          { name: 'activity', type: 'json' },
+          { name: 'state',    type: 'json' },
+        ]},
+        { name: 'assignments', fields: [
+          { name: 'code',          type: 'text',   required: true },
+          { name: 'activity_id',   type: 'text' },
+          { name: 'activity_snap', type: 'json' },
+          { name: 'author_id',     type: 'text' },
+          { name: 'title',         type: 'text' },
+          { name: 'due_at',        type: 'text' },
+          { name: 'max_attempts',  type: 'number' },
+          { name: 'status',        type: 'text' },
+          { name: 'created_at',    type: 'text' },
+        ]},
+        { name: 'assignment_attempts', fields: [
+          { name: 'assignment_id', type: 'text' },
+          { name: 'activity_id',   type: 'text' },
+          { name: 'user_id',       type: 'text' },
+          { name: 'player_name',   type: 'text' },
+          { name: 'score_auto',    type: 'number' },
+          { name: 'score_final',   type: 'number' },
+          { name: 'max_score',     type: 'number' },
+          { name: 'time_used',     type: 'number' },
+          { name: 'created_at',    type: 'text' },
+        ]},
       ];
+
+      // En PB ≥0.23 la clave del esquema es `fields`; en <0.23 es `schema`. Los
+      // campos json necesitan maxSize explícito en 0.23 vía API.
+      const schemaKey = isV23 ? 'fields' : 'schema';
+      const buildField = (f) => {
+        const base = { name: f.name, type: f.type, required: !!f.required };
+        if (f.type === 'json') {
+          if (isV23) base.maxSize = 5242880;
+          else base.options = { maxSize: 5242880 };
+        }
+        return base;
+      };
+      const COLLECTIONS = DEFS.map(d => ({
+        name: d.name, type: 'base',
+        [schemaKey]: d.fields.map(buildField),
+        listRule: '', viewRule: '', createRule: '', updateRule: '', deleteRule: '',
+      }));
 
       // 3. Create each collection (skip if already exists)
       const results = [];
@@ -503,8 +513,11 @@ function renderPanel(rootSel) {
             results.push({ name: col.name, ok: true, msg: 'creada' });
           } else {
             const b = await r.json().catch(() => ({}));
-            // 400 with "already exists" is fine
-            if (b.data?.name?.code === 'validation_not_unique' || b.message?.includes('already exists')) {
+            // Una colección que ya existe no es error (idempotente). El código de
+            // validación difiere entre versiones, así que miramos varias señales.
+            const code = b.data?.name?.code || '';
+            const dup = code.includes('not_unique') || code.includes('exists') || /exist/i.test(b.message || '');
+            if (dup) {
               results.push({ name: col.name, ok: true, msg: 'ya existía' });
             } else {
               results.push({ name: col.name, ok: false, msg: b.message || `error ${r.status}` });
