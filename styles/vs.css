@@ -164,3 +164,113 @@
   width: 100%; min-height: 100%; height: 100%; padding: 1rem;
 }
 .vs-result-screen .vs-result { width: 100%; max-width: 640px; }
+
+/* ══════════════════════════════════════════════════════════
+   SKIN: COLEGIOS  —  dark sports-scoreboard layout
+   ══════════════════════════════════════════════════════════ */
+
+.vs-arena.vs-theme-school {
+  display: block;
+  position: relative;
+  height: 100%;
+  background: #0d1b2a;
+  background-image: repeating-linear-gradient(
+    135deg, transparent, transparent 28px,
+    rgba(255,255,255,.018) 28px, rgba(255,255,255,.018) 29px
+  );
+  overflow: hidden;
+}
+
+/* ── Scoreboard bar ───────────────────────────────────── */
+.vss-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 76px;
+  display: flex;
+  z-index: 10;
+  box-shadow: 0 4px 20px rgba(0,0,0,.5);
+}
+.vss-team {
+  flex: 1; display: flex; align-items: center; gap: .55rem;
+  padding: .45rem .9rem; overflow: hidden;
+}
+.vss-left  { background: linear-gradient(95deg, #1044a8, #1565c0 80%, #1976d2); }
+.vss-right {
+  background: linear-gradient(265deg, #a81010, #c62828 80%, #d32f2f);
+  flex-direction: row-reverse;
+}
+.vss-info  { flex: 1; min-width: 0; }
+.vss-info-r { text-align: right; }
+.vss-label { font-size: .55rem; font-weight: 700; letter-spacing: .18em; color: rgba(255,255,255,.65); text-transform: uppercase; }
+.vss-name  { font-size: clamp(.8rem, 1.6cqw, 1.25rem); font-weight: 900; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vss-score {
+  font-size: clamp(1.6rem, 3.2cqw, 2.4rem); font-weight: 900;
+  color: #fff; font-variant-numeric: tabular-nums; flex-shrink: 0;
+  text-shadow: 0 2px 8px rgba(0,0,0,.4);
+}
+.vss-bar .vs-prog  { height: 4px; background: rgba(255,255,255,.18); border-radius: 999px; margin-top: .25rem; overflow: hidden; }
+.vss-bar .vs-prog-bar { background: rgba(255,255,255,.75); }
+
+/* Avatar inside scoreboard (overrides base .vs-avatar size) */
+.vss-av { width: 2.8rem; height: 2.8rem; border: 2.5px solid rgba(255,255,255,.5); flex-shrink: 0; }
+
+/* ── VS gold badge ────────────────────────────────────── */
+.vss-badge {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: 54px; height: 54px;
+  background: radial-gradient(circle at 38% 32%, #ffe066, #f9a800 70%);
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 4px 16px rgba(0,0,0,.55), 0 0 0 3px rgba(249,168,0,.3);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: .95rem; color: #5c2e00;
+  letter-spacing: .04em; z-index: 20;
+}
+
+/* ── Central stage (animation fills area below bar) ───── */
+.vs-arena.vs-theme-school .vs-stage {
+  position: absolute;
+  top: 76px; bottom: 0; left: 0; right: 0;
+  border: none; background: none; padding: .5rem;
+  display: flex; flex-direction: column;
+}
+.vs-arena.vs-theme-school .vs-tug-label { display: none; }
+
+/* ── Floating game panels at bottom corners ───────────── */
+.vss-panel {
+  position: absolute;
+  bottom: 0; top: 76px;
+  width: min(260px, 28cqw);
+  display: flex; align-items: flex-end;
+  padding: .5rem;
+  pointer-events: none;
+  background: none;
+}
+.vs-panel.vs-left.vss-panel  { left: 0; }
+.vs-panel.vs-right.vss-panel { right: 0; }
+.vss-panel > .vs-body {
+  pointer-events: auto;
+  width: 100%;
+  max-height: 100%;
+  overflow: auto;
+  border-radius: 1.1rem;
+  padding: .65rem;
+  background: rgba(8,18,38,.88);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0,0,0,.6);
+  border: 1px solid rgba(255,255,255,.07);
+}
+.vs-panel.vs-left.vss-panel  > .vs-body { border-top: 3px solid #1976d2; }
+.vs-panel.vs-right.vss-panel > .vs-body { border-top: 3px solid #d32f2f; }
+
+/* Flash feedback works the same in school theme */
+.vss-panel > .vs-body.vs-flash-ok { animation: vs-flash-ok .7s ease-out; }
+.vss-panel > .vs-body.vs-flash-no { animation: vs-flash-no .7s ease-out; }
+
+/* Portrait stacking for school theme */
+@container vs ((max-width: 860px) or (max-aspect-ratio: 5/4)) {
+  .vs-arena.vs-theme-school .vss-panel {
+    width: 48%;
+    padding: .35rem;
+  }
+}

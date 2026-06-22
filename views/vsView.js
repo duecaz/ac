@@ -108,8 +108,17 @@ export function mountVs(host, a, ctx, opts = {}) {
         <div class="vs-av-err text-danger small mt-1" id="vs-av-err-${side}" hidden></div>
       </div>`;
 
+    const currentTheme = a.presentation?.vsTheme || 'classic';
     const body = `
-      <div class="row justify-content-center g-3 my-3" style="max-width:520px;margin:auto">
+      <div class="d-flex justify-content-center gap-2 mb-3">
+        <button class="vs-theme-btn btn btn-sm ${currentTheme !== 'school' ? 'btn-secondary' : 'btn-outline-secondary'}" data-vst="classic">
+          <i class="bi bi-layout-split"></i> Clásico
+        </button>
+        <button class="vs-theme-btn btn btn-sm ${currentTheme === 'school' ? 'btn-danger' : 'btn-outline-danger'}" data-vst="school">
+          <i class="bi bi-building"></i> Colegios
+        </button>
+      </div>
+      <div class="row justify-content-center g-3 mb-3" style="max-width:520px;margin:auto">
         ${avatarCol('left',  'Equipo izquierda', 'Alumno 1', avLeft)}
         ${avatarCol('right', 'Equipo derecha',   'Alumno 2', avRight)}
       </div>
@@ -160,6 +169,19 @@ export function mountVs(host, a, ctx, opts = {}) {
           });
         });
 
+        // Theme selector — persists in presentation.vsTheme.
+        on(host, 'click', '.vs-theme-btn', (_, btn) => {
+          if (!a.presentation) a.presentation = {};
+          a.presentation.vsTheme = btn.dataset.vst;
+          save(a);
+          document.querySelectorAll('.vs-theme-btn').forEach(b => {
+            const active = b.dataset.vst === a.presentation.vsTheme;
+            const col = b.dataset.vst === 'school' ? 'danger' : 'secondary';
+            b.classList.toggle(`btn-${col}`, active);
+            b.classList.toggle(`btn-outline-${col}`, !active);
+          });
+        });
+
         // Clear avatar button (only rendered when an avatar exists).
         on(host, 'click', '.vs-av-clear', (_, btn) => {
           const side = btn.dataset.side;
@@ -192,25 +214,71 @@ export function mountVs(host, a, ctx, opts = {}) {
     paintArena();
     renderSide('left'); renderSide('right'); updateCenter();
 
-    // 4-column arena: alumno 1 | (animación, 2 cols) | alumno 2. Stacks to rows
-    // in portrait/narrow via CSS. The animation owns the centre stage; the view
-    // only feeds it the lead and yanks, and updates the textual label.
+    const vsTheme = a.presentation?.vsTheme || 'classic';
+
     function paintArena() {
       const st = session.standings();
-      mount(host, html`
-        <div class="vs-wrap">
-          <div class="vs-arena">
-            ${panelShell('left',  st.left.name,  avatars.left)}
-            <div class="vs-stage" id="vs-stage">
-              <div class="vs-tug-label" id="vs-tug-label">¡Empate!</div>
-              <div class="vs-stage-canvas" id="vs-stage-canvas"></div>
+      if (vsTheme === 'school') {
+        mount(host, html`
+          <div class="vs-wrap">
+            <div class="vs-arena vs-theme-school">
+              ${schoolBarHtml(st.left.name, st.right.name, avatars.left, avatars.right)}
+              <div class="vs-stage" id="vs-stage">
+                <div class="vs-tug-label" id="vs-tug-label"></div>
+                <div class="vs-stage-canvas" id="vs-stage-canvas"></div>
+              </div>
+              <div class="vs-panel vs-left vss-panel" data-side="left">
+                <div class="vs-body" id="vs-body-left"></div>
+              </div>
+              <div class="vs-panel vs-right vss-panel" data-side="right">
+                <div class="vs-body" id="vs-body-right"></div>
+              </div>
             </div>
-            ${panelShell('right', st.right.name, avatars.right)}
-          </div>
-        </div>`);
+          </div>`);
+      } else {
+        mount(host, html`
+          <div class="vs-wrap">
+            <div class="vs-arena">
+              ${panelShell('left',  st.left.name,  avatars.left)}
+              <div class="vs-stage" id="vs-stage">
+                <div class="vs-tug-label" id="vs-tug-label">¡Empate!</div>
+                <div class="vs-stage-canvas" id="vs-stage-canvas"></div>
+              </div>
+              ${panelShell('right', st.right.name, avatars.right)}
+            </div>
+          </div>`);
+      }
       on(host, 'click', '#vs-again', () => renderSetup());
       if (currentAnim) currentAnim.destroy();
       currentAnim = animDef.create(document.getElementById('vs-stage-canvas'), { src: a.presentation?.vsAnimationSrc });
+    }
+
+    function schoolBarHtml(lName, rName, lAv, rAv) {
+      const av = (src, name) => src
+        ? `<img src="${escapeHtml(src)}" class="vs-avatar vss-av" alt="">`
+        : `<span class="vs-avatar vss-av vs-avatar-init">${escapeHtml(name.charAt(0).toUpperCase())}</span>`;
+      return `
+        <div class="vss-bar">
+          <div class="vss-team vss-left">
+            ${av(lAv, lName)}
+            <div class="vss-info">
+              <div class="vss-label">EQUIPO</div>
+              <div class="vss-name">${escapeHtml(lName)}</div>
+              <div class="vs-prog"><div class="vs-prog-bar" id="vs-prog-left"></div></div>
+            </div>
+            <span class="vss-score" id="vs-score-left">0</span>
+          </div>
+          <div class="vss-badge">VS</div>
+          <div class="vss-team vss-right">
+            <span class="vss-score" id="vs-score-right">0</span>
+            <div class="vss-info vss-info-r">
+              <div class="vss-label">EQUIPO</div>
+              <div class="vss-name">${escapeHtml(rName)}</div>
+              <div class="vs-prog"><div class="vs-prog-bar" id="vs-prog-right"></div></div>
+            </div>
+            ${av(rAv, rName)}
+          </div>
+        </div>`;
     }
 
     function panelShell(side, name, avatar) {
