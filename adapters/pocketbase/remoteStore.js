@@ -172,11 +172,17 @@ export function createPocketbaseRemoteStore() {
     },
 
     async listResults(activityId) {
-      const filter = activityId
-        ? `?filter=(activity_id="${toId(activityId)}")&sort=-created`
-        : '?sort=-created&perPage=200';
-      const rec = await pbFetch(`/api/collections/results/records${filter}`);
-      return rec?.items || [];
+      const where = activityId ? `filter=(activity_id="${toId(activityId)}")&` : '';
+      // Orden por `created` (autodate de PocketBase). Si la colección se creó por
+      // API en PB ≥0.23 puede no tener ese campo → el sort da error; en ese caso
+      // reintentamos sin orden para no romper la lectura.
+      try {
+        const rec = await pbFetch(`/api/collections/results/records?${where}sort=-created&perPage=200`);
+        return rec?.items || [];
+      } catch (e) {
+        const rec = await pbFetch(`/api/collections/results/records?${where}perPage=200`);
+        return rec?.items || [];
+      }
     },
   };
 }

@@ -8,6 +8,19 @@ import { PB_URL } from '../pocketbase.config.js';
 
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
+// Extrae el detalle campo-a-campo de un error de PocketBase. El RemoteStore
+// adjunta el cuerpo del error como `e.pb` ({ message, data: { campo: {message} } }).
+// Sin esto solo se ve "Failed to create record" sin saber QUÉ campo falló.
+function pbDetail(e) {
+  const data = e?.pb?.data;
+  if (data && typeof data === 'object') {
+    const parts = Object.entries(data).map(([k, v]) => `${k}: ${v?.message || v?.code || JSON.stringify(v)}`);
+    if (parts.length) return ' → ' + parts.join(' · ');
+  }
+  if (e?.pb?.message && e.pb.message !== e.message) return ' → ' + e.pb.message;
+  return '';
+}
+
 // Ejecuta `fn` midiendo cuánto tarda (ms). Devuelve { ms, value }.
 async function timed(fn) {
   const t0 = now();
@@ -74,7 +87,7 @@ export async function diagnoseDb(onStep) {
     wrote = true;
     step({ name: 'Escritura (saveActivity)', pass: true, ms, info: 'registro temporal creado' });
   } catch (e) {
-    step({ name: 'Escritura (saveActivity)', pass: false, info: e.message });
+    step({ name: 'Escritura (saveActivity)', pass: false, info: e.message + pbDetail(e) });
   }
 
   if (wrote) {
@@ -98,7 +111,7 @@ export async function diagnoseDb(onStep) {
     const { ms, value } = await timed(() => store.listResults());
     step({ name: 'Lectura de resultados (listResults)', pass: true, ms, info: `${value.length} resultados` });
   } catch (e) {
-    step({ name: 'Lectura de resultados (listResults)', pass: false, info: e.message });
+    step({ name: 'Lectura de resultados (listResults)', pass: false, info: e.message + pbDetail(e) });
   }
 
   return out;

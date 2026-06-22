@@ -513,9 +513,16 @@ function renderPanel(rootSel) {
       };
       // Reglas públicas (sin auth) para todas las colecciones.
       const publicRules = { listRule: '', viewRule: '', createRule: '', updateRule: '', deleteRule: '' };
+      // En PB ≥0.23 los campos created/updated NO se añaden solos al crear por API,
+      // y el store ordena resultados por `sort=-created` → hay que crearlos como
+      // autodate. En <0.23 se añaden automáticamente, así que no los duplicamos.
+      const sysFields = isV23 ? [
+        { name: 'created', type: 'autodate', onCreate: true, onUpdate: false },
+        { name: 'updated', type: 'autodate', onCreate: true, onUpdate: true },
+      ] : [];
       const COLLECTIONS = DEFS.map(d => ({
         name: d.name, type: 'base',
-        [schemaKey]: d.fields.map(buildField),
+        [schemaKey]: [...d.fields.map(buildField), ...sysFields],
         ...publicRules,
       }));
 
