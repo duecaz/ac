@@ -32,6 +32,7 @@ export class MathTemplate extends BaseTemplate {
   static scoreSubmission = scoreMathSubmission;
   static getRoundPayload(activity, ctx) { const it = activity.content.items[ctx.itemIndex]; return it ? { question: it.question } : null; }
   static renderRound(root, payload, opts) { return renderKeypadRound(root, payload, opts); }
+  static vsCanRetry = true;
   static migrateContent(content) { return content; }
   // Adapta el contenido al cambiar de formato HACIA Matemáticas (quita opciones).
   static adoptContent(content) { return adoptForMath(content); }

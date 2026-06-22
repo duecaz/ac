@@ -277,6 +277,27 @@ export function mountVs(host, a, ctx, opts = {}) {
       // Guard against late taps after this side has already finished all items
       // or after the whole duel has ended (both sides done).
       if (session.standings()[side].done || session.status !== 'running') return;
+
+      // Templates that set vsCanRetry=true (e.g. math keypad) must re-try on
+      // wrong: flash red, re-render the SAME question without advancing cursor.
+      if (T.vsCanRetry && typeof T.scoreSubmission === 'function') {
+        const cursor = session.standings()[side].cursor;
+        const item = sessionItems(a)[cursor];
+        const pre = T.scoreSubmission({ value, item, activity: a, mode: 'vs' });
+        if (!pre.correct) {
+          flashing[side] = true;
+          const body = document.getElementById('vs-body-' + side);
+          if (fx.flash && body) body.classList.add('vs-flash-no');
+          if (fx.sound) playSound('wrong');
+          setTimeout(() => {
+            flashing[side] = false;
+            if (body) body.classList.remove('vs-flash-no');
+            renderSide(side); // re-renders same question (cursor unchanged)
+          }, FLASH_MS);
+          return;
+        }
+      }
+
       flashing[side] = true;
       const r = session.answer(side, value);
       const scoreEl = document.getElementById('vs-score-' + side);

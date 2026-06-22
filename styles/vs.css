@@ -91,6 +91,18 @@
 /* SKIN: COLEGIOS — rules live in themes/colegios/skin.css, loaded by applySkin() */
 
 /* ══════════════════════════════════════════════════════════════════════════
+   KAHOOT GRID INSIDE VS PANELS
+   Override live.css projector sizes (padding:2rem, font-size:1.5rem) so
+   choice options fit inside the narrow side panels at any orientation.
+   ══════════════════════════════════════════════════════════════════════════ */
+.vs-body .ww-kahoot-grid { gap: .4rem; }
+.vs-body .ww-kahoot-grid .btn {
+  font-size: clamp(.7rem, 2.4cqw, 1rem);
+  padding: .4em .45em;
+  font-weight: 600;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    PORTRAIT / NARROW
    ══════════════════════════════════════════════════════════════════════════ */
 @container vs (max-aspect-ratio: 5/4) {
