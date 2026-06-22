@@ -121,6 +121,10 @@
 
 /* ── Portrait / narrow ────────────────────────────────────────────────────── */
 @container vs ((max-width: 860px) or (max-aspect-ratio: 5/4)) {
-  .vs-skin-school .vs-panel { padding: .4rem .3rem; }
-  .vs-skin-school .vs-body  { max-width: 100%; width: 100%; border-radius: 1rem; }
+  /* Override school bar height (skin sets 80px, portrait needs 46px) */
+  .vs-skin-school .vss-bar  { height: 46px; box-shadow: none; }
+  .vs-skin-school .vss-score { font-size: clamp(1rem, 2.2cqw, 1.5rem); }
+  .vs-skin-school .vss-badge { animation: none; }
+  .vs-skin-school .vs-panel { padding: .35rem .25rem; justify-content: flex-start; }
+  .vs-skin-school .vs-body  { max-width: 100%; width: 100%; border-radius: .75rem; }
 }

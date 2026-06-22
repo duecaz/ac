@@ -94,15 +94,31 @@
    PORTRAIT / NARROW
    ══════════════════════════════════════════════════════════════════════════ */
 @container vs ((max-width: 860px) or (max-aspect-ratio: 5/4)) {
+  /* Barra compacta — libera espacio vertical para los paneles */
+  .vss-bar   { height: 46px; }
+  .vss-label { display: none; }
+  .vss-badge { width: 36px; height: 36px; font-size: .72rem; }
+  .vss-mid   { width: 50px; }
+  .vs-avatar.vss-av { width: 1.9rem; height: 1.9rem; }
+  .vss-score { font-size: clamp(1rem, 2.2cqw, 1.5rem); }
+  .vss-name  { font-size: clamp(.62rem, 1.2cqw, .88rem); }
+
+  /* Grid: franja de animación arriba, dos paneles abajo */
   .vs-main {
     grid-template-columns: 1fr 1fr;
     grid-template-areas: "stage stage" "s1 s2";
-    grid-template-rows: 18cqh 1fr;
+    grid-template-rows: 90px 1fr;
     align-content: stretch;
   }
   .vs-skin-classic .vs-stage { border: none; border-bottom: 1px solid #dee2e6; }
-  .vs-body { padding: .35rem .4rem; justify-content: flex-start; }
-  .vs-q    { font-size: clamp(.9rem, 2cqw, 1.4rem); margin-bottom: .4rem; }
+  .vs-body { padding: .3rem .35rem; justify-content: flex-start; }
+  .vs-q    { font-size: clamp(.85rem, 2cqw, 1.3rem); margin-bottom: .3rem; }
+
+  /* Actividades dentro del panel — eliminar centrado vertical que oculta cabecera */
+  .vs-body .ww-keypad-round   { justify-content: flex-start; gap: .3rem; }
+  .vs-body .ww-keypad-q       { font-size: clamp(.85rem, 5vmin, 1.2rem); }
+  .vs-body .ww-keypad-display { font-size: clamp(.8rem, 4vmin, .95rem); min-width: 4rem; }
+  .vs-body .ww-key            { font-size: clamp(.65rem, 3vmin, .88rem); padding: .26rem 0; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
