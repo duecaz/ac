@@ -1,7 +1,7 @@
 // Student-side live view. Routes: #/join, #/play/:code.
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
-import { joinSession, getOwnAnswer, subscribeRoom, pingPresence, findRoomByCode, fetchSession, leaderboard, settleItem } from '../core/liveTransport.js';
+import { joinSession, getOwnAnswer, subscribeRoom, pingPresence, findRoomByCode, fetchSession, leaderboard } from '../core/liveTransport.js';
 import { findAssignmentByCode } from '../core/assignmentsTransport.js';
 import { isAcceptableNickname } from '../core/nicknameFilter.js';
 import { acquire } from '../core/lifecycle.js';
@@ -222,7 +222,7 @@ export async function renderPlay(rootSel, code) {
     `);
   }
 
-  async function paintRace() {
+  function paintRace() {
     const allItems = sessionItems(activity);
     const tpl = getTemplate(activity.template);
 
@@ -265,42 +265,25 @@ export async function renderPlay(rootSel, code) {
     let sent = false;
     tpl.renderRound(document.getElementById('s-round'), payload, {
       mode: 'live',
-      onSubmit: async (value) => {
+      onSubmit: (value) => {
         if (sent) return;
         sent = true;
         const ms = Date.now() - lastQuestionShownAt;
-        mount(rootSel, html`<div class="text-center py-5"><div class="spinner-border text-warning mb-3"></div><p class="lead">Verificando…</p></div>`);
 
+        // Score locally (activity_snap contains full answers on PocketBase).
+        // No network wait — result is instant.
         let ok = false;
-        let offline = false;
+        let pts = 0;
         try {
-          const r = await queuedSubmit(session.id, player.playerId, idx, value, ms);
-          if (r.queued) {
-            offline = true;
-          } else {
-            await settleItem(session.id, idx);
-            const own = await getOwnAnswer(session.id, player.playerId, idx);
-            ok = own?.correct === true;
-            if (own) myScore += own.points || 0;
-          }
-        } catch { offline = true; }
+          const r = tpl.scoreSubmission({ value, item: allItems[idx], msTaken: ms, activity, mode: 'live' });
+          ok = !!r.correct;
+          pts = r.points || 0;
+        } catch { /* activity_snap may lack answers on some backends — keep ok=false */ }
 
-        if (offline) {
-          mount(rootSel, html`
-            <div class="text-center py-5">
-              <i class="bi bi-wifi-off display-1 text-warning"></i>
-              <h2 class="mt-3">Sin conexión</h2>
-              <p class="text-muted">Tu respuesta se guardó. Toca para reintentar.</p>
-              <button class="btn btn-warning mt-2" id="r-retry"><i class="bi bi-arrow-repeat"></i> Reintentar</button>
-            </div>
-          `);
-          document.getElementById('r-retry')?.addEventListener('click', () => paintRace());
-          return;
-        }
-
+        // Advance queue before feedback so next question is ready.
         raceQueue.shift();
         if (!ok) raceQueue.push(idx);
-        else raceCorrectCount++;
+        else { raceCorrectCount++; myScore += pts; }
         Streaks.bump(session.id, player.playerId, ok);
         const newStreak = Streaks.get(session.id, player.playerId);
 
@@ -308,12 +291,16 @@ export async function renderPlay(rootSel, code) {
           <div class="text-center py-5">
             ${ok
               ? `<i class="bi bi-check-circle-fill display-1 text-success"></i><h2 class="mt-3">¡Correcto!</h2>`
-              : `<i class="bi bi-x-circle-fill display-1 text-danger"></i><h2 class="mt-3">Incorrecto</h2><p class="text-muted small">Va al final de la cola</p>`}
-            ${ok && newStreak >= 2 ? `<p class="h4">🔥 Racha de ${newStreak}</p>` : ''}
-            <p class="text-muted">${raceCorrectCount}/${total} correctas · ${raceQueue.length} restantes</p>
+              : `<i class="bi bi-x-circle-fill display-1 text-danger"></i><h2 class="mt-3">Incorrecto</h2>`}
+            ${ok && newStreak >= 2 ? `<p class="h4">🔥 ${newStreak}</p>` : ''}
+            <p class="text-muted small">${raceCorrectCount}/${total} · ${raceQueue.length} restantes</p>
           </div>
         `);
-        setTimeout(() => paintRace(), ok ? 900 : 1200);
+
+        // Send to server in background — queue handles offline retry automatically.
+        queuedSubmit(session.id, player.playerId, idx, value, ms).catch(() => {});
+
+        setTimeout(() => paintRace(), ok ? 600 : 900);
       }
     });
   }
