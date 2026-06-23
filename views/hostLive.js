@@ -78,6 +78,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
   const live = activity.live || {};
   const timerSec = Math.max(5, live.questionTimer || 20);
   const advanceMode = live.advanceMode || 'manual';
+  let autoAdvance = advanceMode !== 'manual';
   let session = await fetchSession(sessionId);
   let players = await listPlayers(sessionId);
   let answers = [];
@@ -180,13 +181,23 @@ async function renderHost(rootSel, code, sessionId, activity) {
             </div>`;
           }).join('')}
         </div>
-        <button class="btn btn-success btn-lg mt-4 px-5" id="btn-start" ${players.length===0?'disabled':''}>
+        <div class="d-flex justify-content-center mt-4 mb-2">
+          <label class="d-flex align-items-center gap-2 text-light" style="cursor:pointer">
+            <div class="form-check form-switch m-0">
+              <input class="form-check-input" type="checkbox" id="toggle-auto" ${autoAdvance ? 'checked' : ''}>
+            </div>
+            Avance automático
+          </label>
+        </div>
+        <button class="btn btn-success btn-lg px-5" id="btn-start" ${players.length===0?'disabled':''}>
           <i class="bi bi-play-fill"></i> Empezar
         </button>
         <button class="btn btn-link text-muted ms-2" id="btn-cancel">Cancelar sala</button>
       </div>
     `);
     attachFullscreenButton(rootSel);
+    const toggleEl = document.getElementById('toggle-auto');
+    if (toggleEl) toggleEl.onchange = (e) => { autoAdvance = e.target.checked; };
     on(rootSel, 'click', '#btn-start', async () => {
       const deadline = new Date(Date.now() + timerSec * 1000).toISOString();
       await setSessionState(sessionId, { status: 'running', phase: 'question', current_item: 0, started_at: new Date().toISOString(), deadline });
@@ -305,17 +316,46 @@ async function renderHost(rootSel, code, sessionId, activity) {
     const item = items[idx];
     if (phaseChanged) emitGame(GameEvents.REVEAL, { idx, item });
     answers = await listAnswers(sessionId, idx);
+
+    // Build name map: answer value → [playerName, …] for each option.
+    const playerById = Object.fromEntries(players.map(p => [p.id, p.name]));
+    const playerMap = {};
+    answers.forEach(a => {
+      const pid = a.playerId || a.player_id;
+      const name = playerById[pid];
+      if (name) {
+        const val = String(a.value);
+        (playerMap[val] = playerMap[val] || []).push(name);
+      }
+    });
+
+    const isLast = idx + 1 >= items.length;
     mount(rootSel, html`
       <div id="host-round" class="mb-4"></div>
       <div class="text-center">
-        <button class="btn btn-primary btn-lg" id="btn-lb"><i class="bi bi-bar-chart-fill"></i> Ver clasificación</button>
+        <button class="btn btn-primary btn-lg" id="btn-lb">
+          <i class="bi bi-bar-chart-fill"></i>
+          <span id="btn-lb-txt">${isLast ? 'Ver clasificación final' : 'Ver clasificación'}</span>
+        </button>
       </div>
     `);
-    tpl.renderRoundHost(document.getElementById('host-round'), { phase: 'reveal', item, answers });
+    tpl.renderRoundHost(document.getElementById('host-round'), { phase: 'reveal', item, answers, playerMap });
     on(rootSel, 'click', '#btn-lb', () => setSessionState(sessionId, { phase: 'leaderboard' }));
+
+    // Auto-advance countdown: tick down in the button text, then trigger leaderboard.
+    if (autoAdvance && phaseChanged) {
+      let secs = 4;
+      const tick = ctx.setInterval(() => {
+        if (session.phase !== 'reveal') { clearInterval(tick); return; }
+        secs--;
+        const t = document.getElementById('btn-lb-txt');
+        if (t) t.textContent = isLast ? `Clasificación final (${secs}s)` : `Clasificación (${secs}s)`;
+        if (secs <= 0) { clearInterval(tick); setSessionState(sessionId, { phase: 'leaderboard' }); }
+      }, 1000);
+    }
   }
 
-  async function paintLeaderboard(/* phaseChanged */) {
+  async function paintLeaderboard(phaseChanged = true) {
     const lb = await leaderboard(sessionId, 10);
     const idx = session.current_item;
     const isLast = idx + 1 >= items.length;
@@ -332,7 +372,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
       <div class="text-center mt-4">
         ${isLast
           ? `<button class="btn btn-warning btn-lg" id="btn-end"><i class="bi bi-trophy-fill"></i> Terminar y mostrar podio</button>`
-          : `<button class="btn btn-primary btn-lg" id="btn-next"><i class="bi bi-arrow-right"></i> Siguiente pregunta</button>`}
+          : `<button class="btn btn-primary btn-lg" id="btn-next"><i class="bi bi-arrow-right"></i> <span id="btn-next-txt">Siguiente pregunta</span></button>`}
       </div>
     `);
     on(rootSel, 'click', '#btn-next', () => {
@@ -340,6 +380,22 @@ async function renderHost(rootSel, code, sessionId, activity) {
       setSessionState(sessionId, { phase: 'question', current_item: idx + 1, deadline });
     });
     on(rootSel, 'click', '#btn-end', () => endSession(sessionId));
+
+    // Auto-advance to next question after 5s (only between questions, not on the last).
+    if (autoAdvance && !isLast && phaseChanged) {
+      let secs = 5;
+      const tick = ctx.setInterval(() => {
+        if (session.phase !== 'leaderboard') { clearInterval(tick); return; }
+        secs--;
+        const t = document.getElementById('btn-next-txt');
+        if (t) t.textContent = `Siguiente pregunta (${secs}s)`;
+        if (secs <= 0) {
+          clearInterval(tick);
+          const deadline = new Date(Date.now() + timerSec * 1000).toISOString();
+          setSessionState(sessionId, { phase: 'question', current_item: idx + 1, deadline });
+        }
+      }, 1000);
+    }
   }
 
   async function paintPodium(phaseChanged = true) {

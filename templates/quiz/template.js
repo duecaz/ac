@@ -58,7 +58,8 @@ export class QuizTemplate extends BaseTemplate {
 
   // Projector view for LIVE: the Kahoot-style colour grid (question phase) and
   // the per-option answer distribution + correct option (reveal phase).
-  static renderRoundHost(root, { phase, item, answers = [] } = {}) {
+  // playerMap: optional { [optionValue]: ['Ana', 'Beto', …] } built by the host.
+  static renderRoundHost(root, { phase, item, answers = [], playerMap = {} } = {}) {
     const opts = item?.options || [];
     if (phase === 'reveal') {
       const counts = opts.map(o => answers.filter(a => String(a.value) === String(o)).length);
@@ -70,9 +71,11 @@ export class QuizTemplate extends BaseTemplate {
           ${opts.map((o, i) => {
             const isOk = String(o) === String(item?.answer);
             const w = Math.round(100 * counts[i] / max);
+            const names = playerMap[String(o)] || [];
             return `<div class="mb-2">
               <div class="d-flex justify-content-between"><span>${'ABCD'[i] || ''}. ${escapeHtml(o)} ${isOk ? '<i class="bi bi-check-circle-fill text-success"></i>' : ''}</span><b>${counts[i]}</b></div>
               <div class="progress" style="height:24px"><div class="progress-bar ${isOk ? 'bg-success' : 'bg-secondary'}" style="width:${w}%"></div></div>
+              ${names.length ? `<div class="text-muted small mt-1 ps-1">${names.map(n => `<span class="badge bg-light text-dark border me-1">${escapeHtml(n)}</span>`).join('')}</div>` : ''}
             </div>`;
           }).join('')}
         </div>`;
