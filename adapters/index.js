@@ -7,7 +7,15 @@
 //   3. localhost / 127.0.0.1 / file → 'local'   (offline-first development)
 //   4. otherwise → 'pocketbase'                  (Pi5 self-hosted en pb.lanube.uno)
 
+import { VERSION } from '../core/constants.js';
+
 const VALID = ['local', 'supabase', 'pocketbase'];
+
+// Cache-buster por versión para los imports dinámicos de los drivers. Los
+// módulos ES se cachean por archivo; sin esto, tras un deploy el navegador puede
+// servir un driver viejo (p.ej. remoteStore.js) aunque constants.js ya esté
+// fresco. Añadir ?v=VERSION fuerza descarga fresca de cada driver al subir versión.
+const v = `?v=${VERSION}`;
 
 export function backendName() {
   try {
@@ -49,9 +57,9 @@ export function getRemoteStore() {
   if (_store) return _store;
   const name = backendName();
   _store = (async () => {
-    if (name === 'local')      return (await import('./local/remoteStore.js')).createLocalRemoteStore();
-    if (name === 'pocketbase') return (await import('./pocketbase/remoteStore.js')).createPocketbaseRemoteStore();
-    return (await import('./supabase/remoteStore.js')).createSupabaseRemoteStore();
+    if (name === 'local')      return (await import('./local/remoteStore.js' + v)).createLocalRemoteStore();
+    if (name === 'pocketbase') return (await import('./pocketbase/remoteStore.js' + v)).createPocketbaseRemoteStore();
+    return (await import('./supabase/remoteStore.js' + v)).createSupabaseRemoteStore();
   })();
   return _store;
 }
@@ -61,16 +69,16 @@ export function getRealtime() {
   if (_realtime) return _realtime;
   const name = backendName();
   _realtime = (async () => {
-    if (name === 'local') return (await import('./local/realtime.js')).createLocalRealtime();
+    if (name === 'local') return (await import('./local/realtime.js' + v)).createLocalRealtime();
     if (name === 'pocketbase') {
       // Live SIEMPRE usa el backend público (PocketBase). Nunca cae a local: cada
       // alumno está en su propio móvil y en otra red, así que un modo "local"
       // (mismo navegador) no serviría. Si falta la colección live_sessions,
       // createRoom dará un error claro y el profesor la crea desde
       // Admin → "Crear colecciones".
-      return (await import('./pocketbase/realtime.js')).createPocketbaseRealtime();
+      return (await import('./pocketbase/realtime.js' + v)).createPocketbaseRealtime();
     }
-    return (await import('./supabase/realtime.js')).createSupabaseRealtime();
+    return (await import('./supabase/realtime.js' + v)).createSupabaseRealtime();
   })();
   return _realtime;
 }
@@ -84,19 +92,19 @@ export function getAssignments() {
   _assignments = (async () => {
     if (name === 'local') {
       let userId;
-      try { userId = (await import('../core/state.js')).getAnonId(); } catch { userId = 'local-anon'; }
-      return (await import('./local/assignments.js')).createLocalAssignments({ userId });
+      try { userId = (await import('../core/state.js' + v)).getAnonId(); } catch { userId = 'local-anon'; }
+      return (await import('./local/assignments.js' + v)).createLocalAssignments({ userId });
     }
     if (name === 'pocketbase') {
       let userId;
-      try { userId = (await import('../core/state.js')).getAnonId(); } catch { userId = 'local-anon'; }
+      try { userId = (await import('../core/state.js' + v)).getAnonId(); } catch { userId = 'local-anon'; }
       if (await pbCollectionExists('assignments')) {
-        return (await import('./pocketbase/assignments.js')).createPocketbaseAssignments({ userId });
+        return (await import('./pocketbase/assignments.js' + v)).createPocketbaseAssignments({ userId });
       }
       console.warn('[assignments] Colección assignments no existe en PocketBase → modo local');
-      return (await import('./local/assignments.js')).createLocalAssignments({ userId });
+      return (await import('./local/assignments.js' + v)).createLocalAssignments({ userId });
     }
-    return (await import('./supabase/assignments.js')).createSupabaseAssignments();
+    return (await import('./supabase/assignments.js' + v)).createSupabaseAssignments();
   })();
   return _assignments;
 }
