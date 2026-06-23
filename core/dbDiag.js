@@ -9,13 +9,7 @@ import { VERSION } from './constants.js';
 
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
-// Extrae el detalle campo-a-campo de un error de PocketBase. El RemoteStore
-// adjunta el cuerpo del error como `e.pb` ({ message, data: { campo: {message} } }).
-// Sin esto solo se ve "Failed to create record" sin saber QUÉ campo falló.
 function pbDetail(e) {
-  // Muestra el cuerpo completo de la respuesta de PocketBase para diagnóstico.
-  // Si hay errores campo-a-campo en `data`, los lista. Si no, muestra el JSON
-  // bruto (truncado) para que podamos ver exactamente qué rechaza el servidor.
   const pb = e?.pb;
   if (!pb) return '';
   const data = pb.data;
@@ -24,15 +18,26 @@ function pbDetail(e) {
       `${k}: ${v?.message || v?.code || JSON.stringify(v)}`);
     return ' → ' + parts.join(' · ');
   }
-  // Sin detalle de campo: muestra el cuerpo bruto (hasta 400 chars)
   return ' · PB: ' + JSON.stringify(pb).slice(0, 400);
 }
 
-// Ejecuta `fn` midiendo cuánto tarda (ms). Devuelve { ms, value }.
 async function timed(fn) {
   const t0 = now();
   const value = await fn();
   return { ms: Math.round(now() - t0), value };
+}
+
+function fmtBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1024 / 1024).toFixed(2) + ' MB';
+}
+
+function rttLabel(ms) {
+  if (ms < 40)  return 'Excelente (<40 ms)';
+  if (ms < 100) return 'Buena (<100 ms)';
+  if (ms < 250) return 'Aceptable (<250 ms) — carga inicial puede verse lenta';
+  return `Lenta (${ms} ms) — cada petición HTTP suma esta demora × veces`;
 }
 
 /**
@@ -49,8 +54,43 @@ export async function diagnoseDb(onStep) {
   step({ name: 'Versión de la app', pass: true, info: `v${VERSION}` });
   step({ name: 'Backend activo', pass: true, info: name + (name === 'pocketbase' ? ` · ${PB_URL}` : '') });
 
-  // 1. Salud del servidor (solo PocketBase tiene /api/health).
+  // ── 0. RTT: latencia pura de red (solo tiempo hasta la primera respuesta HTTP) ─
   if (name === 'pocketbase') {
+    // Primer ping: incluye setup de conexión TCP/TLS. Puede ser más lento.
+    let rtt1 = null;
+    try {
+      const { ms } = await timed(async () => {
+        const r = await fetch(`${PB_URL}/api/health`);
+        // Consumir cabeceras basta; body se descarta.
+        await r.text();
+      });
+      rtt1 = ms;
+    } catch {}
+
+    // Segundo ping: conexión ya caliente (sin TCP handshake). Mide RTT real.
+    let rtt2 = null;
+    try {
+      const { ms } = await timed(async () => {
+        const r = await fetch(`${PB_URL}/api/health`);
+        await r.text();
+      });
+      rtt2 = ms;
+    } catch {}
+
+    if (rtt2 !== null) {
+      step({
+        name: 'Latencia de red (RTT · 2.ª petición)',
+        pass: rtt2 < 500,
+        ms: rtt2,
+        info: rttLabel(rtt2) + (rtt1 !== null ? ` · 1.ª petición: ${rtt1} ms (incluye setup TCP/TLS)` : ''),
+      });
+    } else if (rtt1 !== null) {
+      step({ name: 'Latencia de red (RTT)', pass: rtt1 < 500, ms: rtt1, info: rttLabel(rtt1) });
+    } else {
+      step({ name: 'Latencia de red (RTT)', pass: false, info: 'No se pudo alcanzar el servidor' });
+    }
+
+    // ── 1. Salud del servidor ─────────────────────────────────────────────────
     try {
       const { ms, value } = await timed(async () => {
         const r = await fetch(`${PB_URL}/api/health`);
@@ -64,7 +104,7 @@ export async function diagnoseDb(onStep) {
     }
   }
 
-  // 2. Cargar el adaptador del backend activo.
+  // ── Cargar adaptador ──────────────────────────────────────────────────────
   let store;
   try {
     store = await getRemoteStore();
@@ -73,15 +113,35 @@ export async function diagnoseDb(onStep) {
     return out;
   }
 
-  // 3. Lectura: listar actividades (mide latencia + cuántas hay).
+  // ── 2. Lectura con tamaño de payload (simula carga de la página de inicio) ─
+  let listCount = 0;
   try {
-    const { ms, value } = await timed(() => store.listActivities());
-    step({ name: 'Lectura (listActivities)', pass: true, ms, info: `${value.length} registros` });
+    let payloadBytes = 0;
+    const { ms, value } = await timed(async () => {
+      // Medir tamaño del payload directamente cuando sea PocketBase.
+      if (name === 'pocketbase') {
+        const r = await fetch(`${PB_URL}/api/collections/activities/records?perPage=500&fields=id,title,template,content,tags,visibility,language,updatedAt`);
+        const txt = await r.text();
+        payloadBytes = txt.length;
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const data = JSON.parse(txt);
+        return data.items || [];
+      }
+      return store.listActivities();
+    });
+    listCount = value.length;
+    const throughput = payloadBytes > 0
+      ? ` · ${fmtBytes(payloadBytes)} · ~${fmtBytes(Math.round(payloadBytes / (ms / 1000)))}/s`
+      : '';
+    const serverMs = name === 'pocketbase' && out.find(s => s.name.includes('RTT'))
+      ? ` (red ~${out.find(s => s.name.includes('RTT')).ms} ms · procesamiento ~${Math.max(0, ms - out.find(s => s.name.includes('RTT')).ms)} ms)`
+      : '';
+    step({ name: 'Lectura (listActivities)', pass: true, ms, info: `${listCount} registros${throughput}${serverMs}` });
   } catch (e) {
     step({ name: 'Lectura (listActivities)', pass: false, info: e.message });
   }
 
-  // 4. Ciclo CRUD con un registro temporal (__diag__) que se borra al final.
+  // ── 3. Ciclo CRUD completo ────────────────────────────────────────────────
   const tempId = 'diagtest' + Date.now().toString(36);
   const temp = {
     id: tempId, template: 'quiz', title: '__diag__',
@@ -93,7 +153,8 @@ export async function diagnoseDb(onStep) {
   try {
     const { ms } = await timed(() => store.saveActivity(temp));
     wrote = true;
-    step({ name: 'Escritura (saveActivity)', pass: true, ms, info: 'registro temporal creado' });
+    const hint = ms > 500 ? ' ⚠ escritura lenta — revisar modo WAL en PocketBase' : '';
+    step({ name: 'Escritura (saveActivity)', pass: true, ms, info: `registro temporal creado${hint}` });
   } catch (e) {
     step({ name: 'Escritura (saveActivity)', pass: false, info: e.message + pbDetail(e) });
   }
@@ -114,12 +175,28 @@ export async function diagnoseDb(onStep) {
     }
   }
 
-  // 5. Lectura de la colección de resultados (no destructivo).
+  // ── 4. Resultados ─────────────────────────────────────────────────────────
   try {
     const { ms, value } = await timed(() => store.listResults());
     step({ name: 'Lectura de resultados (listResults)', pass: true, ms, info: `${value.length} resultados` });
   } catch (e) {
     step({ name: 'Lectura de resultados (listResults)', pass: false, info: e.message + pbDetail(e) });
+  }
+
+  // ── 5. Resumen de latencia acumulada (simula carga real de la app) ─────────
+  const rttStep = out.find(s => s.name.includes('RTT') && s.ms != null);
+  const listStep = out.find(s => s.name.includes('listActivities') && s.ms != null);
+  if (rttStep && listStep) {
+    const rtt = rttStep.ms;
+    // La página de inicio hace ~2 peticiones secuenciales (app boot + listActivities).
+    // Total percibido ≈ latencias acumuladas.
+    const estimated = rtt + listStep.ms;
+    const feel = estimated < 400 ? 'rápida' : estimated < 800 ? 'notable' : 'lenta';
+    step({
+      name: 'Estimación carga página de inicio',
+      pass: estimated < 1000,
+      info: `≈ ${estimated} ms total percibido (red ${rtt} ms + datos ${listStep.ms} ms) · sensación: ${feel}`,
+    });
   }
 
   return out;
