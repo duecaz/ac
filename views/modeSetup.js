@@ -24,6 +24,7 @@
 //   onStart    () => void. Called when the user taps Start.
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
+import { toggleFullscreen } from '../core/fullscreen.js';
 
 export function renderModeSetup(host, opts) {
   const {
@@ -37,10 +38,17 @@ export function renderModeSetup(host, opts) {
       <h3 class="mt-2 mb-1"><i class="bi ${icon} text-${color}"></i> ${escapeHtml(title)}</h3>
       ${subtitle ? `<p class="text-muted">${escapeHtml(subtitle)}</p>` : ''}
       <div class="ww-mode-setup-body">${body}</div>
-      <button class="btn btn-${color} btn-lg px-5 mt-4 ww-mode-start"><i class="bi bi-play-fill"></i> ${escapeHtml(startLabel)}</button>
+      <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
+        <button class="btn btn-outline-${color} btn-lg px-4 ww-mode-start"><i class="bi bi-play-fill"></i> ${escapeHtml(startLabel)}</button>
+        <button class="btn btn-${color} btn-lg px-4 ww-mode-start-fs"><i class="bi bi-arrows-fullscreen"></i> ${escapeHtml(startLabel)}</button>
+      </div>
       ${note ? `<p class="text-muted small mt-3">${escapeHtml(note)}</p>` : ''}
     </div>`);
 
   if (typeof onMount === 'function') onMount(host);
   on(host, 'click', '.ww-mode-start', () => { if (typeof onStart === 'function') onStart(); });
+  on(host, 'click', '.ww-mode-start-fs', () => {
+    if (typeof onStart === 'function') onStart();
+    toggleFullscreen();
+  });
 }
