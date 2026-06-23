@@ -1,7 +1,7 @@
 // Student-side live view. Routes: #/join, #/play/:code.
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
-import { joinSession, getOwnAnswer, subscribeRoom, pingPresence, findRoomByCode, fetchSession, leaderboard } from '../core/liveTransport.js';
+import { joinSession, getOwnAnswer, subscribeRoom, pingPresence, findRoomByCode, fetchSession, leaderboard, settleItem } from '../core/liveTransport.js';
 import { findAssignmentByCode } from '../core/assignmentsTransport.js';
 import { isAcceptableNickname } from '../core/nicknameFilter.js';
 import { acquire } from '../core/lifecycle.js';
@@ -73,6 +73,8 @@ export async function renderPlay(rootSel, code) {
   let myScore = 0;      // accumulated locally; used for end-of-game display
   let endedFired = false;
   let endingInProgress = false;
+  let raceQueue = null;       // null = not started yet; [] = finished
+  let raceCorrectCount = 0;
   // Tracks items we've already bumped streak for. Without this, host_seen_at
   // pings re-trigger paintRevealOwn and would replay every ~10 s.
   const revealedItems = new Set();
@@ -119,6 +121,7 @@ export async function renderPlay(rootSel, code) {
     lastPhaseKey = key;
     if (session.status === 'lobby') return paintLobby();
     if (session.status === 'ended') return paintEnded();
+    if (session.phase === 'race') return paintRace();
     if (session.phase === 'question') return paintQuestion();
     if (session.phase === 'reveal') return paintRevealOwn();
     if (session.phase === 'leaderboard') return paintWaiting('Mira la pizarra del profesor.');
@@ -217,6 +220,102 @@ export async function renderPlay(rootSel, code) {
         ${ok && streak >= 2 ? `<p class="h4">🔥 Racha de ${streak}</p>` : ''}
       </div>
     `);
+  }
+
+  async function paintRace() {
+    const allItems = sessionItems(activity);
+    const tpl = getTemplate(activity.template);
+
+    if (raceQueue === null) {
+      raceQueue = allItems.map((_, i) => i);
+      raceCorrectCount = 0;
+    }
+
+    if (raceQueue.length === 0) {
+      mount(rootSel, html`
+        <div class="text-center py-5">
+          <i class="bi bi-trophy-fill display-1 text-warning"></i>
+          <h2 class="mt-3">¡Terminaste!</h2>
+          <p class="lead">${raceCorrectCount} / ${allItems.length} correctas</p>
+          <p class="text-muted">Esperando que el profesor cierre la carrera…</p>
+          <div class="spinner-border text-warning mt-2"></div>
+        </div>
+      `);
+      return;
+    }
+
+    const idx = raceQueue[0];
+    const payload = tpl.getRoundPayload ? tpl.getRoundPayload(activity, { itemIndex: idx }) : allItems[idx];
+    const streak = Streaks.get(session.id, player.playerId);
+    lastQuestionShownAt = Date.now();
+    const total = allItems.length;
+
+    mount(rootSel, html`
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="badge bg-success fs-6"><i class="bi bi-check2-circle"></i> ${raceCorrectCount}/${total}</span>
+        ${streak >= 2 ? `<span class="badge bg-warning text-dark fs-5">🔥 ${streak}</span>` : '<span></span>'}
+        <span class="badge bg-info text-dark fs-6">${raceQueue.length} restantes</span>
+      </div>
+      <div class="progress mb-3" style="height:6px">
+        <div class="progress-bar bg-success" style="width:${total > 0 ? Math.round(100*raceCorrectCount/total) : 0}%"></div>
+      </div>
+      <div id="s-round"></div>
+    `);
+
+    let sent = false;
+    tpl.renderRound(document.getElementById('s-round'), payload, {
+      mode: 'live',
+      onSubmit: async (value) => {
+        if (sent) return;
+        sent = true;
+        const ms = Date.now() - lastQuestionShownAt;
+        mount(rootSel, html`<div class="text-center py-5"><div class="spinner-border text-warning mb-3"></div><p class="lead">Verificando…</p></div>`);
+
+        let ok = false;
+        let offline = false;
+        try {
+          const r = await queuedSubmit(session.id, player.playerId, idx, value, ms);
+          if (r.queued) {
+            offline = true;
+          } else {
+            await settleItem(session.id, idx);
+            const own = await getOwnAnswer(session.id, player.playerId, idx);
+            ok = own?.correct === true;
+            if (own) myScore += own.points || 0;
+          }
+        } catch { offline = true; }
+
+        if (offline) {
+          mount(rootSel, html`
+            <div class="text-center py-5">
+              <i class="bi bi-wifi-off display-1 text-warning"></i>
+              <h2 class="mt-3">Sin conexión</h2>
+              <p class="text-muted">Tu respuesta se guardó. Toca para reintentar.</p>
+              <button class="btn btn-warning mt-2" id="r-retry"><i class="bi bi-arrow-repeat"></i> Reintentar</button>
+            </div>
+          `);
+          document.getElementById('r-retry')?.addEventListener('click', () => paintRace());
+          return;
+        }
+
+        raceQueue.shift();
+        if (!ok) raceQueue.push(idx);
+        else raceCorrectCount++;
+        Streaks.bump(session.id, player.playerId, ok);
+        const newStreak = Streaks.get(session.id, player.playerId);
+
+        mount(rootSel, html`
+          <div class="text-center py-5">
+            ${ok
+              ? `<i class="bi bi-check-circle-fill display-1 text-success"></i><h2 class="mt-3">¡Correcto!</h2>`
+              : `<i class="bi bi-x-circle-fill display-1 text-danger"></i><h2 class="mt-3">Incorrecto</h2><p class="text-muted small">Va al final de la cola</p>`}
+            ${ok && newStreak >= 2 ? `<p class="h4">🔥 Racha de ${newStreak}</p>` : ''}
+            <p class="text-muted">${raceCorrectCount}/${total} correctas · ${raceQueue.length} restantes</p>
+          </div>
+        `);
+        setTimeout(() => paintRace(), ok ? 900 : 1200);
+      }
+    });
   }
 
   function paintWaiting(msg) {

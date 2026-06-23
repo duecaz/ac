@@ -78,7 +78,8 @@ async function renderHost(rootSel, code, sessionId, activity) {
   const live = activity.live || {};
   const timerSec = Math.max(5, live.questionTimer || 20);
   const advanceMode = live.advanceMode || 'manual';
-  let autoAdvance = advanceMode !== 'manual';
+  let liveMode = (advanceMode === 'manual') ? 'manual' : 'auto';
+  let autoAdvance = liveMode === 'auto';
   let session = await fetchSession(sessionId);
   let players = await listPlayers(sessionId);
   let answers = [];
@@ -114,11 +115,14 @@ async function renderHost(rootSel, code, sessionId, activity) {
       paint();
     }
     else if (ev.table === 'answers') {
-      if (!hasPayload) answers = await listAnswers(sessionId, session.current_item);
-      else if (ev.eventType === 'INSERT') answers = [...answers, ev.new];
-      else if (ev.eventType === 'UPDATE') answers = answers.map(a => a.id === ev.new.id ? ev.new : a);
-      // While in question phase, don't repaint (the ticker updates count).
-      if (session.phase !== 'question') paint();
+      if (session.phase === 'race') {
+        paintRace(false); // race view loads its own answer data
+      } else {
+        if (!hasPayload) answers = await listAnswers(sessionId, session.current_item);
+        else if (ev.eventType === 'INSERT') answers = [...answers, ev.new];
+        else if (ev.eventType === 'UPDATE') answers = answers.map(a => a.id === ev.new.id ? ev.new : a);
+        if (session.phase !== 'question') paint();
+      }
     }
   }
   ctx.add(await subscribeRoom(sessionId, onChange));
@@ -137,6 +141,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     lastPhaseKey = key;
     if (session.status === 'lobby') return paintLobby(phaseChanged);
     if (session.status === 'ended') return paintPodium(phaseChanged);
+    if (session.phase === 'race') return paintRace(phaseChanged);
     if (session.phase === 'question') return paintQuestion(phaseChanged);
     if (session.phase === 'reveal') return paintReveal(phaseChanged);
     if (session.phase === 'leaderboard') return paintLeaderboard(phaseChanged);
@@ -181,13 +186,13 @@ async function renderHost(rootSel, code, sessionId, activity) {
             </div>`;
           }).join('')}
         </div>
-        <div class="d-flex justify-content-center mt-4 mb-2">
-          <label class="d-flex align-items-center gap-2 text-light" style="cursor:pointer">
-            <div class="form-check form-switch m-0">
-              <input class="form-check-input" type="checkbox" id="toggle-auto" ${autoAdvance ? 'checked' : ''}>
-            </div>
-            Avance automático
-          </label>
+        <div class="d-flex justify-content-center mt-4 mb-2 gap-3 align-items-center">
+          <label class="text-light" for="mode-select">Modo:</label>
+          <select id="mode-select" class="form-select form-select-sm" style="max-width:230px">
+            <option value="manual" ${liveMode==='manual'?'selected':''}>Manual (tú avanzas)</option>
+            <option value="auto" ${liveMode==='auto'?'selected':''}>Automático</option>
+            <option value="race" ${liveMode==='race'?'selected':''}>🏁 Carrera libre</option>
+          </select>
         </div>
         <button class="btn btn-success btn-lg px-5" id="btn-start" ${players.length===0?'disabled':''}>
           <i class="bi bi-play-fill"></i> Empezar
@@ -196,11 +201,15 @@ async function renderHost(rootSel, code, sessionId, activity) {
       </div>
     `);
     attachFullscreenButton(rootSel);
-    const toggleEl = document.getElementById('toggle-auto');
-    if (toggleEl) toggleEl.onchange = (e) => { autoAdvance = e.target.checked; };
+    const modeEl = document.getElementById('mode-select');
+    if (modeEl) modeEl.onchange = (e) => { liveMode = e.target.value; autoAdvance = (liveMode === 'auto'); };
     on(rootSel, 'click', '#btn-start', async () => {
-      const deadline = new Date(Date.now() + timerSec * 1000).toISOString();
-      await setSessionState(sessionId, { status: 'running', phase: 'question', current_item: 0, started_at: new Date().toISOString(), deadline });
+      if (liveMode === 'race') {
+        await setSessionState(sessionId, { status: 'running', phase: 'race', current_item: 0, started_at: new Date().toISOString(), deadline: null });
+      } else {
+        const deadline = new Date(Date.now() + timerSec * 1000).toISOString();
+        await setSessionState(sessionId, { status: 'running', phase: 'question', current_item: 0, started_at: new Date().toISOString(), deadline });
+      }
     });
     on(rootSel, 'click', '#btn-cancel', async () => {
       const ok = await confirmModal('¿Cancelar sala?', { okText: 'Cancelar sala', danger: true });
@@ -396,6 +405,83 @@ async function renderHost(rootSel, code, sessionId, activity) {
         }
       }, 1000);
     }
+  }
+
+  async function loadRaceAnswers() {
+    const all = await Promise.all(items.map((_, i) => listAnswers(sessionId, i)));
+    return all.flat();
+  }
+
+  async function paintRace(phaseChanged = true) {
+    if (phaseChanged) emitGame(GameEvents.LOBBY_END);
+    let allAnswers;
+    try { allAnswers = await loadRaceAnswers(); } catch { allAnswers = []; }
+
+    const prog = {};
+    for (const p of players) prog[p.id] = { name: p.name, correct: 0, answered: 0 };
+    for (const a of allAnswers) {
+      const pid = a.playerId || a.player_id;
+      if (prog[pid]) {
+        prog[pid].answered++;
+        if (a.correct === true) prog[pid].correct++;
+      }
+    }
+    const sorted = Object.values(prog).sort((a, b) => b.correct - a.correct || b.answered - a.answered);
+    const total = items.length;
+    const elapsed = session.started_at ? Math.floor((Date.now() - new Date(session.started_at).getTime()) / 1000) : 0;
+    const mins = Math.floor(elapsed / 60);
+    const secs = elapsed % 60;
+
+    mount(rootSel, html`
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="bi bi-flag-fill text-warning me-2"></i>Carrera libre</h4>
+        <span class="badge bg-secondary fs-6" id="race-timer">${mins}:${String(secs).padStart(2,'0')}</span>
+        ${fullscreenButtonHtml()}
+      </div>
+      <div class="mb-4" style="max-width:700px;margin:0 auto">
+        ${sorted.map((p, i) => {
+          const pct = total > 0 ? Math.round(100 * p.correct / total) : 0;
+          const done = p.correct >= total;
+          return `<div class="d-flex align-items-center gap-2 mb-2">
+            <span class="text-light fw-bold" style="min-width:22px">${i+1}</span>
+            <span class="text-light" style="min-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span>
+            <div class="progress flex-grow-1" style="height:22px">
+              <div class="progress-bar ${done?'bg-success':'bg-warning text-dark'} fw-bold d-flex align-items-center justify-content-center" style="width:${Math.max(pct,3)}%;transition:width .4s">${p.correct > 0 ? p.correct : ''}</div>
+            </div>
+            <span class="text-light" style="min-width:52px;text-align:right;font-size:.85em">${p.correct}/${total}</span>
+            ${done ? '<i class="bi bi-trophy-fill text-warning fs-5"></i>' : '<span style="width:20px"></span>'}
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="text-center">
+        <button class="btn btn-warning btn-lg" id="btn-end-race">
+          <i class="bi bi-flag-fill"></i> Terminar carrera y ver podio
+        </button>
+      </div>
+    `);
+    attachFullscreenButton(rootSel);
+
+    if (phaseChanged) {
+      const timerTick = ctx.setInterval(() => {
+        if (session.phase !== 'race') { clearInterval(timerTick); return; }
+        const el = document.getElementById('race-timer');
+        if (!el) { clearInterval(timerTick); return; }
+        const e = session.started_at ? Math.floor((Date.now() - new Date(session.started_at).getTime()) / 1000) : 0;
+        const m = Math.floor(e / 60), s = e % 60;
+        el.textContent = `${m}:${String(s).padStart(2,'0')}`;
+      }, 1000);
+    }
+
+    on(rootSel, 'click', '#btn-end-race', async () => {
+      const ok = await confirmModal('¿Terminar la carrera? Se calculará la clasificación final.', { okText: 'Terminar carrera' });
+      if (!ok) return;
+      const btn = document.getElementById('btn-end-race');
+      if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Finalizando…'; }
+      for (let i = 0; i < items.length; i++) {
+        try { await settleItem(sessionId, i); } catch {}
+      }
+      await endSession(sessionId);
+    });
   }
 
   async function paintPodium(phaseChanged = true) {
