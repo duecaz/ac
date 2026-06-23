@@ -444,14 +444,14 @@ async function renderHost(rootSel, code, sessionId, activity) {
           const n = p.items.size;
           const pct = total > 0 ? Math.round(100 * n / total) : 0;
           const done = n >= total;
-          return `<div class="d-flex align-items-center gap-2 mb-2">
-            <span class="text-light fw-bold" style="min-width:22px">${i+1}</span>
-            <span class="text-light" style="min-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span>
-            <div class="progress flex-grow-1" style="height:26px">
-              <div class="progress-bar ${done?'bg-success':'bg-warning text-dark'} fw-bold d-flex align-items-center justify-content-center" style="width:${Math.max(pct,4)}%;transition:width .5s">${n > 0 ? n : ''}</div>
+          return `<div class="mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="fw-bold text-light fs-5">${i+1}. ${escapeHtml(p.name)}${done ? ' 🏆' : ''}</span>
+              <span class="badge ${done?'bg-success':'bg-warning text-dark'} fs-6">${n}/${total}</span>
             </div>
-            <span class="text-light" style="min-width:52px;text-align:right;font-size:.85em">${n}/${total}</span>
-            ${done ? '<i class="bi bi-trophy-fill text-warning fs-5"></i>' : '<span style="width:20px"></span>'}
+            <div class="progress" style="height:20px">
+              <div class="progress-bar ${done?'bg-success':'bg-warning text-dark'} fw-bold" style="width:${Math.max(pct,2)}%;transition:width .5s"></div>
+            </div>
           </div>`;
         }).join('')}
       </div>

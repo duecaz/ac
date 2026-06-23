@@ -320,24 +320,27 @@ export async function renderPlay(rootSel, code) {
     if (endingInProgress) return;
     endingInProgress = true;
     Streaks.reset(session.id, player.playerId);
-    // Fetch the real score from the server (may differ if reveal was missed).
     let finalScore = myScore;
+    let rank = 0;
     try {
       const lb = await leaderboard(session.id);
-      const me = lb.find(p => p.id === player.playerId);
-      if (me != null) finalScore = me.score;
-    } catch { /* fall back to locally tracked score */ }
-    // Fire PODIUM celebration once (confetti + fanfare).
+      const meIdx = lb.findIndex(p => p.id === player.playerId);
+      if (meIdx >= 0) { finalScore = lb[meIdx].score; rank = meIdx + 1; }
+    } catch {}
     if (!endedFired) {
       endedFired = true;
       emitGame(GameEvents.PODIUM, { top: [{ name: player.name, score: finalScore }] });
     }
+    const rankIcon = rank === 1 ? '🏆' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '<i class="bi bi-trophy-fill display-1 text-warning"></i>';
+    const rankMsg  = rank === 1 ? '¡Ganaste!' : rank === 2 ? '¡Segundo lugar!' : rank === 3 ? '¡Tercer lugar!' : '¡Fin de la partida!';
     mount(rootSel, html`
       <div class="text-center py-5">
-        <i class="bi bi-trophy-fill display-1 text-warning"></i>
-        <h2 class="mt-3">¡Fin de la partida!</h2>
+        <div class="display-1">${rankIcon}</div>
+        <h2 class="mt-3">${rankMsg}</h2>
+        ${rank === 1 ? '<p class="lead text-warning fw-bold">¡Eres el primero!</p>' : ''}
         <p class="lead">Tu puntuación: <b class="fs-2">${finalScore}</b> puntos</p>
-        <p class="text-muted">Mira el ranking completo en la pantalla del profesor.</p>
+        ${rank > 1 ? `<p class="text-muted">Posición ${rank} en el ranking</p>` : ''}
+        <p class="text-muted small">Mira el ranking completo en la pantalla del profesor.</p>
         <a href="#/join" class="btn btn-warning btn-lg mt-2"><i class="bi bi-arrow-left"></i> Otra sala</a>
       </div>
     `);
