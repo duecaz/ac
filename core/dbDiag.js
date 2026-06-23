@@ -5,6 +5,7 @@
 // lectura/escritura/borrado funcionan de extremo a extremo.
 import { getRemoteStore, backendName } from '../adapters/index.js';
 import { PB_URL } from '../pocketbase.config.js';
+import { VERSION } from './constants.js';
 
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
@@ -45,6 +46,7 @@ export async function diagnoseDb(onStep) {
   const step = (r) => { out.push(r); onStep?.(r, out.length); return r; };
   const name = backendName();
 
+  step({ name: 'Versión de la app', pass: true, info: `v${VERSION}` });
   step({ name: 'Backend activo', pass: true, info: name + (name === 'pocketbase' ? ` · ${PB_URL}` : '') });
 
   // 1. Salud del servidor (solo PocketBase tiene /api/health).
