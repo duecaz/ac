@@ -249,6 +249,7 @@ export async function renderPlay(rootSel, code) {
     const streak = Streaks.get(session.id, player.playerId);
     lastQuestionShownAt = Date.now();
     const total = allItems.length;
+    emitGame(GameEvents.QUESTION_SHOWN, { idx, total, item: allItems[idx] });
 
     mount(rootSel, html`
       <div class="d-flex justify-content-between align-items-center mb-2">
@@ -271,36 +272,37 @@ export async function renderPlay(rootSel, code) {
         const ms = Date.now() - lastQuestionShownAt;
 
         // Score locally (activity_snap contains full answers on PocketBase).
-        // No network wait — result is instant.
         let ok = false;
         let pts = 0;
         try {
           const r = tpl.scoreSubmission({ value, item: allItems[idx], msTaken: ms, activity, mode: 'live' });
           ok = !!r.correct;
           pts = r.points || 0;
-        } catch { /* activity_snap may lack answers on some backends — keep ok=false */ }
+        } catch { /* keep ok=false if activity_snap lacks answers */ }
 
-        // Advance queue before feedback so next question is ready.
+        // Color the selected button in-place — no DOM replacement, same as solo player.
+        const roundEl = document.getElementById('s-round');
+        if (roundEl) {
+          const picked = [...roundEl.querySelectorAll('.rq-opt')].find(b => b.dataset.value === value)
+                        || roundEl.querySelector('.rq-picked');
+          if (picked) picked.classList.add(ok ? 'btn-success' : 'btn-danger');
+        }
+
+        // Advance queue and score.
         raceQueue.shift();
         if (!ok) raceQueue.push(idx);
         else { raceCorrectCount++; myScore += pts; }
-        Streaks.bump(session.id, player.playerId, ok);
-        const newStreak = Streaks.get(session.id, player.playerId);
+        const newStreak = Streaks.bump(session.id, player.playerId, ok);
 
-        mount(rootSel, html`
-          <div class="text-center py-5">
-            ${ok
-              ? `<i class="bi bi-check-circle-fill display-1 text-success"></i><h2 class="mt-3">¡Correcto!</h2>`
-              : `<i class="bi bi-x-circle-fill display-1 text-danger"></i><h2 class="mt-3">Incorrecto</h2>`}
-            ${ok && newStreak >= 2 ? `<p class="h4">🔥 ${newStreak}</p>` : ''}
-            <p class="text-muted small">${raceCorrectCount}/${total} · ${raceQueue.length} restantes</p>
-          </div>
-        `);
+        // Sound events (correct/wrong chime).
+        if (ok) emitGame(GameEvents.ANSWER_CORRECT, { idx, points: pts, streak: newStreak });
+        else    emitGame(GameEvents.ANSWER_WRONG, { idx });
 
-        // Send to server in background — queue handles offline retry automatically.
+        // Submit to server in background.
         queuedSubmit(session.id, player.playerId, idx, value, ms).catch(() => {});
 
-        setTimeout(() => paintRace(), ok ? 600 : 900);
+        // Brief pause to see the color flash, then load next question.
+        setTimeout(() => paintRace(), 350);
       }
     });
   }
