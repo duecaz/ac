@@ -12,13 +12,19 @@ const now = () => (typeof performance !== 'undefined' ? performance.now() : Date
 // adjunta el cuerpo del error como `e.pb` ({ message, data: { campo: {message} } }).
 // Sin esto solo se ve "Failed to create record" sin saber QUÉ campo falló.
 function pbDetail(e) {
-  const data = e?.pb?.data;
-  if (data && typeof data === 'object') {
-    const parts = Object.entries(data).map(([k, v]) => `${k}: ${v?.message || v?.code || JSON.stringify(v)}`);
-    if (parts.length) return ' → ' + parts.join(' · ');
+  // Muestra el cuerpo completo de la respuesta de PocketBase para diagnóstico.
+  // Si hay errores campo-a-campo en `data`, los lista. Si no, muestra el JSON
+  // bruto (truncado) para que podamos ver exactamente qué rechaza el servidor.
+  const pb = e?.pb;
+  if (!pb) return '';
+  const data = pb.data;
+  if (data && typeof data === 'object' && Object.keys(data).length > 0) {
+    const parts = Object.entries(data).map(([k, v]) =>
+      `${k}: ${v?.message || v?.code || JSON.stringify(v)}`);
+    return ' → ' + parts.join(' · ');
   }
-  if (e?.pb?.message && e.pb.message !== e.message) return ' → ' + e.pb.message;
-  return '';
+  // Sin detalle de campo: muestra el cuerpo bruto (hasta 400 chars)
+  return ' · PB: ' + JSON.stringify(pb).slice(0, 400);
 }
 
 // Ejecuta `fn` midiendo cuánto tarda (ms). Devuelve { ms, value }.
