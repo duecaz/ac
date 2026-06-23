@@ -14,7 +14,7 @@ export class MathTemplate extends BaseTemplate {
     contentModel: 'qa',
     templateVersion: 1,
     aspectRatio: '16/10',
-    modes: { solo: true, live: false, async: true, practice: true },
+    modes: { solo: true, live: true, async: true, practice: true },
     needsImageUpload: false,
     needsAudioUpload: false,
     defaultRules: () => ({ randomize: true }),
