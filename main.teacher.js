@@ -70,21 +70,6 @@ setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encon
 
 (async function boot() {
   applySkin(localStorage.getItem('ww.skin') || 'default');
-  try {
-    const user = await ensureAuth();
-    setStorageUser(user.id);
-    // sync() completes after the router has already painted the home page with
-    // stale/empty localStorage. Re-render home when remote data arrives so the
-    // user sees their activities without needing to refresh.
-    sync()
-      .then(() => {
-        const h = location.hash;
-        if (!h || h === '#/' || h === '#/home') renderHome(APP);
-      })
-      .catch(err => console.warn('[sync]', err.message));
-  } catch (err) {
-    console.warn('[boot] auth failed:', err.message);
-  }
   const v = document.getElementById('ww-version'); if (v) v.textContent = 'v' + VERSION;
   // Mute toggle in navbar.
   const muteSlot = document.getElementById('ww-mute-slot');
@@ -93,9 +78,24 @@ setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encon
     paint();
     muteSlot.addEventListener('click', (e) => { if (e.target.closest('#ww-mute-btn')) { setMuted(!isMuted()); paint(); } });
   }
-  await renderAuthBadge('#ww-auth-slot');
-  onAuthChange(() => renderAuthBadge('#ww-auth-slot'));
   initCustomAnims(); // register any animations added from the Admin panel
+  // Start the router immediately so the home page paints from localStorage
+  // without waiting for the network. Auth + sync happen in the background.
   start();
   window.__APP_READY__ = true;
+  try {
+    const user = await ensureAuth();
+    setStorageUser(user.id);
+    // Re-render home once remote data arrives so new/updated activities appear.
+    sync()
+      .then(() => {
+        const h = location.hash;
+        if (!h || h === '#/' || h === '#/home') renderHome(APP);
+      })
+      .catch(err => console.warn('[sync]', err.message));
+    await renderAuthBadge('#ww-auth-slot');
+    onAuthChange(() => renderAuthBadge('#ww-auth-slot'));
+  } catch (err) {
+    console.warn('[boot] auth failed:', err.message);
+  }
 })();
