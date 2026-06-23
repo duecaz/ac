@@ -74,7 +74,12 @@ export function mountVs(host, a, ctx, opts = {}) {
   const fxCfg = () => ({ ...FX_DEFAULTS, ...(a.presentation?.vsFeedback || {}) });
   let currentAnim = null; // the running central animation (destroyed on dispose)
 
-  renderSetup();
+  // List-orchestrator mode: skip setup screen and jump straight to the match.
+  if (opts.leftName && opts.rightName) {
+    startMatch(opts.leftName, opts.rightName);
+  } else {
+    renderSetup();
+  }
 
   // Names + start. Defaults let the teacher launch in one tap. The header,
   // subtitle and Start button come from the shared scaffold; this only supplies
@@ -352,6 +357,8 @@ export function mountVs(host, a, ctx, opts = {}) {
       if (finished) return; // idempotent: both sides' pending timers may call this
       finished = true;
       if (currentAnim) { currentAnim.destroy(); currentAnim = null; }
+      // List-orchestrator mode: delegate result handling to the caller.
+      if (opts.onFinish) { opts.onFinish(st); return; }
       // Carrera: gana quien terminó primero (finishedBy). Si por alguna razón no
       // hay finisher (estado heredado), cae al criterio de puntos.
       const winnerSide = st.finishedBy || (st.leader !== 'tie' ? st.leader : null);

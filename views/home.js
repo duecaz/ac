@@ -32,6 +32,7 @@ export function renderHome(rootSel) {
           <button class="btn btn-outline-secondary" id="h-import" title="Importar JSON"><i class="bi bi-upload"></i> Importar</button>
           <button class="btn btn-outline-secondary" id="h-export-all" title="Exportar todas a JSON" ${all.length===0?'disabled':''}><i class="bi bi-download"></i> Exportar</button>
           <a href="#/admin" class="btn btn-outline-secondary" title="Panel de administración (modos, detalles, tests)"><i class="bi bi-shield-lock"></i> Admin</a>
+          <a href="#/new-list" class="btn btn-outline-primary"><i class="bi bi-collection-play"></i> Nueva lista</a>
           <a href="#/new" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Nueva</a>
         </div>
       </div>
@@ -70,6 +71,7 @@ export function renderHome(rootSel) {
   }
 
   function card(a) {
+    if (a.template === 'list') return listCard(a);
     const T = getTemplate(a.template);
     const m = T?.meta?.modes || { solo: true, live: false, async: false };
     const color = T?.meta?.color || 'info';
@@ -110,6 +112,36 @@ export function renderHome(rootSel) {
       </div>`;
   }
 
+  function listCard(a) {
+    const rounds = (a.content?.items || []).length;
+    return `
+      <div class="col-sm-6 col-xl-4">
+        <div class="card h-100 border-0 rounded-4 shadow-sm overflow-hidden">
+          <div class="p-3 d-flex align-items-center gap-3" style="background:var(--bs-primary);color:#fff;min-height:72px">
+            <i class="bi bi-collection-play-fill fs-2 opacity-75"></i>
+            <div class="overflow-hidden">
+              <div class="fw-semibold text-truncate">${escapeHtml(a.title)}</div>
+              ${a.subtitle ? `<small class="opacity-75 text-truncate d-block">${escapeHtml(a.subtitle)}</small>` : ''}
+            </div>
+          </div>
+          <div class="btn-group btn-group-sm w-100 card-modes" role="group">
+            <button class="btn btn-primary act-list" data-id="${escapeHtml(a.id)}" title="Jugar lista">
+              <i class="bi bi-play-fill"></i> Jugar
+            </button>
+          </div>
+          <div class="card-body pt-2 pb-3 px-3">
+            <div class="d-flex align-items-center gap-2">
+              <span class="badge bg-primary"><i class="bi bi-collection-play"></i> Lista</span>
+              <button class="card-icon-btn text-primary act-edit-list" data-id="${escapeHtml(a.id)}" title="Editar lista"><i class="bi bi-pencil-fill"></i></button>
+              <button class="card-icon-btn text-danger act-del" data-id="${escapeHtml(a.id)}" title="Eliminar"><i class="bi bi-trash3"></i></button>
+              ${a._unsynced ? '<i class="bi bi-cloud-slash text-warning" title="No sincronizada"></i>' : ''}
+              <span class="ms-auto text-muted small"><i class="bi bi-collection"></i> ${rounds} rondas</span>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
   on(rootSel, 'click', '#h-export-all', () => downloadActivitiesJson());
   on(rootSel, 'click', '#h-import', () => {
     pickAndImport({ strategy: 'duplicate' }, (r) => {
@@ -124,6 +156,8 @@ export function renderHome(rootSel) {
   on(rootSel, 'click', '.act-teams', (_, b) => navigate(`#/${b.dataset.tpl === 'memory' ? 'memory' : 'teams'}/${b.dataset.id}`));
   on(rootSel, 'click', '.act-pin', (_, b) => navigate(`#/launch/${b.dataset.id}`));
   on(rootSel, 'click', '.act-task', (_, b) => navigate(`#/tasks/${b.dataset.id}`));
+  on(rootSel, 'click', '.act-list', (_, b) => navigate(`#/list/${b.dataset.id}`));
+  on(rootSel, 'click', '.act-edit-list', (_, b) => navigate(`#/edit-list/${b.dataset.id}`));
   on(rootSel, 'click', '.act-edit', (_, b) => navigate(`#/edit/${b.dataset.id}`));
   on(rootSel, 'click', '.act-del', async (_, b) => {
     const ok = await confirmModal('¿Eliminar esta actividad?', { okText: 'Eliminar', danger: true });
