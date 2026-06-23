@@ -1,5 +1,6 @@
 // Fullscreen helper. Wrap the toggle for cross-browser quirks.
-export function toggleFullscreen(el = document.documentElement) {
+export function toggleFullscreen(el) {
+  el = el || document.documentElement;
   if (document.fullscreenElement || document.webkitFullscreenElement) {
     (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
   } else {

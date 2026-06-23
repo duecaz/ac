@@ -49,6 +49,9 @@ export function renderModeSetup(host, opts) {
   on(host, 'click', '.ww-mode-start', () => { if (typeof onStart === 'function') onStart(); });
   on(host, 'click', '.ww-mode-start-fs', () => {
     if (typeof onStart === 'function') onStart();
-    toggleFullscreen();
+    // Fullscreen the game frame only — not the whole page (YouTube-style).
+    // host is #ww-player-widget; its parent #ww-frame is the aspect-ratio container.
+    const frame = host.closest('#ww-frame') || host;
+    toggleFullscreen(frame);
   });
 }
