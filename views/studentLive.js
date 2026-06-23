@@ -21,7 +21,7 @@ export function renderJoin(rootSel, prefilledCode = '') {
   mount(rootSel, html`
     <div class="text-center py-4" style="max-width:420px;margin:0 auto">
       <h2 class="mb-4">Unirme a la sala</h2>
-      <input id="f-code" class="form-control form-control-lg text-center mb-3 ww-pin-input" maxlength="6" placeholder="PIN" autocomplete="off" autocapitalize="characters" value="${escapeHtml(prefilledCode)}">
+      <input id="f-code" class="form-control form-control-lg text-center mb-3 ww-pin-input" maxlength="8" placeholder="Código" autocomplete="off" autocapitalize="characters" value="${escapeHtml(prefilledCode)}">
       <input id="f-nick" class="form-control form-control-lg text-center mb-3" placeholder="Tu apodo" value="${escapeHtml(lsGet(NICK_KEY) || '')}">
       <button id="btn-join" class="btn btn-warning btn-lg w-100">Entrar</button>
       <div id="err" class="text-danger mt-3"></div>
@@ -33,7 +33,7 @@ export function renderJoin(rootSel, prefilledCode = '') {
     const nick = document.getElementById('f-nick').value.trim();
     const err = document.getElementById('err');
     err.textContent = '';
-    if (code.length !== 6) { err.textContent = 'PIN inválido'; return; }
+    if (code.length < 3) { err.textContent = 'Código inválido'; return; }
     const f = isAcceptableNickname(nick);
     if (!f.ok) { err.textContent = 'Apodo: ' + f.reason; return; }
     document.getElementById('btn-join').disabled = true;
