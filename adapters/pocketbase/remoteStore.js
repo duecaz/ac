@@ -2,13 +2,15 @@
 // Usa la REST API directamente (sin SDK) para mantener zero-dependency.
 //
 // IDs: la app usa IDs como 'act_aBcDeFgHiJ' (con underscore) y UUIDs con
-// guiones. PocketBase v0.23+ exige ^[a-zA-Z0-9]+$ y mínimo 15 chars.
-// Se stripean los chars inválidos y se rellena con '0' hasta 15 si es más corto.
+// guiones. PocketBase v0.23+ exige ^[a-zA-Z0-9]+$ y EXACTAMENTE 15 chars (ni
+// más ni menos). Se stripean los chars inválidos, se recorta si sobra y se
+// rellena con '0' si falta. El id original siempre se guarda dentro de `data`,
+// así que recortar no impide reconstruirlo al leer (fromId prefiere data.id).
 import { PB_URL } from '../../pocketbase.config.js';
 
 function toId(id) {
   const s = (id || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-  return s.length >= 15 ? s : s.padEnd(15, '0');
+  return s.length > 15 ? s.slice(0, 15) : s.padEnd(15, '0');
 }
 
 function fromId(pbId, originalId) {
