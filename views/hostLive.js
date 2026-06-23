@@ -408,7 +408,9 @@ async function renderHost(rootSel, code, sessionId, activity) {
   }
 
   async function loadRaceAnswers() {
-    const all = await Promise.all(items.map((_, i) => listAnswers(sessionId, i)));
+    const all = await Promise.all(
+      items.map((_, i) => listAnswers(sessionId, i).then(ans => ans.map(a => ({ ...a, itemIndex: i }))))
+    );
     return all.flat();
   }
 
@@ -417,16 +419,15 @@ async function renderHost(rootSel, code, sessionId, activity) {
     let allAnswers;
     try { allAnswers = await loadRaceAnswers(); } catch { allAnswers = []; }
 
+    // During the race answers are unsettled (correct=null), so track unique
+    // item indices each player has submitted for — that IS their real progress.
     const prog = {};
-    for (const p of players) prog[p.id] = { name: p.name, correct: 0, answered: 0 };
+    for (const p of players) prog[p.id] = { name: p.name, items: new Set() };
     for (const a of allAnswers) {
       const pid = a.playerId || a.player_id;
-      if (prog[pid]) {
-        prog[pid].answered++;
-        if (a.correct === true) prog[pid].correct++;
-      }
+      if (prog[pid]) prog[pid].items.add(a.itemIndex);
     }
-    const sorted = Object.values(prog).sort((a, b) => b.correct - a.correct || b.answered - a.answered);
+    const sorted = Object.values(prog).sort((a, b) => b.items.size - a.items.size);
     const total = items.length;
     const elapsed = session.started_at ? Math.floor((Date.now() - new Date(session.started_at).getTime()) / 1000) : 0;
     const mins = Math.floor(elapsed / 60);
@@ -440,15 +441,16 @@ async function renderHost(rootSel, code, sessionId, activity) {
       </div>
       <div class="mb-4" style="max-width:700px;margin:0 auto">
         ${sorted.map((p, i) => {
-          const pct = total > 0 ? Math.round(100 * p.correct / total) : 0;
-          const done = p.correct >= total;
+          const n = p.items.size;
+          const pct = total > 0 ? Math.round(100 * n / total) : 0;
+          const done = n >= total;
           return `<div class="d-flex align-items-center gap-2 mb-2">
             <span class="text-light fw-bold" style="min-width:22px">${i+1}</span>
             <span class="text-light" style="min-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span>
-            <div class="progress flex-grow-1" style="height:22px">
-              <div class="progress-bar ${done?'bg-success':'bg-warning text-dark'} fw-bold d-flex align-items-center justify-content-center" style="width:${Math.max(pct,3)}%;transition:width .4s">${p.correct > 0 ? p.correct : ''}</div>
+            <div class="progress flex-grow-1" style="height:26px">
+              <div class="progress-bar ${done?'bg-success':'bg-warning text-dark'} fw-bold d-flex align-items-center justify-content-center" style="width:${Math.max(pct,4)}%;transition:width .5s">${n > 0 ? n : ''}</div>
             </div>
-            <span class="text-light" style="min-width:52px;text-align:right;font-size:.85em">${p.correct}/${total}</span>
+            <span class="text-light" style="min-width:52px;text-align:right;font-size:.85em">${n}/${total}</span>
             ${done ? '<i class="bi bi-trophy-fill text-warning fs-5"></i>' : '<span style="width:20px"></span>'}
           </div>`;
         }).join('')}
@@ -470,6 +472,11 @@ async function renderHost(rootSel, code, sessionId, activity) {
         const m = Math.floor(e / 60), s = e % 60;
         el.textContent = `${m}:${String(s).padStart(2,'0')}`;
       }, 1000);
+      // Polling fallback: refresh progress every 5 s even if SSE is missed.
+      const racePoll = ctx.setInterval(() => {
+        if (session.phase !== 'race') { clearInterval(racePoll); return; }
+        paintRace(false);
+      }, 5000);
     }
 
     on(rootSel, 'click', '#btn-end-race', async () => {
