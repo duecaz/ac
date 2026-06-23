@@ -84,6 +84,7 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
       if (patch.phase) s.phase = patch.phase;
       if ('current_item' in patch) s.currentItem = patch.current_item;
       if ('deadline' in patch) room.deadline = patch.deadline ?? null;
+      if ('started_at' in patch) room.startedAt = patch.started_at ?? null;
       save(code, room, engine); notify(code, 'sessions');
     },
 
@@ -137,7 +138,7 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
     async fetchSession(code) {
       const r = read(code);
       if (!r) throw new Error('Sala no encontrada');
-      return { id: code, code, status: r.state.status, phase: r.state.phase, current_item: r.state.currentItem, deadline: r.deadline ?? null, activity_snap: r.activity };
+      return { id: code, code, status: r.state.status, phase: r.state.phase, current_item: r.state.currentItem, deadline: r.deadline ?? null, started_at: r.startedAt ?? null, activity_snap: r.activity };
     },
 
     // Single-device local mode: no separate answer key — the host already holds

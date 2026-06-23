@@ -113,6 +113,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         phase: rec.state?.phase,
         current_item: rec.state?.currentItem,
         deadline: rec.state?.deadline ?? null,
+        started_at: rec.state?.startedAt ?? null,
         activity_snap: rec.activity,
       };
     },
@@ -160,6 +161,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       if (patch.phase !== undefined) engine.state.phase = patch.phase;
       if ('current_item' in patch) engine.state.currentItem = patch.current_item;
       if ('deadline' in patch) engine.state.deadline = patch.deadline ?? null;
+      if ('started_at' in patch) engine.state.startedAt = patch.started_at ?? null;
       await saveState(sessionId, engine);
     },
 

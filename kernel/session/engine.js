@@ -110,7 +110,8 @@ function createLiveSession(activity, T, opts) {
   }
 
   function submit(playerId, itemIndex, value, msTaken = 0) {
-    if (state.phase !== PHASES.QUESTION || itemIndex !== state.currentItem) {
+    const isRace = state.phase === 'race';
+    if (!isRace && (state.phase !== PHASES.QUESTION || itemIndex !== state.currentItem)) {
       throw new Error('No se aceptan respuestas en esta fase');
     }
     state.answers[answerKey(itemIndex, playerId)] = { playerId, value, msTaken, correct: null, points: 0 };
@@ -131,7 +132,7 @@ function createLiveSession(activity, T, opts) {
       }
       settled++;
     }
-    state.phase = PHASES.REVEAL;
+    if (state.phase !== 'race') state.phase = PHASES.REVEAL;
     return settled;
   }
 
