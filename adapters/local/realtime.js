@@ -88,6 +88,8 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
       if ('ql_open' in patch) s.qlOpen = patch.ql_open ?? null;
       if ('ql_question' in patch) s.qlQuestion = patch.ql_question ?? null;
       if ('ql_done' in patch) s.qlDone = patch.ql_done ?? [];
+      if ('ql_by' in patch) s.qlBy = patch.ql_by ?? null;
+      if ('ql_by_name' in patch) s.qlByName = patch.ql_by_name ?? null;
       if (patch.ql_award) {
         const { playerId, points } = patch.ql_award;
         const p = s.players.find(pl => pl.id === playerId);
@@ -156,6 +158,8 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
         ql_open: r.state.qlOpen ?? null,
         ql_question: r.state.qlQuestion ?? null,
         ql_done: r.state.qlDone ?? [],
+        ql_by: r.state.qlBy ?? null,
+        ql_by_name: r.state.qlByName ?? null,
       };
     },
 

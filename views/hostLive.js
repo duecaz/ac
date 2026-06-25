@@ -499,32 +499,26 @@ async function renderHost(rootSel, code, sessionId, activity) {
   const QL_COLORS = ['#e74c3c','#e67e22','#d4ac0d','#27ae60','#16a085','#2980b9','#8e44ad','#c0392b'];
 
   async function paintQuestionLive() {
-    const qlOpen    = session.ql_open ?? null;
+    const qlOpen     = session.ql_open ?? null;
     const qlQuestion = session.ql_question ?? null;
-    const qlDone    = session.ql_done || [];
-    const cols      = Math.min(Math.max(items.length, 1), 6);
+    const qlDone     = session.ql_done || [];
+    const qlBy       = session.ql_by ?? null;
+    const qlByName   = session.ql_by_name ?? null;
+    const cols       = Math.min(6, Math.max(3, Math.ceil(items.length / 2)));
 
-    const boxesHtml = items.map((item, idx) => {
+    const boxesHtml = items.map((_, idx) => {
       const isDone = qlDone.includes(idx);
       const isOpen = qlOpen === idx;
       const color  = QL_COLORS[idx % QL_COLORS.length];
-      let style, cls;
-      if (isDone) {
-        style = 'background:#6c757d;border-color:#6c757d;';
-        cls = 'ql-box';
-      } else if (isOpen) {
-        style = `background:#fff;border-color:${color};`;
-        cls = 'ql-box ql-open';
-      } else {
-        style = `background:${color};border-color:${color};`;
-        cls = 'ql-box';
-      }
+      let style, cls = 'ql-box';
+      if (isDone)      { style = `background:#6c757d;border-color:#6c757d;`; }
+      else if (isOpen) { style = `background:#fff;border-color:${color};`; cls += ' ql-open'; }
+      else             { style = `background:${color};border-color:${color};`; }
       return `<button class="${cls}" data-idx="${idx}" ${isDone ? 'disabled' : ''} style="${style}">
         ${isDone
           ? '<i class="bi bi-check-lg fs-4"></i>'
-          : isOpen
-            ? `<span class="ql-num text-dark">${idx + 1}</span>`
-            : `<span class="ql-num">${idx + 1}</span>`}
+          : isOpen ? `<span class="ql-num" style="color:#1f2937">${idx + 1}</span>`
+                   : `<span class="ql-num">${idx + 1}</span>`}
       </button>`;
     }).join('');
 
@@ -535,25 +529,19 @@ async function renderHost(rootSel, code, sessionId, activity) {
           <span class="badge bg-secondary fs-6">${qlDone.length} / ${items.length} respondidas</span>
           ${fullscreenButtonHtml()}
         </div>
-        <div class="ql-grid mb-4" style="--ql-cols:${cols}">${boxesHtml}</div>
+        <div class="ql-grid mb-4" style="grid-template-columns:repeat(${cols},1fr)">${boxesHtml}</div>
         ${qlOpen !== null ? `
           <div class="card bg-dark text-light p-4 mb-3 mx-auto" style="max-width:700px">
+            <p class="text-warning fw-bold mb-2 fs-5"><i class="bi bi-hand-index-fill"></i> ${escapeHtml(qlByName || '—')} eligió esta caja</p>
             <h3 class="text-center mb-4">${escapeHtml(qlQuestion || '')}</h3>
-            <h6 class="text-warning mb-3"><i class="bi bi-people-fill"></i> Dar puntos a:</h6>
-            <div>
-              ${players.map(p => `
-                <div class="d-flex align-items-center gap-2 mb-2">
-                  <span class="flex-grow-1 text-light fw-bold">${escapeHtml(p.name)}</span>
-                  <button class="btn btn-sm btn-outline-success ql-award" data-pid="${p.id}" data-pts="10">+10 pts</button>
-                  <button class="btn btn-sm btn-success ql-award" data-pid="${p.id}" data-pts="50">+50 pts</button>
-                </div>`).join('')}
-            </div>
-            <div class="text-center mt-3">
-              <button class="btn btn-outline-secondary" id="ql-close">
-                <i class="bi bi-x-circle"></i> Cerrar caja sin puntos
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+              <button class="btn btn-outline-success btn-lg ql-award" data-pts="10">+10 pts</button>
+              <button class="btn btn-success btn-lg ql-award" data-pts="50">+50 pts</button>
+              <button class="btn btn-outline-secondary btn-lg" id="ql-close">
+                <i class="bi bi-x-circle"></i> Sin puntos
               </button>
             </div>
-          </div>` : ''}
+          </div>` : `<p class="text-center text-muted">Los alumnos eligen una caja…</p>`}
         <div class="text-center mt-3">
           <button class="btn btn-danger btn-lg" id="ql-end">
             <i class="bi bi-stop-circle-fill"></i> Terminar y ver clasificación
@@ -563,26 +551,20 @@ async function renderHost(rootSel, code, sessionId, activity) {
     `);
     attachFullscreenButton(rootSel);
 
-    on(rootSel, 'click', '.ql-box:not([disabled])', async (_, btn) => {
-      const idx = +btn.dataset.idx;
-      if (idx === qlOpen) return; // already open
-      await setSessionState(sessionId, { ql_open: idx, ql_question: items[idx]?.q || '' });
-    });
-
     on(rootSel, 'click', '.ql-award', async (_, btn) => {
-      const playerId = btn.dataset.pid;
-      const points   = +btn.dataset.pts;
-      const newDone  = [...qlDone, qlOpen];
+      if (!qlBy) return;
+      const points  = +btn.dataset.pts;
+      const newDone = [...qlDone, qlOpen];
       await setSessionState(sessionId, {
-        ql_award: { playerId, points },
-        ql_open: null, ql_question: null,
+        ql_award: { playerId: qlBy, points },
+        ql_open: null, ql_question: null, ql_by: null, ql_by_name: null,
         ql_done: newDone,
       });
     });
 
     on(rootSel, 'click', '#ql-close', async () => {
       const newDone = [...qlDone, qlOpen];
-      await setSessionState(sessionId, { ql_open: null, ql_question: null, ql_done: newDone });
+      await setSessionState(sessionId, { ql_open: null, ql_question: null, ql_by: null, ql_by_name: null, ql_done: newDone });
     });
 
     on(rootSel, 'click', '#ql-end', async () => {

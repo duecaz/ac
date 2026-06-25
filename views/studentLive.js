@@ -1,7 +1,7 @@
 // Student-side live view. Routes: #/join, #/play/:code.
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
-import { joinSession, getOwnAnswer, subscribeRoom, pingPresence, findRoomByCode, fetchSession, leaderboard } from '../core/liveTransport.js';
+import { joinSession, getOwnAnswer, subscribeRoom, pingPresence, findRoomByCode, fetchSession, leaderboard, setSessionState } from '../core/liveTransport.js';
 import { findAssignmentByCode } from '../core/assignmentsTransport.js';
 import { isAcceptableNickname } from '../core/nicknameFilter.js';
 import { acquire } from '../core/lifecycle.js';
@@ -147,36 +147,51 @@ export async function renderPlay(rootSel, code) {
     const qlOpen     = session.ql_open ?? null;
     const qlQuestion = session.ql_question ?? null;
     const qlDone     = session.ql_done || [];
+    const qlBy       = session.ql_by ?? null;
     const allItems   = sessionItems(activity);
     const QL_COLORS  = ['#e74c3c','#e67e22','#d4ac0d','#27ae60','#16a085','#2980b9','#8e44ad','#c0392b'];
-    const cols       = Math.min(Math.max(allItems.length, 1), 6);
+    const cols       = Math.min(4, Math.max(2, Math.ceil(allItems.length / 2)));
+    const iMine      = qlBy === player.playerId;
+    const canPick    = qlOpen === null; // only 1 box open at a time
 
     const boxesHtml = allItems.map((_, idx) => {
       const isDone = qlDone.includes(idx);
       const isOpen = qlOpen === idx;
       const color  = QL_COLORS[idx % QL_COLORS.length];
-      let style;
-      if (isDone)      style = `background:#6c757d;`;
-      else if (isOpen) style = `background:#fff;border:3px solid ${color};`;
+      let style, cls = 'ql-sbox';
+      if (isDone)      { style = `background:#6c757d;`; cls += ' ql-done'; }
+      else if (isOpen) { style = `background:#fff;border:3px solid ${color};`; cls += ' ql-open'; }
       else             style = `background:${color};`;
-      return `<div class="ql-sbox ${isDone ? 'ql-done' : ''} ${isOpen ? 'ql-open' : ''}" style="${style}">
+      const clickable = !isDone && canPick && !isOpen;
+      return `<button class="${cls}" data-idx="${idx}" ${!clickable ? 'disabled' : ''} style="${style};border-radius:8px;cursor:${clickable?'pointer':'default'}">
         ${isDone
           ? '<i class="bi bi-check-lg"></i>'
-          : isOpen ? `<span style="color:#1f2937">${idx + 1}</span>` : idx + 1}
-      </div>`;
+          : isOpen ? `<span style="color:#1f2937;font-weight:700">${idx + 1}</span>` : `<b>${idx + 1}</b>`}
+      </button>`;
     }).join('');
 
     mount(rootSel, html`
       <div class="text-center py-3">
-        <div class="ql-student-grid mb-4" style="--ql-cols:${cols}">${boxesHtml}</div>
+        <div class="ql-student-grid mb-3" style="grid-template-columns:repeat(${cols},1fr)">${boxesHtml}</div>
         ${qlOpen !== null
-          ? `<div class="card bg-dark text-light p-4 mx-auto" style="max-width:560px">
+          ? `<div class="card bg-dark text-light p-4 mx-auto mt-2" style="max-width:500px">
+               <p class="text-muted small mb-1">${iMine ? '<i class="bi bi-hand-index-fill text-warning"></i> ¡Tu pregunta!' : '<i class="bi bi-hand-index-fill"></i> Pregunta en curso'}</p>
                <h3 class="text-center">${escapeHtml(qlQuestion || '')}</h3>
              </div>`
-          : `<div class="mt-3"><div class="spinner-border text-warning mb-2"></div><p class="text-muted">Espera la siguiente pregunta…</p></div>`}
-        <p class="text-muted small mt-3">El profesor asignará los puntos manualmente.</p>
+          : `<p class="text-muted mt-3"><i class="bi bi-hand-index"></i> Elige una caja</p>`}
       </div>
     `);
+
+    on(rootSel, 'click', '.ql-sbox:not([disabled])', async (_, btn) => {
+      const idx = +btn.dataset.idx;
+      if (session.ql_open !== null) return; // race — someone beat us
+      await setSessionState(session.id, {
+        ql_open: idx,
+        ql_question: allItems[idx]?.q || '',
+        ql_by: player.playerId,
+        ql_by_name: player.name,
+      });
+    });
   }
 
   async function paintQuestion() {

@@ -1,6 +1,5 @@
 .ql-grid {
   display: grid;
-  grid-template-columns: repeat(var(--ql-cols, 4), 1fr);
   gap: .6rem;
   max-width: 720px;
   margin: 0 auto;
@@ -27,9 +26,8 @@
 /* Student view */
 .ql-student-grid {
   display: grid;
-  grid-template-columns: repeat(var(--ql-cols, 4), 1fr);
   gap: .5rem;
-  max-width: 540px;
+  max-width: 480px;
   margin: 0 auto;
 }
 .ql-sbox {

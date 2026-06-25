@@ -103,6 +103,8 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         ql_open: rec.state?.qlOpen ?? null,
         ql_question: rec.state?.qlQuestion ?? null,
         ql_done: rec.state?.qlDone ?? [],
+        ql_by: rec.state?.qlBy ?? null,
+        ql_by_name: rec.state?.qlByName ?? null,
       };
     },
 
@@ -121,6 +123,8 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         ql_open: rec.state?.qlOpen ?? null,
         ql_question: rec.state?.qlQuestion ?? null,
         ql_done: rec.state?.qlDone ?? [],
+        ql_by: rec.state?.qlBy ?? null,
+        ql_by_name: rec.state?.qlByName ?? null,
       };
     },
 
@@ -171,6 +175,8 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       if ('ql_open' in patch) engine.state.qlOpen = patch.ql_open ?? null;
       if ('ql_question' in patch) engine.state.qlQuestion = patch.ql_question ?? null;
       if ('ql_done' in patch) engine.state.qlDone = patch.ql_done ?? [];
+      if ('ql_by' in patch) engine.state.qlBy = patch.ql_by ?? null;
+      if ('ql_by_name' in patch) engine.state.qlByName = patch.ql_by_name ?? null;
       if (patch.ql_award) {
         const { playerId, points } = patch.ql_award;
         const p = engine.state.players.find(pl => pl.id === playerId);
