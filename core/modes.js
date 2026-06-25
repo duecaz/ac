@@ -28,8 +28,11 @@ export const MODE_DEFS = [
     id: 'solo', label: 'Individual', short: 'individual', icon: 'bi-person-fill', color: 'success',
     embed: true,
     title: 'Jugar aquí, en este dispositivo',
-    supportsTemplate: () => true,           // todo template implementa renderPlayer
-    isAvailable: () => true
+    // Casi todo template implementa renderPlayer, salvo los que se declaran
+    // SOLO en vivo (p.ej. Pregunta Live: meta.modes.solo === false). Ese opt-out
+    // explícito oculta "Individual"; el resto lo mantiene por defecto.
+    supportsTemplate: (T) => T?.meta?.modes?.solo !== false,
+    isAvailable: (a) => getTemplate(a?.template)?.meta?.modes?.solo !== false
   },
   {
     id: 'vs', label: 'VS (duelo)', short: 'vs', icon: 'bi-fire', color: 'danger',

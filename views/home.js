@@ -8,6 +8,7 @@ import { confirmModal, toast } from '../core/toast.js';
 import { downloadActivitiesJson, pickAndImport } from '../core/io.js';
 import { activityItemCount as itemCount } from '../core/migrate.js';
 import { isVsCompatible } from '../kernel/session/engine.js';
+import { getMode } from '../core/modes.js';
 
 let _filter = { q: '', template: '' };
 
@@ -78,10 +79,16 @@ export function renderHome(rootSel) {
     const icon  = T?.meta?.icon  || 'bi-puzzle';
     const label = T?.meta?.label || a.template;
 
+    // Equipos solo si la plantilla lo soporta (renderRound o Memoria) y la
+    // actividad tiene ítems suficientes — misma regla que la barra de modos.
+    // Sin esto el botón salía hasta en Ruleta/Pregunta Live, que no lo admiten.
+    const teamsMode = getMode('teams');
+    const canTeams = teamsMode.supportsTemplate(T) && teamsMode.isAvailable(a);
+
     const playBtns = [
       m.solo             ? `<button class="btn btn-success act-play"  data-id="${a.id}" title="Individual"><i class="bi bi-person-fill"></i></button>` : '',
       isVsCompatible(a)  ? `<button class="btn btn-danger  act-vs"   data-id="${a.id}" title="VS"><i class="bi bi-fire"></i></button>` : '',
-                            `<button class="btn btn-primary act-teams" data-id="${a.id}" data-tpl="${a.template}" title="Equipos"><i class="bi bi-people-fill"></i></button>`,
+      canTeams           ? `<button class="btn btn-primary act-teams" data-id="${a.id}" data-tpl="${a.template}" title="Equipos"><i class="bi bi-people-fill"></i></button>` : '',
       m.live             ? `<button class="btn btn-warning  act-pin"  data-id="${a.id}" title="En vivo"><i class="bi bi-broadcast"></i></button>` : '',
       m.async            ? `<button class="btn btn-info     act-task" data-id="${a.id}" title="Tarea"><i class="bi bi-clipboard-check"></i></button>` : '',
     ].filter(Boolean).join('');

@@ -64,7 +64,12 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   // lives in ONE place (core/modes.js). Embedded modes are buttons that mount
   // into the stage; embed:false modes (En vivo, Tarea) are links to their page.
   function modeBarHtml(act) {
-    return availableModes(act).map(m => {
+    // Solo se ofrecen los modos que la PLANTILLA soporta (capacidad) — sin esto,
+    // "Equipos" aparecía en Ruleta/Pregunta Live (que no tienen renderRound) y
+    // "Individual" en plantillas solo-en-vivo. La gating de disponibilidad
+    // (isAvailable) decide habilitado/gris dentro de los que sí soporta.
+    const T = getTemplate(act.template);
+    return availableModes(act).filter(m => m.supportsTemplate(T)).map(m => {
       const ok = m.isAvailable(act);
       if (!m.embed) {
         return ok
