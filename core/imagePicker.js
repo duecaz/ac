@@ -1,6 +1,7 @@
 // Reusable compact image picker. Renders a preview (or placeholder) plus two
 // buttons — Cambiar/Añadir and Eliminar — with a hidden file input. On file
-// change it uploads to the storage bucket and calls back with the public URL.
+// change it converts the image to an inline data-URL (no external storage) and
+// calls back with that data-URL. Stored inline in the activity JSON (máx 200 KB).
 import { uploadMedia } from './upload.js';
 import { escapeHtml } from './html.js';
 import { toast } from './toast.js';

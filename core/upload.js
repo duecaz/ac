@@ -1,6 +1,8 @@
-// Upload to the public 'media' bucket. Returns the public URL.
-// Validates MIME and extension against a whitelist.
-import { getClient, ensureAuth } from './supabase.js';
+// Media inline: convierte el archivo a data-URL y lo devuelve. Las imágenes
+// viven DENTRO del JSON de la actividad (el stack es PocketBase, sin storage
+// externo). Límite 200 KB para mantener el registro ligero — igual que el fondo
+// personalizado y las imágenes de Pregunta/Ruleta Live.
+const IMG_MAX_BYTES = 200 * 1024; // 200 KB
 
 const ALLOWED = {
   'image/png': 'png',
@@ -8,25 +10,19 @@ const ALLOWED = {
   'image/webp': 'webp',
   'image/gif': 'gif',
   'image/svg+xml': 'svg',
-  'audio/mpeg': 'mp3',
-  'audio/mp3': 'mp3',
-  'audio/ogg': 'ogg',
-  'audio/wav': 'wav',
-  'audio/webm': 'webm'
 };
 
 export async function uploadMedia(file) {
   if (!file) throw new Error('no file');
-  if (file.size > 5 * 1024 * 1024) throw new Error('Archivo > 5 MB');
-  const ext = ALLOWED[file.type];
-  if (!ext) throw new Error(`Tipo no permitido: ${file.type || 'desconocido'}`);
-  await ensureAuth();
-  const sb = await getClient();
-  const { data: { user } } = await sb.auth.getUser();
-  // Path: <userId>/<uuid>.<safeExt>. RLS on storage.objects requires the
-  // first path segment to equal auth.uid().
-  const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
-  const { error } = await sb.storage.from('repo-ac-media').upload(path, file, { contentType: file.type, upsert: false });
-  if (error) throw error;
-  return sb.storage.from('repo-ac-media').getPublicUrl(path).data.publicUrl;
+  if (!ALLOWED[file.type]) throw new Error(`Tipo no permitido: ${file.type || 'desconocido'}`);
+  if (file.size > IMG_MAX_BYTES) {
+    throw new Error(`Imagen demasiado grande (${Math.round(file.size / 1024)} KB). Máximo 200 KB.`);
+  }
+  // Lee como data-URL (base64 inline). No hay subida a ningún bucket.
+  return await new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = (e) => resolve(e.target.result);
+    r.onerror = () => reject(new Error('No se pudo leer la imagen.'));
+    r.readAsDataURL(file);
+  });
 }

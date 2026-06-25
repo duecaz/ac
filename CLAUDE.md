@@ -20,8 +20,13 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
 
 ## Arquitectura (resumen)
 - Vanilla JS, ES modules, sin framework. Routing por hash.
-- Backend: **PocketBase** en `pb.lanube.uno` (Pi 5, Docker). **NO Supabase** para live.
-- Imágenes inline como data-URL en el JSON de la actividad (límite 200 KB). No subir a storage externo.
+- Backend: **PocketBase** en `pb.lanube.uno` (Pi 5, Docker). **Solo PocketBase** — Supabase se está retirando.
+  - Ya en PB: activities, results, live sessions, tareas (assignments), imágenes (inline), logs (local).
+  - Pendiente de migrar a PB: auth (`core/auth.js`/`core/supabase.js`), reportes (`views/reports.js`),
+    explorar/banco compartido (`views/explore.js`). Los adaptadores `adapters/supabase/*` quedan solo
+    como fallback (`?backend=supabase`); el default es `pocketbase`.
+- Imágenes inline como data-URL en el JSON de la actividad (límite 200 KB). **No subir a storage externo**
+  (`core/upload.js` convierte a data-URL; nunca a un bucket).
 - Live: una sola sala PocketBase (`live_sessions`), PIN/QR, `subscribeRoom`, fase de máquina de estados.
   - Pregunta Live y Ruleta Live reutilizan ese mismo live con la fase `'question-live'` y campos `ql_*`.
 

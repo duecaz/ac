@@ -1,36 +1,31 @@
-// Logs uncaught errors to repo_ac.client_errors via REST. Best-effort,
-// fire-and-forget. NOTE: the table lives in the `repo_ac` schema, so the
-// request MUST carry the `Content-Profile: repo_ac` header — without it
-// PostgREST targets `public`, where the table doesn't exist, and every log
-// silently 404s (which is exactly what was happening).
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../supabase.config.js';
+// Registro de errores del cliente — SIN backend externo. El stack es PocketBase
+// y no hay tabla de logs remota, así que los errores se guardan en un anillo
+// local (localStorage) y se vuelcan a la consola. Best-effort, sin red.
+import { lsGet, lsSet } from './ls.js';
 
+const RING_KEY = 'ww.errlog';
+const RING_MAX = 30; // conserva los últimos N errores
 let lastSent = 0;
 
 export function logClientError({ message, stack, page }) {
-  // Throttle: at most one per 2s to avoid loops.
+  // Throttle: como mucho uno cada 2 s para evitar bucles.
   const now = Date.now();
   if (now - lastSent < 2000) return;
   lastSent = now;
+  const entry = {
+    message: String(message || '').slice(0, 4000),
+    stack: stack ? String(stack).slice(0, 8000) : null,
+    page: page || location.pathname,
+    url: location.href,
+    at: new Date().toISOString(),
+  };
+  try { console.warn('[client-error]', entry.message, entry.stack || ''); } catch {}
   try {
-    fetch(`${SUPABASE_URL}/rest/v1/client_errors`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-        'Content-Profile': 'repo_ac',
-        'Prefer': 'return=minimal'
-      },
-      body: JSON.stringify({
-        message: String(message || '').slice(0, 4000),
-        stack: stack ? String(stack).slice(0, 8000) : null,
-        page: page || location.pathname,
-        url: location.href,
-        user_agent: navigator.userAgent
-      })
-    }).catch(() => {});
-  } catch {}
+    const ring = JSON.parse(lsGet(RING_KEY) || '[]');
+    ring.push(entry);
+    while (ring.length > RING_MAX) ring.shift();
+    lsSet(RING_KEY, JSON.stringify(ring));
+  } catch { /* localStorage lleno / no disponible: ignora */ }
 }
 
 export function installErrorHandlers(page) {
