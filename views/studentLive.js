@@ -14,6 +14,8 @@ import * as Streaks from '../core/streaks.js';
 import { getTemplate } from '../core/registry.js';
 import { sessionItems } from '../kernel/session/engine.js';
 import { lsGet, lsSet } from '../core/ls.js';
+import { wheelSvg } from '../templates/wheel/render.js';
+import { pickIndex } from '../templates/wheel/logic.js';
 
 const NICK_KEY = 'ww.nick';
 
@@ -75,6 +77,8 @@ export async function renderPlay(rootSel, code) {
   let endingInProgress = false;
   let raceQueue = null;       // null = not started yet; [] = finished
   let raceCorrectCount = 0;
+  let qlSpinning = false;      // guards the question-live wheel mid-spin
+  let qlRotation = 0;          // persisted wheel angle across spins
   // Tracks items we've already bumped streak for. Without this, host_seen_at
   // pings re-trigger paintRevealOwn and would replay every ~10 s.
   const revealedItems = new Set();
@@ -116,7 +120,8 @@ export async function renderPlay(rootSel, code) {
     // Short-circuit: ignore session UPDATEs that don't change the visible
     // state (e.g. host_seen_at heartbeats every 10 s). Without this, every
     // ping repaints, replays sounds, and bumps streaks.
-    const key = `${session.status}-${session.phase}-${session.current_item}-${session.deadline||''}-${session.ql_open??''}`;
+    const key = `${session.status}-${session.phase}-${session.current_item}-${session.deadline||''}-${session.ql_open??''}-${Object.keys(session.ql_points||{}).length}`;
+    if (qlSpinning) return; // don't repaint over an in-progress wheel spin
     if (key === lastPhaseKey) return;
     lastPhaseKey = key;
     if (session.status === 'lobby') return paintLobby();
@@ -143,14 +148,43 @@ export async function renderPlay(rootSel, code) {
     attachFullscreenButton(rootSel);
   }
 
+  const QL_COLORS = ['#e74c3c','#e67e22','#d4ac0d','#27ae60','#16a085','#2980b9','#8e44ad','#c0392b'];
+  const rootEl = () => (typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel);
+
+  async function qlOpenQuestion(idx) {
+    if (session.ql_open !== null) return; // race — someone beat us
+    const allItems = sessionItems(activity);
+    await setSessionState(session.id, {
+      ql_open: idx,
+      ql_question: allItems[idx]?.q || '',
+      ql_image: allItems[idx]?.image || null,
+      ql_by: player.playerId,
+      ql_by_name: player.name,
+    });
+  }
+
+  // Card shown to everyone once a question is open (the picker sees "¡Tu pregunta!").
+  function qlOpenCardHtml(qlQuestion, qlImage, iMine) {
+    return `<div class="card bg-dark text-light p-4 mx-auto mt-2" style="max-width:500px">
+       <p class="text-muted small mb-1">${iMine ? '<i class="bi bi-hand-index-fill text-warning"></i> ¡Tu pregunta!' : '<i class="bi bi-hand-index-fill"></i> Pregunta en curso'}</p>
+       ${qlImage ? `<div class="text-center mb-2"><img src="${escapeHtml(qlImage)}" class="img-fluid rounded" style="max-height:180px"></div>` : ''}
+       <h3 class="text-center">${escapeHtml(qlQuestion || '')}</h3>
+     </div>`;
+  }
+
   function paintQuestionLive() {
+    const selector = activity.rules?.selector || 'boxes';
+    if (selector === 'wheel') return paintQuestionLiveWheel();
+    return paintQuestionLiveBoxes();
+  }
+
+  function paintQuestionLiveBoxes() {
     const qlOpen     = session.ql_open ?? null;
     const qlQuestion = session.ql_question ?? null;
     const qlImage    = session.ql_image ?? null;
     const qlPoints   = session.ql_points || {};
     const qlBy       = session.ql_by ?? null;
     const allItems   = sessionItems(activity);
-    const QL_COLORS  = ['#e74c3c','#e67e22','#d4ac0d','#27ae60','#16a085','#2980b9','#8e44ad','#c0392b'];
     const cols       = Math.min(4, Math.max(2, Math.ceil(allItems.length / 2)));
     const iMine      = qlBy === player.playerId;
     const canPick    = qlOpen === null; // only 1 box open at a time
@@ -175,26 +209,86 @@ export async function renderPlay(rootSel, code) {
       <div class="text-center py-3">
         <div class="ql-student-grid mb-3" style="grid-template-columns:repeat(${cols},1fr)">${boxesHtml}</div>
         ${qlOpen !== null
-          ? `<div class="card bg-dark text-light p-4 mx-auto mt-2" style="max-width:500px">
-               <p class="text-muted small mb-1">${iMine ? '<i class="bi bi-hand-index-fill text-warning"></i> ¡Tu pregunta!' : '<i class="bi bi-hand-index-fill"></i> Pregunta en curso'}</p>
-               ${qlImage ? `<div class="text-center mb-2"><img src="${escapeHtml(qlImage)}" class="img-fluid rounded" style="max-height:180px"></div>` : ''}
-               <h3 class="text-center">${escapeHtml(qlQuestion || '')}</h3>
-             </div>`
+          ? qlOpenCardHtml(qlQuestion, qlImage, iMine)
           : `<p class="text-muted mt-3"><i class="bi bi-hand-index"></i> Elige una caja</p>`}
       </div>
     `);
 
-    on(rootSel, 'click', '.ql-sbox:not([disabled])', async (_, btn) => {
-      const idx = +btn.dataset.idx;
-      if (session.ql_open !== null) return; // race — someone beat us
-      await setSessionState(session.id, {
-        ql_open: idx,
-        ql_question: allItems[idx]?.q || '',
-        ql_image: allItems[idx]?.image || null,
-        ql_by: player.playerId,
-        ql_by_name: player.name,
-      });
-    });
+    on(rootSel, 'click', '.ql-sbox:not([disabled])', (_, btn) => qlOpenQuestion(+btn.dataset.idx));
+  }
+
+  function paintQuestionLiveWheel() {
+    const qlOpen     = session.ql_open ?? null;
+    const qlQuestion = session.ql_question ?? null;
+    const qlImage    = session.ql_image ?? null;
+    const qlPoints   = session.ql_points || {};
+    const qlBy       = session.ql_by ?? null;
+    const allItems   = sessionItems(activity);
+    const iMine      = qlBy === player.playerId;
+
+    // A question is open → show the question card, no wheel.
+    if (qlOpen !== null) {
+      mount(rootSel, html`<div class="text-center py-3">${qlOpenCardHtml(qlQuestion, qlImage, iMine)}</div>`);
+      return;
+    }
+
+    // Available = questions not yet scored. Wheel slices are their numbers.
+    const available = allItems.map((_, i) => i).filter(i => qlPoints[i] == null);
+    if (available.length === 0) {
+      mount(rootSel, html`
+        <div class="text-center py-5">
+          <i class="bi bi-check2-all display-1 text-success"></i>
+          <h3 class="mt-3">¡Todas respondidas!</h3>
+          <p class="text-muted">Espera a que el profesor termine.</p>
+        </div>`);
+      return;
+    }
+
+    const entries = available.map(i => String(i + 1));
+    mount(rootSel, html`
+      <div class="text-center py-3">
+        <div class="ql-wheel d-inline-block" style="position:relative">
+          ${wheelSvg(entries, { rotation: qlRotation, dur: 0, spinning: false, size: 300 })}
+          <div style="position:absolute;top:50%;left:-14px;transform:translateY(-50%);font-size:30px;color:#e53935;line-height:1">▶</div>
+        </div>
+        <div class="mt-3">
+          <button class="btn btn-warning btn-lg px-5" id="ql-spin"><i class="bi bi-arrow-repeat"></i> Girar</button>
+        </div>
+        <p class="text-muted small mt-2">Gira la rueda y responde la pregunta que te toque.</p>
+      </div>
+    `);
+
+    on(rootSel, 'click', '#ql-spin', () => qlSpin(available, entries.length));
+  }
+
+  function qlSpin(available, count) {
+    if (qlSpinning || count === 0) return;
+    qlSpinning = true;
+    const dur = 3500;
+    const target = pickIndex(count);
+    const realIdx = available[target];
+    const arc = 360 / count;
+    const SPIN_TURNS = 5;
+    // Spin forward from the current angle; pointer is on the left (−90°).
+    const base = Math.ceil((qlRotation + 1) / 360) * 360;
+    qlRotation = base + 360 * SPIN_TURNS + (360 - (target * arc + arc / 2)) - 90;
+
+    const svg = rootEl()?.querySelector('.ql-wheel svg');
+    const btn = rootEl()?.querySelector('#ql-spin');
+    if (btn) btn.disabled = true;
+    if (svg) {
+      svg.style.transition = `transform ${dur}ms cubic-bezier(.17,.67,.21,.99)`;
+      svg.getBoundingClientRect?.(); // force reflow so the transition fires
+      svg.style.transform = `rotate(${qlRotation}deg)`;
+    }
+
+    setTimeout(async () => {
+      qlSpinning = false;
+      qlRotation = ((qlRotation % 360) + 360) % 360;
+      // Someone may have opened a question while we spun — bail and repaint.
+      if (session.ql_open !== null) { lastPhaseKey = ''; paint(); return; }
+      await qlOpenQuestion(realIdx);
+    }, dur);
   }
 
   async function paintQuestion() {

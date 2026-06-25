@@ -9,9 +9,42 @@ export function renderQuestionLiveEditor(root, activity, onChange) {
   if (!Array.isArray(a.content?.items)) {
     a.content = { items: [newItem(), newItem(), newItem()] };
   }
+  if (!a.rules) a.rules = {};
+  if (!a.rules.selector) a.rules.selector = 'boxes';
   renderEditorShell(root, a, onChange, {
     content: { label: 'Preguntas', html: contentHtml, wire: wireContent },
+    rules: { label: 'Selector', html: rulesHtml, wire: wireRules },
   });
+}
+
+function rulesHtml(a) {
+  const sel = a.rules?.selector || 'boxes';
+  return `
+    <label class="form-label fw-bold">¿Cómo elige el alumno la pregunta?</label>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="form-check card p-3 ${sel === 'boxes' ? 'border-primary' : ''}">
+          <input class="form-check-input ql-sel" type="radio" name="ql-sel" id="ql-sel-boxes" value="boxes" ${sel === 'boxes' ? 'checked' : ''}>
+          <label class="form-check-label" for="ql-sel-boxes">
+            <b><i class="bi bi-grid-3x3-gap-fill"></i> Cajas</b><br>
+            <span class="small text-muted">Rejilla de cajas numeradas; el alumno toca una.</span>
+          </label>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-check card p-3 ${sel === 'wheel' ? 'border-primary' : ''}">
+          <input class="form-check-input ql-sel" type="radio" name="ql-sel" id="ql-sel-wheel" value="wheel" ${sel === 'wheel' ? 'checked' : ''}>
+          <label class="form-check-label" for="ql-sel-wheel">
+            <b><i class="bi bi-bullseye"></i> Ruleta</b><br>
+            <span class="small text-muted">El alumno gira una rueda y le toca la pregunta que salga.</span>
+          </label>
+        </div>
+      </div>
+    </div>`;
+}
+
+function wireRules(root, a, ctx) {
+  on(root, 'change', '.ql-sel', (e) => { a.rules.selector = e.target.value; ctx.onChange(a); ctx.repaint(); });
 }
 
 function newItem() {

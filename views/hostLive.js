@@ -516,7 +516,8 @@ async function renderHost(rootSel, code, sessionId, activity) {
       if (isDone)      { style = `background:#198754;border-color:#198754;`; }
       else if (isOpen) { style = `background:#fff;border-color:${color};`; cls += ' ql-open'; }
       else             { style = `background:${color};border-color:${color};`; }
-      return `<button class="${cls}" data-idx="${idx}" ${isDone ? 'disabled' : ''} style="${style}">
+      // Host board is status-only — students pick. Boxes are not interactive.
+      return `<button class="${cls}" data-idx="${idx}" disabled style="${style};opacity:1">
         ${isDone
           ? `<span class="ql-num">+${qlPoints[idx]}</span>`
           : isOpen ? `<span class="ql-num" style="color:#1f2937">${idx + 1}</span>`

@@ -16,7 +16,7 @@ export class QuestionLiveTemplate extends BaseTemplate {
     modes: { solo: false, live: true, async: false, practice: false },
     needsImageUpload: true,
     needsAudioUpload: false,
-    defaultRules: () => ({}),
+    defaultRules: () => ({ selector: 'boxes' }),
     defaultScoring: () => ({}),
     defaultLive: () => ({}),
     defaultContent: () => ({
