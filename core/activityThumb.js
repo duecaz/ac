@@ -188,8 +188,14 @@ function textHtml(act) {
 
 function wheelHtml(act) {
   const items = act.content?.entries || act.content?.items || act.content?.words || [];
-  const labels = items.map(i => typeof i === 'string' ? i : (i.q || i.text || i.label || i.question || ''))
+  let labels = items.map(i => typeof i === 'string' ? i : (i.q || i.text || i.label || i.question || ''))
     .filter(Boolean).slice(0, 8);
+  // Rueda nueva/sin rellenar: en vez de colapsar al círculo punteado vacío,
+  // dibujamos porciones numeradas para que el preview siempre parezca una ruleta.
+  if (!labels.length) {
+    const n = Math.min(8, Math.max(4, items.length || 4));
+    labels = Array.from({ length: n }, (_, i) => String(i + 1));
+  }
   return `<div class="ww-player" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem">
     ${wheelSvg(labels, { size: 520 })}
     <div class="fs-4 fw-semibold text-center">${escapeHtml(act.title || 'Ruleta')}</div>
@@ -267,9 +273,32 @@ function wordsearchHtml(act) {
   </div>`;
 }
 
+// Decorative crossword shape for an empty/new activity: a fixed cross of white
+// cells so the card reads as a crossword instead of just showing a bare title.
+function crosswordPlaceholderHtml(act) {
+  const W = '#fff', B = null;
+  const pattern = [
+    [B, 'C', B, B, B],
+    ['S', 'R', 'U', 'Z', B],
+    [B, 'U', B, B, B],
+    [B, 'C', B, 'P', B],
+    [B, 'E', 'R', 'A', B],
+  ];
+  const cellPx = 46;
+  const cells = pattern.flatMap((row, r) => row.map((l, c) =>
+    l === B
+      ? `<div style="width:${cellPx}px;height:${cellPx}px;background:#343a40"></div>`
+      : `<div style="width:${cellPx}px;height:${cellPx}px;background:${W};border:1px solid #adb5bd;display:flex;align-items:center;justify-content:center;font-size:${cellPx*0.5}px;font-weight:800;color:#212529">${l}</div>`
+  )).join('');
+  return `<div style="display:flex;flex-direction:column;height:100%;align-items:center;justify-content:center;gap:1rem">
+    <div style="display:grid;grid-template-columns:repeat(5,${cellPx}px);gap:2px;background:#dee2e6;border:2px solid #dee2e6;border-radius:6px;overflow:hidden">${cells}</div>
+    <div class="fs-4 fw-semibold text-center">${escapeHtml(act.title || 'Crucigrama')}</div>
+  </div>`;
+}
+
 function crosswordHtml(act) {
   const words = (act.content?.words || []).filter(w => w.word && w.word.length >= 2 && w.row != null && w.col != null && w.dir);
-  if (!words.length) return emptyHtml(act);
+  if (!words.length) return crosswordPlaceholderHtml(act);
 
   // Compute grid dimensions
   let maxR = 0, maxC = 0;
