@@ -29,8 +29,6 @@ import { renderListView } from './views/listView.js';
 import { renderEditList } from './views/editList.js';
 import { renderExplore } from './views/explore.js';
 import { renderAdmin } from './views/adminView.js';
-import { renderAuthBadge } from './views/authView.js';
-import { onAuthChange } from './core/auth.js';
 import { sync, setStorageUser } from './core/storage.js';
 import { ensureAuth } from './core/supabase.js';
 import { applySkin } from './core/skins.js';
@@ -94,8 +92,6 @@ setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encon
         if (!h || h === '#/' || h === '#/home') renderHome(APP);
       })
       .catch(err => console.warn('[sync]', err.message));
-    await renderAuthBadge('#ww-auth-slot');
-    onAuthChange(() => renderAuthBadge('#ww-auth-slot'));
   } catch (err) {
     console.warn('[boot] auth failed:', err.message);
   }
