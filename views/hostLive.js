@@ -152,7 +152,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
 
   function paintLobby(phaseChanged = true) {
     if (phaseChanged) emitGame(GameEvents.LOBBY_START, { sessionId });
-    const isQL = activity.template === 'question-live';
+    const isQL = activity.template === 'question-live' || activity.template === 'wheel';
     const now = Date.now();
     mount(rootSel, html`
       <div class="text-center py-3">
@@ -501,12 +501,16 @@ async function renderHost(rootSel, code, sessionId, activity) {
   async function paintQuestionLive() {
     const qlOpen     = session.ql_open ?? null;
     const qlQuestion = session.ql_question ?? null;
+    // Image stored inline in the activity — read locally by index (not in session state).
     const qlImage    = qlOpen !== null ? (items[qlOpen]?.image || null) : null;
     const qlPoints   = session.ql_points || {};
     const qlBy       = session.ql_by ?? null;
     const qlByName   = session.ql_by_name ?? null;
     const doneCount  = Object.keys(qlPoints).length;
     const cols       = Math.min(6, Math.max(3, Math.ceil(items.length / 2)));
+    const isWheel    = activity.template === 'wheel';
+    const viewTitle  = isWheel ? 'Ruleta Live' : 'Pregunta Live';
+    const viewIcon   = isWheel ? 'bi-bullseye' : 'bi-chat-square-text-fill';
 
     const boxesHtml = items.map((_, idx) => {
       const isDone = qlPoints[idx] != null;
@@ -528,7 +532,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     mount(rootSel, html`
       <div class="py-3">
         <div class="d-flex justify-content-between align-items-center mb-3">
-          <h4 class="mb-0 text-light"><i class="bi bi-chat-square-text-fill text-warning me-2"></i> Pregunta Live</h4>
+          <h4 class="mb-0 text-light"><i class="bi ${viewIcon} text-warning me-2"></i> ${escapeHtml(viewTitle)}</h4>
           <span class="badge bg-secondary fs-6">${doneCount} / ${items.length} respondidas</span>
           ${fullscreenButtonHtml()}
         </div>

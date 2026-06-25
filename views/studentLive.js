@@ -154,11 +154,14 @@ export async function renderPlay(rootSel, code) {
   async function qlOpenQuestion(idx) {
     if (session.ql_open !== null) return; // race — someone beat us
     const allItems = sessionItems(activity);
+    const raw = allItems[idx];
+    // Support both new {q, image} format and old flat-string entries format.
+    const label = typeof raw === 'string' ? raw : (raw?.q || '');
     // Image is NOT put in session state (data-URLs are heavy) — both host and
     // student already hold the full activity and read it locally by index.
     await setSessionState(session.id, {
       ql_open: idx,
-      ql_question: allItems[idx]?.q || '',
+      ql_question: label,
       ql_by: player.playerId,
       ql_by_name: player.name,
     });
@@ -174,7 +177,8 @@ export async function renderPlay(rootSel, code) {
   }
 
   function paintQuestionLive() {
-    const selector = activity.rules?.selector || 'boxes';
+    // wheel template always spins; question-live reads its selector rule.
+    const selector = activity.template === 'wheel' ? 'wheel' : (activity.rules?.selector || 'boxes');
     if (selector === 'wheel') return paintQuestionLiveWheel();
     return paintQuestionLiveBoxes();
   }
@@ -183,7 +187,7 @@ export async function renderPlay(rootSel, code) {
     const qlOpen     = session.ql_open ?? null;
     const qlQuestion = session.ql_question ?? null;
     const allItems0  = sessionItems(activity);
-    const qlImage    = qlOpen !== null ? (allItems0[qlOpen]?.image || null) : null;
+    const qlImage    = qlOpen !== null ? (typeof allItems0[qlOpen] === 'object' ? allItems0[qlOpen]?.image || null : null) : null;
     const qlPoints   = session.ql_points || {};
     const qlBy       = session.ql_by ?? null;
     const allItems   = sessionItems(activity);
@@ -225,7 +229,7 @@ export async function renderPlay(rootSel, code) {
     const qlPoints   = session.ql_points || {};
     const qlBy       = session.ql_by ?? null;
     const allItems   = sessionItems(activity);
-    const qlImage    = qlOpen !== null ? (allItems[qlOpen]?.image || null) : null;
+    const qlImage    = qlOpen !== null ? (typeof allItems[qlOpen] === 'object' ? allItems[qlOpen]?.image || null : null) : null;
     const iMine      = qlBy === player.playerId;
 
     // A question is open → show the question card, no wheel.

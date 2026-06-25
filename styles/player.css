@@ -39,13 +39,23 @@
    When aspect-ratio is 'auto', the wrapper has min-height set inline and
    the widget uses static positioning so height grows naturally.
    container-type:size makes it a query container so the activity can size
-   itself to the frame (cq* units) and fit without a scrollbar. */
+   itself to the frame (cq* units) and fit without a scrollbar.
+   display:flex + column lets short activities center themselves vertically
+   via margin-top/bottom:auto on their root element (margin:auto trick —
+   safe with overflow:auto unlike justify-content:center which hides the top). */
 .ww-play-page .ww-player-frame > #ww-player-widget {
   position: absolute;
   inset: 0;
   overflow: auto;
   padding: 1.25rem;
   container-type: size;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.ww-play-page .ww-player-frame > #ww-player-widget > * {
+  margin-top: auto;
+  margin-bottom: auto;
 }
 
 /* Quiz/solo player: a flex column that exactly fills the frame, so it never

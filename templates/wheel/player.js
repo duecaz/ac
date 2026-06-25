@@ -1,12 +1,12 @@
-// SVG-based spinning wheel. No scoring; just lands on a random entry.
+// SVG-based spinning wheel for solo/practice mode. No scoring; just lands on a random entry.
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { resultScreenHtml } from '../../core/resultScreen.js';
 import { on } from '../../core/events.js';
-import { normalizeEntries, pickIndex } from './logic.js';
+import { pickIndex } from './logic.js';
 import { wheelSvg } from './render.js';
 
 const SPIN_TURNS = 5;
-const MAX_DUR = 30000; // cap the spin so nobody sets a 5-minute wheel
+const MAX_DUR = 30000;
 
 function clampDur(ms) {
   const n = Number(ms);
@@ -14,9 +14,17 @@ function clampDur(ms) {
   return Math.min(n, MAX_DUR);
 }
 
+// Support both old flat-entries format and new items format.
+function getEntries(activity) {
+  const c = activity.content || {};
+  if (Array.isArray(c.items)) return c.items.map(i => (typeof i === 'string' ? i : i.q) || '(vacío)');
+  if (Array.isArray(c.entries)) return c.entries.map(e => String(e)).filter(e => e.trim()) || ['(vacío)'];
+  return ['(vacío)'];
+}
+
 export async function renderWheelPlayer(rootSel, activity, opts = {}) {
-  // Snapshot so removeAfterSpin doesn't mutate the saved activity.
-  let entries = normalizeEntries(activity.content?.entries);
+  let entries = getEntries(activity);
+  if (!entries.length) entries = ['(vacío)'];
   const dur = clampDur(activity.rules?.spinDurationMs);
   const remove = !!activity.rules?.removeAfterSpin;
   const startedAt = Date.now();
@@ -27,8 +35,8 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
   const rootEl = () => (typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel);
 
   function paint(winner = null) {
-    if (!rootEl()) return; // view was left (e.g. spin finished after navigating away)
-    const exhausted = entries.length === 0; // all options drawn (removeAfterSpin)
+    if (!rootEl()) return;
+    const exhausted = entries.length === 0;
     mount(rootSel, html`
       <div class="ww-wheel text-center py-3">
         <h3 class="mb-3">${escapeHtml(activity.title)}</h3>
@@ -60,18 +68,11 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
     spinning = true;
     const count = entries.length;
     const target = pickIndex(count);
-    const winner = entries[target]; // capture BEFORE any mutation
+    const winner = entries[target];
     const arc = 360 / count;
-    // Always spin FORWARD from the current angle: round up to whole turns, add
-    // the full spins, then the offset that centers `target` under the pointer.
     const base = Math.ceil((rotation + 1) / 360) * 360;
-    // Pointer is on the LEFT (9 o'clock). Top pointer would need 0° offset;
-    // left pointer is 90° counterclockwise from top, so subtract 90°.
     rotation = base + 360 * SPIN_TURNS + (360 - (target * arc + arc / 2)) - 90;
 
-    // Animate the EXISTING svg (mount() creates it with transition:0 so the
-    // first paint doesn't animate; here we turn the transition on and change
-    // the transform, which is what actually makes it spin).
     const svg = rootEl()?.querySelector('svg');
     const btnSpin = rootEl()?.querySelector('#btn-spin');
     const btnEnd = rootEl()?.querySelector('#btn-end');
@@ -79,18 +80,15 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
     if (btnEnd) btnEnd.disabled = true;
     if (svg) {
       svg.style.transition = `transform ${dur}ms cubic-bezier(.17,.67,.21,.99)`;
-      svg.getBoundingClientRect?.(); // force reflow so the transition fires
+      svg.getBoundingClientRect?.();
       svg.style.transform = `rotate(${rotation}deg)`;
     }
 
     setTimeout(() => {
       spinning = false;
-      if (!rootEl()) return; // left the view mid-spin — nothing to repaint
+      if (!rootEl()) return;
       history.push(winner);
       if (remove) {
-        // Draw without replacement. Keep the wheel oriented where it landed
-        // (mod 360) and drop the winner — when the last one is drawn the wheel
-        // becomes empty: only the hub shows and "Girar" is hidden.
         entries = entries.filter((_, i) => i !== target);
         rotation = ((rotation % 360) + 360) % 360;
       }
