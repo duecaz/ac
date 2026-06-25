@@ -83,7 +83,7 @@ ok('students submit answers from their tabs; unscored until reveal');
 // host reveals → server-side scoring in the engine
 await host.settleItem(code, 0);
 const lb = await host.leaderboard(code);
-assert.deepStrictEqual(lb[0], { rank: 1, name: 'Ana', score: 1 }, 'Ana leads after q1');
+assert.deepStrictEqual(lb[0], { rank: 1, id: anaP.playerId, name: 'Ana', score: 1 }, 'Ana leads after q1');
 assert.ok(anaSaw.includes('answers'), 'students notified of reveal');
 ok('host reveals; scoring happens server-side; leaderboard updates across tabs');
 

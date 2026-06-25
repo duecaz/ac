@@ -76,7 +76,7 @@ assert.strictEqual(a0.length, 2);
 assert.ok(a0.every(a => a.correct === null), 'answers unscored until reveal (anti-cheat parity)');
 await host.settleItem(code, 0);
 let lb = await host.leaderboard(code);
-assert.deepStrictEqual(lb[0], { rank: 1, name: 'Ana', score: 1 }, 'Ana leads after p1 (exact position match)');
+assert.deepStrictEqual(lb[0], { rank: 1, id: anaP.playerId, name: 'Ana', score: 1 }, 'Ana leads after p1 (exact position match)');
 assert.ok(anaSaw.includes('answers'), 'students notified of reveal');
 ok('number[] answers score via scoreMarks on settle; leaderboard updates');
 

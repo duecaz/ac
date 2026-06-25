@@ -76,7 +76,7 @@ ok('settle is idempotent (no double scoring on re-settle)');
 // ----- advance to round 2 -----
 room.dispatch('leaderboard');
 const lb1 = room.leaderboard();
-assert.deepStrictEqual(lb1[0], { rank: 1, name: 'Ana', score: 1 }, 'Ana leads');
+assert.deepStrictEqual(lb1[0], { rank: 1, id: ana.id, name: 'Ana', score: 1 }, 'Ana leads');
 room.dispatch('next');
 assert.strictEqual(room.currentItem, 1);
 assert.strictEqual(room.phase, 'question');
