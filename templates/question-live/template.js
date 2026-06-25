@@ -7,13 +7,13 @@ function newId() { return 'q_' + Math.random().toString(36).slice(2, 8); }
 export class QuestionLiveTemplate extends BaseTemplate {
   static meta = {
     name: 'question-live',
-    label: 'Pregunta Live',
-    icon: 'bi-chat-square-text-fill',
+    label: 'Abre Cajas',
+    icon: 'bi-grid-3x3-gap-fill',
     color: 'warning',
     contentModel: 'items',
     templateVersion: 1,
     aspectRatio: '4/3',
-    modes: { solo: false, live: true, async: false, practice: false },
+    modes: { solo: true, live: true, async: false, practice: false },
     needsImageUpload: false, // images stored inline as data-URLs (no external upload)
     needsAudioUpload: false,
     defaultRules: () => ({ selector: 'boxes' }),
