@@ -123,16 +123,29 @@ function memoryHtml(act) {
     .filter(p => String(p.left||'').trim() && String(p.right||'').trim());
   if (!pairs.length) return emptyHtml(act);
   const cols = Math.max(2, Math.min(8, act.rules?.columns || 4));
-  let cells = '';
-  for (let i = 0; i < pairs.length * 2; i++)
-    cells += `<button class="mc"><i class="bi bi-question-lg"></i></button>`;
+  // "Game in progress" snapshot: first pair matched (green), second pair one
+  // card open (white/amber), rest face-down — shows real content at a glance.
+  const cards = pairs.flatMap((p, i) => {
+    if (i === 0) return [
+      `<button class="mc mc-locked" disabled><span class="mc-text">${escapeHtml(p.left)}</span></button>`,
+      `<button class="mc mc-locked" disabled><span class="mc-text">${escapeHtml(p.right)}</span></button>`
+    ];
+    if (i === 1) return [
+      `<button class="mc mc-open"><span class="mc-text">${escapeHtml(p.left)}</span></button>`,
+      `<button class="mc"><i class="bi bi-question-lg"></i></button>`
+    ];
+    return [
+      `<button class="mc"><i class="bi bi-question-lg"></i></button>`,
+      `<button class="mc"><i class="bi bi-question-lg"></i></button>`
+    ];
+  });
   return `<div class="ww-memory">
     <div class="d-flex justify-content-between align-items-center mb-3">
-      <span class="badge bg-secondary">0 / ${pairs.length}</span>
-      <span class="badge bg-info text-dark">Flips: 0</span>
-      <span class="badge bg-primary">★ 0</span></div>
+      <span class="badge bg-secondary">1 / ${pairs.length}</span>
+      <span class="badge bg-info text-dark">Flips: 3</span>
+      <span class="badge bg-primary">★ 1</span></div>
     <h5 class="text-center mb-3">${escapeHtml(act.title || '')}</h5>
-    <div class="ww-memo-grid" style="grid-template-columns:repeat(${cols},1fr)">${cells}</div>
+    <div class="ww-memo-grid" style="grid-template-columns:repeat(${cols},1fr)">${cards.join('')}</div>
   </div>`;
 }
 
