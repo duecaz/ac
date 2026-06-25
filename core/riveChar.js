@@ -1,16 +1,24 @@
 // Lazy-loads the Rive runtime and drives a character canvas.
 // Fails silently if the CDN is unreachable — the activity works without it.
-const RIVE_CDN = 'https://cdn.jsdelivr.net/npm/@rive-app/canvas@2/rive.js';
+// @rive-app/canvas UMD exposes window.rive (lowercase), constructor at window.rive.Rive.
+const RIVE_CDN = 'https://unpkg.com/@rive-app/canvas/rive.js';
 
 let _loadPromise = null;
+
+function getRiveCtor() {
+  // Handle both export patterns: window.rive.Rive (UMD) and window.Rive (some builds).
+  return (window.rive && window.rive.Rive) || window.Rive || null;
+}
+
 async function ensureRive() {
-  if (window.Rive) return window.Rive;
+  const existing = getRiveCtor();
+  if (existing) return existing;
   if (!_loadPromise) {
     _loadPromise = new Promise((resolve) => {
       const s = document.createElement('script');
       s.src = RIVE_CDN;
-      s.onload = () => resolve(window.Rive);
-      s.onerror = () => resolve(null);
+      s.onload = () => resolve(getRiveCtor());
+      s.onerror = () => { console.warn('[riveChar] CDN load failed'); resolve(null); };
       document.head.appendChild(s);
     });
   }
@@ -20,7 +28,7 @@ async function ensureRive() {
 /**
  * Mount a Rive character on a <canvas> element.
  * @param {HTMLCanvasElement} canvasEl
- * @param {string} animName  - initial animation to play ('Run', 'Jump', …)
+ * @param {string} animName  - initial animation ('Run', 'Jump', …)
  * @returns {Promise<object|null>}  Rive instance, or null if Rive unavailable
  */
 export async function mountRiveChar(canvasEl, animName = 'Run') {
@@ -33,14 +41,14 @@ export async function mountRiveChar(canvasEl, animName = 'Run') {
       animations: animName,
       autoplay: true,
       onLoad: () => { r.resizeDrawingSurfaceToCanvas(); resolve(r); },
-      onLoadError: () => resolve(null),
+      onLoadError: () => { console.warn('[riveChar] .riv load failed'); resolve(null); },
     });
   });
 }
 
 /**
- * Switch the running character to the Jump animation.
- * @param {object} r  - Rive instance returned by mountRiveChar
+ * Switch the character from Run to Jump.
+ * @param {object} r  Rive instance from mountRiveChar
  */
 export function playJump(r) {
   if (!r) return;
