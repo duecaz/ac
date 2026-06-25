@@ -33,4 +33,12 @@ export class QuestionLiveTemplate extends BaseTemplate {
   static renderPlayer = renderQuestionLivePlayer;
   static renderEditor = renderQuestionLiveEditor;
   static migrateContent(content) { return content; }
+
+  // Required by the registry for live-capable templates.
+  // Question Live uses manual teacher scoring, so these are not called in game,
+  // but must exist to pass validation.
+  static getRoundPayload(activity, { itemIndex }) {
+    return activity.content?.items?.[itemIndex] ?? null;
+  }
+  static scoreSubmission() { return { correct: false, points: 0 }; }
 }
