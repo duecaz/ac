@@ -100,6 +100,9 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         current_item: rec.state?.currentItem,
         deadline: rec.state?.deadline ?? null,
         activity_snap: rec.activity,
+        ql_open: rec.state?.qlOpen ?? null,
+        ql_question: rec.state?.qlQuestion ?? null,
+        ql_done: rec.state?.qlDone ?? [],
       };
     },
 
@@ -115,6 +118,9 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         deadline: rec.state?.deadline ?? null,
         started_at: rec.state?.startedAt ?? null,
         activity_snap: rec.activity,
+        ql_open: rec.state?.qlOpen ?? null,
+        ql_question: rec.state?.qlQuestion ?? null,
+        ql_done: rec.state?.qlDone ?? [],
       };
     },
 
@@ -162,6 +168,14 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       if ('current_item' in patch) engine.state.currentItem = patch.current_item;
       if ('deadline' in patch) engine.state.deadline = patch.deadline ?? null;
       if ('started_at' in patch) engine.state.startedAt = patch.started_at ?? null;
+      if ('ql_open' in patch) engine.state.qlOpen = patch.ql_open ?? null;
+      if ('ql_question' in patch) engine.state.qlQuestion = patch.ql_question ?? null;
+      if ('ql_done' in patch) engine.state.qlDone = patch.ql_done ?? [];
+      if (patch.ql_award) {
+        const { playerId, points } = patch.ql_award;
+        const p = engine.state.players.find(pl => pl.id === playerId);
+        if (p) p.score += points;
+      }
       await saveState(sessionId, engine);
     },
 

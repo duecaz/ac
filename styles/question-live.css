@@ -1,0 +1,47 @@
+.ql-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--ql-cols, 4), 1fr);
+  gap: .6rem;
+  max-width: 720px;
+  margin: 0 auto;
+}
+.ql-box {
+  border: 3px solid transparent;
+  border-radius: 10px;
+  padding: 0;
+  height: 90px;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform .15s, opacity .2s;
+}
+.ql-box:hover:not(:disabled):not(.ql-open) { transform: scale(1.06); }
+.ql-box.ql-open { color: #1f2937; }
+.ql-box:disabled { cursor: default; }
+.ql-num { font-size: 1.8rem; }
+
+/* Student view */
+.ql-student-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--ql-cols, 4), 1fr);
+  gap: .5rem;
+  max-width: 540px;
+  margin: 0 auto;
+}
+.ql-sbox {
+  border-radius: 8px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #fff;
+  border: none;
+}
+.ql-sbox.ql-done { opacity: .45; }
+.ql-sbox.ql-open { color: #1f2937; }

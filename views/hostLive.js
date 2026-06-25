@@ -132,6 +132,8 @@ async function renderHost(rootSel, code, sessionId, activity) {
 
   function paint() {
     if (disposed) return;
+    // question-live bypasses the skip logic: ql_open changes must always repaint.
+    if (session.phase === 'question-live') return paintQuestionLive();
     // Always re-render when data changes (e.g. a player joins the lobby), but
     // only re-fire phase sounds/effects when the visible phase actually changes
     // (phaseChanged). `skip` protects an active question from being reset by
@@ -150,6 +152,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
 
   function paintLobby(phaseChanged = true) {
     if (phaseChanged) emitGame(GameEvents.LOBBY_START, { sessionId });
+    const isQL = activity.template === 'question-live';
     const now = Date.now();
     mount(rootSel, html`
       <div class="text-center py-3">
@@ -186,14 +189,14 @@ async function renderHost(rootSel, code, sessionId, activity) {
             </div>`;
           }).join('')}
         </div>
-        <div class="d-flex justify-content-center mt-4 mb-2 gap-3 align-items-center">
+        ${!isQL ? `<div class="d-flex justify-content-center mt-4 mb-2 gap-3 align-items-center">
           <label class="text-light" for="mode-select">Modo:</label>
           <select id="mode-select" class="form-select form-select-sm" style="max-width:230px">
             <option value="manual" ${liveMode==='manual'?'selected':''}>Manual (tú avanzas)</option>
             <option value="auto" ${liveMode==='auto'?'selected':''}>Automático</option>
             <option value="race" ${liveMode==='race'?'selected':''}>🏁 Carrera libre</option>
           </select>
-        </div>
+        </div>` : '<div class="mt-4"></div>'}
         <button class="btn btn-success btn-lg px-5" id="btn-start" ${players.length===0?'disabled':''}>
           <i class="bi bi-play-fill"></i> Empezar
         </button>
@@ -204,7 +207,9 @@ async function renderHost(rootSel, code, sessionId, activity) {
     const modeEl = document.getElementById('mode-select');
     if (modeEl) modeEl.onchange = (e) => { liveMode = e.target.value; autoAdvance = (liveMode === 'auto'); };
     on(rootSel, 'click', '#btn-start', async () => {
-      if (liveMode === 'race') {
+      if (isQL) {
+        await setSessionState(sessionId, { status: 'running', phase: 'question-live', current_item: 0, started_at: new Date().toISOString() });
+      } else if (liveMode === 'race') {
         await setSessionState(sessionId, { status: 'running', phase: 'race', current_item: 0, started_at: new Date().toISOString(), deadline: null });
       } else {
         const deadline = new Date(Date.now() + timerSec * 1000).toISOString();
@@ -487,6 +492,102 @@ async function renderHost(rootSel, code, sessionId, activity) {
       for (let i = 0; i < items.length; i++) {
         try { await settleItem(sessionId, i); } catch {}
       }
+      await endSession(sessionId);
+    });
+  }
+
+  const QL_COLORS = ['#e74c3c','#e67e22','#d4ac0d','#27ae60','#16a085','#2980b9','#8e44ad','#c0392b'];
+
+  async function paintQuestionLive() {
+    const qlOpen    = session.ql_open ?? null;
+    const qlQuestion = session.ql_question ?? null;
+    const qlDone    = session.ql_done || [];
+    const cols      = Math.min(Math.max(items.length, 1), 6);
+
+    const boxesHtml = items.map((item, idx) => {
+      const isDone = qlDone.includes(idx);
+      const isOpen = qlOpen === idx;
+      const color  = QL_COLORS[idx % QL_COLORS.length];
+      let style, cls;
+      if (isDone) {
+        style = 'background:#6c757d;border-color:#6c757d;';
+        cls = 'ql-box';
+      } else if (isOpen) {
+        style = `background:#fff;border-color:${color};`;
+        cls = 'ql-box ql-open';
+      } else {
+        style = `background:${color};border-color:${color};`;
+        cls = 'ql-box';
+      }
+      return `<button class="${cls}" data-idx="${idx}" ${isDone ? 'disabled' : ''} style="${style}">
+        ${isDone
+          ? '<i class="bi bi-check-lg fs-4"></i>'
+          : isOpen
+            ? `<span class="ql-num text-dark">${idx + 1}</span>`
+            : `<span class="ql-num">${idx + 1}</span>`}
+      </button>`;
+    }).join('');
+
+    mount(rootSel, html`
+      <div class="py-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="mb-0 text-light"><i class="bi bi-chat-square-text-fill text-warning me-2"></i> Pregunta Live</h4>
+          <span class="badge bg-secondary fs-6">${qlDone.length} / ${items.length} respondidas</span>
+          ${fullscreenButtonHtml()}
+        </div>
+        <div class="ql-grid mb-4" style="--ql-cols:${cols}">${boxesHtml}</div>
+        ${qlOpen !== null ? `
+          <div class="card bg-dark text-light p-4 mb-3 mx-auto" style="max-width:700px">
+            <h3 class="text-center mb-4">${escapeHtml(qlQuestion || '')}</h3>
+            <h6 class="text-warning mb-3"><i class="bi bi-people-fill"></i> Dar puntos a:</h6>
+            <div>
+              ${players.map(p => `
+                <div class="d-flex align-items-center gap-2 mb-2">
+                  <span class="flex-grow-1 text-light fw-bold">${escapeHtml(p.name)}</span>
+                  <button class="btn btn-sm btn-outline-success ql-award" data-pid="${p.id}" data-pts="10">+10 pts</button>
+                  <button class="btn btn-sm btn-success ql-award" data-pid="${p.id}" data-pts="50">+50 pts</button>
+                </div>`).join('')}
+            </div>
+            <div class="text-center mt-3">
+              <button class="btn btn-outline-secondary" id="ql-close">
+                <i class="bi bi-x-circle"></i> Cerrar caja sin puntos
+              </button>
+            </div>
+          </div>` : ''}
+        <div class="text-center mt-3">
+          <button class="btn btn-danger btn-lg" id="ql-end">
+            <i class="bi bi-stop-circle-fill"></i> Terminar y ver clasificación
+          </button>
+        </div>
+      </div>
+    `);
+    attachFullscreenButton(rootSel);
+
+    on(rootSel, 'click', '.ql-box:not([disabled])', async (_, btn) => {
+      const idx = +btn.dataset.idx;
+      if (idx === qlOpen) return; // already open
+      await setSessionState(sessionId, { ql_open: idx, ql_question: items[idx]?.q || '' });
+    });
+
+    on(rootSel, 'click', '.ql-award', async (_, btn) => {
+      const playerId = btn.dataset.pid;
+      const points   = +btn.dataset.pts;
+      const newDone  = [...qlDone, qlOpen];
+      await setSessionState(sessionId, {
+        ql_award: { playerId, points },
+        ql_open: null, ql_question: null,
+        ql_done: newDone,
+      });
+    });
+
+    on(rootSel, 'click', '#ql-close', async () => {
+      const newDone = [...qlDone, qlOpen];
+      await setSessionState(sessionId, { ql_open: null, ql_question: null, ql_done: newDone });
+    });
+
+    on(rootSel, 'click', '#ql-end', async () => {
+      const ok = await confirmModal('¿Terminar la sesión?', { okText: 'Terminar' });
+      if (!ok) return;
       await endSession(sessionId);
     });
   }

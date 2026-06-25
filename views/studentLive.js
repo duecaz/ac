@@ -116,11 +116,12 @@ export async function renderPlay(rootSel, code) {
     // Short-circuit: ignore session UPDATEs that don't change the visible
     // state (e.g. host_seen_at heartbeats every 10 s). Without this, every
     // ping repaints, replays sounds, and bumps streaks.
-    const key = `${session.status}-${session.phase}-${session.current_item}-${session.deadline||''}`;
+    const key = `${session.status}-${session.phase}-${session.current_item}-${session.deadline||''}-${session.ql_open??''}`;
     if (key === lastPhaseKey) return;
     lastPhaseKey = key;
     if (session.status === 'lobby') return paintLobby();
     if (session.status === 'ended') return paintEnded();
+    if (session.phase === 'question-live') return paintQuestionLive();
     if (session.phase === 'race') return paintRace();
     if (session.phase === 'question') return paintQuestion();
     if (session.phase === 'reveal') return paintRevealOwn();
@@ -140,6 +141,42 @@ export async function renderPlay(rootSel, code) {
       </div>
     `);
     attachFullscreenButton(rootSel);
+  }
+
+  function paintQuestionLive() {
+    const qlOpen     = session.ql_open ?? null;
+    const qlQuestion = session.ql_question ?? null;
+    const qlDone     = session.ql_done || [];
+    const allItems   = sessionItems(activity);
+    const QL_COLORS  = ['#e74c3c','#e67e22','#d4ac0d','#27ae60','#16a085','#2980b9','#8e44ad','#c0392b'];
+    const cols       = Math.min(Math.max(allItems.length, 1), 6);
+
+    const boxesHtml = allItems.map((_, idx) => {
+      const isDone = qlDone.includes(idx);
+      const isOpen = qlOpen === idx;
+      const color  = QL_COLORS[idx % QL_COLORS.length];
+      let style;
+      if (isDone)      style = `background:#6c757d;`;
+      else if (isOpen) style = `background:#fff;border:3px solid ${color};`;
+      else             style = `background:${color};`;
+      return `<div class="ql-sbox ${isDone ? 'ql-done' : ''} ${isOpen ? 'ql-open' : ''}" style="${style}">
+        ${isDone
+          ? '<i class="bi bi-check-lg"></i>'
+          : isOpen ? `<span style="color:#1f2937">${idx + 1}</span>` : idx + 1}
+      </div>`;
+    }).join('');
+
+    mount(rootSel, html`
+      <div class="text-center py-3">
+        <div class="ql-student-grid mb-4" style="--ql-cols:${cols}">${boxesHtml}</div>
+        ${qlOpen !== null
+          ? `<div class="card bg-dark text-light p-4 mx-auto" style="max-width:560px">
+               <h3 class="text-center">${escapeHtml(qlQuestion || '')}</h3>
+             </div>`
+          : `<div class="mt-3"><div class="spinner-border text-warning mb-2"></div><p class="text-muted">Espera la siguiente pregunta…</p></div>`}
+        <p class="text-muted small mt-3">El profesor asignará los puntos manualmente.</p>
+      </div>
+    `);
   }
 
   async function paintQuestion() {

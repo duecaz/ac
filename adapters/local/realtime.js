@@ -85,6 +85,14 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
       if ('current_item' in patch) s.currentItem = patch.current_item;
       if ('deadline' in patch) room.deadline = patch.deadline ?? null;
       if ('started_at' in patch) room.startedAt = patch.started_at ?? null;
+      if ('ql_open' in patch) s.qlOpen = patch.ql_open ?? null;
+      if ('ql_question' in patch) s.qlQuestion = patch.ql_question ?? null;
+      if ('ql_done' in patch) s.qlDone = patch.ql_done ?? [];
+      if (patch.ql_award) {
+        const { playerId, points } = patch.ql_award;
+        const p = s.players.find(pl => pl.id === playerId);
+        if (p) p.score += points;
+      }
       save(code, room, engine); notify(code, 'sessions');
     },
 
@@ -138,7 +146,17 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
     async fetchSession(code) {
       const r = read(code);
       if (!r) throw new Error('Sala no encontrada');
-      return { id: code, code, status: r.state.status, phase: r.state.phase, current_item: r.state.currentItem, deadline: r.deadline ?? null, started_at: r.startedAt ?? null, activity_snap: r.activity };
+      return {
+        id: code, code,
+        status: r.state.status, phase: r.state.phase,
+        current_item: r.state.currentItem,
+        deadline: r.deadline ?? null,
+        started_at: r.startedAt ?? null,
+        activity_snap: r.activity,
+        ql_open: r.state.qlOpen ?? null,
+        ql_question: r.state.qlQuestion ?? null,
+        ql_done: r.state.qlDone ?? [],
+      };
     },
 
     // Single-device local mode: no separate answer key — the host already holds
