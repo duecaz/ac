@@ -1,6 +1,7 @@
 .ww-player .ww-opt {
-  border: 2px solid #dee2e6;
-  background: #fff;
+  border: 2px solid var(--ww-card-border, #dee2e6);
+  background: var(--ww-card-bg, #fff);
+  color: var(--ww-card-fg, var(--ww-fg, #1f2937));
   font-weight: 500;
   padding: 1rem;
   text-align: left;
@@ -29,7 +30,7 @@
   margin: 0 auto;
   position: relative;
   background: var(--ww-card-bg, #ffffff);
-  color: var(--ww-fg, inherit);
+  color: var(--ww-card-fg, var(--ww-fg, #1f2937));
   border-radius: 12px;
   box-shadow: 0 6px 24px rgba(0,0,0,.12);
   overflow: hidden;

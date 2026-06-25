@@ -132,6 +132,7 @@ registerSkin({
     '--ww-bg-soft': '#f9fafb',
     '--ww-fg': '#1f2937',
     '--ww-card-bg': '#ffffff',
+    '--ww-card-fg': '#1f2937',   // text INSIDE cards — contrasts with card-bg
     '--ww-card-border': '#dee2e6',
     '--ww-accent': '#6366f1',
     '--ww-shape-1': '#e21b3c',
@@ -155,6 +156,7 @@ registerSkin({
     '--ww-bg-soft': '#f5edd3',
     '--ww-fg': '#3a2f1f',
     '--ww-card-bg': '#fffdf5',
+    '--ww-card-fg': '#3a2f1f',
     '--ww-card-border': '#c9b88a',
     '--ww-accent': '#b45309',
     '--ww-shape-1': '#dc2626',
@@ -175,6 +177,7 @@ registerSkin({
     '--ww-bg-soft': '#1e1b4b',
     '--ww-fg': '#e0e7ff',
     '--ww-card-bg': '#1e1b4b',
+    '--ww-card-fg': '#e0e7ff',
     '--ww-card-border': '#6366f1',
     '--ww-accent': '#a855f7',
     '--ww-shape-1': '#f43f5e',
@@ -187,6 +190,7 @@ registerSkin({
 });
 
 registerSkin({
+  // Card bg is WHITE → card text must be DARK, even though page fg is white.
   name: 'kahoot',
   label: 'Kahoot',
   description: 'Magenta y azul vibrantes.',
@@ -195,6 +199,7 @@ registerSkin({
     '--ww-bg-soft': '#1368ce',
     '--ww-fg': '#ffffff',
     '--ww-card-bg': '#ffffff',
+    '--ww-card-fg': '#1f2937',   // dark text on white cards (fg≠card-fg here)
     '--ww-card-border': '#46178f',
     '--ww-accent': '#ff3355',
     '--ww-shape-1': '#e21b3c',
@@ -215,6 +220,7 @@ registerSkin({
     '--ww-bg-soft': '#1a1a3e',
     '--ww-fg': '#39ff14',
     '--ww-card-bg': '#1a1a3e',
+    '--ww-card-fg': '#39ff14',
     '--ww-card-border': '#39ff14',
     '--ww-accent': '#ff00ff',
     '--ww-shape-1': '#ff5555',
@@ -235,6 +241,7 @@ registerSkin({
     '--ww-bg-soft': '#155e3d',
     '--ww-fg': '#ecfccb',
     '--ww-card-bg': '#1a4d36',
+    '--ww-card-fg': '#ecfccb',
     '--ww-card-border': '#84cc16',
     '--ww-accent': '#facc15',
     '--ww-shape-1': '#dc2626',
@@ -257,6 +264,7 @@ registerSkin({
     '--ww-bg-soft': '#0d1b2a',
     '--ww-fg': '#e2e8f0',
     '--ww-card-bg': '#162236',
+    '--ww-card-fg': '#e2e8f0',
     '--ww-card-border': '#1976d2',
     '--ww-accent': '#f9a800',
     '--ww-shape-1': '#b71c1c',

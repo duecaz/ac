@@ -46,8 +46,8 @@
   display: grid;
   grid-template-columns: repeat(var(--ws-cols, 15), 1fr);
   gap: 1.5px;
-  background: #ced4da;
-  border: 2px solid #ced4da;
+  background: var(--ww-card-border, #ced4da);
+  border: 2px solid var(--ww-card-border, #ced4da);
   border-radius: 10px;
   overflow: hidden;
   width: min(100%, 100cqb, 580px);
@@ -67,23 +67,11 @@
   font-weight: 800;
   font-size: clamp(.45rem, 2cqmin, 1.05rem);
   line-height: 1;
-  background: #fff;
-  color: #212529;
+  background: var(--ww-card-bg, #fff);
+  color: var(--ww-card-fg, var(--ww-fg, #212529));
   cursor: default;
   transition: background .07s, color .07s;
   aspect-ratio: 1;
-}
-
-/* Dark-mode cells */
-[data-bs-theme="dark"] .ws-cell,
-.ww-player-frame.skin-dark .ws-cell {
-  background: #1e2533;
-  color: #e9ecef;
-}
-[data-bs-theme="dark"] .ww-ws-grid,
-.ww-player-frame.skin-dark .ww-ws-grid {
-  background: #2d3748;
-  border-color: #2d3748;
 }
 
 /* Selecting state (current drag) */
@@ -144,23 +132,20 @@
   border-radius: 20px;
   font-size: clamp(.72rem, 1.4cqw, .88rem);
   font-weight: 700;
-  background: #f1f3f5;
-  color: #495057;
+  background: var(--ww-bg-soft, #f1f3f5);
+  color: var(--ww-card-fg, var(--ww-fg, #495057));
   letter-spacing: .02em;
   transition: background .15s, color .15s;
   line-height: 1.2;
 }
-.ws-word-dot { font-size: .85em; color: #adb5bd; flex-shrink: 0; }
+.ws-word-dot { font-size: .85em; opacity: .55; flex-shrink: 0; }
 
 .ws-word.ws-word-found {
-  background: #d1fae5;
-  color: #065f46;
+  background: rgba(16,185,129,.18);
+  color: var(--ww-success, #10b981);
   text-decoration: line-through;
 }
-.ws-word.ws-word-found .ws-word-dot { color: #10b981; }
-
-[data-bs-theme="dark"] .ws-word          { background: #2d3748; color: #cbd5e0; }
-[data-bs-theme="dark"] .ws-word.ws-word-found { background: #064e3b; color: #6ee7b7; }
+.ws-word.ws-word-found .ws-word-dot { opacity: 1; }
 
 /* ── VS round target banner ────────────────────────── */
 .ww-ws-round-target {

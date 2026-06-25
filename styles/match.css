@@ -26,9 +26,10 @@
 /* Cards */
 .ww-match .ww-card {
   position: relative;
-  border: 2px solid #dee2e6;
+  border: 2px solid var(--ww-card-border, #dee2e6);
   border-radius: 10px;
-  background: #fff;
+  background: var(--ww-card-bg, #fff);
+  color: var(--ww-card-fg, var(--ww-fg, #1f2937));
   padding: 10px;
   text-align: center;
   overflow: visible;

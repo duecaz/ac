@@ -71,10 +71,11 @@
   overflow-y: auto;
   font-size: clamp(.68rem, 1.7cqw, .9rem);
   padding-right: .25rem;
-  background: #f8fafc;
+  background: var(--ww-bg-soft, #f8fafc);
+  color: var(--ww-card-fg, var(--ww-fg, #1e293b));
   border-radius: .5rem;
   padding: .5rem .5rem .5rem .5rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--ww-card-border, #e2e8f0);
 }
 .cw-clue-section { margin-bottom: .6rem; }
 .cw-clue-heading {
@@ -139,7 +140,7 @@
   background: #1e293b;
 }
 .cw-white {
-  background: #ffffff;
+  background: var(--ww-card-bg, #ffffff);
   cursor: pointer;
   outline: none;
   transition: background .1s;
@@ -152,7 +153,8 @@
   left: 2px;
   font-size: max(6px, calc(var(--cw-cell, 36px) * 0.27));
   line-height: 1;
-  color: #64748b;
+  color: var(--ww-card-fg, var(--ww-fg, #64748b));
+  opacity: .6;
   font-weight: 700;
   pointer-events: none;
 }
@@ -161,7 +163,7 @@
   font-size: max(10px, calc(var(--cw-cell, 36px) * 0.55));
   font-weight: 900;
   line-height: 1;
-  color: #0f172a;
+  color: var(--ww-card-fg, var(--ww-fg, #0f172a));
   text-transform: uppercase;
   pointer-events: none;
 }
@@ -198,7 +200,8 @@
   backdrop-filter: blur(3px);
 }
 .cw-celeb-box {
-  background: #fff;
+  background: var(--ww-card-bg, #fff);
+  color: var(--ww-card-fg, var(--ww-fg, #0f172a));
   border-radius: 1.25rem;
   padding: 2rem 2.5rem;
   text-align: center;
@@ -215,8 +218,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
-  border: 1px solid #94a3b8;
+  background: var(--ww-card-bg, #fff);
+  border: 1px solid var(--ww-card-border, #94a3b8);
 }
 .cw-pre-blk { background: #1e293b; }
 

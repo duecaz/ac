@@ -19,7 +19,7 @@
   transition: transform .15s, opacity .2s;
 }
 .ql-box:hover:not(:disabled):not(.ql-open) { transform: scale(1.06); }
-.ql-box.ql-open { color: #1f2937; }
+.ql-box.ql-open { background: var(--ww-card-bg, #fff) !important; color: var(--ww-card-fg, var(--ww-fg, #1f2937)); border-color: var(--ww-card-border, #dee2e6); }
 .ql-box:disabled { cursor: default; }
 .ql-num { font-size: 1.8rem; }
 
@@ -42,4 +42,4 @@
   border: none;
 }
 .ql-sbox.ql-done { opacity: .45; }
-.ql-sbox.ql-open { color: #1f2937; }
+.ql-sbox.ql-open { background: var(--ww-card-bg, #fff) !important; color: var(--ww-card-fg, var(--ww-fg, #1f2937)); }

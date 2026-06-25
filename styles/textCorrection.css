@@ -21,12 +21,12 @@
   font: inherit; color: inherit;
   min-width: 1.4em; min-height: 1.7em; line-height: 1.5;
   padding: .05em .2em; margin: 0 .05em;
-  border: 2px dashed rgba(99,102,241,.45); border-radius: .5rem;
-  background: #fff; cursor: pointer; vertical-align: baseline;
+  border: 2px dashed var(--ww-accent, rgba(99,102,241,.45)); border-radius: .5rem;
+  background: var(--ww-card-bg, #fff); cursor: pointer; vertical-align: baseline;
   touch-action: manipulation; -webkit-tap-highlight-color: transparent;
   transition: background .12s, border-color .12s, transform .08s;
 }
-.tc-gap { min-width: .9em; padding: .05em .1em; background: #f7f8ff; }
+.tc-gap { min-width: .9em; padding: .05em .1em; background: var(--ww-bg-soft, #f7f8ff); }
 .tc-tap:active { transform: scale(.9); }
 @media (hover: hover) { .tc-tap:not(.is-revealed):hover { background: #fff3cd; border-color: #ffc107; } }
 
