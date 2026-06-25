@@ -44,8 +44,4 @@ export class CrosswordTemplate extends BaseTemplate {
       .filter(w => w.word && w.row != null && w.col != null && w.dir);
     return { words };
   }
-
-  static renderRound() {
-    // Not used for solo-only template
-  }
 }
