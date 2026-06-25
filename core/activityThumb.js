@@ -188,11 +188,34 @@ function textHtml(act) {
 
 function wheelHtml(act) {
   const items = act.content?.entries || act.content?.items || act.content?.words || [];
-  const labels = items.map(i => typeof i === 'string' ? i : (i.text || i.label || i.question || ''))
+  const labels = items.map(i => typeof i === 'string' ? i : (i.q || i.text || i.label || i.question || ''))
     .filter(Boolean).slice(0, 8);
   return `<div class="ww-player" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem">
     ${wheelSvg(labels, { size: 520 })}
     <div class="fs-4 fw-semibold text-center">${escapeHtml(act.title || 'Ruleta')}</div>
+  </div>`;
+}
+
+// "Abre Cajas" (question-live): grid of numbered colored boxes, or a wheel of
+// numbers if the activity uses the wheel selector — mirrors the solo player.
+function boxesHtml(act) {
+  const BOX = ['#e74c3c','#e67e22','#d4ac0d','#27ae60','#16a085','#2980b9','#8e44ad','#c0392b'];
+  const items = act.content?.items || act.content?.entries || [];
+  const n = items.length || 6;
+  if ((act.rules?.selector) === 'wheel') {
+    const labels = Array.from({ length: Math.min(n, 8) }, (_, i) => String(i + 1));
+    return `<div class="ww-player" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem">
+      ${wheelSvg(labels, { size: 520 })}
+      <div class="fs-4 fw-semibold text-center">${escapeHtml(act.title || 'Abre Cajas')}</div>
+    </div>`;
+  }
+  const cols = Math.min(4, Math.max(2, Math.ceil(n / 2)));
+  const boxes = Array.from({ length: n }, (_, i) =>
+    `<div style="background:${BOX[i % BOX.length]};color:#fff;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:clamp(1.6rem,9cqmin,3.4rem);font-weight:800;aspect-ratio:1">${i + 1}</div>`
+  ).join('');
+  return `<div class="ww-player" style="display:flex;flex-direction:column;height:100%;gap:1.2rem;justify-content:center">
+    <div class="fs-3 fw-bold text-center">${escapeHtml(act.title || 'Abre Cajas')}</div>
+    <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:14px;max-width:760px;margin:0 auto;width:100%">${boxes}</div>
   </div>`;
 }
 
@@ -292,6 +315,7 @@ function buildHtml(act) {
     case 'tildes':
     case 'comas':       return textHtml(act);
     case 'wheel':       return wheelHtml(act);
+    case 'question-live': return boxesHtml(act);
     case 'wordsearch':  return wordsearchHtml(act);
     case 'froggy':      return froggyHtml(act);
     case 'crossword':   return crosswordHtml(act);
