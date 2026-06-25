@@ -501,7 +501,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
   async function paintQuestionLive() {
     const qlOpen     = session.ql_open ?? null;
     const qlQuestion = session.ql_question ?? null;
-    const qlImage    = session.ql_image ?? null;
+    const qlImage    = qlOpen !== null ? (items[qlOpen]?.image || null) : null;
     const qlPoints   = session.ql_points || {};
     const qlBy       = session.ql_by ?? null;
     const qlByName   = session.ql_by_name ?? null;

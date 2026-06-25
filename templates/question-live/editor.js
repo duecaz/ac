@@ -2,7 +2,21 @@ import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { itemControlsHtml, reorderArray } from '../../core/editorPrimitives.js';
 import { renderEditorShell } from '../../core/editorShell.js';
-import { renderImagePicker, attachImagePicker } from '../../core/imagePicker.js';
+import { toast } from '../../core/toast.js';
+
+// Images are stored INLINE as data-URLs inside the activity JSON (same approach
+// as the custom background). No external upload — works on PocketBase with no
+// Supabase storage. Kept small so the activity/live record stays light.
+const IMG_MAX_BYTES = 200 * 1024; // 200 KB
+
+function readDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = e => resolve(e.target.result);
+    r.onerror = () => reject(new Error('No se pudo leer la imagen.'));
+    r.readAsDataURL(file);
+  });
+}
 
 export function renderQuestionLiveEditor(root, activity, onChange) {
   const a = activity;
@@ -14,6 +28,63 @@ export function renderQuestionLiveEditor(root, activity, onChange) {
   renderEditorShell(root, a, onChange, {
     content: { label: 'Preguntas', html: contentHtml, wire: wireContent },
     rules: { label: 'Selector', html: rulesHtml, wire: wireRules },
+  });
+}
+
+function newItem() {
+  return { id: 'q_' + Math.random().toString(36).slice(2, 8), q: '', image: null };
+}
+
+function imgTileHtml(url) {
+  return `
+    <input type="file" accept="image/*" class="d-none ql-img-file">
+    ${url
+      ? `<img src="${escapeHtml(url)}" class="img-fluid rounded mb-1" style="max-height:90px;object-fit:contain">`
+      : `<div class="d-flex flex-column align-items-center justify-content-center text-muted bg-body-secondary rounded mb-1" style="height:80px"><i class="bi bi-image fs-4"></i><small>Sin imagen</small></div>`}
+    <div class="d-flex gap-1 justify-content-center flex-wrap">
+      <button type="button" class="btn btn-sm btn-outline-primary ql-img-add"><i class="bi ${url ? 'bi-arrow-repeat' : 'bi-plus-lg'}"></i> ${url ? 'Cambiar' : 'Imagen'}</button>
+      ${url ? `<button type="button" class="btn btn-sm btn-outline-danger ql-img-del"><i class="bi bi-trash"></i></button>` : ''}
+    </div>`;
+}
+
+function contentHtml(a) {
+  return `
+    <p class="small text-muted">Preguntas que se muestran en cajas numeradas. El alumno elige una caja, responde de viva voz y el profesor asigna los puntos. Puedes añadir una imagen a cada pregunta (máx. 200&nbsp;KB).</p>
+    ${a.content.items.map((item, i) => `
+      <div class="row g-2 mb-3 align-items-start border-bottom pb-3">
+        <div class="col-12 col-md-9">
+          <div class="input-group">
+            <span class="input-group-text fw-bold">${i + 1}</span>
+            <input class="form-control ql-q" data-i="${i}" placeholder="Escribe la pregunta aquí…" value="${escapeHtml(item.q || '')}">
+            <span class="input-group-text p-0 border-0 ps-2 d-flex">${itemControlsHtml(i, a.content.items.length)}</span>
+          </div>
+        </div>
+        <div class="col-12 col-md-3 text-center" id="img-${i}">${imgTileHtml(item.image)}</div>
+      </div>`).join('')}
+    <button class="btn btn-outline-primary mt-2" id="ql-add"><i class="bi bi-plus-lg"></i> Añadir pregunta</button>`;
+}
+
+function wireContent(root, a, ctx) {
+  on(root, 'input', '.ql-q', (e, el) => { a.content.items[+el.dataset.i].q = e.target.value; ctx.onChange(a); });
+  on(root, 'click', '.item-del', (_, b) => { a.content.items.splice(+b.dataset.i, 1); ctx.onChange(a); ctx.repaint(); });
+  on(root, 'click', '.item-up', (_, b) => { reorderArray(a.content.items, +b.dataset.i, -1); ctx.onChange(a); ctx.repaint(); });
+  on(root, 'click', '.item-down', (_, b) => { reorderArray(a.content.items, +b.dataset.i, +1); ctx.onChange(a); ctx.repaint(); });
+  on(root, 'click', '#ql-add', () => { a.content.items.push(newItem()); ctx.onChange(a); ctx.repaint(); });
+
+  // Inline image handling (data-URL, 200 KB cap, no external upload).
+  const tileIndex = (el) => { const t = el.closest('[id^="img-"]'); return t ? +t.id.slice(4) : -1; };
+  on(root, 'click', '.ql-img-add', (_, b) => { b.closest('[id^="img-"]')?.querySelector('.ql-img-file')?.click(); });
+  on(root, 'click', '.ql-img-del', (_, b) => { const i = tileIndex(b); if (i < 0) return; a.content.items[i].image = null; ctx.onChange(a); ctx.repaint(); });
+  on(root, 'change', '.ql-img-file', async (e) => {
+    const input = e.target;
+    const i = tileIndex(input);
+    const f = input.files?.[0];
+    if (i < 0 || !f) return;
+    if (f.size > IMG_MAX_BYTES) { toast(`Imagen demasiado grande (${Math.round(f.size / 1024)} KB). Máximo 200 KB.`, 'danger', 5000); input.value = ''; return; }
+    try {
+      a.content.items[i].image = await readDataUrl(f);
+      ctx.onChange(a); ctx.repaint();
+    } catch (err) { toast(err.message, 'danger', 4000); }
   });
 }
 
@@ -45,36 +116,4 @@ function rulesHtml(a) {
 
 function wireRules(root, a, ctx) {
   on(root, 'change', '.ql-sel', (e) => { a.rules.selector = e.target.value; ctx.onChange(a); ctx.repaint(); });
-}
-
-function newItem() {
-  return { id: 'q_' + Math.random().toString(36).slice(2, 8), q: '', image: null };
-}
-
-function contentHtml(a) {
-  return `
-    <p class="small text-muted">Preguntas que se muestran en cajas numeradas. El alumno elige una caja, responde de viva voz y el profesor asigna los puntos. Puedes añadir una imagen a cada pregunta.</p>
-    ${a.content.items.map((item, i) => `
-      <div class="row g-2 mb-3 align-items-start border-bottom pb-3">
-        <div class="col-12 col-md-9">
-          <div class="input-group">
-            <span class="input-group-text fw-bold">${i + 1}</span>
-            <input class="form-control ql-q" data-i="${i}" placeholder="Escribe la pregunta aquí…" value="${escapeHtml(item.q || '')}">
-            <span class="input-group-text p-0 border-0 ps-2 d-flex">${itemControlsHtml(i, a.content.items.length)}</span>
-          </div>
-        </div>
-        <div class="col-12 col-md-3" id="img-${i}">${renderImagePicker(item.image)}</div>
-      </div>`).join('')}
-    <button class="btn btn-outline-primary mt-2" id="ql-add"><i class="bi bi-plus-lg"></i> Añadir pregunta</button>`;
-}
-
-function wireContent(root, a, ctx) {
-  on(root, 'input', '.ql-q', (e, el) => { a.content.items[+el.dataset.i].q = e.target.value; ctx.onChange(a); });
-  on(root, 'click', '.item-del', (_, b) => { a.content.items.splice(+b.dataset.i, 1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '.item-up', (_, b) => { reorderArray(a.content.items, +b.dataset.i, -1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '.item-down', (_, b) => { reorderArray(a.content.items, +b.dataset.i, +1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '#ql-add', () => { a.content.items.push(newItem()); ctx.onChange(a); ctx.repaint(); });
-  a.content.items.forEach((item, i) => {
-    attachImagePicker(root, `#img-${i}`, item.image, (url) => { item.image = url; ctx.onChange(a); }, { maxBytes: 200 * 1024 });
-  });
 }

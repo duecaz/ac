@@ -141,7 +141,7 @@ function createLiveSession(activity, T, opts) {
 
   const leaderboard = (limit = 50) =>
     [...state.players].sort((a, b) => b.score - a.score).slice(0, limit)
-      .map((p, i) => ({ rank: i + 1, name: p.name, score: p.score }));
+      .map((p, i) => ({ rank: i + 1, id: p.id, name: p.name, score: p.score }));
 
   return {
     state, join, dispatch, submit, settle, roundPayload, leaderboard,

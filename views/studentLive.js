@@ -154,10 +154,11 @@ export async function renderPlay(rootSel, code) {
   async function qlOpenQuestion(idx) {
     if (session.ql_open !== null) return; // race — someone beat us
     const allItems = sessionItems(activity);
+    // Image is NOT put in session state (data-URLs are heavy) — both host and
+    // student already hold the full activity and read it locally by index.
     await setSessionState(session.id, {
       ql_open: idx,
       ql_question: allItems[idx]?.q || '',
-      ql_image: allItems[idx]?.image || null,
       ql_by: player.playerId,
       ql_by_name: player.name,
     });
@@ -181,7 +182,8 @@ export async function renderPlay(rootSel, code) {
   function paintQuestionLiveBoxes() {
     const qlOpen     = session.ql_open ?? null;
     const qlQuestion = session.ql_question ?? null;
-    const qlImage    = session.ql_image ?? null;
+    const allItems0  = sessionItems(activity);
+    const qlImage    = qlOpen !== null ? (allItems0[qlOpen]?.image || null) : null;
     const qlPoints   = session.ql_points || {};
     const qlBy       = session.ql_by ?? null;
     const allItems   = sessionItems(activity);
@@ -220,10 +222,10 @@ export async function renderPlay(rootSel, code) {
   function paintQuestionLiveWheel() {
     const qlOpen     = session.ql_open ?? null;
     const qlQuestion = session.ql_question ?? null;
-    const qlImage    = session.ql_image ?? null;
     const qlPoints   = session.ql_points || {};
     const qlBy       = session.ql_by ?? null;
     const allItems   = sessionItems(activity);
+    const qlImage    = qlOpen !== null ? (allItems[qlOpen]?.image || null) : null;
     const iMine      = qlBy === player.playerId;
 
     // A question is open → show the question card, no wheel.

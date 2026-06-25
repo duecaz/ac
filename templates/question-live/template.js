@@ -14,7 +14,7 @@ export class QuestionLiveTemplate extends BaseTemplate {
     templateVersion: 1,
     aspectRatio: '4/3',
     modes: { solo: false, live: true, async: false, practice: false },
-    needsImageUpload: true,
+    needsImageUpload: false, // images stored inline as data-URLs (no external upload)
     needsAudioUpload: false,
     defaultRules: () => ({ selector: 'boxes' }),
     defaultScoring: () => ({}),
