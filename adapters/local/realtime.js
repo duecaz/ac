@@ -87,7 +87,8 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
       if ('started_at' in patch) room.startedAt = patch.started_at ?? null;
       if ('ql_open' in patch) s.qlOpen = patch.ql_open ?? null;
       if ('ql_question' in patch) s.qlQuestion = patch.ql_question ?? null;
-      if ('ql_done' in patch) s.qlDone = patch.ql_done ?? [];
+      if ('ql_image' in patch) s.qlImage = patch.ql_image ?? null;
+      if ('ql_points' in patch) s.qlPoints = patch.ql_points ?? {};
       if ('ql_by' in patch) s.qlBy = patch.ql_by ?? null;
       if ('ql_by_name' in patch) s.qlByName = patch.ql_by_name ?? null;
       if (patch.ql_award) {
@@ -157,7 +158,8 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
         activity_snap: r.activity,
         ql_open: r.state.qlOpen ?? null,
         ql_question: r.state.qlQuestion ?? null,
-        ql_done: r.state.qlDone ?? [],
+        ql_image: r.state.qlImage ?? null,
+        ql_points: r.state.qlPoints ?? {},
         ql_by: r.state.qlBy ?? null,
         ql_by_name: r.state.qlByName ?? null,
       };

@@ -14,19 +14,19 @@ export class QuestionLiveTemplate extends BaseTemplate {
     templateVersion: 1,
     aspectRatio: '4/3',
     modes: { solo: false, live: true, async: false, practice: false },
-    needsImageUpload: false,
+    needsImageUpload: true,
     needsAudioUpload: false,
     defaultRules: () => ({}),
     defaultScoring: () => ({}),
     defaultLive: () => ({}),
     defaultContent: () => ({
       items: [
-        { id: newId(), q: '¿Cuál es la capital de Francia?' },
-        { id: newId(), q: '¿Cuánto es 8 × 7?' },
-        { id: newId(), q: '¿Quién escribió el Quijote?' },
-        { id: newId(), q: '¿Cuál es el río más largo del mundo?' },
-        { id: newId(), q: '¿En qué año llegó Colón a América?' },
-        { id: newId(), q: '¿Cuál es el planeta más grande del sistema solar?' },
+        { id: newId(), q: '¿Cuál es la capital de Francia?', image: null },
+        { id: newId(), q: '¿Cuánto es 8 × 7?', image: null },
+        { id: newId(), q: '¿Quién escribió el Quijote?', image: null },
+        { id: newId(), q: '¿Cuál es el río más largo del mundo?', image: null },
+        { id: newId(), q: '¿En qué año llegó Colón a América?', image: null },
+        { id: newId(), q: '¿Cuál es el planeta más grande del sistema solar?', image: null },
       ]
     })
   };

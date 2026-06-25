@@ -23,7 +23,9 @@ export function renderImagePicker(currentUrl) {
     </div>`;
 }
 
-export function attachImagePicker(root, containerSel, currentUrl, onChange) {
+// opts.maxBytes — optional client-side size cap (e.g. 200*1024). When set, files
+// over the limit are rejected before upload with a friendly toast.
+export function attachImagePicker(root, containerSel, currentUrl, onChange, opts = {}) {
   const el = typeof root === 'string' ? document.querySelector(root) : root;
   if (!el) return;
   const container = el.querySelector(containerSel);
@@ -34,7 +36,7 @@ export function attachImagePicker(root, containerSel, currentUrl, onChange) {
 
   const rerender = (url) => {
     container.innerHTML = renderImagePicker(url);
-    attachImagePicker(root, containerSel, url, onChange);
+    attachImagePicker(root, containerSel, url, onChange, opts);
   };
 
   if (changeBtn && fileInput) changeBtn.addEventListener('click', () => fileInput.click());
@@ -42,6 +44,11 @@ export function attachImagePicker(root, containerSel, currentUrl, onChange) {
     fileInput.addEventListener('change', async (e) => {
       const f = e.target.files?.[0];
       if (!f) return;
+      if (opts.maxBytes && f.size > opts.maxBytes) {
+        toast(`Imagen demasiado grande (máx. ${Math.round(opts.maxBytes / 1024)} KB)`, 'danger', 5000);
+        e.target.value = '';
+        return;
+      }
       if (changeBtn) changeBtn.disabled = true;
       try {
         const url = await uploadMedia(f);

@@ -102,7 +102,8 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         activity_snap: rec.activity,
         ql_open: rec.state?.qlOpen ?? null,
         ql_question: rec.state?.qlQuestion ?? null,
-        ql_done: rec.state?.qlDone ?? [],
+        ql_image: rec.state?.qlImage ?? null,
+        ql_points: rec.state?.qlPoints ?? {},
         ql_by: rec.state?.qlBy ?? null,
         ql_by_name: rec.state?.qlByName ?? null,
       };
@@ -122,7 +123,8 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         activity_snap: rec.activity,
         ql_open: rec.state?.qlOpen ?? null,
         ql_question: rec.state?.qlQuestion ?? null,
-        ql_done: rec.state?.qlDone ?? [],
+        ql_image: rec.state?.qlImage ?? null,
+        ql_points: rec.state?.qlPoints ?? {},
         ql_by: rec.state?.qlBy ?? null,
         ql_by_name: rec.state?.qlByName ?? null,
       };
@@ -174,7 +176,8 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       if ('started_at' in patch) engine.state.startedAt = patch.started_at ?? null;
       if ('ql_open' in patch) engine.state.qlOpen = patch.ql_open ?? null;
       if ('ql_question' in patch) engine.state.qlQuestion = patch.ql_question ?? null;
-      if ('ql_done' in patch) engine.state.qlDone = patch.ql_done ?? [];
+      if ('ql_image' in patch) engine.state.qlImage = patch.ql_image ?? null;
+      if ('ql_points' in patch) engine.state.qlPoints = patch.ql_points ?? {};
       if ('ql_by' in patch) engine.state.qlBy = patch.ql_by ?? null;
       if ('ql_by_name' in patch) engine.state.qlByName = patch.ql_by_name ?? null;
       if (patch.ql_award) {

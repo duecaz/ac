@@ -501,22 +501,24 @@ async function renderHost(rootSel, code, sessionId, activity) {
   async function paintQuestionLive() {
     const qlOpen     = session.ql_open ?? null;
     const qlQuestion = session.ql_question ?? null;
-    const qlDone     = session.ql_done || [];
+    const qlImage    = session.ql_image ?? null;
+    const qlPoints   = session.ql_points || {};
     const qlBy       = session.ql_by ?? null;
     const qlByName   = session.ql_by_name ?? null;
+    const doneCount  = Object.keys(qlPoints).length;
     const cols       = Math.min(6, Math.max(3, Math.ceil(items.length / 2)));
 
     const boxesHtml = items.map((_, idx) => {
-      const isDone = qlDone.includes(idx);
+      const isDone = qlPoints[idx] != null;
       const isOpen = qlOpen === idx;
       const color  = QL_COLORS[idx % QL_COLORS.length];
       let style, cls = 'ql-box';
-      if (isDone)      { style = `background:#6c757d;border-color:#6c757d;`; }
+      if (isDone)      { style = `background:#198754;border-color:#198754;`; }
       else if (isOpen) { style = `background:#fff;border-color:${color};`; cls += ' ql-open'; }
       else             { style = `background:${color};border-color:${color};`; }
       return `<button class="${cls}" data-idx="${idx}" ${isDone ? 'disabled' : ''} style="${style}">
         ${isDone
-          ? '<i class="bi bi-check-lg fs-4"></i>'
+          ? `<span class="ql-num">+${qlPoints[idx]}</span>`
           : isOpen ? `<span class="ql-num" style="color:#1f2937">${idx + 1}</span>`
                    : `<span class="ql-num">${idx + 1}</span>`}
       </button>`;
@@ -526,13 +528,14 @@ async function renderHost(rootSel, code, sessionId, activity) {
       <div class="py-3">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h4 class="mb-0 text-light"><i class="bi bi-chat-square-text-fill text-warning me-2"></i> Pregunta Live</h4>
-          <span class="badge bg-secondary fs-6">${qlDone.length} / ${items.length} respondidas</span>
+          <span class="badge bg-secondary fs-6">${doneCount} / ${items.length} respondidas</span>
           ${fullscreenButtonHtml()}
         </div>
         <div class="ql-grid mb-4" style="grid-template-columns:repeat(${cols},1fr)">${boxesHtml}</div>
         ${qlOpen !== null ? `
           <div class="card bg-dark text-light p-4 mb-3 mx-auto" style="max-width:700px">
             <p class="text-warning fw-bold mb-2 fs-5"><i class="bi bi-hand-index-fill"></i> ${escapeHtml(qlByName || '—')} eligió esta caja</p>
+            ${qlImage ? `<div class="text-center mb-3"><img src="${escapeHtml(qlImage)}" class="img-fluid rounded" style="max-height:240px"></div>` : ''}
             <h3 class="text-center mb-4">${escapeHtml(qlQuestion || '')}</h3>
             <div class="d-flex justify-content-center gap-3 flex-wrap">
               <button class="btn btn-outline-success btn-lg ql-award" data-pts="10">+10 pts</button>
@@ -552,19 +555,19 @@ async function renderHost(rootSel, code, sessionId, activity) {
     attachFullscreenButton(rootSel);
 
     on(rootSel, 'click', '.ql-award', async (_, btn) => {
-      if (!qlBy) return;
-      const points  = +btn.dataset.pts;
-      const newDone = [...qlDone, qlOpen];
+      if (!qlBy || qlOpen === null) return;
+      const points    = +btn.dataset.pts;
+      const newPoints = { ...qlPoints, [qlOpen]: points };
       await setSessionState(sessionId, {
         ql_award: { playerId: qlBy, points },
-        ql_open: null, ql_question: null, ql_by: null, ql_by_name: null,
-        ql_done: newDone,
+        ql_open: null, ql_question: null, ql_image: null, ql_by: null, ql_by_name: null,
+        ql_points: newPoints,
       });
     });
 
+    // "Sin puntos" closes the box as if it was never opened — it stays available.
     on(rootSel, 'click', '#ql-close', async () => {
-      const newDone = [...qlDone, qlOpen];
-      await setSessionState(sessionId, { ql_open: null, ql_question: null, ql_by: null, ql_by_name: null, ql_done: newDone });
+      await setSessionState(sessionId, { ql_open: null, ql_question: null, ql_image: null, ql_by: null, ql_by_name: null });
     });
 
     on(rootSel, 'click', '#ql-end', async () => {

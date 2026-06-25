@@ -146,7 +146,8 @@ export async function renderPlay(rootSel, code) {
   function paintQuestionLive() {
     const qlOpen     = session.ql_open ?? null;
     const qlQuestion = session.ql_question ?? null;
-    const qlDone     = session.ql_done || [];
+    const qlImage    = session.ql_image ?? null;
+    const qlPoints   = session.ql_points || {};
     const qlBy       = session.ql_by ?? null;
     const allItems   = sessionItems(activity);
     const QL_COLORS  = ['#e74c3c','#e67e22','#d4ac0d','#27ae60','#16a085','#2980b9','#8e44ad','#c0392b'];
@@ -155,17 +156,17 @@ export async function renderPlay(rootSel, code) {
     const canPick    = qlOpen === null; // only 1 box open at a time
 
     const boxesHtml = allItems.map((_, idx) => {
-      const isDone = qlDone.includes(idx);
+      const isDone = qlPoints[idx] != null;
       const isOpen = qlOpen === idx;
       const color  = QL_COLORS[idx % QL_COLORS.length];
       let style, cls = 'ql-sbox';
-      if (isDone)      { style = `background:#6c757d;`; cls += ' ql-done'; }
+      if (isDone)      { style = `background:#198754;`; cls += ' ql-done'; }
       else if (isOpen) { style = `background:#fff;border:3px solid ${color};`; cls += ' ql-open'; }
       else             style = `background:${color};`;
       const clickable = !isDone && canPick && !isOpen;
       return `<button class="${cls}" data-idx="${idx}" ${!clickable ? 'disabled' : ''} style="${style};border-radius:8px;cursor:${clickable?'pointer':'default'}">
         ${isDone
-          ? '<i class="bi bi-check-lg"></i>'
+          ? `<span>+${qlPoints[idx]}</span>`
           : isOpen ? `<span style="color:#1f2937;font-weight:700">${idx + 1}</span>` : `<b>${idx + 1}</b>`}
       </button>`;
     }).join('');
@@ -176,6 +177,7 @@ export async function renderPlay(rootSel, code) {
         ${qlOpen !== null
           ? `<div class="card bg-dark text-light p-4 mx-auto mt-2" style="max-width:500px">
                <p class="text-muted small mb-1">${iMine ? '<i class="bi bi-hand-index-fill text-warning"></i> ¡Tu pregunta!' : '<i class="bi bi-hand-index-fill"></i> Pregunta en curso'}</p>
+               ${qlImage ? `<div class="text-center mb-2"><img src="${escapeHtml(qlImage)}" class="img-fluid rounded" style="max-height:180px"></div>` : ''}
                <h3 class="text-center">${escapeHtml(qlQuestion || '')}</h3>
              </div>`
           : `<p class="text-muted mt-3"><i class="bi bi-hand-index"></i> Elige una caja</p>`}
@@ -188,6 +190,7 @@ export async function renderPlay(rootSel, code) {
       await setSessionState(session.id, {
         ql_open: idx,
         ql_question: allItems[idx]?.q || '',
+        ql_image: allItems[idx]?.image || null,
         ql_by: player.playerId,
         ql_by_name: player.name,
       });
