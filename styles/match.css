@@ -1,13 +1,94 @@
-.ww-match .ww-card {
-  border: 2px solid #dee2e6;
-  background: #fff;
-  font-weight: 500;
-  padding: 1rem;
-  white-space: normal;
-  transition: transform .1s, background .15s, border-color .15s;
+/* Match (Emparejar) — line-drawing two-column layout */
+
+.ww-match-arena {
+  display: flex;
+  position: relative;
+  gap: 36px;
 }
-.ww-match .ww-card:hover:not(:disabled) { transform: translateY(-2px); border-color: #6366f1; }
-.ww-match .ww-card-sel { background: #fff3cd; border-color: #f59e0b; }
-.ww-match .ww-card-wrong { background: #fee2e2; border-color: #ef4444; animation: shake .2s; }
-.ww-match .ww-card-done { opacity: .35; background: #d1fae5; border-color: #10b981; text-decoration: line-through; }
-@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+.ww-col-left,
+.ww-col-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: visible;
+}
+.ww-lines-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 5;
+}
+
+/* Cards */
+.ww-match .ww-card {
+  position: relative;
+  border: 2px solid #dee2e6;
+  border-radius: 10px;
+  background: #fff;
+  padding: 10px;
+  text-align: center;
+  overflow: visible;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: border-color .15s, background .15s, opacity .2s;
+}
+.ww-match .ww-card img {
+  width: 100%;
+  height: 72px;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+  border-radius: 4px;
+}
+.ww-match .ww-card-label {
+  display: block;
+  font-weight: 500;
+  font-size: .85rem;
+  margin-top: 4px;
+}
+.ww-match .ww-card-wrong {
+  background: #fee2e2;
+  border-color: #ef4444;
+  animation: ww-shake .3s;
+}
+.ww-match .ww-card-done {
+  opacity: .4;
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+.ww-match .ww-card-done .ww-dot { display: none; }
+
+/* Connector dots */
+.ww-dot {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #94a3b8;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,.25);
+  cursor: crosshair;
+  z-index: 10;
+  pointer-events: all;
+  touch-action: none;
+  transition: background .15s, transform .15s;
+  display: block;
+}
+.ww-dot:hover {
+  background: #6366f1;
+  transform: translateY(-50%) scale(1.3);
+}
+.ww-dot[data-side="L"] { right: -10px; }
+.ww-dot[data-side="R"] { left:  -10px; }
+
+@keyframes ww-shake {
+  0%,100% { transform: translateX(0); }
+  25%     { transform: translateX(-6px); }
+  75%     { transform: translateX(6px); }
+}

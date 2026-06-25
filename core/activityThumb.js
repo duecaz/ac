@@ -101,19 +101,31 @@ function mathHtml(act) {
 
 function matchHtml(act) {
   const pairs = (act.content?.pairs || [])
-    .filter(p => String(p.left||'').trim() && String(p.right||'').trim()).slice(0, 5);
+    .filter(p => (String(p.left||'').trim() || p.leftImage || p.image) &&
+                 (String(p.right||'').trim() || p.rightImage))
+    .slice(0, 4);
   if (!pairs.length) return emptyHtml(act);
-  const card = t => `<button class="ww-card btn w-100 mb-2 text-start">${escapeHtml(t)}</button>`;
-  const lefts = pairs.map(p => p.left);
-  const rights = pairs.map(p => p.right).reverse();
-  return `<div class="ww-match">
-    <div class="d-flex justify-content-between align-items-center mb-3">
+  const rights = [...pairs].reverse();
+  const thumbCard = (p, side) => {
+    const img  = side === 'L' ? (p.leftImage || p.image || null) : (p.rightImage || null);
+    const text = side === 'L' ? (p.left || '') : (p.right || '');
+    const dot  = side === 'L'
+      ? `style="right:-7px;top:50%;transform:translateY(-50%);position:absolute;width:12px;height:12px;border-radius:50%;background:#94a3b8;border:2px solid #fff;"`
+      : `style="left:-7px;top:50%;transform:translateY(-50%);position:absolute;width:12px;height:12px;border-radius:50%;background:#94a3b8;border:2px solid #fff;"`;
+    return `<div style="position:relative;border:2px solid #dee2e6;border-radius:8px;padding:8px;background:#fff;text-align:center;margin-bottom:6px;overflow:visible;">
+      ${img ? `<img src="${img}" style="width:100%;height:56px;object-fit:contain;display:block;" alt="">` : ''}
+      ${text ? `<span style="font-size:.8rem;font-weight:500;display:block;">${escapeHtml(text)}</span>` : ''}
+      <span ${dot}></span>
+    </div>`;
+  };
+  return `<div class="ww-match p-2">
+    <div class="d-flex justify-content-between align-items-center mb-2">
       <span class="badge bg-secondary">0 / ${pairs.length}</span>
-      <span class="badge bg-primary">★ 0</span></div>
-    <h4 class="text-center mb-4">${escapeHtml(act.title || '')}</h4>
-    <div class="row g-2">
-      <div class="col-6">${lefts.map(card).join('')}</div>
-      <div class="col-6">${rights.map(card).join('')}</div>
+      <span class="badge bg-primary">★ 0</span>
+    </div>
+    <div style="display:flex;gap:28px;position:relative;align-items:flex-start;">
+      <div style="flex:1;">${pairs.map(p => thumbCard(p, 'L')).join('')}</div>
+      <div style="flex:1;">${rights.map(p => thumbCard(p, 'R')).join('')}</div>
     </div>
   </div>`;
 }
