@@ -85,7 +85,7 @@ export async function renderAuthBadge(targetSel) {
     return;
   }
   const p = await getProfile();
-  const name = p?.display_name || u.email.split('@')[0];
+  const name = p?.display_name || u.name || u.email.split('@')[0];
   target.innerHTML = `
     <div class="dropdown">
       <button class="btn btn-sm btn-outline-light dropdown-toggle" data-bs-toggle="dropdown">

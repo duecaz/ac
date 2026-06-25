@@ -1,96 +1,96 @@
-// Auth facade. Wraps Supabase auth + profiles.
-import { getClient } from './supabase.js';
+// Auth facade. PocketBase email/password auth.
+import { PB_URL } from '../pocketbase.config.js';
 
+const STORE_KEY = 'ww.pb.auth';
 let _user = null;
-let _profile = null;
 const listeners = new Set();
+
+function loadStored() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)); } catch { return null; }
+}
+
+function saveStored(token, record) {
+  localStorage.setItem(STORE_KEY, JSON.stringify({ token, record }));
+}
+
+function clearStored() {
+  localStorage.removeItem(STORE_KEY);
+}
 
 export async function getUser() {
   if (_user !== null) return _user;
-  const sb = await getClient();
-  const { data } = await sb.auth.getUser();
-  _user = data?.user || null;
-  return _user;
+  const stored = loadStored();
+  if (stored?.record) { _user = stored.record; return _user; }
+  return null;
 }
 
 export async function getProfile() {
-  if (_profile) return _profile;
   const u = await getUser();
   if (!u) return null;
-  const sb = await getClient();
-  const { data } = await sb.from('profiles').select('*').eq('id', u.id).maybeSingle();
-  _profile = data || null;
-  return _profile;
+  return { display_name: u.name || u.email?.split('@')[0] || null };
 }
 
-export async function signUp(email, password, displayName) {
-  const sb = await getClient();
-  const { data, error } = await sb.auth.signUp({
-    email, password,
-    options: { data: { display_name: displayName || email.split('@')[0] } }
+async function pbPost(path, body) {
+  const r = await fetch(`${PB_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
   });
-  if (error) throw error;
-  _user = data.user; _profile = null;
-  notify();
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data?.message || `Error ${r.status}`);
   return data;
 }
 
+export async function signUp(email, password, displayName) {
+  await pbPost('/api/collections/users/records', {
+    email, password, passwordConfirm: password,
+    name: displayName || email.split('@')[0],
+  });
+  return signIn(email, password);
+}
+
 export async function signIn(email, password) {
-  const sb = await getClient();
-  const { data, error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) throw error;
-  _user = data.user; _profile = null;
+  const data = await pbPost('/api/collections/users/auth-with-password', {
+    identity: email, password,
+  });
+  _user = data.record;
+  saveStored(data.token, data.record);
   notify();
   return data;
 }
 
 export async function signInWithGoogle() {
-  const sb = await getClient();
-  const options = { redirectTo: location.origin + location.pathname };
-  // MIGRACIÓN: si el usuario es anónimo, ENLAZAMOS Google a ESTE usuario en vez
-  // de crear una cuenta nueva. Así se preserva el MISMO user.id y todas sus
-  // actividades (que ya cuelgan de ese id) pasan a la cuenta permanente sin
-  // mover datos ni chocar con RLS. Requiere "Manual linking" activo en Supabase
-  // (Auth → Settings). Si no es anónimo (ya hay cuenta), login OAuth normal.
-  const u = await getUser();
-  if (u?.is_anonymous) {
-    const { error } = await sb.auth.linkIdentity({ provider: 'google', options });
-    if (error) {
-      // El mensaje de GoTrue cuando el linking manual está desactivado es poco
-      // claro; lo traducimos para que se sepa qué activar en el panel.
-      if (/manual linking|not enabled|disabled/i.test(error.message || '')) {
-        throw new Error('Activa "Manual linking" en Supabase (Auth → Settings) para conservar tus actividades al entrar con Google.');
-      }
-      throw error;
-    }
-    return;
-  }
-  const { error } = await sb.auth.signInWithOAuth({ provider: 'google', options });
-  if (error) throw error;
+  throw new Error('OAuth de Google no está configurado en este servidor PocketBase.');
 }
 
 export async function signOut() {
-  const sb = await getClient();
-  await sb.auth.signOut();
-  _user = null; _profile = null;
-  // Re-trigger anonymous auth so the app keeps working.
-  await sb.auth.signInAnonymously();
+  _user = null;
+  clearStored();
   notify();
 }
 
 export async function updateProfile(patch) {
   const u = await getUser();
   if (!u) throw new Error('not signed in');
-  const sb = await getClient();
-  const { data, error } = await sb.from('profiles').update(patch).eq('id', u.id).select().single();
-  if (error) throw error;
-  _profile = data;
+  const stored = loadStored();
+  const r = await fetch(`${PB_URL}/api/collections/users/records/${u.id}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(stored?.token ? { Authorization: `Bearer ${stored.token}` } : {}),
+    },
+    body: JSON.stringify({ name: patch.display_name ?? patch.name }),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data?.message || 'Error al actualizar perfil');
+  _user = data;
+  saveStored(stored?.token, data);
   notify();
-  return data;
+  return { display_name: data.name };
 }
 
 export function isAnonymous(user) {
-  return !!user && (user.is_anonymous || !user.email);
+  return !user || !user.email;
 }
 
 export function onAuthChange(fn) {
@@ -98,14 +98,4 @@ export function onAuthChange(fn) {
   return () => listeners.delete(fn);
 }
 
-function notify() { for (const fn of listeners) fn({ user: _user, profile: _profile }); }
-
-// Reset cache when Supabase auth changes externally (token refresh, OAuth callback).
-(async () => {
-  const sb = await getClient();
-  sb.auth.onAuthStateChange((_evt, session) => {
-    _user = session?.user || null;
-    _profile = null;
-    notify();
-  });
-})();
+function notify() { for (const fn of listeners) fn({ user: _user, profile: null }); }
