@@ -30,8 +30,8 @@ export function renderHome(rootSel) {
       <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <h2 class="mb-0">Mis actividades</h2>
         <div class="d-flex gap-2 flex-wrap">
-          <button class="btn btn-outline-secondary" id="h-import" title="Importar JSON"><i class="bi bi-upload"></i> Importar</button>
-          <button class="btn btn-outline-secondary" id="h-export-all" title="Exportar todas a JSON" ${all.length===0?'disabled':''}><i class="bi bi-download"></i> Exportar</button>
+          <button class="btn btn-outline-secondary" id="h-import" title="Importar JSON"><i class="bi bi-file-earmark-arrow-up"></i> Importar</button>
+          <button class="btn btn-outline-secondary" id="h-export-all" title="Exportar todas a JSON" ${all.length===0?'disabled':''}><i class="bi bi-file-earmark-arrow-down"></i> Exportar</button>
           <a href="#/admin" class="btn btn-outline-secondary" title="Panel de administración (modos, detalles, tests)"><i class="bi bi-shield-lock"></i> Admin</a>
           <a href="#/new-list" class="btn btn-outline-primary"><i class="bi bi-collection-play"></i> Nueva lista</a>
           <a href="#/new" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Nueva</a>

@@ -139,7 +139,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
           ${canEdit ? `<a href="#/edit/${a.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>` : ''}
           <button class="btn btn-sm btn-outline-secondary" id="btn-link"><i class="bi bi-link-45deg"></i> Copiar link</button>
           <button class="btn btn-sm btn-outline-secondary" id="btn-embed"><i class="bi bi-code-square"></i> Embed</button>
-          <button class="btn btn-sm btn-outline-secondary" id="btn-json"><i class="bi bi-download"></i> JSON</button>
+          <button class="btn btn-sm btn-outline-secondary" id="btn-json"><i class="bi bi-file-earmark-arrow-down"></i> JSON</button>
           <button class="btn btn-sm btn-outline-secondary" id="btn-fork"><i class="bi bi-files"></i> Duplicar</button>
         </div>
 

@@ -74,7 +74,7 @@ export function renderEditView(rootSel, { id, template }) {
         <span id="save-state" class="badge bg-secondary"><i class="bi bi-check2"></i> Guardado</span>
       </div>
       <div class="d-flex gap-2">
-        <button class="btn btn-outline-secondary btn-sm" id="btn-export" title="Exportar JSON"><i class="bi bi-download"></i></button>
+        <button class="btn btn-outline-secondary btn-sm" id="btn-export" title="Exportar JSON"><i class="bi bi-file-earmark-arrow-down"></i> JSON</button>
         <button class="btn btn-outline-success btn-sm" id="btn-test"><i class="bi bi-play-fill"></i> Probar</button>
         <button class="btn btn-primary btn-sm" id="btn-save"><i class="bi bi-cloud-arrow-up"></i> Guardar</button>
       </div>
