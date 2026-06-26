@@ -240,13 +240,33 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       const topic = `${COLL}/${sessionId}`;
       let active = true;
       let es = null;
+      let retries = 0;          // consecutive failed connection attempts
+      let retryTimer = null;
+
+      // Exponential backoff with jitter, capped at 30s. The native EventSource
+      // reconnect hammers a downed server every ~3s; this backs off instead so
+      // a PocketBase outage doesn't flood it with reconnects from every client.
+      function backoffDelay() {
+        const base = Math.min(30000, 1000 * 2 ** Math.min(retries, 5)); // 1,2,4,8,16,30…
+        return base / 2 + Math.random() * (base / 2);                   // 50–100% jitter
+      }
+
+      function scheduleReconnect() {
+        if (!active || retryTimer) return;
+        const delay = backoffDelay();
+        retries++;
+        console.warn(`[realtime] reconnecting in ${Math.round(delay)}ms (attempt ${retries})`);
+        retryTimer = setTimeout(() => { retryTimer = null; connect(); }, delay);
+      }
 
       function connect() {
         if (!active) return;
+        try { es?.close(); } catch {}
         es = new EventSource(`${PB_URL}/api/realtime`);
 
         es.addEventListener('PB_CONNECT', async (e) => {
           if (!active) return;
+          retries = 0; // a successful handshake resets the backoff
           try {
             const { clientId } = JSON.parse(e.data);
             await fetch(`${PB_URL}/api/realtime`, {
@@ -270,14 +290,20 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         });
 
         es.onerror = (err) => {
-          // EventSource auto-reconnects; PB_CONNECT fires again on reconnect
-          // and re-runs the subscription POST. No manual reconnect needed.
-          console.warn('[realtime] SSE connection error — browser will auto-reconnect:', err);
+          // Take over reconnection from the native EventSource: close it and
+          // reconnect on an exponential backoff so a downed server isn't flooded.
+          console.warn('[realtime] SSE connection error — backing off before reconnect:', err);
+          try { es?.close(); } catch {}
+          scheduleReconnect();
         };
       }
 
       connect();
-      return () => { active = false; es?.close(); };
+      return () => {
+        active = false;
+        if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
+        es?.close();
+      };
     },
   };
 }

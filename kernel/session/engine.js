@@ -114,7 +114,14 @@ function createLiveSession(activity, T, opts) {
     if (!isRace && (state.phase !== PHASES.QUESTION || itemIndex !== state.currentItem)) {
       throw new Error('No se aceptan respuestas en esta fase');
     }
-    state.answers[answerKey(itemIndex, playerId)] = { playerId, value, msTaken, correct: null, points: 0 };
+    const key = answerKey(itemIndex, playerId);
+    // Lock the first answer (Kahoot-style). In the standard question phase a
+    // duplicate submit — double-tap, or a submitQueue retry landing after the
+    // original already saved — must NOT overwrite the recorded answer (which
+    // would clobber its msTaken and let a slower resend beat the real one).
+    // Race mode is exempt: a wrong answer is requeued and legitimately retried.
+    if (!isRace && state.answers[key] && state.answers[key].correct === null) return;
+    state.answers[key] = { playerId, value, msTaken, correct: null, points: 0 };
   }
 
   function settle(itemIndex) {

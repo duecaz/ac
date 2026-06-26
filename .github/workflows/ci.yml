@@ -1,0 +1,22 @@
+name: CI
+
+# Run the test suite on every push and PR. The suite (tests/run.mjs) asserts on
+# import and exits non-zero on the first failure, so no test framework is needed.
+on:
+  push:
+    branches:
+      - claude/admiring-shannon-06ioqo
+      - ACTIVIDAD2
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run test suite
+        run: node tests/run.mjs

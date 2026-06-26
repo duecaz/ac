@@ -55,5 +55,8 @@ async function flushResultQueue() {
   qSave(remaining);
 }
 
-// Retry when the browser comes back online.
-window.addEventListener('online', () => { flushResultQueue().catch(() => {}); });
+// Retry when the browser comes back online. Guarded so importing this module
+// in Node (tests) doesn't throw on the missing `window` global.
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => { flushResultQueue().catch(() => {}); });
+}
