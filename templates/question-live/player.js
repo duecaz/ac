@@ -6,6 +6,7 @@ import { on } from '../../core/events.js';
 import { sessionItems } from '../../kernel/session/engine.js';
 import { wheelSvg } from '../wheel/render.js';
 import { pickIndex } from '../wheel/logic.js';
+import { runFreeformPlayer } from '../../core/soloPlayer.js';
 
 const COLORS = ['#e74c3c','#e67e22','#d4ac0d','#27ae60','#16a085','#2980b9','#8e44ad','#c0392b'];
 const SPIN_TURNS = 5;
@@ -17,13 +18,14 @@ function getItems(activity) {
   );
 }
 
-export function renderQuestionLivePlayer(rootSel, activity) {
+export function renderQuestionLivePlayer(rootSel, activity, opts = {}) {
   const selector = activity.rules?.selector || 'boxes';
-  if (selector === 'wheel') renderWheel(rootSel, activity);
-  else renderBoxes(rootSel, activity);
+  if (selector === 'wheel') renderWheel(rootSel, activity, opts);
+  else renderBoxes(rootSel, activity, opts);
 }
 
-function renderBoxes(rootSel, activity) {
+function renderBoxes(rootSel, activity, opts = {}) {
+  const ctx = runFreeformPlayer(rootSel, activity, opts);
   const items = getItems(activity);
   let openIdx = null;
   const done = new Set();
@@ -72,14 +74,19 @@ function renderBoxes(rootSel, activity) {
       openIdx = openIdx === i ? null : i;
       paint();
     });
-    on(rootSel, 'click', '#ab-done', () => { if (openIdx !== null) { done.add(openIdx); openIdx = null; } paint(); });
+    on(rootSel, 'click', '#ab-done', () => {
+      if (openIdx !== null) { done.add(openIdx); openIdx = null; }
+      if (done.size === items.length) ctx.finish({ score: done.size, maxScore: items.length, skipResultScreen: true });
+      paint();
+    });
     on(rootSel, 'click', '#ab-close', () => { openIdx = null; paint(); });
   }
 
   paint();
 }
 
-function renderWheel(rootSel, activity) {
+function renderWheel(rootSel, activity, opts = {}) {
+  const ctx = runFreeformPlayer(rootSel, activity, opts);
   const items = getItems(activity);
   const done = new Set();
   let openIdx = null;
@@ -114,6 +121,7 @@ function renderWheel(rootSel, activity) {
 
     const available = items.map((_, i) => i).filter(i => !done.has(i));
     if (available.length === 0) {
+      ctx.finish({ score: done.size, maxScore: items.length, skipResultScreen: true });
       mount(rootSel, html`
         <div class="text-center py-5">
           <h3>${escapeHtml(activity.title)}</h3>

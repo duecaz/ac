@@ -1,9 +1,9 @@
 // SVG-based spinning wheel for solo/practice mode. No scoring; just lands on a random entry.
 import { html, escapeHtml, mount } from '../../core/html.js';
-import { resultScreenHtml } from '../../core/resultScreen.js';
 import { on } from '../../core/events.js';
 import { pickIndex } from './logic.js';
 import { wheelSvg } from './render.js';
+import { runFreeformPlayer } from '../../core/soloPlayer.js';
 
 const SPIN_TURNS = 5;
 const MAX_DUR = 30000;
@@ -23,11 +23,11 @@ function getEntries(activity) {
 }
 
 export async function renderWheelPlayer(rootSel, activity, opts = {}) {
+  const ctx = runFreeformPlayer(rootSel, activity, opts);
   let entries = getEntries(activity);
   if (!entries.length) entries = ['(vacío)'];
   const dur = clampDur(activity.rules?.spinDurationMs);
   const remove = !!activity.rules?.removeAfterSpin;
-  const startedAt = Date.now();
   let history = [];
   let rotation = 0;
   let spinning = false;
@@ -58,8 +58,7 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
 
     on(rootSel, 'click', '#btn-spin', spin);
     on(rootSel, 'click', '#btn-end', () => {
-      mount(rootSel, resultScreenHtml({ title: 'Listo', stats: `${history.length} giro(s).` }));
-      if (opts.onFinish) opts.onFinish({ score: history.length, history, startedAt });
+      ctx.finish({ title: 'Listo', stats: `${history.length} giro(s).`, score: history.length, maxScore: history.length });
     });
   }
 
