@@ -1,13 +1,15 @@
 // Froggy Jumps — solo player + VS-round renderer.
+// Loop/timer/finish are handled by the SequentialShell (core/soloPlayer.js).
+// Froggy uses MANUAL advance (submit({auto:false}) + ctx.next()/ctx.finish())
+// because progression is animation-driven: a correct answer advances only when
+// the frog's jump finishes, and reaching the finish line ends the run early.
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { trySaveResult } from '../../core/results.js';
-import { resultScreenHtml } from '../../core/resultScreen.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import * as Streaks from '../../core/streaks.js';
 import { scoreFroggy, jumpPads, streakLabel } from './scorer.js';
 import { shuffle } from '../../core/roundRender.js';
-import { createCountdown } from '../../core/soloTimer.js';
+import { runSequentialPlayer } from '../../core/soloPlayer.js';
 
 // Scenario config — emoji pad + CSS class
 export const SCENARIOS = {
@@ -26,27 +28,22 @@ const VIEWPORT_H = 140; // px
 
 // ── Solo player ───────────────────────────────────────────────────────────────
 export async function renderFroggyPlayer(rootSel, activity, opts = {}) {
-  let items = (activity.content?.items || []).slice();
-  if (activity.rules?.randomize) items = shuffle(items.slice());
-  if (!items.length) {
+  const sourceItems = activity.content?.items || [];
+  if (!sourceItems.length) {
     mount(rootSel, html`<div class="alert alert-warning m-3">No hay preguntas.</div>`);
     return;
   }
 
   const rules    = activity.rules  || {};
   const scoring  = activity.scoring || {};
-  const timerSecs = rules.timer || 0;
   const scene    = SCENARIOS[rules.froggyScenario || activity.presentation?.froggyScenario || 'swamp'] || SCENARIOS.swamp;
-  const totalPads = items.length * 4;   // finish line distance
+  const totalPads = sourceItems.length * 4;   // finish line distance
   const ppc      = scoring.pointsPerCorrect || 1;
-  const startedAt = Date.now();
 
-  const state = { idx: 0, score: 0, pad: 0, streak: 0, answers: [] };
-  let timerHandle = null, t0 = Date.now();
-  let animating = false;
+  // Track progression that the shell doesn't model (frog position + visual streak).
+  const local = { pad: 0, streak: 0, animating: false };
 
   function rootEl() { return typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel; }
-  function worldEl()  { return rootEl()?.querySelector('#froggy-world'); }
   function viewportEl() { return rootEl()?.querySelector('#froggy-vp'); }
   function frogEl()  { return rootEl()?.querySelector('#froggy-frog'); }
 
@@ -70,103 +67,6 @@ export async function renderFroggyPlayer(rootSel, activity, opts = {}) {
           </div>
         </div>
       </div>`;
-  }
-
-  // ── Render question ──────────────────────────────────────────────────────────
-  function renderItem() {
-    if (state.idx >= items.length) return finish();
-    stopTimer();
-    animating = false;
-    const item = items[state.idx];
-    const opts2 = (activity.rules?.shuffleOptions !== false)
-      ? shuffle((item.options || []).slice())
-      : (item.options || []).slice();
-    t0 = Date.now();
-
-    mount(rootSel, html`
-      <div class="froggy-game ${scene.css}">
-        <div class="froggy-hud">
-          <span class="froggy-hud-pos">🐸 ${state.pad}/${totalPads}</span>
-          <div class="froggy-hud-center">
-            ${state.streak >= 3 ? `<span class="froggy-hud-streak">${streakLabel(state.streak)} ×${state.streak}</span>` : ''}
-          </div>
-          <span class="froggy-hud-right">
-            ${timerSecs > 0 ? `<span class="froggy-timer" id="froggy-timer">⏱ ${timerSecs}</span>` : ''}
-            <span class="froggy-score">★ ${state.score}</span>
-          </span>
-        </div>
-
-        ${trackHtml()}
-
-        <div class="froggy-q-area">
-          <div class="froggy-q-number">${state.idx + 1} / ${items.length}</div>
-          <div class="froggy-q-text">${escapeHtml(item.question)}</div>
-          ${item.image ? `<div class="froggy-q-img"><img src="${escapeHtml(item.image)}" alt=""></div>` : ''}
-          <div class="froggy-options">
-            ${opts2.map((o, i) => `
-              <button class="froggy-opt froggy-opt-${i}" data-value="${escapeHtml(o)}">
-                <i class="bi ${SHAPE_ICONS[i % 4]}"></i>
-                <span>${escapeHtml(o)}</span>
-              </button>`).join('')}
-          </div>
-        </div>
-      </div>
-    `);
-
-    // Position frog at current pad (no animation on re-render)
-    positionFrog(state.pad, false);
-    updateBadge();
-
-    on(rootSel, 'pointerdown', '.froggy-opt', (e, btn) => {
-      e.preventDefault();
-      if (animating) return;
-      stopTimer();
-      handleAnswer(btn.dataset.value, btn);
-    });
-
-    if (timerSecs > 0) startTimer(item);
-  }
-
-  function handleAnswer(value, btn) {
-    const ms = Date.now() - t0;
-    const item = items[state.idx];
-    const r = scoreFroggy({ value, item, msTaken: ms, activity });
-
-    rootEl()?.querySelectorAll('.froggy-opt').forEach(b => { b.style.pointerEvents = 'none'; });
-    btn?.classList.add(r.correct ? 'froggy-opt-correct' : 'froggy-opt-wrong');
-    if (!r.correct && item.answer != null) {
-      const correct = Array.isArray(item.answer) ? item.answer.map(String) : [String(item.answer)];
-      rootEl()?.querySelectorAll('.froggy-opt').forEach(b => {
-        if (correct.includes(b.dataset.value)) b.classList.add('froggy-opt-correct');
-      });
-    }
-
-    state.score += r.points;
-    state.answers.push({ itemId: item.id, value, correct: r.correct, points: r.points, msTaken: ms });
-
-    if (r.correct) {
-      state.streak++;
-      const pads = jumpPads(ms, timerSecs, state.streak);
-      const newPad = Math.min(state.pad + pads, totalPads);
-      const newStreak = Streaks.bump('solo', activity.id, true);
-      emitGame(GameEvents.ANSWER_CORRECT, { idx: state.idx, points: r.points, streak: newStreak });
-      if (newStreak >= 3) emitGame(GameEvents.STREAK, { count: newStreak });
-      showJumpEffect(pads);
-      animating = true;
-      jumpFrog(state.pad, newPad, pads, () => {
-        state.pad = newPad;
-        if (newPad >= totalPads) { finish(); return; }
-        state.idx++;
-        animating = false;
-        renderItem();
-      });
-    } else {
-      state.streak = 0;
-      Streaks.bump('solo', activity.id, false);
-      emitGame(GameEvents.ANSWER_WRONG, { idx: state.idx });
-      frogSlip();
-      setTimeout(() => { state.idx++; renderItem(); }, 900);
-    }
   }
 
   // ── Frog animation ───────────────────────────────────────────────────────────
@@ -203,7 +103,7 @@ export async function renderFroggyPlayer(rootSel, activity, opts = {}) {
     }
 
     // Golden glow for 10+ streak
-    if (state.streak >= 10) charEl?.classList.add('froggy-golden');
+    if (local.streak >= 10) charEl?.classList.add('froggy-golden');
     else charEl?.classList.remove('froggy-golden');
   }
 
@@ -220,7 +120,7 @@ export async function renderFroggyPlayer(rootSel, activity, opts = {}) {
 
   function updateBadge() {
     const badge = rootEl()?.querySelector('#froggy-badge');
-    if (badge) badge.textContent = streakLabel(state.streak);
+    if (badge) badge.textContent = streakLabel(local.streak);
   }
 
   function showJumpEffect(pads) {
@@ -247,46 +147,122 @@ export async function renderFroggyPlayer(rootSel, activity, opts = {}) {
     vp.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
   }
 
-  // ── Timer ────────────────────────────────────────────────────────────────────
-  function startTimer(item) {
-    timerHandle = createCountdown(timerSecs, {
-      onTick: (remaining) => {
-        emitGame(GameEvents.TICK, { remainSec: remaining });
-        const el = rootEl()?.querySelector('#froggy-timer');
-        if (el) { el.textContent = `⏱ ${remaining}`; el.classList.toggle('froggy-timer-urgent', remaining <= 5); }
-      },
-      onTimeout: () => {
-        state.answers.push({ itemId: item.id, value: null, correct: false, points: 0, msTaken: timerSecs * 1000 });
-        state.streak = 0;
-        Streaks.bump('solo', activity.id, false);
-        emitGame(GameEvents.ANSWER_WRONG, { idx: state.idx });
-        frogSlip();
-        setTimeout(() => { state.idx++; renderItem(); }, 900);
-      },
-    });
-    timerHandle.start();
-  }
-  function stopTimer() { if (timerHandle) { timerHandle.stop(); timerHandle = null; } }
+  runSequentialPlayer(rootSel, activity, opts, {
+    maxScore: (items) => Math.max(items.length * ppc, 1),
+    onFinish: () => Streaks.reset('solo', activity.id),
+    resultScreen: ({ state, items, timeUsed }) => {
+      const correct = state.answers.filter(a => a.correct).length;
+      const racePct = Math.round(local.pad / totalPads * 100);
+      return {
+        lead: `Puntos: <b>${state.score}</b> · Recorrido: <b>${racePct}%</b> de la pista`,
+        stats: `${correct}/${items.length} correctas · ${timeUsed}s`,
+      };
+    },
 
-  // ── Finish ────────────────────────────────────────────────────────────────────
-  function finish() {
-    stopTimer();
-    const timeUsed = Math.round((Date.now() - startedAt) / 1000);
-    const correct = state.answers.filter(a => a.correct).length;
-    const max = Math.max(...[items.length * ppc, 1]);
-    Streaks.reset('solo', activity.id);
-    emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: state.score }] });
-    const racePct = Math.round(state.pad / totalPads * 100);
-    mount(rootSel, resultScreenHtml({
-      lead: `Puntos: <b>${state.score}</b> · Recorrido: <b>${racePct}%</b> de la pista`,
-      stats: `${correct}/${items.length} correctas · ${timeUsed}s`,
-      score: state.score, maxScore: max,
-    }));
-    trySaveResult(opts, { activityId: activity.id, scoreAuto: state.score, scoreFinal: state.score, maxScore: max, timeUsed });
-    if (opts.onFinish) opts.onFinish(state);
-  }
+    renderItem({ item, idx, total, score, timerSecs, submit, next, finish, startTimer }) {
+      local.animating = false;
+      const opts2 = (rules.shuffleOptions !== false)
+        ? shuffle((item.options || []).slice())
+        : (item.options || []).slice();
+      const t0 = Date.now();
 
-  renderItem();
+      mount(rootSel, html`
+        <div class="froggy-game ${scene.css}">
+          <div class="froggy-hud">
+            <span class="froggy-hud-pos">🐸 ${local.pad}/${totalPads}</span>
+            <div class="froggy-hud-center">
+              ${local.streak >= 3 ? `<span class="froggy-hud-streak">${streakLabel(local.streak)} ×${local.streak}</span>` : ''}
+            </div>
+            <span class="froggy-hud-right">
+              ${timerSecs > 0 ? `<span class="froggy-timer" id="froggy-timer">⏱ ${timerSecs}</span>` : ''}
+              <span class="froggy-score">★ ${score}</span>
+            </span>
+          </div>
+
+          ${trackHtml()}
+
+          <div class="froggy-q-area">
+            <div class="froggy-q-number">${idx + 1} / ${total}</div>
+            <div class="froggy-q-text">${escapeHtml(item.question)}</div>
+            ${item.image ? `<div class="froggy-q-img"><img src="${escapeHtml(item.image)}" alt=""></div>` : ''}
+            <div class="froggy-options">
+              ${opts2.map((o, i) => `
+                <button class="froggy-opt froggy-opt-${i}" data-value="${escapeHtml(o)}">
+                  <i class="bi ${SHAPE_ICONS[i % 4]}"></i>
+                  <span>${escapeHtml(o)}</span>
+                </button>`).join('')}
+            </div>
+          </div>
+        </div>
+      `);
+
+      // Position frog at current pad (no animation on re-render)
+      positionFrog(local.pad, false);
+      updateBadge();
+
+      function answer(value, btn) {
+        const ms = Date.now() - t0;
+        const r = scoreFroggy({ value, item, msTaken: ms, activity });
+
+        rootEl()?.querySelectorAll('.froggy-opt').forEach(b => { b.style.pointerEvents = 'none'; });
+        btn?.classList.add(r.correct ? 'froggy-opt-correct' : 'froggy-opt-wrong');
+        if (!r.correct && item.answer != null) {
+          const correct = Array.isArray(item.answer) ? item.answer.map(String) : [String(item.answer)];
+          rootEl()?.querySelectorAll('.froggy-opt').forEach(b => {
+            if (correct.includes(b.dataset.value)) b.classList.add('froggy-opt-correct');
+          });
+        }
+
+        // Manual advance: record now, drive progression from the animation.
+        submit({ itemId: item.id, value, correct: r.correct, points: r.points, msTaken: ms }, { auto: false });
+
+        if (r.correct) {
+          local.streak++;
+          const pads = jumpPads(ms, timerSecs, local.streak);
+          const newPad = Math.min(local.pad + pads, totalPads);
+          const newStreak = Streaks.bump('solo', activity.id, true);
+          emitGame(GameEvents.ANSWER_CORRECT, { idx, points: r.points, streak: newStreak });
+          if (newStreak >= 3) emitGame(GameEvents.STREAK, { count: newStreak });
+          showJumpEffect(pads);
+          local.animating = true;
+          jumpFrog(local.pad, newPad, pads, () => {
+            local.pad = newPad;
+            if (newPad >= totalPads) { finish(); return; }
+            local.animating = false;
+            next();
+          });
+        } else {
+          local.streak = 0;
+          Streaks.bump('solo', activity.id, false);
+          emitGame(GameEvents.ANSWER_WRONG, { idx });
+          frogSlip();
+          setTimeout(() => next(), 900);
+        }
+      }
+
+      on(rootSel, 'pointerdown', '.froggy-opt', (e, btn) => {
+        e.preventDefault();
+        if (local.animating) return;
+        answer(btn.dataset.value, btn);
+      });
+
+      startTimer({
+        onTick: (remaining) => {
+          emitGame(GameEvents.TICK, { remainSec: remaining });
+          const el = rootEl()?.querySelector('#froggy-timer');
+          if (el) { el.textContent = `⏱ ${remaining}`; el.classList.toggle('froggy-timer-urgent', remaining <= 5); }
+        },
+        onTimeout: () => {
+          submit({ itemId: item.id, value: null, correct: false, points: 0, msTaken: timerSecs * 1000 }, { auto: false });
+          local.streak = 0;
+          Streaks.bump('solo', activity.id, false);
+          emitGame(GameEvents.ANSWER_WRONG, { idx });
+          frogSlip();
+          setTimeout(() => next(), 900);
+        },
+      });
+    },
+  });
 }
 
 // ── VS / Equipos round renderer ───────────────────────────────────────────────

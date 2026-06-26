@@ -75,6 +75,44 @@ try {
     assert.ok(finished, 'sin ítems termina de inmediato sin renderItem');
     ok('runSequentialPlayer: lista vacía termina sin error');
   }
+
+  // ── manual advance: submit({auto:false}) waits for ctx.next() (Froggy pacing) ─
+  {
+    const root = makeRoot();
+    const seen = [];
+    const pending = [];   // captured next() callbacks, one per item
+    runSequentialPlayer(root, baseActivity, { mode: 'async-tracked', onFinish: () => {} }, {
+      renderItem({ item, idx, submit, next }) {
+        seen.push(idx);
+        submit({ itemId: item.id, correct: true, points: 1 }, { auto: false });
+        pending.push(next);   // do NOT advance yet — emulate an in-flight animation
+      },
+    });
+    drain();
+    assert.deepStrictEqual(seen, [0], 'auto:false no avanza solo: queda en el ítem 0');
+    pending.shift()();        // animation done → advance to item 1
+    drain();
+    assert.deepStrictEqual(seen, [0, 1], 'ctx.next() avanza al siguiente ítem');
+    ok('runSequentialPlayer: avance manual (auto:false + next)');
+  }
+
+  // ── early finish + custom result screen (Froggy reaches the finish line) ─────
+  {
+    const root = makeRoot();
+    let finalScore = null;
+    runSequentialPlayer(root, baseActivity, { mode: 'async-tracked', onFinish: (s) => { finalScore = s.score; } }, {
+      resultScreen: ({ state }) => ({ lead: `Recorrido ${state.score}`, stats: 'meta' }),
+      renderItem({ item, idx, submit, finish }) {
+        submit({ itemId: item.id, correct: true, points: 5 }, { auto: false });
+        if (idx === 0) finish();   // end on the very first item
+        else throw new Error('no debe renderizar más ítems tras finish()');
+      },
+    });
+    drain();
+    assert.strictEqual(finalScore, 5, 'finish() temprano cierra con el score acumulado');
+    assert.ok(root.innerHTML.includes('Recorrido 5'), 'usa el resultScreen personalizado');
+    ok('runSequentialPlayer: finish() temprano + resultScreen personalizado');
+  }
 } finally {
   global.setTimeout = realSetTimeout;
 }

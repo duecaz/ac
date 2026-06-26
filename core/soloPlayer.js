@@ -67,9 +67,16 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
 //     maxScore(items, activity) { return n; },  // optional override
 //   });
 //
-// submit() adds points to the running score, records the answer, stops any
-// active timer, and schedules the next item after FEEDBACK_DELAY. It is
-// idempotent within an item (a timeout-then-click, or vice versa, advances once).
+// submit(record, { auto = true, delay = FEEDBACK_DELAY }):
+//   - records the answer once (points → running score, record → answers).
+//     Idempotent within an item: a timeout-then-click (or vice versa) records once.
+//   - auto (default): schedules the next item after `delay`. Cores with custom,
+//     animation-driven pacing (Froggy) pass { auto: false } and drive progression
+//     themselves via ctx.next() / ctx.finish().
+// ctx.next()   — advance to the next item now (idempotent per item).
+// ctx.finish() — end the run now (e.g. reached the finish line before the last item).
+// callbacks.resultScreen({ state, items, maxScore, timeUsed }) — optional; return
+//   resultScreenHtml options to override the default "Puntos: X / max · Tiempo".
 export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}) {
   const source = activity.content?.items || [];
   const items = (activity.rules?.randomize ? shuffle(source.slice()) : source).slice();
@@ -81,18 +88,33 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
     : (activity.scoring?.maxScore || ((activity.scoring?.pointsPerCorrect || 1) * items.length)));
 
   let timerHandle = null;
-  let advanced = false;
+  let recorded = false;   // per-item: answer already taken?
+  let stepped = false;    // per-item: already advanced past this item?
+  let finished = false;   // run already ended?
   function stopTimer() { if (timerHandle) { timerHandle.stop(); timerHandle = null; } }
 
-  function advance(record) {
-    if (advanced) return;
-    advanced = true;
+  function record(rec) {
+    if (recorded) return false;
+    recorded = true;
     stopTimer();
-    if (record) {
-      state.score += record.points || 0;
-      state.answers.push(record);
+    if (rec) {
+      state.score += rec.points || 0;
+      state.answers.push(rec);
     }
-    setTimeout(() => { state.idx++; renderItem(); }, callbacks.feedbackDelay ?? FEEDBACK_DELAY);
+    return true;
+  }
+
+  function next() {
+    if (stepped) return;
+    stepped = true;
+    stopTimer();
+    state.idx++;
+    renderItem();
+  }
+
+  function submit(rec, { auto = true, delay = callbacks.feedbackDelay ?? FEEDBACK_DELAY } = {}) {
+    if (!record(rec)) return;
+    if (auto) setTimeout(next, delay);
   }
 
   function startTimer({ onTick, onTimeout } = {}) {
@@ -107,7 +129,8 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
   }
 
   function renderItem() {
-    advanced = false;
+    recorded = false;
+    stepped = false;
     stopTimer();
     if (state.idx >= items.length) return finish();
     const item = items[state.idx];
@@ -116,21 +139,24 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
       rootSel, activity, item,
       idx: state.idx, total: items.length,
       score: state.score, state, timerSecs,
-      submit: advance,
-      startTimer,
+      submit, next, finish, startTimer,
     });
   }
 
   function finish() {
+    if (finished) return;
+    finished = true;
     stopTimer();
     const timeUsed = Math.round((Date.now() - state.startedAt) / 1000);
     const max = maxScore();
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: state.score }] });
     if (!callbacks.skipResultScreen) {
+      const custom = callbacks.resultScreen?.({ state, items, maxScore: max, timeUsed }) || {};
       mount(rootSel, resultScreenHtml({
         lead: `Puntos: <b>${state.score}</b> / ${max}`,
         stats: `Tiempo: ${timeUsed}s`,
         score: state.score, maxScore: max,
+        ...custom,
       }));
     }
     trySaveResult(opts, { activityId: activity.id, scoreAuto: state.score, scoreFinal: state.score, maxScore: max, timeUsed });
