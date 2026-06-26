@@ -7,6 +7,7 @@ import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import * as Streaks from '../../core/streaks.js';
 import { scoreFroggy, jumpPads, streakLabel } from './scorer.js';
 import { shuffle } from '../../core/roundRender.js';
+import { createCountdown } from '../../core/soloTimer.js';
 
 // Scenario config — emoji pad + CSS class
 export const SCENARIOS = {
@@ -41,7 +42,7 @@ export async function renderFroggyPlayer(rootSel, activity, opts = {}) {
   const startedAt = Date.now();
 
   const state = { idx: 0, score: 0, pad: 0, streak: 0, answers: [] };
-  let timerHandle = null, timerRemain = timerSecs, t0 = Date.now();
+  let timerHandle = null, t0 = Date.now();
   let animating = false;
 
   function rootEl() { return typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel; }
@@ -81,7 +82,6 @@ export async function renderFroggyPlayer(rootSel, activity, opts = {}) {
       ? shuffle((item.options || []).slice())
       : (item.options || []).slice();
     t0 = Date.now();
-    timerRemain = timerSecs;
 
     mount(rootSel, html`
       <div class="froggy-game ${scene.css}">
@@ -249,23 +249,24 @@ export async function renderFroggyPlayer(rootSel, activity, opts = {}) {
 
   // ── Timer ────────────────────────────────────────────────────────────────────
   function startTimer(item) {
-    timerHandle = setInterval(() => {
-      timerRemain--;
-      emitGame(GameEvents.TICK, { remainSec: timerRemain });
-      const el = rootEl()?.querySelector('#froggy-timer');
-      if (el) { el.textContent = `⏱ ${timerRemain}`; el.classList.toggle('froggy-timer-urgent', timerRemain <= 5); }
-      if (timerRemain <= 0) {
-        stopTimer();
+    timerHandle = createCountdown(timerSecs, {
+      onTick: (remaining) => {
+        emitGame(GameEvents.TICK, { remainSec: remaining });
+        const el = rootEl()?.querySelector('#froggy-timer');
+        if (el) { el.textContent = `⏱ ${remaining}`; el.classList.toggle('froggy-timer-urgent', remaining <= 5); }
+      },
+      onTimeout: () => {
         state.answers.push({ itemId: item.id, value: null, correct: false, points: 0, msTaken: timerSecs * 1000 });
         state.streak = 0;
         Streaks.bump('solo', activity.id, false);
         emitGame(GameEvents.ANSWER_WRONG, { idx: state.idx });
         frogSlip();
         setTimeout(() => { state.idx++; renderItem(); }, 900);
-      }
-    }, 1000);
+      },
+    });
+    timerHandle.start();
   }
-  function stopTimer() { clearInterval(timerHandle); timerHandle = null; }
+  function stopTimer() { if (timerHandle) { timerHandle.stop(); timerHandle = null; } }
 
   // ── Finish ────────────────────────────────────────────────────────────────────
   function finish() {

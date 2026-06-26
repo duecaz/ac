@@ -5,6 +5,7 @@ import { trySaveResult } from '../../core/results.js';
 import { resultScreenHtml } from '../../core/resultScreen.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import * as Streaks from '../../core/streaks.js';
+import { createCountdown } from '../../core/soloTimer.js';
 import { generateGrid, cellLine, SIZE_MAP } from './generator.js';
 
 // Per-player color palette (supports up to 6 players)
@@ -41,8 +42,7 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
   const total      = placed.length;
   const startedAt  = Date.now();
   const timerSecs  = rules.timer || 0;
-  let timerRemain  = timerSecs;
-  let timerHandle  = null;
+  let timer        = null;
 
   const state = { score: 0, found: new Set() };
 
@@ -243,18 +243,20 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
 
   // ── Timer ────────────────────────────────────────────────────────────────────
   function startTimer() {
-    timerHandle = setInterval(() => {
-      timerRemain--;
-      emitGame(GameEvents.TICK, { remainSec: timerRemain });
-      const el = rootEl()?.querySelector('.ww-ws-timer');
-      if (el) el.textContent = `⏱ ${timerRemain}s`;
-      if (timerRemain <= 0) { clearInterval(timerHandle); timerHandle = null; finish(); }
-    }, 1000);
+    timer = createCountdown(timerSecs, {
+      onTick: (remaining) => {
+        emitGame(GameEvents.TICK, { remainSec: remaining });
+        const el = rootEl()?.querySelector('.ww-ws-timer');
+        if (el) el.textContent = `⏱ ${remaining}s`;
+      },
+      onTimeout: () => finish(),
+    });
+    timer.start();
   }
 
   // ── Finish ───────────────────────────────────────────────────────────────────
   function finish() {
-    if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
+    if (timer) { timer.stop(); timer = null; }
     const timeUsed = Math.round((Date.now() - startedAt) / 1000);
     const max = total * ppc;
     Streaks.reset('solo', activity.id);

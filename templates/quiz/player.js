@@ -10,6 +10,7 @@ import { scoreQuizSubmission } from './scorer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import * as Streaks from '../../core/streaks.js';
 import { shuffle } from '../../core/roundRender.js';
+import { createCountdown } from '../../core/soloTimer.js';
 
 const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
 
@@ -18,7 +19,7 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
   const state = { idx: 0, score: 0, startedAt: Date.now(), answers: [] };
   const timerSecs = activity.rules?.timer ?? 0;
   let timerHandle = null;
-  function stopTimer() { if (timerHandle) { clearInterval(timerHandle); timerHandle = null; } }
+  function stopTimer() { if (timerHandle) { timerHandle.stop(); timerHandle = null; } }
 
   function maxScore() {
     const scoring = activity.scoring || {};
@@ -65,25 +66,26 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
     const t0 = Date.now();
 
     if (timerSecs > 0) {
-      let remaining = timerSecs;
-      timerHandle = setInterval(() => {
-        remaining--;
-        const el = document.querySelector('.ww-timer-badge');
-        if (el) el.textContent = `⏱ ${remaining}`;
-        if (remaining > 0) return;
-        stopTimer();
-        document.querySelectorAll('.ww-opt').forEach(b => { b.disabled = true; });
-        if (item.answer != null) {
-          const correct = (Array.isArray(item.answer) ? item.answer : [item.answer]).map(String);
-          document.querySelectorAll('.ww-opt').forEach(b => {
-            if (correct.includes(b.dataset.value)) b.classList.add('btn-success');
-          });
-        }
-        state.answers.push({ itemId: item.id, value: null, correct: false, points: 0, msTaken: timerSecs * 1000 });
-        Streaks.bump('solo', activity.id, false);
-        emitGame(GameEvents.ANSWER_WRONG, { idx: state.idx });
-        setTimeout(() => { state.idx++; renderItem(); }, FEEDBACK_DELAY);
-      }, 1000);
+      timerHandle = createCountdown(timerSecs, {
+        onTick: (remaining) => {
+          const el = document.querySelector('.ww-timer-badge');
+          if (el) el.textContent = `⏱ ${remaining}`;
+        },
+        onTimeout: () => {
+          document.querySelectorAll('.ww-opt').forEach(b => { b.disabled = true; });
+          if (item.answer != null) {
+            const correct = (Array.isArray(item.answer) ? item.answer : [item.answer]).map(String);
+            document.querySelectorAll('.ww-opt').forEach(b => {
+              if (correct.includes(b.dataset.value)) b.classList.add('btn-success');
+            });
+          }
+          state.answers.push({ itemId: item.id, value: null, correct: false, points: 0, msTaken: timerSecs * 1000 });
+          Streaks.bump('solo', activity.id, false);
+          emitGame(GameEvents.ANSWER_WRONG, { idx: state.idx });
+          setTimeout(() => { state.idx++; renderItem(); }, FEEDBACK_DELAY);
+        },
+      });
+      timerHandle.start();
     }
 
     on(rootSel, 'click', '.ww-opt', (_, btn) => {
