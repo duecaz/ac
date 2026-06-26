@@ -50,11 +50,16 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
 - **Impacto**: los tests de tiempo son imposibles de escribir (siempre verde aunque la lógica esté mal). Un bug en timers se encuentra tarde.
 - **Plan**: centralizar en un reloj inyectable `core/clock.js` — `export const clock = { now: () => Date.now() }` que los tests reemplazan con `clock.now = () => fakeTs`. No requiere cambios de API en producción.
 
-### 🟡 DEUDA ARQUITECTÓNICA (en progreso)
+### 🟢 DEUDA ARQUITECTÓNICA — RESUELTA (✅ players estandarizados)
 
-#### 3. Players sin contrato uniforme → pérdida silenciosa de datos
-- **Qué**: Wheel y Question-Live no llaman `trySaveResult`. Crossword guarda `scoreAuto: totalWords` en vez de puntos. Timer duplicado en 3 players (Quiz, Froggy, Wordsearch).
-- **Plan**: ver sección "Arquitectura de Players" más abajo.
+#### 3. ✅ Players sin contrato uniforme → pérdida silenciosa de datos
+- **Estado**: RESUELTO. Las tres capas (Contrato / Shells / Cores) están en producción.
+  - `core/soloTimer.js` (`createCountdown`) cierra los 3 timers divergentes (Quiz, Froggy, Wordsearch).
+  - `core/soloPlayer.js` expone `runFreeformPlayer` y `runSequentialPlayer`.
+  - **FreeformShell** activo en Wheel y Question-Live → ya guardan resultado (`trySaveResult`).
+  - **SequentialShell** activo en Math, Quiz y Froggy → loop/timer/finish/trySaveResult unificados.
+- **Pendiente menor**: Crossword sigue guardando `scoreAuto: totalWords` (no puntos); Memory/Match/Wordsearch/Crossword aún no migrados a `runFreeformPlayer` (ya llaman `trySaveResult`, sin pérdida de datos — migración cosmética).
+- **Tests**: `tests/soloTimer.test.mjs` (5) + `tests/soloPlayer.test.mjs` (5, incl. submit idempotente, avance manual y finish temprano).
 
 ## Arquitectura de Players (plan de estandarización)
 
@@ -66,21 +71,25 @@ SHELLS    (core/soloPlayer.js)     — cuándo: timer, avance, finish, trySaveRe
 CORES     (templates/*/player.js)  — cómo: drag, click, tipo, animación (único por plantilla)
 ```
 
-**Shell Secuencial** `runSequentialPlayer(activity, opts, callbacks)`:
-- Maneja: `state`, timer, `idx++`, `finish()`, `trySaveResult()`, `onFinish()`
-- Callers destino: Quiz, Math, Froggy
+**Shell Secuencial** `runSequentialPlayer(rootSel, activity, opts, callbacks)` ✅:
+- Maneja: `state` (`idx`/`score`/`startedAt`/`answers`), timer opcional, `idx++`, `finish()`, `trySaveResult()`, `onFinish()`, emits `QUESTION_SHOWN`/`PODIUM`, `maxScore`.
+- El core provee `renderItem(ctx)` y, opcionalmente, `maxScore`, `onFinish` (teardown), `resultScreen`.
+- `ctx`: `{ item, idx, total, score, state, timerSecs, submit, next, finish, startTimer }`.
+  - `submit(record, { auto=true, delay })` — registra la respuesta UNA vez (idempotente: timeout+clic registran una). `auto:true` avanza tras `delay`; `auto:false` para pacing propio.
+  - `next()` / `finish()` — para cores con avance dirigido por animación (Froggy salta y avanza en `onfinish`, o termina al llegar a la meta).
+- Callers EN PRODUCCIÓN: Math, Quiz, Froggy.
 
-**Shell Libre** `runFreeformPlayer(activity, opts)` → devuelve `ctx`:
-- El player llama `ctx.finish({score, maxScore, lead, stats})` al terminar
-- Shell garantiza: `resultScreenHtml()`, `trySaveResult()`, `onFinish()`
-- Callers destino: Memory, Match, Wordsearch, Crossword, Wheel, Question-Live
+**Shell Libre** `runFreeformPlayer(rootSel, activity, opts)` → devuelve `ctx` ✅:
+- El player llama `ctx.finish({score, maxScore, lead, stats, skipResultScreen})` al terminar.
+- Shell garantiza: `resultScreenHtml()` (salvo `skipResultScreen`), `trySaveResult()`, `onFinish()`.
+- Callers EN PRODUCCIÓN: Wheel, Question-Live. Pendientes (cosméticos): Memory, Match, Wordsearch, Crossword.
 
-**Timer único** `core/soloTimer.js` — `createTimer(secs, {onTick, onTimeout})`:
-- Cierra 3 implementaciones divergentes (Quiz, Froggy, Wordsearch)
+**Timer único** `core/soloTimer.js` — `createCountdown(secs, {onTick, onTimeout, setIntervalFn?, clearIntervalFn?})` ✅:
+- Cierra 3 implementaciones divergentes (Quiz, Froggy, Wordsearch). Scheduler inyectable → tests deterministas.
 
-**Orden de migración** (menor a mayor riesgo):
-1. `core/soloTimer.js` — solo nuevo código, sin tocar players aún
-2. `FreeformShell` — cerrar bug trySaveResult en Wheel/Question-Live
-3. Migrar Math al SequentialShell (más simple, valida el shell)
-4. Migrar Quiz al shell
-5. Migrar Froggy al shell (conserva todas sus animaciones)
+**Orden de migración** — COMPLETADO:
+1. ✅ `core/soloTimer.js` + migrar Quiz/Froggy/Wordsearch
+2. ✅ `FreeformShell` — cerró bug trySaveResult en Wheel/Question-Live
+3. ✅ Migrar Math al SequentialShell
+4. ✅ Migrar Quiz al shell
+5. ✅ Migrar Froggy al shell (todas sus animaciones intactas)
