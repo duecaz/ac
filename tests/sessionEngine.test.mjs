@@ -308,6 +308,22 @@ const quizActivity = {
   const live = createSession(quizActivity, { format: FORMATS.LIVE });
   assert.strictEqual(live.settle(999), 0, 'settle fuera de rango → 0 sin lanzar');
   ok('live: settle() fuera de rango no lanza');
+
+  // VS points mode: answering fast-but-WRONG must NOT win over correct answers.
+  // Both sides answer every item; the winner is whoever got more right.
+  const vs = createSession(quizActivity, { format: FORMATS.VS, left: 'Veloz', right: 'Cuidadoso' });
+  vs.start();
+  const its = sessionItems(quizActivity);
+  const wrongFor = (it) => it.options.find(o => o !== it.answer);
+  // 'left' (Veloz) blasts through every item WRONG; 'right' (Cuidadoso) answers all correct.
+  for (let i = 0; i < its.length; i++) vs.answer('left', wrongFor(its[i]));
+  for (let i = 0; i < its.length; i++) vs.answer('right', its[i].answer);
+  const st = vs.standings();
+  assert.strictEqual(st.finished, true, 'el duelo termina cuando AMBOS acaban');
+  assert.strictEqual(st.left.score, 0, 'Veloz (todo mal) suma 0 pese a acabar primero');
+  assert.ok(st.right.score > 0, 'Cuidadoso (todo bien) suma puntos');
+  assert.strictEqual(st.leader, 'right', 'gana quien más acierta, no quien responde más rápido');
+  ok('vs (puntos): acertar gana sobre responder rápido/más');
 }
 
 console.log(`\nsessionEngine.test: ${passed} checks passed`);

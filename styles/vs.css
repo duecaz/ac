@@ -57,8 +57,11 @@
 .vss-right { flex-direction: row-reverse; }
 .vss-info   { flex: 1; min-width: 0; }
 .vss-info-r { text-align: right; }
-.vss-label  { font-size: .5rem; font-weight: 700; letter-spacing: .18em; color: rgba(255,255,255,.65); text-transform: uppercase; }
-.vss-name   { font-size: clamp(.78rem, 1.5cqw, 1.15rem); font-weight: 900; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vss-label  { font-size: .5rem; font-weight: 700; letter-spacing: .18em; color: rgba(255,255,255,.8); text-transform: uppercase; text-shadow: 0 1px 2px rgba(0,0,0,.45); }
+/* Names sit on skin gradients (blue/red, sometimes mid-tone) — without a shadow
+   the white washes out and is unreadable. A dark halo guarantees contrast on any
+   skin, matching how .vss-score is already treated. */
+.vss-name   { font-size: clamp(.78rem, 1.5cqw, 1.15rem); font-weight: 900; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 4px rgba(0,0,0,.6), 0 0 2px rgba(0,0,0,.4); }
 .vss-score  { font-size: clamp(1.5rem, 3cqw, 2.2rem); font-weight: 900; color: #fff; font-variant-numeric: tabular-nums; flex-shrink: 0; text-shadow: 0 2px 8px rgba(0,0,0,.3); }
 /* Progress bar inside bar */
 .vs-prog     { height: 4px; border-radius: 999px; background: rgba(255,255,255,.22); margin-top: .3rem; overflow: hidden; }
