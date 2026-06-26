@@ -126,6 +126,10 @@ function createLiveSession(activity, T, opts) {
 
   function settle(itemIndex) {
     const item = items[itemIndex];
+    // Out-of-range index (e.g. a hydrated/corrupt state, or a race-mode client
+    // that recorded an answer under an itemIndex past the end): there's nothing
+    // valid to score, so degrade quietly instead of throwing in scoreSubmission.
+    if (!item) return 0;
     let settled = 0;
     for (const [key, ans] of Object.entries(state.answers)) {
       if (!key.startsWith(itemIndex + ':')) continue;
@@ -241,7 +245,9 @@ function createTeamsSession(activity, T, opts) {
     const item = items[itemIndex];
     const team = activeTeam();
     const ans = team && state.answers[`${itemIndex}:${team.id}`];
-    if (ans && ans.correct === null) {
+    // Guard `item`: an out-of-range index must not throw in scoreSubmission. We
+    // still fall through to set REVEAL so the round never gets stuck.
+    if (ans && ans.correct === null && item) {
       const r = autoScore(T, { value: ans.value, item, msTaken: ans.msTaken, activity, mode: 'teams' });
       ans.correct = r.correct;
       ans.points = r.points;
@@ -271,7 +277,11 @@ function createTeamsSession(activity, T, opts) {
   function award(teamId, delta) {
     const team = teamById(teamId);
     if (!team) throw new Error('Equipo desconocido');
-    team.score += delta;
+    // A non-numeric delta (a UI bug calling award('t1') with no value) would set
+    // the score to NaN and poison sorting for the rest of the match.
+    const d = Number(delta);
+    if (!Number.isFinite(d)) throw new Error('Puntos inválidos');
+    team.score += d;
     return team.score;
   }
 
@@ -390,7 +400,9 @@ function createSoloSession(activity, T, opts) {
 
   const state = opts.state ? { ...opts.state } : {
     format: FORMATS.SOLO,
-    status: 'running',
+    // A 0-item activity is done before it starts: answer() can never run, so
+    // without this the status would stay 'running' forever (result().done=true).
+    status: total ? 'running' : 'ended',
     score: 0, cursor: 0, correct: 0, answers: [],
   };
 

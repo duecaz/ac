@@ -285,4 +285,29 @@ const quizActivity = {
   ok('match: pairs play as matching rounds in VS');
 }
 
+// ───────────────────────── Robustness guards (bug-hunt fixes) ───────────────
+{
+  // Empty-activity SOLO must report 'ended', not hang in 'running'.
+  const emptyAct = { id: 'empty', template: 'quiz_sess', scoring: { pointsPerCorrect: 1 }, content: { items: [] } };
+  const solo = createSession(emptyAct, { format: FORMATS.SOLO });
+  assert.strictEqual(solo.status, 'ended', 'SOLO con 0 ítems termina de inmediato');
+  assert.strictEqual(solo.result().done, true, 'result().done coherente con status');
+  ok('solo: actividad vacía → status "ended" (no se queda en running)');
+
+  // award() rejects non-numeric deltas instead of poisoning the score with NaN.
+  const t = createSession(quizActivity, { format: FORMATS.TEAMS, teams: ['Rojo', 'Azul'] });
+  t.dispatch('start');
+  const id = t.state.teams[0].id;
+  assert.throws(() => t.award(id), /Puntos inválidos/, 'award sin delta → error, no NaN');
+  assert.throws(() => t.award(id, 'x'), /Puntos inválidos/, 'award con texto → error');
+  assert.strictEqual(t.award(id, 5), 5, 'award con número válido suma');
+  assert.ok(Number.isFinite(t.state.teams[0].score), 'el score sigue siendo finito');
+  ok('teams: award() valida el delta (sin NaN)');
+
+  // settle() with an out-of-range item degrades to 0 instead of throwing.
+  const live = createSession(quizActivity, { format: FORMATS.LIVE });
+  assert.strictEqual(live.settle(999), 0, 'settle fuera de rango → 0 sin lanzar');
+  ok('live: settle() fuera de rango no lanza');
+}
+
 console.log(`\nsessionEngine.test: ${passed} checks passed`);
