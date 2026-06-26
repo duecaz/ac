@@ -453,8 +453,12 @@ export async function renderPlay(rootSel, code) {
         if (ok) emitGame(GameEvents.ANSWER_CORRECT, { idx, points: pts, streak: newStreak });
         else    emitGame(GameEvents.ANSWER_WRONG, { idx });
 
-        // Submit to server in background.
-        queuedSubmit(session.id, player.playerId, idx, value, ms).catch(() => {});
+        // Submit to the server ONLY when correct. Wrong attempts are retried
+        // locally (requeued above), so sending them just adds noise — and with
+        // answers in their own collection the first (wrong) row would lock the
+        // item, dropping the later correct answer. One correct row per item keeps
+        // the host's progress honest and the collection path retry-safe.
+        if (ok) queuedSubmit(session.id, player.playerId, idx, value, ms).catch(() => {});
 
         // Brief pause to see the color flash, then load next question.
         setTimeout(() => paintRace(), 350);

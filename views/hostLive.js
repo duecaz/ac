@@ -446,13 +446,22 @@ async function renderHost(rootSel, code, sessionId, activity) {
     let allAnswers;
     try { allAnswers = await loadRaceAnswers(); } catch { allAnswers = []; }
 
-    // During the race answers are unsettled (correct=null), so track unique
-    // item indices each player has submitted for — that IS their real progress.
+    // Rank by CORRECT answers, not by how many were submitted. Counting any
+    // submission let a student tapping fast through WRONG answers top the board
+    // ("responde más → lo cuenta como buena"). Race answers are unsettled
+    // (correct=null) during play, so score each here on the host (we hold the
+    // answer key) — a settled row's verdict is trusted as-is.
     const prog = {};
     for (const p of players) prog[p.id] = { name: p.name, items: new Set() };
     for (const a of allAnswers) {
       const pid = a.playerId || a.player_id;
-      if (prog[pid]) prog[pid].items.add(a.itemIndex);
+      if (!prog[pid]) continue;
+      let ok = a.correct === true;
+      if (a.correct == null) {
+        try { ok = !!tpl.scoreSubmission({ value: a.value, item: items[a.itemIndex], activity, mode: 'live' }).correct; }
+        catch { ok = false; }
+      }
+      if (ok) prog[pid].items.add(a.itemIndex);   // only correct items count as progress
     }
     const sorted = Object.values(prog).sort((a, b) => b.items.size - a.items.size);
     const total = items.length;
