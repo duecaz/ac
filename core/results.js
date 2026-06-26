@@ -3,6 +3,7 @@
 // (local, supabase, pocketbase) and survive offline. Fail-soft: a backend error
 // never interrupts gameplay.
 import { getRemoteStore } from '../adapters/index.js';
+import { clock } from './clock.js';
 
 const QUEUE_KEY = 'ww.resultQueue';
 const QUEUE_MAX = 60;
@@ -35,7 +36,7 @@ export async function saveResult(r) {
   } catch (e) {
     console.warn('[results] save failed — queuing for retry:', e.message);
     const q = qLoad();
-    q.push({ ...r, _queuedAt: Date.now() });
+    q.push({ ...r, _queuedAt: clock.now() });
     qSave(q);
   }
 }

@@ -2,6 +2,7 @@
 // (network), enqueue and flush on online or on next attempt. Persisted in
 // localStorage so a refresh during a flaky moment still recovers.
 import { submitAnswer as transportSubmit } from './liveTransport.js';
+import { clock } from './clock.js';
 
 const KEY = 'ww.submitQueue';
 
@@ -16,7 +17,7 @@ export async function submit(sessionId, playerId, itemIndex, value, msTaken) {
   } catch (e) {
     // Enqueue and retry later.
     const q = load();
-    q.push({ sessionId, playerId, itemIndex, value, msTaken, ts: Date.now(), err: e.message });
+    q.push({ sessionId, playerId, itemIndex, value, msTaken, ts: clock.now(), err: e.message });
     save(q);
     return { queued: true, error: e.message };
   }

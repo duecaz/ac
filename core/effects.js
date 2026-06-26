@@ -3,6 +3,7 @@
 // siempre, también offline o con la red restringida. Cada efecto tiene cooldown
 // para que re-emisiones rápidas del mismo evento no se apilen en un estrobo.
 import { GameEvents, onGame } from './gameEvents.js';
+import { clock } from './clock.js';
 
 const COLORS = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#a855f7', '#ec4899', '#eab308'];
 
@@ -44,14 +45,14 @@ let _lastPodium = 0, _lastCorrect = 0;
 const PODIUM_COOLDOWN = 5000, CORRECT_COOLDOWN = 800;
 
 function podiumBurst() {
-  const now = Date.now();
+  const now = clock.now();
   if (now - _lastPodium < PODIUM_COOLDOWN) return;
   _lastPodium = now;
   confetti({ particleCount: 160, spread: 120, startVelocity: 45, origin: { y: 0.6 }, ticks: 120 });
 }
 
 function correctBurst() {
-  const now = Date.now();
+  const now = clock.now();
   if (now - _lastCorrect < CORRECT_COOLDOWN) return;
   _lastCorrect = now;
   confetti({ particleCount: 40, spread: 60, startVelocity: 32, origin: { y: 0.7 }, ticks: 80 });

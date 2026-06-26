@@ -45,10 +45,14 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
 - **Archivos principales**: `core/supabase.js`, `core/auth.js`, `views/reports.js`, `views/explore.js`, `adapters/supabase/*` (4 archivos), `core/assignmentsTransport.js`, `core/liveTransport.js`, `core/identity.js`.
 - **Plan**: migrar auth a PocketBase users/anon-id, reescribir reportes sobre `live_sessions` PB, luego eliminar `adapters/supabase/`.
 
-#### 2. `Date.now()` no determinista en lógica de dominio
-- **Qué**: `Date.now()` aparece en `core/effects.js`, `core/textCorrectionRound.js`, `core/assignmentRules.js`, `core/submitQueue.js`, `core/results.js`, `core/sounds.js`, `core/errorLog.js`.
-- **Impacto**: los tests de tiempo son imposibles de escribir (siempre verde aunque la lógica esté mal). Un bug en timers se encuentra tarde.
-- **Plan**: centralizar en un reloj inyectable `core/clock.js` — `export const clock = { now: () => Date.now() }` que los tests reemplazan con `clock.now = () => fakeTs`. No requiere cambios de API en producción.
+#### 2. ✅ `Date.now()` no determinista en lógica de dominio — RESUELTO
+- **Estado**: RESUELTO. `core/clock.js` expone `clock.now()` (= `Date.now()` en prod). Migrados:
+  `core/effects.js` (cooldowns), `core/textCorrectionRound.js` (startedAt/timeUsed),
+  `core/assignmentRules.js` (defaults `now`), `core/submitQueue.js` (ts), `core/results.js`
+  (`_queuedAt`), `core/sounds.js` (cooldown), `core/errorLog.js` (throttle).
+- **Tests**: `tests/clock.test.mjs` (4) — congelar `clock.now` hace `isPastDue`/`assignmentGate` deterministas.
+- **Pendiente menor**: los players (`startedAt`, `t0`) aún usan `Date.now()` directo; no es lógica de
+  dominio crítica (solo se reporta como `timeUsed`), migración opcional.
 
 ### 🟢 DEUDA ARQUITECTÓNICA — RESUELTA (✅ players estandarizados)
 

@@ -1,6 +1,7 @@
 // Pure rules for async assignments (tareas) — no DOM, no backend. Extracted from
 // views/studentTask.js so the gating (closed / past-due / attempts) is testable
 // and identical across drivers.
+import { clock } from './clock.js';
 
 /** Public codes are matched upper-cased and trimmed. */
 export function normalizeCode(code) {
@@ -8,7 +9,7 @@ export function normalizeCode(code) {
 }
 
 /** Has the due date passed? `now` may be ms or a Date/ISO. No due date → never. */
-export function isPastDue(dueAt, now = Date.now()) {
+export function isPastDue(dueAt, now = clock.now()) {
   if (!dueAt) return false;
   const nowMs = typeof now === 'number' ? now : new Date(now).getTime();
   return new Date(dueAt).getTime() < nowMs;
@@ -25,7 +26,7 @@ export function attemptsRemaining(maxAttempts, taken) {
  * not found → closed → past due → no attempts left.
  * @returns {{ allowed: boolean, reason: 'notFound'|'closed'|'pastDue'|'noAttemptsLeft'|null }}
  */
-export function assignmentGate(assignment, taken, now = Date.now()) {
+export function assignmentGate(assignment, taken, now = clock.now()) {
   if (!assignment) return { allowed: false, reason: 'notFound' };
   if (assignment.status === 'closed') return { allowed: false, reason: 'closed' };
   if (isPastDue(assignment.due_at, now)) return { allowed: false, reason: 'pastDue' };

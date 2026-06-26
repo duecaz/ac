@@ -3,6 +3,7 @@
 // local (localStorage) y se vuelcan a la consola. Best-effort, sin red.
 import { lsGet, lsSet } from './ls.js';
 import { toast } from './toast.js';
+import { clock } from './clock.js';
 
 export const RING_KEY = 'ww.errlog';
 const RING_MAX = 30; // conserva los últimos N errores
@@ -19,7 +20,7 @@ export function clearErrors() { lsSet(RING_KEY, '[]'); }
 
 export function logClientError({ message, stack, page }) {
   // Throttle: como mucho uno cada 2 s para evitar bucles.
-  const now = Date.now();
+  const now = clock.now();
   if (now - lastSent < 2000) return;
   lastSent = now;
   const entry = {

@@ -7,6 +7,7 @@
 
 import { GameEvents, onGame } from './gameEvents.js';
 import { lsGet, lsSet } from './ls.js';
+import { clock } from './clock.js';
 
 let _pack = {};
 const _cache = new Map();           // name -> HTMLAudioElement
@@ -60,7 +61,7 @@ export function play(name) {
   if (!a) return;
   const cooldown = COOLDOWN_MS[name] ?? 1000;
   if (cooldown > 0) {
-    const now = Date.now();
+    const now = clock.now();
     const last = _lastPlayed.get(name) || 0;
     if (now - last < cooldown) return;
     _lastPlayed.set(name, now);

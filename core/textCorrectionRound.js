@@ -14,6 +14,7 @@ import { trySaveResult } from './results.js';
 import { resultScreenHtml } from './resultScreen.js';
 import { GameEvents, emitGame } from './gameEvents.js';
 import { speak, isAvailable as ttsAvailable } from './tts.js';
+import { clock } from './clock.js';
 
 const HINTS = {
   tilde: 'Toca las vocales que llevan tilde.',
@@ -113,7 +114,7 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
   }
   const ppc = activity.scoring?.pointsPerCorrect || 1;
   const maxScore = activity.scoring?.maxScore || passages.length * ppc;
-  const startedAt = Date.now();
+  const startedAt = clock.now();
   let idx = 0, score = 0, correct = 0, wrong = 0;
   const passageResults = [];
 
@@ -181,7 +182,7 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
   }
 
   function finish() {
-    const timeUsed = Math.round((Date.now() - startedAt) / 1000);
+    const timeUsed = Math.round((clock.now() - startedAt) / 1000);
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score }] });
     const wrongResults = passageResults.filter(r => !r.correct);
     const reviewHtml = wrongResults.length ? `
