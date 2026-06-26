@@ -1,10 +1,12 @@
-// Match player: drag a line from a left dot to the matching right dot.
-// Supports text, images, or both per side.
+// Match player: drag a rope from a left dot to the matching right dot.
+// Results shown only at the end — no live score, like Wordwall.
 import { html, mount, escapeHtml } from '../../core/html.js';
-import { trySaveResult, applyPoints } from '../../core/results.js';
+import { trySaveResult } from '../../core/results.js';
 import { resultScreenHtml } from '../../core/resultScreen.js';
-import { FEEDBACK_DELAY } from '../../core/constants.js';
 import { shuffle } from '../../core/roundRender.js';
+
+// Rope color palette — one per matched pair
+const ROPES = ['#f43f5e','#3b82f6','#f59e0b','#22c55e','#a855f7','#0891b2','#fb923c','#84cc16'];
 
 export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   const raw = (activity.content?.pairs || []).filter(p =>
@@ -16,88 +18,101 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
     return;
   }
 
-  const ppc = activity.scoring?.pointsPerCorrect || 1;
+  const ppc    = activity.scoring?.pointsPerCorrect ?? 1;
+  const ppw    = activity.scoring?.pointsPerWrong   ?? 0;
   const maxScore = activity.scoring?.maxScore || ppc * raw.length;
   const doShuffle = activity.rules?.randomize !== false;
 
-  const lefts = (doShuffle ? shuffle : v => v)(
-    raw.map(p => ({ id: p.id, text: p.left || '', image: p.leftImage || p.image || null }))
-  );
-  const rights = (doShuffle ? shuffle : v => v)(
-    raw.map(p => ({ id: p.id, text: p.right || '', image: p.rightImage || null }))
-  );
+  const lefts  = (doShuffle ? shuffle : v => v)(raw.map(p => ({ id: p.id, text: p.left  || '', image: p.leftImage  || p.image || null })));
+  const rights = (doShuffle ? shuffle : v => v)(raw.map(p => ({ id: p.id, text: p.right || '', image: p.rightImage || null })));
 
   const state = {
-    score: 0, mistakes: 0, startedAt: Date.now(),
-    matched: new Set(), lines: [], dragging: null, wrongLine: null,
+    mistakes: 0,
+    startedAt: Date.now(),
+    matched:   new Set(),   // pair IDs confirmed
+    lines:     [],          // { id, colorIdx } permanent ropes
+    dragging:  null,        // { fromId, x1, y1, cx, cy }
+    wrongLine: null,        // { x1,y1,x2,y2 } brief red flash
   };
 
   mount(rootSel, buildLayout(lefts, rights, activity, raw.length));
 
-  const root = document.querySelector(rootSel);
-  const arena = root.querySelector('.ww-match-arena');
-  const svg   = root.querySelector('.ww-lines-svg');
-  const scoreEl   = root.querySelector('.ww-score');
-  const matchedEl = root.querySelector('.ww-matched');
+  const root       = document.querySelector(rootSel);
+  const arena      = root.querySelector('.ww-match-arena');
+  const svg        = root.querySelector('.ww-lines-svg');
+  const progressEl = root.querySelector('.ww-matched');
 
-  function updateHeader() {
-    if (scoreEl)   scoreEl.textContent   = `★ ${state.score}`;
-    if (matchedEl) matchedEl.textContent = `${state.matched.size} / ${raw.length}`;
+  // Pre-paint the static SVG defs once.
+  const filterId = 'rf' + Math.random().toString(36).slice(2, 6);
+  svg.innerHTML = `<defs>
+    <filter id="${filterId}" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.25"/>
+    </filter>
+  </defs><g class="ww-rope-layer"></g>`;
+  const layer = svg.querySelector('.ww-rope-layer');
+
+  function updateProgress() {
+    if (progressEl) progressEl.textContent = `${state.matched.size} / ${raw.length}`;
+  }
+
+  function rope(curve, col) {
+    // Two strokes: shadow behind + colour on top = rope depth effect
+    return `<path d="${curve}" stroke="rgba(0,0,0,.22)" stroke-width="11" fill="none" stroke-linecap="round"/>`
+         + `<path d="${curve}" stroke="${col}" stroke-width="6" fill="none" stroke-linecap="round"/>`;
   }
 
   function updateSvg() {
     let d = '';
+
+    // Permanent ropes
     for (const line of state.lines) {
       const ld = root.querySelector(`.ww-dot[data-id="${line.id}"][data-side="L"]`);
       const rd = root.querySelector(`.ww-dot[data-id="${line.id}"][data-side="R"]`);
       if (!ld || !rd) continue;
-      const p1 = dotSvgPos(ld, svg), p2 = dotSvgPos(rd, svg);
+      const p1 = dotPos(ld, svg), p2 = dotPos(rd, svg);
       const mx = (p1.x + p2.x) / 2;
-      d += `<path d="M${p1.x},${p1.y} C${mx},${p1.y} ${mx},${p2.y} ${p2.x},${p2.y}" stroke="#22c55e" stroke-width="3.5" fill="none" stroke-linecap="round"/>`;
-      d += `<circle cx="${p1.x}" cy="${p1.y}" r="6" fill="#22c55e"/><circle cx="${p2.x}" cy="${p2.y}" r="6" fill="#22c55e"/>`;
+      const col = ROPES[line.colorIdx % ROPES.length];
+      const curve = `M${p1.x},${p1.y} C${mx},${p1.y} ${mx},${p2.y} ${p2.x},${p2.y}`;
+      d += `<g filter="url(#${filterId})">${rope(curve, col)}</g>`;
+      d += `<circle cx="${p1.x}" cy="${p1.y}" r="8" fill="${col}"/>`;
+      d += `<circle cx="${p2.x}" cy="${p2.y}" r="8" fill="${col}"/>`;
     }
+
+    // Wrong flash (red dashed, fades out via JS timeout)
     if (state.wrongLine) {
       const { x1, y1, x2, y2 } = state.wrongLine;
       const mx = (x1 + x2) / 2;
-      d += `<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" stroke="#ef4444" stroke-width="3" fill="none" stroke-dasharray="6 3"/>`;
-      d += `<circle cx="${x1}" cy="${y1}" r="6" fill="#ef4444"/><circle cx="${x2}" cy="${y2}" r="6" fill="#ef4444"/>`;
+      d += `<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" stroke="#ef4444" stroke-width="4" fill="none" stroke-dasharray="9 5" stroke-linecap="round" opacity=".9"/>`;
     }
+
+    // Active drag rope (dashed, follows pointer)
     if (state.dragging) {
       const { x1, y1, cx, cy } = state.dragging;
       const mx = (x1 + cx) / 2;
-      d += `<circle cx="${x1}" cy="${y1}" r="8" fill="#6366f1" opacity="0.75"/>`;
-      d += `<path d="M${x1},${y1} C${mx},${y1} ${mx},${cy} ${cx},${cy}" stroke="#6366f1" stroke-width="2.5" fill="none" stroke-dasharray="9 4"/>`;
+      d += `<circle cx="${x1}" cy="${y1}" r="10" fill="#6366f1" opacity=".6"/>`;
+      d += `<path d="M${x1},${y1} C${mx},${y1} ${mx},${cy} ${cx},${cy}" stroke="#6366f1" stroke-width="4.5" fill="none" stroke-dasharray="11 6" stroke-linecap="round" opacity=".75"/>`;
     }
-    svg.innerHTML = d;
+
+    layer.innerHTML = d;
   }
 
-  function markMatched(id) {
+  function markDone(id) {
     root.querySelectorAll(`.ww-card[data-id="${id}"]`).forEach(c => c.classList.add('ww-card-done'));
   }
 
-  function flashWrong(fromId, toId) {
-    [
-      root.querySelector(`.ww-card[data-id="${fromId}"][data-side="L"]`),
-      root.querySelector(`.ww-card[data-id="${toId}"][data-side="R"]`),
-    ].filter(Boolean).forEach(c => {
-      c.classList.add('ww-card-wrong');
-      setTimeout(() => c.classList.remove('ww-card-wrong'), FEEDBACK_DELAY);
-    });
-  }
-
-  // Drag: start on a left dot, release on a right dot.
+  // ── Drag interaction ──────────────────────────────────────────────────────
   arena.addEventListener('pointerdown', e => {
     const dot = e.target.closest('.ww-dot');
     if (!dot || dot.dataset.side !== 'L' || state.matched.has(dot.dataset.id)) return;
     e.preventDefault();
 
-    const pos = dotSvgPos(dot, svg);
+    const pos = dotPos(dot, svg);
     state.dragging = { fromId: dot.dataset.id, x1: pos.x, y1: pos.y, cx: pos.x, cy: pos.y };
     updateSvg();
 
     const onMove = ev => {
       if (!state.dragging) return;
-      const p = clientToSvg(svg, ev.clientX, ev.clientY);
+      const p = svgPt(svg, ev.clientX, ev.clientY);
       state.dragging.cx = p.x; state.dragging.cy = p.y;
       updateSvg();
     };
@@ -113,28 +128,28 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
       cleanup();
       if (!fromId) { updateSvg(); return; }
 
-      // Find the right-side dot at the drop position (traverse through SVG overlay).
+      // elementsFromPoint skips SVG (pointer-events:none) and finds the dot beneath.
       const els = document.elementsFromPoint(ev.clientX, ev.clientY);
-      const targetDot = els.find(el => el.classList?.contains('ww-dot') && el.dataset?.side === 'R');
+      const hit = els.find(el => el.classList?.contains('ww-dot') && el.dataset?.side === 'R');
 
-      if (targetDot && !state.matched.has(targetDot.dataset.id)) {
-        const toId  = targetDot.dataset.id;
-        const pos2  = dotSvgPos(targetDot, svg);
+      if (hit && !state.matched.has(hit.dataset.id)) {
+        const toId = hit.dataset.id;
         if (fromId === toId) {
-          state.score = applyPoints(state.score, activity.scoring, true);
+          // ✓ Correct
+          const colorIdx = state.lines.length;
           state.matched.add(fromId);
-          state.lines.push({ id: fromId });
-          markMatched(fromId);
+          state.lines.push({ id: fromId, colorIdx });
+          markDone(fromId);
           updateSvg();
-          updateHeader();
-          if (state.matched.size >= raw.length) setTimeout(() => finish(), 700);
+          updateProgress();
+          if (state.matched.size >= raw.length) setTimeout(() => finish(), 750);
         } else {
-          state.score   = applyPoints(state.score, activity.scoring, false);
+          // ✗ Wrong — brief red line only, no card shake
           state.mistakes++;
-          state.wrongLine = { x1, y1, x2: pos2.x, y2: pos2.y };
-          flashWrong(fromId, toId);
+          const p2 = dotPos(hit, svg);
+          state.wrongLine = { x1, y1, x2: p2.x, y2: p2.y };
           updateSvg();
-          setTimeout(() => { state.wrongLine = null; updateSvg(); }, FEEDBACK_DELAY);
+          setTimeout(() => { state.wrongLine = null; updateSvg(); }, 650);
         }
       } else {
         updateSvg();
@@ -145,24 +160,28 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
     document.addEventListener('pointercancel', cleanup);
   });
 
+  // ── End screen ────────────────────────────────────────────────────────────
   function finish() {
     const timeUsed = Math.round((Date.now() - state.startedAt) / 1000);
+    const score = Math.max(0, ppc * raw.length - ppw * state.mistakes);
     mount(rootSel, resultScreenHtml({
       title: '¡Completado!',
-      lead: `Puntos: <b>${state.score}</b> / ${maxScore}`,
-      stats: `${raw.length} pares · ${state.mistakes} fallos · ${timeUsed}s`,
+      lead:  `${raw.length} de ${raw.length} pares`,
+      stats: `${state.mistakes} error${state.mistakes !== 1 ? 'es' : ''} · ${timeUsed}s`,
     }));
-    trySaveResult(opts, { activityId: activity.id, scoreAuto: state.score, scoreFinal: state.score, maxScore, timeUsed });
-    if (opts.onFinish) opts.onFinish({ score: state.score, startedAt: state.startedAt, mistakes: state.mistakes });
+    trySaveResult(opts, { activityId: activity.id, scoreAuto: score, scoreFinal: score, maxScore, timeUsed });
+    if (opts.onFinish) opts.onFinish({ score, startedAt: state.startedAt, mistakes: state.mistakes });
   }
 }
 
+// ── HTML builders ─────────────────────────────────────────────────────────────
+
 function buildLayout(lefts, rights, activity, total) {
   return `<div class="ww-match p-3">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <span class="badge bg-secondary ww-matched">0 / ${total}</span>
-    <span class="fw-bold text-truncate mx-2 small">${escapeHtml(activity.title || '')}</span>
-    <span class="badge bg-primary ww-score">★ 0</span>
+  <div class="d-flex align-items-center mb-3 gap-2">
+    <span class="badge bg-secondary ww-matched flex-shrink-0">0 / ${total}</span>
+    <span class="fw-bold text-truncate flex-grow-1 text-center small">${escapeHtml(activity.title || '')}</span>
+    <span class="badge bg-secondary flex-shrink-0" style="visibility:hidden">0 / ${total}</span>
   </div>
   <div class="ww-match-arena">
     <div class="ww-col-left">${lefts.map(c => cardHtml(c, 'L')).join('')}</div>
@@ -181,11 +200,13 @@ function cardHtml(c, side) {
 </div>`;
 }
 
-function dotSvgPos(el, svg) {
+// ── SVG coordinate helpers ────────────────────────────────────────────────────
+
+function dotPos(el, svg) {
   const er = el.getBoundingClientRect(), sr = svg.getBoundingClientRect();
   return { x: (er.left + er.right) / 2 - sr.left, y: (er.top + er.bottom) / 2 - sr.top };
 }
-function clientToSvg(svg, cx, cy) {
+function svgPt(svg, cx, cy) {
   const sr = svg.getBoundingClientRect();
   return { x: cx - sr.left, y: cy - sr.top };
 }

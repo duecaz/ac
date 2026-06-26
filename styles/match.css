@@ -1,13 +1,14 @@
-/* Match (Emparejar) — line-drawing two-column layout */
+/* Match (Emparejar) — rope-drawing two-column layout */
 
 .ww-match-arena {
   display: flex;
   position: relative;
-  gap: 36px;
+  gap: 72px;   /* wide corridor so ropes are clearly visible */
 }
 .ww-col-left,
 .ww-col-right {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -35,7 +36,7 @@
   overflow: visible;
   user-select: none;
   -webkit-user-select: none;
-  transition: border-color .15s, background .15s, opacity .2s;
+  transition: border-color .15s, background .15s, opacity .25s;
 }
 .ww-match .ww-card img {
   width: 100%;
@@ -51,15 +52,9 @@
   font-size: .85rem;
   margin-top: 4px;
 }
-.ww-match .ww-card-wrong {
-  background: #fee2e2;
-  border-color: #ef4444;
-  animation: ww-shake .3s;
-}
 .ww-match .ww-card-done {
-  opacity: .4;
-  background: #f0fdf4;
-  border-color: #86efac;
+  opacity: .38;
+  border-color: var(--ww-card-border, #dee2e6);
 }
 .ww-match .ww-card-done .ww-dot { display: none; }
 
@@ -87,9 +82,3 @@
 }
 .ww-dot[data-side="L"] { right: -10px; }
 .ww-dot[data-side="R"] { left:  -10px; }
-
-@keyframes ww-shake {
-  0%,100% { transform: translateX(0); }
-  25%     { transform: translateX(-6px); }
-  75%     { transform: translateX(6px); }
-}
