@@ -280,8 +280,10 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         retries++;
         console.warn(`[realtime] reconnecting in ${Math.round(delay)}ms (attempt ${retries})`);
         // Surface the sticky "Reconectando…" banner (debounced inside connection.js
-        // so brief blips during normal heartbeats don't flash it).
-        try { setConnectionState('reconnecting'); } catch {}
+        // so brief blips during normal heartbeats don't flash it). After several
+        // failed attempts, escalate to "Conexión perdida" so the user knows it's
+        // not just a momentary blip.
+        try { setConnectionState(retries >= 5 ? 'error' : 'reconnecting'); } catch {}
         retryTimer = setTimeout(() => { retryTimer = null; connect(); }, delay);
       }
 
