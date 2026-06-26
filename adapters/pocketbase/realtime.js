@@ -14,6 +14,7 @@ import { PB_URL } from '../../pocketbase.config.js';
 import { setConnectionState } from '../../core/connection.js';
 
 const COLL = 'live_sessions';
+const ANS = 'live_answers';   // one record per student answer (lost-update fix)
 
 function genUserId() { return 'u_' + Math.random().toString(36).slice(2, 10); }
 
@@ -68,6 +69,52 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       method: 'PATCH',
       body: JSON.stringify({ state: engine.state }),
     });
+  }
+
+  // ── Answers in their own collection (lost-update fix) ───────────────────────
+  // The lost-update bug: every student answer used to load→mutate→PATCH the
+  // SINGLE live_sessions.state blob, so two students answering in the same ~1-2s
+  // window clobbered each other (PATCH B overwrote A's answer; PB returned 200,
+  // so the offline queue never retried → answer silently lost).
+  //
+  // Fix: each student CREATEs a row in `live_answers` (their own record) — a
+  // CREATE never collides with another student's CREATE. The host stays the only
+  // writer of the blob (scores live in state.players[]), so scoring is collision
+  // free too. Activated only when the collection exists; otherwise everything
+  // falls back to the legacy blob path (zero change for existing deployments).
+  let _ansReady;   // undefined = unknown, then true/false (cached per adapter)
+  async function answersReady() {
+    if (_ansReady !== undefined) return _ansReady;
+    try {
+      const r = await fetch(`${PB_URL}/api/collections/${ANS}/records?perPage=1`);
+      if (r.status === 200) return (_ansReady = true);
+      const body = await r.json().catch(() => ({}));
+      if (body?.message?.includes('Missing collection')) return (_ansReady = false);
+      _ansReady = r.ok;
+    } catch { _ansReady = false; }
+    return _ansReady;
+  }
+
+  // PB ids (session/player) are alphanumeric, but escape single quotes anyway so
+  // a stray quote can't break (or inject into) the filter.
+  const q = (v) => String(v).replace(/'/g, "\\'");
+  const ansFilter = (sessionId, itemIndex, playerId) => {
+    const parts = [`session='${q(sessionId)}'`, `item=${Number(itemIndex)}`];
+    if (playerId != null) parts.push(`player='${q(playerId)}'`);
+    return encodeURIComponent(parts.join(' && '));
+  };
+
+  // Fetch a session's answer rows for one item, deduped to ONE per player. A
+  // double-tap can create two rows (no DB unique index needed); we keep the
+  // earliest (lowest ms) so the Kahoot first-answer/speed semantics hold.
+  async function fetchAnswerRows(sessionId, itemIndex) {
+    const res = await pbFetch(`/api/collections/${ANS}/records?filter=${ansFilter(sessionId, itemIndex)}&perPage=500`);
+    const byPlayer = new Map();
+    for (const r of res?.items || []) {
+      const prev = byPlayer.get(r.player);
+      if (!prev || (r.ms ?? 0) < (prev.ms ?? Infinity)) byPlayer.set(r.player, r);
+    }
+    return [...byPlayer.values()];
   }
 
   return {
@@ -212,6 +259,40 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
     },
 
     async settleItem(sessionId, itemIndex) {
+      if (await answersReady()) {
+        const { engine } = await load(sessionId);
+        const rows = await fetchAnswerRows(sessionId, itemIndex);
+        // Hydrate the engine with the collection's answers, then let the SAME
+        // engine.settle() score them (single source of truth) — it adds points
+        // to state.players[]. The host is the only writer here, so this PATCH
+        // can't be clobbered by students.
+        for (const r of rows) {
+          engine.state.answers[`${itemIndex}:${r.player}`] = {
+            playerId: r.player, value: r.value, msTaken: r.ms ?? 0,
+            // Preserve a row's existing verdict: settle() only awards points when
+            // an answer was unscored (correct === null). A second settle of the
+            // same item (host double-click / end-of-race loop) must NOT re-add
+            // points already in players[] — keeping the scored row's verdict makes
+            // wasUnscored false so the re-settle is a no-op for scoring.
+            correct: r.scored ? r.correct : null, points: r.scored ? (r.points ?? 0) : 0,
+          };
+        }
+        const settled = engine.settle(itemIndex);
+        // Write each answer's verdict back to its row (so students/host see ✓/✗
+        // and points). Host-only writes, one per answer — no contention.
+        await Promise.all(rows.map(r => {
+          const scored = engine.state.answers[`${itemIndex}:${r.player}`];
+          if (!scored) return null;
+          return pbFetch(`/api/collections/${ANS}/records/${r.id}`, {
+            method: 'PATCH', body: JSON.stringify({ scored: true, correct: scored.correct === true, points: scored.points }),
+          }).catch(() => {});
+        }));
+        // Keep scores (players[]) but drop the hydrated answers so the blob stays
+        // lean — the answers live in live_answers, not in state.
+        engine.state.answers = {};
+        await saveState(sessionId, engine);
+        return { ok: true, settled };
+      }
       const { engine } = await load(sessionId);
       const settled = engine.settle(itemIndex);
       await saveState(sessionId, engine);
@@ -219,12 +300,32 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
     },
 
     async submitAnswer(sessionId, playerId, itemIndex, value, msTaken) {
+      if (await answersReady()) {
+        // First-answer lock (Kahoot): if this player already has a row for this
+        // item, keep it. A true simultaneous double-tap may still create two
+        // rows, but fetchAnswerRows() dedupes them on read, so no double-score.
+        const existing = await pbFetch(`/api/collections/${ANS}/records?filter=${ansFilter(sessionId, itemIndex, playerId)}&perPage=1`);
+        if (existing?.items?.length) return;
+        // scored=false marks "answered, not yet graded". PB bool can't be null,
+        // so this flag (not `correct`) carries the unscored state.
+        await pbFetch(`/api/collections/${ANS}/records`, {
+          method: 'POST',
+          body: JSON.stringify({ session: sessionId, player: playerId, item: Number(itemIndex), value, ms: msTaken ?? 0, scored: false, correct: false, points: 0 }),
+        });
+        return;
+      }
+      // Legacy blob path (no live_answers collection): load→mutate→PATCH.
       const { engine } = await load(sessionId);
       engine.submit(playerId, itemIndex, value, msTaken);
       await saveState(sessionId, engine);
     },
 
     async getOwnAnswer(sessionId, playerId, itemIndex) {
+      if (await answersReady()) {
+        const res = await pbFetch(`/api/collections/${ANS}/records?filter=${ansFilter(sessionId, itemIndex, playerId)}&perPage=1`);
+        const r = res?.items?.[0];
+        return r ? { playerId: r.player, value: r.value, msTaken: r.ms, correct: r.scored ? r.correct : null, points: r.points } : null;
+      }
       const { engine } = await load(sessionId);
       return engine.state.answers[`${itemIndex}:${playerId}`] || null;
     },
@@ -235,6 +336,10 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
     },
 
     async listAnswers(sessionId, itemIndex) {
+      if (await answersReady()) {
+        const rows = await fetchAnswerRows(sessionId, itemIndex);
+        return rows.map(r => ({ playerId: r.player, value: r.value, msTaken: r.ms, correct: r.scored ? r.correct : null, points: r.points }));
+      }
       const { engine } = await load(sessionId);
       const a = engine.state.answers;
       return Object.entries(a)

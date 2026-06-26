@@ -493,6 +493,19 @@ function renderPanel(rootSel) {
           { name: 'activity', type: 'json' },
           { name: 'state',    type: 'json' },
         ]},
+        // One record per student answer → concurrent answers never clobber each
+        // other (the lost-update fix). Once this exists, the realtime adapter
+        // routes answers here instead of the live_sessions.state blob.
+        { name: 'live_answers', fields: [
+          { name: 'session', type: 'text', required: true },
+          { name: 'player',  type: 'text', required: true },
+          { name: 'item',    type: 'number' },
+          { name: 'value',   type: 'json' },
+          { name: 'ms',      type: 'number' },
+          { name: 'scored',  type: 'bool' },
+          { name: 'correct', type: 'bool' },
+          { name: 'points',  type: 'number' },
+        ]},
         { name: 'assignments', fields: [
           { name: 'code',          type: 'text', required: true },
           { name: 'activity_id',   type: 'text' },

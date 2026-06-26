@@ -293,8 +293,18 @@ async function renderHost(rootSel, code, sessionId, activity) {
     });
 
     if (tickHandle) clearInterval(tickHandle);
+    let pollBusy = false, lastPoll = 0;
     tickHandle = ctx.setInterval(() => {
       if (session.phase !== 'question') { clearInterval(tickHandle); tickHandle = null; return; }
+      // Poll the answer count (~every 1.2s). With answers in their own collection,
+      // a student's submit no longer touches the session record, so the SSE that
+      // drives `answers` doesn't fire — without this the count would freeze and
+      // auto-advance-on-all-answered would never trigger. Harmless in blob mode
+      // too (covers the occasional coalesced/missed SSE event).
+      if (!pollBusy && Date.now() - lastPoll > 1200) {
+        pollBusy = true; lastPoll = Date.now();
+        listAnswers(sessionId, idx).then(a => { answers = a; }).catch(() => {}).finally(() => { pollBusy = false; });
+      }
       // If host paused (deadline cleared server-side), freeze the bar.
       if (!session.deadline) {
         const t = document.getElementById('time-left');

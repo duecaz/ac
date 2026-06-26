@@ -324,6 +324,36 @@ const quizActivity = {
   assert.ok(st.right.score > 0, 'Cuidadoso (todo bien) suma puntos');
   assert.strictEqual(st.leader, 'right', 'gana quien más acierta, no quien responde más rápido');
   ok('vs (puntos): acertar gana sobre responder rápido/más');
+
+  // LIVE answers-collection settle (lost-update fix): mirror the adapter's
+  // hydrate→settle→re-settle so a second settle of the same item does NOT
+  // double-count points already added to players[].
+  const lv = createSession(quizActivity, { format: FORMATS.LIVE });
+  const pa = lv.join('uA', 'Ana'), pb2 = lv.join('uB', 'Beto');
+  const item0 = quizActivity.content.items[0]; // answer '4'
+  // Simulated live_answers rows for item 0: Ana right, Beto wrong (both unscored).
+  const rows = [
+    { player: pa.id, value: item0.answer, ms: 100, scored: false, correct: false, points: 0 },
+    { player: pb2.id, value: 'X',          ms: 200, scored: false, correct: false, points: 0 },
+  ];
+  const hydrate = () => { lv.state.answers = {}; for (const r of rows) lv.state.answers[`0:${r.player}`] = {
+    playerId: r.player, value: r.value, msTaken: r.ms, correct: r.scored ? r.correct : null, points: r.scored ? r.points : 0,
+  }; };
+
+  hydrate();
+  lv.settle(0);
+  const anaScore = lv.state.players.find(p => p.id === pa.id).score;
+  assert.ok(anaScore > 0, 'Ana (correcta) recibe puntos al settle');
+  assert.strictEqual(lv.state.players.find(p => p.id === pb2.id).score, 0, 'Beto (incorrecta) 0');
+
+  // Write back verdicts to the rows (as the adapter does) and re-settle.
+  rows[0].scored = true; rows[0].correct = true;  rows[0].points = anaScore;
+  rows[1].scored = true; rows[1].correct = false; rows[1].points = 0;
+  hydrate();
+  lv.settle(0);
+  assert.strictEqual(lv.state.players.find(p => p.id === pa.id).score, anaScore,
+    'el segundo settle NO duplica puntos (scored row → wasUnscored false)');
+  ok('live (answers-collection): settle idempotente, sin doble puntuación');
 }
 
 console.log(`\nsessionEngine.test: ${passed} checks passed`);
