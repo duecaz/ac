@@ -18,16 +18,31 @@ const COLL = 'live_sessions';
 function genUserId() { return 'u_' + Math.random().toString(36).slice(2, 10); }
 
 async function pbFetch(path, opts = {}) {
-  const { body: reqBody, method, headers: extra, ...rest } = opts;
+  const { body: reqBody, method, headers: extra, timeoutMs = 12000, ...rest } = opts;
   const headers = {};
   if (reqBody && typeof reqBody === 'string') headers['Content-Type'] = 'application/json';
   if (extra) Object.assign(headers, extra);
-  const r = await fetch(`${PB_URL}${path}`, {
-    method: method || 'GET',
-    headers,
-    ...(reqBody !== undefined ? { body: reqBody } : {}),
-    ...rest,
-  });
+  // Abort a stalled socket instead of hanging forever: on flaky mobile a TCP
+  // connection can open but never respond, which would leave submit/load/host
+  // actions pending indefinitely (frozen UI, submitQueue never enqueues). The
+  // AbortError flows into the offline queue / reconnect backoff like any failure.
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  let r;
+  try {
+    r = await fetch(`${PB_URL}${path}`, {
+      method: method || 'GET',
+      headers,
+      ...(reqBody !== undefined ? { body: reqBody } : {}),
+      ...rest,
+      signal: ctrl.signal,
+    });
+  } catch (e) {
+    if (e?.name === 'AbortError') throw Object.assign(new Error(`PocketBase: tiempo de espera agotado (${timeoutMs}ms)`), { status: 0, timeout: true });
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
   if (r.status === 204) return null;
   const text = await r.text();
   let body = null;
@@ -77,14 +92,21 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
           });
           return { id: rec.id, code };
         } catch (e) {
-          if (attempt < 4 && (e.status === 400 || e.status === 409)) continue;
           if (e.status === 404) {
             throw new Error('La colección "live_sessions" no existe en el servidor. '
               + 'Créala una sola vez en Admin → "Crear colecciones".');
           }
+          // Retry on PIN collision (400/409) AND on transient failures (network
+          // error → no status, 5xx, timeout) — a momentary blip shouldn't kill
+          // room creation outright.
+          const retryable = !e.status || e.status === 400 || e.status === 409 || e.status >= 500;
+          if (attempt < 4 && retryable) continue;
           throw e;
         }
       }
+      // All attempts exhausted (persistent collisions / validation): fail loudly
+      // so the caller shows a clear message instead of crashing on undefined.id.
+      throw new Error('No se pudo crear la sala tras varios intentos. Revisa la conexión e inténtalo de nuevo.');
     },
 
     async findRoomByCode(code) {
@@ -263,27 +285,56 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         retryTimer = setTimeout(() => { retryTimer = null; connect(); }, delay);
       }
 
+      // Re-fetch all virtual tables. SSE only delivers CHANGES, so anything the
+      // host changed while we were disconnected was never delivered; firing this
+      // on every (re)connect makes a reconnecting student catch up instead of
+      // staying stuck on a stale question.
+      function resync(reason) {
+        onChange({ table: 'sessions', eventType: reason });
+        onChange({ table: 'players', eventType: reason });
+        onChange({ table: 'answers', eventType: reason });
+      }
+
+      // Tear down an EventSource so a superseded source can't keep firing its
+      // onerror and spawn a second reconnect stream (orphaned ES hammering a
+      // downed server). Detaching onerror BEFORE close is the key step.
+      function teardown(src) {
+        if (!src) return;
+        src.onerror = null;
+        try { src.close(); } catch {}
+      }
+
       function connect() {
         if (!active) return;
-        try { es?.close(); } catch {}
-        es = new EventSource(`${PB_URL}/api/realtime`);
+        teardown(es);
+        const self = new EventSource(`${PB_URL}/api/realtime`);
+        es = self;
 
-        es.addEventListener('PB_CONNECT', async (e) => {
-          if (!active) return;
+        self.addEventListener('PB_CONNECT', async (e) => {
+          if (!active || es !== self) return;
           retries = 0; // a successful handshake resets the backoff
           try { setConnectionState('connected'); } catch {}
           try {
             const { clientId } = JSON.parse(e.data);
-            await fetch(`${PB_URL}/api/realtime`, {
+            const r = await fetch(`${PB_URL}/api/realtime`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ clientId, subscriptions: [topic] }),
             });
-          } catch (err) { console.warn('[realtime] subscription POST failed — will retry on next PB_CONNECT:', err); }
+            if (!r.ok) throw new Error(`subscribe HTTP ${r.status}`);
+            resync('reconnect');
+          } catch (err) {
+            // PB_CONNECT fires once per connection; a failed subscribe would
+            // leave us connected-but-deaf forever (no events, no error). Force a
+            // fresh reconnect cycle instead of waiting for a PB_CONNECT that
+            // will never come again.
+            console.warn('[realtime] subscription POST failed — forcing reconnect:', err);
+            if (es === self) { teardown(self); es = null; scheduleReconnect(); }
+          }
         });
 
-        es.addEventListener(topic, (e) => {
-          if (!active) return;
+        self.addEventListener(topic, (e) => {
+          if (!active || es !== self) return;
           try {
             const { action } = JSON.parse(e.data);
             // All state is in one record: fire all three virtual tables so views
@@ -294,11 +345,13 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
           } catch (err) { console.warn('[realtime] malformed SSE payload — skipping event:', err, e?.data?.slice?.(0, 120)); }
         });
 
-        es.onerror = (err) => {
+        self.onerror = (err) => {
+          if (es !== self) return; // a superseded source firing late — ignore
           // Take over reconnection from the native EventSource: close it and
           // reconnect on an exponential backoff so a downed server isn't flooded.
           console.warn('[realtime] SSE connection error — backing off before reconnect:', err);
-          try { es?.close(); } catch {}
+          teardown(self);
+          es = null;
           scheduleReconnect();
         };
       }
@@ -307,7 +360,8 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       return () => {
         active = false;
         if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
-        es?.close();
+        teardown(es);
+        es = null;
       };
     },
   };
