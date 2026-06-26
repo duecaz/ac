@@ -325,6 +325,20 @@ const quizActivity = {
   assert.strictEqual(st.leader, 'right', 'gana quien más acierta, no quien responde más rápido');
   ok('vs (puntos): acertar gana sobre responder rápido/más');
 
+  // VS tie-break: when BOTH sides get everything right (e.g. Operaciones with
+  // unlimited retries → both finish at 100%), the score is tied, so the FIRST
+  // side to finish wins instead of showing a draw.
+  const vs2 = createSession(quizActivity, { format: FORMATS.VS, left: 'Rápido', right: 'Lento' });
+  vs2.start();
+  for (let i = 0; i < its.length; i++) vs2.answer('left', its[i].answer);   // left finishes first, all correct
+  for (let i = 0; i < its.length; i++) vs2.answer('right', its[i].answer);  // right finishes second, all correct
+  const st2 = vs2.standings();
+  assert.strictEqual(st2.finished, true, 'el duelo termina');
+  assert.strictEqual(st2.left.score, st2.right.score, 'empate a puntos (ambos 100%)');
+  assert.strictEqual(st2.leader, 'tie', 'leader empatado por puntos');
+  assert.strictEqual(st2.finishedBy, 'left', 'finishedBy = quien terminó primero → desempata');
+  ok('vs (puntos): empate a puntos lo gana quien terminó primero');
+
   // LIVE answers-collection settle (lost-update fix): mirror the adapter's
   // hydrate→settle→re-settle so a second settle of the same item does NOT
   // double-count points already added to players[].

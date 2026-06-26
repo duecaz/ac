@@ -351,9 +351,14 @@ function createVsSession(activity, T, opts) {
     s.score += r.points;
     if (r.correct) s.correct += 1;
     s.cursor += 1;
+    // Record the FIRST side to complete all items. In points mode this breaks a
+    // score tie: Operaciones (math) with unlimited retries advances only on a
+    // correct answer, so BOTH sides finish at 100% — a draw on points. The
+    // faster finisher should win, not show "empate".
+    if (s.cursor >= total && !state.finishedBy) state.finishedBy = sideId;
     if (raceToFinish) {
       // Carrera: el primero que completa todos los ítems gana y cierra el duelo.
-      if (s.cursor >= total) { state.status = 'ended'; state.finishedBy = sideId; }
+      if (s.cursor >= total) state.status = 'ended';
     } else if (state.sides.left.cursor >= total && state.sides.right.cursor >= total) {
       // Puntos: cada lado va a su ritmo; termina cuando AMBOS acaban.
       state.status = 'ended';
