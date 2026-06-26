@@ -20,11 +20,11 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
 
 ## Arquitectura (resumen)
 - Vanilla JS, ES modules, sin framework. Routing por hash.
-- Backend: **PocketBase** en `pb.lanube.uno` (Pi 5, Docker). **Solo PocketBase** — Supabase se está retirando.
-  - Ya en PB: activities, results, live sessions, tareas (assignments), imágenes (inline), logs (local).
-  - Pendiente de migrar a PB: auth (`core/auth.js`/`core/supabase.js`), reportes (`views/reports.js`),
-    explorar/banco compartido (`views/explore.js`). Los adaptadores `adapters/supabase/*` quedan solo
-    como fallback (`?backend=supabase`); el default es `pocketbase`.
+- Backend: **PocketBase** en `pb.lanube.uno` (Pi 5, Docker). **Solo PocketBase** — Supabase RETIRADO.
+  - En PB: activities, results, live sessions, tareas (assignments), reportes, explorar, auth
+    (email/password en `core/auth.js`), imágenes (inline), logs (local).
+  - Backends válidos: `local` (dev offline) y `pocketbase` (prod). El antiguo fallback
+    `?backend=supabase` y `adapters/supabase/*` fueron eliminados.
 - Imágenes inline como data-URL en el JSON de la actividad (límite 200 KB). **No subir a storage externo**
   (`core/upload.js` convierte a data-URL; nunca a un bucket).
 - Live: una sola sala PocketBase (`live_sessions`), PIN/QR, `subscribeRoom`, fase de máquina de estados.
@@ -37,13 +37,18 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
 
 ## Deuda técnica registrada
 
-### 🔴 DEUDA IMPORTANTE
+### 🟢 DEUDA IMPORTANTE — RESUELTA
 
-#### 1. Retiro de Supabase (pendiente desde migración a PocketBase)
-- **Qué**: auth (`core/supabase.js`, `core/auth.js`), reportes (`views/reports.js`), explorar (`views/explore.js`) todavía apuntan a Supabase.
-- **Impacto**: si Supabase se apaga, auth y reportes dejan de funcionar. El fallback `?backend=supabase` complica el mantenimiento.
-- **Archivos principales**: `core/supabase.js`, `core/auth.js`, `views/reports.js`, `views/explore.js`, `adapters/supabase/*` (4 archivos), `core/assignmentsTransport.js`, `core/liveTransport.js`, `core/identity.js`.
-- **Plan**: migrar auth a PocketBase users/anon-id, reescribir reportes sobre `live_sessions` PB, luego eliminar `adapters/supabase/`.
+#### 1. ✅ Retiro de Supabase — RESUELTO
+- **Estado**: RESUELTO. Supabase ya no se usa en ninguna ruta. Eliminados: `core/supabase.js` (stub),
+  `core/transport/assignments.js`, `supabase.config.js` y `adapters/supabase/*` (live, room, remoteStore,
+  realtime, assignments). `adapters/index.js` solo conoce `local` y `pocketbase`.
+- **Auth**: `core/auth.js` ya estaba en PocketBase (email/password). `core/identity.js` devuelve el anon id
+  en cualquier backend; los mains usan `ensureIdentity()` (antes `ensureAuth` del stub Supabase).
+- **Reportes/explorar**: `views/reports.js` y `views/explore.js` ya consultaban `PB_URL` directamente.
+- **Bonus**: `core/connection.js` (banner de reconexión) había quedado huérfano al retirar el adaptador
+  Supabase que lo alimentaba → re-cableado en `adapters/pocketbase/realtime.js` (`reconnecting` en backoff,
+  `connected` tras el handshake PB_CONNECT). El banner vuelve a funcionar.
 
 #### 2. ✅ `Date.now()` no determinista en lógica de dominio — RESUELTO
 - **Estado**: RESUELTO. `core/clock.js` expone `clock.now()` (= `Date.now()` en prod). Migrados:

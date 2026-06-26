@@ -11,6 +11,7 @@
 import { createLiveRoom } from '../../kernel/live/engine.js';
 import { pickWord } from '../../core/liveWords.js';
 import { PB_URL } from '../../pocketbase.config.js';
+import { setConnectionState } from '../../core/connection.js';
 
 const COLL = 'live_sessions';
 
@@ -256,6 +257,9 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         const delay = backoffDelay();
         retries++;
         console.warn(`[realtime] reconnecting in ${Math.round(delay)}ms (attempt ${retries})`);
+        // Surface the sticky "Reconectando…" banner (debounced inside connection.js
+        // so brief blips during normal heartbeats don't flash it).
+        try { setConnectionState('reconnecting'); } catch {}
         retryTimer = setTimeout(() => { retryTimer = null; connect(); }, delay);
       }
 
@@ -267,6 +271,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         es.addEventListener('PB_CONNECT', async (e) => {
           if (!active) return;
           retries = 0; // a successful handshake resets the backoff
+          try { setConnectionState('connected'); } catch {}
           try {
             const { clientId } = JSON.parse(e.data);
             await fetch(`${PB_URL}/api/realtime`, {

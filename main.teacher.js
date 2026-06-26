@@ -30,7 +30,7 @@ import { renderEditList } from './views/editList.js';
 import { renderExplore } from './views/explore.js';
 import { renderAdmin } from './views/adminView.js';
 import { sync, setStorageUser } from './core/storage.js';
-import { ensureAuth } from './core/supabase.js';
+import { ensureIdentity } from './core/identity.js';
 import { applySkin } from './core/skins.js';
 // Side-effect imports: subscribe to GameEvents bus for sounds + visual effects.
 import './core/sounds.js';
@@ -83,7 +83,7 @@ setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encon
   start();
   window.__APP_READY__ = true;
   try {
-    const user = await ensureAuth();
+    const user = await ensureIdentity();
     setStorageUser(user.id);
     // Re-render home once remote data arrives so new/updated activities appear.
     sync()

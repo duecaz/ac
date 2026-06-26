@@ -1,6 +1,6 @@
-// Assignments (tareas) transport facade. Views import these instead of
-// core/transport/assignments.js directly, so the backend (local | supabase) is
-// chosen by getAssignments() and call sites stay identical.
+// Assignments (tareas) transport facade. Views import these so the backend
+// (local | pocketbase) is chosen by getAssignments() and call sites stay
+// identical regardless of the active driver.
 import { getAssignments } from '../adapters/index.js';
 
 const call = (method) => async (...args) => {

@@ -1,11 +1,13 @@
 // Connection state banner. Shows a sticky message when realtime/network drops.
-// Subscribed to from adapters/supabase/live.js subscribeRoom (system events).
+// Driven by adapters/pocketbase/realtime.js subscribeRoom: 'reconnecting' on
+// SSE backoff, 'connected' on a successful PB_CONNECT handshake. Also reacts to
+// the window online/offline events directly.
 //
-// Debounced: Supabase Realtime cycles CLOSED → SUBSCRIBED several times a
-// minute during normal heartbeats. Without debounce the user sees the
-// "Reconectando…" banner blink and a "Conexión recuperada" toast every time
-// even with a perfect connection. We hold off showing anything until the
-// disconnected state has lasted at least DEBOUNCE_MS.
+// Debounced: a flaky SSE can cycle error → reconnect several times a minute
+// during normal heartbeats. Without debounce the user sees the "Reconectando…"
+// banner blink and a "Conexión recuperada" toast every time even with a fine
+// connection. We hold off showing anything until the disconnected state has
+// lasted at least DEBOUNCE_MS.
 import { toast } from './toast.js';
 
 const DEBOUNCE_MS = 1500;

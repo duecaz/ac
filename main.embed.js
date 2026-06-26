@@ -11,7 +11,7 @@
 //   template  optional   render with a different (compatible) template
 
 import { getRemote } from './core/storage.js';
-import { ensureAuth } from './core/supabase.js';
+import { ensureIdentity } from './core/identity.js';
 import { applySkin } from './core/skins.js';
 import { applyBackground } from './core/backgrounds.js';
 import { runPlayer } from './core/player.js';
@@ -41,7 +41,7 @@ const templateOverride = params.get('template');
     return;
   }
   try {
-    await ensureAuth();
+    await ensureIdentity();
     const a = await getRemote(id);
     if (!a) {
       document.body.innerHTML = '<div class="alert alert-warning m-4">Actividad no disponible. Tal vez sea privada.</div>';

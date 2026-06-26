@@ -1,15 +1,16 @@
 // Backend selection. core/storage.js calls getRemoteStore(); which concrete
-// adapter it gets is decided here, lazily (the Supabase SDK only loads if chosen).
+// adapter it gets is decided here, lazily (the driver only loads if chosen).
+// Supabase fue retirado: solo quedan 'local' (dev offline) y 'pocketbase' (prod).
 //
 // Resolution order:
 //   1. URL query param  ?backend=pocketbase  (persiste en localStorage)
-//   2. localStorage 'ww.backend' override ('local' | 'supabase' | 'pocketbase')
+//   2. localStorage 'ww.backend' override ('local' | 'pocketbase')
 //   3. localhost / 127.0.0.1 / file → 'local'   (offline-first development)
 //   4. otherwise → 'pocketbase'                  (Pi5 self-hosted en pb.lanube.uno)
 
 import { VERSION } from '../core/constants.js';
 
-const VALID = ['local', 'supabase', 'pocketbase'];
+const VALID = ['local', 'pocketbase'];
 
 // Cache-buster por versión para los imports dinámicos de los drivers. Los
 // módulos ES se cachean por archivo; sin esto, tras un deploy el navegador puede
@@ -59,7 +60,7 @@ export function getRemoteStore() {
   _store = (async () => {
     if (name === 'local')      return (await import('./local/remoteStore.js' + v)).createLocalRemoteStore();
     if (name === 'pocketbase') return (await import('./pocketbase/remoteStore.js' + v)).createPocketbaseRemoteStore();
-    return (await import('./supabase/remoteStore.js' + v)).createSupabaseRemoteStore();
+    throw new Error(`backend desconocido: ${name}`);
   })();
   return _store;
 }
@@ -78,7 +79,7 @@ export function getRealtime() {
       // Admin → "Crear colecciones".
       return (await import('./pocketbase/realtime.js' + v)).createPocketbaseRealtime();
     }
-    return (await import('./supabase/realtime.js' + v)).createSupabaseRealtime();
+    throw new Error(`backend desconocido: ${name}`);
   })();
   return _realtime;
 }
@@ -104,7 +105,7 @@ export function getAssignments() {
       console.warn('[assignments] Colección assignments no existe en PocketBase → modo local');
       return (await import('./local/assignments.js' + v)).createLocalAssignments({ userId });
     }
-    return (await import('./supabase/assignments.js' + v)).createSupabaseAssignments();
+    throw new Error(`backend desconocido: ${name}`);
   })();
   return _assignments;
 }

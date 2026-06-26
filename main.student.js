@@ -18,7 +18,7 @@ import './templates/crossword/index.js';
 import './templates/question-live/index.js';
 
 import { html, mount } from './core/html.js';
-import { ensureAuth } from './core/supabase.js';
+import { ensureIdentity } from './core/identity.js';
 import { applySkin } from './core/skins.js';
 // Side-effect imports: subscribe sound + effects to game events bus.
 import './core/sounds.js';
@@ -40,7 +40,7 @@ setNotFound(() => mount(APP, html`<div class="alert alert-warning m-4">Ruta no e
 (async function boot() {
   applySkin(localStorage.getItem('ww.skin') || 'default');
   try {
-    const user = await ensureAuth();
+    const user = await ensureIdentity();
     const { setStorageUser } = await import('./core/storage.js');
     setStorageUser(user.id);
   } catch (err) { console.warn('[boot] auth failed:', err.message); }

@@ -1,7 +1,6 @@
 // RealtimePort — the interface for LIVE (hosted room) play, independent of any
-// concrete realtime backend. The Supabase adapter implements it in
-// adapters/supabase/ (realtime.js composing live.js + room.js); a PocketBase
-// adapter can implement the same contract later.
+// concrete realtime backend. Implemented by adapters/pocketbase/realtime.js
+// (prod) and adapters/local/realtime.js (dev/offline).
 //
 // Views never import a backend: they talk to the facade in core/liveTransport.js,
 // which resolves the active Port via adapters/index.js getRealtime().
