@@ -134,6 +134,8 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
       }));
     }
     trySaveResult(opts, { activityId: activity.id, scoreAuto: state.score, scoreFinal: state.score, maxScore: max, timeUsed });
+    // Template-level teardown (e.g. reset streaks) runs before the caller's hook.
+    callbacks.onFinish?.(state);
     if (opts.onFinish) opts.onFinish(state);
   }
 
