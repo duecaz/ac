@@ -4,6 +4,12 @@
 // never interrupts gameplay.
 import { getRemoteStore } from '../adapters/index.js';
 
+const QUEUE_KEY = 'ww.resultQueue';
+const QUEUE_MAX = 60;
+
+function qLoad() { try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch { return []; } }
+function qSave(q) { try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q.slice(-QUEUE_MAX))); } catch {} }
+
 /** Puntuación incremental compartida para mecánicas acierto/fallo (Emparejar y
  *  Memoria en SOLO): suma pointsPerCorrect al acertar; al fallar resta
  *  pointsPerWrong (si es negativo) pero NUNCA baja de 0. El piso vive aquí, en un
@@ -21,10 +27,33 @@ export function trySaveResult(opts, payload) {
 }
 
 export async function saveResult(r) {
+  // Try to flush any pending queued results first (piggyback on active connection).
+  flushResultQueue().catch(() => {});
   try {
     const rs = await getRemoteStore();
     await rs.saveResult(r);
   } catch (e) {
-    console.warn('[results] save failed:', e.message);
+    console.warn('[results] save failed — queuing for retry:', e.message);
+    const q = qLoad();
+    q.push({ ...r, _queuedAt: Date.now() });
+    qSave(q);
   }
 }
+
+async function flushResultQueue() {
+  const q = qLoad();
+  if (!q.length) return;
+  const rs = await getRemoteStore();
+  const remaining = [];
+  for (const item of q) {
+    try {
+      await rs.saveResult(item);
+    } catch {
+      remaining.push(item);
+    }
+  }
+  qSave(remaining);
+}
+
+// Retry when the browser comes back online.
+window.addEventListener('online', () => { flushResultQueue().catch(() => {}); });

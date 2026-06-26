@@ -254,7 +254,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ clientId, subscriptions: [topic] }),
             });
-          } catch { /* subscription failed — will reconnect on next PB_CONNECT */ }
+          } catch (err) { console.warn('[realtime] subscription POST failed — will retry on next PB_CONNECT:', err); }
         });
 
         es.addEventListener(topic, (e) => {
@@ -266,12 +266,13 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
             onChange({ table: 'sessions', eventType: action });
             onChange({ table: 'players', eventType: action });
             onChange({ table: 'answers', eventType: action });
-          } catch { /* malformed SSE payload */ }
+          } catch (err) { console.warn('[realtime] malformed SSE payload — skipping event:', err, e?.data?.slice?.(0, 120)); }
         });
 
-        es.onerror = () => {
+        es.onerror = (err) => {
           // EventSource auto-reconnects; PB_CONNECT fires again on reconnect
           // and re-runs the subscription POST. No manual reconnect needed.
+          console.warn('[realtime] SSE connection error — browser will auto-reconnect:', err);
         };
       }
 

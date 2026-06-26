@@ -237,7 +237,13 @@ async function renderHost(rootSel, code, sessionId, activity) {
     const total = players.length;
     const answered = answers.length;
     const deadline = session.deadline ? new Date(session.deadline).getTime() : Date.now() + timerSec * 1000;
-    const payload = tpl.getRoundPayload ? tpl.getRoundPayload(activity, { itemIndex: idx }) : item;
+    let payload;
+    try {
+      payload = tpl.getRoundPayload ? tpl.getRoundPayload(activity, { itemIndex: idx }) : item;
+    } catch (err) {
+      console.warn('[hostLive] getRoundPayload threw — falling back to item:', err);
+      payload = item;
+    }
     mount(rootSel, html`
       <div class="d-flex justify-content-between align-items-center mb-2">
         <span class="badge bg-secondary fs-6">Pregunta ${idx + 1} / ${items.length}</span>
@@ -253,7 +259,13 @@ async function renderHost(rootSel, code, sessionId, activity) {
         ${fullscreenButtonHtml()}
       </div>
     `);
-    tpl.renderRoundHost(document.getElementById('host-round'), { phase: 'question', item, payload });
+    try {
+      tpl.renderRoundHost(document.getElementById('host-round'), { phase: 'question', item, payload });
+    } catch (err) {
+      console.error('[hostLive] renderRoundHost threw:', err);
+      const el = document.getElementById('host-round');
+      if (el) el.innerHTML = `<div class="alert alert-danger m-3">Error al mostrar pregunta ${idx + 1}: verifique el contenido de la actividad.</div>`;
+    }
     attachFullscreenButton(rootSel);
 
     on(rootSel, 'click', '#btn-reveal', () => doSettle(idx));

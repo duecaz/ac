@@ -288,7 +288,13 @@ export function mountVs(host, a, ctx, opts = {}) {
       if (T.vsCanRetry && typeof T.scoreSubmission === 'function') {
         const cursor = session.standings()[side].cursor;
         const item = sessionItems(a)[cursor];
-        const pre = T.scoreSubmission({ value, item, activity: a, mode: 'vs' });
+        let pre;
+        try {
+          pre = T.scoreSubmission({ value, item, activity: a, mode: 'vs' });
+        } catch (err) {
+          console.warn('[vsView] scoreSubmission threw — treating as correct to unblock player:', err);
+          pre = { correct: true };
+        }
         if (!pre.correct) {
           flashing[side] = true;
           const body = document.getElementById('vs-body-' + side);
