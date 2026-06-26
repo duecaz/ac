@@ -3,13 +3,15 @@
 // ids match, both stay; else they flip back after revealMs.
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { trySaveResult, applyPoints } from '../../core/results.js';
-import { resultScreenHtml } from '../../core/resultScreen.js';
+import { applyPoints } from '../../core/results.js';
+import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { shuffle } from '../../core/roundRender.js';
 
 export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
   const pairs = (activity.content?.pairs || []).filter(p => String(p.left||'').trim() && String(p.right||'').trim());
   if (!pairs.length) { mount(rootSel, html`<div class="alert alert-warning m-4">Sin pares.</div>`); return; }
+
+  const ctx = runFreeformPlayer(rootSel, activity, opts);
 
   const ppc = activity.scoring?.pointsPerCorrect || 1;
   const maxScore = activity.scoring?.maxScore || ppc * pairs.length;
@@ -27,7 +29,6 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
     matched: 0,
     mistakes: 0,
     flips: 0,
-    startedAt: Date.now(),
     open: [],            // currently face-up (and not yet matched)
     locked: new Set(),   // matched cardIds (stay open)
     busy: false
@@ -85,10 +86,13 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
   }
 
   function finish() {
-    const timeUsed = Math.round((Date.now() - state.startedAt) / 1000);
-    mount(rootSel, resultScreenHtml({ title: '¡Memorizado!', lead: `Puntos: <b>${state.score}</b> / ${maxScore}`, stats: `${pairs.length} pares · ${state.flips} flips · ${state.mistakes} fallos · ${timeUsed}s` }));
-    trySaveResult(opts, { activityId: activity.id, scoreAuto: state.score, scoreFinal: state.score, maxScore, timeUsed });
-    if (opts.onFinish) opts.onFinish({ score: state.score, startedAt: state.startedAt, mistakes: state.mistakes });
+    ctx.finish({
+      title: '¡Memorizado!',
+      lead: `Puntos: <b>${state.score}</b> / ${maxScore}`,
+      stats: ({ timeUsed }) => `${pairs.length} pares · ${state.flips} flips · ${state.mistakes} fallos · ${timeUsed}s`,
+      score: state.score,
+      maxScore,
+    });
   }
 
   paint();

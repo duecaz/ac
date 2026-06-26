@@ -1,8 +1,7 @@
 // Match player: drag a rope from a left dot to the matching right dot.
 // Results shown only at the end — no live score, like Wordwall.
 import { html, mount, escapeHtml } from '../../core/html.js';
-import { trySaveResult } from '../../core/results.js';
-import { resultScreenHtml } from '../../core/resultScreen.js';
+import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { shuffle } from '../../core/roundRender.js';
 
 // Rope color palette — one per matched pair
@@ -26,9 +25,10 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   const lefts  = (doShuffle ? shuffle : v => v)(raw.map(p => ({ id: p.id, text: p.left  || '', image: p.leftImage  || p.image || null })));
   const rights = (doShuffle ? shuffle : v => v)(raw.map(p => ({ id: p.id, text: p.right || '', image: p.rightImage || null })));
 
+  const ctx = runFreeformPlayer(rootSel, activity, opts);
+
   const state = {
     mistakes: 0,
-    startedAt: Date.now(),
     matched:   new Set(),   // pair IDs confirmed
     lines:     [],          // { id, colorIdx } permanent ropes
     dragging:  null,        // { fromId, x1, y1, cx, cy }
@@ -162,15 +162,14 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
 
   // ── End screen ────────────────────────────────────────────────────────────
   function finish() {
-    const timeUsed = Math.round((Date.now() - state.startedAt) / 1000);
     const score = Math.max(0, ppc * raw.length - ppw * state.mistakes);
-    mount(rootSel, resultScreenHtml({
+    ctx.finish({
       title: '¡Completado!',
       lead:  `${raw.length} de ${raw.length} pares`,
-      stats: `${state.mistakes} error${state.mistakes !== 1 ? 'es' : ''} · ${timeUsed}s`,
-    }));
-    trySaveResult(opts, { activityId: activity.id, scoreAuto: score, scoreFinal: score, maxScore, timeUsed });
-    if (opts.onFinish) opts.onFinish({ score, startedAt: state.startedAt, mistakes: state.mistakes });
+      stats: ({ timeUsed }) => `${state.mistakes} error${state.mistakes !== 1 ? 'es' : ''} · ${timeUsed}s`,
+      score,
+      maxScore,
+    });
   }
 }
 

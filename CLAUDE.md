@@ -62,7 +62,10 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
   - `core/soloPlayer.js` expone `runFreeformPlayer` y `runSequentialPlayer`.
   - **FreeformShell** activo en Wheel y Question-Live → ya guardan resultado (`trySaveResult`).
   - **SequentialShell** activo en Math, Quiz y Froggy → loop/timer/finish/trySaveResult unificados.
-- **Pendiente menor**: Crossword sigue guardando `scoreAuto: totalWords` (no puntos); Memory/Match/Wordsearch/Crossword aún no migrados a `runFreeformPlayer` (ya llaman `trySaveResult`, sin pérdida de datos — migración cosmética).
+- **Cosmética COMPLETADA**: Memory, Match, Wordsearch y Crossword ya usan `runFreeformPlayer`.
+  Crossword ahora guarda puntos reales (`solvedIds.size · pointsPerCorrect`), no el conteo crudo de palabras.
+  `runFreeformPlayer.finish()` acepta `lead`/`stats` como función de `{ timeUsed, score, maxScore }` y
+  devuelve esos valores (para overlays propios con `skipResultScreen`, p.ej. la celebración de Crossword).
 - **Tests**: `tests/soloTimer.test.mjs` (5) + `tests/soloPlayer.test.mjs` (5, incl. submit idempotente, avance manual y finish temprano).
 
 ## Arquitectura de Players (plan de estandarización)

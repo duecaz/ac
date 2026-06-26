@@ -13,11 +13,15 @@ import { FEEDBACK_DELAY } from './constants.js';
 import { GameEvents, emitGame } from './gameEvents.js';
 import { shuffle } from './roundRender.js';
 import { createCountdown } from './soloTimer.js';
+import { clock } from './clock.js';
 
 export function runFreeformPlayer(rootSel, activity, opts = {}) {
-  const startedAt = Date.now();
+  const startedAt = clock.now();
   let finished = false;
 
+  // `lead` and `stats` may be strings OR functions of { timeUsed, score,
+  // maxScore } — the latter lets a player show the elapsed time without
+  // tracking its own clock (the shell owns startedAt).
   function finish({
     score = 0,
     maxScore = 0,
@@ -31,7 +35,10 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
     if (finished) return;
     finished = true;
 
-    const timeUsed = Math.round((Date.now() - startedAt) / 1000);
+    const timeUsed = Math.round((clock.now() - startedAt) / 1000);
+    const ctx = { timeUsed, score, maxScore };
+    const leadStr = typeof lead === 'function' ? lead(ctx) : lead;
+    const statsStr = typeof stats === 'function' ? stats(ctx) : stats;
 
     trySaveResult(opts, {
       activityId: activity.id,
@@ -42,10 +49,13 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
     });
 
     if (!skipResultScreen) {
-      mount(rootSel, resultScreenHtml({ icon, iconColor, title, lead, stats, score, maxScore }));
+      mount(rootSel, resultScreenHtml({ icon, iconColor, title, lead: leadStr, stats: statsStr, score, maxScore }));
     }
 
     if (opts.onFinish) opts.onFinish({ score, maxScore, timeUsed });
+    // Return the computed values so players with their own end UI (e.g. Crossword's
+    // celebration overlay, skipResultScreen) can show the elapsed time.
+    return { timeUsed, score, maxScore };
   }
 
   return { finish };

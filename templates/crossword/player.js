@@ -1,7 +1,7 @@
 // Crucigrama — solo player.
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { trySaveResult } from '../../core/results.js';
+import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { buildGrid } from './generator.js';
 
@@ -20,8 +20,9 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     return;
   }
 
-  const startedAt = Date.now();
+  const ctx = runFreeformPlayer(rootSel, activity, opts);
   const totalWords = words.length;
+  const ppc = activity.scoring?.pointsPerCorrect || 1;
 
   // User state: 2D array of typed letters, set of solved word IDs
   const userGrid  = Array.from({ length: rows }, () => Array(cols).fill(''));
@@ -428,8 +429,14 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
 
   function finishGame() {
     ro?.disconnect();
-    const timeUsed = Math.round((Date.now() - startedAt) / 1000);
-    emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: totalWords }] });
+    // Score is points, not raw word count: solving every word earns
+    // totalWords·pointsPerCorrect (respects the activity's scoring config).
+    const score = solvedIds.size * ppc;
+    const max = totalWords * ppc;
+    emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score }] });
+    // Crossword has its own celebration overlay → skip the generic result screen,
+    // but let the shell save the result + fire onFinish and hand back timeUsed.
+    const { timeUsed } = ctx.finish({ score, maxScore: max, skipResultScreen: true });
     const celebEl = document.createElement('div');
     celebEl.className = 'cw-celebration';
     celebEl.innerHTML = `
@@ -443,8 +450,6 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     document.getElementById('cw-celeb-close')?.addEventListener('click', () => {
       celebEl.remove();
     });
-    trySaveResult(opts, { activityId: activity.id, scoreAuto: totalWords, scoreFinal: totalWords, maxScore: totalWords, timeUsed });
-    if (opts.onFinish) opts.onFinish({ score: totalWords, timeUsed });
   }
 
   // Select the first cell of the first word on load

@@ -1,8 +1,7 @@
 // Word search player: solo + VS-round variant.
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { trySaveResult } from '../../core/results.js';
-import { resultScreenHtml } from '../../core/resultScreen.js';
+import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import * as Streaks from '../../core/streaks.js';
 import { createCountdown } from '../../core/soloTimer.js';
@@ -40,10 +39,10 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
   });
 
   const total      = placed.length;
-  const startedAt  = Date.now();
   const timerSecs  = rules.timer || 0;
   let timer        = null;
 
+  const ctx = runFreeformPlayer(rootSel, activity, opts);
   const state = { score: 0, found: new Set() };
 
   function rootEl() { return typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel; }
@@ -257,20 +256,14 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
   // ── Finish ───────────────────────────────────────────────────────────────────
   function finish() {
     if (timer) { timer.stop(); timer = null; }
-    const timeUsed = Math.round((Date.now() - startedAt) / 1000);
     const max = total * ppc;
     Streaks.reset('solo', activity.id);
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: state.score }] });
-    mount(rootSel, resultScreenHtml({
+    ctx.finish({
       lead: `Palabras: <b>${state.found.size}/${total}</b> · Puntos: <b>${state.score}</b>`,
-      stats: `Tiempo: ${timeUsed}s`,
+      stats: ({ timeUsed }) => `Tiempo: ${timeUsed}s`,
       score: state.score, maxScore: max,
-    }));
-    trySaveResult(opts, {
-      activityId: activity.id, scoreAuto: state.score, scoreFinal: state.score,
-      maxScore: max, timeUsed,
     });
-    if (opts.onFinish) opts.onFinish({ score: state.score, found: [...state.found], startedAt });
   }
 
   render();
