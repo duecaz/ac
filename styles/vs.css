@@ -30,7 +30,12 @@
 
 /* ── Activity panels ─────────────────────────────────────────────────────── */
 .vs-panel { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-.vs-body  { flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: auto; padding: .5rem .75rem; }
+.vs-body  { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; justify-content: center; overflow: auto; padding: .5rem .75rem;
+  box-sizing: border-box; container-type: inline-size; }
+/* ESTÁNDAR: el panel de actividad y todo su contenido usan border-box, para que
+   width:100% + padding NO desborde el panel (el bug que partía las tarjetas en
+   móvil). Aplica a CUALQUIER plantilla embebida en VS, en todos los skins. */
+.vs-body, .vs-body * { box-sizing: border-box; }
 .vs-q     { font-size: clamp(1.1rem, 2.4cqw, 1.8rem); font-weight: 600; text-align: center; margin-bottom: 1rem; }
 .vs-done  { margin: auto; text-align: center; }
 .vs-overlay { flex: 1; display: flex; align-items: center; justify-content: center; }
@@ -105,11 +110,24 @@
   font-weight: 600;
 }
 
+/* ESTÁNDAR: el contenido de ronda de CADA plantilla embebida en VS se dimensiona
+   con unidades de CONTENEDOR (cqw), nunca de viewport (vmin/vw) — si no, en el
+   panel estrecho se ve gigante y desborda. Cubre Froggy y Tildes/Comas (Quiz y
+   Operaciones ya arriba / en el query de ajuste). */
+.vs-body .froggy-q-text { font-size: clamp(.8rem, 12cqw, 1.15rem); }
+.vs-body .froggy-opt    { font-size: clamp(.7rem, 8cqw, .9rem); border-radius: .6rem; }
+.vs-body .froggy-q-area { gap: .3rem; }
+.vs-body .tc-passage    { font-size: clamp(.85rem, 9cqw, 1.4rem); }
+.vs-body .tc-ch, .vs-body .tc-gap { line-height: 1.5; }
+
 /* ══════════════════════════════════════════════════════════════════════════
    PORTRAIT / NARROW
    ══════════════════════════════════════════════════════════════════════════ */
+/* PORTRAIT (vertical): barra compacta + apilar — animación arriba (a lo ancho),
+   los dos paneles abajo. El stage es 1fr (no 90px) → la animación no queda
+   minúscula. minmax(0,…) deja que las columnas/filas encojan (si no, el
+   contenido las fuerza a crecer y los paneles se solapan). */
 @container vs (max-aspect-ratio: 5/4) {
-  /* Barra compacta — libera espacio vertical para los paneles */
   .vss-bar   { height: 46px; }
   .vss-label { display: none; }
   .vss-badge { width: 36px; height: 36px; font-size: .72rem; }
@@ -118,22 +136,34 @@
   .vss-score { font-size: clamp(1rem, 2.2cqw, 1.5rem); }
   .vss-name  { font-size: clamp(.62rem, 1.2cqw, .88rem); }
 
-  /* Grid: franja de animación arriba, dos paneles abajo */
   .vs-main {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-areas: "stage stage" "s1 s2";
-    grid-template-rows: 90px 1fr;
-    align-content: stretch;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1.8fr);
+    align-content: stretch; column-gap: .4rem;
   }
   .vs-skin-classic .vs-stage { border: none; border-bottom: 1px solid #dee2e6; }
-  .vs-body { padding: .3rem .35rem; justify-content: flex-start; }
-  .vs-q    { font-size: clamp(.85rem, 2cqw, 1.3rem); margin-bottom: .3rem; }
+}
 
-  /* Actividades dentro del panel — eliminar centrado vertical que oculta cabecera */
-  .vs-body .ww-keypad-round   { justify-content: flex-start; gap: .3rem; }
-  .vs-body .ww-keypad-q       { font-size: clamp(.85rem, 5vmin, 1.2rem); }
-  .vs-body .ww-keypad-display { font-size: clamp(.8rem, 4vmin, .95rem); min-width: 4rem; }
-  .vs-body .ww-key            { font-size: clamp(.65rem, 3vmin, .88rem); padding: .26rem 0; }
+/* AJUSTE ESTÁNDAR DE LA ACTIVIDAD EN EL PANEL — se aplica en vertical O en
+   cualquier contenedor BAJO (móvil apaisado, laptop pequeña). PRIMERO el layout
+   reparte el espacio (celda del grid → altura definida); LUEGO el contenido se
+   dibuja dentro y se ESCALA para caber con unidades de CONTENEDOR (cqw), nunca
+   de viewport. Vale para todas las plantillas VS y todos los skins. */
+@container vs (max-aspect-ratio: 5/4) or (max-height: 700px) {
+  .vs-panel { justify-content: stretch; align-items: stretch; }
+  .vs-body  { padding: .45rem .5rem; justify-content: flex-start; min-width: 0; min-height: 0; overflow: hidden; }
+  .vs-q     { font-size: clamp(.85rem, 4cqw, 1.3rem); margin-bottom: .3rem; }
+
+  /* Teclado numérico (Operaciones): la rejilla LLENA la altura disponible y
+     reparte sus 4 filas → pregunta + display + borrar/enviar SIEMPRE caben. */
+  .vs-body .ww-keypad-round   { height: 100%; justify-content: flex-start; gap: 2cqw; }
+  .vs-body .ww-keypad-q       { font-size: clamp(.7rem, 11cqw, 1.3rem); flex: 0 0 auto; }
+  .vs-body .ww-keypad-display { font-size: clamp(.7rem, 10cqw, 1.05rem); min-width: 0; flex: 0 0 auto; }
+  .vs-body .ww-keypad         { flex: 1 1 auto; min-height: 0; gap: 1.8cqw; grid-auto-rows: 1fr;
+                                grid-template-columns: repeat(var(--key-cols, 3), minmax(0, 1fr)); }
+  .vs-body .ww-key            { font-size: clamp(.6rem, 8cqw, 1rem); padding: 0; min-height: 0; min-width: 0;
+                                display: flex; align-items: center; justify-content: center; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════

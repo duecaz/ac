@@ -16,11 +16,31 @@
 /* Center stage */
 .teams-stage { flex: 1; display: flex; flex-direction: column; padding: .5rem 1rem 1.2rem; min-height: 0; }
 .teams-turn { text-align: center; margin-bottom: .6rem; }
+/* ESTÁNDAR (igual que VS): la tarjeta es un CONTENEDOR de tamaño definido y todo
+   su contenido es border-box, para que la actividad embebida se mida contra la
+   tarjeta (cqmin) y SIEMPRE quepa — no contra el viewport. */
 .teams-card {
   flex: 1; display: flex; flex-direction: column; justify-content: center;
-  overflow: auto; max-width: 900px; width: 100%; margin: 0 auto;
+  overflow: hidden; max-width: 900px; width: 100%; margin: 0 auto; min-height: 0;
+  box-sizing: border-box; container-type: size;
 }
-.teams-q { font-size: clamp(1.3rem, 3vw, 2.2rem); font-weight: 700; text-align: center; margin-bottom: 1.2rem; }
+.teams-card, .teams-card * { box-sizing: border-box; }
+.teams-q { font-size: clamp(1.1rem, 6cqmin, 2.2rem); font-weight: 700; text-align: center; margin-bottom: .8rem; flex: 0 0 auto; }
+
+/* Teclado (Operaciones) en Teams: llena la tarjeta y reparte sus filas → cabe en
+   cualquier altura (también móvil apaisado). Tamaños por cqmin (no viewport). */
+.teams-card .ww-keypad-round   { height: 100%; justify-content: flex-start; gap: 2cqmin; }
+.teams-card .ww-keypad-q       { font-size: clamp(.9rem, 7cqmin, 2rem); flex: 0 0 auto; }
+.teams-card .ww-keypad-display { font-size: clamp(.85rem, 6cqmin, 1.8rem); min-width: 0; flex: 0 0 auto; }
+.teams-card .ww-keypad         { flex: 1 1 auto; min-height: 0; gap: 2cqmin; grid-auto-rows: 1fr;
+                                 grid-template-columns: repeat(var(--key-cols, 3), minmax(0, 1fr)); }
+.teams-card .ww-key            { font-size: clamp(.7rem, 5cqmin, 1.5rem); padding: 0; min-height: 0; min-width: 0;
+                                 display: flex; align-items: center; justify-content: center; }
+/* Opciones (Quiz/Froggy) y texto (Tildes/Comas) por cqmin */
+.teams-card .ww-kahoot-grid .btn,
+.teams-card .ww-opt        { font-size: clamp(.8rem, 4cqmin, 1.3rem); }
+.teams-card .froggy-q-text { font-size: clamp(1rem, 6cqmin, 1.6rem); }
+.teams-card .tc-passage    { font-size: clamp(1rem, 5cqmin, 1.8rem); }
 .teams-opts { max-width: 760px; margin: 0 auto; width: 100%; }
 .teams-opt.teams-picked { outline: 4px solid #ffc107; outline-offset: -2px; }
 .teams-answer { text-align: center; font-size: 1.2rem; margin-top: 1rem; }
