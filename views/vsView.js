@@ -382,20 +382,43 @@ export function mountVs(host, a, ctx, opts = {}) {
         ? [st[winnerSide], st[other]]
         : [st.left, st.right].sort((a, b) => b.score - a.score))
         .map(s => ({ name: s.name, score: s.score }));
-      const heading = tie
-        ? `<i class="bi bi-emoji-neutral text-secondary"></i> ¡Empate a ${st.left.score}!`
-        : `<i class="bi bi-trophy-fill text-warning"></i> 🏆 ¡${escapeHtml(winner.name)} gana!`;
-      const body = `
-        <div class="vs-result text-center py-4">
-          <h2 class="mb-3">${heading}</h2>
-          ${podiumHtml(ranked)}
-          <button id="vs-again" class="btn btn-danger btn-lg mt-2"><i class="bi bi-arrow-repeat"></i> Otra vez</button>
-          ${backHref ? `<a href="${backHref}" class="btn btn-outline-secondary btn-lg mt-2 ms-2">Salir</a>` : ''}
+      const actions = `
+        <div class="vs-celeb-actions">
+          <button id="vs-again" class="btn btn-danger btn-lg"><i class="bi bi-arrow-repeat"></i> Otra vez</button>
+          ${backHref ? `<a href="${backHref}" class="btn btn-outline-secondary btn-lg ms-2">Salir</a>` : ''}
         </div>`;
-      mount(host, html`<div class="vs-result-screen">${body}</div>`);
+      // Spectacular winner reveal: sunburst rays + spotlight, dropping crown,
+      // popping trophy, the winner's name HUGE in their panel colour. Each piece
+      // animates in on a stagger (see .vs-celeb-* in vs.css; the TV-Show skin
+      // amps it further). A tie gets a calmer screen — a draw isn't a victory.
+      const body = tie
+        ? `<div class="vs-celebration vs-celeb-tie">
+             <div class="vs-celeb-trophy"><i class="bi bi-emoji-neutral"></i></div>
+             <div class="vs-celeb-label">¡EMPATE!</div>
+             <div class="vs-celeb-score">${st.left.score} – ${st.right.score}</div>
+             <div class="vs-celeb-podium">${podiumHtml(ranked)}</div>
+             ${actions}
+           </div>`
+        : `<div class="vs-celebration vs-win-${winnerSide}">
+             <div class="vs-celeb-rays" aria-hidden="true"></div>
+             <div class="vs-celeb-spotlight" aria-hidden="true"></div>
+             <div class="vs-celeb-crown" aria-hidden="true">👑</div>
+             <div class="vs-celeb-trophy"><i class="bi bi-trophy-fill"></i></div>
+             <div class="vs-celeb-label">¡GANADOR!</div>
+             <h1 class="vs-celeb-name">${escapeHtml(winner.name)}</h1>
+             <div class="vs-celeb-score">${winner.score} pts</div>
+             <div class="vs-celeb-podium">${podiumHtml(ranked)}</div>
+             ${actions}
+           </div>`;
+      mount(host, html`<div class="vs-result-screen vs-skin-${vsTheme}">${body}</div>`);
       // Only celebrate a real winner. On a tie, no victory fanfare/confetti
       // (PODIUM triggers win.mp3 + confetti) — a draw isn't a win.
-      if (winner) emitGame(GameEvents.PODIUM, { top: [{ name: winner.name, score: winner.score }] });
+      if (winner) {
+        emitGame(GameEvents.PODIUM, { top: [{ name: winner.name, score: winner.score }] });
+        // Two follow-up bursts (respecting the confetti cooldown) sustain the moment.
+        setTimeout(() => answerConfetti(), 900);
+        setTimeout(() => answerConfetti(), 1700);
+      }
       on(host, 'click', '#vs-again', () => renderSetup());
     }
   }

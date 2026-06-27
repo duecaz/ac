@@ -290,3 +290,40 @@ body.skin-tv-show .card,
   .vs-skin-tv-show .vss-right::after,
   .vs-skin-tv-show .vs-body { animation: none; }
 }
+
+/* ════════════════════════════ CELEBRACIÓN DEL GANADOR ═════════════════════
+   Sobre la base de styles/vs.css, el skin TV-Show sube el espectáculo: rayos
+   dorados intensos, foco de plató, trofeo y nombre con glow neón, etiqueta
+   "GANADOR" tipo chapa dorada. El .vs-result-screen lleva la clase del skin.
+   ─────────────────────────────────────────────────────────────────────────── */
+.vs-skin-tv-show.vs-result-screen {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255,196,0,.10) 0%, transparent 60%),
+    radial-gradient(ellipse 90% 70% at 50% 100%, rgba(43,111,255,.10) 0%, transparent 60%),
+    radial-gradient(ellipse 90% 70% at 50% 0%, #16245a 0%, #070d20 72%);
+}
+.vs-skin-tv-show .vs-celeb-rays {
+  background: repeating-conic-gradient(from 0deg at 50% 38%,
+    rgba(255,196,0,.20) 0deg 6deg, transparent 6deg 17deg);
+  opacity: .95; filter: drop-shadow(0 0 18px rgba(255,196,0,.3));
+}
+.vs-skin-tv-show .vs-celeb-spotlight {
+  background: radial-gradient(ellipse at center top, rgba(255,255,255,.24), transparent 66%);
+}
+.vs-skin-tv-show .vs-celeb-crown  { filter: drop-shadow(0 0 16px rgba(255,196,0,.7)); }
+.vs-skin-tv-show .vs-celeb-trophy {
+  color: #ffc400;
+  filter: drop-shadow(0 0 26px rgba(255,196,0,.75)) drop-shadow(0 6px 14px rgba(0,0,0,.5));
+}
+.vs-skin-tv-show .vs-celeb-label {
+  display: inline-block; color: #3a2200; letter-spacing: .24em;
+  background: linear-gradient(180deg, #ffe88a 0%, #ffb300 100%);
+  padding: .28em 1.2em; border-radius: 999px; border: 2px solid #fff6;
+  box-shadow: 0 0 24px rgba(255,196,0,.6), 0 6px 16px rgba(0,0,0,.5);
+}
+.vs-skin-tv-show .vs-celeb-name {
+  text-shadow: 0 0 30px currentColor, 0 4px 12px rgba(0,0,0,.65);
+}
+.vs-skin-tv-show .vs-win-left  .vs-celeb-name { color: #5b9bff; }
+.vs-skin-tv-show .vs-win-right .vs-celeb-name { color: #ff5b78; }
+.vs-skin-tv-show .vs-celeb-score { color: #ffe78a; text-shadow: 0 0 16px rgba(255,196,0,.5); }

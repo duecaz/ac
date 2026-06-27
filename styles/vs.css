@@ -234,3 +234,48 @@
   width: 100%; min-height: 100%; height: 100%; padding: 1rem;
 }
 .vs-result-screen .vs-result { width: 100%; max-width: 640px; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   VS WINNER CELEBRATION — base (works on any skin; the TV-Show skin amps it).
+   Staggered entrance: rays + spotlight, crown drops, trophy pops, name scales.
+   ══════════════════════════════════════════════════════════════════════════ */
+.vs-celebration {
+  position: relative; text-align: center;
+  width: 100%; max-width: 560px; padding: 2rem 1rem; overflow: hidden;
+}
+.vs-celeb-rays {
+  position: absolute; left: 50%; top: -25%; width: 130%; height: 110%;
+  transform: translateX(-50%); z-index: -2; pointer-events: none;
+  background: repeating-conic-gradient(from 0deg at 50% 38%,
+    rgba(255,196,0,.10) 0deg 7deg, transparent 7deg 19deg);
+  animation: vsc-spin 22s linear infinite;
+}
+.vs-celeb-spotlight {
+  position: absolute; left: 50%; top: -12%; width: 120%; height: 64%;
+  transform: translateX(-50%); z-index: -1; pointer-events: none;
+  background: radial-gradient(ellipse at center top, rgba(255,255,255,.16), transparent 70%);
+}
+.vs-celeb-crown  { font-size: 2.6rem; line-height: 1; animation: vsc-drop .7s cubic-bezier(.2,1.4,.5,1) both; }
+.vs-celeb-trophy { font-size: 4.6rem; color: #f9c700; line-height: 1; margin-top: -.2rem;
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,.4)); animation: vsc-pop .6s .15s cubic-bezier(.2,1.6,.5,1) both; }
+.vs-celeb-label  { font-size: 1.05rem; font-weight: 900; letter-spacing: .3em;
+  opacity: .9; margin-top: .5rem; animation: vsc-fade .5s .35s both; }
+.vs-celeb-name   { font-size: clamp(2rem, 7vw, 3.6rem); font-weight: 900; line-height: 1.05;
+  margin: .15rem 0; animation: vsc-pop .55s .3s cubic-bezier(.2,1.5,.5,1) both; }
+.vs-celeb-score  { font-size: 1.35rem; font-weight: 800; opacity: .92; animation: vsc-fade .5s .5s both; }
+.vs-celeb-podium { margin: 1.1rem auto 1.3rem; max-width: 420px; animation: vsc-fade .5s .6s both; }
+.vs-celeb-actions{ animation: vsc-fade .5s .72s both; }
+/* Base colour cue per winning side (skins override with richer tones). */
+.vs-win-left  .vs-celeb-name { color: #2563eb; }
+.vs-win-right .vs-celeb-name { color: #dc2626; }
+
+@keyframes vsc-drop { from { opacity: 0; transform: translateY(-44px) scale(.6) rotate(-12deg); } to { opacity: 1; transform: none; } }
+@keyframes vsc-pop  { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+@keyframes vsc-fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes vsc-spin { to { transform: translateX(-50%) rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .vs-celeb-rays { animation: none; }
+  .vs-celeb-crown, .vs-celeb-trophy, .vs-celeb-label,
+  .vs-celeb-name, .vs-celeb-score, .vs-celeb-podium, .vs-celeb-actions { animation: none; }
+}
