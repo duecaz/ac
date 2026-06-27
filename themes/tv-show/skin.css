@@ -211,20 +211,31 @@ body.skin-tv-show .card,
   50%      { box-shadow: 0 0 0 7px rgba(255,196,0,.18), 0 10px 26px rgba(0,0,0,.7), 0 0 44px rgba(255,196,0,.75); }
 }
 
-/* Avatares con aro dorado */
-.vs-skin-tv-show .vss-av { border: 3px solid rgba(255,196,0,.85); box-shadow: 0 0 14px rgba(255,196,0,.5), 0 2px 8px rgba(0,0,0,.5); }
-.vs-skin-tv-show .vs-avatar-init { background: rgba(255,255,255,.18); font-size: 1.15rem; }
+/* Avatares (foto del colegio) lo MÁS GRANDES posible dentro de la barra */
+.vs-skin-tv-show .vss-av {
+  width: clamp(2.8rem, 7cqw, 3.6rem); height: clamp(2.8rem, 7cqw, 3.6rem);
+  border: 3px solid rgba(255,196,0,.9);
+  box-shadow: 0 0 16px rgba(255,196,0,.55), 0 2px 10px rgba(0,0,0,.55);
+}
+.vs-skin-tv-show .vs-avatar-init { background: rgba(255,255,255,.18); font-size: 1.4rem; }
 
-/* Barras de progreso segmentadas (10 casillas) */
+/* Barras de progreso: N segmentos = N preguntas (--vs-total lo pone vsView en
+   .vss-bar). Avanza un segmento por acierto; un fallo no avanza (el cursor solo
+   sube al acertar, ver engine). Los separadores se pintan sobre toda la barra,
+   así la parte llena y la vacía quedan divididas en exactamente N segmentos. */
 .vs-skin-tv-show .vss-bar .vs-prog {
-  height: 7px; margin-top: .35rem; border-radius: 4px;
-  background: repeating-linear-gradient(90deg,
-    rgba(255,255,255,.16) 0 calc(10% - 3px), transparent calc(10% - 3px) 10%);
+  position: relative; height: 8px; margin-top: .35rem; border-radius: 4px;
+  background: rgba(255,255,255,.16); overflow: hidden;
 }
 .vs-skin-tv-show .vss-bar .vs-prog-bar {
-  background: repeating-linear-gradient(90deg,
-    #fff 0 calc(10% - 3px), rgba(255,255,255,.25) calc(10% - 3px) 10%);
+  background: linear-gradient(90deg, #fff, #ffe78a);
   box-shadow: 0 0 10px rgba(255,255,255,.6); border-radius: 4px;
+}
+.vs-skin-tv-show .vss-bar .vs-prog::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 2;
+  background: repeating-linear-gradient(90deg,
+    transparent 0 calc(100% / var(--vs-total, 10) - 2px),
+    rgba(8,14,34,.95) calc(100% / var(--vs-total, 10) - 2px) calc(100% / var(--vs-total, 10)));
 }
 
 /* ── Escenario central + suelo con brillo ─────────────────────────────────── */
@@ -341,6 +352,7 @@ body.skin-tv-show .card,
     box-shadow: 0 0 0 2px #ffc400, 0 10px 22px rgba(0,0,0,.55); }
   .vs-skin-tv-show .vss-score { font-size: clamp(1.1rem, 2.4cqw, 1.7rem); }
   .vs-skin-tv-show .vss-name  { font-size: clamp(.7rem, 1.8cqw, 1rem); }
+  .vs-skin-tv-show .vss-av    { width: 2.4rem; height: 2.4rem; }
   .vs-skin-tv-show .vss-badge { width: 44px; height: 44px; transform: translateY(-12px); animation: none; }
   .vs-skin-tv-show .vss-badge::before { animation: none; }
   .vs-skin-tv-show .vss-left::after,

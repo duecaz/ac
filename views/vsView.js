@@ -234,7 +234,7 @@ export function mountVs(host, a, ctx, opts = {}) {
         ? `<img src="${escapeHtml(src)}" class="vs-avatar vss-av" alt="">`
         : `<span class="vs-avatar vss-av vs-avatar-init">${escapeHtml(name.charAt(0).toUpperCase())}</span>`;
       return `
-        <div class="vss-bar">
+        <div class="vss-bar" style="--vs-total:${Math.max(1, session.totalItems)}">
           <div class="vss-team vss-left">
             ${av(lAv, lName)}
             <div class="vss-info">
