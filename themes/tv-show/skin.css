@@ -268,7 +268,8 @@ body.skin-tv-show .card,
   animation: tvs-float 6s ease-in-out infinite;
 }
 /* Teclas más altas (cuadradas), separación cómoda — como la foto */
-.vs-skin-tv-show .vs-body .ww-keypad { gap: .5rem; margin-top: .3rem; }
+.vs-skin-tv-show .vs-body .ww-keypad { gap: .5rem; margin-top: .3rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr)); }   /* las teclas pueden encoger */
 .vs-skin-tv-show .vs-body .ww-key { padding-block: .62em; }
 .vs-skin-tv-show .vs-panel.vs-left .vs-body {
   background: linear-gradient(180deg, #0a1844 0%, #060f2c 100%);
@@ -366,7 +367,11 @@ body.skin-tv-show .card,
      Fila 1 = animación (flexible), Fila 2 = teclados (mayor cuota, definida). */
   .vs-skin-tv-show .vs-main {
     padding: .5rem .5rem .7rem; row-gap: .4rem; column-gap: .6rem;
-    grid-template-rows: minmax(64px, 1fr) minmax(0, 1.7fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1.9fr);
+    /* minmax(0,…): las columnas PUEDEN encoger por debajo del contenido. Con 1fr
+       (mín. auto) el teclado forzaba la columna a crecer → las tarjetas se
+       solapaban. Ahora el espacio manda y el teclado se ajusta dentro. */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
   .vs-skin-tv-show .vs-stage { justify-content: center; padding: .2rem; min-height: 0; }
   .vs-skin-tv-show .vs-stage-canvas { min-height: 64px; }
@@ -377,20 +382,30 @@ body.skin-tv-show .card,
      cabe: pregunta + display + las 4 filas (incl. borrar/enviar). */
   .vs-skin-tv-show .vs-panel { justify-content: stretch; align-items: stretch; }
   .vs-skin-tv-show .vs-body  {
+    box-sizing: border-box;               /* CLAVE: la tarjeta es content-box →
+                                             width:100% + padding desbordaba el
+                                             panel y las tarjetas se solapaban */
     width: 100%; max-width: 100%; height: 100%; max-height: 100%; margin-top: 0;
-    container-type: size; overflow: hidden;
-    border-radius: 1rem; padding: 2cqmin 2.4cqmin; animation: none;
+    min-width: 0; min-height: 0;          /* deja encoger el ítem flex */
+    container-type: inline-size;          /* ancho-relativo: el ancho lo manda el
+                                             grid; la ALTURA la reparte el flex */
+    overflow: hidden;
+    border-radius: 1rem; padding: 3cqw 3.5cqw; animation: none;
   }
+  /* El teclado LLENA la altura de la tarjeta: pregunta + display arriba, la
+     rejilla (flex:1) ocupa el resto y reparte sus 4 filas → siempre cabe. */
   .vs-skin-tv-show .vs-body .ww-keypad-round {
-    height: 100%; justify-content: space-between; gap: 1.4cqmin; padding: 0;
+    height: 100%; justify-content: flex-start; gap: 2cqw; padding: 0;
   }
-  .vs-skin-tv-show .vs-body .ww-keypad-q       { font-size: clamp(.75rem, 8cqmin, 1.4rem); margin: 0; padding: 1cqmin 2cqmin; }
-  .vs-skin-tv-show .vs-body .ww-keypad-display { font-size: clamp(.7rem, 7cqmin, 1.2rem); padding: .4cqmin 2cqmin; min-width: 0; }
+  .vs-skin-tv-show .vs-body .ww-keypad-q       { font-size: clamp(.75rem, 11cqw, 1.4rem); margin: 0; padding: 1.5cqw 3cqw; flex: 0 0 auto; }
+  .vs-skin-tv-show .vs-body .ww-keypad-display { font-size: clamp(.7rem, 10cqw, 1.2rem); padding: .5cqw 3cqw; min-width: 0; flex: 0 0 auto; }
   .vs-skin-tv-show .vs-body .ww-keypad {
-    flex: 1 1 auto; min-height: 0; gap: 1.4cqmin; grid-auto-rows: 1fr; align-content: stretch;
+    flex: 1 1 auto; min-height: 0; gap: 2cqw;
+    grid-auto-rows: 1fr; align-content: stretch;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .vs-skin-tv-show .vs-body .ww-key {
-    font-size: clamp(.6rem, 6cqmin, 1.1rem); padding: 0; min-height: 0;
+    font-size: clamp(.6rem, 8cqw, 1.1rem); padding: 0; min-height: 0; min-width: 0;
     display: flex; align-items: center; justify-content: center;
   }
 }
