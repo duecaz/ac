@@ -55,6 +55,8 @@
 //   --badge-bg         VS badge fill
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { VERSION } from './constants.js';
+
 const _registry = new Map();
 
 /** Register a skin. Can be called from any module — no core file needs editing.
@@ -96,10 +98,16 @@ export function applySkin(name, target = null) {
   // Each skin is responsible for its own CSS — core never needs updating.
   if (skin.stylesheet) {
     const id = `skin-css-${validName}`;
-    if (!document.getElementById(id)) {
+    // Cache-bust por versión: sin ?v= el Service Worker sirve el CSS viejo tras
+    // actualizar un skin (igual que los drivers en adapters/index.js).
+    const href = `${skin.stylesheet}?v=${VERSION}`;
+    const existing = document.getElementById(id);
+    if (!existing) {
       const link = document.createElement('link');
-      link.id = id; link.rel = 'stylesheet'; link.href = skin.stylesheet;
+      link.id = id; link.rel = 'stylesheet'; link.href = href;
       document.head.appendChild(link);
+    } else if (existing.getAttribute('href') !== href) {
+      existing.setAttribute('href', href); // versión nueva → recargar la hoja
     }
   }
 }
