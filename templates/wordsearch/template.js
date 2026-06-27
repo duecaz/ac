@@ -2,7 +2,7 @@ import { BaseTemplate } from '../base.js';
 import { renderWordsearchPlayer, renderWordsearchRound } from './player.js';
 import { renderWordsearchEditor } from './editor.js';
 import { scoreWordsearch } from './scorer.js';
-import { generateGrid, SIZE_MAP } from './generator.js';
+import { generateGridAllWords, SIZE_MAP } from './generator.js';
 
 export class WordsearchTemplate extends BaseTemplate {
   static meta = {
@@ -27,19 +27,21 @@ export class WordsearchTemplate extends BaseTemplate {
   static renderEditor = renderWordsearchEditor;
   static scoreSubmission = scoreWordsearch;
 
-  // Each "item" for VS is one word from content.words.
-  // Both players call generateGrid with the same inputs → same board → fair race.
+  // VS: each side gets a DIFFERENT board with the SAME words (seeded by side, so
+  // players can't copy positions). The whole board + word list is sent so the
+  // round works like solo (free find), and `found` lets it mark what's done
+  // across re-renders. Total items = number of words (each find advances one).
   static getRoundPayload(activity, ctx) {
     const words = (activity.content?.words || [])
       .map(w => String(w || '').trim()).filter(Boolean);
+    if (!words.length) return null;
     const rules = activity.rules || {};
     const n = SIZE_MAP[rules.gridSize] || 15;
-    const { grid, placed, rows, cols } = generateGrid(words, {
+    const { grid, placed, rows, cols } = generateGridAllWords(words, {
       rows: n, cols: n, dirs: rules.directions || 'medium',
+      seedSalt: ctx?.side || '',          // distinto tablero por lado
     });
-    const p = placed[ctx.itemIndex];
-    if (!p) return null;
-    return { grid, rows, cols, word: p.word, wordIndex: ctx.itemIndex };
+    return { grid, rows, cols, placed, found: ctx?.found || [], side: ctx?.side || 'left' };
   }
 
   static renderRound(root, payload, opts) {

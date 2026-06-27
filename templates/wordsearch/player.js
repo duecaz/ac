@@ -17,6 +17,34 @@ const PLAYER_COLORS = [
   { stroke: '#ec4899', bg: 'rgba(236,72,153,.30)',  label: 'Rosa'    },
 ];
 
+const wsNorm = (s) => String(s || '').toUpperCase().replace(/\s+/g, '');
+
+// Draw an SVG <line> between the CENTRES of cells a and b in REAL pixel coords.
+// The old approach used viewBox grid-units (x = c+0.5), but the grid has gaps +
+// a border and is centred inside a wider wrap, so the line drifted badly. Pixel
+// coords from getBoundingClientRect are robust to all of that. The SVG must have
+// NO viewBox (its user units are then CSS pixels).
+function wsDrawLine(svg, gridEl, a, b, { color = '#3b82f6', opacity = 0.7, id } = {}) {
+  if (!svg || !gridEl) return null;
+  const cA = gridEl.querySelector(`.ws-cell[data-r="${a.r}"][data-c="${a.c}"]`);
+  const cB = gridEl.querySelector(`.ws-cell[data-r="${b.r}"][data-c="${b.c}"]`);
+  if (!cA || !cB) return null;
+  const sr = svg.getBoundingClientRect();
+  const ra = cA.getBoundingClientRect(), rb = cB.getBoundingClientRect();
+  const ln = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  if (id) ln.id = id;
+  ln.setAttribute('x1', ra.left + ra.width / 2 - sr.left);
+  ln.setAttribute('y1', ra.top  + ra.height / 2 - sr.top);
+  ln.setAttribute('x2', rb.left + rb.width / 2 - sr.left);
+  ln.setAttribute('y2', rb.top  + rb.height / 2 - sr.top);
+  ln.setAttribute('stroke', color);
+  ln.setAttribute('stroke-width', Math.max(5, ra.width * 0.7));
+  ln.setAttribute('stroke-linecap', 'round');
+  ln.setAttribute('opacity', opacity);
+  svg.appendChild(ln);
+  return ln;
+}
+
 // ── Solo player ──────────────────────────────────────────────────────────────
 
 export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
@@ -67,8 +95,7 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
                 `<span class="ws-cell" data-r="${r}" data-c="${c}">${l}</span>`
               )).join('')}
             </div>
-            <svg id="ws-svg" class="ww-ws-svg" viewBox="0 0 ${cols} ${rows}"
-                 preserveAspectRatio="none" aria-hidden="true"></svg>
+            <svg id="ws-svg" class="ww-ws-svg" aria-hidden="true"></svg>
           </div>
 
           <div class="ww-ws-words">
@@ -114,30 +141,15 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
     }
     selSet.clear();
     if (!line) return;
+    // Highlight the cells under the drag (NO line — the line is drawn only when a
+    // word is found correctly, so a wrong drag never leaves a misleading line).
     for (const { r, c } of line) {
       getCell(r, c)?.classList.add('ws-sel');
       selSet.add(`${r},${c}`);
     }
-    // Draw SVG selection line
-    const svg = document.getElementById('ws-svg');
-    let el = svg?.querySelector('#ws-sel-ln');
-    if (!el && svg && line.length > 1) {
-      el = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      el.id = 'ws-sel-ln';
-      el.setAttribute('stroke', color.stroke);
-      el.setAttribute('stroke-width', '0.72');
-      el.setAttribute('stroke-linecap', 'round');
-      el.setAttribute('opacity', '0.55');
-      svg.appendChild(el);
-    }
-    if (el && line.length > 1) {
-      const s = line[0], e = line[line.length - 1];
-      el.setAttribute('x1', s.c + 0.5); el.setAttribute('y1', s.r + 0.5);
-      el.setAttribute('x2', e.c + 0.5); el.setAttribute('y2', e.r + 0.5);
-    } else el?.remove();
   }
 
-  function clearSel() { setSel(null); document.getElementById('ws-sel-ln')?.remove(); }
+  function clearSel() { setSel(null); }
 
   function attachDrag() {
     buildCellMap();
@@ -209,19 +221,10 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
     const colorIdx = opts.playerIndex || 0;
     for (const { r, c } of p.cells) getCell(r, c)?.classList.add(`ws-found-${colorIdx}`);
 
-    // Permanent SVG line
+    // Permanent SVG line — pixel-based so it lands exactly on the word.
     const svg = document.getElementById('ws-svg');
-    if (svg) {
-      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-      const s = p.cells[0], e = p.cells[p.cells.length - 1];
-      line.setAttribute('x1', s.c + 0.5); line.setAttribute('y1', s.r + 0.5);
-      line.setAttribute('x2', e.c + 0.5); line.setAttribute('y2', e.r + 0.5);
-      line.setAttribute('stroke', color.stroke);
-      line.setAttribute('stroke-width', '0.72');
-      line.setAttribute('stroke-linecap', 'round');
-      line.setAttribute('opacity', '0.72');
-      svg.appendChild(line);
-    }
+    const gridEl = document.getElementById('ws-grid');
+    wsDrawLine(svg, gridEl, p.cells[0], p.cells[p.cells.length - 1], { color: color.stroke, opacity: 0.72 });
 
     // Update word list
     const wEl = rootEl()?.querySelector(`[data-word="${p.word}"]`);
@@ -270,35 +273,45 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
 }
 
 // ── VS / Equipos round renderer ──────────────────────────────────────────────
-// Shows the full grid with the target word highlighted at top.
-// Player drags to find it; onSubmit(word) fires on success, onSubmit(null) on skip.
+// Mirrors the solo experience: the WHOLE board + ALL words are shown, the player
+// drags freely to find ANY word (free-find), and each correct find fires
+// onSubmit(word) — the engine advances one segment per find. Words already found
+// (carried in payload.found across re-renders) are pre-marked with a permanent
+// line so progress survives a re-render. Each VS side gets a DIFFERENT board
+// (seeded by side in getRoundPayload) so opponents can't copy positions.
 export function renderWordsearchRound(root, payload, { onSubmit } = {}) {
   if (!payload) return;
-  const { grid, rows, cols, word, color = PLAYER_COLORS[0] } = payload;
+  const { grid, cols, placed = [], found = [], side = 'left' } = payload;
+  const color = PLAYER_COLORS[side === 'right' ? 1 : 0];
+  const colorIdx = side === 'right' ? 1 : 0;
+  const foundSet = new Set(found.map(wsNorm));
+  const total = placed.length;
+
   let dragging = false, startR = 0, startC = 0;
   let selSet = new Set(), cellMap;
 
   root.innerHTML = `
-    <div class="ww-ws" style="padding:.5rem">
-      <div class="ww-ws-round-target">
-        Encuentra: <span class="ww-ws-target-word">${escapeHtml(word)}</span>
-      </div>
-      <div class="ww-ws-body" style="margin-top:.5rem">
+    <div class="ww-ws ww-ws-round">
+      <div class="ww-ws-body">
         <div class="ww-ws-grid-wrap">
           <div class="ww-ws-grid" id="ws-grid-r" style="--ws-cols:${cols}">
             ${grid.flatMap((row, r) => row.map((l, c) =>
               `<span class="ws-cell" data-r="${r}" data-c="${c}">${l}</span>`
             )).join('')}
           </div>
-          <svg class="ww-ws-svg" viewBox="0 0 ${cols} ${rows}" preserveAspectRatio="none" aria-hidden="true"></svg>
+          <svg class="ww-ws-svg" aria-hidden="true"></svg>
         </div>
-      </div>
-      <div class="text-center mt-2">
-        <button id="ws-skip" class="btn btn-sm btn-outline-secondary">Omitir</button>
+        <div class="ww-ws-words">
+          <div class="ww-ws-words-title">Palabras <span class="ws-words-count">0/${total}</span></div>
+          ${placed.map(p => `
+            <div class="ws-word" data-word="${escapeHtml(wsNorm(p.word))}">
+              <span class="ws-word-dot">○</span>
+              <span class="ws-word-lbl">${escapeHtml(p.word)}</span>
+            </div>`).join('')}
+        </div>
       </div>
     </div>`;
 
-  // Build cell map
   cellMap = new Map();
   root.querySelectorAll('.ws-cell').forEach(el => cellMap.set(`${el.dataset.r},${el.dataset.c}`, el));
   const getCell = (r, c) => cellMap.get(`${r},${c}`) ?? null;
@@ -308,27 +321,34 @@ export function renderWordsearchRound(root, payload, { onSubmit } = {}) {
   };
 
   const svg = root.querySelector('.ww-ws-svg');
+  const gridEl = root.querySelector('#ws-grid-r');
+
+  function markFound(p) {
+    const w = wsNorm(p.word);
+    foundSet.add(w);
+    for (const { r, c } of p.cells) getCell(r, c)?.classList.add(`ws-found-${colorIdx}`);
+    wsDrawLine(svg, gridEl, p.cells[0], p.cells[p.cells.length - 1], { color: color.stroke, opacity: 0.72 });
+    const wEl = root.querySelector(`.ws-word[data-word="${w}"]`);
+    if (wEl) { wEl.classList.add('ws-word-found'); const d = wEl.querySelector('.ws-word-dot'); if (d) d.textContent = '✓'; }
+    const cEl = root.querySelector('.ws-words-count');
+    if (cEl) cEl.textContent = `${foundSet.size}/${total}`;
+  }
+
+  // Pre-mark words already found (draw after layout so pixel coords are valid).
+  function paintFound() {
+    for (const p of placed) if (foundSet.has(wsNorm(p.word))) markFound(p);
+    const cEl = root.querySelector('.ws-words-count');
+    if (cEl) cEl.textContent = `${foundSet.size}/${total}`;
+  }
+  requestAnimationFrame(paintFound);
 
   function setSel(line) {
     for (const k of selSet) { const [r, c] = k.split(','); getCell(r, c)?.classList.remove('ws-sel'); }
     selSet.clear();
-    if (!line) { svg?.querySelector('#ws-sel-ln')?.remove(); return; }
+    if (!line) return;
+    // Highlight cells only — NO preview line. The line is drawn solely when the
+    // word is correct, so a wrong drag never leaves a misleading line.
     for (const { r, c } of line) { getCell(r, c)?.classList.add('ws-sel'); selSet.add(`${r},${c}`); }
-    if (svg && line.length > 1) {
-      let el = svg.querySelector('#ws-sel-ln');
-      if (!el) {
-        el = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        el.id = 'ws-sel-ln';
-        el.setAttribute('stroke', color.stroke);
-        el.setAttribute('stroke-width', '0.72');
-        el.setAttribute('stroke-linecap', 'round');
-        el.setAttribute('opacity', '0.55');
-        svg.appendChild(el);
-      }
-      const s = line[0], e = line[line.length - 1];
-      el.setAttribute('x1', s.c + 0.5); el.setAttribute('y1', s.r + 0.5);
-      el.setAttribute('x2', e.c + 0.5); el.setAttribute('y2', e.r + 0.5);
-    }
   }
 
   function checkSel() {
@@ -336,19 +356,23 @@ export function renderWordsearchRound(root, payload, { onSubmit } = {}) {
     const cells = [...selSet].map(k => k.split(',').map(Number)).map(([r, c]) => ({ r, c }));
     const letters  = cells.map(({ r, c }) => grid[r]?.[c] || '').join('');
     const reversed = letters.split('').reverse().join('');
-    if (letters === word || reversed === word) {
-      onSubmit?.(word);
-    } else {
-      for (const { r, c } of cells) {
-        const el = getCell(r, c);
-        if (!el) continue;
-        el.classList.add('ws-wrong');
-        setTimeout(() => el.classList.remove('ws-wrong'), 380);
+    for (const p of placed) {
+      const w = wsNorm(p.word);
+      if (foundSet.has(w)) continue;
+      if (letters === w || reversed === w) {
+        markFound(p);
+        onSubmit?.(p.word);
+        return;
       }
+    }
+    for (const { r, c } of cells) {
+      const el = getCell(r, c);
+      if (!el) continue;
+      el.classList.add('ws-wrong');
+      setTimeout(() => el.classList.remove('ws-wrong'), 380);
     }
   }
 
-  const gridEl = root.querySelector('#ws-grid-r');
   if (gridEl) {
     gridEl.addEventListener('pointerdown', (e) => {
       const cell = cellFromPoint(e.clientX, e.clientY);
@@ -374,6 +398,4 @@ export function renderWordsearchRound(root, payload, { onSubmit } = {}) {
     });
     gridEl.addEventListener('pointercancel', () => { dragging = false; setSel(null); });
   }
-
-  root.querySelector('#ws-skip')?.addEventListener('click', () => onSubmit?.(null));
 }

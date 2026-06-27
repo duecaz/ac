@@ -45,8 +45,10 @@ export const SIZE_MAP = { easy: 10, medium: 15, hard: 20 };
  * @param {{ rows?, cols?, dirs? }} opts
  * @returns {{ grid: string[][], placed: {word,cells}[], rows, cols }}
  */
-export function generateGrid(words, { rows = 15, cols = 15, dirs = 'medium' } = {}) {
-  const seed = strHash(words.join('|') + rows + cols + String(dirs));
+export function generateGrid(words, { rows = 15, cols = 15, dirs = 'medium', seedSalt = '' } = {}) {
+  // seedSalt → tablero DISTINTO con las MISMAS palabras (p.ej. un lado del VS),
+  // para que dos jugadores no puedan copiarse las posiciones.
+  const seed = strHash(words.join('|') + rows + cols + String(dirs) + String(seedSalt));
   const rand = mulberry32(seed);
   const ri = (n) => Math.floor(rand() * n);
 
@@ -94,6 +96,22 @@ export function generateGrid(words, { rows = 15, cols = 15, dirs = 'medium' } = 
       if (!grid[r][c]) grid[r][c] = FILL[ri(FILL.length)];
 
   return { grid, placed, rows, cols, failed };
+}
+
+/**
+ * Generate a grid that places EVERY word (tries seed variations). Ensures both
+ * VS sides get a board with the SAME full set of words (fair), even though the
+ * layouts differ (via seedSalt). Returns the first all-placed grid, else the
+ * best attempt.
+ */
+export function generateGridAllWords(words, opts = {}) {
+  let best = null;
+  for (let i = 0; i < 16; i++) {
+    const g = generateGrid(words, { ...opts, seedSalt: `${opts.seedSalt || ''}#${i}` });
+    if (!g.failed.length) return g;
+    if (!best || g.placed.length > best.placed.length) best = g;
+  }
+  return best;
 }
 
 /**

@@ -385,7 +385,12 @@ function createVsSession(activity, T, opts) {
   const roundPayloadFor = (sideId) => {
     const s = getSide(sideId);
     if (!s || s.cursor >= total) return null;
-    return T.getRoundPayload ? T.getRoundPayload(activity, { itemIndex: s.cursor }) : null;
+    // Pass the side id (so templates can build a DIFFERENT board per side, e.g.
+    // word search) and the values already answered (so a free-find board can
+    // mark what's done across re-renders). Other templates ignore the extra ctx.
+    return T.getRoundPayload
+      ? T.getRoundPayload(activity, { itemIndex: s.cursor, side: sideId, found: s.answers.map(a => a.value).filter(Boolean) })
+      : null;
   };
 
   return {
