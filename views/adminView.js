@@ -111,6 +111,11 @@ function renderPanel(rootSel) {
           <tr><th class="pe-3">Actividades (locales)</th><td>${acts.length}</td></tr>
         </tbody>
       </table>
+      <div class="d-flex gap-2 flex-wrap mb-1">
+        <button id="admin-refresh" class="btn btn-sm btn-outline-primary"><i class="bi bi-arrow-clockwise"></i> Borrar caché y recargar</button>
+        <button id="admin-nuke-sw" class="btn btn-sm btn-outline-danger"><i class="bi bi-radioactive"></i> Eliminar Service Worker (agresivo)</button>
+      </div>
+      <p class="small text-muted">Si tras actualizar sigues viendo la versión vieja, usa el botón rojo: desregistra el SW, borra toda la caché y recarga. Mantiene tus datos.</p>
 
       <h5 class="mt-4">PocketBase — configuración de colecciones</h5>
       <p class="small text-muted mb-2">Crea automáticamente las colecciones <code>live_sessions</code>, <code>assignments</code> y <code>assignment_attempts</code> en tu instancia de PocketBase. Solo se necesita una vez.</p>
@@ -317,6 +322,8 @@ function renderPanel(rootSel) {
   });
 
   on(rootSel, 'click', '#admin-lock', () => { try { sessionStorage.removeItem(SESSION_KEY); } catch {} renderGate(rootSel); });
+  on(rootSel, 'click', '#admin-refresh', () => { (window.__wwRefresh || (() => location.reload()))(); });
+  on(rootSel, 'click', '#admin-nuke-sw', () => { (window.__wwNukeSW || (() => location.reload()))(); });
   on(rootSel, 'click', '#admin-err-clear', () => { clearErrors(); toast('Registro de errores limpiado.', 'success'); renderPanel(rootSel); });
   on(rootSel, 'click', '#admin-wipe', async () => {
     const ok = await confirmModal('¿Borrar TODAS tus actividades de este dispositivo y de la nube? No se puede deshacer.', { okText: 'Borrar todo', danger: true });

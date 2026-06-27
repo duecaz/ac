@@ -58,7 +58,13 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
 
   // The activity as it will be PLAYED: the chosen "switch template" wins over
   // the stored one, so mode gating + the running game both follow the preview.
-  function playActivity() { return { ...a, template: liveTemplate }; }
+  // Carry the LIVE theme picks into the activity each mode receives, so views
+  // that read presentation (e.g. vsView's vs-skin-<vsLayout> arena class) reflect
+  // the theme chosen in the picker — not just the originally saved one.
+  function playActivity() {
+    return { ...a, template: liveTemplate,
+      presentation: { ...a.presentation, skin: currentSkin, background: currentBg, backgroundImage: currentBgImage } };
+  }
 
   // The "Modos de juego" bar, built entirely from the mode registry so gating
   // lives in ONE place (core/modes.js). Embedded modes are buttons that mount
@@ -202,6 +208,10 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
       currentSkin = b.dataset.name;
       applySkin(currentSkin, document.getElementById('ww-frame'));
       document.querySelectorAll('.skin-pick').forEach(p => p.classList.toggle('is-active', p.dataset.name === currentSkin));
+      // Re-mount the active mode so views built around a skin's layout (VS arena,
+      // teams) re-read the theme and swap their vs-skin-<layout> class. Solo just
+      // restyles via the page rules, but re-mounting keeps every mode consistent.
+      selectMode(currentMode);
     });
     on(rootSel, 'click', '.bg-pick', (_, b) => {
       // Custom selects only when an image exists; otherwise its upload button
