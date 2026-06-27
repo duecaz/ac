@@ -225,21 +225,20 @@ body.skin-tv-show .card,
    .vss-bar). Avanza un segmento por acierto; un fallo no avanza (el cursor solo
    sube al acertar, ver engine). Los separadores se pintan sobre toda la barra,
    así la parte llena y la vacía quedan divididas en exactamente N segmentos. */
+/* N bloques chunky (N = var(--vs-total)). La MÁSCARA recorta el subárbol (fondo
+   vacío + relleno) en N bloques con GAPS TRANSPARENTES → en los huecos se ve el
+   color del equipo (no negro). El relleno (gold, ancho = cursor/total) queda
+   alineado a los bloques porque la máscara va en el contenedor (no en el fill). */
 .vs-skin-tv-show .vss-bar .vs-prog {
-  position: relative; height: 11px; margin-top: .3rem; border-radius: 4px;
-  background: rgba(0,0,0,.3); box-shadow: inset 0 1px 3px rgba(0,0,0,.5); overflow: hidden;
+  height: 11px; margin-top: .3rem; border-radius: 2px; overflow: visible;
+  background: rgba(255,255,255,.22);                 /* bloque VACÍO (translúcido) */
+  -webkit-mask: repeating-linear-gradient(90deg, #000 0 calc(100% / var(--vs-total, 10) - 4px),
+                transparent calc(100% / var(--vs-total, 10) - 4px) calc(100% / var(--vs-total, 10)));
+          mask: repeating-linear-gradient(90deg, #000 0 calc(100% / var(--vs-total, 10) - 4px),
+                transparent calc(100% / var(--vs-total, 10) - 4px) calc(100% / var(--vs-total, 10)));
 }
 .vs-skin-tv-show .vss-bar .vs-prog-bar {
-  background: linear-gradient(180deg, #ffffff, #ffe27a);
-  box-shadow: 0 0 12px rgba(255,255,255,.7); border-radius: 4px;
-}
-/* Separadores GRUESOS → bloques chunky como la foto. Gap de 4px entre cada uno
-   de los N segmentos (N = var(--vs-total), que pone vsView). */
-.vs-skin-tv-show .vss-bar .vs-prog::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 2;
-  background: repeating-linear-gradient(90deg,
-    transparent 0 calc(100% / var(--vs-total, 10) - 4px),
-    rgba(8,14,34,1) calc(100% / var(--vs-total, 10) - 4px) calc(100% / var(--vs-total, 10)));
+  background: linear-gradient(180deg, #ffffff, #ffe27a); border-radius: 2px;
 }
 
 /* ── Escenario central + suelo con brillo ─────────────────────────────────── */
@@ -362,25 +361,38 @@ body.skin-tv-show .card,
   .vs-skin-tv-show .vss-left::after,
   .vs-skin-tv-show .vss-right::after { animation: none; }
 
-  /* La ANIMACIÓN (stage) toma el espacio grande a lo ancho; los teclados quedan
-     compactos abajo, lado a lado. La base usa stage de 90px → minúsculo con un
-     hueco enorme; aquí el stage es 1fr (rellena) y los paneles son auto (alto de
-     contenido), así nada queda descentrado. */
+  /* MAQUETADO: primero se reparte el ESPACIO con el grid (filas en fr → alturas
+     DEFINIDAS), luego el contenido se dibuja dentro y se escala para caber.
+     Fila 1 = animación (flexible), Fila 2 = teclados (mayor cuota, definida). */
   .vs-skin-tv-show .vs-main {
-    padding: .6rem .6rem .8rem; row-gap: .5rem;
-    grid-template-rows: 1fr auto;
+    padding: .5rem .5rem .7rem; row-gap: .4rem; column-gap: .6rem;
+    grid-template-rows: minmax(64px, 1fr) minmax(0, 1.7fr);
   }
-  .vs-skin-tv-show .vs-stage { justify-content: center; padding: .3rem; }
-  .vs-skin-tv-show .vs-stage-canvas { min-height: 130px; }
+  .vs-skin-tv-show .vs-stage { justify-content: center; padding: .2rem; min-height: 0; }
+  .vs-skin-tv-show .vs-stage-canvas { min-height: 64px; }
   .vs-skin-tv-show .vs-stage-canvas::after { display: none; }
 
-  .vs-skin-tv-show .vs-panel { justify-content: flex-end; align-items: stretch; }
+  /* La tarjeta del teclado LLENA su celda del grid → altura DEFINIDA. Con
+     container-type:size, el teclado se mide contra la tarjeta (cqmin) y siempre
+     cabe: pregunta + display + las 4 filas (incl. borrar/enviar). */
+  .vs-skin-tv-show .vs-panel { justify-content: stretch; align-items: stretch; }
   .vs-skin-tv-show .vs-body  {
-    max-width: 100%; width: 100%; max-height: 100%; margin-top: 0;
-    border-radius: 1rem; padding: .6rem .65rem .7rem; animation: none;
+    width: 100%; max-width: 100%; height: 100%; max-height: 100%; margin-top: 0;
+    container-type: size; overflow: hidden;
+    border-radius: 1rem; padding: 2cqmin 2.4cqmin; animation: none;
   }
-  .vs-skin-tv-show .vs-body .ww-keypad { gap: .4rem; }
-  .vs-skin-tv-show .vs-body .ww-key { padding-block: .5em; }
+  .vs-skin-tv-show .vs-body .ww-keypad-round {
+    height: 100%; justify-content: space-between; gap: 1.4cqmin; padding: 0;
+  }
+  .vs-skin-tv-show .vs-body .ww-keypad-q       { font-size: clamp(.75rem, 8cqmin, 1.4rem); margin: 0; padding: 1cqmin 2cqmin; }
+  .vs-skin-tv-show .vs-body .ww-keypad-display { font-size: clamp(.7rem, 7cqmin, 1.2rem); padding: .4cqmin 2cqmin; min-width: 0; }
+  .vs-skin-tv-show .vs-body .ww-keypad {
+    flex: 1 1 auto; min-height: 0; gap: 1.4cqmin; grid-auto-rows: 1fr; align-content: stretch;
+  }
+  .vs-skin-tv-show .vs-body .ww-key {
+    font-size: clamp(.6rem, 6cqmin, 1.1rem); padding: 0; min-height: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
 }
 
 /* Accesibilidad: respeta "reducir movimiento" */
