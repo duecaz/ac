@@ -324,10 +324,26 @@ body.skin-tv-show .card,
   .vs-skin-tv-show .vss-badge::before { animation: none; }
   .vs-skin-tv-show .vss-left::after,
   .vs-skin-tv-show .vss-right::after { animation: none; }
-  /* Paneles: tarjetas compactas, ya no fijadas a una esquina */
-  .vs-skin-tv-show .vs-main  { padding: .5rem .5rem .7rem; }
-  .vs-skin-tv-show .vs-panel { justify-content: flex-start; align-items: center; }
-  .vs-skin-tv-show .vs-body  { max-width: 100%; width: 100%; max-height: 100%; border-radius: .9rem; animation: none; }
+
+  /* La ANIMACIÓN (stage) toma el espacio grande a lo ancho; los teclados quedan
+     compactos abajo, lado a lado. La base usa stage de 90px → minúsculo con un
+     hueco enorme; aquí el stage es 1fr (rellena) y los paneles son auto (alto de
+     contenido), así nada queda descentrado. */
+  .vs-skin-tv-show .vs-main {
+    padding: .6rem .6rem .8rem; row-gap: .5rem;
+    grid-template-rows: 1fr auto;
+  }
+  .vs-skin-tv-show .vs-stage { justify-content: center; padding: .3rem; }
+  .vs-skin-tv-show .vs-stage-canvas { min-height: 130px; }
+  .vs-skin-tv-show .vs-stage-canvas::after { display: none; }
+
+  .vs-skin-tv-show .vs-panel { justify-content: flex-end; align-items: stretch; }
+  .vs-skin-tv-show .vs-body  {
+    max-width: 100%; width: 100%; max-height: 100%; margin-top: 0;
+    border-radius: 1rem; padding: .6rem .65rem .7rem; animation: none;
+  }
+  .vs-skin-tv-show .vs-body .ww-keypad { gap: .4rem; }
+  .vs-skin-tv-show .vs-body .ww-key { padding-block: .5em; }
 }
 
 /* Accesibilidad: respeta "reducir movimiento" */
