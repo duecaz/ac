@@ -139,44 +139,43 @@ body.skin-tv-show .card,
     linear-gradient(180deg, rgba(7,13,32,.45) 0%, rgba(7,13,32,.68) 100%);
 }
 
-/* ── BARRA FLOTANTE en píldora ────────────────────────────────────────────── */
+/* ── BARRA en TRAPECIO flotante ───────────────────────────────────────────────
+   Forma de banner como la foto: cada mitad es un trapecio (clip-path). El relleno
+   y el borde dorado van en ::before (clip-path + 4 drop-shadows dorados) para que
+   el TEXTO no se recorte y el medallón siga pudiendo sobresalir (la barra y
+   .vss-mid NO se recortan). drop-shadow sigue la forma recortada → borde dorado. */
 .vs-skin-tv-show .vss-bar {
   align-self: center;
-  width: min(95%, 1060px);
-  height: 70px;
-  margin: 40px auto 0;                        /* hueco arriba para el medallón */
-  border-radius: 999px;
-  overflow: visible;                         /* deja salir el medallón VS */
+  width: min(95%, 1080px);
+  height: 72px;
+  margin: 42px auto 0;            /* hueco arriba para el medallón */
+  overflow: visible;
   background: transparent;
-  box-shadow: 0 0 0 2.5px #ffc400,           /* aro dorado de la píldora */
-              0 0 0 4px rgba(0,0,0,.35),
-              0 16px 34px rgba(0,0,0,.6);
+  box-shadow: none;
 }
-.vs-skin-tv-show .vss-left {
+.vs-skin-tv-show .vss-team { position: relative; overflow: visible; background: transparent; }
+.vs-skin-tv-show .vss-team > * { position: relative; z-index: 1; }   /* texto sobre el relleno */
+.vs-skin-tv-show .vss-left::before,
+.vs-skin-tv-show .vss-right::before {
+  content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  filter: drop-shadow(1.6px 0 0 #ffc400) drop-shadow(-1.6px 0 0 #ffc400)
+          drop-shadow(0 1.6px 0 #ffc400) drop-shadow(0 -1.6px 0 #ffc400)
+          drop-shadow(0 12px 22px rgba(0,0,0,.55));
+}
+.vs-skin-tv-show .vss-left::before {
   background: linear-gradient(120deg, #0c2f9e 0%, #1a52e0 60%, #2b6fff 100%);
-  border-radius: 999px 0 0 999px;            /* extremo izquierdo redondeado */
-  box-shadow: inset 0 0 0 2px rgba(255,255,255,.14), inset 0 -3px 8px rgba(0,0,0,.35);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.14), inset 0 -4px 10px rgba(0,0,0,.4);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 5% 100%);   /* extremo izq. en ángulo */
 }
-.vs-skin-tv-show .vss-right {
+.vs-skin-tv-show .vss-right::before {
   background: linear-gradient(240deg, #9e0c2f 0%, #d11540 60%, #ef2b5b 100%);
-  border-radius: 0 999px 999px 0;            /* extremo derecho redondeado */
-  box-shadow: inset 0 0 0 2px rgba(255,255,255,.14), inset 0 -3px 8px rgba(0,0,0,.35);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.14), inset 0 -4px 10px rgba(0,0,0,.4);
+  clip-path: polygon(0 0, 100% 0, 95% 100%, 0 100%);     /* extremo der. en ángulo */
 }
-.vs-skin-tv-show .vss-mid { width: 0; overflow: visible; background: transparent; }
-/* Espejo correcto: avatar al BORDE exterior, marcador hacia el centro (como la
-   foto). La base usa row-reverse (avatar al centro); lo invertimos solo aquí. */
+.vs-skin-tv-show .vss-mid { width: 0; overflow: visible; background: transparent; z-index: 3; }
+/* Espejo: avatar al BORDE exterior, marcador hacia el centro (como la foto). */
 .vs-skin-tv-show .vss-right { flex-direction: row; }
 .vs-skin-tv-show .vss-info-r { text-align: left; }
-/* Brillo que recorre cada mitad (efecto TV en vivo) — recortado a la píldora */
-.vs-skin-tv-show .vss-team { position: relative; overflow: hidden; }
-.vs-skin-tv-show .vss-left::after,
-.vs-skin-tv-show .vss-right::after {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.16) 50%, transparent 70%);
-  background-size: 250% 100%;
-  animation: tvs-sheen 5.5s ease-in-out infinite;
-}
-@keyframes tvs-sheen { 0%,100% { background-position: 180% 0; } 50% { background-position: -80% 0; } }
 
 /* Etiqueta + nombre + marcador */
 .vs-skin-tv-show .vss-label { letter-spacing: .26em; color: rgba(255,255,255,.78); }
@@ -189,6 +188,9 @@ body.skin-tv-show .card,
   font-size: clamp(1.9rem, 4cqw, 3.1rem); font-weight: 900; color: #fff;
   text-shadow: 0 0 24px rgba(255,196,0,.5), 0 2px 6px rgba(0,0,0,.6);
 }
+/* Apartar los marcadores del centro para que el medallón VS no los tape. */
+.vs-skin-tv-show .vss-left  .vss-score { margin-right: clamp(22px, 4cqw, 52px); }
+.vs-skin-tv-show .vss-right .vss-score { margin-left:  clamp(22px, 4cqw, 52px); }
 
 /* ── MEDALLÓN VS dorado que SOBRESALE ─────────────────────────────────────── */
 .vs-skin-tv-show .vss-badge {
@@ -224,18 +226,20 @@ body.skin-tv-show .card,
    sube al acertar, ver engine). Los separadores se pintan sobre toda la barra,
    así la parte llena y la vacía quedan divididas en exactamente N segmentos. */
 .vs-skin-tv-show .vss-bar .vs-prog {
-  position: relative; height: 8px; margin-top: .35rem; border-radius: 4px;
-  background: rgba(255,255,255,.16); overflow: hidden;
+  position: relative; height: 11px; margin-top: .3rem; border-radius: 4px;
+  background: rgba(0,0,0,.3); box-shadow: inset 0 1px 3px rgba(0,0,0,.5); overflow: hidden;
 }
 .vs-skin-tv-show .vss-bar .vs-prog-bar {
-  background: linear-gradient(90deg, #fff, #ffe78a);
-  box-shadow: 0 0 10px rgba(255,255,255,.6); border-radius: 4px;
+  background: linear-gradient(180deg, #ffffff, #ffe27a);
+  box-shadow: 0 0 12px rgba(255,255,255,.7); border-radius: 4px;
 }
+/* Separadores GRUESOS → bloques chunky como la foto. Gap de 4px entre cada uno
+   de los N segmentos (N = var(--vs-total), que pone vsView). */
 .vs-skin-tv-show .vss-bar .vs-prog::after {
   content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 2;
   background: repeating-linear-gradient(90deg,
-    transparent 0 calc(100% / var(--vs-total, 10) - 2px),
-    rgba(8,14,34,.95) calc(100% / var(--vs-total, 10) - 2px) calc(100% / var(--vs-total, 10)));
+    transparent 0 calc(100% / var(--vs-total, 10) - 4px),
+    rgba(8,14,34,1) calc(100% / var(--vs-total, 10) - 4px) calc(100% / var(--vs-total, 10)));
 }
 
 /* ── Escenario central + suelo con brillo ─────────────────────────────────── */
@@ -348,8 +352,8 @@ body.skin-tv-show .card,
    ─────────────────────────────────────────────────────────────────────────── */
 @container vs (max-aspect-ratio: 5/4) {
   /* Píldora flotante compacta */
-  .vs-skin-tv-show .vss-bar  { width: 96%; height: 46px; margin: 10px auto 0;
-    box-shadow: 0 0 0 2px #ffc400, 0 10px 22px rgba(0,0,0,.55); }
+  /* El borde dorado lo dibuja el ::before (trapecio); aquí solo compactamos. */
+  .vs-skin-tv-show .vss-bar  { width: 96%; height: 46px; margin: 10px auto 0; box-shadow: none; }
   .vs-skin-tv-show .vss-score { font-size: clamp(1.1rem, 2.4cqw, 1.7rem); }
   .vs-skin-tv-show .vss-name  { font-size: clamp(.7rem, 1.8cqw, 1rem); }
   .vs-skin-tv-show .vss-av    { width: 2.4rem; height: 2.4rem; }
