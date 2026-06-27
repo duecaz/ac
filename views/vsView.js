@@ -185,11 +185,11 @@ export function mountVs(host, a, ctx, opts = {}) {
 
   function startMatch(leftName, rightName) {
     const T = getTemplate(a.template);
-    // Points mode (NOT raceToFinish): both sides answer EVERY item and the
-    // winner is whoever got more right. Finishing first must never win on its
-    // own — a student tapping fast through wrong answers used to be declared
-    // winner over a careful, correct one. Now correctness decides.
-    const session = createSession(a, { format: FORMATS.VS, left: leftName, right: rightName });
+    // Carrera: el duelo se CIERRA en cuanto un lado completa todos los ítems y
+    // ese lado gana — el otro deja de poder responder. En plantillas con
+    // reintento (Operaciones) un fallo no avanza, así que "terminar" = todas
+    // bien; en quiz, el primero en contestar todas gana la carrera.
+    const session = createSession(a, { format: FORMATS.VS, left: leftName, right: rightName, raceToFinish: true });
     session.start();
     const flashing = { left: false, right: false };
     let finished = false; // guards finish() against double-fire from pending timers
@@ -340,8 +340,9 @@ export function mountVs(host, a, ctx, opts = {}) {
           // que el resto de la vista (getElementById/querySelector).
           const arena = document.querySelector('.vs-arena');
           if (arena) arena.classList.add('vs-race-finished');
-          // Winner by SCORE (aciertos). finishedBy only breaks a score tie.
-          const ws = st.leader !== 'tie' ? st.leader : st.finishedBy;
+          // Carrera: gana quien terminó primero (finishedBy). Solo si no hubiera
+          // finisher (estado heredado) cae al criterio de puntos.
+          const ws = st.finishedBy || (st.leader !== 'tie' ? st.leader : null);
           if (ws && currentAnim) currentAnim.setProgress(ws === 'left' ? 1 : -1);
           setTimeout(() => finish(st), 1500);
         } else {
@@ -370,12 +371,12 @@ export function mountVs(host, a, ctx, opts = {}) {
       if (currentAnim) { currentAnim.destroy(); currentAnim = null; }
       // List-orchestrator mode: delegate result handling to the caller.
       if (opts.onFinish) { opts.onFinish(st); return; }
-      // Gana quien MÁS acertó (mayor score). Si hay empate a puntos, desempata
-      // quien terminó primero (finishedBy); si tampoco, es empate real.
-      const winnerSide = st.leader !== 'tie' ? st.leader : (st.finishedBy || null);
+      // Carrera: gana quien terminó primero (finishedBy). Si por alguna razón no
+      // hay finisher (estado heredado), cae al criterio de puntos.
+      const winnerSide = st.finishedBy || (st.leader !== 'tie' ? st.leader : null);
       const tie = !winnerSide;
       const winner = tie ? null : st[winnerSide];
-      // El ganador (más puntos) encabeza el podio; el otro lado después.
+      // El ganador (quien terminó primero) encabeza el podio; el otro lado después.
       const other = winnerSide === 'left' ? 'right' : 'left';
       const ranked = (winnerSide
         ? [st[winnerSide], st[other]]
