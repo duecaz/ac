@@ -350,9 +350,9 @@ body.skin-tv-show .card,
    estrechas: barra más baja, paneles compactos, sin animaciones pesadas.
    Funciona en 1920×1080, 1366×768 y tablet.
    ─────────────────────────────────────────────────────────────────────────── */
+/* PORTRAIT (vertical): apilar — animación arriba (toma el ancho), teclados
+   abajo lado a lado — y compactar la barra. SOLO en vertical. */
 @container vs (max-aspect-ratio: 5/4) {
-  /* Píldora flotante compacta */
-  /* El borde dorado lo dibuja el ::before (trapecio); aquí solo compactamos. */
   .vs-skin-tv-show .vss-bar  { width: 96%; height: 46px; margin: 10px auto 0; box-shadow: none; }
   .vs-skin-tv-show .vss-score { font-size: clamp(1.1rem, 2.4cqw, 1.7rem); }
   .vs-skin-tv-show .vss-name  { font-size: clamp(.7rem, 1.8cqw, 1rem); }
@@ -361,51 +361,42 @@ body.skin-tv-show .card,
   .vs-skin-tv-show .vss-badge::before { animation: none; }
   .vs-skin-tv-show .vss-left::after,
   .vs-skin-tv-show .vss-right::after { animation: none; }
-
-  /* MAQUETADO: primero se reparte el ESPACIO con el grid (filas en fr → alturas
-     DEFINIDAS), luego el contenido se dibuja dentro y se escala para caber.
-     Fila 1 = animación (flexible), Fila 2 = teclados (mayor cuota, definida). */
   .vs-skin-tv-show .vs-main {
     padding: .5rem .5rem .7rem; row-gap: .4rem; column-gap: .6rem;
     grid-template-rows: minmax(0, 1fr) minmax(0, 1.9fr);
-    /* minmax(0,…): las columnas PUEDEN encoger por debajo del contenido. Con 1fr
-       (mín. auto) el teclado forzaba la columna a crecer → las tarjetas se
-       solapaban. Ahora el espacio manda y el teclado se ajusta dentro. */
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
   .vs-skin-tv-show .vs-stage { justify-content: center; padding: .2rem; min-height: 0; }
   .vs-skin-tv-show .vs-stage-canvas { min-height: 64px; }
   .vs-skin-tv-show .vs-stage-canvas::after { display: none; }
+}
 
-  /* La tarjeta del teclado LLENA su celda del grid → altura DEFINIDA. Con
-     container-type:size, el teclado se mide contra la tarjeta (cqmin) y siempre
-     cabe: pregunta + display + las 4 filas (incl. borrar/enviar). */
+/* AJUSTE DEL TECLADO — se aplica en vertical O en cualquier contenedor BAJO
+   (móvil APAISADO: ancho pero de poca altura). El espacio lo da el layout (la
+   celda del grid); la tarjeta lo LLENA (border-box) y el teclado se reparte por
+   dentro con flex + grid 1fr, dimensionado por cqw → la pregunta, el display y
+   las 4 filas (incl. borrar/enviar) SIEMPRE caben. En desktop ALTO no aplica y
+   se conserva la tarjeta-esquina compacta del mockup. */
+@container vs (max-aspect-ratio: 5/4) or (max-height: 700px) {
   .vs-skin-tv-show .vs-panel { justify-content: stretch; align-items: stretch; }
   .vs-skin-tv-show .vs-body  {
-    box-sizing: border-box;               /* CLAVE: la tarjeta es content-box →
-                                             width:100% + padding desbordaba el
-                                             panel y las tarjetas se solapaban */
+    box-sizing: border-box;               /* content-box desbordaba el panel */
+    display: flex; flex-direction: column;
     width: 100%; max-width: 100%; height: 100%; max-height: 100%; margin-top: 0;
-    min-width: 0; min-height: 0;          /* deja encoger el ítem flex */
-    container-type: inline-size;          /* ancho-relativo: el ancho lo manda el
-                                             grid; la ALTURA la reparte el flex */
-    overflow: hidden;
-    border-radius: 1rem; padding: 3cqw 3.5cqw; animation: none;
+    min-width: 0; min-height: 0; flex: 1 1 auto;
+    container-type: inline-size; overflow: hidden;
+    border-radius: 1rem; padding: 3cqw 3.2cqw; animation: none;
   }
-  /* El teclado LLENA la altura de la tarjeta: pregunta + display arriba, la
-     rejilla (flex:1) ocupa el resto y reparte sus 4 filas → siempre cabe. */
-  .vs-skin-tv-show .vs-body .ww-keypad-round {
-    height: 100%; justify-content: flex-start; gap: 2cqw; padding: 0;
-  }
-  .vs-skin-tv-show .vs-body .ww-keypad-q       { font-size: clamp(.75rem, 11cqw, 1.4rem); margin: 0; padding: 1.5cqw 3cqw; flex: 0 0 auto; }
-  .vs-skin-tv-show .vs-body .ww-keypad-display { font-size: clamp(.7rem, 10cqw, 1.2rem); padding: .5cqw 3cqw; min-width: 0; flex: 0 0 auto; }
+  .vs-skin-tv-show .vs-body .ww-keypad-round { height: 100%; justify-content: flex-start; gap: 1.8cqw; padding: 0; }
+  .vs-skin-tv-show .vs-body .ww-keypad-q       { font-size: clamp(.7rem, 11cqw, 1.4rem); margin: 0; padding: 1.4cqw 3cqw; flex: 0 0 auto; }
+  .vs-skin-tv-show .vs-body .ww-keypad-display { font-size: clamp(.65rem, 10cqw, 1.2rem); padding: .5cqw 3cqw; min-width: 0; flex: 0 0 auto; }
   .vs-skin-tv-show .vs-body .ww-keypad {
-    flex: 1 1 auto; min-height: 0; gap: 2cqw;
+    flex: 1 1 auto; min-height: 0; gap: 1.8cqw;
     grid-auto-rows: 1fr; align-content: stretch;
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .vs-skin-tv-show .vs-body .ww-key {
-    font-size: clamp(.6rem, 8cqw, 1.1rem); padding: 0; min-height: 0; min-width: 0;
+    font-size: clamp(.55rem, 8cqw, 1.1rem); padding: 0; min-height: 0; min-width: 0;
     display: flex; align-items: center; justify-content: center;
   }
 }
