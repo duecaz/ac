@@ -1,0 +1,292 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   SKIN: TV-SHOW  —  concurso de televisión / eSports
+   Cargado automáticamente por applySkin() cuando presentation.skin = 'tv-show'.
+
+   100% encapsulado: TODAS las reglas están scoped bajo
+     • .skin-tv-show              → página (player solo, host live, embed)
+     • .vs-skin-tv-show           → arena del modo VS (scoreboard + paneles)
+   El manifest (core/skins.js) solo define tokens ESTÁNDAR, así que al cambiar
+   de tema la clase desaparece y los tokens se sobrescriben → revierte por
+   completo. No se toca ningún CSS global ni ningún otro skin.
+
+   Paleta: azul eléctrico (#2b6fff) · rojo TV (#ef2b5b) · oro (#ffc400)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ════════════════════════════ PÁGINA (no-VS) ═══════════════════════════════
+   Fondo de estudio azul con glow + viñeta. Aplica al body y al frame del embed
+   (mismo patrón que styles/skins.css, pero contenido aquí para no tocar global).
+   ─────────────────────────────────────────────────────────────────────────── */
+body.skin-tv-show,
+.ww-player-frame.skin-tv-show {
+  background:
+    radial-gradient(ellipse 70% 55% at 12% 8%,  rgba(43,111,255,.22) 0%, transparent 60%),
+    radial-gradient(ellipse 70% 55% at 88% 8%,  rgba(239,43,91,.20)  0%, transparent 60%),
+    radial-gradient(ellipse 120% 80% at 50% 120%, rgba(255,196,0,.07) 0%, transparent 55%),
+    radial-gradient(ellipse 90% 70% at 50% 0%, #16245a 0%, #070d20 72%);
+  color: var(--ww-fg);
+}
+body.skin-tv-show { background-attachment: fixed; }
+
+/* Tarjetas / paneles flotantes con profundidad y borde luminoso */
+body.skin-tv-show .card,
+.ww-player-frame.skin-tv-show .card {
+  background: linear-gradient(180deg, #15235266 0%, #0d1838cc 100%);
+  color: var(--ww-fg);
+  border: 1px solid rgba(59,130,246,.4);
+  border-radius: 1.1rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.03) inset,
+              0 0 40px rgba(43,111,255,.12);
+}
+
+/* Botones modernos con gradiente + glow (solo dentro del skin) */
+.skin-tv-show .btn-primary {
+  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+  border: none; border-radius: .8rem; font-weight: 800;
+  box-shadow: 0 5px 0 #1437a3, 0 8px 18px rgba(29,78,216,.5);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.skin-tv-show .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 7px 0 #1437a3, 0 12px 24px rgba(29,78,216,.6); }
+.skin-tv-show .btn-primary:active { transform: translateY(3px); box-shadow: 0 2px 0 #1437a3, 0 4px 10px rgba(29,78,216,.5); }
+.skin-tv-show .btn-warning {
+  background: linear-gradient(180deg, #ffd34d 0%, #ffa400 100%);
+  border: none; border-radius: .8rem; font-weight: 800; color: #3a2200;
+  box-shadow: 0 5px 0 #b87400, 0 8px 18px rgba(255,164,0,.45);
+}
+
+/* Cuadrícula Kahoot (quiz / froggy / live) — fichas 3D con color de forma */
+.skin-tv-show .ww-kahoot-grid .btn,
+.skin-tv-show .ww-opt {
+  color: #fff; border: none; border-radius: .9rem; font-weight: 800;
+  box-shadow: 0 5px 0 rgba(0,0,0,.45), 0 8px 20px rgba(0,0,0,.35);
+  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+}
+.skin-tv-show .ww-opt:hover { transform: translateY(-2px); filter: brightness(1.07); }
+.skin-tv-show .ww-opt:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0,0,0,.45); }
+.skin-tv-show .ww-shape-1 { background: linear-gradient(180deg, #ff4d72, #d11540); }
+.skin-tv-show .ww-shape-2 { background: linear-gradient(180deg, #4d8cff, #1a52e0); }
+.skin-tv-show .ww-shape-3 { background: linear-gradient(180deg, #2fe0bf, #0f9e85); }
+.skin-tv-show .ww-shape-4 { background: linear-gradient(180deg, #ffa64d, #e06f00); }
+
+/* Pregunta + cronómetro grandes */
+.skin-tv-show .ww-q { font-weight: 800; text-shadow: 0 2px 10px rgba(0,0,0,.5); }
+.skin-tv-show .ww-timer-badge { box-shadow: 0 0 14px rgba(251,191,36,.5); }
+
+/* Teclado numérico (math) en página — efecto 3D */
+.skin-tv-show .ww-key {
+  background: linear-gradient(180deg, #1c2c5e 0%, #142347 100%);
+  color: var(--ww-fg); border: 1px solid rgba(120,160,255,.25);
+  border-radius: .8rem; font-weight: 800;
+  box-shadow: 0 4px 0 #0a1430, 0 6px 14px rgba(0,0,0,.4);
+  transition: transform .1s ease, box-shadow .1s ease;
+}
+.skin-tv-show .ww-key:active { transform: translateY(3px); box-shadow: 0 1px 0 #0a1430, 0 3px 8px rgba(0,0,0,.4); }
+.skin-tv-show .ww-key-ok { background: linear-gradient(180deg, #34d36b, #15a04a); box-shadow: 0 4px 0 #0c6e30, 0 6px 14px rgba(21,160,74,.5); }
+.skin-tv-show .ww-keypad-display {
+  background: rgba(2,8,24,.6); color: #fff; border: 2px solid rgba(120,160,255,.35);
+  border-radius: .8rem; box-shadow: inset 0 0 18px rgba(43,111,255,.25);
+}
+
+/* ════════════════════════════ ARENA VS ════════════════════════════════════
+   Estructura de clases idéntica a la base (styles/vs.css) y a 'colegios', pero
+   con identidad propia: glow eléctrico, scanlines TV, badge dorado con anillo.
+   ─────────────────────────────────────────────────────────────────────────── */
+.vs-skin-tv-show {
+  position: relative;
+  background: #070d20;
+  background-image:
+    radial-gradient(ellipse 55% 85% at 6% 50%,  rgba(43,111,255,.18) 0%, transparent 100%),
+    radial-gradient(ellipse 55% 85% at 94% 50%, rgba(239,43,91,.18)  0%, transparent 100%),
+    radial-gradient(ellipse 80% 50% at 50% 4%,  rgba(255,196,0,.06)  0%, transparent 70%),
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.18) 2px, rgba(0,0,0,.18) 3px);
+}
+/* Viñeta + brillo de foco de plató (capa decorativa, no captura clics) */
+.vs-skin-tv-show::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 45% at 50% -10%, rgba(255,255,255,.06) 0%, transparent 60%),
+    radial-gradient(ellipse 130% 100% at 50% 50%, transparent 55%, rgba(0,0,0,.55) 100%);
+}
+.vs-skin-tv-show .vss-bar,
+.vs-skin-tv-show .vs-main { position: relative; z-index: 1; }
+
+/* Si el profe elige un fondo real, dejarlo asomar tras los paneles */
+.ww-player-frame:not(.bg-none) .vs-skin-tv-show {
+  background: transparent;
+  background-image:
+    radial-gradient(ellipse 55% 85% at 6% 50%,  rgba(43,111,255,.22) 0%, transparent 100%),
+    radial-gradient(ellipse 55% 85% at 94% 50%, rgba(239,43,91,.22)  0%, transparent 100%),
+    linear-gradient(180deg, rgba(7,13,32,.5) 0%, rgba(7,13,32,.72) 100%);
+}
+
+/* ── Scoreboard superior espectacular ─────────────────────────────────────── */
+.vs-skin-tv-show .vss-bar {
+  height: 84px;
+  box-shadow: 0 8px 36px rgba(0,0,0,.75), inset 0 -2px 0 rgba(255,255,255,.07),
+              inset 0 2px 0 rgba(255,255,255,.12);
+  border-radius: 0 0 1.2rem 1.2rem;
+}
+.vs-skin-tv-show .vss-left  { background: linear-gradient(100deg, #0a2b8c 0%, #1a52e0 55%, #2b6fff 100%); }
+.vs-skin-tv-show .vss-right { background: linear-gradient(260deg, #8c0a2b 0%, #d11540 55%, #ef2b5b 100%); }
+.vs-skin-tv-show .vss-mid   { background: linear-gradient(180deg, #1a52e0 0%, #8c0a2b 100%); }
+/* Brillo que recorre la barra (efecto TV en vivo) */
+.vs-skin-tv-show .vss-left::after,
+.vs-skin-tv-show .vss-right::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.16) 50%, transparent 70%);
+  background-size: 250% 100%;
+  animation: tvs-sheen 5.5s ease-in-out infinite;
+}
+.vs-skin-tv-show .vss-team { position: relative; overflow: hidden; }
+@keyframes tvs-sheen { 0%,100% { background-position: 180% 0; } 50% { background-position: -80% 0; } }
+
+/* Nombres grandes + marcador con glow */
+.vs-skin-tv-show .vss-name  {
+  font-size: clamp(.9rem, 1.8cqw, 1.45rem); font-weight: 900;
+  text-transform: uppercase; letter-spacing: .05em;
+  text-shadow: 0 0 16px rgba(255,255,255,.35), 0 2px 4px rgba(0,0,0,.6);
+}
+.vs-skin-tv-show .vss-label { letter-spacing: .26em; color: rgba(255,255,255,.75); }
+.vs-skin-tv-show .vss-score {
+  font-size: clamp(2.1rem, 4.2cqw, 3.4rem); font-weight: 900;
+  color: #fff; text-shadow: 0 0 26px rgba(255,196,0,.5), 0 2px 6px rgba(0,0,0,.6);
+}
+
+/* Círculo VS dorado con anillo giratorio */
+.vs-skin-tv-show .vss-badge {
+  position: relative;
+  background: radial-gradient(circle at 38% 30%, #fff6b0, #ffc400 52%, #d98a00 100%);
+  color: #4a2a00; border: 3px solid #fff; font-weight: 900; letter-spacing: .04em;
+  font-size: .95rem;
+  box-shadow: 0 0 0 4px rgba(255,196,0,.25), 0 6px 22px rgba(0,0,0,.6),
+              0 0 30px rgba(255,196,0,.5);
+  animation: tvs-badge 2.6s ease-in-out infinite;
+}
+.vs-skin-tv-show .vss-badge::before {
+  content: ''; position: absolute; inset: -9px; border-radius: 50%; z-index: -1;
+  background: conic-gradient(from 0deg, #ffc400, #ff8a00, #ffc400, #fff3b0, #ffc400);
+  filter: blur(3px); opacity: .85;
+  animation: tvs-spin 4s linear infinite;
+}
+@keyframes tvs-spin  { to { transform: rotate(360deg); } }
+@keyframes tvs-badge {
+  0%,100% { box-shadow: 0 0 0 4px rgba(255,196,0,.25), 0 6px 22px rgba(0,0,0,.6), 0 0 30px rgba(255,196,0,.5); }
+  50%      { box-shadow: 0 0 0 9px rgba(255,196,0,.12), 0 6px 26px rgba(0,0,0,.7), 0 0 44px rgba(255,196,0,.7); }
+}
+
+/* Avatares con aro dorado */
+.vs-skin-tv-show .vss-av { border: 3px solid rgba(255,196,0,.8); box-shadow: 0 0 14px rgba(255,196,0,.45), 0 2px 8px rgba(0,0,0,.5); }
+.vs-skin-tv-show .vs-avatar-init { background: rgba(255,255,255,.16); font-size: 1.15rem; }
+
+/* Barras de progreso segmentadas con shimmer */
+.vs-skin-tv-show .vss-bar .vs-prog {
+  height: 6px; margin-top: .35rem; border-radius: 999px;
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,.14) 0 8px, transparent 8px 11px);
+}
+.vs-skin-tv-show .vss-bar .vs-prog-bar {
+  background: linear-gradient(90deg, #fff, #ffe78a);
+  box-shadow: 0 0 10px rgba(255,255,255,.6); border-radius: 999px;
+}
+
+/* ── Escenario central ────────────────────────────────────────────────────── */
+.vs-skin-tv-show .vs-stage     { border: none; }
+.vs-skin-tv-show .vs-tug-label {
+  color: rgba(255,255,255,.8); font-weight: 800; letter-spacing: .04em;
+  text-shadow: 0 0 16px rgba(43,111,255,.5);
+}
+
+/* ── Paneles flotantes de jugador (azul izq · rojo der) ───────────────────── */
+.vs-skin-tv-show .vs-panel { align-items: center; justify-content: center; padding: .85rem .45rem; }
+.vs-skin-tv-show .vs-panel.vs-left  { background: radial-gradient(ellipse 120% 80% at 62% 50%, rgba(43,111,255,.12) 0%, transparent 70%); }
+.vs-skin-tv-show .vs-panel.vs-right { background: radial-gradient(ellipse 120% 80% at 38% 50%, rgba(239,43,91,.12) 0%, transparent 70%); }
+
+.vs-skin-tv-show .vs-body {
+  container-type: inline-size;
+  flex: 1; width: 100%; max-width: 210px;
+  border-radius: 1.7rem; overflow: auto; padding: .7rem .75rem;
+  animation: tvs-float 6s ease-in-out infinite;
+}
+.vs-skin-tv-show .vs-panel.vs-left .vs-body {
+  background: linear-gradient(180deg, #08153a 0%, #050d24 100%);
+  border: 2.5px solid #2b6fff;
+  box-shadow: 0 0 0 1px rgba(43,111,255,.4), 0 0 46px rgba(43,111,255,.55), 0 16px 38px rgba(0,0,0,.65);
+}
+.vs-skin-tv-show .vs-panel.vs-right .vs-body {
+  background: linear-gradient(180deg, #2a0712 0%, #1a0309 100%);
+  border: 2.5px solid #ef2b5b;
+  box-shadow: 0 0 0 1px rgba(239,43,91,.4), 0 0 46px rgba(239,43,91,.55), 0 16px 38px rgba(0,0,0,.65);
+}
+@keyframes tvs-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+.vs-skin-tv-show .vs-body .vs-done,
+.vs-skin-tv-show .vs-body .vs-done .h5     { color: #eaf2ff !important; }
+.vs-skin-tv-show .vs-body .vs-done .text-muted { color: rgba(255,255,255,.6) !important; }
+
+/* ── Teclado 3D dentro del panel ──────────────────────────────────────────── */
+.vs-skin-tv-show .vs-body .ww-keypad-q  { font-size: clamp(.95rem, 15cqw, 1.4rem); font-weight: 900; color: #eaf2ff; }
+.vs-skin-tv-show .vs-body .ww-keypad-eq { color: rgba(255,255,255,.5); }
+.vs-skin-tv-show .vs-body .ww-keypad-display {
+  font-size: clamp(.9rem, 13cqw, 1.25rem); background: rgba(2,8,24,.6);
+  color: #fff; border-radius: .8rem; box-shadow: inset 0 0 18px rgba(43,111,255,.3);
+}
+.vs-skin-tv-show .vs-body .ww-key {
+  font-size: clamp(.74rem, 9cqw, 1.05rem); color: #eaf2ff; border-radius: .8rem;
+  font-weight: 800; transition: transform .1s ease, box-shadow .1s ease;
+}
+.vs-skin-tv-show .vs-body .ww-key:active { transform: translateY(3px); }
+.vs-skin-tv-show .vs-panel.vs-left .vs-body .ww-key {
+  background: linear-gradient(180deg, #15347e, #0c2050); border: 1px solid rgba(43,111,255,.45);
+  box-shadow: 0 4px 0 #07142f, 0 6px 12px rgba(0,0,0,.45);
+}
+.vs-skin-tv-show .vs-panel.vs-right .vs-body .ww-key {
+  background: linear-gradient(180deg, #6e1228, #44081a); border: 1px solid rgba(239,43,91,.45);
+  box-shadow: 0 4px 0 #2a0510, 0 6px 12px rgba(0,0,0,.45);
+}
+.vs-skin-tv-show .vs-body .ww-key-ok {
+  background: linear-gradient(180deg, #34d36b, #15a04a); border-color: #0c6e30; color: #fff;
+  box-shadow: 0 4px 0 #0a5827, 0 6px 12px rgba(21,160,74,.5);
+}
+.vs-skin-tv-show .vs-body .ww-key-fn { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.12); }
+
+/* ── Opciones de quiz dentro del panel ────────────────────────────────────── */
+.vs-skin-tv-show .vs-body .ww-q,
+.vs-skin-tv-show .vs-body .ww-phead { color: #eaf2ff; }
+.vs-skin-tv-show .vs-body .ww-opt {
+  color: #fff; border: none; border-radius: .85rem; font-weight: 800;
+  font-size: clamp(.74rem, 9cqw, .95rem); padding: .5em .65em;
+  box-shadow: 0 4px 0 rgba(0,0,0,.5);
+}
+.vs-skin-tv-show .vs-body .ww-shape-1 { background: linear-gradient(180deg, #ff4d72, #d11540); }
+.vs-skin-tv-show .vs-body .ww-shape-2 { background: linear-gradient(180deg, #4d8cff, #1a52e0); }
+.vs-skin-tv-show .vs-body .ww-shape-3 { background: linear-gradient(180deg, #2fe0bf, #0f9e85); }
+.vs-skin-tv-show .vs-body .ww-shape-4 { background: linear-gradient(180deg, #ffa64d, #e06f00); }
+
+/* ── Froggy dentro del panel ──────────────────────────────────────────────── */
+.vs-skin-tv-show .vs-body .froggy-q-text { color: #eaf2ff; font-size: clamp(.82rem, 12cqw, 1.15rem); }
+.vs-skin-tv-show .vs-body .froggy-opt    { border-radius: .8rem; font-size: clamp(.72rem, 8cqw, .9rem); }
+.vs-skin-tv-show .vs-body .froggy-q-area { gap: .3rem; }
+
+/* ════════════════════════════ RESPONSIVE ══════════════════════════════════
+   Container query 'vs' (definida en styles/vs.css). Retrato / pantallas
+   estrechas: barra más baja, paneles compactos, sin animaciones pesadas.
+   Funciona en 1920×1080, 1366×768 y tablet.
+   ─────────────────────────────────────────────────────────────────────────── */
+@container vs (max-aspect-ratio: 5/4) {
+  .vs-skin-tv-show .vss-bar  { height: 50px; box-shadow: 0 4px 16px rgba(0,0,0,.6); border-radius: 0 0 .7rem .7rem; }
+  .vs-skin-tv-show .vss-score { font-size: clamp(1.1rem, 2.4cqw, 1.7rem); }
+  .vs-skin-tv-show .vss-name  { font-size: clamp(.7rem, 1.8cqw, 1rem); }
+  .vs-skin-tv-show .vss-badge { animation: none; }
+  .vs-skin-tv-show .vss-badge::before { animation: none; }
+  .vs-skin-tv-show .vss-left::after,
+  .vs-skin-tv-show .vss-right::after { animation: none; }
+  .vs-skin-tv-show .vs-panel { padding: .4rem .25rem; justify-content: flex-start; }
+  .vs-skin-tv-show .vs-body  { max-width: 100%; width: 100%; border-radius: .8rem; animation: none; }
+}
+
+/* Accesibilidad: respeta "reducir movimiento" */
+@media (prefers-reduced-motion: reduce) {
+  .vs-skin-tv-show .vss-badge,
+  .vs-skin-tv-show .vss-badge::before,
+  .vs-skin-tv-show .vss-left::after,
+  .vs-skin-tv-show .vss-right::after,
+  .vs-skin-tv-show .vs-body { animation: none; }
+}
