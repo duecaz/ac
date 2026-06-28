@@ -20,7 +20,7 @@ import { getTemplate } from '../core/registry.js';
 import { createSession, isVsCompatible, FORMATS, sessionItems } from '../kernel/session/engine.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { podiumHtml } from '../core/podium.js';
-import { getVsAnimation } from '../core/vsAnimations.js';
+import { getVsAnimation, DEFAULT_VS_ANIMATION } from '../core/vsAnimations.js';
 import { play as playSound } from '../core/sounds.js';
 import { answerConfetti } from '../core/effects.js';
 import { renderModeSetup } from './modeSetup.js';
@@ -199,7 +199,7 @@ export function mountVs(host, a, ctx, opts = {}) {
     // Presentación (default: the built-in SVG tug-of-war / "cuerda"). The teacher
     // can hide it entirely (presentation.vsAnimationOff) → the two panels take the
     // whole width.
-    const animDef = getVsAnimation(a.presentation?.vsAnimation || 'svg-tug');
+    const animDef = getVsAnimation(a.presentation?.vsAnimation || DEFAULT_VS_ANIMATION);
     const animOff = !!a.presentation?.vsAnimationOff;
     // "Board" templates (Ordena las Pelotas): one shared board, no per-question
     // score during play, so the rope is fed by each side's BOARD progress instead.

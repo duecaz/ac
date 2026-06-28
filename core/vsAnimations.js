@@ -19,6 +19,11 @@
 
 const _providers = new Map();
 
+// Animación por defecto en TODOS los VS: "Cuerda (personajes)" (Lottie). Si el id
+// guardado ya no existe, getVsAnimation cae al SVG 'svg-tug' (sin descargas) como
+// red de seguridad.
+export const DEFAULT_VS_ANIMATION = 'lottie-cuerda';
+
 export function registerVsAnimation(provider) { _providers.set(provider.id, provider); }
 export function listVsAnimations() { return [..._providers.values()]; }
 export function getVsAnimation(id) { return _providers.get(id) || _providers.get('svg-tug'); }

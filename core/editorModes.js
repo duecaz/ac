@@ -14,7 +14,7 @@
 import { escapeHtml } from './html.js';
 import { on } from './events.js';
 import { isVsCompatible, sessionItems } from '../kernel/session/engine.js';
-import { listVsAnimations, startPreviewAnims } from './vsAnimations.js';
+import { listVsAnimations, startPreviewAnims, DEFAULT_VS_ANIMATION } from './vsAnimations.js';
 
 let _editorPreviewAnims = [];
 let _editorPreviewGen = 0;
@@ -31,7 +31,7 @@ const fxRow = (key, label, hint, on) => `
   </label>`;
 
 function vsBlock(a) {
-  const cur = a.presentation?.vsAnimation || 'svg-tug';
+  const cur = a.presentation?.vsAnimation || DEFAULT_VS_ANIMATION;
   const animOn = !a.presentation?.vsAnimationOff;   // por defecto: cuerda activa
   const curSrc = a.presentation?.vsAnimationSrc || '';
   const fx = { ...VS_FX_DEFAULTS, ...(a.presentation?.vsFeedback || {}) };
