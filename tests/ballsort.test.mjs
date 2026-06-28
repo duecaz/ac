@@ -4,7 +4,8 @@ import { canMove, applyMove, isWin, progress } from '../templates/ballsort/game/
 import { createBoard, randomBoard, cloneBoard } from '../templates/ballsort/game/board.js';
 import { scoreBallsort } from '../templates/ballsort/scorer.js';
 import '../templates/ballsort/index.js'; // side-effect: registers the template
-import { getTemplate } from '../core/registry.js';
+import { getTemplate, registerTemplate } from '../core/registry.js';
+import { isVsCompatible } from '../kernel/session/engine.js';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
@@ -93,6 +94,26 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   assert.ok(payload.board?.tubes?.length, 'getRoundPayload returns a board');
   assert.ok(['moves','time'].includes(payload.mode), 'payload carries the mode');
   ok('template satisfies the live contract (payload + scorer + flags)');
+}
+
+// ── VS compatibility (single shared board) ──────────────────────────────────────
+{
+  const T = getTemplate('ballsort');
+  const act = { template: 'ballsort', content: T.meta.defaultContent() };
+  assert.strictEqual(act.content.items.length, 1, 'one board per activity');
+  assert.strictEqual(isVsCompatible(act), true, 'a 1-board liveBoard template IS VS-compatible (same board both sides)');
+
+  // both sides receive the SAME board (fairness): getRoundPayload ignores side.
+  const left  = T.getRoundPayload(act, { itemIndex: 0, side: 'left' });
+  const right = T.getRoundPayload(act, { itemIndex: 0, side: 'right' });
+  assert.deepStrictEqual(left.board.tubes, right.board.tubes, 'both VS sides get the identical starting board');
+
+  // a NON-liveBoard template with a single item is still NOT VS-compatible.
+  registerTemplate({ meta: { name: 't_single', contentModel: 'qa', modes: { live: true } },
+    renderPlayer(){}, renderEditor(){}, renderRound(){}, getRoundPayload(){}, scoreSubmission(){ return { correct:false, points:0 }; } });
+  const single = { template: 't_single', content: { items: [{}] } };
+  assert.strictEqual(isVsCompatible(single), false, 'a normal 1-item template needs ≥2 items for VS');
+  ok('Ball Sort is VS-compatible with one shared board; normal templates still need ≥2 items');
 }
 
 console.log(`\nballsort.test: ${passed} checks passed`);

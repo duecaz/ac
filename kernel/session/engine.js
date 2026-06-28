@@ -33,12 +33,16 @@ export function sessionItems(activity) {
 
 /** VS pits two sides head-to-head with no host to judge, so it only works on
  *  templates that can both render a single round (renderRound) and self-score
- *  it (scoreSubmission), with enough items for a real race. */
+ *  it (scoreSubmission), with enough items for a real race.
+ *  EXCEPCIÓN: las plantillas "de tablero" (meta.liveBoard, p.ej. Ordena las
+ *  Pelotas) son UN solo reto compartido — ambos lados resuelven el MISMO tablero
+ *  y gana quien termina antes (raceToFinish). Ahí basta con 1 ítem. */
 export function isVsCompatible(activity) {
   const T = getTemplate(activity?.template);
   const total = sessionItems(activity).length;
+  const minItems = T?.meta?.liveBoard ? 1 : 2;
   return !!(T && typeof T.scoreSubmission === 'function'
-            && typeof T.renderRound === 'function' && total >= 2);
+            && typeof T.renderRound === 'function' && total >= minItems);
 }
 
 /** Single entry point. `opts.format` selects the flow; `opts.state` hydrates. */

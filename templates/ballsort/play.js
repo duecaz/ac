@@ -3,7 +3,7 @@
 // time, and reports via callbacks so the caller decides what to do with the
 // result (solo: show result screen; live: broadcast progress + finish).
 import { cloneBoard } from './game/board.js';
-import { applyMove, canMove, isWin } from './game/rules.js';
+import { applyMove, canMove, isWin, progress } from './game/rules.js';
 import { renderTubes } from './render/tubes.js';
 import { attachDrag } from './render/drag.js';
 import { createTimer, formatMs } from './timer.js';
@@ -63,6 +63,7 @@ export function mountBallSort(host, { board, mode = 'moves', onProgress, onSolve
       colors: state.board.colors,
       moveCount: state.moveCount,
       elapsedMs: state.timer.elapsedMs(),
+      progress: progress(state.board),   // 0..1 sorted — drives the VS rope lead
       solved
     };
   }

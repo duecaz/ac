@@ -196,8 +196,15 @@ export function mountVs(host, a, ctx, opts = {}) {
     const fx = fxCfg();
     const avatars = { left: loadAvatar(a.id, 'left'), right: loadAvatar(a.id, 'right') };
     // The central stage is a pluggable animation chosen by the teacher in
-    // Presentación (default: the built-in SVG tug-of-war).
+    // Presentación (default: the built-in SVG tug-of-war / "cuerda"). The teacher
+    // can hide it entirely (presentation.vsAnimationOff) → the two panels take the
+    // whole width.
     const animDef = getVsAnimation(a.presentation?.vsAnimation || 'svg-tug');
+    const animOff = !!a.presentation?.vsAnimationOff;
+    // "Board" templates (Ordena las Pelotas): one shared board, no per-question
+    // score during play, so the rope is fed by each side's BOARD progress instead.
+    const isBoard = !!T.meta?.liveBoard;
+    const boardProgress = { left: 0, right: 0 };
 
     const vsTheme = getSkin(a.presentation?.skin)?.vsLayout || 'classic';
 
@@ -208,7 +215,7 @@ export function mountVs(host, a, ctx, opts = {}) {
       const st = session.standings();
       mount(host, html`
         <div class="vs-wrap">
-          <div class="vs-arena vs-skin-${vsTheme}">
+          <div class="vs-arena vs-skin-${vsTheme}${animOff ? ' vs-no-stage' : ''}">
             ${vsBarHtml(st.left.name, st.right.name, avatars.left, avatars.right)}
             <div class="vs-main">
               <div class="vs-panel vs-left" data-side="left">
@@ -225,8 +232,11 @@ export function mountVs(host, a, ctx, opts = {}) {
           </div>
         </div>`);
       on(host, 'click', '#vs-again', () => renderSetup());
-      if (currentAnim) currentAnim.destroy();
-      currentAnim = animDef.create(document.getElementById('vs-stage-canvas'), { src: a.presentation?.vsAnimationSrc });
+      if (currentAnim) { currentAnim.destroy(); currentAnim = null; }
+      // Skip the central animation entirely when the teacher turned it off.
+      if (!animOff) {
+        currentAnim = animDef.create(document.getElementById('vs-stage-canvas'), { src: a.presentation?.vsAnimationSrc });
+      }
     }
 
     function vsBarHtml(lName, rName, lAv, rAv) {
@@ -264,7 +274,9 @@ export function mountVs(host, a, ctx, opts = {}) {
       const payload = session.roundPayloadFor(side);
       const st = session.standings()[side];
       const prog = document.getElementById('vs-prog-' + side);
-      if (prog) prog.style.width = Math.round((st.cursor / session.totalItems) * 100) + '%';
+      // Board templates feed the top bar from board completeness (updateBoardLead);
+      // item templates from the item cursor.
+      if (prog && !isBoard) prog.style.width = Math.round((st.cursor / session.totalItems) * 100) + '%';
 
       if (!payload) {
         body.innerHTML = `
@@ -277,8 +289,29 @@ export function mountVs(host, a, ctx, opts = {}) {
       }
       // The template owns the round's DOM (options, tap-vowels, …) and reports
       // the answer via onSubmit; the view only handles scoring + feedback.
+      // Board templates also stream progress (onProgress) so the rope reacts to
+      // how sorted each side's board is, move by move.
       body.innerHTML = '';
-      T.renderRound(body, payload, { onSubmit: (value) => onAnswer(side, value) });
+      T.renderRound(body, payload, {
+        onSubmit: (value) => onAnswer(side, value),
+        onProgress: isBoard ? (snap) => { boardProgress[side] = snap?.progress || 0; updateBoardLead(); } : undefined,
+      });
+    }
+
+    // Board duel: drive the rope + top bars from each side's board completeness.
+    function updateBoardLead() {
+      const names = session.standings();
+      ['left', 'right'].forEach(s => {
+        const prog = document.getElementById('vs-prog-' + s);
+        if (prog) prog.style.width = Math.round(boardProgress[s] * 100) + '%';
+      });
+      const diff = boardProgress.left - boardProgress.right;     // -1..1, + = left
+      if (currentAnim) currentAnim.setProgress(Math.max(-1, Math.min(1, diff)));
+      const label = document.getElementById('vs-tug-label');
+      if (label) {
+        label.textContent = Math.abs(diff) < 0.02 ? '¡Igualados!'
+          : `${(diff > 0 ? names.left.name : names.right.name)} va por delante`;
+      }
     }
 
     function onAnswer(side, value) {

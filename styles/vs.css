@@ -18,6 +18,13 @@
 .vs-panel.vs-left  { grid-area: s1; }
 .vs-panel.vs-right { grid-area: s2; }
 
+/* Animación central desactivada: ocultar el escenario y repartir todo el ancho
+   entre los dos paneles. */
+.vs-arena.vs-no-stage .vs-main { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "s1 s2"; }
+.vs-arena.vs-no-stage .vs-stage { display: none; }
+/* Editor: atenuar la lista de animaciones cuando la animación central está apagada. */
+.vsanim-list-off { opacity: .4; pointer-events: none; filter: grayscale(1); }
+
 /* ── Centre stage ────────────────────────────────────────────────────────── */
 .vs-stage {
   grid-area: stage; display: flex; flex-direction: column; min-width: 0; min-height: 0;

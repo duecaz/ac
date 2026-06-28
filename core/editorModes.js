@@ -32,6 +32,7 @@ const fxRow = (key, label, hint, on) => `
 
 function vsBlock(a) {
   const cur = a.presentation?.vsAnimation || 'svg-tug';
+  const animOn = !a.presentation?.vsAnimationOff;   // por defecto: cuerda activa
   const curSrc = a.presentation?.vsAnimationSrc || '';
   const fx = { ...VS_FX_DEFAULTS, ...(a.presentation?.vsFeedback || {}) };
   const anims = listVsAnimations();
@@ -40,8 +41,14 @@ function vsBlock(a) {
     <section class="ww-mode-cfg" data-mode="vs">
       <h6 class="mb-1"><i class="bi bi-fire text-danger"></i> VS (duelo)</h6>
       <p class="text-muted small mb-2">Cómo se ve y suena el duelo 1‑contra‑1 en pantalla compartida.</p>
+      <label class="vs-fx-row mb-2" title="Muestra u oculta la animación del centro del duelo.">
+        <span class="form-check form-switch m-0">
+          <input class="form-check-input vsanim-toggle" type="checkbox" role="switch" ${animOn ? 'checked' : ''}>
+        </span>
+        <span class="vs-fx-label">Animación central<small class="d-block text-muted">Cuerda (tira y afloja) por defecto. Apágala para dar todo el ancho a los dos lados.</small></span>
+      </label>
       <label class="form-label small text-muted">Animación central del duelo</label>
-      <div class="d-flex flex-wrap gap-2 mb-2">
+      <div class="d-flex flex-wrap gap-2 mb-2 vsanim-list ${animOn ? '' : 'vsanim-list-off'}">
         ${anims.map(v => {
           const hasSrc = v.kind === 'lottie' && v.src && !v.needsSrc;
           return `
@@ -138,6 +145,12 @@ export function wireModesTab(root, a, onChange) {
     }).catch(() => {});
   }
 
+  // VS — central animation on/off (default on = "cuerda").
+  on(root, 'change', '.vsanim-toggle', (_, el) => {
+    pres().vsAnimationOff = !el.checked;
+    onChange(a);
+    root.querySelector('.vsanim-list')?.classList.toggle('vsanim-list-off', !el.checked);
+  });
   // VS — animation tiles.
   on(root, 'click', '.vsanim-pick', (_, b) => {
     pres().vsAnimation = b.dataset.id;
