@@ -320,6 +320,33 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       await saveState(sessionId, engine);
     },
 
+    // Continuous progress for live "board" templates. UPSERTS the player's own
+    // row (no first-answer lock): PATCH if it exists, else POST. The host reads
+    // these via listAnswers and renders each board live; settleItem() later
+    // scores the latest value. itemIndex defaults to 0 (single shared board).
+    async submitProgress(sessionId, playerId, value, msTaken, itemIndex = 0) {
+      if (await answersReady()) {
+        const existing = await pbFetch(`/api/collections/${ANS}/records?filter=${ansFilter(sessionId, itemIndex, playerId)}&perPage=1`);
+        const row = existing?.items?.[0];
+        if (row) {
+          await pbFetch(`/api/collections/${ANS}/records/${row.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ value, ms: msTaken ?? row.ms ?? 0, scored: false }),
+          });
+        } else {
+          await pbFetch(`/api/collections/${ANS}/records`, {
+            method: 'POST',
+            body: JSON.stringify({ session: sessionId, player: playerId, item: Number(itemIndex), value, ms: msTaken ?? 0, scored: false, correct: false, points: 0 }),
+          });
+        }
+        return;
+      }
+      // Legacy blob path: overwrite the player's answer in state (allowed here).
+      const { engine } = await load(sessionId);
+      engine.state.answers[`${Number(itemIndex)}:${playerId}`] = { playerId, value, msTaken: msTaken ?? 0, correct: null, points: 0 };
+      await saveState(sessionId, engine);
+    },
+
     async getOwnAnswer(sessionId, playerId, itemIndex) {
       if (await answersReady()) {
         const res = await pbFetch(`/api/collections/${ANS}/records?filter=${ansFilter(sessionId, itemIndex, playerId)}&perPage=1`);

@@ -78,7 +78,10 @@ async function renderHost(rootSel, code, sessionId, activity) {
   const live = activity.live || {};
   const timerSec = Math.max(5, live.questionTimer || 20);
   const advanceMode = live.advanceMode || 'manual';
-  let liveMode = (advanceMode === 'manual') ? 'manual' : 'auto';
+  // LIVE "board" templates (Ball Sort): a single shared board everyone solves at
+  // their own pace while the host watches each board live. Always runs as a race.
+  const isBoard = !!(tpl?.meta && tpl.meta.liveBoard);
+  let liveMode = isBoard ? 'race' : ((advanceMode === 'manual') ? 'manual' : 'auto');
   let autoAdvance = liveMode === 'auto';
   let session = await fetchSession(sessionId);
   let players = await listPlayers(sessionId);
@@ -116,7 +119,8 @@ async function renderHost(rootSel, code, sessionId, activity) {
     }
     else if (ev.table === 'answers') {
       if (session.phase === 'race') {
-        paintRace(false); // race view loads its own answer data
+        if (isBoard) paintLiveBoardHost(false); // grid of live mini-boards
+        else paintRace(false); // race view loads its own answer data
       } else {
         if (!hasPayload) answers = await listAnswers(sessionId, session.current_item);
         else if (ev.eventType === 'INSERT') answers = [...answers, ev.new];
@@ -143,7 +147,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     lastPhaseKey = key;
     if (session.status === 'lobby') return paintLobby(phaseChanged);
     if (session.status === 'ended') return paintPodium(phaseChanged);
-    if (session.phase === 'race') return paintRace(phaseChanged);
+    if (session.phase === 'race') return isBoard ? paintLiveBoardHost(phaseChanged) : paintRace(phaseChanged);
     if (session.phase === 'question') return paintQuestion(phaseChanged);
     if (session.phase === 'reveal') return paintReveal(phaseChanged);
     if (session.phase === 'leaderboard') return paintLeaderboard(phaseChanged);
@@ -189,14 +193,15 @@ async function renderHost(rootSel, code, sessionId, activity) {
             </div>`;
           }).join('')}
         </div>
-        ${!isQL ? `<div class="d-flex justify-content-center mt-4 mb-2 gap-3 align-items-center">
+        ${isBoard ? `<div class="text-center mt-4 mb-2 text-light"><i class="bi bi-flag-fill text-warning"></i> Carrera de tableros — cada alumno resuelve el mismo tablero; tú ves todos en vivo.</div>`
+          : (!isQL ? `<div class="d-flex justify-content-center mt-4 mb-2 gap-3 align-items-center">
           <label class="text-light" for="mode-select">Modo:</label>
           <select id="mode-select" class="form-select form-select-sm" style="max-width:230px">
             <option value="manual" ${liveMode==='manual'?'selected':''}>Manual (tú avanzas)</option>
             <option value="auto" ${liveMode==='auto'?'selected':''}>Automático</option>
             <option value="race" ${liveMode==='race'?'selected':''}>🏁 Carrera libre</option>
           </select>
-        </div>` : '<div class="mt-4"></div>'}
+        </div>` : '<div class="mt-4"></div>')}
         <button class="btn btn-success btn-lg px-5" id="btn-start" ${players.length===0?'disabled':''}>
           <i class="bi bi-play-fill"></i> Empezar
         </button>
@@ -523,6 +528,91 @@ async function renderHost(rootSel, code, sessionId, activity) {
       for (let i = 0; i < items.length; i++) {
         try { await settleItem(sessionId, i); } catch {}
       }
+      await endSession(sessionId);
+    });
+  }
+
+  // LIVE "board" dashboard (Ball Sort): a grid of every student's board updating
+  // move-by-move. Reads progress rows from live_answers (item 0); each student
+  // upserts their own row via submitProgress, so there's no clobber. Rides the
+  // 'race' phase, so the lobby/start/podium are the standard ones.
+  async function paintLiveBoardHost(phaseChanged = true) {
+    if (phaseChanged) emitGame(GameEvents.LOBBY_END);
+    const mode = activity.content?.mode || 'moves';
+    const initialBoard = (tpl.getRoundPayload ? tpl.getRoundPayload(activity, { itemIndex: 0 }) : null)?.board || null;
+
+    let rows = [];
+    try { rows = await listAnswers(sessionId, 0); } catch { rows = []; }
+    const byPlayer = {};
+    for (const r of rows) byPlayer[r.playerId || r.player_id] = r.value;
+
+    // One cell per player; players with no move yet show the starting board.
+    const cells = players.map(p => ({
+      id: p.id, name: p.name,
+      value: byPlayer[p.id] || (initialBoard ? { tubes: initialBoard.tubes, tubeCapacity: initialBoard.tubeCapacity, colors: initialBoard.colors, moveCount: 0, elapsedMs: 0, solved: false } : null),
+    }));
+    // Solved first, then by fewest moves / least time.
+    cells.sort((a, b) => {
+      const av = a.value || {}, bv = b.value || {};
+      if (!!bv.solved !== !!av.solved) return bv.solved ? 1 : -1;
+      if (av.solved && bv.solved) {
+        return mode === 'time' ? (av.elapsedMs - bv.elapsedMs) : (av.moveCount - bv.moveCount);
+      }
+      return 0;
+    });
+    const solvedCount = cells.filter(c => c.value?.solved).length;
+    const elapsed = session.started_at ? Math.floor((Date.now() - new Date(session.started_at).getTime()) / 1000) : 0;
+    const mins = Math.floor(elapsed / 60), secs = elapsed % 60;
+
+    mount(rootSel, html`
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="mb-0"><i class="bi bi-droplet-half text-info me-2"></i>Ordena las pelotas
+          <span class="badge bg-success ms-2">${solvedCount}/${players.length} resueltos</span></h4>
+        <span class="badge bg-secondary fs-6" id="race-timer">${mins}:${String(secs).padStart(2,'0')}</span>
+        ${fullscreenButtonHtml()}
+      </div>
+      ${players.length === 0
+        ? `<p class="text-center text-light">Esperando jugadores…</p>`
+        : `<div class="bs-grid" id="bs-grid"></div>`}
+      <div class="text-center mt-4">
+        <button class="btn btn-warning btn-lg" id="btn-end-race">
+          <i class="bi bi-flag-fill"></i> Terminar y ver podio
+        </button>
+      </div>
+    `);
+    attachFullscreenButton(rootSel);
+
+    const grid = document.getElementById('bs-grid');
+    if (grid && typeof tpl.renderRaceCell === 'function') {
+      for (const c of cells) {
+        const cellEl = document.createElement('div');
+        cellEl.className = 'bs-grid-cell';
+        grid.appendChild(cellEl);
+        try { tpl.renderRaceCell(cellEl, { value: c.value, name: c.name, mode }); } catch {}
+      }
+    }
+
+    if (phaseChanged) {
+      const timerTick = ctx.setInterval(() => {
+        if (session.phase !== 'race') { clearInterval(timerTick); return; }
+        const el = document.getElementById('race-timer');
+        if (!el) { clearInterval(timerTick); return; }
+        const e = session.started_at ? Math.floor((Date.now() - new Date(session.started_at).getTime()) / 1000) : 0;
+        el.textContent = `${Math.floor(e/60)}:${String(e%60).padStart(2,'0')}`;
+      }, 1000);
+      // Poll progress every 2 s even if a realtime event is missed.
+      const poll = ctx.setInterval(() => {
+        if (session.phase !== 'race') { clearInterval(poll); return; }
+        paintLiveBoardHost(false);
+      }, 2000);
+    }
+
+    on(rootSel, 'click', '#btn-end-race', async () => {
+      const ok = await confirmModal('¿Terminar la partida? Se calculará la clasificación final.', { okText: 'Terminar' });
+      if (!ok) return;
+      const btn = document.getElementById('btn-end-race');
+      if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Finalizando…'; }
+      try { await settleItem(sessionId, 0); } catch {}
       await endSession(sessionId);
     });
   }

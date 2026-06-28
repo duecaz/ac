@@ -32,6 +32,10 @@ export const joinSession = call('joinSession');
 export const submitAnswer = call('submitAnswer');
 export const getOwnAnswer = call('getOwnAnswer');
 export const pingPresence = call('pingPresence');
+// Continuous progress broadcast for live "board" templates (e.g. Ball Sort):
+// unlike submitAnswer this UPSERTS the player's OWN row, so the host sees the
+// board move-by-move. One row per player → no clobber.
+export const submitProgress = call('submitProgress');
 
 // Realtime subscription. Returns (a promise resolving to) an unsubscribe fn.
 export const subscribeRoom = call('subscribeRoom');

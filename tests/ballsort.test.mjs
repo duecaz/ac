@@ -1,0 +1,98 @@
+// Ball Sort template — pure engine + scoring + contract. Run: node tests/ballsort.test.mjs
+import assert from 'node:assert';
+import { canMove, applyMove, isWin, progress } from '../templates/ballsort/game/rules.js';
+import { createBoard, randomBoard, cloneBoard } from '../templates/ballsort/game/board.js';
+import { scoreBallsort } from '../templates/ballsort/scorer.js';
+import '../templates/ballsort/index.js'; // side-effect: registers the template
+import { getTemplate } from '../core/registry.js';
+
+let passed = 0;
+const ok = (m) => { passed++; console.log('  ✓', m); };
+
+// ── rules ────────────────────────────────────────────────────────────────────
+{
+  const b = { tubeCapacity: 3, colors: ['red','blue'], tubes: [['red','blue'], ['red'], []] };
+  assert.strictEqual(canMove(b, 0, 2), true, 'top → empty is legal');
+  assert.strictEqual(canMove(b, 1, 1), false, 'same tube illegal');
+  assert.strictEqual(canMove(b, 2, 0), false, 'empty source illegal');
+  const full = { tubeCapacity: 1, colors: ['red'], tubes: [['red'], ['red']] };
+  assert.strictEqual(canMove(full, 0, 1), false, 'full destination illegal');
+  ok('canMove respects source/dest/capacity');
+
+  const moved = applyMove(b, 0, 2);
+  assert.deepStrictEqual(moved.tubes[2], ['blue'], 'applyMove pops top onto dest');
+  assert.deepStrictEqual(moved.tubes[0], ['red'], 'applyMove leaves source minus top');
+  assert.strictEqual(b.tubes[0].length, 2, 'applyMove is immutable (source untouched)');
+  ok('applyMove moves the top ball immutably');
+}
+
+// ── win + progress ────────────────────────────────────────────────────────────
+{
+  const won = { tubeCapacity: 2, colors: ['red','blue'], tubes: [['red','red'], ['blue','blue'], []] };
+  assert.strictEqual(isWin(won), true, 'all tubes single-colour-full or empty → win');
+  assert.strictEqual(progress(won), 1, 'fully sorted → progress 1');
+
+  const mid = { tubeCapacity: 2, colors: ['red','blue'], tubes: [['red','red'], ['blue','red'], []] };
+  assert.strictEqual(isWin(mid), false, 'mixed tube → not won');
+  assert.ok(progress(mid) > 0 && progress(mid) < 1, 'partial board → 0 < progress < 1');
+  ok('isWin + progress compute board completeness');
+}
+
+// ── random board fairness ──────────────────────────────────────────────────────
+{
+  const r = randomBoard('classic');
+  const counts = {};
+  r.tubes.flat().forEach(c => { counts[c] = (counts[c] || 0) + 1; });
+  for (const color of r.colors) {
+    assert.strictEqual(counts[color], r.tubeCapacity, `every colour appears exactly tubeCapacity times (${color})`);
+  }
+  assert.strictEqual(r.tubes.filter(t => t.length === 0).length, r.tubes.length - r.colors.length, 'exactly the spare tubes are empty');
+  ok('randomBoard distributes a fair, solvable ball pool');
+
+  // seeded rand → reproducible
+  const seq = [0.1, 0.9, 0.3, 0.7, 0.5, 0.2, 0.8, 0.4, 0.6, 0.05];
+  let i = 0; const rand = () => seq[(i++) % seq.length];
+  let j = 0; const rand2 = () => seq[(j++) % seq.length];
+  assert.deepStrictEqual(randomBoard('easy', rand).tubes, randomBoard('easy', rand2).tubes, 'same rand seq → identical board');
+  ok('randomBoard accepts an injectable rand for reproducible boards');
+}
+
+// ── scoring ────────────────────────────────────────────────────────────────────
+{
+  const movesItem = { mode: 'moves' };
+  const timeItem  = { mode: 'time' };
+  const a = scoreBallsort({ value: { solved: true, moveCount: 10 }, item: movesItem });
+  const b = scoreBallsort({ value: { solved: true, moveCount: 40 }, item: movesItem });
+  assert.ok(a.correct && b.correct, 'solved boards are correct');
+  assert.ok(a.points > b.points, 'fewer moves → more points');
+
+  const t1 = scoreBallsort({ value: { solved: true, elapsedMs: 10000 }, item: timeItem });
+  const t2 = scoreBallsort({ value: { solved: true, elapsedMs: 60000 }, item: timeItem });
+  assert.ok(t1.points > t2.points, 'less time → more points');
+
+  const slow = scoreBallsort({ value: { solved: true, moveCount: 9999 }, item: movesItem });
+  assert.strictEqual(slow.points, 200, 'a solve never scores below the floor');
+
+  const partial = scoreBallsort({ value: { solved: false, tubes: [['red','red'],['blue','blue'],['red','blue']], tubeCapacity: 2 }, item: movesItem });
+  assert.strictEqual(partial.correct, false, 'unsolved is not correct');
+  assert.ok(partial.points > 0 && partial.points <= 300, 'unsolved gets bounded partial credit');
+  ok('scoreBallsort ranks by mode and floors a solve above any partial');
+}
+
+// ── template contract ───────────────────────────────────────────────────────────
+{
+  const T = getTemplate('ballsort');
+  assert.ok(T, 'ballsort registers in the registry');
+  assert.strictEqual(T.meta.modes.live, true, 'declares live');
+  assert.strictEqual(T.meta.liveBoard, true, 'declares the liveBoard flag');
+  assert.strictEqual(typeof T.getRoundPayload, 'function', 'has getRoundPayload (live requirement)');
+  assert.strictEqual(typeof T.scoreSubmission, 'function', 'has scoreSubmission (live requirement)');
+
+  const act = { template: 'ballsort', content: T.meta.defaultContent() };
+  const payload = T.getRoundPayload(act, { itemIndex: 0 });
+  assert.ok(payload.board?.tubes?.length, 'getRoundPayload returns a board');
+  assert.ok(['moves','time'].includes(payload.mode), 'payload carries the mode');
+  ok('template satisfies the live contract (payload + scorer + flags)');
+}
+
+console.log(`\nballsort.test: ${passed} checks passed`);

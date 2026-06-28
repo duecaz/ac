@@ -16,6 +16,7 @@ import './templates/wordsearch/index.js';
 import './templates/froggy/index.js';
 import './templates/crossword/index.js';
 import './templates/question-live/index.js';
+import './templates/ballsort/index.js';
 
 import { html, mount } from './core/html.js';
 import { ensureIdentity } from './core/identity.js';

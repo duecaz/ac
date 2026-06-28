@@ -1,7 +1,7 @@
 // Student-side live view. Routes: #/join, #/play/:code.
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
-import { joinSession, getOwnAnswer, subscribeRoom, pingPresence, findRoomByCode, fetchSession, leaderboard, setSessionState } from '../core/liveTransport.js';
+import { joinSession, getOwnAnswer, subscribeRoom, pingPresence, findRoomByCode, fetchSession, leaderboard, setSessionState, submitProgress } from '../core/liveTransport.js';
 import { findAssignmentByCode } from '../core/assignmentsTransport.js';
 import { isAcceptableNickname } from '../core/nicknameFilter.js';
 import { acquire } from '../core/lifecycle.js';
@@ -127,7 +127,7 @@ export async function renderPlay(rootSel, code) {
     if (session.status === 'lobby') return paintLobby();
     if (session.status === 'ended') return paintEnded();
     if (session.phase === 'question-live') return paintQuestionLive();
-    if (session.phase === 'race') return paintRace();
+    if (session.phase === 'race') return isLiveBoard() ? paintLiveBoard() : paintRace();
     if (session.phase === 'question') return paintQuestion();
     if (session.phase === 'reveal') return paintRevealOwn();
     if (session.phase === 'leaderboard') return paintWaiting('Mira la pizarra del profesor.');
@@ -463,6 +463,67 @@ export async function renderPlay(rootSel, code) {
         // Brief pause to see the color flash, then load next question.
         setTimeout(() => paintRace(), 350);
       }
+    });
+  }
+
+  function isLiveBoard() {
+    try { return !!getTemplate(activity.template)?.meta?.liveBoard; } catch { return false; }
+  }
+
+  // LIVE "board" templates (Ball Sort): ONE shared board the student solves at
+  // their own pace. Every move is broadcast (throttled) so the host sees the
+  // board move-by-move; the final solve is sent immediately. Rides the 'race'
+  // phase — lobby/podium are unchanged. The board is mounted once and kept
+  // (paint() dedups identical phase keys, so host pings don't remount it).
+  function paintLiveBoard() {
+    const tpl = getTemplate(activity.template);
+    const payload = tpl.getRoundPayload ? tpl.getRoundPayload(activity, { itemIndex: 0 }) : null;
+    if (!payload?.board) return paintWaiting('Esperando…');
+    emitGame(GameEvents.QUESTION_SHOWN, { idx: 0, total: 1, item: payload });
+
+    mount(rootSel, html`
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="badge bg-info text-dark"><i class="bi bi-droplet-half"></i> Ordena las pelotas</span>
+        <span id="bs-status" class="badge bg-secondary">En juego…</span>
+      </div>
+      <div id="s-round"></div>
+    `);
+
+    let lastSent = 0, pendingSnap = null, flushHandle = null, solved = false;
+    const SEND_EVERY = 600;   // ms — cap network writes to ~1.7/s per student
+    const sendNow = (snap) => {
+      lastSent = Date.now();
+      pendingSnap = null;
+      submitProgress(session.id, player.playerId, snap).catch(() => {});
+    };
+    const onProgress = (snap) => {
+      if (solved) return;
+      const now = Date.now();
+      const wait = SEND_EVERY - (now - lastSent);
+      if (wait <= 0) { sendNow(snap); return; }
+      pendingSnap = snap;                       // coalesce: keep only the latest
+      if (!flushHandle) {
+        flushHandle = ctx.setTimeout(() => { flushHandle = null; if (pendingSnap && !solved) sendNow(pendingSnap); }, wait);
+      }
+    };
+
+    tpl.renderRound(document.getElementById('s-round'), payload, {
+      mode: 'live',
+      onProgress,
+      onSubmit: (res) => {
+        solved = true;
+        const finalSnap = {
+          tubes: res.tubes,
+          tubeCapacity: payload.board.tubeCapacity,
+          colors: payload.board.colors,
+          moveCount: res.moveCount, elapsedMs: res.elapsedMs, solved: true,
+        };
+        sendNow(finalSnap);
+        emitGame(GameEvents.ANSWER_CORRECT, { idx: 0, points: 0 });
+        const st = document.getElementById('bs-status');
+        if (st) { st.className = 'badge bg-success'; st.textContent = '🏆 ¡Resuelto!'; }
+        toast('¡Resuelto! Espera a que el profesor cierre la partida.', 'success', 4000);
+      },
     });
   }
 

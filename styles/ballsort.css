@@ -1,0 +1,112 @@
+/* ═══════════════════════════════════════════════════
+   Ordena las Pelotas (Ball Sort) — styles
+   Game classes (.tube/.ball/.tubes) are scoped under .ww-bs so they can't
+   collide with anything global. The drag ghost lives on <body>, so its rule
+   (.ball--ghost) is intentionally self-contained and unscoped.
+   ═══════════════════════════════════════════════════ */
+
+.ww-bs {
+  --bs-tube-w:      clamp(28px, 11cqw, 52px);
+  --bs-tube-gap:    clamp(3px, 1.4cqw, 14px);
+  --bs-ball-size:   calc(var(--bs-tube-w) - 12px);
+  --bs-tube-bg:     #2a3140;
+  --bs-tube-border: #3a4356;
+  --bs-accent:      #4cc38a;
+  --bs-danger:      #e06a6a;
+  container-type: inline-size;
+}
+
+.bs-hidden { display: none !important; }
+
+.bs-toolbar {
+  display: flex; flex-wrap: wrap; gap: 12px;
+  align-items: center; justify-content: space-between;
+  padding: 4px 0 10px;
+}
+.bs-win { text-align: center; font-weight: 700; color: var(--bs-accent); }
+
+.ww-bs .tubes {
+  display: flex; justify-content: center; flex-wrap: wrap;
+  gap: var(--bs-tube-gap, 12px);
+  margin: 12px 0;
+  touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.ww-bs .tube {
+  width: var(--bs-tube-w, 48px);
+  background: var(--bs-tube-bg, #2a3140);
+  border: 2px solid var(--bs-tube-border, #3a4356);
+  border-radius: 0 0 24px 24px;
+  display: flex; flex-direction: column-reverse;
+  padding: 4px; gap: 4px; cursor: default;
+  transition: border-color 80ms ease, background-color 80ms ease;
+}
+.ww-bs .tube--interactive { cursor: pointer; }
+.ww-bs .tube--selected {
+  border-color: var(--bs-accent, #4cc38a);
+  box-shadow: 0 0 0 2px rgba(76,195,138,0.25);
+}
+.ww-bs .tube--target-ok {
+  border-color: var(--bs-accent, #4cc38a);
+  background-color: rgba(76,195,138,0.18);
+}
+.ww-bs .tube--target-bad {
+  border-color: var(--bs-danger, #e06a6a);
+  background-color: rgba(224,106,106,0.18);
+}
+.ww-bs .ball {
+  width: var(--bs-ball-size, 36px);
+  height: var(--bs-ball-size, 36px);
+  border-radius: 50%; margin: 0 auto; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+}
+.ww-bs .ball--empty {
+  background: transparent; border: 1px dashed #3a4356; pointer-events: none;
+}
+.ww-bs .ball__letter {
+  font-weight: 800; font-size: calc(var(--bs-ball-size, 36px) * 0.5);
+  color: #fff; text-shadow: 0 0 3px rgba(0,0,0,0.9), 0 0 1px rgba(0,0,0,1);
+  line-height: 1; pointer-events: none; user-select: none;
+  font-family: system-ui, sans-serif;
+}
+/* 8 tubos (nivel difícil) — apretar un poco */
+.ww-bs .tubes[data-count="8"] { --bs-tube-w: clamp(22px, 9cqw, 46px); --bs-tube-gap: clamp(2px, 1cqw, 11px); }
+
+/* Drag ghost — appended to <body>, so it must stand on its own. */
+.ball--ghost {
+  position: fixed; left: 0; top: 0; z-index: 1000;
+  width: 40px; height: 40px; border-radius: 50%; margin: 0;
+  pointer-events: none; transform: translate(-50%, -50%);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.45);
+}
+
+/* ── Read-only mini boards (host dashboard / projector / editor) ──────────── */
+.mini-tubes { display: flex; gap: 4px; align-items: flex-end; justify-content: center; }
+.mini-tube {
+  width: 16px; background: #2a3140; border: 1px solid #3a4356;
+  border-radius: 0 0 8px 8px; display: flex; flex-direction: column-reverse;
+  padding: 2px; gap: 2px;
+}
+.mini-ball { width: 12px; height: 12px; border-radius: 50%; margin: 0 auto; }
+.mini-ball--empty { background: transparent; border: 1px dashed #3a4356; }
+
+/* ── Host LIVE dashboard grid ─────────────────────────────────────────────── */
+.bs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  max-width: 1100px; margin: 0 auto;
+}
+.bs-cell {
+  background: rgba(255,255,255,.06);
+  border: 2px solid rgba(255,255,255,.12);
+  border-radius: 12px; padding: 8px;
+  transition: border-color .2s, background .2s;
+}
+.bs-cell-solved { border-color: var(--bs-accent, #4cc38a); background: rgba(76,195,138,.14); }
+.bs-cell-head {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 6px; margin-bottom: 6px;
+}
+.bs-cell-name { font-weight: 700; color: #fff; font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bs-cell-stat { font-weight: 700; color: #ffd34d; font-size: .82rem; flex-shrink: 0; }
+.bs-cell-board { display: flex; justify-content: center; }

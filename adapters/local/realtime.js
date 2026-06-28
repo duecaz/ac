@@ -120,6 +120,14 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
       save(code, room, engine); notify(code, 'answers');
     },
 
+    // Continuous progress upsert (live board templates). Overwrites the player's
+    // own answer slot each move so the host's dashboard updates live.
+    async submitProgress(code, playerId, value, msTaken, itemIndex = 0) {
+      const { room, engine } = load(code);
+      engine.state.answers[`${Number(itemIndex)}:${playerId}`] = { playerId, value, msTaken: msTaken ?? 0, correct: null, points: 0 };
+      save(code, room, engine); notify(code, 'answers');
+    },
+
     async findRoomByCode(code) {
       try { return await this.fetchSession(code); } catch { return null; }
     },
