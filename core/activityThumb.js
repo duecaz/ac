@@ -134,30 +134,27 @@ function memoryHtml(act) {
   const pairs = (act.content?.pairs || [])
     .filter(p => String(p.left||'').trim() && String(p.right||'').trim());
   if (!pairs.length) return emptyHtml(act);
-  const cols = Math.max(2, Math.min(8, act.rules?.columns || 4));
-  // "Game in progress" snapshot: first pair matched (green), second pair one
-  // card open (white/amber), rest face-down — shows real content at a glance.
-  const cards = pairs.flatMap((p, i) => {
-    if (i === 0) return [
-      `<button class="mc mc-locked" disabled><span class="mc-text">${escapeHtml(p.left)}</span></button>`,
-      `<button class="mc mc-locked" disabled><span class="mc-text">${escapeHtml(p.right)}</span></button>`
-    ];
-    if (i === 1) return [
-      `<button class="mc mc-open"><span class="mc-text">${escapeHtml(p.left)}</span></button>`,
-      `<button class="mc"><i class="bi bi-question-lg"></i></button>`
-    ];
-    return [
-      `<button class="mc"><i class="bi bi-question-lg"></i></button>`,
-      `<button class="mc"><i class="bi bi-question-lg"></i></button>`
-    ];
-  });
-  return `<div class="ww-memory">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <span class="badge bg-secondary">1 / ${pairs.length}</span>
-      <span class="badge bg-info text-dark">Flips: 3</span>
-      <span class="badge bg-primary">★ 1</span></div>
-    <h5 class="text-center mb-3">${escapeHtml(act.title || '')}</h5>
-    <div class="ww-memo-grid" style="grid-template-columns:repeat(${cols},1fr)">${cards.join('')}</div>
+  // Same bold, centered, square-card look as "Abre Cajas": big tiles filling the
+  // stage, no cramped header. A "game in progress" snapshot — pair 0 matched
+  // (green), one card of pair 1 flipped (white), the rest face-down with a
+  // colourful back — so it reads as Memory at a glance and stays vivid.
+  const BACK = ['#e74c3c','#e67e22','#d4ac0d','#27ae60','#16a085','#2980b9','#8e44ad','#c0392b'];
+  const shown = pairs.slice(0, 6);                       // keep tiles big & bold
+  const cards = shown.flatMap((p, i) => [{ text: p.left, pair: i }, { text: p.right, pair: i }]);
+  const cols = Math.min(6, Math.max(3, act.rules?.columns || 4));
+  const matched = new Set([0, 1]);   // first pair fully matched
+  const open = new Set([2]);         // one card of the second pair flipped up
+  const sq = `aspect-ratio:1;border-radius:16px;display:flex;align-items:center;justify-content:center;font-weight:800;text-align:center;padding:6px;overflow:hidden;box-sizing:border-box;`;
+  const txt = `font-size:clamp(.8rem,4.5cqmin,1.7rem);line-height:1.1;overflow:hidden;`;
+  const tile = (c, idx) => {
+    if (matched.has(idx)) return `<div style="${sq}background:#198754;color:#fff;box-shadow:0 4px 12px rgba(25,135,84,.35)"><span style="${txt}">${escapeHtml(c.text)}</span></div>`;
+    if (open.has(idx))    return `<div style="${sq}background:#fff;color:#212529;border:4px solid #6610f2;box-shadow:0 4px 12px rgba(0,0,0,.12)"><span style="${txt}">${escapeHtml(c.text)}</span></div>`;
+    const bg = BACK[idx % BACK.length];
+    return `<div style="${sq}background:${bg};color:rgba(255,255,255,.92);font-size:clamp(1.6rem,9cqmin,3.4rem);box-shadow:0 4px 12px rgba(0,0,0,.18)">?</div>`;
+  };
+  return `<div class="ww-player" style="display:flex;flex-direction:column;height:100%;gap:1.2rem;justify-content:center">
+    <div class="fs-3 fw-bold text-center">${escapeHtml(act.title || 'Memoria')}</div>
+    <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:14px;max-width:820px;margin:0 auto;width:100%">${cards.map(tile).join('')}</div>
   </div>`;
 }
 
