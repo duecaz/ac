@@ -19,6 +19,7 @@ import { acquire } from '../core/lifecycle.js';
 import { toast, confirmModal } from '../core/toast.js';
 import { downloadActivitiesJson } from '../core/io.js';
 import { openEmbedModal } from './embedModal.js';
+import { mountSoloAnimator } from '../core/soloAnimator.js';
 
 export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   let a = get(id);
@@ -43,7 +44,9 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   // disposes the previous one (stops VS animations, etc.). See core/modes.js.
   let currentMode = initialMode;
   let currentDisposer = null;
+  let currentAnim = null;   // animación de progreso del modo solo (carril)
   ctx.add(() => { if (currentDisposer) { try { currentDisposer.dispose(); } catch {} currentDisposer = null; } });
+  ctx.add(() => { if (currentAnim) { try { currentAnim.dispose(); } catch {} currentAnim = null; } });
   // This page themes only the embed frame (scoped, after paint()). Keep the
   // page chrome neutral on enter AND restore it on teardown, clearing any
   // global theme a prior view (host/student live) may have left on <body>.
@@ -97,6 +100,16 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     const m = getMode(id);
     if (!m || !m.embed) return; // embed:false modes navigate via their link
     if (currentDisposer) { try { currentDisposer.dispose(); } catch {} currentDisposer = null; }
+    // Animación de progreso: SOLO en modo Individual. Se monta ANTES del player
+    // para suscribirse al bus antes de su primer QUESTION_SHOWN; se descarta al
+    // cambiar de modo.
+    if (currentAnim) { try { currentAnim.dispose(); } catch {} currentAnim = null; }
+    if (id === 'solo') {
+      currentAnim = mountSoloAnimator(document.getElementById('ww-solo-anim'), playActivity());
+    } else {
+      const lane = document.getElementById('ww-solo-anim');
+      if (lane) { lane.innerHTML = ''; lane.hidden = true; }
+    }
     currentMode = id;
     document.querySelectorAll('.ww-mode').forEach(btn => {
       const on = btn.dataset.mode === id;
@@ -130,6 +143,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
           </div>
         </div>
 
+        <div id="ww-solo-anim" class="ww-solo-anim" hidden></div>
         <div class="ww-player-frame mb-3" style="${aspectStyle(aspect)}" id="ww-frame">
           <div id="ww-player-widget"></div>
         </div>

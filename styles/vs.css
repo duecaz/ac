@@ -119,11 +119,8 @@
 
 /* ESTÁNDAR: el contenido de ronda de CADA plantilla embebida en VS se dimensiona
    con unidades de CONTENEDOR (cqw), nunca de viewport (vmin/vw) — si no, en el
-   panel estrecho se ve gigante y desborda. Cubre Froggy y Tildes/Comas (Quiz y
+   panel estrecho se ve gigante y desborda. Cubre Tildes/Comas (Quiz y
    Operaciones ya arriba / en el query de ajuste). */
-.vs-body .froggy-q-text { font-size: clamp(.8rem, 12cqw, 1.15rem); }
-.vs-body .froggy-opt    { font-size: clamp(.7rem, 8cqw, .9rem); border-radius: .6rem; }
-.vs-body .froggy-q-area { gap: .3rem; }
 .vs-body .tc-passage    { font-size: clamp(.85rem, 9cqw, 1.4rem); }
 .vs-body .tc-ch, .vs-body .tc-gap { line-height: 1.5; }
 

@@ -116,9 +116,26 @@ function taskBlock(a) {
     </section>`;
 }
 
+// SOLO (Individual): opciones del modo en solitario. Hoy: animación de progreso
+// (una rana cruza saltando charcos a medida que el alumno acierta). On/off.
+function soloBlock(a) {
+  const on = !!a.presentation?.soloAnimation && a.presentation.soloAnimation !== 'none';
+  return `
+    <section class="ww-mode-cfg" data-mode="solo">
+      <h6 class="mb-1"><i class="bi bi-person-fill text-success"></i> Individual</h6>
+      <p class="text-muted small mb-2">Opciones del modo en solitario.</p>
+      <label class="vs-fx-row" title="Muestra una rana que avanza con cada acierto.">
+        <span class="form-check form-switch m-0">
+          <input class="form-check-input solo-anim-toggle" type="checkbox" role="switch" ${on ? 'checked' : ''}>
+        </span>
+        <span class="vs-fx-label">Animación de progreso<small class="d-block text-muted">Una rana cruza saltando charcos a medida que el alumno acierta. Solo en modo Individual.</small></span>
+      </label>
+    </section>`;
+}
+
 /** HTML for the "Modos" tab. Empty-ish note if the activity has no extra modes. */
 export function renderModesTab(a) {
-  const blocks = [];
+  const blocks = [soloBlock(a)];
   if (isVsCompatible(a)) blocks.push(vsBlock(a));
   if (sessionItems(a).length >= 1) blocks.push(teamsBlock(a));
   if (getTemplate(a?.template)?.meta?.modes?.async) blocks.push(taskBlock(a));
@@ -145,6 +162,11 @@ export function wireModesTab(root, a, onChange) {
     }).catch(() => {});
   }
 
+  // SOLO — animación de progreso on/off (hoy solo la rana).
+  on(root, 'change', '.solo-anim-toggle', (_, el) => {
+    pres().soloAnimation = el.checked ? 'frog' : null;
+    onChange(a);
+  });
   // VS — central animation on/off (default on = "cuerda").
   on(root, 'change', '.vsanim-toggle', (_, el) => {
     pres().vsAnimationOff = !el.checked;

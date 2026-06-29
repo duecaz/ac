@@ -126,11 +126,6 @@
 .vs-skin-school .vs-body .ww-shape-3 { background: #2e7d32; }
 .vs-skin-school .vs-body .ww-shape-4 { background: #e65100; }
 
-/* ── Froggy ───────────────────────────────────────────────────────────────── */
-.vs-skin-school .vs-body .froggy-q-text { color: #e2e8f0; font-size: clamp(.8rem, 12cqw, 1.1rem); }
-.vs-skin-school .vs-body .froggy-opt    { border-radius: .75rem; font-size: clamp(.7rem, 8cqw, .88rem); }
-.vs-skin-school .vs-body .froggy-q-area { gap: .3rem; }
-
 /* ── Portrait / narrow ────────────────────────────────────────────────────── */
 @container vs (max-aspect-ratio: 5/4) {
   /* Override school bar height (skin sets 80px, portrait needs 46px) */

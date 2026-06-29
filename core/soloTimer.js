@@ -1,4 +1,4 @@
-// Cuenta regresiva única para los players SOLO (Quiz, Froggy, Wordsearch tenían
+// Cuenta regresiva única para los players SOLO (Quiz, Wordsearch tenían
 // cada uno su propio setInterval casi idéntico). Mantiene la lógica de tiempo en
 // UN solo sitio para que un bug se arregle una vez.
 //

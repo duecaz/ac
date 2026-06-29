@@ -15,7 +15,7 @@
 //   --ww-card-bg       card / panel fill
 //   --ww-card-border   card / panel border
 //   --ww-accent        brand accent (buttons, links)
-//   --ww-shape-1..4    answer option colours (maps to quiz/froggy/live)
+//   --ww-shape-1..4    answer option colours (maps to quiz/live)
 //   --ww-success       correct answer green
 //   --ww-danger        wrong answer red
 //   --ww-warning       warning / time-running-out amber

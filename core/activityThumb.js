@@ -234,27 +234,6 @@ function boxesHtml(act) {
   </div>`;
 }
 
-function froggyHtml(act) {
-  const items = act.content?.items || [];
-  if (!items.length) return emptyHtml(act);
-  const it = items[0];
-  const opts = (it.options || []).slice(0, 4);
-  const COLORS = ['#e53935','#1e88e5','#43a047','#fb8c00'];
-  const pads = Array.from({ length: 7 }, (_, i) => `<span style="font-size:1.1rem">🪷</span>`).join('');
-  return `<div style="display:flex;flex-direction:column;height:100%;gap:.5rem">
-    <div style="border-radius:10px;background:linear-gradient(90deg,#0e7490,#0369a1);padding:8px 14px;display:flex;align-items:center;gap:4px;flex-shrink:0">
-      <span style="font-size:1.8rem">🐸</span>
-      ${pads}
-      <span style="font-size:1.1rem">🏁</span>
-    </div>
-    <div style="font-size:clamp(.8rem,3cqmin,1.4rem);font-weight:800;text-align:center;padding:0 .5rem;flex-shrink:0">${escapeHtml(it.question || '')}</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;flex:1">
-      ${opts.map((o, i) => `<div style="background:${COLORS[i]};color:#fff;border-radius:8px;padding:.35rem .5rem;font-size:clamp(.65rem,2cqmin,1rem);font-weight:700;display:flex;align-items:center;gap:.3rem;overflow:hidden">
-        <i class="bi ${SHAPE_ICONS[i % 4]}"></i><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(o)}</span></div>`).join('')}
-    </div>
-  </div>`;
-}
-
 function wordsearchHtml(act) {
   const words = (act.content?.words || []).map(w => typeof w === 'string' ? w : (w?.word || '')).filter(Boolean);
   if (!words.length) return emptyHtml(act);
@@ -379,7 +358,6 @@ function buildHtml(act) {
     case 'wheel':       return wheelHtml(act);
     case 'question-live': return boxesHtml(act);
     case 'wordsearch':  return wordsearchHtml(act);
-    case 'froggy':      return froggyHtml(act);
     case 'crossword':   return crosswordHtml(act);
     case 'ballsort':    return ballsortHtml(act);
     default:

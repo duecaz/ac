@@ -61,7 +61,7 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
   return { finish };
 }
 
-// SequentialShell: drives the item-by-item loop common to Quiz, Math, Froggy.
+// SequentialShell: drives the item-by-item loop common to Quiz and Math.
 // The shell owns: items prep (+randomize), state, idx++, optional per-item
 // timer, finish() (timeUsed, maxScore, result screen, trySaveResult, onFinish)
 // and the QUESTION_SHOWN / PODIUM emits. The CORE (per template) only decides
@@ -81,7 +81,7 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
 //   - records the answer once (points → running score, record → answers).
 //     Idempotent within an item: a timeout-then-click (or vice versa) records once.
 //   - auto (default): schedules the next item after `delay`. Cores with custom,
-//     animation-driven pacing (Froggy) pass { auto: false } and drive progression
+//     animation-driven pacing pass { auto: false } and drive progression
 //     themselves via ctx.next() / ctx.finish().
 // ctx.next()   — advance to the next item now (idempotent per item).
 // ctx.finish() — end the run now (e.g. reached the finish line before the last item).

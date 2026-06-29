@@ -1,5 +1,5 @@
 // SequentialShell tests (core/soloPlayer.js). Validate the item-loop the
-// Quiz/Math/Froggy cores delegate to: iterate each item once, accumulate
+// Quiz/Math cores delegate to: iterate each item once, accumulate
 // score, advance exactly once per item (submit is idempotent), honour a
 // maxScore override, and finish with onFinish + result screen.
 // Run: node tests/soloPlayer.test.mjs
@@ -76,7 +76,7 @@ try {
     ok('runSequentialPlayer: lista vacía termina sin error');
   }
 
-  // ── manual advance: submit({auto:false}) waits for ctx.next() (Froggy pacing) ─
+  // ── manual advance: submit({auto:false}) waits for ctx.next() (animation-driven pacing) ─
   {
     const root = makeRoot();
     const seen = [];
@@ -96,7 +96,7 @@ try {
     ok('runSequentialPlayer: avance manual (auto:false + next)');
   }
 
-  // ── early finish + custom result screen (Froggy reaches the finish line) ─────
+  // ── early finish + custom result screen (e.g. reaching a finish line) ─────
   {
     const root = makeRoot();
     let finalScore = null;

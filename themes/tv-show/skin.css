@@ -53,7 +53,7 @@ body.skin-tv-show .card,
   box-shadow: 0 5px 0 #b87400, 0 8px 18px rgba(255,164,0,.45);
 }
 
-/* Cuadrícula Kahoot (quiz / froggy / live) — fichas 3D con color de forma */
+/* Cuadrícula Kahoot (quiz / live) — fichas 3D con color de forma */
 .skin-tv-show .ww-kahoot-grid .btn,
 .skin-tv-show .ww-opt {
   color: #fff; border: none; border-radius: .9rem; font-weight: 800;
@@ -339,11 +339,6 @@ body.skin-tv-show .card,
 .vs-skin-tv-show .vs-body .ww-shape-2 { background: linear-gradient(180deg, #4d8cff, #1a52e0); }
 .vs-skin-tv-show .vs-body .ww-shape-3 { background: linear-gradient(180deg, #2fe0bf, #0f9e85); }
 .vs-skin-tv-show .vs-body .ww-shape-4 { background: linear-gradient(180deg, #ffa64d, #e06f00); }
-
-/* ── Froggy dentro del panel ──────────────────────────────────────────────── */
-.vs-skin-tv-show .vs-body .froggy-q-text { color: #eaf2ff; font-size: clamp(.82rem, 12cqw, 1.15rem); }
-.vs-skin-tv-show .vs-body .froggy-opt    { border-radius: .8rem; font-size: clamp(.72rem, 8cqw, .9rem); }
-.vs-skin-tv-show .vs-body .froggy-q-area { gap: .3rem; }
 
 /* ════════════════════════════ RESPONSIVE ══════════════════════════════════
    Container query 'vs' (definida en styles/vs.css). Retrato / pantallas
