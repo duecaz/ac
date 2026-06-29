@@ -115,14 +115,20 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
     });
   }
 
-  // ¿En qué tarjeta de `side` cae el punto (x,y)? Con un margen para abarcar el
-  // punto de anclaje que sobresale del borde.
-  function cardAt(x, y, side, pad = 12) {
+  // Tarjeta del lado `side` MÁS CERCANA al punto (distancia al rectángulo). Soltar
+  // dentro de una (distancia 0) o muy cerca (corredor/punto de anclaje) conecta con
+  // ella; soltar lejos de todas (espacio vacío) devuelve null → desconecta. Robusto:
+  // no depende de aciertos exactos ni de pointer-events.
+  function cardAt(x, y, side, maxDist = 44) {
+    let best = null, bestD = Infinity;
     for (const c of root.querySelectorAll(`.ww-card[data-side="${side}"]`)) {
       const r = c.getBoundingClientRect();
-      if (x >= r.left - pad && x <= r.right + pad && y >= r.top - pad && y <= r.bottom + pad) return c;
+      const dx = x < r.left ? r.left - x : x > r.right ? x - r.right : 0;
+      const dy = y < r.top  ? r.top  - y : y > r.bottom ? y - r.bottom : 0;
+      const d = Math.hypot(dx, dy);
+      if (d < bestD) { bestD = d; best = c; }
     }
-    return null;
+    return bestD <= maxDist ? best : null;
   }
 
   // ── Arrastre desde TODA la tarjeta (cualquier lado → el opuesto) ────────────
