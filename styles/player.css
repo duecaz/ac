@@ -42,12 +42,17 @@
   flex-direction: column;
 }
 
-/* Carril de la animación de progreso (solo) DENTRO del marco: franja fija arriba.
-   Oculto ([hidden]) no ocupa espacio, así que el widget llena el marco completo. */
+/* Carril de la animación de progreso (solo) DENTRO del marco: franja arriba.
+   La animación es SECUNDARIA → ocupa como mucho el 25% del alto del marco (y el
+   widget se queda con el 75%+). Oculto ([hidden]) no ocupa espacio. */
 .ww-play-page .ww-player-frame > .ww-solo-anim {
   flex: 0 0 auto;
+  height: clamp(44px, 25%, 104px);
   margin: 0;
 }
+/* Marco de alto indefinido (aspect:auto, p.ej. Tildes/Comas): el % no resuelve,
+   usar un alto fijo discreto. */
+.ww-play-page .ww-player-frame[style*="auto"] > .ww-solo-anim { height: 84px; }
 
 /* Widget: toma la altura RESTANTE tras el carril (flex:1), con su propio scroll.
    container-type:size lo hace contenedor de consulta para que la actividad se

@@ -1,53 +1,59 @@
 /* ══════════════════════════════════════════════════════════
    Animación de progreso (modo SOLO) — la rana saltarina.
-   Reutilizable en CUALQUIER actividad individual. Clases con prefijo frog-.
+   SECUNDARIA: franja discreta (≤25% del marco, ver styles/player.css),
+   SIN fondo (transparente) y CENTRADA verticalmente. Clases con prefijo frog-.
    ══════════════════════════════════════════════════════════ */
-/* El carril vive DENTRO del marco del player (styles/player.css reserva su
-   espacio como primera fila del flex). Sin animación → [hidden] → no ocupa. */
-.ww-solo-anim { margin: 0; }
+.ww-solo-anim { margin: 0; position: relative; }
 .ww-solo-anim[hidden] { display: none !important; }
-.frog-anim { width: 100%; }   /* alto = el del carril (.frog-track), no 100% (causa feedback en el flex) */
+/* La animación se posiciona ABSOLUTA dentro del carril: llena su alto definido
+   (player.css) SIN empujar la altura del flex item (height:100% en flujo lo
+   inflaba y se comía el marco). */
+.frog-anim { position: absolute; inset: 0; }
 
 .frog-track {
-  height: 104px;
+  height: 100%;
+  position: relative;
   overflow-x: hidden;
   overflow-y: visible;
-  position: relative;
-  border-radius: 14px 14px 0 0;       /* arriba redondeado, abajo recto (pega al widget) */
-  scroll-behavior: smooth;
+  background: transparent;             /* sin fondo verde: blende con la tarjeta */
 }
 .frog-world { position: relative; height: 100%; }
 
+/* Charcos: solo el emoji (nenúfar), sin círculo de fondo, centrado vertical. */
 .frog-pad {
-  position: absolute; bottom: 10px;
-  width: 54px; height: 30px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.3rem; border-radius: 50%;
-  filter: drop-shadow(0 4px 6px rgba(0,0,0,.4));
-  transform: translateX(-50%); user-select: none;
+  position: absolute; top: 64%;
+  font-size: 1.1rem;
+  line-height: 1;
+  transform: translate(-50%, -50%);
+  user-select: none;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,.25));
 }
 
+/* Rana: posada sobre el charco (centrada vertical, un poco por encima). */
 .frog-mascot {
-  position: absolute; bottom: 28px; width: 48px;
-  transform: translateX(-50%); text-align: center; z-index: 10;
+  position: absolute; top: 64%;
+  transform: translate(-50%, -98%);
+  text-align: center; z-index: 10;
   display: flex; flex-direction: column; align-items: center;
 }
 .frog-char {
-  font-size: 2.1rem; line-height: 1; display: block;
+  font-size: 1.6rem;
+  line-height: 1; display: block;
   transition: filter .3s; transform-origin: bottom center; will-change: transform;
 }
 .frog-char.frog-golden {
   filter: brightness(1.3) sepia(.6) saturate(3) hue-rotate(5deg) drop-shadow(0 0 8px gold);
 }
 .frog-shadow {
-  width: 28px; height: 7px; background: rgba(0,0,0,.25);
-  border-radius: 50%; margin-top: 2px; flex-shrink: 0;
+  width: 22px; height: 5px; background: rgba(0,0,0,.22);
+  border-radius: 50%; margin-top: 1px; flex-shrink: 0;
 }
-.frog-badge { font-size: 1rem; line-height: 1; min-height: 1.2rem; text-align: center; }
+.frog-badge { font-size: .82rem; line-height: 1; min-height: 1rem; text-align: center; }
 
 .frog-flag {
-  position: absolute; bottom: 26px; font-size: 1.4rem; z-index: 5;
-  transform: translateX(-50%); filter: drop-shadow(0 2px 4px rgba(0,0,0,.4));
+  position: absolute; top: 64%; transform: translate(-50%, -98%);
+  font-size: 1.2rem; z-index: 5;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,.3));
 }
 
 .frog-particle {
@@ -58,29 +64,3 @@
   0%   { transform: translate(0,0) scale(1); opacity: 1; }
   100% { transform: translate(var(--dx), var(--dy)) scale(0); opacity: 0; }
 }
-
-.frog-ambient {
-  position: absolute; inset: 0; border-radius: 14px 14px 0 0; pointer-events: none; z-index: 1;
-  background: linear-gradient(180deg, transparent 55%, rgba(0,0,0,.18) 100%);
-}
-
-/* ── Escenarios (fondo del carril + estilo de charco) ────────────────────── */
-.frog-swamp .frog-track  { background: linear-gradient(180deg,#164e63 0%,#0e7490 45%,#0369a1 70%,#075985 100%); }
-.frog-swamp .frog-pad    { background: rgba(5,150,105,.8);  box-shadow: 0 3px 8px rgba(0,0,0,.5); border-radius: 50%; }
-.frog-jungle .frog-track { background: linear-gradient(180deg,#14532d 0%,#166534 40%,#15803d 70%,#052e16 100%); }
-.frog-jungle .frog-pad   { background: rgba(20,120,60,.85); box-shadow: 0 3px 8px rgba(0,0,0,.5); border-radius: 50%; }
-.frog-space .frog-track  { background: linear-gradient(180deg,#0f0f1a 0%,#1e1b4b 45%,#0f172a 100%); }
-.frog-space .frog-pad    { background: rgba(79,70,229,.7);  border-radius: 50%; box-shadow: 0 0 12px rgba(99,102,241,.6); }
-.frog-space .frog-track::before {
-  content: ''; position: absolute; inset: 0; pointer-events: none;
-  background-image:
-    radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,.8) 0, transparent 0),
-    radial-gradient(1px 1px at 30% 60%, rgba(255,255,255,.6) 0, transparent 0),
-    radial-gradient(1px 1px at 60% 15%, rgba(255,255,255,.9) 0, transparent 0),
-    radial-gradient(1px 1px at 80% 45%, rgba(255,255,255,.7) 0, transparent 0),
-    radial-gradient(1px 1px at 50% 80%, rgba(255,255,255,.5) 0, transparent 0);
-}
-.frog-winter .frog-track { background: linear-gradient(180deg,#bfdbfe 0%,#93c5fd 40%,#3b82f6 70%,#1d4ed8 100%); }
-.frog-winter .frog-pad   { background: rgba(219,234,254,.85); border-radius: 50%; box-shadow: 0 2px 8px rgba(59,130,246,.5); }
-.frog-volcano .frog-track{ background: linear-gradient(180deg,#1c0a00 0%,#7c2d12 40%,#b45309 65%,#92400e 100%); }
-.frog-volcano .frog-pad  { background: rgba(120,40,10,.85); border-radius: 50%; box-shadow: 0 0 10px rgba(239,68,68,.6); }

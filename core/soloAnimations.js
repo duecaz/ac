@@ -35,20 +35,22 @@ function createFrog(container, { total = 1, scene = 'swamp' } = {}) {
   const sc = SCENES[scene] || SCENES.swamp;
   const pads = Math.max(1, total);           // un charco por pregunta; meta = total
   const worldW = (pads + 2) * STRIDE;
-  container.className = `frog-anim ${sc.css}`;
+  // OJO: NO tocar container.className — el contenedor es el carril (.ww-solo-anim)
+  // cuyo alto lo fija styles/player.css. La animación va en un hijo .frog-anim.
   const padHtml = Array.from({ length: pads + 1 }, (_, i) =>
     `<div class="frog-pad" style="left:${i * STRIDE}px">${sc.pad}</div>`).join('');
   container.innerHTML = `
-    <div class="frog-track">
-      <div class="frog-ambient"></div>
-      <div class="frog-world" style="width:${worldW}px">
-        ${padHtml}
-        <div class="frog-flag frog-flag-start" style="left:-8px">🚩</div>
-        <div class="frog-flag frog-flag-finish" style="left:${pads * STRIDE - 4}px">🏁</div>
-        <div class="frog-mascot" style="left:0">
-          <div class="frog-badge"></div>
-          <div class="frog-char">🐸</div>
-          <div class="frog-shadow"></div>
+    <div class="frog-anim">
+      <div class="frog-track">
+        <div class="frog-world" style="width:${worldW}px">
+          ${padHtml}
+          <div class="frog-flag frog-flag-start" style="left:-8px">🚩</div>
+          <div class="frog-flag frog-flag-finish" style="left:${pads * STRIDE - 4}px">🏁</div>
+          <div class="frog-mascot" style="left:0">
+            <div class="frog-badge"></div>
+            <div class="frog-char">🐸</div>
+            <div class="frog-shadow"></div>
+          </div>
         </div>
       </div>
     </div>`;
@@ -67,9 +69,10 @@ function createFrog(container, { total = 1, scene = 'swamp' } = {}) {
 
   function jumpTo(toPad, streak) {
     const toX  = toPad * STRIDE;
-    // Arco acotado a la altura del carril (~104px) para que el salto no se
-    // recorte contra el borde superior del marco.
-    const arcH = Math.min(16 + streak * 3, 42);
+    // Arco escalado al alto REAL del carril, para que el salto no se recorte
+    // contra el borde del marco (el carril es discreto, ≤25%).
+    const h    = track?.clientHeight || 90;
+    const arcH = Math.min(12 + streak * 2, Math.max(10, h * 0.34));
     const dur  = Math.min(420 + streak * 40, 1000);
     if (mascot) { mascot.style.transition = `left ${dur}ms cubic-bezier(.25,.46,.45,.94)`; mascot.style.left = `${toX}px`; }
     scroll(toX);
@@ -123,7 +126,7 @@ function createFrog(container, { total = 1, scene = 'swamp' } = {}) {
       if (mascot) { mascot.style.transition = 'left .4s ease'; mascot.style.left = `${pos * STRIDE}px`; }
       scroll(pos * STRIDE);
     },
-    destroy() { container.innerHTML = ''; container.className = ''; },
+    destroy() { container.innerHTML = ''; },
   };
 }
 
