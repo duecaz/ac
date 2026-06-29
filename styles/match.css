@@ -4,6 +4,7 @@
   display: flex;
   position: relative;
   gap: 72px;   /* wide corridor so ropes are clearly visible */
+  touch-action: none;   /* el arrastre nunca se interpreta como scroll (táctil) */
 }
 .ww-col-left,
 .ww-col-right {

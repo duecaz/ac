@@ -126,50 +126,50 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   }
 
   // ── Arrastre desde TODA la tarjeta (cualquier lado → el opuesto) ────────────
+  // Con setPointerCapture: todos los pointermove/up van a la arena aunque el dedo
+  // cruce el corredor o salga de la tarjeta, y el navegador NO roba el gesto como
+  // scroll (clave en tablets/pizarra). touch-action:none lo refuerza desde CSS.
   arena.addEventListener('pointerdown', e => {
-    if (state.graded) return;
+    if (state.graded || state.dragging) return;
     if (e.target.closest('.ww-match-submit')) return;
     const card = e.target.closest('.ww-card');
     if (!card) return;
     e.preventDefault();
-    const fromSide = card.dataset.side;
-    const fromId   = card.dataset.id;
     const dot = card.querySelector('.ww-dot');
     const pos = dotPos(dot, svg);
-    state.dragging = { fromSide, fromId, x1: pos.x, y1: pos.y, cx: pos.x, cy: pos.y };
+    state.dragging = { pointerId: e.pointerId, fromSide: card.dataset.side, fromId: card.dataset.id,
+                       x1: pos.x, y1: pos.y, cx: pos.x, cy: pos.y };
+    try { arena.setPointerCapture(e.pointerId); } catch {}
     updateSvg();
-
-    const onMove = ev => {
-      if (!state.dragging) return;
-      const p = svgPt(svg, ev.clientX, ev.clientY);
-      state.dragging.cx = p.x; state.dragging.cy = p.y;
-      updateSvg();
-    };
-    const cleanup = () => {
-      document.removeEventListener('pointermove', onMove);
-      document.removeEventListener('pointerup', onUp);
-      document.removeEventListener('pointercancel', cleanup);
-    };
-    const onUp = ev => {
-      const drag = state.dragging;
-      state.dragging = null;
-      cleanup();
-      if (!drag) { updateSvg(); return; }
-      // ¿Soltó dentro de una tarjeta del lado OPUESTO? Geometría pura sobre las
-      // tarjetas (sin elementsFromPoint/pointer-events): toda la tarjeta vale.
-      const hit = cardAt(ev.clientX, ev.clientY, drag.fromSide === 'L' ? 'R' : 'L');
-      if (hit) {
-        const leftId  = drag.fromSide === 'L' ? drag.fromId : hit.dataset.id;
-        const rightId = drag.fromSide === 'L' ? hit.dataset.id : drag.fromId;
-        setLink(leftId, rightId);
-      } else {
-        removeByCard(drag.fromSide, drag.fromId);   // soltar en vacío: desconectar
-      }
-    };
-    document.addEventListener('pointermove', onMove);
-    document.addEventListener('pointerup', onUp);
-    document.addEventListener('pointercancel', cleanup);
   });
+
+  arena.addEventListener('pointermove', e => {
+    const drag = state.dragging;
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    const p = svgPt(svg, e.clientX, e.clientY);
+    drag.cx = p.x; drag.cy = p.y;
+    updateSvg();
+  });
+
+  function endDrag(e, connect) {
+    const drag = state.dragging;
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    state.dragging = null;
+    try { arena.releasePointerCapture(e.pointerId); } catch {}
+    if (!connect) { updateSvg(); return; }
+    // ¿Soltó dentro de una tarjeta del lado OPUESTO? Geometría pura (toda la
+    // tarjeta vale, sin depender de pointer-events ni del SVG superpuesto).
+    const hit = cardAt(e.clientX, e.clientY, drag.fromSide === 'L' ? 'R' : 'L');
+    if (hit) {
+      const leftId  = drag.fromSide === 'L' ? drag.fromId : hit.dataset.id;
+      const rightId = drag.fromSide === 'L' ? hit.dataset.id : drag.fromId;
+      setLink(leftId, rightId);
+    } else {
+      removeByCard(drag.fromSide, drag.fromId);   // soltar en vacío: desconectar
+    }
+  }
+  arena.addEventListener('pointerup', e => endDrag(e, true));
+  arena.addEventListener('pointercancel', e => endDrag(e, false));
 
   // ── Enviar → corregir y puntuar ─────────────────────────────────────────────
   submitBtn?.addEventListener('click', () => {
