@@ -9,6 +9,7 @@ import { shuffle } from '../../core/roundRender.js';
 // Paleta neutra para las cuerdas mientras se empareja (antes de corregir).
 const ROPES = ['#6366f1','#0891b2','#a855f7','#f59e0b','#0ea5e9','#ec4899','#14b8a6','#8b5cf6'];
 const OK_COL = '#16a34a', NO_COL = '#ef4444';
+const SAG = 16;   // px que "cuelga" la cuerda (evita bbox de alto 0 → filtro/línea visible)
 
 export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   const raw = (activity.content?.pairs || []).filter(p =>
@@ -75,7 +76,10 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
       const p1 = dotPos(ld, svg), p2 = dotPos(rd, svg);
       const mx = (p1.x + p2.x) / 2;
       const col = state.graded ? (leftId === rightId ? OK_COL : NO_COL) : ROPES[i % ROPES.length];
-      const curve = `M${p1.x},${p1.y} C${mx},${p1.y} ${mx},${p2.y} ${p2.x},${p2.y}`;
+      // La cuerda CUELGA un poco (sag): así una unión horizontal NO tiene bounding
+      // box de altura 0 — el filtro de sombra (región en % del bbox) colapsaría a
+      // cero y la línea quedaría INVISIBLE. Además se ve más natural (cuerda real).
+      const curve = `M${p1.x},${p1.y} C${mx},${p1.y + SAG} ${mx},${p2.y + SAG} ${p2.x},${p2.y}`;
       d += `<g filter="url(#${filterId})">${rope(curve, col)}</g>`;
       d += `<circle cx="${p1.x}" cy="${p1.y}" r="8" fill="${col}"/>`;
       d += `<circle cx="${p2.x}" cy="${p2.y}" r="8" fill="${col}"/>`;
