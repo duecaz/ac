@@ -67,7 +67,9 @@ function createFrog(container, { total = 1, scene = 'swamp' } = {}) {
 
   function jumpTo(toPad, streak) {
     const toX  = toPad * STRIDE;
-    const arcH = Math.min(24 + streak * 5, 80);
+    // Arco acotado a la altura del carril (~104px) para que el salto no se
+    // recorte contra el borde superior del marco.
+    const arcH = Math.min(16 + streak * 3, 42);
     const dur  = Math.min(420 + streak * 40, 1000);
     if (mascot) { mascot.style.transition = `left ${dur}ms cubic-bezier(.25,.46,.45,.94)`; mascot.style.left = `${toX}px`; }
     scroll(toX);

@@ -2,31 +2,33 @@
    Animación de progreso (modo SOLO) — la rana saltarina.
    Reutilizable en CUALQUIER actividad individual. Clases con prefijo frog-.
    ══════════════════════════════════════════════════════════ */
-.ww-solo-anim { margin-bottom: .75rem; }
+/* El carril vive DENTRO del marco del player (styles/player.css reserva su
+   espacio como primera fila del flex). Sin animación → [hidden] → no ocupa. */
+.ww-solo-anim { margin: 0; }
 .ww-solo-anim[hidden] { display: none !important; }
-.frog-anim { width: 100%; }
+.frog-anim { width: 100%; }   /* alto = el del carril (.frog-track), no 100% (causa feedback en el flex) */
 
 .frog-track {
-  height: 120px;
+  height: 104px;
   overflow-x: hidden;
   overflow-y: visible;
   position: relative;
-  border-radius: 14px;
+  border-radius: 14px 14px 0 0;       /* arriba redondeado, abajo recto (pega al widget) */
   scroll-behavior: smooth;
 }
 .frog-world { position: relative; height: 100%; }
 
 .frog-pad {
-  position: absolute; bottom: 14px;
-  width: 54px; height: 32px;
+  position: absolute; bottom: 10px;
+  width: 54px; height: 30px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.4rem; border-radius: 50%;
+  font-size: 1.3rem; border-radius: 50%;
   filter: drop-shadow(0 4px 6px rgba(0,0,0,.4));
   transform: translateX(-50%); user-select: none;
 }
 
 .frog-mascot {
-  position: absolute; bottom: 42px; width: 48px;
+  position: absolute; bottom: 28px; width: 48px;
   transform: translateX(-50%); text-align: center; z-index: 10;
   display: flex; flex-direction: column; align-items: center;
 }
@@ -44,7 +46,7 @@
 .frog-badge { font-size: 1rem; line-height: 1; min-height: 1.2rem; text-align: center; }
 
 .frog-flag {
-  position: absolute; bottom: 40px; font-size: 1.5rem; z-index: 5;
+  position: absolute; bottom: 26px; font-size: 1.4rem; z-index: 5;
   transform: translateX(-50%); filter: drop-shadow(0 2px 4px rgba(0,0,0,.4));
 }
 
@@ -58,7 +60,7 @@
 }
 
 .frog-ambient {
-  position: absolute; inset: 0; border-radius: 14px; pointer-events: none; z-index: 1;
+  position: absolute; inset: 0; border-radius: 14px 14px 0 0; pointer-events: none; z-index: 1;
   background: linear-gradient(180deg, transparent 55%, rgba(0,0,0,.18) 100%);
 }
 

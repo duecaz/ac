@@ -34,19 +34,29 @@
   border-radius: 12px;
   box-shadow: 0 6px 24px rgba(0,0,0,.12);
   overflow: hidden;
+  /* ESTÁNDAR DE MAQUETACIÓN: el marco es una COLUMNA flex y RESERVA el espacio de
+     cada parte ANTES de dibujar. Si el modo Individual activa la animación de
+     progreso, su carril (.ww-solo-anim) ocupa su franja arriba y el widget toma
+     el resto; si no, el carril es display:none y el widget llena todo. */
+  display: flex;
+  flex-direction: column;
 }
 
-/* Inner widget fills the frame absolutely and scrolls if content overflows.
-   When aspect-ratio is 'auto', the wrapper has min-height set inline and
-   the widget uses static positioning so height grows naturally.
-   container-type:size makes it a query container so the activity can size
-   itself to the frame (cq* units) and fit without a scrollbar.
-   display:flex + column lets short activities center themselves vertically
-   via margin-top/bottom:auto on their root element (margin:auto trick —
-   safe with overflow:auto unlike justify-content:center which hides the top). */
+/* Carril de la animación de progreso (solo) DENTRO del marco: franja fija arriba.
+   Oculto ([hidden]) no ocupa espacio, así que el widget llena el marco completo. */
+.ww-play-page .ww-player-frame > .ww-solo-anim {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+/* Widget: toma la altura RESTANTE tras el carril (flex:1), con su propio scroll.
+   container-type:size lo hace contenedor de consulta para que la actividad se
+   dimensione al hueco real (cq*) y quepa sin desbordar. display:flex+column deja
+   que las actividades cortas se centren con margin:auto. */
 .ww-play-page .ww-player-frame > #ww-player-widget {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
   padding: 1.25rem;
   container-type: size;

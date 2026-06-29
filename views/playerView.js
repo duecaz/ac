@@ -143,8 +143,8 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
           </div>
         </div>
 
-        <div id="ww-solo-anim" class="ww-solo-anim" hidden></div>
         <div class="ww-player-frame mb-3" style="${aspectStyle(aspect)}" id="ww-frame">
+          <div id="ww-solo-anim" class="ww-solo-anim" hidden></div>
           <div id="ww-player-widget"></div>
         </div>
 
