@@ -44,22 +44,41 @@
 .ww-match .ww-card:active { cursor: grabbing; }
 .ww-match .ww-card:hover { border-color: #94a3b8; }
 
-/* Tarjetas con imagen: la imagen LLENA el recuadro (cover) — sin caja blanca ni
-   letterbox. Padding mínimo + esquinas redondeadas que casan con la tarjeta. */
-.ww-match .ww-card-img { padding: 5px; }
-.ww-match .ww-card img {
+/* Tarjetas con imagen (estilo "card de perfil"): la imagen LLENA el recuadro,
+   SIN margen ni padding, más alta (no una tira ancha), y el texto es un BADGE
+   flotante sobre la parte baja de la foto. */
+.ww-match .ww-card-img { padding: 0; }
+.ww-match .ww-card-img img {
   width: 100%;
-  height: clamp(64px, 12cqh, 108px);
+  height: clamp(120px, 26cqh, 190px);   /* más alta: la foto se ve completa */
   object-fit: cover;
   display: block;
   pointer-events: none;
-  border-radius: 7px;
+  border-radius: 8px;                    /* casa con el radio interior de la tarjeta */
 }
+/* Velo inferior para que el badge se lea sobre cualquier foto. */
+.ww-match .ww-card-img::after {
+  content: '';
+  position: absolute; left: 0; right: 0; bottom: 0; height: 46%;
+  border-radius: 0 0 8px 8px;
+  background: linear-gradient(transparent, rgba(0,0,0,.55));
+  pointer-events: none;
+}
+.ww-match .ww-card-img .ww-card-label {
+  position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%);
+  margin: 0; z-index: 2;
+  background: rgba(17,24,39,.9);
+  color: #fff; font-weight: 700; font-size: .9rem;
+  padding: 4px 14px; border-radius: 999px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.35);
+  max-width: 88%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Texto (tarjetas sin imagen): badge sólido que se nota. */
 .ww-match .ww-card-label {
-  display: block;
-  font-weight: 500;
-  font-size: .85rem;
-  margin-top: 4px;
+  display: inline-block;
+  font-weight: 700;
+  font-size: .9rem;
   pointer-events: none;
 }
 
