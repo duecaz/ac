@@ -115,6 +115,16 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
     });
   }
 
+  // ¿En qué tarjeta de `side` cae el punto (x,y)? Con un margen para abarcar el
+  // punto de anclaje que sobresale del borde.
+  function cardAt(x, y, side, pad = 12) {
+    for (const c of root.querySelectorAll(`.ww-card[data-side="${side}"]`)) {
+      const r = c.getBoundingClientRect();
+      if (x >= r.left - pad && x <= r.right + pad && y >= r.top - pad && y <= r.bottom + pad) return c;
+    }
+    return null;
+  }
+
   // ── Arrastre desde TODA la tarjeta (cualquier lado → el opuesto) ────────────
   arena.addEventListener('pointerdown', e => {
     if (state.graded) return;
@@ -145,17 +155,15 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
       state.dragging = null;
       cleanup();
       if (!drag) { updateSvg(); return; }
-      // Buscar una tarjeta del lado OPUESTO bajo el puntero (toda la tarjeta es
-      // zona válida). El SVG y las imágenes tienen pointer-events:none.
-      const els = document.elementsFromPoint(ev.clientX, ev.clientY);
-      const hit = els.map(el => el.closest?.('.ww-card')).find(c => c && c.dataset.side && c.dataset.side !== drag.fromSide);
+      // ¿Soltó dentro de una tarjeta del lado OPUESTO? Geometría pura sobre las
+      // tarjetas (sin elementsFromPoint/pointer-events): toda la tarjeta vale.
+      const hit = cardAt(ev.clientX, ev.clientY, drag.fromSide === 'L' ? 'R' : 'L');
       if (hit) {
         const leftId  = drag.fromSide === 'L' ? drag.fromId : hit.dataset.id;
         const rightId = drag.fromSide === 'L' ? hit.dataset.id : drag.fromId;
         setLink(leftId, rightId);
       } else {
-        // Soltar en vacío: desconectar esta tarjeta.
-        removeByCard(drag.fromSide, drag.fromId);
+        removeByCard(drag.fromSide, drag.fromId);   // soltar en vacío: desconectar
       }
     };
     document.addEventListener('pointermove', onMove);
