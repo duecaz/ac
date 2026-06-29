@@ -13,11 +13,10 @@
 .frog-track {
   height: 100%;
   position: relative;
-  overflow-x: hidden;
-  overflow-y: visible;
+  overflow: hidden;                    /* todo cabe a lo ancho: sin scroll */
   background: transparent;             /* sin fondo verde: blende con la tarjeta */
 }
-.frog-world { position: relative; height: 100%; }
+.frog-world { position: relative; height: 100%; width: 100%; }
 
 /* Charcos: solo el emoji (nenúfar), sin círculo de fondo, centrado vertical. */
 .frog-pad {

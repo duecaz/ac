@@ -28,25 +28,29 @@ const SCENES = {
   winter: { pad: '❄️',  css: 'frog-winter'  },
   volcano:{ pad: '🌋', css: 'frog-volcano' },
 };
-const STRIDE = 72; // px entre centros de charco
 const streakLabel = (s) => s >= 15 ? '🔥🔥' : s >= 10 ? '🔥' : s >= 5 ? '⚡' : s >= 3 ? '✨' : '';
+
+// Posiciones en PORCENTAJE: la pista ocupa TODO el ancho del box (sin scroll).
+// La rana va del margen izq. (START%) a la meta (END%) en `pads` saltos, con los
+// charcos repartidos uniformemente entre medias.
+const START_PCT = 9, END_PCT = 91;
 
 function createFrog(container, { total = 1, scene = 'swamp' } = {}) {
   const sc = SCENES[scene] || SCENES.swamp;
   const pads = Math.max(1, total);           // un charco por pregunta; meta = total
-  const worldW = (pads + 2) * STRIDE;
+  const step = (END_PCT - START_PCT) / pads; // % entre paradas
+  const pct  = (k) => START_PCT + k * step;  // % de la parada k (0..pads)
   // OJO: NO tocar container.className — el contenedor es el carril (.ww-solo-anim)
   // cuyo alto lo fija styles/player.css. La animación va en un hijo .frog-anim.
-  const padHtml = Array.from({ length: pads + 1 }, (_, i) =>
-    `<div class="frog-pad" style="left:${i * STRIDE}px">${sc.pad}</div>`).join('');
+  const padHtml = Array.from({ length: pads }, (_, i) =>
+    `<div class="frog-pad" style="left:${pct(i)}%">${sc.pad}</div>`).join('');
   container.innerHTML = `
     <div class="frog-anim">
       <div class="frog-track">
-        <div class="frog-world" style="width:${worldW}px">
+        <div class="frog-world">
           ${padHtml}
-          <div class="frog-flag frog-flag-start" style="left:-8px">🚩</div>
-          <div class="frog-flag frog-flag-finish" style="left:${pads * STRIDE - 4}px">🏁</div>
-          <div class="frog-mascot" style="left:0">
+          <div class="frog-flag frog-flag-finish" style="left:${pct(pads)}%">🏁</div>
+          <div class="frog-mascot" style="left:${pct(0)}%">
             <div class="frog-badge"></div>
             <div class="frog-char">🐸</div>
             <div class="frog-shadow"></div>
@@ -61,21 +65,13 @@ function createFrog(container, { total = 1, scene = 'swamp' } = {}) {
   const badge  = container.querySelector('.frog-badge');
   let pos = 0;
 
-  function scroll(x) {
-    if (!track) return;
-    const target = x - track.offsetWidth * 0.38;
-    track.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
-  }
-
   function jumpTo(toPad, streak) {
-    const toX  = toPad * STRIDE;
     // Arco escalado al alto REAL del carril, para que el salto no se recorte
     // contra el borde del marco (el carril es discreto, ≤25%).
     const h    = track?.clientHeight || 90;
     const arcH = Math.min(12 + streak * 2, Math.max(10, h * 0.34));
     const dur  = Math.min(420 + streak * 40, 1000);
-    if (mascot) { mascot.style.transition = `left ${dur}ms cubic-bezier(.25,.46,.45,.94)`; mascot.style.left = `${toX}px`; }
-    scroll(toX);
+    if (mascot) { mascot.style.transition = `left ${dur}ms cubic-bezier(.25,.46,.45,.94)`; mascot.style.left = `${pct(toPad)}%`; }
     if (char) {
       char.animate([
         { transform: 'scaleX(0.88) scaleY(1.12) translateY(0)',          offset: 0 },
@@ -123,8 +119,7 @@ function createFrog(container, { total = 1, scene = 'swamp' } = {}) {
     },
     setProgress(frac) {
       pos = Math.max(0, Math.min(pads, Math.round((frac || 0) * pads)));
-      if (mascot) { mascot.style.transition = 'left .4s ease'; mascot.style.left = `${pos * STRIDE}px`; }
-      scroll(pos * STRIDE);
+      if (mascot) { mascot.style.transition = 'left .4s ease'; mascot.style.left = `${pct(pos)}%`; }
     },
     destroy() { container.innerHTML = ''; },
   };
