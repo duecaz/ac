@@ -115,20 +115,27 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
     });
   }
 
-  // Tarjeta del lado `side` MÁS CERCANA al punto (distancia al rectángulo). Soltar
-  // dentro de una (distancia 0) o muy cerca (corredor/punto de anclaje) conecta con
-  // ella; soltar lejos de todas (espacio vacío) devuelve null → desconecta. Robusto:
-  // no depende de aciertos exactos ni de pointer-events.
-  function cardAt(x, y, side, maxDist = 44) {
+  // Tarjeta destino al soltar. Lógica por COLUMNA + altura (robusta, sin depender
+  // de acertar el rectángulo exacto): si el punto cayó del lado de la columna
+  // OPUESTA, conecta con la tarjeta de esa columna más cercana por ALTURA (siempre
+  // hay una → de frente u horizontal NUNCA falla). Si soltó de vuelta hacia el
+  // origen (cruzó menos del medio), devuelve null → desconecta.
+  function targetCard(x, y, fromSide) {
+    const side = fromSide === 'L' ? 'R' : 'L';
+    const cards = [...root.querySelectorAll(`.ww-card[data-side="${side}"]`)];
+    if (!cards.length) return null;
+    const colL = root.querySelector('.ww-col-left').getBoundingClientRect();
+    const colR = root.querySelector('.ww-col-right').getBoundingClientRect();
+    const mid = (colL.right + colR.left) / 2;            // centro del corredor
+    const onTargetSide = side === 'R' ? x >= mid : x <= mid;
+    if (!onTargetSide) return null;                       // soltó hacia el origen → desconectar
     let best = null, bestD = Infinity;
-    for (const c of root.querySelectorAll(`.ww-card[data-side="${side}"]`)) {
+    for (const c of cards) {
       const r = c.getBoundingClientRect();
-      const dx = x < r.left ? r.left - x : x > r.right ? x - r.right : 0;
-      const dy = y < r.top  ? r.top  - y : y > r.bottom ? y - r.bottom : 0;
-      const d = Math.hypot(dx, dy);
+      const d = Math.abs((r.top + r.bottom) / 2 - y);
       if (d < bestD) { bestD = d; best = c; }
     }
-    return bestD <= maxDist ? best : null;
+    return best;
   }
 
   // ── Arrastre desde TODA la tarjeta (cualquier lado → el opuesto) ────────────
@@ -163,9 +170,7 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
     state.dragging = null;
     try { arena.releasePointerCapture(e.pointerId); } catch {}
     if (!connect) { updateSvg(); return; }
-    // ¿Soltó dentro de una tarjeta del lado OPUESTO? Geometría pura (toda la
-    // tarjeta vale, sin depender de pointer-events ni del SVG superpuesto).
-    const hit = cardAt(e.clientX, e.clientY, drag.fromSide === 'L' ? 'R' : 'L');
+    const hit = targetCard(e.clientX, e.clientY, drag.fromSide);
     if (hit) {
       const leftId  = drag.fromSide === 'L' ? drag.fromId : hit.dataset.id;
       const rightId = drag.fromSide === 'L' ? hit.dataset.id : drag.fromId;
