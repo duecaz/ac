@@ -1,0 +1,211 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   SKIN: ARCADE — recreativa retro para el modo VS.
+   Marquesina de neón arriba (texto en marcha), "INSERT COIN" abajo, rejilla de
+   neón al fondo, líneas de escaneo en las pantallas, fuente de píxeles y los dos
+   paneles como máquinas (cian vs rojo). Solo CSS: la marquesina y el pie se
+   pintan con ::before/::after del arena (que es flex-column), sin tocar el DOM.
+   Cargado por applySkin() cuando presentation.skin = 'arcade'.
+   ══════════════════════════════════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+/* Fuente de píxeles reutilizable (con respaldo monospace si no carga la web). */
+.vs-skin-arcade,
+.vs-skin-arcade .vss-name, .vs-skin-arcade .vss-label, .vs-skin-arcade .vss-score,
+.vs-skin-arcade .vss-badge, .vs-skin-arcade .vs-tug-label,
+.vs-skin-arcade .ww-keypad-q, .vs-skin-arcade .ww-keypad-display, .vs-skin-arcade .ww-key,
+.vs-skin-arcade .vs-celeb-label, .vs-skin-arcade .vs-celeb-name {
+  font-family: "Press Start 2P", "Courier New", ui-monospace, monospace;
+}
+
+/* ── Arena: fondo oscuro + rejilla de neón en perspectiva + viñeta ─────────── */
+.vs-skin-arcade {
+  position: relative;
+  color: #eafcff;
+  background-color: #0a0820;
+  background-image:
+    radial-gradient(ellipse 70% 55% at 50% 42%, rgba(34,211,238,.07), transparent 70%),
+    repeating-linear-gradient(90deg, transparent 0, transparent 38px, rgba(124,58,237,.16) 38px, rgba(124,58,237,.16) 40px),
+    repeating-linear-gradient(0deg,  transparent 0, transparent 38px, rgba(124,58,237,.10) 38px, rgba(124,58,237,.10) 40px),
+    linear-gradient(180deg, #0a0820 0%, #1a0a3a 100%);
+}
+
+/* ── Marquesina superior (texto en marcha) ────────────────────────────────────
+   ::before es el PRIMER hijo flex de la columna → fila superior. El texto corre
+   con text-indent (mueve solo el texto; el marco/borde quedan fijos). */
+.vs-arena.vs-skin-arcade::before {
+  content: "★ INSERT COIN ★ READY PLAYER ONE ★ PLAYER 1  VS  PLAYER 2 ★ FIGHT! ★ HIGH SCORE ★ INSERT COIN ★ READY PLAYER ONE ★ PLAYER 1  VS  PLAYER 2 ★ FIGHT! ★ ";
+  order: -1; flex: 0 0 auto;
+  display: block; height: clamp(24px, 5.5cqh, 44px); line-height: clamp(24px, 5.5cqh, 44px);
+  white-space: nowrap; overflow: hidden;
+  font-size: clamp(.5rem, 1.7cqw, .9rem); font-weight: 400;
+  color: #ffd400; text-shadow: 0 0 6px #ffae00, 0 0 12px rgba(255,106,0,.7);
+  background: linear-gradient(180deg, #1a0a3a, #0a0820);
+  border-bottom: 3px solid #ffd400;
+  box-shadow: inset 0 0 18px rgba(255,212,0,.22), 0 0 16px rgba(255,170,0,.3);
+  animation: arc-marquee 16s linear infinite;
+}
+@keyframes arc-marquee { from { text-indent: 100%; } to { text-indent: -210%; } }
+
+/* ── Pie "INSERT COIN" (parpadea) ─────────────────────────────────────────── */
+.vs-arena.vs-skin-arcade::after {
+  content: "◉ INSERT COIN     1 CREDIT     ▶ PRESS START";
+  flex: 0 0 auto; display: block;
+  height: clamp(20px, 4.5cqh, 34px); line-height: clamp(20px, 4.5cqh, 34px);
+  text-align: center; letter-spacing: .08em;
+  font-family: "Press Start 2P", "Courier New", monospace;
+  font-size: clamp(.45rem, 1.35cqw, .75rem);
+  color: #ffd400; text-shadow: 0 0 6px #ffae00;
+  background: linear-gradient(0deg, #1a0a3a, #0a0820);
+  border-top: 3px solid #ff2e88;
+  box-shadow: inset 0 0 14px rgba(255,46,136,.25);
+  animation: arc-blink 1.1s steps(2, end) infinite;
+}
+@keyframes arc-blink { 50% { opacity: .4; } }
+
+/* ── Scoreboard ───────────────────────────────────────────────────────────── */
+.vs-skin-arcade .vss-bar {
+  height: clamp(70px, 15cqh, 110px);
+  background: #0a0820;
+  border-bottom: 2px solid rgba(124,58,237,.5);
+  box-shadow: 0 4px 22px rgba(0,0,0,.6);
+}
+.vs-skin-arcade .vss-team { overflow: visible; }
+.vs-skin-arcade .vss-left  { background: linear-gradient(100deg, rgba(34,211,238,.12), rgba(34,211,238,.02)); box-shadow: inset 0 0 34px rgba(34,211,238,.18); }
+.vs-skin-arcade .vss-right { background: linear-gradient(260deg, rgba(255,59,107,.12), rgba(255,59,107,.02)); box-shadow: inset 0 0 34px rgba(255,59,107,.18); }
+.vs-skin-arcade .vss-mid   { background: #0a0820; }
+
+.vs-skin-arcade .vss-label { font-size: clamp(.4rem, .9cqw, .55rem); letter-spacing: .12em; }
+.vs-skin-arcade .vss-left  .vss-label { color: #22d3ee; }
+.vs-skin-arcade .vss-right .vss-label { color: #ff3b6b; }
+.vs-skin-arcade .vss-name  { font-size: clamp(.6rem, 1.4cqw, 1rem); font-weight: 400; }
+.vs-skin-arcade .vss-left  .vss-name { color: #aef6ff; text-shadow: 0 0 8px rgba(34,211,238,.85); }
+.vs-skin-arcade .vss-right .vss-name { color: #ffd0db; text-shadow: 0 0 8px rgba(255,59,107,.85); }
+.vs-skin-arcade .vss-score { font-size: clamp(1.3rem, 3.2cqw, 2.6rem); }
+.vs-skin-arcade .vss-left  .vss-score { color: #22d3ee; text-shadow: 0 0 14px rgba(34,211,238,.95); }
+.vs-skin-arcade .vss-right .vss-score { color: #ff3b6b; text-shadow: 0 0 14px rgba(255,59,107,.95); }
+
+/* Estrellas decorativas (rating arcade) en lugar de la barra de progreso. */
+.vs-skin-arcade .vs-prog { display: none; }
+.vs-skin-arcade .vss-info::after {
+  content: "★★★★★★★★★★";
+  display: block; margin-top: .3rem; letter-spacing: 2px; line-height: 1;
+  font-size: clamp(.5rem, 1.1cqw, .8rem);
+  color: rgba(255,212,0,.9); text-shadow: 0 0 5px rgba(255,170,0,.6);
+}
+.vs-skin-arcade .vss-info-r::after { text-align: right; }
+
+/* Badge VS de neón. */
+.vs-skin-arcade .vss-mid   { width: clamp(54px, 10cqw, 78px); }
+.vs-skin-arcade .vss-badge {
+  width: clamp(40px, 7cqw, 58px); height: clamp(40px, 7cqw, 58px);
+  border-radius: .35rem; background: #1a0a3a; color: #ff2e88;
+  border: 3px solid #ff2e88; font-size: clamp(.6rem, 1.4cqw, .9rem);
+  box-shadow: 0 0 14px rgba(255,46,136,.7), inset 0 0 10px rgba(255,46,136,.3);
+  text-shadow: 0 0 8px rgba(255,46,136,.9);
+  animation: arc-vs-pulse 1.4s ease-in-out infinite;
+}
+@keyframes arc-vs-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+
+/* Avatares cuadrados con marco de neón (como las máquinas). */
+.vs-skin-arcade .vss-av { border-radius: .3rem; border-width: 3px; }
+.vs-skin-arcade .vss-left  .vss-av { border-color: #22d3ee; box-shadow: 0 0 10px rgba(34,211,238,.6); }
+.vs-skin-arcade .vss-right .vss-av { border-color: #ff3b6b; box-shadow: 0 0 10px rgba(255,59,107,.6); }
+.vs-skin-arcade .vs-avatar-init { background: rgba(255,255,255,.06); }
+
+/* ── Paneles = máquinas recreativas (pantalla negra + neón + escaneo) ─────── */
+.vs-skin-arcade .vs-stage     { border: none; }
+.vs-skin-arcade .vs-tug-label { color: #ffd400; font-size: clamp(.7rem, 1.6cqw, 1.1rem); text-shadow: 0 0 8px rgba(255,170,0,.6); }
+
+.vs-skin-arcade .vs-panel { align-items: center; justify-content: center; padding: .55rem .4rem; }
+.vs-skin-arcade .vs-panel.vs-left  { background: radial-gradient(ellipse 120% 80% at 60% 50%, rgba(34,211,238,.08), transparent 70%); }
+.vs-skin-arcade .vs-panel.vs-right { background: radial-gradient(ellipse 120% 80% at 40% 50%, rgba(255,59,107,.08), transparent 70%); }
+
+.vs-skin-arcade .vs-body {
+  position: relative; container-type: inline-size;
+  flex: 1; width: 100%; max-width: 230px;
+  border-radius: .9rem; padding: .7rem .65rem; overflow: hidden auto;
+  background: #05030f;
+}
+.vs-skin-arcade .vs-panel.vs-left  .vs-body {
+  border: 3px solid #22d3ee;
+  box-shadow: 0 0 0 2px rgba(34,211,238,.2), 0 0 28px rgba(34,211,238,.55), inset 0 0 20px rgba(34,211,238,.12);
+  --key-border: 2px solid rgba(34,211,238,.5); --display-border: 2px solid #22d3ee;
+}
+.vs-skin-arcade .vs-panel.vs-right .vs-body {
+  border: 3px solid #ff3b6b;
+  box-shadow: 0 0 0 2px rgba(255,59,107,.2), 0 0 28px rgba(255,59,107,.55), inset 0 0 20px rgba(255,59,107,.12);
+  --key-border: 2px solid rgba(255,59,107,.5); --display-border: 2px solid #ff3b6b;
+}
+/* Líneas de escaneo encima de la pantalla (no roban el clic). */
+.vs-skin-arcade .vs-body::before {
+  content: ""; position: absolute; inset: 0; z-index: 4; pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0, rgba(0,0,0,.22) 1px, transparent 1px, transparent 3px);
+}
+.vs-skin-arcade .vs-body .vs-done,
+.vs-skin-arcade .vs-body .vs-done .h5     { color: #eafcff !important; }
+.vs-skin-arcade .vs-body .vs-done .text-muted { color: rgba(255,255,255,.6) !important; }
+
+/* ── Teclado numérico (Operaciones) ───────────────────────────────────────── */
+.vs-skin-arcade .ww-keypad-q {
+  text-align: center; color: #ffd400;
+  font-size: clamp(.8rem, 13cqw, 1.25rem);
+  text-shadow: 0 0 6px rgba(255,170,0,.7);
+}
+.vs-skin-arcade .ww-keypad-q::before {
+  content: "SOLVE!"; display: block; margin-bottom: .35em; letter-spacing: .15em;
+  font-size: .5em; color: #ff2e88; text-shadow: 0 0 6px rgba(255,46,136,.7);
+}
+.vs-skin-arcade .ww-keypad-eq { color: rgba(255,255,255,.4); }
+.vs-skin-arcade .ww-keypad-display {
+  color: #39ff7a; text-shadow: 0 0 8px rgba(57,255,122,.7);
+  background: rgba(0,0,0,.6); border-radius: .35rem;
+  font-size: clamp(.85rem, 12cqw, 1.2rem);
+}
+.vs-skin-arcade .ww-key {
+  color: #eafcff; background: rgba(34,211,238,.10);
+  border: 2px solid rgba(34,211,238,.5); border-radius: .4rem;
+  box-shadow: inset 0 0 8px rgba(34,211,238,.15);
+  text-shadow: 0 0 4px rgba(255,255,255,.3);
+  font-size: clamp(.7rem, 9cqw, 1rem);
+}
+.vs-skin-arcade .vs-panel.vs-right .ww-key {
+  background: rgba(255,59,107,.10); border-color: rgba(255,59,107,.5);
+  box-shadow: inset 0 0 8px rgba(255,59,107,.15);
+}
+.vs-skin-arcade .ww-key-fn { background: rgba(255,255,255,.05); }
+.vs-skin-arcade .ww-key-ok {
+  background: #0e7a3a; border-color: #39ff7a; color: #eafff0;
+  box-shadow: 0 0 12px rgba(57,255,122,.6), inset 0 0 8px rgba(57,255,122,.3);
+}
+
+/* ── Otras plantillas en VS (Quiz/Tildes…) — texto legible sobre la pantalla ─ */
+.vs-skin-arcade .vs-body .ww-q,
+.vs-skin-arcade .vs-body .ww-phead,
+.vs-skin-arcade .vs-body .tc-passage { color: #eafcff; }
+.vs-skin-arcade .vs-body .ww-opt { color: #fff; border-radius: .5rem; box-shadow: 0 3px 0 rgba(0,0,0,.5); }
+.vs-skin-arcade .vs-body .ww-shape-1 { background: #ff2e88; }
+.vs-skin-arcade .vs-body .ww-shape-2 { background: #22d3ee; }
+.vs-skin-arcade .vs-body .ww-shape-3 { background: #a3e635; }
+.vs-skin-arcade .vs-body .ww-shape-4 { background: #ffd400; }
+
+/* ── Pantalla de resultado / celebración ──────────────────────────────────── */
+.vs-skin-arcade .vs-celeb-label { letter-spacing: .25em; }
+.vs-skin-arcade .vs-celeb-name  { text-shadow: 0 0 16px currentColor; }
+.vs-win-left.vs-skin-arcade  .vs-celeb-name, .vs-skin-arcade .vs-win-left  .vs-celeb-name { color: #22d3ee; }
+.vs-win-right.vs-skin-arcade .vs-celeb-name, .vs-skin-arcade .vs-win-right .vs-celeb-name { color: #ff3b6b; }
+
+/* ── Vertical / estrecho ──────────────────────────────────────────────────── */
+@container vs (max-aspect-ratio: 5/4) {
+  .vs-arena.vs-skin-arcade::before { height: 20px; line-height: 20px; font-size: .5rem; }
+  .vs-arena.vs-skin-arcade::after  { height: 18px; line-height: 18px; font-size: .45rem; }
+  .vs-skin-arcade .vss-bar    { height: 46px; }
+  .vs-skin-arcade .vss-info::after { display: none; }
+  .vs-skin-arcade .vss-badge  { animation: none; }
+  .vs-skin-arcade .vs-body    { max-width: 100%; width: 100%; border-radius: .55rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vs-arena.vs-skin-arcade::before,
+  .vs-arena.vs-skin-arcade::after,
+  .vs-skin-arcade .vss-badge { animation: none !important; }
+}
