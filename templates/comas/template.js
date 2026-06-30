@@ -17,6 +17,7 @@ export class ComasTemplate extends BaseTemplate {
     color: 'success',
     contentModel: 'textCorrection',
     templateVersion: 1,
+    instructions: 'Dibuja la coma (,) en el hueco donde falta. Cuando termines, pulsa “Listo” para corregir.',
     aspectRatio: '16/10',
     modes: { solo: true, live: true, async: true, practice: true },
     needsImageUpload: false,

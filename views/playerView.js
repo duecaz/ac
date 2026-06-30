@@ -10,6 +10,7 @@ import { activityItemCount, newActivityId } from '../core/migrate.js';
 import { getTemplate, compatibleTemplates } from '../core/registry.js';
 import { isVsCompatible } from '../kernel/session/engine.js';
 import { availableModes, getMode, runMode } from '../core/modes.js';
+import { renderStartScreen } from './startScreen.js';
 import { listSkins, applySkin, skinPreviewHtml } from '../core/skins.js';
 
 import { listBackgrounds, applyBackground, backgroundPreviewHtml, readBackgroundImage } from '../core/backgrounds.js';
@@ -104,12 +105,10 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     // para suscribirse al bus antes de su primer QUESTION_SHOWN; se descarta al
     // cambiar de modo.
     if (currentAnim) { try { currentAnim.dispose(); } catch {} currentAnim = null; }
-    if (id === 'solo') {
-      currentAnim = mountSoloAnimator(document.getElementById('ww-solo-anim'), playActivity());
-    } else {
-      const lane = document.getElementById('ww-solo-anim');
-      if (lane) { lane.innerHTML = ''; lane.hidden = true; }
-    }
+    // La animación de progreso (solo) y el juego arrancan al pulsar "Iniciar" en
+    // la pantalla de inicio; hasta entonces el carril queda oculto.
+    const lane = document.getElementById('ww-solo-anim');
+    if (lane) { lane.innerHTML = ''; lane.hidden = true; }
     currentMode = id;
     document.querySelectorAll('.ww-mode').forEach(btn => {
       const on = btn.dataset.mode === id;
@@ -119,7 +118,37 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
       btn.classList.toggle('btn-outline-' + color, !on);
     });
     document.getElementById('ww-frame')?.classList.toggle('is-expanded', id !== 'solo');
-    currentDisposer = await runMode(id, '#ww-player-widget', playActivity(), ctx);
+    // ESTÁNDAR: toda actividad pasa por una pantalla de inicio (título +
+    // instrucciones + ajustes) antes de mostrar el ejercicio. El modo Individual
+    // la pinta aquí; VS/Equipos ya tienen su propia pantalla previa (modeSetup).
+    if (id === 'solo') {
+      currentDisposer = mountSoloStart();
+    } else {
+      currentDisposer = await runMode(id, '#ww-player-widget', playActivity(), ctx);
+    }
+  }
+
+  // Pantalla de inicio del modo Individual: muestra título/instrucciones/ajustes
+  // y, al pulsar "Iniciar", entra en pantalla completa, monta la animación de
+  // progreso (si está activa) y arranca el player real en el mismo escenario.
+  function mountSoloStart() {
+    const widget = document.getElementById('ww-player-widget');
+    const act = playActivity();
+    const T = getTemplate(liveTemplate) || getTemplate(a.template);
+    const modes = availableModes(act)
+      .filter(md => md.embed && md.supportsTemplate(T))
+      .map(md => ({ id: md.id, label: md.label, icon: md.icon, color: md.color,
+                    active: md.id === 'solo', disabled: !md.isAvailable(act) }));
+    return renderStartScreen(widget, act, {
+      modes,
+      frame: document.getElementById('ww-frame'),
+      onPickMode: (mid) => selectMode(mid),
+      onStart: async () => {
+        if (currentAnim) { try { currentAnim.dispose(); } catch {} currentAnim = null; }
+        currentAnim = mountSoloAnimator(document.getElementById('ww-solo-anim'), playActivity());
+        currentDisposer = await runMode('solo', '#ww-player-widget', playActivity(), ctx);
+      }
+    });
   }
 
   function paint() {

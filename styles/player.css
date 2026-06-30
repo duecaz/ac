@@ -167,6 +167,50 @@
 .ww-mode-setup .ww-mode-setup-body { margin: 0 auto; }
 .ww-mode-setup .form-control { max-width: 100%; }
 
+/* Pantalla de INICIO estándar (views/startScreen.js). Vive dentro del escenario
+   (#ww-player-widget, container-type:size) → escala con el marco/pantalla
+   completa usando unidades de contenedor. Oculta el ejercicio hasta "Iniciar". */
+.ww-start {
+  width: 100%; min-height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  padding: 3cqmin 2cqmin; box-sizing: border-box;
+}
+.ww-start-card {
+  width: min(640px, 100%); text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 2.2cqmin;
+}
+.ww-start-icon {
+  width: clamp(54px, 12cqmin, 110px); height: clamp(54px, 12cqmin, 110px);
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; background: rgba(25,135,84,.12); color: #198754;
+  font-size: clamp(1.6rem, 6cqmin, 3.4rem);
+}
+.ww-start-title { margin: 0; font-weight: 800; font-size: clamp(1.4rem, 5.2cqmin, 3rem); line-height: 1.1; }
+.ww-start-instructions {
+  margin: 0; color: var(--ww-muted, #6b7280);
+  font-size: clamp(.95rem, 2.6cqmin, 1.4rem); max-width: 52ch;
+}
+.ww-start-modes { display: flex; flex-wrap: wrap; gap: .6rem; justify-content: center; }
+.ww-start-mode {
+  border: 2px solid #cbd5e1; background: #fff; color: #334155;
+  border-radius: 999px; padding: .4em 1em; cursor: pointer;
+  font-size: clamp(.85rem, 2.3cqmin, 1.15rem); display: inline-flex; align-items: center; gap: .4em;
+}
+.ww-start-mode.is-active { border-color: #198754; background: #198754; color: #fff; }
+.ww-start-mode:disabled { opacity: .5; cursor: not-allowed; }
+.ww-start-settings { display: flex; flex-wrap: wrap; gap: .6rem; justify-content: center; }
+.ww-set-toggle {
+  border: 2px solid #e2e8f0; background: #f8fafc; color: #334155;
+  border-radius: 12px; padding: .5em .9em; cursor: pointer;
+  font-size: clamp(.82rem, 2.2cqmin, 1.1rem); display: inline-flex; align-items: center; gap: .45em;
+}
+.ww-set-toggle.is-on { border-color: #198754; background: #f0fdf4; color: #166534; }
+.ww-set-state { font-weight: 700; opacity: .85; }
+.ww-start-go {
+  margin-top: 1cqmin; border-radius: 999px;
+  font-size: clamp(1.05rem, 3.4cqmin, 1.9rem); padding: .5em 1.8em; font-weight: 700;
+}
+
 /* Pickable tiles for skin and background. */
 .ww-pick-tile {
   width: 96px;

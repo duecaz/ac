@@ -7,6 +7,14 @@ import { clock } from './clock.js';
 
 const COLORS = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#a855f7', '#ec4899', '#eab308'];
 
+// Interruptor global de efectos visuales (confeti). Se persiste igual que el
+// silencio de sonidos, para que la pantalla de inicio pueda activar/desactivar.
+function lsGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch {} }
+let _fxMuted = lsGet('ww.fxMuted') === '1';
+export function setEffectsMuted(m) { _fxMuted = !!m; lsSet('ww.fxMuted', _fxMuted ? '1' : '0'); }
+export function isEffectsMuted() { return _fxMuted; }
+
 // Confeti minimalista en canvas. opts: { particleCount, spread (grados),
 // startVelocity, origin:{x,y} en 0..1, ticks (vida) }.
 function confetti(opts = {}) {
@@ -45,6 +53,7 @@ let _lastPodium = 0, _lastCorrect = 0;
 const PODIUM_COOLDOWN = 5000, CORRECT_COOLDOWN = 800;
 
 function podiumBurst() {
+  if (_fxMuted) return;
   const now = clock.now();
   if (now - _lastPodium < PODIUM_COOLDOWN) return;
   _lastPodium = now;
@@ -52,6 +61,7 @@ function podiumBurst() {
 }
 
 function correctBurst() {
+  if (_fxMuted) return;
   const now = clock.now();
   if (now - _lastCorrect < CORRECT_COOLDOWN) return;
   _lastCorrect = now;
