@@ -9,11 +9,10 @@
 // value is number[]: for tildes, the char positions marked; for comas, the
 // index of the char AFTER which the comma goes (matches the answer-key `pos`).
 import { html, escapeHtml, mount } from './html.js';
-import { isVowel, applyTilde, applyMarks, scoreMarks } from './textMarks.js';
+import { isVowel, applyTilde, scoreMarks } from './textMarks.js';
 import { trySaveResult } from './results.js';
 import { resultScreenHtml } from './resultScreen.js';
 import { GameEvents, emitGame } from './gameEvents.js';
-import { speak, isAvailable as ttsAvailable } from './tts.js';
 import { clock } from './clock.js';
 import { mountTcDraw } from './textCorrectionDraw.js';
 
@@ -141,9 +140,8 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
 
   const shell = (bodyHtml) => mount(rootSel, html`
     <div class="tc-solo">
-      <div class="d-flex justify-content-between align-items-center mb-2">
+      <div class="d-flex justify-content-center align-items-center mb-2">
         <span class="badge bg-secondary">Frase ${idx + 1} / ${passages.length}</span>
-        <span class="badge bg-primary">★ ${score}</span>
       </div>
       <h4 class="text-center mb-1">${escapeHtml(title || activity.title || '')}</h4>
       ${activity.subtitle ? `<p class="text-center text-muted mb-2">${escapeHtml(activity.subtitle)}</p>` : ''}
@@ -154,7 +152,6 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     shell('');
     const body = document.getElementById('tc-body');
     renderTextCorrectionRound(body, passages[idx], { kind, onSubmit: grade });
-    addTts(body, passages[idx]);
   }
 
   function grade(value) {
@@ -186,20 +183,10 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
           </button></div>
         </div>
       </div>`);
-    addTts(document.getElementById('tc-body'), p);
     document.querySelector('.tc-next').addEventListener('click', () => {
       if (last) finish();
       else { idx++; ask(); }
     });
-  }
-
-  function addTts(scope, p) {
-    if (!ttsAvailable()) return;
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-sm btn-outline-secondary tc-tts';
-    btn.innerHTML = '<i class="bi bi-volume-up-fill"></i> Escuchar';
-    btn.addEventListener('click', () => speak(applyMarks(p.text, p.marks || []), { lang: 'es-ES' }));
-    scope.querySelector('.tc-round')?.prepend(btn);
   }
 
   function finish() {

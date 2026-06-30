@@ -41,7 +41,9 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
     const prevHit = new Map(zones.map(z => [z.pos, z.hit]));
     zones = tg.map(el => {
       const r = el.getBoundingClientRect();
-      const padX = Math.max(8, r.width * 0.5), padTop = r.height * 0.6;
+      // padTop generoso: la tilde se dibuja ARRIBA de la vocal (los spans inline
+      // tienen un rect ~1em, así que ampliamos la zona hacia arriba).
+      const padX = Math.max(8, r.width * 0.5), padTop = Math.max(16, r.height * 0.9);
       return {
         pos: +el.dataset.pos, el,
         x: (r.left - pr.left - padX) * dpr,

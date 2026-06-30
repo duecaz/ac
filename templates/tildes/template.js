@@ -24,7 +24,10 @@ export class TildesTemplate extends BaseTemplate {
     defaultScoring: () => ({ pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
     defaultLive: () => ({}),
     defaultContent: () => {
-      const examples = ['canción popular', 'árbol frondoso', 'música alegre'];
+      const examples = [
+        'Jamás tanto cariño doloroso, jamás tanta cerca arremetió lo lejos, jamás el fuego nunca jugó mejor su rol de frío muerto! Jamás, señor ministro de salud, fue la salud más mortal',
+        'y la migraña extrajo tanta frente de la frente! Y el mueble tuvo en su cajón, dolor, el corazón, en su cajón, dolor, la lagartija, en su cajón, dolor.',
+      ];
       return { passages: examples.map(s => ({ ...newPassage(), ...parseAccentedText(s) })) };
     },
     // Suggest a notebook background by default — author can override.

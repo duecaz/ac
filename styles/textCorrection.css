@@ -11,7 +11,7 @@
   font-size: clamp(1.5rem, 4.5vw, 2.6rem);
   line-height: 2.4;          /* hueco arriba de la vocal para dibujar la tilde */
   text-align: center;
-  word-break: break-word;
+  overflow-wrap: break-word; /* parte solo entre palabras o palabras larguísimas */
   margin: 1rem 0;
 }
 .tc-ch { white-space: pre-wrap; }
@@ -22,41 +22,26 @@
   position: absolute; inset: 0; width: 100%; height: 100%;
   z-index: 3; touch-action: none; cursor: crosshair;
 }
-.tc-target {
-  display: inline-block; font: inherit; color: inherit; position: relative;
-  border-bottom: 3px solid rgba(99,102,241,.4);   /* indica "aquí va la marca" */
-  border-radius: 2px; padding: 0 .04em;
-}
-.tc-target.tc-gap { min-width: 1.1em; }
-.tc-target.tc-marked { background: rgba(25,135,84,.16); border-bottom-color: #198754; }
+/* Texto LIMPIO: las vocales/huecos NO llevan recuadro. Las vocales son `inline`
+   (no parten la palabra a final de línea y el sombreado abraza la letra); el hueco
+   de coma es inline-block para tener un ancho de zona. */
+.tc-target { font: inherit; color: inherit; border-radius: 5px; }
+.tc-target.tc-gap { display: inline-block; min-width: 1.1em; }
+/* Marcada (trazo dibujado dentro): solo un sombreado suave, sin formas extra. */
+.tc-target.tc-marked { background: rgba(37,99,235,.16); }
 
 .tc-toolbar { display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; margin-bottom: .4rem; }
 .tc-tool.is-active { box-shadow: 0 0 0 3px rgba(0,0,0,.08); }
 
-/* Tap target: a vowel (tilde) or a between-words gap (coma). ≥44px hit area. */
-.tc-tap {
-  display: inline-block;
-  font: inherit; color: inherit;
-  min-width: 1.4em; min-height: 1.7em; line-height: 1.5;
-  padding: .05em .2em; margin: 0 .05em;
-  border: 2px dashed var(--ww-accent, rgba(99,102,241,.45)); border-radius: .5rem;
-  background: var(--ww-card-bg, #fff); cursor: pointer; vertical-align: baseline;
-  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
-  transition: background .12s, border-color .12s, transform .08s;
+/* Reveal (solo lectura): color + SOMBREADO, sin recuadros ni bordes.
+   ok = acierto (verde) · bad = marca de más (rojo, tachada) · miss = faltó (rojo). */
+.tc-tap.is-revealed {
+  font: inherit; color: inherit; border-radius: 5px; padding: .02em .06em; cursor: default;
 }
-.tc-gap { min-width: .9em; padding: .05em .1em; background: var(--ww-bg-soft, #f7f8ff); }
-.tc-tap:active { transform: scale(.9); }
-@media (hover: hover) { .tc-tap:not(.is-revealed):hover { background: #fff3cd; border-color: #ffc107; } }
-
-/* Chosen (marked) state */
-.tc-vowel.on { background: #ffe69c; border-color: #ffc107; border-style: solid; color: #664d03; font-weight: 700; }
-.tc-gap.on   { background: #d1e7dd; border-color: #198754; border-style: solid; color: #0f5132; font-weight: 700; min-width: 1.1em; }
-
-/* Read-only reveal: ok = right mark · bad = wrong mark · miss = should've marked */
-.tc-tap.is-revealed { cursor: default; }
-.tc-tap.ok   { background: rgba(25,135,84,.16); border-color: #198754; border-style: solid; color: #0f5132; font-weight: 700; }
-.tc-tap.bad  { background: rgba(220,53,69,.16); border-color: #dc3545; border-style: solid; color: #842029; font-weight: 700; text-decoration: line-through; }
-.tc-tap.miss { background: rgba(255,193,7,.20); border-color: #dc3545; border-style: dashed; color: #842029; font-weight: 700; }
+.tc-tap.is-revealed.tc-gap { display: inline-block; min-width: .9em; }
+.tc-tap.ok   { color: #0f5132; background: rgba(25,135,84,.20); font-weight: 700; }
+.tc-tap.bad  { color: #842029; background: rgba(220,53,69,.18); font-weight: 700; text-decoration: line-through; }
+.tc-tap.miss { color: #842029; background: rgba(220,53,69,.16); font-weight: 700; }
 
 .tc-hint { font-size: .95rem; }
 .tc-verdict { font-weight: 700; font-size: 1.1rem; }
