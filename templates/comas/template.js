@@ -17,7 +17,7 @@ export class ComasTemplate extends BaseTemplate {
     color: 'success',
     contentModel: 'textCorrection',
     templateVersion: 1,
-    aspectRatio: 'auto',
+    aspectRatio: '16/10',
     modes: { solo: true, live: true, async: true, practice: true },
     needsImageUpload: false,
     needsAudioUpload: false,

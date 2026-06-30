@@ -3,19 +3,46 @@
    mouse, touch and IR pen. Driven by core/textCorrectionRound.js for solo, VS,
    Equipos and LIVE. (Replaces the old per-template drag-drop styles.) */
 
-/* width:100% es clave: dentro del widget flex-column, `margin:0 auto` por sí solo
-   desactiva el stretch y la tarjeta se dimensiona al CONTENIDO (desborda). Con
-   width:100% se ajusta al ancho del marco (capado a 900) y el texto envuelve. */
-.tc-solo { width: 100%; max-width: 900px; margin: 0 auto; padding: .25rem 1rem 2rem; min-width: 0; box-sizing: border-box; }
-.tc-round { text-align: center; }
+/* El marco es un box de alto definido (16/10): la columna .tc-solo lo LLENA y el
+   texto se ajusta (fitPassage) para verse grande en pantalla completa. */
+.tc-solo {
+  position: relative;
+  width: 100%; height: 100%;
+  margin: 0; padding: .5rem;
+  min-width: 0; box-sizing: border-box;
+  display: flex; flex-direction: column;
+}
+/* Anula el centrado por margin:auto del widget para que .tc-solo llene la altura. */
+.ww-play-page .ww-player-frame > #ww-player-widget > .tc-solo { margin: 0; }
+
+/* "Frase X/Y" en una esquina, fuera del flujo, para no robar espacio al texto. */
+.tc-frase {
+  position: absolute; top: .45rem; left: .55rem; z-index: 5;
+  font-size: .8rem; font-weight: 600; line-height: 1;
+  padding: .28em .55em; border-radius: 999px;
+  background: rgba(0,0,0,.55); color: #fff;
+}
+
+.tc-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.tc-round { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+
+/* El área del texto toma toda la altura libre; el texto se centra y NO desborda
+   (fitPassage encoge la letra si hiciera falta). */
+.tc-passage-area {
+  flex: 1 1 auto; min-height: 0;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.tc-done-wrap { flex: 0 0 auto; padding-top: .6rem; text-align: center; }
 
 .tc-passage {
   position: relative;        /* el canvas de dibujo se superpone (inset:0) */
-  font-size: clamp(1.5rem, 4.5vw, 2.6rem);
-  line-height: 2.4;          /* hueco arriba de la vocal para dibujar la tilde */
+  width: 100%;
+  font-size: clamp(1.5rem, 4.5vw, 2.6rem);  /* fallback; fitPassage fija el real en px */
+  line-height: 2.0;          /* hueco arriba de la vocal para dibujar la tilde */
   text-align: center;
   overflow-wrap: break-word; /* parte solo entre palabras o palabras larguísimas */
-  margin: 1rem 0;
+  margin: 0;
   min-width: 0; max-width: 100%;
 }
 /* Espacios NORMALES → el texto envuelve al ancho del marco (pre-wrap los preservaba
@@ -36,9 +63,6 @@
 /* Marcada (trazo dibujado dentro): solo un sombreado suave, sin formas extra. */
 .tc-target.tc-marked { background: rgba(37,99,235,.16); }
 
-.tc-toolbar { display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; margin-bottom: .4rem; }
-.tc-tool.is-active { box-shadow: 0 0 0 3px rgba(0,0,0,.08); }
-
 /* Reveal (solo lectura): color + SOMBREADO, sin recuadros ni bordes.
    ok = acierto (verde) · bad = marca de más (rojo, tachada) · miss = faltó (rojo). */
 .tc-tap.is-revealed {
@@ -49,11 +73,9 @@
 .tc-tap.bad  { color: #842029; background: rgba(220,53,69,.18); font-weight: 700; text-decoration: line-through; }
 .tc-tap.miss { color: #842029; background: rgba(220,53,69,.16); font-weight: 700; }
 
-.tc-hint { font-size: .95rem; }
 .tc-verdict { font-weight: 700; font-size: 1.1rem; }
 .tc-verdict.ok { color: #198754; }
 .tc-verdict.bad { color: #dc3545; }
-.tc-tts { margin-bottom: .75rem; }
 
 /* Paper-like dark text on the notebook background skin. */
 body.bg-notebook .tc-passage { color: #1f2937; }

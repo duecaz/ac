@@ -20,8 +20,6 @@ const HINTS = {
   tilde: 'Toca las vocales que llevan tilde.',
   coma: 'Toca el hueco donde falta una coma.'
 };
-const SYMBOL = { tilde: ch => applyTilde(ch), coma: () => ',' };
-
 // Build the inline passage. `reveal` (optional) bakes correct/wrong/missed
 // classes for a read-only answer review; otherwise targets are interactive.
 function passageHtml(text, kind, reveal) {
@@ -73,40 +71,55 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
   const text = payload?.text || '';
   root.innerHTML = `
     <div class="tc-round">
-      <div class="tc-toolbar">
-        <button type="button" class="btn btn-sm btn-primary tc-tool tc-tool-pen is-active" data-tool="pen"><i class="bi bi-pencil-fill"></i> Lápiz</button>
-        <button type="button" class="btn btn-sm btn-outline-secondary tc-tool tc-tool-eraser" data-tool="eraser"><i class="bi bi-eraser-fill"></i> Borrador</button>
-        <button type="button" class="btn btn-sm btn-outline-danger tc-clear"><i class="bi bi-trash"></i> Limpiar</button>
-      </div>
-      <div class="tc-passage">${passageHtml(text, kind)}</div>
-      <div class="text-center mt-3"><button type="button" class="btn btn-success btn-lg tc-done"><i class="bi bi-check2-circle"></i> Listo</button></div>
-      <p class="tc-hint text-muted text-center mt-2">${kind === 'tilde' ? 'Dibuja la tilde sobre las vocales que la llevan.' : 'Dibuja la coma en el hueco donde falta.'}</p>
+      <div class="tc-passage-area"><div class="tc-passage">${passageHtml(text, kind)}</div></div>
+      <div class="tc-done-wrap"><button type="button" class="btn btn-success btn-lg tc-done"><i class="bi bi-check2-circle"></i> Listo</button></div>
     </div>`;
 
+  const areaEl = root.querySelector('.tc-passage-area');
   const passageEl = root.querySelector('.tc-passage');
+  // El texto LLENA el área disponible (grande en pantalla completa). Se monta el
+  // canvas, se ajusta el tamaño de letra al hueco, y se recalculan las zonas.
   const draw = mountTcDraw(passageEl, { targets: passageEl.querySelectorAll('.tc-target') });
-
-  const tools = root.querySelectorAll('.tc-tool');
-  tools.forEach(b => b.addEventListener('click', () => {
-    const eraser = b.dataset.tool === 'eraser';
-    draw.setEraser(eraser);
-    tools.forEach(t => {
-      const on = t === b;
-      t.classList.toggle('is-active', on);
-      t.classList.toggle('btn-primary', on && t.dataset.tool === 'pen');
-      t.classList.toggle('btn-warning', on && t.dataset.tool === 'eraser');
-      t.classList.toggle('btn-outline-secondary', !on);
-    });
-  }));
-  root.querySelector('.tc-clear').addEventListener('click', () => draw.clear());
+  const stopFit = fitPassage(areaEl, passageEl);
 
   let done = false;
   root.querySelector('.tc-done').addEventListener('click', () => {
     if (done) return;
     done = true;
+    stopFit();
     draw.freeze();
     onSubmit?.(draw.getMarked());
   });
+}
+
+// Ajusta el tamaño de letra para que el texto LLENE el área (sin desbordar): el
+// texto se ve grande en pantalla completa y se reajusta al cambiar de tamaño
+// (fullscreen, rotación). Búsqueda binaria del font-size que cabe en ancho y alto.
+// Devuelve una función para detener el observador (al congelar / cambiar de frase).
+function fitPassage(areaEl, passageEl) {
+  let raf = 0;
+  const fit = () => {
+    const availW = areaEl.clientWidth, availH = areaEl.clientHeight;
+    if (!availW || !availH) return;
+    let lo = 16, hi = 220, best = 16;
+    for (let i = 0; i < 13; i++) {
+      const mid = (lo + hi) / 2;
+      passageEl.style.fontSize = mid + 'px';
+      // Cabe si el contenido no desborda el área en ninguna dirección.
+      if (passageEl.scrollWidth <= availW + 1 && passageEl.scrollHeight <= availH + 1) {
+        best = mid; lo = mid;
+      } else {
+        hi = mid;
+      }
+    }
+    passageEl.style.fontSize = best + 'px';
+    // El canvas de dibujo observa passageEl y recalcula sus zonas solo.
+  };
+  const schedule = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(fit); };
+  const ro = new ResizeObserver(schedule);
+  ro.observe(areaEl);
+  schedule();
+  return () => { cancelAnimationFrame(raf); ro.disconnect(); };
 }
 
 // Projector (host) view for LIVE: the passage big and read-only. In the reveal
@@ -142,12 +155,8 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
 
   const shell = (bodyHtml) => mount(rootSel, html`
     <div class="tc-solo">
-      <div class="d-flex justify-content-center align-items-center mb-2">
-        <span class="badge bg-secondary">Frase ${idx + 1} / ${passages.length}</span>
-      </div>
-      <h4 class="text-center mb-1">${escapeHtml(title || activity.title || '')}</h4>
-      ${activity.subtitle ? `<p class="text-center text-muted mb-2">${escapeHtml(activity.subtitle)}</p>` : ''}
-      <div id="tc-body">${bodyHtml}</div>
+      <span class="tc-frase">${idx + 1} / ${passages.length}</span>
+      <div id="tc-body" class="tc-body">${bodyHtml}</div>
     </div>`);
 
   function ask() {
