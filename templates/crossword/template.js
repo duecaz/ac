@@ -19,6 +19,7 @@ export class CrosswordTemplate extends BaseTemplate {
     color:           'warning',
     contentModel:    'words',
     templateVersion: 1,
+    instructions:    'Completa el crucigrama: toca una pista, escribe la palabra y resuélvela.',
     modes:           { solo: true, live: false, async: true, practice: true },
     needsImageUpload: false,
     needsAudioUpload: false,

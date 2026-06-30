@@ -12,6 +12,7 @@ export class WordsearchTemplate extends BaseTemplate {
     color:           'success',
     contentModel:    'words',
     templateVersion: 1,
+    instructions:    'Encuentra las palabras ocultas arrastrando sobre la sopa de letras.',
     modes:           { solo: true, live: false, async: true, practice: true },
     needsImageUpload: false,
     needsAudioUpload: false,

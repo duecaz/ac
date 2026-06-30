@@ -12,6 +12,7 @@ export class QuestionLiveTemplate extends BaseTemplate {
     color: 'warning',
     contentModel: 'items',
     templateVersion: 1,
+    instructions: 'Espera tu turno: cuando salga tu pregunta, respóndela como indique el docente.',
     aspectRatio: '4/3',
     modes: { solo: true, live: true, async: false, practice: false },
     needsImageUpload: false, // images stored inline as data-URLs (no external upload)

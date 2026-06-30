@@ -13,6 +13,7 @@ export class MathTemplate extends BaseTemplate {
     color: 'warning',
     contentModel: 'qa',
     templateVersion: 1,
+    instructions: 'Resuelve cada operación y escribe el resultado con el teclado.',
     aspectRatio: '16/10',
     modes: { solo: true, live: true, async: true, practice: true },
     needsImageUpload: false,

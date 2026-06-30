@@ -17,6 +17,7 @@ export class QuizTemplate extends BaseTemplate {
     color: 'primary',
     contentModel: 'qa',
     templateVersion: 1,
+    instructions: 'Lee cada pregunta y toca la respuesta correcta.',
     aspectRatio: '16/10',
     modes: { solo: true, live: true, async: true, practice: false },
     needsImageUpload: true,

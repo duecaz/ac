@@ -14,6 +14,7 @@ export class MatchTemplate extends BaseTemplate {
     color: 'info',
     contentModel: 'pairs',
     templateVersion: 1,
+    instructions: 'Une cada elemento con su pareja arrastrando de uno al otro. Pulsa Enviar para corregir.',
     aspectRatio: '16/10',
     modes: { solo: true, live: false, async: true, practice: true },
     needsImageUpload: true,

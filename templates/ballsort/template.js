@@ -18,6 +18,7 @@ export class BallsortTemplate extends BaseTemplate {
     color:           'info',
     contentModel:    'ballsort',
     templateVersion: 1,
+    instructions:    'Ordena las bolas: mueve la de arriba de un tubo a otro hasta que cada tubo quede de un solo color.',
     aspectRatio:     '4/3',
     modes:           { solo: true, live: true, async: true, practice: false },
     // LIVE: this template runs as a single shared board where every student

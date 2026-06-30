@@ -11,6 +11,7 @@ export class WheelTemplate extends BaseTemplate {
     color: 'success',
     contentModel: 'items',
     templateVersion: 2,
+    instructions: 'Gira la ruleta y responde la pregunta que toque.',
     aspectRatio: '1/1',
     modes: { solo: true, live: true, async: false, practice: true },
     needsImageUpload: false,
