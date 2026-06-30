@@ -17,6 +17,7 @@ export class TildesTemplate extends BaseTemplate {
     contentModel: 'textCorrection',
     templateVersion: 1,
     instructions: 'Dibuja la tilde (´) sobre las vocales que la llevan. Cuando termines, pulsa “Listo” para corregir.',
+    panelFit: 'fill',    // el texto llena el panel y se escala para caber
     aspectRatio: '16/10',
     modes: { solo: true, live: true, async: true, practice: true },
     needsImageUpload: false,

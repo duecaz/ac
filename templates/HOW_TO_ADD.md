@@ -29,6 +29,10 @@ export class MyTemplate extends BaseTemplate {
     color: 'warning',             // bootstrap color
     contentModel: 'qa',           // 'qa' | 'pairs' | 'groups' | 'words' | 'entries' | 'diagram'
     templateVersion: 1,
+    instructions: 'Frase corta de cómo se juega.', // se muestra en la pantalla de inicio
+    panelFit: 'fill',             // maquetación en el panel VS: 'fill' (defecto, el
+                                  // contenido llena y se escala) | 'block' (bloque
+                                  // único con tope, p.ej. un teclado) | 'center'
     modes: { solo: true, live: false, async: true, practice: false },
     needsImageUpload: true,
     needsAudioUpload: false,

@@ -211,6 +211,15 @@ export function mountVs(host, a, ctx, opts = {}) {
     const isBoard = !!T.meta?.liveBoard;
     const boardProgress = { left: 0, right: 0 };
 
+    // POLÍTICA DE MAQUETACIÓN del panel, declarada por la plantilla (estándar):
+    //   'fill'   → el contenido LLENA el panel y se escala para caber (texto de
+    //              Tildes, opciones de Quiz). Es el valor por defecto.
+    //   'block'  → bloque ÚNICO indivisible a su tamaño natural, centrado y CON
+    //              tope (no se estira a toda la vertical) — p.ej. la calculadora.
+    //   'center' → tamaño natural, centrado, sin llenar (contenido pequeño).
+    // El panel recibe la clase `ww-fit-<modo>` y styles/vs.css aplica cada caso.
+    const panelFit = T.meta?.panelFit || 'fill';
+
     const vsTheme = getSkin(a.presentation?.skin)?.vsLayout || 'classic';
 
     paintArena();
@@ -224,14 +233,14 @@ export function mountVs(host, a, ctx, opts = {}) {
             ${vsBarHtml(st.left.name, st.right.name, avatars.left, avatars.right)}
             <div class="vs-main">
               <div class="vs-panel vs-left" data-side="left">
-                <div class="vs-body" id="vs-body-left"></div>
+                <div class="vs-body ww-fit-${panelFit}" id="vs-body-left"></div>
               </div>
               <div class="vs-stage" id="vs-stage">
                 <div class="vs-tug-label" id="vs-tug-label">¡Empate!</div>
                 <div class="vs-stage-canvas" id="vs-stage-canvas"></div>
               </div>
               <div class="vs-panel vs-right" data-side="right">
-                <div class="vs-body" id="vs-body-right"></div>
+                <div class="vs-body ww-fit-${panelFit}" id="vs-body-right"></div>
               </div>
             </div>
           </div>

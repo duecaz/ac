@@ -14,6 +14,7 @@ export class MathTemplate extends BaseTemplate {
     contentModel: 'qa',
     templateVersion: 1,
     instructions: 'Resuelve cada operación y escribe el resultado con el teclado.',
+    panelFit: 'block',   // el teclado es UN bloque: no se estira en el panel VS
     aspectRatio: '16/10',
     modes: { solo: true, live: true, async: true, practice: true },
     needsImageUpload: false,

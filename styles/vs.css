@@ -19,8 +19,15 @@
 .vs-panel.vs-right { grid-area: s2; }
 
 /* Animación central desactivada: ocultar el escenario y repartir todo el ancho
-   entre los dos paneles. */
-.vs-arena.vs-no-stage .vs-main { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "s1 s2"; }
+   entre los dos paneles. `grid-template-rows: 1fr` es CLAVE: sin él, en vertical
+   los paneles heredaban las DOS filas del layout apilado (stage+paneles) y solo
+   ocupaban una fracción del alto → el texto se apretaba y se cortaba dejando el
+   resto del panel vacío. Con una sola fila a 1fr, los paneles llenan el alto. */
+.vs-arena.vs-no-stage .vs-main {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: "s1 s2";
+}
 .vs-arena.vs-no-stage .vs-stage { display: none; }
 /* Editor: atenuar la lista de animaciones cuando la animación central está apagada. */
 .vsanim-list-off { opacity: .4; pointer-events: none; filter: grayscale(1); }
@@ -171,20 +178,25 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   CALCULADORA EN VS — es UN bloque indivisible: NO se estira a toda la vertical
-   A diferencia de Quiz/Tildes (que reparten su contenido al alto disponible), el
-   teclado es un solo bloque. Estirarlo para llenar el panel deja teclas
-   larguísimas; en su lugar conserva su tamaño NATURAL (teclas casi cuadradas, un
-   punto más altas), se CENTRA en el panel y, si el panel fuera muy bajo, hace
-   scroll en vez de deformarse. Va al final para ganar a las reglas de relleno
-   (math.css height:100% y el query estrecho de arriba) por orden de cascada.
+   POLÍTICA DE MAQUETACIÓN DEL PANEL (declarada por meta.panelFit de la plantilla;
+   vsView pone la clase ww-fit-<modo> en .vs-body). UN solo sitio decide el caso:
+
+     ww-fit-fill   (defecto) → el contenido LLENA el panel y se escala para caber
+                    (Tildes/Comas vía fitPassage, Quiz vía rejilla). Es lo que ya
+                    hacen las reglas base de arriba; no necesita nada extra.
+     ww-fit-block  → BLOQUE único indivisible (la calculadora): a su tamaño
+                    natural, centrado y CON TOPE — no se estira a toda la vertical
+                    (teclas larguísimas); en panel bajo encoge para caber.
+     ww-fit-center → tamaño natural, centrado, sin llenar (contenido pequeño).
    ══════════════════════════════════════════════════════════════════════════ */
-.vs-body:has(.ww-keypad-round) { justify-content: center; overflow: hidden; }
-/* Clave: TOPE de altura. El teclado llena su bloque (filas 1fr), pero el bloque
-   no pasa de ~500px (su tamaño natural cómodo) → en un panel alto NO se estira a
-   toda la vertical (teclas larguísimas), se queda a su tamaño y se centra
-   (margin:auto). En un panel más bajo, height:100% manda y encoge para caber. */
-.vs-body .ww-keypad-round {
+.vs-body.ww-fit-block  { justify-content: center; overflow: hidden; }
+.vs-body.ww-fit-center { justify-content: center; overflow: auto; }
+.vs-body.ww-fit-center > * { flex: 0 0 auto; margin: auto; }
+/* TOPE de altura del bloque (la calculadora). El teclado llena su bloque (filas
+   1fr), pero el bloque no pasa de ~500px (su tamaño natural cómodo) → en un panel
+   alto NO se estira (se centra con margin:auto); en uno bajo, height:100% manda y
+   encoge para caber. */
+.vs-body.ww-fit-block .ww-keypad-round {
   height: min(500px, 100%);
   width: 100%; max-width: 290px; margin: auto;
 }

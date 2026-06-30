@@ -18,6 +18,7 @@ export class QuizTemplate extends BaseTemplate {
     contentModel: 'qa',
     templateVersion: 1,
     instructions: 'Lee cada pregunta y toca la respuesta correcta.',
+    panelFit: 'fill',    // las opciones llenan el panel
     aspectRatio: '16/10',
     modes: { solo: true, live: true, async: true, practice: false },
     needsImageUpload: true,
