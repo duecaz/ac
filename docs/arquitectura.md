@@ -2,6 +2,12 @@
 
 > Versión 1.51.9 · Vanilla JS ES Modules · Sin bundler · Bootstrap 5 via CDN
 
+> ⚠️ **Nota:** algunas secciones de abajo (flujo LIVE, Edge Functions, "supabase =
+> producción") son ANTERIORES a la migración a PocketBase. El backend de
+> producción es **PocketBase** (`pb.lanube.uno`); **Supabase fue retirado** y la
+> plantilla **Froggy eliminada**. Para el estado actual, la fuente de verdad es
+> `CLAUDE.md` en la raíz del repo.
+
 ---
 
 ## 1. Principios de diseño
@@ -29,7 +35,6 @@ el contenido sin modificarlo. Cambiar el skin o el fondo no toca nada más.
 | `student.html` → `main.student.js` | Alumno | Unirse a sala live o abrir tarea asignada |
 | `embed.html` → `main.embed.js` | Embed externo | Actividad embebida en iframe (solo modo Solo) |
 | `tools/test.html` | Dev | Suite de tests en el navegador |
-| `tools/bot.html` | Dev | Bot virtual para smoke-test de sesiones live |
 
 Cada entrada registra sus rutas de hash (`#/home`, `#/edit/:id`, …) y hace boot.
 
@@ -81,13 +86,12 @@ ac/
 │   ├── textMarks.js      Sistema de marcas de tildes/comas
 │   ├── textCorrectionRound.js Ronda de corrección de texto (tildes/comas Live)
 │   ├── io.js             Importar/exportar actividades en JSON
-│   ├── auth.js           Autenticación (Supabase anon/email)
+│   ├── auth.js           Autenticación (PocketBase email/password)
 │   ├── identity.js       ID anónimo de visitante (para stats)
 │   ├── state.js          Estado global mínimo (anonId)
-│   ├── supabase.js       Cliente Supabase compartido
 │   ├── connection.js     Monitor de conectividad online/offline
-│   ├── errorLog.js       Captura de errores no manejados → Supabase
-│   ├── upload.js         Upload de imágenes a Supabase Storage
+│   ├── errorLog.js       Captura de errores no manejados (log local)
+│   ├── upload.js         Convierte imágenes a data-URL inline (sin storage externo)
 │   ├── vsAnimations.js   Animaciones VS (SVG propio + Lottie opcional)
 │   ├── vsAnimStore.js    Registro de animaciones custom (admin)
 │   ├── dbDiag.js         Diagnóstico CRUD de BD (usado en admin)
@@ -153,19 +157,15 @@ ac/
 │   └── adminView.js      Panel admin: tests, diagnóstico BD, animaciones custom
 │
 ├── adapters/             ← Implementaciones de los puertos (DataPort / RealtimePort)
-│   ├── index.js          Selector de backend: local | supabase | pocketbase
+│   ├── index.js          Selector de backend: local | pocketbase  (Supabase retirado)
 │   ├── local/            Backend en memoria (desarrollo offline)
 │   │   ├── remoteStore.js
 │   │   ├── realtime.js
 │   │   └── assignments.js
-│   ├── pocketbase/       Backend en Raspberry Pi 5 (pb.lanube.uno)
-│   │   └── remoteStore.js (actividades + resultados; live no implementado)
-│   └── supabase/         Backend producción (PostgreSQL + Realtime + Edge Functions)
-│       ├── remoteStore.js
-│       ├── realtime.js   (subscribeRoom, submitAnswer…)
-│       ├── room.js       (createRoom, joinSession, settle…)
-│       ├── live.js
-│       └── assignments.js
+│   └── pocketbase/       Backend PRODUCCIÓN (Raspberry Pi 5, pb.lanube.uno)
+│       ├── remoteStore.js (actividades + resultados)
+│       ├── realtime.js    (live: subscribeRoom, submitAnswer…)
+│       └── assignments.js (tareas)
 │
 ├── themes/               ← Skins externos. Cada carpeta es un skin autocontenido
 │   └── colegios/
@@ -184,15 +184,9 @@ ac/
 │   ├── match.css         Tablero de pares de emparejar
 │   ├── memory.css        Tablero de cartas de memoria
 │   ├── math.css          Keypad matemático; propiedades visuales → CSS vars (--key-*, --display-*)
-│   ├── froggy.css        Juego de rana; colores de opciones → --ww-shape-*
 │   ├── review.css        Pantalla de revisión de respuestas
 │   ├── textCorrection.css Texto con marcas de tildes/comas
 │   └── touch.css         Mejoras táctiles (botones más grandes en móvil)
-│
-├── supabase/
-│   ├── migrations/       SQL migrations (0001…0017)
-│   ├── functions/        Edge Functions (create-session, settle-item)
-│   └── schema.sql        Esquema completo actual
 │
 └── tests/                ← Tests de Node (no requieren DOM)
     ├── run.mjs           Corre todos los suites

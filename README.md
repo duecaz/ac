@@ -1,7 +1,7 @@
 # AC — plataforma de actividades (Wordwall + Kahoot)
 
 Plataforma de actividades educativas en **JS vanilla (ES Modules)**, sin bundler,
-desplegada en **GitHub Pages** con **Supabase** como backend. Una misma actividad
+desplegada en **GitHub Pages** con **PocketBase** como backend. Una misma actividad
 (contenido como dato) se juega en varios **modos**:
 
 - **Individual** — un dispositivo, sin red, puntuación local (estilo Wordwall).
@@ -15,8 +15,9 @@ en **`docs/modos-de-juego.md`** (es la fuente única; el gateo vive en `core/mod
 
 ## Stack
 HTML + CSS + JS vanilla (ES Modules). Bootstrap 5.3 + Bootstrap Icons por CDN.
-Supabase (auth anónima + Postgres con RLS, esquema `repo_ac` + Edge Functions).
-Sin bundler. GitHub Pages.
+PocketBase (`pb.lanube.uno`): auth email/password (`core/auth.js`), id anónimo
+(`core/identity.js`), colecciones para activities/results/live/tareas/reportes.
+Imágenes inline como data-URL en el JSON (sin storage externo). Sin bundler. GitHub Pages.
 
 ## Páginas
 - `teacher.html` (`main.teacher.js`) — crear/editar/jugar/lanzar, reportes, tareas.
@@ -24,7 +25,8 @@ Sin bundler. GitHub Pages.
 - `embed.html` (`main.embed.js`) — incrustar una actividad.
 
 ## Plantillas
-quiz · match (emparejar) · memory · tildes · comas · math · wheel (ruleta).
+quiz · match (emparejar) · memory · tildes · comas · math · wheel (ruleta) ·
+crossword · wordsearch · ballsort · question-live.
 Cada una es autocontenida en `templates/<name>/`. Añadir una: **`templates/HOW_TO_ADD.md`**
 (no se toca el core; el registro valida el contrato y falla ruidosamente).
 
@@ -35,7 +37,7 @@ python3 -m http.server 8000
 # Profesor: http://localhost:8000/teacher.html
 # Alumno:   http://localhost:8000/student.html
 ```
-En `localhost` el backend es **`local`** (sin Supabase). Forzar: `ww.setBackend('local'|'supabase')`
+En `localhost` el backend es **`local`** (offline). Forzar: `ww.setBackend('local'|'pocketbase')`
 en consola y recargar. Detalles: **`docs/dev-local.md`**.
 
 ## Tests
@@ -46,28 +48,29 @@ Lo no automatizable aquí (render DOM / táctil) se verifica en navegador.
 
 ## Estructura
 ```
-core/        router, storage, supabase, migrate, registry, modes, skins, sounds…
+core/        router, storage, migrate, registry, modes, skins, sounds, auth, identity…
 kernel/      session/ (motor vs·teams·solo·live), content/ (modelos + conversores)
-templates/   quiz, match, memory, tildes, comas, math, wheel  (+ HOW_TO_ADD.md)
-views/       home, editView, playerView, modeSetup, vsView, teamsView, memoryView, hostLive…
-adapters/    backend intercambiable: local · supabase · pocketbase(stub)
+templates/   quiz, match, memory, tildes, comas, math, wheel, crossword, wordsearch,
+             ballsort, question-live  (+ HOW_TO_ADD.md)
+views/       home, editView, playerView, startScreen, modeSetup, vsView, teamsView, hostLive…
+adapters/    backend intercambiable: local (offline) · pocketbase (prod)
 styles/      theme, player, quiz, vs, teams, memory, live…
-supabase/    migrations/ + Edge Functions (settle-item)
+themes/      skins con CSS propio (colegios, tv-show, arcade)
 docs/        modos-de-juego.md, panorama-actividades.md, modo-wordwall.md, dev-local.md, auditoria-*.md
 ```
 
-## Supabase (setup, una vez)
-1. Pages: repo `duecaz/ac` → Deploy from branch `main` / `(root)`.
-2. Esquema `repo_ac` aplicado en el proyecto `www` (`klecbdjbrsyshjqzdxhw`) y **expuesto** en API → Exposed schemas.
-3. **Anonymous Sign-Ins** activo (Auth → Providers).
-4. **Google provider** configurado + **Manual linking** activo (Auth → Settings) — necesario para migrar anónimo→cuenta conservando las actividades. Ver `docs/identidad.md`.
-5. Bucket `media` (público, 5MB máx).
+## PocketBase (backend)
+Backend en **PocketBase** (`pb.lanube.uno`, Docker en una Raspberry Pi 5). Maneja
+activities, results, live sessions, tareas (assignments), reportes y auth
+(email/password en `core/auth.js`). Las imágenes van **inline** como data-URL en
+el JSON de la actividad (límite ~200 KB) — sin storage externo. El backend `local`
+es para desarrollo offline. (Supabase fue **retirado**; ya no se usa en ninguna ruta.)
 
 > Versión actual: ver `core/constants.js` (`VERSION`).
 
 ## Modelo de datos — banco compartido
 Las actividades son un **banco común sin dueño** (`author_id = null`, lectura
-pública por RLS): cualquiera las ve/abre por URL sin login y NO dependen de la
-identidad del navegador → limpiar la caché no las pierde (`sync()` las repuebla
-desde la nube). Sin privacidad por cuenta (el login con Google queda para
-actividades privadas, si en el futuro se necesitan).
+pública): cualquiera las ve/abre por URL sin login y NO dependen de la identidad
+del navegador → limpiar la caché no las pierde (`sync()` las repuebla desde la
+nube). Sin privacidad por cuenta (el login queda para actividades privadas, si en
+el futuro se necesitan).

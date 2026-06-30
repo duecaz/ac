@@ -1,8 +1,11 @@
 # Estado del proyecto — handoff para continuar
 
 > Repo **duecaz/ac** · rama de trabajo **main** · versión actual **v1.31.4** · fecha 2026-06-15.
-> JS vanilla (ES Modules), sin bundler, GitHub Pages + Supabase. Este documento
+> JS vanilla (ES Modules), sin bundler, GitHub Pages + PocketBase. Este documento
 > resume arquitectura, decisiones y lo pendiente para retomar en otro chat.
+>
+> ⚠️ **Snapshot antiguo:** Supabase fue **retirado** (backend ahora PocketBase) y la
+> plantilla **Froggy eliminada**. Fuente de verdad actual: `CLAUDE.md`.
 
 ## Cómo trabajar (importante)
 - El contenedor a veces clona un **mirror desfasado** → **antes de tocar nada**:

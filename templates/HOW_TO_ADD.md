@@ -93,27 +93,28 @@ import './templates/miplantilla/index.js';
 
 (En `main.student.js` solo si la plantilla soporta `solo`/`async`; si solo es `live`, basta con teacher.)
 
-## 5. (Si soporta LIVE) — añade scorer en la Edge Function
+## 5. (Si soporta LIVE / VS / Equipos-auto) — añade el scorer
 
-En `supabase/functions/settle-item/_scorers/miplantilla.ts`:
+La puntuación es **pura y del lado del cliente** (no hay Edge Function; Supabase
+fue retirado). Implementa `scoreSubmission` como un `static` de tu plantilla,
+normalmente delegando a `templates/miplantilla/scorer.js`:
 
-```ts
-export function scoreOne(activity, item, ans) {
-  return { correct: true|false|null, points: 0 };
+```js
+// templates/miplantilla/scorer.js
+import { basePoints, wrongPoints } from '../../core/scoreHelpers.js';
+export function scoreMiSubmission({ value, item, activity, mode = 'solo' }) {
+  const ok = /* ¿correcto? */;
+  if (ok === null) return { correct: null, points: 0 };          // no puntuable
+  const scoring = activity?.scoring || {};
+  return ok
+    ? { correct: true,  points: basePoints(item, scoring) }
+    : { correct: false, points: wrongPoints(scoring) };
 }
 ```
 
-Y en `index.ts` del Edge Function:
-
-```ts
-import { scoreOne as miScore } from "./_scorers/miplantilla.ts";
-const SCORERS = { quiz: quizScoreOne, miplantilla: miScore };
-```
-
-Redeploya con:
-```
-mcp deploy_edge_function settle-item
-```
+Y en `template.js`: `static scoreSubmission = scoreMiSubmission;` (más
+`getRoundPayload` si declara `meta.modes.live`). El registro valida que ambas
+existan cuando la plantilla es live.
 
 ## 6. Modos de juego (qué desbloquea cada método)
 
