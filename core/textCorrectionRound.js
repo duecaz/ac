@@ -183,18 +183,23 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     const last = idx === passages.length - 1;
     shell(`
       <div class="tc-round">
-        <div class="tc-passage">${passageHtml(p.text, kind, { got, want })}</div>
-        <div class="text-center mt-3">
+        <div class="tc-passage-area"><div class="tc-passage">${passageHtml(p.text, kind, { got, want })}</div></div>
+        <div class="tc-done-wrap">
           <span class="tc-verdict ${r.correct ? 'ok' : 'bad'}">
             <i class="bi ${r.correct ? 'bi-check-circle-fill' : 'bi-x-circle-fill'}"></i>
             ${r.correct ? '¡Correcto!' : 'Revisa las marcas'}
           </span>
-          <div class="mt-3"><button type="button" class="btn btn-primary btn-lg tc-next">
+          <div class="mt-2"><button type="button" class="btn btn-primary btn-lg tc-next">
             ${last ? '<i class="bi bi-flag-fill"></i> Ver resultado' : 'Siguiente <i class="bi bi-arrow-right"></i>'}
           </button></div>
         </div>
       </div>`);
+    // El texto de la corrección también LLENA el área (mismo tamaño grande).
+    const areaEl = document.querySelector('.tc-passage-area');
+    const passageEl = areaEl.querySelector('.tc-passage');
+    const stopFit = fitPassage(areaEl, passageEl);
     document.querySelector('.tc-next').addEventListener('click', () => {
+      stopFit();
       if (last) finish();
       else { idx++; ask(); }
     });
