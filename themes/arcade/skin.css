@@ -33,18 +33,19 @@
    ::before es el PRIMER hijo flex de la columna → fila superior. El texto corre
    con text-indent (mueve solo el texto; el marco/borde quedan fijos). */
 .vs-arena.vs-skin-arcade::before {
-  content: "★ INSERT COIN ★ READY PLAYER ONE ★ PLAYER 1  VS  PLAYER 2 ★ FIGHT! ★ HIGH SCORE ★ INSERT COIN ★ READY PLAYER ONE ★ PLAYER 1  VS  PLAYER 2 ★ FIGHT! ★ ";
+  content: "★ MATH FIGHTER ★ ¡BATALLA DE COLEGIOS! ★ INSERT COIN TO PLAY ★ READY PLAYER ONE ★ MATH FIGHTER ★ ¡BATALLA DE COLEGIOS! ★ INSERT COIN TO PLAY ★ READY PLAYER ONE ★ ";
   order: -1; flex: 0 0 auto;
-  display: block; height: clamp(24px, 5.5cqh, 44px); line-height: clamp(24px, 5.5cqh, 44px);
+  margin: .5rem .6rem .25rem; box-sizing: border-box;
+  display: block; height: clamp(26px, 5.5cqh, 46px); line-height: clamp(20px, 5.5cqh, 40px);
   white-space: nowrap; overflow: hidden;
   font-size: clamp(.5rem, 1.7cqw, .9rem); font-weight: 400;
   color: #ffd400; text-shadow: 0 0 6px #ffae00, 0 0 12px rgba(255,106,0,.7);
   background: linear-gradient(180deg, #1a0a3a, #0a0820);
-  border-bottom: 3px solid #ffd400;
-  box-shadow: inset 0 0 18px rgba(255,212,0,.22), 0 0 16px rgba(255,170,0,.3);
+  border: 3px solid #ffd400; border-radius: .6rem;
+  box-shadow: inset 0 0 18px rgba(255,212,0,.2), 0 0 16px rgba(255,170,0,.35);
   animation: arc-marquee 16s linear infinite;
 }
-@keyframes arc-marquee { from { text-indent: 100%; } to { text-indent: -210%; } }
+@keyframes arc-marquee { from { text-indent: 100%; } to { text-indent: -240%; } }
 
 /* ── Pie "INSERT COIN" (parpadea) ─────────────────────────────────────────── */
 .vs-arena.vs-skin-arcade::after {
@@ -62,27 +63,42 @@
 }
 @keyframes arc-blink { 50% { opacity: .4; } }
 
-/* ── Scoreboard ───────────────────────────────────────────────────────────── */
+/* ── Scoreboard — DOS paneles separados (cian / rojo) con el VS flotando ───── */
 .vs-skin-arcade .vss-bar {
-  height: clamp(70px, 15cqh, 110px);
-  background: #0a0820;
-  border-bottom: 2px solid rgba(124,58,237,.5);
-  box-shadow: 0 4px 22px rgba(0,0,0,.6);
+  height: clamp(82px, 17cqh, 120px);
+  background: transparent; border: none; box-shadow: none;
+  align-items: center; gap: .4rem; padding: .35rem .6rem 0;
 }
-.vs-skin-arcade .vss-team { overflow: visible; }
-.vs-skin-arcade .vss-left  { background: linear-gradient(100deg, rgba(34,211,238,.12), rgba(34,211,238,.02)); box-shadow: inset 0 0 34px rgba(34,211,238,.18); }
-.vs-skin-arcade .vss-right { background: linear-gradient(260deg, rgba(255,59,107,.12), rgba(255,59,107,.02)); box-shadow: inset 0 0 34px rgba(255,59,107,.18); }
-.vs-skin-arcade .vss-mid   { background: #0a0820; }
+.vs-skin-arcade .vss-team {
+  overflow: visible; align-self: stretch;
+  border-radius: .8rem; padding: .45rem .85rem;
+  margin: .15rem 0 .4rem;
+}
+.vs-skin-arcade .vss-left  {
+  border: 3px solid #22d3ee;
+  background: linear-gradient(100deg, rgba(34,211,238,.16), rgba(34,211,238,.03));
+  box-shadow: 0 0 18px rgba(34,211,238,.4), inset 0 0 26px rgba(34,211,238,.14);
+}
+.vs-skin-arcade .vss-right {
+  border: 3px solid #ff3b6b;
+  background: linear-gradient(260deg, rgba(255,59,107,.16), rgba(255,59,107,.03));
+  box-shadow: 0 0 18px rgba(255,59,107,.4), inset 0 0 26px rgba(255,59,107,.14);
+}
+.vs-skin-arcade .vss-mid   { width: clamp(46px, 8cqw, 70px); background: transparent; }
 
-.vs-skin-arcade .vss-label { font-size: clamp(.4rem, .9cqw, .55rem); letter-spacing: .12em; }
-.vs-skin-arcade .vss-left  .vss-label { color: #22d3ee; }
-.vs-skin-arcade .vss-right .vss-label { color: #ff3b6b; }
+/* Etiqueta "PLAYER 1/2" (el DOM dice EQUIPO → se oculta y se reemplaza por CSS). */
+.vs-skin-arcade .vss-label { font-size: 0; letter-spacing: .12em; }
+.vs-skin-arcade .vss-left  .vss-label::before { content: "PLAYER 1"; font-size: clamp(.4rem, .92cqw, .58rem); color: #22d3ee; }
+.vs-skin-arcade .vss-right .vss-label::before { content: "PLAYER 2"; font-size: clamp(.4rem, .92cqw, .58rem); color: #ff3b6b; }
+
 .vs-skin-arcade .vss-name  { font-size: clamp(.6rem, 1.4cqw, 1rem); font-weight: 400; }
-.vs-skin-arcade .vss-left  .vss-name { color: #aef6ff; text-shadow: 0 0 8px rgba(34,211,238,.85); }
-.vs-skin-arcade .vss-right .vss-name { color: #ffd0db; text-shadow: 0 0 8px rgba(255,59,107,.85); }
-.vs-skin-arcade .vss-score { font-size: clamp(1.3rem, 3.2cqw, 2.6rem); }
-.vs-skin-arcade .vss-left  .vss-score { color: #22d3ee; text-shadow: 0 0 14px rgba(34,211,238,.95); }
-.vs-skin-arcade .vss-right .vss-score { color: #ff3b6b; text-shadow: 0 0 14px rgba(255,59,107,.95); }
+.vs-skin-arcade .vss-left  .vss-name { color: #eafcff; text-shadow: 0 0 8px rgba(34,211,238,.85); }
+.vs-skin-arcade .vss-right .vss-name { color: #eafcff; text-shadow: 0 0 8px rgba(255,59,107,.85); }
+/* Marcadores en DORADO (como la referencia), grandes y con halo de neón. */
+.vs-skin-arcade .vss-score {
+  font-size: clamp(1.5rem, 3.6cqw, 2.8rem);
+  color: #ffd400; text-shadow: 0 0 14px rgba(255,170,0,.95), 0 0 4px rgba(255,212,0,.8);
+}
 
 /* Estrellas decorativas (rating arcade) en lugar de la barra de progreso. */
 .vs-skin-arcade .vs-prog { display: none; }
@@ -116,6 +132,12 @@
 .vs-skin-arcade .vs-stage     { border: none; }
 .vs-skin-arcade .vs-tug-label { color: #ffd400; font-size: clamp(.7rem, 1.6cqw, 1.1rem); text-shadow: 0 0 8px rgba(255,170,0,.6); }
 
+/* Zona de juego: tinte partido (azul izq · rojo der) + línea central rosa. */
+.vs-skin-arcade .vs-main {
+  background:
+    linear-gradient(0deg, transparent calc(50% - 1px), rgba(236,72,153,.4) 50%, transparent calc(50% + 1px)),
+    linear-gradient(90deg, rgba(34,211,238,.07) 0%, transparent 42%, transparent 58%, rgba(255,59,107,.07) 100%);
+}
 .vs-skin-arcade .vs-panel { align-items: center; justify-content: center; padding: .55rem .4rem; }
 .vs-skin-arcade .vs-panel.vs-left  { background: radial-gradient(ellipse 120% 80% at 60% 50%, rgba(34,211,238,.08), transparent 70%); }
 .vs-skin-arcade .vs-panel.vs-right { background: radial-gradient(ellipse 120% 80% at 40% 50%, rgba(255,59,107,.08), transparent 70%); }
@@ -150,9 +172,11 @@
   text-align: center; color: #ffd400;
   font-size: clamp(.8rem, 13cqw, 1.25rem);
   text-shadow: 0 0 6px rgba(255,170,0,.7);
+  border: 2px solid rgba(255,212,0,.45); border-radius: .45rem;
+  background: rgba(0,0,0,.35); padding: .45em .3em;
 }
 .vs-skin-arcade .ww-keypad-q::before {
-  content: "SOLVE!"; display: block; margin-bottom: .35em; letter-spacing: .15em;
+  content: "SOLVE!"; display: block; margin-bottom: .4em; letter-spacing: .15em;
   font-size: .5em; color: #ff2e88; text-shadow: 0 0 6px rgba(255,46,136,.7);
 }
 .vs-skin-arcade .ww-keypad-eq { color: rgba(255,255,255,.4); }
