@@ -5,21 +5,25 @@
 
 /* El marco es un box de alto definido (16/10): la columna .tc-solo lo LLENA y el
    texto se ajusta (fitPassage) para verse grande en pantalla completa. */
+/* TODO el espaciado va en unidades del CONTENEDOR (cq*) — el widget es
+   container-type:size — para que márgenes/huecos crezcan EN PROPORCIÓN al marco
+   (pantalla completa) en vez de quedarse fijos en px. */
 .tc-solo {
   position: relative;
   width: 100%; height: 100%;
-  margin: 0; padding: .5rem;
+  margin: 0; padding: 1.6cqmin;
   min-width: 0; box-sizing: border-box;
   display: flex; flex-direction: column;
 }
 /* Anula el centrado por margin:auto del widget para que .tc-solo llene la altura. */
 .ww-play-page .ww-player-frame > #ww-player-widget > .tc-solo { margin: 0; }
 
-/* "Frase X/Y" en una esquina, fuera del flujo, para no robar espacio al texto. */
+/* "Frase X/Y" en una esquina, fuera del flujo, para no robar espacio al texto.
+   Escala con el marco (cqmin) para no verse minúsculo en pantalla completa. */
 .tc-frase {
-  position: absolute; top: .45rem; left: .55rem; z-index: 5;
-  font-size: .8rem; font-weight: 600; line-height: 1;
-  padding: .28em .55em; border-radius: 999px;
+  position: absolute; top: 1.4cqmin; left: 1.6cqmin; z-index: 5;
+  font-size: clamp(.7rem, 2.3cqmin, 1.4rem); font-weight: 600; line-height: 1;
+  padding: .3em .6em; border-radius: 999px;
   background: rgba(0,0,0,.55); color: #fff;
 }
 
@@ -33,7 +37,9 @@
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
 }
-.tc-done-wrap { flex: 0 0 auto; padding-top: .6rem; text-align: center; }
+.tc-done-wrap { flex: 0 0 auto; padding-top: 1.8cqh; text-align: center; }
+/* El botón también escala con el marco (no un botón diminuto en pantalla grande). */
+.tc-done-wrap .btn { font-size: clamp(.9rem, 2.6cqmin, 1.7rem); padding: .5em 1.1em; }
 
 .tc-passage {
   position: relative;        /* el canvas de dibujo se superpone (inset:0) */
@@ -83,22 +89,26 @@
    el font-size dinámico (fitPassage). El renglón queda bajo la escritura (a la
    altura de la base de la letra), con sitio arriba para dibujar la tilde. */
 body.bg-notebook .tc-passage { color: #1f2937; }
+/* Grosor del renglón en `em`: engorda con la letra (no un pelo de 2px fijo cuando
+   el texto mide 77px). Periodo y posición ya van en `em` = escalan con el texto. */
 body.bg-notebook .tc-passage,
 .ww-player-frame.bg-notebook .tc-passage {
   background-image: repeating-linear-gradient(
     to bottom,
     transparent 0, transparent 1.5em,
-    rgba(37,99,235,.32) 1.5em, rgba(37,99,235,.32) calc(1.5em + 2px),
-    transparent calc(1.5em + 2px), transparent 2em);
+    rgba(37,99,235,.32) 1.5em, rgba(37,99,235,.32) calc(1.5em + .05em),
+    transparent calc(1.5em + .05em), transparent 2em);
   background-position: left top;
 }
-/* En Tildes/Comas el marco solo aporta el papel crema + el margen rojo; las
-   líneas azules (fijas) del fondo se omiten porque las pinta .tc-passage
-   alineadas al texto (evita el doble rayado con distinto interlineado). */
+/* El marco solo aporta el papel crema; el margen rojo se pinta en .tc-solo con
+   unidades del contenedor (cqw) para que su posición/grosor crezcan con el marco. */
 .ww-player-frame.bg-notebook:has(.tc-solo),
-body.bg-notebook:has(.tc-solo) {
-  background:
-    linear-gradient(to right, transparent 0, transparent 58px,
-      rgba(220,38,38,.45) 58px, rgba(220,38,38,.45) 60px, transparent 60px),
-    #fffdf5;
+body.bg-notebook:has(.tc-solo) { background: #fffdf5; }
+.ww-player-frame.bg-notebook .tc-solo,
+body.bg-notebook .tc-solo {
+  background: linear-gradient(to right,
+    transparent calc(4cqw - .18cqw),
+    rgba(220,38,38,.4) calc(4cqw - .18cqw),
+    rgba(220,38,38,.4) calc(4cqw + .18cqw),
+    transparent calc(4cqw + .18cqw));
 }
