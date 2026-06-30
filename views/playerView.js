@@ -133,16 +133,8 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   // progreso (si está activa) y arranca el player real en el mismo escenario.
   function mountSoloStart() {
     const widget = document.getElementById('ww-player-widget');
-    const act = playActivity();
-    const T = getTemplate(liveTemplate) || getTemplate(a.template);
-    const modes = availableModes(act)
-      .filter(md => md.embed && md.supportsTemplate(T))
-      .map(md => ({ id: md.id, label: md.label, icon: md.icon, color: md.color,
-                    active: md.id === 'solo', disabled: !md.isAvailable(act) }));
-    return renderStartScreen(widget, act, {
-      modes,
+    return renderStartScreen(widget, playActivity(), {
       frame: document.getElementById('ww-frame'),
-      onPickMode: (mid) => selectMode(mid),
       onStart: async () => {
         if (currentAnim) { try { currentAnim.dispose(); } catch {} currentAnim = null; }
         currentAnim = mountSoloAnimator(document.getElementById('ww-solo-anim'), playActivity());

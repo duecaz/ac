@@ -4,17 +4,14 @@
 // views/modeSetup.js) mostraban una pantalla previa; el modo Individual saltaba
 // directo al primer ítem, así que el alumno VEÍA el ejercicio antes de empezar y
 // no había un lugar común para el título, las instrucciones y los ajustes. Esta
-// pantalla lo estandariza: una sola tarjeta con Título + Instrucciones + (modo,
-// si hay varios) + Ajustes (sonido, efectos y, en Tildes/Comas, "Calibrar
-// pizarra") + un botón grande "Iniciar" que SIEMPRE entra en pantalla completa.
+// pantalla lo estandariza: una sola tarjeta con Título + Instrucciones + Ajustes
+// (sonido, efectos y, en Tildes/Comas, "Calibrar pizarra") + un botón grande
+// "Iniciar" que SIEMPRE entra en pantalla completa.
 //
 // Contrato:
 //   host      elemento/selector del escenario donde se pinta (#ww-player-widget).
 //   activity  la actividad a jugar (ya con su tema/preview aplicado).
 //   opts:
-//     modes        [{ id, label, icon, color, active, disabled }] para los chips
-//                  de modo. Si hay 0/1 no se muestran. Opcional.
-//     onPickMode   (id) => void al pulsar un chip de otro modo. Opcional.
 //     onStart      () => void|Promise. Arranca el juego de verdad. Requerido.
 //     frame        elemento del marco a poner en pantalla completa (#ww-frame).
 import { html, escapeHtml, mount } from '../core/html.js';
@@ -40,13 +37,12 @@ const TOGGLE = (id, icon, label, on) => `
   </button>`;
 
 export function renderStartScreen(host, activity, opts = {}) {
-  const { modes = [], onPickMode, onStart, frame } = opts;
+  const { onStart, frame } = opts;
   const T = getTemplate(activity?.template);
   const color = 'success';
   const soundOn = activity?.presentation?.sound !== false && !isMuted();
   const fxOn = !isEffectsMuted();
   const isText = activity?.template === 'tildes' || activity?.template === 'comas';
-  const pickable = (modes || []).filter(m => !m.disabled);
 
   mount(host, html`
     <div class="ww-start">
@@ -54,15 +50,6 @@ export function renderStartScreen(host, activity, opts = {}) {
         <div class="ww-start-icon"><i class="bi ${T?.meta?.icon || 'bi-puzzle'}"></i></div>
         <h2 class="ww-start-title">${escapeHtml(activity?.title || 'Actividad')}</h2>
         <p class="ww-start-instructions">${escapeHtml(activityInstructions(activity))}</p>
-
-        ${pickable.length > 1 ? `
-          <div class="ww-start-modes">
-            ${modes.map(m => `
-              <button type="button" class="ww-start-mode ${m.active ? 'is-active' : ''}"
-                data-mode="${m.id}" ${m.disabled ? 'disabled' : ''}>
-                <i class="bi ${m.icon}"></i> ${escapeHtml(m.label)}
-              </button>`).join('')}
-          </div>` : ''}
 
         <div class="ww-start-settings">
           ${TOGGLE('sound', 'bi-volume-up-fill', 'Sonido', soundOn)}
@@ -88,12 +75,6 @@ export function renderStartScreen(host, activity, opts = {}) {
     setEffectsMuted(!next); paintToggle(t, next);
   });
   on(el, 'click', '[data-calib]', () => openPenCalibration());
-
-  // Cambio de modo (chips)
-  on(el, 'click', '.ww-start-mode', (e, t) => {
-    const id = t.dataset.mode;
-    if (id && !t.disabled && typeof onPickMode === 'function') onPickMode(id);
-  });
 
   // Iniciar → SIEMPRE pantalla completa, luego arranca el juego.
   on(el, 'click', '.ww-start-go', () => {

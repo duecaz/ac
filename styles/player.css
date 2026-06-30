@@ -190,14 +190,6 @@
   margin: 0; color: var(--ww-muted, #6b7280);
   font-size: clamp(.95rem, 2.6cqmin, 1.4rem); max-width: 52ch;
 }
-.ww-start-modes { display: flex; flex-wrap: wrap; gap: .6rem; justify-content: center; }
-.ww-start-mode {
-  border: 2px solid #cbd5e1; background: #fff; color: #334155;
-  border-radius: 999px; padding: .4em 1em; cursor: pointer;
-  font-size: clamp(.85rem, 2.3cqmin, 1.15rem); display: inline-flex; align-items: center; gap: .4em;
-}
-.ww-start-mode.is-active { border-color: #198754; background: #198754; color: #fff; }
-.ww-start-mode:disabled { opacity: .5; cursor: not-allowed; }
 .ww-start-settings { display: flex; flex-wrap: wrap; gap: .6rem; justify-content: center; }
 .ww-set-toggle {
   border: 2px solid #e2e8f0; background: #f8fafc; color: #334155;
