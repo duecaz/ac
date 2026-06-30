@@ -50,7 +50,8 @@
 .ww-match .ww-card-img { padding: 0; }
 .ww-match .ww-card-img img {
   width: 100%;
-  height: clamp(120px, 26cqh, 190px);   /* más alta: la foto se ve completa */
+  aspect-ratio: 16 / 10;                 /* recuadro 16/10: proporción equilibrada */
+  max-height: 200px;                     /* tope para que no desborde en marcos anchos */
   object-fit: cover;
   display: block;
   pointer-events: none;
@@ -59,9 +60,9 @@
 /* Velo inferior para que el badge se lea sobre cualquier foto. */
 .ww-match .ww-card-img::after {
   content: '';
-  position: absolute; left: 0; right: 0; bottom: 0; height: 46%;
+  position: absolute; left: 0; right: 0; bottom: 0; height: 54px;
   border-radius: 0 0 8px 8px;
-  background: linear-gradient(transparent, rgba(0,0,0,.55));
+  background: linear-gradient(transparent, rgba(0,0,0,.6));
   pointer-events: none;
 }
 .ww-match .ww-card-img .ww-card-label {
