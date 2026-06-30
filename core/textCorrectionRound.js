@@ -15,6 +15,7 @@ import { resultScreenHtml } from './resultScreen.js';
 import { GameEvents, emitGame } from './gameEvents.js';
 import { clock } from './clock.js';
 import { mountTcDraw } from './textCorrectionDraw.js';
+import { openPenCalibration } from './penCalibration.js';
 
 const HINTS = {
   tilde: 'Toca las vocales que llevan tilde.',
@@ -71,9 +72,14 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
   const text = payload?.text || '';
   root.innerHTML = `
     <div class="tc-round">
+      <button type="button" class="tc-calib" title="Calibrar lápiz/borrador en la pizarra">
+        <i class="bi bi-sliders"></i> Calibrar pizarra
+      </button>
       <div class="tc-passage-area"><div class="tc-passage">${passageHtml(text, kind)}</div></div>
       <div class="tc-done-wrap"><button type="button" class="btn btn-success btn-lg tc-done"><i class="bi bi-check2-circle"></i> Listo</button></div>
     </div>`;
+
+  root.querySelector('.tc-calib').addEventListener('click', () => openPenCalibration());
 
   const areaEl = root.querySelector('.tc-passage-area');
   const passageEl = root.querySelector('.tc-passage');

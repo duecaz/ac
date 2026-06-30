@@ -3,13 +3,14 @@
 // la zona de una vocal/hueco marca esa posición → mismo `value` (number[]) que el
 // modo "tocar", así el scoring/solo/host no cambian.
 //
-// FASE 1 — Pointer API:
-//   · dibujar: lápiz (pointerType 'pen') o ratón/dedo.
-//   · borrar: palma (≥3 contactos simultáneos) borra los trazos cercanos, o el
-//     botón "Borrador" (para ratón/escritorio). "Limpiar" borra todo.
-// (FASE 2 añadirá el PenDetector IR por tamaño de contacto + calibración.)
+// FASE 2 — detección por TAMAÑO de contacto (core/penDetector.js): cada puntero
+// se clasifica al bajar → lápiz punta/dedo DIBUJAN; lápiz parte trasera BORRA;
+// palma (≥3 contactos) BORRA. Los umbrales se calibran con "Calibrar pizarra" y
+// se guardan en sessionStorage; SIN calibrar todo dibuja salvo la palma (=Fase 1).
 //
 // Adaptado del enfoque de duecaz/play (zonas + trazos en canvas).
+
+import { pointerMetric, classifyTool, toolAction, loadThresholds } from './penDetector.js';
 
 export function mountTcDraw(passageEl, { targets, onChange } = {}) {
   passageEl.style.position = 'relative';
@@ -24,6 +25,7 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
   let zones = [];               // { pos, el, x, y, w, h, hit }
   let strokes = [];             // [{ pts:[{x,y}] }]
   const active = new Set();     // pointerIds activos (para detectar palma)
+  const pointerAction = new Map(); // pointerId → 'draw' | 'erase' (clasificado al bajar)
   let drawing = false, palmErase = false, eraserMode = false, frozen = false, cur = null, dpr = 1;
 
   function resize() {
@@ -110,35 +112,40 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
 
   const getMarked = () => zones.filter(z => z.hit).map(z => z.pos).sort((a, b) => a - b);
 
-  // ── Pointer handlers (Fase 1) ───────────────────────────────────────────────
+  // ── Pointer handlers (Fase 2: dibuja/borra según el tamaño del contacto) ──────
   const onDown = (e) => {
     if (frozen) return;
     active.add(e.pointerId);
-    if (active.size >= 3) {                 // palma → borrar
+    const tool = classifyTool(pointerMetric(e), active.size, loadThresholds());
+    if (tool === 'palm') {                  // palma → borrar
       palmErase = true; drawing = false; cur = null;
       e.preventDefault(); eraseAt(toCanvas(e)); return;
     }
     if (palmErase) return;
     e.preventDefault();
+    const action = eraserMode ? 'erase' : toolAction(tool);
+    pointerAction.set(e.pointerId, action);
     const p = toCanvas(e);
-    if (eraserMode) { eraseAt(p); drawing = false; return; }   // borrador manual (ratón)
-    drawing = true; cur = { pts: [p] }; strokes.push(cur);
     try { canvas.setPointerCapture(e.pointerId); } catch {}
+    if (action === 'erase') { eraseAt(p); drawing = false; return; }   // lápiz trasero / borrador
+    drawing = true; cur = { pts: [p] }; strokes.push(cur);
     redraw();
   };
   const onMove = (e) => {
     if (frozen) return;
     if (palmErase) { e.preventDefault(); eraseAt(toCanvas(e)); return; }
     const p = toCanvas(e);
-    if (eraserMode && (e.buttons || e.pressure > 0)) { eraseAt(p); return; }
+    if (pointerAction.get(e.pointerId) === 'erase') { e.preventDefault(); eraseAt(p); return; }
     if (!drawing || !cur) return;
     e.preventDefault();
     cur.pts.push(p); redraw();
   };
   const onUp = (e) => {
     active.delete(e.pointerId);
+    const action = pointerAction.get(e.pointerId);
+    pointerAction.delete(e.pointerId);
     if (palmErase) { if (active.size < 3) { palmErase = false; redraw(); } return; }
-    if (eraserMode) { redraw(); return; }     // limpiar el indicador del borrador
+    if (action === 'erase') { redraw(); return; }     // limpiar el indicador del borrador
     if (!drawing) return;
     drawing = false; cur = null;
     recalcHits(); redraw();

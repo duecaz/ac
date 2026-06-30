@@ -27,6 +27,16 @@
   background: rgba(0,0,0,.55); color: #fff;
 }
 
+/* "Calibrar pizarra" en la esquina superior derecha (no roba espacio al texto). */
+.tc-calib {
+  position: absolute; top: 1.4cqmin; right: 1.6cqmin; z-index: 6;
+  border: 0; border-radius: 999px; cursor: pointer;
+  font-size: clamp(.68rem, 2.1cqmin, 1.05rem); line-height: 1;
+  padding: .42em .8em; display: inline-flex; align-items: center; gap: .35em;
+  background: rgba(0,0,0,.5); color: #fff;
+}
+.tc-calib:hover { background: rgba(0,0,0,.72); }
+
 .tc-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 .tc-round { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: center; text-align: center; }
 
@@ -112,3 +122,32 @@ body.bg-notebook .tc-solo {
     rgba(220,38,38,.4) calc(4cqw + .18cqw),
     transparent calc(4cqw + .18cqw));
 }
+
+/* ── Panel "Calibrar pizarra" (core/penCalibration.js) ──────────────────────── */
+.pcal-overlay {
+  position: fixed; inset: 0; z-index: 1080;
+  background: rgba(15,23,42,.55);
+  display: flex; align-items: center; justify-content: center; padding: 1rem;
+}
+.pcal-panel {
+  background: #fff; color: #1f2937; border-radius: 14px;
+  width: min(680px, 96vw); max-height: 92vh; overflow: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,.35); padding: 1.1rem 1.25rem;
+}
+.pcal-head { display: flex; align-items: center; justify-content: space-between; }
+.pcal-sub { color: #6b7280; font-size: .92rem; margin: .35rem 0 1rem; }
+.pcal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+@media (max-width: 520px) { .pcal-grid { grid-template-columns: 1fr; } }
+.pcal-pad {
+  position: relative; border: 2px dashed #cbd5e1; border-radius: 12px;
+  min-height: 120px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: .25rem;
+  touch-action: none; cursor: crosshair; user-select: none;
+  background: #f8fafc; text-align: center; padding: .5rem;
+}
+.pcal-pad.is-capturing { border-color: #2563eb; background: #eff6ff; }
+.pcal-field.is-set .pcal-pad { border-style: solid; border-color: #16a34a; background: #f0fdf4; }
+.pcal-pad-label { font-weight: 700; }
+.pcal-pad-action { font-size: .8rem; color: #6b7280; }
+.pcal-val { font-size: 1.6rem; font-weight: 800; color: #2563eb; margin-top: .2rem; }
+.pcal-foot { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1rem; }

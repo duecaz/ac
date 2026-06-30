@@ -31,4 +31,5 @@ console.log('\n▶ soloPlayer'); await import('./soloPlayer.test.mjs');
 console.log('\n▶ clock'); await import('./clock.test.mjs');
 console.log('\n▶ offlineQueue'); await import('./offlineQueue.test.mjs');
 console.log('\n▶ ballsort'); await import('./ballsort.test.mjs');
+console.log('\n▶ penDetector'); await import('./penDetector.test.mjs');
 console.log('\n✅ all suites passed');
