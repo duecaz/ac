@@ -1,8 +1,7 @@
 // Embed entrypoint. Reads activity id + presentation overrides from query
-// string, fetches the activity from Supabase (only public/unlisted ones
-// are visible to anon thanks to RLS), and renders the player into the
-// full-viewport frame. No navbar, no auth UI, no extra chrome — designed
-// to live inside an external <iframe>.
+// string, fetches the activity from PocketBase (only public ones are visible),
+// and renders the player into the full-viewport frame. No navbar, no auth UI,
+// no extra chrome — designed to live inside an external <iframe>.
 //
 // Query params:
 //   id        required   activity id
@@ -17,16 +16,11 @@ import { applyBackground } from './core/backgrounds.js';
 import { runPlayer } from './core/player.js';
 import { getTemplate } from './core/registry.js';
 
-// Templates: same set as the main app. Lazy splitting can come later.
-import './templates/quiz/index.js';
-import './templates/wheel/index.js';
-import './templates/match/index.js';
-import './templates/memory/index.js';
-import './templates/tildes/index.js';
-import './templates/comas/index.js';
-
-import './core/sounds.js';
-import './core/effects.js';
+// Todas las plantillas (antes el embed registraba solo 6 → incrustar math,
+// crossword, wordsearch, ballsort o question-live fallaba).
+import './core/registerTemplates.js';
+// Side-effect: cablea sonidos + efectos al bus de GameEvents.
+import './core/boot.js';
 
 const params = new URLSearchParams(location.search);
 const id = params.get('id');

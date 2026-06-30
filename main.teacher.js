@@ -1,21 +1,10 @@
-import { VERSION } from './core/constants.js';
 import { installErrorHandlers } from './core/errorLog.js';
 import { route, start, navigate, setNotFound } from './core/router.js';
 
 installErrorHandlers('teacher');
 
 // Templates: each module self-registers via registerTemplate(...).
-import './templates/quiz/index.js';
-import './templates/wheel/index.js';
-import './templates/match/index.js';
-import './templates/memory/index.js';
-import './templates/tildes/index.js';
-import './templates/comas/index.js';
-import './templates/math/index.js';
-import './templates/wordsearch/index.js';
-import './templates/crossword/index.js';
-import './templates/question-live/index.js';
-import './templates/ballsort/index.js';
+import './core/registerTemplates.js';
 
 import { renderHome } from './views/home.js';
 import { renderTemplateSelector } from './views/templateSelector.js';
@@ -32,10 +21,9 @@ import { renderAdmin } from './views/adminView.js';
 import { sync, setStorageUser } from './core/storage.js';
 import { ensureIdentity } from './core/identity.js';
 import { applySkin } from './core/skins.js';
-// Side-effect imports: subscribe to GameEvents bus for sounds + visual effects.
-import './core/sounds.js';
-import './core/effects.js';
-import { isMuted, setMuted } from './core/sounds.js';
+// Side-effect: boot.js wires sounds + visual effects to the GameEvents bus and
+// exposes the navbar helpers (version stamp + mute button).
+import { stampVersion, attachMuteButton } from './core/boot.js';
 import { initCustomAnims } from './core/vsAnimations.js';
 import { html, mount } from './core/html.js';
 
@@ -69,14 +57,8 @@ setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encon
 
 (async function boot() {
   applySkin(localStorage.getItem('ww.skin') || 'default');
-  const v = document.getElementById('ww-version'); if (v) v.textContent = 'v' + VERSION;
-  // Mute toggle in navbar.
-  const muteSlot = document.getElementById('ww-mute-slot');
-  if (muteSlot) {
-    const paint = () => muteSlot.innerHTML = `<button class="btn btn-sm btn-outline-light" id="ww-mute-btn" title="${isMuted()?'Activar sonido':'Silenciar'}"><i class="bi ${isMuted()?'bi-volume-mute-fill':'bi-volume-up-fill'}"></i></button>`;
-    paint();
-    muteSlot.addEventListener('click', (e) => { if (e.target.closest('#ww-mute-btn')) { setMuted(!isMuted()); paint(); } });
-  }
+  stampVersion();
+  attachMuteButton();
   initCustomAnims(); // register any animations added from the Admin panel
   // Start the router immediately so the home page paints from localStorage
   // without waiting for the network. Auth + sync happen in the background.
