@@ -171,6 +171,32 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
+   CALCULADORA EN VS — es UN bloque indivisible: NO se estira a toda la vertical
+   A diferencia de Quiz/Tildes (que reparten su contenido al alto disponible), el
+   teclado es un solo bloque. Estirarlo para llenar el panel deja teclas
+   larguísimas; en su lugar conserva su tamaño NATURAL (teclas casi cuadradas, un
+   punto más altas), se CENTRA en el panel y, si el panel fuera muy bajo, hace
+   scroll en vez de deformarse. Va al final para ganar a las reglas de relleno
+   (math.css height:100% y el query estrecho de arriba) por orden de cascada.
+   ══════════════════════════════════════════════════════════════════════════ */
+.vs-body:has(.ww-keypad-round) { justify-content: center; overflow: hidden; }
+/* Clave: TOPE de altura. El teclado llena su bloque (filas 1fr), pero el bloque
+   no pasa de ~500px (su tamaño natural cómodo) → en un panel alto NO se estira a
+   toda la vertical (teclas larguísimas), se queda a su tamaño y se centra
+   (margin:auto). En un panel más bajo, height:100% manda y encoge para caber. */
+.vs-body .ww-keypad-round {
+  height: min(500px, 100%);
+  width: 100%; max-width: 290px; margin: auto;
+}
+/* Las teclas no se hacen más altas que ~1 ancho y pico (cqw = ancho del panel):
+   en un panel muy alto las filas se topan ahí y el teclado se centra en su hueco,
+   en uno bajo encogen (min 0) para caber. Así quedan casi cuadradas, un punto más
+   altas — no barras verticales. */
+.vs-body .ww-keypad {
+  grid-auto-rows: minmax(0, 34cqw); align-content: center;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
    CARRERA TERMINADA — se cierran las calculadoras y la animación llena el centro
    ══════════════════════════════════════════════════════════════════════════ */
 .vs-arena.vs-race-finished .vs-panel { display: none; }
