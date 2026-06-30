@@ -213,6 +213,30 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
     }), 1100);
   });
 
+  // ── Maquetación 16/10: calcular el tamaño de las tarjetas para que las N filas
+  // QUEPAN sin scroll y cada cuadro sea 16/10. alto de fila = el que cabe; ancho =
+  // alto·16/10 (acotado al ancho de columna). Tarjetas centradas (más angostas).
+  function fitLayout() {
+    const colEl = root.querySelector('.ww-col-left');
+    if (!arena || !colEl) return;
+    const N = Math.max(lefts.length, rights.length);
+    const GAP = 8;
+    const H = arena.clientHeight, colW = colEl.clientWidth;
+    if (!H || !colW) return;
+    let cardH = Math.min((H - (N - 1) * GAP) / N, colW * 10 / 16);
+    cardH = Math.max(52, Math.floor(cardH));          // suelo legible (móvil → scroll)
+    const cardW = Math.min(colW, Math.round(cardH * 16 / 10));
+    root.querySelectorAll('.ww-card').forEach(c => {
+      c.style.flex = '0 0 auto';
+      c.style.width = cardW + 'px';
+      c.style.height = cardH + 'px';
+    });
+    updateSvg();                                       // recolocar cuerdas
+  }
+  requestAnimationFrame(fitLayout);
+  const ro = new ResizeObserver(() => fitLayout());
+  ro.observe(root);                                    // recalcular al redimensionar/fullscreen
+
   updateProgress();
   updateSubmit();
 }
