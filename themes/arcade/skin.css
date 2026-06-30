@@ -228,8 +228,16 @@
   .vs-skin-arcade .vs-body    { max-width: 100%; width: 100%; border-radius: .55rem; }
 }
 
+/* Sin animaciones continuas si el usuario las reduce O en dispositivos lite
+   (gama baja): la marquesina anima `text-indent` = REFLOW por cuadro (muy caro)
+   y el badge/scanlines repintan; apagarlas libera el hilo para el teclado. */
 @media (prefers-reduced-motion: reduce) {
   .vs-arena.vs-skin-arcade::before,
   .vs-arena.vs-skin-arcade::after,
   .vs-skin-arcade .vss-badge { animation: none !important; }
 }
+.ww-lite .vs-arena.vs-skin-arcade::before,
+.ww-lite .vs-arena.vs-skin-arcade::after,
+.ww-lite .vs-skin-arcade .vss-badge { animation: none !important; }
+/* En lite, la marquesina muestra el texto desde el inicio (sin desplazarse). */
+.ww-lite .vs-arena.vs-skin-arcade::before { text-indent: 0; }

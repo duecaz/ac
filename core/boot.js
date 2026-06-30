@@ -9,6 +9,11 @@ import './sounds.js';   // efecto: suscribe sonidos a GameEvents
 import './effects.js';  // efecto: suscribe confeti/efectos a GameEvents
 import { VERSION } from './constants.js';
 import { isMuted, setMuted } from './sounds.js';
+import { applyPerfClass } from './perf.js';
+
+// Marca el dispositivo como lite (gama baja) lo antes posible → el CSS y la
+// animación central degradan para que el VS responda fluido en pizarras lentas.
+applyPerfClass();
 
 // Escribe `v<VERSION>` en el slot de versión del navbar, si existe.
 export function stampVersion(id = 'ww-version') {

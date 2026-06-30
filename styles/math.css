@@ -69,6 +69,12 @@
   border-radius: var(--key-radius, .5rem);
   box-shadow: var(--key-shadow, none);
   line-height: 1;
+  /* Respuesta táctil inmediata y MULTITÁCTIL fiable: `none` evita que el
+     navegador trate cada toque como posible scroll/zoom (lo que añade latencia
+     y, en pizarras lentas, puede descartar el 2º dedo simultáneo del rival). */
+  touch-action: none;
+  user-select: none; -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 .ww-keypad .ww-key:active { transform: translateY(1px); }
 .ww-keypad .ww-key-ok {

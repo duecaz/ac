@@ -17,6 +17,12 @@
 //   frame total-1  = RIGHT player has won (right side dominating)
 // The engine scrubs to the frame matching the live score lead automatically.
 
+import { isLowEndDevice } from './perf.js';
+
+// En gama baja, la animación central NO corre en reposo (ver idle() en
+// createLottie) para no robar CPU al teclado del VS.
+const LITE = isLowEndDevice();
+
 const _providers = new Map();
 
 // Animación por defecto en TODOS los VS: "Cuerda (personajes)" (Lottie). Si el id
@@ -157,18 +163,32 @@ function createLottie(container, src) {
   // Sinusoidal idle: oscillate ±swing frames around the current lead frame so
   // the characters are always gently swaying, even when the score hasn't changed.
   // setProgress/win re-call idle() to re-center; yank cancels it briefly.
+  //
+  // RENDIMIENTO: cada cuadro hace goToAndStop() = re-render del SVG en el HILO
+  // PRINCIPAL. A 60fps eso satura una pizarra A55 y el teclado del VS se traba.
+  //   · gama baja (ww-lite): SIN bucle de reposo → cuadro estático centrado; la
+  //     cuerda solo se mueve al responder (yank/setProgress). El hilo queda libre.
+  //   · normal: bucle limitado a ~25fps (vaire imperceptible en un balanceo lento)
+  //     en vez de 60 → ~⅓ del coste de pintado.
+  const IDLE_MS = 40;   // ~25 fps
   function idle() {
     cancelAnimationFrame(idleRaf);
     idlePhase = 0;                              // reset so resume always starts from center
     if (!anim || !total || destroyed) return;
     const center = frameFor(lead);
+    if (LITE) { anim.goToAndStop(center, true); return; }   // estático en gama baja
     const swing = total / 3;   // ±30 frames for 90-frame anim (2/6 of total)
-    const speed = 0.036;       // radians/frame → full cycle ≈ 2.9 s at 60 fps
-    const step = () => {
+    const speed = 0.036 * (IDLE_MS / 16.67);   // radians per RENDERED frame → mantiene la cadencia del ciclo
+    let last = 0;
+    const step = (now) => {
+      if (destroyed) return;
       if (document.hidden) { idleRaf = requestAnimationFrame(step); return; } // pause when tab invisible
-      idlePhase += speed;
-      anim.goToAndStop(Math.max(0, Math.min(total - 1, center + Math.sin(idlePhase) * swing)), true);
-      if (!destroyed) idleRaf = requestAnimationFrame(step);
+      if (now - last >= IDLE_MS) {
+        last = now;
+        idlePhase += speed;
+        anim.goToAndStop(Math.max(0, Math.min(total - 1, center + Math.sin(idlePhase) * swing)), true);
+      }
+      idleRaf = requestAnimationFrame(step);
     };
     idleRaf = requestAnimationFrame(step);
   }
