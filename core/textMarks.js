@@ -64,7 +64,10 @@ export function scoreMarks(value, item, kinds, activity) {
 // we replace 1 char with 1 char). The student sees `text` (no accents);
 // `marks` is the answer key.
 export function parseAccentedText(accented) {
-  const chars = [...String(accented || '')];
+  // Normaliza ANTES de calcular posiciones: colapsa saltos de línea y espacios
+  // múltiples a uno solo (los poemas pegados fluyen como párrafo y no desbordan),
+  // así text + marks quedan alineados.
+  const chars = [...String(accented || '').replace(/\s+/g, ' ').trim()];
   const text = chars.map(c => STRIP_MAP[c] ?? c).join('');
   const marks = [];
   chars.forEach((c, i) => {

@@ -26,7 +26,9 @@ const SYMBOL = { tilde: ch => applyTilde(ch), coma: () => ',' };
 // classes for a read-only answer review; otherwise targets are interactive.
 function passageHtml(text, kind, reveal) {
   const chars = [...text];
-  const ch = (c) => `<span class="tc-ch">${escapeHtml(c === ' ' ? ' ' : c)}</span>`;
+  // ESPACIOS como texto crudo y rompible (antes era \u00a0 = no-rompible, por eso
+  // no cortaba la linea): las palabras quedan enteras y el texto envuelve al marco.
+  const ch = (c) => c === ' ' ? ' ' : `<span class="tc-ch">${escapeHtml(c)}</span>`;
   const stateCls = (pos, isTargetMarkable) => {
     if (!reveal) return '';
     const got = reveal.got.has(pos), want = reveal.want.has(pos);
