@@ -15,6 +15,7 @@ import { resultScreenHtml } from './resultScreen.js';
 import { GameEvents, emitGame } from './gameEvents.js';
 import { speak, isAvailable as ttsAvailable } from './tts.js';
 import { clock } from './clock.js';
+import { mountTcDraw } from './textCorrectionDraw.js';
 
 const HINTS = {
   tilde: 'Toca las vocales que llevan tilde.',
@@ -44,7 +45,9 @@ function passageHtml(text, kind, reveal) {
         const show = (reveal.got.has(i) || reveal.want.has(i)) ? applyTilde(c) : c;
         return `<span class="tc-tap tc-vowel is-revealed${cls}">${escapeHtml(show)}</span>`;
       }
-      return `<button type="button" class="tc-tap tc-vowel" data-pos="${i}">${escapeHtml(c)}</button>`;
+      // Modo DIBUJO: el target es un span de solo lectura; el canvas captura el
+      // trazo y la zona de este span decide la marca (data-pos).
+      return `<span class="tc-target tc-vowel" data-pos="${i}">${escapeHtml(c)}</span>`;
     }).join('');
   }
   // coma: gaps only at word-end boundaries (after a non-space before a space)
@@ -58,32 +61,50 @@ function passageHtml(text, kind, reveal) {
       return ch(c) + `<span class="tc-tap tc-gap is-revealed${cls}">${sym}</span>`;
     }
     if (c === ' ' || chars[i + 1] !== ' ') return ch(c);
-    return ch(c) + `<button type="button" class="tc-tap tc-gap" data-pos="${i}" aria-label="hueco"></button>`;
+    return ch(c) + `<span class="tc-target tc-gap" data-pos="${i}" aria-label="hueco"></span>`;
   }).join('');
 }
 
-// Interactive round for the session formats (VS / Equipos-auto / LIVE).
-// onSubmit(value:number[]) fires once when the student presses "Listo".
+// Interactive round (VS / Equipos-auto / LIVE / Solo) — modo DIBUJO: el alumno
+// dibuja la marca con lápiz/táctil sobre el texto. onSubmit(value:number[]) al
+// pulsar "Listo" (mismas posiciones que el modo tocar → scoring intacto).
 export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSubmit } = {}) {
   const text = payload?.text || '';
-  const marked = new Set();
   root.innerHTML = `
     <div class="tc-round">
+      <div class="tc-toolbar">
+        <button type="button" class="btn btn-sm btn-primary tc-tool tc-tool-pen is-active" data-tool="pen"><i class="bi bi-pencil-fill"></i> Lápiz</button>
+        <button type="button" class="btn btn-sm btn-outline-secondary tc-tool tc-tool-eraser" data-tool="eraser"><i class="bi bi-eraser-fill"></i> Borrador</button>
+        <button type="button" class="btn btn-sm btn-outline-danger tc-clear"><i class="bi bi-trash"></i> Limpiar</button>
+      </div>
       <div class="tc-passage">${passageHtml(text, kind)}</div>
       <div class="text-center mt-3"><button type="button" class="btn btn-success btn-lg tc-done"><i class="bi bi-check2-circle"></i> Listo</button></div>
-      <p class="tc-hint text-muted text-center mt-2">${HINTS[kind]}</p>
+      <p class="tc-hint text-muted text-center mt-2">${kind === 'tilde' ? 'Dibuja la tilde sobre las vocales que la llevan.' : 'Dibuja la coma en el hueco donde falta.'}</p>
     </div>`;
-  root.querySelectorAll('.tc-tap').forEach(el => el.addEventListener('click', () => {
-    const pos = +el.dataset.pos;
-    if (marked.has(pos)) { marked.delete(pos); el.classList.remove('on'); el.textContent = kind === 'tilde' ? text[pos] : ''; }
-    else { marked.add(pos); el.classList.add('on'); el.textContent = SYMBOL[kind](text[pos]); }
+
+  const passageEl = root.querySelector('.tc-passage');
+  const draw = mountTcDraw(passageEl, { targets: passageEl.querySelectorAll('.tc-target') });
+
+  const tools = root.querySelectorAll('.tc-tool');
+  tools.forEach(b => b.addEventListener('click', () => {
+    const eraser = b.dataset.tool === 'eraser';
+    draw.setEraser(eraser);
+    tools.forEach(t => {
+      const on = t === b;
+      t.classList.toggle('is-active', on);
+      t.classList.toggle('btn-primary', on && t.dataset.tool === 'pen');
+      t.classList.toggle('btn-warning', on && t.dataset.tool === 'eraser');
+      t.classList.toggle('btn-outline-secondary', !on);
+    });
   }));
+  root.querySelector('.tc-clear').addEventListener('click', () => draw.clear());
+
   let done = false;
   root.querySelector('.tc-done').addEventListener('click', () => {
     if (done) return;
     done = true;
-    root.querySelectorAll('.tc-tap').forEach(el => { el.disabled = true; });
-    onSubmit?.([...marked].sort((a, b) => a - b));
+    draw.freeze();
+    onSubmit?.(draw.getMarked());
   });
 }
 

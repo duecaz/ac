@@ -7,13 +7,31 @@
 .tc-round { text-align: center; }
 
 .tc-passage {
+  position: relative;        /* el canvas de dibujo se superpone (inset:0) */
   font-size: clamp(1.5rem, 4.5vw, 2.6rem);
-  line-height: 2.1;
+  line-height: 2.4;          /* hueco arriba de la vocal para dibujar la tilde */
   text-align: center;
   word-break: break-word;
   margin: 1rem 0;
 }
 .tc-ch { white-space: pre-wrap; }
+
+/* ── Modo DIBUJO (lápiz/táctil) ─────────────────────────────────────────────
+   El canvas captura el trazo; los .tc-target (solo lectura) definen las zonas. */
+.tc-canvas {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  z-index: 3; touch-action: none; cursor: crosshair;
+}
+.tc-target {
+  display: inline-block; font: inherit; color: inherit; position: relative;
+  border-bottom: 3px solid rgba(99,102,241,.4);   /* indica "aquí va la marca" */
+  border-radius: 2px; padding: 0 .04em;
+}
+.tc-target.tc-gap { min-width: 1.1em; }
+.tc-target.tc-marked { background: rgba(25,135,84,.16); border-bottom-color: #198754; }
+
+.tc-toolbar { display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; margin-bottom: .4rem; }
+.tc-tool.is-active { box-shadow: 0 0 0 3px rgba(0,0,0,.08); }
 
 /* Tap target: a vowel (tilde) or a between-words gap (coma). ≥44px hit area. */
 .tc-tap {
