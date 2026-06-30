@@ -25,6 +25,7 @@
 // API rules: allow all (or restrict by author_id for mutations).
 import { LETTERS, PIN_LENGTH } from '../../core/constants.js';
 import { normalizeCode } from '../../core/assignmentRules.js';
+import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
 import { PB_URL } from '../../pocketbase.config.js';
 
 function genCode() {
@@ -81,7 +82,7 @@ export function createPocketbaseAssignments({ userId = 'local-anon' } = {}) {
 
     async listAssignmentsForActivity(activityId) {
       const res = await pbFetch(
-        `/api/collections/assignments/records?filter=(activity_id='${encodeURIComponent(activityId)}')&sort=-created_at&perPage=200`
+        `/api/collections/assignments/records?filter=${pbFilterParam(`activity_id='${pbEscape(activityId)}'`)}&sort=-created_at&perPage=200`
       );
       return res?.items || [];
     },
@@ -89,7 +90,7 @@ export function createPocketbaseAssignments({ userId = 'local-anon' } = {}) {
     async findAssignmentByCode(code) {
       const target = normalizeCode(code);
       const res = await pbFetch(
-        `/api/collections/assignments/records?filter=(code='${encodeURIComponent(target)}')`
+        `/api/collections/assignments/records?filter=${pbFilterParam(`code='${pbEscape(target)}'`)}`
       );
       return res?.items?.[0] || null;
     },
@@ -112,7 +113,7 @@ export function createPocketbaseAssignments({ userId = 'local-anon' } = {}) {
 
     async listAttempts(assignmentId) {
       const res = await pbFetch(
-        `/api/collections/assignment_attempts/records?filter=(assignment_id='${encodeURIComponent(assignmentId)}')&sort=-created_at&perPage=200`
+        `/api/collections/assignment_attempts/records?filter=${pbFilterParam(`assignment_id='${pbEscape(assignmentId)}'`)}&sort=-created_at&perPage=200`
       );
       return res?.items || [];
     },
@@ -120,7 +121,7 @@ export function createPocketbaseAssignments({ userId = 'local-anon' } = {}) {
     async countOwnAttempts(assignmentId) {
       const me = uid();
       const res = await pbFetch(
-        `/api/collections/assignment_attempts/records?filter=(assignment_id='${encodeURIComponent(assignmentId)}'%26%26user_id='${encodeURIComponent(me)}')&perPage=1`
+        `/api/collections/assignment_attempts/records?filter=${pbFilterParam(`assignment_id='${pbEscape(assignmentId)}' && user_id='${pbEscape(me)}'`)}&perPage=1`
       );
       return res?.totalItems ?? 0;
     },

@@ -10,6 +10,7 @@
 // API rules: allow all (or at minimum Create/Read/Update without auth).
 import { createLiveRoom } from '../../kernel/live/engine.js';
 import { pickWord } from '../../core/liveWords.js';
+import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
 import { PB_URL } from '../../pocketbase.config.js';
 import { setConnectionState } from '../../core/connection.js';
 
@@ -96,12 +97,11 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
   }
 
   // PB ids (session/player) are alphanumeric, but escape single quotes anyway so
-  // a stray quote can't break (or inject into) the filter.
-  const q = (v) => String(v).replace(/'/g, "\\'");
+  // a stray quote can't break (or inject into) the filter. (pbEscape: shared.)
   const ansFilter = (sessionId, itemIndex, playerId) => {
-    const parts = [`session='${q(sessionId)}'`, `item=${Number(itemIndex)}`];
-    if (playerId != null) parts.push(`player='${q(playerId)}'`);
-    return encodeURIComponent(parts.join(' && '));
+    const parts = [`session='${pbEscape(sessionId)}'`, `item=${Number(itemIndex)}`];
+    if (playerId != null) parts.push(`player='${pbEscape(playerId)}'`);
+    return pbFilterParam(parts.join(' && '));
   };
 
   // Fetch a session's answer rows for one item, deduped to ONE per player. A

@@ -1,5 +1,6 @@
 // Pure text+marks helpers, shared by the tildes editor and player.
 // kind 'tilde' applies acute accent to vowels; case-preserved.
+import { basePoints } from './scoreHelpers.js';
 
 const TILDE_MAP = {
   a: 'á', e: 'é', i: 'í', o: 'ó', u: 'ú',
@@ -55,7 +56,7 @@ export function scoreMarks(value, item, kinds, activity) {
   const got = new Set(Array.isArray(value) ? value.map(Number) : []);
   const correct = want.size === got.size && [...want].every(p => got.has(p));
   const scoring = activity?.scoring || {};
-  return { correct, points: correct ? (item?.points || scoring.pointsPerCorrect || 1) : 0 };
+  return { correct, points: correct ? basePoints(item, scoring) : 0 };
 }
 
 // Reverse of applyMarks for kind='tilde': given an accented input from the
