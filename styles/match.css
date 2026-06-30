@@ -1,10 +1,23 @@
 /* Match (Emparejar) — rope-drawing two-column layout */
 
+/* ESTÁNDAR DE MAQUETACIÓN: el juego LLENA el marco y reparte el alto disponible
+   entre las filas, así TODO cabe sin scroll (las tarjetas encogen para caber). */
+.ww-match {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.ww-match > .d-flex { flex: 0 0 auto; }       /* cabecera */
+.ww-match > .text-center { flex: 0 0 auto; }  /* botón Enviar */
+
 .ww-match-arena {
   display: flex;
   position: relative;
   gap: 72px;   /* wide corridor so ropes are clearly visible */
   touch-action: none;   /* el arrastre nunca se interpreta como scroll (táctil) */
+  flex: 1 1 auto;
+  min-height: 0;        /* puede encoger: las filas reparten el alto */
 }
 .ww-col-left,
 .ww-col-right {
@@ -14,7 +27,13 @@
   flex-direction: column;
   gap: 8px;
   overflow: visible;
+  justify-content: stretch;
 }
+/* Cada tarjeta toma su porción del alto disponible → en un marco con sitio, las
+   N filas CABEN sin scroll. min-height evita que en marcos muy cortos (móvil) las
+   tarjetas queden diminutas: ahí mantienen un alto legible y se permite scroll. */
+.ww-match .ww-card { flex: 1 1 0; min-height: 64px; }
+.ww-match .ww-card-img { min-height: 76px; }
 .ww-lines-svg {
   position: absolute;
   inset: 0;
@@ -50,12 +69,11 @@
 .ww-match .ww-card-img { padding: 0; }
 .ww-match .ww-card-img img {
   width: 100%;
-  aspect-ratio: 16 / 10;                 /* recuadro 16/10: proporción equilibrada */
-  max-height: 200px;                     /* tope para que no desborde en marcos anchos */
-  object-fit: cover;
+  height: 100%;                          /* llena la celda que reparte el flex (sin scroll) */
+  object-fit: cover;                     /* sin caja blanca ni deformar */
   display: block;
   pointer-events: none;
-  border-radius: 8px;                    /* casa con el radio interior de la tarjeta */
+  border-radius: 8px;
 }
 /* Velo inferior para que el badge se lea sobre cualquier foto. */
 .ww-match .ww-card-img::after {
