@@ -115,10 +115,16 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
   // ── Pointer handlers (Fase 2: dibuja/borra según el tamaño del contacto) ──────
   const onDown = (e) => {
     if (frozen) return;
+    // Las pizarras táctiles a veces PIERDEN el pointerup/pointercancel → quedan
+    // pointerIds "fantasma" en `active`; al sumar ≥3 un trazo legítimo se confunde
+    // con PALMA y se borra ("deja de detectar las tildes"). isPrimary=true ⇒ es el
+    // ÚNICO puntero activo según el SO → reseteamos el conteo y salimos de borrado.
+    if (e.isPrimary) { active.clear(); palmErase = false; }
     active.add(e.pointerId);
     const tool = classifyTool(pointerMetric(e), active.size, loadThresholds());
-    if (tool === 'palm') {                  // palma → borrar
-      palmErase = true; drawing = false; cur = null;
+    if (tool === 'palm') {                  // palma (varios dedos) → borrar…
+      if (drawing) return;                  // …pero NO si ya hay un trazo en curso
+      palmErase = true; cur = null;         //   (un fantasma no secuestra el dibujo)
       e.preventDefault(); eraseAt(toCanvas(e)); return;
     }
     if (palmErase) return;
