@@ -200,7 +200,12 @@ export function mountVs(host, a, ctx, opts = {}) {
     // can hide it entirely (presentation.vsAnimationOff) → the two panels take the
     // whole width.
     const animDef = getVsAnimation(a.presentation?.vsAnimation || DEFAULT_VS_ANIMATION);
-    const animOff = !!a.presentation?.vsAnimationOff;
+    // Por defecto la animación central se DESACTIVA en plantillas de texto
+    // (Tildes/Comas): el texto necesita el ancho y el carril central lo robaba.
+    // Los dos paneles pasan a 50%/50% (vs-no-stage). El profe puede forzar on/off
+    // con presentation.vsAnimationOff (si está definido, manda sobre el default).
+    const textTight = getTemplate(a.template)?.meta?.contentModel === 'textCorrection';
+    const animOff = a.presentation?.vsAnimationOff ?? textTight;
     // "Board" templates (Ordena las Pelotas): one shared board, no per-question
     // score during play, so the rope is fed by each side's BOARD progress instead.
     const isBoard = !!T.meta?.liveBoard;

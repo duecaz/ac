@@ -1,9 +1,9 @@
-// Per-passage tildes scoring for the session formats (VS / Equipos-auto / Solo).
-// Thin binding over the shared mark scorer: correct iff the student's accented
-// positions exactly match the answer key's 'tilde' positions. `value` is the
-// array of character positions the student marked.
-import { scoreMarks } from '../../core/textMarks.js';
+// Tildes scoring for the session formats (VS / Equipos-auto / Live). Crédito
+// PARCIAL: cada tilde bien colocada suma y cada marca de más resta (suelo 0), así
+// el duelo da "puntos por cada tilde buena" en vez de todo-o-nada por frase.
+// `value` es el array de posiciones de carácter que marcó el alumno.
+import { scoreMarksPerHit } from '../../core/textMarks.js';
 
 export function scoreTildesSubmission({ value, item, activity }) {
-  return scoreMarks(value, item, ['tilde'], activity);
+  return scoreMarksPerHit(value, item, ['tilde'], activity);
 }

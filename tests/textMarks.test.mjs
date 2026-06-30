@@ -4,6 +4,7 @@ import assert from 'node:assert';
 import {
   isVowel, applyTilde, applyMarks, hasMarks,
   parseAccentedText, parseTextWithCommas, parseRichText, stripAccents,
+  scoreMarksPerHit,
 } from '../core/textMarks.js';
 
 let passed = 0;
@@ -60,5 +61,21 @@ assert.strictEqual(stripAccents('Canción Ágil'), 'Cancion Agil');
 assert.ok(hasMarks({ marks: [{ pos: 1, kind: 'tilde' }] }));
 assert.ok(!hasMarks({ marks: [] }) && !hasMarks({}));
 ok('stripAccents removes accents; hasMarks detects presence');
+
+// ---------- scoreMarksPerHit (crédito parcial por tilde, anti-gaming) ----------
+{
+  const item = { marks: [{ pos: 3, kind: 'tilde' }, { pos: 7, kind: 'tilde' }] }; // 2 tildes
+  const act = { scoring: { pointsPerCorrect: 1 } };
+  const s = (v) => scoreMarksPerHit(v, item, ['tilde'], act);
+  assert.deepStrictEqual(s([3, 7]), { correct: true, points: 2 }, 'ambas tildes → 2 puntos');
+  assert.deepStrictEqual(s([3]), { correct: true, points: 1 }, 'una tilde buena → 1 punto');
+  assert.deepStrictEqual(s([3, 5]), { correct: false, points: 0 }, 'una buena + una de más → se cancelan (0)');
+  assert.deepStrictEqual(s([]), { correct: false, points: 0 }, 'nada marcado → 0');
+  // anti-gaming: marcar TODAS las vocales no debe puntuar de gratis
+  assert.strictEqual(s([1, 3, 5, 7, 9, 11]).points, 0, 'marcar de más (4 sobrantes) anula los 2 aciertos');
+  // ppc respeta la config
+  assert.strictEqual(scoreMarksPerHit([3, 7], item, ['tilde'], { scoring: { pointsPerCorrect: 10 } }).points, 20, 'ppc=10 → 20');
+  ok('scoreMarksPerHit: crédito por tilde, las marcas de más restan (anti-gaming)');
+}
 
 console.log(`\ntextMarks.test: ${passed} checks passed`);
