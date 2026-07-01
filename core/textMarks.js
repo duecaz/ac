@@ -59,16 +59,16 @@ export function scoreMarks(value, item, kinds, activity) {
   return { correct, points: correct ? basePoints(item, scoring) : 0 };
 }
 
-// Puntuación PARCIAL (crédito por marca): cada marca CORRECTA suma `ppc`; cada
-// marca de MÁS resta una (suelo 0) → marcar todo no puntúa. Para los formatos de
-// sesión donde se quiere "puntos por cada tilde buena" en vez de todo-o-nada.
+// Puntuación PARCIAL (crédito por marca): UN punto fijo por cada marca CORRECTA;
+// cada marca de MÁS resta uno (suelo 0) → marcar todo no puntúa. Para los formatos
+// de sesión donde se quiere "un punto por cada tilde buena" en vez de todo-o-nada.
 // `correct` (verde/rojo + contador de aciertos) = ganó puntos netos.
 export function scoreMarksPerHit(value, item, kinds, activity) {
   const want = new Set((item?.marks || []).filter(m => kinds.includes(m.kind)).map(m => m.pos));
   const got = Array.isArray(value) ? value.map(Number) : [];
   let hits = 0, over = 0;
   for (const p of new Set(got)) (want.has(p) ? hits++ : over++);
-  const points = Math.max(0, hits - over) * basePoints(item, activity?.scoring || {});
+  const points = Math.max(0, hits - over);   // 1 punto por tilde buena (fijo)
   return { correct: points > 0, points };
 }
 

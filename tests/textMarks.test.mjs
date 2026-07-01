@@ -73,9 +73,9 @@ ok('stripAccents removes accents; hasMarks detects presence');
   assert.deepStrictEqual(s([]), { correct: false, points: 0 }, 'nada marcado → 0');
   // anti-gaming: marcar TODAS las vocales no debe puntuar de gratis
   assert.strictEqual(s([1, 3, 5, 7, 9, 11]).points, 0, 'marcar de más (4 sobrantes) anula los 2 aciertos');
-  // ppc respeta la config
-  assert.strictEqual(scoreMarksPerHit([3, 7], item, ['tilde'], { scoring: { pointsPerCorrect: 10 } }).points, 20, 'ppc=10 → 20');
-  ok('scoreMarksPerHit: crédito por tilde, las marcas de más restan (anti-gaming)');
+  // SIEMPRE 1 punto por tilde, ignorando pointsPerCorrect de la config
+  assert.strictEqual(scoreMarksPerHit([3, 7], item, ['tilde'], { scoring: { pointsPerCorrect: 10 } }).points, 2, 'ppc=10 igual da 2 (1 por tilde)');
+  ok('scoreMarksPerHit: 1 punto por tilde buena, las marcas de más restan (anti-gaming)');
 }
 
 console.log(`\ntextMarks.test: ${passed} checks passed`);
