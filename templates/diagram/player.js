@@ -44,7 +44,7 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
   function updateSvg() {
     let d = '', i = 0;
     for (const [labelId, pinId] of state.links) {
-      const ld = root.querySelector(`.dg-dot[data-id="${labelId}"]`);
+      const ld = root.querySelector(`.ww-dot[data-id="${labelId}"]`);
       const pd = root.querySelector(`.dg-pin[data-id="${pinId}"]`);
       if (ld && pd) {
         const col = state.graded ? (labelId === pinId ? OK_COL : NO_COL) : ROPES[i % ROPES.length];
@@ -94,7 +94,7 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
     const from  = label || pin;
     if (!from) return;
     e.preventDefault();
-    const dotEl = label ? label.querySelector('.dg-dot') : pin;
+    const dotEl = label ? label.querySelector('.ww-dot') : pin;
     const pos = dotPos(dotEl, svg);
     state.dragging = { pointerId: e.pointerId, kind: label ? 'label' : 'pin', fromId: from.dataset.id, x1: pos.x, y1: pos.y, cx: pos.x, cy: pos.y };
     try { arena.setPointerCapture(e.pointerId); } catch {}
@@ -154,28 +154,36 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
   const boxEl = root.querySelector('.dg-img-box');
   const stageEl = root.querySelector('.dg-stage');
   function fitImageBox() {
-    if (!imgEl || !boxEl || !stageEl) return;
+    if (!imgEl || !boxEl || !stageEl) return false;
     const nw = imgEl.naturalWidth || 4, nh = imgEl.naturalHeight || 3;
     const sw = stageEl.clientWidth, sh = stageEl.clientHeight;
-    if (!sw || !sh) return;
+    if (!sw || !sh) return false;
     const scale = Math.min(sw / nw, sh / nh);
-    boxEl.style.width  = Math.max(1, Math.round(nw * scale)) + 'px';
-    boxEl.style.height = Math.max(1, Math.round(nh * scale)) + 'px';
+    const w = Math.max(1, Math.round(nw * scale)) + 'px', h = Math.max(1, Math.round(nh * scale)) + 'px';
+    if (boxEl.style.width === w && boxEl.style.height === h) return false;  // guarda: no re-disparar el RO
+    boxEl.style.width = w; boxEl.style.height = h;
+    return true;
   }
-  const relayout = () => { fitImageBox(); updateSvg(); };
-  requestAnimationFrame(relayout);
+  // rAF + guarda evitan el "ResizeObserver loop completed with undelivered
+  // notifications" (redimensionar la caja dentro del callback lo re-disparaba).
+  let raf = 0;
+  const relayout = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { fitImageBox(); updateSvg(); }); };
+  relayout();
   const ro = new ResizeObserver(relayout);
-  ro.observe(root);
+  ro.observe(stageEl);   // el stage no cambia de tamaño al redimensionar la caja (descendiente)
   if (imgEl && !imgEl.complete) imgEl.addEventListener('load', relayout);
 
   updateProgress(); updateSubmit();
 }
 
 // ── HTML ──────────────────────────────────────────────────────────────────────
-function labelHtml(c) {
+function labelHtml(c, side) {
+  // .ww-dot es el conector COMPARTIDO con Emparejar (styles/match.css): absoluto
+  // en el borde de la tarjeta. side 'L' (columna izq) → punto en el borde DERECHO
+  // (hacia la imagen); side 'R' → borde IZQUIERDO. Así apunta siempre al centro.
   return `<div class="dg-label" data-id="${escapeHtml(c.id)}">
-    <span class="dg-dot" data-id="${escapeHtml(c.id)}"></span>
     <span class="dg-label-text">${escapeHtml(c.text)}</span>
+    <span class="ww-dot" data-side="${side}" data-id="${escapeHtml(c.id)}"></span>
   </div>`;
 }
 function pinHtml(p) {
@@ -189,14 +197,14 @@ function buildLayout(leftLabels, rightLabels, pins, image, activity, total) {
     <span class="badge bg-secondary flex-shrink-0" style="visibility:hidden">0 / ${total}</span>
   </div>
   <div class="dg-arena">
-    <div class="dg-col dg-left">${leftLabels.map(labelHtml).join('')}</div>
+    <div class="dg-col dg-left">${leftLabels.map(c => labelHtml(c, 'L')).join('')}</div>
     <div class="dg-stage">
       <div class="dg-img-box">
         <img class="dg-img" src="${escapeHtml(image)}" alt="" draggable="false">
         ${pins.map(pinHtml).join('')}
       </div>
     </div>
-    <div class="dg-col dg-right">${rightLabels.map(labelHtml).join('')}</div>
+    <div class="dg-col dg-right">${rightLabels.map(c => labelHtml(c, 'R')).join('')}</div>
     <svg class="ww-lines-svg" xmlns="http://www.w3.org/2000/svg"></svg>
   </div>
   <div class="text-center mt-2">

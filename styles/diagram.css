@@ -27,10 +27,9 @@
 
 /* Etiquetas (pastilla arrastrable con su punto de conexión). */
 .dg-label {
-  position: relative;
-  display: flex; align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
+  position: relative;                 /* el .ww-dot (compartido) se ancla al borde */
+  display: flex; align-items: center; justify-content: center;
+  padding: 8px 14px;
   border-radius: 999px;
   border: 2px solid var(--ww-card-border, #dee2e6);
   background: var(--ww-card-bg, #fff);
@@ -39,24 +38,17 @@
   line-height: 1.1;
   cursor: grab; touch-action: none;
   user-select: none; -webkit-user-select: none;
-  max-width: 100%;
+  max-width: 100%; overflow: visible;
   transition: border-color .15s, box-shadow .15s;
 }
 .dg-label:active { cursor: grabbing; }
-.dg-left  .dg-label { flex-direction: row; }
-.dg-right .dg-label { flex-direction: row-reverse; }
 .dg-label-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Hueco extra en el lado del punto (borde interior) para que no pise el texto. */
+.dg-left  .dg-label { padding-right: 22px; }
+.dg-right .dg-label { padding-left: 22px; }
 .dg-label.dg-linked  { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,.18); }
 .dg-label.dg-correct { border-color: #16a34a; box-shadow: 0 0 0 2px rgba(22,163,74,.22); }
 .dg-label.dg-wrong   { border-color: #ef4444; box-shadow: 0 0 0 2px rgba(239,68,68,.22); }
-
-/* Punto de conexión de la etiqueta (en el borde interior, hacia la imagen). */
-.dg-dot {
-  flex: 0 0 auto;
-  width: 14px; height: 14px; border-radius: 50%;
-  background: #6366f1; border: 2px solid #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,.25);
-}
 
 /* Escenario central: la imagen define su caja; los pines se posicionan en %. */
 .dg-stage {
