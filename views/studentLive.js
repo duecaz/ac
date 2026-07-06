@@ -74,7 +74,7 @@ export async function renderPlay(rootSel, code) {
   let lastQuestionShownAt = 0;
   let questionTickHandle = null;
   let lastPhaseKey = '';
-  let myScore = 0;      // accumulated locally; used for end-of-game display
+  let myScore = 0;      // estimación local de respaldo (autoritativo = leaderboard del servidor)
   let endedFired = false;
   let endingInProgress = false;
   let raceQueue = null;       // null = not started yet; [] = finished
@@ -541,13 +541,19 @@ export async function renderPlay(rootSel, code) {
     if (endingInProgress) return;
     endingInProgress = true;
     Streaks.reset(session.id, player.playerId);
+    // La puntuación AUTORITATIVA es la del leaderboard del servidor. `myScore` es
+    // solo una ESTIMACIÓN local de respaldo (acumulada en submit/reveal) para el
+    // raro caso de que el servidor no responda al terminar — no se muestra durante
+    // la partida, así que nunca hay un número local "en desacuerdo" a la vista.
     let finalScore = myScore;
     let rank = 0;
     try {
       const lb = await leaderboard(session.id);
       const meIdx = lb.findIndex(p => p.id === player.playerId);
       if (meIdx >= 0) { finalScore = lb[meIdx].score; rank = meIdx + 1; }
-    } catch {}
+    } catch (e) {
+      console.warn('[studentLive] leaderboard final no disponible; usando estimación local:', e);
+    }
     if (!endedFired) {
       endedFired = true;
       emitGame(GameEvents.PODIUM, { top: [{ name: player.name, score: finalScore }] });

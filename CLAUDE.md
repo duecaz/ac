@@ -89,16 +89,20 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
   core/teams.js (`teamsScoreboardHtml`/`teamsPodiumHtml`) · `.vs-done` por tokens
   `--vs-done-fg/muted` (una regla base, skins solo definen tokens) · ritmo de juego con nombre
   en `core/timings.js` (FLASH_MS/COVER_MS/RACE_FLASH_MS/WIN_HOLD_MS/CONFETTI_ENCORE_MS).
-- **CSS**: bloque "keypad-fit" duplicado 4× (vs.css, teams.css, tv-show, colegios — ya derivan);
-  crossword.css con estados hardcodeados + 6 `!important` en cadena (tokenizar a `--ww-*`);
-  scaffolding portrait del scoreboard copiado en los 3 skins.
-- **Vistas**: timer de carrera + poll-fallback duplicados dentro de hostLive (paintRace ↔
-  paintLiveBoardHost); los pacing internos de hostLive siguen como literales (pase propio);
-  studentLive lleva doble contabilidad (`myScore`/`raceQueue`) que puede discrepar del
-  leaderboard del servidor; varios `catch {}` en hostLive esconden errores reales de settle.
-- **Core**: deadlines de hostLive/studentLive aún con `Date.now()` (migrar a clock en pase
-  propio); load-guard + wiring 'online' duplicado entre submitQueue y results (absorber en la
-  factory de offlineQueue; NO fusionar las colas — identidad/evicción distintas es correcto).
+  · `catch {}` de settle en hostLive → warn+toast al docente (los best-effort quedan comentados)
+  · crossword.css tokenizado a paleta local `--cw-*` y SIN los 6 `!important` (prioridad por
+  especificidad `.cw-cell.X`, verificado headless) · `myScore` de studentLive documentado como
+  estimación de respaldo (autoritativo = leaderboard) y su `catch {}` ahora avisa.
+- **DEUDA restante (pase propio)**:
+  - **CSS**: bloque "keypad-fit" duplicado 4× (vs.css, teams.css, tv-show, colegios — ya derivan;
+    extraer `.ww-keypad-fit` con verificación visual VS/Equipos × 3 skins × 2 orientaciones);
+    scaffolding portrait del scoreboard copiado en los 3 skins.
+  - **Vistas**: timer de carrera + poll-fallback duplicados dentro de hostLive (paintRace ↔
+    paintLiveBoardHost); los pacing internos de hostLive siguen como literales.
+  - **Core**: deadlines de hostLive/studentLive aún con `Date.now()`; load-guard + wiring 'online'
+    duplicado entre submitQueue y results (absorber en la factory de offlineQueue; NO fusionar las
+    colas — identidad/evicción distintas es correcto).
+  - La fusión real de `raceQueue`/scoring de studentLive va con la deuda A (lost-update): mismo flujo.
 
 ### 🟢 DEUDA IMPORTANTE — RESUELTA
 

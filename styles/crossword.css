@@ -2,6 +2,29 @@
    Crucigrama — styles
    ═══════════════════════════════════════════════════ */
 
+/* Paleta LOCAL centralizada (antes eran hex sueltos repartidos por el archivo +
+   6 !important en cadena). Cada color con nombre en un solo sitio; los que encajan
+   con el contrato global usan --ww-* con el mismo valor de respaldo. El fallback
+   en cada `var()` deja que las mini-celdas del editor (fuera de .cw-wrap) sigan
+   viéndose igual aunque no hereden estas variables. */
+.cw-wrap {
+  --cw-frame:            #1e293b;   /* rejilla, celdas bloqueadas, header oscuro */
+  --cw-frame-2:          #334155;   /* fin del degradado del header */
+  --cw-focus:            #3b82f6;   /* contorno de foco */
+  --cw-progress:         var(--ww-success, #4ade80);
+  --cw-active-word:      #dbeafe;   /* tinte de la palabra activa (pastel) */
+  --cw-active-cell:      #fde68a;   /* celda enfocada (pastel ámbar) */
+  --cw-correct-bg:       #bbf7d0;   --cw-correct-fg: #15803d;
+  --cw-wrong-bg:         #fee2e2;   --cw-wrong-fg:   #dc2626;
+  --cw-hint-fg:          #2563eb;
+  --cw-clue-active-bg:   #fef9c3;   --cw-clue-active-border: #eab308;
+  --cw-clue-solved:      var(--ww-success, #16a34a);
+  --cw-clue-wrong:       var(--ww-danger,  #dc2626);
+  --cw-heading:          #475569;   --cw-heading-border: #cbd5e1;
+  --cw-clue-hover:       #f1f5f9;
+  --cw-num:              #64748b;
+}
+
 /* ── Outer wrapper ─────────────────────────────────── */
 .cw-wrap {
   display: flex;
@@ -21,7 +44,7 @@
   gap: .6rem;
   flex-shrink: 0;
   padding: .4rem .75rem;
-  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  background: linear-gradient(135deg, var(--cw-frame, #1e293b) 0%, var(--cw-frame-2, #334155) 100%);
   border-radius: .6rem;
   color: #fff;
 }
@@ -44,7 +67,7 @@
 }
 .cw-progress-bar {
   height: 100%;
-  background: #4ade80;
+  background: var(--cw-progress, #4ade80);
   border-radius: 4px;
   transition: width .35s ease;
 }
@@ -83,9 +106,9 @@
   font-size: clamp(.63rem, 1.5cqw, .78rem);
   text-transform: uppercase;
   letter-spacing: .06em;
-  color: #475569;
+  color: var(--cw-heading, #475569);
   margin-bottom: .3rem;
-  border-bottom: 2px solid #cbd5e1;
+  border-bottom: 2px solid var(--cw-heading-border, #cbd5e1);
   padding-bottom: .2rem;
 }
 .cw-clue {
@@ -96,10 +119,11 @@
   transition: background .1s;
   border-left: 3px solid transparent;
 }
-.cw-clue:hover       { background: #f1f5f9; }
-.cw-clue-active      { background: #fef9c3 !important; border-left-color: #eab308; font-weight: 600; }
-.cw-clue-solved      { color: #16a34a; text-decoration: line-through; opacity: .65; }
-.cw-clue-wrong       { color: #dc2626; border-left-color: #dc2626; }
+.cw-clue:hover       { background: var(--cw-clue-hover, #f1f5f9); }
+/* Prioridad por especificidad (.cw-clue.X = 2 clases > .cw-clue:hover), sin !important. */
+.cw-clue.cw-clue-active { background: var(--cw-clue-active-bg, #fef9c3); border-left-color: var(--cw-clue-active-border, #eab308); font-weight: 600; }
+.cw-clue.cw-clue-solved { color: var(--cw-clue-solved, #16a34a); text-decoration: line-through; opacity: .65; }
+.cw-clue.cw-clue-wrong  { color: var(--cw-clue-wrong, #dc2626); border-left-color: var(--cw-clue-wrong, #dc2626); }
 
 /* ── Grid wrapper ──────────────────────────────────── */
 .cw-grid-wrap {
@@ -119,8 +143,8 @@
   grid-template-columns: repeat(var(--cw-cols, 10), var(--cw-cell, 36px));
   grid-template-rows:    repeat(var(--cw-rows, 10), var(--cw-cell, 36px));
   gap: 2px;
-  background: #1e293b;
-  border: 3px solid #1e293b;
+  background: var(--cw-frame, #1e293b);
+  border: 3px solid var(--cw-frame, #1e293b);
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0,0,0,.25);
@@ -137,7 +161,7 @@
   user-select: none;
 }
 .cw-blocked {
-  background: #1e293b;
+  background: var(--cw-frame, #1e293b);
 }
 .cw-white {
   background: var(--ww-card-bg, #ffffff);
@@ -145,7 +169,7 @@
   outline: none;
   transition: background .1s;
 }
-.cw-white:focus { outline: 2px solid #3b82f6; outline-offset: -2px; }
+.cw-white:focus { outline: 2px solid var(--cw-focus, #3b82f6); outline-offset: -2px; }
 
 .cw-num {
   position: absolute;
@@ -168,17 +192,21 @@
   pointer-events: none;
 }
 
-/* ── Cell states ───────────────────────────────────── */
-.cw-active-word { background: #dbeafe; }
-.cw-active-cell { background: #fde68a !important; }
+/* ── Cell states ───────────────────────────────────────────────────────────
+   Todas se apilan en la MISMA celda (.cw-white). Se scopean a .cw-cell (= 2
+   clases) para ganar a .cw-white (1 clase) SIN !important, y se ordenan de MENOR
+   a MAYOR prioridad: con igual especificidad, la última en el archivo gana.
+   Orden efectivo: palabra activa < celda enfocada < palabra correcta < palabra
+   incorrecta (idéntico al que imponía la cadena de !important anterior). */
+.cw-cell.cw-active-word  { background: var(--cw-active-word, #dbeafe); }
+.cw-cell.cw-active-cell  { background: var(--cw-active-cell, #fde68a); }
+.cw-cell.cw-correct-word { background: var(--cw-correct-bg, #bbf7d0); }
+.cw-cell.cw-correct-word .cw-letter { color: var(--cw-correct-fg, #15803d); }
+.cw-cell.cw-wrong-word   { background: var(--cw-wrong-bg, #fee2e2); }
 
-.cw-correct-word              { background: #bbf7d0 !important; }
-.cw-correct-word .cw-letter   { color: #15803d; }
-
-.cw-wrong-word                { background: #fee2e2 !important; }
-
-.cw-wrong-letter { color: #dc2626 !important; }
-.cw-hint-letter  { color: #2563eb !important; }
+/* Colores de letra: .cw-letter.X (2 clases) gana a .cw-letter, sin !important. */
+.cw-letter.cw-wrong-letter { color: var(--cw-wrong-fg, #dc2626); }
+.cw-letter.cw-hint-letter  { color: var(--cw-hint-fg, #2563eb); }
 
 /* ── Footer ────────────────────────────────────────── */
 .cw-footer {
@@ -221,7 +249,7 @@
   background: var(--ww-card-bg, #fff);
   border: 1px solid var(--ww-card-border, #94a3b8);
 }
-.cw-pre-blk { background: #1e293b; }
+.cw-pre-blk { background: var(--cw-frame, #1e293b); }
 
 /* ── Responsive: stack clues below grid on small cq ── */
 @container (max-width: 480px) {

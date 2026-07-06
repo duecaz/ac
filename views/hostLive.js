@@ -226,7 +226,8 @@ async function renderHost(rootSel, code, sessionId, activity) {
       const ok = await confirmModal('¿Cancelar sala?', { okText: 'Cancelar sala', danger: true });
       if (!ok) return;
       disposed = true; // stop reacting to the 'ended' echo before it can paint a podium
-      try { await endSession(sessionId); } catch {}
+      // Best-effort: cancelar sala igual navega a casa aunque el PATCH falle.
+      try { await endSession(sessionId); } catch (e) { console.warn('[hostLive] endSession al cancelar:', e); }
       location.hash = '#/home';
     });
     on(rootSel, 'click', '.kick', (_, b) => kickPlayer(sessionId, b.dataset.id));
@@ -526,9 +527,14 @@ async function renderHost(rootSel, code, sessionId, activity) {
       if (!ok) return;
       const btn = document.getElementById('btn-end-race');
       if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Finalizando…'; }
+      // Puntuar cada ítem de la carrera. Un fallo aquí desvía la clasificación
+      // final SIN aviso — se acumulan y se reportan al docente (antes: catch {}).
+      const failedItems = [];
       for (let i = 0; i < items.length; i++) {
-        try { await settleItem(sessionId, i); } catch {}
+        try { await settleItem(sessionId, i); }
+        catch (e) { console.warn('[hostLive] settleItem', i, 'falló:', e); failedItems.push(i + 1); }
       }
+      if (failedItems.length) toast(`No se pudieron puntuar ${failedItems.length} pregunta(s) (${failedItems.join(', ')}). La clasificación puede estar incompleta.`, 'warning', 6000);
       await endSession(sessionId);
     });
   }
@@ -589,7 +595,10 @@ async function renderHost(rootSel, code, sessionId, activity) {
         const cellEl = document.createElement('div');
         cellEl.className = 'bs-grid-cell';
         grid.appendChild(cellEl);
-        try { tpl.renderRaceCell(cellEl, { value: c.value, name: c.name, mode }); } catch {}
+        // Aísla el fallo de UNA celda para no romper la rejilla, pero lo registra
+        // (un bug de renderRaceCell de la plantilla era invisible; antes: catch {}).
+        try { tpl.renderRaceCell(cellEl, { value: c.value, name: c.name, mode }); }
+        catch (e) { console.warn('[hostLive] renderRaceCell falló:', e); }
       }
     }
 
@@ -613,7 +622,9 @@ async function renderHost(rootSel, code, sessionId, activity) {
       if (!ok) return;
       const btn = document.getElementById('btn-end-race');
       if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Finalizando…'; }
-      try { await settleItem(sessionId, 0); } catch {}
+      // Puntuar el tablero. Un fallo desvía el resultado final SIN aviso (antes: catch {}).
+      try { await settleItem(sessionId, 0); }
+      catch (e) { console.warn('[hostLive] settleItem tablero falló:', e); toast('No se pudo puntuar el tablero; el resultado puede estar incompleto.', 'warning', 6000); }
       await endSession(sessionId);
     });
   }
