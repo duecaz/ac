@@ -3,6 +3,9 @@
 > El MD de referencia para probar el proyecto. Tres niveles: **suite Node** (pura,
 > CI), **self-tests en navegador** (panel admin) y **verificación headless**
 > (Playwright) para lo que la suite no puede ver (DOM, táctil, layout).
+>
+> Documento hermano: qué hace cada actividad y feature → **`docs/panorama-actividades.md`**
+> (su §5 tiene una tabla "qué suite prueba qué área").
 
 ## 1. Suite Node (la de CI)
 
