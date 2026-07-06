@@ -50,6 +50,12 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
   `encodeURIComponent` a pelo (no escapa la comilla simple).
 - **Puntos**: convención en `core/scoreHelpers.js` (basePoints/wrongPoints/useKahoot); Tildes VS
   puntúa 1 punto fijo por tilde buena (`scoreMarksPerHit`, las marcas de más restan).
+- **Maquetación del PLAYER: NADA con tamaño fijo** — todo relativo (unidades de
+  contenedor `cq*` o `%`, o cálculo JS tipo `fitLayout`/`fitPassage`), para que el
+  juego se vea bien en 4K, 600×800, 9:16 y 16:9. Prohibido `px`/`rem` fijos que
+  congelen el crecimiento (un `clamp(...,...,.95rem)` con tope bajo NO escala). Los
+  `max(12px, Xcqmin)` son OK como PISO de legibilidad, nunca como techo. (El editor
+  sí puede usar px: es un formulario, no el juego.)
 - **Testeo**: mapa de suites + receta headless (Playwright) en `docs/testing.md`.
 
 ## Deuda técnica registrada

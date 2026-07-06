@@ -1,5 +1,10 @@
 /* Etiqueta el diagrama — imagen central con pines + etiquetas a los lados,
-   unidas con cuerdas (motor SVG compartido core/connectRope.js). */
+   unidas con cuerdas (motor SVG compartido core/connectRope.js).
+
+   ESTÁNDAR DE MAQUETACIÓN (regla del proyecto): NADA con tamaño fijo en el juego.
+   `.dg-arena` es un CONTENEDOR de consulta y TODO (fuente, padding, columnas,
+   separación, puntos, pines) se mide en unidades de contenedor (cq*) → escala
+   igual en 4K, 600×800, 9:16 o 16:9. */
 
 .dg-wrap { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 .dg-wrap > .d-flex { flex: 0 0 auto; }
@@ -9,32 +14,37 @@
   position: relative;
   display: flex;
   align-items: stretch;
-  gap: 10px;
+  gap: 2cqw;
   flex: 1 1 auto;
   min-height: 0;
-  touch-action: none;   /* el arrastre nunca se interpreta como scroll (táctil) */
+  touch-action: none;              /* el arrastre nunca se interpreta como scroll */
+  container-type: size;            /* → los hijos escalan con el arena (cqmin/cqw/cqh) */
+  container-name: dg;
 }
 .dg-col {
   flex: 0 0 auto;
   min-width: 0;
   display: flex; flex-direction: column;
-  gap: 8px; justify-content: center; align-items: stretch;
-  width: clamp(96px, 22%, 190px);
+  gap: 2cqh; justify-content: center;
+  width: 26cqw;                    /* relativo al arena (sin tope fijo) */
   overflow: visible;
 }
 .dg-left  { align-items: flex-start; }
 .dg-right { align-items: flex-end; }
 
-/* Etiquetas (pastilla arrastrable con su punto de conexión). */
+/* Etiquetas (pastilla arrastrable con su punto de conexión). Tamaño del punto en
+   una variable relativa para derivar posición y hueco del texto. */
 .dg-label {
-  position: relative;                 /* el .ww-dot (compartido) se ancla al borde */
+  --dg-dot: max(12px, 3cqmin);
+  position: relative;              /* el .ww-dot (compartido) se ancla al borde */
   display: flex; align-items: center; justify-content: center;
-  padding: 8px 14px;
+  padding: 1.6cqmin 2.8cqmin;
   border-radius: 999px;
-  border: 2px solid var(--ww-card-border, #dee2e6);
+  border: max(2px, .35cqmin) solid var(--ww-card-border, #dee2e6);
   background: var(--ww-card-bg, #fff);
   color: var(--ww-card-fg, var(--ww-fg, #1f2937));
-  font-weight: 700; font-size: clamp(.7rem, 2.4cqw, .95rem);
+  font-weight: 700;
+  font-size: max(.72rem, 4.2cqmin);   /* piso legible; por lo demás crece con el arena */
   line-height: 1.1;
   cursor: grab; touch-action: none;
   user-select: none; -webkit-user-select: none;
@@ -43,12 +53,17 @@
 }
 .dg-label:active { cursor: grabbing; }
 .dg-label-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* Hueco extra en el lado del punto (borde interior) para que no pise el texto. */
-.dg-left  .dg-label { padding-right: 22px; }
-.dg-right .dg-label { padding-left: 22px; }
-.dg-label.dg-linked  { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,.18); }
-.dg-label.dg-correct { border-color: #16a34a; box-shadow: 0 0 0 2px rgba(22,163,74,.22); }
-.dg-label.dg-wrong   { border-color: #ef4444; box-shadow: 0 0 0 2px rgba(239,68,68,.22); }
+/* Hueco para el punto en el borde interior (sin pisar el texto). */
+.dg-left  .dg-label { padding-right: calc(var(--dg-dot) + 1.4cqmin); }
+.dg-right .dg-label { padding-left:  calc(var(--dg-dot) + 1.4cqmin); }
+.dg-label.dg-linked  { border-color: #6366f1; box-shadow: 0 0 0 max(2px,.4cqmin) rgba(99,102,241,.18); }
+.dg-label.dg-correct { border-color: #16a34a; box-shadow: 0 0 0 max(2px,.4cqmin) rgba(22,163,74,.22); }
+.dg-label.dg-wrong   { border-color: #ef4444; box-shadow: 0 0 0 max(2px,.4cqmin) rgba(239,68,68,.22); }
+
+/* El punto conector (.ww-dot compartido con Emparejar) escala con la etiqueta. */
+.dg-label .ww-dot { width: var(--dg-dot); height: var(--dg-dot); }
+.dg-left  .dg-label .ww-dot { right: calc(var(--dg-dot) / -2); left: auto; }
+.dg-right .dg-label .ww-dot { left:  calc(var(--dg-dot) / -2); right: auto; }
 
 /* Escenario central: la imagen define su caja; los pines se posicionan en %. */
 .dg-stage {
@@ -56,13 +71,13 @@
   display: flex; align-items: center; justify-content: center;
 }
 .dg-img-box { position: relative; line-height: 0; }   /* tamaño puesto por JS (fitImageBox) */
-.dg-img { display: block; width: 100%; height: 100%; border-radius: 8px; -webkit-user-drag: none; user-select: none; }
+.dg-img { display: block; width: 100%; height: 100%; border-radius: 1cqmin; -webkit-user-drag: none; user-select: none; }
 
 /* Pines sobre la imagen: aro blanco con centro de color (estilo Wordwall). */
 .dg-pin {
   position: absolute; transform: translate(-50%, -50%);
-  width: 16px; height: 16px; border-radius: 50%;
-  background: #fff; border: 3px solid #475569;
+  width: max(12px, 2.8cqmin); height: max(12px, 2.8cqmin); border-radius: 50%;
+  background: #fff; border: max(2px, .6cqmin) solid #475569;
   box-shadow: 0 1px 5px rgba(0,0,0,.4);
   cursor: crosshair; touch-action: none; z-index: 10;
 }
@@ -77,7 +92,9 @@
   pointer-events: none; overflow: visible; z-index: 5;
 }
 
-/* Editor: escenario de colocación de pines (imagen + pines numerados). */
+/* Editor: escenario de colocación de pines (imagen + pines numerados). El editor
+   NO es el juego (vive en una página de formulario), así que aquí sí caben
+   tamaños fijos moderados para la vista previa. */
 .dg-edit-stage { display: flex; justify-content: center; background: var(--ww-bg-soft, #f8fafc); border: 1px solid var(--ww-card-border, #e2e8f0); border-radius: 8px; padding: 8px; max-height: 46vh; }
 .dg-edit-stage .dg-img { cursor: crosshair; }
 .dg-edit-pin { width: 20px; height: 20px; background: #6366f1; color: #fff; border-color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; cursor: grab; }
