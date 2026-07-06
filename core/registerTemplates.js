@@ -17,3 +17,4 @@ import '../templates/wordsearch/index.js';
 import '../templates/crossword/index.js';
 import '../templates/question-live/index.js';
 import '../templates/ballsort/index.js';
+import '../templates/diagram/index.js';

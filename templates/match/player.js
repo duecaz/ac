@@ -5,11 +5,7 @@
 import { html, mount, escapeHtml } from '../../core/html.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { shuffle } from '../../core/roundRender.js';
-
-// Paleta neutra para las cuerdas mientras se empareja (antes de corregir).
-const ROPES = ['#6366f1','#0891b2','#a855f7','#f59e0b','#0ea5e9','#ec4899','#14b8a6','#8b5cf6'];
-const OK_COL = '#16a34a', NO_COL = '#ef4444';
-const SAG = 16;   // px que "cuelga" la cuerda (evita bbox de alto 0 → filtro/línea visible)
+import { ROPES, OK_COL, NO_COL, mountRopeLayer, ropeHtml, ghostHtml, dotPos, svgPt } from '../../core/connectRope.js';
 
 export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   const raw = (activity.content?.pairs || []).filter(p =>
@@ -45,25 +41,14 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   const progressEl = root.querySelector('.ww-matched');
   const submitBtn  = root.querySelector('.ww-match-submit');
 
-  // Defs (sombra de cuerda) una sola vez.
-  const filterId = 'rf' + Math.random().toString(36).slice(2, 6);
-  svg.innerHTML = `<defs>
-    <filter id="${filterId}" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.25"/>
-    </filter>
-  </defs><g class="ww-rope-layer"></g>`;
-  const layer = svg.querySelector('.ww-rope-layer');
+  // Capa de cuerdas (defs + sombra) — motor compartido core/connectRope.js.
+  const { layer, filterId } = mountRopeLayer(svg);
 
   function updateProgress() {
     if (progressEl) progressEl.textContent = `${state.links.size} / ${raw.length}`;
   }
   function updateSubmit() {
     if (submitBtn) submitBtn.disabled = state.graded || state.links.size < raw.length;
-  }
-
-  function rope(curve, col) {
-    return `<path d="${curve}" stroke="rgba(0,0,0,.22)" stroke-width="11" fill="none" stroke-linecap="round"/>`
-         + `<path d="${curve}" stroke="${col}" stroke-width="6" fill="none" stroke-linecap="round"/>`;
   }
 
   function updateSvg() {
@@ -74,22 +59,13 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
       const rd = root.querySelector(`.ww-dot[data-id="${rightId}"][data-side="R"]`);
       if (!ld || !rd) { i++; continue; }
       const p1 = dotPos(ld, svg), p2 = dotPos(rd, svg);
-      const mx = (p1.x + p2.x) / 2;
       const col = state.graded ? (leftId === rightId ? OK_COL : NO_COL) : ROPES[i % ROPES.length];
-      // La cuerda CUELGA un poco (sag): así una unión horizontal NO tiene bounding
-      // box de altura 0 — el filtro de sombra (región en % del bbox) colapsaría a
-      // cero y la línea quedaría INVISIBLE. Además se ve más natural (cuerda real).
-      const curve = `M${p1.x},${p1.y} C${mx},${p1.y + SAG} ${mx},${p2.y + SAG} ${p2.x},${p2.y}`;
-      d += `<g filter="url(#${filterId})">${rope(curve, col)}</g>`;
-      d += `<circle cx="${p1.x}" cy="${p1.y}" r="8" fill="${col}"/>`;
-      d += `<circle cx="${p2.x}" cy="${p2.y}" r="8" fill="${col}"/>`;
+      d += ropeHtml(p1, p2, col, filterId);
       i++;
     }
     if (state.dragging) {
       const { x1, y1, cx, cy } = state.dragging;
-      const mx = (x1 + cx) / 2;
-      d += `<circle cx="${x1}" cy="${y1}" r="10" fill="#6366f1" opacity=".6"/>`;
-      d += `<path d="M${x1},${y1} C${mx},${y1} ${mx},${cy} ${cx},${cy}" stroke="#6366f1" stroke-width="4.5" fill="none" stroke-dasharray="11 6" stroke-linecap="round" opacity=".75"/>`;
+      d += ghostHtml(x1, y1, cx, cy);
     }
     layer.innerHTML = d;
   }
@@ -273,13 +249,4 @@ function cardHtml(c, side) {
 </div>`;
 }
 
-// ── SVG coordinate helpers ────────────────────────────────────────────────────
 
-function dotPos(el, svg) {
-  const er = el.getBoundingClientRect(), sr = svg.getBoundingClientRect();
-  return { x: (er.left + er.right) / 2 - sr.left, y: (er.top + er.bottom) / 2 - sr.top };
-}
-function svgPt(svg, cx, cy) {
-  const sr = svg.getBoundingClientRect();
-  return { x: cx - sr.left, y: cy - sr.top };
-}

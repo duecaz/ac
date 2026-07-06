@@ -5,7 +5,7 @@
 > Documentos hermanos: modelo de contenido JSON → `docs/ESTRUCTURA.md` ·
 > contrato de modos → `docs/modos-de-juego.md` · cómo se prueba → `docs/testing.md`.
 
-## 1. Las 11 actividades de un vistazo
+## 1. Las 12 actividades de un vistazo
 
 | Actividad | Modelo | Qué hace | `panelFit` | Solo | Tarea | En vivo | VS | Equipos |
 |---|---|---|---|:--:|:--:|:--:|:--:|:--:|
@@ -20,6 +20,7 @@
 | **Ordena las Pelotas** (ballsort) | `ballsort` | Mueves bolas hasta que cada tubo sea de un color | fill | ✅ | ✅ | ✅ *(tablero)* | ✅ *(carrera)* | ✅ *(carrera)* |
 | **Ruleta** (wheel) | `items` | Gira y cae en una entrada al azar | fill | ✅ | — | ✅ *(manual)* | ❌ | ❌ |
 | **Abre Cajas** (question-live) | `items` | El profe abre cajas; el alumno responde | fill | ✅ | — | ✅ *(manual)* | ❌ | ❌ |
+| **Etiqueta el diagrama** (diagram) | `diagram` | Arrastras etiquetas a pines sobre una imagen | fill | ✅ | ✅ | ❌ | ❌ | ❌ |
 
 Reglas de compatibilidad (derivadas, no configuradas — `core/modes.js`):
 - **VS / Equipos-auto** necesitan `scoreSubmission` + `renderRound` (+ ≥2 ítems, o 1 si es tablero).
@@ -37,6 +38,7 @@ Reglas de compatibilidad (derivadas, no configuradas — `core/modes.js`):
 - **Sopa de Letras / Crucigrama** — tableros de palabras (`words`); wordsearch busca libremente, crossword rellena desde pistas.
 - **Ordena las Pelotas** — puzzle de tubos; el progreso del tablero alimenta la cuerda del VS.
 - **Ruleta / Abre Cajas** — herramientas de aula en vivo; el profe controla, valida verbalmente.
+- **Etiqueta el diagrama** — imagen con pines a (x,y); arrastras cada etiqueta a su pin (motor de cuerdas compartido `core/connectRope.js`, el mismo de Emparejar). Editor: clic en la imagen coloca el pin.
 
 ## 3. Cambiar de formato conservando el contenido
 

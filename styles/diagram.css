@@ -1,0 +1,92 @@
+/* Etiqueta el diagrama — imagen central con pines + etiquetas a los lados,
+   unidas con cuerdas (motor SVG compartido core/connectRope.js). */
+
+.dg-wrap { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.dg-wrap > .d-flex { flex: 0 0 auto; }
+.dg-wrap > .text-center { flex: 0 0 auto; }
+
+.dg-arena {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+  touch-action: none;   /* el arrastre nunca se interpreta como scroll (táctil) */
+}
+.dg-col {
+  flex: 0 0 auto;
+  min-width: 0;
+  display: flex; flex-direction: column;
+  gap: 8px; justify-content: center; align-items: stretch;
+  width: clamp(96px, 22%, 190px);
+  overflow: visible;
+}
+.dg-left  { align-items: flex-start; }
+.dg-right { align-items: flex-end; }
+
+/* Etiquetas (pastilla arrastrable con su punto de conexión). */
+.dg-label {
+  position: relative;
+  display: flex; align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 2px solid var(--ww-card-border, #dee2e6);
+  background: var(--ww-card-bg, #fff);
+  color: var(--ww-card-fg, var(--ww-fg, #1f2937));
+  font-weight: 700; font-size: clamp(.7rem, 2.4cqw, .95rem);
+  line-height: 1.1;
+  cursor: grab; touch-action: none;
+  user-select: none; -webkit-user-select: none;
+  max-width: 100%;
+  transition: border-color .15s, box-shadow .15s;
+}
+.dg-label:active { cursor: grabbing; }
+.dg-left  .dg-label { flex-direction: row; }
+.dg-right .dg-label { flex-direction: row-reverse; }
+.dg-label-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dg-label.dg-linked  { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,.18); }
+.dg-label.dg-correct { border-color: #16a34a; box-shadow: 0 0 0 2px rgba(22,163,74,.22); }
+.dg-label.dg-wrong   { border-color: #ef4444; box-shadow: 0 0 0 2px rgba(239,68,68,.22); }
+
+/* Punto de conexión de la etiqueta (en el borde interior, hacia la imagen). */
+.dg-dot {
+  flex: 0 0 auto;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #6366f1; border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,.25);
+}
+
+/* Escenario central: la imagen define su caja; los pines se posicionan en %. */
+.dg-stage {
+  flex: 1 1 auto; min-width: 0; min-height: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.dg-img-box { position: relative; line-height: 0; }   /* tamaño puesto por JS (fitImageBox) */
+.dg-img { display: block; width: 100%; height: 100%; border-radius: 8px; -webkit-user-drag: none; user-select: none; }
+
+/* Pines sobre la imagen: aro blanco con centro de color (estilo Wordwall). */
+.dg-pin {
+  position: absolute; transform: translate(-50%, -50%);
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; border: 3px solid #475569;
+  box-shadow: 0 1px 5px rgba(0,0,0,.4);
+  cursor: crosshair; touch-action: none; z-index: 10;
+}
+.dg-pin:hover  { transform: translate(-50%, -50%) scale(1.25); }
+.dg-pin.dg-linked  { border-color: #6366f1; }
+.dg-pin.dg-correct { border-color: #16a34a; background: #16a34a; }
+.dg-pin.dg-wrong   { border-color: #ef4444; background: #ef4444; }
+
+/* Capa de cuerdas: cubre todo el arena, sin robar el puntero. */
+.dg-arena .ww-lines-svg {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  pointer-events: none; overflow: visible; z-index: 5;
+}
+
+/* Editor: escenario de colocación de pines (imagen + pines numerados). */
+.dg-edit-stage { display: flex; justify-content: center; background: var(--ww-bg-soft, #f8fafc); border: 1px solid var(--ww-card-border, #e2e8f0); border-radius: 8px; padding: 8px; max-height: 46vh; }
+.dg-edit-stage .dg-img { cursor: crosshair; }
+.dg-edit-pin { width: 20px; height: 20px; background: #6366f1; color: #fff; border-color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; cursor: grab; }
+.dg-edit-pin:active { cursor: grabbing; }

@@ -42,7 +42,7 @@
 │   ├── content/          conversión / modelos de contenido (qaAdapt, models…)
 │   └── contracts/        interfaces: template, dataPort, realtimePort, contentModel
 │
-├── templates/            UNA carpeta por plantilla (11). Ver §3.
+├── templates/            UNA carpeta por plantilla (12). Ver §3.
 │   └── <tpl>/
 │       ├── template.js   meta (contentModel, modes, defaults) + scorer/round
 │       ├── editor.js     UI de edición
@@ -133,7 +133,7 @@ Toda actividad pasa por `normalize()` (core/migrate.js). Forma canónica
 
 ## 3. Plantillas y su MODELO DE CONTENIDO (`content`)
 
-11 plantillas. La clave es `template` (name). `contentModel` decide la forma de
+12 plantillas. La clave es `template` (name). `contentModel` decide la forma de
 `content`. `modes` indica dónde se puede jugar.
 
 | template        | label             | contentModel    | clave en `content` |
@@ -149,6 +149,7 @@ Toda actividad pasa por `normalize()` (core/migrate.js). Forma canónica
 | `wheel`         | Ruleta            | `items`         | `items[]`          |
 | `question-live` | Abre Cajas        | `items`         | `items[]`          |
 | `ballsort`      | Ordena las Pelotas| `ballsort`      | `items[]` (tablero)|
+| `diagram`       | Etiqueta el diagrama| `diagram`     | `image` + `pins[]`  |
 
 > (Froggy Jumps fue **eliminado**; su animación de progreso vive ahora en
 > `core/soloAnimations.js` como carril opcional del modo Individual.)
@@ -227,6 +228,17 @@ ambos lados resuelven el MISMO tablero y gana quien termina antes).
 ```
 - `random: true` → el editor regenera el tablero con `randomBoard(level)`.
 - `mode`: `'moves'` (menos movimientos) | `'time'` (más rápido).
+
+### diagram — Etiqueta el diagrama (imagen + pines)
+Una imagen de fondo y PINES a coordenadas sobre ella; el alumno arrastra cada
+etiqueta a su pin (estilo Wordwall). `x`/`y` son fracciones 0..1 de la imagen.
+```jsonc
+"content": {
+  "image": "data:image/…",                        // imagen de fondo (data-URL, ≤200 KB)
+  "pins": [ { "id": "pin_a", "label": "Cabeza", "x": 0.5, "y": 0.11 } ]
+}
+```
+- Acierto = etiqueta enlazada a SU pin (mismo `id`). El editor coloca pines con clic.
 
 ## 4. Modos de juego (`modes` de cada plantilla)
 - **solo**: un dispositivo, autopuntuado localmente.
