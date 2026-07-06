@@ -55,7 +55,11 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
   juego se vea bien en 4K, 600×800, 9:16 y 16:9. Prohibido `px`/`rem` fijos que
   congelen el crecimiento (un `clamp(...,...,.95rem)` con tope bajo NO escala). Los
   `max(12px, Xcqmin)` son OK como PISO de legibilidad, nunca como techo. (El editor
-  sí puede usar px: es un formulario, no el juego.)
+  sí puede usar px: es un formulario, no el juego.) **Además, colores pintables**
+  (`color`/`background`) del juego **por token `var(--ww-*)`** para que los skins
+  recoloreen — nunca `#hex` a pelo (salvo neutros y estado acierto/error). Contrato
+  completo + ejemplares (`math.css`/`quiz.css`) en **`docs/estilos-de-actividad.md`**;
+  lo protege el ratchet `tests/styles.test.mjs` (una actividad nueva debe nacer limpia).
 - **Testeo**: mapa de suites + receta headless (Playwright) en `docs/testing.md`.
 
 ## Deuda técnica registrada

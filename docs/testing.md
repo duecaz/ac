@@ -69,6 +69,7 @@ testea **lógica pura** (sin DOM, sin red): motores, scorers, parsers, colas.
 | `clock` | Reloj inyectable: congelar `clock.now` hace determinista la lógica de dominio. |
 | `assignments` | Reglas puras de Tareas + flujo del driver local. |
 | `penDetector` | Clasificación lápiz/dedo/borrador/palma por tamaño de contacto + derivación de umbrales de calibración. |
+| `styles` | Ratchet anti-regresión del CSS de juego: sin `font-size` congelada ni color pintable a pelo (regla → `docs/estilos-de-actividad.md`). `math`/`quiz` limpios; deuda actual en un BASELINE que no puede crecer. |
 
 ### Añadir una suite
 1. Crea `tests/mifeature.test.mjs` con el patrón estándar:
