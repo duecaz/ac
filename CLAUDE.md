@@ -34,6 +34,23 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
 - `sessionItems(activity)` lee `items ?? entries ?? pairs ?? groups ?? words ?? passages ?? []`.
 - Plantillas con `modes.live: true` deben declarar `getRoundPayload` y `scoreSubmission` (aunque sean stubs).
 - Las columnas de rejillas se ponen inline (`grid-template-columns: repeat(N, 1fr)`); las variables CSS se ignoran en algunos móviles.
+- **`meta.instructions` es obligatorio** (frase corta de cómo se juega): lo muestra la pantalla de inicio.
+- **`meta.panelFit`** declara la maquetación del panel VS: `'fill'` (defecto, llena y escala) ·
+  `'block'` (bloque único con tope, p.ej. la calculadora) · `'center'`. Ver docs/modos-de-juego.md §5c.
+
+## Estándares transversales (no romper)
+- **Pantalla de inicio** (`views/startScreen.js`): todo modo Individual pasa por ella (título +
+  instrucciones + ajustes + Iniciar→fullscreen). El ejercicio queda oculto hasta Iniciar.
+- **Registro de plantillas y arranque**: `core/registerTemplates.js` (las 11, punto único) +
+  `core/boot.js` (sonidos/efectos al bus, versión, mute). Las 3 `main.*.js` NO repiten ese wiring.
+- **Gama baja** (`core/perf.js`): `ww-lite` en `<html>` si ≤4 núcleos o ≤2GB → sin bucles de
+  animación en reposo (cuerda Lottie estática, marquesina arcade quieta). El VS debe ser fluido en
+  pizarras A55; nunca añadir bucles rAF continuos en el hilo principal sin gate `ww-lite`.
+- **Filtros PocketBase**: SIEMPRE `pbEscape`/`pbFilterParam` (`core/pbFilter.js`), nunca
+  `encodeURIComponent` a pelo (no escapa la comilla simple).
+- **Puntos**: convención en `core/scoreHelpers.js` (basePoints/wrongPoints/useKahoot); Tildes VS
+  puntúa 1 punto fijo por tilde buena (`scoreMarksPerHit`, las marcas de más restan).
+- **Testeo**: mapa de suites + receta headless (Playwright) en `docs/testing.md`.
 
 ## Deuda técnica registrada
 
@@ -62,9 +79,10 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
   (`scoreSubmission` devuelve `null`) marca a TODA la clase como incorrecta en vez de tratarse como
   no puntuable. Riesgo de cambiarlo: el `null` fluye a UI (✓/✗); requiere verificación visual.
 
-#### D. Menores: filtros PB sin escapar comilla simple (`realtime.js`/`assignments.js`), `saveResult`
-  remoto sin cola propia (un resultado final puede perderse en blip; la cola de `results.js` cubre el
-  caso local), sin idempotency key en resultados (posibles filas duplicadas si se pierde el ACK).
+#### D. Menores: ~~filtros PB sin escapar comilla simple~~ ✅ RESUELTO (`core/pbFilter.js`, ambos
+  adaptadores lo usan). Quedan: `saveResult` remoto sin cola propia (un resultado final puede
+  perderse en blip; la cola de `results.js` cubre el caso local) y sin idempotency key en
+  resultados (posibles filas duplicadas si se pierde el ACK).
 
 ### 🟢 DEUDA IMPORTANTE — RESUELTA
 

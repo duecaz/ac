@@ -1,51 +1,38 @@
-# Identidad y migración anónimo → cuenta
+# Identidad — anon id local + auth PocketBase
 
-> Cómo persisten las actividades y cómo se "migran" cuando el docente entra con
-> una cuenta real. Verificado contra `core/auth.js`, `core/supabase.js`,
-> `core/storage.js` y `adapters/supabase/remoteStore.js`.
+> Cómo se identifica al usuario y a quién pertenecen las actividades. Verificado
+> contra `core/identity.js`, `core/auth.js`, `core/state.js` y `core/storage.js`.
+> (La versión anterior de este doc describía el flujo Supabase con Google
+> linking; **Supabase fue retirado** y ese flujo ya no existe.)
 
-## El modelo
-- Cada actividad se guarda con `author_id = uid del usuario`. La lista del Home
-  muestra `author_id = uid_actual` (+ filas `author_id is null` heredadas).
-- Al arrancar, si no hay sesión, se crea un usuario **anónimo** persistente
-  (`ensureAuth` en `core/supabase.js`). **`ensureAuth` cachea la promesa en
-  vuelo** para que llamadas concurrentes (boot + realtime + uploads) NO creen
-  varios anónimos a la vez (ese era el origen de la dispersión de identidades).
-- LocalStorage es la fuente de verdad de lectura, scopeado por uid
-  (`ww.activities.<uid>`); `sync()` baja del backend y reconcilia.
+## El modelo actual
 
-## La migración: ENLAZAR, no copiar
-Cuando un usuario **anónimo** entra con Google, `core/auth.js → signInWithGoogle`
-llama a **`linkIdentity({ provider: 'google' })`**, que **enlaza** Google al
-usuario anónimo actual:
+- **Identidad base = anon id local.** `core/identity.js → ensureIdentity()`
+  devuelve `{ id: getAnonId() }`: un id anónimo persistido en `localStorage`
+  (`core/state.js`), igual en cualquier backend. Con eso SOLO/ASYNC/LIVE
+  funcionan también offline y sin login.
+- **Auth real = PocketBase email/password** (`core/auth.js`). Facade con token +
+  record en `localStorage` (`ww.pb.auth`), `onAuthChange` por listeners. Se usa
+  para acciones que requieren cuenta, no para jugar.
+- **Las actividades son un banco compartido sin dueño** (`author_id = null`):
+  cualquiera las ve/abre por URL, y `sync()` (`core/storage.js`) las repuebla
+  desde la nube si se limpia la caché. `localStorage` es la fuente de lectura,
+  scopeada por uid (`setStorageUser`).
 
-- Se **preserva el mismo `user.id`** → todas sus actividades (que ya cuelgan de
-  ese id) pasan a ser de la cuenta permanente **sin mover ni una fila** y sin
-  chocar con RLS. La cuenta deja de ser anónima.
-- Si el usuario **no** es anónimo (ya tiene cuenta), se hace login OAuth normal.
+## Qué identifica a quién
 
-Por eso la consolidación previa de las actividades dispersas bajo **una** sola
-identidad anónima (la del navegador del docente) es lo que hace la migración
-trivial: al enlazar Google en ese navegador, ese id se vuelve permanente y se
-lleva todo.
+| Contexto | Identidad usada |
+|---|---|
+| Jugar SOLO / guardar resultado | anon id (`ensureIdentity`) |
+| Unirse a LIVE (alumno) | anon id + apodo elegido |
+| Tarea (async) | anon id + apodo; los intentos guardan `user_id = anon id` |
+| Editar/crear actividades | ninguna exigida (banco compartido) |
+| Login profesor (opcional) | PocketBase email/password (`core/auth.js`) |
 
-## Requisitos en el panel de Supabase (una vez)
-1. **Auth → Providers → Google**: configurado (Client ID/Secret + redirect URI
-   autorizada = la URL del sitio).
-2. **Auth → Settings → Manual linking**: **activado** (lo necesita
-   `linkIdentity`). Si está desactivado, la UI muestra un aviso pidiendo
-   activarlo (no crea una cuenta nueva a tu espalda).
-3. **Anonymous Sign-Ins**: activado (ya lo estaba).
+## Historia (por qué este doc cambió)
 
-## Plan B (si no se usa linking)
-Si se prefiere no activar manual linking, al entrar con Google se crea una cuenta
-nueva (uid distinto) y las actividades anónimas **no** la siguen. En ese caso la
-migración es un `UPDATE author_id` de la identidad anónima al uid de Google
-(las filas migradas guardan su `author_id` original en `data._prevAuthor`, así
-que es un solo UPDATE verificable).
-
-## Limitación conocida
-El **registro por email** (`signUp`) aún crea cuenta nueva (no enlaza), porque el
-cambio de email de un anónimo requiere confirmación. La vía recomendada para
-conservar el trabajo es **Google** (enlace en el sitio). Pendiente: upgrade por
-email vía `updateUser({ email, password })` con su flujo de confirmación.
+El flujo anterior (usuario anónimo de Supabase + `linkIdentity` con Google para
+migrar anónimo→cuenta) se retiró junto con Supabase. Si en el futuro se quieren
+actividades privadas por cuenta, el camino es: `author_id = user.id` de
+PocketBase al guardar + filtro por autor en `sync()` — la infraestructura de
+auth ya está en `core/auth.js`.

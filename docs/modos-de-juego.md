@@ -182,6 +182,38 @@ renderModeSetup(host, {
 No reescribas este chrome en tu vista. Si necesitas un control nuevo común a
 varios modos, añádelo al andamiaje, no a una vista suelta.
 
+### 5b. Pantalla de inicio estándar del modo Individual (`views/startScreen.js`)
+
+El modo `solo` NO salta directo al primer ítem: `playerView` monta primero
+`renderStartScreen(widget, activity, { frame, onStart })` — una tarjeta estándar
+con **Título + Instrucciones + Ajustes** (Sonido, Efectos y, en Tildes/Comas,
+"Calibrar pizarra") + botón **Iniciar**, que SIEMPRE entra en pantalla completa
+antes de arrancar. Así el alumno no ve el ejercicio antes de empezar.
+
+- Las instrucciones salen de `activity.instructions` → `meta.instructions` de la
+  plantilla → texto genérico. **Toda plantilla debe declarar
+  `meta.instructions`** (las 11 actuales lo hacen).
+- La animación de progreso (carril `#ww-solo-anim`) y el player real se montan
+  en `onStart`, no antes.
+
+### 5c. Política de maquetación del panel VS (`meta.panelFit`)
+
+Cada plantilla **declara** cómo debe tratarse su contenido dentro del panel VS;
+`vsView` pone la clase `ww-fit-<modo>` en `.vs-body` y `styles/vs.css` resuelve
+cada caso en un solo sitio (nada de olfatear la estructura con `:has`):
+
+| Valor | Comportamiento | Ejemplo |
+|---|---|---|
+| `fill` (defecto) | el contenido **llena** el panel y se escala para caber | Tildes/Comas (fitPassage), Quiz |
+| `block` | **bloque único** indivisible: tamaño natural, centrado, con tope — no se estira | la calculadora de Operaciones |
+| `center` | tamaño natural, centrado, sin llenar | contenido pequeño |
+
+Regla asociada: con la animación central apagada (`vs-no-stage`) el grid usa UNA
+sola fila a `1fr` — los paneles llenan el alto (el bug de Tildes VS cortado
+venía de heredar las dos filas del layout vertical). En plantillas de texto
+(`contentModel: 'textCorrection'`) la animación central va **apagada por
+defecto** (el texto necesita el ancho); `presentation.vsAnimationOff` la fuerza.
+
 ---
 
 ## 6. Cómo se monta en la página (resumen de `playerView.js`)

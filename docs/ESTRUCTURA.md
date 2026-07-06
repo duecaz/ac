@@ -136,27 +136,30 @@ Toda actividad pasa por `normalize()` (core/migrate.js). Forma canónica
 11 plantillas. La clave es `template` (name). `contentModel` decide la forma de
 `content`. `modes` indica dónde se puede jugar.
 
-| template        | label          | contentModel    | clave en `content` |
-|-----------------|----------------|-----------------|--------------------|
-| `quiz`          | Quiz           | `qa`            | `items[]`          |
-| `math`          | Operaciones    | `qa`            | `items[]`          |
-| `froggy`        | Froggy Jumps   | `qa`            | `items[]`          |
-| `memory`        | Memoria        | `pairs`         | `pairs[]`          |
-| `match`         | Emparejar      | `pairs`         | `pairs[]`          |
-| `wordsearch`    | Sopa de Letras | `words`         | `words[]` (strings)|
-| `crossword`     | Crucigrama     | `words`         | `words[]` (objetos)|
-| `tildes`        | Tildes         | `textCorrection`| `passages[]`       |
-| `comas`         | Comas          | `textCorrection`| `passages[]`       |
-| `wheel`         | Ruleta         | `items`         | `items[]`          |
-| `question-live` | Abre Cajas     | `items`         | `items[]`          |
+| template        | label             | contentModel    | clave en `content` |
+|-----------------|-------------------|-----------------|--------------------|
+| `quiz`          | Quiz              | `qa`            | `items[]`          |
+| `math`          | Operaciones       | `qa`            | `items[]`          |
+| `memory`        | Memoria           | `pairs`         | `pairs[]`          |
+| `match`         | Emparejar         | `pairs`         | `pairs[]`          |
+| `wordsearch`    | Sopa de Letras    | `words`         | `words[]` (strings)|
+| `crossword`     | Crucigrama        | `words`         | `words[]` (objetos)|
+| `tildes`        | Tildes            | `textCorrection`| `passages[]`       |
+| `comas`         | Comas             | `textCorrection`| `passages[]`       |
+| `wheel`         | Ruleta            | `items`         | `items[]`          |
+| `question-live` | Abre Cajas        | `items`         | `items[]`          |
+| `ballsort`      | Ordena las Pelotas| `ballsort`      | `items[]` (tablero)|
+
+> (Froggy Jumps fue **eliminado**; su animación de progreso vive ahora en
+> `core/soloAnimations.js` como carril opcional del modo Individual.)
 
 > `sessionItems(activity)` lee, en este orden:
 > `items ?? entries ?? pairs ?? groups ?? words ?? passages ?? []`.
 
-### qa — quiz / math / froggy
-Pregunta con opciones (quiz/froggy) o respuesta abierta numérica (math).
+### qa — quiz / math
+Pregunta con opciones (quiz) o respuesta abierta numérica (math).
 ```jsonc
-// quiz / froggy
+// quiz
 "content": { "items": [
   { "id": "q_ab12", "question": "¿Capital de España?", "answer": "Madrid",
     "options": ["Madrid","Barcelona","Lisboa","París"],
@@ -211,6 +214,19 @@ Lista simple de entradas (sin respuesta correcta: el profe valida verbalmente).
 // question-live "Abre Cajas"
 "content": { "items": [ { "id": "i1", "q": "¿Capital de Francia?", "image": null } ] }
 ```
+
+### ballsort — Ordena las Pelotas (tablero único)
+UN tablero compartido por ronda (por eso `meta.liveBoard: true` — en VS/Live
+ambos lados resuelven el MISMO tablero y gana quien termina antes).
+```jsonc
+"content": {
+  "level": "classic", "mode": "moves", "random": true,
+  "items": [ { "id": "bs1", "mode": "moves",
+    "board": { "tubeCapacity": 7, "colors": ["red","blue",…], "tubes": [["red","blue"],…] } } ]
+}
+```
+- `random: true` → el editor regenera el tablero con `randomBoard(level)`.
+- `mode`: `'moves'` (menos movimientos) | `'time'` (más rápido).
 
 ## 4. Modos de juego (`modes` de cada plantilla)
 - **solo**: un dispositivo, autopuntuado localmente.
