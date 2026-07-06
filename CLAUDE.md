@@ -84,20 +84,20 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
   perderse en blip; la cola de `results.js` cubre el caso local) y sin idempotency key en
   resultados (posibles filas duplicadas si se pierde el ACK).
 
-#### E. Hallazgos de la auditoría v2 NO aplicados (necesitan verificación visual / pase propio)
+#### E. Hallazgos de la auditoría v2 — restantes (los demás ya aplicados)
+- ✅ Aplicado: `SYNCED_KEY` con tope+LRU vía ls.js · podium/scoreboard de Equipos unificado en
+  core/teams.js (`teamsScoreboardHtml`/`teamsPodiumHtml`) · `.vs-done` por tokens
+  `--vs-done-fg/muted` (una regla base, skins solo definen tokens) · ritmo de juego con nombre
+  en `core/timings.js` (FLASH_MS/COVER_MS/RACE_FLASH_MS/WIN_HOLD_MS/CONFETTI_ENCORE_MS).
 - **CSS**: bloque "keypad-fit" duplicado 4× (vs.css, teams.css, tv-show, colegios — ya derivan);
   crossword.css con estados hardcodeados + 6 `!important` en cadena (tokenizar a `--ww-*`);
-  `.vs-done {color !important}` idéntico en los 3 skins (subir a base); scaffolding portrait
-  del scoreboard copiado en los 3 skins.
-- **Vistas**: podium/scoreboard de Equipos duplicado (teamsView ↔ memoryView → core/teams.js);
-  timer de carrera + poll-fallback duplicados dentro de hostLive (paintRace ↔ paintLiveBoardHost);
-  setTimeouts mágicos dispersos (hoistear a constantes); studentLive lleva doble contabilidad
-  (`myScore`/`raceQueue`) que puede discrepar del leaderboard del servidor; varios `catch {}`
-  en hostLive esconden errores reales de settle al docente.
-- **Core**: `SYNCED_KEY` en adapters/pocketbase/remoteStore.js crece SIN tope y escribe
-  localStorage a pelo (riesgo de cuota sin señal `ww:storage-full`) — poner cap o pasar por ls.js;
-  los deadlines de hostLive/studentLive aún usan `Date.now()` (migrar a clock en pase propio);
-  el load-guard + wiring 'online' está duplicado entre submitQueue y results (absorber en la
+  scaffolding portrait del scoreboard copiado en los 3 skins.
+- **Vistas**: timer de carrera + poll-fallback duplicados dentro de hostLive (paintRace ↔
+  paintLiveBoardHost); los pacing internos de hostLive siguen como literales (pase propio);
+  studentLive lleva doble contabilidad (`myScore`/`raceQueue`) que puede discrepar del
+  leaderboard del servidor; varios `catch {}` en hostLive esconden errores reales de settle.
+- **Core**: deadlines de hostLive/studentLive aún con `Date.now()` (migrar a clock en pase
+  propio); load-guard + wiring 'online' duplicado entre submitQueue y results (absorber en la
   factory de offlineQueue; NO fusionar las colas — identidad/evicción distintas es correcto).
 
 ### 🟢 DEUDA IMPORTANTE — RESUELTA

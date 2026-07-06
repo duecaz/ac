@@ -7,6 +7,7 @@
 // rellena con '0' si falta. El id original siempre se guarda dentro de `data`,
 // así que recortar no impide reconstruirlo al leer (fromId prefiere data.id).
 import { PB_URL } from '../../pocketbase.config.js';
+import { lsGet, lsSet } from '../../core/ls.js';
 
 function toId(id) {
   const s = (id || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
@@ -62,22 +63,28 @@ async function pbFetch(path, opts = {}) {
 
 // Track which PocketBase IDs are known to exist so we can skip the
 // PATCH→404→POST dance after the first successful sync.
+//
+// Es un CACHE de optimizacion, no estado critico: perder una entrada solo cuesta
+// un PATCH→404→POST extra. Por eso: (a) va por ls.js (un fallo de cuota emite
+// `ww:storage-full` en vez de perderse en silencio), y (b) tiene TOPE — antes
+// crecia sin limite con cada actividad jamas sincronizada (riesgo de cuota real
+// a largo plazo). Re-add al final + slice(-MAX) = LRU barato.
 const SYNCED_KEY = 'ww.pb.synced';
+const SYNCED_MAX = 500;
 function getSynced() {
-  try { return new Set(JSON.parse(localStorage.getItem(SYNCED_KEY) || '[]')); }
+  try { return new Set(JSON.parse(lsGet(SYNCED_KEY) || '[]')); }
   catch { return new Set(); }
 }
+function saveSynced(s) {
+  lsSet(SYNCED_KEY, JSON.stringify([...s].slice(-SYNCED_MAX)));
+}
 function markSynced(pbId) {
-  try {
-    const s = getSynced(); s.add(pbId);
-    localStorage.setItem(SYNCED_KEY, JSON.stringify([...s]));
-  } catch { }
+  const s = getSynced(); s.delete(pbId); s.add(pbId);
+  saveSynced(s);
 }
 function unmarkSynced(pbId) {
-  try {
-    const s = getSynced(); s.delete(pbId);
-    localStorage.setItem(SYNCED_KEY, JSON.stringify([...s]));
-  } catch { }
+  const s = getSynced(); s.delete(pbId);
+  saveSynced(s);
 }
 
 export function createPocketbaseRemoteStore() {

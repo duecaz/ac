@@ -86,9 +86,7 @@
   background: #180508; border: 2.5px solid #d32f2f;
   box-shadow: 0 0 0 1px rgba(211,47,47,.35), 0 0 40px rgba(211,47,47,.55), 0 12px 32px rgba(0,0,0,.6);
 }
-.vs-skin-school .vs-body .vs-done,
-.vs-skin-school .vs-body .vs-done .h5     { color: #e2e8f0 !important; }
-.vs-skin-school .vs-body .vs-done .text-muted { color: rgba(255,255,255,.55) !important; }
+.vs-skin-school .vs-body { --vs-done-fg: #e2e8f0; --vs-done-muted: rgba(255,255,255,.55); }
 
 /* ── Per-panel token overrides (no !important needed — cascade via vars) ──── */
 /* Global keypad tokens already set in skins.js cssVars for colegios.

@@ -283,9 +283,7 @@ body.skin-tv-show .card,
 }
 @keyframes tvs-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
 
-.vs-skin-tv-show .vs-body .vs-done,
-.vs-skin-tv-show .vs-body .vs-done .h5     { color: #eaf2ff !important; }
-.vs-skin-tv-show .vs-body .vs-done .text-muted { color: rgba(255,255,255,.6) !important; }
+.vs-skin-tv-show .vs-body { --vs-done-fg: #eaf2ff; --vs-done-muted: rgba(255,255,255,.6); }
 
 /* ── Teclado 3D dentro del panel ──────────────────────────────────────────── */
 /* La pregunta como "chapa" superior (como ¡RESUELVE! / 2 × 6 = de la foto) */

@@ -22,9 +22,9 @@ import { getVsAnimation, DEFAULT_VS_ANIMATION } from '../core/vsAnimations.js';
 import { play as playSound } from '../core/sounds.js';
 import { answerConfetti } from '../core/effects.js';
 import { renderModeSetup } from './modeSetup.js';
+import { FLASH_MS, WIN_HOLD_MS, CONFETTI_ENCORE_MS } from '../core/timings.js';
 import { getSkin } from '../core/skins.js';
 
-const FLASH_MS = 700;
 const AVATAR_MAX_BYTES = 150 * 1024; // 150 KB hard limit
 
 // Per-answer feedback in VS, configurable from the setup panel. Default: the
@@ -377,7 +377,7 @@ export function mountVs(host, a, ctx, opts = {}) {
           // finisher (estado heredado) cae al criterio de puntos.
           const ws = st.finishedBy || (st.leader !== 'tie' ? st.leader : null);
           if (ws && currentAnim) currentAnim.setProgress(ws === 'left' ? 1 : -1);
-          setTimeout(() => finish(st), 1500);
+          setTimeout(() => finish(st), WIN_HOLD_MS);
         } else {
           renderSide(side);
         }
@@ -449,8 +449,8 @@ export function mountVs(host, a, ctx, opts = {}) {
       if (winner) {
         emitGame(GameEvents.PODIUM, { top: [{ name: winner.name, score: winner.score }] });
         // Two follow-up bursts (respecting the confetti cooldown) sustain the moment.
-        setTimeout(() => answerConfetti(), 900);
-        setTimeout(() => answerConfetti(), 1700);
+        setTimeout(() => answerConfetti(), CONFETTI_ENCORE_MS[0]);
+        setTimeout(() => answerConfetti(), CONFETTI_ENCORE_MS[1]);
       }
       on(host, 'click', '#vs-again', () => renderSetup());
     }

@@ -17,9 +17,8 @@ import { getTemplate } from '../core/registry.js';
 import { createSession, FORMATS, sessionItems } from '../kernel/session/engine.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { applyMarks } from '../core/textMarks.js';
-import { podiumHtml } from '../core/podium.js';
 import { renderModeSetup } from './modeSetup.js';
-import { teamColor, teamNameInputsHtml } from '../core/teams.js';
+import { teamColor, teamNameInputsHtml, teamsScoreboardHtml, teamsPodiumHtml } from '../core/teams.js';
 
 
 // Standalone route wrapper (#/teams/:id).
@@ -154,14 +153,7 @@ export function mountTeams(host, a, ctx, opts = {}) {
     }
 
     function scoreboard(teams, active, phase) {
-      return `
-        <div class="teams-scoreboard">
-          ${teams.map(t => `
-            <div class="teams-chip text-bg-${colorOf(t)} ${t.id === active.id && phase !== 'ended' ? 'is-turn' : ''}">
-              <span class="teams-chip-name">${escapeHtml(t.name)}</span>
-              <span class="teams-chip-score">${t.score}</span>
-            </div>`).join('')}
-        </div>`;
+      return teamsScoreboardHtml(teams, active.id, phase === 'ended');
     }
 
     // Question body. In AUTO mode the template paints the interactive round
@@ -231,18 +223,8 @@ export function mountTeams(host, a, ctx, opts = {}) {
     }
 
     function podium() {
-      const lb = session.leaderboard();
-      const top = lb[0];
-      const tie = lb.length > 1 && lb[1].score === top.score;
-      const ranked = lb.map(t => ({ name: t.name, score: t.score }));
-      // Same bar podium as En vivo / VS (tied teams → equal height). Teams
-      // beyond the top 3 are listed compactly below.
-      return `
-        <div class="teams-podium text-center">
-          <h2 class="mb-3"><i class="bi bi-trophy-fill text-warning"></i> ${tie ? '¡Empate!' : `🏆 ¡${escapeHtml(top.name)} gana!`}</h2>
-          ${podiumHtml(ranked)}
-          ${lb.length > 3 ? `<div class="teams-ranking mt-3">${lb.slice(3).map(t => `<div class="d-flex justify-content-between teams-rank-row"><span>${t.rank}. ${escapeHtml(t.name)}</span><b>${t.score}</b></div>`).join('')}</div>` : ''}
-        </div>`;
+      // Mismo podio de barras que En vivo / VS; implementación única en core/teams.js.
+      return teamsPodiumHtml(session.leaderboard());
     }
 
     function wire(item, payload, phase) {

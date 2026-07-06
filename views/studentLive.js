@@ -17,6 +17,7 @@ import { lsGet, lsSet } from '../core/ls.js';
 import { wheelSvg } from '../templates/wheel/render.js';
 import { pickIndex } from '../templates/wheel/logic.js';
 import { QL_COLORS } from '../core/questionLive.js';
+import { RACE_FLASH_MS } from '../core/timings.js';
 
 const NICK_KEY = 'ww.nick';
 
@@ -461,7 +462,7 @@ export async function renderPlay(rootSel, code) {
         if (ok) queuedSubmit(session.id, player.playerId, idx, value, ms).catch(() => {});
 
         // Brief pause to see the color flash, then load next question.
-        setTimeout(() => paintRace(), 350);
+        setTimeout(() => paintRace(), RACE_FLASH_MS);
       }
     });
   }

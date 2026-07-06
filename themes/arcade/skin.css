@@ -163,9 +163,7 @@
   content: ""; position: absolute; inset: 0; z-index: 4; pointer-events: none;
   background: repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0, rgba(0,0,0,.22) 1px, transparent 1px, transparent 3px);
 }
-.vs-skin-arcade .vs-body .vs-done,
-.vs-skin-arcade .vs-body .vs-done .h5     { color: #eafcff !important; }
-.vs-skin-arcade .vs-body .vs-done .text-muted { color: rgba(255,255,255,.6) !important; }
+.vs-skin-arcade .vs-body { --vs-done-fg: #eafcff; --vs-done-muted: rgba(255,255,255,.6); }
 
 /* ── Teclado numérico (Operaciones) ───────────────────────────────────────── */
 .vs-skin-arcade .ww-keypad-q {
