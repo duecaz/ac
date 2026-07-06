@@ -41,17 +41,25 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
   function recalcZones() {
     const pr = passageEl.getBoundingClientRect();
     const prevHit = new Map(zones.map(z => [z.pos, z.hit]));
+    const fontPx = parseFloat(getComputedStyle(passageEl).fontSize) || 16;
     zones = tg.map(el => {
       const r = el.getBoundingClientRect();
-      // padTop generoso: la tilde se dibuja ARRIBA de la vocal (los spans inline
-      // tienen un rect ~1em, así que ampliamos la zona hacia arriba).
-      const padX = Math.max(8, r.width * 0.5), padTop = Math.max(16, r.height * 0.9);
+      // Dos geometrías según DÓNDE se dibuja la marca:
+      //  · TILDE (vocal): ARRIBA de la letra → zona alta con mucho margen superior.
+      //  · COMA (hueco): el span está vacío (rect de alto ~0, en la línea base) y la
+      //    coma se dibuja EN/BAJO la línea → banda centrada en la base, con margen
+      //    abajo. Ancho mínimo relativo al font (el hueco no tiene ancho de texto).
+      const isGap = el.classList.contains('tc-gap');
+      const padX = Math.max(8, (r.width || fontPx * 0.6) * 0.5);
+      const padTop    = isGap ? fontPx * 0.40 : Math.max(16, r.height * 0.9);
+      const padBottom = isGap ? fontPx * 0.55 : 0;
+      const baseH = isGap ? 0 : r.height;
       return {
         pos: +el.dataset.pos, el,
         x: (r.left - pr.left - padX) * dpr,
         y: (r.top  - pr.top  - padTop) * dpr,
         w: (r.width  + padX * 2) * dpr,
-        h: (r.height + padTop) * dpr,
+        h: (baseH + padTop + padBottom) * dpr,
         hit: prevHit.get(+el.dataset.pos) || false,
       };
     });
