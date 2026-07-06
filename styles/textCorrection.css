@@ -75,9 +75,21 @@
    (no parten la palabra a final de línea y el sombreado abraza la letra); el hueco
    de coma es inline-block para tener un ancho de zona. */
 .tc-target { font: inherit; color: inherit; border-radius: 5px; }
-.tc-target.tc-gap { display: inline-block; min-width: 1.1em; }
-/* Marcada (trazo dibujado dentro): solo un sombreado suave, sin formas extra. */
+/* El hueco mantiene alto 0 (caja de layout) para no mover la ZONA de dibujo, que
+   se calcula desde su rect en textCorrectionDraw.js. `position:relative` deja
+   anclar el sombreado como pseudo-elemento sin cambiar esa caja. */
+.tc-target.tc-gap { display: inline-block; min-width: 1.1em; position: relative; }
+/* Marcada (trazo dibujado dentro): sombreado suave, sin formas extra. */
 .tc-target.tc-marked { background: rgba(37,99,235,.16); }
+/* El hueco está VACÍO (alto 0): su fondo no se vería. Se pinta el sombreado con un
+   pseudo-elemento que ABRAZA el hueco alrededor de la base, igual que la tilde
+   abraza la vocal, sin alterar el rect que define la zona de dibujo. */
+.tc-target.tc-gap.tc-marked { background: transparent; }
+.tc-target.tc-gap.tc-marked::before {
+  content: ''; position: absolute; left: 0; right: 0;
+  top: -0.85em; height: 1.05em; border-radius: 5px;
+  background: rgba(37,99,235,.16);
+}
 
 /* Reveal (solo lectura): color + SOMBREADO, sin recuadros ni bordes.
    ok = acierto (verde) · bad = marca de más (rojo, tachada) · miss = faltó (rojo). */

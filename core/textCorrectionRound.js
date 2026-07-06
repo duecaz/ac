@@ -50,17 +50,18 @@ function passageHtml(text, kind, reveal) {
       return `<span class="tc-target tc-vowel" data-pos="${i}">${escapeHtml(c)}</span>`;
     }).join('');
   }
-  // coma: gaps only at word-end boundaries (after a non-space before a space)
-  // to prevent placing commas inside words.
+  // coma: el hueco existe SOLO en el límite fin-de-palabra (un carácter que no es
+  // espacio y va seguido de un espacio), nunca entre letras de una palabra.
+  const isGap = (i) => i < chars.length - 1 && chars[i] !== ' ' && chars[i + 1] === ' ';
   return chars.map((c, i) => {
-    const last = i === chars.length - 1;
-    if (last) return ch(c);
+    if (!isGap(i)) return ch(c);                     // letra normal (no se separa)
     if (reveal) {
-      const cls = stateCls(i);
-      const sym = (reveal.got.has(i) || reveal.want.has(i)) ? ',' : '';
-      return ch(c) + `<span class="tc-tap tc-gap is-revealed${cls}">${sym}</span>`;
+      // En la corrección se pinta SOLO el hueco que participa (coma puesta o
+      // esperada). Los demás huecos van como texto plano → el texto NO se
+      // separa letra a letra (antes se añadía un span en cada carácter).
+      if (!reveal.got.has(i) && !reveal.want.has(i)) return ch(c);
+      return ch(c) + `<span class="tc-tap tc-gap is-revealed${stateCls(i)}">,</span>`;
     }
-    if (c === ' ' || chars[i + 1] !== ' ') return ch(c);
     return ch(c) + `<span class="tc-target tc-gap" data-pos="${i}" aria-label="hueco"></span>`;
   }).join('');
 }
