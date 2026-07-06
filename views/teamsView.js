@@ -10,11 +10,9 @@
 // board, the scoreboard and the host controls.
 //
 // EMBEDDING: mountTeams(host, activity, ctx, opts) renders setup + game INTO
-// `host` (the activity stage). renderTeamsView(rootSel, id) is the thin wrapper
-// for the standalone deep-link route (#/teams/:id). Both share the same code.
+// `host` (the activity stage). (Wrapper de ruta suelta eliminado: sin callers.)
 import { html, escapeHtml, mount, $, $$ } from '../core/html.js';
 import { on } from '../core/events.js';
-import { get } from '../core/storage.js';
 import { getTemplate } from '../core/registry.js';
 import { createSession, FORMATS, sessionItems } from '../kernel/session/engine.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
@@ -25,16 +23,6 @@ import { teamColor, teamNameInputsHtml } from '../core/teams.js';
 
 
 // Standalone route wrapper (#/teams/:id).
-export function renderTeamsView(rootSel, id) {
-  const host = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
-  const a = get(id);
-  if (!a) {
-    mount(host, html`<div class="alert alert-warning m-3">Actividad no encontrada. <a href="#/home">Volver</a></div>`);
-    return;
-  }
-  mountTeams(host, a, null, { backHref: `#/play/${a.id}` });
-}
-
 // Embedded entry point. `host` is a DOM element. Returns { dispose }.
 export function mountTeams(host, a, ctx, opts = {}) {
   const backHref = opts.backHref;

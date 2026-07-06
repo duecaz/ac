@@ -16,6 +16,7 @@ import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { hostPaintDecision } from '../core/livePhases.js';
 import { podiumHtml } from '../core/podium.js';
+import { QL_COLORS } from '../core/questionLive.js';
 
 const STUDENT_BASE = location.origin + location.pathname.replace(/teacher\.html.*/, 'student.html');
 
@@ -617,7 +618,6 @@ async function renderHost(rootSel, code, sessionId, activity) {
     });
   }
 
-  const QL_COLORS = ['#e74c3c','#e67e22','#d4ac0d','#27ae60','#16a085','#2980b9','#8e44ad','#c0392b'];
 
   async function paintQuestionLive() {
     const qlOpen     = session.ql_open ?? null;

@@ -6,6 +6,7 @@ import { renderKeypadRound } from '../../core/roundRender.js';
 import { scoreMathSubmission } from './scorer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { runSequentialPlayer } from '../../core/soloPlayer.js';
+import { clock } from '../../core/clock.js';
 
 export async function renderMathPlayer(rootSel, activity, opts = {}) {
   runSequentialPlayer(rootSel, activity, opts, {
@@ -19,7 +20,7 @@ export async function renderMathPlayer(rootSel, activity, opts = {}) {
           <div id="ww-math-round" class="ww-math-round"></div>
         </div>`);
       const roundEl = document.getElementById('ww-math-round');
-      const t0 = Date.now();
+      const t0 = clock.now();
       renderKeypadRound(roundEl, { question: item.question }, { onSubmit: (value) => {
         const r = scoreMathSubmission({ value, item, activity });
         const disp = roundEl.querySelector('[data-display]');
@@ -29,7 +30,7 @@ export async function renderMathPlayer(rootSel, activity, opts = {}) {
           if (q) q.insertAdjacentHTML('beforeend', ` <b class="text-success">${escapeHtml(String(item.answer))}</b>`);
         }
         emitGame(r.correct ? GameEvents.ANSWER_CORRECT : GameEvents.ANSWER_WRONG, { idx });
-        submit({ itemId: item.id, value, correct: r.correct, points: r.points, msTaken: Date.now() - t0 });
+        submit({ itemId: item.id, value, correct: r.correct, points: r.points, msTaken: clock.now() - t0 });
       } });
     },
   });

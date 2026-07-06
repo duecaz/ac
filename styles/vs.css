@@ -52,7 +52,6 @@
 .vs-body, .vs-body * { box-sizing: border-box; }
 .vs-q     { font-size: clamp(1.1rem, 2.4cqw, 1.8rem); font-weight: 600; text-align: center; margin-bottom: 1rem; }
 .vs-done  { margin: auto; text-align: center; }
-.vs-overlay { flex: 1; display: flex; align-items: center; justify-content: center; }
 
 /* Panel-level answer feedback */
 .vs-body.vs-flash-ok { animation: vs-flash-ok .7s ease-out; }

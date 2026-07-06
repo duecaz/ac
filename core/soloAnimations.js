@@ -14,11 +14,9 @@
 const _providers = new Map();
 
 export function registerSoloAnimation(provider) { _providers.set(provider.id, provider); }
-export function listSoloAnimations() { return [..._providers.values()]; }
 export function getSoloAnimation(id) { return _providers.get(id) || null; }
 
 // Por defecto: ninguna (no altera las actividades existentes).
-export const DEFAULT_SOLO_ANIMATION = null;
 
 // ── Rana saltarina ───────────────────────────────────────────────────────────
 const SCENES = {

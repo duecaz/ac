@@ -31,4 +31,3 @@ export function reset(sessionId, userId) {
   save(map);
 }
 
-export function clearAll() { sessionStorage.removeItem(KEY); }

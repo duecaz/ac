@@ -103,8 +103,8 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
   `core/assignmentRules.js` (defaults `now`), `core/submitQueue.js` (ts), `core/results.js`
   (`_queuedAt`), `core/sounds.js` (cooldown), `core/errorLog.js` (throttle).
 - **Tests**: `tests/clock.test.mjs` (4) — congelar `clock.now` hace `isPastDue`/`assignmentGate` deterministas.
-- **Pendiente menor**: los players (`startedAt`, `t0`) aún usan `Date.now()` directo; no es lógica de
-  dominio crítica (solo se reporta como `timeUsed`), migración opcional.
+- **✅ Cerrado en auditoría**: los players (quiz/math `t0`), `core/soloPlayer.js` y `studentTask`
+  ya usan `clock.now()`. Solo quedan los deadlines de hostLive/studentLive (pase aparte, mayor superficie).
 
 ### 🟢 DEUDA ARQUITECTÓNICA — RESUELTA (✅ players estandarizados)
 

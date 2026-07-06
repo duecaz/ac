@@ -8,13 +8,11 @@
 //
 // EMBEDDING: mountVs(host, activity, ctx, opts) renders setup + duel INTO `host`
 // (the activity stage) and returns { dispose } so the page can stop the central
-// animation when switching modes. renderVsView(rootSel, id) is a thin wrapper
-// kept for the standalone deep-link route (#/vs/:id), rendering full-page with a
-// "Volver" link. Both share the SAME code below — embedded and standalone never
-// diverge.
+// animation when switching modes. (El wrapper de ruta suelta se eliminó: las
+// rutas #/vs/:id montan vía renderPlayerView → runMode, no había otro caller.)
 import { html, escapeHtml, mount, $ } from '../core/html.js';
 import { on } from '../core/events.js';
-import { get, save } from '../core/storage.js';
+import { save } from '../core/storage.js';
 import { lsGet, lsSet } from '../core/ls.js';
 import { getTemplate } from '../core/registry.js';
 import { createSession, isVsCompatible, FORMATS, sessionItems } from '../kernel/session/engine.js';
@@ -43,18 +41,6 @@ function saveAvatar(actId, side, dataUrl) { lsSet(avatarKey(actId, side), dataUr
 function avatarPreviewHtml(dataUrl, side) {
   if (dataUrl) return `<img src="${escapeHtml(dataUrl)}" class="vs-av-thumb" alt="">`;
   return `<span class="vs-av-empty"><i class="bi bi-${side === 'left' ? 'person' : 'person'}-circle fs-1 text-muted"></i></span>`;
-}
-
-// Standalone route wrapper (#/vs/:id): resolve element + activity, then mount
-// full-page with a back link to the activity page.
-export function renderVsView(rootSel, id) {
-  const host = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
-  const a = get(id);
-  if (!a) {
-    mount(host, html`<div class="alert alert-warning m-3">Actividad no encontrada. <a href="#/home">Volver</a></div>`);
-    return;
-  }
-  mountVs(host, a, null, { backHref: `#/play/${a.id}` });
 }
 
 // Embedded entry point. `host` is a DOM element. Returns { dispose }.
@@ -142,28 +128,28 @@ export function mountVs(host, a, ctx, opts = {}) {
         });
 
         // Avatar upload — validate size, read as data-URL, cache in localStorage.
-        ['left', 'right'].forEach(side => {
-          const fileInput = document.getElementById(`vs-file-${side}`);
-          if (!fileInput) return;
-          fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            const errEl = document.getElementById(`vs-av-err-${side}`);
-            if (file.size > AVATAR_MAX_BYTES) {
-              if (errEl) { errEl.textContent = `Imagen demasiado grande (${Math.round(file.size/1024)} KB). Máximo: 150 KB.`; errEl.hidden = false; }
-              e.target.value = '';
-              return;
-            }
-            if (errEl) errEl.hidden = true;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-              const data = ev.target.result;
-              saveAvatar(a.id, side, data);
-              const preview = document.getElementById(`vs-av-${side}`);
-              if (preview) preview.innerHTML = `<img src="${escapeHtml(data)}" class="vs-av-thumb" alt="">`;
-            };
-            reader.readAsDataURL(file);
-          });
+        // DELEGADO con on() (idempotente por raíz+evento+selector): renderSetup se
+        // re-ejecuta en "Otra vez" y el addEventListener directo apilaba un listener
+        // por pasada (leak + disparos duplicados).
+        on(host, 'change', 'input[id^="vs-file-"]', (e, input) => {
+          const side = input.id.endsWith('left') ? 'left' : 'right';
+          const file = input.files[0];
+          if (!file) return;
+          const errEl = document.getElementById(`vs-av-err-${side}`);
+          if (file.size > AVATAR_MAX_BYTES) {
+            if (errEl) { errEl.textContent = `Imagen demasiado grande (${Math.round(file.size/1024)} KB). Máximo: 150 KB.`; errEl.hidden = false; }
+            input.value = '';
+            return;
+          }
+          if (errEl) errEl.hidden = true;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            const data = ev.target.result;
+            saveAvatar(a.id, side, data);
+            const preview = document.getElementById(`vs-av-${side}`);
+            if (preview) preview.innerHTML = `<img src="${escapeHtml(data)}" class="vs-av-thumb" alt="">`;
+          };
+          reader.readAsDataURL(file);
         });
 
         // Clear avatar button (only rendered when an avatar exists).

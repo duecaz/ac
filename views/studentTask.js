@@ -8,6 +8,7 @@ import { ensureIdentity } from '../core/identity.js';
 import { runPlayer } from '../core/player.js';
 import { activityItemCount } from '../core/migrate.js';
 import { lsGet, lsSet } from '../core/ls.js';
+import { clock } from '../core/clock.js';
 
 const NICK_KEY = 'ww.nick';
 
@@ -87,7 +88,7 @@ export async function renderTask(rootSel, code) {
       // Not every template has content.items (tildes/comas/memory/wheel use
       // other shapes) — use the generic item counter so this never throws.
       const max = activity.scoring?.maxScore || ((activity.scoring?.pointsPerCorrect || 1) * activityItemCount(activity));
-      const timeUsed = state.timeUsed ?? Math.round((Date.now() - (state.startedAt ?? Date.now())) / 1000);
+      const timeUsed = state.timeUsed ?? Math.round((clock.now() - (state.startedAt ?? clock.now())) / 1000);
       recordAttempt(t.id, t.activity_id, nick, state.score, max, timeUsed).catch(e => console.warn('record failed', e.message));
       // Override the template's own finish screen (which links to #/home — a
       // teacher-only route absent from the student app, hence "ruta no

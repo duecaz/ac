@@ -4,13 +4,14 @@
 // para que re-emisiones rápidas del mismo evento no se apilen en un estrobo.
 import { GameEvents, onGame } from './gameEvents.js';
 import { clock } from './clock.js';
+import { lsGet, lsSet } from './ls.js';
 
 const COLORS = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#a855f7', '#ec4899', '#eab308'];
 
 // Interruptor global de efectos visuales (confeti). Se persiste igual que el
 // silencio de sonidos, para que la pantalla de inicio pueda activar/desactivar.
-function lsGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
-function lsSet(k, v) { try { localStorage.setItem(k, v); } catch {} }
+// Vía ls.js (no wrappers locales): así un fallo de cuota emite `ww:storage-full`
+// en vez de perderse en silencio.
 let _fxMuted = lsGet('ww.fxMuted') === '1';
 export function setEffectsMuted(m) { _fxMuted = !!m; lsSet('ww.fxMuted', _fxMuted ? '1' : '0'); }
 export function isEffectsMuted() { return _fxMuted; }

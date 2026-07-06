@@ -5,7 +5,7 @@
 
 @media (hover: none) {
   /* Drop hover effects on touch devices (otherwise they "stick"). */
-  .btn:hover, .ww-card:hover, .mc:hover, .ww-opt:hover, .ww-ans:hover {
+  .btn:hover, .ww-card:hover, .mc:hover, .ww-opt:hover {
     transform: none !important;
     box-shadow: none !important;
     border-color: inherit !important;

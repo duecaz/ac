@@ -10,6 +10,7 @@ import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import * as Streaks from '../../core/streaks.js';
 import { shuffle } from '../../core/roundRender.js';
 import { runSequentialPlayer } from '../../core/soloPlayer.js';
+import { clock } from '../../core/clock.js';
 
 const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
 
@@ -55,7 +56,7 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
         </div>
       `);
 
-      const t0 = Date.now();
+      const t0 = clock.now();
 
       function revealCorrect() {
         if (item.answer == null) return;
@@ -83,7 +84,7 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
 
       on(rootSel, 'click', '.ww-opt', (_, btn) => {
         if (btn.disabled) return;
-        const ms = Date.now() - t0;
+        const ms = clock.now() - t0;
         const value = btn.dataset.value;
         const r = scoreQuizSubmission({ value, item, msTaken: ms, activity });
         document.querySelectorAll('.ww-opt').forEach(b => b.disabled = true);

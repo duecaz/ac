@@ -4,11 +4,9 @@
 // board, scoreboard and turn, and times the "cover" after a miss.
 //
 // EMBEDDING: mountMemory(host, activity, ctx, opts) renders setup + game INTO
-// `host` (the activity stage). renderMemoryView(rootSel, id) is the thin wrapper
-// for the standalone deep-link route (#/memory/:id). Both share the same code.
+// `host` (the activity stage). (Wrapper de ruta suelta eliminado: sin callers.)
 import { html, escapeHtml, mount, $, $$ } from '../core/html.js';
 import { on } from '../core/events.js';
-import { get } from '../core/storage.js';
 import { createMemoryGame } from '../kernel/session/memory.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { renderModeSetup } from './modeSetup.js';
@@ -18,16 +16,6 @@ import { podiumHtml } from '../core/podium.js';
 const COVER_MS = 1100;
 
 // Standalone route wrapper (#/memory/:id).
-export function renderMemoryView(rootSel, id) {
-  const host = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
-  const a = get(id);
-  if (!a) {
-    mount(host, html`<div class="alert alert-warning m-3">Actividad no encontrada. <a href="#/home">Volver</a></div>`);
-    return;
-  }
-  mountMemory(host, a, null, { backHref: `#/play/${a.id}` });
-}
-
 // Embedded entry point. `host` is a DOM element. Returns { dispose }.
 export function mountMemory(host, a, ctx, opts = {}) {
   const backHref = opts.backHref;

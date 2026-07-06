@@ -16,6 +16,7 @@ import { sessionItems } from '../kernel/session/engine.js';
 import { lsGet, lsSet } from '../core/ls.js';
 import { wheelSvg } from '../templates/wheel/render.js';
 import { pickIndex } from '../templates/wheel/logic.js';
+import { QL_COLORS } from '../core/questionLive.js';
 
 const NICK_KEY = 'ww.nick';
 
@@ -148,7 +149,6 @@ export async function renderPlay(rootSel, code) {
     attachFullscreenButton(rootSel);
   }
 
-  const QL_COLORS = ['#e74c3c','#e67e22','#d4ac0d','#27ae60','#16a085','#2980b9','#8e44ad','#c0392b'];
   const rootEl = () => (typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel);
 
   async function qlOpenQuestion(idx) {

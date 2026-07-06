@@ -90,7 +90,7 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
 export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}) {
   const source = activity.content?.items || [];
   const items = (activity.rules?.randomize ? shuffle(source.slice()) : source).slice();
-  const state = { idx: 0, score: 0, startedAt: Date.now(), answers: [] };
+  const state = { idx: 0, score: 0, startedAt: clock.now(), answers: [] };
   const timerSecs = activity.rules?.timer ?? 0;
 
   const maxScore = () => (callbacks.maxScore
@@ -157,7 +157,7 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
     if (finished) return;
     finished = true;
     stopTimer();
-    const timeUsed = Math.round((Date.now() - state.startedAt) / 1000);
+    const timeUsed = Math.round((clock.now() - state.startedAt) / 1000);
     const max = maxScore();
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: state.score }] });
     if (!callbacks.skipResultScreen) {

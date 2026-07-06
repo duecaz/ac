@@ -1,8 +1,5 @@
-// Per-session ephemeral state (e.g. "current activity being edited").
-const _state = {};
-export const setState = (k, v) => { _state[k] = v; };
-export const getState = (k) => _state[k];
-export const clearState = (k) => { delete _state[k]; };
+// Identidad anonima estable. (El antiguo mapa efimero setState/getState/clearState
+// se elimino: nadie lo importaba - auditoria estructural.)
 
 // Stable anonymous user id, persisted in localStorage. Used for player rejoin.
 import { lsGet, lsSet } from './ls.js';

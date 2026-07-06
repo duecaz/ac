@@ -34,7 +34,6 @@ export function getEditor(name) {
   return T ? { render: (root, a, oc) => T.renderEditor(root, a, oc) } : null;
 }
 export function listTemplates() { return Object.values(_templates); }
-export function listTemplateNames() { return Object.keys(_templates); }
 
 // Templates that accept the same content as `name` (same contentModel).
 // Excludes `name` itself. Returns Template classes ordered by label.
