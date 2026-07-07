@@ -84,18 +84,22 @@
    (no parten la palabra a final de línea y el sombreado abraza la letra); el hueco
    de coma es inline-block para tener un ancho de zona. */
 .tc-target { font: inherit; color: inherit; border-radius: 5px; }
-/* El hueco mantiene alto 0 (caja de layout) para no mover la ZONA de dibujo, que
-   se calcula desde su rect en textCorrectionDraw.js. `position:relative` deja
+/* El hueco/detector ES el separador entre palabras (el JS omite el espacio
+   literal): angosto para que las frases no se vean tan separadas. Mantiene alto 0
+   (caja de layout) para no mover la ZONA de dibujo, que se calcula desde su rect
+   en textCorrectionDraw.js (la zona ya se ensancha con su propio padX, así que un
+   detector estrecho se sigue dibujando/detectando bien). `position:relative` deja
    anclar el sombreado como pseudo-elemento sin cambiar esa caja. */
-.tc-target.tc-gap { display: inline-block; min-width: 1.1em; position: relative; }
+.tc-target.tc-gap { display: inline-block; min-width: .5em; position: relative; }
 /* Marcada (trazo dibujado dentro): sombreado suave, sin formas extra. */
 .tc-target.tc-marked { background: rgba(37,99,235,.16); }
 /* El hueco está VACÍO (alto 0): su fondo no se vería. Se pinta el sombreado con un
    pseudo-elemento que ABRAZA el hueco alrededor de la base, igual que la tilde
-   abraza la vocal, sin alterar el rect que define la zona de dibujo. */
+   abraza la vocal, sin alterar el rect que define la zona de dibujo. Se ensancha
+   un poco más que el detector para que la marca se lea cómoda. */
 .tc-target.tc-gap.tc-marked { background: transparent; }
 .tc-target.tc-gap.tc-marked::before {
-  content: ''; position: absolute; left: 0; right: 0;
+  content: ''; position: absolute; left: -.14em; right: -.14em;
   top: -0.85em; height: 1.05em; border-radius: 5px;
   background: rgba(37,99,235,.16);
 }

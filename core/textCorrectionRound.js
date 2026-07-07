@@ -54,15 +54,20 @@ function passageHtml(text, kind, reveal) {
   // espacio y va seguido de un espacio), nunca entre letras de una palabra.
   const isGap = (i) => i < chars.length - 1 && chars[i] !== ' ' && chars[i + 1] === ' ';
   return chars.map((c, i) => {
-    if (!isGap(i)) return ch(c);                     // letra normal (no se separa)
+    // CORRECCIÓN: el texto tal cual (espacios normales) + la coma solo donde
+    // participa (puesta o esperada). Deriva del MISMO texto+marcas: no se guarda
+    // una segunda copia "con espacios/comas" que podría desincronizarse.
     if (reveal) {
-      // En la corrección se pinta SOLO el hueco que participa (coma puesta o
-      // esperada). Los demás huecos van como texto plano → el texto NO se
-      // separa letra a letra (antes se añadía un span en cada carácter).
+      if (!isGap(i)) return ch(c);
       if (!reveal.got.has(i) && !reveal.want.has(i)) return ch(c);
       return ch(c) + `<span class="tc-tap tc-gap is-revealed${stateCls(i)}">,</span>`;
     }
-    return ch(c) + `<span class="tc-target tc-gap" data-pos="${i}" aria-label="hueco"></span>`;
+    // JUEGO (dibujo): el DETECTOR es el ÚNICO separador entre palabras — se OMITE
+    // el espacio literal (antes: detector + espacio = doble hueco, muy separado).
+    // El detector es angosto (styles) y <wbr> conserva el corte de línea.
+    if (c === ' ') return '';                          // el hueco lo aporta el detector
+    if (!isGap(i)) return ch(c);                       // letra dentro de la palabra
+    return ch(c) + `<span class="tc-target tc-gap" data-pos="${i}" aria-label="hueco"></span><wbr>`;
   }).join('');
 }
 
