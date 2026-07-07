@@ -40,6 +40,15 @@
 .tc-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 .tc-round { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: center; text-align: center; }
 
+/* ── Aire extra SOLO en modo Individual ──────────────────────────────────────
+   VS/Equipos/Live renderizan `.tc-round` SIN el envoltorio `.tc-solo` (panel
+   estrecho: el texto DEBE llenarlo, sin margen). En SOLO hay sitio de sobra, así
+   que aquí —y solo aquí— damos margen para que el texto amplificado respire y se
+   lea como escrito en una hoja, a la derecha del margen rojo. Como `fitPassage`
+   mide `.tc-passage-area` (hijo flex), el padding reduce el área y la letra se
+   ajusta sola: no hace falta tocar el JS. */
+.tc-solo .tc-round { padding: 3cqmin 5cqw 2cqmin 7cqw; }
+
 /* El área del texto toma toda la altura libre; el texto se centra y NO desborda
    (fitPassage encoge la letra si hiciera falta). */
 .tc-passage-area {
@@ -125,7 +134,11 @@ body.bg-notebook .tc-passage,
 /* El marco solo aporta el papel crema; el margen rojo se pinta en .tc-solo con
    unidades del contenedor (cqw) para que su posición/grosor crezcan con el marco. */
 .ww-player-frame.bg-notebook:has(.tc-solo),
-body.bg-notebook:has(.tc-solo) { background: #fffdf5; }
+body.bg-notebook:has(.tc-solo) {
+  background: #fffdf5;
+  /* Viñeta cálida sutil → la hoja crema toma profundidad de papel real. */
+  box-shadow: inset 0 0 8cqmin rgba(120,90,40,.07);
+}
 .ww-player-frame.bg-notebook .tc-solo,
 body.bg-notebook .tc-solo {
   background: linear-gradient(to right,
