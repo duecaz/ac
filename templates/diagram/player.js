@@ -6,6 +6,7 @@ import { html, mount, escapeHtml } from '../../core/html.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { shuffle } from '../../core/roundRender.js';
 import { ROPES, OK_COL, NO_COL, mountRopeLayer, ropeHtml, ghostHtml, dotPos, svgPt } from '../../core/connectRope.js';
+import { observeResize } from '../../core/observeResize.js';
 
 export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
   const pins = (activity.content?.pins || []).filter(p => p && p.id && String(p.label || '').trim());
@@ -164,13 +165,11 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
     boxEl.style.width = w; boxEl.style.height = h;
     return true;
   }
-  // rAF + guarda evitan el "ResizeObserver loop completed with undelivered
-  // notifications" (redimensionar la caja dentro del callback lo re-disparaba).
-  let raf = 0;
-  const relayout = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { fitImageBox(); updateSvg(); }); };
-  relayout();
-  const ro = new ResizeObserver(relayout);
-  ro.observe(stageEl);   // el stage no cambia de tamaño al redimensionar la caja (descendiente)
+  // observeResize (rAF-debounced, core/observeResize.js) + la guarda de
+  // fitImageBox evitan el aviso "ResizeObserver loop…" del navegador.
+  const relayout = () => { fitImageBox(); updateSvg(); };
+  requestAnimationFrame(relayout);
+  observeResize(stageEl, relayout);   // el stage no cambia al redimensionar la caja (descendiente)
   if (imgEl && !imgEl.complete) imgEl.addEventListener('load', relayout);
 
   updateProgress(); updateSubmit();

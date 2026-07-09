@@ -7,7 +7,7 @@
 import { escapeHtml } from './html.js';
 import { applySkin } from './skins.js';
 import { applyBackground } from './backgrounds.js';
-import { isVowel } from './textMarks.js';
+import { passageHtml } from './textCorrectionRound.js';
 import { wheelSvg } from '../templates/wheel/render.js';
 import { generateGrid } from '../templates/wordsearch/generator.js';
 
@@ -189,22 +189,6 @@ function memoryHtml(act) {
   </div>`;
 }
 
-// Static reproduction of the text-correction passage (core/textCorrectionRound).
-// Vowels (tildes) / word-end gaps (comas) become tap targets — no handlers.
-function tcPassageHtml(text, kind) {
-  const chars = [...String(text)];
-  const ch = c => `<span class="tc-ch">${escapeHtml(c === ' ' ? ' ' : c)}</span>`;
-  if (kind === 'coma') {
-    return chars.map((c, i) => {
-      if (i === chars.length - 1 || c === ' ' || chars[i + 1] !== ' ') return ch(c);
-      return ch(c) + `<button type="button" class="tc-tap tc-gap" aria-label="hueco"></button>`;
-    }).join('');
-  }
-  return chars.map(c => isVowel(c)
-    ? `<button type="button" class="tc-tap tc-vowel">${escapeHtml(c)}</button>`
-    : ch(c)).join('');
-}
-
 function textHtml(act) {
   const passages = (act.content?.passages || []).filter(p => p && p.text);
   if (!passages.length) return emptyHtml(act);
@@ -218,7 +202,7 @@ function textHtml(act) {
       <span class="badge bg-primary">★ 0</span></div>
     <h4 class="text-center mb-1">${escapeHtml(act.title || '')}</h4>
     <div class="tc-round">
-      <div class="tc-passage">${tcPassageHtml(passages[0].text, kind)}</div>
+      <div class="tc-passage">${passageHtml(passages[0].text, kind)}</div>
       <div class="text-center mt-3"><button type="button" class="btn btn-success btn-lg">
         <i class="bi bi-check2-circle"></i> Listo</button></div>
       <p class="tc-hint text-muted text-center mt-2">${hint}</p>
@@ -378,6 +362,38 @@ function ballsortHtml(act) {
   </div>`;
 }
 
+// "Etiqueta el diagrama": imagen central con sus pines (posicionados en %) y las
+// etiquetas como pastillas a los lados, con su punto conector — la primera
+// pantalla del juego, estática (estilos inline, como matchHtml).
+function diagramHtml(act) {
+  const pins = (act.content?.pins || []).filter(p => p && String(p.label || '').trim());
+  const image = act.content?.image;
+  if (!image || !pins.length) return emptyHtml(act);
+  const labels = pins.slice(0, 6);
+  const half = Math.ceil(labels.length / 2);
+  const pill = (p, side) => `<div style="position:relative;display:flex;align-items:center;justify-content:center;
+      padding:12px 26px;border-radius:999px;border:3px solid #c7d2fe;background:#fff;font-weight:700;
+      font-size:1.3rem;color:#1f2937;box-shadow:0 3px 10px rgba(0,0,0,.06);white-space:nowrap;">
+    ${escapeHtml(p.label)}
+    <span style="position:absolute;${side === 'L' ? 'right' : 'left'}:-11px;width:20px;height:20px;border-radius:50%;
+      background:#94a3b8;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25);"></span></div>`;
+  const pinDot = (p) => `<span style="position:absolute;left:${(p.x * 100).toFixed(1)}%;top:${(p.y * 100).toFixed(1)}%;
+      transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:#fff;
+      border:6px solid #475569;box-sizing:border-box;box-shadow:0 1px 5px rgba(0,0,0,.4);"></span>`;
+  return `<div style="display:flex;height:100%;gap:26px;align-items:stretch;">
+    <div style="flex:0 0 auto;display:flex;flex-direction:column;gap:20px;justify-content:center;align-items:flex-start;">
+      ${labels.slice(0, half).map(p => pill(p, 'L')).join('')}</div>
+    <div style="flex:1 1 auto;display:flex;align-items:center;justify-content:center;min-width:0;">
+      <div style="position:relative;display:inline-block;line-height:0;">
+        <img src="${escapeHtml(image)}" style="max-width:100%;max-height:640px;display:block;border-radius:10px;" alt="">
+        ${pins.map(pinDot).join('')}
+      </div>
+    </div>
+    <div style="flex:0 0 auto;display:flex;flex-direction:column;gap:20px;justify-content:center;align-items:flex-end;">
+      ${labels.slice(half).map(p => pill(p, 'R')).join('')}</div>
+  </div>`;
+}
+
 function buildHtml(act) {
   switch (act.template) {
     case 'quiz':        return quizHtml(act);
@@ -391,10 +407,12 @@ function buildHtml(act) {
     case 'wordsearch':  return wordsearchHtml(act);
     case 'crossword':   return crosswordHtml(act);
     case 'ballsort':    return ballsortHtml(act);
+    case 'diagram':     return diagramHtml(act);
     default:
       if (act.content?.items?.[0]?.options) return quizHtml(act);
       if (act.content?.pairs?.length)       return matchHtml(act);
       if (act.content?.passages?.length)    return textHtml(act);
+      if (act.content?.pins?.length)        return diagramHtml(act);
       return emptyHtml(act);
   }
 }

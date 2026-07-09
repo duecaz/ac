@@ -58,7 +58,12 @@ window.__wwClearAll = async function() {
     if (shown) return; shown = true;
     document.body.innerHTML = '<div class="alert alert-danger m-4"><h4><i class="bi bi-bug-fill"></i> Error</h4><pre style="white-space:pre-wrap">'+String(msg).replace(/[<>&]/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))+'</pre></div>';
   }
-  window.addEventListener('error', e => show(e.error?.stack || e.message));
+  // "ResizeObserver loop…" es un AVISO benigno del navegador (el observer
+  // difiere notificaciones un frame), no un crash: no tumbar la app por él.
+  window.addEventListener('error', e => {
+    if (/ResizeObserver loop/i.test(e.message || '')) return;
+    show(e.error?.stack || e.message);
+  });
   window.addEventListener('unhandledrejection', e => show(e.reason?.stack || e.reason));
   setTimeout(()=>{ if (!window.__APP_READY__) show('La actividad no cargó en 8s.'); }, 8000);
 })();

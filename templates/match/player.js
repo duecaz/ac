@@ -6,6 +6,7 @@ import { html, mount, escapeHtml } from '../../core/html.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { shuffle } from '../../core/roundRender.js';
 import { ROPES, OK_COL, NO_COL, mountRopeLayer, ropeHtml, ghostHtml, dotPos, svgPt } from '../../core/connectRope.js';
+import { observeResize } from '../../core/observeResize.js';
 
 export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   const raw = (activity.content?.pairs || []).filter(p =>
@@ -210,8 +211,9 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
     updateSvg();                                       // recolocar cuerdas
   }
   requestAnimationFrame(fitLayout);
-  const ro = new ResizeObserver(() => fitLayout());
-  ro.observe(root);                                    // recalcular al redimensionar/fullscreen
+  // rAF-debounced (observeResize): fitLayout MUTA el tamaño de las tarjetas; un
+  // RO directo dispararía el aviso "ResizeObserver loop…" al salir de fullscreen.
+  observeResize(root, fitLayout);                      // recalcular al redimensionar/fullscreen
 
   updateProgress();
   updateSubmit();

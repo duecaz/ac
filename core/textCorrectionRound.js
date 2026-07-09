@@ -23,7 +23,10 @@ const HINTS = {
 };
 // Build the inline passage. `reveal` (optional) bakes correct/wrong/missed
 // classes for a read-only answer review; otherwise targets are interactive.
-function passageHtml(text, kind, reveal) {
+// Exportada: el preview de tarjeta (core/activityThumb.js) reutiliza ESTE mismo
+// markup para que la miniatura sea fiel al juego y no se desfase (los targets
+// son spans limpios; solo el canvas los vuelve interactivos).
+export function passageHtml(text, kind, reveal) {
   const chars = [...text];
   // ESPACIOS como texto crudo y rompible (antes era \u00a0 = no-rompible, por eso
   // no cortaba la linea): las palabras quedan enteras y el texto envuelve al marco.

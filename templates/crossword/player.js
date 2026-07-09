@@ -4,6 +4,7 @@ import { on } from '../../core/events.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { buildGrid } from './generator.js';
+import { observeResize } from '../../core/observeResize.js';
 
 export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
   const wordsRaw = (activity.content?.words || [])
@@ -110,14 +111,12 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     grid.style.setProperty('--cw-cell', `${cellPx}px`);
   }
 
-  // Recalculate if container resizes; disconnect when game finishes
-  let ro = null;
+  // Recalculate if container resizes; disconnect when game finishes.
+  // rAF-debounced (observeResize): fitGrid muta --cw-cell dentro del observado.
+  let stopRo = null;
   if (typeof ResizeObserver !== 'undefined') {
     const wrap = document.querySelector(`${rootSel} .cw-grid-wrap`);
-    if (wrap) {
-      ro = new ResizeObserver(() => fitGrid());
-      ro.observe(wrap);
-    }
+    if (wrap) stopRo = observeResize(wrap, fitGrid);
   }
 
   // ── Interaction ──────────────────────────────────────────────────────────
@@ -428,7 +427,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
   }
 
   function finishGame() {
-    ro?.disconnect();
+    stopRo?.();
     // Score is points, not raw word count: solving every word earns
     // totalWords·pointsPerCorrect (respects the activity's scoring config).
     const score = solvedIds.size * ppc;

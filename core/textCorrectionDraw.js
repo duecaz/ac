@@ -11,6 +11,7 @@
 // Adaptado del enfoque de duecaz/play (zonas + trazos en canvas).
 
 import { pointerMetric, classifyTool, toolAction, loadThresholds } from './penDetector.js';
+import { observeResize } from './observeResize.js';
 
 export function mountTcDraw(passageEl, { targets, onChange } = {}) {
   passageEl.style.position = 'relative';
@@ -172,8 +173,7 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
   canvas.addEventListener('pointercancel', onUp);
   canvas.addEventListener('lostpointercapture', onUp);
 
-  const ro = new ResizeObserver(() => resize());
-  ro.observe(passageEl);
+  const stopRo = observeResize(passageEl, resize);   // rAF-debounced (evita "RO loop…")
   requestAnimationFrame(resize);
 
   return {
@@ -182,7 +182,7 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
     clear() { strokes = []; recalcHits(); redraw(); },
     freeze() { frozen = true; canvas.style.pointerEvents = 'none'; },
     destroy() {
-      ro.disconnect();
+      stopRo();
       canvas.remove();        // al quitar el canvas se van sus listeners
     },
   };

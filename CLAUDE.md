@@ -60,6 +60,10 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
   recoloreen — nunca `#hex` a pelo (salvo neutros y estado acierto/error). Contrato
   completo + ejemplares (`math.css`/`quiz.css`) en **`docs/estilos-de-actividad.md`**;
   lo protege el ratchet `tests/styles.test.mjs` (una actividad nueva debe nacer limpia).
+- **ResizeObserver en players**: NUNCA `new ResizeObserver(cb)` directo si el callback
+  muta layout — usar `observeResize()` (`core/observeResize.js`, rAF-debounced). Un RO
+  directo dispara el aviso benigno "ResizeObserver loop…" que el boot-guard de los HTML
+  trataba como crash (ya filtrado, pero el helper es la norma).
 - **Testeo**: mapa de suites + receta headless (Playwright) en `docs/testing.md`.
 
 ## Deuda técnica registrada
