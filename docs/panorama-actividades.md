@@ -84,5 +84,7 @@ en **`docs/testing.md`**. Referencia rápida por área:
 | Puntuación | `scoring`, `textMarks`, `qaAdapt`, `ballsort` | — |
 | Tildes/Comas (dibujo + calibración) | `textMarks`, `penDetector`, `liveText` | headless: trazo sobre vocal, punteros fantasma |
 | Modo SOLO (shells, timer) | `solo`, `soloPlayer`, `soloTimer`, `clock` | — |
+| Etiqueta el diagrama | `diagram` | headless: pines↔etiquetas, `fitImageBox`, sin fugas de ResizeObserver |
 | Maquetación de panel (`panelFit`, fitPassage) | — *(sin suite: es CSS/DOM)* | headless: `scrollHeight` vs área, 2 tamaños |
+| CSS de actividad (relativo + tokens de skin) | `styles` (ratchet, ver `docs/estilos-de-actividad.md`) | — |
 | Skins / tokens | — | headless: `getComputedStyle` por skin |

@@ -461,8 +461,14 @@ export async function renderPlay(rootSel, code) {
         // the host's progress honest and the collection path retry-safe.
         if (ok) queuedSubmit(session.id, player.playerId, idx, value, ms).catch(() => {});
 
-        // Brief pause to see the color flash, then load next question.
-        setTimeout(() => paintRace(), RACE_FLASH_MS);
+        // Brief pause to see the color flash, then load next question. Guardia:
+        // si el profesor terminó la carrera en esa ventana (p.ej. "Terminar
+        // carrera"), `session.phase` ya no es 'race' — no repintar la carrera
+        // sobre lo que paint() ya haya mostrado (resultado/podio); el próximo
+        // evento real de sesión (subscribeRoom/poll) lo enruta correctamente.
+        // (No se puede usar paint() aquí: cachea por `session.*` y el avance de
+        // raceQueue es 100% local, así que repintaría la MISMA pregunta.)
+        setTimeout(() => { if (session.phase === 'race') paintRace(); }, RACE_FLASH_MS);
       }
     });
   }

@@ -17,8 +17,8 @@ Qué leer según lo que necesites. La **fuente de verdad del estado actual** es
 | Esquema JSON de una actividad + modelo de contenido por plantilla | `ESTRUCTURA.md` |
 | Contrato de los modos (Solo/VS/Equipos/Live/Tarea) + recetas | `modos-de-juego.md` |
 | El modo SOLO (Wordwall) por dentro | `modo-wordwall.md` |
+| Contrato de CSS de actividad (relativo + tokens de skin) | `estilos-de-actividad.md` |
 | Mapa de módulos `core/` por rol | `../core/README.md` |
-| Arquitectura completa (parcial: ver banner) | `arquitectura.md` |
 
 ## Hacer
 | Necesitas… | Lee |
@@ -31,7 +31,10 @@ Qué leer según lo que necesites. La **fuente de verdad del estado actual** es
 |---|---|
 | Identidad (anon id + auth PocketBase) | `identidad.md` |
 | Auditoría del camino SOLO (resuelta) | `auditoria-solo.md` |
-| Snapshot antiguo (handoff) | `ESTADO.md` |
+| Arquitectura completa (ANTERIOR a PocketBase, ver banner) | `historico/arquitectura.md` |
+| Snapshot antiguo (handoff v1.31.4) | `historico/ESTADO.md` |
 
-> Nota: `arquitectura.md`, `ESTADO.md` y `auditoria-solo.md` son en parte
-> históricos (llevan aviso). Para el estado vigente, `CLAUDE.md` manda.
+> Nota: `auditoria-solo.md` describe una auditoría ya resuelta (queda como
+> registro). `historico/arquitectura.md` y `historico/ESTADO.md` son snapshots
+> ANTERIORES a la migración a PocketBase — llevan su propio aviso. Para el
+> estado vigente, `CLAUDE.md` (raíz) manda siempre.

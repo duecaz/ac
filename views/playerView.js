@@ -46,6 +46,12 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   let currentMode = initialMode;
   let currentDisposer = null;
   let currentAnim = null;   // animación de progreso del modo solo (carril)
+  // Ficha de generación: cada selectMode() la incrementa. runMode()/mountSoloStart
+  // son ASÍNCRONOS (dynamic import + montaje); si el usuario cambia de modo otra
+  // vez antes de que resuelvan, el resultado tardío NO debe pisar currentDisposer
+  // (huérfano sin dispose(), y su DOM se pintaría sobre el modo nuevo). Cualquier
+  // callback async compara su ficha capturada contra `modeToken` antes de asignar.
+  let modeToken = 0;
   ctx.add(() => { if (currentDisposer) { try { currentDisposer.dispose(); } catch {} currentDisposer = null; } });
   ctx.add(() => { if (currentAnim) { try { currentAnim.dispose(); } catch {} currentAnim = null; } });
   // This page themes only the embed frame (scoped, after paint()). Keep the
@@ -100,6 +106,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   async function selectMode(id) {
     const m = getMode(id);
     if (!m || !m.embed) return; // embed:false modes navigate via their link
+    const myToken = ++modeToken;   // invalida cualquier callback async en vuelo de una selección previa
     if (currentDisposer) { try { currentDisposer.dispose(); } catch {} currentDisposer = null; }
     // Animación de progreso: SOLO en modo Individual. Se monta ANTES del player
     // para suscribirse al bus antes de su primer QUESTION_SHOWN; se descarta al
@@ -122,23 +129,33 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     // instrucciones + ajustes) antes de mostrar el ejercicio. El modo Individual
     // la pinta aquí; VS/Equipos ya tienen su propia pantalla previa (modeSetup).
     if (id === 'solo') {
-      currentDisposer = mountSoloStart();
+      currentDisposer = mountSoloStart(myToken);
     } else {
-      currentDisposer = await runMode(id, '#ww-player-widget', playActivity(), ctx);
+      const disposer = await runMode(id, '#ww-player-widget', playActivity(), ctx);
+      // Si otra selección de modo ganó la carrera mientras este runMode montaba,
+      // este resultado llega TARDE: no pisar currentDisposer (huérfano) — se
+      // descarta el montaje recién hecho en vez de dejarlo sin dispose().
+      if (myToken !== modeToken) { try { disposer.dispose(); } catch {} return; }
+      currentDisposer = disposer;
     }
   }
 
   // Pantalla de inicio del modo Individual: muestra título/instrucciones/ajustes
   // y, al pulsar "Iniciar", entra en pantalla completa, monta la animación de
   // progreso (si está activa) y arranca el player real en el mismo escenario.
-  function mountSoloStart() {
+  function mountSoloStart(myToken) {
     const widget = document.getElementById('ww-player-widget');
     return renderStartScreen(widget, playActivity(), {
       frame: document.getElementById('ww-frame'),
       onStart: async () => {
         if (currentAnim) { try { currentAnim.dispose(); } catch {} currentAnim = null; }
-        currentAnim = mountSoloAnimator(document.getElementById('ww-solo-anim'), playActivity());
-        currentDisposer = await runMode('solo', '#ww-player-widget', playActivity(), ctx);
+        const anim = mountSoloAnimator(document.getElementById('ww-solo-anim'), playActivity());
+        const disposer = await runMode('solo', '#ww-player-widget', playActivity(), ctx);
+        // Mismo guardia: si el alumno cambió de modo mientras "Iniciar" montaba
+        // el player real, no pisar el modo YA activo con el solo tardío.
+        if (myToken !== modeToken) { try { anim.dispose(); } catch {} try { disposer.dispose(); } catch {} return; }
+        currentAnim = anim;
+        currentDisposer = disposer;
       }
     });
   }

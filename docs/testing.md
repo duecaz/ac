@@ -4,8 +4,9 @@
 > CI), **self-tests en navegador** (panel admin) y **verificación headless**
 > (Playwright) para lo que la suite no puede ver (DOM, táctil, layout).
 >
-> Documento hermano: qué hace cada actividad y feature → **`docs/panorama-actividades.md`**
-> (su §5 tiene una tabla "qué suite prueba qué área").
+> Documentos hermanos: qué hace cada actividad y feature → **`docs/panorama-actividades.md`**
+> (su §5 tiene una tabla "qué suite prueba qué área") · contrato de CSS de actividad
+> (relativo + tokens de skin) → **`docs/estilos-de-actividad.md`**.
 
 ## 1. Suite Node (la de CI)
 
@@ -36,6 +37,7 @@ testea **lógica pura** (sin DOM, sin red): motores, scorers, parsers, colas.
 | `textMarks` | Clave de respuesta de Tildes/Comas: parseo de acentos/comas, `scoreMarks`, `scoreMarksPerHit` (1 punto por tilde, anti-trampa). |
 | `wheel` | Lógica pura de la ruleta (normalización, selección). |
 | `ballsort` | Reglas del tablero (canMove/applyMove/isWin), generador reproducible, scorer y contrato live/VS. |
+| `diagram` | Modelo de contenido (`newPin`/`newEmpty`/`validate`), `scoreDiagramSubmission` (etiqueta↔su pin) y contrato de plantilla. |
 
 **Motores de sesión (sin DOM ni backend)**
 | Suite | Protege |
@@ -126,6 +128,12 @@ Trucos aprendidos (no re-descubrir):
 - **Multitáctil**: dos `pointerdown` con `pointerId` distintos en el mismo tick.
 - Probar SIEMPRE en 2 tamaños: marco embebido (~720×450) y fullscreen (1280×800),
   y en vertical si el modo lo permite.
+- **Salir de fullscreen = el resize más agresivo**: si un player observa su propio
+  tamaño con `ResizeObserver` y el callback MUTA layout (redimensionar tarjetas,
+  celdas…), usa `observeResize()` (`core/observeResize.js`, rAF-debounced) — un RO
+  directo puede disparar el aviso "ResizeObserver loop…" justo ahí. Repro headless:
+  cambiar `#ww-player-widget` de tamaño varias veces seguidas (simula
+  fullscreen-enter/exit) y contar el evento `error` de window con ese mensaje.
 - El harness es **temporal**: bórralo antes de commitear.
 
 ## 4. Qué NO está cubierto (y cómo se mitiga)

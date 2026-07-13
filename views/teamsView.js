@@ -19,6 +19,7 @@ import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { applyMarks } from '../core/textMarks.js';
 import { renderModeSetup } from './modeSetup.js';
 import { teamColor, teamNameInputsHtml, teamsScoreboardHtml, teamsPodiumHtml } from '../core/teams.js';
+import { canAutoScoreRound } from '../core/templateCapability.js';
 
 
 // Standalone route wrapper (#/teams/:id).
@@ -31,7 +32,11 @@ export function mountTeams(host, a, ctx, opts = {}) {
     return { dispose() {} };
   }
   const T = getTemplate(a.template);
-  const canAuto = typeof T?.scoreSubmission === 'function' && typeof T?.getRoundPayload === 'function';
+  // MISMO criterio que core/modes.js y createTeamsSession (core/templateCapability.js):
+  // hace falta scoreSubmission Y renderRound — roundBody()/wire() más abajo exigen
+  // renderRound para pintar la ronda "Automática"; exigir solo getRoundPayload
+  // dejaba el botón "Revelar" deshabilitado para siempre si se llegara a habilitar.
+  const canAuto = canAutoScoreRound(T);
 
   // Defaults configured in the editor's "Modos" tab (presentation.*); still
   // changeable here before starting.

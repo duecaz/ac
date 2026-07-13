@@ -14,7 +14,7 @@ export class WheelTemplate extends BaseTemplate {
     instructions: 'Gira la ruleta y responde la pregunta que toque.',
     aspectRatio: '1/1',
     modes: { solo: true, live: true, async: false, practice: true },
-    needsImageUpload: false,
+    needsImageUpload: true,   // wheel/editor.js: imagen opcional por entrada (data-URL, 200 KB)
     needsAudioUpload: false,
     defaultRules: () => ({ spinDurationMs: 4000, removeAfterSpin: false }),
     defaultScoring: () => ({}),

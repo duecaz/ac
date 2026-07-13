@@ -368,6 +368,30 @@ const quizActivity = {
   assert.strictEqual(lv.state.players.find(p => p.id === pa.id).score, anaScore,
     'el segundo settle NO duplica puntos (scored row → wasUnscored false)');
   ok('live (answers-collection): settle idempotente, sin doble puntuación');
+
+  // BUG regresión: submit() debía bloquear un reenvío SIEMPRE que ya exista
+  // respuesta para esa clave — antes solo bloqueaba mientras estaba sin puntuar
+  // (`correct === null`). El hueco es alcanzable vía el adaptador PocketBase: un
+  // proceso hidrata el estado, otro ya corrió settle() y persistió el veredicto,
+  // pero el hidratado de ESTE proceso es más viejo → su `state.phase` local
+  // sigue en QUESTION aunque `state.answers[key]` (si se rehidratara fresco)
+  // ya estaría puntuado. Un reintento tardío del submitQueue que llega en ese
+  // hueco pisaba el registro ya puntuado con `{correct:null, points:0}` — los
+  // puntos quedan en player.score pero la respuesta se ve "sin puntuar" (y un
+  // settle posterior la volvería a sumar: doble conteo).
+  const lv2 = createSession(quizActivity, { format: FORMATS.LIVE });
+  const pc = lv2.join('uC', 'Carla');
+  lv2.dispatch('start');   // phase → QUESTION, currentItem → 0
+  // Simula el estado YA puntuado (como si otro proceso hubiera corrido settle()
+  // y esto se acabara de rehidratar) sin tocar la fase — reproduce el hueco.
+  lv2.state.answers['0:' + pc.id] = { playerId: pc.id, value: item0.answer, msTaken: 150, correct: true, points: 10 };
+  lv2.state.players.find(p => p.id === pc.id).score = 10;
+  lv2.submit(pc.id, 0, item0.answer, 9000);   // reintento tardío (misma respuesta, llega después)
+  assert.strictEqual(lv2.state.answers['0:' + pc.id].correct, true,
+    'un submit() tardío NO revierte una respuesta ya puntuada a correct:null');
+  assert.strictEqual(lv2.state.players.find(p => p.id === pc.id).score, 10,
+    'un submit() tardío no cambia player.score (ya estaba contada)');
+  ok('live: submit() tardío sobre una respuesta ya puntuada no la des-puntúa (fix)');
 }
 
 console.log(`\nsessionEngine.test: ${passed} checks passed`);

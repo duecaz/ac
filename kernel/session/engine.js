@@ -19,6 +19,7 @@
 import { planTransition, PHASES } from '../../core/livePhases.js';
 import { isAcceptableNickname } from '../../core/nicknameFilter.js';
 import { getTemplate } from '../../core/registry.js';
+import { canAutoScoreRound } from '../../core/templateCapability.js';
 
 export const FORMATS = Object.freeze({ SOLO: 'solo', LIVE: 'live', TEAMS: 'teams', VS: 'vs' });
 
@@ -124,7 +125,14 @@ function createLiveSession(activity, T, opts) {
     // original already saved — must NOT overwrite the recorded answer (which
     // would clobber its msTaken and let a slower resend beat the real one).
     // Race mode is exempt: a wrong answer is requeued and legitimately retried.
-    if (!isRace && state.answers[key] && state.answers[key].correct === null) return;
+    //
+    // The lock covers an answer REGARDLESS of whether settle() already scored
+    // it (bug fixed: checking only `correct === null` left a hole — a retry
+    // landing AFTER settle() fell through and overwrote the scored record back
+    // to `{correct:null, points:0}`, silently un-scoring it and, if the item
+    // were ever settled again — e.g. a race "end race" that re-settles all
+    // items — double-counting the points on re-settle).
+    if (!isRace && state.answers[key]) return;
     state.answers[key] = { playerId, value, msTaken, correct: null, points: 0 };
   }
 
@@ -174,7 +182,10 @@ function createLiveSession(activity, T, opts) {
 function createTeamsSession(activity, T, opts) {
   const items = sessionItems(activity);
   const total = items.length;
-  const canAuto = typeof T.scoreSubmission === 'function';
+  // MISMO criterio que core/modes.js y views/teamsView.js (core/templateCapability.js):
+  // hace falta scoreSubmission Y renderRound — sin renderRound la ronda "auto" no
+  // se puede PINTAR (ver teamsView.js roundBody/wire), aunque haya scorer.
+  const canAuto = canAutoScoreRound(T);
   // Default to auto when possible; fall back to teacher judge otherwise.
   const scoring = opts.scoring || (canAuto ? 'auto' : 'judge');
   if (scoring === 'auto' && !canAuto) {

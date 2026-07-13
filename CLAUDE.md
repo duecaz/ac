@@ -41,7 +41,7 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
 ## Estándares transversales (no romper)
 - **Pantalla de inicio** (`views/startScreen.js`): todo modo Individual pasa por ella (título +
   instrucciones + ajustes + Iniciar→fullscreen). El ejercicio queda oculto hasta Iniciar.
-- **Registro de plantillas y arranque**: `core/registerTemplates.js` (las 11, punto único) +
+- **Registro de plantillas y arranque**: `core/registerTemplates.js` (las 12, punto único) +
   `core/boot.js` (sonidos/efectos al bus, versión, mute). Las 3 `main.*.js` NO repiten ese wiring.
 - **Gama baja** (`core/perf.js`): `ww-lite` en `<html>` si ≤4 núcleos o ≤2GB → sin bucles de
   animación en reposo (cuerda Lottie estática, marquesina arcade quieta). El VS debe ser fluido en
@@ -93,10 +93,24 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
   (`scoreSubmission` devuelve `null`) marca a TODA la clase como incorrecta en vez de tratarse como
   no puntuable. Riesgo de cambiarlo: el `null` fluye a UI (✓/✗); requiere verificación visual.
 
-#### D. Menores: ~~filtros PB sin escapar comilla simple~~ ✅ RESUELTO (`core/pbFilter.js`, ambos
-  adaptadores lo usan). Quedan: `saveResult` remoto sin cola propia (un resultado final puede
-  perderse en blip; la cola de `results.js` cubre el caso local) y sin idempotency key en
-  resultados (posibles filas duplicadas si se pierde el ACK).
+#### D. Menores: ~~filtros PB sin escapar comilla simple~~ ✅ RESUELTO (`core/pbFilter.js`, todos los
+  llamadores lo usan — `views/explore.js` era el último rezagado con `encodeURIComponent` a pelo,
+  cerrado en la auditoría de estructura). Quedan: `saveResult` remoto sin cola propia (un resultado
+  final puede perderse en blip; la cola de `results.js` cubre el caso local) y sin idempotency key
+  en resultados (posibles filas duplicadas si se pierde el ACK).
+
+#### F. `submitProgress` (tablero compartido de Ordena las Pelotas en vivo) — no atómico (medio)
+- **Qué**: `adapters/pocketbase/realtime.js submitProgress` hace GET-then-POST/PATCH sin lock; en
+  `views/studentLive.js` se llama sin `msTaken` (siempre `ms:0`/heredado). Con RTT alto (pizarra de
+  gama baja) dos envíos de progreso pueden solaparse, ambos ven "sin fila" y ambos `POST` → dos filas
+  `live_answers` para el mismo alumno/ítem. `fetchAnswerRows` desempata "por jugador, la de `ms` más
+  bajo" — correcto para una respuesta Kahoot de una vez, pero con `ms` siempre ~0 el desempate es
+  esencialmente arbitrario, así que el tablero del profesor (`hostLive.js paintLiveBoardHost`) o el
+  "Terminar carrera" pueden puntuar/mostrar un tablero VIEJO en vez del más reciente.
+- **Por qué no se arregló aún**: toca sincronización real con PocketBase (no verificable con el driver
+  `local` de los tests); mismo tipo de riesgo que la deuda A. Candidato: mandar un contador
+  monotónico/timestamp propio en vez de reusar `ms`, y desempatar por "más reciente" en vez de "más
+  bajo" cuando se detecten varias filas del mismo jugador.
 
 #### E. Hallazgos de la auditoría v2 — restantes (los demás ya aplicados)
 - ✅ Aplicado: `SYNCED_KEY` con tope+LRU vía ls.js · podium/scoreboard de Equipos unificado en
@@ -117,6 +131,48 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
     duplicado entre submitQueue y results (absorber en la factory de offlineQueue; NO fusionar las
     colas — identidad/evicción distintas es correcto).
   - La fusión real de `raceQueue`/scoring de studentLive va con la deuda A (lost-update): mismo flujo.
+
+#### G. Auditoría de estructura (motor/plantillas/vistas/docs) — RESUELTO
+Auditoría con 4 agentes en paralelo (motor de sesión, contrato de plantillas, capa de vistas,
+frescura de docs). Arreglado:
+- **`submit()` des-puntuaba respuestas ya calificadas** (`kernel/session/engine.js`): el candado de
+  primera respuesta solo bloqueaba mientras estaba SIN puntuar (`correct === null`); un reintento
+  tardío (submitQueue, o un hidratado más viejo desde el adaptador PocketBase) que llegaba DESPUÉS de
+  `settle()` pasaba el candado y pisaba el registro ya puntuado con `{correct:null, points:0}` — los
+  puntos quedaban en `player.score` pero la respuesta se veía sin puntuar (y un settle posterior la
+  volvería a sumar). Ahora el candado cubre cualquier respuesta existente, puntuada o no (test:
+  `tests/sessionEngine.test.mjs` "submit() tardío…"). Distinto de la deuda B (esta SÍ se corrigió).
+- **Tres criterios distintos de "¿puede esta plantilla auto-puntuar en Equipos?"**: `core/modes.js`
+  exigía solo `renderRound`, `kernel/session/engine.js` (`createTeamsSession`) exigía solo
+  `scoreSubmission`, `views/teamsView.js` exigía `scoreSubmission`+`getRoundPayload` (sin
+  `renderRound`) — con ese último criterio, una plantilla con scorer+payload pero sin `renderRound`
+  (Crucigrama/Ruleta/Abre-Cajas) podía habilitar "Automática" en Equipos y dejar el botón "Revelar"
+  deshabilitado para siempre (`roundBody()` exige `renderRound` para pintar). Hoy no era alcanzable
+  (`core/modes.js` ya oculta "Equipos" antes de llegar ahí), pero los tres criterios divergían.
+  Unificado en `core/templateCapability.js` (`canAutoScoreRound`), usado por los tres.
+- **`scoreCrossword` devolvía `{score,maxScore}`** en vez del contrato `{correct,points}` que leen
+  TODOS los llamadores de `scoreSubmission` — inofensivo hoy (Crucigrama no tiene `renderRound`, así
+  que nunca se invoca en un flujo real), pero una mina para el día en que sume `renderRound` (ya tiene
+  `getRoundPayload`). Corregido a la forma estándar.
+- **Condición de carrera en `views/playerView.js`** (`selectMode`/`mountSoloStart`, ambos async):
+  cambiar de modo dos veces rápido (o pulsar "Iniciar" y luego otro modo antes de que el player
+  terminara de montar) podía dejar el `disposer` del modo NUEVO huérfano (nunca se le llama
+  `dispose()`) y el DOM del modo viejo pintado encima. Fix: ficha de generación (`modeToken`) — un
+  `runMode()`/`mountSoloStart()` que resuelve tarde se descarta si ya no es la selección vigente.
+- **`views/explore.js`** construía el filtro PB con `encodeURIComponent` a pelo (no escapa la comilla
+  simple) — el único rezagado tras el fix de `core/pbFilter.js`; migrado a `pbEscape`/`pbFilterParam`.
+- **`views/studentLive.js paintRace`**: el reintento tras responder (`setTimeout(paintRace, …)`) no
+  comprobaba `session.phase` — si el profesor terminaba la carrera en esa ventana, repintaba una
+  pregunta de carrera sobre el resultado/podio ya mostrado. Ahora guarda `session.phase === 'race'`.
+- **Metadata**: `wheel.needsImageUpload` decía `false` pese a tener subida de imagen por entrada en
+  su editor → `true`. `registerTemplates.js`/`CLAUDE.md`/`modos-de-juego.md` decían "las 11" → 12.
+- **Docs**: `docs/arquitectura.md` y `docs/ESTADO.md` (snapshots ANTERIORES a PocketBase, con su
+  propio aviso) movidos a `docs/historico/` — `docs/historico/README.md` ya declaraba que la
+  documentación viva vivía fuera de ahí, pero ambos seguían sueltos en `docs/`, contradiciéndolo.
+  README.md/testing.md/panorama-actividades.md actualizados con las 12 actividades + suites `diagram`
+  y `styles` + referencias cruzadas a `docs/estilos-de-actividad.md`.
+- **Documentado como deuda NUEVA** (no arreglado, ver F arriba): `submitProgress` no atómico en el
+  tablero compartido de Ordena las Pelotas en vivo.
 
 ### 🟢 DEUDA IMPORTANTE — RESUELTA
 

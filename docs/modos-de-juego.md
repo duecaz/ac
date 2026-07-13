@@ -192,7 +192,7 @@ antes de arrancar. Así el alumno no ve el ejercicio antes de empezar.
 
 - Las instrucciones salen de `activity.instructions` → `meta.instructions` de la
   plantilla → texto genérico. **Toda plantilla debe declarar
-  `meta.instructions`** (las 11 actuales lo hacen).
+  `meta.instructions`** (las 12 actuales lo hacen).
 - La animación de progreso (carril `#ww-solo-anim`) y el player real se montan
   en `onStart`, no antes.
 

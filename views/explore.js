@@ -6,6 +6,7 @@ import { save } from '../core/storage.js';
 import { navigate } from '../core/router.js';
 import { getTemplate } from '../core/registry.js';
 import { PB_URL } from '../pocketbase.config.js';
+import { pbEscape, pbFilterParam } from '../core/pbFilter.js';
 
 export async function renderExplore(rootSel) {
   mount(rootSel, html`
@@ -30,8 +31,10 @@ export async function renderExplore(rootSel) {
   let cache = [];
   async function load() {
     const lang = document.getElementById('exp-lang').value;
-    const langFilter = lang ? `%26%26language='${encodeURIComponent(lang)}'` : '';
-    const url = `${PB_URL}/api/collections/activities/records?filter=(visibility%3D'public'${langFilter})&sort=-updated&perPage=120`;
+    // pbEscape/pbFilterParam (core/pbFilter.js): NUNCA encodeURIComponent a pelo
+    // sobre el valor — no escapa la comilla simple del filtro `field='valor'`.
+    const expr = `visibility='public'` + (lang ? ` && language='${pbEscape(lang)}'` : '');
+    const url = `${PB_URL}/api/collections/activities/records?filter=${pbFilterParam(expr)}&sort=-updated&perPage=120`;
     try {
       const r = await fetch(url);
       const data = await r.json().catch(() => ({}));

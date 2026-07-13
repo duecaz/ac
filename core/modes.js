@@ -22,6 +22,7 @@
 //                 styling but navigate via `href` instead of mounting.
 import { getTemplate } from './registry.js';
 import { isVsCompatible, sessionItems } from '../kernel/session/engine.js';
+import { canAutoScoreRound } from './templateCapability.js';
 
 export const MODE_DEFS = [
   {
@@ -38,7 +39,7 @@ export const MODE_DEFS = [
     id: 'vs', label: 'VS (duelo)', short: 'vs', icon: 'bi-fire', color: 'danger',
     embed: true,
     // CAPACIDAD (¿puede esta plantilla?): sabe puntuar un ítem y pintarlo.
-    supportsTemplate: (T) => typeof T?.scoreSubmission === 'function' && typeof T?.renderRound === 'function',
+    supportsTemplate: (T) => canAutoScoreRound(T),
     // DISPONIBLE (¿esta actividad concreta?): además, ≥2 ítems para una carrera justa.
     isAvailable: (a) => isVsCompatible(a),
     disabledHint: 'Necesita autocorrección y 2+ preguntas'
@@ -46,9 +47,10 @@ export const MODE_DEFS = [
   {
     id: 'teams', label: 'Equipos', short: 'equipos', icon: 'bi-people-fill', color: 'primary',
     embed: true,
-    // Capacidad: auto vía renderRound, o Memoria con su mecánica nativa por
-    // turnos. (No se ofrece en herramientas como la ruleta, que no tienen ronda.)
-    supportsTemplate: (T) => typeof T?.renderRound === 'function' || T?.meta?.name === 'memory',
+    // Capacidad: auto vía scoreSubmission+renderRound, o Memoria con su mecánica
+    // nativa por turnos. (No se ofrece en herramientas como la ruleta, que no
+    // tienen ronda.)
+    supportsTemplate: (T) => canAutoScoreRound(T) || T?.meta?.name === 'memory',
     // Disponible: Memoria necesita ≥2 pares; el resto, ≥1 ronda. Coincide con lo
     // que cada vista exige (no ofrecer un modo que luego no arranca).
     isAvailable: (a) => a?.template === 'memory'
