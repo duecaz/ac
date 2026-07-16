@@ -170,7 +170,10 @@ registerSkin({
     '--ww-shape-1': '#dc2626',
     '--ww-shape-2': '#2563eb',
     '--ww-shape-3': '#ca8a04',
-    '--ww-shape-4': '#16a34a'
+    '--ww-shape-4': '#16a34a',
+    '--ww-success': '#16a34a',   // verde tiza, encaja con la madera cálida
+    '--ww-danger': '#dc2626',
+    '--ww-warning': '#ca8a04'    // ámbar de la paleta (no el genérico)
   },
   bgImage: null,
   fontFamily: '"Georgia", serif'
@@ -191,7 +194,10 @@ registerSkin({
     '--ww-shape-1': '#f43f5e',
     '--ww-shape-2': '#3b82f6',
     '--ww-shape-3': '#eab308',
-    '--ww-shape-4': '#22c55e'
+    '--ww-shape-4': '#22c55e',
+    '--ww-success': '#22c55e',   // verde neón, brilla sobre el cosmos oscuro
+    '--ww-danger': '#f43f5e',
+    '--ww-warning': '#eab308'
   },
   bgImage: 'radial-gradient(ellipse at top, #1e1b4b 0%, #0c0a1f 70%)',
   fontFamily: null
@@ -213,7 +219,10 @@ registerSkin({
     '--ww-shape-1': '#e21b3c',
     '--ww-shape-2': '#1368ce',
     '--ww-shape-3': '#d89e00',
-    '--ww-shape-4': '#26890c'
+    '--ww-shape-4': '#26890c',
+    '--ww-success': '#26890c',   // verde/rojo Kahoot (los mismos de sus formas)
+    '--ww-danger': '#e21b3c',
+    '--ww-warning': '#d89e00'
   },
   bgImage: 'linear-gradient(135deg, #46178f 0%, #1368ce 100%)',
   fontFamily: null
@@ -234,7 +243,10 @@ registerSkin({
     '--ww-shape-1': '#ff5555',
     '--ww-shape-2': '#5555ff',
     '--ww-shape-3': '#ffff55',
-    '--ww-shape-4': '#55ff55'
+    '--ww-shape-4': '#55ff55',
+    '--ww-success': '#39ff14',   // verde fósforo del texto retro
+    '--ww-danger': '#ff5555',
+    '--ww-warning': '#ffff55'
   },
   bgImage: null,
   fontFamily: '"Courier New", monospace'
@@ -255,7 +267,10 @@ registerSkin({
     '--ww-shape-1': '#dc2626',
     '--ww-shape-2': '#0891b2',
     '--ww-shape-3': '#facc15',
-    '--ww-shape-4': '#84cc16'
+    '--ww-shape-4': '#84cc16',
+    '--ww-success': '#84cc16',   // lima tropical (borde/acento de la jungla)
+    '--ww-danger': '#dc2626',
+    '--ww-warning': '#facc15'
   },
   bgImage: 'linear-gradient(180deg, #0f3a26 0%, #1a4d36 100%)',
   fontFamily: null

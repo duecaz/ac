@@ -66,10 +66,12 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
   trataba como crash (ya filtrado, pero el helper es la norma).
 - **Contrato y normas EJECUTABLES**: `tests/templateContract.test.mjs` (contrato completo de
   plantilla: `instructions`, modelo registrado, scorer `{correct,points}`, migrate idempotente,
-  carpeta↔registro) y `tests/norms.test.mjs` (RO directo, filtros PB, kernel sin `Date.now()`).
-  Ambos corren también en el panel `#/admin` (grupos *Contrato* y *Normas*) vía los checkers
-  compartidos `core/templateContract.js` / `core/normsCheck.js`. Una plantilla nueva queda
-  cubierta sola al registrarse — no escribas estas reglas solo en un MD: si es norma, es test.
+  carpeta↔registro), `tests/norms.test.mjs` (RO directo, filtros PB, kernel sin `Date.now()`) y
+  `tests/skins.test.mjs` (cada skin define el set COMPLETO de tokens de `default`, sin caer al
+  fallback `:root`). Los tres corren también en el panel `#/admin` (grupos *Contrato*, *Normas*,
+  *Skins*) vía los checkers compartidos `core/templateContract.js` / `core/normsCheck.js` /
+  `core/skinContract.js`. Una plantilla o skin nuevo queda cubierto solo — no escribas estas
+  reglas solo en un MD: si es norma, es test.
 - **Testeo**: mapa de suites + receta headless (Playwright) en `docs/testing.md`.
 
 ## Deuda técnica registrada

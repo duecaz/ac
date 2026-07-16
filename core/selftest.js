@@ -20,6 +20,7 @@ import { acquire } from './lifecycle.js';
 import { normalizeCode, isPastDue, attemptsRemaining, assignmentGate } from './assignmentRules.js';
 import { checkAllTemplates } from './templateContract.js';
 import { scanNormsSource, BROWSER_SCAN_FILES } from './normsCheck.js';
+import { checkAllSkins } from './skinContract.js';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 function assert(cond, msg) { if (!cond) throw new Error(msg); }
@@ -296,6 +297,12 @@ const TESTS = [
     }));
     assert(violations.length === 0,
       violations.map(v => `[${v.rule}] ${v.path}:${v.line}`).join(' · '));
+  } },
+
+  // ── Contrato de skin (mismo checker que tests/skins.test.mjs) ──────────────
+  { group: 'Skins', name: 'cada skin define el set completo de tokens pintables', fn: () => {
+    const failing = checkAllSkins();
+    assert(failing.length === 0, failing.map(f => `${f.name}: ${f.issues.join(' · ')}`).join(' | '));
   } },
 ];
 
