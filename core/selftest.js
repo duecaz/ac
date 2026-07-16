@@ -18,6 +18,8 @@ import { compileRoute, matchRoute } from './routing.js';
 import { emit, listen } from './events.js';
 import { acquire } from './lifecycle.js';
 import { normalizeCode, isPastDue, attemptsRemaining, assignmentGate } from './assignmentRules.js';
+import { checkAllTemplates } from './templateContract.js';
+import { scanNormsSource, BROWSER_SCAN_FILES } from './normsCheck.js';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 function assert(cond, msg) { if (!cond) throw new Error(msg); }
@@ -266,6 +268,34 @@ const TESTS = [
     assert(room.phase === 'ended', 'la partida no terminó');
     const order = room.leaderboard().map(r => `${r.name}:${r.score}`).join(',');
     eq(order, 'Ana:4,Bea:1,Caro:0', 'ranking final inesperado: ' + order);
+  } },
+
+  // ── Contrato de plantilla (mismo checker que tests/templateContract.test.mjs) ─
+  { group: 'Contrato', name: 'las plantillas registradas cumplen el contrato completo', fn: () => {
+    const templates = listTemplates();
+    assert(templates.length >= 12, `esperaba ≥12 plantillas, hay ${templates.length}`);
+    const failing = checkAllTemplates(templates);
+    assert(failing.length === 0, failing.map(f => `${f.name}: ${f.issues.join(' · ')}`).join(' | '));
+  } },
+
+  // ── Normas transversales sobre el DEPLOY (fetch de los fuentes servidos) ────
+  // Humo del despliegue: escanea los ficheros del manifest + los 3 de cada
+  // plantilla registrada. La autoridad exhaustiva (fs completo) es
+  // tests/norms.test.mjs; aquí verificamos que lo SERVIDO cumple las normas.
+  { group: 'Normas', name: 'RO directo / filtro PB a pelo / kernel puro — en los fuentes servidos', fn: async () => {
+    const templateFiles = listTemplates().flatMap(T =>
+      ['template.js', 'player.js', 'editor.js'].map(f => `templates/${T.meta.name}/${f}`));
+    const files = [...BROWSER_SCAN_FILES, ...templateFiles];
+    const violations = [];
+    await Promise.all(files.map(async (path) => {
+      try {
+        const r = await fetch(path, { cache: 'no-store' });
+        if (!r.ok) return;                    // p.ej. una plantilla sin editor.js propio
+        violations.push(...scanNormsSource(path, await r.text()));
+      } catch { /* offline / file:// — el check queda en manos de la suite Node */ }
+    }));
+    assert(violations.length === 0,
+      violations.map(v => `[${v.rule}] ${v.path}:${v.line}`).join(' · '));
   } },
 ];
 

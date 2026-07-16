@@ -34,4 +34,6 @@ console.log('\n▶ ballsort'); await import('./ballsort.test.mjs');
 console.log('\n▶ penDetector'); await import('./penDetector.test.mjs');
 console.log('\n▶ diagram'); await import('./diagram.test.mjs');
 console.log('\n▶ styles'); await import('./styles.test.mjs');
+console.log('\n▶ templateContract'); await import('./templateContract.test.mjs');
+console.log('\n▶ norms'); await import('./norms.test.mjs');
 console.log('\n✅ all suites passed');

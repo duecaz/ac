@@ -149,11 +149,27 @@ modo propias: VS/Equipos/Memoria usan el andamiaje común `views/modeSetup.js`.
 
 ## Content models reconocidos
 
-| `contentModel` | Schema | Templates típicos |
+Los REGISTRADOS viven en `kernel/content/models.js` (fuente única — el
+`contentModel` que declares DEBE estar ahí, lo exige el contrato):
+
+| `contentModel` | Schema | Templates que lo usan |
 |---|---|---|
-| `qa`     | `items[{question, options[], answer, points, image, audio}]` | quiz, true/false, type-the-answer |
-| `pairs`  | `pairs[{left, right, leftImage?, rightImage?}]` | match, memory, flip-tiles |
-| `groups` | `groups[{label, members[{text,image}]}]` | group sort, categorize |
-| `words`  | `words[{word, clue?, image?}]` | hangman, crossword, word search, anagram |
-| `entries`| `entries[]` | wheel, flashcards, random cards |
-| `diagram`| `image, labels[{x,y,text}]` | labelled diagram |
+| `qa`     | `items[{question, options[], answer, points, image, audio}]` | quiz, math |
+| `pairs`  | `pairs[{left, right, leftImage?, rightImage?}]` | match, memory |
+| `textCorrection` | `passages[{id, text, marks[{pos, kind}]}]` | tildes, comas |
+| `words`  | sopa: `words['GATO', …]` · crucigrama: `words[{word, clue, row, col, dir}]` | wordsearch, crossword |
+| `items`  | `items[{id, q, image?}]` | wheel, question-live |
+| `ballsort` | `{level, mode, random, items[{id, board, mode}]}` | ballsort |
+| `diagram`| `{image, pins[{id, label, x, y}]}` (x,y en 0..1) | diagram |
+| `entries`| `entries[]` (huérfano: sin plantilla hoy; Wheel migró a `items`) | — |
+
+## El contrato es EJECUTABLE
+
+Tu plantilla nueva queda cubierta automáticamente al registrarse:
+`node tests/templateContract.test.mjs` (y el panel `#/admin` → "Ejecutar tests",
+grupo *Contrato*) verifican meta completa (`instructions` obligatorio),
+`contentModel` registrado, `defaultContent` válido y jugable, scorer con forma
+`{correct, points}` y `migrateContent` idempotente. Si eso pasa y
+`tests/norms.test.mjs` + `tests/styles.test.mjs` están en verde (sin
+`ResizeObserver` directo, filtros PB por `pbFilter.js`, CSS relativo +
+tokens de skin → `docs/estilos-de-actividad.md`), la plantilla nace estándar.

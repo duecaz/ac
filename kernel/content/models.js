@@ -12,6 +12,7 @@
 import * as pairs from '../../core/contentModels/pairs.js';
 import * as entries from '../../core/contentModels/entries.js';
 import * as textCorrection from '../../core/contentModels/textCorrection.js';
+import * as diagram from '../../core/contentModels/diagram.js';
 
 /** Wrap a leaf validate (returns string[]) into a ValidationResult. */
 function wrap(leafValidate) {
@@ -40,6 +41,38 @@ export const MODELS = {
   pairs:          { name: 'pairs',          newEmpty: pairs.newEmpty,          validate: wrap(pairs.validate) },
   entries:        { name: 'entries',        newEmpty: entries.newEmpty,        validate: wrap(entries.validate) },
   textCorrection: { name: 'textCorrection', newEmpty: textCorrection.newEmpty, validate: wrap(textCorrection.validate) },
+  diagram:        { name: 'diagram',        newEmpty: diagram.newEmpty,        validate: wrap(diagram.validate) },
+  // Los tres de abajo no tienen módulo hoja en core/contentModels/ (sus formas
+  // viven en la plantilla); el contrato mínimo se define aquí. HUECO que destapó
+  // tests/templateContract.test.mjs: estas plantillas declaraban un contentModel
+  // NO registrado, así que switchOptions()/el contrato no podían validarlas.
+  items: {
+    name: 'items',   // Ruleta / Abre Cajas: [{ id, q, image? }]
+    newEmpty: () => ({ items: [] }),
+    validate(content) {
+      const errors = [];
+      if (!Array.isArray(content?.items)) errors.push('items must be an array');
+      return { ok: errors.length === 0, errors };
+    }
+  },
+  words: {
+    name: 'words',   // Sopa de Letras: ['GATO', …] · Crucigrama: [{ word, clue, row, col, dir }]
+    newEmpty: () => ({ words: [] }),
+    validate(content) {
+      const errors = [];
+      if (!Array.isArray(content?.words)) errors.push('words must be an array');
+      return { ok: errors.length === 0, errors };
+    }
+  },
+  ballsort: {
+    name: 'ballsort',   // { level, mode, random, items: [{ id, board, mode }] }
+    newEmpty: () => ({ level: 'classic', mode: 'moves', random: true, items: [] }),
+    validate(content) {
+      const errors = [];
+      if (!Array.isArray(content?.items)) errors.push('items must be an array');
+      return { ok: errors.length === 0, errors };
+    }
+  },
 };
 
 /** @param {string} name @returns {ContentModelContract|null} */

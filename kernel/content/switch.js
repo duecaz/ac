@@ -8,6 +8,7 @@
 
 import { getModel } from './models.js';
 import { canConvert, convert } from './convert.js';
+import { clock } from '../../core/clock.js';
 
 /** Find a template's declared contentModel from a list. */
 function modelOf(templateName, templates) {
@@ -74,6 +75,7 @@ export function applySwitch(activity, targetName, templates) {
     rules: target.meta.defaultRules ? target.meta.defaultRules() : (activity.rules || {}),
     scoring: target.meta.defaultScoring ? target.meta.defaultScoring() : (activity.scoring || {}),
     live: target.meta.defaultLive ? target.meta.defaultLive() : (activity.live || {}),
-    updatedAt: new Date().toISOString(),
+    // Reloj inyectable (core/clock.js): kernel/ debe ser determinista en tests.
+    updatedAt: new Date(clock.now()).toISOString(),
   };
 }

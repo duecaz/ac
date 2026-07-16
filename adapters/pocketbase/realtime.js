@@ -158,7 +158,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
 
     async findRoomByCode(code) {
       const res = await pbFetch(
-        `/api/collections/${COLL}/records?filter=(code='${encodeURIComponent(code.toUpperCase())}')`
+        `/api/collections/${COLL}/records?filter=${pbFilterParam(`code='${pbEscape(code.toUpperCase())}'`)}`
       );
       const rec = res?.items?.[0];
       if (!rec) return null;
@@ -208,7 +208,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
 
     async joinSession(code, nickname) {
       const res = await pbFetch(
-        `/api/collections/${COLL}/records?filter=(code='${encodeURIComponent(code.toUpperCase())}')`
+        `/api/collections/${COLL}/records?filter=${pbFilterParam(`code='${pbEscape(code.toUpperCase())}'`)}`
       );
       const rec = res?.items?.[0];
       if (!rec) throw new Error('Sala no encontrada');

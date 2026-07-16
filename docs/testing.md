@@ -72,6 +72,14 @@ testea **lógica pura** (sin DOM, sin red): motores, scorers, parsers, colas.
 | `assignments` | Reglas puras de Tareas + flujo del driver local. |
 | `penDetector` | Clasificación lápiz/dedo/borrador/palma por tamaño de contacto + derivación de umbrales de calibración. |
 | `styles` | Ratchet anti-regresión del CSS de juego: sin `font-size` congelada ni color pintable a pelo (regla → `docs/estilos-de-actividad.md`). `math`/`quiz` limpios; deuda actual en un BASELINE que no puede crecer. |
+| `templateContract` | El contrato de plantilla EJECUTABLE (`core/templateContract.js`): las 12 con meta completa (`instructions` obligatorio), `contentModel` registrado, `defaultContent` válido y jugable, scorer con forma `{correct, points}`, `migrateContent` idempotente, carpeta ↔ registro consistentes. Una plantilla NUEVA queda cubierta sola al registrarse. |
+| `norms` | Normas transversales de CLAUDE.md como CI (`core/normsCheck.js`): nunca `new ResizeObserver` directo, nunca `filter=` PB con `encodeURIComponent`, `kernel/` determinista (sin `Date.now()`). Recorre TODO el JS del repo. |
+
+> **Los dos checkers de arriba también corren en el panel `#/admin`** ("Ejecutar
+> tests", grupos *Contrato* y *Normas*): mismos módulos `core/templateContract.js`
+> y `core/normsCheck.js`, sin duplicar lógica. En el admin, Normas escanea por
+> `fetch` los fuentes SERVIDOS (manifest + plantillas del registro) — humo del
+> deploy; la autoridad exhaustiva es la suite Node.
 
 ### Añadir una suite
 1. Crea `tests/mifeature.test.mjs` con el patrón estándar:

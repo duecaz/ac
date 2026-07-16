@@ -16,6 +16,7 @@ import { GameEvents, emitGame } from './gameEvents.js';
 import { clock } from './clock.js';
 import { mountTcDraw } from './textCorrectionDraw.js';
 import { openPenCalibration } from './penCalibration.js';
+import { observeResize } from './observeResize.js';
 
 const HINTS = {
   tilde: 'Toca las vocales que llevan tilde.',
@@ -112,7 +113,6 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
 // (fullscreen, rotación). Búsqueda binaria del font-size que cabe en ancho y alto.
 // Devuelve una función para detener el observador (al congelar / cambiar de frase).
 function fitPassage(areaEl, passageEl) {
-  let raf = 0;
   const fit = () => {
     const availW = areaEl.clientWidth, availH = areaEl.clientHeight;
     if (!availW || !availH) return;
@@ -130,11 +130,11 @@ function fitPassage(areaEl, passageEl) {
     passageEl.style.fontSize = best + 'px';
     // El canvas de dibujo observa passageEl y recalcula sus zonas solo.
   };
-  const schedule = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(fit); };
-  const ro = new ResizeObserver(schedule);
-  ro.observe(areaEl);
-  schedule();
-  return () => { cancelAnimationFrame(raf); ro.disconnect(); };
+  // observeResize (rAF-debounced): fit muta font-size, que puede re-disparar al
+  // observer en el mismo frame — norma del proyecto, nunca RO directo en players.
+  const stopRo = observeResize(areaEl, fit);
+  requestAnimationFrame(fit);
+  return stopRo;
 }
 
 // Projector (host) view for LIVE: the passage big and read-only. In the reveal

@@ -64,6 +64,12 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
   muta layout — usar `observeResize()` (`core/observeResize.js`, rAF-debounced). Un RO
   directo dispara el aviso benigno "ResizeObserver loop…" que el boot-guard de los HTML
   trataba como crash (ya filtrado, pero el helper es la norma).
+- **Contrato y normas EJECUTABLES**: `tests/templateContract.test.mjs` (contrato completo de
+  plantilla: `instructions`, modelo registrado, scorer `{correct,points}`, migrate idempotente,
+  carpeta↔registro) y `tests/norms.test.mjs` (RO directo, filtros PB, kernel sin `Date.now()`).
+  Ambos corren también en el panel `#/admin` (grupos *Contrato* y *Normas*) vía los checkers
+  compartidos `core/templateContract.js` / `core/normsCheck.js`. Una plantilla nueva queda
+  cubierta sola al registrarse — no escribas estas reglas solo en un MD: si es norma, es test.
 - **Testeo**: mapa de suites + receta headless (Playwright) en `docs/testing.md`.
 
 ## Deuda técnica registrada
