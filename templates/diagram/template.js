@@ -7,6 +7,8 @@ import { renderDiagramPlayer } from './player.js';
 import { renderDiagramEditor } from './editor.js';
 import { newPin } from '../../core/contentModels/diagram.js';
 import { scoreDiagramSubmission } from './scorer.js';
+import { escapeHtml } from '../../core/html.js';
+import { emptyHtml } from '../../core/previewKit.js';
 
 // Imagen de ejemplo (una cara simple) como SVG inline → funciona sin subir nada.
 const SAMPLE_SVG =
@@ -50,6 +52,37 @@ export class DiagramTemplate extends BaseTemplate {
   static renderPlayer = renderDiagramPlayer;
   static renderEditor = renderDiagramEditor;
   static scoreSubmission = scoreDiagramSubmission;
+
+  // Preview de tarjeta: imagen central con sus pines (en %) y las etiquetas como
+  // pastillas con punto conector a los lados.
+  static previewHtml(act) {
+    const pins = (act.content?.pins || []).filter(p => p && String(p.label || '').trim());
+    const image = act.content?.image;
+    if (!image || !pins.length) return emptyHtml(act);
+    const labels = pins.slice(0, 6);
+    const half = Math.ceil(labels.length / 2);
+    const pill = (p, side) => `<div style="position:relative;display:flex;align-items:center;justify-content:center;
+        padding:12px 26px;border-radius:999px;border:3px solid #c7d2fe;background:#fff;font-weight:700;
+        font-size:1.3rem;color:#1f2937;box-shadow:0 3px 10px rgba(0,0,0,.06);white-space:nowrap;">
+      ${escapeHtml(p.label)}
+      <span style="position:absolute;${side === 'L' ? 'right' : 'left'}:-11px;width:20px;height:20px;border-radius:50%;
+        background:#94a3b8;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25);"></span></div>`;
+    const pinDot = (p) => `<span style="position:absolute;left:${(p.x * 100).toFixed(1)}%;top:${(p.y * 100).toFixed(1)}%;
+        transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:#fff;
+        border:6px solid #475569;box-sizing:border-box;box-shadow:0 1px 5px rgba(0,0,0,.4);"></span>`;
+    return `<div style="display:flex;height:100%;gap:26px;align-items:stretch;">
+      <div style="flex:0 0 auto;display:flex;flex-direction:column;gap:20px;justify-content:center;align-items:flex-start;">
+        ${labels.slice(0, half).map(p => pill(p, 'L')).join('')}</div>
+      <div style="flex:1 1 auto;display:flex;align-items:center;justify-content:center;min-width:0;">
+        <div style="position:relative;display:inline-block;line-height:0;">
+          <img src="${escapeHtml(image)}" style="max-width:100%;max-height:640px;display:block;border-radius:10px;" alt="">
+          ${pins.map(pinDot).join('')}
+        </div>
+      </div>
+      <div style="flex:0 0 auto;display:flex;flex-direction:column;gap:20px;justify-content:center;align-items:flex-end;">
+        ${labels.slice(half).map(p => pill(p, 'R')).join('')}</div>
+    </div>`;
+  }
 
   static migrateContent(content) { return content; }
 }

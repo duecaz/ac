@@ -31,6 +31,10 @@ export function checkTemplateContract(T) {
   if (!String(m.instructions || '').trim()) issues.push('meta.instructions vacío (obligatorio: lo muestra la pantalla de inicio)');
   if (!Number.isInteger(m.templateVersion) || m.templateVersion < 1) issues.push(`meta.templateVersion inválido: ${m.templateVersion}`);
   if (!m.modes || typeof m.modes !== 'object') issues.push('meta.modes ausente');
+  // Preview de tarjeta obligatorio: cada plantilla declara su `previewHtml(act)`
+  // → no hay switch central que olvidar y la miniatura no se desfasa del juego
+  // (vive en la propia plantilla). Ver core/activityThumb.js / core/previewKit.js.
+  if (typeof T.previewHtml !== 'function') issues.push('falta static previewHtml(act) (preview de tarjeta del home)');
 
   // ── modelo de contenido registrado + defaultContent válido ────────────────
   const model = getModel(m.contentModel);

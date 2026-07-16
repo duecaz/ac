@@ -4,6 +4,8 @@ import { renderMathEditor } from './editor.js';
 import { renderKeypadRound } from '../../core/roundRender.js';
 import { scoreMathSubmission } from './scorer.js';
 import { adoptForMath } from '../../kernel/content/qaAdapt.js';
+import { escapeHtml } from '../../core/html.js';
+import { headHtml, emptyHtml } from '../../core/previewKit.js';
 
 export class MathTemplate extends BaseTemplate {
   static meta = {
@@ -32,6 +34,26 @@ export class MathTemplate extends BaseTemplate {
   static renderPlayer = renderMathPlayer;
   static renderEditor = renderMathEditor;
   static scoreSubmission = scoreMathSubmission;
+
+  // Preview de tarjeta: la operación + teclado numérico (mismas clases del player).
+  static previewHtml(act) {
+    const items = act.content?.items || [];
+    const it = items[0];
+    if (!it) return emptyHtml(act);
+    return `<div class="ww-player ww-math">
+      ${headHtml(1, items.length)}
+      <div class="ww-math-round"><div class="ww-keypad-round">
+        <div class="ww-keypad-q">${escapeHtml(it.question || '')} <span class="ww-keypad-eq">=</span></div>
+        <div class="ww-keypad-display">0</div>
+        <div class="ww-keypad">
+          ${[1,2,3,4,5,6,7,8,9].map(n => `<button class="btn ww-key">${n}</button>`).join('')}
+          <button class="btn ww-key ww-key-fn"><i class="bi bi-backspace"></i></button>
+          <button class="btn ww-key">0</button>
+          <button class="btn ww-key ww-key-ok"><i class="bi bi-check-lg"></i></button>
+        </div>
+      </div></div>
+    </div>`;
+  }
   static getRoundPayload(activity, ctx) { const it = activity.content.items[ctx.itemIndex]; return it ? { question: it.question } : null; }
   static renderRound(root, payload, opts) { return renderKeypadRound(root, payload, opts); }
   static vsCanRetry = true;

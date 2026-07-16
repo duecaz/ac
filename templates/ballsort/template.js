@@ -129,4 +129,30 @@ export class BallsortTemplate extends BaseTemplate {
       },
     });
   }
+
+  // Preview de tarjeta: el tablero congelado — tubos con sus bolas de color, la
+  // primera pantalla del juego. Estilos inline (sin depender del CSS scoped).
+  static previewHtml(act) {
+    const board = act.content?.items?.[0]?.board;
+    if (!board?.tubes?.length) {
+      return `<div class="ww-player" style="display:flex;align-items:center;justify-content:center">
+        <h2 class="text-center">${escapeHtml(act.title || 'Ordena las Pelotas')}</h2></div>`;
+    }
+    const cap = board.tubeCapacity || 7;
+    const TUBE = 68, BALL = 54, GAP = 4;
+    const ball = (color) => {
+      const base = `width:${BALL}px;height:${BALL}px;border-radius:50%;margin:0 auto;box-sizing:border-box;`;
+      if (!color)            return `<div style="${base}background:transparent;border:1px dashed #3a4356"></div>`;
+      if (color === 'white') return `<div style="${base}background:#fff;border:2px solid #000"></div>`;
+      return `<div style="${base}background:${color}"></div>`;
+    };
+    const tubes = board.tubes.map(tube => {
+      const slots = Array.from({ length: cap }, (_, i) => ball(tube[i])).join('');
+      return `<div style="width:${TUBE}px;background:#2a3140;border:2px solid #3a4356;border-radius:0 0 24px 24px;display:flex;flex-direction:column-reverse;padding:4px;gap:${GAP}px;box-sizing:border-box">${slots}</div>`;
+    }).join('');
+    return `<div class="ww-player" style="display:flex;flex-direction:column;height:100%;align-items:center;justify-content:center;gap:1.4rem">
+      <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;align-items:flex-end">${tubes}</div>
+      <div class="fs-3 fw-semibold text-center">${escapeHtml(act.title || 'Ordena las Pelotas')}</div>
+    </div>`;
+  }
 }

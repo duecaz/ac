@@ -22,6 +22,29 @@ const HINTS = {
   tilde: 'Toca las vocales que llevan tilde.',
   coma: 'Toca el hueco donde falta una coma.'
 };
+
+// Preview de tarjeta (miniatura del home) para Tildes/Comas. Reutiliza el MISMO
+// `passageHtml` del juego → la miniatura no puede desincronizarse del player.
+// La comparten templates/tildes/template.js y templates/comas/template.js.
+export function textCorrectionPreviewHtml(act, kind) {
+  const passages = (act.content?.passages || []).filter(p => p && p.text);
+  if (!passages.length) {
+    return `<div class="ww-player" style="display:flex;align-items:center;justify-content:center">
+      <h2 class="text-center">${escapeHtml(act.title || 'Actividad')}</h2></div>`;
+  }
+  return `<div class="tc-solo">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <span class="badge bg-secondary">Frase 1 / ${passages.length}</span>
+      <span class="badge bg-primary">★ 0</span></div>
+    <h4 class="text-center mb-1">${escapeHtml(act.title || '')}</h4>
+    <div class="tc-round">
+      <div class="tc-passage">${passageHtml(passages[0].text, kind)}</div>
+      <div class="text-center mt-3"><button type="button" class="btn btn-success btn-lg">
+        <i class="bi bi-check2-circle"></i> Listo</button></div>
+      <p class="tc-hint text-muted text-center mt-2">${HINTS[kind]}</p>
+    </div>
+  </div>`;
+}
 // Build the inline passage. `reveal` (optional) bakes correct/wrong/missed
 // classes for a read-only answer review; otherwise targets are interactive.
 // Exportada: el preview de tarjeta (core/activityThumb.js) reutiliza ESTE mismo

@@ -72,7 +72,7 @@ testea **lógica pura** (sin DOM, sin red): motores, scorers, parsers, colas.
 | `assignments` | Reglas puras de Tareas + flujo del driver local. |
 | `penDetector` | Clasificación lápiz/dedo/borrador/palma por tamaño de contacto + derivación de umbrales de calibración. |
 | `styles` | Ratchet anti-regresión del CSS de juego: sin `font-size` congelada ni color pintable a pelo (regla → `docs/estilos-de-actividad.md`). `math`/`quiz` limpios; deuda actual en un BASELINE que no puede crecer. |
-| `templateContract` | El contrato de plantilla EJECUTABLE (`core/templateContract.js`): las 12 con meta completa (`instructions` obligatorio), `contentModel` registrado, `defaultContent` válido y jugable, scorer con forma `{correct, points}`, `migrateContent` idempotente, carpeta ↔ registro consistentes. Una plantilla NUEVA queda cubierta sola al registrarse. |
+| `templateContract` | El contrato de plantilla EJECUTABLE (`core/templateContract.js`): las 12 con meta completa (`instructions` obligatorio), `contentModel` registrado, `defaultContent` válido y jugable, scorer con forma `{correct, points}`, `migrateContent` idempotente, `previewHtml` (miniatura del home) y carpeta ↔ registro consistentes. Una plantilla NUEVA queda cubierta sola al registrarse. |
 | `norms` | Normas transversales de CLAUDE.md como CI (`core/normsCheck.js`): nunca `new ResizeObserver` directo, nunca `filter=` PB con `encodeURIComponent`, `kernel/` determinista (sin `Date.now()`). Recorre TODO el JS del repo. |
 | `skins` | Contrato de skin (`core/skinContract.js`): cada skin define el set COMPLETO de tokens pintables (los del skin `default`), sin apoyarse en el fallback silencioso de `theme.css :root`. Cazó 5 skins que no declaraban `--ww-success/danger/warning`. |
 

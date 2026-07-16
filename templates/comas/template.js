@@ -6,7 +6,7 @@ import { renderComasPlayer } from './player.js';
 import { renderComasEditor } from './editor.js';
 import { newPassage } from '../../core/contentModels/textCorrection.js';
 import { parseTextWithCommas } from '../../core/textMarks.js';
-import { renderTextCorrectionRound, renderTextCorrectionHost } from '../../core/textCorrectionRound.js';
+import { renderTextCorrectionRound, renderTextCorrectionHost, textCorrectionPreviewHtml } from '../../core/textCorrectionRound.js';
 import { scoreComasSubmission } from './scorer.js';
 
 export class ComasTemplate extends BaseTemplate {
@@ -39,6 +39,10 @@ export class ComasTemplate extends BaseTemplate {
   static renderPlayer = renderComasPlayer;
   static renderEditor = renderComasEditor;
   static scoreSubmission = scoreComasSubmission;
+
+  // Preview de tarjeta: reusa el markup real del player (passageHtml) vía el
+  // helper compartido → la miniatura no puede desincronizarse del juego.
+  static previewHtml(act) { return textCorrectionPreviewHtml(act, 'coma'); }
 
   // One passage = one round. The answer key (marks) is stripped from the payload.
   static getRoundPayload(activity, ctx) {

@@ -2,6 +2,8 @@
 import { BaseTemplate } from '../base.js';
 import { renderWheelPlayer } from './player.js';
 import { renderWheelEditor } from './editor.js';
+import { wheelSvg } from './render.js';
+import { escapeHtml } from '../../core/html.js';
 
 export class WheelTemplate extends BaseTemplate {
   static meta = {
@@ -44,4 +46,20 @@ export class WheelTemplate extends BaseTemplate {
     return activity.content?.items?.[itemIndex] ?? null;
   }
   static scoreSubmission() { return { correct: false, points: 0 }; }
+
+  // Preview de tarjeta: la ruleta con sus entradas (reusa el mismo wheelSvg del
+  // player). Sin entradas → porciones numeradas para que siempre parezca ruleta.
+  static previewHtml(act) {
+    const items = act.content?.entries || act.content?.items || act.content?.words || [];
+    let labels = items.map(i => typeof i === 'string' ? i : (i.q || i.text || i.label || i.question || ''))
+      .filter(Boolean).slice(0, 8);
+    if (!labels.length) {
+      const n = Math.min(8, Math.max(4, items.length || 4));
+      labels = Array.from({ length: n }, (_, i) => String(i + 1));
+    }
+    return `<div class="ww-player" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem">
+      ${wheelSvg(labels, { size: 520 })}
+      <div class="fs-4 fw-semibold text-center">${escapeHtml(act.title || 'Ruleta')}</div>
+    </div>`;
+  }
 }

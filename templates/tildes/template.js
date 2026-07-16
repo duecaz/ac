@@ -5,7 +5,7 @@ import { renderTildesPlayer } from './player.js';
 import { renderTildesEditor } from './editor.js';
 import { newPassage } from '../../core/contentModels/textCorrection.js';
 import { parseAccentedText } from '../../core/textMarks.js';
-import { renderTextCorrectionRound, renderTextCorrectionHost } from '../../core/textCorrectionRound.js';
+import { renderTextCorrectionRound, renderTextCorrectionHost, textCorrectionPreviewHtml } from '../../core/textCorrectionRound.js';
 import { scoreTildesSubmission } from './scorer.js';
 
 export class TildesTemplate extends BaseTemplate {
@@ -38,6 +38,10 @@ export class TildesTemplate extends BaseTemplate {
   static renderPlayer = renderTildesPlayer;
   static renderEditor = renderTildesEditor;
   static scoreSubmission = scoreTildesSubmission;
+
+  // Preview de tarjeta: reusa el markup real del player (passageHtml) vía el
+  // helper compartido → la miniatura no puede desincronizarse del juego.
+  static previewHtml(act) { return textCorrectionPreviewHtml(act, 'tilde'); }
 
   // One passage = one round. The answer key (marks) is stripped from the payload.
   static getRoundPayload(activity, ctx) {
