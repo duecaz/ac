@@ -20,12 +20,13 @@
 // Resolving the corrected text from text+marks is done in core/textMarks.js
 // so editor preview and player share the logic.
 
+import { rid } from '../ids.js';
 export function newEmpty() {
-  return { passages: [{ id: rid(), text: '', marks: [] }] };
+  return { passages: [{ id: rid('ps_'), text: '', marks: [] }] };
 }
 
 export function newPassage() {
-  return { id: rid(), text: '', marks: [] };
+  return { id: rid('ps_'), text: '', marks: [] };
 }
 
 export function validate(content) {
@@ -34,4 +35,3 @@ export function validate(content) {
   return errs;
 }
 
-function rid() { return 'p_' + Math.random().toString(36).slice(2, 8); }

@@ -5,16 +5,22 @@
 // model can't represent.
 //
 // Conversion graph (high-confidence only):
-//   qa    → pairs     (question→left, answer→right)        Quiz → Match/Memory
-//   qa    → entries   (question→entry)                     Quiz → Wheel
-//   pairs → qa        (left→question, right→answer+option) Match → Quiz
-//   pairs → entries   (left & right → entries)             Match → Wheel
+//   qa    → pairs   (question→left, answer→right)        Quiz/Math → Match/Memory
+//   qa    → items   (question→q, conserva image)         Quiz/Math → Ruleta/Abre Cajas
+//   pairs → qa      (left→question, right→answer+option) Match → Quiz
+//   pairs → items   (left y right → entradas)            Match → Ruleta/Abre Cajas
+//
+// REGLA: todo conversor apunta a un modelo usado por ≥1 plantilla VIVA (lo
+// verifica tests/content.test.mjs). Los antiguos `→ entries` se retiraron
+// cuando la Ruleta migró entries→items (templateVersion 2): apuntaban a un
+// modelo huérfano, así que Quiz→Ruleta dejó de ofrecerse EN SILENCIO — este
+// check existe para que eso no vuelva a pasar.
 //
 // textCorrection has no converters (its data is structurally unique) — switch
 // options simply won't offer cross-model targets for it. That's the graceful
 // path, not a bug.
+import { rid } from '../../core/ids.js';
 
-function rid(p) { return p + Math.random().toString(36).slice(2, 8); }
 const nonEmpty = (s) => String(s ?? '').trim() !== '';
 
 /** @type {Record<string, (content: Object) => (Object|null)>} */
@@ -27,10 +33,13 @@ const CONVERTERS = {
     return out.length ? { pairs: out } : null;
   },
 
-  'qa->entries'(content) {
+  // Ruleta / Abre Cajas: ítems {id, q, image}. Se conserva la imagen del qa.
+  'qa->items'(content) {
     const items = Array.isArray(content?.items) ? content.items : [];
-    const out = items.map(it => it.question).filter(nonEmpty).map(String);
-    return out.length ? { entries: out } : null;
+    const out = items
+      .filter(it => nonEmpty(it.question))
+      .map(it => ({ id: rid('it_'), q: String(it.question), image: it.image ?? null }));
+    return out.length ? { items: out } : null;
   },
 
   'pairs->qa'(content) {
@@ -47,12 +56,19 @@ const CONVERTERS = {
     return { items };
   },
 
-  'pairs->entries'(content) {
+  // Cada lado del par se vuelve una entrada de la ruleta (conserva su imagen).
+  'pairs->items'(content) {
     const ps = Array.isArray(content?.pairs) ? content.pairs : [];
-    const out = ps.flatMap(p => [p.left, p.right]).filter(nonEmpty).map(String);
-    return out.length ? { entries: out } : null;
+    const out = ps.flatMap(p => [
+      nonEmpty(p.left) ? { id: rid('it_'), q: String(p.left), image: p.leftImage ?? p.image ?? null } : null,
+      nonEmpty(p.right) ? { id: rid('it_'), q: String(p.right), image: p.rightImage ?? null } : null,
+    ]).filter(Boolean);
+    return out.length ? { items: out } : null;
   },
 };
+
+/** Claves 'from->to' del grafo — para el check de "modelos vivos" del test. */
+export function converterKeys() { return Object.keys(CONVERTERS); }
 
 /** @returns {boolean} */
 export function canConvert(fromModel, toModel) {

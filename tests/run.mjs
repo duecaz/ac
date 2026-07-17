@@ -37,4 +37,5 @@ console.log('\n▶ styles'); await import('./styles.test.mjs');
 console.log('\n▶ templateContract'); await import('./templateContract.test.mjs');
 console.log('\n▶ norms'); await import('./norms.test.mjs');
 console.log('\n▶ skins'); await import('./skins.test.mjs');
+console.log('\n▶ newTemplate'); await import('./newTemplate.test.mjs');
 console.log('\n✅ all suites passed');

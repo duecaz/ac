@@ -13,6 +13,7 @@ import * as pairs from '../../core/contentModels/pairs.js';
 import * as entries from '../../core/contentModels/entries.js';
 import * as textCorrection from '../../core/contentModels/textCorrection.js';
 import * as diagram from '../../core/contentModels/diagram.js';
+import { rid } from '../../core/ids.js';
 
 /** Wrap a leaf validate (returns string[]) into a ValidationResult. */
 function wrap(leafValidate) {
@@ -23,7 +24,6 @@ function wrap(leafValidate) {
   };
 }
 
-function rid(p) { return p + Math.random().toString(36).slice(2, 8); }
 
 /** @type {Record<string, ContentModelContract>} */
 export const MODELS = {

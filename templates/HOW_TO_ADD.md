@@ -2,6 +2,25 @@
 
 Cada plantilla vive en su carpeta `templates/<name>/` y es **autocontenida**: clase, player, editor, scorer (si aplica). Para añadirla, no se toca el core.
 
+## 0. Atajo: el GENERADOR (recomendado)
+
+```bash
+node tools/new-template.mjs globos --label "Explota Globos" --icon bi-balloon \
+     --color danger --model qa --shell sequential [--vs] [--live] [--dry-run]
+```
+
+Crea la carpeta completa (template/player/editor/scorer/index + `styles/<name>.css`
+tokenizado), la registra en `core/registerTemplates.js` y **nace cumpliendo el
+contrato** (lo garantiza `tests/newTemplate.test.mjs`, que genera en un scratch y
+corre los checkers reales). Por defecto la plantilla es SOLO-Individual: `--vs`
+añade la ronda (VS/Equipos-auto) y `--live` declara En vivo — así una mecánica a
+medio hacer nunca aparece en modos multijugador. Al terminar imprime los pasos
+manuales (lista GAME de estilos, `<link>` del CSS, TODOs, docs).
+
+Diagnóstico de una plantilla existente: `node tools/check-template.mjs [name]`.
+
+Las secciones de abajo explican lo que el generador emite, por si lo haces a mano.
+
 ## 1. Crea la carpeta y los 4 archivos mínimos
 
 ```
@@ -27,7 +46,7 @@ export class MyTemplate extends BaseTemplate {
     label: 'Mi Plantilla',
     icon: 'bi-star-fill',         // bootstrap-icons
     color: 'warning',             // bootstrap color
-    contentModel: 'qa',           // 'qa' | 'pairs' | 'groups' | 'words' | 'entries' | 'diagram'
+    contentModel: 'qa',           // uno de los REGISTRADOS en kernel/content/models.js (tabla abajo)
     templateVersion: 1,
     instructions: 'Frase corta de cómo se juega.', // se muestra en la pantalla de inicio
     panelFit: 'fill',             // maquetación en el panel VS: 'fill' (defecto, el
@@ -87,15 +106,17 @@ registerTemplate(MyTemplate);
 export { MyTemplate };
 ```
 
-## 4. Importa desde los mains
+## 4. Regístrala en el punto ÚNICO
 
-En `main.teacher.js` **y** `main.student.js`:
+Los mains NO importan plantillas sueltas: los tres (`main.teacher/student/embed`)
+importan `core/registerTemplates.js`, el punto único. Añade ahí tu línea:
 
 ```js
-import './templates/miplantilla/index.js';
+import '../templates/miplantilla/index.js';
 ```
 
-(En `main.student.js` solo si la plantilla soporta `solo`/`async`; si solo es `live`, basta con teacher.)
+(El generador lo hace solo. Si olvidas este paso, `tests/templateContract.test.mjs`
+falla con "carpeta existe pero NO está registrada".)
 
 ## 5. (Si soporta LIVE / VS / Equipos-auto) — añade el scorer
 

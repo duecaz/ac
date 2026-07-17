@@ -7,8 +7,8 @@
 // A `pairs` activity becomes a deck: each pair → two cards (left + right) sharing
 // a pairId; a match is two face-up cards with the same pairId.
 
-function rid(p) { return p + Math.random().toString(36).slice(2, 8); }
 
+import { rid } from '../../core/ids.js';
 export function createMemoryGame(activity, opts = {}) {
   const pairs = (activity?.content?.pairs || []).filter(p => p?.left && p?.right);
 

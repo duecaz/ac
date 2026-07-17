@@ -45,12 +45,12 @@ Reglas de compatibilidad (derivadas, no configuradas — `core/modes.js`):
 Conversores en `kernel/content/convert.js` (`adoptContent` opcional por plantilla):
 
 ```
-qa ⇄ pairs        qa ──▶ entries        pairs ──▶ entries
+qa ⇄ pairs        qa ──▶ items        pairs ──▶ items
 ```
 
 | Tienes contenido… | Puedes jugarlo como… |
 |---|---|
-| **qa** (quiz/math) | Quiz, Operaciones, Emparejar/Memoria (qa→pairs), Ruleta (qa→entries) |
+| **qa** (quiz/math) | Quiz, Operaciones, Emparejar/Memoria (qa→pairs), Ruleta/Abre Cajas (qa→items) |
 | **pairs** (match/memory) | Emparejar, Memoria, Quiz (pairs→qa) |
 | **words** (wordsearch/crossword) | Sopa de Letras, Crucigrama *(sin conversor entre sí aún — deuda)* |
 | **textCorrection** (tildes/comas) | Tildes, Comas *(sin conversor entre sí aún — deuda)* |

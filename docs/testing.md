@@ -75,6 +75,7 @@ testea **lógica pura** (sin DOM, sin red): motores, scorers, parsers, colas.
 | `templateContract` | El contrato de plantilla EJECUTABLE (`core/templateContract.js`): las 12 con meta completa (`instructions` obligatorio), `contentModel` registrado, `defaultContent` válido y jugable, scorer con forma `{correct, points}`, `migrateContent` idempotente, `previewHtml` (miniatura del home) y carpeta ↔ registro consistentes. Una plantilla NUEVA queda cubierta sola al registrarse. |
 | `norms` | Normas transversales de CLAUDE.md como CI (`core/normsCheck.js`): nunca `new ResizeObserver` directo, nunca `filter=` PB con `encodeURIComponent`, `kernel/` determinista (sin `Date.now()`). Recorre TODO el JS del repo. |
 | `skins` | Contrato de skin (`core/skinContract.js`): cada skin define el set COMPLETO de tokens pintables (los del skin `default`), sin apoyarse en el fallback silencioso de `theme.css :root`. Cazó 5 skins que no declaraban `--ww-success/danger/warning`. |
+| `newTemplate` | Self-test del generador (`tools/new-template.mjs`): genera en un scratch y corre los checkers reales (contrato, normas, CSS) sobre lo emitido — si el contrato crece y el esqueleto se queda viejo, falla aquí. También guardas del CLI (no pisa carpetas, `--out` no muta el repo). |
 
 > **Los tres checkers de arriba también corren en el panel `#/admin`** ("Ejecutar
 > tests", grupos *Contrato*, *Normas* y *Skins*): mismos módulos

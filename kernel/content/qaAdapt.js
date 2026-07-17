@@ -13,7 +13,7 @@
 //                        docente lo ajusta.)
 // Puro: sin DOM, testeable en Node (tests/qaAdapt.test.mjs).
 
-const rid = (p) => p + Math.random().toString(36).slice(2, 8);
+import { rid } from '../../core/ids.js';
 const str = (v) => (v == null ? '' : String(v));
 const firstAnswer = (a) => (Array.isArray(a) ? a[0] : a);
 

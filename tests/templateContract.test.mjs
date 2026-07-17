@@ -39,6 +39,18 @@ ok('las plantillas cumplen el contrato completo (meta, modelo, scorer {correct,p
 assert.deepStrictEqual(checkAllTemplates(templates), [], 'checkAllTemplates debe devolver vacío');
 ok('checkAllTemplates (runner del panel admin) coincide: 0 incumplimientos');
 
+// REGLA del grafo de conversión: todo conversor une modelos usados por ≥1
+// plantilla VIVA. (Habría cazado el bug real: qa→entries quedó huérfano cuando
+// la Ruleta migró a items y Quiz→Ruleta dejó de ofrecerse EN SILENCIO.)
+{
+  const { converterKeys } = await import('../kernel/content/convert.js');
+  const liveModels = new Set(templates.map(T => T.meta.contentModel));
+  const dead = converterKeys().flatMap(k => k.split('->')).filter(m => !liveModels.has(m));
+  assert.deepStrictEqual([...new Set(dead)], [],
+    `conversores hacia/desde modelos sin plantilla viva: ${dead.join(', ')}`);
+  ok('grafo de conversión: todos los conversores unen modelos con plantilla viva');
+}
+
 // El checker DETECTA de verdad (no es un stub): una plantilla rota debe fallar.
 const broken = {
   meta: {

@@ -72,6 +72,12 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
   *Skins*) vía los checkers compartidos `core/templateContract.js` / `core/normsCheck.js` /
   `core/skinContract.js`. Una plantilla o skin nuevo queda cubierto solo — no escribas estas
   reglas solo en un MD: si es norma, es test.
+- **Plantilla nueva = generador**: `node tools/new-template.mjs <name> --model qa [--vs] [--live]`
+  crea la carpeta completa cumpliendo el contrato (default: SOLO-Individual — una mecánica a
+  medias nunca aparece en VS/Equipos) y la registra. Diagnóstico: `tools/check-template.mjs`.
+  El esqueleto lo vigila `tests/newTemplate.test.mjs` (genera en scratch + checkers reales).
+  IDs SIEMPRE con `rid()` de `core/ids.js` (prefijos: `q_ p_ it_ w_ ps_ pin_`), nunca
+  `Math.random().toString(36)` a mano.
 - **Testeo**: mapa de suites + receta headless (Playwright) en `docs/testing.md`.
 
 ## Deuda técnica registrada

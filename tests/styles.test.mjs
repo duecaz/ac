@@ -16,6 +16,7 @@ import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { readdirSync } from 'node:fs';
 
 const STYLES = join(dirname(fileURLToPath(import.meta.url)), '..', 'styles');
 
@@ -23,6 +24,8 @@ const STYLES = join(dirname(fileURLToPath(import.meta.url)), '..', 'styles');
 // editor/player-frame/touch/soloAnim/live (chrome, no el ejercicio).
 const GAME = ['ballsort', 'crossword', 'diagram', 'match', 'math', 'memory',
   'question-live', 'quiz', 'textCorrection', 'vs', 'teams', 'wordsearch'];
+// Chrome/paletas explícitamente EXCLUIDOS del ratchet (no son "el juego").
+const EXCLUDED = ['backgrounds', 'editor', 'live', 'player', 'skins', 'soloAnim', 'theme', 'touch'];
 
 // Colores skin-independientes POR DISEÑO: no necesitan token.
 //  · neutros (texto sobre superficies de color)
@@ -104,6 +107,21 @@ for (const clean of ['math', 'quiz']) {
   assert.strictEqual(fonts.size + colors.size, 0, `${clean}.css debe seguir 100% relativo + tokenizado (ejemplar)`);
 }
 ok('math.css y quiz.css siguen limpios (0 fija / 0 color hardcodeado)');
+
+// COMPLETITUD: todo styles/*.css debe estar CLASIFICADO — en GAME (se escanea)
+// o en EXCLUDED (chrome/paleta, no juego). Sin esto, el CSS de una actividad
+// NUEVA escaparía del ratchet en silencio ("una actividad nueva debe nacer
+// limpia" solo se cumple si su CSS entra al escáner).
+{
+  const all = readdirSync(STYLES).filter(f => f.endsWith('.css')).map(f => f.replace(/\.css$/, ''));
+  const unclassified = all.filter(n => !GAME.includes(n) && !EXCLUDED.includes(n));
+  assert.deepStrictEqual(unclassified, [],
+    `styles/*.css sin clasificar: ${unclassified.join(', ')} — añádelo a GAME (CSS de juego, ` +
+    `se escanea) o a EXCLUDED (chrome/paleta) en tests/styles.test.mjs`);
+  const ghosts = [...GAME, ...EXCLUDED].filter(n => !all.includes(n));
+  assert.deepStrictEqual(ghosts, [], `listas apuntan a CSS inexistente: ${ghosts.join(', ')}`);
+  ok(`completitud: ${all.length} CSS clasificados (${GAME.length} juego · ${EXCLUDED.length} excluidos)`);
+}
 
 if (newViolations.length) {
   console.error('\n✗ Nuevas violaciones de estilo de actividad:\n  - ' + newViolations.join('\n  - '));

@@ -27,18 +27,27 @@ const qa = { items: [
   { id: 'q1', question: 'Capital de Perú', answer: 'Lima', options: ['Lima'] },
   { id: 'q2', question: '2+2', answer: '4', options: ['4'] },
 ] };
-assert.ok(canConvert('qa', 'pairs') && canConvert('qa', 'entries'));
+assert.ok(canConvert('qa', 'pairs') && canConvert('qa', 'items'));
 assert.ok(canConvert('qa', 'qa'), 'identity always convertible');
 assert.ok(!canConvert('textCorrection', 'qa'), 'textCorrection has no cross-model converter');
+// Retirados al quedar `entries` huérfano (la Ruleta migró a items): un conversor
+// hacia un modelo sin plantilla viva no se ofrece nunca — código muerto.
+assert.ok(!canConvert('qa', 'entries') && !canConvert('pairs', 'entries'), 'sin conversores a entries (huérfano)');
 
 const toPairs = convert('qa', 'pairs', qa);
 assert.deepStrictEqual(toPairs.pairs.map(p => [p.left, p.right]),
   [['Capital de Perú', 'Lima'], ['2+2', '4']]);
 ok('qa → pairs maps question/answer');
 
-const toEntries = convert('qa', 'entries', qa);
-assert.deepStrictEqual(toEntries.entries, ['Capital de Perú', '2+2']);
-ok('qa → entries maps questions');
+// qa → items (Ruleta/Abre Cajas): question→q, conserva la imagen.
+const toItems = convert('qa', 'items', { items: [
+  { id: 'q1', question: 'Capital de Perú', answer: 'Lima', options: ['Lima'], image: 'data:img' },
+  { id: 'q2', question: '2+2', answer: '4', options: ['4'] },
+] });
+assert.deepStrictEqual(toItems.items.map(i => [i.q, i.image]),
+  [['Capital de Perú', 'data:img'], ['2+2', null]]);
+assert.ok(toItems.items.every(i => i.id?.startsWith('it_')), 'ids con prefijo it_');
+ok('qa → items maps question→q y conserva image (Quiz → Ruleta restaurado)');
 
 const pairsContent = { pairs: [
   { id: 'p1', left: 'dog', right: 'perro' },
@@ -52,16 +61,21 @@ assert.ok(backToQa.items[0].options.includes('perro'), 'answer is among options'
 assert.ok(backToQa.items[0].options.length > 1, 'distractors added from other rights');
 ok('pairs → qa builds questions with distractors');
 
-assert.deepStrictEqual(convert('pairs', 'entries', pairsContent).entries,
+assert.deepStrictEqual(convert('pairs', 'items', pairsContent).items.map(i => i.q),
   ['dog', 'perro', 'cat', 'gato', 'sun', 'sol']);
-ok('pairs → entries flattens both sides');
+ok('pairs → items flattens both sides (Match → Ruleta restaurado)');
 
 // empty / degenerate input degrades to null
 assert.strictEqual(convert('qa', 'pairs', { items: [{ question: 'x', answer: '' }] }), null);
 ok('converter returns null when no valid content (graceful degradation)');
 
-assert.deepStrictEqual(convertibleTargets('qa').sort(), ['entries', 'pairs']);
+assert.deepStrictEqual(convertibleTargets('qa').sort(), ['items', 'pairs']);
 ok('convertibleTargets lists reachable models');
+
+// NOTA: el check "todo conversor une modelos con plantilla viva" vive en
+// tests/templateContract.test.mjs — necesita registrar las 12 plantillas, y
+// hacerlo AQUÍ contaminaba las suites que corren después en run.mjs (migrate()
+// empieza a aplicar el migrateContent real de cada plantilla registrada).
 
 // --- switch engine (with fake template registry) ---
 const T = (name, contentModel, extra = {}) => ({
@@ -71,7 +85,7 @@ const T = (name, contentModel, extra = {}) => ({
 });
 const templates = [
   T('quiz', 'qa'), T('match', 'pairs'), T('memory', 'pairs'),
-  T('wheel', 'entries'), T('tildes', 'textCorrection'),
+  T('wheel', 'items'), T('tildes', 'textCorrection'),
 ];
 
 const activity = { template: 'quiz', content: qa, rules: { timer: 99 } };
