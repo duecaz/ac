@@ -22,7 +22,7 @@ const STYLES = join(dirname(fileURLToPath(import.meta.url)), '..', 'styles');
 
 // CSS de juego (player). Se excluyen: theme/skins/backgrounds (definen paletas),
 // editor/player-frame/touch/soloAnim/live (chrome, no el ejercicio).
-const GAME = ['ballsort', 'crossword', 'diagram', 'match', 'math', 'memory',
+const GAME = ['ballsort', 'crossword', 'diagram', 'globos', 'match', 'math', 'memory',
   'question-live', 'quiz', 'textCorrection', 'vs', 'teams', 'wordsearch'];
 // Chrome/paletas explícitamente EXCLUIDOS del ratchet (no son "el juego").
 const EXCLUDED = ['backgrounds', 'editor', 'live', 'player', 'skins', 'soloAnim', 'theme', 'touch'];

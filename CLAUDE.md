@@ -46,7 +46,7 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
 ## Estándares transversales (no romper)
 - **Pantalla de inicio** (`views/startScreen.js`): todo modo Individual pasa por ella (título +
   instrucciones + ajustes + Iniciar→fullscreen). El ejercicio queda oculto hasta Iniciar.
-- **Registro de plantillas y arranque**: `core/registerTemplates.js` (las 12, punto único) +
+- **Registro de plantillas y arranque**: `core/registerTemplates.js` (las 13, punto único) +
   `core/boot.js` (sonidos/efectos al bus, versión, mute). Las 3 `main.*.js` NO repiten ese wiring.
 - **Gama baja** (`core/perf.js`): `ww-lite` en `<html>` si ≤4 núcleos o ≤2GB → sin bucles de
   animación en reposo (cuerda Lottie estática, marquesina arcade quieta). El VS debe ser fluido en

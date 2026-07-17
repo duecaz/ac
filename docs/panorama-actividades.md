@@ -5,7 +5,7 @@
 > Documentos hermanos: modelo de contenido JSON → `docs/ESTRUCTURA.md` ·
 > contrato de modos → `docs/modos-de-juego.md` · cómo se prueba → `docs/testing.md`.
 
-## 1. Las 12 actividades de un vistazo
+## 1. Las 13 actividades de un vistazo
 
 | Actividad | Modelo | Qué hace | `panelFit` | Solo | Tarea | En vivo | VS | Equipos |
 |---|---|---|---|:--:|:--:|:--:|:--:|:--:|
@@ -21,6 +21,7 @@
 | **Ruleta** (wheel) | `items` | Gira y cae en una entrada al azar | fill | ✅ | — | ✅ *(manual)* | ❌ | ❌ |
 | **Abre Cajas** (question-live) | `items` | El profe abre cajas; el alumno responde | fill | ✅ | — | ✅ *(manual)* | ❌ | ❌ |
 | **Etiqueta el diagrama** (diagram) | `diagram` | Arrastras etiquetas a pines sobre una imagen | fill | ✅ | ✅ | ❌ | ❌ | ❌ |
+| **Explota Globos** (globos) | `qa` | Tocas el globo con la respuesta correcta | fill | ✅ | ✅ | ❌ | ✅ | ✅ |
 
 Reglas de compatibilidad (derivadas, no configuradas — `core/modes.js`):
 - **VS / Equipos-auto** necesitan `scoreSubmission` + `renderRound` (+ ≥2 ítems, o 1 si es tablero).
@@ -39,6 +40,7 @@ Reglas de compatibilidad (derivadas, no configuradas — `core/modes.js`):
 - **Ordena las Pelotas** — puzzle de tubos; el progreso del tablero alimenta la cuerda del VS.
 - **Ruleta / Abre Cajas** — herramientas de aula en vivo; el profe controla, valida verbalmente.
 - **Etiqueta el diagrama** — imagen con pines a (x,y); arrastras cada etiqueta a su pin (motor de cuerdas compartido `core/connectRope.js`, el mismo de Emparejar). Editor: clic en la imagen coloca el pin.
+- **Explota Globos** — el caso "Wordwall" puro: MISMO contenido que Quiz (modelo `qa`, mismo editor y scorer), distinta mecánica — las opciones flotan como globos y tocas el correcto. Nació con `tools/new-template.mjs`.
 
 ## 3. Cambiar de formato conservando el contenido
 

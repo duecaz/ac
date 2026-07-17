@@ -1,0 +1,79 @@
+/* Explota Globos — estilos del PLAYER. Contrato (docs/estilos-de-actividad.md):
+   NADA con tamaño fijo (cq*/% o piso max()) y colores pintables por token
+   var(--ww-*) — los globos usan las formas del skin (--ww-shape-1..4). */
+
+.gl-play { display: flex; flex-direction: column; height: 100%; }
+.gl-q { flex: 0 0 auto; }
+.gl-media { flex: 0 0 auto; max-height: 30%; }
+
+/* Campo de globos: llena el resto; los globos se reparten a lo ancho y cada uno
+   sube un poco distinto (--gl-lift, puesto inline por índice — estable). */
+.gl-field {
+  flex: 1 1 auto; min-height: 0;
+  display: flex; align-items: flex-end; justify-content: space-evenly;
+  gap: 2cqw; padding: 2cqmin 1cqw 3cqmin;
+}
+.gl-balloon {
+  position: relative;
+  flex: 0 1 auto;
+  width: max(72px, 17cqmin);
+  aspect-ratio: 5 / 6;
+  margin-bottom: var(--gl-lift, 0cqh);       /* altura distinta por globo */
+  border: none; padding: 1cqmin;
+  border-radius: 50% 50% 48% 48% / 55% 55% 45% 45%;
+  color: #fff; font-weight: 800;
+  font-size: max(.72rem, 3.4cqmin);
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  cursor: pointer; touch-action: manipulation;
+  box-shadow: inset calc(max(72px, 17cqmin) / -12) calc(max(72px, 17cqmin) / -10) 0 rgba(0,0,0,.12);
+  transition: transform .12s;
+}
+.gl-balloon:hover { transform: scale(1.06); }
+.gl-text { overflow: hidden; max-height: 100%; overflow-wrap: break-word; }
+/* Cuerda del globo. */
+.gl-balloon::after {
+  content: ''; position: absolute; left: 50%; top: 99%;
+  width: max(1px, .3cqmin); height: 3.2cqmin;
+  background: rgba(0,0,0,.30);
+}
+/* Nudo. */
+.gl-balloon::before {
+  content: ''; position: absolute; left: 50%; top: calc(99% - .5cqmin);
+  transform: translateX(-50%);
+  border-left: 1cqmin solid transparent; border-right: 1cqmin solid transparent;
+  border-top: 1.4cqmin solid rgba(0,0,0,.18);
+}
+/* Colores por token de forma → los skins recolorean los globos. */
+.gl-c1 { background: var(--ww-shape-1); }
+.gl-c2 { background: var(--ww-shape-2); }
+.gl-c3 { background: var(--ww-shape-3); }
+.gl-c4 { background: var(--ww-shape-4); }
+
+/* Bamboleo en reposo — transform puro (compositor). APAGADO en gama baja. */
+@keyframes gl-bob {
+  0%, 100% { transform: translateY(0) rotate(calc(var(--gl-sway, 0) * 1.5deg)); }
+  50%      { transform: translateY(-1.8cqmin) rotate(calc(var(--gl-sway, 0) * -1.5deg)); }
+}
+.gl-balloon { animation: gl-bob 3.2s ease-in-out infinite; }
+.gl-balloon:nth-child(2n) { animation-duration: 3.9s; }
+.gl-balloon:nth-child(3n) { animation-delay: -1.3s; }
+html.ww-lite .gl-balloon { animation: none; }
+
+/* Explosión: escala + desvanecimiento; el color del veredicto por semántica. */
+@keyframes gl-burst {
+  40% { transform: scale(1.35); opacity: 1; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+.gl-balloon.gl-pop { animation: gl-burst .3s ease-out forwards; pointer-events: none; }
+.gl-balloon.gl-pop-ok  { background: #16a34a; }
+.gl-balloon.gl-pop-bad { background: #ef4444; }
+/* El globo correcto se revela con un aro verde (tras fallo o timeout). */
+.gl-balloon.gl-good { box-shadow: 0 0 0 max(3px, .8cqmin) #16a34a, inset -8px -10px 0 rgba(0,0,0,.12); }
+.gl-balloon:disabled { cursor: default; }
+
+/* Ronda VS/Equipos: mismo campo, cabecera compacta. */
+.gl-round { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.gl-round-q {
+  flex: 0 0 auto; text-align: center; font-weight: 700; margin: 0 0 1cqmin;
+  font-size: max(.8rem, 4cqmin); color: var(--ww-card-fg, var(--ww-fg));
+}
