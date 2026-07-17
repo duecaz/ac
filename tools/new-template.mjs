@@ -64,8 +64,8 @@ const DEMO = {
   ] },
   words: { words: ['SOL', 'LUNA', 'MAR'] },
   items: { items: [
-    { id: 'it_demo1', q: 'Entrada 1', image: null },
-    { id: 'it_demo2', q: 'Entrada 2', image: null },
+    { id: 'it_demo1', question: 'Entrada 1', image: null },
+    { id: 'it_demo2', question: 'Entrada 2', image: null },
   ] },
   textCorrection: { passages: [{ id: 'ps_demo1', text: 'Hola como estas', marks: [{ pos: 6, kind: 'tilde' }] }] },
   ballsort: { level: 'classic', mode: 'moves', random: true, items: [] },

@@ -2,9 +2,9 @@ import { BaseTemplate } from '../base.js';
 import { renderQuestionLiveEditor } from './editor.js';
 import { renderQuestionLivePlayer } from './player.js';
 import { wheelSvg } from '../wheel/render.js';
+import { newItem, migrateLegacyItems } from '../../core/contentModels/items.js';
 import { escapeHtml } from '../../core/html.js';
 
-function newId() { return 'q_' + Math.random().toString(36).slice(2, 8); }
 
 export class QuestionLiveTemplate extends BaseTemplate {
   static meta = {
@@ -13,7 +13,7 @@ export class QuestionLiveTemplate extends BaseTemplate {
     icon: 'bi-grid-3x3-gap-fill',
     color: 'warning',
     contentModel: 'items',
-    templateVersion: 1,
+    templateVersion: 2,   // v2: campo `q` → `question` (vocabulario reservado)
     instructions: 'Espera tu turno: cuando salga tu pregunta, respóndela como indique el docente.',
     aspectRatio: '4/3',
     modes: { solo: true, live: true, async: false, practice: false },
@@ -24,18 +24,19 @@ export class QuestionLiveTemplate extends BaseTemplate {
     defaultLive: () => ({}),
     defaultContent: () => ({
       items: [
-        { id: newId(), q: '¿Cuál es la capital de Francia?', image: null },
-        { id: newId(), q: '¿Cuánto es 8 × 7?', image: null },
-        { id: newId(), q: '¿Quién escribió el Quijote?', image: null },
-        { id: newId(), q: '¿Cuál es el río más largo del mundo?', image: null },
-        { id: newId(), q: '¿En qué año llegó Colón a América?', image: null },
-        { id: newId(), q: '¿Cuál es el planeta más grande del sistema solar?', image: null },
+        newItem('¿Cuál es la capital de Francia?'),
+        newItem('¿Cuánto es 8 × 7?'),
+        newItem('¿Quién escribió el Quijote?'),
+        newItem('¿Cuál es el río más largo del mundo?'),
+        newItem('¿En qué año llegó Colón a América?'),
+        newItem('¿Cuál es el planeta más grande del sistema solar?'),
       ]
     })
   };
   static renderPlayer = renderQuestionLivePlayer;
   static renderEditor = renderQuestionLiveEditor;
-  static migrateContent(content) { return content; }
+  // v1 usaba `q`; la hoja compartida lo migra a `question` (idempotente).
+  static migrateContent(content) { return migrateLegacyItems(content); }
 
   // Required by the registry for live-capable templates.
   // Question Live uses manual teacher scoring, so these are not called in game,

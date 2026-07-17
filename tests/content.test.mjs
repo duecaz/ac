@@ -44,10 +44,10 @@ const toItems = convert('qa', 'items', { items: [
   { id: 'q1', question: 'Capital de Perú', answer: 'Lima', options: ['Lima'], image: 'data:img' },
   { id: 'q2', question: '2+2', answer: '4', options: ['4'] },
 ] });
-assert.deepStrictEqual(toItems.items.map(i => [i.q, i.image]),
+assert.deepStrictEqual(toItems.items.map(i => [i.question, i.image]),
   [['Capital de Perú', 'data:img'], ['2+2', null]]);
 assert.ok(toItems.items.every(i => i.id?.startsWith('it_')), 'ids con prefijo it_');
-ok('qa → items maps question→q y conserva image (Quiz → Ruleta restaurado)');
+ok('qa → items conserva question e image (Quiz → Ruleta restaurado)');
 
 const pairsContent = { pairs: [
   { id: 'p1', left: 'dog', right: 'perro' },
@@ -61,7 +61,7 @@ assert.ok(backToQa.items[0].options.includes('perro'), 'answer is among options'
 assert.ok(backToQa.items[0].options.length > 1, 'distractors added from other rights');
 ok('pairs → qa builds questions with distractors');
 
-assert.deepStrictEqual(convert('pairs', 'items', pairsContent).items.map(i => i.q),
+assert.deepStrictEqual(convert('pairs', 'items', pairsContent).items.map(i => i.question),
   ['dog', 'perro', 'cat', 'gato', 'sun', 'sol']);
 ok('pairs → items flattens both sides (Match → Ruleta restaurado)');
 

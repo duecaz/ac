@@ -157,7 +157,7 @@ export async function renderPlay(rootSel, code) {
     const allItems = sessionItems(activity);
     const raw = allItems[idx];
     // Support both new {q, image} format and old flat-string entries format.
-    const label = typeof raw === 'string' ? raw : (raw?.q || '');
+    const label = typeof raw === 'string' ? raw : (raw?.question ?? raw?.q ?? '');   // ?? q: sesión en vuelo pre-migración
     // Image is NOT put in session state (data-URLs are heavy) — both host and
     // student already hold the full activity and read it locally by index.
     await setSessionState(session.id, {

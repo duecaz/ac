@@ -17,7 +17,7 @@ function clampDur(ms) {
 // Support both old flat-entries format and new items format.
 function getEntries(activity) {
   const c = activity.content || {};
-  if (Array.isArray(c.items)) return c.items.map(i => (typeof i === 'string' ? i : i.q) || '(vacío)');
+  if (Array.isArray(c.items)) return c.items.map(i => (typeof i === 'string' ? i : (i.question ?? i.q)) || '(vacío)');
   if (Array.isArray(c.entries)) return c.entries.map(e => String(e)).filter(e => e.trim()) || ['(vacío)'];
   return ['(vacío)'];
 }

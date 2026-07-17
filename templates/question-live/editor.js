@@ -3,6 +3,7 @@ import { on } from '../../core/events.js';
 import { itemControlsHtml, reorderArray } from '../../core/editorPrimitives.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 import { toast } from '../../core/toast.js';
+import { newItem } from '../../core/contentModels/items.js';
 
 // Images are stored INLINE as data-URLs inside the activity JSON (same approach
 // as the custom background). No external upload — works on PocketBase with no
@@ -31,10 +32,6 @@ export function renderQuestionLiveEditor(root, activity, onChange) {
   });
 }
 
-function newItem() {
-  return { id: 'q_' + Math.random().toString(36).slice(2, 8), q: '', image: null };
-}
-
 function imgTileHtml(url) {
   return `
     <input type="file" accept="image/*" class="d-none ql-img-file">
@@ -55,7 +52,7 @@ function contentHtml(a) {
         <div class="col-12 col-md-9">
           <div class="input-group">
             <span class="input-group-text fw-bold">${i + 1}</span>
-            <input class="form-control ql-q" data-i="${i}" placeholder="Escribe la pregunta aquí…" value="${escapeHtml(item.q || '')}">
+            <input class="form-control ql-q" data-i="${i}" placeholder="Escribe la pregunta aquí…" value="${escapeHtml(item.question ?? item.q ?? '')}">
             <span class="input-group-text p-0 border-0 ps-2 d-flex">${itemControlsHtml(i, a.content.items.length)}</span>
           </div>
         </div>
@@ -65,7 +62,7 @@ function contentHtml(a) {
 }
 
 function wireContent(root, a, ctx) {
-  on(root, 'input', '.ql-q', (e, el) => { a.content.items[+el.dataset.i].q = e.target.value; ctx.onChange(a); });
+  on(root, 'input', '.ql-q', (e, el) => { a.content.items[+el.dataset.i].question = e.target.value; ctx.onChange(a); });
   on(root, 'click', '.item-del', (_, b) => { a.content.items.splice(+b.dataset.i, 1); ctx.onChange(a); ctx.repaint(); });
   on(root, 'click', '.item-up', (_, b) => { reorderArray(a.content.items, +b.dataset.i, -1); ctx.onChange(a); ctx.repaint(); });
   on(root, 'click', '.item-down', (_, b) => { reorderArray(a.content.items, +b.dataset.i, +1); ctx.onChange(a); ctx.repaint(); });

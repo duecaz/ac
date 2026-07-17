@@ -3,6 +3,7 @@ import { BaseTemplate } from '../base.js';
 import { renderWheelPlayer } from './player.js';
 import { renderWheelEditor } from './editor.js';
 import { wheelSvg } from './render.js';
+import { migrateLegacyItems } from '../../core/contentModels/items.js';
 import { escapeHtml } from '../../core/html.js';
 
 export class WheelTemplate extends BaseTemplate {
@@ -12,7 +13,7 @@ export class WheelTemplate extends BaseTemplate {
     icon: 'bi-bullseye',
     color: 'success',
     contentModel: 'items',
-    templateVersion: 2,
+    templateVersion: 3,   // v3: campo `q` → `question` (vocabulario reservado)
     instructions: 'Gira la ruleta y responde la pregunta que toque.',
     aspectRatio: '1/1',
     modes: { solo: true, live: true, async: false, practice: true },
@@ -23,22 +24,17 @@ export class WheelTemplate extends BaseTemplate {
     defaultLive: () => ({}),
     defaultContent: () => ({
       items: [
-        { q: 'Opción 1', image: null },
-        { q: 'Opción 2', image: null },
-        { q: 'Opción 3', image: null },
-        { q: 'Opción 4', image: null },
+        { question: 'Opción 1', image: null },
+        { question: 'Opción 2', image: null },
+        { question: 'Opción 3', image: null },
+        { question: 'Opción 4', image: null },
       ]
     })
   };
   static renderPlayer = renderWheelPlayer;
   static renderEditor = renderWheelEditor;
-  static migrateContent(content) {
-    // Migrate old flat-entries format to items with q+image.
-    if (Array.isArray(content?.entries) && !Array.isArray(content?.items)) {
-      return { items: content.entries.map(e => ({ q: String(e), image: null })) };
-    }
-    return content;
-  }
+  // v1 entries planas y v2 `q` → forma actual {id, question, image} (hoja compartida).
+  static migrateContent(content) { return migrateLegacyItems(content); }
   // Required by the registry for live-capable templates.
   // Wheel Live uses manual teacher scoring, so these are not called in game,
   // but must exist to pass validation.
@@ -51,7 +47,7 @@ export class WheelTemplate extends BaseTemplate {
   // player). Sin entradas → porciones numeradas para que siempre parezca ruleta.
   static previewHtml(act) {
     const items = act.content?.entries || act.content?.items || act.content?.words || [];
-    let labels = items.map(i => typeof i === 'string' ? i : (i.q || i.text || i.label || i.question || ''))
+    let labels = items.map(i => typeof i === 'string' ? i : (i.question || i.q || i.text || i.label || ''))
       .filter(Boolean).slice(0, 8);
     if (!labels.length) {
       const n = Math.min(8, Math.max(4, items.length || 4));

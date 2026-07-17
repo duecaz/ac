@@ -4,6 +4,7 @@ import { on } from '../../core/events.js';
 import { itemControlsHtml, reorderArray } from '../../core/editorPrimitives.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 import { toast } from '../../core/toast.js';
+import { newItem, migrateLegacyItems } from '../../core/contentModels/items.js';
 
 const IMG_MAX_BYTES = 200 * 1024; // 200 KB — stored inline as data-URL
 
@@ -16,15 +17,11 @@ function readDataUrl(file) {
   });
 }
 
-function newItem() {
-  return { q: '', image: null };
-}
-
 export function renderWheelEditor(root, activity, onChange) {
   const a = activity;
   // Migrate old flat-entries format to items.
   if (Array.isArray(a.content?.entries) && !Array.isArray(a.content?.items)) {
-    a.content = { items: a.content.entries.map(e => ({ q: String(e), image: null })) };
+    a.content = migrateLegacyItems(a.content);
     onChange(a);
   }
   if (!Array.isArray(a.content?.items)) a.content = { items: [newItem(), newItem(), newItem(), newItem()] };
@@ -56,7 +53,7 @@ function contentHtml(a) {
         <div class="col-12 col-md-9">
           <div class="input-group">
             <span class="input-group-text fw-bold">${i + 1}</span>
-            <input class="form-control we-entry" data-i="${i}" placeholder="Opción ${i + 1}" value="${escapeHtml(item.q || '')}">
+            <input class="form-control we-entry" data-i="${i}" placeholder="Opción ${i + 1}" value="${escapeHtml(item.question ?? item.q ?? '')}">
             <span class="input-group-text p-0 border-0 ps-2 d-flex">${itemControlsHtml(i, a.content.items.length)}</span>
           </div>
         </div>
@@ -66,7 +63,7 @@ function contentHtml(a) {
 }
 
 function wireContent(root, a, ctx) {
-  on(root, 'input', '.we-entry', (e, el) => { a.content.items[+el.dataset.i].q = e.target.value; ctx.onChange(a); });
+  on(root, 'input', '.we-entry', (e, el) => { a.content.items[+el.dataset.i].question = e.target.value; ctx.onChange(a); });
   on(root, 'click', '.item-del', (_, b) => { a.content.items.splice(+b.dataset.i, 1); ctx.onChange(a); ctx.repaint(); });
   on(root, 'click', '.item-up', (_, b) => { reorderArray(a.content.items, +b.dataset.i, -1); ctx.onChange(a); ctx.repaint(); });
   on(root, 'click', '.item-down', (_, b) => { reorderArray(a.content.items, +b.dataset.i, +1); ctx.onChange(a); ctx.repaint(); });

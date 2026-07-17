@@ -13,6 +13,7 @@ import * as pairs from '../../core/contentModels/pairs.js';
 import * as entries from '../../core/contentModels/entries.js';
 import * as textCorrection from '../../core/contentModels/textCorrection.js';
 import * as diagram from '../../core/contentModels/diagram.js';
+import * as itemsModel from '../../core/contentModels/items.js';
 import { rid } from '../../core/ids.js';
 
 /** Wrap a leaf validate (returns string[]) into a ValidationResult. */
@@ -46,15 +47,10 @@ export const MODELS = {
   // viven en la plantilla); el contrato mínimo se define aquí. HUECO que destapó
   // tests/templateContract.test.mjs: estas plantillas declaraban un contentModel
   // NO registrado, así que switchOptions()/el contrato no podían validarlas.
-  items: {
-    name: 'items',   // Ruleta / Abre Cajas: [{ id, q, image? }]
-    newEmpty: () => ({ items: [] }),
-    validate(content) {
-      const errors = [];
-      if (!Array.isArray(content?.items)) errors.push('items must be an array');
-      return { ok: errors.length === 0, errors };
-    }
-  },
+  // Ruleta / Abre Cajas / futuras tarjetas: [{ id, question, image? }] — la hoja
+  // (core/contentModels/items.js) también aporta migrateLegacyItems (entries y
+  // el campo legado `q` → `question`).
+  items: { name: 'items', newEmpty: itemsModel.newEmpty, validate: wrap(itemsModel.validate) },
   words: {
     name: 'words',   // Sopa de Letras: ['GATO', …] · Crucigrama: [{ word, clue, row, col, dir }]
     newEmpty: () => ({ words: [] }),

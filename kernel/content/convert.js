@@ -6,7 +6,7 @@
 //
 // Conversion graph (high-confidence only):
 //   qa    → pairs   (question→left, answer→right)        Quiz/Math → Match/Memory
-//   qa    → items   (question→q, conserva image)         Quiz/Math → Ruleta/Abre Cajas
+//   qa    → items   (question→question, conserva image)  Quiz/Math → Ruleta/Abre Cajas
 //   pairs → qa      (left→question, right→answer+option) Match → Quiz
 //   pairs → items   (left y right → entradas)            Match → Ruleta/Abre Cajas
 //
@@ -38,7 +38,7 @@ const CONVERTERS = {
     const items = Array.isArray(content?.items) ? content.items : [];
     const out = items
       .filter(it => nonEmpty(it.question))
-      .map(it => ({ id: rid('it_'), q: String(it.question), image: it.image ?? null }));
+      .map(it => ({ id: rid('it_'), question: String(it.question), image: it.image ?? null }));
     return out.length ? { items: out } : null;
   },
 
@@ -60,8 +60,8 @@ const CONVERTERS = {
   'pairs->items'(content) {
     const ps = Array.isArray(content?.pairs) ? content.pairs : [];
     const out = ps.flatMap(p => [
-      nonEmpty(p.left) ? { id: rid('it_'), q: String(p.left), image: p.leftImage ?? p.image ?? null } : null,
-      nonEmpty(p.right) ? { id: rid('it_'), q: String(p.right), image: p.rightImage ?? null } : null,
+      nonEmpty(p.left) ? { id: rid('it_'), question: String(p.left), image: p.leftImage ?? p.image ?? null } : null,
+      nonEmpty(p.right) ? { id: rid('it_'), question: String(p.right), image: p.rightImage ?? null } : null,
     ]).filter(Boolean);
     return out.length ? { items: out } : null;
   },

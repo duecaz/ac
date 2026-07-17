@@ -14,7 +14,7 @@ const SPIN_DUR = 3500;
 
 function getItems(activity) {
   return sessionItems(activity).map(i =>
-    typeof i === 'string' ? { q: i, image: null } : { q: i?.q || '', image: i?.image || null }
+    typeof i === 'string' ? { question: i, image: null } : { question: i?.question ?? i?.q ?? '', image: i?.image || null }
   );
 }
 
@@ -57,7 +57,7 @@ function renderBoxes(rootSel, activity, opts = {}) {
             <div class="card-body">
               <small class="text-muted d-block mb-2">Caja ${openIdx + 1}</small>
               ${openItem.image ? `<img src="${escapeHtml(openItem.image)}" class="img-fluid rounded mb-3 d-block mx-auto" style="max-height:200px">` : ''}
-              <h4 class="card-title text-center">${escapeHtml(openItem.q || '')}</h4>
+              <h4 class="card-title text-center">${escapeHtml(openItem.question || '')}</h4>
               <div class="d-flex gap-2 justify-content-center mt-3">
                 <button class="btn btn-success" id="ab-done"><i class="bi bi-check2-circle"></i> Listo</button>
                 <button class="btn btn-outline-secondary" id="ab-close"><i class="bi bi-x-lg"></i> Cerrar</button>
@@ -105,7 +105,7 @@ function renderWheel(rootSel, activity, opts = {}) {
             <div class="card-body">
               <small class="text-muted d-block mb-2">Pregunta ${openIdx + 1}</small>
               ${item.image ? `<img src="${escapeHtml(item.image)}" class="img-fluid rounded mb-3 d-block mx-auto" style="max-height:200px">` : ''}
-              <h4 class="card-title text-center">${escapeHtml(item.q || '')}</h4>
+              <h4 class="card-title text-center">${escapeHtml(item.question || '')}</h4>
               <div class="d-flex gap-2 justify-content-center mt-3">
                 <button class="btn btn-success" id="ab-done"><i class="bi bi-check2-circle"></i> Listo</button>
                 <button class="btn btn-outline-secondary" id="ab-back"><i class="bi bi-arrow-repeat"></i> Volver</button>
