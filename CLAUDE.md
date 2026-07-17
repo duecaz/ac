@@ -18,6 +18,11 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
 ```
 `ACTIVIDAD2` es la rama que sirve GitHub Pages (estático).
 
+### 3. Entorno del usuario
+- El usuario trabaja en **Windows (PowerShell)** y tiene **GitHub CLI (`gh`) instalado y
+  autenticado**: para acciones sobre sus repos fuera del alcance de la sesión (p.ej.
+  `duecaz/ww-assets`), pásale los comandos `gh`/PS listos para pegar y él los ejecuta.
+
 ## Arquitectura (resumen)
 - Vanilla JS, ES modules, sin framework. Routing por hash.
 - Backend: **PocketBase** en `pb.lanube.uno` (Pi 5, Docker). **Solo PocketBase** — Supabase RETIRADO.
