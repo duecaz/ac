@@ -13,10 +13,13 @@ let _pack = {};
 const _cache = new Map();           // name -> HTMLAudioElement
 let _muted = lsGet('ww.muted') === '1';
 
-// Default pack on jsDelivr serving from the public repo duecaz/ww-assets.
-// Three CC0 files are mapped onto the six game events (some events share).
-// (We can move these to our own Supabase Storage bucket for production later.)
-const ASSET_BASE = 'https://cdn.jsdelivr.net/gh/duecaz/ww-assets@main/sounds';
+// Pack por defecto AUTOALOJADO: los 3 mp3 CC0 viven en `sounds/` DENTRO de este
+// repo (los sirve GitHub Pages junto a la app). Antes venían de jsDelivr
+// apuntando al repo duecaz/ww-assets — cuando ese repo se volvió PRIVADO, el CDN
+// dejó de servirlos y TODA la app enmudeció en silencio (los 404 de Audio no
+// avisan). Norma: los assets del juego van dentro del sistema, nunca en un CDN
+// externo. Ruta relativa a la PÁGINA (teacher/student/embed.html viven en la raíz).
+const ASSET_BASE = 'sounds';
 const DEFAULT_PACK = {
   lobby:   null,                          // intentionally silent
   tick:    `${ASSET_BASE}/click.mp3`,     // soft click for ticks/UI
