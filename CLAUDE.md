@@ -82,7 +82,8 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
   medias nunca aparece en VS/Equipos) y la registra. Diagnóstico: `tools/check-template.mjs`.
   El esqueleto lo vigila `tests/newTemplate.test.mjs` (genera en scratch + checkers reales).
   IDs SIEMPRE con `rid()` de `core/ids.js` (prefijos: `q_ p_ it_ w_ ps_ pin_`), nunca
-  `Math.random().toString(36)` a mano.
+  `Math.random().toString(36)` a mano. Mapa completo del sistema (crear/validar/jugar,
+  qué módulo interviene en cada momento) en **`docs/sistema-de-plantillas.md`**.
 - **Testeo**: mapa de suites + receta headless (Playwright) en `docs/testing.md`.
 
 ## Deuda técnica registrada
