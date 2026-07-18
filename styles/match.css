@@ -1,37 +1,13 @@
-/* Match (Emparejar) — rope-drawing two-column layout */
+/* Match (Emparejar) — dos rieles de tarjetas unidas con cuerdas, sobre el ANDAMIO
+   de regiones (styles/scaffold.css): columnas laterales (ancho) ↔ filas arriba/
+   abajo (alto), así en móvil vertical las tarjetas se agrandan. El corredor central
+   (.ww-match-gap = ww-stage vacío) es por donde cruzan las cuerdas. El tamaño de
+   tarjeta 16/10 lo calcula el player (fitLayout, consciente de la orientación).
+   El scaffold aporta la columna raíz, las barras y el reflujo del field. */
+.ww-match-col { gap: 8px; overflow: visible; }
+.ww-match-gap { flex: 1 1 auto; min-width: 6cqmin; min-height: 6cqmin; }
+.ww-match-field { touch-action: none; }   /* el arrastre nunca hace scroll (táctil) */
 
-/* ESTÁNDAR DE MAQUETACIÓN: el juego LLENA el marco y reparte el alto disponible
-   entre las filas, así TODO cabe sin scroll (las tarjetas encogen para caber). */
-.ww-match {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-}
-.ww-match > .d-flex { flex: 0 0 auto; }       /* cabecera */
-.ww-match > .text-center { flex: 0 0 auto; }  /* botón Enviar */
-
-.ww-match-arena {
-  display: flex;
-  position: relative;
-  gap: 72px;   /* wide corridor so ropes are clearly visible */
-  touch-action: none;   /* el arrastre nunca se interpreta como scroll (táctil) */
-  flex: 1 1 auto;
-  min-height: 0;        /* puede encoger: las filas reparten el alto */
-}
-.ww-col-left,
-.ww-col-right {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  overflow: visible;
-  align-items: center;       /* tarjetas 16/10 (más angostas) centradas */
-  justify-content: center;   /* y centradas en vertical si sobra alto */
-}
-/* El tamaño de las tarjetas (ancho/alto 16/10 que cabe) lo calcula el player
-   (fitLayout): inline width/height + flex:0 0 auto. */
 .ww-lines-svg {
   position: absolute;
   inset: 0;
@@ -134,3 +110,11 @@
 }
 .ww-dot[data-side="L"] { right: -10px; }
 .ww-dot[data-side="R"] { left:  -10px; }
+/* Portrait (rieles = filas): las tarjetas de arriba (L) llevan el punto ABAJO y
+   las de abajo (R) ARRIBA — apuntando siempre al corredor central. */
+@container player (aspect-ratio < 1/1) {
+  .ww-dot[data-side="L"] { right: auto; left: 50%; top: auto; bottom: -10px; transform: translateX(-50%); }
+  .ww-dot[data-side="R"] { left: 50%; top: -10px; bottom: auto; transform: translateX(-50%); }
+  .ww-dot[data-side="L"]:hover,
+  .ww-dot[data-side="R"]:hover { transform: translateX(-50%) scale(1.3); }
+}

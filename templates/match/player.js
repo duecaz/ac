@@ -37,7 +37,7 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   mount(rootSel, buildLayout(lefts, rights, activity, raw.length));
 
   const root       = document.querySelector(rootSel);
-  const arena      = root.querySelector('.ww-match-arena');
+  const arena      = root.querySelector('.ww-field');
   const svg        = root.querySelector('.ww-lines-svg');
   const progressEl = root.querySelector('.ww-matched');
   const submitBtn  = root.querySelector('.ww-match-submit');
@@ -101,22 +101,24 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   // OPUESTA, conecta con la tarjeta de esa columna más cercana por ALTURA (siempre
   // hay una → de frente u horizontal NUNCA falla). Si soltó de vuelta hacia el
   // origen (cruzó menos del medio), devuelve null → desconecta.
-  function targetCard(x, y, fromSide) {
+  // Tarjeta destino al soltar — 2D AGNÓSTICO a la orientación (mismo criterio que
+  // Etiqueta el diagrama): la tarjeta del lado OPUESTO más cercana en 2D. Así
+  // funciona igual con columnas laterales (ancho) o filas arriba/abajo (alto), sin
+  // asumir un "corredor" por X. Dos guardas para desconectar: soltar MÁS cerca del
+  // origen que del destino (tirar de vuelta), o soltar lejos (fuera del radio).
+  function targetCard(x, y, fromSide, fromId) {
     const side = fromSide === 'L' ? 'R' : 'L';
-    const cards = [...root.querySelectorAll(`.ww-card[data-side="${side}"]`)];
-    if (!cards.length) return null;
-    const colL = root.querySelector('.ww-col-left').getBoundingClientRect();
-    const colR = root.querySelector('.ww-col-right').getBoundingClientRect();
-    const mid = (colL.right + colR.left) / 2;            // centro del corredor
-    const onTargetSide = side === 'R' ? x >= mid : x <= mid;
-    if (!onTargetSide) return null;                       // soltó hacia el origen → desconectar
+    const cen = el => { const r = el.getBoundingClientRect(); return [(r.left + r.right) / 2, (r.top + r.bottom) / 2]; };
     let best = null, bestD = Infinity;
-    for (const c of cards) {
-      const r = c.getBoundingClientRect();
-      const d = Math.abs((r.top + r.bottom) / 2 - y);
+    for (const c of root.querySelectorAll(`.ww-card[data-side="${side}"]`)) {
+      const [cx, cy] = cen(c); const dx = cx - x, dy = cy - y, d = dx * dx + dy * dy;
       if (d < bestD) { bestD = d; best = c; }
     }
-    return best;
+    if (!best) return null;
+    const origin = root.querySelector(`.ww-card[data-side="${fromSide}"][data-id="${fromId}"]`);
+    if (origin) { const [ox, oy] = cen(origin); if ((ox - x) ** 2 + (oy - y) ** 2 < bestD) return null; }
+    const radius = Math.max(70, arena.getBoundingClientRect().width * 0.16);
+    return Math.sqrt(bestD) <= radius ? best : null;
   }
 
   // ── Arrastre desde TODA la tarjeta (cualquier lado → el opuesto) ────────────
@@ -151,7 +153,7 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
     state.dragging = null;
     try { arena.releasePointerCapture(e.pointerId); } catch {}
     if (!connect) { updateSvg(); return; }
-    const hit = targetCard(e.clientX, e.clientY, drag.fromSide);
+    const hit = targetCard(e.clientX, e.clientY, drag.fromSide, drag.fromId);
     if (hit) {
       const leftId  = drag.fromSide === 'L' ? drag.fromId : hit.dataset.id;
       const rightId = drag.fromSide === 'L' ? hit.dataset.id : drag.fromId;
@@ -190,30 +192,37 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
     }), 1100);
   });
 
-  // ── Maquetación 16/10: calcular el tamaño de las tarjetas para que las N filas
-  // QUEPAN sin scroll y cada cuadro sea 16/10. alto de fila = el que cabe; ancho =
-  // alto·16/10 (acotado al ancho de columna). Tarjetas centradas (más angostas).
+  // ── Maquetación 16/10, CONSCIENTE de la orientación del andamio ─────────────
+  // Ancho (rieles = columnas): N tarjetas apiladas en el ALTO, ancho ≤ ~38% del
+  // field (dos columnas + corredor). Alto (rieles = filas envueltas): 2 tarjetas
+  // por fila, más grandes. El tamaño se calcula del FIELD (no del riel, que se
+  // ciñe a las tarjetas → evita la dependencia circular).
   function fitLayout() {
-    const colEl = root.querySelector('.ww-col-left');
-    if (!arena || !colEl) return;
+    const field = root.querySelector('.ww-field');
+    if (!field) return;
     const N = Math.max(lefts.length, rights.length);
     const GAP = 8;
-    const H = arena.clientHeight, colW = colEl.clientWidth;
-    if (!H || !colW) return;
-    let cardH = Math.min((H - (N - 1) * GAP) / N, colW * 10 / 16);
-    cardH = Math.max(52, Math.floor(cardH));          // suelo legible (móvil → scroll)
-    const cardW = Math.min(colW, Math.round(cardH * 16 / 10));
+    const fw = field.clientWidth, fh = field.clientHeight;
+    if (!fw || !fh) return;
+    const horizontal = getComputedStyle(field).flexDirection === 'row';   // landscape
+    let cardW, cardH;
+    if (horizontal) {
+      cardH = Math.max(44, Math.floor(Math.min((fh - (N - 1) * GAP) / N, (fw * 0.38) * 10 / 16)));
+      cardW = Math.round(cardH * 16 / 10);
+    } else {
+      cardW = Math.max(90, Math.floor((fw - GAP) / 2));
+      cardH = Math.round(cardW * 10 / 16);
+    }
     root.querySelectorAll('.ww-card').forEach(c => {
-      c.style.flex = '0 0 auto';
-      c.style.width = cardW + 'px';
-      c.style.height = cardH + 'px';
+      c.style.flex = '0 0 auto'; c.style.width = cardW + 'px'; c.style.height = cardH + 'px';
     });
     updateSvg();                                       // recolocar cuerdas
   }
   requestAnimationFrame(fitLayout);
-  // rAF-debounced (observeResize): fitLayout MUTA el tamaño de las tarjetas; un
-  // RO directo dispararía el aviso "ResizeObserver loop…" al salir de fullscreen.
-  observeResize(root, fitLayout);                      // recalcular al redimensionar/fullscreen
+  // rAF-debounced (observeResize): fitLayout MUTA el tamaño de las tarjetas; un RO
+  // directo dispararía el aviso "ResizeObserver loop…" al salir de fullscreen. Se
+  // observa el field (al reflujo/redimensión → recalcular tamaños y cuerdas).
+  observeResize(arena, fitLayout);
 
   updateProgress();
   updateSubmit();
@@ -222,19 +231,23 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
 // ── HTML builders ─────────────────────────────────────────────────────────────
 
 function buildLayout(lefts, rights, activity, total) {
-  return `<div class="ww-match p-3">
-  <div class="d-flex align-items-center mb-3 gap-2">
+  // Andamio de regiones (styles/scaffold.css): dos rieles (start/end) con un
+  // corredor central (ww-stage vacío) que las cuerdas cruzan. Refluye de columnas
+  // laterales (ancho) a filas arriba/abajo (alto) → tarjetas grandes en móvil.
+  return `<div class="ww-scaffold ww-match p-2">
+  <div class="ww-bar d-flex align-items-center gap-2 px-1">
     <span class="badge bg-secondary ww-matched flex-shrink-0">0 / ${total}</span>
     <span class="fw-bold text-truncate flex-grow-1 text-center small">${escapeHtml(activity.title || '')}</span>
     <span class="badge bg-secondary flex-shrink-0" style="visibility:hidden">0 / ${total}</span>
   </div>
-  <div class="ww-match-arena">
-    <div class="ww-col-left">${lefts.map(c => cardHtml(c, 'L')).join('')}</div>
+  <div class="ww-field ww-match-field">
+    <div class="ww-rail ww-match-col" data-rail="start">${lefts.map(c => cardHtml(c, 'L')).join('')}</div>
+    <div class="ww-stage ww-match-gap"></div>
+    <div class="ww-rail ww-match-col" data-rail="end">${rights.map(c => cardHtml(c, 'R')).join('')}</div>
     <svg class="ww-lines-svg" xmlns="http://www.w3.org/2000/svg"></svg>
-    <div class="ww-col-right">${rights.map(c => cardHtml(c, 'R')).join('')}</div>
   </div>
-  <div class="text-center mt-3">
-    <button type="button" class="btn btn-success btn-lg px-5 ww-match-submit" disabled>
+  <div class="ww-bar ww-bar-actions">
+    <button type="button" class="btn btn-success ww-match-submit" disabled>
       <i class="bi bi-check2-circle"></i> Enviar
     </button>
   </div>
