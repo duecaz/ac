@@ -24,8 +24,14 @@ Qué leer según lo que necesites. La **fuente de verdad del estado actual** es
 ## Hacer
 | Necesitas… | Lee |
 |---|---|
-| **Añadir una plantilla nueva** | `../templates/HOW_TO_ADD.md` |
+| **El sistema de plantillas de punta a punta** (crear/validar/jugar) | `sistema-de-plantillas.md` |
+| **Añadir una plantilla nueva** | `../templates/HOW_TO_ADD.md` (o `node tools/new-template.mjs`) |
 | **Probar** (suites Node + self-tests + headless) | `testing.md` |
+
+## Bugs abiertos / handoffs
+| Tema | Doc |
+|---|---|
+| **Emparejar no conecta en vertical** (SIN RESOLVER) | `handoff-emparejar-vertical.md` |
 
 ## Histórico / temas puntuales
 | Tema | Doc |

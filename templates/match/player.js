@@ -41,7 +41,14 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   // TEMPORAL — logs de diagnóstico del arrastre (para depurar en dispositivo real).
   // Abre la consola y arrastra: verás DOWN/END/hit/LINK. Se quita tras diagnosticar.
   const dbg = (...a) => { try { console.log('[match]', ...a); } catch {} };
-  dbg('montado, orientación=', arena && getComputedStyle(arena).flexDirection);
+  requestAnimationFrame(() => {
+    const w = document.getElementById('ww-player-widget');
+    const fr = root.querySelector('.ww-field')?.getBoundingClientRect();
+    dbg('montado dir=', arena && getComputedStyle(arena).flexDirection,
+        'field=', fr && Math.round(fr.width) + 'x' + Math.round(fr.height),
+        'widget scroll=', w && (w.scrollHeight + '/' + w.clientHeight),
+        'fullscreen=', !!document.fullscreenElement, 'scrollY=', Math.round(window.scrollY));
+  });
   const svg        = root.querySelector('.ww-lines-svg');
   const progressEl = root.querySelector('.ww-matched');
   const submitBtn  = root.querySelector('.ww-match-submit');

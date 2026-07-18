@@ -23,6 +23,29 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
   autenticado**: para acciones sobre sus repos fuera del alcance de la sesión (p.ej.
   `duecaz/ww-assets`), pásale los comandos `gh`/PS listos para pegar y él los ejecuta.
 
+## MAPA — dónde mirar (lee ESTO antes de cargar medio repo)
+
+Este archivo es el índice. **No leas todos los MD ni todo el código de golpe**: identifica
+la tarea, abre SOLO el doc/módulo que corresponde. Regla de oro del proyecto: *si es norma,
+es test* — antes de dudar de una convención, mira si hay un test que la fija.
+
+| Quiero… | Voy a… |
+|---|---|
+| Entender el sistema de plantillas (crear/validar/jugar, qué módulo hace qué) | **`docs/sistema-de-plantillas.md`** (mapa vivo) |
+| **Crear una actividad nueva** | `node tools/new-template.mjs <name> --model qa [--vs] [--live]` + `templates/HOW_TO_ADD.md` |
+| **Diagnosticar** una plantilla existente | `node tools/check-template.mjs [name]` (contrato + normas) |
+| Contrato de CSS + **responsive / andamio de regiones** (ww-scaffold/rail/stage) | `docs/estilos-de-actividad.md` (§3b andamio) |
+| Contrato de **modos** (Solo/VS/Equipos/Live/Tarea) y su gateo | `docs/modos-de-juego.md` · `core/modes.js` |
+| **Modelo de contenido** JSON por plantilla | `docs/ESTRUCTURA.md` · modelos en `kernel/content/models.js` |
+| Catálogo: qué hace cada actividad y en qué modos | `docs/panorama-actividades.md` |
+| **Probar** (suites Node + panel admin + headless Playwright) | `docs/testing.md` |
+| Modo SOLO (Wordwall) por dentro · identidad/auth · dev local | `docs/modo-wordwall.md` · `docs/identidad.md` · `docs/dev-local.md` |
+| Índice completo de docs | `docs/README.md` (lo histórico vive en `docs/historico/`) |
+| **Bugs abiertos / deuda** | la sección "Deuda técnica registrada" (abajo) + notas `docs/handoff-*.md` |
+
+Verificar SIEMPRE antes de commitear: `node tests/run.mjs` (todas las suites). El contrato,
+las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecutar tests".
+
 ## Arquitectura (resumen)
 - Vanilla JS, ES modules, sin framework. Routing por hash.
 - Backend: **PocketBase** en `pb.lanube.uno` (Pi 5, Docker). **Solo PocketBase** — Supabase RETIRADO.
@@ -87,6 +110,14 @@ git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
 - **Testeo**: mapa de suites + receta headless (Playwright) en `docs/testing.md`.
 
 ## Deuda técnica registrada
+
+### 🐞 BUG ABIERTO (UI) — Emparejar no conecta en VERTICAL → **`docs/handoff-emparejar-vertical.md`**
+SIN RESOLVER tras v1.51.171→175. En portrait las conexiones fallan en el dispositivo
+REAL del usuario, pero los tests headless PASAN (esa es la brecha: algo del táctil/scroll
+real que el headless no reproduce). Lo confirmado (no re-descartar): la cuerda NO tiene
+altura 0, y el enlace SÍ se crea (los logs `[match]` del dispositivo muestran `LINK`).
+Los logs `[match]` siguen en `templates/match/player.js` (temporales, quitar al cerrar).
+**Empezar por el handoff, sin asumir las hipótesis previas.**
 
 ### 🔴 DEUDA DETECTADA EN REVISIÓN (caza de bugs live/session) — PENDIENTE
 
