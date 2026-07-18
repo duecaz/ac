@@ -45,13 +45,17 @@
 .ww-rail[data-rail="start"] { order: 1; }
 .ww-rail[data-rail="end"]   { order: 3; }
 
-/* ── ANCHO (landscape): rieles = COLUMNAS laterales, escenario en medio ─────── */
+/* ── ANCHO (landscape): rieles = COLUMNAS laterales, escenario en medio ───────
+   Las piezas se REPARTEN en el alto (space-evenly) en vez de amontonarse en el
+   centro → usan el espacio disponible sin quedar pegadas (como Wordwall). Con
+   pocas piezas quedan separadas; con muchas, huecos parejos y ceñidas. */
 @container player (aspect-ratio >= 1/1) {
   .ww-field { flex-direction: row; align-items: stretch; }
-  .ww-rail  { flex-direction: column; }
+  .ww-rail  { flex-direction: column; justify-content: space-evenly; }
 }
-/* ── ALTO (portrait): rieles = FILAS arriba/abajo (con wrap), escenario en medio */
+/* ── ALTO (portrait): rieles = FILAS arriba/abajo (con wrap), escenario en medio
+   Aquí sí CENTRADO: las filas envueltas se leen mejor agrupadas que estiradas. */
 @container player (aspect-ratio < 1/1) {
   .ww-field { flex-direction: column; align-items: stretch; }
-  .ww-rail  { flex-direction: row; flex-wrap: wrap; }
+  .ww-rail  { flex-direction: row; flex-wrap: wrap; justify-content: center; }
 }
