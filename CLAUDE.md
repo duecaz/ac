@@ -10,18 +10,25 @@
   cambio, en formato `(vX.Y.Z)`, para poder referenciar exactamente por versión.
 - El número de versión del commit y el de la respuesta deben coincidir.
 
-### 2. Push a las TRES ramas (SIEMPRE, sin excepción)
-Tras commitear, hacer push a las tres ramas:
+### 2. TODO AL MAIN — `main` sirve la web (permiso permanente)
+**`main` es la rama que sirve GitHub Pages (dos.pe)** — es LA rama de producción. El
+usuario da permiso PERMANENTE y explícito para commitear y hacer push a `main`
+directamente (fast-forward simple, sin force), aunque una herramienta/harness obligue a
+trabajar primero en una rama `claude/*`: en ese caso, trabaja en la rama que toque y al
+terminar **propaga el commit a `main`** para que el usuario vea la última versión.
+Si algún guardarraíl lo impide, pídele que lo reafirme, pero por defecto: TODO AL MAIN.
+
+Tras commitear, hacer push (rama de trabajo si la hay, y SIEMPRE `main`):
 ```
-git push -u origin claude/admiring-shannon-06ioqo
-git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
-git push origin claude/admiring-shannon-06ioqo:main
+git push -u origin <rama-de-trabajo>                 # si el harness fija una
+git push origin <rama-de-trabajo>:main               # ← imprescindible: sirve la web
+git push origin <rama-de-trabajo>:ACTIVIDAD2         # legado, opcional (ya no sirve la web)
 ```
-- `ACTIVIDAD2` es la rama que sirve GitHub Pages (estático).
-- `main` es la rama que otros proyectos/herramientas consultan por defecto — **debe
-  quedar siempre al día**; se dejó desincronizada 154 commits una vez y "el otro
-  proyecto no encontraba nada" de todo este trabajo. No vuelva a pasar: es push
-  fast-forward simple (sin force), tan rutinario como las otras dos.
+- `main` **debe quedar siempre al día**: es lo que ve el usuario en dos.pe y lo que otros
+  proyectos consultan. Se dejó desincronizada 154 commits una vez y "el otro proyecto no
+  encontraba nada". No vuelva a pasar.
+- `ACTIVIDAD2` fue la rama de Pages; **ya NO sirve la web** (se movió a `main`). Se
+  mantiene sincronizada por inercia/legado, pero lo crítico es `main`.
 
 ### 3. Entorno del usuario
 - El usuario trabaja en **Windows (PowerShell)** y tiene **GitHub CLI (`gh`) instalado y
@@ -116,7 +123,17 @@ las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecut
 
 ## Deuda técnica registrada
 
-### ✅ RESUELTO (v1.51.178) — Emparejar no conectaba en VERTICAL → `docs/handoff-emparejar-vertical.md`
+### ✅ RESUELTO (v1.51.178 + v1.51.179) — Emparejar no conectaba en VERTICAL → `docs/handoff-emparejar-vertical.md`
+**Eran DOS causas encadenadas** (la segunda quedaba oculta tras la primera):
+- **v1.51.179 — la cuerda VERTICAL no se dibujaba (frente a frente).** El motor de
+  cuerdas (`core/connectRope.js`) daba la sombra con un filtro SVG `feDropShadow` cuya
+  región va en % del BOUNDING BOX; una cuerda vertical (dos tarjetas alineadas → mismos x)
+  tiene bbox de ANCHO 0 → el filtro colapsaba y borraba la cuerda ENTERA (las diagonales
+  cruzadas sí se veían). El `SAG` solo cubría el caso horizontal (alto 0), no el vertical.
+  Fix: fuera el filtro; la sombra es ahora un trazo desplazado (`ropeHtml`), que se pinta
+  en cualquier orientación. Afecta a Emparejar y Etiqueta-el-diagrama (motor compartido).
+  Logs `[match]` restaurados como TEMPORALES (confirmar en dispositivo → quitar).
+
 Causa REAL (reproducida headless con toque real vía CDP, no PointerEvents sintéticos):
 en portrait el `.ww-stage` (corredor central, `flex:1` del andamio) se estiraba a ~1000px
 de HUECO MUERTO en marcos muy altos, empujando los dos grupos a los extremos. Al arrastrar

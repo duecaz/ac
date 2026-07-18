@@ -1,6 +1,19 @@
-# HANDOFF — Emparejar (match): conectar en VERTICAL ✅ RESUELTO (v1.51.178)
+# HANDOFF — Emparejar (match): conectar en VERTICAL ✅ RESUELTO (v1.51.178 + v1.51.179)
 
-> **Estado: RESUELTO.** La causa NO era la que se venía persiguiendo. Se reprodujo
+> **SEGUNDA CAUSA (v1.51.179), la que de verdad veía el usuario como "no conecta":**
+> tras arreglar el corredor (abajo), en portrait las cuerdas VERTICALES (dos tarjetas
+> frente a frente, misma columna → mismos x) **no se dibujaban**. Reproducido headless:
+> el `<g>` de la cuerda tenía bbox de ANCHO 0, y el filtro de sombra `feDropShadow`
+> (región en % del bbox) colapsaba a cero → borraba la cuerda entera. Las diagonales
+> (cruzadas, con ancho > 0) sí se veían; por eso "solo fallan las verticales / frente a
+> frente". El `SAG` solo evitaba el caso horizontal (alto 0). Fix en `core/connectRope.js`:
+> se elimina el filtro SVG; la sombra pasa a ser un TRAZO DESPLAZADO, que se pinta en
+> cualquier orientación. (El enlace SIEMPRE se creaba —`LINK` en los logs—; era puro
+> render.) Comparte motor con `diagram`, que casi nunca tenía cuerdas perfectamente
+> verticales, por eso no lo había manifestado.
+>
+> ---
+> **PRIMERA CAUSA (v1.51.178):** La causa NO era la que se venía persiguiendo. Se reprodujo
 > el fallo EXACTO en headless usando **toque real (eventos táctiles vía CDP)** en un
 > marco portrait extremo (field 468×1714, como el dispositivo del usuario): con esa
 > geometría el `.ww-stage` (corredor central, `flex:1` del andamio) se estiraba a

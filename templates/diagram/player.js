@@ -38,7 +38,7 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
   const svg        = root.querySelector('.ww-lines-svg');
   const progressEl = root.querySelector('.dg-progress');
   const submitBtn  = root.querySelector('.dg-submit');
-  const { layer, filterId } = mountRopeLayer(svg);
+  const { layer } = mountRopeLayer(svg);
 
   const updateProgress = () => { if (progressEl) progressEl.textContent = `${state.links.size} / ${pins.length}`; };
   const updateSubmit   = () => { if (submitBtn) submitBtn.disabled = state.graded || state.links.size < pins.length; };
@@ -50,7 +50,7 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
       const pd = root.querySelector(`.dg-pin[data-id="${pinId}"]`);
       if (ld && pd) {
         const col = state.graded ? (labelId === pinId ? OK_COL : NO_COL) : ROPES[i % ROPES.length];
-        d += ropeHtml(dotPos(ld, svg), dotPos(pd, svg), col, filterId);
+        d += ropeHtml(dotPos(ld, svg), dotPos(pd, svg), col);
       }
       i++;
     }
