@@ -101,22 +101,33 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   // OPUESTA, conecta con la tarjeta de esa columna más cercana por ALTURA (siempre
   // hay una → de frente u horizontal NUNCA falla). Si soltó de vuelta hacia el
   // origen (cruzó menos del medio), devuelve null → desconecta.
-  // Tarjeta destino al soltar — 2D AGNÓSTICO a la orientación (mismo criterio que
-  // Etiqueta el diagrama): la tarjeta del lado OPUESTO más cercana en 2D. Funciona
-  // igual con columnas laterales (ancho) o filas arriba/abajo (alto), sin asumir un
-  // "corredor" por X. NO se usa radio: las tarjetas son GRANDES y el usuario suelta
-  // apuntando al punto/borde (a ~medio alto/ancho del centro), así que un radio
-  // sobre el centro rechazaría conexiones válidas (era el bug del vertical). La
-  // única desconexión es "tirar de vuelta": soltar MÁS cerca del origen que del
-  // mejor destino (incluye el toque sin arrastrar, que cae sobre el propio origen).
+  // Tarjeta destino al soltar — AGNÓSTICO a la orientación (columnas o filas). Dos
+  // pasos, a prueba de geometría (era el bug del vertical):
+  //  1) si el punto cayó DENTRO de una tarjeta del lado opuesto (con un margen),
+  //     conecta con ESA — lo más intuitivo, y no importa dónde quede su centro.
+  //  2) si cayó en el hueco/corredor: la del lado opuesto MÁS cercana por centro,
+  //     salvo que se soltara más cerca del ORIGEN que del destino (tirar de vuelta
+  //     = cancelar; incluye el toque sin arrastrar sobre la propia tarjeta).
+  // NO hay radio sobre el centro: rechazaba conexiones válidas al soltar en el
+  // punto/borde de una tarjeta grande.
   function targetCard(x, y, fromSide, fromId) {
     const side = fromSide === 'L' ? 'R' : 'L';
+    const cards = [...root.querySelectorAll(`.ww-card[data-side="${side}"]`)];
+    const inRect = (r, m) => x >= r.left - m && x <= r.right + m && y >= r.top - m && y <= r.bottom + m;
+    // 0) ¿soltó sobre el PUNTO conector de una tarjeta? → esa tarjeta. Es el caso
+    //    clave: en vertical el punto SOBRESALE hacia el corredor (fuera de su
+    //    tarjeta, en el hueco con la vecina) → por posición "gana" la vecina, pero
+    //    el punto PERTENECE a su tarjeta. Se comprueba primero, sin ambigüedad.
+    for (const c of cards) {
+      const dot = c.querySelector('.ww-dot');
+      if (dot && inRect(dot.getBoundingClientRect(), 14)) return c;
+    }
+    // 1) ¿soltó DENTRO de una tarjeta (margen pequeño)? → esa.
+    for (const c of cards) if (inRect(c.getBoundingClientRect(), 8)) return c;
+    // 2) hueco/corredor: la más cercana por centro, salvo "tirar de vuelta" al origen.
     const cen = el => { const r = el.getBoundingClientRect(); return [(r.left + r.right) / 2, (r.top + r.bottom) / 2]; };
     let best = null, bestD = Infinity;
-    for (const c of root.querySelectorAll(`.ww-card[data-side="${side}"]`)) {
-      const [cx, cy] = cen(c); const dx = cx - x, dy = cy - y, d = dx * dx + dy * dy;
-      if (d < bestD) { bestD = d; best = c; }
-    }
+    for (const c of cards) { const [cx, cy] = cen(c); const d = (cx - x) ** 2 + (cy - y) ** 2; if (d < bestD) { bestD = d; best = c; } }
     if (!best) return null;
     const origin = root.querySelector(`.ww-card[data-side="${fromSide}"][data-id="${fromId}"]`);
     if (origin) { const [ox, oy] = cen(origin); if ((ox - x) ** 2 + (oy - y) ** 2 < bestD) return null; }
