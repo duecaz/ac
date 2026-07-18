@@ -1,0 +1,57 @@
+/* Andamio de PLAYER con REGIONES semánticas — el reflujo responsive compartido
+   por todas las actividades que tienen "un centro + piezas alrededor" (Etiqueta
+   el diagrama, Emparejar, Quiz, Sopa…). El player marca sus partes por ROL y el
+   andamio las acomoda según el ASPECT-RATIO del área, SIN breakpoints de píxeles
+   (como Wordwall): las piezas viajan al eje LARGO y el centro se queda el eje
+   corto entero.  Contrato de regiones en docs/estilos-de-actividad.md.
+
+     .ww-scaffold  columna raíz que LLENA el marco (y es el contenedor de consulta)
+     .ww-bar       chrome fijo (cabecera / acciones) — no refluye, tamaño mínimo
+     .ww-field     la ZONA que refluye (rieles + escenario)
+     .ww-rail      grupo de piezas móviles — data-rail="start|end"
+     .ww-stage     el contenido central — centrado, máximo tamaño
+
+   Nota técnica: el `@container` se resuelve contra un ANCESTRO, así que el
+   CONTENEDOR es `.ww-scaffold` y quien REFLUYE es `.ww-field` (su descendiente).
+   El aspecto del scaffold ≈ el del field (las barras son finas). */
+
+.ww-scaffold {
+  display: flex; flex-direction: column;
+  height: 100%; min-height: 0; min-width: 0;
+  gap: 1.2cqmin;
+  container-type: size;
+  container-name: player;
+}
+.ww-bar { flex: 0 0 auto; min-height: 0; }
+.ww-bar-actions { display: flex; justify-content: center; align-items: center; }
+
+.ww-field {
+  position: relative;                 /* capas absolutas (cuerdas SVG) inset:0 */
+  flex: 1 1 auto; min-height: 0; min-width: 0;
+  display: flex;
+  gap: 2cqmin;
+}
+.ww-stage {
+  flex: 1 1 auto; min-width: 0; min-height: 0;
+  display: grid; place-items: center;
+  order: 2;
+}
+.ww-rail {
+  flex: 0 1 auto; min-width: 0; min-height: 0;
+  display: flex;
+  gap: 1.6cqmin;
+  align-items: center; justify-content: center;
+}
+.ww-rail[data-rail="start"] { order: 1; }
+.ww-rail[data-rail="end"]   { order: 3; }
+
+/* ── ANCHO (landscape): rieles = COLUMNAS laterales, escenario en medio ─────── */
+@container player (aspect-ratio >= 1/1) {
+  .ww-field { flex-direction: row; align-items: stretch; }
+  .ww-rail  { flex-direction: column; }
+}
+/* ── ALTO (portrait): rieles = FILAS arriba/abajo (con wrap), escenario en medio */
+@container player (aspect-ratio < 1/1) {
+  .ww-field { flex-direction: column; align-items: stretch; }
+  .ww-rail  { flex-direction: row; flex-wrap: wrap; }
+}

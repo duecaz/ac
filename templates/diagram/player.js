@@ -21,8 +21,9 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
   const maxScore = activity.scoring?.maxScore || ppc * pins.length;
   const doShuffle = activity.rules?.randomize !== false;
 
-  // Etiquetas repartidas izquierda/derecha por orden (como Wordwall).
-  const labels = (doShuffle ? shuffle([...pins]) : [...pins]).map(p => ({ id: p.id, text: p.label }));
+  // Etiquetas repartidas en dos rieles (start/end). Cada una lleva su índice
+  // GLOBAL para el color (cíclico por --ww-shape-*), estable pase al riel que pase.
+  const labels = (doShuffle ? shuffle([...pins]) : [...pins]).map((p, i) => ({ id: p.id, text: p.label, i }));
   const half = Math.ceil(labels.length / 2);
   const leftLabels = labels.slice(0, half), rightLabels = labels.slice(half);
 
@@ -33,7 +34,7 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
   mount(rootSel, buildLayout(leftLabels, rightLabels, pins, image, activity, pins.length));
 
   const root       = document.querySelector(rootSel);
-  const arena      = root.querySelector('.dg-arena');
+  const arena      = root.querySelector('.ww-field');
   const svg        = root.querySelector('.ww-lines-svg');
   const progressEl = root.querySelector('.dg-progress');
   const submitBtn  = root.querySelector('.dg-submit');
@@ -153,7 +154,7 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
   // letterbox) → los pines, posicionados en %, caen exactos sobre la imagen.
   const imgEl = root.querySelector('.dg-img');
   const boxEl = root.querySelector('.dg-img-box');
-  const stageEl = root.querySelector('.dg-stage');
+  const stageEl = root.querySelector('.ww-stage');
   function fitImageBox() {
     if (!imgEl || !boxEl || !stageEl) return false;
     const nw = imgEl.naturalWidth || 4, nh = imgEl.naturalHeight || 3;
@@ -169,45 +170,50 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
   // fitImageBox evitan el aviso "ResizeObserver loop…" del navegador.
   const relayout = () => { fitImageBox(); updateSvg(); };
   requestAnimationFrame(relayout);
-  observeResize(stageEl, relayout);   // el stage no cambia al redimensionar la caja (descendiente)
+  // Se observa el FIELD (no el stage): al cruzar el aspecto 1:1 los rieles saltan
+  // de columnas a filas → las etiquetas se mueven aunque el stage no cambie de
+  // tamaño; hay que recalcular la caja de imagen Y las cuerdas.
+  observeResize(arena, relayout);
   if (imgEl && !imgEl.complete) imgEl.addEventListener('load', relayout);
 
   updateProgress(); updateSubmit();
 }
 
 // ── HTML ──────────────────────────────────────────────────────────────────────
-function labelHtml(c, side) {
-  // .ww-dot es el conector COMPARTIDO con Emparejar (styles/match.css): absoluto
-  // en el borde de la tarjeta. side 'L' (columna izq) → punto en el borde DERECHO
-  // (hacia la imagen); side 'R' → borde IZQUIERDO. Así apunta siempre al centro.
-  return `<div class="dg-label" data-id="${escapeHtml(c.id)}">
+function labelHtml(c) {
+  // Color cíclico por índice global (--ww-shape-*): variedad vistosa tipo
+  // Wordwall, y el skin lo recolorea. El .ww-dot (conector compartido con
+  // Emparejar) lo posiciona diagram.css según el riel Y la orientación.
+  return `<div class="dg-label" data-id="${escapeHtml(c.id)}" style="--dg-color:var(--ww-shape-${(c.i % 4) + 1})">
     <span class="dg-label-text">${escapeHtml(c.text)}</span>
-    <span class="ww-dot" data-side="${side}" data-id="${escapeHtml(c.id)}"></span>
+    <span class="ww-dot" data-id="${escapeHtml(c.id)}"></span>
   </div>`;
 }
 function pinHtml(p) {
   return `<span class="dg-pin" data-id="${escapeHtml(p.id)}" style="left:${(p.x * 100).toFixed(2)}%;top:${(p.y * 100).toFixed(2)}%"></span>`;
 }
 function buildLayout(leftLabels, rightLabels, pins, image, activity, total) {
-  return `<div class="dg-wrap p-3">
-  <div class="d-flex align-items-center mb-2 gap-2">
+  // Andamio de regiones (styles/scaffold.css): rieles start/end que refluyen de
+  // columnas laterales (ancho) a filas arriba/abajo (alto), con el escenario en medio.
+  return `<div class="ww-scaffold dg-play p-2">
+  <div class="ww-bar d-flex align-items-center gap-2 px-1">
     <span class="badge bg-secondary dg-progress flex-shrink-0">0 / ${total}</span>
     <span class="fw-bold text-truncate flex-grow-1 text-center small">${escapeHtml(activity.title || '')}</span>
     <span class="badge bg-secondary flex-shrink-0" style="visibility:hidden">0 / ${total}</span>
   </div>
-  <div class="dg-arena">
-    <div class="dg-col dg-left">${leftLabels.map(c => labelHtml(c, 'L')).join('')}</div>
-    <div class="dg-stage">
+  <div class="ww-field dg-field">
+    <div class="ww-rail dg-rail" data-rail="start">${leftLabels.map(labelHtml).join('')}</div>
+    <div class="ww-stage dg-stage">
       <div class="dg-img-box">
         <img class="dg-img" src="${escapeHtml(image)}" alt="" draggable="false">
         ${pins.map(pinHtml).join('')}
       </div>
     </div>
-    <div class="dg-col dg-right">${rightLabels.map(c => labelHtml(c, 'R')).join('')}</div>
+    <div class="ww-rail dg-rail" data-rail="end">${rightLabels.map(labelHtml).join('')}</div>
     <svg class="ww-lines-svg" xmlns="http://www.w3.org/2000/svg"></svg>
   </div>
-  <div class="text-center mt-2">
-    <button type="button" class="btn btn-success btn-lg px-5 dg-submit" disabled>
+  <div class="ww-bar ww-bar-actions">
+    <button type="button" class="btn btn-success dg-submit" disabled>
       <i class="bi bi-check2-circle"></i> Enviar respuestas
     </button>
   </div>

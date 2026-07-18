@@ -25,7 +25,7 @@ const STYLES = join(dirname(fileURLToPath(import.meta.url)), '..', 'styles');
 const GAME = ['ballsort', 'crossword', 'diagram', 'globos', 'match', 'math', 'memory',
   'question-live', 'quiz', 'textCorrection', 'vs', 'teams', 'wordsearch'];
 // Chrome/paletas explícitamente EXCLUIDOS del ratchet (no son "el juego").
-const EXCLUDED = ['backgrounds', 'editor', 'live', 'player', 'skins', 'soloAnim', 'theme', 'touch'];
+const EXCLUDED = ['backgrounds', 'editor', 'live', 'player', 'scaffold', 'skins', 'soloAnim', 'theme', 'touch'];
 
 // Colores skin-independientes POR DISEÑO: no necesitan token.
 //  · neutros (texto sobre superficies de color)

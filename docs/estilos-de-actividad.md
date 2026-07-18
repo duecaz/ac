@@ -72,6 +72,44 @@ las permite):
   2. ¿`color`/`background` con `#hex` que no sea neutro ni estado? → token `var(--ww-*)`.
   3. Corre `node tests/styles.test.mjs`. Debe pasar **sin tocar el BASELINE**.
 
+## 3b. Andamio de regiones — el responsive compartido (`styles/scaffold.css`)
+
+Las actividades con "un centro + piezas alrededor" (Etiqueta el diagrama, Emparejar,
+Quiz, Sopa…) usan un **andamio de regiones** que refluye solo según el aspect-ratio
+del área — **sin breakpoints de píxeles**, como Wordwall. El player marca sus partes
+por ROL y el andamio decide dónde van:
+
+```html
+<div class="ww-scaffold">                    <!-- columna raíz (contenedor de consulta) -->
+  <div class="ww-bar">…progreso · título…</div>
+  <div class="ww-field">                     <!-- la zona que refluye -->
+    <div class="ww-rail" data-rail="start">…piezas…</div>
+    <div class="ww-stage">…imagen / tablero…</div>
+    <div class="ww-rail" data-rail="end">…piezas…</div>
+  </div>
+  <div class="ww-bar ww-bar-actions">…botón…</div>
+</div>
+```
+
+- **Ancho** (`aspect-ratio ≥ 1/1`) → los rieles son **columnas laterales**, el stage en medio.
+- **Alto** (`aspect-ratio < 1/1`) → los rieles pasan a **filas arriba/abajo** (con wrap),
+  el stage en medio. Las piezas "viajan" al eje largo y el centro se queda el corto entero.
+
+**Cómo marcar lo reordenable**: es el ROL, no la posición. `ww-stage` = el centro
+(máximo tamaño); `ww-rail` `data-rail="start|end"` = un grupo que fluye; `ww-bar` =
+chrome fijo. El player NO decide izquierda/derecha/arriba/abajo — lo hace el andamio.
+
+**Nota técnica** (para no perder una tarde): el `@container` se resuelve contra un
+ANCESTRO, así que el CONTENEDOR de consulta es `.ww-scaffold` y quien REFLUYE es
+`.ww-field` (su descendiente) — un elemento no puede consultar su propio `@container`.
+Y en container queries el aspect-ratio va en sintaxis de RANGO (`(aspect-ratio < 1/1)`),
+NO `min/max-aspect-ratio` (eso es solo de media queries). `scaffold.css` está en la
+lista EXCLUDED del ratchet (es chrome compartido, no el CSS de una actividad).
+
+Ejemplar migrado: **Etiqueta el diagrama** (`styles/diagram.css`) — etiquetas de color
+`--ww-shape-*`, imagen que reclama el máximo, y el punto conector se reposiciona al
+borde interior según la orientación (derecha/izquierda en ancho, abajo/arriba en alto).
+
 ## 4. El guardián: `tests/styles.test.mjs` (ratchet de deuda)
 
 Escanea el CSS de juego y falla si aparece una violación **nueva**. La deuda actual está

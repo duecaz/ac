@@ -1,82 +1,72 @@
-/* Etiqueta el diagrama — imagen central con pines + etiquetas a los lados,
-   unidas con cuerdas (motor SVG compartido core/connectRope.js).
+/* Etiqueta el diagrama — usa el ANDAMIO de regiones (styles/scaffold.css): rieles
+   start/end que refluyen de columnas laterales (ancho) a filas arriba/abajo (alto)
+   con la imagen centrada. Aquí va solo la PIEL: etiquetas vistosas de color,
+   pines, imagen y el punto conector orientado. Motor de cuerdas: core/connectRope.js.
 
-   ESTÁNDAR DE MAQUETACIÓN (regla del proyecto): NADA con tamaño fijo en el juego.
-   `.dg-arena` es un CONTENEDOR de consulta y TODO (fuente, padding, columnas,
-   separación, puntos, pines) se mide en unidades de contenedor (cq*) → escala
-   igual en 4K, 600×800, 9:16 o 16:9. */
+   ESTÁNDAR (docs/estilos-de-actividad.md): todo relativo (cq*) y colores pintables
+   por token var(--ww-*) — las etiquetas ciclan --ww-shape-1..4 (el skin recolorea). */
 
-.dg-wrap { display: flex; flex-direction: column; height: 100%; min-height: 0; }
-.dg-wrap > .d-flex { flex: 0 0 auto; }
-.dg-wrap > .text-center { flex: 0 0 auto; }
+.dg-play { touch-action: none; }               /* el arrastre nunca hace scroll */
 
-.dg-arena {
-  position: relative;
-  display: flex;
-  align-items: stretch;
-  gap: 2cqw;
-  flex: 1 1 auto;
-  min-height: 0;
-  touch-action: none;              /* el arrastre nunca se interpreta como scroll */
-  container-type: size;            /* → los hijos escalan con el arena (cqmin/cqw/cqh) */
-  container-name: dg;
-}
-.dg-col {
-  flex: 0 0 auto;
-  min-width: 0;
-  display: flex; flex-direction: column;
-  gap: 2cqh; justify-content: center;
-  width: 26cqw;                    /* relativo al arena (sin tope fijo) */
-  overflow: visible;
-}
-.dg-left  { align-items: flex-start; }
-.dg-right { align-items: flex-end; }
+/* Rieles: se CIÑEN a su contenido para que el escenario reclame el máximo (la
+   imagen grande, como en Wordwall — antes 2 columnas fijas comían el 52%). */
+.dg-rail { gap: 1.4cqmin; padding: .4cqmin; overflow: visible; }
 
-/* Etiquetas (pastilla arrastrable con su punto de conexión). Tamaño del punto en
-   una variable relativa para derivar posición y hueco del texto. */
+/* Etiqueta: pastilla VISTOSA de color con texto blanco y grande. */
 .dg-label {
-  --dg-dot: max(12px, 3cqmin);
-  position: relative;              /* el .ww-dot (compartido) se ancla al borde */
+  --dg-dot: max(13px, 3.2cqmin);
+  position: relative;
   display: flex; align-items: center; justify-content: center;
-  padding: 1.6cqmin 2.8cqmin;
+  padding: 1.7cqmin 3cqmin;
   border-radius: 999px;
-  border: max(2px, .35cqmin) solid var(--ww-card-border, #dee2e6);
-  background: var(--ww-card-bg, #fff);
-  color: var(--ww-card-fg, var(--ww-fg, #1f2937));
-  font-weight: 700;
-  font-size: max(.72rem, 4.2cqmin);   /* piso legible; por lo demás crece con el arena */
+  background: var(--dg-color, var(--ww-accent, #6366f1));
+  color: #fff;
+  font-weight: 800;
+  font-size: max(.8rem, 4.4cqmin);   /* piso legible; crece con el marco */
   line-height: 1.1;
   cursor: grab; touch-action: none;
   user-select: none; -webkit-user-select: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,.18);
   max-width: 100%; overflow: visible;
-  transition: border-color .15s, box-shadow .15s;
+  transition: transform .12s, box-shadow .15s;
 }
 .dg-label:active { cursor: grabbing; }
-.dg-label-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* Hueco para el punto en el borde interior (sin pisar el texto). */
-.dg-left  .dg-label { padding-right: calc(var(--dg-dot) + 1.4cqmin); }
-.dg-right .dg-label { padding-left:  calc(var(--dg-dot) + 1.4cqmin); }
-.dg-label.dg-linked  { border-color: #6366f1; box-shadow: 0 0 0 max(2px,.4cqmin) rgba(99,102,241,.18); }
-.dg-label.dg-correct { border-color: #16a34a; box-shadow: 0 0 0 max(2px,.4cqmin) rgba(22,163,74,.22); }
-.dg-label.dg-wrong   { border-color: #ef4444; box-shadow: 0 0 0 max(2px,.4cqmin) rgba(239,68,68,.22); }
+.dg-label:hover  { transform: scale(1.04); }
+.dg-label-text   { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dg-label.dg-linked  { box-shadow: 0 0 0 max(2px,.5cqmin) #6366f1, 0 2px 6px rgba(0,0,0,.18); }
+.dg-label.dg-correct { box-shadow: 0 0 0 max(2px,.5cqmin) #16a34a, 0 2px 6px rgba(0,0,0,.18); }
+.dg-label.dg-wrong   { box-shadow: 0 0 0 max(2px,.5cqmin) #ef4444, 0 2px 6px rgba(0,0,0,.18); opacity: .85; }
 
-/* El punto conector (.ww-dot compartido con Emparejar) escala con la etiqueta. */
-.dg-label .ww-dot { width: var(--dg-dot); height: var(--dg-dot); }
-.dg-left  .dg-label .ww-dot { right: calc(var(--dg-dot) / -2); left: auto; }
-.dg-right .dg-label .ww-dot { left:  calc(var(--dg-dot) / -2); right: auto; }
-
-/* Escenario central: la imagen define su caja; los pines se posicionan en %. */
-.dg-stage {
-  flex: 1 1 auto; min-width: 0; min-height: 0;
-  display: flex; align-items: center; justify-content: center;
+/* Punto conector (.ww-dot compartido con Emparejar) — del color del chip. */
+.dg-label .ww-dot {
+  width: var(--dg-dot); height: var(--dg-dot);
+  background: var(--dg-color, var(--ww-accent, #6366f1)); border-color: #fff;
 }
-.dg-img-box { position: relative; line-height: 0; }   /* tamaño puesto por JS (fitImageBox) */
+
+/* Hueco para el punto + su POSICIÓN según la orientación del área:
+   ANCHO  → start: borde derecho · end: borde izquierdo (columnas laterales)
+   ALTO   → start: borde inferior · end: borde superior  (filas arriba/abajo) */
+@container player (aspect-ratio >= 1/1) {
+  .dg-rail[data-rail="start"] .dg-label { padding-right: calc(var(--dg-dot) + 1.6cqmin); }
+  .dg-rail[data-rail="end"]   .dg-label { padding-left:  calc(var(--dg-dot) + 1.6cqmin); }
+  .dg-rail[data-rail="start"] .ww-dot { top: 50%; left: auto; right: calc(var(--dg-dot) / -2); transform: translateY(-50%); }
+  .dg-rail[data-rail="end"]   .ww-dot { top: 50%; right: auto; left:  calc(var(--dg-dot) / -2); transform: translateY(-50%); }
+}
+@container player (aspect-ratio < 1/1) {
+  .dg-rail[data-rail="start"] .dg-label { padding-bottom: calc(var(--dg-dot) + 1cqmin); }
+  .dg-rail[data-rail="end"]   .dg-label { padding-top:    calc(var(--dg-dot) + 1cqmin); }
+  .dg-rail[data-rail="start"] .ww-dot { left: 50%; top: auto; bottom: calc(var(--dg-dot) / -2); transform: translateX(-50%); }
+  .dg-rail[data-rail="end"]   .ww-dot { left: 50%; bottom: auto; top: calc(var(--dg-dot) / -2); transform: translateX(-50%); }
+}
+
+/* Escenario: la imagen define su caja (fitImageBox por JS) y ocupa lo máximo. */
+.dg-img-box { position: relative; line-height: 0; }
 .dg-img { display: block; width: 100%; height: 100%; border-radius: 1cqmin; -webkit-user-drag: none; user-select: none; }
 
-/* Pines sobre la imagen: aro blanco con centro de color (estilo Wordwall). */
+/* Pines sobre la imagen: aro blanco con centro (estilo Wordwall). */
 .dg-pin {
   position: absolute; transform: translate(-50%, -50%);
-  width: max(12px, 2.8cqmin); height: max(12px, 2.8cqmin); border-radius: 50%;
+  width: max(13px, 2.8cqmin); height: max(13px, 2.8cqmin); border-radius: 50%;
   background: #fff; border: max(2px, .6cqmin) solid #475569;
   box-shadow: 0 1px 5px rgba(0,0,0,.4);
   cursor: crosshair; touch-action: none; z-index: 10;
@@ -86,15 +76,16 @@
 .dg-pin.dg-correct { border-color: #16a34a; background: #16a34a; }
 .dg-pin.dg-wrong   { border-color: #ef4444; background: #ef4444; }
 
-/* Capa de cuerdas: cubre todo el arena, sin robar el puntero. */
-.dg-arena .ww-lines-svg {
+/* Capa de cuerdas: cubre todo el field, sin robar el puntero. */
+.dg-field .ww-lines-svg {
   position: absolute; inset: 0; width: 100%; height: 100%;
   pointer-events: none; overflow: visible; z-index: 5;
 }
 
-/* Editor: escenario de colocación de pines (imagen + pines numerados). El editor
-   NO es el juego (vive en una página de formulario), así que aquí sí caben
-   tamaños fijos moderados para la vista previa. */
+/* Botón enviar: tamaño normal (no gigante), pegado a la barra inferior. */
+.dg-submit { font-size: max(.82rem, 2.8cqmin); padding: .45em 1.4em; border-radius: 999px; }
+
+/* Editor: escenario de colocación de pines. NO es el juego (formulario) → px OK. */
 .dg-edit-stage { display: flex; justify-content: center; background: var(--ww-bg-soft, #f8fafc); border: 1px solid var(--ww-card-border, #e2e8f0); border-radius: 8px; padding: 8px; max-height: 46vh; }
 .dg-edit-stage .dg-img { cursor: crosshair; }
 .dg-edit-pin { width: 20px; height: 20px; background: #6366f1; color: #fff; border-color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; cursor: grab; }
