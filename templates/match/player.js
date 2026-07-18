@@ -102,10 +102,13 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   // hay una → de frente u horizontal NUNCA falla). Si soltó de vuelta hacia el
   // origen (cruzó menos del medio), devuelve null → desconecta.
   // Tarjeta destino al soltar — 2D AGNÓSTICO a la orientación (mismo criterio que
-  // Etiqueta el diagrama): la tarjeta del lado OPUESTO más cercana en 2D. Así
-  // funciona igual con columnas laterales (ancho) o filas arriba/abajo (alto), sin
-  // asumir un "corredor" por X. Dos guardas para desconectar: soltar MÁS cerca del
-  // origen que del destino (tirar de vuelta), o soltar lejos (fuera del radio).
+  // Etiqueta el diagrama): la tarjeta del lado OPUESTO más cercana en 2D. Funciona
+  // igual con columnas laterales (ancho) o filas arriba/abajo (alto), sin asumir un
+  // "corredor" por X. NO se usa radio: las tarjetas son GRANDES y el usuario suelta
+  // apuntando al punto/borde (a ~medio alto/ancho del centro), así que un radio
+  // sobre el centro rechazaría conexiones válidas (era el bug del vertical). La
+  // única desconexión es "tirar de vuelta": soltar MÁS cerca del origen que del
+  // mejor destino (incluye el toque sin arrastrar, que cae sobre el propio origen).
   function targetCard(x, y, fromSide, fromId) {
     const side = fromSide === 'L' ? 'R' : 'L';
     const cen = el => { const r = el.getBoundingClientRect(); return [(r.left + r.right) / 2, (r.top + r.bottom) / 2]; };
@@ -117,8 +120,7 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
     if (!best) return null;
     const origin = root.querySelector(`.ww-card[data-side="${fromSide}"][data-id="${fromId}"]`);
     if (origin) { const [ox, oy] = cen(origin); if ((ox - x) ** 2 + (oy - y) ** 2 < bestD) return null; }
-    const radius = Math.max(70, arena.getBoundingClientRect().width * 0.16);
-    return Math.sqrt(bestD) <= radius ? best : null;
+    return best;
   }
 
   // ── Arrastre desde TODA la tarjeta (cualquier lado → el opuesto) ────────────
