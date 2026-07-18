@@ -10,13 +10,18 @@
   cambio, en formato `(vX.Y.Z)`, para poder referenciar exactamente por versión.
 - El número de versión del commit y el de la respuesta deben coincidir.
 
-### 2. Push a AMBAS ramas
-Tras commitear, hacer push a las dos ramas:
+### 2. Push a las TRES ramas (SIEMPRE, sin excepción)
+Tras commitear, hacer push a las tres ramas:
 ```
 git push -u origin claude/admiring-shannon-06ioqo
 git push origin claude/admiring-shannon-06ioqo:ACTIVIDAD2
+git push origin claude/admiring-shannon-06ioqo:main
 ```
-`ACTIVIDAD2` es la rama que sirve GitHub Pages (estático).
+- `ACTIVIDAD2` es la rama que sirve GitHub Pages (estático).
+- `main` es la rama que otros proyectos/herramientas consultan por defecto — **debe
+  quedar siempre al día**; se dejó desincronizada 154 commits una vez y "el otro
+  proyecto no encontraba nada" de todo este trabajo. No vuelva a pasar: es push
+  fast-forward simple (sin force), tan rutinario como las otras dos.
 
 ### 3. Entorno del usuario
 - El usuario trabaja en **Windows (PowerShell)** y tiene **GitHub CLI (`gh`) instalado y
