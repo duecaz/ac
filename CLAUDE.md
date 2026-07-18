@@ -116,13 +116,17 @@ las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecut
 
 ## Deuda técnica registrada
 
-### 🐞 BUG ABIERTO (UI) — Emparejar no conecta en VERTICAL → **`docs/handoff-emparejar-vertical.md`**
-SIN RESOLVER tras v1.51.171→175. En portrait las conexiones fallan en el dispositivo
-REAL del usuario, pero los tests headless PASAN (esa es la brecha: algo del táctil/scroll
-real que el headless no reproduce). Lo confirmado (no re-descartar): la cuerda NO tiene
-altura 0, y el enlace SÍ se crea (los logs `[match]` del dispositivo muestran `LINK`).
-Los logs `[match]` siguen en `templates/match/player.js` (temporales, quitar al cerrar).
-**Empezar por el handoff, sin asumir las hipótesis previas.**
+### ✅ RESUELTO (v1.51.178) — Emparejar no conectaba en VERTICAL → `docs/handoff-emparejar-vertical.md`
+Causa REAL (reproducida headless con toque real vía CDP, no PointerEvents sintéticos):
+en portrait el `.ww-stage` (corredor central, `flex:1` del andamio) se estiraba a ~1000px
+de HUECO MUERTO en marcos muy altos, empujando los dos grupos a los extremos. Al arrastrar
+entre ellos se soltaba en ese vacío y `targetCard` cancelaba por su regla "más cerca del
+origen que del destino → cancela" (con un corredor así, medio arrastre legítimo cae ahí).
+Fix (dos partes): (1) `styles/match.css` portrait — corredor fino + `justify-content:center`
+(grupos juntos, cuerdas cortas); (2) `templates/match/player.js targetCard` — se quitó la
+comparación frágil origen-vs-destino; ahora todo arrastre al grupo opuesto conecta con la
+tarjeta más cercana, y solo cancela si se suelta sobre la propia tarjeta. Logs `[match]`
+temporales retirados.
 
 ### 🔴 DEUDA DETECTADA EN REVISIÓN (caza de bugs live/session) — PENDIENTE
 

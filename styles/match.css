@@ -117,4 +117,13 @@
   .ww-dot[data-side="R"] { left: 50%; top: -10px; bottom: auto; transform: translateX(-50%); }
   .ww-dot[data-side="L"]:hover,
   .ww-dot[data-side="R"]:hover { transform: translateX(-50%) scale(1.3); }
+
+  /* Los dos grupos, JUNTOS en el centro (no en los extremos). El escenario es
+     `flex:1` en el andamio → en un marco muy alto se estiraba a ~1000px de HUECO
+     MUERTO, dejando las tarjetas de arriba y de abajo separadísimas: al arrastrar
+     entre ellas se soltaba en ese vacío y la conexión se perdía. Aquí el corredor
+     pasa a ser un carril fino y el field centra ambos grupos → cuerdas cortas,
+     arrastre natural, cabe sin scroll. */
+  .ww-match-field { justify-content: center; }
+  .ww-match-gap   { flex: 0 0 auto; min-height: 10cqmin; height: 10cqmin; }
 }

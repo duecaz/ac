@@ -1,10 +1,32 @@
-# HANDOFF — Emparejar (match): conectar en VERTICAL sigue fallando (SIN RESOLVER)
+# HANDOFF — Emparejar (match): conectar en VERTICAL ✅ RESUELTO (v1.51.178)
 
-> **Estado: NO RESUELTO.** El usuario reporta, de forma consistente y en su
-> dispositivo real, que en orientación VERTICAL (portrait) las conexiones de
-> Emparejar "no funcionan". Varios intentos (v1.51.171→175) NO lo cerraron. El
-> usuario dijo explícitamente "veo que no entiendes el problema" → **empezar de
-> cero, sin asumir que las hipótesis previas eran correctas.**
+> **Estado: RESUELTO.** La causa NO era la que se venía persiguiendo. Se reprodujo
+> el fallo EXACTO en headless usando **toque real (eventos táctiles vía CDP)** en un
+> marco portrait extremo (field 468×1714, como el dispositivo del usuario): con esa
+> geometría el `.ww-stage` (corredor central, `flex:1` del andamio) se estiraba a
+> **~1045px de hueco muerto**, empujando los dos grupos a los extremos (grupo de
+> arriba en y≈100, grupo de abajo en y≈1460). Al arrastrar entre ellos, soltar en
+> ese vacío hacía que `targetCard` CANCELARA por su regla "si el destino queda más
+> cerca del origen que del punto de soltado → cancela": con un corredor tan alto,
+> medio arrastre legítimo cae más cerca del origen → conexión perdida. Eso es
+> justo lo que headless "8/8, 12/12" NO veía: con viewport modesto el corredor era
+> pequeño y el punto medio se cruzaba fácil.
+>
+> **Fix aplicado (dos partes):**
+> 1. `styles/match.css` (portrait `@container player (aspect-ratio < 1/1)`): el
+>    corredor pasa a un carril fino (`.ww-match-gap { flex:0 0 auto; height:10cqmin }`)
+>    y el field centra ambos grupos (`.ww-match-field { justify-content:center }`) →
+>    cuerdas cortas, arrastre natural, cabe sin scroll.
+> 2. `templates/match/player.js` (`targetCard`): eliminada la comparación frágil
+>    origen-vs-destino. Ahora: soltar dentro de una tarjeta opuesta → esa; soltar
+>    de vuelta en la PROPIA tarjeta → cancela; en cualquier otro sitio → la tarjeta
+>    opuesta más cercana por centro. Un arrastre al otro grupo NUNCA se queda sin
+>    conectar. (Mismo criterio robusto que `diagram`, que ya funcionaba.)
+>
+> Logs `[match]` temporales retirados de `templates/match/player.js`.
+>
+> ---
+> _Lo de abajo es el registro histórico de la investigación previa (ya no vigente)._
 
 ## Qué hace el juego
 Emparejar (`templates/match/player.js` + `styles/match.css`) usa el ANDAMIO de
