@@ -233,8 +233,15 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
       cardH = Math.max(44, Math.floor(Math.min((fh - (N - 1) * GAP) / N, (fw * 0.38) * 10 / 16)));
       cardW = Math.round(cardH * 16 / 10);
     } else {
-      cardW = Math.max(90, Math.floor((fw - GAP) / 2));
-      cardH = Math.round(cardW * 10 / 16);
+      // Portrait: cada riel es una fila de 2 columnas → ceil(N/2) filas por riel,
+      // 2 rieles = filas totales. El tamaño debe caber en el ALTO (todas las filas
+      // + corredor) Y en el ANCHO (2 por fila) → NADA de scroll (si no, el grupo de
+      // abajo queda fuera de pantalla y no se puede arrastrar hasta él).
+      const rows = Math.ceil(N / 2) * 2;
+      const byH = (fh * 0.88 - rows * GAP) / rows;   // 12% reservado al corredor
+      const byW = ((fw - GAP) / 2) * 10 / 16;
+      cardH = Math.max(40, Math.floor(Math.min(byH, byW)));
+      cardW = Math.round(cardH * 16 / 10);
     }
     root.querySelectorAll('.ww-card').forEach(c => {
       c.style.flex = '0 0 auto'; c.style.width = cardW + 'px'; c.style.height = cardH + 'px';
