@@ -38,6 +38,10 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
 
   const root       = document.querySelector(rootSel);
   const arena      = root.querySelector('.ww-field');
+  // TEMPORAL — logs de diagnóstico del arrastre (para depurar en dispositivo real).
+  // Abre la consola y arrastra: verás DOWN/END/hit/LINK. Se quita tras diagnosticar.
+  const dbg = (...a) => { try { console.log('[match]', ...a); } catch {} };
+  dbg('montado, orientación=', arena && getComputedStyle(arena).flexDirection);
   const svg        = root.querySelector('.ww-lines-svg');
   const progressEl = root.querySelector('.ww-matched');
   const submitBtn  = root.querySelector('.ww-match-submit');
@@ -120,17 +124,18 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
     //    el punto PERTENECE a su tarjeta. Se comprueba primero, sin ambigüedad.
     for (const c of cards) {
       const dot = c.querySelector('.ww-dot');
-      if (dot && inRect(dot.getBoundingClientRect(), 14)) return c;
+      if (dot && inRect(dot.getBoundingClientRect(), 14)) { dbg('hit=DOT', side + ':' + c.dataset.id); return c; }
     }
     // 1) ¿soltó DENTRO de una tarjeta (margen pequeño)? → esa.
-    for (const c of cards) if (inRect(c.getBoundingClientRect(), 8)) return c;
+    for (const c of cards) if (inRect(c.getBoundingClientRect(), 8)) { dbg('hit=RECT', side + ':' + c.dataset.id); return c; }
     // 2) hueco/corredor: la más cercana por centro, salvo "tirar de vuelta" al origen.
     const cen = el => { const r = el.getBoundingClientRect(); return [(r.left + r.right) / 2, (r.top + r.bottom) / 2]; };
     let best = null, bestD = Infinity;
     for (const c of cards) { const [cx, cy] = cen(c); const d = (cx - x) ** 2 + (cy - y) ** 2; if (d < bestD) { bestD = d; best = c; } }
-    if (!best) return null;
+    if (!best) { dbg('hit=NONE (sin tarjetas opuestas)'); return null; }
     const origin = root.querySelector(`.ww-card[data-side="${fromSide}"][data-id="${fromId}"]`);
-    if (origin) { const [ox, oy] = cen(origin); if ((ox - x) ** 2 + (oy - y) ** 2 < bestD) return null; }
+    if (origin) { const [ox, oy] = cen(origin); if ((ox - x) ** 2 + (oy - y) ** 2 < bestD) { dbg('hit=NULL (más cerca del origen → cancela)'); return null; } }
+    dbg('hit=NEAREST', side + ':' + best.dataset.id, 'd=' + Math.round(Math.sqrt(bestD)));
     return best;
   }
 
@@ -142,13 +147,15 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
     if (state.graded || state.dragging) return;
     if (e.target.closest('.ww-match-submit')) return;
     const card = e.target.closest('.ww-card');
-    if (!card) return;
+    if (!card) { dbg('DOWN ignorado (no cayó en tarjeta), target=', e.target?.className); return; }
     e.preventDefault();
     const dot = card.querySelector('.ww-dot');
     const pos = dotPos(dot, svg);
     state.dragging = { pointerId: e.pointerId, fromSide: card.dataset.side, fromId: card.dataset.id,
                        x1: pos.x, y1: pos.y, cx: pos.x, cy: pos.y };
-    try { arena.setPointerCapture(e.pointerId); } catch {}
+    let captured = false;
+    try { arena.setPointerCapture(e.pointerId); captured = true; } catch {}
+    dbg('DOWN', card.dataset.side + ':' + card.dataset.id, 'type=' + e.pointerType, 'capture=' + captured);
     updateSvg();
   });
 
@@ -160,23 +167,26 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
     updateSvg();
   });
 
-  function endDrag(e, connect) {
+  function endDrag(e, connect, evName) {
     const drag = state.dragging;
-    if (!drag || e.pointerId !== drag.pointerId) return;
+    if (!drag || e.pointerId !== drag.pointerId) { dbg('END ignorado ev=' + evName, 'sin drag activo o pointerId distinto'); return; }
     state.dragging = null;
     try { arena.releasePointerCapture(e.pointerId); } catch {}
-    if (!connect) { updateSvg(); return; }
+    if (!connect) { dbg('END', 'ev=' + evName, '→ NO conecta (cancel)'); updateSvg(); return; }
+    dbg('END', 'ev=' + evName, 'suelta=(' + Math.round(e.clientX) + ',' + Math.round(e.clientY) + ')', 'desde ' + drag.fromSide + ':' + drag.fromId);
     const hit = targetCard(e.clientX, e.clientY, drag.fromSide, drag.fromId);
     if (hit) {
       const leftId  = drag.fromSide === 'L' ? drag.fromId : hit.dataset.id;
       const rightId = drag.fromSide === 'L' ? hit.dataset.id : drag.fromId;
+      dbg('LINK', leftId + ' ↔ ' + rightId);
       setLink(leftId, rightId);
     } else {
       removeByCard(drag.fromSide, drag.fromId);   // soltar en vacío: desconectar
     }
   }
-  arena.addEventListener('pointerup', e => endDrag(e, true));
-  arena.addEventListener('pointercancel', e => endDrag(e, false));
+  arena.addEventListener('pointerup', e => endDrag(e, true, 'pointerup'));
+  arena.addEventListener('pointercancel', e => endDrag(e, false, 'pointercancel'));
+  arena.addEventListener('lostpointercapture', e => dbg('lostpointercapture', 'id=' + e.pointerId));
 
   // ── Enviar → corregir y puntuar ─────────────────────────────────────────────
   submitBtn?.addEventListener('click', () => {
