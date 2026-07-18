@@ -216,11 +216,15 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
     }), 1100);
   });
 
-  // ── Maquetación 16/10, CONSCIENTE de la orientación del andamio ─────────────
-  // Ancho (rieles = columnas): N tarjetas apiladas en el ALTO, ancho ≤ ~38% del
-  // field (dos columnas + corredor). Alto (rieles = filas envueltas): 2 tarjetas
-  // por fila, más grandes. El tamaño se calcula del FIELD (no del riel, que se
-  // ciñe a las tarjetas → evita la dependencia circular).
+  // ── Maquetación: SIEMPRE dos columnas laterales (preguntas | respuestas) ─────
+  // En ambas orientaciones los rieles son columnas y las cuerdas cruzan el pasillo
+  // central en horizontal → nunca pisan otra tarjeta. Cambia el CÁLCULO de tamaño:
+  //  · Ancho (landscape): muchas tarjetas caben por alto → se dimensionan por alto,
+  //    con tope de ancho ~38% del field (deja pasillo).
+  //  · Alto (portrait): pocas tarjetas, ancho por columna ~mitad del field y alto
+  //    para apilar las N; con tope legible (nada de tarjetas altísimas casi vacías;
+  //    el resto del alto lo reparte space-evenly). El tamaño se calcula del FIELD
+  //    (no del riel, que se ciñe a las tarjetas → evita la dependencia circular).
   function fitLayout() {
     const field = root.querySelector('.ww-field');
     if (!field) return;
@@ -228,21 +232,16 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
     const GAP = 8;
     const fw = field.clientWidth, fh = field.clientHeight;
     if (!fw || !fh) return;
-    const horizontal = getComputedStyle(field).flexDirection === 'row';   // landscape
+    const portrait = fh > fw;
     let cardW, cardH;
-    if (horizontal) {
+    if (!portrait) {
       cardH = Math.max(44, Math.floor(Math.min((fh - (N - 1) * GAP) / N, (fw * 0.38) * 10 / 16)));
       cardW = Math.round(cardH * 16 / 10);
     } else {
-      // Portrait: cada riel es una fila de 2 columnas → ceil(N/2) filas por riel,
-      // 2 rieles = filas totales. El tamaño debe caber en el ALTO (todas las filas
-      // + corredor) Y en el ANCHO (2 por fila) → NADA de scroll (si no, el grupo de
-      // abajo queda fuera de pantalla y no se puede arrastrar hasta él).
-      const rows = Math.ceil(N / 2) * 2;
-      const byH = (fh * 0.88 - rows * GAP) / rows;   // 12% reservado al corredor
-      const byW = ((fw - GAP) / 2) * 10 / 16;
-      cardH = Math.max(40, Math.floor(Math.min(byH, byW)));
-      cardW = Math.round(cardH * 16 / 10);
+      // Dos columnas: ancho por columna ≈ mitad del field menos el pasillo central.
+      cardW = Math.max(88, Math.floor((fw - 44) / 2));
+      // Alto: que las N quepan apiladas, pero sin pasar de ~0.92·ancho (legible).
+      cardH = Math.max(64, Math.floor(Math.min((fh - (N - 1) * GAP) / N, cardW * 0.92)));
     }
     root.querySelectorAll('.ww-card').forEach(c => {
       c.style.flex = '0 0 auto'; c.style.width = cardW + 'px'; c.style.height = cardH + 'px';
@@ -263,8 +262,9 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
 
 function buildLayout(lefts, rights, activity, total) {
   // Andamio de regiones (styles/scaffold.css): dos rieles (start/end) con un
-  // corredor central (ww-stage vacío) que las cuerdas cruzan. Refluye de columnas
-  // laterales (ancho) a filas arriba/abajo (alto) → tarjetas grandes en móvil.
+  // corredor central (ww-stage vacío) que las cuerdas cruzan. Emparejar mantiene los
+  // rieles como DOS COLUMNAS laterales en ambas orientaciones (ver match.css portrait):
+  // así las cuerdas cruzan el pasillo en horizontal y no se solapan con las tarjetas.
   return `<div class="ww-scaffold ww-match p-2">
   <div class="ww-bar d-flex align-items-center gap-2 px-1">
     <span class="badge bg-secondary ww-matched flex-shrink-0">0 / ${total}</span>

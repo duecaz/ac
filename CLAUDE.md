@@ -123,8 +123,14 @@ las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecut
 
 ## Deuda técnica registrada
 
-### ✅ RESUELTO (v1.51.178 + v1.51.179) — Emparejar no conectaba en VERTICAL → `docs/handoff-emparejar-vertical.md`
-**Eran DOS causas encadenadas** (la segunda quedaba oculta tras la primera):
+### ✅ RESUELTO (v1.51.178 → v1.51.180) — Emparejar no conectaba en VERTICAL → `docs/handoff-emparejar-vertical.md`
+**Eran DOS causas encadenadas + 1 mejora de layout** (cada una tapaba a la siguiente):
+- **v1.51.180 — las cuerdas se SOLAPABAN con las tarjetas en vertical.** Al reordenar el
+  andamio a filas arriba/abajo (rejilla 2×2 por grupo), una cuerda entre dos tarjetas de la
+  MISMA columna era vertical y pasaba por encima de las tarjetas intermedias. Fix:
+  Emparejar NO se reordena a filas en portrait — mantiene DOS COLUMNAS laterales en ambas
+  orientaciones (`styles/match.css` portrait + rama portrait de `fitLayout`), así las
+  cuerdas cruzan el pasillo central en horizontal y nunca pisan otra tarjeta.
 - **v1.51.179 — la cuerda VERTICAL no se dibujaba (frente a frente).** El motor de
   cuerdas (`core/connectRope.js`) daba la sombra con un filtro SVG `feDropShadow` cuya
   región va en % del BOUNDING BOX; una cuerda vertical (dos tarjetas alineadas → mismos x)

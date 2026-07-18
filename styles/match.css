@@ -110,20 +110,15 @@
 }
 .ww-dot[data-side="L"] { right: -10px; }
 .ww-dot[data-side="R"] { left:  -10px; }
-/* Portrait (rieles = filas): las tarjetas de arriba (L) llevan el punto ABAJO y
-   las de abajo (R) ARRIBA — apuntando siempre al corredor central. */
+/* Portrait: Emparejar NO se reordena a filas arriba/abajo (a diferencia del resto
+   del andamio). Mantiene DOS COLUMNAS laterales SIEMPRE. Motivo: con filas, una
+   cuerda entre dos tarjetas de la MISMA columna es vertical y cruza POR ENCIMA de
+   las tarjetas intermedias (se solapaban). Con dos columnas, las cuerdas cruzan el
+   pasillo central en horizontal y nunca pisan otra tarjeta. Los puntos se quedan en
+   el borde interior (regla base, no se reposicionan). El tamaño lo calcula fitLayout
+   (rama portrait: ancho por columna + alto para apilar las N). */
 @container player (aspect-ratio < 1/1) {
-  .ww-dot[data-side="L"] { right: auto; left: 50%; top: auto; bottom: -10px; transform: translateX(-50%); }
-  .ww-dot[data-side="R"] { left: 50%; top: -10px; bottom: auto; transform: translateX(-50%); }
-  .ww-dot[data-side="L"]:hover,
-  .ww-dot[data-side="R"]:hover { transform: translateX(-50%) scale(1.3); }
-
-  /* Los dos grupos, JUNTOS en el centro (no en los extremos). El escenario es
-     `flex:1` en el andamio → en un marco muy alto se estiraba a ~1000px de HUECO
-     MUERTO, dejando las tarjetas de arriba y de abajo separadísimas: al arrastrar
-     entre ellas se soltaba en ese vacío y la conexión se perdía. Aquí el corredor
-     pasa a ser un carril fino y el field centra ambos grupos → cuerdas cortas,
-     arrastre natural, cabe sin scroll. */
-  .ww-match-field { justify-content: center; }
-  .ww-match-gap   { flex: 0 0 auto; min-height: 10cqmin; height: 10cqmin; }
+  .ww-match-field { flex-direction: row; align-items: stretch; }
+  .ww-match-col   { flex-direction: column; flex-wrap: nowrap; justify-content: space-evenly; }
+  .ww-match-gap   { flex: 1 1 auto; }
 }
