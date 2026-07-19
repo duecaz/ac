@@ -73,7 +73,16 @@ export function renderHome(rootSel) {
     `);
 
     const qEl = document.getElementById('h-q');
-    if (qEl) qEl.oninput = e => { _filter.q = e.target.value; paint(); qEl.focus(); };
+    // paint() re-monta toda la vista → el <input> se reemplaza. Hay que re-enfocar
+    // el input NUEVO (no el viejo, ya desprendido) y restaurar el cursor, o el
+    // buscador pierde el foco a la primera tecla.
+    if (qEl) qEl.oninput = e => {
+      _filter.q = e.target.value;
+      const caret = e.target.selectionStart;
+      paint();
+      const q = document.getElementById('h-q');
+      if (q) { q.focus(); try { q.setSelectionRange(caret, caret); } catch {} }
+    };
     const tEl = document.getElementById('h-tpl');
     if (tEl) tEl.onchange = e => { _filter.template = e.target.value; paint(); };
   }
