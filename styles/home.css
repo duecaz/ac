@@ -1,0 +1,282 @@
+/* Chrome del panel Profesor — "Mis actividades" (rediseño visual).
+   Estilo propio (no Bootstrap) para la barra superior, la home y sus tarjetas.
+   NO usa los tokens --ww-* del juego (esto es chrome, no "el juego"): por eso el
+   ratchet styles.test.mjs lo EXCLUYE. Paleta calibrada del mockup del usuario.
+   Fuente = del sistema (decisión del usuario, sin webfont). */
+
+:root {
+  --dash-bg:        #f3efe4;   /* crema cálido de la página */
+  --dash-fg:        #1f2937;
+  --dash-ink:       #141c2e;   /* títulos / navy */
+  --dash-muted:     #6b7280;
+  --dash-line:      #e2ddce;   /* bordes cálidos */
+  --dash-card-line: #ece7d8;
+  --dash-primary:   #2563eb;
+  --dash-primary-d: #1d4ed8;
+  --dash-navy:      #141c2e;
+  --dash-navy-btn:  #243149;
+  --dash-navy-btn2: #2d3d59;
+  --dash-navy-line: #33425d;
+  --dash-yellow:    #f5c518;
+  --dash-yellow-d:  #ffd534;
+}
+
+/* La app del profesor vive sobre crema; la fuente del sistema. */
+body {
+  background: var(--dash-bg);
+  color: var(--dash-fg);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+#app { min-height: 40vh; }
+
+/* ─────────────────────────── Barra superior ─────────────────────────── */
+.ww-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+  background: var(--dash-navy); color: #fff;
+  padding: 0 18px; min-height: 56px;
+  flex-wrap: wrap;
+}
+.ww-topbar__brand {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-weight: 800; font-size: 17px; letter-spacing: .2px; color: #fff;
+  text-decoration: none;
+}
+.ww-topbar__brand:hover { color: #fff; }
+.ww-topbar__logo {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 8px;
+  background: var(--dash-yellow); color: var(--dash-ink); font-size: 15px;
+}
+.ww-topbar__brand .sep { opacity: .45; font-weight: 500; }
+.ww-topbar__brand .role { font-weight: 600; opacity: .9; }
+.ww-topbar__actions { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+
+.ww-topbar #ww-version,
+.ww-topbar .ww-chip {
+  font-size: 11px; font-weight: 700; letter-spacing: .2px;
+  background: var(--dash-navy-btn); color: #9fb3d1;
+  padding: 4px 9px; border-radius: 6px;
+}
+
+/* Botones de la barra (incl. los inyectados en #ww-mute-slot/#ww-auth-slot). */
+.ww-navbtn,
+#ww-mute-slot > *, #ww-auth-slot > * {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  background: var(--dash-navy-btn); color: #e5edf9;
+  border: 1px solid var(--dash-navy-line); border-radius: 9px;
+  padding: 8px 13px; min-height: 36px;
+  font: inherit; font-size: 13px; font-weight: 600; line-height: 1;
+  cursor: pointer; text-decoration: none; transition: background .15s, color .15s;
+}
+.ww-navbtn:hover,
+#ww-mute-slot > *:hover, #ww-auth-slot > *:hover {
+  background: var(--dash-navy-btn2); color: #fff;
+}
+.ww-navbtn--icon { width: 36px; padding: 0; }
+.ww-navbtn--accent {
+  background: var(--dash-yellow); color: var(--dash-ink); border: none;
+}
+.ww-navbtn--accent:hover { background: var(--dash-yellow-d); color: var(--dash-ink); }
+.ww-navbtn i { font-size: 15px; }
+
+/* ──────────────────────────── Home layout ───────────────────────────── */
+.home-wrap { max-width: 1440px; margin: 0 auto; padding: 30px 28px 60px; }
+
+.home-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 20px; flex-wrap: wrap; margin-bottom: 18px;
+}
+.home-head h1 {
+  margin: 0; font-size: 30px; font-weight: 800; letter-spacing: -.5px;
+  color: var(--dash-ink);
+}
+.home-head p { margin: 4px 0 0; color: var(--dash-muted); font-size: 14px; font-weight: 500; }
+.home-actions { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+
+/* Botones del toolbar */
+.btn-ghost, .btn-primary-solid {
+  display: inline-flex; align-items: center; gap: 7px;
+  font: inherit; font-size: 13px; font-weight: 600; line-height: 1;
+  border-radius: 10px; cursor: pointer; text-decoration: none;
+  transition: background .15s, border-color .15s, box-shadow .15s;
+}
+.btn-ghost {
+  background: #fff; color: #374151; border: 1px solid var(--dash-line);
+  padding: 9px 14px; box-shadow: 0 1px 2px rgba(20,28,46,.04);
+}
+.btn-ghost:hover { border-color: #c9c2ad; background: #faf8f2; color: #374151; }
+.btn-ghost:disabled { opacity: .5; cursor: not-allowed; }
+.btn-ghost i { font-size: 15px; }
+.btn-primary-solid {
+  background: var(--dash-primary); color: #fff; border: none;
+  padding: 10px 18px; font-weight: 700;
+  box-shadow: 0 3px 10px rgba(37,99,235,.32);
+}
+.btn-primary-solid:hover { background: var(--dash-primary-d); color: #fff; }
+.btn-primary-solid i { font-size: 16px; }
+
+/* Búsqueda + filtro + contador */
+.home-tools {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px;
+}
+.home-search { position: relative; flex: 1; min-width: 240px; }
+.home-search > i {
+  position: absolute; left: 15px; top: 50%; transform: translateY(-50%);
+  color: #9aa2ad; font-size: 16px; pointer-events: none;
+}
+.home-search input {
+  width: 100%; padding: 12px 16px 12px 40px;
+  border: 1px solid var(--dash-line); border-radius: 12px; background: #fff;
+  font: inherit; font-size: 14px; color: var(--dash-fg);
+  box-shadow: 0 1px 2px rgba(20,28,46,.04);
+}
+.home-search input:focus {
+  outline: none; border-color: var(--dash-primary);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.14);
+}
+.home-select { position: relative; min-width: 210px; }
+.home-select select {
+  appearance: none; -webkit-appearance: none;
+  width: 100%; padding: 12px 40px 12px 16px;
+  border: 1px solid var(--dash-line); border-radius: 12px; background: #fff;
+  font: inherit; font-size: 14px; font-weight: 600; color: #374151; cursor: pointer;
+  box-shadow: 0 1px 2px rgba(20,28,46,.04);
+}
+.home-select select:focus {
+  outline: none; border-color: var(--dash-primary);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.14);
+}
+.home-select > i {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  color: var(--dash-muted); pointer-events: none;
+}
+.home-count {
+  font-size: 13px; font-weight: 700; color: var(--dash-muted);
+  background: #fff; border: 1px solid var(--dash-line); border-radius: 999px;
+  padding: 8px 14px; white-space: nowrap;
+}
+
+/* ───────────────────────────── Grid + tarjeta ───────────────────────── */
+.home-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 18px;
+}
+.acard {
+  display: flex; flex-direction: column;
+  background: #fff; border: 1px solid var(--dash-card-line); border-radius: 16px;
+  overflow: hidden; box-shadow: 0 1px 3px rgba(20,28,46,.05);
+  transition: box-shadow .18s, transform .18s;
+}
+.acard:hover { box-shadow: 0 12px 30px rgba(20,28,46,.13); transform: translateY(-3px); }
+
+/* El preview real (mountThumb) se auto-dimensiona: le pone al .js-thumb la clase
+   .ww-thumb (width:100%, aspect-ratio 16/10) y escala su escenario 1280×800 con un
+   transform. NO forzar tamaño al hijo aquí — rompería ese escalado. */
+.acard-preview {
+  position: relative; overflow: hidden;
+  border-bottom: 1px solid #f0ecdf; background: #eef0f3;
+}
+.acard-preview .js-thumb { display: block; }
+.acard-badge {
+  position: absolute; top: 9px; left: 10px; z-index: 2;
+  font-size: 10px; font-weight: 800; letter-spacing: .5px;
+  background: rgba(20,28,46,.72); color: #fff; padding: 3px 7px; border-radius: 6px;
+}
+/* Cabecera de tarjeta-lista (variante) */
+.acard-listhead {
+  height: 150px; display: flex; align-items: center; gap: 14px; padding: 18px;
+  background: var(--dash-navy); color: #fff; border-bottom: 1px solid #f0ecdf;
+}
+.acard-listhead i { font-size: 34px; opacity: .8; }
+.acard-listhead .t { font-weight: 700; font-size: 16px; }
+.acard-listhead .s { opacity: .8; font-size: 12.5px; }
+
+/* Tira de modos (pastillas de color con icono) */
+.acard-modes {
+  display: flex; gap: 6px; padding: 10px 12px; border-bottom: 1px solid #f2eee2;
+}
+.acard-modes button {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center;
+  height: 30px; border: none; border-radius: 8px; cursor: pointer;
+  font-size: 15px; transition: background .15s, color .15s;
+}
+.acard-modes button.mode-solo  { background: #e8f6ee; color: #16a34a; }
+.acard-modes button.mode-vs    { background: #fdeaea; color: #ef4444; }
+.acard-modes button.mode-teams { background: #e7f0fe; color: #2563eb; }
+.acard-modes button.mode-live  { background: #fef3e2; color: #f59e0b; }
+.acard-modes button.mode-task  { background: #e2f8fb; color: #0891b2; }
+.acard-modes button.mode-solo:hover  { background: #16a34a; color: #fff; }
+.acard-modes button.mode-vs:hover    { background: #ef4444; color: #fff; }
+.acard-modes button.mode-teams:hover { background: #2563eb; color: #fff; }
+.acard-modes button.mode-live:hover  { background: #f59e0b; color: #fff; }
+.acard-modes button.mode-task:hover  { background: #0891b2; color: #fff; }
+/* Botón "Jugar" de la tarjeta-lista (ocupa toda la fila) */
+.acard-modes .mode-list {
+  flex: 1; gap: 7px; font-size: 13px; font-weight: 700;
+  background: #e7f0fe; color: #2563eb;
+}
+.acard-modes .mode-list:hover { background: #2563eb; color: #fff; }
+
+/* Cuerpo de la tarjeta */
+.acard-body { padding: 13px 14px 15px; display: flex; flex-direction: column; flex: 1; }
+.acard-toprow {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin-bottom: 9px;
+}
+.tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 999px;
+  background: #eef2f7; color: #475569;
+}
+.tag i { font-size: 12px; }
+.tag--info    { background: #e2f8fb; color: #0891b2; }
+.tag--success { background: #e8f6ee; color: #16a34a; }
+.tag--warning { background: #fef3e2; color: #d97706; }
+.tag--primary { background: #e7f0fe; color: #2563eb; }
+.tag--danger  { background: #fdeaea; color: #ef4444; }
+
+.acard-icons { display: flex; gap: 4px; align-items: center; }
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 7px; border: none;
+  background: #f4f1e8; color: #6b7280; cursor: pointer; font-size: 14px;
+  transition: background .15s, color .15s;
+}
+.icon-btn.edit:hover { background: #e7f0fe; color: #2563eb; }
+.icon-btn.del:hover  { background: #fdeaea; color: #ef4444; }
+.acard-unsync { color: #f59e0b; font-size: 14px; }
+
+.acard-title {
+  margin: 0; font-size: 15px; font-weight: 700; color: var(--dash-ink);
+  line-height: 1.3;
+}
+.acard-sub { margin: 3px 0 0; font-size: 12.5px; color: #8a8371; font-weight: 500; }
+.acard-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.acard-tags .t {
+  font-size: 10px; font-weight: 600; color: #6b7280;
+  background: #f4f1e8; border: 1px solid #e7e1d2; border-radius: 6px; padding: 2px 7px;
+}
+.acard-foot {
+  display: flex; align-items: center; gap: 14px;
+  margin-top: auto; padding-top: 11px; border-top: 1px solid #f2eee2;
+  color: #9aa2ad; font-size: 12px; font-weight: 600;
+}
+.acard-foot span { display: inline-flex; align-items: center; gap: 5px; }
+.acard-foot .heart { color: #ef4444; }
+
+/* Estado vacío / sin resultados */
+.home-empty { text-align: center; padding: 60px 20px; color: var(--dash-muted); }
+.home-empty i { font-size: 54px; opacity: .5; }
+.home-empty p { margin-top: 14px; font-size: 15px; }
+
+/* ───────────────────────────── Responsive ───────────────────────────── */
+@media (max-width: 640px) {
+  .ww-topbar { padding: 8px 12px; gap: 8px; }
+  .ww-topbar__actions { gap: 6px; }
+  .ww-navbtn { padding: 7px 10px; font-size: 12px; }
+  .home-wrap { padding: 20px 16px 48px; }
+  .home-head h1 { font-size: 24px; }
+  .home-actions { width: 100%; }
+  .home-grid { grid-template-columns: 1fr; }   /* una sola columna en teléfono */
+}

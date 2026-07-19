@@ -26,37 +26,50 @@ export function renderHome(rootSel) {
           || (a.tags || []).some(t => String(t).toLowerCase().includes(term));
     });
 
+    const countLabel = _filter.q || _filter.template
+      ? `${acts.length} de ${all.length}`
+      : `${all.length} ${all.length === 1 ? 'actividad' : 'actividades'}`;
+
     mount(rootSel, html`
-      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <h2 class="mb-0">Mis actividades</h2>
-        <div class="d-flex gap-2 flex-wrap">
-          <button class="btn btn-outline-secondary" id="h-import" title="Importar JSON"><i class="bi bi-file-earmark-arrow-up"></i> Importar</button>
-          <button class="btn btn-outline-secondary" id="h-export-all" title="Exportar todas a JSON" ${all.length===0?'disabled':''}><i class="bi bi-file-earmark-arrow-down"></i> Exportar</button>
-          <a href="#/admin" class="btn btn-outline-secondary" title="Panel de administración (modos, detalles, tests)"><i class="bi bi-shield-lock"></i> Admin</a>
-          <a href="#/new-list" class="btn btn-outline-primary"><i class="bi bi-collection-play"></i> Nueva lista</a>
-          <a href="#/new" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Nueva</a>
-        </div>
-      </div>
-      ${all.length === 0 ? '' : `
-        <div class="row g-2 mb-3">
-          <div class="col-md-7"><input id="h-q" class="form-control" placeholder="Buscar por título o tag…" value="${escapeHtml(_filter.q)}"></div>
-          <div class="col-md-3">
-            <select id="h-tpl" class="form-select">
-              <option value="">Todas las plantillas</option>
-              ${templates.map(T => `<option value="${T.meta.name}" ${_filter.template===T.meta.name?'selected':''}>${escapeHtml(T.meta.label)}</option>`).join('')}
-            </select>
+      <div class="home-wrap">
+        <div class="home-head">
+          <div>
+            <h1>Mis actividades</h1>
+            <p>Gestiona y comparte tus actividades con tus alumnos</p>
           </div>
-          <div class="col-md-2 d-flex align-items-center"><small class="text-muted">${acts.length} / ${all.length}</small></div>
+          <div class="home-actions">
+            <button class="btn-ghost" id="h-import" title="Importar JSON"><i class="bi bi-file-earmark-arrow-up"></i> Importar</button>
+            <button class="btn-ghost" id="h-export-all" title="Exportar todas a JSON" ${all.length===0?'disabled':''}><i class="bi bi-file-earmark-arrow-down"></i> Exportar</button>
+            <a href="#/admin" class="btn-ghost" title="Panel de administración (modos, detalles, tests)"><i class="bi bi-shield-lock"></i> Admin</a>
+            <a href="#/new-list" class="btn-ghost"><i class="bi bi-collection-play"></i> Nueva lista</a>
+            <a href="#/new" class="btn-primary-solid"><i class="bi bi-plus-lg"></i> Nueva</a>
+          </div>
         </div>
-      `}
-      ${acts.length === 0 ? (all.length === 0 ? `
-        <div class="text-center py-5 text-muted">
-          <i class="bi bi-collection display-1"></i>
-          <p class="mt-3">Aún no hay actividades. Crea la primera.</p>
-        </div>` : `<p class="text-muted text-center py-4">Sin resultados con ese filtro.</p>`) : `
-        <div class="row g-3">
-          ${acts.map(card).join('')}
-        </div>`}
+        ${all.length === 0 ? '' : `
+          <div class="home-tools">
+            <div class="home-search">
+              <i class="bi bi-search"></i>
+              <input id="h-q" placeholder="Buscar por título o tag…" value="${escapeHtml(_filter.q)}">
+            </div>
+            <div class="home-select">
+              <select id="h-tpl">
+                <option value="">Todas las plantillas</option>
+                ${templates.map(T => `<option value="${T.meta.name}" ${_filter.template===T.meta.name?'selected':''}>${escapeHtml(T.meta.label)}</option>`).join('')}
+              </select>
+              <i class="bi bi-chevron-down"></i>
+            </div>
+            <span class="home-count">${countLabel}</span>
+          </div>
+        `}
+        ${acts.length === 0 ? (all.length === 0 ? `
+          <div class="home-empty">
+            <i class="bi bi-collection"></i>
+            <p>Aún no hay actividades. Crea la primera.</p>
+          </div>` : `<div class="home-empty"><p>Sin resultados con ese filtro.</p></div>`) : `
+          <div class="home-grid">
+            ${acts.map(card).join('')}
+          </div>`}
+      </div>
     `);
 
     const qEl = document.getElementById('h-q');
@@ -86,67 +99,69 @@ export function renderHome(rootSel) {
     const canTeams = teamsMode.supportsTemplate(T) && teamsMode.isAvailable(a);
 
     const playBtns = [
-      m.solo             ? `<button class="btn btn-success act-play"  data-id="${a.id}" title="Individual"><i class="bi bi-person-fill"></i></button>` : '',
-      isVsCompatible(a)  ? `<button class="btn btn-danger  act-vs"   data-id="${a.id}" title="VS"><i class="bi bi-fire"></i></button>` : '',
-      canTeams           ? `<button class="btn btn-primary act-teams" data-id="${a.id}" data-tpl="${a.template}" title="Equipos"><i class="bi bi-people-fill"></i></button>` : '',
-      m.live             ? `<button class="btn btn-warning  act-pin"  data-id="${a.id}" title="En vivo"><i class="bi bi-broadcast"></i></button>` : '',
-      m.async            ? `<button class="btn btn-info     act-task" data-id="${a.id}" title="Tarea"><i class="bi bi-clipboard-check"></i></button>` : '',
+      m.solo             ? `<button class="act-play mode-solo"   data-id="${a.id}" title="Individual"><i class="bi bi-person-fill"></i></button>` : '',
+      isVsCompatible(a)  ? `<button class="act-vs mode-vs"       data-id="${a.id}" title="VS"><i class="bi bi-fire"></i></button>` : '',
+      canTeams           ? `<button class="act-teams mode-teams" data-id="${a.id}" data-tpl="${a.template}" title="Equipos"><i class="bi bi-people-fill"></i></button>` : '',
+      m.live             ? `<button class="act-pin mode-live"    data-id="${a.id}" title="En vivo"><i class="bi bi-broadcast"></i></button>` : '',
+      m.async            ? `<button class="act-task mode-task"   data-id="${a.id}" title="Tarea"><i class="bi bi-clipboard-check"></i></button>` : '',
     ].filter(Boolean).join('');
 
     return `
-      <div class="col-sm-6 col-xl-4">
-        <div class="card h-100 border-0 rounded-4 shadow-sm overflow-hidden">
+      <article class="acard">
+        <div class="acard-preview">
           <div class="js-thumb" data-id="${escapeHtml(a.id)}"></div>
-          <div class="btn-group btn-group-sm w-100 card-modes" role="group">
-            ${playBtns}
-          </div>
-          <div class="card-body pt-2 pb-3 px-3">
-            <div class="d-flex align-items-center gap-2 mb-2">
-              <span class="badge bg-${color}"><i class="bi ${icon}"></i> ${escapeHtml(label)}</span>
-              <button class="card-icon-btn text-primary act-edit" data-id="${a.id}" title="Editar"><i class="bi bi-pencil-fill"></i></button>
-              <button class="card-icon-btn text-danger act-del" data-id="${a.id}" title="Eliminar"><i class="bi bi-trash3"></i></button>
-              ${a._unsynced ? '<i class="bi bi-cloud-slash text-warning" title="No sincronizada"></i>' : ''}
-              <span class="ms-auto d-flex align-items-center gap-3 text-muted small">
-                <span title="Elementos"><i class="bi bi-file-earmark-text"></i> ${itemCount(a)}</span>
-                <span title="Me gusta (próximamente)"><i class="bi bi-heart-fill text-danger"></i> ${a.likes ?? 0}</span>
-              </span>
+        </div>
+        ${playBtns ? `<div class="acard-modes">${playBtns}</div>` : ''}
+        <div class="acard-body">
+          <div class="acard-toprow">
+            <span class="tag tag--${color}"><i class="bi ${icon}"></i> ${escapeHtml(label)}</span>
+            <div class="acard-icons">
+              <button class="icon-btn edit act-edit" data-id="${a.id}" title="Editar"><i class="bi bi-pencil-fill"></i></button>
+              <button class="icon-btn del act-del" data-id="${a.id}" title="Eliminar"><i class="bi bi-trash3"></i></button>
+              ${a._unsynced ? '<i class="bi bi-cloud-slash acard-unsync" title="No sincronizada"></i>' : ''}
             </div>
-            <h6 class="card-title mb-0 fw-semibold">${escapeHtml(a.title)}</h6>
-            ${a.subtitle ? `<p class="small text-muted mb-0 mt-1">${escapeHtml(a.subtitle)}</p>` : ''}
-            ${(a.tags||[]).length ? `<div class="mt-1">${a.tags.slice(0,3).map(t=>`<span class="badge bg-light text-dark border me-1">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+          </div>
+          <h3 class="acard-title">${escapeHtml(a.title)}</h3>
+          ${a.subtitle ? `<p class="acard-sub">${escapeHtml(a.subtitle)}</p>` : ''}
+          ${(a.tags||[]).length ? `<div class="acard-tags">${a.tags.slice(0,3).map(t=>`<span class="t">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+          <div class="acard-foot">
+            <span title="Elementos"><i class="bi bi-file-earmark-text"></i> ${itemCount(a)}</span>
+            <span title="Me gusta (próximamente)"><i class="bi bi-heart-fill heart"></i> ${a.likes ?? 0}</span>
           </div>
         </div>
-      </div>`;
+      </article>`;
   }
 
   function listCard(a) {
     const rounds = (a.content?.items || []).length;
     return `
-      <div class="col-sm-6 col-xl-4">
-        <div class="card h-100 border-0 rounded-4 shadow-sm overflow-hidden">
-          <div class="p-3 d-flex align-items-center gap-3" style="background:var(--bs-primary);color:#fff;min-height:72px">
-            <i class="bi bi-collection-play-fill fs-2 opacity-75"></i>
-            <div class="overflow-hidden">
-              <div class="fw-semibold text-truncate">${escapeHtml(a.title)}</div>
-              ${a.subtitle ? `<small class="opacity-75 text-truncate d-block">${escapeHtml(a.subtitle)}</small>` : ''}
-            </div>
-          </div>
-          <div class="btn-group btn-group-sm w-100 card-modes" role="group">
-            <button class="btn btn-primary act-list" data-id="${escapeHtml(a.id)}" title="Jugar lista">
-              <i class="bi bi-play-fill"></i> Jugar
-            </button>
-          </div>
-          <div class="card-body pt-2 pb-3 px-3">
-            <div class="d-flex align-items-center gap-2">
-              <span class="badge bg-primary"><i class="bi bi-collection-play"></i> Lista</span>
-              <button class="card-icon-btn text-primary act-edit-list" data-id="${escapeHtml(a.id)}" title="Editar lista"><i class="bi bi-pencil-fill"></i></button>
-              <button class="card-icon-btn text-danger act-del" data-id="${escapeHtml(a.id)}" title="Eliminar"><i class="bi bi-trash3"></i></button>
-              ${a._unsynced ? '<i class="bi bi-cloud-slash text-warning" title="No sincronizada"></i>' : ''}
-              <span class="ms-auto text-muted small"><i class="bi bi-collection"></i> ${rounds} rondas</span>
-            </div>
+      <article class="acard">
+        <div class="acard-listhead">
+          <i class="bi bi-collection-play-fill"></i>
+          <div class="overflow-hidden">
+            <div class="t text-truncate">${escapeHtml(a.title)}</div>
+            ${a.subtitle ? `<div class="s text-truncate">${escapeHtml(a.subtitle)}</div>` : ''}
           </div>
         </div>
-      </div>`;
+        <div class="acard-modes">
+          <button class="mode-list act-list" data-id="${escapeHtml(a.id)}" title="Jugar lista">
+            <i class="bi bi-play-fill"></i> Jugar
+          </button>
+        </div>
+        <div class="acard-body">
+          <div class="acard-toprow">
+            <span class="tag tag--primary"><i class="bi bi-collection-play"></i> Lista</span>
+            <div class="acard-icons">
+              <button class="icon-btn edit act-edit-list" data-id="${escapeHtml(a.id)}" title="Editar lista"><i class="bi bi-pencil-fill"></i></button>
+              <button class="icon-btn del act-del" data-id="${escapeHtml(a.id)}" title="Eliminar"><i class="bi bi-trash3"></i></button>
+              ${a._unsynced ? '<i class="bi bi-cloud-slash acard-unsync" title="No sincronizada"></i>' : ''}
+            </div>
+          </div>
+          <div class="acard-foot" style="margin-top:8px">
+            <span><i class="bi bi-collection"></i> ${rounds} rondas</span>
+          </div>
+        </div>
+      </article>`;
   }
 
   on(rootSel, 'click', '#h-export-all', () => downloadActivitiesJson());

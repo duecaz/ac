@@ -78,6 +78,14 @@ las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecut
 - **`meta.panelFit`** declara la maquetación del panel VS: `'fill'` (defecto, llena y escala) ·
   `'block'` (bloque único con tope, p.ej. la calculadora) · `'center'`. Ver docs/modos-de-juego.md §5c.
 
+## Chrome del panel Profesor (NO es "el juego")
+- La barra superior y la home "Mis actividades" (`views/home.js` + `teacher.html <nav>`) usan
+  **`styles/home.css`** (chrome propio, paleta crema/navy del mockup, fuente del sistema). NO usa
+  tokens `--ww-*` ni skins (eso es del juego). Al ser chrome, va en la lista `EXCLUDED` del ratchet
+  `tests/styles.test.mjs` — si añades otro CSS de chrome, súmalo ahí o el "completeness gate" falla.
+- El preview de cada tarjeta lo pinta `mountThumb` (`core/activityThumb.js`): escala un escenario
+  1280×800 con `transform`; NO forzar `width/height` a su `.js-thumb` hijo (rompe el escalado).
+
 ## Estándares transversales (no romper)
 - **Pantalla de inicio** (`views/startScreen.js`): todo modo Individual pasa por ella (título +
   instrucciones + ajustes + Iniciar→fullscreen). El ejercicio queda oculto hasta Iniciar.
