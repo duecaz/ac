@@ -6,7 +6,7 @@ import { navigate } from '../core/router.js';
 import { getTemplate, listTemplates } from '../core/registry.js';
 import { confirmModal, toast } from '../core/toast.js';
 import { downloadActivitiesJson, pickAndImport } from '../core/io.js';
-import { activityItemCount as itemCount } from '../core/migrate.js';
+import { activityItemCount as itemCount, activityPageCount as pageCount } from '../core/migrate.js';
 import { isVsCompatible } from '../kernel/session/engine.js';
 import { getMode } from '../core/modes.js';
 
@@ -101,11 +101,12 @@ export function renderHome(rootSel) {
     ].filter(Boolean).join('');
 
     const n = itemCount(a);
+    const pages = pageCount(a);
     return `
       <article class="acard">
         <div class="acard-preview">
           ${homePreviewHtml(a)}
-          <span class="acard-pages" title="${n} ${n === 1 ? 'página' : 'páginas'}"><i class="bi bi-files"></i> ${n}</span>
+          <span class="acard-pages" title="${pages} ${pages === 1 ? 'página' : 'páginas'}"><i class="bi bi-files"></i> ${pages}</span>
         </div>
         ${playBtns ? `<div class="acard-modes">${playBtns}</div>` : ''}
         <div class="acard-body">
