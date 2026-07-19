@@ -18,7 +18,6 @@ import { resetScene } from '../core/presentation.js';
 import { toggleFullscreen } from '../core/fullscreen.js';
 import { acquire } from '../core/lifecycle.js';
 import { toast, confirmModal } from '../core/toast.js';
-import { downloadActivitiesJson } from '../core/io.js';
 import { openEmbedModal } from './embedModal.js';
 import { mountSoloAnimator } from '../core/soloAnimator.js';
 
@@ -168,22 +167,23 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     mount(rootSel, html`
       <div class="ww-play-page">
 
-        <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
-          <div>
-            <a href="#/home" class="btn btn-sm btn-link p-0 mb-1"><i class="bi bi-arrow-left"></i> Inicio</a>
-            <h3 class="mb-1">${escapeHtml(a.title)}</h3>
-            <div class="text-muted small">
-              <span class="badge bg-${T?.meta?.color || 'info'}"><i class="bi ${T?.meta?.icon || 'bi-puzzle'}"></i> ${escapeHtml(T?.meta?.label || liveTemplate)}</span>
-              · ${activityItemCount(a)} elementos
-              ${a.subtitle ? `· ${escapeHtml(a.subtitle)}` : ''}
-            </div>
-            ${(a.tags||[]).length ? `<div class="mt-1">${(a.tags||[]).map(t => `<span class="badge bg-light text-dark border me-1">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
-          </div>
-        </div>
-
+        <!-- Orden tipo Wordwall: primero la ACTIVIDAD, luego título + autor, luego
+             los modos. La navegación "Inicio" ya vive en la barra superior (un solo
+             nav), así que aquí no se repite la miga de pan. -->
         <div class="ww-player-frame mb-3" style="${aspectStyle(aspect)}" id="ww-frame">
           <div id="ww-solo-anim" class="ww-solo-anim" hidden></div>
           <div id="ww-player-widget"></div>
+        </div>
+
+        <div class="mb-3">
+          <h3 class="mb-1">${escapeHtml(a.title)}</h3>
+          ${a.author?.name ? `<div class="text-muted small mb-1">por ${escapeHtml(a.author.name)}</div>` : ''}
+          <div class="text-muted small">
+            <span class="badge bg-${T?.meta?.color || 'info'}"><i class="bi ${T?.meta?.icon || 'bi-puzzle'}"></i> ${escapeHtml(T?.meta?.label || liveTemplate)}</span>
+            · ${activityItemCount(a)} elementos
+            ${a.subtitle ? `· ${escapeHtml(a.subtitle)}` : ''}
+          </div>
+          ${(a.tags||[]).length ? `<div class="mt-1">${(a.tags||[]).map(t => `<span class="badge bg-light text-dark border me-1">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
         </div>
 
         <h6 class="text-muted text-uppercase small mb-2">Modos de juego</h6>
@@ -197,7 +197,6 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
           ${canEdit ? `<a href="#/edit/${a.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>` : ''}
           <button class="btn btn-sm btn-outline-secondary" id="btn-link"><i class="bi bi-link-45deg"></i> Copiar link</button>
           <button class="btn btn-sm btn-outline-secondary" id="btn-embed"><i class="bi bi-code-square"></i> Embed</button>
-          <button class="btn btn-sm btn-outline-secondary" id="btn-json"><i class="bi bi-file-earmark-arrow-down"></i> JSON</button>
           <button class="btn btn-sm btn-outline-secondary" id="btn-fork"><i class="bi bi-files"></i> Duplicar</button>
         </div>
 
@@ -306,7 +305,6 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
       catch { toast('No se pudo copiar — copia manualmente: ' + location.href, 'warning', 6000); }
     });
     on(rootSel, 'click', '#btn-embed', () => openEmbedModal(a));
-    on(rootSel, 'click', '#btn-json', () => downloadActivitiesJson([a.id]));
     on(rootSel, 'click', '#btn-fork', async () => {
       const fork = {
         ...a,
