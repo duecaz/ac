@@ -105,6 +105,7 @@ export function renderHome(rootSel) {
       <article class="acard">
         <div class="acard-preview">
           ${homePreviewHtml(a)}
+          <span class="acard-pages" title="${n} ${n === 1 ? 'página' : 'páginas'}"><i class="bi bi-files"></i> ${n}</span>
         </div>
         ${playBtns ? `<div class="acard-modes">${playBtns}</div>` : ''}
         <div class="acard-body">
