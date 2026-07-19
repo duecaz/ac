@@ -16,6 +16,7 @@ export class TildesTemplate extends BaseTemplate {
     color: 'warning',
     contentModel: 'textCorrection',
     templateVersion: 1,
+    paginated: true,   // una frase por pantalla → nº de páginas = nº de frases
     instructions: 'Dibuja la tilde (´) sobre las vocales que la llevan. Cuando termines, pulsa “Listo” para corregir.',
     panelFit: 'fill',    // el texto llena el panel y se escala para caber
     aspectRatio: '16/10',

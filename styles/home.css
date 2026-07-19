@@ -19,6 +19,14 @@
   --dash-navy-line: #33425d;
   --dash-yellow:    #f5c518;
   --dash-yellow-d:  #ffd534;
+  /* Paleta suave (bg/fg) por color semántico — UNA fuente para las pastillas de
+     plantilla (.tag--*), la tira de modos (.mode-*) y el respaldo del preview. */
+  --soft-info-bg:    #e2f8fb; --soft-info-fg:    #0891b2;
+  --soft-success-bg: #e8f6ee; --soft-success-fg: #16a34a;
+  --soft-warning-bg: #fef3e2; --soft-warning-fg: #d97706;
+  --soft-primary-bg: #e7f0fe; --soft-primary-fg: #2563eb;
+  --soft-danger-bg:  #fdeaea; --soft-danger-fg:  #ef4444;
+  --soft-neutral-bg: #eef2f7; --soft-neutral-fg: #475569;
 }
 
 /* La app del profesor vive sobre crema; la fuente del sistema. */
@@ -62,8 +70,7 @@ body {
 .ww-topbar__brand .role { font-weight: 600; opacity: .9; }
 .ww-topbar__actions { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
 
-.ww-topbar #ww-version,
-.ww-topbar .ww-chip {
+.ww-topbar #ww-version {
   font-size: 11px; font-weight: 700; letter-spacing: .2px;
   background: var(--dash-navy-btn); color: #9fb3d1;
   padding: 4px 9px; border-radius: 6px;
@@ -250,15 +257,11 @@ body {
 /* Memoria */
 .pv-memory { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 68%; }
 .pv-memory span { aspect-ratio: 3/4; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 5px; }
-/* Respaldo genérico */
-.pv-generic { flex-direction: column; gap: 8px; }
+/* Respaldo genérico — el color lo da la clase .tag--{color} de la plantilla; aquí
+   solo la maqueta + un neutro por defecto (por si el color no tuviera .tag--*). */
+.pv-generic { flex-direction: column; gap: 8px; background: var(--soft-neutral-bg); color: var(--soft-neutral-fg); }
 .pv-generic i { font-size: 40px; line-height: 1; }
 .pv-generic span { font-size: 12px; font-weight: 700; }
-.acard-badge {
-  position: absolute; top: 9px; left: 10px; z-index: 2;
-  font-size: 10px; font-weight: 800; letter-spacing: .5px;
-  background: rgba(20,28,46,.72); color: #fff; padding: 3px 7px; border-radius: 6px;
-}
 /* Cabecera de tarjeta-lista (variante) */
 .acard-listhead {
   height: 150px; display: flex; align-items: center; gap: 14px; padding: 18px;
@@ -277,16 +280,16 @@ body {
   height: 30px; border: none; border-radius: 8px; cursor: pointer;
   font-size: 15px; transition: background .15s, color .15s;
 }
-.acard-modes button.mode-solo  { background: #e8f6ee; color: #16a34a; }
-.acard-modes button.mode-vs    { background: #fdeaea; color: #ef4444; }
-.acard-modes button.mode-teams { background: #e7f0fe; color: #2563eb; }
-.acard-modes button.mode-live  { background: #fef3e2; color: #f59e0b; }
-.acard-modes button.mode-task  { background: #e2f8fb; color: #0891b2; }
-.acard-modes button.mode-solo:hover  { background: #16a34a; color: #fff; }
-.acard-modes button.mode-vs:hover    { background: #ef4444; color: #fff; }
-.acard-modes button.mode-teams:hover { background: #2563eb; color: #fff; }
-.acard-modes button.mode-live:hover  { background: #f59e0b; color: #fff; }
-.acard-modes button.mode-task:hover  { background: #0891b2; color: #fff; }
+.acard-modes button.mode-solo  { background: var(--soft-success-bg); color: var(--soft-success-fg); }
+.acard-modes button.mode-vs    { background: var(--soft-danger-bg);  color: var(--soft-danger-fg); }
+.acard-modes button.mode-teams { background: var(--soft-primary-bg); color: var(--soft-primary-fg); }
+.acard-modes button.mode-live  { background: var(--soft-warning-bg); color: var(--soft-warning-fg); }
+.acard-modes button.mode-task  { background: var(--soft-info-bg);    color: var(--soft-info-fg); }
+.acard-modes button.mode-solo:hover  { background: var(--soft-success-fg); color: #fff; }
+.acard-modes button.mode-vs:hover    { background: var(--soft-danger-fg);  color: #fff; }
+.acard-modes button.mode-teams:hover { background: var(--soft-primary-fg); color: #fff; }
+.acard-modes button.mode-live:hover  { background: var(--soft-warning-fg); color: #fff; }
+.acard-modes button.mode-task:hover  { background: var(--soft-info-fg);    color: #fff; }
 /* Botón "Jugar" de la tarjeta-lista (ocupa toda la fila) */
 .acard-modes .mode-list {
   flex: 1; gap: 7px; font-size: 13px; font-weight: 700;
@@ -303,14 +306,15 @@ body {
 .tag {
   display: inline-flex; align-items: center; gap: 5px;
   font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 999px;
-  background: #eef2f7; color: #475569;
+  background: var(--soft-neutral-bg); color: var(--soft-neutral-fg);
 }
 .tag i { font-size: 12px; }
-.tag--info    { background: #e2f8fb; color: #0891b2; }
-.tag--success { background: #e8f6ee; color: #16a34a; }
-.tag--warning { background: #fef3e2; color: #d97706; }
-.tag--primary { background: #e7f0fe; color: #2563eb; }
-.tag--danger  { background: #fdeaea; color: #ef4444; }
+.tag--info      { background: var(--soft-info-bg);    color: var(--soft-info-fg); }
+.tag--success   { background: var(--soft-success-bg); color: var(--soft-success-fg); }
+.tag--warning   { background: var(--soft-warning-bg); color: var(--soft-warning-fg); }
+.tag--primary   { background: var(--soft-primary-bg); color: var(--soft-primary-fg); }
+.tag--danger    { background: var(--soft-danger-bg);  color: var(--soft-danger-fg); }
+.tag--secondary { background: var(--soft-neutral-bg); color: var(--soft-neutral-fg); }
 
 .acard-icons { display: flex; gap: 4px; align-items: center; }
 .icon-btn {

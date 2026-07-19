@@ -15,6 +15,7 @@ export class MathTemplate extends BaseTemplate {
     color: 'warning',
     contentModel: 'qa',
     templateVersion: 1,
+    paginated: true,   // una operación por pantalla → nº de páginas = nº de ítems
     instructions: 'Resuelve cada operación y escribe el resultado con el teclado.',
     panelFit: 'block',   // el teclado es UN bloque: no se estira en el panel VS
     aspectRatio: '16/10',

@@ -17,6 +17,7 @@ export class GlobosTemplate extends BaseTemplate {
     color: 'danger',
     contentModel: 'qa',           // mismo contenido que Quiz/Operaciones
     templateVersion: 1,
+    paginated: true,   // una pregunta por pantalla → nº de páginas = nº de ítems
     instructions: 'Lee la pregunta y toca el globo con la respuesta correcta para explotarlo.',
     panelFit: 'fill',
     aspectRatio: '16/10',

@@ -97,11 +97,10 @@ export function activityItemCount(a) {
 // Nº de PÁGINAS (pantallas) que recorre el alumno — distinto de nº de elementos.
 // Plantillas SECUENCIALES (una pregunta/frase por pantalla) → tantas páginas como
 // ítems. El resto muestran TODO el ejercicio en UNA sola pantalla → 1 página
-// (Emparejar con 4 pares = 1 hoja; Etiqueta-el-diagrama = 1 hoja). Una plantilla
-// nueva cuenta como 1 página salvo que se sume aquí (es lo esperado en la mayoría).
-const MULTI_PAGE = new Set(['quiz', 'math', 'globos', 'comas', 'tildes']);
+// (Emparejar con 4 pares = 1 hoja; Etiqueta-el-diagrama = 1 hoja). El dato lo declara
+// cada plantilla en `meta.paginated` (co-locado con ella, no en una lista central).
 export function activityPageCount(a) {
-  if (!MULTI_PAGE.has(a?.template)) return 1;
+  if (!getTemplate(a?.template)?.meta?.paginated) return 1;
   return activityItemCount(a) || 1;
 }
 

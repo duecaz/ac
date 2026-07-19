@@ -16,6 +16,7 @@ export class QuizTemplate extends BaseTemplate {
     color: 'primary',
     contentModel: 'qa',
     templateVersion: 1,
+    paginated: true,   // una pregunta por pantalla → nº de páginas = nº de ítems
     instructions: 'Lee cada pregunta y toca la respuesta correcta.',
     panelFit: 'fill',    // las opciones llenan el panel
     aspectRatio: '16/10',

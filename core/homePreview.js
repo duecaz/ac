@@ -6,15 +6,9 @@
 import { escapeHtml } from './html.js';
 import { getTemplate } from './registry.js';
 
+const esc = escapeHtml;                                     // ya coacciona null → ''
 const trunc = (s, n) => { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
-const esc = s => escapeHtml(String(s || ''));
-
-// Par bg/fg suave por color Bootstrap de la plantilla (para el respaldo genérico).
-const TINT = {
-  info:    ['#e2f8fb', '#0891b2'], success: ['#e8f6ee', '#16a34a'],
-  warning: ['#fef3e2', '#d97706'], primary: ['#e7f0fe', '#2563eb'],
-  danger:  ['#fdeaea', '#ef4444'], secondary: ['#eef2f7', '#475569'],
-};
+const et = (s, n) => esc(trunc(s, n));                      // truncar + escapar (uso común)
 
 export function homePreviewHtml(a) {
   const c = a?.content || {};
@@ -25,8 +19,7 @@ export function homePreviewHtml(a) {
       case 'math':    return calcPv(c);
       case 'quiz':    return quizPv(c);
       case 'comas':
-      case 'tildes':
-      case 'textCorrection': return textPv(c);
+      case 'tildes':  return textPv(c);
       case 'memory':  return memoryPv(c);
       default:        return genericPv(a);
     }
@@ -37,8 +30,8 @@ export function homePreviewHtml(a) {
 function matchPv(c) {
   const pairs = (c.pairs || []).slice(0, 4);
   if (!pairs.length) return genericPv({ template: 'match' });
-  const L = pairs.map(p => `<span class="pv-chip pv-chip--l">${esc(trunc(p.left, 12))}</span>`).join('');
-  const R = pairs.map(p => `<span class="pv-chip pv-chip--r">${esc(trunc(p.right, 12))}</span>`).join('');
+  const L = pairs.map(p => `<span class="pv-chip pv-chip--l">${et(p.left, 12)}</span>`).join('');
+  const R = pairs.map(p => `<span class="pv-chip pv-chip--r">${et(p.right, 12)}</span>`).join('');
   // Curvas fijas (estética): 3 trazos, un par cruzado.
   const curves = `
     <svg class="pv-match__ropes" viewBox="0 0 46 90" preserveAspectRatio="none">
@@ -51,8 +44,11 @@ function matchPv(c) {
 
 // Etiqueta el diagrama: la imagen real (barata como <img>) + fichas de etiqueta.
 function diagramPv(c) {
-  const labels = (c.pins || []).slice(0, 3).map(p => `<span class="pv-tag">${esc(trunc(p.label, 10))}</span>`).join('');
-  const img = c.image ? `<img class="pv-diagram__img" src="${esc(c.image)}" alt="" loading="lazy">` : '';
+  const labels = (c.pins || []).slice(0, 3).map(p => `<span class="pv-tag">${et(p.label, 10)}</span>`).join('');
+  // Los data-URL (base64) no contienen comillas → no hace falta escapear su enorme
+  // cadena en cada tecleo; solo se escapa una URL externa por seguridad del atributo.
+  const src = c.image ? (String(c.image).startsWith('data:') ? c.image : esc(c.image)) : '';
+  const img = src ? `<img class="pv-diagram__img" src="${src}" alt="" loading="lazy">` : '';
   if (!img && !labels) return genericPv({ template: 'diagram' });
   return `<div class="pv pv-diagram"><div class="pv-tags">${labels}</div>${img}</div>`;
 }
@@ -74,7 +70,7 @@ function quizPv(c) {
   const q = it?.question ? trunc(it.question, 40) : 'Pregunta';
   const opts = (it?.options || ['A', 'B', 'C', 'D']).slice(0, 4);
   const cls = ['pv-opt--a', 'pv-opt--b', 'pv-opt--c', 'pv-opt--d'];
-  const cells = opts.map((o, i) => `<span class="pv-opt ${cls[i] || ''}">${esc(trunc(o, 12))}</span>`).join('');
+  const cells = opts.map((o, i) => `<span class="pv-opt ${cls[i] || ''}">${et(o, 12)}</span>`).join('');
   return `<div class="pv pv-quiz"><div class="pv-quiz__q">${esc(q)}</div><div class="pv-quiz__grid">${cells}</div></div>`;
 }
 
@@ -95,13 +91,13 @@ function memoryPv() {
 }
 
 // Respaldo: panel teñido con el color de la plantilla + icono grande + etiqueta.
+// Reusa la paleta suave de las pastillas (.tag--*) en vez de re-declararla aquí.
 function genericPv(a) {
   const T = getTemplate(a?.template);
   const color = T?.meta?.color || 'secondary';
   const icon = T?.meta?.icon || 'bi-puzzle';
   const label = T?.meta?.label || a?.template || '';
-  const [bg, fg] = TINT[color] || TINT.secondary;
-  return `<div class="pv pv-generic" style="background:${bg};color:${fg}">
+  return `<div class="pv pv-generic tag--${esc(color)}">
     <i class="bi ${icon}"></i><span>${esc(label)}</span>
   </div>`;
 }
