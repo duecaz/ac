@@ -83,8 +83,12 @@ las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecut
   **`styles/home.css`** (chrome propio, paleta crema/navy del mockup, fuente del sistema). NO usa
   tokens `--ww-*` ni skins (eso es del juego). Al ser chrome, va en la lista `EXCLUDED` del ratchet
   `tests/styles.test.mjs` — si añades otro CSS de chrome, súmalo ahí o el "completeness gate" falla.
-- El preview de cada tarjeta lo pinta `mountThumb` (`core/activityThumb.js`): escala un escenario
-  1280×800 con `transform`; NO forzar `width/height` a su `.js-thumb` hijo (rompe el escalado).
+- El preview de cada tarjeta del HOME lo pinta **`core/homePreview.js`** (`homePreviewHtml`):
+  un dibujo LIGERO y estático por tipo de plantilla (sin render del juego). Es distinto de
+  `mountThumb`/`core/activityThumb.js` (render real escalado 1280×800), que sigue existiendo
+  para otros usos — el home dejó de usarlo por rendimiento con muchas tarjetas.
+- En móvil (≤640px) la barra superior colapsa en un **menú hamburguesa** (`.ww-topbar__burger`
+  → clase `.open`); las acciones (incl. `#ww-mute-slot`/`#ww-auth-slot`) caen en el desplegable.
 
 ## Estándares transversales (no romper)
 - **Pantalla de inicio** (`views/startScreen.js`): todo modo Individual pasa por ella (título +

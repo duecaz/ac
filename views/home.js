@@ -1,7 +1,7 @@
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { list, remove } from '../core/storage.js';
-import { mountThumb } from '../core/activityThumb.js';
+import { homePreviewHtml } from '../core/homePreview.js';
 import { navigate } from '../core/router.js';
 import { getTemplate, listTemplates } from '../core/registry.js';
 import { confirmModal, toast } from '../core/toast.js';
@@ -76,12 +76,6 @@ export function renderHome(rootSel) {
     if (qEl) qEl.oninput = e => { _filter.q = e.target.value; paint(); qEl.focus(); };
     const tEl = document.getElementById('h-tpl');
     if (tEl) tEl.onchange = e => { _filter.template = e.target.value; paint(); };
-
-    // Mount a faithful 16:9 preview into each card.
-    acts.forEach(a => {
-      const el = document.querySelector(`.js-thumb[data-id="${a.id}"]`);
-      if (el) mountThumb(el, a);
-    });
   }
 
   function card(a) {
@@ -106,10 +100,11 @@ export function renderHome(rootSel) {
       m.async            ? `<button class="act-task mode-task"   data-id="${a.id}" title="Tarea"><i class="bi bi-clipboard-check"></i></button>` : '',
     ].filter(Boolean).join('');
 
+    const n = itemCount(a);
     return `
       <article class="acard">
         <div class="acard-preview">
-          <div class="js-thumb" data-id="${escapeHtml(a.id)}"></div>
+          ${homePreviewHtml(a)}
         </div>
         ${playBtns ? `<div class="acard-modes">${playBtns}</div>` : ''}
         <div class="acard-body">
@@ -125,7 +120,7 @@ export function renderHome(rootSel) {
           ${a.subtitle ? `<p class="acard-sub">${escapeHtml(a.subtitle)}</p>` : ''}
           ${(a.tags||[]).length ? `<div class="acard-tags">${a.tags.slice(0,3).map(t=>`<span class="t">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
           <div class="acard-foot">
-            <span title="Elementos"><i class="bi bi-file-earmark-text"></i> ${itemCount(a)}</span>
+            <span title="Elementos"><i class="bi bi-collection"></i> ${n} ${n === 1 ? 'ítem' : 'ítems'}</span>
             <span title="Me gusta (próximamente)"><i class="bi bi-heart-fill heart"></i> ${a.likes ?? 0}</span>
           </div>
         </div>
