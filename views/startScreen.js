@@ -77,10 +77,18 @@ export function renderStartScreen(host, activity, opts = {}) {
   on(el, 'click', '[data-calib]', () => openPenCalibration());
 
   // Iniciar → SIEMPRE pantalla completa, luego arranca el juego.
-  on(el, 'click', '.ww-start-go', () => {
+  // Guard de una sola entrada: en pizarra táctil un doble-tap rápido (antes de que
+  // resuelva el import() del player) disparaba onStart DOS veces → doble
+  // mountSoloAnimator + doble runMode + doble requestFullscreen. `started` corta
+  // el segundo toque y deshabilitamos el botón para feedback visual.
+  let started = false;
+  on(el, 'click', '.ww-start-go', (_, btn) => {
+    if (started) return;
+    started = true;
+    if (btn) { btn.disabled = true; btn.classList.add('is-loading'); }
     const target = frame || el.closest('#ww-frame') || document.getElementById('ww-frame');
     if (target && !document.fullscreenElement && !document.webkitFullscreenElement) {
-      try { toggleFullscreen(target); } catch {}
+      toggleFullscreen(target); // ya es no-op seguro si el navegador lo deniega
     }
     if (typeof onStart === 'function') onStart();
   });

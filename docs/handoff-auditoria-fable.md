@@ -163,7 +163,7 @@ alumnos esperando indefinidamente salvo que el profe encuentre "Reintentar".
 
 ## P3 — ROBUSTEZ UI
 
-### P3-1 🔴 CRÍTICO — Fullscreen denegado = pantalla ROJA de Error (la clase no puede jugar)
+### P3-1 ✅ HECHO (v1.51.206) — Fullscreen denegado = pantalla ROJA de Error (la clase no puede jugar)
 `core/fullscreen.js:5,7`: la promesa de `requestFullscreen()` no se captura; el
 `try/catch` síncrono de `startScreen.js:80-86` no atrapa un rechazo async; el boot-guard
 de los HTML (`teacher.html:107`, `embed.html:69`) convierte el `unhandledrejection` en
@@ -172,12 +172,12 @@ fullscreen → pulsar "Iniciar" mata el juego. **Fix**:
 `Promise.resolve((el.requestFullscreen||el.webkitRequestFullscreen)?.call(el)).catch(()=>{})`
 (ídem rama exit). Test headless: denegar fullscreen y verificar que el juego arranca.
 
-### P3-2 🟠 ALTO — Navegar por hash antes del autosave (2 s) pierde el cambio
+### P3-2 ✅ HECHO (v1.51.206) — Navegar por hash antes del autosave (2 s) pierde el cambio
 `views/editView.js:99,155-162`: el teardown hace `clearTimeout` SIN flush y
 `beforeunload` no cubre `hashchange`. Teclear y pulsar "Volver" en <2 s = cambio perdido.
 **Fix**: en el disposer, si `dirty` → `save(activity)` (local es síncrono).
 
-### P3-3 🟠 ALTO — Doble toque en "Iniciar" monta el juego DOS veces
+### P3-3 ✅ HECHO (v1.51.206) — Doble toque en "Iniciar" monta el juego DOS veces
 `startScreen.js:80-86` sin guard de re-entrada; `mountSoloStart` captura `myToken` una
 vez, así que el token no protege el doble tap (pizarras táctiles). **Fix**: flag
 `started` en `onStart` / deshabilitar el botón al primer toque.
@@ -189,13 +189,13 @@ vez" APILA uno más por partida (jank en pizarras de gama baja). Secundario: dis
 `observeResize` descartados en match/diagram/crossword. **Fix**: propagar el disposer del
 player hasta el `dispose()` real del modo (afecta al contrato — hacerlo con cuidado).
 
-### P3-5 🟡 MEDIO — Tocar un tile de Tema/Fondo a mitad de partida SOLO reinicia el juego
+### P3-5 ✅ HECHO (v1.51.206) — Tocar un tile de Tema/Fondo a mitad de partida SOLO reinicia el juego
 `playerView.js:258-266`: `.skin-pick` llama `selectMode(currentMode)` → re-monta la
 pantalla de inicio y pierde el progreso. Para `solo` basta `applySkin` al frame (ya se
 hace); re-montar solo en VS/Equipos. **Fix**: condicionar el re-mount al modo.
 
 ### P3-6 🟡 MEDIO — Sin cache-busting de CSS/JS en los HTML (no hay SW; caché HTTP de Pages puede mezclar CSS viejo + JS nuevo tras deploy). Versionar `<link>`/import raíz con `?v=VERSION`.
-### P3-7 🔵 BAJO — `templates/match/player.js:41-52` conserva los logs `dbg` marcados "TEMPORAL". Quitarlos.
+### P3-7 ✅ HECHO (v1.51.206) — logs `dbg` "TEMPORAL" de match/player.js eliminados.
 
 ---
 

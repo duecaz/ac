@@ -259,10 +259,11 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
       currentSkin = b.dataset.name;
       applySkin(currentSkin, document.getElementById('ww-frame'));
       document.querySelectorAll('.skin-pick').forEach(p => p.classList.toggle('is-active', p.dataset.name === currentSkin));
-      // Re-mount the active mode so views built around a skin's layout (VS arena,
-      // teams) re-read the theme and swap their vs-skin-<layout> class. Solo just
-      // restyles via the page rules, but re-mounting keeps every mode consistent.
-      selectMode(currentMode);
+      // VS/Equipos SÍ necesitan re-montar: su layout depende de la clase
+      // vs-skin-<layout> del skin. Pero en Individual re-montar reinicia el juego
+      // a la pantalla de inicio (el alumno tocaba un tema por curiosidad y perdía
+      // el crucigrama/emparejar a medias). En solo basta el applySkin de arriba.
+      if (currentMode !== 'solo') selectMode(currentMode);
     });
     on(rootSel, 'click', '.bg-pick', (_, b) => {
       // Custom selects only when an image exists; otherwise its upload button

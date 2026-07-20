@@ -152,8 +152,14 @@ export function renderEditView(rootSel, { id, template }) {
 
   // Don't lose changes on accidental nav. Browsers ignore custom messages
   // but the prompt itself still appears.
+  // beforeunload solo cubre el cierre REAL de pestaña, no la navegación por hash
+  // (Volver / otro enlace #/…). Si el usuario navega dentro de la ventana de 2 s
+  // del autosave, el disposer corría clearTimeout SIN guardar → cambio perdido.
+  // Aquí hacemos flush SÍNCRONO a local si quedaba algo sucio (save() escribe
+  // local de inmediato; el PATCH remoto es best-effort).
   ctx.add(() => {
     if (autosaveTimer) clearTimeout(autosaveTimer);
+    if (dirty) { try { save(activity); } catch { /* best-effort */ } }
   });
   const beforeUnload = (e) => {
     if (dirty) { e.preventDefault(); e.returnValue = ''; }
