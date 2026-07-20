@@ -14,7 +14,10 @@ function readLS() {
   try { return JSON.parse(localStorage.getItem(currentKey()) || '{}'); }
   catch { return {}; }
 }
-function writeLS(map) { lsSet(currentKey(), JSON.stringify(map)); }
+// Devuelve false si la escritura falló (cuota llena / almacenamiento bloqueado).
+// lsSet ya emite `ww:storage-full` para el aviso global; el booleano deja que el
+// caller NO finja éxito (P1-2).
+function writeLS(map) { return lsSet(currentKey(), JSON.stringify(map)); }
 
 export function list() {
   const map = readLS();
@@ -37,20 +40,23 @@ export async function getRemote(id) {
 // no image generation/upload happens here.
 export function save(activity) {
   const a = normalize({ ...activity, updatedAt: new Date().toISOString() });
-  delete a._unsynced;
+  // _unsynced OPTIMISTA (P1-3): marca pendiente ANTES del remoto. Si la pestaña
+  // se cierra con el PATCH en vuelo, el registro queda flagueado y retryUnsynced
+  // lo recupera; antes se borraba el flag por adelantado y la edición divergía
+  // en silencio sin reintento. Se limpia solo tras confirmar el remoto.
+  a._unsynced = true;
   const map = readLS();
   map[a.id] = a;
-  writeLS(map);
+  const persisted = writeLS(map);   // P1-2: no fingir éxito si la cuota está llena
   const remote = remoteSave(a);
   remote.then(() => {
     const m = readLS();
     if (m[a.id]?._unsynced) { delete m[a.id]._unsynced; writeLS(m); }
   }).catch(err => {
     console.warn('[storage] remote save failed:', err.message);
-    const m = readLS();
-    if (m[a.id]) { m[a.id]._unsynced = true; writeLS(m); }
+    // El flag _unsynced ya está puesto; retryUnsynced / el evento 'online' lo tomarán.
   });
-  return { activity: a, remote };
+  return { activity: a, remote, persisted };
 }
 
 async function remoteSave(a) {

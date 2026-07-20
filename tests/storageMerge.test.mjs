@@ -48,4 +48,11 @@ assert.strictEqual(JSON.stringify(origLocal), snapshot, 'input localMap not muta
 assert.ok(migrated, 'migrate applied to remote rows');
 ok('does not mutate inputs; applies migrate to remote data');
 
+// P1-4: una edición local PENDIENTE de subir (_unsynced) es intocable, aunque el
+// remoto tenga updatedAt MAYOR (reloj desincronizado entre dispositivos).
+local = { a: { id: 'a', updatedAt: '2026-01-01', title: 'local-pendiente', _unsynced: true } };
+merged = mergeRemote(local, [row('a', '2026-09-01', { title: 'remote-mas-nuevo' })], idmigrate);
+assert.strictEqual(merged.a.title, 'local-pendiente', 'una edición _unsynced no se pisa ni con remoto más nuevo');
+ok('mergeRemote respeta _unsynced (no lo pisa el reloj de pared)');
+
 console.log(`\nstorageMerge.test: ${passed} checks passed`);

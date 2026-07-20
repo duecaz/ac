@@ -104,7 +104,16 @@ export function renderEditView(rootSel, { id, template }) {
     if (saving) return;
     saving = true;
     setState('Guardando…', 'info', 'bi-cloud-arrow-up');
-    const { remote } = save(activity);
+    const { remote, persisted } = save(activity);
+    // P1-2: si NI SIQUIERA se guardó en local (cuota llena), NO fingir éxito —
+    // estado de error PERSISTENTE (no un toast que se va) y `dirty` sigue true
+    // para que el autosave reintente al liberar espacio.
+    if (persisted === false) {
+      setState('No se pudo guardar: almacenamiento lleno', 'danger', 'bi-exclamation-triangle-fill');
+      if (!silent) toast('Almacenamiento del navegador lleno. Exporta a JSON y libera espacio; tu cambio NO se guardó.', 'danger', 8000);
+      saving = false;
+      return;
+    }
     try {
       await remote;
       dirty = false;

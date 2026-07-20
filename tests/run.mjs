@@ -17,6 +17,7 @@ console.log('\n▶ core');      await import('./core.test.mjs');
 console.log('\n▶ routing');   await import('./routing.test.mjs');
 console.log('\n▶ events');    await import('./events.test.mjs');
 console.log('\n▶ storageMerge'); await import('./storageMerge.test.mjs');
+console.log('\n▶ storage'); await import('./storage.test.mjs');
 console.log('\n▶ live');      await import('./live.test.mjs');
 console.log('\n▶ liveEngine'); await import('./liveEngine.test.mjs');
 console.log('\n▶ sessionEngine'); await import('./sessionEngine.test.mjs');

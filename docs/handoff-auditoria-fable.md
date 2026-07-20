@@ -89,7 +89,7 @@ toda fila remota que no exista en local). Igual en multi-dispositivo.
 (a) `mergeRemote` consulte para no reintroducir y (b) una cola estilo `offlineQueue`
 reintente el DELETE. Test en `storageMerge`/`storage`.
 
-### P1-2 🔴 CRÍTICO — localStorage lleno = fallo SILENCIOSO de todos los saves
+### P1-2 ✅ HECHO (v1.51.208) — localStorage lleno = fallo SILENCIOSO de todos los saves
 `core/storage.js:17` (`writeLS`) ignora el booleano de `lsSet` (`core/ls.js`). Todas las
 actividades viven en UNA clave; cuando el blob supera la cuota (fácil con imágenes
 inline, ver P1-5), NINGÚN save/remove/sync local persiste y `save()` finge éxito.
@@ -97,13 +97,13 @@ inline, ver P1-5), NINGÚN save/remove/sync local persiste y `save()` finge éxi
 lanza/avisa (toast persistente, no once-per-session) y no finge éxito. Test: mock de
 `lsSet` que devuelve false.
 
-### P1-3 🟠 ALTO — Edición guardada que nunca llegó al servidor no se reintenta
+### P1-3 ✅ HECHO (v1.51.208) — Edición guardada que nunca llegó al servidor no se reintenta
 `core/storage.js:38-54`: `save()` borra `_unsynced` ANTES de que el PATCH remoto
 confirme; si la pestaña se cierra con el PATCH en vuelo, el registro queda divergente
 sin flag → `retryUnsynced()` lo ignora para siempre. **Fix**: marcar `_unsynced=true`
 optimista antes del remoto y limpiarlo solo en el `.then` de confirmación. Test directo.
 
-### P1-4 🟠 ALTO — `mergeRemote` pisa ediciones locales pendientes (`_unsynced`) por reloj de pared
+### P1-4 ✅ HECHO (v1.51.208) — `mergeRemote` pisa ediciones locales pendientes (`_unsynced`) por reloj de pared
 `core/storageMerge.js:20`: criterio `remote.updatedAt >= local.updatedAt` sin mirar
 `_unsynced`. Reloj atrasado en un dispositivo → su edición más nueva pierde el LWW y se
 borra en silencio. **Fix mínimo**: si `local._unsynced`, remoto NO pisa (conservar local
@@ -122,7 +122,7 @@ actividad al guardar y avisar antes de que sea insincronizable.
 
 ### P1-7 🟡 MEDIO — `results.js` recorta la cola a 60 SIEMPRE (descarta resultados viejos aunque haya espacio). Subir tope / avisar al descartar.
 ### P1-8 🔵 BAJO — `toId()` (`adapters/pocketbase/remoteStore.js:12`) lowercasea+trunca a 15 → ids distintos pueden colisionar y pisarse en PB. Fix: hash del id completo.
-### P1-9 🔵 BAJO — `core/io.js:39` no valida `parsed.version` del wrapper de import.
+### P1-9 ✅ HECHO (v1.51.205) — `core/io.js` rechaza un wrapper de versión más nueva que la soportada.
 
 ---
 
