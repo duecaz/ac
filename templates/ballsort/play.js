@@ -53,6 +53,11 @@ export function mountBallSort(host, { board, mode = 'moves', onProgress, onSolve
 
   state.timer.start();
   state.timerHandle = setInterval(() => {
+    // Auto-detiene el intervalo si el nodo salió del DOM (P3-4): el player SOLO
+    // descarta el unmount() de mountBallSort, así que al navegar fuera a mitad de
+    // partida este setInterval de 250 ms seguía vivo para siempre (jank en pizarras
+    // de gama baja). Si timeEl ya no está conectado, la vista se desmontó → cortar.
+    if (timeEl && !timeEl.isConnected) { clearInterval(state.timerHandle); state.timerHandle = null; return; }
     if (timeEl) timeEl.textContent = formatMs(state.timer.elapsedMs());
   }, 250);
 

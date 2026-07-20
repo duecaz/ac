@@ -194,7 +194,12 @@ fullscreen → pulsar "Iniciar" mata el juego. **Fix**:
 vez, así que el token no protege el doble tap (pizarras táctiles). **Fix**: flag
 `started` en `onStart` / deshabilitar el botón al primer toque.
 
-### P3-4 🟡 MEDIO — Players SOLO sin gancho de teardown: el `setInterval` de Ball Sort vive para siempre
+### P3-4 🟡 PARCIAL (v1.51.212) — Players SOLO sin gancho de teardown: el `setInterval` de Ball Sort vive para siempre
+HECHO (seguro): el intervalo de 250 ms de Ball Sort se AUTO-DETIENE cuando su nodo
+sale del DOM (`!timeEl.isConnected`) → al navegar fuera a mitad de partida ya no queda
+vivo. PENDIENTE (refactor de contrato, con cuidado): propagar el `dispose()` del player
+hasta `runMode('solo')` para TODOS los templates de forma uniforme (los observeResize de
+match/diagram/crossword dependen del GC, benigno). Va como deuda de contrato de players.
 `core/modes.js:110-118` descarta el retorno de `runPlayer`; `templates/ballsort/template.js:114`
 descarta el `{unmount}`; `play.js:55` = interval de 250 ms nunca limpiado y "Jugar otra
 vez" APILA uno más por partida (jank en pizarras de gama baja). Secundario: disposers de
@@ -206,7 +211,7 @@ player hasta el `dispose()` real del modo (afecta al contrato — hacerlo con cu
 pantalla de inicio y pierde el progreso. Para `solo` basta `applySkin` al frame (ya se
 hace); re-montar solo en VS/Equipos. **Fix**: condicionar el re-mount al modo.
 
-### P3-6 🟡 MEDIO — Sin cache-busting de CSS/JS en los HTML (no hay SW; caché HTTP de Pages puede mezclar CSS viejo + JS nuevo tras deploy). Versionar `<link>`/import raíz con `?v=VERSION`.
+### P3-6 ⏸️ RECOMENDACIÓN (no auto-aplicado) — Sin cache-busting de CSS en los HTML. No hay paso de build, así que versionar los `<link>` exige o un mini-build o bumpear la query a mano cada release (toil). Los drivers JS YA se versionan (`adapters/index.js ?v=VERSION`) y las hojas de skin también. Mitigación actual: botón goma (`__wwClearAll`). Recomendado: añadir un paso de build mínimo que estampe `?v=VERSION` en los `<link>`; se deja como decisión del usuario.
 ### P3-7 ✅ HECHO (v1.51.206) — logs `dbg` "TEMPORAL" de match/player.js eliminados.
 
 ---
