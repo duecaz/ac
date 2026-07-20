@@ -20,8 +20,6 @@ import { renderExplore } from './views/explore.js';
 import { renderAdmin } from './views/adminView.js';
 import { sync, setStorageUser } from './core/storage.js';
 import { ensureIdentity } from './core/identity.js';
-import { downloadActivitiesJson, pickAndImport } from './core/io.js';
-import { toast } from './core/toast.js';
 import { applySkin } from './core/skins.js';
 // Side-effect: boot.js wires sounds + visual effects to the GameEvents bus and
 // exposes the navbar helpers (version stamp + mute button).
@@ -57,21 +55,6 @@ route('#/sorteo', () => renderSorteoView(APP));
 
 setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encontrada. <a href="#/home">Inicio</a></div>`));
 
-// Importar/Exportar viven en la barra superior (nav), no en el cuerpo del home.
-// Se cablean una vez: la barra es estática y está presente desde el arranque.
-function wireNavActions() {
-  document.getElementById('nav-export')?.addEventListener('click', () => downloadActivitiesJson());
-  document.getElementById('nav-import')?.addEventListener('click', () => {
-    pickAndImport({ strategy: 'duplicate' }, (r) => {
-      if (r.ok) toast(`Importadas ${r.count} actividades.`, 'success');
-      else if (r.count) toast(`${r.count} importadas, ${r.errors.length} fallaron.`, 'warning', 6000);
-      else toast('Error al importar: ' + r.errors.join('; '), 'danger', 6000);
-      if (location.hash === '#/home' || location.hash === '#/' || !location.hash) renderHome(APP);
-      else navigate('#/home');
-    });
-  });
-}
-
 (async function boot() {
   applySkin(localStorage.getItem('ww.skin') || 'default');
   stampVersion();
@@ -80,7 +63,6 @@ function wireNavActions() {
   // Start the router immediately so the home page paints from localStorage
   // without waiting for the network. Auth + sync happen in the background.
   start();
-  wireNavActions();
   window.__APP_READY__ = true;
   try {
     const user = await ensureIdentity();

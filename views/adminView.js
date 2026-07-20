@@ -11,6 +11,7 @@ import { MODE_DEFS } from '../core/modes.js';
 import { CONTRACT_METHODS } from '../core/modeMatrix.js';
 import { list, remove } from '../core/storage.js';
 import { confirmModal, toast } from '../core/toast.js';
+import { downloadActivitiesJson, pickAndImport } from '../core/io.js';
 import { runSelfTests, TOTAL_TESTS } from '../core/selftest.js';
 import { diagnoseDb } from '../core/dbDiag.js';
 import { buildAdminMatrix } from './admin/matrix.js';
@@ -69,6 +70,12 @@ function renderPanel(rootSel) {
         <button id="admin-lock" class="btn btn-sm btn-outline-secondary"><i class="bi bi-lock"></i> Bloquear</button>
       </div>
       <h3><i class="bi bi-shield-lock"></i> Panel de administración</h3>
+
+      <h5 class="mt-3">Datos</h5>
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        <button id="admin-import" class="btn btn-outline-secondary btn-sm"><i class="bi bi-file-earmark-arrow-up"></i> Importar actividades</button>
+        <button id="admin-export" class="btn btn-outline-secondary btn-sm"><i class="bi bi-file-earmark-arrow-down"></i> Exportar todas</button>
+      </div>
 
       <h5 class="mt-3">Sistema</h5>
       <table class="table table-sm w-auto">
@@ -289,6 +296,14 @@ function renderPanel(rootSel) {
     }
   });
 
+  on(rootSel, 'click', '#admin-export', () => downloadActivitiesJson());
+  on(rootSel, 'click', '#admin-import', () => {
+    pickAndImport({ strategy: 'duplicate' }, (r) => {
+      if (r.ok) toast(`Importadas ${r.count} actividades.`, 'success');
+      else if (r.count) toast(`${r.count} importadas, ${r.errors.length} fallaron.`, 'warning', 6000);
+      else toast('Error al importar: ' + r.errors.join('; '), 'danger', 6000);
+    });
+  });
   on(rootSel, 'click', '#admin-lock', () => { try { sessionStorage.removeItem(SESSION_KEY); } catch {} renderGate(rootSel); });
   on(rootSel, 'click', '#admin-refresh', () => { (window.__wwRefresh || (() => location.reload()))(); });
   on(rootSel, 'click', '#admin-nuke-sw', () => { (window.__wwNukeSW || (() => location.reload()))(); });
