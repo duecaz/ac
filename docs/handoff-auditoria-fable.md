@@ -56,7 +56,11 @@ respuestas y `state`) sin conocer ningún PIN (`GET /api/collections/live_sessio
 Además los códigos son palabras cortas de un diccionario pequeño (`core/liveWords.js`) sin
 rate-limiting. **Fix**: cae junto con P0-1 (sin listRule pública; join por `code` exacto).
 
-### P0-4 🟠 ALTO — XSS almacenado vía `presentation.backgroundImage` (roba la sesión del profe)
+### P0-4 ✅ HECHO (v1.51.205) — XSS almacenado vía `presentation.backgroundImage` (roba la sesión del profe)
+Fix aplicado: `isSafeBgImage()` en `core/backgrounds.js` (whitelist `data:image/<raster>;base64`),
+`backgroundPreviewHtml` usa `url('…')` en comillas simples + whitelist (arregla también el
+bug de render por comillas dobles anidadas), `applyBackground` solo pinta si es seguro, y
+`core/io.js` descarta un `backgroundImage` no válido al importar. Test: `tests/security.test.mjs`.
 `core/backgrounds.js:77` (`backgroundPreviewHtml`) interpola `imageUrl` SIN escapar dentro
 de `style="...url("${imageUrl}")"`. Llega desde JSON importado (`core/io.js`, sin
 sanitizar) o actividad pública forkeada (y con P0-1 cualquiera puede publicar). Payload
@@ -67,7 +71,7 @@ subir (`readBackgroundImage`). Revisar el mismo patrón en `views/playerView.js:
 `core/editorShell.js:51`. Test: importar actividad con `backgroundImage` malicioso →
 el HTML resultante no contiene el payload sin escapar.
 
-### P0-5 🟡 MEDIO — `vsView.js:313,397`: nombres interpolados sin `escapeHtml` (inconsistencia; el resto del archivo sí escapa). Fix trivial.
+### P0-5 ✅ FALSO POSITIVO (verificado v1.51.205) — `vsView.js:313,397` usan `label.textContent`, no `innerHTML`. `textContent` NO parsea HTML → ya es seguro; añadir `escapeHtml` haría doble-escape. El resto de `vsView` (incl. `vsBarHtml`) escapa correctamente. Sin cambio.
 
 Nota (verificado, NO tocar): `escapeHtml` es consistente en el proyector (nicknames en
 hostLive/podium/teams/reports escapados) y `pbFilter` se usa bien en todos los filtros.

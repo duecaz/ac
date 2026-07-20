@@ -27,6 +27,7 @@ console.log('\n▶ simPlay'); await import('./simPlay.test.mjs');
 console.log('\n▶ assignments'); await import('./assignments.test.mjs');
 console.log('\n▶ stability'); await import('./stability.test.mjs');
 console.log('\n▶ presentation'); await import('./presentation.test.mjs');
+console.log('\n▶ security'); await import('./security.test.mjs');
 console.log('\n▶ soloTimer'); await import('./soloTimer.test.mjs');
 console.log('\n▶ soloPlayer'); await import('./soloPlayer.test.mjs');
 console.log('\n▶ clock'); await import('./clock.test.mjs');

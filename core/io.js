@@ -5,6 +5,7 @@
 //   { format: 'ww-activities', version: 1, exportedAt, activities: [Activity, ...] }
 import { list, save, get } from './storage.js';
 import { migrate, newActivityId } from './migrate.js';
+import { isSafeBgImage } from './backgrounds.js';
 
 const FORMAT = 'ww-activities';
 const FORMAT_VERSION = 1;
@@ -35,6 +36,12 @@ export async function importActivitiesJson(input, { strategy = 'duplicate' } = {
   let parsed;
   try { parsed = JSON.parse(text); } catch (e) { return { ok: false, errors: ['JSON inválido: ' + e.message], count: 0 }; }
 
+  // Rechaza un wrapper de una versión de formato FUTURA: su contenido podría
+  // tener un esquema que `migrate` (forward-only) normalizaría mal en silencio.
+  if (parsed?.format === FORMAT && Number(parsed.version) > FORMAT_VERSION) {
+    return { ok: false, count: 0, errors: [`Formato v${parsed.version} más nuevo que el soportado (v${FORMAT_VERSION}). Actualiza la app.`] };
+  }
+
   let activities = [];
   if (parsed?.format === FORMAT && Array.isArray(parsed.activities)) activities = parsed.activities;
   else if (Array.isArray(parsed)) activities = parsed;
@@ -48,6 +55,12 @@ export async function importActivitiesJson(input, { strategy = 'duplicate' } = {
       const a = migrate(raw);
       if (strategy === 'duplicate') a.id = newActivityId();
       a.updatedAt = new Date().toISOString();
+      // Sanea un backgroundImage no confiable (JSON de terceros): si no es un
+      // data-URL de imagen válido, lo descarta para no propagar el vector XSS.
+      if (a.presentation?.backgroundImage && !isSafeBgImage(a.presentation.backgroundImage)) {
+        a.presentation.backgroundImage = '';
+        if (a.presentation.background === 'custom') a.presentation.background = 'none';
+      }
       const { remote } = save(a);
       remote.catch(() => {}); // surfacing handled at caller level
       count++;

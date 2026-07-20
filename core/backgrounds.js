@@ -8,6 +8,22 @@
 //
 // Heavier backgrounds (interactive whiteboard, IR pen) will live in
 // optional modules under core/canvas/ that load lazily — this stays small.
+import { escapeHtml } from './html.js';
+
+// Whitelist para la imagen de fondo. La ÚNICA fuente legítima es la subida
+// (readBackgroundImage → data-URL base64 raster). Un JSON importado o una
+// actividad pública forkeada puede traer un `backgroundImage` arbitrario; si se
+// interpola en HTML/CSS sin validar, un payload como
+//   x')><img src=x onerror=...>
+// rompe el atributo `style` y ejecuta script en el navegador del PROFESOR (que
+// tiene el token PB en localStorage). Este whitelist solo admite data-URLs de
+// imagen base64 (sin comillas ni `<`/`>` posibles en el cuerpo), así que
+// neutraliza la inyección de raíz. Rechaza SVG en texto (data:image/svg+xml,…)
+// a propósito: su cuerpo es XML con comillas/`<` y rompería el atributo.
+export function isSafeBgImage(url) {
+  return typeof url === 'string'
+    && /^data:image\/(?:png|jpe?g|webp|gif|avif);base64,[A-Za-z0-9+/=\s]+$/i.test(url);
+}
 
 export const BACKGROUNDS = {
   none:       { label: 'Ninguno',      description: 'Sin fondo.' },
@@ -38,7 +54,7 @@ export function applyBackground(name, target = null, imageUrl = null) {
   const el = target || document.body;
   el.classList.remove(...ALL_CLS);
   el.classList.add(`bg-${valid}`);
-  if (valid === 'custom' && imageUrl) {
+  if (valid === 'custom' && isSafeBgImage(imageUrl)) {
     el.style.setProperty('--ww-bg-image', `url("${imageUrl}")`);
   } else {
     el.style.removeProperty('--ww-bg-image');
@@ -73,12 +89,16 @@ export function backgroundPreviewHtml(name, imageUrl = '') {
   const b = BACKGROUNDS[name] || BACKGROUNDS.none;
   const style = 'width:100%;height:60px;border-radius:6px;border:1px solid #dee2e6';
   if (name === 'custom') {
-    const inner = imageUrl
-      ? `background:center/cover no-repeat url("${imageUrl}")`
+    // url() en comillas SIMPLES: el atributo style va en comillas dobles, así que
+    // anidar dobles rompía el atributo (bug de render además del de seguridad).
+    // isSafeBgImage garantiza que `safe` no contiene comillas ni HTML.
+    const safe = isSafeBgImage(imageUrl) ? imageUrl : '';
+    const inner = safe
+      ? `background:center/cover no-repeat url('${safe}')`
       : 'display:flex;align-items:center;justify-content:center;background:#f1f3f5;color:#868e96';
-    return `<div class="ww-bg-preview bg-custom" style="${style};${inner}">${imageUrl ? '' : '<i class="bi bi-upload"></i>'}</div>
-            <small class="d-block text-center mt-1">${b.label}</small>`;
+    return `<div class="ww-bg-preview bg-custom" style="${style};${inner}">${safe ? '' : '<i class="bi bi-upload"></i>'}</div>
+            <small class="d-block text-center mt-1">${escapeHtml(b.label)}</small>`;
   }
   return `<div class="ww-bg-preview bg-${name}" style="${style}"></div>
-          <small class="d-block text-center mt-1">${b.label}</small>`;
+          <small class="d-block text-center mt-1">${escapeHtml(b.label)}</small>`;
 }
