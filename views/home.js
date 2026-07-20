@@ -1,7 +1,7 @@
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { list, remove } from '../core/storage.js';
-import { homePreviewHtml } from '../core/homePreview.js';
+import { homePreviewHtml, previewBgStyle } from '../core/homePreview.js';
 import { navigate } from '../core/router.js';
 import { getTemplate, listTemplates } from '../core/registry.js';
 import { confirmModal, toast } from '../core/toast.js';
@@ -104,9 +104,10 @@ export function renderHome(rootSel) {
 
     const n = itemCount(a);
     const pages = pageCount(a);
+    const bg = previewBgStyle(a.presentation);
     return `
       <article class="acard">
-        <div class="acard-preview">
+        <div class="acard-preview"${bg ? ` style="background:${bg}"` : ''}>
           ${homePreviewHtml(a)}
           <span class="acard-pages" title="${pages} ${pages === 1 ? 'página' : 'páginas'}"><i class="bi bi-files"></i> ${pages}</span>
         </div>

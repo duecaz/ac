@@ -234,7 +234,11 @@ body {
 .pv-match__ropes { width: 40px; height: 92px; align-self: center; flex: 0 0 auto; }
 /* Quiz */
 .pv-quiz { flex-direction: column; width: 86%; gap: 9px; }
-.pv-quiz__q { text-align: center; font-size: 10px; font-weight: 700; color: #374151; line-height: 1.2; }
+/* Pastilla clara: legible sobre CUALQUIER fondo/skin (incl. oscuros) — Fase 2b. */
+.pv-quiz__q {
+  text-align: center; font-size: 10px; font-weight: 700; color: #1f2937; line-height: 1.2;
+  background: rgba(255,255,255,.85); padding: 3px 8px; border-radius: 6px;
+}
 .pv-quiz__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; width: 100%; }
 .pv-opt {
   font-size: 9px; font-weight: 700; color: #fff; padding: 6px; border-radius: 6px;
@@ -256,9 +260,13 @@ body {
 .pv-calc__pad span { height: 14px; background: #16233b; border-radius: 4px; }
 .pv-calc__pad span.ok { background: #22c55e; }
 /* Texto (comas/tildes) */
-.pv-text { flex-direction: column; width: 82%; text-align: center; gap: 9px; }
-.pv-text__line { font-size: 11px; font-weight: 700; color: #374151; line-height: 1.3; }
-.pv-text__rule { border-bottom: 2px solid #cbd5e1; width: 70%; margin: 0 auto; }
+.pv-text { flex-direction: column; width: 82%; text-align: center; gap: 8px; }
+/* Pastilla clara: legible sobre cualquier fondo/skin (incl. oscuros) — Fase 2b. */
+.pv-text__line {
+  font-size: 11px; font-weight: 700; color: #1f2937; line-height: 1.3;
+  background: rgba(255,255,255,.85); padding: 4px 9px; border-radius: 7px;
+}
+.pv-text__rule { border-bottom: 2px solid #94a3b8; width: 70%; margin: 0 auto; }
 .pv-text__ok { font-size: 9px; font-weight: 700; color: #fff; background: #16a34a; padding: 3px 12px; border-radius: 5px; }
 /* Diagrama */
 .pv-diagram { gap: 10px; }

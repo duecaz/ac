@@ -6,6 +6,35 @@
 // tests/homePreview.test.mjs. Estilos .pv-* en styles/home.css.
 import { escapeHtml } from './html.js';
 import { getTemplate } from './registry.js';
+import { getSkin } from './skins.js';
+
+// Fondo REPRESENTATIVO por textura (backgrounds.css vive en clases body/frame que no
+// alcanzan a .acard-preview; a tamaño miniatura basta el color/gradiente dominante).
+const BG_REPR = {
+  notebook:   'repeating-linear-gradient(#ffffff,#ffffff 13px,#d7e3f0 14px,#ffffff 15px)',
+  blackboard: '#2f4a3a',
+  greenboard: '#1f5c43',
+  paper:      '#efe7d3',
+  grid:       'repeating-linear-gradient(#ffffff,#ffffff 12px,#e3e9f2 13px),repeating-linear-gradient(90deg,#ffffff,#ffffff 12px,#e3e9f2 13px)',
+  corkboard:  '#c8a06a',
+  classroom:  '#f3e7d2',
+  arena:      'radial-gradient(circle at 50% 0%,#25325a,#0f1830)',
+  stars:      'radial-gradient(circle at 50% 20%,#1e1b4b,#0b1024)',
+};
+
+// Fondo del preview según la presentación de la actividad: fondo elegido > skin >
+// (nada → el neutro por defecto de .acard-preview). 'custom' (imagen propia) se omite
+// a propósito por rendimiento (data-URL por tarjeta). Devuelve un valor CSS o ''.
+export function previewBgStyle(presentation) {
+  const bg = presentation?.background;
+  if (bg && BG_REPR[bg]) return BG_REPR[bg];
+  const skin = presentation?.skin;
+  if (skin && skin !== 'default') {
+    const s = getSkin(skin);
+    return s?.bgImage || s?.cssVars?.['--ww-bg'] || '';
+  }
+  return '';
+}
 
 const esc = escapeHtml;                                     // ya coacciona null → ''
 const trunc = (s, n) => { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; };

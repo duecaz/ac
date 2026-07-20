@@ -13,9 +13,16 @@
 >   `templates/`). Decisión de altitud pragmática: el switch es chrome decorativo, y el
 >   test cierra el agujero de drift (una plantilla nueva sin esquema falla en CI).
 >   *(Si se prefiere el método por plantilla en el futuro, la Fase 1 de abajo sigue válida.)*
-> - **PENDIENTE — Fase 2b (temas/fondos):** NO hecho. Riesgo: legibilidad sobre skins
->   oscuros (el texto de comas/tildes/quiz-q se perdería). Necesita un backdrop por
->   esquema. Es el siguiente paso natural y lo que el usuario preguntó ("¿los fondos?").
+> - **Fase 2b (HECHO, v1.51.201):** el preview respeta el TEMA/FONDO de la actividad.
+>   `previewBgStyle(presentation)` en `core/homePreview.js` (fondo elegido > skin > neutro)
+>   pinta el `.acard-preview` inline desde `views/home.js card()`. Fondos por textura en el
+>   mapa `BG_REPR` (notebook/blackboard/greenboard/paper/grid/corkboard/classroom/arena/stars,
+>   color/gradiente dominante); skins vía `getSkin().bgImage||--ww-bg`; `custom` (imagen
+>   propia) se omite a propósito (data-URL por tarjeta). Legibilidad resuelta con pastilla
+>   clara (`rgba(255,255,255,.85)`) en `.pv-quiz__q` y `.pv-text__line` → texto legible sobre
+>   CUALQUIER fondo. Verificado headless con blackboard/stars/grid/classroom + skins
+>   retro/arcade (oscuros): todo legible, el fondo se ve. La memoización `id:updatedAt` se
+>   invalida sola al cambiar la presentación (`save()` refresca `updatedAt`).
 > - **PENDIENTE — Fase 4·2 (filtrar sin re-montar):** NO hecho. La memoización ya abarata
 >   el re-paint por tecleo; el refactor de `paint()` queda como mejora aparte.
 > - **PENDIENTE — Fase 2c (SVGs del usuario):** pipeline listo (`docs/svg-previews-guia.md`);
