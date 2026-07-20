@@ -212,14 +212,14 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
         <h6 class="text-muted text-uppercase small mb-2">Fondo</h6>
         <div class="d-flex flex-wrap gap-2 mb-4">
           ${listBackgrounds().map(b => b.name === 'custom'
-            ? `<div class="ww-pick-tile bg-pick ${currentBg==='custom'?'is-active':''}" data-name="custom" role="button" title="${escapeHtml(b.description||'')}" style="width:120px">
+            ? `<div class="ww-pick-tile bg-pick ${currentBg==='custom'?'is-active':''}" data-name="custom" role="button" title="${escapeHtml(b.description||'')}" style="width:88px">
                  ${backgroundPreviewHtml('custom', a.presentation?.backgroundImage || '')}
                  <label class="btn btn-sm btn-outline-secondary w-100 mt-1" style="cursor:pointer" title="Máx 800 KB">
                    <i class="bi bi-upload"></i> ${a.presentation?.backgroundImage ? 'Cambiar' : 'Subir'}
                    <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" id="bg-custom-file" hidden>
                  </label>
                </div>`
-            : `<div class="ww-pick-tile bg-pick ${currentBg===b.name?'is-active':''}" data-name="${b.name}" role="button" title="${escapeHtml(b.description||'')}" style="width:120px">
+            : `<div class="ww-pick-tile bg-pick ${currentBg===b.name?'is-active':''}" data-name="${b.name}" role="button" title="${escapeHtml(b.description||'')}" style="width:88px">
                  ${backgroundPreviewHtml(b.name)}
                </div>`).join('')}
         </div>

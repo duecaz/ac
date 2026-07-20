@@ -19,7 +19,7 @@
 .ww-play-page {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 0 .5rem;
+  padding: 5px .5rem 0;   /* un respiro entre la barra superior y el marco */
 }
 
 /* The "embed" frame — bounded width, fixed aspect ratio, scrolls inside.

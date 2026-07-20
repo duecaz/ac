@@ -13,10 +13,12 @@
   --dash-card-line: #ece7d8;
   --dash-primary:   #2563eb;
   --dash-primary-d: #1d4ed8;
-  --dash-navy:      #141c2e;
-  --dash-navy-btn:  #243149;
-  --dash-navy-btn2: #2d3d59;
-  --dash-navy-line: #33425d;
+  /* Barra superior: terracota cálido que combina con el crema (antes navy #141c2e).
+     Los botones son velos de blanco translúcido → se adaptan al color de la barra. */
+  --dash-navy:      #c95324;
+  --dash-navy-btn:  rgba(255,255,255,.14);
+  --dash-navy-btn2: rgba(255,255,255,.26);
+  --dash-navy-line: rgba(255,255,255,.32);
   --dash-yellow:    #f5c518;
   --dash-yellow-d:  #ffd534;
   /* Paleta suave (bg/fg) por color semántico — UNA fuente para las pastillas de
@@ -72,7 +74,7 @@ body {
 
 .ww-topbar #ww-version {
   font-size: 11px; font-weight: 700; letter-spacing: .2px;
-  background: var(--dash-navy-btn); color: #9fb3d1;
+  background: var(--dash-navy-btn); color: #ffe3d3;
   padding: 4px 9px; border-radius: 6px;
 }
 

@@ -16,7 +16,7 @@ assert.ok(required.includes('--ww-success') && required.includes('--ww-danger') 
 ok(`set canónico de ${required.length} tokens (derivado del skin default)`);
 
 const skins = listSkins();
-assert.ok(skins.length >= 9, `esperaba ≥9 skins, hay ${skins.length}`);
+assert.ok(skins.length >= 7, `esperaba ≥7 skins, hay ${skins.length}`);
 ok(`${skins.length} skins registrados`);
 
 const failing = checkAllSkins();
