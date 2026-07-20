@@ -271,6 +271,59 @@ body {
 /* Memoria */
 .pv-memory { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 68%; }
 .pv-memory span { aspect-ratio: 3/4; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 5px; }
+/* Ruleta — disco de 8 sectores + eje + aguja */
+.pv-wheel__disc {
+  width: 106px; height: 106px; border-radius: 50%;
+  background: conic-gradient(#ef4444 0 45deg, #f59e0b 45deg 90deg, #eab308 90deg 135deg,
+    #16a34a 135deg 180deg, #0891b2 180deg 225deg, #2563eb 225deg 270deg,
+    #8b5cf6 270deg 315deg, #ec4899 315deg 360deg);
+  box-shadow: 0 2px 9px rgba(20, 28, 46, .18);
+}
+.pv-wheel__hub {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .3);
+}
+.pv-wheel__pin {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent;
+  border-top: 15px solid #141c2e;
+}
+/* Sopa de letras — rejilla 5×5, palabra resaltada en diagonal */
+.pv-word__grid { display: grid; grid-template-columns: repeat(5, 20px); gap: 3px; }
+.pv-word__grid span {
+  height: 20px; display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #475569; background: #f1f5f9; border-radius: 4px;
+}
+.pv-word__grid .pv-word__hit { background: #2563eb; color: #fff; }
+/* Crucigrama — rejilla blanca/negra con letras */
+.pv-cross__grid { display: grid; grid-template-columns: repeat(5, 20px); gap: 2px; }
+.pv-cross__grid span {
+  height: 20px; border-radius: 3px; background: #fff; border: 1px solid #dbe2ea;
+  display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #334155;
+}
+.pv-cross__grid .pv-cross__b { background: #141c2e; border-color: #141c2e; }
+.pv-cross__grid .pv-cross__l { background: #e7f0fe; color: #2563eb; border-color: #bfd3f5; }
+/* Ordena las Pelotas — 3 tubos con bolas */
+.pv-balls { gap: 12px; }
+.pv-tube {
+  display: flex; flex-direction: column-reverse; gap: 3px; padding: 4px;
+  border: 2px solid #cbd5e1; border-top: 0; border-radius: 0 0 13px 13px; background: rgba(255, 255, 255, .55);
+}
+.pv-tube b { width: 18px; height: 18px; border-radius: 50%; display: block; }
+.pv-tube__empty { background: transparent; }
+/* Explota Globos */
+.pv-globos svg { width: 94%; height: 100%; }
+/* Abre Cajas — 6 cajas, una abierta */
+.pv-boxes__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+.pv-box {
+  width: 34px; height: 30px; border-radius: 7px; background: #ece7d8; color: #8a8371;
+  border: 2px solid #ddd6c4; display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800;
+}
+.pv-box--open {
+  background: #fef3e2; color: #f59e0b; border-color: #f6d488;
+  box-shadow: 0 2px 9px rgba(245, 158, 11, .3);
+}
 /* Respaldo genérico — el color lo da la clase .tag--{color} de la plantilla; aquí
    solo la maqueta + un neutro por defecto (por si el color no tuviera .tag--*). */
 .pv-generic { flex-direction: column; gap: 8px; background: var(--soft-neutral-bg); color: var(--soft-neutral-fg); }

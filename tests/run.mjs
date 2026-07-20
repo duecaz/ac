@@ -35,6 +35,9 @@ console.log('\n▶ penDetector'); await import('./penDetector.test.mjs');
 console.log('\n▶ diagram'); await import('./diagram.test.mjs');
 console.log('\n▶ styles'); await import('./styles.test.mjs');
 console.log('\n▶ templateContract'); await import('./templateContract.test.mjs');
+// Tras templateContract: el registro real ya está cargado (homePreview lo necesita
+// y algunas suites previas —p.ej. solo— asumen que NO lo está; ver su registerTemplate).
+console.log('\n▶ homePreview'); await import('./homePreview.test.mjs');
 console.log('\n▶ norms'); await import('./norms.test.mjs');
 console.log('\n▶ skins'); await import('./skins.test.mjs');
 console.log('\n▶ newTemplate'); await import('./newTemplate.test.mjs');

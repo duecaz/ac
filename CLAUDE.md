@@ -84,9 +84,13 @@ las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecut
   tokens `--ww-*` ni skins (eso es del juego). Al ser chrome, va en la lista `EXCLUDED` del ratchet
   `tests/styles.test.mjs` — si añades otro CSS de chrome, súmalo ahí o el "completeness gate" falla.
 - El preview de cada tarjeta del HOME lo pinta **`core/homePreview.js`** (`homePreviewHtml`):
-  un dibujo LIGERO y estático por tipo de plantilla (sin render del juego). Es distinto de
-  `mountThumb`/`core/activityThumb.js` (render real escalado 1280×800), que sigue existiendo
-  para otros usos — el home dejó de usarlo por rendimiento con muchas tarjetas.
+  un dibujo LIGERO y estático por tipo de plantilla (sin render del juego), MEMOIZADO por
+  `id:updatedAt`. Cubre las **13** plantillas (0 respaldos genéricos) — lo garantiza
+  `tests/homePreview.test.mjs` (si añades plantilla y olvidas su esquema en el switch
+  `build()`, falla en CI). Es distinto de `mountThumb`/`core/activityThumb.js` (render real
+  escalado 1280×800), que sigue existiendo para otros usos — el home dejó de usarlo por
+  rendimiento. Pendiente: que el preview respete tema/fondo de la actividad (ver
+  `docs/handoff-previews-home.md` Fase 2b).
 - En móvil (≤640px) la barra superior colapsa en un **menú hamburguesa** (`.ww-topbar__burger`
   → clase `.open`); las acciones (incl. `#ww-mute-slot`/`#ww-auth-slot`) caen en el desplegable.
 

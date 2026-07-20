@@ -1,6 +1,28 @@
 # HANDOFF — Previews del HOME: contrato por plantilla, esquemas faltantes, centrado y rendimiento
 
-> **Para:** próxima sesión (Opus 4.8). **Estado:** PLAN aprobado por el usuario, sin ejecutar.
+> ## ✅ EJECUTADO (v1.51.200) — lo hecho y lo que queda
+> - **Fase 2 (HECHO):** las 13 plantillas tienen esquema propio en `core/homePreview.js`
+>   (nuevos: wheel/ruleta, wordsearch/sopa, crossword/crucigrama, ballsort/pelotas,
+>   globos, question-live/abre-cajas; memory refleja nº de pares). **0 respaldos
+>   genéricos.** Verificado headless (13 tarjetas, captura grid).
+> - **Fase 3 (HECHO):** centrado ≤6px medido en headless para las 13.
+> - **Fase 4·1 (HECHO):** memoización `id:updatedAt → html` (LRU 300) en el dispatcher.
+> - **"Si es norma, es test" (HECHO, variante):** en vez de migrar a un método por
+>   plantilla (`cardPreviewHtml`), se mantuvo el switch central PERO con un test que
+>   garantiza 0 genéricos: `tests/homePreview.test.mjs` (lista canónica desde
+>   `templates/`). Decisión de altitud pragmática: el switch es chrome decorativo, y el
+>   test cierra el agujero de drift (una plantilla nueva sin esquema falla en CI).
+>   *(Si se prefiere el método por plantilla en el futuro, la Fase 1 de abajo sigue válida.)*
+> - **PENDIENTE — Fase 2b (temas/fondos):** NO hecho. Riesgo: legibilidad sobre skins
+>   oscuros (el texto de comas/tildes/quiz-q se perdería). Necesita un backdrop por
+>   esquema. Es el siguiente paso natural y lo que el usuario preguntó ("¿los fondos?").
+> - **PENDIENTE — Fase 4·2 (filtrar sin re-montar):** NO hecho. La memoización ya abarata
+>   el re-paint por tecleo; el refactor de `paint()` queda como mejora aparte.
+> - **PENDIENTE — Fase 2c (SVGs del usuario):** pipeline listo (`docs/svg-previews-guia.md`);
+>   cada SVG entregado sustituye su esquema programático.
+>
+> ---
+> **Estado original:** PLAN aprobado por el usuario.
 > Contexto: el usuario reporta que en "Mis actividades" (1) algunos previews no están
 > centrados, (2) varias plantillas NI tienen preview (cae el respaldo genérico icono+nombre),
 > y (3) quiere que carguen más rápido.
