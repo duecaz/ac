@@ -8,8 +8,10 @@ import { toast, confirmModal } from '../core/toast.js';
 import { acquire } from '../core/lifecycle.js';
 import { buildSwitchOptions, applyAndSave } from './switchTemplate.js';
 import { downloadActivitiesJson } from '../core/io.js';
+import { activityTooLarge, activitySizeBytes } from '../core/upload.js';
 
 const AUTOSAVE_DELAY_MS = 2000;
+let _sizeWarned = false; // aviso de tamaño una vez por sesión
 
 export function renderEditView(rootSel, { id, template }) {
   const ctx = acquire('editView');
@@ -104,6 +106,12 @@ export function renderEditView(rootSel, { id, template }) {
     if (saving) return;
     saving = true;
     setState('Guardando…', 'info', 'bi-cloud-arrow-up');
+    // P1-6: avisa (una vez) si la actividad se acerca a ser insincronizable por
+    // acumular imágenes inline, antes de que reviente la cuota o el límite de PB.
+    if (!_sizeWarned && activityTooLarge(activity)) {
+      _sizeWarned = true;
+      toast(`Esta actividad pesa ~${Math.round(activitySizeBytes(activity)/1024)} KB por las imágenes. Si crece mucho más puede que no se sincronice; reduce el tamaño o el número de imágenes.`, 'warning', 8000);
+    }
     const { remote, persisted } = save(activity);
     // P1-2: si NI SIQUIERA se guardó en local (cuota llena), NO fingir éxito —
     // estado de error PERSISTENTE (no un toast que se va) y `dirty` sigue true

@@ -87,7 +87,7 @@ hostLive/podium/teams/reports escapados) y `pbFilter` se usa bien en todos los f
 
 ## P1 — PÉRDIDA DE DATOS (profesor)
 
-### P1-1 🔴 CRÍTICO — Actividades borradas RESUCITAN vía sync (sin tombstones)
+### P1-1 ✅ HECHO (v1.51.210) — Actividades borradas RESUCITAN vía sync (sin tombstones)
 `core/storage.js:76-88` + `core/storageMerge.js:20`. `remove()` borra local y lanza el
 DELETE remoto en background sin cola de reintento; si falla (offline, blip, cierre de
 pestaña), el registro sigue en PB y el próximo `sync()` lo RE-AÑADE (`mergeRemote` mete
@@ -116,19 +116,19 @@ optimista antes del remoto y limpiarlo solo en el `.then` de confirmación. Test
 borra en silencio. **Fix mínimo**: si `local._unsynced`, remoto NO pisa (conservar local
 o marcar conflicto). Test en `storageMerge.test.mjs`.
 
-### P1-5 🟠 ALTO — Import `preserve` re-sella `updatedAt` → un backup VIEJO machaca lo nuevo
+### P1-5 ✅ HECHO (v1.51.210) — Import `preserve` re-sella `updatedAt` → un backup VIEJO machaca lo nuevo
 `core/io.js:50`: con `strategy:'preserve'` se conserva el id pero se pone `updatedAt`
 fresco → el import gana el LWW local y remoto sin confirmación. **Fix**: conservar el
 `updatedAt` del JSON; si el id existe con `updatedAt` mayor, confirmar o duplicar.
 
-### P1-6 🟡 MEDIO — Presupuesto de imágenes por ACTIVIDAD inexistente
+### P1-6 ✅ HECHO (v1.51.210) — Presupuesto de imágenes por ACTIVIDAD inexistente
 `core/upload.js` limita 200 KB POR imagen; 20 ítems con imagen ≈ 4 MB en un registro →
 (a) revienta la cuota del blob localStorage (cae en P1-2), (b) puede superar el límite
 de PB → `_unsynced` pegado para siempre. **Fix**: validar tamaño total del JSON de la
 actividad al guardar y avisar antes de que sea insincronizable.
 
-### P1-7 🟡 MEDIO — `results.js` recorta la cola a 60 SIEMPRE (descarta resultados viejos aunque haya espacio). Subir tope / avisar al descartar.
-### P1-8 🔵 BAJO — `toId()` (`adapters/pocketbase/remoteStore.js:12`) lowercasea+trunca a 15 → ids distintos pueden colisionar y pisarse en PB. Fix: hash del id completo.
+### P1-7 ✅ HECHO (v1.51.210) — cola de `results.js` subida a 200 y AVISA (`ww:results-dropped`) al recortar.
+### P1-8 ⏸️ DIFERIDO (peligro de migración) — cambiar `toId()` re-mapearía TODAS las actividades ya sincronizadas → registros PB huérfanos. Requiere migración coordinada (re-key en el servidor) + acceso del usuario. Colisión de caso es improbable con `rid()`. Se deja documentado, no se toca sin plan de migración.
 ### P1-9 ✅ HECHO (v1.51.205) — `core/io.js` rechaza un wrapper de versión más nueva que la soportada.
 
 ---

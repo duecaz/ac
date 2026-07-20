@@ -23,7 +23,7 @@ const LS = makeLS();
 global.localStorage = LS;
 // backendName() → 'local' en Node (sin location) → driver offline, sin red.
 
-const { save } = await import('../core/storage.js');
+const { save, remove, tombstoneSet } = await import('../core/storage.js');
 
 const act = () => ({ id: 'act_test1', template: 'quiz', title: 'T', content: { items: [] } });
 
@@ -48,6 +48,21 @@ const act = () => ({ id: 'act_test1', template: 'quiz', title: 'T', content: { i
   assert.strictEqual(LS.getItem('ww.activities'), before, 'no se escribió nada nuevo (no finge éxito)');
   LS.full = false;
   ok('save() devuelve persisted:false con la cuota llena');
+}
+
+// ── remove() tumba el id SÍNCRONAMENTE (P1-1) ───────────────────────────────
+{
+  LS.full = false;
+  // siembra un registro para borrar
+  const { remote: r0 } = save({ id: 'act_del1', template: 'quiz', title: 'Del', content: { items: [] } });
+  r0.catch(() => {});
+  const p = remove('act_del1');
+  // justo tras remove(), y ANTES de que resuelva el DELETE remoto, el id está tumbado
+  assert.ok(tombstoneSet().has('act_del1'), 'remove() añade el tombstone de inmediato (bloquea la resurrección por sync)');
+  const stored = JSON.parse(LS.getItem('ww.activities'))['act_del1'];
+  assert.ok(!stored, 'el registro se borró del mapa local');
+  p.catch(() => {});
+  ok('remove() tumba el id síncronamente antes del DELETE remoto');
 }
 
 console.log(`\nstorage.test: ${passed} checks passed`);

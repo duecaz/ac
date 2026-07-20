@@ -8,15 +8,26 @@ import { lsGet, lsSet } from './ls.js';
 import { createOfflineQueue } from './offlineQueue.js';
 
 const QUEUE_KEY = 'ww.resultQueue';
-const QUEUE_MAX = 60;
+// Tope de la cola offline de resultados. Subido de 60 → 200 (P1-7): en un
+// dispositivo de aula compartido usado sin red, varios alumnos jugando en
+// secuencia superaban 60 y se DESCARTABAN los primeros en SILENCIO antes del
+// flush. Con 200 hay margen holgado, y si aun así se recorta, se AVISA.
+const QUEUE_MAX = 200;
 
 let _qseq = 0;
 const qid = () => `${clock.now().toString(36)}-${(_qseq = (_qseq + 1) % 1e6).toString(36)}`;
 
-// Quota-aware write. When the cap is hit we drop the OLDEST queued results
-// (slice(-MAX)); lsSet surfaces ww:storage-full so the UI can warn instead of
-// silently swallowing the loss.
-function qSave(q) { lsSet(QUEUE_KEY, JSON.stringify(q.slice(-QUEUE_MAX))); }
+// Quota-aware write. Solo recorta si de verdad se supera el tope, y entonces
+// emite `ww:results-dropped` para que la UI avise en vez de tragarse la pérdida.
+function qSave(q) {
+  if (q.length > QUEUE_MAX) {
+    const dropped = q.length - QUEUE_MAX;
+    console.warn(`[results] cola de resultados llena: se descartan ${dropped} resultado(s) más antiguo(s)`);
+    try { window.dispatchEvent(new CustomEvent('ww:results-dropped', { detail: { dropped } })); } catch { /* sin DOM */ }
+    q = q.slice(-QUEUE_MAX);
+  }
+  lsSet(QUEUE_KEY, JSON.stringify(q));
+}
 
 // Loads the queue, backfilling a stable _qid on any legacy items (queued before
 // _qid existed) and persisting it, so removal-by-id is reliable across flushes.

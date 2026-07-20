@@ -55,4 +55,16 @@ merged = mergeRemote(local, [row('a', '2026-09-01', { title: 'remote-mas-nuevo' 
 assert.strictEqual(merged.a.title, 'local-pendiente', 'una edición _unsynced no se pisa ni con remoto más nuevo');
 ok('mergeRemote respeta _unsynced (no lo pisa el reloj de pared)');
 
+// P1-1: un id en tombstones (borrado pendiente de confirmar) NO se reintroduce
+// desde el remoto, aunque la fila siga viva en PB.
+local = {};
+merged = mergeRemote(local, [row('gone', '2026-05-01', { title: 'zombie' })], idmigrate, new Set(['gone']));
+assert.ok(!merged.gone, 'una fila remota tumbada no resucita en el merge');
+ok('mergeRemote respeta tombstones (no resucita borrados)');
+
+// …y sin tombstone esa misma fila SÍ entra (control).
+merged = mergeRemote({}, [row('gone', '2026-05-01')], idmigrate, new Set());
+assert.ok(merged.gone, 'sin tombstone, la fila remota entra con normalidad');
+ok('sin tombstone la fila remota entra (control)');
+
 console.log(`\nstorageMerge.test: ${passed} checks passed`);

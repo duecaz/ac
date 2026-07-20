@@ -12,6 +12,19 @@ const ALLOWED = {
   'image/svg+xml': 'svg',
 };
 
+// Presupuesto POR ACTIVIDAD (P1-6). El límite de 200 KB es por imagen, pero una
+// actividad con muchas imágenes inline puede llegar a varios MB → (a) revienta la
+// cuota del blob de localStorage (todas las actividades en una clave) y (b) puede
+// superar el maxSize del campo `data` de PocketBase (5 MB) y quedar imposible de
+// sincronizar. Avisamos bastante por debajo para que el profe reaccione a tiempo.
+export const ACTIVITY_SIZE_WARN_BYTES = 1.5 * 1024 * 1024; // 1.5 MB
+
+export function activitySizeBytes(a) {
+  const s = typeof a === 'string' ? a : JSON.stringify(a);
+  try { return new TextEncoder().encode(s).length; } catch { return s.length; }
+}
+export function activityTooLarge(a) { return activitySizeBytes(a) > ACTIVITY_SIZE_WARN_BYTES; }
+
 export async function uploadMedia(file) {
   if (!file) throw new Error('no file');
   if (!ALLOWED[file.type]) throw new Error(`Tipo no permitido: ${file.type || 'desconocido'}`);

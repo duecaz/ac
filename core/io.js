@@ -49,26 +49,35 @@ export async function importActivitiesJson(input, { strategy = 'duplicate' } = {
   else return { ok: false, errors: ['Formato no reconocido.'], count: 0 };
 
   const errors = [];
-  let count = 0;
+  let count = 0, skipped = 0;
   for (const raw of activities) {
     try {
       const a = migrate(raw);
-      if (strategy === 'duplicate') a.id = newActivityId();
-      a.updatedAt = new Date().toISOString();
+      if (strategy === 'duplicate') {
+        a.id = newActivityId();
+        a.updatedAt = new Date().toISOString();
+      }
+      // P1-5: en 'preserve' NO re-sellar updatedAt. Si ya existe una copia local
+      // con updatedAt >= la importada, un backup VIEJO NO debe machacar lo nuevo:
+      // se omite. (Con 'duplicate' siempre es copia nueva, no aplica.)
+      if (strategy === 'preserve') {
+        const existing = get(a.id);
+        if (existing && (existing.updatedAt || '') >= (a.updatedAt || '')) { skipped++; continue; }
+      }
       // Sanea un backgroundImage no confiable (JSON de terceros): si no es un
       // data-URL de imagen válido, lo descarta para no propagar el vector XSS.
       if (a.presentation?.backgroundImage && !isSafeBgImage(a.presentation.backgroundImage)) {
         a.presentation.backgroundImage = '';
         if (a.presentation.background === 'custom') a.presentation.background = 'none';
       }
-      const { remote } = save(a);
+      const { remote } = save(a, { keepUpdatedAt: strategy === 'preserve' });
       remote.catch(() => {}); // surfacing handled at caller level
       count++;
     } catch (e) {
       errors.push(`"${raw?.title || raw?.id || '?'}": ${e.message}`);
     }
   }
-  return { ok: errors.length === 0, count, errors };
+  return { ok: errors.length === 0, count, skipped, errors };
 }
 
 function slug(s) {

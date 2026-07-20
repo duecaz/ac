@@ -13,14 +13,21 @@
  * reloj de pared borraba la edición en silencio. Se conserva hasta que suba (y
  * el flag se limpie), momento en que futuros sync la mergean con normalidad.
  *
+ * TOMBSTONES (P1-1): un id borrado localmente cuyo DELETE remoto aún no confirmó
+ * NO debe reintroducirse desde el remoto. `tombstones` (Set de ids) bloquea esa
+ * resurrección; sin ello, borrar offline / con blip / cerrando la pestaña dejaba
+ * la fila viva en PB y el siguiente sync la re-añadía.
+ *
  * @param {Record<string, Object>} localMap   id → activity (the local cache)
  * @param {{id:string, data:Object}[]} remoteRows  backend rows
  * @param {(data:Object)=>Object} migrate      normaliser applied to remote data
+ * @param {Set<string>} [tombstones]           ids borrados pendientes de confirmar
  * @returns {Record<string, Object>} a NEW merged map (inputs untouched)
  */
-export function mergeRemote(localMap, remoteRows, migrate) {
+export function mergeRemote(localMap, remoteRows, migrate, tombstones = null) {
   const map = { ...(localMap || {}) };
   for (const row of remoteRows || []) {
+    if (tombstones && tombstones.has(row.id)) continue; // borrado pendiente: no resucitar
     const remote = migrate(row.data || {});
     const local = map[row.id];
     if (local?._unsynced) continue; // no pisar una edición local pendiente de subir
