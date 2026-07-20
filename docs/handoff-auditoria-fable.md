@@ -22,7 +22,11 @@ C (`autoScore` null→false), F (`submitProgress` no atómico) — eso sigue en 
 
 ## P0 — SEGURIDAD (lo más grave del repo)
 
-### P0-1 🔴 CRÍTICO — Reglas de PocketBase 100% abiertas en TODAS las colecciones
+### P0-1 ⏸️ PROPUESTA (v1.51.209) — Reglas de PocketBase 100% abiertas en TODAS las colecciones
+**Análisis + plan por fases en `docs/handoff-seguridad-pb.md`.** NO auto-aplicado: el
+cliente no manda token de auth (`remoteStore.pbFetch`) y los alumnos son anónimos, así
+que reglas por-autor a ciegas romperían guardadas y el flujo en vivo. Requiere DECISIÓN
+del usuario + acceso a pb.lanube.uno + prueba en dispositivo. Recomendado: Fase 0+1 ya.
 `views/adminView.js:535`: `publicRules = { listRule:'', viewRule:'', createRule:'',
 updateRule:'', deleteRule:'' }` aplicado a `activities, results, live_sessions,
 live_answers, assignments, assignment_attempts`. En PB, `''` = acceso público total.
@@ -50,7 +54,10 @@ lógica de `getRoundPayload` por plantilla para strippear) y las claves reales e
 campo/colección solo accesible al host. Es el fix con más diseño de este bloque —
 coordinarlo con la deuda A si se toca el esquema.
 
-### P0-3 🟠 ALTO — Salas enumerables + PIN de baja entropía
+### P0-3 ⏸️ PROPUESTA (v1.51.209) — Salas enumerables + PIN de baja entropía (ver `docs/handoff-seguridad-pb.md` Fase 3, acoplada a P0-2).
+
+<!-- original abajo -->
+#### P0-3 (detalle)
 `live_sessions.listRule=''` permite listar TODAS las salas (con `code`, `activity` con
 respuestas y `state`) sin conocer ningún PIN (`GET /api/collections/live_sessions/records`).
 Además los códigos son palabras cortas de un diccionario pequeño (`core/liveWords.js`) sin
