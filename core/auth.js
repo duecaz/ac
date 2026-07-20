@@ -90,13 +90,95 @@ export async function signIn(email, password) {
   return data;
 }
 
+// ── OAuth2 (Google) — flujo por redirección contra PocketBase, sin SDK ────────
+// PB hace el intercambio del `code` con Google usando el client_secret guardado
+// en el servidor (nunca viaja al navegador). El token de acceso de Google vuelve
+// en `meta.accessToken` → base para enviar tareas a Google Classroom (Fase B).
+const OAUTH_KEY = 'ww.oauth.pending';       // { provider, state, codeVerifier, redirectUrl }
+const GOOGLE_TOKEN_KEY = 'ww.google.token'; // { accessToken, expiry } (para Classroom)
+
+// Lista los proveedores OAuth habilitados en PB. Tolera el cambio de forma entre
+// PB <0.23 (`authProviders`) y ≥0.23 (`oauth2.providers`).
+export async function listOAuthProviders() {
+  try {
+    const r = await fetch(`${PB_URL}/api/collections/users/auth-methods`);
+    if (!r.ok) return [];
+    const data = await r.json();
+    return data?.oauth2?.providers || data?.authProviders || [];
+  } catch { return []; }
+}
+
+// El origen+ruta actual, sin query ni hash — debe coincidir EXACTAMENTE con una
+// "Authorized redirect URI" registrada en Google Cloud.
+export function oauthRedirectUrl() {
+  return location.origin + location.pathname;
+}
+
+// Paso 1: pide a PB los datos del proveedor (authURL/state/codeVerifier), guarda
+// lo necesario para el retorno y redirige al consentimiento de Google.
+export async function startOAuthLogin(providerName = 'google', redirectUrl = oauthRedirectUrl()) {
+  const provs = await listOAuthProviders();
+  const p = provs.find(x => x.name === providerName);
+  if (!p) throw new Error(`El proveedor "${providerName}" no está habilitado en PocketBase (Settings → Auth providers).`);
+  sessionStorage.setItem(OAUTH_KEY, JSON.stringify({
+    provider: providerName, state: p.state, codeVerifier: p.codeVerifier, redirectUrl,
+  }));
+  // authURL viene con `redirect_uri=` al final (sin valor); se lo añadimos.
+  location.href = p.authURL + encodeURIComponent(redirectUrl);
+}
+
+export function pendingOAuth() {
+  try { return JSON.parse(sessionStorage.getItem(OAUTH_KEY)); } catch { return null; }
+}
+
+// Paso 2 (al volver de Google con ?code&state): valida el state y canjea el code
+// en PB. Deja la sesión iniciada y guarda el accessToken de Google si vino.
+export async function completeOAuthLogin(code, returnedState) {
+  const pending = pendingOAuth();
+  sessionStorage.removeItem(OAUTH_KEY);
+  if (!pending) throw new Error('No hay un login de Google en curso.');
+  if (returnedState !== pending.state) throw new Error('Estado OAuth no coincide (posible CSRF); reintenta el login.');
+  const r = await fetch(`${PB_URL}/api/collections/users/auth-with-oauth2`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      provider: pending.provider,
+      code,
+      codeVerifier: pending.codeVerifier,
+      redirectURL: pending.redirectUrl,
+    }),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data?.message || `Error ${r.status} al completar el login con Google`);
+  _user = data.record;
+  saveStored(data.token, data.record);
+  if (data.meta?.accessToken) {
+    try { sessionStorage.setItem(GOOGLE_TOKEN_KEY, JSON.stringify({ accessToken: data.meta.accessToken, expiry: data.meta.expiry || null })); } catch {}
+  }
+  notify();
+  return data;
+}
+
+// Token de acceso de Google de la sesión actual (para llamar a la API de
+// Classroom en Fase B). Null si no hay o no vino. Caduca ~1 h.
+export function getGoogleAccessToken() {
+  try {
+    const t = JSON.parse(sessionStorage.getItem(GOOGLE_TOKEN_KEY));
+    if (!t?.accessToken) return null;
+    if (t.expiry && new Date(t.expiry).getTime() < Date.now()) return null;
+    return t.accessToken;
+  } catch { return null; }
+}
+
+// Compat: el botón "Entrar con Google" llama aquí.
 export async function signInWithGoogle() {
-  throw new Error('OAuth de Google no está configurado en este servidor PocketBase.');
+  return startOAuthLogin('google');
 }
 
 export async function signOut() {
   _user = null;
   clearStored();
+  try { sessionStorage.removeItem(GOOGLE_TOKEN_KEY); } catch {}
   notify();
 }
 

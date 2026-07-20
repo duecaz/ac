@@ -21,7 +21,8 @@ import { renderExplore } from './views/explore.js';
 import { renderAdmin } from './views/adminView.js';
 import { sync, setStorageUser } from './core/storage.js';
 import { ensureIdentity } from './core/identity.js';
-import { authRefresh } from './core/auth.js';
+import { authRefresh, completeOAuthLogin } from './core/auth.js';
+import { mountAuthSlot } from './core/authWidget.js';
 import { applySkin } from './core/skins.js';
 // Side-effect: boot.js wires sounds + visual effects to the GameEvents bus and
 // exposes the navbar helpers (version stamp + mute button).
@@ -67,6 +68,20 @@ setBeforeResolve(() => clearListeners(APP));
   applySkin(localStorage.getItem('ww.skin') || 'default');
   stampVersion();
   initCustomAnims(); // register any animations added from the Admin panel
+
+  // Retorno de Google OAuth: aterriza en teacher.html?code=…&state=… . Se canjea
+  // el code ANTES de arrancar el router y se limpia la query (deja el #hash para
+  // que el router enrute normal). Si falla, se avisa pero la app sigue.
+  const _q = new URLSearchParams(location.search);
+  if (_q.get('code') && _q.get('state')) {
+    try { await completeOAuthLogin(_q.get('code'), _q.get('state')); }
+    catch (e) {
+      console.warn('[oauth]', e.message);
+      try { const { toast } = await import('./core/toast.js'); toast('Login con Google: ' + e.message, 'danger', 7000); } catch {}
+    }
+    history.replaceState(null, '', location.pathname + (location.hash || '#/home'));
+  }
+  mountAuthSlot('#ww-auth-slot').catch(() => {});
   // Start the router immediately so the home page paints from localStorage
   // without waiting for the network. Auth + sync happen in the background.
   start();
