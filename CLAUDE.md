@@ -148,6 +148,15 @@ las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecut
 
 ## Deuda técnica registrada
 
+### 🔴 AUDITORÍA INTEGRAL (Fable, 2026-07) — PENDIENTE DE EJECUTAR → `docs/handoff-auditoria-fable.md`
+4 agentes en paralelo (datos/sync · live · seguridad · UI), hallazgos verificados en
+código. Lo más grave: **reglas de PocketBase 100% abiertas** (un alumno puede
+auto-puntuarse/borrar actividades ajenas), **las respuestas correctas viajan al móvil
+del alumno**, XSS vía `backgroundImage`, borrados que resucitan (sin tombstones),
+fallo silencioso con localStorage lleno, y fullscreen denegado que mata la app con la
+pantalla roja. El handoff tiene 30+ ítems priorizados (P0 seguridad → P3 UI) con
+archivo:línea, escenario y fix; empezar por los "quick wins" listados al final.
+
 ### ✅ RESUELTO (v1.51.178 → v1.51.180) — Emparejar no conectaba en VERTICAL → `docs/handoff-emparejar-vertical.md`
 **Eran DOS causas encadenadas + 1 mejora de layout** (cada una tapaba a la siguiente):
 - **v1.51.180 — las cuerdas se SOLAPABAN con las tarjetas en vertical.** Al reordenar el
