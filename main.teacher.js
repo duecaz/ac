@@ -1,5 +1,6 @@
 import { installErrorHandlers } from './core/errorLog.js';
-import { route, start, navigate, setNotFound } from './core/router.js';
+import { route, start, navigate, setNotFound, setBeforeResolve } from './core/router.js';
+import { clearListeners } from './core/events.js';
 
 installErrorHandlers('teacher');
 
@@ -54,6 +55,12 @@ route('#/modos', () => renderAdmin(APP));
 route('#/sorteo', () => renderSorteoView(APP));
 
 setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encontrada. <a href="#/home">Inicio</a></div>`));
+
+// Antes de renderizar cada vista, suelta los handlers delegados que la vista
+// anterior dejó en #app (raíz compartida y estable). Sin esto, p.ej. los
+// handlers .skin-pick/.bg-pick del player seguían vivos al entrar al editor
+// (mismas clases) → "mount: root not found" + el tema saltaba a <body>.
+setBeforeResolve(() => clearListeners(APP));
 
 (async function boot() {
   applySkin(localStorage.getItem('ww.skin') || 'default');

@@ -4,6 +4,12 @@ import { compileRoute, matchRoute } from './routing.js';
 
 const routes = [];
 let notFound = () => {};
+let beforeResolve = null;
+
+// Hook run right before a route handler renders. Mains use it to clear the
+// previous view's delegated listeners on the shared app root (see
+// core/events.js clearListeners) so handlers never leak across views.
+export function setBeforeResolve(fn) { beforeResolve = fn; }
 
 export function route(pattern, handler) {
   const { rx, keys } = compileRoute(pattern);
@@ -18,6 +24,7 @@ export function navigate(hash) {
 }
 
 export function resolve() {
+  if (beforeResolve) { try { beforeResolve(); } catch {} }
   const hit = matchRoute(location.hash, routes);
   if (hit) return hit.handler(hit.params);
   notFound();

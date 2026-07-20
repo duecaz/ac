@@ -1,5 +1,6 @@
 import { installErrorHandlers } from './core/errorLog.js';
-import { route, start, setNotFound } from './core/router.js';
+import { route, start, setNotFound, setBeforeResolve } from './core/router.js';
+import { clearListeners } from './core/events.js';
 
 installErrorHandlers('student');
 
@@ -24,6 +25,10 @@ route('#/play/:code', ({ code }) => renderPlay(APP, code));
 route('#/task/:code', ({ code }) => renderTask(APP, code));
 
 setNotFound(() => mount(APP, html`<div class="alert alert-warning m-4">Ruta no encontrada.</div>`));
+
+// Suelta los handlers delegados de la vista anterior en la raíz compartida antes
+// de renderizar la siguiente (ver core/events.js clearListeners).
+setBeforeResolve(() => clearListeners(APP));
 
 (async function boot() {
   applySkin(localStorage.getItem('ww.skin') || 'default');

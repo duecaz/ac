@@ -120,6 +120,15 @@ las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecut
   muta layout — usar `observeResize()` (`core/observeResize.js`, rAF-debounced). Un RO
   directo dispara el aviso benigno "ResizeObserver loop…" que el boot-guard de los HTML
   trataba como crash (ya filtrado, pero el helper es la norma).
+- **Handlers delegados y cambio de ruta**: todas las vistas montan en la MISMA raíz
+  compartida `#app` y registran sus handlers con `on(APP, ...)` (delegación en
+  `core/events.js`). Esos listeners viven en el elemento `#app` (estable), así que
+  SOBREVIVEN al `innerHTML` de la vista siguiente. Por eso el router llama
+  `clearListeners(APP)` antes de renderizar cada ruta (`setBeforeResolve` en las
+  `main.*.js`): sin ello, los handlers `.skin-pick`/`.bg-pick` del player seguían vivos
+  al entrar al editor (mismas clases) → `mount: root not found` y el tema saltaba a
+  `<body>`. NUNCA quites ese `setBeforeResolve`, y si una vista necesita que un handler
+  persista entre rutas, NO lo cuelgues de `#app`. Cubierto por `tests/events.test.mjs`.
 - **Contrato y normas EJECUTABLES**: `tests/templateContract.test.mjs` (contrato completo de
   plantilla: `instructions`, modelo registrado, scorer `{correct,points}`, migrate idempotente,
   carpeta↔registro), `tests/norms.test.mjs` (RO directo, filtros PB, kernel sin `Date.now()`) y

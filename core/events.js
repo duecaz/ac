@@ -31,6 +31,22 @@ export function on(target, ev, sel, handler) {
   };
 }
 
+// Remove EVERY delegated listener registered via on() on this root. Used at the
+// route boundary: the shared app root (#app) is reused across views, and
+// delegated handlers live on that stable element, so they survive the innerHTML
+// swap of the next view and keep firing on its markup. That is exactly how the
+// player's `.skin-pick`/`.bg-pick` handlers leaked into the editor (same class
+// names) → `mount: root not found` and the theme bleeding onto <body>. Clearing
+// on navigation kills the whole class of cross-view handler leaks at the source.
+export function clearListeners(target) {
+  const root = typeof target === 'string' ? document.querySelector(target) : target;
+  if (!root) return;
+  const bag = _listeners.get(root);
+  if (!bag) return;
+  for (const [key, fn] of bag) root.removeEventListener(key.slice(0, key.indexOf('|')), fn);
+  bag.clear();
+}
+
 export const emit = (name, detail) => bus.dispatchEvent(new CustomEvent(name, { detail }));
 export const listen = (name, fn) => {
   const handler = (e) => fn(e.detail);
