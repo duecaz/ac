@@ -289,7 +289,10 @@ export async function renderPlay(rootSel, code) {
       svg.style.transform = `rotate(${qlRotation}deg)`;
     }
 
-    setTimeout(async () => {
+    // ctx.setTimeout: si el alumno abandona la vista mientras gira la ruleta, este
+    // callback ESCRIBE en el servidor (qlOpenQuestion → setSessionState). Con
+    // setTimeout desnudo disparaba tras navegar; ctx lo cancela en disposeAll.
+    ctx.setTimeout(async () => {
       qlSpinning = false;
       qlRotation = ((qlRotation % 360) + 360) % 360;
       // Someone may have opened a question while we spun — bail and repaint.
@@ -308,7 +311,11 @@ export async function renderPlay(rootSel, code) {
     const streak = Streaks.get(session.id, player.playerId);
     lastQuestionShownAt = Date.now();
     const deadlineMs = session.deadline ? new Date(session.deadline).getTime() : 0;
-    const total = activity?.live?.questionTimer ? activity.live.questionTimer * 1000 : 0;
+    // MISMO default que el host (hostLive.js timerSec = max(5, questionTimer||20)):
+    // antes, sin `questionTimer` definido, total=0 → el alumno NO veía cuenta atrás
+    // aunque el host liquidara a los 20 s. Ahora el reloj del alumno coincide con
+    // la ventana real del deadline del servidor.
+    const total = Math.max(5, activity?.live?.questionTimer || 20) * 1000;
     // The DEVICE renders the round via the template contract (same as VS),
     // so every template — quiz, tildes, comas, math… — works without a
     // per-template branch here. The host's projector shows the prompt.
@@ -337,7 +344,7 @@ export async function renderPlay(rootSel, code) {
     });
 
     if (questionTickHandle) clearInterval(questionTickHandle);
-    if (deadlineMs && total) {
+    if (deadlineMs) {
       questionTickHandle = ctx.setInterval(() => {
         if (session.phase !== 'question') { clearInterval(questionTickHandle); questionTickHandle = null; return; }
         const remain = Math.max(0, deadlineMs - Date.now());
@@ -468,7 +475,10 @@ export async function renderPlay(rootSel, code) {
         // evento real de sesión (subscribeRoom/poll) lo enruta correctamente.
         // (No se puede usar paint() aquí: cachea por `session.*` y el avance de
         // raceQueue es 100% local, así que repintaría la MISMA pregunta.)
-        setTimeout(() => { if (session.phase === 'race') paintRace(); }, RACE_FLASH_MS);
+        // ctx.setTimeout: paintRace hace mount(rootSel,…) sobre #app; con
+        // setTimeout desnudo, si el alumno navega en esta ventana pisaba el #app
+        // de otra vista. ctx lo cancela al desmontar.
+        ctx.setTimeout(() => { if (session.phase === 'race') paintRace(); }, RACE_FLASH_MS);
       }
     });
   }

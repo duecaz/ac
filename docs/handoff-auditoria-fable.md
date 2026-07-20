@@ -153,9 +153,9 @@ alumnos esperando indefinidamente salvo que el profe encuentre "Reintentar".
 
 ### P2-4 🟡 MEDIO — Apodos duplicados (`engine.js:92-103` solo dedupe por userId): dos "Juan" indistinguibles al expulsar/revelar. Auto-sufijar.
 ### P2-5 🟡 MEDIO — Refresh del host pierde el modo elegido en el lobby (`hostLive.js:85,213`: `liveMode` nunca se persiste) → "Automático" vuelve a manual en silencio. Persistir en la sesión.
-### P2-6 🟡 MEDIO — `setTimeout` desnudos en `studentLive.js:471` (`paintRace`) y `:292` (`qlSpin`): disparan tras navegar (uno ESCRIBE en servidor, otro pisa `#app`). Usar `ctx.setTimeout`.
+### P2-6 ✅ HECHO (v1.51.207) — `setTimeout` desnudos de `paintRace`/`qlSpin` migrados a `ctx.setTimeout` (se cancelan al desmontar la vista).
 ### P2-7 🟡 MEDIO — Amplificación SSE ×3 (`realtime.js:470-479`: cada cambio notifica a las 3 tablas virtuales) y en carrera cada evento dispara `loadRaceAnswers()` = N fetches. Debounce + 1 consulta filtrada.
-### P2-8 🟡 MEDIO — El alumno no ve countdown si `questionTimer` no está definido pero el host SÍ liquida a los 20 s (`studentLive.js:311` sin default vs `hostLive.js:82` con `||20`). Unificar default.
+### P2-8 ✅ HECHO (v1.51.207) — el alumno usa el MISMO default que el host (`max(5, questionTimer||20)`); su cuenta atrás siempre aparece y coincide con la ventana del deadline del servidor.
 ### P2-9 🔵 BAJO — `advanceMode` vs `liveMode` divergen (`hostLive.js:334`): elegir "Automático" en el lobby NO activa la liquidación temprana al responder todos.
 ### P2-10 🔵 BAJO — Jugador expulsado no se entera y sigue enviando (`studentLive.js:66-70` confía en sessionStorage sin revalidar contra `players[]`).
 
