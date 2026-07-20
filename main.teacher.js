@@ -23,7 +23,7 @@ import { ensureIdentity } from './core/identity.js';
 import { applySkin } from './core/skins.js';
 // Side-effect: boot.js wires sounds + visual effects to the GameEvents bus and
 // exposes the navbar helpers (version stamp + mute button).
-import { stampVersion, attachMuteButton } from './core/boot.js';
+import { stampVersion } from './core/boot.js';
 import { initCustomAnims } from './core/vsAnimations.js';
 import { html, mount } from './core/html.js';
 
@@ -58,7 +58,6 @@ setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encon
 (async function boot() {
   applySkin(localStorage.getItem('ww.skin') || 'default');
   stampVersion();
-  attachMuteButton();
   initCustomAnims(); // register any animations added from the Admin panel
   // Start the router immediately so the home page paints from localStorage
   // without waiting for the network. Auth + sync happen in the background.
