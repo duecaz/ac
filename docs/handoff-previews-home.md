@@ -39,6 +39,33 @@
   una abierta con estrella/premio.
 - memory ya existe: revisar que refleje contenido real (nº cartas = min(items·2, 8)).
 
+## FASE 2b — El preview respeta el TEMA y el FONDO de la actividad
+Hoy el marco del preview es blanco/neutro: una actividad con skin "Retro" o fondo
+"Pizarra" se ve igual que una default. Fix BARATO, sin render del juego:
+- `getSkin(a.presentation?.skin)` (core/skins.js) y el manifiesto de
+  `core/backgrounds.js` ya exponen colores/gradientes (`--ww-bg`, `bgImage`) — son
+  los mismos que pintan las fichas del picker en playerView. Aplicar ese fondo al
+  `.acard-preview` como estilo inline. Prioridad: fondo elegido > skin > blanco.
+- Legibilidad: los esquemas usan chips/piezas con fondo propio → legibles sobre
+  oscuro; VERIFICAR en headless con skin oscuro (retro/arcade) que nada se pierde.
+- La memoización de Fase 4 sigue válida: `save()` actualiza `updatedAt` al cambiar
+  la presentación → la clave `id:updatedAt` invalida sola.
+
+## FASE 2c — Previews DISEÑADOS por el usuario (pipeline de integración)
+El usuario quiere diseñar a mano algunos previews (p.ej. Abre Cajas). Contrato de entrega:
+- Lienzo `viewBox="0 0 320 150"` + `preserveAspectRatio="xMidYMid meet"` (marco de
+  150px de alto, ancho fluido ~260-380px). Fondo TRANSPARENTE (Fase 2b pinta detrás).
+- Sin fuentes externas (texto→trazados o tipografía del sistema), sin rasters
+  embebidos; objetivo <10 KB por SVG. Un archivo por plantilla.
+- Entrega: pegado en el chat O commit en `assets/card-previews/<template>.svg`
+  (el usuario tiene gh en Windows).
+- Integración (la hace Claude): sanitizar (metadata del editor, ids/clases que
+  colisionen, nada de <script>), tokenizar colores recolorables a var(--soft-*)
+  cuando aporte, e INLINE como string en el `cardPreviewHtml` de esa plantilla —
+  NUNCA `<img src>` (evita un fetch por tarjeta y permite recolor por CSS).
+- Un SVG diseñado SUSTITUYE al esquema programático de Fase 2 para esa plantilla;
+  el contrato de Fase 1 no cambia (el método devuelve el SVG).
+
 ## FASE 3 — Centrado / diagramación
 - Regla única `.pv` (position absolute inset:0, flex center, padding 12px, overflow hidden)
   y auditar cada `.pv-*` para centrado óptico del bloque interior.
