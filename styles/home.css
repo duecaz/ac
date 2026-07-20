@@ -221,6 +221,13 @@ body {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
   padding: 12px; overflow: hidden;
+  /* Centrado GENERAL: un esquema puede acotar su ancho (width:86% en pv-quiz,
+     82% en pv-text, 68% en pv-memory…) sobre este mismo elemento. Como está en
+     position:absolute con inset:0 (left:0+right:0), fijar width dejaría el bloque
+     anclado a la IZQUIERDA (el navegador ignora right:0). margin auto reparte el
+     hueco a ambos lados → cualquier esquema, actual o futuro, queda centrado sin
+     parche por plantilla. */
+  margin: auto;
 }
 /* Emparejar */
 .pv-match { gap: 16px; }

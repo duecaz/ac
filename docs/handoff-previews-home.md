@@ -5,7 +5,18 @@
 >   (nuevos: wheel/ruleta, wordsearch/sopa, crossword/crucigrama, ballsort/pelotas,
 >   globos, question-live/abre-cajas; memory refleja nº de pares). **0 respaldos
 >   genéricos.** Verificado headless (13 tarjetas, captura grid).
-> - **Fase 3 (HECHO):** centrado ≤6px medido en headless para las 13.
+> - **Fase 3 (HECHO + BUG DE CENTRADO CORREGIDO DE RAÍZ, v1.51.202):** el centrado
+>   ≤6px que se midió antes era solo en el eje VERTICAL. En HORIZONTAL, quiz/comas/tildes
+>   y memory salían corridos a la IZQUIERDA (medido headless: dx quiz −10px, texto −16px,
+>   memory −39px). Causa GENERAL (no un fallo por plantilla): `.pv` está en
+>   `position:absolute; inset:0` (left:0+right:0) y varios esquemas fijan `width:<100%`
+>   sobre ESE mismo elemento (quiz 86%, texto 82%, memory 68%); al sobre-restringir, el
+>   navegador ignora `right:0` y ancla el bloque a la izquierda. **Fix de raíz (una línea):
+>   `margin:auto` en la regla base `.pv`** — reparte el hueco a ambos lados, así CUALQUIER
+>   esquema (actual o futuro) que acote su ancho queda centrado sin parche por plantilla.
+>   Verificado headless para las 13: dx=0 en todas; dy dentro de ±6px (los −5.5 de la
+>   ruleta y +5.3 de memory son artefactos de la aguja decorativa/rejilla casi a tope, no
+>   descentrado real — el disco y la rejilla SÍ están centrados).
 > - **Fase 4·1 (HECHO):** memoización `id:updatedAt → html` (LRU 300) en el dispatcher.
 > - **"Si es norma, es test" (HECHO, variante):** en vez de migrar a un método por
 >   plantilla (`cardPreviewHtml`), se mantuvo el switch central PERO con un test que
@@ -23,10 +34,30 @@
 >   CUALQUIER fondo. Verificado headless con blackboard/stars/grid/classroom + skins
 >   retro/arcade (oscuros): todo legible, el fondo se ve. La memoización `id:updatedAt` se
 >   invalida sola al cambiar la presentación (`save()` refresca `updatedAt`).
-> - **PENDIENTE — Fase 4·2 (filtrar sin re-montar):** NO hecho. La memoización ya abarata
->   el re-paint por tecleo; el refactor de `paint()` queda como mejora aparte.
-> - **PENDIENTE — Fase 2c (SVGs del usuario):** pipeline listo (`docs/svg-previews-guia.md`);
->   cada SVG entregado sustituye su esquema programático.
+>
+> ## 🎨 DEUDA DE DISEÑO (aparcada a propósito — la retoma un DISEÑADOR a futuro)
+> Decisión del usuario (2026-07): lo FUNCIONAL de los previews está cerrado (13 esquemas,
+> 0 genéricos, tema/fondo respetado, centrado correcto de raíz). El PULIDO VISUAL de cada
+> esquema se deja como deuda para que un diseñador lo haga bien, sin bloquear el resto. Qué
+> falta y cómo entrarle:
+> - **Fase 2c — SVGs diseñados por plantilla:** los esquemas de `core/homePreview.js` son
+>   PLACEHOLDER programáticos. El pipeline de integración está listo y documentado en
+>   **`docs/svg-previews-guia.md`** (lienzo `viewBox 0 0 320 150`, fondo transparente porque
+>   la Fase 2b ya pinta el tema detrás, <10 KB, sin `<script>`, colores recolorables a
+>   `var(--soft-*)`). Cada SVG entregado SUSTITUYE al esquema de su plantilla en el `build()`
+>   central; el resto sigue igual. Entrega: pegado en chat o commit en
+>   `assets/card-previews/<template>.svg` (el usuario tiene `gh` en Windows).
+> - **Nivel de acabado objetivo:** que cada preview se entienda de un vistazo y esté al
+>   nivel del de Emparejar (composición centrada, 2-4 colores de paleta, formas redondeadas).
+>   Iterar con capturas headless (montar → screenshot → ajustar). Ver Fase 2 "MODO DISEÑADOR".
+> - **NO tocar sin diseñador:** afinar a mano colores/proporciones de los esquemas actuales
+>   es justo lo que se aparca; el contrato (Fase 1) y el test de 0-genéricos siguen protegiendo
+>   que ninguna plantilla se quede sin preview.
+>
+> ## 🔧 DEUDA TÉCNICA (no visual, pendiente)
+> - **Fase 4·2 (filtrar sin re-montar):** NO hecho. La memoización ya abarata el re-paint por
+>   tecleo; el refactor de `paint()` (pintar la rejilla una vez y alternar `hidden` por tarjeta)
+>   queda como mejora de rendimiento aparte.
 >
 > ---
 > **Estado original:** PLAN aprobado por el usuario.
