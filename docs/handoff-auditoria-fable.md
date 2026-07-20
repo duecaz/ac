@@ -22,7 +22,7 @@ C (`autoScore` null→false), F (`submitProgress` no atómico) — eso sigue en 
 
 ## P0 — SEGURIDAD (lo más grave del repo)
 
-### P0-1 ⏸️ PROPUESTA (v1.51.209) — Reglas de PocketBase 100% abiertas en TODAS las colecciones
+### P0-1 🟡 FASE 0+1 EN CÓDIGO (v1.51.214), falta aplicar+probar — Reglas de PocketBase 100% abiertas
 **Análisis + plan por fases en `docs/handoff-seguridad-pb.md`.** NO auto-aplicado: el
 cliente no manda token de auth (`remoteStore.pbFetch`) y los alumnos son anónimos, así
 que reglas por-autor a ciegas romperían guardadas y el flujo en vivo. Requiere DECISIÓN

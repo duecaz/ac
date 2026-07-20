@@ -1,5 +1,48 @@
 # Seguridad PocketBase — plan por fases (P0-1 · P0-2 · P0-3 · P2-1)
 
+> ## ✅ FASE 0 + 1 IMPLEMENTADAS EN CÓDIGO (v1.51.214) — falta que el usuario APLIQUE y PRUEBE
+>
+> **Qué se hizo en código (ya desplegado, NO rompe nada con las reglas actuales):**
+> - **Fase 0** — `adapters/pocketbase/remoteStore.js` firma las escrituras de
+>   actividades con el token del profe (`core/auth.js getAuthToken`), con **fallback
+>   anónimo** si el token está expirado y las reglas siguen públicas (no rompe
+>   guardadas de hoy). El arranque refresca el token (`authRefresh` en `main.teacher.js`).
+>   `saveActivity` manda `owner = <id del profe>` en el registro.
+> - **Fase 1** — el setup de `#/admin` → "Crear colecciones" ahora: (a) añade el campo
+>   `owner` a `activities` (merge seguro, sin borrar columnas), y (b) aplica reglas
+>   por-autor SOLO a `activities` (el resto sigue público, para no romper alumnos
+>   anónimos). Reglas: público ve las `public`; **solo el dueño edita/borra** las suyas
+>   (con cláusula transitoria `owner = ''` para no bloquear las legadas).
+>
+> ### PASOS QUE DEBES HACER TÚ (en tu navegador / servidor) — en orden:
+> 1. **Inicia sesión** como profe en la web (con tu email/clave PB). Esto guarda el token.
+> 2. Ve a **`#/admin` → "Crear colecciones"** y entra tu **contraseña de superadmin PB**.
+>    Esto añade `owner` a `activities` y aplica las reglas nuevas. (Es idempotente.)
+> 3. **Backfill del owner en tus actividades existentes** (todas nacieron sin `owner`).
+>    Como es tu app personal, el dueño de todas eres tú. Pégame tu **id de usuario PB**
+>    (NO el token: el `id` del record de usuario, visible en el panel PB → Collections →
+>    users → tu fila) y te doy el comando exacto. O desde el panel PB, edita el campo
+>    `owner` de cada fila de `activities` poniéndolo a tu id. Mientras no hagas backfill,
+>    las actividades viejas siguen editables por cualquiera (cláusula `owner = ''`).
+> 4. **Prueba en un dispositivo** (idealmente el móvil de un "alumno"):
+>    - Logueado, **guardas y borras TUS actividades** → funciona.
+>    - Abre DevTools en una sesión SIN login e intenta
+>      `PATCH /api/collections/activities/records/<id>` de una actividad con `owner`
+>      puesto → debe dar **403** (antes daba 200).
+>    - Un alumno se une a un Live por PIN y responde → sigue funcionando (esas
+>      colecciones siguen públicas en esta fase).
+> 5. **(Opcional, tras el backfill)** endurecer: quitar la cláusula `owner = ''` de las
+>    reglas de `activities` (dejar solo `owner = @request.auth.id`) para cerrar el hueco
+>    de las legadas. Pídemelo y ajusto `adminView.js`.
+>
+> ⚠️ Si algo falla (p.ej. no puedes guardar tras aplicar), es que el token no llega:
+> vuelve a iniciar sesión (el refresco de token del arranque debería bastar). El
+> fallback anónimo + el estado `_unsynced` evitan pérdida de datos mientras tanto.
+> **Fases 2 y 3 (results/attempts y live) siguen pendientes** — más abajo.
+
+---
+
+
 > **Estado: PROPUESTA — requiere DECISIÓN del usuario + acceso al servidor
 > (pb.lanube.uno). NO auto-aplicado a propósito** (ver "Por qué no lo apliqué ya").
 > Opus 4.8, tras la auditoría de Fable (2026-07).

@@ -466,6 +466,7 @@ function renderPanel(rootSel) {
           { name: 'visibility', type: 'text' },
           { name: 'tags',       type: 'json' },
           { name: 'language',   type: 'text' },
+          { name: 'owner',      type: 'text' },   // id del profe dueño (Fase 1 seguridad PB)
         ]},
         { name: 'results', fields: [
           { name: 'activity_id', type: 'text' },
@@ -531,8 +532,23 @@ function renderPanel(rootSel) {
         }
         return base;
       };
-      // Reglas públicas (sin auth) para todas las colecciones.
+      // Reglas públicas (sin auth) — se mantienen en las colecciones que tocan
+      // alumnos anónimos (results, live_*, assignments). Ver docs/handoff-seguridad-pb.md.
       const publicRules = { listRule: '', viewRule: '', createRule: '', updateRule: '', deleteRule: '' };
+      // Reglas de `activities` (Fase 1): protegen el contenido del profe. Un alumno
+      // (o un profe distinto) ya NO puede editar/borrar actividades ajenas. La
+      // cláusula `owner = ''` es TRANSITORIA: deja operar las actividades legadas
+      // (sin owner) hasta que se haga el backfill; después se puede endurecer a solo
+      // `owner = @request.auth.id`. crear no exige login (no romper flujo actual).
+      const OWN = "owner = '' || owner = @request.auth.id";
+      const activityRules = {
+        listRule: `visibility = 'public' || ${OWN}`,
+        viewRule: `visibility = 'public' || ${OWN}`,
+        createRule: '',
+        updateRule: OWN,
+        deleteRule: OWN,
+      };
+      const rulesFor = (name) => (name === 'activities' ? activityRules : publicRules);
       // En PB ≥0.23 los campos created/updated NO se añaden solos al crear por API,
       // y el store ordena resultados por `sort=-created` → hay que crearlos como
       // autodate. En <0.23 se añaden automáticamente, así que no los duplicamos.
@@ -543,7 +559,7 @@ function renderPanel(rootSel) {
       const COLLECTIONS = DEFS.map(d => ({
         name: d.name, type: 'base',
         [schemaKey]: [...d.fields.map(buildField), ...sysFields],
-        ...publicRules,
+        ...rulesFor(d.name),
       }));
 
       // Función auxiliar: busca la colección por nombre y devuelve su id o null.
@@ -563,14 +579,25 @@ function renderPanel(rootSel) {
         try {
           const existingId = await findCollection(col.name);
           if (existingId) {
-            // Colección ya existe: solo actualiza las reglas de acceso. PATCH sin
-            // `fields`/`schema` evita tocar la estructura de datos.
+            // Colección ya existe: actualiza las reglas de acceso. Para `activities`
+            // además hay que AÑADIR el campo `owner` si falta — sin tocar el resto.
+            // Se lee el esquema actual y se hace merge (append solo si no existe),
+            // así un PATCH de fields NO puede borrar columnas existentes.
+            const patchBody = { ...rulesFor(col.name) };
+            if (col.name === 'activities') {
+              try {
+                const cur = await (await fetch(`${PB_URL}/api/collections/${existingId}`, { headers })).json();
+                const curFields = cur[schemaKey] || cur.fields || cur.schema || [];
+                const hasOwner = curFields.some(f => f.name === 'owner');
+                if (!hasOwner) patchBody[schemaKey] = [...curFields, buildField({ name: 'owner', type: 'text' })];
+              } catch { /* si no se pudo leer, solo se aplican reglas */ }
+            }
             const pr = await fetch(`${PB_URL}/api/collections/${existingId}`, {
               method: 'PATCH', headers,
-              body: JSON.stringify(publicRules),
+              body: JSON.stringify(patchBody),
             });
             if (pr.ok) {
-              results.push({ name: col.name, ok: true, msg: 'reglas actualizadas (ya existía)' });
+              results.push({ name: col.name, ok: true, msg: patchBody[schemaKey] ? 'reglas + campo owner (ya existía)' : 'reglas actualizadas (ya existía)' });
             } else {
               const b = await pr.json().catch(() => ({}));
               results.push({ name: col.name, ok: false, msg: b.message || `error ${pr.status}` });

@@ -24,6 +24,37 @@ export async function getUser() {
   return null;
 }
 
+// Lectores SÍNCRONOS del token/usuario almacenado (los usa remoteStore para
+// firmar las escrituras de actividades con el token del profe — Fase 0 de la
+// seguridad PB). Devuelven null si no hay sesión.
+export function getAuthToken() {
+  return loadStored()?.token || null;
+}
+export function getAuthUserId() {
+  return loadStored()?.record?.id || null;
+}
+
+// Refresca el token en el arranque (equivale a pb.authRefresh del SDK): valida y
+// renueva el token guardado. Si PB responde 401 (sesión realmente expirada), se
+// limpia la sesión para forzar re-login en vez de arrastrar un token muerto.
+export async function authRefresh() {
+  const stored = loadStored();
+  if (!stored?.token) return null;
+  try {
+    const r = await fetch(`${PB_URL}/api/collections/users/auth-refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: stored.token },
+    });
+    if (r.status === 401 || r.status === 403) { clearStored(); _user = null; notify(); return null; }
+    if (!r.ok) return stored.record; // error transitorio (red/5xx): conserva la sesión
+    const data = await r.json();
+    _user = data.record;
+    saveStored(data.token, data.record);
+    notify();
+    return data.record;
+  } catch { return stored.record; /* sin red: conserva lo guardado */ }
+}
+
 export async function getProfile() {
   const u = await getUser();
   if (!u) return null;

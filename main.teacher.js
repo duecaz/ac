@@ -21,6 +21,7 @@ import { renderExplore } from './views/explore.js';
 import { renderAdmin } from './views/adminView.js';
 import { sync, setStorageUser } from './core/storage.js';
 import { ensureIdentity } from './core/identity.js';
+import { authRefresh } from './core/auth.js';
 import { applySkin } from './core/skins.js';
 // Side-effect: boot.js wires sounds + visual effects to the GameEvents bus and
 // exposes the navbar helpers (version stamp + mute button).
@@ -70,6 +71,10 @@ setBeforeResolve(() => clearListeners(APP));
   // without waiting for the network. Auth + sync happen in the background.
   start();
   window.__APP_READY__ = true;
+  // Refresca el token del profe en el arranque (Fase 0 seguridad PB): mantiene la
+  // sesión viva para firmar las escrituras; si expiró de verdad, limpia y fuerza
+  // re-login en vez de arrastrar un token muerto. No bloquea el render.
+  authRefresh().catch(() => {});
   try {
     const user = await ensureIdentity();
     setStorageUser(user.id);

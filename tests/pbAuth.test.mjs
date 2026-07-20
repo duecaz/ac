@@ -1,0 +1,65 @@
+// Fase 0/1 seguridad PB: las escrituras de actividades se firman con el token del
+// profe y llevan `owner`; si el token expira y las reglas aún son públicas, hay
+// fallback anónimo para no romper guardadas. Run: node tests/pbAuth.test.mjs
+import assert from 'node:assert';
+
+let passed = 0;
+const ok = (m) => { passed++; console.log('  ✓', m); };
+
+// Mock de localStorage con sesión de profe.
+const store = new Map();
+store.set('ww.pb.auth', JSON.stringify({ token: 'TOK123', record: { id: 'teacher_9' } }));
+global.localStorage = {
+  getItem: (k) => (store.has(k) ? store.get(k) : null),
+  setItem: (k, v) => store.set(k, v),
+  removeItem: (k) => store.delete(k),
+};
+
+// Mock de fetch programable: registra cada llamada y responde por guion.
+const calls = [];
+let script = [];
+global.fetch = async (url, opts = {}) => {
+  calls.push({ url, method: opts.method || 'GET', headers: opts.headers || {}, body: opts.body });
+  const next = script.shift() || { status: 200, body: {} };
+  return {
+    status: next.status,
+    ok: next.status >= 200 && next.status < 300,
+    text: async () => JSON.stringify(next.body || {}),
+    json: async () => next.body || {},
+  };
+};
+
+const { createPocketbaseRemoteStore } = await import('../adapters/pocketbase/remoteStore.js');
+const rs = createPocketbaseRemoteStore();
+const act = { id: 'act_owned01', template: 'quiz', title: 'T', visibility: 'private', content: {} };
+
+// ── saveActivity firma con token y añade owner ───────────────────────────────
+{
+  calls.length = 0;
+  script = [{ status: 404, body: {} }, { status: 200, body: { id: 'actowned010000' } }]; // PATCH 404 → POST 200
+  await rs.saveActivity(act);
+  const post = calls.find(c => c.method === 'POST');
+  assert.ok(post, 'hubo POST de creación');
+  assert.strictEqual(post.headers['Authorization'], 'TOK123', 'la escritura lleva el token del profe');
+  const body = JSON.parse(post.body);
+  assert.strictEqual(body.owner, 'teacher_9', 'el registro incluye owner = id del profe');
+  ok('saveActivity firma con token y setea owner');
+}
+
+// ── fallback anónimo si el token es rechazado (401) con reglas aún públicas ───
+{
+  calls.length = 0;
+  // getActivity: 1ª con token → 401 → reintento sin token → 200
+  script = [{ status: 401, body: {} }, { status: 200, body: { data: { id: 'x' } } }];
+  const got = await rs.getActivity('act_owned01');
+  assert.strictEqual(calls.length, 2, 'reintentó tras el 401');
+  assert.strictEqual(calls[0].headers['Authorization'], 'TOK123', '1º intento con token');
+  assert.strictEqual(calls[1].headers['Authorization'], undefined, '2º intento SIN token (fallback anónimo)');
+  assert.ok(got, 'la lectura acabó devolviendo datos (no rompió)');
+  ok('fallback anónimo tras 401 (no rompe con reglas públicas)');
+}
+
+// Limpia los globals mockeados para no contaminar otras suites.
+delete global.fetch; delete global.localStorage;
+
+console.log(`\npbAuth.test: ${passed} checks passed`);
