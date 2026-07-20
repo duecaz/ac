@@ -329,9 +329,12 @@ async function renderHost(rootSel, code, sessionId, activity) {
       if (t) t.textContent = `${Math.ceil(remain / 1000)}s`;
       if (bar) bar.style.width = pct + '%';
       if (ac) ac.textContent = String(answers.length);
-      // Auto-advance triggers.
+      // Auto-advance triggers. P2-9: honrar la elección de "Automático" del lobby
+      // (`autoAdvance`, runtime) además del `advanceMode` estático de la actividad;
+      // antes elegir "Automático" no liquidaba al responder todos porque solo se
+      // miraba `advanceMode`, que el <select> del lobby no cambia.
       const allAnswered = total > 0 && answers.length >= total;
-      if (allAnswered && (advanceMode === 'autoOnAllAnswered' || (live.lockAnswersOn === 'allAnswered'))) {
+      if (allAnswered && (autoAdvance || advanceMode === 'autoOnAllAnswered' || live.lockAnswersOn === 'allAnswered')) {
         return doSettle(idx);
       }
       if (remain <= 0 && (advanceMode === 'autoOnTimer' || advanceMode === 'autoOnAllAnswered' || advanceMode === 'manual')) {

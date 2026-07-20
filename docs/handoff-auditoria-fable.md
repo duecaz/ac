@@ -145,26 +145,31 @@ huérfanas post-settle alimentan la deuda B. **Fix**: rechazar en `submitAnswer`
 fase/ítem no coinciden o `now > deadline+gracia`; derivar `ms` del `deadline` del
 servidor. Coordinarlo con la deuda A (misma zona).
 
-### P2-2 🟠 ALTO — Unicidad de PIN frágil + salas terminadas nunca se purgan
+### P2-2 🟡 PARCIAL (v1.51.211) — Unicidad de PIN frágil + salas terminadas nunca se purgan
+HECHO (seguro): los reintentos de `createRoom` ahora SIEMPRE evitan los códigos
+conocidos (antes usaban un Set vacío y podían re-elegir un PIN en uso). PENDIENTE
+(necesita esquema): filtrar salas `ended` y purgarlas requiere un campo `status`
+columna en `live_sessions` (hoy vive dentro del blob `state`) → va con el trabajo
+de esquema de P0-1.
 `realtime.js:126-130,159-163`: los códigos en uso se recogen con `perPage=200` SIN
 filtrar `status`, los reintentos usan un set VACÍO, y `endSession` nunca borra → con el
 tiempo el fetch se trunca y dos salas pueden compartir PIN (los alumnos se reparten
 entre las dos). **Fix**: filtrar `status!='ended'`, purga/expiración de salas viejas,
 reintentos con el set real, e índice único de `code` OBLIGATORIO en el setup.
 
-### P2-3 🟠 ALTO — Host sin red al expirar el timer → ronda muerta sin auto-reintento
+### P2-3 ⏸️ DIFERIDO A VERIFICACIÓN — Host sin red al expirar el timer → ronda muerta sin auto-reintento
 `views/hostLive.js:304-355`: `doSettle` falla, el ticker ya se limpió, y al volver la
 red `hostPaintDecision` devuelve skip (fase sin cambio) → nadie reinicia nada; 30
 alumnos esperando indefinidamente salvo que el profe encuentre "Reintentar".
 **Fix**: backoff de reintento en `doSettle` o que el resync reinicie el ticker.
 
-### P2-4 🟡 MEDIO — Apodos duplicados (`engine.js:92-103` solo dedupe por userId): dos "Juan" indistinguibles al expulsar/revelar. Auto-sufijar.
-### P2-5 🟡 MEDIO — Refresh del host pierde el modo elegido en el lobby (`hostLive.js:85,213`: `liveMode` nunca se persiste) → "Automático" vuelve a manual en silencio. Persistir en la sesión.
+### P2-4 ✅ HECHO (v1.51.211) — apodos duplicados se auto-sufijan ("Juan 2") en `engine.join` (cubre local Y el flujo PB, que usa el mismo engine). Test en sessionEngine.
+### P2-5 ⏸️ DIFERIDO A VERIFICACIÓN — persistir `liveMode` exige un campo nuevo en el blob `state` (zona deuda A) y no es testeable con el driver local. Va con el refactor live.
 ### P2-6 ✅ HECHO (v1.51.207) — `setTimeout` desnudos de `paintRace`/`qlSpin` migrados a `ctx.setTimeout` (se cancelan al desmontar la vista).
-### P2-7 🟡 MEDIO — Amplificación SSE ×3 (`realtime.js:470-479`: cada cambio notifica a las 3 tablas virtuales) y en carrera cada evento dispara `loadRaceAnswers()` = N fetches. Debounce + 1 consulta filtrada.
+### P2-7 ⏸️ DIFERIDO A VERIFICACIÓN — toca el camino caliente de eventos SSE; sin PB real no es verificable. Va con el refactor live.
 ### P2-8 ✅ HECHO (v1.51.207) — el alumno usa el MISMO default que el host (`max(5, questionTimer||20)`); su cuenta atrás siempre aparece y coincide con la ventana del deadline del servidor.
-### P2-9 🔵 BAJO — `advanceMode` vs `liveMode` divergen (`hostLive.js:334`): elegir "Automático" en el lobby NO activa la liquidación temprana al responder todos.
-### P2-10 🔵 BAJO — Jugador expulsado no se entera y sigue enviando (`studentLive.js:66-70` confía en sessionStorage sin revalidar contra `players[]`).
+### P2-9 ✅ HECHO (v1.51.211) — la liquidación temprana honra el `autoAdvance` runtime del lobby, no solo el `advanceMode` estático; "Automático" ya liquida al responder todos.
+### P2-10 ⏸️ DIFERIDO A VERIFICACIÓN — `fetchSession` no devuelve `players[]`; detectarlo exige un `listPlayers` extra por poll en un camino no verificable. BAJO.
 
 ---
 

@@ -309,6 +309,20 @@ const quizActivity = {
   assert.strictEqual(live.settle(999), 0, 'settle fuera de rango → 0 sin lanzar');
   ok('live: settle() fuera de rango no lanza');
 
+  // P2-4: dos móviles distintos con el MISMO apodo → se auto-sufija (no dos "Juan"
+  // indistinguibles al expulsar / en la clasificación / en el reveal).
+  const dedup = createSession(quizActivity, { format: FORMATS.LIVE });
+  const j1 = dedup.join('user-a', 'Juan');
+  const j2 = dedup.join('user-b', 'Juan');
+  const j3 = dedup.join('user-c', 'juan');   // case-insensitive
+  assert.strictEqual(j1.name, 'Juan', 'el primer Juan conserva su nombre');
+  assert.strictEqual(j2.name, 'Juan 2', 'el segundo Juan se auto-sufija');
+  assert.strictEqual(j3.name, 'juan 3', 'el tercer juan (colisión case-insensitive) se sufija conservando su propio caso');
+  // reconexión del mismo userId NO crea otro ni re-sufija
+  assert.strictEqual(dedup.join('user-a', 'Juan').name, 'Juan', 'reconexión (mismo userId) no duplica');
+  assert.strictEqual(dedup.state.players.length, 3, 'siguen siendo 3 jugadores');
+  ok('live: apodos duplicados se auto-sufijan (P2-4)');
+
   // VS points mode: answering fast-but-WRONG must NOT win over correct answers.
   // Both sides answer every item; the winner is whoever got more right.
   const vs = createSession(quizActivity, { format: FORMATS.VS, left: 'Veloz', right: 'Cuidadoso' });

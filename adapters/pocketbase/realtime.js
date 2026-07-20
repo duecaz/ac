@@ -130,7 +130,9 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       } catch { /* proceed with empty set — collision handled by retry below */ }
 
       for (let attempt = 0; attempt < 5; attempt++) {
-        const code = pickWord(attempt === 0 ? usedCodes : new Set());
+        // P2-2: SIEMPRE evitar los códigos conocidos (antes los reintentos usaban
+        // un Set VACÍO, así que tras una colisión podían re-elegir un PIN en uso).
+        const code = pickWord(usedCodes);
         const engine = createLiveRoom(activity, { code });
         try {
           const rec = await pbFetch(`/api/collections/${COLL}/records`, {
@@ -143,6 +145,9 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
             throw new Error('La colección "live_sessions" no existe en el servidor. '
               + 'Créala una sola vez en Admin → "Crear colecciones".');
           }
+          // El código recién intentado falló (colisión de índice único o blip):
+          // recuérdalo para no re-elegirlo en el siguiente intento.
+          usedCodes.add(code);
           // Retry on PIN collision (400/409) AND on transient failures (network
           // error → no status, 5xx, timeout) — a momentary blip shouldn't kill
           // room creation outright.

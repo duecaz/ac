@@ -97,9 +97,21 @@ function createLiveSession(activity, T, opts) {
     if (state.status === 'ended') throw new Error('La sala ha terminado');
     if (state.status !== 'lobby' && !allowLateJoin) throw new Error('La partida ya empezó');
     if (state.players.length >= maxPlayers) throw new Error('La sala está llena');
-    const p = { id: 'p' + (++state._seq), userId, name: f.value, score: 0 };
+    // Apodos únicos (P2-4): dos móviles distintos con "Juan" antes creaban dos
+    // jugadores indistinguibles (al expulsar, en la clasificación y en el mapa
+    // nombre→respuesta del reveal). Se auto-sufija ("Juan 2") en vez de rechazar.
+    const p = { id: 'p' + (++state._seq), userId, name: uniqueNickname(f.value), score: 0 };
     state.players.push(p);
     return p;
+  }
+
+  function uniqueNickname(base) {
+    const taken = new Set(state.players.map(p => (p.name || '').toLowerCase()));
+    if (!taken.has(base.toLowerCase())) return base;
+    for (let n = 2; ; n++) {
+      const cand = `${base} ${n}`;
+      if (!taken.has(cand.toLowerCase())) return cand;
+    }
   }
 
   function dispatch(action) {
