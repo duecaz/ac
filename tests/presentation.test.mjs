@@ -21,12 +21,12 @@ function makeClassList() {
 const makeEl = () => ({ classList: makeClassList(), style: { setProperty() {}, removeProperty() {} } });
 
 global.document = { body: makeEl(), documentElement: makeEl() };
-const act = { presentation: { skin: 'space', background: 'stars' } };
+const act = { presentation: { skin: 'jungle', background: 'stars' } };
 
 // ── Global apply themes <body> ───────────────────────────────────────────────
 {
   applyScene(act, null);
-  assert.ok(document.body.classList.contains('skin-space'), 'body gets the skin');
+  assert.ok(document.body.classList.contains('skin-jungle'), 'body gets the skin');
   assert.ok(document.body.classList.contains('bg-stars'), 'body gets the background');
   ok('applyScene(activity) themes the page (body)');
 }
@@ -36,7 +36,7 @@ const act = { presentation: { skin: 'space', background: 'stars' } };
   resetScene();
   assert.ok(document.body.classList.contains('skin-default'), 'skin back to default');
   assert.ok(document.body.classList.contains('bg-none'), 'background back to none');
-  assert.ok(!document.body.classList.contains('skin-space'), 'old skin removed');
+  assert.ok(!document.body.classList.contains('skin-jungle'), 'old skin removed');
   assert.ok(!document.body.classList.contains('bg-stars'), 'old background removed');
   ok('resetScene() restores neutral skin + background on the page');
 }
@@ -45,12 +45,12 @@ const act = { presentation: { skin: 'space', background: 'stars' } };
 {
   const frame = makeEl();
   applyScene(act, null, { target: frame });
-  assert.ok(frame.classList.contains('skin-space'), 'frame gets the skin');
+  assert.ok(frame.classList.contains('skin-jungle'), 'frame gets the skin');
   assert.ok(frame.classList.contains('bg-stars'), 'frame gets the background');
   // Body stays exactly as resetScene left it — no leak.
   assert.ok(document.body.classList.contains('skin-default'), 'body skin untouched');
   assert.ok(document.body.classList.contains('bg-none'), 'body background untouched');
-  assert.ok(!document.body.classList.contains('skin-space'), 'NO skin leak to body');
+  assert.ok(!document.body.classList.contains('skin-jungle'), 'NO skin leak to body');
   assert.ok(!document.body.classList.contains('bg-stars'), 'NO background leak to body');
   ok('scoped applyScene paints only the target — never leaks onto the page');
 }
@@ -60,7 +60,7 @@ const act = { presentation: { skin: 'space', background: 'stars' } };
   const disposers = [];
   const ctx = { add: (fn) => disposers.push(fn) };
   applyScene(act, ctx);
-  assert.ok(document.body.classList.contains('skin-space'), 'page themed on enter');
+  assert.ok(document.body.classList.contains('skin-jungle'), 'page themed on enter');
   disposers.forEach(d => d());
   assert.ok(document.body.classList.contains('skin-default'), 'skin reset on teardown');
   assert.ok(document.body.classList.contains('bg-none'), 'background reset on teardown');

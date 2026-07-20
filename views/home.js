@@ -5,7 +5,6 @@ import { homePreviewHtml } from '../core/homePreview.js';
 import { navigate } from '../core/router.js';
 import { getTemplate, listTemplates } from '../core/registry.js';
 import { confirmModal, toast } from '../core/toast.js';
-import { downloadActivitiesJson, pickAndImport } from '../core/io.js';
 import { activityItemCount as itemCount, activityPageCount as pageCount } from '../core/migrate.js';
 import { isVsCompatible } from '../kernel/session/engine.js';
 import { getMode } from '../core/modes.js';
@@ -37,13 +36,9 @@ export function renderHome(rootSel) {
             <h1>Mis actividades</h1>
             <p>Gestiona y comparte tus actividades con tus alumnos</p>
           </div>
-          <div class="home-actions">
-            <button class="btn-ghost" id="h-import" title="Importar JSON"><i class="bi bi-file-earmark-arrow-up"></i> Importar</button>
-            <button class="btn-ghost" id="h-export-all" title="Exportar todas a JSON" ${all.length===0?'disabled':''}><i class="bi bi-file-earmark-arrow-down"></i> Exportar</button>
-            <a href="#/admin" class="btn-ghost" title="Panel de administración (modos, detalles, tests)"><i class="bi bi-shield-lock"></i> Admin</a>
-            <a href="#/new-list" class="btn-ghost"><i class="bi bi-collection-play"></i> Nueva lista</a>
-            <a href="#/new" class="btn-primary-solid"><i class="bi bi-plus-lg"></i> Nueva</a>
-          </div>
+          <!-- "+ Nueva" junto al título. Importar/Exportar/Admin viven en la barra
+               superior (nav); "Nueva lista" en la página "Elige una plantilla". -->
+          <a href="#/new" class="btn-primary-solid"><i class="bi bi-plus-lg"></i> Nueva</a>
         </div>
         ${all.length === 0 ? '' : `
           <div class="home-tools">
@@ -51,13 +46,16 @@ export function renderHome(rootSel) {
               <i class="bi bi-search"></i>
               <input id="h-q" placeholder="Buscar por título o tag…" value="${escapeHtml(_filter.q)}">
             </div>
-            <div class="home-select">
-              <select id="h-tpl">
-                <option value="">Todas las plantillas</option>
-                ${templates.map(T => `<option value="${T.meta.name}" ${_filter.template===T.meta.name?'selected':''}>${escapeHtml(T.meta.label)}</option>`).join('')}
-              </select>
-              <i class="bi bi-chevron-down"></i>
-            </div>
+            <details class="home-filter${_filter.template ? ' is-set' : ''}">
+              <summary class="home-config" title="Filtrar por plantilla" aria-label="Filtrar por plantilla"><i class="bi bi-sliders2"></i></summary>
+              <div class="home-filter-pop">
+                <div class="home-filter-label">Filtrar por plantilla</div>
+                <select id="h-tpl">
+                  <option value="">Todas las plantillas</option>
+                  ${templates.map(T => `<option value="${T.meta.name}" ${_filter.template===T.meta.name?'selected':''}>${escapeHtml(T.meta.label)}</option>`).join('')}
+                </select>
+              </div>
+            </details>
             <span class="home-count">${countLabel}</span>
           </div>
         `}
@@ -170,15 +168,6 @@ export function renderHome(rootSel) {
       </article>`;
   }
 
-  on(rootSel, 'click', '#h-export-all', () => downloadActivitiesJson());
-  on(rootSel, 'click', '#h-import', () => {
-    pickAndImport({ strategy: 'duplicate' }, (r) => {
-      if (r.ok) toast(`Importadas ${r.count} actividades.`, 'success');
-      else if (r.count) toast(`${r.count} importadas, ${r.errors.length} fallaron.`, 'warning', 6000);
-      else toast('Error al importar: ' + r.errors.join('; '), 'danger', 6000);
-      renderHome(rootSel);
-    });
-  });
   on(rootSel, 'click', '.act-play', (_, b) => navigate(`#/play/${b.dataset.id}`));
   on(rootSel, 'click', '.act-vs', (_, b) => navigate(`#/vs/${b.dataset.id}`));
   on(rootSel, 'click', '.act-teams', (_, b) => navigate(`#/${b.dataset.tpl === 'memory' ? 'memory' : 'teams'}/${b.dataset.id}`));

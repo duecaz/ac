@@ -180,30 +180,6 @@ registerSkin({
 });
 
 registerSkin({
-  name: 'space',
-  label: 'Espacio',
-  description: 'Cosmos y neón.',
-  cssVars: {
-    '--ww-bg': '#0c0a1f',
-    '--ww-bg-soft': '#1e1b4b',
-    '--ww-fg': '#e0e7ff',
-    '--ww-card-bg': '#1e1b4b',
-    '--ww-card-fg': '#e0e7ff',
-    '--ww-card-border': '#6366f1',
-    '--ww-accent': '#a855f7',
-    '--ww-shape-1': '#f43f5e',
-    '--ww-shape-2': '#3b82f6',
-    '--ww-shape-3': '#eab308',
-    '--ww-shape-4': '#22c55e',
-    '--ww-success': '#22c55e',   // verde neón, brilla sobre el cosmos oscuro
-    '--ww-danger': '#f43f5e',
-    '--ww-warning': '#eab308'
-  },
-  bgImage: 'radial-gradient(ellipse at top, #1e1b4b 0%, #0c0a1f 70%)',
-  fontFamily: null
-});
-
-registerSkin({
   // Card bg is WHITE → card text must be DARK, even though page fg is white.
   name: 'kahoot',
   label: 'Kahoot',
@@ -273,6 +249,38 @@ registerSkin({
     '--ww-warning': '#facc15'
   },
   bgImage: 'linear-gradient(180deg, #0f3a26 0%, #1a4d36 100%)',
+  fontFamily: null
+});
+
+registerSkin({
+  // Concurso de TV / eSports: azul eléctrico + rojo, badge VS dorado con anillo
+  // animado, paneles flotantes con glow y teclado 3D. Todo el CSS vive en
+  // themes/tv-show/skin.css, scoped bajo .skin-tv-show y .vs-skin-tv-show, así
+  // que al cambiar de tema revierte por completo. Solo se definen tokens
+  // ESTÁNDAR (presentes en 'default') → al cambiar de skin se sobrescriben todos
+  // y no queda ninguna variable colgando.
+  name: 'tv-show',
+  label: 'TV Show',
+  description: 'Concurso de televisión: glow azul, badge VS dorado y paneles 3D.',
+  vsLayout: 'tv-show',
+  stylesheet: 'themes/tv-show/skin.css',
+  cssVars: {
+    '--ww-bg': '#070d20',
+    '--ww-bg-soft': '#0e1838',
+    '--ww-fg': '#eaf2ff',
+    '--ww-card-bg': '#111d44',
+    '--ww-card-fg': '#eaf2ff',
+    '--ww-card-border': '#3b82f6',
+    '--ww-accent': '#ffc400',
+    '--ww-shape-1': '#ef2b5b',
+    '--ww-shape-2': '#2b6fff',
+    '--ww-shape-3': '#13c4a3',
+    '--ww-shape-4': '#ff8a00',
+    '--ww-success': '#22c55e',
+    '--ww-danger': '#ef4444',
+    '--ww-warning': '#fbbf24'
+  },
+  bgImage: 'radial-gradient(ellipse 90% 60% at 50% 0%, #1a2a66 0%, #070d20 70%)',
   fontFamily: null
 });
 

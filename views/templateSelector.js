@@ -16,7 +16,10 @@ export function renderTemplateSelector(rootSel) {
   ];
 
   mount(rootSel, html`
-    <h2 class="mb-3">Elige una plantilla</h2>
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <h2 class="mb-0">Elige una plantilla</h2>
+      <a href="#/new-list" class="btn btn-outline-primary"><i class="bi bi-collection-play"></i> Crear lista de actividades</a>
+    </div>
     <div class="row g-3">
       ${templates.map(T => `
         <div class="col-md-3 col-6">
