@@ -29,6 +29,14 @@
    un stub en el esqueleto (o `tests/newTemplate.test.mjs` fallará — verificarlo).
 
 ## FASE 2 — Esquemas nuevos (≤20 nodos, sin imágenes, sin animación, colores por --soft-* / paleta ROPES)
+**MODO DISEÑADOR (pedido por el usuario):** esta fase se ejecuta con vocación
+visual, no solo funcional. Usar `docs/svg-previews-guia.md` como brief (lienzo,
+paleta, estilo redondeado) y **ITERAR con capturas headless** (montar → screenshot
+→ ajustar → screenshot) hasta que cada preview esté al nivel del de Emparejar.
+Puede hacerse con subagentes de diseño en paralelo (uno por plantilla) revisados
+por el orquestador. Criterio de aceptación visual: composición centrada, 2-4
+colores de la paleta, formas redondeadas, y que el juego se entienda de un
+vistazo. El usuario puede sustituir cualquiera con su propio SVG (Fase 2c).
 - **wheel (Ruleta)**: SVG rueda de 8 sectores de color + aguja arriba.
 - **wordsearch (Sopa de Letras)**: rejilla 5×5 de letras (usar letras de `content.words`),
   una palabra resaltada en color.
