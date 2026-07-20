@@ -6,11 +6,38 @@
   --ww-danger: #ef4444;
 }
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-.card { border: 0; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
 
-/* Play-mode strip sits flush against the thumbnail — no top border */
-.card-modes .btn { border-top: 0; border-radius: 0 !important; }
+/* ─── AulaReto — armonía sobre Bootstrap ──────────────────────────────────
+   Las páginas que todavía usan Bootstrap (jugar, editor, reportes, admin,
+   elegir plantilla) heredan el acento AZUL de AulaReto y un redondeo más
+   suave SIN tocar su markup. Solo color de acento, enlaces, radio y foco —
+   nada estructural, y sin pisar el juego (pinta con tokens --ww-*/skins).
+   Es chrome → EXCLUIDO del ratchet styles.test.mjs. */
+:root {
+  --bs-primary: #2563eb;
+  --bs-primary-rgb: 37, 99, 235;
+  --bs-link-color: #2563eb;
+  --bs-link-hover-color: #1d4ed8;
+  --bs-border-radius: .6rem;
+  --bs-border-radius-sm: .45rem;
+  --bs-border-radius-lg: .85rem;
+}
+.btn-primary {
+  --bs-btn-bg: #2563eb;      --bs-btn-border-color: #2563eb;
+  --bs-btn-hover-bg: #1d4ed8; --bs-btn-hover-border-color: #1d4ed8;
+  --bs-btn-active-bg: #1d4ed8; --bs-btn-active-border-color: #1d4ed8;
+  --bs-btn-disabled-bg: #2563eb; --bs-btn-disabled-border-color: #2563eb;
+}
+.btn-outline-primary {
+  --bs-btn-color: #2563eb; --bs-btn-border-color: #2563eb;
+  --bs-btn-hover-bg: #2563eb; --bs-btn-hover-border-color: #2563eb;
+  --bs-btn-active-bg: #2563eb; --bs-btn-active-border-color: #2563eb;
+}
+.form-control:focus, .form-select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 .2rem rgba(37, 99, 235, .18);
+}
 
-/* Edit / delete shown as bare icons — no rectangle */
-.card-icon-btn { padding: 0 .25rem; background: none; border: none; line-height: 1; }
-.card-icon-btn:focus-visible { outline: 2px solid currentColor; border-radius: 3px; }
+/* Tarjetas de chrome: sin borde duro, sombra suave y esquinas redondeadas.
+   El juego usa .ww-*/skins (scoped), así que esto no lo altera. */
+.card { border: 0; border-radius: .85rem; box-shadow: 0 1px 3px rgba(20, 28, 46, .06); }

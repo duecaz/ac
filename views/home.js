@@ -25,10 +25,6 @@ export function renderHome(rootSel) {
           || (a.tags || []).some(t => String(t).toLowerCase().includes(term));
     });
 
-    const countLabel = _filter.q || _filter.template
-      ? `${acts.length} de ${all.length}`
-      : `${all.length} ${all.length === 1 ? 'actividad' : 'actividades'}`;
-
     mount(rootSel, html`
       <div class="home-wrap">
         <div class="home-head">
@@ -56,7 +52,6 @@ export function renderHome(rootSel) {
                 </select>
               </div>
             </details>
-            <span class="home-count">${countLabel}</span>
           </div>
         `}
         ${acts.length === 0 ? (all.length === 0 ? `
