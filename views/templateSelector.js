@@ -16,11 +16,15 @@ export function renderTemplateSelector(rootSel) {
   ];
 
   mount(rootSel, html`
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-      <h2 class="mb-0">Elige una plantilla</h2>
-      <a href="#/new-list" class="btn btn-outline-primary"><i class="bi bi-collection-play"></i> Crear lista de actividades</a>
-    </div>
+    <h2 class="mb-3">Elige una plantilla</h2>
     <div class="row g-3">
+      <div class="col-md-3 col-6">
+        <button class="btn btn-primary w-100 py-4 new-list-tile">
+          <i class="bi bi-collection-play display-4 d-block"></i>
+          <span class="mt-2 d-block">Lista de actividades</span>
+          <small class="d-block" style="opacity:.85">varias en secuencia</small>
+        </button>
+      </div>
       ${templates.map(T => `
         <div class="col-md-3 col-6">
           <button class="btn btn-outline-${T.meta.color || 'primary'} w-100 py-4 tpl-pick" data-name="${T.meta.name}">
@@ -42,4 +46,5 @@ export function renderTemplateSelector(rootSel) {
     </div>
   `);
   on(rootSel, 'click', '.tpl-pick', (_, b) => navigate(`#/edit-new/${b.dataset.name}`));
+  on(rootSel, 'click', '.new-list-tile', () => navigate('#/new-list'));
 }
