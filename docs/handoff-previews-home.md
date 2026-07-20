@@ -52,7 +52,10 @@ Hoy el marco del preview es blanco/neutro: una actividad con skin "Retro" o fond
   la presentación → la clave `id:updatedAt` invalida sola.
 
 ## FASE 2c — Previews DISEÑADOS por el usuario (pipeline de integración)
-El usuario quiere diseñar a mano algunos previews (p.ej. Abre Cajas). Contrato de entrega:
+**Guía completa de diseño/entrega: `docs/svg-previews-guia.md`** (brief por plantilla,
+paleta, export, checklist). Los esquemas de Fase 2 son PLACEHOLDER: un SVG del
+usuario sustituye al de su plantilla cuando llegue — sin bloquear el resto del plan.
+Contrato de entrega (resumen):
 - Lienzo `viewBox="0 0 320 150"` + `preserveAspectRatio="xMidYMid meet"` (marco de
   150px de alto, ancho fluido ~260-380px). Fondo TRANSPARENTE (Fase 2b pinta detrás).
 - Sin fuentes externas (texto→trazados o tipografía del sistema), sin rasters
