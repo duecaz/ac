@@ -42,7 +42,9 @@ qué mutaciones de `state` deben pasar por el host. Entregar al usuario el paso 
 para re-aplicar reglas en su PB (tiene `gh`/PowerShell; el panel `#/admin` ya tiene el
 botón de setup — que el botón aplique las reglas NUEVAS y documente la migración).
 
-### P0-2 🔴 CRÍTICO — Las respuestas correctas viajan al móvil del alumno
+### P0-2 ⏸️ DISEÑO (ver `docs/handoff-seguridad-pb.md` Fase 3) — Las respuestas correctas viajan al móvil del alumno
+Requiere cambio de esquema (snapshot sin claves en `activity` + claves en campo/colección
+solo-host) acoplado a la deuda A. Propuesto, pendiente de decisión del usuario.
 `adapters/pocketbase/realtime.js:138` guarda el `activity` ÍNTEGRO (con
 `answer`/`answerIdx`) en la sala; `findRoomByCode:159`/`fetchSession:182` lo devuelven a
 CUALQUIERA (agravado por P0-1: `listRule` pública). Un alumno abre la pestaña Network o
@@ -135,7 +137,9 @@ actividad al guardar y avisar antes de que sea insincronizable.
 
 ## P2 — LIVE / TIEMPO REAL (aula con 30 alumnos)
 
-### P2-1 🔴 CRÍTICO — `submitAnswer` no valida fase/ítem/deadline en servidor; `ms` lo mide el reloj del ALUMNO
+### P2-1 ⏸️ DISEÑO (ver `docs/handoff-seguridad-pb.md` Fase 3) — `submitAnswer` no valida fase/ítem/deadline en servidor; `ms` lo mide el reloj del ALUMNO
+Acoplado a la deuda A (mover respuestas a `live_answers` + host único escritor del state) y
+a reglas PB de Fase 3. Propuesto, pendiente de decisión del usuario.
 `adapters/pocketbase/realtime.js:302-321`: el path de colección solo comprueba "ya existe
 fila" — no `phase==='question'`, ni `itemIndex` vigente, ni deadline (el guard del engine
 puro `kernel/session/engine.js:117-119` NO corre aquí). Y `ms = Date.now() −
