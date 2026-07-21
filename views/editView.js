@@ -33,10 +33,9 @@ export function renderEditView(rootSel, { id, template }) {
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
       <a href="#/home" class="btn btn-link"><i class="bi bi-arrow-left"></i> Volver</a>
       <div class="d-flex gap-2 align-items-center flex-wrap">
-        <select id="meta-vis" class="form-select form-select-sm" style="width:140px" title="Visibilidad">
-          <option value="private" ${activity.visibility==='private'?'selected':''}>Privada</option>
-          <option value="unlisted" ${activity.visibility==='unlisted'?'selected':''}>No listada</option>
-          <option value="public" ${activity.visibility==='public'?'selected':''}>Pública</option>
+        <select id="meta-vis" class="form-select form-select-sm" style="width:160px" title="¿Aparece en la biblioteca pública?">
+          <option value="unlisted" ${activity.visibility!=='public'?'selected':''}>📝 Borrador</option>
+          <option value="public" ${activity.visibility==='public'?'selected':''}>🌍 Publicada</option>
         </select>
         <input id="meta-tags" class="form-control form-control-sm" style="width:200px" placeholder="tags (coma)" value="${escapeHtml((activity.tags||[]).join(', '))}">
         <select id="meta-lang" class="form-select form-select-sm" style="width:100px">

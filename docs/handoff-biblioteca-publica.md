@@ -122,7 +122,11 @@ Nada se rompe si el usuario aún no configuró Google/PB; el gate solo aparece d
 5. Tests: gate (con/sin sesión, mock), storage por usuario (dos users no se mezclan),
    claim idempotente (segunda vez no duplica), filtro de sync (URL con owner).
 
-### FASE S2 — Portada pública + Explorar + likes + publicar
+### FASE S2 ✅ HECHO (v1.51.218) — Portada pública + Explorar + likes + publicar
+> DESVIACIÓN del plan (seguridad de transición): `#/mine` NO se gatea — VER las
+> propias es libre (un profe que aún no configuró Google sigue viendo sus borradores
+> locales). Solo CREAR/EDITAR (#/new, #/edit*) exigen sesión. El gate de #/mine se
+> valorará en S3 cuando el login ya esté operativo.
 1. **`views/landing.js`** (nueva, ruta `#/`): hero corto + grid de 6-8 destacadas
    (reusar `homePreviewHtml` + `previewBgStyle`) + buscador que lleva a Explorar +
    CTA "Entrar con Google" si no hay sesión / "Mis actividades" si la hay.

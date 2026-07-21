@@ -16,7 +16,7 @@ function newListActivity() {
     content: { items: [], mode: 'vs' },
     tags: [],
     language: 'es',
-    visibility: 'private',
+    visibility: 'unlisted',
     schemaVersion: 4,
     templateVersion: 1,
     rules: {},

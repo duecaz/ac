@@ -24,10 +24,11 @@ import { mountSoloAnimator } from '../core/soloAnimator.js';
 export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   let a = get(id);
   // Banco compartido: si no está en local, tráela de la nube (acceso por URL
-  // desde cualquier dispositivo/profe) y cachéala localmente.
+  // desde cualquier dispositivo/profe). NO se guarda en el almacén del usuario:
+  // jugar una actividad pública NO debe ensuciar "Mis actividades" (modelo
+  // biblioteca, S2). Se juega en memoria; para tenerla propia se usa "Duplicar".
   if (!a) {
     a = await getRemote(id).catch(() => null);
-    if (a) save(a);
   }
   if (!a) {
     mount(rootSel, html`<div class="alert alert-warning">Actividad no encontrada. <a href="#/home">Volver</a></div>`);
@@ -312,7 +313,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
         id: newActivityId(),
         title: a.title + ' (copia)',
         forkOf: a.id,
-        visibility: 'private',
+        visibility: 'unlisted',
         author: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()

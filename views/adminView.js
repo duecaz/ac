@@ -519,6 +519,11 @@ function renderPanel(rootSel) {
           { name: 'time_used',     type: 'number' },
           { name: 'created_at',    type: 'text' },
         ]},
+        // ❤ Likes de la biblioteca pública (S2): una fila por (actividad, profe).
+        { name: 'activity_likes', fields: [
+          { name: 'activity', type: 'text', required: true },
+          { name: 'user',     type: 'text', required: true },
+        ], indexes: ['CREATE UNIQUE INDEX `idx_like_act_user` ON `activity_likes` (`activity`, `user`)'] },
       ];
 
       // En PB ≥0.23 la clave del esquema es `fields`; en <0.23 es `schema`. Los
@@ -548,7 +553,17 @@ function renderPanel(rootSel) {
         updateRule: OWN,
         deleteRule: OWN,
       };
-      const rulesFor = (name) => (name === 'activities' ? activityRules : publicRules);
+      // Likes: cualquiera lee el conteo (público); solo un profe logueado crea/borra
+      // SU propio like (user = él mismo). El índice único (activity,user) evita dobles.
+      const likesRules = {
+        listRule: '', viewRule: '',
+        createRule: "@request.auth.id != '' && user = @request.auth.id",
+        updateRule: null,
+        deleteRule: "@request.auth.id != '' && user = @request.auth.id",
+      };
+      const rulesFor = (name) =>
+        name === 'activities' ? activityRules :
+        name === 'activity_likes' ? likesRules : publicRules;
       // En PB ≥0.23 los campos created/updated NO se añaden solos al crear por API,
       // y el store ordena resultados por `sort=-created` → hay que crearlos como
       // autodate. En <0.23 se añaden automáticamente, así que no los duplicamos.
@@ -559,6 +574,7 @@ function renderPanel(rootSel) {
       const COLLECTIONS = DEFS.map(d => ({
         name: d.name, type: 'base',
         [schemaKey]: [...d.fields.map(buildField), ...sysFields],
+        ...(d.indexes ? { indexes: d.indexes } : {}),
         ...rulesFor(d.name),
       }));
 

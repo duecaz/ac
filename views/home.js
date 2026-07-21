@@ -1,6 +1,6 @@
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
-import { list, remove } from '../core/storage.js';
+import { list, remove, get, save } from '../core/storage.js';
 import { homePreviewHtml, previewBgStyle } from '../core/homePreview.js';
 import { navigate } from '../core/router.js';
 import { getTemplate, listTemplates } from '../core/registry.js';
@@ -116,6 +116,9 @@ export function renderHome(rootSel) {
           <div class="acard-toprow">
             <span class="tag tag--${color}"><i class="bi ${icon}"></i> ${escapeHtml(label)}</span>
             <div class="acard-icons">
+              ${a.visibility === 'public'
+                ? `<button class="pub-toggle is-pub act-unpublish" data-id="${a.id}" title="Publicada — clic para pasar a borrador"><i class="bi bi-globe"></i> Pública</button>`
+                : `<button class="pub-toggle act-publish" data-id="${a.id}" title="Borrador — clic para publicar en la biblioteca"><i class="bi bi-eye-slash"></i> Borrador</button>`}
               <button class="icon-btn edit act-edit" data-id="${a.id}" title="Editar"><i class="bi bi-pencil-fill"></i></button>
               <button class="icon-btn del act-del" data-id="${a.id}" title="Eliminar"><i class="bi bi-trash3"></i></button>
               ${a._unsynced ? '<i class="bi bi-cloud-slash acard-unsync" title="No sincronizada"></i>' : ''}
@@ -172,6 +175,19 @@ export function renderHome(rootSel) {
   on(rootSel, 'click', '.act-list', (_, b) => navigate(`#/list/${b.dataset.id}`));
   on(rootSel, 'click', '.act-edit-list', (_, b) => navigate(`#/edit-list/${b.dataset.id}`));
   on(rootSel, 'click', '.act-edit', (_, b) => navigate(`#/edit/${b.dataset.id}`));
+  // Publicar / despublicar (S2): alterna visibility unlisted↔public. Publicar la
+  // mete en la biblioteca pública; borrador la saca. Guarda y re-pinta.
+  const setVisibility = async (id, visibility, msg) => {
+    const a = get(id);
+    if (!a) return;
+    a.visibility = visibility;
+    const { remote } = save(a);
+    remote.catch(() => {});
+    toast(msg, 'success');
+    renderHome(rootSel);
+  };
+  on(rootSel, 'click', '.act-publish', (_, b) => setVisibility(b.dataset.id, 'public', 'Publicada en la biblioteca.'));
+  on(rootSel, 'click', '.act-unpublish', (_, b) => setVisibility(b.dataset.id, 'unlisted', 'Pasada a borrador (fuera de la biblioteca).'));
   on(rootSel, 'click', '.act-del', async (_, b) => {
     const ok = await confirmModal('¿Eliminar esta actividad?', { okText: 'Eliminar', danger: true });
     if (!ok) return;

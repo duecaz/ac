@@ -8,6 +8,7 @@ installErrorHandlers('teacher');
 import './core/registerTemplates.js';
 
 import { renderHome } from './views/home.js';
+import { renderLanding } from './views/landing.js';
 import { renderTemplateSelector } from './views/templateSelector.js';
 import { renderPlayerView } from './views/playerView.js';
 import { renderSorteoView } from './views/sorteoView.js';
@@ -33,8 +34,14 @@ import { html, mount } from './core/html.js';
 
 const APP = '#app';
 
-route('#/', () => navigate('#/home'));
-route('#/home', () => renderHome(APP));
+// Portada PÚBLICA (S2): cualquiera ve destacadas + explora + juega.
+route('#/', () => renderLanding(APP));
+// #/home → redirección compatible a Mis actividades.
+route('#/home', () => navigate('#/mine'));
+// "Mis actividades" (renderHome): NO se gatea VER (transición segura — un profe que
+// aún no configuró Google sigue viendo sus borradores locales; ver es libre). Crear
+// y editar SÍ exigen sesión (gate en #/new, #/edit*).
+route('#/mine', () => renderHome(APP));
 // Autoría (crear/editar/gestionar) → requiere sesión de profe (S1). Ver/jugar libre.
 route('#/new', () => requireTeacher(APP, () => renderTemplateSelector(APP)));
 route('#/edit-new/:template', ({ template }) => requireTeacher(APP, () => renderEditView(APP, { template })));
@@ -97,7 +104,7 @@ setBeforeResolve(() => clearListeners(APP));
       // Sube las reclamadas (firma owner) y trae SOLO las del profe.
       retryUnsynced().catch(() => {});
       sync()
-        .then(() => { const h = location.hash; if (!h || h === '#/' || h === '#/home') renderHome(APP); })
+        .then(() => { const h = location.hash; if (!h || h === '#/' || h === '#/home' || h === '#/mine') resolve(); })
         .catch(err => console.warn('[sync]', err.message));
     }
   }

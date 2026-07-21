@@ -97,7 +97,7 @@ export async function renderExplore(rootSel) {
   on(rootSel, 'click', '.exp-play', async (_, b) => {
     const row = cache.find(r => (r.data?.id || r.id) === b.dataset.id);
     if (!row) return;
-    const preview = { ...row.data, id: newActivityId(), forkOf: row.data.id, visibility: 'private' };
+    const preview = { ...row.data, id: newActivityId(), forkOf: row.data.id, visibility: 'unlisted' };
     save(preview);
     navigate(`#/play/${preview.id}`);
   });
@@ -109,7 +109,7 @@ export async function renderExplore(rootSel) {
       id: newActivityId(),
       title: (row.data.title || '') + ' (copia)',
       forkOf: row.data.id,
-      visibility: 'private',
+      visibility: 'unlisted',
       author: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()

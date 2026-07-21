@@ -67,7 +67,7 @@ export function normalize(a) {
     presentation: { ...DEFAULT_PRESENTATION, ...(a.presentation || {}) },
     live: { ...liveDefs, ...(a.live || {}) },
     author: { ...DEFAULT_AUTHOR, ...(a.author || {}) },
-    visibility: a.visibility || 'private',
+    visibility: a.visibility || 'unlisted',
     forkOf: a.forkOf || null,
     tags: Array.isArray(a.tags) ? a.tags : [],
     language: a.language || 'es',
@@ -114,6 +114,7 @@ export function newActivity(template = 'quiz') {
     template,
     templateVersion: T?.meta?.templateVersion || 1,
     content,
-    presentation
+    presentation,
+    visibility: 'unlisted'   // nace como BORRADOR (S2): no aparece en la biblioteca hasta "Publicar"
   });
 }
