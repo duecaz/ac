@@ -54,6 +54,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | Modo SOLO (Wordwall) por dentro · identidad/auth · dev local | `docs/modo-wordwall.md` · `docs/identidad.md` · `docs/dev-local.md` |
 | Índice completo de docs | `docs/README.md` (lo histórico vive en `docs/historico/`) |
 | **Bugs abiertos / deuda** | la sección "Deuda técnica registrada" (abajo) + notas `docs/handoff-*.md` |
+| **Plan biblioteca pública** (portada, likes, gate de login, admin) | **`docs/handoff-biblioteca-publica.md`** (+ `handoff-google-classroom.md` y `handoff-seguridad-pb.md`) |
 
 Verificar SIEMPRE antes de commitear: `node tests/run.mjs` (todas las suites). El contrato,
 las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecutar tests".
