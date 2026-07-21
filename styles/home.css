@@ -519,3 +519,14 @@ body {
 }
 .pub-toggle:hover { border-color: #c9c2ad; background: #faf8f2; }
 .pub-toggle.is-pub { background: #e8f6ee; border-color: #16a34a; color: #16a34a; }
+
+/* ── Moderación (views/moderate.js) — chrome, EXCLUIDO del ratchet ──────────── */
+.mod-reports { display: flex; flex-direction: column; gap: 10px; }
+.mod-report {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: #fff; border: 1px solid #ece7d8; border-radius: 12px; padding: 12px 16px;
+}
+.mod-report__act { font-weight: 700; color: #141c2e; font-size: 14px; }
+.mod-report__reason { color: #6b7280; font-size: 14px; margin-top: 2px; }
+.mod-report__meta { color: #9aa2ad; font-size: 12px; margin-top: 4px; }
+.mod-report__actions { display: flex; gap: 6px; flex-wrap: wrap; flex-shrink: 0; }

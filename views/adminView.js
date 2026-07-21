@@ -524,6 +524,12 @@ function renderPanel(rootSel) {
           { name: 'activity', type: 'text', required: true },
           { name: 'user',     type: 'text', required: true },
         ], indexes: ['CREATE UNIQUE INDEX `idx_like_act_user` ON `activity_likes` (`activity`, `user`)'] },
+        // 🚩 Reportes de contenido (S3): un profe reporta; solo el admin los ve/borra.
+        { name: 'reports', fields: [
+          { name: 'activity', type: 'text', required: true },
+          { name: 'by',       type: 'text' },
+          { name: 'reason',   type: 'text' },
+        ]},
       ];
 
       // En PB ≥0.23 la clave del esquema es `fields`; en <0.23 es `schema`. Los
@@ -545,10 +551,19 @@ function renderPanel(rootSel) {
       // cláusula `owner = ''` es TRANSITORIA: deja operar las actividades legadas
       // (sin owner) hasta que se haga el backfill; después se puede endurecer a solo
       // `owner = @request.auth.id`. crear no exige login (no romper flujo actual).
-      const OWN = "owner = '' || owner = @request.auth.id";
+      // ADMIN (S3): un usuario con role='admin' puede editar/borrar CUALQUIER
+      // actividad y moderar. La cláusula es ADITIVA — solo concede permisos, nunca
+      // bloquea — así aplicarla nunca deja a nadie fuera. La cláusula transitoria
+      // `owner = ''` se mantiene (endurecer = quitarla, paso manual tras el claim;
+      // ver docs/handoff-biblioteca-publica.md S3).
+      const ADMIN = "@request.auth.role = 'admin'";
+      const OWN = `owner = '' || owner = @request.auth.id || ${ADMIN}`;
       const activityRules = {
         listRule: `visibility = 'public' || ${OWN}`,
         viewRule: `visibility = 'public' || ${OWN}`,
+        // createRule permisivo por ahora (el GATE de cliente ya exige login para
+        // crear). Endurecer a "@request.auth.id != ''" + quitar `owner=''` es el
+        // paso manual de S3, TRAS confirmar que el login con Google funciona.
         createRule: '',
         updateRule: OWN,
         deleteRule: OWN,
@@ -561,9 +576,17 @@ function renderPanel(rootSel) {
         updateRule: null,
         deleteRule: "@request.auth.id != '' && user = @request.auth.id",
       };
+      // Reportes: crear exige login; listar/borrar SOLO admin (moderación).
+      const reportsRules = {
+        listRule: ADMIN, viewRule: ADMIN,
+        createRule: "@request.auth.id != ''",
+        updateRule: null,
+        deleteRule: ADMIN,
+      };
       const rulesFor = (name) =>
         name === 'activities' ? activityRules :
-        name === 'activity_likes' ? likesRules : publicRules;
+        name === 'activity_likes' ? likesRules :
+        name === 'reports' ? reportsRules : publicRules;
       // En PB ≥0.23 los campos created/updated NO se añaden solos al crear por API,
       // y el store ordena resultados por `sort=-created` → hay que crearlos como
       // autodate. En <0.23 se añaden automáticamente, así que no los duplicamos.

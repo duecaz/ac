@@ -33,6 +33,14 @@ export function getAuthToken() {
 export function getAuthUserId() {
   return loadStored()?.record?.id || null;
 }
+// Rol del profe (campo `role` del record de usuario en PB). 'admin' → puede
+// moderar/editar/borrar cualquier actividad y ver los reportes (S3).
+export function getAuthRole() {
+  return loadStored()?.record?.role || null;
+}
+export function isAdmin() {
+  return getAuthRole() === 'admin';
+}
 
 // Refresca el token en el arranque (equivale a pb.authRefresh del SDK): valida y
 // renueva el token guardado. Si PB responde 401 (sesión realmente expirada), se

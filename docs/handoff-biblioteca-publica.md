@@ -146,7 +146,38 @@ Nada se rompe si el usuario aún no configuró Google/PB; el gate solo aparece d
 6. Tests: ranking puro (orden y desempates), landing pinta N destacadas (headless),
    redirect de `#/home` según sesión, explore solo public.
 
-### FASE S3 — Reglas DURAS + admin + reportar (requiere al usuario en su Pi)
+### FASE S3 ✅ EN CÓDIGO (v1.51.219) — Reglas DURAS + admin + reportar (requiere al usuario en su Pi)
+> **Hecho en código (aditivo y SEGURO — no rompe nada):**
+> - `core/auth.js`: `getAuthRole()`/`isAdmin()` (leen `record.role`).
+> - `views/adminView.js`: colecciones `activity_likes` (S2) y `reports` (S3) en el
+>   setup; regla `|| @request.auth.role='admin'` añadida a update/delete de
+>   `activities` (ADITIVA: solo concede, nunca bloquea). Reglas de `reports`
+>   (crear=logueado, listar/borrar=admin).
+> - `core/reports.js` + botón 🚩 "Reportar" en Explorar; `views/moderate.js`
+>   (`#/moderar`, solo admin) lista reportes y borra reporte/actividad; en Explorar
+>   un admin ve Editar/Borrar sobre cualquier actividad. Link "Moderar" en la barra
+>   si eres admin.
+>
+> **PASOS MANUALES DEL USUARIO (en tu Pi/panel PB), en orden:**
+> 1. Asegúrate de que el **login con Google funciona** (docs/handoff-google-classroom.md)
+>    y de haber **entrado una vez** (para que el claim de S1 marque tus actividades).
+> 2. En PB → **Collections → `users` → New field → `role`** (tipo text). Guarda.
+> 3. En PB → tu fila de `users` → pon **`role = admin`** a tu usuario. (Es lo único
+>    que te hace admin; nadie más lo es hasta que se lo pongas.)
+> 4. En **#/admin → "Crear colecciones"**: crea `activity_likes` y `reports` y
+>    reaplica las reglas (incluye la cláusula admin, aditiva).
+> 5. **ENDURECER (opcional, cuando TODO tu contenido tenga owner):** en PB, en las
+>    reglas de `activities`, quita la cláusula transitoria `owner = ''` (deja
+>    `owner = @request.auth.id || @request.auth.role = 'admin'`) y pon
+>    `createRule = @request.auth.id != ''`. Esto cierra del todo: nadie sin login
+>    crea, nadie edita/borra lo ajeno (salvo admin). ⚠️ Hazlo SOLO tras confirmar
+>    que tus actividades ya tienen `owner` (si no, quedarían huérfanas y solo el
+>    admin podría tocarlas).
+> 6. **Probar en dispositivo**: crear sin login → bloqueado (gate); like/reportar sin
+>    login → invita a entrar; admin ve Editar/Borrar en Explorar y #/moderar; alumno
+>    juega por PIN → sigue OK.
+
+#### Detalle original
 1. **`users.role`**: campo text en la colección users (setup admin lo añade con merge
    seguro). El usuario se pone `role='admin'` a sí mismo desde el panel PB (manual, 1 vez).
 2. **Reglas finales de `activities`** en el setup del admin:

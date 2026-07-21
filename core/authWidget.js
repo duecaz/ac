@@ -2,7 +2,7 @@
 // Deslogueado → "Entrar con Google". Logueado → nombre + "Salir".
 // El login con Google desbloquea `owner` (seguridad PB) y, en Fase B, el envío
 // de tareas a Google Classroom. Ver docs/handoff-google-classroom.md.
-import { getUser, signInWithGoogle, signOut, onAuthChange } from './auth.js';
+import { getUser, signInWithGoogle, signOut, onAuthChange, isAdmin } from './auth.js';
 import { escapeHtml } from './html.js';
 
 let _wired = false;
@@ -17,6 +17,7 @@ export async function mountAuthSlot(selector = '#ww-auth-slot') {
       const name = user.name || user.email || 'Profe';
       slot.innerHTML = `
         <span class="ww-auth ww-auth--in d-inline-flex align-items-center gap-2">
+          ${isAdmin() ? `<a href="#/moderar" class="btn btn-sm btn-outline-warning ww-auth__mod" title="Moderación"><i class="bi bi-flag"></i></a>` : ''}
           <span class="ww-auth__name" title="${escapeHtml(user.email || '')}">
             <i class="bi bi-person-check-fill"></i> ${escapeHtml(name)}
           </span>

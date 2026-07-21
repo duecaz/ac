@@ -7,6 +7,10 @@ import { navigate } from '../core/router.js';
 import { getTemplate } from '../core/registry.js';
 import { PB_URL } from '../pocketbase.config.js';
 import { pbEscape, pbFilterParam } from '../core/pbFilter.js';
+import { isAdmin } from '../core/auth.js';
+import { submitReport } from '../core/reports.js';
+import { remove } from '../core/storage.js';
+import { toast, confirmModal } from '../core/toast.js';
 
 export async function renderExplore(rootSel) {
   mount(rootSel, html`
@@ -84,9 +88,13 @@ export async function renderExplore(rootSel) {
             <p class="card-text small text-muted">${escapeHtml(a.subtitle || '')}</p>
             <div>${tags.map(t => `<span class="badge bg-light text-dark border">${escapeHtml(t)}</span>`).join(' ')}</div>
           </div>
-          <div class="card-footer d-flex gap-2">
+          <div class="card-footer d-flex gap-2 align-items-center">
             <button class="btn btn-success btn-sm flex-grow-1 exp-play" data-id="${escapeHtml(dataId)}"><i class="bi bi-play-fill"></i> Probar</button>
             <button class="btn btn-outline-primary btn-sm exp-fork" data-id="${escapeHtml(dataId)}"><i class="bi bi-files"></i> Duplicar</button>
+            <button class="btn btn-link btn-sm text-muted exp-report" data-id="${escapeHtml(dataId)}" title="Reportar contenido"><i class="bi bi-flag"></i></button>
+            ${isAdmin() ? `
+              <button class="btn btn-outline-secondary btn-sm exp-admin-edit" data-id="${escapeHtml(dataId)}" title="Editar (admin)"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-outline-danger btn-sm exp-admin-del" data-id="${escapeHtml(dataId)}" title="Borrar (admin)"><i class="bi bi-trash3"></i></button>` : ''}
           </div>
         </div>
       </div>`;
@@ -116,6 +124,18 @@ export async function renderExplore(rootSel) {
     };
     save(fork);
     navigate(`#/edit/${fork.id}`);
+  });
+  on(rootSel, 'click', '.exp-report', async (_, b) => {
+    try { await submitReport(b.dataset.id, 'Reportada desde Explorar'); toast('Gracias, lo revisaremos.', 'success'); }
+    catch (e) { toast(e.message || 'Inicia sesión para reportar.', 'info', 4000); }
+  });
+  // Moderación admin: editar/borrar cualquier actividad pública (la regla PB lo respalda).
+  on(rootSel, 'click', '.exp-admin-edit', (_, b) => navigate(`#/edit/${b.dataset.id}`));
+  on(rootSel, 'click', '.exp-admin-del', async (_, b) => {
+    const ok = await confirmModal('¿Borrar esta actividad de la biblioteca? (admin)', { okText: 'Borrar', danger: true });
+    if (!ok) return;
+    try { await remove(b.dataset.id); toast('Borrada.', 'success'); load(); }
+    catch (e) { toast('No se pudo borrar: ' + e.message, 'danger', 5000); }
   });
 
   load();

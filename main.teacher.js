@@ -19,6 +19,7 @@ import { renderAssignmentsForActivity, renderAttempts } from './views/assignment
 import { renderListView } from './views/listView.js';
 import { renderEditList } from './views/editList.js';
 import { renderExplore } from './views/explore.js';
+import { renderModerate } from './views/moderate.js';
 import { renderAdmin } from './views/adminView.js';
 import { sync, setStorageUser, claimGuestActivities, retryUnsynced } from './core/storage.js';
 import { ensureIdentity } from './core/identity.js';
@@ -61,6 +62,7 @@ route('#/list/:id', ({ id }) => renderListView(APP, id));
 route('#/edit-list/:id', ({ id }) => requireTeacher(APP, () => renderEditList(APP, { id })));
 route('#/new-list', () => requireTeacher(APP, () => renderEditList(APP, {})));
 route('#/explore', () => renderExplore(APP));
+route('#/moderar', () => renderModerate(APP));
 route('#/admin', () => renderAdmin(APP));
 route('#/modos', () => renderAdmin(APP));
 route('#/sorteo', () => renderSorteoView(APP));
