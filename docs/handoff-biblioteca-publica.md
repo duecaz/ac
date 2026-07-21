@@ -101,7 +101,7 @@ stateDiagram-v2
 
 ## FASES DE EJECUCIÓN (Opus: en este orden, un commit-bloque por fase, tests en cada una)
 
-### FASE S1 — Identidad efectiva: gate + claim + almacén por usuario (SOFT, sin endurecer reglas)
+### FASE S1 ✅ HECHO (v1.51.217) — Identidad efectiva: gate + claim + almacén por usuario (SOFT, sin endurecer reglas)
 Nada se rompe si el usuario aún no configuró Google/PB; el gate solo aparece donde aplica.
 1. **`core/authGate.js`**: `requireTeacher(rootSel, renderFn)` — si no hay sesión pinta
    una pantalla amable ("Entra con Google para crear y gestionar tus actividades",

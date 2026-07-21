@@ -464,3 +464,23 @@ body {
   .home-filter-pop { right: auto; left: 0; }
   .home-grid { grid-template-columns: 1fr; }   /* una sola columna en teléfono */
 }
+
+/* ── Gate de sesión (core/authGate.js) — chrome, EXCLUIDO del ratchet ────────── */
+.auth-gate {
+  min-height: 60vh; display: flex; align-items: center; justify-content: center; padding: 24px;
+}
+.auth-gate__card {
+  max-width: 440px; width: 100%; text-align: center;
+  background: #fff; border: 1px solid #ece7d8; border-radius: 18px;
+  padding: 40px 32px; box-shadow: 0 12px 30px rgba(20,28,46,.10);
+}
+.auth-gate__icon {
+  width: 64px; height: 64px; margin: 0 auto 16px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: #e7f0fe; color: #2563eb; font-size: 30px;
+}
+.auth-gate__title { font-size: 22px; font-weight: 800; color: #141c2e; margin: 0 0 8px; }
+.auth-gate__sub { color: #6b7280; font-size: 14px; line-height: 1.5; margin: 0 0 20px; }
+.auth-gate__cta { display: flex; justify-content: center; margin-bottom: 16px; }
+.auth-gate__back { color: #9aa2ad; font-size: 13px; text-decoration: none; }
+.auth-gate__back:hover { color: #2563eb; }

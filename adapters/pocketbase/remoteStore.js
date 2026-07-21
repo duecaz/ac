@@ -9,6 +9,7 @@
 import { PB_URL } from '../../pocketbase.config.js';
 import { lsGet, lsSet } from '../../core/ls.js';
 import { getAuthToken, getAuthUserId } from '../../core/auth.js';
+import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
 
 function toId(id) {
   const s = (id || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
@@ -175,8 +176,11 @@ export function createPocketbaseRemoteStore() {
       }
     },
 
-    async listActivities() {
-      const rec = await pbFetch('/api/collections/activities/records?perPage=200');
+    // ownerId (opcional): filtra por owner en el servidor → "Mis actividades"
+    // no arrastra la biblioteca pública entera (S1.4). Sin él, trae todas (uso legado).
+    async listActivities(ownerId = null) {
+      const filter = ownerId ? `&filter=${pbFilterParam(`owner='${pbEscape(ownerId)}'`)}` : '';
+      const rec = await pbFetch(`/api/collections/activities/records?perPage=200${filter}`);
       return (rec?.items || []).map(row => {
         markSynced(row.id);
         return { id: fromId(row.id, row.data?.id), data: row.data };

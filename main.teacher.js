@@ -1,5 +1,5 @@
 import { installErrorHandlers } from './core/errorLog.js';
-import { route, start, navigate, setNotFound, setBeforeResolve } from './core/router.js';
+import { route, start, navigate, setNotFound, setBeforeResolve, resolve } from './core/router.js';
 import { clearListeners } from './core/events.js';
 
 installErrorHandlers('teacher');
@@ -19,10 +19,11 @@ import { renderListView } from './views/listView.js';
 import { renderEditList } from './views/editList.js';
 import { renderExplore } from './views/explore.js';
 import { renderAdmin } from './views/adminView.js';
-import { sync, setStorageUser } from './core/storage.js';
+import { sync, setStorageUser, claimGuestActivities, retryUnsynced } from './core/storage.js';
 import { ensureIdentity } from './core/identity.js';
-import { authRefresh, completeOAuthLogin } from './core/auth.js';
+import { authRefresh, completeOAuthLogin, getAuthUserId, onAuthChange } from './core/auth.js';
 import { mountAuthSlot } from './core/authWidget.js';
+import { requireTeacher } from './core/authGate.js';
 import { applySkin } from './core/skins.js';
 // Side-effect: boot.js wires sounds + visual effects to the GameEvents bus and
 // exposes the navbar helpers (version stamp + mute button).
@@ -34,9 +35,10 @@ const APP = '#app';
 
 route('#/', () => navigate('#/home'));
 route('#/home', () => renderHome(APP));
-route('#/new', () => renderTemplateSelector(APP));
-route('#/edit-new/:template', ({ template }) => renderEditView(APP, { template }));
-route('#/edit/:id', ({ id }) => renderEditView(APP, { id }));
+// Autoría (crear/editar/gestionar) → requiere sesión de profe (S1). Ver/jugar libre.
+route('#/new', () => requireTeacher(APP, () => renderTemplateSelector(APP)));
+route('#/edit-new/:template', ({ template }) => requireTeacher(APP, () => renderEditView(APP, { template })));
+route('#/edit/:id', ({ id }) => requireTeacher(APP, () => renderEditView(APP, { id })));
 route('#/play/:id', ({ id }) => renderPlayerView(APP, id));
 route('#/vs/:id', ({ id }) => renderPlayerView(APP, id, 'vs'));
 route('#/teams/:id', ({ id }) => renderPlayerView(APP, id, 'teams'));
@@ -46,11 +48,11 @@ route('#/host/:code', ({ code }) => renderHostByCode(APP, code));
 route('#/reports', () => renderReports(APP));
 route('#/reports/session/:id', ({ id }) => renderSessionReport(APP, id));
 route('#/reports/:id', ({ id }) => renderActivityReport(APP, id));
-route('#/tasks/:id', ({ id }) => renderAssignmentsForActivity(APP, id));
+route('#/tasks/:id', ({ id }) => requireTeacher(APP, () => renderAssignmentsForActivity(APP, id)));
 route('#/task/:id/attempts', ({ id }) => renderAttempts(APP, id));
 route('#/list/:id', ({ id }) => renderListView(APP, id));
-route('#/edit-list/:id', ({ id }) => renderEditList(APP, { id }));
-route('#/new-list', () => renderEditList(APP, {}));
+route('#/edit-list/:id', ({ id }) => requireTeacher(APP, () => renderEditList(APP, { id })));
+route('#/new-list', () => requireTeacher(APP, () => renderEditList(APP, {})));
 route('#/explore', () => renderExplore(APP));
 route('#/admin', () => renderAdmin(APP));
 route('#/modos', () => renderAdmin(APP));
@@ -82,25 +84,41 @@ setBeforeResolve(() => clearListeners(APP));
     history.replaceState(null, '', location.pathname + (location.hash || '#/home'));
   }
   mountAuthSlot('#ww-auth-slot').catch(() => {});
-  // Start the router immediately so the home page paints from localStorage
-  // without waiting for the network. Auth + sync happen in the background.
+
+  // Almacén de actividades = el profe logueado con Google (o 'guest' si no hay
+  // sesión). getAuthUserId() lee la sesión guardada de forma síncrona → no bloquea.
+  // (S1) Antes se usaba el id ANÓNIMO de ensureIdentity como storage user; ya no:
+  // guest usa la clave legacy y un profe usa la suya propia.
+  function applyStorageUser(id) {
+    setStorageUser(id || undefined);
+    if (id) {
+      // Primer login en este navegador: adopta las actividades anónimas locales.
+      claimGuestActivities(id);
+      // Sube las reclamadas (firma owner) y trae SOLO las del profe.
+      retryUnsynced().catch(() => {});
+      sync()
+        .then(() => { const h = location.hash; if (!h || h === '#/' || h === '#/home') renderHome(APP); })
+        .catch(err => console.warn('[sync]', err.message));
+    }
+  }
+  applyStorageUser(getAuthUserId());
+
+  // Start the router immediately so la home pinta desde localStorage sin esperar red.
   start();
   window.__APP_READY__ = true;
-  // Refresca el token del profe en el arranque (Fase 0 seguridad PB): mantiene la
-  // sesión viva para firmar las escrituras; si expiró de verdad, limpia y fuerza
-  // re-login en vez de arrastrar un token muerto. No bloquea el render.
+
+  // Identidad anónima para subsistemas de alumno/resultados (NO es el storage user).
+  ensureIdentity().catch(err => console.warn('[boot] identity:', err.message));
+
+  // Refresca el token del profe (Fase 0 seguridad PB). Si expira de verdad,
+  // authRefresh limpia la sesión → onAuthChange nos lleva a 'guest' y re-renderiza.
   authRefresh().catch(() => {});
-  try {
-    const user = await ensureIdentity();
-    setStorageUser(user.id);
-    // Re-render home once remote data arrives so new/updated activities appear.
-    sync()
-      .then(() => {
-        const h = location.hash;
-        if (!h || h === '#/' || h === '#/home') renderHome(APP);
-      })
-      .catch(err => console.warn('[sync]', err.message));
-  } catch (err) {
-    console.warn('[boot] auth failed:', err.message);
-  }
+
+  // Transiciones de sesión sin recarga (logout, o refresh que invalida el token).
+  // El LOGIN normal recarga la página (redirección OAuth), así que boot lo cubre;
+  // esto cubre sobre todo el logout y la expiración.
+  onAuthChange(({ user }) => {
+    applyStorageUser(user?.id || null);
+    resolve(); // re-ejecuta el router para la ruta actual con el nuevo estado
+  });
 })();

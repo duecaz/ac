@@ -5,21 +5,56 @@ import { lsGet, lsSet } from './ls.js';
 
 const LEGACY_KEY = 'ww.activities';
 const TOMBSTONE_KEY = 'ww.tombstones';   // { [id]: ISOString } — borrados pendientes de confirmar en remoto
+const CLAIM_FLAG = 'ww.activities.claimed'; // marca global: el primer profe del navegador ya adoptó las anónimas
 let _userId = 'guest';
+
+// Almacén POR USUARIO (S1.2): "guest" (sin login) usa la clave legacy — así un
+// usuario que aún NO configuró Google sigue viendo sus actividades intactas. Un
+// profe logueado usa `ww.activities.<googleId>`, aislado de otros profes que
+// compartan el navegador. Los tombstones van igual (por usuario).
+function currentKey() { return _userId === 'guest' ? LEGACY_KEY : `${LEGACY_KEY}.${_userId}`; }
+function tombKey()    { return _userId === 'guest' ? TOMBSTONE_KEY : `${TOMBSTONE_KEY}.${_userId}`; }
 
 // ── Tombstones (P1-1): evitan que una actividad borrada resucite vía sync ─────
 function readTombstones() {
-  try { return JSON.parse(localStorage.getItem(TOMBSTONE_KEY) || '{}'); }
+  try { return JSON.parse(localStorage.getItem(tombKey()) || '{}'); }
   catch { return {}; }
 }
-function writeTombstones(t) { return lsSet(TOMBSTONE_KEY, JSON.stringify(t)); }
+function writeTombstones(t) { return lsSet(tombKey(), JSON.stringify(t)); }
 function addTombstone(id) { const t = readTombstones(); t[id] = new Date().toISOString(); writeTombstones(t); }
 function clearTombstone(id) { const t = readTombstones(); if (t[id]) { delete t[id]; writeTombstones(t); } }
 export function tombstoneSet() { return new Set(Object.keys(readTombstones())); }
 
 export function setStorageUser(userId) { _userId = userId || 'guest'; }
+export function currentStorageUser() { return _userId; }
 
-function currentKey() { return LEGACY_KEY; }
+export function hasClaimed() { try { return !!localStorage.getItem(CLAIM_FLAG); } catch { return false; } }
+
+// Claim al primer login (S1.3): adopta las actividades anónimas que ya viven en el
+// navegador (clave legacy) para el profe que entra — les asigna dueño al re-subir
+// (marca _unsynced → retryUnsynced las sube y remoteStore firma owner=googleId).
+// Es GLOBAL y una sola vez: el PRIMER profe del navegador se queda las anónimas;
+// después la clave legacy queda vacía. Requiere que _userId ya sea el del profe.
+export function claimGuestActivities(userId) {
+  if (!userId || userId === 'guest' || hasClaimed()) return { claimed: 0 };
+  let legacy = {};
+  try { legacy = JSON.parse(localStorage.getItem(LEGACY_KEY) || '{}'); } catch {}
+  const ids = Object.keys(legacy).filter(id => legacy[id]);
+  if (!ids.length) { try { localStorage.setItem(CLAIM_FLAG, new Date().toISOString()); } catch {} return { claimed: 0 }; }
+  const prev = _userId;
+  setStorageUser(userId);
+  const userMap = readLS();
+  for (const id of ids) {
+    // No pisar una versión más nueva ya presente en la clave del usuario.
+    if (userMap[id] && (userMap[id].updatedAt || '') >= (legacy[id].updatedAt || '')) continue;
+    userMap[id] = { ...legacy[id], _unsynced: true };
+  }
+  const okWrite = writeLS(userMap);
+  setStorageUser(prev);
+  if (!okWrite) return { claimed: 0, error: 'quota' }; // sin escribir → NO marcar reclamado (reintentará)
+  try { localStorage.setItem(LEGACY_KEY, '{}'); localStorage.setItem(CLAIM_FLAG, new Date().toISOString()); } catch {}
+  return { claimed: ids.length };
+}
 
 function readLS() {
   try { return JSON.parse(localStorage.getItem(currentKey()) || '{}'); }
@@ -131,10 +166,16 @@ export async function retryTombstones() {
 }
 
 export async function sync() {
+  // Guest (sin login): SOLO local, sin remoto (S1.4). En el modelo de biblioteca
+  // pública, "Mis actividades" es del profe logueado; la portada/explore consultan
+  // lo público aparte. Sin este guard, el sync traería la biblioteca ENTERA aquí.
+  if (_userId === 'guest') return list();
   const rs = await getRemoteStore();
   // Antes de mergear, reintenta los borrados pendientes para que no vuelvan.
   await retryTombstones().catch(() => {});
-  const rows = await rs.listActivities();
+  // Solo las del profe (filtra por owner) → "Mis actividades" no se llena con las
+  // de todo el mundo cuando la biblioteca es pública.
+  const rows = await rs.listActivities(_userId);
   writeLS(mergeRemote(readLS(), rows, migrate, tombstoneSet()));
   return list();
 }

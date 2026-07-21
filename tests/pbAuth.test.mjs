@@ -59,7 +59,22 @@ const act = { id: 'act_owned01', template: 'quiz', title: 'T', visibility: 'priv
   ok('fallback anónimo tras 401 (no rompe con reglas públicas)');
 }
 
-// Limpia los globals mockeados para no contaminar otras suites.
+// ── listActivities(ownerId) filtra por owner en el servidor (S1.4) ───────────
+{
+  calls.length = 0;
+  script = [{ status: 200, body: { items: [] } }];
+  await rs.listActivities('teacher_9');
+  const url = calls[0].url;
+  assert.ok(/filter=/.test(url), 'la URL incluye un filtro');
+  assert.ok(decodeURIComponent(url).includes("owner='teacher_9'"), "filtra por owner='teacher_9'");
+  // Sin ownerId → sin filtro (uso legado)
+  calls.length = 0;
+  script = [{ status: 200, body: { items: [] } }];
+  await rs.listActivities();
+  assert.ok(!/filter=/.test(calls[0].url), 'sin ownerId no añade filtro (compat)');
+  ok('listActivities filtra por owner cuando se pide');
+}
+
 delete global.fetch; delete global.localStorage;
 
 console.log(`\npbAuth.test: ${passed} checks passed`);
