@@ -44,7 +44,7 @@
   <div class="ww-topbar__actions" onclick="this.closest('.ww-topbar').classList.remove('open')">
     <span class="badge bg-secondary" id="ww-version">v…</span>
     <a href="#/reports" class="ww-navbtn ww-navbtn--icon" title="Reportes"><i class="bi bi-bar-chart-fill"></i></a>
-    <a href="#/admin" class="ww-navbtn"><i class="bi bi-shield-lock"></i> Admin</a>
+    <a href="#/admin" id="nav-admin" class="ww-navbtn" hidden><i class="bi bi-shield-lock"></i> Admin</a>
     <span id="ww-auth-slot"></span>
     <button class="ww-navbtn ww-navbtn--icon ww-navbtn--accent" onclick="window.__wwClearAll && window.__wwClearAll()" title="Borrar caché y recargar"><i class="bi bi-eraser"></i></button>
   </div>

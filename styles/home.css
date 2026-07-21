@@ -530,3 +530,30 @@ body {
 .mod-report__reason { color: #6b7280; font-size: 14px; margin-top: 2px; }
 .mod-report__meta { color: #9aa2ad; font-size: 12px; margin-top: 4px; }
 .mod-report__actions { display: flex; gap: 6px; flex-wrap: wrap; flex-shrink: 0; }
+
+/* ── Modal de login (views/loginModal.js) — chrome, EXCLUIDO del ratchet ─────── */
+.login-modal { position: fixed; inset: 0; z-index: 3000; display: flex; align-items: center; justify-content: center; }
+.login-modal__backdrop { position: absolute; inset: 0; background: rgba(20,28,46,.5); }
+.login-modal__card {
+  position: relative; width: 92%; max-width: 380px; background: #fff; border-radius: 18px;
+  padding: 28px 26px; box-shadow: 0 20px 60px rgba(20,28,46,.3); text-align: center;
+}
+.login-modal__x { position: absolute; top: 12px; right: 14px; border: 0; background: transparent; color: #9aa2ad; font-size: 16px; cursor: pointer; }
+.login-modal__title { font-size: 22px; font-weight: 800; color: #141c2e; margin: 0 0 4px; }
+.login-modal__sub { color: #6b7280; font-size: 13px; margin: 0 0 18px; }
+.login-modal__google {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+  border: 1px solid #e2ddce; background: #fff; color: #1f2937; font-weight: 700;
+  border-radius: 10px; padding: 10px; cursor: pointer;
+}
+.login-modal__google:hover { background: #faf8f2; border-color: #c9c2ad; }
+.login-modal__or { display: flex; align-items: center; gap: 10px; color: #9aa2ad; font-size: 12px; margin: 16px 0; }
+.login-modal__or::before, .login-modal__or::after { content: ''; flex: 1; height: 1px; background: #ece7d8; }
+.login-modal__form { display: flex; flex-direction: column; gap: 10px; }
+.login-modal__inp { border: 1px solid #e2ddce; border-radius: 10px; padding: 10px 12px; font-size: 14px; outline: none; }
+.login-modal__inp:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.14); }
+.login-modal__err { color: #ef4444; font-size: 13px; min-height: 18px; text-align: left; }
+.login-modal__submit { background: #2563eb; color: #fff; border: 0; border-radius: 10px; padding: 10px; font-weight: 700; cursor: pointer; }
+.login-modal__submit:hover { background: #1d4ed8; }
+.login-modal__submit:disabled { opacity: .6; cursor: default; }
+.login-modal__toggle { margin-top: 14px; background: transparent; border: 0; color: #2563eb; font-size: 13px; cursor: pointer; }

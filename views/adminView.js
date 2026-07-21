@@ -19,43 +19,26 @@ import { listVsAnimations } from '../core/vsAnimations.js';
 import { loadCustomAnims, addCustomAnim, removeCustomAnim } from '../core/vsAnimStore.js';
 import { DEFAULT_WORDS, getWordList, setWordList, resetWordList } from '../core/liveWords.js';
 import { recentErrors, clearErrors } from '../core/errorLog.js';
+import { isAdmin, createTeacher } from '../core/auth.js';
 
-const ADMIN_PASSWORD = 'fernando';
-const SESSION_KEY = 'ww.admin.ok';
-
-function isUnlocked() {
-  try { return sessionStorage.getItem(SESSION_KEY) === '1'; } catch { return false; }
-}
-
+// Admin UNIFICADO (auth v2): el acceso es por ROL de Google (isAdmin), no por
+// contraseña local. Solo un profe con role='admin' entra. La contraseña 'fernando'
+// se retiró — había un candado paralelo que confundía (dos "admin" distintos).
 export function renderAdmin(rootSel) {
-  if (!isUnlocked()) return renderGate(rootSel);
+  if (!isAdmin()) return renderGate(rootSel);
   renderPanel(rootSel);
 }
 
 function renderGate(rootSel) {
   mount(rootSel, html`
-    <div class="container py-5" style="max-width:420px">
-      <a href="#/home" class="btn btn-sm btn-link p-0 mb-2"><i class="bi bi-arrow-left"></i> Inicio</a>
-      <div class="card shadow-sm"><div class="card-body">
-        <h4 class="mb-3"><i class="bi bi-shield-lock"></i> Panel de administración</h4>
-        <p class="text-muted small">Introduce la contraseña para ver detalles del sistema y ejecutar los tests.</p>
-        <input id="admin-pass" type="password" class="form-control mb-2" placeholder="Contraseña" autofocus>
-        <button id="admin-go" class="btn btn-primary w-100">Entrar</button>
-        <div id="admin-err" class="text-danger small mt-2"></div>
-      </div></div>
-    </div>`);
-  const submit = () => {
-    const v = document.getElementById('admin-pass')?.value || '';
-    if (v === ADMIN_PASSWORD) {
-      try { sessionStorage.setItem(SESSION_KEY, '1'); } catch {}
-      renderPanel(rootSel);
-    } else {
-      const err = document.getElementById('admin-err');
-      if (err) err.textContent = 'Contraseña incorrecta.';
-    }
-  };
-  on(rootSel, 'click', '#admin-go', submit);
-  on(rootSel, 'keydown', '#admin-pass', (e) => { if (e.key === 'Enter') submit(); });
+    <div class="auth-gate"><div class="auth-gate__card">
+      <div class="auth-gate__icon"><i class="bi bi-shield-lock"></i></div>
+      <h1 class="auth-gate__title">Panel de administración</h1>
+      <p class="auth-gate__sub">Esta sección es solo para administradores. Inicia sesión con una cuenta con rol admin.</p>
+      <div class="auth-gate__cta" id="admin-gate-slot"></div>
+      <a href="#/" class="auth-gate__back"><i class="bi bi-arrow-left"></i> Volver a la portada</a>
+    </div></div>`);
+  import('../core/authWidget.js').then(m => m.mountAuthSlot('#admin-gate-slot').catch(() => {}));
 }
 
 function renderPanel(rootSel) {
@@ -67,9 +50,19 @@ function renderPanel(rootSel) {
     <div class="container py-3">
       <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
         <a href="#/home" class="btn btn-sm btn-link p-0"><i class="bi bi-arrow-left"></i> Inicio</a>
-        <button id="admin-lock" class="btn btn-sm btn-outline-secondary"><i class="bi bi-lock"></i> Bloquear</button>
+        <a href="#/moderar" class="btn btn-sm btn-outline-warning"><i class="bi bi-flag"></i> Moderación</a>
       </div>
       <h3><i class="bi bi-shield-lock"></i> Panel de administración</h3>
+
+      <h5 class="mt-3"><i class="bi bi-people"></i> Profesores</h5>
+      <p class="text-muted small mb-2">Crea una cuenta con correo + contraseña para que un profe entre en una pizarra sin cuenta de Google. Para hacer admin a alguien, pon <code>role = admin</code> en su fila de la colección <code>users</code> (PocketBase).</p>
+      <div class="d-flex flex-wrap gap-2 mb-1" style="max-width:640px">
+        <input id="teach-name" class="form-control form-control-sm" style="width:150px" placeholder="Nombre">
+        <input id="teach-email" class="form-control form-control-sm" style="width:200px" type="email" placeholder="Correo">
+        <input id="teach-pass" class="form-control form-control-sm" style="width:150px" type="text" placeholder="Contraseña (mín 8)">
+        <button id="teach-create" class="btn btn-primary btn-sm"><i class="bi bi-person-plus"></i> Crear profesor</button>
+      </div>
+      <div id="teach-msg" class="small mb-3"></div>
 
       <h5 class="mt-3">Datos</h5>
       <div class="d-flex flex-wrap gap-2 mb-3">
@@ -296,6 +289,20 @@ function renderPanel(rootSel) {
     }
   });
 
+  on(rootSel, 'click', '#teach-create', async () => {
+    const name = document.getElementById('teach-name')?.value.trim();
+    const email = document.getElementById('teach-email')?.value.trim();
+    const pass = document.getElementById('teach-pass')?.value || '';
+    const msg = document.getElementById('teach-msg');
+    if (!email || pass.length < 8) { if (msg) { msg.className = 'small mb-3 text-danger'; msg.textContent = 'Correo válido y contraseña de al menos 8 caracteres.'; } return; }
+    try {
+      await createTeacher(email, pass, name);
+      if (msg) { msg.className = 'small mb-3 text-success'; msg.textContent = `Profesor creado: ${email} (contraseña: ${pass}). Apúntala.`; }
+      ['teach-name','teach-email','teach-pass'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    } catch (e) {
+      if (msg) { msg.className = 'small mb-3 text-danger'; msg.textContent = 'No se pudo crear: ' + e.message; }
+    }
+  });
   on(rootSel, 'click', '#admin-export', () => downloadActivitiesJson());
   on(rootSel, 'click', '#admin-import', () => {
     pickAndImport({ strategy: 'duplicate' }, (r) => {
@@ -304,7 +311,6 @@ function renderPanel(rootSel) {
       else toast('Error al importar: ' + r.errors.join('; '), 'danger', 6000);
     });
   });
-  on(rootSel, 'click', '#admin-lock', () => { try { sessionStorage.removeItem(SESSION_KEY); } catch {} renderGate(rootSel); });
   on(rootSel, 'click', '#admin-refresh', () => { (window.__wwRefresh || (() => location.reload()))(); });
   on(rootSel, 'click', '#admin-nuke-sw', () => { (window.__wwNukeSW || (() => location.reload()))(); });
   on(rootSel, 'click', '#admin-err-clear', () => { clearErrors(); toast('Registro de errores limpiado.', 'success'); renderPanel(rootSel); });

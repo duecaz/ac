@@ -88,6 +88,18 @@ export async function signUp(email, password, displayName) {
   return signIn(email, password);
 }
 
+// Crea una cuenta de profe SIN iniciar sesión como ella (la usa el admin para
+// provisionar accesos de pizarra: correo + contraseña sencilla). No toca la sesión
+// actual del admin. Requiere que el createRule de `users` permita signup (por
+// defecto en PocketBase sí).
+export async function createTeacher(email, password, name) {
+  await pbPost('/api/collections/users/records', {
+    email, password, passwordConfirm: password,
+    name: name || email.split('@')[0],
+  });
+  return { ok: true };
+}
+
 export async function signIn(email, password) {
   const data = await pbPost('/api/collections/users/auth-with-password', {
     identity: email, password,

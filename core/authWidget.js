@@ -2,7 +2,7 @@
 // Deslogueado → "Entrar con Google". Logueado → nombre + "Salir".
 // El login con Google desbloquea `owner` (seguridad PB) y, en Fase B, el envío
 // de tareas a Google Classroom. Ver docs/handoff-google-classroom.md.
-import { getUser, signInWithGoogle, signOut, onAuthChange, isAdmin } from './auth.js';
+import { getUser, signOut, onAuthChange, isAdmin } from './auth.js';
 import { escapeHtml } from './html.js';
 
 let _wired = false;
@@ -13,6 +13,9 @@ export async function mountAuthSlot(selector = '#ww-auth-slot') {
 
   async function paint() {
     const user = await getUser();
+    // El botón "Admin" de la barra solo se muestra a administradores (auth v2).
+    const navAdmin = document.getElementById('nav-admin');
+    if (navAdmin) navAdmin.hidden = !isAdmin();
     if (user) {
       const name = user.name || user.email || 'Profe';
       slot.innerHTML = `
@@ -25,8 +28,8 @@ export async function mountAuthSlot(selector = '#ww-auth-slot') {
         </span>`;
     } else {
       slot.innerHTML = `
-        <button type="button" class="btn btn-sm btn-light ww-auth__in d-inline-flex align-items-center gap-2" title="Iniciar sesión con Google">
-          <i class="bi bi-google"></i> Entrar con Google
+        <button type="button" class="btn btn-sm btn-light ww-auth__in d-inline-flex align-items-center gap-2" title="Iniciar sesión">
+          <i class="bi bi-box-arrow-in-right"></i> Entrar
         </button>`;
     }
   }
@@ -36,11 +39,8 @@ export async function mountAuthSlot(selector = '#ww-auth-slot') {
     _wired = true;
     slot.addEventListener('click', async (e) => {
       if (e.target.closest('.ww-auth__in')) {
-        try { await signInWithGoogle(); } // redirige a Google
-        catch (err) {
-          const { toast } = await import('./toast.js');
-          toast('No se pudo iniciar el login con Google: ' + err.message, 'danger', 6000);
-        }
+        const { openLoginModal } = await import('../views/loginModal.js');
+        openLoginModal(); // Google + correo/contraseña (pizarras sin Google)
       } else if (e.target.closest('.ww-auth__out')) {
         await signOut();
       }
