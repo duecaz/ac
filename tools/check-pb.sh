@@ -53,10 +53,19 @@ curl -s "$PB/api/collections/users/auth-methods" | jq -e '(.oauth2.providers // 
 
 # 8) ENDURECIMIENTO (U1): crear una actividad SIN sesión DEBE fallar (403/400).
 #    Si devuelve 200 la regla quedó abierta → cualquiera puede escribir en la BD.
-SC=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$PB/api/collections/activities/records" \
+#    Se captura la respuesta: si por estar abierta se creó una fila, se BORRA con
+#    el token de superadmin para no dejar basura de diagnóstico.
+RESP=$(curl -s -w $'\n%{http_code}' -X POST "$PB/api/collections/activities/records" \
   -H "Content-Type: application/json" -d '{"data":{"id":"checkpbtmp"},"visibility":"unlisted"}')
-{ [ "$SC" = "400" ] || [ "$SC" = "403" ]; } \
-  && green "create anónimo de activities bloqueado ($SC)" || red "create anónimo de activities" "devolvió $SC (regla abierta)"
+SC=$(echo "$RESP" | tail -1); BODY=$(echo "$RESP" | sed '$d')
+if [ "$SC" = "400" ] || [ "$SC" = "403" ]; then
+  green "create anónimo de activities bloqueado ($SC)"
+else
+  red "create anónimo de activities" "devolvió $SC (regla abierta)"
+  JUNK=$(echo "$BODY" | jq -r '.id // empty')
+  [ -n "$JUNK" ] && curl -s -o /dev/null -X DELETE "$PB/api/collections/activities/records/$JUNK" -H "Authorization: $TOKEN" \
+    && echo "    (fila de diagnóstico $JUNK borrada)"
+fi
 
 # 9) ENDURECIMIENTO (U1): alta de usuario SIN sesión DEBE fallar (signup público cerrado).
 SC=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$PB/api/collections/users/records" \
