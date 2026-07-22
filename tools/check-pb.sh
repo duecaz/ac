@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# check-pb.sh — smoke-test de PocketBase para AulaReto.
+# Corre las consultas EXACTAS que hace la app y reporta OK/FALLA por cada una.
+# Úsalo tras CUALQUIER actualización de PocketBase, ANTES de que jueguen los alumnos.
+#
+# Uso:  ./check-pb.sh            (usa http://localhost:8090)
+#       PB=https://pb.lanube.uno ./check-pb.sh
+set -u
+PB="${PB:-http://localhost:8090}"
+command -v jq >/dev/null || { echo "Falta jq: sudo apt-get install -y jq"; exit 1; }
+
+read -rp "Email superadmin PB: " EMAIL
+read -rsp "Password superadmin PB: " PASS; echo
+TOKEN=$(curl -s -X POST "$PB/api/collections/_superusers/auth-with-password" \
+  -H "Content-Type: application/json" -d "{\"identity\":\"$EMAIL\",\"password\":\"$PASS\"}" | jq -r '.token // empty')
+
+ok=0; fail=0
+green(){ echo -e "  \033[32m✓\033[0m $1"; ok=$((ok+1)); }
+red(){   echo -e "  \033[31m✗\033[0m $1 — $2"; fail=$((fail+1)); }
+
+# 1) health
+curl -s "$PB/api/health" | jq -e '.code==200' >/dev/null && green "API health" || red "API health" "no responde 200"
+
+# 2) token
+[ -n "$TOKEN" ] && green "auth superadmin" || { red "auth superadmin" "sin token (password?)"; echo "Aborta."; exit 1; }
+
+# 3) colecciones esperadas
+for c in users activities activity_likes reports results; do
+  curl -s "$PB/api/collections/$c" -H "Authorization: $TOKEN" | jq -e '.id' >/dev/null \
+    && green "colección $c existe" || red "colección $c" "no existe"
+done
+
+# 4) activities tiene los campos que la app necesita
+FIELDS=$(curl -s "$PB/api/collections/activities" -H "Authorization: $TOKEN" | jq -r '.fields[].name' | tr '\n' ' ')
+for f in data visibility owner; do
+  echo "$FIELDS" | grep -qw "$f" && green "activities.$f" || red "activities.$f" "campo ausente"
+done
+
+# 5) La consulta de EXPLORAR / PORTADA (como la hace el navegador, anónimo, SIN sort)
+Q=$(curl -s -G "$PB/api/collections/activities/records" \
+  --data-urlencode "filter=visibility='public'" --data-urlencode "perPage=5")
+echo "$Q" | jq -e 'has("items")' >/dev/null \
+  && green "query Explorar (public)" || red "query Explorar" "$(echo "$Q" | jq -r '.message // "?"')"
+
+# 6) La consulta de LIKES (conteo)
+L=$(curl -s "$PB/api/collections/activity_likes/records?perPage=1" -H "Authorization: $TOKEN")
+echo "$L" | jq -e 'has("items")' >/dev/null \
+  && green "query likes" || red "query likes" "$(echo "$L" | jq -r '.message // "?"')"
+
+# 7) auth-methods expone Google (login)
+curl -s "$PB/api/collections/users/auth-methods" | jq -e '(.oauth2.providers // .authProviders // [])[]?.name | select(.=="google")' >/dev/null \
+  && green "login Google habilitado" || red "login Google" "proveedor google no activo"
+
+echo ""
+echo "Resultado: $ok OK, $fail FALLA(S)."
+[ "$fail" -eq 0 ] && echo "Todo verde ✅" || { echo "Hay fallos ❌ — pégaselos a Claude para arreglar antes de usar con alumnos."; exit 1; }
