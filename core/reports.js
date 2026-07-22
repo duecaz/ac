@@ -32,7 +32,9 @@ export async function submitReport(activity, reason = '') {
 // Lista los reportes (solo admin — la regla PB lo respalda). Devuelve [] si falla.
 export async function listReports() {
   try {
-    const data = await pb(`/api/collections/${COLL}/records?perPage=200&sort=-created`);
+    // Sin sort=-created: la colección puede no tener el campo `created` (según cómo
+    // se creó) y ese sort rompería la consulta. Orden por defecto de PB.
+    const data = await pb(`/api/collections/${COLL}/records?perPage=200`);
     return data?.items || [];
   } catch { return []; }
 }

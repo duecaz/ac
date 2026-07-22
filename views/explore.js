@@ -38,7 +38,11 @@ export async function renderExplore(rootSel) {
     // pbEscape/pbFilterParam (core/pbFilter.js): NUNCA encodeURIComponent a pelo
     // sobre el valor — no escapa la comilla simple del filtro `field='valor'`.
     const expr = `visibility='public'` + (lang ? ` && language='${pbEscape(lang)}'` : '');
-    const url = `${PB_URL}/api/collections/activities/records?filter=${pbFilterParam(expr)}&sort=-updated&perPage=120`;
+    // SIN `sort=-updated`: la colección `activities` puede no tener el campo PB
+    // `updated` (algunos setups no lo crean) → ese sort rompía la consulta con
+    // "Something went wrong". Ordenamos en el cliente por el updatedAt que vive
+    // dentro de cada actividad (data.updatedAt), que siempre existe.
+    const url = `${PB_URL}/api/collections/activities/records?filter=${pbFilterParam(expr)}&perPage=120`;
     try {
       const r = await fetch(url);
       const data = await r.json().catch(() => ({}));
@@ -48,8 +52,9 @@ export async function renderExplore(rootSel) {
         data: row.data || {},
         language: row.language || 'es',
         tags: row.tags || [],
-        updated_at: row.updated,
+        updated_at: row.data?.updatedAt || row.updated || '',
       }));
+      cache.sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at))); // más nuevas primero
     } catch (e) {
       document.getElementById('exp-list').innerHTML = `<div class="alert alert-danger">${escapeHtml(e.message)}</div>`;
       return;

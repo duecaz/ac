@@ -58,7 +58,9 @@ export async function renderLanding(rootSel) {
   async function load() {
     let rows = [];
     try {
-      const url = `${PB_URL}/api/collections/activities/records?filter=${pbFilterParam(`visibility='public'`)}&sort=-updated&perPage=48`;
+      // SIN sort=-updated (activities puede no tener el campo PB `updated`);
+      // computeFeatured ya ordena por likes/plays/updatedAt del propio contenido.
+      const url = `${PB_URL}/api/collections/activities/records?filter=${pbFilterParam(`visibility='public'`)}&perPage=48`;
       const r = await fetch(url);
       const data = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(data?.message || `Error ${r.status}`);
