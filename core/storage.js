@@ -3,7 +3,6 @@ import { migrate, normalize } from './migrate.js';
 import { mergeRemote } from './storageMerge.js';
 import { lsGet, lsSet } from './ls.js';
 import { getAuthUserId, getAuthName } from './auth.js';
-import { getProfile } from './profile.js';
 
 const LEGACY_KEY = 'ww.activities';
 const TOMBSTONE_KEY = 'ww.tombstones';   // { [id]: ISOString } — borrados pendientes de confirmar en remoto
@@ -97,19 +96,15 @@ export function save(activity, { keepUpdatedAt = false } = {}) {
   // resetean → toman al que duplica). El `owner` de PB (permisos) lo pone remoteStore.
   const uid = getAuthUserId();
   if (uid && (!a.author?.id || a.author.id === uid)) {
-    // Denormaliza el perfil público del profe (nombre + colegio + frase + avatar de
-    // Google) dentro de author, para que la página del autor lo muestre sin leer la
-    // colección users (privada). Al primera firma se fija signedAt; si el autor ya
-    // soy yo, se REFRESCA (nombre/colegio/frase/avatar) por si cambié algo.
-    const prof = getProfile(uid);
-    const pick = (v, prev) => (v !== undefined ? v : (prev || '')); // permite vaciar
+    // La actividad SOLO guarda una etiqueta ligera del autor: id + nombre (para
+    // mostrar "por X" en las tarjetas sin una consulta por tarjeta). El PERFIL rico
+    // (colegio, frase, avatar) NO vive aquí: vive en la colección pública `profiles`
+    // (core/profile.js), que la página del autor consulta. El nombre se refresca si
+    // el autor soy yo (por si me renombré).
     a.author = {
       ...(a.author || {}),
       id: uid,
       name: getAuthName() || a.author?.name || 'Profe',
-      school: pick(prof.school, a.author?.school),
-      bio: pick(prof.bio, a.author?.bio),
-      avatar: pick(prof.avatar, a.author?.avatar),
       signedAt: a.author?.signedAt || stamp,
     };
   }

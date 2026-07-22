@@ -200,11 +200,15 @@ export async function completeOAuthLogin(code, returnedState) {
   if (data.meta?.accessToken) {
     try { sessionStorage.setItem(GOOGLE_TOKEN_KEY, JSON.stringify({ accessToken: data.meta.accessToken, expiry: data.meta.expiry || null })); } catch {}
   }
-  // Guarda la foto de Google en el perfil (se denormaliza en author al guardar →
-  // se ve en la página del autor). PB devuelve la URL en meta.avatarURL/avatarUrl.
+  // Sella nombre + foto de Google en la colección pública `profiles` (merge, no
+  // pisa colegio/frase). PB devuelve la URL de la foto en meta.avatarURL/avatarUrl.
   try {
     const avatar = data.meta?.avatarURL || data.meta?.avatarUrl || '';
-    if (avatar && data.record?.id) { const { setProfile } = await import('./profile.js'); setProfile(data.record.id, { avatar }); }
+    const name = data.record?.name || (data.record?.email ? data.record.email.split('@')[0] : '');
+    if (data.record?.id && (avatar || name)) {
+      const { saveProfile } = await import('./profile.js');
+      saveProfile(data.record.id, { ...(name ? { name } : {}), ...(avatar ? { avatar } : {}) }).catch(() => {});
+    }
   } catch {}
   notify();
   return data;

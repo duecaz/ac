@@ -77,6 +77,7 @@ los MISMOS campos y reglas (fuente de verdad en código: `views/adminView.js` DE
 | `activities` | `data` (json 5MB), `visibility` (`public`/`unlisted`), `tags`, `language`, `owner` (id del profe) | **SIN campos `created`/`updated`** (ver quirks). El JSON `data` lleva la actividad completa, incluido `author {id,name,signedAt}` denormalizado para las tarjetas. |
 | `activity_likes` | `activity`, `user` + índice ÚNICO (activity,user) | ❤ de la biblioteca. |
 | `reports` | `activity`, `by`, `reason` | 🚩 moderación. |
+| `profiles` | `owner`, `name`, `school`, `bio`, `avatar` + índice ÚNICO (owner) | 👤 Perfil PÚBLICO del profe (colegio/frase/avatar de Google), separado de `users` porque el email es privado. Fila id = id de usuario. Lectura pública; escritura solo del dueño. Lo lee la página `#/autor/:id`. |
 | `results` | activity_id, session_id, user_id, player_name, score_*, max_score, time_used… | Resultados de alumnos (anónimos). |
 | `live_sessions`, `assignments`, `assignment_attempts` | (ver `handoff-esquema-pb.md`) | En vivo y tareas. |
 

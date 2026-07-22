@@ -9,8 +9,7 @@ import { PB_URL } from '../pocketbase.config.js';
 import { pbEscape, pbFilterParam } from '../core/pbFilter.js';
 import { homePreviewHtml, previewBgStyle } from '../core/homePreview.js';
 import { getAuthUserId, getAuthName } from '../core/auth.js';
-import { getProfile, setProfile } from '../core/profile.js';
-import { list, save } from '../core/storage.js';
+import { fetchProfile, getLocalProfile, saveProfile } from '../core/profile.js';
 import { toast } from '../core/toast.js';
 
 export async function renderAuthor(rootSel, ownerId) {
@@ -79,14 +78,17 @@ export async function renderAuthor(rootSel, ownerId) {
     }
     rows.sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
 
-    // Deriva el perfil mostrado.
-    const fromRows = rows.find(a => a.author && (a.author.school || a.author.bio || a.author.avatar || a.author.name))?.author || {};
-    if (isOwner) {
-      const p = getProfile(ownerId);
-      profile = { name: getAuthName() || fromRows.name || 'Profesor', school: p.school ?? fromRows.school ?? '', bio: p.bio ?? fromRows.bio ?? '', avatar: p.avatar || fromRows.avatar || '' };
-    } else {
-      profile = { name: fromRows.name || 'Profesor', school: fromRows.school || '', bio: fromRows.bio || '', avatar: fromRows.avatar || '' };
-    }
+    // Perfil desde la colección pública `profiles` (fuente de verdad). Respaldo: el
+    // nombre etiquetado en las actividades, o el local (para el dueño, pintado ya).
+    const nameFromRows = rows.find(a => a.author?.name)?.author?.name || '';
+    const local = isOwner ? getLocalProfile(ownerId) : {};
+    const remote = await fetchProfile(ownerId);
+    profile = {
+      name: remote.name || nameFromRows || (isOwner ? getAuthName() : '') || 'Profesor',
+      school: remote.school || local.school || '',
+      bio: remote.bio || local.bio || '',
+      avatar: remote.avatar || local.avatar || '',
+    };
     paintHead();
 
     const grid = document.getElementById('au-grid');
@@ -126,16 +128,17 @@ export async function renderAuthor(rootSel, ownerId) {
     const school = (document.getElementById('au-school')?.value || '').trim();
     const bio = (document.getElementById('au-bio')?.value || '').trim();
     b.disabled = true;
-    setProfile(ownerId, { school, bio });
-    profile = { ...profile, school, bio };
-    // Re-sella author en TODAS mis actividades (save re-denormaliza el perfil) para
-    // que las públicas muestren el dato nuevo. Best-effort; local siempre queda.
     try {
-      for (const a of list()) { if (a.author?.id === ownerId || !a.author?.id) save(a, { keepUpdatedAt: true }); }
+      // Un solo sitio que actualizar: la fila `profiles` (no cada actividad).
+      const merged = await saveProfile(ownerId, { name: getAuthName() || profile.name, school, bio });
+      profile = { ...profile, ...merged };
       toast('Perfil actualizado.', 'success');
-    } catch (e) { toast('Perfil guardado localmente; algunas actividades no se sincronizaron.', 'warning', 5000); }
-    paintHead();
-    paintEditForm(false);
+      paintHead();
+      paintEditForm(false);
+    } catch (e) {
+      toast('No se pudo guardar el perfil: ' + e.message, 'danger', 5000);
+      b.disabled = false;
+    }
   });
 
   load();

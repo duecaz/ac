@@ -87,6 +87,17 @@ $defs = @(
        updateRule=$null; deleteRule='@request.auth.role = "admin"'
      } },
 
+  # Perfil PÚBLICO del profe (colegio/frase/avatar) — separado de users (email privado).
+  @{ name = "profiles";
+     fields = @( @{ name="owner"; type="text"; required=$true }, @{ name="name"; type="text" }, @{ name="school"; type="text" }, @{ name="bio"; type="text" }, @{ name="avatar"; type="text" } );
+     indexes = @( "CREATE UNIQUE INDEX ``idx_profile_owner`` ON ``profiles`` (``owner``)" );
+     rules = @{
+       listRule=""; viewRule="";
+       createRule='@request.auth.id != "" && owner = @request.auth.id';
+       updateRule='owner = @request.auth.id';
+       deleteRule='owner = @request.auth.id'
+     } },
+
   @{ name = "results";
      fields = @(
        @{ name="activity_id"; type="text" }, @{ name="session_id"; type="text" }, @{ name="user_id"; type="text" },

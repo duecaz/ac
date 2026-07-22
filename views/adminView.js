@@ -586,6 +586,16 @@ function renderPanel(rootSel) {
           { name: 'by',       type: 'text' },
           { name: 'reason',   type: 'text' },
         ]},
+        // 👤 Perfil PÚBLICO del profe (colegio, frase, avatar): separado de `users`
+        // (privada por el email). Lectura pública; escritura solo del dueño. Una fila
+        // por profe (id de fila = id de usuario). Ver core/profile.js.
+        { name: 'profiles', fields: [
+          { name: 'owner',  type: 'text', required: true },
+          { name: 'name',   type: 'text' },
+          { name: 'school', type: 'text' },
+          { name: 'bio',    type: 'text' },
+          { name: 'avatar', type: 'text' },
+        ], indexes: ['CREATE UNIQUE INDEX `idx_profile_owner` ON `profiles` (`owner`)'] },
       ];
 
       // En PB ≥0.23 la clave del esquema es `fields`; en <0.23 es `schema`. Los
@@ -634,10 +644,19 @@ function renderPanel(rootSel) {
         updateRule: null,
         deleteRule: ADMIN,
       };
+      // Perfiles: lectura PÚBLICA (la página del autor la ve cualquiera); crear/editar/
+      // borrar SOLO el dueño (owner = yo). El email nunca vive aquí (está en users).
+      const profilesRules = {
+        listRule: '', viewRule: '',
+        createRule: "@request.auth.id != '' && owner = @request.auth.id",
+        updateRule: 'owner = @request.auth.id',
+        deleteRule: 'owner = @request.auth.id',
+      };
       const rulesFor = (name) =>
         name === 'activities' ? activityRules :
         name === 'activity_likes' ? likesRules :
-        name === 'reports' ? reportsRules : publicRules;
+        name === 'reports' ? reportsRules :
+        name === 'profiles' ? profilesRules : publicRules;
       // En PB ≥0.23 los campos created/updated NO se añaden solos al crear por API,
       // y el store ordena resultados por `sort=-created` → hay que crearlos como
       // autodate. En <0.23 se añaden automáticamente, así que no los duplicamos.
