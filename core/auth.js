@@ -36,7 +36,12 @@ export function getAuthUserId() {
 // Rol del profe (campo `role` del record de usuario en PB). 'admin' → puede
 // moderar/editar/borrar cualquier actividad y ver los reportes (S3).
 export function getAuthRole() {
-  return loadStored()?.record?.role || null;
+  // Tolerante a la mayúscula del campo (role / Role): el CLIENTE funciona con
+  // cualquiera. OJO: las REGLAS de PocketBase usan `@request.auth.role` (minúscula),
+  // así que para que el servidor también te reconozca como admin el campo en PB
+  // debe llamarse `role` en minúscula.
+  const rec = loadStored()?.record || {};
+  return rec.role || rec.Role || null;
 }
 export function isAdmin() {
   return getAuthRole() === 'admin';
