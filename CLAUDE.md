@@ -55,6 +55,8 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | Índice completo de docs | `docs/README.md` (lo histórico vive en `docs/historico/`) |
 | **Bugs abiertos / deuda** | la sección "Deuda técnica registrada" (abajo) + notas `docs/handoff-*.md` |
 | **Plan biblioteca pública** (portada, likes, gate de login, admin) | **`docs/handoff-biblioteca-publica.md`** (+ `handoff-google-classroom.md` y `handoff-seguridad-pb.md`) |
+| **Cómo está la BD/Pi de VERDAD** (PocketBase, Docker, backups, OAuth Google, quirks) | **`docs/infraestructura-pb.md`** (fuente de infra; actualizar si cambia el servidor) |
+| **Plan de usuarios/acceso docente** (endurecer reglas, PIN, NFC, pizarras, panel profes) | **`docs/handoff-acceso-docente.md`** (incluye auditoría del sistema de usuarios) |
 
 Verificar SIEMPRE antes de commitear: `node tests/run.mjs` (todas las suites). El contrato,
 las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecutar tests".
