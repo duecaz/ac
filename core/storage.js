@@ -2,6 +2,7 @@ import { getRemoteStore } from '../adapters/index.js';
 import { migrate, normalize } from './migrate.js';
 import { mergeRemote } from './storageMerge.js';
 import { lsGet, lsSet } from './ls.js';
+import { getAuthUserId, getAuthName } from './auth.js';
 
 const LEGACY_KEY = 'ww.activities';
 const TOMBSTONE_KEY = 'ww.tombstones';   // { [id]: ISOString } — borrados pendientes de confirmar en remoto
@@ -89,6 +90,14 @@ export async function getRemote(id) {
 export function save(activity, { keepUpdatedAt = false } = {}) {
   const stamp = keepUpdatedAt && activity.updatedAt ? activity.updatedAt : new Date().toISOString();
   const a = normalize({ ...activity, updatedAt: stamp });
+  // Sella el AUTOR (denormalizado en el JSON) la primera vez que un profe logueado
+  // guarda: sirve para mostrar "por X" en las tarjetas públicas y enlazar a su
+  // perfil (#/autor/:id). Solo se sella si aún no tiene autor (los forks lo
+  // resetean → toman al que duplica). El `owner` de PB (permisos) lo pone remoteStore.
+  const uid = getAuthUserId();
+  if (uid && !a.author?.id) {
+    a.author = { id: uid, name: getAuthName() || 'Profe', signedAt: a.author?.signedAt || stamp };
+  }
   // _unsynced OPTIMISTA (P1-3): marca pendiente ANTES del remoto. Si la pestaña
   // se cierra con el PATCH en vuelo, el registro queda flagueado y retryUnsynced
   // lo recupera; antes se borraba el flag por adelantado y la edición divergía

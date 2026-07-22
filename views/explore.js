@@ -90,6 +90,7 @@ export async function renderExplore(rootSel) {
               <small class="text-muted">${escapeHtml(r.language || 'es')}</small>
             </div>
             <h5 class="card-title mt-2">${escapeHtml(a.title || '')}</h5>
+            ${a.author?.id ? `<a class="lp-author d-block mb-1" href="#/autor/${escapeHtml(a.author.id)}">por ${escapeHtml(a.author.name || 'Profesor')}</a>` : ''}
             <p class="card-text small text-muted">${escapeHtml(a.subtitle || '')}</p>
             <div>${tags.map(t => `<span class="badge bg-light text-dark border">${escapeHtml(t)}</span>`).join(' ')}</div>
           </div>

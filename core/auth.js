@@ -33,6 +33,11 @@ export function getAuthToken() {
 export function getAuthUserId() {
   return loadStored()?.record?.id || null;
 }
+// Nombre visible del profe (para sellar el autor de las actividades y mostrarlo).
+export function getAuthName() {
+  const rec = loadStored()?.record || {};
+  return rec.name || (rec.email ? rec.email.split('@')[0] : null);
+}
 // Rol del profe (campo `role` del record de usuario en PB). 'admin' → puede
 // moderar/editar/borrar cualquier actividad y ver los reportes (S3).
 export function getAuthRole() {

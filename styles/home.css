@@ -557,3 +557,7 @@ body {
 .login-modal__submit:hover { background: #1d4ed8; }
 .login-modal__submit:disabled { opacity: .6; cursor: default; }
 .login-modal__toggle { margin-top: 14px; background: transparent; border: 0; color: #2563eb; font-size: 13px; cursor: pointer; }
+
+/* Autor en tarjetas públicas (landing/explore/perfil) */
+.lp-author { color: #2563eb; font-size: 13px; font-weight: 600; text-decoration: none; }
+.lp-author:hover { text-decoration: underline; }

@@ -97,6 +97,7 @@ export async function renderLanding(rootSel) {
             </button>
           </div>
           <h3 class="acard-title">${escapeHtml(a.title || 'Sin título')}</h3>
+          ${a.author?.id ? `<a class="lp-author" href="#/autor/${escapeHtml(a.author.id)}">por ${escapeHtml(a.author.name || 'Profesor')}</a>` : ''}
           <button class="btn-primary-solid w-100 lp-play" data-play="${escapeHtml(a.id)}"><i class="bi bi-play-fill"></i> Jugar</button>
         </div>
       </article>`;
