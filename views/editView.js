@@ -33,10 +33,9 @@ export function renderEditView(rootSel, { id, template }) {
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
       <a href="#/home" class="btn btn-link"><i class="bi bi-arrow-left"></i> Volver</a>
       <div class="d-flex gap-2 align-items-center flex-wrap">
-        <select id="meta-vis" class="form-select form-select-sm" style="width:160px" title="¿Aparece en la biblioteca pública?">
-          <option value="unlisted" ${activity.visibility!=='public'?'selected':''}>📝 Borrador</option>
-          <option value="public" ${activity.visibility==='public'?'selected':''}>🌍 Publicada</option>
-        </select>
+        <span id="vis-badge" class="badge ${activity.visibility==='public'?'bg-success':'bg-secondary'}" title="Estado de publicación">
+          ${activity.visibility==='public' ? '<i class="bi bi-globe"></i> Pública' : '<i class="bi bi-eye-slash"></i> Borrador'}
+        </span>
         <input id="meta-tags" class="form-control form-control-sm" style="width:200px" placeholder="tags (coma)" value="${escapeHtml((activity.tags||[]).join(', '))}">
         <select id="meta-lang" class="form-select form-select-sm" style="width:100px">
           <option value="es" ${activity.language==='es'?'selected':''}>es</option>
@@ -77,7 +76,8 @@ export function renderEditView(rootSel, { id, template }) {
       <div class="d-flex gap-2">
         <button class="btn btn-outline-secondary btn-sm" id="btn-export" title="Exportar JSON"><i class="bi bi-file-earmark-arrow-down"></i> JSON</button>
         <button class="btn btn-outline-success btn-sm" id="btn-test"><i class="bi bi-play-fill"></i> Probar</button>
-        <button class="btn btn-primary btn-sm" id="btn-save"><i class="bi bi-cloud-arrow-up"></i> Guardar</button>
+        <button class="btn btn-outline-secondary btn-sm" id="btn-save-draft" title="Guardar sin publicar (solo tú la ves)"><i class="bi bi-eye-slash"></i> Guardar borrador</button>
+        <button class="btn btn-primary btn-sm" id="btn-publish" title="Publicar en la biblioteca (visible para todos)"><i class="bi bi-globe"></i> ${activity.visibility==='public'?'Actualizar publicación':'Publicar'}</button>
       </div>
     </div>
   `);
@@ -101,8 +101,23 @@ export function renderEditView(rootSel, { id, template }) {
     autosaveTimer = ctx.setTimeout(() => doSave(true), AUTOSAVE_DELAY_MS);
   }
 
-  async function doSave(silent = false) {
+  // Refleja el estado público/borrador en el badge y en el botón de publicar.
+  function paintVis() {
+    const badge = document.getElementById('vis-badge');
+    if (badge) {
+      const pub = activity.visibility === 'public';
+      badge.className = `badge ${pub ? 'bg-success' : 'bg-secondary'}`;
+      badge.innerHTML = pub ? '<i class="bi bi-globe"></i> Pública' : '<i class="bi bi-eye-slash"></i> Borrador';
+    }
+    const pubBtn = document.getElementById('btn-publish');
+    if (pubBtn) pubBtn.innerHTML = `<i class="bi bi-globe"></i> ${activity.visibility === 'public' ? 'Actualizar publicación' : 'Publicar'}`;
+  }
+
+  // setVis: 'public' | 'unlisted' | null. Los botones fijan la visibilidad de forma
+  // EXPLÍCITA (Guardar borrador vs Publicar); el autosave (silent) la respeta (null).
+  async function doSave(silent = false, setVis = null) {
     if (saving) return;
+    if (setVis) { activity.visibility = setVis; paintVis(); }
     saving = true;
     setState('Guardando…', 'info', 'bi-cloud-arrow-up');
     // P1-6: avisa (una vez) si la actividad se acerca a ser insincronizable por
@@ -125,7 +140,7 @@ export function renderEditView(rootSel, { id, template }) {
       await remote;
       dirty = false;
       setState('Guardado', 'success', 'bi-check-circle-fill');
-      if (!silent) toast('Guardado correctamente.', 'success');
+      if (!silent) toast(activity.visibility === 'public' ? 'Publicada en la biblioteca ✓ Ya aparece en Explorar.' : 'Guardado como borrador (solo tú la ves).', 'success');
     } catch (e) {
       setState('Error al sincronizar (queda local)', 'danger', 'bi-exclamation-triangle-fill');
       if (!silent) toast('No se pudo sincronizar: ' + e.message, 'danger', 6000);
@@ -135,7 +150,6 @@ export function renderEditView(rootSel, { id, template }) {
   }
 
   // Edit-meta handlers.
-  on(rootSel, 'change', '#meta-vis', e => { activity.visibility = e.target.value; markDirty(); });
   on(rootSel, 'input', '#meta-tags', e => { activity.tags = e.target.value.split(',').map(s=>s.trim()).filter(Boolean); markDirty(); });
   on(rootSel, 'change', '#meta-lang', e => { activity.language = e.target.value; markDirty(); });
 
@@ -160,7 +174,8 @@ export function renderEditView(rootSel, { id, template }) {
   });
 
   on(rootSel, 'click', '#btn-export', () => downloadActivitiesJson([activity.id]));
-  on(rootSel, 'click', '#btn-save', () => doSave(false));
+  on(rootSel, 'click', '#btn-save-draft', () => doSave(false, 'unlisted'));
+  on(rootSel, 'click', '#btn-publish', () => doSave(false, 'public'));
   on(rootSel, 'click', '#btn-test', async () => {
     if (dirty) await doSave(true);
     navigate(`#/play/${activity.id}`);

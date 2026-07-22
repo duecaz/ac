@@ -200,6 +200,12 @@ export async function completeOAuthLogin(code, returnedState) {
   if (data.meta?.accessToken) {
     try { sessionStorage.setItem(GOOGLE_TOKEN_KEY, JSON.stringify({ accessToken: data.meta.accessToken, expiry: data.meta.expiry || null })); } catch {}
   }
+  // Guarda la foto de Google en el perfil (se denormaliza en author al guardar →
+  // se ve en la página del autor). PB devuelve la URL en meta.avatarURL/avatarUrl.
+  try {
+    const avatar = data.meta?.avatarURL || data.meta?.avatarUrl || '';
+    if (avatar && data.record?.id) { const { setProfile } = await import('./profile.js'); setProfile(data.record.id, { avatar }); }
+  } catch {}
   notify();
   return data;
 }
