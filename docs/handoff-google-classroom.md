@@ -55,21 +55,44 @@
 
 ---
 
-## Fase B — Enviar tareas a Google Classroom (siguiente)
-Base ya lista: tras el login, `getGoogleAccessToken()` da el token de Google.
-Plan (cuando lo abordemos):
-1. **Scopes**: añadir en PB/Google el scope
-   `https://www.googleapis.com/auth/classroom.coursework.students` (crear tareas) y
-   `.../auth/classroom.courses.readonly` (listar cursos). Son "sensibles" → en modo
-   Testing con tus usuarios de prueba NO requieren verificación; para abrirlo a
-   cualquier profe, sí hay que verificar la pantalla de consentimiento.
-2. **Reparto como canal** (simple, reutiliza tus `assignments`): en la vista de
-   tarea, botón "Enviar a Classroom" → `GET courses` (elegir curso) →
-   `POST courses/{id}/courseWork` con un `link` a `student.html#/task/:code`. El
-   alumno abre desde Classroom y cae en el flujo de tarea de siempre. Sin sincronizar
-   listas ni notas al principio.
-3. **Caducidad del token** (~1 h): para envíos en la misma sesión, directo con el
-   token del login. Para envíos en diferido / robustos → **hook JS server-side en tu
-   PocketBase** (pb_hooks) que refresque el token de Google y llame a Classroom; así
-   el refresh token no vive en el navegador. Tú controlas la Pi → viable.
-4. **Grade passback** (devolver notas a Classroom): fase posterior, más scopes.
+## Fase B — Enviar tareas a Google Classroom ✅ IMPLEMENTADA (v1.51.229)
+
+### Qué hace el código
+- Botón **"Classroom"** en cada tarea abierta (`views/assignments.js`) → lista tus
+  cursos activos → eliges uno (`core/coursePicker.js`) → publica una tarea con
+  **enlace** a `student.html#/task/:code`. El alumno la abre desde Classroom y cae en el
+  flujo de tarea de siempre. Sin sincronizar listas ni notas (eso es fase posterior).
+- `core/classroom.js`: `listCourses()` + `createCourseworkLink(courseId, {...})` contra
+  `classroom.googleapis.com`. Parte la fecha límite en `dueDate`+`dueTime` (UTC).
+
+### El punto CLAVE — los scopes (por qué NO basta el login)
+El token del login de PocketBase solo trae `email`/`profile`/`openid` (PocketBase pide
+scopes fijos para Google; no reenvía los de Classroom). Por eso Classroom usa
+**autorización incremental con Google Identity Services (GIS)**
+(`core/classroomAuth.js`): la primera vez que pulsas "Classroom", Google pide aparte el
+consentimiento de estos scopes y cachea ese token ~55 min en sessionStorage:
+- `https://www.googleapis.com/auth/classroom.courses.readonly` (listar cursos)
+- `https://www.googleapis.com/auth/classroom.coursework.students` (crear tareas)
+
+### Config necesaria (una vez, tú)
+1. **`pocketbase.config.js` → `GOOGLE_CLIENT_ID`**: pon tu Client ID público
+   (`…apps.googleusercontent.com`, el mismo del login). Vacío = el botón avisa de que
+   falta configurarlo. (Es público, no es el secret — no pasa nada por commitearlo.)
+2. **Google Cloud → APIs y servicios**:
+   - **Habilita la API "Google Classroom API"** en la biblioteca de APIs.
+   - **Pantalla de consentimiento → Scopes**: añade los dos scopes de Classroom de
+     arriba. Son "sensibles": en modo **Testing** con tus usuarios de prueba funcionan
+     SIN verificación de Google; para abrirlo a cualquier profe (Producción) hay que
+     verificar la pantalla de consentimiento.
+   - **Orígenes autorizados de JavaScript** del cliente OAuth: debe estar
+     `https://aulareto.com` (GIS usa el origin, no una redirect URI).
+3. Listo: entra normal (Google), crea una tarea y pulsa **Classroom** → acepta el
+   permiso extra la primera vez → elige curso → publicada.
+
+### Notas
+- Errores claros: sin `GOOGLE_CLIENT_ID` → avisa; 401/403 por scopes → fuerza el
+  consentimiento y reintenta una vez; sin cursos → lo dice.
+- **Caducidad**: para envíos en la misma sesión, directo. Para envíos en diferido /
+  robustos → hook JS en la Pi (`pb_hooks`) que refresque el token de Google server-side
+  (el refresh token no viviría en el navegador). Tú controlas la Pi → viable a futuro.
+- **Grade passback** (devolver notas a Classroom): fase posterior, más scopes.

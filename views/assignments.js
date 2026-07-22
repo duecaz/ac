@@ -59,9 +59,10 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
                     <div class="small text-muted">PIN <code>${escapeHtml(t.code)}</code> · ${escapeHtml(due)} · máx ${t.max_attempts} intento(s)</div>
                     <div class="small"><a href="${url}" target="_blank">${url}</a></div>
                   </div>
-                  <div class="d-flex gap-2">
+                  <div class="d-flex gap-2 flex-wrap">
                     <a href="#/task/${t.id}/attempts" class="btn btn-sm btn-outline-primary">Intentos</a>
                     <button class="btn btn-sm btn-outline-secondary copy" data-url="${escapeHtml(url)}" title="Copiar URL"><i class="bi bi-clipboard"></i></button>
+                    ${t.status !== 'closed' ? `<button class="btn btn-sm btn-outline-success gclass" data-url="${escapeHtml(url)}" data-title="${escapeHtml(t.title || a.title)}" data-due="${escapeHtml(t.due_at || '')}" title="Enviar a Google Classroom"><i class="bi bi-google"></i> Classroom</button>` : ''}
                     ${t.status !== 'closed' ? `<button class="btn btn-sm btn-outline-warning rotate-t" data-id="${t.id}" title="Rotar PIN"><i class="bi bi-arrow-repeat"></i></button>` : ''}
                     ${t.status !== 'closed' ? `<button class="btn btn-sm btn-outline-danger close-t" data-id="${t.id}" title="Cerrar tarea"><i class="bi bi-x-lg"></i></button>` : ''}
                   </div>
@@ -85,6 +86,27 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
       navigator.clipboard?.writeText(b.dataset.url);
       b.innerHTML = '<i class="bi bi-check"></i>';
       setTimeout(() => b.innerHTML = '<i class="bi bi-clipboard"></i>', 1200);
+    });
+    on(rootSel, 'click', '.gclass', async (_, b) => {
+      const { listCourses, createCourseworkLink } = await import('../core/classroom.js');
+      const { pickCourse } = await import('../core/coursePicker.js');
+      b.disabled = true;
+      try {
+        const courses = await listCourses();
+        if (!courses.length) { toast('No tienes cursos activos en Classroom (o tu sesión no ve ninguno).', 'info', 5000); return; }
+        const courseId = await pickCourse(courses);
+        if (!courseId) return;
+        const res = await createCourseworkLink(courseId, {
+          title: b.dataset.title,
+          description: 'Abre el enlace para hacer la actividad en AulaReto.',
+          link: b.dataset.url,
+          dueAt: b.dataset.due || null,
+        });
+        toast('Tarea publicada en Classroom ✓', 'success', 4000);
+        if (res.link) window.open(res.link, '_blank');
+      } catch (e) {
+        toast('Classroom: ' + (e.message || 'no se pudo enviar'), 'danger', 7000);
+      } finally { b.disabled = false; }
     });
     on(rootSel, 'click', '.rotate-t', async (_, b) => {
       const ok = await confirmModal('¿Rotar el PIN? El antiguo dejará de funcionar.', { okText: 'Rotar', danger: false });

@@ -123,13 +123,18 @@ Independiente de esto; solo requiere sesión Google (ya guardamos `meta.accessTo
 
 ## 3. Consejos NFC (hardware y captura) — leído ANTES de comprar
 
-- **Lector recomendado: USB que emula TECLADO (HID)** — "acerca la tarjeta y el lector
-  *teclea* el UID + Enter". Funciona en CUALQUIER pizarra/OS/navegador sin drivers ni
-  permisos. Buscar lectores 13.56 MHz (Mifare/NTAG) con "keyboard emulation"; configurar
-  salida = UID decimal o hex + Enter.
-- **Web NFC (NDEFReader) NO sirve de plan A**: solo Chrome en Android; las pizarras
-  suelen llevar navegadores raros o Windows. Puede quedar como extra si la pizarra es
-  Android+Chrome.
+- **Contexto confirmado por el usuario**: las pizarras son **táctiles con lector NFC
+  integrado** → esto cambia el plan A. Si el navegador de la pizarra es **Chrome sobre
+  Android**, **Web NFC (`NDEFReader`) pasa a ser el plan A** (nativo, sin hardware extra):
+  `new NDEFReader().scan()` y en el evento leer `serialNumber` (el UID) → `nfc-login`.
+  Requiere HTTPS (lo tenemos) y un gesto del usuario para pedir permiso NFC.
+- **Plan B universal — lector USB que emula TECLADO (HID)**: para pizarras que NO sean
+  Android/Chrome (Windows, WebView raro). "Acerca la tarjeta y el lector *teclea* el UID +
+  Enter"; funciona en cualquier OS/navegador sin drivers. 13.56 MHz (Mifare/NTAG) con
+  "keyboard emulation". La app detecta la ráfaga rápida de teclas (§captura).
+- **Detección**: probar `('NDEFReader' in window)` → si existe, ofrecer "acerca tu
+  tarjeta" con Web NFC; si no, el capturador de teclado HID queda activo de fondo. Así la
+  misma pantalla `#/pizarra` cubre ambos tipos de pizarra sin que el docente elija nada.
 - **Captura en la app** (`#/pizarra`): sin input visible — un buffer global de teclas que
   detecta "ráfaga rápida de [0-9a-f] terminada en Enter" (los HID teclean a <30 ms/tecla,
   un humano no) → eso dispara `nfc-login` sin que el docente toque nada.
