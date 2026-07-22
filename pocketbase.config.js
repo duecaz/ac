@@ -9,4 +9,4 @@ export const PB_URL = 'https://pb.lanube.uno';
 // Rellénalo con tu Client ID (…apps.googleusercontent.com). Vacío = el botón
 // "Enviar a Classroom" avisará de que falta configurarlo.
 // Ver docs/handoff-google-classroom.md (Fase B).
-export const GOOGLE_CLIENT_ID = '';
+export const GOOGLE_CLIENT_ID = '12847638894-1e7kunkuvss2r530im0pdlkgg9crs5ql.apps.googleusercontent.com';
