@@ -82,16 +82,22 @@ los MISMOS campos y reglas (fuente de verdad en código: `views/adminView.js` DE
 
 ### Reglas de acceso vigentes (resumen)
 
-- `activities`: list/view = `visibility='public' || owner='' || owner=@request.auth.id || @request.auth.role='admin'`;
-  update/delete = mismo OWN; **create = '' (abierto)**.
-  ⚠️ Las cláusulas `owner=''` y el create abierto son **TRANSITORIAS** — endurecerlas es
-  la fase U1 de `handoff-acceso-docente.md` (ya se puede: la BD arrancó limpia).
+- `activities` (**ENDURECIDO U1**, v1.51.228): list/view =
+  `visibility='public' || owner=@request.auth.id || @request.auth.role='admin'`;
+  create = `@request.auth.id != '' && owner=@request.auth.id` (crear exige sesión y ser tu
+  propio owner); update/delete = `owner=@request.auth.id || role='admin'`. Ya **no** hay
+  cláusula transitoria `owner=''` (la BD arrancó limpia). → un anónimo no crea filas y
+  nadie edita/borra ajenas salvo admin.
 - `activity_likes`: leer público; crear/borrar solo el propio (`user=@request.auth.id`).
 - `reports`: crear con sesión; listar/borrar solo admin.
 - `results`, `live_sessions`, `assignments`, `assignment_attempts`: **públicas** (alumnos
   anónimos). Riesgo conocido y aceptado por ahora (deuda: auditoría Fable P0).
-- `users`: view = uno mismo o admin; list = solo admin; **create abierto** (signup público
-  — a cerrar en U1).
+- `users` (**ENDURECIDO U1**): view = uno mismo o admin; list = solo admin;
+  **create = solo admin** (`@request.auth.role='admin'`). El signup público por correo se
+  cerró; el alta de autoservicio queda por Google (OAuth **no** pasa por createRule en PB,
+  así que el primer login con Google sigue creando su user). Las cuentas de correo para
+  pizarras las crea el admin (panel Profesores). Aplicado por `setup-pocketbase.ps1`
+  (`Apply-Users`), no por el panel `#/admin` (que no toca `users`).
 
 ### Quirks de PB 0.23 que YA nos mordieron (no repetir)
 

@@ -97,6 +97,10 @@ export function save(activity, { keepUpdatedAt = false } = {}) {
   const uid = getAuthUserId();
   if (uid && !a.author?.id) {
     a.author = { id: uid, name: getAuthName() || 'Profe', signedAt: a.author?.signedAt || stamp };
+  } else if (uid && a.author?.id === uid) {
+    // El autor soy yo: refresca el nombre visible por si me renombré (antes las
+    // tarjetas viejas se quedaban con el nombre antiguo para siempre).
+    a.author = { ...a.author, name: getAuthName() || a.author.name || 'Profe' };
   }
   // _unsynced OPTIMISTA (P1-3): marca pendiente ANTES del remoto. Si la pestaña
   // se cierra con el PATCH en vuelo, el registro queda flagueado y retryUnsynced

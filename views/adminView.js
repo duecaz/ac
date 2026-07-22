@@ -19,7 +19,8 @@ import { listVsAnimations } from '../core/vsAnimations.js';
 import { loadCustomAnims, addCustomAnim, removeCustomAnim } from '../core/vsAnimStore.js';
 import { DEFAULT_WORDS, getWordList, setWordList, resetWordList } from '../core/liveWords.js';
 import { recentErrors, clearErrors } from '../core/errorLog.js';
-import { isAdmin, createTeacher } from '../core/auth.js';
+import { isAdmin, createTeacher, getAuthUserId } from '../core/auth.js';
+import { listTeachers, setTeacherRole, countActivitiesByOwner } from '../core/teachers.js';
 
 // Admin UNIFICADO (auth v2): el acceso es por ROL de Google (isAdmin), no por
 // contraseña local. Solo un profe con role='admin' entra. La contraseña 'fernando'
@@ -55,14 +56,17 @@ function renderPanel(rootSel) {
       <h3><i class="bi bi-shield-lock"></i> Panel de administración</h3>
 
       <h5 class="mt-3"><i class="bi bi-people"></i> Profesores</h5>
-      <p class="text-muted small mb-2">Crea una cuenta con correo + contraseña para que un profe entre en una pizarra sin cuenta de Google. Para hacer admin a alguien, pon <code>role = admin</code> en su fila de la colección <code>users</code> (PocketBase).</p>
+      <p class="text-muted small mb-2">Crea una cuenta con correo + contraseña para que un profe entre en una pizarra sin cuenta de Google. Da o quita <b>admin</b> desde la tabla (moderación global).</p>
       <div class="d-flex flex-wrap gap-2 mb-1" style="max-width:640px">
         <input id="teach-name" class="form-control form-control-sm" style="width:150px" placeholder="Nombre">
         <input id="teach-email" class="form-control form-control-sm" style="width:200px" type="email" placeholder="Correo">
         <input id="teach-pass" class="form-control form-control-sm" style="width:150px" type="text" placeholder="Contraseña (mín 8)">
         <button id="teach-create" class="btn btn-primary btn-sm"><i class="bi bi-person-plus"></i> Crear profesor</button>
       </div>
-      <div id="teach-msg" class="small mb-3"></div>
+      <div id="teach-msg" class="small mb-2"></div>
+      <div id="teach-list" class="table-responsive mb-3">
+        <div class="text-muted small"><span class="spinner-border spinner-border-sm me-1"></span>Cargando profesores…</div>
+      </div>
 
       <h5 class="mt-3">Datos</h5>
       <div class="d-flex flex-wrap gap-2 mb-3">
@@ -289,18 +293,64 @@ function renderPanel(rootSel) {
     }
   });
 
+  // Tabla de profesores (U5): lista users + nº de actividades + dar/quitar admin.
+  async function paintTeachers() {
+    const box = document.getElementById('teach-list');
+    if (!box) return;
+    const [teachers, counts] = await Promise.all([listTeachers(), countActivitiesByOwner()]);
+    if (!teachers.length) {
+      box.innerHTML = `<p class="text-muted small mb-0">No se pudo listar (¿sin permiso admin?) o no hay profesores todavía.</p>`;
+      return;
+    }
+    const me = getAuthUserId();
+    teachers.sort((a, b) => (a.name || a.email).localeCompare(b.name || b.email));
+    box.innerHTML = `<table class="table table-sm table-bordered align-middle mb-0">
+      <thead class="table-light"><tr><th>Nombre</th><th>Correo</th><th class="text-center">Actividades</th><th class="text-center">Rol</th><th></th></tr></thead>
+      <tbody>${teachers.map(t => {
+        const isA = t.role === 'admin';
+        const self = t.id === me;
+        return `<tr>
+          <td>${escapeHtml(t.name || '—')}</td>
+          <td class="small text-muted">${escapeHtml(t.email)}</td>
+          <td class="text-center">${counts[t.id] || 0}</td>
+          <td class="text-center">${isA ? '<span class="badge bg-warning text-dark">admin</span>' : '<span class="badge bg-light text-dark border">profe</span>'}</td>
+          <td class="text-end">
+            <button class="btn btn-sm ${isA ? 'btn-outline-secondary' : 'btn-outline-warning'} teach-role"
+              data-id="${escapeHtml(t.id)}" data-role="${isA ? '' : 'admin'}" ${self ? 'disabled title="No te cambies el rol a ti mismo"' : ''}>
+              ${isA ? '<i class="bi bi-shield-minus"></i> Quitar admin' : '<i class="bi bi-shield-plus"></i> Hacer admin'}
+            </button>
+          </td>
+        </tr>`;
+      }).join('')}</tbody></table>`;
+  }
+  paintTeachers().catch(() => {});
+
+  on(rootSel, 'click', '.teach-role', async (_, b) => {
+    const id = b.dataset.id, role = b.dataset.role;
+    b.disabled = true;
+    try {
+      await setTeacherRole(id, role);
+      toast(role === 'admin' ? 'Ahora es admin.' : 'Admin retirado.', 'success');
+      await paintTeachers();
+    } catch (e) {
+      toast('No se pudo cambiar el rol: ' + e.message, 'danger', 5000);
+      b.disabled = false;
+    }
+  });
+
   on(rootSel, 'click', '#teach-create', async () => {
     const name = document.getElementById('teach-name')?.value.trim();
     const email = document.getElementById('teach-email')?.value.trim();
     const pass = document.getElementById('teach-pass')?.value || '';
     const msg = document.getElementById('teach-msg');
-    if (!email || pass.length < 8) { if (msg) { msg.className = 'small mb-3 text-danger'; msg.textContent = 'Correo válido y contraseña de al menos 8 caracteres.'; } return; }
+    if (!email || pass.length < 8) { if (msg) { msg.className = 'small mb-2 text-danger'; msg.textContent = 'Correo válido y contraseña de al menos 8 caracteres.'; } return; }
     try {
       await createTeacher(email, pass, name);
-      if (msg) { msg.className = 'small mb-3 text-success'; msg.textContent = `Profesor creado: ${email} (contraseña: ${pass}). Apúntala.`; }
+      if (msg) { msg.className = 'small mb-2 text-success'; msg.textContent = `Profesor creado: ${email} (contraseña: ${pass}). Apúntala.`; }
       ['teach-name','teach-email','teach-pass'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      await paintTeachers();
     } catch (e) {
-      if (msg) { msg.className = 'small mb-3 text-danger'; msg.textContent = 'No se pudo crear: ' + e.message; }
+      if (msg) { msg.className = 'small mb-2 text-danger'; msg.textContent = 'No se pudo crear: ' + e.message; }
     }
   });
   on(rootSel, 'click', '#admin-export', () => downloadActivitiesJson());
@@ -552,25 +602,20 @@ function renderPanel(rootSel) {
       // Reglas públicas (sin auth) — se mantienen en las colecciones que tocan
       // alumnos anónimos (results, live_*, assignments). Ver docs/handoff-seguridad-pb.md.
       const publicRules = { listRule: '', viewRule: '', createRule: '', updateRule: '', deleteRule: '' };
-      // Reglas de `activities` (Fase 1): protegen el contenido del profe. Un alumno
-      // (o un profe distinto) ya NO puede editar/borrar actividades ajenas. La
-      // cláusula `owner = ''` es TRANSITORIA: deja operar las actividades legadas
-      // (sin owner) hasta que se haga el backfill; después se puede endurecer a solo
-      // `owner = @request.auth.id`. crear no exige login (no romper flujo actual).
-      // ADMIN (S3): un usuario con role='admin' puede editar/borrar CUALQUIER
-      // actividad y moderar. La cláusula es ADITIVA — solo concede permisos, nunca
-      // bloquea — así aplicarla nunca deja a nadie fuera. La cláusula transitoria
-      // `owner = ''` se mantiene (endurecer = quitarla, paso manual tras el claim;
-      // ver docs/handoff-biblioteca-publica.md S3).
+      // Reglas de `activities` (U1 — ENDURECIDAS): protegen el contenido del profe.
+      // Ya NO hay cláusula transitoria `owner = ''` (la BD arrancó limpia, no quedan
+      // legadas que proteger) y crear EXIGE sesión y que seas tu propio owner → un
+      // anónimo no puede crear filas ni un profe editar/borrar ajenas.
+      // ADMIN (S3): un usuario con role='admin' puede editar/borrar/moderar CUALQUIER
+      // actividad. La cláusula es ADITIVA (solo concede permisos, nunca bloquea).
       const ADMIN = "@request.auth.role = 'admin'";
-      const OWN = `owner = '' || owner = @request.auth.id || ${ADMIN}`;
+      const OWN = `owner = @request.auth.id || ${ADMIN}`;
       const activityRules = {
         listRule: `visibility = 'public' || ${OWN}`,
         viewRule: `visibility = 'public' || ${OWN}`,
-        // createRule permisivo por ahora (el GATE de cliente ya exige login para
-        // crear). Endurecer a "@request.auth.id != ''" + quitar `owner=''` es el
-        // paso manual de S3, TRAS confirmar que el login con Google funciona.
-        createRule: '',
+        // Crear exige sesión y que el owner enviado seas tú (no puedes crear a nombre
+        // de otro). Bloquea de raíz la creación anónima (incluido el viejo "Probar").
+        createRule: "@request.auth.id != '' && owner = @request.auth.id",
         updateRule: OWN,
         deleteRule: OWN,
       };

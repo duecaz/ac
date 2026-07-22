@@ -109,11 +109,11 @@ export async function renderExplore(rootSel) {
   on(rootSel, 'input', '#exp-q', () => paint());
   on(rootSel, 'change', '#exp-lang', () => load());
   on(rootSel, 'click', '.exp-play', async (_, b) => {
-    const row = cache.find(r => (r.data?.id || r.id) === b.dataset.id);
-    if (!row) return;
-    const preview = { ...row.data, id: newActivityId(), forkOf: row.data.id, visibility: 'unlisted' };
-    save(preview);
-    navigate(`#/play/${preview.id}`);
+    // Jugar la actividad PÚBLICA por su id real. El player hace fallback a
+    // getRemote() si no está en local (playerView), así que NO clonamos a PB —
+    // antes cada "Probar" de un anónimo creaba una copia unlisted en el servidor
+    // (basura acumulándose). Para quedarse una copia editable está "Duplicar".
+    navigate(`#/play/${b.dataset.id}`);
   });
   on(rootSel, 'click', '.exp-fork', async (_, b) => {
     const row = cache.find(r => (r.data?.id || r.id) === b.dataset.id);

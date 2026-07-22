@@ -51,6 +51,19 @@ echo "$L" | jq -e 'has("items")' >/dev/null \
 curl -s "$PB/api/collections/users/auth-methods" | jq -e '(.oauth2.providers // .authProviders // [])[]?.name | select(.=="google")' >/dev/null \
   && green "login Google habilitado" || red "login Google" "proveedor google no activo"
 
+# 8) ENDURECIMIENTO (U1): crear una actividad SIN sesión DEBE fallar (403/400).
+#    Si devuelve 200 la regla quedó abierta → cualquiera puede escribir en la BD.
+SC=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$PB/api/collections/activities/records" \
+  -H "Content-Type: application/json" -d '{"data":{"id":"checkpbtmp"},"visibility":"unlisted"}')
+{ [ "$SC" = "400" ] || [ "$SC" = "403" ]; } \
+  && green "create anónimo de activities bloqueado ($SC)" || red "create anónimo de activities" "devolvió $SC (regla abierta)"
+
+# 9) ENDURECIMIENTO (U1): alta de usuario SIN sesión DEBE fallar (signup público cerrado).
+SC=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$PB/api/collections/users/records" \
+  -H "Content-Type: application/json" -d '{"email":"checkpb_'$RANDOM'@x.com","password":"12345678","passwordConfirm":"12345678"}')
+{ [ "$SC" = "400" ] || [ "$SC" = "403" ]; } \
+  && green "signup público de users bloqueado ($SC)" || red "signup público de users" "devolvió $SC (createRule abierto)"
+
 echo ""
 echo "Resultado: $ok OK, $fail FALLA(S)."
 [ "$fail" -eq 0 ] && echo "Todo verde ✅" || { echo "Hay fallos ❌ — pégaselos a Claude para arreglar antes de usar con alumnos."; exit 1; }

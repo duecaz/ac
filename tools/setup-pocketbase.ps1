@@ -58,12 +58,14 @@ $defs = @(
        "CREATE INDEX ``idx_act_owner`` ON ``activities`` (``owner``)",
        "CREATE INDEX ``idx_act_vis``   ON ``activities`` (``visibility``)"
      );
+     # U1 ENDURECIDO: sin cláusula transitoria owner="" y crear exige sesión + ser
+     # tu propio owner (nadie anónimo crea; nadie edita/borra ajenas salvo admin).
      rules = @{
-       listRule   = 'visibility = "public" || owner = "" || owner = @request.auth.id || @request.auth.role = "admin"';
-       viewRule   = 'visibility = "public" || owner = "" || owner = @request.auth.id || @request.auth.role = "admin"';
-       createRule = "";
-       updateRule = 'owner = "" || owner = @request.auth.id || @request.auth.role = "admin"';
-       deleteRule = 'owner = "" || owner = @request.auth.id || @request.auth.role = "admin"'
+       listRule   = 'visibility = "public" || owner = @request.auth.id || @request.auth.role = "admin"';
+       viewRule   = 'visibility = "public" || owner = @request.auth.id || @request.auth.role = "admin"';
+       createRule = '@request.auth.id != "" && owner = @request.auth.id';
+       updateRule = 'owner = @request.auth.id || @request.auth.role = "admin"';
+       deleteRule = 'owner = @request.auth.id || @request.auth.role = "admin"'
      } },
 
   @{ name = "activity_likes";
@@ -155,13 +157,18 @@ function Apply-Users {
   if (-not $hasRole) {
     Write-Host "  ! users NO tiene el campo 'role'. Añádelo a mano en PB (Plain text, nombre 'role' en minúscula) y re-corre este script." -ForegroundColor Red
   }
+  # U1: alta de cuentas de correo SOLO por admin (el signup público se retiró; el
+  # alta de autoservicio queda por Google/OAuth). OJO: en PocketBase el login
+  # con OAuth2 NO pasa por createRule, así que cerrar create no impide el primer
+  # login con Google — solo bloquea el signup anónimo por correo.
   $body = @{
-    viewRule = 'id = @request.auth.id || @request.auth.role = "admin"'
-    listRule = '@request.auth.role = "admin"'
+    viewRule   = 'id = @request.auth.id || @request.auth.role = "admin"'
+    listRule   = '@request.auth.role = "admin"'
+    createRule = '@request.auth.role = "admin"'
   }
   Invoke-RestMethod -Method Patch -Uri "$PbUrl/api/collections/$($u.id)" -Headers $H `
     -ContentType "application/json" -Body ($body | ConvertTo-Json -Depth 12) | Out-Null
-  Write-Host "  ~ users: reglas admin aplicadas" -ForegroundColor Yellow
+  Write-Host "  ~ users: reglas admin aplicadas (view/list/create)" -ForegroundColor Yellow
 }
 
 Write-Host "Configurando PocketBase en $PbUrl ..." -ForegroundColor Cyan

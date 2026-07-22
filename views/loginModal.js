@@ -3,7 +3,7 @@
 //  - Correo + contraseña — para PIZARRAS interactivas donde no hay cuenta de
 //    Google puesta; el admin puede crear estas cuentas (ver panel de Profesores).
 import { html } from '../core/html.js';
-import { signInWithGoogle, signIn, signUp } from '../core/auth.js';
+import { signInWithGoogle, signIn } from '../core/auth.js';
 
 let _open = false;
 
@@ -24,19 +24,18 @@ export function openLoginModal() {
       <div class="login-modal__or"><span>o con correo</span></div>
 
       <form id="lm-form" class="login-modal__form">
-        <div id="lm-name-row" hidden>
-          <input id="lm-name" class="login-modal__inp" placeholder="Tu nombre" autocomplete="name">
-        </div>
         <input id="lm-email" class="login-modal__inp" type="email" placeholder="Correo" autocomplete="email" required>
         <input id="lm-pass" class="login-modal__inp" type="password" placeholder="Contraseña" autocomplete="current-password" required>
         <div id="lm-err" class="login-modal__err"></div>
         <button type="submit" class="login-modal__submit" id="lm-submit">Entrar</button>
       </form>
-      <button class="login-modal__toggle" id="lm-toggle">¿No tienes cuenta? Crear una</button>
+      <p class="login-modal__hint text-muted small mt-2 mb-0">¿No tienes cuenta? Entra con Google, o pídele al administrador que te cree un acceso de correo para las pizarras.</p>
     </div>`;
   document.body.appendChild(host);
 
-  let mode = 'signin'; // 'signin' | 'signup'
+  // Solo INICIO de sesión: el alta pública se retiró (biblioteca curada de
+  // colegio). Cuentas nuevas = Google (autoservicio) o el admin las crea por
+  // correo desde el panel Profesores (#/admin). Ver docs/handoff-acceso-docente.md U1.
   const $ = (id) => host.querySelector(id);
   const close = () => { _open = false; host.remove(); };
 
@@ -45,23 +44,14 @@ export function openLoginModal() {
     try { await signInWithGoogle(); } // redirige
     catch (err) { showErr(err.message); }
   });
-  $('#lm-toggle').addEventListener('click', () => {
-    mode = mode === 'signin' ? 'signup' : 'signin';
-    $('#lm-name-row').hidden = mode !== 'signup';
-    $('#lm-submit').textContent = mode === 'signup' ? 'Crear cuenta' : 'Entrar';
-    $('#lm-toggle').textContent = mode === 'signup' ? '¿Ya tienes cuenta? Entrar' : '¿No tienes cuenta? Crear una';
-    showErr('');
-  });
   $('#lm-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = $('#lm-email').value.trim();
     const pass = $('#lm-pass').value;
     if (!email || !pass) return showErr('Completa correo y contraseña.');
-    if (mode === 'signup' && pass.length < 8) return showErr('La contraseña debe tener al menos 8 caracteres.');
     $('#lm-submit').disabled = true;
     try {
-      if (mode === 'signup') await signUp(email, pass, $('#lm-name').value.trim());
-      else await signIn(email, pass);
+      await signIn(email, pass);
       close(); // auth.js ya hizo notify() → la barra se repinta
     } catch (err) {
       showErr(err.message || 'No se pudo iniciar sesión.');
