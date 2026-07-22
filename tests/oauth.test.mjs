@@ -70,5 +70,22 @@ const auth = await import('../core/auth.js');
   ok('completeOAuthLogin canjea el code y deja sesión + token Google');
 }
 
+// ── oauthRedirectUrl canonicaliza /teacher → /teacher.html ──────────────────
+// GitHub Pages sirve teacher.html también como /teacher (sin extensión). El
+// redirect_uri debe COINCIDIR EXACTO con el autorizado en Google (que es
+// .../teacher.html), así que entrar por /teacher debe mandar igualmente /teacher.html.
+{
+  for (const [pathname, expected] of [
+    ['/teacher',       'https://aulareto.com/teacher.html'],
+    ['/teacher.html',  'https://aulareto.com/teacher.html'],
+    ['/teacher/',      'https://aulareto.com/teacher.html'],
+  ]) {
+    global.location = { origin: 'https://aulareto.com', pathname };
+    assert.strictEqual(auth.oauthRedirectUrl(), expected, `redirect canónico para ${pathname}`);
+  }
+  delete global.location;
+  ok('oauthRedirectUrl canonicaliza /teacher(/) → /teacher.html (evita redirect_uri_mismatch)');
+}
+
 delete global.fetch; delete global.sessionStorage; delete global.localStorage;
 console.log(`\noauth.test: ${passed} checks passed`);

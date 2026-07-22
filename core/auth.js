@@ -146,9 +146,14 @@ export async function listOAuthProviders() {
 }
 
 // El origen+ruta actual, sin query ni hash — debe coincidir EXACTAMENTE con una
-// "Authorized redirect URI" registrada en Google Cloud.
+// "Authorized redirect URI" registrada en Google Cloud. CANONICALIZAMOS a
+// `/teacher.html` porque GitHub Pages sirve la misma página también como `/teacher`
+// (sin extensión): sin esto, entrar por `/teacher` mandaba un redirect_uri que no
+// coincidía con la URI `.../teacher.html` autorizada → error redirect_uri_mismatch.
+// Así basta con UNA sola URI autorizada. El hash (#/play/...) nunca viaja a Google.
 export function oauthRedirectUrl() {
-  return location.origin + location.pathname;
+  const path = location.pathname.replace(/\/teacher\/?$/, '/teacher.html');
+  return location.origin + path;
 }
 
 // Paso 1: pide a PB los datos del proveedor (authURL/state/codeVerifier), guarda
@@ -159,6 +164,9 @@ export async function startOAuthLogin(providerName = 'google', redirectUrl = oau
   if (!p) throw new Error(`El proveedor "${providerName}" no está habilitado en PocketBase (Settings → Auth providers).`);
   sessionStorage.setItem(OAUTH_KEY, JSON.stringify({
     provider: providerName, state: p.state, codeVerifier: p.codeVerifier, redirectUrl,
+    // Dónde estaba el profe (ruta hash) para devolverlo ahí tras el login — Google
+    // no preserva el #hash en el retorno, así que lo guardamos nosotros.
+    returnHash: location.hash || '',
   }));
   // authURL viene con `redirect_uri=` al final (sin valor); se lo añadimos.
   location.href = p.authURL + encodeURIComponent(redirectUrl);
@@ -211,7 +219,7 @@ export async function completeOAuthLogin(code, returnedState) {
     }
   } catch {}
   notify();
-  return data;
+  return { ...data, returnHash: pending.returnHash || '' };
 }
 
 // Token de acceso de Google de la sesión actual (para llamar a la API de

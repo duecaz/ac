@@ -87,12 +87,14 @@ setBeforeResolve(() => clearListeners(APP));
   // que el router enrute normal). Si falla, se avisa pero la app sigue.
   const _q = new URLSearchParams(location.search);
   if (_q.get('code') && _q.get('state')) {
-    try { await completeOAuthLogin(_q.get('code'), _q.get('state')); }
+    let _returnHash = '';
+    try { const _res = await completeOAuthLogin(_q.get('code'), _q.get('state')); _returnHash = _res?.returnHash || ''; }
     catch (e) {
       console.warn('[oauth]', e.message);
       try { const { toast } = await import('./core/toast.js'); toast('Login con Google: ' + e.message, 'danger', 7000); } catch {}
     }
-    history.replaceState(null, '', location.pathname + (location.hash || '#/home'));
+    // Devuelve al profe a donde estaba (Google no preserva el #hash en el retorno).
+    history.replaceState(null, '', location.pathname + (_returnHash || location.hash || '#/home'));
   }
   mountAuthSlot('#ww-auth-slot').catch(() => {});
 
