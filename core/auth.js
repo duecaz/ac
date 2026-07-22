@@ -186,7 +186,15 @@ export async function completeOAuthLogin(code, returnedState) {
     }),
   });
   const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(data?.message || `Error ${r.status} al completar el login con Google`);
+  if (!r.ok) {
+    // "Failed to fetch OAuth2 token" = PB no pudo canjear el code con Google
+    // (client_secret cambiado, redirect_uri no registrada, etc.). Volcamos TODO
+    // a la consola para diagnosticar sin depender de los logs del servidor, y
+    // añadimos cualquier detalle anidado que PB devuelva al mensaje visible.
+    console.error('[oauth] auth-with-oauth2 falló', r.status, data, { redirectURL: pending.redirectUrl });
+    const nested = data?.data && Object.keys(data.data).length ? ' — ' + JSON.stringify(data.data) : '';
+    throw new Error((data?.message || `Error ${r.status} al completar el login con Google`) + nested);
+  }
   _user = data.record;
   saveStored(data.token, data.record);
   if (data.meta?.accessToken) {
