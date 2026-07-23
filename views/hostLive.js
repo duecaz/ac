@@ -1,7 +1,7 @@
 // Host view for live mode. Drives the phase machine over sessions.phase.
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
-import { get } from '../core/storage.js';
+import { get, getRemote } from '../core/storage.js';
 import { createRoom, findRoomByCode, fetchSession,
          startSession, setSessionState, endSession, settleItem,
          listPlayers, listAnswers, leaderboard, kickPlayer, subscribeRoom, pingHost, fetchSessionKey,
@@ -24,7 +24,15 @@ import { QL_COLORS } from '../core/questionLive.js';
 const STUDENT_BASE = location.origin + location.pathname.replace(/teacher\.html.*/, 'student.html');
 
 export async function renderHostLaunch(rootSel, activityId) {
-  const a = get(activityId);
+  // Igual que el modo solo (playerView): primero local, y si no está, se trae de
+  // la nube. Antes solo miraba local → una actividad que vive en PB pero no en el
+  // navegador (otro dispositivo, caché limpiada) daba "Actividad no encontrada"
+  // aunque en solo sí abría.
+  let a = get(activityId);
+  if (!a) {
+    mount(rootSel, html`<div class="text-center py-5"><div class="spinner-border"></div><p class="mt-2">Cargando actividad…</p></div>`);
+    a = await getRemote(activityId).catch(() => null);
+  }
   if (!a) { mount(rootSel, html`<div class="alert alert-danger">Actividad no encontrada.</div>`); return; }
   if (!sessionItems(a).length) { mount(rootSel, html`<div class="alert alert-warning">La actividad no tiene preguntas.</div>`); return; }
 
