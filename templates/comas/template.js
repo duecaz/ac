@@ -5,7 +5,7 @@ import { BaseTemplate } from '../base.js';
 import { renderComasPlayer } from './player.js';
 import { renderComasEditor } from './editor.js';
 import { newPassage } from '../../core/contentModels/textCorrection.js';
-import { parseTextWithCommas } from '../../core/textMarks.js';
+import { parseTextWithCommas, markPartsFor, markValueParts } from '../../core/textMarks.js';
 import { renderTextCorrectionRound, renderTextCorrectionHost, textCorrectionPreviewHtml } from '../../core/textCorrectionRound.js';
 import { scoreComasSubmission } from './scorer.js';
 
@@ -60,6 +60,12 @@ export class ComasTemplate extends BaseTemplate {
   static renderRoundHost(root, ctx) {
     renderTextCorrectionHost(root, { ...ctx, kind: 'coma' });
   }
+
+  // Analítica por parte (M1): cada parte = una coma requerida (key=posición,
+  // label=palabra) → heatmap por el % de la clase que acertó cada coma.
+  static itemParts({ item }) { return markPartsFor(item, 'coma'); }
+  static valueParts({ value }) { return markValueParts(value); }
+  static itemLabel(item) { return (item?.text || '').slice(0, 40); }
 
   static migrateContent(content) { return content; }
 }

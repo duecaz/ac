@@ -131,3 +131,29 @@ export function parseRichText(input) {
   }
   return { text: stripped, marks };
 }
+
+// ── Analítica por parte (M1) — helpers de texto compartidos por tildes/comas ──
+// Palabra que contiene la posición `pos` del texto (para etiquetar la marca en el
+// heatmap: "la clase falla en jugó"). Devuelve la palabra "cruda" del texto sin
+// tildes; para la coma, la palabra ANTES de la cual iría (pos = char previo).
+export function wordAtPos(text, pos) {
+  const s = String(text || '');
+  if (pos < 0 || pos >= s.length) return '';
+  let a = pos, b = pos;
+  while (a > 0 && !/\s/.test(s[a - 1])) a--;
+  while (b < s.length - 1 && !/\s/.test(s[b + 1])) b++;
+  return s.slice(a, b + 1).replace(/[.,;:!?()"]/g, '');
+}
+
+// Partes de un pasaje = cada marca requerida de ese `kind` (una por tilde/coma a
+// colocar). key = posición; label = palabra; ok = true (todas son requeridas).
+export function markPartsFor(item, kind) {
+  return (item?.marks || [])
+    .filter(m => m.kind === kind)
+    .map(m => ({ key: m.pos, label: wordAtPos(item.text, m.pos), ok: true }));
+}
+
+// Partes que marcó una respuesta = las posiciones que tocó el alumno.
+export function markValueParts(value) {
+  return (Array.isArray(value) ? value : []).map(Number);
+}

@@ -6,6 +6,7 @@ import { renderTildesEditor } from './editor.js';
 import { newPassage } from '../../core/contentModels/textCorrection.js';
 import { parseAccentedText } from '../../core/textMarks.js';
 import { renderTextCorrectionRound, renderTextCorrectionHost, textCorrectionPreviewHtml } from '../../core/textCorrectionRound.js';
+import { markPartsFor, markValueParts } from '../../core/textMarks.js';
 import { scoreTildesSubmission } from './scorer.js';
 
 export class TildesTemplate extends BaseTemplate {
@@ -59,6 +60,13 @@ export class TildesTemplate extends BaseTemplate {
   static renderRoundHost(root, ctx) {
     renderTextCorrectionHost(root, { ...ctx, kind: 'tilde' });
   }
+
+  // Analítica por parte (M1): cada parte = una tilde requerida (key=posición,
+  // label=palabra) → el informe pinta un heatmap sobre el texto con el % de la
+  // clase que acertó cada tilde ("jugó en rojo").
+  static itemParts({ item }) { return markPartsFor(item, 'tilde'); }
+  static valueParts({ value }) { return markValueParts(value); }
+  static itemLabel(item) { return (item?.text || '').slice(0, 40); }
 
   static migrateContent(content) { return content; }
 }

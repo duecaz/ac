@@ -73,6 +73,15 @@ export class QuizTemplate extends BaseTemplate {
     return { id: item.id, question: item.question, image: item.image || null, audio: item.audio || null, options: opts, points: item.points || 1 };
   }
 
+  // Analítica por parte (M1): las PARTES de una pregunta son sus opciones (la
+  // correcta + los distractores); `valueParts` = la opción que eligió el alumno.
+  // → el informe muestra "% que eligió cada opción" (distractores más marcados).
+  static itemParts({ item }) {
+    return (item?.options || []).map(o => ({ key: String(o), label: String(o), ok: String(o) === String(item?.answer) }));
+  }
+  static valueParts({ value }) { return value == null ? [] : [String(value)]; }
+  static itemLabel(item) { return item?.question || ''; }
+
   // One multiple-choice round for the session formats (VS / Equipos-auto).
   static renderRound(root, payload, opts) { renderChoiceRound(root, payload, opts); }
 
