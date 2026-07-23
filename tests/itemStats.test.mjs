@@ -110,4 +110,20 @@ const items = [{ text: 'ajugo', marks: [{ pos: 0, kind: 'tilde' }, { pos: 3, kin
   ok('M4 packAnswers normaliza y capa por tamaño');
 }
 
+// ── v0/c0: la analítica usa el PRIMER intento (carrera), no el corregido ──────
+{
+  // Fila de carrera: el alumno acabó ACERTANDO (value/correct = correcto), pero su
+  // primer intento fue MAL (v0 vacío, c0 false). El análisis debe ver el primer intento.
+  const raceRows = rowsFromLiveAnswers([
+    { playerId: 'p1', value: [3], correct: true, points: 1, v0: [], c0: false }, // acabó bien, empezó mal
+    { playerId: 'p2', value: [3], correct: true, points: 1, v0: [3], c0: true }, // bien a la primera
+  ], 0);
+  assert.deepStrictEqual(raceRows[0].value, [], 'usa v0 (primer intento) no el value final');
+  assert.strictEqual(raceRows[0].correct, false, 'usa c0 (primer intento) no el correct final');
+  const r = aggregate({ items, template: textTpl, rows: raceRows });
+  // pos3 la acertó a la PRIMERA solo p2 → 1 de 2 = 50%
+  assert.strictEqual(r.items[0].parts.find(p => p.key === '3').nMarked, 1, 'solo p2 acertó pos3 a la primera');
+  ok('v0/c0: la analítica de carrera refleja el primer intento (captura errores)');
+}
+
 console.log(`\nitemStats.test: ${passed} checks passed`);

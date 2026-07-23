@@ -325,6 +325,45 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       await saveState(sessionId, engine);
     },
 
+    // Carrera (opción A analítica): a diferencia de submitAnswer, aquí llega TODO
+    // intento. El PRIMERO (bien o mal) crea la fila y captura v0/c0 (primer intento)
+    // para el análisis de clase, SIN cambiar el juego; los reintentos correctos solo
+    // AVANZAN el progreso (value/correct/points) — v0/c0 son inmutables. Ver
+    // docs/handoff-analitica-items.md.
+    async submitRaceAttempt(sessionId, playerId, itemIndex, value, correct, points, msTaken) {
+      if (await answersReady()) {
+        const existing = await pbFetch(`/api/collections/${ANS}/records?filter=${ansFilter(sessionId, itemIndex, playerId)}&perPage=1`);
+        const row = existing?.items?.[0];
+        if (!row) {
+          await pbFetch(`/api/collections/${ANS}/records`, {
+            method: 'POST',
+            body: JSON.stringify({
+              session: sessionId, player: playerId, item: Number(itemIndex),
+              value, ms: msTaken ?? 0, scored: !!correct, correct: !!correct, points: correct ? (points ?? 0) : 0,
+              v0: value, c0: !!correct,
+            }),
+          });
+          return;
+        }
+        if (correct && row.correct !== true) {
+          await pbFetch(`/api/collections/${ANS}/records/${row.id}`, {
+            method: 'PATCH', body: JSON.stringify({ value, correct: true, scored: true, points: points ?? 0 }),
+          });
+        }
+        return;
+      }
+      // Legacy blob: guarda v0/c0 en el propio answer; progreso solo con correcto.
+      const { engine } = await load(sessionId);
+      const key = `${itemIndex}:${playerId}`;
+      const prev = engine.state.answers[key];
+      const v0 = prev && 'v0' in prev ? prev.v0 : value;
+      const c0 = prev && 'c0' in prev ? prev.c0 : !!correct;
+      if (!prev || (correct && prev.correct !== true)) {
+        engine.state.answers[key] = { playerId, value, msTaken: msTaken ?? 0, correct: !!correct, points: correct ? (points ?? 0) : (prev?.points ?? 0), v0, c0 };
+        await saveState(sessionId, engine);
+      }
+    },
+
     // Continuous progress for live "board" templates. UPSERTS the player's own
     // row (no first-answer lock): PATCH if it exists, else POST. The host reads
     // these via listAnswers and renders each board live; settleItem() later
@@ -370,7 +409,8 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
     async listAnswers(sessionId, itemIndex) {
       if (await answersReady()) {
         const rows = await fetchAnswerRows(sessionId, itemIndex);
-        return rows.map(r => ({ playerId: r.player, value: r.value, msTaken: r.ms, correct: r.scored ? r.correct : null, points: r.points }));
+        // v0/c0 (primer intento, carrera) pasan a la analítica; el resto usa value/correct.
+        return rows.map(r => ({ playerId: r.player, value: r.value, msTaken: r.ms, correct: r.scored ? r.correct : null, points: r.points, v0: r.v0, c0: r.c0 }));
       }
       const { engine } = await load(sessionId);
       const a = engine.state.answers;

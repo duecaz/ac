@@ -7,6 +7,16 @@
 > pendiente de ejecutar por fases**. Etapa 1 (puntuar por aciertos en tildes/comas) ✅
 > v1.51.238.
 
+## ✅ HECHO: F1 (núcleo) · F2 (live) · F3 (tareas) · captura del PRIMER intento en carrera
+
+**Modo carrera — captura de errores (v1.51.243):** en carrera el alumno reintenta hasta
+acertar y el cliente solo enviaba la respuesta CORRECTA → el análisis salía siempre verde.
+Fix (opción A, no cambia el juego): `submitRaceAttempt` guarda el PRIMER intento en
+`live_answers.v0/c0` (inmutable) mientras `value/correct` siguen llevando el progreso; la
+analítica prefiere `v0/c0` (answerRows.firstVal/firstCorrect). Requiere los campos
+`v0`(json)/`c0`(bool) en `live_answers` (setup-pocketbase.ps1 + check-pb.sh los vigilan).
+En Kahoot no hace falta: el candado de primera respuesta ya guarda el primer intento.
+
 ## 0. Hechos del código que anclan el diseño (verificados)
 
 | Fuente | ¿Guarda detalle por ítem HOY? | Forma |

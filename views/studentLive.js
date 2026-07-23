@@ -1,7 +1,7 @@
 // Student-side live view. Routes: #/join, #/play/:code.
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
-import { joinSession, getOwnAnswer, subscribeRoom, pingPresence, findRoomByCode, fetchSession, leaderboard, setSessionState, submitProgress } from '../core/liveTransport.js';
+import { joinSession, getOwnAnswer, subscribeRoom, pingPresence, findRoomByCode, fetchSession, leaderboard, setSessionState, submitProgress, submitRaceAttempt } from '../core/liveTransport.js';
 import { findAssignmentByCode } from '../core/assignmentsTransport.js';
 import { isAcceptableNickname } from '../core/nicknameFilter.js';
 import { acquire } from '../core/lifecycle.js';
@@ -79,6 +79,7 @@ export async function renderPlay(rootSel, code) {
   let endingInProgress = false;
   let raceQueue = null;       // null = not started yet; [] = finished
   let raceCorrectCount = 0;
+  let raceFirstSent = new Set();  // ítems cuyo PRIMER intento ya se envió (análisis)
   let qlSpinning = false;      // guards the question-live wheel mid-spin
   let qlRotation = 0;          // persisted wheel angle across spins
   // Tracks items we've already bumped streak for. Without this, host_seen_at
@@ -392,6 +393,7 @@ export async function renderPlay(rootSel, code) {
     if (raceQueue === null) {
       raceQueue = allItems.map((_, i) => i);
       raceCorrectCount = 0;
+      raceFirstSent = new Set();
     }
 
     if (raceQueue.length === 0) {
@@ -461,12 +463,16 @@ export async function renderPlay(rootSel, code) {
         if (ok) emitGame(GameEvents.ANSWER_CORRECT, { idx, points: pts, streak: newStreak });
         else    emitGame(GameEvents.ANSWER_WRONG, { idx });
 
-        // Submit to the server ONLY when correct. Wrong attempts are retried
-        // locally (requeued above), so sending them just adds noise — and with
-        // answers in their own collection the first (wrong) row would lock the
-        // item, dropping the later correct answer. One correct row per item keeps
-        // the host's progress honest and the collection path retry-safe.
-        if (ok) queuedSubmit(session.id, player.playerId, idx, value, ms).catch(() => {});
+        // Analítica opción A: el PRIMER intento de cada ítem (bien o mal) se envía
+        // SIEMPRE → captura v0/c0 (el error real) para el análisis de clase. Los
+        // reintentos posteriores solo se envían si son CORRECTOS, para avanzar el
+        // progreso del host. submitRaceAttempt no cambia el juego: preserva v0/c0
+        // (inmutable) y solo mueve value/correct al acertar. Ver docs/handoff-analitica-items.md.
+        const firstForItem = !raceFirstSent.has(idx);
+        if (firstForItem || ok) {
+          raceFirstSent.add(idx);
+          submitRaceAttempt(session.id, player.playerId, idx, value, ok, pts, ms).catch(() => {});
+        }
 
         // Brief pause to see the color flash, then load next question. Guardia:
         // si el profesor terminó la carrera en esa ventana (p.ej. "Terminar

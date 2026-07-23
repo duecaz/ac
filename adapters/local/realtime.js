@@ -120,6 +120,20 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
       save(code, room, engine); notify(code, 'answers');
     },
 
+    // Carrera (opción A analítica): captura v0/c0 (primer intento) sin cambiar el
+    // juego; el progreso (correct) solo avanza con un intento correcto.
+    async submitRaceAttempt(code, playerId, itemIndex, value, correct, points, msTaken) {
+      const { room, engine } = load(code);
+      const key = `${Number(itemIndex)}:${playerId}`;
+      const prev = engine.state.answers[key];
+      const v0 = prev && 'v0' in prev ? prev.v0 : value;
+      const c0 = prev && 'c0' in prev ? prev.c0 : !!correct;
+      if (!prev || (correct && prev.correct !== true)) {
+        engine.state.answers[key] = { playerId, value, msTaken: msTaken ?? 0, correct: !!correct, points: correct ? (points ?? 0) : (prev?.points ?? 0), v0, c0 };
+        save(code, room, engine); notify(code, 'answers');
+      }
+    },
+
     // Continuous progress upsert (live board templates). Overwrites the player's
     // own answer slot each move so the host's dashboard updates live.
     async submitProgress(code, playerId, value, msTaken, itemIndex = 0) {

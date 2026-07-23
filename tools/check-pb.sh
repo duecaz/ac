@@ -40,6 +40,12 @@ done
 AAF=$(curl -s "$PB/api/collections/assignment_attempts" -H "Authorization: $TOKEN" | jq -r '.fields[].name' | tr '\n' ' ')
 echo "$AAF" | grep -qw answers && green "assignment_attempts.answers" || red "assignment_attempts.answers" "campo ausente (corre 'Crear colecciones' en #/admin)"
 
+# 4c) live_answers.v0/c0 (primer intento en carrera, para capturar errores)
+LAF=$(curl -s "$PB/api/collections/live_answers" -H "Authorization: $TOKEN" | jq -r '.fields[].name' | tr '\n' ' ')
+for f in v0 c0; do
+  echo "$LAF" | grep -qw "$f" && green "live_answers.$f" || red "live_answers.$f" "campo ausente (re-corre setup-pocketbase.ps1 o añade el campo)"
+done
+
 # 5) La consulta de EXPLORAR / PORTADA (como la hace el navegador, anónimo, SIN sort)
 Q=$(curl -s -G "$PB/api/collections/activities/records" \
   --data-urlencode "filter=visibility='public'" --data-urlencode "perPage=5")

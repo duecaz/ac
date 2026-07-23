@@ -114,7 +114,7 @@ $defs = @(
      rules = @{ listRule=""; viewRule=""; createRule=""; updateRule=""; deleteRule="" } },
 
   @{ name = "live_answers";
-     fields = @( @{ name="session"; type="text"; required=$true }, @{ name="player"; type="text"; required=$true }, @{ name="item"; type="number" }, @{ name="value"; type="json"; maxSize=200000 }, @{ name="ms"; type="number" }, @{ name="scored"; type="bool" }, @{ name="correct"; type="bool" }, @{ name="points"; type="number" } );
+     fields = @( @{ name="session"; type="text"; required=$true }, @{ name="player"; type="text"; required=$true }, @{ name="item"; type="number" }, @{ name="value"; type="json"; maxSize=200000 }, @{ name="ms"; type="number" }, @{ name="scored"; type="bool" }, @{ name="correct"; type="bool" }, @{ name="points"; type="number" }, @{ name="v0"; type="json"; maxSize=200000 }, @{ name="c0"; type="bool" } );
      indexes = @( "CREATE INDEX ``idx_la_session`` ON ``live_answers`` (``session``)" );
      rules = @{ listRule=""; viewRule=""; createRule=""; updateRule=""; deleteRule="" } },
 

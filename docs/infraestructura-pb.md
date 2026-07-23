@@ -79,7 +79,7 @@ los MISMOS campos y reglas (fuente de verdad en código: `views/adminView.js` DE
 | `reports` | `activity`, `by`, `reason` | 🚩 moderación. |
 | `profiles` | `owner`, `name`, `school`, `bio`, `avatar` + índice ÚNICO (owner) | 👤 Perfil PÚBLICO del profe (colegio/frase/avatar de Google), separado de `users` porque el email es privado. Fila id = id de usuario. Lectura pública; escritura solo del dueño. Lo lee la página `#/autor/:id`. |
 | `results` | activity_id, session_id, user_id, player_name, score_*, max_score, time_used… | Resultados de alumnos (anónimos). |
-| `live_sessions`, `assignments`, `assignment_attempts` | (ver `handoff-esquema-pb.md`) | En vivo y tareas. `assignment_attempts.answers` (json) = detalle por ítem para la analítica del docente (F3, `docs/handoff-analitica-items.md`). |
+| `live_sessions`, `assignments`, `assignment_attempts` | (ver `handoff-esquema-pb.md`) | En vivo y tareas. `assignment_attempts.answers` (json) = detalle por ítem (analítica de tareas, F3). `live_answers.v0`(json)/`c0`(bool) = PRIMER intento en carrera (para capturar errores en la analítica en vivo). |
 
 ### Reglas de acceso vigentes (resumen)
 

@@ -23,6 +23,7 @@ export const endSession = call('endSession');
 export const settleItem = call('settleItem');
 export const listPlayers = call('listPlayers');
 export const listAnswers = call('listAnswers');
+export const submitRaceAttempt = call('submitRaceAttempt');
 export const leaderboard = call('leaderboard');
 export const kickPlayer = call('kickPlayer');
 export const pingHost = call('pingHost');
