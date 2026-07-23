@@ -90,13 +90,8 @@ async function pbPost(path, body) {
   return data;
 }
 
-export async function signUp(email, password, displayName) {
-  await pbPost('/api/collections/users/records', {
-    email, password, passwordConfirm: password,
-    name: displayName || email.split('@')[0],
-  });
-  return signIn(email, password);
-}
+// (Se retiró signUp(): el alta pública por correo se cerró en U1 — las cuentas
+// nuevas son por Google, o las crea el admin con createTeacher.)
 
 // Crea una cuenta de profe SIN iniciar sesión como ella (la usa el admin para
 // provisionar accesos de pizarra: correo + contraseña sencilla). No toca la sesión

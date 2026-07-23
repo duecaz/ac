@@ -43,6 +43,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 
 | Quiero… | Voy a… |
 |---|---|
+| **Ver TODAS las leyes/normas del proyecto** (px/token del juego, PB, XSS, versión…) | **`docs/leyes.md`** (índice único: qué · dónde · qué test la vigila) |
 | Entender el sistema de plantillas (crear/validar/jugar, qué módulo hace qué) | **`docs/sistema-de-plantillas.md`** (mapa vivo) |
 | **Crear una actividad nueva** | `node tools/new-template.mjs <name> --model qa [--vs] [--live]` + `templates/HOW_TO_ADD.md` |
 | **Diagnosticar** una plantilla existente | `node tools/check-template.mjs [name]` (contrato + normas) |
@@ -150,6 +151,25 @@ las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecut
 - **Testeo**: mapa de suites + receta headless (Playwright) en `docs/testing.md`.
 
 ## Deuda técnica registrada
+
+### ✅ RESUELTO (v1.51.217 → v1.51.235) — Sistema de usuarios + biblioteca pública
+Biblioteca tipo Wordwall + cuentas de profe, ejecutado y verificado en real:
+- **S1-S3** (gate/claim/almacén por usuario · portada+explore+likes+publicar · reglas duras
+  + admin + reportes) → `docs/handoff-biblioteca-publica.md`.
+- **U1**: reglas PB ENDURECIDAS (crear exige sesión+owner; sin `owner=''`), signup público
+  cerrado (alta = Google o admin), `createTeacher` firma con token, "Probar" ya no clona a PB.
+- **U5**: panel Profesores en `#/admin` (listar, dar/quitar admin) — `core/teachers.js`.
+- **S4**: enviar tareas a **Google Classroom** (`core/classroom.js` + GIS en
+  `core/classroomAuth.js`) → `docs/handoff-google-classroom.md`. Requiere habilitar la
+  Classroom API + scopes en Google Cloud (paso del usuario).
+- **Perfil del profe**: colección pública `profiles` (colegio/frase/avatar de Google),
+  separada de `users` (email privado) — `core/profile.js`, `views/author.js`.
+- **Editor**: botones claros "Guardar borrador" / "Publicar".
+- **OAuth**: redirect canónico `/teacher`→`/teacher.html` + volver a donde estabas.
+- **Infra**: `docs/infraestructura-pb.md` (estado REAL de PB/Pi) + `tools/check-pb.sh`
+  (smoke-test) + `docs/leyes.md` (índice de todas las normas).
+- **Pendiente (futuro, pedido por el usuario)**: PIN/NFC para pizarras (U2-U4) →
+  `docs/handoff-acceso-docente.md`.
 
 ### 🔴 AUDITORÍA INTEGRAL (Fable, 2026-07) — PENDIENTE DE EJECUTAR → `docs/handoff-auditoria-fable.md`
 4 agentes en paralelo (datos/sync · live · seguridad · UI), hallazgos verificados en
