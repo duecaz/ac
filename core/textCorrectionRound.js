@@ -9,7 +9,7 @@
 // value is number[]: for tildes, the char positions marked; for comas, the
 // index of the char AFTER which the comma goes (matches the answer-key `pos`).
 import { html, escapeHtml, mount } from './html.js';
-import { isVowel, applyTilde, scoreMarks } from './textMarks.js';
+import { isVowel, applyTilde } from './textMarks.js';
 import { trySaveResult } from './results.js';
 import { resultScreenHtml } from './resultScreen.js';
 import { GameEvents, emitGame } from './gameEvents.js';
@@ -176,7 +176,8 @@ export function renderTextCorrectionHost(root, { phase, item, kind = 'tilde' } =
 
 // Full SOLO runner shared by Tildes and Comas: paginate passages one per
 // screen, tap to mark, "Listo" reveals the correct/wrong/missed marks, then
-// advance. Final summary + saveResult, identical scoring to VS (scoreMarks).
+// advance. Final summary + saveResult. Puntúa POR ACIERTOS (nº de marcas buenas),
+// no todo-o-nada por frase.
 export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, title } = {}) {
   const passages = (activity.content?.passages || []).filter(p => p.text);
   if (!passages.length) {
@@ -184,9 +185,13 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     return;
   }
   const ppc = activity.scoring?.pointsPerCorrect || 1;
-  const maxScore = activity.scoring?.maxScore || passages.length * ppc;
+  // Puntuación POR ACIERTOS (no todo-o-nada por frase): cada marca correcta suma
+  // ppc; las marcas de MÁS restan (suelo 0 por frase, así marcar todo no puntúa).
+  // maxScore = total de marcas de la actividad (nº de tildes/comas a colocar).
+  const totalMarks = passages.reduce((n, p) => n + (p.marks || []).filter(m => m.kind === kind).length, 0);
+  const maxScore = activity.scoring?.maxScore || totalMarks * ppc || passages.length * ppc;
   const startedAt = clock.now();
-  let idx = 0, score = 0, correct = 0, wrong = 0;
+  let idx = 0, score = 0, hits = 0, misses = 0, over = 0;
   const passageResults = [];
 
   const shell = (bodyHtml) => mount(rootSel, html`
@@ -203,13 +208,20 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
 
   function grade(value) {
     const p = passages[idx];
-    const r = scoreMarks(value, p, [kind], activity);
-    score += r.points;
     const want = new Set((p.marks || []).filter(m => m.kind === kind).map(m => m.pos));
-    passageResults.push({ p, got: new Set(value.map(Number)), want, correct: r.correct });
-    if (r.correct) { correct++; emitGame(GameEvents.ANSWER_CORRECT, { points: r.points }); }
-    else { wrong++; emitGame(GameEvents.ANSWER_WRONG, {}); }
-    reveal(value, r);
+    const got = new Set((value || []).map(Number));
+    let h = 0, o = 0;
+    for (const pos of got) (want.has(pos) ? h++ : o++);
+    const miss = want.size - h;
+    const pts = Math.max(0, h - o) * ppc;
+    score += pts; hits += h; misses += miss; over += o;
+    const perfect = miss === 0 && o === 0;
+    // Guarda el detalle por frase (aciertos/fallos/de-más) — base para la analítica
+    // por palabra del docente (etapa 2, docs/handoff-analitica-items.md).
+    passageResults.push({ p, got, want, hits: h, misses: miss, over: o, total: want.size, correct: perfect });
+    if (perfect) emitGame(GameEvents.ANSWER_CORRECT, { points: pts });
+    else emitGame(GameEvents.ANSWER_WRONG, {});
+    reveal(value, { hits: h, over: o, misses: miss, total: want.size, correct: perfect });
   }
 
   function reveal(value, r) {
@@ -223,7 +235,7 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
         <div class="tc-done-wrap">
           <span class="tc-verdict ${r.correct ? 'ok' : 'bad'}">
             <i class="bi ${r.correct ? 'bi-check-circle-fill' : 'bi-x-circle-fill'}"></i>
-            ${r.correct ? '¡Correcto!' : 'Revisa las marcas'}
+            ${r.hits}/${r.total} aciertos${r.over ? ` · ${r.over} de más` : ''}
           </span>
           <div class="mt-2"><button type="button" class="btn btn-primary btn-lg tc-next">
             ${last ? '<i class="bi bi-flag-fill"></i> Ver resultado' : 'Siguiente <i class="bi bi-arrow-right"></i>'}
@@ -253,9 +265,9 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
             <div class="tc-passage tc-review-passage">${passageHtml(r.p.text, kind, { got: r.got, want: r.want })}</div>
           </div>`).join('')}
       </div>` : '';
-    mount(rootSel, resultScreenHtml({ lead: `Puntos: <b>${score}</b> / ${maxScore}`, stats: `${correct} aciertos · ${wrong} fallos · ${timeUsed}s`, score, maxScore }) + reviewHtml);
+    mount(rootSel, resultScreenHtml({ lead: `Aciertos: <b>${hits}</b> / ${totalMarks}`, stats: `${hits} aciertos · ${misses} sin marcar · ${over} de más · ${timeUsed}s`, score, maxScore }) + reviewHtml);
     trySaveResult(opts, { activityId: activity.id, scoreAuto: score, scoreFinal: score, maxScore, timeUsed });
-    if (opts.onFinish) opts.onFinish({ score, startedAt, mistakes: wrong });
+    if (opts.onFinish) opts.onFinish({ score, startedAt, mistakes: misses });
   }
 
   ask();
