@@ -761,6 +761,13 @@ async function renderHost(rootSel, code, sessionId, activity) {
             if (!seen.has(`${r.player} ${r.itemIndex}`)) rows.push(r);
           }
         } catch { /* respaldo best-effort */ }
+        // Resuelve el nombre del alumno (las filas de live_answers traen el id) para
+        // mostrar "quién acertó/falló" estilo Kahoot en el análisis.
+        try {
+          const ps = await listPlayers(sessionId);
+          const nameOf = new Map((ps || []).map(p => [p.id, p.name]));
+          rows = rows.map(r => ({ ...r, name: r.name || nameOf.get(r.player) || r.player }));
+        } catch { /* si no hay nombres, se muestran ids */ }
         out.innerHTML = itemStatsHtml(activity, rows);
       } catch (e) {
         out.innerHTML = `<div class="alert alert-warning">No se pudo cargar el análisis: ${escapeHtml(e.message)}</div>`;

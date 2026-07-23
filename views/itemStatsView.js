@@ -43,9 +43,17 @@ function itemBlock(it, item, isText, kind) {
       <span class="istats-bar__pct">${w}%</span>
     </div>`;
   }).join('');
+  const chips = (names, cls) => names.length
+    ? `<span class="istats-who istats-who--${cls}">${names.map(n => `<span class="istats-chip">${escapeHtml(n)}</span>`).join('')}</span>` : '';
+  const who = (it.correctNames?.length || it.wrongNames?.length)
+    ? `<div class="istats-names">
+         ${it.wrongNames?.length ? `<i class="bi bi-x-circle-fill text-danger"></i> ${chips(it.wrongNames, 'bad')}` : ''}
+         ${it.correctNames?.length ? `<i class="bi bi-check-circle-fill text-success"></i> ${chips(it.correctNames, 'ok')}` : ''}
+       </div>` : '';
   return `<div class="istats-item">
     <div class="istats-item__head"><b>${escapeHtml(it.label)}</b> · ${it.n} resp · ${pct}% acierto${it.extras ? ` · <span class="text-danger">${it.extras} marca(s) de más</span>` : ''}</div>
     ${heat}
     <div class="istats-bars">${bars}</div>
+    ${who}
   </div>`;
 }

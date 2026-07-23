@@ -43,6 +43,10 @@ export function aggregate({ items = [], template = null, rows = [], activity = n
     const ans = byItem.get(index) || [];
     const n = ans.length;
     const nCorrect = ans.filter(a => a.correct === true).length;
+    // Nombres por veredicto (estilo Kahoot): quién acertó y quién falló este ítem.
+    const nameOf = (a) => a.name || a.player || '?';
+    const correctNames = ans.filter(a => a.correct === true).map(nameOf);
+    const wrongNames = ans.filter(a => a.correct === false).map(nameOf);
     const parts = partsOf(template, item, activity);
 
     if (!parts) {
@@ -51,7 +55,7 @@ export function aggregate({ items = [], template = null, rows = [], activity = n
         index, label: itemLabel(template, item, index), n, nCorrect,
         pctCorrect: n ? nCorrect / n : 0,
         parts: [{ key: 'ok', label: 'Acierto', ok: true, nMarked: nCorrect, pctMarked: n ? nCorrect / n : 0 }],
-        extras: 0,
+        extras: 0, correctNames, wrongNames,
       };
     }
 
@@ -71,7 +75,7 @@ export function aggregate({ items = [], template = null, rows = [], activity = n
     }));
     return {
       index, label: itemLabel(template, item, index), n, nCorrect,
-      pctCorrect: n ? nCorrect / n : 0, parts: partStats, extras,
+      pctCorrect: n ? nCorrect / n : 0, parts: partStats, extras, correctNames, wrongNames,
     };
   });
 

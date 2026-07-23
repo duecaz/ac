@@ -126,4 +126,16 @@ const items = [{ text: 'ajugo', marks: [{ pos: 0, kind: 'tilde' }, { pos: 3, kin
   ok('v0/c0: la analítica de carrera refleja el primer intento (captura errores)');
 }
 
+// ── nombres por veredicto (quién acertó/falló, estilo Kahoot) ────────────────
+{
+  const rows = [
+    { player: 'p1', name: 'Ana', itemIndex: 0, value: [3], correct: true, points: 1 },
+    { player: 'p2', name: 'Beto', itemIndex: 0, value: [], correct: false, points: 0 },
+  ];
+  const r = aggregate({ items, template: textTpl, rows });
+  assert.deepStrictEqual(r.items[0].correctNames, ['Ana'], 'Ana acertó');
+  assert.deepStrictEqual(r.items[0].wrongNames, ['Beto'], 'Beto falló');
+  ok('aggregate lista quién acertó/falló por ítem');
+}
+
 console.log(`\nitemStats.test: ${passed} checks passed`);

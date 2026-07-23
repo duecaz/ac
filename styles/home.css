@@ -599,3 +599,10 @@ body {
 .tc-heat--bad { background: rgba(239,68,68,.20); color: #b91c1c; }
 .tc-heat__pct { font-size: .5em; font-weight: 700; vertical-align: super; margin-left: 1px; opacity: .8; }
 .tc-heat__coma { color: inherit; }
+
+/* nombres por veredicto (quién acertó/falló) — estilo Kahoot */
+.istats-names { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 10px; padding-top: 8px; border-top: 1px dashed #ece7d8; font-size: 13px; }
+.istats-who { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-right: 6px; }
+.istats-chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-weight: 600; }
+.istats-who--ok .istats-chip { background: #e8f6ee; color: #15803d; }
+.istats-who--bad .istats-chip { background: #fdeaea; color: #b91c1c; }
