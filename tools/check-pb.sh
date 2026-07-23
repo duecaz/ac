@@ -25,7 +25,7 @@ curl -s "$PB/api/health" | jq -e '.code==200' >/dev/null && green "API health" |
 [ -n "$TOKEN" ] && green "auth superadmin" || { red "auth superadmin" "sin token (password?)"; echo "Aborta."; exit 1; }
 
 # 3) colecciones esperadas
-for c in users activities activity_likes reports results profiles; do
+for c in users activities activity_likes reports results profiles live_answers; do
   curl -s "$PB/api/collections/$c" -H "Authorization: $TOKEN" | jq -e '.id' >/dev/null \
     && green "colección $c existe" || red "colección $c" "no existe"
 done

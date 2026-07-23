@@ -552,6 +552,8 @@ function renderPanel(rootSel) {
           { name: 'scored',  type: 'bool' },
           { name: 'correct', type: 'bool' },
           { name: 'points',  type: 'number' },
+          { name: 'v0',      type: 'json' },   // primer intento en carrera (analítica)
+          { name: 'c0',      type: 'bool' },   // ¿el primer intento fue correcto?
         ]},
         { name: 'assignments', fields: [
           { name: 'code',          type: 'text', required: true },
@@ -689,25 +691,29 @@ function renderPanel(rootSel) {
         try {
           const existingId = await findCollection(col.name);
           if (existingId) {
-            // Colección ya existe: actualiza las reglas de acceso. Para `activities`
-            // además hay que AÑADIR el campo `owner` si falta — sin tocar el resto.
-            // Se lee el esquema actual y se hace merge (append solo si no existe),
-            // así un PATCH de fields NO puede borrar columnas existentes.
+            // Colección ya existe: actualiza reglas Y AÑADE los campos que falten
+            // (append-only: nunca borra columnas existentes). Antes solo añadía
+            // `activities.owner`; ahora cubre cualquier campo nuevo del DEF (p.ej.
+            // `assignment_attempts.answers`, `live_answers.v0/c0`) → un update de la
+            // app no exige recrear colecciones a mano.
             const patchBody = { ...rulesFor(col.name) };
-            if (col.name === 'activities') {
-              try {
-                const cur = await (await fetch(`${PB_URL}/api/collections/${existingId}`, { headers })).json();
-                const curFields = cur[schemaKey] || cur.fields || cur.schema || [];
-                const hasOwner = curFields.some(f => f.name === 'owner');
-                if (!hasOwner) patchBody[schemaKey] = [...curFields, buildField({ name: 'owner', type: 'text' })];
-              } catch { /* si no se pudo leer, solo se aplican reglas */ }
-            }
+            let addedFields = [];
+            try {
+              const cur = await (await fetch(`${PB_URL}/api/collections/${existingId}`, { headers })).json();
+              const curFields = cur[schemaKey] || cur.fields || cur.schema || [];
+              const curNames = new Set(curFields.map(f => f.name));
+              const missing = (col[schemaKey] || []).filter(f => !curNames.has(f.name) && !['id','created','updated'].includes(f.name));
+              if (missing.length) {
+                patchBody[schemaKey] = [...curFields, ...missing];
+                addedFields = missing.map(f => f.name);
+              }
+            } catch { /* si no se pudo leer, solo se aplican reglas */ }
             const pr = await fetch(`${PB_URL}/api/collections/${existingId}`, {
               method: 'PATCH', headers,
               body: JSON.stringify(patchBody),
             });
             if (pr.ok) {
-              results.push({ name: col.name, ok: true, msg: patchBody[schemaKey] ? 'reglas + campo owner (ya existía)' : 'reglas actualizadas (ya existía)' });
+              results.push({ name: col.name, ok: true, msg: addedFields.length ? `reglas + campos [${addedFields.join(', ')}] (ya existía)` : 'reglas actualizadas (ya existía)' });
             } else {
               const b = await pr.json().catch(() => ({}));
               results.push({ name: col.name, ok: false, msg: b.message || `error ${pr.status}` });
