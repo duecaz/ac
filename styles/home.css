@@ -93,6 +93,8 @@ body {
   background: var(--dash-navy-btn2); color: #fff;
 }
 .ww-navbtn--icon { width: 36px; padding: 0; }
+/* La etiqueta de los botones solo-icono SOLO se ve en el desplegable móvil. */
+.ww-navbtn__lbl { display: none; }
 .ww-navbtn--accent {
   background: var(--dash-yellow); color: var(--dash-ink); border: none;
 }
@@ -452,9 +454,13 @@ body {
   .ww-topbar__actions .ww-navbtn,
   .ww-topbar__actions #ww-mute-slot > *,
   .ww-topbar__actions #ww-auth-slot > * {
-    width: 100%; justify-content: flex-start;
+    width: 100%; justify-content: flex-start; padding: 8px 12px; gap: 8px;
   }
   .ww-topbar__actions .ww-navbtn--icon { width: 100%; }
+  /* En el desplegable, los botones solo-icono muestran su etiqueta → nada de
+     barras "vacías" con un icono suelto. */
+  .ww-topbar__actions .ww-navbtn__lbl { display: inline; }
+  .ww-topbar__actions .ww-navbtn i { font-size: 16px; width: 18px; text-align: center; }
 
   .home-wrap { padding: 20px 16px 48px; }
   .home-head h1 { font-size: 24px; }
