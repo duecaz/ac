@@ -6,6 +6,8 @@ import { on } from '../core/events.js';
 import { list as listActivities } from '../core/storage.js';
 import { activityItemCount } from '../core/migrate.js';
 import { PB_URL } from '../pocketbase.config.js';
+import { rowsFromLiveState } from '../core/answerRows.js';
+import { itemStatsHtml } from './itemStatsView.js';
 
 async function pbFetch(path) {
   const r = await fetch(`${PB_URL}${path}`);
@@ -181,6 +183,9 @@ export async function renderSessionReport(rootSel, sessionId) {
         </tbody>
       </table>
     </div>
+
+    <h4 class="mt-4 mb-2"><i class="bi bi-bar-chart-line-fill"></i> Análisis por ${activity?.template === 'tildes' || activity?.template === 'comas' ? 'palabra' : 'ítem'}</h4>
+    <div class="istats-wrap">${itemStatsHtml(activity, rowsFromLiveState(sess))}</div>
   `);
 
   on(rootSel, 'click', '#btn-csv', () => downloadCsv(sess, players, items, ansByPlayer));

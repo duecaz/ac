@@ -16,6 +16,7 @@ import { GameEvents, emitGame } from './gameEvents.js';
 import { clock } from './clock.js';
 import { mountTcDraw } from './textCorrectionDraw.js';
 import { observeResize } from './observeResize.js';
+import { heatClass } from './itemStats.js';
 
 const HINTS = {
   tilde: 'Toca las vocales que llevan tilde.',
@@ -271,4 +272,23 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
   }
 
   ask();
+}
+
+// Heatmap de analítica (M5): pinta el pasaje con cada marca REQUERIDA coloreada
+// por el % de la clase que la acertó (verde ≥80 · ámbar 50-79 · rojo <50), con el
+// % en pequeño. `parts` = itemStat.parts de esa frase ({key:pos, pctMarked}).
+// Reutiliza applyTilde para mostrar la vocal acentuada / la coma en su sitio.
+export function textHeatmapHtml(text, kind, parts) {
+  const byPos = new Map((parts || []).map(p => [Number(p.key), p]));
+  const s = String(text || '');
+  let out = '';
+  for (let i = 0; i < s.length; i++) {
+    const p = byPos.get(i);
+    if (!p) { out += escapeHtml(s[i]); continue; }
+    const cls = heatClass(p.pctMarked);
+    const pct = Math.round(p.pctMarked * 100);
+    const glyph = kind === 'tilde' ? escapeHtml(applyTilde(s[i])) : escapeHtml(s[i]) + '<b class="tc-heat__coma">,</b>';
+    out += `<span class="tc-heat tc-heat--${cls}" title="${pct}% de la clase acertó">${glyph}<sup class="tc-heat__pct">${pct}%</sup></span>`;
+  }
+  return out;
 }

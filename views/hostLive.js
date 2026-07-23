@@ -9,6 +9,8 @@ import { createRoom, findRoomByCode, fetchSession,
        from '../core/liveTransport.js';
 import { getTemplate } from '../core/registry.js';
 import { sessionItems } from '../kernel/session/engine.js';
+import { rowsFromLiveAnswers } from '../core/answerRows.js';
+import { itemStatsHtml } from './itemStatsView.js';
 import { acquire } from '../core/lifecycle.js';
 import { toast, confirmModal } from '../core/toast.js';
 import { applyScene } from '../core/presentation.js';
@@ -723,10 +725,28 @@ async function renderHost(rootSel, code, sessionId, activity) {
     mount(rootSel, html`
       <h2 class="text-center mb-4"><i class="bi bi-trophy-fill text-warning"></i> Podio</h2>
       ${podiumHtml(lb)}
-      <div class="text-center">
-        <a href="#/home" class="btn btn-outline-primary btn-lg"><i class="bi bi-house"></i> Volver a inicio</a>
+      <div class="text-center d-flex gap-2 justify-content-center flex-wrap mb-3">
+        <button id="ll-analysis" class="btn btn-primary btn-lg"><i class="bi bi-bar-chart-line-fill"></i> Análisis de la clase</button>
+        <a href="#/home" class="btn btn-outline-secondary btn-lg"><i class="bi bi-house"></i> Volver a inicio</a>
       </div>
+      <div id="ll-analysis-out" class="mt-2"></div>
     `);
+    // Análisis por ítem/palabra (F2): al pulsar, junta TODAS las respuestas de
+    // live_answers (una fila por alumno×ítem) y las pasa al agregador puro.
+    const btn = document.getElementById('ll-analysis');
+    if (btn) btn.addEventListener('click', async () => {
+      const out = document.getElementById('ll-analysis-out');
+      if (!out) return;
+      out.innerHTML = '<div class="text-center py-3"><div class="spinner-border"></div></div>';
+      btn.disabled = true;
+      try {
+        const all = await Promise.all(items.map((_, i) => listAnswers(sessionId, i).then(a => rowsFromLiveAnswers(a, i))));
+        out.innerHTML = itemStatsHtml(activity, all.flat());
+      } catch (e) {
+        out.innerHTML = `<div class="alert alert-warning">No se pudo cargar el análisis: ${escapeHtml(e.message)}</div>`;
+        btn.disabled = false;
+      }
+    });
   }
 
   paint();

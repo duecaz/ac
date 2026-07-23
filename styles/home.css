@@ -575,3 +575,27 @@ body {
 .author-editcard { background: #fff; border: 1px solid #ece7d8; border-radius: 14px; padding: 16px; margin-top: 14px; max-width: 520px; display: flex; flex-direction: column; }
 .author-editcard .login-modal__inp { width: 100%; }
 @media (max-width: 640px) { .author-avatar { width: 60px; height: 60px; } .author-name { font-size: 23px; } }
+
+/* ── Analítica por ítem/palabra (views/itemStatsView.js) ─────────────────────── */
+.istats { max-width: 900px; margin: 0 auto; }
+.istats__head { font-weight: 600; color: #141c2e; margin-bottom: 12px; }
+.istats-item { background: #fff; border: 1px solid #ece7d8; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; }
+.istats-item--empty { opacity: .6; }
+.istats-item__head { font-size: 14px; color: #374151; margin-bottom: 8px; }
+.istats-bar { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 13px; }
+.istats-bar__lbl { flex: 0 0 40%; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1f2937; }
+.istats-bar__track { flex: 1; height: 12px; background: #f0ecdf; border-radius: 999px; overflow: hidden; }
+.istats-bar__fill { display: block; height: 100%; border-radius: 999px; }
+.istats-bar__fill.is-ok { background: #16a34a; }
+.istats-bar__fill.is-warn { background: #f59e0b; }
+.istats-bar__fill.is-bad { background: #ef4444; }
+.istats-bar__fill.is-muted { background: #9aa2ad; }
+.istats-bar__pct { flex: 0 0 40px; text-align: right; color: #6b7280; font-variant-numeric: tabular-nums; }
+/* heatmap sobre el texto (tildes/comas) */
+.istats-heat { font-size: 20px; line-height: 2.1; margin: 6px 0 12px; color: #1f2937; }
+.tc-heat { position: relative; border-radius: 4px; padding: 0 1px; font-weight: 700; }
+.tc-heat--ok { background: rgba(22,163,74,.18); color: #15803d; }
+.tc-heat--warn { background: rgba(245,158,11,.20); color: #b45309; }
+.tc-heat--bad { background: rgba(239,68,68,.20); color: #b91c1c; }
+.tc-heat__pct { font-size: .5em; font-weight: 700; vertical-align: super; margin-left: 1px; opacity: .8; }
+.tc-heat__coma { color: inherit; }
