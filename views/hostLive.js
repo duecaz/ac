@@ -9,8 +9,9 @@ import { createRoom, findRoomByCode, fetchSession,
        from '../core/liveTransport.js';
 import { getTemplate } from '../core/registry.js';
 import { sessionItems } from '../kernel/session/engine.js';
-import { rowsFromLiveAnswers } from '../core/answerRows.js';
+import { rowsFromLiveAnswers, rowsFromLiveState } from '../core/answerRows.js';
 import { itemStatsHtml } from './itemStatsView.js';
+import { PB_URL } from '../pocketbase.config.js';
 import { acquire } from '../core/lifecycle.js';
 import { toast, confirmModal } from '../core/toast.js';
 import { applyScene } from '../core/presentation.js';
@@ -740,8 +741,19 @@ async function renderHost(rootSel, code, sessionId, activity) {
       out.innerHTML = '<div class="text-center py-3"><div class="spinner-border"></div></div>';
       btn.disabled = true;
       try {
-        const all = await Promise.all(items.map((_, i) => listAnswers(sessionId, i).then(a => rowsFromLiveAnswers(a, i))));
-        out.innerHTML = itemStatsHtml(activity, all.flat());
+        const all = await Promise.all(items.map((_, i) => listAnswers(sessionId, i).then(a => rowsFromLiveAnswers(a, i)).catch(() => [])));
+        let rows = all.flat();
+        // Respaldo: junta también el blob de la sesión (state.answers), por si la
+        // colección live_answers está vacía o hubo versión mixta. Solo añade las
+        // filas que no estén ya (dedupe por jugador×ítem) para no duplicar.
+        try {
+          const raw = await fetch(`${PB_URL}/api/collections/live_sessions/records/${sessionId}`).then(r => r.json());
+          const seen = new Set(rows.map(r => `${r.player} ${r.itemIndex}`));
+          for (const r of rowsFromLiveState(raw?.state || {})) {
+            if (!seen.has(`${r.player} ${r.itemIndex}`)) rows.push(r);
+          }
+        } catch { /* respaldo best-effort */ }
+        out.innerHTML = itemStatsHtml(activity, rows);
       } catch (e) {
         out.innerHTML = `<div class="alert alert-warning">No se pudo cargar el análisis: ${escapeHtml(e.message)}</div>`;
         btn.disabled = false;
