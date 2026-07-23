@@ -15,11 +15,15 @@
 .btn { min-height: 38px; }
 .btn-lg { min-height: 48px; }
 
-/* Large-screen presenter mode for the host live view. Activates when the
-   viewport is wide enough OR when we add .ww-stage manually. */
-.ww-stage h1, .ww-stage h2 { font-size: clamp(2rem, 4vw, 4rem); }
-.ww-stage .ww-pin { font-size: clamp(3rem, 10vw, 7rem); }
-.ww-stage .ww-kahoot-grid .btn { font-size: clamp(1.4rem, 3vw, 2.5rem); padding: clamp(1rem, 3vw, 3rem); }
+/* Large-screen presenter mode for the host live view. Se activa con la clase
+   `ww-livestage` que hostLive añade al <body>. OJO: NO usar `.ww-stage` aquí —
+   esa clase también es una REGIÓN del andamio del player (scaffold.css,
+   display:grid; place-items:center); si se pone en el <body> centra y ENCOGE la
+   barra superior y el contenido (nav "reducido" en live). Por eso el body usa un
+   nombre propio, `ww-livestage`, y `.ww-stage` queda solo para el player. */
+.ww-livestage h1, .ww-livestage h2 { font-size: clamp(2rem, 4vw, 4rem); }
+.ww-livestage .ww-pin { font-size: clamp(3rem, 10vw, 7rem); }
+.ww-livestage .ww-kahoot-grid .btn { font-size: clamp(1.4rem, 3vw, 2.5rem); padding: clamp(1rem, 3vw, 3rem); }
 
 /* Prevent overscroll while playing live; keeps the question fixed. */
 body.ww-play-noscroll { overscroll-behavior: none; }

@@ -81,8 +81,11 @@ async function renderHost(rootSel, code, sessionId, activity) {
   // Apply per-activity theme during the host live view (Kahoot look by default).
   applyScene(activity, ctx, { defaultSkin: 'kahoot' });
   // Stage class for big-screen typography.
-  document.body.classList.add('ww-stage');
-  ctx.add(() => document.body.classList.remove('ww-stage'));
+  // `ww-livestage` (NO `ww-stage`): activa las fuentes grandes de proyector
+  // (touch.css) SIN heredar la región de andamio `.ww-stage` (scaffold.css), que
+  // en el <body> centraba y encogía la barra superior. Ver styles/touch.css.
+  document.body.classList.add('ww-livestage');
+  ctx.add(() => document.body.classList.remove('ww-livestage'));
 
   const tpl = getTemplate(activity.template);
   // Template-agnostic item list (quiz→items, tildes/comas→passages, …).
