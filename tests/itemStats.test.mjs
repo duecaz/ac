@@ -93,4 +93,21 @@ const items = [{ text: 'ajugo', marks: [{ pos: 0, kind: 'tilde' }, { pos: 3, kin
   ok('M2 rowsFromLiveAnswers + rowsFromAttempts');
 }
 
+// ── M4 packAnswers: normaliza ambas formas + tope de tamaño ──────────────────
+{
+  const { packAnswers } = await import('../core/answerDetail.js');
+  // shell secuencial (value/correct/points) + runner de texto (v/c/p)
+  const packed = packAnswers([
+    { i: 0, itemId: 'q1', value: 'Madrid', correct: true, points: 1 },
+    { i: 1, v: [3, 5], c: false, p: 0 },
+  ]);
+  assert.deepStrictEqual(packed[0], { i: 0, v: 'Madrid', c: true, p: 1 }, 'normaliza forma secuencial');
+  assert.deepStrictEqual(packed[1], { i: 1, v: [3, 5], c: false, p: 0 }, 'normaliza forma de texto');
+  // tope: primero suelta v de correctos
+  const big = Array.from({ length: 50 }, (_, i) => ({ i, v: 'x'.repeat(100), c: i % 2 === 0, p: 1 }));
+  const capped = packAnswers(big, { maxBytes: 2000 });
+  assert.ok(JSON.stringify(capped).length <= 2000, 'respeta el tope de bytes');
+  ok('M4 packAnswers normaliza y capa por tamaño');
+}
+
 console.log(`\nitemStats.test: ${passed} checks passed`);

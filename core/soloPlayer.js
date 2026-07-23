@@ -109,7 +109,9 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
     stopTimer();
     if (rec) {
       state.score += rec.points || 0;
-      state.answers.push(rec);
+      // Sella el índice de ítem para la analítica por ítem (F3): así el detalle
+      // del intento sabe a qué pregunta corresponde cada respuesta.
+      state.answers.push({ i: state.idx, ...rec });
     }
     return true;
   }

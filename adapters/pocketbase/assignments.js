@@ -126,7 +126,7 @@ export function createPocketbaseAssignments({ userId = 'local-anon' } = {}) {
       return res?.totalItems ?? 0;
     },
 
-    async recordAttempt(assignmentId, activityId, playerName, scoreAuto, maxScore, timeUsed) {
+    async recordAttempt(assignmentId, activityId, playerName, scoreAuto, maxScore, timeUsed, answers = []) {
       await pbFetch('/api/collections/assignment_attempts/records', {
         method: 'POST',
         body: JSON.stringify({
@@ -138,6 +138,7 @@ export function createPocketbaseAssignments({ userId = 'local-anon' } = {}) {
           score_final: scoreAuto,
           max_score: maxScore,
           time_used: timeUsed,
+          answers,   // detalle por ítem para la analítica (F3)
           created_at: new Date().toISOString(),
         }),
       });

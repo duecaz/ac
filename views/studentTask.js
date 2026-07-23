@@ -6,6 +6,7 @@ import { isAcceptableNickname } from '../core/nicknameFilter.js';
 import { getTemplate } from '../core/registry.js';
 import { ensureIdentity } from '../core/identity.js';
 import { runPlayer } from '../core/player.js';
+import { packAnswers } from '../core/answerDetail.js';
 import { activityItemCount } from '../core/migrate.js';
 import { lsGet, lsSet } from '../core/ls.js';
 import { clock } from '../core/clock.js';
@@ -89,7 +90,10 @@ export async function renderTask(rootSel, code) {
       // other shapes) — use the generic item counter so this never throws.
       const max = activity.scoring?.maxScore || ((activity.scoring?.pointsPerCorrect || 1) * activityItemCount(activity));
       const timeUsed = state.timeUsed ?? Math.round((clock.now() - (state.startedAt ?? clock.now())) / 1000);
-      recordAttempt(t.id, t.activity_id, nick, state.score, max, timeUsed).catch(e => console.warn('record failed', e.message));
+      // Detalle por ítem para la analítica del docente (F3). Degrada a [] si el
+      // player no lo expone (freeform sin detalle) → el informe usa agregados.
+      const answers = packAnswers(state.answers || []);
+      recordAttempt(t.id, t.activity_id, nick, state.score, max, timeUsed, answers).catch(e => console.warn('record failed', e.message));
       // Override the template's own finish screen (which links to #/home — a
       // teacher-only route absent from the student app, hence "ruta no
       // encontrada"). Show a student-safe completion screen instead.

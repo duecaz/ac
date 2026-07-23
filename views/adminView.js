@@ -573,6 +573,7 @@ function renderPanel(rootSel) {
           { name: 'score_final',   type: 'number' },
           { name: 'max_score',     type: 'number' },
           { name: 'time_used',     type: 'number' },
+          { name: 'answers',       type: 'json' },   // detalle por ítem (analítica F3)
           { name: 'created_at',    type: 'text' },
         ]},
         // ❤ Likes de la biblioteca pública (S2): una fila por (actividad, profe).

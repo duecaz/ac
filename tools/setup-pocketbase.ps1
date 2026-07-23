@@ -124,7 +124,7 @@ $defs = @(
      rules = @{ listRule=""; viewRule=""; createRule=""; updateRule=""; deleteRule="" } },
 
   @{ name = "assignment_attempts";
-     fields = @( @{ name="assignment_id"; type="text" }, @{ name="activity_id"; type="text" }, @{ name="user_id"; type="text" }, @{ name="player_name"; type="text" }, @{ name="score_auto"; type="number" }, @{ name="score_final"; type="number" }, @{ name="max_score"; type="number" }, @{ name="time_used"; type="number" } );
+     fields = @( @{ name="assignment_id"; type="text" }, @{ name="activity_id"; type="text" }, @{ name="user_id"; type="text" }, @{ name="player_name"; type="text" }, @{ name="score_auto"; type="number" }, @{ name="score_final"; type="number" }, @{ name="max_score"; type="number" }, @{ name="time_used"; type="number" }, @{ name="answers"; type="json"; maxSize=200000 } );
      indexes = @();
      rules = @{ createRule=""; listRule='@request.auth.id != ""'; viewRule='@request.auth.id != ""'; updateRule=$null; deleteRule=$null } }
 )

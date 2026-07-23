@@ -217,9 +217,9 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     const pts = Math.max(0, h - o) * ppc;
     score += pts; hits += h; misses += miss; over += o;
     const perfect = miss === 0 && o === 0;
-    // Guarda el detalle por frase (aciertos/fallos/de-más) — base para la analítica
-    // por palabra del docente (etapa 2, docs/handoff-analitica-items.md).
-    passageResults.push({ p, got, want, hits: h, misses: miss, over: o, total: want.size, correct: perfect });
+    // Guarda el detalle por frase (aciertos/fallos/de-más + posiciones + puntos) —
+    // materia prima de la analítica por palabra del docente (F3).
+    passageResults.push({ p, got, want, hits: h, misses: miss, over: o, total: want.size, correct: perfect, points: pts });
     if (perfect) emitGame(GameEvents.ANSWER_CORRECT, { points: pts });
     else emitGame(GameEvents.ANSWER_WRONG, {});
     reveal(value, { hits: h, over: o, misses: miss, total: want.size, correct: perfect });
@@ -268,7 +268,9 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
       </div>` : '';
     mount(rootSel, resultScreenHtml({ lead: `Aciertos: <b>${hits}</b> / ${totalMarks}`, stats: `${hits} aciertos · ${misses} sin marcar · ${over} de más · ${timeUsed}s`, score, maxScore }) + reviewHtml);
     trySaveResult(opts, { activityId: activity.id, scoreAuto: score, scoreFinal: score, maxScore, timeUsed });
-    if (opts.onFinish) opts.onFinish({ score, startedAt, mistakes: misses });
+    // Detalle por frase para la analítica de tareas (F3): {i, v: posiciones, c, p}.
+    const answers = passageResults.map((r, i) => ({ i, v: [...r.got], c: r.correct, p: r.points || 0 }));
+    if (opts.onFinish) opts.onFinish({ score, startedAt, mistakes: misses, answers });
   }
 
   ask();

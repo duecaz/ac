@@ -1,6 +1,8 @@
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { get } from '../core/storage.js';
+import { rowsFromAttempts } from '../core/answerRows.js';
+import { itemStatsHtml } from './itemStatsView.js';
 import { createAssignment, listAssignmentsForActivity, listAttempts, closeAssignment, rotateAssignmentCode } from '../core/assignmentsTransport.js';
 import { toast, confirmModal } from '../core/toast.js';
 
@@ -131,6 +133,15 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
 
 export async function renderAttempts(rootSel, assignmentId) {
   const attempts = await listAttempts(assignmentId);
+  // Analítica por ítem/palabra de TODA la clase (F3): junta el `answers` de cada
+  // intento. La actividad (plantilla + ítems) sale del almacén local del docente.
+  const activityId = attempts.find(a => a.activity_id)?.activity_id;
+  const activity = activityId ? get(activityId) : null;
+  const hasDetail = attempts.some(a => Array.isArray(a.answers) && a.answers.length);
+  let analytics = '';
+  if (activity && hasDetail) {
+    try { analytics = itemStatsHtml(activity, rowsFromAttempts(attempts)); } catch { analytics = ''; }
+  }
   mount(rootSel, html`
     <a href="#/home" class="btn btn-link"><i class="bi bi-arrow-left"></i> Inicio</a>
     <h2 class="mb-3">Intentos</h2>
@@ -147,6 +158,8 @@ export async function renderAttempts(rootSel, assignmentId) {
             </tr>
           `).join('')}
         </tbody>
-      </table>`}
+      </table>
+      ${analytics ? `<h4 class="mt-4 mb-2"><i class="bi bi-bar-chart-line-fill"></i> Análisis de la clase</h4>${analytics}`
+        : `<p class="text-muted small mt-3"><i class="bi bi-info-circle"></i> El análisis por palabra/ítem aparecerá cuando haya intentos con detalle (crea el campo <code>answers</code> en #/admin si aún no está).</p>`}`}
   `);
 }

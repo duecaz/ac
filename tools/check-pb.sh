@@ -36,6 +36,10 @@ for f in data visibility owner; do
   echo "$FIELDS" | grep -qw "$f" && green "activities.$f" || red "activities.$f" "campo ausente"
 done
 
+# 4b) assignment_attempts.answers (analítica por ítem de tareas, F3)
+AAF=$(curl -s "$PB/api/collections/assignment_attempts" -H "Authorization: $TOKEN" | jq -r '.fields[].name' | tr '\n' ' ')
+echo "$AAF" | grep -qw answers && green "assignment_attempts.answers" || red "assignment_attempts.answers" "campo ausente (corre 'Crear colecciones' en #/admin)"
+
 # 5) La consulta de EXPLORAR / PORTADA (como la hace el navegador, anónimo, SIN sort)
 Q=$(curl -s -G "$PB/api/collections/activities/records" \
   --data-urlencode "filter=visibility='public'" --data-urlencode "perPage=5")
