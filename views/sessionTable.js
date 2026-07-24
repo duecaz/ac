@@ -1,47 +1,74 @@
 // C1 — Matriz alumno×ítem estilo Kahoot, COMPARTIDA por el informe de live (A1) y
-// el de tareas (B1). Recibe filas ya normalizadas de core/answerRows.js
-// ({ player, name, itemIndex, value, correct, points }) → tabla con una fila por
-// alumno y una columna por pregunta: ✓ verde / ✗ roja / — gris, % de acierto por
-// columna en la cabecera y total por alumno. En carrera la fila trae el PRIMER
-// intento (v0/c0) → refleja el error real. Ver docs/handoff-mejoras-live-tareas.md.
+// el de tareas (B1). Recibe filas normalizadas de core/answerRows.js
+// ({ player, name, itemIndex, value, correct, points }) + (opcional) los `items` y
+// la `template` para puntuar POR PARTE (M1): en Tildes/Comas cada tilde/coma bien
+// puesta cuenta como 1 acierto → la celda muestra "4/5" y el ranking va por número
+// de aciertos (palabras), no por "frase perfecta". Sin M1 → binario ✓/✗.
+// Ver docs/handoff-mejoras-live-tareas.md y handoff-analitica-items.md.
 import { escapeHtml } from '../core/html.js';
 import { dedupeRows } from '../core/answerRows.js';
+import { heatClass } from '../core/itemStats.js';
 
-// Construye el modelo puro (sin DOM) → testeable.
-//   rows: filas normalizadas · nItems: nº de preguntas · labels?: etiquetas de columna
-// → { players:[{name, cells:[{correct,points,value}|null], total}], perItem:[{n,nCorrect,pct}] }
-export function buildSessionTable(rows, nItems, { labels = [] } = {}) {
+// Puntúa una respuesta a un ítem: { hits, total, binary }.
+// Con M1 (itemParts/valueParts): hits = partes requeridas acertadas, total = nº de
+// partes requeridas. binary=true si el ítem tiene una sola parte requerida (quiz:
+// ✓/✗). Sin M1: binario desde `correct`.
+function cellScore(template, item, row) {
+  const parts = template?.itemParts?.({ item });
+  if (Array.isArray(parts) && parts.length && typeof template?.valueParts === 'function') {
+    const req = new Set(parts.filter(p => p.ok).map(p => String(p.key)));
+    const marked = new Set((template.valueParts({ value: row.value, item }) || []).map(k => String(k)));
+    let hits = 0; for (const k of marked) if (req.has(k)) hits++;
+    const total = req.size || 1;
+    return { hits, total, binary: total <= 1 };
+  }
+  return { hits: row.correct === true ? 1 : 0, total: 1, binary: true };
+}
+
+// Modelo puro (sin DOM) → testeable.
+export function buildSessionTable(rows, nItems, { labels = [], items = [], template = null } = {}) {
   const deduped = dedupeRows(rows || []);
-  const byPlayer = new Map();       // player → { name, cells:[] }
+  const byPlayer = new Map();
   for (const r of deduped) {
     if (!byPlayer.has(r.player)) byPlayer.set(r.player, { name: r.name || r.player, cells: Array(nItems).fill(null) });
     const p = byPlayer.get(r.player);
     if (r.name && (!p.name || p.name === r.player)) p.name = r.name;
     if (r.itemIndex >= 0 && r.itemIndex < nItems) {
-      p.cells[r.itemIndex] = { correct: r.correct, points: r.points || 0, value: r.value };
+      const sc = cellScore(template, items[r.itemIndex], r);
+      p.cells[r.itemIndex] = { correct: r.correct, points: r.points || 0, value: r.value, hits: sc.hits, total: sc.total, binary: sc.binary };
     }
   }
   const players = [...byPlayer.values()].map(p => ({
     name: p.name,
     cells: p.cells,
     total: p.cells.reduce((s, c) => s + (c?.points || 0), 0),
+    marks: p.cells.reduce((s, c) => s + (c?.hits || 0), 0),          // ACIERTOS (palabras/respuestas)
+    maxMarks: p.cells.reduce((s, c) => s + (c?.total || 0), 0),
     nCorrect: p.cells.filter(c => c?.correct === true).length,
-    // Ranking: MANDAN los aciertos (respuestas correctas a la primera); los puntos
-    // (que incluyen el bonus de velocidad) solo DESEMPATAN. Antes ordenaba por
-    // puntos → un alumno más rápido pero con menos aciertos adelantaba a otro con
-    // más aciertos. Ahora no.
-  })).sort((a, b) => b.nCorrect - a.nCorrect || b.total - a.total);
+  })).sort((a, b) => b.marks - a.marks || b.total - a.total);        // manda nº de aciertos; puntos desempatan
 
   const perItem = Array.from({ length: nItems }, (_, i) => {
-    let n = 0, nCorrect = 0;
-    for (const p of players) { const c = p.cells[i]; if (c) { n++; if (c.correct === true) nCorrect++; } }
-    return { label: labels[i] || `P${i + 1}`, n, nCorrect, pct: n ? Math.round(100 * nCorrect / n) : null };
+    let hits = 0, tot = 0, n = 0;
+    for (const p of players) { const c = p.cells[i]; if (c) { n++; hits += c.hits; tot += c.total; } }
+    return { label: labels[i] || `P${i + 1}`, n, pct: tot ? Math.round(100 * hits / tot) : null };
   });
   return { players, perItem };
 }
 
-// HTML de la tabla. Cabecera con % por pregunta; celdas coloreadas. Envuelta en
-// scroll horizontal propio (nunca desborda el body).
+function cellHtml(c) {
+  if (!c) return `<td class="st-cell st-cell--none">—</td>`;
+  if (!c.binary) {   // ítem con varias partes (Tildes/Comas): "4/5" coloreado
+    const pct = c.total ? c.hits / c.total : 0;
+    return `<td class="st-cell st-cell--${heatClass(pct)}" title="${c.hits} de ${c.total} bien${c.points ? ` · ${c.points} pts` : ''}">${c.hits}/${c.total}</td>`;
+  }
+  const cls = c.correct === true ? 'ok' : c.correct === false ? 'bad' : 'meh';
+  const corrected = c.correct === false && (c.points || 0) > 0;   // falló y lo corrigió (carrera)
+  const icon = c.correct === true ? '<i class="bi bi-check-lg"></i>'
+    : c.correct === false ? (corrected ? '<i class="bi bi-x-lg"></i><sup class="st-fix">↻</sup>' : '<i class="bi bi-x-lg"></i>')
+    : '·';
+  return `<td class="st-cell st-cell--${cls}" title="${corrected ? 'Falló al 1er intento, luego lo corrigió' : (c.points || 0) + ' pts'}">${icon}</td>`;
+}
+
 export function sessionTableHtml(rows, nItems, opts = {}) {
   const { players, perItem } = buildSessionTable(rows, nItems, opts);
   if (!players.length) return `<p class="text-muted text-center py-3">Sin respuestas todavía.</p>`;
@@ -50,34 +77,22 @@ export function sessionTableHtml(rows, nItems, opts = {}) {
   const body = players.map((p, rank) => `
     <tr>
       <td class="st-name">${rank < 3 ? ['🥇','🥈','🥉'][rank] + ' ' : ''}${escapeHtml(p.name)}</td>
-      ${p.cells.map(c => {
-        if (!c) return `<td class="st-cell st-cell--none">—</td>`;
-        const cls = c.correct === true ? 'ok' : c.correct === false ? 'bad' : 'meh';
-        // Falló al 1er intento pero acabó con puntos = lo CORRIGIÓ (típico de carrera:
-        // reintenta hasta acertar). Se marca ✗↻ para no confundir con "quedó mal".
-        const corrected = c.correct === false && (c.points || 0) > 0;
-        const icon = c.correct === true ? '<i class="bi bi-check-lg"></i>'
-          : c.correct === false ? (corrected ? '<i class="bi bi-x-lg"></i><sup class="st-fix">↻</sup>' : '<i class="bi bi-x-lg"></i>')
-          : '·';
-        const title = corrected ? 'Falló al 1er intento, luego lo corrigió' : `${c.points} pts`;
-        return `<td class="st-cell st-cell--${cls}" title="${title}">${icon}</td>`;
-      }).join('')}
-      <td class="st-total">${p.total}</td>
+      ${p.cells.map(cellHtml).join('')}
+      <td class="st-total" title="${p.marks}/${p.maxMarks} aciertos · ${p.total} pts">${p.marks}<small class="text-muted"> ac.</small></td>
     </tr>`).join('');
   return `<div class="st-wrap"><table class="st-table">
-    <thead><tr><th class="st-name">Alumno</th>${head}<th class="st-total">Total</th></tr></thead>
+    <thead><tr><th class="st-name">Alumno</th>${head}<th class="st-total">Aciertos</th></tr></thead>
     <tbody>${body}</tbody>
   </table></div>`;
 }
 
-// Filas en formato CSV (para exportar). Devuelve un string CSV.
 export function sessionTableCsv(rows, nItems, opts = {}) {
   const { players, perItem } = buildSessionTable(rows, nItems, opts);
   const esc = (s) => `"${String(s ?? '').replace(/"/g, '""')}"`;
-  const head = ['alumno', ...perItem.map((_, i) => `P${i + 1}`), 'total'];
+  const head = ['alumno', ...perItem.map((_, i) => `P${i + 1}`), 'aciertos', 'puntos'];
   const lines = [head.map(esc).join(',')];
   for (const p of players) {
-    lines.push([esc(p.name), ...p.cells.map(c => esc(c == null ? '' : c.correct === true ? 1 : 0)), p.total].join(','));
+    lines.push([esc(p.name), ...p.cells.map(c => esc(c == null ? '' : `${c.hits}/${c.total}`)), p.marks, p.total].join(','));
   }
   return lines.join('\n');
 }

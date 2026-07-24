@@ -4,7 +4,7 @@ import { buildSessionTable, sessionTableCsv } from '../views/sessionTable.js';
 
 let passed = 0; const ok = (m) => { passed++; console.log('  ✓', m); };
 
-// 2 alumnos, 2 preguntas. Ana: P0 bien, P1 mal. Beto: P0 mal, P1 bien.
+// 2 alumnos, 2 preguntas (quiz binario). Ana: P0 bien, P1 mal. Beto: P0 mal, P1 bien.
 const rows = [
   { player: 'p1', name: 'Ana', itemIndex: 0, value: 'Madrid', correct: true, points: 2 },
   { player: 'p1', name: 'Ana', itemIndex: 1, value: 'x', correct: false, points: 0 },
@@ -14,21 +14,40 @@ const rows = [
 {
   const t = buildSessionTable(rows, 2);
   assert.strictEqual(t.players.length, 2, '2 alumnos');
-  assert.strictEqual(t.players[0].name, 'Beto', 'ordena por total (Beto 3 primero)');
-  assert.strictEqual(t.players[0].total, 3, 'total Beto');
+  // ambos 1 acierto → desempata puntos (Beto 3 > Ana 2)
+  assert.strictEqual(t.players[0].name, 'Beto', 'ordena por aciertos y desempata por puntos');
+  assert.strictEqual(t.players[0].marks, 1, 'Beto 1 acierto');
   assert.strictEqual(t.perItem[0].pct, 50, 'P0 50% acierto');
-  assert.strictEqual(t.players.find(p=>p.name==='Ana').cells[1].correct, false, 'celda Ana P1 mal');
-  ok('buildSessionTable: celdas, totales y % por columna');
+  ok('buildSessionTable binario: aciertos, desempate por puntos, % por columna');
 }
 {
-  // Alumno sin responder una pregunta → celda null.
   const t = buildSessionTable([{ player: 'p3', name: 'Cid', itemIndex: 0, value: 'a', correct: true, points: 1 }], 2);
   assert.strictEqual(t.players[0].cells[1], null, 'pregunta sin responder = null');
   ok('celda vacía cuando no respondió');
 }
+// ── Con M1 (texto): la celda cuenta PALABRAS bien (2/3), no frase perfecta ────
+{
+  const textTpl = {
+    itemParts: ({ item }) => (item.marks || []).map(m => ({ key: m.pos, label: 'w', ok: true })),
+    valueParts: ({ value }) => (value || []).map(Number),
+  };
+  const items = [{ marks: [{ pos: 0 }, { pos: 3 }, { pos: 5 }] }]; // 3 tildes requeridas
+  const tRows = [
+    { player: 'p1', name: 'Ana', itemIndex: 0, value: [0, 3, 9], correct: false, points: 2 },  // 2 de 3 (+1 de más)
+    { player: 'p2', name: 'Beto', itemIndex: 0, value: [0, 3, 5], correct: true, points: 3 },   // 3 de 3
+  ];
+  const t = buildSessionTable(tRows, 1, { items, template: textTpl });
+  const ana = t.players.find(p => p.name === 'Ana');
+  assert.strictEqual(t.players[0].name, 'Beto', 'Beto (3 aciertos) por delante de Ana (2)');
+  assert.strictEqual(ana.cells[0].hits, 2, 'Ana 2 palabras bien');
+  assert.strictEqual(ana.cells[0].total, 3, 'de 3 requeridas');
+  assert.strictEqual(ana.cells[0].binary, false, 'ítem multi-parte no es binario');
+  assert.strictEqual(ana.marks, 2, 'ranking por marcas: Ana 2');
+  ok('M1 texto: la celda cuenta palabras bien (no todo-o-nada por frase)');
+}
 {
   const csv = sessionTableCsv(rows, 2);
-  assert.ok(csv.includes('"alumno","P1","P2","total"'), 'cabecera CSV');
+  assert.ok(csv.includes('"alumno","P1","P2","aciertos","puntos"'), 'cabecera CSV con aciertos y puntos');
   assert.ok(csv.split('\n').length === 3, 'cabecera + 2 alumnos');
   ok('sessionTableCsv exporta bien');
 }

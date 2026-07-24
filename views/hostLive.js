@@ -16,7 +16,7 @@ import { sessionTableHtml, sessionTableCsv, buildSessionTable } from './sessionT
 import { PB_URL } from '../pocketbase.config.js';
 import { acquire } from '../core/lifecycle.js';
 import { toast, confirmModal } from '../core/toast.js';
-import { applyScene } from '../core/presentation.js';
+import { applyScene, resetScene } from '../core/presentation.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { hostPaintDecision } from '../core/livePhases.js';
@@ -758,11 +758,16 @@ async function renderHost(rootSel, code, sessionId, activity) {
   const itemLabels = () => items.map((it, i) => { try { return tpl?.itemLabel?.(it) || `Pregunta ${i + 1}`; } catch { return `Pregunta ${i + 1}`; } });
 
   async function paintPodium(phaseChanged = true) {
+    // El fondo inmersivo de la actividad se aplicó a la PÁGINA para proyectar el
+    // juego; en el PODIO (chrome, no juego) se restablece el fondo neutro para que
+    // no "se apropie" de la página. (Fix puntual; la separación limpia player↔página
+    // va en docs/handoff-player-frame.md.)
+    resetScene();
     // Ranking desde los PUNTOS REALES por respuesta (misma fuente que la Tabla →
     // podio y tabla SIEMPRE coinciden). Si no hay filas (colección vacía), cae al
     // marcador oficial de la sesión (state.players[].score).
     const rows = await gatherSessionRows().catch(() => []);
-    let lb = buildSessionTable(rows, items.length).players.map(p => ({ name: p.name, score: p.total, nCorrect: p.nCorrect }));
+    let lb = buildSessionTable(rows, items.length, { items, template: tpl }).players.map(p => ({ name: p.name, score: p.total, marks: p.marks, nCorrect: p.nCorrect }));
     if (!lb.length) { try { lb = await leaderboard(sessionId, 100); } catch { lb = []; } }
     if (phaseChanged) emitGame(GameEvents.PODIUM, { top: lb.slice(0, 3).map(p => ({ name: p.name, score: p.score })) });
     const isText = tpl?.meta?.contentModel === 'textCorrection';
@@ -794,7 +799,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
       try {
         const rows = await gatherSessionRows();
         out.innerHTML = tab === 'tabla'
-          ? sessionTableHtml(rows, items.length, { labels: itemLabels() })
+          ? sessionTableHtml(rows, items.length, { labels: itemLabels(), items, template: tpl })
           : itemStatsHtml(activity, rows);
       } catch (e) { out.innerHTML = `<div class="alert alert-warning">No se pudo cargar: ${escapeHtml(e.message)}</div>`; }
     }
@@ -802,7 +807,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     document.getElementById('ll-csv')?.addEventListener('click', async () => {
       try {
         const rows = await gatherSessionRows();
-        const csv = sessionTableCsv(rows, items.length, { labels: itemLabels() });
+        const csv = sessionTableCsv(rows, items.length, { labels: itemLabels(), items, template: tpl });
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a'); a.href = url; a.download = `sesion-${code}.csv`; a.click();

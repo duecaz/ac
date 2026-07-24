@@ -205,7 +205,7 @@ export async function renderAttempts(rootSel, assignmentId) {
   function showTab(tab) {
     document.querySelectorAll('.ll-tab').forEach(b => b.classList.toggle('is-active', b.dataset.tab === tab));
     if (tab === 'alumnos') out.innerHTML = studentsTable;
-    else if (tab === 'tabla') out.innerHTML = activity ? sessionTableHtml(rows, items.length, { labels }) : '<p class="text-muted">Sin actividad local para la tabla.</p>';
+    else if (tab === 'tabla') out.innerHTML = activity ? sessionTableHtml(rows, items.length, { labels, items, template: T }) : '<p class="text-muted">Sin actividad local para la tabla.</p>';
     else out.innerHTML = (activity && hasDetail) ? itemStatsHtml(activity, rows) : '<p class="text-muted small">Sin detalle por ítem (crea el campo <code>answers</code> en #/admin).</p>';
   }
   document.querySelectorAll('.ll-tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
@@ -220,7 +220,7 @@ export async function renderAttempts(rootSel, assignmentId) {
     document.querySelectorAll('.ll-tab').forEach(x => x.classList.remove('is-active'));
   });
   document.getElementById('at-csv')?.addEventListener('click', () => {
-    const csv = activity ? sessionTableCsv(rows, items.length, { labels }) : '';
+    const csv = activity ? sessionTableCsv(rows, items.length, { labels, items, template: T }) : '';
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `tarea-intentos.csv`; a.click();
