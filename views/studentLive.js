@@ -95,8 +95,17 @@ export async function renderPlay(rootSel, code) {
     mount(rootSel, html`<div class="alert alert-danger m-3">${escapeHtml(e.message)}</div>`); return;
   }
 
-  // Per-activity theme during play (Kahoot look by default).
-  applyScene(activity, ctx, { defaultSkin: 'kahoot' });
+  // Escena POR FASE (docs/handoff-player-frame.md, Etapa 1): el fondo de la
+  // actividad va SOLO en las pantallas de JUEGO; lobby/espera/resultado (chrome) van
+  // neutros. Antes se aplicaba al montar y se apropiaba de toda la página.
+  let sceneOn = null;
+  function scene(game) {
+    if (game === sceneOn) return;
+    sceneOn = game;
+    if (game) applyScene(activity, null, { defaultSkin: 'kahoot' });
+    else resetScene();
+  }
+  ctx.add(() => resetScene());
   // Prevent overscroll while playing.
   document.body.classList.add('ww-play-noscroll');
   ctx.add(() => document.body.classList.remove('ww-play-noscroll'));
@@ -127,14 +136,14 @@ export async function renderPlay(rootSel, code) {
     if (qlSpinning) return; // don't repaint over an in-progress wheel spin
     if (key === lastPhaseKey) return;
     lastPhaseKey = key;
-    if (session.status === 'lobby') return paintLobby();
-    if (session.status === 'ended') return paintEnded();
-    if (session.phase === 'question-live') return paintQuestionLive();
-    if (session.phase === 'race') return isLiveBoard() ? paintLiveBoard() : paintRace();
-    if (session.phase === 'question') return paintQuestion();
-    if (session.phase === 'reveal') return paintRevealOwn();
-    if (session.phase === 'leaderboard') return paintWaiting('Mira la pizarra del profesor.');
-    paintWaiting('Esperando…');
+    if (session.status === 'lobby') { scene(false); return paintLobby(); }
+    if (session.status === 'ended') { scene(false); return paintEnded(); }
+    if (session.phase === 'question-live') { scene(true); return paintQuestionLive(); }
+    if (session.phase === 'race') { scene(true); return isLiveBoard() ? paintLiveBoard() : paintRace(); }
+    if (session.phase === 'question') { scene(true); return paintQuestion(); }
+    if (session.phase === 'reveal') { scene(true); return paintRevealOwn(); }
+    if (session.phase === 'leaderboard') { scene(false); return paintWaiting('Mira la pizarra del profesor.'); }
+    scene(false); paintWaiting('Esperando…');
   }
 
   function paintLobby() {
@@ -562,10 +571,7 @@ export async function renderPlay(rootSel, code) {
   async function paintEnded() {
     if (endingInProgress) return;
     endingInProgress = true;
-    // El fondo inmersivo de la actividad (p.ej. cuaderno) se aplicó a la PÁGINA
-    // para jugar; en la pantalla de RESULTADO se restablece el fondo neutro para
-    // que no "se apropie" de la página (antes el cuaderno cubría el resultado).
-    resetScene();
+    scene(false); // resultado = chrome → fondo neutro (Etapa 1)
     Streaks.reset(session.id, player.playerId);
     // La puntuación AUTORITATIVA es la del leaderboard del servidor. `myScore` es
     // solo una ESTIMACIÓN local de respaldo (acumulada en submit/reveal) para el

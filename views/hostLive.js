@@ -80,8 +80,18 @@ async function renderHost(rootSel, code, sessionId, activity) {
   let driverKind = 'unknown';
   try { driverKind = await realtimeKind(); } catch { /* keep unknown */ }
 
-  // Apply per-activity theme during the host live view (Kahoot look by default).
-  applyScene(activity, ctx, { defaultSkin: 'kahoot' });
+  // Escena POR FASE (docs/handoff-player-frame.md, Etapa 1): el fondo/skin de la
+  // actividad se aplica SOLO en las pantallas de JUEGO; lobby y podio (chrome) van
+  // con el fondo neutro de la app. Antes se aplicaba al MONTAR y se apropiaba de
+  // toda la página (lobby con PIN/QR incluido). El enrutador paint() decide.
+  let sceneOn = null;
+  function scene(game) {
+    if (game === sceneOn) return;
+    sceneOn = game;
+    if (game) applyScene(activity, null, { defaultSkin: 'kahoot' });
+    else resetScene();
+  }
+  ctx.add(() => resetScene());
   // Stage class for big-screen typography.
   // `ww-livestage` (NO `ww-stage`): activa las fuentes grandes de proyector
   // (touch.css) SIN heredar la región de andamio `.ww-stage` (scaffold.css), que
@@ -154,7 +164,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
   function paint() {
     if (disposed) return;
     // question-live bypasses the skip logic: ql_open changes must always repaint.
-    if (session.phase === 'question-live') return paintQuestionLive();
+    if (session.phase === 'question-live') { scene(true); return paintQuestionLive(); }
     // Always re-render when data changes (e.g. a player joins the lobby), but
     // only re-fire phase sounds/effects when the visible phase actually changes
     // (phaseChanged). `skip` protects an active question from being reset by
@@ -162,13 +172,14 @@ async function renderHost(rootSel, code, sessionId, activity) {
     const { key, phaseChanged, skip } = hostPaintDecision(lastPhaseKey, session);
     if (skip) return;
     lastPhaseKey = key;
-    if (session.status === 'lobby') return paintLobby(phaseChanged);
-    if (session.status === 'ended') return paintPodium(phaseChanged);
+    if (session.status === 'lobby') { scene(false); return paintLobby(phaseChanged); }
+    if (session.status === 'ended') { scene(false); return paintPodium(phaseChanged); }
+    scene(true); // el resto son pantallas de JUEGO → fondo de la actividad
     if (session.phase === 'race') return isBoard ? paintLiveBoardHost(phaseChanged) : paintRace(phaseChanged);
     if (session.phase === 'question') return paintQuestion(phaseChanged);
     if (session.phase === 'reveal') return paintReveal(phaseChanged);
     if (session.phase === 'leaderboard') return paintLeaderboard(phaseChanged);
-    paintLobby(phaseChanged);
+    scene(false); paintLobby(phaseChanged);
   }
 
   function paintLobby(phaseChanged = true) {
@@ -758,11 +769,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
   const itemLabels = () => items.map((it, i) => { try { return tpl?.itemLabel?.(it) || `Pregunta ${i + 1}`; } catch { return `Pregunta ${i + 1}`; } });
 
   async function paintPodium(phaseChanged = true) {
-    // El fondo inmersivo de la actividad se aplicó a la PÁGINA para proyectar el
-    // juego; en el PODIO (chrome, no juego) se restablece el fondo neutro para que
-    // no "se apropie" de la página. (Fix puntual; la separación limpia player↔página
-    // va en docs/handoff-player-frame.md.)
-    resetScene();
+    scene(false); // el podio es chrome → fondo neutro (Etapa 1)
     // Ranking desde los PUNTOS REALES por respuesta (misma fuente que la Tabla →
     // podio y tabla SIEMPRE coinciden). Si no hay filas (colección vacía), cae al
     // marcador oficial de la sesión (state.players[].score).
