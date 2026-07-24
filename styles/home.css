@@ -638,3 +638,5 @@ body {
 .ll-rank__pos { width: 26px; text-align: right; color: #9aa2ad; font-weight: 700; }
 .ll-rank__name { flex: 1; font-weight: 600; color: #1f2937; }
 .ll-rank__pts { font-weight: 800; color: #141c2e; }
+
+.st-fix { font-size: .7em; margin-left: 1px; opacity: .8; }

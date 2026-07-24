@@ -26,7 +26,11 @@ export function buildSessionTable(rows, nItems, { labels = [] } = {}) {
     cells: p.cells,
     total: p.cells.reduce((s, c) => s + (c?.points || 0), 0),
     nCorrect: p.cells.filter(c => c?.correct === true).length,
-  })).sort((a, b) => b.total - a.total || b.nCorrect - a.nCorrect);
+    // Ranking: MANDAN los aciertos (respuestas correctas a la primera); los puntos
+    // (que incluyen el bonus de velocidad) solo DESEMPATAN. Antes ordenaba por
+    // puntos → un alumno más rápido pero con menos aciertos adelantaba a otro con
+    // más aciertos. Ahora no.
+  })).sort((a, b) => b.nCorrect - a.nCorrect || b.total - a.total);
 
   const perItem = Array.from({ length: nItems }, (_, i) => {
     let n = 0, nCorrect = 0;
@@ -49,8 +53,14 @@ export function sessionTableHtml(rows, nItems, opts = {}) {
       ${p.cells.map(c => {
         if (!c) return `<td class="st-cell st-cell--none">—</td>`;
         const cls = c.correct === true ? 'ok' : c.correct === false ? 'bad' : 'meh';
-        const icon = c.correct === true ? '<i class="bi bi-check-lg"></i>' : c.correct === false ? '<i class="bi bi-x-lg"></i>' : '·';
-        return `<td class="st-cell st-cell--${cls}" title="${c.points} pts">${icon}</td>`;
+        // Falló al 1er intento pero acabó con puntos = lo CORRIGIÓ (típico de carrera:
+        // reintenta hasta acertar). Se marca ✗↻ para no confundir con "quedó mal".
+        const corrected = c.correct === false && (c.points || 0) > 0;
+        const icon = c.correct === true ? '<i class="bi bi-check-lg"></i>'
+          : c.correct === false ? (corrected ? '<i class="bi bi-x-lg"></i><sup class="st-fix">↻</sup>' : '<i class="bi bi-x-lg"></i>')
+          : '·';
+        const title = corrected ? 'Falló al 1er intento, luego lo corrigió' : `${c.points} pts`;
+        return `<td class="st-cell st-cell--${cls}" title="${title}">${icon}</td>`;
       }).join('')}
       <td class="st-total">${p.total}</td>
     </tr>`).join('');

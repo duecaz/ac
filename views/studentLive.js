@@ -7,7 +7,7 @@ import { isAcceptableNickname } from '../core/nicknameFilter.js';
 import { acquire } from '../core/lifecycle.js';
 import { toast } from '../core/toast.js';
 import { submit as queuedSubmit, flush as flushQueue, pendingCount } from '../core/submitQueue.js';
-import { applyScene } from '../core/presentation.js';
+import { applyScene, resetScene } from '../core/presentation.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import * as Streaks from '../core/streaks.js';
@@ -562,6 +562,10 @@ export async function renderPlay(rootSel, code) {
   async function paintEnded() {
     if (endingInProgress) return;
     endingInProgress = true;
+    // El fondo inmersivo de la actividad (p.ej. cuaderno) se aplicó a la PÁGINA
+    // para jugar; en la pantalla de RESULTADO se restablece el fondo neutro para
+    // que no "se apropie" de la página (antes el cuaderno cubría el resultado).
+    resetScene();
     Streaks.reset(session.id, player.playerId);
     // La puntuación AUTORITATIVA es la del leaderboard del servidor. `myScore` es
     // solo una ESTIMACIÓN local de respaldo (acumulada en submit/reveal) para el
@@ -572,7 +576,10 @@ export async function renderPlay(rootSel, code) {
     try {
       const lb = await leaderboard(session.id);
       const meIdx = lb.findIndex(p => p.id === player.playerId);
-      if (meIdx >= 0) { finalScore = lb[meIdx].score; rank = meIdx + 1; }
+      // Si el marcador del servidor trae un puntaje real, mándalo; si viene en 0
+      // (no se consolidó en state.players), conservamos la estimación local myScore
+      // para no mostrar "0 puntos" cuando el alumno sí acertó.
+      if (meIdx >= 0) { rank = meIdx + 1; if (lb[meIdx].score) finalScore = lb[meIdx].score; }
     } catch (e) {
       console.warn('[studentLive] leaderboard final no disponible; usando estimación local:', e);
     }
