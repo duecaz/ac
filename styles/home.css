@@ -612,3 +612,29 @@ body {
 .istats-chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-weight: 600; }
 .istats-who--ok .istats-chip { background: #e8f6ee; color: #15803d; }
 .istats-who--bad .istats-chip { background: #fdeaea; color: #b91c1c; }
+
+/* ── Tabla alumno×ítem estilo Kahoot (views/sessionTable.js) ─────────────────── */
+.st-wrap { overflow-x: auto; margin: 8px 0; -webkit-overflow-scrolling: touch; }
+.st-table { border-collapse: separate; border-spacing: 0; font-size: 13px; min-width: 100%; background: #fff; border-radius: 12px; overflow: hidden; }
+.st-table th, .st-table td { padding: 7px 9px; text-align: center; border-bottom: 1px solid #f0ecdf; white-space: nowrap; }
+.st-table thead th { background: #faf8f2; color: #4b5563; font-weight: 700; position: sticky; top: 0; }
+.st-qh small { color: #9aa2ad; font-weight: 600; }
+.st-name { text-align: left !important; font-weight: 600; color: #1f2937; position: sticky; left: 0; background: #fff; z-index: 1; }
+.st-table thead .st-name { background: #faf8f2; }
+.st-cell { font-weight: 700; }
+.st-cell--ok { color: #15803d; background: #e8f6ee; }
+.st-cell--bad { color: #b91c1c; background: #fdeaea; }
+.st-cell--meh { color: #b45309; background: #fef3e2; }
+.st-cell--none { color: #cbd2da; }
+.st-total { font-weight: 800; color: #141c2e; background: #f7f4ea; }
+/* pestañas del informe post-partida (A1) */
+.ll-tabs { display: inline-flex; gap: 6px; background: #efeadd; padding: 4px; border-radius: 999px; margin: 4px auto 14px; }
+.ll-tab { border: 0; background: transparent; padding: 7px 16px; border-radius: 999px; font-weight: 600; color: #4b5563; cursor: pointer; font-size: 14px; }
+.ll-tab.is-active { background: #fff; color: #141c2e; box-shadow: 0 1px 3px rgba(20,28,46,.12); }
+.ll-medals { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 10px 0; }
+.ll-medal { display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 1px solid #ece7d8; border-radius: 999px; padding: 5px 12px; font-size: 13px; font-weight: 600; color: #374151; }
+.ll-rank { max-width: 520px; margin: 8px auto 0; }
+.ll-rank__row { display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-bottom: 1px solid #f0ecdf; }
+.ll-rank__pos { width: 26px; text-align: right; color: #9aa2ad; font-weight: 700; }
+.ll-rank__name { flex: 1; font-weight: 600; color: #1f2937; }
+.ll-rank__pts { font-weight: 800; color: #141c2e; }
