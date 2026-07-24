@@ -1,73 +1,76 @@
-# HANDOFF — Separación PLAYER ↔ PÁGINA (frame de juego, estilo Wordwall)
+# HANDOFF — Separación PLAYER ↔ PÁGINA (escena por fase → frame estilo Wordwall)
 
-> Problema raíz (repetido): el fondo/skin de la ACTIVIDAD se aplica a la **página
-> entera** (`<body>`) en los modos live (host y alumno), así que "se apropia" del
-> chrome, del podio, del resultado y de los menús. Wordwall no hace esto: el juego
-> vive en un **marco** con su propio fondo; la página alrededor es neutra. Esa
-> frontera es lo que falta. Parche puntual ya aplicado (resetScene en podios/
-> resultado); este doc es el arreglo LIMPIO y definitivo.
+> Problema (recurrente): el fondo/skin de la ACTIVIDAD se aplica al `<body>` en los
+> modos live al MONTAR la vista, así que se come pantallas que NO son juego: el
+> LOBBY del host (PIN/QR — la captura del usuario), el podio, el resultado del
+> alumno, las esperas. Wordwall no hace esto: el juego vive en un marco; la página
+> alrededor es neutra. Estado: **P0 hecho** (parches resetScene en podio/resultado),
+> **Etapa 1 y 2 pendientes** — este es el plan para "volver a este problema".
 
-## Estado real (verificado)
-- **Solo** (`views/playerView.js`): YA lo hace bien → aplica skin/fondo al FRAME
-  `#ww-frame` (`applySkin(skin, frame)` / `applyBackground(bg, frame)`), no al body.
-  El CSS ya soporta ambos objetivos: `styles/backgrounds.css` define `body.bg-*` **y**
-  `.ww-player-frame.bg-*`.
-- **Live host** (`views/hostLive.js:84`) y **Live alumno** (`views/studentLive.js:99`):
-  `applyScene(activity, ctx, {defaultSkin:'kahoot'})` → tematiza el `<body>`. FUGA.
-- **core/player.js:17**: `applyScene(activity, ctx)` (page-level) — revisar quién lo usa.
-- `applyScene(activity, null, { target })` YA existe para tematizar UN elemento
-  (presentation.js) → la pieza para scoping ya está, solo falta USARLA en live.
+## Hechos verificados (anclas de código)
+- `views/hostLive.js:84` y `views/studentLive.js:99`: `applyScene(activity, ctx, …)`
+  al montar → tematiza el `<body>` para TODA la vida de la vista (incluido el lobby).
+- **Ambas vistas tienen UN enrutador de fases `paint()`** (hostLive ~línea 153,
+  studentLive ~122) que decide qué pantalla pintar. Esa es LA costura: ahí se sabe
+  si lo que viene es juego o chrome.
+- El modo **solo** (`views/playerView.js`) ya hace lo correcto: aplica skin/fondo al
+  frame `#ww-frame`, no al body. `styles/backgrounds.css` ya define `body.bg-*` **y**
+  `.ww-player-frame.bg-*`. `applyScene(activity, null, {target})` ya acepta target.
 
-## Principio (la "ley" nueva)
-**El fondo/skin de la actividad SOLO se aplica al frame del juego, NUNCA al `<body>`.**
-- El `<body>`/chrome (barra, menús) = paleta de la app (crema), siempre.
-- El JUEGO (y solo el juego) vive dentro de `.ww-player-frame` y lleva su fondo/skin.
-- Pantallas que NO son juego (lobby, pregunta-host con marcador, podio, resultado,
-  "¡Ganaste!") = fuera del frame → fondo neutro automáticamente.
+## Clasificación de pantallas (la tabla de la verdad)
 
-## Diseño
-### 1. Un frame único de juego
-Contrato: el área jugable se envuelve en `<div class="ww-player-frame" id="ww-frame">`.
-`applyScene`/`applySkin`/`applyBackground` reciben SIEMPRE `target = ese frame`.
-`resetScene()` global deja de ser necesario para "limpiar fugas" (ya no las hay), pero
-se mantiene por robustez.
+| Vista | Pantalla | ¿Juego o chrome? | Fondo |
+|---|---|---|---|
+| host | `paintLobby` (PIN/QR) | **chrome** | neutro |
+| host | `paintQuestion` / `paintReveal` / `paintRace` / `paintLiveBoardHost` / `paintQuestionLive` | juego | actividad |
+| host | `paintLeaderboard` (entre preguntas) | juego (flujo Kahoot) | actividad |
+| host | `paintPodium` (ended) | **chrome** | neutro |
+| alumno | `paintLobby` / `paintWaiting` / `paintEnded` | **chrome** | neutro |
+| alumno | `paintQuestion` / `paintRevealOwn` / `paintRace` / `paintLiveBoard` / `paintQuestionLive` | juego | actividad |
 
-### 2. Migrar los 3 full-screen a frame
-- **Solo** (playerView): ya está — es el modelo a copiar.
-- **Live host** (hostLive):
-  - `renderHost` deja de hacer `applyScene(...ctx...)` sobre el body.
-  - La vista de PREGUNTA (renderRoundHost) se monta dentro de `#ww-frame` y ahí se
-    aplica la escena; lobby/podio se montan FUERA del frame (chrome neutro).
-  - `.ww-livestage` (fuentes grandes de proyector, touch.css) se aplica AL FRAME.
-- **Live alumno** (studentLive): igual — el juego dentro del frame; lobby/resultado
-  fuera. `ww-play-noscroll` puede quedarse en body (es scroll, no color).
+## Etapa 1 — Escena POR FASE (quirúrgica, bajo riesgo) ← empezar aquí
+Sin tocar maquetación: mover la decisión de escena al enrutador `paint()`.
+1. Quitar el `applyScene` del montaje (hostLive:84 / studentLive:99).
+2. Helper local en cada vista:
+   ```js
+   let sceneOn = null; // evita re-aplicar en cada repaint
+   function scene(game) {
+     if (game === sceneOn) return; sceneOn = game;
+     if (game) applyScene(activity, null, { defaultSkin: 'kahoot' });
+     else resetScene();
+   }
+   ```
+   `paint()` llama `scene(false)` en las filas "chrome" de la tabla y `scene(true)` en
+   las de juego (una línea por rama; el short-circuit de repaints ya existe).
+3. El teardown (`ctx.add`) mantiene `resetScene()` (ya está por P0).
+4. Quitar los parches P0 puntuales (quedan absorbidos por el helper).
+- **Resultado**: lobby con PIN/QR, podio, esperas y "¡Ganaste!" SIEMPRE neutros; el
+  juego conserva su fondo inmersivo a pantalla completa. Cero cambio de layout.
+- **Verificación**: headless (Playwright): en lobby/podio `document.body.className`
+  NO contiene `bg-*` de actividad; en fase question sí. + juego manual 2 ventanas.
 
-### 3. CSS
-- `.ww-player-frame`: ocupa el área de juego (flex:1 / min-height), `position:relative`
-  para las capas del andamio, y hereda `bg-*` (ya definido). En proyector (host)
-  ocupa casi todo el viewport bajo la barra; en alumno, el área bajo la barra.
-- Quitar del recorrido cualquier `body.bg-*` en live (ya no se pone).
+## Etapa 2 — Frame real `.ww-player-frame` (estructural, el modelo Wordwall)
+Para que NI SIQUIERA durante el juego el body lleve el fondo (página crema alrededor,
+juego enmarcado), como en solo:
+1. Las ramas de juego montan su contenido dentro de `<div id="ww-frame" class="ww-player-frame">`
+   y la escena se aplica `{ target: frame }`. Las de chrome montan como hoy.
+2. `.ww-livestage` (tipografía de proyector, touch.css) se mueve del body al frame.
+3. CSS: `.ww-player-frame` llena el alto disponible bajo la barra (flex column en
+   `#app`), `position:relative` (capas del andamio ya lo esperan).
+4. Deprecar `applyScene` page-level (core/player.js incluido) + **ley en
+   `docs/leyes.md`**: "el fondo/skin de actividad va al frame, nunca al body" + check
+   en tests/norms (grep: ningún `applyScene(` sin `target` fuera de presentation.js).
+- **Verificación**: headless con capturas 16:9 y 9:16 de host+alumno en las 4 fases;
+  confirmar reflow del proyector intacto (fuentes grandes, sin scroll fantasma).
 
-### 4. Limpieza
-- `applyScene(activity, ctx)` sin target (page-level) → deprecar en favor de
-  `{ target: frame }`. Dejar `resetScene()` como salvaguarda.
-- Actualizar `docs/leyes.md` (§ maquetación): "el fondo de actividad va al frame, no
-  al body" + test si se puede (un check de que hostLive/studentLive no llaman
-  applyScene sin target).
-
-## Fases
-| Fase | Qué | Riesgo |
+## Orden y tamaño
+| Paso | Tamaño | Riesgo |
 |---|---|---|
-| **P0** (hecho) | `resetScene()` en podio host + resultado alumno (parche) | nulo |
-| **P1** | Frame en **live alumno**: juego en `#ww-frame`, lobby/resultado fuera; escena al frame | medio (maquetación) |
-| **P2** | Frame en **live host**: pregunta-proyector en `#ww-frame`, lobby/podio fuera; `.ww-livestage` al frame | medio |
-| **P3** | Deprecar applyScene page-level (core/player.js) + ley + test | bajo |
+| Etapa 1 host + alumno (escena por fase) | S | bajo (solo llamadas, sin layout) |
+| Etapa 2 alumno (frame) | M | medio |
+| Etapa 2 host (frame + livestage al frame) | M | medio (proyector) |
+| Ley + test norms + deprecación page-level | S | bajo |
 
-Verificación (headless Playwright, como el bug de emparejar): cargar host y alumno,
-comprobar que `document.body` NO tiene `bg-notebook` en lobby/podio/resultado y que el
-frame SÍ lo tiene durante el juego; capturas en 16:9 y 9:16.
-
-## Nota de alcance
-La migración a frame es la correcta pero toca la maquetación de hostLive/studentLive
-(riesgo de romper el reflow del proyector). Por eso va por fases con verificación
-headless. El parche P0 ya evita la fuga visible mientras tanto.
+La Etapa 1 elimina el 100% del bug VISIBLE (fondo en pantallas de chrome). La 2 es la
+arquitectura correcta a largo plazo; puede esperar a una sesión tranquila con
+verificación headless.
