@@ -615,7 +615,7 @@ function renderPanel(rootSel) {
           { name: 'points',  type: 'number' },
           { name: 'v0',      type: 'json' },   // primer intento en carrera (analítica)
           { name: 'c0',      type: 'bool' },   // ¿el primer intento fue correcto?
-        ]},
+        ], indexes: ['CREATE UNIQUE INDEX `idx_la_session_player_item` ON `live_answers` (`session`, `player`, `item`)'] },
         // One record per player (deuda A: lost-update del join). Un CREATE nunca
         // pisa a otro → 30 alumnos entrando a la vez ya no se clobbean en el blob.
         // playerId = id de la FILA. Índice único (session,name) → apodos únicos

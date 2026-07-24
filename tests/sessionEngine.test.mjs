@@ -411,4 +411,31 @@ const quizActivity = {
   ok('live: submit() tardío sobre una respuesta ya puntuada no la des-puntúa (fix)');
 }
 
+// ── Deuda B: en CARRERA, re-enviar una respuesta YA CORRECTA no re-puntúa ─────
+{
+  const act = { id: 'race1', template: 'quiz_sess', content: { items: [{ id: 'q', question: '2+2', answer: '4', options: ['4', '5'], points: 5 }] }, scoring: { mode: 'flat', pointsPerCorrect: 1 }, live: {} };
+  const e = createSession(act, { format: FORMATS.LIVE });
+  const ana = e.join('u-ana', 'Ana');
+  const beto = e.join('u-beto', 'Beto');
+  e.state.phase = 'race';                 // en prod lo fija setSessionState al iniciar carrera
+
+  // Ana acierta a la primera; un settle intermedio la puntúa (+5).
+  e.submit(ana.id, 0, '4', 100);
+  e.settle(0);
+  assert.strictEqual(e.state.players.find(p => p.id === ana.id).score, 5, 'acierto en carrera: +5');
+  // Re-envío de una respuesta YA CORRECTA (dup / rescate) → IGNORADO; el settle no re-suma.
+  e.submit(ana.id, 0, '4', 100);
+  e.settle(0);
+  assert.strictEqual(e.state.players.find(p => p.id === ana.id).score, 5, 'correcta re-enviada NO dobla los puntos (deuda B)');
+
+  // Beto falla → sí puede reintentar (la carrera re-encola los fallos).
+  e.submit(beto.id, 0, 'x', 100);
+  e.settle(0);
+  assert.strictEqual(e.state.players.find(p => p.id === beto.id).score, 0, 'fallo en carrera: 0');
+  e.submit(beto.id, 0, '4', 100);         // reintento correcto → permitido
+  e.settle(0);
+  assert.strictEqual(e.state.players.find(p => p.id === beto.id).score, 5, 'reintento de un fallo sí puntúa');
+  ok('carrera: la correcta no se re-puntúa; el fallo sí se reintenta (deuda B)');
+}
+
 console.log(`\nsessionEngine.test: ${passed} checks passed`);

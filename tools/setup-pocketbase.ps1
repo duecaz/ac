@@ -115,7 +115,7 @@ $defs = @(
 
   @{ name = "live_answers";
      fields = @( @{ name="session"; type="text"; required=$true }, @{ name="player"; type="text"; required=$true }, @{ name="item"; type="number" }, @{ name="value"; type="json"; maxSize=200000 }, @{ name="ms"; type="number" }, @{ name="scored"; type="bool" }, @{ name="correct"; type="bool" }, @{ name="points"; type="number" }, @{ name="v0"; type="json"; maxSize=200000 }, @{ name="c0"; type="bool" } );
-     indexes = @( "CREATE INDEX ``idx_la_session`` ON ``live_answers`` (``session``)" );
+     indexes = @( "CREATE INDEX ``idx_la_session`` ON ``live_answers`` (``session``)", "CREATE UNIQUE INDEX ``idx_la_session_player_item`` ON ``live_answers`` (``session``, ``player``, ``item``)" );
      rules = @{ listRule=""; viewRule=""; createRule=""; updateRule=""; deleteRule="" } },
 
   # live_players (deuda A): una fila por jugador → los joins concurrentes no se

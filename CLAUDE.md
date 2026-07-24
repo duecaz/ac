@@ -233,12 +233,14 @@ temporales retirados.
 - **PASO DEL USUARIO**: `#/admin` → "Crear colecciones" (añade `live_players`); luego
   `node tools/stress-live.mjs <PIN> 30` contra la Pi. Ver el handoff.
 
-#### B. Doble puntuación en modo carrera (`'race'`) (alto, código sin tests)
-- **Qué**: en fase `'race'` el lock de primera respuesta se omite, así que un reenvío resetea
-  `correct: null` y un `settle` posterior vuelve a sumar puntos. Reachable si hay un settle intermedio.
-- **Por qué no se arregló**: el fix obvio (bloquear reenvío de respuestas ya puntuadas) podría romper el
-  reintento legítimo de carrera; necesita entender el flujo `hostLive` race a fondo + un test que cubra
-  `submit/settle` en `'race'` (hoy 0 cobertura). 
+#### B. ✅ RESUELTO (v1.51.277) — Doble puntuación en modo carrera (`'race'`)
+- **Qué era**: en fase `'race'` el candado de primera respuesta se omitía por completo, así que
+  re-enviar una respuesta YA CORRECTA la reseteaba a `{correct:null}` y un `settle` posterior la
+  re-puntuaba (doble conteo). El reintento de un FALLO sí es legítimo (la carrera re-encola).
+- **Fix**: el candado en `kernel/session/engine.js submit()` ahora cubre en carrera las respuestas ya
+  CORRECTAS (`if (prev && (!isRace || prev.correct === true)) return;`) — una correcta no se pisa; una
+  incorrecta sí se puede reintentar. Test: `tests/sessionEngine.test.mjs` (carrera: correcta no dobla,
+  fallo sí reintenta).
 
 #### B-bis. ✅ RESUELTO (v1.51.267) — Respuestas REZAGADAS sin puntuar
 - **Qué era**: una respuesta que llegaba DESPUÉS del settle de su pregunta (rescate del trazo al
@@ -262,18 +264,16 @@ temporales retirados.
   final puede perderse en blip; la cola de `results.js` cubre el caso local) y sin idempotency key
   en resultados (posibles filas duplicadas si se pierde el ACK).
 
-#### F. `submitProgress` (tablero compartido de Ordena las Pelotas en vivo) — no atómico (medio)
-- **Qué**: `adapters/pocketbase/realtime.js submitProgress` hace GET-then-POST/PATCH sin lock; en
-  `views/studentLive.js` se llama sin `msTaken` (siempre `ms:0`/heredado). Con RTT alto (pizarra de
-  gama baja) dos envíos de progreso pueden solaparse, ambos ven "sin fila" y ambos `POST` → dos filas
-  `live_answers` para el mismo alumno/ítem. `fetchAnswerRows` desempata "por jugador, la de `ms` más
-  bajo" — correcto para una respuesta Kahoot de una vez, pero con `ms` siempre ~0 el desempate es
-  esencialmente arbitrario, así que el tablero del profesor (`hostLive.js paintLiveBoardHost`) o el
-  "Terminar carrera" pueden puntuar/mostrar un tablero VIEJO en vez del más reciente.
-- **Por qué no se arregló aún**: toca sincronización real con PocketBase (no verificable con el driver
-  `local` de los tests); mismo tipo de riesgo que la deuda A. Candidato: mandar un contador
-  monotónico/timestamp propio en vez de reusar `ms`, y desempatar por "más reciente" en vez de "más
-  bajo" cuando se detecten varias filas del mismo jugador.
+#### F. ✅ RESUELTO (v1.51.277) — `submitProgress` (tablero de Ordena las Pelotas) no atómico
+- **Qué era**: `submitProgress` hacía GET-then-POST/PATCH sin candado → dos progresos concurrentes
+  veían "sin fila" y ambos POST → DOS filas `live_answers` del mismo alumno/ítem; el desempate por
+  `ms` (siempre ~0) era arbitrario y el tablero del profe podía mostrar/puntuar un estado VIEJO.
+- **Fix (mismo patrón que la deuda A)**: índice **ÚNICO (session, player, item)** en `live_answers` →
+  una fila por celda garantizada por la BD. `submitAnswer`/`submitRaceAttempt`/`submitProgress`
+  refactorizados a **upsert atómico** vía `postAnswer()` (POST; si choca con 400, re-lee y PATCHea la
+  fila existente — helper compartido). Adiós al read-then-write que duplicaba. El desempate por `ms`
+  deja de importar (no hay duplicados). Tests: `tests/liveAnswers.test.mjs` (conflicto → PATCH, sin
+  2ª fila). **PASO DEL USUARIO**: re-correr "Crear colecciones" (añade el índice) + `stress-live`.
 
 #### E. Hallazgos de la auditoría v2 — restantes (los demás ya aplicados)
 - ✅ Aplicado: `SYNCED_KEY` con tope+LRU vía ls.js · podium/scoreboard de Equipos unificado en

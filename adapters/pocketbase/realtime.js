@@ -160,11 +160,27 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
     };
   }
 
-  // Fetch a session's answer rows for one item, deduped to ONE per player. A
-  // double-tap can create two rows (no DB unique index needed).
+  // Fetch a session's answer rows for one item, deduped to ONE per player.
   async function fetchAnswerRows(sessionId, itemIndex) {
     const res = await pbFetch(`/api/collections/${ANS}/records?filter=${ansFilter(sessionId, itemIndex)}&perPage=500`);
     return dedupeByPlayer(res?.items);
+  }
+
+  // La fila de UN (jugador, ítem), o null.
+  async function getAnswerRow(sessionId, itemIndex, playerId) {
+    const res = await pbFetch(`/api/collections/${ANS}/records?filter=${ansFilter(sessionId, itemIndex, playerId)}&perPage=1`);
+    return res?.items?.[0] || null;
+  }
+
+  // Crea la fila de una respuesta. Con el índice ÚNICO (session,player,item)
+  // (deuda F), dos creaciones concurrentes de la MISMA celda chocan: la 2ª recibe
+  // 400 → devolvemos `conflict` para que el llamador re-lea y haga PATCH. Así el
+  // upsert es ATÓMICO por la BD, sin el read-then-write que duplicaba filas (el
+  // tablero de Ordena las Pelotas mostraba/puntuaba un estado viejo). Sin el
+  // índice (pre-migración), el 400 no ocurre y todo sigue como antes.
+  async function postAnswer(body) {
+    try { await pbFetch(`/api/collections/${ANS}/records`, { method: 'POST', body: JSON.stringify(body) }); return { created: true }; }
+    catch (e) { if (e?.status === 400) return { conflict: true }; throw e; }
   }
 
   // Liquida las respuestas que quedaron SIN puntuar en CUALQUIER ítem, sin tocar
@@ -423,17 +439,12 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
 
     async submitAnswer(sessionId, playerId, itemIndex, value, msTaken) {
       if (await answersReady()) {
-        // First-answer lock (Kahoot): if this player already has a row for this
-        // item, keep it. A true simultaneous double-tap may still create two
-        // rows, but fetchAnswerRows() dedupes them on read, so no double-score.
-        const existing = await pbFetch(`/api/collections/${ANS}/records?filter=${ansFilter(sessionId, itemIndex, playerId)}&perPage=1`);
-        if (existing?.items?.length) return;
-        // scored=false marks "answered, not yet graded". PB bool can't be null,
-        // so this flag (not `correct`) carries the unscored state.
-        await pbFetch(`/api/collections/${ANS}/records`, {
-          method: 'POST',
-          body: JSON.stringify({ session: sessionId, player: playerId, item: Number(itemIndex), value, ms: msTaken ?? 0, scored: false, correct: false, points: 0 }),
-        });
+        // Candado de primera respuesta (Kahoot): si ya hay fila para este ítem, se
+        // conserva. Un doble-tap simultáneo choca contra el índice único → `conflict`,
+        // que aquí significa "ya respondió" → se ignora (antes creaba una 2ª fila).
+        // scored=false = "respondió, sin puntuar" (PB bool no admite null).
+        if (await getAnswerRow(sessionId, itemIndex, playerId)) return;
+        await postAnswer({ session: sessionId, player: playerId, item: Number(itemIndex), value, ms: msTaken ?? 0, scored: false, correct: false, points: 0 });
         return;
       }
       // Legacy blob path (no live_answers collection): load→mutate→PATCH.
@@ -449,20 +460,17 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
     // docs/handoff-analitica-items.md.
     async submitRaceAttempt(sessionId, playerId, itemIndex, value, correct, points, msTaken) {
       if (await answersReady()) {
-        const existing = await pbFetch(`/api/collections/${ANS}/records?filter=${ansFilter(sessionId, itemIndex, playerId)}&perPage=1`);
-        const row = existing?.items?.[0];
+        let row = await getAnswerRow(sessionId, itemIndex, playerId);
         if (!row) {
-          await pbFetch(`/api/collections/${ANS}/records`, {
-            method: 'POST',
-            body: JSON.stringify({
-              session: sessionId, player: playerId, item: Number(itemIndex),
-              value, ms: msTaken ?? 0, scored: !!correct, correct: !!correct, points: correct ? (points ?? 0) : 0,
-              v0: value, c0: !!correct,
-            }),
+          const r = await postAnswer({
+            session: sessionId, player: playerId, item: Number(itemIndex),
+            value, ms: msTaken ?? 0, scored: !!correct, correct: !!correct, points: correct ? (points ?? 0) : 0,
+            v0: value, c0: !!correct,
           });
-          return;
+          if (r.created) return;                 // primer intento creado
+          row = await getAnswerRow(sessionId, itemIndex, playerId);   // chocó → re-leer para avanzar
         }
-        if (correct && row.correct !== true) {
+        if (row && correct && row.correct !== true) {
           await pbFetch(`/api/collections/${ANS}/records/${row.id}`, {
             method: 'PATCH', body: JSON.stringify({ value, correct: true, scored: true, points: points ?? 0 }),
           });
@@ -487,17 +495,19 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
     // scores the latest value. itemIndex defaults to 0 (single shared board).
     async submitProgress(sessionId, playerId, value, msTaken, itemIndex = 0) {
       if (await answersReady()) {
-        const existing = await pbFetch(`/api/collections/${ANS}/records?filter=${ansFilter(sessionId, itemIndex, playerId)}&perPage=1`);
-        const row = existing?.items?.[0];
+        // Upsert ATÓMICO (deuda F): si no hay fila, POST; si dos progresos
+        // concurrentes chocan (índice único), el 2º re-lee y PATCHea la MISMA
+        // fila → nunca hay dos filas del mismo jugador con estados de tablero
+        // distintos (antes el desempate por `ms` mostraba/puntuaba uno viejo).
+        let row = await getAnswerRow(sessionId, itemIndex, playerId);
+        if (!row) {
+          const r = await postAnswer({ session: sessionId, player: playerId, item: Number(itemIndex), value, ms: msTaken ?? 0, scored: false, correct: false, points: 0 });
+          if (r.created) return;
+          row = await getAnswerRow(sessionId, itemIndex, playerId);
+        }
         if (row) {
           await pbFetch(`/api/collections/${ANS}/records/${row.id}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ value, ms: msTaken ?? row.ms ?? 0, scored: false }),
-          });
-        } else {
-          await pbFetch(`/api/collections/${ANS}/records`, {
-            method: 'POST',
-            body: JSON.stringify({ session: sessionId, player: playerId, item: Number(itemIndex), value, ms: msTaken ?? 0, scored: false, correct: false, points: 0 }),
+            method: 'PATCH', body: JSON.stringify({ value, ms: msTaken ?? row.ms ?? 0, scored: false }),
           });
         }
         return;

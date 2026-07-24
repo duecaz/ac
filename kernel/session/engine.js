@@ -132,19 +132,18 @@ function createLiveSession(activity, T, opts) {
       throw new Error('No se aceptan respuestas en esta fase');
     }
     const key = answerKey(itemIndex, playerId);
+    const prev = state.answers[key];
     // Lock the first answer (Kahoot-style). In the standard question phase a
     // duplicate submit — double-tap, or a submitQueue retry landing after the
     // original already saved — must NOT overwrite the recorded answer (which
     // would clobber its msTaken and let a slower resend beat the real one).
-    // Race mode is exempt: a wrong answer is requeued and legitimately retried.
     //
-    // The lock covers an answer REGARDLESS of whether settle() already scored
-    // it (bug fixed: checking only `correct === null` left a hole — a retry
-    // landing AFTER settle() fell through and overwrote the scored record back
-    // to `{correct:null, points:0}`, silently un-scoring it and, if the item
-    // were ever settled again — e.g. a race "end race" that re-settles all
-    // items — double-counting the points on re-settle).
-    if (!isRace && state.answers[key]) return;
+    // Race mode retries a WRONG answer (requeued), so a re-submit is legitimate —
+    // BUT una respuesta YA CORRECTA no se reintenta. Si se dejara pisar (reset a
+    // {correct:null}), un settle posterior la re-puntuaría → DOBLE conteo en
+    // carrera (deuda B). Por eso el lock cubre también en carrera las respuestas
+    // ya CORRECTAS; solo las incorrectas se pueden re-enviar.
+    if (prev && (!isRace || prev.correct === true)) return;
     state.answers[key] = { playerId, value, msTaken, correct: null, points: 0 };
   }
 
