@@ -12,7 +12,7 @@ import { sessionItems } from '../kernel/session/engine.js';
 import { rowsFromLiveAnswers, rowsFromLiveState } from '../core/answerRows.js';
 import { itemStatsHtml } from './itemStatsView.js';
 import { computeMedals } from '../core/itemStats.js';
-import { sessionTableHtml, sessionTableCsv } from './sessionTable.js';
+import { sessionTableHtml, sessionTableCsv, buildSessionTable } from './sessionTable.js';
 import { PB_URL } from '../pocketbase.config.js';
 import { acquire } from '../core/lifecycle.js';
 import { toast, confirmModal } from '../core/toast.js';
@@ -758,7 +758,12 @@ async function renderHost(rootSel, code, sessionId, activity) {
   const itemLabels = () => items.map((it, i) => { try { return tpl?.itemLabel?.(it) || `Pregunta ${i + 1}`; } catch { return `Pregunta ${i + 1}`; } });
 
   async function paintPodium(phaseChanged = true) {
-    const lb = await leaderboard(sessionId, 100);
+    // Ranking desde los PUNTOS REALES por respuesta (misma fuente que la Tabla →
+    // podio y tabla SIEMPRE coinciden). Si no hay filas (colección vacía), cae al
+    // marcador oficial de la sesión (state.players[].score).
+    const rows = await gatherSessionRows().catch(() => []);
+    let lb = buildSessionTable(rows, items.length).players.map(p => ({ name: p.name, score: p.total, nCorrect: p.nCorrect }));
+    if (!lb.length) { try { lb = await leaderboard(sessionId, 100); } catch { lb = []; } }
     if (phaseChanged) emitGame(GameEvents.PODIUM, { top: lb.slice(0, 3).map(p => ({ name: p.name, score: p.score })) });
     const isText = tpl?.meta?.contentModel === 'textCorrection';
     mount(rootSel, html`
