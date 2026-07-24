@@ -11,6 +11,7 @@ import { getTemplate } from '../core/registry.js';
 import { sessionItems } from '../kernel/session/engine.js';
 import { rowsFromLiveAnswers, rowsFromLiveState } from '../core/answerRows.js';
 import { itemStatsHtml } from './itemStatsView.js';
+import { sessionTableHtml, sessionTableCsv } from './sessionTable.js';
 import { PB_URL } from '../pocketbase.config.js';
 import { acquire } from '../core/lifecycle.js';
 import { toast, confirmModal } from '../core/toast.js';
@@ -731,52 +732,77 @@ async function renderHost(rootSel, code, sessionId, activity) {
     });
   }
 
+  // Junta TODAS las respuestas de la sesión (live_answers por ítem + respaldo del
+  // blob state.answers), con el nombre del alumno resuelto. Fuente única para las
+  // 3 pestañas del informe post-partida (A1) — se calcula una sola vez (cache).
+  let _rowsCache = null;
+  async function gatherSessionRows() {
+    if (_rowsCache) return _rowsCache;
+    const all = await Promise.all(items.map((_, i) => listAnswers(sessionId, i).then(a => rowsFromLiveAnswers(a, i)).catch(() => [])));
+    let rows = all.flat();
+    try {
+      const raw = await fetch(`${PB_URL}/api/collections/live_sessions/records/${sessionId}`).then(r => r.json());
+      const seen = new Set(rows.map(r => `${r.player} ${r.itemIndex}`));
+      for (const r of rowsFromLiveState(raw?.state || {})) if (!seen.has(`${r.player} ${r.itemIndex}`)) rows.push(r);
+    } catch { /* respaldo best-effort */ }
+    try {
+      const ps = await listPlayers(sessionId);
+      const nameOf = new Map((ps || []).map(p => [p.id, p.name]));
+      rows = rows.map(r => ({ ...r, name: r.name || nameOf.get(r.player) || r.player }));
+    } catch { /* si no hay nombres, se muestran ids */ }
+    _rowsCache = rows;
+    return rows;
+  }
+
+  const itemLabels = () => items.map((it, i) => { try { return tpl?.itemLabel?.(it) || `Pregunta ${i + 1}`; } catch { return `Pregunta ${i + 1}`; } });
+
   async function paintPodium(phaseChanged = true) {
-    const lb = await leaderboard(sessionId, 3);
-    if (phaseChanged) emitGame(GameEvents.PODIUM, { top: lb.map(p => ({ name: p.name, score: p.score })) });
+    const lb = await leaderboard(sessionId, 100);
+    if (phaseChanged) emitGame(GameEvents.PODIUM, { top: lb.slice(0, 3).map(p => ({ name: p.name, score: p.score })) });
+    const isText = tpl?.meta?.contentModel === 'textCorrection';
     mount(rootSel, html`
-      <h2 class="text-center mb-4"><i class="bi bi-trophy-fill text-warning"></i> Podio</h2>
-      ${podiumHtml(lb)}
-      <div class="text-center d-flex gap-2 justify-content-center flex-wrap mb-3">
-        <button id="ll-analysis" class="btn btn-primary btn-lg"><i class="bi bi-bar-chart-line-fill"></i> Análisis de la clase</button>
-        <a href="#/home" class="btn btn-outline-secondary btn-lg"><i class="bi bi-house"></i> Volver a inicio</a>
+      <h2 class="text-center mb-3"><i class="bi bi-trophy-fill text-warning"></i> Podio</h2>
+      ${podiumHtml(lb.slice(0, 3))}
+      <div class="text-center"><div class="ll-tabs">
+        <button class="ll-tab is-active" data-tab="podio"><i class="bi bi-trophy"></i> Ranking</button>
+        <button class="ll-tab" data-tab="tabla"><i class="bi bi-table"></i> Tabla</button>
+        <button class="ll-tab" data-tab="palabra"><i class="bi bi-bar-chart-line-fill"></i> Por ${isText ? 'palabra' : 'ítem'}</button>
+      </div></div>
+      <div id="ll-tabout" class="mt-1"></div>
+      <div class="text-center mt-3 d-flex gap-2 justify-content-center flex-wrap">
+        <button id="ll-csv" class="btn btn-outline-success btn-sm"><i class="bi bi-download"></i> Exportar CSV</button>
+        <a href="#/home" class="btn btn-outline-secondary btn-sm"><i class="bi bi-house"></i> Volver a inicio</a>
       </div>
-      <div id="ll-analysis-out" class="mt-2"></div>
     `);
-    // Análisis por ítem/palabra (F2): al pulsar, junta TODAS las respuestas de
-    // live_answers (una fila por alumno×ítem) y las pasa al agregador puro.
-    const btn = document.getElementById('ll-analysis');
-    if (btn) btn.addEventListener('click', async () => {
-      const out = document.getElementById('ll-analysis-out');
-      if (!out) return;
-      out.innerHTML = '<div class="text-center py-3"><div class="spinner-border"></div></div>';
-      btn.disabled = true;
+
+    const out = document.getElementById('ll-tabout');
+    const spin = () => { out.innerHTML = '<div class="text-center py-4"><div class="spinner-border"></div></div>'; };
+    const rankingHtml = () => `<div class="ll-rank">${lb.map((p, i) =>
+      `<div class="ll-rank__row"><span class="ll-rank__pos">${i < 3 ? ['🥇','🥈','🥉'][i] : (i + 1) + '.'}</span><span class="ll-rank__name">${escapeHtml(p.name)}</span><span class="ll-rank__pts">${p.score ?? 0}</span></div>`).join('')}</div>`;
+
+    async function showTab(tab) {
+      document.querySelectorAll('.ll-tab').forEach(b => b.classList.toggle('is-active', b.dataset.tab === tab));
+      if (tab === 'podio') { out.innerHTML = rankingHtml(); return; }
+      spin();
       try {
-        const all = await Promise.all(items.map((_, i) => listAnswers(sessionId, i).then(a => rowsFromLiveAnswers(a, i)).catch(() => [])));
-        let rows = all.flat();
-        // Respaldo: junta también el blob de la sesión (state.answers), por si la
-        // colección live_answers está vacía o hubo versión mixta. Solo añade las
-        // filas que no estén ya (dedupe por jugador×ítem) para no duplicar.
-        try {
-          const raw = await fetch(`${PB_URL}/api/collections/live_sessions/records/${sessionId}`).then(r => r.json());
-          const seen = new Set(rows.map(r => `${r.player} ${r.itemIndex}`));
-          for (const r of rowsFromLiveState(raw?.state || {})) {
-            if (!seen.has(`${r.player} ${r.itemIndex}`)) rows.push(r);
-          }
-        } catch { /* respaldo best-effort */ }
-        // Resuelve el nombre del alumno (las filas de live_answers traen el id) para
-        // mostrar "quién acertó/falló" estilo Kahoot en el análisis.
-        try {
-          const ps = await listPlayers(sessionId);
-          const nameOf = new Map((ps || []).map(p => [p.id, p.name]));
-          rows = rows.map(r => ({ ...r, name: r.name || nameOf.get(r.player) || r.player }));
-        } catch { /* si no hay nombres, se muestran ids */ }
-        out.innerHTML = itemStatsHtml(activity, rows);
-      } catch (e) {
-        out.innerHTML = `<div class="alert alert-warning">No se pudo cargar el análisis: ${escapeHtml(e.message)}</div>`;
-        btn.disabled = false;
-      }
+        const rows = await gatherSessionRows();
+        out.innerHTML = tab === 'tabla'
+          ? sessionTableHtml(rows, items.length, { labels: itemLabels() })
+          : itemStatsHtml(activity, rows);
+      } catch (e) { out.innerHTML = `<div class="alert alert-warning">No se pudo cargar: ${escapeHtml(e.message)}</div>`; }
+    }
+    document.querySelectorAll('.ll-tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+    document.getElementById('ll-csv')?.addEventListener('click', async () => {
+      try {
+        const rows = await gatherSessionRows();
+        const csv = sessionTableCsv(rows, items.length, { labels: itemLabels() });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `sesion-${code}.csv`; a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch { toast('No se pudo exportar el CSV.', 'danger'); }
     });
+    showTab('podio');
   }
 
   paint();
