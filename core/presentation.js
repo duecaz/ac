@@ -47,3 +47,21 @@ export function applyScene(activity, ctx = null, { defaultSkin = NEUTRAL_SKIN, d
   if (ctx) ctx.add(() => resetScene(target));
   return () => resetScene(target);
 }
+
+/**
+ * Escena POR FASE para las vistas live (docs/handoff-player-frame.md, Etapa 1):
+ * devuelve un toggle `scene(game)` que aplica el fondo/skin de la actividad SOLO
+ * en pantallas de JUEGO y lo resetea en las de chrome (lobby/podio/esperas), con
+ * short-circuit para no re-aplicar en cada repaint. Compartido por hostLive y
+ * studentLive (antes cada vista llevaba su copia).
+ * El teardown NO va aquí: cada vista registra `ctx.add(() => resetScene())`.
+ */
+export function sceneToggle(activity, { defaultSkin = 'kahoot' } = {}) {
+  let on = null;
+  return (game) => {
+    if (game === on) return;
+    on = game;
+    if (game) applyScene(activity, null, { defaultSkin });
+    else resetScene();
+  };
+}

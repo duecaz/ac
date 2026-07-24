@@ -4,7 +4,7 @@
 // must theme <body> only. Also covers applyScene's lifecycle teardown.
 // Run: node tests/presentation.test.mjs
 import assert from 'node:assert';
-import { applyScene, resetScene } from '../core/presentation.js';
+import { applyScene, resetScene, sceneToggle } from '../core/presentation.js';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
@@ -74,6 +74,26 @@ const act = { presentation: { skin: 'jungle', background: 'stars' } };
   assert.ok(document.body.classList.contains('skin-kahoot'), 'falls back to kahoot');
   resetScene();
   ok('applyScene uses defaultSkin when the activity has no skin');
+}
+
+// ── sceneToggle: escena por fase (compartido por hostLive/studentLive) ────────
+{
+  const scene = sceneToggle(act);
+  scene(true);
+  assert.ok(document.body.classList.contains('skin-jungle'), 'juego → skin de la actividad');
+  scene(false);
+  assert.ok(document.body.classList.contains('skin-default'), 'chrome → neutro');
+  assert.ok(!document.body.classList.contains('skin-jungle'), 'skin del juego retirado');
+  scene(false);   // repaint de la misma fase → no-op (short-circuit)
+  scene(true);
+  assert.ok(document.body.classList.contains('skin-jungle'), 'vuelve al juego');
+  // sin skin en la actividad → cae al default kahoot (mismo default que el live)
+  resetScene();
+  const scene2 = sceneToggle({ presentation: {} });
+  scene2(true);
+  assert.ok(document.body.classList.contains('skin-kahoot'), 'default kahoot');
+  resetScene();
+  ok('sceneToggle: aplica solo en juego, resetea en chrome, default kahoot');
 }
 
 delete global.document;

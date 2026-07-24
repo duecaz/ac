@@ -7,7 +7,7 @@ import { isAcceptableNickname } from '../core/nicknameFilter.js';
 import { acquire } from '../core/lifecycle.js';
 import { toast } from '../core/toast.js';
 import { submit as queuedSubmit, flush as flushQueue, pendingCount } from '../core/submitQueue.js';
-import { applyScene, resetScene } from '../core/presentation.js';
+import { sceneToggle, resetScene } from '../core/presentation.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import * as Streaks from '../core/streaks.js';
@@ -75,6 +75,7 @@ export async function renderPlay(rootSel, code) {
   let questionTickHandle = null;
   let lastPhaseKey = '';
   let autoFlushQuestion = null;  // capturar el trazo en curso al avanzar sin "Listo"
+  let rescuedIdx = -1;           // ítem cuyo trazo se rescató (su POST puede ir en vuelo)
   let myScore = 0;      // estimación local de respaldo (autoritativo = leaderboard del servidor)
   let endedFired = false;
   let endingInProgress = false;
@@ -97,15 +98,9 @@ export async function renderPlay(rootSel, code) {
   }
 
   // Escena POR FASE (docs/handoff-player-frame.md, Etapa 1): el fondo de la
-  // actividad va SOLO en las pantallas de JUEGO; lobby/espera/resultado (chrome) van
-  // neutros. Antes se aplicaba al montar y se apropiaba de toda la página.
-  let sceneOn = null;
-  function scene(game) {
-    if (game === sceneOn) return;
-    sceneOn = game;
-    if (game) applyScene(activity, null, { defaultSkin: 'kahoot' });
-    else resetScene();
-  }
+  // actividad va SOLO en las pantallas de JUEGO; lobby/espera/resultado (chrome)
+  // van neutros. Toggle compartido con hostLive (core/presentation.js).
+  const scene = sceneToggle(activity);
   ctx.add(() => resetScene());
   // Prevent overscroll while playing.
   document.body.classList.add('ww-play-noscroll');
@@ -366,7 +361,12 @@ export async function renderPlay(rootSel, code) {
         const ms = Date.now() - lastQuestionShownAt;
         const r = await queuedSubmit(session.id, player.playerId, idx, value, ms);
         emitGame(GameEvents.PLAYER_ANSWERED, { idx });
-        paintWaiting(r.queued ? 'Respuesta guardada (sin red). Se enviará al reconectar.' : '¡Respuesta enviada!');
+        // Solo pintar "esperando" si SEGUIMOS en la pregunta: cuando este submit
+        // es el rescate de autoFlushQuestion, la fase ya cambió y paint() ya montó
+        // el reveal/podio — pintarle "¡Respuesta enviada!" encima lo pisaba.
+        if (session.phase === 'question') {
+          paintWaiting(r.queued ? 'Respuesta guardada (sin red). Se enviará al reconectar.' : '¡Respuesta enviada!');
+        }
       }
     });
     // Rescate del trazo en curso: si el profe avanza antes de que el alumno pulse
@@ -375,7 +375,7 @@ export async function renderPlay(rootSel, code) {
     autoFlushQuestion = () => {
       if (sent) return;
       const btn = document.querySelector('#s-round .tc-done');
-      if (btn) btn.click();
+      if (btn) { rescuedIdx = idx; btn.click(); }
     };
 
     if (questionTickHandle) clearInterval(questionTickHandle);
@@ -395,7 +395,16 @@ export async function renderPlay(rootSel, code) {
 
   async function paintRevealOwn() {
     const idx = session.current_item;
-    const own = await getOwnAnswer(session.id, player.playerId, idx);
+    let own = await getOwnAnswer(session.id, player.playerId, idx);
+    // Si acabamos de RESCATAR el trazo de este ítem (autoFlushQuestion), su POST
+    // puede seguir en vuelo mientras este GET ya respondió null → saldría "Sin
+    // respuesta" al alumno que sí respondió (y lastPhaseKey no repinta). Un único
+    // reintento corto le da tiempo a aterrizar.
+    if (!own && rescuedIdx === idx) {
+      await new Promise(res => ctx.setTimeout(res, 900));
+      if (session.current_item !== idx || session.phase !== 'reveal') return;
+      own = await getOwnAnswer(session.id, player.playerId, idx);
+    }
     const ok = own?.correct === true;
     const skipped = !own;
     // Bump streak ONCE per item. No per-question sounds or confetti in live

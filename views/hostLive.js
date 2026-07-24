@@ -16,7 +16,7 @@ import { sessionTableHtml, sessionTableCsv, buildSessionTable } from './sessionT
 import { PB_URL } from '../pocketbase.config.js';
 import { acquire } from '../core/lifecycle.js';
 import { toast, confirmModal } from '../core/toast.js';
-import { applyScene, resetScene } from '../core/presentation.js';
+import { sceneToggle, resetScene } from '../core/presentation.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { hostPaintDecision } from '../core/livePhases.js';
@@ -82,15 +82,8 @@ async function renderHost(rootSel, code, sessionId, activity) {
 
   // Escena POR FASE (docs/handoff-player-frame.md, Etapa 1): el fondo/skin de la
   // actividad se aplica SOLO en las pantallas de JUEGO; lobby y podio (chrome) van
-  // con el fondo neutro de la app. Antes se aplicaba al MONTAR y se apropiaba de
-  // toda la página (lobby con PIN/QR incluido). El enrutador paint() decide.
-  let sceneOn = null;
-  function scene(game) {
-    if (game === sceneOn) return;
-    sceneOn = game;
-    if (game) applyScene(activity, null, { defaultSkin: 'kahoot' });
-    else resetScene();
-  }
+  // con el fondo neutro de la app. El enrutador paint() decide por rama.
+  const scene = sceneToggle(activity);
   ctx.add(() => resetScene());
   // Stage class for big-screen typography.
   // `ww-livestage` (NO `ww-stage`): activa las fuentes grandes de proyector
