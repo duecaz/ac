@@ -137,6 +137,63 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
     return [...byPlayer.values()];
   }
 
+  // Liquida las respuestas que quedaron SIN puntuar en CUALQUIER ítem, sin tocar la
+  // fase (`keepPhase`). Se llama al cerrar la sala para recoger las REZAGADAS: las
+  // que llegaron después del settle de su pregunta (rescate del trazo al avanzar,
+  // reintento de la cola offline, red lenta). Una sola pasada: 1 lectura de todas
+  // las filas + 1 PATCH por fila recién puntuada + 1 guardado de estado.
+  async function settlePending(sessionId) {
+    if (!(await answersReady())) {
+      // Blob heredado: las respuestas viven en state.answers y settle() ya salta
+      // las que tienen veredicto, así que esto solo puntúa lo pendiente.
+      const { engine } = await load(sessionId);
+      for (let i = 0; i < engine.totalItems; i++) engine.settle(i, { keepPhase: true });
+      await saveState(sessionId, engine);
+      return 0;
+    }
+    const res = await pbFetch(`/api/collections/${ANS}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}'`)}&perPage=500`);
+    const all = res?.items || [];
+    if (!all.some(r => !r.scored)) return 0;          // nada rezagado → ni cargamos el motor
+    const { engine } = await load(sessionId);
+    // Dedupe por (ítem, jugador) con el MISMO criterio que fetchAnswerRows.
+    const byItem = new Map();
+    for (const r of all) {
+      const it = Number(r.item);
+      if (!byItem.has(it)) byItem.set(it, new Map());
+      const m = byItem.get(it);
+      const prev = m.get(r.player);
+      if (!prev || (r.ms ?? 0) < (prev.ms ?? Infinity)) m.set(r.player, r);
+    }
+    const toPatch = [];
+    for (const [itemIndex, m] of byItem) {
+      const rows = [...m.values()];
+      if (!rows.some(r => !r.scored)) continue;       // ese ítem ya está liquidado
+      // Un ítem a la vez: settle() solo mira las claves `${itemIndex}:` y suma a
+      // players[], así que limpiamos entre ítems para no recontar.
+      engine.state.answers = {};
+      for (const r of rows) {
+        engine.state.answers[`${itemIndex}:${r.player}`] = {
+          playerId: r.player, value: r.value, msTaken: r.ms ?? 0,
+          // Preservar el veredicto existente hace que settle() NO vuelva a sumar
+          // los puntos ya contados en players[] (wasUnscored === false).
+          correct: r.scored ? r.correct : null, points: r.scored ? (r.points ?? 0) : 0,
+        };
+      }
+      engine.settle(itemIndex, { keepPhase: true });
+      for (const r of rows) {
+        if (r.scored) continue;                       // ya estaba puntuada: no la tocamos
+        const s = engine.state.answers[`${itemIndex}:${r.player}`];
+        if (s) toPatch.push({ id: r.id, correct: s.correct === true, points: s.points });
+      }
+    }
+    engine.state.answers = {};   // el blob queda limpio; las respuestas viven en live_answers
+    await Promise.all(toPatch.map(p => pbFetch(`/api/collections/${ANS}/records/${p.id}`, {
+      method: 'PATCH', body: JSON.stringify({ scored: true, correct: p.correct, points: p.points }),
+    }).catch(() => {})));
+    await saveState(sessionId, engine);
+    return toPatch.length;
+  }
+
   return {
     kind: 'pocketbase',
 
@@ -255,7 +312,14 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       await saveState(sessionId, engine);
     },
 
+    // Cerrar la sala LIQUIDA lo pendiente y LUEGO marca 'ended'. Así ninguna
+    // respuesta rezagada (rescate del trazo, cola offline, red lenta) se queda sin
+    // puntuar: llegue cuando llegue, si está en la colección antes del cierre
+    // cuenta. Un fallo al liquidar NO impide cerrar (la sala debe poder cerrarse
+    // siempre); se avisa por consola y el podio se pinta con lo que haya.
     async endSession(sessionId) {
+      try { await settlePending(sessionId); }
+      catch (e) { console.warn('[live] no se pudieron liquidar rezagadas al cerrar:', e); }
       const { engine } = await load(sessionId);
       engine.state.status = 'ended';
       engine.state.phase = 'ended';

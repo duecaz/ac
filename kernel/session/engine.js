@@ -148,7 +148,12 @@ function createLiveSession(activity, T, opts) {
     state.answers[key] = { playerId, value, msTaken, correct: null, points: 0 };
   }
 
-  function settle(itemIndex) {
+  // `keepPhase`: puntúa SIN mover la máquina de estados. Se usa al CERRAR la sala
+  // para liquidar respuestas REZAGADAS — las que llegaron después del settle de su
+  // pregunta (rescate del trazo al avanzar, reintento de la cola offline, red
+  // lenta). Sin esto quedaban `scored:false` → 0 puntos para siempre; y con el
+  // settle normal la fase saltaría a 'reveal' encima del podio.
+  function settle(itemIndex, { keepPhase = false } = {}) {
     const item = items[itemIndex];
     // Out-of-range index (e.g. a hydrated/corrupt state, or a race-mode client
     // that recorded an answer under an itemIndex past the end): there's nothing
@@ -167,7 +172,7 @@ function createLiveSession(activity, T, opts) {
       }
       settled++;
     }
-    if (state.phase !== 'race') state.phase = PHASES.REVEAL;
+    if (!keepPhase && state.phase !== 'race') state.phase = PHASES.REVEAL;
     return settled;
   }
 

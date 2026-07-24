@@ -54,6 +54,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | **Probar** (suites Node + panel admin + headless Playwright) | `docs/testing.md` |
 | Modo SOLO (Wordwall) por dentro · identidad/auth · dev local | `docs/modo-wordwall.md` · `docs/identidad.md` · `docs/dev-local.md` |
 | Índice completo de docs | `docs/README.md` (lo histórico vive en `docs/historico/`) |
+| **Cómo se puntúa CADA actividad** (mapa de los 7 sitios que deciden puntos + plan) | **`docs/handoff-puntuacion.md`** |
 | **Bugs abiertos / deuda** | la sección "Deuda técnica registrada" (abajo) + notas `docs/handoff-*.md` |
 | **Plan biblioteca pública** (portada, likes, gate de login, admin) | **`docs/handoff-biblioteca-publica.md`** (+ `handoff-google-classroom.md` y `handoff-seguridad-pb.md`) |
 | **Cómo está la BD/Pi de VERDAD** (PocketBase, Docker, backups, OAuth Google, quirks) | **`docs/infraestructura-pb.md`** (fuente de infra; actualizar si cambia el servidor) |
@@ -234,6 +235,17 @@ temporales retirados.
 - **Por qué no se arregló**: el fix obvio (bloquear reenvío de respuestas ya puntuadas) podría romper el
   reintento legítimo de carrera; necesita entender el flujo `hostLive` race a fondo + un test que cubra
   `submit/settle` en `'race'` (hoy 0 cobertura). 
+
+#### B-bis. ✅ RESUELTO (v1.51.267) — Respuestas REZAGADAS sin puntuar
+- **Qué era**: una respuesta que llegaba DESPUÉS del settle de su pregunta (rescate del trazo al
+  avanzar, reintento de la cola offline, red lenta) se quedaba `scored:false` → 0 puntos para
+  siempre. También las pendientes cuando el profe cerraba sin revelar la última pregunta.
+- **Fix**: `engine.settle(i, { keepPhase })` (kernel) + `settlePending(sessionId)` en el adaptador
+  PocketBase, que **`endSession` llama antes de marcar `ended`**: cerrar la sala liquida todo lo
+  pendiente en UNA pasada (1 lectura + 1 PATCH por fila nueva + 1 guardado). `keepPhase` evita que
+  la fase salte a `reveal` encima del podio; preservar el veredicto de las ya puntuadas evita el
+  doble conteo. Espejado en el driver `local`. Test: `tests/liveLocal.test.mjs` (incl. cerrar dos
+  veces = idempotente).
 
 #### C. `autoScore` colapsa `correct: null` → `false` (medio)
 - **Qué**: `engine.js autoScore` hace `correct: !!r.correct`; un ítem sin clave de respuesta

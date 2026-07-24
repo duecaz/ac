@@ -96,4 +96,37 @@ const final = await host.leaderboard(code);
 assert.deepStrictEqual(final.map(r => [r.name, r.score]), [['Beto', 2], ['Ana', 1]], 'final standings across tabs');
 ok('multi-round match completes end-to-end with no backend');
 
+// ── Rezagadas: una respuesta que llega DESPUÉS del settle de su pregunta ──────
+// (rescate del trazo al avanzar, reintento de la cola offline, red lenta). Antes
+// se quedaba sin puntuar para siempre; ahora endSession la liquida al cerrar, y
+// SIN mover la fase (keepPhase) para no pisar el podio.
+{
+  const h2 = createLocalRealtime({ kv, makeChannel, userId: 'host2' });
+  const { code: c2 } = await h2.createRoom(activity);
+  const s1 = createLocalRealtime({ kv, makeChannel, userId: 'u-caro' });
+  const s2 = createLocalRealtime({ kv, makeChannel, userId: 'u-dani' });
+  const caro = await s1.joinSession(c2, 'Caro');
+  const dani = await s2.joinSession(c2, 'Dani');
+  await h2.startSession(c2);
+  await s1.submitAnswer(c2, caro.playerId, 0, '4', 400);       // correcta
+  await s2.submitAnswer(c2, dani.playerId, 0, '3', 500);       // fallo
+
+  // El profe CIERRA sin revelar la última pregunta: sin liquidar, esas dos
+  // respuestas se quedaban en 0 para siempre.
+  assert.ok((await h2.listAnswers(c2, 0)).every(a => a.correct === null), 'sin puntuar antes de cerrar');
+  await h2.endSession(c2);
+
+  const closed = await h2.fetchSession(c2);
+  assert.strictEqual(closed.status, 'ended', 'la sala queda cerrada');
+  assert.strictEqual(closed.phase, 'ended', 'keepPhase: liquidar NO devuelve la fase a reveal');
+  assert.deepStrictEqual((await h2.leaderboard(c2)).map(r => [r.name, r.score]),
+    [['Caro', 1], ['Dani', 0]], 'la pendiente puntúa al cerrar');
+
+  // Cerrar dos veces no debe volver a sumar (settle salta lo ya puntuado).
+  await h2.endSession(c2);
+  assert.deepStrictEqual((await h2.leaderboard(c2)).map(r => [r.name, r.score]),
+    [['Caro', 1], ['Dani', 0]], 'cerrar de nuevo es idempotente (sin doble conteo)');
+  ok('endSession liquida lo pendiente sin mover la fase y sin doble conteo');
+}
+
 console.log(`\nliveLocal.test: ${passed} checks passed`);
