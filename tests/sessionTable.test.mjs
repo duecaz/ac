@@ -27,9 +27,16 @@ const rows = [
 }
 // ── Con M1 (texto): la celda cuenta PALABRAS bien (2/3), no frase perfecta ────
 {
+  // Desde P4 (handoff-puntuacion) la tabla lee el mérito del SCORER de la
+  // plantilla ({hits, over, total}), no de itemParts/valueParts.
   const textTpl = {
-    itemParts: ({ item }) => (item.marks || []).map(m => ({ key: m.pos, label: 'w', ok: true })),
-    valueParts: ({ value }) => (value || []).map(Number),
+    scoreSubmission: ({ value, item }) => {
+      const want = new Set((item.marks || []).map(m => m.pos));
+      const got = (value || []).map(Number);
+      let hits = 0, over = 0;
+      for (const p of new Set(got)) (want.has(p) ? hits++ : over++);
+      return { correct: hits > 0, points: hits, hits, over, total: want.size };
+    },
   };
   const items = [{ marks: [{ pos: 0 }, { pos: 3 }, { pos: 5 }] }]; // 3 tildes requeridas
   const tRows = [
@@ -47,9 +54,16 @@ const rows = [
 }
 // ── carrera: la tabla cuenta el intento FINAL, no el primer borrador ─────────
 {
+  // Desde P4 (handoff-puntuacion) la tabla lee el mérito del SCORER de la
+  // plantilla ({hits, over, total}), no de itemParts/valueParts.
   const textTpl = {
-    itemParts: ({ item }) => (item.marks || []).map(m => ({ key: m.pos, label: 'w', ok: true })),
-    valueParts: ({ value }) => (value || []).map(Number),
+    scoreSubmission: ({ value, item }) => {
+      const want = new Set((item.marks || []).map(m => m.pos));
+      const got = (value || []).map(Number);
+      let hits = 0, over = 0;
+      for (const p of new Set(got)) (want.has(p) ? hits++ : over++);
+      return { correct: hits > 0, points: hits, hits, over, total: want.size };
+    },
   };
   const items = [{ marks: [{ pos: 0 }, { pos: 3 }, { pos: 5 }, { pos: 7 }] }]; // 4 tildes
   // alumno2 empezó MAL (v0 vacío → value) pero acabó con 3/4 (valueFinal).

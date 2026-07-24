@@ -25,8 +25,8 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 {
   const item = { id: 'pin_a', label: 'Cabeza' };
   const act = { scoring: { pointsPerCorrect: 1 } };
-  assert.deepStrictEqual(scoreDiagramSubmission({ value: 'pin_a', item, activity: act }), { correct: true, points: 1 }, 'a su pin → 1');
-  assert.deepStrictEqual(scoreDiagramSubmission({ value: 'pin_b', item, activity: act }), { correct: false, points: 0 }, 'a otro pin → 0');
+  assert.deepStrictEqual(scoreDiagramSubmission({ value: 'pin_a', item, activity: act }), { correct: true, points: 1, hits: 1, total: 1 }, 'a su pin → 1');
+  assert.deepStrictEqual(scoreDiagramSubmission({ value: 'pin_b', item, activity: act }), { correct: false, points: 0, hits: 0, total: 1 }, 'a otro pin → 0');
   assert.strictEqual(scoreDiagramSubmission({ value: 'pin_a', item, activity: { scoring: { pointsPerCorrect: 5 } } }).points, 5, 'respeta ppc');
   ok('scoreDiagramSubmission: etiqueta↔su pin');
 }

@@ -280,8 +280,8 @@ const quizActivity = {
   const matchAct = { id: 'ma', template: 'match_sess', scoring: { pointsPerCorrect: 1 },
     content: { pairs: [{ id: 'm1', left: 'dog', right: 'perro' }, { id: 'm2', left: 'cat', right: 'gato' }] } };
   assert.strictEqual(isVsCompatible(matchAct), true, 'match is VS-compatible');
-  assert.deepStrictEqual(scoreMatchSubmission({ value: 'perro', item: matchAct.content.pairs[0], activity: matchAct }), { correct: true, points: 1 });
-  assert.deepStrictEqual(scoreMatchSubmission({ value: 'gato', item: matchAct.content.pairs[0], activity: matchAct }), { correct: false, points: 0 });
+  assert.deepStrictEqual(scoreMatchSubmission({ value: 'perro', item: matchAct.content.pairs[0], activity: matchAct }), { correct: true, points: 1, hits: 1, total: 1 });
+  assert.deepStrictEqual(scoreMatchSubmission({ value: 'gato', item: matchAct.content.pairs[0], activity: matchAct }), { correct: false, points: 0, hits: 0, total: 1 });
   const mvs = createSession(matchAct, { format: FORMATS.VS, left: 'A', right: 'B' });
   mvs.start(); mvs.answer('left', 'perro'); mvs.answer('left', 'gato');
   assert.strictEqual(mvs.standings().left.score, 2, 'match VS scores correct picks');

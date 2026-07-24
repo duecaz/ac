@@ -1,9 +1,13 @@
 # HANDOFF — Puntuación: dónde vive la decisión de puntos de CADA actividad
 
-> Estado: **mapa verificado en código + plan por fases**. No ejecutado (salvo la
-> unificación de Tildes/Comas, ya en producción desde v1.51.265). Escrito tras la
-> caza de bugs "0 pts con aciertos" / "3/8 vs ✓/✗", que fueron SÍNTOMAS de lo que
-> este documento describe.
+> Estado: **P1–P4 EJECUTADAS (v1.51.268)** — `core/scoring/` existe, los 11
+> scorers devuelven mérito `{hits, total}`, el contrato lo exige
+> (`tests/templateContract.test.mjs` + generador `tools/new-template.mjs`), y la
+> tabla (`views/sessionTable.js cellScore`) lee el mérito del scorer único.
+> **P5 pendiente** (unificar escalas de wordsearch/ballsort): cambia puntajes
+> que ven los alumnos → NO ejecutar sin OK explícito del usuario. El mapa §1
+> refleja el estado PREVIO (los puntos aún se calculan igual; solo el mérito y
+> la estructura de módulos cambiaron).
 
 ## 1. Dónde vive hoy la decisión (mapa real, 13 plantillas)
 
@@ -88,13 +92,13 @@ hereda mérito+puntos coherentes sin tocar nada.
 
 ## 5. Plan por fases (riesgo creciente; las 4 primeras NO cambian puntajes)
 
-| Fase | Qué | Riesgo | Verificación |
+| Fase | Qué | Riesgo | Estado |
 |---|---|---|---|
-| **P1** | Crear `core/scoring/`, mover `scoreHelpers` + `scoreMarksPerHit`, re-exportar desde las rutas viejas | nulo (solo mueve) | suite verde sin tocar plantillas |
-| **P2** | Añadir `hits/total` a los scorers que no lo dan (quiz, math, match, diagram, wordsearch, ballsort, crossword). Binarias: `1/1` ó `0/1` | bajo (campo nuevo, nadie lo lee aún) | test de contrato: todo `scoreSubmission` devuelve `hits/total` |
-| **P3** | `normalize()` + exigirlo en `tests/templateContract.test.mjs` | bajo | una plantilla nueva nace cumpliendo |
-| **P4** | `sessionTable`/`itemStats` leen `hits/total`; se borra `cellScore` | bajo | tablas idénticas antes/después |
-| **P5** | **Unificar escalas**: wordsearch ppc 10→1 y su Kahoot propio → `awardPoints`; ballsort a la escala común | **cambia puntajes** | requiere decisión del usuario |
+| **P1** | Crear `core/scoring/`, mover `scoreHelpers` + `scoreMarksPerHit`, re-exportar desde las rutas viejas | nulo (solo mueve) | ✅ v1.51.268 |
+| **P2** | Añadir `hits/total` a los scorers que no lo daban. Binarias: `1/1` ó `0/1`; wheel/question-live `total:0` (puntúa el profe). Quiz además usa `awardPoints` (misma fórmula, un solo sitio) | bajo | ✅ v1.51.268 |
+| **P3** | Contrato exige el mérito (`core/templateContract.js` + self-test + generador `new-template.mjs`) | bajo | ✅ v1.51.268 |
+| **P4** | `cellScore` de sessionTable lee el mérito del SCORER (multi-parte); en binarias sigue mandando el veredicto guardado del settle (autoritativo, sin re-scoring). `itemParts` queda SOLO para el heatmap por parte (itemStats), que sí necesita el desglose | bajo | ✅ v1.51.268 |
+| **P5** | **Unificar escalas**: wordsearch ppc 10→1 y su Kahoot propio → `awardPoints`; ballsort a la escala común; ¿math con Kahoot opcional? | **cambia puntajes** | ⏸ requiere OK del usuario |
 
 **P5 cambia los números que ven los alumnos** en Sopa de Letras y Ordena las Pelotas.
 No se ejecuta sin el OK explícito del usuario; P1–P4 son invisibles para él.

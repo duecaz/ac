@@ -9,25 +9,24 @@ import { escapeHtml } from '../core/html.js';
 import { dedupeRows } from '../core/answerRows.js';
 import { heatClass } from '../core/itemStats.js';
 
-// Puntúa una respuesta a un ítem: { hits, total, binary }.
-// Con M1 (itemParts/valueParts): hits = partes requeridas acertadas, total = nº de
-// partes requeridas. binary=true si el ítem tiene una sola parte requerida (quiz:
-// ✓/✗). Sin M1: binario desde `correct`.
-function cellScore(template, item, row) {
-  const parts = template?.itemParts?.({ item });
-  if (Array.isArray(parts) && parts.length && typeof template?.valueParts === 'function') {
-    const req = new Set(parts.filter(p => p.ok).map(p => String(p.key)));
-    const marked = new Set((template.valueParts({ value: row.value, item }) || []).map(k => String(k)));
-    let hits = 0; for (const k of marked) if (req.has(k)) hits++;
-    const over = marked.size - hits;   // marcas de MÁS (desempate por precisión)
-    const total = req.size || 1;
-    return { hits, over, total, binary: total <= 1 };
-  }
+// Mérito de una respuesta a un ítem: { hits, over, total, binary }. Fuente única:
+// el scorer de la plantilla (contrato {correct, points, hits, total} — fase P4 de
+// docs/handoff-puntuacion.md); aquí ya no se reimplementa el conteo por partes.
+// Para ítems BINARIOS manda el veredicto GUARDADO (`row.correct`, del settle
+// autoritativo), no un re-scoring: solo el mérito multi-parte (tildes "3/8") se
+// recalcula del value, porque no viaja en la fila.
+function cellScore(template, item, row, activity) {
+  try {
+    const r = template?.scoreSubmission?.({ value: row.value, item, activity, mode: 'report' });
+    if (r && Number.isFinite(r.total) && r.total > 1) {
+      return { hits: r.hits || 0, over: r.over || 0, total: r.total, binary: false };
+    }
+  } catch { /* scorer exigente con la forma del value → binario */ }
   return { hits: row.correct === true ? 1 : 0, over: 0, total: 1, binary: true };
 }
 
 // Modelo puro (sin DOM) → testeable.
-export function buildSessionTable(rows, nItems, { labels = [], items = [], template = null } = {}) {
+export function buildSessionTable(rows, nItems, { labels = [], items = [], template = null, activity = null } = {}) {
   const deduped = dedupeRows(rows || []);
   const byPlayer = new Map();
   for (const r of deduped) {
@@ -39,7 +38,7 @@ export function buildSessionTable(rows, nItems, { labels = [], items = [], templ
       // el borrador inicial — el heatmap de errores sí usa el primero (v0).
       const vf = r.valueFinal ?? r.value;
       const cf = r.correctFinal ?? r.correct;
-      const sc = cellScore(template, items[r.itemIndex], { value: vf, correct: cf });
+      const sc = cellScore(template, items[r.itemIndex], { value: vf, correct: cf }, activity);
       p.cells[r.itemIndex] = { correct: cf, points: r.points || 0, value: vf, hits: sc.hits, over: sc.over || 0, total: sc.total, binary: sc.binary };
     }
   }

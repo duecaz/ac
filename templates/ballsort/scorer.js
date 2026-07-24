@@ -21,7 +21,7 @@ export function scoreBallsort({ value, item, activity } = {}) {
     if (Array.isArray(v.tubes)) {
       frac = progress({ tubes: v.tubes, tubeCapacity: v.tubeCapacity || 7 });
     }
-    return { correct: false, points: Math.round(frac * PARTIAL_MAX) };
+    return { correct: false, points: Math.round(frac * PARTIAL_MAX), hits: 0, total: 1 };
   }
 
   let points;
@@ -32,5 +32,5 @@ export function scoreBallsort({ value, item, activity } = {}) {
     const moves = Math.max(0, v.moveCount || 0);
     points = SOLVE_BASE - moves * 8;           // -8 pts/move
   }
-  return { correct: true, points: Math.max(SOLVE_FLOOR, points) };
+  return { correct: true, points: Math.max(SOLVE_FLOOR, points), hits: 1, total: 1 };
 }

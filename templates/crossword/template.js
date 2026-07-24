@@ -16,7 +16,7 @@ function scoreCrossword({ value, activity }) {
   const total = value?.totalWords ?? (activity?.content?.words?.length || 1);
   const solved = value?.solvedIds?.length ?? 0;
   const ppc = activity?.scoring?.pointsPerCorrect ?? 1;
-  return { correct: solved >= total, points: solved * ppc };
+  return { correct: solved >= total, points: solved * ppc, hits: solved, total };
 }
 
 export class CrosswordTemplate extends BaseTemplate {

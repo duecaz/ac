@@ -6,10 +6,10 @@
 const norm = (s) => String(s || '').toUpperCase().replace(/\s+/g, '');
 
 export function scoreWordsearch({ value, item, msTaken, activity }) {
-  if (!value) return { correct: false, points: 0 };
+  if (!value) return { correct: false, points: 0, hits: 0, total: 1 };
   const found = norm(value);
   const words = (activity.content?.words || []).map(norm);
-  if (!words.includes(found)) return { correct: false, points: 0 };
+  if (!words.includes(found)) return { correct: false, points: 0, hits: 0, total: 1 };
 
   const ppc = activity.scoring?.pointsPerCorrect || 10;
   let points = ppc;
@@ -24,5 +24,5 @@ export function scoreWordsearch({ value, item, msTaken, activity }) {
   // Length bonus: longer words worth more (+50% for words >6 letters)
   if (found.length > 6) points = Math.round(points * 1.5);
 
-  return { correct: true, points };
+  return { correct: true, points, hits: 1, total: 1 };
 }

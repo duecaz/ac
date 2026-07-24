@@ -234,18 +234,19 @@ export async function render${fn}Player(rootSel, activity, opts = {}) {
 
 files['player.js'] = shell === 'sequential' ? playerSequential : playerFreeform;
 
-files['scorer.js'] = `// Scorer PURO de ${label} — contrato: SIEMPRE {correct, points}.
-// correct:null = ítem no puntuable (sin clave). Convención de puntos en
-// core/scoreHelpers.js (puntos del ítem → config → 1; penalización con suelo).
-import { basePoints, wrongPoints } from '${REL}/core/scoreHelpers.js';
+files['scorer.js'] = `// Scorer PURO de ${label} — contrato: SIEMPRE {correct, points, hits, total}.
+// hits/total = MÉRITO (docs/handoff-puntuacion.md): binarias 1/1 ó 0/1; por
+// partes (p.ej. tildes) 3/8; total:0 = ítem no auto-puntuable. correct:null =
+// sin clave. Convención de puntos en core/scoring/ (ítem → config → 1).
+import { basePoints, wrongPoints } from '${REL}/core/scoring/index.js';
 
 export function score${fn}Submission({ value, item, msTaken, activity, mode = 'solo' }) {
   const ok = value != null;   // TODO: compara value contra la clave real del ítem
-  if (ok === null) return { correct: null, points: 0 };
+  if (ok === null) return { correct: null, points: 0, hits: 0, total: 0 };
   const scoring = activity?.scoring || {};
   return ok
-    ? { correct: true, points: basePoints(item, scoring) }
-    : { correct: false, points: wrongPoints(scoring) };
+    ? { correct: true, points: basePoints(item, scoring), hits: 1, total: 1 }
+    : { correct: false, points: wrongPoints(scoring), hits: 0, total: 1 };
 }
 `;
 

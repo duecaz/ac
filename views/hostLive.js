@@ -767,7 +767,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     // podio y tabla SIEMPRE coinciden). Si no hay filas (colección vacía), cae al
     // marcador oficial de la sesión (state.players[].score).
     const rows = await gatherSessionRows().catch(() => []);
-    let lb = buildSessionTable(rows, items.length, { items, template: tpl }).players.map(p => ({ name: p.name, score: p.total, marks: p.marks, nCorrect: p.nCorrect }));
+    let lb = buildSessionTable(rows, items.length, { items, template: tpl, activity }).players.map(p => ({ name: p.name, score: p.total, marks: p.marks, nCorrect: p.nCorrect }));
     if (!lb.length) { try { lb = await leaderboard(sessionId, 100); } catch { lb = []; } }
     if (phaseChanged) emitGame(GameEvents.PODIUM, { top: lb.slice(0, 3).map(p => ({ name: p.name, score: p.score })) });
     const isText = tpl?.meta?.contentModel === 'textCorrection';
@@ -799,7 +799,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
       try {
         const rows = await gatherSessionRows();
         out.innerHTML = tab === 'tabla'
-          ? sessionTableHtml(rows, items.length, { labels: itemLabels(), items, template: tpl })
+          ? sessionTableHtml(rows, items.length, { labels: itemLabels(), items, template: tpl, activity })
           : itemStatsHtml(activity, rows);
       } catch (e) { out.innerHTML = `<div class="alert alert-warning">No se pudo cargar: ${escapeHtml(e.message)}</div>`; }
     }
@@ -807,7 +807,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     document.getElementById('ll-csv')?.addEventListener('click', async () => {
       try {
         const rows = await gatherSessionRows();
-        const csv = sessionTableCsv(rows, items.length, { labels: itemLabels(), items, template: tpl });
+        const csv = sessionTableCsv(rows, items.length, { labels: itemLabels(), items, template: tpl, activity });
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a'); a.href = url; a.download = `sesion-${code}.csv`; a.click();

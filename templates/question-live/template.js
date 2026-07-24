@@ -44,7 +44,7 @@ export class QuestionLiveTemplate extends BaseTemplate {
   static getRoundPayload(activity, { itemIndex }) {
     return activity.content?.items?.[itemIndex] ?? null;
   }
-  static scoreSubmission() { return { correct: false, points: 0 }; }
+  static scoreSubmission() { return { correct: null, points: 0, hits: 0, total: 0 }; }   // puntúa el profe (ql_points): sin mérito automático
 
   // Preview de tarjeta: rejilla de cajas numeradas de colores (o ruleta de
   // números si la actividad usa el selector de ruleta) — como el player solo.

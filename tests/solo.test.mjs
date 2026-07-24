@@ -22,13 +22,14 @@ ok('isCorrect: case/accent-insensitive, trims, supports array answers, null when
 
 // ---------- scoreQuizSubmission (pure, shared SOLO + LIVE) ----------
 const flat = { scoring: { mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0 } };
+// Desde P2 (handoff-puntuacion) el scorer devuelve además el MÉRITO hits/total.
 assert.deepStrictEqual(scoreQuizSubmission({ value: 'a', item: { answer: 'a', points: 3 }, activity: flat }),
-  { correct: true, points: 3 }, 'flat: uses item.points');
+  { correct: true, points: 3, hits: 1, total: 1 }, 'flat: uses item.points (+mérito 1/1)');
 assert.deepStrictEqual(scoreQuizSubmission({ value: 'a', item: { answer: 'b', points: 3 }, activity: flat }),
-  { correct: false, points: 0 }, 'flat: wrong → 0 when no penalty');
+  { correct: false, points: 0, hits: 0, total: 1 }, 'flat: wrong → 0 when no penalty (+mérito 0/1)');
 assert.deepStrictEqual(
   scoreQuizSubmission({ value: 'a', item: { answer: 'b' }, activity: { scoring: { pointsPerWrong: -1 } } }),
-  { correct: false, points: -1 }, 'flat: negative penalty applies on wrong');
+  { correct: false, points: -1, hits: 0, total: 1 }, 'flat: negative penalty applies on wrong');
 assert.strictEqual(
   scoreQuizSubmission({ value: 'x', item: { answer: null }, activity: flat }).correct, null,
   'unscorable item → correct null');

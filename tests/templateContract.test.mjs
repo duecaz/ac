@@ -70,8 +70,13 @@ assert.ok(found.some(i => i.includes('renderRound')), 'detecta renderRound sin s
 // Y la forma del scorer: {score,maxScore} (el bug real del Crucigrama) debe cazarse.
 const badScorer = { ...broken, meta: { ...broken.meta, instructions: 'x' }, renderRound: undefined,
   scoreSubmission: () => ({ score: 1, maxScore: 2 }) };
-assert.ok(checkTemplateContract(badScorer).some(i => i.includes('{correct, points}')),
+assert.ok(checkTemplateContract(badScorer).some(i => i.includes('{correct, points, hits, total}')),
   'detecta un scorer con forma equivocada ({score,maxScore})');
+// Y el MÉRITO (hits/total) es obligatorio desde P3 del handoff de puntuación:
+// un scorer con la forma vieja {correct, points} sin mérito también se caza.
+const noMerit = { ...badScorer, scoreSubmission: () => ({ correct: true, points: 1 }) };
+assert.ok(checkTemplateContract(noMerit).some(i => i.includes('mérito')),
+  'detecta un scorer sin mérito {hits, total}');
 ok('el checker caza plantillas rotas (instructions vacío, ronda a medias, scorer con forma equivocada)');
 
 console.log(`\ntemplateContract.test: ${passed} checks passed`);

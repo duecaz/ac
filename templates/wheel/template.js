@@ -41,7 +41,7 @@ export class WheelTemplate extends BaseTemplate {
   static getRoundPayload(activity, { itemIndex }) {
     return activity.content?.items?.[itemIndex] ?? null;
   }
-  static scoreSubmission() { return { correct: false, points: 0 }; }
+  static scoreSubmission() { return { correct: null, points: 0, hits: 0, total: 0 }; }   // puntúa el profe (ql_points): sin mérito automático
 
   // Preview de tarjeta: la ruleta con sus entradas (reusa el mismo wheelSvg del
   // player). Sin entradas → porciones numeradas para que siempre parezca ruleta.

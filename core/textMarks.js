@@ -1,6 +1,10 @@
 // Pure text+marks helpers, shared by the tildes editor and player.
 // kind 'tilde' applies acute accent to vowels; case-preserved.
-import { basePoints } from './scoreHelpers.js';
+//
+// La PUNTUACIÓN por marcas ya NO vive aquí: se movió a core/scoring/marks.js
+// (fase P1 de docs/handoff-puntuacion.md — este módulo es texto, no puntos).
+// Re-export de compatibilidad para los llamadores existentes:
+export { scoreMarks, scoreMarksPerHit } from './scoring/marks.js';
 
 const TILDE_MAP = {
   a: 'á', e: 'é', i: 'í', o: 'ó', u: 'ú',
@@ -45,39 +49,6 @@ export function applyMarks(text, marks) {
 // True if the passage has at least one mark.
 export function hasMarks(passage) {
   return Array.isArray(passage?.marks) && passage.marks.length > 0;
-}
-
-// Per-passage scoring for the session formats (VS / Equipos-auto / Solo):
-// the whole passage is ONE round, correct iff the student's marked positions
-// (value: number[]) exactly match the answer-key positions for `kinds`. Pure.
-// Tildes binds kinds=['tilde']; Comas binds kinds=['coma'].
-export function scoreMarks(value, item, kinds, activity) {
-  const want = new Set((item?.marks || []).filter(m => kinds.includes(m.kind)).map(m => m.pos));
-  const got = new Set(Array.isArray(value) ? value.map(Number) : []);
-  const correct = want.size === got.size && [...want].every(p => got.has(p));
-  const scoring = activity?.scoring || {};
-  return { correct, points: correct ? basePoints(item, scoring) : 0 };
-}
-
-// Puntuación PARCIAL (crédito por marca): UN punto por cada marca CORRECTA — "por
-// palabra buena". Las marcas de MÁS (una tilde donde no va) NO restan puntos: el
-// puntaje es exactamente el nº de aciertos, así que coincide con lo que muestra la
-// tabla ("3/8") y con `player.score` (suma de aciertos) → clasificación, podio y
-// tabla usan el MISMO número (antes restaban y dejaban 0 pese a tener aciertos).
-// Las de más se devuelven en `over` como dato de calidad (desempate/corrección) y
-// `perfect` marca la frase impecable (todas puestas, ninguna de más). `correct`
-// (ganó crédito) = al menos una buena.
-export function scoreMarksPerHit(value, item, kinds, activity) {
-  const want = new Set((item?.marks || []).filter(m => kinds.includes(m.kind)).map(m => m.pos));
-  const got = Array.isArray(value) ? value.map(Number) : [];
-  let hits = 0, over = 0;
-  for (const p of new Set(got)) (want.has(p) ? hits++ : over++);
-  // `pointsPerCorrect` (guardado EN la actividad, default 1) = puntos por marca buena.
-  // ÚNICA fuente de la regla → solo/tarea/VS/equipos/live la comparten (ver
-  // scoreTildesSubmission/scoreComasSubmission y runTextCorrectionSolo).
-  const ppc = activity?.scoring?.pointsPerCorrect ?? 1;
-  const points = hits * ppc;   // las de más NO restan; se registran en `over`
-  return { correct: points > 0, points, hits, over, total: want.size, perfect: hits === want.size && over === 0 };
 }
 
 // Reverse of applyMarks for kind='tilde': given an accented input from the

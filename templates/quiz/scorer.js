@@ -1,21 +1,14 @@
 import { isCorrect } from '../../core/contentModels/qa.js';
-import { basePoints, wrongPoints, useKahoot } from '../../core/scoreHelpers.js';
+import { awardPoints } from '../../core/scoring/index.js';
 
 // Pure scoring. Same input shape used by client (SOLO) and Edge Function (LIVE).
-// In SOLO we read activity.scoring.mode; in LIVE the Edge Function passes
-// mode: 'live' which overrides to use activity.live.pointsModel.
+// In SOLO we read activity.scoring.mode; in LIVE the caller passes mode: 'live'
+// which switches to activity.live.pointsModel. El MÉRITO (hits/total) es binario:
+// 1/1 ó 0/1 (total 0 = ítem sin clave → no puntuable). Los PUNTOS los pone la
+// fórmula común awardPoints (flat | kahoot) — sin copia local del bonus.
 export function scoreQuizSubmission({ value, item, msTaken, activity, mode = 'solo' }) {
   const ok = isCorrect(item, value);
-  if (ok === null) return { correct: null, points: 0 };
-  const scoring = activity?.scoring || {};
-  if (!ok) return { correct: false, points: wrongPoints(scoring) };
-  const base = basePoints(item, scoring);
-  if (useKahoot(mode, scoring, activity?.live)) {
-    const live = activity?.live || {};
-    const max = (live.questionTimer || 20) * 1000;
-    const remain = Math.max(0, 1 - (msTaken || 0) / max);
-    const points = Math.round(base * 500 + (live.speedBonusMax ?? 1000) * remain);
-    return { correct: true, points };
-  }
-  return { correct: true, points: base };
+  if (ok === null) return { correct: null, points: 0, hits: 0, total: 0 };
+  const points = awardPoints({ correct: ok, item, msTaken, activity, mode });
+  return { correct: ok, points, hits: ok ? 1 : 0, total: 1 };
 }
