@@ -108,8 +108,10 @@ las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecut
   pizarras A55; nunca añadir bucles rAF continuos en el hilo principal sin gate `ww-lite`.
 - **Filtros PocketBase**: SIEMPRE `pbEscape`/`pbFilterParam` (`core/pbFilter.js`), nunca
   `encodeURIComponent` a pelo (no escapa la comilla simple).
-- **Puntos**: convención en `core/scoreHelpers.js` (basePoints/wrongPoints/useKahoot); Tildes VS
-  puntúa 1 punto fijo por tilde buena (`scoreMarksPerHit`, las marcas de más restan).
+- **Puntos**: convención en `core/scoreHelpers.js` (basePoints/wrongPoints/useKahoot); Tildes/Comas
+  puntúan **1 punto por marca buena** (`scoreMarksPerHit`): el puntaje = nº de aciertos, las marcas
+  de más NO restan (se registran en `over` para desempate/corrección; `perfect` = todas y ninguna
+  de más). Así `player.score`, la tabla y el podio muestran el MISMO número.
 - **Maquetación del PLAYER: NADA con tamaño fijo** — todo relativo (unidades de
   contenedor `cq*` o `%`, o cálculo JS tipo `fitLayout`/`fitPassage`), para que el
   juego se vea bien en 4K, 600×800, 9:16 y 16:9. Prohibido `px`/`rem` fijos que

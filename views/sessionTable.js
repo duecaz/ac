@@ -19,10 +19,11 @@ function cellScore(template, item, row) {
     const req = new Set(parts.filter(p => p.ok).map(p => String(p.key)));
     const marked = new Set((template.valueParts({ value: row.value, item }) || []).map(k => String(k)));
     let hits = 0; for (const k of marked) if (req.has(k)) hits++;
+    const over = marked.size - hits;   // marcas de MÁS (desempate por precisión)
     const total = req.size || 1;
-    return { hits, total, binary: total <= 1 };
+    return { hits, over, total, binary: total <= 1 };
   }
-  return { hits: row.correct === true ? 1 : 0, total: 1, binary: true };
+  return { hits: row.correct === true ? 1 : 0, over: 0, total: 1, binary: true };
 }
 
 // Modelo puro (sin DOM) → testeable.
@@ -39,7 +40,7 @@ export function buildSessionTable(rows, nItems, { labels = [], items = [], templ
       const vf = r.valueFinal ?? r.value;
       const cf = r.correctFinal ?? r.correct;
       const sc = cellScore(template, items[r.itemIndex], { value: vf, correct: cf });
-      p.cells[r.itemIndex] = { correct: cf, points: r.points || 0, value: vf, hits: sc.hits, total: sc.total, binary: sc.binary };
+      p.cells[r.itemIndex] = { correct: cf, points: r.points || 0, value: vf, hits: sc.hits, over: sc.over || 0, total: sc.total, binary: sc.binary };
     }
   }
   const players = [...byPlayer.values()].map(p => ({
@@ -48,8 +49,10 @@ export function buildSessionTable(rows, nItems, { labels = [], items = [], templ
     total: p.cells.reduce((s, c) => s + (c?.points || 0), 0),
     marks: p.cells.reduce((s, c) => s + (c?.hits || 0), 0),          // ACIERTOS (palabras/respuestas)
     maxMarks: p.cells.reduce((s, c) => s + (c?.total || 0), 0),
+    overs: p.cells.reduce((s, c) => s + (c?.over || 0), 0),          // marcas de MÁS (errores)
     nCorrect: p.cells.filter(c => c?.correct === true).length,
-  })).sort((a, b) => b.marks - a.marks || b.total - a.total);        // manda nº de aciertos; puntos desempatan
+    // manda nº de aciertos; a igualdad, menos errores (de más); luego puntos.
+  })).sort((a, b) => b.marks - a.marks || a.overs - b.overs || b.total - a.total);
 
   const perItem = Array.from({ length: nItems }, (_, i) => {
     let hits = 0, tot = 0, n = 0;

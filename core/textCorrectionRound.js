@@ -187,8 +187,9 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
   }
   const ppc = activity.scoring?.pointsPerCorrect || 1;
   // Puntuación POR ACIERTOS (no todo-o-nada por frase): cada marca correcta suma
-  // ppc; las marcas de MÁS restan (suelo 0 por frase, así marcar todo no puntúa).
-  // maxScore = total de marcas de la actividad (nº de tildes/comas a colocar).
+  // ppc; las marcas de MÁS NO restan (mismo criterio que scoreMarksPerHit en vivo:
+  // "por palabra buena"), solo cuentan como error en la corrección. maxScore =
+  // total de marcas de la actividad (nº de tildes/comas a colocar).
   const totalMarks = passages.reduce((n, p) => n + (p.marks || []).filter(m => m.kind === kind).length, 0);
   const maxScore = activity.scoring?.maxScore || totalMarks * ppc || passages.length * ppc;
   const startedAt = clock.now();
@@ -214,7 +215,7 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     let h = 0, o = 0;
     for (const pos of got) (want.has(pos) ? h++ : o++);
     const miss = want.size - h;
-    const pts = Math.max(0, h - o) * ppc;
+    const pts = h * ppc;   // 1·ppc por marca buena; las de más no restan (ver scoreMarksPerHit)
     score += pts; hits += h; misses += miss; over += o;
     const perfect = miss === 0 && o === 0;
     // Guarda el detalle por frase (aciertos/fallos/de-más + posiciones + puntos) —

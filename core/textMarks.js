@@ -59,17 +59,21 @@ export function scoreMarks(value, item, kinds, activity) {
   return { correct, points: correct ? basePoints(item, scoring) : 0 };
 }
 
-// Puntuación PARCIAL (crédito por marca): UN punto fijo por cada marca CORRECTA;
-// cada marca de MÁS resta uno (suelo 0) → marcar todo no puntúa. Para los formatos
-// de sesión donde se quiere "un punto por cada tilde buena" en vez de todo-o-nada.
-// `correct` (verde/rojo + contador de aciertos) = ganó puntos netos.
+// Puntuación PARCIAL (crédito por marca): UN punto por cada marca CORRECTA — "por
+// palabra buena". Las marcas de MÁS (una tilde donde no va) NO restan puntos: el
+// puntaje es exactamente el nº de aciertos, así que coincide con lo que muestra la
+// tabla ("3/8") y con `player.score` (suma de aciertos) → clasificación, podio y
+// tabla usan el MISMO número (antes restaban y dejaban 0 pese a tener aciertos).
+// Las de más se devuelven en `over` como dato de calidad (desempate/corrección) y
+// `perfect` marca la frase impecable (todas puestas, ninguna de más). `correct`
+// (ganó crédito) = al menos una buena.
 export function scoreMarksPerHit(value, item, kinds, activity) {
   const want = new Set((item?.marks || []).filter(m => kinds.includes(m.kind)).map(m => m.pos));
   const got = Array.isArray(value) ? value.map(Number) : [];
   let hits = 0, over = 0;
   for (const p of new Set(got)) (want.has(p) ? hits++ : over++);
-  const points = Math.max(0, hits - over);   // 1 punto por tilde buena (fijo)
-  return { correct: points > 0, points };
+  const points = hits;   // 1 punto por tilde/coma buena; las de más no restan
+  return { correct: points > 0, points, hits, over, total: want.size, perfect: hits === want.size && over === 0 };
 }
 
 // Reverse of applyMarks for kind='tilde': given an accented input from the

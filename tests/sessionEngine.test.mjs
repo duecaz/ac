@@ -236,10 +236,13 @@ const quizActivity = {
   };
 
   assert.strictEqual(isVsCompatible(tildesAct), true, 'tildes is VS-compatible (renderRound + scorer + ≥2)');
-  // Exact-match scoring: right positions → correct; extra/missing → wrong.
-  assert.deepStrictEqual(scoreTildesSubmission({ value: [4], item: tildesAct.content.passages[0], activity: tildesAct }), { correct: true, points: 1 });
-  assert.deepStrictEqual(scoreTildesSubmission({ value: [], item: tildesAct.content.passages[0], activity: tildesAct }), { correct: false, points: 0 });
-  assert.deepStrictEqual(scoreTildesSubmission({ value: [3, 4], item: tildesAct.content.passages[0], activity: tildesAct }), { correct: false, points: 0 });
+  // Puntuación POR ACIERTOS (1 punto por marca buena; las de más NO restan, solo
+  // cuentan como `over`). El scorer devuelve {correct, points, hits, over, total, perfect}.
+  const sc = (v) => scoreTildesSubmission({ value: v, item: tildesAct.content.passages[0], activity: tildesAct });
+  assert.deepStrictEqual(sc([4]), { correct: true, points: 1, hits: 1, over: 0, total: 1, perfect: true }, 'tilde buena → 1 pto, perfecto');
+  assert.deepStrictEqual(sc([]), { correct: false, points: 0, hits: 0, over: 0, total: 1, perfect: false }, 'nada → 0');
+  // buena (4) + de más (3): la de más NO resta → sigue 1 punto, over=1, no perfecto.
+  assert.deepStrictEqual(sc([3, 4]), { correct: true, points: 1, hits: 1, over: 1, total: 1, perfect: false }, 'buena + de más → 1 pto (over=1)');
 
   // A VS duel over tildes scores via the engine.
   const vs = createSession(tildesAct, { format: FORMATS.VS, left: 'A', right: 'B' });
@@ -260,8 +263,8 @@ const quizActivity = {
   // Comas binds the same shared scorer to the 'coma' kind.
   const { scoreComasSubmission } = await import('../templates/comas/scorer.js');
   const comaItem = { text: 'Hola como estas', marks: [{ pos: 3, kind: 'coma' }] };
-  assert.deepStrictEqual(scoreComasSubmission({ value: [3], item: comaItem, activity: {} }), { correct: true, points: 1 });
-  assert.deepStrictEqual(scoreComasSubmission({ value: [], item: comaItem, activity: {} }), { correct: false, points: 0 });
+  assert.deepStrictEqual(scoreComasSubmission({ value: [3], item: comaItem, activity: {} }), { correct: true, points: 1, hits: 1, over: 0, total: 1, perfect: true });
+  assert.deepStrictEqual(scoreComasSubmission({ value: [], item: comaItem, activity: {} }), { correct: false, points: 0, hits: 0, over: 0, total: 1, perfect: false });
   ok('comas: shared mark scorer bound to the coma kind');
 
   // Match: each pair is a matching round, scored by the chosen right side.
