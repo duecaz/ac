@@ -78,10 +78,14 @@ export function scoreMarksPerHit(value, item, kinds, activity) {
 // we replace 1 char with 1 char). The student sees `text` (no accents);
 // `marks` is the answer key.
 export function parseAccentedText(accented) {
-  // Normaliza ANTES de calcular posiciones: colapsa saltos de línea y espacios
-  // múltiples a uno solo (los poemas pegados fluyen como párrafo y no desbordan),
-  // así text + marks quedan alineados.
-  const chars = [...String(accented || '').replace(/\s+/g, ' ').trim()];
+  // Normaliza ANTES de calcular posiciones: (1) NFC para que las tildes DESCOMPUESTAS
+  // (vocal + U+0301 combinante, típico al pegar de Word/webs) se compongan a la forma
+  // precompuesta que STRIP_MAP reconoce — sin esto, media frase pegada perdía tildes
+  // (la marca no se registraba → el denominador de aciertos salía menor que las tildes
+  // visibles: "3/4" cuando había 8); (2) colapsa saltos de línea y espacios múltiples a
+  // uno solo (los poemas pegados fluyen como párrafo y no desbordan), así text + marks
+  // quedan alineados.
+  const chars = [...String(accented || '').normalize('NFC').replace(/\s+/g, ' ').trim()];
   const text = chars.map(c => STRIP_MAP[c] ?? c).join('');
   const marks = [];
   chars.forEach((c, i) => {
@@ -92,7 +96,7 @@ export function parseAccentedText(accented) {
 
 // Strip only the accents (no marks). Useful for previews.
 export function stripAccents(s) {
-  return [...String(s || '')].map(c => STRIP_MAP[c] ?? c).join('');
+  return [...String(s || '').normalize('NFC')].map(c => STRIP_MAP[c] ?? c).join('');
 }
 
 // Reverse of applyMarks for kind='coma': given an input where the author
@@ -105,7 +109,7 @@ export function stripAccents(s) {
 export function parseTextWithCommas(input) {
   let stripped = '';
   const marks = [];
-  for (const c of [...String(input || '')]) {
+  for (const c of [...String(input || '').normalize('NFC')]) {
     if (c === ',') {
       if (stripped.length > 0) marks.push({ pos: stripped.length - 1, kind: 'coma' });
     } else {
@@ -119,7 +123,7 @@ export function parseTextWithCommas(input) {
 export function parseRichText(input) {
   let stripped = '';
   const marks = [];
-  for (const c of [...String(input || '')]) {
+  for (const c of [...String(input || '').normalize('NFC')]) {
     if (c === ',') {
       if (stripped.length > 0) marks.push({ pos: stripped.length - 1, kind: 'coma' });
     } else if (STRIP_MAP[c]) {

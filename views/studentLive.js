@@ -74,6 +74,7 @@ export async function renderPlay(rootSel, code) {
   let lastQuestionShownAt = 0;
   let questionTickHandle = null;
   let lastPhaseKey = '';
+  let autoFlushQuestion = null;  // capturar el trazo en curso al avanzar sin "Listo"
   let myScore = 0;      // estimación local de respaldo (autoritativo = leaderboard del servidor)
   let endedFired = false;
   let endingInProgress = false;
@@ -136,6 +137,16 @@ export async function renderPlay(rootSel, code) {
     if (qlSpinning) return; // don't repaint over an in-progress wheel spin
     if (key === lastPhaseKey) return;
     lastPhaseKey = key;
+    // Al SALIR de la fase 'question' (el profe reveló/avanzó) sin que el alumno
+    // pulsara "Listo": captura su trazo EN CURSO en vez de descartarlo. En Tildes/
+    // Comas dibujar lleva su tiempo; antes, si el profe avanzaba mientras el alumno
+    // aún colocaba tildes, su respuesta se perdía → salía "Sin respuesta" pese a
+    // tener buenas tildes (aunque no todas). autoFlushQuestion solo está armado
+    // mientras hay una pregunta pendiente; hace clic en "Listo" con lo dibujado.
+    if (autoFlushQuestion && session.phase !== 'question') {
+      try { autoFlushQuestion(); } catch { /* best-effort */ }
+      autoFlushQuestion = null;
+    }
     if (session.status === 'lobby') { scene(false); return paintLobby(); }
     if (session.status === 'ended') { scene(false); return paintEnded(); }
     if (session.phase === 'question-live') { scene(true); return paintQuestionLive(); }
@@ -346,12 +357,21 @@ export async function renderPlay(rootSel, code) {
       onSubmit: async (value) => {
         if (sent) return;
         sent = true;
+        autoFlushQuestion = null;   // ya respondió: no hay trazo que rescatar
         const ms = Date.now() - lastQuestionShownAt;
         const r = await queuedSubmit(session.id, player.playerId, idx, value, ms);
         emitGame(GameEvents.PLAYER_ANSWERED, { idx });
         paintWaiting(r.queued ? 'Respuesta guardada (sin red). Se enviará al reconectar.' : '¡Respuesta enviada!');
       }
     });
+    // Rescate del trazo en curso: si el profe avanza antes de que el alumno pulse
+    // "Listo", disparamos ese mismo botón (existe en Tildes/Comas) para no perder
+    // lo dibujado. En plantillas que responden al toque (quiz) no hay botón → no-op.
+    autoFlushQuestion = () => {
+      if (sent) return;
+      const btn = document.querySelector('#s-round .tc-done');
+      if (btn) btn.click();
+    };
 
     if (questionTickHandle) clearInterval(questionTickHandle);
     if (deadlineMs) {

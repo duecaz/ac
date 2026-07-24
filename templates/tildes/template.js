@@ -4,7 +4,7 @@ import { BaseTemplate } from '../base.js';
 import { renderTildesPlayer } from './player.js';
 import { renderTildesEditor } from './editor.js';
 import { newPassage } from '../../core/contentModels/textCorrection.js';
-import { parseAccentedText } from '../../core/textMarks.js';
+import { parseAccentedText, applyMarks } from '../../core/textMarks.js';
 import { renderTextCorrectionRound, renderTextCorrectionHost, textCorrectionPreviewHtml } from '../../core/textCorrectionRound.js';
 import { markPartsFor, markValueParts } from '../../core/textMarks.js';
 import { scoreTildesSubmission } from './scorer.js';
@@ -68,5 +68,23 @@ export class TildesTemplate extends BaseTemplate {
   static valueParts({ value }) { return markValueParts(value); }
   static itemLabel(item) { return (item?.text || '').slice(0, 40); }
 
-  static migrateContent(content) { return content; }
+  // Recupera pasajes guardados ANTES del fix de normalización: si se pegó texto
+  // con tildes DESCOMPUESTAS (vocal + U+0301), el parse viejo no las reconocía →
+  // el texto se guardó con acentos combinantes sueltos y `marks` incompleto (el
+  // denominador de aciertos salía menor, "3/4" en vez de "3/8"). Reconstruimos el
+  // texto acentuado (aplicando las marcas conocidas) y lo re-parseamos ahora con
+  // NFC → recupera TODAS las tildes. Idempotente en pasajes ya limpios (las comas
+  // literales del texto se conservan; parseAccentedText solo toca acentos). Ver
+  // docs/handoff-emparejar-vertical.md (histórico) y core/textMarks.js.
+  static migrateContent(content) {
+    const passages = content?.passages;
+    if (!Array.isArray(passages)) return content;
+    for (const p of passages) {
+      if (!p || typeof p.text !== 'string') continue;
+      const re = parseAccentedText(applyMarks(p.text, p.marks || []));
+      p.text = re.text;
+      p.marks = re.marks;
+    }
+    return content;
+  }
 }

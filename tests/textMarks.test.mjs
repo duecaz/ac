@@ -32,6 +32,21 @@ assert.strictEqual(multi.text, 'arbol pequeño');
 assert.deepStrictEqual(multi.marks, [{ pos: 0, kind: 'tilde' }], 'ñ is not treated as a tilde');
 ok('parseAccentedText: ñ left intact, only acute accents become marks');
 
+// ---------- tildes DESCOMPUESTAS (NFD): pegar de Word/web no debe perder marcas ----------
+// 'canción jugó' con acentos combinantes (vocal + U+0301) debe contar 2 tildes, igual
+// que la forma precompuesta. Sin normalizar a NFC, marks=0 → denominador falso ("3/4").
+{
+  const nfd = 'canción jugó'.normalize('NFD');
+  const p = parseAccentedText(nfd);
+  assert.strictEqual(p.text, 'cancion jugo', 'NFD: acentos combinantes eliminados del texto del alumno');
+  assert.strictEqual(p.marks.filter(m => m.kind === 'tilde').length, 2, 'NFD: cuenta las 2 tildes (no 0)');
+  assert.strictEqual(applyMarks(p.text, p.marks), 'canción jugó', 'NFD round-trip a precompuesto');
+  // parseRichText también normaliza
+  const pr2 = parseRichText('jugó, más'.normalize('NFD'));
+  assert.strictEqual(pr2.marks.filter(m => m.kind === 'tilde').length, 2, 'parseRichText NFD: 2 tildes');
+  ok('parse*: normaliza NFD→NFC, las tildes descompuestas se cuentan (fix denominador "3/4"→"3/8")');
+}
+
 // ---------- parseTextWithCommas ----------
 const pc = parseTextWithCommas('hola, mundo');
 assert.strictEqual(pc.text, 'hola mundo', 'comma removed from student text');
