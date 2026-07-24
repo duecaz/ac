@@ -10,6 +10,7 @@
 // API rules: allow all (or at minimum Create/Read/Update without auth).
 import { createLiveRoom } from '../../kernel/live/engine.js';
 import { isAcceptableNickname } from '../../core/nicknameFilter.js';
+import { signedFetch } from '../../core/pbHttp.js';
 import { pickWord } from '../../core/liveWords.js';
 import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
 import { PB_URL } from '../../pocketbase.config.js';
@@ -23,23 +24,17 @@ function genUserId() { return 'u_' + Math.random().toString(36).slice(2, 10); }
 
 async function pbFetchOnce(path, opts = {}) {
   const { body: reqBody, method, headers: extra, timeoutMs = 12000 } = opts;
-  const headers = {};
-  if (reqBody && typeof reqBody === 'string') headers['Content-Type'] = 'application/json';
-  if (extra) Object.assign(headers, extra);
   // Abort a stalled socket instead of hanging forever: on flaky mobile a TCP
   // connection can open but never respond, which would leave submit/load/host
   // actions pending indefinitely (frozen UI, submitQueue never enqueues). The
   // AbortError flows into the offline queue / reconnect backoff like any failure.
+  // La FIRMA (token del profe host + fallback anónimo) va en signedFetch: las
+  // escrituras del host quedan autenticadas; el alumno (sin token) va anónimo.
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   let r;
   try {
-    r = await fetch(`${PB_URL}${path}`, {
-      method: method || 'GET',
-      headers,
-      ...(reqBody !== undefined ? { body: reqBody } : {}),
-      signal: ctrl.signal,
-    });
+    r = await signedFetch(`${PB_URL}${path}`, { method, body: reqBody, headers: extra, signal: ctrl.signal });
   } catch (e) {
     if (e?.name === 'AbortError') throw Object.assign(new Error(`PocketBase: tiempo de espera agotado (${timeoutMs}ms)`), { status: 0, timeout: true });
     throw e;

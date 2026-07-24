@@ -92,7 +92,7 @@ function renderPanel(rootSel) {
       <p class="small text-muted">Si tras actualizar sigues viendo la versión vieja, usa el botón rojo: desregistra el SW, borra toda la caché y recarga. Mantiene tus datos.</p>
 
       <h5 class="mt-4">PocketBase — configuración de colecciones</h5>
-      <p class="small text-muted mb-2">Crea automáticamente las colecciones <code>live_sessions</code>, <code>assignments</code> y <code>assignment_attempts</code> en tu instancia de PocketBase. Solo se necesita una vez.</p>
+      <p class="small text-muted mb-2">Crea/actualiza TODAS las colecciones (activities, live_sessions, <code>live_players</code>, live_answers, assignments, results…) y aplica sus reglas de acceso. Append-only: añade lo que falte sin borrar datos. Re-córrelo tras cada actualización que toque el esquema (p.ej. reglas endurecidas). Necesita tu superadmin de PocketBase.</p>
       <div class="d-flex gap-2 align-items-end flex-wrap mb-1">
         <div>
           <label class="form-label small mb-1">Email admin PocketBase</label>
@@ -726,11 +726,24 @@ function renderPanel(rootSel) {
         updateRule: 'owner = @request.auth.id',
         deleteRule: 'owner = @request.auth.id',
       };
+      // Append-only (results / assignment_attempts): el alumno anónimo CREA su
+      // resultado/intento y lo LEE (tope de intentos), pero NADIE los edita o
+      // borra por API (verificado: 0 PATCH/DELETE en el código). Cerrar
+      // update/delete impide que un alumno con DevTools manipule un puntaje ya
+      // guardado. Riesgo cero (no toca create/read, no depende del login).
+      const appendOnlyRules = { listRule: '', viewRule: '', createRule: '', updateRule: null, deleteRule: null };
+      // live_players (deuda A): el alumno CREA su fila y la LEE (reconexión/lobby);
+      // el host la BORRA (expulsar). NADIE la actualiza (sin renombrado) → update
+      // cerrado. Delete queda público por ahora (expulsar no exige host logueado);
+      // cerrarlo a host-only va con la fase de reglas live (ver handoff-seguridad-pb).
+      const livePlayersRules = { listRule: '', viewRule: '', createRule: '', updateRule: null, deleteRule: '' };
       const rulesFor = (name) =>
         name === 'activities' ? activityRules :
         name === 'activity_likes' ? likesRules :
         name === 'reports' ? reportsRules :
-        name === 'profiles' ? profilesRules : publicRules;
+        name === 'profiles' ? profilesRules :
+        (name === 'results' || name === 'assignment_attempts') ? appendOnlyRules :
+        name === 'live_players' ? livePlayersRules : publicRules;
       // En PB ≥0.23 los campos created/updated NO se añaden solos al crear por API,
       // y el store ordena resultados por `sort=-created` → hay que crearlos como
       // autodate. En <0.23 se añaden automáticamente, así que no los duplicamos.

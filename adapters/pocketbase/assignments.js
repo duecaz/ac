@@ -26,6 +26,7 @@
 import { LETTERS, PIN_LENGTH } from '../../core/constants.js';
 import { normalizeCode } from '../../core/assignmentRules.js';
 import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
+import { signedFetch } from '../../core/pbHttp.js';
 import { PB_URL } from '../../pocketbase.config.js';
 
 function genCode() {
@@ -35,16 +36,9 @@ function genCode() {
 }
 
 async function pbFetch(path, opts = {}) {
-  const { body: reqBody, method, headers: extra, ...rest } = opts;
-  const headers = {};
-  if (reqBody && typeof reqBody === 'string') headers['Content-Type'] = 'application/json';
-  if (extra) Object.assign(headers, extra);
-  const r = await fetch(`${PB_URL}${path}`, {
-    method: method || 'GET',
-    headers,
-    ...(reqBody !== undefined ? { body: reqBody } : {}),
-    ...rest,
-  });
+  // Firma (token del profe + fallback anónimo) centralizada en core/pbHttp.js:
+  // el profe crea/lee tareas autenticado; el alumno entrega su intento anónimo.
+  const r = await signedFetch(`${PB_URL}${path}`, opts);
   if (r.status === 204) return null;
   const text = await r.text();
   let body = null;

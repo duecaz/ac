@@ -1,5 +1,31 @@
 # Seguridad PocketBase — plan por fases (P0-1 · P0-2 · P0-3 · P2-1)
 
+> ## AVANCE v1.51.276 — fundación de token CENTRALIZADA + reglas append-only
+> - **`core/pbHttp.js signedFetch`**: UN solo sitio con la política de auth de PB.
+>   Firma con el token del profe si hay sesión, con **fallback anónimo** ante
+>   401/403 (token caduco no rompe lo público). El alumno (sin token) va anónimo →
+>   NO-OP. Cableado en los 4 adaptadores (remoteStore, realtime, assignments,
+>   reports) — antes cada uno tenía su copia y solo remoteStore firmaba. Esto era
+>   EL prerrequisito que bloqueaba TODAS las reglas host-only (el host ahora manda
+>   token en createRoom/settle/kick/endSession; los reportes se leen firmados).
+>   Test: `tests/pbHttp.test.mjs`.
+> - **Reglas append-only aplicadas** (en el setup de `#/admin`): `results` y
+>   `assignment_attempts` → `update/delete = null` (verificado: 0 PATCH/DELETE en
+>   el código; el alumno solo crea y lee). `live_players` → `update = null`. Cierra
+>   la manipulación/borrado de resultados y filas de jugador SIN tocar create/read
+>   ni depender del login. **PASO DEL USUARIO**: re-correr "Crear colecciones".
+> - **Deuda A ya cerrada** (respuestas→live_answers, jugadores→live_players, blob
+>   host-only) → desbloquea la Fase 3, PERO las reglas host-only de `live_*` siguen
+>   **pendientes de que el usuario las aplique y PRUEBE en dispositivo** (no las
+>   aplico a ciegas: podrían tumbar una clase y no las puedo probar desde el sandbox).
+>   Caveat nuevo: `live_sessions.create/delete = host-only` exige que el profe esté
+>   LOGUEADO al hostear; si se hostea sin login, rompería. Validar antes.
+> - **Residuales conocidos** (necesitan refactor, no solo reglas): el alumno aún
+>   puede PATCHear `live_answers` (corrección de carrera) → mitigado por el re-score
+>   autoritativo del host al settle; y `live_sessions` (ql_* de question-live) →
+>   cerrable moviendo los "picks" a su propia colección. Ver §Fase 3.
+
+
 > ## ✅ FASE 0 + 1 IMPLEMENTADAS EN CÓDIGO (v1.51.214) — falta que el usuario APLIQUE y PRUEBE
 >
 > **Qué se hizo en código (ya desplegado, NO rompe nada con las reglas actuales):**

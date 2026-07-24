@@ -8,7 +8,8 @@
 // así que recortar no impide reconstruirlo al leer (fromId prefiere data.id).
 import { PB_URL } from '../../pocketbase.config.js';
 import { lsGet, lsSet } from '../../core/ls.js';
-import { getAuthToken, getAuthUserId } from '../../core/auth.js';
+import { getAuthUserId } from '../../core/auth.js';
+import { signedFetch } from '../../core/pbHttp.js';
 import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
 
 function toId(id) {
@@ -28,32 +29,8 @@ function fromId(pbId, originalId) {
 }
 
 async function pbFetch(path, opts = {}) {
-  const { headers: extraHeaders, body: reqBody, method, ...rest } = opts;
-  // Firma la petición con el token del profe si hay sesión (Fase 0 seguridad PB).
-  // Con las reglas AÚN públicas esto es un no-op funcional; posiciona las reglas
-  // por-autor. Si el token está expirado y PB responde 401/403, reintentamos SIN
-  // auth (fallback anónimo) para no romper guardadas que hoy funcionan. Cuando el
-  // usuario aplique las reglas por-autor, el reintento anónimo también fallará y el
-  // error se propaga (el profe verá que debe volver a entrar) — que es lo correcto.
-  const doFetch = async (withAuth) => {
-    const headers = {};
-    // Only set Content-Type for requests that send a JSON body (POST/PATCH).
-    // Sending Content-Type on GET/DELETE causes 400 on PocketBase.
-    if (reqBody && typeof reqBody === 'string') headers['Content-Type'] = 'application/json';
-    const token = withAuth ? getAuthToken() : null;
-    if (token) headers['Authorization'] = token;
-    if (extraHeaders) Object.assign(headers, extraHeaders);
-    return fetch(`${PB_URL}${path}`, {
-      method: method || 'GET',
-      headers,
-      ...(reqBody !== undefined ? { body: reqBody } : {}),
-      ...rest,
-    });
-  };
-  let r = await doFetch(true);
-  if ((r.status === 401 || r.status === 403) && getAuthToken()) {
-    r = await doFetch(false); // fallback anónimo (reglas aún públicas)
-  }
+  // Firma (token del profe + fallback anónimo) centralizada en core/pbHttp.js.
+  const r = await signedFetch(`${PB_URL}${path}`, opts);
   if (r.status === 204) return null;
   // PocketBase always speaks JSON. If the body fails to parse, a gateway /
   // proxy / network-policy page intercepted the request — surface it as a
