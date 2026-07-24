@@ -82,6 +82,27 @@ export function aggregate({ items = [], template = null, rows = [], activity = n
   return { nPlayers, items: outItems };
 }
 
+// Medallas (A2) — reconocimientos "de aula" calculables con lo ya capturado:
+//   🎯 más preciso (mayor % de acierto) · ⚡ más rápido (menor ms medio en aciertos).
+// Solo con lo que hay en las filas; sin datos extra. Devuelve [] si no aplica.
+export function computeMedals(rows) {
+  const deduped = dedupeRows(rows || []);
+  const byP = new Map();
+  for (const r of deduped) {
+    if (!byP.has(r.player)) byP.set(r.player, { name: r.name || r.player, correct: 0, total: 0, msSum: 0, msN: 0 });
+    const p = byP.get(r.player);
+    p.total++;
+    if (r.correct === true) { p.correct++; if (r.ms != null) { p.msSum += r.ms; p.msN++; } }
+  }
+  const arr = [...byP.values()].filter(p => p.total);
+  const medals = [];
+  const sharp = arr.filter(p => p.correct > 0).sort((a, b) => (b.correct / b.total) - (a.correct / a.total) || b.correct - a.correct)[0];
+  if (sharp) medals.push({ icon: '🎯', label: 'Más preciso', name: sharp.name });
+  const fast = arr.filter(p => p.msN > 0).sort((a, b) => (a.msSum / a.msN) - (b.msSum / b.msN))[0];
+  if (fast) medals.push({ icon: '⚡', label: 'Más rápido', name: fast.name });
+  return medals;
+}
+
 // Umbrales del heatmap (verde/ámbar/rojo) — compartidos por la vista y los tests,
 // no números mágicos. Un pct 0..1 → clase de color.
 export const HEAT = { good: 0.8, warn: 0.5 };

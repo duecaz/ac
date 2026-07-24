@@ -138,4 +138,21 @@ const items = [{ text: 'ajugo', marks: [{ pos: 0, kind: 'tilde' }, { pos: 3, kin
   ok('aggregate lista quién acertó/falló por ítem');
 }
 
+// ── computeMedals: más preciso + más rápido ─────────────────────────────────
+{
+  const { computeMedals } = await import('../core/itemStats.js');
+  const rows = [
+    { player: 'p1', name: 'Ana', itemIndex: 0, correct: true, ms: 500 },
+    { player: 'p1', name: 'Ana', itemIndex: 1, correct: true, ms: 700 },
+    { player: 'p2', name: 'Beto', itemIndex: 0, correct: true, ms: 200 },
+    { player: 'p2', name: 'Beto', itemIndex: 1, correct: false, ms: 0 },
+  ];
+  const m = computeMedals(rows);
+  const sharp = m.find(x => x.label === 'Más preciso');
+  const fast = m.find(x => x.label === 'Más rápido');
+  assert.strictEqual(sharp.name, 'Ana', 'Ana 100% acierto = más precisa');
+  assert.strictEqual(fast.name, 'Beto', 'Beto 200ms = más rápido');
+  ok('computeMedals: más preciso y más rápido');
+}
+
 console.log(`\nitemStats.test: ${passed} checks passed`);

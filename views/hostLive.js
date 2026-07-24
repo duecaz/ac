@@ -11,6 +11,7 @@ import { getTemplate } from '../core/registry.js';
 import { sessionItems } from '../kernel/session/engine.js';
 import { rowsFromLiveAnswers, rowsFromLiveState } from '../core/answerRows.js';
 import { itemStatsHtml } from './itemStatsView.js';
+import { computeMedals } from '../core/itemStats.js';
 import { sessionTableHtml, sessionTableCsv } from './sessionTable.js';
 import { PB_URL } from '../pocketbase.config.js';
 import { acquire } from '../core/lifecycle.js';
@@ -763,6 +764,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     mount(rootSel, html`
       <h2 class="text-center mb-3"><i class="bi bi-trophy-fill text-warning"></i> Podio</h2>
       ${podiumHtml(lb.slice(0, 3))}
+      <div id="ll-medals" class="ll-medals"></div>
       <div class="text-center"><div class="ll-tabs">
         <button class="ll-tab is-active" data-tab="podio"><i class="bi bi-trophy"></i> Ranking</button>
         <button class="ll-tab" data-tab="tabla"><i class="bi bi-table"></i> Tabla</button>
@@ -803,6 +805,12 @@ async function renderHost(rootSel, code, sessionId, activity) {
       } catch { toast('No se pudo exportar el CSV.', 'danger'); }
     });
     showTab('podio');
+    // Medallas de aula (A2): se pintan al cargar las respuestas (no bloquea el podio).
+    gatherSessionRows().then(rows => {
+      const m = computeMedals(rows);
+      const el = document.getElementById('ll-medals');
+      if (el && m.length) el.innerHTML = m.map(x => `<span class="ll-medal">${x.icon} ${x.label}: <b>${escapeHtml(x.name)}</b></span>`).join('');
+    }).catch(() => {});
   }
 
   paint();
