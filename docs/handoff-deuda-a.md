@@ -1,10 +1,10 @@
 # HANDOFF — Deuda A: lost-update en el blob `state` de `live_sessions`
 
-> Estado: **PLAN, no ejecutado**. Escrito tras medir la superficie real del
-> problema (v1.51.271). La mitad de la deuda ya se pagó sola con la analítica:
-> las RESPUESTAS viven en `live_answers` (una fila por alumno×ítem, un CREATE
-> nunca pisa a otro). Lo que queda es más pequeño de lo que dice CLAUDE.md — y
-> por eso es abordable en una sesión.
+> Estado: **EJECUTADA (v1.51.272)** — A1-A4 completas. `live_players` (fila por
+> jugador) + adaptador dual + marcador derivado + `tools/stress-live.mjs`. El
+> `joinSession` de 30 alumnos ya no se pisa: cada uno CREA su fila. Falta SOLO el
+> paso del usuario: correr "Crear colecciones" en `#/admin` (crea `live_players`)
+> y el stress-test contra la Pi. El plan original queda abajo como registro.
 
 ## 1. Superficie REAL hoy (verificada en `adapters/pocketbase/realtime.js`)
 
@@ -50,12 +50,17 @@ fallback legado.
 
 ## 3. Fases
 
-| Fase | Qué | Tamaño |
+| Fase | Qué | Estado |
 |---|---|---|
-| **A1** | Colección `live_players` + índice único (session,name) en: `#/admin` "Crear colecciones" (DEFS), `tools/setup-pocketbase.ps1`, `tools/check-pb.sh` (+ check negativo). Reglas como `live_answers` (públicas hoy; endurecer va con handoff-seguridad-pb) | S |
-| **A2** | Adaptador dual (patrón `answersReady()` → `playersReady()` cacheado): `joinSession` = gate de status (lectura) + POST fila con retry de apodo ante 400 del índice único; `listPlayers` = filas; `kickPlayer` = DELETE fila; sin colección → ruta blob actual (cero cambio pre-migración). `subscribeRoom` añade el topic `live_players` (filtrado por sesión en cliente) para que el lobby del profe vea entrar gente al instante — hoy los joins se ven porque PATCHean el blob; al dejar de hacerlo, hace falta el topic (y de paso puede añadirse `live_answers`, que hoy depende de pings+poll) | M |
-| **A3** | `leaderboard()` derivado: puntos = agregado de `live_answers` + nombres de `live_players` (misma fuente que el podio → el marcador entre preguntas y el final SIEMPRE coinciden). `paintEnded` del alumno igual. Tras esto el blob es host-only ⇒ **deuda A cerrada** | M |
-| **A4** | Verificación: `tools/stress-live.mjs <PIN> 30` — 30 joins + 30 respuestas CONCURRENTES contra el PB real (lo corre el usuario contra la Pi), assert: 30 filas de jugador, 0 pisados, apodos únicos. + test unitario del retry de apodo (fetch inyectado) + actualizar CLAUDE.md/este handoff | S |
+| **A1** | Colección `live_players` + índice único (session,name) en DEFS de `#/admin`, `tools/setup-pocketbase.ps1` y `tools/check-pb.sh` (+ check del índice) | ✅ v1.51.272 |
+| **A2** | Adaptador dual (`playersReady()` cacheado): `joinSession` = gate de status + POST fila con retry de apodo ante el 400 del índice; `listPlayers` = filas; `kickPlayer` = DELETE; sin colección → ruta blob (cero cambio pre-migración). `subscribeRoom` añade el topic `live_players` (solo si existe) → el lobby del profe ve entrar gente al instante. `userId` = anon id estable (reconexión sin duplicar) | ✅ v1.51.272 |
+| **A3** | `leaderboard()` derivado: puntos = agregado de `live_answers.points` + nombres de `live_players` (misma fuente que el podio → marcador entre preguntas y podio final coinciden). El blob queda host-only ⇒ **cerrada por diseño** | ✅ v1.51.272 |
+| **A4** | `tools/stress-live.mjs <PIN> [N]` — N joins CONCURRENTES contra el PB real (lo corre el usuario), assert: N filas, 0 pisadas, apodos únicos (+ modo `clean`). Test unitario del retry con fetch inyectado: `tests/liveJoin.test.mjs` | ✅ v1.51.272 |
+
+## PASO DEL USUARIO (imprescindible para activarlo)
+1. En la web: `#/admin` → **"Crear colecciones"** (añade `live_players` con su índice único — es append-only, no toca nada existente).
+2. Verificar: `bash tools/check-pb.sh` → debe salir verde `live_players` + su índice.
+3. Aceptación real: crear una sala, y `node tools/stress-live.mjs <PIN> 30` → `✅ PASA: 30 → 30 filas`. Limpiar: `node tools/stress-live.mjs <PIN> clean`.
 
 Orden estricto A1→A2→A3 (cada una deja el sistema funcionando; A2 ya elimina el
 clobber de joins aunque A3 no esté).

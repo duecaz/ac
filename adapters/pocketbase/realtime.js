@@ -9,6 +9,7 @@
 //   state    json
 // API rules: allow all (or at minimum Create/Read/Update without auth).
 import { createLiveRoom } from '../../kernel/live/engine.js';
+import { isAcceptableNickname } from '../../core/nicknameFilter.js';
 import { pickWord } from '../../core/liveWords.js';
 import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
 import { PB_URL } from '../../pocketbase.config.js';
@@ -16,6 +17,7 @@ import { setConnectionState } from '../../core/connection.js';
 
 const COLL = 'live_sessions';
 const ANS = 'live_answers';   // one record per student answer (lost-update fix)
+const PLR = 'live_players';   // one record per player (lost-update fix del join)
 
 function genUserId() { return 'u_' + Math.random().toString(36).slice(2, 10); }
 
@@ -99,17 +101,35 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
   // writer of the blob (scores live in state.players[]), so scoring is collision
   // free too. Activated only when the collection exists; otherwise everything
   // falls back to the legacy blob path (zero change for existing deployments).
-  let _ansReady;   // undefined = unknown, then true/false (cached per adapter)
-  async function answersReady() {
-    if (_ansReady !== undefined) return _ansReady;
-    try {
-      const r = await fetch(`${PB_URL}/api/collections/${ANS}/records?perPage=1`);
-      if (r.status === 200) return (_ansReady = true);
-      const body = await r.json().catch(() => ({}));
-      if (body?.message?.includes('Missing collection')) return (_ansReady = false);
-      _ansReady = r.ok;
-    } catch { _ansReady = false; }
-    return _ansReady;
+  // "¿Existe esta colección?" — probe cacheado por adaptador. Si falta, las rutas
+  // que la usan caen al blob heredado (cero cambio pre-migración). Una sola
+  // implementación para live_answers (lost-update de respuestas) y live_players
+  // (deuda A, lost-update del join).
+  function collectionProbe(coll) {
+    let cached;   // undefined = desconocido, luego true/false
+    return async () => {
+      if (cached !== undefined) return cached;
+      try {
+        const r = await fetch(`${PB_URL}/api/collections/${coll}/records?perPage=1`);
+        if (r.status === 200) return (cached = true);
+        const body = await r.json().catch(() => ({}));
+        if (body?.message?.includes('Missing collection')) return (cached = false);
+        cached = r.ok;
+      } catch { cached = false; }
+      return cached;
+    };
+  }
+  const answersReady = collectionProbe(ANS);
+  const playersReady = collectionProbe(PLR);
+  const plrFilter = (sessionId, extra) =>
+    pbFilterParam([`session='${pbEscape(sessionId)}'`, ...(extra ? [extra] : [])].join(' && '));
+
+  // Jugadores de una sala desde live_players (deuda A). Standalone (no método)
+  // para que lo compartan listPlayers y el leaderboard derivado sin depender del
+  // binding de `this`.
+  async function fetchPlayers(sessionId) {
+    const res = await pbFetch(`/api/collections/${PLR}/records?filter=${plrFilter(sessionId)}&perPage=200`);
+    return (res?.items || []).map(r => ({ id: r.id, name: r.name, userId: r.user_id, score: 0 }));
   }
 
   // PB ids (session/player) are alphanumeric, but escape single quotes anyway so
@@ -289,8 +309,40 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       if (!rec) throw new Error('Sala no encontrada');
       if (rec.state?.status === 'ended') throw new Error('La sala ha terminado');
       const live = rec.activity?.live || {};
-      if (rec.state?.status !== 'lobby' && !live.allowLateJoin) throw new Error('La partida ya empezó');
+      if (rec.state?.status !== 'lobby' && live.allowLateJoin === false) throw new Error('La partida ya empezó');
 
+      // Ruta live_players (deuda A): el jugador es su PROPIA fila → dos entradas
+      // simultáneas ya no se pisan en el blob. La validación del apodo y el gateo
+      // de aforo se conservan; la UNICIDAD del nombre la garantiza el índice único
+      // (session,name) de forma atómica: una colisión (400) reintenta con sufijo.
+      if (await playersReady()) {
+        const f = isAcceptableNickname(nickname);
+        if (!f.ok) throw new Error('Apodo: ' + f.reason);
+        // Reconexión: si este dispositivo ya tiene fila en la sala, la conserva.
+        const mine = await pbFetch(`/api/collections/${PLR}/records?filter=${plrFilter(rec.id, `user_id='${pbEscape(userId)}'`)}&perPage=1`);
+        if (mine?.items?.length) {
+          const row = mine.items[0];
+          return { sessionId: rec.id, playerId: row.id, name: row.name };
+        }
+        const maxPlayers = live.maxPlayers || 60;
+        const cnt = await pbFetch(`/api/collections/${PLR}/records?filter=${plrFilter(rec.id)}&perPage=1`);
+        if ((cnt?.totalItems || 0) >= maxPlayers) throw new Error('La sala está llena');
+        let name = f.value;
+        for (let n = 2; ; n++) {
+          try {
+            const row = await pbFetch(`/api/collections/${PLR}/records`, {
+              method: 'POST', body: JSON.stringify({ session: rec.id, name, user_id: userId }),
+            });
+            return { sessionId: rec.id, playerId: row.id, name: row.name };
+          } catch (e) {
+            // 400 del índice único (session,name) = apodo ocupado → sufija y reintenta.
+            if (e?.status === 400 && n <= 40) { name = `${f.value} ${n}`; continue; }
+            throw e;
+          }
+        }
+      }
+
+      // Ruta blob heredada (sin la colección): comportamiento anterior.
       const engine = createLiveRoom(rec.activity, { state: rec.state, code: rec.code });
       const p = engine.join(userId, nickname);
       await saveState(rec.id, engine);
@@ -472,6 +524,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
     },
 
     async listPlayers(sessionId) {
+      if (await playersReady()) return fetchPlayers(sessionId);
       const { engine } = await load(sessionId);
       return engine.state.players.slice();
     },
@@ -489,12 +542,35 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         .map(([, v]) => v);
     },
 
+    // Marcador DERIVADO (deuda A A3): con los jugadores fuera del blob, el motor
+    // ya no acumula `state.players[].score`; la puntuación autoritativa vive en
+    // las filas de live_answers (una por respuesta, puntuada por el profe al
+    // settle). Sumamos points por jugador y le pegamos el nombre de live_players
+    // → misma fuente que el podio (buildSessionTable) ⇒ marcador entre preguntas
+    // y podio final SIEMPRE coinciden. Incluye a quien aún no puntúa (0).
     async leaderboard(sessionId, limit = 50) {
+      if (await playersReady() && await answersReady()) {
+        const players = await fetchPlayers(sessionId);
+        const score = new Map();
+        try {
+          const res = await pbFetch(`/api/collections/${ANS}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}' && scored=true`)}&perPage=500&fields=player,points`);
+          for (const r of res?.items || []) score.set(r.player, (score.get(r.player) || 0) + (r.points || 0));
+        } catch { /* sin respuestas todavía → todos a 0 */ }
+        return players
+          .map(p => ({ id: p.id, name: p.name, score: score.get(p.id) || 0 }))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, limit)
+          .map((p, i) => ({ rank: i + 1, ...p }));
+      }
       const { engine } = await load(sessionId);
       return engine.leaderboard(limit);
     },
 
     async kickPlayer(sessionId, playerId) {
+      if (await playersReady()) {
+        await pbFetch(`/api/collections/${PLR}/records/${playerId}`, { method: 'DELETE' }).catch(() => {});
+        return;
+      }
       const { engine } = await load(sessionId);
       engine.state.players = engine.state.players.filter(p => p.id !== playerId);
       await saveState(sessionId, engine);
@@ -565,10 +641,17 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
           try { setConnectionState('connected'); } catch {}
           try {
             const { clientId } = JSON.parse(e.data);
+            // Suscribe también a live_players (deuda A) para que el lobby del
+            // profe vea entrar gente al instante: los joins ya NO PATCHean el blob
+            // (dejarían de disparar el topic de la sesión). Solo si la colección
+            // existe — sin ella, suscribir un topic inexistente podría dejar el
+            // POST connected-but-deaf en despliegues pre-migración.
+            const subs = [topic];
+            if (await playersReady()) subs.push(PLR);
             const r = await fetch(`${PB_URL}/api/realtime`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ clientId, subscriptions: [topic] }),
+              body: JSON.stringify({ clientId, subscriptions: subs }),
             });
             if (!r.ok) throw new Error(`subscribe HTTP ${r.status}`);
             resync('reconnect');
@@ -592,6 +675,16 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
             onChange({ table: 'players', eventType: action });
             onChange({ table: 'answers', eventType: action });
           } catch (err) { console.warn('[realtime] malformed SSE payload — skipping event:', err, e?.data?.slice?.(0, 120)); }
+        });
+
+        // live_players (deuda A): un alumno entró/salió → el profe re-lee la
+        // lista. El topic es la colección ENTERA (filtramos por sesión al
+        // re-fetch en listPlayers); a escala colegio el ruido entre salas es
+        // despreciable. Payload ignorado a propósito: forzamos un re-fetch.
+        self.addEventListener(PLR, (e) => {
+          if (!active || es !== self) return;
+          try { onChange({ table: 'players', eventType: JSON.parse(e.data).action }); }
+          catch { onChange({ table: 'players' }); }
         });
 
         self.onerror = (err) => {

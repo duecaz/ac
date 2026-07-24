@@ -23,6 +23,7 @@ console.log('\n▶ liveEngine'); await import('./liveEngine.test.mjs');
 console.log('\n▶ sessionEngine'); await import('./sessionEngine.test.mjs');
 console.log('\n▶ memory'); await import('./memory.test.mjs');
 console.log('\n▶ liveLocal'); await import('./liveLocal.test.mjs');
+console.log('\n▶ liveJoin'); await import('./liveJoin.test.mjs');
 console.log('\n▶ liveText'); await import('./liveText.test.mjs');
 console.log('\n▶ simPlay'); await import('./simPlay.test.mjs');
 console.log('\n▶ assignments'); await import('./assignments.test.mjs');

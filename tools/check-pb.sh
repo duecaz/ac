@@ -25,7 +25,7 @@ curl -s "$PB/api/health" | jq -e '.code==200' >/dev/null && green "API health" |
 [ -n "$TOKEN" ] && green "auth superadmin" || { red "auth superadmin" "sin token (password?)"; echo "Aborta."; exit 1; }
 
 # 3) colecciones esperadas
-for c in users activities activity_likes reports results profiles live_answers; do
+for c in users activities activity_likes reports results profiles live_answers live_players; do
   curl -s "$PB/api/collections/$c" -H "Authorization: $TOKEN" | jq -e '.id' >/dev/null \
     && green "colección $c existe" || red "colección $c" "no existe"
 done
@@ -45,6 +45,16 @@ LAF=$(curl -s "$PB/api/collections/live_answers" -H "Authorization: $TOKEN" | jq
 for f in v0 c0; do
   echo "$LAF" | grep -qw "$f" && green "live_answers.$f" || red "live_answers.$f" "campo ausente (re-corre setup-pocketbase.ps1 o añade el campo)"
 done
+
+# 4d) live_players (deuda A) + su índice único (session,name)
+LPF=$(curl -s "$PB/api/collections/live_players" -H "Authorization: $TOKEN" | jq -r '.fields[].name' | tr '\n' ' ')
+for f in session name user_id; do
+  echo "$LPF" | grep -qw "$f" && green "live_players.$f" || red "live_players.$f" "campo ausente (corre 'Crear colecciones' en #/admin)"
+done
+LPI=$(curl -s "$PB/api/collections/live_players" -H "Authorization: $TOKEN" | jq -r '.indexes[]?' | tr '\n' ' ')
+echo "$LPI" | grep -qi "unique" && echo "$LPI" | grep -qi "session" \
+  && green "live_players índice único (session,name)" \
+  || red "live_players índice único" "falta el UNIQUE (session,name) → apodos podrían duplicarse"
 
 # 5) La consulta de EXPLORAR / PORTADA (como la hace el navegador, anónimo, SIN sort)
 Q=$(curl -s -G "$PB/api/collections/activities/records" \

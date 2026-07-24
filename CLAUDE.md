@@ -219,16 +219,18 @@ temporales retirados.
 
 ### 🔴 DEUDA DETECTADA EN REVISIÓN (caza de bugs live/session) — PENDIENTE
 
-#### A. Lost-update en el blob `state` de `live_sessions` (queda SOLO el join) → `docs/handoff-deuda-a.md`
-- **Qué queda**: las RESPUESTAS ya están a salvo (`live_answers`, fila por alumno×ítem) y todo lo demás
-  lo escribe solo el profe (un escritor). El ÚNICO choque real de "30 alumnos a la vez" es
-  **`joinSession`** (load→push a `players[]`→PATCH del blob completo): dos entradas simultáneas se
-  pisan → "un alumno no entra y hay que refrescarle" (síntoma confirmado). Bonus del mismo origen:
-  `'p'+seq` puede duplicar playerId y el sufijo de apodos únicos corre.
-- **Plan** (en `docs/handoff-deuda-a.md`, fases A1-A4): colección `live_players` (fila por jugador,
-  playerId = id de fila, índice único (session,name) para apodos atómicos), adaptador dual con
-  fallback, leaderboard derivado de `live_answers`+nombres, y `tools/stress-live.mjs` (30 joins
-  concurrentes contra la Pi) como test de aceptación. Tras A3 el blob es host-only → cerrada por diseño.
+#### A. ✅ RESUELTO (v1.51.272) — Lost-update en el blob `state` de `live_sessions` → `docs/handoff-deuda-a.md`
+- **Qué era**: las respuestas ya vivían en `live_answers`; quedaba `joinSession` (load→push a
+  `players[]`→PATCH del blob completo) → 30 entradas a la vez se pisaban ("un alumno no entra y hay
+  que refrescarle").
+- **Fix (A1-A4)**: colección **`live_players`** (fila por jugador, `playerId` = id de fila, índice
+  ÚNICO (session,name) → apodos atómicos vía retry del 400). Adaptador PB dual (`playersReady()`
+  cacheado): join = POST fila; listPlayers/kickPlayer sobre filas; `subscribeRoom` añade el topic
+  `live_players`; `userId` = anon id estable. **`leaderboard()` DERIVADO** de `live_answers.points` +
+  nombres (misma fuente que el podio). El blob quedó host-only → cerrada POR DISEÑO. Test:
+  `tests/liveJoin.test.mjs` (retry de apodo con fetch inyectado). Aceptación real: `tools/stress-live.mjs`.
+- **PASO DEL USUARIO**: `#/admin` → "Crear colecciones" (añade `live_players`); luego
+  `node tools/stress-live.mjs <PIN> 30` contra la Pi. Ver el handoff.
 
 #### B. Doble puntuación en modo carrera (`'race'`) (alto, código sin tests)
 - **Qué**: en fase `'race'` el lock de primera respuesta se omite, así que un reenvío resetea

@@ -77,7 +77,11 @@ export function getRealtime() {
       // (mismo navegador) no serviría. Si falta la colección live_sessions,
       // createRoom dará un error claro y el profesor la crea desde
       // Admin → "Crear colecciones".
-      return (await import('./pocketbase/realtime.js' + v)).createPocketbaseRealtime();
+      // userId = anon id ESTABLE (no aleatorio): la reconexión de un jugador a su
+      // fila live_players (deuda A) se apoya en él además de sessionStorage.
+      let uid;
+      try { uid = (await import('../core/state.js' + v)).getAnonId(); } catch { uid = undefined; }
+      return (await import('./pocketbase/realtime.js' + v)).createPocketbaseRealtime({ userId: uid });
     }
     throw new Error(`backend desconocido: ${name}`);
   })();

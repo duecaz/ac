@@ -555,6 +555,16 @@ function renderPanel(rootSel) {
           { name: 'v0',      type: 'json' },   // primer intento en carrera (analítica)
           { name: 'c0',      type: 'bool' },   // ¿el primer intento fue correcto?
         ]},
+        // One record per player (deuda A: lost-update del join). Un CREATE nunca
+        // pisa a otro → 30 alumnos entrando a la vez ya no se clobbean en el blob.
+        // playerId = id de la FILA. Índice único (session,name) → apodos únicos
+        // ATÓMICOS (el 400 de colisión dispara el retry "Juan 2"). Ver
+        // docs/handoff-deuda-a.md.
+        { name: 'live_players', fields: [
+          { name: 'session', type: 'text', required: true },
+          { name: 'name',    type: 'text', required: true },
+          { name: 'user_id', type: 'text' },
+        ], indexes: ['CREATE UNIQUE INDEX `idx_lp_session_name` ON `live_players` (`session`, `name`)'] },
         { name: 'assignments', fields: [
           { name: 'code',          type: 'text', required: true },
           { name: 'activity_id',   type: 'text' },

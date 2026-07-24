@@ -118,6 +118,13 @@ $defs = @(
      indexes = @( "CREATE INDEX ``idx_la_session`` ON ``live_answers`` (``session``)" );
      rules = @{ listRule=""; viewRule=""; createRule=""; updateRule=""; deleteRule="" } },
 
+  # live_players (deuda A): una fila por jugador → los joins concurrentes no se
+  # pisan en el blob. Índice UNICO (session,name) = apodos únicos atómicos.
+  @{ name = "live_players";
+     fields = @( @{ name="session"; type="text"; required=$true }, @{ name="name"; type="text"; required=$true }, @{ name="user_id"; type="text" } );
+     indexes = @( "CREATE UNIQUE INDEX ``idx_lp_session_name`` ON ``live_players`` (``session``, ``name``)" );
+     rules = @{ listRule=""; viewRule=""; createRule=""; updateRule=""; deleteRule="" } },
+
   @{ name = "assignments";
      fields = @( @{ name="code"; type="text"; required=$true }, @{ name="activity_id"; type="text" }, @{ name="activity_snap"; type="json"; maxSize=5242880 }, @{ name="author_id"; type="text" }, @{ name="title"; type="text" }, @{ name="due_at"; type="text" }, @{ name="max_attempts"; type="number" }, @{ name="status"; type="text" } );
      indexes = @( "CREATE INDEX ``idx_asg_code`` ON ``assignments`` (``code``)" );
