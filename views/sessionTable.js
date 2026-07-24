@@ -38,7 +38,7 @@ export function buildSessionTable(rows, nItems, { labels = [], items = [], templ
       // el borrador inicial — el heatmap de errores sí usa el primero (v0).
       const vf = r.valueFinal ?? r.value;
       const cf = r.correctFinal ?? r.correct;
-      const sc = cellScore(template, items[r.itemIndex], { value: vf });
+      const sc = cellScore(template, items[r.itemIndex], { value: vf, correct: cf });
       p.cells[r.itemIndex] = { correct: cf, points: r.points || 0, value: vf, hits: sc.hits, total: sc.total, binary: sc.binary };
     }
   }
