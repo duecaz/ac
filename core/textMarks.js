@@ -72,7 +72,11 @@ export function scoreMarksPerHit(value, item, kinds, activity) {
   const got = Array.isArray(value) ? value.map(Number) : [];
   let hits = 0, over = 0;
   for (const p of new Set(got)) (want.has(p) ? hits++ : over++);
-  const points = hits;   // 1 punto por tilde/coma buena; las de más no restan
+  // `pointsPerCorrect` (guardado EN la actividad, default 1) = puntos por marca buena.
+  // ÚNICA fuente de la regla → solo/tarea/VS/equipos/live la comparten (ver
+  // scoreTildesSubmission/scoreComasSubmission y runTextCorrectionSolo).
+  const ppc = activity?.scoring?.pointsPerCorrect ?? 1;
+  const points = hits * ppc;   // las de más NO restan; se registran en `over`
   return { correct: points > 0, points, hits, over, total: want.size, perfect: hits === want.size && over === 0 };
 }
 

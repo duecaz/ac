@@ -113,9 +113,14 @@ export async function renderPlay(rootSel, code) {
 
   ctx.add(await subscribeRoom(session.id, async (ev) => {
     if (ev.table === 'sessions') {
-      // Full diff (Supabase) or re-fetch on a bare ping (local driver).
-      session = ev.new ? { ...session, ...ev.new } : { ...session, ...(await fetchSession(session.id)) };
-      paint();
+      // Full diff (Supabase) or re-fetch on a bare ping (local driver). El fetch
+      // puede AGOTAR el tiempo (móvil flojo); sin try/catch, esa promesa rechazaba
+      // sin capturar y dejaba al alumno con un error en el lobby. Lo ignoramos: el
+      // sondeo cada 8 s (con reintentos en pbFetch) se pone al día solo.
+      try {
+        session = ev.new ? { ...session, ...ev.new } : { ...session, ...(await fetchSession(session.id)) };
+        paint();
+      } catch { /* transitorio: el poll de 8 s recupera */ }
     }
   }));
   ctx.setInterval(() => pingPresence(player.playerId).catch(()=>{}), 15000);

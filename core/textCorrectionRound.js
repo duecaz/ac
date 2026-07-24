@@ -9,7 +9,7 @@
 // value is number[]: for tildes, the char positions marked; for comas, the
 // index of the char AFTER which the comma goes (matches the answer-key `pos`).
 import { html, escapeHtml, mount } from './html.js';
-import { isVowel, applyTilde } from './textMarks.js';
+import { isVowel, applyTilde, scoreMarksPerHit } from './textMarks.js';
 import { trySaveResult } from './results.js';
 import { resultScreenHtml } from './resultScreen.js';
 import { GameEvents, emitGame } from './gameEvents.js';
@@ -212,12 +212,12 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     const p = passages[idx];
     const want = new Set((p.marks || []).filter(m => m.kind === kind).map(m => m.pos));
     const got = new Set((value || []).map(Number));
-    let h = 0, o = 0;
-    for (const pos of got) (want.has(pos) ? h++ : o++);
+    // MISMO scorer que VS/Equipos/Live/Tarea (fuente única de la regla "por palabra
+    // buena"): no reimplementamos el conteo aquí. Solo derivamos `miss` para la UI.
+    const r = scoreMarksPerHit(value, p, [kind], activity);
+    const h = r.hits, o = r.over, pts = r.points, perfect = r.perfect;
     const miss = want.size - h;
-    const pts = h * ppc;   // 1·ppc por marca buena; las de más no restan (ver scoreMarksPerHit)
     score += pts; hits += h; misses += miss; over += o;
-    const perfect = miss === 0 && o === 0;
     // Guarda el detalle por frase (aciertos/fallos/de-más + posiciones + puntos) —
     // materia prima de la analítica por palabra del docente (F3).
     passageResults.push({ p, got, want, hits: h, misses: miss, over: o, total: want.size, correct: perfect, points: pts });

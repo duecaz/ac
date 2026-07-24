@@ -109,9 +109,14 @@ las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecut
 - **Filtros PocketBase**: SIEMPRE `pbEscape`/`pbFilterParam` (`core/pbFilter.js`), nunca
   `encodeURIComponent` a pelo (no escapa la comilla simple).
 - **Puntos**: convención en `core/scoreHelpers.js` (basePoints/wrongPoints/useKahoot); Tildes/Comas
-  puntúan **1 punto por marca buena** (`scoreMarksPerHit`): el puntaje = nº de aciertos, las marcas
-  de más NO restan (se registran en `over` para desempate/corrección; `perfect` = todas y ninguna
-  de más). Así `player.score`, la tabla y el podio muestran el MISMO número.
+  puntúan **`pointsPerCorrect` por marca buena** (`scoreMarksPerHit`, default 1): el puntaje = nº de
+  aciertos × ppc, las marcas de más NO restan (se registran en `over` para desempate/corrección;
+  `perfect` = todas y ninguna de más). Así `player.score`, la tabla y el podio muestran el MISMO número.
+  **Regla inherente = un solo scorer por plantilla**: TODOS los modos (Solo, Tarea, VS, Equipos, Live
+  y cualquier modo futuro) puntúan vía `T.scoreSubmission` (que envuelve `scoreMarksPerHit`); NUNCA
+  se reimplementa el conteo en la vista/runner de un modo. Los PARÁMETROS (`scoring.pointsPerCorrect`)
+  viven en la propia actividad; la LÓGICA vive en la plantilla → imposible que un modo desincronice.
+  El runner Solo (`runTextCorrectionSolo`) también llama a `scoreMarksPerHit` (no tiene copia propia).
 - **Maquetación del PLAYER: NADA con tamaño fijo** — todo relativo (unidades de
   contenedor `cq*` o `%`, o cálculo JS tipo `fitLayout`/`fitPassage`), para que el
   juego se vea bien en 4K, 600×800, 9:16 y 16:9. Prohibido `px`/`rem` fijos que

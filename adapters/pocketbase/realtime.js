@@ -19,8 +19,8 @@ const ANS = 'live_answers';   // one record per student answer (lost-update fix)
 
 function genUserId() { return 'u_' + Math.random().toString(36).slice(2, 10); }
 
-async function pbFetch(path, opts = {}) {
-  const { body: reqBody, method, headers: extra, timeoutMs = 12000, ...rest } = opts;
+async function pbFetchOnce(path, opts = {}) {
+  const { body: reqBody, method, headers: extra, timeoutMs = 12000 } = opts;
   const headers = {};
   if (reqBody && typeof reqBody === 'string') headers['Content-Type'] = 'application/json';
   if (extra) Object.assign(headers, extra);
@@ -36,7 +36,6 @@ async function pbFetch(path, opts = {}) {
       method: method || 'GET',
       headers,
       ...(reqBody !== undefined ? { body: reqBody } : {}),
-      ...rest,
       signal: ctrl.signal,
     });
   } catch (e) {
@@ -54,6 +53,27 @@ async function pbFetch(path, opts = {}) {
   }
   if (!r.ok) throw Object.assign(new Error(body?.message || `PocketBase error ${r.status}`), { status: r.status, pb: body });
   return body;
+}
+
+// Reintenta las lecturas (GET) ante fallos TRANSITORIOS — timeout, red caída, 5xx —
+// que en móvil flojo tumbaban un `join`/`fetchSession` de una sola vez ("un alumno
+// no entra y hay que refrescar"). Solo GET: es idempotente, reintentarlo no duplica
+// nada. Las ESCRITURAS (POST/PATCH) NO se reintentan aquí (podrían pisar el blob
+// `state` — deuda A); su resiliencia vive en la cola offline. Backoff 300/700ms.
+async function pbFetch(path, opts = {}) {
+  const isRead = !opts.method || opts.method === 'GET';
+  const attempts = isRead ? 3 : 1;
+  let lastErr;
+  for (let i = 0; i < attempts; i++) {
+    try { return await pbFetchOnce(path, opts); }
+    catch (e) {
+      lastErr = e;
+      const transient = e?.timeout || e?.status === 0 || e?.status >= 500;
+      if (!isRead || !transient || i === attempts - 1) throw e;
+      await new Promise(res => setTimeout(res, i === 0 ? 300 : 700));
+    }
+  }
+  throw lastErr;
 }
 
 export function createPocketbaseRealtime({ userId = genUserId() } = {}) {

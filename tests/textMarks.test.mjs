@@ -94,9 +94,10 @@ ok('stripAccents removes accents; hasMarks detects presence');
   assert.strictEqual(messy.points, 2, 'los 2 aciertos cuentan aunque haya 4 de más');
   assert.strictEqual(messy.over, 4, 'las 4 de más se registran como error (desempate)');
   assert.strictEqual(messy.perfect, false, 'con marcas de más nunca es perfecto');
-  // SIEMPRE 1 punto por tilde, ignorando pointsPerCorrect de la config
-  assert.strictEqual(scoreMarksPerHit([3, 7], item, ['tilde'], { scoring: { pointsPerCorrect: 10 } }).points, 2, 'ppc=10 igual da 2 (1 por tilde)');
-  ok('scoreMarksPerHit: 1 punto por tilde buena; las de más no restan (se registran en over)');
+  // pointsPerCorrect (guardado EN la actividad) escala el punto por marca buena.
+  assert.strictEqual(scoreMarksPerHit([3, 7], item, ['tilde'], { scoring: { pointsPerCorrect: 10 } }).points, 20, 'ppc=10 → 2 tildes × 10 = 20');
+  assert.strictEqual(scoreMarksPerHit([3, 7], item, ['tilde'], {}).points, 2, 'sin scoring → ppc=1 por defecto');
+  ok('scoreMarksPerHit: pointsPerCorrect por marca buena; las de más no restan (over)');
 }
 
 console.log(`\ntextMarks.test: ${passed} checks passed`);
