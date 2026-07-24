@@ -45,7 +45,7 @@ export async function runStressTest({ pbUrl, n = 30, onLog = () => {} } = {}) {
   // ── Comprobar que las colecciones de la deuda A existen ────────────────────
   for (const c of ['live_sessions', 'live_players', 'live_answers', 'assignments', 'assignment_attempts']) {
     if (!(await exists(c))) {
-      report.notes.push(`Falta la colección ${c} → corre "Crear colecciones" primero.`);
+      report.notes.push(`Falta la colección de base de datos "${c}". NO es una actividad: súbela con el botón "Crear colecciones" de esta misma página (sección PocketBase, arriba) — pide tu email y clave de superadmin de PocketBase. Es append-only, no toca nada existente.`);
       report.ms = Date.now() - t0;
       return report;
     }
