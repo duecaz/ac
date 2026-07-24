@@ -34,8 +34,12 @@ export function buildSessionTable(rows, nItems, { labels = [], items = [], templ
     const p = byPlayer.get(r.player);
     if (r.name && (!p.name || p.name === r.player)) p.name = r.name;
     if (r.itemIndex >= 0 && r.itemIndex < nItems) {
-      const sc = cellScore(template, items[r.itemIndex], r);
-      p.cells[r.itemIndex] = { correct: r.correct, points: r.points || 0, value: r.value, hits: sc.hits, total: sc.total, binary: sc.binary };
+      // La tabla cuenta el intento FINAL (lo que el alumno acabó respondiendo), no
+      // el borrador inicial — el heatmap de errores sí usa el primero (v0).
+      const vf = r.valueFinal ?? r.value;
+      const cf = r.correctFinal ?? r.correct;
+      const sc = cellScore(template, items[r.itemIndex], { value: vf });
+      p.cells[r.itemIndex] = { correct: cf, points: r.points || 0, value: vf, hits: sc.hits, total: sc.total, binary: sc.binary };
     }
   }
   const players = [...byPlayer.values()].map(p => ({

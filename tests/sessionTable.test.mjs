@@ -45,6 +45,22 @@ const rows = [
   assert.strictEqual(ana.marks, 2, 'ranking por marcas: Ana 2');
   ok('M1 texto: la celda cuenta palabras bien (no todo-o-nada por frase)');
 }
+// ── carrera: la tabla cuenta el intento FINAL, no el primer borrador ─────────
+{
+  const textTpl = {
+    itemParts: ({ item }) => (item.marks || []).map(m => ({ key: m.pos, label: 'w', ok: true })),
+    valueParts: ({ value }) => (value || []).map(Number),
+  };
+  const items = [{ marks: [{ pos: 0 }, { pos: 3 }, { pos: 5 }, { pos: 7 }] }]; // 4 tildes
+  // alumno2 empezó MAL (v0 vacío → value) pero acabó con 3/4 (valueFinal).
+  const tRows = [
+    { player: 'p2', name: 'alumno2', itemIndex: 0, value: [], correct: false, valueFinal: [0, 3, 5], correctFinal: true, points: 3 },
+  ];
+  const t = buildSessionTable(tRows, 1, { items, template: textTpl });
+  assert.strictEqual(t.players[0].cells[0].hits, 3, 'la tabla cuenta el intento FINAL (3/4), no el borrador (0)');
+  assert.strictEqual(t.players[0].marks, 3, 'ranking por el resultado final');
+  ok('carrera: tabla usa valueFinal (resultado real), no el primer intento');
+}
 {
   const csv = sessionTableCsv(rows, 2);
   assert.ok(csv.includes('"alumno","P1","P2","aciertos","puntos"'), 'cabecera CSV con aciertos y puntos');
