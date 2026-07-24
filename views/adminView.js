@@ -14,6 +14,8 @@ import { confirmModal, toast } from '../core/toast.js';
 import { downloadActivitiesJson, pickAndImport } from '../core/io.js';
 import { runSelfTests, TOTAL_TESTS } from '../core/selftest.js';
 import { diagnoseDb } from '../core/dbDiag.js';
+import { runStressTest } from '../core/stressTest.js';
+import { PB_URL } from '../pocketbase.config.js';
 import { buildAdminMatrix } from './admin/matrix.js';
 import { listVsAnimations } from '../core/vsAnimations.js';
 import { loadCustomAnims, addCustomAnim, removeCustomAnim } from '../core/vsAnimStore.js';
@@ -111,6 +113,18 @@ function renderPanel(rootSel) {
       <h5 class="mt-4">Base de datos <small class="text-muted">(conexión, latencia y ciclo lectura/escritura/borrado real)</small></h5>
       <button id="admin-db" class="btn btn-primary"><i class="bi bi-database-check"></i> Probar base de datos</button>
       <div id="admin-db-out" class="mt-2"></div>
+
+      <h5 class="mt-4">Prueba de carga <small class="text-muted">(N alumnos entrando y respondiendo A LA VEZ · live + tareas, contra el servidor real)</small></h5>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <button id="admin-stress" class="btn btn-primary"><i class="bi bi-lightning-charge"></i> Simular carga</button>
+        <select id="admin-stress-n" class="form-select form-select-sm" style="width:auto">
+          <option value="30">30 alumnos</option>
+          <option value="50">50 alumnos</option>
+          <option value="100">100 alumnos</option>
+        </select>
+        <small class="text-muted">Crea datos desechables (prefijo <code>stress_</code>) y los borra al terminar.</small>
+      </div>
+      <div id="admin-stress-out" class="mt-2"></div>
 
       <h5 class="mt-4">Tests en vivo <small class="text-muted">(${TOTAL_TESTS} comprobaciones · la suite CI es <code>node tests/run.mjs</code>)</small></h5>
       <button id="admin-run" class="btn btn-success"><i class="bi bi-play-circle"></i> Ejecutar tests</button>
@@ -411,6 +425,46 @@ function renderPanel(rootSel) {
     box.querySelector('.d-flex')?.remove();
     box.insertBefore(banner, ul);
     btn.disabled = false;
+  });
+
+  on(rootSel, 'click', '#admin-stress', async () => {
+    const box = document.getElementById('admin-stress-out');
+    const btn = document.getElementById('admin-stress');
+    const n = Number(document.getElementById('admin-stress-n').value) || 30;
+    const ok = await confirmModal(`Se van a simular ${n} alumnos golpeando el servidor A LA VEZ (live + tareas). Crea y borra datos de prueba. ¿Continuar?`, { okText: 'Simular carga' });
+    if (!ok) return;
+    btn.disabled = true;
+    const log = [];
+    const paint = (extra = '') => {
+      box.innerHTML = `<div class="d-flex align-items-center gap-2 mb-1 text-muted"><span class="spinner-border spinner-border-sm"></span><small>${escapeHtml(log[log.length - 1] || 'Preparando…')}</small></div>${extra}`;
+    };
+    paint();
+    try {
+      const r = await runStressTest({ pbUrl: PB_URL, n, onLog: (m) => { log.push(m); paint(); } });
+      const row = (label, pass, detail) =>
+        `<li class="list-group-item d-flex justify-content-between align-items-center py-1 px-2">
+           <span>${pass ? '<span class="text-success fw-semibold me-1">✓</span>' : '<span class="text-danger fw-semibold me-1">✗</span>'}${escapeHtml(label)}</span>
+           <small class="text-muted">${escapeHtml(detail)}</small></li>`;
+      const L = r.live, T = r.tasks;
+      const items = [];
+      if (L) {
+        items.push(row(`Live · entradas simultáneas`, L.playerRows === n, `${L.playerRows}/${n} filas · ${L.uniqueNames} apodos únicos · ${L.joinMs} ms`));
+        items.push(row(`Live · respuestas simultáneas`, L.answerRows === L.joinsOk * 2, `${L.answerRows} filas (esperadas ${L.joinsOk * 2}) · ${L.ansMs} ms`));
+      }
+      if (T) items.push(row(`Tareas · intentos simultáneos`, T.pass, T.attemptRows != null ? `${T.attemptRows}/${n} filas · ${T.attMs} ms` : 'no ejecutado'));
+      const notes = r.notes.length ? `<div class="alert alert-warning py-1 px-2 small mb-2">${r.notes.map(escapeHtml).join('<br>')}</div>` : '';
+      box.innerHTML = `
+        ${notes}
+        <div class="alert ${r.ok ? 'alert-success' : 'alert-danger'} py-1 px-2 mb-2 small">
+          <b>${r.ok ? '✅ Aguanta' : '❌ Se cayó bajo carga'}</b> · ${n} alumnos concurrentes · ${r.ms} ms total
+          ${r.ok ? '' : '<br>Filas &lt; N ⇒ lost-update o la Pi no da abasto. Apodos únicos &lt; filas ⇒ colisión sin resolver.'}
+        </div>
+        <ul class="list-group list-group-flush" style="font-size:.875rem">${items.join('')}</ul>`;
+    } catch (e) {
+      box.innerHTML = `<div class="alert alert-danger py-1 px-2 small">Error: ${escapeHtml(e.message)}</div>`;
+    } finally {
+      btn.disabled = false;
+    }
   });
 
   on(rootSel, 'click', '#admin-run', async () => {

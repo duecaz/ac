@@ -105,6 +105,13 @@ del navegador real. El mismo panel tiene **"Probar base de datos"**
 (`core/dbDiag.js`): conexión, latencia y ciclo real lectura/escritura/borrado
 contra el backend activo.
 
+**"Simular carga"** (`core/stressTest.js`) lanza N alumnos (30/50/100) entrando
+y respondiendo **A LA VEZ** (live) + N intentos de tarea concurrentes contra el
+PB REAL — caza los bugs de concurrencia que el driver local NO puede reproducir
+(lost-update del join, throughput de la Pi, colisiones de apodo). Crea datos
+`stress_*` desechables y los borra. Mismo motor por CLI: `node tools/stress-live.mjs [N]`.
+Blindado por `tests/stressTest.test.mjs` (PB falso en memoria con índice único).
+
 ## 3. Verificación headless (layout, táctil, visual)
 
 Lo que la suite Node no ve (¿el texto llena el marco?, ¿el trazo marca la

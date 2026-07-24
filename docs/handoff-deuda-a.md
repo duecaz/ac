@@ -60,7 +60,10 @@ fallback legado.
 ## PASO DEL USUARIO (imprescindible para activarlo)
 1. En la web: `#/admin` → **"Crear colecciones"** (añade `live_players` con su índice único — es append-only, no toca nada existente).
 2. Verificar: `bash tools/check-pb.sh` → debe salir verde `live_players` + su índice.
-3. Aceptación real: crear una sala, y `node tools/stress-live.mjs <PIN> 30` → `✅ PASA: 30 → 30 filas`. Limpiar: `node tools/stress-live.mjs <PIN> clean`.
+3. Aceptación real (2 vías, mismo motor `core/stressTest.js`):
+   - En la web: `#/admin` → **"Simular carga"** (30/50/100) → crea sala+tarea desechables, N joins+respuestas+intentos CONCURRENTES, verifica 0 filas perdidas y limpia.
+   - CLI: `node tools/stress-live.mjs 30` (auto-crea su propia sala; ya no necesita PIN).
+   Cubierto por `tests/stressTest.test.mjs` (PB falso en memoria con índice único).
 
 Orden estricto A1→A2→A3 (cada una deja el sistema funcionando; A2 ya elimina el
 clobber de joins aunque A3 no esté).
