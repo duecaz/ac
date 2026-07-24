@@ -76,6 +76,7 @@ export async function renderPlay(rootSel, code) {
   let lastPhaseKey = '';
   let autoFlushQuestion = null;  // capturar el trazo en curso al avanzar sin "Listo"
   let rescuedIdx = -1;           // ítem cuyo trazo se rescató (su POST puede ir en vuelo)
+  let rescuedSubmit = null;      // promesa de ese POST — paintRevealOwn la espera
   let myScore = 0;      // estimación local de respaldo (autoritativo = leaderboard del servidor)
   let endedFired = false;
   let endingInProgress = false;
@@ -106,16 +107,23 @@ export async function renderPlay(rootSel, code) {
   document.body.classList.add('ww-play-noscroll');
   ctx.add(() => document.body.classList.remove('ww-play-noscroll'));
 
+  // Re-lectura de la sesión COALESCIDA: el evento realtime y el poll de 8 s piden
+  // lo mismo; si una petición ya va en vuelo (que con los reintentos de pbFetch
+  // puede tardar), ambos comparten esa promesa en vez de apilar cadenas de
+  // reintentos concurrentes contra el servidor caído. Fail-soft: un fallo
+  // transitorio se ignora (el siguiente tick recupera) — sin try/catch, esa
+  // promesa rechazaba sin capturar y dejaba al alumno con un error en el lobby.
+  let refetching = null;
+  async function refreshSession() {
+    refetching ??= fetchSession(session.id).finally(() => { refetching = null; });
+    try { session = { ...session, ...(await refetching) }; paint(); }
+    catch { /* transitorio: el próximo evento/poll recupera */ }
+  }
   ctx.add(await subscribeRoom(session.id, async (ev) => {
     if (ev.table === 'sessions') {
-      // Full diff (Supabase) or re-fetch on a bare ping (local driver). El fetch
-      // puede AGOTAR el tiempo (móvil flojo); sin try/catch, esa promesa rechazaba
-      // sin capturar y dejaba al alumno con un error en el lobby. Lo ignoramos: el
-      // sondeo cada 8 s (con reintentos en pbFetch) se pone al día solo.
-      try {
-        session = ev.new ? { ...session, ...ev.new } : { ...session, ...(await fetchSession(session.id)) };
-        paint();
-      } catch { /* transitorio: el poll de 8 s recupera */ }
+      // Full diff (Supabase) or re-fetch on a bare ping (local driver).
+      if (ev.new) { session = { ...session, ...ev.new }; paint(); }
+      else await refreshSession();
     }
   }));
   ctx.setInterval(() => pingPresence(player.playerId).catch(()=>{}), 15000);
@@ -123,9 +131,7 @@ export async function renderPlay(rootSel, code) {
   // or the network switches. Re-fetch session every 8 s so the student
   // catches up even if the realtime event was missed. paint() is idempotent
   // (the lastPhaseKey dedup skips re-renders when nothing changed).
-  ctx.setInterval(async () => {
-    try { session = await fetchSession(session.id); paint(); } catch { /* ignore transient */ }
-  }, 8000);
+  ctx.setInterval(refreshSession, 8000);
   // Try to flush any pending submissions (in case we just regained network).
   flushQueue().catch(() => {});
 
@@ -352,14 +358,15 @@ export async function renderPlay(rootSel, code) {
       <div id="s-round"></div>
     `);
     let sent = false;
-    tpl.renderRound(document.getElementById('s-round'), payload, {
+    const handle = tpl.renderRound(document.getElementById('s-round'), payload, {
       mode: 'live',
       onSubmit: async (value) => {
         if (sent) return;
         sent = true;
-        autoFlushQuestion = null;   // ya respondió: no hay trazo que rescatar
         const ms = Date.now() - lastQuestionShownAt;
-        const r = await queuedSubmit(session.id, player.playerId, idx, value, ms);
+        const p = queuedSubmit(session.id, player.playerId, idx, value, ms);
+        rescuedSubmit = p;   // paintRevealOwn puede esperar este POST si hizo falta rescatar
+        const r = await p;
         emitGame(GameEvents.PLAYER_ANSWERED, { idx });
         // Solo pintar "esperando" si SEGUIMOS en la pregunta: cuando este submit
         // es el rescate de autoFlushQuestion, la fase ya cambió y paint() ya montó
@@ -370,12 +377,13 @@ export async function renderPlay(rootSel, code) {
       }
     });
     // Rescate del trazo en curso: si el profe avanza antes de que el alumno pulse
-    // "Listo", disparamos ese mismo botón (existe en Tildes/Comas) para no perder
-    // lo dibujado. En plantillas que responden al toque (quiz) no hay botón → no-op.
+    // "Listo", la plantilla entrega lo dibujado vía el handle `{ flush }` de su
+    // renderRound (capacidad del CONTRATO — Tildes/Comas la implementan; quiz no
+    // devuelve handle → no-op). Nada de querySelector a clases internas.
     autoFlushQuestion = () => {
-      if (sent) return;
-      const btn = document.querySelector('#s-round .tc-done');
-      if (btn) { rescuedIdx = idx; btn.click(); }
+      if (sent || !handle?.flush) return;
+      rescuedIdx = idx;
+      handle.flush();
     };
 
     if (questionTickHandle) clearInterval(questionTickHandle);
@@ -398,10 +406,11 @@ export async function renderPlay(rootSel, code) {
     let own = await getOwnAnswer(session.id, player.playerId, idx);
     // Si acabamos de RESCATAR el trazo de este ítem (autoFlushQuestion), su POST
     // puede seguir en vuelo mientras este GET ya respondió null → saldría "Sin
-    // respuesta" al alumno que sí respondió (y lastPhaseKey no repinta). Un único
-    // reintento corto le da tiempo a aterrizar.
-    if (!own && rescuedIdx === idx) {
-      await new Promise(res => ctx.setTimeout(res, 900));
+    // respuesta" al alumno que sí respondió (y lastPhaseKey no repinta). En vez
+    // de un sleep a ciegas, esperamos la promesa REAL del submit y re-leemos.
+    if (!own && rescuedIdx === idx && rescuedSubmit) {
+      try { await rescuedSubmit; } catch { /* la cola offline ya lo tiene */ }
+      rescuedIdx = -1; rescuedSubmit = null;
       if (session.current_item !== idx || session.phase !== 'reveal') return;
       own = await getOwnAnswer(session.id, player.playerId, idx);
     }

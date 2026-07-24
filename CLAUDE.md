@@ -55,6 +55,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | Modo SOLO (Wordwall) por dentro · identidad/auth · dev local | `docs/modo-wordwall.md` · `docs/identidad.md` · `docs/dev-local.md` |
 | Índice completo de docs | `docs/README.md` (lo histórico vive en `docs/historico/`) |
 | **Cómo se puntúa CADA actividad** (mapa de los 7 sitios que deciden puntos + plan) | **`docs/handoff-puntuacion.md`** |
+| **Centralizar decisiones repartidas en vistas** (fase→pantalla, payload, meta, prompt…) | **`docs/handoff-centralizacion.md`** |
 | **Bugs abiertos / deuda** | la sección "Deuda técnica registrada" (abajo) + notas `docs/handoff-*.md` |
 | **Plan biblioteca pública** (portada, likes, gate de login, admin) | **`docs/handoff-biblioteca-publica.md`** (+ `handoff-google-classroom.md` y `handoff-seguridad-pb.md`) |
 | **Cómo está la BD/Pi de VERDAD** (PocketBase, Docker, backups, OAuth Google, quirks) | **`docs/infraestructura-pb.md`** (fuente de infra; actualizar si cambia el servidor) |
@@ -109,7 +110,7 @@ las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecut
   pizarras A55; nunca añadir bucles rAF continuos en el hilo principal sin gate `ww-lite`.
 - **Filtros PocketBase**: SIEMPRE `pbEscape`/`pbFilterParam` (`core/pbFilter.js`), nunca
   `encodeURIComponent` a pelo (no escapa la comilla simple).
-- **Puntos**: convención en `core/scoreHelpers.js` (basePoints/wrongPoints/useKahoot); Tildes/Comas
+- **Puntos**: convención en `core/scoring/` (basePoints/wrongPoints/useKahoot/awardPoints); Tildes/Comas
   puntúan **`pointsPerCorrect` por marca buena** (`scoreMarksPerHit`, default 1): el puntaje = nº de
   aciertos × ppc, las marcas de más NO restan (se registran en `over` para desempate/corrección;
   `perfect` = todas y ninguna de más). Así `player.score`, la tabla y el podio muestran el MISMO número.

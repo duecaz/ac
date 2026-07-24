@@ -105,11 +105,11 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
 
     // Cerrar la sala LIQUIDA lo pendiente y luego marca 'ended' (mismo contrato que
     // el driver PocketBase): ninguna respuesta rezagada se queda sin puntuar.
-    // `keepPhase` evita que settle() mueva la fase a 'reveal' al cerrar.
+    // `keepPhase` evita que settle() mueva la fase a 'reveal' al cerrar; solo se
+    // guarda el barrido si procesó algo (el cierre repetido no re-escribe).
     async endSession(code) {
       const { room, engine } = load(code);
-      for (let i = 0; i < engine.totalItems; i++) engine.settle(i, { keepPhase: true });
-      save(code, room, engine);
+      if (engine.settleAll({ keepPhase: true }) > 0) save(code, room, engine);
       return this.setSessionState(code, { status: 'ended', phase: 'ended' });
     },
 

@@ -121,13 +121,19 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
   const stopFit = fitPassage(areaEl, passageEl);
 
   let done = false;
-  root.querySelector('.tc-done').addEventListener('click', () => {
+  const submit = () => {
     if (done) return;
     done = true;
     stopFit();
     draw.freeze();
     onSubmit?.(draw.getMarked());
-  });
+  };
+  root.querySelector('.tc-done').addEventListener('click', submit);
+  // Contrato opcional de renderRound: `{ flush }` entrega lo dibujado hasta ahora
+  // (mismo efecto que pulsar "Listo"). Lo usa studentLive para RESCATAR el trazo
+  // en curso cuando el profe avanza antes de que el alumno termine — capacidad
+  // declarada por la plantilla, no un querySelector a clases internas.
+  return { flush: submit };
 }
 
 // Ajusta el tamaño de letra para que el texto LLENE el área (sin desbordar): el
@@ -210,20 +216,20 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
 
   function grade(value) {
     const p = passages[idx];
+    // MISMO scorer que VS/Equipos/Live/Tarea (fuente única de la regla "por palabra
+    // buena"): no reimplementamos el conteo aquí. `want/got` solo alimentan la
+    // corrección visual y la analítica por frase.
     const want = new Set((p.marks || []).filter(m => m.kind === kind).map(m => m.pos));
     const got = new Set((value || []).map(Number));
-    // MISMO scorer que VS/Equipos/Live/Tarea (fuente única de la regla "por palabra
-    // buena"): no reimplementamos el conteo aquí. Solo derivamos `miss` para la UI.
     const r = scoreMarksPerHit(value, p, [kind], activity);
-    const h = r.hits, o = r.over, pts = r.points, perfect = r.perfect;
-    const miss = want.size - h;
-    score += pts; hits += h; misses += miss; over += o;
+    const miss = r.total - r.hits;
+    score += r.points; hits += r.hits; misses += miss; over += r.over;
     // Guarda el detalle por frase (aciertos/fallos/de-más + posiciones + puntos) —
     // materia prima de la analítica por palabra del docente (F3).
-    passageResults.push({ p, got, want, hits: h, misses: miss, over: o, total: want.size, correct: perfect, points: pts });
-    if (perfect) emitGame(GameEvents.ANSWER_CORRECT, { points: pts });
+    passageResults.push({ p, got, want, hits: r.hits, misses: miss, over: r.over, total: r.total, correct: r.perfect, points: r.points });
+    if (r.perfect) emitGame(GameEvents.ANSWER_CORRECT, { points: r.points });
     else emitGame(GameEvents.ANSWER_WRONG, {});
-    reveal(value, { hits: h, over: o, misses: miss, total: want.size, correct: perfect });
+    reveal(value, { hits: r.hits, over: r.over, misses: miss, total: r.total, correct: r.perfect });
   }
 
   function reveal(value, r) {

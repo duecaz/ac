@@ -19,6 +19,7 @@ import { listVsAnimations, startPreviewAnims, DEFAULT_VS_ANIMATION } from './vsA
 let _editorPreviewAnims = [];
 let _editorPreviewGen = 0;
 import { getTemplate } from './registry.js';
+import { canAutoScoreRound } from './templateCapability.js';
 
 const VS_FX_DEFAULTS = { sound: true, flash: true, confetti: false };
 
@@ -78,7 +79,7 @@ function teamsBlock(a) {
   const count = a.presentation?.teamsCount || 2;
   const scoring = a.presentation?.teamsScoring || 'auto';
   const T = getTemplate(a.template);
-  const canAuto = typeof T?.scoreSubmission === 'function' && typeof T?.getRoundPayload === 'function';
+  const canAuto = canAutoScoreRound(T);   // MISMO criterio que modes/engine/teamsView (core/templateCapability.js)
   return `
     <section class="ww-mode-cfg" data-mode="teams">
       <h6 class="mb-1"><i class="bi bi-people-fill text-primary"></i> Equipos</h6>

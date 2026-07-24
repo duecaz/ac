@@ -25,19 +25,20 @@ const rows = [
   assert.strictEqual(t.players[0].cells[1], null, 'pregunta sin responder = null');
   ok('celda vacía cuando no respondió');
 }
+// Plantilla de texto FICTICIA para los bloques multi-parte. Desde P4
+// (handoff-puntuacion) la tabla lee el mérito del SCORER de la plantilla
+// ({hits, over, total}), no de itemParts/valueParts.
+const textTpl = {
+  scoreSubmission: ({ value, item }) => {
+    const want = new Set((item.marks || []).map(m => m.pos));
+    const got = (value || []).map(Number);
+    let hits = 0, over = 0;
+    for (const p of new Set(got)) (want.has(p) ? hits++ : over++);
+    return { correct: hits > 0, points: hits, hits, over, total: want.size };
+  },
+};
 // ── Con M1 (texto): la celda cuenta PALABRAS bien (2/3), no frase perfecta ────
 {
-  // Desde P4 (handoff-puntuacion) la tabla lee el mérito del SCORER de la
-  // plantilla ({hits, over, total}), no de itemParts/valueParts.
-  const textTpl = {
-    scoreSubmission: ({ value, item }) => {
-      const want = new Set((item.marks || []).map(m => m.pos));
-      const got = (value || []).map(Number);
-      let hits = 0, over = 0;
-      for (const p of new Set(got)) (want.has(p) ? hits++ : over++);
-      return { correct: hits > 0, points: hits, hits, over, total: want.size };
-    },
-  };
   const items = [{ marks: [{ pos: 0 }, { pos: 3 }, { pos: 5 }] }]; // 3 tildes requeridas
   const tRows = [
     { player: 'p1', name: 'Ana', itemIndex: 0, value: [0, 3, 9], correct: false, points: 2 },  // 2 de 3 (+1 de más)
@@ -54,17 +55,6 @@ const rows = [
 }
 // ── carrera: la tabla cuenta el intento FINAL, no el primer borrador ─────────
 {
-  // Desde P4 (handoff-puntuacion) la tabla lee el mérito del SCORER de la
-  // plantilla ({hits, over, total}), no de itemParts/valueParts.
-  const textTpl = {
-    scoreSubmission: ({ value, item }) => {
-      const want = new Set((item.marks || []).map(m => m.pos));
-      const got = (value || []).map(Number);
-      let hits = 0, over = 0;
-      for (const p of new Set(got)) (want.has(p) ? hits++ : over++);
-      return { correct: hits > 0, points: hits, hits, over, total: want.size };
-    },
-  };
   const items = [{ marks: [{ pos: 0 }, { pos: 3 }, { pos: 5 }, { pos: 7 }] }]; // 4 tildes
   // alumno2 empezó MAL (v0 vacío → value) pero acabó con 3/4 (valueFinal).
   const tRows = [

@@ -23,7 +23,7 @@ genérica anti-pérdida) · `pbFilter` (escape de filtros PocketBase) · `dbDiag
 
 ## Juego (mecánica / feedback)
 `roundRender` · `podium` · `resultScreen` · `teams` · `streaks` · `effects`
-· `sounds` · `gameEvents` · `scoreHelpers` (convención de puntos compartida)
+· `sounds` · `gameEvents` · `scoring/` (convención de puntos compartida)
 
 ## Modo SOLO (shells estandarizados — ver CLAUDE.md "Arquitectura de Players")
 `soloPlayer` (SequentialShell + FreeformShell) · `soloTimer` (countdown único)
@@ -50,7 +50,7 @@ del home) · `vsAnimations` + `vsAnimStore` (animación central del VS)
 
 ---
 Las **fuentes únicas de verdad** (modes, modeMatrix, editorShell, resultScreen,
-teams, scoreHelpers, results.applyPoints, kernel/content/qaAdapt) centralizan
+teams, scoring/, results.applyPoints, kernel/content/qaAdapt) centralizan
 cada decisión en un solo sitio. Detalle del contrato en `templates/base.js` y
 `kernel/contracts/`, guía de modos en `docs/modos-de-juego.md`, testeo en
 `docs/testing.md` y el panel `#/admin`.

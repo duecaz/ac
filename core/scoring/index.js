@@ -3,4 +3,3 @@
 // (hits/total); award.js decide los PUNTOS; los PARÁMETROS viven en la actividad.
 export { basePoints, wrongPoints, useKahoot, awardPoints } from './award.js';
 export { scoreMarks, scoreMarksPerHit } from './marks.js';
-export { normalizeScore } from './contract.js';

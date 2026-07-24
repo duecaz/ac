@@ -53,7 +53,7 @@ export class TildesTemplate extends BaseTemplate {
 
   // One passage = one round (tap the accented vowels). Shared renderer.
   static renderRound(root, payload, { onSubmit } = {}) {
-    renderTextCorrectionRound(root, payload, { kind: 'tilde', onSubmit });
+    return renderTextCorrectionRound(root, payload, { kind: 'tilde', onSubmit });   // devuelve { flush }
   }
 
   // Projector view for LIVE (passage big; solution on reveal).
@@ -81,6 +81,11 @@ export class TildesTemplate extends BaseTemplate {
     if (!Array.isArray(passages)) return content;
     for (const p of passages) {
       if (!p || typeof p.text !== 'string') continue;
+      // Solo re-parsear si el texto muestra la FIRMA de la corrupción (acentos
+      // combinantes U+0300-036F sueltos). migrate() corre en CADA carga/sync de
+      // cada actividad — sin este guard, todos los pasajes limpios pagaban el
+      // applyMarks+parse completo para siempre.
+      if (!/[\u0300-\u036f]/.test(p.text)) continue;
       const re = parseAccentedText(applyMarks(p.text, p.marks || []));
       p.text = re.text;
       p.marks = re.marks;

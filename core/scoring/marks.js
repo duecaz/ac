@@ -26,7 +26,8 @@ export function scoreMarksPerHit(value, item, kinds, activity) {
   const got = Array.isArray(value) ? value.map(Number) : [];
   let hits = 0, over = 0;
   for (const p of new Set(got)) (want.has(p) ? hits++ : over++);
-  const ppc = activity?.scoring?.pointsPerCorrect ?? 1;
-  const points = hits * ppc;
+  // basePoints SIN item a propósito: en el crédito por marca no aplica
+  // item.points (cada marca vale lo mismo); queda solo config → 1.
+  const points = hits * basePoints(null, activity?.scoring);
   return { correct: points > 0, points, hits, over, total: want.size, perfect: hits === want.size && over === 0 };
 }

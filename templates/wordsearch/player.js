@@ -7,6 +7,7 @@ import * as Streaks from '../../core/streaks.js';
 import { createCountdown } from '../../core/soloTimer.js';
 import { generateGrid, cellLine, SIZE_MAP } from './generator.js';
 import { scoreWordsearch } from './scorer.js';
+import { basePoints } from '../../core/scoring/index.js';
 
 // Per-player color palette (supports up to 6 players)
 const PLAYER_COLORS = [
@@ -261,7 +262,7 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
   // ── Finish ───────────────────────────────────────────────────────────────────
   function finish() {
     if (timer) { timer.stop(); timer = null; }
-    const max = total * (scoring.pointsPerCorrect || 1);
+    const max = total * basePoints(null, scoring);   // misma convención que el scorer
     Streaks.reset('solo', activity.id);
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: state.score }] });
     ctx.finish({

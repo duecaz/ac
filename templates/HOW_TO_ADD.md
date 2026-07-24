@@ -126,7 +126,7 @@ normalmente delegando a `templates/miplantilla/scorer.js`:
 
 ```js
 // templates/miplantilla/scorer.js
-import { basePoints, wrongPoints } from '../../core/scoreHelpers.js';
+import { basePoints, wrongPoints } from '../../core/scoring/index.js';
 export function scoreMiSubmission({ value, item, activity, mode = 'solo' }) {
   const ok = /* ¿correcto? */;
   if (ok === null) return { correct: null, points: 0 };          // no puntuable

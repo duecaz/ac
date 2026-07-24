@@ -73,7 +73,7 @@ core/soloPlayer.js      SHELLS: runSequentialPlayer (ítem a ítem) / runFreefor
                         → bucle, idx, finish, trySaveResult, emite QUESTION_SHOWN/PODIUM
 core/soloTimer.js       createCountdown (scheduler inyectable)
 core/gameEvents.js      el BUS → core/sounds.js (mp3 autoalojados) + core/effects.js (confeti)
-core/scoreHelpers.js    basePoints / wrongPoints / useKahoot (convención de puntos)
+core/scoring/           basePoints / wrongPoints / useKahoot / awardPoints (convención de puntos)
 core/skins.js           aplica los tokens --ww-*; el CSS de la actividad los consume
 core/activityThumb.js   la miniatura del home → llama al previewHtml de la plantilla
 ```

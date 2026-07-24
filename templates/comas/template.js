@@ -53,7 +53,7 @@ export class ComasTemplate extends BaseTemplate {
 
   // One passage = one round (tap the gap where a comma is missing). Shared renderer.
   static renderRound(root, payload, { onSubmit } = {}) {
-    renderTextCorrectionRound(root, payload, { kind: 'coma', onSubmit });
+    return renderTextCorrectionRound(root, payload, { kind: 'coma', onSubmit });   // devuelve { flush }
   }
 
   // Projector view for LIVE (passage big; solution on reveal).

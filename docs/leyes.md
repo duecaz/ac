@@ -76,7 +76,7 @@ Esto es lo que buscabas: el **contrato de estilos del PLAYER**.
 - ≤4 núcleos o ≤2GB → `ww-lite` en `<html>`; sin bucles rAF continuos en reposo. El VS
   debe ir fluido en pizarras A55.
 
-## 14) Puntos (`core/scoreHelpers.js`)
+## 14) Puntos (`core/scoring/`)
 - `basePoints`/`wrongPoints`/`useKahoot`. Tildes VS: 1 punto fijo por tilde buena
   (`scoreMarksPerHit`).
 

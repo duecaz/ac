@@ -176,6 +176,15 @@ function createLiveSession(activity, T, opts) {
     return settled;
   }
 
+  // Barrido de cierre: liquida TODOS los ítems (settle salta lo ya puntuado, así
+  // que es idempotente en puntos). Lo llaman los drivers al cerrar la sala para
+  // que ninguna respuesta pendiente quede en 0; devuelve respuestas procesadas.
+  const settleAll = (opts) => {
+    let n = 0;
+    for (let i = 0; i < total; i++) n += settle(i, opts);
+    return n;
+  };
+
   const roundPayload = (itemIndex = state.currentItem) =>
     T.getRoundPayload ? T.getRoundPayload(activity, { itemIndex }) : null;
 
@@ -184,7 +193,7 @@ function createLiveSession(activity, T, opts) {
       .map((p, i) => ({ rank: i + 1, id: p.id, name: p.name, score: p.score }));
 
   return {
-    state, join, dispatch, submit, settle, roundPayload, leaderboard,
+    state, join, dispatch, submit, settle, settleAll, roundPayload, leaderboard,
     get phase() { return state.phase; },
     get currentItem() { return state.currentItem; },
     get totalItems() { return total; },

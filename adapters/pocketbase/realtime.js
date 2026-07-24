@@ -61,19 +61,15 @@ async function pbFetchOnce(path, opts = {}) {
 // nada. Las ESCRITURAS (POST/PATCH) NO se reintentan aquí (podrían pisar el blob
 // `state` — deuda A); su resiliencia vive en la cola offline. Backoff 300/700ms.
 async function pbFetch(path, opts = {}) {
-  const isRead = !opts.method || opts.method === 'GET';
-  const attempts = isRead ? 3 : 1;
-  let lastErr;
-  for (let i = 0; i < attempts; i++) {
+  const attempts = (!opts.method || opts.method === 'GET') ? 3 : 1;
+  for (let i = 0; ; i++) {
     try { return await pbFetchOnce(path, opts); }
     catch (e) {
-      lastErr = e;
       const transient = e?.timeout || e?.status === 0 || e?.status >= 500;
-      if (!isRead || !transient || i === attempts - 1) throw e;
+      if (!transient || i >= attempts - 1) throw e;
       await new Promise(res => setTimeout(res, i === 0 ? 300 : 700));
     }
   }
-  throw lastErr;
 }
 
 export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
@@ -124,61 +120,59 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
     return pbFilterParam(parts.join(' && '));
   };
 
-  // Fetch a session's answer rows for one item, deduped to ONE per player. A
-  // double-tap can create two rows (no DB unique index needed); we keep the
-  // earliest (lowest ms) so the Kahoot first-answer/speed semantics hold.
-  async function fetchAnswerRows(sessionId, itemIndex) {
-    const res = await pbFetch(`/api/collections/${ANS}/records?filter=${ansFilter(sessionId, itemIndex)}&perPage=500`);
+  // Deduplica filas de respuesta a UNA por jugador: nos quedamos con la más
+  // TEMPRANA (menor `ms`) para conservar la semántica Kahoot de primera
+  // respuesta/velocidad. ÚNICO sitio donde vive este criterio (lo usan
+  // fetchAnswerRows y settlePending); si la deuda F cambia el desempate a
+  // "más reciente", se cambia solo aquí.
+  function dedupeByPlayer(rows) {
     const byPlayer = new Map();
-    for (const r of res?.items || []) {
+    for (const r of rows || []) {
       const prev = byPlayer.get(r.player);
       if (!prev || (r.ms ?? 0) < (prev.ms ?? Infinity)) byPlayer.set(r.player, r);
     }
     return [...byPlayer.values()];
   }
 
-  // Liquida las respuestas que quedaron SIN puntuar en CUALQUIER ítem, sin tocar la
-  // fase (`keepPhase`). Se llama al cerrar la sala para recoger las REZAGADAS: las
-  // que llegaron después del settle de su pregunta (rescate del trazo al avanzar,
-  // reintento de la cola offline, red lenta). Una sola pasada: 1 lectura de todas
-  // las filas + 1 PATCH por fila recién puntuada + 1 guardado de estado.
-  async function settlePending(sessionId) {
-    if (!(await answersReady())) {
-      // Blob heredado: las respuestas viven en state.answers y settle() ya salta
-      // las que tienen veredicto, así que esto solo puntúa lo pendiente.
-      const { engine } = await load(sessionId);
-      for (let i = 0; i < engine.totalItems; i++) engine.settle(i, { keepPhase: true });
-      await saveState(sessionId, engine);
-      return 0;
-    }
+  // Hidrata el motor con una fila de la colección. Preservar el veredicto de una
+  // fila YA puntuada es lo que impide el doble conteo: settle() solo suma puntos
+  // a players[] cuando la respuesta estaba sin puntuar (wasUnscored). Compartido
+  // por settleItem y settlePending — el invariante anti-doble-conteo vive aquí.
+  function hydrateAnswerRow(engine, itemIndex, r) {
+    engine.state.answers[`${itemIndex}:${r.player}`] = {
+      playerId: r.player, value: r.value, msTaken: r.ms ?? 0,
+      correct: r.scored ? r.correct : null, points: r.scored ? (r.points ?? 0) : 0,
+    };
+  }
+
+  // Fetch a session's answer rows for one item, deduped to ONE per player. A
+  // double-tap can create two rows (no DB unique index needed).
+  async function fetchAnswerRows(sessionId, itemIndex) {
+    const res = await pbFetch(`/api/collections/${ANS}/records?filter=${ansFilter(sessionId, itemIndex)}&perPage=500`);
+    return dedupeByPlayer(res?.items);
+  }
+
+  // Liquida las respuestas que quedaron SIN puntuar en CUALQUIER ítem, sin tocar
+  // la fase (`keepPhase`) y SOBRE el motor que le pasa endSession (así el cierre
+  // hace UNA carga y UN guardado en total). Recoge las REZAGADAS: las que llegaron
+  // después del settle de su pregunta (rescate del trazo, cola offline, red lenta).
+  // Camino común (nada pendiente): un probe de 1 fila y fuera.
+  async function settlePendingInto(engine, sessionId) {
+    // ¿Hay algo sin puntuar? Probe mínimo server-side antes de bajar nada.
+    const probe = await pbFetch(`/api/collections/${ANS}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}' && scored=false`)}&perPage=1&fields=id`);
+    if (!probe?.items?.length) return 0;
     const res = await pbFetch(`/api/collections/${ANS}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}'`)}&perPage=500`);
-    const all = res?.items || [];
-    if (!all.some(r => !r.scored)) return 0;          // nada rezagado → ni cargamos el motor
-    const { engine } = await load(sessionId);
-    // Dedupe por (ítem, jugador) con el MISMO criterio que fetchAnswerRows.
     const byItem = new Map();
-    for (const r of all) {
+    for (const r of res?.items || []) {
       const it = Number(r.item);
-      if (!byItem.has(it)) byItem.set(it, new Map());
-      const m = byItem.get(it);
-      const prev = m.get(r.player);
-      if (!prev || (r.ms ?? 0) < (prev.ms ?? Infinity)) m.set(r.player, r);
+      if (!byItem.has(it)) byItem.set(it, []);
+      byItem.get(it).push(r);
     }
     const toPatch = [];
-    for (const [itemIndex, m] of byItem) {
-      const rows = [...m.values()];
+    for (const [itemIndex, itemRows] of byItem) {
+      const rows = dedupeByPlayer(itemRows);
       if (!rows.some(r => !r.scored)) continue;       // ese ítem ya está liquidado
-      // Un ítem a la vez: settle() solo mira las claves `${itemIndex}:` y suma a
-      // players[], así que limpiamos entre ítems para no recontar.
-      engine.state.answers = {};
-      for (const r of rows) {
-        engine.state.answers[`${itemIndex}:${r.player}`] = {
-          playerId: r.player, value: r.value, msTaken: r.ms ?? 0,
-          // Preservar el veredicto existente hace que settle() NO vuelva a sumar
-          // los puntos ya contados en players[] (wasUnscored === false).
-          correct: r.scored ? r.correct : null, points: r.scored ? (r.points ?? 0) : 0,
-        };
-      }
+      for (const r of rows) hydrateAnswerRow(engine, itemIndex, r);
       engine.settle(itemIndex, { keepPhase: true });
       for (const r of rows) {
         if (r.scored) continue;                       // ya estaba puntuada: no la tocamos
@@ -190,7 +184,6 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
     await Promise.all(toPatch.map(p => pbFetch(`/api/collections/${ANS}/records/${p.id}`, {
       method: 'PATCH', body: JSON.stringify({ scored: true, correct: p.correct, points: p.points }),
     }).catch(() => {})));
-    await saveState(sessionId, engine);
     return toPatch.length;
   }
 
@@ -312,15 +305,17 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       await saveState(sessionId, engine);
     },
 
-    // Cerrar la sala LIQUIDA lo pendiente y LUEGO marca 'ended'. Así ninguna
-    // respuesta rezagada (rescate del trazo, cola offline, red lenta) se queda sin
-    // puntuar: llegue cuando llegue, si está en la colección antes del cierre
-    // cuenta. Un fallo al liquidar NO impide cerrar (la sala debe poder cerrarse
-    // siempre); se avisa por consola y el podio se pinta con lo que haya.
+    // Cerrar la sala LIQUIDA lo pendiente y LUEGO marca 'ended' — todo sobre UN
+    // load y UN saveState. Así ninguna respuesta rezagada (rescate del trazo,
+    // cola offline, red lenta) se queda sin puntuar: llegue cuando llegue, si
+    // está en la colección antes del cierre cuenta. Un fallo al liquidar NO
+    // impide cerrar (la sala debe poder cerrarse siempre).
     async endSession(sessionId) {
-      try { await settlePending(sessionId); }
-      catch (e) { console.warn('[live] no se pudieron liquidar rezagadas al cerrar:', e); }
       const { engine } = await load(sessionId);
+      try {
+        if (await answersReady()) await settlePendingInto(engine, sessionId);
+        else engine.settleAll({ keepPhase: true });   // blob heredado: settle salta lo ya puntuado
+      } catch (e) { console.warn('[live] no se pudieron liquidar rezagadas al cerrar:', e); }
       engine.state.status = 'ended';
       engine.state.phase = 'ended';
       await saveState(sessionId, engine);
@@ -354,18 +349,9 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         // Hydrate the engine with the collection's answers, then let the SAME
         // engine.settle() score them (single source of truth) — it adds points
         // to state.players[]. The host is the only writer here, so this PATCH
-        // can't be clobbered by students.
-        for (const r of rows) {
-          engine.state.answers[`${itemIndex}:${r.player}`] = {
-            playerId: r.player, value: r.value, msTaken: r.ms ?? 0,
-            // Preserve a row's existing verdict: settle() only awards points when
-            // an answer was unscored (correct === null). A second settle of the
-            // same item (host double-click / end-of-race loop) must NOT re-add
-            // points already in players[] — keeping the scored row's verdict makes
-            // wasUnscored false so the re-settle is a no-op for scoring.
-            correct: r.scored ? r.correct : null, points: r.scored ? (r.points ?? 0) : 0,
-          };
-        }
+        // can't be clobbered by students. hydrateAnswerRow preserva el veredicto
+        // de las filas ya puntuadas → un segundo settle no re-suma (ver helper).
+        for (const r of rows) hydrateAnswerRow(engine, itemIndex, r);
         const settled = engine.settle(itemIndex);
         // Write each answer's verdict back to its row (so students/host see ✓/✗
         // and points). Host-only writes, one per answer — no contention.

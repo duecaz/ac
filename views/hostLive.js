@@ -550,14 +550,9 @@ async function renderHost(rootSel, code, sessionId, activity) {
       if (!ok) return;
       const btn = document.getElementById('btn-end-race');
       if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Finalizando…'; }
-      // Puntuar cada ítem de la carrera. Un fallo aquí desvía la clasificación
-      // final SIN aviso — se acumulan y se reportan al docente (antes: catch {}).
-      const failedItems = [];
-      for (let i = 0; i < items.length; i++) {
-        try { await settleItem(sessionId, i); }
-        catch (e) { console.warn('[hostLive] settleItem', i, 'falló:', e); failedItems.push(i + 1); }
-      }
-      if (failedItems.length) toast(`No se pudieron puntuar ${failedItems.length} pregunta(s) (${failedItems.join(', ')}). La clasificación puede estar incompleta.`, 'warning', 6000);
+      // endSession liquida TODO lo pendiente en una pasada (settlePending del
+      // adaptador) antes de marcar 'ended' — ya no hace falta el bucle de
+      // settleItem por ítem que hacía N viajes redundantes.
       await endSession(sessionId);
     });
   }
@@ -645,9 +640,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
       if (!ok) return;
       const btn = document.getElementById('btn-end-race');
       if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Finalizando…'; }
-      // Puntuar el tablero. Un fallo desvía el resultado final SIN aviso (antes: catch {}).
-      try { await settleItem(sessionId, 0); }
-      catch (e) { console.warn('[hostLive] settleItem tablero falló:', e); toast('No se pudo puntuar el tablero; el resultado puede estar incompleto.', 'warning', 6000); }
+      // endSession liquida el tablero pendiente (settlePending) antes de cerrar.
       await endSession(sessionId);
     });
   }
@@ -763,6 +756,10 @@ async function renderHost(rootSel, code, sessionId, activity) {
 
   async function paintPodium(phaseChanged = true) {
     scene(false); // el podio es chrome → fondo neutro (Etapa 1)
+    // Ya montado y sin cambio de fase → no re-montar: con la sala 'ended' cada
+    // evento (pings de presencia cada 15 s, heartbeats) repintaba el podio
+    // entero, re-puntuando la tabla y re-cableando listeners sin motivo.
+    if (!phaseChanged && document.getElementById('ll-tabout')) return;
     // Ranking desde los PUNTOS REALES por respuesta (misma fuente que la Tabla →
     // podio y tabla SIEMPRE coinciden). Si no hay filas (colección vacía), cae al
     // marcador oficial de la sesión (state.players[].score).

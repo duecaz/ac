@@ -1,6 +1,5 @@
 // PUNTOS (ranking) — la ÚNICA fórmula que convierte mérito en puntos, compartida
-// por todos los scorers. Aquí viven las convenciones que antes estaban repartidas
-// en core/scoreHelpers.js (que ahora re-exporta de aquí). Ver
+// por todos los scorers (antes en core/scoreHelpers.js, ya retirado). Ver
 // docs/handoff-puntuacion.md: la PLANTILLA decide el MÉRITO (hits/total), este
 // módulo decide los PUNTOS.
 
