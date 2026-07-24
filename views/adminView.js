@@ -781,7 +781,7 @@ function renderPanel(rootSel) {
             // `assignment_attempts.answers`, `live_answers.v0/c0`) → un update de la
             // app no exige recrear colecciones a mano.
             const patchBody = { ...rulesFor(col.name) };
-            let addedFields = [];
+            let addedFields = [], addedIdx = [];
             try {
               const cur = await (await fetch(`${PB_URL}/api/collections/${existingId}`, { headers })).json();
               const curFields = cur[schemaKey] || cur.fields || cur.schema || [];
@@ -791,13 +791,26 @@ function renderPanel(rootSel) {
                 patchBody[schemaKey] = [...curFields, ...missing];
                 addedFields = missing.map(f => f.name);
               }
+              // Índices que FALTAN (append-only). Sin esto, un índice nuevo (p.ej.
+              // el ÚNICO (session,player,item) de la deuda F, o (session,name) de la
+              // deuda A) NUNCA se crea si la colección ya existía → el fix no aplica.
+              // Deduplicamos por NOMBRE; nunca quitamos los que ya hay.
+              const idxName = (sql) => (String(sql).match(/INDEX\s+[`"']?(\w+)[`"']?/i) || [])[1] || sql;
+              const curIdx = cur.indexes || [];
+              const curIdxNames = new Set(curIdx.map(idxName));
+              const missingIdx = (col.indexes || []).filter(sql => !curIdxNames.has(idxName(sql)));
+              if (missingIdx.length) {
+                patchBody.indexes = [...curIdx, ...missingIdx];
+                addedIdx = missingIdx.map(idxName);
+              }
             } catch { /* si no se pudo leer, solo se aplican reglas */ }
             const pr = await fetch(`${PB_URL}/api/collections/${existingId}`, {
               method: 'PATCH', headers,
               body: JSON.stringify(patchBody),
             });
             if (pr.ok) {
-              results.push({ name: col.name, ok: true, msg: addedFields.length ? `reglas + campos [${addedFields.join(', ')}] (ya existía)` : 'reglas actualizadas (ya existía)' });
+              const extras = [...addedFields.map(f => `campo ${f}`), ...addedIdx.map(i => `índice ${i}`)];
+              results.push({ name: col.name, ok: true, msg: extras.length ? `reglas + ${extras.join(', ')} (ya existía)` : 'reglas actualizadas (ya existía)' });
             } else {
               const b = await pr.json().catch(() => ({}));
               results.push({ name: col.name, ok: false, msg: b.message || `error ${pr.status}` });
