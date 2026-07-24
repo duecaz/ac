@@ -1,8 +1,10 @@
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { get } from '../core/storage.js';
-import { rowsFromAttempts } from '../core/answerRows.js';
+import { rowsFromAttempts, rowsFromAttempt } from '../core/answerRows.js';
 import { itemStatsHtml } from './itemStatsView.js';
+import { sessionTableHtml, sessionTableCsv } from './sessionTable.js';
+import { getTemplate } from '../core/registry.js';
 import { createAssignment, listAssignmentsForActivity, listAttempts, closeAssignment, rotateAssignmentCode } from '../core/assignmentsTransport.js';
 import { toast, confirmModal } from '../core/toast.js';
 
@@ -131,35 +133,98 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
   refresh();
 }
 
+const itemsOf = (a) => { const c = a?.content || {}; return c.items ?? c.entries ?? c.pairs ?? c.groups ?? c.words ?? c.passages ?? []; };
+
 export async function renderAttempts(rootSel, assignmentId) {
   const attempts = await listAttempts(assignmentId);
-  // Analítica por ítem/palabra de TODA la clase (F3): junta el `answers` de cada
-  // intento. La actividad (plantilla + ítems) sale del almacén local del docente.
   const activityId = attempts.find(a => a.activity_id)?.activity_id;
   const activity = activityId ? get(activityId) : null;
+  const items = activity ? itemsOf(activity) : [];
+  const T = activity ? getTemplate(activity.template) : null;
+  const labels = items.map((it, i) => { try { return T?.itemLabel?.(it) || `Pregunta ${i + 1}`; } catch { return `Pregunta ${i + 1}`; } });
   const hasDetail = attempts.some(a => Array.isArray(a.answers) && a.answers.length);
-  let analytics = '';
-  if (activity && hasDetail) {
-    try { analytics = itemStatsHtml(activity, rowsFromAttempts(attempts)); } catch { analytics = ''; }
+  const isText = T?.meta?.contentModel === 'textCorrection';
+
+  // Agrupa por alumno (nombre): nº intentos, MEJOR puntaje, último intento/tiempo.
+  const byName = new Map();
+  for (const a of attempts) { const k = a.player_name || '—'; (byName.get(k) || byName.set(k, []).get(k)).push(a); }
+  const students = [...byName.entries()].map(([name, atts]) => {
+    const sorted = atts.slice().sort((x, y) => (y.created_at || '').localeCompare(x.created_at || ''));
+    const best = Math.max(...atts.map(a => a.score_auto ?? 0));
+    const bestA = atts.find(a => (a.score_auto ?? 0) === best) || sorted[0];
+    return { name, count: atts.length, best, max: bestA?.max_score, lastAt: sorted[0]?.created_at, time: sorted[0]?.time_used, attempts: sorted };
+  }).sort((a, b) => b.best - a.best);
+
+  const nStudents = students.length;
+  const nAttempts = attempts.length;
+  const avgBest = nStudents ? Math.round(students.reduce((s, x) => s + (x.best || 0), 0) / nStudents) : 0;
+  // Ítem más fallado (de la analítica, si hay detalle).
+  let worst = null;
+  if (hasDetail && activity) {
+    try {
+      const { aggregate } = await import('../core/itemStats.js');
+      const st = aggregate({ items, template: T, rows: rowsFromAttempts(attempts), activity });
+      worst = st.items.filter(i => i.n).sort((a, b) => a.pctCorrect - b.pctCorrect)[0] || null;
+    } catch {}
   }
+
+  const studentsTable = `<div class="st-wrap"><table class="st-table">
+    <thead><tr><th class="st-name">Alumno</th><th>Intentos</th><th>Mejor</th><th>Tiempo</th><th>Último</th>${hasDetail ? '<th></th>' : ''}</tr></thead>
+    <tbody>${students.map((s, i) => `<tr>
+      <td class="st-name">${i < 3 ? ['🥇','🥈','🥉'][i] + ' ' : ''}${escapeHtml(s.name)}</td>
+      <td>${s.count}</td>
+      <td><b>${s.best}</b>${s.max ? ` / ${s.max}` : ''}</td>
+      <td>${s.time ?? '—'}s</td>
+      <td class="small text-muted">${s.lastAt ? new Date(s.lastAt).toLocaleString() : '—'}</td>
+      ${hasDetail ? `<td><button class="btn btn-sm btn-outline-primary st-who" data-name="${escapeHtml(s.name)}"><i class="bi bi-person-lines-fill"></i> Ver</button></td>` : ''}
+    </tr>`).join('')}</tbody></table></div>`;
+
   mount(rootSel, html`
     <a href="#/home" class="btn btn-link"><i class="bi bi-arrow-left"></i> Inicio</a>
-    <h2 class="mb-3">Intentos</h2>
+    <h2 class="mb-2">Intentos${activity ? ` — ${escapeHtml(activity.title || '')}` : ''}</h2>
     ${attempts.length === 0 ? `<p class="text-muted">Sin intentos todavía.</p>` : `
-      <table class="table table-hover">
-        <thead><tr><th>Alumno</th><th>Puntos</th><th>Tiempo</th><th>Fecha</th></tr></thead>
-        <tbody>
-          ${attempts.map(r => `
-            <tr>
-              <td>${escapeHtml(r.player_name || '')}</td>
-              <td>${r.score_auto ?? 0} / ${r.max_score ?? '?'}</td>
-              <td>${r.time_used ?? 0}s</td>
-              <td>${new Date(r.created_at).toLocaleString()}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-      ${analytics ? `<h4 class="mt-4 mb-2"><i class="bi bi-bar-chart-line-fill"></i> Análisis de la clase</h4>${analytics}`
-        : `<p class="text-muted small mt-3"><i class="bi bi-info-circle"></i> El análisis por palabra/ítem aparecerá cuando haya intentos con detalle (crea el campo <code>answers</code> en #/admin si aún no está).</p>`}`}
+      <div class="row g-2 mb-3" style="max-width:640px">
+        <div class="col-4"><div class="card text-center"><div class="card-body p-2"><div class="small text-muted">Alumnos</div><div class="h4 mb-0">${nStudents}</div></div></div></div>
+        <div class="col-4"><div class="card text-center"><div class="card-body p-2"><div class="small text-muted">Intentos</div><div class="h4 mb-0">${nAttempts}</div></div></div></div>
+        <div class="col-4"><div class="card text-center"><div class="card-body p-2"><div class="small text-muted">Media (mejor)</div><div class="h4 mb-0">${avgBest}</div></div></div></div>
+      </div>
+      ${worst ? `<p class="small"><i class="bi bi-exclamation-triangle text-warning"></i> Ítem más fallado: <b>${escapeHtml(worst.label)}</b> (${Math.round(worst.pctCorrect * 100)}% acierto)</p>` : ''}
+
+      <div class="ll-tabs">
+        <button class="ll-tab is-active" data-tab="alumnos"><i class="bi bi-people"></i> Alumnos</button>
+        <button class="ll-tab" data-tab="tabla"><i class="bi bi-table"></i> Tabla</button>
+        ${hasDetail ? `<button class="ll-tab" data-tab="item"><i class="bi bi-bar-chart-line-fill"></i> Por ${isText ? 'palabra' : 'ítem'}</button>` : ''}
+      </div>
+      <div id="at-tabout" class="mt-1"></div>
+      <div class="mt-3"><button id="at-csv" class="btn btn-outline-success btn-sm"><i class="bi bi-download"></i> Exportar CSV</button></div>`}
   `);
+
+  if (!attempts.length) return;
+  const out = document.getElementById('at-tabout');
+  const rows = rowsFromAttempts(attempts);
+  function showTab(tab) {
+    document.querySelectorAll('.ll-tab').forEach(b => b.classList.toggle('is-active', b.dataset.tab === tab));
+    if (tab === 'alumnos') out.innerHTML = studentsTable;
+    else if (tab === 'tabla') out.innerHTML = activity ? sessionTableHtml(rows, items.length, { labels }) : '<p class="text-muted">Sin actividad local para la tabla.</p>';
+    else out.innerHTML = (activity && hasDetail) ? itemStatsHtml(activity, rows) : '<p class="text-muted small">Sin detalle por ítem (crea el campo <code>answers</code> en #/admin).</p>';
+  }
+  document.querySelectorAll('.ll-tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+  // B2 — ficha por alumno: su heatmap individual.
+  on(rootSel, 'click', '.st-who', (_, b) => {
+    const name = b.dataset.name;
+    const mine = attempts.filter(a => (a.player_name || '—') === name);
+    const myRows = mine.flatMap(rowsFromAttempt);
+    out.innerHTML = `<div class="mb-2"><button class="btn btn-sm btn-link" id="at-back"><i class="bi bi-arrow-left"></i> Volver</button> <b>${escapeHtml(name)}</b></div>`
+      + ((activity && myRows.length) ? itemStatsHtml(activity, myRows) : '<p class="text-muted">Sin detalle de este alumno.</p>');
+    document.getElementById('at-back')?.addEventListener('click', () => showTab('alumnos'));
+    document.querySelectorAll('.ll-tab').forEach(x => x.classList.remove('is-active'));
+  });
+  document.getElementById('at-csv')?.addEventListener('click', () => {
+    const csv = activity ? sessionTableCsv(rows, items.length, { labels }) : '';
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = `tarea-intentos.csv`; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+  showTab('alumnos');
 }
