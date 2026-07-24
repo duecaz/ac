@@ -4,6 +4,8 @@
 import assert from 'node:assert';
 import { isCorrect } from '../core/contentModels/qa.js';
 import { scoreQuizSubmission } from '../templates/quiz/scorer.js';
+import { scoreMathSubmission } from '../templates/math/scorer.js';
+import { scoreWordsearch } from '../templates/wordsearch/scorer.js';
 import { migrate, normalize, activityItemCount, newActivityId, newActivity } from '../core/migrate.js';
 import { registerTemplate } from '../core/registry.js';
 import { SCHEMA_VERSION } from '../core/constants.js';
@@ -46,6 +48,28 @@ const live = scoreQuizSubmission({ value: 'a', item: { answer: 'a', points: 2 },
   activity: { live: { pointsModel: 'kahoot', questionTimer: 20, speedBonusMax: 1000 } }, mode: 'live' });
 assert.strictEqual(live.points, 2000, 'live mode honours live.pointsModel=kahoot');
 ok('scoreQuizSubmission: kahoot speed bonus (solo advanced + live)');
+
+// ---------- P5: escala UNIFICADA (docs/handoff-puntuacion.md) ----------
+// math en VIVO paga con el MISMO bonus de velocidad que quiz (antes: 1 plano
+// mientras quiz pagaba ~1500 en la misma sesión de clase).
+{
+  const liveKahoot = { live: { pointsModel: 'kahoot', questionTimer: 20, speedBonusMax: 1000 } };
+  const m = scoreMathSubmission({ value: '4', item: { answer: '4', points: 2 }, msTaken: 0, activity: liveKahoot, mode: 'live' });
+  assert.deepStrictEqual(m, { correct: true, points: 2000, hits: 1, total: 1 }, 'math live = misma fórmula kahoot que quiz');
+  assert.strictEqual(scoreMathSubmission({ value: '4', item: { answer: '4' }, activity: {} }).points, 1, 'math solo plano = 1');
+  ok('P5 math: awardPoints — plano en solo, kahoot en vivo (como quiz)');
+}
+// wordsearch: ppc default 1 (antes 10), SIN bonus de longitud ni kahoot propio.
+{
+  const act = { content: { words: ['ELEFANTE', 'SOL'] }, scoring: {} };
+  assert.deepStrictEqual(scoreWordsearch({ value: 'elefante', activity: act }), { correct: true, points: 1, hits: 1, total: 1 },
+    'palabra larga = 1 punto (sin bonus de longitud, default 1)');
+  assert.deepStrictEqual(scoreWordsearch({ value: 'luna', activity: act }), { correct: false, points: 0, hits: 0, total: 1 },
+    'palabra fuera de la lista → 0');
+  assert.strictEqual(scoreWordsearch({ value: 'sol', activity: { ...act, scoring: { pointsPerCorrect: 5 } } }).points, 5,
+    'respeta pointsPerCorrect de la actividad');
+  ok('P5 wordsearch: escala común (ppc→awardPoints), sin monedas propias');
+}
 
 // ---------- migrate / normalize ----------
 // v1 (legacy { items }) migrates all the way to SCHEMA_VERSION.

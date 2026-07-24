@@ -6,6 +6,7 @@ import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import * as Streaks from '../../core/streaks.js';
 import { createCountdown } from '../../core/soloTimer.js';
 import { generateGrid, cellLine, SIZE_MAP } from './generator.js';
+import { scoreWordsearch } from './scorer.js';
 
 // Per-player color palette (supports up to 6 players)
 const PLAYER_COLORS = [
@@ -59,7 +60,6 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
   const rules    = activity.rules  || {};
   const scoring  = activity.scoring || {};
   const gridN    = SIZE_MAP[rules.gridSize] || 15;
-  const ppc      = scoring.pointsPerCorrect || 10;
   const color    = PLAYER_COLORS[opts.playerIndex || 0];
 
   const { grid, placed, rows, cols } = generateGrid(rawWords, {
@@ -210,7 +210,9 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
   // ── Word found ──────────────────────────────────────────────────────────────
   function wordFound(p) {
     state.found.add(p.word);
-    const pts = ppc + (p.word.length > 6 ? Math.round(ppc * 0.5) : 0);
+    // Un solo scorer por plantilla (ley en CLAUDE.md): el player NO reimplementa
+    // el conteo — mismo scoreWordsearch que VS/sesión.
+    const pts = scoreWordsearch({ value: p.word, activity, mode: 'solo' }).points;
     state.score += pts;
 
     const streak = Streaks.bump('solo', activity.id, true);
@@ -259,7 +261,7 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
   // ── Finish ───────────────────────────────────────────────────────────────────
   function finish() {
     if (timer) { timer.stop(); timer = null; }
-    const max = total * ppc;
+    const max = total * (scoring.pointsPerCorrect || 1);
     Streaks.reset('solo', activity.id);
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: state.score }] });
     ctx.finish({

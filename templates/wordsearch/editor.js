@@ -158,12 +158,12 @@ function scoringHtml(a) {
       </div>
       <div class="col-md-4">
         <label class="form-label">Puntos por palabra</label>
-        <input type="number" min="1" class="form-control" id="ws-ppc" value="${a.scoring?.pointsPerCorrect || 10}">
+        <input type="number" min="1" class="form-control" id="ws-ppc" value="${a.scoring?.pointsPerCorrect || 1}">
       </div>
     </div>
     <p class="small text-muted mt-2">Las palabras largas (más de 6 letras) valen 50% más puntos automáticamente.</p>`;
 }
 function wireScoring(root, a, ctx) {
   on(root, 'change', '#ws-smode', e => { a.scoring.mode = e.target.value; ctx.onChange(a); });
-  on(root, 'input',  '#ws-ppc',   e => { a.scoring.pointsPerCorrect = +e.target.value || 10; ctx.onChange(a); });
+  on(root, 'input',  '#ws-ppc',   e => { a.scoring.pointsPerCorrect = +e.target.value || 1; ctx.onChange(a); });
 }

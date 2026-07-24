@@ -18,7 +18,7 @@ export class WordsearchTemplate extends BaseTemplate {
     needsImageUpload: false,
     needsAudioUpload: false,
     defaultRules:   () => ({ gridSize: 'medium', directions: 'medium', timer: 0 }),
-    defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 10 }),
+    defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1 }),   // P5: escala unificada (antes 10)
     defaultContent: () => ({
       words: ['GATO', 'PERRO', 'PÁJARO', 'RATÓN', 'CONEJO',
               'PATO', 'CABALLO', 'VACA', 'OVEJA', 'CERDO'],

@@ -1,13 +1,11 @@
 # HANDOFF — Puntuación: dónde vive la decisión de puntos de CADA actividad
 
-> Estado: **P1–P4 EJECUTADAS (v1.51.268)** — `core/scoring/` existe, los 11
+> Estado: **P1–P5 EJECUTADAS (v1.51.268–269)** — `core/scoring/` existe, los 11
 > scorers devuelven mérito `{hits, total}`, el contrato lo exige
-> (`tests/templateContract.test.mjs` + generador `tools/new-template.mjs`), y la
-> tabla (`views/sessionTable.js cellScore`) lee el mérito del scorer único.
-> **P5 pendiente** (unificar escalas de wordsearch/ballsort): cambia puntajes
-> que ven los alumnos → NO ejecutar sin OK explícito del usuario. El mapa §1
-> refleja el estado PREVIO (los puntos aún se calculan igual; solo el mérito y
-> la estructura de módulos cambiaron).
+> (`tests/templateContract.test.mjs` + generador `tools/new-template.mjs`), la
+> tabla lee el mérito del scorer único, y las escalas quedaron unificadas (P5,
+> autorizada por el usuario en modo debug — los datos previos no importaban).
+> El mapa §1 refleja el estado PREVIO a la limpieza (histórico).
 
 ## 1. Dónde vive hoy la decisión (mapa real, 13 plantillas)
 
@@ -98,16 +96,21 @@ hereda mérito+puntos coherentes sin tocar nada.
 | **P2** | Añadir `hits/total` a los scorers que no lo daban. Binarias: `1/1` ó `0/1`; wheel/question-live `total:0` (puntúa el profe). Quiz además usa `awardPoints` (misma fórmula, un solo sitio) | bajo | ✅ v1.51.268 |
 | **P3** | Contrato exige el mérito (`core/templateContract.js` + self-test + generador `new-template.mjs`) | bajo | ✅ v1.51.268 |
 | **P4** | `cellScore` de sessionTable lee el mérito del SCORER (multi-parte); en binarias sigue mandando el veredicto guardado del settle (autoritativo, sin re-scoring). `itemParts` queda SOLO para el heatmap por parte (itemStats), que sí necesita el desglose | bajo | ✅ v1.51.268 |
-| **P5** | **Unificar escalas**: wordsearch ppc 10→1 y su Kahoot propio → `awardPoints`; ballsort a la escala común; ¿math con Kahoot opcional? | **cambia puntajes** | ⏸ requiere OK del usuario |
+| **P5** | **Unificar escalas** (cambió puntajes; autorizado en modo debug): **wordsearch** ppc default 10→1, fuera el Kahoot propio y el bonus de longitud, y el player SOLO llama al scorer (tenía copia en línea); **math** paga en vivo con el mismo bonus Kahoot que quiz (antes 1 plano vs ~1500); **ballsort** mérito fraccional `hits/100` (% ordenado) y conserva su escala 0–1000 A PROPÓSITO (codifica eficiencia y nunca comparte sesión con otra plantilla, ver §6) | **cambia puntajes** | ✅ v1.51.269 |
 
 **P5 cambia los números que ven los alumnos** en Sopa de Letras y Ordena las Pelotas.
 No se ejecuta sin el OK explícito del usuario; P1–P4 son invisibles para él.
 
-## 6. Fuera de alcance (decisiones abiertas)
+## 6. Decisiones tomadas y restantes
 
-- **wheel / question-live** puntúan a mano (el profe asigna). Encajan como
-  "mérito no automático": `hits/total = null` y `points` del docente. No es deuda.
+- **ballsort conserva su escala 0–1000** (decisión P5): sus puntos codifican la
+  EFICIENCIA (menos movimientos/tiempo = más), que la escala plana no expresa, y
+  un tablero en vivo nunca comparte sesión con otra plantilla → no hay informes
+  mezclados que descuadrar. Su MÉRITO sí es estándar: `hits/100` (% ordenado).
+- **wheel / question-live** puntúan a mano (el profe asigna). Mérito no automático:
+  `total: 0` y `points` del docente. No es deuda.
 - **memory** no tiene `scoreSubmission` → hoy solo Solo/Tarea. Si algún día va a
-  VS/Equipos/Live, necesita uno (P2 sería el momento).
-- **`maxScore` unificado** (problema E) se resuelve solo en P4: `maxScore` = suma de
-  `total` de todos los ítems.
+  VS/Equipos/Live, necesita uno (nacerá conforme: el contrato lo exige).
+- **`maxScore` unificado** (problema E): los runners aún lo calculan cada uno;
+  con el mérito en pie, el siguiente paso natural es `maxScore = Σ total` — pase
+  corto pendiente.

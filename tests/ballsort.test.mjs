@@ -77,7 +77,12 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   const partial = scoreBallsort({ value: { solved: false, tubes: [['red','red'],['blue','blue'],['red','blue']], tubeCapacity: 2 }, item: movesItem });
   assert.strictEqual(partial.correct, false, 'unsolved is not correct');
   assert.ok(partial.points > 0 && partial.points <= 300, 'unsolved gets bounded partial credit');
-  ok('scoreBallsort ranks by mode and floors a solve above any partial');
+  // Mérito FRACCIONAL (P5): hits = % ordenado sobre 100 → la tabla muestra
+  // "73/100" y el ranking por aciertos ordena por progreso aunque nadie termine.
+  assert.strictEqual(partial.total, 100, 'mérito sobre 100');
+  assert.ok(partial.hits > 0 && partial.hits < 100, 'tablero a medias → mérito parcial');
+  assert.deepStrictEqual([a.hits, a.total], [100, 100], 'resuelto = mérito 100/100');
+  ok('scoreBallsort ranks by mode and floors a solve above any partial (+mérito %)');
 }
 
 // ── template contract ───────────────────────────────────────────────────────────

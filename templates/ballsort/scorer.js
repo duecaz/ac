@@ -1,4 +1,9 @@
-// Ball Sort scoring. The submitted `value` is a board snapshot
+// Ball Sort scoring. ESCALA PROPIA (0-1000) a propósito, no la común de
+// awardPoints (decisión P5, docs/handoff-puntuacion.md §6): aquí los puntos
+// codifican la EFICIENCIA (menos movimientos / menos tiempo = más puntos), que
+// la escala plana no puede expresar, y un tablero en vivo nunca comparte sesión
+// con otra plantilla, así que no hay informes mezclados que descuadrar.
+// The submitted `value` is a board snapshot
 // ({ tubes, tubeCapacity, moveCount, elapsedMs, solved }). The `item` is the
 // frozen puzzle config ({ board, mode, level }).
 //
@@ -16,12 +21,14 @@ export function scoreBallsort({ value, item, activity } = {}) {
   const mode = item?.mode || activity?.content?.mode || activity?.rules?.mode || 'moves';
 
   if (!v.solved) {
-    // Partial credit from board completeness (0..1).
+    // Partial credit from board completeness (0..1). MÉRITO fraccional (P5):
+    // hits = % ordenado sobre total 100 → la tabla muestra "73/100" y el ranking
+    // por aciertos ordena por progreso real aunque nadie termine.
     let frac = 0;
     if (Array.isArray(v.tubes)) {
       frac = progress({ tubes: v.tubes, tubeCapacity: v.tubeCapacity || 7 });
     }
-    return { correct: false, points: Math.round(frac * PARTIAL_MAX), hits: 0, total: 1 };
+    return { correct: false, points: Math.round(frac * PARTIAL_MAX), hits: Math.round(frac * 100), total: 100 };
   }
 
   let points;
@@ -32,5 +39,5 @@ export function scoreBallsort({ value, item, activity } = {}) {
     const moves = Math.max(0, v.moveCount || 0);
     points = SOLVE_BASE - moves * 8;           // -8 pts/move
   }
-  return { correct: true, points: Math.max(SOLVE_FLOOR, points), hits: 1, total: 1 };
+  return { correct: true, points: Math.max(SOLVE_FLOOR, points), hits: 100, total: 100 };
 }
