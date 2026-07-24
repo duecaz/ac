@@ -118,6 +118,8 @@ function renderPanel(rootSel) {
       <div class="d-flex align-items-center gap-2 flex-wrap">
         <button id="admin-stress" class="btn btn-primary"><i class="bi bi-lightning-charge"></i> Simular carga</button>
         <select id="admin-stress-n" class="form-select form-select-sm" style="width:auto">
+          <option value="10">10 alumnos</option>
+          <option value="20" selected>20 alumnos</option>
           <option value="30">30 alumnos</option>
           <option value="50">50 alumnos</option>
           <option value="100">100 alumnos</option>
@@ -446,13 +448,18 @@ function renderPanel(rootSel) {
            <span>${pass ? '<span class="text-success fw-semibold me-1">✓</span>' : '<span class="text-danger fw-semibold me-1">✗</span>'}${escapeHtml(label)}</span>
            <small class="text-muted">${escapeHtml(detail)}</small></li>`;
       const L = r.live, T = r.tasks;
+      const notRun = !L && !T;   // abortó antes de correr (faltan colecciones) ≠ se cayó
+      const notes = r.notes.length ? `<div class="alert alert-warning py-1 px-2 small mb-2">${r.notes.map(escapeHtml).join('<br>')}</div>` : '';
+      if (notRun) {
+        box.innerHTML = `${notes}<div class="alert alert-secondary py-1 px-2 mb-0 small"><b>No ejecutado</b> — falta preparar el servidor (arriba: <i class="bi bi-database-add"></i> Crear colecciones). No es un fallo de carga.</div>`;
+        return;
+      }
       const items = [];
       if (L) {
         items.push(row(`Live · entradas simultáneas`, L.playerRows === n, `${L.playerRows}/${n} filas · ${L.uniqueNames} apodos únicos · ${L.joinMs} ms`));
         items.push(row(`Live · respuestas simultáneas`, L.answerRows === L.joinsOk * 2, `${L.answerRows} filas (esperadas ${L.joinsOk * 2}) · ${L.ansMs} ms`));
       }
       if (T) items.push(row(`Tareas · intentos simultáneos`, T.pass, T.attemptRows != null ? `${T.attemptRows}/${n} filas · ${T.attMs} ms` : 'no ejecutado'));
-      const notes = r.notes.length ? `<div class="alert alert-warning py-1 px-2 small mb-2">${r.notes.map(escapeHtml).join('<br>')}</div>` : '';
       box.innerHTML = `
         ${notes}
         <div class="alert ${r.ok ? 'alert-success' : 'alert-danger'} py-1 px-2 mb-2 small">

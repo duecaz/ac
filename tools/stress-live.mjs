@@ -19,6 +19,11 @@ const PB = process.argv[3] || 'https://pb.lanube.uno';
   const r = await runStressTest({ pbUrl: PB, n: N, onLog: (m) => console.log('  ·', m) });
 
   if (r.notes.length) r.notes.forEach(n => console.log('  ⚠', n));
+  // Abortó antes de correr (faltan colecciones) ≠ se cayó bajo carga.
+  if (!r.live && !r.tasks) {
+    console.log('\n⏸ No ejecutado — prepara el servidor primero (#/admin → "Crear colecciones").');
+    process.exit(2);
+  }
   if (r.live) {
     const L = r.live;
     console.log(`\nLIVE (${L.joinMs}ms join · ${L.ansMs}ms respuestas):`);
