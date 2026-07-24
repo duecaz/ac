@@ -3,6 +3,8 @@
 // docs/handoff-puntuacion.md: la PLANTILLA decide el MÉRITO (hits/total), este
 // módulo decide los PUNTOS.
 
+import { questionWindowMs } from '../timings.js';
+
 // Puntos base de un acierto: los del ítem, si no los de la config, si no 1.
 export function basePoints(item, scoring) {
   return item?.points || scoring?.pointsPerCorrect || 1;
@@ -32,8 +34,7 @@ export function awardPoints({ correct, item, msTaken, activity, mode = 'solo' })
   const base = basePoints(item, scoring);
   if (useKahoot(mode, scoring, activity?.live)) {
     const live = activity?.live || {};
-    const max = (live.questionTimer || 20) * 1000;
-    const remain = Math.max(0, 1 - (msTaken || 0) / max);
+    const remain = Math.max(0, 1 - (msTaken || 0) / questionWindowMs(activity));   // misma ventana que host/alumno
     return Math.round(base * 500 + (live.speedBonusMax ?? 1000) * remain);
   }
   return base;

@@ -8,7 +8,7 @@ import { createRoom, findRoomByCode, fetchSession,
          realtimeKind }
        from '../core/liveTransport.js';
 import { getTemplate } from '../core/registry.js';
-import { sessionItems } from '../kernel/session/engine.js';
+import { sessionItems, roundPayloadOf } from '../kernel/session/engine.js';
 import { rowsFromLiveAnswers, rowsFromLiveState } from '../core/answerRows.js';
 import { itemStatsHtml } from './itemStatsView.js';
 import { computeMedals } from '../core/itemStats.js';
@@ -22,6 +22,7 @@ import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { hostPaintDecision } from '../core/livePhases.js';
 import { podiumHtml } from '../core/podium.js';
 import { QL_COLORS } from '../core/questionLive.js';
+import { questionWindowMs } from '../core/timings.js';
 
 const STUDENT_BASE = location.origin + location.pathname.replace(/teacher\.html.*/, 'student.html');
 
@@ -96,7 +97,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
   // Template-agnostic item list (quiz→items, tildes/comas→passages, …).
   const items = sessionItems(activity);
   const live = activity.live || {};
-  const timerSec = Math.max(5, live.questionTimer || 20);
+  const timerSec = questionWindowMs(activity) / 1000;   // ventana única (core/timings.js)
   const advanceMode = live.advanceMode || 'manual';
   // LIVE "board" templates (Ball Sort): a single shared board everyone solves at
   // their own pace while the host watches each board live. Always runs as a race.
@@ -266,7 +267,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     const deadline = session.deadline ? new Date(session.deadline).getTime() : Date.now() + timerSec * 1000;
     let payload;
     try {
-      payload = tpl.getRoundPayload ? tpl.getRoundPayload(activity, { itemIndex: idx }) : item;
+      payload = roundPayloadOf(tpl, activity, idx, item);
     } catch (err) {
       console.warn('[hostLive] getRoundPayload threw — falling back to item:', err);
       payload = item;
@@ -564,7 +565,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
   async function paintLiveBoardHost(phaseChanged = true) {
     if (phaseChanged) emitGame(GameEvents.LOBBY_END);
     const mode = activity.content?.mode || 'moves';
-    const initialBoard = (tpl.getRoundPayload ? tpl.getRoundPayload(activity, { itemIndex: 0 }) : null)?.board || null;
+    const initialBoard = roundPayloadOf(tpl, activity, 0)?.board || null;
 
     let rows = [];
     try { rows = await listAnswers(sessionId, 0); } catch { rows = []; }

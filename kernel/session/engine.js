@@ -32,6 +32,17 @@ export function sessionItems(activity) {
   return c.items ?? c.entries ?? c.pairs ?? c.groups ?? c.words ?? c.passages ?? [];
 }
 
+// Payload de una ronda para el ítem `itemIndex`: lo que la plantilla expone al
+// jugador (getRoundPayload, SIN las claves de respuesta), o `fallback` si no lo
+// define. ÚNICA copia del `T.getRoundPayload ? … : fallback` que estaba repetido
+// en vistas y kernel (una versión con try/catch, otras sin → asimetría: una
+// plantilla con getRoundPayload que lanzara caía con gracia en el proyector del
+// host pero crasheaba al alumno). El try/catch degrada igual en todos.
+export function roundPayloadOf(T, activity, itemIndex, fallback = null) {
+  try { return T?.getRoundPayload ? T.getRoundPayload(activity, { itemIndex }) : fallback; }
+  catch { return fallback; }
+}
+
 /** VS pits two sides head-to-head with no host to judge, so it only works on
  *  templates that can both render a single round (renderRound) and self-score
  *  it (scoreSubmission), with enough items for a real race.
@@ -185,7 +196,7 @@ function createLiveSession(activity, T, opts) {
   };
 
   const roundPayload = (itemIndex = state.currentItem) =>
-    T.getRoundPayload ? T.getRoundPayload(activity, { itemIndex }) : null;
+    roundPayloadOf(T, activity, itemIndex);
 
   const leaderboard = (limit = 50) =>
     [...state.players].sort((a, b) => b.score - a.score).slice(0, limit)
@@ -326,7 +337,7 @@ function createTeamsSession(activity, T, opts) {
   }
 
   const roundPayload = (itemIndex = state.currentItem) =>
-    T.getRoundPayload ? T.getRoundPayload(activity, { itemIndex }) : null;
+    roundPayloadOf(T, activity, itemIndex);
 
   const leaderboard = () =>
     [...state.teams].sort((a, b) => b.score - a.score)

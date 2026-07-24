@@ -6,6 +6,14 @@
 > dónde está duplicado hoy y dónde debería vivir. Ninguno es urgente; son pases
 > cortos e independientes, ideales para sesiones sueltas.
 
+## Ya hecho en v1.51.278 (segundo pase)
+- **#2 Payload de ronda** → `roundPayloadOf(T, activity, itemIndex, fallback)`
+  exportado del kernel; 5 sitios en vistas + 2 internos del kernel colapsados. El
+  try/catch degrada IGUAL en todos (antes host tenía guarda y el alumno no).
+- **#4 Ventana de pregunta** → `questionWindowMs(activity)` en `core/timings.js`;
+  usado por deadline del host, barra del alumno y bonus Kahoot (`award.js`) — que
+  OMITÍA el piso de 5s: ya no puede mentir el bonus con timers < 5s.
+
 ## Ya hecho en el pase v1.51.270 (referencia del patrón)
 - `flush` en el contrato de `renderRound` (rescate del trazo SIN querySelector a
   clases internas) — `core/textCorrectionRound.js` lo devuelve, studentLive lo usa.
@@ -27,12 +35,9 @@
   en `core/livePhases.js` (ya es el dueño puro y testeado de las fases). `paint()`
   queda en `scene(screenKind(...) === 'game')` una vez.
 
-### 2. Payload de ronda — exportar el helper del kernel
-- **Duplicado**: `tpl.getRoundPayload ? tpl.getRoundPayload(activity, {itemIndex}) : item`
-  ×5 en vistas (studentLive ×3, hostLive ×2 — solo UNA copia con try/catch) y ×3
-  DENTRO de `kernel/session/engine.js` (`roundPayload` interno).
-- **Casa**: exportar `roundPayloadOf(T, activity, itemIndex, fallbackItem)` del
-  kernel; 8 sitios colapsan y el manejo de errores queda igual en todos.
+### 2. ✅ HECHO (v1.51.278) Payload de ronda — `roundPayloadOf` en el kernel
+Exportado; 5 sitios de vistas + 2 internos colapsados; try/catch uniforme. (Queda
+el caso VS con params extra `side`/`found` en engine.js — distinto, no se tocó.)
 
 ### 3. Etiquetas de ítem — un helper
 - **Duplicado**: `try { T.itemLabel?.(it) || \`Pregunta ${i+1}\` } catch {...}`
@@ -41,12 +46,8 @@
 - **Casa**: `itemLabels(T, items)` junto a `sessionItems` o en `core/itemStats.js`
   (es el input `labels` que sessionTable ya consume).
 
-### 4. Ventana de pregunta — un solo default
-- **Duplicado**: `Math.max(5, questionTimer || 20)` en hostLive:99 y
-  studentLive (con comentario "MISMO default que el host" = norma por comentario);
-  `questionTimer || 20` OTRA vez en `core/scoring/award.js` (denominador del bonus).
-- **Casa**: `questionWindowMs(activity)` en `core/timings.js`; lo usan deadline
-  (host), barra (alumno) y bonus Kahoot (award). Si divergen, el bonus miente.
+### 4. ✅ HECHO (v1.51.278) Ventana de pregunta — `questionWindowMs` en timings.js
+Un solo default (piso 5s incluido); host + alumno + bonus Kahoot lo comparten.
 
 ### 5. Identidad de plantilla por META, no por string
 - **Duplicado**: `template === 'wheel'` / `=== 'question-live'` en hostLive:180,

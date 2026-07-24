@@ -12,12 +12,12 @@ import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import * as Streaks from '../core/streaks.js';
 import { getTemplate } from '../core/registry.js';
-import { sessionItems } from '../kernel/session/engine.js';
+import { sessionItems, roundPayloadOf } from '../kernel/session/engine.js';
 import { lsGet, lsSet } from '../core/ls.js';
 import { wheelSvg } from '../templates/wheel/render.js';
 import { pickIndex } from '../templates/wheel/logic.js';
 import { QL_COLORS } from '../core/questionLive.js';
-import { RACE_FLASH_MS } from '../core/timings.js';
+import { RACE_FLASH_MS, questionWindowMs } from '../core/timings.js';
 
 const NICK_KEY = 'ww.nick';
 
@@ -338,16 +338,15 @@ export async function renderPlay(rootSel, code) {
     const streak = Streaks.get(session.id, player.playerId);
     lastQuestionShownAt = Date.now();
     const deadlineMs = session.deadline ? new Date(session.deadline).getTime() : 0;
-    // MISMO default que el host (hostLive.js timerSec = max(5, questionTimer||20)):
-    // antes, sin `questionTimer` definido, total=0 → el alumno NO veía cuenta atrás
-    // aunque el host liquidara a los 20 s. Ahora el reloj del alumno coincide con
-    // la ventana real del deadline del servidor.
-    const total = Math.max(5, activity?.live?.questionTimer || 20) * 1000;
+    // MISMA ventana que el host y que el bonus de velocidad (core/timings.js):
+    // antes cada uno tenía su copia y award.js omitía el piso de 5 → el reloj del
+    // alumno podía no coincidir con el deadline real del servidor.
+    const total = questionWindowMs(activity);
     // The DEVICE renders the round via the template contract (same as VS),
     // so every template — quiz, tildes, comas, math… — works without a
     // per-template branch here. The host's projector shows the prompt.
     const tpl = getTemplate(activity.template);
-    const payload = tpl.getRoundPayload ? tpl.getRoundPayload(activity, { itemIndex: idx }) : item;
+    const payload = roundPayloadOf(tpl, activity, idx, item);
     mount(rootSel, html`
       <div class="d-flex justify-content-between align-items-center mb-2">
         <span class="badge bg-info text-dark">Pregunta ${idx+1} / ${items.length}</span>
@@ -462,7 +461,7 @@ export async function renderPlay(rootSel, code) {
     }
 
     const idx = raceQueue[0];
-    const payload = tpl.getRoundPayload ? tpl.getRoundPayload(activity, { itemIndex: idx }) : allItems[idx];
+    const payload = roundPayloadOf(tpl, activity, idx, allItems[idx]);
     const streak = Streaks.get(session.id, player.playerId);
     lastQuestionShownAt = Date.now();
     const total = allItems.length;
@@ -552,7 +551,7 @@ export async function renderPlay(rootSel, code) {
   // (paint() dedups identical phase keys, so host pings don't remount it).
   function paintLiveBoard() {
     const tpl = getTemplate(activity.template);
-    const payload = tpl.getRoundPayload ? tpl.getRoundPayload(activity, { itemIndex: 0 }) : null;
+    const payload = roundPayloadOf(tpl, activity, 0);
     if (!payload?.board) return paintWaiting('Esperando…');
     emitGame(GameEvents.QUESTION_SHOWN, { idx: 0, total: 1, item: payload });
 
