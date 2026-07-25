@@ -101,6 +101,49 @@ body {
 .ww-navbtn--accent:hover { background: var(--dash-yellow-d); color: var(--dash-ink); }
 .ww-navbtn i { font-size: 15px; }
 
+/* Sesión del profe (logueado): avatar redondo + nombre + menú. El wrapper
+   `.ww-auth--in` NO debe heredar el recuadro navy de los botones de la barra
+   (por eso lo reseteamos) — el fondo/borde va en el propio botón interno. */
+#ww-auth-slot > .ww-auth--in {
+  background: none; border: none; padding: 0; min-height: 0; gap: 6px;
+}
+.ww-auth__btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--dash-navy-btn); color: #e5edf9;
+  border: 1px solid var(--dash-navy-line); border-radius: 999px;
+  padding: 4px 12px 4px 5px; min-height: 36px;
+  font: inherit; font-size: 13px; font-weight: 600; line-height: 1;
+  cursor: pointer; transition: background .15s, color .15s;
+}
+.ww-auth__btn:hover { background: var(--dash-navy-btn2); color: #fff; }
+.ww-auth__av {
+  width: 28px; height: 28px; flex: 0 0 auto;
+  border-radius: 50%; object-fit: cover; background: #fff; display: block;
+}
+.ww-auth__av--ph {
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #8496b3; font-size: 16px;
+}
+.ww-auth__name { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ww-auth__mod { flex: 0 0 auto; }
+/* Menú desplegable (Mi perfil / Salir). */
+.ww-auth__menu {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 60;
+  min-width: 180px; padding: 6px;
+  background: #fff; border: 1px solid #e2ddce; border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(20,28,46,.18);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.ww-auth__menu[hidden] { display: none; }
+.ww-auth__item {
+  display: flex; align-items: center; gap: 9px; width: 100%;
+  padding: 9px 11px; border: none; background: none; border-radius: 8px;
+  font: inherit; font-size: 14px; color: #1f2937; text-align: left;
+  cursor: pointer; text-decoration: none;
+}
+.ww-auth__item:hover { background: #f3efe4; color: #141c2e; }
+.ww-auth__item i { font-size: 15px; color: #6b7280; }
+
 /* ──────────────────────────── Home layout ───────────────────────────── */
 .home-wrap { max-width: 1440px; margin: 0 auto; padding: 30px 28px 60px; }
 
