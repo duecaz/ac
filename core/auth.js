@@ -153,18 +153,28 @@ export function oauthRedirectUrl() {
 
 // Paso 1: pide a PB los datos del proveedor (authURL/state/codeVerifier), guarda
 // lo necesario para el retorno y redirige al consentimiento de Google.
-export async function startOAuthLogin(providerName = 'google', redirectUrl = oauthRedirectUrl()) {
+export async function startOAuthLogin(providerName = 'google', redirectUrl = oauthRedirectUrl(), { link = false } = {}) {
   const provs = await listOAuthProviders();
   const p = provs.find(x => x.name === providerName);
   if (!p) throw new Error(`El proveedor "${providerName}" no está habilitado en PocketBase (Settings → Auth providers).`);
   sessionStorage.setItem(OAUTH_KEY, JSON.stringify({
     provider: providerName, state: p.state, codeVerifier: p.codeVerifier, redirectUrl,
+    // `link`: VINCULAR Google a la cuenta ya iniciada (los que entraron por
+    // correo/clave) en vez de crear/entrar. Al volver, se firma el intercambio con
+    // el token actual → PB asocia el proveedor a ESE usuario.
+    link: !!link,
     // Dónde estaba el profe (ruta hash) para devolverlo ahí tras el login — Google
     // no preserva el #hash en el retorno, así que lo guardamos nosotros.
     returnHash: location.hash || '',
   }));
   // authURL viene con `redirect_uri=` al final (sin valor); se lo añadimos.
   location.href = p.authURL + encodeURIComponent(redirectUrl);
+}
+
+// Vincular Google a la cuenta actual (correo/clave). Requiere sesión iniciada.
+export async function linkGoogle() {
+  if (!getAuthToken()) throw new Error('Inicia sesión primero.');
+  return startOAuthLogin('google', oauthRedirectUrl(), { link: true });
 }
 
 export function pendingOAuth() {
@@ -178,9 +188,13 @@ export async function completeOAuthLogin(code, returnedState) {
   sessionStorage.removeItem(OAUTH_KEY);
   if (!pending) throw new Error('No hay un login de Google en curso.');
   if (returnedState !== pending.state) throw new Error('Estado OAuth no coincide (posible CSRF); reintenta el login.');
+  // VINCULAR (los que entraron por correo): firmamos el intercambio con el token
+  // actual → PB asocia Google a ESE usuario en vez de crear otro. Sin `link`, es
+  // un login normal (sin Authorization).
+  const authHeader = (pending.link && getAuthToken()) ? { Authorization: getAuthToken() } : {};
   const r = await fetch(`${PB_URL}/api/collections/users/auth-with-oauth2`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeader },
     body: JSON.stringify({
       provider: pending.provider,
       code,
@@ -206,7 +220,7 @@ export async function completeOAuthLogin(code, returnedState) {
   // Sella nombre + foto de Google en la colección pública `profiles` (merge, no
   // pisa colegio/frase). PB devuelve la URL de la foto en meta.avatarURL/avatarUrl.
   try {
-    const avatar = data.meta?.avatarURL || data.meta?.avatarUrl || '';
+    const avatar = data.meta?.avatarURL || data.meta?.avatarUrl || data.meta?.avatar || data.meta?.picture || data.meta?.rawUser?.picture || '';
     const name = data.record?.name || (data.record?.email ? data.record.email.split('@')[0] : '');
     if (data.record?.id && (avatar || name)) {
       const { saveProfile } = await import('./profile.js');
@@ -258,6 +272,26 @@ export async function updateProfile(patch) {
   saveStored(stored?.token, data);
   notify();
   return { display_name: data.name };
+}
+
+// Cambia la contraseña del profe. PB exige la actual (`oldPassword`). Al cambiarla
+// PB revoca el token, así que re-autenticamos con la nueva para no cerrar sesión.
+export async function changePassword(oldPassword, newPassword) {
+  const u = await getUser();
+  if (!u) throw new Error('Inicia sesión primero.');
+  if (!u.email) throw new Error('Esta cuenta no tiene correo (entró por Google). Pon una contraseña desde tu proveedor.');
+  if (!newPassword || newPassword.length < 8) throw new Error('La contraseña nueva debe tener al menos 8 caracteres.');
+  const stored = loadStored();
+  const r = await fetch(`${PB_URL}/api/collections/users/records/${u.id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...(stored?.token ? { Authorization: stored.token } : {}) },
+    body: JSON.stringify({ oldPassword, password: newPassword, passwordConfirm: newPassword }),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data?.message || (r.status === 400 ? 'La contraseña actual no es correcta.' : `Error ${r.status}`));
+  // Re-autentica con la nueva clave → token fresco (PB revocó el anterior).
+  await signIn(u.email, newPassword);
+  return true;
 }
 
 export function isAnonymous(user) {

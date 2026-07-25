@@ -89,7 +89,7 @@ $defs = @(
 
   # Perfil PÚBLICO del profe (colegio/frase/avatar) — separado de users (email privado).
   @{ name = "profiles";
-     fields = @( @{ name="owner"; type="text"; required=$true }, @{ name="name"; type="text" }, @{ name="school"; type="text" }, @{ name="bio"; type="text" }, @{ name="avatar"; type="text" } );
+     fields = @( @{ name="owner"; type="text"; required=$true }, @{ name="name"; type="text" }, @{ name="school"; type="text" }, @{ name="bio"; type="text" }, @{ name="avatar"; type="text" }, @{ name="banner"; type="text" } );
      indexes = @( "CREATE UNIQUE INDEX ``idx_profile_owner`` ON ``profiles`` (``owner``)" );
      rules = @{
        listRule=""; viewRule="";

@@ -669,6 +669,7 @@ function renderPanel(rootSel) {
           { name: 'school', type: 'text' },
           { name: 'bio',    type: 'text' },
           { name: 'avatar', type: 'text' },
+          { name: 'banner', type: 'text' },   // portada estilo Facebook (data-URL o vacío)
         ], indexes: ['CREATE UNIQUE INDEX `idx_profile_owner` ON `profiles` (`owner`)'] },
       ];
 

@@ -570,17 +570,28 @@ body {
 
 /* ── Página del autor (#/autor/:id) — perfil público estilo Wordwall ────────── */
 .author-head { margin: 4px 0 18px; }
-.author-id { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-.author-avatar { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 3px solid #fff; box-shadow: 0 2px 10px rgba(20,28,46,.15); flex: 0 0 auto; }
-.author-avatar--ph { display: flex; align-items: center; justify-content: center; background: #e7eef7; color: #8496b3; font-size: 40px; }
-.author-meta { flex: 1 1 220px; min-width: 0; }
+/* Portada estilo Facebook: banda superior con imagen o degradado. El avatar se
+   solapa sobre su borde inferior (author-avatar-wrap con margen negativo). */
+.author-cover { height: 170px; border-radius: 16px; background: linear-gradient(120deg,#243149,#3a4a67); background-size: cover; background-position: center; position: relative; }
+.author-cover.has-img { box-shadow: inset 0 -40px 60px rgba(0,0,0,.25); }
+.author-cover__btn, .author-avatar__btn { border: none; cursor: pointer; font: inherit; }
+.author-cover__btn { position: absolute; right: 12px; bottom: 12px; background: rgba(20,28,46,.62); color: #fff; border-radius: 8px; padding: 5px 10px; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; }
+.author-cover__btn:hover { background: rgba(20,28,46,.82); }
+.author-id { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-top: -36px; padding: 0 8px; }
+.author-avatar-wrap { position: relative; flex: 0 0 auto; }
+.author-avatar { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; box-shadow: 0 2px 10px rgba(20,28,46,.18); display: block; }
+.author-avatar--ph { display: flex; align-items: center; justify-content: center; background: #e7eef7; color: #8496b3; font-size: 46px; }
+.author-avatar__btn { position: absolute; right: 2px; bottom: 2px; width: 30px; height: 30px; border-radius: 50%; background: #2563eb; color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+.author-avatar__btn:hover { background: #1d4ed8; }
+.author-actions { flex: 0 0 auto; display: flex; gap: 8px; align-self: center; }
+.author-meta { flex: 1 1 220px; min-width: 0; padding-bottom: 4px; }
 .author-name { font-size: 28px; font-weight: 800; color: #141c2e; margin: 0; line-height: 1.1; }
 .author-school { color: #4b5563; font-size: 14px; margin-top: 3px; }
 .author-bio { color: #374151; font-size: 15px; margin: 6px 0 0; max-width: 640px; }
 .author-edit { flex: 0 0 auto; }
 .author-editcard { background: #fff; border: 1px solid #ece7d8; border-radius: 14px; padding: 16px; margin-top: 14px; max-width: 520px; display: flex; flex-direction: column; }
 .author-editcard .login-modal__inp { width: 100%; }
-@media (max-width: 640px) { .author-avatar { width: 60px; height: 60px; } .author-name { font-size: 23px; } }
+@media (max-width: 640px) { .author-cover { height: 120px; } .author-avatar { width: 74px; height: 74px; } .author-name { font-size: 23px; } .author-id { margin-top: -28px; } }
 
 /* ── Analítica por ítem/palabra (views/itemStatsView.js) ─────────────────────── */
 .istats { max-width: 900px; margin: 0 auto; }

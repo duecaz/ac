@@ -9,7 +9,7 @@ import { lsSet } from './ls.js';
 
 const COLL = 'profiles';
 const LKEY = (uid) => `ww.profile.${uid}`;
-const EMPTY = { name: '', school: '', bio: '', avatar: '' };
+const EMPTY = { name: '', school: '', bio: '', avatar: '', banner: '' };
 
 // Cache local (pintado instantáneo + respaldo offline). No es la fuente de verdad.
 export function getLocalProfile(uid) {
@@ -31,7 +31,7 @@ export async function fetchProfile(ownerId) {
     const r = await fetch(`${PB_URL}/api/collections/${COLL}/records/${ownerId}`);
     if (!r.ok) return { ...EMPTY };
     const d = await r.json().catch(() => ({}));
-    return { name: d.name || '', school: d.school || '', bio: d.bio || '', avatar: d.avatar || '' };
+    return { name: d.name || '', school: d.school || '', bio: d.bio || '', avatar: d.avatar || '', banner: d.banner || '' };
   } catch { return { ...EMPTY }; }
 }
 
