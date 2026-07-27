@@ -1,16 +1,11 @@
-// Public library. Browse activities with visibility=public. Fork to duplicate.
+// Biblioteca pública. Explora actividades con visibility=public. Se juegan por la
+// tira de modos; editar/borrar viven en "Mis actividades", moderar en #/moderar.
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
-import { newActivityId } from '../core/migrate.js';
-import { save } from '../core/storage.js';
 import { navigate } from '../core/router.js';
 import { activityCardHtml } from '../core/activityCard.js';
 import { PB_URL } from '../pocketbase.config.js';
 import { pbEscape, pbFilterParam } from '../core/pbFilter.js';
-import { isAdmin } from '../core/auth.js';
-import { submitReport } from '../core/reports.js';
-import { remove } from '../core/storage.js';
-import { toast, confirmModal } from '../core/toast.js';
 
 export async function renderExplore(rootSel) {
   mount(rootSel, html`
@@ -82,62 +77,22 @@ export async function renderExplore(rootSel) {
     // Los tags e id "reales" viven en la fila PB (r.tags / r.id), fuera del blob
     // data → los normalizamos DENTRO de la actividad para la tarjeta compartida.
     const a = { ...(r.data || {}), id: r.data?.id || r.id, tags: r.tags || [] };
-    const idE = escapeHtml(a.id);
     const topRight = `<small class="text-muted">${escapeHtml(r.language || 'es')}</small>`;
-    const footer = `<div class="acard-actions">
-        <button class="btn-primary-solid exp-play" data-id="${idE}"><i class="bi bi-play-fill"></i> Probar</button>
-        <button class="btn-ghost exp-fork" data-id="${idE}"><i class="bi bi-files"></i> Duplicar</button>
-        <button class="icon-btn exp-report" data-id="${idE}" title="Reportar contenido"><i class="bi bi-flag"></i></button>
-        ${isAdmin() ? `<button class="icon-btn exp-admin-edit" data-id="${idE}" title="Editar (admin)"><i class="bi bi-pencil"></i></button>
-        <button class="icon-btn del exp-admin-del" data-id="${idE}" title="Borrar (admin)"><i class="bi bi-trash3"></i></button>` : ''}
-      </div>`;
+    // Sin pie de acciones: jugar se hace por la tira de modos (Individual/VS/
+    // Equipos) o clic en el preview. Editar/borrar viven SOLO en "Mis
+    // actividades" (son tuyas); para moderar como admin está la vista #/moderar.
     return activityCardHtml(a, {
-      modes: 'play', playablePreview: true, author: true, subtitle: true, tags: true, topRight, footer,
+      modes: 'play', playablePreview: true, author: true, subtitle: true, tags: true, topRight,
     });
   }
 
   on(rootSel, 'input', '#exp-q', () => paint());
   on(rootSel, 'change', '#exp-lang', () => load());
-  // Preview clicable + tira de modos (Individual/VS/Equipos) de la tarjeta compartida.
+  // Jugar: preview clicable + tira de modos (Individual/VS/Equipos).
   on(rootSel, 'click', '[data-play]', (_, b) => navigate(`#/play/${b.dataset.play}`));
   on(rootSel, 'click', '.act-play', (_, b) => navigate(`#/play/${b.dataset.id}`));
   on(rootSel, 'click', '.act-vs', (_, b) => navigate(`#/vs/${b.dataset.id}`));
   on(rootSel, 'click', '.act-teams', (_, b) => navigate(`#/${b.dataset.tpl === 'memory' ? 'memory' : 'teams'}/${b.dataset.id}`));
-  on(rootSel, 'click', '.exp-play', async (_, b) => {
-    // Jugar la actividad PÚBLICA por su id real. El player hace fallback a
-    // getRemote() si no está en local (playerView), así que NO clonamos a PB —
-    // antes cada "Probar" de un anónimo creaba una copia unlisted en el servidor
-    // (basura acumulándose). Para quedarse una copia editable está "Duplicar".
-    navigate(`#/play/${b.dataset.id}`);
-  });
-  on(rootSel, 'click', '.exp-fork', async (_, b) => {
-    const row = cache.find(r => (r.data?.id || r.id) === b.dataset.id);
-    if (!row) return;
-    const fork = {
-      ...row.data,
-      id: newActivityId(),
-      title: (row.data.title || '') + ' (copia)',
-      forkOf: row.data.id,
-      visibility: 'unlisted',
-      author: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    save(fork);
-    navigate(`#/edit/${fork.id}`);
-  });
-  on(rootSel, 'click', '.exp-report', async (_, b) => {
-    try { await submitReport(b.dataset.id, 'Reportada desde Explorar'); toast('Gracias, lo revisaremos.', 'success'); }
-    catch (e) { toast(e.message || 'Inicia sesión para reportar.', 'info', 4000); }
-  });
-  // Moderación admin: editar/borrar cualquier actividad pública (la regla PB lo respalda).
-  on(rootSel, 'click', '.exp-admin-edit', (_, b) => navigate(`#/edit/${b.dataset.id}`));
-  on(rootSel, 'click', '.exp-admin-del', async (_, b) => {
-    const ok = await confirmModal('¿Borrar esta actividad de la biblioteca? (admin)', { okText: 'Borrar', danger: true });
-    if (!ok) return;
-    try { await remove(b.dataset.id); toast('Borrada.', 'success'); load(); }
-    catch (e) { toast('No se pudo borrar: ' + e.message, 'danger', 5000); }
-  });
 
   load();
 }

@@ -472,12 +472,6 @@ body {
 .acard-foot span { display: inline-flex; align-items: center; gap: 5px; }
 .acard-foot .heart { color: #ef4444; }
 
-/* Fila de acciones al pie (Explorar: Probar / Duplicar / reportar / admin). El
-   botón principal crece; los de icono quedan compactos. */
-.acard-actions { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 11px; }
-.acard-actions .btn-primary-solid, .acard-actions .btn-ghost { width: auto; flex: 0 1 auto; padding: 8px 12px; }
-.acard-actions .exp-play { flex: 1 1 auto; }
-
 /* Estado vacío / sin resultados */
 .home-empty { text-align: center; padding: 60px 20px; color: var(--dash-muted); }
 .home-empty i { font-size: 54px; opacity: .5; }
