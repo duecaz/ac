@@ -1,13 +1,11 @@
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { list, remove, get, save } from '../core/storage.js';
-import { homePreviewHtml, previewBgStyle } from '../core/homePreview.js';
 import { navigate } from '../core/router.js';
-import { getTemplate, listTemplates } from '../core/registry.js';
+import { listTemplates } from '../core/registry.js';
 import { confirmModal, toast } from '../core/toast.js';
-import { activityItemCount as itemCount, activityPageCount as pageCount } from '../core/migrate.js';
-import { isVsCompatible } from '../kernel/session/engine.js';
-import { getMode } from '../core/modes.js';
+import { activityItemCount as itemCount } from '../core/migrate.js';
+import { activityCardHtml } from '../core/activityCard.js';
 
 let _filter = { q: '', template: '' };
 
@@ -82,57 +80,22 @@ export function renderHome(rootSel) {
 
   function card(a) {
     if (a.template === 'list') return listCard(a);
-    const T = getTemplate(a.template);
-    const m = T?.meta?.modes || { solo: true, live: false, async: false };
-    const color = T?.meta?.color || 'info';
-    const icon  = T?.meta?.icon  || 'bi-puzzle';
-    const label = T?.meta?.label || a.template;
-
-    // Equipos solo si la plantilla lo soporta (renderRound o Memoria) y la
-    // actividad tiene ítems suficientes — misma regla que la barra de modos.
-    // Sin esto el botón salía hasta en Ruleta/Pregunta Live, que no lo admiten.
-    const teamsMode = getMode('teams');
-    const canTeams = teamsMode.supportsTemplate(T) && teamsMode.isAvailable(a);
-
-    const playBtns = [
-      m.solo             ? `<button class="act-play mode-solo"   data-id="${a.id}" title="Individual"><i class="bi bi-person-fill"></i></button>` : '',
-      isVsCompatible(a)  ? `<button class="act-vs mode-vs"       data-id="${a.id}" title="VS"><i class="bi bi-fire"></i></button>` : '',
-      canTeams           ? `<button class="act-teams mode-teams" data-id="${a.id}" data-tpl="${a.template}" title="Equipos"><i class="bi bi-people-fill"></i></button>` : '',
-      m.live             ? `<button class="act-pin mode-live"    data-id="${a.id}" title="En vivo"><i class="bi bi-broadcast"></i></button>` : '',
-      m.async            ? `<button class="act-task mode-task"   data-id="${a.id}" title="Tarea"><i class="bi bi-clipboard-check"></i></button>` : '',
-    ].filter(Boolean).join('');
-
     const n = itemCount(a);
-    const pages = pageCount(a);
-    const bg = previewBgStyle(a.presentation);
-    return `
-      <article class="acard">
-        <div class="acard-preview"${bg ? ` style="background:${bg}"` : ''}>
-          ${homePreviewHtml(a)}
-          <span class="acard-pages" title="${pages} ${pages === 1 ? 'página' : 'páginas'}"><i class="bi bi-files"></i> ${pages}</span>
-        </div>
-        ${playBtns ? `<div class="acard-modes">${playBtns}</div>` : ''}
-        <div class="acard-body">
-          <div class="acard-toprow">
-            <span class="tag tag--${color}"><i class="bi ${icon}"></i> ${escapeHtml(label)}</span>
-            <div class="acard-icons">
-              ${a.visibility === 'public'
-                ? `<button class="pub-toggle is-pub act-unpublish" data-id="${a.id}" title="Publicada — clic para pasar a borrador"><i class="bi bi-globe"></i> Pública</button>`
-                : `<button class="pub-toggle act-publish" data-id="${a.id}" title="Borrador — clic para publicar en la biblioteca"><i class="bi bi-eye-slash"></i> Borrador</button>`}
-              <button class="icon-btn edit act-edit" data-id="${a.id}" title="Editar"><i class="bi bi-pencil-fill"></i></button>
-              <button class="icon-btn del act-del" data-id="${a.id}" title="Eliminar"><i class="bi bi-trash3"></i></button>
-              ${a._unsynced ? '<i class="bi bi-cloud-slash acard-unsync" title="No sincronizada"></i>' : ''}
-            </div>
-          </div>
-          <h3 class="acard-title">${escapeHtml(a.title)}</h3>
-          ${a.subtitle ? `<p class="acard-sub">${escapeHtml(a.subtitle)}</p>` : ''}
-          ${(a.tags||[]).length ? `<div class="acard-tags">${a.tags.slice(0,3).map(t=>`<span class="t">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
-          <div class="acard-foot">
-            <span title="Elementos"><i class="bi bi-collection"></i> ${n} ${n === 1 ? 'ítem' : 'ítems'}</span>
-            <span title="Me gusta (próximamente)"><i class="bi bi-heart-fill heart"></i> ${a.likes ?? 0}</span>
-          </div>
-        </div>
-      </article>`;
+    // Esquina sup-der (dueño): publicar/despublicar + editar + borrar.
+    const topRight = `<div class="acard-icons">
+        ${a.visibility === 'public'
+          ? `<button class="pub-toggle is-pub act-unpublish" data-id="${a.id}" title="Publicada — clic para pasar a borrador"><i class="bi bi-globe"></i> Pública</button>`
+          : `<button class="pub-toggle act-publish" data-id="${a.id}" title="Borrador — clic para publicar en la biblioteca"><i class="bi bi-eye-slash"></i> Borrador</button>`}
+        <button class="icon-btn edit act-edit" data-id="${a.id}" title="Editar"><i class="bi bi-pencil-fill"></i></button>
+        <button class="icon-btn del act-del" data-id="${a.id}" title="Eliminar"><i class="bi bi-trash3"></i></button>
+        ${a._unsynced ? '<i class="bi bi-cloud-slash acard-unsync" title="No sincronizada"></i>' : ''}
+      </div>`;
+    const footer = `<div class="acard-foot">
+        <span title="Elementos"><i class="bi bi-collection"></i> ${n} ${n === 1 ? 'ítem' : 'ítems'}</span>
+        <span title="Me gusta (próximamente)"><i class="bi bi-heart-fill heart"></i> ${a.likes ?? 0}</span>
+      </div>`;
+    // 'all' = incluye Live/Tarea (son actividades del dueño).
+    return activityCardHtml(a, { modes: 'all', pages: true, subtitle: true, tags: true, topRight, footer });
   }
 
   function listCard(a) {

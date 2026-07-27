@@ -4,10 +4,9 @@
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { navigate } from '../core/router.js';
-import { getTemplate } from '../core/registry.js';
 import { PB_URL } from '../pocketbase.config.js';
 import { pbEscape, pbFilterParam } from '../core/pbFilter.js';
-import { homePreviewHtml, previewBgStyle } from '../core/homePreview.js';
+import { activityCardHtml } from '../core/activityCard.js';
 import { getAuthUserId, getAuthName, changePassword, linkGoogle } from '../core/auth.js';
 import { fetchProfile, getLocalProfile, saveProfile } from '../core/profile.js';
 import { uploadMedia } from '../core/upload.js';
@@ -160,27 +159,14 @@ export async function renderAuthor(rootSel, ownerId) {
   }
 
   function card(a) {
-    const T = getTemplate(a.template);
-    const color = T?.meta?.color || 'info';
-    const icon = T?.meta?.icon || 'bi-puzzle';
-    const label = T?.meta?.label || a.template;
-    const bg = previewBgStyle(a.presentation);
-    return `
-      <article class="acard">
-        <div class="acard-preview lp-card__pv"${bg ? ` style="background:${bg}"` : ''} data-play="${escapeHtml(a.id)}" role="button" title="Jugar">
-          ${homePreviewHtml(a)}
-        </div>
-        <div class="acard-body">
-          <div class="acard-toprow">
-            <span class="tag tag--${color}"><i class="bi ${icon}"></i> ${escapeHtml(label)}</span>
-          </div>
-          <h3 class="acard-title">${escapeHtml(a.title || 'Sin título')}</h3>
-          <button class="btn-primary-solid w-100 lp-play" data-play="${escapeHtml(a.id)}"><i class="bi bi-play-fill"></i> Jugar</button>
-        </div>
-      </article>`;
+    const footer = `<button class="btn-primary-solid w-100 lp-play" data-play="${escapeHtml(a.id)}"><i class="bi bi-play-fill"></i> Jugar</button>`;
+    return activityCardHtml(a, { modes: 'play', playablePreview: true, previewClass: 'lp-card__pv', footer });
   }
 
   on(rootSel, 'click', '[data-play]', (_, b) => navigate(`#/play/${b.dataset.play}`));
+  on(rootSel, 'click', '.act-play', (_, b) => navigate(`#/play/${b.dataset.id}`));
+  on(rootSel, 'click', '.act-vs', (_, b) => navigate(`#/vs/${b.dataset.id}`));
+  on(rootSel, 'click', '.act-teams', (_, b) => navigate(`#/${b.dataset.tpl === 'memory' ? 'memory' : 'teams'}/${b.dataset.id}`));
   on(rootSel, 'click', '#au-edit', () => paintEditForm(true));
   on(rootSel, 'click', '#au-account', () => paintAccount(true));
   on(rootSel, 'click', '#au-cancel', () => { paintEditForm(false); });

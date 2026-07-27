@@ -5,12 +5,9 @@
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { navigate } from '../core/router.js';
-import { getTemplate } from '../core/registry.js';
-import { getMode } from '../core/modes.js';
-import { isVsCompatible } from '../kernel/session/engine.js';
 import { PB_URL } from '../pocketbase.config.js';
 import { pbFilterParam } from '../core/pbFilter.js';
-import { homePreviewHtml, previewBgStyle } from '../core/homePreview.js';
+import { activityCardHtml } from '../core/activityCard.js';
 import { computeFeatured } from '../core/ranking.js';
 import { fetchLikeCounts, fetchMyLikes, toggleLike } from '../core/likes.js';
 import { getUser } from '../core/auth.js';
@@ -80,41 +77,17 @@ export async function renderLanding(rootSel) {
   }
 
   function card(a, likes) {
-    const T = getTemplate(a.template);
-    const color = T?.meta?.color || 'info';
-    const icon = T?.meta?.icon || 'bi-puzzle';
-    const label = T?.meta?.label || a.template;
-    const bg = previewBgStyle(a.presentation);
     const liked = myLikes.has(a.id);
-    // Tira de modos JUGABLES sobre cualquier actividad de la biblioteca
-    // (Individual/VS/Equipos). Live y Tarea NO van aquí: crean sesión/asignación
-    // y exigen que la actividad sea tuya → eso se hace desde "Mis actividades".
-    const m = T?.meta?.modes || { solo: true };
-    const teamsMode = getMode('teams');
-    const canTeams = teamsMode.supportsTemplate(T) && teamsMode.isAvailable(a);
-    const modeBtns = [
-      m.solo            ? `<button class="act-play mode-solo"   data-id="${escapeHtml(a.id)}" title="Individual"><i class="bi bi-person-fill"></i></button>` : '',
-      isVsCompatible(a) ? `<button class="act-vs mode-vs"       data-id="${escapeHtml(a.id)}" title="VS"><i class="bi bi-fire"></i></button>` : '',
-      canTeams          ? `<button class="act-teams mode-teams" data-id="${escapeHtml(a.id)}" data-tpl="${escapeHtml(a.template)}" title="Equipos"><i class="bi bi-people-fill"></i></button>` : '',
-    ].filter(Boolean).join('');
-    return `
-      <article class="acard lp-card" data-id="${escapeHtml(a.id)}">
-        <div class="acard-preview lp-card__pv"${bg ? ` style="background:${bg}"` : ''} data-play="${escapeHtml(a.id)}" role="button" title="Jugar">
-          ${homePreviewHtml(a)}
-        </div>
-        ${modeBtns ? `<div class="acard-modes">${modeBtns}</div>` : ''}
-        <div class="acard-body">
-          <div class="acard-toprow">
-            <span class="tag tag--${color}"><i class="bi ${icon}"></i> ${escapeHtml(label)}</span>
-            <button class="lp-like ${liked ? 'is-liked' : ''}" data-like="${escapeHtml(a.id)}" title="Me gusta">
-              <i class="bi ${liked ? 'bi-heart-fill' : 'bi-heart'}"></i> <span class="lp-like__n">${likes}</span>
-            </button>
-          </div>
-          <h3 class="acard-title">${escapeHtml(a.title || 'Sin título')}</h3>
-          ${a.author?.id ? `<a class="lp-author" href="#/autor/${escapeHtml(a.author.id)}">por ${escapeHtml(a.author.name || 'Profesor')}</a>` : ''}
-          <button class="btn-primary-solid w-100 lp-play" data-play="${escapeHtml(a.id)}"><i class="bi bi-play-fill"></i> Jugar</button>
-        </div>
-      </article>`;
+    const topRight = `<button class="lp-like ${liked ? 'is-liked' : ''}" data-like="${escapeHtml(a.id)}" title="Me gusta">
+        <i class="bi ${liked ? 'bi-heart-fill' : 'bi-heart'}"></i> <span class="lp-like__n">${likes}</span>
+      </button>`;
+    const footer = `<button class="btn-primary-solid w-100 lp-play" data-play="${escapeHtml(a.id)}"><i class="bi bi-play-fill"></i> Jugar</button>`;
+    // modes:'play' = solo Individual/VS/Equipos (jugables sobre cualquier
+    // actividad). Live/Tarea se quedan en "Mis actividades" (son tuyas).
+    return activityCardHtml(a, {
+      modes: 'play', playablePreview: true, author: true,
+      extraClass: 'lp-card', previewClass: 'lp-card__pv', topRight, footer,
+    });
   }
 
   function goSearch() {
