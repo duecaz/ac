@@ -6,6 +6,8 @@ import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { navigate } from '../core/router.js';
 import { getTemplate } from '../core/registry.js';
+import { getMode } from '../core/modes.js';
+import { isVsCompatible } from '../kernel/session/engine.js';
 import { PB_URL } from '../pocketbase.config.js';
 import { pbFilterParam } from '../core/pbFilter.js';
 import { homePreviewHtml, previewBgStyle } from '../core/homePreview.js';
@@ -84,11 +86,23 @@ export async function renderLanding(rootSel) {
     const label = T?.meta?.label || a.template;
     const bg = previewBgStyle(a.presentation);
     const liked = myLikes.has(a.id);
+    // Tira de modos JUGABLES sobre cualquier actividad de la biblioteca
+    // (Individual/VS/Equipos). Live y Tarea NO van aquí: crean sesión/asignación
+    // y exigen que la actividad sea tuya → eso se hace desde "Mis actividades".
+    const m = T?.meta?.modes || { solo: true };
+    const teamsMode = getMode('teams');
+    const canTeams = teamsMode.supportsTemplate(T) && teamsMode.isAvailable(a);
+    const modeBtns = [
+      m.solo            ? `<button class="act-play mode-solo"   data-id="${escapeHtml(a.id)}" title="Individual"><i class="bi bi-person-fill"></i></button>` : '',
+      isVsCompatible(a) ? `<button class="act-vs mode-vs"       data-id="${escapeHtml(a.id)}" title="VS"><i class="bi bi-fire"></i></button>` : '',
+      canTeams          ? `<button class="act-teams mode-teams" data-id="${escapeHtml(a.id)}" data-tpl="${escapeHtml(a.template)}" title="Equipos"><i class="bi bi-people-fill"></i></button>` : '',
+    ].filter(Boolean).join('');
     return `
       <article class="acard lp-card" data-id="${escapeHtml(a.id)}">
         <div class="acard-preview lp-card__pv"${bg ? ` style="background:${bg}"` : ''} data-play="${escapeHtml(a.id)}" role="button" title="Jugar">
           ${homePreviewHtml(a)}
         </div>
+        ${modeBtns ? `<div class="acard-modes">${modeBtns}</div>` : ''}
         <div class="acard-body">
           <div class="acard-toprow">
             <span class="tag tag--${color}"><i class="bi ${icon}"></i> ${escapeHtml(label)}</span>
@@ -111,6 +125,9 @@ export async function renderLanding(rootSel) {
   on(rootSel, 'click', '#lp-go', goSearch);
   on(rootSel, 'keydown', '#lp-q', (e) => { if (e.key === 'Enter') goSearch(); });
   on(rootSel, 'click', '[data-play]', (_, b) => navigate(`#/play/${b.dataset.play}`));
+  on(rootSel, 'click', '.act-play', (_, b) => navigate(`#/play/${b.dataset.id}`));
+  on(rootSel, 'click', '.act-vs', (_, b) => navigate(`#/vs/${b.dataset.id}`));
+  on(rootSel, 'click', '.act-teams', (_, b) => navigate(`#/${b.dataset.tpl === 'memory' ? 'memory' : 'teams'}/${b.dataset.id}`));
   on(rootSel, 'click', '[data-like]', async (e, b) => {
     e.stopPropagation();
     try {
