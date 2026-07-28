@@ -14,6 +14,18 @@ import { GameEvents, emitGame } from './gameEvents.js';
 import { shuffle } from './roundRender.js';
 import { createCountdown } from './soloTimer.js';
 import { clock } from './clock.js';
+import { lsGet, lsSet, lsDel } from './ls.js';
+
+// Reanudar al recargar (F5) SOLO en modo individual: guarda el avance (idx/score/
+// answers/startedAt) por actividad y lo retoma si el navegador se recarga a mitad.
+// NO aplica a Live (el ritmo lo marca el servidor) ni Tarea (registra su propio
+// intento), ni a actividades con orden aleatorio (el barajado cambiaría). Se
+// invalida si la actividad se editó (updatedAt) y se limpia al terminar/reiniciar.
+const progressKey = (id) => `ww.solo.progress.${id}`;
+function canResumeSolo(activity, opts) {
+  return (!opts.mode || opts.mode === 'solo') && !activity?.rules?.randomize;
+}
+export function clearSoloProgress(activityId) { if (activityId) lsDel(progressKey(activityId)); }
 
 export function runFreeformPlayer(rootSel, activity, opts = {}) {
   const startedAt = clock.now();
@@ -93,6 +105,26 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
   const state = { idx: 0, score: 0, startedAt: clock.now(), answers: [] };
   const timerSecs = activity.rules?.timer ?? 0;
 
+  // Reanudar (F5): retoma el avance guardado si es de ESTA versión y va a medias.
+  const resumeOn = canResumeSolo(activity, opts);
+  const pKey = progressKey(activity.id);
+  if (resumeOn) {
+    let saved = null;
+    try { saved = JSON.parse(lsGet(pKey, '') || 'null'); } catch { saved = null; }
+    if (saved && saved.updatedAt === (activity.updatedAt || '') && Array.isArray(saved.answers)
+        && Number.isInteger(saved.idx) && saved.idx > 0 && saved.idx < items.length) {
+      state.idx = saved.idx;
+      state.score = saved.score || 0;
+      state.answers = saved.answers;
+      state.startedAt = saved.startedAt || state.startedAt;
+    }
+  }
+  function persistProgress() {
+    if (!resumeOn || finished) return;
+    if (state.idx <= 0 || state.idx >= items.length) return; // nada útil al inicio/final
+    lsSet(pKey, JSON.stringify({ v: 1, updatedAt: activity.updatedAt || '', idx: state.idx, score: state.score, answers: state.answers, startedAt: state.startedAt }));
+  }
+
   const maxScore = () => (callbacks.maxScore
     ? callbacks.maxScore(items, activity)
     : (activity.scoring?.maxScore || ((activity.scoring?.pointsPerCorrect || 1) * items.length)));
@@ -121,6 +153,7 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
     stepped = true;
     stopTimer();
     state.idx++;
+    persistProgress();
     renderItem();
   }
 
@@ -159,6 +192,7 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
     if (finished) return;
     finished = true;
     stopTimer();
+    if (resumeOn) lsDel(pKey); // partida terminada → no reanudar
     const timeUsed = Math.round((clock.now() - state.startedAt) / 1000);
     const max = maxScore();
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: state.score }] });

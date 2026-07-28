@@ -10,6 +10,7 @@ import { activityItemCount, newActivityId } from '../core/migrate.js';
 import { getTemplate, compatibleTemplates } from '../core/registry.js';
 import { isVsCompatible } from '../kernel/session/engine.js';
 import { availableModes, getMode, runMode } from '../core/modes.js';
+import { clearSoloProgress } from '../core/soloPlayer.js';
 import { renderStartScreen } from './startScreen.js';
 import { listSkins, applySkin, skinPreviewHtml } from '../core/skins.js';
 
@@ -299,7 +300,8 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
       document.getElementById('ww-frame')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
     // Restart re-mounts whatever mode is active (new game / fresh setup).
-    on(rootSel, 'click', '#btn-restart', () => selectMode(currentMode));
+    // Borra el progreso guardado para que REINICIE de verdad (no reanude).
+    on(rootSel, 'click', '#btn-restart', () => { clearSoloProgress(id); selectMode(currentMode); });
     // Frame-level fullscreen: only the embed expands, not the page (YouTube-like).
     on(rootSel, 'click', '#btn-fs', () => toggleFullscreen(document.getElementById('ww-frame')));
     on(rootSel, 'click', '#btn-link', async () => {

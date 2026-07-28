@@ -113,6 +113,59 @@ try {
     assert.ok(root.innerHTML.includes('Recorrido 5'), 'usa el resultScreen personalizado');
     ok('runSequentialPlayer: finish() temprano + resultScreen personalizado');
   }
+
+  // ── reanudar (F5) en modo solo: guarda avance y lo retoma ───────────────────
+  {
+    const mem = new Map();
+    global.localStorage = {
+      getItem: (k) => (mem.has(k) ? mem.get(k) : null),
+      setItem: (k, v) => { mem.set(k, String(v)); },
+      removeItem: (k) => { mem.delete(k); },
+    };
+    const act = { ...baseActivity, id: 'resume1', template: 'quiz', updatedAt: 'u1' };
+
+    // Sesión 1: responde el ítem 0 (avanza a 1) y "recarga" ahí (no responde el 1).
+    runSequentialPlayer(makeRoot(), act, { mode: 'solo' }, {
+      renderItem({ idx, item, submit }) { if (idx === 0) submit({ itemId: item.id, correct: true, points: 1 }); },
+    });
+    drain();
+
+    // Sesión 2 (F5): nueva instancia, misma actividad → reanuda en el ítem 1.
+    const seen2 = []; let scoreAtStart = null;
+    runSequentialPlayer(makeRoot(), act, { mode: 'solo' }, {
+      renderItem({ idx, score, item, submit }) {
+        seen2.push(idx);
+        if (scoreAtStart === null) scoreAtStart = score;
+        submit({ itemId: item.id, correct: true, points: 1 });
+      },
+    });
+    drain();
+    assert.strictEqual(seen2[0], 1, 'reanuda en el ítem 1 (no empieza de 0)');
+    assert.strictEqual(scoreAtStart, 1, 'conserva el punto ya logrado en el ítem 0');
+
+    // Sesión 3: al haber TERMINADO la 2, el progreso se limpió → empieza de 0.
+    const seen3 = [];
+    runSequentialPlayer(makeRoot(), act, { mode: 'solo' }, {
+      renderItem({ idx, item, submit }) { seen3.push(idx); submit({ itemId: item.id, correct: true, points: 1 }); },
+    });
+    drain();
+    assert.strictEqual(seen3[0], 0, 'tras terminar, empieza de 0 (progreso limpiado)');
+
+    // Live NO reanuda aunque haya progreso guardado de otra actividad.
+    const actL = { ...baseActivity, id: 'resume2', updatedAt: 'u1' };
+    runSequentialPlayer(makeRoot(), actL, { mode: 'solo' }, {
+      renderItem({ idx, item, submit }) { if (idx === 0) submit({ itemId: item.id, correct: true, points: 1 }); },
+    });
+    drain();
+    const seenLive = [];
+    runSequentialPlayer(makeRoot(), actL, { mode: 'live-student' }, {
+      renderItem({ idx, item, submit }) { seenLive.push(idx); submit({ itemId: item.id, correct: true, points: 1 }); },
+    });
+    drain();
+    assert.strictEqual(seenLive[0], 0, 'Live no reanuda (empieza de 0)');
+    ok('runSequentialPlayer: reanuda solo en modo individual; limpia al terminar; Live no reanuda');
+    delete global.localStorage;
+  }
 } finally {
   global.setTimeout = realSetTimeout;
 }
