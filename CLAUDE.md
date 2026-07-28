@@ -112,9 +112,10 @@ las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecut
 - **Filtros PocketBase**: SIEMPRE `pbEscape`/`pbFilterParam` (`core/pbFilter.js`), nunca
   `encodeURIComponent` a pelo (no escapa la comilla simple).
 - **Puntos**: convención en `core/scoring/` (basePoints/wrongPoints/useKahoot/awardPoints); Tildes/Comas
-  puntúan **`pointsPerCorrect` por marca buena** (`scoreMarksPerHit`, default 1): el puntaje = nº de
-  aciertos × ppc, las marcas de más NO restan (se registran en `over` para desempate/corrección;
-  `perfect` = todas y ninguna de más). Así `player.score`, la tabla y el podio muestran el MISMO número.
+  puntúan **NETO por marca** (`scoreMarksPerHit`, `pointsPerCorrect` default 1): puntaje =
+  `max(0, aciertos − de más) × ppc` — cada marca buena suma, cada marca de MÁS resta, así "marcar
+  todo" NO gana (neto 0). `hits`/`over`/`total` se conservan para la tabla ("3/8 · 2 de más") y
+  `perfect` = todas y ninguna de más. Así `player.score`, la tabla y el podio muestran el MISMO número.
   **Regla inherente = un solo scorer por plantilla**: TODOS los modos (Solo, Tarea, VS, Equipos, Live
   y cualquier modo futuro) puntúan vía `T.scoreSubmission` (que envuelve `scoreMarksPerHit`); NUNCA
   se reimplementa el conteo en la vista/runner de un modo. Los PARÁMETROS (`scoring.pointsPerCorrect`)

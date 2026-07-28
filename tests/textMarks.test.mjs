@@ -77,27 +77,26 @@ assert.ok(hasMarks({ marks: [{ pos: 1, kind: 'tilde' }] }));
 assert.ok(!hasMarks({ marks: [] }) && !hasMarks({}));
 ok('stripAccents removes accents; hasMarks detects presence');
 
-// ---------- scoreMarksPerHit (1 punto por tilde buena; las de más NO restan) ----------
+// ---------- scoreMarksPerHit (NETO: +1 por buena, −1 por de más; marcar todo no gana) ----------
 {
   const item = { marks: [{ pos: 3, kind: 'tilde' }, { pos: 7, kind: 'tilde' }] }; // 2 tildes
   const act = { scoring: { pointsPerCorrect: 1 } };
   const s = (v) => scoreMarksPerHit(v, item, ['tilde'], act);
-  // puntos = nº de aciertos, SIEMPRE (coincide con la tabla y con player.score).
-  assert.deepStrictEqual(s([3, 7]), { correct: true, points: 2, hits: 2, over: 0, total: 2, perfect: true }, 'ambas → 2 pts, perfecto');
-  assert.deepStrictEqual(s([3]), { correct: true, points: 1, hits: 1, over: 0, total: 2, perfect: false }, 'una buena → 1 pto (no perfecto: falta una)');
-  // una buena + una de más → SIGUE valiendo 1 (la de más no resta, solo cuenta como error).
-  assert.deepStrictEqual(s([3, 5]), { correct: true, points: 1, hits: 1, over: 1, total: 2, perfect: false }, 'buena + de más → 1 pto, over=1');
-  assert.deepStrictEqual(s([]), { correct: false, points: 0, hits: 0, over: 0, total: 2, perfect: false }, 'nada marcado → 0');
-  // marcar de más NO anula los aciertos (por diseño: "por palabra buena"); las de
-  // más quedan registradas en `over` para desempate/corrección, y no hay 'perfecto'.
+  // puntos = max(0, aciertos − de más) × ppc.
+  assert.deepStrictEqual(s([3, 7]), { correct: true, points: 2, hits: 2, over: 0, net: 2, total: 2, perfect: true }, 'ambas → 2 pts, perfecto');
+  assert.deepStrictEqual(s([3]), { correct: true, points: 1, hits: 1, over: 0, net: 1, total: 2, perfect: false }, 'una buena → 1 pto (no perfecto: falta una)');
+  // una buena + una de más → NETO 0 (la de más resta el acierto).
+  assert.deepStrictEqual(s([3, 5]), { correct: false, points: 0, hits: 1, over: 1, net: 0, total: 2, perfect: false }, 'buena + de más → 0 (resta), over=1');
+  assert.deepStrictEqual(s([]), { correct: false, points: 0, hits: 0, over: 0, net: 0, total: 2, perfect: false }, 'nada marcado → 0');
+  // marcar TODO: los 2 aciertos se anulan con las 4 de más → neto 0 (no gana).
   const messy = s([1, 3, 5, 7, 9, 11]);
-  assert.strictEqual(messy.points, 2, 'los 2 aciertos cuentan aunque haya 4 de más');
-  assert.strictEqual(messy.over, 4, 'las 4 de más se registran como error (desempate)');
+  assert.strictEqual(messy.points, 0, 'marcar todo → 0 (2 aciertos − 4 de más, con piso 0)');
+  assert.strictEqual(messy.over, 4, 'las 4 de más se registran (tabla/desempate)');
   assert.strictEqual(messy.perfect, false, 'con marcas de más nunca es perfecto');
-  // pointsPerCorrect (guardado EN la actividad) escala el punto por marca buena.
+  // pointsPerCorrect (guardado EN la actividad) escala el neto por marca buena.
   assert.strictEqual(scoreMarksPerHit([3, 7], item, ['tilde'], { scoring: { pointsPerCorrect: 10 } }).points, 20, 'ppc=10 → 2 tildes × 10 = 20');
   assert.strictEqual(scoreMarksPerHit([3, 7], item, ['tilde'], {}).points, 2, 'sin scoring → ppc=1 por defecto');
-  ok('scoreMarksPerHit: pointsPerCorrect por marca buena; las de más no restan (over)');
+  ok('scoreMarksPerHit: NETO (buenas − de más, piso 0); marcar todo no gana');
 }
 
 console.log(`\ntextMarks.test: ${passed} checks passed`);
