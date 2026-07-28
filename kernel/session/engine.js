@@ -217,7 +217,16 @@ function createLiveSession(activity, T, opts) {
 // lets ANY content be played in teams, which is the whole point for a classroom.
 function createTeamsSession(activity, T, opts) {
   const items = sessionItems(activity);
-  const total = items.length;
+  // Cada equipo debe responder la MISMA cantidad de preguntas. Como los turnos
+  // alternan (t1, t2, t1, …), un total IMPAR haría que el primer equipo responda
+  // de más. Recortamos el total a un múltiplo del nº de equipos (con 2 equipos →
+  // siempre PAR). Si hay menos ítems que equipos, se juega con lo que haya.
+  const teamCount = Array.isArray(opts.teams) ? opts.teams.length
+    : (typeof opts.teams === 'number' ? opts.teams
+      : (opts.state?.teams?.length || 2));
+  const total = (teamCount > 0 && items.length >= teamCount)
+    ? items.length - (items.length % teamCount)
+    : items.length;
   // MISMO criterio que core/modes.js y views/teamsView.js (core/templateCapability.js):
   // hace falta scoreSubmission Y renderRound — sin renderRound la ronda "auto" no
   // se puede PINTAR (ver teamsView.js roundBody/wire), aunque haya scorer.

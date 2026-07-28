@@ -205,6 +205,19 @@ const quizActivity = {
 
   const s = createSession(passagesAct, { format: FORMATS.TEAMS });
   assert.strictEqual(s.totalItems, 2, 'teams session counts passages');
+
+  // Equipos: el total se recorta a un MÚLTIPLO del nº de equipos (par con 2)
+  // para que ambos respondan la misma cantidad — impar dejaría a uno de más.
+  const odd = { id: 'odd', template: 'quiz_sess', content: { items: [
+    { id: 'q1', question: 'a', answer: '1', options: ['1', '2'] },
+    { id: 'q2', question: 'b', answer: '1', options: ['1', '2'] },
+    { id: 'q3', question: 'c', answer: '1', options: ['1', '2'] },
+  ] } };
+  assert.strictEqual(createSession(odd, { format: FORMATS.TEAMS, teams: 2 }).totalItems, 2, '3 ítems · 2 equipos → 2 (par)');
+  assert.strictEqual(createSession(odd, { format: FORMATS.TEAMS, teams: 3 }).totalItems, 3, '3 ítems · 3 equipos → 3 (cada uno 1)');
+  assert.strictEqual(createSession(odd, { format: FORMATS.TEAMS, teams: ['A', 'B'] }).totalItems, 2, 'nombres de equipo también cuentan');
+  const few = { id: 'few', template: 'quiz_sess', content: { items: [{ id: 'q', question: 'a', answer: '1', options: ['1', '2'] }] } };
+  assert.strictEqual(createSession(few, { format: FORMATS.TEAMS, teams: 2 }).totalItems, 1, 'menos ítems que equipos → se juega con lo que hay (no 0)');
   assert.strictEqual(s.state.scoring, 'judge', 'no scorer → judge');
   s.dispatch('start');
   s.judge({ correct: true });

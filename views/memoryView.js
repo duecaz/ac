@@ -10,7 +10,7 @@ import { on } from '../core/events.js';
 import { createMemoryGame } from '../kernel/session/memory.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { renderModeSetup } from './modeSetup.js';
-import { teamColor, teamNameInputsHtml } from '../core/teams.js';
+import { teamColor, teamNameInputsHtml, teamsScoreboardHtml, teamsPodiumHtml } from '../core/teams.js';
 
 
 // Standalone route wrapper (#/memory/:id).

@@ -18,21 +18,39 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
   const revealMs = activity.rules?.revealMs ?? 900;
   const columns = Math.max(2, Math.min(8, activity.rules?.columns || 4));
 
-  // Build deck: 2 cards per pair.
-  const deck = shuffle(pairs.flatMap(p => [
+  // Todas las cartas (2 por par), en orden canónico. El mazo se baraja al montar,
+  // salvo que haya progreso guardado (F5): entonces se recompone ese mismo orden.
+  const allCards = pairs.flatMap(p => [
     { cardId: p.id + ':L', pairId: p.id, text: p.left },
     { cardId: p.id + ':R', pairId: p.id, text: p.right }
-  ]));
+  ]);
+  const saved = ctx.loadProgress();
+  let deck = null, restored = false;
+  if (saved && Array.isArray(saved.deckIds) && saved.deckIds.length === allCards.length && Array.isArray(saved.locked)) {
+    const byId = new Map(allCards.map(c => [c.cardId, c]));
+    const ordered = saved.deckIds.map(id => byId.get(id));
+    if (ordered.every(Boolean)) { deck = ordered; restored = true; } // orden y cartas coherentes
+  }
+  if (!deck) deck = shuffle(allCards.slice());
 
   const state = {
-    score: 0,
-    matched: 0,
-    mistakes: 0,
-    flips: 0,
+    score: 0, matched: 0, mistakes: 0, flips: 0,
     open: [],            // currently face-up (and not yet matched)
     locked: new Set(),   // matched cardIds (stay open)
     busy: false
   };
+  if (restored) {
+    state.score = saved.score || 0;
+    state.matched = saved.matched || 0;
+    state.mistakes = saved.mistakes || 0;
+    state.flips = saved.flips || 0;
+    state.locked = new Set(saved.locked);
+  }
+
+  const snapshot = () => ({
+    deckIds: deck.map(c => c.cardId), locked: [...state.locked],
+    score: state.score, matched: state.matched, flips: state.flips, mistakes: state.mistakes,
+  });
 
   function paint() {
     mount(rootSel, html`
@@ -76,11 +94,12 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
         state.open = [];
         paint();
         if (state.matched >= pairs.length) finish();
+        else ctx.saveProgress(snapshot()); // estado estable → reanudable
       } else {
         state.busy = true;
         state.score = applyPoints(state.score, activity.scoring, false);
         state.mistakes += 1;
-        setTimeout(() => { state.open = []; state.busy = false; paint(); }, revealMs);
+        setTimeout(() => { state.open = []; state.busy = false; paint(); ctx.saveProgress(snapshot()); }, revealMs);
       }
     }
   }

@@ -28,8 +28,28 @@ function canResumeSolo(activity, opts) {
 export function clearSoloProgress(activityId) { if (activityId) lsDel(progressKey(activityId)); }
 
 export function runFreeformPlayer(rootSel, activity, opts = {}) {
-  const startedAt = clock.now();
+  let startedAt = clock.now();
   let finished = false;
+
+  // Progreso opt-in para players LIBRES (Memoria, etc.): como el shell no posee
+  // el estado del tablero, el core lo aporta. loadProgress() devuelve el snapshot
+  // guardado (o null) al montar y restaura el startedAt; saveProgress(snapshot)
+  // lo guarda tras cada jugada. Mismas garantías que el secuencial: solo modo
+  // individual, invalidado por updatedAt, limpiado al terminar.
+  const resumeOn = canResumeSolo(activity, opts);
+  const pKey = progressKey(activity.id);
+  function loadProgress() {
+    if (!resumeOn) return null;
+    let saved = null;
+    try { saved = JSON.parse(lsGet(pKey, '') || 'null'); } catch { saved = null; }
+    if (!saved || saved.updatedAt !== (activity.updatedAt || '')) return null;
+    if (saved.startedAt) startedAt = saved.startedAt;
+    return saved.snapshot ?? null;
+  }
+  function saveProgress(snapshot) {
+    if (!resumeOn || finished) return;
+    lsSet(pKey, JSON.stringify({ v: 1, updatedAt: activity.updatedAt || '', startedAt, snapshot }));
+  }
 
   // `lead` and `stats` may be strings OR functions of { timeUsed, score,
   // maxScore } — the latter lets a player show the elapsed time without
@@ -46,6 +66,7 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
   } = {}) {
     if (finished) return;
     finished = true;
+    if (resumeOn) lsDel(pKey); // partida terminada → no reanudar
 
     const timeUsed = Math.round((clock.now() - startedAt) / 1000);
     const ctx = { timeUsed, score, maxScore };
@@ -70,7 +91,7 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
     return { timeUsed, score, maxScore };
   }
 
-  return { finish };
+  return { finish, saveProgress, loadProgress };
 }
 
 // SequentialShell: drives the item-by-item loop common to Quiz and Math.

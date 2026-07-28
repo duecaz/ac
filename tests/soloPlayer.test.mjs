@@ -4,7 +4,7 @@
 // maxScore override, and finish with onFinish + result screen.
 // Run: node tests/soloPlayer.test.mjs
 import assert from 'node:assert';
-import { runSequentialPlayer } from '../core/soloPlayer.js';
+import { runSequentialPlayer, runFreeformPlayer } from '../core/soloPlayer.js';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
@@ -164,6 +164,34 @@ try {
     drain();
     assert.strictEqual(seenLive[0], 0, 'Live no reanuda (empieza de 0)');
     ok('runSequentialPlayer: reanuda solo en modo individual; limpia al terminar; Live no reanuda');
+    delete global.localStorage;
+  }
+
+  // ── reanudar FREEFORM (Memoria): saveProgress/loadProgress round-trip ───────
+  {
+    const mem = new Map();
+    global.localStorage = {
+      getItem: (k) => (mem.has(k) ? mem.get(k) : null),
+      setItem: (k, v) => { mem.set(k, String(v)); },
+      removeItem: (k) => { mem.delete(k); },
+    };
+    const act = { id: 'ff1', updatedAt: 'u1', scoring: {} };
+    const ctx = runFreeformPlayer(makeRoot(), act, { mode: 'solo' });
+    assert.strictEqual(ctx.loadProgress(), null, 'sin progreso guardado → null');
+    ctx.saveProgress({ deckIds: ['a', 'b'], score: 3 });
+    // Nueva instancia (F5) recupera el snapshot.
+    const ctx2 = runFreeformPlayer(makeRoot(), act, { mode: 'solo' });
+    assert.deepStrictEqual(ctx2.loadProgress(), { deckIds: ['a', 'b'], score: 3 }, 'reanuda el snapshot guardado');
+    // Terminar limpia el progreso.
+    ctx2.finish({ score: 3, maxScore: 3, skipResultScreen: true });
+    assert.strictEqual(runFreeformPlayer(makeRoot(), act, { mode: 'solo' }).loadProgress(), null, 'tras finish → limpio');
+    // Otra versión de la actividad (updatedAt distinto) NO reanuda.
+    runFreeformPlayer(makeRoot(), act, { mode: 'solo' }).saveProgress({ deckIds: ['a', 'b'], score: 1 });
+    assert.strictEqual(runFreeformPlayer(makeRoot(), { ...act, updatedAt: 'u2' }, { mode: 'solo' }).loadProgress(), null, 'updatedAt distinto → no reanuda');
+    // Live no reanuda.
+    runFreeformPlayer(makeRoot(), { ...act, id: 'ff2' }, { mode: 'live-student' }).saveProgress({ x: 1 });
+    assert.strictEqual(runFreeformPlayer(makeRoot(), { ...act, id: 'ff2' }, { mode: 'live-student' }).loadProgress(), null, 'freeform Live no reanuda');
+    ok('runFreeformPlayer: saveProgress/loadProgress reanuda en solo; limpia al terminar; invalida por updatedAt; Live no');
     delete global.localStorage;
   }
 } finally {
