@@ -52,10 +52,9 @@ const code = (p) => readFileSync(p, 'utf8')
 
 // ── 2. Si la plantilla tiene scorer.js, su player lo usa ─────────────────────
 // Excepciones DOCUMENTADAS (no silenciosas):
-//   ballsort — su player vive dentro de template.js (deuda registrada), y ese
-//              template sí importa el scorer.
 //   wheel / question-live — no puntúan: los puntos los da el docente a mano.
-const NO_PLAYER_SCORING = new Set(['ballsort', 'wheel', 'question-live']);
+// (ballsort salió de la lista en C1: ya tiene player.js sobre el shell y usa su scorer.)
+const NO_PLAYER_SCORING = new Set(['wheel', 'question-live']);
 {
   const offenders = [];
   for (const t of templates) {

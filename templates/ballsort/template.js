@@ -1,14 +1,12 @@
 import { BaseTemplate } from '../base.js';
 import { escapeHtml } from '../../core/html.js';
-import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { mountBallSort } from './play.js';
 import { renderMini } from './render/mini.js';
 import { renderBallsortEditor, ensureContent } from './editor.js';
+import { renderBallsortPlayer } from './player.js';
 import { scoreBallsort } from './scorer.js';
-import { createBoard, randomBoard } from './game/board.js';
+import { randomBoard } from './game/board.js';
 import { formatMs } from './timer.js';
-
-const el = (sel) => (typeof sel === 'string' ? document.querySelector(sel) : sel);
 
 export class BallsortTemplate extends BaseTemplate {
   static meta = {
@@ -95,42 +93,9 @@ export class BallsortTemplate extends BaseTemplate {
     }
   }
 
-  // SOLO / async player. Minimal but functional: solve the board, see your
-  // moves/time. (Saving results / leaderboards comes in the "compatible with the
-  // other modes" phase.)
-  static renderPlayer(rootSel, activity, opts = {}) {
-    ensureContent(activity);
-    const root = el(rootSel);
-    if (!root) return;
-    const item = activity.content.items[0];
-    const mode = item.mode || activity.content.mode || 'moves';
-    // Fresh board each solo attempt if "random"; else the frozen one.
-    const board = activity.content.random
-      ? randomBoard(activity.content.level || 'classic')
-      : (item.board || createBoard(activity.content.level || 'classic'));
-
-    root.innerHTML = `<div class="ww-bs-solo"><div id="bs-solo-host"></div></div>`;
-    const host = root.querySelector('#bs-solo-host');
-    emitGame(GameEvents.QUESTION_SHOWN, { idx: 0, total: 1, item });
-
-    mountBallSort(host, {
-      board, mode,
-      onSolve: (res) => {
-        const r = scoreBallsort({ value: { ...res, solved: true, tubes: res.tubes }, item, activity });
-        const lead = mode === 'time'
-          ? `Tiempo: <b>${formatMs(res.elapsedMs)}</b>`
-          : `Movimientos: <b>${res.moveCount}</b>`;
-        emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: r.points }] });
-        host.insertAdjacentHTML('beforeend', `
-          <div class="text-center mt-3">
-            <h3 class="text-success"><i class="bi bi-trophy-fill"></i> ¡Resuelto!</h3>
-            <p class="lead mb-2">${lead} · Puntos: <b>${r.points}</b></p>
-            <button type="button" class="btn btn-primary" id="bs-again"><i class="bi bi-arrow-repeat"></i> Jugar otra vez</button>
-          </div>`);
-        host.querySelector('#bs-again')?.addEventListener('click', () => this.renderPlayer(rootSel, activity, opts));
-      },
-    });
-  }
+  // SOLO / Tarea: en player.js sobre el shell libre (guardado de resultado +
+  // pantalla de fin estándar garantizados por core/soloPlayer.js).
+  static renderPlayer = renderBallsortPlayer;
 
   // Preview de tarjeta: el tablero congelado — tubos con sus bolas de color, la
   // primera pantalla del juego. Estilos inline (sin depender del CSS scoped).

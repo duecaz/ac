@@ -7,6 +7,11 @@ import { applyMove, canMove, isWin, progress } from './game/rules.js';
 import { renderTubes } from './render/tubes.js';
 import { attachDrag } from './render/drag.js';
 import { createTimer, formatMs } from './timer.js';
+import { startElapsedTicker } from '../../core/deadlineTicker.js';
+import { clock } from '../../core/clock.js';
+import { lsGet, lsSet } from '../../core/ls.js';
+
+const LETTERS_KEY = 'yu_show_letters';   // preferencia de accesibilidad (letras en las bolas)
 
 /**
  * @param {HTMLElement} host
@@ -49,17 +54,19 @@ export function mountBallSort(host, { board, mode = 'moves', onProgress, onSolve
     timer: createTimer(),
     timerHandle: null
   };
-  try { state.showLetters = localStorage.getItem('yu_show_letters') === '1'; } catch {}
+  state.showLetters = lsGet(LETTERS_KEY, '') === '1';
 
   state.timer.start();
-  state.timerHandle = setInterval(() => {
-    // Auto-detiene el intervalo si el nodo salió del DOM (P3-4): el player SOLO
-    // descarta el unmount() de mountBallSort, así que al navegar fuera a mitad de
-    // partida este setInterval de 250 ms seguía vivo para siempre (jank en pizarras
-    // de gama baja). Si timeEl ya no está conectado, la vista se desmontó → cortar.
-    if (timeEl && !timeEl.isConnected) { clearInterval(state.timerHandle); state.timerHandle = null; return; }
-    if (timeEl) timeEl.textContent = formatMs(state.timer.elapsedMs());
-  }, 250);
+  // Latido del marcador de tiempo con el primitivo compartido. El guard `while`
+  // corta solo si el nodo sale del DOM (navegar fuera a mitad de partida) o al
+  // terminar — antes era un setInterval a pelo que quedaba vivo para siempre
+  // (jank en pizarras de gama baja) hasta que se le parchó un auto-corte.
+  const timeTicker = startElapsedTicker({
+    since: clock.now(), everyMs: 250,
+    while: () => !state.finished && (!timeEl || timeEl.isConnected),
+    onTick: () => { if (timeEl) timeEl.textContent = formatMs(state.timer.elapsedMs()); },
+  });
+  state.timerHandle = timeTicker;   // se detiene en finish()/unmount() vía .stop()
 
   function snapshot(solved = false) {
     return {
@@ -134,14 +141,14 @@ export function mountBallSort(host, { board, mode = 'moves', onProgress, onSolve
 
   function toggleLetters() {
     state.showLetters = !state.showLetters;
-    try { localStorage.setItem('yu_show_letters', state.showLetters ? '1' : '0'); } catch {}
+    lsSet(LETTERS_KEY, state.showLetters ? '1' : '0');
     paint();
   }
 
   function finish() {
     if (state.finished) return;
     state.finished = true;
-    if (state.timerHandle) { clearInterval(state.timerHandle); state.timerHandle = null; }
+    if (state.timerHandle) { state.timerHandle.stop(); state.timerHandle = null; }
     state.timer.stop();
     if (winMsg) winMsg.classList.remove('bs-hidden');
     paint();
@@ -165,7 +172,7 @@ export function mountBallSort(host, { board, mode = 'moves', onProgress, onSolve
     getState: () => snapshot(state.finished),
     unmount() {
       detachDrag?.();
-      if (state.timerHandle) clearInterval(state.timerHandle);
+      state.timerHandle?.stop();
       host.replaceChildren();
     }
   };
