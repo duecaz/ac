@@ -7,8 +7,14 @@
 > Si añades una plantilla o un modo nuevo, sigue este contrato y aparecerá en el
 > sitio correcto, con el aspecto correcto, **sin improvisar**.
 
-Fecha: 2026-06-08. Verificado contra `core/modes.js`, `views/modeSetup.js`,
-`views/playerView.js` y los `views/*View.js`.
+Fecha: 2026-07-29 (§9 reescrita como **documento de estudio**: fichas + escenarios
+Gherkin + decisiones de diseño abiertas). Verificado contra `core/modes.js`,
+`core/persistPolicy.js`, `core/deadlineTicker.js`, `kernel/session/engine.js`,
+`kernel/session/memory.js`, `views/modeSetup.js`, `views/playerView.js` y los
+`views/*View.js`.
+
+> **Si vienes a decidir el diseño de un modo, ve directo a la §9.** Ahí está,
+> por modo: qué hace HOY (con el test que lo fija) y qué está sin decidir.
 
 ---
 
@@ -261,28 +267,284 @@ una clase en vivo.
 
 ---
 
-## 9. Reglas de juego de cada modo (esto es ley)
+## 9. Reglas de juego de cada modo — FICHAS + ESCENARIOS (documento de estudio)
 
-Cómo se gana en cada modo. La lógica vive en `kernel/session/engine.js`
-(`vs`/`teams`/`solo`) y `kernel/session/memory.js`, y está cubierta por
-`tests/sessionEngine.test.mjs` / `tests/memory.test.mjs`. **Si cambias una
-regla, cambia el test que la fija — no al revés.**
+> **Para qué es esta sección.** No es solo referencia: es el material para
+> **decidir el diseño** de cada modo. Cada modo tiene (a) una **ficha** con las
+> cinco preguntas que definen un modo, (b) **escenarios Gherkin** del
+> comportamiento REAL de hoy —cada uno con el test que lo fija—, y (c) las
+> **decisiones de diseño abiertas**, planteadas como preguntas con opciones.
+>
+> Regla de oro: **si un escenario de aquí no coincide con el código, uno de los
+> dos está mal — y el test dice cuál.** Si cambias una regla, cambia el
+> escenario Y su test en el mismo commit.
 
-- **VS (duelo)** — es una **carrera en paralelo**: ambos responden la MISMA
-  secuencia, cada uno a su ritmo. **El duelo termina en cuanto el PRIMERO
-  completa todos los ítems** (no se espera al otro; el perdedor no sigue
-  jugando). Gana **quien más puntos tenga** en ese momento (puede haber
-  empate). Como ambos recorren la misma secuencia en orden y los puntos no son
-  negativos por defecto, el que termina primero suele ir igual o por delante.
-- **Equipos (por turnos)** — los equipos se turnan sobre un único flujo de
-  preguntas. Termina al agotar los ítems; gana el equipo con más puntos.
-  Puntuación **automática** (la plantilla puntúa) o **juez docente** (✓/✗).
-- **Memoria (equipos)** — voltear dos cartas: acierto = suma y **repites**
-  turno; fallo = pasa el turno. Termina al emparejar todo; gana más parejas.
-- **Individual** — cursor puntuado sobre los ítems; sin condición de victoria
-  (es práctica personal).
+### 9.0 Las cinco preguntas que definen un modo
 
-> Invariante de VS/Equipos/Solo: una vez `status === 'ended'`, `answer()` /
-> `dispatch()` rechazan más jugadas. Las vistas deben ignorar toques tardíos en
-> la ventana de feedback (ver `onAnswer` en `vsView.js`) para no chocar con esa
-> ley.
+Todo modo debe responderlas explícitamente. Cuando una queda implícita, aparece
+un bug: el VS cortaba al rival porque "quién decide el fin" vivía en una vista
+en vez de declararse; la Tarea guardaba doble porque "qué persiste" era un
+`if` suelto.
+
+| # | Pregunta | Dónde se responde HOY |
+|---|---|---|
+| 1 | **¿Quién puntúa?** | `T.scoreSubmission` (uno por plantilla), vía `autoScore` en el kernel |
+| 2 | **¿Quién decide el fin?** | El kernel, leyendo `meta.play` de la plantilla |
+| 3 | **¿Qué persiste?** | `core/persistPolicy.js` (cuadro único) |
+| 4 | **¿Qué reloj usa?** | `core/soloTimer.js` (duración) · `core/deadlineTicker.js` (hasta un instante / ascendente) |
+| 5 | **¿Hay identidad de alumno?** | Determina si el resultado es atribuible (y por tanto si tiene sentido guardarlo) |
+
+---
+
+### 9.1 Individual (solo)
+
+| | |
+|---|---|
+| **Puntúa** | La plantilla (`T.scoreSubmission`), acumulado por el shell |
+| **Termina** | El shell, al agotar los ítems (o `ctx.finish()` del core) |
+| **Persiste** | `results` — es el único modo con historial propio |
+| **Reloj** | `createCountdown` (`rules.timer`, por ítem) — opcional |
+| **Identidad** | El propio dispositivo (anon id) |
+| **Reanuda F5** | **Sí** (única con reanudación) |
+
+```gherkin
+Escenario: reanudar tras recargar la página
+  Dado que juego una actividad en modo Individual
+  Y que he respondido el ítem 1 de 3 y llevo 1 punto
+  Cuando recargo la página (F5)
+  Entonces continúo en el ítem 2
+  Y conservo el punto que ya tenía
+  # tests/soloPlayer.test.mjs
+
+Escenario: terminar limpia el progreso guardado
+  Dado que he terminado una actividad en Individual
+  Cuando la vuelvo a abrir
+  Entonces empieza desde el ítem 1
+  # tests/soloPlayer.test.mjs
+
+Escenario: el techo y el marcador salen del mismo sitio
+  Dado que una actividad tiene 4 ítems a 1 punto
+  Cuando termino con 3 aciertos
+  Entonces la pantalla dice "3 / 4"
+  Y el resultado registrado dice lo mismo
+  # tests/persistPolicy.test.mjs (defaultMaxScore)
+```
+
+**Decisión abierta** — hoy el orden aleatorio (`rules.randomize`) desactiva la
+reanudación (al rebarajar, retomar sería incoherente). Alternativa: guardar
+también el orden barajado, como ya hace Memoria con su mazo. ¿Merece la pena?
+
+---
+
+### 9.2 VS (duelo, dos en una pantalla)
+
+| | |
+|---|---|
+| **Puntúa** | `T.scoreSubmission` vía `autoScore` del kernel (`mode: 'vs'`) |
+| **Termina** | El kernel, según **`meta.play.vs`** de la plantilla |
+| **Persiste** | **Nada** (por diseño: pizarra compartida sin identidad) |
+| **Reloj** | Ninguno — **no hay temporizador de pregunta en VS** |
+| **Identidad** | Ninguna (dos apodos locales) |
+
+**La política `meta.play.vs` es LA decisión de diseño de este modo:**
+
+| Valor | Cómo acaba | Quién gana | Plantillas hoy |
+|---|---|---|---|
+| `'race'` | El primero que completa TODO cierra el duelo | Quien terminó primero | Operaciones, Sopa, Ordena las Pelotas |
+| `'points'` | Cuando **ambos** terminan | Quien más suma (desempata quien acabó antes) | Quiz, Globos, Emparejar, Tildes, Comas |
+| `'none'` | No se juega en VS | — | Memoria, Ruleta, Crucigrama, Diagrama, Pregunta en vivo |
+
+```gherkin
+Escenario: 'points' — acabar primero NO corta al rival
+  Dado un Quiz en VS (meta.play.vs = 'points')
+  Y que Ana ha respondido las 4 preguntas
+  Cuando Beto responde su pregunta 1
+  Entonces se acepta su respuesta
+  Y el duelo sigue en curso
+  # tests/sessionEngine.test.mjs
+
+Escenario: 'points' — gana quien más suma
+  Dado que ambos han terminado
+  Cuando se calcula el resultado
+  Entonces gana quien tiene más puntos
+  Y si empatan, gana quien terminó antes
+
+Escenario: 'race' — el primero cierra
+  Dado Operaciones en VS (meta.play.vs = 'race')
+  Cuando Ana completa todos los ítems
+  Entonces el duelo termina de inmediato
+  Y Beto ya no puede responder
+  # tests/sessionEngine.test.mjs
+```
+
+**Decisiones abiertas del VS** (pedidas por QA, sin implementar):
+
+1. **¿Simultáneo con temporizador?** Hoy cada lado va a su ritmo sobre la misma
+   secuencia. La propuesta de QA para pizarra: *ambos ven la MISMA pregunta a la
+   vez · temporizador visible · se espera a ambos o al fin del tiempo · tras cada
+   ronda se muestran respuesta correcta, puntos y marcador · el ganador se
+   anuncia solo al final*. Eso es un **tercer valor de `play.vs`**
+   (p.ej. `'rounds'`), no un cambio de los dos existentes.
+2. **¿Debería el VS dejar historial?** Hoy no persiste porque no hay identidad
+   ni vista que lo lea. Si se quiere, el orden correcto es: primero la vista en
+   Reportes, después `results: true` en `core/persistPolicy.js`.
+3. **¿Temporizador por pregunta?** No existe en VS. `rules.timer` solo lo
+   respeta Individual.
+
+---
+
+### 9.3 Equipos (por turnos, una pantalla)
+
+| | |
+|---|---|
+| **Puntúa** | `autoScore` (modo *automático*) o el **docente** (modo *juez*, ✓/✗) |
+| **Termina** | La vista, al agotar las rondas (`session.totalItems`) |
+| **Persiste** | **Nada** (por diseño, igual que VS) |
+| **Reloj** | Ninguno — **no hay tiempo límite por turno** |
+| **Identidad** | Ninguna (equipos con nombre local) |
+
+```gherkin
+Escenario: todos los equipos responden lo mismo
+  Dado una actividad con 5 ítems y 2 equipos
+  Cuando empieza la partida
+  Entonces se juegan 4 rondas (múltiplo del nº de equipos)
+  Y cada equipo responde exactamente 2 veces
+  # tests/sessionEngine.test.mjs — un impar dejaba a un equipo con una de más
+
+Escenario: el turno rota al avanzar
+  Dado que es el turno del Equipo 1
+  Cuando el docente pulsa "Siguiente"
+  Entonces el turno pasa al Equipo 2
+
+Escenario: cualquier contenido se puede jugar en equipos
+  Dado una plantilla SIN autocorrección
+  Cuando el docente elige "Juez docente"
+  Entonces marca ✓/✗ sobre lo que el equipo respondió en voz alta
+  # tests/sessionEngine.test.mjs
+```
+
+**Decisiones abiertas de Equipos** (las tres que reportó QA):
+
+1. **Memoria por equipos — mecánica propia.** Spec propuesta: *acierto = punto y
+   REPITE turno; fallo = las cartas se ocultan y pasa el turno; gana quien más
+   parejas*. Hoy Memoria tiene su propio motor (`kernel/session/memory.js`) que
+   ya repite turno al acertar, **pero suma +1 fijo** ignorando la configuración
+   de puntos. ¿Unificar ese motor con `createTeamsSession`?
+2. **¿Robo (steal)?** Para Quiz: si el equipo del turno falla, ¿el otro puede
+   robar la pregunta por 1 punto? No existe hoy.
+3. **¿Tiempo límite por turno (p.ej. 15 s)?** No existe hoy.
+4. **Sopa y Ordena las Pelotas en equipos.** Declaran `play.teams: 'board'`
+   (tablero compartido), pero el flujo actual es de turnos pregunta→revelar, que
+   no encaja: Sopa reparte el tablero completo en cada turno y Ordena exige
+   resolver el puzle para poder "Revelar". **La política ya está declarada; falta
+   que la vista la respete** (o retirarles el modo hasta entonces).
+
+> Las tres primeras son **la misma máquina** con parámetros distintos
+> (`repiteAlAcertar`, `permiteRobo`, `segundosPorTurno`). Construirla una vez y
+> parametrizarla es preferible a tres mecánicas artesanales.
+
+---
+
+### 9.4 En vivo (host + móviles)
+
+| | |
+|---|---|
+| **Puntúa** | El **host** al liquidar (`settle`) — el alumno NO puntúa |
+| **Termina** | El docente (o el temporizador, según `advanceMode`) |
+| **Persiste** | `live_answers` (una fila por alumno/ítem) + estado de la sala |
+| **Reloj** | `startDeadlineTicker` — cuenta hasta el instante que fija el host |
+| **Identidad** | Apodo por sala (`live_players`, único por sala) |
+
+```gherkin
+Escenario: el alumno no se puede auto-puntuar
+  Dado que respondo desde el móvil
+  Cuando envío mi respuesta
+  Entonces se guarda SIN veredicto
+  Y solo el host le pone puntos al liquidar la pregunta
+  # kernel/session/engine.js (settle) — política anti-trampa
+
+Escenario: una respuesta rezagada no se pierde
+  Dado que mi respuesta llega después de liquidarse su pregunta
+  Cuando el docente cierra la sala
+  Entonces esa respuesta se liquida también
+  # tests/liveLocal.test.mjs
+
+Escenario: 30 alumnos entran a la vez
+  Cuando 30 alumnos se unen simultáneamente
+  Entonces hay 30 filas de jugador y 30 apodos únicos
+  # core/stressTest.js — verificado en la Pi real con 50
+```
+
+**Deuda conocida de Live** (no es decisión de diseño, es arreglo pendiente):
+en **modo carrera** el alumno SÍ puntúa en su propio dispositivo
+(`studentLive.js`), rompiendo la política anti-trampa de arriba. Y los puntos
+manuales de *Pregunta en vivo* (+10/+50) no pasan por la fórmula de puntos.
+
+---
+
+### 9.5 Tarea (asíncrona)
+
+| | |
+|---|---|
+| **Puntúa** | El shell Individual (la plantilla) |
+| **Termina** | El shell, al agotar los ítems |
+| **Persiste** | `assignment_attempts` — y **NUNCA** `results` a la vez |
+| **Reloj** | El del shell Individual (`rules.timer`) |
+| **Identidad** | Apodo + id anónimo del dispositivo |
+| **Reanuda F5** | **No** — recargar debe ser un intento limpio |
+
+```gherkin
+Escenario: una entrega deja UN solo registro
+  Dado que termino una tarea
+  Entonces se registra un intento en assignment_attempts
+  Y NO se escribe ninguna fila en results
+  # tests/persistPolicy.test.mjs — antes se guardaba en los dos sitios
+
+Escenario: recargar no continúa el intento
+  Dado que voy por la mitad de una tarea
+  Cuando recargo la página
+  Entonces empiezo un intento limpio
+
+Escenario: el gateo decide quién puede entregar
+  Dado una tarea cerrada, vencida o sin intentos disponibles
+  Cuando intento abrirla
+  Entonces veo el motivo y no puedo jugar
+  # core/assignmentRules.js (assignmentGate) — puro y testeado
+```
+
+**Decisión abierta** — `max_attempts` nulo se interpreta como **1 intento**
+(no ilimitado). Los dos drivers guardan siempre un número, así que hoy no
+ocurre; queda escrito para que nadie lo "arregle" al revés.
+
+---
+
+### 9.6 Cuadro comparativo (las cinco preguntas, de un vistazo)
+
+| | Individual | VS | Equipos | En vivo | Tarea |
+|---|---|---|---|---|---|
+| **Puntúa** | plantilla | plantilla (kernel) | plantilla o docente | host al liquidar | plantilla |
+| **Fin** | agotar ítems | `meta.play.vs` | agotar rondas | el docente | agotar ítems |
+| **Persiste** | `results` | nada | nada | `live_answers` | `assignment_attempts` |
+| **Reloj** | duración (opcional) | ninguno | ninguno | hasta deadline | duración (opcional) |
+| **Identidad** | dispositivo | ninguna | ninguna | apodo por sala | apodo + dispositivo |
+| **Reanuda F5** | sí | no | no | no (lo marca el host) | no |
+| **`rules.timer`** | ✅ | ❌ | ❌ | ❌ (usa el del host) | ✅ |
+| **`rules.randomize`** | ✅ | ❌ | ❌ | ❌ | ✅ |
+
+> **Lo que este cuadro revela** (material de decisión): `rules.timer` y
+> `rules.randomize` los configura el docente en el editor creyendo que aplican
+> al juego, pero **solo funcionan en Individual y Tarea**. O se respetan en
+> todos los modos, o el editor debe decir en cuáles aplican.
+
+---
+
+### 9.7 Invariantes (esto no se negocia)
+
+- Una vez `status === 'ended'`, `answer()` / `dispatch()` rechazan más jugadas.
+  Las vistas deben ignorar toques tardíos en la ventana de feedback.
+- **Un solo scorer por plantilla**: ningún modo —ni el player Individual—
+  reimplementa el conteo. Vigilado por `tests/scoringSources.test.mjs`.
+- **Ningún modo escribe dos veces**: `results` y `assignment_attempts` son
+  excluyentes. Vigilado por `tests/persistPolicy.test.mjs`.
+- **Ningún `setInterval` a pelo** en un modo: hay tres primitivos de reloj.
+- Un modo desconocido **no guarda nada** (fail-safe).

@@ -49,6 +49,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | **Diagnosticar** una plantilla existente | `node tools/check-template.mjs [name]` (contrato + normas) |
 | Contrato de CSS + **responsive / andamio de regiones** (ww-scaffold/rail/stage) | `docs/estilos-de-actividad.md` (§3b andamio) |
 | Contrato de **modos** (Solo/VS/Equipos/Live/Tarea) y su gateo | `docs/modos-de-juego.md` · `core/modes.js` |
+| **DECIDIR el diseño de un modo** (ficha + escenarios Gherkin + preguntas abiertas) | **`docs/modos-de-juego.md` §9** |
 | **Modelo de contenido** JSON por plantilla | `docs/ESTRUCTURA.md` · modelos en `kernel/content/models.js` |
 | Catálogo: qué hace cada actividad y en qué modos | `docs/panorama-actividades.md` |
 | **Probar** (suites Node + panel admin + headless Playwright) | `docs/testing.md` |

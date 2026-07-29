@@ -16,6 +16,7 @@ Qué leer según lo que necesites. La **fuente de verdad del estado actual** es
 | **Qué hace cada actividad + features + en qué modo se juega** | **`panorama-actividades.md`** |
 | Esquema JSON de una actividad + modelo de contenido por plantilla | `ESTRUCTURA.md` |
 | Contrato de los modos (Solo/VS/Equipos/Live/Tarea) + recetas | `modos-de-juego.md` |
+| **Estudiar/decidir el diseño de cada modo** (fichas, Gherkin, decisiones abiertas) | `modos-de-juego.md` §9 |
 | El modo SOLO (Wordwall) por dentro | `modo-wordwall.md` |
 | **Sistema de plantillas** (crear/validar/jugar · qué módulo hace qué) | **`sistema-de-plantillas.md`** |
 | Contrato de CSS de actividad (relativo + tokens de skin) | `estilos-de-actividad.md` |
