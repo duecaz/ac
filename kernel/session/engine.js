@@ -12,7 +12,7 @@
 //   vs     1-vs-1 duel: two sides race through the SAME item sequence in
 //          PARALLEL, each auto-scored on submit; standings() drives the central
 //          "who's winning" animation. Needs a scorer and ≥2 items to be fair.
-//   solo   Single self-paced participant (thin: a scored cursor over the items).
+//   (solo NO vive aquí: el modo Individual es de los shells de core/soloPlayer.js.)
 //
 // Pure: no DOM, no network, JSON-serializable state → a whole session can be
 // simulated and asserted in Node, and rebuilt from a snapshot (opts.state).
@@ -66,7 +66,12 @@ export function createSession(activity, opts = {}) {
     case FORMATS.LIVE:  return createLiveSession(activity, T, opts);
     case FORMATS.TEAMS: return createTeamsSession(activity, T, opts);
     case FORMATS.VS:    return createVsSession(activity, T, opts);
-    case FORMATS.SOLO:  return createSoloSession(activity, T, opts);
+    // SOLO no tiene sesión de kernel A PROPÓSITO (C3): el modo Individual vive
+    // en los shells (core/soloPlayer.js), que son su único dueño — estado,
+    // reanudación F5, techo y guardado. Hubo un createSoloSession aquí que
+    // NADIE llamaba en producción: era una segunda verdad latente y se retiró.
+    // El kernel es para los modos multi-actor (lados, turnos, fases, sala).
+    case FORMATS.SOLO:  throw new Error('El modo Individual no usa sesión de kernel: vive en core/soloPlayer.js');
     default: throw new Error(`Formato de sesión desconocido: ${format}`);
   }
 }
@@ -465,41 +470,3 @@ function createVsSession(activity, T, opts) {
   };
 }
 
-// ───────────────────────────── SOLO ─────────────────────────────
-// Thin single-participant tracker: a scored cursor over the items. Useful as a
-// uniform wrapper for Solo/Tarea attempts on top of the per-template player.
-function createSoloSession(activity, T, opts) {
-  const items = sessionItems(activity);
-  const total = items.length;
-  const canAuto = typeof T.scoreSubmission === 'function';
-
-  const state = opts.state ? { ...opts.state } : {
-    format: FORMATS.SOLO,
-    // A 0-item activity is done before it starts: answer() can never run, so
-    // without this the status would stay 'running' forever (result().done=true).
-    status: total ? 'running' : 'ended',
-    score: 0, cursor: 0, correct: 0, answers: [],
-  };
-
-  function answer(value, msTaken = 0) {
-    if (state.cursor >= total) throw new Error('La actividad ya terminó');
-    const item = items[state.cursor];
-    const r = canAuto
-      ? autoScore(T, { value, item, msTaken, activity, mode: 'solo' })
-      : { correct: false, points: 0 };
-    state.answers.push({ index: state.cursor, value, correct: r.correct, points: r.points });
-    state.score += r.points;
-    if (r.correct) state.correct += 1;
-    state.cursor += 1;
-    if (state.cursor >= total) state.status = 'ended';
-    return { correct: r.correct, points: r.points, cursor: state.cursor, done: state.cursor >= total };
-  }
-
-  const result = () => ({ score: state.score, correct: state.correct, total, done: state.cursor >= total });
-
-  return {
-    state, answer, result,
-    get status() { return state.status; },
-    get totalItems() { return total; },
-  };
-}

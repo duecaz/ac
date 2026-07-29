@@ -335,12 +335,12 @@ const quizActivity = {
 
 // ───────────────────────── Robustness guards (bug-hunt fixes) ───────────────
 {
-  // Empty-activity SOLO must report 'ended', not hang in 'running'.
+  // C3: el modo Individual NO tiene sesión de kernel (vive en core/soloPlayer.js,
+  // su único dueño). El createSoloSession que había aquí era código muerto — una
+  // segunda verdad latente — y se retiró; pedirlo debe fallar alto y claro.
   const emptyAct = { id: 'empty', template: 'quiz_sess', scoring: { pointsPerCorrect: 1 }, content: { items: [] } };
-  const solo = createSession(emptyAct, { format: FORMATS.SOLO });
-  assert.strictEqual(solo.status, 'ended', 'SOLO con 0 ítems termina de inmediato');
-  assert.strictEqual(solo.result().done, true, 'result().done coherente con status');
-  ok('solo: actividad vacía → status "ended" (no se queda en running)');
+  assert.throws(() => createSession(emptyAct, { format: FORMATS.SOLO }), /soloPlayer/, 'FORMATS.SOLO → error que apunta al dueño real');
+  ok('solo: sin sesión de kernel (el dueño es core/soloPlayer.js) — pedirla falla claro');
 
   // award() rejects non-numeric deltas instead of poisoning the score with NaN.
   const t = createSession(quizActivity, { format: FORMATS.TEAMS, teams: ['Rojo', 'Azul'] });
