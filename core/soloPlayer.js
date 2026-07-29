@@ -64,6 +64,8 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
     icon = undefined,
     iconColor = undefined,
     skipResultScreen = false,
+    after = '',        // HTML extra BAJO la pantalla estándar (p.ej. revisión de errores)
+    answers = undefined, // detalle por ítem → llega a opts.onFinish (analítica de Tarea)
   } = {}) {
     if (finished) return;
     finished = true;
@@ -83,10 +85,11 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
     });
 
     if (!skipResultScreen) {
-      mount(rootSel, resultScreenHtml({ icon, iconColor, title, lead: leadStr, stats: statsStr, score, maxScore }));
+      mount(rootSel, resultScreenHtml({ icon, iconColor, title, lead: leadStr, stats: statsStr, score, maxScore })
+        + (typeof after === 'function' ? after(ctx) : after));
     }
 
-    if (opts.onFinish) opts.onFinish({ score, maxScore, timeUsed });
+    if (opts.onFinish) opts.onFinish({ score, maxScore, timeUsed, ...(answers !== undefined ? { answers } : {}) });
     // Return the computed values so players with their own end UI (e.g. Crossword's
     // celebration overlay, skipResultScreen) can show the elapsed time.
     return { timeUsed, score, maxScore };

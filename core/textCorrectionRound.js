@@ -10,10 +10,8 @@
 // index of the char AFTER which the comma goes (matches the answer-key `pos`).
 import { html, escapeHtml, mount } from './html.js';
 import { isVowel, applyTilde, scoreMarksPerHit } from './textMarks.js';
-import { trySaveResult } from './results.js';
-import { resultScreenHtml } from './resultScreen.js';
 import { GameEvents, emitGame } from './gameEvents.js';
-import { clock } from './clock.js';
+import { runFreeformPlayer } from './soloPlayer.js';
 import { mountTcDraw } from './textCorrectionDraw.js';
 import { observeResize } from './observeResize.js';
 import { heatClass } from './itemStats.js';
@@ -183,8 +181,12 @@ export function renderTextCorrectionHost(root, { phase, item, kind = 'tilde' } =
 
 // Full SOLO runner shared by Tildes and Comas: paginate passages one per
 // screen, tap to mark, "Listo" reveals the correct/wrong/missed marks, then
-// advance. Final summary + saveResult. Puntúa POR ACIERTOS (nº de marcas buenas),
-// no todo-o-nada por frase.
+// advance. Puntúa NETO por marca (scoreMarksPerHit, la fuente única).
+//
+// C2 de la consolidación: corre sobre el SHELL libre (core/soloPlayer.js) — el
+// shell pone timeUsed, la pantalla estándar (+ apéndice de revisión), el guardado
+// (trySaveResult según persistPolicy) y la REANUDACIÓN F5, que este runner no
+// tenía cuando era el "3er shell" con su copia manual de todo eso.
 export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, title } = {}) {
   const passages = (activity.content?.passages || []).filter(p => p.text);
   if (!passages.length) {
@@ -192,15 +194,32 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     return;
   }
   const ppc = activity.scoring?.pointsPerCorrect || 1;
-  // Puntuación POR ACIERTOS (no todo-o-nada por frase): cada marca correcta suma
-  // ppc; las marcas de MÁS NO restan (mismo criterio que scoreMarksPerHit en vivo:
-  // "por palabra buena"), solo cuentan como error en la corrección. maxScore =
-  // total de marcas de la actividad (nº de tildes/comas a colocar).
+  // maxScore = total de marcas de la actividad (nº de tildes/comas a colocar).
   const totalMarks = passages.reduce((n, p) => n + (p.marks || []).filter(m => m.kind === kind).length, 0);
   const maxScore = activity.scoring?.maxScore || totalMarks * ppc || passages.length * ppc;
-  const startedAt = clock.now();
+
+  const ctx = runFreeformPlayer(rootSel, activity, opts);
   let idx = 0, score = 0, hits = 0, misses = 0, over = 0;
   const passageResults = [];
+
+  // Reanudar (F5): el snapshot guarda contadores + el detalle por frase en forma
+  // serializable; `got`/`want` (Sets para la corrección visual) se reconstruyen.
+  const wantOf = (p) => new Set((p.marks || []).filter(m => m.kind === kind).map(m => m.pos));
+  const saved = ctx.loadProgress();
+  if (saved && Number.isInteger(saved.idx) && saved.idx > 0 && saved.idx < passages.length
+      && Array.isArray(saved.results)) {
+    idx = saved.idx; score = saved.score || 0;
+    hits = saved.hits || 0; misses = saved.misses || 0; over = saved.over || 0;
+    for (const r of saved.results) {
+      const p = passages[r.i];
+      if (!p) continue;
+      passageResults.push({ p, got: new Set(r.got), want: wantOf(p), hits: r.hits, misses: r.misses, over: r.over, total: r.total, correct: r.correct, points: r.points });
+    }
+  }
+  const snapshot = () => ({
+    idx, score, hits, misses, over,
+    results: passageResults.map((r, i) => ({ i, got: [...r.got], hits: r.hits, misses: r.misses, over: r.over, total: r.total, correct: r.correct, points: r.points })),
+  });
 
   const shell = (bodyHtml) => mount(rootSel, html`
     <div class="tc-solo">
@@ -216,10 +235,9 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
 
   function grade(value) {
     const p = passages[idx];
-    // MISMO scorer que VS/Equipos/Live/Tarea (fuente única de la regla "por palabra
-    // buena"): no reimplementamos el conteo aquí. `want/got` solo alimentan la
-    // corrección visual y la analítica por frase.
-    const want = new Set((p.marks || []).filter(m => m.kind === kind).map(m => m.pos));
+    // MISMO scorer que VS/Equipos/Live/Tarea (fuente única): no reimplementamos
+    // el conteo aquí. `want/got` solo alimentan la corrección visual y la analítica.
+    const want = wantOf(p);
     const got = new Set((value || []).map(Number));
     const r = scoreMarksPerHit(value, p, [kind], activity);
     const miss = r.total - r.hits;
@@ -257,27 +275,30 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     document.querySelector('.tc-next').addEventListener('click', () => {
       stopFit();
       if (last) finish();
-      else { idx++; ask(); }
+      else { idx++; ctx.saveProgress(snapshot()); ask(); }
     });
   }
 
   function finish() {
-    const timeUsed = Math.round((clock.now() - startedAt) / 1000);
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score }] });
     const wrongResults = passageResults.filter(r => !r.correct);
     const reviewHtml = wrongResults.length ? `
       <div class="tc-review mt-4 text-start" style="max-width:900px;margin:0 auto;padding:0 1rem">
         <h5 class="mb-3"><i class="bi bi-search"></i> Revisión de errores</h5>
-        ${wrongResults.map((r, i) => `
+        ${wrongResults.map((r) => `
           <div class="tc-review-item mb-4">
             <div class="tc-passage tc-review-passage">${passageHtml(r.p.text, kind, { got: r.got, want: r.want })}</div>
           </div>`).join('')}
       </div>` : '';
-    mount(rootSel, resultScreenHtml({ lead: `Aciertos: <b>${hits}</b> / ${totalMarks}`, stats: `${hits} aciertos · ${misses} sin marcar · ${over} de más · ${timeUsed}s`, score, maxScore }) + reviewHtml);
-    trySaveResult(opts, { activityId: activity.id, scoreAuto: score, scoreFinal: score, maxScore, timeUsed });
-    // Detalle por frase para la analítica de tareas (F3): {i, v: posiciones, c, p}.
-    const answers = passageResults.map((r, i) => ({ i, v: [...r.got], c: r.correct, p: r.points || 0 }));
-    if (opts.onFinish) opts.onFinish({ score, startedAt, mistakes: misses, answers });
+    // El shell pinta la pantalla estándar (+ la revisión como apéndice), guarda el
+    // resultado según persistPolicy y entrega `answers` a onFinish (analítica F3).
+    ctx.finish({
+      score, maxScore,
+      lead: `Aciertos: <b>${hits}</b> / ${totalMarks}`,
+      stats: ({ timeUsed }) => `${hits} aciertos · ${misses} sin marcar · ${over} de más · ${timeUsed}s`,
+      after: reviewHtml,
+      answers: passageResults.map((r, i) => ({ i, v: [...r.got], c: r.correct, p: r.points || 0 })),
+    });
   }
 
   ask();
