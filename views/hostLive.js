@@ -1,4 +1,6 @@
 // Host view for live mode. Drives the phase machine over sessions.phase.
+import { clock } from '../core/clock.js';
+import { startElapsedTicker } from '../core/deadlineTicker.js';
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { get, getRemote } from '../core/storage.js';
@@ -179,7 +181,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
   function paintLobby(phaseChanged = true) {
     if (phaseChanged) emitGame(GameEvents.LOBBY_START, { sessionId });
     const isQL = activity.template === 'question-live' || activity.template === 'wheel';
-    const now = Date.now();
+    const now = clock.now();
     mount(rootSel, html`
       <div class="text-center py-3">
         <div class="d-flex justify-content-end mb-2">${fullscreenButtonHtml()}</div>
@@ -239,7 +241,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
       } else if (liveMode === 'race') {
         await setSessionState(sessionId, { status: 'running', phase: 'race', current_item: 0, started_at: new Date().toISOString(), deadline: null });
       } else {
-        const deadline = new Date(Date.now() + timerSec * 1000).toISOString();
+        const deadline = new Date(clock.now() + timerSec * 1000).toISOString();
         await setSessionState(sessionId, { status: 'running', phase: 'question', current_item: 0, started_at: new Date().toISOString(), deadline });
       }
     });
@@ -264,7 +266,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     answers = await listAnswers(sessionId, idx);
     const total = players.length;
     const answered = answers.length;
-    const deadline = session.deadline ? new Date(session.deadline).getTime() : Date.now() + timerSec * 1000;
+    const deadline = session.deadline ? new Date(session.deadline).getTime() : clock.now() + timerSec * 1000;
     let payload;
     try {
       payload = roundPayloadOf(tpl, activity, idx, item);
@@ -300,11 +302,11 @@ async function renderHost(rootSel, code, sessionId, activity) {
     on(rootSel, 'click', '#btn-pause', async () => {
       if (paused) {
         // Resume: extend deadline by the pauseRemainMs we saved.
-        const newDeadline = new Date(Date.now() + pauseRemainMs).toISOString();
+        const newDeadline = new Date(clock.now() + pauseRemainMs).toISOString();
         await setSessionState(sessionId, { deadline: newDeadline });
         paused = false;
       } else {
-        pauseRemainMs = Math.max(0, deadline - Date.now());
+        pauseRemainMs = Math.max(0, deadline - clock.now());
         await setSessionState(sessionId, { deadline: null });
         paused = true;
       }
@@ -315,7 +317,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
       const isLast = idx + 1 >= items.length;
       if (isLast) await endSession(sessionId);
       else {
-        const newDeadline = new Date(Date.now() + timerSec * 1000).toISOString();
+        const newDeadline = new Date(clock.now() + timerSec * 1000).toISOString();
         await setSessionState(sessionId, { phase: 'question', current_item: idx + 1, deadline: newDeadline });
       }
     });
@@ -329,8 +331,8 @@ async function renderHost(rootSel, code, sessionId, activity) {
       // drives `answers` doesn't fire — without this the count would freeze and
       // auto-advance-on-all-answered would never trigger. Harmless in blob mode
       // too (covers the occasional coalesced/missed SSE event).
-      if (!pollBusy && Date.now() - lastPoll > 1200) {
-        pollBusy = true; lastPoll = Date.now();
+      if (!pollBusy && clock.now() - lastPoll > 1200) {
+        pollBusy = true; lastPoll = clock.now();
         listAnswers(sessionId, idx).then(a => { answers = a; }).catch(() => {}).finally(() => { pollBusy = false; });
       }
       // If host paused (deadline cleared server-side), freeze the bar.
@@ -342,7 +344,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
         return;
       }
       const liveDeadline = new Date(session.deadline).getTime();
-      const remain = Math.max(0, liveDeadline - Date.now());
+      const remain = Math.max(0, liveDeadline - clock.now());
       const pct = Math.max(0, Math.min(100, 100 * remain / (timerSec * 1000)));
       const t = document.getElementById('time-left');
       const bar = document.getElementById('time-bar');
@@ -443,7 +445,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
       </div>
     `);
     on(rootSel, 'click', '#btn-next', () => {
-      const deadline = new Date(Date.now() + timerSec * 1000).toISOString();
+      const deadline = new Date(clock.now() + timerSec * 1000).toISOString();
       setSessionState(sessionId, { phase: 'question', current_item: idx + 1, deadline });
     });
     on(rootSel, 'click', '#btn-end', () => endSession(sessionId));
@@ -458,7 +460,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
         if (t) t.textContent = `Siguiente pregunta (${secs}s)`;
         if (secs <= 0) {
           clearInterval(tick);
-          const deadline = new Date(Date.now() + timerSec * 1000).toISOString();
+          const deadline = new Date(clock.now() + timerSec * 1000).toISOString();
           setSessionState(sessionId, { phase: 'question', current_item: idx + 1, deadline });
         }
       }, 1000);
@@ -496,7 +498,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     }
     const sorted = Object.values(prog).sort((a, b) => b.items.size - a.items.size);
     const total = items.length;
-    const elapsed = session.started_at ? Math.floor((Date.now() - new Date(session.started_at).getTime()) / 1000) : 0;
+    const elapsed = session.started_at ? Math.floor((clock.now() - new Date(session.started_at).getTime()) / 1000) : 0;
     const mins = Math.floor(elapsed / 60);
     const secs = elapsed % 60;
 
@@ -531,14 +533,13 @@ async function renderHost(rootSel, code, sessionId, activity) {
     attachFullscreenButton(rootSel);
 
     if (phaseChanged) {
-      const timerTick = ctx.setInterval(() => {
-        if (session.phase !== 'race') { clearInterval(timerTick); return; }
-        const el = document.getElementById('race-timer');
-        if (!el) { clearInterval(timerTick); return; }
-        const e = session.started_at ? Math.floor((Date.now() - new Date(session.started_at).getTime()) / 1000) : 0;
-        const m = Math.floor(e / 60), s = e % 60;
-        el.textContent = `${m}:${String(s).padStart(2,'0')}`;
-      }, 1000);
+      // Cronómetro ascendente compartido (core/deadlineTicker.js): mismo reloj
+      // que el tablero, con clock.now() y auto-parada al cambiar de fase.
+      startElapsedTicker({
+        since: session.started_at, setIntervalFn: ctx.setInterval,
+        while: () => session.phase === 'race' && !!document.getElementById('race-timer'),
+        onTick: ({ label }) => { const el = document.getElementById('race-timer'); if (el) el.textContent = label; },
+      });
       // Polling fallback: refresh progress every 5 s even if SSE is missed.
       const racePoll = ctx.setInterval(() => {
         if (session.phase !== 'race') { clearInterval(racePoll); return; }
@@ -587,7 +588,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
       return 0;
     });
     const solvedCount = cells.filter(c => c.value?.solved).length;
-    const elapsed = session.started_at ? Math.floor((Date.now() - new Date(session.started_at).getTime()) / 1000) : 0;
+    const elapsed = session.started_at ? Math.floor((clock.now() - new Date(session.started_at).getTime()) / 1000) : 0;
     const mins = Math.floor(elapsed / 60), secs = elapsed % 60;
 
     mount(rootSel, html`
@@ -622,13 +623,13 @@ async function renderHost(rootSel, code, sessionId, activity) {
     }
 
     if (phaseChanged) {
-      const timerTick = ctx.setInterval(() => {
-        if (session.phase !== 'race') { clearInterval(timerTick); return; }
-        const el = document.getElementById('race-timer');
-        if (!el) { clearInterval(timerTick); return; }
-        const e = session.started_at ? Math.floor((Date.now() - new Date(session.started_at).getTime()) / 1000) : 0;
-        el.textContent = `${Math.floor(e/60)}:${String(e%60).padStart(2,'0')}`;
-      }, 1000);
+      // Cronómetro ascendente compartido (core/deadlineTicker.js): mismo reloj
+      // que el tablero, con clock.now() y auto-parada al cambiar de fase.
+      startElapsedTicker({
+        since: session.started_at, setIntervalFn: ctx.setInterval,
+        while: () => session.phase === 'race' && !!document.getElementById('race-timer'),
+        onTick: ({ label }) => { const el = document.getElementById('race-timer'); if (el) el.textContent = label; },
+      });
       // Poll progress every 2 s even if a realtime event is missed.
       const poll = ctx.setInterval(() => {
         if (session.phase !== 'race') { clearInterval(poll); return; }

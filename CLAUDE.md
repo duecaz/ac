@@ -152,6 +152,13 @@ las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecut
   recoloreen — nunca `#hex` a pelo (salvo neutros y estado acierto/error). Contrato
   completo + ejemplares (`math.css`/`quiz.css`) en **`docs/estilos-de-actividad.md`**;
   lo protege el ratchet `tests/styles.test.mjs` (una actividad nueva debe nacer limpia).
+- **Relojes**: hay TRES formas y cada una tiene su primitivo — nunca un `setInterval` a pelo.
+  Duración (temporizador por ítem en Individual) → `createCountdown` (`core/soloTimer.js`);
+  hasta un instante que manda el servidor (pregunta en vivo) → `startDeadlineTicker`;
+  ascendente desde un inicio (carrera, tablero) → `startElapsedTicker` (ambos en
+  `core/deadlineTicker.js`, con `clock.now()` y guard `while` para que un reloj zombi no repinte
+  sobre la fase siguiente). Las vistas de Live ya NO usan `Date.now()` crudo → son testeables con
+  tiempo congelado (`tests/deadlineTicker.test.mjs`).
 - **ResizeObserver en players**: NUNCA `new ResizeObserver(cb)` directo si el callback
   muta layout — usar `observeResize()` (`core/observeResize.js`, rAF-debounced). Un RO
   directo dispara el aviso benigno "ResizeObserver loop…" que el boot-guard de los HTML

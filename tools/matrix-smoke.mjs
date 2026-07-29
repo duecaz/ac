@@ -28,13 +28,18 @@ const PORT = Number(process.env.PORT || 8477);
 const BASE = `http://127.0.0.1:${PORT}`;
 const only = process.argv.slice(2);
 
-// Modos que esta matriz sabe conducir hoy. Live y Tarea quedan FUERA: necesitan
-// sala/asignación (host + alumno en dos contextos) — irán en un segundo runner.
-// No se silencian: se listan como "no cubierto" al final.
+// Modos que esta matriz sabe conducir hoy. `live` cubre el LADO DEL HOST (crear
+// sala + lobby con PIN), que es donde vive la máquina de fases; el lado del alumno
+// necesita un segundo contexto de navegador y queda para un runner aparte, igual
+// que Tarea. No se silencian: se listan como "no cubierto" al final.
 const DRIVERS = {
   solo:  { route: (id) => `#/play/${id}`,  start: '.ww-start-go',   ready: '#ww-player-widget *' },
   vs:    { route: (id) => `#/vs/${id}`,    start: '.ww-mode-start', ready: '.vs-panel, .vs-arena, .vs-board' },
   teams: { route: (id) => `#/teams/${id}`, start: '.ww-mode-start', ready: '.teams-arena, .memo-arena, .teams-card' },
+  // El host navega solo de #/launch/:id a #/host/:code al crear la sala; no hay
+  // botón "empezar" que pulsar hasta que entra un alumno, así que basta con que
+  // el lobby aparezca (es donde monta la vista y arrancan sus relojes).
+  live:  { route: (id) => `#/launch/${id}`, ready: '#btn-start' },
 };
 const MEMORY_TEAMS_ROUTE = (id) => `#/memory/${id}`;
 
@@ -99,7 +104,7 @@ for (const t of seeded) {
   for (const [mode, drv] of Object.entries(DRIVERS)) {
     const supported = mode === 'solo'
       ? (cap?.modes.find(m => m.id === 'solo')?.supported ?? true)
-      : !!cap?.modes.find(m => m.id === mode)?.supported;
+      : !!cap?.modes.find(m => m.id === (mode === 'live' ? 'live' : mode))?.supported;
     if (!supported) { results.push({ t: t.name, label: t.label, mode, status: 'n/a' }); continue; }
 
     bucket = [];
@@ -109,11 +114,13 @@ for (const t of seeded) {
       await page.evaluate(() => { location.hash = '#/mine'; });
       await page.waitForTimeout(120);
       await page.evaluate(h => { location.hash = h; }, route);
-      // 1) La pantalla de arranque (inicio/setup) aparece.
-      await page.waitForSelector(drv.start, { timeout: 9000 });
-      // 2) Empezar → el juego se monta de verdad.
-      await page.click(drv.start);
-      await page.waitForSelector(drv.ready, { timeout: 9000 });
+      if (drv.start) {
+        // 1) La pantalla de arranque (inicio/setup) aparece.
+        await page.waitForSelector(drv.start, { timeout: 9000 });
+        // 2) Empezar → el juego se monta de verdad.
+        await page.click(drv.start);
+      }
+      await page.waitForSelector(drv.ready, { timeout: 12000 });
       await page.waitForTimeout(350);   // deja correr timers/animaciones de entrada
       if (bucket.length) { status = 'error'; detail = bucket[0]; }
     } catch (e) {
@@ -149,5 +156,5 @@ if (seedBad.length) { console.log('\nSIEMBRA FALLIDA:'); seedBad.forEach(s => co
 console.log(`\n✅ ok: ${results.filter(r => r.status === 'ok').length}` +
   ` · ❌ fallos: ${bad.length}` +
   ` · · no aplica: ${results.filter(r => r.status === 'n/a').length}`);
-console.log('NO CUBIERTO por este runner: modo En vivo y modo Tarea (necesitan sala/asignación con dos contextos).');
+console.log('NO CUBIERTO por este runner: el ALUMNO en vivo y el modo Tarea (necesitan un segundo contexto de navegador).');
 bye(bad.length || seedBad.length ? 1 : 0);

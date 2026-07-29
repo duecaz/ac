@@ -1,4 +1,6 @@
 // Student-side live view. Routes: #/join, #/play/:code.
+import { clock } from '../core/clock.js';
+import { startDeadlineTicker } from '../core/deadlineTicker.js';
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { joinSession, getOwnAnswer, subscribeRoom, pingPresence, findRoomByCode, fetchSession, leaderboard, setSessionState, submitProgress, submitRaceAttempt } from '../core/liveTransport.js';
@@ -72,7 +74,7 @@ export async function renderPlay(rootSel, code) {
   let session = null;
   let activity = null;
   let lastQuestionShownAt = 0;
-  let questionTickHandle = null;
+  let questionTicker = null;   // cronómetro de pregunta (core/deadlineTicker.js)
   let lastPhaseKey = '';
   let autoFlushQuestion = null;  // capturar el trazo en curso al avanzar sin "Listo"
   let rescuedIdx = -1;           // ítem cuyo trazo se rescató (su POST puede ir en vuelo)
@@ -336,7 +338,7 @@ export async function renderPlay(rootSel, code) {
     if (own) return paintWaiting('Respuesta enviada. Espera al resto.');
     emitGame(GameEvents.QUESTION_SHOWN, { idx, total: items.length, item });
     const streak = Streaks.get(session.id, player.playerId);
-    lastQuestionShownAt = Date.now();
+    lastQuestionShownAt = clock.now();
     const deadlineMs = session.deadline ? new Date(session.deadline).getTime() : 0;
     // MISMA ventana que el host y que el bonus de velocidad (core/timings.js):
     // antes cada uno tenía su copia y award.js omitía el piso de 5 → el reloj del
@@ -362,7 +364,7 @@ export async function renderPlay(rootSel, code) {
       onSubmit: async (value) => {
         if (sent) return;
         sent = true;
-        const ms = Date.now() - lastQuestionShownAt;
+        const ms = clock.now() - lastQuestionShownAt;
         const p = queuedSubmit(session.id, player.playerId, idx, value, ms);
         rescuedSubmit = p;   // paintRevealOwn puede esperar este POST si hizo falta rescatar
         const r = await p;
@@ -385,19 +387,21 @@ export async function renderPlay(rootSel, code) {
       handle.flush();
     };
 
-    if (questionTickHandle) clearInterval(questionTickHandle);
-    if (deadlineMs) {
-      questionTickHandle = ctx.setInterval(() => {
-        if (session.phase !== 'question') { clearInterval(questionTickHandle); questionTickHandle = null; return; }
-        const remain = Math.max(0, deadlineMs - Date.now());
-        const pct = Math.max(0, Math.min(100, 100 * remain / total));
+    // Cronómetro compartido (core/deadlineTicker.js): mismo reloj que el host,
+    // con clock.now() y auto-parada cuando la fase cambia — antes era un
+    // setInterval propio con clock.now() y limpieza a mano.
+    questionTicker?.stop();
+    questionTicker = startDeadlineTicker({
+      deadline: deadlineMs, totalMs: total,
+      while: () => session.phase === 'question',
+      setIntervalFn: ctx.setInterval,
+      onTick: ({ remainSec, pct }) => {
         const t = document.getElementById('s-time');
         const b = document.getElementById('s-bar');
-        if (t) t.textContent = `${Math.ceil(remain / 1000)}s`;
+        if (t) t.textContent = `${remainSec}s`;
         if (b) b.style.width = pct + '%';
-        if (remain <= 0) { clearInterval(questionTickHandle); questionTickHandle = null; }
-      }, 250);
-    }
+      },
+    });
   }
 
   async function paintRevealOwn() {
@@ -463,7 +467,7 @@ export async function renderPlay(rootSel, code) {
     const idx = raceQueue[0];
     const payload = roundPayloadOf(tpl, activity, idx, allItems[idx]);
     const streak = Streaks.get(session.id, player.playerId);
-    lastQuestionShownAt = Date.now();
+    lastQuestionShownAt = clock.now();
     const total = allItems.length;
     emitGame(GameEvents.QUESTION_SHOWN, { idx, total, item: allItems[idx] });
 
@@ -485,7 +489,7 @@ export async function renderPlay(rootSel, code) {
       onSubmit: (value) => {
         if (sent) return;
         sent = true;
-        const ms = Date.now() - lastQuestionShownAt;
+        const ms = clock.now() - lastQuestionShownAt;
 
         // Score locally (activity_snap contains full answers on PocketBase).
         let ok = false;
@@ -566,13 +570,13 @@ export async function renderPlay(rootSel, code) {
     let lastSent = 0, pendingSnap = null, flushHandle = null, solved = false;
     const SEND_EVERY = 600;   // ms — cap network writes to ~1.7/s per student
     const sendNow = (snap) => {
-      lastSent = Date.now();
+      lastSent = clock.now();
       pendingSnap = null;
       submitProgress(session.id, player.playerId, snap).catch(() => {});
     };
     const onProgress = (snap) => {
       if (solved) return;
-      const now = Date.now();
+      const now = clock.now();
       const wait = SEND_EVERY - (now - lastSent);
       if (wait <= 0) { sendNow(snap); return; }
       pendingSnap = snap;                       // coalesce: keep only the latest
