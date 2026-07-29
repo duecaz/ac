@@ -57,4 +57,5 @@ console.log('\n▶ norms'); await import('./norms.test.mjs');
 console.log('\n▶ skins'); await import('./skins.test.mjs');
 console.log('\n▶ newTemplate'); await import('./newTemplate.test.mjs');
 console.log('\n▶ activityCard'); await import('./activityCard.test.mjs');
+console.log('\n▶ moduleRefs'); await import('./moduleRefs.test.mjs');
 console.log('\n✅ all suites passed');

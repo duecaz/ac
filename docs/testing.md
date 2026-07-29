@@ -112,6 +112,29 @@ PB REAL — caza los bugs de concurrencia que el driver local NO puede reproduci
 `stress_*` desechables y los borra. Mismo motor por CLI: `node tools/stress-live.mjs [N]`.
 Blindado por `tests/stressTest.test.mjs` (PB falso en memoria con índice único).
 
+## 2b. Matriz JUGABLE — plantilla × modo (`tools/matrix-smoke.mjs`)
+
+Las dos redes que impiden que un crash de primera pantalla llegue a la pizarra
+(«Memoria por equipos NO ABRE», encontrado por QA a mano):
+
+| Red | Qué hace | Cuándo corre |
+|---|---|---|
+| **`tests/moduleRefs.test.mjs`** | Mapea TODOS los `export` del repo y marca cualquier fichero que USE uno de esos nombres **sin importarlo**. Caza el `ReferenceError` latente que `node --check` no ve (la sintaxis es válida; el módulo importa bien; solo estalla al ejecutar esa línea). | Siempre, en `node tests/run.mjs` |
+| **`tools/matrix-smoke.mjs`** | Monta CADA plantilla en CADA modo que declara soportar, pulsa Empezar y comprueba que el juego arranca sin errores de consola. Siembra con el `defaultContent()` **de la propia plantilla** → sin fixtures que mantener. | A mano / antes de publicar |
+
+```bash
+node tools/matrix-smoke.mjs              # las 13 × (solo · VS · equipos) — sale 1 si algo falla
+node tools/matrix-smoke.mjs memory quiz  # solo esas plantillas
+```
+
+Ambas están **verificadas contra el bug real**: reintroduciendo el import que
+faltaba en `views/memoryView.js`, el escáner lo señala con archivo:línea y la
+matriz pinta ❌ en *Memoria · equipos* con el mensaje `teamsScoreboardHtml is not
+defined`. Un test que no puede fallar no vale.
+
+**No cubierto todavía por la matriz**: modo **En vivo** y modo **Tarea**
+(necesitan sala/asignación con dos contextos) — irán en un segundo runner.
+
 ## 3. Verificación headless (layout, táctil, visual)
 
 Lo que la suite Node no ve (¿el texto llena el marco?, ¿el trazo marca la
