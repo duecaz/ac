@@ -456,35 +456,48 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
     // Carrera (opción A analítica): a diferencia de submitAnswer, aquí llega TODO
     // intento. El PRIMERO (bien o mal) crea la fila y captura v0/c0 (primer intento)
     // para el análisis de clase, SIN cambiar el juego; los reintentos correctos solo
-    // AVANZAN el progreso (value/correct/points) — v0/c0 son inmutables. Ver
-    // docs/handoff-analitica-items.md.
+    // AVANZAN el progreso (value) — v0/c0 son inmutables. Ver docs/handoff-analitica-items.md.
+    //
+    // ANTI-TRAMPA (C6): el veredicto/los puntos del CLIENTE son solo un hint de
+    // flujo — la fila se guarda SIEMPRE `scored:false, points:0`, como las
+    // preguntas normales. Antes se persistía `scored:!!correct, points` tal cual
+    // los mandaba el móvil: un alumno podía inyectar correct:true/points:9999 y
+    // el settle lo respetaba ("ya puntuada"). Ahora la verdad la pone el HOST:
+    // paintRace re-puntúa los values para el ranking en vivo (correct llega null
+    // vía listAnswers) y endSession → settlePendingInto liquida con la fórmula
+    // real. Mentir en `correct` solo mueve `value` a una respuesta mala → el
+    // settle la puntúa MAL: mentir resta. (c0 queda como veredicto del primer
+    // intento para la analítica de clase — no otorga puntos.)
     async submitRaceAttempt(sessionId, playerId, itemIndex, value, correct, points, msTaken) {
       if (await answersReady()) {
         let row = await getAnswerRow(sessionId, itemIndex, playerId);
         if (!row) {
           const r = await postAnswer({
             session: sessionId, player: playerId, item: Number(itemIndex),
-            value, ms: msTaken ?? 0, scored: !!correct, correct: !!correct, points: correct ? (points ?? 0) : 0,
+            value, ms: msTaken ?? 0, scored: false, correct: !!correct, points: 0,
             v0: value, c0: !!correct,
           });
           if (r.created) return;                 // primer intento creado
           row = await getAnswerRow(sessionId, itemIndex, playerId);   // chocó → re-leer para avanzar
         }
-        if (row && correct && row.correct !== true) {
+        if (row && correct && row.correct !== true && !row.scored) {
           await pbFetch(`/api/collections/${ANS}/records/${row.id}`, {
-            method: 'PATCH', body: JSON.stringify({ value, correct: true, scored: true, points: points ?? 0 }),
+            method: 'PATCH', body: JSON.stringify({ value, ms: msTaken ?? 0, correct: true }),
           });
         }
         return;
       }
-      // Legacy blob: guarda v0/c0 en el propio answer; progreso solo con correcto.
+      // Legacy blob (colección live_answers ausente): mismo principio anti-trampa —
+      // el veredicto del cliente es un HINT (`hint`) para no re-escribir un ítem ya
+      // avanzado; la respuesta queda SIN puntuar (correct:null) y la liquida el
+      // settle del host con la fórmula real.
       const { engine } = await load(sessionId);
       const key = `${itemIndex}:${playerId}`;
       const prev = engine.state.answers[key];
       const v0 = prev && 'v0' in prev ? prev.v0 : value;
       const c0 = prev && 'c0' in prev ? prev.c0 : !!correct;
-      if (!prev || (correct && prev.correct !== true)) {
-        engine.state.answers[key] = { playerId, value, msTaken: msTaken ?? 0, correct: !!correct, points: correct ? (points ?? 0) : (prev?.points ?? 0), v0, c0 };
+      if (!prev || (correct && prev.hint !== true)) {
+        engine.state.answers[key] = { playerId, value, msTaken: msTaken ?? 0, correct: null, points: 0, hint: !!correct, v0, c0 };
         await saveState(sessionId, engine);
       }
     },

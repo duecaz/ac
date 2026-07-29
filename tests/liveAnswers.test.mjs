@@ -55,5 +55,59 @@ const res = (status, obj) => ({ status, ok: status >= 200 && status < 300, text:
   ok('submitProgress: sin fila previa → POST crea (camino feliz)');
 }
 
+// ── C6 ANTI-TRAMPA: la carrera NUNCA persiste el veredicto/puntos del cliente ──
+// Un móvil manipulado puede llamar submitRaceAttempt con correct:true y
+// points:9999. La fila debe guardarse scored:false / points:0 — la verdad la
+// pone el settle del HOST con la fórmula real (mentir solo mueve `value` a una
+// respuesta mala, que el settle puntúa MAL).
+{
+  let postBody = null, patches = 0;
+  global.fetch = async (url, opts = {}) => {
+    const method = opts.method || 'GET';
+    if (method === 'POST' && url.includes('/live_answers/records')) {
+      postBody = JSON.parse(opts.body);
+      return res(200, { id: 'la3' });
+    }
+    if (method === 'PATCH') { patches++; return res(200, {}); }
+    if (url.includes('/live_answers/records') && !url.includes('filter=')) return res(200, { items: [], totalItems: 0 });
+    if (url.includes('/live_answers/records')) return res(200, { items: [] });
+    return res(200, {});
+  };
+  const rt = createPocketbaseRealtime({ userId: 'p3' });
+  await rt.submitRaceAttempt('sess1', 'p3', 0, 'X', true, 9999, 50);   // cliente MIENTE
+  assert.strictEqual(postBody.scored, false, 'la fila queda SIN liquidar (scored:false)');
+  assert.strictEqual(postBody.points, 0, 'los puntos del cliente NO se persisten (0)');
+  assert.strictEqual(postBody.c0, true, 'c0 (analítica del 1er intento) se conserva como hint');
+  assert.strictEqual(patches, 0, 'sin fila previa no hay PATCH');
+  ok('C6: submitRaceAttempt guarda scored:false/points:0 aunque el cliente reclame 9999');
+}
+
+// El reintento correcto AVANZA value pero sigue sin auto-puntuarse; y una fila ya
+// liquidada por el host no se toca.
+{
+  let patchBody = null, patches = 0;
+  let row = { id: 'la4', player: 'p4', item: 0, correct: false, scored: false };
+  global.fetch = async (url, opts = {}) => {
+    const method = opts.method || 'GET';
+    if (method === 'PATCH' && url.includes('/live_answers/records/')) { patches++; patchBody = JSON.parse(opts.body); return res(200, {}); }
+    if (url.includes('/live_answers/records') && !url.includes('filter=')) return res(200, { items: [], totalItems: 0 });
+    if (url.includes('/live_answers/records')) return res(200, { items: [row] });
+    return res(200, {});
+  };
+  const rt = createPocketbaseRealtime({ userId: 'p4' });
+  await rt.submitRaceAttempt('sess1', 'p4', 0, 'bien', true, 500, 80);   // reintento correcto
+  assert.strictEqual(patches, 1, 'el reintento correcto PATCHea la fila');
+  assert.strictEqual(patchBody.value, 'bien', 'avanza el value');
+  assert.strictEqual(patchBody.correct, true, 'marca el hint de avance');
+  assert.strictEqual('points' in patchBody, false, 'pero NO escribe puntos');
+  assert.strictEqual('scored' in patchBody, false, 'ni la marca como liquidada');
+  // Fila ya liquidada por el host → intocable.
+  row = { id: 'la5', player: 'p4', item: 0, correct: false, scored: true };
+  patches = 0;
+  await rt.submitRaceAttempt('sess1', 'p4', 0, 'tarde', true, 500, 80);
+  assert.strictEqual(patches, 0, 'una fila ya liquidada por el host no se re-escribe');
+  ok('C6: el reintento avanza value sin puntos; una fila liquidada es intocable');
+}
+
 delete global.fetch;
 console.log(`\nliveAnswers.test: ${passed} checks passed`);

@@ -127,15 +127,17 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
     },
 
     // Carrera (opción A analítica): captura v0/c0 (primer intento) sin cambiar el
-    // juego; el progreso (correct) solo avanza con un intento correcto.
+    // juego. ANTI-TRAMPA (C6, espejo del adaptador PB): el veredicto del cliente
+    // es solo un HINT de avance — la respuesta queda SIN puntuar (correct:null)
+    // y la liquida el settle del host con la fórmula real.
     async submitRaceAttempt(code, playerId, itemIndex, value, correct, points, msTaken) {
       const { room, engine } = load(code);
       const key = `${Number(itemIndex)}:${playerId}`;
       const prev = engine.state.answers[key];
       const v0 = prev && 'v0' in prev ? prev.v0 : value;
       const c0 = prev && 'c0' in prev ? prev.c0 : !!correct;
-      if (!prev || (correct && prev.correct !== true)) {
-        engine.state.answers[key] = { playerId, value, msTaken: msTaken ?? 0, correct: !!correct, points: correct ? (points ?? 0) : (prev?.points ?? 0), v0, c0 };
+      if (!prev || (correct && prev.hint !== true)) {
+        engine.state.answers[key] = { playerId, value, msTaken: msTaken ?? 0, correct: null, points: 0, hint: !!correct, v0, c0 };
         save(code, room, engine); notify(code, 'answers');
       }
     },
