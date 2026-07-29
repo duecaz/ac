@@ -4,15 +4,7 @@ import { on } from '../../core/events.js';
 import { pickIndex } from './logic.js';
 import { wheelSvg } from './render.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
-
-const SPIN_TURNS = 5;
-const MAX_DUR = 30000;
-
-function clampDur(ms) {
-  const n = Number(ms);
-  if (!Number.isFinite(n) || n <= 0) return 4000;
-  return Math.min(n, MAX_DUR);
-}
+import { spinTarget, normalizeRotation, animateSpin, clampSpinDur } from './spin.js';
 
 // Support both old flat-entries format and new items format.
 function getEntries(activity) {
@@ -26,7 +18,7 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
   const ctx = runFreeformPlayer(rootSel, activity, opts);
   let entries = getEntries(activity);
   if (!entries.length) entries = ['(vacío)'];
-  const dur = clampDur(activity.rules?.spinDurationMs);
+  const dur = clampSpinDur(activity.rules?.spinDurationMs);
   const remove = !!activity.rules?.removeAfterSpin;
   let history = [];
   let rotation = 0;
@@ -68,20 +60,13 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
     const count = entries.length;
     const target = pickIndex(count);
     const winner = entries[target];
-    const arc = 360 / count;
-    const base = Math.ceil((rotation + 1) / 360) * 360;
-    rotation = base + 360 * SPIN_TURNS + (360 - (target * arc + arc / 2)) - 90;
+    rotation = spinTarget(rotation, count, target);
 
-    const svg = rootEl()?.querySelector('svg');
     const btnSpin = rootEl()?.querySelector('#btn-spin');
     const btnEnd = rootEl()?.querySelector('#btn-end');
     if (btnSpin) btnSpin.disabled = true;
     if (btnEnd) btnEnd.disabled = true;
-    if (svg) {
-      svg.style.transition = `transform ${dur}ms cubic-bezier(.17,.67,.21,.99)`;
-      svg.getBoundingClientRect?.();
-      svg.style.transform = `rotate(${rotation}deg)`;
-    }
+    animateSpin(rootEl()?.querySelector('svg'), rotation, dur);
 
     setTimeout(() => {
       spinning = false;
@@ -89,7 +74,7 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
       history.push(winner);
       if (remove) {
         entries = entries.filter((_, i) => i !== target);
-        rotation = ((rotation % 360) + 360) % 360;
+        rotation = normalizeRotation(rotation);
       }
       paint(winner);
     }, dur);

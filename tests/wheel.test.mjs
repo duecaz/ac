@@ -38,4 +38,24 @@ assert.strictEqual(truncLabel('una etiqueta larguísima', 16).length, 16, 'cappe
 assert.ok(truncLabel('una etiqueta larguísima', 16).endsWith('…'), 'ellipsis on truncation');
 ok('truncLabel: ellipsis only when over the limit');
 
+// ── spin.js: geometría del giro compartida por las TRES ruletas (C4) ─────────
+// (wheel solo, question-live "abre cajas" y la ruleta del alumno en vivo).
+const { spinTarget, normalizeRotation, clampSpinDur, SPIN_TURNS, SPIN_DUR_MAX } = await import('../templates/wheel/spin.js');
+{
+  // 4 gajos, caer en el gajo 0 partiendo de 0°: base 360 + 5 vueltas + centro
+  // del gajo bajo la aguja izquierda (360 − 45 − 90).
+  assert.strictEqual(spinTarget(0, 4, 0), 360 + 360 * SPIN_TURNS + (360 - 45) - 90, 'ángulo exacto para el gajo 0');
+  const r1 = spinTarget(0, 4, 2);
+  assert.ok(r1 > 360 * SPIN_TURNS, 'siempre gira hacia delante varias vueltas');
+  assert.ok(spinTarget(r1, 4, 2) > r1, 'el siguiente giro sigue avanzando (nunca retrocede)');
+  // La rotación congelada equivale al mismo ángulo visual.
+  assert.strictEqual(normalizeRotation(r1) , r1 % 360, 'normaliza a [0,360)');
+  assert.strictEqual(normalizeRotation(-90), 270, 'los negativos también');
+  // Duración: default sano, tope, y el valor configurado pasa tal cual.
+  assert.strictEqual(clampSpinDur(undefined) > 0, true, 'default > 0');
+  assert.strictEqual(clampSpinDur(999999), SPIN_DUR_MAX, 'se acota al tope');
+  assert.strictEqual(clampSpinDur(5000), 5000, 'lo configurado se respeta');
+  ok('spin: geometría del giro única (ángulo, avance, normalización, duración)');
+}
+
 console.log(`\nwheel.test: ${passed} checks passed`);

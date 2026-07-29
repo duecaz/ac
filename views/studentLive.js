@@ -18,6 +18,7 @@ import { sessionItems, roundPayloadOf } from '../kernel/session/engine.js';
 import { lsGet, lsSet } from '../core/ls.js';
 import { wheelSvg } from '../templates/wheel/render.js';
 import { pickIndex } from '../templates/wheel/logic.js';
+import { spinTarget, normalizeRotation, animateSpin, SPIN_DUR_PICK } from '../templates/wheel/spin.js';
 import { QL_COLORS } from '../core/questionLive.js';
 import { RACE_FLASH_MS, questionWindowMs } from '../core/timings.js';
 
@@ -300,30 +301,21 @@ export async function renderPlay(rootSel, code) {
   function qlSpin(available, count) {
     if (qlSpinning || count === 0) return;
     qlSpinning = true;
-    const dur = 3500;
+    const dur = SPIN_DUR_PICK;
     const target = pickIndex(count);
     const realIdx = available[target];
-    const arc = 360 / count;
-    const SPIN_TURNS = 5;
-    // Spin forward from the current angle; pointer is on the left (−90°).
-    const base = Math.ceil((qlRotation + 1) / 360) * 360;
-    qlRotation = base + 360 * SPIN_TURNS + (360 - (target * arc + arc / 2)) - 90;
+    qlRotation = spinTarget(qlRotation, count, target);
 
-    const svg = rootEl()?.querySelector('.ql-wheel svg');
     const btn = rootEl()?.querySelector('#ql-spin');
     if (btn) btn.disabled = true;
-    if (svg) {
-      svg.style.transition = `transform ${dur}ms cubic-bezier(.17,.67,.21,.99)`;
-      svg.getBoundingClientRect?.(); // force reflow so the transition fires
-      svg.style.transform = `rotate(${qlRotation}deg)`;
-    }
+    animateSpin(rootEl()?.querySelector('.ql-wheel svg'), qlRotation, dur);
 
     // ctx.setTimeout: si el alumno abandona la vista mientras gira la ruleta, este
     // callback ESCRIBE en el servidor (qlOpenQuestion → setSessionState). Con
     // setTimeout desnudo disparaba tras navegar; ctx lo cancela en disposeAll.
     ctx.setTimeout(async () => {
       qlSpinning = false;
-      qlRotation = ((qlRotation % 360) + 360) % 360;
+      qlRotation = normalizeRotation(qlRotation);
       // Someone may have opened a question while we spun — bail and repaint.
       if (session.ql_open !== null) { lastPhaseKey = ''; paint(); return; }
       await qlOpenQuestion(realIdx);

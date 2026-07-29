@@ -6,11 +6,10 @@ import { on } from '../../core/events.js';
 import { sessionItems } from '../../kernel/session/engine.js';
 import { wheelSvg } from '../wheel/render.js';
 import { pickIndex } from '../wheel/logic.js';
+import { spinTarget, normalizeRotation, animateSpin, SPIN_DUR_PICK } from '../wheel/spin.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 
 const COLORS = ['#e74c3c','#e67e22','#d4ac0d','#27ae60','#16a085','#2980b9','#8e44ad','#c0392b'];
-const SPIN_TURNS = 5;
-const SPIN_DUR = 3500;
 
 function getItems(activity) {
   return sessionItems(activity).map(i =>
@@ -155,24 +154,17 @@ function renderWheel(rootSel, activity, opts = {}) {
       const count = available.length;
       const target = pickIndex(count);
       const realIdx = available[target];
-      const arc = 360 / count;
-      const base = Math.ceil((rotation + 1) / 360) * 360;
-      rotation = base + 360 * SPIN_TURNS + (360 - (target * arc + arc / 2)) - 90;
+      rotation = spinTarget(rotation, count, target);
 
-      const svg = rootEl()?.querySelector('svg');
       const btn = rootEl()?.querySelector('#ab-spin');
       if (btn) btn.disabled = true;
-      if (svg) {
-        svg.style.transition = `transform ${SPIN_DUR}ms cubic-bezier(.17,.67,.21,.99)`;
-        svg.getBoundingClientRect?.();
-        svg.style.transform = `rotate(${rotation}deg)`;
-      }
+      animateSpin(rootEl()?.querySelector('svg'), rotation, SPIN_DUR_PICK);
       setTimeout(() => {
         spinning = false;
-        rotation = ((rotation % 360) + 360) % 360;
+        rotation = normalizeRotation(rotation);
         openIdx = realIdx;
         paint();
-      }, SPIN_DUR);
+      }, SPIN_DUR_PICK);
     });
   }
 
