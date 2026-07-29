@@ -2,6 +2,12 @@
 // Each round loads one activity, runs a VS match (skipping the per-round setup
 // screen since names are collected once at the top), and accumulates scores.
 // After all rounds a combined podium is shown.
+//
+// NO es un modo (decisión C7): no está en MODE_DEFS ni pasa por runMode a
+// propósito — es un ORQUESTADOR de partidas VS ya existentes (usa la rama
+// opts.onFinish de mountVs). Si algún día una "lista" debe poder jugarse en
+// otros modos (equipos/live), ahí sí tocará registrarla como modo; mientras
+// tanto, registrarla solo añadiría gateo y setup que no aplican.
 import { html, escapeHtml, mount } from '../core/html.js';
 import { get, getRemote, save } from '../core/storage.js';
 import { podiumHtml } from '../core/podium.js';

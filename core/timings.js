@@ -8,6 +8,8 @@ export const RACE_FLASH_MS = 350;   // destello corto entre preguntas de carrera
 export const COVER_MS = 1100;       // Memoria: cuánto se ven las dos cartas falladas
 export const WIN_HOLD_MS = 1500;    // VS: la animación celebra al ganador antes del podio
 export const CONFETTI_ENCORE_MS = [900, 1700];  // ráfagas extra de confeti tras el podio
+export const WRONG_FLASH_MS = 380;  // Sopa: destello rojo de una selección fallida
+export const GRADE_HOLD_MS = 1100;  // Emparejar/Diagrama: ver la corrección antes del resultado
 
 // Ventana de una pregunta en vivo, en ms (default 20s, piso 5s). ÚNICA fuente:
 // la usan el deadline del host, la barra de cuenta atrás del alumno y el

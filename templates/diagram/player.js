@@ -4,6 +4,7 @@
 // (x,y) sobre ella. Reutiliza el motor de cuerdas core/connectRope.js.
 import { html, mount, escapeHtml } from '../../core/html.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
+import { GRADE_HOLD_MS } from '../../core/timings.js';
 import { shuffle } from '../../core/roundRender.js';
 import { scoreDiagramSubmission } from './scorer.js';
 import { ROPES, OK_COL, NO_COL, mountRopeLayer, ropeHtml, ghostHtml, dotPos, svgPt } from '../../core/connectRope.js';
@@ -155,7 +156,7 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
       lead:  `${correct} de ${pins.length} correctas`,
       stats: ({ timeUsed }) => `${wrong} error${wrong !== 1 ? 'es' : ''} · ${timeUsed}s`,
       score, maxScore,
-    }), 1100);
+    }), GRADE_HOLD_MS);
   });
 
   // Ajusta la CAJA de la imagen a su tamaño CONTENIDO (preserva aspecto, sin

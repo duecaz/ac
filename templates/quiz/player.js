@@ -53,23 +53,27 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
 
       const t0 = clock.now();
 
+      // Acotado al root del player (C7): '.ww-opt' a documento entero rompería
+      // con dos players montados (p.ej. una miniatura + el juego, o tests).
+      const opts$ = () => document.querySelectorAll(`${rootSel} .ww-opt`);
+
       function revealCorrect() {
         if (item.answer == null) return;
         // answer may be a single value OR an array (multi-correct); highlight
         // every correct option, not just when String(array) accidentally matches.
         const correct = (Array.isArray(item.answer) ? item.answer : [item.answer]).map(String);
-        document.querySelectorAll('.ww-opt').forEach(b => {
+        opts$().forEach(b => {
           if (correct.includes(b.dataset.value)) b.classList.add('btn-success');
         });
       }
 
       startTimer({
         onTick: (remaining) => {
-          const el = document.querySelector('.ww-timer-badge');
+          const el = document.querySelector(`${rootSel} .ww-timer-badge`);
           if (el) el.textContent = `⏱ ${remaining}`;
         },
         onTimeout: () => {
-          document.querySelectorAll('.ww-opt').forEach(b => { b.disabled = true; });
+          opts$().forEach(b => { b.disabled = true; });
           revealCorrect();
           Streaks.bump('solo', activity.id, false);
           emitGame(GameEvents.ANSWER_WRONG, { idx });
@@ -82,7 +86,7 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
         const ms = clock.now() - t0;
         const value = btn.dataset.value;
         const r = scoreQuizSubmission({ value, item, msTaken: ms, activity });
-        document.querySelectorAll('.ww-opt').forEach(b => b.disabled = true);
+        opts$().forEach(b => b.disabled = true);
         btn.classList.add(r.correct ? 'btn-success' : 'btn-danger');
         if (!r.correct) revealCorrect();
         const newStreak = Streaks.bump('solo', activity.id, r.correct === true);

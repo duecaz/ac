@@ -4,6 +4,7 @@
 // La zona de arrastre es TODA la tarjeta (no solo el punto), en cualquier lado.
 import { html, mount, escapeHtml } from '../../core/html.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
+import { GRADE_HOLD_MS } from '../../core/timings.js';
 import { shuffle } from '../../core/roundRender.js';
 import { scoreMatchSubmission } from './scorer.js';
 import { ROPES, OK_COL, NO_COL, mountRopeLayer, ropeHtml, ghostHtml, dotPos, svgPt } from '../../core/connectRope.js';
@@ -205,7 +206,7 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
       lead:  `${correct} de ${raw.length} correctas`,
       stats: ({ timeUsed }) => `${wrong} error${wrong !== 1 ? 'es' : ''} · ${timeUsed}s`,
       score, maxScore,
-    }), 1100);
+    }), GRADE_HOLD_MS);
   });
 
   // ── Maquetación: SIEMPRE dos columnas laterales (preguntas | respuestas) ─────

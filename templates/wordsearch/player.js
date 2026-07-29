@@ -2,6 +2,7 @@
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
+import { WRONG_FLASH_MS } from '../../core/timings.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import * as Streaks from '../../core/streaks.js';
 import { createCountdown } from '../../core/soloTimer.js';
@@ -204,7 +205,7 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
       const el = getCell(r, c);
       if (!el) continue;
       el.classList.add('ws-wrong');
-      setTimeout(() => el.classList.remove('ws-wrong'), 380);
+      setTimeout(() => el.classList.remove('ws-wrong'), WRONG_FLASH_MS);
     }
   }
 
@@ -235,7 +236,6 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
 
     // Update counters
     const found = state.found.size;
-    rootEl()?.querySelector('.ww-ws-count')?.setText?.(`${found}/${total}`);
     const countEl = rootEl()?.querySelector('.ww-ws-count');
     if (countEl) countEl.textContent = `${found}/${total}`;
     const pbar = rootEl()?.querySelector('.ww-ws-pbar');
@@ -372,7 +372,7 @@ export function renderWordsearchRound(root, payload, { onSubmit } = {}) {
       const el = getCell(r, c);
       if (!el) continue;
       el.classList.add('ws-wrong');
-      setTimeout(() => el.classList.remove('ws-wrong'), 380);
+      setTimeout(() => el.classList.remove('ws-wrong'), WRONG_FLASH_MS);
     }
   }
 
