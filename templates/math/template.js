@@ -20,6 +20,8 @@ export class MathTemplate extends BaseTemplate {
     panelFit: 'block',   // el teclado es UN bloque: no se estira en el panel VS
     aspectRatio: '16/10',
     modes: { solo: true, live: true, async: true, practice: true },
+    // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
+    play:            { vs: 'race', teams: 'turns' },
     needsImageUpload: false,
     needsAudioUpload: false,
     defaultRules: () => ({ randomize: true }),

@@ -190,6 +190,38 @@ const quizActivity = {
   ok('vs (carrera): the duel ends the moment the FIRST side finishes; winner = finishedBy');
 }
 
+// ───────── VS: la POLÍTICA la declara la plantilla en meta.play.vs ──────────
+// Antes vsView forzaba raceToFinish:true a las 13 plantillas → en Quiz/Tildes el
+// primero en terminar cortaba al otro y le robaba lo que llevaba hecho (QA).
+{
+  const { registerTemplate: reg, getTemplate: get } = await import('../core/registry.js');
+  const base = get('quiz_sess');
+  if (!get('vs_points')) reg({ ...base, meta: { ...base.meta, name: 'vs_points', play: { vs: 'points', teams: 'turns' } } });
+  if (!get('vs_race'))   reg({ ...base, meta: { ...base.meta, name: 'vs_race',   play: { vs: 'race',   teams: 'turns' } } });
+
+  // 'points': el que acaba primero NO cierra el duelo — el otro sigue jugando.
+  const p = createSession({ ...quizActivity, template: 'vs_points' }, { format: FORMATS.VS, left: 'Ana', right: 'Beto' });
+  p.start();
+  for (const a of ['4', '6', '10', '8']) p.answer('left', a);   // Ana termina las 4
+  let ps = p.standings();
+  assert.strictEqual(ps.race, false, 'la plantilla declara vs:points → sin carrera');
+  assert.strictEqual(p.status, 'running', 'acabar primero NO cierra el duelo en modo puntos');
+  assert.strictEqual(ps.left.done, true, 'Ana ha terminado');
+  assert.doesNotThrow(() => p.answer('right', '4'), 'Beto SIGUE pudiendo responder (era el bug de QA)');
+  for (const a of ['6', '10', '8']) p.answer('right', a);
+  ps = p.standings();
+  assert.strictEqual(ps.finished, true, 'termina cuando AMBOS acaban');
+  assert.strictEqual(ps.finishedBy, 'left', 'se recuerda quién acabó antes (desempate)');
+
+  // 'race': misma actividad, política distinta → el primero cierra.
+  const r = createSession({ ...quizActivity, template: 'vs_race' }, { format: FORMATS.VS, left: 'Ana', right: 'Beto' });
+  r.start();
+  for (const a of ['4', '6', '10', '8']) r.answer('left', a);
+  assert.strictEqual(r.standings().race, true, 'la plantilla declara vs:race');
+  assert.strictEqual(r.status, 'ended', 'en carrera, el primero en acabar cierra el duelo');
+  ok('vs: el final (carrera vs puntos) lo DECLARA la plantilla en meta.play.vs, no la vista');
+}
+
 // ──────────── sessionItems + TEAMS judge over a non-`items` model ────────────
 {
   // textCorrection stores rounds under `passages`, not `items`.

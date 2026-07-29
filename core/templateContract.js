@@ -31,6 +31,21 @@ export function checkTemplateContract(T) {
   if (!String(m.instructions || '').trim()) issues.push('meta.instructions vacío (obligatorio: lo muestra la pantalla de inicio)');
   if (!Number.isInteger(m.templateVersion) || m.templateVersion < 1) issues.push(`meta.templateVersion inválido: ${m.templateVersion}`);
   if (!m.modes || typeof m.modes !== 'object') issues.push('meta.modes ausente');
+  // POLÍTICA DE JUEGO declarada: cómo se comporta la plantilla en cada modo, en
+  // vez de que cada vista lo adivine (vsView forzaba "carrera" a las 13, así que
+  // en Quiz/Tildes el primero en acabar cortaba al otro — bug reportado por QA).
+  //   play.vs    'race'  el primero que termina gana y cierra el duelo
+  //              'points' espera a AMBOS y gana quien más suma
+  //              'none'  la plantilla no se juega en VS
+  //   play.teams 'turns' | 'board' | 'none'
+  const VS_POLICIES = ['race', 'points', 'none'];
+  const TEAMS_POLICIES = ['turns', 'board', 'none'];
+  if (!m.play || typeof m.play !== 'object') {
+    issues.push("meta.play ausente (declara { vs: 'race'|'points'|'none', teams: 'turns'|'board'|'none' })");
+  } else {
+    if (!VS_POLICIES.includes(m.play.vs)) issues.push(`meta.play.vs inválido: ${JSON.stringify(m.play.vs)} (usa ${VS_POLICIES.join(' | ')})`);
+    if (!TEAMS_POLICIES.includes(m.play.teams)) issues.push(`meta.play.teams inválido: ${JSON.stringify(m.play.teams)} (usa ${TEAMS_POLICIES.join(' | ')})`);
+  }
   // Preview de tarjeta obligatorio: cada plantilla declara su `previewHtml(act)`
   // → no hay switch central que olvidar y la miniatura no se desfasa del juego
   // (vive en la propia plantilla). Ver core/activityThumb.js / core/previewKit.js.

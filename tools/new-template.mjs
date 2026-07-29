@@ -117,6 +117,12 @@ export class ${Cls}Template extends BaseTemplate {
     panelFit: 'fill',             // panel VS: 'fill' (llena y escala) | 'block' | 'center'
     aspectRatio: '16/10',         // marco del player: '16/10' | '4/3' | '1/1' | 'auto'
     modes: { solo: true, live: ${wantLive}, async: true, practice: true },
+    // POLÍTICA DE JUEGO (contrato): cómo se comporta en cada modo — la leen el
+    // motor y las vistas, no la adivinan.
+    //   vs:    'points' espera a AMBOS y gana quien más suma (defecto sensato)
+    //          'race'   el primero que termina gana y cierra · 'none' sin VS
+    //   teams: 'turns' por turnos · 'board' tablero compartido · 'none'
+    play: { vs: '${wantVs ? 'points' : 'none'}', teams: '${wantVs ? 'turns' : 'none'}' },
     needsImageUpload: false,      // true si el editor sube imágenes (core/upload.js)
     needsAudioUpload: false,
     defaultRules:   () => ({ timer: 0, randomize: true }),

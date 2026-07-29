@@ -22,6 +22,8 @@ export class TildesTemplate extends BaseTemplate {
     panelFit: 'fill',    // el texto llena el panel y se escala para caber
     aspectRatio: '16/10',
     modes: { solo: true, live: true, async: true, practice: true },
+    // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
+    play:            { vs: 'points', teams: 'turns' },
     needsImageUpload: false,
     needsAudioUpload: false,
     defaultRules: () => ({ randomize: false, allowOverflow: true, showHints: false }),

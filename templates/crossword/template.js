@@ -16,6 +16,8 @@ export class CrosswordTemplate extends BaseTemplate {
     templateVersion: 1,
     instructions:    'Completa el crucigrama: toca una pista, escribe la palabra y resuélvela.',
     modes:           { solo: true, live: false, async: true, practice: true },
+    // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
+    play:            { vs: 'none', teams: 'none' },
     needsImageUpload: false,
     needsAudioUpload: false,
     defaultRules:   () => ({ hintMode: 'none', timer: 0 }),

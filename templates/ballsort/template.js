@@ -21,6 +21,8 @@ export class BallsortTemplate extends BaseTemplate {
     instructions:    'Ordena las bolas: mueve la de arriba de un tubo a otro hasta que cada tubo quede de un solo color.',
     aspectRatio:     '4/3',
     modes:           { solo: true, live: true, async: true, practice: false },
+    // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
+    play:            { vs: 'race', teams: 'board' },
     // LIVE: this template runs as a single shared board where every student
     // solves the SAME puzzle at their own pace and the host watches each board
     // update move-by-move. It rides the existing 'race' phase (lobby/podium

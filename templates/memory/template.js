@@ -19,6 +19,8 @@ export class MemoryTemplate extends BaseTemplate {
     instructions: 'Encuentra las parejas: voltea dos cartas; si coinciden, se quedan descubiertas.',
     aspectRatio: '1/1',
     modes: { solo: true, live: false, async: true, practice: true },
+    // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
+    play:            { vs: 'none', teams: 'turns' },
     needsImageUpload: false,
     needsAudioUpload: false,
     defaultRules: () => ({ revealMs: 900, columns: 4 }),

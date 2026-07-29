@@ -376,10 +376,14 @@ function createVsSession(activity, T, opts) {
   }
 
   const side = (id, name) => ({ id, name, score: 0, cursor: 0, correct: 0, answers: [] });
-  // Modo carrera (opt-in): el duelo termina en cuanto UN lado completa todos los
-  // ítems (gana quien acaba primero). Por defecto sigue el modo "puntos": termina
-  // cuando AMBOS lados acaban y gana quien sumó más. La vista VS activa carrera.
-  const raceToFinish = !!opts.raceToFinish;
+  // Cómo termina el duelo — POLÍTICA DECLARADA por la plantilla en `meta.play.vs`:
+  //   'race'   → carrera: el primero que completa todos los ítems gana y cierra
+  //              (Operaciones: con reintento, terminar = tenerlo todo bien).
+  //   'points' → cada lado va a su ritmo; acaba cuando AMBOS terminan y gana quien
+  //              más sumó (Quiz/Emparejar/Tildes: cortar al otro le robaba lo que
+  //              llevaba hecho — el bug que reportó QA).
+  // `opts.raceToFinish` sigue disponible para forzarlo desde un caller concreto.
+  const raceToFinish = opts.raceToFinish ?? (T?.meta?.play?.vs === 'race');
   const state = opts.state ? { ...opts.state } : {
     format: FORMATS.VS,
     code: opts.code || 'VS1',
@@ -439,6 +443,7 @@ function createVsSession(activity, T, opts) {
       right: { name: R.name, score: R.score, cursor: R.cursor, correct: R.correct, done: R.cursor >= total },
       leader, diff: Math.abs(diff), total, finished: state.status === 'ended',
       finishedBy: state.finishedBy || null,
+      race: raceToFinish,   // la vista decide el podio según la política
     };
   }
 

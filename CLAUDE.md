@@ -85,6 +85,13 @@ las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecut
 - **`meta.instructions` es obligatorio** (frase corta de cómo se juega): lo muestra la pantalla de inicio.
 - **`meta.panelFit`** declara la maquetación del panel VS: `'fill'` (defecto, llena y escala) ·
   `'block'` (bloque único con tope, p.ej. la calculadora) · `'center'`. Ver docs/modos-de-juego.md §5c.
+- **`meta.play` = POLÍTICA DE JUEGO declarada** (obligatoria, la valida el contrato). Cómo se
+  comporta la plantilla en cada modo, para que el motor y las vistas la LEAN en vez de adivinarla:
+  - `play.vs`: `'race'` (el primero que termina gana y cierra: Operaciones/Sopa/Pelotas) ·
+    `'points'` (espera a AMBOS y gana quien más suma: Quiz/Globos/Emparejar/Tildes/Comas) · `'none'`.
+    Antes `views/vsView.js` forzaba carrera a las 13 → en Quiz/Tildes el primero en acabar cortaba
+    al otro y le robaba lo hecho (bug de QA). Ahora lo aplica `createVsSession` desde el meta.
+  - `play.teams`: `'turns'` · `'board'` (tablero compartido) · `'none'`.
 
 ## Chrome del panel Profesor (NO es "el juego")
 - La barra superior y la home "Mis actividades" (`views/home.js` + `teacher.html <nav>`) usan

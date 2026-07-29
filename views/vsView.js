@@ -171,11 +171,11 @@ export function mountVs(host, a, ctx, opts = {}) {
 
   function startMatch(leftName, rightName) {
     const T = getTemplate(a.template);
-    // Carrera: el duelo se CIERRA en cuanto un lado completa todos los ítems y
-    // ese lado gana — el otro deja de poder responder. En plantillas con
-    // reintento (Operaciones) un fallo no avanza, así que "terminar" = todas
-    // bien; en quiz, el primero en contestar todas gana la carrera.
-    const session = createSession(a, { format: FORMATS.VS, left: leftName, right: rightName, raceToFinish: true });
+    // Cómo acaba el duelo lo DECLARA la plantilla en `meta.play.vs` y lo aplica el
+    // motor ('race' | 'points'). Antes esta vista forzaba carrera para las 13, así
+    // que en Quiz/Emparejar/Tildes el primero en terminar cortaba al otro y le
+    // robaba lo que llevaba hecho (bug de QA).
+    const session = createSession(a, { format: FORMATS.VS, left: leftName, right: rightName });
     session.start();
     const flashing = { left: false, right: false };
     let finished = false; // guards finish() against double-fire from pending timers
@@ -404,9 +404,12 @@ export function mountVs(host, a, ctx, opts = {}) {
       if (currentAnim) { currentAnim.destroy(); currentAnim = null; }
       // List-orchestrator mode: delegate result handling to the caller.
       if (opts.onFinish) { opts.onFinish(st); return; }
-      // Carrera: gana quien terminó primero (finishedBy). Si por alguna razón no
-      // hay finisher (estado heredado), cae al criterio de puntos.
-      const winnerSide = st.finishedBy || (st.leader !== 'tie' ? st.leader : null);
+      // Quién gana, según la política declarada por la plantilla:
+      //   carrera → quien terminó primero (con los puntos como respaldo).
+      //   puntos  → quien más sumó; si empatan, desempata quien acabó antes
+      //             (Operaciones: ambos al 100% no debe leerse "empate").
+      const byPoints = st.leader !== 'tie' ? st.leader : null;
+      const winnerSide = st.race ? (st.finishedBy || byPoints) : (byPoints || st.finishedBy);
       const tie = !winnerSide;
       const winner = tie ? null : st[winnerSide];
       // El ganador (quien terminó primero) encabeza el podio; el otro lado después.
