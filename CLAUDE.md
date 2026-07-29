@@ -119,6 +119,15 @@ las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecut
   pizarras A55; nunca añadir bucles rAF continuos en el hilo principal sin gate `ww-lite`.
 - **Filtros PocketBase**: SIEMPRE `pbEscape`/`pbFilterParam` (`core/pbFilter.js`), nunca
   `encodeURIComponent` a pelo (no escapa la comilla simple).
+- **Qué persiste cada modo**: cuadro único en `core/persistPolicy.js` (Individual → `results`;
+  Tarea → `assignment_attempts` y NUNCA `results` a la vez; Live → `live_answers`; VS y Equipos →
+  nada, POR DISEÑO: pizarra compartida sin identidad de alumno y sin vista que lo lea). Lo lee
+  `trySaveResult`; un modo desconocido no guarda (fail-safe). Vigilado por `tests/persistPolicy.test.mjs`.
+  El **techo** (`maxScore`) sale de `defaultMaxScore` (`core/scoring`) y el shell lo ENTREGA en
+  `onFinish` → el "X / max" de la pantalla y el registrado son el mismo número.
+- **Gateo de tareas** (cerrada / vencida / sin intentos): SIEMPRE `assignmentGate`
+  (`core/assignmentRules.js`, puro y testeado). `views/studentTask.js` lo reimplementaba con otra
+  semántica (`max_attempts` nulo = ilimitado vs 1).
 - **Puntos**: convención en `core/scoring/` (basePoints/wrongPoints/useKahoot/awardPoints); Tildes/Comas
   puntúan **NETO por marca** (`scoreMarksPerHit`, `pointsPerCorrect` default 1): puntaje =
   `max(0, aciertos − de más) × ppc` — cada marca buena suma, cada marca de MÁS resta, así "marcar

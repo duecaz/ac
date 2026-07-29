@@ -8,6 +8,8 @@ import { ensureIdentity } from '../core/identity.js';
 import { runPlayer } from '../core/player.js';
 import { packAnswers } from '../core/answerDetail.js';
 import { activityItemCount } from '../core/migrate.js';
+import { assignmentGate } from '../core/assignmentRules.js';
+import { defaultMaxScore } from '../core/scoring/index.js';
 import { lsGet, lsSet } from '../core/ls.js';
 import { clock } from '../core/clock.js';
 
@@ -17,15 +19,19 @@ export async function renderTask(rootSel, code) {
   await ensureIdentity();
   const t = await findAssignmentByCode(code);
   if (!t) { mount(rootSel, html`<div class="alert alert-warning m-3">Tarea no encontrada.</div>`); return; }
-  if (t.status === 'closed') { mount(rootSel, html`<div class="alert alert-secondary m-3">Esta tarea está cerrada.</div>`); return; }
-  if (t.due_at && new Date(t.due_at) < new Date()) {
-    mount(rootSel, html`<div class="alert alert-danger m-3">Esta tarea venció el ${escapeHtml(new Date(t.due_at).toLocaleString())}.</div>`);
-    return;
-  }
-
+  // Quién puede entregar lo decide UN solo sitio: core/assignmentRules.js (puro,
+  // testeado, con reloj inyectable). Esta vista lo reimplementaba a mano y además
+  // discrepaba: trataba `max_attempts` nulo como ILIMITADO mientras el módulo lo
+  // trata como 1 — dos verdades sobre quién puede entregar.
   const taken = await countOwnAttempts(t.id);
-  if (t.max_attempts != null && taken >= t.max_attempts) {
-    mount(rootSel, html`<div class="alert alert-info m-3">Ya usaste tus ${t.max_attempts} intento(s) en esta tarea.</div>`);
+  const gate = assignmentGate(t, taken);
+  if (!gate.allowed) {
+    const msg = {
+      closed:          ['secondary', 'Esta tarea está cerrada.'],
+      pastDue:         ['danger',    `Esta tarea venció el ${escapeHtml(new Date(t.due_at).toLocaleString())}.`],
+      noAttemptsLeft:  ['info',      `Ya usaste tus ${t.max_attempts ?? 1} intento(s) en esta tarea.`],
+    }[gate.reason] || ['warning', 'Esta tarea no está disponible.'];
+    mount(rootSel, html`<div class="alert alert-${msg[0]} m-3">${msg[1]}</div>`);
     return;
   }
 
@@ -92,9 +98,10 @@ export async function renderTask(rootSel, code) {
     // recargar = intento limpio, como dicta assignmentRules).
     mode: 'async-tracked',
     onFinish: (state) => {
-      // Not every template has content.items (tildes/comas/memory/wheel use
-      // other shapes) — use the generic item counter so this never throws.
-      const max = activity.scoring?.maxScore || ((activity.scoring?.pointsPerCorrect || 1) * activityItemCount(activity));
+      // El techo y el tiempo los aporta el SHELL (ambos los calculan ya): así el
+      // "X / max" que ve el alumno y el que se registra son el mismo número.
+      // El respaldo usa la fórmula común (nunca una copia local).
+      const max = state.maxScore ?? defaultMaxScore(activity, activityItemCount(activity));
       const timeUsed = state.timeUsed ?? Math.round((clock.now() - (state.startedAt ?? clock.now())) / 1000);
       // Detalle por ítem para la analítica del docente (F3). Degrada a [] si el
       // player no lo expone (freeform sin detalle) → el informe usa agregados.

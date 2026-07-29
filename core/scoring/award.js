@@ -10,6 +10,15 @@ export function basePoints(item, scoring) {
   return item?.points || scoring?.pointsPerCorrect || 1;
 }
 
+// Techo POR DEFECTO de una actividad cuando la plantilla no deriva uno propio
+// del scorer: el máximo declarado, o "un acierto por ítem". Vive aquí para que
+// numerador y denominador del "X / max" salgan del mismo sitio — antes esta
+// misma fórmula estaba copiada en el shell solo y en la vista de Tarea, y podían
+// dar denominadores distintos para el mismo intento.
+export function defaultMaxScore(activity, itemCount) {
+  return activity?.scoring?.maxScore || ((activity?.scoring?.pointsPerCorrect || 1) * (itemCount || 0));
+}
+
 // Puntos de un fallo: 0 salvo que se configure una penalización (negativa).
 export function wrongPoints(scoring) {
   const ppw = scoring?.pointsPerWrong ?? 0;

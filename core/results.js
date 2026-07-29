@@ -2,6 +2,7 @@
 // RemoteStore) — NOT Supabase directly — so results are captured on any backend
 // (local, supabase, pocketbase) and survive offline. Fail-soft: a backend error
 // never interrupts gameplay.
+import { savesResult } from './persistPolicy.js';
 import { getRemoteStore } from '../adapters/index.js';
 import { clock } from './clock.js';
 import { lsGet, lsSet } from './ls.js';
@@ -60,10 +61,11 @@ export function applyPoints(score, scoring, correct) {
   return correct ? score + ppc : Math.max(0, score + (ppw < 0 ? ppw : 0));
 }
 
-/** Guarda el resultado salvo en modo TAREA (async-tracked), donde el contenedor
- *  de la tarea registra su propio intento. Evita repetir el gateo en cada player. */
+/** Guarda el resultado SI la política del modo lo dice (core/persistPolicy.js:
+ *  el cuadro único de qué persiste cada modo). Evita repetir el gateo en cada
+ *  player y que un modo nuevo herede "guarda" sin haberlo decidido. */
 export function trySaveResult(opts, payload) {
-  if (opts?.mode !== 'async-tracked') saveResult(payload);
+  if (savesResult(opts?.mode)) saveResult(payload);
 }
 
 export async function saveResult(r) {

@@ -14,6 +14,7 @@ import { GameEvents, emitGame } from './gameEvents.js';
 import { shuffle } from './roundRender.js';
 import { createCountdown } from './soloTimer.js';
 import { clock } from './clock.js';
+import { defaultMaxScore } from './scoring/index.js';
 import { lsGet, lsSet, lsDel } from './ls.js';
 
 // Reanudar al recargar (F5) SOLO en modo individual: guarda el avance (idx/score/
@@ -148,7 +149,7 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
 
   const maxScore = () => (callbacks.maxScore
     ? callbacks.maxScore(items, activity)
-    : (activity.scoring?.maxScore || ((activity.scoring?.pointsPerCorrect || 1) * items.length)));
+    : defaultMaxScore(activity, items.length));
 
   let timerHandle = null;
   let recorded = false;   // per-item: answer already taken?
@@ -229,7 +230,10 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
     trySaveResult(opts, { activityId: activity.id, scoreAuto: state.score, scoreFinal: state.score, maxScore: max, timeUsed });
     // Template-level teardown (e.g. reset streaks) runs before the caller's hook.
     callbacks.onFinish?.(state);
-    if (opts.onFinish) opts.onFinish(state);
+    // El caller recibe TAMBIÉN el techo y el tiempo que el shell ya calculó (igual
+    // que el shell libre): así Tarea no tiene que recalcularlos por su cuenta y el
+    // "X / max" que ve el alumno y el que se registra son el MISMO número.
+    if (opts.onFinish) opts.onFinish({ ...state, maxScore: max, timeUsed });
   }
 
   renderItem();
