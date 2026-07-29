@@ -3,6 +3,7 @@
 import { BaseTemplate } from '../base.js';
 import { renderMemoryPlayer } from './player.js';
 import { renderMemoryEditor } from './editor.js';
+import { scoreMemorySubmission } from './scorer.js';
 import { newPair } from '../../core/contentModels/pairs.js';
 import { escapeHtml } from '../../core/html.js';
 import { emptyHtml } from '../../core/previewKit.js';
@@ -37,6 +38,9 @@ export class MemoryTemplate extends BaseTemplate {
   };
   static renderPlayer = renderMemoryPlayer;
   static renderEditor = renderMemoryEditor;
+  // Memoria no tiene renderRound (su modo Equipos usa su propio motor), pero SÍ
+  // declara scorer: es la única fuente de puntos, la use el player o una ronda.
+  static scoreSubmission = scoreMemorySubmission;
   static migrateContent(content) { return content; }
 
   // Preview de tarjeta: snapshot "partida en curso" — un par emparejado (verde),

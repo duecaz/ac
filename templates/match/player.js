@@ -5,6 +5,7 @@
 import { html, mount, escapeHtml } from '../../core/html.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { shuffle } from '../../core/roundRender.js';
+import { scoreMatchSubmission } from './scorer.js';
 import { ROPES, OK_COL, NO_COL, mountRopeLayer, ropeHtml, ghostHtml, dotPos, svgPt } from '../../core/connectRope.js';
 import { observeResize } from '../../core/observeResize.js';
 
@@ -18,9 +19,11 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
     return;
   }
 
-  const ppc      = activity.scoring?.pointsPerCorrect ?? 1;
-  const ppw      = activity.scoring?.pointsPerWrong   ?? 0;
-  const maxScore = activity.scoring?.maxScore || ppc * raw.length;
+  // El techo es, POR DEFINICIÓN, lo que da el propio scorer si aciertas todo —
+  // así no hay una segunda fórmula que pueda desincronizarse.
+  const byId = new Map(raw.map(p => [p.id, p]));
+  const maxScore = activity.scoring?.maxScore
+    || raw.reduce((s, p) => s + scoreMatchSubmission({ value: p.right, item: p, activity }).points, 0);
   const doShuffle = activity.rules?.randomize !== false;
 
   const lefts  = (doShuffle ? shuffle : v => v)(raw.map(p => ({ id: p.id, text: p.left  || '', image: p.leftImage  || p.image || null })));
@@ -176,10 +179,16 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   submitBtn?.addEventListener('click', () => {
     if (state.graded || state.links.size < raw.length) return;
     state.graded = true;
-    let correct = 0;
-    for (const [l, r] of state.links) if (l === r) correct++;
+    // Cada cuerda se puntúa con el MISMO scorer que usan VS y Equipos: el modo
+    // Individual no puede tener su propia aritmética (era la doble contabilidad).
+    let correct = 0, score = 0;
+    for (const [l, r] of state.links) {
+      const res = scoreMatchSubmission({ value: byId.get(r)?.right ?? '', item: byId.get(l), activity });
+      score += res.points;
+      if (res.correct) correct++;
+    }
+    score = Math.max(0, score);
     const wrong = state.links.size - correct;
-    const score = Math.max(0, ppc * correct - ppw * wrong);
     // Pintar cuerdas + tarjetas según corrección.
     root.querySelectorAll('.ww-card').forEach(c => {
       const id = c.dataset.id, side = c.dataset.side;

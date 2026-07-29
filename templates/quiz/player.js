@@ -15,19 +15,14 @@ import { clock } from '../../core/clock.js';
 const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
 
 export async function renderQuizPlayer(rootSel, activity, opts = {}) {
+  // Techo = lo que da el PROPIO scorer si se acierta todo al instante
+  // (msTaken 0 → bonus de velocidad máximo). Derivarlo así evita la copia local
+  // de la fórmula Kahoot que antes vivía aquí: una sola verdad para el
+  // numerador y el denominador del "X / max".
   function maxScore(items) {
-    const scoring = activity.scoring || {};
-    if (scoring.maxScore) return scoring.maxScore;
-    // Kahoot scoring gives base*500 + speedBonus per correct, so the flat
-    // pointsPerCorrect*items max read "7000 / 5". Compute the real ceiling:
-    // every scorable item answered correctly and instantly.
-    if (scoring.mode === 'kahoot') {
-      const speedBonus = activity.live?.speedBonusMax ?? 1000;
-      const ppc = scoring.pointsPerCorrect || 1;
-      return items.reduce((sum, it) =>
-        it.answer != null ? sum + (it.points || ppc) * 500 + speedBonus : sum, 0);
-    }
-    return (scoring.pointsPerCorrect || 1) * items.length;
+    if (activity.scoring?.maxScore) return activity.scoring.maxScore;
+    return items.reduce((sum, it) =>
+      sum + scoreQuizSubmission({ value: it.answer, item: it, msTaken: 0, activity }).points, 0);
   }
 
   runSequentialPlayer(rootSel, activity, opts, {

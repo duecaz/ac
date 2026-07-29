@@ -5,6 +5,7 @@
 import { html, mount, escapeHtml } from '../../core/html.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { shuffle } from '../../core/roundRender.js';
+import { scoreDiagramSubmission } from './scorer.js';
 import { ROPES, OK_COL, NO_COL, mountRopeLayer, ropeHtml, ghostHtml, dotPos, svgPt } from '../../core/connectRope.js';
 import { observeResize } from '../../core/observeResize.js';
 
@@ -16,9 +17,10 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
     return;
   }
 
-  const ppc      = activity.scoring?.pointsPerCorrect ?? 1;
-  const ppw      = activity.scoring?.pointsPerWrong   ?? 0;
-  const maxScore = activity.scoring?.maxScore || ppc * pins.length;
+  // El techo es, POR DEFINICIÓN, lo que da el propio scorer si aciertas todo.
+  const pinById = new Map(pins.map(p => [p.id, p]));
+  const maxScore = activity.scoring?.maxScore
+    || pins.reduce((s, p) => s + scoreDiagramSubmission({ value: p.id, item: p, activity }).points, 0);
   const doShuffle = activity.rules?.randomize !== false;
 
   // Etiquetas repartidas en dos rieles (start/end). Cada una lleva su índice
@@ -129,10 +131,16 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
   submitBtn?.addEventListener('click', () => {
     if (state.graded || state.links.size < pins.length) return;
     state.graded = true;
-    let correct = 0;
-    for (const [l, p] of state.links) if (l === p) correct++;
+    // Cada etiqueta enlazada se puntúa con el MISMO scorer de la plantilla:
+    // el modo Individual no lleva aritmética propia (era doble contabilidad).
+    let correct = 0, score = 0;
+    for (const [l, p] of state.links) {
+      const res = scoreDiagramSubmission({ value: p, item: pinById.get(l), activity });
+      score += res.points;
+      if (res.correct) correct++;
+    }
+    score = Math.max(0, score);
     const wrong = state.links.size - correct;
-    const score = Math.max(0, ppc * correct - ppw * wrong);
     root.querySelectorAll('.dg-label, .dg-pin').forEach(c => {
       const ok = c.classList.contains('dg-label')
         ? state.links.get(c.dataset.id) === c.dataset.id

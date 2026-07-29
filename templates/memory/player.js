@@ -3,7 +3,7 @@
 // ids match, both stay; else they flip back after revealMs.
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { applyPoints } from '../../core/results.js';
+import { scoreMemorySubmission } from './scorer.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { shuffle } from '../../core/roundRender.js';
 
@@ -13,8 +13,13 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
 
   const ctx = runFreeformPlayer(rootSel, activity, opts);
 
-  const ppc = activity.scoring?.pointsPerCorrect || 1;
-  const maxScore = activity.scoring?.maxScore || ppc * pairs.length;
+  // Techo = lo que da el propio scorer si se casan todas las parejas.
+  const byId = new Map(pairs.map(p => [p.id, p]));
+  const maxScore = activity.scoring?.maxScore
+    || pairs.reduce((s, p) => s + scoreMemorySubmission({ value: p.id, item: p, activity }).points, 0);
+  // Suma con piso 0 (un fallo penaliza solo si la actividad configura
+  // pointsPerWrong negativo; el marcador nunca baja de cero).
+  const addScore = (res) => { state.score = Math.max(0, state.score + res.points); };
   const revealMs = activity.rules?.revealMs ?? 900;
   const columns = Math.max(2, Math.min(8, activity.rules?.columns || 4));
 
@@ -27,8 +32,8 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
   const saved = ctx.loadProgress();
   let deck = null, restored = false;
   if (saved && Array.isArray(saved.deckIds) && saved.deckIds.length === allCards.length && Array.isArray(saved.locked)) {
-    const byId = new Map(allCards.map(c => [c.cardId, c]));
-    const ordered = saved.deckIds.map(id => byId.get(id));
+    const cardById = new Map(allCards.map(c => [c.cardId, c]));
+    const ordered = saved.deckIds.map(id => cardById.get(id));
     if (ordered.every(Boolean)) { deck = ordered; restored = true; } // orden y cartas coherentes
   }
   if (!deck) deck = shuffle(allCards.slice());
@@ -90,14 +95,14 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
       if (pa === pb && a !== b) {
         state.locked.add(a); state.locked.add(b);
         state.matched += 1;
-        state.score = applyPoints(state.score, activity.scoring, true);
+        addScore(scoreMemorySubmission({ value: pb, item: byId.get(pa), activity }));   // pa === pb → acierto
         state.open = [];
         paint();
         if (state.matched >= pairs.length) finish();
         else ctx.saveProgress(snapshot()); // estado estable → reanudable
       } else {
         state.busy = true;
-        state.score = applyPoints(state.score, activity.scoring, false);
+        addScore(scoreMemorySubmission({ value: pb, item: byId.get(pa), activity }));   // pa ≠ pb → fallo
         state.mistakes += 1;
         setTimeout(() => { state.open = []; state.busy = false; paint(); ctx.saveProgress(snapshot()); }, revealMs);
       }

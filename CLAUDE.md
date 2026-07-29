@@ -119,8 +119,12 @@ las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecut
   `perfect` = todas y ninguna de más. Así `player.score`, la tabla y el podio muestran el MISMO número.
   **Regla inherente = un solo scorer por plantilla**: TODOS los modos (Solo, Tarea, VS, Equipos, Live
   y cualquier modo futuro) puntúan vía `T.scoreSubmission` (que envuelve `scoreMarksPerHit`); NUNCA
-  se reimplementa el conteo en la vista/runner de un modo. Los PARÁMETROS (`scoring.pointsPerCorrect`)
-  viven en la propia actividad; la LÓGICA vive en la plantilla → imposible que un modo desincronice.
+  se reimplementa el conteo en la vista/runner de un modo **ni en el player Individual**. Los
+  PARÁMETROS (`scoring.pointsPerCorrect`) los lee el SCORER, nunca el player; la LÓGICA vive en la
+  plantilla → imposible que un modo desincronice. El **techo** (`maxScore`) se DERIVA del propio
+  scorer ("lo que daría acertarlo todo"), no de una fórmula paralela. Lo vigila
+  `tests/scoringSources.test.mjs` (4 reglas ejecutables) — antes match/diagram/crossword/memory
+  llevaban aritmética propia en Individual.
   El runner Solo (`runTextCorrectionSolo`) también llama a `scoreMarksPerHit` (no tiene copia propia).
 - **Maquetación del PLAYER: NADA con tamaño fijo** — todo relativo (unidades de
   contenedor `cq*` o `%`, o cálculo JS tipo `fitLayout`/`fitPassage`), para que el

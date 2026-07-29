@@ -2,6 +2,7 @@
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
+import { scoreCrosswordSubmission } from './scorer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { buildGrid } from './generator.js';
 import { observeResize } from '../../core/observeResize.js';
@@ -23,7 +24,6 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
 
   const ctx = runFreeformPlayer(rootSel, activity, opts);
   const totalWords = words.length;
-  const ppc = activity.scoring?.pointsPerCorrect || 1;
 
   // User state: 2D array of typed letters, set of solved word IDs
   const userGrid  = Array.from({ length: rows }, () => Array(cols).fill(''));
@@ -428,10 +428,12 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
 
   function finishGame() {
     stopRo?.();
-    // Score is points, not raw word count: solving every word earns
-    // totalWords·pointsPerCorrect (respects the activity's scoring config).
-    const score = solvedIds.size * ppc;
-    const max = totalWords * ppc;
+    // Puntúa con el MISMO scorer de la plantilla (una llamada por palabra
+    // resuelta): sin aritmética propia en el player. El techo es, por
+    // definición, lo que da ese scorer si se resuelven todas.
+    const pts = (w) => scoreCrosswordSubmission({ value: w.word, item: w, activity }).points;
+    const score = words.filter(w => solvedIds.has(w.id)).reduce((s, w) => s + pts(w), 0);
+    const max = words.reduce((s, w) => s + pts(w), 0);
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score }] });
     // Crossword has its own celebration overlay → skip the generic result screen,
     // but let the shell save the result + fire onFinish and hand back timeUsed.
