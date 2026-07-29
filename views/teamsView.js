@@ -122,6 +122,10 @@ export function mountTeams(host, a, ctx, opts = {}) {
 
   function startGame(names, scoring) {
     const session = createSession(a, { format: FORMATS.TEAMS, teams: names, scoring });
+    // El TOTAL de la partida es el del MOTOR, no el nº bruto de ítems: el motor
+    // recorta a múltiplo del nº de equipos (todos responden lo mismo). Usar el
+    // bruto aquí desincronizaba el rótulo "Pregunta X / N" y el botón final.
+    const roundsTotal = session.totalItems;
     session.dispatch('start');
     let selected = null; // auto-mode: the active team's tapped value (pre-reveal)
 
@@ -143,7 +147,7 @@ export function mountTeams(host, a, ctx, opts = {}) {
               <span class="badge text-bg-${colorOf(active)} fs-6">
                 <i class="bi bi-arrow-right-circle"></i> Turno: ${escapeHtml(active.name)}
               </span>
-              <span class="text-muted ms-2">Pregunta ${idx + 1} / ${total}</span>
+              <span class="text-muted ms-2">Pregunta ${idx + 1} / ${roundsTotal}</span>
             </div>
             <div class="teams-card" id="teams-card">
               ${roundBody(item, payload, phase)}
@@ -208,7 +212,7 @@ export function mountTeams(host, a, ctx, opts = {}) {
     }
 
     function controls(phase) {
-      const last = session.currentItem >= total - 1;
+      const last = session.currentItem >= roundsTotal - 1;
       if (phase === 'question') {
         if (scoring === 'judge') {
           return `
@@ -263,7 +267,7 @@ export function mountTeams(host, a, ctx, opts = {}) {
       });
 
       on(host, 'click', '#teams-next', () => {
-        const last = session.currentItem >= total - 1;
+        const last = session.currentItem >= roundsTotal - 1;
         session.dispatch(last ? 'end' : 'next'); // 'next' rotates the turn
         selected = null;
         if (last) emitGame(GameEvents.PODIUM, { top: session.leaderboard().slice(0, 1).map(t => ({ name: t.name, score: t.score })) });

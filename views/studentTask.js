@@ -85,6 +85,12 @@ export async function renderTask(rootSel, code) {
   if (!tpl) { mount(rootSel, html`<div class="alert alert-danger m-3">Plantilla no soportada: ${escapeHtml(activity.template)}</div>`); return; }
 
   await runPlayer(rootSel, activity, {
+    // 'async-tracked' hace DOS cosas en los shells: (1) results.js NO guarda una
+    // fila `results` extra (el intento va a assignment_attempts vía recordAttempt
+    // de abajo — sin esto cada tarea se guardaba DOBLE); (2) desactiva la
+    // reanudación F5 de soloPlayer (una tarea no debe retomarse a medias:
+    // recargar = intento limpio, como dicta assignmentRules).
+    mode: 'async-tracked',
     onFinish: (state) => {
       // Not every template has content.items (tildes/comas/memory/wheel use
       // other shapes) — use the generic item counter so this never throws.
