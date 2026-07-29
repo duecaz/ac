@@ -20,6 +20,7 @@ import { planTransition, PHASES } from '../../core/livePhases.js';
 import { isAcceptableNickname } from '../../core/nicknameFilter.js';
 import { getTemplate } from '../../core/registry.js';
 import { canAutoScoreRound } from '../../core/templateCapability.js';
+import { basePoints } from '../../core/scoring/index.js';
 
 export const FORMATS = Object.freeze({ SOLO: 'solo', LIVE: 'live', TEAMS: 'teams', VS: 'vs' });
 
@@ -329,7 +330,10 @@ function createTeamsSession(activity, T, opts) {
     const team = activeTeam();
     if (!team) throw new Error('No hay equipo activo');
     const item = items[state.currentItem];
-    const pts = Number.isFinite(points) ? points : (correct ? (item?.points || 1) : 0);
+    // Puntos del juez por la FÓRMULA común (C5): item.points, si no el
+    // pointsPerCorrect de la actividad, si no 1. Antes era `item.points || 1`,
+    // que ignoraba la configuración de puntos — la única fuga en el kernel.
+    const pts = Number.isFinite(points) ? points : (correct ? basePoints(item, activity?.scoring) : 0);
     const key = `${state.currentItem}:${team.id}`;
     const prev = state.answers[key];
     if (prev) team.score -= (prev.points || 0); // undo a previous ruling

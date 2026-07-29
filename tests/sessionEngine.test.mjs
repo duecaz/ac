@@ -107,6 +107,15 @@ const quizActivity = {
   s.award('t1', 5);                           // buzzer-bonus steal to Rojo
   assert.strictEqual(s.state.teams[0].score, 5, 'award() grants raw points');
   ok('teams (judge): teacher rules ✓/✗, re-judge is idempotent, award() works');
+
+  // C5: el juez respeta pointsPerCorrect cuando el ítem no trae puntos propios
+  // (antes era `item.points || 1`, la única fuga de la fórmula en el kernel).
+  const noPts = { ...judgeActivity, scoring: { pointsPerCorrect: 3 },
+    content: { items: judgeActivity.content.items.map(({ points, ...it }) => it) } };
+  const sj = createSession(noPts, { format: FORMATS.TEAMS });
+  sj.dispatch('start');
+  assert.strictEqual(sj.judge({ correct: true }).points, 3, 'judge sin item.points → ppc de la actividad');
+  ok('teams (judge): los puntos salen de basePoints (ppc), no de un 1 a pelo');
 }
 
 // ───────────────────────────── VS — parallel duel ────────────────────────────

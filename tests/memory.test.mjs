@@ -51,4 +51,21 @@ assert.strictEqual(g.leaderboard()[0].name, 'Azul');
 assert.strictEqual(g.leaderboard()[0].score, 2);
 ok('end: clearing the board ends the game; leaderboard ranks teams');
 
+// ── C5: cada pareja vale lo de la FÓRMULA común, no +1 fijo ──────────────────
+// La misma actividad debe dar los MISMOS números en solo y en equipos: si el
+// docente configura pointsPerCorrect=5, una pareja vale 5 también aquí.
+{
+  const act5 = { content: { pairs: [
+    { id: 'p1', left: 'a', right: 'A' },
+    { id: 'p2', left: 'b', right: 'B', points: 9 },   // puntos propios del par
+  ] }, scoring: { pointsPerCorrect: 5 } };
+  const g5 = createMemoryGame(act5, { teams: ['Rojo', 'Azul'], order: [0, 1, 2, 3] });
+  const ids = g5.state.cards.map(c => c.id);
+  g5.flip(ids[0]); g5.flip(ids[1]);      // p1 → +ppc (5)
+  assert.strictEqual(g5.leaderboard()[0].score, 5, 'pareja sin puntos propios → pointsPerCorrect');
+  g5.flip(ids[2]); g5.flip(ids[3]);      // p2 → +points del par (9)
+  assert.strictEqual(g5.leaderboard()[0].score, 14, 'pareja con points propios → esos puntos');
+  ok('C5: la memoria por equipos puntúa con basePoints (ppc/points), no +1 fijo');
+}
+
 console.log(`\nmemory.test: ${passed} checks passed`);

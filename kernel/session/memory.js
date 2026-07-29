@@ -9,6 +9,7 @@
 
 
 import { rid } from '../../core/ids.js';
+import { basePoints } from '../../core/scoring/index.js';
 export function createMemoryGame(activity, opts = {}) {
   const pairs = (activity?.content?.pairs || []).filter(p => p?.left && p?.right);
 
@@ -62,7 +63,12 @@ export function createMemoryGame(activity, opts = {}) {
     if (a.pairId === b.pairId) {
       a.matched = b.matched = true;
       const t = activeTeam();
-      if (t) t.score += 1;
+      // Cada pareja vale lo de la FÓRMULA común (C5): pair.points, si no el
+      // pointsPerCorrect de la actividad, si no 1. Antes sumaba +1 FIJO — la
+      // memoria por equipos era la única suma del repo fuera de core/scoring, y
+      // sus números podían no coincidir con los de la MISMA actividad en solo.
+      const pair = pairs.find(pp => pp.id === a.pairId);
+      if (t) t.score += basePoints(pair, activity?.scoring);
       state.flipped = [];
       if (remaining() === 0) state.status = 'ended';
       // Match → same team plays again.
