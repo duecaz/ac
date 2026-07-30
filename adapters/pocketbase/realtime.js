@@ -448,6 +448,29 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       return await fullActivity(sessionId, rec);
     },
 
+    // ── INFORMES (ley de datos §21) ──────────────────────────────────────────
+    // `views/reports.js` consultaba la colección por su cuenta (y además rompía
+    // el seam local|pb: en dev sin PocketBase no había informes). Ahora se lo
+    // PIDE al dueño. Devuelve las filas crudas (id, code, activity, state) y el
+    // informe se queda con el parseo, que es cosa suya.
+    async listSessions({ limit = 500 } = {}) {
+      // `sort=-created` puede no existir según cómo se creara la colección: si
+      // falla, se reintenta sin orden en vez de dejar la vista vacía.
+      try {
+        const res = await pbFetch(`/api/collections/${COLL}/records?perPage=${Number(limit) || 500}&sort=-created`);
+        return res?.items || [];
+      } catch {
+        const res = await pbFetch(`/api/collections/${COLL}/records?perPage=${Number(limit) || 500}`);
+        return res?.items || [];
+      }
+    },
+
+    /** Fila cruda de UNA sala (informe de sesión). null si no existe. */
+    async fetchSessionRecord(sessionId) {
+      try { return await pbFetch(`/api/collections/${COLL}/records/${sessionId}`); }
+      catch (e) { if (e?.status === 404) return null; throw e; }
+    },
+
     // Respaldo del informe post-partida (A1): el blob `state` entero, para
     // rescatar respuestas legadas que no llegaron a live_answers. Solo lo
     // consume el HOST (rowsFromLiveState); existe para que ninguna vista tenga

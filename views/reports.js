@@ -5,26 +5,15 @@ import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { list as listActivities } from '../core/storage.js';
 import { activityItemCount } from '../core/migrate.js';
-import { PB_URL } from '../pocketbase.config.js';
-import { signedFetch } from '../core/pbHttp.js';
+import { listSessions, fetchSessionRecord } from '../core/liveTransport.js';
 import { rowsFromLiveState } from '../core/answerRows.js';
 import { itemStatsHtml } from './itemStatsView.js';
 
-async function pbFetch(path) {
-  // Firma con el token del profe (core/pbHttp.js) → los reportes se leen
-  // autenticados, habilitando reglas listRule host-only en el servidor.
-  const r = await signedFetch(`${PB_URL}${path}`);
-  if (r.status === 204) return null;
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(data?.message || `Error ${r.status}`);
-  return data;
-}
-
-// Fetch all live_sessions records (up to 500 — sufficient for classroom use).
-async function fetchAllSessions() {
-  const data = await pbFetch('/api/collections/live_sessions/records?perPage=500&sort=-created');
-  return data?.items || [];
-}
+// Las filas de salas las sirve el DUEÑO de la colección (ley de datos §21):
+// adapters/*/realtime.js vía core/liveTransport.js. Esta vista tenía su propio
+// `fetch` firmado a `live_sessions`, lo que además rompía el seam local|pb (en
+// dev, sin PocketBase, no había informes).
+const fetchAllSessions = () => listSessions({ limit: 500 });
 
 // Parse players and answers from a live_sessions state blob.
 function parseState(rec) {
@@ -105,7 +94,7 @@ export async function renderActivityReport(rootSel, activityId) {
 export async function renderSessionReport(rootSel, sessionId) {
   let sess;
   try {
-    const rec = await pbFetch(`/api/collections/live_sessions/records/${sessionId}`);
+    const rec = await fetchSessionRecord(sessionId);
     if (!rec) { mount(rootSel, html`<div class="alert alert-warning">Sesión no encontrada.</div>`); return; }
     sess = parseState(rec);
   } catch {

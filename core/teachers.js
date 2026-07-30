@@ -35,16 +35,13 @@ export async function setTeacherRole(id, role) {
   return { ok: true };
 }
 
-// Cuenta actividades por dueño (owner) — como admin, la listRule permite ver
-// todas. Devuelve { [ownerId]: n }. {} si no hay permiso.
+// Cuenta actividades por dueño (owner) para el panel de Profesores. Este módulo
+// es dueño de `users`, NO de `activities` (ley de datos §21): le pide el recuento
+// al dueño de esa colección en vez de consultarla. Devuelve { [ownerId]: n }, y
+// {} si no hay permiso.
 export async function countActivitiesByOwner() {
   try {
-    const data = await pb('/api/collections/activities/records?perPage=500&fields=owner');
-    const out = {};
-    for (const row of (data?.items || [])) {
-      const o = row.owner || '';
-      if (o) out[o] = (out[o] || 0) + 1;
-    }
-    return out;
+    const { countActivitiesByOwner: countFromOwner } = await import('./storage.js');
+    return Object.fromEntries(await countFromOwner());
   } catch { return {}; }
 }

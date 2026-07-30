@@ -5,9 +5,8 @@
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { navigate } from '../core/router.js';
-import { PB_URL } from '../pocketbase.config.js';
-import { pbFilterParam } from '../core/pbFilter.js';
 import { activityCardHtml } from '../core/activityCard.js';
+import { listPublicActivities } from '../core/storage.js';
 import { computeFeatured } from '../core/ranking.js';
 import { fetchLikeCounts, fetchMyLikes, toggleLike } from '../core/likes.js';
 import { getUser } from '../core/auth.js';
@@ -57,13 +56,9 @@ export async function renderLanding(rootSel) {
   async function load() {
     let rows = [];
     try {
-      // SIN sort=-updated (activities puede no tener el campo PB `updated`);
-      // computeFeatured ya ordena por likes/plays/updatedAt del propio contenido.
-      const url = `${PB_URL}/api/collections/activities/records?filter=${pbFilterParam(`visibility='public'`)}&perPage=48`;
-      const r = await fetch(url);
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(data?.message || `Error ${r.status}`);
-      rows = (data.items || []).map(row => ({ ...(row.data || {}), id: row.data?.id || row.id }));
+      // Al dueño de la colección (ley §21). computeFeatured ordena después por
+      // likes/plays/updatedAt del propio contenido.
+      rows = await listPublicActivities({ limit: 48 });
     } catch (e) {
       setGrid(`<p class="text-muted text-center py-4 w-100">Aún no hay actividades publicadas. ${user ? 'Crea la primera con <a href="#/new">Nueva</a>.' : 'Vuelve pronto.'}</p>`);
       return;

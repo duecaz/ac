@@ -4,9 +4,8 @@
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { navigate } from '../core/router.js';
-import { PB_URL } from '../pocketbase.config.js';
-import { pbEscape, pbFilterParam } from '../core/pbFilter.js';
 import { activityCardHtml } from '../core/activityCard.js';
+import { listPublicActivities } from '../core/storage.js';
 import { getAuthUserId, getAuthName, changePassword, linkGoogle } from '../core/auth.js';
 import { fetchProfile, getLocalProfile, saveProfile } from '../core/profile.js';
 import { uploadMedia } from '../core/upload.js';
@@ -123,11 +122,7 @@ export async function renderAuthor(rootSel, ownerId) {
   async function load() {
     let rows = [];
     try {
-      const expr = `owner='${pbEscape(ownerId)}' && visibility='public'`;
-      const r = await fetch(`${PB_URL}/api/collections/activities/records?filter=${pbFilterParam(expr)}&perPage=100`);
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(data?.message || `Error ${r.status}`);
-      rows = (data.items || []).map(row => ({ ...(row.data || {}), id: row.data?.id || row.id }));
+      rows = await listPublicActivities({ owner: ownerId, limit: 100 });
     } catch (e) {
       const g = document.getElementById('au-grid');
       if (g) g.innerHTML = `<p class="text-muted text-center py-4 w-100">No se pudo cargar el perfil.</p>`;

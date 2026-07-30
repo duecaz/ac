@@ -18,6 +18,10 @@ export const fetchSessionKey = call('fetchSessionKey');
 // Blob `state` entero (respaldo del informe post-partida del HOST). Las vistas
 // jamás tocan la colección live_sessions directamente — ley de datos.
 export const fetchSessionBlob = call('fetchSessionBlob');
+// Informes (§21): las filas de salas las sirve el DUEÑO de live_sessions, no un
+// fetch propio de la vista — así el informe funciona igual en local y en PB.
+export const listSessions = call('listSessions');
+export const fetchSessionRecord = call('fetchSessionRecord');
 
 // Host flow
 export const startSession = call('startSession');

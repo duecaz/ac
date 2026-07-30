@@ -82,6 +82,38 @@ export async function getRemote(id) {
   return data ? migrate(data) : null;
 }
 
+// ── BIBLIOTECA PÚBLICA (ley de datos §21: la colección tiene UN dueño) ────────
+// Portada, Explorar y el perfil de autor consultaban `activities` por su cuenta,
+// cada uno con su filtro y su normalización. Ahora piden estos métodos al dueño
+// (el remoteStore) a través de esta fachada, que además MIGRA el contenido: una
+// tarjeta pública de una actividad vieja se pinta con el modelo de hoy, que es
+// justo lo que las copias sueltas no hacían.
+export async function listPublic(opts = {}) {
+  const rs = await getRemoteStore();
+  if (typeof rs.listPublicActivities !== 'function') return [];
+  const rows = await rs.listPublicActivities(opts);
+  return rows.map(r => ({ ...r, data: r.data ? migrate(r.data) : {} }));
+}
+
+/** Actividades públicas ya como ACTIVIDAD (portada / perfil de autor). */
+export async function listPublicActivities(opts = {}) {
+  return (await listPublic(opts)).map(r => ({ ...r.data, id: r.data.id || r.id }));
+}
+
+/** Cuántas actividades tiene cada dueño (panel de Profesores). */
+export async function countActivitiesByOwner() {
+  const rs = await getRemoteStore();
+  return typeof rs.countActivitiesByOwner === 'function' ? rs.countActivitiesByOwner() : new Map();
+}
+
+/** Diagnóstico de `#/admin`: lista + tamaño del payload medido. `{items, bytes}`.
+ *  Si el backend activo no sabe medir (driver local), devuelve bytes 0. */
+export async function probeActivitiesPayload(fields) {
+  const rs = await getRemoteStore();
+  if (typeof rs.probeActivitiesPayload === 'function') return rs.probeActivitiesPayload(fields);
+  return { items: await rs.listActivities(), bytes: 0 };
+}
+
 // Saves locally immediately and to remote in the background. The home preview
 // is rendered live from the activity content (see core/activityThumb.js), so
 // no image generation/upload happens here.

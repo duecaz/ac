@@ -185,10 +185,19 @@ exactamente lo que causó los lost-updates (deuda A) y el guardado doble.
 - **Test que lo vigila**: regla `pb-dueno` en `core/normsCheck.js` +
   `tests/norms.test.mjs` — nombrar una colección (URL o literal) fuera de su
   allowlist rompe CI. El allowlist es RATCHET: solo encoge.
-- **Deuda registrada** (en el allowlist, marcada): lectores directos de
-  `activities` (`explore`/`landing`/`author`/`teachers`/`dbDiag`) y de
-  `live_sessions` (`views/reports.js`, que además rompe el seam local|pb);
-  `recordAttempt` sin cola offline (un intento de tarea puede perderse en blip —
+- **✅ CERRADO (M6) — ya NO hay lectores directos**: portada, Explorar, perfil de
+  autor, panel de Profesores y el diagnóstico piden métodos al dueño
+  (`listPublicActivities` · `countActivitiesByOwner` · `probeActivitiesPayload`
+  en `remoteStore`, expuestos por `core/storage.js`), y los informes piden
+  `listSessions`/`fetchSessionRecord` al dueño de `live_sessions` — lo que además
+  **arregla el seam local|pb**: en dev sin PocketBase los informes ya funcionan
+  (el driver local implementa los mismos dos métodos). El allowlist del ratchet
+  encogió: `activities` y `live_sessions` ya solo las nombran su dueño y el dueño
+  del esquema. Ganancia de paso: las tres copias del filtro/normalización
+  divergían (una devolvía el id de PB y otra el del contenido, y ninguna migraba
+  el modelo) — ahora es un solo lector que además MIGRA, así una tarjeta pública
+  de una actividad vieja se pinta con el modelo de hoy.
+- **Deuda registrada**: `recordAttempt` sin cola offline (un intento de tarea puede perderse en blip —
   candidato a `createOfflineQueue`); `results` y `assignment_attempts` sin clave
   de idempotencia (reintento tras ACK perdido puede duplicar fila; el fix bueno
   es índice único + campo `qid`, requiere "Crear colecciones"); 7 copias del

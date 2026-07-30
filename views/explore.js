@@ -4,8 +4,7 @@ import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { navigate } from '../core/router.js';
 import { activityCardHtml } from '../core/activityCard.js';
-import { PB_URL } from '../pocketbase.config.js';
-import { pbEscape, pbFilterParam } from '../core/pbFilter.js';
+import { listPublic } from '../core/storage.js';
 
 export async function renderExplore(rootSel) {
   mount(rootSel, html`
@@ -32,26 +31,11 @@ export async function renderExplore(rootSel) {
   let cache = [];
   async function load() {
     const lang = document.getElementById('exp-lang').value;
-    // pbEscape/pbFilterParam (core/pbFilter.js): NUNCA encodeURIComponent a pelo
-    // sobre el valor — no escapa la comilla simple del filtro `field='valor'`.
-    const expr = `visibility='public'` + (lang ? ` && language='${pbEscape(lang)}'` : '');
-    // SIN `sort=-updated`: la colección `activities` puede no tener el campo PB
-    // `updated` (algunos setups no lo crean) → ese sort rompía la consulta con
-    // "Something went wrong". Ordenamos en el cliente por el updatedAt que vive
-    // dentro de cada actividad (data.updatedAt), que siempre existe.
-    const url = `${PB_URL}/api/collections/activities/records?filter=${pbFilterParam(expr)}&perPage=120`;
+    // La colección `activities` tiene UN dueño (ley §21): se le PIDE la lista, no
+    // se consulta a mano. El filtro, el escapado, el orden por `updatedAt` del
+    // contenido y la migración del modelo viven ahí, una sola vez.
     try {
-      const r = await fetch(url);
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(data?.message || `Error ${r.status}`);
-      cache = (data.items || []).map(row => ({
-        id: row.id,
-        data: row.data || {},
-        language: row.language || 'es',
-        tags: row.tags || [],
-        updated_at: row.data?.updatedAt || row.updated || '',
-      }));
-      cache.sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at))); // más nuevas primero
+      cache = await listPublic({ language: lang, limit: 120 });
     } catch (e) {
       document.getElementById('exp-list').innerHTML = `<div class="alert alert-danger">${escapeHtml(e.message)}</div>`;
       return;

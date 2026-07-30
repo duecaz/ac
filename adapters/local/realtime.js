@@ -215,6 +215,25 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
     // Espejo del driver PB: el blob de estado para el respaldo del informe.
     async fetchSessionBlob(code) { return read(code)?.state || {}; },
 
+    // Informes (§21): el DUEÑO sirve las filas de salas también en local, así el
+    // informe funciona en dev sin PocketBase (antes la vista consultaba PB a
+    // pelo y en local no había nada que ver).
+    async listSessions() {
+      const out = [];
+      const keys = kv ? Object.keys(kv).filter(k => k.startsWith(PREFIX)) : [...mem.keys()];
+      for (const k of keys) {
+        const code = k.slice(PREFIX.length);
+        const room = read(code);
+        if (room) out.push({ id: code, code, activity: room.activity, state: room.state });
+      }
+      return out;
+    },
+
+    async fetchSessionRecord(code) {
+      const room = read(code);
+      return room ? { id: code, code, activity: room.activity, state: room.state } : null;
+    },
+
     // onChange({ table }) — the view re-fetches players/answers/session on notice.
     // Registers both a same-tab subscriber (self-echo) and a cross-tab channel
     // listener; the returned function tears both down.

@@ -6,6 +6,7 @@
 import { getRemoteStore, backendName } from '../adapters/index.js';
 import { PB_URL } from '../pocketbase.config.js';
 import { VERSION } from './constants.js';
+import { probeActivitiesPayload } from './storage.js';
 
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
@@ -118,16 +119,11 @@ export async function diagnoseDb(onStep) {
   try {
     let payloadBytes = 0;
     const { ms, value } = await timed(async () => {
-      // Medir tamaño del payload directamente cuando sea PocketBase.
-      if (name === 'pocketbase') {
-        const r = await fetch(`${PB_URL}/api/collections/activities/records?perPage=500&fields=id,title,template,content,tags,visibility,language,updatedAt`);
-        const txt = await r.text();
-        payloadBytes = txt.length;
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        const data = JSON.parse(txt);
-        return data.items || [];
-      }
-      return store.listActivities();
+      // El TAMAÑO del payload lo mide el dueño de la colección (ley de datos §21):
+      // este módulo es un diagnóstico, no el lector de `activities`.
+      const probe = await probeActivitiesPayload();
+      payloadBytes = probe.bytes || 0;
+      return probe.items || [];
     });
     listCount = value.length;
     const throughput = payloadBytes > 0

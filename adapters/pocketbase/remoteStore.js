@@ -164,6 +164,62 @@ export function createPocketbaseRemoteStore() {
       });
     },
 
+    // ── BIBLIOTECA PÚBLICA (ley de datos §21) ────────────────────────────────
+    // Portada, Explorar y el perfil de autor pedían las actividades públicas con
+    // su PROPIO `fetch` a la colección, cada uno con su filtro y su normalización
+    // (tres copias que ya habían divergido en el escapado de la comilla simple).
+    // Aquí está el único lector: `opts` = { language, owner, limit }.
+    //
+    // Devuelve la fila NORMALIZADA: `{ id, data, language, tags, updated_at }`.
+    // `data` es la actividad tal cual la guardó el profe; `id` prioriza el del
+    // contenido (el que usan los enlaces #/play/:id) con respaldo al de PB.
+    //
+    // Sin `sort=-updated` A PROPÓSITO: la colección puede no tener el campo PB
+    // `updated` (según cómo se creara) y ese sort rompía la consulta entera. Se
+    // ordena aquí por el `updatedAt` que vive DENTRO del contenido, que siempre
+    // está — así ninguna vista tiene que acordarse.
+    async listPublicActivities({ language = '', owner = '', limit = 120 } = {}) {
+      const parts = [`visibility='public'`];
+      if (language) parts.push(`language='${pbEscape(language)}'`);
+      if (owner) parts.push(`owner='${pbEscape(owner)}'`);
+      const rec = await pbFetch(`/api/collections/activities/records`
+        + `?filter=${pbFilterParam(parts.join(' && '))}&perPage=${Number(limit) || 120}`);
+      const rows = (rec?.items || []).map(row => ({
+        id: row.data?.id || row.id,
+        data: row.data || {},
+        language: row.language || 'es',
+        tags: row.tags || [],
+        updated_at: row.data?.updatedAt || row.updated || '',
+      }));
+      rows.sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)));
+      return rows;
+    },
+
+    /** Cuántas actividades tiene cada dueño (panel de Profesores). Solo lee el
+     *  campo `owner`: ni contenido ni títulos salen del servidor para esto. */
+    async countActivitiesByOwner() {
+      const rec = await pbFetch('/api/collections/activities/records?perPage=500&fields=owner');
+      const out = new Map();
+      for (const row of rec?.items || []) {
+        const o = row.owner || '';
+        if (o) out.set(o, (out.get(o) || 0) + 1);
+      }
+      return out;
+    },
+
+    /** DIAGNÓSTICO de `#/admin`: la lista con el TAMAÑO del payload medido. Vive
+     *  aquí porque `core/dbDiag.js` lo hacía con su propio fetch a la colección
+     *  (ley de datos §21); necesita el texto crudo para poder pesarlo, así que no
+     *  puede pasar por pbFetch (que ya lo parsea). */
+    async probeActivitiesPayload(fields = 'id,title,template,content,tags,visibility,language,updatedAt') {
+      const r = await signedFetch(`${PB_URL}/api/collections/activities/records?perPage=500&fields=${encodeURIComponent(fields)}`);
+      const txt = await r.text();
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      let items = [];
+      try { items = JSON.parse(txt).items || []; } catch { items = []; }
+      return { items, bytes: txt.length };
+    },
+
     async saveResult(r) {
       await pbFetch('/api/collections/results/records', {
         method: 'POST',

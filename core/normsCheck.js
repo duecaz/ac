@@ -60,12 +60,12 @@ const ALLOW = {
 const PB_SCHEMA_OWNERS = ['views/adminView.js', 'core/pbRules.js'];
 
 const PB_OWNERS = {
-  activities: ['adapters/pocketbase/remoteStore.js', 'views/adminView.js',
-    // lectores directos (deuda §21): migrarlos a métodos del dueño
-    'views/explore.js', 'views/landing.js', 'views/author.js', 'core/teachers.js', 'core/dbDiag.js'],
+  // Ya NO hay lectores directos: portada, Explorar, perfil de autor, el panel de
+  // Profesores y el diagnóstico piden métodos al dueño (M6). El ratchet solo
+  // encoge: no volver a añadir ficheros aquí, se añade un método al dueño.
+  activities: ['adapters/pocketbase/remoteStore.js', 'views/adminView.js'],
   results: ['adapters/pocketbase/remoteStore.js', 'views/adminView.js'],
-  live_sessions: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js',
-    'views/reports.js'],   // lector directo (deuda §21): además rompe el seam local|pb
+  live_sessions: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js'],
   live_answers: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js'],
   live_players: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js'],
   live_keys: ['adapters/pocketbase/realtime.js', 'views/adminView.js'],
