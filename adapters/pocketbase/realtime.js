@@ -17,10 +17,12 @@ import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
 import { PB_URL } from '../../pocketbase.config.js';
 import { setConnectionState } from '../../core/connection.js';
 import { deriveAnswerMs, openedKey, openedAtFor } from '../../core/serverMs.js';
+import { studentSnapshot, needsClientKey } from '../../core/liveSnapshot.js';
 
 const COLL = 'live_sessions';
 const ANS = 'live_answers';   // one record per student answer (lost-update fix)
 const PLR = 'live_players';   // one record per player (lost-update fix del join)
+const KEY = 'live_keys';      // contenido COMPLETO de la sala (host-only, §22-2)
 
 function genUserId() { return rid('u_'); }
 
@@ -119,10 +121,29 @@ async function pbFetch(path, opts = {}) {
 
 export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
   // Load a session record and rebuild the engine over its persisted state.
+  // §22-2 — la sala guarda un snapshot SIN clave; el contenido completo vive en
+  // `live_keys` (host-only). El motor del HOST necesita la clave para puntuar, así
+  // que la trae de ahí. Caché por sala: el contenido no cambia durante la partida,
+  // así un settle no paga una lectura extra por ítem. Respaldo a `rec.activity`
+  // para las salas creadas ANTES de esta versión (y para el alumno, que no puede
+  // leer live_keys: ahí el motor no puntúa, solo hidrata).
+  const keyCache = new Map();
+  async function fullActivity(sessionId, rec) {
+    if (keyCache.has(sessionId)) return keyCache.get(sessionId);
+    let full = null;
+    try {
+      const res = await pbFetch(`/api/collections/${KEY}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}'`)}&perPage=1`);
+      full = res?.items?.[0]?.activity || null;
+    } catch { /* sin sesión de profe, o colección no creada aún */ }
+    const act = full || rec?.activity || null;
+    keyCache.set(sessionId, act);
+    return act;
+  }
+
   async function load(sessionId) {
     const rec = await pbFetch(`/api/collections/${COLL}/records/${sessionId}`);
     if (!rec) throw new Error('Sala no encontrada');
-    const engine = createLiveRoom(rec.activity, { state: rec.state, code: rec.code });
+    const engine = createLiveRoom(await fullActivity(sessionId, rec), { state: rec.state, code: rec.code });
     return { rec, engine };
   }
 
@@ -293,10 +314,28 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         const code = pickWord(usedCodes);
         const engine = createLiveRoom(activity, { code });
         try {
+          // §22-2 — en la SALA (lectura abierta: el alumno entra por PIN) va el
+          // snapshot SANEADO: payloads de ronda ya sin solución + metadatos. La
+          // actividad completa se guarda aparte, en `live_keys` (host-only).
           const rec = await pbFetch(`/api/collections/${COLL}/records`, {
             method: 'POST',
-            body: JSON.stringify({ code, activity, state: engine.state }),
+            body: JSON.stringify({ code, activity: studentSnapshot(activity), state: engine.state }),
           });
+          // La clave. Si esta escritura falla, la sala se queda SIN clave para el
+          // host → mejor decirlo aquí que descubrirlo al revelar la primera
+          // respuesta, así que se propaga el error (la sala se reintenta).
+          try {
+            await pbFetch(`/api/collections/${KEY}/records`, {
+              method: 'POST', body: JSON.stringify({ session: rec.id, activity }),
+            });
+          } catch (ke) {
+            if (ke?.status === 404) {
+              throw new Error('La colección "live_keys" no existe en el servidor. '
+                + 'Créala una sola vez en Admin → "Crear colecciones" (guarda el contenido de la sala sin exponerlo a los alumnos).');
+            }
+            throw ke;
+          }
+          keyCache.set(rec.id, activity);
           return { id: rec.id, code };
         } catch (e) {
           if (e.status === 404) {
@@ -353,10 +392,12 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       };
     },
 
-    // The host holds the full activity (with answer keys) — return it directly.
+    // La actividad COMPLETA (con la clave) para el HOST: vive en `live_keys`, que
+    // solo lee una sesión de profe (§22-2). Respaldo a la sala para las creadas
+    // antes de esta versión.
     async fetchSessionKey(sessionId) {
-      const rec = await pbFetch(`/api/collections/${COLL}/records/${sessionId}`);
-      return rec?.activity || null;
+      const rec = await pbFetch(`/api/collections/${COLL}/records/${sessionId}`).catch(() => null);
+      return await fullActivity(sessionId, rec);
     },
 
     // Respaldo del informe post-partida (A1): el blob `state` entero, para
@@ -438,6 +479,15 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       engine.state.status = 'ended';
       engine.state.phase = 'ended';
       await saveState(sessionId, engine);
+      // Higiene §22-2: si la sala fue una carrera, su snapshot lleva el contenido
+      // completo. Terminada la partida ya no hace falta → se vuelve al saneado
+      // para que la clave no siga en una fila de lectura abierta.
+      try {
+        const full = keyCache.get(sessionId);
+        if (full) await pbFetch(`/api/collections/${COLL}/records/${sessionId}`, {
+          method: 'PATCH', body: JSON.stringify({ activity: studentSnapshot(full) }),
+        });
+      } catch { /* best-effort: la sala ya está cerrada */ }
     },
 
     async setSessionState(sessionId, patch) {
@@ -466,6 +516,18 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       // permite medir después el tiempo de cada respuesta con el reloj del
       // SERVIDOR. Cuesta un PATCH diminuto por pregunta —del host, no de los 30
       // alumnos— y a cambio sobrevive a que el host recargue a mitad de pregunta.
+      // §22-2 — EXCEPCIÓN DECLARADA de la carrera libre: en ese modo el móvil
+      // juzga cada intento en local (colorea al instante y re-encola los fallos),
+      // así que necesita el contenido completo. Solo entonces, y solo al arrancar,
+      // se sube la actividad entera a la sala; al cerrar se vuelve al snapshot
+      // saneado. Cerrarlo del todo pide un validador en el servidor (ver
+      // core/liveSnapshot.js).
+      if (needsClientKey(patch.phase)) {
+        const full = await fullActivity(sessionId, rec);
+        if (full) await pbFetch(`/api/collections/${COLL}/records/${sessionId}`, {
+          method: 'PATCH', body: JSON.stringify({ activity: full }),
+        }).catch(() => { /* si falla, la carrera arranca sin veredicto local */ });
+      }
       if (noteItemOpened(engine, patch, rec)) {
         await pbFetch(`/api/collections/${COLL}/records/${sessionId}`, {
           method: 'PATCH', body: JSON.stringify({ state: engine.state }),

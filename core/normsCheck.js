@@ -68,6 +68,7 @@ const PB_OWNERS = {
     'views/reports.js'],   // lector directo (deuda §21): además rompe el seam local|pb
   live_answers: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js'],
   live_players: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js'],
+  live_keys: ['adapters/pocketbase/realtime.js', 'views/adminView.js'],
   assignments: ['adapters/pocketbase/assignments.js', 'views/adminView.js', 'core/stressTest.js',
     'adapters/index.js'],  // pbCollectionExists: decide el fallback local, no escribe
   assignment_attempts: ['adapters/pocketbase/assignments.js', 'views/adminView.js', 'core/stressTest.js'],

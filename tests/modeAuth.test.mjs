@@ -89,21 +89,28 @@ ok('modeStripHtml: candado visible sin sesión, tira intacta con sesión');
 
 // ── 4. El aviso está CABLEADO donde el profe pulsa ──────────────────────────
 const home = read('views/home.js');
-assert.match(home, /authed: !!getAuthUserId\(\)/, 'views/home.js debe pasar el estado de sesión a la tarjeta');
+assert.match(home, /authed: canHost\(\)/, 'views/home.js debe pasar el estado de sesión a la tarjeta (misma condición que el gate)');
 assert.match(home, /data\.locked|dataset\.locked/, 'views/home.js debe interceptar el clic en un modo bloqueado');
 assert.match(home, /openLoginModal\(\{ reason/, 'el clic bloqueado abre el login DICIENDO para qué');
 
 const player = read('views/playerView.js');
-assert.match(player, /modeNeedsAuth\(m\)/, 'views/playerView.js debe bloquear Live/Tarea sin sesión en la barra de modos');
+assert.match(player, /modeNeedsAuth\(m\) && !canHost\(\)/, 'views/playerView.js debe bloquear Live/Tarea sin sesión en la barra de modos');
 assert.match(player, /openLoginModal\(\{ reason/, 'la barra de modos abre el login con el motivo');
 
-// El router gatea las rutas que DIRIGEN (crear sala, reentrar, tareas).
+// El router gatea las rutas que DIRIGEN (crear sala, reentrar, tareas) con
+// requireHost: exige sesión en PocketBase y deja pasar en el backend `local`
+// (dev offline / smokes headless), donde no hay servidor que distinga host de
+// alumno. Eso es la contra-prueba de la ley: la regla no puede bloquear al
+// legítimo — un gate que rompe la matriz jugable está mal puesto.
 const main = read('main.teacher.js');
 for (const [route, what] of [['#/launch/:id', 'crear la sala'], ['#/host/:code', 'reentrar a la sala'], ['#/tasks/:id', 'gestionar tareas']]) {
   const line = main.split('\n').find(l => l.includes(`route('${route}'`)) || '';
-  assert.match(line, /requireTeacher/, `la ruta ${route} (${what}) debe gatearse con requireTeacher en el router`);
+  assert.match(line, /requireHost/, `la ruta ${route} (${what}) debe gatearse con requireHost en el router`);
 }
 assert.match(main, /modeAuthHint\('live'\)/, 'el gate del router reutiliza la frase de core/modes.js (no la reescribe)');
+const gate = read('core/authGate.js');
+assert.match(gate, /backendName\(\) === 'local'/, 'requireHost debe dejar pasar el backend local (no hay servidor que gatear)');
+assert.match(gate, /export function canHost/, 'canHost() debe existir para que botón y router usen la MISMA condición');
 ok('cableado: tarjeta, barra de modos y router usan la misma política y frase');
 
 console.log(`\nmodeAuth.test: ${passed} checks passed`);

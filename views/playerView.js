@@ -10,7 +10,7 @@ import { activityItemCount, newActivityId } from '../core/migrate.js';
 import { getTemplate, compatibleTemplates } from '../core/registry.js';
 import { isVsCompatible } from '../kernel/session/engine.js';
 import { availableModes, getMode, runMode, modeNeedsAuth, modeAuthHint } from '../core/modes.js';
-import { getAuthUserId } from '../core/auth.js';
+import { canHost } from '../core/authGate.js';
 import { openLoginModal } from './loginModal.js';
 import { clearSoloProgress } from '../core/soloPlayer.js';
 import { renderStartScreen } from './startScreen.js';
@@ -95,7 +95,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
         // botón gris sin explicación — lleva candado y su frase, y al pulsarlo
         // abre el login diciendo para qué (ley §22: dirigir es acto de profe; el
         // alumno entra con PIN y sin cuenta).
-        if (ok && modeNeedsAuth(m) && !getAuthUserId()) {
+        if (ok && modeNeedsAuth(m) && !canHost()) {
           return `<button class="btn btn-outline-${m.color} ww-mode-locked" data-lock="${m.id}" title="${escapeHtml(modeAuthHint(m))}">`
             + `<i class="bi bi-lock-fill"></i> ${escapeHtml(m.label)}</button>`;
         }

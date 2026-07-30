@@ -26,7 +26,7 @@ import { sync, setStorageUser, claimGuestActivities, retryUnsynced } from './cor
 import { ensureIdentity } from './core/identity.js';
 import { authRefresh, completeOAuthLogin, getAuthUserId, onAuthChange } from './core/auth.js';
 import { mountAuthSlot } from './core/authWidget.js';
-import { requireTeacher } from './core/authGate.js';
+import { requireTeacher, requireHost } from './core/authGate.js';
 import { modeAuthHint } from './core/modes.js';
 import { applySkin } from './core/skins.js';
 // Side-effect: boot.js wires sounds + visual effects to the GameEvents bus and
@@ -58,21 +58,21 @@ route('#/memory/:id', ({ id }) => renderPlayerView(APP, id, 'teams'));
 // el ROUTER, no dentro de la vista, para que el aviso llegue ANTES de intentar
 // crear la sala — descubrirlo con un 403 y la clase delante es el peor momento.
 // El ALUMNO no pasa por aquí: entra con el PIN, sin cuenta.
-route('#/launch/:id', ({ id }) => requireTeacher(APP, () => renderHostLaunch(APP, id), {
+route('#/launch/:id', ({ id }) => requireHost(APP, () => renderHostLaunch(APP, id), {
   title: 'Entra para dirigir la clase en vivo',
   subtitle: modeAuthHint('live') + '. Tus alumnos NO necesitan cuenta: entran con el PIN desde su móvil.',
 }));
 // Reentrar a una sala ya creada es el MISMO acto de profe (avanzar fase, revelar,
 // puntuar = escrituras host-only): si la sesión caducó, mejor el gate claro que un
 // 403 silencioso al pulsar "Siguiente".
-route('#/host/:code', ({ code }) => requireTeacher(APP, () => renderHostByCode(APP, code), {
+route('#/host/:code', ({ code }) => requireHost(APP, () => renderHostByCode(APP, code), {
   title: 'Entra para dirigir la clase en vivo',
   subtitle: modeAuthHint('live') + '. Tus alumnos NO necesitan cuenta: entran con el PIN desde su móvil.',
 }));
 route('#/reports', () => renderReports(APP));
 route('#/reports/session/:id', ({ id }) => renderSessionReport(APP, id));
 route('#/reports/:id', ({ id }) => renderActivityReport(APP, id));
-route('#/tasks/:id', ({ id }) => requireTeacher(APP, () => renderAssignmentsForActivity(APP, id), {
+route('#/tasks/:id', ({ id }) => requireHost(APP, () => renderAssignmentsForActivity(APP, id), {
   title: 'Entra para crear tareas',
   subtitle: modeAuthHint('task') + '. Tus alumnos la hacen con el código de la tarea, sin cuenta.',
 }));

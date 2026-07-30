@@ -15,6 +15,7 @@ import { GameEvents, emitGame } from '../core/gameEvents.js';
 import * as Streaks from '../core/streaks.js';
 import { getTemplate } from '../core/registry.js';
 import { sessionItems, roundPayloadOf } from '../kernel/session/engine.js';
+import { visibleItem } from '../core/liveSnapshot.js';
 import { lsGet, lsSet } from '../core/ls.js';
 import { wheelSvg } from '../templates/wheel/render.js';
 import { pickIndex } from '../templates/wheel/logic.js';
@@ -184,8 +185,9 @@ export async function renderPlay(rootSel, code) {
 
   async function qlOpenQuestion(idx) {
     if (session.ql_open !== null) return; // race — someone beat us
-    const allItems = sessionItems(activity);
-    const raw = allItems[idx];
+    // §22-2 — lo que el alumno puede leer de un ítem sale de su PAYLOAD (ya sin
+    // solución), no del contenido: el snapshot de la sala ya no lo lleva.
+    const raw = visibleItem(activity, idx);
     // Support both new {q, image} format and old flat-string entries format.
     const label = typeof raw === 'string' ? raw : (raw?.question ?? raw?.q ?? '');   // ?? q: sesión en vuelo pre-migración
     // Image is NOT put in session state (data-URLs are heavy) — both host and
@@ -219,8 +221,7 @@ export async function renderPlay(rootSel, code) {
   function paintQuestionLiveBoxes() {
     const qlOpen     = session.ql_open ?? null;
     const qlQuestion = session.ql_question ?? null;
-    const allItems0  = sessionItems(activity);
-    const qlImage    = qlOpen !== null ? (typeof allItems0[qlOpen] === 'object' ? allItems0[qlOpen]?.image || null : null) : null;
+    const qlImage    = qlOpen !== null ? (visibleItem(activity, qlOpen)?.image ?? null) : null;
     const qlPoints   = session.ql_points || {};
     const qlBy       = session.ql_by ?? null;
     const allItems   = sessionItems(activity);
@@ -262,7 +263,7 @@ export async function renderPlay(rootSel, code) {
     const qlPoints   = session.ql_points || {};
     const qlBy       = session.ql_by ?? null;
     const allItems   = sessionItems(activity);
-    const qlImage    = qlOpen !== null ? (typeof allItems[qlOpen] === 'object' ? allItems[qlOpen]?.image || null : null) : null;
+    const qlImage    = qlOpen !== null ? (visibleItem(activity, qlOpen)?.image ?? null) : null;
     const iMine      = qlBy === player.playerId;
 
     // A question is open → show the question card, no wheel.

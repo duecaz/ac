@@ -627,6 +627,12 @@ function renderPanel(rootSel) {
         // playerId = id de la FILA. Índice único (session,name) → apodos únicos
         // ATÓMICOS (el 400 de colisión dispara el retry "Juan 2"). Ver
         // docs/handoff-deuda-a.md.
+        // §22-2 — contenido COMPLETO de la sala (host-only). La sala guarda el
+        // snapshot saneado; la clave, aquí.
+        { name: 'live_keys', fields: [
+          { name: 'session',  type: 'text', required: true },
+          { name: 'activity', type: 'json' },
+        ], indexes: ['CREATE UNIQUE INDEX `idx_lk_session` ON `live_keys` (`session`)'] },
         { name: 'live_players', fields: [
           { name: 'session', type: 'text', required: true },
           { name: 'name',    type: 'text', required: true },

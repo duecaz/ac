@@ -40,6 +40,11 @@ export function sessionItems(activity) {
 // plantilla con getRoundPayload que lanzara caía con gracia en el proyector del
 // host pero crasheaba al alumno). El try/catch degrada igual en todos.
 export function roundPayloadOf(T, activity, itemIndex, fallback = null) {
+  // Snapshot de sala SANEADO (§22-2): el alumno no tiene `content`, tiene los
+  // payloads ya calculados por el host. Se sirven de ahí en vez de recalcular
+  // sobre una clave que ya no está (core/liveSnapshot.js).
+  const pre = activity?.payloads;
+  if (Array.isArray(pre)) return pre[itemIndex] ?? fallback;
   try { return T?.getRoundPayload ? T.getRoundPayload(activity, { itemIndex }) : fallback; }
   catch { return fallback; }
 }

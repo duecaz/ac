@@ -7,7 +7,7 @@ import { confirmModal, toast } from '../core/toast.js';
 import { activityItemCount as itemCount } from '../core/migrate.js';
 import { activityCardHtml } from '../core/activityCard.js';
 import { buildSwitchOptions } from './switchTemplate.js';
-import { getAuthUserId } from '../core/auth.js';
+import { canHost } from '../core/authGate.js';
 import { modeAuthHint } from '../core/modes.js';
 import { openLoginModal } from './loginModal.js';
 
@@ -108,7 +108,7 @@ export function renderHome(rootSel) {
     // `authed`: sin sesión, Live/Tarea salen con CANDADO y su frase — dirigir una
     // sala o crear una tarea son actos de profe (ley §22). Avisar aquí, no con un
     // 403 a mitad de clase.
-    return activityCardHtml(a, { modes: 'all', authed: !!getAuthUserId(), pages: true, subtitle: true, tags: true, topRight, footer });
+    return activityCardHtml(a, { modes: 'all', authed: canHost(), pages: true, subtitle: true, tags: true, topRight, footer });
   }
 
   function listCard(a) {

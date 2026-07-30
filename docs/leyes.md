@@ -269,8 +269,30 @@ servidor.** Una feature nueva que confíe en el móvil está mal diseñada.
   derivación (`rowsFromLiveAnswers(rows, i, {itemOpenedAt, phase})`) → un solo
   tiempo por respuesta. Test: `tests/serverMs.test.mjs` (mentir con `ms:0` no
   cobra bonus **y** el alumno rápido de verdad conserva el suyo).
-- **Sigue pendiente (diseño en `docs/handoff-seguridad-pb.md`)**: ② el `activity_snap` con la clave que viaja al móvil
-  en carrera (R5 cubre el payload de ronda, no el snapshot); ③ tope de intentos
+- **② LA CLAVE NO VIAJA EN LA SALA — CERRADO (M2)**: `live_sessions` tiene
+  lectura ABIERTA por necesidad (el alumno anónimo entra con el PIN) y ahí se
+  guardaba la actividad ENTERA → cualquiera con el PIN se leía todas las
+  respuestas, y R5 no protegía nada porque el propio móvil se construía el
+  payload en local desde ese snapshot. Ahora la sala guarda el **snapshot
+  saneado** (`core/liveSnapshot.js studentSnapshot`: whitelist de metadatos +
+  los payloads de ronda ya sin solución + huecos vacíos para contar ítems) y el
+  contenido completo vive en **`live_keys`**, colección con las CINCO reglas
+  cerradas a quien no tiene sesión. Lo que el alumno puede leer de un ítem sale
+  de `visibleItem()` (payload), no de `content`. El host trae la clave de
+  `live_keys` con caché por sala; si no puede (sesión caducada, colección sin
+  crear) lo DICE al entrar en vez de fallar al revelar.
+  **Excepción declarada**: en *carrera libre* el móvil juzga cada intento en
+  local (colorea y re-encola al instante), así que esa sala sí sube el contenido
+  completo al arrancar y vuelve al snapshot saneado al cerrar. Cerrarlo del todo
+  pide un **validador en el servidor** (hook de PocketBase en la Pi): sin él,
+  cualquier alternativa de cliente es cosmética — con 4 opciones visibles, un
+  hash de la correcta se rompe probando las 4.
+  Test: `tests/liveSnapshot.test.mjs` (las 13 plantillas: del contenido solo
+  viaja el payload; fugas comprobables como cadena cerradas; contra-prueba de
+  que con el snapshot aún se juega; `live_keys` cerrada).
+  **PASO DEL USUARIO**: `#/admin` → "Crear colecciones" (añade `live_keys`).
+  Sin ella, crear sala falla con ese mensaje exacto.
+- **Sigue pendiente (diseño en `docs/handoff-seguridad-pb.md`)**: ③ tope de intentos
   server-side (índice único) — hoy borrar `ww.anonId` da intentos ∞; ④ que la
   fila de respuesta esté atada al dispositivo (un alumno puede responder en
   nombre de otro si adivina su `playerId`).

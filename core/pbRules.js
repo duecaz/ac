@@ -78,6 +78,12 @@ export const RULES = {
   // (update cerrado) y solo el PROFE expulsa (antes cualquier alumno podía
   // echar a un compañero).
   live_players: { listRule: '', viewRule: '', createRule: '', updateRule: null, deleteRule: AUTH },
+  // §22-2 — CLAVE DE LA SALA: la actividad COMPLETA (con las respuestas) vive
+  // aquí, CERRADA a quien no tiene sesión. La sala (`live_sessions`) guarda solo
+  // el snapshot saneado, porque su lectura tiene que ser abierta (el alumno entra
+  // por PIN). Antes la clave viajaba en la sala → el móvil se leía todas las
+  // respuestas sin necesidad de trampa ninguna.
+  live_keys: { listRule: AUTH, viewRule: AUTH, createRule: AUTH, updateRule: AUTH, deleteRule: AUTH },
 
   // ── Tareas ────────────────────────────────────────────────────────────────
   // Crear/cerrar/rotar es del profe; el alumno solo LEE (buscar por código y

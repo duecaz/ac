@@ -1,4 +1,4 @@
-<#
+﻿<#
   setup-pocketbase.ps1 — configura la base de datos de AulaReto en PocketBase.
   Idempotente: se puede re-correr sin miedo (crea lo que falte, actualiza reglas,
   añade campos que falten SIN borrar los existentes, crea índices).
@@ -131,6 +131,13 @@ $defs = @(
        updateRule='@request.auth.id != "" || (@request.body.scored:isset = false && @request.body.points:isset = false)';
        deleteRule='@request.auth.id != ""'
      } },
+
+  # live_keys (§22-2): la actividad COMPLETA de la sala, CERRADA sin sesión. La
+  # sala guarda solo el snapshot saneado (su lectura debe ser abierta: PIN).
+  @{ name = "live_keys";
+     fields = @( @{ name="session"; type="text"; required=$true }, @{ name="activity"; type="json"; maxSize=5242880 } );
+     indexes = @( "CREATE UNIQUE INDEX ``idx_lk_session`` ON ``live_keys`` (``session``)" );
+     rules = @{ listRule='@request.auth.id != ""'; viewRule='@request.auth.id != ""'; createRule='@request.auth.id != ""'; updateRule='@request.auth.id != ""'; deleteRule='@request.auth.id != ""' } },
 
   # live_players (deuda A): una fila por jugador → los joins concurrentes no se
   # pisan en el blob. Índice UNICO (session,name) = apodos únicos atómicos.

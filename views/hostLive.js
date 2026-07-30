@@ -23,6 +23,7 @@ import { sceneToggle, resetScene } from '../core/presentation.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { hostPaintDecision } from '../core/livePhases.js';
+import { isStudentSnapshot } from '../core/liveSnapshot.js';
 import { podiumHtml } from '../core/podium.js';
 import { QL_COLORS } from '../core/questionLive.js';
 import { questionWindowMs } from '../core/timings.js';
@@ -86,6 +87,13 @@ async function renderHost(rootSel, code, sessionId, activity) {
   // so swap in the full snapshot from session_keys when available. Falls back to
   // the (possibly full, for older/local sessions) snap we were handed.
   try { const full = await fetchSessionKey(sessionId); if (full) activity = full; } catch { /* keep fallback */ }
+  // §22-2 — si aquí seguimos con el snapshot SANEADO, el host no tiene la clave:
+  // no podría enunciar ni puntuar. Pasa si `live_keys` no está creada o si la
+  // sesión de profe caducó. Se dice AHORA, no al revelar la primera respuesta.
+  if (isStudentSnapshot(activity)) {
+    toast('No se pudo leer el contenido de la sala (¿sesión caducada o falta la colección live_keys?). '
+      + 'Entra de nuevo o crea las colecciones en Admin.', 'warning', 8000);
+  }
   // Which Live backend is really in use. If it fell back to 'local' (e.g. the
   // PocketBase live_sessions collection doesn't exist), the room only works on
   // THIS device — warn the teacher in the lobby so it's not a silent failure.
