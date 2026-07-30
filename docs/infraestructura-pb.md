@@ -1,15 +1,20 @@
 # Infraestructura — PocketBase + Raspberry Pi (estado REAL)
 
-> **⚠ PENDIENTE DE VERIFICAR EN @pio (2026-07-30)**: hay DOS servidores PocketBase
-> (@pio producción, @pit). Las reglas L6+M1-M5 se aplicaron vía `#/admin` →
-> "Crear colecciones" (las 12 en verde), pero las sondas de verificación
-> (`live_keys`→403 · `live_claims`→403 · POST `live_answers` sin credencial→403)
-> se corrieron desde @pit y dieron **200/403/400** — es decir, cayeron en un
-> servidor SIN las reglas nuevas (`live_keys` legible = mal). Al recuperar acceso
-> local a @pio: repetir las 3 sondas contra él, jugar una partida EN VIVO real
-> (móvil anónimo: entrar·responder·puntuar) y `node tools/stress-live.mjs <PIN> 30`.
-> Y decidir @pit: aplicarle las mismas reglas o apagarlo — un clon con reglas
-> viejas y datos reales es una puerta trasera.
+> **✅ REGLAS L6+M1-M5+R1 APLICADAS Y SONDEADAS (2026-07-30, app v1.51.327)**.
+> Las sondas anónimas contra `pb.lanube.uno` dan `200 · 403 · 400` y eso es lo
+> CORRECTO — lección de semántica PocketBase que costó una falsa alarma:
+> · una `listRule` con expresión (p.ej. exigir sesión) responde **200 con cero
+>   filas** al anónimo, no 403 — solo una regla CERRADA (null) da 403;
+> · un create que viola la regla responde **400** (no 403) para no filtrar info.
+> Comprobación definitiva de `live_keys`: `curl -s .../live_keys/records` debe
+> dar `"totalItems":0` aunque existan salas.
+> QUEDA por confirmar: ① que el campo `qid` + índices de R1 entraron (la pasada
+> reportó solo "reglas actualizadas" — mirar en el admin web de PB los campos de
+> `results` y `assignment_attempts`, o `PRAGMA table_info(results);` si hay
+> consola SQL); ② la PARTIDA REAL (móvil anónimo: entrar·responder·puntuar en
+> pregunta Y carrera) + `node tools/stress-live.mjs <PIN> 30`; ③ qué es @pit
+> (el DNS de la LAN resuelve `pb.lanube.uno` igual que fuera, así que las sondas
+> de la Pi eran del MISMO servidor — @pit como clon aparte sigue sin confirmar).
 
 > **Para qué sirve este doc**: es la FUENTE para consultar cómo está montada la base de
 > datos y la Pi sin tener que redescubrirlo por SSH. Actualízalo cada vez que cambie algo
