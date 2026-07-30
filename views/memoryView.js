@@ -116,7 +116,9 @@ export function mountMemory(host, a, ctx, opts = {}) {
           emitGame(GameEvents.ANSWER_WRONG, {});
           busy = true;
           paint(); // reflect the 2nd card face-up (all disabled)
-          setTimeout(() => { game.cover(); busy = false; paint(); }, COVER_MS);
+          // Guard de vida: si la ruta cambió durante la pausa, no repintar
+          // sobre la vista siguiente (ley de vista §23).
+          setTimeout(() => { if (!host.isConnected) return; game.cover(); busy = false; paint(); }, COVER_MS);
           return;
         }
         if (r.ended) emitGame(GameEvents.PODIUM, { top: game.leaderboard().slice(0, 1).map(t => ({ name: t.name, score: t.score })) });

@@ -160,6 +160,7 @@ function renderWheel(rootSel, activity, opts = {}) {
       if (btn) btn.disabled = true;
       animateSpin(rootEl()?.querySelector('svg'), rotation, SPIN_DUR_PICK);
       setTimeout(() => {
+        if (!rootEl()) return;   // la ruta cambió a mitad del giro (ley de vista §23)
         spinning = false;
         rotation = normalizeRotation(rotation);
         openIdx = realIdx;

@@ -236,12 +236,12 @@ async function renderHost(rootSel, code, sessionId, activity) {
     if (modeEl) modeEl.onchange = (e) => { liveMode = e.target.value; autoAdvance = (liveMode === 'auto'); };
     on(rootSel, 'click', '#btn-start', async () => {
       if (isQL) {
-        await setSessionState(sessionId, { status: 'running', phase: 'question-live', current_item: 0, started_at: new Date().toISOString() });
+        await setSessionState(sessionId, { status: 'running', phase: 'question-live', current_item: 0, started_at: new Date(clock.now()).toISOString() });
       } else if (liveMode === 'race') {
-        await setSessionState(sessionId, { status: 'running', phase: 'race', current_item: 0, started_at: new Date().toISOString(), deadline: null });
+        await setSessionState(sessionId, { status: 'running', phase: 'race', current_item: 0, started_at: new Date(clock.now()).toISOString(), deadline: null });
       } else {
         const deadline = new Date(clock.now() + timerSec * 1000).toISOString();
-        await setSessionState(sessionId, { status: 'running', phase: 'question', current_item: 0, started_at: new Date().toISOString(), deadline });
+        await setSessionState(sessionId, { status: 'running', phase: 'question', current_item: 0, started_at: new Date(clock.now()).toISOString(), deadline });
       }
     });
     on(rootSel, 'click', '#btn-cancel', async () => {

@@ -37,7 +37,11 @@ export function openLoginModal() {
   // colegio). Cuentas nuevas = Google (autoservicio) o el admin las crea por
   // correo desde el panel Profesores (#/admin). Ver docs/handoff-acceso-docente.md U1.
   const $ = (id) => host.querySelector(id);
-  const close = () => { _open = false; host.remove(); };
+  const close = () => { _open = false; host.remove(); window.removeEventListener('hashchange', close); };
+  // El modal vive en <body> (fuera de #app), así que el router no lo desmonta:
+  // si se navega con él abierto quedaba huérfano encima de la vista nueva y
+  // `_open` bloqueaba reabrirlo (ley de vista §23). Navegar = cerrarlo.
+  window.addEventListener('hashchange', close);
 
   host.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', close));
   $('#lm-google').addEventListener('click', async () => {

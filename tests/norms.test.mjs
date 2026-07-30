@@ -75,6 +75,10 @@ assert.strictEqual(scanNormsSource('views/x.js', `ls('ww.activities.' + uid)`).l
 assert.strictEqual(scanNormsSource('views/studentLive.js', `import { settleItem } from '../core/liveTransport.js';`).length, 1, 'alumno no liquida');
 assert.strictEqual(scanNormsSource('views/hostLive.js', `await settleItem(sessionId, i);`).length, 0, 'el host sí liquida');
 assert.strictEqual(scanNormsSource('views/studentLive.js', `await setSessionState(id, patch);`).length, 0, 'setSessionState sancionado (QL)');
-ok('el escáner caza cada norma (incl. pb-dueno y confianza-alumno) y respeta comentarios + allowlist');
+// reloj-primitivo (ley §23): interval crudo → violación; ctx.setInterval y el primitivo, no.
+assert.strictEqual(scanNormsSource('views/x.js', `const t = setInterval(paint, 500);`).length, 1, 'caza setInterval crudo');
+assert.strictEqual(scanNormsSource('views/x.js', `ctx.setInterval(paint, 500);`).length, 0, 'ctx.setInterval es la vía');
+assert.strictEqual(scanNormsSource('core/soloTimer.js', `setInterval(tick, 1000)`).length, 0, 'el primitivo puede');
+ok('el escáner caza cada norma (pb-dueno · confianza-alumno · reloj-primitivo) y respeta comentarios + allowlist');
 
 console.log(`\nnorms.test: ${passed} checks passed`);

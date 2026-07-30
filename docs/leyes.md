@@ -212,6 +212,40 @@ servidor.** Una feature nueva que confíe en el móvil está mal diseñada.
   (R5 cubre el payload de ronda, no `activity_snap`); ⑥ tope de intentos
   server-side (índice único attempt) — hoy borrar `ww.anonId` = intentos ∞.
 
+## 23) ⚖️ LEY DE VISTA — ciclo de vida de una pantalla
+Las normas 4, 6 y 10 son piezas de esta ley; aquí está el cuadro completo de
+dueños. El síntoma de violarla siempre es el mismo: algo del pasado (un reloj,
+un handler, un observer, un modal) sigue vivo pintando encima del presente.
+
+| Pieza | Dueña de | PROHIBIDO |
+|---|---|---|
+| **VISTA** (`views/*`, montada en `#app`) | su render + sus handlers `on(APP,…)` + sus disposers (`acquire()`/`ctx`) | listeners globales sin remove · guardar referencias DOM entre montajes · estado module-level salvo preferencia declarada (filtro de home) |
+| **ROUTER** (`core/router` + `setBeforeResolve`) | el ciclo de vida: `clearListeners(APP)` antes de CADA ruta | que una vista lo esquive colgando handlers "para siempre" |
+| **RELOJES** | `createCountdown` (duración) · `startDeadlineTicker` (hasta instante del servidor) · `startElapsedTicker` (ascendente) · `ctx.setInterval` (polling con limpieza) | `setInterval` a pelo (regla `reloj-primitivo`) · `Date.now()` en dominio (→ `clock.now()`) |
+| **CALLBACKS DIFERIDOS** (`setTimeout` que repinta) | guard de vida: `if (!rootEl()) return` / `host.isConnected` / `ctx.setTimeout` | repintar sin comprobar que la ruta sigue viva (el patrón wheel es el ejemplar) |
+| **OVERLAYS en `<body>`** (toast, modales, banner) | cierre propio + **cierre en `hashchange`** si sobrevive a la ruta (loginModal) | quedar huérfanos encima de la vista siguiente |
+
+- **Ejemplares** (así se hace): `views/studentLive.js` (100% ctx + primitivos +
+  disposer de suscripción) · `views/playerView.js` (token de generación
+  anti-carrera async) · `views/editView.js` (único listener de window en views/,
+  con remove en el disposer).
+- **Tests que lo vigilan**: `reloj-primitivo` + `resize-observer` en
+  `core/normsCheck.js`/`tests/norms.test.mjs` · `tests/events.test.mjs`
+  (delegación + clearListeners) · `tests/deadlineTicker.test.mjs` (guard
+  anti-zombi).
+- **Arreglado en L3**: `started_at` de hostLive con `clock.now()` (era el único
+  `new Date()` vivo de la vista → relojes de carrera testeables con tiempo
+  congelado) · guard de vida en el giro de Abre-Cajas y en el "cubrir" de
+  Memoria-Equipos · loginModal se cierra al navegar (quedaba huérfano y
+  bloqueaba reabrirse).
+- **Deuda registrada**: `views/vsView.js` sin `acquire()` (sus 3 `setTimeout`
+  de ritmo repintan sin guard — migrarla a ctx es un pase propio) ·
+  disposer de `observeResize` descartado en match/diagram (y crossword solo lo
+  suelta al terminar) — RO sobre nodo desconectado no dispara, es fuga de
+  referencia, no de repintado · `Date.now()` en expiración de tokens
+  (`auth`/`classroomAuth`: legítimo reloj de pared, pero con `clock.now()`
+  serían testeables) · timestamps de `editList` con `new Date()` crudo.
+
 ---
 ### Cómo se auto-verifica todo
 `node tests/run.mjs` corre TODAS las suites. Los escáneres compartidos

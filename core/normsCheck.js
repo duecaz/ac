@@ -23,6 +23,12 @@
 //                       kickPlayer, fetchSessionKey/Blob): el alumno AFIRMA,
 //                       nunca liquida ni controla la sala. setSessionState es
 //                       la única afirmación sancionada (abrir pregunta en QL).
+//   · reloj-primitivo : LEY DE VISTA (docs/leyes.md §23) — nunca `setInterval(`
+//                       a pelo: un reloj repetitivo va por su primitivo
+//                       (createCountdown / startDeadlineTicker /
+//                       startElapsedTicker) o por `ctx.setInterval` (lifecycle,
+//                       que lo limpia al salir de la ruta). Un interval crudo
+//                       es el reloj zombi que repinta sobre la vista siguiente.
 //
 // Lo consumen DOS runners (mismo patrón que core/templateContract.js):
 //   · tests/norms.test.mjs — Node, recorre el filesystem COMPLETO (autoridad).
@@ -32,6 +38,8 @@ const ALLOW = {
   'resize-observer': ['core/observeResize.js'],
   'pb-filter': ['core/pbFilter.js'],   // pbFilterParam usa encodeURIComponent legítimamente
   'kernel-puro': [],
+  // Los primitivos de reloj y el ctx del lifecycle SON la implementación.
+  'reloj-primitivo': ['core/lifecycle.js', 'core/soloTimer.js', 'core/deadlineTicker.js'],
 };
 
 // LEY DE DATOS — colección → ficheros que pueden nombrarla. El PRIMERO es el
@@ -101,6 +109,10 @@ export function scanNormsSource(path, source) {
     }
     if (path.startsWith('views/student') && HOST_VERBS_RE.test(ln)) {
       out.push({ path, line: i + 1, rule: 'confianza-alumno', text: ln.trim() });
+    }
+    // `setInterval(` sin prefijo (ctx.setInterval y setIntervalFn( son legítimos).
+    if (/(^|[^.\w])setInterval\s*\(/.test(ln) && !allowed('reloj-primitivo')) {
+      out.push({ path, line: i + 1, rule: 'reloj-primitivo', text: ln.trim() });
     }
   });
   return out;
