@@ -174,6 +174,44 @@ exactamente lo que causó los lost-updates (deuda A) y el guardado doble.
   es índice único + campo `qid`, requiere "Crear colecciones"); 7 copias del
   wrapper `pb()` (unificar en `pbHttp`).
 
+## 22) ⚖️ LEY DE CONFIANZA — el cliente AFIRMA, el veredicto lo pone otro
+El principio que ya aplicamos tres veces sin nombrarlo (C6, answer-safety R5,
+reglas U1/S3), ahora como ley: **lo que llega de un cliente es una AFIRMACIÓN;
+el veredicto (correcto/puntos/fin) solo lo pone el host o una regla del
+servidor.** Una feature nueva que confíe en el móvil está mal diseñada.
+
+| Actor | AFIRMA (se acepta como dato) | PROHIBIDO decidir |
+|---|---|---|
+| **ALUMNO en vivo** (anónimo) | apodo · `value` · `ms` · abrir pregunta en QL (`ql_open`, sancionado) | su veredicto/puntos (los pone el settle del host — C6) · la fase/fin de la sala · expulsar · responder por otro `playerId` |
+| **PROFESOR (host)** | fase · deadlines · settle · `ql_award` (acto docente manual) | responder por un alumno · re-abrir lo liquidado (candado del engine) |
+| **CLIENTE Individual** (`results`) | score/techo/tiempo (append-only; deuda: autodeclarado) | editar/borrar lo ya guardado (reglas append-only) |
+| **CLIENTE Tarea** (`assignment_attempts`) | intento con score y `answers` (deuda: autodeclarado, re-puntuable desde `answers[].v`) | crear/cerrar/rotar la TAREA (exige sesión de profe — regla L2) · editar intentos ajenos |
+
+- **Dónde vive el veredicto hoy**: settle del host (`realtime.js settleItem`/
+  `settlePendingInto` sobre `engine.settle`, idempotente) + reglas PB
+  (`views/adminView.js` DEFS = `tools/setup-pocketbase.ps1`, unificados en L2).
+- **Tests que lo vigilan**: regla `confianza-alumno` en `core/normsCheck.js`
+  (el código de `views/student*` no puede ni NOMBRAR settleItem/endSession/
+  startSession/kickPlayer/fetchSessionKey/Blob) · `tests/liveAnswers.test.mjs`
+  (C6: carrera persiste sin puntuar) · `tests/answerSafety.test.mjs` (la clave
+  no viaja) · `bash tools/check-pb.sh` (reglas negativas contra la Pi).
+- **Reglas aplicadas en L2** (re-correr "Crear colecciones"): `assignments`
+  crear/cerrar/rotar/borrar exige sesión (el gateo de tareas deja de ser solo
+  de cliente en su mitad más grave: reabrir/mover due_at/subir intentos);
+  `setup-pocketbase.ps1` re-sincronizado con el DEFS del admin (divergía en
+  `assignment_attempts.list/view` — la variante ps1 rompía el tope de intentos
+  del alumno anónimo — y en `live_players.update`).
+- **FASE DE REGLAS LIVE (pendiente, diseño en `docs/handoff-seguridad-pb.md`)**
+  — requiere probarse en aula, no se aplica a ciegas: ① `live_answers.update`
+  con guarda de campos (`@request.body.scored/points/correct:isset = false` para
+  anónimos; el host firmado sí liquida) — hoy un PATCH de DevTools puede
+  auto-puntuarse saltándose C6; ② blob de `live_sessions` host-only compatible
+  con el handshake QL; ③ `live_players.delete` a sesión (hoy cualquiera
+  expulsa); ④ `ms` de servidor (autodate de la fila vs `started_at`) para el
+  bonus de velocidad; ⑤ el snapshot con clave que viaja al móvil en carrera
+  (R5 cubre el payload de ronda, no `activity_snap`); ⑥ tope de intentos
+  server-side (índice único attempt) — hoy borrar `ww.anonId` = intentos ∞.
+
 ---
 ### Cómo se auto-verifica todo
 `node tests/run.mjs` corre TODAS las suites. Los escáneres compartidos

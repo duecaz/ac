@@ -71,6 +71,10 @@ assert.strictEqual(scanNormsSource('views/x.js', `fetch('/api/collections/result
 assert.strictEqual(scanNormsSource('views/x.js', `const c = 'live_answers';`).length, 1, 'caza el literal de colección');
 assert.strictEqual(scanNormsSource('adapters/pocketbase/remoteStore.js', `fetch('/api/collections/results/records')`).length, 0, 'el dueño puede');
 assert.strictEqual(scanNormsSource('views/x.js', `ls('ww.activities.' + uid)`).length, 0, 'no confunde substrings (ww.activities.)');
-ok('el escáner caza cada norma (incl. pb-dueno) y respeta comentarios + allowlist');
+// confianza-alumno (ley §22): el lado alumno no nombra verbos del host; el host sí puede.
+assert.strictEqual(scanNormsSource('views/studentLive.js', `import { settleItem } from '../core/liveTransport.js';`).length, 1, 'alumno no liquida');
+assert.strictEqual(scanNormsSource('views/hostLive.js', `await settleItem(sessionId, i);`).length, 0, 'el host sí liquida');
+assert.strictEqual(scanNormsSource('views/studentLive.js', `await setSessionState(id, patch);`).length, 0, 'setSessionState sancionado (QL)');
+ok('el escáner caza cada norma (incl. pb-dueno y confianza-alumno) y respeta comentarios + allowlist');
 
 console.log(`\nnorms.test: ${passed} checks passed`);

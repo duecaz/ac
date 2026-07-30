@@ -123,17 +123,22 @@ $defs = @(
   @{ name = "live_players";
      fields = @( @{ name="session"; type="text"; required=$true }, @{ name="name"; type="text"; required=$true }, @{ name="user_id"; type="text" } );
      indexes = @( "CREATE UNIQUE INDEX ``idx_lp_session_name`` ON ``live_players`` (``session``, ``name``)" );
-     rules = @{ listRule=""; viewRule=""; createRule=""; updateRule=""; deleteRule="" } },
+     rules = @{ listRule=""; viewRule=""; createRule=""; updateRule=$null; deleteRule="" } },
 
+  # L2 (ley de confianza, docs/leyes.md §22): crear/cerrar/rotar tarea = acto del
+  # PROFE con sesión; el alumno solo lee (findByCode + tope de intentos).
   @{ name = "assignments";
      fields = @( @{ name="code"; type="text"; required=$true }, @{ name="activity_id"; type="text" }, @{ name="activity_snap"; type="json"; maxSize=5242880 }, @{ name="author_id"; type="text" }, @{ name="title"; type="text" }, @{ name="due_at"; type="text" }, @{ name="max_attempts"; type="number" }, @{ name="status"; type="text" } );
      indexes = @( "CREATE INDEX ``idx_asg_code`` ON ``assignments`` (``code``)" );
-     rules = @{ listRule=""; viewRule=""; createRule=""; updateRule=""; deleteRule="" } },
+     rules = @{ listRule=""; viewRule=""; createRule='@request.auth.id != ""'; updateRule='@request.auth.id != ""'; deleteRule='@request.auth.id != ""' } },
 
+  # list/view ABIERTOS: el tope de intentos lo cuenta el ALUMNO ANONIMO
+  # (countOwnAttempts) — con auth-required aqui el gateo de tareas revienta.
+  # (Antes este script divergia de views/adminView.js DEFS; unificado en L2.)
   @{ name = "assignment_attempts";
      fields = @( @{ name="assignment_id"; type="text" }, @{ name="activity_id"; type="text" }, @{ name="user_id"; type="text" }, @{ name="player_name"; type="text" }, @{ name="score_auto"; type="number" }, @{ name="score_final"; type="number" }, @{ name="max_score"; type="number" }, @{ name="time_used"; type="number" }, @{ name="answers"; type="json"; maxSize=200000 } );
      indexes = @();
-     rules = @{ createRule=""; listRule='@request.auth.id != ""'; viewRule='@request.auth.id != ""'; updateRule=$null; deleteRule=$null } }
+     rules = @{ createRule=""; listRule=""; viewRule=""; updateRule=$null; deleteRule=$null } }
 )
 
 function Merge-Fields($existing, $wanted) {

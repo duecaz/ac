@@ -684,8 +684,10 @@ function renderPanel(rootSel) {
         }
         return base;
       };
-      // Reglas públicas (sin auth) — se mantienen en las colecciones que tocan
-      // alumnos anónimos (results, live_*, assignments). Ver docs/handoff-seguridad-pb.md.
+      // Reglas públicas (sin auth) — quedan SOLO en live_sessions/live_answers,
+      // que los alumnos anónimos escriben por diseño. Endurecerlas de verdad
+      // (veredicto host-only por regla, blob host-only) es la "fase de reglas
+      // live" — ver docs/leyes.md §22 (LEY DE CONFIANZA) y handoff-seguridad-pb.
       const publicRules = { listRule: '', viewRule: '', createRule: '', updateRule: '', deleteRule: '' };
       // Reglas de `activities` (U1 — ENDURECIDAS): protegen el contenido del profe.
       // Ya NO hay cláusula transitoria `owner = ''` (la BD arrancó limpia, no quedan
@@ -738,12 +740,23 @@ function renderPanel(rootSel) {
       // cerrado. Delete queda público por ahora (expulsar no exige host logueado);
       // cerrarlo a host-only va con la fase de reglas live (ver handoff-seguridad-pb).
       const livePlayersRules = { listRule: '', viewRule: '', createRule: '', updateRule: null, deleteRule: '' };
+      // Tareas (L2 — ley de confianza §22): el ALUMNO solo LEE (findByCode y el
+      // tope de intentos); crear/cerrar/rotar/borrar es acto del PROFE (siempre
+      // con sesión). Sin esto, un alumno con DevTools podía REABRIR una tarea
+      // cerrada, mover due_at o subir max_attempts (el gateo era solo cliente).
+      const assignmentsRules = {
+        listRule: '', viewRule: '',
+        createRule: "@request.auth.id != ''",
+        updateRule: "@request.auth.id != ''",
+        deleteRule: "@request.auth.id != ''",
+      };
       const rulesFor = (name) =>
         name === 'activities' ? activityRules :
         name === 'activity_likes' ? likesRules :
         name === 'reports' ? reportsRules :
         name === 'profiles' ? profilesRules :
         (name === 'results' || name === 'assignment_attempts') ? appendOnlyRules :
+        name === 'assignments' ? assignmentsRules :
         name === 'live_players' ? livePlayersRules : publicRules;
       // En PB ≥0.23 los campos created/updated NO se añaden solos al crear por API,
       // y el store ordena resultados por `sort=-created` → hay que crearlos como

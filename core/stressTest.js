@@ -7,6 +7,7 @@
 // Crea datos DESECHABLES (sesión/tarea de prueba con prefijo `stress_`) y los
 // BORRA al terminar, pase o falle. No toca actividades ni salas reales.
 import { pbEscape, pbFilterParam } from './pbFilter.js';
+import { signedFetch } from './pbHttp.js';
 
 const filt = (parts) => pbFilterParam(parts.join(' && '));
 const sessFilter = (id) => `filter=${filt([`session='${pbEscape(id)}'`])}`;
@@ -31,10 +32,20 @@ const playerName = (i) => i % 2 === 0 ? `${FIRST[i % FIRST.length]}${i}` : 'Alum
 export async function runStressTest({ pbUrl, n = 30, onLog = () => {} } = {}) {
   const PB = String(pbUrl || '').replace(/\/$/, '');
   const jget = async (path) => (await fetch(`${PB}${path}`)).json();
+  // fetch CRUDO a propósito (sin token): replica lo que puede hacer un ALUMNO
+  // anónimo — ese es el punto de la prueba de carga en live_*.
   const jpost = (coll, body) => fetch(`${PB}/api/collections/${coll}/records`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
   });
-  const del = (coll, id) => fetch(`${PB}/api/collections/${coll}/records/${id}`, { method: 'DELETE' }).catch(() => {});
+  // FIRMADO: crear/borrar la TAREA es acto del profe (ley de confianza §22 —
+  // assignments exige sesión). El intento del alumno sigue yendo por jpost crudo.
+  const jpostAuth = (coll, body) => signedFetch(`${PB}/api/collections/${coll}/records`, {
+    method: 'POST', body: JSON.stringify(body),
+  });
+  const del = (coll, id) => {
+    const url = `${PB}/api/collections/${coll}/records/${id}`;
+    return (coll === 'assignments' ? signedFetch(url, { method: 'DELETE' }) : fetch(url, { method: 'DELETE' })).catch(() => {});
+  };
   // Borra en tandas de 15 para no reventar la Pi con 50 DELETE de golpe.
   const delMany = async (coll, ids) => { for (let i = 0; i < ids.length; i += 15) await Promise.all(ids.slice(i, i + 15).map(id => del(coll, id))); };
   const exists = async (coll) => { try { return (await fetch(`${PB}/api/collections/${coll}/records?perPage=1`)).status === 200; } catch { return false; } };
@@ -111,7 +122,7 @@ export async function runStressTest({ pbUrl, n = 30, onLog = () => {} } = {}) {
 
   // ── TAREAS: crear tarea → N intentos concurrentes → verificar → limpiar ────
   onLog(`Creando tarea de prueba y ${n} intentos simultáneos…`);
-  const asgRes = await jpost('assignments', { code: ('T' + rnd()).toUpperCase(), activity_id: activity.id, activity_snap: activity, title: 'Prueba de carga', status: 'open', max_attempts: 1 });
+  const asgRes = await jpostAuth('assignments', { code: ('T' + rnd()).toUpperCase(), activity_id: activity.id, activity_snap: activity, title: 'Prueba de carga', status: 'open', max_attempts: 1 });
   const asgId = (await asgRes.json())?.id;
   if (asgId) {
     const tAtt = Date.now();
@@ -129,7 +140,8 @@ export async function runStressTest({ pbUrl, n = 30, onLog = () => {} } = {}) {
     await del('assignments', asgId);
   } else {
     report.tasks = { pass: false };
-    report.notes.push('No se pudo crear la tarea de prueba.');
+    report.notes.push('No se pudo crear la tarea de prueba. Si las reglas L2 ya están aplicadas '
+      + '(crear tarea exige sesión de profe), corre esta prueba desde #/admin con sesión iniciada.');
   }
 
   report.ms = Date.now() - t0;

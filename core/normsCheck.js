@@ -17,6 +17,12 @@
 //                       módulo nuevo que necesite esos datos pide un método al
 //                       dueño, no hace fetch por su cuenta — así "parchar algo"
 //                       escribiendo directo a la BD hace fallar CI.
+//   · confianza-alumno: LEY DE CONFIANZA (docs/leyes.md §22) — el código del
+//                       LADO ALUMNO (views/student*) no puede ni NOMBRAR los
+//                       verbos del host (settleItem, endSession, startSession,
+//                       kickPlayer, fetchSessionKey/Blob): el alumno AFIRMA,
+//                       nunca liquida ni controla la sala. setSessionState es
+//                       la única afirmación sancionada (abrir pregunta en QL).
 //
 // Lo consumen DOS runners (mismo patrón que core/templateContract.js):
 //   · tests/norms.test.mjs — Node, recorre el filesystem COMPLETO (autoridad).
@@ -58,6 +64,12 @@ const PB_RES = Object.keys(PB_OWNERS).map(c => ({
   re: new RegExp(`collections/${c}(?![a-zA-Z_])|['"\`]${c}['"\`]`),
 }));
 
+// LEY DE CONFIANZA — verbos del HOST que el lado alumno no puede ni nombrar.
+// (Como cadenas, no regex literal: si fueran identificadores, moduleRefs los
+// contaría como "usados sin importar" en este mismo fichero.)
+const HOST_VERBS = ['settleItem', 'endSession', 'startSession', 'kickPlayer', 'fetchSessionKey', 'fetchSessionBlob'];
+const HOST_VERBS_RE = new RegExp(`\\b(${HOST_VERBS.join('|')})\\b`);
+
 // Comentarios fuera (mismo truco que tests/styles.test.mjs: se preservan los
 // saltos de línea para que los números de línea no se corran).
 const blank = (s) => s
@@ -86,6 +98,9 @@ export function scanNormsSource(path, source) {
       if (re.test(ln) && !PB_OWNERS[coll].some(a => path.endsWith(a))) {
         out.push({ path, line: i + 1, rule: 'pb-dueno', text: `[${coll}] ${ln.trim()}` });
       }
+    }
+    if (path.startsWith('views/student') && HOST_VERBS_RE.test(ln)) {
+      out.push({ path, line: i + 1, rule: 'confianza-alumno', text: ln.trim() });
     }
   });
   return out;
