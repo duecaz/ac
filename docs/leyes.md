@@ -94,6 +94,17 @@ escribirse; si necesita violar una prohibición, está en la capa equivocada.
   del chrome (hoy §3 solo legisla el JUEGO). Mientras tanto, cualquier trabajo
   offline debe recordar que `confirmModal` depende del CDN (el shim de
   `tools/live-smoke.mjs` existe por esto).
+  **La especificación ya es ejecutable (R3/R4)**: `node tools/css-inventory.mjs`
+  cuenta qué clases de Bootstrap usa la app de verdad, por familia (hoy ~3.900
+  usos: texto 761 · iconos `bi` 690 · spacing 613 · botones 507 · flex 371 ·
+  forms 279 · grid 216 · …). El CSS propio se escribe familia a familia,
+  empezando por la de más usos; re-correr el inventario tras cada migración dice
+  cuánto falta (debe tender a 0). Los iconos son decisión aparte: `bi` es una
+  FUENTE, no CSS — vendorizarla o pasar a SVG inline.
+  **Themes ya están en el escáner de px (R3)**: `tests/styles.test.mjs` congela
+  los 7 `font-size` fijos que quedaban en arcade/colegios/tv-show como baseline
+  propio (solo encoge) — la cifra "27" de la deuda era vieja; L5/M7 ya habían
+  limpiado el resto.
 - **Deuda registrada**: `themes/colegios/skin.css` huérfano (en disco, sin
   `registerSkin` — decidir si se registra o se retira; fijado en
   `KNOWN_ORPHANS`; su copia del teclado es CÓDIGO MUERTO, no una 4ª copia viva) · deuda de ratchet en vs/teams/wordsearch (la mayor) +

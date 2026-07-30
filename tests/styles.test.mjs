@@ -107,6 +107,40 @@ for (const clean of ['math', 'quiz']) {
 }
 ok('math.css y quiz.css siguen limpios (0 fija / 0 color hardcodeado)');
 
+// ── THEMES en el escáner de px (§3, R3) ──────────────────────────────────────
+// Los skins definen su PALETA (colores propios, por diseño: el escáner de arriba
+// salta `.vs-skin-*` a propósito), pero un `font-size` FIJO congela el escalado
+// igual que en cualquier CSS de juego — la pizarra 4K y el móvil 9:16 no
+// perdonan según quién pinte. Aquí se escanean SOLO los tamaños, con su propio
+// baseline congelado (mismo contrato ratchet: solo encoge, nunca crece).
+const THEME_BASELINE = {
+  arcade:   ['.45rem', '.5em', '.5rem'],
+  colegios: ['.85rem', '1.1rem'],
+  'tv-show': ['1.05rem', '1.4rem'],
+};
+{
+  const themesDir = join(STYLES, '..', 'themes');
+  for (const d of readdirSync(themesDir, { withFileTypes: true }).filter(x => x.isDirectory())) {
+    const css = blank(readFileSync(join(themesDir, d.name, 'skin.css'), 'utf8'));
+    const fonts = new Set();
+    const re = /([^{}]+)\{([^{}]*)\}/g; let m;
+    while ((m = re.exec(css))) {
+      for (const decl of m[2].matchAll(/font-size\s*:\s*([^;}]+)/g)) {
+        const v = decl[1].trim();
+        if (/cq|vw|vh|vmin|vmax|%/.test(v)) continue;
+        if (/(max|clamp)\s*\(/.test(v) && /cq|vw|vh|vmin|%/.test(v)) continue;
+        if (/\bvar\(/.test(v)) continue;
+        if (/\d(px|rem|em)\b/.test(v)) fonts.add(v.replace(/\s+/g, ' '));
+      }
+    }
+    const base = new Set(THEME_BASELINE[d.name] || []);
+    for (const v of fonts) if (!base.has(v)) {
+      newViolations.push(`themes/${d.name}/skin.css: font-size fija nueva → "${v}" (un skin cambia TOKENS, no congela tamaños)`);
+    }
+  }
+  ok(`themes en el escáner de px (${Object.keys(THEME_BASELINE).length} baselines congelados, solo encogen)`);
+}
+
 // COMPLETITUD: todo styles/*.css debe estar CLASIFICADO — en GAME (se escanea)
 // o en EXCLUDED (chrome/paleta, no juego). Sin esto, el CSS de una actividad
 // NUEVA escaparía del ratchet en silencio ("una actividad nueva debe nacer
