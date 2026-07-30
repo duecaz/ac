@@ -38,6 +38,17 @@ for (const [p, who] of [[host, 'host'], [student, 'alumno']]) {
   p.on('pageerror', e => { const m = String(e.message).split('\n')[0]; if (!NOISE.test(m)) errs.push(`${who}: ${m}`); });
   await p.route('**/esm.sh/**', r => r.fulfill({ contentType: 'application/javascript', body: 'export default function(){}' }));
   await p.route('**/cdn.jsdelivr.net/**', r => r.fulfill({ contentType: 'text/css', body: '' }));
+  // Bootstrap viene de un CDN y este sandbox no tiene red: sin un mínimo shim,
+  // `confirmModal` (que usa bootstrap.Modal) revienta y no se puede probar NINGÚN
+  // flujo con confirmación — como terminar la carrera. El shim solo muestra y
+  // quita el diálogo; los botones son los de la app.
+  await p.addInitScript(() => {
+    window.bootstrap = {
+      Modal: class { constructor(el) { this.el = el; }
+        show() { this.el.classList.add('show'); this.el.style.display = 'block'; }
+        hide() { this.el.dispatchEvent(new Event('hidden.bs.modal')); } },
+    };
+  });
 }
 const log = (m) => console.log('  ·', m);
 
@@ -104,9 +115,46 @@ try {
   await student.waitForFunction(() => /final|Final|podio|puntos|rango/i.test(document.body.textContent), { timeout: 12000 });
   log('la alumna ve la pantalla de final');
 
+  // ══ SEGUNDA PASADA: CARRERA LIBRE ═══════════════════════════════════════════
+  // El otro flujo del host, que no estaba cubierto: cada alumno va a su ritmo, el
+  // host ve una lista de progreso con cronómetro y un repintado de respaldo
+  // (startRaceLoop). Aquí se comprueba lo que se puede romper sin que nadie lo
+  // note: que el CRONÓMETRO avanza y que el progreso del alumno llega.
+  await host.evaluate(() => { location.hash = '#/launch/lv_e2e'; });
+  await host.waitForSelector('.ww-pin', { timeout: 12000 });
+  const pin2 = (await host.locator('.ww-pin').textContent()).trim();
+  await student.goto(`${BASE}/student.html?backend=local#/join`, { waitUntil: 'domcontentloaded' });
+  await student.waitForSelector('#f-code', { timeout: 12000 });
+  await student.fill('#f-code', pin2);
+  await student.fill('#f-nick', 'Leo');
+  await student.click('#btn-join');
+  await host.waitForFunction(() => document.body.textContent.includes('Leo'), { timeout: 9000 });
+  await host.selectOption('#mode-select', 'race');
+  await host.click('#btn-start');
+  await host.waitForSelector('#race-timer', { timeout: 9000 });
+  log(`carrera arrancada · PIN ${pin2}`);
+
+  // El cronómetro es un reloj de verdad: su etiqueta cambia sola.
+  const t0 = (await host.locator('#race-timer').textContent()).trim();
+  await host.waitForFunction((prev) => (document.getElementById('race-timer')?.textContent || '').trim() !== prev,
+    t0, { timeout: 9000 });
+  log('el cronómetro de carrera avanza (startElapsedTicker vivo)');
+
+  // El alumno resuelve un ítem y el host lo ve (evento o repintado de respaldo).
+  await student.waitForSelector('.rq-opt, .ww-opt', { timeout: 12000 });
+  await student.locator('.rq-opt, .ww-opt', { hasText: '4' }).first().click();
+  await host.waitForFunction(() => /1\s*\/\s*2/.test(document.body.textContent), { timeout: 12000 });
+  log('progreso del alumno en la lista del host (1/2)');
+
+  await host.click('#btn-end-race');
+  await host.click('.modal [data-act=ok]', { timeout: 9000 });   // confirmación real del profe
+  await host.waitForFunction(() => /podio|Podio|🏆|trophy/i.test(document.body.innerHTML), { timeout: 12000 });
+  log('podio tras la carrera');
+
   if (errs.length) { console.error('\nERRORES DE PÁGINA:'); errs.forEach(e => console.error('  ✗', e)); }
   if (!emmaScored || errs.length) { console.log('\n❌ LIVE E2E FALLA'); await browser.close(); bye(1); }
-  console.log('\n✅ LIVE E2E PASA — sala→PIN→join→pregunta→respuesta→settle→clasificación→podio, en dos contextos.');
+  console.log('\n✅ LIVE E2E PASA — pregunta (sala→PIN→join→respuesta→settle→clasificación→podio)'
+    + ' Y carrera (cronómetro vivo → progreso → podio), en dos contextos.');
   await browser.close(); bye(0);
 } catch (e) {
   console.error('\n❌ LIVE E2E FALLA:', String(e.message).split('\n')[0]);

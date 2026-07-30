@@ -397,6 +397,16 @@ un handler, un observer, un modal) sigue vivo pintando encima del presente.
   congelado) · guard de vida en el giro de Abre-Cajas y en el "cubrir" de
   Memoria-Equipos · loginModal se cierra al navegar (quedaba huérfano y
   bloqueaba reabrirse).
+- **✅ CERRADO (M8)**: las vistas de LIVE ya no miran el reloj del sistema — todo
+  deadline y cronómetro pasa por `clock.now()` o por los primitivos de
+  `core/deadlineTicker.js`, y `tests/clock.test.mjs` FALLA si vuelve un
+  `Date.now()` crudo a `hostLive`/`studentLive`. En hostLive, el cronómetro de
+  carrera y el repintado de respaldo estaban copiados en sus dos pantallas
+  (lista de progreso y tablero): ahora es `startRaceLoop(repaint, cada)` y los
+  ritmos tienen nombre en `core/timings.js` (`RACE_POLL_MS`/`BOARD_POLL_MS`).
+  `tools/live-smoke.mjs` cubre además la CARRERA de punta a punta (el cronómetro
+  avanza de verdad → el progreso del alumno llega → podio), que era el hueco
+  declarado del runner.
 - **Deuda registrada**: `views/vsView.js` sin `acquire()` (sus 3 `setTimeout`
   de ritmo repintan sin guard — migrarla a ctx es un pase propio) ·
   disposer de `observeResize` descartado en match/diagram (y crossword solo lo

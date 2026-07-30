@@ -360,11 +360,15 @@ temporales retirados.
     a propósito: cada skin define su `.vs-skin-X .vss-bar`, así que una regla compartida
     pierde por especificidad — se intentó y el marcador de tv-show se descuadró (razón
     escrita en vs.css).
-  - **Vistas**: timer de carrera + poll-fallback duplicados dentro de hostLive (paintRace ↔
-    paintLiveBoardHost); los pacing internos de hostLive siguen como literales.
-  - **Core**: deadlines de hostLive/studentLive aún con `Date.now()`; load-guard + wiring 'online'
-    duplicado entre submitQueue y results (absorber en la factory de offlineQueue; NO fusionar las
-    colas — identidad/evicción distintas es correcto).
+  - **Vistas**: ✅ RESUELTO (v1.51.321) — `startRaceLoop()` en hostLive une el cronómetro y el
+    repintado de respaldo de las DOS pantallas de carrera, y sus ritmos tienen nombre en
+    `core/timings.js` (`RACE_POLL_MS`/`BOARD_POLL_MS`). `tools/live-smoke.mjs` cubre ahora
+    también la CARRERA (cronómetro vivo → progreso del alumno → podio).
+  - **Core**: ✅ los deadlines de hostLive/studentLive ya van por `clock.now()` y los primitivos
+    de `core/deadlineTicker.js` (lo fija `tests/clock.test.mjs`, que falla si vuelve un
+    `Date.now()` crudo). QUEDA: load-guard + wiring 'online' duplicado entre submitQueue y
+    results (absorber en la factory de offlineQueue; NO fusionar las colas — identidad/evicción
+    distintas es correcto).
   - La fusión real de `raceQueue`/scoring de studentLive va con la deuda A (lost-update): mismo flujo.
 
 #### G. Auditoría de estructura (motor/plantillas/vistas/docs) — RESUELTO

@@ -46,4 +46,21 @@ try {
   clock.now = realNow;
 }
 
+// ── Las vistas de LIVE ya no miran el reloj del sistema (§23) ────────────────
+// Eran las dos últimas con `Date.now()` crudo en sus deadlines, y por eso las
+// únicas que no se podían testear con tiempo congelado. Este guardarraíl impide
+// que vuelva a colarse: los deadlines y los cronómetros pasan por clock.now() o
+// por los primitivos de core/deadlineTicker.js.
+{
+  const { readFileSync } = await import('node:fs');
+  for (const f of ['views/hostLive.js', 'views/studentLive.js']) {
+    const src = readFileSync(new URL('../' + f, import.meta.url), 'utf8')
+      // fuera comentarios: una explicación puede nombrar Date.now()
+      .replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+    assert.ok(!/\bDate\.now\s*\(/.test(src), `${f} debe usar clock.now(), no Date.now()`);
+    assert.ok(!/new Date\s*\)/.test(src.replace(/\s+/g, '')), `${f} no debe usar new Date() sin argumento`);
+  }
+  ok('hostLive y studentLive: sin Date.now() ni new Date() a pelo (testeables con reloj congelado)');
+}
+
 console.log(`\nclock.test: ${passed} checks passed`);

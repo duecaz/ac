@@ -26,7 +26,7 @@ import { hostPaintDecision } from '../core/livePhases.js';
 import { isStudentSnapshot } from '../core/liveSnapshot.js';
 import { podiumHtml } from '../core/podium.js';
 import { QL_COLORS } from '../core/questionLive.js';
-import { questionWindowMs } from '../core/timings.js';
+import { questionWindowMs, RACE_POLL_MS, BOARD_POLL_MS } from '../core/timings.js';
 
 const STUDENT_BASE = location.origin + location.pathname.replace(/teacher\.html.*/, 'student.html');
 
@@ -491,6 +491,23 @@ async function renderHost(rootSel, code, sessionId, activity) {
     return all.flat();
   }
 
+  // CARRERA: reloj + red de seguridad de refresco. Las DOS pantallas de carrera
+  // (lista de progreso y tablero compartido) necesitan exactamente lo mismo —
+  // cronómetro ascendente compartido (core/deadlineTicker.js, con clock.now() y
+  // auto-parada al cambiar de fase) más un repintado de respaldo por si se pierde
+  // un evento de realtime. Estaba copiado en las dos, con su literal cada una.
+  function startRaceLoop(repaint, everyMs) {
+    startElapsedTicker({
+      since: session.started_at, setIntervalFn: ctx.setInterval,
+      while: () => session.phase === 'race' && !!document.getElementById('race-timer'),
+      onTick: ({ label }) => { const el = document.getElementById('race-timer'); if (el) el.textContent = label; },
+    });
+    const poll = ctx.setInterval(() => {
+      if (session.phase !== 'race') { clearInterval(poll); return; }
+      repaint(false);
+    }, everyMs);
+  }
+
   async function paintRace(phaseChanged = true) {
     if (phaseChanged) emitGame(GameEvents.LOBBY_END);
     let allAnswers;
@@ -549,20 +566,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     `);
     attachFullscreenButton(rootSel);
 
-    if (phaseChanged) {
-      // Cronómetro ascendente compartido (core/deadlineTicker.js): mismo reloj
-      // que el tablero, con clock.now() y auto-parada al cambiar de fase.
-      startElapsedTicker({
-        since: session.started_at, setIntervalFn: ctx.setInterval,
-        while: () => session.phase === 'race' && !!document.getElementById('race-timer'),
-        onTick: ({ label }) => { const el = document.getElementById('race-timer'); if (el) el.textContent = label; },
-      });
-      // Polling fallback: refresh progress every 5 s even if SSE is missed.
-      const racePoll = ctx.setInterval(() => {
-        if (session.phase !== 'race') { clearInterval(racePoll); return; }
-        paintRace(false);
-      }, 5000);
-    }
+    if (phaseChanged) startRaceLoop(paintRace, RACE_POLL_MS);
 
     on(rootSel, 'click', '#btn-end-race', async () => {
       const ok = await confirmModal('¿Terminar la carrera? Se calculará la clasificación final.', { okText: 'Terminar carrera' });
@@ -639,20 +643,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
       }
     }
 
-    if (phaseChanged) {
-      // Cronómetro ascendente compartido (core/deadlineTicker.js): mismo reloj
-      // que el tablero, con clock.now() y auto-parada al cambiar de fase.
-      startElapsedTicker({
-        since: session.started_at, setIntervalFn: ctx.setInterval,
-        while: () => session.phase === 'race' && !!document.getElementById('race-timer'),
-        onTick: ({ label }) => { const el = document.getElementById('race-timer'); if (el) el.textContent = label; },
-      });
-      // Poll progress every 2 s even if a realtime event is missed.
-      const poll = ctx.setInterval(() => {
-        if (session.phase !== 'race') { clearInterval(poll); return; }
-        paintLiveBoardHost(false);
-      }, 2000);
-    }
+    if (phaseChanged) startRaceLoop(paintLiveBoardHost, BOARD_POLL_MS);
 
     on(rootSel, 'click', '#btn-end-race', async () => {
       const ok = await confirmModal('¿Terminar la partida? Se calculará la clasificación final.', { okText: 'Terminar' });

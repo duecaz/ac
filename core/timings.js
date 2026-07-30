@@ -11,6 +11,14 @@ export const CONFETTI_ENCORE_MS = [900, 1700];  // ráfagas extra de confeti tra
 export const WRONG_FLASH_MS = 380;  // Sopa: destello rojo de una selección fallida
 export const GRADE_HOLD_MS = 1100;  // Emparejar/Diagrama: ver la corrección antes del resultado
 
+// ── RED DE SEGURIDAD DE REFRESCO EN VIVO ─────────────────────────────────────
+// El host se pinta con los eventos de realtime, pero un evento se puede perder
+// (móvil que suspende, SSE cortado). Estos son los repintados de respaldo, no el
+// ritmo normal: si se ven "saltos" de progreso en clase, es esto. Estaban como
+// literales sueltos dentro de hostLive, cada pantalla con el suyo.
+export const RACE_POLL_MS = 5000;   // carrera libre: lista de progreso por alumno
+export const BOARD_POLL_MS = 2000;  // tablero compartido: se mueve más, refresca antes
+
 // Ventana de una pregunta en vivo, en ms (default 20s, piso 5s). ÚNICA fuente:
 // la usan el deadline del host, la barra de cuenta atrás del alumno y el
 // denominador del bonus de velocidad Kahoot (core/scoring/award.js). Antes iban
