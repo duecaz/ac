@@ -412,6 +412,14 @@ body {
 .acard-modes button.mode-teams { background: var(--soft-primary-bg); color: var(--soft-primary-fg); }
 .acard-modes button.mode-live  { background: var(--soft-warning-bg); color: var(--soft-warning-fg); }
 .acard-modes button.mode-task  { background: var(--soft-info-bg);    color: var(--soft-info-fg); }
+/* Modo host-only sin sesión (En vivo / Tarea): CANDADO en gris neutro — se ve, se
+   entiende que falta algo, y el tooltip/toast dice qué ("Inicia sesión para crear
+   una sala en vivo"). No se esconde: esconder un modo enseña que no existe. */
+.acard-modes button.is-locked,
+.acard-modes button.is-locked:hover {
+  background: var(--soft-neutral-bg); color: var(--soft-neutral-fg);
+  cursor: pointer;
+}
 .acard-modes button.mode-solo:hover  { background: var(--soft-success-fg); color: #fff; }
 .acard-modes button.mode-vs:hover    { background: var(--soft-danger-fg);  color: #fff; }
 .acard-modes button.mode-teams:hover { background: var(--soft-primary-fg); color: #fff; }

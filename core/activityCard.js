@@ -11,7 +11,7 @@
 // aquí una vez y aplica en las 4 páginas. Lo vigila tests/activityCard.test.mjs.
 import { escapeHtml } from './html.js';
 import { getTemplate } from './registry.js';
-import { getMode } from './modes.js';
+import { getMode, modeNeedsAuth, modeAuthHint } from './modes.js';
 import { isVsCompatible } from '../kernel/session/engine.js';
 import { homePreviewHtml, previewBgStyle } from './homePreview.js';
 import { activityPageCount } from './migrate.js';
@@ -20,23 +20,34 @@ import { activityPageCount } from './migrate.js';
 // (Individual/VS/Equipos). `includeManage` añade Live/Tarea, que crean
 // sesión/asignación y solo tienen sentido sobre TUS propias actividades
 // ("Mis actividades") — en la biblioteca pública romperían sobre una ajena.
-export function modeStripHtml(a, { includeManage = false } = {}) {
+export function modeStripHtml(a, { includeManage = false, authed = true } = {}) {
   const T = getTemplate(a.template);
   const m = T?.meta?.modes || { solo: true };
   const teamsMode = getMode('teams');
   const canTeams = teamsMode.supportsTemplate(T) && teamsMode.isAvailable(a);
   const id = escapeHtml(a.id);
+  // Modo host-only sin sesión: se muestra con CANDADO y su frase, no se esconde
+  // ni se deja fallar al pulsar. `authed` lo aporta la vista (este módulo es
+  // puro). Los modos jugables (Individual/VS/Equipos) nunca se bloquean.
+  const hostBtn = (modeId, cls, icon, label) => {
+    const locked = !authed && modeNeedsAuth(modeId);
+    const title = locked ? modeAuthHint(modeId) : label;
+    return `<button class="${cls} mode-${modeId === 'task' ? 'task' : 'live'}${locked ? ' is-locked' : ''}"`
+      + ` data-id="${id}"${locked ? ' data-locked="1"' : ''} title="${escapeHtml(title)}">`
+      + `<i class="bi ${locked ? 'bi-lock-fill' : icon}"></i></button>`;
+  };
   return [
     m.solo            ? `<button class="act-play mode-solo"   data-id="${id}" title="Individual"><i class="bi bi-person-fill"></i></button>` : '',
     isVsCompatible(a) ? `<button class="act-vs mode-vs"       data-id="${id}" title="VS"><i class="bi bi-fire"></i></button>` : '',
     canTeams          ? `<button class="act-teams mode-teams" data-id="${id}" data-tpl="${escapeHtml(a.template)}" title="Equipos"><i class="bi bi-people-fill"></i></button>` : '',
-    includeManage && m.live  ? `<button class="act-pin mode-live"  data-id="${id}" title="En vivo"><i class="bi bi-broadcast"></i></button>` : '',
-    includeManage && m.async ? `<button class="act-task mode-task" data-id="${id}" title="Tarea"><i class="bi bi-clipboard-check"></i></button>` : '',
+    includeManage && m.live  ? hostBtn('live', 'act-pin',  'bi-broadcast',      'En vivo') : '',
+    includeManage && m.async ? hostBtn('task', 'act-task', 'bi-clipboard-check', 'Tarea')  : '',
   ].filter(Boolean).join('');
 }
 
 // Pinta la tarjeta canónica. `opts`:
 //   modes: 'none' | 'play' | 'all'   → tira de modos (play = jugables; all = +Live/Tarea)
+//   authed: bool                     → hay sesión de profe (false ⇒ Live/Tarea con candado)
 //   pages: bool                      → badge de nº de páginas sobre el preview
 //   playablePreview: bool            → preview clicable (data-play → jugar)
 //   subtitle/author/tags: bool       → mostrar esos campos si existen
@@ -45,7 +56,7 @@ export function modeStripHtml(a, { includeManage = false } = {}) {
 //   extraClass/previewClass: string  → clases extra opcionales
 export function activityCardHtml(a, opts = {}) {
   const {
-    modes = 'none', pages = false, playablePreview = false,
+    modes = 'none', pages = false, playablePreview = false, authed = true,
     subtitle = false, author = false, tags = false,
     topRight = '', footer = '', extraClass = '', previewClass = '',
   } = opts;
@@ -55,7 +66,7 @@ export function activityCardHtml(a, opts = {}) {
   const label = T?.meta?.label || a.template;
   const bg = previewBgStyle(a.presentation);
   const id = escapeHtml(a.id);
-  const strip = modes === 'none' ? '' : modeStripHtml(a, { includeManage: modes === 'all' });
+  const strip = modes === 'none' ? '' : modeStripHtml(a, { includeManage: modes === 'all', authed });
   let pagesBadge = '';
   if (pages) {
     const p = activityPageCount(a);

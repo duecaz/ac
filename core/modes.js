@@ -20,9 +20,19 @@
 //                 PHYSICAL setup: En vivo = projector + students' phones;
 //                 Tarea = assignment management. These share the mode bar and
 //                 styling but navigate via `href` instead of mounting.
+//
+// AUTORIDAD (¿quién puede ABRIR este modo?): un modo que crea una sesión
+// compartida ESCRIBE en una colección host-only (ley §22: el veredicto es del
+// host, y el servidor solo distingue host de alumno por el token). Esos modos
+// declaran en qué colección escriben (`writes`) y qué acto de profe hacen
+// (`hostAction`); `modeNeedsAuth()` lo DERIVA de las reglas reales
+// (`HOST_ONLY_WRITES` de core/pbRules.js) en vez de repetir la lista. Así la UI
+// puede avisar ANTES —"inicia sesión para crear la sala"— en vez de dejar que
+// el 403 aparezca con la clase delante.
 import { getTemplate } from './registry.js';
 import { isVsCompatible, sessionItems } from '../kernel/session/engine.js';
 import { canAutoScoreRound } from './templateCapability.js';
+import { HOST_ONLY_WRITES, LIVE_SESSIONS, ASSIGNMENTS } from './pbRules.js';
 
 export const MODE_DEFS = [
   {
@@ -62,6 +72,10 @@ export const MODE_DEFS = [
     id: 'live', label: 'En vivo', short: 'en vivo', icon: 'bi-broadcast', color: 'info',
     embed: false,
     href: (a) => `#/launch/${a.id}`,
+    // Abrir sala = escribir en live_sessions (host-only). El ALUMNO no necesita
+    // cuenta: entra con el PIN.
+    writes: LIVE_SESSIONS,
+    hostAction: 'crear una sala en vivo',
     supportsTemplate: (T) => !!T?.meta?.modes?.live,
     isAvailable: (a) => !!getTemplate(a?.template)?.meta?.modes?.live,
     disabledHint: 'Esta plantilla no admite En vivo'
@@ -70,6 +84,10 @@ export const MODE_DEFS = [
     id: 'task', label: 'Tarea', short: 'tarea', icon: 'bi-journal-check', color: 'warning',
     embed: false,
     href: (a) => `#/tasks/${a.id}`,
+    // Crear/cerrar tarea = escribir en assignments (host-only). El alumno la
+    // hace con su código, sin cuenta.
+    writes: ASSIGNMENTS,
+    hostAction: 'crear una tarea',
     supportsTemplate: (T) => !!T?.meta?.modes?.async,
     isAvailable: (a) => !!getTemplate(a?.template)?.meta?.modes?.async,
     // Tarea no tiene sentido si la plantilla no la soporta: se OCULTA en vez de
@@ -94,6 +112,32 @@ export function availableModes(activity) {
 }
 
 export function getMode(modeId) { return MODE_DEFS.find(m => m.id === modeId); }
+
+/** Normaliza `'live'` | MODE_DEF → MODE_DEF. */
+const asMode = (m) => (typeof m === 'string' ? getMode(m) : m);
+
+/** ¿Abrir este modo exige sesión de profe? Se DERIVA de las reglas del servidor
+ *  (`HOST_ONLY_WRITES`), no de una lista repetida aquí: si mañana una colección
+ *  deja de ser host-only, el aviso desaparece solo. */
+export function modeNeedsAuth(mode) {
+  const m = asMode(mode);
+  return !!(m?.writes && HOST_ONLY_WRITES.includes(m.writes));
+}
+
+/** Frase EXACTA que ve el profe cuando le falta la sesión ("Inicia sesión para
+ *  crear una sala en vivo"). Una sola redacción para el botón, el tooltip, el
+ *  modal y el gate del router — no cuatro variantes que se separan. */
+export function modeAuthHint(mode) {
+  const m = asMode(mode);
+  if (!modeNeedsAuth(m)) return '';
+  return `Inicia sesión para ${m.hostAction || `usar ${m.label}`}`;
+}
+
+/** Modos host-only que hoy están BLOQUEADOS por no haber entrado. `authed` lo
+ *  aporta la vista (este módulo es puro y no conoce la sesión). */
+export function lockedModes(authed) {
+  return authed ? [] : MODE_DEFS.filter(m => modeNeedsAuth(m));
+}
 
 export function isModeAvailable(modeId, activity) {
   const m = getMode(modeId);

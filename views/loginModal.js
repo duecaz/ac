@@ -2,12 +2,15 @@
 //  - Google (OAuth) — cómodo en el equipo propio del profe.
 //  - Correo + contraseña — para PIZARRAS interactivas donde no hay cuenta de
 //    Google puesta; el admin puede crear estas cuentas (ver panel de Profesores).
-import { html } from '../core/html.js';
+import { html, escapeHtml } from '../core/html.js';
 import { signInWithGoogle, signIn } from '../core/auth.js';
 
 let _open = false;
 
-export function openLoginModal() {
+/** `reason`: por qué se le pide entrar AHORA ("Inicia sesión para crear una sala
+ *  en vivo"). La frase la fija core/modes.js y viaja hasta aquí para que el modal
+ *  no diga algo distinto del botón que lo abrió. */
+export function openLoginModal({ reason = '' } = {}) {
   if (_open) return;
   _open = true;
   const host = document.createElement('div');
@@ -17,7 +20,8 @@ export function openLoginModal() {
     <div class="login-modal__card" role="dialog" aria-modal="true">
       <button class="login-modal__x" data-close title="Cerrar"><i class="bi bi-x-lg"></i></button>
       <h2 class="login-modal__title">Entrar</h2>
-      <p class="login-modal__sub">Inicia sesión para crear y gestionar tus actividades.</p>
+      <p class="login-modal__sub">${reason ? escapeHtml(reason) + '. Tus alumnos no necesitan cuenta.'
+        : 'Inicia sesión para crear y gestionar tus actividades.'}</p>
 
       <button class="login-modal__google" id="lm-google"><i class="bi bi-google"></i> Entrar con Google</button>
 

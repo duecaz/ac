@@ -9,7 +9,9 @@ import { get, save, getRemote, remove as removeActivity } from '../core/storage.
 import { activityItemCount, newActivityId } from '../core/migrate.js';
 import { getTemplate, compatibleTemplates } from '../core/registry.js';
 import { isVsCompatible } from '../kernel/session/engine.js';
-import { availableModes, getMode, runMode } from '../core/modes.js';
+import { availableModes, getMode, runMode, modeNeedsAuth, modeAuthHint } from '../core/modes.js';
+import { getAuthUserId } from '../core/auth.js';
+import { openLoginModal } from './loginModal.js';
 import { clearSoloProgress } from '../core/soloPlayer.js';
 import { renderStartScreen } from './startScreen.js';
 import { listSkins, applySkin, skinPreviewHtml } from '../core/skins.js';
@@ -89,6 +91,14 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     return availableModes(act).filter(m => m.supportsTemplate(T)).map(m => {
       const ok = m.isAvailable(act);
       if (!m.embed) {
+        // Modo host-only (En vivo / Tarea) sin sesión: NO es un enlace roto ni un
+        // botón gris sin explicación — lleva candado y su frase, y al pulsarlo
+        // abre el login diciendo para qué (ley §22: dirigir es acto de profe; el
+        // alumno entra con PIN y sin cuenta).
+        if (ok && modeNeedsAuth(m) && !getAuthUserId()) {
+          return `<button class="btn btn-outline-${m.color} ww-mode-locked" data-lock="${m.id}" title="${escapeHtml(modeAuthHint(m))}">`
+            + `<i class="bi bi-lock-fill"></i> ${escapeHtml(m.label)}</button>`;
+        }
         return ok
           ? `<a href="${m.href(a)}" class="btn btn-outline-${m.color}"><i class="bi ${m.icon}"></i> ${escapeHtml(m.label)}</a>`
           : `<button class="btn btn-outline-secondary" disabled title="${escapeHtml(m.disabledHint || '')}"><i class="bi ${m.icon}"></i> ${escapeHtml(m.label)}</button>`;
@@ -295,6 +305,11 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     });
     // Mode bar: embedded modes mount into the stage (embed:false modes are
     // plain links and navigate on their own).
+    on(rootSel, 'click', '.ww-mode-locked', (_, b) => {
+      const hint = modeAuthHint(b.dataset.lock);
+      toast(hint + '. Tus alumnos entran con el PIN, sin cuenta.', 'info', 5000);
+      openLoginModal({ reason: hint });
+    });
     on(rootSel, 'click', '.ww-mode', (_, b) => {
       selectMode(b.dataset.mode);
       document.getElementById('ww-frame')?.scrollIntoView({ behavior: 'smooth', block: 'center' });

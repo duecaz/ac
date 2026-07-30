@@ -7,6 +7,9 @@ import { confirmModal, toast } from '../core/toast.js';
 import { activityItemCount as itemCount } from '../core/migrate.js';
 import { activityCardHtml } from '../core/activityCard.js';
 import { buildSwitchOptions } from './switchTemplate.js';
+import { getAuthUserId } from '../core/auth.js';
+import { modeAuthHint } from '../core/modes.js';
+import { openLoginModal } from './loginModal.js';
 
 let _filter = { q: '', template: '' };
 
@@ -102,7 +105,10 @@ export function renderHome(rootSel) {
         <span title="Me gusta (próximamente)"><i class="bi bi-heart-fill heart"></i> ${a.likes ?? 0}</span>
       </div>`;
     // 'all' = incluye Live/Tarea (son actividades del dueño).
-    return activityCardHtml(a, { modes: 'all', pages: true, subtitle: true, tags: true, topRight, footer });
+    // `authed`: sin sesión, Live/Tarea salen con CANDADO y su frase — dirigir una
+    // sala o crear una tarea son actos de profe (ley §22). Avisar aquí, no con un
+    // 403 a mitad de clase.
+    return activityCardHtml(a, { modes: 'all', authed: !!getAuthUserId(), pages: true, subtitle: true, tags: true, topRight, footer });
   }
 
   function listCard(a) {
@@ -140,8 +146,20 @@ export function renderHome(rootSel) {
   on(rootSel, 'click', '.act-play', (_, b) => navigate(`#/play/${b.dataset.id}`));
   on(rootSel, 'click', '.act-vs', (_, b) => navigate(`#/vs/${b.dataset.id}`));
   on(rootSel, 'click', '.act-teams', (_, b) => navigate(`#/${b.dataset.tpl === 'memory' ? 'memory' : 'teams'}/${b.dataset.id}`));
-  on(rootSel, 'click', '.act-pin', (_, b) => navigate(`#/launch/${b.dataset.id}`));
-  on(rootSel, 'click', '.act-task', (_, b) => navigate(`#/tasks/${b.dataset.id}`));
+  // Modo host-only con candado: no navegues a una pantalla que va a rebotar —
+  // di POR QUÉ y ofrece entrar ahí mismo. La frase sale de core/modes.js (una
+  // sola redacción para botón, tooltip, modal y gate del router).
+  const hostClick = (mode, go) => (_, b) => {
+    if (b.dataset.locked) {
+      const hint = modeAuthHint(mode);
+      toast(hint + '. Los alumnos NO necesitan cuenta.', 'info', 5000);
+      openLoginModal({ reason: hint });
+      return;
+    }
+    go(b.dataset.id);
+  };
+  on(rootSel, 'click', '.act-pin', hostClick('live', id => navigate(`#/launch/${id}`)));
+  on(rootSel, 'click', '.act-task', hostClick('task', id => navigate(`#/tasks/${id}`)));
   on(rootSel, 'click', '.act-list', (_, b) => navigate(`#/list/${b.dataset.id}`));
   on(rootSel, 'click', '.act-edit-list', (_, b) => navigate(`#/edit-list/${b.dataset.id}`));
   on(rootSel, 'click', '.act-edit', (_, b) => navigate(`#/edit/${b.dataset.id}`));

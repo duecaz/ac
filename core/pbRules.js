@@ -114,4 +114,9 @@ export function rulesFor(name) {
  * avisar ANTES de empezar (dirigir una sala sin haber entrado fallaría a mitad
  * de clase, que es el peor momento para descubrirlo).
  */
-export const HOST_ONLY_WRITES = ['live_sessions', 'assignments'];
+// Los nombres van como SÍMBOLO para que otros módulos declaren "escribo aquí"
+// SIN repetir el literal (ley de datos §21: el nombre de una colección vive en
+// su dueño; core/modes.js hace `writes: LIVE_SESSIONS`).
+export const LIVE_SESSIONS = 'live_sessions';
+export const ASSIGNMENTS = 'assignments';
+export const HOST_ONLY_WRITES = [LIVE_SESSIONS, ASSIGNMENTS];

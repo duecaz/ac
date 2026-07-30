@@ -45,11 +45,17 @@ replantea. Texto completo en **`docs/leyes.md`** (índice único de normas).
 | **§0 · CUATRO CAPAS** | contenido · plantilla · modo · plataforma: una plantilla no sabe en qué modo corre (lo DECLARA), un modo no conoce plantillas concretas | `scoringSources` · `persistPolicy` · `templateContract` · matriz jugable |
 | **§3 · ESTILO** | 4 capas del píxel: el skin cambia TOKENS, la actividad consume TOKENS; nada de tamaños fijos en el juego | `styles` (ratchet + gate de themes) · `skins` |
 | **§21 · DATOS** | cada colección PB tiene UN módulo dueño; quien necesite datos **pide un método al dueño**, nunca hace fetch propio | regla `pb-dueno` (`norms`) |
-| **§22 · CONFIANZA** | el cliente **AFIRMA**, el veredicto lo pone el host o una regla del servidor | `pbRules` + `liveRules` (evaluador de reglas) · `confianza-alumno` · `answerSafety` |
+| **§22 · CONFIANZA** | el cliente **AFIRMA**, el veredicto lo pone el host o una regla del servidor | `pbRules` + `liveRules` (evaluador de reglas) · `confianza-alumno` · `answerSafety` · `modeAuth` (avisar ANTES) |
 | **§23 · VISTA** | la vista posee su render y sus handlers; el router el ciclo de vida; los relojes van por su primitivo | regla `reloj-primitivo` · `events` · `deadlineTicker` |
 | **§24 · CONTENIDO** | el contenido es del usuario: cambia solo por migración versionada, conversión declarada e ids con `rid()` | regla `id-rid` · `templateContract` (versión>1 ⇒ migrate) |
 
 - **Si es norma, es test**: una regla nueva se escribe como test, no solo en un MD.
+- **Si una ley cierra una puerta, la UI lo DICE ANTES**: dirigir en vivo / crear
+  tareas exige sesión (§22) → el botón lleva candado con su frase y el router
+  gatea; jugar/PIN/tarea siguen sin cuenta. La política vive en `MODE_DEFS`
+  (`writes` + `hostAction`) y la frase sale de `modeAuthHint()` — una sola
+  redacción para botón, modal y gate (`tests/modeAuth.test.mjs`). Nunca esconder
+  el modo, nunca dejar que falle para explicarlo después.
 - **La contra-prueba importa igual que la prueba**: al endurecer algo, el test debe
   comprobar TAMBIÉN que el camino legítimo sigue funcionando (una regla demasiado
   cerrada se descubre con la clase delante — eso es lo que hace `liveRules`).

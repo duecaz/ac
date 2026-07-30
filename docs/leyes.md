@@ -241,10 +241,22 @@ servidor.** Una feature nueva que confíe en el móvil está mal diseñada.
   - `assignments`: crear/cerrar/rotar/borrar exige sesión (un alumno ya no
     reabre una tarea cerrada, ni mueve `due_at`, ni se sube el tope).
   - `results`: **leer exige sesión** (privacidad: nombres y notas de menores).
-  - **Consecuencia operativa**: dirigir una sala en vivo o crear tareas EXIGE
-    haber entrado con la cuenta de profe. `views/hostLive.js` lo dice con
-    nombre y apellido si el 403 llega por eso (y ofrece "Entrar"), para no
-    descubrirlo con la clase delante.
+  - **Consecuencia operativa — AUTORIDAD DE MODO, y hay que DECIRLO ANTES**:
+    dirigir una sala en vivo o crear tareas EXIGE haber entrado con la cuenta de
+    profe (el servidor solo distingue host de alumno por el token). **Jugar,
+    explorar, entrar con PIN y hacer una tarea siguen SIN cuenta.** Esa
+    autoridad no se re-escribe en cada vista: el modo declara en qué colección
+    escribe (`MODE_DEFS[].writes`) y qué acto docente hace (`hostAction`), y
+    `modeNeedsAuth()`/`modeAuthHint()` (`core/modes.js`) lo **derivan** de
+    `HOST_ONLY_WRITES` (`core/pbRules.js`) → una sola redacción
+    ("Inicia sesión para crear una sala en vivo") para el **botón** (candado en
+    la tarjeta y en la barra de modos), el **modal** (`openLoginModal({reason})`)
+    y el **gate del router** (`requireTeacher` en `#/launch`, `#/host`,
+    `#/tasks`). Prohibido **esconder** el modo (esconderlo enseña que no existe)
+    y prohibido **dejar que falle** para explicarlo después: `views/hostLive.js`
+    conserva el mensaje del 403 solo como red para la sesión caducada.
+    Lo vigila `tests/modeAuth.test.mjs` (incluida la anti-divergencia
+    `HOST_ONLY_WRITES` ↔ `MODE_DEFS.writes` en ambos sentidos).
 - **Sigue pendiente (diseño en `docs/handoff-seguridad-pb.md`)**: ① `ms` de
   servidor (autodate de la fila vs `started_at`) — hoy el bonus de velocidad se
   fía del reloj del móvil; ② el `activity_snap` con la clave que viaja al móvil
