@@ -20,7 +20,7 @@ export class MatchTemplate extends BaseTemplate {
     aspectRatio: '16/10',
     modes: { solo: true, live: false, async: true, practice: true },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
-    play:            { vs: 'points', teams: 'turns' },
+    play:            { vs: 'points', teams: 'turns', live: 'none' },
     needsImageUpload: true,
     needsAudioUpload: false,
     defaultRules: () => ({ timer: 0, randomize: true, livesPerMistake: 0 }),

@@ -38,13 +38,21 @@ export function checkTemplateContract(T) {
   //              'points' espera a AMBOS y gana quien más suma
   //              'none'  la plantilla no se juega en VS
   //   play.teams 'turns' | 'board' | 'none'
+  //   play.live  'rounds' (flujo pregunta→revelar) · 'board' (tablero único
+  //              compartido, fase race) · 'none'. Debe ser coherente con modes.live.
+  //   play.retry (opcional) — en VS un fallo se reintenta (la calculadora).
   const VS_POLICIES = ['race', 'points', 'none'];
   const TEAMS_POLICIES = ['turns', 'board', 'none'];
+  const LIVE_POLICIES = ['rounds', 'board', 'none'];
   if (!m.play || typeof m.play !== 'object') {
-    issues.push("meta.play ausente (declara { vs: 'race'|'points'|'none', teams: 'turns'|'board'|'none' })");
+    issues.push("meta.play ausente (declara { vs: 'race'|'points'|'none', teams: 'turns'|'board'|'none', live: 'rounds'|'board'|'none' })");
   } else {
     if (!VS_POLICIES.includes(m.play.vs)) issues.push(`meta.play.vs inválido: ${JSON.stringify(m.play.vs)} (usa ${VS_POLICIES.join(' | ')})`);
     if (!TEAMS_POLICIES.includes(m.play.teams)) issues.push(`meta.play.teams inválido: ${JSON.stringify(m.play.teams)} (usa ${TEAMS_POLICIES.join(' | ')})`);
+    if (!LIVE_POLICIES.includes(m.play.live)) issues.push(`meta.play.live inválido: ${JSON.stringify(m.play.live)} (usa ${LIVE_POLICIES.join(' | ')})`);
+    if (m.modes?.live && m.play.live === 'none') issues.push("incoherencia: modes.live=true pero play.live='none' (declara cómo corre en vivo)");
+    if (!m.modes?.live && m.play.live && m.play.live !== 'none') issues.push("incoherencia: play.live declarado pero modes.live=false");
+    if ('retry' in m.play && typeof m.play.retry !== 'boolean') issues.push('meta.play.retry debe ser booleano');
   }
   // Preview de tarjeta obligatorio: cada plantilla declara su `previewHtml(act)`
   // → no hay switch central que olvidar y la miniatura no se desfasa del juego

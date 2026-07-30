@@ -22,7 +22,7 @@ export class QuizTemplate extends BaseTemplate {
     aspectRatio: '16/10',
     modes: { solo: true, live: true, async: true, practice: false },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
-    play:            { vs: 'points', teams: 'turns' },
+    play:            { vs: 'points', teams: 'turns', live: 'rounds' },
     needsImageUpload: true,
     needsAudioUpload: true,
     defaultRules: () => ({ timer: 0, randomize: false, shuffleOptions: true }),

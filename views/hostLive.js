@@ -103,7 +103,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
   const advanceMode = live.advanceMode || 'manual';
   // LIVE "board" templates (Ball Sort): a single shared board everyone solves at
   // their own pace while the host watches each board live. Always runs as a race.
-  const isBoard = !!(tpl?.meta && tpl.meta.liveBoard);
+  const isBoard = tpl?.meta?.play?.live === 'board';
   let liveMode = isBoard ? 'race' : ((advanceMode === 'manual') ? 'manual' : 'auto');
   let autoAdvance = liveMode === 'auto';
   let session = await fetchSession(sessionId);

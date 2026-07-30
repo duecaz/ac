@@ -537,7 +537,7 @@ export async function renderPlay(rootSel, code) {
   }
 
   function isLiveBoard() {
-    try { return !!getTemplate(activity.template)?.meta?.liveBoard; } catch { return false; }
+    try { return getTemplate(activity.template)?.meta?.play?.live === 'board'; } catch { return false; }
   }
 
   // LIVE "board" templates (Ball Sort): ONE shared board the student solves at

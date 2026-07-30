@@ -13,6 +13,10 @@ Gherkin + decisiones de diseño abiertas). Verificado contra `core/modes.js`,
 `kernel/session/memory.js`, `views/modeSetup.js`, `views/playerView.js` y los
 `views/*View.js`.
 
+> **LEY MARCO**: el modelo de cuatro capas (`docs/leyes.md` §0) — la plantilla
+> DECLARA sus políticas (`meta.play`), el modo las consume, la plataforma no
+> decide reglas de juego. Todo lo de este documento se subordina a ese cuadro.
+>
 > **Si vienes a decidir el diseño de un modo, ve directo a la §9.** Ahí está,
 > por modo: qué hace HOY (con el test que lo fija) y qué está sin decidir.
 

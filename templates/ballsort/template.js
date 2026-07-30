@@ -20,12 +20,10 @@ export class BallsortTemplate extends BaseTemplate {
     aspectRatio:     '4/3',
     modes:           { solo: true, live: true, async: true, practice: false },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
-    play:            { vs: 'race', teams: 'board' },
-    // LIVE: this template runs as a single shared board where every student
-    // solves the SAME puzzle at their own pace and the host watches each board
-    // update move-by-move. It rides the existing 'race' phase (lobby/podium
-    // unchanged) but the host + student PLAY views branch on this flag.
-    liveBoard:       true,
+    play:            { vs: 'race', teams: 'board', live: 'board' },
+    // LIVE 'board' (declarado en play.live): tablero ÚNICO compartido — cada
+    // alumno resuelve el MISMO puzle a su ritmo y el host ve cada tablero
+    // avanzar movimiento a movimiento sobre la fase 'race'.
     needsImageUpload: false,
     needsAudioUpload: false,
     defaultRules:   () => ({}),

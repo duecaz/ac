@@ -5,6 +5,31 @@
 > convención, mira aquí. Verificación de todo: `node tests/run.mjs` (y `#/admin` →
 > "Ejecutar tests" corre el mismo escáner en el navegador).
 
+## 0) ⚖️ EL MODELO DE CUATRO CAPAS — el norte de la arquitectura
+Cuatro capas, cada una con UN dueño y UNA prohibición. Toda decisión de diseño
+se contrasta contra este cuadro ANTES de escribir código; si un cambio necesita
+violar una prohibición, el diseño está mal planteado.
+
+| Capa | Vive en | Dueña de | PROHIBIDO |
+|---|---|---|---|
+| **CONTENIDO** | `kernel/content` | modelos + validación + conversores | saber de mecánicas o modos |
+| **PLANTILLA** | `templates/*` | UNA mecánica: el MÉRITO (scorer) + el render + sus políticas (`meta.play`) | saber en qué modo corre (lo DECLARA, no lo pregunta) |
+| **MODO** | `core/modes` + `kernel/session` + shells (`core/soloPlayer`) | el arreglo social: quién juega · quién puntúa cuándo · qué persiste · qué reloj | conocer una plantilla concreta (solo consume el contrato) |
+| **PLATAFORMA** | `views/` + editor + biblioteca | navegación, setup, resultados (chrome) | decidir reglas de juego (el bug del `raceToFinish` fue esto) |
+
+- **El norte medible**: plantilla nueva = 1 carpeta · modo nuevo = 1 módulo ·
+  **ninguna celda de la matriz plantilla×modo se programa a mano** — la matriz
+  EMERGE del contrato.
+- **Fronteras que no se cruzan**: el mérito NUNCA sube al kernel (la plantilla
+  decide qué es correcto; el kernel cuándo se liquida). Un "game mode" con
+  mecánica propia (p.ej. tipo Blooket) es una PLANTILLA live, no un modo.
+- **Todo modo responde 5 preguntas** antes de existir (ficha en
+  `docs/modos-de-juego.md` §9): quién puntúa · quién decide el fin · qué
+  persiste · qué reloj · hay identidad de alumno.
+- **Tests que lo vigilan**: `scoringSources` (el mérito vive en la plantilla) ·
+  `persistPolicy` (qué persiste cada modo) · `templateContract` (meta.play
+  declarado) · `moduleRefs` + matriz jugable (`tools/matrix-smoke.mjs`).
+
 ## 1) Versión — en CADA commit y en CADA respuesta
 - Sube `VERSION` en `core/constants.js` (patch: `x.y.z → x.y.z+1`), nunca hacia atrás.
 - Indica la versión `(vX.Y.Z)` en la respuesta del chat; commit y respuesta deben coincidir.

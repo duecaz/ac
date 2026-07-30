@@ -194,7 +194,7 @@ export function mountVs(host, a, ctx, opts = {}) {
     const animOff = a.presentation?.vsAnimationOff ?? textTight;
     // "Board" templates (Ordena las Pelotas): one shared board, no per-question
     // score during play, so the rope is fed by each side's BOARD progress instead.
-    const isBoard = !!T.meta?.liveBoard;
+    const isBoard = T.meta?.play?.live === 'board';
     const boardProgress = { left: 0, right: 0 };
 
     // POLÍTICA DE MAQUETACIÓN del panel, declarada por la plantilla (estándar):
@@ -320,9 +320,9 @@ export function mountVs(host, a, ctx, opts = {}) {
       // or after the whole duel has ended (both sides done).
       if (session.standings()[side].done || session.status !== 'running') return;
 
-      // Templates that set vsCanRetry=true (e.g. math keypad) must re-try on
+      // Templates que declaran play.retry (p.ej. la calculadora) reintentan al
       // wrong: flash red, re-render the SAME question without advancing cursor.
-      if (T.vsCanRetry && typeof T.scoreSubmission === 'function') {
+      if (T.meta?.play?.retry && typeof T.scoreSubmission === 'function') {
         const cursor = session.standings()[side].cursor;
         const item = sessionItems(a)[cursor];
         let pre;

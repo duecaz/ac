@@ -90,7 +90,7 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   const T = getTemplate('ballsort');
   assert.ok(T, 'ballsort registers in the registry');
   assert.strictEqual(T.meta.modes.live, true, 'declares live');
-  assert.strictEqual(T.meta.liveBoard, true, 'declares the liveBoard flag');
+  assert.strictEqual(T.meta.play.live, 'board', "declara play.live 'board' (tablero compartido; antes era el flag liveBoard)");
   assert.strictEqual(typeof T.getRoundPayload, 'function', 'has getRoundPayload (live requirement)');
   assert.strictEqual(typeof T.scoreSubmission, 'function', 'has scoreSubmission (live requirement)');
 
@@ -106,7 +106,7 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   const T = getTemplate('ballsort');
   const act = { template: 'ballsort', content: T.meta.defaultContent() };
   assert.strictEqual(act.content.items.length, 1, 'one board per activity');
-  assert.strictEqual(isVsCompatible(act), true, 'a 1-board liveBoard template IS VS-compatible (same board both sides)');
+  assert.strictEqual(isVsCompatible(act), true, 'a 1-board play.live=board template IS VS-compatible (same board both sides)');
 
   // both sides receive the SAME board (fairness): getRoundPayload ignores side.
   const left  = T.getRoundPayload(act, { itemIndex: 0, side: 'left' });

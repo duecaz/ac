@@ -79,3 +79,13 @@ export function attachItemControls(rootSel, getArr, onChange, repaint) {
     repaint();
   });
 }
+
+// R2 (ley del cuadro de modos): las reglas de juego configurables tienen ALCANCE
+// declarado y el editor lo MUESTRA — antes el docente configuraba "Timer" u
+// "Orden aleatorio" creyendo que aplicaban a todos los modos, pero solo las
+// honran Individual y Tarea (VS/Equipos/En vivo llevan su propio ritmo).
+// Extenderlas a más modos es una decisión de diseño por modo (modos-de-juego §9);
+// mientras tanto, se dice la verdad en el formulario.
+export function ruleScopeNote() {
+  return `<div class="form-text mt-1"><i class="bi bi-info-circle"></i> El temporizador y el orden aleatorio aplican en <b>Individual</b> y <b>Tarea</b>; VS, Equipos y En vivo llevan su propio ritmo.</div>`;
+}

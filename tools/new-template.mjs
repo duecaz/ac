@@ -122,7 +122,7 @@ export class ${Cls}Template extends BaseTemplate {
     //   vs:    'points' espera a AMBOS y gana quien más suma (defecto sensato)
     //          'race'   el primero que termina gana y cierra · 'none' sin VS
     //   teams: 'turns' por turnos · 'board' tablero compartido · 'none'
-    play: { vs: '${wantVs ? 'points' : 'none'}', teams: '${wantVs ? 'turns' : 'none'}' },
+    play: { vs: '${wantVs ? 'points' : 'none'}', teams: '${wantVs ? 'turns' : 'none'}', live: '${wantLive ? 'rounds' : 'none'}' },
     needsImageUpload: false,      // true si el editor sube imágenes (core/upload.js)
     needsAudioUpload: false,
     defaultRules:   () => ({ timer: 0, randomize: true }),

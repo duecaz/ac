@@ -2,7 +2,7 @@
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { newPair } from '../../core/contentModels/pairs.js';
-import { itemControlsHtml, reorderArray } from '../../core/editorPrimitives.js';
+import { itemControlsHtml, reorderArray, ruleScopeNote } from '../../core/editorPrimitives.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 
 export function renderMatchEditor(root, activity, onChange) {
@@ -99,12 +99,11 @@ function wireContent(root, a, ctx) {
 function rulesHtml(a) {
   return `<div class="row g-3">
     <div class="col-md-4 form-check pt-4 ms-3"><input class="form-check-input" type="checkbox" id="m-rand" ${a.rules.randomize ? 'checked' : ''}><label class="form-check-label" for="m-rand">Mezclar columnas</label></div>
-    <div class="col-md-4"><label class="form-label">Timer (s, 0=off)</label><input id="m-timer" type="number" min="0" class="form-control" value="${a.rules.timer || 0}"></div>
-  </div>`;
+    <div class="col-12">${ruleScopeNote()}</div>
+      </div>`;
 }
 function wireRules(root, a, ctx) {
   on(root, 'change', '#m-rand',  e => { a.rules.randomize = e.target.checked; ctx.onChange(a); });
-  on(root, 'input',  '#m-timer', e => { a.rules.timer      = +e.target.value || 0; ctx.onChange(a); });
 }
 
 function scoringHtml(a) {

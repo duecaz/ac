@@ -3,6 +3,7 @@
 // la etiqueta de cada pin. El chasis (título, ajustes, tabs) lo pone el shell.
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
+import { ruleScopeNote } from '../../core/editorPrimitives.js';
 import { uploadMedia } from '../../core/upload.js';
 import { newPin } from '../../core/contentModels/diagram.js';
 import { renderEditorShell } from '../../core/editorShell.js';
@@ -105,7 +106,8 @@ function rulesHtml(a) {
   return `<div class="form-check">
     <input class="form-check-input" type="checkbox" id="dg-rand" ${a.rules?.randomize !== false ? 'checked' : ''}>
     <label class="form-check-label" for="dg-rand">Barajar el orden de las etiquetas</label>
-  </div>`;
+  </div>
+    ${ruleScopeNote()}`;
 }
 function wireRules(root, a, ctx) {
   on(root, 'change', '#dg-rand', (e) => { (a.rules = a.rules || {}).randomize = e.target.checked; ctx.onChange(a); });

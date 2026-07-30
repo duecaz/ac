@@ -1,6 +1,6 @@
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { itemControlsHtml, reorderArray } from '../../core/editorPrimitives.js';
+import { itemControlsHtml, reorderArray, ruleScopeNote } from '../../core/editorPrimitives.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 import { generateGrid, SIZE_MAP } from './generator.js';
 
@@ -137,6 +137,7 @@ function rulesHtml(a) {
         <label class="form-label">Tiempo límite (s, 0=libre)</label>
         <input type="number" min="0" class="form-control" id="ws-timer" value="${r.timer || 0}">
       </div>
+      ${ruleScopeNote()}
     </div>`;
 }
 function wireRules(root, a, ctx) {

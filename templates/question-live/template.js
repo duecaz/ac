@@ -18,7 +18,7 @@ export class QuestionLiveTemplate extends BaseTemplate {
     aspectRatio: '4/3',
     modes: { solo: true, live: true, async: false, practice: false },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
-    play:            { vs: 'none', teams: 'none' },
+    play:            { vs: 'none', teams: 'none', live: 'rounds' },
     needsImageUpload: false, // images stored inline as data-URLs (no external upload)
     needsAudioUpload: false,
     defaultRules: () => ({ selector: 'boxes' }),

@@ -2,6 +2,7 @@
 // pestaña "Modos") lo pone el shell compartido.
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
+import { ruleScopeNote } from '../../core/editorPrimitives.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 
 export function renderMathEditor(root, activity, onChange) {
@@ -47,7 +48,8 @@ function rulesHtml(a) {
   return `<div class="form-check">
     <input class="form-check-input" type="checkbox" id="f-rand" ${a.rules.randomize !== false ? 'checked' : ''}>
     <label class="form-check-label" for="f-rand">Mezclar el orden de las operaciones</label>
-  </div>`;
+  </div>
+    ${ruleScopeNote()}`;
 }
 function wireRules(root, a, ctx) {
   on(root, 'change', '#f-rand', e => { a.rules.randomize = e.target.checked; ctx.onChange(a); });

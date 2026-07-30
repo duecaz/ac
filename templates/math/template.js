@@ -21,7 +21,7 @@ export class MathTemplate extends BaseTemplate {
     aspectRatio: '16/10',
     modes: { solo: true, live: true, async: true, practice: true },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
-    play:            { vs: 'race', teams: 'turns' },
+    play:            { vs: 'race', teams: 'turns', live: 'rounds', retry: true },
     needsImageUpload: false,
     needsAudioUpload: false,
     defaultRules: () => ({ randomize: true }),
@@ -59,7 +59,6 @@ export class MathTemplate extends BaseTemplate {
   }
   static getRoundPayload(activity, ctx) { const it = activity.content.items[ctx.itemIndex]; return it ? { question: it.question } : null; }
   static renderRound(root, payload, opts) { return renderKeypadRound(root, payload, opts); }
-  static vsCanRetry = true;
   static migrateContent(content) { return content; }
   // Adapta el contenido al cambiar de formato HACIA Matemáticas (quita opciones).
   static adoptContent(content) { return adoptForMath(content); }

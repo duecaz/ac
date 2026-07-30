@@ -4,7 +4,7 @@ import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { newPassage } from '../../core/contentModels/textCorrection.js';
 import { applyMarks, parseTextWithCommas } from '../../core/textMarks.js';
-import { itemControlsHtml, reorderArray } from '../../core/editorPrimitives.js';
+import { itemControlsHtml, reorderArray, ruleScopeNote } from '../../core/editorPrimitives.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 
 export function renderComasEditor(root, activity, onChange) {
@@ -43,6 +43,7 @@ function wireContent(root, a, ctx) {
 function rulesHtml(a) {
   return `<div class="row g-3">
     <div class="col-md-4 form-check pt-4 ms-3"><input id="t-rand" class="form-check-input" type="checkbox" ${a.rules.randomize ? 'checked' : ''}><label class="form-check-label" for="t-rand">Mezclar frases</label></div>
+    <div class="col-12">${ruleScopeNote()}</div>
     <div class="col-md-4 form-check pt-4"><input id="t-overflow" class="form-check-input" type="checkbox" ${a.rules.allowOverflow !== false ? 'checked' : ''}><label class="form-check-label" for="t-overflow">Comas ilimitadas</label></div>
     <div class="col-md-4"><label class="form-label">Puntos por acierto</label><input id="t-ppc" type="number" min="0" class="form-control" value="${a.scoring.pointsPerCorrect ?? 1}"></div>
     <div class="col-md-4"><label class="form-label">Puntos por error</label><input id="t-ppw" type="number" class="form-control" value="${a.scoring.pointsPerWrong ?? 0}"></div>
