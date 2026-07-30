@@ -182,7 +182,7 @@ export function createPocketbaseRemoteStore() {
     },
 
     async listResults(activityId) {
-      const where = activityId ? `filter=(activity_id="${toId(activityId)}")&` : '';
+      const where = activityId ? `filter=${pbFilterParam(`activity_id='${pbEscape(toId(activityId))}'`)}&` : '';
       // Orden por `created` (autodate de PocketBase). Si la colección se creó por
       // API en PB ≥0.23 puede no tener ese campo → el sort da error; en ese caso
       // reintentamos sin orden para no romper la lectura.

@@ -4,7 +4,7 @@ import { startElapsedTicker } from '../core/deadlineTicker.js';
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { get, getRemote } from '../core/storage.js';
-import { createRoom, findRoomByCode, fetchSession,
+import { createRoom, findRoomByCode, fetchSession, fetchSessionBlob,
          startSession, setSessionState, endSession, settleItem,
          listPlayers, listAnswers, leaderboard, kickPlayer, subscribeRoom, pingHost, fetchSessionKey,
          realtimeKind }
@@ -15,7 +15,6 @@ import { rowsFromLiveAnswers, rowsFromLiveState } from '../core/answerRows.js';
 import { itemStatsHtml } from './itemStatsView.js';
 import { computeMedals } from '../core/itemStats.js';
 import { sessionTableHtml, sessionTableCsv, buildSessionTable } from './sessionTable.js';
-import { PB_URL } from '../pocketbase.config.js';
 import { acquire } from '../core/lifecycle.js';
 import { toast, confirmModal } from '../core/toast.js';
 import { sceneToggle, resetScene } from '../core/presentation.js';
@@ -741,9 +740,9 @@ async function renderHost(rootSel, code, sessionId, activity) {
     const all = await Promise.all(items.map((_, i) => listAnswers(sessionId, i).then(a => rowsFromLiveAnswers(a, i)).catch(() => [])));
     let rows = all.flat();
     try {
-      const raw = await fetch(`${PB_URL}/api/collections/live_sessions/records/${sessionId}`).then(r => r.json());
+      const blob = await fetchSessionBlob(sessionId);
       const seen = new Set(rows.map(r => `${r.player} ${r.itemIndex}`));
-      for (const r of rowsFromLiveState(raw?.state || {})) if (!seen.has(`${r.player} ${r.itemIndex}`)) rows.push(r);
+      for (const r of rowsFromLiveState(blob || {})) if (!seen.has(`${r.player} ${r.itemIndex}`)) rows.push(r);
     } catch { /* respaldo best-effort */ }
     try {
       const ps = await listPlayers(sessionId);

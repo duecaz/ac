@@ -312,6 +312,15 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       return rec?.activity || null;
     },
 
+    // Respaldo del informe post-partida (A1): el blob `state` entero, para
+    // rescatar respuestas legadas que no llegaron a live_answers. Solo lo
+    // consume el HOST (rowsFromLiveState); existe para que ninguna vista tenga
+    // que tocar la colección directamente (ley de datos).
+    async fetchSessionBlob(sessionId) {
+      const rec = await pbFetch(`/api/collections/${COLL}/records/${sessionId}`);
+      return rec?.state || {};
+    },
+
     async joinSession(code, nickname) {
       const res = await pbFetch(
         `/api/collections/${COLL}/records?filter=${pbFilterParam(`code='${pbEscape(code.toUpperCase())}'`)}`

@@ -45,6 +45,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 |---|---|
 | **Ver TODAS las leyes/normas del proyecto** (px/token del juego, PB, XSS, versión…) | **`docs/leyes.md`** (índice único: qué · dónde · qué test la vigila) |
 | **EL NORTE: modelo de 4 capas** (contenido·plantilla·modo·plataforma, dueños y prohibiciones) | **`docs/leyes.md` §0** — contrastar TODO diseño contra ese cuadro |
+| **Quién escribe cada colección PB** (dueño único, prohibiciones, deuda) | **`docs/leyes.md` §21** — vigilada por la regla `pb-dueno` (`tests/norms.test.mjs`) |
 | Entender el sistema de plantillas (crear/validar/jugar, qué módulo hace qué) | **`docs/sistema-de-plantillas.md`** (mapa vivo) |
 | **Crear una actividad nueva** | `node tools/new-template.mjs <name> --model qa [--vs] [--live]` + `templates/HOW_TO_ADD.md` |
 | **Diagnosticar** una plantilla existente | `node tools/check-template.mjs [name]` (contrato + normas) |

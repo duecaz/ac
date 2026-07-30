@@ -140,6 +140,40 @@ Esto es lo que buscabas: el **contrato de estilos del PLAYER**.
   Google) y se preserva el `#hash` para volver a donde estabas.
 - **Test**: `tests/oauth.test.mjs`.
 
+## 21) ⚖️ LEY DE DATOS — cada colección tiene UN dueño
+El equivalente del §0 para la persistencia: si no está declarado quién escribe,
+cualquier módulo puede "parchar algo" escribiendo directo a la BD — y eso es
+exactamente lo que causó los lost-updates (deuda A) y el guardado doble.
+
+| Colección | DUEÑO (único módulo que la nombra/escribe) | Autoritativo | PROHIBIDO |
+|---|---|---|---|
+| `activities` | `adapters/pocketbase/remoteStore.js` (entrada: `core/storage.js` save/remove — cola `_unsynced` + tombstones) | PB; LWW por `updatedAt`; `owner` lo sella SOLO remoteStore | que una vista haga fetch propio a la colección |
+| `results` | `remoteStore.js` (entrada ÚNICA: `trySaveResult` de `core/results.js`, gateado por `persistPolicy`) | append-only | escribir results desde un modo que `persistPolicy` no declare |
+| `live_sessions` | `adapters/pocketbase/realtime.js` (blob `state` = host-only) | la fase la manda el host | que una vista/el alumno toque el blob por fetch propio |
+| `live_answers` | `realtime.js` (`postAnswer` upsert atómico; índice único session+player+item) | los PUNTOS los pone el settle del host (C6) | POST/PATCH fuera de `postAnswer`/settle |
+| `live_players` | `realtime.js` (fila por jugador; apodo único por índice) | la fila ES el playerId | tocar `players[]` del blob (retirado) |
+| `assignments` / `assignment_attempts` | `adapters/pocketbase/assignments.js` (fachada: `core/assignmentsTransport.js`) | attempts append-only; NUNCA results+attempts a la vez | reimplementar el gateo fuera de `assignmentGate` |
+| `reports` · `activity_likes` · `profiles` | `core/reports.js` · `core/likes.js` · `core/profile.js` (upsert `id=uid`) | PB (el perfil local es cache declarada) | duplicar el wrapper `pb()` en un módulo nuevo — pídele el método al dueño |
+| `users` | `core/auth.js` (alta/está/patch) + `core/teachers.js` (rol, panel admin) | token PB | leer/escribir users desde vistas |
+| _esquema_ | `views/adminView.js` (DEFS + reglas = `tools/setup-pocketbase.ps1`) | el DEFS del admin | migrar esquema desde otro sitio |
+
+- **La regla de oro**: un módulo nuevo que necesite datos NO hace fetch a la
+  colección — **le pide un método al dueño**. El dueño concentra firma
+  (`signedFetch`), filtros (`pbFilter`), reintentos e idempotencia.
+- **Excepción sancionada**: `core/stressTest.js` (prueba de carga: escribe filas
+  `stress_*` y las borra; replica adrede el camino del alumno).
+- **Test que lo vigila**: regla `pb-dueno` en `core/normsCheck.js` +
+  `tests/norms.test.mjs` — nombrar una colección (URL o literal) fuera de su
+  allowlist rompe CI. El allowlist es RATCHET: solo encoge.
+- **Deuda registrada** (en el allowlist, marcada): lectores directos de
+  `activities` (`explore`/`landing`/`author`/`teachers`/`dbDiag`) y de
+  `live_sessions` (`views/reports.js`, que además rompe el seam local|pb);
+  `recordAttempt` sin cola offline (un intento de tarea puede perderse en blip —
+  candidato a `createOfflineQueue`); `results` y `assignment_attempts` sin clave
+  de idempotencia (reintento tras ACK perdido puede duplicar fila; el fix bueno
+  es índice único + campo `qid`, requiere "Crear colecciones"); 7 copias del
+  wrapper `pb()` (unificar en `pbHttp`).
+
 ---
 ### Cómo se auto-verifica todo
 `node tests/run.mjs` corre TODAS las suites. Los escáneres compartidos

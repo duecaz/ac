@@ -199,6 +199,9 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
     // the full activity in its session. Return null so callers fall back to it.
     async fetchSessionKey() { return null; },
 
+    // Espejo del driver PB: el blob de estado para el respaldo del informe.
+    async fetchSessionBlob(code) { return read(code)?.state || {}; },
+
     // onChange({ table }) — the view re-fetches players/answers/session on notice.
     // Registers both a same-tab subscriber (self-echo) and a cross-tab channel
     // listener; the returned function tears both down.

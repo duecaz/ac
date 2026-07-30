@@ -44,8 +44,9 @@ for (const name of readdirSync(ROOT)) {
 if (violations.length) {
   console.error('\n✗ Violaciones de normas transversales:');
   for (const v of violations) console.error(`  - [${v.rule}] ${v.path}:${v.line} → ${v.text}`);
-  console.error('\n  Normas (CLAUDE.md): observeResize() en vez de RO directo · pbEscape/pbFilterParam');
-  console.error('  para filtros PB · kernel/ determinista (clock inyectable, sin Date.now()).');
+  console.error('\n  Normas (CLAUDE.md + docs/leyes.md): observeResize() en vez de RO directo · pbEscape/');
+  console.error('  pbFilterParam para filtros PB · kernel/ determinista (sin Date.now()) · pb-dueno:');
+  console.error('  solo el módulo DUEÑO nombra su colección PB — pide un método al dueño (leyes.md §21).');
 }
 assert.strictEqual(violations.length, 0, `${violations.length} violación(es) de normas — ver arriba`);
 ok(`${scanned} ficheros JS escaneados, 0 violaciones (RO directo / filtro PB a pelo / Date.now en kernel)`);
@@ -64,6 +65,12 @@ assert.strictEqual(bad.length, 2, 'detecta RO directo y filtro PB a pelo');
 assert.strictEqual(scanNormsSource('kernel/x.js', 'const t = Date.now();').length, 1, 'detecta Date.now en kernel');
 assert.strictEqual(scanNormsSource('kernel/x.js', '// comentario con Date.now()').length, 0, 'ignora comentarios');
 assert.strictEqual(scanNormsSource('core/observeResize.js', 'new ResizeObserver(cb)').length, 0, 'allowlist del helper');
-ok('el escáner caza cada norma y respeta comentarios + allowlist');
+// pb-dueno (ley de datos §21): un módulo cualquiera nombrando una colección → violación;
+// el dueño y el literal exacto dentro de otra palabra → limpios.
+assert.strictEqual(scanNormsSource('views/x.js', `fetch('/api/collections/results/records')`).length, 1, 'caza fetch a colección ajena');
+assert.strictEqual(scanNormsSource('views/x.js', `const c = 'live_answers';`).length, 1, 'caza el literal de colección');
+assert.strictEqual(scanNormsSource('adapters/pocketbase/remoteStore.js', `fetch('/api/collections/results/records')`).length, 0, 'el dueño puede');
+assert.strictEqual(scanNormsSource('views/x.js', `ls('ww.activities.' + uid)`).length, 0, 'no confunde substrings (ww.activities.)');
+ok('el escáner caza cada norma (incl. pb-dueno) y respeta comentarios + allowlist');
 
 console.log(`\nnorms.test: ${passed} checks passed`);

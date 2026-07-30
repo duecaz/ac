@@ -15,6 +15,9 @@ export const createRoom = call('createRoom');
 export const findRoomByCode = call('findRoomByCode');
 export const fetchSession = call('fetchSession');
 export const fetchSessionKey = call('fetchSessionKey');
+// Blob `state` entero (respaldo del informe post-partida del HOST). Las vistas
+// jamás tocan la colección live_sessions directamente — ley de datos.
+export const fetchSessionBlob = call('fetchSessionBlob');
 
 // Host flow
 export const startSession = call('startSession');

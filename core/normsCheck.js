@@ -11,6 +11,12 @@
 //   · kernel-puro     : kernel/** es el cerebro PURO y determinista: sin
 //                       `Date.now()` ni `new Date()` (el reloj se inyecta vía
 //                       core/clock.js; sin esto los tests dejan de ser deterministas).
+//   · pb-dueno        : LEY DE DATOS (docs/leyes.md §21) — cada colección de
+//                       PocketBase tiene UN módulo dueño; nadie más la nombra
+//                       (ni por URL `collections/x` ni por literal 'x'). Un
+//                       módulo nuevo que necesite esos datos pide un método al
+//                       dueño, no hace fetch por su cuenta — así "parchar algo"
+//                       escribiendo directo a la BD hace fallar CI.
 //
 // Lo consumen DOS runners (mismo patrón que core/templateContract.js):
 //   · tests/norms.test.mjs — Node, recorre el filesystem COMPLETO (autoridad).
@@ -21,6 +27,36 @@ const ALLOW = {
   'pb-filter': ['core/pbFilter.js'],   // pbFilterParam usa encodeURIComponent legítimamente
   'kernel-puro': [],
 };
+
+// LEY DE DATOS — colección → ficheros que pueden nombrarla. El PRIMERO es el
+// DUEÑO (único escritor); `views/adminView.js` está en todas por ser el dueño
+// del ESQUEMA (crear colecciones/reglas), y `core/stressTest.js` es la
+// excepción sancionada (prueba de carga: escribe filas `stress_*` y las borra).
+// Los marcados "lector directo" son deuda registrada en la ley: leen bien pero
+// esquivan al dueño; al migrarlos, quítalos de aquí (el ratchet solo encoge).
+const PB_OWNERS = {
+  activities: ['adapters/pocketbase/remoteStore.js', 'views/adminView.js',
+    // lectores directos (deuda §21): migrarlos a métodos del dueño
+    'views/explore.js', 'views/landing.js', 'views/author.js', 'core/teachers.js', 'core/dbDiag.js'],
+  results: ['adapters/pocketbase/remoteStore.js', 'views/adminView.js'],
+  live_sessions: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js',
+    'views/reports.js'],   // lector directo (deuda §21): además rompe el seam local|pb
+  live_answers: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js'],
+  live_players: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js'],
+  assignments: ['adapters/pocketbase/assignments.js', 'views/adminView.js', 'core/stressTest.js',
+    'adapters/index.js'],  // pbCollectionExists: decide el fallback local, no escribe
+  assignment_attempts: ['adapters/pocketbase/assignments.js', 'views/adminView.js', 'core/stressTest.js'],
+  reports: ['core/reports.js', 'views/adminView.js'],
+  activity_likes: ['core/likes.js', 'views/adminView.js'],
+  profiles: ['core/profile.js', 'views/adminView.js'],
+  users: ['core/auth.js', 'core/teachers.js', 'views/adminView.js'],
+  _superusers: ['views/adminView.js'],
+};
+// Precompilado: nombre → regex que caza `collections/<x>` o el literal '<x>'.
+const PB_RES = Object.keys(PB_OWNERS).map(c => ({
+  coll: c,
+  re: new RegExp(`collections/${c}(?![a-zA-Z_])|['"\`]${c}['"\`]`),
+}));
 
 // Comentarios fuera (mismo truco que tests/styles.test.mjs: se preservan los
 // saltos de línea para que los números de línea no se corran).
@@ -45,6 +81,11 @@ export function scanNormsSource(path, source) {
     }
     if (path.startsWith('kernel/') && /(Date\.now\s*\(|new Date\s*\(\s*\))/.test(ln)) {
       out.push({ path, line: i + 1, rule: 'kernel-puro', text: ln.trim() });
+    }
+    for (const { coll, re } of PB_RES) {
+      if (re.test(ln) && !PB_OWNERS[coll].some(a => path.endsWith(a))) {
+        out.push({ path, line: i + 1, rule: 'pb-dueno', text: `[${coll}] ${ln.trim()}` });
+      }
     }
   });
   return out;
