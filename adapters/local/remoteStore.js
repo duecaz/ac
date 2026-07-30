@@ -45,7 +45,12 @@ export function createLocalRemoteStore(kv = defaultKV()) {
     async listActivities() { return Object.entries(readMap()).map(([id, data]) => ({ id, data })); },
 
     // Results: append-only log so reports work offline / on any backend.
-    async saveResult(r) { const log = read(KEY_RESULTS) || []; log.push(r); write(KEY_RESULTS, log); },
+    // Espejo del índice único remoto: un reintento con el mismo _qid no duplica.
+    async saveResult(r) {
+      const log = read(KEY_RESULTS) || [];
+      if (r._qid && log.some(x => x._qid === r._qid)) return;
+      log.push(r); write(KEY_RESULTS, log);
+    },
     async listResults() { return read(KEY_RESULTS) || []; },
   };
 }

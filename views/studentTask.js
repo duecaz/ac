@@ -1,7 +1,8 @@
 // Async assignment: student plays SOLO at their own pace.
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
-import { findAssignmentByCode, countOwnAttempts, recordAttempt } from '../core/assignmentsTransport.js';
+import { findAssignmentByCode, countOwnAttempts } from '../core/assignmentsTransport.js';
+import { submitAttempt, flushAttempts } from '../core/attemptQueue.js';
 import { isAcceptableNickname } from '../core/nicknameFilter.js';
 import { getTemplate } from '../core/registry.js';
 import { ensureIdentity } from '../core/identity.js';
@@ -18,6 +19,9 @@ const NICK_KEY = 'ww.nick';
 
 export async function renderTask(rootSel, code) {
   await ensureIdentity();
+  // Si quedó un intento pendiente de otra sesión (red caída al entregar), esta
+  // visita es la oportunidad de reenviarlo.
+  flushAttempts().catch(() => {});
   const t = await findAssignmentByCode(code);
   if (!t) { mount(rootSel, html`<div class="alert alert-warning m-3">Tarea no encontrada.</div>`); return; }
   // Quién puede entregar lo decide UN solo sitio: core/assignmentRules.js (puro,
@@ -93,7 +97,7 @@ export async function renderTask(rootSel, code) {
 
   await runPlayer(rootSel, activity, {
     // 'async-tracked' hace DOS cosas en los shells: (1) results.js NO guarda una
-    // fila `results` extra (el intento va a assignment_attempts vía recordAttempt
+    // fila `results` extra (el intento va a assignment_attempts vía submitAttempt
     // de abajo — sin esto cada tarea se guardaba DOBLE); (2) desactiva la
     // reanudación F5 de soloPlayer (una tarea no debe retomarse a medias:
     // recargar = intento limpio, como dicta assignmentRules).
@@ -107,19 +111,25 @@ export async function renderTask(rootSel, code) {
       // Detalle por ítem para la analítica del docente (F3). Degrada a [] si el
       // player no lo expone (freeform sin detalle) → el informe usa agregados.
       const answers = packAnswers(state.answers || []);
-      // §22-3 — el tope y el "cerrada" los aplica ahora el SERVIDOR, así que la
-      // entrega puede volver rechazada. Callarlo dejaría al alumno creyendo que
-      // entregó: se le dice, con la frase que manda el adaptador.
-      recordAttempt(t.id, t.activity_id, nick, state.score, max, timeUsed, answers)
-        .catch(e => {
-          console.warn('record failed', e.message);
-          const msg = e?.status === 403
-            ? e.message
-            : 'No se pudo guardar tu intento (sin conexión). Avisa a tu profe.';
-          toast(msg, e?.status === 403 ? 'warning' : 'danger', 9000);
-          const note = document.getElementById('st-record-note');
-          if (note) note.textContent = msg;
-        });
+      // La entrega va por la COLA de intentos (core/attemptQueue.js): con la red
+      // caída se guarda y se reenvía sola (idempotente por qid), y si el SERVIDOR
+      // la rechaza (§22-3: tope agotado / tarea cerrada) se le dice al alumno con
+      // la frase del adaptador — callarlo lo dejaría creyendo que entregó.
+      submitAttempt({ assignmentId: t.id, activityId: t.activity_id, playerName: nick,
+        score: state.score, maxScore: max, timeUsed, answers })
+        .then(r => {
+          if (r.rejected) {
+            toast(r.error, 'warning', 9000);
+            const note = document.getElementById('st-record-note');
+            if (note) note.textContent = r.error;
+          } else if (r.queued) {
+            const msg = 'Sin conexión: tu intento quedó guardado en este dispositivo y se enviará solo al volver la red. No borres el navegador.';
+            toast(msg, 'info', 9000);
+            const note = document.getElementById('st-record-note');
+            if (note) { note.textContent = msg; note.className = 'text-info small'; }
+          }
+        })
+        .catch(e => console.warn('record failed', e.message));
       // Override the template's own finish screen (which links to #/home — a
       // teacher-only route absent from the student app, hence "ruta no
       // encontrada"). Show a student-safe completion screen instead.

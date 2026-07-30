@@ -12,7 +12,8 @@
 export const PERSIST = {
   // Individual: el shell guarda el resultado al terminar.
   solo:             { results: true,  attempts: false, live: false },
-  // Tarea: el intento lo registra views/studentTask.js (recordAttempt). NO debe
+  // Tarea: el intento lo registra views/studentTask.js (submitAttempt, con cola
+  // offline e idempotencia por qid — core/attemptQueue.js). NO debe
   // escribir además en `results` — eso era el guardado doble.
   'async-tracked':  { results: false, attempts: true,  live: false },
   // Live (alumno): las respuestas van a `live_answers`; el veredicto lo pone el

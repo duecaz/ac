@@ -63,6 +63,7 @@ console.log('\n▶ serverMs'); await import('./serverMs.test.mjs');
 console.log('\n▶ liveSnapshot'); await import('./liveSnapshot.test.mjs');
 console.log('\n▶ taskRules'); await import('./taskRules.test.mjs');
 console.log('\n▶ unscorable'); await import('./unscorable.test.mjs');
+console.log('\n▶ idempotency'); await import('./idempotency.test.mjs');
 console.log('\n▶ liveRules'); await import('./liveRules.test.mjs');
 console.log('\n▶ skins'); await import('./skins.test.mjs');
 console.log('\n▶ newTemplate'); await import('./newTemplate.test.mjs');

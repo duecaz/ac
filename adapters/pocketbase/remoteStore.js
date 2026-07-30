@@ -9,7 +9,7 @@
 import { PB_URL } from '../../pocketbase.config.js';
 import { lsGet, lsSet } from '../../core/ls.js';
 import { getAuthUserId } from '../../core/auth.js';
-import { signedFetch } from '../../core/pbHttp.js';
+import { signedFetch, pbJson } from '../../core/pbHttp.js';
 import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
 
 function toId(id) {
@@ -28,31 +28,9 @@ function fromId(pbId, originalId) {
   return pbId;
 }
 
-async function pbFetch(path, opts = {}) {
-  // Firma (token del profe + fallback anónimo) centralizada en core/pbHttp.js.
-  const r = await signedFetch(`${PB_URL}${path}`, opts);
-  if (r.status === 204) return null;
-  // PocketBase always speaks JSON. If the body fails to parse, a gateway /
-  // proxy / network-policy page intercepted the request — surface it as a
-  // PocketBase error so callers handle every failure uniformly (instead of an
-  // opaque SyntaxError from r.json()).
-  const text = await r.text();
-  let body = null;
-  if (text) {
-    try { body = JSON.parse(text); }
-    catch {
-      throw Object.assign(
-        new Error(`PocketBase error ${r.status}: respuesta no-JSON`),
-        { status: r.status, pb: { raw: text.slice(0, 200) } }
-      );
-    }
-  }
-  if (!r.ok) throw Object.assign(
-    new Error(body?.message || `PocketBase error ${r.status}`),
-    { status: r.status, pb: body }
-  );
-  return body;
-}
+// El wrapper JSON (firma + parseo seguro + error { status, pb }) vive UNA vez
+// en core/pbHttp.js. Alias local para no tocar los ~20 llamadores.
+const pbFetch = (path, opts) => pbJson(path, opts);
 
 // Track which PocketBase IDs are known to exist so we can skip the
 // PATCH→404→POST dance after the first successful sync.
@@ -220,8 +198,23 @@ export function createPocketbaseRemoteStore() {
       return { items, bytes: txt.length };
     },
 
+    // Idempotente por `qid` (deuda D): la cola de results reintenta tras un ACK
+    // perdido, y sin clave el reintento duplicaba la fila. El índice único
+    // parcial (qid != '') convierte el reintento en un 400 que aquí significa
+    // "ya estaba guardado" → éxito, no error.
     async saveResult(r) {
-      await pbFetch('/api/collections/results/records', {
+      try {
+        await postResult(r);
+      } catch (e) {
+        if (e?.status === 400 && r._qid) {
+          const dup = await pbFetch(`/api/collections/results/records?filter=${pbFilterParam(`qid='${pbEscape(r._qid)}'`)}&perPage=1&fields=id`).catch(() => null);
+          if (dup?.items?.length) return;   // el primer envío SÍ llegó
+        }
+        throw e;
+      }
+
+      function postResult(r) {
+        return pbFetch('/api/collections/results/records', {
         method: 'POST',
         body: JSON.stringify({
           activity_id: toId(r.activityId || ''),
@@ -233,8 +226,10 @@ export function createPocketbaseRemoteStore() {
           max_score:   r.maxScore   ?? null,
           time_used:   r.timeUsed   ?? null,
           overrides:   r.overrides  || [],
+          qid:         r._qid || '',
         }),
-      });
+        });
+      }
     },
 
     async listResults(activityId) {

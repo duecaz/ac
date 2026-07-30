@@ -77,12 +77,16 @@ export function createLocalAssignments({ kv = defaultKV(), userId } = {}) {
       return attempts().filter(r => r.assignment_id === assignmentId && r.user_id === me).length;
     },
 
-    async recordAttempt(assignmentId, activityId, playerName, scoreAuto, maxScore, timeUsed, answers = []) {
+    async recordAttempt(assignmentId, activityId, playerName, scoreAuto, maxScoreVal, timeUsed, answers = [], qid = '') {
       const log = attempts();
+      // Espejo del índice único remoto (deuda D): un reintento con el mismo qid
+      // no duplica el intento.
+      if (qid && log.some(a => a.qid === qid)) return;
       log.push({
+        qid,
         assignment_id: assignmentId, activity_id: activityId, user_id: uid(),
         player_name: playerName, score_auto: scoreAuto, score_final: scoreAuto,
-        max_score: maxScore, time_used: timeUsed, answers,
+        max_score: maxScoreVal, time_used: timeUsed, answers,
         created_at: new Date().toISOString(),
       });
       write(K_ATTEMPTS, log);

@@ -14,6 +14,7 @@
 //
 // Devuelve la Response CRUDA: cada adaptador conserva su parseo/reintento/timeout.
 import { getAuthToken } from './auth.js';
+import { PB_URL } from '../pocketbase.config.js';
 
 export async function signedFetch(url, opts = {}) {
   const { headers: extra, ...rest } = opts;
@@ -30,4 +31,36 @@ export async function signedFetch(url, opts = {}) {
   let r = await run(true);
   if ((r.status === 401 || r.status === 403) && getAuthToken()) r = await run(false);
   return r;
+}
+
+// ── EL wrapper JSON de PocketBase, UNA vez (ley de datos §21) ────────────────
+// Había SIETE copias de "signedFetch/fetch + parsear JSON + dar forma al error"
+// (likes, reports, teachers y los 3 adaptadores; auth.js es la séptima y se
+// queda: es el DUEÑO del token y pbHttp importa de él — usarlo aquí sería un
+// ciclo). Todas las demás llaman a esto.
+//
+// Forma del error, ÚNICA para todos los llamadores:
+//   { status, pb }  — pb = cuerpo JSON del servidor (message, data por campo).
+// Un cuerpo no-JSON (proxy, portal cautivo, política de red) también sale como
+// error PocketBase con `pb.raw`, nunca como SyntaxError opaco de r.json().
+// `opts` pasa entero a signedFetch → `signal` (timeout del caller) funciona.
+export async function pbJson(path, opts = {}) {
+  const r = await signedFetch(`${PB_URL}${path}`, opts);
+  if (r.status === 204) return null;
+  const text = await r.text();
+  let body = null;
+  if (text) {
+    try { body = JSON.parse(text); }
+    catch {
+      throw Object.assign(
+        new Error(`PocketBase error ${r.status}: respuesta no-JSON`),
+        { status: r.status, pb: { raw: text.slice(0, 200) } }
+      );
+    }
+  }
+  if (!r.ok) throw Object.assign(
+    new Error(body?.message || `PocketBase error ${r.status}`),
+    { status: r.status, pb: body }
+  );
+  return body;
 }

@@ -326,11 +326,12 @@ temporales retirados.
   rompe ni sube la racha. Test: `tests/unscorable.test.mjs` (cadena entera + contra-prueba de que
   un ítem normal puntúa igual). **PASO DEL USUARIO**: re-correr "Crear colecciones" (campo nuevo).
 
-#### D. Menores: ~~filtros PB sin escapar comilla simple~~ ✅ RESUELTO (`core/pbFilter.js`, todos los
-  llamadores lo usan — `views/explore.js` era el último rezagado con `encodeURIComponent` a pelo,
-  cerrado en la auditoría de estructura). Quedan: `saveResult` remoto sin cola propia (un resultado
-  final puede perderse en blip; la cola de `results.js` cubre el caso local) y sin idempotency key
-  en resultados (posibles filas duplicadas si se pierde el ACK).
+#### D. ✅ RESUELTO — filtros PB (`core/pbFilter.js`) y, en R1 (v1.51.324), la robustez de
+  escritura: intentos de tarea con cola offline (`core/attemptQueue.js`), idempotencia por `qid`
+  en `results`/`assignment_attempts` (índice único parcial + comprobación en el adaptador; un
+  ACK perdido ya no duplica ni gasta intentos), y el wrapper JSON de PB unificado en
+  `pbJson` (`core/pbHttp.js`; auth.js conserva el suyo por ciclo de imports). Test:
+  `tests/idempotency.test.mjs`. Requiere re-correr "Crear colecciones" (campo `qid` + índices).
 
 #### F. ✅ RESUELTO (v1.51.277) — `submitProgress` (tablero de Ordena las Pelotas) no atómico
 - **Qué era**: `submitProgress` hacía GET-then-POST/PATCH sin candado → dos progresos concurrentes

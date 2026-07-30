@@ -227,11 +227,28 @@ exactamente lo que causó los lost-updates (deuda A) y el guardado doble.
   divergían (una devolvía el id de PB y otra el del contenido, y ninguna migraba
   el modelo) — ahora es un solo lector que además MIGRA, así una tarjeta pública
   de una actividad vieja se pinta con el modelo de hoy.
-- **Deuda registrada**: `recordAttempt` sin cola offline (un intento de tarea puede perderse en blip —
-  candidato a `createOfflineQueue`); `results` y `assignment_attempts` sin clave
-  de idempotencia (reintento tras ACK perdido puede duplicar fila; el fix bueno
-  es índice único + campo `qid`, requiere "Crear colecciones"); 7 copias del
-  wrapper `pb()` (unificar en `pbHttp`).
+- **✅ CERRADO (R1)** — las tres piezas de robustez de escritura:
+  - **Cola offline de intentos** (`core/attemptQueue.js`): la entrega de una
+    tarea con la red caída se guarda en el dispositivo y se reenvía sola (al
+    volver la red, al reabrir una tarea, o en el piggyback de la siguiente
+    entrega). La vista lo DICE ("quedó guardado en este dispositivo…"). Un 403
+    del servidor (tope/cerrada, §22-3) NO se encola: se explica.
+  - **Idempotencia por `qid`** en `results` y `assignment_attempts`: la clave
+    nace ANTES del primer envío (misma identidad en el reintento) y el índice
+    único PARCIAL (`WHERE qid != ''`, no molesta a las filas antiguas) convierte
+    el reintento tras un ACK perdido en no-op. En intentos era lo grave: el
+    reintento recontaba y entraba como `attempt_no+1` — fila duplicada Y un
+    intento del alumno gastado en falso. Test: `tests/idempotency.test.mjs`
+    (ACK perdido de verdad: la fila queda, el cliente ve error, el reintento no
+    duplica, y la contra-prueba de que la entrega nueva real sigue entrando).
+  - **UN wrapper JSON de PocketBase** (`pbJson` en `core/pbHttp.js`): 6 de las 7
+    copias migradas (likes, reports, teachers y los 3 adaptadores; el timeout de
+    realtime queda como capa encima). `core/auth.js` conserva la suya A
+    PROPÓSITO: es el dueño del token y pbHttp importa de él — sería un ciclo.
+  - **PASO DEL USUARIO**: re-correr "Crear colecciones" cuando haya acceso a
+    @pio (añade `qid` + sus 2 índices). Sin eso, el reintento sigue funcionando
+    pero sin la garantía del índice (la comprobación por consulta del adaptador
+    cubre mientras tanto).
 
 ## 22) ⚖️ LEY DE CONFIANZA — el cliente AFIRMA, el veredicto lo pone otro
 El principio que ya aplicamos tres veces sin nombrarlo (C6, answer-safety R5,

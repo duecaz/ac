@@ -1,22 +1,14 @@
 // 🚩 Reportes de contenido de la biblioteca pública (S3). Un profe logueado puede
 // reportar una actividad; solo el admin lista/borra. Colección PB `reports`
 // {activity, by, reason} — la crea el setup de #/admin.
-import { PB_URL } from '../pocketbase.config.js';
-import { getAuthToken, getAuthUserId } from './auth.js';
+import { getAuthUserId } from './auth.js';
+import { pbJson } from './pbHttp.js';
 
 const COLL = 'reports';
 
-async function pb(path, opts = {}) {
-  const headers = {};
-  if (opts.body) headers['Content-Type'] = 'application/json';
-  const token = getAuthToken();
-  if (token) headers['Authorization'] = token;
-  const r = await fetch(`${PB_URL}${path}`, { ...opts, headers: { ...headers, ...(opts.headers || {}) } });
-  if (r.status === 204) return null;
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw Object.assign(new Error(data?.message || `Error ${r.status}`), { status: r.status });
-  return data;
-}
+// El wrapper JSON vive UNA vez en core/pbHttp.js (pbJson): firma con el token
+// si lo hay y da a los errores la forma común { status, pb }.
+const pb = (path, opts) => pbJson(path, opts);
 
 // Crea un reporte (requiere sesión). `activity` = id de la actividad reportada.
 export async function submitReport(activity, reason = '') {

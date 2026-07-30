@@ -26,8 +26,7 @@
 import { LETTERS, PIN_LENGTH } from '../../core/constants.js';
 import { normalizeCode } from '../../core/assignmentRules.js';
 import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
-import { signedFetch } from '../../core/pbHttp.js';
-import { PB_URL } from '../../pocketbase.config.js';
+import { pbJson } from '../../core/pbHttp.js';
 
 function genCode() {
   let s = '';
@@ -35,20 +34,9 @@ function genCode() {
   return s;
 }
 
-async function pbFetch(path, opts = {}) {
-  // Firma (token del profe + fallback anónimo) centralizada en core/pbHttp.js:
-  // el profe crea/lee tareas autenticado; el alumno entrega su intento anónimo.
-  const r = await signedFetch(`${PB_URL}${path}`, opts);
-  if (r.status === 204) return null;
-  const text = await r.text();
-  let body = null;
-  if (text) {
-    try { body = JSON.parse(text); }
-    catch { throw Object.assign(new Error(`PocketBase error ${r.status}: respuesta no-JSON`), { status: r.status }); }
-  }
-  if (!r.ok) throw Object.assign(new Error(body?.message || `PocketBase error ${r.status}`), { status: r.status, pb: body });
-  return body;
-}
+// El wrapper JSON vive UNA vez en core/pbHttp.js (el profe firma; el alumno va
+// anónimo, exactamente como antes). Alias local para los llamadores.
+const pbFetch = (path, opts) => pbJson(path, opts);
 
 export function createPocketbaseAssignments({ userId = 'local-anon' } = {}) {
   const uid = () => userId;
@@ -128,7 +116,15 @@ export function createPocketbaseAssignments({ userId = 'local-anon' } = {}) {
     //     siguiente número, igual que el retry de apodos del live.
     //   · 403 = la regla dijo NO: tope agotado o tarea cerrada. Eso no se
     //     reintenta, se explica.
-    async recordAttempt(assignmentId, activityId, playerName, scoreAuto, maxScore, timeUsed, answers = []) {
+    //   · `qid` (deuda D) = clave de idempotencia del reintento. Sin ella, un ACK
+    //     perdido + reintento de la cola offline recontaba, entraba con
+    //     attempt_no+1 y DUPLICABA la fila — gastándole un intento al alumno.
+    //     Ahora, ante cualquier 400 se comprueba primero si una fila con nuestro
+    //     qid ya existe: si sí, el primer envío llegó → éxito, no reintento.
+    async recordAttempt(assignmentId, activityId, playerName, scoreAuto, maxScore, timeUsed, answers = [], qid = '') {
+      const mine = () => pbFetch(
+        `/api/collections/assignment_attempts/records?filter=${pbFilterParam(`assignment_id='${pbEscape(assignmentId)}' && user_id='${pbEscape(uid())}'`)}&perPage=50&fields=qid`
+      ).then(r => r?.items || []).catch(() => []);
       let taken = await this.countOwnAttempts(assignmentId).catch(() => 0);
       for (let tries = 0; tries < 4; tries++) {
         try {
@@ -138,6 +134,7 @@ export function createPocketbaseAssignments({ userId = 'local-anon' } = {}) {
             throw Object.assign(new Error('El servidor no aceptó el intento: la tarea está cerrada o ya has agotado los intentos.'), { status: 403 });
           }
           if (e?.status !== 400 || tries === 3) throw e;
+          if (qid && (await mine()).some(r => r.qid === qid)) return;   // ya entregado
           const fresh = await this.countOwnAttempts(assignmentId).catch(() => taken + 1);
           taken = Math.max(taken + 1, fresh);
         }
@@ -148,6 +145,7 @@ export function createPocketbaseAssignments({ userId = 'local-anon' } = {}) {
         method: 'POST',
         body: JSON.stringify({
           attempt_no: attemptNo,
+          qid: qid || '',
           assignment_id: assignmentId,
           activity_id: activityId,
           user_id: uid(),

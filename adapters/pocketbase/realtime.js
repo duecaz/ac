@@ -11,10 +11,10 @@
 import { rid } from '../../core/ids.js';
 import { createLiveRoom } from '../../kernel/live/engine.js';
 import { isAcceptableNickname } from '../../core/nicknameFilter.js';
-import { signedFetch } from '../../core/pbHttp.js';
+import { pbJson } from '../../core/pbHttp.js';
+import { PB_URL } from '../../pocketbase.config.js';
 import { pickWord } from '../../core/liveWords.js';
 import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
-import { PB_URL } from '../../pocketbase.config.js';
 import { setConnectionState } from '../../core/connection.js';
 import { deriveAnswerMs, openedKey, openedAtFor } from '../../core/serverMs.js';
 import { studentSnapshot, needsClientKey } from '../../core/liveSnapshot.js';
@@ -80,28 +80,18 @@ async function pbFetchOnce(path, opts = {}) {
   // connection can open but never respond, which would leave submit/load/host
   // actions pending indefinitely (frozen UI, submitQueue never enqueues). The
   // AbortError flows into the offline queue / reconnect backoff like any failure.
-  // La FIRMA (token del profe host + fallback anónimo) va en signedFetch: las
-  // escrituras del host quedan autenticadas; el alumno (sin token) va anónimo.
+  // El wrapper JSON (firma profe/anónimo + parseo + error { status, pb }) vive
+  // UNA vez en core/pbHttp.js; aquí solo se le añade el timeout.
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-  let r;
   try {
-    r = await signedFetch(`${PB_URL}${path}`, { method, body: reqBody, headers: extra, signal: ctrl.signal });
+    return await pbJson(path, { method, body: reqBody, headers: extra, signal: ctrl.signal });
   } catch (e) {
     if (e?.name === 'AbortError') throw Object.assign(new Error(`PocketBase: tiempo de espera agotado (${timeoutMs}ms)`), { status: 0, timeout: true });
     throw e;
   } finally {
     clearTimeout(timer);
   }
-  if (r.status === 204) return null;
-  const text = await r.text();
-  let body = null;
-  if (text) {
-    try { body = JSON.parse(text); }
-    catch { throw Object.assign(new Error(`PocketBase error ${r.status}: respuesta no-JSON`), { status: r.status }); }
-  }
-  if (!r.ok) throw Object.assign(new Error(body?.message || `PocketBase error ${r.status}`), { status: r.status, pb: body });
-  return body;
 }
 
 // Reintenta las lecturas (GET) ante fallos TRANSITORIOS — timeout, red caída, 5xx —

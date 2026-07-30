@@ -71,12 +71,18 @@ export function trySaveResult(opts, payload) {
 export async function saveResult(r) {
   // Try to flush any pending queued results first (piggyback on active connection).
   queue.flush().catch(() => {});
+  // El `_qid` nace ANTES del primer envío (deuda D): así el intento directo y el
+  // reintento de la cola llevan la MISMA identidad, y el índice único del
+  // servidor convierte un reintento tras ACK perdido en no-op en vez de en fila
+  // duplicada. Antes el _qid se acuñaba solo al encolar → el primer envío iba
+  // sin clave.
+  const item = { ...r, _qid: r._qid || qid() };
   try {
     const rs = await getRemoteStore();
-    await rs.saveResult(r);
+    await rs.saveResult(item);
   } catch (e) {
     console.warn('[results] save failed — queuing for retry:', e.message);
-    queue.enqueue({ ...r, _qid: qid(), _queuedAt: clock.now() });
+    queue.enqueue({ ...item, _queuedAt: clock.now() });
   }
 }
 

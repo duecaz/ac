@@ -1,5 +1,16 @@
 # Infraestructura — PocketBase + Raspberry Pi (estado REAL)
 
+> **⚠ PENDIENTE DE VERIFICAR EN @pio (2026-07-30)**: hay DOS servidores PocketBase
+> (@pio producción, @pit). Las reglas L6+M1-M5 se aplicaron vía `#/admin` →
+> "Crear colecciones" (las 12 en verde), pero las sondas de verificación
+> (`live_keys`→403 · `live_claims`→403 · POST `live_answers` sin credencial→403)
+> se corrieron desde @pit y dieron **200/403/400** — es decir, cayeron en un
+> servidor SIN las reglas nuevas (`live_keys` legible = mal). Al recuperar acceso
+> local a @pio: repetir las 3 sondas contra él, jugar una partida EN VIVO real
+> (móvil anónimo: entrar·responder·puntuar) y `node tools/stress-live.mjs <PIN> 30`.
+> Y decidir @pit: aplicarle las mismas reglas o apagarlo — un clon con reglas
+> viejas y datos reales es una puerta trasera.
+
 > **Para qué sirve este doc**: es la FUENTE para consultar cómo está montada la base de
 > datos y la Pi sin tener que redescubrirlo por SSH. Actualízalo cada vez que cambie algo
 > del servidor (versión de PB, reglas, colecciones, backups). Última verificación completa:

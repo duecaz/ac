@@ -129,7 +129,7 @@ export async function runStressTest({ pbUrl, n = 30, onLog = () => {} } = {}) {
   if (asgId) {
     const tAtt = Date.now();
     const attempts = await Promise.allSettled(Array.from({ length: n }, (_, i) =>
-      jpost('assignment_attempts', { assignment_id: asgId, activity_id: activity.id, user_id: `stress_${i}_${code}`, player_name: playerName(i), score_auto: i % 3, score_final: i % 3, max_score: 2, time_used: 10 + i, answers: [{ i: 0, v: '4', c: true, p: 1 }] })
+      jpost('assignment_attempts', { assignment_id: asgId, activity_id: activity.id, user_id: `stress_${i}_${code}`, player_name: playerName(i), score_auto: i % 3, score_final: i % 3, max_score: 2, time_used: 10 + i, answers: [{ i: 0, v: '4', c: true, p: 1 }], attempt_no: 1, qid: `stress_q_${i}_${code}` })
         .then(r => r.ok)));
     const attMs = Date.now() - tAtt;
     const aaRows = (await jget(`/api/collections/assignment_attempts/records?filter=${filt([`assignment_id='${pbEscape(asgId)}'`])}&perPage=500`))?.items || [];

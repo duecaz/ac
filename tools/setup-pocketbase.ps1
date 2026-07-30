@@ -102,9 +102,11 @@ $defs = @(
      fields = @(
        @{ name="activity_id"; type="text" }, @{ name="session_id"; type="text" }, @{ name="user_id"; type="text" },
        @{ name="player_name"; type="text" }, @{ name="score_auto"; type="number" }, @{ name="score_final"; type="number" },
-       @{ name="max_score"; type="number" }, @{ name="time_used"; type="number" }, @{ name="overrides"; type="json"; maxSize=200000 }
+       @{ name="max_score"; type="number" }, @{ name="time_used"; type="number" }, @{ name="overrides"; type="json"; maxSize=200000 },
+       @{ name="qid"; type="text" }
      );
-     indexes = @();
+     # Deuda D: indice unico PARCIAL (qid != '') = reintento tras ACK perdido -> 400 = ya guardado.
+     indexes = @( "CREATE UNIQUE INDEX ``idx_results_qid`` ON ``results`` (``qid``) WHERE ``qid`` != ''" );
      rules = @{ createRule=""; listRule='@request.auth.id != ""'; viewRule='@request.auth.id != ""'; updateRule=$null; deleteRule=$null } },
 
   # L6 (ley de confianza §22): DIRIGIR la sala es del PROFE. El campo `ql` esta
@@ -171,8 +173,8 @@ $defs = @(
   # (countOwnAttempts) — con auth-required aqui el gateo de tareas revienta.
   # (Antes este script divergia de views/adminView.js DEFS; unificado en L2.)
   @{ name = "assignment_attempts";
-     fields = @( @{ name="assignment_id"; type="text" }, @{ name="activity_id"; type="text" }, @{ name="user_id"; type="text" }, @{ name="player_name"; type="text" }, @{ name="score_auto"; type="number" }, @{ name="score_final"; type="number" }, @{ name="max_score"; type="number" }, @{ name="time_used"; type="number" }, @{ name="answers"; type="json"; maxSize=200000 }, @{ name="attempt_no"; type="number" } );
-     indexes = @( "CREATE UNIQUE INDEX ``idx_aa_asg_user_no`` ON ``assignment_attempts`` (``assignment_id``, ``user_id``, ``attempt_no``)" );
+     fields = @( @{ name="assignment_id"; type="text" }, @{ name="activity_id"; type="text" }, @{ name="user_id"; type="text" }, @{ name="player_name"; type="text" }, @{ name="score_auto"; type="number" }, @{ name="score_final"; type="number" }, @{ name="max_score"; type="number" }, @{ name="time_used"; type="number" }, @{ name="answers"; type="json"; maxSize=200000 }, @{ name="attempt_no"; type="number" }, @{ name="qid"; type="text" } );
+     indexes = @( "CREATE UNIQUE INDEX ``idx_aa_asg_user_no`` ON ``assignment_attempts`` (``assignment_id``, ``user_id``, ``attempt_no``)", "CREATE UNIQUE INDEX ``idx_aa_qid`` ON ``assignment_attempts`` (``qid``) WHERE ``qid`` != ''" );
      # 22-3: el TOPE de intentos lo aplica el servidor (join con la tarea) y el
      # indice unico impide gastar el mismo attempt_no dos veces.
      rules = @{ createRule='@collection.assignments:asg.id ?= @request.body.assignment_id && @collection.assignments:asg.status ?!= "closed" && (@request.body.attempt_no = 1 || @collection.assignments:asg.max_attempts ?>= @request.body.attempt_no)'; listRule=""; viewRule=""; updateRule=$null; deleteRule=$null } }
