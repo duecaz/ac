@@ -16,63 +16,10 @@ import assert from 'node:assert';
 import '../core/registerTemplates.js';   // el settle del host necesita el scorer real
 import { RULES } from '../core/pbRules.js';
 import { createPocketbaseRealtime } from '../adapters/pocketbase/realtime.js';
+import { evalRule } from './helpers/pbRuleEval.mjs';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
-
-// ── Evaluador de reglas ──────────────────────────────────────────────────────
-// Dialecto soportado (el que usan nuestras reglas): '' = abierto · null =
-// cerrado · `A || B` · `A && B` · `@request.auth.id != ""` ·
-// `@request.auth.role = "x"` · `@request.body.CAMPO:isset = false` ·
-// `@request.body.CAMPO = <literal>` · `campo = @request.auth.id` ·
-// `campo = "literal"`. Los paréntesis se resuelven por recursión simple.
-export function evalRule(rule, ctx) {
-  if (rule === '') return true;                 // abierto
-  if (rule == null) return false;               // cerrado por API
-  return orExpr(String(rule).trim(), ctx);
-}
-
-function splitTop(expr, op) {
-  const parts = [];
-  let depth = 0, last = 0;
-  for (let i = 0; i < expr.length; i++) {
-    if (expr[i] === '(') depth++;
-    else if (expr[i] === ')') depth--;
-    else if (depth === 0 && expr.startsWith(op, i)) { parts.push(expr.slice(last, i)); i += op.length - 1; last = i + 1; }
-  }
-  parts.push(expr.slice(last));
-  return parts.map(s => s.trim());
-}
-
-const orExpr = (e, c) => splitTop(e, '||').some(p => andExpr(p, c));
-const andExpr = (e, c) => splitTop(e, '&&').every(p => atom(p, c));
-
-function atom(expr, ctx) {
-  let e = expr.trim();
-  while (e.startsWith('(') && e.endsWith(')')) e = e.slice(1, -1).trim();
-  if (e.includes('||') || e.includes('&&')) return orExpr(e, ctx);
-
-  const m = e.match(/^(.+?)\s*(!=|=)\s*(.+)$/);
-  assert.ok(m, `evaluador: expresión no soportada → "${e}" (¿regla nueva? amplía el evaluador)`);
-  const [, rawL, op, rawR] = m;
-  const L = resolve(rawL.trim(), ctx), R = resolve(rawR.trim(), ctx);
-  return op === '=' ? L === R : L !== R;
-}
-
-function resolve(tok, ctx) {
-  if (/^".*"$/.test(tok) || /^'.*'$/.test(tok)) return tok.slice(1, -1);
-  if (tok === 'true') return true;
-  if (tok === 'false') return false;
-  if (/^-?\d+(\.\d+)?$/.test(tok)) return Number(tok);
-  if (tok === '@request.auth.id') return ctx.auth?.id ?? '';
-  if (tok === '@request.auth.role') return ctx.auth?.role ?? '';
-  const isset = tok.match(/^@request\.body\.([\w.]+):isset$/);
-  if (isset) return Object.prototype.hasOwnProperty.call(ctx.body || {}, isset[1]);
-  const body = tok.match(/^@request\.body\.([\w.]+)$/);
-  if (body) return (ctx.body || {})[body[1]];
-  // Cualquier otro identificador es un campo de la FILA (owner, user, visibility…)
-  return (ctx.record || {})[tok];
-}
 
 // El evaluador se auto-verifica antes de arbitrar nada.
 {

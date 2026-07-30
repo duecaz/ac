@@ -659,8 +659,9 @@ function renderPanel(rootSel) {
           { name: 'max_score',     type: 'number' },
           { name: 'time_used',     type: 'number' },
           { name: 'answers',       type: 'json' },   // detalle por ítem (analítica F3)
+          { name: 'attempt_no',    type: 'number' },  // §22-3: nº de intento, lo acota la regla
           { name: 'created_at',    type: 'text' },
-        ]},
+        ], indexes: ['CREATE UNIQUE INDEX `idx_aa_asg_user_no` ON `assignment_attempts` (`assignment_id`, `user_id`, `attempt_no`)'] },
         // ❤ Likes de la biblioteca pública (S2): una fila por (actividad, profe).
         { name: 'activity_likes', fields: [
           { name: 'activity', type: 'text', required: true },

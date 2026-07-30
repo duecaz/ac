@@ -40,6 +40,16 @@ const ANON_ANSWER_UPDATE = VERDICT_FIELDS.map(notSet).join(' && ');
 const ROOM_FIELDS = ['state', 'activity', 'code'];
 const ANON_ROOM_UPDATE = ROOM_FIELDS.map(notSet).join(' && ');
 
+// §22-3 — tope de intentos aplicado por el SERVIDOR (ver el comentario de
+// `assignment_attempts` más abajo). Se declara aquí arriba para que la regla se
+// lea de una pieza.
+const ASG = '@collection.assignments:asg';
+export const ATTEMPT_CREATE = [
+  `${ASG}.id ?= @request.body.assignment_id`,
+  `${ASG}.status ?!= "closed"`,
+  `(@request.body.attempt_no = 1 || ${ASG}.max_attempts ?>= @request.body.attempt_no)`,
+].join(' && ');
+
 /**
  * Reglas por colección. Cambiar algo aquí exige re-aplicarlas desde
  * `#/admin` → "Crear colecciones" (y verificar con `bash tools/check-pb.sh`).
@@ -92,7 +102,28 @@ export const RULES = {
   assignments: { listRule: '', viewRule: '', createRule: AUTH, updateRule: AUTH, deleteRule: AUTH },
   // list/view ABIERTOS a propósito: el tope de intentos lo cuenta el alumno
   // ANÓNIMO (countOwnAttempts). Con auth aquí, el gateo de tareas revienta.
-  assignment_attempts: { listRule: '', viewRule: '', createRule: '', updateRule: null, deleteRule: null },
+  //
+  // §22-3 — EL TOPE DE INTENTOS LO APLICA EL SERVIDOR. Antes el límite vivía
+  // ENTERO en el cliente: `countOwnAttempts` contaba y la vista decidía, así que
+  // un POST a mano (o simplemente borrar `ww.anonId`) daba intentos infinitos.
+  // Ahora el intento declara su número (`attempt_no`) y la regla lo compara con
+  // el `max_attempts` de SU tarea vía join, y rechaza si la tarea está cerrada.
+  // El índice ÚNICO (assignment_id, user_id, attempt_no) remata: un attempt_no
+  // repetido no entra, así que no se puede "gastar" el mismo número dos veces.
+  //   · `attempt_no = 1` se admite aunque `max_attempts` sea null: la semántica
+  //     canónica es "null ⇒ 1 intento" (core/assignmentRules.js) y hay tareas
+  //     antiguas sin el campo — sin esta rama la regla bloquearía al alumno
+  //     legítimo, que es el otro modo de fallar.
+  //   · Alias `:asg` = un solo join: las tres condiciones se evalúan sobre la
+  //     MISMA fila de la tarea (sin alias podrían cumplirse en filas distintas).
+  // LÍMITE conocido: el `user_id` es anónimo y el alumno puede rotarlo (borrar
+  // el almacenamiento, incógnito) → el tope es por IDENTIDAD, no por persona.
+  // Cerrar eso exige identidad de alumno (PIN/NFC, docs/handoff-acceso-docente.md).
+  assignment_attempts: {
+    listRule: '', viewRule: '',
+    createRule: ATTEMPT_CREATE,
+    updateRule: null, deleteRule: null,
+  },
 
   // ── Biblioteca pública ────────────────────────────────────────────────────
   activity_likes: {

@@ -74,7 +74,14 @@ for (const coll of ['results', 'assignment_attempts']) {
 // El tope de intentos lo cuenta el alumno ANÓNIMO: si esto exigiera sesión, el
 // gateo de tareas reventaría (fue la divergencia real del script de PowerShell).
 assert.strictEqual(RULES.assignment_attempts.listRule, '', 'el alumno anónimo debe poder contar sus intentos');
-assert.strictEqual(RULES.assignment_attempts.createRule, '', 'el alumno anónimo debe poder entregar su intento');
+// Crear NO es abierto del todo (§22-3: el tope lo aplica el servidor), pero
+// tampoco puede exigir SESIÓN: el alumno es anónimo. La forma exacta de la regla
+// (y que el alumno legítimo pasa) la prueba tests/taskRules.test.mjs.
+const attCreate = RULES.assignment_attempts.createRule;
+assert.ok(attCreate && !attCreate.includes('@request.auth'),
+  'crear intento no puede exigir sesión: el alumno es anónimo');
+assert.ok(attCreate.includes('max_attempts'),
+  'crear intento debe acotar el tope contra la tarea (si no, el límite vive solo en el cliente)');
 ok('results/assignment_attempts append-only, y el alumno anónimo aún puede contar y entregar');
 
 // ── 6. Dirigir una tarea es acto del profe ───────────────────────────────────

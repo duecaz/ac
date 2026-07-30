@@ -12,6 +12,7 @@ import { assignmentGate } from '../core/assignmentRules.js';
 import { defaultMaxScore } from '../core/scoring/index.js';
 import { lsGet, lsSet } from '../core/ls.js';
 import { clock } from '../core/clock.js';
+import { toast } from '../core/toast.js';
 
 const NICK_KEY = 'ww.nick';
 
@@ -106,7 +107,19 @@ export async function renderTask(rootSel, code) {
       // Detalle por ítem para la analítica del docente (F3). Degrada a [] si el
       // player no lo expone (freeform sin detalle) → el informe usa agregados.
       const answers = packAnswers(state.answers || []);
-      recordAttempt(t.id, t.activity_id, nick, state.score, max, timeUsed, answers).catch(e => console.warn('record failed', e.message));
+      // §22-3 — el tope y el "cerrada" los aplica ahora el SERVIDOR, así que la
+      // entrega puede volver rechazada. Callarlo dejaría al alumno creyendo que
+      // entregó: se le dice, con la frase que manda el adaptador.
+      recordAttempt(t.id, t.activity_id, nick, state.score, max, timeUsed, answers)
+        .catch(e => {
+          console.warn('record failed', e.message);
+          const msg = e?.status === 403
+            ? e.message
+            : 'No se pudo guardar tu intento (sin conexión). Avisa a tu profe.';
+          toast(msg, e?.status === 403 ? 'warning' : 'danger', 9000);
+          const note = document.getElementById('st-record-note');
+          if (note) note.textContent = msg;
+        });
       // Override the template's own finish screen (which links to #/home — a
       // teacher-only route absent from the student app, hence "ruta no
       // encontrada"). Show a student-safe completion screen instead.
@@ -116,6 +129,7 @@ export async function renderTask(rootSel, code) {
           <h2 class="mt-3">¡Tarea enviada!</h2>
           <p class="lead">Puntos: <b>${state.score}</b> / ${max}</p>
           <p class="text-muted">Tu profe verá tu resultado. Ya puedes cerrar esta página.</p>
+          <p id="st-record-note" class="text-danger small"></p>
           <a href="#/join" class="btn btn-primary"><i class="bi bi-arrow-left"></i> Volver</a>
         </div>`);
     }

@@ -292,8 +292,27 @@ servidor.** Una feature nueva que confíe en el móvil está mal diseñada.
   que con el snapshot aún se juega; `live_keys` cerrada).
   **PASO DEL USUARIO**: `#/admin` → "Crear colecciones" (añade `live_keys`).
   Sin ella, crear sala falla con ese mensaje exacto.
-- **Sigue pendiente (diseño en `docs/handoff-seguridad-pb.md`)**: ③ tope de intentos
-  server-side (índice único) — hoy borrar `ww.anonId` da intentos ∞; ④ que la
+- **③ TOPE DE INTENTOS — CERRADO en el servidor (M3)**: el límite vivía ENTERO en
+  el cliente (`countOwnAttempts` contaba, la vista decidía), así que un POST a
+  mano entregaba infinitas veces y una tarea CERRADA seguía aceptando entregas por
+  API. Ahora el intento declara su número (`attempt_no`) y la regla de
+  `assignment_attempts` lo acota contra el `max_attempts` de SU tarea vía join con
+  alias (`@collection.assignments:asg`, misma fila) y rechaza si está `closed`; el
+  índice ÚNICO `(assignment_id, user_id, attempt_no)` impide gastar el mismo número
+  dos veces. La rama `attempt_no = 1` mantiene la semántica canónica "null ⇒ 1
+  intento" para las tareas antiguas (si no, la regla bloquearía al alumno legítimo
+  — el otro modo de fallar). El alumno sigue SIN cuenta. El adaptador recuenta y
+  reintenta ante el 400 del índice, y traduce el 403 a una frase que
+  `views/studentTask.js` MUESTRA (antes un `console.warn`: el alumno creía que
+  había entregado).
+  **LÍMITE que queda**: el `user_id` es anónimo y se puede rotar (borrar
+  almacenamiento, incógnito) → el tope es por IDENTIDAD, no por persona. Cerrarlo
+  pide identidad de alumno (PIN/NFC, `docs/handoff-acceso-docente.md` U2-U4).
+  Tests: `tests/taskRules.test.mjs` (6) con el evaluador de reglas haciendo de
+  servidor + el adaptador real; el evaluador vive ahora en
+  `tests/helpers/pbRuleEval.mjs` (compartido con `liveRules`) y entiende
+  comparaciones y joins `@collection`.
+- **Sigue pendiente (diseño en `docs/handoff-seguridad-pb.md`)**: ④ que la
   fila de respuesta esté atada al dispositivo (un alumno puede responder en
   nombre de otro si adivina su `playerId`).
 

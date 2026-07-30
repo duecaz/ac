@@ -120,10 +120,34 @@ export function createPocketbaseAssignments({ userId = 'local-anon' } = {}) {
       return res?.totalItems ?? 0;
     },
 
+    // §22-3 — el intento declara su NÚMERO y el servidor lo acota contra el
+    // `max_attempts` de su tarea (regla + índice único). Antes el tope vivía solo
+    // en el cliente: un POST a mano daba intentos infinitos.
+    //   · 400 = el índice único rechazó ese attempt_no (dos entregas a la vez, o
+    //     una cuenta desfasada) → se vuelve a contar y se reintenta con el
+    //     siguiente número, igual que el retry de apodos del live.
+    //   · 403 = la regla dijo NO: tope agotado o tarea cerrada. Eso no se
+    //     reintenta, se explica.
     async recordAttempt(assignmentId, activityId, playerName, scoreAuto, maxScore, timeUsed, answers = []) {
-      await pbFetch('/api/collections/assignment_attempts/records', {
+      let taken = await this.countOwnAttempts(assignmentId).catch(() => 0);
+      for (let tries = 0; tries < 4; tries++) {
+        try {
+          return await postAttempt(taken + 1);
+        } catch (e) {
+          if (e?.status === 403) {
+            throw Object.assign(new Error('El servidor no aceptó el intento: la tarea está cerrada o ya has agotado los intentos.'), { status: 403 });
+          }
+          if (e?.status !== 400 || tries === 3) throw e;
+          const fresh = await this.countOwnAttempts(assignmentId).catch(() => taken + 1);
+          taken = Math.max(taken + 1, fresh);
+        }
+      }
+
+      async function postAttempt(attemptNo) {
+        return pbFetch('/api/collections/assignment_attempts/records', {
         method: 'POST',
         body: JSON.stringify({
+          attempt_no: attemptNo,
           assignment_id: assignmentId,
           activity_id: activityId,
           user_id: uid(),
@@ -135,7 +159,8 @@ export function createPocketbaseAssignments({ userId = 'local-anon' } = {}) {
           answers,   // detalle por ítem para la analítica (F3)
           created_at: new Date().toISOString(),
         }),
-      });
+        });
+      }
     },
   };
 }
