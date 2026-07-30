@@ -59,6 +59,7 @@ console.log('\n▶ norms'); await import('./norms.test.mjs');
 // contra un evaluador de esas reglas (alumno puede jugar / tramposo rebota).
 console.log('\n▶ pbRules'); await import('./pbRules.test.mjs');
 console.log('\n▶ modeAuth'); await import('./modeAuth.test.mjs');
+console.log('\n▶ serverMs'); await import('./serverMs.test.mjs');
 console.log('\n▶ liveRules'); await import('./liveRules.test.mjs');
 console.log('\n▶ skins'); await import('./skins.test.mjs');
 console.log('\n▶ newTemplate'); await import('./newTemplate.test.mjs');

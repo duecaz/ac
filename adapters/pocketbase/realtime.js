@@ -16,12 +16,31 @@ import { pickWord } from '../../core/liveWords.js';
 import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
 import { PB_URL } from '../../pocketbase.config.js';
 import { setConnectionState } from '../../core/connection.js';
+import { deriveAnswerMs, openedKey, openedAtFor } from '../../core/serverMs.js';
 
 const COLL = 'live_sessions';
 const ANS = 'live_answers';   // one record per student answer (lost-update fix)
 const PLR = 'live_players';   // one record per player (lost-update fix del join)
 
 function genUserId() { return rid('u_'); }
+
+// §22-1 — ¿este PATCH del host ABRIÓ un ítem a respuestas? Si sí, sella el
+// instante SERVIDOR de la apertura (`rec.updated`, autodate de PocketBase) en el
+// blob host-only, para que después el tiempo de cada respuesta se mida con el
+// reloj del servidor y no con el del móvil. Devuelve true si el sello es nuevo
+// (y por tanto hay que persistirlo). En CARRERA todos los ítems se abren a la
+// vez → un solo sello 'race'.
+function noteItemOpened(engine, patch, rec) {
+  const iso = rec?.updated;
+  const phase = patch?.phase;
+  if (!iso || (phase !== 'question' && phase !== 'race')) return false;
+  const idx = ('current_item' in patch) ? Number(patch.current_item) : engine.state.currentItem;
+  const key = openedKey(phase, idx);
+  const map = engine.state.itemOpenedAt || (engine.state.itemOpenedAt = {});
+  if (map[key] === iso) return false;
+  map[key] = iso;
+  return true;
+}
 
 // PREGUNTA EN VIVO — el "pedir la palabra" del alumno vive en el campo `ql`,
 // FUERA del blob `state` (ley de confianza §22): así la regla de PocketBase
@@ -183,8 +202,17 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
   // a players[] cuando la respuesta estaba sin puntuar (wasUnscored). Compartido
   // por settleItem y settlePending — el invariante anti-doble-conteo vive aquí.
   function hydrateAnswerRow(engine, itemIndex, r) {
+    // §22-1 — el tiempo que PUNTÚA lo mide el SERVIDOR, no el móvil: se deriva de
+    // los autodate de la fila contra el sello de apertura del ítem (host-only).
+    // El `ms` afirmado por el alumno queda solo como respaldo (ver core/serverMs.js)
+    // y se conserva en la fila para el diagnóstico.
+    const { ms, source } = deriveAnswerMs({
+      createdAt: r.created, updatedAt: r.updated,
+      openedAt: openedAtFor(engine.state.itemOpenedAt, itemIndex, engine.state.phase),
+      claimedMs: r.ms, phase: engine.state.phase,
+    });
     engine.state.answers[`${itemIndex}:${r.player}`] = {
-      playerId: r.player, value: r.value, msTaken: r.ms ?? 0,
+      playerId: r.player, value: r.value, msTaken: ms, msClaimed: r.ms ?? 0, msSource: source,
       correct: r.scored ? r.correct : null, points: r.scored ? (r.points ?? 0) : 0,
     };
   }
@@ -428,10 +456,21 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       // El host puede tocar AMBOS: el blob y el campo `ql` (p.ej. al cerrar la
       // caja abierta tras dar puntos) — un solo PATCH.
       const ql = qlPatch(patch);
-      await pbFetch(`/api/collections/${COLL}/records/${sessionId}`, {
+      const rec = await pbFetch(`/api/collections/${COLL}/records/${sessionId}`, {
         method: 'PATCH',
         body: JSON.stringify(ql ? { state: engine.state, ql } : { state: engine.state }),
       });
+      // §22-1 — SELLO DE APERTURA: si este PATCH abrió un ítem a respuestas, el
+      // `updated` que devuelve PocketBase ES el instante servidor de la apertura.
+      // Guardarlo en el blob (host-only, el alumno no lo puede mover) es lo que
+      // permite medir después el tiempo de cada respuesta con el reloj del
+      // SERVIDOR. Cuesta un PATCH diminuto por pregunta —del host, no de los 30
+      // alumnos— y a cambio sobrevive a que el host recargue a mitad de pregunta.
+      if (noteItemOpened(engine, patch, rec)) {
+        await pbFetch(`/api/collections/${COLL}/records/${sessionId}`, {
+          method: 'PATCH', body: JSON.stringify({ state: engine.state }),
+        }).catch(() => { /* el sello es best-effort: sin él se cae al ms afirmado */ });
+      }
     },
 
     // El ALUMNO pide la palabra (Pregunta en Vivo): escribe SOLO el campo `ql`,

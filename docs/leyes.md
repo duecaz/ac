@@ -257,9 +257,19 @@ servidor.** Una feature nueva que confíe en el móvil está mal diseñada.
     conserva el mensaje del 403 solo como red para la sesión caducada.
     Lo vigila `tests/modeAuth.test.mjs` (incluida la anti-divergencia
     `HOST_ONLY_WRITES` ↔ `MODE_DEFS.writes` en ambos sentidos).
-- **Sigue pendiente (diseño en `docs/handoff-seguridad-pb.md`)**: ① `ms` de
-  servidor (autodate de la fila vs `started_at`) — hoy el bonus de velocidad se
-  fía del reloj del móvil; ② el `activity_snap` con la clave que viaja al móvil
+- **① `ms` de SERVIDOR — CERRADO (M1)**: el bonus de velocidad ya no se fía del
+  reloj del móvil. Al abrir un ítem, el host SELLA en el blob (host-only) el
+  `updated` que devuelve PocketBase = instante servidor de la apertura; al
+  liquidar, el tiempo se DERIVA de los autodate de la fila contra ese sello
+  (`core/serverMs.js`: `created` en fase pregunta, `updated` en carrera, donde
+  cuenta el instante del acierto). Las dos marcas son del MISMO reloj, así que no
+  hay desfase entre dispositivos, y el `ms` del cliente queda como respaldo
+  MARCADO (`source:'claimed'`) para el blob legado / driver local / host recargado
+  a mitad de pregunta. El tiempo que ve el profe en el informe sale de la misma
+  derivación (`rowsFromLiveAnswers(rows, i, {itemOpenedAt, phase})`) → un solo
+  tiempo por respuesta. Test: `tests/serverMs.test.mjs` (mentir con `ms:0` no
+  cobra bonus **y** el alumno rápido de verdad conserva el suyo).
+- **Sigue pendiente (diseño en `docs/handoff-seguridad-pb.md`)**: ② el `activity_snap` con la clave que viaja al móvil
   en carrera (R5 cubre el payload de ronda, no el snapshot); ③ tope de intentos
   server-side (índice único) — hoy borrar `ww.anonId` da intentos ∞; ④ que la
   fila de respuesta esté atada al dispositivo (un alumno puede responder en

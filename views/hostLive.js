@@ -747,10 +747,15 @@ async function renderHost(rootSel, code, sessionId, activity) {
   let _rowsCache = null;
   async function gatherSessionRows() {
     if (_rowsCache) return _rowsCache;
-    const all = await Promise.all(items.map((_, i) => listAnswers(sessionId, i).then(a => rowsFromLiveAnswers(a, i)).catch(() => [])));
+    // El blob PRIMERO: lleva el sello de apertura de cada ítem (§22-1), y sin él
+    // la tabla mostraría el `ms` que afirmó el móvil mientras los puntos salen del
+    // reloj del servidor — dos tiempos distintos para la misma respuesta.
+    let blob = null;
+    try { blob = await fetchSessionBlob(sessionId); } catch { /* respaldo best-effort */ }
+    const msOpts = { itemOpenedAt: blob?.itemOpenedAt, phase: blob?.phase };
+    const all = await Promise.all(items.map((_, i) => listAnswers(sessionId, i).then(a => rowsFromLiveAnswers(a, i, msOpts)).catch(() => [])));
     let rows = all.flat();
     try {
-      const blob = await fetchSessionBlob(sessionId);
       const seen = new Set(rows.map(r => `${r.player} ${r.itemIndex}`));
       for (const r of rowsFromLiveState(blob || {})) if (!seen.has(`${r.player} ${r.itemIndex}`)) rows.push(r);
     } catch { /* respaldo best-effort */ }
