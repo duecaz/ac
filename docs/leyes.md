@@ -312,9 +312,36 @@ servidor.** Una feature nueva que confíe en el móvil está mal diseñada.
   servidor + el adaptador real; el evaluador vive ahora en
   `tests/helpers/pbRuleEval.mjs` (compartido con `liveRules`) y entiende
   comparaciones y joins `@collection`.
-- **Sigue pendiente (diseño en `docs/handoff-seguridad-pb.md`)**: ④ que la
-  fila de respuesta esté atada al dispositivo (un alumno puede responder en
-  nombre de otro si adivina su `playerId`).
+- **④ RESPUESTA ATADA AL DISPOSITIVO — CERRADO (M4)**: el `playerId` es PÚBLICO
+  (la lista de jugadores se lee sin cuenta y el host la necesita), así que bastaba
+  verlo para responder en nombre de otro o pisarle su respuesta. Ahora, al entrar,
+  el dispositivo genera un SECRETO, lo registra en **`live_claims`** (crear
+  abierto + índice ÚNICO `(session, player)` → el primero se queda el jugador;
+  leer/editar/borrar CERRADOS, así que no se puede espiar ni robar) y lo manda en
+  la cabecera **`X-WW-Claim`** con cada escritura. La rama anónima de
+  `live_answers` exige esa cabecera contra el join de `live_claims` — al CREAR
+  contra el `player` del cuerpo y al ACTUALIZAR contra el de la FILA (si fuera el
+  del cuerpo, mandar otro `player` seguiría editando filas ajenas). La cabecera NO
+  se guarda en la fila, así que el secreto no queda legible en `live_answers`, que
+  sí es pública; el join de una regla es interno del servidor y no pasa por las
+  reglas de API de la colección consultada.
+  Efectos de borde cuidados: si el dispositivo pierde su credencial (limpiar
+  almacenamiento, otro móvil) NO se reutiliza su fila de jugador — entra como
+  nuevo (con sufijo de apodo) en vez de quedarse mudo; y un 403 al responder ya no
+  se encola como si fuera falta de red (`core/submitQueue.js`), le dice al alumno
+  que vuelva a entrar.
+  Tests: `tests/liveRules.test.mjs` sube a **14 trampas** (responder como otro con
+  y sin secreto inventado · pisar la respuesta ajena · robar la credencial por
+  duplicado y por PATCH · listar credenciales) **+ la contra-prueba de que la
+  dueña de la credencial sigue respondiendo** y el alumno anónimo juega entero.
+  **PASO DEL USUARIO**: `#/admin` → "Crear colecciones" (añade `live_claims`).
+- **Sigue pendiente**: nada de los cuatro. Lo que queda en §22 son los límites
+  DECLARADOS: el veredicto autodeclarado de Individual/Tarea (`results` y
+  `assignment_attempts` son afirmaciones del cliente, append-only), el tope de
+  intentos por IDENTIDAD y no por persona (rotar el anon id da intentos nuevos), y
+  la carrera libre, que necesita un validador en el servidor. Los tres piden lo
+  mismo para cerrarse de verdad: **identidad de alumno** (PIN/NFC,
+  `docs/handoff-acceso-docente.md`) o **código en el servidor** (hook de PB).
 
 ## 23) ⚖️ LEY DE VISTA — ciclo de vida de una pantalla
 Las normas 4, 6 y 10 son piezas de esta ley; aquí está el cuadro completo de

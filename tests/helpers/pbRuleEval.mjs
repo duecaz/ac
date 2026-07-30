@@ -14,7 +14,7 @@
 //   `A || B` · `A && B` · paréntesis
 //   `@request.auth.id != ""` · `@request.auth.role = "x"`
 //   `@request.body.CAMPO:isset = false` · `@request.body.CAMPO = <literal>`
-//   `campo = @request.auth.id` · `campo = "literal"`
+//   `campo = @request.auth.id` · `campo = "literal"` · `@request.headers.NOMBRE`
 //   comparaciones `= != > >= < <=` y sus variantes ANY de PB (`?=`, `?>=`, …)
 //   `@collection.COLECCION:alias.CAMPO` → join con otra colección (ANY-match:
 //     basta que UNA fila del join cumpla todas las condiciones de ese alias, que
@@ -133,6 +133,10 @@ function resolve(tok, ctx) {
   if (isset) return Object.prototype.hasOwnProperty.call(ctx.body || {}, isset[1]);
   const body = tok.match(/^@request\.body\.([\w.]+)$/);
   if (body) return (ctx.body || {})[body[1]];
+  // Cabecera de la petición: PocketBase las normaliza a minúsculas con `_`
+  // (`X-WW-Claim` → `x_ww_claim`). Lo mismo hace el ctx de los tests.
+  const hdr = tok.match(/^@request\.headers\.([\w]+)$/);
+  if (hdr) return (ctx.headers || {})[hdr[1].toLowerCase()];
   // Join con otra colección: la fila la ata andExpr() en ctx._bind[alias].
   const coll = tok.match(/^@collection\.([\w_]+)(?::([\w_]+))?\.([\w.]+)$/);
   if (coll) {

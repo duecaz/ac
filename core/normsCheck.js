@@ -69,6 +69,7 @@ const PB_OWNERS = {
   live_answers: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js'],
   live_players: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js'],
   live_keys: ['adapters/pocketbase/realtime.js', 'views/adminView.js'],
+  live_claims: ['adapters/pocketbase/realtime.js', 'views/adminView.js'],
   assignments: ['adapters/pocketbase/assignments.js', 'views/adminView.js', 'core/stressTest.js',
     'adapters/index.js'],  // pbCollectionExists: decide el fallback local, no escribe
   assignment_attempts: ['adapters/pocketbase/assignments.js', 'views/adminView.js', 'core/stressTest.js'],

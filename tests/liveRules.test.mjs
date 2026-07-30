@@ -48,12 +48,20 @@ function makeFakePb({ auth = null } = {}) {
   const res = (status, obj) => ({ status, ok: status >= 200 && status < 300,
     text: async () => JSON.stringify(obj ?? {}), json: async () => obj ?? {} });
 
+  // El servidor evalúa la regla con TODO el contexto de la petición: sesión,
+  // cuerpo, fila, CABECERAS (§22-4: el secreto del dispositivo viaja ahí) y las
+  // demás colecciones, que las reglas consultan por join.
   const check = (coll, action, ctx) => {
     const rule = RULES[coll]?.[`${action}Rule`];
-    const allowed = evalRule(rule === undefined ? '' : rule, { auth, ...ctx });
+    const allowed = evalRule(rule === undefined ? '' : rule, {
+      auth, collections: Object.fromEntries(db), ...ctx,
+    });
     if (!allowed) denied.push(`${action} ${coll}`);
     return allowed;
   };
+  // PocketBase normaliza los nombres de cabecera: `X-WW-Claim` → `x_ww_claim`.
+  const hdrs = (opts) => Object.fromEntries(Object.entries(opts.headers || {})
+    .map(([k, v]) => [k.toLowerCase().replace(/-/g, '_'), v]));
 
   const fetchImpl = async (url, opts = {}) => {
     const method = (opts.method || 'GET').toUpperCase();
@@ -63,7 +71,7 @@ function makeFakePb({ auth = null } = {}) {
     const body = opts.body ? JSON.parse(opts.body) : {};
 
     if (method === 'GET') {
-      if (!check(coll, id ? 'view' : 'list', { record: id ? rows(coll).find(r => r.id === id) : undefined })) return res(403, { message: 'forbidden' });
+      if (!check(coll, id ? 'view' : 'list', { headers: hdrs(opts), record: id ? rows(coll).find(r => r.id === id) : undefined })) return res(403, { message: 'forbidden' });
       if (id) { const r = rows(coll).find(x => x.id === id); return r ? res(200, r) : res(404, {}); }
       // Filtro: solo lo que usan los adaptadores (session/item/player) — basta
       // con devolver todo y que el llamador filtre; los tests son de reglas.
@@ -75,10 +83,15 @@ function makeFakePb({ auth = null } = {}) {
       return res(200, { items, totalItems: items.length });
     }
     if (method === 'POST') {
-      if (!check(coll, 'create', { body })) return res(403, { message: 'forbidden' });
+      if (!check(coll, 'create', { body, headers: hdrs(opts) })) return res(403, { message: 'forbidden' });
       const row = { id: `r${++seq}`, ...body };
       // Índice único (session,player,item) de live_answers → 400 como el real.
       if (coll === 'live_answers' && rows(coll).some(r => r.session === row.session && r.player === row.player && r.item === row.item)) {
+        return res(400, { message: 'validation_not_unique' });
+      }
+      // Índice único (session,player) de live_claims → el primero se queda el
+      // jugador; nadie puede reclamar uno ya reclamado (§22-4).
+      if (coll === 'live_claims' && rows(coll).some(r => r.session === row.session && r.player === row.player)) {
         return res(400, { message: 'validation_not_unique' });
       }
       rows(coll).push(row);
@@ -86,13 +99,13 @@ function makeFakePb({ auth = null } = {}) {
     }
     if (method === 'PATCH') {
       const row = rows(coll).find(r => r.id === id);
-      if (!check(coll, 'update', { body, record: row })) return res(403, { message: 'forbidden' });
+      if (!check(coll, 'update', { body, record: row, headers: hdrs(opts) })) return res(403, { message: 'forbidden' });
       Object.assign(row || {}, body);
       return res(200, row || {});
     }
     if (method === 'DELETE') {
       const row = rows(coll).find(r => r.id === id);
-      if (!check(coll, 'delete', { record: row })) return res(403, { message: 'forbidden' });
+      if (!check(coll, 'delete', { record: row, headers: hdrs(opts) })) return res(403, { message: 'forbidden' });
       db.set(coll, rows(coll).filter(r => r.id !== id));
       return res(204, null);
     }
@@ -155,8 +168,10 @@ function seedRoom() {
   const pb = seedRoom();
   pb.rows('live_answers').push({ id: 'la1', session: 'sess1', player: 'p1', item: 0, value: '3', ms: 10, scored: false, correct: false, points: 0 });
   pb.rows('live_players').push({ id: 'p1', session: 'sess1', name: 'Emma' });
+  // Emma tiene su credencial de dispositivo (§22-4); el tramposo NO la conoce.
+  pb.rows('live_claims').push({ id: 'cl1', session: 'sess1', player: 'p1', secret: 'cl_EMMA' });
   const anon = makeFakePb({ auth: null });
-  for (const c of ['live_sessions', 'live_answers', 'live_players']) anon.db.set(c, pb.rows(c));
+  for (const c of ['live_sessions', 'live_answers', 'live_players', 'live_claims']) anon.db.set(c, pb.rows(c));
   const f = anon.fetchImpl;
   const PB = 'https://pb.x/api/collections';
   const patch = (u, b) => f(u, { method: 'PATCH', body: JSON.stringify(b) });
@@ -198,11 +213,45 @@ function seedRoom() {
   assert.strictEqual(r.status, 403, 'reabrir tarea / subir intentos → 403');
   assert.strictEqual(anon.rows('assignments')[0].status, 'closed', 'la tarea sigue cerrada');
 
+  // (j) §22-4 — RESPONDER EN NOMBRE DE OTRO. El `playerId` es público (la lista de
+  // jugadores se lee sin cuenta), así que antes bastaba con verlo. Ahora hace falta
+  // el secreto del dispositivo, que solo tiene Emma.
+  r = await f(`${PB}/live_answers/records`, { method: 'POST',
+    body: JSON.stringify({ session: 'sess1', player: 'p1', item: 3, value: 'X', ms: 1, scored: false, correct: false, points: 0 }) });
+  assert.strictEqual(r.status, 403, 'responder como otro jugador (sin su credencial) → 403');
+  r = await f(`${PB}/live_answers/records`, { method: 'POST',
+    headers: { 'X-WW-Claim': 'cl_INVENTADO' },
+    body: JSON.stringify({ session: 'sess1', player: 'p1', item: 4, value: 'X', ms: 1, scored: false, correct: false, points: 0 }) });
+  assert.strictEqual(r.status, 403, 'con un secreto inventado tampoco → 403');
+  assert.strictEqual(anon.rows('live_answers').length, 1, 'no entró ninguna respuesta falsa');
+
+  // (k) PISAR la respuesta de otro (su fila, su valor).
+  r = await patch(`${PB}/live_answers/records/la1`, { value: 'BORRADO' });
+  assert.strictEqual(r.status, 403, 'editar la respuesta de otro → 403');
+  assert.strictEqual(anon.rows('live_answers')[0].value, '3', 'la respuesta de Emma sigue intacta');
+
+  // (l) ROBAR el jugador reclamando otra credencial para él (índice único + update
+  // cerrado): ni se puede crear una segunda ni cambiar la existente.
+  r = await f(`${PB}/live_claims/records`, { method: 'POST',
+    body: JSON.stringify({ session: 'sess1', player: 'p1', secret: 'cl_LADRON' }) });
+  assert.strictEqual(r.status, 400, 'reclamar un jugador ya reclamado → rechazado por el índice único');
+  r = await patch(`${PB}/live_claims/records/cl1`, { secret: 'cl_LADRON' });
+  assert.strictEqual(r.status, 403, 'cambiarle el secreto a otro → 403');
+  // Y leer credenciales está cerrado del todo: el secreto no se puede espiar.
+  r = await f(`${PB}/live_claims/records`);
+  assert.strictEqual(r.status, 403, 'listar credenciales → 403');
+
+  // Contra-prueba: EMMA, con su credencial, sí responde.
+  r = await f(`${PB}/live_answers/records`, { method: 'POST',
+    headers: { 'X-WW-Claim': 'cl_EMMA' },
+    body: JSON.stringify({ session: 'sess1', player: 'p1', item: 7, value: '4', ms: 1, scored: false, correct: false, points: 0 }) });
+  assert.strictEqual(r.status, 200, 'la dueña de la credencial sigue pudiendo responder');
+
   // (i) editar un intento ya entregado (append-only).
   anon.rows('assignment_attempts').push({ id: 'at1', assignment_id: 'asg1', score_auto: 1 });
   r = await patch(`${PB}/assignment_attempts/records/at1`, { score_auto: 10 });
   assert.strictEqual(r.status, 403, 'editar un intento entregado → 403');
-  ok('9 intentos de trampa REBOTAN (auto-puntuarse · inflar · crear puntuada · terminar sala · expulsar · renombrar · crear sala · reabrir tarea · editar intento)');
+  ok('14 intentos de trampa REBOTAN (auto-puntuarse · inflar · crear puntuada · terminar sala · expulsar · renombrar · crear sala · reabrir tarea · editar intento · responder como otro ×2 · pisar su respuesta · robar credencial ×2 · espiar credenciales) y la dueña sigue respondiendo');
 }
 
 // ── ③ El HOST (con sesión) sí puede dirigir y liquidar ───────────────────────

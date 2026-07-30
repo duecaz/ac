@@ -18,11 +18,13 @@ import { PB_URL } from '../../pocketbase.config.js';
 import { setConnectionState } from '../../core/connection.js';
 import { deriveAnswerMs, openedKey, openedAtFor } from '../../core/serverMs.js';
 import { studentSnapshot, needsClientKey } from '../../core/liveSnapshot.js';
+import { lsGet, lsSet } from '../../core/ls.js';
 
 const COLL = 'live_sessions';
 const ANS = 'live_answers';   // one record per student answer (lost-update fix)
 const PLR = 'live_players';   // one record per player (lost-update fix del join)
 const KEY = 'live_keys';      // contenido COMPLETO de la sala (host-only, §22-2)
+const CLM = 'live_claims';    // credencial del dispositivo del alumno (§22-4)
 
 function genUserId() { return rid('u_'); }
 
@@ -183,6 +185,48 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       return cached;
     };
   }
+  // §22-4 — CREDENCIAL DEL DISPOSITIVO. Al entrar, el alumno se queda con un
+  // secreto que registra en `live_claims` (colección cerrada) y que manda en una
+  // CABECERA con cada escritura suya. Sin esto bastaba con VER el `playerId` de un
+  // compañero —la lista de jugadores es pública, y el host la necesita— para
+  // responder en su nombre.
+  //   · En memoria + localStorage: el Map cubre los tests y la sesión en curso; el
+  //     almacenamiento, el F5 a mitad de partida.
+  //   · La cabecera NO se guarda en la fila → el secreto no queda legible en
+  //     `live_answers`, que sí es pública.
+  const claimKey = (sessionId) => `ww.claim.${sessionId}`;
+  const claims = new Map();
+  function claimSecret(sessionId) {
+    if (claims.has(sessionId)) return claims.get(sessionId);
+    const stored = lsGet(claimKey(sessionId));
+    if (stored) claims.set(sessionId, stored);
+    return stored || null;
+  }
+  /** Cabecera de credencial para las escrituras del ALUMNO. Vacía en el host (va
+   *  firmado con su token y la regla lo deja pasar por la otra rama). */
+  function claimHeaders(sessionId) {
+    const secret = claimSecret(sessionId);
+    return secret ? { 'X-WW-Claim': secret } : undefined;
+  }
+  /** Registra la credencial de ESTE dispositivo para el jugador recién creado. */
+  async function registerClaim(sessionId, playerId) {
+    const secret = rid('cl_');
+    try {
+      await pbFetch(`/api/collections/${CLM}/records`, {
+        method: 'POST', body: JSON.stringify({ session: sessionId, player: playerId, secret }),
+      });
+    } catch (e) {
+      // 404 = servidor sin la colección (aún no se han creado): se sigue sin
+      // credencial, que es exactamente el comportamiento anterior. 400 = ese
+      // jugador ya está reclamado (índice único) → no se puede pisar.
+      if (e?.status !== 404 && e?.status !== 400) throw e;
+      if (e?.status === 400) return null;
+    }
+    claims.set(sessionId, secret);
+    lsSet(claimKey(sessionId), secret);
+    return secret;
+  }
+
   const answersReady = collectionProbe(ANS);
   const playersReady = collectionProbe(PLR);
   const plrFilter = (sessionId, extra) =>
@@ -257,7 +301,8 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
   // tablero de Ordena las Pelotas mostraba/puntuaba un estado viejo). Sin el
   // índice (pre-migración), el 400 no ocurre y todo sigue como antes.
   async function postAnswer(body) {
-    try { await pbFetch(`/api/collections/${ANS}/records`, { method: 'POST', body: JSON.stringify(body) }); return { created: true }; }
+    const headers = claimHeaders(body.session);
+    try { await pbFetch(`/api/collections/${ANS}/records`, { method: 'POST', body: JSON.stringify(body), headers }); return { created: true }; }
     catch (e) { if (e?.status === 400) return { conflict: true }; throw e; }
   }
 
@@ -426,9 +471,12 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       if (await playersReady()) {
         const f = isAcceptableNickname(nickname);
         if (!f.ok) throw new Error('Apodo: ' + f.reason);
-        // Reconexión: si este dispositivo ya tiene fila en la sala, la conserva.
+        // Reconexión: si este dispositivo ya tiene fila en la sala, la conserva —
+        // pero SOLO si además conserva su credencial (§22-4); sin ella no podría
+        // escribir respuestas, así que es mejor entrar como jugador nuevo (el
+        // índice único de apodos le pondrá sufijo) que quedarse mudo.
         const mine = await pbFetch(`/api/collections/${PLR}/records?filter=${plrFilter(rec.id, `user_id='${pbEscape(userId)}'`)}&perPage=1`);
-        if (mine?.items?.length) {
+        if (mine?.items?.length && claimSecret(rec.id)) {
           const row = mine.items[0];
           return { sessionId: rec.id, playerId: row.id, name: row.name };
         }
@@ -441,6 +489,9 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
             const row = await pbFetch(`/api/collections/${PLR}/records`, {
               method: 'POST', body: JSON.stringify({ session: rec.id, name, user_id: userId }),
             });
+            // Credencial de ESTE dispositivo para ESTE jugador, antes de devolver:
+            // sin ella las respuestas rebotarían (§22-4).
+            await registerClaim(rec.id, row.id);
             return { sessionId: rec.id, playerId: row.id, name: row.name };
           } catch (e) {
             // 400 del índice único (session,name) = apodo ocupado → sufija y reintenta.
@@ -629,6 +680,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         if (row && correct && row.correct !== true && !row.scored) {
           await pbFetch(`/api/collections/${ANS}/records/${row.id}`, {
             method: 'PATCH', body: JSON.stringify({ value, ms: msTaken ?? 0, correct: true }),
+            headers: claimHeaders(sessionId),
           });
         }
         return;
@@ -670,6 +722,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
           // DES-liquidar una fila que el host ya había puntuado.
           await pbFetch(`/api/collections/${ANS}/records/${row.id}`, {
             method: 'PATCH', body: JSON.stringify({ value, ms: msTaken ?? row.ms ?? 0 }),
+            headers: claimHeaders(sessionId),
           });
         }
         return;

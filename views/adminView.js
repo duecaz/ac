@@ -627,6 +627,13 @@ function renderPanel(rootSel) {
         // playerId = id de la FILA. Índice único (session,name) → apodos únicos
         // ATÓMICOS (el 400 de colisión dispara el retry "Juan 2"). Ver
         // docs/handoff-deuda-a.md.
+        // §22-4 — credencial del dispositivo del alumno (secreto). CERRADA por API:
+        // solo se escribe al entrar y solo la consultan las reglas por join.
+        { name: 'live_claims', fields: [
+          { name: 'session', type: 'text', required: true },
+          { name: 'player',  type: 'text', required: true },
+          { name: 'secret',  type: 'text', required: true },
+        ], indexes: ['CREATE UNIQUE INDEX `idx_lc_session_player` ON `live_claims` (`session`, `player`)'] },
         // §22-2 — contenido COMPLETO de la sala (host-only). La sala guarda el
         // snapshot saneado; la clave, aquí.
         { name: 'live_keys', fields: [

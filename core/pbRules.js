@@ -28,10 +28,25 @@ export const OWN = `owner = @request.auth.id || ${ADMIN}`;
 // settle respeta lo "ya puntuado" y el marcador suma esos puntos).
 const VERDICT_FIELDS = ['scored', 'points'];
 const notSet = (f) => `@request.body.${f}:isset = false`;
-/** Anónimo: puede crear su respuesta, pero SIN veredicto (0 puntos, sin puntuar). */
-const ANON_ANSWER_CREATE = '@request.body.scored = false && @request.body.points = 0';
-/** Anónimo: puede corregir su valor/tiempo, pero NO tocar el veredicto. */
-const ANON_ANSWER_UPDATE = VERDICT_FIELDS.map(notSet).join(' && ');
+// §22-4 — LA RESPUESTA VA ATADA AL DISPOSITIVO. El `playerId` es público (la
+// lista de jugadores de la sala se lee sin cuenta, y el host la necesita), así que
+// bastaba con verlo para responder EN NOMBRE DE OTRO. Ahora, al entrar, el
+// dispositivo se queda con un SECRETO que guarda en `live_claims` (colección
+// CERRADA por API: nadie la lee ni la edita; el join de la regla es interno del
+// servidor) y lo manda en una CABECERA con cada escritura. La cabecera no se
+// guarda en la fila → no queda legible en `live_answers`, que sí es pública.
+const CLAIM = '@collection.live_claims:cl';
+const CLAIM_HEADER = `${CLAIM}.secret ?= @request.headers.x_ww_claim`;
+/** Al CREAR, el jugador viene en el cuerpo. */
+const CLAIM_BY_BODY = `${CLAIM}.player ?= @request.body.player && ${CLAIM_HEADER}`;
+/** Al ACTUALIZAR, el jugador es el de la FILA (así nadie edita la fila de otro). */
+const CLAIM_BY_ROW = `${CLAIM}.player ?= player && ${CLAIM_HEADER}`;
+
+/** Anónimo: puede crear su respuesta, pero SIN veredicto (0 puntos, sin puntuar)
+ *  y solo en su propio nombre (secreto del dispositivo). */
+const ANON_ANSWER_CREATE = `@request.body.scored = false && @request.body.points = 0 && ${CLAIM_BY_BODY}`;
+/** Anónimo: puede corregir su valor/tiempo —los de SU fila—, pero NO el veredicto. */
+const ANON_ANSWER_UPDATE = [...VERDICT_FIELDS.map(notSet), CLAIM_BY_ROW].join(' && ');
 
 // Campos de CONTROL de la sala: el blob `state` (fase, ítem actual, deadline,
 // puntajes), la actividad con sus respuestas y el código. Todo eso es del HOST.
@@ -88,6 +103,15 @@ export const RULES = {
   // (update cerrado) y solo el PROFE expulsa (antes cualquier alumno podía
   // echar a un compañero).
   live_players: { listRule: '', viewRule: '', createRule: '', updateRule: null, deleteRule: AUTH },
+  // §22-4 — CREDENCIAL DEL DISPOSITIVO. Crear es abierto (el alumno anónimo se
+  // registra al entrar) y el índice ÚNICO (session, player) hace que el primero
+  // en llegar se quede el jugador: nadie puede reclamar un jugador ya reclamado.
+  // Todo lo demás CERRADO: ni leer (el secreto no se puede espiar) ni editar (no
+  // se puede robar un jugador ajeno cambiándole el secreto). Las reglas que la
+  // consultan lo hacen por JOIN, que es interno del servidor y no pasa por estas
+  // reglas de API.
+  live_claims: { listRule: null, viewRule: null, createRule: '', updateRule: null, deleteRule: null },
+
   // §22-2 — CLAVE DE LA SALA: la actividad COMPLETA (con las respuestas) vive
   // aquí, CERRADA a quien no tiene sesión. La sala (`live_sessions`) guarda solo
   // el snapshot saneado, porque su lectura tiene que ser abierta (el alumno entra

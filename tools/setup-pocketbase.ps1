@@ -125,12 +125,24 @@ $defs = @(
      indexes = @( "CREATE INDEX ``idx_la_session`` ON ``live_answers`` (``session``)", "CREATE UNIQUE INDEX ``idx_la_session_player_item`` ON ``live_answers`` (``session``, ``player``, ``item``)" );
      # El VEREDICTO (scored/points) lo pone el settle del host: un alumno no
      # puede ni mencionar esos campos en un PATCH (sin esto, C6 se saltaba).
+     # 22-4: ademas del veredicto, la respuesta va ATADA AL DISPOSITIVO (secreto
+     # en live_claims + cabecera X-WW-Claim) para que nadie responda en nombre de
+     # otro conociendo su playerId.
      rules = @{
        listRule=""; viewRule="";
-       createRule='@request.auth.id != "" || (@request.body.scored = false && @request.body.points = 0)';
-       updateRule='@request.auth.id != "" || (@request.body.scored:isset = false && @request.body.points:isset = false)';
+       createRule='@request.auth.id != "" || (@request.body.scored = false && @request.body.points = 0 && @collection.live_claims:cl.player ?= @request.body.player && @collection.live_claims:cl.secret ?= @request.headers.x_ww_claim)';
+       updateRule='@request.auth.id != "" || (@request.body.scored:isset = false && @request.body.points:isset = false && @collection.live_claims:cl.player ?= player && @collection.live_claims:cl.secret ?= @request.headers.x_ww_claim)';
        deleteRule='@request.auth.id != ""'
      } },
+
+  # live_claims (22-4): credencial del DISPOSITIVO del alumno. Crear abierto (se
+  # registra al entrar, indice unico = el primero se queda el jugador); leer y
+  # editar CERRADOS (el secreto no se espia ni se roba). Las reglas la consultan
+  # por join, que es interno del servidor.
+  @{ name = "live_claims";
+     fields = @( @{ name="session"; type="text"; required=$true }, @{ name="player"; type="text"; required=$true }, @{ name="secret"; type="text"; required=$true } );
+     indexes = @( "CREATE UNIQUE INDEX ``idx_lc_session_player`` ON ``live_claims`` (``session``, ``player``)" );
+     rules = @{ listRule=$null; viewRule=$null; createRule=""; updateRule=$null; deleteRule=$null } },
 
   # live_keys (§22-2): la actividad COMPLETA de la sala, CERRADA sin sesión. La
   # sala guarda solo el snapshot saneado (su lectura debe ser abierta: PIN).

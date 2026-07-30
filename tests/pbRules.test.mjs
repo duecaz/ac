@@ -34,7 +34,10 @@ ok(`${Object.keys(RULES).length} colecciones con sus 5 reglas declaradas (sin ag
 // '' en create/update/delete = cualquier anónimo hace lo que quiera. Solo se
 // permite donde el ALUMNO ANÓNIMO tiene que poder escribir, y ahí la regla debe
 // llevar guardas de campo (se comprueban abajo).
-const ANON_CREATE_OK = ['results', 'live_players', 'assignment_attempts'];
+// `live_claims`: el alumno REGISTRA la credencial de su dispositivo al entrar
+// (§22-4). Abierto a crear, pero el índice único (session,player) hace que el
+// primero se quede el jugador, y leer/editar están CERRADOS.
+const ANON_CREATE_OK = ['results', 'live_players', 'assignment_attempts', 'live_claims'];
 for (const [coll, r] of Object.entries(RULES)) {
   if (r.createRule === '' && !ANON_CREATE_OK.includes(coll)) {
     assert.fail(`${coll}.createRule abierto sin justificar — el alumno anónimo no necesita crear aquí`);
@@ -53,7 +56,21 @@ for (const f of ['scored', 'points']) {
 }
 assert.match(RULES.live_answers.createRule, /@request\.body\.scored = false/, 'crear respuesta: scored debe nacer false');
 assert.match(RULES.live_answers.createRule, /@request\.body\.points = 0/, 'crear respuesta: points debe nacer 0');
-ok('live_answers: el veredicto (scored/points) solo lo escribe el host');
+// §22-4 — y además atada al DISPOSITIVO: la rama anónima exige el secreto de
+// `live_claims` por cabecera, y en el UPDATE contra el jugador de la FILA (si
+// fuera contra el cuerpo, bastaría mandar otro `player` para editar filas ajenas).
+{
+  const c = RULES.live_answers.createRule, u = RULES.live_answers.updateRule;
+  assert.ok(c.includes('@request.headers.x_ww_claim') && c.includes('live_claims'),
+    'crear respuesta debe exigir el secreto del dispositivo');
+  assert.ok(u.includes('@request.headers.x_ww_claim') && u.includes('.player ?= player'),
+    'actualizar respuesta debe atarse al jugador de LA FILA, no al del cuerpo');
+  // Y el secreto no puede quedar legible en ninguna colección pública.
+  assert.strictEqual(RULES.live_claims.listRule, null, 'nadie puede LISTAR credenciales');
+  assert.strictEqual(RULES.live_claims.viewRule, null, 'nadie puede LEER una credencial');
+  assert.strictEqual(RULES.live_claims.updateRule, null, 'nadie puede robar un jugador cambiándole el secreto');
+}
+ok('live_answers: el veredicto (scored/points) solo lo escribe el host, y la fila va atada al dispositivo');
 
 // ── 4. El BLOB de control de la sala es del host ─────────────────────────────
 for (const f of ['state', 'activity', 'code']) {

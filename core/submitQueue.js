@@ -33,6 +33,11 @@ export async function submit(sessionId, playerId, itemIndex, value, msTaken) {
     await transportSubmit(sessionId, playerId, itemIndex, value, msTaken);
     return { queued: false };
   } catch (e) {
+    // 403 = el SERVIDOR la rechazó (§22-4: sin la credencial del dispositivo, o
+    // fuera de fase). Eso no lo arregla reintentar: encolarlo dejaría al alumno
+    // con un "se enviará al reconectar" que nunca ocurre. Se devuelve RECHAZADA
+    // para que la vista lo diga y el alumno pueda volver a entrar.
+    if (e?.status === 403) return { queued: false, rejected: true, error: e.message };
     queue.enqueue({ sessionId, playerId, itemIndex, value, msTaken, ts: clock.now(), err: e.message });
     return { queued: true, error: e.message };
   }

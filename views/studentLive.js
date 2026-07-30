@@ -368,7 +368,15 @@ export async function renderPlay(rootSel, code) {
         // es el rescate de autoFlushQuestion, la fase ya cambió y paint() ya montó
         // el reveal/podio — pintarle "¡Respuesta enviada!" encima lo pisaba.
         if (session.phase === 'question') {
-          paintWaiting(r.queued ? 'Respuesta guardada (sin red). Se enviará al reconectar.' : '¡Respuesta enviada!');
+          // `rejected` = el servidor dijo NO (credencial del dispositivo perdida,
+          // §22-4). Reintentar no sirve: hay que volver a entrar a la sala. Se
+          // dice, en vez de mostrar un "se enviará al reconectar" que no pasará.
+          if (r.rejected) {
+            sent = false;   // que pueda reintentar tras volver a entrar
+            paintWaiting('El servidor no aceptó tu respuesta. Vuelve a entrar a la sala con el PIN.');
+          } else {
+            paintWaiting(r.queued ? 'Respuesta guardada (sin red). Se enviará al reconectar.' : '¡Respuesta enviada!');
+          }
         }
       }
     });
