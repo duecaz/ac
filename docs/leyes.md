@@ -40,18 +40,38 @@ violar una prohibición, el diseño está mal planteado.
   (permiso permanente) y por legado a `ACTIVIDAD2`.
 - **Dónde**: `CLAUDE.md §2`.
 
-## 3) ⚖️ LEYES DE MAQUETACIÓN Y COLOR DEL JUEGO ("las leyes de los input")
-Esto es lo que buscabas: el **contrato de estilos del PLAYER**.
-- **NADA con tamaño fijo en el player**: todo relativo — unidades de contenedor (`cq*`),
-  `%`, o cálculo JS (`fitLayout`/`fitPassage`). Prohibido `px`/`rem` que congelen el
-  crecimiento. `max(12px, Xcqmin)` vale como PISO de legibilidad, nunca como techo.
-  (El EDITOR sí puede usar `px`: es un formulario, no el juego.)
-- **Colores pintables por token `var(--ww-*)`** para que los skins recoloreen — nunca
-  `#hex` a pelo, salvo neutros (`#fff/#000`) y acierto/error (verde/rojo).
-- **Dónde se explica**: `docs/estilos-de-actividad.md` (contrato completo + ejemplares
-  `math.css`/`quiz.css`; §3b andamio de regiones ww-scaffold/rail/stage).
-- **Test que lo vigila**: `tests/styles.test.mjs` (ratchet: una actividad nueva nace
-  limpia; lista `GAME` = CSS de juego escaneado, `EXCLUDED` = chrome/paletas).
+## 3) ⚖️ LEY DE ESTILO — las cuatro capas del píxel
+El contrato de estilos del PLAYER, en el mismo formato del §0: cada capa con UN
+dueño y UNA prohibición. Un cambio visual se ubica en su capa ANTES de
+escribirse; si necesita violar una prohibición, está en la capa equivocada.
+
+| Capa | Vive en | Dueña de | PROHIBIDO |
+|---|---|---|---|
+| **TOKENS** | `core/skins.js` (`cssVars` de `default`) + `styles/theme.css :root` | el VOCABULARIO: los 14 `--ww-*` (bg/bg-soft/fg · card-* · accent · shape-1..4 · success/danger/warning) | que un token viva solo en `:root` (es red de seguridad, no fuente); añadir un token a `default` obliga a TODOS los skins |
+| **SKIN** | `core/skins.js` (`registerSkin`) + `themes/<name>/skin.css` | dar VALOR a los 14 tokens (+ layout VS opcional) | tocar reglas de una actividad · pintar fuera de su scope `.skin-<name>`/`.vs-skin-<name>` · declarar `stylesheet:` sin archivo |
+| **CSS DE PLANTILLA** (el juego) | `styles/<actividad>.css` (lista `GAME`) | la maquetación del ejercicio: RELATIVA (`cq*`, `%`, `fitLayout`/`fitPassage`) y pintada SOLO con `var(--ww-*)` | `px`/`rem` que congelen (`max(12px, Xcqmin)` vale como PISO, nunca techo) · `#hex` a pelo salvo neutros y acierto/error |
+| **CHROME** | `styles/` en `EXCLUDED` (player, scaffold, editor, home, live, touch…) | el marco: `#ww-player-widget{container-type:size}`, el andamio `ww-scaffold/rail/stage/bar`, formularios | decidir el aspecto del EJERCICIO (el editor sí puede usar px: es formulario) |
+
+- **La frontera que no se cruza**: el skin cambia TOKENS, nunca reglas; la
+  actividad consume TOKENS, nunca hex. Si un trozo queda gris al cambiar de
+  piel, ese `#6c757d` es el bug.
+- **Ratchet, no formateador**: la deuda vive congelada en `BASELINE` por
+  archivo+valor; actividad nueva (sin entrada) nace limpia; al arreglar deuda se
+  BORRA su entrada; nunca se añade una violación para callar el test.
+- **Dónde se explica**: `docs/estilos-de-actividad.md` (contrato + ejemplares
+  `math.css`/`quiz.css` con assert duro a cero; §3b andamio de regiones).
+- **Tests que lo vigilan**: `tests/styles.test.mjs` (ratchet + completeness gate
+  23/23 + **gate de themes**: todo `stylesheet:` declarado existe y ningún
+  `themes/*/skin.css` queda huérfano sin documentar) · `tests/skins.test.mjs`
+  (set COMPLETO de tokens por skin).
+- **Deuda registrada**: `themes/colegios/skin.css` huérfano (en disco, sin
+  `registerSkin` — decidir si se registra o se retira; fijado en
+  `KNOWN_ORPHANS`) · deuda de ratchet en vs/teams/wordsearch (la mayor) +
+  match/memory/ballsort/crossword/textCorrection/question-live ·
+  `themes/*/skin.css` aún fuera del escáner de px (27 font-size fijos entre
+  arcade/tv-show/colegios) · el escape por selector `.mem-`/`-ed\b` exime más de
+  lo que debería (todo memory) · `rgba()` de superficie sin vigilar.
+  (Las reglas muertas del skin `space` no registrado se retiraron en L5.)
 
 ## 4) ResizeObserver → `observeResize()`
 - Nunca `new ResizeObserver(cb)` directo si el callback muta layout: usa

@@ -13,10 +13,9 @@
 //
 // Run: node tests/styles.test.mjs
 import assert from 'node:assert';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { readdirSync } from 'node:fs';
 
 const STYLES = join(dirname(fileURLToPath(import.meta.url)), '..', 'styles');
 
@@ -121,6 +120,30 @@ ok('math.css y quiz.css siguen limpios (0 fija / 0 color hardcodeado)');
   const ghosts = [...GAME, ...EXCLUDED].filter(n => !all.includes(n));
   assert.deepStrictEqual(ghosts, [], `listas apuntan a CSS inexistente: ${ghosts.join(', ')}`);
   ok(`completitud: ${all.length} CSS clasificados (${GAME.length} juego · ${EXCLUDED.length} excluidos)`);
+}
+
+// THEMES (ley de estilo §3): todo `stylesheet:` declarado en core/skins.js debe
+// existir en disco (si no, el skin carga un 404 silencioso), y todo
+// themes/*/skin.css debe estar REFERENCIADO por un registerSkin — un skin
+// huérfano en disco es deuda declarada, no un archivo fantasma sin dueño.
+{
+  const ROOT = join(STYLES, '..');
+  const skinsSrc = readFileSync(join(ROOT, 'core/skins.js'), 'utf8');
+  const declared = [...skinsSrc.matchAll(/stylesheet:\s*'([^']+)'/g)].map(m => m[1]);
+  for (const p of declared) {
+    assert.ok(statSync(join(ROOT, p), { throwIfNoEntry: false }), `core/skins.js declara stylesheet inexistente: ${p}`);
+  }
+  // Huérfanos CONOCIDOS (deuda registrada en docs/leyes.md §3): colegios existe
+  // en disco pero ningún registerSkin lo usa. Al registrarlo o borrarlo, quita
+  // la entrada de aquí (ratchet: la lista solo encoge).
+  const KNOWN_ORPHANS = ['themes/colegios/skin.css'];
+  const themeFiles = readdirSync(join(ROOT, 'themes'), { withFileTypes: true })
+    .filter(d => d.isDirectory()).map(d => `themes/${d.name}/skin.css`)
+    .filter(p => statSync(join(ROOT, p), { throwIfNoEntry: false }));
+  const orphans = themeFiles.filter(p => !declared.includes(p) && !KNOWN_ORPHANS.includes(p));
+  assert.deepStrictEqual(orphans, [],
+    `themes/*/skin.css sin registerSkin que lo use: ${orphans.join(', ')} — regístralo en core/skins.js o documenta la deuda`);
+  ok(`themes: ${declared.length} stylesheet(s) declarados existen · sin huérfanos nuevos (${KNOWN_ORPHANS.length} deuda conocida)`);
 }
 
 if (newViolations.length) {

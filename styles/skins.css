@@ -12,15 +12,6 @@ body.skin-classroom,
 }
 body.skin-classroom { background-attachment: fixed; }
 
-body.skin-space,
-.ww-player-frame.skin-space {
-  background: radial-gradient(ellipse at top, #1e1b4b 0%, #0c0a1f 70%);
-  color: #e0e7ff;
-}
-body.skin-space { background-attachment: fixed; }
-body.skin-space .card,
-.ww-player-frame.skin-space .card { background: rgba(30,27,75,.85); color: #e0e7ff; border-color: #6366f1; }
-
 body.skin-kahoot,
 .ww-player-frame.skin-kahoot { background: linear-gradient(135deg, #46178f 0%, #1368ce 100%); }
 body.skin-kahoot { background-attachment: fixed; }
