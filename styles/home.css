@@ -471,6 +471,10 @@ body {
 }
 .acard-foot span { display: inline-flex; align-items: center; gap: 5px; }
 .acard-foot .heart { color: #ef4444; }
+/* Chip "N formatos" (el gesto Wordwall): mismo tono que el pie, clicable → editor. */
+.acard-switch { border: none; background: none; padding: 0; font: inherit; color: #2563eb;
+  display: inline-flex; align-items: center; gap: 5px; cursor: pointer; font-weight: 600; }
+.acard-switch:hover { text-decoration: underline; }
 
 /* Estado vacío / sin resultados */
 .home-empty { text-align: center; padding: 60px 20px; color: var(--dash-muted); }

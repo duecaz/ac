@@ -47,9 +47,11 @@ export function renderEditView(rootSel, { id, template }) {
     </div>
 
     <details class="ww-switch mb-3" id="switch-format">
-      <summary class="d-inline-flex align-items-center gap-2 small text-muted" style="cursor:pointer; list-style:none">
+      <summary class="d-inline-flex align-items-center gap-2 small text-muted flex-wrap" style="cursor:pointer; list-style:none">
         <span class="badge bg-${curT?.meta?.color || 'secondary'}"><i class="bi ${curT?.meta?.icon || 'bi-puzzle'}"></i> ${escapeHtml(curT?.meta?.label || activity.template)}</span>
         <i class="bi bi-arrow-left-right"></i> Cambiar formato
+        ${switchOpts.filter(o => o.valid).length ? `<span class="text-muted">·</span>
+        <span class="fw-semibold">${switchOpts.filter(o => o.valid).slice(0, 3).map(o => escapeHtml(o.template.meta.label)).join(' · ')}${switchOpts.filter(o => o.valid).length > 3 ? ` +${switchOpts.filter(o => o.valid).length - 3}` : ''}</span>` : ''}
       </summary>
       ${switchOpts.length ? html`
         <div class="mt-2">

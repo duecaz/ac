@@ -6,6 +6,7 @@ import { listTemplates } from '../core/registry.js';
 import { confirmModal, toast } from '../core/toast.js';
 import { activityItemCount as itemCount } from '../core/migrate.js';
 import { activityCardHtml } from '../core/activityCard.js';
+import { buildSwitchOptions } from './switchTemplate.js';
 
 let _filter = { q: '', template: '' };
 
@@ -90,8 +91,14 @@ export function renderHome(rootSel) {
         <button class="icon-btn del act-del" data-id="${a.id}" title="Eliminar"><i class="bi bi-trash3"></i></button>
         ${a._unsynced ? '<i class="bi bi-cloud-slash acard-unsync" title="No sincronizada"></i>' : ''}
       </div>`;
+    // El gesto Wordwall a la vista: cuántos formatos hermanos puede jugar este
+    // MISMO contenido (clic → editor, donde vive el selector de formato).
+    const sibs = buildSwitchOptions(a).filter(o => o.valid);
     const footer = `<div class="acard-foot">
         <span title="Elementos"><i class="bi bi-collection"></i> ${n} ${n === 1 ? 'ítem' : 'ítems'}</span>
+        ${sibs.length ? `<button class="acard-switch act-edit" data-id="${a.id}"
+          title="Este contenido también funciona como: ${sibs.map(o => o.template.meta.label).join(' · ')}">
+          <i class="bi bi-arrow-left-right"></i> ${sibs.length + 1} formatos</button>` : ''}
         <span title="Me gusta (próximamente)"><i class="bi bi-heart-fill heart"></i> ${a.likes ?? 0}</span>
       </div>`;
     // 'all' = incluye Live/Tarea (son actividades del dueño).
