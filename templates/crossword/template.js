@@ -36,10 +36,14 @@ export class CrosswordTemplate extends BaseTemplate {
   static renderEditor = renderCrosswordEditor;
   static scoreSubmission = scoreCrosswordSubmission;
 
-  // Crossword is solo-only; no live round payload needed.
+  // ANSWER-SAFETY (R5): el payload de ronda lleva la FORMA del crucigrama
+  // (posición, dirección, longitud, pista) pero NUNCA las letras — `word` ES la
+  // respuesta. Hoy es solo-only y nadie lo consume en vivo, pero el contrato de
+  // getRoundPayload es "apto para enviarse a un alumno" SIEMPRE.
   static getRoundPayload(activity) {
     const words = (activity.content?.words || [])
-      .filter(w => w.word && w.row != null && w.col != null && w.dir);
+      .filter(w => w.word && w.row != null && w.col != null && w.dir)
+      .map(w => ({ id: w.id, clue: w.clue, row: w.row, col: w.col, dir: w.dir, len: String(w.word).length }));
     return { words };
   }
 

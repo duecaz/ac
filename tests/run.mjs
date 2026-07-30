@@ -61,4 +61,5 @@ console.log('\n▶ moduleRefs'); await import('./moduleRefs.test.mjs');
 console.log('\n▶ scoringSources'); await import('./scoringSources.test.mjs');
 console.log('\n▶ persistPolicy'); await import('./persistPolicy.test.mjs');
 console.log('\n▶ deadlineTicker'); await import('./deadlineTicker.test.mjs');
+console.log('\n▶ answerSafety'); await import('./answerSafety.test.mjs');
 console.log('\n✅ all suites passed');

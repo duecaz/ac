@@ -43,8 +43,12 @@ export class QuestionLiveTemplate extends BaseTemplate {
   // Required by the registry for live-capable templates.
   // Question Live uses manual teacher scoring, so these are not called in game,
   // but must exist to pass validation.
+  // ANSWER-SAFETY (R5): whitelist de campos de PANTALLA — nunca el ítem crudo.
+  // El modelo `items` hoy no guarda clave de respuesta, pero un passthrough
+  // filtraría cualquier campo que un contenido importado traiga de más.
   static getRoundPayload(activity, { itemIndex }) {
-    return activity.content?.items?.[itemIndex] ?? null;
+    const it = activity.content?.items?.[itemIndex];
+    return it ? { id: it.id, question: it.question, image: it.image || null } : null;
   }
   static scoreSubmission() { return { correct: null, points: 0, hits: 0, total: 0 }; }   // puntúa el profe (ql_points): sin mérito automático
 
