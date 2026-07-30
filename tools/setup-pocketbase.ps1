@@ -107,23 +107,37 @@ $defs = @(
      indexes = @();
      rules = @{ createRule=""; listRule='@request.auth.id != ""'; viewRule='@request.auth.id != ""'; updateRule=$null; deleteRule=$null } },
 
-  # Alumno anónimo — se dejan públicas por ahora (deuda A / live aparte).
+  # L6 (ley de confianza §22): DIRIGIR la sala es del PROFE. El campo `ql` esta
+  # FUERA del blob a proposito: es lo unico que escribe un alumno (pedir la
+  # palabra en Pregunta en Vivo), asi `state` puede ser host-only.
   @{ name = "live_sessions";
-     fields = @( @{ name="code"; type="text"; required=$true }, @{ name="activity"; type="json"; maxSize=5242880 }, @{ name="state"; type="json"; maxSize=5242880 }, @{ name="status"; type="text" } );
+     fields = @( @{ name="code"; type="text"; required=$true }, @{ name="activity"; type="json"; maxSize=5242880 }, @{ name="state"; type="json"; maxSize=5242880 }, @{ name="ql"; type="json"; maxSize=200000 }, @{ name="status"; type="text" } );
      indexes = @( "CREATE INDEX ``idx_ls_code`` ON ``live_sessions`` (``code``)" );
-     rules = @{ listRule=""; viewRule=""; createRule=""; updateRule=""; deleteRule="" } },
+     rules = @{
+       listRule=""; viewRule="";
+       createRule='@request.auth.id != ""';
+       updateRule='@request.auth.id != "" || (@request.body.state:isset = false && @request.body.activity:isset = false && @request.body.code:isset = false)';
+       deleteRule='@request.auth.id != ""'
+     } },
 
   @{ name = "live_answers";
      fields = @( @{ name="session"; type="text"; required=$true }, @{ name="player"; type="text"; required=$true }, @{ name="item"; type="number" }, @{ name="value"; type="json"; maxSize=200000 }, @{ name="ms"; type="number" }, @{ name="scored"; type="bool" }, @{ name="correct"; type="bool" }, @{ name="points"; type="number" }, @{ name="v0"; type="json"; maxSize=200000 }, @{ name="c0"; type="bool" } );
      indexes = @( "CREATE INDEX ``idx_la_session`` ON ``live_answers`` (``session``)", "CREATE UNIQUE INDEX ``idx_la_session_player_item`` ON ``live_answers`` (``session``, ``player``, ``item``)" );
-     rules = @{ listRule=""; viewRule=""; createRule=""; updateRule=""; deleteRule="" } },
+     # El VEREDICTO (scored/points) lo pone el settle del host: un alumno no
+     # puede ni mencionar esos campos en un PATCH (sin esto, C6 se saltaba).
+     rules = @{
+       listRule=""; viewRule="";
+       createRule='@request.auth.id != "" || (@request.body.scored = false && @request.body.points = 0)';
+       updateRule='@request.auth.id != "" || (@request.body.scored:isset = false && @request.body.points:isset = false)';
+       deleteRule='@request.auth.id != ""'
+     } },
 
   # live_players (deuda A): una fila por jugador → los joins concurrentes no se
   # pisan en el blob. Índice UNICO (session,name) = apodos únicos atómicos.
   @{ name = "live_players";
      fields = @( @{ name="session"; type="text"; required=$true }, @{ name="name"; type="text"; required=$true }, @{ name="user_id"; type="text" } );
      indexes = @( "CREATE UNIQUE INDEX ``idx_lp_session_name`` ON ``live_players`` (``session``, ``name``)" );
-     rules = @{ listRule=""; viewRule=""; createRule=""; updateRule=$null; deleteRule="" } },
+     rules = @{ listRule=""; viewRule=""; createRule=""; updateRule=$null; deleteRule='@request.auth.id != ""' } },
 
   # L2 (ley de confianza, docs/leyes.md §22): crear/cerrar/rotar tarea = acto del
   # PROFE con sesión; el alumno solo lee (findByCode + tope de intentos).

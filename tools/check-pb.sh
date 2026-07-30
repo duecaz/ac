@@ -99,6 +99,73 @@ SC=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$PB/api/collections/users/r
 { [ "$SC" = "400" ] || [ "$SC" = "403" ]; } \
   && green "signup público de users bloqueado ($SC)" || red "signup público de users" "devolvió $SC (createRule abierto)"
 
+
+# ── FASE DE REGLAS LIVE (§22) — chequeos NEGATIVOS: lo que un alumno NO puede ──
+# Se necesita una sala de verdad para probar contra ella; se crea con el token de
+# superadmin y se borra al final. Si alguno de estos pasa, la trampa está abierta.
+LIVE_SESS=$(curl -s -X POST "$PB/api/collections/live_sessions/records" \
+  -H "Authorization: $TOKEN" -H "Content-Type: application/json" \
+  -d '{"code":"CHECKPB","state":{"status":"running","phase":"question"}}' | jq -r '.id // empty')
+if [ -z "$LIVE_SESS" ]; then
+  red "crear sala de diagnóstico" "no se pudo (¿falta la colección live_sessions?)"
+else
+  LIVE_ANS=$(curl -s -X POST "$PB/api/collections/live_answers/records" \
+    -H "Authorization: $TOKEN" -H "Content-Type: application/json" \
+    -d "{\"session\":\"$LIVE_SESS\",\"player\":\"checkpb\",\"item\":0,\"value\":\"x\",\"scored\":false,\"points\":0}" | jq -r '.id // empty')
+  LIVE_PLR=$(curl -s -X POST "$PB/api/collections/live_players/records" \
+    -H "Authorization: $TOKEN" -H "Content-Type: application/json" \
+    -d "{\"session\":\"$LIVE_SESS\",\"name\":\"CheckPB\"}" | jq -r '.id // empty')
+
+  # 1) AUTO-PUNTUARSE (el ataque que neutralizaba C6 entero).
+  SC=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH "$PB/api/collections/live_answers/records/$LIVE_ANS" \
+    -H "Content-Type: application/json" -d '{"scored":true,"correct":true,"points":9999}')
+  { [ "$SC" = "403" ] || [ "$SC" = "400" ]; } \
+    && green "auto-puntuarse una respuesta bloqueado ($SC)" \
+    || red "auto-puntuarse una respuesta" "devolvió $SC — un alumno puede inflar su puntaje desde DevTools"
+
+  # 2) El alumno SÍ debe poder corregir su valor (si esto falla, se rompe el juego).
+  SC=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH "$PB/api/collections/live_answers/records/$LIVE_ANS" \
+    -H "Content-Type: application/json" -d '{"value":"y","ms":123}')
+  [ "$SC" = "200" ] && green "el alumno sí puede corregir su respuesta ($SC)" \
+    || red "corregir la propia respuesta" "devolvió $SC — la regla quedó DEMASIADO cerrada (rompe carrera y tablero)"
+
+  # 3) CONTROLAR LA SALA (terminarla, saltar pregunta, tocar puntajes).
+  SC=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH "$PB/api/collections/live_sessions/records/$LIVE_SESS" \
+    -H "Content-Type: application/json" -d '{"state":{"status":"ended"}}')
+  { [ "$SC" = "403" ] || [ "$SC" = "400" ]; } \
+    && green "controlar la sala (blob state) bloqueado ($SC)" \
+    || red "controlar la sala" "devolvió $SC — un alumno puede terminar la clase o saltar preguntas"
+
+  # 4) PEDIR LA PALABRA sí debe funcionar (Pregunta en Vivo, campo `ql`).
+  SC=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH "$PB/api/collections/live_sessions/records/$LIVE_SESS" \
+    -H "Content-Type: application/json" -d '{"ql":{"open":1,"by":"checkpb"}}')
+  [ "$SC" = "200" ] && green "pedir la palabra sí funciona ($SC)" \
+    || red "pedir la palabra (campo ql)" "devolvió $SC — Pregunta en Vivo se rompe (¿falta el campo ql?)"
+
+  # 5) EXPULSAR a un compañero.
+  SC=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE "$PB/api/collections/live_players/records/$LIVE_PLR")
+  { [ "$SC" = "403" ] || [ "$SC" = "400" ]; } \
+    && green "expulsar a un compañero bloqueado ($SC)" \
+    || red "expulsar a un compañero" "devolvió $SC — cualquier alumno puede echar a otro"
+
+  # 6) REABRIR una tarea cerrada / subirse el tope de intentos.
+  ASG=$(curl -s -X POST "$PB/api/collections/assignments/records" -H "Authorization: $TOKEN" \
+    -H "Content-Type: application/json" -d '{"code":"CHECKPBT","status":"closed","max_attempts":1}' | jq -r '.id // empty')
+  if [ -n "$ASG" ]; then
+    SC=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH "$PB/api/collections/assignments/records/$ASG" \
+      -H "Content-Type: application/json" -d '{"status":"open","max_attempts":99}')
+    { [ "$SC" = "403" ] || [ "$SC" = "400" ]; } \
+      && green "reabrir tarea / subir intentos bloqueado ($SC)" \
+      || red "reabrir tarea cerrada" "devolvió $SC — el gateo de tareas es solo de cliente"
+    curl -s -o /dev/null -X DELETE "$PB/api/collections/assignments/records/$ASG" -H "Authorization: $TOKEN"
+  fi
+
+  # Limpieza del diagnóstico.
+  [ -n "$LIVE_ANS" ] && curl -s -o /dev/null -X DELETE "$PB/api/collections/live_answers/records/$LIVE_ANS" -H "Authorization: $TOKEN"
+  [ -n "$LIVE_PLR" ] && curl -s -o /dev/null -X DELETE "$PB/api/collections/live_players/records/$LIVE_PLR" -H "Authorization: $TOKEN"
+  curl -s -o /dev/null -X DELETE "$PB/api/collections/live_sessions/records/$LIVE_SESS" -H "Authorization: $TOKEN"
+fi
+
 echo ""
 echo "Resultado: $ok OK, $fail FALLA(S)."
 [ "$fail" -eq 0 ] && echo "Todo verde ✅" || { echo "Hay fallos ❌ — pégaselos a Claude para arreglar antes de usar con alumnos."; exit 1; }

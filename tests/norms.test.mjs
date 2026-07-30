@@ -74,7 +74,8 @@ assert.strictEqual(scanNormsSource('views/x.js', `ls('ww.activities.' + uid)`).l
 // confianza-alumno (ley §22): el lado alumno no nombra verbos del host; el host sí puede.
 assert.strictEqual(scanNormsSource('views/studentLive.js', `import { settleItem } from '../core/liveTransport.js';`).length, 1, 'alumno no liquida');
 assert.strictEqual(scanNormsSource('views/hostLive.js', `await settleItem(sessionId, i);`).length, 0, 'el host sí liquida');
-assert.strictEqual(scanNormsSource('views/studentLive.js', `await setSessionState(id, patch);`).length, 0, 'setSessionState sancionado (QL)');
+assert.strictEqual(scanNormsSource('views/studentLive.js', `await setSessionState(id, patch);`).length, 1, 'el alumno tampoco controla la sala');
+assert.strictEqual(scanNormsSource('views/studentLive.js', `await claimQuestion(id, claim);`).length, 0, 'pedir la palabra sí (campo ql)');
 // reloj-primitivo (ley §23): interval crudo → violación; ctx.setInterval y el primitivo, no.
 assert.strictEqual(scanNormsSource('views/x.js', `const t = setInterval(paint, 500);`).length, 1, 'caza setInterval crudo');
 assert.strictEqual(scanNormsSource('views/x.js', `ctx.setInterval(paint, 500);`).length, 0, 'ctx.setInterval es la vía');

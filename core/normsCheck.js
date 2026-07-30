@@ -20,9 +20,10 @@
 //   · confianza-alumno: LEY DE CONFIANZA (docs/leyes.md §22) — el código del
 //                       LADO ALUMNO (views/student*) no puede ni NOMBRAR los
 //                       verbos del host (settleItem, endSession, startSession,
-//                       kickPlayer, fetchSessionKey/Blob): el alumno AFIRMA,
-//                       nunca liquida ni controla la sala. setSessionState es
-//                       la única afirmación sancionada (abrir pregunta en QL).
+//                       kickPlayer, setSessionState, fetchSessionKey/Blob): el
+//                       alumno AFIRMA, nunca liquida ni controla la sala. Para
+//                       pedir la palabra tiene `claimQuestion`, que escribe
+//                       SOLO el campo `ql` (fuera del blob de control).
 //   · reloj-primitivo : LEY DE VISTA (docs/leyes.md §23) — nunca `setInterval(`
 //                       a pelo: un reloj repetitivo va por su primitivo
 //                       (createCountdown / startDeadlineTicker /
@@ -53,6 +54,11 @@ const ALLOW = {
 // excepción sancionada (prueba de carga: escribe filas `stress_*` y las borra).
 // Los marcados "lector directo" son deuda registrada en la ley: leen bien pero
 // esquivan al dueño; al migrarlos, quítalos de aquí (el ratchet solo encoge).
+// Dueños del ESQUEMA y de las REGLAS: nombran TODAS las colecciones por
+// definición (crear colecciones / declarar sus reglas), así que están exentos de
+// la regla de dueño-por-colección. Se añaden a cada lista más abajo.
+const PB_SCHEMA_OWNERS = ['views/adminView.js', 'core/pbRules.js'];
+
 const PB_OWNERS = {
   activities: ['adapters/pocketbase/remoteStore.js', 'views/adminView.js',
     // lectores directos (deuda §21): migrarlos a métodos del dueño
@@ -74,13 +80,15 @@ const PB_OWNERS = {
 // Precompilado: nombre → regex que caza `collections/<x>` o el literal '<x>'.
 const PB_RES = Object.keys(PB_OWNERS).map(c => ({
   coll: c,
+  allow: [...PB_OWNERS[c], ...PB_SCHEMA_OWNERS],
   re: new RegExp(`collections/${c}(?![a-zA-Z_])|['"\`]${c}['"\`]`),
 }));
 
 // LEY DE CONFIANZA — verbos del HOST que el lado alumno no puede ni nombrar.
 // (Como cadenas, no regex literal: si fueran identificadores, moduleRefs los
 // contaría como "usados sin importar" en este mismo fichero.)
-const HOST_VERBS = ['settleItem', 'endSession', 'startSession', 'kickPlayer', 'fetchSessionKey', 'fetchSessionBlob'];
+const HOST_VERBS = ['settleItem', 'endSession', 'startSession', 'kickPlayer', 'setSessionState',
+  'fetchSessionKey', 'fetchSessionBlob'];
 const HOST_VERBS_RE = new RegExp(`\\b(${HOST_VERBS.join('|')})\\b`);
 
 // Comentarios fuera (mismo truco que tests/styles.test.mjs: se preservan los
@@ -107,8 +115,8 @@ export function scanNormsSource(path, source) {
     if (path.startsWith('kernel/') && /(Date\.now\s*\(|new Date\s*\(\s*\))/.test(ln)) {
       out.push({ path, line: i + 1, rule: 'kernel-puro', text: ln.trim() });
     }
-    for (const { coll, re } of PB_RES) {
-      if (re.test(ln) && !PB_OWNERS[coll].some(a => path.endsWith(a))) {
+    for (const { coll, re, allow } of PB_RES) {
+      if (re.test(ln) && !allow.some(a => path.endsWith(a))) {
         out.push({ path, line: i + 1, rule: 'pb-dueno', text: `[${coll}] ${ln.trim()}` });
       }
     }

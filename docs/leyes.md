@@ -207,30 +207,51 @@ servidor.** Una feature nueva que confíe en el móvil está mal diseñada.
 | **CLIENTE Individual** (`results`) | score/techo/tiempo (append-only; deuda: autodeclarado) | editar/borrar lo ya guardado (reglas append-only) |
 | **CLIENTE Tarea** (`assignment_attempts`) | intento con score y `answers` (deuda: autodeclarado, re-puntuable desde `answers[].v`) | crear/cerrar/rotar la TAREA (exige sesión de profe — regla L2) · editar intentos ajenos |
 
-- **Dónde vive el veredicto hoy**: settle del host (`realtime.js settleItem`/
-  `settlePendingInto` sobre `engine.settle`, idempotente) + reglas PB
-  (`views/adminView.js` DEFS = `tools/setup-pocketbase.ps1`, unificados en L2).
-- **Tests que lo vigilan**: regla `confianza-alumno` en `core/normsCheck.js`
-  (el código de `views/student*` no puede ni NOMBRAR settleItem/endSession/
-  startSession/kickPlayer/fetchSessionKey/Blob) · `tests/liveAnswers.test.mjs`
-  (C6: carrera persiste sin puntuar) · `tests/answerSafety.test.mjs` (la clave
-  no viaja) · `bash tools/check-pb.sh` (reglas negativas contra la Pi).
-- **Reglas aplicadas en L2** (re-correr "Crear colecciones"): `assignments`
-  crear/cerrar/rotar/borrar exige sesión (el gateo de tareas deja de ser solo
-  de cliente en su mitad más grave: reabrir/mover due_at/subir intentos);
-  `setup-pocketbase.ps1` re-sincronizado con el DEFS del admin (divergía en
-  `assignment_attempts.list/view` — la variante ps1 rompía el tope de intentos
-  del alumno anónimo — y en `live_players.update`).
-- **FASE DE REGLAS LIVE (pendiente, diseño en `docs/handoff-seguridad-pb.md`)**
-  — requiere probarse en aula, no se aplica a ciegas: ① `live_answers.update`
-  con guarda de campos (`@request.body.scored/points/correct:isset = false` para
-  anónimos; el host firmado sí liquida) — hoy un PATCH de DevTools puede
-  auto-puntuarse saltándose C6; ② blob de `live_sessions` host-only compatible
-  con el handshake QL; ③ `live_players.delete` a sesión (hoy cualquiera
-  expulsa); ④ `ms` de servidor (autodate de la fila vs `started_at`) para el
-  bonus de velocidad; ⑤ el snapshot con clave que viaja al móvil en carrera
-  (R5 cubre el payload de ronda, no `activity_snap`); ⑥ tope de intentos
-  server-side (índice único attempt) — hoy borrar `ww.anonId` = intentos ∞.
+- **Dónde vive el veredicto**: settle del host (`realtime.js settleItem`/
+  `settlePendingInto` sobre `engine.settle`, idempotente) **+ las reglas de
+  PocketBase**, declaradas UNA vez en **`core/pbRules.js`** (fuente única que
+  leen el panel `#/admin` y `tools/setup-pocketbase.ps1`).
+- **Reglas EJECUTABLES** (esto es lo que las saca de "configuración que nadie
+  mira"): `tests/pbRules.test.mjs` fija los invariantes (nadie con update/delete
+  abierto · el veredicto `scored`/`points` es host-only · el blob de la sala es
+  host-only · append-only donde el dato es un hecho entregado) **y compara regla
+  a regla con el script de PowerShell** (la divergencia silenciosa era un bug
+  real). `tests/liveRules.test.mjs` va más lejos: un **evaluador del dialecto de
+  reglas PB** hace de servidor y el **adaptador REAL** juega contra él, así se
+  vigilan los dos fallos posibles — que la regla sea muy ABIERTA (9 trampas
+  deben rebotar) y que sea muy CERRADA (el alumno anónimo debe poder jugar
+  entero: entrar · responder · reintentar en carrera · mover el tablero · pedir
+  la palabra). En la Pi de verdad: `bash tools/check-pb.sh` (6 chequeos live,
+  negativos Y positivos).
+- **Otros tests**: regla `confianza-alumno` en `core/normsCheck.js` (el código de
+  `views/student*` no puede ni NOMBRAR los verbos del host, `setSessionState`
+  incluido) · `tests/liveAnswers.test.mjs` (C6) · `tests/answerSafety.test.mjs`.
+- **Reglas aplicadas (L2 + L6)** — re-correr `#/admin` → "Crear colecciones":
+  - `live_answers`: el alumno crea su respuesta (forzosamente `scored:false`,
+    `points:0`) y puede corregir `value`/`ms`, pero **no puede ni mencionar
+    `scored`/`points`** en un PATCH. Sin esto, C6 se saltaba entero desde
+    DevTools: `{scored:true, points:9999}` entraba y el marcador lo sumaba.
+  - `live_sessions`: **el blob `state` es host-only** (fase, ítem, deadline,
+    puntajes) y crear/borrar sala exige sesión. Para que eso fuera posible, el
+    "pedir la palabra" de Pregunta en Vivo salió del blob a un campo propio
+    `ql` con su verbo propio (`claimQuestion`) — el alumno escribe ESO y nada
+    más. (Se lee con respaldo al blob: las salas creadas antes siguen bien.)
+  - `live_players`: solo el profe **expulsa** (antes cualquier alumno echaba a
+    un compañero) y nadie renombra.
+  - `assignments`: crear/cerrar/rotar/borrar exige sesión (un alumno ya no
+    reabre una tarea cerrada, ni mueve `due_at`, ni se sube el tope).
+  - `results`: **leer exige sesión** (privacidad: nombres y notas de menores).
+  - **Consecuencia operativa**: dirigir una sala en vivo o crear tareas EXIGE
+    haber entrado con la cuenta de profe. `views/hostLive.js` lo dice con
+    nombre y apellido si el 403 llega por eso (y ofrece "Entrar"), para no
+    descubrirlo con la clase delante.
+- **Sigue pendiente (diseño en `docs/handoff-seguridad-pb.md`)**: ① `ms` de
+  servidor (autodate de la fila vs `started_at`) — hoy el bonus de velocidad se
+  fía del reloj del móvil; ② el `activity_snap` con la clave que viaja al móvil
+  en carrera (R5 cubre el payload de ronda, no el snapshot); ③ tope de intentos
+  server-side (índice único) — hoy borrar `ww.anonId` da intentos ∞; ④ que la
+  fila de respuesta esté atada al dispositivo (un alumno puede responder en
+  nombre de otro si adivina su `playerId`).
 
 ## 23) ⚖️ LEY DE VISTA — ciclo de vida de una pantalla
 Las normas 4, 6 y 10 son piezas de esta ley; aquí está el cuadro completo de

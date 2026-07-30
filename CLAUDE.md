@@ -35,6 +35,25 @@ git push origin <rama-de-trabajo>:ACTIVIDAD2         # legado, opcional (ya no s
   autenticado**: para acciones sobre sus repos fuera del alcance de la sesión (p.ej.
   `duecaz/ww-assets`), pásale los comandos `gh`/PS listos para pegar y él los ejecuta.
 
+### 4. LAS SEIS LEYES — contrastar TODO diseño contra ellas ANTES de escribir código
+Cada ley es un cuadro **dueño → PROHIBIDO** con su test que rompe CI. Si un cambio
+necesita violar una prohibición, el diseño está mal planteado: no se parchea, se
+replantea. Texto completo en **`docs/leyes.md`** (índice único de normas).
+
+| Ley | En una frase | Vigilada por |
+|---|---|---|
+| **§0 · CUATRO CAPAS** | contenido · plantilla · modo · plataforma: una plantilla no sabe en qué modo corre (lo DECLARA), un modo no conoce plantillas concretas | `scoringSources` · `persistPolicy` · `templateContract` · matriz jugable |
+| **§3 · ESTILO** | 4 capas del píxel: el skin cambia TOKENS, la actividad consume TOKENS; nada de tamaños fijos en el juego | `styles` (ratchet + gate de themes) · `skins` |
+| **§21 · DATOS** | cada colección PB tiene UN módulo dueño; quien necesite datos **pide un método al dueño**, nunca hace fetch propio | regla `pb-dueno` (`norms`) |
+| **§22 · CONFIANZA** | el cliente **AFIRMA**, el veredicto lo pone el host o una regla del servidor | `pbRules` + `liveRules` (evaluador de reglas) · `confianza-alumno` · `answerSafety` |
+| **§23 · VISTA** | la vista posee su render y sus handlers; el router el ciclo de vida; los relojes van por su primitivo | regla `reloj-primitivo` · `events` · `deadlineTicker` |
+| **§24 · CONTENIDO** | el contenido es del usuario: cambia solo por migración versionada, conversión declarada e ids con `rid()` | regla `id-rid` · `templateContract` (versión>1 ⇒ migrate) |
+
+- **Si es norma, es test**: una regla nueva se escribe como test, no solo en un MD.
+- **La contra-prueba importa igual que la prueba**: al endurecer algo, el test debe
+  comprobar TAMBIÉN que el camino legítimo sigue funcionando (una regla demasiado
+  cerrada se descubre con la clase delante — eso es lo que hace `liveRules`).
+
 ## MAPA — dónde mirar (lee ESTO antes de cargar medio repo)
 
 Este archivo es el índice. **No leas todos los MD ni todo el código de golpe**: identifica

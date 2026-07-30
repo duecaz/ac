@@ -3,7 +3,7 @@ import { clock } from '../core/clock.js';
 import { startDeadlineTicker } from '../core/deadlineTicker.js';
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
-import { joinSession, getOwnAnswer, subscribeRoom, pingPresence, findRoomByCode, fetchSession, leaderboard, setSessionState, submitProgress, submitRaceAttempt } from '../core/liveTransport.js';
+import { joinSession, getOwnAnswer, subscribeRoom, pingPresence, findRoomByCode, fetchSession, leaderboard, claimQuestion, submitProgress, submitRaceAttempt } from '../core/liveTransport.js';
 import { findAssignmentByCode } from '../core/assignmentsTransport.js';
 import { isAcceptableNickname } from '../core/nicknameFilter.js';
 import { acquire } from '../core/lifecycle.js';
@@ -190,11 +190,13 @@ export async function renderPlay(rootSel, code) {
     const label = typeof raw === 'string' ? raw : (raw?.question ?? raw?.q ?? '');   // ?? q: sesión en vuelo pre-migración
     // Image is NOT put in session state (data-URLs are heavy) — both host and
     // student already hold the full activity and read it locally by index.
-    await setSessionState(session.id, {
-      ql_open: idx,
-      ql_question: label,
-      ql_by: player.playerId,
-      ql_by_name: player.name,
+    // Pedir la palabra escribe SOLO el campo `ql` de la sala: el alumno no
+    // puede tocar fase/ítem/deadline/puntajes (ley de confianza §22).
+    await claimQuestion(session.id, {
+      open: idx,
+      question: label,
+      by: player.playerId,
+      byName: player.name,
     });
   }
 

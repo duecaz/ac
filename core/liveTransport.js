@@ -40,6 +40,10 @@ export const pingPresence = call('pingPresence');
 // unlike submitAnswer this UPSERTS the player's OWN row, so the host sees the
 // board move-by-move. One row per player → no clobber.
 export const submitProgress = call('submitProgress');
+// Pregunta en Vivo: el alumno pide la palabra. Escribe SOLO el campo `ql` de la
+// sala — nunca el blob de control (ley de confianza §22). Antes esto iba por
+// `setSessionState`, lo que obligaba a dejar el blob escribible por cualquiera.
+export const claimQuestion = call('claimQuestion');
 
 // Realtime subscription. Returns (a promise resolving to) an unsubscribe fn.
 export const subscribeRoom = call('subscribeRoom');

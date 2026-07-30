@@ -43,10 +43,11 @@ export async function runStressTest({ pbUrl, n = 30, onLog = () => {} } = {}) {
   const jpostAuth = (coll, body) => signedFetch(`${PB}/api/collections/${coll}/records`, {
     method: 'POST', body: JSON.stringify(body),
   });
-  const del = (coll, id) => {
-    const url = `${PB}/api/collections/${coll}/records/${id}`;
-    return (coll === 'assignments' ? signedFetch(url, { method: 'DELETE' }) : fetch(url, { method: 'DELETE' })).catch(() => {});
-  };
+  // La LIMPIEZA es acto del profe: borrar filas de live_*/tareas exige sesión
+  // desde la fase de reglas live (§22). Por eso va FIRMADO (el botón de #/admin
+  // corre con el profe dentro). Las escrituras que simulan al ALUMNO siguen
+  // crudas a propósito — son justo lo que hay que probar.
+  const del = (coll, id) => signedFetch(`${PB}/api/collections/${coll}/records/${id}`, { method: 'DELETE' }).catch(() => {});
   // Borra en tandas de 15 para no reventar la Pi con 50 DELETE de golpe.
   const delMany = async (coll, ids) => { for (let i = 0; i < ids.length; i += 15) await Promise.all(ids.slice(i, i + 15).map(id => del(coll, id))); };
   const exists = async (coll) => { try { return (await fetch(`${PB}/api/collections/${coll}/records?perPage=1`)).status === 200; } catch { return false; } };
@@ -68,7 +69,7 @@ export async function runStressTest({ pbUrl, n = 30, onLog = () => {} } = {}) {
   const code = ('LOAD' + rnd()).toUpperCase();
   const activity = miniActivity(code);
   const state = { format: 'live', code, status: 'running', phase: 'question', currentItem: 0, players: [], answers: {}, _seq: 0 };
-  const sessRes = await jpost('live_sessions', { code, activity, state });
+  const sessRes = await jpostAuth('live_sessions', { code, activity, state });   // crear sala = acto del profe (§22)
   const sessId = (await sessRes.json())?.id;
   if (!sessId) { report.notes.push('No se pudo crear la sala de prueba.'); report.ms = Date.now() - t0; return report; }
 

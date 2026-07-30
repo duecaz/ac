@@ -54,6 +54,11 @@ console.log('\n▶ templateContract'); await import('./templateContract.test.mjs
 // y algunas suites previas —p.ej. solo— asumen que NO lo está; ver su registerTemplate).
 console.log('\n▶ homePreview'); await import('./homePreview.test.mjs');
 console.log('\n▶ norms'); await import('./norms.test.mjs');
+// Reglas de PocketBase como contrato ejecutable (ley de confianza §22):
+// invariantes + anti-divergencia con el script, y el adaptador real jugando
+// contra un evaluador de esas reglas (alumno puede jugar / tramposo rebota).
+console.log('\n▶ pbRules'); await import('./pbRules.test.mjs');
+console.log('\n▶ liveRules'); await import('./liveRules.test.mjs');
 console.log('\n▶ skins'); await import('./skins.test.mjs');
 console.log('\n▶ newTemplate'); await import('./newTemplate.test.mjs');
 console.log('\n▶ activityCard'); await import('./activityCard.test.mjs');

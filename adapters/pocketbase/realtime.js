@@ -23,6 +23,34 @@ const PLR = 'live_players';   // one record per player (lost-update fix del join
 
 function genUserId() { return rid('u_'); }
 
+// PREGUNTA EN VIVO — el "pedir la palabra" del alumno vive en el campo `ql`,
+// FUERA del blob `state` (ley de confianza §22): así la regla de PocketBase
+// puede dejar `state` (fase, ítem, deadline, puntajes) como HOST-ONLY y el
+// alumno solo escribe este campo. Los PUNTOS otorgados (`qlPoints`) siguen en
+// el blob porque los da el docente. Se lee con respaldo al blob para que una
+// sala creada ANTES de esta versión siga funcionando.
+function qlOf(rec) {
+  const q = rec?.ql || {};
+  const s = rec?.state || {};
+  return {
+    ql_open: q.open ?? s.qlOpen ?? null,
+    ql_question: q.question ?? s.qlQuestion ?? null,
+    ql_image: q.image ?? s.qlImage ?? null,
+    ql_by: q.by ?? s.qlBy ?? null,
+    ql_by_name: q.byName ?? s.qlByName ?? null,
+    ql_points: s.qlPoints ?? {},
+  };
+}
+// Claves `ql_*` de un patch → forma del campo `ql`. Devuelve null si el patch
+// no toca nada de Pregunta en Vivo (para no escribir el campo en vano).
+function qlPatch(patch) {
+  const MAP = { ql_open: 'open', ql_question: 'question', ql_image: 'image', ql_by: 'by', ql_by_name: 'byName' };
+  const out = {};
+  let touched = false;
+  for (const [k, v] of Object.entries(MAP)) if (k in patch) { out[v] = patch[k] ?? null; touched = true; }
+  return touched ? out : null;
+}
+
 async function pbFetchOnce(path, opts = {}) {
   const { body: reqBody, method, headers: extra, timeoutMs = 12000 } = opts;
   // Abort a stalled socket instead of hanging forever: on flaky mobile a TCP
@@ -277,12 +305,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         current_item: rec.state?.currentItem,
         deadline: rec.state?.deadline ?? null,
         activity_snap: rec.activity,
-        ql_open: rec.state?.qlOpen ?? null,
-        ql_question: rec.state?.qlQuestion ?? null,
-        ql_image: rec.state?.qlImage ?? null,
-        ql_points: rec.state?.qlPoints ?? {},
-        ql_by: rec.state?.qlBy ?? null,
-        ql_by_name: rec.state?.qlByName ?? null,
+        ...qlOf(rec),
       };
     },
 
@@ -298,12 +321,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         deadline: rec.state?.deadline ?? null,
         started_at: rec.state?.startedAt ?? null,
         activity_snap: rec.activity,
-        ql_open: rec.state?.qlOpen ?? null,
-        ql_question: rec.state?.qlQuestion ?? null,
-        ql_image: rec.state?.qlImage ?? null,
-        ql_points: rec.state?.qlPoints ?? {},
-        ql_by: rec.state?.qlBy ?? null,
-        ql_by_name: rec.state?.qlByName ?? null,
+        ...qlOf(rec),
       };
     },
 
@@ -401,18 +419,35 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       if ('current_item' in patch) engine.state.currentItem = patch.current_item;
       if ('deadline' in patch) engine.state.deadline = patch.deadline ?? null;
       if ('started_at' in patch) engine.state.startedAt = patch.started_at ?? null;
-      if ('ql_open' in patch) engine.state.qlOpen = patch.ql_open ?? null;
-      if ('ql_question' in patch) engine.state.qlQuestion = patch.ql_question ?? null;
-      if ('ql_image' in patch) engine.state.qlImage = patch.ql_image ?? null;
       if ('ql_points' in patch) engine.state.qlPoints = patch.ql_points ?? {};
-      if ('ql_by' in patch) engine.state.qlBy = patch.ql_by ?? null;
-      if ('ql_by_name' in patch) engine.state.qlByName = patch.ql_by_name ?? null;
       if (patch.ql_award) {
         const { playerId, points } = patch.ql_award;
         const p = engine.state.players.find(pl => pl.id === playerId);
         if (p) p.score += points;
       }
-      await saveState(sessionId, engine);
+      // El host puede tocar AMBOS: el blob y el campo `ql` (p.ej. al cerrar la
+      // caja abierta tras dar puntos) — un solo PATCH.
+      const ql = qlPatch(patch);
+      await pbFetch(`/api/collections/${COLL}/records/${sessionId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(ql ? { state: engine.state, ql } : { state: engine.state }),
+      });
+    },
+
+    // El ALUMNO pide la palabra (Pregunta en Vivo): escribe SOLO el campo `ql`,
+    // nunca el blob. Es la única afirmación que un alumno hace sobre la sala
+    // (ley de confianza §22) y la regla de PB lo permite justo por eso.
+    async claimQuestion(sessionId, claim) {
+      await pbFetch(`/api/collections/${COLL}/records/${sessionId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ ql: {
+          open: claim?.open ?? null,
+          question: claim?.question ?? null,
+          image: claim?.image ?? null,
+          by: claim?.by ?? null,
+          byName: claim?.byName ?? null,
+        } }),
+      });
     },
 
     async settleItem(sessionId, itemIndex) {
@@ -529,8 +564,11 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
           row = await getAnswerRow(sessionId, itemIndex, playerId);
         }
         if (row) {
+          // SIN `scored` en el patch: (a) la regla de PB prohíbe al alumno tocar
+          // los campos de veredicto (§22) y (b) re-afirmar scored:false podía
+          // DES-liquidar una fila que el host ya había puntuado.
           await pbFetch(`/api/collections/${ANS}/records/${row.id}`, {
-            method: 'PATCH', body: JSON.stringify({ value, ms: msTaken ?? row.ms ?? 0, scored: false }),
+            method: 'PATCH', body: JSON.stringify({ value, ms: msTaken ?? row.ms ?? 0 }),
           });
         }
         return;

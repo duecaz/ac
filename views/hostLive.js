@@ -16,6 +16,8 @@ import { itemStatsHtml } from './itemStatsView.js';
 import { computeMedals } from '../core/itemStats.js';
 import { sessionTableHtml, sessionTableCsv, buildSessionTable } from './sessionTable.js';
 import { acquire } from '../core/lifecycle.js';
+import { getAuthUserId } from '../core/auth.js';
+import { openLoginModal } from './loginModal.js';
 import { toast, confirmModal } from '../core/toast.js';
 import { sceneToggle, resetScene } from '../core/presentation.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
@@ -47,11 +49,18 @@ export async function renderHostLaunch(rootSel, activityId) {
     location.hash = `#/host/${room.code}`;
   } catch (e) {
     const needsSetup = /live_sessions/.test(e.message || '');
+    // Con la fase de reglas live (§22) DIRIGIR una sala exige sesión de profe.
+    // Si el 403 llega por eso, dilo con nombre y apellido: descubrirlo con la
+    // clase delante es el peor momento posible.
+    const needsLogin = !getAuthUserId() && (e?.status === 403 || e?.status === 400);
     mount(rootSel, html`
       <div class="container py-4" style="max-width:560px">
         <div class="alert alert-danger">
           <h5 class="alert-heading"><i class="bi bi-exclamation-octagon"></i> No se pudo crear la sala</h5>
-          <p class="mb-2">${escapeHtml(e.message)}</p>
+          <p class="mb-2">${needsLogin
+            ? 'Para dirigir una sala en vivo tienes que entrar con tu cuenta de profesor (el servidor ya no acepta salas anónimas).'
+            : escapeHtml(e.message)}</p>
+          ${needsLogin ? html`<button class="btn btn-primary btn-sm" id="hl-login"><i class="bi bi-box-arrow-in-right"></i> Entrar</button>` : ''}
           ${needsSetup ? html`
             <hr>
             <p class="mb-2 small">El servidor de Live necesita la colección <code>live_sessions</code> (solo se crea una vez).</p>
@@ -60,6 +69,7 @@ export async function renderHostLaunch(rootSel, activityId) {
         </div>
         <a href="#/play/${escapeHtml(a.id)}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-arrow-left"></i> Volver a la actividad</a>
       </div>`);
+    on(rootSel, 'click', '#hl-login', () => openLoginModal());
   }
 }
 

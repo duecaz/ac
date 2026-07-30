@@ -86,12 +86,11 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
       if ('current_item' in patch) s.currentItem = patch.current_item;
       if ('deadline' in patch) room.deadline = patch.deadline ?? null;
       if ('started_at' in patch) room.startedAt = patch.started_at ?? null;
-      if ('ql_open' in patch) s.qlOpen = patch.ql_open ?? null;
-      if ('ql_question' in patch) s.qlQuestion = patch.ql_question ?? null;
-      if ('ql_image' in patch) s.qlImage = patch.ql_image ?? null;
       if ('ql_points' in patch) s.qlPoints = patch.ql_points ?? {};
-      if ('ql_by' in patch) s.qlBy = patch.ql_by ?? null;
-      if ('ql_by_name' in patch) s.qlByName = patch.ql_by_name ?? null;
+      // Espejo del driver PB: el "pedir la palabra" vive en room.ql, fuera del
+      // blob de estado (ley de confianza §22).
+      const MAP = { ql_open: 'open', ql_question: 'question', ql_image: 'image', ql_by: 'by', ql_by_name: 'byName' };
+      for (const [k, f] of Object.entries(MAP)) if (k in patch) (room.ql ||= {})[f] = patch[k] ?? null;
       if (patch.ql_award) {
         const { playerId, points } = patch.ql_award;
         const p = s.players.find(pl => pl.id === playerId);
@@ -102,6 +101,18 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
 
     async startSession(code) {
       return this.setSessionState(code, { status: 'running', phase: 'question', current_item: 0 });
+    },
+
+    // El alumno pide la palabra: solo room.ql (espejo del driver PB).
+    async claimQuestion(code, claim) {
+      const room = read(code);
+      if (!room) throw new Error('Sala no encontrada');
+      room.ql = {
+        open: claim?.open ?? null, question: claim?.question ?? null, image: claim?.image ?? null,
+        by: claim?.by ?? null, byName: claim?.byName ?? null,
+      };
+      write(code, room);
+      notify(code, 'sessions');
     },
 
     // Cerrar la sala LIQUIDA lo pendiente y luego marca 'ended' (mismo contrato que
@@ -187,12 +198,13 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
         deadline: r.deadline ?? null,
         started_at: r.startedAt ?? null,
         activity_snap: r.activity,
-        ql_open: r.state.qlOpen ?? null,
-        ql_question: r.state.qlQuestion ?? null,
-        ql_image: r.state.qlImage ?? null,
+        // `ql` fuera del blob (§22), con respaldo al blob de salas anteriores.
+        ql_open: r.ql?.open ?? r.state.qlOpen ?? null,
+        ql_question: r.ql?.question ?? r.state.qlQuestion ?? null,
+        ql_image: r.ql?.image ?? r.state.qlImage ?? null,
+        ql_by: r.ql?.by ?? r.state.qlBy ?? null,
+        ql_by_name: r.ql?.byName ?? r.state.qlByName ?? null,
         ql_points: r.state.qlPoints ?? {},
-        ql_by: r.state.qlBy ?? null,
-        ql_by_name: r.state.qlByName ?? null,
       };
     },
 

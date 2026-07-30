@@ -15,6 +15,7 @@ import { downloadActivitiesJson, pickAndImport } from '../core/io.js';
 import { runSelfTests, TOTAL_TESTS } from '../core/selftest.js';
 import { diagnoseDb } from '../core/dbDiag.js';
 import { runStressTest } from '../core/stressTest.js';
+import { rulesFor as pbRulesFor } from '../core/pbRules.js';
 import { PB_URL } from '../pocketbase.config.js';
 import { buildAdminMatrix } from './admin/matrix.js';
 import { listVsAnimations } from '../core/vsAnimations.js';
@@ -600,6 +601,11 @@ function renderPanel(rootSel) {
           { name: 'code',     type: 'text', required: true },
           { name: 'activity', type: 'json' },
           { name: 'state',    type: 'json' },
+          // `ql` FUERA del blob a propósito (ley de confianza §22): es lo único
+          // que un alumno escribe en la sala (pedir la palabra en Pregunta en
+          // Vivo). Al tener campo propio, la regla puede dejar `state` —fase,
+          // ítem, deadline, puntajes— como HOST-ONLY.
+          { name: 'ql',       type: 'json' },
         ]},
         // One record per student answer → concurrent answers never clobber each
         // other (the lost-update fix). Once this exists, the realtime adapter
@@ -684,80 +690,11 @@ function renderPanel(rootSel) {
         }
         return base;
       };
-      // Reglas públicas (sin auth) — quedan SOLO en live_sessions/live_answers,
-      // que los alumnos anónimos escriben por diseño. Endurecerlas de verdad
-      // (veredicto host-only por regla, blob host-only) es la "fase de reglas
-      // live" — ver docs/leyes.md §22 (LEY DE CONFIANZA) y handoff-seguridad-pb.
-      const publicRules = { listRule: '', viewRule: '', createRule: '', updateRule: '', deleteRule: '' };
-      // Reglas de `activities` (U1 — ENDURECIDAS): protegen el contenido del profe.
-      // Ya NO hay cláusula transitoria `owner = ''` (la BD arrancó limpia, no quedan
-      // legadas que proteger) y crear EXIGE sesión y que seas tu propio owner → un
-      // anónimo no puede crear filas ni un profe editar/borrar ajenas.
-      // ADMIN (S3): un usuario con role='admin' puede editar/borrar/moderar CUALQUIER
-      // actividad. La cláusula es ADITIVA (solo concede permisos, nunca bloquea).
-      const ADMIN = "@request.auth.role = 'admin'";
-      const OWN = `owner = @request.auth.id || ${ADMIN}`;
-      const activityRules = {
-        listRule: `visibility = 'public' || ${OWN}`,
-        viewRule: `visibility = 'public' || ${OWN}`,
-        // Crear exige sesión y que el owner enviado seas tú (no puedes crear a nombre
-        // de otro). Bloquea de raíz la creación anónima (incluido el viejo "Probar").
-        createRule: "@request.auth.id != '' && owner = @request.auth.id",
-        updateRule: OWN,
-        deleteRule: OWN,
-      };
-      // Likes: cualquiera lee el conteo (público); solo un profe logueado crea/borra
-      // SU propio like (user = él mismo). El índice único (activity,user) evita dobles.
-      const likesRules = {
-        listRule: '', viewRule: '',
-        createRule: "@request.auth.id != '' && user = @request.auth.id",
-        updateRule: null,
-        deleteRule: "@request.auth.id != '' && user = @request.auth.id",
-      };
-      // Reportes: crear exige login; listar/borrar SOLO admin (moderación).
-      const reportsRules = {
-        listRule: ADMIN, viewRule: ADMIN,
-        createRule: "@request.auth.id != ''",
-        updateRule: null,
-        deleteRule: ADMIN,
-      };
-      // Perfiles: lectura PÚBLICA (la página del autor la ve cualquiera); crear/editar/
-      // borrar SOLO el dueño (owner = yo). El email nunca vive aquí (está en users).
-      const profilesRules = {
-        listRule: '', viewRule: '',
-        createRule: "@request.auth.id != '' && owner = @request.auth.id",
-        updateRule: 'owner = @request.auth.id',
-        deleteRule: 'owner = @request.auth.id',
-      };
-      // Append-only (results / assignment_attempts): el alumno anónimo CREA su
-      // resultado/intento y lo LEE (tope de intentos), pero NADIE los edita o
-      // borra por API (verificado: 0 PATCH/DELETE en el código). Cerrar
-      // update/delete impide que un alumno con DevTools manipule un puntaje ya
-      // guardado. Riesgo cero (no toca create/read, no depende del login).
-      const appendOnlyRules = { listRule: '', viewRule: '', createRule: '', updateRule: null, deleteRule: null };
-      // live_players (deuda A): el alumno CREA su fila y la LEE (reconexión/lobby);
-      // el host la BORRA (expulsar). NADIE la actualiza (sin renombrado) → update
-      // cerrado. Delete queda público por ahora (expulsar no exige host logueado);
-      // cerrarlo a host-only va con la fase de reglas live (ver handoff-seguridad-pb).
-      const livePlayersRules = { listRule: '', viewRule: '', createRule: '', updateRule: null, deleteRule: '' };
-      // Tareas (L2 — ley de confianza §22): el ALUMNO solo LEE (findByCode y el
-      // tope de intentos); crear/cerrar/rotar/borrar es acto del PROFE (siempre
-      // con sesión). Sin esto, un alumno con DevTools podía REABRIR una tarea
-      // cerrada, mover due_at o subir max_attempts (el gateo era solo cliente).
-      const assignmentsRules = {
-        listRule: '', viewRule: '',
-        createRule: "@request.auth.id != ''",
-        updateRule: "@request.auth.id != ''",
-        deleteRule: "@request.auth.id != ''",
-      };
-      const rulesFor = (name) =>
-        name === 'activities' ? activityRules :
-        name === 'activity_likes' ? likesRules :
-        name === 'reports' ? reportsRules :
-        name === 'profiles' ? profilesRules :
-        (name === 'results' || name === 'assignment_attempts') ? appendOnlyRules :
-        name === 'assignments' ? assignmentsRules :
-        name === 'live_players' ? livePlayersRules : publicRules;
+      // REGLAS: fuente única en core/pbRules.js (ley de confianza §22). Antes
+      // vivían escritas a mano aquí Y en tools/setup-pocketbase.ps1, y
+      // divergieron; ahora las dos las leen del módulo y tests/pbRules.test.mjs
+      // falla si se vuelven a separar.
+      const rulesFor = (name) => pbRulesFor(name) || { listRule: '', viewRule: '', createRule: '', updateRule: '', deleteRule: '' };
       // En PB ≥0.23 los campos created/updated NO se añaden solos al crear por API,
       // y el store ordena resultados por `sort=-created` → hay que crearlos como
       // autodate. En <0.23 se añaden automáticamente, así que no los duplicamos.
