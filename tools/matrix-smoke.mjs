@@ -156,5 +156,5 @@ if (seedBad.length) { console.log('\nSIEMBRA FALLIDA:'); seedBad.forEach(s => co
 console.log(`\n✅ ok: ${results.filter(r => r.status === 'ok').length}` +
   ` · ❌ fallos: ${bad.length}` +
   ` · · no aplica: ${results.filter(r => r.status === 'n/a').length}`);
-console.log('NO CUBIERTO por este runner: el ALUMNO en vivo y el modo Tarea (necesitan un segundo contexto de navegador).');
+console.log('El ALUMNO en vivo lo cubre tools/live-smoke.mjs (dos contextos). Sin cubrir: Tarea e2e y carrera con 2 alumnos.');
 bye(bad.length || seedBad.length ? 1 : 0);

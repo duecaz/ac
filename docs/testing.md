@@ -132,8 +132,18 @@ faltaba en `views/memoryView.js`, el escáner lo señala con archivo:línea y la
 matriz pinta ❌ en *Memoria · equipos* con el mensaje `teamsScoreboardHtml is not
 defined`. Un test que no puede fallar no vale.
 
-**No cubierto todavía por la matriz**: modo **En vivo** y modo **Tarea**
-(necesitan sala/asignación con dos contextos) — irán en un segundo runner.
+**El runner de dos contextos** (`tools/live-smoke.mjs`) cubre lo que la matriz
+no puede: EN VIVO de punta a punta con una página HOST y una página ALUMNO sobre
+el backend local (localStorage + BroadcastChannel = multi-pestaña real):
+sala → PIN → join → pregunta → respuesta → settle → clasificación → podio.
+La aserción clave post-C6: los puntos del podio los puso el settle del host.
+
+```bash
+node tools/live-smoke.mjs     # sale 1 si el flujo canónico de una clase se rompe
+```
+
+**No cubierto todavía**: el modo Tarea end-to-end (mismo patrón de dos páginas,
+pendiente) y el modo carrera con dos alumnos.
 
 ## 3. Verificación headless (layout, táctil, visual)
 

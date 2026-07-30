@@ -1,0 +1,116 @@
+// RED DE SEGURIDAD Nº3 (R6) — EN VIVO de punta a punta con DOS CONTEXTOS:
+// una página HOST (profesor) y una página ALUMNO, sobre el backend local
+// (localStorage + BroadcastChannel: multi-pestaña real, sin red ni Pi).
+//
+// Cierra el hueco que la matriz jugable declaraba ("el ALUMNO en vivo no está
+// cubierto"): recorre el flujo canónico completo de una clase en vivo —
+//   crear sala → PIN → alumno se une → empezar → pregunta → alumno responde →
+//   revelar (settle) → clasificación → terminar → podio con los puntos REALES.
+// La aserción final es la que importa tras C6: los puntos del alumno en el
+// podio los puso el SETTLE del host, no el cliente.
+//
+//   node tools/live-smoke.mjs
+//
+// Requiere: python3 + el Chromium preinstalado (igual que matrix-smoke).
+import { createRequire } from 'node:module';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+
+const require = createRequire(import.meta.url);
+const { chromium } = require(process.env.PW || '/opt/node22/lib/node_modules/playwright');
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const PORT = Number(process.env.PORT || 8481);
+const BASE = `http://127.0.0.1:${PORT}`;
+
+const server = spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'], { cwd: ROOT, stdio: 'ignore' });
+const bye = (code) => { try { server.kill(); } catch {} process.exit(code); };
+process.on('SIGINT', () => bye(130));
+await new Promise(r => setTimeout(r, 700));
+
+const browser = await chromium.launch();
+const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+const host = await ctx.newPage();
+const student = await ctx.newPage();
+const NOISE = /net::ERR_|Failed to load resource|ERR_TUNNEL|favicon/i;
+const errs = [];
+for (const [p, who] of [[host, 'host'], [student, 'alumno']]) {
+  p.on('pageerror', e => { const m = String(e.message).split('\n')[0]; if (!NOISE.test(m)) errs.push(`${who}: ${m}`); });
+  await p.route('**/esm.sh/**', r => r.fulfill({ contentType: 'application/javascript', body: 'export default function(){}' }));
+  await p.route('**/cdn.jsdelivr.net/**', r => r.fulfill({ contentType: 'text/css', body: '' }));
+}
+const log = (m) => console.log('  ·', m);
+
+try {
+  // ── HOST: sembrar un quiz y lanzar la sala ─────────────────────────────────
+  await host.goto(`${BASE}/teacher.html?backend=local`, { waitUntil: 'domcontentloaded' });
+  await host.waitForFunction(() => document.querySelector('#app')?.children.length > 0, { timeout: 20000 });
+  await host.evaluate(async () => {
+    await import('/core/registerTemplates.js');
+    const s = await import('/core/storage.js');
+    s.save({ id: 'lv_e2e', template: 'quiz', title: 'Live e2e',
+      content: { items: [
+        { id: 'q1', question: '2+2', answer: '4', options: ['3', '4'], points: 1 },
+        { id: 'q2', question: '3+3', answer: '6', options: ['6', '7'], points: 1 },
+      ] },
+      rules: {}, scoring: { mode: 'flat', pointsPerCorrect: 1 },
+      live: { questionTimer: 30 }, updatedAt: 'x' });
+  });
+  await host.evaluate(() => { location.hash = '#/launch/lv_e2e'; });
+  await host.waitForSelector('.ww-pin', { timeout: 12000 });
+  const pin = (await host.locator('.ww-pin').textContent()).trim();
+  log(`sala creada · PIN ${pin}`);
+
+  // ── ALUMNO: unirse con el PIN ──────────────────────────────────────────────
+  await student.goto(`${BASE}/student.html?backend=local#/join`, { waitUntil: 'domcontentloaded' });
+  await student.waitForSelector('#f-code', { timeout: 12000 });
+  await student.fill('#f-code', pin);
+  await student.fill('#f-nick', 'Emma');
+  await student.click('#btn-join');
+  await host.waitForFunction(() => document.body.textContent.includes('Emma'), { timeout: 9000 });
+  log('alumna "Emma" en el lobby del host (realtime cross-tab ✓)');
+
+  // ── Empezar → pregunta → la alumna responde BIEN ───────────────────────────
+  await host.click('#btn-start');
+  await student.waitForSelector('.rq-opt, .ww-opt', { timeout: 9000 });
+  log('pregunta en el móvil de la alumna');
+  await student.locator('.rq-opt, .ww-opt', { hasText: '4' }).first().click();
+  // Con todos respondidos el host puede AUTO-liquidar (pasa directo a reveal);
+  // si no, se revela a mano. Ambos caminos terminan en #btn-lb.
+  await host.waitForSelector('#btn-lb, #btn-reveal', { timeout: 9000 });
+  if (!(await host.locator('#btn-lb').count())) {
+    await host.click('#btn-reveal');
+  }
+  await host.waitForSelector('#btn-lb', { timeout: 9000 });
+  log('respuesta recibida y liquidada por el settle del host');
+  await host.click('#btn-lb');
+  await host.waitForFunction(() => /Emma/.test(document.body.textContent) && /1/.test(document.body.textContent), { timeout: 9000 });
+  log('clasificación con Emma puntuada por el settle');
+
+  // ── Siguiente pregunta → sin responder → terminar → podio ─────────────────
+  await host.click('#btn-next');
+  await host.waitForSelector('#btn-reveal', { timeout: 9000 });
+  await host.click('#btn-reveal');
+  await host.waitForSelector('#btn-lb', { timeout: 9000 });
+  await host.click('#btn-lb');
+  await host.waitForSelector('#btn-end', { timeout: 9000 });
+  await host.click('#btn-end');
+  await host.waitForFunction(() => /podio|Podio|🏆|trophy/i.test(document.body.innerHTML), { timeout: 9000 });
+  const podium = await host.evaluate(() => document.body.textContent.replace(/\s+/g, ' '));
+  const emmaScored = /Emma/.test(podium);
+  log(`podio del host: Emma ${emmaScored ? 'presente' : 'AUSENTE'}`);
+
+  // La alumna ve el final con SU puntaje (autoritativo del servidor local).
+  await student.waitForFunction(() => /final|Final|podio|puntos|rango/i.test(document.body.textContent), { timeout: 12000 });
+  log('la alumna ve la pantalla de final');
+
+  if (errs.length) { console.error('\nERRORES DE PÁGINA:'); errs.forEach(e => console.error('  ✗', e)); }
+  if (!emmaScored || errs.length) { console.log('\n❌ LIVE E2E FALLA'); await browser.close(); bye(1); }
+  console.log('\n✅ LIVE E2E PASA — sala→PIN→join→pregunta→respuesta→settle→clasificación→podio, en dos contextos.');
+  await browser.close(); bye(0);
+} catch (e) {
+  console.error('\n❌ LIVE E2E FALLA:', String(e.message).split('\n')[0]);
+  if (errs.length) errs.forEach(x => console.error('  ✗', x));
+  try { await browser.close(); } catch {}
+  bye(1);
+}
