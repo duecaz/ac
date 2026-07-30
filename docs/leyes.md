@@ -83,6 +83,17 @@ escribirse; si necesita violar una prohibición, está en la capa equivocada.
   256k píxeles de diferencia en tv-show vertical). Ganar exigiría selectores más
   específicos que los propios skins o `!important` — peor que la repetición. La
   razón está escrita en `styles/vs.css`, no sobreentendida.
+- **DEUDA REGISTRADA (decisión del usuario, 2026-07-30) — CSS propio, Bootstrap
+  fuera**: hoy Bootstrap entra por CDN en los 4 HTML (7 tags) y ~250 sitios de
+  JS usan sus clases (`btn`, `badge`, `modal`, `form-control`, `spinner-border`) +
+  `bootstrap.Modal` en `core/toast.js`. Dos problemas: en un colegio sin internet
+  los diálogos de confirmación REVIENTAN (dependencia de red en tiempo de clase),
+  y el chrome mezcla dos sistemas de estilo. Plan acordado: construir un CSS
+  centralizado PROPIO — la grilla súper reducida de Bootstrap que realmente
+  usamos + las reglas dispersas nuestras — y al hacerlo escribir la LEY de estilo
+  del chrome (hoy §3 solo legisla el JUEGO). Mientras tanto, cualquier trabajo
+  offline debe recordar que `confirmModal` depende del CDN (el shim de
+  `tools/live-smoke.mjs` existe por esto).
 - **Deuda registrada**: `themes/colegios/skin.css` huérfano (en disco, sin
   `registerSkin` — decidir si se registra o se retira; fijado en
   `KNOWN_ORPHANS`; su copia del teclado es CÓDIGO MUERTO, no una 4ª copia viva) · deuda de ratchet en vs/teams/wordsearch (la mayor) +
