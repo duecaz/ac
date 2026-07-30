@@ -435,11 +435,17 @@ un handler, un observer, un modal) sigue vivo pintando encima del presente.
   `tools/live-smoke.mjs` cubre además la CARRERA de punta a punta (el cronómetro
   avanza de verdad → el progreso del alumno llega → podio), que era el hueco
   declarado del runner.
-- **Deuda registrada**: `views/vsView.js` sin `acquire()` (sus 3 `setTimeout`
-  de ritmo repintan sin guard — migrarla a ctx es un pase propio) ·
-  disposer de `observeResize` descartado en match/diagram (y crossword solo lo
-  suelta al terminar) — RO sobre nodo desconectado no dispara, es fuga de
-  referencia, no de repintado · `Date.now()` en expiración de tokens
+- **✅ CERRADO (R2)**: `views/vsView.js` registra sus 5 `setTimeout` de ritmo en
+  el lifecycle (`acquire('vsView')` + `release()` en su dispose — nuevo
+  `release(key)` para vistas embebidas que desmonta un PADRE sin hashchange);
+  match/diagram guardan y sueltan el disposer de `observeResize` al terminar; y
+  el wiring del evento `'online'` vive UNA vez en la factory de `offlineQueue`
+  (las tres colas lo copiaban). Vigilado en `tests/offlineQueue.test.mjs`.
+  Cicatriz útil: el primer intento redeclaró el parámetro `ctx` de `mountVs` →
+  SyntaxError al cargar y la app entera sin arrancar — lo cazó
+  `tools/matrix-smoke.mjs` (0/37), no las suites de Node. La matriz va después
+  de cualquier cambio en vistas, siempre.
+- **Deuda registrada**:  `Date.now()` en expiración de tokens
   (`auth`/`classroomAuth`: legítimo reloj de pared, pero con `clock.now()`
   serían testeables) · timestamps de `editList` con `new Date()` crudo.
 

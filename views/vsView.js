@@ -10,6 +10,7 @@
 // (the activity stage) and returns { dispose } so the page can stop the central
 // animation when switching modes. (El wrapper de ruta suelta se eliminó: las
 // rutas #/vs/:id montan vía renderPlayerView → runMode, no había otro caller.)
+import { acquire, release } from '../core/lifecycle.js';
 import { html, escapeHtml, mount, $ } from '../core/html.js';
 import { on } from '../core/events.js';
 import { save } from '../core/storage.js';
@@ -59,6 +60,12 @@ export function mountVs(host, a, ctx, opts = {}) {
 
   const fxCfg = () => ({ ...FX_DEFAULTS, ...(a.presentation?.vsFeedback || {}) });
   let currentAnim = null; // the running central animation (destroyed on dispose)
+  // Ley de vista §23: los setTimeout de RITMO (destello, celebración, confeti)
+  // se registran en el lifecycle — un cambio de modo o de ruta a mitad de
+  // destello ya no repinta (renderSide/finish) sobre la vista siguiente. Era la
+  // última vista de views/ fuera de la norma. (`life`, no `ctx`: el parámetro
+  // `ctx` de mountVs es el contexto que ya pasa el padre.)
+  const life = acquire('vsView');
 
   // List-orchestrator mode: skip setup screen and jump straight to the match.
   if (opts.leftName && opts.rightName) {
@@ -337,7 +344,7 @@ export function mountVs(host, a, ctx, opts = {}) {
           const body = document.getElementById('vs-body-' + side);
           if (fx.flash && body) body.classList.add('vs-flash-no');
           if (fx.sound) playSound('wrong');
-          setTimeout(() => {
+          life.setTimeout(() => {
             flashing[side] = false;
             if (body) body.classList.remove('vs-flash-no');
             renderSide(side); // re-renders same question (cursor unchanged)
@@ -362,7 +369,7 @@ export function mountVs(host, a, ctx, opts = {}) {
       // ties feedback to the animation rather than a detached jingle.
       if (r.correct && currentAnim) currentAnim.yank(side);
       if (r.correct && fx.confetti) answerConfetti();
-      setTimeout(() => {
+      life.setTimeout(() => {
         flashing[side] = false;
         if (body) body.classList.remove('vs-flash-ok', 'vs-flash-no');
         const st = session.standings();
@@ -377,7 +384,7 @@ export function mountVs(host, a, ctx, opts = {}) {
           // finisher (estado heredado) cae al criterio de puntos.
           const ws = st.finishedBy || (st.leader !== 'tie' ? st.leader : null);
           if (ws && currentAnim) currentAnim.setProgress(ws === 'left' ? 1 : -1);
-          setTimeout(() => finish(st), WIN_HOLD_MS);
+          life.setTimeout(() => finish(st), WIN_HOLD_MS);
         } else {
           renderSide(side);
         }
@@ -452,12 +459,15 @@ export function mountVs(host, a, ctx, opts = {}) {
       if (winner) {
         emitGame(GameEvents.PODIUM, { top: [{ name: winner.name, score: winner.score }] });
         // Two follow-up bursts (respecting the confetti cooldown) sustain the moment.
-        setTimeout(() => answerConfetti(), CONFETTI_ENCORE_MS[0]);
-        setTimeout(() => answerConfetti(), CONFETTI_ENCORE_MS[1]);
+        life.setTimeout(() => answerConfetti(), CONFETTI_ENCORE_MS[0]);
+        life.setTimeout(() => answerConfetti(), CONFETTI_ENCORE_MS[1]);
       }
       on(host, 'click', '#vs-again', () => renderSetup());
     }
   }
 
-  return { dispose() { if (currentAnim) { currentAnim.destroy(); currentAnim = null; } } };
+  return { dispose() {
+    release('vsView');   // drena los timeouts de ritmo (el padre nos desmonta sin hashchange)
+    if (currentAnim) { currentAnim.destroy(); currentAnim = null; }
+  } };
 }

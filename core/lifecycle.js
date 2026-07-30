@@ -21,6 +21,13 @@ function disposeAll(key) {
   _bag.delete(key);
 }
 
+/** Drena los disposers de una vista SIN volver a montarla. Para vistas
+ *  embebidas (VS/Equipos dentro del stage) cuyo ciclo lo maneja un padre
+ *  (playerView llama dispose() al cambiar de modo): el padre suelta aquí lo que
+ *  la vista registró con acquire(). En navegación normal no hace falta — el
+ *  hashchange ya drena todo. */
+export function release(key) { disposeAll(key); }
+
 export function acquire(key) {
   // Tear down anything from the previous mount of this view.
   disposeAll(key);

@@ -32,6 +32,7 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
 
   const ctx = runFreeformPlayer(rootSel, activity, opts);
 
+  let stopRo = null;   // disposer del observeResize del field (se suelta al terminar)
   const state = {
     links:    new Map(),  // leftId → rightId (emparejados por el alumno; cambiables)
     dragging: null,       // { fromSide, fromId, x1, y1, cx, cy }
@@ -201,6 +202,7 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
     });
     updateSvg();
     submitBtn.disabled = true;
+    stopRo?.();   // la pantalla de resultado desmonta el field: suelta el observer
     setTimeout(() => ctx.finish({
       title: correct === raw.length ? '¡Perfecto!' : 'Resultado',
       lead:  `${correct} de ${raw.length} correctas`,
@@ -245,7 +247,9 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   // rAF-debounced (observeResize): fitLayout MUTA el tamaño de las tarjetas; un RO
   // directo dispararía el aviso "ResizeObserver loop…" al salir de fullscreen. Se
   // observa el field (al reflujo/redimensión → recalcular tamaños y cuerdas).
-  observeResize(arena, fitLayout);
+  // El disposer se guarda y se suelta al terminar (§23): un RO sobre el DOM ya
+  // desmontado no dispara, pero retiene el nodo — fuga de referencia.
+  stopRo = observeResize(arena, fitLayout);
 
   updateProgress();
   updateSubmit();

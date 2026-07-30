@@ -86,8 +86,4 @@ export async function saveResult(r) {
   }
 }
 
-// Retry when the browser comes back online. Guarded so importing this module
-// in Node (tests) doesn't throw on the missing `window` global.
-if (typeof window !== 'undefined') {
-  window.addEventListener('online', () => { queue.flush().catch(() => {}); });
-}
+// El flush al volver la red lo cablea la factory (core/offlineQueue.js), una vez.

@@ -16,7 +16,7 @@
 //  save(arr)     -> persist the array (may cap/evict; quota-aware)
 //  send(item)    -> Promise; resolve = delivered, throw = keep for next flush
 //  idOf(item)    -> stable string identity for de-dupe and removal
-export function createOfflineQueue({ load, save, send, idOf }) {
+export function createOfflineQueue({ load, save, send, idOf, flushOnOnline = true }) {
   let flushing = null;
 
   function enqueue(item) {
@@ -45,6 +45,14 @@ export function createOfflineQueue({ load, save, send, idOf }) {
       return ok;
     })();
     return flushing.finally(() => { flushing = null; });
+  }
+
+  // El wiring del evento 'online' vive AQUÍ, una vez (§23): las tres colas
+  // (respuestas en vivo, resultados, intentos de tarea) lo copiaban cada una.
+  // Guardado para Node/tests (sin window). `flushOnOnline: false` lo desactiva
+  // para colas de test o de vida corta.
+  if (flushOnOnline && typeof window !== 'undefined') {
+    window.addEventListener('online', () => { flush().catch(() => {}); });
   }
 
   return { enqueue, flush, pending: () => load().length };

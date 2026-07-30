@@ -73,4 +73,27 @@ const deferred = () => { let resolve, reject; const p = new Promise((res, rej) =
   ok('flush: item encolado durante el flush no se pierde (re-lectura por id)');
 }
 
+// ── §23 (R2): el wiring 'online' vive en la factory, no copiado en cada cola ──
+{
+  const { readFileSync } = await import('node:fs');
+  const factory = readFileSync(new URL('../core/offlineQueue.js', import.meta.url), 'utf8');
+  if (!/addEventListener\('online'/.test(factory)) throw new Error("la factory debe cablear el flush en 'online'");
+  for (const f of ['core/submitQueue.js', 'core/results.js', 'core/attemptQueue.js']) {
+    const src = readFileSync(new URL('../' + f, import.meta.url), 'utf8');
+    if (/addEventListener\('online'/.test(src)) throw new Error(`${f} re-cablea 'online' — eso vive en la factory (una vez)`);
+  }
+  ok("el flush en 'online' está en la factory; las tres colas ya no lo copian");
+}
+
+// vsView (§23): sus setTimeout de ritmo van por ctx (no repintan sobre la vista siguiente).
+{
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../views/vsView.js', import.meta.url), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+  const bare = (src.match(/(?<!life\.)setTimeout\(/g) || []).length;
+  if (bare) throw new Error(`views/vsView.js tiene ${bare} setTimeout sin lifecycle — repintan tras cambiar de modo/ruta`);
+  if (!/release\('vsView'\)/.test(src)) throw new Error('vsView.dispose debe drenar su ctx (release)');
+  ok('vsView: timeouts de ritmo por lifecycle y drenados en dispose');
+}
+
 console.log(`\nofflineQueue.test: ${passed} checks passed`);

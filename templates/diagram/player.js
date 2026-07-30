@@ -31,6 +31,7 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
   const leftLabels = labels.slice(0, half), rightLabels = labels.slice(half);
 
   const ctx = runFreeformPlayer(rootSel, activity, opts);
+  let stopRo = null;   // disposer del observeResize del field (se suelta al terminar, §23)
 
   const state = { links: new Map(), dragging: null, graded: false };  // links: labelId → pinId
 
@@ -151,6 +152,7 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
     });
     updateSvg();
     submitBtn.disabled = true;
+    stopRo?.();   // la pantalla de resultado desmonta el field: suelta el observer
     setTimeout(() => ctx.finish({
       title: correct === pins.length ? '¡Perfecto!' : 'Resultado',
       lead:  `${correct} de ${pins.length} correctas`,
@@ -182,7 +184,7 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
   // Se observa el FIELD (no el stage): al cruzar el aspecto 1:1 los rieles saltan
   // de columnas a filas → las etiquetas se mueven aunque el stage no cambie de
   // tamaño; hay que recalcular la caja de imagen Y las cuerdas.
-  observeResize(arena, relayout);
+  stopRo = observeResize(arena, relayout);
   if (imgEl && !imgEl.complete) imgEl.addEventListener('load', relayout);
 
   updateProgress(); updateSubmit();

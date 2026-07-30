@@ -46,6 +46,4 @@ export async function submit(sessionId, playerId, itemIndex, value, msTaken) {
 export const flush = () => queue.flush();
 export const pendingCount = () => queue.pending();
 
-if (typeof window !== 'undefined') {
-  window.addEventListener('online', () => { queue.flush().catch(() => {}); });
-}
+// El flush al volver la red lo cablea la factory (core/offlineQueue.js), una vez.
