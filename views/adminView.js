@@ -817,6 +817,7 @@ function renderPanel(rootSel) {
       const allOk = results.every(r => r.ok);
       out.innerHTML = `
         <div class="alert ${allOk ? 'alert-success' : 'alert-warning'} py-2 px-3 small">
+          <div class="text-muted">Aplicado con la app v${VERSION} — si acabas de actualizar, recarga con Ctrl+F5 ANTES de aplicar (una página cacheada aplica DEFS viejos).</div>
           ${results.map(r => `<div>${r.ok ? '✓' : '✗'} <code>${r.name}</code> — ${escapeHtml(r.msg)}</div>`).join('')}
           ${allOk ? '<div class="mt-1 fw-semibold">Listo. Recarga la página para activar Live, actividades en nube y tareas.</div>' : ''}
         </div>`;
