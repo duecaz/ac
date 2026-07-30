@@ -170,16 +170,27 @@
   .vs-body  { padding: .45rem .5rem; justify-content: flex-start; min-width: 0; min-height: 0; overflow: hidden; }
   .vs-q     { font-size: clamp(.85rem, 4cqw, 1.3rem); margin-bottom: .3rem; }
 
-  /* Teclado numérico (Operaciones): la rejilla LLENA la altura disponible y
-     reparte sus 4 filas → pregunta + display + borrar/enviar SIEMPRE caben. */
-  .vs-body .ww-keypad-round   { height: 100%; justify-content: flex-start; gap: 2cqw; }
-  .vs-body .ww-keypad-q       { font-size: clamp(.7rem, 11cqw, 1.3rem); flex: 0 0 auto; }
-  .vs-body .ww-keypad-display { font-size: clamp(.7rem, 10cqw, 1.05rem); min-width: 0; flex: 0 0 auto; }
-  .vs-body .ww-keypad         { flex: 1 1 auto; min-height: 0; gap: 1.8cqw; grid-auto-rows: 1fr;
-                                grid-template-columns: repeat(var(--key-cols, 3), minmax(0, 1fr)); }
-  .vs-body .ww-key            { font-size: clamp(.6rem, 8cqw, 1rem); padding: 0; min-height: 0; min-width: 0;
-                                display: flex; align-items: center; justify-content: center; }
+  /* Teclado numérico (Operaciones): la ESTRUCTURA (que quepa) vive UNA vez en
+     styles/scaffold.css; aquí solo los TAMAÑOS de este panel, en cqw porque en VS
+     manda el ancho del panel. */
+  .vs-body .ww-keypad-round   { gap: 2cqw; }
+  .vs-body .ww-keypad-q       { font-size: clamp(.7rem, 11cqw, 1.3rem); }
+  .vs-body .ww-keypad-display { font-size: clamp(.7rem, 10cqw, 1.05rem); }
+  .vs-body .ww-keypad         { gap: 1.8cqw; }
+  /* OJO con la especificidad: `.vs-body .ww-key` (y no `.ww-keypad .ww-key`) para
+     que un skin con su propio tamaño de tecla —arcade— siga mandando, como antes. */
+  .vs-body .ww-key            { font-size: clamp(.6rem, 8cqw, 1rem); }
 }
+
+/* MARCADOR EN VERTICAL — POR QUÉ SIGUE EN CADA SKIN (§3, medido)
+   La deuda decía "el andamio portrait del scoreboard está copiado en los skins".
+   Se intentó traerlo aquí (barra a 46px + animaciones OFF, que además es cosa de
+   la ORIENTACIÓN y no del skin) y `node tools/shots.mjs` lo tumbó: cada skin
+   define su propia `.vs-skin-X .vss-bar` (especificidad 0,2,0), así que una regla
+   compartida `.vss-bar` (0,1,0) PIERDE — la barra volvía a su alto de escritorio y
+   el marcador de tv-show se descuadraba (256k píxeles de diferencia). Para ganar
+   habría que escribir selectores más específicos que los propios skins o tirar de
+   `!important`: peor que la repetición. Se queda en cada skin, ADREDE y dicho aquí.
 
 /* ══════════════════════════════════════════════════════════════════════════
    POLÍTICA DE MAQUETACIÓN DEL PANEL (declarada por meta.panelFit de la plantilla;

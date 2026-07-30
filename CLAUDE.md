@@ -83,6 +83,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | **Modelo de contenido** JSON por plantilla | `docs/ESTRUCTURA.md` · modelos en `kernel/content/models.js` |
 | Catálogo: qué hace cada actividad y en qué modos | `docs/panorama-actividades.md` |
 | **Probar** (suites Node + panel admin + headless Playwright) | `docs/testing.md` |
+| **Tocar CSS del juego sin romper nada** (capturas antes/después, diff por píxel) | `node tools/shots.mjs before` → cambios → `node tools/shots.mjs after` |
 | **Matriz JUGABLE** (cada plantilla × cada modo arranca sin crash) | `node tools/matrix-smoke.mjs` + `tests/moduleRefs.test.mjs` (imports olvidados) |
 | **EN VIVO e2e** (host+alumno en dos páginas: sala→PIN→respuesta→settle→podio) | `node tools/live-smoke.mjs` |
 | **Prueba de CARGA** (N alumnos concurrentes live+tareas contra PB real) | `core/stressTest.js` · botón `#/admin` "Simular carga" · `node tools/stress-live.mjs [N]` |
@@ -352,9 +353,13 @@ temporales retirados.
   especificidad `.cw-cell.X`, verificado headless) · `myScore` de studentLive documentado como
   estimación de respaldo (autoritativo = leaderboard) y su `catch {}` ahora avisa.
 - **DEUDA restante (pase propio)**:
-  - **CSS**: bloque "keypad-fit" duplicado 4× (vs.css, teams.css, tv-show, colegios — ya derivan;
-    extraer `.ww-keypad-fit` con verificación visual VS/Equipos × 3 skins × 2 orientaciones);
-    scaffolding portrait del scoreboard copiado en los 3 skins.
+  - **CSS**: ✅ RESUELTO (v1.51.320) — el reparto del teclado vive UNA vez en
+    `styles/scaffold.css` (vs.css/teams.css/tv-show solo ponen tamaños), verificado con
+    **`node tools/shots.mjs`** (capturas VS/Equipos × 3 skins × 2 orientaciones, diff por
+    píxel: 12/12 sin cambios). El andamio portrait del scoreboard se queda EN CADA SKIN
+    a propósito: cada skin define su `.vs-skin-X .vss-bar`, así que una regla compartida
+    pierde por especificidad — se intentó y el marcador de tv-show se descuadró (razón
+    escrita en vs.css).
   - **Vistas**: timer de carrera + poll-fallback duplicados dentro de hostLive (paintRace ↔
     paintLiveBoardHost); los pacing internos de hostLive siguen como literales.
   - **Core**: deadlines de hostLive/studentLive aún con `Date.now()`; load-guard + wiring 'online'

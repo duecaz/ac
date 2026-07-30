@@ -59,3 +59,55 @@
   .ww-field { flex-direction: column; align-items: stretch; }
   .ww-rail  { flex-direction: row; flex-wrap: wrap; justify-content: center; }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ANDAMIO DEL TECLADO EN PANTALLA COMPARTIDA (§3 · una sola copia)
+   ══════════════════════════════════════════════════════════════════════════
+   El reparto de "que el teclado de Operaciones quepa en su hueco" estaba copiado
+   TRES veces —`styles/vs.css`, `styles/teams.css` y el skin tv-show— con los
+   mismos flex/grid y solo distintos tamaños. Ahora vive aquí; cada contenedor se
+   queda con sus TAMAÑOS (el panel VS mide en `cqw`, la tarjeta de Equipos en
+   `cqmin`) y el skin ya no repite estructura, solo su relleno y su tipografía.
+
+   Reparto: pregunta y display a su tamaño natural (flex 0 0 auto), la rejilla se
+   come el resto (flex 1 1 auto) y sus filas se reparten (grid-auto-rows: 1fr) →
+   pregunta + display + borrar/enviar SIEMPRE caben, en cualquier altura.
+
+   POR QUÉ DOS BLOQUES y no uno: la CONDICIÓN es distinta y eso no se puede
+   compartir en CSS. La tarjeta de Equipos siempre reparte. El panel de VS solo
+   cuando es bajo o vertical: en escritorio alto, el skin tv-show pinta una
+   tarjeta-esquina compacta (teclas a su altura natural) y estirar ahí le dejaba
+   un hueco muerto debajo — verificado con `node tools/shots.mjs`, que fue justo
+   la captura que cambió al intentar unificarlo en un solo bloque.
+   Especificidad deliberada (sin `:where()`): conserva el peso que tenían las
+   copias, y `.ww-keypad .ww-key` lleva su ancestro para superar a la regla base
+   de `math.css`. Este archivo se carga ANTES de vs.css/teams.css, así que sus
+   ajustes (p.ej. el tope de filas del modo bloque) siguen mandando. */
+.teams-card .ww-keypad-round { height: 100%; justify-content: flex-start; }
+.teams-card .ww-keypad-q,
+.teams-card .ww-keypad-display { flex: 0 0 auto; }
+.teams-card .ww-keypad-display { min-width: 0; }
+.teams-card .ww-keypad {
+  flex: 1 1 auto; min-height: 0; grid-auto-rows: 1fr;
+  grid-template-columns: repeat(var(--key-cols, 3), minmax(0, 1fr));
+}
+.teams-card .ww-keypad .ww-key {
+  padding: 0; min-height: 0; min-width: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* MISMA condición que el resto del ajuste de panel en vs.css y en el skin. */
+@container vs (max-aspect-ratio: 5/4) or (max-height: 700px) {
+  .vs-body .ww-keypad-round { height: 100%; justify-content: flex-start; }
+  .vs-body .ww-keypad-q,
+  .vs-body .ww-keypad-display { flex: 0 0 auto; }
+  .vs-body .ww-keypad-display { min-width: 0; }
+  .vs-body .ww-keypad {
+    flex: 1 1 auto; min-height: 0; grid-auto-rows: 1fr;
+    grid-template-columns: repeat(var(--key-cols, 3), minmax(0, 1fr));
+  }
+  .vs-body .ww-keypad .ww-key {
+    padding: 0; min-height: 0; min-width: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+}

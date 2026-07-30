@@ -64,9 +64,28 @@ escribirse; si necesita violar una prohibición, está en la capa equivocada.
   23/23 + **gate de themes**: todo `stylesheet:` declarado existe y ningún
   `themes/*/skin.css` queda huérfano sin documentar) · `tests/skins.test.mjs`
   (set COMPLETO de tokens por skin).
+- **✅ CERRADO (M7) — el reparto del TECLADO ya no está copiado**: lo tenían
+  `styles/vs.css`, `styles/teams.css` y el skin tv-show con los mismos flex/grid.
+  Ahora vive una vez en `styles/scaffold.css` y cada contenedor solo pone TAMAÑOS
+  (el panel VS mide en `cqw`, la tarjeta de Equipos en `cqmin`). Dos bloques, no
+  uno, porque la CONDICIÓN difiere y eso no se comparte en CSS (Equipos siempre
+  reparte; VS solo cuando el panel es bajo o vertical — estirar en escritorio alto
+  dejaba hueco muerto bajo la tarjeta-esquina de tv-show).
+- **NUEVA HERRAMIENTA — `node tools/shots.mjs`**: capturas VS/Equipos × 3 skins ×
+  2 orientaciones con diff POR PÍXEL (`before` → cambios → `after`). Es lo que
+  permitió cerrar esta deuda: el refactor quedó en **12/12 sin cambios visuales**,
+  y de paso pilló tres regresiones invisibles a ojo mientras se hacía (teclas de
+  arcade encogidas por especificidad, filas de tv-show sin estirar, marcador
+  descuadrado). Sin esto, "unificar CSS" era apostar.
+- **El andamio portrait del SCOREBOARD se queda en cada skin, a propósito**: cada
+  skin define su `.vs-skin-X .vss-bar` (0,2,0), así que una regla compartida
+  `.vss-bar` (0,1,0) pierde y la barra vuelve a su alto de escritorio (medido:
+  256k píxeles de diferencia en tv-show vertical). Ganar exigiría selectores más
+  específicos que los propios skins o `!important` — peor que la repetición. La
+  razón está escrita en `styles/vs.css`, no sobreentendida.
 - **Deuda registrada**: `themes/colegios/skin.css` huérfano (en disco, sin
   `registerSkin` — decidir si se registra o se retira; fijado en
-  `KNOWN_ORPHANS`) · deuda de ratchet en vs/teams/wordsearch (la mayor) +
+  `KNOWN_ORPHANS`; su copia del teclado es CÓDIGO MUERTO, no una 4ª copia viva) · deuda de ratchet en vs/teams/wordsearch (la mayor) +
   match/memory/ballsort/crossword/textCorrection/question-live ·
   `themes/*/skin.css` aún fuera del escáner de px (27 font-size fijos entre
   arcade/tv-show/colegios) · el escape por selector `.mem-`/`-ed\b` exime más de

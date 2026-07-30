@@ -380,18 +380,17 @@ body.skin-tv-show .card,
     container-type: inline-size; overflow: hidden;
     border-radius: 1rem; padding: 3cqw 3.2cqw; animation: none;
   }
-  .vs-skin-tv-show .vs-body .ww-keypad-round { height: 100%; justify-content: flex-start; gap: 1.8cqw; padding: 0; }
-  .vs-skin-tv-show .vs-body .ww-keypad-q       { font-size: clamp(.7rem, 11cqw, 1.4rem); margin: 0; padding: 1.4cqw 3cqw; flex: 0 0 auto; }
-  .vs-skin-tv-show .vs-body .ww-keypad-display { font-size: clamp(.65rem, 10cqw, 1.2rem); padding: .5cqw 3cqw; min-width: 0; flex: 0 0 auto; }
-  .vs-skin-tv-show .vs-body .ww-keypad {
-    flex: 1 1 auto; min-height: 0; gap: 1.8cqw;
-    grid-auto-rows: 1fr; align-content: stretch;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .vs-skin-tv-show .vs-body .ww-key {
-    font-size: clamp(.55rem, 8cqw, 1.1rem); padding: 0; min-height: 0; min-width: 0;
-    display: flex; align-items: center; justify-content: center;
-  }
+  /* Teclado: la ESTRUCTURA es del andamio compartido (styles/scaffold.css); el
+     skin solo cambia TAMAÑOS y su propio relleno/estirado. */
+  .vs-skin-tv-show .vs-body .ww-keypad-round   { gap: 1.8cqw; padding: 0; }
+  .vs-skin-tv-show .vs-body .ww-keypad-q       { font-size: clamp(.7rem, 11cqw, 1.4rem); margin: 0; padding: 1.4cqw 3cqw; }
+  .vs-skin-tv-show .vs-body .ww-keypad-display { font-size: clamp(.65rem, 10cqw, 1.2rem); padding: .5cqw 3cqw; }
+  /* `grid-auto-rows: 1fr` NO es duplicación: es el override de este skin sobre el
+     tope de filas que vs.css pone por defecto (`minmax(0, 34cqw)`, teclas casi
+     cuadradas). Sin él, la tarjeta-esquina se queda con un hueco muerto debajo
+     del teclado (lo pilló `node tools/shots.mjs`). */
+  .vs-skin-tv-show .vs-body .ww-keypad         { gap: 1.8cqw; grid-auto-rows: 1fr; align-content: stretch; }
+  .vs-skin-tv-show .vs-body .ww-key            { font-size: clamp(.55rem, 8cqw, 1.1rem); }
 }
 
 /* Accesibilidad: respeta "reducir movimiento" */

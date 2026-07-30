@@ -27,15 +27,14 @@
 .teams-card, .teams-card * { box-sizing: border-box; }
 .teams-q { font-size: clamp(1.1rem, 6cqmin, 2.2rem); font-weight: 700; text-align: center; margin-bottom: .8rem; flex: 0 0 auto; }
 
-/* Teclado (Operaciones) en Teams: llena la tarjeta y reparte sus filas → cabe en
-   cualquier altura (también móvil apaisado). Tamaños por cqmin (no viewport). */
-.teams-card .ww-keypad-round   { height: 100%; justify-content: flex-start; gap: 2cqmin; }
-.teams-card .ww-keypad-q       { font-size: clamp(.9rem, 7cqmin, 2rem); flex: 0 0 auto; }
-.teams-card .ww-keypad-display { font-size: clamp(.85rem, 6cqmin, 1.8rem); min-width: 0; flex: 0 0 auto; }
-.teams-card .ww-keypad         { flex: 1 1 auto; min-height: 0; gap: 2cqmin; grid-auto-rows: 1fr;
-                                 grid-template-columns: repeat(var(--key-cols, 3), minmax(0, 1fr)); }
-.teams-card .ww-key            { font-size: clamp(.7rem, 5cqmin, 1.5rem); padding: 0; min-height: 0; min-width: 0;
-                                 display: flex; align-items: center; justify-content: center; }
+/* Teclado (Operaciones) en Teams: la ESTRUCTURA (llenar la tarjeta y repartir las
+   filas para caber en cualquier altura) vive UNA vez en styles/scaffold.css; aquí
+   solo los TAMAÑOS, en cqmin, que es la medida de la tarjeta. */
+.teams-card .ww-keypad-round   { gap: 2cqmin; }
+.teams-card .ww-keypad-q       { font-size: clamp(.9rem, 7cqmin, 2rem); }
+.teams-card .ww-keypad-display { font-size: clamp(.85rem, 6cqmin, 1.8rem); }
+.teams-card .ww-keypad         { gap: 2cqmin; }
+.teams-card .ww-key            { font-size: clamp(.7rem, 5cqmin, 1.5rem); }
 /* Opciones (Quiz) y texto (Tildes/Comas) por cqmin */
 .teams-card .ww-kahoot-grid .btn,
 .teams-card .ww-opt        { font-size: clamp(.8rem, 4cqmin, 1.3rem); }
