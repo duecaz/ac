@@ -422,22 +422,30 @@ export async function renderPlay(rootSel, code) {
     }
     const ok = own?.correct === true;
     const skipped = !own;
+    // NO PUNTUABLE (deuda C): el ítem no tiene clave y los puntos los pone el
+    // profe. Antes se pintaba "Incorrecto" a toda la clase por no haber respuesta
+    // que comparar — decirle a un niño que falló cuando no había nada que acertar.
+    const unscored = !!own && own.correct == null;
     // Bump streak ONCE per item. No per-question sounds or confetti in live
     // mode — celebration happens only at the end. Subsequent paints for the
     // same idx (caused by unrelated session UPDATEs) skip the side effects.
     if (own && !revealedItems.has(idx)) {
       revealedItems.add(idx);
       myScore += own.points || 0;
-      Streaks.bump(session.id, player.playerId, ok);
+      // Un ítem no puntuable no rompe la racha (ni la sube): no hubo acierto ni
+      // fallo que juzgar.
+      if (!unscored) Streaks.bump(session.id, player.playerId, ok);
     }
     const streak = Streaks.get(session.id, player.playerId);
     mount(rootSel, html`
       <div class="text-center py-5">
         ${skipped
           ? `<i class="bi bi-dash-circle display-1 text-secondary"></i><h2 class="mt-3">Sin respuesta</h2>`
-          : ok
-            ? `<i class="bi bi-check-circle-fill display-1 text-success"></i><h2 class="mt-3">¡Correcto!</h2>`
-            : `<i class="bi bi-x-circle-fill display-1 text-danger"></i><h2 class="mt-3">Incorrecto</h2>`}
+          : unscored
+            ? `<i class="bi bi-hand-thumbs-up display-1 text-info"></i><h2 class="mt-3">¡Respuesta enviada!</h2><p class="text-muted">La valora tu profe.</p>`
+            : ok
+              ? `<i class="bi bi-check-circle-fill display-1 text-success"></i><h2 class="mt-3">¡Correcto!</h2>`
+              : `<i class="bi bi-x-circle-fill display-1 text-danger"></i><h2 class="mt-3">Incorrecto</h2>`}
         <p class="lead">+${own?.points || 0} puntos</p>
         ${ok && streak >= 2 ? `<p class="h4">🔥 Racha de ${streak}</p>` : ''}
       </div>

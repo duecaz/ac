@@ -314,10 +314,16 @@ temporales retirados.
   doble conteo. Espejado en el driver `local`. Test: `tests/liveLocal.test.mjs` (incl. cerrar dos
   veces = idempotente).
 
-#### C. `autoScore` colapsa `correct: null` → `false` (medio)
-- **Qué**: `engine.js autoScore` hace `correct: !!r.correct`; un ítem sin clave de respuesta
-  (`scoreSubmission` devuelve `null`) marca a TODA la clase como incorrecta en vez de tratarse como
-  no puntuable. Riesgo de cambiarlo: el `null` fluye a UI (✓/✗); requiere verificación visual.
+#### C. ✅ RESUELTO (v1.51.318) — `autoScore` colapsaba `correct: null` → `false`
+- **Qué era**: `engine.js autoScore` hacía `correct: !!r.correct`; un ítem sin clave de respuesta
+  (Pregunta en Vivo / Ruleta: `scoreSubmission` devuelve `null` porque los puntos los da el docente)
+  marcaba a TODA la clase como incorrecta — en la tabla, en la analítica y en la cara del alumno.
+- **Fix**: el motor PRESERVA el null. PocketBase no guarda booleanos nulos, así que el settle marca
+  el campo propio `unscorable` y `answerRows` restaura el null; `cellScore` deja la celda en "—" y
+  con `total: 0` (no entra en el denominador: antes contaba como fallo); `studentLive` pinta
+  "¡Respuesta enviada! · la valora tu profe" en vez de "Incorrecto", y un ítem no puntuable no
+  rompe ni sube la racha. Test: `tests/unscorable.test.mjs` (cadena entera + contra-prueba de que
+  un ítem normal puntúa igual). **PASO DEL USUARIO**: re-correr "Crear colecciones" (campo nuevo).
 
 #### D. Menores: ~~filtros PB sin escapar comilla simple~~ ✅ RESUELTO (`core/pbFilter.js`, todos los
   llamadores lo usan — `views/explore.js` era el último rezagado con `encodeURIComponent` a pelo,

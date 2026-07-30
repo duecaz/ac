@@ -83,9 +83,15 @@ export function createSession(activity, opts = {}) {
 }
 
 // Shared scorer call — identical contract across formats so the brain is one.
+//
+// `correct: null` NO es "incorrecto": es NO PUNTUABLE — el ítem no tiene clave de
+// respuesta y los puntos los da el docente a mano (Pregunta en Vivo, Ruleta).
+// Antes esto hacía `!!r.correct`, así que un ítem sin clave marcaba a TODA la
+// clase como incorrecta en la tabla y en la analítica. Se preserva el null y cada
+// consumidor decide cómo pintarlo (la tabla ya tenía su estado "—").
 function autoScore(T, { value, item, msTaken, activity, mode }) {
   const r = T.scoreSubmission({ value, item, msTaken, activity, mode });
-  return { correct: !!r.correct, points: r.points || 0 };
+  return { correct: r.correct == null ? null : !!r.correct, points: r.points || 0 };
 }
 
 // ───────────────────────────── LIVE ─────────────────────────────

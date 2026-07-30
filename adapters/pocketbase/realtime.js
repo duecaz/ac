@@ -278,7 +278,10 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
     });
     engine.state.answers[`${itemIndex}:${r.player}`] = {
       playerId: r.player, value: r.value, msTaken: ms, msClaimed: r.ms ?? 0, msSource: source,
-      correct: r.scored ? r.correct : null, points: r.scored ? (r.points ?? 0) : 0,
+      // `unscorable` = liquidada pero SIN clave de respuesta (deuda C): se hidrata
+      // como null (no puntuable), no como false (incorrecta).
+      correct: r.scored ? (r.unscorable ? null : r.correct) : null,
+      points: r.scored ? (r.points ?? 0) : 0,
     };
   }
 
@@ -331,12 +334,12 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       for (const r of rows) {
         if (r.scored) continue;                       // ya estaba puntuada: no la tocamos
         const s = engine.state.answers[`${itemIndex}:${r.player}`];
-        if (s) toPatch.push({ id: r.id, correct: s.correct === true, points: s.points });
+        if (s) toPatch.push({ id: r.id, correct: s.correct === true, unscorable: s.correct == null, points: s.points });
       }
     }
     engine.state.answers = {};   // el blob queda limpio; las respuestas viven en live_answers
     await Promise.all(toPatch.map(p => pbFetch(`/api/collections/${ANS}/records/${p.id}`, {
-      method: 'PATCH', body: JSON.stringify({ scored: true, correct: p.correct, points: p.points }),
+      method: 'PATCH', body: JSON.stringify({ scored: true, correct: p.correct, unscorable: p.unscorable, points: p.points }),
     }).catch(() => {})));
     return toPatch.length;
   }
@@ -619,7 +622,8 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
           const scored = engine.state.answers[`${itemIndex}:${r.player}`];
           if (!scored) return null;
           return pbFetch(`/api/collections/${ANS}/records/${r.id}`, {
-            method: 'PATCH', body: JSON.stringify({ scored: true, correct: scored.correct === true, points: scored.points }),
+            method: 'PATCH', body: JSON.stringify({ scored: true, correct: scored.correct === true,
+              unscorable: scored.correct == null, points: scored.points }),
           }).catch(() => {});
         }));
         // Keep scores (players[]) but drop the hydrated answers so the blob stays

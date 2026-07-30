@@ -22,6 +22,10 @@ function cellScore(template, item, row, activity) {
       return { hits: r.hits || 0, over: r.over || 0, total: r.total, binary: false };
     }
   } catch { /* scorer exigente con la forma del value → binario */ }
+  // NO PUNTUABLE (`correct == null`): el ítem no tiene clave y los puntos los da
+  // el docente. No suma acierto NI cuenta en el denominador — antes caía en el
+  // `else` y contaba como fallo, así que un ítem sin clave hundía a toda la clase.
+  if (row.correct == null) return { hits: 0, over: 0, total: 0, binary: true };
   return { hits: row.correct === true ? 1 : 0, over: 0, total: 1, binary: true };
 }
 

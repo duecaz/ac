@@ -121,7 +121,7 @@ $defs = @(
      } },
 
   @{ name = "live_answers";
-     fields = @( @{ name="session"; type="text"; required=$true }, @{ name="player"; type="text"; required=$true }, @{ name="item"; type="number" }, @{ name="value"; type="json"; maxSize=200000 }, @{ name="ms"; type="number" }, @{ name="scored"; type="bool" }, @{ name="correct"; type="bool" }, @{ name="points"; type="number" }, @{ name="v0"; type="json"; maxSize=200000 }, @{ name="c0"; type="bool" } );
+     fields = @( @{ name="session"; type="text"; required=$true }, @{ name="player"; type="text"; required=$true }, @{ name="item"; type="number" }, @{ name="value"; type="json"; maxSize=200000 }, @{ name="ms"; type="number" }, @{ name="scored"; type="bool" }, @{ name="correct"; type="bool" }, @{ name="points"; type="number" }, @{ name="unscorable"; type="bool" }, @{ name="v0"; type="json"; maxSize=200000 }, @{ name="c0"; type="bool" } );
      indexes = @( "CREATE INDEX ``idx_la_session`` ON ``live_answers`` (``session``)", "CREATE UNIQUE INDEX ``idx_la_session_player_item`` ON ``live_answers`` (``session``, ``player``, ``item``)" );
      # El VEREDICTO (scored/points) lo pone el settle del host: un alumno no
      # puede ni mencionar esos campos en un PATCH (sin esto, C6 se saltaba).

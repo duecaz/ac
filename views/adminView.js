@@ -619,6 +619,7 @@ function renderPanel(rootSel) {
           { name: 'scored',  type: 'bool' },
           { name: 'correct', type: 'bool' },
           { name: 'points',  type: 'number' },
+          { name: 'unscorable', type: 'bool' },   // deuda C: liquidada pero sin clave (no puntuable)
           { name: 'v0',      type: 'json' },   // primer intento en carrera (analítica)
           { name: 'c0',      type: 'bool' },   // ¿el primer intento fue correcto?
         ], indexes: ['CREATE UNIQUE INDEX `idx_la_session_player_item` ON `live_answers` (`session`, `player`, `item`)'] },
