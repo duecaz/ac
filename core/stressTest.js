@@ -6,12 +6,13 @@
 //
 // Crea datos DESECHABLES (sesión/tarea de prueba con prefijo `stress_`) y los
 // BORRA al terminar, pase o falle. No toca actividades ni salas reales.
+import { rid } from './ids.js';
 import { pbEscape, pbFilterParam } from './pbFilter.js';
 import { signedFetch } from './pbHttp.js';
 
 const filt = (parts) => pbFilterParam(parts.join(' && '));
 const sessFilter = (id) => `filter=${filt([`session='${pbEscape(id)}'`])}`;
-const rnd = () => Math.random().toString(36).slice(2, 8);
+const rnd = () => rid();
 
 // Actividad mínima (quiz de 2 ítems) para la sala/tarea de prueba.
 function miniActivity(code) {

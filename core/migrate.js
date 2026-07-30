@@ -39,7 +39,9 @@ export function migrate(a) {
   // Per-template content migration if the template knows how.
   const T = getTemplate(a.template);
   if (T?.migrateContent) {
-    a.content = T.migrateContent(a.content, a.templateVersion || 1);
+    // `?? a.content`: una migración que devuelva undefined NO puede borrar el
+    // contenido del usuario (ley de contenido §24 — fail-safe).
+    a.content = T.migrateContent(a.content, a.templateVersion || 1) ?? a.content;
     a.templateVersion = T.meta?.templateVersion || a.templateVersion || 1;
   }
   return normalize(a);

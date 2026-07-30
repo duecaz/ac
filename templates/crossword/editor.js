@@ -2,8 +2,9 @@ import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 import { autoLayout, buildGrid } from './generator.js';
+import { rid } from '../../core/ids.js';
 
-const uid = () => 'cw_' + Math.random().toString(36).slice(2, 8);
+const uid = () => rid('cw_');
 
 export function renderCrosswordEditor(root, activity, onChange) {
   renderEditorShell(root, activity, onChange, {

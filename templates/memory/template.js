@@ -1,6 +1,7 @@
 // Memory: face-down grid; flip 2 cards; if same pair.id, stay; else flip back.
 // Reuses the 'pairs' content model. The two cards of a pair show left and right.
 import { BaseTemplate } from '../base.js';
+import { rid } from '../../core/ids.js';
 import { renderMemoryPlayer } from './player.js';
 import { renderMemoryEditor } from './editor.js';
 import { scoreMemorySubmission } from './scorer.js';
@@ -27,7 +28,7 @@ export class MemoryTemplate extends BaseTemplate {
     defaultScoring: () => ({ pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
     defaultLive: () => ({}),
     defaultContent: () => {
-      const id = () => 'p_' + Math.random().toString(36).slice(2, 8);
+      const id = () => rid('p_');
       return { pairs: [
         { id: id(), left: 'grande',   right: 'pequeño' },
         { id: id(), left: 'rápido',   right: 'lento'   },

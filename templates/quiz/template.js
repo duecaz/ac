@@ -1,5 +1,6 @@
 // Quiz template: classic multiple-choice. Uses contentModels/qa.
 import { BaseTemplate } from '../base.js';
+import { rid } from '../../core/ids.js';
 import { renderQuizPlayer } from './player.js';
 import { renderQuizEditor } from './editor.js';
 import { scoreQuizSubmission } from './scorer.js';
@@ -31,7 +32,7 @@ export class QuizTemplate extends BaseTemplate {
                           showAnswerAfterEach: true, showLeaderboardBetween: true, pointsModel: 'kahoot',
                           speedBonusMax: 1000, allowLateJoin: true, maxPlayers: 60, nicknameFilter: true }),
     defaultContent: () => {
-      const id = () => 'q_' + Math.random().toString(36).slice(2, 8);
+      const id = () => rid('q_');
       return { items: [
         { id: id(), question: '¿Cuál es la capital de España?', answer: 'Madrid',
           options: ['Madrid', 'Barcelona', 'Lisboa', 'París'], points: 1, image: null, audio: null },

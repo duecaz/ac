@@ -1,7 +1,8 @@
 // Crossword grid builder + auto-layout algorithm.
+import { rid } from '../../core/ids.js';
 // words = [{id, word, clue, row, col, dir}]  dir: 'H' | 'V'
 
-const uid = () => 'cw_' + Math.random().toString(36).slice(2, 8);
+const uid = () => rid('cw_');
 
 /**
  * Build a 2-D cell grid from a list of placed words.

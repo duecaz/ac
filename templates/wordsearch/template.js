@@ -31,6 +31,16 @@ export class WordsearchTemplate extends BaseTemplate {
   static renderEditor = renderWordsearchEditor;
   static scoreSubmission = scoreWordsearch;
 
+  // Cambio de formato (ley de contenido §24): Crucigrama comparte el modelo
+  // `words` pero con FORMA distinta (palabras colocadas {word,clue,row,col,dir}
+  // vs strings). Al adoptar, quedarse solo con la palabra — antes el switch
+  // "directo" pasaba los objetos tal cual y la sopa quedaba inservible.
+  static adoptContent(content) {
+    const ws = content?.words || [];
+    if (!ws.length || typeof ws[0] === 'string') return content;
+    return { ...content, words: ws.map(w => String(w?.word || '')).filter(Boolean) };
+  }
+
   // Preview de tarjeta: una rejilla 10×10 con las palabras ya marateadas de color
   // + la lista tachada. Rejilla pequeña para que la miniatura sea rápida.
   static previewHtml(act) {

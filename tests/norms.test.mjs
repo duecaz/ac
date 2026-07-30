@@ -79,6 +79,9 @@ assert.strictEqual(scanNormsSource('views/studentLive.js', `await setSessionStat
 assert.strictEqual(scanNormsSource('views/x.js', `const t = setInterval(paint, 500);`).length, 1, 'caza setInterval crudo');
 assert.strictEqual(scanNormsSource('views/x.js', `ctx.setInterval(paint, 500);`).length, 0, 'ctx.setInterval es la vía');
 assert.strictEqual(scanNormsSource('core/soloTimer.js', `setInterval(tick, 1000)`).length, 0, 'el primitivo puede');
-ok('el escáner caza cada norma (pb-dueno · confianza-alumno · reloj-primitivo) y respeta comentarios + allowlist');
+// id-rid (ley §24): base36 a mano → violación; rid() y la implementación, no.
+assert.strictEqual(scanNormsSource('templates/x/editor.js', `const id = 'q_' + Math.random().toString(36).slice(2, 8);`).length, 1, 'caza el id a mano');
+assert.strictEqual(scanNormsSource('core/ids.js', `return prefix + Math.random().toString(36).slice(2, 8);`).length, 0, 'ids.js es la implementación');
+ok('el escáner caza cada norma (pb-dueno · confianza-alumno · reloj-primitivo · id-rid) y respeta comentarios + allowlist');
 
 console.log(`\nnorms.test: ${passed} checks passed`);

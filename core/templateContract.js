@@ -116,6 +116,13 @@ export function checkTemplateContract(T) {
     }
   }
 
+  // ── Ley de contenido (§24): versión >1 EXIGE saber migrar ─────────────────
+  // Si la plantilla subió su templateVersion es que la forma del contenido
+  // cambió — el contenido viejo guardado en PB/localStorage necesita el camino.
+  if ((m.templateVersion || 1) > 1 && typeof T.migrateContent !== 'function') {
+    issues.push(`templateVersion=${m.templateVersion} sin migrateContent: el contenido legado no tiene camino de subida`);
+  }
+
   // ── migrateContent idempotente sobre el contenido default ────────────────
   if (typeof T.migrateContent === 'function' && dc) {
     try {

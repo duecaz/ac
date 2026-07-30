@@ -2,7 +2,7 @@ import { BaseTemplate } from '../base.js';
 import { renderCrosswordPlayer } from './player.js';
 import { renderCrosswordEditor } from './editor.js';
 import { scoreCrosswordSubmission } from './scorer.js';
-import { buildGrid } from './generator.js';
+import { buildGrid, autoLayout } from './generator.js';
 import { escapeHtml } from '../../core/html.js';
 import { emptyHtml } from '../../core/previewKit.js';
 
@@ -35,6 +35,16 @@ export class CrosswordTemplate extends BaseTemplate {
   static renderPlayer = renderCrosswordPlayer;
   static renderEditor = renderCrosswordEditor;
   static scoreSubmission = scoreCrosswordSubmission;
+
+  // Cambio de formato (ley de contenido §24): desde Sopa llegan strings sin
+  // posición — el auto-layout del generador las CRUZA de verdad (antes el
+  // switch "directo" dejaba strings y el crucigrama quedaba inservible).
+  // Las pistas nacen vacías: el editor es la siguiente parada del gesto.
+  static adoptContent(content) {
+    const ws = content?.words || [];
+    if (!ws.length || typeof ws[0] === 'object') return content;
+    return { ...content, words: autoLayout(ws.map(w => ({ word: String(w), clue: '' }))) };
+  }
 
   // ANSWER-SAFETY (R5): el payload de ronda lleva la FORMA del crucigrama
   // (posición, dirección, longitud, pista) pero NUNCA las letras — `word` ES la

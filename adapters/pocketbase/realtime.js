@@ -8,6 +8,7 @@
 //   activity json
 //   state    json
 // API rules: allow all (or at minimum Create/Read/Update without auth).
+import { rid } from '../../core/ids.js';
 import { createLiveRoom } from '../../kernel/live/engine.js';
 import { isAcceptableNickname } from '../../core/nicknameFilter.js';
 import { signedFetch } from '../../core/pbHttp.js';
@@ -20,7 +21,7 @@ const COLL = 'live_sessions';
 const ANS = 'live_answers';   // one record per student answer (lost-update fix)
 const PLR = 'live_players';   // one record per player (lost-update fix del join)
 
-function genUserId() { return 'u_' + Math.random().toString(36).slice(2, 10); }
+function genUserId() { return rid('u_'); }
 
 async function pbFetchOnce(path, opts = {}) {
   const { body: reqBody, method, headers: extra, timeoutMs = 12000 } = opts;

@@ -1,5 +1,6 @@
 // Toast helper. Replaces window.alert/confirm with non-blocking UI.
 // Auto-creates a fixed container at top-right.
+import { rid } from './ids.js';
 
 let _container = null;
 
@@ -35,7 +36,7 @@ export function toast(message, kind = 'success', timeoutMs = 3000) {
 // Promise-based confirm. Resolves true on accept, false on cancel.
 export function confirmModal(message, { title = 'Confirmar', okText = 'Aceptar', cancelText = 'Cancelar', danger = false } = {}) {
   return new Promise(resolve => {
-    const id = 'ww-cm-' + Math.random().toString(36).slice(2, 8);
+    const id = rid('ww-cm-');
     const wrap = document.createElement('div');
     wrap.innerHTML = `
       <div class="modal fade" id="${id}" tabindex="-1">

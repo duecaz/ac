@@ -8,6 +8,7 @@
 // the pure kernel/live/engine, persists, and notifies. Scoring still happens in
 // settle() (engine, anti-cheat parity) — fine for local dev. The Supabase driver
 // keeps true server-side scoring.
+import { rid } from '../../core/ids.js';
 import { createLiveRoom } from '../../kernel/live/engine.js';
 import { pickWord } from '../../core/liveWords.js';
 
@@ -15,7 +16,7 @@ const PREFIX = 'ww.live.';
 
 function defaultKV() { try { return globalThis.localStorage || null; } catch { return null; } }
 function defaultMakeChannel(name) { try { return new BroadcastChannel(name); } catch { return null; } }
-function genUserId() { return 'u_' + Math.random().toString(36).slice(2, 10); }
+function genUserId() { return rid('u_'); }
 
 export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMakeChannel, userId = genUserId() } = {}) {
   const mem = new Map();

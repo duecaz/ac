@@ -5,6 +5,7 @@ import { html, escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { renderImagePicker, attachImagePicker } from '../../core/imagePicker.js';
 import { itemControlsHtml, reorderArray, ruleScopeNote } from '../../core/editorPrimitives.js';
+import { rid } from '../../core/ids.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 
 export function renderQuizEditor(root, activity, onChange) {
@@ -32,11 +33,11 @@ function contentHtml(a) {
 
 function wireContent(root, a, ctx) {
   on(root, 'click', '#add-item', () => {
-    a.content.items.push({ id: 'q_' + Math.random().toString(36).slice(2, 8), question: '', answer: '', options: ['', '', '', ''], points: 1, image: null, audio: null });
+    a.content.items.push({ id: rid('q_'), question: '', answer: '', options: ['', '', '', ''], points: 1, image: null, audio: null });
     ctx.onChange(a); ctx.repaint();
   });
   on(root, 'click', '#add-tf', () => {
-    a.content.items.push({ id: 'q_' + Math.random().toString(36).slice(2, 8), question: '', answer: 'Verdadero', options: ['Verdadero', 'Falso'], points: 1, image: null, audio: null, kind: 'truefalse' });
+    a.content.items.push({ id: rid('q_'), question: '', answer: 'Verdadero', options: ['Verdadero', 'Falso'], points: 1, image: null, audio: null, kind: 'truefalse' });
     ctx.onChange(a); ctx.repaint();
   });
   on(root, 'click', '.item-del', (_, btn) => { a.content.items.splice(+btn.dataset.i, 1); ctx.onChange(a); ctx.repaint(); });

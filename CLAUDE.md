@@ -48,6 +48,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | **Quién escribe cada colección PB** (dueño único, prohibiciones, deuda) | **`docs/leyes.md` §21** — vigilada por la regla `pb-dueno` (`tests/norms.test.mjs`) |
 | **Qué palabra del cliente vale** (afirmación vs veredicto, fase de reglas live) | **`docs/leyes.md` §22** — regla `confianza-alumno` + C6 + answer-safety |
 | **Ciclo de vida de una pantalla** (relojes, guards, overlays, disposers) | **`docs/leyes.md` §23** — regla `reloj-primitivo`; ejemplar: `views/studentLive.js` |
+| **Cómo evoluciona el contenido** (migraciones, formatos, ids, editor=CRUD) | **`docs/leyes.md` §24** — reglas `id-rid` + contrato versión>1⇒migrate |
 | Entender el sistema de plantillas (crear/validar/jugar, qué módulo hace qué) | **`docs/sistema-de-plantillas.md`** (mapa vivo) |
 | **Crear una actividad nueva** | `node tools/new-template.mjs <name> --model qa [--vs] [--live]` + `templates/HOW_TO_ADD.md` |
 | **Diagnosticar** una plantilla existente | `node tools/check-template.mjs [name]` (contrato + normas) |

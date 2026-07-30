@@ -246,6 +246,40 @@ un handler, un observer, un modal) sigue vivo pintando encima del presente.
   (`auth`/`classroomAuth`: legítimo reloj de pared, pero con `clock.now()`
   serían testeables) · timestamps de `editList` con `new Date()` crudo.
 
+## 24) ⚖️ LEY DE CONTENIDO — el modelo evoluciona por caminos declarados
+El contenido de una actividad es del USUARIO: sobrevive años en PB/localStorage.
+Solo puede cambiar de forma por caminos versionados y testeados — nunca por un
+módulo que lo "arregle" al vuelo.
+
+| Camino | Único mecanismo | PROHIBIDO |
+|---|---|---|
+| **Evolución de forma** | `migrateContent` + subir `meta.templateVersion` (idempotente; `core/migrate.js` lo aplica fail-safe con `?? content`) | cambiar la forma sin migración (contrato: versión >1 EXIGE migrate) · una migración que devuelva `undefined` ya no puede borrar contenido |
+| **Cambio de formato** (gesto Wordwall) | `kernel/content/convert.js` (entre modelos) + `adoptContent` de la plantilla destino (afinado de FORMA intra-modelo) | convertir a mano en una vista/editor · un switch "directo" que produzca contenido inservible (era el caso Sopa↔Crucigrama) |
+| **IDs** | `rid()` de `core/ids.js` (prefijos `q_ p_ it_ w_ ps_ pin_ m_ cw_`) | `Math.random().toString(36)` a mano (regla `id-rid`) |
+| **Edición** | el editor hace CRUD del contenido; los PARÁMETROS los lee el scorer | lógica de juego en el editor (el caso patrón: el Timer muerto de Emparejar) · campos que ningún player/scorer lee |
+| **En caliente** | el player LEE; normalizar es de `migrate`/`adoptContent` | mutar `activity.content` durante el juego |
+
+- **Tests que lo vigilan**: `templateContract` (migrate idempotente + versión>1
+  ⇒ migrate) · regla `id-rid` en `normsCheck`/`tests/norms.test.mjs` ·
+  `tests/switchTemplate.test.mjs` (conversores).
+- **Arreglado en L4**: los 9 generadores de id a mano migrados a `rid()`
+  (quiz/math/match/memory/crossword + toast/embedModal/adaptadores/stressTest —
+  el allowlist de la regla es SOLO `core/ids.js`) · `migrate` fail-safe ·
+  contrato versión>1⇒migrate · **Sopa↔Crucigrama por fin convierte de verdad**:
+  `adoptContent` en ambas (Crucigrama→Sopa se queda las palabras; Sopa→Crucigrama
+  las CRUZA con el auto-layout del generador, pistas vacías para el editor).
+- **Deuda registrada**: `ensureContent` de ballsort vive en su editor y lo
+  importan player/getRoundPayload (el editor como dependencia del runtime —
+  moverlo a template) · campos muertos que aún se escriben (`rules.allowOverflow`
+  en tildes/comas, `hintMode` de crossword, `answerIdx`/`kind`/`audio` de quiz,
+  `rules.timer`/`livesPerMistake` residuales de match/diagram) · el editor de
+  quiz lleva la 3ª copia de la regla de respuesta correcta (las otras:
+  template.migrate y qaAdapt) · modelo `entries` huérfano en models.js ·
+  `sessionItems`/`activityItemCount` mantienen dos listas paralelas de nombres
+  de colección · la pseudo-plantilla `list` de `views/editList.js` define su
+  actividad a mano fuera del contrato · Ruleta/Abre-Cajas no pueden VOLVER a
+  Quiz (falta `items→qa`).
+
 ---
 ### Cómo se auto-verifica todo
 `node tests/run.mjs` corre TODAS las suites. Los escáneres compartidos

@@ -3,6 +3,7 @@
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { ruleScopeNote } from '../../core/editorPrimitives.js';
+import { rid } from '../../core/ids.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 
 export function renderMathEditor(root, activity, onChange) {
@@ -31,12 +32,12 @@ function contentHtml(a) {
 }
 function wireContent(root, a, ctx) {
   on(root, 'click', '#add-op', () => {
-    a.content.items.push({ id: 'm_' + Math.random().toString(36).slice(2, 8), question: '', answer: '', points: 1 });
+    a.content.items.push({ id: rid('m_'), question: '', answer: '', points: 1 });
     ctx.onChange(a); ctx.repaint();
   });
   on(root, 'click', '#gen-table', () => {
     const n = Math.max(1, Math.min(12, +(root.querySelector('#gen-n')?.value) || 2));
-    for (let i = 1; i <= 10; i++) a.content.items.push({ id: 'm_' + Math.random().toString(36).slice(2, 8), question: `${n} × ${i}`, answer: String(n * i), points: 1 });
+    for (let i = 1; i <= 10; i++) a.content.items.push({ id: rid('m_'), question: `${n} × ${i}`, answer: String(n * i), points: 1 });
     ctx.onChange(a); ctx.repaint();
   });
   on(root, 'input', '.it-q', (e, el) => { a.content.items[+el.dataset.i].question = e.target.value; ctx.onChange(a); });

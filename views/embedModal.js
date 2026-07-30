@@ -1,5 +1,6 @@
 // "Embed" modal. Generates the <iframe> snippet for an activity, lets the
 // user pick size + skin/bg/template overrides, shows a live preview.
+import { rid } from '../core/ids.js';
 import { escapeHtml } from '../core/html.js';
 import { listSkins } from '../core/skins.js';
 import { listBackgrounds } from '../core/backgrounds.js';
@@ -14,7 +15,7 @@ const SIZES = [
 ];
 
 export function openEmbedModal(activity) {
-  const id = 'ww-embed-modal-' + Math.random().toString(36).slice(2, 6);
+  const id = rid('ww-embed-modal-');
   const skins = listSkins();
   const bgs = listBackgrounds();
   const compat = [getTemplate(activity.template), ...compatibleTemplates(activity.template)].filter(Boolean);

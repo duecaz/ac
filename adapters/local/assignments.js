@@ -2,6 +2,7 @@
 // assignments and attempts in a key-value store (localStorage in the browser;
 // injectable for tests). Mirrors the snake_case shape that views read from the
 // Supabase rows (due_at, max_attempts, activity_snap, status, …).
+import { rid } from '../../core/ids.js';
 import { LETTERS, PIN_LENGTH } from '../../core/constants.js';
 import { normalizeCode } from '../../core/assignmentRules.js';
 
@@ -10,7 +11,7 @@ const K_ATTEMPTS = 'ww.assignment_attempts';
 
 function defaultKV() { try { return globalThis.localStorage || null; } catch { return null; } }
 function genCode() { let s = ''; for (let i = 0; i < PIN_LENGTH; i++) s += LETTERS[Math.floor(Math.random() * LETTERS.length)]; return s; }
-function genId() { return 'asg_' + Math.random().toString(36).slice(2, 10); }
+function genId() { return rid('asg_'); }
 
 export function createLocalAssignments({ kv = defaultKV(), userId } = {}) {
   const mem = new Map();

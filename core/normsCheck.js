@@ -29,6 +29,10 @@
 //                       startElapsedTicker) o por `ctx.setInterval` (lifecycle,
 //                       que lo limpia al salir de la ruta). Un interval crudo
 //                       es el reloj zombi que repinta sobre la vista siguiente.
+//   · id-rid          : LEY DE CONTENIDO (docs/leyes.md §24) — IDs SIEMPRE con
+//                       `rid()` de core/ids.js, nunca `Math.random().toString(36)`
+//                       a mano (estaba copiado en ~17 sitios con longitudes y
+//                       prefijos dispares).
 //
 // Lo consumen DOS runners (mismo patrón que core/templateContract.js):
 //   · tests/norms.test.mjs — Node, recorre el filesystem COMPLETO (autoridad).
@@ -40,6 +44,7 @@ const ALLOW = {
   'kernel-puro': [],
   // Los primitivos de reloj y el ctx del lifecycle SON la implementación.
   'reloj-primitivo': ['core/lifecycle.js', 'core/soloTimer.js', 'core/deadlineTicker.js'],
+  'id-rid': ['core/ids.js'],   // la única implementación permitida
 };
 
 // LEY DE DATOS — colección → ficheros que pueden nombrarla. El PRIMERO es el
@@ -113,6 +118,9 @@ export function scanNormsSource(path, source) {
     // `setInterval(` sin prefijo (ctx.setInterval y setIntervalFn( son legítimos).
     if (/(^|[^.\w])setInterval\s*\(/.test(ln) && !allowed('reloj-primitivo')) {
       out.push({ path, line: i + 1, rule: 'reloj-primitivo', text: ln.trim() });
+    }
+    if (/Math\.random\s*\(\s*\)\s*\.toString\s*\(\s*36\s*\)/.test(ln) && !allowed('id-rid')) {
+      out.push({ path, line: i + 1, rule: 'id-rid', text: ln.trim() });
     }
   });
   return out;

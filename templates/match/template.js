@@ -1,5 +1,6 @@
 // Match Up: two columns; tap left then right to pair. Solo + async.
 import { BaseTemplate } from '../base.js';
+import { rid } from '../../core/ids.js';
 import { renderMatchPlayer } from './player.js';
 import { renderMatchEditor } from './editor.js';
 import { newPair } from '../../core/contentModels/pairs.js';
@@ -27,7 +28,7 @@ export class MatchTemplate extends BaseTemplate {
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
     defaultLive: () => ({}),
     defaultContent: () => {
-      const id = () => 'p_' + Math.random().toString(36).slice(2, 8);
+      const id = () => rid('p_');
       return { pairs: [
         { id: id(), left: 'España',    right: 'Madrid' },
         { id: id(), left: 'México',    right: 'Ciudad de México' },
