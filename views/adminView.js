@@ -607,6 +607,23 @@ function renderPanel(rootSel) {
           // ítem, deadline, puntajes— como HOST-ONLY.
           { name: 'ql',       type: 'json' },
         ]},
+        // §22-4 — credencial del dispositivo del alumno (secreto). CERRADA por API:
+        // solo se escribe al entrar y solo la consultan las reglas por join.
+        // ANTES que live_answers a propósito: la regla de live_answers hace join a
+        // esta colección y PocketBase VALIDA las reglas al guardarlas — con el
+        // orden invertido, aplicar en un servidor sin live_claims fallaba con
+        // "Failed to update collection" (pasó en la Pi).
+        { name: 'live_claims', fields: [
+          { name: 'session', type: 'text', required: true },
+          { name: 'player',  type: 'text', required: true },
+          { name: 'secret',  type: 'text', required: true },
+        ], indexes: ['CREATE UNIQUE INDEX `idx_lc_session_player` ON `live_claims` (`session`, `player`)'] },
+        // §22-2 — contenido COMPLETO de la sala (host-only). La sala guarda el
+        // snapshot saneado; la clave, aquí.
+        { name: 'live_keys', fields: [
+          { name: 'session',  type: 'text', required: true },
+          { name: 'activity', type: 'json' },
+        ], indexes: ['CREATE UNIQUE INDEX `idx_lk_session` ON `live_keys` (`session`)'] },
         // One record per student answer → concurrent answers never clobber each
         // other (the lost-update fix). Once this exists, the realtime adapter
         // routes answers here instead of the live_sessions.state blob.
@@ -628,19 +645,6 @@ function renderPanel(rootSel) {
         // playerId = id de la FILA. Índice único (session,name) → apodos únicos
         // ATÓMICOS (el 400 de colisión dispara el retry "Juan 2"). Ver
         // docs/handoff-deuda-a.md.
-        // §22-4 — credencial del dispositivo del alumno (secreto). CERRADA por API:
-        // solo se escribe al entrar y solo la consultan las reglas por join.
-        { name: 'live_claims', fields: [
-          { name: 'session', type: 'text', required: true },
-          { name: 'player',  type: 'text', required: true },
-          { name: 'secret',  type: 'text', required: true },
-        ], indexes: ['CREATE UNIQUE INDEX `idx_lc_session_player` ON `live_claims` (`session`, `player`)'] },
-        // §22-2 — contenido COMPLETO de la sala (host-only). La sala guarda el
-        // snapshot saneado; la clave, aquí.
-        { name: 'live_keys', fields: [
-          { name: 'session',  type: 'text', required: true },
-          { name: 'activity', type: 'json' },
-        ], indexes: ['CREATE UNIQUE INDEX `idx_lk_session` ON `live_keys` (`session`)'] },
         { name: 'live_players', fields: [
           { name: 'session', type: 'text', required: true },
           { name: 'name',    type: 'text', required: true },
@@ -717,6 +721,17 @@ function renderPanel(rootSel) {
         { name: 'created', type: 'autodate', onCreate: true, onUpdate: false },
         { name: 'updated', type: 'autodate', onCreate: true, onUpdate: true },
       ] : [];
+      // "Failed to update collection" a secas no dice QUÉ regla rebotó — PB manda
+      // el detalle por campo en `data` (p.ej. createRule: "unknown collection...").
+      // Aplanarlo al mensaje fue lo que faltó para diagnosticar el fallo de orden
+      // live_answers→live_claims en la Pi.
+      const pbErrDetail = (b, status) => {
+        const parts = [];
+        for (const [field, err] of Object.entries(b?.data || {})) {
+          parts.push(`${field}: ${err?.message || JSON.stringify(err)}`);
+        }
+        return [b?.message || `error ${status}`, ...parts].join(' · ');
+      };
       const COLLECTIONS = DEFS.map(d => ({
         name: d.name, type: 'base',
         [schemaKey]: [...d.fields.map(buildField), ...sysFields],
@@ -779,7 +794,7 @@ function renderPanel(rootSel) {
               results.push({ name: col.name, ok: true, msg: extras.length ? `reglas + ${extras.join(', ')} (ya existía)` : 'reglas actualizadas (ya existía)' });
             } else {
               const b = await pr.json().catch(() => ({}));
-              results.push({ name: col.name, ok: false, msg: b.message || `error ${pr.status}` });
+              results.push({ name: col.name, ok: false, msg: pbErrDetail(b, pr.status) });
             }
           } else {
             // No existe → crear completa.
@@ -791,7 +806,7 @@ function renderPanel(rootSel) {
               results.push({ name: col.name, ok: true, msg: 'creada' });
             } else {
               const b = await cr.json().catch(() => ({}));
-              results.push({ name: col.name, ok: false, msg: b.message || `error ${cr.status}` });
+              results.push({ name: col.name, ok: false, msg: pbErrDetail(b, cr.status) });
             }
           }
         } catch (e) {

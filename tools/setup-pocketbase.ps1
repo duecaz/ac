@@ -120,6 +120,24 @@ $defs = @(
        deleteRule='@request.auth.id != ""'
      } },
 
+  # live_claims (22-4): credencial del DISPOSITIVO del alumno — ANTES que
+  # live_answers: su regla hace join aqui y PocketBase valida las reglas al
+  # guardarlas (con el orden invertido, aplicar fallaba en servidor limpio).
+  # Crear abierto (se registra al entrar, indice unico = el primero se queda el jugador); leer y
+  # editar CERRADOS (el secreto no se espia ni se roba). Las reglas la consultan
+  # por join, que es interno del servidor.
+  @{ name = "live_claims";
+     fields = @( @{ name="session"; type="text"; required=$true }, @{ name="player"; type="text"; required=$true }, @{ name="secret"; type="text"; required=$true } );
+     indexes = @( "CREATE UNIQUE INDEX ``idx_lc_session_player`` ON ``live_claims`` (``session``, ``player``)" );
+     rules = @{ listRule=$null; viewRule=$null; createRule=""; updateRule=$null; deleteRule=$null } },
+
+  # live_keys (22-2): la actividad COMPLETA de la sala, CERRADA sin sesión. La
+  # sala guarda solo el snapshot saneado (su lectura debe ser abierta: PIN).
+  @{ name = "live_keys";
+     fields = @( @{ name="session"; type="text"; required=$true }, @{ name="activity"; type="json"; maxSize=5242880 } );
+     indexes = @( "CREATE UNIQUE INDEX ``idx_lk_session`` ON ``live_keys`` (``session``)" );
+     rules = @{ listRule='@request.auth.id != ""'; viewRule='@request.auth.id != ""'; createRule='@request.auth.id != ""'; updateRule='@request.auth.id != ""'; deleteRule='@request.auth.id != ""' } },
+
   @{ name = "live_answers";
      fields = @( @{ name="session"; type="text"; required=$true }, @{ name="player"; type="text"; required=$true }, @{ name="item"; type="number" }, @{ name="value"; type="json"; maxSize=200000 }, @{ name="ms"; type="number" }, @{ name="scored"; type="bool" }, @{ name="correct"; type="bool" }, @{ name="points"; type="number" }, @{ name="unscorable"; type="bool" }, @{ name="v0"; type="json"; maxSize=200000 }, @{ name="c0"; type="bool" } );
      indexes = @( "CREATE INDEX ``idx_la_session`` ON ``live_answers`` (``session``)", "CREATE UNIQUE INDEX ``idx_la_session_player_item`` ON ``live_answers`` (``session``, ``player``, ``item``)" );
@@ -134,22 +152,6 @@ $defs = @(
        updateRule='@request.auth.id != "" || (@request.body.scored:isset = false && @request.body.points:isset = false && @collection.live_claims:cl.player ?= player && @collection.live_claims:cl.secret ?= @request.headers.x_ww_claim)';
        deleteRule='@request.auth.id != ""'
      } },
-
-  # live_claims (22-4): credencial del DISPOSITIVO del alumno. Crear abierto (se
-  # registra al entrar, indice unico = el primero se queda el jugador); leer y
-  # editar CERRADOS (el secreto no se espia ni se roba). Las reglas la consultan
-  # por join, que es interno del servidor.
-  @{ name = "live_claims";
-     fields = @( @{ name="session"; type="text"; required=$true }, @{ name="player"; type="text"; required=$true }, @{ name="secret"; type="text"; required=$true } );
-     indexes = @( "CREATE UNIQUE INDEX ``idx_lc_session_player`` ON ``live_claims`` (``session``, ``player``)" );
-     rules = @{ listRule=$null; viewRule=$null; createRule=""; updateRule=$null; deleteRule=$null } },
-
-  # live_keys (§22-2): la actividad COMPLETA de la sala, CERRADA sin sesión. La
-  # sala guarda solo el snapshot saneado (su lectura debe ser abierta: PIN).
-  @{ name = "live_keys";
-     fields = @( @{ name="session"; type="text"; required=$true }, @{ name="activity"; type="json"; maxSize=5242880 } );
-     indexes = @( "CREATE UNIQUE INDEX ``idx_lk_session`` ON ``live_keys`` (``session``)" );
-     rules = @{ listRule='@request.auth.id != ""'; viewRule='@request.auth.id != ""'; createRule='@request.auth.id != ""'; updateRule='@request.auth.id != ""'; deleteRule='@request.auth.id != ""' } },
 
   # live_players (deuda A): una fila por jugador → los joins concurrentes no se
   # pisan en el blob. Índice UNICO (session,name) = apodos únicos atómicos.

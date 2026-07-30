@@ -156,4 +156,41 @@ ok('assignments: crear/cerrar/rotar exige sesión; el alumno solo lee');
   ok('el panel #/admin aplica las reglas del módulo (sin copia propia)');
 }
 
+// ── 9. ORDEN de aplicación: una colección va DESPUÉS de las que sus reglas
+// consultan por join. PocketBase valida las reglas al guardarlas: si live_answers
+// (que hace join a live_claims) se aplica antes de que live_claims exista, el
+// servidor rebota con "Failed to update collection" — pasó en la Pi. Se fija en
+// las DOS vías (panel y script), leyendo el orden real de sus DEFS.
+{
+  const orderOf = (src, re) => {
+    const names = [];
+    let m; const rx = new RegExp(re, 'g');
+    while ((m = rx.exec(src))) names.push(m[1]);
+    return names;
+  };
+  const deps = {};
+  for (const [coll, r] of Object.entries(RULES)) {
+    const joins = new Set();
+    for (const rule of Object.values(r)) {
+      let m; const rx = /@collection\.([\w_]+)/g;
+      while ((m = rx.exec(String(rule || '')))) if (m[1] !== coll) joins.add(m[1]);
+    }
+    if (joins.size) deps[coll] = [...joins];
+  }
+  assert.ok(Object.keys(deps).length >= 2, 'premisa: hay reglas con join (live_answers, assignment_attempts)');
+  for (const [label, order] of [
+    ['views/adminView.js', orderOf(readFileSync(join(ROOT, 'views/adminView.js'), 'utf8'), String.raw`\{ name: '([\w_]+)', fields:`)],
+    ['tools/setup-pocketbase.ps1', orderOf(readFileSync(join(ROOT, 'tools/setup-pocketbase.ps1'), 'utf8'), String.raw`@\{ name = "([\w_]+)";`)],
+  ]) {
+    for (const [coll, needs] of Object.entries(deps)) {
+      for (const dep of needs) {
+        const a = order.indexOf(dep), b = order.indexOf(coll);
+        assert.ok(a >= 0 && b >= 0, `${label}: no encuentro ${dep}/${coll} en los DEFS`);
+        assert.ok(a < b, `${label}: ${coll} hace join a ${dep} pero se aplica ANTES (${b} < ${a}) — en un servidor limpio la regla rebota`);
+      }
+    }
+  }
+  ok('orden de aplicación: cada colección va después de las que sus reglas consultan');
+}
+
 console.log(`\npbRules.test: ${passed} checks passed`);
