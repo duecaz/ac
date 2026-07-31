@@ -62,6 +62,7 @@ function qlOf(rec) {
     ql_by: q.by ?? s.qlBy ?? null,
     ql_by_name: q.byName ?? s.qlByName ?? null,
     ql_points: s.qlPoints ?? {},
+    ql_taken: s.qlTaken ?? {},
   };
 }
 // Claves `ql_*` de un patch → forma del campo `ql`. Devuelve null si el patch
@@ -581,6 +582,10 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       if ('end_n' in patch) engine.state.endN = patch.end_n ?? null;
       if ('started_at' in patch) engine.state.startedAt = patch.started_at ?? null;
       if ('ql_points' in patch) engine.state.qlPoints = patch.ql_points ?? {};
+      // CL-1 · quién se llevó cada caja. Se guardaba CUÁNTO valió, no QUIÉN
+      // respondió, así que el docente no tenía forma de ver a quién le faltaba
+      // participar (y los rápidos acaparaban sin que se notara).
+      if ('ql_taken' in patch) engine.state.qlTaken = patch.ql_taken ?? {};
       if (patch.ql_award) {
         const { playerId, points } = patch.ql_award;
         const p = engine.state.players.find(pl => pl.id === playerId);

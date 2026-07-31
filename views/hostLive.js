@@ -792,6 +792,33 @@ async function renderHost(rootSel, code, sessionId, activity) {
   }
 
 
+  // CL-1 · QUIÉN HA PARTICIPADO YA (aviso, no regla). El problema real de este
+  // bucle es de reparto: el primero que toca se queda la caja, así que los
+  // rápidos acaparan y el docente no tiene forma de ver a quién le falta. Esto
+  // NO bloquea a nadie —sería una promesa que el cliente no puede garantizar—:
+  // pone el dato delante para que el profe reparta con la vista. Los que aún no
+  // han participado salen destacados, que es lo accionable.
+  function participationHtml() {
+    if (!players.length) return '';
+    const taken = session.ql_taken || {};
+    const count = {};
+    for (const pid of Object.values(taken)) if (pid) count[pid] = (count[pid] || 0) + 1;
+    const pending = players.filter(p => !count[p.id]);
+    return `<div class="ql-participation mb-3">
+      <div class="small text-light-emphasis mb-1">
+        ${pending.length
+          ? `<i class="bi bi-people-fill"></i> Aún no participan: <b>${pending.length}</b> de ${players.length}`
+          : '<i class="bi bi-check2-all"></i> Todos han participado al menos una vez'}
+      </div>
+      <div class="d-flex flex-wrap gap-1 justify-content-center">
+        ${players.map(p => {
+          const n = count[p.id] || 0;
+          return `<span class="badge ${n ? 'bg-secondary' : 'bg-warning text-dark'}">${escapeHtml(p.name)}${n > 1 ? ` ×${n}` : ''}</span>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
   async function paintQuestionLive() {
     const qlOpen     = session.ql_open ?? null;
     const qlQuestion = session.ql_question ?? null;
@@ -831,6 +858,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
           ${fullscreenButtonHtml()}
         </div>
         <div class="ql-grid mb-4" style="grid-template-columns:repeat(${cols},1fr)">${boxesHtml}</div>
+        ${participationHtml()}
         ${qlOpen !== null ? `
           <div class="card bg-dark text-light p-4 mb-3 mx-auto" style="max-width:700px">
             <p class="text-warning fw-bold mb-2 fs-5"><i class="bi bi-hand-index-fill"></i> ${escapeHtml(qlByName || '—')} eligió esta caja</p>
@@ -857,12 +885,15 @@ async function renderHost(rootSel, code, sessionId, activity) {
       if (!qlBy || qlOpen === null) return;
       const points    = +btn.dataset.pts;
       const newPoints = { ...qlPoints, [qlOpen]: points };
+      // CL-1 · queda registrado quién se llevó la caja, para la tira de
+      // participación (antes solo se sabía CUÁNTO valió, no QUIÉN respondió).
+      const newTaken = { ...(session.ql_taken || {}), [qlOpen]: qlBy };
       await setSessionState(sessionId, {
         // `item`: sin la caja, el adaptador no puede escribir la fila de
         // live_answers y los puntos se quedarían solo en el blob (podio a 0).
         ql_award: { playerId: qlBy, points, item: qlOpen },
         ql_open: null, ql_question: null, ql_image: null, ql_by: null, ql_by_name: null,
-        ql_points: newPoints,
+        ql_points: newPoints, ql_taken: newTaken,
       });
     });
 

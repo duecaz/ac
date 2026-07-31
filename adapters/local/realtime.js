@@ -95,6 +95,7 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
       if ('end_n' in patch) room.endN = patch.end_n ?? null;
       if ('started_at' in patch) room.startedAt = patch.started_at ?? null;
       if ('ql_points' in patch) s.qlPoints = patch.ql_points ?? {};
+      if ('ql_taken' in patch) s.qlTaken = patch.ql_taken ?? {};   // CL-1: quién se llevó cada caja
       // Espejo del driver PB: el "pedir la palabra" vive en room.ql, fuera del
       // blob de estado (ley de confianza §22).
       const MAP = { ql_open: 'open', ql_question: 'question', ql_image: 'image', ql_by: 'by', ql_by_name: 'byName' };
@@ -252,6 +253,7 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
         ql_by: r.ql?.by ?? r.state.qlBy ?? null,
         ql_by_name: r.ql?.byName ?? r.state.qlByName ?? null,
         ql_points: r.state.qlPoints ?? {},
+        ql_taken: r.state.qlTaken ?? {},
       };
     },
 

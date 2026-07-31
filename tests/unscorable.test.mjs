@@ -122,4 +122,30 @@ const QUIZ = { id: 'a2', template: 'uns_quiz', live: {}, content: { items: [{ id
   ok('pedir la palabra: el premio del docente es una fila de live_answers → llega al podio');
 }
 
+// ── 7. CL-1 · quién ha participado ya: AVISO en la pizarra, no regla ───────
+// El reparto de este bucle era ciego: el primero que toca se queda la caja y
+// los rápidos acaparan, sin que el docente pudiera ver a quién le falta. Ahora
+// queda registrado QUIÉN se llevó cada caja y la pizarra lo muestra. NO se
+// bloquea a nadie: un gate en el móvil sería una promesa que el cliente no
+// puede garantizar (la única garantía sería una regla de servidor, y este
+// problema es de gestión de aula, no de trampa).
+{
+  const { readFileSync } = await import('node:fs');
+  const host = readFileSync(new URL('../views/hostLive.js', import.meta.url), 'utf8');
+  assert.match(host, /ql_points: newPoints, ql_taken: newTaken/,
+    'al premiar se registra QUIÉN se llevó la caja, no solo cuánto valió');
+  assert.match(host, /function participationHtml\(/, 'la pizarra muestra la participación');
+  assert.match(host, /Aún no participan/, 'y destaca a los que aún no han participado (lo accionable)');
+  // Es un AVISO: la rejilla del ALUMNO no puede depender de ello para bloquear.
+  const student = readFileSync(new URL('../views/studentLive.js', import.meta.url), 'utf8');
+  assert.ok(!/ql_taken/.test(student),
+    'el móvil NO usa ql_taken para bloquear: sería una regla que el cliente no puede garantizar (CL-1 opción 1)');
+  // Y el dato viaja por los dos adaptadores.
+  for (const drv of ['../adapters/pocketbase/realtime.js', '../adapters/local/realtime.js']) {
+    const src = readFileSync(new URL(drv, import.meta.url), 'utf8');
+    assert.match(src, /'ql_taken' in patch/, `${drv}: transporta ql_taken`);
+  }
+  ok('CL-1: la pizarra dice quién ha participado; nadie queda bloqueado en el móvil');
+}
+
 console.log(`\nunscorable.test: ${passed} checks passed`);

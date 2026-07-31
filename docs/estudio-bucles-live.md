@@ -726,4 +726,26 @@ de aula, no de trampa —nadie "hackea" para responder una pregunta oral—, y e
 docente ya tiene el mando (ve quién pidió y puede cerrar sin puntos). (3) sería
 gastar la parte más frágil del sistema en un problema que no es de seguridad.
 
-**Decisión pendiente tuya**: si quieres (1), (2) o dejarlo como está.
+**Decisión tomada: (1), aplicada en v1.51.349.** Al premiar queda registrado
+QUIÉN se llevó la caja (antes solo se guardaba cuánto valió), y la pizarra
+muestra una tira de participación: los que aún no han participado salen
+destacados, que es lo accionable para el docente. **No se bloquea a nadie en el
+móvil** — sería una promesa que el cliente no puede garantizar; el test lo fija
+(`tests/unscorable.test.mjs`: la vista del alumno no puede usar `ql_taken` para
+bloquear).
+
+---
+
+# Estado de las cuatro fichas (v1.51.349)
+
+| | Decidido | Aplicado | Queda |
+|---|---|---|---|
+| **rounds** | lectura previa · puesto y distancia · movimiento · tiempo por pregunta · lobby de dos preguntas | R-1 · R-2 · R-3 · R-4 | el campo de tiempo por ítem en los editores de Operaciones/Tildes/Comas (el motor ya lo soporta) |
+| **race** | fin declarado · avance en vez de ranking · tiempo límite | C-1 · C-2 · C-3 | separar la fase `race` del tablero (comparten fase) |
+| **board** | mismo fin y misma exposición que la carrera | B-1 · B-2 (medido: no hacía falta tocar) | — |
+| **claim** | los puntos del docente llegan al podio · aviso de participación | bug del podio · CL-1 (aviso) · CL-2 (lo dice la fila) | gate opcional en el móvil, si el profe lo pide |
+
+**Lo único estructural que queda de todo el estudio D7**: la fase `race` la
+comparten carrera y tablero, y cada vista las desambigua. No hay ningún bug
+abierto por ello — es deuda de diseño, medida y acotada por
+`tests/liveLoops.test.mjs`.
