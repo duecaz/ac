@@ -46,8 +46,10 @@ function wireContent(root, a, ctx) {
   on(root, 'input', '.it-q', (e, el) => { a.content.items[+el.dataset.i].question = e.target.value; ctx.onChange(a); });
   on(root, 'input', '.it-opt', (e, el) => {
     const i = +el.dataset.i, k = +el.dataset.k, item = a.content.items[i];
-    item.options[k] = e.target.value;
-    syncAnswerFromIdx(item);
+    setOptionText(item, k, e.target.value);
+    // Si al reescribir el texto la pregunta se quedó SIN respuesta correcta, el
+    // aviso aparece al instante (no al terminar la partida).
+    root.querySelector('#ans-warn')?.classList.toggle('d-none', !someItemHasNoAnswer(a));
     ctx.onChange(a);
   });
   // Toggle an option correct BY INDEX (duplicate/empty texts don't collide).
@@ -184,13 +186,55 @@ function syncAnswerFromIdx(it) {
   const texts = idxs.map(k => it.options[k]);
   it.answer = texts.length === 0 ? '' : (texts.length === 1 ? texts[0] : texts);
 }
+
+/** Reescribe el TEXTO de una opción SIN perder cuál era la correcta.
+ *
+ *  El bug (VS/Live: "clico la correcta y me la da mala"): en un ítem heredado
+ *  —sin `answerIdx`, que es como quedaron las actividades creadas antes de que
+ *  existiera— la correcta se deducía comparando `answer` con el TEXTO de las
+ *  opciones. Al corregir una errata en la opción correcta, el handler mutaba el
+ *  texto PRIMERO y luego re-deducía: ya no coincidía con nada, así que la
+ *  pregunta se quedaba con `answer: ''` — todas las respuestas malas para
+ *  siempre, sin decir nada (el editor seguía pintando el verde hasta repintar).
+ *
+ *  Ahora se FIJA el índice correcto ANTES de tocar el texto: la marca vive en
+ *  `answerIdx` (posición, no texto) y `answer` se re-deriva de ahí, así que
+ *  editar el texto de la correcta la SIGUE. */
+export function setOptionText(item, k, text) {
+  const idxs = [...correctIdxSet(item)].sort((a, b) => a - b);  // ANTES de mutar
+  item.answerIdx = idxs;
+  item.options[k] = text;
+  syncAnswerFromIdx(item);
+  return item;
+}
+
+/** ¿Esta pregunta puede puntuarse? Sin correcta marcada, TODA respuesta cuenta
+ *  como fallo — el modo de fallar silencioso que nadie ve hasta jugar. */
+export function itemHasNoAnswer(it) {
+  const ans = it?.answer;
+  if (Array.isArray(ans)) return ans.filter(s => String(s ?? '').trim() !== '').length === 0;
+  return String(ans ?? '').trim() === '';
+}
+export function someItemHasNoAnswer(a) {
+  return (a?.content?.items || []).some(itemHasNoAnswer);
+}
+
+function answerWarningHtml(a) {
+  return `<div id="ans-warn" class="alert alert-danger d-flex align-items-start gap-2 py-2 mb-2 ${someItemHasNoAnswer(a) ? '' : 'd-none'}" role="alert">
+    <i class="bi bi-exclamation-octagon-fill"></i>
+    <div><b>Hay preguntas SIN respuesta correcta marcada.</b> Están en rojo abajo.
+    Tal como están, cualquier respuesta del alumno contará como fallo (en Individual,
+    VS, Equipos y En vivo). Toca el botón de la opción correcta para marcarla en verde.</div>
+  </div>`;
+}
 function renderItems(a) {
   if (!a.content.items.length) return `<p class="text-muted">No hay preguntas todavía.</p>`;
   const total = a.content.items.length;
-  return pointsWarningHtml(a) + a.content.items.map((it, i) => `
-    <div class="card mb-2"><div class="card-body">
+  return answerWarningHtml(a) + pointsWarningHtml(a) + a.content.items.map((it, i) => `
+    <div class="card mb-2 ${itemHasNoAnswer(it) ? 'border-danger' : ''}"><div class="card-body">
       <div class="d-flex justify-content-between align-items-center mb-2">
-        <span class="badge bg-secondary">#${i + 1}${it.kind === 'truefalse' ? ' · V/F' : ''}</span>
+        <span class="badge ${itemHasNoAnswer(it) ? 'bg-danger' : 'bg-secondary'}">#${i + 1}${it.kind === 'truefalse' ? ' · V/F' : ''}</span>
+        ${itemHasNoAnswer(it) ? '<span class="text-danger small"><i class="bi bi-exclamation-octagon-fill"></i> sin respuesta correcta</span>' : ''}
         ${itemControlsHtml(i, total)}
       </div>
       <input class="form-control mb-2 it-q" data-i="${i}" placeholder="Pregunta" value="${escapeHtml(it.question)}">

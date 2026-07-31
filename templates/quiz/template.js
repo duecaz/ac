@@ -128,6 +128,21 @@ export class QuizTemplate extends BaseTemplate {
     // options that share text. Idempotent: only fills it when missing.
     if (content && Array.isArray(content.items)) {
       for (const it of content.items) {
+        // RESCATE de las preguntas que perdieron su `answer` al editar el texto
+        // de la opción correcta (el bug de "todas malas": el editor mutaba el
+        // texto antes de fijar el índice). Si la MARCA por índice sobrevivió, la
+        // respuesta se re-deriva de ella; si no sobrevivió, no hay nada que
+        // adivinar y el editor lo señala en rojo. Idempotente.
+        if (it && Array.isArray(it.answerIdx) && it.answerIdx.length) {
+          const texts = it.answerIdx
+            .filter(k => k >= 0 && k < (it.options || []).length)
+            .map(k => String(it.options[k] ?? ''))
+            .filter(t => t.trim() !== '');
+          const lost = Array.isArray(it.answer)
+            ? it.answer.filter(s => String(s ?? '').trim() !== '').length === 0
+            : String(it.answer ?? '').trim() === '';
+          if (lost && texts.length) it.answer = texts.length === 1 ? texts[0] : texts;
+        }
         if (it && !Array.isArray(it.answerIdx)) {
           const ans = it.answer;
           it.answerIdx = (it.options || []).reduce((acc, o, k) => {
