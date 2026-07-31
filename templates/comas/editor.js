@@ -4,7 +4,7 @@ import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { newPassage } from '../../core/contentModels/textCorrection.js';
 import { applyMarks, parseTextWithCommas } from '../../core/textMarks.js';
-import { itemControlsHtml, reorderArray, ruleScopeNote } from '../../core/editorPrimitives.js';
+import { itemControlsHtml, reorderArray, ruleScopeNote, itemSecondsFieldHtml, wireItemSeconds } from '../../core/editorPrimitives.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 
 export function renderComasEditor(root, activity, onChange) {
@@ -19,10 +19,11 @@ export function renderComasEditor(root, activity, onChange) {
 function contentHtml(a) {
   return `
     <p class="small text-muted">Escribe la frase <b>con sus comas</b>. La app las quita y guarda dónde van.</p>
-    ${a.content.passages.map((p, i) => renderPassage(p, i, a.content.passages.length)).join('')}
+    ${a.content.passages.map((p, i) => renderPassage(p, i, a.content.passages.length, a)).join('')}
     <button class="btn btn-outline-primary mt-2" id="t-add"><i class="bi bi-plus-lg"></i> Añadir frase</button>`;
 }
 function wireContent(root, a, ctx) {
+  wireItemSeconds(root, a, ctx, a.content.passages);   // R-3 · tiempo por frase
   on(root, 'input', '.tp-accented', (e, el) => {
     const idx = +el.dataset.i;
     const { text, marks } = parseTextWithCommas(e.target.value);
@@ -56,7 +57,7 @@ function wireRules(root, a, ctx) {
   on(root, 'input', '#t-ppw', e => { a.scoring.pointsPerWrong = +e.target.value || 0; ctx.onChange(a); });
 }
 
-function renderPassage(p, i, total) {
+function renderPassage(p, i, total, A) {
   const accented = applyMarks(p.text || '', p.marks || []);
   return `
     <div class="card mb-3"><div class="card-body">
@@ -69,5 +70,6 @@ function renderPassage(p, i, total) {
         <div class="col-md-6"><span class="text-muted">Lo que verá el alumno:</span> <span data-preview="${i}" class="font-monospace">${escapeHtml(p.text || '(vacío)')}</span></div>
         <div class="col-md-6"><span class="text-muted">Solución:</span> <b data-expected="${i}">${escapeHtml(accented)}</b></div>
       </div>
+      <div class="mt-2">${itemSecondsFieldHtml(A, p, i)}</div>
     </div></div>`;
 }

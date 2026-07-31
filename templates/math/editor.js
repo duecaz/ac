@@ -2,7 +2,7 @@
 // pestaña "Modos") lo pone el shell compartido.
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { ruleScopeNote } from '../../core/editorPrimitives.js';
+import { ruleScopeNote, itemSecondsFieldHtml, wireItemSeconds } from '../../core/editorPrimitives.js';
 import { rid } from '../../core/ids.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 
@@ -42,6 +42,7 @@ function wireContent(root, a, ctx) {
   });
   on(root, 'input', '.it-q', (e, el) => { a.content.items[+el.dataset.i].question = e.target.value; ctx.onChange(a); });
   on(root, 'input', '.it-a', (e, el) => { a.content.items[+el.dataset.i].answer = e.target.value.trim(); ctx.onChange(a); });
+  wireItemSeconds(root, a, ctx, a.content.items);   // R-3 · tiempo por pregunta
   on(root, 'click', '.it-del', (_, b) => { a.content.items.splice(+b.dataset.i, 1); ctx.onChange(a); ctx.repaint(); });
 }
 
@@ -65,5 +66,6 @@ function renderItems(a) {
       <span class="input-group-text">=</span>
       <input class="form-control it-a" data-i="${i}" style="max-width:130px" inputmode="numeric" placeholder="Resultado" value="${escapeHtml(it.answer ?? '')}">
       <button class="btn btn-outline-danger it-del" data-i="${i}" title="Eliminar"><i class="bi bi-trash"></i></button>
-    </div>`).join('');
+    </div>
+    <div class="mb-2 ps-2">${itemSecondsFieldHtml(a, it, i)}</div>`).join('');
 }
