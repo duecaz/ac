@@ -99,4 +99,27 @@ const QUIZ = { id: 'a2', template: 'uns_quiz', live: {}, content: { items: [{ id
   ok('la pantalla del alumno distingue sin respuesta · no puntuable · correcto · incorrecto');
 }
 
+// ── 6. PEDIR LA PALABRA: los puntos del DOCENTE llegan al podio ────────────
+// Bug encontrado y verificado contra PocketBase real (v1.51.347): el podio se
+// DERIVA de live_answers desde la deuda A, pero este bucle escribía los puntos
+// solo en el blob de la sala → el docente repartía puntos toda la clase y al
+// final el podio mostraba CERO a todos. Ahora cada premio es también una fila:
+// `scored` (el veredicto ya está dado) + `unscorable` (no hubo clave que
+// acertar; el mérito es del docente, §22-5).
+{
+  const { readFileSync } = await import('node:fs');
+  const pb = readFileSync(new URL('../adapters/pocketbase/realtime.js', import.meta.url), 'utf8');
+  assert.match(pb, /patch\.ql_award && Number\.isInteger\(patch\.ql_award\.item\)/,
+    'el adaptador escribe la fila del premio (y necesita saber QUÉ caja se premió)');
+  const block = pb.slice(pb.indexOf('patch.ql_award && Number.isInteger'), pb.indexOf('El host puede tocar AMBOS'));
+  assert.match(block, /scored: true/, 'la fila va puntuada: el veredicto ya lo dio el docente');
+  assert.match(block, /unscorable: true/,
+    'y NO puntuable: sin clave que acertar, la tabla la pinta "—" en vez de fingir un acierto');
+  assert.match(block, /conflict/, 'si la caja se reabre y se re-premia, se actualiza la fila (no se duplica)');
+  const host = readFileSync(new URL('../views/hostLive.js', import.meta.url), 'utf8');
+  assert.match(host, /ql_award: \{ playerId: qlBy, points, item: qlOpen \}/,
+    'el host manda la caja premiada: sin `item` los puntos se quedarían solo en el blob');
+  ok('pedir la palabra: el premio del docente es una fila de live_answers → llega al podio');
+}
+
 console.log(`\nunscorable.test: ${passed} checks passed`);

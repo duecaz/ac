@@ -586,6 +586,30 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         const p = engine.state.players.find(pl => pl.id === playerId);
         if (p) p.score += points;
       }
+      // §21 · PEDIR LA PALABRA: los puntos que da el DOCENTE también son una
+      // FILA de live_answers. Sin esto se quedaban SOLO en el blob y el podio
+      // —que se DERIVA de live_answers desde la deuda A— mostraba 0 a todos:
+      // el docente repartía puntos toda la clase y al final no los veía nadie
+      // (verificado contra PocketBase real antes de arreglarlo). La fila va
+      // `scored` (el veredicto ya está dado) y `unscorable` (no hubo clave que
+      // acertar: el mérito es del docente, §22-5) → la tabla la pinta "—" con
+      // sus puntos, sin fingir un acierto automático.
+      if (patch.ql_award && Number.isInteger(patch.ql_award.item) && await answersReady()) {
+        const { playerId, points, item } = patch.ql_award;
+        const row = {
+          session: sessionId, player: playerId, item: Number(item),
+          value: null, ms: 0, scored: true, correct: false, unscorable: true,
+          points: Number(points) || 0,
+        };
+        const r = await postAnswer(row).catch(() => ({}));
+        if (r?.conflict) {
+          // Misma caja reabierta y re-otorgada: se actualiza la fila existente.
+          const prev = await getAnswerRow(sessionId, Number(item), playerId).catch(() => null);
+          if (prev) await pbFetch(`/api/collections/${ANS}/records/${prev.id}`, {
+            method: 'PATCH', body: JSON.stringify({ scored: true, correct: false, unscorable: true, points: row.points }),
+          }).catch(() => {});
+        }
+      }
       // El host puede tocar AMBOS: el blob y el campo `ql` (p.ej. al cerrar la
       // caja abierta tras dar puntos) — un solo PATCH.
       const ql = qlPatch(patch);

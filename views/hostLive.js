@@ -854,7 +854,9 @@ async function renderHost(rootSel, code, sessionId, activity) {
       const points    = +btn.dataset.pts;
       const newPoints = { ...qlPoints, [qlOpen]: points };
       await setSessionState(sessionId, {
-        ql_award: { playerId: qlBy, points },
+        // `item`: sin la caja, el adaptador no puede escribir la fila de
+        // live_answers y los puntos se quedarían solo en el blob (podio a 0).
+        ql_award: { playerId: qlBy, points, item: qlOpen },
         ql_open: null, ql_question: null, ql_image: null, ql_by: null, ql_by_name: null,
         ql_points: newPoints,
       });

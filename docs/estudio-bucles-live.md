@@ -587,3 +587,56 @@ Detalles que importan y están cubiertos por `tests/liveEnd.test.mjs`:
   jugadores (§21). El conteo exacto lo ve el profe en la pizarra.
 - El cierre automático es **una función compartida** (`maybeAutoEnd`): el test
   falla si un bucle se la salta y vuelve a quedarse sin final.
+
+---
+
+# Hallazgo al revisar `claim` · los puntos del docente NO llegaban al podio
+### (bug real, encontrado y arreglado en v1.51.347)
+
+Al ir a implementar CL-1/CL-2 apareció algo más grave que las dos mejoras:
+
+**En Pregunta en Vivo y en Ruleta, los puntos que reparte el docente durante toda
+la clase acababan en CERO en el podio.** Verificado contra un PocketBase real
+antes y después del arreglo (3 puntos → 0 · 3 puntos → 3).
+
+**Causa**: la deuda A (v1.51.272) hizo que el marcador se DERIVE de
+`live_answers` — "misma fuente que el podio", que era lo correcto. Pero este
+bucle nunca escribe una respuesta: el premio iba al blob de la sala
+(`ql_award` → `state.players[].score`), que el marcador derivado ya no mira. Los
+otros tres bucles no se enteraron porque todos pasan por `live_answers`.
+
+**Arreglo**: cada premio es también una fila, escrita por el DUEÑO de la
+colección (§21), con la semántica honesta de este bucle:
+`scored: true` (el veredicto ya está dado) + `unscorable: true` (no había clave
+que acertar: el mérito es del docente, §22-5). Así la tabla la pinta "—" con sus
+puntos —sin fingir un acierto automático— y el podio la suma como cualquier otra.
+Si la caja se reabre y se vuelve a premiar, la fila se actualiza en vez de
+duplicarse.
+
+**Esto responde de paso a CL-2** (que el informe diga que el punto lo puso el
+profe): la fila lo dice por sí sola, sin una columna nueva.
+
+**Por qué no lo cazó ningún test**: los tests de podio usan el driver local,
+cuyo marcador SÍ sale del motor (blob) — el bucle de `claim` solo se rompía en
+PocketBase. Cerrado con una guarda en `tests/unscorable.test.mjs` y anotado aquí
+como el patrón a vigilar: **un bucle que no escribe en `live_answers` no existe
+para el marcador**.
+
+---
+
+# B-2 · MEDIDO (v1.51.347): la rejilla de tableros NO es un problema
+
+La ficha 3 decía "hay que medirlo antes de tocarlo". Medido con la rejilla real
+y la CPU ralentizada ×6 (una pizarra de gama baja):
+
+| Alumnos | CPU normal | CPU ×6 (pizarra lenta) |
+|---|---|---|
+| 6 | 1,4 ms | 8,8 ms |
+| 12 | 2,4 ms | 15,9 ms |
+| 30 | **4,8 ms** | **39,3 ms** |
+
+El presupuesto para que NO se note son ~50 ms (3 fotogramas). Con 30 alumnos en
+una pizarra lenta estamos por debajo. **Conclusión: no se toca nada** — ni tope
+de mini-tableros ni repintado más lento. La sospecha era razonable y el dato
+dice que no. Si algún día se nota, el sospechoso NO es el pintado: será la
+frecuencia de sondeo o la red.
