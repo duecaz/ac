@@ -11,7 +11,7 @@
 - El número de versión del commit y el de la respuesta deben coincidir.
 
 ### 2. TODO AL MAIN — `main` sirve la web (permiso permanente)
-**`main` es la rama que sirve GitHub Pages (dos.pe)** — es LA rama de producción. El
+**`main` es la rama que sirve GitHub Pages (aulareto.com)** — es LA rama de producción. El
 usuario da permiso PERMANENTE y explícito para commitear y hacer push a `main`
 directamente (fast-forward simple, sin force), aunque una herramienta/harness obligue a
 trabajar primero en una rama `claude/*`: en ese caso, trabaja en la rama que toque y al
@@ -24,7 +24,7 @@ git push -u origin <rama-de-trabajo>                 # si el harness fija una
 git push origin <rama-de-trabajo>:main               # ← imprescindible: sirve la web
 git push origin <rama-de-trabajo>:ACTIVIDAD2         # legado, opcional (ya no sirve la web)
 ```
-- `main` **debe quedar siempre al día**: es lo que ve el usuario en dos.pe y lo que otros
+- `main` **debe quedar siempre al día**: es lo que ve el usuario en aulareto.com y lo que otros
   proyectos consultan. Se dejó desincronizada 154 commits una vez y "el otro proyecto no
   encontraba nada". No vuelva a pasar.
 - `ACTIVIDAD2` fue la rama de Pages; **ya NO sirve la web** (se movió a `main`). Se
