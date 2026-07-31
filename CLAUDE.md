@@ -90,6 +90,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | **¿Editar el contenido pierde la respuesta correcta?** (teclea en los 13 editores y re-pregunta al scorer) | `node tools/edit-audit.mjs` |
 | **Prueba de CARGA** (N alumnos concurrentes live+tareas contra PB real) | `core/stressTest.js` · botón `#/admin` "Simular carga" · `node tools/stress-live.mjs [N]` |
 | Modo SOLO (Wordwall) por dentro · identidad/auth · dev local | `docs/modo-wordwall.md` · `docs/identidad.md` · `docs/dev-local.md` |
+| **DECISIONES de producto pendientes** (contrastadas con Wordwall/Kahoot: identidad del alumno, imprimible, cuotas…) | **`docs/decisiones-pendientes.md`** |
 | Índice completo de docs | `docs/README.md` (lo histórico vive en `docs/historico/`) |
 | **Cómo se puntúa CADA actividad** (mapa de los 7 sitios que deciden puntos + plan) | **`docs/handoff-puntuacion.md`** |
 | **Centralizar decisiones repartidas en vistas** (fase→pantalla, payload, meta, prompt…) | **`docs/handoff-centralizacion.md`** |

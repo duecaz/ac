@@ -1,0 +1,114 @@
+# Decisiones de producto pendientes — contrastadas con Wordwall y Kahoot
+
+Los referentes ya tomaron estas decisiones; nosotros aún no. Este documento NO
+es un plan de tareas: es la lista de bifurcaciones donde el proyecto todavía
+puede ir a dos sitios distintos, con una recomendación por cada una. Cuando una
+se decide, baja a su handoff (o a `docs/leyes.md` si se convierte en norma) y
+sale de aquí.
+
+## Lo que YA está decidido (no re-litigar)
+
+| Decisión | Igual que… |
+|---|---|
+| Alumno **sin cuenta**: PIN + apodo | Kahoot |
+| **Puntos por velocidad** (kahoot) + podio como ceremonia | Kahoot |
+| Mismo contenido en **vivo** y en **tarea** (student-paced) | Kahoot |
+| **Biblioteca pública** con likes y publicar/borrador | Wordwall |
+| **Cambiar de plantilla** sobre el mismo contenido | Wordwall |
+| **Skins/temas** separados del juego (tokens, §3) | Wordwall (temas) |
+| Qué persiste cada modo (`core/persistPolicy.js`); VS/Equipos NO persisten | decisión propia |
+| El cliente AFIRMA, el veredicto lo pone el host/servidor (§22) | decisión propia |
+
+## D1 · Identidad del alumno: ¿apodo, clase o cuenta?
+
+- **Ellos**: Kahoot resuelve la partida con apodo y el seguimiento con
+  grupos/roster; Wordwall pide el nombre al asignar una tarea.
+- **Nosotros hoy**: apodo por sala + id anónimo por dispositivo. Un alumno no
+  existe entre una actividad y la siguiente → **no hay seguimiento en el año**,
+  que es justo lo que pide un colegio.
+- **Opciones**: (a) seguir con apodo suelto — cero fricción, cero seguimiento ·
+  (b) **CLASES**: el profe crea una clase con la lista de nombres y un código;
+  el alumno se identifica eligiendo su nombre — seguimiento sin cuentas ni datos
+  personales de menores · (c) cuentas de alumno — fricción alta y datos de menores.
+- **Recomendación: (b)**. Es el prerequisito de lo que ya está registrado como
+  deuda (PIN/NFC para pizarras, `docs/handoff-acceso-docente.md` U2-U4) y de los
+  informes "por alumno" que ya existen a medias. Impacto: colecciones `classes` y
+  `students`, un campo de alumno en `results`/`assignment_attempts`.
+
+## D2 · ¿El contenido es un objeto propio o vive dentro de la actividad?
+
+- **Ellos**: en Wordwall el activo es el CONTENIDO y la plantilla es una vista;
+  de una lista salen N juegos sin duplicar nada.
+- **Nosotros hoy**: actividad = contenido + plantilla, y cambiar de plantilla
+  CONVIERTE en el sitio (mismo id): lo que la plantilla destino no usa se pierde.
+  Las "listas" (`#/list/:id`) son otra cosa: una secuencia de partidas VS.
+- **Opciones**: (a) dejarlo así · (b) **"Duplicar como otra plantilla"** (no
+  destructivo: nace una actividad nueva y la original queda intacta) · (c) elevar
+  el contenido a entidad propia con actividades colgando de él.
+- **Recomendación: (b) ahora, (c) nunca salvo que la biblioteca lo pida**. (b) da
+  el 80% del valor de Wordwall con una fracción del coste y sin tocar el modelo
+  de datos; (c) es un rediseño de `storage`, informes y biblioteca entera.
+
+## D3 · ¿Imprimimos? (hoja de trabajo)
+
+- **Ellos**: Wordwall genera versión imprimible de muchas plantillas. Es lo que
+  engancha al profe con pocas tabletas: la misma actividad sirve en pantalla y
+  en papel.
+- **Nosotros hoy**: nada.
+- **Recomendación: sí, y por MODELO de contenido, no por plantilla**. Cinco hojas
+  genéricas (`qa`, `pairs`, `words`, `items`, `textCorrection`) cubren las 13
+  plantillas; una plantilla nueva hereda la hoja de su modelo sin escribir nada.
+  Coste bajo (CSS de impresión + una vista), valor alto en aulas con pocos
+  dispositivos.
+
+## D4 · ¿Aula SIN internet es un caso soportado?
+
+- **Ellos**: Kahoot y Wordwall exigen internet, sin matices.
+- **Nosotros hoy**: existe el backend `local` (misma máquina, BroadcastChannel) y
+  los HTML **desregistran** el service worker a propósito. O sea: la decisión
+  está tomada de hecho ("siempre hay internet") pero no declarada.
+- **Recomendación: decidirlo explícitamente**. Si se soporta, es nuestra única
+  ventaja estructural frente a los referentes (pizarra + móviles en la misma
+  red). Pero **solo después** de cerrar el problema de caché: ya nos costó dos
+  partidas (v1.51.336) y un PWA multiplica esa clase de fallo.
+
+## D5 · Taxonomía de la biblioteca
+
+- **Ellos**: Wordwall filtra por edad, asignatura e idioma, y cada actividad
+  tiene página pública. Ese es su motor de tráfico.
+- **Nosotros hoy**: `explore` + likes, sin vocabulario fijo.
+- **Recomendación: campos obligatorios al publicar** (grado · área · tema) con
+  vocabulario CERRADO (currículo peruano). Sin eso, la biblioteca no pasa de
+  "lo último publicado" por muchos likes que tenga.
+
+## D6 · Cuotas y retención (la Pi es compartida)
+
+- **Ellos**: Wordwall limita el plan gratuito (nº de recursos); es una decisión
+  de negocio Y de capacidad.
+- **Nosotros hoy**: sin límite de actividades por profe, sin tope de tamaño total
+  por actividad (solo 200 KB por imagen) y sin política de borrado de
+  `live_answers`/`live_sessions`. El servidor es un Raspberry Pi **compartido con
+  otros proyectos**.
+- **Recomendación: decidirlo ya, aunque sea generoso.** Tres números: actividades
+  por profe, tamaño máximo por actividad, y meses de retención de salas y
+  respuestas. Es la decisión más barata de tomar y la más cara de no tener.
+
+## D7 · Congelar el catálogo de bucles en vivo
+
+- **Ellos**: Kahoot tiene UN bucle (pregunta → responder → revelar → ranking) y
+  los tipos de pregunta son variantes, no juegos distintos.
+- **Nosotros hoy**: cuatro bucles declarados en `meta.play.live` (`rounds`,
+  `race`, `board`, y la fase `question-live`). Están declarados, que es lo
+  correcto — pero nada impide que aparezca un quinto.
+- **Recomendación: cerrarlo como norma** — no se añade un bucle nuevo sin entrada
+  en `docs/leyes.md` y su test. Cada bucle multiplica el coste de cada cambio en
+  vivo (lo hemos pagado ya en la carrera y en el tablero compartido).
+
+## Orden sugerido
+
+1. **D6** (cuotas/retención) — barato, protege el servidor compartido.
+2. **D1** (clases) — desbloquea seguimiento por alumno y el PIN/NFC ya registrado.
+3. **D3** (imprimible) — valor inmediato para el profe, coste contenido.
+4. **D5** (taxonomía) — hace útil la biblioteca antes de que crezca.
+5. **D2** (duplicar como otra plantilla) — pulido del flujo Wordwall.
+6. **D4** (sin internet) — solo tras estabilizar la caché.
