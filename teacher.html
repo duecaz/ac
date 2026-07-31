@@ -55,6 +55,18 @@
 <script>
 // Cache buster + error boundary. Loaded INLINE before any module so it
 // keeps working even if module fetch fails.
+// Caché HTTP (donde viven los ES modules con max-age=600): re-pedir cada
+// recurso propio con cache:'reload' — un reload normal NO los refresca.
+window.__wwHardRefetch = async function() {
+  try {
+    const urls = new Set([location.origin + location.pathname]);
+    for (const e of performance.getEntriesByType('resource')) {
+      const u = String(e.name || '');
+      if (u.startsWith(location.origin)) urls.add(u.split('?')[0]);
+    }
+    await Promise.allSettled([...urls].map(u => fetch(u, { cache: 'reload' })));
+  } catch {}
+};
 window.__wwClearAll = async function() {
   if (!confirm('¿Borrar todo (caché del navegador + datos locales) y recargar?')) return;
   try { localStorage.clear(); } catch {}
@@ -65,6 +77,7 @@ window.__wwClearAll = async function() {
   if ('serviceWorker' in navigator) {
     try { const regs = await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(r => r.unregister())); } catch {}
   }
+  await window.__wwHardRefetch();
   // Bypass disk cache by adding a unique query string.
   location.href = location.pathname + '?_=' + Date.now() + location.hash;
 };
@@ -72,6 +85,7 @@ window.__wwClearAll = async function() {
 window.__wwRefresh = async function() {
   if ('caches' in window) { try { const ns = await caches.keys(); await Promise.all(ns.map(n => caches.delete(n))); } catch {} }
   if ('serviceWorker' in navigator) { try { const rs = await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r => r.unregister())); } catch {} }
+  await window.__wwHardRefetch();
   location.href = location.pathname + '?_=' + Date.now() + location.hash;
 };
 // Eliminación AGRESIVA del Service Worker + toda la caché (mantiene tus datos).

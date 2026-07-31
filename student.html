@@ -59,6 +59,16 @@ window.__wwClearAll = async function() {
   if ('serviceWorker' in navigator) {
     try { const regs = await navigator.serviceWorker.getRegistrations(); await Promise.all(regs.map(r => r.unregister())); } catch {}
   }
+  // Caché HTTP (donde viven los ES modules con max-age=600): re-pedir cada
+  // recurso propio con cache:'reload' — un reload normal NO los refresca.
+  try {
+    const urls = new Set([location.origin + location.pathname]);
+    for (const e of performance.getEntriesByType('resource')) {
+      const u = String(e.name || '');
+      if (u.startsWith(location.origin)) urls.add(u.split('?')[0]);
+    }
+    await Promise.allSettled([...urls].map(u => fetch(u, { cache: 'reload' })));
+  } catch {}
   location.href = location.pathname + '?_=' + Date.now() + location.hash;
 };
 (function(){

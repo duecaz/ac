@@ -105,19 +105,24 @@ export async function renderPlay(rootSel, code) {
     mount(rootSel, html`<div class="alert alert-danger m-3">${escapeHtml(e.message)}</div>`); return;
   }
 
-  // ── VERSIÓN DESFASADA → auto-recarga (una vez) ─────────────────────────────
+  // ── VERSIÓN DESFASADA → recarga DURA del grafo (una vez) ───────────────────
   // La sala lleva la versión del profe (core/liveSnapshot.js). Si este móvil
-  // corre otra (módulos cacheados: el F5 normal NO los refresca), la mezcla
-  // rompe al pasar de lobby a pregunta — el bug real de la primera partida en
-  // producción. Recarga dura con cache-buster, UNA vez por sala (flag en
-  // sessionStorage para no ciclar si el CDN aún sirve lo viejo: en ese caso es
-  // mejor intentar jugar que un bucle de recargas).
+  // corre otra, el grafo de módulos está MEZCLADO (GitHub Pages sirve con
+  // max-age=600: tras un deploy conviven módulos nuevos y cacheados) y la
+  // mezcla rompe al pasar de lobby a pregunta — el bug real de las partidas en
+  // producción. Un reload/cache-buster de página NO refresca los ES modules:
+  // hay que re-pedir cada módulo con `cache:'reload'` (core/appRefresh.js) y
+  // LUEGO recargar. Una vez por sala (flag en sessionStorage): si tras eso el
+  // CDN aún sirve la versión anterior, el grafo al menos queda COHERENTE y es
+  // mejor jugar que ciclar recargas.
   if (activity?.appVersion && activity.appVersion !== VERSION) {
     const onceKey = `ww.vreload.${code}`;
     if (!sessionStorage.getItem(onceKey)) {
       sessionStorage.setItem(onceKey, '1');
       mount(rootSel, html`<div class="text-center py-5"><div class="spinner-border"></div>
         <p class="mt-3">Actualizando a la versión del profesor…</p></div>`);
+      const { refreshAppGraph } = await import('../core/appRefresh.js');
+      await refreshAppGraph();
       location.replace(location.pathname + '?_=' + clock.now() + location.hash);
       return;
     }

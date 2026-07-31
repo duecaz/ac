@@ -171,7 +171,21 @@ function stable(v) {
   const src = readFileSync(new URL('../views/studentLive.js', import.meta.url), 'utf8');
   assert.match(src, /activity\.appVersion !== VERSION/, 'studentLive compara su versión con la de la sala');
   assert.match(src, /ww\.vreload\./, 'y la recarga es UNA vez por sala (flag), no un bucle');
-  ok('versión de sala: el alumno con módulos cacheados se auto-actualiza (una vez)');
+  // La recarga tiene que ser DURA: un reload/cache-buster de página no refresca
+  // los ES modules (GitHub Pages: max-age=600) — hay que re-pedir cada módulo
+  // con cache:'reload' ANTES de recargar (core/appRefresh.js), o el móvil vuelve
+  // a arrancar con el mismo grafo mezclado (el bug de v1.51.335).
+  assert.match(src, /refreshAppGraph/, 'la auto-actualización refresca el GRAFO (cache:reload), no solo la página');
+  const refresher = readFileSync(new URL('../core/appRefresh.js', import.meta.url), 'utf8');
+  assert.match(refresher, /cache:\s*'reload'/, 'refreshAppGraph re-pide con cache:reload (lo único que salta el max-age)');
+  assert.match(refresher, /getEntriesByType/, 'y enumera los recursos realmente cargados por esta página');
+  // Los botones "Borrar caché"/"Actualizar" de los HTML hacen lo mismo: antes
+  // borraban CacheStorage (vacío) y dejaban intacta la caché HTTP real.
+  for (const page of ['student.html', 'teacher.html']) {
+    const htmlSrc = readFileSync(new URL('../' + page, import.meta.url), 'utf8');
+    assert.match(htmlSrc, /cache:\s*'reload'/, `${page}: el botón de limpiar caché re-pide los recursos con cache:reload`);
+  }
+  ok('versión de sala: la auto-actualización y los botones de caché refrescan el grafo de módulos de verdad');
 }
 
 // ── 5. La colección de la clave está CERRADA ───────────────────────────────
