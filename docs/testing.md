@@ -145,6 +145,26 @@ node tools/live-smoke.mjs     # sale 1 si el flujo canónico de una clase se rom
 **No cubierto todavía**: el modo Tarea end-to-end (mismo patrón de dos páginas,
 pendiente) y el modo carrera con dos alumnos.
 
+## 2c. ¿Editar el contenido rompe la clave? (`tools/edit-audit.mjs`)
+
+El bug de v1.51.337 (Quiz: corregir una errata en la opción CORRECTA dejaba la
+pregunta con `answer: ''` → todas las respuestas malas, en todos los modos y sin
+avisar) es de una CLASE que puede repetirse en cualquier plantilla: la clave de
+respuesta re-derivada DESPUÉS de mutar aquello de lo que depende (el texto, la
+posición). Esta herramienta la caza a lo bruto: monta el editor de cada
+plantilla, teclea en TODOS sus campos de texto —lo que hace el docente al
+corregir— y vuelve a preguntar **al scorer** (única verdad) si cada ítem sigue
+teniendo respuesta correcta. Si "puntuables antes → después" baja, editar rompió
+la clave.
+
+```bash
+node tools/edit-audit.mjs     # las 13 plantillas — sale 1 si alguna pierde su clave
+```
+
+No se teclea en el campo que ES la respuesta (cambiarlo a mano no es perder la
+clave, es cambiarla): esos selectores viven en `ANSWER_FIELDS`, dentro del
+script. Una plantilla nueva entra sola (recorre el registro).
+
 ## 3. Verificación headless (layout, táctil, visual)
 
 Lo que la suite Node no ve (¿el texto llena el marco?, ¿el trazo marca la
