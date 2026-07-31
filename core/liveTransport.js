@@ -39,6 +39,9 @@ export const pingHost = call('pingHost');
 export const joinSession = call('joinSession');
 export const submitAnswer = call('submitAnswer');
 export const getOwnAnswer = call('getOwnAnswer');
+// Filas propias del alumno en la sala — reanudar la carrera tras una recarga
+// (core/raceResume.js siembra la cola con lo YA acertado fuera).
+export const listOwnAnswers = call('listOwnAnswers');
 export const pingPresence = call('pingPresence');
 // Continuous progress broadcast for live "board" templates (e.g. Ball Sort):
 // unlike submitAnswer this UPSERTS the player's OWN row, so the host sees the

@@ -3,7 +3,8 @@ import { clock } from '../core/clock.js';
 import { startDeadlineTicker } from '../core/deadlineTicker.js';
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
-import { joinSession, getOwnAnswer, subscribeRoom, pingPresence, findRoomByCode, fetchSession, leaderboard, claimQuestion, submitProgress, submitRaceAttempt } from '../core/liveTransport.js';
+import { joinSession, getOwnAnswer, listOwnAnswers, subscribeRoom, pingPresence, findRoomByCode, fetchSession, leaderboard, claimQuestion, submitProgress, submitRaceAttempt } from '../core/liveTransport.js';
+import { raceResumeState } from '../core/raceResume.js';
 import { findAssignmentByCode } from '../core/assignmentsTransport.js';
 import { isAcceptableNickname } from '../core/nicknameFilter.js';
 import { acquire } from '../core/lifecycle.js';
@@ -88,6 +89,7 @@ export async function renderPlay(rootSel, code) {
   let raceQueue = null;       // null = not started yet; [] = finished
   let raceCorrectCount = 0;
   let raceFirstSent = new Set();  // ítems cuyo PRIMER intento ya se envió (análisis)
+  let raceSeed = null;        // promesa de la siembra de la cola (una sola vez)
   let qlSpinning = false;      // guards the question-live wheel mid-spin
   let qlRotation = 0;          // persisted wheel angle across spins
   // Tracks items we've already bumped streak for. Without this, host_seen_at
@@ -477,9 +479,27 @@ export async function renderPlay(rootSel, code) {
     const tpl = getTemplate(activity.template);
 
     if (raceQueue === null) {
-      raceQueue = allItems.map((_, i) => i);
-      raceCorrectCount = 0;
-      raceFirstSent = new Set();
+      // REANUDAR, no reiniciar (bug real de la primera partida): una recarga a
+      // mitad de carrera (F5, el móvil descartando la página al bloquear, o la
+      // auto-actualización de versión) perdía la cola en memoria y el alumno
+      // repetía TODO. La cola se siembra desde sus propias filas del servidor:
+      // lo ya acertado no vuelve; los fallados y los nuevos sí
+      // (core/raceResume.js). Sin red/sin filas → carrera desde cero, como antes.
+      if (!raceSeed) {
+        raceSeed = listOwnAnswers(session.id, player.playerId)
+          .catch(() => [])
+          .then((rows) => {
+            const s = raceResumeState(sessionItems(activity).length, rows);
+            raceQueue = s.queue;
+            raceCorrectCount = s.correctCount;
+            raceFirstSent = s.firstSent;
+            // ctx.setTimeout: si el alumno navegó (o el profe cerró) mientras la
+            // siembra estaba en vuelo, no pintar sobre otra vista/fase.
+            ctx.setTimeout(() => { if (session.phase === 'race') paintRace(); }, 0);
+          });
+      }
+      mount(rootSel, html`<div class="text-center py-5"><div class="spinner-border text-warning"></div></div>`);
+      return;
     }
 
     if (raceQueue.length === 0) {

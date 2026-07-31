@@ -760,6 +760,31 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       return engine.state.answers[`${itemIndex}:${playerId}`] || null;
     },
 
+    // Todas las filas PROPIAS del alumno en la sala (reanudar la carrera tras
+    // una recarga: core/raceResume.js). `correct` aquí significa "este
+    // dispositivo ya lo acertó": veredicto del settle O el hint de avance de la
+    // carrera (submitRaceAttempt escribe correct=true al acertar, §22-C6) — un
+    // fallo sin puntuar queda en null, no en false.
+    async listOwnAnswers(sessionId, playerId) {
+      if (await answersReady()) {
+        const filter = pbFilterParam(`session='${pbEscape(sessionId)}' && player='${pbEscape(playerId)}'`);
+        const res = await pbFetch(`/api/collections/${ANS}/records?filter=${filter}&perPage=500`);
+        return (res?.items || []).map(r => ({
+          itemIndex: r.item, value: r.value,
+          correct: (r.scored ? !!r.correct : (r.correct === true ? true : null)),
+          points: r.points,
+        }));
+      }
+      const { engine } = await load(sessionId);
+      return Object.entries(engine.state.answers)
+        .filter(([k]) => k.endsWith(':' + playerId))
+        .map(([k, v]) => ({
+          itemIndex: Number(k.split(':')[0]), value: v.value,
+          correct: (v.correct === true || v.hint === true) ? true : (v.correct === false ? false : null),
+          points: v.points,
+        }));
+    },
+
     async listPlayers(sessionId) {
       if (await playersReady()) return fetchPlayers(sessionId);
       const { engine } = await load(sessionId);

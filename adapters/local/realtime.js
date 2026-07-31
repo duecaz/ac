@@ -170,6 +170,20 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
       return load(code).engine.state.answers[`${itemIndex}:${playerId}`] || null;
     },
 
+    // Filas PROPIAS del alumno (reanudar la carrera tras recarga —
+    // core/raceResume.js). Espejo del adaptador PB: `correct: true` = ya lo
+    // acertó (veredicto O hint de carrera); un fallo sin puntuar queda en null.
+    async listOwnAnswers(code, playerId) {
+      const a = load(code).engine.state.answers;
+      return Object.entries(a)
+        .filter(([k]) => k.endsWith(':' + playerId))
+        .map(([k, v]) => ({
+          itemIndex: Number(k.split(':')[0]), value: v.value,
+          correct: (v.correct === true || v.hint === true) ? true : (v.correct === false ? false : null),
+          points: v.points,
+        }));
+    },
+
     async kickPlayer(code, playerId) {
       const { room, engine } = load(code);
       engine.state.players = engine.state.players.filter(p => p.id !== playerId);
