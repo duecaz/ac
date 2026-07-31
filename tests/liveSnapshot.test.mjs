@@ -24,7 +24,7 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 
 // Campos que el snapshot PUEDE llevar (whitelist del módulo) + los que añade.
 const ALLOWED = new Set(['id', 'title', 'template', 'presentation', 'live', 'rules',
-  'scoring', 'schemaVersion', 'payloads', 'content', 'itemCount']);
+  'scoring', 'schemaVersion', 'payloads', 'content', 'itemCount', 'appVersion']);
 
 // Actividad de prueba por plantilla, con contenido en el campo que cada modelo usa.
 function seed(name) {
@@ -156,6 +156,22 @@ function stable(v) {
     assert.strictEqual(needsClientKey(phase), false, `la fase ${phase} NO justifica mandar la clave`);
   }
   ok('needsClientKey: solo la carrera libre, y está dicho en el módulo');
+}
+
+// ── 4b. La sala lleva la VERSIÓN del profe y el alumno desfasado se recarga ──
+// El bug real de la primera partida en producción: móviles con módulos JS
+// cacheados (el F5 no refresca ES modules) + snapshot nuevo = pantalla muerta al
+// pasar de lobby a pregunta. La sala declara la versión y el alumno se
+// auto-recarga UNA vez si no coincide.
+{
+  const { VERSION } = await import('../core/constants.js');
+  const snap = studentSnapshot({ id: 'a', template: 'quiz', content: { items: [] } });
+  assert.strictEqual(snap.appVersion, VERSION, 'el snapshot declara la versión de la app del profe');
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../views/studentLive.js', import.meta.url), 'utf8');
+  assert.match(src, /activity\.appVersion !== VERSION/, 'studentLive compara su versión con la de la sala');
+  assert.match(src, /ww\.vreload\./, 'y la recarga es UNA vez por sala (flag), no un bucle');
+  ok('versión de sala: el alumno con módulos cacheados se auto-actualiza (una vez)');
 }
 
 // ── 5. La colección de la clave está CERRADA ───────────────────────────────

@@ -23,6 +23,7 @@
 // Módulo PURO (sin fetch): entra actividad, sale snapshot.
 import { getTemplate } from './registry.js';
 import { sessionItems, roundPayloadOf } from '../kernel/session/engine.js';
+import { VERSION } from './constants.js';
 
 /** Campos de la actividad que el alumno SÍ necesita (whitelist: un campo nuevo
  *  del modelo no se cuela solo). `content` NO está, a propósito. */
@@ -59,6 +60,12 @@ export function studentSnapshot(activity) {
   // Vacío y que el payload manda: la única regla que no se puede colar.
   out.content = { items: items.map(() => ({})) };
   out.itemCount = items.length;
+  // Versión de la app del PROFE al crear la sala. El alumno la compara con la
+  // suya: en un aula real conviven móviles con módulos cacheados de versiones
+  // distintas (el F5 del móvil NO refresca los ES modules), y una mezcla
+  // vieja-app/nuevo-snapshot se muere en silencio al pasar de lobby a pregunta.
+  // Con esto, el alumno desfasado se AUTO-RECARGA una vez (ver studentLive).
+  out.appVersion = VERSION;
   return out;
 }
 

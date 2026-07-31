@@ -16,6 +16,7 @@ import * as Streaks from '../core/streaks.js';
 import { getTemplate } from '../core/registry.js';
 import { sessionItems, roundPayloadOf } from '../kernel/session/engine.js';
 import { visibleItem } from '../core/liveSnapshot.js';
+import { VERSION } from '../core/constants.js';
 import { lsGet, lsSet } from '../core/ls.js';
 import { wheelSvg } from '../templates/wheel/render.js';
 import { pickIndex } from '../templates/wheel/logic.js';
@@ -100,6 +101,25 @@ export async function renderPlay(rootSel, code) {
     activity = sess.activity_snap;
   } catch (e) {
     mount(rootSel, html`<div class="alert alert-danger m-3">${escapeHtml(e.message)}</div>`); return;
+  }
+
+  // ── VERSIÓN DESFASADA → auto-recarga (una vez) ─────────────────────────────
+  // La sala lleva la versión del profe (core/liveSnapshot.js). Si este móvil
+  // corre otra (módulos cacheados: el F5 normal NO los refresca), la mezcla
+  // rompe al pasar de lobby a pregunta — el bug real de la primera partida en
+  // producción. Recarga dura con cache-buster, UNA vez por sala (flag en
+  // sessionStorage para no ciclar si el CDN aún sirve lo viejo: en ese caso es
+  // mejor intentar jugar que un bucle de recargas).
+  if (activity?.appVersion && activity.appVersion !== VERSION) {
+    const onceKey = `ww.vreload.${code}`;
+    if (!sessionStorage.getItem(onceKey)) {
+      sessionStorage.setItem(onceKey, '1');
+      mount(rootSel, html`<div class="text-center py-5"><div class="spinner-border"></div>
+        <p class="mt-3">Actualizando a la versión del profesor…</p></div>`);
+      location.replace(location.pathname + '?_=' + clock.now() + location.hash);
+      return;
+    }
+    console.warn(`[studentLive] versión desfasada tras recargar (app ${VERSION} vs sala ${activity.appVersion}) — se intenta jugar igual`);
   }
 
   // Escena POR FASE (docs/handoff-player-frame.md, Etapa 1): el fondo de la
