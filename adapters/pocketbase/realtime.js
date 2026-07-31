@@ -410,6 +410,8 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         current_item: rec.state?.currentItem,
         deadline: rec.state?.deadline ?? null,
         answers_open_at: rec.state?.answersOpenAt ?? null,
+        end_policy: rec.state?.endPolicy ?? null,
+        end_n: rec.state?.endN ?? null,
         activity_snap: rec.activity,
         ...qlOf(rec),
       };
@@ -426,6 +428,8 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         current_item: rec.state?.currentItem,
         deadline: rec.state?.deadline ?? null,
         answers_open_at: rec.state?.answersOpenAt ?? null,
+        end_policy: rec.state?.endPolicy ?? null,
+        end_n: rec.state?.endN ?? null,
         started_at: rec.state?.startedAt ?? null,
         activity_snap: rec.activity,
         ...qlOf(rec),
@@ -570,6 +574,11 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       // temporizador local — así todos los móviles leen lo mismo y quien entra
       // tarde o recarga ve el tiempo que queda de verdad.
       if ('answers_open_at' in patch) engine.state.answersOpenAt = patch.answers_open_at ?? null;
+      // POLÍTICA DE FIN de carrera/tablero (core/liveEnd.js): vive en la sala
+      // porque el ALUMNO también la necesita — es lo que le dice si espera un
+      // reloj o a sus compañeros, en vez de un "esperando…" mudo.
+      if ('end_policy' in patch) engine.state.endPolicy = patch.end_policy ?? null;
+      if ('end_n' in patch) engine.state.endN = patch.end_n ?? null;
       if ('started_at' in patch) engine.state.startedAt = patch.started_at ?? null;
       if ('ql_points' in patch) engine.state.qlPoints = patch.ql_points ?? {};
       if (patch.ql_award) {

@@ -28,6 +28,7 @@ import { podiumHtml } from '../core/podium.js';
 import { QL_COLORS } from '../core/questionLive.js';
 import { questionWindowMs, RACE_POLL_MS, BOARD_POLL_MS, readSeconds, READ_SECONDS_MAX } from '../core/timings.js';
 import { loopsOf, supportsLoop, defaultLoop, LOOP_LABELS, hasAdvanceChoice } from '../core/liveLoops.js';
+import { END_LABELS, END_POLICIES, DEFAULT_POLICY, DEFAULT_FIRST_N, DEFAULT_MINUTES, MAX_MINUTES, shouldEnd, endPolicyOf } from '../core/liveEnd.js';
 
 const STUDENT_BASE = location.origin + location.pathname.replace(/teacher\.html.*/, 'student.html');
 
@@ -129,6 +130,12 @@ async function renderHost(rootSel, code, sessionId, activity) {
   let autoAdvance = advanceMode !== 'manual';    // "avanzar solo" (dentro de rondas)
   let readSecs = readSeconds(activity);          // ventana de LECTURA (R-1)
   let prevRanks = null;                          // puestos de la ronda anterior (R-4)
+  // POLÍTICA DE FIN de carrera/tablero (C-1, core/liveEnd.js): sin ella la
+  // partida no acaba nunca sola y la clase se queda en el limbo.
+  let endPolicy = DEFAULT_POLICY;
+  let endN = DEFAULT_FIRST_N;
+  let endMinutes = DEFAULT_MINUTES;
+  let autoEnding = false;                        // el cierre automático dispara UNA vez
   let session = await fetchSession(sessionId);
   let players = await listPlayers(sessionId);
   let answers = [];
@@ -176,6 +183,18 @@ async function renderHost(rootSel, code, sessionId, activity) {
     }
   }
   ctx.add(await subscribeRoom(sessionId, onChange));
+
+  // C-1 · ¿toca cerrar sola la partida? (core/liveEnd.js) La MISMA comprobación
+  // para carrera y tablero: cambia solo qué cuenta como "terminado". Dispara una
+  // vez (`autoEnding`) y el profe conserva su botón de cortar antes.
+  async function maybeAutoEnd(finished) {
+    if (autoEnding || session.status === 'ended') return false;
+    const { policy, n, deadlineMs } = endPolicyOf(session);
+    if (!shouldEnd({ policy, n, deadlineMs, now: clock.now(), players: players.length, finished })) return false;
+    autoEnding = true;
+    try { await endSession(sessionId); } catch (e) { autoEnding = false; console.warn('[hostLive] cierre automático:', e); }
+    return true;
+  }
 
   // R-1 · ABRIR UNA PREGUNTA = un solo PATCH con los DOS instantes: cuándo se
   // pueden tocar las respuestas y cuándo cierra. El ritmo se escribe en la SALA
@@ -300,6 +319,11 @@ async function renderHost(rootSel, code, sessionId, activity) {
     attachFullscreenButton(rootSel);
     on(rootSel, 'click', '.loop-pick', (_, b) => { loop = b.dataset.loop; paintLobby(false); });
     on(rootSel, 'click', '.adv-pick', (_, b) => { autoAdvance = b.dataset.auto === '1'; paintLobby(false); });
+    on(rootSel, 'click', '.end-pick', (_, b) => { endPolicy = b.dataset.end; paintLobby(false); });
+    const nEl = document.getElementById('end-n');
+    if (nEl) nEl.onchange = (e) => { endN = Math.max(1, Math.min(60, Math.round(+e.target.value || DEFAULT_FIRST_N))); };
+    const minEl = document.getElementById('end-min');
+    if (minEl) minEl.onchange = (e) => { endMinutes = Math.max(1, Math.min(MAX_MINUTES, Math.round(+e.target.value || DEFAULT_MINUTES))); };
     const readEl = document.getElementById('read-secs');
     if (readEl) readEl.onchange = (e) => { readSecs = Math.max(0, Math.min(READ_SECONDS_MAX, Math.round(+e.target.value || 0))); };
     on(rootSel, 'click', '#btn-start', async () => {
@@ -307,7 +331,15 @@ async function renderHost(rootSel, code, sessionId, activity) {
       if (loop === 'claim') {
         await setSessionState(sessionId, { status: 'running', phase: 'question-live', current_item: 0, started_at: startedAt });
       } else if (loop === 'race' || loop === 'board') {
-        await setSessionState(sessionId, { status: 'running', phase: 'race', current_item: 0, started_at: startedAt, deadline: null });
+        // El "tiempo límite" viaja como INSTANTE en la sala (§26 ficha 1b), no
+        // como un contador del host: así el alumno ve el mismo reloj y sobrevive
+        // a que el profe recargue.
+        const deadline = endPolicy === 'time'
+          ? new Date(clock.now() + endMinutes * 60_000).toISOString() : null;
+        await setSessionState(sessionId, {
+          status: 'running', phase: 'race', current_item: 0, started_at: startedAt,
+          deadline, end_policy: endPolicy, end_n: endN,
+        });
       } else {
         await setSessionState(sessionId, { started_at: startedAt });
         await openQuestion(0);
@@ -586,6 +618,20 @@ async function renderHost(rootSel, code, sessionId, activity) {
     }, everyMs);
   }
 
+  // Cómo va a terminar esto, en la pizarra: con tiempo límite el cronómetro es
+  // DESCENDENTE (queda X) — el mismo instante que ve el alumno; sin él, se dice
+  // la regla ("terminan todos" / "primeros N"), que es lo que la clase pregunta.
+  function endBadge() {
+    const { policy, n, deadlineMs } = endPolicyOf(session);
+    if (policy === 'time' && deadlineMs) {
+      const left = Math.max(0, deadlineMs - clock.now());
+      const m = Math.floor(left / 60000), s2 = Math.floor((left % 60000) / 1000);
+      return `queda ${m}:${String(s2).padStart(2, '0')}`;
+    }
+    if (policy === 'firstN') return `terminan los ${n} primeros`;
+    return 'terminan todos';
+  }
+
   async function paintRace(phaseChanged = true) {
     if (phaseChanged) emitGame(GameEvents.LOBBY_END);
     let allAnswers;
@@ -616,6 +662,8 @@ async function renderHost(rootSel, code, sessionId, activity) {
     // entrada a la sala): cada alumno ve su barra crecer sin compararse en
     // público. La clasificación existe, pero en el PODIO, al final.
     const sorted = players.map(p => prog[p.id]).filter(Boolean);
+    // ¿Se cumple la política de fin? (todos · primeros N · tiempo)
+    if (await maybeAutoEnd(sorted.filter(p => p.items.size >= items.length).length)) return;
     const total = items.length;
     const elapsed = session.started_at ? Math.floor((clock.now() - new Date(session.started_at).getTime()) / 1000) : 0;
     const mins = Math.floor(elapsed / 60);
@@ -623,7 +671,8 @@ async function renderHost(rootSel, code, sessionId, activity) {
 
     mount(rootSel, html`
       <div class="d-flex justify-content-between align-items-center mb-3">
-        <h4 class="mb-0"><i class="bi bi-flag-fill text-warning me-2"></i>Carrera libre</h4>
+        <h4 class="mb-0"><i class="bi bi-flag-fill text-warning me-2"></i>Carrera libre
+          <span class="badge bg-secondary ms-2">${escapeHtml(endBadge())}</span></h4>
         <span class="badge bg-secondary fs-6" id="race-timer">${mins}:${String(secs).padStart(2,'0')}</span>
         ${fullscreenButtonHtml()}
       </div>
@@ -690,13 +739,15 @@ async function renderHost(rootSel, code, sessionId, activity) {
     // además hace saltar las celdas bajo el dedo del que está jugando. La
     // clasificación (resuelto → menos movimientos/tiempo) es cosa del PODIO.
     const solvedCount = cells.filter(c => c.value?.solved).length;
+    if (await maybeAutoEnd(solvedCount)) return;
     const elapsed = session.started_at ? Math.floor((clock.now() - new Date(session.started_at).getTime()) / 1000) : 0;
     const mins = Math.floor(elapsed / 60), secs = elapsed % 60;
 
     mount(rootSel, html`
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="mb-0"><i class="bi bi-droplet-half text-info me-2"></i>Ordena las pelotas
-          <span class="badge bg-success ms-2">${solvedCount}/${players.length} resueltos</span></h4>
+          <span class="badge bg-success ms-2">${solvedCount}/${players.length} resueltos</span>
+          <span class="badge bg-secondary ms-1">${escapeHtml(endBadge())}</span></h4>
         <span class="badge bg-secondary fs-6" id="race-timer">${mins}:${String(secs).padStart(2,'0')}</span>
         ${fullscreenButtonHtml()}
       </div>

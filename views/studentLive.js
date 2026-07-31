@@ -25,6 +25,7 @@ import { spinTarget, normalizeRotation, animateSpin, SPIN_DUR_PICK } from '../te
 import { QL_COLORS } from '../core/questionLive.js';
 import { RACE_FLASH_MS, questionWindowMs } from '../core/timings.js';
 import { supportsLoop } from '../core/liveLoops.js';
+import { endPolicyOf, waitingInfo } from '../core/liveEnd.js';
 
 const NICK_KEY = 'ww.nick';
 
@@ -562,15 +563,37 @@ export async function renderPlay(rootSel, code) {
     }
 
     if (raceQueue.length === 0) {
+      // C-1 · El que termina primero ya no mira un "esperando…" mudo: se le dice
+      // QUÉ se espera, según la política declarada en la sala (core/liveEnd.js).
+      // Con tiempo límite ve el mismo reloj que la pizarra (instante de la sala,
+      // no un contador propio).
+      const { policy, n, deadlineMs } = endPolicyOf(session);
+      // El alumno no lee la lista de jugadores (§21): se le dice la REGLA, no un
+      // número inventado. El conteo exacto lo ve el profe en la pizarra.
+      const info = waitingInfo({ policy, n });
       mount(rootSel, html`
         <div class="text-center py-5">
           <i class="bi bi-trophy-fill display-1 text-warning"></i>
           <h2 class="mt-3">¡Terminaste!</h2>
           <p class="lead">${raceCorrectCount} / ${allItems.length} correctas</p>
-          <p class="text-muted">Esperando que el profesor cierre la carrera…</p>
-          <div class="spinner-border text-warning mt-2"></div>
+          <p class="text-muted">${escapeHtml(info.text)}</p>
+          ${info.showClock ? '<div class="h3" id="race-left">—</div>' : '<div class="spinner-border text-warning mt-2"></div>'}
         </div>
       `);
+      if (info.showClock && deadlineMs) {
+        // Primitivo compartido (§23): reloj hasta un instante del servidor, con
+        // guard de fase para que no repinte encima del podio.
+        startDeadlineTicker({
+          deadline: deadlineMs, ctx,
+          while: () => session.phase === 'race' && !!document.getElementById('race-left'),
+          onTick: (leftMs) => {
+            const el = document.getElementById('race-left');
+            if (!el) return;
+            const s2 = Math.max(0, Math.ceil(leftMs / 1000));
+            el.textContent = `${Math.floor(s2 / 60)}:${String(s2 % 60).padStart(2, '0')}`;
+          },
+        });
+      }
       return;
     }
 

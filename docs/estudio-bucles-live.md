@@ -385,7 +385,7 @@ propio; en carrera **no termina nunca solo**.
 
 ## Las tres preguntas abiertas, con recomendación
 
-**C-1 · ¿Qué significa "terminar"?**
+**C-1 · ¿Qué significa "terminar"?** — ✅ **DECIDIDO Y APLICADO (v1.51.346)**
 Hoy: nada — la carrera sigue hasta que el profe corta, aunque los 30 hayan
 acabado hace dos minutos. El primero en terminar se queda mirando una pantalla
 de "esperando" sin saber cuánto.
@@ -456,7 +456,7 @@ más. Lo que sí deberían compartir es la **política de fin** (C-1) y la de
 
 ## Recomendaciones
 
-**B-1 · Fin declarado, igual que en la carrera**: "cuando todos resuelvan",
+**B-1** — ✅ **APLICADO (v1.51.346)**: fin declarado, igual que en la carrera: "cuando todos resuelvan",
 "los primeros N" o "tiempo límite". Misma implementación, mismo instante en la
 sala. Es literalmente el mismo código si se hace una vez.
 
@@ -552,3 +552,38 @@ vivo, las celdas **saltaban bajo el dedo** del alumno que estaba jugando.
 Vigilado por `tests/liveLoops.test.mjs` ("exposición: carrera y tablero muestran
 avance; rondas conserva su ranking"), con contra-prueba incluida para que nadie
 "arregle" el ranking de rondas por error.
+
+---
+
+# Decisión aplicada · POLÍTICA DE FIN (C-1 / B-1, v1.51.346)
+
+En rondas el juego acaba solo (se terminan las preguntas). Carrera y tablero
+**no acababan nunca**: seguían hasta que el profe pulsaba "Terminar", aunque los
+30 hubieran acabado hacía dos minutos — y el primero que terminaba miraba un
+"esperando…" mudo, sin saber si faltaban diez segundos o diez minutos.
+
+**Una sola política (`core/liveEnd.js`) que consumen los dos bucles**, elegida en
+el lobby:
+
+| | Cuándo cierra | Para qué sirve |
+|---|---|---|
+| **Cuando todos terminen** (defecto) | el último acaba | nadie se queda a medias |
+| **Los primeros N** | acaba el N-ésimo | competición corta |
+| **Tiempo límite** | llega el instante | la clase tiene 10 minutos y punto |
+
+Detalles que importan y están cubiertos por `tests/liveEnd.test.mjs`:
+
+- El **tiempo límite viaja como INSTANTE en la sala** (§26 ficha 1b), así que el
+  alumno ve **el mismo reloj** que la pizarra y sobrevive a que el profe recargue.
+- **Una sala vacía no se auto-termina** (0 de 0 no es "todos acabaron").
+- Con **menos alumnos que N**, basta con que acaben todos (si no, no cerraría
+  nunca).
+- **Sin instante, la política de tiempo no cierra**: mejor que corte el profe a
+  cerrar una clase por sorpresa.
+- El profe **conserva siempre su botón** de terminar antes: la política decide
+  cuándo se cierra SOLA, no le quita el mando.
+- Al alumno se le dice **la regla, no un número inventado** ("termina cuando
+  acaben todos" / "los 3 primeros" / reloj), porque el alumno no lee la lista de
+  jugadores (§21). El conteo exacto lo ve el profe en la pizarra.
+- El cierre automático es **una función compartida** (`maybeAutoEnd`): el test
+  falla si un bucle se la salta y vuelve a quedarse sin final.
