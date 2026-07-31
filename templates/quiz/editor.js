@@ -7,6 +7,7 @@ import { renderImagePicker, attachImagePicker } from '../../core/imagePicker.js'
 import { itemControlsHtml, reorderArray, ruleScopeNote } from '../../core/editorPrimitives.js';
 import { rid } from '../../core/ids.js';
 import { renderEditorShell } from '../../core/editorShell.js';
+import { readSeconds } from '../../core/timings.js';
 
 export function renderQuizEditor(root, activity, onChange) {
   const a = activity;
@@ -114,6 +115,9 @@ function liveHtml(a) {
         <option value="autoOnTimer" ${a.live.advanceMode === 'autoOnTimer' ? 'selected' : ''}>autoOnTimer</option>
       </select></div>
     <div class="col-md-4"><label class="form-label">Timer pregunta (s)</label><input id="l-qtimer" type="number" min="5" max="300" class="form-control" value="${a.live.questionTimer}"></div>
+    <div class="col-md-4"><label class="form-label">Tiempo de lectura (s)</label>
+      <input id="l-read" type="number" min="0" max="30" class="form-control" value="${readSeconds(a)}">
+      <div class="form-text">Se ve la pregunta pero aún no se puede responder. 0 = al instante.</div></div>
     <div class="col-md-4"><label class="form-label">Bloquear respuestas</label>
       <select class="form-select" id="l-lock">
         <option value="firstOf" ${a.live.lockAnswersOn === 'firstOf' ? 'selected' : ''}>firstOf</option>
@@ -143,6 +147,7 @@ function wireLive(root, a, ctx) {
   const oc = ctx.onChange;
   on(root, 'change', '#l-advance', e => { a.live.advanceMode = e.target.value; oc(a); });
   on(root, 'input', '#l-qtimer', e => { a.live.questionTimer = +e.target.value || 20; oc(a); });
+  on(root, 'input', '#l-read', e => { a.live.readSeconds = Math.max(0, Math.min(30, Math.round(+e.target.value || 0))); oc(a); });
   on(root, 'change', '#l-lock', e => { a.live.lockAnswersOn = e.target.value; oc(a); });
   on(root, 'change', '#l-points', e => { a.live.pointsModel = e.target.value; oc(a); });
   on(root, 'input', '#l-bonus', e => { a.live.speedBonusMax = +e.target.value || 0; oc(a); });

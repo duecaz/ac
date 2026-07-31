@@ -88,6 +88,8 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
       if (patch.phase) s.phase = patch.phase;
       if ('current_item' in patch) s.currentItem = patch.current_item;
       if ('deadline' in patch) room.deadline = patch.deadline ?? null;
+      // R-1 · espejo del driver PB: el instante de apertura de respuestas.
+      if ('answers_open_at' in patch) room.answersOpenAt = patch.answers_open_at ?? null;
       if ('started_at' in patch) room.startedAt = patch.started_at ?? null;
       if ('ql_points' in patch) s.qlPoints = patch.ql_points ?? {};
       // Espejo del driver PB: el "pedir la palabra" vive en room.ql, fuera del
@@ -236,6 +238,7 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
         current_item: r.state.currentItem,
         deadline: r.deadline ?? null,
         started_at: r.startedAt ?? null,
+        answers_open_at: r.answersOpenAt ?? null,
         activity_snap: r.activity,
         // `ql` fuera del blob (§22), con respaldo al blob de salas anteriores.
         ql_open: r.ql?.open ?? r.state.qlOpen ?? null,

@@ -21,7 +21,7 @@ export class MathTemplate extends BaseTemplate {
     aspectRatio: '16/10',
     modes: { solo: true, live: true, async: true, practice: true },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
-    play:            { vs: 'race', teams: 'turns', live: 'rounds', retry: true },
+    play:            { vs: 'race', teams: 'turns', live: ['rounds', 'race'], retry: true },
     needsImageUpload: false,
     needsAudioUpload: false,
     defaultRules: () => ({ randomize: true }),

@@ -20,7 +20,7 @@ export class BallsortTemplate extends BaseTemplate {
     aspectRatio:     '4/3',
     modes:           { solo: true, live: true, async: true, practice: false },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
-    play:            { vs: 'race', teams: 'board', live: 'board' },
+    play:            { vs: 'race', teams: 'board', live: ['board'] },
     // LIVE 'board' (declarado en play.live): tablero ÚNICO compartido — cada
     // alumno resuelve el MISMO puzle a su ritmo y el host ve cada tablero
     // avanzar movimiento a movimiento sobre la fase 'race'.

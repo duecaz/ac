@@ -101,10 +101,11 @@ ok(`${templates.length} payloads envenenados: ninguno filtra la clave (ni por no
   const act = { content: ws.meta.defaultContent(), rules: ws.meta.defaultRules() };
   const p = ws.getRoundPayload(act, { itemIndex: 0 });
   assert.ok(Array.isArray(p.placed) && p.placed.length, 'la sopa reparte el tablero con su colocación (pantalla compartida)');
-  assert.strictEqual(ws.meta.play.live, 'none', "quien lleva solución en el payload DEBE declarar play.live 'none'");
+  assert.deepStrictEqual(ws.meta.play.live, [], 'quien lleva solución en el payload NO puede declarar ningún bucle en vivo (§26)');
   // Y la regla general: ninguna plantilla que declare live lleva 'placed'/'solution'.
   for (const T of templates) {
-    if (T.meta.play?.live && T.meta.play.live !== 'none') {
+    const loops = Array.isArray(T.meta.play?.live) ? T.meta.play.live : (T.meta.play?.live ? [T.meta.play.live] : []);
+    if (loops.filter(l => l !== 'none').length > 0) {
       const a2 = { content: T.meta.defaultContent ? T.meta.defaultContent() : {}, rules: T.meta.defaultRules ? T.meta.defaultRules() : {} };
       if (T.migrateContent) { try { a2.content = T.migrateContent(a2.content) ?? a2.content; } catch {} }
       let pl = null; try { pl = T.getRoundPayload(a2, { itemIndex: 0 }); } catch {}

@@ -23,3 +23,11 @@
 .ww-podium .step.s1 { height: 220px; }
 .ww-podium .step.s2 { height: 160px; }
 .ww-podium .step.s3 { height: 120px; }
+
+/* R-1 · LECTURA (§26 ficha 1b): mientras la pizarra está en "preparados" se ve
+   el enunciado pero NO las opciones — es lo que separa "leer" de "responder" y
+   hace justo el bonus de velocidad. La clase la pone/quita views/hostLive.js
+   con el MISMO instante que desbloquea los móviles. */
+.hl-reading .ww-kahoot-grid { visibility: hidden; }
+/* Y en el móvil: se lee, no se toca (mismo instante que la pizarra). */
+.s-reading { pointer-events: none; opacity: .85; }

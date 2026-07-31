@@ -26,7 +26,8 @@ import { hostPaintDecision } from '../core/livePhases.js';
 import { isStudentSnapshot } from '../core/liveSnapshot.js';
 import { podiumHtml } from '../core/podium.js';
 import { QL_COLORS } from '../core/questionLive.js';
-import { questionWindowMs, RACE_POLL_MS, BOARD_POLL_MS } from '../core/timings.js';
+import { questionWindowMs, RACE_POLL_MS, BOARD_POLL_MS, readSeconds, READ_SECONDS_MAX } from '../core/timings.js';
+import { loopsOf, supportsLoop, defaultLoop, LOOP_LABELS, hasAdvanceChoice } from '../core/liveLoops.js';
 
 const STUDENT_BASE = location.origin + location.pathname.replace(/teacher\.html.*/, 'student.html');
 
@@ -120,9 +121,14 @@ async function renderHost(rootSel, code, sessionId, activity) {
   const advanceMode = live.advanceMode || 'manual';
   // LIVE "board" templates (Ball Sort): a single shared board everyone solves at
   // their own pace while the host watches each board live. Always runs as a race.
-  const isBoard = tpl?.meta?.play?.live === 'board';
-  let liveMode = isBoard ? 'race' : ((advanceMode === 'manual') ? 'manual' : 'auto');
-  let autoAdvance = liveMode === 'auto';
+  // §26 — los bucles salen de lo que la plantilla DECLARA (core/liveLoops.js),
+  // no de mirar su nombre ni de un <select> fijo (ley §0).
+  const loops = loopsOf(tpl);
+  const isBoard = supportsLoop(tpl, 'board');
+  let loop = defaultLoop(tpl) || 'rounds';       // bucle elegido en el lobby
+  let autoAdvance = advanceMode !== 'manual';    // "avanzar solo" (dentro de rondas)
+  let readSecs = readSeconds(activity);          // ventana de LECTURA (R-1)
+  let prevRanks = null;                          // puestos de la ronda anterior (R-4)
   let session = await fetchSession(sessionId);
   let players = await listPlayers(sessionId);
   let answers = [];
@@ -171,6 +177,20 @@ async function renderHost(rootSel, code, sessionId, activity) {
   }
   ctx.add(await subscribeRoom(sessionId, onChange));
 
+  // R-1 · ABRIR UNA PREGUNTA = un solo PATCH con los DOS instantes: cuándo se
+  // pueden tocar las respuestas y cuándo cierra. El ritmo se escribe en la SALA
+  // (§26 ficha 1b): un temporizador local se desincroniza entre móviles, no
+  // sobrevive a recargar ni a entrar tarde, y no es verificable en el servidor.
+  function openQuestion(idx) {
+    const now = clock.now();
+    const openAt = now + readSecs * 1000;
+    return setSessionState(sessionId, {
+      status: 'running', phase: 'question', current_item: idx,
+      answers_open_at: new Date(openAt).toISOString(),
+      deadline: new Date(openAt + timerSec * 1000).toISOString(),
+    });
+  }
+
   function joinUrl() { return `${STUDENT_BASE}#/play/${code}`; }
   function qrUrl() { return `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(joinUrl())}`; }
 
@@ -195,9 +215,45 @@ async function renderHost(rootSel, code, sessionId, activity) {
     scene(false); paintLobby(phaseChanged);
   }
 
+  // Dos preguntas ORDENADAS (§26 ficha 1b): primero "¿cómo juega la clase?"
+  // —construido desde los bucles que la PLANTILLA declara, no desde un <select>
+  // fijo— y solo entonces los ajustes de ese bucle. Antes eran tres opciones al
+  // mismo nivel ("manual · automático · carrera") que mezclaban qué juego con
+  // quién avanza, y por eso la carrera se ofrecía hasta donde no tenía sentido.
+  function lobbySetupHtml() {
+    if (loops.length === 0) return '<div class="mt-4"></div>';
+    const chooser = loops.length > 1 ? `
+      <div class="mb-3">
+        <div class="text-light small mb-1">¿Cómo juega la clase?</div>
+        <div class="btn-group" role="group">
+          ${loops.map(l => `<button type="button" class="btn btn-sm ${l === loop ? 'btn-warning' : 'btn-outline-light'} loop-pick" data-loop="${l}">${escapeHtml(LOOP_LABELS[l].label)}</button>`).join('')}
+        </div>
+        <div class="text-muted small mt-1">${escapeHtml(LOOP_LABELS[loop]?.hint || '')}</div>
+      </div>` : `<div class="text-muted small mb-3">${escapeHtml(LOOP_LABELS[loop]?.hint || '')}</div>`;
+    const rounds = hasAdvanceChoice(loop) ? `
+      <div class="d-flex gap-4 justify-content-center flex-wrap align-items-end">
+        <div>
+          <div class="text-light small mb-1">Avanzar de pregunta</div>
+          <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn ${!autoAdvance ? 'btn-warning' : 'btn-outline-light'} adv-pick" data-auto="0">Yo controlo</button>
+            <button type="button" class="btn ${autoAdvance ? 'btn-warning' : 'btn-outline-light'} adv-pick" data-auto="1">Solo</button>
+          </div>
+        </div>
+        <div>
+          <label class="text-light small mb-1 d-block" for="read-secs">Tiempo de lectura</label>
+          <div class="input-group input-group-sm" style="max-width:130px">
+            <input id="read-secs" type="number" class="form-control" min="0" max="${READ_SECONDS_MAX}" value="${readSecs}">
+            <span class="input-group-text">s</span>
+          </div>
+        </div>
+      </div>
+      <div class="text-muted small mt-1">Segundos para LEER antes de poder responder. 0 = responder al instante.</div>` : '';
+    return `<div class="text-center mt-4 mb-2">${chooser}${rounds}</div>`;
+  }
+
   function paintLobby(phaseChanged = true) {
     if (phaseChanged) emitGame(GameEvents.LOBBY_START, { sessionId });
-    const isQL = activity.template === 'question-live' || activity.template === 'wheel';
+    const isQL = supportsLoop(tpl, 'claim');
     const now = clock.now();
     mount(rootSel, html`
       <div class="text-center py-3">
@@ -234,15 +290,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
             </div>`;
           }).join('')}
         </div>
-        ${isBoard ? `<div class="text-center mt-4 mb-2 text-light"><i class="bi bi-flag-fill text-warning"></i> Carrera de tableros — cada alumno resuelve el mismo tablero; tú ves todos en vivo.</div>`
-          : (!isQL ? `<div class="d-flex justify-content-center mt-4 mb-2 gap-3 align-items-center">
-          <label class="text-light" for="mode-select">Modo:</label>
-          <select id="mode-select" class="form-select form-select-sm" style="max-width:230px">
-            <option value="manual" ${liveMode==='manual'?'selected':''}>Manual (tú avanzas)</option>
-            <option value="auto" ${liveMode==='auto'?'selected':''}>Automático</option>
-            <option value="race" ${liveMode==='race'?'selected':''}>🏁 Carrera libre</option>
-          </select>
-        </div>` : '<div class="mt-4"></div>')}
+        ${lobbySetupHtml()}
         <button class="btn btn-success btn-lg px-5" id="btn-start" ${players.length===0?'disabled':''}>
           <i class="bi bi-play-fill"></i> Empezar
         </button>
@@ -250,16 +298,19 @@ async function renderHost(rootSel, code, sessionId, activity) {
       </div>
     `);
     attachFullscreenButton(rootSel);
-    const modeEl = document.getElementById('mode-select');
-    if (modeEl) modeEl.onchange = (e) => { liveMode = e.target.value; autoAdvance = (liveMode === 'auto'); };
+    on(rootSel, 'click', '.loop-pick', (_, b) => { loop = b.dataset.loop; paintLobby(false); });
+    on(rootSel, 'click', '.adv-pick', (_, b) => { autoAdvance = b.dataset.auto === '1'; paintLobby(false); });
+    const readEl = document.getElementById('read-secs');
+    if (readEl) readEl.onchange = (e) => { readSecs = Math.max(0, Math.min(READ_SECONDS_MAX, Math.round(+e.target.value || 0))); };
     on(rootSel, 'click', '#btn-start', async () => {
-      if (isQL) {
-        await setSessionState(sessionId, { status: 'running', phase: 'question-live', current_item: 0, started_at: new Date(clock.now()).toISOString() });
-      } else if (liveMode === 'race') {
-        await setSessionState(sessionId, { status: 'running', phase: 'race', current_item: 0, started_at: new Date(clock.now()).toISOString(), deadline: null });
+      const startedAt = new Date(clock.now()).toISOString();
+      if (loop === 'claim') {
+        await setSessionState(sessionId, { status: 'running', phase: 'question-live', current_item: 0, started_at: startedAt });
+      } else if (loop === 'race' || loop === 'board') {
+        await setSessionState(sessionId, { status: 'running', phase: 'race', current_item: 0, started_at: startedAt, deadline: null });
       } else {
-        const deadline = new Date(clock.now() + timerSec * 1000).toISOString();
-        await setSessionState(sessionId, { status: 'running', phase: 'question', current_item: 0, started_at: new Date(clock.now()).toISOString(), deadline });
+        await setSessionState(sessionId, { started_at: startedAt });
+        await openQuestion(0);
       }
     });
     on(rootSel, 'click', '#btn-cancel', async () => {
@@ -306,8 +357,18 @@ async function renderHost(rootSel, code, sessionId, activity) {
         ${fullscreenButtonHtml()}
       </div>
     `);
+    // R-1 · LECTURA: hasta `answers_open_at` la pizarra muestra el enunciado
+    // pero NO las opciones (clase `.hl-reading`), y el badge dice "Preparados".
+    // Al llegar el instante se quita la clase — el mismo instante que desbloquea
+    // los móviles, así nadie responde antes de que se vea la pregunta.
+    const openAtMs = session.answers_open_at ? new Date(session.answers_open_at).getTime() : 0;
     try {
       tpl.renderRoundHost(document.getElementById('host-round'), { phase: 'question', item, payload });
+      const hr = document.getElementById('host-round');
+      if (hr && openAtMs > clock.now()) {
+        hr.classList.add('hl-reading');
+        ctx.setTimeout(() => hr.classList.remove('hl-reading'), Math.max(0, openAtMs - clock.now()));
+      }
     } catch (err) {
       console.error('[hostLive] renderRoundHost threw:', err);
       const el = document.getElementById('host-round');
@@ -332,11 +393,11 @@ async function renderHost(rootSel, code, sessionId, activity) {
       const ok = await confirmModal('¿Saltar esta pregunta? Se cerrará sin puntuar.', { okText: 'Saltar', danger: false });
       if (!ok) return;
       const isLast = idx + 1 >= items.length;
+      // Saltar abre la siguiente por el MISMO camino que el resto (openQuestion):
+      // si no, esa pregunta se abriría sin ventana de lectura y con el reloj ya
+      // corriendo — el hueco que cazó tests/roundsLoop.test.mjs.
       if (isLast) await endSession(sessionId);
-      else {
-        const newDeadline = new Date(clock.now() + timerSec * 1000).toISOString();
-        await setSessionState(sessionId, { phase: 'question', current_item: idx + 1, deadline: newDeadline });
-      }
+      else await openQuestion(idx + 1);
     });
 
     if (tickHandle) clearInterval(tickHandle);
@@ -358,6 +419,16 @@ async function renderHost(rootSel, code, sessionId, activity) {
         const ac = document.getElementById('ans-count');
         if (t) t.textContent = 'Pausa';
         if (ac) ac.textContent = String(answers.length);
+        return;
+      }
+      // Durante la LECTURA el reloj de respuesta aún no corre: se muestra la
+      // cuenta atrás de "preparados" y no se liquida por tiempo.
+      const readLeft = openAtMs - clock.now();
+      if (readLeft > 0) {
+        const t0 = document.getElementById('time-left');
+        if (t0) t0.textContent = `Preparados… ${Math.ceil(readLeft / 1000)}`;
+        const b0 = document.getElementById('time-bar');
+        if (b0) b0.style.width = '100%';
         return;
       }
       const liveDeadline = new Date(session.deadline).getTime();
@@ -443,6 +514,18 @@ async function renderHost(rootSel, code, sessionId, activity) {
 
   async function paintLeaderboard(phaseChanged = true) {
     const lb = await leaderboard(sessionId, 10);
+    // R-4 · MOVIMIENTO: la tabla estática no cuenta nada; una flecha sí ("subió
+    // dos"). Se compara con el orden de la ronda anterior, que se guarda aquí
+    // mismo (nada que persistir: si el host recarga, simplemente no hay flechas
+    // en la primera tabla que pinte).
+    const move = (id) => {
+      if (!prevRanks || !prevRanks.has(id)) return '';
+      const before = prevRanks.get(id);
+      const now = lb.findIndex(p => p.id === id) + 1;
+      if (now < before) return `<span class="text-success" title="subió ${before - now}"><i class="bi bi-caret-up-fill"></i></span>`;
+      if (now > before) return `<span class="text-danger" title="bajó ${now - before}"><i class="bi bi-caret-down-fill"></i></span>`;
+      return '<span class="text-muted">·</span>';
+    };
     const idx = session.current_item;
     const isLast = idx + 1 >= items.length;
     mount(rootSel, html`
@@ -451,7 +534,8 @@ async function renderHost(rootSel, code, sessionId, activity) {
         ${lb.map((p, i) => `
           <div class="row align-items-center bg-dark text-light rounded mb-2 p-2">
             <div class="col-1"><b>${i+1}</b></div>
-            <div class="col-7">${escapeHtml(p.name)}</div>
+            <div class="col-1">${move(p.id)}</div>
+            <div class="col-6">${escapeHtml(p.name)}</div>
             <div class="col-4 text-end"><b>${p.score}</b> pts</div>
           </div>`).join('')}
       </div>
@@ -461,10 +545,8 @@ async function renderHost(rootSel, code, sessionId, activity) {
           : `<button class="btn btn-primary btn-lg" id="btn-next"><i class="bi bi-arrow-right"></i> <span id="btn-next-txt">Siguiente pregunta</span></button>`}
       </div>
     `);
-    on(rootSel, 'click', '#btn-next', () => {
-      const deadline = new Date(clock.now() + timerSec * 1000).toISOString();
-      setSessionState(sessionId, { phase: 'question', current_item: idx + 1, deadline });
-    });
+    prevRanks = new Map(lb.map((p, i) => [p.id, i + 1]));   // para las flechas de la próxima
+    on(rootSel, 'click', '#btn-next', () => openQuestion(idx + 1));
     on(rootSel, 'click', '#btn-end', () => endSession(sessionId));
 
     // Auto-advance to next question after 5s (only between questions, not on the last).
@@ -475,11 +557,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
         secs--;
         const t = document.getElementById('btn-next-txt');
         if (t) t.textContent = `Siguiente pregunta (${secs}s)`;
-        if (secs <= 0) {
-          clearInterval(tick);
-          const deadline = new Date(clock.now() + timerSec * 1000).toISOString();
-          setSessionState(sessionId, { phase: 'question', current_item: idx + 1, deadline });
-        }
+        if (secs <= 0) { clearInterval(tick); openQuestion(idx + 1); }
       }, 1000);
     }
   }
@@ -666,7 +744,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     const qlByName   = session.ql_by_name ?? null;
     const doneCount  = Object.keys(qlPoints).length;
     const cols       = Math.min(6, Math.max(3, Math.ceil(items.length / 2)));
-    const isWheel    = activity.template === 'wheel';
+    const isWheel    = (activity.rules?.selector || 'boxes') === 'wheel';
     const viewTitle  = isWheel ? 'Ruleta Live' : 'Pregunta Live';
     const viewIcon   = isWheel ? 'bi-bullseye' : 'bi-chat-square-text-fill';
 

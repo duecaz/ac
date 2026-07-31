@@ -409,6 +409,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         phase: rec.state?.phase,
         current_item: rec.state?.currentItem,
         deadline: rec.state?.deadline ?? null,
+        answers_open_at: rec.state?.answersOpenAt ?? null,
         activity_snap: rec.activity,
         ...qlOf(rec),
       };
@@ -424,6 +425,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         phase: rec.state?.phase,
         current_item: rec.state?.currentItem,
         deadline: rec.state?.deadline ?? null,
+        answers_open_at: rec.state?.answersOpenAt ?? null,
         started_at: rec.state?.startedAt ?? null,
         activity_snap: rec.activity,
         ...qlOf(rec),
@@ -563,6 +565,11 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       if (patch.phase !== undefined) engine.state.phase = patch.phase;
       if ('current_item' in patch) engine.state.currentItem = patch.current_item;
       if ('deadline' in patch) engine.state.deadline = patch.deadline ?? null;
+      // R-1 · instante en que se pueden TOCAR las respuestas (§26 ficha 1b): el
+      // ritmo del juego se escribe como INSTANTE en la sala, nunca como un
+      // temporizador local — así todos los móviles leen lo mismo y quien entra
+      // tarde o recarga ve el tiempo que queda de verdad.
+      if ('answers_open_at' in patch) engine.state.answersOpenAt = patch.answers_open_at ?? null;
       if ('started_at' in patch) engine.state.startedAt = patch.started_at ?? null;
       if ('ql_points' in patch) engine.state.qlPoints = patch.ql_points ?? {};
       if (patch.ql_award) {

@@ -85,6 +85,20 @@ try {
   await host.click('#btn-start');
   await student.waitForSelector('.rq-opt, .ww-opt', { timeout: 9000 });
   log('pregunta en el móvil de la alumna');
+  // R-1 · LECTURA (§26 ficha 1b): la pregunta se ve pero NO se puede responder
+  // hasta el instante que manda la sala. Se comprueba que la puerta EXISTE (si
+  // desaparece, el bonus de velocidad vuelve a premiar al que clica sin leer) y
+  // que se abre sola — sin tocar nada.
+  const gated = await student.locator('#s-round.s-reading').count();
+  if (!gated) throw new Error('R-1: el móvil debería estar en LECTURA (bloqueado) al abrir la pregunta');
+  const blocked = await student.evaluate(() => {
+    const el = document.querySelector('#s-round.s-reading');
+    return el ? getComputedStyle(el).pointerEvents === 'none' : false;
+  });
+  if (!blocked) throw new Error('R-1: la lectura no bloquea la interacción');
+  log('lectura: la pregunta se ve pero no se puede tocar (R-1)');
+  await student.waitForSelector('#s-round:not(.s-reading) .rq-opt, #s-round:not(.s-reading) .ww-opt', { timeout: 15000 });
+  log('se abren las respuestas solas al llegar el instante de la sala');
   await student.locator('.rq-opt, .ww-opt', { hasText: '4' }).first().click();
   // Con todos respondidos el host puede AUTO-liquidar (pasa directo a reveal);
   // si no, se revela a mano. Ambos caminos terminan en #btn-lb.
@@ -129,7 +143,11 @@ try {
   await student.fill('#f-nick', 'Leo');
   await student.click('#btn-join');
   await host.waitForFunction(() => document.body.textContent.includes('Leo'), { timeout: 9000 });
-  await host.selectOption('#mode-select', 'race');
+  // El lobby ya no tiene un <select> con tres opciones desiguales: son DOS
+  // preguntas y la primera se construye desde los bucles que la plantilla
+  // DECLARA (§26). Elegir "Carrera libre" es pulsar su botón.
+  await host.waitForSelector('.loop-pick[data-loop="race"]', { timeout: 9000 });
+  await host.click('.loop-pick[data-loop="race"]');
   await host.click('#btn-start');
   await host.waitForSelector('#race-timer', { timeout: 9000 });
   log(`carrera arrancada · PIN ${pin2}`);

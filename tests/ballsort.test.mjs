@@ -90,7 +90,7 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   const T = getTemplate('ballsort');
   assert.ok(T, 'ballsort registers in the registry');
   assert.strictEqual(T.meta.modes.live, true, 'declares live');
-  assert.strictEqual(T.meta.play.live, 'board', "declara play.live 'board' (tablero compartido; antes era el flag liveBoard)");
+  assert.deepStrictEqual(T.meta.play.live, ['board'], "declara play.live ['board'] (tablero compartido; el catálogo de bucles es una LISTA, §26)");
   assert.strictEqual(typeof T.getRoundPayload, 'function', 'has getRoundPayload (live requirement)');
   assert.strictEqual(typeof T.scoreSubmission, 'function', 'has scoreSubmission (live requirement)');
 

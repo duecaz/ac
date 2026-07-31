@@ -18,10 +18,14 @@ export class WheelTemplate extends BaseTemplate {
     aspectRatio: '1/1',
     modes: { solo: true, live: true, async: false, practice: true },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
-    play:            { vs: 'none', teams: 'none', live: 'rounds' },
+    play:            { vs: 'none', teams: 'none', live: ['claim'] },
     needsImageUpload: true,   // wheel/editor.js: imagen opcional por entrada (data-URL, 200 KB)
     needsAudioUpload: false,
-    defaultRules: () => ({ spinDurationMs: 4000, removeAfterSpin: false }),
+    // `selector: 'wheel'` es la DECLARACIÓN de que esta actividad usa la ruleta
+    // para elegir turno (§0): antes la vista lo deducía del NOMBRE de la
+    // plantilla. `normalize()` lo rellena también en las actividades ya
+    // guardadas, así que las salas antiguas siguen girando la ruleta.
+    defaultRules: () => ({ spinDurationMs: 4000, removeAfterSpin: false, selector: 'wheel' }),
     defaultScoring: () => ({}),
     defaultLive: () => ({}),
     defaultContent: () => ({

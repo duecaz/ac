@@ -24,6 +24,7 @@ import { pickIndex } from '../templates/wheel/logic.js';
 import { spinTarget, normalizeRotation, animateSpin, SPIN_DUR_PICK } from '../templates/wheel/spin.js';
 import { QL_COLORS } from '../core/questionLive.js';
 import { RACE_FLASH_MS, questionWindowMs } from '../core/timings.js';
+import { supportsLoop } from '../core/liveLoops.js';
 
 const NICK_KEY = 'ww.nick';
 
@@ -240,7 +241,9 @@ export async function renderPlay(rootSel, code) {
 
   function paintQuestionLive() {
     // wheel template always spins; question-live reads its selector rule.
-    const selector = activity.template === 'wheel' ? 'wheel' : (activity.rules?.selector || 'boxes');
+    // La ruleta la declara la ACTIVIDAD (rules.selector), no el nombre de la
+    // plantilla: 'wheel' trae ese selector por defecto en sus reglas.
+    const selector = activity.rules?.selector || 'boxes';
     if (selector === 'wheel') return paintQuestionLiveWheel();
     return paintQuestionLiveBoxes();
   }
@@ -360,7 +363,16 @@ export async function renderPlay(rootSel, code) {
     if (own) return paintWaiting('Respuesta enviada. Espera al resto.');
     emitGame(GameEvents.QUESTION_SHOWN, { idx, total: items.length, item });
     const streak = Streaks.get(session.id, player.playerId);
-    lastQuestionShownAt = clock.now();
+    // R-1 · LECTURA (§26 ficha 1b): hasta el instante que manda la SALA, la
+    // pregunta se ve pero no se puede tocar. El instante es del servidor, no un
+    // temporizador de este móvil: quien entra tarde o recarga no gana tiempo, y
+    // el reloj de respuesta (y con él el bonus de velocidad) empieza igual para
+    // todos — antes ganaba quien clicaba antes de leer.
+    const openAtMs = session.answers_open_at ? new Date(session.answers_open_at).getTime() : 0;
+    const reading = openAtMs > clock.now();
+    // El ms se mide desde la apertura REAL de respuestas (no desde que este
+    // móvil pintó): misma referencia que el sello del servidor (§22-1).
+    lastQuestionShownAt = openAtMs || clock.now();
     const deadlineMs = session.deadline ? new Date(session.deadline).getTime() : 0;
     // MISMA ventana que el host y que el bonus de velocidad (core/timings.js):
     // antes cada uno tenía su copia y award.js omitía el piso de 5 → el reloj del
@@ -380,6 +392,24 @@ export async function renderPlay(rootSel, code) {
       <div class="progress mb-3" style="height:6px"><div id="s-bar" class="progress-bar bg-warning" style="width:100%"></div></div>
       <div id="s-round"></div>
     `);
+    if (reading) {
+      // Se pinta la ronda para poder LEERLA, con la interacción bloqueada y la
+      // cuenta atrás; al llegar el instante se repinta ya jugable (guard de
+      // fase: si el profe avanzó mientras tanto, no se pisa la pantalla nueva).
+      const el = document.getElementById('s-round');
+      el.classList.add('s-reading');
+      try { tpl.renderRound(el, payload, { mode: 'live', onSubmit: () => {} }); } catch { /* payload raro: la cuenta atrás sigue */ }
+      const badge = document.getElementById('s-time');
+      const tick = ctx.setInterval(() => {
+        const left = Math.ceil((openAtMs - clock.now()) / 1000);
+        if (badge) badge.textContent = `Preparados… ${Math.max(0, left)}`;
+        if (left <= 0) {
+          clearInterval(tick);
+          if (session.phase === 'question' && session.current_item === idx) paintQuestion();
+        }
+      }, 200);
+      return;
+    }
     let sent = false;
     const handle = tpl.renderRound(document.getElementById('s-round'), payload, {
       mode: 'live',
@@ -464,6 +494,29 @@ export async function renderPlay(rootSel, code) {
       if (!unscored) Streaks.bump(session.id, player.playerId, ok);
     }
     const streak = Streaks.get(session.id, player.playerId);
+    // R-2 · TU PUESTO Y TU DISTANCIA (el motor de enganche de Kahoot): el
+    // alumno veía "+80 puntos" y nada más — ni dónde está ni cuánto le falta.
+    // Sale del leaderboard DERIVADO del servidor (misma fuente que el podio),
+    // así que no puede discrepar de la pizarra. Fail-soft: si no llega, la
+    // pantalla se pinta igual sin esa línea.
+    let standing = null;
+    try {
+      const lb = await leaderboard(session.id, 100);
+      const meIdx = lb.findIndex(p => p.id === player.playerId);
+      if (meIdx >= 0) {
+        const me = lb[meIdx];
+        const above = meIdx > 0 ? lb[meIdx - 1] : null;
+        standing = { rank: meIdx + 1, total: lb.length, score: me.score,
+                     gap: above ? Math.max(0, above.score - me.score) : 0, aboveName: above?.name || null };
+      }
+    } catch { /* sin marcador: se pinta el resultado igual */ }
+    const standingHtml = !standing ? '' : `
+      <p class="h5 mt-3 mb-0">${standing.rank}º de ${standing.total} · ${standing.score} pts</p>
+      ${standing.aboveName
+        ? `<p class="text-muted">${standing.gap === 0
+             ? `empatas con ${escapeHtml(standing.aboveName)}`
+             : `a ${standing.gap} ${standing.gap === 1 ? 'punto' : 'puntos'} de ${escapeHtml(standing.aboveName)}`}</p>`
+        : '<p class="text-muted">¡vas primero!</p>'}`;
     mount(rootSel, html`
       <div class="text-center py-5">
         ${skipped
@@ -475,6 +528,7 @@ export async function renderPlay(rootSel, code) {
               : `<i class="bi bi-x-circle-fill display-1 text-danger"></i><h2 class="mt-3">Incorrecto</h2>`}
         <p class="lead">+${own?.points || 0} puntos</p>
         ${ok && streak >= 2 ? `<p class="h4">🔥 Racha de ${streak}</p>` : ''}
+        ${standingHtml}
       </div>
     `);
   }
@@ -601,7 +655,7 @@ export async function renderPlay(rootSel, code) {
   }
 
   function isLiveBoard() {
-    try { return getTemplate(activity.template)?.meta?.play?.live === 'board'; } catch { return false; }
+    try { return supportsLoop(getTemplate(activity.template), 'board'); } catch { return false; }
   }
 
   // LIVE "board" templates (Ball Sort): ONE shared board the student solves at

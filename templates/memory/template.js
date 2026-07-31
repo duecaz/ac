@@ -21,7 +21,7 @@ export class MemoryTemplate extends BaseTemplate {
     aspectRatio: '1/1',
     modes: { solo: true, live: false, async: true, practice: true },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
-    play:            { vs: 'none', teams: 'turns', live: 'none' },
+    play:            { vs: 'none', teams: 'turns', live: [] },
     needsImageUpload: false,
     needsAudioUpload: false,
     defaultRules: () => ({ revealMs: 900, columns: 4 }),

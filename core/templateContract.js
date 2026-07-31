@@ -11,6 +11,7 @@
 import { sessionItems } from '../kernel/session/engine.js';
 import { getModel } from '../kernel/content/models.js';
 import { canAutoScoreRound } from './templateCapability.js';
+import { LIVE_LOOPS } from './liveLoops.js';
 
 const clone = (o) => JSON.parse(JSON.stringify(o ?? null));
 
@@ -19,6 +20,7 @@ const clone = (o) => JSON.parse(JSON.stringify(o ?? null));
  * @param {any} T Template class (como sale de listTemplates()).
  * @returns {string[]} problemas encontrados (vacío = cumple).
  */
+// El catálogo de bucles vive en core/liveLoops.js (§26): aquí solo se valida.
 export function checkTemplateContract(T) {
   const issues = [];
   const m = T?.meta;
@@ -38,20 +40,29 @@ export function checkTemplateContract(T) {
   //              'points' espera a AMBOS y gana quien más suma
   //              'none'  la plantilla no se juega en VS
   //   play.teams 'turns' | 'board' | 'none'
-  //   play.live  'rounds' (flujo pregunta→revelar) · 'board' (tablero único
-  //              compartido, fase race) · 'none'. Debe ser coherente con modes.live.
+  //   play.live  LISTA de los bucles que la plantilla soporta (§26,
+  //              core/liveLoops.js): 'rounds' (pregunta→revelar) · 'race'
+  //              (cada alumno a su ritmo) · 'board' (tablero compartido) ·
+  //              'claim' (pedir la palabra, sin clave: puntúa el docente).
+  //              [] = no se juega en vivo. Se acepta la forma heredada (string).
+  //              Debe ser coherente con modes.live.
   //   play.retry (opcional) — en VS un fallo se reintenta (la calculadora).
   const VS_POLICIES = ['race', 'points', 'none'];
   const TEAMS_POLICIES = ['turns', 'board', 'none'];
-  const LIVE_POLICIES = ['rounds', 'board', 'none'];
+  const LIVE_POLICIES = [...LIVE_LOOPS, 'none'];
   if (!m.play || typeof m.play !== 'object') {
     issues.push("meta.play ausente (declara { vs: 'race'|'points'|'none', teams: 'turns'|'board'|'none', live: 'rounds'|'board'|'none' })");
   } else {
     if (!VS_POLICIES.includes(m.play.vs)) issues.push(`meta.play.vs inválido: ${JSON.stringify(m.play.vs)} (usa ${VS_POLICIES.join(' | ')})`);
     if (!TEAMS_POLICIES.includes(m.play.teams)) issues.push(`meta.play.teams inválido: ${JSON.stringify(m.play.teams)} (usa ${TEAMS_POLICIES.join(' | ')})`);
-    if (!LIVE_POLICIES.includes(m.play.live)) issues.push(`meta.play.live inválido: ${JSON.stringify(m.play.live)} (usa ${LIVE_POLICIES.join(' | ')})`);
-    if (m.modes?.live && m.play.live === 'none') issues.push("incoherencia: modes.live=true pero play.live='none' (declara cómo corre en vivo)");
-    if (!m.modes?.live && m.play.live && m.play.live !== 'none') issues.push("incoherencia: play.live declarado pero modes.live=false");
+    // `play.live` es una LISTA de bucles (§26); se tolera el string heredado.
+    const liveRaw = Array.isArray(m.play.live) ? m.play.live : (m.play.live ? [m.play.live] : []);
+    for (const l of liveRaw) {
+      if (!LIVE_POLICIES.includes(l)) issues.push(`meta.play.live: "${l}" no es un bucle del catálogo (usa ${LIVE_LOOPS.join(' | ')} o [])`);
+    }
+    const liveLoops = liveRaw.filter(l => l !== 'none');
+    if (m.modes?.live && liveLoops.length === 0) issues.push('incoherencia: modes.live=true pero play.live no declara ningún bucle (declara cómo corre en vivo)');
+    if (!m.modes?.live && liveLoops.length > 0) issues.push('incoherencia: play.live declara bucles pero modes.live=false');
     if ('retry' in m.play && typeof m.play.retry !== 'boolean') issues.push('meta.play.retry debe ser booleano');
   }
   // Preview de tarjeta obligatorio: cada plantilla declara su `previewHtml(act)`

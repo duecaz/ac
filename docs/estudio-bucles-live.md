@@ -313,3 +313,36 @@ literalmente lo que el profe ve en el lobby.
 
 **No** toca: fases de sala (§26 intacta), reglas de PocketBase, esquema, ni el
 scorer. Es un cambio de ritmo, no de motor.
+
+---
+
+# Ficha 1c · APLICADO (v1.51.343)
+
+Lo que estaba escrito arriba como propuesta, ya en producción:
+
+- **R-1 · Lectura antes de responder.** `core/timings.js readSeconds()` (3 s por
+  defecto, tope 30, `0` = como antes). El host abre la pregunta con
+  `openQuestion()`: **un solo PATCH con los dos instantes** (`answers_open_at` y
+  `deadline`). La pizarra oculta las opciones (`.hl-reading`) y el móvil se ve
+  pero no se toca (`.s-reading`, `pointer-events:none`) hasta el instante. El
+  `ms` se mide desde `answers_open_at`, no desde que el móvil pintó.
+- **R-2 · Puesto y distancia** en el móvil tras cada pregunta ("2º de 12 · a 120
+  puntos de Ana" / "¡vas primero!"), del `leaderboard()` derivado del servidor —
+  la misma fuente que el podio, así que no pueden discrepar.
+- **R-4 · Movimiento** en el marcador del host (flechas ↑↓ contra la ronda
+  anterior).
+- **Lobby de dos preguntas**: "¿Cómo juega la clase?" construido desde
+  `play.live` de la plantilla + (solo en rondas) "¿quién avanza?" y "tiempo de
+  lectura". Se fue el `<select>` de tres opciones desiguales.
+- **§0 SALDADA**: `play.live` es una LISTA (`core/liveLoops.js`) y las vistas
+  preguntan `supportsLoop(...)`. Quedan **0** sitios eligiendo por nombre de
+  plantilla (eran 4); la ruleta se declara en `rules.selector`, y `normalize()`
+  lo rellena en las actividades antiguas.
+
+**Hueco que encontró el test** (`tests/roundsLoop.test.mjs`): "Saltar pregunta"
+abría la siguiente por su cuenta, sin lectura y con el reloj ya corriendo. Ahora
+los tres caminos (empezar · siguiente · saltar) pasan por `openQuestion()`, y el
+test falla si aparece un cuarto.
+
+**Pendiente declarado de esta ficha**: R-3 (tiempo POR pregunta) — toca el modelo
+de contenido y su migración (§24), y no se ha hecho.

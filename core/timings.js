@@ -26,3 +26,17 @@ export const BOARD_POLL_MS = 2000;  // tablero compartido: se mueve más, refres
 export function questionWindowMs(activity) {
   return Math.max(5, activity?.live?.questionTimer || 20) * 1000;
 }
+
+// R-1 · VENTANA DE LECTURA (docs/estudio-bucles-live.md, ficha 1b). Segundos en
+// los que la pregunta se ve pero NO se puede responder. Sin ella, enunciado y
+// opciones aparecen a la vez y el bonus de velocidad premia al que hace clic
+// antes de leer. 0 = comportamiento anterior (retrocompatible).
+export const READ_SECONDS_DEFAULT = 3;
+export const READ_SECONDS_MAX = 30;
+export function readSeconds(activity) {
+  const v = activity?.live?.readSeconds;
+  const n = (v === undefined || v === null) ? READ_SECONDS_DEFAULT : Number(v);
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return Math.min(READ_SECONDS_MAX, Math.round(n));
+}
+export function readWindowMs(activity) { return readSeconds(activity) * 1000; }

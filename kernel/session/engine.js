@@ -18,6 +18,7 @@
 // simulated and asserted in Node, and rebuilt from a snapshot (opts.state).
 import { planTransition, PHASES } from '../../core/livePhases.js';
 import { isAcceptableNickname } from '../../core/nicknameFilter.js';
+import { supportsLoop } from '../../core/liveLoops.js';
 import { getTemplate } from '../../core/registry.js';
 import { canAutoScoreRound } from '../../core/templateCapability.js';
 import { basePoints } from '../../core/scoring/index.js';
@@ -58,7 +59,7 @@ export function roundPayloadOf(T, activity, itemIndex, fallback = null) {
 export function isVsCompatible(activity) {
   const T = getTemplate(activity?.template);
   const total = sessionItems(activity).length;
-  const minItems = T?.meta?.play?.live === 'board' ? 1 : 2;
+  const minItems = supportsLoop(T, 'board') ? 1 : 2;
   return !!(T && typeof T.scoreSubmission === 'function'
             && typeof T.renderRound === 'function' && total >= minItems);
 }

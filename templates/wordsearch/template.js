@@ -16,7 +16,7 @@ export class WordsearchTemplate extends BaseTemplate {
     instructions:    'Encuentra las palabras ocultas arrastrando sobre la sopa de letras.',
     modes:           { solo: true, live: false, async: true, practice: true },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
-    play:            { vs: 'race', teams: 'board', live: 'none' },
+    play:            { vs: 'race', teams: 'board', live: [] },
     needsImageUpload: false,
     needsAudioUpload: false,
     defaultRules:   () => ({ gridSize: 'medium', directions: 'medium', timer: 0 }),

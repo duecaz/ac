@@ -17,6 +17,7 @@ import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
 import '../core/registerTemplates.js';
 import { listTemplates } from '../core/registry.js';
+import { LIVE_LOOPS, loopsOf } from '../core/liveLoops.js';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
@@ -27,13 +28,13 @@ const read = (p) => readFileSync(new URL(p, new URL('..', import.meta.url)), 'ut
 const LOOPS = {
   rounds: { phase: 'question', chosenBy: 'plantilla' },
   board:  { phase: 'race',     chosenBy: 'plantilla' },
-  race:   { phase: 'race',     chosenBy: 'profe (select del lobby)' },
-  claim:  { phase: 'question-live', chosenBy: 'vista (por nombre de plantilla) — deuda §0' },
+  race:   { phase: 'race',     chosenBy: 'plantilla (+ elección del profe en el lobby)' },
+  claim:  { phase: 'question-live', chosenBy: 'plantilla' },
 };
 
 // ── 1. Las 13 plantillas solo declaran políticas del catálogo ──────────────
 {
-  const DECLARABLE = ['rounds', 'board', 'none'];   // lo que hoy admite el contrato
+  const DECLARABLE = LIVE_LOOPS;   // el catálogo completo (core/liveLoops.js)
   // Solo las plantillas REALES: el registro es global y otras suites del runner
   // dejan plantillas de prueba registradas (t_solo, qlocal…). El punto único de
   // registro es core/registerTemplates.js, así que la lista sale de ahí.
@@ -41,13 +42,21 @@ const LOOPS = {
   assert.ok(registered.size >= 12, `se esperaban ≥12 plantillas registradas, se leyeron ${registered.size}`);
   const seen = {};
   for (const T of listTemplates().filter(t => registered.has(t.meta?.name))) {
-    const v = T.meta?.play?.live;
-    assert.ok(DECLARABLE.includes(v),
-      `${T.meta.name}: play.live=${JSON.stringify(v)} no está en el catálogo ${DECLARABLE.join(' | ')}. `
-      + 'Si es un bucle NUEVO, no basta con declararlo: pasa por docs/leyes.md y por docs/estudio-bucles-live.md.');
-    seen[v] = (seen[v] || 0) + 1;
+    const declared = T.meta?.play?.live;
+    assert.ok(Array.isArray(declared),
+      `${T.meta.name}: play.live debe ser una LISTA de bucles (§26), vale ${JSON.stringify(declared)}`);
+    for (const v of declared) {
+      assert.ok(DECLARABLE.includes(v),
+        `${T.meta.name}: play.live incluye "${v}", que no está en el catálogo ${DECLARABLE.join(' | ')}. `
+        + 'Si es un bucle NUEVO, no basta con declararlo: pasa por docs/leyes.md y por docs/estudio-bucles-live.md.');
+    }
+    // Y la declaración tiene que coincidir con lo que devuelve el módulo dueño.
+    assert.deepStrictEqual(loopsOf(T), declared.filter(v => DECLARABLE.includes(v)),
+      `${T.meta.name}: loopsOf() no coincide con lo declarado`);
+    for (const v of (declared.length ? declared : ['(ninguno)'])) seen[v] = (seen[v] || 0) + 1;
   }
-  assert.ok(seen.rounds >= 1 && seen.board >= 1, 'siguen existiendo plantillas de rondas y de tablero');
+  assert.ok(seen.rounds >= 1 && seen.board >= 1 && seen.race >= 1 && seen.claim >= 1,
+    `el catálogo debe seguir cubierto por plantillas reales (visto: ${JSON.stringify(seen)})`);
   ok(`${Object.values(seen).reduce((a, b) => a + b, 0)} plantillas: ninguna se inventa una política de vivo (${Object.entries(seen).map(([k, n]) => `${k}:${n}`).join(' ')})`);
 }
 
@@ -56,11 +65,12 @@ const LOOPS = {
   const src = read('core/templateContract.js');
   const m = src.match(/LIVE_POLICIES\s*=\s*\[([^\]]*)\]/);
   assert.ok(m, 'core/templateContract.js debe declarar LIVE_POLICIES');
-  const got = m[1].split(',').map(s => s.trim().replace(/['"]/g, '')).filter(Boolean);
-  assert.deepStrictEqual(got.sort(), ['board', 'none', 'rounds'],
-    `el catálogo declarable cambió a ${JSON.stringify(got)}. Es una DECISIÓN de diseño (D7): `
-    + 'actualiza docs/estudio-bucles-live.md y esta lista a la vez.');
-  ok('el catálogo declarable sigue siendo rounds | board | none');
+  assert.match(src, /LIVE_POLICIES\s*=\s*\[\.\.\.LIVE_LOOPS/,
+    'el contrato debe VALIDAR contra core/liveLoops.js, no llevar su propia lista');
+  assert.deepStrictEqual([...LIVE_LOOPS].sort(), ['board', 'claim', 'race', 'rounds'],
+    `el catálogo cambió a ${JSON.stringify(LIVE_LOOPS)}. Es una DECISIÓN (§26): actualiza `
+    + 'docs/estudio-bucles-live.md y su ficha a la vez.');
+  ok('el catálogo es rounds | race | board | claim y el contrato lo lee del módulo');
 }
 
 // ── 3. Las FASES de sala en vivo también están congeladas ─────────────────
@@ -83,7 +93,7 @@ const LOOPS = {
 // No se prohíbe (arreglarlo es el rediseño), pero se fija el número: si crece,
 // el test avisa. Así la deuda no se hace más grande en silencio.
 {
-  const KNOWN = 4;   // hostLive:200 (×2 en la misma línea), 669 · studentLive:243
+  const KNOWN = 0;   // §0 SALDADA: ninguna vista elige bucle por nombre de plantilla
   let n = 0;
   for (const f of ['views/hostLive.js', 'views/studentLive.js']) {
     n += [...read(f).matchAll(/activity\.template\s*===\s*'[\w-]+'/g)].length;

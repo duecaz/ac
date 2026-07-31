@@ -17,6 +17,7 @@ import { save } from '../core/storage.js';
 import { lsGet, lsSet } from '../core/ls.js';
 import { getTemplate } from '../core/registry.js';
 import { createSession, isVsCompatible, FORMATS, sessionItems } from '../kernel/session/engine.js';
+import { supportsLoop } from '../core/liveLoops.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { podiumHtml } from '../core/podium.js';
 import { getVsAnimation, DEFAULT_VS_ANIMATION } from '../core/vsAnimations.js';
@@ -201,7 +202,7 @@ export function mountVs(host, a, ctx, opts = {}) {
     const animOff = a.presentation?.vsAnimationOff ?? textTight;
     // "Board" templates (Ordena las Pelotas): one shared board, no per-question
     // score during play, so the rope is fed by each side's BOARD progress instead.
-    const isBoard = T.meta?.play?.live === 'board';
+    const isBoard = supportsLoop(T, 'board');
     const boardProgress = { left: 0, right: 0 };
 
     // POLÍTICA DE MAQUETACIÓN del panel, declarada por la plantilla (estándar):
