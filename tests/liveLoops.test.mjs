@@ -105,6 +105,30 @@ const LOOPS = {
   ok(`deuda §0 acotada: ${n} elecciones por nombre de plantilla (tope ${KNOWN}, no puede crecer)`);
 }
 
+// ── 4b. POLÍTICA DE EXPOSICIÓN: durante el juego, AVANCE y no RANKING ─────
+// Decisión (docs/estudio-bucles-live.md fichas 2 C-2 y 3 B-1): en los bucles a
+// ritmo del alumno la pizarra está puesta VARIOS MINUTOS. Ordenarla por
+// puntuación deja al que menos sabe el último de una lista proyectada todo ese
+// rato — mucho más exposición que la revelación de una pregunta. La
+// clasificación existe, pero en el PODIO. (En RONDAS el marcador entre
+// preguntas sí es un ranking: dura segundos y es el bucle de Kahoot.)
+{
+  const host = read('views/hostLive.js');
+  const fn = (name, end) => host.slice(host.indexOf(name), host.indexOf(end));
+  const race = fn('async function paintRace(', 'async function paintLiveBoardHost(');
+  assert.ok(!/\.sort\(/.test(race),
+    'la lista de la CARRERA no puede ordenarse durante el juego (avance, no ranking): '
+    + 'el orden es el de entrada a la sala. La clasificación va en el podio.');
+  assert.match(race, /players\.map\(p => prog\[p\.id\]\)/, 'y sale del orden estable de jugadores');
+  const board = fn('async function paintLiveBoardHost(', 'async function paintPodium(');
+  assert.ok(!/cells\.sort\(/.test(board),
+    'la rejilla del TABLERO tampoco se reordena en vivo (además hace saltar las celdas bajo el dedo)');
+  // Contra-prueba: en RONDAS el marcador SÍ ordena (es su momento, y dura poco).
+  const lb = fn('async function paintLeaderboard(', 'async function loadRaceAnswers(');   // rondas
+  assert.match(lb, /leaderboard\(sessionId/, 'rondas conserva su clasificación entre preguntas');
+  ok('exposición: carrera y tablero muestran avance; rondas conserva su ranking');
+}
+
 // ── 5. El estudio existe y describe los mismos bucles que el código ───────
 {
   const doc = read('docs/estudio-bucles-live.md');

@@ -608,7 +608,14 @@ async function renderHost(rootSel, code, sessionId, activity) {
       }
       if (ok) prog[pid].items.add(a.itemIndex);   // only correct items count as progress
     }
-    const sorted = Object.values(prog).sort((a, b) => b.items.size - a.items.size);
+    // POLÍTICA DE EXPOSICIÓN (decisión, docs/estudio-bucles-live.md ficha 2 C-2):
+    // durante el juego la pizarra muestra AVANCE, no RANKING. Antes esta lista
+    // se ordenaba por aciertos, así que el que menos sabía aparecía el último,
+    // con su nombre y su barra vacía, proyectado VARIOS MINUTOS — mucho más
+    // tiempo del que dura una revelación. El orden es ahora estable (el de
+    // entrada a la sala): cada alumno ve su barra crecer sin compararse en
+    // público. La clasificación existe, pero en el PODIO, al final.
+    const sorted = players.map(p => prog[p.id]).filter(Boolean);
     const total = items.length;
     const elapsed = session.started_at ? Math.floor((clock.now() - new Date(session.started_at).getTime()) / 1000) : 0;
     const mins = Math.floor(elapsed / 60);
@@ -621,13 +628,13 @@ async function renderHost(rootSel, code, sessionId, activity) {
         ${fullscreenButtonHtml()}
       </div>
       <div class="mb-4" style="max-width:700px;margin:0 auto">
-        ${sorted.map((p, i) => {
+        ${sorted.map((p) => {
           const n = p.items.size;
           const pct = total > 0 ? Math.round(100 * n / total) : 0;
           const done = n >= total;
           return `<div class="mb-3">
             <div class="d-flex justify-content-between align-items-center mb-1">
-              <span class="fw-bold text-light fs-5">${i+1}. ${escapeHtml(p.name)}${done ? ' 🏆' : ''}</span>
+              <span class="fw-bold text-light fs-5">${escapeHtml(p.name)}${done ? ' 🏆' : ''}</span>
               <span class="badge ${done?'bg-success':'bg-warning text-dark'} fs-6">${n}/${total}</span>
             </div>
             <div class="progress" style="height:20px">
@@ -677,15 +684,11 @@ async function renderHost(rootSel, code, sessionId, activity) {
       id: p.id, name: p.name,
       value: byPlayer[p.id] || (initialBoard ? { tubes: initialBoard.tubes, tubeCapacity: initialBoard.tubeCapacity, colors: initialBoard.colors, moveCount: 0, elapsedMs: 0, solved: false } : null),
     }));
-    // Solved first, then by fewest moves / least time.
-    cells.sort((a, b) => {
-      const av = a.value || {}, bv = b.value || {};
-      if (!!bv.solved !== !!av.solved) return bv.solved ? 1 : -1;
-      if (av.solved && bv.solved) {
-        return mode === 'time' ? (av.elapsedMs - bv.elapsedMs) : (av.moveCount - bv.moveCount);
-      }
-      return 0;
-    });
+    // MISMA política de exposición que la carrera (ficha 3 B-1): durante el
+    // juego la rejilla NO se reordena por quién va ganando — cada tablero se
+    // queda en su sitio y el alumno ve el suyo donde lo dejó. Reordenar en vivo
+    // además hace saltar las celdas bajo el dedo del que está jugando. La
+    // clasificación (resuelto → menos movimientos/tiempo) es cosa del PODIO.
     const solvedCount = cells.filter(c => c.value?.solved).length;
     const elapsed = session.started_at ? Math.floor((clock.now() - new Date(session.started_at).getTime()) / 1000) : 0;
     const mins = Math.floor(elapsed / 60), secs = elapsed % 60;

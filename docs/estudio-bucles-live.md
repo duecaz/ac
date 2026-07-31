@@ -395,7 +395,7 @@ primeros N terminan**, **(c) tiempo límite**. En los tres casos el profe
 conserva el botón de cortar. Sin esto, "terminar" es un acto de voluntad y la
 clase se queda en el limbo.
 
-**C-2 · ¿Qué ve el que va último?**
+**C-2 · ¿Qué ve el que va último?** — ✅ **DECIDIDO Y APLICADO (v1.51.345)**
 Hoy ve su cola y su contador; en la pizarra aparece **el último de una lista
 ordenada por aciertos**, con su nombre y su barra vacía, proyectado. Eso es
 exposición pública del que menos sabe, y en una carrera dura varios minutos —
@@ -519,3 +519,36 @@ tomar UNA vez para los tres bucles sin final propio:
 
 Hacerlas una vez y que los tres bucles las consuman es lo que evita que
 `race`/`board`/`claim` se sigan separando entre sí.
+
+---
+
+# Decisión aplicada · POLÍTICA DE EXPOSICIÓN (v1.51.345)
+
+**Decisión del usuario**: en los bucles a ritmo del alumno se elimina el ranking
+de la pizarra y se deja el AVANCE.
+
+**Matiz honesto sobre el referente**: en el Kahoot **en vivo** el marcador entre
+preguntas **sí** es una clasificación — y por eso lo conservamos en `rounds`,
+donde dura segundos y es el momento de la ceremonia. Es en sus modos **a ritmo
+del alumno** (los que se parecen a nuestra carrera y a nuestro tablero) donde la
+vista del docente es de progreso, no de puestos. Así que la decisión coincide con
+el referente **bucle a bucle**, no en bloque.
+
+**Qué cambió:**
+
+| Pantalla | Antes | Ahora |
+|---|---|---|
+| Carrera (pizarra) | lista ordenada **por aciertos**, con puesto `1.` `2.`… | orden **estable** (el de entrada a la sala), sin puestos; cada uno ve su barra crecer |
+| Tablero (rejilla) | celdas reordenadas en vivo: resueltos primero, luego por movimientos/tiempo | cada tablero **se queda en su sitio** |
+| Rondas (marcador) | clasificación entre preguntas | **igual** — es su momento y dura poco |
+| Podio | clasificación final | **igual** — ahí sí se compite |
+
+**Por qué importa más de lo que parece**: en carrera y tablero la pizarra está
+puesta varios MINUTOS. Un orden por puntuación deja al que menos sabe el último
+de una lista proyectada todo ese rato — mucha más exposición que la revelación
+de una pregunta. Y en el tablero había un efecto secundario feo: al reordenar en
+vivo, las celdas **saltaban bajo el dedo** del alumno que estaba jugando.
+
+Vigilado por `tests/liveLoops.test.mjs` ("exposición: carrera y tablero muestran
+avance; rondas conserva su ranking"), con contra-prueba incluida para que nadie
+"arregle" el ranking de rondas por error.
