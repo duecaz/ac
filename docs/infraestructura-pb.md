@@ -8,13 +8,14 @@
 > · un create que viola la regla responde **400** (no 403) para no filtrar info.
 > Comprobación definitiva de `live_keys`: `curl -s .../live_keys/records` debe
 > dar `"totalItems":0` aunque existan salas.
-> QUEDA por confirmar: ① que el campo `qid` + índices de R1 entraron (la pasada
-> reportó solo "reglas actualizadas" — mirar en el admin web de PB los campos de
-> `results` y `assignment_attempts`, o `PRAGMA table_info(results);` si hay
-> consola SQL); ② la PARTIDA REAL (móvil anónimo: entrar·responder·puntuar en
-> pregunta Y carrera) + `node tools/stress-live.mjs <PIN> 30`; ③ qué es @pit
-> (el DNS de la LAN resuelve `pb.lanube.uno` igual que fuera, así que las sondas
-> de la Pi eran del MISMO servidor — @pit como clon aparte sigue sin confirmar).
+> ① `qid` + índices de R1: **CONFIRMADOS** (2026-07-30, panel v1.51.332 con
+> verificación por relectura: `results · verificado: 10 campos`,
+> `assignment_attempts · verificado: 12 campos`, índices incluidos). El panel
+> ahora RELEE el servidor tras aplicar y reporta lo que HAY, no lo que intentó.
+> QUEDA: ② la PARTIDA REAL (móvil anónimo: entrar·responder·puntuar en pregunta
+> Y carrera) + `node tools/stress-live.mjs <PIN> 30`; ③ qué es @pit (las sondas
+> de la Pi daban lo mismo que desde fuera → mismo servidor; @pit como clon
+> aparte sigue sin confirmar).
 
 > **Para qué sirve este doc**: es la FUENTE para consultar cómo está montada la base de
 > datos y la Pi sin tener que redescubrirlo por SSH. Actualízalo cada vez que cambie algo
