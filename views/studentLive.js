@@ -378,7 +378,13 @@ export async function renderPlay(rootSel, code) {
     // MISMA ventana que el host y que el bonus de velocidad (core/timings.js):
     // antes cada uno tenía su copia y award.js omitía el piso de 5 → el reloj del
     // alumno podía no coincidir con el deadline real del servidor.
-    const total = questionWindowMs(activity);
+    // La barra mide la ventana REAL de esta pregunta: la distancia entre los dos
+    // instantes de la sala. Con tiempo por pregunta (R-3) leer la ventana de la
+    // actividad daría una barra que no cuadra con el reloj — y además así el
+    // alumno no necesita que los segundos viajen en el snapshot (§22-2).
+    const total = (deadlineMs && openAtMs && deadlineMs > openAtMs)
+      ? deadlineMs - openAtMs
+      : questionWindowMs(activity);
     // The DEVICE renders the round via the template contract (same as VS),
     // so every template — quiz, tildes, comas, math… — works without a
     // per-template branch here. The host's projector shows the prompt.

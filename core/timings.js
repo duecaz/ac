@@ -40,3 +40,25 @@ export function readSeconds(activity) {
   return Math.min(READ_SECONDS_MAX, Math.round(n));
 }
 export function readWindowMs(activity) { return readSeconds(activity) * 1000; }
+
+// R-3 · TIEMPO POR PREGUNTA (docs/estudio-bucles-live.md ficha 1). Había UNA
+// ventana para toda la actividad: una de comprensión lectora y un "2+2" no
+// pueden compartir cronómetro. Ahora cada ítem PUEDE declarar sus segundos
+// (`item.seconds`) y, si no lo hace, hereda el de la actividad — así el
+// contenido antiguo se comporta EXACTAMENTE igual y no hace falta migrar nada
+// (§24: campo opcional, sin transformación).
+//
+// OJO — quien usa esto: el HOST (para fijar el instante de cierre) y el SCORER
+// (el bonus de velocidad divide por la ventana; con una ventana equivocada el
+// bonus se calcula mal en silencio). El ALUMNO no lo necesita: lee los
+// INSTANTES de la sala, así que la ventana no viaja en el snapshot.
+export const ITEM_SECONDS_MIN = 5;
+export const ITEM_SECONDS_MAX = 300;
+export function itemSeconds(activity, item) {
+  const raw = Number(item?.seconds);
+  if (Number.isFinite(raw) && raw > 0) {
+    return Math.min(ITEM_SECONDS_MAX, Math.max(ITEM_SECONDS_MIN, Math.round(raw)));
+  }
+  return questionWindowMs(activity) / 1000;   // el de la actividad (defecto 20)
+}
+export function itemWindowMs(activity, item) { return itemSeconds(activity, item) * 1000; }

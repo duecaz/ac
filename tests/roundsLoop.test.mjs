@@ -14,7 +14,9 @@
 // Run: node tests/roundsLoop.test.mjs
 import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
-import { readSeconds, readWindowMs, questionWindowMs, READ_SECONDS_DEFAULT, READ_SECONDS_MAX } from '../core/timings.js';
+import { readSeconds, readWindowMs, questionWindowMs, READ_SECONDS_DEFAULT, READ_SECONDS_MAX,
+         itemSeconds, itemWindowMs, ITEM_SECONDS_MIN, ITEM_SECONDS_MAX } from '../core/timings.js';
+import { awardPoints } from '../core/scoring/index.js';
 import { createLocalRealtime } from '../adapters/local/realtime.js';
 import { registerTemplate } from '../core/registry.js';
 import { scoreQuizSubmission } from '../templates/quiz/scorer.js';
@@ -41,6 +43,43 @@ const read = (p) => readFileSync(new URL(p, new URL('..', import.meta.url)), 'ut
   assert.strictEqual(questionWindowMs(act), 20000,
     'el cronómetro de respuesta sigue siendo el declarado: la lectura se SUMA, no se roba');
   ok('la lectura no recorta el tiempo de responder');
+}
+
+// ── 2b. R-3 · TIEMPO POR PREGUNTA: el ítem manda, la actividad es el defecto ─
+{
+  const act = { live: { questionTimer: 20 } };
+  assert.strictEqual(itemSeconds(act, {}), 20, 'un ítem sin tiempo propio hereda el de la actividad');
+  assert.strictEqual(itemSeconds(act, { seconds: 60 }), 60, 'y si lo declara, manda el suyo');
+  assert.strictEqual(itemSeconds(act, { seconds: 9999 }), ITEM_SECONDS_MAX, 'con tope');
+  assert.strictEqual(itemSeconds(act, { seconds: 1 }), ITEM_SECONDS_MIN, 'y con suelo (1 s no es jugable)');
+  assert.strictEqual(itemSeconds(act, { seconds: 0 }), 20, '0 = heredar, no "sin tiempo"');
+  assert.strictEqual(itemSeconds(act, { seconds: 'x' }), 20, 'basura → hereda');
+  assert.strictEqual(itemWindowMs(act, { seconds: 45 }), 45000);
+  // Contra-prueba de compatibilidad: contenido ANTIGUO (sin el campo) se comporta igual.
+  assert.strictEqual(itemWindowMs(act, { question: 'vieja' }), questionWindowMs(act),
+    'una actividad anterior a R-3 mantiene EXACTAMENTE su ventana (por eso no hace falta migrar)');
+  ok('R-3: el ítem declara su tiempo, con suelo/tope, y sin declararlo hereda');
+}
+
+// ── 2c. El BONUS de velocidad usa la ventana DEL ÍTEM ─────────────────────
+// El fallo silencioso que esto evita: con tiempo por pregunta, dividir por la
+// ventana de la ACTIVIDAD da bonus de más en las largas y de menos en las
+// cortas — nadie lo vería, solo saldrían puntos raros.
+{
+  // En vivo el bonus lo activa `live.pointsModel` (no `scoring.mode`) — ver useKahoot.
+  const act = { scoring: { pointsPerCorrect: 1 }, live: { pointsModel: 'kahoot', questionTimer: 20, speedBonusMax: 1000 } };
+  const half = (secs) => awardPoints({ correct: true, item: { seconds: secs }, msTaken: secs * 1000 / 2, activity: act, mode: 'live' });
+  // Responder a MITAD de ventana debe dar el mismo bonus, dure 20 s o 60 s.
+  assert.strictEqual(half(20), half(60),
+    'a mitad de su ventana, el bonus es el mismo en una pregunta corta y en una larga');
+  const early = awardPoints({ correct: true, item: { seconds: 60 }, msTaken: 1000, activity: act, mode: 'live' });
+  const late = awardPoints({ correct: true, item: { seconds: 60 }, msTaken: 59000, activity: act, mode: 'live' });
+  assert.ok(early > late, 'responder pronto sigue dando más que responder tarde');
+  // Sin tiempo propio, el bonus es exactamente el de antes.
+  assert.strictEqual(awardPoints({ correct: true, item: {}, msTaken: 10000, activity: act, mode: 'live' }),
+                     awardPoints({ correct: true, item: { seconds: 20 }, msTaken: 10000, activity: act, mode: 'live' }),
+                     'un ítem sin tiempo propio puntúa igual que uno que declare el de la actividad');
+  ok('el bonus de velocidad se calcula con la ventana del ítem, no con la de la actividad');
 }
 
 // ── 3. El ritmo viaja como INSTANTE en la sala (ida y vuelta real) ─────────
@@ -99,6 +138,11 @@ const read = (p) => readFileSync(new URL(p, new URL('..', import.meta.url)), 'ut
   assert.match(student, /session\.answers_open_at/, 'el alumno lee el instante de la sala');
   assert.match(student, /lastQuestionShownAt = openAtMs \|\| clock\.now\(\)/,
     'el ms se mide desde la apertura REAL, no desde que este móvil pintó (si no, el bonus premia al de mejor red)');
+  assert.match(host, /itemWindowMs\(activity, items\[idx\]\)/,
+    'el host cierra con la ventana DEL ÍTEM (R-3)');
+  assert.match(student, /deadlineMs - openAtMs/,
+    'y el alumno DERIVA la ventana de los dos instantes: así la barra cuadra con el reloj '
+    + 'y los segundos no tienen que viajar en el snapshot (§22-2)');
   ok('el ritmo lo escribe el host como instante y el alumno solo lo lee');
 }
 

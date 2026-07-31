@@ -26,7 +26,7 @@ import { hostPaintDecision } from '../core/livePhases.js';
 import { isStudentSnapshot } from '../core/liveSnapshot.js';
 import { podiumHtml } from '../core/podium.js';
 import { QL_COLORS } from '../core/questionLive.js';
-import { questionWindowMs, RACE_POLL_MS, BOARD_POLL_MS, readSeconds, READ_SECONDS_MAX } from '../core/timings.js';
+import { questionWindowMs, RACE_POLL_MS, BOARD_POLL_MS, readSeconds, READ_SECONDS_MAX, itemWindowMs } from '../core/timings.js';
 import { loopsOf, supportsLoop, defaultLoop, LOOP_LABELS, hasAdvanceChoice } from '../core/liveLoops.js';
 import { END_LABELS, END_POLICIES, DEFAULT_POLICY, DEFAULT_FIRST_N, DEFAULT_MINUTES, MAX_MINUTES, shouldEnd, endPolicyOf } from '../core/liveEnd.js';
 
@@ -203,10 +203,14 @@ async function renderHost(rootSel, code, sessionId, activity) {
   function openQuestion(idx) {
     const now = clock.now();
     const openAt = now + readSecs * 1000;
+    // R-3 · cada pregunta puede tener SU tiempo; si no lo declara, hereda el de
+    // la actividad. Como el cierre viaja como INSTANTE, el alumno no necesita
+    // saber los segundos: lee el mismo reloj sea cual sea la ventana.
+    const windowMs = itemWindowMs(activity, items[idx]);
     return setSessionState(sessionId, {
       status: 'running', phase: 'question', current_item: idx,
       answers_open_at: new Date(openAt).toISOString(),
-      deadline: new Date(openAt + timerSec * 1000).toISOString(),
+      deadline: new Date(openAt + windowMs).toISOString(),
     });
   }
 

@@ -7,7 +7,7 @@ import { renderImagePicker, attachImagePicker } from '../../core/imagePicker.js'
 import { itemControlsHtml, reorderArray, ruleScopeNote } from '../../core/editorPrimitives.js';
 import { rid } from '../../core/ids.js';
 import { renderEditorShell } from '../../core/editorShell.js';
-import { readSeconds } from '../../core/timings.js';
+import { readSeconds, questionWindowMs, ITEM_SECONDS_MIN, ITEM_SECONDS_MAX } from '../../core/timings.js';
 
 export function renderQuizEditor(root, activity, onChange) {
   const a = activity;
@@ -61,6 +61,15 @@ function wireContent(root, a, ctx) {
     item.answerIdx = [...set].sort((x, y) => x - y);
     syncAnswerFromIdx(item);
     ctx.onChange(a); ctx.repaint();
+  });
+  // R-3 · tiempo POR pregunta: vacío/0 = hereda el de la actividad (no se
+  // guarda el campo, así el contenido antiguo queda EXACTAMENTE igual).
+  on(root, 'input', '.it-secs', (e, el) => {
+    const item = a.content.items[+el.dataset.i];
+    const v = Math.round(+e.target.value || 0);
+    if (v > 0) item.seconds = Math.min(ITEM_SECONDS_MAX, Math.max(ITEM_SECONDS_MIN, v));
+    else delete item.seconds;
+    ctx.onChange(a);
   });
   on(root, 'input', '.it-pts', (e, el) => {
     a.content.items[+el.dataset.i].points = +e.target.value || 1;
@@ -267,9 +276,18 @@ function renderItems(a) {
           <i class="bi bi-sliders"></i> Avanzado
         </button>
         <div class="collapse" id="adv-${i}">
-          <div class="d-flex align-items-center gap-2">
-            <label class="form-label small text-muted mb-0">Puntos</label>
-            <input type="number" min="1" class="form-control form-control-sm it-pts" style="width:5rem" data-i="${i}" value="${it.points || 1}">
+          <div class="d-flex align-items-center gap-3 flex-wrap">
+            <div class="d-flex align-items-center gap-2">
+              <label class="form-label small text-muted mb-0">Puntos</label>
+              <input type="number" min="1" class="form-control form-control-sm it-pts" style="width:5rem" data-i="${i}" value="${it.points || 1}">
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <label class="form-label small text-muted mb-0">Tiempo en vivo (s)</label>
+              <input type="number" min="${ITEM_SECONDS_MIN}" max="${ITEM_SECONDS_MAX}" class="form-control form-control-sm it-secs"
+                     style="width:6rem" data-i="${i}" value="${it.seconds || ''}"
+                     placeholder="${Math.round(questionWindowMs(a) / 1000)}">
+              <span class="form-text mb-0">vacío = el de la actividad</span>
+            </div>
           </div>
         </div>
       </div>

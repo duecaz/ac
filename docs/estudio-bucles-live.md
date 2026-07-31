@@ -640,3 +640,90 @@ una pizarra lenta estamos por debajo. **Conclusión: no se toca nada** — ni to
 de mini-tableros ni repintado más lento. La sospecha era razonable y el dato
 dice que no. Si algún día se nota, el sospechoso NO es el pintado: será la
 frecuencia de sondeo o la red.
+
+---
+
+# R-3 · TIEMPO POR PREGUNTA — aplicado (v1.51.348)
+
+**Decisión**: los segundos son **por pregunta**, con el tiempo de la actividad
+como valor por defecto, y el profe lo cambia **al crear o editar** la actividad.
+
+## Análisis previo (por qué así, y qué se podía romper en silencio)
+
+Había **una** ventana para toda la actividad. Buscando quién dependía de ella
+aparecieron **tres** consumidores, y uno era una trampa:
+
+| Quién | Antes | Ahora |
+|---|---|---|
+| **Host** (fija el cierre) | `questionWindowMs(activity)` | `itemWindowMs(activity, item)` |
+| **Bonus de velocidad** (`core/scoring/award.js`) | dividía por la ventana de la ACTIVIDAD | por la ventana **del ítem** |
+| **Barra del alumno** | `questionWindowMs(activity)` | la **deriva** de `deadline − answers_open_at` |
+
+El de en medio es el que importaba: el bonus se calcula como "tiempo que te
+sobró / ventana". Con preguntas de 60 s y una ventana declarada de 20, el bonus
+habría salido **mal en silencio** —de más en las largas, de menos en las
+cortas— y nadie lo habría visto: solo puntajes raros. Está cubierto con un test
+que comprueba que responder **a mitad de ventana da el mismo bonus** dure la
+pregunta 20 s o 60 s.
+
+El tercero tiene una consecuencia bonita: como el alumno **deriva** la ventana de
+los dos instantes de la sala, los segundos **no viajan en el snapshot** (§22-2) y
+la barra cuadra siempre con el reloj, sea cual sea el tiempo de esa pregunta.
+
+## Sin migración, a propósito (§24)
+
+`item.seconds` es **opcional**: ausente o 0 = heredar el de la actividad. Una
+actividad creada antes de hoy se comporta **exactamente igual**, así que no hace
+falta transformar contenido ni subir `templateVersion` — el camino con menos
+riesgo. Suelo 5 s y tope 300 s (como el campo de la actividad).
+
+## Dónde lo cambia el profe
+
+- **Por actividad**: pestaña *En vivo* → "Timer pregunta (s)" (ya existía).
+- **Por pregunta**: en Quiz, dentro de *Avanzado* de cada pregunta → "Tiempo en
+  vivo (s)", con el valor de la actividad como marcador de posición; **vacío =
+  heredar**.
+- **Pendiente declarado**: Operaciones, Tildes y Comas no tienen zona "Avanzado"
+  por ítem en su editor, así que en ellas rige el tiempo de la actividad. El
+  motor ya lo soporta: es solo añadir el campo a esos tres editores cuando toque.
+
+---
+
+# CL-1 · Turnos justos en "pedir la palabra" — ANÁLISIS (sin ejecutar)
+
+## Qué pasa hoy
+
+El alumno ve la rejilla de cajas y **el primero que toca se queda la caja**
+(`canPick = qlOpen === null`, una caja abierta a la vez). Con 30 alumnos, los
+rápidos acaparan: el mismo niño puede llevarse cinco cajas seguidas mientras
+otros no participan ninguna vez. No hay ningún reparto.
+
+## El dato que falta
+
+Hoy se guarda **cuánto valió cada caja** (`ql_points[idx]`), pero **no quién se
+la llevó**. Desde v1.51.347 sí queda en `live_answers` (una fila por premio con
+su `player`), así que la información YA existe — pero en una colección que el
+alumno no consulta para pintar su rejilla.
+
+## Tres formas, con su coste y su honestidad
+
+1. **Aviso, no regla** (más barato): la pizarra muestra quién ha participado ya;
+   el profe reparte con la vista. Cero código de reglas, cero falsas promesas.
+2. **Gate en el móvil** (medio): si el profe activa "solo los que no han
+   participado", el alumno que ya tiene caja no puede pedir. **Aviso honesto**:
+   es una ayuda de aula, **no una garantía** — un alumno con conocimientos podría
+   saltárselo desde el navegador, igual que el tope de actividades de §25 es un
+   aviso y no un veredicto. Necesita que la sala lleve quién participó.
+3. **Regla de servidor** (caro): que PocketBase rechace el `claim` de quien ya
+   participó. Es lo único que sería una garantía de verdad, y exige que la regla
+   pueda consultar `live_answers` por join desde el PATCH de `ql` — factible pero
+   es tocar la parte más delicada del sistema.
+
+## Mi recomendación
+
+**(1) ahora, (2) si el profe lo pide.** Razones: el problema real es de gestión
+de aula, no de trampa —nadie "hackea" para responder una pregunta oral—, y el
+docente ya tiene el mando (ve quién pidió y puede cerrar sin puntos). (3) sería
+gastar la parte más frágil del sistema en un problema que no es de seguridad.
+
+**Decisión pendiente tuya**: si quieres (1), (2) o dejarlo como está.
