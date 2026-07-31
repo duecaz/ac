@@ -187,3 +187,129 @@ una lista teórica: es lo que el profe ve.
 3. Ficha de `board` (tablero compartido).
 4. Ficha de `claim` (pedir la palabra) — la única sin clave de respuesta, donde
    el veredicto es del docente.
+
+---
+
+# Ficha 1b · El bucle `rounds` CERRADO — máquina de estados propuesta
+
+Tres preguntas que quedaban abiertas, respondidas.
+
+## A · ¿Por horario o por retardo? — por INSTANTE, y ya lo hacemos así
+
+Kahoot no "abre a una hora": el anfitrión abre la pregunta y **el servidor fija
+el instante de cierre**; cada dispositivo solo calcula *cuánto falta*. Nosotros
+ya funcionamos exactamente así (`views/hostLive.js:261` escribe un `deadline`
+ISO en la sala; el móvil hace `deadline - clock.now()`), y es la decisión
+correcta por tres razones concretas:
+
+- **Un retardo (`setTimeout` de N segundos en cada móvil) se desincroniza**: cada
+  teléfono lo arranca cuando *él* pintó, así que el que tiene peor red juega con
+  menos tiempo. Un instante compartido no tiene ese sesgo.
+- **Sobrevive a recargar y a entrar tarde**: quien llega a mitad de pregunta ve
+  el tiempo que queda de verdad, no una ventana nueva.
+- **Es verificable en el servidor** (§22-1): el `ms` de cada respuesta se mide
+  contra ese instante sellado, no contra lo que afirme el móvil.
+
+Regla que se deriva y hay que respetar: **todo lo que gobierne el ritmo del
+juego se escribe como INSTANTE en la fila de la sala; nunca como un temporizador
+local**. La fase de lectura (R-1) es un instante más, no un `setTimeout`.
+
+## B · El bucle, paso a paso (con los dos instantes)
+
+La sala lleva, por pregunta: `current_item`, `answersOpenAt` (cuándo se pueden
+tocar las respuestas) y `deadline` (cuándo cierra). **Las fases de sala NO
+cambian** (`question` → `reveal` → `leaderboard`, §26 sigue congelada): la
+lectura vive DENTRO de `question`.
+
+```
+LOBBY
+  │  el profe pulsa Empezar
+  ▼
+QUESTION ── el host escribe de una vez:
+  │           current_item = i
+  │           answersOpenAt = ahora + lectura(i)
+  │           deadline      = answersOpenAt + segundos(i)
+  │
+  ├─ [1] LECTURA   (ahora → answersOpenAt)
+  │      pizarra: enunciado grande (+ imagen)
+  │      móvil:   el mismo enunciado y "prepárate… 3·2·1", botones BLOQUEADOS
+  │      → nadie puede clicar al azar; el reloj de respuesta no ha empezado
+  │
+  ├─ [2] RESPUESTA (answersOpenAt → deadline)
+  │      pizarra: opciones + cuenta atrás + nº de respuestas
+  │      móvil:   la ronda de la plantilla, activa
+  │      el ms se mide desde answersOpenAt (servidor) → el bonus de velocidad
+  │      premia pensar rápido, no tener mejor móvil
+  │      cierra por: deadline vencido  ó  todos han respondido
+  ▼
+REVEAL ── veredicto del SERVIDOR (settle, §22)
+  │      pizarra: correcta destacada + distribución por opción
+  │      móvil:   correcto/incorrecto · +puntos · racha · **tu puesto y a
+  │               cuánto estás del de arriba**  (R-2)
+  ▼
+LEADERBOARD
+  │      pizarra: top con flechas ↑↓ de quién subió o bajó (R-4)
+  │      móvil:   tu fila resaltada
+  │
+  ├─ ¿quedan preguntas? → vuelve a QUESTION con i+1
+  │     · por defecto lo dispara el PROFE ("Siguiente")
+  │     · si activó "avanzar solo", lo dispara el cronómetro
+  ▼
+PODIO + resumen personal ("acertaste 7 de 10")
+```
+
+Casos borde que este diseño resuelve solo, y hay que probar:
+- **Entrar a mitad de lectura** → ve la lectura y responde con todos.
+- **Entrar a mitad de respuesta** → responde con el tiempo que queda (menos), que
+  es lo justo y lo que hace Kahoot.
+- **Recargar el móvil** → ambos instantes vienen de la sala; no gana tiempo extra.
+- **Pausa del profe** → ya existe (`deadline: null` congela la barra); con la
+  lectura, pausar durante la lectura la congela igual.
+- **`lectura = 0`** → se comporta exactamente como hoy (retrocompatible).
+
+## C · ¿Quitamos "manual" y dejamos solo automático, como Kahoot?
+
+**No, y el motivo es que la premisa no es exacta**: en Kahoot en vivo el docente
+**también avanza a mano** entre preguntas por defecto — el automatismo está
+DENTRO de la pregunta (el cronómetro cierra solo), y "avanzar solo por las
+preguntas" es una opción que se activa, no el comportamiento base. Nuestro
+`advanceMode` por defecto ya es `manual`: coincidimos con el modelo sin saberlo.
+
+Tres razones propias para no quitarlo:
+1. **El valor pedagógico está justo ahí**: la revelación es cuando el profe dice
+   "¿por qué tres eligieron B?". Un avance automático se lleva por delante ese
+   momento, que es la mitad de la clase.
+2. **Aulas reales**: con móviles y redes desiguales, el automático deja atrás al
+   que aún está entrando o al que se le cayó el wifi.
+3. Ya está implementado y probado en las dos vistas; quitarlo es perder función.
+
+**Lo que sí cambia es DÓNDE vive la opción.** Hoy son tres hermanos desiguales
+en un `<select>` ("manual · automático · carrera"). Propuesta:
+
+```
+¿Cómo juega la clase?     [ Rondas juntas ] [ Carrera libre ] [ Tablero ]
+                            ← solo las que la PLANTILLA declara soportar
+
+(si eligió Rondas)
+  Avanzar de pregunta:    ( • ) Yo controlo      ( ) Solo, cada 5 s
+  Tiempo de lectura:      [ 3 s ]      ← 0 = como hasta ahora
+```
+
+Dos decisiones pequeñas y ordenadas en vez de tres opciones que mezclan "qué
+juego" con "quién avanza". Y el catálogo `LIVE_LOOPS` deja de ser teoría: es
+literalmente lo que el profe ve en el lobby.
+
+## D · Qué habría que tocar (estimación honesta)
+
+| Pieza | Cambio |
+|---|---|
+| `core/timings.js` | `readWindowMs(activity, item)` junto a `questionWindowMs` |
+| host: abrir pregunta | escribir `answersOpenAt` además de `deadline` (mismo PATCH) |
+| `views/studentLive.js` `paintQuestion` | pintar lectura hasta `answersOpenAt`; medir el ms desde ahí |
+| `views/hostLive.js` `paintQuestion` | la pizarra muestra enunciado y luego opciones |
+| reveal del alumno | añadir puesto + distancia (R-2) desde el `leaderboard()` ya existente |
+| lobby | las dos preguntas separadas (C) |
+| tests | instantes en `deadlineTicker`/`serverMs`; `live-smoke` con lectura > 0 |
+
+**No** toca: fases de sala (§26 intacta), reglas de PocketBase, esquema, ni el
+scorer. Es un cambio de ritmo, no de motor.
