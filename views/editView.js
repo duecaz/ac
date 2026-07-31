@@ -8,7 +8,7 @@ import { toast, confirmModal } from '../core/toast.js';
 import { acquire } from '../core/lifecycle.js';
 import { buildSwitchOptions, applyAndSave } from './switchTemplate.js';
 import { downloadActivitiesJson } from '../core/io.js';
-import { activityTooLarge, activitySizeBytes } from '../core/upload.js';
+import { checkActivitySize } from '../core/quotas.js';
 
 const AUTOSAVE_DELAY_MS = 2000;
 let _sizeWarned = false; // aviso de tamaño una vez por sesión
@@ -122,11 +122,18 @@ export function renderEditView(rootSel, { id, template }) {
     if (setVis) { activity.visibility = setVis; paintVis(); }
     saving = true;
     setState('Guardando…', 'info', 'bi-cloud-arrow-up');
-    // P1-6: avisa (una vez) si la actividad se acerca a ser insincronizable por
-    // acumular imágenes inline, antes de que reviente la cuota o el límite de PB.
-    if (!_sizeWarned && activityTooLarge(activity)) {
+    // §25 CAPACIDAD (antes P1-6): una actividad con muchas imágenes inline deja
+    // de poder guardarse. El AVISO salta antes del tope; pasado el tope el
+    // servidor la RECHAZA, así que se dice aquí en vez de dejar que falle la
+    // sincronización en silencio. Una sola redacción, la de core/quotas.js.
+    const size = checkActivitySize(activity);
+    if (size.level === 'over') {
       _sizeWarned = true;
-      toast(`Esta actividad pesa ~${Math.round(activitySizeBytes(activity)/1024)} KB por las imágenes. Si crece mucho más puede que no se sincronice; reduce el tamaño o el número de imágenes.`, 'warning', 8000);
+      setState('Demasiado pesada para el servidor', 'danger', 'bi-exclamation-triangle-fill');
+      if (!silent) toast(size.msg, 'danger', 10000);
+    } else if (size.level === 'warn' && !_sizeWarned) {
+      _sizeWarned = true;
+      toast(size.msg, 'warning', 8000);
     }
     const { remote, persisted } = save(activity);
     // P1-2: si NI SIQUIERA se guardó en local (cuota llena), NO fingir éxito —

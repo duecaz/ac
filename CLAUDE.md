@@ -35,7 +35,7 @@ git push origin <rama-de-trabajo>:ACTIVIDAD2         # legado, opcional (ya no s
   autenticado**: para acciones sobre sus repos fuera del alcance de la sesión (p.ej.
   `duecaz/ww-assets`), pásale los comandos `gh`/PS listos para pegar y él los ejecuta.
 
-### 4. LAS SEIS LEYES — contrastar TODO diseño contra ellas ANTES de escribir código
+### 4. LAS OCHO LEYES — contrastar TODO diseño contra ellas ANTES de escribir código
 Cada ley es un cuadro **dueño → PROHIBIDO** con su test que rompe CI. Si un cambio
 necesita violar una prohibición, el diseño está mal planteado: no se parchea, se
 replantea. Texto completo en **`docs/leyes.md`** (índice único de normas).
@@ -48,6 +48,8 @@ replantea. Texto completo en **`docs/leyes.md`** (índice único de normas).
 | **§22 · CONFIANZA** | el cliente **AFIRMA**, el veredicto lo pone el host o una regla del servidor | `pbRules` + `liveRules` (evaluador de reglas) · `confianza-alumno` · `answerSafety` · `modeAuth` (avisar ANTES) |
 | **§23 · VISTA** | la vista posee su render y sus handlers; el router el ciclo de vida; los relojes van por su primitivo | regla `reloj-primitivo` · `events` · `deadlineTicker` |
 | **§24 · CONTENIDO** | el contenido es del usuario: cambia solo por migración versionada, conversión declarada e ids con `rid()` | regla `id-rid` · `templateContract` (versión>1 ⇒ migrate) |
+| **§25 · CAPACIDAD** | el sistema tiene límites y son UNO (`core/quotas.js`): 200 actividades · 2 MB por actividad · 120 días de salas | `quotas` (paridad módulo↔panel↔ps1) |
+| **§26 · BUCLES LIVE** | el catálogo (rondas·carrera·tablero·pedir la palabra) está CONGELADO: fase nueva = decisión escrita | `liveLoops` |
 
 - **Si es norma, es test**: una regla nueva se escribe como test, no solo en un MD.
 - **Si una ley cierra una puerta, la UI lo DICE ANTES**: dirigir en vivo / crear
@@ -91,6 +93,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | **Prueba de CARGA** (N alumnos concurrentes live+tareas contra PB real) | `core/stressTest.js` · botón `#/admin` "Simular carga" · `node tools/stress-live.mjs [N]` |
 | Modo SOLO (Wordwall) por dentro · identidad/auth · dev local | `docs/modo-wordwall.md` · `docs/identidad.md` · `docs/dev-local.md` |
 | **DECISIONES de producto pendientes** (contrastadas con Wordwall/Kahoot: identidad del alumno, imprimible, cuotas…) | **`docs/decisiones-pendientes.md`** |
+| **Cuántos bucles de juego en vivo hay y qué cuestan** (estudio D7, medido) | **`docs/estudio-bucles-live.md`** + ley §26 |
 | Índice completo de docs | `docs/README.md` (lo histórico vive en `docs/historico/`) |
 | **Cómo se puntúa CADA actividad** (mapa de los 7 sitios que deciden puntos + plan) | **`docs/handoff-puntuacion.md`** |
 | **Centralizar decisiones repartidas en vistas** (fase→pantalla, payload, meta, prompt…) | **`docs/handoff-centralizacion.md`** |
@@ -245,6 +248,19 @@ Biblioteca tipo Wordwall + cuentas de profe, ejecutado y verificado en real:
   (smoke-test) + `docs/leyes.md` (índice de todas las normas).
 - **Pendiente (futuro, pedido por el usuario)**: PIN/NFC para pizarras (U2-U4) →
   `docs/handoff-acceso-docente.md`.
+
+### 🟡 DECISIONES APLAZADAS (D1-D5) — deuda de PRODUCTO, no de código
+Decisión del usuario (v1.51.340): se ejecutan solo las estructurales. **D6 hecha**
+(ley §25 · cuotas y retención) y **D7 estudiada y congelada** (ley §26 + estudio medido
+en `docs/estudio-bucles-live.md`). Quedan como módulos que se pueden añadir DESPUÉS sin
+rediseñar nada — ficha completa y recomendación en **`docs/decisiones-pendientes.md`**:
+- **D1 · identidad del alumno** (clases con lista de nombres): sin esto no hay seguimiento
+  del alumno en el año y los informes por alumno se quedan a medias. Es la más estructural
+  de las aplazadas; prerequisito del PIN/NFC (U2-U4).
+- **D3 · imprimible** (hoja de trabajo por MODELO de contenido, no por plantilla).
+- **D5 · taxonomía de la biblioteca** (grado·área·tema con vocabulario cerrado).
+- **D2 · "duplicar como otra plantilla"** (hoy el cambio de plantilla es destructivo).
+- **D4 · aula sin internet** (PWA): solo tras estabilizar la caché (ver v1.51.336).
 
 ### 🔴 AUDITORÍA INTEGRAL (Fable, 2026-07) — PENDIENTE DE EJECUTAR → `docs/handoff-auditoria-fable.md`
 4 agentes en paralelo (datos/sync · live · seguridad · UI), hallazgos verificados en

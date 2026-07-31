@@ -110,7 +110,13 @@ export const RULES = {
   // se puede robar un jugador ajeno cambiándole el secreto). Las reglas que la
   // consultan lo hacen por JOIN, que es interno del servidor y no pasa por estas
   // reglas de API.
-  live_claims: { listRule: null, viewRule: null, createRule: '', updateRule: null, deleteRule: null },
+  // BORRADO (§25 · retención): cerrado para las credenciales de HOY —si se
+  // pudiera borrar la credencial viva de un jugador, se le podría robar el
+  // puesto re-registrando otra— y abierto al PROFE para las de días anteriores,
+  // que es lo que permite purgar salas caducadas sin superadmin. `@todayStart`
+  // lo evalúa el servidor, así que el reloj del cliente no entra en la decisión.
+  live_claims: { listRule: null, viewRule: null, createRule: '', updateRule: null,
+                 deleteRule: `${AUTH} && created < @todayStart` },
 
   // §22-2 — CLAVE DE LA SALA: la actividad COMPLETA (con las respuestas) vive
   // aquí, CERRADA a quien no tiene sesión. La sala (`live_sessions`) guarda solo

@@ -2,7 +2,12 @@
 // viven DENTRO del JSON de la actividad (el stack es PocketBase, sin storage
 // externo). Límite 200 KB para mantener el registro ligero — igual que el fondo
 // personalizado y las imágenes de Pregunta/Ruleta Live.
-const IMG_MAX_BYTES = 200 * 1024; // 200 KB
+// Los NÚMEROS viven en core/quotas.js (§25 · capacidad, un número un sitio);
+// aquí solo se aplican. Antes el 200 KB estaba escrito aquí y el 5 MB del campo
+// de PocketBase en otros dos ficheros: tres topes que nadie podía comparar.
+import { QUOTAS, activityBytes, checkActivitySize } from './quotas.js';
+
+const IMG_MAX_BYTES = QUOTAS.imageBytes;
 
 const ALLOWED = {
   'image/png': 'png',
@@ -12,18 +17,15 @@ const ALLOWED = {
   'image/svg+xml': 'svg',
 };
 
-// Presupuesto POR ACTIVIDAD (P1-6). El límite de 200 KB es por imagen, pero una
+// Presupuesto POR ACTIVIDAD (P1-6 → §25). El límite por imagen es uno, pero una
 // actividad con muchas imágenes inline puede llegar a varios MB → (a) revienta la
-// cuota del blob de localStorage (todas las actividades en una clave) y (b) puede
-// superar el maxSize del campo `data` de PocketBase (5 MB) y quedar imposible de
-// sincronizar. Avisamos bastante por debajo para que el profe reaccione a tiempo.
-export const ACTIVITY_SIZE_WARN_BYTES = 1.5 * 1024 * 1024; // 1.5 MB
+// cuota del blob de localStorage (todas las actividades en una clave) y (b) supera
+// el maxSize del campo `data` de PocketBase y queda imposible de sincronizar.
+// El aviso salta ANTES del tope (QUOTAS.activityWarnRatio), no al rebotar.
+export const ACTIVITY_SIZE_WARN_BYTES = QUOTAS.activityBytes * QUOTAS.activityWarnRatio;
 
-export function activitySizeBytes(a) {
-  const s = typeof a === 'string' ? a : JSON.stringify(a);
-  try { return new TextEncoder().encode(s).length; } catch { return s.length; }
-}
-export function activityTooLarge(a) { return activitySizeBytes(a) > ACTIVITY_SIZE_WARN_BYTES; }
+export const activitySizeBytes = activityBytes;
+export function activityTooLarge(a) { return checkActivitySize(a).level !== 'ok'; }
 
 export async function uploadMedia(file) {
   if (!file) throw new Error('no file');

@@ -81,7 +81,7 @@ sale de aquí.
   vocabulario CERRADO (currículo peruano). Sin eso, la biblioteca no pasa de
   "lo último publicado" por muchos likes que tenga.
 
-## D6 · Cuotas y retención (la Pi es compartida)
+## D6 · Cuotas y retención — ✅ DECIDIDA Y APLICADA (v1.51.340, ley §25)
 
 - **Ellos**: Wordwall limita el plan gratuito (nº de recursos); es una decisión
   de negocio Y de capacidad.
@@ -93,7 +93,7 @@ sale de aquí.
   por profe, tamaño máximo por actividad, y meses de retención de salas y
   respuestas. Es la decisión más barata de tomar y la más cara de no tener.
 
-## D7 · Congelar el catálogo de bucles en vivo
+## D7 · Congelar el catálogo de bucles en vivo — ✅ ESTUDIADA Y CONGELADA (ley §26)
 
 - **Ellos**: Kahoot tiene UN bucle (pregunta → responder → revelar → ranking) y
   los tipos de pregunta son variantes, no juegos distintos.
@@ -104,11 +104,23 @@ sale de aquí.
   en `docs/leyes.md` y su test. Cada bucle multiplica el coste de cada cambio en
   vivo (lo hemos pagado ya en la carrera y en el tablero compartido).
 
-## Orden sugerido
+## Estado (decisión del usuario, v1.51.340)
 
-1. **D6** (cuotas/retención) — barato, protege el servidor compartido.
-2. **D1** (clases) — desbloquea seguimiento por alumno y el PIN/NFC ya registrado.
-3. **D3** (imprimible) — valor inmediato para el profe, coste contenido.
-4. **D5** (taxonomía) — hace útil la biblioteca antes de que crezca.
-5. **D2** (duplicar como otra plantilla) — pulido del flujo Wordwall.
-6. **D4** (sin internet) — solo tras estabilizar la caché.
+Se ejecutan **solo las estructurales**: D6 hecha (ley §25) y D7 estudiada +
+congelada (ley §26, estudio en `docs/estudio-bucles-live.md`).
+
+**D1 · D2 · D3 · D4 · D5 quedan como DEUDA REGISTRADA**: son módulos que se
+pueden añadir después sin rediseñar nada de lo que ya existe — no bloquean, y
+por eso no se hacen ahora. Siguen descritas arriba con su recomendación; cuando
+toque una, se retoma desde ahí. Orden si se retoman: D1 (clases) → D3
+(imprimible) → D5 (taxonomía) → D2 (duplicar) → D4 (sin internet).
+
+### Lo aplicado en D6
+- `core/quotas.js`: los cuatro números en un sitio (200 actividades · 2 MB por
+  actividad · 200 KB por imagen · 120 días de retención de salas).
+- El tope de tamaño lo aplica **PocketBase** (`maxSize` del campo `data`);
+  verificado contra un servidor real: 400 al pasarse, 200 por debajo.
+- `#/admin` → **Capacidad**: cuánto ocupas, tus actividades más pesadas, y
+  "ver qué salas caducaron" → purga con conteo previo (probado: 12 salas y sus
+  hijas borradas; la credencial de una partida de HOY resistió el borrado).
+- El editor avisa al 70% y dice cuándo el servidor va a rechazar.

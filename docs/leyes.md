@@ -495,6 +495,63 @@ módulo que lo "arregle" al vuelo.
   Quiz (falta `items→qa`).
 
 ---
+
+## §25 · CAPACIDAD — el sistema tiene límites, y son UNO
+
+> **Dueño**: `core/quotas.js` · **PROHIBIDO**: escribir un límite en cualquier
+> otro sitio (vista, esquema, script). · **Vigilada por**: `tests/quotas.test.mjs`.
+
+El servidor es **una Raspberry Pi compartida con otros proyectos**. Hasta
+v1.51.340 no había ningún tope: ni actividades por profe, ni tamaño real por
+actividad (200 KB por imagen, un aviso a 1,5 MB… y el campo de PocketBase
+aceptando 5 MB: tres números que nadie podía comparar), ni borrado de las salas
+en vivo, que crecen para siempre aunque la partida durase 20 minutos.
+
+**Los cuatro números** (decisión D6, `docs/decisiones-pendientes.md`):
+
+| Límite | Valor | Quién lo aplica |
+|---|---|---|
+| Actividades por profe | 200 | **AVISO** — una regla de PB no sabe contar filas, y se dice |
+| Tamaño de UNA actividad | 2 MB | **EL SERVIDOR** (`maxSize` del campo `data`) |
+| Una imagen | 200 KB | el cliente, al subirla |
+| Retención de salas en vivo | 120 días | el profe, desde `#/admin` → Capacidad |
+
+**Reglas que se derivan:**
+- **Un número, un sitio**: el panel `#/admin`, `tools/setup-pocketbase.ps1` y
+  `core/upload.js` LEEN de `core/quotas.js`. El test compara el `maxSize` del
+  script con el módulo: si divergen, falla.
+- **Se avisa antes de rebotar**: el editor avisa al 70% y dice claramente cuándo
+  el servidor va a rechazar (§22 — lo que no se puede aplicar, se declara como
+  aviso, no se disfraza de veredicto).
+- **La retención NUNCA toca el registro del profe**: se purgan `live_sessions`,
+  `live_answers`, `live_players` y `live_claims`; jamás `results` ni
+  `assignment_attempts`. Una fila **sin fecha no se purga** (§24: ante la duda,
+  se conserva el dato del usuario).
+- **La purga la ejecuta el DUEÑO** de esas colecciones (`purgeOldLive` en los dos
+  adaptadores, §21), nunca la vista; y siempre puede CONTAR sin borrar (`dryRun`).
+- **Las credenciales de HOY no se borran**: `live_claims.deleteRule` exige
+  `created < @todayStart`, porque borrar la credencial viva de un jugador
+  permitiría robarle el puesto (§22-4). Lo evalúa el servidor, no el cliente.
+
+## §26 · BUCLES EN VIVO — el catálogo está congelado
+
+> **Dueño**: `core/templateContract.js` (`LIVE_POLICIES`) · **PROHIBIDO**: añadir
+> un bucle o una fase de sala sin decisión escrita. · **Vigilada por**:
+> `tests/liveLoops.test.mjs`.
+
+Kahoot tiene UN bucle de juego; nosotros **cuatro** (rondas · carrera · tablero ·
+pedir la palabra) repartidos entre dos vistas de 840 y 714 líneas — y las tres
+regresiones en vivo de julio cayeron justo donde se cruzan. Mientras se decide el
+rediseño (**estudio completo y medido en `docs/estudio-bucles-live.md`**), el
+catálogo queda CONGELADO: una plantilla con política inventada, una fase de sala
+nueva, o una elección de bucle más por NOMBRE de plantilla rompen CI.
+
+**Deuda declarada y acotada (§0)**: hoy las vistas de vivo eligen bucle mirando
+el nombre de la plantilla en 4 sitios (`activity.template === 'wheel'`…). Es una
+violación de "un modo no conoce plantillas concretas". No se arregla ahora, pero
+el test fija el número: **no puede crecer**.
+
+---
 ### Cómo se auto-verifica todo
 `node tests/run.mjs` corre TODAS las suites. Los escáneres compartidos
 (`core/normsCheck.js` / `core/templateContract.js` / `core/skinContract.js`) corren

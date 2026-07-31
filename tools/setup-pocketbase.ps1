@@ -48,7 +48,9 @@ $sysFields = @(
 $defs = @(
   @{ name = "activities";
      fields = @(
-       @{ name="data"; type="json"; maxSize=5242880 },
+       # §25 CAPACIDAD: el tope de UNA actividad (core/quotas.js activityBytes).
+       # Si cambias el numero, cambialo alli y aqui — lo vigila tests/quotas.test.mjs.
+       @{ name="data"; type="json"; maxSize=2097152 },
        @{ name="owner"; type="text" },
        @{ name="visibility"; type="text" },
        @{ name="tags"; type="json"; maxSize=2000000 },
@@ -131,7 +133,7 @@ $defs = @(
   @{ name = "live_claims";
      fields = @( @{ name="session"; type="text"; required=$true }, @{ name="player"; type="text"; required=$true }, @{ name="secret"; type="text"; required=$true } );
      indexes = @( "CREATE UNIQUE INDEX ``idx_lc_session_player`` ON ``live_claims`` (``session``, ``player``)" );
-     rules = @{ listRule=$null; viewRule=$null; createRule=""; updateRule=$null; deleteRule=$null } },
+     rules = @{ listRule=$null; viewRule=$null; createRule=""; updateRule=$null; deleteRule='@request.auth.id != "" && created < @todayStart' } },
 
   # live_keys (22-2): la actividad COMPLETA de la sala, CERRADA sin sesión. La
   # sala guarda solo el snapshot saneado (su lectura debe ser abierta: PIN).

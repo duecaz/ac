@@ -26,6 +26,8 @@ console.log('\n▶ liveLocal'); await import('./liveLocal.test.mjs');
 console.log('\n▶ liveJoin'); await import('./liveJoin.test.mjs');
 console.log('\n▶ raceResume'); await import('./raceResume.test.mjs');
 console.log('\n▶ quizAnswer'); await import('./quizAnswer.test.mjs');
+console.log('\n▶ quotas'); await import('./quotas.test.mjs');
+console.log('\n▶ liveLoops'); await import('./liveLoops.test.mjs');
 console.log('\n▶ stressTest'); await import('./stressTest.test.mjs');
 console.log('\n▶ pbHttp'); await import('./pbHttp.test.mjs');
 console.log('\n▶ liveAnswers'); await import('./liveAnswers.test.mjs');

@@ -33,6 +33,9 @@ export const listAnswers = call('listAnswers');
 export const submitRaceAttempt = call('submitRaceAttempt');
 export const leaderboard = call('leaderboard');
 export const kickPlayer = call('kickPlayer');
+// §25 CAPACIDAD — retención: borra las salas (y lo que cuelga de ellas) más
+// viejas que el corte. Lo ejecuta el DUEÑO de esas colecciones, nunca la vista.
+export const purgeOldLive = call('purgeOldLive');
 export const pingHost = call('pingHost');
 
 // Student flow

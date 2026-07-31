@@ -11,6 +11,7 @@
 import { rid } from '../../core/ids.js';
 import { createLiveRoom } from '../../kernel/live/engine.js';
 import { pickWord } from '../../core/liveWords.js';
+import { clock } from '../../core/clock.js';
 
 const PREFIX = 'ww.live.';
 
@@ -67,7 +68,9 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
       } catch { /* ignore — worst case two rooms share a word (recycling) */ }
       const code = pickWord(usedCodes);
       const engine = createLiveRoom(activity, { code });
-      write(code, { activity, state: engine.state });
+      // `created`: espejo del campo autodate de PocketBase. Sin él, la retención
+      // (§25) no tendría por dónde decidir qué sala es vieja en modo local.
+      write(code, { activity, state: engine.state, created: new Date(clock.now()).toISOString() });
       return { id: code, code };
     },
 
@@ -188,6 +191,28 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
       const { room, engine } = load(code);
       engine.state.players = engine.state.players.filter(p => p.id !== playerId);
       save(code, room, engine); notify(code, 'players');
+    },
+
+    // §25 CAPACIDAD — espejo de la retención del driver PocketBase. En local
+    // una sala ES su clave de localStorage (con sus respuestas y jugadores
+    // dentro del blob), así que purgar la sala se lleva todo lo suyo.
+    async purgeOldLive(cutoffIso, { dryRun = true } = {}) {
+      const out = { cutoff: cutoffIso, dryRun, sessions: 0, answers: 0, players: 0, claims: 0, errors: [] };
+      const codes = [];
+      try {
+        if (kv) { for (let i = 0; i < kv.length; i++) { const k = kv.key(i); if (k?.startsWith(PREFIX)) codes.push(k.slice(PREFIX.length)); } }
+        else for (const k of mem.keys()) codes.push(k.slice(PREFIX.length));
+      } catch (e) { out.errors.push(e.message); return out; }
+      for (const code of codes) {
+        const room = read(code);
+        // Sin fecha NO se purga (§24: ante la duda, se conserva).
+        if (!room?.created || String(room.created) >= String(cutoffIso)) continue;
+        out.sessions++;
+        out.answers += Object.keys(room.state?.answers || {}).length;
+        out.players += (room.state?.players || []).length;
+        if (!dryRun) { try { kv ? kv.removeItem(PREFIX + code) : mem.delete(PREFIX + code); } catch (e) { out.errors.push(`${code}: ${e.message}`); } }
+      }
+      return out;
     },
 
     async pingPresence(/* playerId */) { /* no-op locally */ },
