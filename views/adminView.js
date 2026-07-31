@@ -596,7 +596,11 @@ function renderPanel(rootSel) {
           { name: 'max_score',   type: 'number' },
           { name: 'time_used',   type: 'number' },
           { name: 'overrides',   type: 'json' },
-        ]},
+          // Deuda D (R1) — clave de idempotencia: el índice único PARCIAL
+          // (qid != '') deja en paz las filas antiguas y convierte el reintento
+          // tras un ACK perdido en 400 = "ya guardado".
+          { name: 'qid',         type: 'text' },
+        ], indexes: ["CREATE UNIQUE INDEX `idx_results_qid` ON `results` (`qid`) WHERE `qid` != ''"] },
         { name: 'live_sessions', fields: [
           { name: 'code',     type: 'text', required: true },
           { name: 'activity', type: 'json' },
@@ -672,8 +676,10 @@ function renderPanel(rootSel) {
           { name: 'time_used',     type: 'number' },
           { name: 'answers',       type: 'json' },   // detalle por ítem (analítica F3)
           { name: 'attempt_no',    type: 'number' },  // §22-3: nº de intento, lo acota la regla
+          { name: 'qid',           type: 'text' },    // deuda D (R1): idempotencia del reintento
           { name: 'created_at',    type: 'text' },
-        ], indexes: ['CREATE UNIQUE INDEX `idx_aa_asg_user_no` ON `assignment_attempts` (`assignment_id`, `user_id`, `attempt_no`)'] },
+        ], indexes: ['CREATE UNIQUE INDEX `idx_aa_asg_user_no` ON `assignment_attempts` (`assignment_id`, `user_id`, `attempt_no`)',
+                     "CREATE UNIQUE INDEX `idx_aa_qid` ON `assignment_attempts` (`qid`) WHERE `qid` != ''"] },
         // ❤ Likes de la biblioteca pública (S2): una fila por (actividad, profe).
         { name: 'activity_likes', fields: [
           { name: 'activity', type: 'text', required: true },

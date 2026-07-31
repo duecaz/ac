@@ -193,4 +193,38 @@ ok('assignments: crear/cerrar/rotar exige sesión; el alumno solo lee');
   ok('orden de aplicación: cada colección va después de las que sus reglas consultan');
 }
 
+// ── 10. PARIDAD DE CAMPOS panel ↔ script (la comparación de arriba solo cubre
+// REGLAS). Cómo se coló el bug real: el campo `qid` entró al .ps1 pero la edición
+// del panel falló a medias — el panel aplicó en la Pi sin el campo y NADIE lo vio
+// hasta consultar el servidor a mano. Un campo declarado en una vía tiene que
+// estar en la otra.
+{
+  const admin = readFileSync(join(ROOT, 'views/adminView.js'), 'utf8');
+  const ps1   = readFileSync(join(ROOT, 'tools/setup-pocketbase.ps1'), 'utf8');
+
+  // DEFS del panel: { name: 'coll', fields: [ { name: 'x', ... }, ... ] }
+  const adminFields = {};
+  for (const m of admin.matchAll(/\{ name: '([\w_]+)', fields: \[([\s\S]*?)\]/g)) {
+    adminFields[m[1]] = new Set([...m[2].matchAll(/\{ name: '([\w_]+)'/g)].map(x => x[1]));
+  }
+  // DEFS del script: @{ name = "coll"; fields = @( @{ name="x"; ... } ... )
+  const ps1Fields = {};
+  for (const m of ps1.matchAll(/@\{ name = "([\w_]+)";\s*\n\s*fields = @\(([\s\S]*?)\);/g)) {
+    ps1Fields[m[1]] = new Set([...m[2].matchAll(/@\{ name="([\w_]+)"/g)].map(x => x[1]));
+  }
+
+  const both = Object.keys(ps1Fields).filter(c => adminFields[c]);
+  assert.ok(both.length >= 10, `el parser debe ver las colecciones en ambas vías (vio ${both.length})`);
+  for (const coll of both) {
+    const a = adminFields[coll], b = ps1Fields[coll];
+    const onlyPs1 = [...b].filter(f => !a.has(f) && f !== 'created_at');   // created_at lo añade PB/panel aparte
+    const onlyAdmin = [...a].filter(f => !b.has(f) && f !== 'created_at');
+    assert.deepStrictEqual(onlyPs1, [],
+      `${coll}: campos en setup-pocketbase.ps1 que FALTAN en el panel: ${onlyPs1.join(', ')} — el panel aplicaría un esquema incompleto (fue el bug del qid)`);
+    assert.deepStrictEqual(onlyAdmin, [],
+      `${coll}: campos en el panel que faltan en setup-pocketbase.ps1: ${onlyAdmin.join(', ')}`);
+  }
+  ok(`paridad de CAMPOS panel ↔ script en ${both.length} colecciones (cómo se coló el qid)`);
+}
+
 console.log(`\npbRules.test: ${passed} checks passed`);

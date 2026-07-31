@@ -113,7 +113,7 @@ $defs = @(
   # FUERA del blob a proposito: es lo unico que escribe un alumno (pedir la
   # palabra en Pregunta en Vivo), asi `state` puede ser host-only.
   @{ name = "live_sessions";
-     fields = @( @{ name="code"; type="text"; required=$true }, @{ name="activity"; type="json"; maxSize=5242880 }, @{ name="state"; type="json"; maxSize=5242880 }, @{ name="ql"; type="json"; maxSize=200000 }, @{ name="status"; type="text" } );
+     fields = @( @{ name="code"; type="text"; required=$true }, @{ name="activity"; type="json"; maxSize=5242880 }, @{ name="state"; type="json"; maxSize=5242880 }, @{ name="ql"; type="json"; maxSize=200000 } );
      indexes = @( "CREATE INDEX ``idx_ls_code`` ON ``live_sessions`` (``code``)" );
      rules = @{
        listRule=""; viewRule="";
