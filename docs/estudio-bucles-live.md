@@ -346,3 +346,176 @@ test falla si aparece un cuarto.
 
 **Pendiente declarado de esta ficha**: R-3 (tiempo POR pregunta) — toca el modelo
 de contenido y su migración (§24), y no se ha hecho.
+
+---
+
+# Ficha 2 · `race` — la carrera libre
+
+Medido sobre `views/hostLive.js paintRace` y `views/studentLive.js paintRace`
+(v1.51.344). **No tiene referente en Kahoot**: lo más parecido es su modo
+asignado (student-paced), pero ese es una TAREA, no una clase en directo con la
+pizarra puesta. Aquí el referente somos nosotros, así que las decisiones hay que
+tomarlas, no copiarlas.
+
+## Cómo corre hoy
+
+1. El profe elige "Carrera libre" y pulsa Empezar → fase `race`, **sin deadline**.
+2. Cada alumno recibe su cola de ítems y avanza a su ritmo. Su móvil **juzga en
+   local** (excepción declarada de §22-2: la sala lleva el contenido completo) y
+   colorea al instante; el fallo **se re-encola al final** y vuelve más tarde.
+3. La pizarra muestra una **lista ordenada por aciertos** con barra de progreso y
+   un cronómetro ascendente. El host **re-puntúa cada fila** con la clave real
+   (`paintRace` línea 606): el veredicto del móvil no cuenta para el ranking.
+4. Termina **solo cuando el profe pulsa "Terminar carrera"** → `endSession`
+   liquida lo pendiente y sale el podio.
+
+## Diferencias de fondo con `rounds`
+
+| | `rounds` | `race` |
+|---|---|---|
+| Quién marca el ritmo | el profe (o el reloj) | **cada alumno** |
+| Qué ve la pizarra | la pregunta actual | **quién va por dónde** |
+| Cuándo se puntúa | al revelar cada ítem (settle) | al cerrar la carrera |
+| Quién juzga en el momento | el servidor | el móvil (hint), el host re-puntúa |
+| Ítem fallado | se queda fallado | **vuelve a la cola** |
+| Fin | se acaban las preguntas | **lo decide el profe** |
+
+Ese último renglón es el problema de diseño: en rondas el juego tiene final
+propio; en carrera **no termina nunca solo**.
+
+## Las tres preguntas abiertas, con recomendación
+
+**C-1 · ¿Qué significa "terminar"?**
+Hoy: nada — la carrera sigue hasta que el profe corta, aunque los 30 hayan
+acabado hace dos minutos. El primero en terminar se queda mirando una pantalla
+de "esperando" sin saber cuánto.
+**Recomendación**: la carrera termina cuando se cumple lo primero de estas tres,
+y el profe lo elige al empezar: **(a) todos terminan** (por defecto), **(b) los
+primeros N terminan**, **(c) tiempo límite**. En los tres casos el profe
+conserva el botón de cortar. Sin esto, "terminar" es un acto de voluntad y la
+clase se queda en el limbo.
+
+**C-2 · ¿Qué ve el que va último?**
+Hoy ve su cola y su contador; en la pizarra aparece **el último de una lista
+ordenada por aciertos**, con su nombre y su barra vacía, proyectado. Eso es
+exposición pública del que menos sabe, y en una carrera dura varios minutos —
+mucho más tiempo que la revelación de una pregunta.
+**Recomendación**: la pizarra muestra **avance, no ranking**: mismo orden que la
+lista de clase (o alfabético) y barras de progreso, con la posición SOLO en el
+podio final. El profe puede activar "ordenar por avance" si quiere competición.
+Es la decisión análoga a la de los nombres en la revelación de rondas.
+
+**C-3 · ¿Debe tener tiempo límite?**
+**Recomendación: opcional y visible.** Si el profe pone límite, se escribe como
+INSTANTE en la sala (`deadline`, igual que en rondas — §26 ficha 1b) y todos ven
+el mismo cronómetro **descendente**; sin límite, el cronómetro es ascendente
+como hoy. Nada de temporizadores locales.
+
+## Deuda propia de este bucle (ya conocida)
+
+- La fase `race` la comparten **carrera y tablero**; cada vista desambigua con su
+  propio `isBoard`. Al declarar el catálogo (§26) el bucle ya está declarado,
+  pero **la fase sigue compartida** — separarlas es trabajo pendiente.
+- El re-cálculo del ranking en el host es O(alumnos × ítems) **en cada
+  repintado** (`RACE_POLL_MS`). Con 30 alumnos y 20 ítems son 600 evaluaciones
+  por tick; funciona, pero es el sitio donde una clase grande se notará primero.
+
+---
+
+# Ficha 3 · `board` — el tablero compartido
+
+Medido sobre `paintLiveBoardHost` y `paintLiveBoard`. Hoy solo lo usa **Ordena
+las Pelotas**. Tampoco tiene equivalente en Kahoot ni en Wordwall en vivo.
+
+## Cómo corre hoy
+
+1. Comparte la fase `race` (no elige el profe: lo **declara la plantilla**).
+2. Cada alumno recibe **el mismo tablero** y lo resuelve; cada movimiento se
+   emite (throttled) con `submitProgress`, que hace *upsert* de SU fila.
+3. La pizarra muestra **una rejilla de mini-tableros en vivo**, ordenados:
+   resueltos primero, luego por menos movimientos o menos tiempo (según
+   `content.mode`).
+4. Termina cuando el profe cierra.
+
+## Diferencias de fondo con `race`
+
+Parecen el mismo bucle (ambos van a ritmo del alumno, ambos en fase `race`) pero
+se distinguen en algo que importa:
+
+| | `race` | `board` |
+|---|---|---|
+| Unidad de avance | **ítems** de una lista | **un solo** puzzle |
+| Progreso | cuántos lleva bien | qué tan ordenado está su tablero |
+| Ranking | aciertos | resuelto → menos movimientos / menos tiempo |
+| Qué ve la pizarra | barras | **el tablero de cada uno, moviéndose** |
+| Re-encolar fallos | sí | no aplica (no hay "fallar", hay "mover") |
+
+Por eso fusionarlos sería un error: comparten el "cada uno a su ritmo" y nada
+más. Lo que sí deberían compartir es la **política de fin** (C-1) y la de
+**exposición** (C-2) — son la misma pregunta en los dos.
+
+## Recomendaciones
+
+**B-1 · Fin declarado, igual que en la carrera**: "cuando todos resuelvan",
+"los primeros N" o "tiempo límite". Misma implementación, mismo instante en la
+sala. Es literalmente el mismo código si se hace una vez.
+
+**B-2 · El coste de la rejilla en pizarras de gama baja.** Con 30 alumnos son 30
+mini-tableros repintándose por polling. En una pizarra A55 (`ww-lite`) eso se
+nota. **Recomendación**: tope de mini-tableros visibles (p.ej. 12, "y 18 más") y
+repintado más lento en `ww-lite`. Hoy no está medido — antes de tocarlo, medirlo.
+
+**B-3 · Un tablero por alumno vs el mismo para todos**: hoy es el mismo tablero
+generado del contenido, y está bien (es comparable). Dejarlo declarado: si algún
+día se genera aleatorio por alumno, deja de ser una competición justa.
+
+---
+
+# Ficha 4 · `claim` — pedir la palabra
+
+Es el bucle **distinto de verdad**: el contenido **no tiene clave de respuesta**.
+Lo usan Pregunta en Vivo y Ruleta.
+
+1. El alumno ve una rejilla de cajas (o la ruleta) y **pide turno** tocando una.
+2. La caja se abre para toda la clase; el enunciado sale en la pizarra.
+3. El alumno responde **en voz alta** (fuera de la app).
+4. **El docente da los puntos** con botones (o cierra sin puntos, y la caja
+   vuelve a estar disponible).
+
+Diferencia esencial con los otros tres: aquí **no hay veredicto automático**, y
+por eso `scoreSubmission` devuelve `correct: null` — el ítem no es puntuable y
+la cadena entera lo respeta (deuda C, ley §22-5): la tabla pinta "—", no cuenta
+como fallo, no rompe la racha.
+
+**Recomendaciones (menores, es el bucle más sano):**
+- **CL-1 · Turnos justos**: hoy quien pulsa primero se queda la caja. Con 30
+  alumnos, los rápidos acaparan. Opción del profe: "solo pueden pedir los que
+  aún no han participado".
+- **CL-2 · Se escribe cuánto valió**, no solo el total: hoy `ql_points` guarda el
+  puntaje por caja, pero el informe no distingue "acertó" de "el profe le dio 2".
+  Como los puntos son juicio del docente, conviene que quede así dicho en el
+  informe (una nota, no una nota fingida).
+
+---
+
+# Qué comparten los cuatro (y qué no)
+
+| | rounds | race | board | claim |
+|---|---|---|---|---|
+| Ritmo | profe | alumno | alumno | profe |
+| Veredicto | servidor | host al cerrar | host al cerrar | **docente** |
+| Fin propio | sí (se acaban) | **no** | **no** | no |
+| Exposición pública | por pregunta | **continua** | continua | por turno |
+| Fase de sala | `question` | `race` | `race` (compartida) | `question-live` |
+
+**Las dos decisiones transversales** que salen de este estudio y que conviene
+tomar UNA vez para los tres bucles sin final propio:
+
+1. **Política de fin** (todos · primeros N · tiempo límite), escrita como
+   instante en la sala.
+2. **Política de exposición** (¿la pizarra ordena por ranking o muestra avance?),
+   con el mismo interruptor que ya se propuso para los nombres en la revelación
+   de rondas.
+
+Hacerlas una vez y que los tres bucles las consuman es lo que evita que
+`race`/`board`/`claim` se sigan separando entre sí.

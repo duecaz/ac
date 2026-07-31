@@ -31,3 +31,22 @@
 .hl-reading .ww-kahoot-grid { visibility: hidden; }
 /* Y en el móvil: se lee, no se toca (mismo instante que la pizarra). */
 .s-reading { pointer-events: none; opacity: .85; }
+
+
+/* ── LOBBY DEL HOST · controles de configuración ──────────────────────────────
+   CONTRASTE: el chrome del profesor es CREMA (#f3efe4, styles/home.css), así
+   que las variantes "light" de Bootstrap (texto blanco) quedan ilegibles — se
+   veía el botón pero no su texto. Estos chips traen su propio par
+   fondo/texto de la paleta del panel (navy + ámbar), que contrasta tanto sobre
+   crema como sobre un fondo oscuro si algún día la sala se proyecta en negro.
+   Es chrome, no juego: nada de tokens --ww-* aquí (§3). */
+.ll-label { color: #141c2e; font-weight: 600; }
+.ll-hint  { color: #5b6472; }
+.ll-pick {
+  background: #243149; color: #e5edf9; border: 1px solid #33425d;
+}
+.ll-pick:hover { background: #2d3d59; color: #fff; }
+.ll-pick.is-on {
+  background: #f5c518; color: #141c2e; border-color: #d9ad0f; font-weight: 700;
+}
+.ll-pick.is-on:hover { background: #ffd534; color: #141c2e; }

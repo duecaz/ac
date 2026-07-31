@@ -224,30 +224,30 @@ async function renderHost(rootSel, code, sessionId, activity) {
     if (loops.length === 0) return '<div class="mt-4"></div>';
     const chooser = loops.length > 1 ? `
       <div class="mb-3">
-        <div class="text-light small mb-1">¿Cómo juega la clase?</div>
+        <div class="ll-label small mb-1">¿Cómo juega la clase?</div>
         <div class="btn-group" role="group">
-          ${loops.map(l => `<button type="button" class="btn btn-sm ${l === loop ? 'btn-warning' : 'btn-outline-light'} loop-pick" data-loop="${l}">${escapeHtml(LOOP_LABELS[l].label)}</button>`).join('')}
+          ${loops.map(l => `<button type="button" class="btn btn-sm ll-pick loop-pick${l === loop ? ' is-on' : ''}" data-loop="${l}">${escapeHtml(LOOP_LABELS[l].label)}</button>`).join('')}
         </div>
-        <div class="text-muted small mt-1">${escapeHtml(LOOP_LABELS[loop]?.hint || '')}</div>
-      </div>` : `<div class="text-muted small mb-3">${escapeHtml(LOOP_LABELS[loop]?.hint || '')}</div>`;
+        <div class="ll-hint small mt-1">${escapeHtml(LOOP_LABELS[loop]?.hint || '')}</div>
+      </div>` : `<div class="ll-hint small mb-3">${escapeHtml(LOOP_LABELS[loop]?.hint || '')}</div>`;
     const rounds = hasAdvanceChoice(loop) ? `
       <div class="d-flex gap-4 justify-content-center flex-wrap align-items-end">
         <div>
-          <div class="text-light small mb-1">Avanzar de pregunta</div>
+          <div class="ll-label small mb-1">Avanzar de pregunta</div>
           <div class="btn-group btn-group-sm" role="group">
-            <button type="button" class="btn ${!autoAdvance ? 'btn-warning' : 'btn-outline-light'} adv-pick" data-auto="0">Yo controlo</button>
-            <button type="button" class="btn ${autoAdvance ? 'btn-warning' : 'btn-outline-light'} adv-pick" data-auto="1">Solo</button>
+            <button type="button" class="btn ll-pick adv-pick${!autoAdvance ? ' is-on' : ''}" data-auto="0">Yo controlo</button>
+            <button type="button" class="btn ll-pick adv-pick${autoAdvance ? ' is-on' : ''}" data-auto="1">Solo</button>
           </div>
         </div>
         <div>
-          <label class="text-light small mb-1 d-block" for="read-secs">Tiempo de lectura</label>
+          <label class="ll-label small mb-1 d-block" for="read-secs">Tiempo de lectura</label>
           <div class="input-group input-group-sm" style="max-width:130px">
             <input id="read-secs" type="number" class="form-control" min="0" max="${READ_SECONDS_MAX}" value="${readSecs}">
             <span class="input-group-text">s</span>
           </div>
         </div>
       </div>
-      <div class="text-muted small mt-1">Segundos para LEER antes de poder responder. 0 = responder al instante.</div>` : '';
+      <div class="ll-hint small mt-1">Segundos para LEER antes de poder responder. 0 = responder al instante.</div>` : '';
     return `<div class="text-center mt-4 mb-2">${chooser}${rounds}</div>`;
   }
 
