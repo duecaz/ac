@@ -790,14 +790,39 @@ function renderPanel(rootSel) {
                 patchBody.indexes = [...curIdx, ...missingIdx];
                 addedIdx = missingIdx.map(idxName);
               }
-            } catch { /* si no se pudo leer, solo se aplican reglas */ }
+            } catch (readErr) {
+              // ANTES este catch callaba y "reglas actualizadas" mentía por
+              // omisión (así se aplicó un esquema sin `qid` en producción sin que
+              // nadie lo viera). Si no se pudo leer el esquema actual, se DICE.
+              results.push({ name: col.name, ok: false, msg: `no se pudo LEER el esquema para el diff de campos (${readErr?.message || readErr}) — solo se aplicarían reglas; reintenta` });
+              continue;
+            }
             const pr = await fetch(`${PB_URL}/api/collections/${existingId}`, {
               method: 'PATCH', headers,
               body: JSON.stringify(patchBody),
             });
             if (pr.ok) {
               const extras = [...addedFields.map(f => `campo ${f}`), ...addedIdx.map(i => `índice ${i}`)];
-              results.push({ name: col.name, ok: true, msg: extras.length ? `reglas + ${extras.join(', ')} (ya existía)` : 'reglas actualizadas (ya existía)' });
+              // VERIFICACIÓN post-aplicación: se RELEE el servidor y se compara
+              // contra el DEF. La salida deja de ser "lo que intenté" y pasa a ser
+              // "lo que HAY" — un campo que falte se dice con nombre, nunca más un
+              // ✓ con esquema incompleto.
+              let verify = '';
+              try {
+                const post = await (await fetch(`${PB_URL}/api/collections/${existingId}`, { headers })).json();
+                const haveF = new Set((post[schemaKey] || post.fields || []).map(f => f.name));
+                const wantF = (col[schemaKey] || []).map(f => f.name).filter(n => !['id','created','updated'].includes(n));
+                const lackF = wantF.filter(n => !haveF.has(n));
+                const idxName = (sql) => (String(sql).match(/INDEX\s+[\`"']?(\w+)[\`"']?/i) || [])[1] || sql;
+                const haveI = new Set((post.indexes || []).map(idxName));
+                const lackI = (col.indexes || []).map(idxName).filter(n => !haveI.has(n));
+                if (lackF.length || lackI.length) {
+                  results.push({ name: col.name, ok: false, msg: `reglas OK pero el servidor QUEDÓ SIN: ${[...lackF.map(f => 'campo ' + f), ...lackI.map(i => 'índice ' + i)].join(', ')}` });
+                  continue;
+                }
+                verify = ` · verificado: ${wantF.length} campos`;
+              } catch { verify = ' · (sin verificar: relectura falló)'; }
+              results.push({ name: col.name, ok: true, msg: (extras.length ? `reglas + ${extras.join(', ')} (ya existía)` : 'reglas actualizadas (ya existía)') + verify });
             } else {
               const b = await pr.json().catch(() => ({}));
               results.push({ name: col.name, ok: false, msg: pbErrDetail(b, pr.status) });
