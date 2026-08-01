@@ -138,7 +138,7 @@ montaje FÍSICO (proyector+móviles / gestión de entregas).
 |---|---|---|---|---|---|
 | `rounds` Rondas juntas | `question` | el profe o el reloj | **más puntos** | Kahoot (base×500 + velocidad) | agotar preguntas |
 | `race` Carrera libre | `race` | cada alumno | **terminar primero con todas bien** | **planos** (puntaje = nº de aciertos) | todos · primeros N · tiempo (`core/liveEnd.js`) |
-| `board` Tablero | `race` | cada alumno | avanzar más en el tablero | planos | igual que carrera |
+| `board` Tablero | `race` | cada alumno | avanzar más en el tablero | **escala propia** de la plantilla (Pelotas: 0-1000 por eficiencia, P5) | igual que carrera |
 | `claim` Pedir la palabra | `question-live` | el profe (quien pide turno) | los puntos que da el docente | manuales (+10/+50) | lo cierra el docente |
 
 - **Carrera**: un fallo VUELVE A LA COLA ⇒ todo el que termina lo hace con TODAS bien ⇒ el

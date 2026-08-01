@@ -924,7 +924,12 @@ async function renderHost(rootSel, code, sessionId, activity) {
     // ¿Fue una CARRERA? El sello de apertura único ('race') lo delata aunque la
     // sala ya esté 'ended' — y de él depende que el podio muestre la hora de meta.
     _wasRace = !!blob?.itemOpenedAt?.race || blob?.phase === 'race';
-    const msOpts = { itemOpenedAt: blob?.itemOpenedAt, phase: blob?.phase };
+    // FASE EFECTIVA para derivar el tiempo: en el podio la sala ya está 'ended',
+    // y con esa fase core/serverMs.js tomaría `created` (el PRIMER intento). En
+    // carrera lo que cuenta es el instante del ACIERTO (`updated`): quien falló
+    // y corrigió tarde saldría con una meta más temprana que la real — y la meta
+    // es lo que decide la carrera.
+    const msOpts = { itemOpenedAt: blob?.itemOpenedAt, phase: _wasRace ? 'race' : blob?.phase };
     const all = await Promise.all(items.map((_, i) => listAnswers(sessionId, i).then(a => rowsFromLiveAnswers(a, i, msOpts)).catch(() => [])));
     let rows = all.flat();
     try {
@@ -991,7 +996,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
       try {
         const rows = await gatherSessionRows();
         out.innerHTML = tab === 'tabla'
-          ? sessionTableHtml(rows, items.length, { labels: itemLabels(), items, template: tpl, activity })
+          ? sessionTableHtml(rows, items.length, { labels: itemLabels(), items, template: tpl, activity, race: _wasRace })
           : itemStatsHtml(activity, rows);
       } catch (e) { out.innerHTML = `<div class="alert alert-warning">No se pudo cargar: ${escapeHtml(e.message)}</div>`; }
     }
@@ -999,7 +1004,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     document.getElementById('ll-csv')?.addEventListener('click', async () => {
       try {
         const rows = await gatherSessionRows();
-        const csv = sessionTableCsv(rows, items.length, { labels: itemLabels(), items, template: tpl, activity });
+        const csv = sessionTableCsv(rows, items.length, { labels: itemLabels(), items, template: tpl, activity, race: _wasRace });
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a'); a.href = url; a.download = `sesion-${code}.csv`; a.click();

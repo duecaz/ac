@@ -326,12 +326,14 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       for (const r of rows) {
         if (r.scored) continue;                       // ya estaba puntuada: no la tocamos
         const s = engine.state.answers[`${itemIndex}:${r.player}`];
-        if (s) toPatch.push({ id: r.id, correct: s.correct === true, unscorable: s.correct == null, points: s.points });
+        // `ms` del SERVIDOR (mismo motivo que en settleItem): este PATCH pisa
+        // `updated`, así que el instante derivado se guarda AHORA o se pierde.
+        if (s) toPatch.push({ id: r.id, correct: s.correct === true, unscorable: s.correct == null, points: s.points, ms: s.msTaken ?? 0 });
       }
     }
     engine.state.answers = {};   // el blob queda limpio; las respuestas viven en live_answers
     await Promise.all(toPatch.map(p => pbFetch(`/api/collections/${ANS}/records/${p.id}`, {
-      method: 'PATCH', body: JSON.stringify({ scored: true, correct: p.correct, unscorable: p.unscorable, points: p.points }),
+      method: 'PATCH', body: JSON.stringify({ scored: true, correct: p.correct, unscorable: p.unscorable, points: p.points, ms: p.ms }),
     }).catch(() => {})));
     return toPatch.length;
   }
@@ -681,8 +683,12 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
           const scored = engine.state.answers[`${itemIndex}:${r.player}`];
           if (!scored) return null;
           return pbFetch(`/api/collections/${ANS}/records/${r.id}`, {
+            // `ms` se REESCRIBE con el del servidor: el `ms` del cliente era una
+            // afirmación (§22) y el settle es justo el momento en que el servidor
+            // pone su número. Importa porque `updated` deja de servir como
+            // instante del acierto en cuanto este PATCH lo pisa.
             method: 'PATCH', body: JSON.stringify({ scored: true, correct: scored.correct === true,
-              unscorable: scored.correct == null, points: scored.points }),
+              unscorable: scored.correct == null, points: scored.points, ms: scored.msTaken ?? 0 }),
           }).catch(() => {});
         }));
         // Keep scores (players[]) but drop the hydrated answers so the blob stays
@@ -841,7 +847,12 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       if (await answersReady()) {
         const rows = await fetchAnswerRows(sessionId, itemIndex);
         // v0/c0 (primer intento, carrera) pasan a la analítica; el resto usa value/correct.
-        return rows.map(r => ({ playerId: r.player, value: r.value, msTaken: r.ms, correct: r.scored ? r.correct : null, points: r.points, v0: r.v0, c0: r.c0 }));
+        // `created`/`updated` VIAJAN: son los autodate del servidor y sin ellos
+        // core/answerRows.js no puede derivar el tiempo (§22-1) y cae al `ms` que
+        // afirma el móvil — que en carrera es el tiempo EN ESA PREGUNTA, no desde
+        // la salida. Como la carrera la decide la HORA DE META, ese respaldo
+        // ordenaba el podio con un dato del cliente y con la semántica equivocada.
+        return rows.map(r => ({ playerId: r.player, value: r.value, msTaken: r.ms, correct: r.scored ? r.correct : null, points: r.points, v0: r.v0, c0: r.c0, created: r.created, updated: r.updated, scored: r.scored }));
       }
       const { engine } = await load(sessionId);
       const a = engine.state.answers;
@@ -866,8 +877,15 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
           // El instante lo pone el SERVIDOR (`created`, autodate inmutable), no
           // el `ms` que afirma el móvil (§22): si el desempate dependiera del
           // cliente, bastaría con jurar ms=0 para ganar todos los empates.
-          const res = await pbFetch(`/api/collections/${ANS}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}' && scored=true`)}&perPage=500&fields=player,points,created`);
-          rows = (res?.items || []).map(r => ({ player: r.player, points: r.points || 0, ms: Date.parse(r.created) || 0 }));
+          // `ms` = la MISMA fuente que el podio: el tiempo que el SERVIDOR
+          // escribió en la fila al liquidarla (el `ms` del cliente queda pisado
+          // ahí, §22). Se filtra por scored=true, así que toda fila que llega
+          // aquí ya lo tiene. Ojo: NO sirve derivarlo de `created`/`updated` —
+          // el PATCH del settle pisa `updated` con la misma hora para toda la
+          // clase, y entonces el desempate de la carrera se vuelve aleatorio
+          // (medido: el rápido salía 2.º).
+          const res = await pbFetch(`/api/collections/${ANS}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}' && scored=true`)}&perPage=500&fields=player,points,ms`);
+          rows = (res?.items || []).map(r => ({ player: r.player, points: r.points || 0, ms: r.ms || 0 }));
         } catch { /* sin respuestas todavía → todos a 0 */ }
         return rankPlayers(players, rows, limit);
       }

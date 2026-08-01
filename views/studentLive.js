@@ -23,7 +23,7 @@ import { wheelSvg } from '../templates/wheel/render.js';
 import { pickIndex } from '../templates/wheel/logic.js';
 import { spinTarget, normalizeRotation, animateSpin, SPIN_DUR_PICK } from '../templates/wheel/spin.js';
 import { QL_COLORS } from '../core/questionLive.js';
-import { RACE_FLASH_MS, questionWindowMs } from '../core/timings.js';
+import { RACE_FLASH_MS, questionWindowMs, mmss } from '../core/timings.js';
 import { supportsLoop } from '../core/liveLoops.js';
 import { endPolicyOf, waitingInfo } from '../core/liveEnd.js';
 
@@ -577,11 +577,16 @@ export async function renderPlay(rootSel, code) {
       // El alumno no lee la lista de jugadores (§21): se le dice la REGLA, no un
       // número inventado. El conteo exacto lo ve el profe en la pizarra.
       const info = waitingInfo({ policy, n });
+      // TU HORA DE META: es lo que decide la carrera (todos acaban con todas
+      // bien), así que el alumno tiene que verla — si no, el orden del podio le
+      // llega sin explicación. Es informativa: la que ordena la pone el servidor.
+      const startMs = session.started_at ? new Date(session.started_at).getTime() : 0;
+      const myFinish = startMs ? mmss(clock.now() - startMs) : null;
       mount(rootSel, html`
         <div class="text-center py-5">
           <i class="bi bi-trophy-fill display-1 text-warning"></i>
           <h2 class="mt-3">¡Terminaste!</h2>
-          <p class="lead">${raceCorrectCount} / ${allItems.length} correctas</p>
+          <p class="lead">${raceCorrectCount} / ${allItems.length} correctas${myFinish ? ` · <strong>${myFinish}</strong>` : ''}</p>
           <p class="text-muted">${escapeHtml(info.text)}</p>
           ${info.showClock ? '<div class="h3" id="race-left">—</div>' : '<div class="spinner-border text-warning mt-2"></div>'}
         </div>

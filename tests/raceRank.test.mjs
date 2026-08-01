@@ -21,6 +21,8 @@ import { scoreQuizSubmission } from '../templates/quiz/scorer.js';
 import { buildSessionTable } from '../views/sessionTable.js';
 import { podiumHtml } from '../core/podium.js';
 import { mmss } from '../core/timings.js';
+import { rowsFromLiveAnswers } from '../core/answerRows.js';
+import { readFileSync } from 'node:fs';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
@@ -135,6 +137,74 @@ registerTemplate({
   const places = [...html.matchAll(/<div class="display-6">(\d)<\/div>/g)].map(m => m[1]);
   assert.deepStrictEqual(places, ['2', '1', '3'], 'tres puestos distintos (el orden visual es 2.º · 1.º · 3.º)');
   ok('podio de carrera: ordena por hora de meta y la muestra');
+}
+
+// ── 6. La meta la mide el SERVIDOR (y sobrevive al settle) ─────────────────
+// Dos bugs encadenados, los dos reproducidos:
+//   (a) `listAnswers` no dejaba pasar `created`/`updated`, así que todo caía al
+//       `ms` del móvil — que en carrera es el tiempo EN ESA PREGUNTA.
+//   (b) el PATCH del settle PISA `updated`: derivar después de liquidar da la
+//       hora del settle, IDÉNTICA para toda la clase → la meta desaparece.
+//       (Medido contra PocketBase real: los dos alumnos con finishMs 15142.)
+// Por eso el settle GUARDA su ms y las filas ya puntuadas lo prefieren.
+{
+  const T0 = '2026-08-01T10:00:00.000Z';
+  const at = (s2) => new Date(Date.parse(T0) + s2 * 1000).toISOString();
+  const opts = { itemOpenedAt: { race: T0 }, phase: 'race' };
+
+  // (a) SIN puntuar (la carrera en marcha): se deriva, y en carrera cuenta el
+  // instante del ACIERTO (`updated`), no el del primer intento (`created`).
+  const enJuego = rowsFromLiveAnswers([{
+    player: 'p1', value: 'c', correct: null, scored: false, points: 0,
+    ms: 900, created: at(4), updated: at(40),
+  }], 2, opts)[0];
+  assert.strictEqual(enJuego.ms, 40000, 'en carrera la meta es el acierto (updated), no el 1er intento');
+
+  // (b) YA puntuada: manda el ms que guardó el settle, aunque `updated` sea
+  // ahora la hora del settle (aquí, el segundo 90 para todos).
+  const settleIso = at(90);
+  // OJO con la forma: `listAnswers` entrega el tiempo como `msTaken` (el campo
+  // `ms` de la fila). Mirar solo `r.ms` hacía que el atajo no se activara nunca
+  // y todo volviera a derivarse — pasaba en el test y fallaba contra PocketBase.
+  const liquidada = rowsFromLiveAnswers([{
+    playerId: 'p1', value: 'c', correct: true, scored: true, points: 1,
+    msTaken: 40000, created: at(4), updated: settleIso,
+  }], 2, opts)[0];
+  assert.strictEqual(liquidada.ms, 40000, 'una fila liquidada usa el ms del SERVIDOR, no el `updated` pisado');
+  ok('la meta la mide el servidor: se deriva en juego y se conserva tras el settle');
+}
+
+// ── 7. El podio ordena bien el caso "falló el último y lo corrigió tarde" ───
+{
+  const T0 = '2026-08-01T10:00:00.000Z';
+  const at = (s2) => new Date(Date.parse(T0) + s2 * 1000).toISOString();
+  const opts = { itemOpenedAt: { race: T0 }, phase: 'race' };
+  // Filas tal como quedan TRAS el settle: `ms` del servidor, `updated` pisado.
+  const raw = [
+    ['p1', 'FALLON', 0, 2000], ['p1', 'FALLON', 1, 3000], ['p1', 'FALLON', 2, 40000],
+    ['p2', 'CUMPLIDOR', 0, 6000], ['p2', 'CUMPLIDOR', 1, 13000], ['p2', 'CUMPLIDOR', 2, 20000],
+  ].map(([player, name, item, ms]) => ({ playerId: player, name, item, value: 'x', correct: true, scored: true, points: 1, msTaken: ms, created: at(2), updated: at(90) }));
+  const rows = raw.map(r => rowsFromLiveAnswers([r], r.item, opts)[0]);
+  const { players } = buildSessionTable(rows, 3, {});
+  assert.deepStrictEqual(players.map(p => p.name), ['CUMPLIDOR', 'FALLON'],
+    'gana quien acabó antes DE VERDAD, no quien empezó antes su último ítem');
+  assert.strictEqual(mmss(players[1].finishMs), '0:40', 'la meta del que corrigió tarde es su acierto');
+  ok('podio: falló el último y lo corrigió tarde ⇒ pierde');
+}
+
+// ── 8. NORMAS del adaptador (si es norma, es test) ─────────────────────────
+{
+  const src = readFileSync(new URL('../adapters/pocketbase/realtime.js', import.meta.url), 'utf8');
+  const cut = (from, n) => src.slice(src.indexOf(from), src.indexOf(from) + n);
+  const listAnswers = cut('async listAnswers(', 1000);
+  assert.match(listAnswers, /created: r\.created/, 'listAnswers debe pasar `created`');
+  assert.match(listAnswers, /updated: r\.updated/, 'listAnswers debe pasar `updated`');
+  assert.match(listAnswers, /scored: r\.scored/, 'listAnswers debe pasar `scored` (marca "el servidor ya puso su ms")');
+  // Los DOS caminos de liquidación guardan el ms del servidor: si uno se olvida,
+  // ese ítem pierde su hora de meta en cuanto el PATCH pisa `updated`.
+  assert.match(cut('async settleItem(', 1600), /ms: scored\.msTaken/, 'settleItem debe persistir el ms del servidor');
+  assert.match(cut('async function settlePendingInto(', 2200), /ms: s\.msTaken/, 'settlePending debe persistir el ms del servidor');
+  ok('el adaptador conserva y persiste el tiempo del servidor');
 }
 
 console.log(`\n  ${passed} race-rank checks passed`);

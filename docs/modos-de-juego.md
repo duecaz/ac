@@ -475,8 +475,8 @@ escrita, no un `if` en una vista.
 | **Fase de sala** | `question` | `race` | `race` | `question-live` |
 | **Quién avanza** | la clase junta: **el profe** o **el reloj** | cada alumno, a su ritmo | cada alumno, sobre el mismo tablero | el profe, según quién pide turno |
 | **Cómo se gana** | **más puntos** | **terminar primero con todas bien** | avanzar más en el tablero | los puntos que da el docente |
-| **Puntos** | **Kahoot**: base×500 + bonus por velocidad (`live.pointsModel`) | **PLANOS**: el puntaje ES el nº de aciertos | planos | manuales (+10/+50), sin clave de respuesta |
-| **Desempate** | (los puntos ya lo resuelven) | **hora de meta** (servidor) | hora de meta | — |
+| **Puntos** | **Kahoot**: base×500 + bonus por velocidad (`live.pointsModel`) | **PLANOS**: el puntaje ES el nº de aciertos | **escala propia** de la plantilla (Pelotas: 0-1000 por eficiencia — decisión P5, no pasa por `awardPoints`) | manuales (+10/+50), sin clave de respuesta |
+| **Desempate** | (los puntos ya lo resuelven) | **hora de meta** (servidor) | los puntos ya ordenan; a igualdad, hora de meta | — |
 | **Un fallo…** | se queda fallado, la ronda sigue | **vuelve a la cola** — se reintenta hasta acertarlo | se reintenta | — |
 | **Fin** | al agotar las preguntas | política declarada: **todos · primeros N · tiempo** (`core/liveEnd.js`) | igual que carrera | lo cierra el docente |
 | **Ventana de lectura** | sí (R-1: se ve la pregunta, no se puede tocar) | pendiente (ficha 2b, paso 2) | — | — |

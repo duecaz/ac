@@ -912,3 +912,58 @@ Aplicado:
   sepa que la partida fue una carrera aunque la sala ya esté `ended`.
 - `tools/live-smoke.mjs` exige la hora de meta en el podio de carrera (formato
   `m:ss`), y `tests/raceRank.test.mjs` fija el orden de tres alumnos con 5/5.
+
+## Revisión honesta (v1.51.355) — la meta la medía el MÓVIL, y mal
+
+Al repasar lo entregado apareció que el arreglo estaba a medias, y justo en lo
+que ve la clase. **Tres** fallos encadenados, los tres reproducidos:
+
+1. **El tiempo lo ponía el cliente.** `views/studentLive.js` manda
+   `ms = ahora − cuándo se mostró ESTA pregunta` (tiempo *en la pregunta*, no
+   desde la salida) y `listAnswers` **descartaba `created`/`updated`** al mapear
+   las filas → sin marcas del servidor, `core/serverMs.js` cae a su respaldo
+   declarado: el `ms` afirmado. El podio ordenaba con eso.
+2. **La fase del podio era `'ended'`.** Con esa fase `deriveAnswerMs` toma
+   `created` = el PRIMER intento: quien falla el último ítem y lo corrige tarde
+   salía con una meta más temprana que la real (medido: `FALLON 0:04` ganando a
+   `CUMPLIDOR 0:20`).
+3. **El PATCH del settle pisa `updated`.** Este es el que no se veía venir:
+   liquidar la sala reescribe cada fila, así que `updated` pasa a ser la hora del
+   settle, **idéntica para toda la clase**. Contra PocketBase real los dos
+   alumnos salieron con `finishMs 15142` y el desempate quedó aleatorio.
+
+**La forma correcta**: el settle es el momento en que el servidor pone su
+número — verdicto Y tiempo. Así que el settle **guarda su `ms`** en la fila
+(pisando la afirmación del cliente, §22) y todo el que lee prefiere ese valor.
+Una sola definición de "hora de meta", la misma para el marcador y para el podio.
+
+Aplicado:
+- `settleItem` y `settlePendingInto` persisten `ms` (el derivado del servidor).
+- `core/answerRows.js`: una fila `scored` usa ese `ms`; solo se deriva mientras
+  sigue sin puntuar (la carrera en marcha).
+- `listAnswers` deja pasar `created`/`updated`/`scored`.
+- `gatherSessionRows` pasa la **fase efectiva** (`'race'` si la sala fue carrera).
+- `leaderboard()` lee el mismo `ms` (antes derivaba de `created`/`updated`, que
+  es justo lo que el settle destruye).
+- El driver `local` sella la apertura y guarda `created`/`updated` como espejo,
+  para que en dev la meta también sea real (`live-smoke` pasó de `0:00` a `0:01`).
+- El alumno ve su hora de meta al terminar (`5 / 5 correctas · 3:12`).
+- Tabla y CSV del profe ganan columna **Meta** en las carreras.
+- Corregido en los tres MD: el tablero **no** puntúa plano — Ordena las Pelotas
+  tiene escala propia 0-1000 por eficiencia (decisión P5).
+
+Verificación contra PocketBase real (rápido con las 5 vs lento con las 5):
+
+| | antes | después |
+|---|---|---|
+| `leaderboard()` | LENTO 1.º (aleatorio) | **RAPIDO 1.º** |
+| podio (`buildSessionTable`) | 15142 vs 15142 | **0:00 (50 ms) vs 0:15** |
+
+Tests: `tests/raceRank.test.mjs` sube a 8 (deriva en juego · conserva tras el
+settle · el que corrigió tarde pierde · el adaptador no puede volver a descartar
+las marcas ni a olvidarse de persistir el `ms`).
+
+**Dos señales que dejé pasar**: en `live-smoke` el podio marcaba `0:00` (lo achaqué
+al driver local) y el primer test que escribí usaba `ms:` cuando `listAnswers`
+entrega `msTaken:` — pasaba en verde mientras el camino real seguía roto. La
+prueba contra PocketBase real es la que lo destapó.

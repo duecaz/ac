@@ -154,6 +154,8 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
     async submitAnswer(code, playerId, itemIndex, value, msTaken) {
       const { room, engine } = load(code);
       engine.submit(playerId, itemIndex, value, msTaken);
+      const a = engine.state.answers[`${Number(itemIndex)}:${playerId}`];
+      if (a && !a.created) { a.created = a.updated = new Date(clock.now()).toISOString(); }
       save(code, room, engine); notify(code, 'answers');
     },
 
@@ -168,7 +170,13 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
       const v0 = prev && 'v0' in prev ? prev.v0 : value;
       const c0 = prev && 'c0' in prev ? prev.c0 : !!correct;
       if (!prev || (correct && prev.hint !== true)) {
-        engine.state.answers[key] = { playerId, value, msTaken: msTaken ?? 0, correct: null, points: 0, hint: !!correct, v0, c0 };
+        // Espejo de los autodate de PocketBase: sin ellos el driver local no
+        // puede derivar la HORA DE META (§22-1) y caería al `ms` del cliente,
+        // que en carrera es el tiempo EN ESA PREGUNTA. `created` = primer
+        // intento; `updated` = este write (el acierto, que es lo que cuenta).
+        const nowIso = new Date(clock.now()).toISOString();
+        engine.state.answers[key] = { playerId, value, msTaken: msTaken ?? 0, correct: null, points: 0, hint: !!correct, v0, c0,
+                                      created: prev?.created || nowIso, updated: nowIso };
         save(code, room, engine); notify(code, 'answers');
       }
     },

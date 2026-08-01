@@ -553,7 +553,7 @@ nueva, o una elección de bucle más por NOMBRE de plantilla rompen CI.
 |---|---|---|
 | `rounds` | más puntos | Kahoot (base×500 + velocidad) |
 | `race` | **terminar primero con todas bien** | planos; empate ⇒ hora de meta (servidor) |
-| `board` | avanzar más en el tablero | planos |
+| `board` | avanzar más en el tablero | escala PROPIA de la plantilla (Pelotas: 0-1000 por eficiencia, P5) |
 | `claim` | los puntos que da el docente | manuales, sin clave de respuesta |
 
 En carrera un fallo VUELVE A LA COLA: todo el que termina lo hace con TODAS bien,
