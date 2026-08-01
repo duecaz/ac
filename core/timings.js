@@ -62,3 +62,11 @@ export function itemSeconds(activity, item) {
   return questionWindowMs(activity) / 1000;   // el de la actividad (defecto 20)
 }
 export function itemWindowMs(activity, item) { return itemSeconds(activity, item) * 1000; }
+
+// Tiempo de reloj en «m:ss», el formato que ya usan el cronómetro de carrera y
+// la cuenta atrás. Vive aquí (y no en cada vista) porque la HORA DE META de la
+// carrera se muestra en tres sitios: podio, ranking y lista del host.
+export function mmss(ms) {
+  const s = Math.max(0, Math.round((ms || 0) / 1000));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}

@@ -884,3 +884,31 @@ igualdad de aciertos gana quien terminó antes).
 
 Pendientes de la ficha: **2** (ventana de lectura en carrera) y **3** (dial de
 tres posiciones en el lobby).
+
+## Corrección del propio usuario (v1.51.353) — «nadie puede ganar con menos de 5 de 5»
+
+Textual: *«ningún alumno puede terminar con malas, pues una respuesta mala vuelve
+a la cola; así que todos deben terminar: si buscan ganar con 5 de 5, nadie puede
+ganar con menos»*. Es exacto, y cambia qué criterio MANDA:
+
+> En carrera el puntaje **no ordena**: todo el que termina, termina con TODAS
+> bien. El que decide es el **desempate** — la hora de meta. Deja de ser un
+> criterio de reserva y pasa a ser EL criterio.
+
+Consecuencia: el desempate tenía que estar en los DOS caminos, no solo en
+`leaderboard()`. El podio del profe (lo que ve la clase) no usa `leaderboard()`:
+lo construye `buildSessionTable` (`views/sessionTable.js`) desde las respuestas.
+Ahí el orden era `aciertos → de más → puntos`, todo empatado en una carrera → el
+podio salía **en el orden en que llegaron las filas**, con las tres barras a la
+misma altura.
+
+Aplicado:
+- `buildSessionTable` calcula `finishMs` (ms de servidor de la última respuesta
+  ACERTADA) y desempata con él; `core/podium.js` acepta `tie` (menor = mejor),
+  así tres alumnos con las 5 bien ocupan tres puestos distintos.
+- El podio **muestra** la hora de meta (`0:47`) bajo los puntos, y el ranking la
+  repite: si no se dice, la clase ve un empate y no entiende el orden.
+- El driver `local` también sella la apertura de la carrera, para que el podio
+  sepa que la partida fue una carrera aunque la sala ya esté `ended`.
+- `tools/live-smoke.mjs` exige la hora de meta en el podio de carrera (formato
+  `m:ss`), y `tests/raceRank.test.mjs` fija el orden de tres alumnos con 5/5.

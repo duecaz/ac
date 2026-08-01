@@ -187,6 +187,10 @@ las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecut
   **`core/liveRank.js`** (`rankPlayers`), compartido por el adaptador PocketBase y el motor; la
   "hora de meta" la pone el servidor (`created`), nunca el `ms` que afirma el móvil (§22).
   Vigilado por `tests/raceRank.test.mjs` (con contra-prueba: en rondas el bonus sigue vivo).
+  OJO: en carrera un fallo VUELVE A LA COLA, así que todo el que termina lo hace con TODAS bien
+  → el puntaje no ordena y **manda la hora de meta**. Por eso el desempate está también en
+  `buildSessionTable` (`views/sessionTable.js`, campo `finishMs`), que es de donde sale el PODIO
+  del profe — no de `leaderboard()` —, y el podio la MUESTRA (`m:ss`) para que el orden se entienda.
 - **Maquetación del PLAYER: NADA con tamaño fijo** — todo relativo (unidades de
   contenedor `cq*` o `%`, o cálculo JS tipo `fitLayout`/`fitPassage`), para que el
   juego se vea bien en 4K, 600×800, 9:16 y 16:9. Prohibido `px`/`rem` fijos que

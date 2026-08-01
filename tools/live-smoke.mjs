@@ -169,6 +169,14 @@ try {
   await host.waitForFunction(() => /podio|Podio|🏆|trophy/i.test(document.body.innerHTML), { timeout: 12000 });
   log('podio tras la carrera');
 
+  // En carrera un fallo VUELVE A LA COLA, así que todo el que termina lo hace
+  // con todas bien: el puntaje no ordena nada y el podio DEBE decir la hora de
+  // meta (quién llegó antes). Sin ella, la clase ve un empate.
+  await host.waitForSelector('.ww-podium__sub', { timeout: 9000 });
+  const meta = (await host.locator('.ww-podium__sub').first().textContent()).trim();
+  if (!/^\d+:[0-5]\d$/.test(meta)) throw new Error(`el podio de carrera no muestra la hora de meta: "${meta}"`);
+  log(`el podio muestra la hora de meta (${meta})`);
+
   if (errs.length) { console.error('\nERRORES DE PÁGINA:'); errs.forEach(e => console.error('  ✗', e)); }
   if (!emmaScored || errs.length) { console.log('\n❌ LIVE E2E FALLA'); await browser.close(); bye(1); }
   console.log('\n✅ LIVE E2E PASA — pregunta (sala→PIN→join→respuesta→settle→clasificación→podio)'

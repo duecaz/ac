@@ -26,7 +26,7 @@ import { hostPaintDecision } from '../core/livePhases.js';
 import { isStudentSnapshot } from '../core/liveSnapshot.js';
 import { podiumHtml } from '../core/podium.js';
 import { QL_COLORS } from '../core/questionLive.js';
-import { questionWindowMs, RACE_POLL_MS, BOARD_POLL_MS, readSeconds, READ_SECONDS_MAX, itemWindowMs } from '../core/timings.js';
+import { questionWindowMs, RACE_POLL_MS, BOARD_POLL_MS, readSeconds, READ_SECONDS_MAX, itemWindowMs, mmss } from '../core/timings.js';
 import { loopsOf, supportsLoop, defaultLoop, LOOP_LABELS, hasAdvanceChoice } from '../core/liveLoops.js';
 import { END_LABELS, END_POLICIES, DEFAULT_POLICY, DEFAULT_FIRST_N, DEFAULT_MINUTES, MAX_MINUTES, shouldEnd, endPolicyOf } from '../core/liveEnd.js';
 
@@ -913,6 +913,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
   // blob state.answers), con el nombre del alumno resuelto. Fuente única para las
   // 3 pestañas del informe post-partida (A1) — se calcula una sola vez (cache).
   let _rowsCache = null;
+  let _wasRace = false;
   async function gatherSessionRows() {
     if (_rowsCache) return _rowsCache;
     // El blob PRIMERO: lleva el sello de apertura de cada ítem (§22-1), y sin él
@@ -920,6 +921,9 @@ async function renderHost(rootSel, code, sessionId, activity) {
     // reloj del servidor — dos tiempos distintos para la misma respuesta.
     let blob = null;
     try { blob = await fetchSessionBlob(sessionId); } catch { /* respaldo best-effort */ }
+    // ¿Fue una CARRERA? El sello de apertura único ('race') lo delata aunque la
+    // sala ya esté 'ended' — y de él depende que el podio muestre la hora de meta.
+    _wasRace = !!blob?.itemOpenedAt?.race || blob?.phase === 'race';
     const msOpts = { itemOpenedAt: blob?.itemOpenedAt, phase: blob?.phase };
     const all = await Promise.all(items.map((_, i) => listAnswers(sessionId, i).then(a => rowsFromLiveAnswers(a, i, msOpts)).catch(() => [])));
     let rows = all.flat();
@@ -948,7 +952,14 @@ async function renderHost(rootSel, code, sessionId, activity) {
     // podio y tabla SIEMPRE coinciden). Si no hay filas (colección vacía), cae al
     // marcador oficial de la sesión (state.players[].score).
     const rows = await gatherSessionRows().catch(() => []);
-    let lb = buildSessionTable(rows, items.length, { items, template: tpl, activity }).players.map(p => ({ name: p.name, score: p.total, marks: p.marks, nCorrect: p.nCorrect }));
+    // En CARRERA el puntaje NO ordena por sí solo: un fallo vuelve a la cola, así
+    // que todo el que termina lo hace con TODAS bien y el podio sería un empate.
+    // Lo que decide (y lo que se MUESTRA) es la hora de meta.
+    let lb = buildSessionTable(rows, items.length, { items, template: tpl, activity }).players.map(p => ({
+      name: p.name, score: p.total, marks: p.marks, nCorrect: p.nCorrect,
+      sub: _wasRace && p.finishMs >= 0 ? mmss(p.finishMs) : null,
+      tie: _wasRace && p.finishMs >= 0 ? p.finishMs : null,
+    }));
     if (!lb.length) { try { lb = await leaderboard(sessionId, 100); } catch { lb = []; } }
     if (phaseChanged) emitGame(GameEvents.PODIUM, { top: lb.slice(0, 3).map(p => ({ name: p.name, score: p.score })) });
     const isText = tpl?.meta?.contentModel === 'textCorrection';
@@ -971,7 +982,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     const out = document.getElementById('ll-tabout');
     const spin = () => { out.innerHTML = '<div class="text-center py-4"><div class="spinner-border"></div></div>'; };
     const rankingHtml = () => `<div class="ll-rank">${lb.map((p, i) =>
-      `<div class="ll-rank__row"><span class="ll-rank__pos">${i < 3 ? ['🥇','🥈','🥉'][i] : (i + 1) + '.'}</span><span class="ll-rank__name">${escapeHtml(p.name)}</span><span class="ll-rank__pts">${p.score ?? 0}</span></div>`).join('')}</div>`;
+      `<div class="ll-rank__row"><span class="ll-rank__pos">${i < 3 ? ['🥇','🥈','🥉'][i] : (i + 1) + '.'}</span><span class="ll-rank__name">${escapeHtml(p.name)}</span><span class="ll-rank__pts">${p.score ?? 0}${p.sub ? ` <small class="text-muted">· ${escapeHtml(p.sub)}</small>` : ''}</span></div>`).join('')}</div>`;
 
     async function showTab(tab) {
       document.querySelectorAll('.ll-tab').forEach(b => b.classList.toggle('is-active', b.dataset.tab === tab));

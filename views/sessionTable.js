@@ -43,7 +43,7 @@ export function buildSessionTable(rows, nItems, { labels = [], items = [], templ
       const vf = r.valueFinal ?? r.value;
       const cf = r.correctFinal ?? r.correct;
       const sc = cellScore(template, items[r.itemIndex], { value: vf, correct: cf }, activity);
-      p.cells[r.itemIndex] = { correct: cf, points: r.points || 0, value: vf, hits: sc.hits, over: sc.over || 0, total: sc.total, binary: sc.binary };
+      p.cells[r.itemIndex] = { correct: cf, points: r.points || 0, value: vf, hits: sc.hits, over: sc.over || 0, total: sc.total, binary: sc.binary, ms: r.ms ?? null };
     }
   }
   const players = [...byPlayer.values()].map(p => ({
@@ -54,8 +54,16 @@ export function buildSessionTable(rows, nItems, { labels = [], items = [], templ
     maxMarks: p.cells.reduce((s, c) => s + (c?.total || 0), 0),
     overs: p.cells.reduce((s, c) => s + (c?.over || 0), 0),          // marcas de MÁS (errores)
     nCorrect: p.cells.filter(c => c?.correct === true).length,
-    // manda nº de aciertos; a igualdad, menos errores (de más); luego puntos.
-  })).sort((a, b) => b.marks - a.marks || a.overs - b.overs || b.total - a.total);
+    // HORA DE META: el instante (ms del SERVIDOR desde la salida, §22-1) de la
+    // última respuesta que ACERTÓ. En carrera es literalmente cuándo terminó —
+    // y es el criterio que decide, porque un fallo vuelve a la cola: todo el que
+    // acaba lo hace con TODAS bien, así que nadie gana por aciertos, sino por
+    // tiempo. -1 = no acertó ninguna (o no hay reloj) → al final.
+    finishMs: p.cells.reduce((mx, c) => (c?.correct === true && c.ms != null ? Math.max(mx, c.ms) : mx), -1),
+    // manda nº de aciertos; a igualdad, menos errores (de más); luego puntos; y
+    // por último quien LLEGÓ ANTES (empate total = la carrera).
+  })).sort((a, b) => b.marks - a.marks || a.overs - b.overs || b.total - a.total
+    || (a.finishMs < 0 ? 1 : b.finishMs < 0 ? -1 : a.finishMs - b.finishMs));
 
   const perItem = Array.from({ length: nItems }, (_, i) => {
     let hits = 0, tot = 0, n = 0;

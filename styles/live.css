@@ -23,6 +23,8 @@
 .ww-podium .step.s1 { height: 220px; }
 .ww-podium .step.s2 { height: 160px; }
 .ww-podium .step.s3 { height: 120px; }
+/* Hora de meta de la carrera bajo los puntos (quién terminó antes). */
+.ww-podium__sub { font-size: .85em; opacity: .85; }
 
 /* R-1 · LECTURA (§26 ficha 1b): mientras la pizarra está en "preparados" se ve
    el enunciado pero NO las opciones — es lo que separa "leer" de "responder" y

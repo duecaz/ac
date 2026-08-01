@@ -18,6 +18,9 @@ import { awardPoints } from '../core/scoring/index.js';
 import { createLiveRoom } from '../kernel/live/engine.js';
 import { registerTemplate } from '../core/registry.js';
 import { scoreQuizSubmission } from '../templates/quiz/scorer.js';
+import { buildSessionTable } from '../views/sessionTable.js';
+import { podiumHtml } from '../core/podium.js';
+import { mmss } from '../core/timings.js';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
@@ -104,6 +107,34 @@ registerTemplate({
   assert.strictEqual(lb[0].name, 'B', 'quien no puntuó queda por detrás de quien sí');
   assert.strictEqual(lb[1].score, 0, 'y aparece igual en el podio, con 0');
   ok('la meta ignora los fallos y quien no puntúa va al final');
+}
+
+// ── 5. El podio del profe ORDENA y MUESTRA la hora de meta ─────────────────
+// Es el caso REAL de la carrera: un fallo vuelve a la cola, así que TODO el que
+// termina lo hace con las 5 bien. Nadie gana por aciertos — gana por tiempo. Si
+// la tabla no desempatara, el podio saldría en el orden en que llegaron las
+// filas, y las tres barras a la misma altura.
+{
+  const rowsOf = (player, name, msPerItem) => msPerItem.map((ms, i) => ({
+    player, name, itemIndex: i, value: String(i + 1), correct: true,
+    valueFinal: String(i + 1), correctFinal: true, points: 1, ms,
+  }));
+  const rows = [
+    ...rowsOf('p2', 'TARDON', [4000, 9000, 14000, 19000, 24000]),   // meta 0:24
+    ...rowsOf('p1', 'VELOZ', [1000, 2000, 3000, 4000, 5000]),       // meta 0:05
+    ...rowsOf('p3', 'MEDIO', [3000, 6000, 9000, 12000, 15000]),     // meta 0:15
+  ];
+  const { players } = buildSessionTable(rows, 5, {});
+  assert.deepStrictEqual(players.map(p => p.name), ['VELOZ', 'MEDIO', 'TARDON'],
+    'con 5/5 los tres, el orden lo pone la hora de meta');
+  assert.strictEqual(players[0].finishMs, 5000, 'la meta es la última respuesta acertada');
+
+  const html = podiumHtml(players.map(p => ({ name: p.name, score: p.marks, sub: mmss(p.finishMs), tie: p.finishMs })));
+  assert.match(html, /VELOZ[\s\S]*?0:05/, 'el podio dice a qué hora llegó cada uno');
+  // Colocación: VELOZ 1.º, MEDIO 2.º, TARDON 3.º (antes: los tres 1.º, empatados a 5).
+  const places = [...html.matchAll(/<div class="display-6">(\d)<\/div>/g)].map(m => m[1]);
+  assert.deepStrictEqual(places, ['2', '1', '3'], 'tres puestos distintos (el orden visual es 2.º · 1.º · 3.º)');
+  ok('podio de carrera: ordena por hora de meta y la muestra');
 }
 
 console.log(`\n  ${passed} race-rank checks passed`);

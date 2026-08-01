@@ -12,6 +12,7 @@ import { rid } from '../../core/ids.js';
 import { createLiveRoom } from '../../kernel/live/engine.js';
 import { pickWord } from '../../core/liveWords.js';
 import { clock } from '../../core/clock.js';
+import { openedKey } from '../../core/serverMs.js';
 
 const PREFIX = 'ww.live.';
 
@@ -86,6 +87,15 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
       const s = engine.state;
       if (patch.status) s.status = patch.status;
       if (patch.phase) s.phase = patch.phase;
+      // Espejo del driver PB: sello de apertura del ítem (en carrera, uno solo,
+      // clave 'race'). Aquí no hay autodate, así que el `ms` sigue siendo el
+      // afirmado (fallback honesto de core/serverMs.js); el sello vale porque
+      // DECLARA que la partida fue una carrera — el podio lee eso para mostrar
+      // la hora de meta cuando la sala ya está 'ended'.
+      if (patch.phase === 'question' || patch.phase === 'race') {
+        const idx = ('current_item' in patch) ? Number(patch.current_item) : s.currentItem;
+        ((s.itemOpenedAt ||= {}))[openedKey(patch.phase, idx)] ??= new Date(clock.now()).toISOString();
+      }
       if ('current_item' in patch) s.currentItem = patch.current_item;
       if ('deadline' in patch) room.deadline = patch.deadline ?? null;
       // R-1 · espejo del driver PB: el instante de apertura de respuestas.
