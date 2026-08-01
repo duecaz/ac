@@ -749,3 +749,100 @@ bloquear).
 comparten carrera y tablero, y cada vista las desambigua. No hay ningún bug
 abierto por ello — es deuda de diseño, medida y acotada por
 `tests/liveLoops.test.mjs`.
+
+---
+
+# Ficha 2b · `race` frente a `rounds`+automático — ¿por qué se sienten dos productos?
+
+La pregunta: *automático y carrera no deberían ser tan distintos*. Al ponerlos
+en columnas sobre el código sale que **casi todo lo que los separa es
+consecuencia de UNA sola decisión** — y que una de las diferencias no está
+decidida, es un fallo.
+
+## La estructura, columna a columna
+
+| | Rondas · **Yo controlo** | Rondas · **automático** | **Carrera** |
+|---|---|---|---|
+| ¿Quién avanza? | el profe | **el reloj** | **cada alumno** |
+| ¿La clase está en la misma pregunta? | sí | sí | **no** |
+| Fase de sala | `question`→`reveal`→`leaderboard` | igual | `race` |
+| Ventana de LECTURA | sí (3 s) | sí | **no** |
+| Tiempo por pregunta | sí (R-3) | sí | **no hay cronómetro** |
+| ¿Quién juzga en el momento? | el servidor (settle) | igual | **el móvil** (hint) |
+| ¿Cuándo se puntúa de verdad? | al revelar cada ítem | igual | **al cerrar** |
+| Fallo | se queda fallado | igual | **vuelve a la cola** |
+| Qué ve la pizarra | la pregunta | igual | **el avance** |
+| Revelación colectiva | sí | sí | **no** (cada uno va por su sitio) |
+| Fin | se acaban las preguntas | igual | política declarada (C-1) |
+
+**Las tres primeras filas son la misma decisión** ("¿quién avanza?") y las demás
+**se derivan de ella**: si cada alumno va por su cuenta, la pizarra no PUEDE
+mostrar "la pregunta actual" ni hay revelación común. Eso no es un diseño
+distinto: es la consecuencia obligada.
+
+Las que **no** se derivan de nada y son puro accidente histórico: **la carrera no
+tiene ventana de lectura ni tiempo por pregunta**, aunque el problema que
+resolvían (responder antes de leer) existe igual cuando un alumno va solo.
+
+## 🔴 Y una diferencia que NO está decidida: la carrera puntúa mal
+
+El sello de tiempo del servidor en carrera es **uno solo para toda la partida**
+(`openedKey('race')` devuelve `'race'`, no el índice del ítem). O sea: el `ms`
+que puntúa **no es "lo que tardaste en ESA pregunta"**, es **"cuánto llevabas de
+carrera"**. Con puntos Kahoot y ventana de 20 s, medido:
+
+| El alumno responde… | Puntos |
+|---|---|
+| en el segundo 5 de carrera | **1250** |
+| en el segundo 15 | 750 |
+| en el segundo 25 | 500 |
+| en el segundo 60 | 500 |
+| en el segundo 180 | 500 |
+
+**A partir del segundo 20 de carrera, la velocidad deja de contar para siempre.**
+Todo el bonus se reparte en las dos primeras preguntas y el resto valen lo mismo
+se conteste en 2 segundos o en 2 minutos. Nadie lo vería: solo parecería que "la
+carrera puntúa raro".
+
+## Lo adecuado, en mi opinión
+
+**Un solo bucle de preguntas con un dial de tres posiciones**, en vez de "dos
+juegos":
+
+```
+¿Quién avanza de pregunta?
+   ( ) Yo controlo        → la clase junta, yo marco el ritmo
+   ( ) El reloj           → la clase junta, avanza sola
+   ( ) Cada alumno        → cada uno a su ritmo  (esto es la "carrera")
+```
+
+Con eso, el profe deja de elegir entre "un juego u otro" y elige **una sola
+cosa**. Todo lo demás lo deriva el sistema. Y de paso se arregla lo que hoy
+falta por accidente:
+
+1. **La carrera hereda la ventana de lectura** — mismo motivo que en rondas: que
+   no gane el que hace clic antes de leer. Aquí el instante es local por alumno
+   (cada uno abre su pregunta cuando llega), y es legítimo porque tras el punto 2
+   ya no se comparan velocidades entre alumnos.
+2. **La carrera puntúa PLANO, sin bonus de velocidad.** Es lo honesto: en una
+   carrera la velocidad ya está medida por **cuánto avanzas y cuándo terminas**,
+   que es justo lo que la pizarra y el podio muestran. Meter además un bonus por
+   pregunta obliga a un sello por alumno y por ítem (más escrituras, más
+   superficie) para medir dos veces lo mismo. **Decisión tuya**: esto cambia
+   puntajes de las carreras — a mejor, porque hoy el bonus está roto, pero cambia.
+3. **Mismo vocabulario y mismos ajustes** en el lobby para las tres posiciones.
+
+## Lo que NO propongo
+
+**Fusionar las fases de sala** (`question` y `race` en una). El motor tendría que
+llevar un cursor por alumno *y* uno común, y las dos vistas se llenarían de
+condicionales. La unificación que vale la pena es **la que ve el profe**; por
+dentro pueden seguir siendo dos caminos mientras la ley §26 los tenga declarados
+y probados.
+
+## Orden si se aprueba
+
+1. **Puntuación plana en carrera** (arregla el bonus roto) — pequeño y cerrado.
+2. **Ventana de lectura en carrera** — reutiliza lo de R-1.
+3. **Dial de tres posiciones en el lobby** — cosmético, pero es lo que hace que
+   dejen de parecer dos productos.
