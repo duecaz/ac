@@ -26,7 +26,12 @@ const isHit = (r) => r?.correct === true || (r?.points || 0) > 0;
 
 /** El `ms` de una respuesta, en las dos formas que circulan por el repo: la fila
  *  de `live_answers` (`ms`) y la respuesta del motor (`msTaken`). */
-const msOf = (r) => r?.ms ?? r?.msTaken ?? 0;
+const msOf = (r) => {
+  const v = r?.ms ?? r?.msTaken;
+  // Sin tiempo NO se es el primero: coalescer a 0 ponía por delante justamente a
+  // la fila a la que le falta el dato (fila legada, o `ms` nulo).
+  return Number.isFinite(Number(v)) ? Number(v) : -1;
+};
 
 /** HORA DE META de un conjunto de respuestas: el instante de la última que
  *  acertó. `-1` = no acertó ninguna (o no hay reloj) → va al final. */

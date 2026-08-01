@@ -26,7 +26,15 @@ export const OWN = `owner = @request.auth.id || ${ADMIN}`;
 // Un alumno anónimo no puede ni mencionarlos en un PATCH (sin esto, un PATCH
 // desde DevTools con {scored:true, points:9999} se saltaba C6 por completo: el
 // settle respeta lo "ya puntuado" y el marcador suma esos puntos).
-const VERDICT_FIELDS = ['scored', 'points'];
+// `ms` ENTRÓ AQUÍ en v1.51.358: desde que el settle escribe en él el tiempo
+// DERIVADO POR EL SERVIDOR (§22-1) y el ranking de la carrera se ordena por ese
+// campo, `ms` dejó de ser una afirmación del cliente y pasó a ser veredicto. Sin
+// esto, un alumno podía PATCHear SU PROPIA fila ya liquidada con {ms:0} —con su
+// credencial legítima, sin tocar puntos— y salir primero en el podio con 0:00:
+// en carrera la hora de meta es LO ÚNICO que ordena (todos acaban con todas
+// bien). Reproducido con el evaluador de reglas del repo. El CREATE sigue
+// aceptando `ms` (es el respaldo honesto cuando no hay sello de apertura).
+const VERDICT_FIELDS = ['scored', 'points', 'ms'];
 const notSet = (f) => `@request.body.${f}:isset = false`;
 // §22-4 — LA RESPUESTA VA ATADA AL DISPOSITIVO. El `playerId` es público (la
 // lista de jugadores de la sala se lee sin cuenta, y el host la necesita), así que
@@ -45,7 +53,8 @@ const CLAIM_BY_ROW = `${CLAIM}.player ?= player && ${CLAIM_HEADER}`;
 /** Anónimo: puede crear su respuesta, pero SIN veredicto (0 puntos, sin puntuar)
  *  y solo en su propio nombre (secreto del dispositivo). */
 const ANON_ANSWER_CREATE = `@request.body.scored = false && @request.body.points = 0 && ${CLAIM_BY_BODY}`;
-/** Anónimo: puede corregir su valor/tiempo —los de SU fila—, pero NO el veredicto. */
+/** Anónimo: puede corregir el VALOR de SU fila, pero no el veredicto (que ahora
+ *  incluye el tiempo: lo mide el servidor al liquidar). */
 const ANON_ANSWER_UPDATE = [...VERDICT_FIELDS.map(notSet), CLAIM_BY_ROW].join(' && ');
 
 // Campos de CONTROL de la sala: el blob `state` (fase, ítem actual, deadline,

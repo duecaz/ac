@@ -153,7 +153,7 @@ $defs = @(
      rules = @{
        listRule=""; viewRule="";
        createRule='@request.auth.id != "" || (@request.body.scored = false && @request.body.points = 0 && @collection.live_claims:cl.player ?= @request.body.player && @collection.live_claims:cl.secret ?= @request.headers.x_ww_claim)';
-       updateRule='@request.auth.id != "" || (@request.body.scored:isset = false && @request.body.points:isset = false && @collection.live_claims:cl.player ?= player && @collection.live_claims:cl.secret ?= @request.headers.x_ww_claim)';
+       updateRule='@request.auth.id != "" || (@request.body.scored:isset = false && @request.body.points:isset = false && @request.body.ms:isset = false && @collection.live_claims:cl.player ?= player && @collection.live_claims:cl.secret ?= @request.headers.x_ww_claim)';
        deleteRule='@request.auth.id != ""'
      } },
 

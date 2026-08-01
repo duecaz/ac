@@ -247,11 +247,28 @@ function seedRoom() {
     body: JSON.stringify({ session: 'sess1', player: 'p1', item: 7, value: '4', ms: 1, scored: false, correct: false, points: 0 }) });
   assert.strictEqual(r.status, 200, 'la dueña de la credencial sigue pudiendo responder');
 
+  // (h-bis) §22-1 · FALSEAR LA HORA DE META. Desde que el settle escribe en `ms`
+  // el tiempo DERIVADO POR EL SERVIDOR y la carrera se ordena por él, `ms` es
+  // veredicto. Sin esta prohibición, un alumno con su credencial LEGÍTIMA
+  // PATCHeaba su propia fila ya liquidada con {ms:0} —sin tocar puntos— y salía
+  // primero en el podio con 0:00, porque en carrera la meta es lo ÚNICO que
+  // ordena (todos acaban con todas bien).
+  anon.rows('live_answers').push({ id: 'la9', session: 'sess1', player: 'p1', item: 9, value: '4', ms: 47000, scored: true, correct: true, points: 1 });
+  r = await f(`${PB}/live_answers/records/la9`, { method: 'PATCH',
+    headers: { 'X-WW-Claim': 'cl_EMMA' }, body: JSON.stringify({ ms: 0 }) });
+  assert.strictEqual(r.status, 403, 'falsear su hora de meta (ms:0) con su propia credencial → 403');
+  assert.strictEqual(anon.rows('live_answers').find(x => x.id === 'la9').ms, 47000, 'la meta que midió el servidor queda intacta');
+  // CONTRA-PRUEBA: la carrera legítima sigue funcionando — corregir el VALOR de
+  // su fila (lo que hace submitRaceAttempt al acertar) se sigue permitiendo.
+  r = await f(`${PB}/live_answers/records/la1`, { method: 'PATCH',
+    headers: { 'X-WW-Claim': 'cl_EMMA' }, body: JSON.stringify({ value: '4', correct: true }) });
+  assert.strictEqual(r.status, 200, 'CONTRA-PRUEBA: corregir su respuesta en carrera sigue permitido');
+
   // (i) editar un intento ya entregado (append-only).
   anon.rows('assignment_attempts').push({ id: 'at1', assignment_id: 'asg1', score_auto: 1 });
   r = await patch(`${PB}/assignment_attempts/records/at1`, { score_auto: 10 });
   assert.strictEqual(r.status, 403, 'editar un intento entregado → 403');
-  ok('14 intentos de trampa REBOTAN (auto-puntuarse · inflar · crear puntuada · terminar sala · expulsar · renombrar · crear sala · reabrir tarea · editar intento · responder como otro ×2 · pisar su respuesta · robar credencial ×2 · espiar credenciales) y la dueña sigue respondiendo');
+  ok('15 intentos de trampa REBOTAN (auto-puntuarse · inflar · falsear la hora de meta · crear puntuada · terminar sala · expulsar · renombrar · crear sala · reabrir tarea · editar intento · responder como otro ×2 · pisar su respuesta · robar credencial ×2 · espiar credenciales) y la dueña sigue respondiendo');
 }
 
 // ── ③ El HOST (con sesión) sí puede dirigir y liquidar ───────────────────────

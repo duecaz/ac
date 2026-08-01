@@ -760,7 +760,10 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         }
         if (row && correct && row.correct !== true && !row.scored) {
           await pbFetch(`/api/collections/${ANS}/records/${row.id}`, {
-            method: 'PATCH', body: JSON.stringify({ value, ms: msTaken ?? 0, correct: true }),
+            // SIN `ms`: el tiempo es VEREDICTO del servidor (§22-1) y la regla ya
+            // no deja al alumno tocarlo. El `ms` del primer intento queda en la
+            // fila como respaldo honesto; el que puntúa lo escribe el settle.
+            method: 'PATCH', body: JSON.stringify({ value, correct: true }),
             headers: claimHeaders(sessionId),
           });
         }
@@ -802,7 +805,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
           // los campos de veredicto (§22) y (b) re-afirmar scored:false podía
           // DES-liquidar una fila que el host ya había puntuado.
           await pbFetch(`/api/collections/${ANS}/records/${row.id}`, {
-            method: 'PATCH', body: JSON.stringify({ value, ms: msTaken ?? row.ms ?? 0 }),
+            method: 'PATCH', body: JSON.stringify({ value }),   // `ms` es veredicto (§22-1)
             headers: claimHeaders(sessionId),
           });
         }
