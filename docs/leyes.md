@@ -546,6 +546,23 @@ rediseño (**estudio completo y medido en `docs/estudio-bucles-live.md`**), el
 catálogo queda CONGELADO: una plantilla con política inventada, una fase de sala
 nueva, o una elección de bucle más por NOMBRE de plantilla rompen CI.
 
+**Cada bucle declara CÓMO SE GANA**, y esa regla vive en el motor, no en la vista
+(cuadro completo en `docs/modos-de-juego.md` §9.4 y en CLAUDE.md):
+
+| Bucle | Cómo se gana | Puntos |
+|---|---|---|
+| `rounds` | más puntos | Kahoot (base×500 + velocidad) |
+| `race` | **terminar primero con todas bien** | planos; empate ⇒ hora de meta (servidor) |
+| `board` | avanzar más en el tablero | planos |
+| `claim` | los puntos que da el docente | manuales, sin clave de respuesta |
+
+En carrera un fallo VUELVE A LA COLA: todo el que termina lo hace con TODAS bien,
+así que el puntaje no ordena y **manda la hora de meta**. El desempate va en los
+DOS caminos que ordenan alumnos —`core/liveRank.js` (marcador) y
+`views/sessionTable.js` (`finishMs`, de donde sale el PODIO del profe)— y el
+podio la MUESTRA. Vigilado por `tests/raceRank.test.mjs`, con contra-prueba de
+que en rondas el bonus de velocidad sigue vivo.
+
 **Deuda declarada y acotada (§0)**: hoy las vistas de vivo eligen bucle mirando
 el nombre de la plantilla en 4 sitios (`activity.template === 'wheel'`…). Es una
 violación de "un modo no conoce plantillas concretas". No se arregla ahora, pero

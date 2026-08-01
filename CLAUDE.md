@@ -81,6 +81,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | **Diagnosticar** una plantilla existente | `node tools/check-template.mjs [name]` (contrato + normas) |
 | Contrato de CSS + **responsive / andamio de regiones** (ww-scaffold/rail/stage) | `docs/estilos-de-actividad.md` (§3b andamio) |
 | Contrato de **modos** (Solo/VS/Equipos/Live/Tarea) y su gateo | `docs/modos-de-juego.md` · `core/modes.js` |
+| **ESTRUCTURA de los modos y de los 4 bucles en vivo** (quién puntúa, cómo se gana, qué persiste) | cuadro corto abajo en este archivo · completo en `docs/modos-de-juego.md` §9.4 |
 | **DECIDIR el diseño de un modo** (ficha + escenarios Gherkin + preguntas abiertas) | **`docs/modos-de-juego.md` §9** |
 | **Modelo de contenido** JSON por plantilla | `docs/ESTRUCTURA.md` · modelos en `kernel/content/models.js` |
 | Catálogo: qué hace cada actividad y en qué modos | `docs/panorama-actividades.md` |
@@ -116,6 +117,37 @@ las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecut
   (`core/upload.js` convierte a data-URL; nunca a un bucket).
 - Live: una sola sala PocketBase (`live_sessions`), PIN/QR, `subscribeRoom`, fase de máquina de estados.
   - Pregunta Live y Ruleta Live reutilizan ese mismo live con la fase `'question-live'` y campos `ql_*`.
+
+## ESTRUCTURA DE MODOS (cuadro corto — el completo, en `docs/modos-de-juego.md` §9)
+
+Cinco modos. Los tres embebidos comparten pantalla; los dos con página propia son otro
+montaje FÍSICO (proyector+móviles / gestión de entregas).
+
+| Modo | Pantalla | Puntúa | Cómo se gana | Persiste | Necesita cuenta |
+|---|---|---|---|---|---|
+| **Individual** | esta, embebido | la plantilla (shell solo) | tu puntaje | `results` | no |
+| **VS (duelo)** | esta, embebido | la plantilla (kernel) | `meta.play.vs`: `race` o `points` | nada (por diseño) | no |
+| **Equipos** | esta, embebido | la plantilla o el docente | `meta.play.teams`: `turns` o `board` | nada (por diseño) | no |
+| **En vivo** | página propia (host+móviles) | el **host** al liquidar | **según el BUCLE** ↓ | `live_answers`+`live_players` | **sí** (abrir sala) |
+| **Tarea** | página propia | la plantilla | tu puntaje | `assignment_attempts` | **sí** (crear tarea) |
+
+**«En vivo» son CUATRO bucles** (`core/liveLoops.js`, ley §26; los DECLARA la plantilla en
+`meta.play.live`, nunca un `<select>` fijo ni el nombre de la plantilla dentro de una vista):
+
+| Bucle | Fase | Quién avanza | **Cómo se gana** | Puntos | Fin |
+|---|---|---|---|---|---|
+| `rounds` Rondas juntas | `question` | el profe o el reloj | **más puntos** | Kahoot (base×500 + velocidad) | agotar preguntas |
+| `race` Carrera libre | `race` | cada alumno | **terminar primero con todas bien** | **planos** (puntaje = nº de aciertos) | todos · primeros N · tiempo (`core/liveEnd.js`) |
+| `board` Tablero | `race` | cada alumno | avanzar más en el tablero | planos | igual que carrera |
+| `claim` Pedir la palabra | `question-live` | el profe (quien pide turno) | los puntos que da el docente | manuales (+10/+50) | lo cierra el docente |
+
+- **Carrera**: un fallo VUELVE A LA COLA ⇒ todo el que termina lo hace con TODAS bien ⇒ el
+  puntaje no ordena y **manda la hora de meta** (reloj del SERVIDOR). Va en dos sitios:
+  `core/liveRank.js` (marcador) y `views/sessionTable.js` `finishMs` (podio/tabla del profe).
+  El podio la MUESTRA (`0:47`) o la clase ve un empate. Test: `tests/raceRank.test.mjs`.
+- Durante el juego la pizarra muestra **AVANCE, no ranking** (C-2); la clasificación, en el podio.
+- El **ritmo** (ventana de lectura, cierre) es un INSTANTE en la fila de la sala, nunca un
+  `setTimeout` del cliente → sobrevive a recargas y a llegar tarde.
 
 ## Notas de plantillas
 - `sessionItems(activity)` lee `items ?? entries ?? pairs ?? groups ?? words ?? passages ?? []`.

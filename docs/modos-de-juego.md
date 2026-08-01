@@ -451,13 +451,51 @@ Escenario: cualquier contenido se puede jugar en equipos
 
 ### 9.4 En vivo (host + móviles)
 
+«En vivo» **no es un modo, es cuatro** — cuatro BUCLES distintos bajo la misma
+sala. Lo que comparten y lo que NO está en la ficha de abajo; el catálogo está
+CONGELADO por la ley §26 (`core/liveLoops.js`): una fase nueva es una decisión
+escrita, no un `if` en una vista.
+
+**Lo común a los cuatro** (esto sí es del modo, no del bucle):
+
 | | |
 |---|---|
-| **Puntúa** | El **host** al liquidar (`settle`) — el alumno NO puntúa |
-| **Termina** | El docente (o el temporizador, según `advanceMode`) |
-| **Persiste** | `live_answers` (una fila por alumno/ítem) + estado de la sala |
-| **Reloj** | `startDeadlineTicker` — cuenta hasta el instante que fija el host |
+| **Quién abre** | El docente, **con sesión iniciada** (§22: abrir sala escribe en `live_sessions`, host-only). El alumno entra con PIN, sin cuenta |
+| **Puntúa** | El **host** al liquidar (`settle`) — el alumno AFIRMA, nunca dicta el veredicto |
+| **Tiempo** | Se mide con el reloj del **servidor** (`core/serverMs.js`), no con el `ms` que manda el móvil |
+| **Persiste** | `live_answers` (una fila por alumno×ítem, índice único) + `live_players` + el blob de la sala (host-only) |
 | **Identidad** | Apodo por sala (`live_players`, único por sala) |
+| **Ritmo** | Como **INSTANTE** en la fila de la sala (`answers_open_at`, `deadline`), nunca un `setTimeout` del cliente → sobrevive a recargas y a llegar tarde |
+| **Qué bucles ofrece** | Lo DECLARA la plantilla en `meta.play.live` (lista); el lobby se construye de esa declaración |
+
+**Los cuatro bucles** (`LIVE_LOOPS`):
+
+| | `rounds` · Rondas juntas | `race` · Carrera libre | `board` · Tablero | `claim` · Pedir la palabra |
+|---|---|---|---|---|
+| **Fase de sala** | `question` | `race` | `race` | `question-live` |
+| **Quién avanza** | la clase junta: **el profe** o **el reloj** | cada alumno, a su ritmo | cada alumno, sobre el mismo tablero | el profe, según quién pide turno |
+| **Cómo se gana** | **más puntos** | **terminar primero con todas bien** | avanzar más en el tablero | los puntos que da el docente |
+| **Puntos** | **Kahoot**: base×500 + bonus por velocidad (`live.pointsModel`) | **PLANOS**: el puntaje ES el nº de aciertos | planos | manuales (+10/+50), sin clave de respuesta |
+| **Desempate** | (los puntos ya lo resuelven) | **hora de meta** (servidor) | hora de meta | — |
+| **Un fallo…** | se queda fallado, la ronda sigue | **vuelve a la cola** — se reintenta hasta acertarlo | se reintenta | — |
+| **Fin** | al agotar las preguntas | política declarada: **todos · primeros N · tiempo** (`core/liveEnd.js`) | igual que carrera | lo cierra el docente |
+| **Ventana de lectura** | sí (R-1: se ve la pregunta, no se puede tocar) | pendiente (ficha 2b, paso 2) | — | — |
+| **Tiempo por pregunta** | sí (`item.seconds`, R-3) | — | — | — |
+| **Plantillas hoy** | Quiz · Operaciones · Tildes · Comas | las mismas | Ordena las Pelotas | Pregunta en vivo · Ruleta |
+
+**La carrera, en una frase**: *gana quien termina primero con todas bien*. Como
+un fallo vuelve a la cola, **todo el que termina lo hace con TODAS bien** → el
+puntaje no ordena a los que acaban y **manda la hora de meta**. Por eso el podio
+la MUESTRA (`0:47`): si no, la clase ve un triple empate. Esto vive en dos
+sitios y los dos están vigilados por `tests/raceRank.test.mjs`:
+`kernel/session/engine.js` (puntos planos: el settle pasa `mode:'race'`) y el
+desempate en `core/liveRank.js` (marcador) + `views/sessionTable.js` (podio y
+tabla del profe, `finishMs`).
+
+**Lo que el profe VE durante el juego** (decisión C-2): en carrera y tablero, la
+pizarra muestra **AVANCE, no ranking** — el orden es el de entrada a la sala, y
+nadie queda proyectado el último durante minutos. La clasificación existe, pero
+en el **podio**, al final.
 
 ```gherkin
 Escenario: el alumno no se puede auto-puntuar
@@ -466,6 +504,18 @@ Escenario: el alumno no se puede auto-puntuar
   Entonces se guarda SIN veredicto
   Y solo el host le pone puntos al liquidar la pregunta
   # kernel/session/engine.js (settle) — política anti-trampa
+
+Escenario: en carrera, mi acierto es solo una PISTA de avance
+  Dado que en carrera mi móvil dice "correcto" para pasar de pregunta
+  Entonces la fila se guarda con correct=null (hint) y la liquida el host
+  # §22-C6 — adaptadores local y PocketBase, mismo contrato
+
+Escenario: gana quien termina primero con todas bien
+  Dado que un alumno acierta 2 de 5 en los primeros segundos
+  Y otro acierta las 5 pasados 25 segundos
+  Entonces gana el que acertó las 5
+  Y si dos terminan con las 5, gana el que llegó antes a la meta
+  # tests/raceRank.test.mjs — verificado además contra PocketBase real
 
 Escenario: una respuesta rezagada no se pierde
   Dado que mi respuesta llega después de liquidarse su pregunta
@@ -479,10 +529,10 @@ Escenario: 30 alumnos entran a la vez
   # core/stressTest.js — verificado en la Pi real con 50
 ```
 
-**Deuda conocida de Live** (no es decisión de diseño, es arreglo pendiente):
-en **modo carrera** el alumno SÍ puntúa en su propio dispositivo
-(`studentLive.js`), rompiendo la política anti-trampa de arriba. Y los puntos
-manuales de *Pregunta en vivo* (+10/+50) no pasan por la fórmula de puntos.
+**Pendiente de la ficha 2b** (`docs/estudio-bucles-live.md`): que la carrera
+herede la **ventana de lectura**, y el **dial de tres posiciones** en el lobby
+("Yo controlo · El reloj · Cada alumno") para que rondas y carrera dejen de
+parecer dos productos distintos.
 
 ---
 
@@ -527,7 +577,7 @@ ocurre; queda escrito para que nadie lo "arregle" al revés.
 | | Individual | VS | Equipos | En vivo | Tarea |
 |---|---|---|---|---|---|
 | **Puntúa** | plantilla | plantilla (kernel) | plantilla o docente | host al liquidar | plantilla |
-| **Fin** | agotar ítems | `meta.play.vs` | agotar rondas | el docente | agotar ítems |
+| **Fin** | agotar ítems | `meta.play.vs` | agotar rondas | según el BUCLE (§9.4) | agotar ítems |
 | **Persiste** | `results` | nada | nada | `live_answers` | `assignment_attempts` |
 | **Reloj** | duración (opcional) | ninguno | ninguno | hasta deadline | duración (opcional) |
 | **Identidad** | dispositivo | ninguna | ninguna | apodo por sala | apodo + dispositivo |
@@ -543,6 +593,13 @@ ocurre; queda escrito para que nadie lo "arregle" al revés.
 ---
 
 ### 9.7 Invariantes (esto no se negocia)
+
+- **En vivo son CUATRO bucles declarados** (`core/liveLoops.js`, ley §26), y los
+  declara la PLANTILLA (`meta.play.live`), no un `<select>` fijo ni el nombre de
+  la plantilla dentro de una vista.
+- **Cada bucle dice cómo se GANA** y esa regla vive en el motor, no en la vista:
+  rondas → puntos (Kahoot); carrera → terminar primero con todas bien (puntos
+  planos + hora de meta); tablero → avance; pedir la palabra → puntos del docente.
 
 - Una vez `status === 'ended'`, `answer()` / `dispatch()` rechazan más jugadas.
   Las vistas deben ignorar toques tardíos en la ventana de feedback.
