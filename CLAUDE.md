@@ -141,6 +141,11 @@ montaje FÍSICO (proyector+móviles / gestión de entregas).
 | `board` Tablero | `race` | cada alumno | avanzar más en el tablero | **escala propia** de la plantilla (Pelotas: 0-1000 por eficiencia, P5) | igual que carrera |
 | `claim` Pedir la palabra | `question-live` | el profe (quien pide turno) | los puntos que da el docente | manuales (+10/+50) | lo cierra el docente |
 
+- **El BUCLE se DECLARA y se GUARDA** en el blob de la sala (`state.loop`, sin migración) al
+  arrancar. De ahí lo leen el settle (modelo de puntos vía `pointsModeFor()` de
+  `core/liveLoops.js`), el podio, la tabla y el CSV. Antes cada uno lo re-adivinaba: de la fase
+  (ambigua: `race` y `board` la comparten, y el barrido de cierre liquida con la sala en
+  `ended`), del sello de apertura, o con `mode:'race'` cableado en tres vistas.
 - **Carrera**: un fallo VUELVE A LA COLA ⇒ todo el que termina lo hace con TODAS bien ⇒ el
   puntaje no ordena y **manda la hora de meta** (reloj del SERVIDOR). Va en dos sitios:
   `core/liveRank.js` (marcador) y `views/sessionTable.js` `finishMs` (podio/tabla del profe).

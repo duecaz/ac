@@ -24,7 +24,7 @@ import { pickIndex } from '../templates/wheel/logic.js';
 import { spinTarget, normalizeRotation, animateSpin, SPIN_DUR_PICK } from '../templates/wheel/spin.js';
 import { QL_COLORS } from '../core/questionLive.js';
 import { RACE_FLASH_MS, questionWindowMs, mmss } from '../core/timings.js';
-import { supportsLoop } from '../core/liveLoops.js';
+import { supportsLoop, pointsModeFor } from '../core/liveLoops.js';
 import { endPolicyOf, waitingInfo } from '../core/liveEnd.js';
 
 const NICK_KEY = 'ww.nick';
@@ -579,14 +579,16 @@ export async function renderPlay(rootSel, code) {
       const info = waitingInfo({ policy, n });
       // TU HORA DE META: es lo que decide la carrera (todos acaban con todas
       // bien), así que el alumno tiene que verla — si no, el orden del podio le
-      // llega sin explicación. Es informativa: la que ordena la pone el servidor.
-      const startMs = session.started_at ? new Date(session.started_at).getTime() : 0;
-      const myFinish = startMs ? mmss(clock.now() - startMs) : null;
+      // llega sin explicación. APROXIMADA a propósito: sale del reloj del móvil,
+      // mientras que la que ORDENA la mide el servidor (§22). Puede bailar un
+      // segundo; por eso se marca como "tu tiempo" y no como el oficial.
+      const startMs = session.started_at ? Date.parse(session.started_at) : 0;
+      const myFinish = startMs ? mmss(clock.now() - startMs, Math.floor) : null;
       mount(rootSel, html`
         <div class="text-center py-5">
           <i class="bi bi-trophy-fill display-1 text-warning"></i>
           <h2 class="mt-3">¡Terminaste!</h2>
-          <p class="lead">${raceCorrectCount} / ${allItems.length} correctas${myFinish ? ` · <strong>${myFinish}</strong>` : ''}</p>
+          <p class="lead">${raceCorrectCount} / ${allItems.length} correctas${myFinish ? ` · <strong title="Tu tiempo (aprox.). La clasificación usa el reloj del servidor.">${myFinish}</strong>` : ''}</p>
           <p class="text-muted">${escapeHtml(info.text)}</p>
           ${info.showClock ? '<div class="h3" id="race-left">—</div>' : '<div class="spinner-border text-warning mt-2"></div>'}
         </div>
@@ -599,9 +601,9 @@ export async function renderPlay(rootSel, code) {
           while: () => session.phase === 'race' && !!document.getElementById('race-left'),
           onTick: (leftMs) => {
             const el = document.getElementById('race-left');
-            if (!el) return;
-            const s2 = Math.max(0, Math.ceil(leftMs / 1000));
-            el.textContent = `${Math.floor(s2 / 60)}:${String(s2 % 60).padStart(2, '0')}`;
+            // `Math.ceil`: en una cuenta atrás, mostrar 0:00 con un segundo aún
+            // por correr le dice al alumno que se acabó cuando no se ha acabado.
+            if (el) el.textContent = mmss(leftMs, Math.ceil);
           },
         });
       }
@@ -639,10 +641,10 @@ export async function renderPlay(rootSel, code) {
         let ok = false;
         let pts = 0;
         try {
-          // mode 'race' = puntos PLANOS (sin bonus de velocidad), igual que el
-          // veredicto del servidor al liquidar — si aquí se estimara en 'live',
-          // el alumno vería un puntaje que el podio luego desmiente.
-          const r = tpl.scoreSubmission({ value, item: allItems[idx], msTaken: ms, activity, mode: 'race' });
+          // El modelo de puntos lo decide el BUCLE (core/liveLoops.js), igual que
+          // el settle del servidor — si aquí se estimara distinto, el alumno
+          // vería un puntaje que el podio luego desmiente.
+          const r = tpl.scoreSubmission({ value, item: allItems[idx], msTaken: ms, activity, mode: pointsModeFor(session.loop || 'race') });
           ok = !!r.correct;
           pts = r.points || 0;
         } catch { /* keep ok=false if activity_snap lacks answers */ }

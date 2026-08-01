@@ -9,6 +9,7 @@ import { escapeHtml } from '../core/html.js';
 import { dedupeRows } from '../core/answerRows.js';
 import { heatClass } from '../core/itemStats.js';
 import { mmss } from '../core/timings.js';
+import { finishMsOf, byFinish } from '../core/liveRank.js';
 
 // Mérito de una respuesta a un ítem: { hits, over, total, binary }. Fuente única:
 // el scorer de la plantilla (contrato {correct, points, hits, total} — fase P4 de
@@ -47,24 +48,30 @@ export function buildSessionTable(rows, nItems, { labels = [], items = [], templ
       p.cells[r.itemIndex] = { correct: cf, points: r.points || 0, value: vf, hits: sc.hits, over: sc.over || 0, total: sc.total, binary: sc.binary, ms: r.ms ?? null };
     }
   }
-  const players = [...byPlayer.values()].map(p => ({
-    name: p.name,
-    cells: p.cells,
-    total: p.cells.reduce((s, c) => s + (c?.points || 0), 0),
-    marks: p.cells.reduce((s, c) => s + (c?.hits || 0), 0),          // ACIERTOS (palabras/respuestas)
-    maxMarks: p.cells.reduce((s, c) => s + (c?.total || 0), 0),
-    overs: p.cells.reduce((s, c) => s + (c?.over || 0), 0),          // marcas de MÁS (errores)
-    nCorrect: p.cells.filter(c => c?.correct === true).length,
+  const players = [...byPlayer.values()].map(p => {
+    // UN recorrido para los cinco acumuladores (antes, cinco `reduce` sobre las
+    // mismas celdas: con 50 alumnos × 20 ítems son 5000 pasadas por informe).
+    let total = 0, marks = 0, maxMarks = 0, overs = 0, nCorrect = 0;
+    for (const c of p.cells) {
+      if (!c) continue;
+      total += c.points || 0;
+      marks += c.hits || 0;            // ACIERTOS (palabras/respuestas)
+      maxMarks += c.total || 0;
+      overs += c.over || 0;            // marcas de MÁS (errores)
+      if (c.correct === true) nCorrect++;
+    }
     // HORA DE META: el instante (ms del SERVIDOR desde la salida, §22-1) de la
     // última respuesta que ACERTÓ. En carrera es literalmente cuándo terminó —
     // y es el criterio que decide, porque un fallo vuelve a la cola: todo el que
     // acaba lo hace con TODAS bien, así que nadie gana por aciertos, sino por
-    // tiempo. -1 = no acertó ninguna (o no hay reloj) → al final.
-    finishMs: p.cells.reduce((mx, c) => (c?.correct === true && c.ms != null ? Math.max(mx, c.ms) : mx), -1),
+    // tiempo. La definición es la COMPARTIDA (core/liveRank.js): antes esta
+    // tabla tenía la suya ("última con correct===true") y el marcador otra
+    // ("última que sumó puntos"), y podían discrepar en la misma partida.
+    return { name: p.name, cells: p.cells, total, marks, maxMarks, overs, nCorrect,
+             finishMs: finishMsOf(p.cells) };
     // manda nº de aciertos; a igualdad, menos errores (de más); luego puntos; y
     // por último quien LLEGÓ ANTES (empate total = la carrera).
-  })).sort((a, b) => b.marks - a.marks || a.overs - b.overs || b.total - a.total
-    || (a.finishMs < 0 ? 1 : b.finishMs < 0 ? -1 : a.finishMs - b.finishMs));
+  }).sort((a, b) => b.marks - a.marks || a.overs - b.overs || b.total - a.total || byFinish(a, b));
 
   const perItem = Array.from({ length: nItems }, (_, i) => {
     let hits = 0, tot = 0, n = 0;

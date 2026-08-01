@@ -27,7 +27,7 @@ import { isStudentSnapshot } from '../core/liveSnapshot.js';
 import { podiumHtml } from '../core/podium.js';
 import { QL_COLORS } from '../core/questionLive.js';
 import { questionWindowMs, RACE_POLL_MS, BOARD_POLL_MS, readSeconds, READ_SECONDS_MAX, itemWindowMs, mmss } from '../core/timings.js';
-import { loopsOf, supportsLoop, defaultLoop, LOOP_LABELS, hasAdvanceChoice } from '../core/liveLoops.js';
+import { loopsOf, supportsLoop, defaultLoop, LOOP_LABELS, hasAdvanceChoice, pointsModeFor } from '../core/liveLoops.js';
 import { END_LABELS, END_POLICIES, DEFAULT_POLICY, DEFAULT_FIRST_N, DEFAULT_MINUTES, MAX_MINUTES, shouldEnd, endPolicyOf } from '../core/liveEnd.js';
 
 const STUDENT_BASE = location.origin + location.pathname.replace(/teacher\.html.*/, 'student.html');
@@ -333,7 +333,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     on(rootSel, 'click', '#btn-start', async () => {
       const startedAt = new Date(clock.now()).toISOString();
       if (loop === 'claim') {
-        await setSessionState(sessionId, { status: 'running', phase: 'question-live', current_item: 0, started_at: startedAt });
+        await setSessionState(sessionId, { status: 'running', phase: 'question-live', current_item: 0, started_at: startedAt, loop });
       } else if (loop === 'race' || loop === 'board') {
         // El "tiempo límite" viaja como INSTANTE en la sala (§26 ficha 1b), no
         // como un contador del host: así el alumno ve el mismo reloj y sobrevive
@@ -341,11 +341,11 @@ async function renderHost(rootSel, code, sessionId, activity) {
         const deadline = endPolicy === 'time'
           ? new Date(clock.now() + endMinutes * 60_000).toISOString() : null;
         await setSessionState(sessionId, {
-          status: 'running', phase: 'race', current_item: 0, started_at: startedAt,
+          status: 'running', phase: 'race', current_item: 0, started_at: startedAt, loop,
           deadline, end_policy: endPolicy, end_n: endN,
         });
       } else {
-        await setSessionState(sessionId, { started_at: startedAt });
+        await setSessionState(sessionId, { started_at: startedAt, loop });
         await openQuestion(0);
       }
     });
@@ -625,12 +625,15 @@ async function renderHost(rootSel, code, sessionId, activity) {
   // Cómo va a terminar esto, en la pizarra: con tiempo límite el cronómetro es
   // DESCENDENTE (queda X) — el mismo instante que ve el alumno; sin él, se dice
   // la regla ("terminan todos" / "primeros N"), que es lo que la clase pregunta.
+  // Valor INICIAL del cronómetro de carrera/tablero: el mismo instante y el mismo
+  // formato que luego repinta startElapsedTicker (core/deadlineTicker.js), para
+  // que el primer pintado no sea una tercera copia de la aritmética.
+  const raceClock = () => mmss(session.started_at ? clock.now() - Date.parse(session.started_at) : 0, Math.floor);
+
   function endBadge() {
     const { policy, n, deadlineMs } = endPolicyOf(session);
     if (policy === 'time' && deadlineMs) {
-      const left = Math.max(0, deadlineMs - clock.now());
-      const m = Math.floor(left / 60000), s2 = Math.floor((left % 60000) / 1000);
-      return `queda ${m}:${String(s2).padStart(2, '0')}`;
+      return `queda ${mmss(Math.max(0, deadlineMs - clock.now()), Math.floor)}`;
     }
     if (policy === 'firstN') return `terminan los ${n} primeros`;
     return 'terminan todos';
@@ -653,7 +656,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
       if (!prog[pid]) continue;
       let ok = a.correct === true;
       if (a.correct == null) {
-        try { ok = !!tpl.scoreSubmission({ value: a.value, item: items[a.itemIndex], activity, mode: 'race' }).correct; }
+        try { ok = !!tpl.scoreSubmission({ value: a.value, item: items[a.itemIndex], activity, mode: pointsModeFor(loop) }).correct; }
         catch { ok = false; }
       }
       if (ok) prog[pid].items.add(a.itemIndex);   // only correct items count as progress
@@ -669,15 +672,11 @@ async function renderHost(rootSel, code, sessionId, activity) {
     // ¿Se cumple la política de fin? (todos · primeros N · tiempo)
     if (await maybeAutoEnd(sorted.filter(p => p.items.size >= items.length).length)) return;
     const total = items.length;
-    const elapsed = session.started_at ? Math.floor((clock.now() - new Date(session.started_at).getTime()) / 1000) : 0;
-    const mins = Math.floor(elapsed / 60);
-    const secs = elapsed % 60;
-
     mount(rootSel, html`
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="mb-0"><i class="bi bi-flag-fill text-warning me-2"></i>Carrera libre
           <span class="badge bg-secondary ms-2">${escapeHtml(endBadge())}</span></h4>
-        <span class="badge bg-secondary fs-6" id="race-timer">${mins}:${String(secs).padStart(2,'0')}</span>
+        <span class="badge bg-secondary fs-6" id="race-timer">${raceClock()}</span>
         ${fullscreenButtonHtml()}
       </div>
       <div class="mb-4" style="max-width:700px;margin:0 auto">
@@ -744,15 +743,12 @@ async function renderHost(rootSel, code, sessionId, activity) {
     // clasificación (resuelto → menos movimientos/tiempo) es cosa del PODIO.
     const solvedCount = cells.filter(c => c.value?.solved).length;
     if (await maybeAutoEnd(solvedCount)) return;
-    const elapsed = session.started_at ? Math.floor((clock.now() - new Date(session.started_at).getTime()) / 1000) : 0;
-    const mins = Math.floor(elapsed / 60), secs = elapsed % 60;
-
     mount(rootSel, html`
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="mb-0"><i class="bi bi-droplet-half text-info me-2"></i>Ordena las pelotas
           <span class="badge bg-success ms-2">${solvedCount}/${players.length} resueltos</span>
           <span class="badge bg-secondary ms-1">${escapeHtml(endBadge())}</span></h4>
-        <span class="badge bg-secondary fs-6" id="race-timer">${mins}:${String(secs).padStart(2,'0')}</span>
+        <span class="badge bg-secondary fs-6" id="race-timer">${raceClock()}</span>
         ${fullscreenButtonHtml()}
       </div>
       ${players.length === 0
@@ -913,7 +909,6 @@ async function renderHost(rootSel, code, sessionId, activity) {
   // blob state.answers), con el nombre del alumno resuelto. Fuente única para las
   // 3 pestañas del informe post-partida (A1) — se calcula una sola vez (cache).
   let _rowsCache = null;
-  let _wasRace = false;
   async function gatherSessionRows() {
     if (_rowsCache) return _rowsCache;
     // El blob PRIMERO: lleva el sello de apertura de cada ítem (§22-1), y sin él
@@ -923,13 +918,17 @@ async function renderHost(rootSel, code, sessionId, activity) {
     try { blob = await fetchSessionBlob(sessionId); } catch { /* respaldo best-effort */ }
     // ¿Fue una CARRERA? El sello de apertura único ('race') lo delata aunque la
     // sala ya esté 'ended' — y de él depende que el podio muestre la hora de meta.
-    _wasRace = !!blob?.itemOpenedAt?.race || blob?.phase === 'race';
+    // ¿Fue una CARRERA? Lo DICE la sala (`state.loop`, §26). El respaldo por
+    // sello de apertura es solo para salas abiertas antes de que el bucle se
+    // guardara — olfatear un detalle del cronometraje para recuperar un hecho de
+    // diseño era justo lo que había que dejar de hacer.
+    const wasRace = (blob?.loop ? blob.loop === 'race' : (!!blob?.itemOpenedAt?.race || blob?.phase === 'race'));
     // FASE EFECTIVA para derivar el tiempo: en el podio la sala ya está 'ended',
     // y con esa fase core/serverMs.js tomaría `created` (el PRIMER intento). En
     // carrera lo que cuenta es el instante del ACIERTO (`updated`): quien falló
     // y corrigió tarde saldría con una meta más temprana que la real — y la meta
     // es lo que decide la carrera.
-    const msOpts = { itemOpenedAt: blob?.itemOpenedAt, phase: _wasRace ? 'race' : blob?.phase };
+    const msOpts = { itemOpenedAt: blob?.itemOpenedAt, phase: wasRace ? 'race' : blob?.phase };
     const all = await Promise.all(items.map((_, i) => listAnswers(sessionId, i).then(a => rowsFromLiveAnswers(a, i, msOpts)).catch(() => [])));
     let rows = all.flat();
     try {
@@ -941,8 +940,12 @@ async function renderHost(rootSel, code, sessionId, activity) {
       const nameOf = new Map((ps || []).map(p => [p.id, p.name]));
       rows = rows.map(r => ({ ...r, name: r.name || nameOf.get(r.player) || r.player }));
     } catch { /* si no hay nombres, se muestran ids */ }
-    _rowsCache = rows;
-    return rows;
+    // La caché lleva el HECHO junto a los datos: antes "fue una carrera" vivía en
+    // una variable de módulo que se escribía como efecto lateral de esta función,
+    // y si la lectura fallaba (`.catch(() => [])`) el podio perdía la meta en
+    // silencio, sin que se notara que era por el orden de las llamadas.
+    _rowsCache = { rows, race: wasRace };
+    return _rowsCache;
   }
 
   const itemLabels = () => items.map((it, i) => { try { return tpl?.itemLabel?.(it) || `Pregunta ${i + 1}`; } catch { return `Pregunta ${i + 1}`; } });
@@ -956,14 +959,15 @@ async function renderHost(rootSel, code, sessionId, activity) {
     // Ranking desde los PUNTOS REALES por respuesta (misma fuente que la Tabla →
     // podio y tabla SIEMPRE coinciden). Si no hay filas (colección vacía), cae al
     // marcador oficial de la sesión (state.players[].score).
-    const rows = await gatherSessionRows().catch(() => []);
+    const { rows, race } = await gatherSessionRows().catch(() => ({ rows: [], race: false }));
     // En CARRERA el puntaje NO ordena por sí solo: un fallo vuelve a la cola, así
     // que todo el que termina lo hace con TODAS bien y el podio sería un empate.
     // Lo que decide (y lo que se MUESTRA) es la hora de meta.
     let lb = buildSessionTable(rows, items.length, { items, template: tpl, activity }).players.map(p => ({
       name: p.name, score: p.total, marks: p.marks, nCorrect: p.nCorrect,
-      sub: _wasRace && p.finishMs >= 0 ? mmss(p.finishMs) : null,
-      tie: _wasRace && p.finishMs >= 0 ? p.finishMs : null,
+      // `tie` ordena y `sub` explica: el podio es compartido con el duelo VS, así
+      // que no sabe que el desempate es tiempo — recibe el número y el texto.
+      ...(race && p.finishMs >= 0 ? { tie: p.finishMs, sub: mmss(p.finishMs) } : {}),
     }));
     if (!lb.length) { try { lb = await leaderboard(sessionId, 100); } catch { lb = []; } }
     if (phaseChanged) emitGame(GameEvents.PODIUM, { top: lb.slice(0, 3).map(p => ({ name: p.name, score: p.score })) });
@@ -994,17 +998,17 @@ async function renderHost(rootSel, code, sessionId, activity) {
       if (tab === 'podio') { out.innerHTML = rankingHtml(); return; }
       spin();
       try {
-        const rows = await gatherSessionRows();
+        const { rows, race } = await gatherSessionRows();
         out.innerHTML = tab === 'tabla'
-          ? sessionTableHtml(rows, items.length, { labels: itemLabels(), items, template: tpl, activity, race: _wasRace })
+          ? sessionTableHtml(rows, items.length, { labels: itemLabels(), items, template: tpl, activity, race })
           : itemStatsHtml(activity, rows);
       } catch (e) { out.innerHTML = `<div class="alert alert-warning">No se pudo cargar: ${escapeHtml(e.message)}</div>`; }
     }
     document.querySelectorAll('.ll-tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
     document.getElementById('ll-csv')?.addEventListener('click', async () => {
       try {
-        const rows = await gatherSessionRows();
-        const csv = sessionTableCsv(rows, items.length, { labels: itemLabels(), items, template: tpl, activity, race: _wasRace });
+        const { rows, race } = await gatherSessionRows();
+        const csv = sessionTableCsv(rows, items.length, { labels: itemLabels(), items, template: tpl, activity, race });
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a'); a.href = url; a.download = `sesion-${code}.csv`; a.click();
@@ -1013,7 +1017,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     });
     showTab('podio');
     // Medallas de aula (A2): se pintan al cargar las respuestas (no bloquea el podio).
-    gatherSessionRows().then(rows => {
+    gatherSessionRows().then(({ rows }) => {
       const m = computeMedals(rows);
       const el = document.getElementById('ll-medals');
       if (el && m.length) el.innerHTML = m.map(x => `<span class="ll-medal">${x.icon} ${x.label}: <b>${escapeHtml(x.name)}</b></span>`).join('');

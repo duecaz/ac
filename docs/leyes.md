@@ -556,6 +556,11 @@ nueva, o una elección de bucle más por NOMBRE de plantilla rompen CI.
 | `board` | avanzar más en el tablero | escala PROPIA de la plantilla (Pelotas: 0-1000 por eficiencia, P5) |
 | `claim` | los puntos que da el docente | manuales, sin clave de respuesta |
 
+El bucle elegido se GUARDA en la sala (`state.loop`) y `pointsModeFor(loop)` es el
+único sitio donde está escrito qué modelo de puntos usa cada uno — derivarlo de la
+FASE era inválido: `race` y `board` comparten fase, y el settle de cierre corre con
+la sala ya en `ended`.
+
 En carrera un fallo VUELVE A LA COLA: todo el que termina lo hace con TODAS bien,
 así que el puntaje no ordena y **manda la hora de meta**. El desempate va en los
 DOS caminos que ordenan alumnos —`core/liveRank.js` (marcador) y

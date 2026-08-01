@@ -11,6 +11,7 @@
 // cuenta hasta un INSTANTE que manda el servidor, que es lo que necesita Live
 // para que host y alumnos vean lo mismo.
 import { clock } from './clock.js';
+import { mmss } from './timings.js';
 
 /**
  * @param {object}   o
@@ -72,7 +73,7 @@ export function startElapsedTicker({
   const tick = () => {
     if (keepGoing && !keepGoing()) return stop();
     const elapsedSec = Number.isFinite(startMs) ? Math.max(0, Math.floor((clock.now() - startMs) / 1000)) : 0;
-    onTick?.({ elapsedSec, label: `${Math.floor(elapsedSec / 60)}:${String(elapsedSec % 60).padStart(2, '0')}` });
+    onTick?.({ elapsedSec, label: mmss(elapsedSec * 1000, Math.floor) });
   };
   tick();
   handle = setIntervalFn(tick, everyMs);

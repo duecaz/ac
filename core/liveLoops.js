@@ -51,3 +51,16 @@ export function defaultLoop(T) { return loopsOf(T)[0] || null; }
 /** ¿Este bucle deja al profe elegir quién avanza? Solo las rondas: en carrera y
  *  tablero avanza cada alumno, y en "pedir la palabra" manda el docente siempre. */
 export function hasAdvanceChoice(loop) { return loop === 'rounds'; }
+
+/** MODELO DE PUNTOS de un bucle — la regla "carrera ⇒ plano" vive AQUÍ y solo
+ *  aquí. Antes estaba cableada como `mode: 'race'` en tres llamadores distintos
+ *  (el settle del motor, el estimador del alumno y el re-scoring del host), cada
+ *  uno con un comentario pidiendo que los otros dos no cambiaran. Es el valor
+ *  que reciben los scorers como `mode` (ver core/scoring/award.js `useKahoot`).
+ *  - `rounds`/`claim` → 'live': toda la clase abre la pregunta en el MISMO
+ *    instante, así que comparar velocidades es justo (bonus Kahoot).
+ *  - `race`/`board`  → 'race': cada alumno va a su ritmo; la velocidad ya se
+ *    mide por cuándo terminas, y medirla dos veces premiaba al que madruga. */
+export function pointsModeFor(loop) {
+  return (loop === 'race' || loop === 'board') ? 'race' : 'live';
+}

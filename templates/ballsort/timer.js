@@ -18,9 +18,6 @@ export function createTimer() {
   };
 }
 
-export function formatMs(ms) {
-  const total = Math.max(0, Math.round(ms / 1000));
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
+// El formato «m:ss» es UNO en todo el repo (core/timings.js). Se conserva el
+// nombre para no tocar a los llamadores de la plantilla.
+export { mmss as formatMs } from '../../core/timings.js';

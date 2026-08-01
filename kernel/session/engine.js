@@ -19,6 +19,7 @@
 import { planTransition, PHASES } from '../../core/livePhases.js';
 import { isAcceptableNickname } from '../../core/nicknameFilter.js';
 import { rankPlayers } from '../../core/liveRank.js';
+import { pointsModeFor } from '../../core/liveLoops.js';
 import { supportsLoop } from '../../core/liveLoops.js';
 import { getTemplate } from '../../core/registry.js';
 import { canAutoScoreRound } from '../../core/templateCapability.js';
@@ -191,13 +192,15 @@ function createLiveSession(activity, T, opts) {
     let settled = 0;
     for (const [key, ans] of Object.entries(state.answers)) {
       if (!key.startsWith(itemIndex + ':')) continue;
-      // MODO DE PUNTOS por bucle: en CARRERA se puntúa PLANO (mode 'race' ⇒
-      // useKahoot() es falso). La carrera premia «quien termina primero con
-      // todas bien»: con el bonus de velocidad de Kahoot, quien acertaba 2 de 5
-      // en los primeros segundos superaba a quien acertaba las 5 (medido: 2997
-      // vs 2500 pts). Plano ⇒ el puntaje ES el número de aciertos, y el tiempo
-      // solo desempata (core/liveRank.js). Ver docs/estudio-bucles-live.md 2b.
-      const mode = state.phase === 'race' ? 'race' : 'live';
+      // MODO DE PUNTOS: lo decide el BUCLE que declaró el lobby (§26), no la
+      // fase. La fase es transitoria y AMBIGUA: `race` y `board` comparten la
+      // fase 'race', y este mismo settle corre con la sala ya en 'ended' (el
+      // barrido de cierre) — mirar la fase le daría bonus Kahoot a una carrera.
+      // El respaldo por fase es solo para salas abiertas ANTES de que el bucle
+      // se guardara. En carrera los puntos son PLANOS: quien acertaba 2 de 5 en
+      // los primeros segundos superaba a quien acertaba las 5 (medido: 2997 vs
+      // 2500). Ver docs/estudio-bucles-live.md ficha 2b.
+      const mode = state.loop ? pointsModeFor(state.loop) : (state.phase === 'race' ? 'race' : 'live');
       const r = autoScore(T, { value: ans.value, item, msTaken: ans.msTaken, activity, mode });
       const wasUnscored = ans.correct === null;
       ans.correct = r.correct;
@@ -228,9 +231,7 @@ function createLiveSession(activity, T, opts) {
   // gana quien llegó ANTES a ellos. El puntaje sale de las respuestas (idéntico
   // a players[].score, que settle() acumula de las mismas filas) para que este
   // ranking y el derivado de PocketBase sean LA MISMA función.
-  const leaderboard = (limit = 50) =>
-    rankPlayers(state.players, Object.values(state.answers)
-      .map(a => ({ player: a.playerId, points: a.points || 0, ms: a.msTaken ?? 0 })), limit);
+  const leaderboard = (limit = 50) => rankPlayers(state.players, Object.values(state.answers), limit);
 
   return {
     state, join, dispatch, submit, settle, settleAll, roundPayload, leaderboard,

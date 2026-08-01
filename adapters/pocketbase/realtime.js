@@ -278,8 +278,13 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
   }
 
   // Fetch a session's answer rows for one item, deduped to ONE per player.
+  // `fields=` explícito: esta consulta la POLLEA la carrera (cada 5 s) y el
+  // tablero (cada 2 s), con hasta 500 filas — traer columnas que nadie lee es
+  // ancho de banda contra la Pi en el peor momento. Si alguien necesita un campo
+  // nuevo de live_answers, se añade AQUÍ (y en listAnswers, que es quien mapea).
+  const ANS_FIELDS = 'id,item,player,value,ms,correct,unscorable,points,scored,v0,c0,created,updated';
   async function fetchAnswerRows(sessionId, itemIndex) {
-    const res = await pbFetch(`/api/collections/${ANS}/records?filter=${ansFilter(sessionId, itemIndex)}&perPage=500`);
+    const res = await pbFetch(`/api/collections/${ANS}/records?filter=${ansFilter(sessionId, itemIndex)}&perPage=500&fields=${ANS_FIELDS}`);
     return dedupeByPlayer(res?.items);
   }
 
@@ -414,6 +419,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         current_item: rec.state?.currentItem,
         deadline: rec.state?.deadline ?? null,
         answers_open_at: rec.state?.answersOpenAt ?? null,
+        loop: rec.state?.loop ?? null,
         end_policy: rec.state?.endPolicy ?? null,
         end_n: rec.state?.endN ?? null,
         activity_snap: rec.activity,
@@ -432,6 +438,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         current_item: rec.state?.currentItem,
         deadline: rec.state?.deadline ?? null,
         answers_open_at: rec.state?.answersOpenAt ?? null,
+        loop: rec.state?.loop ?? null,
         end_policy: rec.state?.endPolicy ?? null,
         end_n: rec.state?.endN ?? null,
         started_at: rec.state?.startedAt ?? null,
@@ -581,6 +588,11 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       // POLÍTICA DE FIN de carrera/tablero (core/liveEnd.js): vive en la sala
       // porque el ALUMNO también la necesita — es lo que le dice si espera un
       // reloj o a sus compañeros, en vez de un "esperando…" mudo.
+      // EL BUCLE que corrió la sala (§26). Vive en el blob porque es un HECHO de
+      // la partida, no un detalle de una vista: lo leen el settle (modelo de
+      // puntos), el podio y la tabla. Antes cada uno lo re-adivinaba de la fase
+      // o del sello de apertura, y el lobby lo perdía al recargar.
+      if ('loop' in patch) engine.state.loop = patch.loop ?? null;
       if ('end_policy' in patch) engine.state.endPolicy = patch.end_policy ?? null;
       if ('end_n' in patch) engine.state.endN = patch.end_n ?? null;
       if ('started_at' in patch) engine.state.startedAt = patch.started_at ?? null;
@@ -884,8 +896,8 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
           // el PATCH del settle pisa `updated` con la misma hora para toda la
           // clase, y entonces el desempate de la carrera se vuelve aleatorio
           // (medido: el rápido salía 2.º).
-          const res = await pbFetch(`/api/collections/${ANS}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}' && scored=true`)}&perPage=500&fields=player,points,ms`);
-          rows = (res?.items || []).map(r => ({ player: r.player, points: r.points || 0, ms: r.ms || 0 }));
+          const res = await pbFetch(`/api/collections/${ANS}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}' && scored=true`)}&perPage=500&fields=player,points,ms,correct`);
+          rows = res?.items || [];   // core/liveRank.js acepta la fila tal cual
         } catch { /* sin respuestas todavía → todos a 0 */ }
         return rankPlayers(players, rows, limit);
       }

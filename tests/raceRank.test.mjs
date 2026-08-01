@@ -14,6 +14,7 @@
 // Run: node tests/raceRank.test.mjs
 import assert from 'node:assert';
 import { rankPlayers, tallyRows } from '../core/liveRank.js';
+import { pointsModeFor } from '../core/liveLoops.js';
 import { awardPoints } from '../core/scoring/index.js';
 import { createLiveRoom } from '../kernel/live/engine.js';
 import { registerTemplate } from '../core/registry.js';
@@ -205,6 +206,39 @@ registerTemplate({
   assert.match(cut('async settleItem(', 1600), /ms: scored\.msTaken/, 'settleItem debe persistir el ms del servidor');
   assert.match(cut('async function settlePendingInto(', 2200), /ms: s\.msTaken/, 'settlePending debe persistir el ms del servidor');
   ok('el adaptador conserva y persiste el tiempo del servidor');
+}
+
+// ── 9. El modelo de puntos lo decide el BUCLE, no la fase ──────────────────
+// La fase es AMBIGUA (`race` y `board` comparten la fase 'race') y transitoria
+// (el barrido de cierre liquida con la sala ya en 'ended'). Antes el settle
+// miraba la fase: una carrera liquidada al cerrar habría cobrado bonus Kahoot.
+{
+  assert.strictEqual(pointsModeFor('rounds'), 'live');
+  assert.strictEqual(pointsModeFor('claim'), 'live');
+  assert.strictEqual(pointsModeFor('race'), 'race');
+  assert.strictEqual(pointsModeFor('board'), 'race', 'el tablero también va sin bonus de velocidad');
+
+  // Sala declarada `rounds` liquidada con la fase en 'race': manda el BUCLE.
+  const room = createLiveRoom(activity, { code: 'RANK3' });
+  const ana = room.join('u-a', 'ANA');
+  room.dispatch('start');
+  room.state.loop = 'rounds';
+  room.state.phase = 'race';
+  room.submit(ana.id, 0, '1', 0);
+  room.settleAll({ keepPhase: true });
+  assert.ok(room.leaderboard(1)[0].score > 500, 'con bucle `rounds` el bonus de velocidad sigue vivo aunque la fase diga race');
+
+  // Y al revés: bucle `race` liquidado con la sala ya cerrada ⇒ plano.
+  const r2 = createLiveRoom(activity, { code: 'RANK4' });
+  const beto = r2.join('u-b', 'BETO');
+  r2.dispatch('start');
+  r2.state.loop = 'race';
+  r2.state.phase = 'race';
+  r2.submit(beto.id, 0, '1', 0);
+  r2.state.phase = 'ended';              // el barrido de cierre
+  r2.settleAll({ keepPhase: true });
+  assert.strictEqual(r2.leaderboard(1)[0].score, 1, 'con bucle `race` los puntos son planos aunque la sala ya esté cerrada');
+  ok('el modelo de puntos sale del bucle declarado, no de la fase');
 }
 
 console.log(`\n  ${passed} race-rank checks passed`);
