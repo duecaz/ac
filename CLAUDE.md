@@ -87,6 +87,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | Catálogo: qué hace cada actividad y en qué modos | `docs/panorama-actividades.md` |
 | **Probar** (suites Node + panel admin + headless Playwright) | `docs/testing.md` |
 | **Testeo MANUAL por un compañero** (recorrido completo, matriz por juego×modo, torturas) | `docs/plan-de-pruebas-manual.md` |
+| **Guía de testeo PARA ALGUIEN NO TÉCNICO** (paso a paso: Ctrl+F5, versión, carrera, torturas, plantilla de reporte) | `docs/guia-testeo-companero.md` |
 | **Tocar CSS del juego sin romper nada** (capturas antes/después, diff por píxel) | `node tools/shots.mjs before` → cambios → `node tools/shots.mjs after` |
 | **Matriz JUGABLE** (cada plantilla × cada modo arranca sin crash) | `node tools/matrix-smoke.mjs` + `tests/moduleRefs.test.mjs` (imports olvidados) |
 | **EN VIVO e2e** (host+alumno en dos páginas: sala→PIN→respuesta→settle→podio) | `node tools/live-smoke.mjs` |
