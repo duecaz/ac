@@ -573,6 +573,15 @@ el nombre de la plantilla en 4 sitios (`activity.template === 'wheel'`…). Es u
 violación de "un modo no conoce plantillas concretas". No se arregla ahora, pero
 el test fija el número: **no puede crecer**.
 
+**La prueba de CARGA cuenta como cliente**: `core/stressTest.js` simula un alumno
+anónimo, así que tiene que cumplir lo mismo que él — desde §22-4 eso incluye
+registrar la credencial del dispositivo (`live_claims`) y mandar `X-WW-Claim`.
+Sin eso el servidor rechaza sus respuestas con 403 y el informe lo contaba como
+"filas perdidas bajo carga", culpando al hardware de una regla (reproducido: 200
+rechazos en 439 ms contra un PocketBase local y ocioso). Vigilado por
+`tests/stressClaim.test.mjs`, con contra-prueba de que un rechazo se INFORMA como
+rechazo, con su código HTTP.
+
 ---
 ### Cómo se auto-verifica todo
 `node tests/run.mjs` corre TODAS las suites. Los escáneres compartidos

@@ -527,14 +527,17 @@ function renderPanel(rootSel) {
       const items = [];
       if (L) {
         items.push(row(`Live · entradas simultáneas`, L.playerRows === n, `${L.playerRows}/${n} filas · ${L.uniqueNames} apodos únicos · ${L.joinMs} ms`));
-        items.push(row(`Live · respuestas simultáneas`, L.answerRows === L.joinsOk * 2, `${L.answerRows} filas (esperadas ${L.joinsOk * 2}) · ${L.ansMs} ms`));
+        const errs = Object.entries(L.answerErrors || {});
+        items.push(row(`Live · respuestas simultáneas`, L.answerRows === L.joinsOk * 2,
+          `${L.answerRows} filas (esperadas ${L.joinsOk * 2}) · ${L.ansMs} ms`
+          + (errs.length ? ` · rechazos: ${errs.map(([k, v]) => `${v}×HTTP ${k}`).join(', ')}` : '')));
       }
       if (T) items.push(row(`Tareas · intentos simultáneos`, T.pass, T.attemptRows != null ? `${T.attemptRows}/${n} filas · ${T.attMs} ms` : 'no ejecutado'));
       box.innerHTML = `
         ${notes}
         <div class="alert ${r.ok ? 'alert-success' : 'alert-danger'} py-1 px-2 mb-2 small">
           <b>${r.ok ? '✅ Aguanta' : '❌ Se cayó bajo carga'}</b> · ${n} alumnos concurrentes · ${r.ms} ms total
-          ${r.ok ? '' : '<br>Filas &lt; N ⇒ lost-update o la Pi no da abasto. Apodos únicos &lt; filas ⇒ colisión sin resolver.'}
+          ${r.ok ? '' : '<br>Con RECHAZOS (403/400) es el servidor diciendo que no: regla o credencial, no carga. Sin rechazos y filas &lt; N ⇒ lost-update o la Pi no da abasto. Apodos únicos &lt; filas ⇒ colisión sin resolver.'}
         </div>
         <ul class="list-group list-group-flush" style="font-size:.875rem">${items.join('')}</ul>`;
     } catch (e) {

@@ -35,8 +35,8 @@ export async function runStressTest({ pbUrl, n = 30, onLog = () => {} } = {}) {
   const jget = async (path) => (await fetch(`${PB}${path}`)).json();
   // fetch CRUDO a propósito (sin token): replica lo que puede hacer un ALUMNO
   // anónimo — ese es el punto de la prueba de carga en live_*.
-  const jpost = (coll, body) => fetch(`${PB}/api/collections/${coll}/records`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  const jpost = (coll, body, extraHeaders) => fetch(`${PB}/api/collections/${coll}/records`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', ...(extraHeaders || {}) }, body: JSON.stringify(body),
   });
   // FIRMADO: crear/borrar la TAREA es acto del profe (ley de confianza §22 —
   // assignments exige sesión). El intento del alumno sigue yendo por jpost crudo.
@@ -73,13 +73,22 @@ export async function runStressTest({ pbUrl, n = 30, onLog = () => {} } = {}) {
   const sessId = (await sessRes.json())?.id;
   if (!sessId) { report.notes.push('No se pudo crear la sala de prueba.'); report.ms = Date.now() - t0; return report; }
 
-  // Join: replica joinSession (POST fila; el 400 del índice único → sufija).
+  // Join: replica joinSession (POST fila; el 400 del índice único → sufija) Y
+  // REGISTRA LA CREDENCIAL DEL DISPOSITIVO (§22-4). Esto último faltaba: desde
+  // que la regla de `live_answers` exige el secreto (`x_ww_claim`), un POST de
+  // respuesta sin credencial es un 403 — la prueba de carga simulaba un alumno
+  // que ya no existe y contaba 0 filas, culpando a la Pi de una regla.
   async function join(i) {
     const base = playerName(i);
     for (let s = 2; s <= 60; s++) {
       const name = s === 2 ? base : `${base} ${s}`;
       const r = await jpost('live_players', { session: sessId, name, user_id: `stress_${i}_${code}` });
-      if (r.ok) return (await r.json()).id;
+      if (r.ok) {
+        const id = (await r.json()).id;
+        const secret = `cl_stress_${i}_${code}`;
+        const c = await jpost('live_claims', { session: sessId, player: id, secret });
+        return { id, secret: c.ok ? secret : null };
+      }
       if (r.status === 400) continue;   // apodo ocupado → sufija
       throw new Error(`join ${r.status}`);
     }
@@ -95,15 +104,25 @@ export async function runStressTest({ pbUrl, n = 30, onLog = () => {} } = {}) {
   onLog(`Lanzando ${players.length * 2} respuestas simultáneas…`);
   const tAns = Date.now();
   const answerCalls = [];
-  players.forEach((pid, i) => {
+  players.forEach((p, i) => {
     for (const item of [0, 1]) {
       const value = (i + item) % 3 === 0 ? '4' : 'Lima';   // mezcla de bien/mal
-      answerCalls.push(jpost('live_answers', { session: sessId, player: pid, item, value, ms: 100 + i, scored: false, correct: false, points: 0 })
-        .then(r => r.ok));
+      answerCalls.push(jpost('live_answers',
+        { session: sessId, player: p.id, item, value, ms: 100 + i, scored: false, correct: false, points: 0 },
+        p.secret ? { 'X-WW-Claim': p.secret } : undefined)
+        .then(r => r.ok ? true : r.status));
     }
   });
   const ansResults = await Promise.allSettled(answerCalls);
   const ansMs = Date.now() - tAns;
+  // POR QUÉ falló, no solo cuántas: un 403 en todas es "la regla te rechaza"
+  // (bug de la prueba o de las reglas) y no tiene NADA que ver con la carga; un
+  // 0 filas mudo mandaba a mirar la Pi. Se cuenta cada estado por separado.
+  const ansStatus = {};
+  for (const r of ansResults) {
+    const v = r.status === 'fulfilled' ? r.value : 'red';
+    if (v !== true) ansStatus[v] = (ansStatus[v] || 0) + 1;
+  }
 
   // Verificación server-side (cuenta real de filas).
   const lpRows = (await jget(`/api/collections/live_players/records?${sessFilter(sessId)}&perPage=500`))?.items || [];
@@ -112,12 +131,31 @@ export async function runStressTest({ pbUrl, n = 30, onLog = () => {} } = {}) {
   report.live = {
     joinsOk: players.length, joinsFail: n - players.length, joinMs,
     playerRows: lpRows.length, uniqueNames: uniqNames.size,
-    answersOk: ansResults.filter(r => r.status === 'fulfilled' && r.value).length, answerRows: laRows.length, ansMs,
+    answersOk: ansResults.filter(r => r.status === 'fulfilled' && r.value === true).length, answerRows: laRows.length, ansMs,
+    answerErrors: ansStatus,
     // PASA: 0 joins perdidos, apodos todos únicos, 2 respuestas por jugador que entró.
     pass: lpRows.length === n && uniqNames.size === n && laRows.length === players.length * 2,
+    // La credencial del dispositivo (§22-4) es parte de "entrar": si no se pudo
+    // registrar, las respuestas iban a ser rechazadas y hay que DECIRLO.
+    claimsOk: players.filter(p => p.secret).length,
   };
 
+  // Rechazo masivo por REGLA: no es carga, es que el cliente simulado no cumple
+  // lo que el servidor exige. Se dice con nombre y apellido en vez de dejar un
+  // "0 filas" que manda a mirar el hardware.
+  const rejected = Object.entries(report.live.answerErrors || {});
+  if (rejected.length && report.live.answerRows === 0) {
+    report.notes.push(`Las ${players.length * 2} respuestas fueron RECHAZADAS por el servidor (${rejected.map(([k, v]) => `${v}×HTTP ${k}`).join(', ')}), no perdidas por carga.`
+      + (report.live.claimsOk < players.length
+        ? ' No se pudo registrar la credencial del dispositivo (live_claims): crea las colecciones desde este panel.'
+        : ' Revisa las reglas de live_answers (§22-4 exige la cabecera X-WW-Claim).'));
+  }
+
   onLog(`Limpiando sala de prueba…`);
+  // OJO: `live_claims` de HOY no se puede borrar ni siendo profe (regla §22-4: si
+  // se pudiera, se robaría el puesto de un jugador vivo). Las filas de la prueba
+  // quedan huérfanas hasta la purga por retención (§25) — son inservibles sin su
+  // sala, que sí se borra aquí.
   await delMany('live_answers', laRows.map(r => r.id));
   await delMany('live_players', lpRows.map(r => r.id));
   await del('live_sessions', sessId);

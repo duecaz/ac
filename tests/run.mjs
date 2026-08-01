@@ -24,6 +24,7 @@ console.log('\n▶ sessionEngine'); await import('./sessionEngine.test.mjs');
 console.log('\n▶ memory'); await import('./memory.test.mjs');
 console.log('\n▶ liveLocal'); await import('./liveLocal.test.mjs');
 console.log('\n▶ liveJoin'); await import('./liveJoin.test.mjs');
+console.log('\n▶ stressClaim'); await import('./stressClaim.test.mjs');
 console.log('\n▶ raceRank'); await import('./raceRank.test.mjs');
 console.log('\n▶ raceResume'); await import('./raceResume.test.mjs');
 console.log('\n▶ quizAnswer'); await import('./quizAnswer.test.mjs');

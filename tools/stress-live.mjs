@@ -29,6 +29,8 @@ const PB = process.argv[3] || 'https://pb.lanube.uno';
     console.log(`\nLIVE (${L.joinMs}ms join · ${L.ansMs}ms respuestas):`);
     console.log(`  entradas:  ${L.joinsOk}/${N} ok · ${L.playerRows} filas · ${L.uniqueNames} apodos únicos`);
     console.log(`  respuestas: ${L.answersOk} ok · ${L.answerRows} filas (esperadas ${L.joinsOk * 2})`);
+    const errs = Object.entries(L.answerErrors || {});
+    if (errs.length) console.log(`  rechazos:   ${errs.map(([k, v]) => `${v}×HTTP ${k}`).join(', ')}`);
     console.log(`  ${L.pass ? '✅' : '❌'} live ${L.pass ? 'PASA' : 'FALLA'}`);
   }
   if (r.tasks) {
@@ -39,6 +41,6 @@ const PB = process.argv[3] || 'https://pb.lanube.uno';
   }
 
   console.log(`\n${r.ok ? '✅ TODO PASA' : '❌ HAY FALLOS'} — ${r.ms}ms total.`);
-  if (!r.ok) console.log('   (filas < N ⇒ lost-update / la Pi no aguanta la concurrencia; apodos únicos < filas ⇒ colisión sin resolver)');
+  if (!r.ok) console.log('   (con rechazos 403/400 es una REGLA, no la carga; sin rechazos, filas < N ⇒ lost-update / la Pi no aguanta; apodos únicos < filas ⇒ colisión)');
   process.exit(r.ok ? 0 : 1);
 })().catch(e => { console.error('Error:', e.message); process.exit(1); });

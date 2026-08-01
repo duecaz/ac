@@ -69,7 +69,10 @@ const PB_OWNERS = {
   live_answers: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js'],
   live_players: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js'],
   live_keys: ['adapters/pocketbase/realtime.js', 'views/adminView.js'],
-  live_claims: ['adapters/pocketbase/realtime.js', 'views/adminView.js'],
+  // stressTest: la prueba de carga registra la credencial del alumno simulado
+  // (§22-4) porque sin ella el servidor rechaza sus respuestas — simular al
+  // alumno es justo su trabajo, igual que ya lo hace en live_players/answers.
+  live_claims: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js'],
   assignments: ['adapters/pocketbase/assignments.js', 'views/adminView.js', 'core/stressTest.js',
     'adapters/index.js'],  // pbCollectionExists: decide el fallback local, no escribe
   assignment_attempts: ['adapters/pocketbase/assignments.js', 'views/adminView.js', 'core/stressTest.js'],
