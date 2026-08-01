@@ -653,7 +653,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
       if (!prog[pid]) continue;
       let ok = a.correct === true;
       if (a.correct == null) {
-        try { ok = !!tpl.scoreSubmission({ value: a.value, item: items[a.itemIndex], activity, mode: 'live' }).correct; }
+        try { ok = !!tpl.scoreSubmission({ value: a.value, item: items[a.itemIndex], activity, mode: 'race' }).correct; }
         catch { ok = false; }
       }
       if (ok) prog[pid].items.add(a.itemIndex);   // only correct items count as progress

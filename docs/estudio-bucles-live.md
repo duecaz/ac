@@ -846,3 +846,41 @@ y probados.
 2. **Ventana de lectura en carrera** — reutiliza lo de R-1.
 3. **Dial de tres posiciones en el lobby** — cosmético, pero es lo que hace que
    dejen de parecer dos productos.
+
+---
+
+# Aplicado (v1.51.352) · paso 1 — la carrera la gana quien termina primero con todas bien
+
+Definición del usuario, textual: *«la idea de la carrera es quien termina primero
+con todas bien, no que haya más puntos por velocidad; el que primero termina con
+todas bien gana, simple»*. Antes de tocar nada se **verificó** con tres
+navegadores contra PocketBase (uno por dispositivo — con un solo navegador los
+dos alumnos comparten anon id y reconectan como el MISMO jugador):
+
+| alumno | aciertos | cuándo | puntos ANTES | puntos AHORA |
+|---|---|---|---|---|
+| RAPIDO | **2** de 5 | primeros segundos | **2997** 🏆 | 2 |
+| LENTO | **5** de 5 | pasados 25 s | 2500 | **5** 🏆 |
+
+Ganaba quien no terminó. Dos cambios, cada uno en UN sitio:
+
+1. **Puntos PLANOS en carrera** — `kernel/session/engine.js`: el settle pasa
+   `mode: 'race'` cuando la fase es carrera, y `useKahoot()` (`core/scoring/award.js`)
+   solo enciende el bonus con `mode:'live'`. Ni una plantilla se entera: la
+   fórmula sigue siendo la única. **El puntaje de una carrera ES su número de
+   aciertos.**
+2. **Empate ⇒ gana quien llegó ANTES** — `core/liveRank.js` (`rankPlayers`),
+   compartido por el marcador derivado de PocketBase y por el motor, así que
+   marcador y podio no pueden divergir. La "hora de meta" es el instante de la
+   última respuesta que SUMÓ; en PocketBase se toma del autodate `created`
+   (servidor, inmutable), **no** del `ms` que afirma el móvil — si el desempate
+   dependiera del cliente, bastaría jurar `ms:0` para ganar todos los empates (§22).
+
+Contra-prueba incluida: en **rondas** el bonus de velocidad sigue intacto — es
+ahí donde tiene sentido, porque todos abren la misma pregunta en el mismo
+instante. Vigilado por `tests/raceRank.test.mjs` (4 comprobaciones) y verificado
+de punta a punta contra PocketBase real (5/5 tarde gana a 2/5 rapidísimo; y a
+igualdad de aciertos gana quien terminó antes).
+
+Pendientes de la ficha: **2** (ventana de lectura en carrera) y **3** (dial de
+tres posiciones en el lobby).

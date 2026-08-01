@@ -181,6 +181,12 @@ las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecut
   `tests/scoringSources.test.mjs` (4 reglas ejecutables) — antes match/diagram/crossword/memory
   llevaban aritmética propia en Individual.
   El runner Solo (`runTextCorrectionSolo`) también llama a `scoreMarksPerHit` (no tiene copia propia).
+  **En CARRERA los puntos son PLANOS** (`mode:'race'` en el settle → `useKahoot()` no enciende el
+  bonus): la carrera la gana *quien termina primero con todas bien*, así que el puntaje ES el
+  número de aciertos y el tiempo solo DESEMPATA. El ranking (marcador y podio) sale de
+  **`core/liveRank.js`** (`rankPlayers`), compartido por el adaptador PocketBase y el motor; la
+  "hora de meta" la pone el servidor (`created`), nunca el `ms` que afirma el móvil (§22).
+  Vigilado por `tests/raceRank.test.mjs` (con contra-prueba: en rondas el bonus sigue vivo).
 - **Maquetación del PLAYER: NADA con tamaño fijo** — todo relativo (unidades de
   contenedor `cq*` o `%`, o cálculo JS tipo `fitLayout`/`fitPassage`), para que el
   juego se vea bien en 4K, 600×800, 9:16 y 16:9. Prohibido `px`/`rem` fijos que

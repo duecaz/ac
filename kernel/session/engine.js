@@ -18,6 +18,7 @@
 // simulated and asserted in Node, and rebuilt from a snapshot (opts.state).
 import { planTransition, PHASES } from '../../core/livePhases.js';
 import { isAcceptableNickname } from '../../core/nicknameFilter.js';
+import { rankPlayers } from '../../core/liveRank.js';
 import { supportsLoop } from '../../core/liveLoops.js';
 import { getTemplate } from '../../core/registry.js';
 import { canAutoScoreRound } from '../../core/templateCapability.js';
@@ -190,7 +191,14 @@ function createLiveSession(activity, T, opts) {
     let settled = 0;
     for (const [key, ans] of Object.entries(state.answers)) {
       if (!key.startsWith(itemIndex + ':')) continue;
-      const r = autoScore(T, { value: ans.value, item, msTaken: ans.msTaken, activity, mode: 'live' });
+      // MODO DE PUNTOS por bucle: en CARRERA se puntúa PLANO (mode 'race' ⇒
+      // useKahoot() es falso). La carrera premia «quien termina primero con
+      // todas bien»: con el bonus de velocidad de Kahoot, quien acertaba 2 de 5
+      // en los primeros segundos superaba a quien acertaba las 5 (medido: 2997
+      // vs 2500 pts). Plano ⇒ el puntaje ES el número de aciertos, y el tiempo
+      // solo desempata (core/liveRank.js). Ver docs/estudio-bucles-live.md 2b.
+      const mode = state.phase === 'race' ? 'race' : 'live';
+      const r = autoScore(T, { value: ans.value, item, msTaken: ans.msTaken, activity, mode });
       const wasUnscored = ans.correct === null;
       ans.correct = r.correct;
       ans.points = r.points;
@@ -216,9 +224,13 @@ function createLiveSession(activity, T, opts) {
   const roundPayload = (itemIndex = state.currentItem) =>
     roundPayloadOf(T, activity, itemIndex);
 
+  // Ranking con desempate por HORA DE META (core/liveRank.js): mismos puntos ⇒
+  // gana quien llegó ANTES a ellos. El puntaje sale de las respuestas (idéntico
+  // a players[].score, que settle() acumula de las mismas filas) para que este
+  // ranking y el derivado de PocketBase sean LA MISMA función.
   const leaderboard = (limit = 50) =>
-    [...state.players].sort((a, b) => b.score - a.score).slice(0, limit)
-      .map((p, i) => ({ rank: i + 1, id: p.id, name: p.name, score: p.score }));
+    rankPlayers(state.players, Object.values(state.answers)
+      .map(a => ({ player: a.playerId, points: a.points || 0, ms: a.msTaken ?? 0 })), limit);
 
   return {
     state, join, dispatch, submit, settle, settleAll, roundPayload, leaderboard,

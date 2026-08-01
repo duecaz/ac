@@ -634,7 +634,10 @@ export async function renderPlay(rootSel, code) {
         let ok = false;
         let pts = 0;
         try {
-          const r = tpl.scoreSubmission({ value, item: allItems[idx], msTaken: ms, activity, mode: 'live' });
+          // mode 'race' = puntos PLANOS (sin bonus de velocidad), igual que el
+          // veredicto del servidor al liquidar — si aquí se estimara en 'live',
+          // el alumno vería un puntaje que el podio luego desmiente.
+          const r = tpl.scoreSubmission({ value, item: allItems[idx], msTaken: ms, activity, mode: 'race' });
           ok = !!r.correct;
           pts = r.points || 0;
         } catch { /* keep ok=false if activity_snap lacks answers */ }

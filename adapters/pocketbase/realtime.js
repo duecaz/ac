@@ -15,6 +15,7 @@ import { pbJson } from '../../core/pbHttp.js';
 import { PB_URL } from '../../pocketbase.config.js';
 import { pickWord } from '../../core/liveWords.js';
 import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
+import { rankPlayers } from '../../core/liveRank.js';
 import { setConnectionState } from '../../core/connection.js';
 import { deriveAnswerMs, openedKey, openedAtFor } from '../../core/serverMs.js';
 import { studentSnapshot, needsClientKey } from '../../core/liveSnapshot.js';
@@ -858,16 +859,17 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
     async leaderboard(sessionId, limit = 50) {
       if (await playersReady() && await answersReady()) {
         const players = await fetchPlayers(sessionId);
-        const score = new Map();
+        let rows = [];
         try {
-          const res = await pbFetch(`/api/collections/${ANS}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}' && scored=true`)}&perPage=500&fields=player,points`);
-          for (const r of res?.items || []) score.set(r.player, (score.get(r.player) || 0) + (r.points || 0));
+          // DESEMPATE por hora de meta (core/liveRank.js): a igualdad de puntos
+          // gana quien llegó ANTES — en carrera, quien cruzó la meta primero.
+          // El instante lo pone el SERVIDOR (`created`, autodate inmutable), no
+          // el `ms` que afirma el móvil (§22): si el desempate dependiera del
+          // cliente, bastaría con jurar ms=0 para ganar todos los empates.
+          const res = await pbFetch(`/api/collections/${ANS}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}' && scored=true`)}&perPage=500&fields=player,points,created`);
+          rows = (res?.items || []).map(r => ({ player: r.player, points: r.points || 0, ms: Date.parse(r.created) || 0 }));
         } catch { /* sin respuestas todavía → todos a 0 */ }
-        return players
-          .map(p => ({ id: p.id, name: p.name, score: score.get(p.id) || 0 }))
-          .sort((a, b) => b.score - a.score)
-          .slice(0, limit)
-          .map((p, i) => ({ rank: i + 1, ...p }));
+        return rankPlayers(players, rows, limit);
       }
       const { engine } = await load(sessionId);
       return engine.leaderboard(limit);
