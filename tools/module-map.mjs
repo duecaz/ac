@@ -14,6 +14,8 @@ import { buildGraph, layerEdges, layerOf, ROOT } from '../tests/helpers/importGr
 import { EXCEPTIONS } from '../tests/helpers/layerRules.mjs';
 import { PB_OWNERS } from '../core/normsCheck.js';
 import { RULES, AUTH } from '../core/pbRules.js';
+import { trackOf, testTrackOf, TRACK_ORDER, TRACK_USE } from '../tests/helpers/journeyTracks.mjs';
+import { readdirSync } from 'node:fs';
 
 const OUT = join(ROOT, 'docs', 'arquitectura-modulos.md');
 
@@ -92,6 +94,28 @@ const hot = g.files.map(f => ({
 })).sort((a, b) => b.lines - a.lines).slice(0, 8)
   .map(x => `| \`${x.f}\` | ${x.lines} | ${x.fan} |`).join('\n');
 
+// ── EL ESFUERZO POR TRAMO DEL VIAJE (docs/norte.md §1) ─────────────────────
+// La foto que faltaba: tamaño y fan-in son neutros, y por eso no avisaban de que
+// el modo MINORITARIO (en vivo) tenía ocho veces más cobertura que el tramo por
+// el que pasa TODA clase (buscar/crear).
+const lineCount = (f) => readFileSync(join(ROOT, f), 'utf8').split('\n').length;
+const codeByTrack = {}, testByTrack = {};
+for (const f of g.files) {
+  const t = trackOf(f);
+  (codeByTrack[t] ??= { n: 0, lines: 0 });
+  codeByTrack[t].n++; codeByTrack[t].lines += lineCount(f);
+}
+for (const suite of readdirSync(join(ROOT, 'tests')).filter(x => x.endsWith('.test.mjs'))) {
+  const t = testTrackOf(suite);
+  (testByTrack[t] ??= { n: 0, lines: 0 });
+  testByTrack[t].n++; testByTrack[t].lines += lineCount(join('tests', suite));
+}
+const trackRows = TRACK_ORDER.map(t => {
+  const c = codeByTrack[t] || { n: 0, lines: 0 }, v = testByTrack[t] || { n: 0, lines: 0 };
+  const ratio = c.lines ? (v.lines / c.lines) : 0;
+  return `| **${t}** | ${TRACK_USE[t]} | ${c.n} · ${c.lines} | ${v.n} · ${v.lines} | ${ratio.toFixed(2)} |`;
+}).join('\n');
+
 const md = `# Mapa de módulos — GENERADO, no editar a mano
 
 > Lo produce \`node tools/module-map.mjs\` del grafo de imports REAL del repo.
@@ -100,6 +124,21 @@ const md = `# Mapa de módulos — GENERADO, no editar a mano
 > el código — que es justo el punto.
 >
 > **${g.files.length} módulos · ${g.edges.length} imports internos.**
+
+## Dónde está el esfuerzo, y dónde pasa el profesor
+
+La pregunta que ninguna métrica neutra puede responder: **¿el código y los tests
+están donde el profe pasa?** El uso de cada tramo sale de la escena real
+(\`docs/norte.md\` §1); el reparto, del repo.
+
+| Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
+|---|---|---|---|---|
+${trackRows}
+
+> Un ratio bajo en un tramo muy usado es deuda de PRIORIDAD, no de calidad: ese
+> código funciona, pero si se rompe nadie se entera hasta que hay 33 críos
+> delante. El mapeo módulo→tramo está declarado en
+> \`tests/helpers/journeyTracks.mjs\` — explícito y revisable, no adivinado.
 
 ## Las capas y cómo dependen unas de otras
 

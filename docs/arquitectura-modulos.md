@@ -7,6 +7,26 @@
 >
 > **243 módulos · 875 imports internos.**
 
+## Dónde está el esfuerzo, y dónde pasa el profesor
+
+La pregunta que ninguna métrica neutra puede responder: **¿el código y los tests
+están donde el profe pasa?** El uso de cada tramo sale de la escena real
+(`docs/norte.md` §1); el reparto, del repo.
+
+| Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
+|---|---|---|---|---|
+| **buscar/crear** | **siempre** — toda clase empieza aquí | 7 · 982 | 4 · 282 | 0.29 |
+| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 11 · 2355 | 12 · 1112 | 0.47 |
+| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 18 · 3499 | 17 · 2639 | 0.75 |
+| **informes/tareas** | después de clase | 11 · 1133 | 3 · 381 | 0.34 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5769 | 12 · 975 | 0.17 |
+| **infra/común** | todo lo anterior | 125 · 11956 | 29 · 2778 | 0.23 |
+
+> Un ratio bajo en un tramo muy usado es deuda de PRIORIDAD, no de calidad: ese
+> código funciona, pero si se rompe nadie se entera hasta que hay 33 críos
+> delante. El mapeo módulo→tramo está declarado en
+> `tests/helpers/journeyTracks.mjs` — explícito y revisable, no adivinado.
+
 ## Las capas y cómo dependen unas de otras
 
 Cada flecha va de quien importa a quien es importado, con cuántos imports hay.

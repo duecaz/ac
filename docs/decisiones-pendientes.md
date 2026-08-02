@@ -124,3 +124,38 @@ toque una, se retoma desde ahí. Orden si se retoman: D1 (clases) → D3
   "ver qué salas caducaron" → purga con conteo previo (probado: 12 salas y sus
   hijas borradas; la credencial de una partida de HOY resistió el borrado).
 - El editor avisa al 70% y dice cuándo el servidor va a rechazar.
+
+
+---
+
+## D1 · Identidad del alumno — POSPUESTA CON MOTIVO (v1.51.365)
+
+No es un olvido: es una decisión tomada. Daría muchísimo al docente (ver el
+avance DURANTE el curso, no solo al terminar la actividad), pero toda solución
+conocida cuesta algo que choca con el norte. Requiere **estudio propio antes de
+tocar código**, incluyendo **cómo lo resuelven otras apps**.
+
+**Lo que NO vale** (y por qué):
+
+| Opción | Choca con |
+|---|---|
+| Cuenta para cada alumno | R3 (el alumno no tiene cuenta) y §4 (no somos un LMS) |
+| Contraseñas para el alumno | R2: acaba siendo el profe quien las crea, actualiza y recuerda. Es sencillo de programar y molesto de vivir |
+| Delegarlo en Google Classroom | tampoco lo gestiona bien; y nos ataría a un colegio que lo use |
+
+**La forma que más se acerca** (a estudiar, NO decidida): el profe crea sus
+salones —*5.º A*, con su lista de ~30 nombres— y el alumno entra **con el código
+del profe y elige (o escribe) su nombre de la lista, sin contraseña**. La
+identidad la pone el aula, no el sistema. Un profe con 12 salones los tiene
+declarados una vez.
+
+**El sustituto de la contraseña, a estudiar con cuidado**: reconocer el
+dispositivo desde el que ese alumno abre habitualmente ("equipo de confianza") y
+marcar como *sospechoso* un cambio. Ojo con dos cosas:
+- Si Juan presta su móvil para que otro haga la tarea, **el uso es legítimo**: no
+  puede tratarse como fraude, como mucho como aviso.
+- **LÍNEA ROJA**: el docente **no** debe ver marca ni modelo del aparato del
+  alumno. Eso no es información del profesor.
+
+**Qué arrastra**: el PIN/NFC para pizarras (U2-U4) y los informes por alumno
+dependen de esta pieza. Por eso, cuando se estudie, se estudia entero.

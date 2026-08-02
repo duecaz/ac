@@ -4,20 +4,37 @@
 > construye; **este dice qué construimos y para quién**. Si una ley y el norte
 > chocan, gana el norte y la ley se replantea.
 >
-> **Estado**: BORRADOR v1 (v1.51.364). Lo marcado **[CONFIRMAR]** es propuesta
-> mía a partir de lo que ya está construido y de lo que hemos ido decidiendo;
-> hay que afinarlo con el usuario antes de tratarlo como decisión firme. Lo
-> demás ya está decidido y está en el código.
+> **Estado** (v1.51.365): §1 escena, §3 restricciones y §4 "lo que no somos"
+> están CONFIRMADAS por el usuario. §5 (referentes) sigue **[CONFIRMAR]**. El
+> resto describe lo que ya está en el código.
 
 ---
 
 ## 1. La escena
 
-Un profesor, en su aula, con una **pizarra interactiva** delante de la clase.
-Tiene 45 minutos y ha abierto la app **tres minutos antes de empezar**. Los
-alumnos, si participan desde su sitio, usan **su propio móvil**.
+Un profesor, en su aula, con una **pizarra interactiva** y **unos 33 alumnos**
+delante. **Prepara una actividad o BUSCA una ya hecha**, y la usa **unos
+minutos**: como introducción, como la actividad del día o para explicar algo.
+
+> **La actividad no es la clase: la enriquece.** Son minutos dentro de una
+> sesión que el profe ya tenía preparada. Eso manda sobre todo lo demás: si algo
+> exige montar la clase alrededor de la app, está mal planteado.
+
+Cómo se juega, por frecuencia real:
+
+| | Cómo | Cuánto |
+|---|---|---|
+| **Individual · VS · Equipos** | todos miran la pizarra; se juega ahí mismo | **lo habitual** |
+| **En vivo** | cada alumno con su propio móvil | **solo en algunos colegios** |
+| **Tarea** | fuera de clase | ocasional |
 
 Todo lo que sigue se juzga contra esa escena.
+
+> **Consecuencia incómoda, medida** (v1.51.365): el tramo "en vivo" tiene 0,75
+> líneas de test por línea de código; "buscar/crear" —por donde pasa TODA
+> clase— tiene 0,29, y las plantillas, 0,17. Hemos blindado el modo minoritario.
+> La foto por tramos está en `docs/arquitectura-modulos.md` y ahora se regenera
+> con cada cambio, así que la desviación deja de ser invisible.
 
 ## 2. La promesa (una frase)
 
@@ -41,9 +58,9 @@ planteada, aunque funcione en el portátil del que la programa.
 | **R3** | **El alumno no tiene cuenta.** Entra con un PIN | La identidad del alumno es del aula, no del sistema; la seguridad va por reglas de servidor, no por login (§22) |
 | **R4** | **La red del colegio es mala** y los móviles se bloquean | Todo estado importante vive en el servidor como INSTANTE, no como temporizador local; las escrituras se reintentan solas; recargar nunca pierde nada |
 | **R5** | **El servidor es una Raspberry Pi compartida** | Los límites son reales y están declarados (§25); una función que multiplique las consultas por alumno hay que medirla ANTES |
-| **R6** | **La clase no espera.** Un fallo con 28 críos delante no se depura | Fallar en silencio está prohibido: o funciona, o lo dice claro y sigue |
+| **R6** | **La clase no espera.** Un fallo con 33 críos delante no se depura | Fallar en silencio está prohibido: o funciona, o lo dice claro y sigue |
 
-## 4. Lo que NO somos **[CONFIRMAR]**
+## 4. Lo que NO somos ✅ CONFIRMADO
 
 Decirlo importa tanto como decir lo que sí: la mitad de las discusiones de diseño
 se resuelven aquí.
@@ -73,9 +90,11 @@ se resuelven aquí.
 
 Ante cualquier función nueva, en este orden:
 
-1. **¿Sirve en la escena del §1?** Un profe que no ha preparado nada, tres
-   minutos antes, con la pizarra encendida. Si solo sirve preparándolo en casa,
-   va al final de la lista.
+1. **¿Sirve en la escena del §1?** Un profe con la pizarra encendida, 33
+   alumnos, y unos minutos de actividad dentro de una clase que ya tenía
+   preparada. Si exige montar la clase alrededor de la app, va al final.
+   **Y para qué tramo es**: lo que toca "buscar/crear" o "jugar en la pizarra"
+   llega a todas las clases; lo que toca "en vivo", solo a algunos colegios.
 2. **¿Rompe alguna restricción dura (§3)?** Si sí, no se parchea: se replantea.
 3. **¿Cae en "lo que no somos" (§4)?** Si sí, se descarta o se integra con quien
    ya lo hace.
@@ -85,18 +104,21 @@ Ante cualquier función nueva, en este orden:
 
 ## 7. El viaje del profesor — dónde estamos
 
-Esto es lo que hoy puede hacer, de principio a fin. En **rojo** lo que falta.
+Esto es lo que hoy puede hacer, de principio a fin. Las flechas **gruesas** son
+el camino habitual (la pizarra, sin móviles); en **rojo**, lo que falta.
 
 ```mermaid
 flowchart TD
   A([Entro con mi cuenta]) --> B[Mis actividades]
   B --> C{¿Tengo la actividad?}
-  C -- no --> D[La creo: elijo plantilla y escribo el contenido]
+  C -- no, la busco --> D2[Biblioteca pública: la encuentro y la uso]
+  C -- no, la creo --> D[Elijo plantilla y escribo el contenido]
   C -- sí --> E
   D --> E[Elijo cómo jugarla]
-  E --> F[Individual · en esta pantalla]
-  E --> G[VS o Equipos · pizarra compartida]
-  E --> H[En vivo · pizarra + móviles]
+  D2 --> E
+  E ==> F[Individual · en la pizarra]
+  E ==> G[VS o Equipos · en la pizarra]
+  E --> H[En vivo · pizarra + móviles de los alumnos]
   E --> I[Tarea · para casa]
   H --> J[Elijo el bucle: rondas · carrera · tablero · pedir la palabra]
   J --> K[PIN y QR · los alumnos entran con apodo]
@@ -113,14 +135,30 @@ flowchart TD
 
 **El hueco, dicho claro**: el viaje termina en el informe de UNA partida. El
 profe ve cómo fue *esa* sesión, pero no cómo va *su clase*, porque el sistema no
-sabe quién es "Juan": cada partida crea apodos nuevos y desechables (R3 + la
-decisión de no dar cuenta al alumno). Ese es exactamente el contenido de **D1 ·
-identidad del alumno** (`docs/decisiones-pendientes.md`), y por eso es la
-siguiente pieza estructural: no añade una función, **cierra el viaje**.
+sabe quién es "Juan": cada partida crea apodos nuevos y desechables (R3).
 
-Y una consecuencia que conviene ver: D1 es además el prerrequisito del PIN/NFC
-para pizarras (U2-U4) y de los informes por alumno. Tres cosas paradas por la
-misma pieza que falta.
+**DECISIÓN: se pospone a propósito** (no es un olvido). Daría muchísimo al
+docente —vería el avance DURANTE el curso y no solo al acabar la actividad— pero
+toda solución conocida tiene un coste que choca con el norte:
+
+- **Cuentas para el alumno** → choca con R3 y con "no somos un LMS" (§4).
+- **Contraseñas** → el profe acaba creándolas, actualizándolas y recordándolas:
+  choca con R2 ("el profe no configura nada").
+- **Huella del dispositivo** como sustituto de la contraseña ("se abrió en el
+  equipo de Juan", marcar como sospechoso si cambia) → hay que estudiarlo con
+  cuidado: si Juan presta su móvil para una tarea, el uso es legítimo. Y una
+  línea roja: **el docente NO debe ver marca ni modelo del aparato del alumno**.
+- **Delegarlo a Classroom** no resuelve: tampoco lo gestiona bien.
+
+La forma que más se acerca al norte (a estudiar, no decidida): el profe crea sus
+salones (*5.º A*, con su lista de 30 nombres), y el alumno entra **con el código
+del profe y elige su nombre de la lista, sin contraseña** — la identidad la pone
+el aula, no el sistema.
+
+Antes de tocar código hace falta **ver cómo lo resuelven otras apps** y comparar
+opciones por impacto. Queda al FINAL de la cola, con estudio propio pendiente
+(`docs/decisiones-pendientes.md` D1). Y conviene saber lo que arrastra: el
+PIN/NFC de pizarras (U2-U4) y los informes por alumno dependen de esta pieza.
 
 ## 8. Cómo se relaciona con el resto de la documentación
 
