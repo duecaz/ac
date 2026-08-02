@@ -4,10 +4,13 @@
 > construye; **este dice qué construimos y para quién**. Si una ley y el norte
 > chocan, gana el norte y la ley se replantea.
 >
-> **Estado** (v1.51.366): §1 escena, §3 restricciones, §4 "lo que no somos" y
-> §5 referentes están CONFIRMADAS por el usuario. §5 queda **pendiente de
-> DETALLAR** (hoy es un esquema; hace falta bajar cada fila a ejemplos concretos
-> para que no queden dudas). El resto describe lo que ya está en el código.
+> **Estado** (v1.51.367). CONFIRMADO por el usuario: §1 escena · §3 R1-R6 · §4
+> "lo que no somos" · §5 referentes (⏳ pendiente de DETALLAR: hoy es un esquema
+> y hace falta bajar cada fila a ejemplos concretos).
+> **[CONFIRMAR]**: §2b presupuesto de tiempo · §6d señales de que vamos bien.
+> §3 R7 (privacidad de menores), §3b actores, §3c degradación y §6e vocabulario
+> describen lo que YA hacen el código y las reglas del servidor — salvo la
+> columna "se dice" del vocabulario, que es la decisión que falta aplicar.
 
 ---
 
@@ -37,6 +40,21 @@ Todo lo que sigue se juzga contra esa escena.
 > La foto por tramos está en `docs/arquitectura-modulos.md` y ahora se regenera
 > con cada cambio, así que la desviación deja de ser invisible.
 
+## 1b. El ciclo de una clase: antes · durante · después
+
+Sirve para ubicar cualquier función antes de discutirla. La app vive sobre todo
+en el **durante**, y ahí manda el reloj.
+
+| | Qué hace el profe | Cuánto dura | Qué NO puede pasar |
+|---|---|---|---|
+| **ANTES** | busca una actividad o la crea; a veces el día anterior, a veces 3 minutos antes | minutos, y a menudo con prisa | que haya que preparar algo obligatorio para poder jugar (R2) |
+| **DURANTE** | proyecta, elige el modo y juega unos minutos; atiende a la clase, no a la app | **la actividad son minutos** dentro de la sesión | que la app pida atención (un error, una espera, un ajuste): la clase se cae con ella (R6) |
+| **DESPUÉS** | mira quién falló qué, comenta, y sigue con su clase | segundos, o nada | que revisar exija exportar, cruzar hojas o entrar a otro sitio |
+
+> **Lo que esto implica**: casi todo el valor está en el DURANTE, pero casi todo
+> el tiempo de decisión del profe está en el ANTES. Una función que mejora el
+> durante a costa de complicar el antes suele ser un mal cambio.
+
 ## 2. La promesa (una frase)
 
 > **Convertir cualquier contenido del profe en una actividad jugable en clase,
@@ -46,6 +64,22 @@ Lo que hace única a la app frente a los referentes: **el mismo contenido se jue
 de cinco maneras** (uno solo, duelo, equipos, toda la clase en vivo, o de tarea)
 sin volver a escribirlo. Esa es la razón de ser del modelo de cuatro capas: si
 una actividad supiera en qué modo corre, esa promesa sería imposible de mantener.
+
+## 2b. El presupuesto de tiempo **[CONFIRMAR]**
+
+La promesa de §2 es medible o no es nada. Propuesta de objetivos — no son
+métricas de vanidad, son el listón contra el que se juzga una pantalla nueva:
+
+| Momento | Objetivo |
+|---|---|
+| De abrir la app a **estar jugando** una actividad que ya tengo | **≤ 3 toques** y ≤ 15 segundos |
+| De decidir "quiero una de tildes" a **tenerla lista** (buscada en la biblioteca) | ≤ 1 minuto |
+| De crear una actividad de 5 preguntas desde cero | ≤ 3 minutos |
+| De abrir sala en vivo a **el primer alumno dentro** | ≤ 30 segundos (PIN + QR a la vista) |
+| De terminar a **ver quién falló qué** | ≤ 2 toques, sin exportar nada |
+
+> Si una función añade un paso a cualquiera de estas filas, tiene que quitar
+> otro o justificar muy bien por qué.
 
 ## 3. Las restricciones duras
 
@@ -60,6 +94,40 @@ planteada, aunque funcione en el portátil del que la programa.
 | **R4** | **La red del colegio es mala** y los móviles se bloquean | Todo estado importante vive en el servidor como INSTANTE, no como temporizador local; las escrituras se reintentan solas; recargar nunca pierde nada |
 | **R5** | **El servidor es una Raspberry Pi compartida** | Los límites son reales y están declarados (§25); una función que multiplique las consultas por alumno hay que medirla ANTES |
 | **R6** | **La clase no espera.** Un fallo con 33 críos delante no se depura | Fallar en silencio está prohibido: o funciona, o lo dice claro y sigue |
+| **R7** | **Son MENORES.** Lo que se guarda de un alumno es lo mínimo para que la clase funcione | Nada de datos personales más allá del nombre que el profe usa en el aula; sin telemetría del alumno; **el docente NO ve marca ni modelo del aparato**; leer historial exige sesión de profe; la retención tiene fecha de caducidad (§25) |
+
+## 3b. Los actores, y qué puede cada uno
+
+Cuatro, ni uno más. Cada uno existe en las reglas del servidor (`core/pbRules.js`),
+no solo en la interfaz — por eso esta tabla se puede contrastar con el código.
+
+| Actor | Cómo se identifica | Puede | NO puede |
+|---|---|---|---|
+| **Profe (dueño)** | cuenta (Google o alta por admin) | crear/editar SUS actividades · abrir salas · crear tareas · ver informes | tocar actividades de otro (`owner`), ni ver historiales que no sean de sus sesiones |
+| **Profe (visitante)** | cuenta | **usar** una actividad pública de la biblioteca · darle "me gusta" · reportarla | editar la original (se la lleva como copia suya) |
+| **Alumno** | **sin cuenta**: PIN de sala o enlace de tarea + apodo | entrar, jugar, enviar SU respuesta (atada a su dispositivo, §22-4) | ponerse puntos · editar la respuesta de otro · tocar el estado de la sala · leer el historial de nadie |
+| **Admin** | rol `admin` | dar/quitar rol de profe · ver reportes · crear las colecciones | — |
+
+> **Cualquiera sin cuenta** puede además *ver* la biblioteca pública (`visibility
+> = "public"`). Es la puerta de entrada del §1: buscar una actividad ya hecha.
+
+## 3c. Qué pasa cuando algo falla (degradación declarada)
+
+R6 dice que la clase no espera. Eso obliga a decidir **de antemano** cómo se
+comporta la app rota, en vez de improvisar con 33 críos delante.
+
+| Si falla… | La app debe… | Hoy |
+|---|---|---|
+| **Internet / el servidor** | seguir jugando en la pizarra con lo que ya está cargado; encolar lo que haya que guardar y reenviarlo solo | ✅ colas de resultados e intentos · driver local |
+| **La conexión de UN móvil** | que ese alumno siga y su respuesta llegue tarde pero llegue; la sala no se entera | ✅ reintentos + settle de rezagadas |
+| **El proyector sin sonido** | el juego se entiende sin audio (el sonido acompaña, nunca informa) | ✅ mute + señales visuales |
+| **Una plantilla concreta** | que el fallo se quede en esa actividad, no tumbe la página | ⚠️ parcial: hay boot-guard, pero no un aislamiento declarado por plantilla |
+| **El alumno llega tarde o recarga** | entrar/continuar donde estaba, sin perder nada | ✅ instantes del servidor + reanudar carrera |
+
+> **La regla que las une**: *fallar en silencio está prohibido*. Si algo no se
+> pudo guardar, se dice. La prueba de carga que informaba "0 filas" cuando en
+> realidad el servidor rechazaba con 403 fue exactamente este error, y costó
+> tiempo buscando en el hardware lo que era una regla.
 
 ## 4. Lo que NO somos ✅ CONFIRMADO
 
@@ -158,6 +226,49 @@ estructural, en este orden:
 > el norte es una decisión huérfana. Con el tiempo, las huérfanas son las que
 > nadie sabe por qué están y nadie se atreve a quitar.
 
+## 6d. Señales de que vamos bien **[CONFIRMAR]**
+
+Sin esto, "mejorar" es opinión. Propuesta de señales — ninguna necesita
+analítica ni espiar a nadie (R7): salen de preguntar al profe y de mirar el repo.
+
+| Señal | Cómo se ve | Por qué esa |
+|---|---|---|
+| **El profe REPITE a la semana siguiente** | preguntándole | es la única señal que no se puede fingir |
+| **La usa sin avisar a nadie** | no hay mensajes de "no me funciona" | R6: si la clase se cayó, lo sabemos |
+| **La actividad empieza dentro del presupuesto** (§2b) | cronómetro en mano, una vez al mes | la promesa es el tiempo |
+| **Ninguna clase se rompe por un fallo nuestro** | los reportes del profe | R6 otra vez |
+| **El esfuerzo cae donde el profe pasa** | tabla por tramos de `arquitectura-modulos.md` | evita repetir lo de esta semana (blindar el modo minoritario) |
+
+**Lo que NO vamos a medir**, aunque sea fácil: nada del alumno más allá de lo que
+la clase necesita (R7). Ni cuántas veces abre, ni desde qué aparato, ni cuánto
+tarda en responder fuera de la partida.
+
+## 6e. UNA COSA, UN NOMBRE (vocabulario)
+
+Hoy la interfaz llama a lo mismo de tres maneras. Medido en `views/`: **sala 46 ·
+sesión 24 · partida 15** para el mismo objeto; **tarea 31 · intento 28 ·
+entrega 5**. Eso no es cosmética: el profe aprende un nombre, el código usa otro
+y la documentación un tercero, y cada uno arrastra su malentendido.
+
+**La palabra que manda** (propuesta, y luego se aplica en UI y docs):
+
+| Concepto | **Se dice** | En el código | Nunca se dice |
+|---|---|---|---|
+| Lo que el profe crea y guarda | **actividad** | `activities` | "juego", "ejercicio" |
+| La mecánica con la que se juega | **plantilla** | `templates/*` | "tipo", "formato" |
+| Cómo se organiza la clase para jugar | **modo** (Individual · VS · Equipos · En vivo · Tarea) | `MODE_DEFS` | "método" |
+| La forma del juego DENTRO de "en vivo" | **bucle** (rondas · carrera · tablero · pedir la palabra) | `LIVE_LOOPS` | "modo en vivo" |
+| El encuentro en vivo, con su PIN | **sala** | `live_sessions` | ~~sesión~~, ~~partida~~ |
+| Lo que un alumno envía en la sala | **respuesta** | `live_answers` | "envío" |
+| El trabajo que se manda fuera de clase | **tarea** | `assignments` | "deber", "asignación" |
+| Lo que el alumno entrega de una tarea | **intento** | `assignment_attempts` | ~~entrega~~ (un intento es uno de varios) |
+| Lo que queda de jugar en Individual | **resultado** | `results` | "puntuación guardada" |
+
+> **Deuda declarada**: el código dice `live_sessions` y la UI dirá "sala". No se
+> renombra la colección (migración con datos vivos, coste alto y beneficio nulo
+> para el profe); lo que se unifica es **lo que ve y lee la gente**. La tabla es
+> el puente, y el `docgen` puede vigilarla más adelante.
+
 ## 7. El viaje del profesor — dónde estamos
 
 Esto es lo que hoy puede hacer, de principio a fin. Las flechas **gruesas** son
@@ -229,7 +340,12 @@ en "ideas".
 | **4** | Terminar la ficha 2b de live (ventana de lectura en carrera · dial del lobby) | §26 + estudio D7 | Sigue siendo correcto, pero sirve al modo minoritario: va DESPUÉS de lo de arriba |
 | **5** | Partir `views/hostLive.js` (1031 líneas) | §23 + "candidatos a partir" del mapa | Mismo motivo que el 4: es deuda real, pero de la zona menos usada |
 | **6** | **D1 · identidad del alumno**, con estudio propio previo | §7 (el viaje se corta ahí) · R2 · R3 · §4 | Cierra el viaje y desbloquea 3 cosas, pero toda solución conocida choca con el norte: primero se estudia cómo lo resuelven otros |
-| **7** | D3 imprimible · D5 taxonomía · D2 duplicar como otra plantilla | `decisiones-pendientes.md` | Módulos que se pueden añadir después sin rediseñar nada |
+| **7** | **Unificar el vocabulario en la UI** (§6e) | §6e, medido: sala/sesión/partida conviven | Barato y se nota: el profe aprende UN nombre. Se hace de paso al tocar cada pantalla, no como obra aparte |
+| **8** | D3 imprimible · D5 taxonomía · D2 duplicar como otra plantilla | `decisiones-pendientes.md` | Módulos que se pueden añadir después sin rediseñar nada |
+
+**Fuera de la cola, y a propósito**: R7 (privacidad de menores) no es una tarea
+sino un filtro permanente — se aplica a todo lo que entre. Si alguna función
+futura pide datos del alumno "porque son útiles", esa es la conversación.
 
 > **Lo que cambió al escribir el norte**: la ficha 2b y partir `hostLive` estaban
 > arriba por inercia (era lo que teníamos entre manos). Al derivar la cola de la
