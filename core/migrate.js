@@ -89,11 +89,15 @@ export function newActivityId() {
 // Counts whatever is the "items" of an activity, regardless of content shape.
 // Used by views to display "N elementos" without assuming the template.
 // (Incluye `pins` de Etiqueta-el-diagrama; antes devolvía 0 para esa plantilla.)
+// DÓNDE VIVEN LOS ELEMENTOS de una actividad, por orden de preferencia. Cada
+// plantilla nombra su colección a su manera y este es el único sitio que lo
+// sabe: lo consultan el contador de ítems y el buscador (`core/search.js`).
+export const ITEM_KEYS = ['items', 'entries', 'pairs', 'groups', 'words', 'passages', 'pins'];
+
 export function activityItemCount(a) {
   const c = a?.content || {};
-  return (c.items?.length ?? c.entries?.length ?? c.pairs?.length
-        ?? c.groups?.length ?? c.words?.length ?? c.passages?.length
-        ?? c.pins?.length ?? 0);
+  for (const k of ITEM_KEYS) if (c[k]) return c[k].length;
+  return 0;
 }
 
 // Nº de PÁGINAS (pantallas) que recorre el alumno — distinto de nº de elementos.

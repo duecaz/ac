@@ -4,7 +4,7 @@
 > construye; **este dice qué construimos y para quién**. Si una ley y el norte
 > chocan, gana el norte y la ley se replantea.
 >
-> **Estado** (v1.51.374). CONFIRMADO por el usuario: §1 escena · §2b presupuesto
+> **Estado** (v1.51.375). CONFIRMADO por el usuario: §1 escena · §2b presupuesto
 > de tiempo · §3 restricciones · §4 "lo que no somos" · §5 referentes en lo
 > esencial (⏳ pendiente de un ESTUDIO: documentarse y probar a fondo los
 > referentes para saber qué partes encajan con nuestra escena).
@@ -210,6 +210,14 @@ suele ser un alumno**, con el profe al lado conduciendo.
 > - **El "no hay" es un resultado válido y tiene que llevar a CREAR**, en el
 >   mismo sitio y sin volver atrás. Un vacío mudo obliga a rehacer el camino.
 >
+> **Aplicado (v1.51.375)**: las dos consecuencias son código y son test.
+> `core/search.js` es el ÚNICO buscador (antes estaba copiado en la home y en la
+> biblioteca): busca sin tildes, por palabras en cualquier orden y **también
+> dentro del contenido** — el tema suele estar en las preguntas, no en el
+> título. Y el vacío ya no es mudo: dice qué no encontró y ofrece *crear una* /
+> *buscar en la biblioteca*. Lo fija [`tests/search.test.mjs`](../tests/search.test.mjs),
+> donde cada caso es un falso negativo que no puede volver.
+>
 > **La regla general**: si una función añade un paso a cualquiera de estas filas,
 > tiene que quitar otro o justificar muy bien por qué. Y el que más pesa es
 > **avanzar y revelar**: son los gestos que el profe repite en cada pregunta.
@@ -358,7 +366,7 @@ cada una tiene un test que la hace cumplir. Se lee de izquierda a derecha:
 |---|---|
 | **R2 "el profe no configura nada" no tiene ley ni test.** Es la restricción que más decisiones de UI debería gobernar (cuántos ajustes salen antes de jugar, qué se deriva solo) y hoy vive solo como intención | ⚠️ **falta la ley** — candidata a §27 |
 | **R2b tampoco tiene ley ni test**, y este es más delicado: mientras un alumno juega en la pizarra, la cuenta del profe está abierta. Hoy no hay nada destructivo a la vista porque el juego va a pantalla completa, pero es una propiedad no vigilada: una pantalla nueva podría dejar un "Editar" al alcance | ⚠️ **falta la ley** — se puede escribir como test: en modo juego, ningún control destructivo en el DOM |
-| **El tramo "buscar/crear" no tiene ley propia**, pese a ser por donde pasa TODA clase (§1) y tener el ratio de test más bajo (0,29) | ⚠️ deuda de prioridad, ya medida en `arquitectura-modulos.md` |
+| **El tramo "buscar/crear" no tiene ley propia**, pese a ser por donde pasa TODA clase (§1) y tener el ratio de test más bajo (0,29 → 0,39 con el buscador único) | ⚠️ deuda de prioridad, ya medida en [`arquitectura-modulos.md`](arquitectura-modulos.md). Primera regla escrita como test: **buscar es binario** (§2b) → `tests/search.test.mjs` |
 | §26 (bucles congelados) se desprende de R6, pero **cubre el modo minoritario**; ninguna ley cubre con el mismo detalle los modos de pizarra, que son los habituales | ⚠️ desequilibrio declarado |
 
 ## 6c. CÓMO SE DECIDE LA ARQUITECTURA
@@ -541,7 +549,7 @@ en "ideas".
 
 | # | Qué | Se desprende de | Por qué ahí |
 |---|---|---|---|
-| **1** | **Cubrir "buscar/crear"**: la home, la biblioteca y el editor | §1 (por ahí pasa TODA clase) + la medición 0,29 | Es el tramo más usado y el menos protegido. Si el editor rompe la clave de una actividad, el profe lo descubre con 33 críos delante |
+| **1** | **Cubrir "buscar/crear"**: la home, la biblioteca y el editor | §1 (por ahí pasa TODA clase) + la medición 0,29 | Es el tramo más usado y el menos protegido. Si el editor rompe la clave de una actividad, el profe lo descubre con 33 críos delante. **En marcha** (v1.51.375): el BUSCADOR ya es uno solo y testeado (`core/search.js` · `tests/search.test.mjs`, ratio del tramo 0,29 → 0,39). Queda el EDITOR |
 | **2** | **Las leyes que faltan para R2 y R2b** ("el profe no configura" · "el que toca es un alumno sobre la cuenta del profe") | §6b, huecos declarados | Sin la primera, cada pantalla nueva decide por su cuenta cuántos ajustes enseña. La segunda es **testeable hoy**: en modo juego, ningún control destructivo en el DOM — y protege de un error caro (un niño tocando "borrar" en la cuenta del profe, con la clase mirando) |
 | **3** | **Cubrir las mecánicas en pizarra** (Individual · VS · Equipos) | §1 ("lo habitual") + medición 0,47 y 0,17 | Es donde se juega de verdad. Las 13 plantillas tienen el ratio de test más bajo del repo |
 | **4** | Terminar la ficha 2b de live (ventana de lectura en carrera · dial del lobby) | §26 + estudio D7 | Sigue siendo correcto, pero sirve al modo minoritario: va DESPUÉS de lo de arriba |

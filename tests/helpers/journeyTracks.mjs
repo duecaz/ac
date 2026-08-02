@@ -16,7 +16,7 @@
 // revisable a listo y adivinado.
 
 export const TRACKS = [
-  ['buscar/crear', /^views\/(home|explore|landing|author|editor)|^core\/(homePreview|activityThumb|likes)/],
+  ['buscar/crear', /^views\/(home|explore|landing|author|editor)|^core\/(homePreview|activityThumb|likes|search)\.js/],
   ['jugar en pizarra', /^views\/(playerView|startScreen|vsView|teamsView|memoryView|listView)|^core\/(soloPlayer|soloTimer|teams|vsAnimations|modes)/],
   ['jugar en vivo', /live|Live|^kernel\/session|^views\/session/],
   ['informes/tareas', /reports|sessionTable|sessionModel|itemStats|assignment|attempt/i],
@@ -34,7 +34,7 @@ export function trackOf(file) {
 /** Tramo de una SUITE de tests, por su nombre. Mismo criterio: explícito. */
 export const TEST_TRACKS = [
   ['jugar en vivo', /live|race|session|unscorable|deadline|clock/i],
-  ['buscar/crear', /home|activityCard|explore|author|editor|likes|storage/i],
+  ['buscar/crear', /home|activityCard|explore|author|editor|likes|storage|search/i],
   ['informes/tareas', /report|assignment|itemStat|sessionTable|attempt|idempot/i],
   ['plantillas (mecánicas)', /template|content|qaAdapt|scoring|textMarks|wheel|ballsort|diagram|crossword|quizAnswer|memory/i],
   ['jugar en pizarra', /solo|mode|team|render|presentation|fullscreen|styles|skins/i],

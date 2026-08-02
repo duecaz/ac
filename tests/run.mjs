@@ -76,6 +76,7 @@ console.log('\n▶ liveRules'); await import('./liveRules.test.mjs');
 console.log('\n▶ skins'); await import('./skins.test.mjs');
 console.log('\n▶ newTemplate'); await import('./newTemplate.test.mjs');
 console.log('\n▶ activityCard'); await import('./activityCard.test.mjs');
+console.log('\n▶ search'); await import('./search.test.mjs');
 console.log('\n▶ docs'); await import('./docs.test.mjs');
 console.log('\n▶ layers'); await import('./layers.test.mjs');
 console.log('\n▶ moduleRefs'); await import('./moduleRefs.test.mjs');

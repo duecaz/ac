@@ -6,6 +6,7 @@ import { listTemplates } from '../core/registry.js';
 import { confirmModal, toast } from '../core/toast.js';
 import { activityItemCount as itemCount } from '../core/migrate.js';
 import { activityCardHtml } from '../core/activityCard.js';
+import { searchActivities } from '../core/search.js';
 import { buildSwitchOptions } from './switchTemplate.js';
 import { canHost } from '../core/authGate.js';
 import { modeAuthHint } from '../core/modes.js';
@@ -18,14 +19,10 @@ export function renderHome(rootSel) {
   const templates = listTemplates();
 
   function paint() {
-    const term = _filter.q.toLowerCase();
-    const acts = all.filter(a => {
-      if (_filter.template && a.template !== _filter.template) return false;
-      if (!term) return true;
-      return (a.title || '').toLowerCase().includes(term)
-          || (a.subtitle || '').toLowerCase().includes(term)
-          || (a.tags || []).some(t => String(t).toLowerCase().includes(term));
-    });
+    // El filtro NO se escribe aquí: es el mismo buscador que la biblioteca
+    // (`core/search.js`), con sus reglas — sin tildes, por palabras y también
+    // dentro del contenido. Estaba copiado en las dos vistas.
+    const acts = searchActivities(all, _filter);
 
     mount(rootSel, html`
       <div class="home-wrap">
@@ -42,7 +39,7 @@ export function renderHome(rootSel) {
           <div class="home-tools">
             <div class="home-search">
               <i class="bi bi-search"></i>
-              <input id="h-q" placeholder="Buscar por título o tag…" value="${escapeHtml(_filter.q)}">
+              <input id="h-q" placeholder="Buscar por tema, título o tag…" value="${escapeHtml(_filter.q)}">
             </div>
             <details class="home-filter${_filter.template ? ' is-set' : ''}">
               <summary class="home-config" title="Filtrar por plantilla" aria-label="Filtrar por plantilla"><i class="bi bi-sliders2"></i></summary>
@@ -60,7 +57,7 @@ export function renderHome(rootSel) {
           <div class="home-empty">
             <i class="bi bi-collection"></i>
             <p>Aún no hay actividades. Crea la primera.</p>
-          </div>` : `<div class="home-empty"><p>Sin resultados con ese filtro.</p></div>`) : `
+          </div>` : emptySearch()) : `
           <div class="home-grid">
             ${acts.map(card).join('')}
           </div>`}
@@ -80,6 +77,22 @@ export function renderHome(rootSel) {
     };
     const tEl = document.getElementById('h-tpl');
     if (tEl) tEl.onchange = e => { _filter.template = e.target.value; paint(); };
+  }
+
+  // "No aparece" es un RESULTADO, no un callejón: buscar es binario (norte §2b)
+  // — o está, o el profe se va a crearla. Así que el vacío ofrece las dos
+  // salidas reales (crear · mirar en la biblioteca) en vez de dejarle mirando
+  // "Sin resultados" con la clase esperando.
+  function emptySearch() {
+    const q = _filter.q.trim();
+    return `<div class="home-empty">
+      <i class="bi bi-search"></i>
+      <p>${q ? `No tienes ninguna actividad sobre <b>${escapeHtml(q)}</b>.` : 'Ninguna actividad con ese filtro.'}</p>
+      <div class="home-empty-actions">
+        <a href="#/new" class="btn-primary-solid"><i class="bi bi-plus-lg"></i> Crear una</a>
+        <a href="#/explore" class="btn-ghost"><i class="bi bi-globe"></i> Buscar en la biblioteca</a>
+      </div>
+    </div>`;
   }
 
   function card(a) {

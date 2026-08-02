@@ -218,6 +218,12 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
 - **Gama baja** (`core/perf.js`): `ww-lite` en `<html>` si ≤4 núcleos o ≤2GB → sin bucles de
   animación en reposo (cuerda Lottie estática, marquesina arcade quieta). El VS debe ser fluido en
   pizarras A55; nunca añadir bucles rAF continuos en el hilo principal sin gate `ww-lite`.
+- **Buscar actividades**: SIEMPRE `searchActivities` (`core/search.js`) — uno solo para la
+  home y la biblioteca (estaba copiado en las dos, con `includes` sobre título/subtítulo/tags).
+  Buscar es BINARIO (norte §2b): sin tildes ni mayúsculas, por PALABRAS en cualquier orden, y
+  también DENTRO del contenido (el tema suele estar en las preguntas). El "no hay" no es un
+  callejón: lleva a CREAR. Vigilado por `tests/search.test.mjs` — cada caso es un falso
+  negativo que mandaría al profe a rehacer algo que ya tiene, con la clase delante.
 - **Filtros PocketBase**: SIEMPRE `pbEscape`/`pbFilterParam` (`core/pbFilter.js`), nunca
   `encodeURIComponent` a pelo (no escapa la comilla simple).
 - **Qué persiste cada modo**: cuadro único en `core/persistPolicy.js` (Individual → `results`;

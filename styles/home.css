@@ -488,6 +488,11 @@ body {
 .home-empty { text-align: center; padding: 60px 20px; color: var(--dash-muted); }
 .home-empty i { font-size: 54px; opacity: .5; }
 .home-empty p { margin-top: 14px; font-size: 15px; }
+/* "No aparece" es una bifurcación, no un callejón (norte §2b: buscar es
+   binario). El vacío ofrece las salidas reales, no un mensaje y ya. */
+.home-empty-actions {
+  margin-top: 18px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
+}
 
 /* ───────────────────────────── Responsive ───────────────────────────── */
 @media (max-width: 640px) {

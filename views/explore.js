@@ -5,6 +5,7 @@ import { on } from '../core/events.js';
 import { navigate } from '../core/router.js';
 import { activityCardHtml } from '../core/activityCard.js';
 import { listPublic } from '../core/storage.js';
+import { searchActivities } from '../core/search.js';
 
 export async function renderExplore(rootSel) {
   mount(rootSel, html`
@@ -12,7 +13,7 @@ export async function renderExplore(rootSel) {
       <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <h2 class="mb-0"><i class="bi bi-globe"></i> Explorar</h2>
         <div class="input-group" style="max-width:360px">
-          <input id="exp-q" class="form-control" placeholder="Buscar por título o tag…">
+          <input id="exp-q" class="form-control" placeholder="Buscar por tema, título o tag…">
           <select id="exp-lang" class="form-select" style="max-width:120px">
             <option value="">Todos</option>
             <option value="es" selected>Español</option>
@@ -44,16 +45,24 @@ export async function renderExplore(rootSel) {
   }
 
   function paint() {
-    const term = document.getElementById('exp-q').value.trim().toLowerCase();
-    const filtered = cache.filter(r => {
-      if (!term) return true;
-      const a = r.data || {};
-      return (a.title || '').toLowerCase().includes(term)
-          || (a.subtitle || '').toLowerCase().includes(term)
-          || (r.tags || []).some(t => String(t).toLowerCase().includes(term));
-    });
+    const term = document.getElementById('exp-q').value.trim();
+    // Mismo buscador que "Mis actividades" (`core/search.js`): sin tildes, por
+    // palabras y también dentro del contenido. Los tags reales viven en la FILA
+    // (r.tags), fuera del blob → se los damos a la actividad al mirarla.
+    const filtered = searchActivities(cache, { q: term }, r => ({ ...(r.data || {}), tags: r.tags || [] }));
     const list = document.getElementById('exp-list');
-    if (!filtered.length) { list.innerHTML = `<p class="text-muted text-center py-5">Sin resultados.</p>`; return; }
+    // Buscar es binario (norte §2b): si no está, la salida es CREARLA, no un
+    // "sin resultados" que deja al profe parado delante de la clase.
+    if (!filtered.length) {
+      list.innerHTML = `<div class="home-empty">
+        <i class="bi bi-search"></i>
+        <p>${term ? `Nadie ha publicado nada sobre <b>${escapeHtml(term)}</b>.` : 'La biblioteca está vacía.'}</p>
+        <div class="home-empty-actions">
+          <a href="#/new" class="btn-primary-solid"><i class="bi bi-plus-lg"></i> Crear una</a>
+        </div>
+      </div>`;
+      return;
+    }
     list.innerHTML = `<div class="home-grid">${filtered.map(r => card(r)).join('')}</div>`;
   }
 
