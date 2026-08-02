@@ -1,10 +1,10 @@
 # EL NORTE — para quién es esto, y cómo se decide
 
-> **Rango**: este documento manda sobre los demás. `docs/leyes.md` dice cómo se
+> **Rango**: este documento manda sobre los demás. [`leyes.md`](leyes.md) dice cómo se
 > construye; **este dice qué construimos y para quién**. Si una ley y el norte
 > chocan, gana el norte y la ley se replantea.
 >
-> **Estado** (v1.51.373). CONFIRMADO por el usuario: §1 escena · §2b presupuesto
+> **Estado** (v1.51.374). CONFIRMADO por el usuario: §1 escena · §2b presupuesto
 > de tiempo · §3 restricciones · §4 "lo que no somos" · §5 referentes en lo
 > esencial (⏳ pendiente de un ESTUDIO: documentarse y probar a fondo los
 > referentes para saber qué partes encajan con nuestra escena).
@@ -14,6 +14,51 @@
 > §3 R7 (privacidad de menores), §3b actores, §3c degradación y §6e vocabulario
 > describen lo que YA hacen el código y las reglas del servidor — salvo la
 > columna "se dice" del vocabulario, que es la decisión que falta aplicar.
+
+<!-- GENERADO:nav -->
+### Índice de este documento
+
+- [1. La escena](#1-la-escena)
+- [1b. El ciclo de una clase: antes · durante · después](#1b-el-ciclo-de-una-clase-antes--durante--después)
+- [2. La promesa (una frase)](#2-la-promesa-una-frase)
+- [2b. El presupuesto de tiempo ✅ CONFIRMADO](#2b-el-presupuesto-de-tiempo--confirmado)
+  - [ANTES · el profe llega con la clase preparada](#antes--el-profe-llega-con-la-clase-preparada)
+  - [DURANTE · el montaje, con 33 críos mirando](#durante--el-montaje-con-33-críos-mirando)
+  - [DURANTE · el ritmo de conducción ⭐](#durante--el-ritmo-de-conducción-)
+  - [DURANTE · en vivo (el caso raro)](#durante--en-vivo-el-caso-raro)
+  - [DESPUÉS · revisar, en segundos](#después--revisar-en-segundos)
+- [3. Las restricciones duras](#3-las-restricciones-duras)
+- [3b. Los actores, y qué puede cada uno](#3b-los-actores-y-qué-puede-cada-uno)
+- [3c. Qué pasa cuando algo falla (degradación declarada)](#3c-qué-pasa-cuando-algo-falla-degradación-declarada)
+- [4. Lo que NO somos ✅ CONFIRMADO](#4-lo-que-no-somos--confirmado)
+- [4b. Lo que NO haremos TODAVÍA (aplazado con condición)](#4b-lo-que-no-haremos-todavía-aplazado-con-condición)
+- [5. Los referentes: qué tomamos y qué no ✅ CONFIRMADO · ⏳ falta detallar](#5-los-referentes-qué-tomamos-y-qué-no--confirmado---falta-detallar)
+- [6. El criterio de decisión](#6-el-criterio-de-decisión)
+- [6b. DE DÓNDE SE DESPRENDE CADA LEY — la cadena de derivación](#6b-de-dónde-se-desprende-cada-ley--la-cadena-de-derivación)
+- [6c. CÓMO SE DECIDE LA ARQUITECTURA](#6c-cómo-se-decide-la-arquitectura)
+- [6d. Señales de que vamos bien — APLAZADO](#6d-señales-de-que-vamos-bien--aplazado)
+- [6e. UNA COSA, UN NOMBRE (vocabulario)](#6e-una-cosa-un-nombre-vocabulario)
+- [7. El viaje del profesor — dónde estamos](#7-el-viaje-del-profesor--dónde-estamos)
+- [7b. INVENTARIO: lo que YA tenemos, y dónde encaja](#7b-inventario-lo-que-ya-tenemos-y-dónde-encaja)
+  - [Las 13 plantillas](#las-13-plantillas)
+  - [Los cinco modos](#los-cinco-modos)
+  - [Lo que sostiene todo eso](#lo-que-sostiene-todo-eso)
+- [8. LA COLA, DERIVADA DEL NORTE (no de la inercia)](#8-la-cola-derivada-del-norte-no-de-la-inercia)
+- [9. Cómo se relaciona con el resto de la documentación](#9-cómo-se-relaciona-con-el-resto-de-la-documentación)
+
+### Ir a otro documento
+
+| Documento | Qué responde |
+|---|---|
+| [`leyes.md`](leyes.md) | las 8 leyes, cada una con el test que la vigila |
+| [`arquitectura-modulos.md`](arquitectura-modulos.md) | la radiografía: capas, imports, esfuerzo por tramo y mapa de datos (GENERADO) |
+| [`modos-de-juego.md`](modos-de-juego.md) | contrato de los 5 modos y los 4 bucles en vivo |
+| [`decisiones-pendientes.md`](decisiones-pendientes.md) | lo aplazado, con su condición para reabrirlo |
+| [`estudio-bucles-live.md`](estudio-bucles-live.md) | por qué el vivo es como es (estudio medido) |
+| [`testing.md`](testing.md) | las suites y las cuatro redes de seguridad |
+| [`guia-testeo-companero.md`](guia-testeo-companero.md) | guía de pruebas paso a paso, para alguien no técnico |
+| [`../CLAUDE.md`](../CLAUDE.md) | el mapa de entrada del repo: "quiero X → voy a Y" |
+<!-- /GENERADO:nav -->
 
 ---
 
@@ -65,7 +110,7 @@ Todo lo que sigue se juzga contra esa escena.
 > **Consecuencia incómoda, medida** (v1.51.365): el tramo "en vivo" tiene 0,75
 > líneas de test por línea de código; "buscar/crear" —por donde pasa TODA
 > clase— tiene 0,29, y las plantillas, 0,17. Hemos blindado el modo minoritario.
-> La foto por tramos está en `docs/arquitectura-modulos.md` y ahora se regenera
+> La foto por tramos está en [`arquitectura-modulos.md`](arquitectura-modulos.md#dónde-está-el-esfuerzo-y-dónde-pasa-el-profesor) y ahora se regenera
 > con cada cambio, así que la desviación deja de ser invisible.
 
 ## 1b. El ciclo de una clase: antes · durante · después
@@ -187,7 +232,7 @@ planteada, aunque funcione en el portátil del que la programa.
 
 ## 3b. Los actores, y qué puede cada uno
 
-Cuatro, ni uno más. Cada uno existe en las reglas del servidor (`core/pbRules.js`),
+Cuatro, ni uno más. Cada uno existe en las reglas del servidor ([`core/pbRules.js`](../core/pbRules.js)),
 no solo en la interfaz — por eso esta tabla se puede contrastar con el código.
 
 | Actor | Cómo se identifica | Puede | NO puede |
@@ -297,15 +342,15 @@ cada una tiene un test que la hace cumplir. Se lee de izquierda a derecha:
 
 | Del norte… | …sale esta ley | …vigilada por |
 |---|---|---|
-| **§2 la promesa** (un contenido, muchos modos) | **§0 · CUATRO CAPAS** — la plantilla DECLARA sus políticas (`meta.play`), el modo las consume; una plantilla no sabe en qué modo corre | `layers` · `templateContract` · `scoringSources` · matriz jugable |
-| **§2 la promesa** (el contenido sobrevive al cambio de plantilla) | **§24 · CONTENIDO** — modelos versionados, migración declarada, ids con `rid()` | `templateContract` · regla `id-rid` |
-| **R1 pizarra de gama baja, mirada a 3 m** | **§3 · ESTILO** — el skin cambia TOKENS, la actividad los consume; nada de tamaños fijos; sin bucles de animación en reposo | `styles` (ratchet) · `skins` |
+| **§2 la promesa** (un contenido, muchos modos) | [**§0 · CUATRO CAPAS**](leyes.md#0--el-modelo-de-cuatro-capas--el-norte-de-la-arquitectura) — la plantilla DECLARA sus políticas (`meta.play`), el modo las consume; una plantilla no sabe en qué modo corre | `layers` · `templateContract` · `scoringSources` · matriz jugable |
+| **§2 la promesa** (el contenido sobrevive al cambio de plantilla) | [**§24 · CONTENIDO**](leyes.md#24--ley-de-contenido--el-modelo-evoluciona-por-caminos-declarados) — modelos versionados, migración declarada, ids con `rid()` | `templateContract` · regla `id-rid` |
+| **R1 pizarra de gama baja, mirada a 3 m** | [**§3 · ESTILO**](leyes.md#3--ley-de-estilo--las-cuatro-capas-del-píxel) — el skin cambia TOKENS, la actividad los consume; nada de tamaños fijos; sin bucles de animación en reposo | `styles` (ratchet) · `skins` |
 | **R2b el que toca es un ALUMNO, sobre la cuenta del profe** | ⚠️ **sin ley todavía** — hoy lo cumple el diseño (el juego entra a pantalla completa y el chrome desaparece), pero nada lo impide en una pantalla nueva | ⚠️ ningún test |
-| **R3 el alumno no tiene cuenta** | **§22 · CONFIANZA** — el cliente AFIRMA, el veredicto lo pone el host o una regla del servidor | `pbRules` · `liveRules` · `answerSafety` · `modeAuth` |
-| **R3 + R6** (nadie edita lo de otro, y el fallo se ve) | **§21 · DATOS** — cada colección tiene UN dueño; quien necesite datos le pide un método | regla `pb-dueno` |
-| **R4 la red del colegio es mala** | **§23 · VISTA** — el ritmo es un INSTANTE del servidor, nunca un temporizador local; cada reloj por su primitivo; la vista posee su ciclo de vida | `deadlineTicker` · `clock` · `events` · `idempotency` |
-| **R5 el servidor es una Pi compartida** | **§25 · CAPACIDAD** — los límites son UNO y están declarados (200 actividades · 2 MB · 120 días) | `quotas` (paridad módulo↔panel↔script) |
-| **R6 la clase no espera** | **§26 · BUCLES LIVE** — el catálogo está congelado: fase nueva = decisión escrita | `liveLoops` |
+| **R3 el alumno no tiene cuenta** | [**§22 · CONFIANZA**](leyes.md#22--ley-de-confianza--el-cliente-afirma-el-veredicto-lo-pone-otro) — el cliente AFIRMA, el veredicto lo pone el host o una regla del servidor | `pbRules` · `liveRules` · `answerSafety` · `modeAuth` |
+| **R3 + R6** (nadie edita lo de otro, y el fallo se ve) | [**§21 · DATOS**](leyes.md#21--ley-de-datos--cada-colección-tiene-un-dueño) — cada colección tiene UN dueño; quien necesite datos le pide un método | regla `pb-dueno` |
+| **R4 la red del colegio es mala** | [**§23 · VISTA**](leyes.md#23--ley-de-vista--ciclo-de-vida-de-una-pantalla) — el ritmo es un INSTANTE del servidor, nunca un temporizador local; cada reloj por su primitivo; la vista posee su ciclo de vida | `deadlineTicker` · `clock` · `events` · `idempotency` |
+| **R5 el servidor es una Pi compartida** | [**§25 · CAPACIDAD**](leyes.md#25--capacidad--el-sistema-tiene-límites-y-son-uno) — los límites son UNO y están declarados (200 actividades · 2 MB · 120 días) | `quotas` (paridad módulo↔panel↔script) |
+| **R6 la clase no espera** | [**§26 · BUCLES LIVE**](leyes.md#26--bucles-en-vivo--el-catálogo-está-congelado) — el catálogo está congelado: fase nueva = decisión escrita | `liveLoops` |
 
 **Los huecos que esta tabla destapa** (y que hay que resolver, no esconder):
 
@@ -430,7 +475,7 @@ el aula, no el sistema.
 
 Antes de tocar código hace falta **ver cómo lo resuelven otras apps** y comparar
 opciones por impacto. Queda al FINAL de la cola, con estudio propio pendiente
-(`docs/decisiones-pendientes.md` D1). Y conviene saber lo que arrastra: el
+([`decisiones-pendientes.md`](decisiones-pendientes.md) D1). Y conviene saber lo que arrastra: el
 PIN/NFC de pizarras (U2-U4) y los informes por alumno dependen de esta pieza.
 
 ## 7b. INVENTARIO: lo que YA tenemos, y dónde encaja
@@ -473,7 +518,7 @@ Ordenar antes que añadir. Esto es todo lo construido, contrastado con la escena
 
 ### Los cinco modos
 
-Ya está en §6e y en el cuadro generado de `CLAUDE.md`. Contra la escena: los tres
+Ya está en §6e y en el cuadro generado de [`CLAUDE.md`](../CLAUDE.md). Contra la escena: los tres
 de pizarra (Individual · VS · Equipos) son el caso habitual; En vivo y Tarea son
 la excepción, y **cada uno tiene su página propia porque son otro montaje
 físico** — no por capricho de la interfaz.
@@ -482,12 +527,12 @@ físico** — no por capricho de la interfaz.
 
 | Pieza | Qué es | Estado |
 |---|---|---|
-| 4 capas + 8 leyes | la arquitectura, cada ley con su test | ✅ vigilado (84 suites) |
-| Mapa de módulos y de datos | generado del código | ✅ `arquitectura-modulos.md` |
+| 4 capas + 8 leyes | la arquitectura, cada ley con su test | ✅ vigilado (84 suites) — [`leyes.md`](leyes.md) |
+| Mapa de módulos y de datos | generado del código | ✅ [`arquitectura-modulos.md`](arquitectura-modulos.md) |
 | Biblioteca pública + cuentas de profe | buscar/usar/publicar | ✅ funciona · ⚠️ poco cubierto (0,29) |
 | Informes (partida y tarea) | quién falló qué | ✅ funciona |
-| Cuotas y retención (§25) | los límites de la Pi | ✅ declarado y verificado |
-| Reglas de servidor (§22) | el alumno no se puntúa | ✅ endurecidas y probadas |
+| Cuotas y retención (§25) | los límites de la Pi ([§25](leyes.md#25--capacidad--el-sistema-tiene-límites-y-son-uno)) | ✅ declarado y verificado |
+| Reglas de servidor (§22) | el alumno no se puntúa ([§22](leyes.md#22--ley-de-confianza--el-cliente-afirma-el-veredicto-lo-pone-otro)) | ✅ endurecidas y probadas |
 
 ## 8. LA COLA, DERIVADA DEL NORTE (no de la inercia)
 

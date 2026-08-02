@@ -22,6 +22,45 @@ Gherkin + decisiones de diseño abiertas). Verificado contra `core/modes.js`,
 
 ---
 
+<!-- GENERADO:nav -->
+### Índice de este documento
+
+- [1. El mapa: dónde vive cada cosa](#1-el-mapa-dónde-vive-cada-cosa)
+- [2. Los dos tipos de modo: `embed` vs. página propia](#2-los-dos-tipos-de-modo-embed-vs-página-propia)
+- [3. ¿Cuándo aparece cada modo? (gateo)](#3-cuándo-aparece-cada-modo-gateo)
+  - [Dos niveles de compatibilidad (la forma recomendada)](#dos-niveles-de-compatibilidad-la-forma-recomendada)
+  - [El editor es un SHELL compartido (anti-deriva)](#el-editor-es-un-shell-compartido-anti-deriva)
+- [4. Contrato de una vista de modo embebido](#4-contrato-de-una-vista-de-modo-embebido)
+- [5. El andamiaje de setup (`renderModeSetup`)](#5-el-andamiaje-de-setup-rendermodesetup)
+  - [5b. Pantalla de inicio estándar del modo Individual (`views/startScreen.js`)](#5b-pantalla-de-inicio-estándar-del-modo-individual-viewsstartscreenjs)
+  - [5c. Política de maquetación del panel VS (`meta.panelFit`)](#5c-política-de-maquetación-del-panel-vs-metapanelfit)
+- [6. Cómo se monta en la página (resumen de `playerView.js`)](#6-cómo-se-monta-en-la-página-resumen-de-playerviewjs)
+- [7. Receta: añadir un MODO nuevo](#7-receta-añadir-un-modo-nuevo)
+- [8. Receta: que una PLANTILLA nueva ofrezca cada modo](#8-receta-que-una-plantilla-nueva-ofrezca-cada-modo)
+- [9. Reglas de juego de cada modo — FICHAS + ESCENARIOS (documento de estudio)](#9-reglas-de-juego-de-cada-modo--fichas--escenarios-documento-de-estudio)
+  - [9.0 Las cinco preguntas que definen un modo](#90-las-cinco-preguntas-que-definen-un-modo)
+  - [9.1 Individual (solo)](#91-individual-solo)
+  - [9.2 VS (duelo, dos en una pantalla)](#92-vs-duelo-dos-en-una-pantalla)
+  - [9.3 Equipos (por turnos, una pantalla)](#93-equipos-por-turnos-una-pantalla)
+  - [9.4 En vivo (host + móviles)](#94-en-vivo-host--móviles)
+  - [9.5 Tarea (asíncrona)](#95-tarea-asíncrona)
+  - [9.6 Cuadro comparativo (las cinco preguntas, de un vistazo)](#96-cuadro-comparativo-las-cinco-preguntas-de-un-vistazo)
+  - [9.7 Invariantes (esto no se negocia)](#97-invariantes-esto-no-se-negocia)
+
+### Ir a otro documento
+
+| Documento | Qué responde |
+|---|---|
+| [`norte.md`](norte.md) | para quién es la app, la escena real y cómo se decide (**manda sobre el resto**) |
+| [`leyes.md`](leyes.md) | las 8 leyes, cada una con el test que la vigila |
+| [`arquitectura-modulos.md`](arquitectura-modulos.md) | la radiografía: capas, imports, esfuerzo por tramo y mapa de datos (GENERADO) |
+| [`decisiones-pendientes.md`](decisiones-pendientes.md) | lo aplazado, con su condición para reabrirlo |
+| [`estudio-bucles-live.md`](estudio-bucles-live.md) | por qué el vivo es como es (estudio medido) |
+| [`testing.md`](testing.md) | las suites y las cuatro redes de seguridad |
+| [`guia-testeo-companero.md`](guia-testeo-companero.md) | guía de pruebas paso a paso, para alguien no técnico |
+| [`../CLAUDE.md`](../CLAUDE.md) | el mapa de entrada del repo: "quiero X → voy a Y" |
+<!-- /GENERADO:nav -->
+
 ## 1. El mapa: dónde vive cada cosa
 
 | Pieza | Archivo | Responsabilidad |

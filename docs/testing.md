@@ -8,6 +8,32 @@
 > (su §5 tiene una tabla "qué suite prueba qué área") · contrato de CSS de actividad
 > (relativo + tokens de skin) → **`docs/estilos-de-actividad.md`**.
 
+<!-- GENERADO:nav -->
+### Índice de este documento
+
+- [1. Suite Node (la de CI)](#1-suite-node-la-de-ci)
+  - [Mapa de suites (qué protege cada una)](#mapa-de-suites-qué-protege-cada-una)
+  - [Añadir una suite](#añadir-una-suite)
+- [2. Self-tests en navegador (panel admin)](#2-self-tests-en-navegador-panel-admin)
+- [2b. Matriz JUGABLE — plantilla × modo (`tools/matrix-smoke.mjs`)](#2b-matriz-jugable--plantilla--modo-toolsmatrix-smokemjs)
+- [2c. ¿Editar el contenido rompe la clave? (`tools/edit-audit.mjs`)](#2c-editar-el-contenido-rompe-la-clave-toolsedit-auditmjs)
+- [3. Verificación headless (layout, táctil, visual)](#3-verificación-headless-layout-táctil-visual)
+- [4. Qué NO está cubierto (y cómo se mitiga)](#4-qué-no-está-cubierto-y-cómo-se-mitiga)
+
+### Ir a otro documento
+
+| Documento | Qué responde |
+|---|---|
+| [`norte.md`](norte.md) | para quién es la app, la escena real y cómo se decide (**manda sobre el resto**) |
+| [`leyes.md`](leyes.md) | las 8 leyes, cada una con el test que la vigila |
+| [`arquitectura-modulos.md`](arquitectura-modulos.md) | la radiografía: capas, imports, esfuerzo por tramo y mapa de datos (GENERADO) |
+| [`modos-de-juego.md`](modos-de-juego.md) | contrato de los 5 modos y los 4 bucles en vivo |
+| [`decisiones-pendientes.md`](decisiones-pendientes.md) | lo aplazado, con su condición para reabrirlo |
+| [`estudio-bucles-live.md`](estudio-bucles-live.md) | por qué el vivo es como es (estudio medido) |
+| [`guia-testeo-companero.md`](guia-testeo-companero.md) | guía de pruebas paso a paso, para alguien no técnico |
+| [`../CLAUDE.md`](../CLAUDE.md) | el mapa de entrada del repo: "quiero X → voy a Y" |
+<!-- /GENERADO:nav -->
+
 ## 1. Suite Node (la de CI)
 
 ```bash

@@ -6,6 +6,35 @@ puede ir a dos sitios distintos, con una recomendación por cada una. Cuando una
 se decide, baja a su handoff (o a `docs/leyes.md` si se convierte en norma) y
 sale de aquí.
 
+<!-- GENERADO:nav -->
+### Índice de este documento
+
+- [Lo que YA está decidido (no re-litigar)](#lo-que-ya-está-decidido-no-re-litigar)
+- [D1 · Identidad del alumno: ¿apodo, clase o cuenta?](#d1--identidad-del-alumno-apodo-clase-o-cuenta)
+- [D2 · ¿El contenido es un objeto propio o vive dentro de la actividad?](#d2--el-contenido-es-un-objeto-propio-o-vive-dentro-de-la-actividad)
+- [D3 · ¿Imprimimos? (hoja de trabajo)](#d3--imprimimos-hoja-de-trabajo)
+- [D4 · ¿Aula SIN internet es un caso soportado?](#d4--aula-sin-internet-es-un-caso-soportado)
+- [D5 · Taxonomía de la biblioteca](#d5--taxonomía-de-la-biblioteca)
+- [D6 · Cuotas y retención — ✅ DECIDIDA Y APLICADA (v1.51.340, ley §25)](#d6--cuotas-y-retención---decidida-y-aplicada-v151340-ley-25)
+- [D7 · Congelar el catálogo de bucles en vivo — ✅ ESTUDIADA Y CONGELADA (ley §26)](#d7--congelar-el-catálogo-de-bucles-en-vivo---estudiada-y-congelada-ley-26)
+- [Estado (decisión del usuario, v1.51.340)](#estado-decisión-del-usuario-v151340)
+  - [Lo aplicado en D6](#lo-aplicado-en-d6)
+- [D1 · Identidad del alumno — POSPUESTA CON MOTIVO (v1.51.365)](#d1--identidad-del-alumno--pospuesta-con-motivo-v151365)
+
+### Ir a otro documento
+
+| Documento | Qué responde |
+|---|---|
+| [`norte.md`](norte.md) | para quién es la app, la escena real y cómo se decide (**manda sobre el resto**) |
+| [`leyes.md`](leyes.md) | las 8 leyes, cada una con el test que la vigila |
+| [`arquitectura-modulos.md`](arquitectura-modulos.md) | la radiografía: capas, imports, esfuerzo por tramo y mapa de datos (GENERADO) |
+| [`modos-de-juego.md`](modos-de-juego.md) | contrato de los 5 modos y los 4 bucles en vivo |
+| [`estudio-bucles-live.md`](estudio-bucles-live.md) | por qué el vivo es como es (estudio medido) |
+| [`testing.md`](testing.md) | las suites y las cuatro redes de seguridad |
+| [`guia-testeo-companero.md`](guia-testeo-companero.md) | guía de pruebas paso a paso, para alguien no técnico |
+| [`../CLAUDE.md`](../CLAUDE.md) | el mapa de entrada del repo: "quiero X → voy a Y" |
+<!-- /GENERADO:nav -->
+
 ## Lo que YA está decidido (no re-litigar)
 
 | Decisión | Igual que… |

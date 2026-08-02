@@ -70,43 +70,43 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 
 | Quiero… | Voy a… |
 |---|---|
-| **SABER PARA QUIÉN ES LA APP y cómo se decide** (la escena, restricciones, qué NO somos, referentes, **de dónde se desprende cada ley**, y la COLA de trabajo derivada) | **`docs/norte.md`** — manda sobre el resto: las leyes dicen CÓMO, el norte dice QUÉ y PARA QUIÉN |
-| **Ver TODAS las leyes/normas del proyecto** (px/token del juego, PB, XSS, versión…) | **`docs/leyes.md`** (índice único: qué · dónde · qué test la vigila) |
-| **VER EL MAPA DE MÓDULOS** (capas, quién importa a quién, dónde está el tamaño) | **`docs/arquitectura-modulos.md`** — GENERADO: `node tools/module-map.mjs` (lo vigila `tests/layers.test.mjs`) |
+| **SABER PARA QUIÉN ES LA APP y cómo se decide** (la escena, restricciones, qué NO somos, referentes, **de dónde se desprende cada ley**, y la COLA de trabajo derivada) | **[`docs/norte.md`](docs/norte.md)** — manda sobre el resto: las leyes dicen CÓMO, el norte dice QUÉ y PARA QUIÉN |
+| **Ver TODAS las leyes/normas del proyecto** (px/token del juego, PB, XSS, versión…) | **[`docs/leyes.md`](docs/leyes.md)** (índice único: qué · dónde · qué test la vigila) |
+| **VER EL MAPA DE MÓDULOS** (capas, quién importa a quién, dónde está el tamaño) | **[`docs/arquitectura-modulos.md`](docs/arquitectura-modulos.md)** — GENERADO: `node tools/module-map.mjs` (lo vigila `tests/layers.test.mjs`) |
 | **Tocar un cuadro de bucles/modos en un MD** | NO se edita a mano: sale del código con `node tools/docgen.mjs` (lo vigila `tests/docs.test.mjs`) |
-| **EL NORTE: modelo de 4 capas** (contenido·plantilla·modo·plataforma, dueños y prohibiciones) | **`docs/leyes.md` §0** — contrastar TODO diseño contra ese cuadro |
-| **Quién escribe cada colección PB** (dueño único, prohibiciones, deuda) | **`docs/leyes.md` §21** — vigilada por la regla `pb-dueno` (`tests/norms.test.mjs`) |
-| **Qué palabra del cliente vale** (afirmación vs veredicto, fase de reglas live) | **`docs/leyes.md` §22** — regla `confianza-alumno` + C6 + answer-safety |
-| **Ciclo de vida de una pantalla** (relojes, guards, overlays, disposers) | **`docs/leyes.md` §23** — regla `reloj-primitivo`; ejemplar: `views/studentLive.js` |
-| **Cómo evoluciona el contenido** (migraciones, formatos, ids, editor=CRUD) | **`docs/leyes.md` §24** — reglas `id-rid` + contrato versión>1⇒migrate |
-| Entender el sistema de plantillas (crear/validar/jugar, qué módulo hace qué) | **`docs/sistema-de-plantillas.md`** (mapa vivo) |
+| **EL NORTE: modelo de 4 capas** (contenido·plantilla·modo·plataforma, dueños y prohibiciones) | **[`docs/leyes.md`](docs/leyes.md) §0** — contrastar TODO diseño contra ese cuadro |
+| **Quién escribe cada colección PB** (dueño único, prohibiciones, deuda) | **[`docs/leyes.md`](docs/leyes.md) §21** — vigilada por la regla `pb-dueno` (`tests/norms.test.mjs`) |
+| **Qué palabra del cliente vale** (afirmación vs veredicto, fase de reglas live) | **[`docs/leyes.md`](docs/leyes.md) §22** — regla `confianza-alumno` + C6 + answer-safety |
+| **Ciclo de vida de una pantalla** (relojes, guards, overlays, disposers) | **[`docs/leyes.md`](docs/leyes.md) §23** — regla `reloj-primitivo`; ejemplar: `views/studentLive.js` |
+| **Cómo evoluciona el contenido** (migraciones, formatos, ids, editor=CRUD) | **[`docs/leyes.md`](docs/leyes.md) §24** — reglas `id-rid` + contrato versión>1⇒migrate |
+| Entender el sistema de plantillas (crear/validar/jugar, qué módulo hace qué) | **[`docs/sistema-de-plantillas.md`](docs/sistema-de-plantillas.md)** (mapa vivo) |
 | **Crear una actividad nueva** | `node tools/new-template.mjs <name> --model qa [--vs] [--live]` + `templates/HOW_TO_ADD.md` |
 | **Diagnosticar** una plantilla existente | `node tools/check-template.mjs [name]` (contrato + normas) |
-| Contrato de CSS + **responsive / andamio de regiones** (ww-scaffold/rail/stage) | `docs/estilos-de-actividad.md` (§3b andamio) |
-| Contrato de **modos** (Solo/VS/Equipos/Live/Tarea) y su gateo | `docs/modos-de-juego.md` · `core/modes.js` |
-| **ESTRUCTURA de los modos y de los 4 bucles en vivo** (quién puntúa, cómo se gana, qué persiste) | cuadro corto abajo en este archivo · completo en `docs/modos-de-juego.md` §9.4 |
-| **DECIDIR el diseño de un modo** (ficha + escenarios Gherkin + preguntas abiertas) | **`docs/modos-de-juego.md` §9** |
-| **Modelo de contenido** JSON por plantilla | `docs/ESTRUCTURA.md` · modelos en `kernel/content/models.js` |
-| Catálogo: qué hace cada actividad y en qué modos | `docs/panorama-actividades.md` |
-| **Probar** (suites Node + panel admin + headless Playwright) | `docs/testing.md` |
-| **Testeo MANUAL por un compañero** (recorrido completo, matriz por juego×modo, torturas) | `docs/plan-de-pruebas-manual.md` |
-| **Guía de testeo PARA ALGUIEN NO TÉCNICO** (paso a paso: Ctrl+F5, versión, carrera, torturas, plantilla de reporte) | `docs/guia-testeo-companero.md` |
+| Contrato de CSS + **responsive / andamio de regiones** (ww-scaffold/rail/stage) | [`docs/estilos-de-actividad.md`](docs/estilos-de-actividad.md) (§3b andamio) |
+| Contrato de **modos** (Solo/VS/Equipos/Live/Tarea) y su gateo | [`docs/modos-de-juego.md`](docs/modos-de-juego.md) · `core/modes.js` |
+| **ESTRUCTURA de los modos y de los 4 bucles en vivo** (quién puntúa, cómo se gana, qué persiste) | cuadro corto abajo en este archivo · completo en [`docs/modos-de-juego.md`](docs/modos-de-juego.md) §9.4 |
+| **DECIDIR el diseño de un modo** (ficha + escenarios Gherkin + preguntas abiertas) | **[`docs/modos-de-juego.md`](docs/modos-de-juego.md) §9** |
+| **Modelo de contenido** JSON por plantilla | [`docs/ESTRUCTURA.md`](docs/ESTRUCTURA.md) · modelos en `kernel/content/models.js` |
+| Catálogo: qué hace cada actividad y en qué modos | [`docs/panorama-actividades.md`](docs/panorama-actividades.md) |
+| **Probar** (suites Node + panel admin + headless Playwright) | [`docs/testing.md`](docs/testing.md) |
+| **Testeo MANUAL por un compañero** (recorrido completo, matriz por juego×modo, torturas) | [`docs/plan-de-pruebas-manual.md`](docs/plan-de-pruebas-manual.md) |
+| **Guía de testeo PARA ALGUIEN NO TÉCNICO** (paso a paso: Ctrl+F5, versión, carrera, torturas, plantilla de reporte) | [`docs/guia-testeo-companero.md`](docs/guia-testeo-companero.md) |
 | **Tocar CSS del juego sin romper nada** (capturas antes/después, diff por píxel) | `node tools/shots.mjs before` → cambios → `node tools/shots.mjs after` |
 | **Matriz JUGABLE** (cada plantilla × cada modo arranca sin crash) | `node tools/matrix-smoke.mjs` + `tests/moduleRefs.test.mjs` (imports olvidados) |
 | **EN VIVO e2e** (host+alumno en dos páginas: sala→PIN→respuesta→settle→podio) | `node tools/live-smoke.mjs` |
 | **CARRERA e2e contra PocketBase REAL** (puntos planos · gana quien acabó antes · meta del servidor · la trampa rebota) | `node tools/race-e2e.mjs [PB_URL]` (credenciales por entorno `WW_EMAIL`/`WW_PASS`) |
 | **¿Editar el contenido pierde la respuesta correcta?** (teclea en los 13 editores y re-pregunta al scorer) | `node tools/edit-audit.mjs` |
 | **Prueba de CARGA** (N alumnos concurrentes live+tareas contra PB real) | `core/stressTest.js` · botón `#/admin` "Simular carga" · `node tools/stress-live.mjs [N]` |
-| Modo SOLO (Wordwall) por dentro · identidad/auth · dev local | `docs/modo-wordwall.md` · `docs/identidad.md` · `docs/dev-local.md` |
-| **DECISIONES de producto pendientes** (contrastadas con Wordwall/Kahoot: identidad del alumno, imprimible, cuotas…) | **`docs/decisiones-pendientes.md`** |
-| **Cuántos bucles de juego en vivo hay y qué cuestan** (estudio D7, medido) | **`docs/estudio-bucles-live.md`** + ley §26 |
-| Índice completo de docs | `docs/README.md` (lo histórico vive en `docs/historico/`) |
-| **Cómo se puntúa CADA actividad** (mapa de los 7 sitios que deciden puntos + plan) | **`docs/handoff-puntuacion.md`** |
-| **Centralizar decisiones repartidas en vistas** (fase→pantalla, payload, meta, prompt…) | **`docs/handoff-centralizacion.md`** |
+| Modo SOLO (Wordwall) por dentro · identidad/auth · dev local | [`docs/modo-wordwall.md`](docs/modo-wordwall.md) · [`docs/identidad.md`](docs/identidad.md) · [`docs/dev-local.md`](docs/dev-local.md) |
+| **DECISIONES de producto pendientes** (contrastadas con Wordwall/Kahoot: identidad del alumno, imprimible, cuotas…) | **[`docs/decisiones-pendientes.md`](docs/decisiones-pendientes.md)** |
+| **Cuántos bucles de juego en vivo hay y qué cuestan** (estudio D7, medido) | **[`docs/estudio-bucles-live.md`](docs/estudio-bucles-live.md)** + ley §26 |
+| Índice completo de docs | [`docs/README.md`](docs/README.md) (lo histórico vive en `docs/historico/`) |
+| **Cómo se puntúa CADA actividad** (mapa de los 7 sitios que deciden puntos + plan) | **[`docs/handoff-puntuacion.md`](docs/handoff-puntuacion.md)** |
+| **Centralizar decisiones repartidas en vistas** (fase→pantalla, payload, meta, prompt…) | **[`docs/handoff-centralizacion.md`](docs/handoff-centralizacion.md)** |
 | **Bugs abiertos / deuda** | la sección "Deuda técnica registrada" (abajo) + notas `docs/handoff-*.md` |
-| **Plan biblioteca pública** (portada, likes, gate de login, admin) | **`docs/handoff-biblioteca-publica.md`** (+ `handoff-google-classroom.md` y `handoff-seguridad-pb.md`) |
-| **Cómo está la BD/Pi de VERDAD** (PocketBase, Docker, backups, OAuth Google, quirks) | **`docs/infraestructura-pb.md`** (fuente de infra; actualizar si cambia el servidor) |
-| **Plan de usuarios/acceso docente** (endurecer reglas, PIN, NFC, pizarras, panel profes) | **`docs/handoff-acceso-docente.md`** (incluye auditoría del sistema de usuarios) |
+| **Plan biblioteca pública** (portada, likes, gate de login, admin) | **[`docs/handoff-biblioteca-publica.md`](docs/handoff-biblioteca-publica.md)** (+ `handoff-google-classroom.md` y `handoff-seguridad-pb.md`) |
+| **Cómo está la BD/Pi de VERDAD** (PocketBase, Docker, backups, OAuth Google, quirks) | **[`docs/infraestructura-pb.md`](docs/infraestructura-pb.md)** (fuente de infra; actualizar si cambia el servidor) |
+| **Plan de usuarios/acceso docente** (endurecer reglas, PIN, NFC, pizarras, panel profes) | **[`docs/handoff-acceso-docente.md`](docs/handoff-acceso-docente.md)** (incluye auditoría del sistema de usuarios) |
 
 Verificar SIEMPRE antes de commitear: `node tests/run.mjs` (todas las suites). El contrato,
 las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecutar tests".

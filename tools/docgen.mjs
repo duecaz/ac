@@ -28,6 +28,7 @@ const { LIVE_LOOPS, LOOP_LABELS, LOOP_POINTS, LOOP_PHASE, loopsOf, pointsModeFor
   await import(join(ROOT, 'core/liveLoops.js'));
 const { MODE_DEFS } = await import(join(ROOT, 'core/modes.js'));
 const { PERSIST } = await import(join(ROOT, 'core/persistPolicy.js'));
+const { docTable, anchorOf } = await import(join(ROOT, 'tools/docmap.mjs'));
 
 const templates = listTemplates();
 const nameOf = (t) => t?.meta?.label || t?.meta?.name;
@@ -82,15 +83,39 @@ function modos() {
   ].join('\n');
 }
 
+// ── Bloque `nav`: el índice DEL PROPIO documento + el mapa de docs ─────────
+// Depende del archivo donde se inserta, así que se calcula por destino. En un
+// documento de 400 líneas leído en el móvil, sin índice no se encuentra nada.
+
+// El mapa de documentos y el algoritmo de anclas viven en `tools/docmap.mjs`
+// porque los comparte el generador del diagrama (`tools/module-map.mjs`).
+
+function nav(file, src) {
+  // Índice: los ## y ### del propio documento. Se leen SIN los bloques
+  // generados: si no, el propio "### Ir a otro documento" entraría en el índice
+  // y cada pasada añadiría una línea más (el generador dejaría de ser idempotente
+  // y `--check` fallaría eternamente).
+  const clean = src.replace(/<!-- GENERADO:[\w-]+ -->[\s\S]*?<!-- \/GENERADO:[\w-]+ -->/g, '');
+  const heads = [...clean.matchAll(/^(##{1,2}) +(.+)$/gm)]
+    .map(m => ({ depth: m[1].length, text: m[2].trim() }))
+    .filter(h => !/^Índice/i.test(h.text));
+  const toc = heads.map(h => `${'  '.repeat(h.depth - 2)}- [${h.text.replace(/\*\*/g, '')}](#${anchorOf(h.text)})`).join('\n');
+  return [
+    '### Índice de este documento', '', toc, '',
+    '### Ir a otro documento', '', docTable(file),
+  ].join('\n');
+}
+
 const BLOCKS = { bucles: bucles(), modos: modos() };
-const TARGETS = ['CLAUDE.md', 'docs/leyes.md', 'docs/modos-de-juego.md'];
+const TARGETS = ['CLAUDE.md', 'docs/leyes.md', 'docs/modos-de-juego.md', 'docs/norte.md',
+  'docs/decisiones-pendientes.md', 'docs/testing.md', 'docs/estudio-bucles-live.md'];
 
 let stale = [];
 for (const rel of TARGETS) {
   const file = join(ROOT, rel);
   const src = readFileSync(file, 'utf8');
   let out = src;
-  for (const [name, body] of Object.entries(BLOCKS)) {
+  for (const [name, body] of Object.entries({ ...BLOCKS, nav: nav(rel, src) })) {
     const re = new RegExp(`(<!-- GENERADO:${name} -->)[\\s\\S]*?(<!-- /GENERADO:${name} -->)`, 'g');
     out = out.replace(re, `$1\n${body}\n$2`);
   }

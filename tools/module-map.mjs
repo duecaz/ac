@@ -15,6 +15,7 @@ import { EXCEPTIONS } from '../tests/helpers/layerRules.mjs';
 import { PB_OWNERS } from '../core/normsCheck.js';
 import { RULES, AUTH } from '../core/pbRules.js';
 import { trackOf, testTrackOf, TRACK_ORDER, TRACK_USE } from '../tests/helpers/journeyTracks.mjs';
+import { docTable } from './docmap.mjs';
 import { readdirSync } from 'node:fs';
 
 const OUT = join(ROOT, 'docs', 'arquitectura-modulos.md');
@@ -124,6 +125,10 @@ const md = `# Mapa de módulos — GENERADO, no editar a mano
 > el código — que es justo el punto.
 >
 > **${g.files.length} módulos · ${g.edges.length} imports internos.**
+
+### Ir a otro documento
+
+${docTable('docs/arquitectura-modulos.md')}
 
 ## Dónde está el esfuerzo, y dónde pasa el profesor
 

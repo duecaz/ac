@@ -8,6 +8,60 @@ Este estudio responde tres cosas antes de decidir nada: **cuántos bucles tenemo
 de verdad**, **quién los elige**, y **qué cuesta cada uno**. Medido sobre el
 código, no de memoria (v1.51.340).
 
+<!-- GENERADO:nav -->
+### Índice de este documento
+
+- [1. El catálogo REAL no es el catálogo DECLARADO](#1-el-catálogo-real-no-es-el-catálogo-declarado)
+- [2. Lo que cuesta cada bucle](#2-lo-que-cuesta-cada-bucle)
+- [3. Qué NO hay que hacer](#3-qué-no-hay-que-hacer)
+- [4. Propuesta (para decidir, no ejecutada)](#4-propuesta-para-decidir-no-ejecutada)
+- [El bucle, paso a paso](#el-bucle-paso-a-paso)
+- [Lo que hay que tomar de Kahoot, por orden de valor/coste](#lo-que-hay-que-tomar-de-kahoot-por-orden-de-valorcoste)
+- [Lo que NO hay que copiar (y por qué)](#lo-que-no-hay-que-copiar-y-por-qué)
+- [Riesgo propio a decidir (no es de Kahoot)](#riesgo-propio-a-decidir-no-es-de-kahoot)
+- [Sobre los tres botones del lobby (manual · automático · carrera)](#sobre-los-tres-botones-del-lobby-manual--automático--carrera)
+- [Orden sugerido para seguir](#orden-sugerido-para-seguir)
+- [A · ¿Por horario o por retardo? — por INSTANTE, y ya lo hacemos así](#a--por-horario-o-por-retardo--por-instante-y-ya-lo-hacemos-así)
+- [B · El bucle, paso a paso (con los dos instantes)](#b--el-bucle-paso-a-paso-con-los-dos-instantes)
+- [C · ¿Quitamos "manual" y dejamos solo automático, como Kahoot?](#c--quitamos-manual-y-dejamos-solo-automático-como-kahoot)
+- [D · Qué habría que tocar (estimación honesta)](#d--qué-habría-que-tocar-estimación-honesta)
+- [Cómo corre hoy](#cómo-corre-hoy)
+- [Diferencias de fondo con `rounds`](#diferencias-de-fondo-con-rounds)
+- [Las tres preguntas abiertas, con recomendación](#las-tres-preguntas-abiertas-con-recomendación)
+- [Deuda propia de este bucle (ya conocida)](#deuda-propia-de-este-bucle-ya-conocida)
+- [Cómo corre hoy](#cómo-corre-hoy)
+- [Diferencias de fondo con `race`](#diferencias-de-fondo-con-race)
+- [Recomendaciones](#recomendaciones)
+  - [(bug real, encontrado y arreglado en v1.51.347)](#bug-real-encontrado-y-arreglado-en-v151347)
+- [Análisis previo (por qué así, y qué se podía romper en silencio)](#análisis-previo-por-qué-así-y-qué-se-podía-romper-en-silencio)
+- [Sin migración, a propósito (§24)](#sin-migración-a-propósito-24)
+- [Dónde lo cambia el profe](#dónde-lo-cambia-el-profe)
+- [Qué pasa hoy](#qué-pasa-hoy)
+- [El dato que falta](#el-dato-que-falta)
+- [Tres formas, con su coste y su honestidad](#tres-formas-con-su-coste-y-su-honestidad)
+- [Mi recomendación](#mi-recomendación)
+- [La estructura, columna a columna](#la-estructura-columna-a-columna)
+- [🔴 Y una diferencia que NO está decidida: la carrera puntúa mal](#-y-una-diferencia-que-no-está-decidida-la-carrera-puntúa-mal)
+- [Lo adecuado, en mi opinión](#lo-adecuado-en-mi-opinión)
+- [Lo que NO propongo](#lo-que-no-propongo)
+- [Orden si se aprueba](#orden-si-se-aprueba)
+- [Corrección del propio usuario (v1.51.353) — «nadie puede ganar con menos de 5 de 5»](#corrección-del-propio-usuario-v151353--nadie-puede-ganar-con-menos-de-5-de-5)
+- [Revisión honesta (v1.51.355) — la meta la medía el MÓVIL, y mal](#revisión-honesta-v151355--la-meta-la-medía-el-móvil-y-mal)
+
+### Ir a otro documento
+
+| Documento | Qué responde |
+|---|---|
+| [`norte.md`](norte.md) | para quién es la app, la escena real y cómo se decide (**manda sobre el resto**) |
+| [`leyes.md`](leyes.md) | las 8 leyes, cada una con el test que la vigila |
+| [`arquitectura-modulos.md`](arquitectura-modulos.md) | la radiografía: capas, imports, esfuerzo por tramo y mapa de datos (GENERADO) |
+| [`modos-de-juego.md`](modos-de-juego.md) | contrato de los 5 modos y los 4 bucles en vivo |
+| [`decisiones-pendientes.md`](decisiones-pendientes.md) | lo aplazado, con su condición para reabrirlo |
+| [`testing.md`](testing.md) | las suites y las cuatro redes de seguridad |
+| [`guia-testeo-companero.md`](guia-testeo-companero.md) | guía de pruebas paso a paso, para alguien no técnico |
+| [`../CLAUDE.md`](../CLAUDE.md) | el mapa de entrada del repo: "quiero X → voy a Y" |
+<!-- /GENERADO:nav -->
+
 ## 1. El catálogo REAL no es el catálogo DECLARADO
 
 `meta.play.live` admite tres valores (`core/templateContract.js:46`):

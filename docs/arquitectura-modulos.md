@@ -7,6 +7,19 @@
 >
 > **243 módulos · 875 imports internos.**
 
+### Ir a otro documento
+
+| Documento | Qué responde |
+|---|---|
+| [`norte.md`](norte.md) | para quién es la app, la escena real y cómo se decide (**manda sobre el resto**) |
+| [`leyes.md`](leyes.md) | las 8 leyes, cada una con el test que la vigila |
+| [`modos-de-juego.md`](modos-de-juego.md) | contrato de los 5 modos y los 4 bucles en vivo |
+| [`decisiones-pendientes.md`](decisiones-pendientes.md) | lo aplazado, con su condición para reabrirlo |
+| [`estudio-bucles-live.md`](estudio-bucles-live.md) | por qué el vivo es como es (estudio medido) |
+| [`testing.md`](testing.md) | las suites y las cuatro redes de seguridad |
+| [`guia-testeo-companero.md`](guia-testeo-companero.md) | guía de pruebas paso a paso, para alguien no técnico |
+| [`../CLAUDE.md`](../CLAUDE.md) | el mapa de entrada del repo: "quiero X → voy a Y" |
+
 ## Dónde está el esfuerzo, y dónde pasa el profesor
 
 La pregunta que ninguna métrica neutra puede responder: **¿el código y los tests
@@ -20,7 +33,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 18 · 3499 | 17 · 2639 | 0.75 |
 | **informes/tareas** | después de clase | 11 · 1133 | 3 · 381 | 0.34 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5769 | 12 · 975 | 0.17 |
-| **infra/común** | todo lo anterior | 125 · 11956 | 29 · 2778 | 0.23 |
+| **infra/común** | todo lo anterior | 125 · 11956 | 29 · 2849 | 0.24 |
 
 > Un ratio bajo en un tramo muy usado es deuda de PRIORIDAD, no de calidad: ese
 > código funciona, pero si se rompe nadie se entera hasta que hay 33 críos

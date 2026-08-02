@@ -23,6 +23,53 @@
 > convención, mira aquí. Verificación de todo: `node tests/run.mjs` (y `#/admin` →
 > "Ejecutar tests" corre el mismo escáner en el navegador).
 
+<!-- GENERADO:nav -->
+### Índice de este documento
+
+- [0) ⚖️ EL MODELO DE CUATRO CAPAS — el norte de la arquitectura](#0--el-modelo-de-cuatro-capas--el-norte-de-la-arquitectura)
+- [1) Versión — en CADA commit y en CADA respuesta](#1-versión--en-cada-commit-y-en-cada-respuesta)
+- [2) Todo a `main` (sirve la web)](#2-todo-a-main-sirve-la-web)
+- [3) ⚖️ LEY DE ESTILO — las cuatro capas del píxel](#3--ley-de-estilo--las-cuatro-capas-del-píxel)
+- [4) ResizeObserver → `observeResize()`](#4-resizeobserver--observeresize)
+- [5) Filtros PocketBase → `pbEscape`/`pbFilterParam`](#5-filtros-pocketbase--pbescapepbfilterparam)
+- [6) `kernel/` sin `Date.now()` → `clock.now()`](#6-kernel-sin-datenow--clocknow)
+- [7) IDs con `rid()` (`core/ids.js`)](#7-ids-con-rid-coreidsjs)
+- [8) Contrato de plantilla](#8-contrato-de-plantilla)
+- [9) Skins completos](#9-skins-completos)
+- [10) Handlers delegados + `clearListeners(APP)`](#10-handlers-delegados--clearlistenersapp)
+- [11) Pantalla de inicio obligatoria](#11-pantalla-de-inicio-obligatoria)
+- [12) Registro único + arranque](#12-registro-único--arranque)
+- [13) Gama baja `ww-lite` (`core/perf.js`)](#13-gama-baja-ww-lite-coreperfjs)
+- [14) Puntos (`core/scoring/`)](#14-puntos-corescoring)
+- [── LEYES DE DATOS / SEGURIDAD (biblioteca pública) ──────────────────────────](#-leyes-de-datos--seguridad-biblioteca-pública-)
+- [15) Solo PocketBase (Supabase RETIRADO)](#15-solo-pocketbase-supabase-retirado)
+- [16) `owner` (permiso) ≠ `author` (etiqueta) ≠ `profiles` (perfil)](#16-owner-permiso--author-etiqueta--profiles-perfil)
+- [17) Reglas PB endurecidas (U1)](#17-reglas-pb-endurecidas-u1)
+- [18) XSS: escapar SIEMPRE lo que viene de datos → `escapeHtml`](#18-xss-escapar-siempre-lo-que-viene-de-datos--escapehtml)
+- [19) Credenciales de PocketBase/Pi — NUNCA en el chat](#19-credenciales-de-pocketbasepi--nunca-en-el-chat)
+- [20) OAuth redirect canónico](#20-oauth-redirect-canónico)
+- [21) ⚖️ LEY DE DATOS — cada colección tiene UN dueño](#21--ley-de-datos--cada-colección-tiene-un-dueño)
+- [22) ⚖️ LEY DE CONFIANZA — el cliente AFIRMA, el veredicto lo pone otro](#22--ley-de-confianza--el-cliente-afirma-el-veredicto-lo-pone-otro)
+- [23) ⚖️ LEY DE VISTA — ciclo de vida de una pantalla](#23--ley-de-vista--ciclo-de-vida-de-una-pantalla)
+- [24) ⚖️ LEY DE CONTENIDO — el modelo evoluciona por caminos declarados](#24--ley-de-contenido--el-modelo-evoluciona-por-caminos-declarados)
+- [§25 · CAPACIDAD — el sistema tiene límites, y son UNO](#25--capacidad--el-sistema-tiene-límites-y-son-uno)
+- [§26 · BUCLES EN VIVO — el catálogo está congelado](#26--bucles-en-vivo--el-catálogo-está-congelado)
+  - [Cómo se auto-verifica todo](#cómo-se-auto-verifica-todo)
+
+### Ir a otro documento
+
+| Documento | Qué responde |
+|---|---|
+| [`norte.md`](norte.md) | para quién es la app, la escena real y cómo se decide (**manda sobre el resto**) |
+| [`arquitectura-modulos.md`](arquitectura-modulos.md) | la radiografía: capas, imports, esfuerzo por tramo y mapa de datos (GENERADO) |
+| [`modos-de-juego.md`](modos-de-juego.md) | contrato de los 5 modos y los 4 bucles en vivo |
+| [`decisiones-pendientes.md`](decisiones-pendientes.md) | lo aplazado, con su condición para reabrirlo |
+| [`estudio-bucles-live.md`](estudio-bucles-live.md) | por qué el vivo es como es (estudio medido) |
+| [`testing.md`](testing.md) | las suites y las cuatro redes de seguridad |
+| [`guia-testeo-companero.md`](guia-testeo-companero.md) | guía de pruebas paso a paso, para alguien no técnico |
+| [`../CLAUDE.md`](../CLAUDE.md) | el mapa de entrada del repo: "quiero X → voy a Y" |
+<!-- /GENERADO:nav -->
+
 ## 0) ⚖️ EL MODELO DE CUATRO CAPAS — el norte de la arquitectura
 Cuatro capas, cada una con UN dueño y UNA prohibición. Toda decisión de diseño
 se contrasta contra este cuadro ANTES de escribir código; si un cambio necesita

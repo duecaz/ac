@@ -9,6 +9,11 @@
 // Ahora esos cuadros salen de su módulo dueño (`tools/docgen.mjs`) y aquí se
 // comprueba que están al día. Igual que el mapa de módulos.
 //
+// Desde v1.51.374 los documentos también se ENLAZAN entre sí y saltan a
+// secciones concretas (índice generado + tabla "ir a otro documento"). Un enlace
+// roto no rompe la app, pero sí la confianza en la documentación — así que
+// también se verifica: fichero Y ancla.
+//
 // Run: node tests/docs.test.mjs
 import assert from 'node:assert';
 import { execFileSync } from 'node:child_process';
@@ -39,8 +44,12 @@ const run = (args) => execFileSync(process.execPath, args, { cwd: ROOT, encoding
 {
   const EXPECTED = {
     'CLAUDE.md': ['bucles', 'modos'],
-    'docs/leyes.md': ['bucles'],
-    'docs/modos-de-juego.md': ['bucles', 'modos'],
+    'docs/leyes.md': ['bucles', 'nav'],
+    'docs/modos-de-juego.md': ['bucles', 'modos', 'nav'],
+    'docs/norte.md': ['nav'],
+    'docs/decisiones-pendientes.md': ['nav'],
+    'docs/testing.md': ['nav'],
+    'docs/estudio-bucles-live.md': ['nav'],
   };
   for (const [file, blocks] of Object.entries(EXPECTED)) {
     const src = readFileSync(join(ROOT, file), 'utf8');
@@ -49,7 +58,69 @@ const run = (args) => execFileSync(process.execPath, args, { cwd: ROOT, encoding
         `${file} perdió el bloque GENERADO:${b} — sin marcadores, el cuadro vuelve a mantenerse a mano`);
     }
   }
-  ok('los 5 bloques generados siguen declarados en sus 3 documentos');
+  const total = Object.values(EXPECTED).reduce((n, b) => n + b.length, 0);
+  ok(`los ${total} bloques generados siguen declarados en sus ${Object.keys(EXPECTED).length} documentos`);
+}
+
+// ── 2b. NAVEGACIÓN: cada enlace relativo lleva a un sitio que EXISTE ────────
+// Ahora los documentos se enlazan entre sí y saltan a secciones concretas
+// (`leyes.md#22--confianza`). Un enlace roto en un MD no rompe nada… salvo la
+// confianza en la documentación: el que lo sigue acaba en un 404 de GitHub y
+// deja de usar el índice. Se comprueban las DOS mitades del enlace: el fichero
+// y el ancla. Las anclas se calculan con el MISMO `anchorOf` que las genera.
+{
+  const { anchorOf, DOC_MAP } = await import('../tools/docmap.mjs');
+  const NAVEGABLES = ['CLAUDE.md', 'docs/README.md', ...DOC_MAP.map(d => `docs/${d[1]}`)];
+  const anchors = (file) => {
+    const src = readFileSync(join(ROOT, file), 'utf8');
+    return new Set([...src.matchAll(/^#{1,6} +(.+)$/gm)].map(m => anchorOf(m[1].trim().replace(/\*\*/g, ''))));
+  };
+  const cache = new Map();
+  const anchorsOf = (f) => (cache.has(f) ? cache.get(f) : (cache.set(f, anchors(f)), cache.get(f)));
+
+  // Solo enlaces markdown a un .md del repo (con o sin ancla). Los http(s) y
+  // las rutas a código no son cosa de este test.
+  const scan = (files) => {
+    const broken = [];
+    for (const file of files) {
+      const dir = dirname(file);
+      const src = readFileSync(join(ROOT, file), 'utf8');
+      for (const m of src.matchAll(/\]\((?!https?:)([^)\s#]*\.md)(#[^)\s]*)?\)/g)) {
+        const target = join(dir, m[1]).split('\\').join('/');
+        let exists = true;
+        try { readFileSync(join(ROOT, target), 'utf8'); } catch { exists = false; }
+        if (!exists) { broken.push(`${file}: fichero inexistente → ${m[1]}`); continue; }
+        if (m[2] && !anchorsOf(target).has(m[2].slice(1))) {
+          broken.push(`${file}: ancla inexistente → ${m[1]}${m[2]}`);
+        }
+      }
+    }
+    return broken;
+  };
+
+  const broken = scan(NAVEGABLES);
+  assert.deepStrictEqual(broken, [],
+    'ENLACES ROTOS EN LA DOCUMENTACIÓN:\n  ' + broken.join('\n  ') + '\n\n'
+    + '  El fichero o la sección a la que apuntan ya no existe (renombrada, movida\n'
+    + '  o mal escrita). Corrige el enlace, o el encabezado que lo sostenía.');
+  ok(`navegación: todos los enlaces .md (fichero + ancla) de los ${NAVEGABLES.length} documentos navegables resuelven`);
+
+  // CONTRA-PRUEBA: un comprobador que no puede fallar no protege de nada. Se
+  // fabrican las dos roturas posibles (fichero y ancla) y se exige que las vea.
+  {
+    const { writeFileSync } = await import('node:fs');
+    const file = join(ROOT, 'docs/README.md');
+    const original = readFileSync(file, 'utf8');
+    try {
+      writeFileSync(file, original + '\n[roto](norte.md#seccion-que-no-existe) y [peor](no-existe.md)\n');
+      cache.delete('docs/README.md');
+      const found = scan(['docs/README.md']);
+      assert.strictEqual(found.length, 2, `debía cazar 2 roturas, cazó ${found.length}: ${found.join(' | ')}`);
+      ok('CONTRA-PRUEBA: un ancla inventada y un fichero inexistente rompen la comprobación');
+    } finally {
+      writeFileSync(file, original);
+    }
+  }
 }
 
 // ── 3. CONTRA-PRUEBA: si el código cambia y el MD no, CI lo dice ────────────
