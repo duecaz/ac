@@ -70,6 +70,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 
 | Quiero… | Voy a… |
 |---|---|
+| **SABER PARA QUIÉN ES LA APP y cómo se decide** (la escena, las restricciones duras, qué NO somos, los referentes) | **`docs/norte.md`** — manda sobre el resto: las leyes dicen CÓMO, el norte dice QUÉ y PARA QUIÉN |
 | **Ver TODAS las leyes/normas del proyecto** (px/token del juego, PB, XSS, versión…) | **`docs/leyes.md`** (índice único: qué · dónde · qué test la vigila) |
 | **VER EL MAPA DE MÓDULOS** (capas, quién importa a quién, dónde está el tamaño) | **`docs/arquitectura-modulos.md`** — GENERADO: `node tools/module-map.mjs` (lo vigila `tests/layers.test.mjs`) |
 | **Tocar un cuadro de bucles/modos en un MD** | NO se edita a mano: sale del código con `node tools/docgen.mjs` (lo vigila `tests/docs.test.mjs`) |

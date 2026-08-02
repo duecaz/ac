@@ -6,6 +6,9 @@ Qué leer según lo que necesites. La **fuente de verdad del estado actual** es
 ## Empezar / entender
 | Necesitas… | Lee |
 |---|---|
+| **Para quién es la app y cómo se decide qué entra** (la escena real, las restricciones duras, qué NO somos, los referentes, el viaje del profesor) | **`norte.md`** — manda sobre el resto de la documentación |
+| Las 8 leyes del proyecto, cada una con el test que la vigila | `leyes.md` |
+| Cómo está montado hoy (capas, imports, mapa de datos) | `arquitectura-modulos.md` (GENERADO) |
 | Visión general, stack, cómo arrancar | `README.md` (raíz) |
 | Reglas del repo + estándares + deuda técnica | `CLAUDE.md` (raíz) |
 | Correr y probar en local (sin backend) | `dev-local.md` |

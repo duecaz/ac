@@ -1,5 +1,11 @@
 # LEYES del proyecto — índice único (qué · dónde está escrito · qué test la vigila)
 
+> **Por encima de estas leyes está `docs/norte.md`**: para quién es la app, la
+> escena real de uso (una pizarra táctil, 45 minutos, tres minutos de
+> preparación), las restricciones duras y el criterio de decisión. Las leyes
+> dicen CÓMO se construye; el norte, QUÉ y PARA QUIÉN. Si chocan, gana el norte
+> y la ley se replantea.
+
 > **Los cuadros entre marcadores `<!-- GENERADO:… -->` NO se editan a mano**: los
 > escribe `node tools/docgen.mjs` desde el módulo dueño (`core/liveLoops.js`,
 > `core/modes.js`, `core/persistPolicy.js`) y `tests/docs.test.mjs` falla si el
