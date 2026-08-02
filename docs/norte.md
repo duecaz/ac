@@ -8,7 +8,9 @@
 > "lo que no somos" · §5 referentes (⏳ pendiente de DETALLAR: hoy es un esquema
 > y hace falta bajar cada fila a ejemplos concretos).
 > **[CONFIRMAR]**: §2b presupuesto de tiempo (detallado por momentos reales).
-> **APLAZADO por decisión**: §6d (señales) y todo lo de alumnos identificados.
+> **APLAZADO por decisión** (§4b): §6d señales · alumnos identificados (D1) ·
+> IA generando actividades · otros idiomas (solo español por ahora) ·
+> accesibilidad avanzada. Ninguno es un olvido: cada uno con su condición.
 > §3 R7 (privacidad de menores), §3b actores, §3c degradación y §6e vocabulario
 > describen lo que YA hacen el código y las reglas del servidor — salvo la
 > columna "se dice" del vocabulario, que es la decisión que falta aplicar.
@@ -231,6 +233,8 @@ Cada uno con la condición que tendría que cumplirse para reabrirlo.
 | **Generar actividades con IA** | Encaja con la promesa (§2) y sería la vía (d) del ANTES, pero **añadiría superficie nueva sobre una estructura que todavía estamos ordenando**. Meterlo hoy complica justo lo que estamos arreglando | Que la estructura esté sólida y **sin huecos**, y que la IA entre obedeciendo a un plan específico y escrito — no como añadido |
 | **Identidad del alumno (D1)** | toda solución conocida choca con R2/R3/R7 | estudio propio previo, incluido cómo lo resuelven otras apps (§7) |
 | **Medir "cómo vamos" (§6d)** | primero se termina el norte | tener el norte cerrado |
+| **Otros idiomas** | **por ahora, solo español**. Traducir hoy multiplicaría el trabajo de cada pantalla sin que nadie lo pida | que aparezca un colegio que lo necesite; entonces se decide catálogo de textos vs. duplicar |
+| **Accesibilidad avanzada** (daltonismo, lectores de pantalla) | no toca ahora: primero se ordena lo que hay. R1 ya cubre lo básico de aula (tamaño, contraste, legible a 3 m) | terminar el orden que estamos haciendo; entonces se revisa el color como única señal (Tildes/Comas) |
 
 > Escribirlo aquí es lo que evita que reaparezca cada dos semanas como si fuera
 > nuevo: no está olvidado, está **aplazado y con condición**.
@@ -409,6 +413,58 @@ Antes de tocar código hace falta **ver cómo lo resuelven otras apps** y compar
 opciones por impacto. Queda al FINAL de la cola, con estudio propio pendiente
 (`docs/decisiones-pendientes.md` D1). Y conviene saber lo que arrastra: el
 PIN/NFC de pizarras (U2-U4) y los informes por alumno dependen de esta pieza.
+
+## 7b. INVENTARIO: lo que YA tenemos, y dónde encaja
+
+Ordenar antes que añadir. Esto es todo lo construido, contrastado con la escena
+(§1). La columna "encaje" es **juicio**, no dato: el resto sale del código
+(`meta.play` y el registro de plantillas).
+
+### Las 13 plantillas
+
+| Plantilla | Modelo de contenido | VS | Equipos | En vivo | Encaje con la escena (un alumno en la pizarra) |
+|---|---|---|---|---|---|
+| **Quiz** | preguntas | puntos | turnos | rondas · carrera | ✅ el caso central: sirve para todo |
+| **Operaciones** | preguntas | carrera | turnos | rondas · carrera | ✅ ídem, con teclado numérico |
+| **Tildes** | corrección de texto | puntos | turnos | rondas · carrera | ✅ marcar sobre el texto se ve bien de lejos |
+| **Comas** | corrección de texto | puntos | turnos | rondas · carrera | ✅ ídem |
+| **Explota Globos** | preguntas | puntos | turnos | — | ✅ muy visual; sin vivo, y está bien así |
+| **Emparejar** | parejas | puntos | turnos | — | ✅ arrastrar en la pizarra es su fuerte |
+| **Memoria** | parejas | — | turnos | — | ✅ pensado para turnos de equipo |
+| **Ordena las Pelotas** | tablero propio | carrera | tablero | tablero | ✅ un alumno resolviendo, la clase mirando |
+| **Sopa de Letras** | palabras | carrera | tablero | — | ✅ clásico de pizarra |
+| **Crucigrama** | palabras | — | — | — | ⚠️ **solo Individual**: escribir mucho en la pizarra es lento; encaja mejor como tarea |
+| **Etiqueta el diagrama** | diagrama | — | — | — | ⚠️ **solo Individual**; buen encaje visual, pero sin VS/equipos desaprovecha la clase |
+| **Ruleta** | ítems | — | — | pedir la palabra | ✅ es una herramienta de conducción, no un ejercicio |
+| **Abre Cajas** | ítems | — | — | pedir la palabra | ✅ ídem |
+
+**Lo que el inventario dice**:
+- **9 de 13** sirven al caso central (un alumno al frente, VS o equipos).
+- **2** (Crucigrama, Etiqueta el diagrama) son **solo Individual**: funcionan,
+  pero no aprovechan a la clase. No es un error — es información para decidir si
+  algún día les damos VS/equipos o se asumen como "de tarea".
+- **2** (Ruleta, Abre Cajas) no son ejercicios sino **herramientas de
+  conducción**: sirven para dar la palabra y repartir turnos. Encajan con §1
+  mejor de lo que su nombre sugiere.
+- **Ninguna plantilla sobra**, y ninguna contradice el norte.
+
+### Los cinco modos
+
+Ya está en §6e y en el cuadro generado de `CLAUDE.md`. Contra la escena: los tres
+de pizarra (Individual · VS · Equipos) son el caso habitual; En vivo y Tarea son
+la excepción, y **cada uno tiene su página propia porque son otro montaje
+físico** — no por capricho de la interfaz.
+
+### Lo que sostiene todo eso
+
+| Pieza | Qué es | Estado |
+|---|---|---|
+| 4 capas + 8 leyes | la arquitectura, cada ley con su test | ✅ vigilado (84 suites) |
+| Mapa de módulos y de datos | generado del código | ✅ `arquitectura-modulos.md` |
+| Biblioteca pública + cuentas de profe | buscar/usar/publicar | ✅ funciona · ⚠️ poco cubierto (0,29) |
+| Informes (partida y tarea) | quién falló qué | ✅ funciona |
+| Cuotas y retención (§25) | los límites de la Pi | ✅ declarado y verificado |
+| Reglas de servidor (§22) | el alumno no se puntúa | ✅ endurecidas y probadas |
 
 ## 8. LA COLA, DERIVADA DEL NORTE (no de la inercia)
 
