@@ -1,6 +1,7 @@
 // C1 — matriz alumno×ítem compartida (live + tareas). Run: node tests/sessionTable.test.mjs
 import assert from 'node:assert';
-import { buildSessionTable, sessionTableCsv } from '../views/sessionTable.js';
+import { buildSessionTable } from '../core/sessionModel.js';   // el MODELO es dominio (§0)
+import { sessionTableCsv } from '../views/sessionTable.js';
 
 let passed = 0; const ok = (m) => { passed++; console.log('  ✓', m); };
 

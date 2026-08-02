@@ -19,7 +19,7 @@ import { awardPoints } from '../core/scoring/index.js';
 import { createLiveRoom } from '../kernel/live/engine.js';
 import { registerTemplate } from '../core/registry.js';
 import { scoreQuizSubmission } from '../templates/quiz/scorer.js';
-import { buildSessionTable } from '../views/sessionTable.js';
+import { buildSessionTable } from '../core/sessionModel.js';   // dominio, no vista (§0)
 import { podiumHtml } from '../core/podium.js';
 import { mmss } from '../core/timings.js';
 import { rowsFromLiveAnswers } from '../core/answerRows.js';

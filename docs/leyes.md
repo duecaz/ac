@@ -26,7 +26,23 @@ violar una prohibición, el diseño está mal planteado.
 - **Todo modo responde 5 preguntas** antes de existir (ficha en
   `docs/modos-de-juego.md` §9): quién puntúa · quién decide el fin · qué
   persiste · qué reloj · hay identidad de alumno.
-- **Tests que lo vigilan**: `scoringSources` (el mérito vive en la plantilla) ·
+- **LA DIRECCIÓN DE LAS DEPENDENCIAS ES LEY, y ahora es TEST** (`tests/layers.test.mjs`):
+  cada capa declara a quién puede importar y el escáner recorre los **874 imports**
+  del repo. Lo de arriba sabe de lo de abajo, **nunca al revés**. Las excepciones
+  están listadas UNA A UNA con su motivo, y son ratchet: una nueva rompe CI.
+  Hoy son 12 — el `import()` dinámico con el que un modo monta su vista, la
+  fachada `adapters/index.js`, y una deuda declarada (`question-live` importa
+  `sessionItems` del motor).
+  - **El caso que lo destapó**: `buildSessionTable` —que decide QUIÉN GANA una
+    carrera— vivía en `views/`, o sea la PLATAFORMA decidiendo reglas de juego.
+    Se notó porque los tests de dominio tenían que importarlo de una vista.
+    Ahora el modelo está en `core/sessionModel.js` y la vista solo lo pinta.
+  - **El diagrama se GENERA** (`node tools/module-map.mjs` →
+    `docs/arquitectura-modulos.md`) del mismo grafo, y el test comprueba que
+    está al día: un dibujo hecho a mano envejece en silencio y acaba mintiendo,
+    que es peor que no tenerlo.
+- **Tests que lo vigilan**: `layers` (dirección de los imports + diagrama al día) ·
+  `scoringSources` (el mérito vive en la plantilla) ·
   `persistPolicy` (qué persiste cada modo) · `templateContract` (meta.play
   declarado) · `moduleRefs` + matriz jugable (`tools/matrix-smoke.mjs`).
 

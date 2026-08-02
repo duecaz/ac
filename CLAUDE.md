@@ -71,6 +71,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | Quiero… | Voy a… |
 |---|---|
 | **Ver TODAS las leyes/normas del proyecto** (px/token del juego, PB, XSS, versión…) | **`docs/leyes.md`** (índice único: qué · dónde · qué test la vigila) |
+| **VER EL MAPA DE MÓDULOS** (capas, quién importa a quién, dónde está el tamaño) | **`docs/arquitectura-modulos.md`** — GENERADO: `node tools/module-map.mjs` (lo vigila `tests/layers.test.mjs`) |
 | **EL NORTE: modelo de 4 capas** (contenido·plantilla·modo·plataforma, dueños y prohibiciones) | **`docs/leyes.md` §0** — contrastar TODO diseño contra ese cuadro |
 | **Quién escribe cada colección PB** (dueño único, prohibiciones, deuda) | **`docs/leyes.md` §21** — vigilada por la regla `pb-dueno` (`tests/norms.test.mjs`) |
 | **Qué palabra del cliente vale** (afirmación vs veredicto, fase de reglas live) | **`docs/leyes.md` §22** — regla `confianza-alumno` + C6 + answer-safety |

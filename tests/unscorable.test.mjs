@@ -14,7 +14,7 @@ import assert from 'node:assert';
 import { registerTemplate } from '../core/registry.js';
 import { createSession, FORMATS } from '../kernel/session/engine.js';
 import { rowsFromLiveAnswers } from '../core/answerRows.js';
-import { buildSessionTable } from '../views/sessionTable.js';
+import { buildSessionTable } from '../core/sessionModel.js';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };

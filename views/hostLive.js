@@ -14,7 +14,8 @@ import { sessionItems, roundPayloadOf } from '../kernel/session/engine.js';
 import { rowsFromLiveAnswers, rowsFromLiveState } from '../core/answerRows.js';
 import { itemStatsHtml } from './itemStatsView.js';
 import { computeMedals } from '../core/itemStats.js';
-import { sessionTableHtml, sessionTableCsv, buildSessionTable } from './sessionTable.js';
+import { sessionTableHtml, sessionTableCsv } from './sessionTable.js';
+import { buildSessionTable } from '../core/sessionModel.js';   // el modelo es dominio (§0)
 import { acquire } from '../core/lifecycle.js';
 import { getAuthUserId } from '../core/auth.js';
 import { openLoginModal } from './loginModal.js';
