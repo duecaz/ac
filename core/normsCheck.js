@@ -59,7 +59,9 @@ const ALLOW = {
 // la regla de dueño-por-colección. Se añaden a cada lista más abajo.
 const PB_SCHEMA_OWNERS = ['views/adminView.js', 'core/pbRules.js'];
 
-const PB_OWNERS = {
+/** Dueño de cada colección (§21). Exportado para que `tools/module-map.mjs`
+ *  dibuje el mapa de datos de la misma fuente que lo vigila. */
+export const PB_OWNERS = {
   // Ya NO hay lectores directos: portada, Explorar, perfil de autor, el panel de
   // Profesores y el diagnóstico piden métodos al dueño (M6). El ratchet solo
   // encoge: no volver a añadir ficheros aquí, se añade un método al dueño.

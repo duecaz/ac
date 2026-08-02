@@ -18,61 +18,14 @@
 // Run: node tests/layers.test.mjs
 import assert from 'node:assert';
 import { buildGraph, layerOf } from './helpers/importGraph.mjs';
+import { ALLOWED, EXCEPTIONS } from './helpers/layerRules.mjs';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
 
-// A QUIÉN PUEDE IMPORTAR CADA CAPA (además de a sí misma).
-//
-//   contenido   modelos y conversión del JSON del usuario (kernel/content)
-//   plantillas  UNA mecánica: scorer + render + meta.play
-//   kernel      el motor de sesión (live/teams/vs): cuándo se liquida
-//   core        el arreglo social (modos, shells) + utilidades compartidas
-//   adaptadores el transporte (PocketBase | local)
-//   vistas      el chrome: navegación, setup, informes
-//   config      solo datos (pocketbase.config.js)
-//   arranque    el cableado por página (main.*.js, sw.js)
-//
-// La dirección legítima es SIEMPRE hacia abajo en esa lista. Lo de arriba no
-// puede saber de lo de abajo: una plantilla que importara una vista sabría en
-// qué modo corre, y eso es justo lo que §0 prohíbe.
-const ALLOWED = {
-  contenido:   ['core', 'kernel'],          // utilidades puras (ids, clock) + contratos
-  plantillas:  ['core', 'contenido', 'kernel'],
-  kernel:      ['core', 'contenido', 'config'],
-  core:        ['kernel', 'contenido', 'config'],
-  adaptadores: ['core', 'kernel', 'contenido', 'config'],
-  vistas:      ['core', 'kernel', 'contenido', 'plantillas', 'adaptadores', 'config'],
-  config:      [],                          // datos: no importa nada
-  arranque:    ['core', 'kernel', 'contenido', 'plantillas', 'adaptadores', 'vistas', 'config'],
-};
-
-// EXCEPCIONES SANCIONADAS — `fichero → destino`, con su motivo. Cada una es una
-// deuda declarada o una decisión consciente; nada entra aquí sin explicación.
-const EXCEPTIONS = new Map(Object.entries({
-  // El MODO monta su vista con `import()` DINÁMICO dentro de runMode(): la capa
-  // de modo no conoce la vista al cargarse (sigue siendo pura y testeable en
-  // Node), solo sabe montarla cuando el usuario elige ese modo. Si algún día
-  // esto se hiciera con import estático, el módulo dejaría de ser puro.
-  'core/modes.js→views/vsView.js': 'runMode(): import() dinámico al montar el modo',
-  'core/modes.js→views/memoryView.js': 'runMode(): import() dinámico al montar el modo',
-  'core/modes.js→views/teamsView.js': 'runMode(): import() dinámico al montar el modo',
-  'core/authWidget.js→views/loginModal.js': 'import() dinámico al abrir el modal de acceso',
-  // La fachada de transporte: core habla con `adapters/index.js`, NUNCA con un
-  // adaptador concreto (eso es lo que permitió retirar Supabase sin tocar core).
-  'core/assignmentsTransport.js→adapters/index.js': 'fachada de transporte',
-  'core/authGate.js→adapters/index.js': 'fachada de transporte',
-  'core/dbDiag.js→adapters/index.js': 'fachada de transporte',
-  'core/liveTransport.js→adapters/index.js': 'fachada de transporte',
-  'core/results.js→adapters/index.js': 'fachada de transporte',
-  'core/storage.js→adapters/index.js': 'fachada de transporte',
-  // El auto-test del panel usa un scorer real como banco de pruebas.
-  'core/selftest.js→templates/quiz/scorer.js': 'banco de pruebas del panel #/admin',
-  // DEUDA: una plantilla no debería necesitar el motor de sesión. Aquí es solo
-  // `sessionItems` (leer los ítems), que es utilidad de contenido mal ubicada.
-  'templates/question-live/player.js→kernel/session/engine.js': 'DEUDA: sessionItems debería vivir en contenido',
-}));
-
+// Las reglas (qué capa puede importar a quién) y las excepciones sancionadas
+// viven en `helpers/layerRules.mjs`, porque las comparte el generador del
+// diagrama: una copia en cada sitio acabaría mintiendo.
 const g = buildGraph();
 
 // ── 1. Ningún import cruza una capa en la dirección prohibida ───────────────

@@ -11,6 +11,9 @@
 import { writeFileSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { buildGraph, layerEdges, layerOf, ROOT } from '../tests/helpers/importGraph.mjs';
+import { EXCEPTIONS } from '../tests/helpers/layerRules.mjs';
+import { PB_OWNERS } from '../core/normsCheck.js';
+import { RULES, AUTH } from '../core/pbRules.js';
 
 const OUT = join(ROOT, 'docs', 'arquitectura-modulos.md');
 
@@ -40,9 +43,22 @@ for (const f of g.files) {
 const fanIn = new Map();
 for (const e of g.edges) fanIn.set(e.to, (fanIn.get(e.to) || 0) + 1);
 
+// Una arista puede existir SOLO por excepciones sancionadas (core→vistas es todo
+// `import()` dinámico). Se dibujan punteadas: de un vistazo se ve qué está
+// torcido a propósito y qué es la estructura de verdad.
+const exceptional = new Map();
+for (const e of g.edges) {
+  if (e.fromLayer === e.toLayer) continue;
+  const k = `${e.fromLayer}→${e.toLayer}`;
+  const isExc = EXCEPTIONS.has(`${e.from}→${e.to}`);
+  const prev = exceptional.get(k);
+  exceptional.set(k, prev === undefined ? isExc : (prev && isExc));
+}
 const arrows = [...edges].sort((a, b) => b[1] - a[1]).map(([k, n]) => {
   const [from, to] = k.split('→');
-  return `  ${ID[from]} -->|${n}| ${ID[to]}`;
+  return exceptional.get(k)
+    ? `  ${ID[from]} -.->|${n} · excepción| ${ID[to]}`
+    : `  ${ID[from]} -->|${n}| ${ID[to]}`;
 }).join('\n');
 
 const nodes = ORDER.map(l => `  ${ID[l]}["<b>${l}</b><br/><small>${WHAT[l]}</small><br/><small>${byLayer.get(l).length} módulos</small>"]`).join('\n');
@@ -52,6 +68,29 @@ const top = (l, n = 5) => byLayer.get(l).sort((a, b) => b.lines - a.lines).slice
 
 const most = [...fanIn].sort((a, b) => b[1] - a[1]).slice(0, 10)
   .map(([f, n]) => `| \`${f}\` | ${n} |`).join('\n');
+
+// ── Mapa de DATOS: cada colección, su dueño (§21) y quién puede escribirla (§22)
+const dataRows = Object.entries(PB_OWNERS).map(([coll, owners]) => {
+  const r = RULES[coll];
+  const create = r?.createRule;
+  const who = create == null ? '**nadie** (cerrado por API)'
+    : create === '' ? 'cualquiera, sin cuenta'
+    : create === AUTH ? 'solo con sesión de profe'
+    : create.includes('live_claims') ? 'el alumno, **atado a su dispositivo** (§22-4)'
+    : create.includes('owner') ? 'con sesión, y solo como dueño'
+    : create.includes(AUTH) ? 'con sesión, o el alumno bajo condiciones'
+    : 'regla propia (ver `core/pbRules.js`)';
+  const dueño = owners.filter(o => o !== 'views/adminView.js');
+  return `| \`${coll}\` | ${dueño.map(o => `\`${o}\``).join(' · ') || '—'} | ${who} |`;
+}).join('\n');
+
+// ── Los módulos MÁS GRANDES del repo. No es una métrica de calidad: es la lista
+// de candidatos a partir, y donde han caído las regresiones (hostLive concentra
+// lobby + 4 bucles + podio + tabla + CSV).
+const hot = g.files.map(f => ({
+  f, lines: readFileSync(join(ROOT, f), 'utf8').split('\n').length, fan: fanIn.get(f) || 0,
+})).sort((a, b) => b.lines - a.lines).slice(0, 8)
+  .map(x => `| \`${x.f}\` | ${x.lines} | ${x.fan} |`).join('\n');
 
 const md = `# Mapa de módulos — GENERADO, no editar a mano
 
@@ -99,6 +138,28 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 | Módulo | Lo importan |
 |---|---|
 ${most}
+
+## Los módulos más grandes (candidatos a partir)
+
+El tamaño no es un defecto por sí solo, pero es donde han caído las regresiones:
+\`views/hostLive.js\` concentra lobby + los cuatro bucles + podio + tabla + CSV.
+
+| Módulo | Líneas | Lo importan |
+|---|---|---|
+${hot}
+
+## El mapa de DATOS: quién escribe cada colección
+
+Ley §21 (una colección, un dueño) y §22 (quién puede escribir, según las reglas
+REALES de \`core/pbRules.js\`). El panel \`views/adminView.js\` no se lista: es el
+dueño del ESQUEMA y por eso las nombra todas.
+
+| Colección | Módulo dueño | Quién puede CREAR |
+|---|---|---|
+${dataRows}
+
+> Un módulo que necesite datos no hace fetch a la colección: **le pide un método
+> al dueño**. Lo vigila la regla \`pb-dueno\` de \`tests/norms.test.mjs\`.
 `;
 
 if (process.argv.includes('--check')) {

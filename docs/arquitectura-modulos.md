@@ -32,18 +32,18 @@ graph TD
   CO -->|9| C
   K -->|9| C
   V -->|8| K
-  C -->|6| AD
+  C -.->|6 · excepción| AD
   C -->|5| CF
   V -->|5| T
-  C -->|4| V
+  C -.->|4 · excepción| V
   AD -->|3| CF
   AD -->|3| K
   T -->|2| CO
   V -->|2| CO
-  C -->|1| T
+  C -.->|1 · excepción| T
   C -->|1| CO
   CO -->|1| K
-  T -->|1| K
+  T -.->|1 · excepción| K
   V -->|1| AD
   V -->|1| CF
 ```
@@ -89,3 +89,45 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 | `core/ls.js` | 17 |
 | `core/gameEvents.js` | 17 |
 | `kernel/session/engine.js` | 16 |
+
+## Los módulos más grandes (candidatos a partir)
+
+El tamaño no es un defecto por sí solo, pero es donde han caído las regresiones:
+`views/hostLive.js` concentra lobby + los cuatro bucles + podio + tabla + CSV.
+
+| Módulo | Líneas | Lo importan |
+|---|---|---|
+| `adapters/pocketbase/realtime.js` | 1101 | 0 |
+| `views/hostLive.js` | 1031 | 1 |
+| `views/adminView.js` | 942 | 1 |
+| `views/studentLive.js` | 808 | 1 |
+| `kernel/session/engine.js` | 502 | 16 |
+| `views/vsView.js` | 475 | 2 |
+| `templates/crossword/player.js` | 464 | 1 |
+| `templates/wordsearch/player.js` | 405 | 1 |
+
+## El mapa de DATOS: quién escribe cada colección
+
+Ley §21 (una colección, un dueño) y §22 (quién puede escribir, según las reglas
+REALES de `core/pbRules.js`). El panel `views/adminView.js` no se lista: es el
+dueño del ESQUEMA y por eso las nombra todas.
+
+| Colección | Módulo dueño | Quién puede CREAR |
+|---|---|---|
+| `activities` | `adapters/pocketbase/remoteStore.js` | con sesión, y solo como dueño |
+| `results` | `adapters/pocketbase/remoteStore.js` | cualquiera, sin cuenta |
+| `live_sessions` | `adapters/pocketbase/realtime.js` · `core/stressTest.js` | solo con sesión de profe |
+| `live_answers` | `adapters/pocketbase/realtime.js` · `core/stressTest.js` | el alumno, **atado a su dispositivo** (§22-4) |
+| `live_players` | `adapters/pocketbase/realtime.js` · `core/stressTest.js` | cualquiera, sin cuenta |
+| `live_keys` | `adapters/pocketbase/realtime.js` | solo con sesión de profe |
+| `live_claims` | `adapters/pocketbase/realtime.js` · `core/stressTest.js` | cualquiera, sin cuenta |
+| `assignments` | `adapters/pocketbase/assignments.js` · `core/stressTest.js` · `adapters/index.js` | solo con sesión de profe |
+| `assignment_attempts` | `adapters/pocketbase/assignments.js` · `core/stressTest.js` | regla propia (ver `core/pbRules.js`) |
+| `reports` | `core/reports.js` | solo con sesión de profe |
+| `activity_likes` | `core/likes.js` | con sesión, o el alumno bajo condiciones |
+| `profiles` | `core/profile.js` | con sesión, y solo como dueño |
+| `users` | `core/auth.js` · `core/teachers.js` | **nadie** (cerrado por API) |
+| `_superusers` | — | **nadie** (cerrado por API) |
+
+> Un módulo que necesite datos no hace fetch a la colección: **le pide un método
+> al dueño**. Lo vigila la regla `pb-dueno` de `tests/norms.test.mjs`.
