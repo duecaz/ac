@@ -25,25 +25,38 @@ minutos**: como introducción, como la actividad del día o para explicar algo.
 > sesión que el profe ya tenía preparada. Eso manda sobre todo lo demás: si algo
 > exige montar la clase alrededor de la app, está mal planteado.
 
-**Quien está en la pizarra es EL PROFESOR.** Él conduce: usa la actividad como
-ejemplo, **lanza la pregunta a toda la clase** y los alumnos participan **desde
-su sitio, levantando la mano**. Que salga un alumno al frente ocurre, pero
-**poco**: una a cinco veces en toda la actividad. Sacar a 30 alumnos se comería
-la clase entera, y la clase no es la actividad (§1).
+**Quien toca la pizarra es, la mayoría de las veces, UN ALUMNO.** El profesor la
+usa algunas veces —para poner el ejemplo y **lanzar la pregunta a toda la
+clase**, que responde a mano alzada—, pero lo normal es que salga un alumno,
+resuelva delante de todos y vuelva a su sitio.
 
-| | Quién toca la pantalla | Cómo participa la clase | Cuánto se usa |
+**Para qué existe la actividad**: para **despertar el interés y hacer
+PARTICIPAR** al alumno. Es un refuerzo dentro de la clase, y la clase es lo
+importante.
+
+**Cuánta actividad cabe**: de **1 a 5 actividades** en una clase de una o dos
+horas pedagógicas. **No salen los 30 alumnos**: es imposible, se comería la hora
+y no quedaría clase.
+
+| | Quién toca la pantalla | Cómo participa el resto | Cuánto se usa |
 |---|---|---|---|
-| **Individual** | el profe (o un alumno que sale, a veces) | a mano alzada, en voz alta | **lo habitual** |
-| **VS (duelo)** | el profe, o **dos alumnos** que salen | la clase anima y responde | **lo habitual** |
-| **Equipos** | el profe; sale alguien del equipo cuando toca | por equipos, desde su sitio | a veces |
+| **Individual** | **un alumno** que sale; a veces el profe (ejemplo) | mirando, y a mano alzada | **lo habitual** |
+| **VS (duelo)** | **dos alumnos** que salen | la clase anima y responde | **lo habitual** |
+| **Equipos** | sale alguien del equipo cuando le toca | por equipos, desde su sitio | a veces |
 | **En vivo** | cada alumno en su móvil | todos a la vez, sentados | **raro** — solo algunos colegios |
 | **Tarea** | el alumno, fuera de clase | — | ocasional |
 
-> **Consecuencia de diseño**: el usuario que TOCA es casi siempre el profe, y la
-> participación es **oral**. Entonces lo que manda es el **ritmo de conducción**:
-> lanzar la pregunta, dejar que respondan a mano alzada, **revelar cuando el
-> profe quiera** y pasar a la siguiente **con un toque**. Nada puede depender de
-> que cada alumno tenga un dispositivo, ni de que alguien salga al frente.
+> **Dos consecuencias de diseño, y las dos pesan:**
+>
+> **(a) El que toca puede ser un niño de 8-12 años, sin que nadie le explique.**
+> La pantalla de juego tiene que entenderse sola: instrucciones a la vista,
+> objetivos grandes, y ninguna forma de quedarse atascado.
+>
+> **(b) Ese niño está tocando la sesión del PROFE.** La pizarra tiene la cuenta
+> del profesor abierta: mientras se juega **no puede haber a un toque de
+> distancia** nada de editar, borrar, publicar o cerrar sesión. Es la razón por
+> la que el juego entra a pantalla completa y el chrome desaparece — y ahora está
+> escrito, no es una casualidad afortunada.
 
 Todo lo que sigue se juzga contra esa escena.
 
@@ -61,7 +74,7 @@ en el **durante**, y ahí manda el reloj.
 | | Qué hace el profe | Cuánto dura | Qué NO puede pasar |
 |---|---|---|---|
 | **ANTES** | llega **con su clase ya preparada**, y para la actividad: (a) usa una suya, (b) **la busca en la biblioteca** hasta encontrar una que encaje, o (c) la crea | minutos, a veces la tarde anterior y a veces 3 minutos antes | que haya que preparar algo obligatorio para poder jugar (R2) |
-| **DURANTE** | proyecta, elige el modo y **conduce**: lanza cada pregunta a la clase, que responde a mano alzada; puntualmente saca a un alumno al frente | la actividad son **unos minutos**; el profe avanza pregunta a pregunta | que la app pida atención (un error, una espera, un ajuste): la clase se cae con ella (R6) · que avanzar o revelar cueste más de un toque |
+| **DURANTE** | proyecta, elige el modo y **saca alumnos a la pizarra**; a veces resuelve él el ejemplo y lanza la pregunta a la clase | **1 a 5 actividades** en una o dos horas pedagógicas; cada una, unos minutos | que la app pida atención (un error, una espera, un ajuste): la clase se cae con ella (R6) · que el alumno que sale necesite que le expliquen · que queden a la vista botones de editar/borrar/cerrar sesión |
 | **DESPUÉS** | mira quién falló qué, comenta, y sigue con su clase | segundos, o nada | que revisar exija exportar, cruzar hojas o entrar a otro sitio |
 
 > **Lo que esto implica**: casi todo el valor está en el DURANTE, pero casi todo
@@ -107,7 +120,7 @@ juzga cualquier pantalla nueva, ordenado por los momentos REALES del §1b.
 ### DURANTE · el ritmo de conducción ⭐
 
 Lo que más se repite en una clase, y lo que menos se suele medir. **El que toca
-es el profe**; la clase responde a mano alzada.
+suele ser un alumno**, con el profe al lado conduciendo.
 
 | Momento | Objetivo | Por qué |
 |---|---|---|
@@ -115,12 +128,15 @@ es el profe**; la clase responde a mano alzada.
 | **Revelar la respuesta cuando el profe quiera** | 1 toque, y **nunca antes** de que él lo decida | la clase responde en voz alta primero; si la pantalla se adelanta, mata la participación |
 | Que la clase **lea la pregunta desde el fondo** | sin tocar nada | R1: 33 personas a 2-3 metros |
 | El profe **sostiene la pregunta** todo lo que necesite (para explicar) | sin relojes que corran solos ni avances automáticos | la actividad también sirve para EXPLICAR (§1) |
-| **Sacar a un alumno al frente** (1-5 veces en toda la actividad) | que entienda qué hacer sin explicación: instrucciones visibles | si el profe tiene que explicar cada vez, pierde el hilo de la clase |
+| **El alumno que sale entiende qué hacer sin que le expliquen** | instrucciones visibles en la pantalla de inicio; objetivos grandes | si el profe tiene que explicar cada vez, pierde el hilo de la clase |
+| **Nada peligroso al alcance del alumno** mientras juega | sin editar / borrar / publicar / cerrar sesión a un toque | está tocando la cuenta del profe |
 | Un fallo **no bloquea**: siempre hay salida visible | reintento o siguiente, a la vista | R6 |
+| **Volver a jugar con otro alumno** | 1 toque desde el final | es como se encadenan las 1-5 actividades |
 
-> **El número con más peso de todo el documento es "pasar a la siguiente: 1
-> toque"**. No el relevo entre alumnos (que ocurre 1-5 veces), sino el avance
-> del profe, que ocurre en cada pregunta.
+> **Los dos números con más peso**: *"pasar a la siguiente / volver a jugar: 1
+> toque"* (es lo que encadena las 1-5 actividades de la clase) y *"el alumno
+> entiende sin que le expliquen"* (si no, el profe deja de sacar alumnos, y
+> entonces la actividad deja de hacer participar — que es para lo que existe).
 
 ### DURANTE · en vivo (el caso raro)
 
@@ -149,6 +165,7 @@ planteada, aunque funcione en el portátil del que la programa.
 |---|---|---|
 | **R1** | **La pantalla principal es una pizarra táctil de gama baja**, a 2-3 metros, mirada por 30 personas a la vez | Nada de texto pequeño ni de tamaños fijos; los objetivos táctiles son grandes; sin bucles de animación en reposo (`ww-lite`); contraste alto |
 | **R2** | **El profe no configura nada.** Abre y juega | Cero pantallas de ajustes obligatorias; lo que se pueda derivar, se deriva; los ajustes finos son opcionales y viven en el editor |
+| **R2b** | **Quien toca la pantalla suele ser un ALUMNO, sobre la cuenta del profe** | La pantalla de juego se entiende sin explicación (instrucciones a la vista) y **no expone nada destructivo**: ni editar, ni borrar, ni publicar, ni cerrar sesión mientras se juega |
 | **R3** | **El alumno no tiene cuenta.** Entra con un PIN | La identidad del alumno es del aula, no del sistema; la seguridad va por reglas de servidor, no por login (§22) |
 | **R4** | **La red del colegio es mala** y los móviles se bloquean | Todo estado importante vive en el servidor como INSTANTE, no como temporizador local; las escrituras se reintentan solas; recargar nunca pierde nada |
 | **R5** | **El servidor es una Raspberry Pi compartida** | Los límites son reales y están declarados (§25); una función que multiplique las consultas por alumno hay que medirla ANTES |
@@ -260,6 +277,7 @@ cada una tiene un test que la hace cumplir. Se lee de izquierda a derecha:
 | **§2 la promesa** (un contenido, muchos modos) | **§0 · CUATRO CAPAS** — la plantilla DECLARA sus políticas (`meta.play`), el modo las consume; una plantilla no sabe en qué modo corre | `layers` · `templateContract` · `scoringSources` · matriz jugable |
 | **§2 la promesa** (el contenido sobrevive al cambio de plantilla) | **§24 · CONTENIDO** — modelos versionados, migración declarada, ids con `rid()` | `templateContract` · regla `id-rid` |
 | **R1 pizarra de gama baja, mirada a 3 m** | **§3 · ESTILO** — el skin cambia TOKENS, la actividad los consume; nada de tamaños fijos; sin bucles de animación en reposo | `styles` (ratchet) · `skins` |
+| **R2b el que toca es un ALUMNO, sobre la cuenta del profe** | ⚠️ **sin ley todavía** — hoy lo cumple el diseño (el juego entra a pantalla completa y el chrome desaparece), pero nada lo impide en una pantalla nueva | ⚠️ ningún test |
 | **R3 el alumno no tiene cuenta** | **§22 · CONFIANZA** — el cliente AFIRMA, el veredicto lo pone el host o una regla del servidor | `pbRules` · `liveRules` · `answerSafety` · `modeAuth` |
 | **R3 + R6** (nadie edita lo de otro, y el fallo se ve) | **§21 · DATOS** — cada colección tiene UN dueño; quien necesite datos le pide un método | regla `pb-dueno` |
 | **R4 la red del colegio es mala** | **§23 · VISTA** — el ritmo es un INSTANTE del servidor, nunca un temporizador local; cada reloj por su primitivo; la vista posee su ciclo de vida | `deadlineTicker` · `clock` · `events` · `idempotency` |
@@ -271,6 +289,7 @@ cada una tiene un test que la hace cumplir. Se lee de izquierda a derecha:
 | Hueco | Estado |
 |---|---|
 | **R2 "el profe no configura nada" no tiene ley ni test.** Es la restricción que más decisiones de UI debería gobernar (cuántos ajustes salen antes de jugar, qué se deriva solo) y hoy vive solo como intención | ⚠️ **falta la ley** — candidata a §27 |
+| **R2b tampoco tiene ley ni test**, y este es más delicado: mientras un alumno juega en la pizarra, la cuenta del profe está abierta. Hoy no hay nada destructivo a la vista porque el juego va a pantalla completa, pero es una propiedad no vigilada: una pantalla nueva podría dejar un "Editar" al alcance | ⚠️ **falta la ley** — se puede escribir como test: en modo juego, ningún control destructivo en el DOM |
 | **El tramo "buscar/crear" no tiene ley propia**, pese a ser por donde pasa TODA clase (§1) y tener el ratio de test más bajo (0,29) | ⚠️ deuda de prioridad, ya medida en `arquitectura-modulos.md` |
 | §26 (bucles congelados) se desprende de R6, pero **cubre el modo minoritario**; ninguna ley cubre con el mismo detalle los modos de pizarra, que son los habituales | ⚠️ desequilibrio declarado |
 
@@ -399,7 +418,7 @@ en "ideas".
 | # | Qué | Se desprende de | Por qué ahí |
 |---|---|---|---|
 | **1** | **Cubrir "buscar/crear"**: la home, la biblioteca y el editor | §1 (por ahí pasa TODA clase) + la medición 0,29 | Es el tramo más usado y el menos protegido. Si el editor rompe la clave de una actividad, el profe lo descubre con 33 críos delante |
-| **2** | **La ley que falta para R2** ("el profe no configura nada") | §6b, hueco declarado | Sin ella, cada pantalla nueva decide por su cuenta cuántos ajustes enseña — y eso es justo lo que hace que Wordwall canse |
+| **2** | **Las leyes que faltan para R2 y R2b** ("el profe no configura" · "el que toca es un alumno sobre la cuenta del profe") | §6b, huecos declarados | Sin la primera, cada pantalla nueva decide por su cuenta cuántos ajustes enseña. La segunda es **testeable hoy**: en modo juego, ningún control destructivo en el DOM — y protege de un error caro (un niño tocando "borrar" en la cuenta del profe, con la clase mirando) |
 | **3** | **Cubrir las mecánicas en pizarra** (Individual · VS · Equipos) | §1 ("lo habitual") + medición 0,47 y 0,17 | Es donde se juega de verdad. Las 13 plantillas tienen el ratio de test más bajo del repo |
 | **4** | Terminar la ficha 2b de live (ventana de lectura en carrera · dial del lobby) | §26 + estudio D7 | Sigue siendo correcto, pero sirve al modo minoritario: va DESPUÉS de lo de arriba |
 | **5** | Partir `views/hostLive.js` (1031 líneas) | §23 + "candidatos a partir" del mapa | Mismo motivo que el 4: es deuda real, pero de la zona menos usada |
