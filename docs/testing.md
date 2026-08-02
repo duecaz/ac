@@ -142,8 +142,39 @@ La aserción clave post-C6: los puntos del podio los puso el settle del host.
 node tools/live-smoke.mjs     # sale 1 si el flujo canónico de una clase se rompe
 ```
 
+**La CARRERA contra PocketBase de verdad** (`tools/race-e2e.mjs`) cubre lo que el
+driver local NO puede reproducir: la costura entre el settle, los autodate del
+servidor y el podio. Ahí se colaron **cuatro** fallos seguidos entre v1.51.352 y
+v1.51.355 sin que la batería se enterara (bonus de velocidad que hacía ganar a
+quien acertaba 2 de 5 · el tiempo lo ponía el móvil · el PATCH del settle pisaba
+`updated` y borraba la hora de meta de toda la clase · el podio ordenaba por un
+campo que el alumno podía reescribir). Tres CONTEXTOS de navegador = tres
+dispositivos (con uno solo, los dos alumnos comparten id anónimo y reconectan
+como el MISMO jugador, que es lo correcto y arruina la prueba).
+
+```bash
+node tools/race-e2e.mjs http://127.0.0.1:8090          # réplica local
+WW_EMAIL=… WW_PASS=… node tools/race-e2e.mjs           # la Pi (credenciales por ENTORNO)
+```
+
+Comprueba, en una carrera real de 5 preguntas donde uno va limpio y rápido y el
+otro falla-corrige-y-tarda: que la sala GUARDA su bucle (§26) · que los dos
+acaban con todas bien (un fallo vuelve a la cola) · **puntos planos** · **gana
+quien terminó antes** · que la meta es de la CARRERA y no de la última pregunta ·
+que marcador y podio dan el mismo ganador · y que la **trampa rebota** (PATCH
+`{ms:0}` con la credencial propia sobre la fila ya liquidada). Nunca toca el
+`pocketbase.config.js`: intercepta ese módulo y sirve la URL que se le pase —
+editar el config para probar en local es la vía rápida de commitear un apunte a
+`127.0.0.1` y dejar la web pública sin backend.
+
+> Detalle útil: PocketBase responde **404** (no 403) cuando una regla de UPDATE
+> no casa — no confirma que la fila exista. El simulador de `tests/liveRules`
+> usa 403; contra el servidor real, rechazo es 403 **o** 404, y lo que nunca
+> puede salir es 200. Si sale 200, ese PocketBase tiene las reglas viejas
+> (`#/admin` → "Crear colecciones") y el propio informe lo dice.
+
 **No cubierto todavía**: el modo Tarea end-to-end (mismo patrón de dos páginas,
-pendiente) y el modo carrera con dos alumnos.
+pendiente).
 
 ## 2c. ¿Editar el contenido rompe la clave? (`tools/edit-audit.mjs`)
 
