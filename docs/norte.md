@@ -4,10 +4,10 @@
 > construye; **este dice qué construimos y para quién**. Si una ley y el norte
 > chocan, gana el norte y la ley se replantea.
 >
-> **Estado** (v1.51.367). CONFIRMADO por el usuario: §1 escena · §3 R1-R6 · §4
-> "lo que no somos" · §5 referentes (⏳ pendiente de DETALLAR: hoy es un esquema
-> y hace falta bajar cada fila a ejemplos concretos).
-> **[CONFIRMAR]**: §2b presupuesto de tiempo (detallado por momentos reales).
+> **Estado** (v1.51.373). CONFIRMADO por el usuario: §1 escena · §2b presupuesto
+> de tiempo · §3 restricciones · §4 "lo que no somos" · §5 referentes en lo
+> esencial (⏳ pendiente de un ESTUDIO: documentarse y probar a fondo los
+> referentes para saber qué partes encajan con nuestra escena).
 > **APLAZADO por decisión** (§4b): §6d señales · alumnos identificados (D1) ·
 > IA generando actividades · otros idiomas (solo español por ahora) ·
 > accesibilidad avanzada. Ninguno es un olvido: cada uno con su condición.
@@ -93,7 +93,7 @@ de cinco maneras** (uno solo, duelo, equipos, toda la clase en vivo, o de tarea)
 sin volver a escribirlo. Esa es la razón de ser del modelo de cuatro capas: si
 una actividad supiera en qué modo corre, esa promesa sería imposible de mantener.
 
-## 2b. El presupuesto de tiempo **[CONFIRMAR]**
+## 2b. El presupuesto de tiempo ✅ CONFIRMADO
 
 La promesa de §2 es medible o no es nada. Esto es el listón contra el que se
 juzga cualquier pantalla nueva, ordenado por los momentos REALES del §1b.
@@ -105,7 +105,7 @@ juzga cualquier pantalla nueva, ordenado por los momentos REALES del §1b.
 |---|---|---|
 | Entrar y ver mis actividades | ≤ 5 s desde abrir la web | el profe, con prisa antes de clase |
 | **Encontrar en MI lista la que voy a usar** | ≤ 2 toques (buscar por título incluido) | el profe, si tiene 40 actividades |
-| **Buscar en la biblioteca una que encaje con mi clase** | ≤ 1 min hasta tenerla lista para jugar | el profe que no preparó nada |
+| **Buscar en la biblioteca una que encaje con mi clase** | **≤ 2 toques**: escribe el tema (p. ej. "puntos notables") y **aparece o no aparece** | el profe que no preparó nada |
 | Crear una de 5 preguntas desde cero | ≤ 3 min | el profe la tarde anterior |
 | Ajustar una que ya tengo (cambiar 2 preguntas) | ≤ 1 min | el profe reutilizando |
 
@@ -154,9 +154,20 @@ suele ser un alumno**, con el profe al lado conduciendo.
 | Ver **quién falló qué** | ≤ 2 toques, sin exportar nada |
 | **Repetir la actividad** con otros alumnos | 1 toque desde el resultado |
 
-> **La regla**: si una función añade un paso a cualquiera de estas filas, tiene
-> que quitar otro o justificar muy bien por qué. Y el que más pesa es **avanzar
-> y revelar**: son los gestos que el profe repite en cada pregunta.
+> **La búsqueda es BINARIA, no una exploración.** El profe escribe su tema y solo
+> hay dos salidas: *está* (la usa) o *no está* (la crea). No existe un "seguir
+> mirando": si tuviera que rebuscar entre resultados aproximados, ya le habría
+> salido más barato escribirla él. Dos consecuencias directas:
+>
+> - **El buscador tiene que encontrar por TEMA**, no solo por coincidencia de
+>   título. Si el profe escribe "puntos notables" y existe *"Triángulos: puntos
+>   notables"*, tiene que salir.
+> - **El "no hay" es un resultado válido y tiene que llevar a CREAR**, en el
+>   mismo sitio y sin volver atrás. Un vacío mudo obliga a rehacer el camino.
+>
+> **La regla general**: si una función añade un paso a cualquiera de estas filas,
+> tiene que quitar otro o justificar muy bien por qué. Y el que más pesa es
+> **avanzar y revelar**: son los gestos que el profe repite en cada pregunta.
 
 ## 3. Las restricciones duras
 
@@ -241,9 +252,17 @@ Cada uno con la condición que tendría que cumplirse para reabrirlo.
 
 ## 5. Los referentes: qué tomamos y qué no ✅ CONFIRMADO · ⏳ falta detallar
 
-> Confirmado en lo esencial, pero **todavía es pobre**: cada celda debería bajar
-> a ejemplos concretos (qué pantalla, qué mecánica, qué ajuste) para que no
-> queden dudas al decidir. Pendiente de una sesión propia.
+> **Confirmado en lo esencial · pendiente de un ESTUDIO propio.** Bajar esta
+> tabla a ejemplos concretos no es cuestión de redactarla mejor: hace falta
+> **documentarse y probar extensamente** Wordwall y Kahoot —usarlos como los usa
+> un profe, con una clase en mente— para saber **qué partes encajarían con
+> nuestra escena** y cuáles no. Hasta entonces la tabla vale como orientación,
+> no como criterio para zanjar discusiones.
+>
+> **Alcance del estudio, cuando toque**: por cada referente, qué pantalla
+> resuelve bien y por qué · qué estorba al usarlo de verdad · qué puede hacer un
+> profe allí que aquí todavía no · y, de cada cosa, si encaja o choca con §1
+> (pizarra, alumno al frente, minutos dentro de la clase).
 
 | | Wordwall | Kahoot | Nosotros |
 |---|---|---|---|
@@ -483,6 +502,7 @@ en "ideas".
 | **4** | Terminar la ficha 2b de live (ventana de lectura en carrera · dial del lobby) | §26 + estudio D7 | Sigue siendo correcto, pero sirve al modo minoritario: va DESPUÉS de lo de arriba |
 | **5** | Partir `views/hostLive.js` (1031 líneas) | §23 + "candidatos a partir" del mapa | Mismo motivo que el 4: es deuda real, pero de la zona menos usada |
 | **6** | **D1 · identidad del alumno**, con estudio propio previo | §7 (el viaje se corta ahí) · R2 · R3 · §4 | Cierra el viaje y desbloquea 3 cosas, pero toda solución conocida choca con el norte: primero se estudia cómo lo resuelven otros |
+| **6b** | **Estudio de los referentes** (§5): documentarse y probar Wordwall y Kahoot a fondo | §5, marcado pendiente | No es redactar mejor la tabla: es usarlos de verdad para saber qué encaja. Sin ese estudio, "lo hace Kahoot" seguirá siendo un argumento suelto |
 | **7** | **Unificar el vocabulario en la UI** (§6e) | §6e, medido: sala/sesión/partida conviven | Barato y se nota: el profe aprende UN nombre. Se hace de paso al tocar cada pantalla, no como obra aparte |
 | **8** | D3 imprimible · D5 taxonomía · D2 duplicar como otra plantilla | `decisiones-pendientes.md` | Módulos que se pueden añadir después sin rediseñar nada |
 
