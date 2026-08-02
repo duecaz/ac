@@ -25,22 +25,25 @@ minutos**: como introducción, como la actividad del día o para explicar algo.
 > sesión que el profe ya tenía preparada. Eso manda sobre todo lo demás: si algo
 > exige montar la clase alrededor de la app, está mal planteado.
 
-**Los alumnos SALEN AL FRENTE.** No juegan desde su sitio: pasan a la pizarra,
-resuelven, y vuelve a sentarse. La clase mira. Eso es lo que explica el reparto
-de modos — y por qué "en vivo" es la excepción y no la regla:
+**Quien está en la pizarra es EL PROFESOR.** Él conduce: usa la actividad como
+ejemplo, **lanza la pregunta a toda la clase** y los alumnos participan **desde
+su sitio, levantando la mano**. Que salga un alumno al frente ocurre, pero
+**poco**: una a cinco veces en toda la actividad. Sacar a 30 alumnos se comería
+la clase entera, y la clase no es la actividad (§1).
 
-| | Cómo se juega | Cuántos salen | Cuánto se usa |
+| | Quién toca la pantalla | Cómo participa la clase | Cuánto se usa |
 |---|---|---|---|
-| **Individual** | **un alumno sale** y resuelve en la pizarra | 1 por turno | **lo habitual** |
-| **VS (duelo)** | **dos alumnos salen** y compiten en la misma pantalla | 2 por turno | **lo habitual** |
-| **Equipos** | la clase dividida; sale quien le toca del equipo | 1-2 por turno | a veces |
-| **En vivo** | cada alumno desde su propio móvil, sentado | los 33 a la vez | **raro** — solo algunos colegios |
-| **Tarea** | fuera de clase | — | ocasional |
+| **Individual** | el profe (o un alumno que sale, a veces) | a mano alzada, en voz alta | **lo habitual** |
+| **VS (duelo)** | el profe, o **dos alumnos** que salen | la clase anima y responde | **lo habitual** |
+| **Equipos** | el profe; sale alguien del equipo cuando toca | por equipos, desde su sitio | a veces |
+| **En vivo** | cada alumno en su móvil | todos a la vez, sentados | **raro** — solo algunos colegios |
+| **Tarea** | el alumno, fuera de clase | — | ocasional |
 
-> **Consecuencia de diseño**: si los alumnos salen por turnos, lo que importa es
-> **el tiempo entre turno y turno**, no el tiempo total. Cada relevo tiene que
-> ser un toque: si entre alumno y alumno hay que volver a configurar algo, la
-> clase se enfría y el profe deja de usarlo.
+> **Consecuencia de diseño**: el usuario que TOCA es casi siempre el profe, y la
+> participación es **oral**. Entonces lo que manda es el **ritmo de conducción**:
+> lanzar la pregunta, dejar que respondan a mano alzada, **revelar cuando el
+> profe quiera** y pasar a la siguiente **con un toque**. Nada puede depender de
+> que cada alumno tenga un dispositivo, ni de que alguien salga al frente.
 
 Todo lo que sigue se juzga contra esa escena.
 
@@ -58,7 +61,7 @@ en el **durante**, y ahí manda el reloj.
 | | Qué hace el profe | Cuánto dura | Qué NO puede pasar |
 |---|---|---|---|
 | **ANTES** | llega **con su clase ya preparada**, y para la actividad: (a) usa una suya, (b) **la busca en la biblioteca** hasta encontrar una que encaje, o (c) la crea | minutos, a veces la tarde anterior y a veces 3 minutos antes | que haya que preparar algo obligatorio para poder jugar (R2) |
-| **DURANTE** | proyecta, elige el modo y **los alumnos salen por turnos** a la pizarra; el profe atiende a la clase, no a la app | la actividad son **unos minutos**, repartidos en 5-10 turnos | que la app pida atención (un error, una espera, un ajuste): la clase se cae con ella (R6) · que el relevo entre alumnos cueste más de un toque |
+| **DURANTE** | proyecta, elige el modo y **conduce**: lanza cada pregunta a la clase, que responde a mano alzada; puntualmente saca a un alumno al frente | la actividad son **unos minutos**; el profe avanza pregunta a pregunta | que la app pida atención (un error, una espera, un ajuste): la clase se cae con ella (R6) · que avanzar o revelar cueste más de un toque |
 | **DESPUÉS** | mira quién falló qué, comenta, y sigue con su clase | segundos, o nada | que revisar exija exportar, cruzar hojas o entrar a otro sitio |
 
 > **Lo que esto implica**: casi todo el valor está en el DURANTE, pero casi todo
@@ -97,20 +100,27 @@ juzga cualquier pantalla nueva, ordenado por los momentos REALES del §1b.
 |---|---|---|
 | De la lista a **la actividad en pantalla completa** | **≤ 3 toques y ≤ 15 s** | es el momento en que la clase está esperando: cada segundo se nota |
 | Elegir modo (Individual · VS · Equipos) y **empezar** | **1 toque** por modo, sin pantalla intermedia obligatoria | R2: el profe no configura |
+| Que la actividad funcione **sin que nadie más tenga dispositivo** | por defecto: la clase participa hablando | es el caso normal; el móvil es la excepción |
 | Que se lea **desde el fondo del aula** | sin tocar nada: entra ya legible | R1 |
 | Formar equipos | ≤ 3 toques (nombres por defecto ya puestos) | si hay que teclear 4 nombres, no se usa |
 
-### DURANTE · el turno del alumno en la pizarra ⭐
+### DURANTE · el ritmo de conducción ⭐
 
-Lo que más se repite en una clase, y lo que menos se suele medir.
+Lo que más se repite en una clase, y lo que menos se suele medir. **El que toca
+es el profe**; la clase responde a mano alzada.
 
 | Momento | Objetivo | Por qué |
 |---|---|---|
-| El alumno sale y **entiende qué hacer sin que le expliquen** | 0 palabras del profe: instrucciones visibles en la pantalla de inicio | si el profe tiene que explicar cada turno, pierde la clase |
-| **Un turno completo** (sale, resuelve, vuelve) | 30-60 s | 33 alumnos no caben en la actividad: se juega por turnos y se rota |
-| **Relevo: siguiente alumno** | **1 toque**, sin volver a configurar nada | es el número que decide si la actividad dura 3 minutos o 10 |
-| **Relevo en VS**: dos nuevos al frente | **1 toque** para otro duelo | igual que arriba |
-| Que un fallo del alumno **no bloquee** el turno | siempre hay salida visible (reintento o siguiente) | R6 |
+| **Pasar a la siguiente pregunta** | **1 toque**, sin diálogos ni confirmaciones | es el gesto que se repite durante toda la actividad: es EL número que decide si el profe la vuelve a usar |
+| **Revelar la respuesta cuando el profe quiera** | 1 toque, y **nunca antes** de que él lo decida | la clase responde en voz alta primero; si la pantalla se adelanta, mata la participación |
+| Que la clase **lea la pregunta desde el fondo** | sin tocar nada | R1: 33 personas a 2-3 metros |
+| El profe **sostiene la pregunta** todo lo que necesite (para explicar) | sin relojes que corran solos ni avances automáticos | la actividad también sirve para EXPLICAR (§1) |
+| **Sacar a un alumno al frente** (1-5 veces en toda la actividad) | que entienda qué hacer sin explicación: instrucciones visibles | si el profe tiene que explicar cada vez, pierde el hilo de la clase |
+| Un fallo **no bloquea**: siempre hay salida visible | reintento o siguiente, a la vista | R6 |
+
+> **El número con más peso de todo el documento es "pasar a la siguiente: 1
+> toque"**. No el relevo entre alumnos (que ocurre 1-5 veces), sino el avance
+> del profe, que ocurre en cada pregunta.
 
 ### DURANTE · en vivo (el caso raro)
 
@@ -127,8 +137,8 @@ Lo que más se repite en una clase, y lo que menos se suele medir.
 | **Repetir la actividad** con otros alumnos | 1 toque desde el resultado |
 
 > **La regla**: si una función añade un paso a cualquiera de estas filas, tiene
-> que quitar otro o justificar muy bien por qué. Y el número que más peso tiene
-> es **el relevo entre alumnos**: es el que se repite 10 veces por clase.
+> que quitar otro o justificar muy bien por qué. Y el que más pesa es **avanzar
+> y revelar**: son los gestos que el profe repite en cada pregunta.
 
 ## 3. Las restricciones duras
 
