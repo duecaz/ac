@@ -19,12 +19,31 @@
  *  su ficha en docs/estudio-bucles-live.md), no un `if` en una vista. */
 export const LIVE_LOOPS = ['rounds', 'race', 'board', 'claim'];
 
-/** Cómo se llama cada uno para el docente, y qué hace en una frase. */
+/** Cómo se llama cada uno para el docente, qué hace en una frase, y CÓMO SE GANA.
+ *  `win` es la regla del juego en una línea: vive aquí (no en tres MD copiados,
+ *  que ya divergieron una vez) y de aquí la saca `tools/docgen.mjs` para escribir
+ *  los cuadros de CLAUDE.md, docs/leyes.md §26 y docs/modos-de-juego.md §9.4. */
 export const LOOP_LABELS = {
-  rounds: { label: 'Rondas juntas', hint: 'Toda la clase en la misma pregunta, tú marcas el ritmo.' },
-  race:   { label: 'Carrera libre', hint: 'Cada alumno avanza a su ritmo; tú ves quién va por dónde.' },
-  board:  { label: 'Tablero',       hint: 'Un mismo tablero que cada alumno resuelve.' },
-  claim:  { label: 'Pedir la palabra', hint: 'Los alumnos piden turno y tú das los puntos.' },
+  rounds: { label: 'Rondas juntas', hint: 'Toda la clase en la misma pregunta, tú marcas el ritmo.',
+            win: 'más puntos', advance: 'el profe o el reloj', ends: 'al agotar las preguntas' },
+  race:   { label: 'Carrera libre', hint: 'Cada alumno avanza a su ritmo; tú ves quién va por dónde.',
+            win: '**terminar primero con todas bien** (empate ⇒ hora de meta)', advance: 'cada alumno',
+            ends: 'política declarada: todos · primeros N · tiempo' },
+  board:  { label: 'Tablero',       hint: 'Un mismo tablero que cada alumno resuelve.',
+            win: 'avanzar más en el tablero', advance: 'cada alumno', ends: 'igual que la carrera' },
+  claim:  { label: 'Pedir la palabra', hint: 'Los alumnos piden turno y tú das los puntos.',
+            win: 'los puntos que da el docente', advance: 'el profe (a quien pide turno)',
+            ends: 'lo cierra el docente' },
+};
+
+/** Cómo se calculan los puntos de cada bucle, en una frase (para los cuadros).
+ *  La REGLA ejecutable es `pointsModeFor` + el scorer de la plantilla; esto es
+ *  su traducción a castellano, en el mismo sitio para que no diverja. */
+export const LOOP_POINTS = {
+  rounds: 'Kahoot: base×500 + bonus por velocidad',
+  race:   '**planos**: el puntaje ES el nº de aciertos',
+  board:  'escala propia de la plantilla (Pelotas: 0-1000 por eficiencia)',
+  claim:  'manuales (+10/+50), sin clave de respuesta',
 };
 
 /** La fase de sala en la que corre cada bucle (congelada, §26). */

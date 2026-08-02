@@ -470,18 +470,26 @@ escrita, no un `if` en una vista.
 
 **Los cuatro bucles** (`LIVE_LOOPS`):
 
-| | `rounds` · Rondas juntas | `race` · Carrera libre | `board` · Tablero | `claim` · Pedir la palabra |
+<!-- GENERADO:bucles -->
+| Bucle | Fase | Quién avanza | **Cómo se gana** | Puntos | Fin | Plantillas que lo declaran |
+|---|---|---|---|---|---|---|
+| `rounds` · Rondas juntas | `question` | el profe o el reloj | más puntos | Kahoot: base×500 + bonus por velocidad | al agotar las preguntas | Comas · Operaciones · Quiz · Tildes |
+| `race` · Carrera libre | `race` | cada alumno | **terminar primero con todas bien** (empate ⇒ hora de meta) | **planos**: el puntaje ES el nº de aciertos | política declarada: todos · primeros N · tiempo | Comas · Operaciones · Quiz · Tildes |
+| `board` · Tablero | `race` | cada alumno | avanzar más en el tablero | escala propia de la plantilla (Pelotas: 0-1000 por eficiencia) | igual que la carrera | Ordena las Pelotas |
+| `claim` · Pedir la palabra | `question-live` | el profe (a quien pide turno) | los puntos que da el docente | manuales (+10/+50), sin clave de respuesta | lo cierra el docente | Abre Cajas · Ruleta |
+
+> Generado de `core/liveLoops.js` + `meta.play.live` de las 13 plantillas.
+> El modelo de puntos lo decide `pointsModeFor(loop)`: `rounds`→`live` · `race`→`race` · `board`→`race` · `claim`→`live`.
+<!-- /GENERADO:bucles -->
+
+Lo que NO deriva del código (decisiones de diseño, ficha 2b):
+
+| | `rounds` | `race` | `board` | `claim` |
 |---|---|---|---|---|
-| **Fase de sala** | `question` | `race` | `race` | `question-live` |
-| **Quién avanza** | la clase junta: **el profe** o **el reloj** | cada alumno, a su ritmo | cada alumno, sobre el mismo tablero | el profe, según quién pide turno |
-| **Cómo se gana** | **más puntos** | **terminar primero con todas bien** | avanzar más en el tablero | los puntos que da el docente |
-| **Puntos** | **Kahoot**: base×500 + bonus por velocidad (`live.pointsModel`) | **PLANOS**: el puntaje ES el nº de aciertos | **escala propia** de la plantilla (Pelotas: 0-1000 por eficiencia — decisión P5, no pasa por `awardPoints`) | manuales (+10/+50), sin clave de respuesta |
-| **Desempate** | (los puntos ya lo resuelven) | **hora de meta** (servidor) | los puntos ya ordenan; a igualdad, hora de meta | — |
-| **Un fallo…** | se queda fallado, la ronda sigue | **vuelve a la cola** — se reintenta hasta acertarlo | se reintenta | — |
-| **Fin** | al agotar las preguntas | política declarada: **todos · primeros N · tiempo** (`core/liveEnd.js`) | igual que carrera | lo cierra el docente |
-| **Ventana de lectura** | sí (R-1: se ve la pregunta, no se puede tocar) | pendiente (ficha 2b, paso 2) | — | — |
+| **Un fallo…** | se queda fallado, la ronda sigue | **vuelve a la cola** | se reintenta | — |
+| **Ventana de lectura** | sí (R-1) | pendiente (ficha 2b) | — | — |
 | **Tiempo por pregunta** | sí (`item.seconds`, R-3) | — | — | — |
-| **Plantillas hoy** | Quiz · Operaciones · Tildes · Comas | las mismas | Ordena las Pelotas | Pregunta en vivo · Ruleta |
+| **Desempate** | (los puntos ya lo resuelven) | **hora de meta** (servidor) | los puntos ordenan; a igualdad, meta | — |
 
 **La carrera, en una frase**: *gana quien termina primero con todas bien*. Como
 un fallo vuelve a la cola, **todo el que termina lo hace con TODAS bien** → el
@@ -574,11 +582,28 @@ ocurre; queda escrito para que nadie lo "arregle" al revés.
 
 ### 9.6 Cuadro comparativo (las cinco preguntas, de un vistazo)
 
+Lo que declara el código (qué pantalla, qué persiste, si exige sesión de profe):
+
+<!-- GENERADO:modos -->
+| Modo | Pantalla | Persiste | ¿Necesita sesión de profe? |
+|---|---|---|---|
+| **Individual** | esta pantalla (embebido) | `results` | no |
+| **VS (duelo)** | esta pantalla (embebido) | nada (por diseño) | no |
+| **Equipos** | esta pantalla (embebido) | nada (por diseño) | no |
+| **En vivo** | página propia | `live_answers` | sí — crear una sala en vivo |
+| **Tarea** | página propia | `assignment_attempts` | sí — crear una tarea |
+
+> Generado de `core/modes.js` (`MODE_DEFS`) + `core/persistPolicy.js`.
+> Ningún modo escribe en dos sitios a la vez: lo vigila `tests/persistPolicy.test.mjs`.
+<!-- /GENERADO:modos -->
+
+Y el resto de las cinco preguntas, a mano:
+
+
 | | Individual | VS | Equipos | En vivo | Tarea |
 |---|---|---|---|---|---|
 | **Puntúa** | plantilla | plantilla (kernel) | plantilla o docente | host al liquidar | plantilla |
 | **Fin** | agotar ítems | `meta.play.vs` | agotar rondas | según el BUCLE (§9.4) | agotar ítems |
-| **Persiste** | `results` | nada | nada | `live_answers` | `assignment_attempts` |
 | **Reloj** | duración (opcional) | ninguno | ninguno | hasta deadline | duración (opcional) |
 | **Identidad** | dispositivo | ninguna | ninguna | apodo por sala | apodo + dispositivo |
 | **Reanuda F5** | sí | no | no | no (lo marca el host) | no |

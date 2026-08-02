@@ -1,5 +1,11 @@
 # LEYES del proyecto — índice único (qué · dónde está escrito · qué test la vigila)
 
+> **Los cuadros entre marcadores `<!-- GENERADO:… -->` NO se editan a mano**: los
+> escribe `node tools/docgen.mjs` desde el módulo dueño (`core/liveLoops.js`,
+> `core/modes.js`, `core/persistPolicy.js`) y `tests/docs.test.mjs` falla si el
+> documento y el código dejan de coincidir. El cuadro de los bucles llegó a decir
+> lo contrario que el código EN LOS TRES documentos a la vez.
+>
 > "Si es norma, es test." Aquí está TODA la ley en un sitio, con el archivo donde se
 > explica y el test que la hace fallar en CI si la rompes. Antes de dudar de una
 > convención, mira aquí. Verificación de todo: `node tests/run.mjs` (y `#/admin` →
@@ -565,17 +571,17 @@ nueva, o una elección de bucle más por NOMBRE de plantilla rompen CI.
 **Cada bucle declara CÓMO SE GANA**, y esa regla vive en el motor, no en la vista
 (cuadro completo en `docs/modos-de-juego.md` §9.4 y en CLAUDE.md):
 
-| Bucle | Cómo se gana | Puntos |
-|---|---|---|
-| `rounds` | más puntos | Kahoot (base×500 + velocidad) |
-| `race` | **terminar primero con todas bien** | planos; empate ⇒ hora de meta (servidor) |
-| `board` | avanzar más en el tablero | escala PROPIA de la plantilla (Pelotas: 0-1000 por eficiencia, P5) |
-| `claim` | los puntos que da el docente | manuales, sin clave de respuesta |
+<!-- GENERADO:bucles -->
+| Bucle | Fase | Quién avanza | **Cómo se gana** | Puntos | Fin | Plantillas que lo declaran |
+|---|---|---|---|---|---|---|
+| `rounds` · Rondas juntas | `question` | el profe o el reloj | más puntos | Kahoot: base×500 + bonus por velocidad | al agotar las preguntas | Comas · Operaciones · Quiz · Tildes |
+| `race` · Carrera libre | `race` | cada alumno | **terminar primero con todas bien** (empate ⇒ hora de meta) | **planos**: el puntaje ES el nº de aciertos | política declarada: todos · primeros N · tiempo | Comas · Operaciones · Quiz · Tildes |
+| `board` · Tablero | `race` | cada alumno | avanzar más en el tablero | escala propia de la plantilla (Pelotas: 0-1000 por eficiencia) | igual que la carrera | Ordena las Pelotas |
+| `claim` · Pedir la palabra | `question-live` | el profe (a quien pide turno) | los puntos que da el docente | manuales (+10/+50), sin clave de respuesta | lo cierra el docente | Abre Cajas · Ruleta |
 
-El bucle elegido se GUARDA en la sala (`state.loop`) y `pointsModeFor(loop)` es el
-único sitio donde está escrito qué modelo de puntos usa cada uno — derivarlo de la
-FASE era inválido: `race` y `board` comparten fase, y el settle de cierre corre con
-la sala ya en `ended`.
+> Generado de `core/liveLoops.js` + `meta.play.live` de las 13 plantillas.
+> El modelo de puntos lo decide `pointsModeFor(loop)`: `rounds`→`live` · `race`→`race` · `board`→`race` · `claim`→`live`.
+<!-- /GENERADO:bucles -->
 
 En carrera un fallo VUELVE A LA COLA: todo el que termina lo hace con TODAS bien,
 así que el puntaje no ordena y **manda la hora de meta**. El desempate va en los

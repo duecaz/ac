@@ -72,6 +72,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 |---|---|
 | **Ver TODAS las leyes/normas del proyecto** (px/token del juego, PB, XSS, versión…) | **`docs/leyes.md`** (índice único: qué · dónde · qué test la vigila) |
 | **VER EL MAPA DE MÓDULOS** (capas, quién importa a quién, dónde está el tamaño) | **`docs/arquitectura-modulos.md`** — GENERADO: `node tools/module-map.mjs` (lo vigila `tests/layers.test.mjs`) |
+| **Tocar un cuadro de bucles/modos en un MD** | NO se edita a mano: sale del código con `node tools/docgen.mjs` (lo vigila `tests/docs.test.mjs`) |
 | **EL NORTE: modelo de 4 capas** (contenido·plantilla·modo·plataforma, dueños y prohibiciones) | **`docs/leyes.md` §0** — contrastar TODO diseño contra ese cuadro |
 | **Quién escribe cada colección PB** (dueño único, prohibiciones, deuda) | **`docs/leyes.md` §21** — vigilada por la regla `pb-dueno` (`tests/norms.test.mjs`) |
 | **Qué palabra del cliente vale** (afirmación vs veredicto, fase de reglas live) | **`docs/leyes.md` §22** — regla `confianza-alumno` + C6 + answer-safety |
@@ -126,23 +127,43 @@ las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecut
 Cinco modos. Los tres embebidos comparten pantalla; los dos con página propia son otro
 montaje FÍSICO (proyector+móviles / gestión de entregas).
 
-| Modo | Pantalla | Puntúa | Cómo se gana | Persiste | Necesita cuenta |
-|---|---|---|---|---|---|
-| **Individual** | esta, embebido | la plantilla (shell solo) | tu puntaje | `results` | no |
-| **VS (duelo)** | esta, embebido | la plantilla (kernel) | `meta.play.vs`: `race` o `points` | nada (por diseño) | no |
-| **Equipos** | esta, embebido | la plantilla o el docente | `meta.play.teams`: `turns` o `board` | nada (por diseño) | no |
-| **En vivo** | página propia (host+móviles) | el **host** al liquidar | **según el BUCLE** ↓ | `live_answers`+`live_players` | **sí** (abrir sala) |
-| **Tarea** | página propia | la plantilla | tu puntaje | `assignment_attempts` | **sí** (crear tarea) |
+<!-- GENERADO:modos -->
+| Modo | Pantalla | Persiste | ¿Necesita sesión de profe? |
+|---|---|---|---|
+| **Individual** | esta pantalla (embebido) | `results` | no |
+| **VS (duelo)** | esta pantalla (embebido) | nada (por diseño) | no |
+| **Equipos** | esta pantalla (embebido) | nada (por diseño) | no |
+| **En vivo** | página propia | `live_answers` | sí — crear una sala en vivo |
+| **Tarea** | página propia | `assignment_attempts` | sí — crear una tarea |
+
+> Generado de `core/modes.js` (`MODE_DEFS`) + `core/persistPolicy.js`.
+> Ningún modo escribe en dos sitios a la vez: lo vigila `tests/persistPolicy.test.mjs`.
+<!-- /GENERADO:modos -->
+
+Y lo que no deriva del código — quién pone los puntos y cómo se gana:
+
+| Modo | Puntúa | Cómo se gana |
+|---|---|---|
+| **Individual** | la plantilla (shell solo) | tu puntaje |
+| **VS (duelo)** | la plantilla (kernel) | `meta.play.vs`: `race` o `points` |
+| **Equipos** | la plantilla o el docente | `meta.play.teams`: `turns` o `board` |
+| **En vivo** | el **host** al liquidar | **según el BUCLE** ↓ |
+| **Tarea** | la plantilla | tu puntaje |
 
 **«En vivo» son CUATRO bucles** (`core/liveLoops.js`, ley §26; los DECLARA la plantilla en
 `meta.play.live`, nunca un `<select>` fijo ni el nombre de la plantilla dentro de una vista):
 
-| Bucle | Fase | Quién avanza | **Cómo se gana** | Puntos | Fin |
-|---|---|---|---|---|---|
-| `rounds` Rondas juntas | `question` | el profe o el reloj | **más puntos** | Kahoot (base×500 + velocidad) | agotar preguntas |
-| `race` Carrera libre | `race` | cada alumno | **terminar primero con todas bien** | **planos** (puntaje = nº de aciertos) | todos · primeros N · tiempo (`core/liveEnd.js`) |
-| `board` Tablero | `race` | cada alumno | avanzar más en el tablero | **escala propia** de la plantilla (Pelotas: 0-1000 por eficiencia, P5) | igual que carrera |
-| `claim` Pedir la palabra | `question-live` | el profe (quien pide turno) | los puntos que da el docente | manuales (+10/+50) | lo cierra el docente |
+<!-- GENERADO:bucles -->
+| Bucle | Fase | Quién avanza | **Cómo se gana** | Puntos | Fin | Plantillas que lo declaran |
+|---|---|---|---|---|---|---|
+| `rounds` · Rondas juntas | `question` | el profe o el reloj | más puntos | Kahoot: base×500 + bonus por velocidad | al agotar las preguntas | Comas · Operaciones · Quiz · Tildes |
+| `race` · Carrera libre | `race` | cada alumno | **terminar primero con todas bien** (empate ⇒ hora de meta) | **planos**: el puntaje ES el nº de aciertos | política declarada: todos · primeros N · tiempo | Comas · Operaciones · Quiz · Tildes |
+| `board` · Tablero | `race` | cada alumno | avanzar más en el tablero | escala propia de la plantilla (Pelotas: 0-1000 por eficiencia) | igual que la carrera | Ordena las Pelotas |
+| `claim` · Pedir la palabra | `question-live` | el profe (a quien pide turno) | los puntos que da el docente | manuales (+10/+50), sin clave de respuesta | lo cierra el docente | Abre Cajas · Ruleta |
+
+> Generado de `core/liveLoops.js` + `meta.play.live` de las 13 plantillas.
+> El modelo de puntos lo decide `pointsModeFor(loop)`: `rounds`→`live` · `race`→`race` · `board`→`race` · `claim`→`live`.
+<!-- /GENERADO:bucles -->
 
 - **El BUCLE se DECLARA y se GUARDA** en el blob de la sala (`state.loop`, sin migración) al
   arrancar. De ahí lo leen el settle (modelo de puntos vía `pointsModeFor()` de
