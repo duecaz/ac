@@ -1,5 +1,11 @@
 # LEYES del proyecto — índice único (qué · dónde está escrito · qué test la vigila)
 
+> **Cada ley se DESPRENDE de una restricción del norte** — la cadena completa
+> (restricción → ley → test) está en `docs/norte.md` §6b, y ahí se ven también
+> los huecos: R2 ("el profe no configura nada") todavía no tiene ley, y el tramo
+> "buscar/crear" tampoco. Una ley que no puede citar su origen es una ley
+> huérfana.
+>
 > **Por encima de estas leyes está `docs/norte.md`**: para quién es la app, la
 > escena real de uso (una pizarra táctil, 45 minutos, tres minutos de
 > preparación), las restricciones duras y el criterio de decisión. Las leyes
