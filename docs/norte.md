@@ -432,20 +432,24 @@ Ordenar antes que añadir. Esto es todo lo construido, contrastado con la escena
 | **Emparejar** | parejas | puntos | turnos | — | ✅ arrastrar en la pizarra es su fuerte |
 | **Memoria** | parejas | — | turnos | — | ✅ pensado para turnos de equipo |
 | **Ordena las Pelotas** | tablero propio | carrera | tablero | tablero | ✅ un alumno resolviendo, la clase mirando |
-| **Sopa de Letras** | palabras | carrera | tablero | — | ✅ clásico de pizarra |
-| **Crucigrama** | palabras | — | — | — | ⚠️ **solo Individual**: escribir mucho en la pizarra es lento; encaja mejor como tarea |
-| **Etiqueta el diagrama** | diagrama | — | — | — | ⚠️ **solo Individual**; buen encaje visual, pero sin VS/equipos desaprovecha la clase |
+| **Etiqueta el diagrama** | diagrama | — | — | — | ✅ **valor alto en clase**: enlazar las partes del cuerpo con sus etiquetas es exactamente "sale un alumno y arrastra". ⚠️ hoy es **solo Individual**: darle VS/equipos sería aprovecharlo mejor |
+| **Sopa de Letras** (pupiletras) | palabras | carrera | tablero | — | ⚠️ **poco valor en clase**: buscar letras es lento y la clase no participa mientras tanto. Encaja mejor como tarea |
+| **Crucigrama** | palabras | — | — | — | ⚠️ **poco valor en clase**: escribir mucho en la pizarra es lento. Encaja mejor como tarea |
 | **Ruleta** | ítems | — | — | pedir la palabra | ✅ es una herramienta de conducción, no un ejercicio |
 | **Abre Cajas** | ítems | — | — | pedir la palabra | ✅ ídem |
 
-**Lo que el inventario dice**:
-- **9 de 13** sirven al caso central (un alumno al frente, VS o equipos).
-- **2** (Crucigrama, Etiqueta el diagrama) son **solo Individual**: funcionan,
-  pero no aprovechan a la clase. No es un error — es información para decidir si
-  algún día les damos VS/equipos o se asumen como "de tarea".
+**Lo que el inventario dice** (juicio del usuario, agosto de 2026):
+- **9 de 13** sirven al caso central: sale un alumno, resuelve delante de todos.
+- **Etiqueta el diagrama tiene valor alto** —enlazar las partes del cuerpo con
+  sus etiquetas es justo lo que se hace en una pizarra— pero **hoy es solo
+  Individual**. Darle VS/equipos es la mejora más clara del catálogo. *(No se
+  hace ahora: primero ordenar.)*
+- **Sopa de Letras y Crucigrama tienen poco valor EN CLASE**: buscar letras o
+  escribir palabras largas es lento y, mientras, la clase no participa — que es
+  para lo que existe la actividad (§1). No se retiran: **encajan como tarea**.
 - **2** (Ruleta, Abre Cajas) no son ejercicios sino **herramientas de
-  conducción**: sirven para dar la palabra y repartir turnos. Encajan con §1
-  mejor de lo que su nombre sugiere.
+  conducción**: dar la palabra y repartir turnos. Encajan con §1 mejor de lo que
+  su nombre sugiere.
 - **Ninguna plantilla sobra**, y ninguna contradice el norte.
 
 ### Los cinco modos
