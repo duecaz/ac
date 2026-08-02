@@ -7,7 +7,8 @@
 > **Estado** (v1.51.367). CONFIRMADO por el usuario: §1 escena · §3 R1-R6 · §4
 > "lo que no somos" · §5 referentes (⏳ pendiente de DETALLAR: hoy es un esquema
 > y hace falta bajar cada fila a ejemplos concretos).
-> **[CONFIRMAR]**: §2b presupuesto de tiempo · §6d señales de que vamos bien.
+> **[CONFIRMAR]**: §2b presupuesto de tiempo (detallado por momentos reales).
+> **APLAZADO por decisión**: §6d (señales) y todo lo de alumnos identificados.
 > §3 R7 (privacidad de menores), §3b actores, §3c degradación y §6e vocabulario
 > describen lo que YA hacen el código y las reglas del servidor — salvo la
 > columna "se dice" del vocabulario, que es la decisión que falta aplicar.
@@ -24,13 +25,22 @@ minutos**: como introducción, como la actividad del día o para explicar algo.
 > sesión que el profe ya tenía preparada. Eso manda sobre todo lo demás: si algo
 > exige montar la clase alrededor de la app, está mal planteado.
 
-Cómo se juega, por frecuencia real:
+**Los alumnos SALEN AL FRENTE.** No juegan desde su sitio: pasan a la pizarra,
+resuelven, y vuelve a sentarse. La clase mira. Eso es lo que explica el reparto
+de modos — y por qué "en vivo" es la excepción y no la regla:
 
-| | Cómo | Cuánto |
-|---|---|---|
-| **Individual · VS · Equipos** | todos miran la pizarra; se juega ahí mismo | **lo habitual** |
-| **En vivo** | cada alumno con su propio móvil | **solo en algunos colegios** |
-| **Tarea** | fuera de clase | ocasional |
+| | Cómo se juega | Cuántos salen | Cuánto se usa |
+|---|---|---|---|
+| **Individual** | **un alumno sale** y resuelve en la pizarra | 1 por turno | **lo habitual** |
+| **VS (duelo)** | **dos alumnos salen** y compiten en la misma pantalla | 2 por turno | **lo habitual** |
+| **Equipos** | la clase dividida; sale quien le toca del equipo | 1-2 por turno | a veces |
+| **En vivo** | cada alumno desde su propio móvil, sentado | los 33 a la vez | **raro** — solo algunos colegios |
+| **Tarea** | fuera de clase | — | ocasional |
+
+> **Consecuencia de diseño**: si los alumnos salen por turnos, lo que importa es
+> **el tiempo entre turno y turno**, no el tiempo total. Cada relevo tiene que
+> ser un toque: si entre alumno y alumno hay que volver a configurar algo, la
+> clase se enfría y el profe deja de usarlo.
 
 Todo lo que sigue se juzga contra esa escena.
 
@@ -47,8 +57,8 @@ en el **durante**, y ahí manda el reloj.
 
 | | Qué hace el profe | Cuánto dura | Qué NO puede pasar |
 |---|---|---|---|
-| **ANTES** | busca una actividad o la crea; a veces el día anterior, a veces 3 minutos antes | minutos, y a menudo con prisa | que haya que preparar algo obligatorio para poder jugar (R2) |
-| **DURANTE** | proyecta, elige el modo y juega unos minutos; atiende a la clase, no a la app | **la actividad son minutos** dentro de la sesión | que la app pida atención (un error, una espera, un ajuste): la clase se cae con ella (R6) |
+| **ANTES** | llega **con su clase ya preparada**, y para la actividad: (a) usa una suya, (b) **la busca en la biblioteca** hasta encontrar una que encaje, o (c) la crea | minutos, a veces la tarde anterior y a veces 3 minutos antes | que haya que preparar algo obligatorio para poder jugar (R2) |
+| **DURANTE** | proyecta, elige el modo y **los alumnos salen por turnos** a la pizarra; el profe atiende a la clase, no a la app | la actividad son **unos minutos**, repartidos en 5-10 turnos | que la app pida atención (un error, una espera, un ajuste): la clase se cae con ella (R6) · que el relevo entre alumnos cueste más de un toque |
 | **DESPUÉS** | mira quién falló qué, comenta, y sigue con su clase | segundos, o nada | que revisar exija exportar, cruzar hojas o entrar a otro sitio |
 
 > **Lo que esto implica**: casi todo el valor está en el DURANTE, pero casi todo
@@ -67,19 +77,58 @@ una actividad supiera en qué modo corre, esa promesa sería imposible de manten
 
 ## 2b. El presupuesto de tiempo **[CONFIRMAR]**
 
-La promesa de §2 es medible o no es nada. Propuesta de objetivos — no son
-métricas de vanidad, son el listón contra el que se juzga una pantalla nueva:
+La promesa de §2 es medible o no es nada. Esto es el listón contra el que se
+juzga cualquier pantalla nueva, ordenado por los momentos REALES del §1b.
+"Toques" = acciones del profe (clic o táctil), sin contar escribir contenido.
+
+### ANTES · el profe llega con la clase preparada
+
+| Momento | Objetivo | Si se pasa, ¿quién lo sufre? |
+|---|---|---|
+| Entrar y ver mis actividades | ≤ 5 s desde abrir la web | el profe, con prisa antes de clase |
+| **Encontrar en MI lista la que voy a usar** | ≤ 2 toques (buscar por título incluido) | el profe, si tiene 40 actividades |
+| **Buscar en la biblioteca una que encaje con mi clase** | ≤ 1 min hasta tenerla lista para jugar | el profe que no preparó nada |
+| Crear una de 5 preguntas desde cero | ≤ 3 min | el profe la tarde anterior |
+| Ajustar una que ya tengo (cambiar 2 preguntas) | ≤ 1 min | el profe reutilizando |
+
+### DURANTE · el montaje, con 33 críos mirando
+
+| Momento | Objetivo | Por qué ese número |
+|---|---|---|
+| De la lista a **la actividad en pantalla completa** | **≤ 3 toques y ≤ 15 s** | es el momento en que la clase está esperando: cada segundo se nota |
+| Elegir modo (Individual · VS · Equipos) y **empezar** | **1 toque** por modo, sin pantalla intermedia obligatoria | R2: el profe no configura |
+| Que se lea **desde el fondo del aula** | sin tocar nada: entra ya legible | R1 |
+| Formar equipos | ≤ 3 toques (nombres por defecto ya puestos) | si hay que teclear 4 nombres, no se usa |
+
+### DURANTE · el turno del alumno en la pizarra ⭐
+
+Lo que más se repite en una clase, y lo que menos se suele medir.
+
+| Momento | Objetivo | Por qué |
+|---|---|---|
+| El alumno sale y **entiende qué hacer sin que le expliquen** | 0 palabras del profe: instrucciones visibles en la pantalla de inicio | si el profe tiene que explicar cada turno, pierde la clase |
+| **Un turno completo** (sale, resuelve, vuelve) | 30-60 s | 33 alumnos no caben en la actividad: se juega por turnos y se rota |
+| **Relevo: siguiente alumno** | **1 toque**, sin volver a configurar nada | es el número que decide si la actividad dura 3 minutos o 10 |
+| **Relevo en VS**: dos nuevos al frente | **1 toque** para otro duelo | igual que arriba |
+| Que un fallo del alumno **no bloquee** el turno | siempre hay salida visible (reintento o siguiente) | R6 |
+
+### DURANTE · en vivo (el caso raro)
 
 | Momento | Objetivo |
 |---|---|
-| De abrir la app a **estar jugando** una actividad que ya tengo | **≤ 3 toques** y ≤ 15 segundos |
-| De decidir "quiero una de tildes" a **tenerla lista** (buscada en la biblioteca) | ≤ 1 minuto |
-| De crear una actividad de 5 preguntas desde cero | ≤ 3 minutos |
-| De abrir sala en vivo a **el primer alumno dentro** | ≤ 30 segundos (PIN + QR a la vista) |
-| De terminar a **ver quién falló qué** | ≤ 2 toques, sin exportar nada |
+| De abrir sala a **el primer alumno dentro** | ≤ 30 s (PIN y QR grandes, a la vista) |
+| Que un alumno que llega tarde **entre y juegue** | sin reiniciar nada |
 
-> Si una función añade un paso a cualquiera de estas filas, tiene que quitar
-> otro o justificar muy bien por qué.
+### DESPUÉS · revisar, en segundos
+
+| Momento | Objetivo |
+|---|---|
+| Ver **quién falló qué** | ≤ 2 toques, sin exportar nada |
+| **Repetir la actividad** con otros alumnos | 1 toque desde el resultado |
+
+> **La regla**: si una función añade un paso a cualquiera de estas filas, tiene
+> que quitar otro o justificar muy bien por qué. Y el número que más peso tiene
+> es **el relevo entre alumnos**: es el que se repite 10 veces por clase.
 
 ## 3. Las restricciones duras
 
@@ -144,6 +193,20 @@ se resuelven aquí.
 - **No somos una app de estudio en casa.** El modo Tarea existe para extender la
   clase, no para sustituirla. Si algo solo tiene sentido con el alumno solo en
   su casa, probablemente no es nuestro.
+
+## 4b. Lo que NO haremos TODAVÍA (aplazado con condición)
+
+Distinto de §4: aquí no decimos que no sea nuestro, decimos **que no toca**.
+Cada uno con la condición que tendría que cumplirse para reabrirlo.
+
+| Idea | Por qué no ahora | Qué tendría que pasar |
+|---|---|---|
+| **Generar actividades con IA** | Encaja con la promesa (§2) y sería la vía (d) del ANTES, pero **añadiría superficie nueva sobre una estructura que todavía estamos ordenando**. Meterlo hoy complica justo lo que estamos arreglando | Que la estructura esté sólida y **sin huecos**, y que la IA entre obedeciendo a un plan específico y escrito — no como añadido |
+| **Identidad del alumno (D1)** | toda solución conocida choca con R2/R3/R7 | estudio propio previo, incluido cómo lo resuelven otras apps (§7) |
+| **Medir "cómo vamos" (§6d)** | primero se termina el norte | tener el norte cerrado |
+
+> Escribirlo aquí es lo que evita que reaparezca cada dos semanas como si fuera
+> nuevo: no está olvidado, está **aplazado y con condición**.
 
 ## 5. Los referentes: qué tomamos y qué no ✅ CONFIRMADO · ⏳ falta detallar
 
@@ -226,22 +289,13 @@ estructural, en este orden:
 > el norte es una decisión huérfana. Con el tiempo, las huérfanas son las que
 > nadie sabe por qué están y nadie se atreve a quitar.
 
-## 6d. Señales de que vamos bien **[CONFIRMAR]**
+## 6d. Señales de que vamos bien — APLAZADO
 
-Sin esto, "mejorar" es opinión. Propuesta de señales — ninguna necesita
-analítica ni espiar a nadie (R7): salen de preguntar al profe y de mirar el repo.
-
-| Señal | Cómo se ve | Por qué esa |
-|---|---|---|
-| **El profe REPITE a la semana siguiente** | preguntándole | es la única señal que no se puede fingir |
-| **La usa sin avisar a nadie** | no hay mensajes de "no me funciona" | R6: si la clase se cayó, lo sabemos |
-| **La actividad empieza dentro del presupuesto** (§2b) | cronómetro en mano, una vez al mes | la promesa es el tiempo |
-| **Ninguna clase se rompe por un fallo nuestro** | los reportes del profe | R6 otra vez |
-| **El esfuerzo cae donde el profe pasa** | tabla por tramos de `arquitectura-modulos.md` | evita repetir lo de esta semana (blindar el modo minoritario) |
-
-**Lo que NO vamos a medir**, aunque sea fácil: nada del alumno más allá de lo que
-la clase necesita (R7). Ni cuántas veces abre, ni desde qué aparato, ni cuánto
-tarda en responder fuera de la partida.
+Decisión del usuario: **primero se termina de establecer el norte**. Cómo
+sabremos que vamos bien (y qué se mide, si es que se mide algo del alumno) se
+verá mucho después, junto con la decisión sobre alumnos identificados (D1).
+Hasta entonces, la prioridad se decide con §1, §2b y §8, que no necesitan medir
+a nadie.
 
 ## 6e. UNA COSA, UN NOMBRE (vocabulario)
 
