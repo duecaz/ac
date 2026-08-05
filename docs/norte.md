@@ -4,8 +4,9 @@
 > construye; **este dice qué construimos y para quién**. Si una ley y el norte
 > chocan, gana el norte y la ley se replantea.
 >
-> **Estado** (v1.51.376). CONFIRMADO por el usuario: §1 escena · §2b presupuesto
-> de tiempo · §3 restricciones · §4 "lo que no somos" · §5 referentes en lo
+> **Estado** (v1.51.377). CONFIRMADO por el usuario: §1 escena · §2b presupuesto
+> de tiempo · §3 restricciones · §4 "lo que no somos" · **§4c/§4d dos familias
+> (ejercicios y juegos)** · **§7c la entrada y el menú** · §5 referentes en lo
 > esencial (⏳ pendiente de un ESTUDIO: documentarse y probar a fondo los
 > referentes para saber qué partes encajan con nuestra escena).
 > **APLAZADO por decisión** (§4b): §6d señales · alumnos identificados (D1) ·
@@ -32,6 +33,14 @@
 - [3c. Qué pasa cuando algo falla (degradación declarada)](#3c-qué-pasa-cuando-algo-falla-degradación-declarada)
 - [4. Lo que NO somos ✅ CONFIRMADO](#4-lo-que-no-somos--confirmado)
 - [4b. Lo que NO haremos TODAVÍA (aplazado con condición)](#4b-lo-que-no-haremos-todavía-aplazado-con-condición)
+- [4c. LAS DOS FAMILIAS: ejercicios y juegos ✅ CONFIRMADO](#4c-las-dos-familias-ejercicios-y-juegos--confirmado)
+  - [El eje NO es pedagógico/lúdico. Es quién pone el contenido](#el-eje-no-es-pedagógicolúdico-es-quién-pone-el-contenido)
+  - [La regla de decisión (tres preguntas, sin discusión)](#la-regla-de-decisión-tres-preguntas-sin-discusión)
+  - [El catálogo de juegos está ACOTADO en OCHO](#el-catálogo-de-juegos-está-acotado-en-ocho)
+  - [El eje de los ejercicios es la MECÁNICA](#el-eje-de-los-ejercicios-es-la-mecánica)
+  - [El momento de clase de cada familia — esto es lo que manda](#el-momento-de-clase-de-cada-familia--esto-es-lo-que-manda)
+  - [Lo que se DERIVA de la distinción (para no discutirlo pieza a pieza)](#lo-que-se-deriva-de-la-distinción-para-no-discutirlo-pieza-a-pieza)
+- [4d. Y lo que NO haremos con los juegos](#4d-y-lo-que-no-haremos-con-los-juegos)
 - [5. Los referentes: qué tomamos y qué no ✅ CONFIRMADO · ⏳ falta detallar](#5-los-referentes-qué-tomamos-y-qué-no--confirmado---falta-detallar)
 - [6. El criterio de decisión](#6-el-criterio-de-decisión)
 - [6b. DE DÓNDE SE DESPRENDE CADA LEY — la cadena de derivación](#6b-de-dónde-se-desprende-cada-ley--la-cadena-de-derivación)
@@ -40,9 +49,14 @@
 - [6e. UNA COSA, UN NOMBRE (vocabulario)](#6e-una-cosa-un-nombre-vocabulario)
 - [7. El viaje del profesor — dónde estamos](#7-el-viaje-del-profesor--dónde-estamos)
 - [7b. INVENTARIO: lo que YA tenemos, y dónde encaja](#7b-inventario-lo-que-ya-tenemos-y-dónde-encaja)
-  - [Las 13 plantillas](#las-13-plantillas)
+  - [Las 13 plantillas — 12 ejercicios y 1 juego](#las-13-plantillas--12-ejercicios-y-1-juego)
   - [Los cinco modos](#los-cinco-modos)
   - [Lo que sostiene todo eso](#lo-que-sostiene-todo-eso)
+- [7c. LA ENTRADA Y EL MENÚ ✅ CONFIRMADO](#7c-la-entrada-y-el-menú--confirmado)
+  - [Lo que hacen los referentes (mirado, no supuesto)](#lo-que-hacen-los-referentes-mirado-no-supuesto)
+  - [La entrada](#la-entrada)
+  - [El menú: CUATRO entradas, y ninguna se llama "Alumno"](#el-menú-cuatro-entradas-y-ninguna-se-llama-alumno)
+  - [Y cuándo tocaría cambiarlo](#y-cuándo-tocaría-cambiarlo)
 - [8. LA COLA, DERIVADA DEL NORTE (no de la inercia)](#8-la-cola-derivada-del-norte-no-de-la-inercia)
 - [9. Cómo se relaciona con el resto de la documentación](#9-cómo-se-relaciona-con-el-resto-de-la-documentación)
 
@@ -298,10 +312,128 @@ Cada uno con la condición que tendría que cumplirse para reabrirlo.
 | **Identidad del alumno (D1)** | toda solución conocida choca con R2/R3/R7 | estudio propio previo, incluido cómo lo resuelven otras apps (§7) |
 | **Medir "cómo vamos" (§6d)** | primero se termina el norte | tener el norte cerrado |
 | **Otros idiomas** | **por ahora, solo español**. Traducir hoy multiplicaría el trabajo de cada pantalla sin que nadie lo pida | que aparezca un colegio que lo necesite; entonces se decide catálogo de textos vs. duplicar |
+| **Alumnos jugando entre ellos, sin profe** (área de alumno, juegos fuera de clase) | Cambia el norte, no la interfaz: otro público, otro momento, y arrastra cuentas de menores y ranking entre alumnos — justo lo que R7 y §4 cierran | Que se levante D1 (identidad del alumno) con su estudio previo. Ver §4d |
 | **Accesibilidad avanzada** (daltonismo, lectores de pantalla) | no toca ahora: primero se ordena lo que hay. R1 ya cubre lo básico de aula (tamaño, contraste, legible a 3 m) | terminar el orden que estamos haciendo; entonces se revisa el color como única señal (Tildes/Comas) |
 
 > Escribirlo aquí es lo que evita que reaparezca cada dos semanas como si fuera
 > nuevo: no está olvidado, está **aplazado y con condición**.
+
+## 4c. LAS DOS FAMILIAS: ejercicios y juegos ✅ CONFIRMADO
+
+Ordena las Pelotas nunca encajó del todo, y la razón no era que fuera "menos
+pedagógica": es que **es otra cosa**. Aquí queda escrito qué es cada familia, con
+una regla que clasifica sola las que vengan — para no rehacer esta sección cada
+vez que se añada una plantilla.
+
+### El eje NO es pedagógico/lúdico. Es quién pone el contenido
+
+"Sin valor pedagógico" es una etiqueta falsa y además contraproducente: un
+sudoku entrena planificación, y ponerle ese cartel le complica al profe
+justificarlo ante su coordinación. La diferencia real es estructural:
+
+| | **EJERCICIO** | **JUEGO** |
+|---|---|---|
+| **El contenido lo pone** | el docente (sus preguntas, sus frases, su tema) | la plantilla (genera el tablero) |
+| **Hay clave de respuesta** | sí | no: hay un estado RESUELTO |
+| **El editor sirve para** | escribir el contenido | elegir la dificultad |
+| **Se busca por tema** | sí ("puntos notables") | no: se busca por nombre y por habilidad |
+| **Sirve para ver cómo va la clase** | sí | no |
+| **Dos actividades distintas de la misma plantilla** | sí, tantas como quiera | no: el juego es UNO |
+| **Le cuesta preparación al profe** | sí (o la busca hecha) | **cero** |
+
+Ese "cero preparación" no es un demérito: es su mejor argumento de venta.
+
+### La regla de decisión (tres preguntas, sin discusión)
+
+Una plantilla es **JUEGO** si y solo si responde *no* a las tres:
+
+1. ¿El docente escribe el contenido con el que se juega?
+2. ¿Existe una clave de respuesta que él decide?
+3. ¿Puede tener DOS actividades distintas con esta misma plantilla?
+
+Si responde *sí* a las tres, es **EJERCICIO**. No hay término medio, y no lo
+decide quien la programa a ojo: la plantilla lo **declara** (`meta.kind`) y el
+contrato lo exige, igual que `play` o `submit`. Casos que la regla resuelve sola
+y que no son obvios:
+
+- **Sopa de Letras y Crucigrama son EJERCICIOS**, aunque "parezcan juego": las
+  palabras las pone el profe y son las de su tema.
+- **Memoria es EJERCICIO**: los pares son suyos.
+- **Un sudoku con las tablas de multiplicar seguiría siendo JUEGO**: el tablero
+  lo genera la plantilla; que el adorno sean números no lo convierte en
+  contenido del docente.
+
+### El catálogo de juegos está ACOTADO en OCHO
+
+Igual que la ley §26 congeló los bucles en vivo, aquí hay un techo declarado:
+**máximo 8 juegos**. Sin él, la parte barata de construir (no hay editor, no hay
+contenido, los motores ya están) se come el catálogo y acabamos siendo un sitio
+de juegos con actividades al lado — lo contrario del norte. Ocho es suficiente
+para cubrir las habilidades de abajo con una o dos opciones cada una.
+
+**El eje de los juegos es la HABILIDAD que entrenan** — no la materia, porque no
+tienen materia. Es lo que le sirve al profe para elegir y para justificarlo:
+
+| Habilidad | Para qué momento | Ejemplos (la lista es abierta, el eje NO) |
+|---|---|---|
+| **Lógica y deducción** | pensar antes de mover | Ordena las Pelotas ✅ · sudoku · buscaminas |
+| **Planificación** | ver varios pasos por delante | torres de Hanoi · laberinto · deslizar piezas |
+| **Memoria y atención** | despertar al grupo | secuencias (Simón) · parejas rápidas |
+| **Espacial** | girar figuras en la cabeza | tangram · encajar piezas |
+| **Cálculo mental rápido** | calentar antes de mates | cadenas de operaciones contrarreloj |
+
+Un juego nuevo **declara su habilidad** y ocupa una de las ocho plazas. Si las
+ocho están llenas, entra sustituyendo, no sumando: esa conversación es sana.
+
+### El eje de los ejercicios es la MECÁNICA
+
+Y aquí no hay techo: los ejercicios SON el producto. Su eje interno es **qué
+hace el alumno con el dedo**, que es lo que ya organiza el código (el modelo de
+contenido): elegir · marcar el texto · emparejar · construir/escribir · buscar ·
+ordenar por turnos. El **área y el grado** los pone el profe con etiquetas, y esa
+taxonomía es una decisión aparte y aplazada (D5, `decisiones-pendientes.md`).
+
+### El momento de clase de cada familia — esto es lo que manda
+
+| | **EJERCICIO** | **JUEGO** |
+|---|---|---|
+| **Cuándo** | dentro de la clase: introducción, refuerzo, cierre | los 5 minutos de cambio de ritmo · el premio · el reto entre dos en la pizarra · el que acabó antes |
+| **Cuántos por sesión** | 1 a 5 (§1) | 0 o 1 |
+| **Quién decide** | el profe, porque encaja con su tema | el profe, porque le hace falta un respiro o un enganche |
+
+**El juego resuelve un momento que hoy el profe no tiene resuelto**, y por eso
+merece existir aquí: no es relleno, es la palanca de atención de los cinco
+minutos finales, y no le cuesta ni un minuto de preparación.
+
+### Lo que se DERIVA de la distinción (para no discutirlo pieza a pieza)
+
+Estas consecuencias no son opinión: caen solas del cuadro de arriba.
+
+| Decisión | EJERCICIO | JUEGO | Por qué |
+|---|---|---|---|
+| Aparece en **informes de aprendizaje** | sí | **no** | no hay contenido del profe del que informar; un ranking de sudokus no dice nada de nadie |
+| Se puede mandar como **Tarea** | sí | **no** | no hay nada que evaluar, y mandar juegos a casa es empujar hacia el uso sin profe (§4b) |
+| Se **publica** en la biblioteca | sí (es creación suya) | **no**: vienen con la app | el profe no es su autor |
+| Se **busca por tema** | sí, también dentro del contenido | por nombre y habilidad | no tiene texto que buscar |
+| Su **editor** | escribe contenido | "ajustes del juego" (dificultad) | no es lo mismo y no debe llamarse igual (§6e) |
+| Guarda **puntaje** | sí, y se lee en informes | sí, pero solo como marca personal | el récord es del juego, no del alumno |
+
+## 4d. Y lo que NO haremos con los juegos
+
+Escrito aquí porque es donde se va a intentar colar:
+
+- **Alumnos jugando entre ellos, sin profe delante**: es lo primero que apetece,
+  y **cambia el norte, no la interfaz**. Otro público (el alumno), otro momento
+  (recreo, casa), otro producto. Y arrastra solo lo que R7 prohíbe: cuentas de
+  menores, ranking entre alumnos, "quién es el mejor de 5ºA". Aplazado, atado a
+  D1 (identidad del alumno) — ver §4b.
+- **Ranking global, ligas o competición entre colegios**: no. Sería una red
+  social con tablero (§4) y encima de menores.
+- **Juegos creables o editables por el profe**: no hay contenido que poner. Si
+  alguna vez lo hubiera, deja de ser juego y es un ejercicio (la regla de arriba
+  lo resuelve).
+- **Una sección "Juegos" fuera del catálogo**: ver §7c — hoy no, y con condición
+  escrita para reabrirlo.
 
 ## 5. Los referentes: qué tomamos y qué no ✅ CONFIRMADO · ⏳ falta detallar
 
@@ -492,23 +624,27 @@ Ordenar antes que añadir. Esto es todo lo construido, contrastado con la escena
 (§1). La columna "encaje" es **juicio**, no dato: el resto sale del código
 (`meta.play` y el registro de plantillas).
 
-### Las 13 plantillas
+### Las 13 plantillas — 12 ejercicios y 1 juego
 
-| Plantilla | Modelo de contenido | VS | Equipos | En vivo | Encaje con la escena (un alumno en la pizarra) |
-|---|---|---|---|---|---|
-| **Quiz** | preguntas | puntos | turnos | rondas · carrera | ✅ el caso central: sirve para todo |
-| **Operaciones** | preguntas | carrera | turnos | rondas · carrera | ✅ ídem, con teclado numérico |
-| **Tildes** | corrección de texto | puntos | turnos | rondas · carrera | ✅ marcar sobre el texto se ve bien de lejos |
-| **Comas** | corrección de texto | puntos | turnos | rondas · carrera | ✅ ídem |
-| **Explota Globos** | preguntas | puntos | turnos | — | ✅ muy visual; sin vivo, y está bien así |
-| **Emparejar** | parejas | puntos | turnos | — | ✅ arrastrar en la pizarra es su fuerte |
-| **Memoria** | parejas | — | turnos | — | ✅ pensado para turnos de equipo |
-| **Ordena las Pelotas** | tablero propio | carrera | tablero | tablero | ✅ un alumno resolviendo, la clase mirando |
-| **Etiqueta el diagrama** | diagrama | — | — | — | ✅ **valor alto en clase**: enlazar las partes del cuerpo con sus etiquetas es exactamente "sale un alumno y arrastra". ⚠️ hoy es **solo Individual**: darle VS/equipos sería aprovecharlo mejor |
-| **Sopa de Letras** (pupiletras) | palabras | carrera | tablero | — | ⚠️ **poco valor en clase**: buscar letras es lento y la clase no participa mientras tanto. Encaja mejor como tarea |
-| **Crucigrama** | palabras | — | — | — | ⚠️ **poco valor en clase**: escribir mucho en la pizarra es lento. Encaja mejor como tarea |
-| **Ruleta** | ítems | — | — | pedir la palabra | ✅ es una herramienta de conducción, no un ejercicio |
-| **Abre Cajas** | ítems | — | — | pedir la palabra | ✅ ídem |
+La columna **Familia** es la de §4c: **E** = ejercicio (el contenido lo pone el
+profe) · **J** = juego (lo genera la plantilla). Hoy hay **1 de 8** plazas de
+juego ocupadas.
+
+| Plantilla | Familia | Modelo de contenido | VS | Equipos | En vivo | Encaje con la escena (un alumno en la pizarra) |
+|---|---|---|---|---|---|---|
+| **Quiz** | E | preguntas | puntos | turnos | rondas · carrera | ✅ el caso central: sirve para todo |
+| **Operaciones** | E | preguntas | carrera | turnos | rondas · carrera | ✅ ídem, con teclado numérico |
+| **Tildes** | E | corrección de texto | puntos | turnos | rondas · carrera | ✅ marcar sobre el texto se ve bien de lejos |
+| **Comas** | E | corrección de texto | puntos | turnos | rondas · carrera | ✅ ídem |
+| **Explota Globos** | E | preguntas | puntos | turnos | — | ✅ muy visual; sin vivo, y está bien así |
+| **Emparejar** | E | parejas | puntos | turnos | — | ✅ arrastrar en la pizarra es su fuerte |
+| **Memoria** | E | parejas | — | turnos | — | ✅ pensado para turnos de equipo |
+| **Ordena las Pelotas** | J | tablero propio | carrera | tablero | tablero | ✅ un alumno resolviendo, la clase mirando |
+| **Etiqueta el diagrama** | E | diagrama | — | — | — | ✅ **valor alto en clase**: enlazar las partes del cuerpo con sus etiquetas es exactamente "sale un alumno y arrastra". ⚠️ hoy es **solo Individual**: darle VS/equipos sería aprovecharlo mejor |
+| **Sopa de Letras** (pupiletras) | E | palabras | carrera | tablero | — | ⚠️ **poco valor en clase**: buscar letras es lento y la clase no participa mientras tanto. Encaja mejor como tarea |
+| **Crucigrama** | E | palabras | — | — | — | ⚠️ **poco valor en clase**: escribir mucho en la pizarra es lento. Encaja mejor como tarea |
+| **Ruleta** | E | ítems | — | — | pedir la palabra | ✅ es una herramienta de conducción, no un ejercicio |
+| **Abre Cajas** | E | ítems | — | — | pedir la palabra | ✅ ídem |
 
 **Lo que el inventario dice** (juicio del usuario, agosto de 2026):
 - **9 de 13** sirven al caso central: sale un alumno, resuelve delante de todos.
@@ -523,6 +659,10 @@ Ordenar antes que añadir. Esto es todo lo construido, contrastado con la escena
   conducción**: dar la palabra y repartir turnos. Encajan con §1 mejor de lo que
   su nombre sugiere.
 - **Ninguna plantilla sobra**, y ninguna contradice el norte.
+- **Ordena las Pelotas es el único JUEGO** (§4c) y por eso nunca encajó del todo
+  en las columnas de arriba: no tiene contenido del profe, no informa de nada y su
+  "encaje" es otro — el cambio de ritmo, no el refuerzo del tema. Sopa de Letras y
+  Crucigrama **no** son juegos aunque lo parezcan: las palabras son las del profe.
 
 ### Los cinco modos
 
@@ -542,6 +682,62 @@ físico** — no por capricho de la interfaz.
 | Cuotas y retención (§25) | los límites de la Pi ([§25](leyes.md#25--capacidad--el-sistema-tiene-límites-y-son-uno)) | ✅ declarado y verificado |
 | Reglas de servidor (§22) | el alumno no se puntúa ([§22](leyes.md#22--ley-de-confianza--el-cliente-afirma-el-veredicto-lo-pone-otro)) | ✅ endurecidas y probadas |
 
+## 7c. LA ENTRADA Y EL MENÚ ✅ CONFIRMADO
+
+La pregunta práctica: qué ve el profe al escribir la dirección, y qué entradas
+tiene la barra. Se decide aquí y no en la interfaz porque **el menú es el norte
+hecho botones**: lo que está en la barra es lo que decimos que somos.
+
+### Lo que hacen los referentes (mirado, no supuesto)
+
+| Sitio | Para quién es | ¿Sección de juegos? |
+|---|---|---|
+| **Wordwall** | el docente | **No.** Todo es plantilla que el profe rellena; la comunidad es de actividades suyas |
+| **Educaplay** | el docente | **No.** ~16 tipos de actividad, todos con contenido del docente |
+| **ABCya · Toy Theater** | **el alumno** | **Sí**: "Games / Puzzles / logic games" junto a las materias, organizados por grado |
+
+El patrón es nítido y decide por nosotros: **la sección "Juegos" es lo que tienen
+los sitios PARA ALUMNOS.** Las herramientas de docente no la tienen, porque su
+catálogo es "lo que puedes crear". Como nuestro norte es el docente (§1), la
+referencia correcta es Wordwall/Educaplay.
+
+Pero hay una diferencia real con ellos: **nuestros juegos no se pueden crear**.
+No caben en "crear una actividad", así que necesitan un sitio donde vivir. La
+salida no es una sección hermana: es **una estantería dentro del mismo catálogo**.
+
+### La entrada
+
+| Quien llega | Ve | Por qué |
+|---|---|---|
+| **Profe con sesión** | **Mis actividades**, directo | Ya sabe a qué viene y viene con prisa (§2b). Que la app le enseñe un escaparate antes de su material es hacerle perder el primer toque |
+| **Cualquiera sin sesión** | la portada pública | Es la que convence al que llega de fuera y la que indexa el buscador. Pero **le habla AL PROFE**, no al alumno: hoy dice "Aprende jugando · juega gratis", que es lenguaje de sitio de alumnos |
+| **Un alumno** | **no entra por aquí**: entra por PIN o por el enlace de su tarea, desde su móvil | Es otro montaje físico (§1). Un "Entrar con PIN" discreto en la portada pública basta para el que teclea la dirección a mano |
+
+### El menú: CUATRO entradas, y ninguna se llama "Alumno"
+
+1. **Mis actividades** — la casa del profe.
+2. **Biblioteca** — lo de otros profes, para reutilizar (hoy "Explorar": un nombre, §6e).
+3. **Juegos** — la estantería de los ocho. Sin crear, sin publicar, sin login.
+4. **Informes** — después de clase.
+
+**"Alumno" NO va en la barra del profe.** Meter ahí a otro público es abrir por
+la puerta de atrás lo que §4d aplaza: alumnos jugando solos. El alumno tiene sus
+dos entradas y son ajenas a este menú (PIN y enlace de tarea).
+
+**"Juegos" sí va**, y no contradice lo anterior: quien los lanza es el profe,
+desde la pizarra, en su clase. Es una estantería de su catálogo, no un área para
+nadie más.
+
+### Y cuándo tocaría cambiarlo
+
+Condiciones escritas, para no rediscutirlo por intuición:
+
+- **Sección propia de juegos** (fuera del catálogo): solo si se entra a la app
+  *buscando juegos*. Eso es un dato de uso, no una impresión.
+- **Área de alumno**: solo si se levanta el aplazamiento de §4d/D1. No antes.
+- **Un quinto botón en la barra**: no. Con cinco ya nadie lee ninguno; si algo
+  entra, algo sale.
+
 ## 8. LA COLA, DERIVADA DEL NORTE (no de la inercia)
 
 Cada posición cita su origen. Si algo no puede citarlo, no está en la cola: está
@@ -550,6 +746,7 @@ en "ideas".
 | # | Qué | Se desprende de | Por qué ahí |
 |---|---|---|---|
 | **1** | **Cubrir "buscar/crear"**: la home, la biblioteca y el editor | §1 (por ahí pasa TODA clase) + la medición 0,29 | Es el tramo más usado y el menos protegido. Si el editor rompe la clave de una actividad, el profe lo descubre con 33 críos delante. **En marcha** (v1.51.375): el BUSCADOR ya es uno solo y testeado (`core/search.js` · `tests/search.test.mjs`, ratio del tramo 0,29 → 0,39). Queda el EDITOR |
+| **1b** | **Aplicar §4c/§7c**: declarar `meta.kind` en las 13 (lo exige el contrato), sacar los juegos de informes y de Tarea, y la estantería "Juegos" en el menú | §4c · §7c | La distinción ya está decidida; mientras no esté en el código, Pelotas sigue ensuciando informes y ofreciéndose como tarea sin nada que evaluar |
 | **2** | **Las leyes que faltan para R2 y R2b** ("el profe no configura" · "el que toca es un alumno sobre la cuenta del profe") | §6b, huecos declarados | Sin la primera, cada pantalla nueva decide por su cuenta cuántos ajustes enseña. La segunda es **testeable hoy**: en modo juego, ningún control destructivo en el DOM — y protege de un error caro (un niño tocando "borrar" en la cuenta del profe, con la clase mirando) |
 | **3** | **Cubrir las mecánicas en pizarra** (Individual · VS · Equipos) | §1 ("lo habitual") + medición 0,47 y 0,17 | Es donde se juega de verdad. Las 13 plantillas tienen el ratio de test más bajo del repo |
 | **4** | Terminar la ficha 2b de live (ventana de lectura en carrera · dial del lobby) | §26 + estudio D7 | Sigue siendo correcto, pero sirve al modo minoritario: va DESPUÉS de lo de arriba |
