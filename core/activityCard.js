@@ -45,21 +45,42 @@ export function modeStripHtml(a, { includeManage = false, authed = true } = {}) 
   ].filter(Boolean).join('');
 }
 
+// VARIANTES de tarjeta. Existen porque el componente era único pero la
+// CONFIGURACIÓN estaba repartida: cada vista decidía con banderitas sueltas qué
+// enseñaba, y divergieron sin que nadie lo viera — el badge de páginas solo lo
+// pedía "Mis actividades", el subtítulo y las etiquetas faltaban en la portada y
+// en el perfil del autor. Unificar el markup no sirve de nada si "qué muestra
+// una tarjeta" se decide cuatro veces.
+//
+// La regla ahora: **una tarjeta enseña lo que la actividad TIENE**. Los campos
+// informativos (subtítulo · etiquetas · autor · nº de páginas) van encendidos
+// por defecto y se pintan solo si el dato existe. La vista elige su VARIANTE
+// (qué modos ofrece y si el preview juega) y aporta sus slots.
+//
+//   'mine'    Mis actividades — es tuya: tira completa (incl. Live/Tarea).
+//   'library' Portada · Explorar · Perfil — de otro: se juega, no se gestiona.
+//   'plain'   sin tira de modos (listados donde jugar no toca).
+const VARIANTS = {
+  mine:    { modes: 'all',  playablePreview: false },
+  library: { modes: 'play', playablePreview: true  },
+  plain:   { modes: 'none', playablePreview: false },
+};
+
 // Pinta la tarjeta canónica. `opts`:
-//   modes: 'none' | 'play' | 'all'   → tira de modos (play = jugables; all = +Live/Tarea)
+//   variant: 'mine' | 'library' | 'plain'   → el preajuste (ver arriba)
 //   authed: bool                     → hay sesión de profe (false ⇒ Live/Tarea con candado)
-//   pages: bool                      → badge de nº de páginas sobre el preview
-//   playablePreview: bool            → preview clicable (data-play → jugar)
-//   subtitle/author/tags: bool       → mostrar esos campos si existen
 //   topRight: html                   → esquina sup-der del cuerpo (like / iconos dueño / idioma…)
 //   footer: html                     → pie del cuerpo (Jugar / Probar+Duplicar / ítems+likes…)
 //   extraClass/previewClass: string  → clases extra opcionales
+//   modes/pages/playablePreview/subtitle/author/tags → sobrescriben el preajuste
+//                                    (excepción justificada, no la vía normal)
 export function activityCardHtml(a, opts = {}) {
+  const preset = VARIANTS[opts.variant] || {};
   const {
-    modes = 'none', pages = false, playablePreview = false, authed = true,
-    subtitle = false, author = false, tags = false,
+    modes = 'none', pages = true, playablePreview = false, authed = true,
+    subtitle = true, author = true, tags = true,
     topRight = '', footer = '', extraClass = '', previewClass = '',
-  } = opts;
+  } = { ...preset, ...opts };
   const T = getTemplate(a.template);
   const color = T?.meta?.color || 'info';
   const icon  = T?.meta?.icon  || 'bi-puzzle';

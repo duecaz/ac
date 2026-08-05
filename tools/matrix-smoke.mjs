@@ -106,6 +106,7 @@ const submitKind = await page.evaluate(async () => {
 
 const results = [];
 const taps = [];
+const fsBtn = [];
 for (const t of seeded) {
   if (only.length && !only.includes(t.name)) continue;
   const cap = caps.find(c => c.name === t.name);
@@ -135,6 +136,26 @@ for (const t of seeded) {
       // verdad, contra lo que la plantilla DECLARA en `meta.play.submit`. El
       // reporte de clase fue "en VS son dos botones, el check y el enviar": sin
       // esta cuenta, esa pregunta solo se puede responder jugando.
+      // PANTALLA COMPLETA, TOCABLE (no solo presente). El botón de la esquina
+      // EXISTÍA en VS y aun así no se podía usar: el marcador del duelo
+      // (`.vss-bar`, z-index 10) quedaba por encima. Un `querySelector` decía que
+      // sí; el dedo del profe decía que no. Por eso aquí se comprueba con
+      // hit-testing: quién recibe el toque en el centro del botón.
+      if (['solo', 'vs', 'teams'].includes(mode) && status === 'ok') {
+        const fs = await page.evaluate(() => {
+          const btn = document.querySelector('#ww-frame .ww-fs-btn--corner');
+          if (!btn) return { estado: 'ausente' };
+          const r = btn.getBoundingClientRect();
+          if (!r.width || !r.height) return { estado: 'sin tamaño' };
+          const top = document.elementFromPoint(Math.round(r.x + r.width / 2), Math.round(r.y + r.height / 2));
+          if (!top || !btn.contains(top)) {
+            return { estado: 'tapado por ' + String(top?.className || top?.tagName || '?').slice(0, 40) };
+          }
+          return { estado: 'ok' };
+        });
+        if (fs.estado !== 'ok') { status = 'error'; detail = `pantalla completa: ${fs.estado}`; }
+        fsBtn.push({ t: t.name, label: t.label, mode, estado: fs.estado });
+      }
       if (mode === 'vs' && status === 'ok') {
         const n = await page.evaluate(() => {
           const panel = document.querySelector('#vs-body-left') || document.querySelector('.vs-panel');
@@ -184,6 +205,13 @@ if (taps.length) {
 if (tapBad.length) {
   console.log('\nENVÍO QUE NO CUADRA CON LO DECLARADO:');
   for (const x of tapBad) console.log(`  ❌ ${x.label} — declara '${x.declared}' pero el panel tiene ${x.found} control(es) [data-ww-submit]`);
+}
+
+// ── Pantalla completa: presente Y tocable en los 3 modos embebidos ──────────
+const fsBad = fsBtn.filter(x => x.estado !== 'ok');
+if (fsBtn.length) {
+  console.log(`\nPANTALLA COMPLETA (botón del marco) — ${fsBtn.length - fsBad.length}/${fsBtn.length} tocables`);
+  if (fsBad.length) for (const x of fsBad) console.log(`  ❌ ${x.label} · ${x.mode} — ${x.estado}`);
 }
 
 const seedBad = seeded.filter(s => s.seedError);

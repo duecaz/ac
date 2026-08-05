@@ -121,7 +121,7 @@ export function renderHome(rootSel) {
     // `authed`: sin sesión, Live/Tarea salen con CANDADO y su frase — dirigir una
     // sala o crear una tarea son actos de profe (ley §22). Avisar aquí, no con un
     // 403 a mitad de clase.
-    return activityCardHtml(a, { modes: 'all', authed: canHost(), pages: true, subtitle: true, tags: true, topRight, footer });
+    return activityCardHtml(a, { variant: 'mine', authed: canHost(), topRight, footer });
   }
 
   function listCard(a) {

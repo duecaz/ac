@@ -28,12 +28,12 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
-| **buscar/crear** | **siempre** — toda clase empieza aquí | 8 · 1108 | 5 · 435 | 0.39 |
+| **buscar/crear** | **siempre** — toda clase empieza aquí | 8 · 1105 | 5 · 492 | 0.45 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 11 · 2399 | 12 · 1112 | 0.46 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 18 · 3632 | 18 · 2816 | 0.78 |
 | **informes/tareas** | después de clase | 11 · 1133 | 3 · 381 | 0.34 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5792 | 12 · 975 | 0.17 |
-| **infra/común** | todo lo anterior | 127 · 12248 | 31 · 3122 | 0.25 |
+| **infra/común** | todo lo anterior | 127 · 12269 | 31 · 3122 | 0.25 |
 
 > Un ratio bajo en un tramo muy usado es deuda de PRIORIDAD, no de calidad: ese
 > código funciona, pero si se rompe nadie se entera hasta que hay 33 críos

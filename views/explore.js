@@ -78,9 +78,7 @@ export async function renderExplore(rootSel, q0 = '') {
     // Sin pie de acciones: jugar se hace por la tira de modos (Individual/VS/
     // Equipos) o clic en el preview. Editar/borrar viven SOLO en "Mis
     // actividades" (son tuyas); para moderar como admin está la vista #/moderar.
-    return activityCardHtml(a, {
-      modes: 'play', playablePreview: true, author: true, subtitle: true, tags: true, pages: true, topRight,
-    });
+    return activityCardHtml(a, { variant: 'library', topRight });
   }
 
   on(rootSel, 'input', '#exp-q', () => paint());

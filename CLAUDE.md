@@ -236,6 +236,18 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   Sin esto la premisa del podio es falsa: ordena por hora de meta PORQUE todos terminan con
   todas bien. Y el móvil **nunca juzga sin clave**: `hasClientKey()` (`core/liveSnapshot.js`)
   + el guard de `paintRace`. Vigilado por `tests/raceKey.test.mjs`.
+- **Tarjeta de actividad**: una sola (`core/activityCard.js`) y con VARIANTE, no con
+  banderitas sueltas: `variant: 'mine' | 'library' | 'plain'`. Los campos informativos
+  (subtítulo · etiquetas · autor · nº de páginas) van ENCENDIDOS por defecto y se pintan
+  si el dato existe — "qué muestra una tarjeta" lo decide el componente, no cada vista.
+  Unificar el markup no bastó: la CONFIGURACIÓN divergió igual (el badge de páginas solo
+  lo pedía la home y el profe preguntó por qué no salía en la portada).
+  Vigilado por `tests/activityCard.test.mjs` (ninguna vista puede apagar un campo).
+- **La esquina superior derecha del marco de juego es DEL MARCO**: ahí va el botón de
+  pantalla completa (`.ww-fs-btn--corner`, z-index 30). Un modo que pinte una barra a
+  todo el ancho dentro del marco debe respetar `--ww-fs-reserve` (lo hace el marcador
+  del duelo). El marcador VS lo tapaba: el botón existía y NO se podía tocar. Vigilado
+  por `node tools/matrix-smoke.mjs` con hit-testing real, no con `querySelector`.
 - **Buscar actividades**: SIEMPRE `searchActivities` (`core/search.js`) — uno solo para la
   home y la biblioteca (estaba copiado en las dos, con `includes` sobre título/subtítulo/tags).
   Buscar es BINARIO (norte §2b): sin tildes ni mayúsculas, por PALABRAS en cualquier orden, y

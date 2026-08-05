@@ -40,7 +40,16 @@
      el resto; si no, el carril es display:none y el widget llena todo. */
   display: flex;
   flex-direction: column;
+  /* ESQUINA RESERVADA: el ancho que el botón de pantalla completa ocupa arriba a
+     la derecha. Quien pinte una barra a todo el ancho dentro del marco la
+     respeta con este valor — una sola medida, no un número copiado. */
+  --ww-fs-reserve: 52px;
 }
+
+/* El marcador del duelo cede la esquina (si no, el botón taparía el puntaje del
+   jugador de la derecha). Los skins solo tocan el FONDO de `.vss-right`, no su
+   relleno, así que esta regla no entra en la guerra de especificidad del skin. */
+.ww-play-page .ww-player-frame .vss-right { padding-right: var(--ww-fs-reserve); }
 
 /* BOTÓN DE PANTALLA COMPLETA, DISCRETO (como Wordwall). Flota en la esquina del
    marco, translúcido, y se afirma al pasar el dedo/ratón. Está DENTRO del marco
@@ -48,7 +57,12 @@
    (en una pizarra táctil no hay tecla Esc). Colores por token: los skins
    recolorean el juego y este botón vive encima del juego. */
 .ww-fs-btn--corner {
-  position: absolute; top: 8px; right: 8px; z-index: 5;
+  /* z-index POR ENCIMA de lo que pinte el modo. El marcador del duelo
+     (`.vss-bar`, z-index 10) tapaba el botón: existía, se veía a medias y NO se
+     podía tocar en ningún VS — comprobado con hit-testing, no a ojo. La esquina
+     superior derecha del marco es DEL MARCO; el modo que ponga algo ahí debe
+     dejarla libre (ver `--ww-fs-reserve`). */
+  position: absolute; top: 8px; right: 8px; z-index: 30;
   width: max(34px, 5cqmin); height: max(34px, 5cqmin);
   display: flex; align-items: center; justify-content: center;
   padding: 0; border: 0; border-radius: 50%;

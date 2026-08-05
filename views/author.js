@@ -155,7 +155,7 @@ export async function renderAuthor(rootSel, ownerId) {
 
   function card(a) {
     const footer = `<button class="btn-primary-solid w-100 lp-play" data-play="${escapeHtml(a.id)}"><i class="bi bi-play-fill"></i> Jugar</button>`;
-    return activityCardHtml(a, { modes: 'play', playablePreview: true, previewClass: 'lp-card__pv', footer });
+    return activityCardHtml(a, { variant: 'library', previewClass: 'lp-card__pv', footer });
   }
 
   on(rootSel, 'click', '[data-play]', (_, b) => navigate(`#/play/${b.dataset.play}`));
