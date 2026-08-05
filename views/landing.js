@@ -80,7 +80,7 @@ export async function renderLanding(rootSel) {
     // modes:'play' = solo Individual/VS/Equipos (jugables sobre cualquier
     // actividad). Live/Tarea se quedan en "Mis actividades" (son tuyas).
     return activityCardHtml(a, {
-      modes: 'play', playablePreview: true, author: true,
+      modes: 'play', playablePreview: true, author: true, pages: true,
       extraClass: 'lp-card', previewClass: 'lp-card__pv', topRight, footer,
     });
   }

@@ -7,13 +7,17 @@ import { activityCardHtml } from '../core/activityCard.js';
 import { listPublic } from '../core/storage.js';
 import { searchActivities } from '../core/search.js';
 
-export async function renderExplore(rootSel) {
+// `q0` = término que llega EN LA URL (`#/explore?q=comas`). Es como aterriza el
+// profe desde el buscador de la portada: si la vista no lo leyera, llegaría a la
+// biblioteca con la caja vacía y tendría que teclearlo otra vez — dos toques
+// tirados justo en el tramo por el que pasa toda clase (norte §2b).
+export async function renderExplore(rootSel, q0 = '') {
   mount(rootSel, html`
     <div class="home-wrap">
       <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <h2 class="mb-0"><i class="bi bi-globe"></i> Explorar</h2>
         <div class="input-group" style="max-width:360px">
-          <input id="exp-q" class="form-control" placeholder="Buscar por tema, título o tag…">
+          <input id="exp-q" class="form-control" placeholder="Buscar por tema, título o tag…" value="${escapeHtml(q0)}">
           <select id="exp-lang" class="form-select" style="max-width:120px">
             <option value="">Todos</option>
             <option value="es" selected>Español</option>
@@ -75,7 +79,7 @@ export async function renderExplore(rootSel) {
     // Equipos) o clic en el preview. Editar/borrar viven SOLO en "Mis
     // actividades" (son tuyas); para moderar como admin está la vista #/moderar.
     return activityCardHtml(a, {
-      modes: 'play', playablePreview: true, author: true, subtitle: true, tags: true, topRight,
+      modes: 'play', playablePreview: true, author: true, subtitle: true, tags: true, pages: true, topRight,
     });
   }
 

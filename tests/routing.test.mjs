@@ -1,6 +1,6 @@
 // Tests for pure routing (core/routing.js). Run: node tests/routing.test.mjs
 import assert from 'node:assert';
-import { compileRoute, matchRoute } from '../core/routing.js';
+import { compileRoute, matchRoute, parseQuery } from '../core/routing.js';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
@@ -46,5 +46,51 @@ ok("empty hash defaults to '#/'; unknown route returns null");
 const dup = [R('#/x', () => 'first'), R('#/x', () => 'second')];
 assert.strictEqual(matchRoute('#/x', dup).handler(), 'first', 'first registered route wins');
 ok('registration order is respected (first match wins)');
+
+// ── CONSULTA EN EL HASH (`?q=…`) ────────────────────────────────────────────
+// El buscador de la portada navegaba a `#/explore?q=comas` desde el primer día
+// (commit de la biblioteca pública) y el router NUNCA soportó la `?`: el patrón
+// compilado es `^#?#/explore/?$`, así que ese enlace —generado por la propia
+// app— no casaba con ninguna ruta y el profe acababa en "Ruta no encontrada" al
+// buscar. Verificado en navegador antes de arreglarlo.
+{
+  const routes = [
+    { ...compileRoute('#/explore'), handler: () => 'explore' },
+    { ...compileRoute('#/edit/:id'), handler: () => 'edit' },
+  ];
+  const hit = matchRoute('#/explore?q=comas', routes);
+  assert.ok(hit, 'una ruta con consulta DEBE casar: el `?` no es parte del camino');
+  assert.strictEqual(hit.handler(), 'explore');
+  assert.deepStrictEqual(hit.query, { q: 'comas' });
+  ok('`#/explore?q=comas` casa con `#/explore` y entrega el término (el bug de la portada)');
+
+  // Y la consulta convive con los parámetros de camino.
+  const h2 = matchRoute('#/edit/abc123?tab=contenido&foco=1', routes);
+  assert.deepStrictEqual(h2.params, { id: 'abc123' }, 'el :id no se lleva la consulta pegada');
+  assert.deepStrictEqual(h2.query, { tab: 'contenido', foco: '1' });
+  ok('camino y consulta no se pisan: `#/edit/abc123?tab=…` da id limpio + query');
+}
+
+// ── parseQuery: lo que llega de una URL nunca es de fiar ────────────────────
+{
+  assert.deepStrictEqual(parseQuery('#/explore'), {}, 'sin `?` → objeto vacío, no null');
+  assert.deepStrictEqual(parseQuery('#/explore?'), {});
+  assert.deepStrictEqual(parseQuery('#/x?q=puntos+notables'), { q: 'puntos notables' }, '+ es espacio');
+  assert.deepStrictEqual(parseQuery('#/x?q=matem%C3%A1ticas'), { q: 'matemáticas' }, 'acentos');
+  assert.deepStrictEqual(parseQuery('#/x?solo&q=1'), { solo: '', q: '1' }, 'clave sin valor');
+  assert.doesNotThrow(() => parseQuery('#/x?q=%E0%A4%A'), 'un % suelto no puede tumbar el enrutado');
+  ok('parseQuery aguanta lo que llega de una URL escrita a mano (+, acentos, % roto)');
+}
+
+// ── CONTRA-PRUEBA: la consulta no abre rutas que no existen ────────────────
+// El arreglo no puede convertirse en "todo casa": `#/nada?q=x` sigue siendo 404.
+{
+  const routes = [{ ...compileRoute('#/explore'), handler: () => 'explore' }];
+  assert.strictEqual(matchRoute('#/nada?q=x', routes), null,
+    'una ruta inexistente sigue sin casar aunque lleve consulta');
+  assert.strictEqual(matchRoute('#/explore/otro?q=x', routes), null,
+    'y el camino se sigue comparando entero');
+  ok('CONTRA-PRUEBA: la consulta no convierte cualquier hash en una ruta válida');
+}
 
 console.log(`\nrouting.test: ${passed} checks passed`);

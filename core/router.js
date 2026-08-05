@@ -26,7 +26,9 @@ export function navigate(hash) {
 export function resolve() {
   if (beforeResolve) { try { beforeResolve(); } catch {} }
   const hit = matchRoute(location.hash, routes);
-  if (hit) return hit.handler(hit.params);
+  // Segundo argumento: los parámetros de consulta (`?q=…`). Los handlers que no
+  // los usan lo ignoran, así que añadirlo no toca ninguna ruta existente.
+  if (hit) return hit.handler(hit.params, hit.query);
   notFound();
 }
 

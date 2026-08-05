@@ -80,7 +80,7 @@ route('#/task/:id/attempts', ({ id }) => renderAttempts(APP, id));
 route('#/list/:id', ({ id }) => renderListView(APP, id));
 route('#/edit-list/:id', ({ id }) => requireTeacher(APP, () => renderEditList(APP, { id })));
 route('#/new-list', () => requireTeacher(APP, () => renderEditList(APP, {})));
-route('#/explore', () => renderExplore(APP));
+route('#/explore', (_, q) => renderExplore(APP, q?.q || ''));
 route('#/autor/:id', ({ id }) => renderAuthor(APP, id));
 route('#/moderar', () => renderModerate(APP));
 route('#/admin', () => renderAdmin(APP));
