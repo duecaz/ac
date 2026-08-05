@@ -47,6 +47,17 @@ export function checkTemplateContract(T) {
   //              [] = no se juega en vivo. Se acepta la forma heredada (string).
   //              Debe ser coherente con modes.live.
   //   play.retry (opcional) — en VS un fallo se reintenta (la calculadora).
+  //   play.submit — CÓMO se manda una respuesta en la ronda (VS/Equipos/Live).
+  //              'gesto'  el toque ES la respuesta (elegir opción, pinchar un
+  //                       globo, resolver el tablero): CERO botones de envío.
+  //              'boton'  se construye la respuesta y se confirma: EXACTAMENTE
+  //                       UN control de envío, marcado con `data-ww-submit`.
+  //              Obligatorio en toda plantilla con `renderRound`. Existe porque
+  //              "cuántos toques cuesta responder" es una decisión de PRODUCTO
+  //              (la pizarra es de un alumno con la clase mirando), y sin
+  //              declararla nadie puede auditar que no se cuele un segundo
+  //              botón. Lo vigila `tools/matrix-smoke.mjs` (cuenta los controles
+  //              reales en el panel VS y los compara con lo declarado).
   const VS_POLICIES = ['race', 'points', 'none'];
   const TEAMS_POLICIES = ['turns', 'board', 'none'];
   const LIVE_POLICIES = [...LIVE_LOOPS, 'none'];
@@ -64,6 +75,12 @@ export function checkTemplateContract(T) {
     if (m.modes?.live && liveLoops.length === 0) issues.push('incoherencia: modes.live=true pero play.live no declara ningún bucle (declara cómo corre en vivo)');
     if (!m.modes?.live && liveLoops.length > 0) issues.push('incoherencia: play.live declara bucles pero modes.live=false');
     if ('retry' in m.play && typeof m.play.retry !== 'boolean') issues.push('meta.play.retry debe ser booleano');
+    // Solo se exige a quien tiene ronda: una plantilla que no corre en
+    // VS/Equipos/Live no manda respuestas por ahí y no tiene nada que declarar.
+    const SUBMIT_KINDS = ['gesto', 'boton'];
+    if (typeof T.renderRound === 'function' && !SUBMIT_KINDS.includes(m.play.submit)) {
+      issues.push(`meta.play.submit inválido: ${JSON.stringify(m.play.submit)} — con renderRound hay que declarar cómo se envía (${SUBMIT_KINDS.join(' | ')})`);
+    }
   }
   // Preview de tarjeta obligatorio: cada plantilla declara su `previewHtml(act)`
   // → no hay switch central que olvidar y la miniatura no se desfasa del juego

@@ -351,6 +351,28 @@
   margin: .15rem 0; animation: vsc-pop .55s .3s cubic-bezier(.2,1.5,.5,1) both; }
 .vs-celeb-score  { font-size: 1.35rem; font-weight: 800; opacity: .92; animation: vsc-fade .5s .5s both; }
 .vs-celeb-podium { margin: 1.1rem auto 1.3rem; max-width: 420px; animation: vsc-fade .5s .6s both; }
+
+/* RESUMEN DEL DUELO — qué puso cada uno, para que "ganó Ana" tenga un porqué
+   delante de la clase (core/duelSummary.js). Colores por TOKEN: los skins
+   recolorean el duelo entero y esto no puede quedarse fuera. */
+.duel-sum {
+  display: flex; gap: 2cqmin; justify-content: center; flex-wrap: wrap;
+  margin: 0 auto 1.2rem; max-width: 640px; animation: vsc-fade .5s .7s both;
+}
+.duel-sum__side {
+  flex: 1 1 40%; min-width: 40%;
+  padding: 1.6cqmin 2cqmin; border-radius: 12px;
+  background: var(--vs-done-bg, rgba(255,255,255,.08));
+  border-top: 3px solid var(--ww-accent);
+}
+.duel-sum__side--left  { border-top-color: var(--vs-left,  var(--ww-accent)); }
+.duel-sum__side--right { border-top-color: var(--vs-right, var(--ww-accent)); }
+.duel-sum__name  { font-weight: 800; font-size: max(13px, 2.2cqmin); color: var(--vs-done-fg); }
+.duel-sum__score { font-weight: 800; font-size: max(15px, 3cqmin);   color: var(--vs-done-fg); }
+.duel-sum__list  { list-style: none; margin: .4rem 0 0; padding: 0; }
+.duel-sum__list li {
+  font-size: max(11px, 1.9cqmin); color: var(--vs-done-muted); line-height: 1.5;
+}
 .vs-celeb-actions{ animation: vsc-fade .5s .72s both; }
 /* Base colour cue per winning side (skins override with richer tones). */
 .vs-win-left  .vs-celeb-name { color: #2563eb; }

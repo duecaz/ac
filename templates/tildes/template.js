@@ -23,7 +23,7 @@ export class TildesTemplate extends BaseTemplate {
     aspectRatio: '16/10',
     modes: { solo: true, live: true, async: true, practice: true },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
-    play:            { vs: 'points', teams: 'turns', live: ['rounds', 'race'] },
+    play:            { vs: 'points', teams: 'turns', live: ['rounds', 'race'], submit: 'boton' },
     needsImageUpload: false,
     needsAudioUpload: false,
     defaultRules: () => ({ randomize: false, allowOverflow: true, showHints: false }),

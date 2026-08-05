@@ -16,7 +16,7 @@ import { GameEvents, emitGame } from '../core/gameEvents.js';
 import * as Streaks from '../core/streaks.js';
 import { getTemplate } from '../core/registry.js';
 import { sessionItems, roundPayloadOf } from '../kernel/session/engine.js';
-import { visibleItem } from '../core/liveSnapshot.js';
+import { visibleItem, hasClientKey } from '../core/liveSnapshot.js';
 import { VERSION } from '../core/constants.js';
 import { lsGet, lsSet } from '../core/ls.js';
 import { wheelSvg } from '../templates/wheel/render.js';
@@ -24,7 +24,7 @@ import { pickIndex } from '../templates/wheel/logic.js';
 import { spinTarget, normalizeRotation, animateSpin, SPIN_DUR_PICK } from '../templates/wheel/spin.js';
 import { QL_COLORS } from '../core/questionLive.js';
 import { RACE_FLASH_MS, questionWindowMs, mmss } from '../core/timings.js';
-import { supportsLoop, pointsModeFor } from '../core/liveLoops.js';
+import { supportsLoop, pointsModeFor, racePassed } from '../core/liveLoops.js';
 import { endPolicyOf, waitingInfo } from '../core/liveEnd.js';
 
 const NICK_KEY = 'ww.nick';
@@ -147,15 +147,36 @@ export async function renderPlay(rootSel, code) {
   // transitorio se ignora (el siguiente tick recupera) — sin try/catch, esa
   // promesa rechazaba sin capturar y dejaba al alumno con un error en el lobby.
   let refetching = null;
+
+  // La ACTIVIDAD también cambia a mitad de partida, no solo el estado. Al
+  // arrancar la carrera la sala pasa del snapshot saneado a la actividad
+  // COMPLETA (§22-2), y el móvil se quedaba con la del lobby para siempre:
+  // jugaba sin clave y daba por fallada hasta una hoja perfecta. Toda entrada de
+  // sesión pasa por aquí para que `activity` y `session` no puedan desfasarse.
+  function adoptSession(next) {
+    if (!next) return;
+    const snap = next.activity_snap;
+    // Solo se adopta si TRAE actividad: un diff parcial de realtime sin ese
+    // campo no puede borrar la que ya tenemos.
+    if (snap && snap !== activity) {
+      const gainedKey = !hasClientKey(activity) && hasClientKey(snap);
+      activity = snap;
+      // Llegó la clave estando ya en carrera → repintar para salir de la espera.
+      if (gainedKey && session?.phase === 'race') lastPhaseKey = null;
+    }
+    session = { ...session, ...next };
+    paint();
+  }
+
   async function refreshSession() {
     refetching ??= fetchSession(session.id).finally(() => { refetching = null; });
-    try { session = { ...session, ...(await refetching) }; paint(); }
+    try { adoptSession(await refetching); }
     catch { /* transitorio: el próximo evento/poll recupera */ }
   }
   ctx.add(await subscribeRoom(session.id, async (ev) => {
     if (ev.table === 'sessions') {
       // Full diff (Supabase) or re-fetch on a bare ping (local driver).
-      if (ev.new) { session = { ...session, ...ev.new }; paint(); }
+      if (ev.new) adoptSession(ev.new);
       else await refreshSession();
     }
   }));
@@ -544,6 +565,22 @@ export async function renderPlay(rootSel, code) {
     const allItems = sessionItems(activity);
     const tpl = getTemplate(activity.template);
 
+    // SIN CLAVE NO SE JUZGA (§22). En carrera el veredicto lo da este móvil, así
+    // que necesita la actividad completa; la sala la sube al arrancar, pero
+    // puede tardar en llegar (o fallar el PATCH). Sin este guard, `scoreSubmission`
+    // sobre un ítem vacío devolvía `correct:false` SIEMPRE: la hoja perfecta
+    // sonaba a error y volvía a la cola — la carrera no terminaba nunca. Antes
+    // que castigar al alumno por un fallo nuestro, se espera.
+    if (!hasClientKey(activity)) {
+      mount(rootSel, html`
+        <div class="text-center py-5">
+          <div class="spinner-border text-warning"></div>
+          <p class="mt-3">Preparando la carrera…</p>
+        </div>`);
+      refreshSession();
+      return;
+    }
+
     if (raceQueue === null) {
       // REANUDAR, no reiniciar (bug real de la primera partida): una recarga a
       // mitad de carrera (F5, el móvil descartando la página al bloquear, o la
@@ -640,14 +677,25 @@ export async function renderPlay(rootSel, code) {
         // Score locally (activity_snap contains full answers on PocketBase).
         let ok = false;
         let pts = 0;
+        let faltan = null;   // detalle de lo que faltó, si la hoja vuelve a la cola
         try {
           // El modelo de puntos lo decide el BUCLE (core/liveLoops.js), igual que
           // el settle del servidor — si aquí se estimara distinto, el alumno
           // vería un puntaje que el podio luego desmiente.
           const r = tpl.scoreSubmission({ value, item: allItems[idx], msTaken: ms, activity, mode: pointsModeFor(session.loop || 'race') });
-          ok = !!r.correct;
-          pts = r.points || 0;
-        } catch { /* keep ok=false if activity_snap lacks answers */ }
+          // En CARRERA la vara es COMPLETA (§26 · `racePassed`): una hoja de
+          // Tildes a medias VUELVE A LA COLA en vez de darse por superada — si
+          // no, el podio ordena por hora de meta a gente que no hizo lo mismo.
+          ok = racePassed(r);
+          pts = ok ? (r.points || 0) : 0;
+          faltan = ok ? null : r;
+        } catch (err) {
+          // No se pudo juzgar (ítem sin clave pese al guard, o scorer roto). NO
+          // se puede decir "mal": se deja pasar sin puntos y se avisa. Un fallo
+          // nuestro no puede costarle la carrera al alumno.
+          console.warn('[studentLive] carrera: no se pudo puntuar en local —', err);
+          ok = true; pts = 0;
+        }
 
         // Color the selected button in-place — no DOM replacement, same as solo player.
         const roundEl = document.getElementById('s-round');
@@ -666,6 +714,18 @@ export async function renderPlay(rootSel, code) {
         // Sound events (correct/wrong chime).
         if (ok) emitGame(GameEvents.ANSWER_CORRECT, { idx, points: pts, streak: newStreak });
         else    emitGame(GameEvents.ANSWER_WRONG, { idx });
+
+        // POR QUÉ vuelve a la cola. Sin esto, una hoja de Tildes a medias
+        // reaparecía sin explicación y el alumno repetía el mismo error a
+        // ciegas. El detalle sale del SCORER (aciertos · de más), no de una
+        // cuenta propia de esta vista.
+        if (!ok && faltan && Number.isFinite(faltan.total) && faltan.total > 1) {
+          const sinMarcar = Math.max(0, faltan.total - (faltan.hits || 0));
+          const partes = [];
+          if (sinMarcar) partes.push(`${sinMarcar} sin marcar`);
+          if (faltan.over) partes.push(`${faltan.over} de más`);
+          if (partes.length) toast(`Casi: ${partes.join(' · ')}. Vuelve a intentarlo.`, 'warning', 2500);
+        }
 
         // Analítica opción A: el PRIMER intento de cada ítem (bien o mal) se envía
         // SIEMPRE → captura v0/c0 (el error real) para el análisis de clase. Los

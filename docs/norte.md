@@ -4,7 +4,7 @@
 > construye; **este dice qué construimos y para quién**. Si una ley y el norte
 > chocan, gana el norte y la ley se replantea.
 >
-> **Estado** (v1.51.375). CONFIRMADO por el usuario: §1 escena · §2b presupuesto
+> **Estado** (v1.51.376). CONFIRMADO por el usuario: §1 escena · §2b presupuesto
 > de tiempo · §3 restricciones · §4 "lo que no somos" · §5 referentes en lo
 > esencial (⏳ pendiente de un ESTUDIO: documentarse y probar a fondo los
 > referentes para saber qué partes encajan con nuestra escena).

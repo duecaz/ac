@@ -94,7 +94,22 @@ export function createSession(activity, opts = {}) {
 // consumidor decide cómo pintarlo (la tabla ya tenía su estado "—").
 function autoScore(T, { value, item, msTaken, activity, mode }) {
   const r = T.scoreSubmission({ value, item, msTaken, activity, mode });
-  return { correct: r.correct == null ? null : !!r.correct, points: r.points || 0 };
+  // El DETALLE por marcas (aciertos · de más · total) se conserva cuando el
+  // scorer lo declara: es lo que permite explicar al final del duelo POR QUÉ
+  // ganó uno (`core/duelSummary.js`). Los scorers de todo-o-nada no lo dan y
+  // aquí no se inventa: `detail` queda ausente y quien lo lea se cae a aciertos.
+  // `over` ("marcas de MÁS") solo existe en los scorers de marcas: es lo que
+  // hace que "márcalo todo" no gane. Se conserva la DISTINCIÓN, no solo el
+  // número: sin ella, un Quiz fallado se resumiría como "1 sin marcar", que no
+  // significa nada en una pregunta de opción múltiple.
+  const detail = Number.isFinite(r.total)
+    ? { hits: r.hits || 0, total: r.total, ...(Number.isFinite(r.over) ? { over: r.over } : {}) }
+    : null;
+  return {
+    correct: r.correct == null ? null : !!r.correct,
+    points: r.points || 0,
+    ...(detail ? { detail } : {}),
+  };
 }
 
 // ───────────────────────────── LIVE ─────────────────────────────
@@ -445,7 +460,12 @@ function createVsSession(activity, T, opts) {
     if (s.cursor >= total) throw new Error('Ese lado ya terminó');
     const item = items[s.cursor];
     const r = autoScore(T, { value, item, msTaken, activity, mode: 'vs' });
-    s.answers.push({ index: s.cursor, value, msTaken, correct: r.correct, points: r.points });
+    // El DETALLE del scorer (aciertos · de más · total de marcas) se conserva
+    // cuando lo hay. Sin él, al terminar un duelo de Tildes solo se podía decir
+    // "3 de 5 aciertos" y el profe no tenía cómo explicar quién ganó — el dato
+    // ya estaba calculado y se tiraba. Las plantillas de todo-o-nada no lo
+    // declaran y su resumen se queda en aciertos, como hasta ahora.
+    s.answers.push({ index: s.cursor, value, msTaken, correct: r.correct, points: r.points, ...(r.detail ? { detail: r.detail } : {}) });
     s.score += r.points;
     if (r.correct) s.correct += 1;
     s.cursor += 1;
@@ -466,6 +486,21 @@ function createVsSession(activity, T, opts) {
 
   // The central "who's winning" snapshot — score gap plus progress, with a
   // tie-break on items completed so an early lead still reads as "ahead".
+  // Suma del detalle por marcas de un lado (Tildes/Comas). `null` cuando el
+  // scorer de esta plantilla no lo declara: mejor no decir nada que inventar.
+  function marksOf(s) {
+    const con = (s.answers || []).filter(a => a.detail);
+    if (!con.length) return null;
+    const out = con.reduce((acc, a) => ({
+      hits: acc.hits + (a.detail.hits || 0),
+      over: acc.over + (a.detail.over || 0),
+      total: acc.total + (a.detail.total || 0),
+      // `marca`: esta plantilla cuenta MARCAS (Tildes/Comas), no respuestas.
+      marca: acc.marca || Number.isFinite(a.detail.over),
+    }), { hits: 0, over: 0, total: 0, marca: false });
+    return out;
+  }
+
   function standings() {
     const L = state.sides.left, R = state.sides.right;
     const diff = L.score - R.score;
@@ -473,8 +508,8 @@ function createVsSession(activity, T, opts) {
     if (diff > 0) leader = 'left';
     else if (diff < 0) leader = 'right';
     return {
-      left: { name: L.name, score: L.score, cursor: L.cursor, correct: L.correct, done: L.cursor >= total },
-      right: { name: R.name, score: R.score, cursor: R.cursor, correct: R.correct, done: R.cursor >= total },
+      left: { name: L.name, score: L.score, cursor: L.cursor, correct: L.correct, done: L.cursor >= total, marks: marksOf(L) },
+      right: { name: R.name, score: R.score, cursor: R.cursor, correct: R.correct, done: R.cursor >= total, marks: marksOf(R) },
       leader, diff: Math.abs(diff), total, finished: state.status === 'ended',
       finishedBy: state.finishedBy || null,
       race: raceToFinish,   // la vista decide el podio según la política

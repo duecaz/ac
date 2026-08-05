@@ -108,7 +108,7 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
   root.innerHTML = `
     <div class="tc-round">
       <div class="tc-passage-area"><div class="tc-passage">${passageHtml(text, kind)}</div></div>
-      <div class="tc-done-wrap"><button type="button" class="btn btn-success btn-lg tc-done"><i class="bi bi-check2-circle"></i> Listo</button></div>
+      <div class="tc-done-wrap"><button type="button" class="btn btn-success btn-lg tc-done" data-ww-submit><i class="bi bi-check2-circle"></i> Listo</button></div>
     </div>`;
 
   const areaEl = root.querySelector('.tc-passage-area');

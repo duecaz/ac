@@ -66,7 +66,24 @@ export function studentSnapshot(activity) {
   // vieja-app/nuevo-snapshot se muere en silencio al pasar de lobby a pregunta.
   // Con esto, el alumno desfasado se AUTO-RECARGA una vez (ver studentLive).
   out.appVersion = VERSION;
+  // MARCA DECLARADA: "esto viene sin clave de respuesta". El móvil la lee para
+  // saber si PUEDE juzgar en local (ver `hasClientKey`). Sin esta marca, el
+  // alumno que jugaba la carrera con el snapshot del lobby veía TODO mal —
+  // incluida una hoja perfecta— porque `scoreSubmission` sin clave devuelve
+  // `correct:false`, y la hoja volvía a la cola con sonido de error. El bug real
+  // reportado en clase (v1.51.376): la sala sube la actividad completa al
+  // arrancar la carrera, pero el móvil se quedaba con el snapshot de cuando
+  // entró. Preferimos una marca EXPLÍCITA a adivinar "¿tendrá clave?" mirando el
+  // contenido: cada plantilla guarda la suya de otra forma.
+  out.sanitized = true;
   return out;
+}
+
+/** ¿Puede este dispositivo dar un veredicto por su cuenta? Solo si la actividad
+ *  que tiene en la mano lleva la clave (es decir, NO es el snapshot saneado).
+ *  Quien no pueda juzgar debe ESPERAR, nunca dar por fallada una respuesta. */
+export function hasClientKey(activity) {
+  return !!activity && !activity.sanitized;
 }
 
 /** Lo que el alumno puede LEER de un ítem: su payload de ronda. Las vistas que

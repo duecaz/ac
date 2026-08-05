@@ -20,10 +20,12 @@ import { createSession, isVsCompatible, FORMATS, sessionItems } from '../kernel/
 import { supportsLoop } from '../core/liveLoops.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { podiumHtml } from '../core/podium.js';
+import { duelSummaryHtml } from '../core/duelSummary.js';
 import { getVsAnimation, DEFAULT_VS_ANIMATION } from '../core/vsAnimations.js';
 import { play as playSound } from '../core/sounds.js';
 import { answerConfetti } from '../core/effects.js';
 import { renderModeSetup } from './modeSetup.js';
+import { applyPlayOptions } from '../core/playOptions.js';
 import { FLASH_MS, WIN_HOLD_MS, CONFETTI_ENCORE_MS } from '../core/timings.js';
 import { getSkin } from '../core/skins.js';
 
@@ -67,6 +69,10 @@ export function mountVs(host, a, ctx, opts = {}) {
   // última vista de views/ fuera de la norma. (`life`, no `ctx`: el parámetro
   // `ctx` de mountVs es el contexto que ya pasa el padre.)
   const life = acquire('vsView');
+  const T = getTemplate(a.template);
+  // Opciones de partida elegidas en el setup (core/playOptions.js). Se aplican
+  // a una COPIA al arrancar el duelo: la actividad guardada no se toca.
+  let playChoices = {};
 
   // List-orchestrator mode: skip setup screen and jump straight to the match.
   if (opts.leftName && opts.rightName) {
@@ -126,6 +132,10 @@ export function mountVs(host, a, ctx, opts = {}) {
       icon: 'bi-fire', color: 'danger', title: 'Duelo VS',
       subtitle: `${a.title} · ${sessionItems(a).length} preguntas`,
       body, backHref,
+      // Opciones de partida de la plantilla (p.ej. Pelotas: tiempo o
+      // movimientos). Se aplican a la copia de juego al arrancar, no a la
+      // actividad guardada.
+      playOpts: { T, activity: a, choices: playChoices, onChange: (id, v) => { playChoices = { ...playChoices, [id]: v }; } },
       note: 'Cada jugador responde en su lado. Gana quien sume más puntos.',
       onMount: () => {
         // Feedback toggles persist per-activity (presentation.vsFeedback).
@@ -178,12 +188,12 @@ export function mountVs(host, a, ctx, opts = {}) {
   }
 
   function startMatch(leftName, rightName) {
-    const T = getTemplate(a.template);
     // Cómo acaba el duelo lo DECLARA la plantilla en `meta.play.vs` y lo aplica el
     // motor ('race' | 'points'). Antes esta vista forzaba carrera para las 13, así
     // que en Quiz/Emparejar/Tildes el primero en terminar cortaba al otro y le
     // robaba lo que llevaba hecho (bug de QA).
-    const session = createSession(a, { format: FORMATS.VS, left: leftName, right: rightName });
+    const session = createSession(applyPlayOptions(T, a, playChoices),
+      { format: FORMATS.VS, left: leftName, right: rightName });
     session.start();
     const flashing = { left: false, right: false };
     let finished = false; // guards finish() against double-fire from pending timers
@@ -441,6 +451,7 @@ export function mountVs(host, a, ctx, opts = {}) {
              <div class="vs-celeb-label">¡EMPATE!</div>
              <div class="vs-celeb-score">${st.left.score} – ${st.right.score}</div>
              <div class="vs-celeb-podium">${podiumHtml(ranked)}</div>
+             ${duelSummaryHtml(st)}
              ${actions}
            </div>`
         : `<div class="vs-celebration vs-win-${winnerSide}">
@@ -452,6 +463,7 @@ export function mountVs(host, a, ctx, opts = {}) {
              <h1 class="vs-celeb-name">${escapeHtml(winner.name)}</h1>
              <div class="vs-celeb-score">${winner.score} pts</div>
              <div class="vs-celeb-podium">${podiumHtml(ranked)}</div>
+             ${duelSummaryHtml(st)}
              ${actions}
            </div>`;
       mount(host, html`<div class="vs-result-screen vs-skin-${vsTheme}">${body}</div>`);

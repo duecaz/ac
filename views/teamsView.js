@@ -18,6 +18,7 @@ import { createSession, FORMATS, sessionItems } from '../kernel/session/engine.j
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { applyMarks } from '../core/textMarks.js';
 import { renderModeSetup } from './modeSetup.js';
+import { applyPlayOptions } from '../core/playOptions.js';
 import { teamColor, teamNameInputsHtml, teamsScoreboardHtml, teamsPodiumHtml } from '../core/teams.js';
 import { canAutoScoreRound } from '../core/templateCapability.js';
 
@@ -32,6 +33,9 @@ export function mountTeams(host, a, ctx, opts = {}) {
     return { dispose() {} };
   }
   const T = getTemplate(a.template);
+  // Opciones de partida elegidas en el setup (core/playOptions.js): se aplican
+  // a una COPIA al arrancar, nunca a la actividad guardada.
+  let playChoices = {};
   // MISMO criterio que core/modes.js y createTeamsSession (core/templateCapability.js):
   // hace falta scoreSubmission Y renderRound — roundBody()/wire() más abajo exigen
   // renderRound para pintar la ronda "Automática"; exigir solo getRoundPayload
@@ -73,6 +77,7 @@ export function mountTeams(host, a, ctx, opts = {}) {
       icon: 'bi-people-fill', color: 'success', title: 'Modo Equipos',
       subtitle: `${a.title} · ${total} preguntas · por turnos`,
       body, backHref,
+      playOpts: { T, activity: a, choices: playChoices, onChange: (id, v) => { playChoices = { ...playChoices, [id]: v }; } },
       onMount: () => {
         renderNameInputs();
         updateTeamsHint();
@@ -121,7 +126,8 @@ export function mountTeams(host, a, ctx, opts = {}) {
   }
 
   function startGame(names, scoring) {
-    const session = createSession(a, { format: FORMATS.TEAMS, teams: names, scoring });
+    const session = createSession(applyPlayOptions(T, a, playChoices),
+      { format: FORMATS.TEAMS, teams: names, scoring });
     // El TOTAL de la partida es el del MOTOR, no el nº bruto de ítems: el motor
     // recorta a múltiplo del nº de equipos (todos responden lo mismo). Usar el
     // bruto aquí desincronizaba el rótulo "Pregunta X / N" y el botón final.

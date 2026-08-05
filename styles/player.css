@@ -42,6 +42,28 @@
   flex-direction: column;
 }
 
+/* BOTÓN DE PANTALLA COMPLETA, DISCRETO (como Wordwall). Flota en la esquina del
+   marco, translúcido, y se afirma al pasar el dedo/ratón. Está DENTRO del marco
+   a propósito: al expandir, el botón se expande con él y sigue ahí para salir
+   (en una pizarra táctil no hay tecla Esc). Colores por token: los skins
+   recolorean el juego y este botón vive encima del juego. */
+.ww-fs-btn--corner {
+  position: absolute; top: 8px; right: 8px; z-index: 5;
+  width: max(34px, 5cqmin); height: max(34px, 5cqmin);
+  display: flex; align-items: center; justify-content: center;
+  padding: 0; border: 0; border-radius: 50%;
+  background: var(--ww-card-bg, #fff); color: var(--ww-fg, #1f2937);
+  box-shadow: 0 1px 6px rgba(0,0,0,.22);
+  opacity: .38; cursor: pointer;
+  transition: opacity .15s ease, transform .15s ease;
+}
+.ww-fs-btn--corner:hover,
+.ww-fs-btn--corner:focus-visible { opacity: 1; transform: scale(1.06); }
+.ww-fs-btn--corner.is-on { opacity: .62; }   /* en pantalla completa se ve más: es la salida */
+.ww-fs-btn--corner i { font-size: max(14px, 2.4cqmin); line-height: 1; }
+/* Táctil: no hay hover que revele el botón, así que nace visible. */
+@media (hover: none) { .ww-fs-btn--corner { opacity: .55; } }
+
 /* Carril de la animación de progreso (solo) DENTRO del marco: franja arriba.
    La animación es SECUNDARIA → ocupa como mucho el 25% del alto del marco (y el
    widget se queda con el 75%+). Oculto ([hidden]) no ocupa espacio. */
@@ -190,6 +212,28 @@
   margin: 0; color: var(--ww-muted, #6b7280);
   font-size: clamp(.95rem, 2.6cqmin, 1.4rem); max-width: 52ch;
 }
+/* OPCIONES DE PARTIDA (core/playOptions.js) — "cómo se gana" y similares. Van
+   por encima de los ajustes de ambiente porque cambian el JUEGO. Segmentado y
+   con la elección ya marcada: no es un formulario que rellenar. */
+.ww-playopts { display: flex; flex-direction: column; gap: .5rem; margin: 0 auto 1rem; max-width: 520px; }
+.ww-playopt-label {
+  font-size: max(11px, 1.7cqmin); font-weight: 700; letter-spacing: .02em;
+  text-transform: uppercase; opacity: .6; margin-bottom: .25rem;
+}
+.ww-playopt-values { display: flex; gap: .4rem; flex-wrap: wrap; justify-content: center; }
+.ww-playopt-btn {
+  flex: 1 1 auto; min-width: 40%;
+  padding: .55rem .9rem; border-radius: 10px; cursor: pointer;
+  border: 2px solid var(--ww-line, #e2e8f0);
+  background: var(--ww-card-bg, #fff); color: var(--ww-fg, #1f2937);
+  font-size: max(12px, 2cqmin); font-weight: 600;
+}
+.ww-playopt-btn.is-on {
+  border-color: var(--ww-accent, #2563eb);
+  background: var(--ww-accent-soft, #eff6ff);
+  color: var(--ww-accent-fg, var(--ww-accent, #1d4ed8));
+}
+
 .ww-start-settings { display: flex; flex-wrap: wrap; gap: .6rem; justify-content: center; }
 .ww-set-toggle {
   border: 2px solid #e2e8f0; background: #f8fafc; color: #334155;

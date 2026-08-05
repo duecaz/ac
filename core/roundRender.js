@@ -37,6 +37,10 @@ export function renderChoiceRound(root, payload, { onSubmit } = {}) {
 // Numeric keypad round (Operaciones): a prompt + on-screen number pad. Builds a
 // digit string and calls onSubmit(value) once on ✓, then locks. Reused by the
 // math template for SOLO and by VS / Equipos via renderRound.
+// `data-ww-submit` marca EL control de envío (play.submit:'boton'). No es
+// decorativo: `tools/matrix-smoke.mjs` los cuenta en el panel VS y falla si hay
+// dos — "cuántos toques cuesta responder" es una decisión de producto, no algo
+// que cada plantilla decida por su cuenta con la clase mirando.
 export function renderKeypadRound(root, payload, { onSubmit } = {}) {
   root.innerHTML = `
     <div class="ww-keypad-round">
@@ -46,7 +50,7 @@ export function renderKeypadRound(root, payload, { onSubmit } = {}) {
         ${[1,2,3,4,5,6,7,8,9].map(n => `<button type="button" class="btn ww-key" data-k="${n}">${n}</button>`).join('')}
         <button type="button" class="btn ww-key ww-key-fn" data-k="back" aria-label="Borrar"><i class="bi bi-backspace"></i></button>
         <button type="button" class="btn ww-key" data-k="0">0</button>
-        <button type="button" class="btn ww-key ww-key-ok" data-k="ok" aria-label="Aceptar"><i class="bi bi-check-lg"></i></button>
+        <button type="button" class="btn ww-key ww-key-ok" data-k="ok" data-ww-submit aria-label="Aceptar"><i class="bi bi-check-lg"></i></button>
       </div>
     </div>`;
   const disp = root.querySelector('[data-display]');

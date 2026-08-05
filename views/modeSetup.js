@@ -22,14 +22,21 @@
 //              the stage is the way back, so no in-card back button.
 //   onMount    optional (host) => void. Wire the option controls after paint.
 //   onStart    () => void. Called when the user taps Start.
+//   playOpts   optional { T, activity, choices, onChange(id, value) }. OPCIONES
+//              DE PARTIDA que declara la plantilla (core/playOptions.js): "cómo
+//              se gana" en Ordena las Pelotas, por ejemplo. Se pintan arriba del
+//              `body` porque cambian el JUEGO, no la configuración del modo; y
+//              se deciden aquí, al lanzar, en vez de obligar a entrar al editor
+//              con la clase esperando.
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { toggleFullscreen } from '../core/fullscreen.js';
+import { playOptionsHtml, wirePlayOptions } from '../core/playOptions.js';
 
 export function renderModeSetup(host, opts) {
   const {
     icon, color = 'secondary', title, subtitle = '', body = '',
-    startLabel = '¡Empezar!', note = '', backHref, onMount, onStart
+    startLabel = '¡Empezar!', note = '', backHref, onMount, onStart, playOpts
   } = opts;
 
   mount(host, html`
@@ -37,6 +44,7 @@ export function renderModeSetup(host, opts) {
       ${backHref ? `<a href="${backHref}" class="btn btn-sm btn-link"><i class="bi bi-arrow-left"></i> Volver</a>` : ''}
       <h3 class="mt-2 mb-1"><i class="bi ${icon} text-${color}"></i> ${escapeHtml(title)}</h3>
       ${subtitle ? `<p class="text-muted">${escapeHtml(subtitle)}</p>` : ''}
+      ${playOpts ? playOptionsHtml(playOpts.T, playOpts.activity, playOpts.choices) : ''}
       <div class="ww-mode-setup-body">${body}</div>
       <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
         <button class="btn btn-outline-${color} btn-lg px-4 ww-mode-start"><i class="bi bi-play-fill"></i> ${escapeHtml(startLabel)}</button>
@@ -46,6 +54,7 @@ export function renderModeSetup(host, opts) {
     </div>`);
 
   if (typeof onMount === 'function') onMount(host);
+  if (playOpts) wirePlayOptions(host, (id, value) => playOpts.onChange?.(id, value));
   on(host, 'click', '.ww-mode-start', () => { if (typeof onStart === 'function') onStart(); });
   on(host, 'click', '.ww-mode-start-fs', () => {
     if (typeof onStart === 'function') onStart();

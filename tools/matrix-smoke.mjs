@@ -97,7 +97,15 @@ const caps = await page.evaluate(async () => {
   return templateCapabilities().map(c => ({ name: c.name, modes: c.modes.map(m => ({ id: m.id, supported: m.supported })) }));
 });
 
+// Lo que cada plantilla DECLARA sobre su envío (`meta.play.submit`), para
+// contrastarlo con el DOM real del panel VS.
+const submitKind = await page.evaluate(async () => {
+  const { listTemplates } = await import('/core/registry.js');
+  return Object.fromEntries(listTemplates().map(T => [T.meta.name, T.meta.play?.submit]));
+});
+
 const results = [];
+const taps = [];
 for (const t of seeded) {
   if (only.length && !only.includes(t.name)) continue;
   const cap = caps.find(c => c.name === t.name);
@@ -123,6 +131,17 @@ for (const t of seeded) {
       await page.waitForSelector(drv.ready, { timeout: 12000 });
       await page.waitForTimeout(350);   // deja correr timers/animaciones de entrada
       if (bucket.length) { status = 'error'; detail = bucket[0]; }
+      // AUDITORÍA DE TOQUES (VS): cuántos controles de envío tiene la ronda de
+      // verdad, contra lo que la plantilla DECLARA en `meta.play.submit`. El
+      // reporte de clase fue "en VS son dos botones, el check y el enviar": sin
+      // esta cuenta, esa pregunta solo se puede responder jugando.
+      if (mode === 'vs' && status === 'ok') {
+        const n = await page.evaluate(() => {
+          const panel = document.querySelector('#vs-body-left') || document.querySelector('.vs-panel');
+          return panel ? panel.querySelectorAll('[data-ww-submit]').length : -1;
+        });
+        taps.push({ t: t.name, label: t.label, declared: submitKind[t.name] ?? '(sin declarar)', found: n });
+      }
     } catch (e) {
       status = 'fail';
       detail = bucket[0] || String(e.message).split('\n')[0].slice(0, 120);
@@ -150,6 +169,23 @@ if (bad.length) {
   console.log('\nFALLOS:');
   for (const b of bad) console.log(`  ${ICON[b.status]} ${b.label} · ${b.mode} — ${b.detail}`);
 }
+// ── Toques para responder en VS: declarado vs REAL ──────────────────────────
+// 'gesto' = el toque ES la respuesta (cero botones) · 'boton' = se construye y
+// se confirma (EXACTAMENTE uno). Dos botones para una respuesta es un fallo de
+// producto: en la pizarra responde un alumno con la clase mirando.
+const tapBad = taps.filter(x => x.found !== (x.declared === 'boton' ? 1 : 0));
+if (taps.length) {
+  console.log('\nTOQUES PARA RESPONDER EN VS (declarado → real)\n');
+  for (const x of taps) {
+    const esperado = x.declared === 'boton' ? 1 : 0;
+    console.log(`  ${x.found === esperado ? '✅' : '❌'} ${x.label.padEnd(width)}  ${String(x.declared).padEnd(7)} → ${x.found} control(es) de envío`);
+  }
+}
+if (tapBad.length) {
+  console.log('\nENVÍO QUE NO CUADRA CON LO DECLARADO:');
+  for (const x of tapBad) console.log(`  ❌ ${x.label} — declara '${x.declared}' pero el panel tiene ${x.found} control(es) [data-ww-submit]`);
+}
+
 const seedBad = seeded.filter(s => s.seedError);
 if (seedBad.length) { console.log('\nSIEMBRA FALLIDA:'); seedBad.forEach(s => console.log(`  ❌ ${s.name} — ${s.seedError}`)); }
 
@@ -157,4 +193,4 @@ console.log(`\n✅ ok: ${results.filter(r => r.status === 'ok').length}` +
   ` · ❌ fallos: ${bad.length}` +
   ` · · no aplica: ${results.filter(r => r.status === 'n/a').length}`);
 console.log('El ALUMNO en vivo lo cubre tools/live-smoke.mjs (dos contextos). Sin cubrir: Tarea e2e y carrera con 2 alumnos.');
-bye(bad.length || seedBad.length ? 1 : 0);
+bye(bad.length || seedBad.length || tapBad.length ? 1 : 0);

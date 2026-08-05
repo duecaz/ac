@@ -83,3 +83,24 @@ export function hasAdvanceChoice(loop) { return loop === 'rounds'; }
 export function pointsModeFor(loop) {
   return (loop === 'race' || loop === 'board') ? 'race' : 'live';
 }
+
+/**
+ * ¿SUPERA esta respuesta el ítem en CARRERA? La ley §26 dice que en carrera un
+ * fallo VUELVE A LA COLA, y de ahí sale la premisa del podio: todo el que
+ * termina lo hace con TODAS bien, así que el puntaje no ordena y manda la hora
+ * de meta (`core/liveRank.js`).
+ *
+ * Esa premisa era FALSA para Tildes y Comas. Su scorer da crédito por marca
+ * (`correct: net > 0`), así que una hoja con una tilde de tres puestas se daba
+ * por superada: el alumno "terminaba" con la mitad hecha y el podio lo ordenaba
+ * junto al que lo hizo todo bien, separados solo por el reloj.
+ *
+ * En carrera la vara es COMPLETA: `perfect` cuando el scorer lo dice (nada
+ * omitido y nada de más) y, para los scorers de todo-o-nada que no lo declaran,
+ * su propio `correct`. En los demás bucles no aplica: ahí la pregunta se abre
+ * una vez y no se re-encola nada.
+ */
+export function racePassed(result) {
+  if (!result) return false;
+  return result.perfect ?? !!result.correct;
+}

@@ -122,7 +122,10 @@ export class ${Cls}Template extends BaseTemplate {
     //   vs:    'points' espera a AMBOS y gana quien más suma (defecto sensato)
     //          'race'   el primero que termina gana y cierra · 'none' sin VS
     //   teams: 'turns' por turnos · 'board' tablero compartido · 'none'
-    play: { vs: '${wantVs ? 'points' : 'none'}', teams: '${wantVs ? 'turns' : 'none'}', live: '${wantLive ? 'rounds' : 'none'}' },
+    // play.submit declara CÓMO se manda una respuesta en la ronda: 'gesto' (el
+    // toque ES la respuesta, cero botones) o 'boton' (se construye y se
+    // confirma con UNO marcado data-ww-submit). Lo audita matrix-smoke.
+    play: { vs: '${wantVs ? 'points' : 'none'}', teams: '${wantVs ? 'turns' : 'none'}', live: '${wantLive ? 'rounds' : 'none'}'${wantVs ? ", submit: 'boton'" : ''} },
     needsImageUpload: false,      // true si el editor sube imágenes (core/upload.js)
     needsAudioUpload: false,
     defaultRules:   () => ({ timer: 0, randomize: true }),
@@ -145,7 +148,7 @@ ${wantVs || wantLive ? `
   // Ronda interactiva (VS / Equipos-auto): pinta el ítem y llama onSubmit(value).
   static renderRound(root, payload, { onSubmit } = {}) {
     root.innerHTML = \`<div class="${prefix}-round"><p>\${escapeHtml(payload?.question ?? payload?.q ?? '')}</p>
-      <button type="button" class="btn btn-primary ${prefix}-send">Responder</button></div>\`;
+      <button type="button" class="btn btn-primary ${prefix}-send" data-ww-submit>Responder</button></div>\`;
     root.querySelector('.${prefix}-send').addEventListener('click', () => onSubmit?.('TODO-valor'));
   }
 ` : ''}

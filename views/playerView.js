@@ -18,7 +18,8 @@ import { listSkins, applySkin, skinPreviewHtml } from '../core/skins.js';
 
 import { listBackgrounds, applyBackground, backgroundPreviewHtml, readBackgroundImage } from '../core/backgrounds.js';
 import { resetScene } from '../core/presentation.js';
-import { toggleFullscreen } from '../core/fullscreen.js';
+import { toggleFullscreen, fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
+import { applyPlayOptions } from '../core/playOptions.js';
 import { acquire } from '../core/lifecycle.js';
 import { toast, confirmModal } from '../core/toast.js';
 import { openEmbedModal } from './embedModal.js';
@@ -42,6 +43,11 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   let currentSkin = a.presentation?.skin || 'default';
   let currentBg = a.presentation?.background || 'none';
   let currentBgImage = a.presentation?.backgroundImage || '';
+  // Lo elegido para ESTA partida (core/playOptions.js). Vive aquí, no en la
+  // actividad: mañana con otro grupo el profe elige otra cosa y lo guardado no
+  // se toca. Al vivir en playActivity() sirve a TODOS los modos embebidos.
+  let playChoices = {};
+
   const vsCapable = isVsCompatible(a);
   // The currently selected embedded mode and its teardown handle. The activity
   // stage hosts ONE mode at a time (Individual by default); switching modes
@@ -75,8 +81,9 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   // that read presentation (e.g. vsView's vs-skin-<vsLayout> arena class) reflect
   // the theme chosen in the picker — not just the originally saved one.
   function playActivity() {
-    return { ...a, template: liveTemplate,
+    const base = { ...a, template: liveTemplate,
       presentation: { ...a.presentation, skin: currentSkin, background: currentBg, backgroundImage: currentBgImage } };
+    return applyPlayOptions(getTemplate(liveTemplate), base, playChoices);
   }
 
   // The "Modos de juego" bar, built entirely from the mode registry so gating
@@ -158,6 +165,8 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     const widget = document.getElementById('ww-player-widget');
     return renderStartScreen(widget, playActivity(), {
       frame: document.getElementById('ww-frame'),
+      choices: playChoices,
+      onOption: (id, value) => { playChoices = { ...playChoices, [id]: value }; },
       onStart: async () => {
         if (currentAnim) { try { currentAnim.dispose(); } catch {} currentAnim = null; }
         const anim = mountSoloAnimator(document.getElementById('ww-solo-anim'), playActivity());
@@ -182,9 +191,15 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
         <!-- Orden tipo Wordwall: primero la ACTIVIDAD, luego título + autor, luego
              los modos. La navegación "Inicio" ya vive en la barra superior (un solo
              nav), así que aquí no se repite la miga de pan. -->
+        <!-- El botón de pantalla completa va DENTRO del marco, discreto y en la
+             esquina (como Wordwall): durante la actividad el profe no baja a
+             buscar un control en una barra, y el mismo botón sirve para SALIR
+             (cambia de icono). Al vivir en el marco compartido sale en los tres
+             modos embebidos —Individual, VS y Equipos— sin repetirlo en cada uno. -->
         <div class="ww-player-frame mb-3" style="${aspectStyle(aspect)}" id="ww-frame">
           <div id="ww-solo-anim" class="ww-solo-anim" hidden></div>
           <div id="ww-player-widget"></div>
+          ${fullscreenButtonHtml({ corner: true })}
         </div>
 
         <div class="mb-3">
@@ -319,6 +334,10 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     on(rootSel, 'click', '#btn-restart', () => { clearSoloProgress(id); selectMode(currentMode); });
     // Frame-level fullscreen: only the embed expands, not the page (YouTube-like).
     on(rootSel, 'click', '#btn-fs', () => toggleFullscreen(document.getElementById('ww-frame')));
+    // El de la esquina expande el MISMO marco, y su disposer se cuelga del ctx
+    // de la vista (§23): sin él, el listener de `fullscreenchange` sobreviviría
+    // al cambio de ruta y repintaría botones de una pantalla que ya no existe.
+    ctx.add(attachFullscreenButton('#ww-frame', { target: document.getElementById('ww-frame') }));
     on(rootSel, 'click', '#btn-link', async () => {
       try { await navigator.clipboard.writeText(location.href); toast('Link copiado.', 'success'); }
       catch { toast('No se pudo copiar — copia manualmente: ' + location.href, 'warning', 6000); }

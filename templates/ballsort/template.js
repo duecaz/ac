@@ -20,7 +20,30 @@ export class BallsortTemplate extends BaseTemplate {
     aspectRatio:     '4/3',
     modes:           { solo: true, live: true, async: true, practice: false },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
-    play:            { vs: 'race', teams: 'board', live: ['board'] },
+    play:            { vs: 'race', teams: 'board', live: ['board'], submit: 'gesto',
+      // OPCIÓN DE PARTIDA (core/playOptions.js): el tablero se puede ganar de
+      // DOS formas y quién elige es el docente, en el momento de lanzar. Estaba
+      // solo en el editor: para cambiarla había que salir del juego con la clase
+      // esperando. El scorer ya respetaba ambas (−8 pts/movimiento · −5 pts/s).
+      options: [{
+        id: 'mode', label: 'Cómo se gana',
+        values: [
+          { value: 'moves', label: 'Menos movimientos', icon: 'bi-arrow-left-right' },
+          { value: 'time',  label: 'Menos tiempo',      icon: 'bi-stopwatch' },
+        ],
+        get: (a) => a?.content?.mode || 'moves',
+        // El modo vive en DOS sitios (el contenido y el ítem del tablero, que es
+        // lo que lee el scorer): se cambian los dos o la partida diría una cosa
+        // y puntuaría otra. Copia, sin mutar la actividad guardada.
+        set: (a, v) => ({
+          ...a,
+          content: {
+            ...a.content, mode: v,
+            items: (a.content?.items || []).map(it => ({ ...it, mode: v })),
+          },
+        }),
+      }],
+    },
     // LIVE 'board' (declarado en play.live): tablero ÚNICO compartido — cada
     // alumno resuelve el MISMO puzle a su ritmo y el host ve cada tablero
     // avanzar movimiento a movimiento sobre la fase 'race'.

@@ -21,6 +21,7 @@ import { toggleFullscreen } from '../core/fullscreen.js';
 import { isMuted, setMuted } from '../core/sounds.js';
 import { isEffectsMuted, setEffectsMuted } from '../core/effects.js';
 import { openPenCalibration } from '../core/penCalibration.js';
+import { playOptionsHtml, wirePlayOptions } from '../core/playOptions.js';
 
 // Instrucciones: la actividad puede traerlas (futuro editor); si no, la plantilla
 // puede declarar `meta.instructions`; y si tampoco, un texto genérico.
@@ -37,7 +38,7 @@ const TOGGLE = (id, icon, label, on) => `
   </button>`;
 
 export function renderStartScreen(host, activity, opts = {}) {
-  const { onStart, frame } = opts;
+  const { onStart, frame, onOption, choices } = opts;
   const T = getTemplate(activity?.template);
   const color = 'success';
   const soundOn = activity?.presentation?.sound !== false && !isMuted();
@@ -50,6 +51,11 @@ export function renderStartScreen(host, activity, opts = {}) {
         <div class="ww-start-icon"><i class="bi ${T?.meta?.icon || 'bi-puzzle'}"></i></div>
         <h2 class="ww-start-title">${escapeHtml(activity?.title || 'Actividad')}</h2>
         <p class="ww-start-instructions">${escapeHtml(activityInstructions(activity))}</p>
+
+        <!-- OPCIONES DE PARTIDA que declara la plantilla (core/playOptions.js):
+             se deciden AQUÍ, al lanzar, no en el editor. Van antes de los
+             ajustes de sonido porque cambian el juego, no el ambiente. -->
+        ${playOptionsHtml(T, activity, choices)}
 
         <div class="ww-start-settings">
           ${TOGGLE('sound', 'bi-volume-up-fill', 'Sonido', soundOn)}
@@ -75,6 +81,7 @@ export function renderStartScreen(host, activity, opts = {}) {
     setEffectsMuted(!next); paintToggle(t, next);
   });
   on(el, 'click', '[data-calib]', () => openPenCalibration());
+  wirePlayOptions(el, (id, value) => onOption?.(id, value));
 
   // Iniciar → SIEMPRE pantalla completa, luego arranca el juego.
   // Guard de una sola entrada: en pizarra táctil un doble-tap rápido (antes de que

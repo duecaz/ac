@@ -630,6 +630,24 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
           }).catch(() => {});
         }
       }
+      // §22-2 — EXCEPCIÓN DECLARADA de la carrera libre: en ese modo el móvil
+      // juzga cada intento en local (colorea al instante y re-encola los fallos),
+      // así que necesita el contenido completo. Solo entonces, y solo al arrancar,
+      // se sube la actividad entera a la sala; al cerrar se vuelve al snapshot
+      // saneado. Cerrarlo del todo pide un validador en el servidor (ver
+      // core/liveSnapshot.js).
+      //
+      // ANTES DE ABRIR LA FASE, no después: este PATCH iba DESPUÉS del de
+      // `state`, así que el móvil recibía "empieza la carrera" y se ponía a
+      // jugar con el snapshot SIN clave — daba por fallada hasta una hoja
+      // perfecta. Primero la clave, luego la salida.
+      if (needsClientKey(patch.phase)) {
+        const full = await fullActivity(sessionId, null);
+        if (full) await pbFetch(`/api/collections/${COLL}/records/${sessionId}`, {
+          method: 'PATCH', body: JSON.stringify({ activity: full }),
+        }).catch(() => { /* si falla, el móvil ESPERA (no juzga a ciegas) */ });
+      }
+
       // El host puede tocar AMBOS: el blob y el campo `ql` (p.ej. al cerrar la
       // caja abierta tras dar puntos) — un solo PATCH.
       const ql = qlPatch(patch);
@@ -643,18 +661,6 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       // permite medir después el tiempo de cada respuesta con el reloj del
       // SERVIDOR. Cuesta un PATCH diminuto por pregunta —del host, no de los 30
       // alumnos— y a cambio sobrevive a que el host recargue a mitad de pregunta.
-      // §22-2 — EXCEPCIÓN DECLARADA de la carrera libre: en ese modo el móvil
-      // juzga cada intento en local (colorea al instante y re-encola los fallos),
-      // así que necesita el contenido completo. Solo entonces, y solo al arrancar,
-      // se sube la actividad entera a la sala; al cerrar se vuelve al snapshot
-      // saneado. Cerrarlo del todo pide un validador en el servidor (ver
-      // core/liveSnapshot.js).
-      if (needsClientKey(patch.phase)) {
-        const full = await fullActivity(sessionId, rec);
-        if (full) await pbFetch(`/api/collections/${COLL}/records/${sessionId}`, {
-          method: 'PATCH', body: JSON.stringify({ activity: full }),
-        }).catch(() => { /* si falla, la carrera arranca sin veredicto local */ });
-      }
       if (noteItemOpened(engine, patch, rec)) {
         await pbFetch(`/api/collections/${COLL}/records/${sessionId}`, {
           method: 'PATCH', body: JSON.stringify({ state: engine.state }),

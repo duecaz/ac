@@ -24,7 +24,10 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 
 // Campos que el snapshot PUEDE llevar (whitelist del módulo) + los que añade.
 const ALLOWED = new Set(['id', 'title', 'template', 'presentation', 'live', 'rules',
-  'scoring', 'schemaVersion', 'payloads', 'content', 'itemCount', 'appVersion']);
+  'scoring', 'schemaVersion', 'payloads', 'content', 'itemCount', 'appVersion',
+  // `sanitized`: la MARCA de "esto viene sin clave". El móvil la lee para saber
+  // si puede juzgar en local; sin ella daba por fallada hasta una hoja perfecta.
+  'sanitized']);
 
 // Actividad de prueba por plantilla, con contenido en el campo que cada modelo usa.
 function seed(name) {

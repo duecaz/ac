@@ -218,6 +218,24 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
 - **Gama baja** (`core/perf.js`): `ww-lite` en `<html>` si ≤4 núcleos o ≤2GB → sin bucles de
   animación en reposo (cuerda Lottie estática, marquesina arcade quieta). El VS debe ser fluido en
   pizarras A55; nunca añadir bucles rAF continuos en el hilo principal sin gate `ww-lite`.
+- **Envío de una respuesta en la ronda**: la plantilla lo DECLARA en `meta.play.submit` —
+  `'gesto'` (el toque ES la respuesta: opción, globo, tablero → CERO botones) o `'boton'`
+  (se construye y se confirma → EXACTAMENTE UNO, marcado `data-ww-submit`). Ninguna vista
+  añade un control de envío encima del de la plantilla. Auditado de verdad por
+  `node tools/matrix-smoke.mjs`, que cuenta los `[data-ww-submit]` del panel VS y los
+  compara con lo declarado ("cuántos toques cuesta responder" es producto, no detalle).
+- **Opciones de PARTIDA vs ajustes de CONTENIDO**: lo que cambia el juego para ESTA vez
+  (Pelotas: ganar por tiempo o por movimientos) se declara en `meta.play.options`
+  (`core/playOptions.js`) y lo pintan la pantalla de inicio y el setup de VS/Equipos —
+  ninguna vista conoce la plantilla. `set` es PURO: se aplica a la copia de juego y la
+  actividad guardada NO se toca (§24). Lo del editor sigue siendo contenido. Tope: la
+  opción viene SIEMPRE ya elegida (R2: el profe no configura nada para empezar).
+  Vigilado por `tests/playOptions.test.mjs`.
+- **En CARRERA la vara es COMPLETA**: `racePassed()` (`core/liveLoops.js`) — una hoja de
+  Tildes/Comas a medias VUELVE A LA COLA (su scorer da crédito por marca, `correct: net>0`).
+  Sin esto la premisa del podio es falsa: ordena por hora de meta PORQUE todos terminan con
+  todas bien. Y el móvil **nunca juzga sin clave**: `hasClientKey()` (`core/liveSnapshot.js`)
+  + el guard de `paintRace`. Vigilado por `tests/raceKey.test.mjs`.
 - **Buscar actividades**: SIEMPRE `searchActivities` (`core/search.js`) — uno solo para la
   home y la biblioteca (estaba copiado en las dos, con `includes` sobre título/subtítulo/tags).
   Buscar es BINARIO (norte §2b): sin tildes ni mayúsculas, por PALABRAS en cualquier orden, y
