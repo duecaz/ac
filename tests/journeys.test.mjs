@@ -102,10 +102,23 @@ const RECORRIDOS = {
   // el lado avanza), no solo comprueba que monta. Si el driver desaparece, la
   // cobertura de mecánicas vuelve a ser "arranca sin crash", que es lo que dejó
   // pasar los bugs de juego.
-  for (const driver of ['.rq-opt', '.gl-balloon', '.tc-target', '.tube', 'ww-key[data-k]']) {
-    assert.ok(mx.includes(driver), `matrix-smoke perdió el driver de ronda «${driver}»`);
+  const { MECANICAS } = await import('../tools/helpers/roundDrivers.mjs');
+  assert.ok(MECANICAS.length >= 6, `solo ${MECANICAS.length} mecánicas con driver`);
+  assert.ok(mx.includes('playRound'), 'matrix-smoke debe JUGAR la ronda, no solo montarla');
+  // Los tres modos embebidos, no solo VS: Individual es el más usado de todos.
+  for (const modo of ['solo', 'vs', 'teams']) {
+    assert.ok(new RegExp(`${modo}:\\s*'#`).test(mx), `matrix-smoke no juega la ronda en «${modo}»`);
   }
-  ok('la matriz JUEGA una ronda por mecánica (opción · globo · trazo · tap-tap · teclado)');
+  ok(`la matriz JUEGA la ronda en los 3 modos embebidos · ${MECANICAS.length} mecánicas: ${MECANICAS.join(' · ')}`);
+
+  // El ratchet de deuda conocida no puede convertirse en un cajón: cada entrada
+  // lleva su motivo, y al arreglar el fallo hay que quitarla o el ratchet tapa
+  // el arreglo (misma disciplina que el ratchet de estilos).
+  const conocidos = (mx.match(/const CONOCIDOS = \{([\s\S]*?)\};/) || [])[1] || '';
+  const entradas = (conocidos.match(/'[^']+\|[^']+':/g) || []).length;
+  assert.ok(entradas <= 3, `${entradas} combinaciones marcadas como deuda conocida — el ratchet solo debe ENCOGER`);
+  if (entradas) assert.match(conocidos, /CLAUDE\.md|deuda/i, 'cada deuda conocida cita dónde está registrada');
+  ok(`deuda de juego conocida y declarada: ${entradas} combinación(es), con su motivo`);
 }
 
 // ── 6. CONTRA-PRUEBA: la ley está escrita donde se busca ────────────────────

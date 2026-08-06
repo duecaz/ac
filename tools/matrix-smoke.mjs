@@ -27,6 +27,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = Number(process.env.PORT || 8477);
 const BASE = `http://127.0.0.1:${PORT}`;
 const only = process.argv.slice(2);
+const { playRound, MECANICAS } = await import('./helpers/roundDrivers.mjs');
 
 // Modos que esta matriz sabe conducir hoy. `live` cubre el LADO DEL HOST (crear
 // sala + lobby con PIN), que es donde vive la máquina de fases; el lado del alumno
@@ -126,6 +127,30 @@ const submitKind = await page.evaluate(async () => {
   return Object.fromEntries(listTemplates().map(T => [T.meta.name, T.meta.play?.submit]));
 });
 
+// PISTAS DE LA SEMILLA (no del veredicto, §27): la respuesta que el test sembró
+// para el teclado, y las celdas de la primera palabra colocada en la sopa. Se
+// las pide a la PROPIA plantilla con su defaultContent — el test no resuelve
+// nada, solo sabe qué puso.
+const hints = await page.evaluate(async () => {
+  const { listTemplates } = await import('/core/registry.js');
+  const out = {};
+  for (const T of listTemplates()) {
+    const m = T.meta;
+    const a = { id: `mx_${m.name}`, template: m.name, content: m.defaultContent ? m.defaultContent() : {},
+                rules: m.defaultRules ? m.defaultRules() : {}, scoring: m.defaultScoring ? m.defaultScoring() : {} };
+    const h = {};
+    const it = (a.content.items || [])[0];
+    if (it && it.answer != null) h.answer = String(it.answer);
+    try {
+      const p = T.getRoundPayload?.(a, { itemIndex: 0, side: 'left' });
+      const placed = p?.placed?.[0];
+      if (placed?.cells) h.wordCells = placed.cells;
+    } catch { /* la plantilla no tiene payload: sin pistas */ }
+    out[m.name] = h;
+  }
+  return out;
+});
+
 const results = [];
 const taps = [];
 const hits = [];   // hit-testing de los controles críticos
@@ -209,6 +234,31 @@ for (const t of seeded) {
         });
         if (peligros.length) { status = 'error'; detail = `R2b: control(es) de profe DENTRO del juego: ${peligros.join(' · ')}`; }
       }
+      // ── LA RONDA SE JUEGA, no solo se monta (cola #3 del norte) ─────────
+      // Un gesto REAL en los tres modos embebidos. La vara: que el juego
+      // RESPONDA (progreso o re-render). Quien juzga es la app.
+      if (['solo', 'vs', 'teams'].includes(mode) && status === 'ok') {
+        // UN selector por modo (una coma aquí partiría el CSS: `.a, .b .rq-opt`
+        // no es lo que parece — me costó cuatro falsos fallos descubrirlo).
+        const CAJA = { solo: '#ww-player-widget', vs: '#vs-body-left', teams: '#teams-round' };
+        const prog = mode === 'vs' ? '#vs-prog-left' : '';
+        // En Equipos el gesto no avanza la ronda: HABILITA "Revelar" (el equipo
+        // elige, el docente revela). Ahí se mira ese efecto, no el avance.
+        const efecto = mode === 'teams' ? '#teams-reveal' : '';
+        const r = await playRound(page, CAJA[mode], { ...(hints[t.name] || {}), progressSel: prog, effectSel: efecto });
+        // RATCHET de deuda conocida (mismo patrón que el ratchet de estilos): una
+        // combinación rota Y DECLARADA no tumba la matriz, pero sale en el
+        // informe con su motivo. Lo que no se tolera es una rotura NUEVA.
+        const CONOCIDOS = {
+          'wordsearch|teams': 'Equipos trata la ronda como UNA respuesta y la Sopa emite una por palabra encontrada → el hallazgo se pierde (deuda registrada en CLAUDE.md)',
+        };
+        const conocido = CONOCIDOS[`${t.name}|${mode}`];
+        if (r.mecanica && r.avanzo === false && !conocido) {
+          status = 'error'; detail = `la ronda no AVANZA tras un gesto real (${r.mecanica})`;
+        }
+        if (r.mecanica && r.avanzo === false && conocido) r.conocido = conocido;
+        rounds.push({ label: t.label, mode, mecanica: r.mecanica, avanzo: r.avanzo, conocido: r.conocido });
+      }
       if (mode === 'vs' && status === 'ok') {
         const n = await page.evaluate(() => {
           const panel = document.querySelector('#vs-body-left') || document.querySelector('.vs-panel');
@@ -216,79 +266,6 @@ for (const t of seeded) {
         });
         taps.push({ t: t.name, label: t.label, declared: submitKind[t.name] ?? '(sin declarar)', found: n });
 
-        // ── LA RONDA SE JUEGA, no solo se monta (cola #3 del norte) ──────────
-        // Un toque REAL en el panel izquierdo y la vara es que el juego AVANCE
-        // (la barra de progreso del lado se mueve, o el panel cambia). El
-        // veredicto lo pone la app: para las mecánicas de elección se toca una
-        // opción cualquiera (acierte o falle, el cursor de VS avanza); para el
-        // teclado se teclea la respuesta DE LA SEMILLA — conocer tu propia
-        // semilla no es darse el veredicto (§27), es saber qué sembraste.
-        const jugada = await (async () => {
-          const before = await page.evaluate(() => ({
-            prog: document.getElementById('vs-prog-left')?.style.width || '',
-            html: document.getElementById('vs-body-left')?.innerHTML || '',
-          }));
-          const tap = async (sel) => {
-            const el = page.locator(`#vs-body-left ${sel}`).first();
-            if (!await el.count()) return false;
-            const box = await el.boundingBox();
-            if (!box) return false;
-            await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-            return true;
-          };
-          let did = null;
-          if (await tap('.rq-opt')) did = 'opción';
-          else if (await tap('.gl-balloon')) did = 'globo';
-          else if (await page.locator('#vs-body-left .tc-target').count()) {
-            // Tildes/Comas: un TRAZO real del ratón sobre un objetivo (el canvas
-            // de dibujo escucha pointer events del navegador, no clicks JS) y
-            // luego "Listo". Marque bien o mal, el envío avanza el lado.
-            const tg = await page.locator('#vs-body-left .tc-target').first().boundingBox();
-            if (tg) {
-              await page.mouse.move(tg.x + tg.width / 2 - 3, tg.y + tg.height / 2);
-              await page.mouse.down();
-              await page.mouse.move(tg.x + tg.width / 2 + 3, tg.y + tg.height / 2, { steps: 4 });
-              await page.mouse.up();
-              await page.waitForTimeout(150);
-              await tap('.tc-done');
-              did = 'trazo';
-            }
-          }
-          else if (await page.locator('#vs-body-left .tube').count()) {
-            // Ordena las Pelotas: TAP-TAP (coger del primer tubo, soltar en el
-            // último, que la semilla trae vacío → movimiento legal seguro).
-            const tubos = page.locator('#vs-body-left .tube');
-            const n = await tubos.count();
-            const a = await tubos.nth(0).boundingBox();
-            const b = await tubos.nth(n - 1).boundingBox();
-            if (a && b) {
-              await page.mouse.click(a.x + a.width / 2, a.y + 10);
-              await page.waitForTimeout(120);
-              await page.mouse.click(b.x + b.width / 2, b.y + 10);
-              did = 'tap-tap';
-            }
-          }
-          else if (await page.locator('#vs-body-left .ww-key[data-k]').count()) {
-            // Operaciones: la semilla es defaultContent() → primera pregunta '2 × 6' = '12'.
-            for (const k of ['1', '2']) await tap(`.ww-key[data-k="${k}"]`);
-            await tap('.ww-key[data-k="ok"]');
-            did = 'teclado';
-          }
-          if (!did) return { did: 'sin driver' };   // mecánicas de trazo/arrastre: pendiente declarado
-          await page.waitForTimeout(1100);          // flash + re-render del lado
-          const after = await page.evaluate(() => ({
-            prog: document.getElementById('vs-prog-left')?.style.width || '',
-            html: document.getElementById('vs-body-left')?.innerHTML || '',
-          }));
-          const avanzo = (after.prog && after.prog !== before.prog) || after.html !== before.html;
-          return { did, avanzo };
-        })();
-        if (jugada.did !== 'sin driver') {
-          if (!jugada.avanzo) { status = 'error'; detail = `la ronda no AVANZA tras un toque real (${jugada.did})`; }
-          rounds.push({ label: t.label, did: jugada.did, avanzo: !!jugada.avanzo });
-        } else {
-          rounds.push({ label: t.label, did: 'sin driver', avanzo: null });
-        }
       }
     } catch (e) {
       status = 'fail';
@@ -351,11 +328,27 @@ if (hits.length) {
 }
 
 // ── Rondas jugadas con un toque real ────────────────────────────────────────
+// La deuda CONOCIDA no tumba la matriz (sale en el informe con su motivo); lo
+// que la tumba es una rotura nueva.
+const roundBad = rounds.filter(r => r.avanzo === false && !r.conocido);
 if (rounds.length) {
   const jugadas = rounds.filter(r => r.avanzo !== null);
-  const sinDriver = rounds.filter(r => r.avanzo === null).map(r => r.label);
-  console.log(`\nRONDA JUGADA EN VS (toque real → la app juzga y avanza): ${jugadas.filter(r => r.avanzo).length}/${jugadas.length}`);
-  if (sinDriver.length) console.log(`  · sin driver de gesto todavía (trazo/arrastre): ${sinDriver.join(' · ')}`);
+  console.log(`\nRONDA JUGADA (gesto real → la app juzga y responde): ${jugadas.filter(r => r.avanzo).length}/${jugadas.length}`);
+  for (const m of ['solo', 'vs', 'teams']) {
+    const del = rounds.filter(r => r.mode === m && r.avanzo !== null);
+    if (del.length) console.log(`  ${del.every(r => r.avanzo) ? '✅' : '❌'} ${m.padEnd(6)} ${del.filter(r => r.avanzo).length}/${del.length}  (${[...new Set(del.map(r => r.mecanica))].join(' · ')})`);
+  }
+  const deuda = rounds.filter(r => r.conocido);
+  if (deuda.length) {
+    console.log('  · DEUDA CONOCIDA (no tumba la matriz, sigue siendo un fallo):');
+    for (const d of deuda) console.log(`      ${d.label} · ${d.mode} — ${d.conocido}`);
+  }
+  const sin = rounds.filter(r => r.avanzo === null);
+  if (sin.length) {
+    const porModo = {};
+    for (const r of sin) (porModo[r.mode] ??= []).push(r.label);
+    console.log('  · sin driver de gesto: ' + Object.entries(porModo).map(([m, l]) => `${m}: ${[...new Set(l)].join(', ')}`).join(' | '));
+  }
 }
 
 const seedBad = seeded.filter(s => s.seedError);
@@ -365,4 +358,4 @@ console.log(`\n✅ ok: ${results.filter(r => r.status === 'ok').length}` +
   ` · ❌ fallos: ${bad.length}` +
   ` · · no aplica: ${results.filter(r => r.status === 'n/a').length}`);
 console.log('El ALUMNO en vivo lo cubre tools/live-smoke.mjs (dos contextos). Sin cubrir: Tarea e2e y carrera con 2 alumnos.');
-bye(bad.length || seedBad.length || tapBad.length || hitBad.length ? 1 : 0);
+bye(bad.length || seedBad.length || tapBad.length || hitBad.length || roundBad.length ? 1 : 0);

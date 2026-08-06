@@ -363,6 +363,17 @@ Biblioteca tipo Wordwall + cuentas de profe, ejecutado y verificado en real:
 - **Pendiente (futuro, pedido por el usuario)**: PIN/NFC para pizarras (U2-U4) →
   `docs/handoff-acceso-docente.md`.
 
+### 🔴 DEUDA NUEVA (v1.51.384) — Equipos + Sopa de Letras: el hallazgo se pierde
+Encontrado por la matriz al JUGAR la ronda (no al montarla): en modo Equipos,
+encontrar una palabra en la Sopa **no produce ningún efecto** — ni se marca, ni
+habilita "Revelar". Causa: `views/teamsView.js` trata la ronda como UNA respuesta
+por turno y `renderWordsearchRound` emite `onSubmit` por CADA palabra encontrada;
+el turno de Equipos no sabe qué hacer con una respuesta que llega N veces.
+- Alcance: solo Equipos (en Individual y VS funciona — 7/7 y 8/8 jugando de verdad).
+- Declarado como CONOCIDO en `tools/matrix-smoke.mjs` (ratchet): sale en el
+  informe con su motivo y NO tumba la matriz; una rotura nueva sí.
+- Al arreglarlo, quitar la entrada de `CONOCIDOS` — si no, el ratchet tapa el fix.
+
 ### 🟡 DECISIONES APLAZADAS (D1-D5) — deuda de PRODUCTO, no de código
 Decisión del usuario (v1.51.340): se ejecutan solo las estructurales. **D6 hecha**
 (ley §25 · cuotas y retención) y **D7 estudiada y congelada** (ley §26 + estudio medido
