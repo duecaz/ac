@@ -12,6 +12,7 @@ export class WheelTemplate extends BaseTemplate {
     label: 'Ruleta',
     icon: 'bi-bullseye',
     color: 'success',
+    kind:            'ejercicio',   // familia (norte §4c): quién pone el contenido
     contentModel: 'items',
     templateVersion: 3,   // v3: campo `q` → `question` (vocabulario reservado)
     instructions: 'Gira la ruleta y responde la pregunta que toque.',

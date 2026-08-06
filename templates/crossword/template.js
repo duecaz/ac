@@ -12,6 +12,7 @@ export class CrosswordTemplate extends BaseTemplate {
     label:           'Crucigrama',
     icon:            'bi-grid',
     color:           'warning',
+    kind:            'ejercicio',   // familia (norte §4c): quién pone el contenido
     contentModel:    'words',
     templateVersion: 1,
     instructions:    'Completa el crucigrama: toca una pista, escribe la palabra y resuélvela.',

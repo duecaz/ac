@@ -15,6 +15,7 @@ export class TildesTemplate extends BaseTemplate {
     label: 'Tildes',
     icon: 'bi-pencil-fill',
     color: 'warning',
+    kind:            'ejercicio',   // familia (norte §4c): quién pone el contenido
     contentModel: 'textCorrection',
     templateVersion: 1,
     paginated: true,   // una frase por pantalla → nº de páginas = nº de frases

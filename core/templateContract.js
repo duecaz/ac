@@ -33,6 +33,19 @@ export function checkTemplateContract(T) {
   if (!String(m.instructions || '').trim()) issues.push('meta.instructions vacío (obligatorio: lo muestra la pantalla de inicio)');
   if (!Number.isInteger(m.templateVersion) || m.templateVersion < 1) issues.push(`meta.templateVersion inválido: ${m.templateVersion}`);
   if (!m.modes || typeof m.modes !== 'object') issues.push('meta.modes ausente');
+  // LAS DOS FAMILIAS (norte §4c): 'ejercicio' (el contenido lo pone el docente)
+  // o 'juego' (lo genera la plantilla). Se DECLARA — no se adivina mirando el
+  // contenido — porque de aquí se derivan decisiones de producto: un juego no se
+  // manda como Tarea (no hay nada que evaluar y empuja al uso sin profe, §4d),
+  // declara la HABILIDAD que entrena (es su eje de catálogo), y vive en la
+  // estantería "Juegos", no en crear-actividad.
+  if (!['ejercicio', 'juego'].includes(m.kind)) {
+    issues.push(`meta.kind inválido: ${JSON.stringify(m.kind)} — declara 'ejercicio' o 'juego' (norte §4c)`);
+  }
+  if (m.kind === 'juego') {
+    if (m.modes?.async) issues.push('un JUEGO no se ofrece como Tarea (§4c: no hay contenido del docente que evaluar)');
+    if (!String(m.skill || '').trim()) issues.push("un JUEGO declara la HABILIDAD que entrena (meta.skill, p.ej. 'Lógica y deducción')");
+  }
   // POLÍTICA DE JUEGO declarada: cómo se comporta la plantilla en cada modo, en
   // vez de que cada vista lo adivine (vsView forzaba "carrera" a las 13, así que
   // en Quiz/Tildes el primero en acabar cortaba al otro — bug reportado por QA).

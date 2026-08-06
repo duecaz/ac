@@ -375,14 +375,18 @@ rediseñar nada — ficha completa y recomendación en **`docs/decisiones-pendie
 - **D2 · "duplicar como otra plantilla"** (hoy el cambio de plantilla es destructivo).
 - **D4 · aula sin internet** (PWA): solo tras estabilizar la caché (ver v1.51.336).
 
-### 🔴 AUDITORÍA INTEGRAL (Fable, 2026-07) — PENDIENTE DE EJECUTAR → `docs/handoff-auditoria-fable.md`
-4 agentes en paralelo (datos/sync · live · seguridad · UI), hallazgos verificados en
-código. Lo más grave: **reglas de PocketBase 100% abiertas** (un alumno puede
-auto-puntuarse/borrar actividades ajenas), **las respuestas correctas viajan al móvil
-del alumno**, XSS vía `backgroundImage`, borrados que resucitan (sin tombstones),
-fallo silencioso con localStorage lleno, y fullscreen denegado que mata la app con la
-pantalla roja. El handoff tiene 30+ ítems priorizados (P0 seguridad → P3 UI) con
-archivo:línea, escenario y fix; empezar por los "quick wins" listados al final.
+### 🟡 AUDITORÍA INTEGRAL (Fable, 2026-07) — EJECUTADA en su mayoría → `docs/handoff-auditoria-fable.md`
+4 agentes en paralelo (datos/sync · live · seguridad · UI). **20+ ítems ✅ hechos**
+(XSS de backgroundImage, tombstones, localStorage lleno, fullscreen denegado,
+robustez de colas, batches A-H completos) — el detalle con versión de cada fix
+está en el handoff. QUEDA, y es **paso del usuario o diseño**, no código pendiente:
+- **P0-1**: reglas endurecidas EN CÓDIGO (v1.51.214+, U1) — falta **aplicarlas en
+  la Pi** (`#/admin` → "Crear colecciones" + verificación `tools/check-pb.sh`).
+- **P0-2/P0-3**: la clave viaja al móvil SOLO en carrera (excepción declarada
+  §22-2); cerrarla del todo pide un validador en el SERVIDOR (hook PocketBase en
+  la Pi) → diseño en `docs/handoff-seguridad-pb.md` Fase 3.
+> Este bloque decía "PENDIENTE · reglas 100% abiertas" cuando había 20 ✅: un doc
+> de entrada que grita una urgencia falsa entrena a ignorar los avisos reales.
 
 ### ✅ RESUELTO (v1.51.178 → v1.51.180) — Emparejar no conectaba en VERTICAL → `docs/handoff-emparejar-vertical.md`
 **Eran DOS causas encadenadas + 1 mejora de layout** (cada una tapaba a la siguiente):

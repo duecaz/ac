@@ -12,6 +12,7 @@ export class QuestionLiveTemplate extends BaseTemplate {
     label: 'Abre Cajas',
     icon: 'bi-grid-3x3-gap-fill',
     color: 'warning',
+    kind:            'ejercicio',   // familia (norte §4c): quién pone el contenido
     contentModel: 'items',
     templateVersion: 2,   // v2: campo `q` → `question` (vocabulario reservado)
     instructions: 'Espera tu turno: cuando salga tu pregunta, respóndela como indique el docente.',

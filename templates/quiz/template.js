@@ -15,6 +15,7 @@ export class QuizTemplate extends BaseTemplate {
     label: 'Quiz',
     icon: 'bi-question-circle-fill',
     color: 'primary',
+    kind:            'ejercicio',   // familia (norte §4c): quién pone el contenido
     contentModel: 'qa',
     templateVersion: 1,
     paginated: true,   // una pregunta por pantalla → nº de páginas = nº de ítems

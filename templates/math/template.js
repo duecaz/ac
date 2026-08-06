@@ -13,6 +13,7 @@ export class MathTemplate extends BaseTemplate {
     label: 'Operaciones',
     icon: 'bi-calculator-fill',
     color: 'warning',
+    kind:            'ejercicio',   // familia (norte §4c): quién pone el contenido
     contentModel: 'qa',
     templateVersion: 1,
     paginated: true,   // una operación por pantalla → nº de páginas = nº de ítems

@@ -15,6 +15,7 @@ export class MemoryTemplate extends BaseTemplate {
     label: 'Memoria',
     icon: 'bi-shuffle',
     color: 'primary',
+    kind:            'ejercicio',   // familia (norte §4c): quién pone el contenido
     contentModel: 'pairs',
     templateVersion: 1,
     instructions: 'Encuentra las parejas: voltea dos cartas; si coinciden, se quedan descubiertas.',

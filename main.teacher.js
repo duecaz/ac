@@ -19,6 +19,7 @@ import { renderAssignmentsForActivity, renderAttempts } from './views/assignment
 import { renderListView } from './views/listView.js';
 import { renderEditList } from './views/editList.js';
 import { renderExplore } from './views/explore.js';
+import { renderJuegos } from './views/juegos.js';
 import { renderModerate } from './views/moderate.js';
 import { renderAuthor } from './views/author.js';
 import { renderAdmin } from './views/adminView.js';
@@ -37,8 +38,14 @@ import { html, mount } from './core/html.js';
 
 const APP = '#app';
 
-// Portada PÚBLICA (S2): cualquiera ve destacadas + explora + juega.
-route('#/', () => renderLanding(APP));
+// LA ENTRADA (§7c): el profe CON sesión va directo a Mis actividades — viene con
+// prisa y a por su material; el escaparate es para quien llega de fuera. Sin
+// sesión, la portada pública (que le habla AL PROFE, no al alumno).
+route('#/', async () => {
+  const { getUser } = await import('./core/auth.js');
+  if (await getUser()) return navigate('#/mine');
+  renderLanding(APP);
+});
 // #/home → redirección compatible a Mis actividades.
 route('#/home', () => navigate('#/mine'));
 // "Mis actividades" (renderHome): NO se gatea VER (transición segura — un profe que
@@ -81,6 +88,7 @@ route('#/list/:id', ({ id }) => renderListView(APP, id));
 route('#/edit-list/:id', ({ id }) => requireTeacher(APP, () => renderEditList(APP, { id })));
 route('#/new-list', () => requireTeacher(APP, () => renderEditList(APP, {})));
 route('#/explore', (_, q) => renderExplore(APP, q?.q || ''));
+route('#/juegos', () => renderJuegos(APP));   // la estantería (§4c/§7c): sin crear, sin login
 route('#/autor/:id', ({ id }) => renderAuthor(APP, id));
 route('#/moderar', () => renderModerate(APP));
 route('#/admin', () => renderAdmin(APP));

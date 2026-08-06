@@ -15,6 +15,7 @@ export class MatchTemplate extends BaseTemplate {
     label: 'Emparejar',
     icon: 'bi-link-45deg',
     color: 'info',
+    kind:            'ejercicio',   // familia (norte §4c): quién pone el contenido
     contentModel: 'pairs',
     templateVersion: 1,
     instructions: 'Une cada elemento con su pareja arrastrando de uno al otro. Pulsa Enviar para corregir.',

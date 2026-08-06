@@ -15,6 +15,7 @@ export class GlobosTemplate extends BaseTemplate {
     label: 'Explota Globos',
     icon: 'bi-balloon-fill',
     color: 'danger',
+    kind:            'ejercicio',   // familia (norte §4c): quién pone el contenido
     contentModel: 'qa',           // mismo contenido que Quiz/Operaciones
     templateVersion: 1,
     paginated: true,   // una pregunta por pantalla → nº de páginas = nº de ítems

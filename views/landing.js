@@ -18,8 +18,11 @@ export async function renderLanding(rootSel) {
   mount(rootSel, html`
     <div class="landing">
       <section class="landing-hero">
-        <h1 class="landing-hero__title">Aprende jugando</h1>
-        <p class="landing-hero__sub">Actividades educativas para tu clase: quiz, ruleta, emparejar, crucigramas y más. Juega gratis; los profes crean las suyas.</p>
+        <!-- §7c: la portada le habla AL PROFE — "aprende jugando · juega gratis"
+             era lenguaje de sitio de alumnos. El alumno tiene su entrada discreta
+             (PIN) más abajo, no el titular. -->
+        <h1 class="landing-hero__title">Actividades para tu clase</h1>
+        <p class="landing-hero__sub">Busca una lista para usar en la pizarra o crea la tuya en minutos: quiz, ruleta, emparejar, tildes y más. Tus alumnos participan sin cuenta.</p>
         <div class="landing-search">
           <i class="bi bi-search"></i>
           <input id="lp-q" placeholder="Buscar actividades…">
@@ -30,8 +33,11 @@ export async function renderLanding(rootSel) {
             ? `<a href="#/mine" class="btn-ghost"><i class="bi bi-folder2-open"></i> Mis actividades</a>
                <a href="#/new" class="btn-primary-solid"><i class="bi bi-plus-lg"></i> Nueva</a>`
             : `<span class="landing-cta__hint">¿Eres profe?</span><span id="lp-auth"></span>`}
-          <a href="#/explore" class="btn-ghost"><i class="bi bi-globe"></i> Explorar todo</a>
+          <a href="#/explore" class="btn-ghost"><i class="bi bi-globe"></i> Biblioteca</a>
+          <a href="#/juegos" class="btn-ghost"><i class="bi bi-controller"></i> Juegos</a>
         </div>
+        <p class="landing-hero__pin">¿Eres alumno y tu profe te dio un PIN?
+          <a href="student.html#/join">Entra aquí</a></p>
       </section>
 
       <section class="landing-featured">

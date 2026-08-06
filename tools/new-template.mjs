@@ -110,6 +110,9 @@ export class ${Cls}Template extends BaseTemplate {
     label: '${label}',
     icon: '${icon}',              // bootstrap-icons
     color: '${color}',            // color bootstrap del botón/badge
+    // familia (norte §4c): 'ejercicio' (el docente pone el contenido) o 'juego'
+    // (la plantilla lo genera; entonces declara también meta.skill y async:false).
+    kind: 'ejercicio',
     contentModel: '${model}',     // registrado en kernel/content/models.js
     templateVersion: 1,
     // OBLIGATORIO (contrato): frase corta de cómo se juega — la pantalla de inicio.

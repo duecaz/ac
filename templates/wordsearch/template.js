@@ -11,6 +11,7 @@ export class WordsearchTemplate extends BaseTemplate {
     label:           'Sopa de Letras',
     icon:            'bi-grid-3x3',
     color:           'success',
+    kind:            'ejercicio',   // familia (norte §4c): quién pone el contenido
     contentModel:    'words',
     templateVersion: 1,
     instructions:    'Encuentra las palabras ocultas arrastrando sobre la sopa de letras.',

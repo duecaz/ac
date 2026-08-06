@@ -14,11 +14,15 @@ export class BallsortTemplate extends BaseTemplate {
     label:           'Ordena las Pelotas',
     icon:            'bi-droplet-half',
     color:           'info',
+    kind:            'juego',   // familia (norte §4c): quién pone el contenido
+    skill:           'Lógica y deducción',   // el eje del catálogo de juegos
     contentModel:    'ballsort',
     templateVersion: 1,
     instructions:    'Ordena las bolas: mueve la de arriba de un tubo a otro hasta que cada tubo quede de un solo color.',
     aspectRatio:     '4/3',
-    modes:           { solo: true, live: true, async: true, practice: false },
+    // async:false — es un JUEGO (§4c): sin contenido del docente no hay nada que
+    // evaluar en una Tarea, y mandarlo a casa empuja al uso sin profe (§4d).
+    modes:           { solo: true, live: true, async: false, practice: false },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
     play:            { vs: 'race', teams: 'board', live: ['board'], submit: 'gesto',
       // OPCIÓN DE PARTIDA (core/playOptions.js): el tablero se puede ganar de

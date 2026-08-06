@@ -28,6 +28,7 @@ export class DiagramTemplate extends BaseTemplate {
     label: 'Etiqueta el diagrama',
     icon: 'bi-pin-map-fill',
     color: 'success',
+    kind:            'ejercicio',   // familia (norte §4c): quién pone el contenido
     contentModel: 'diagram',
     templateVersion: 1,
     instructions: 'Arrastra cada etiqueta al punto correcto del dibujo. Pulsa Enviar para corregir.',

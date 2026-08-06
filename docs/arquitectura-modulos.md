@@ -5,7 +5,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **246 módulos · 886 imports internos.**
+> **247 módulos · 893 imports internos.**
 
 ### Ir a otro documento
 
@@ -28,12 +28,12 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
-| **buscar/crear** | **siempre** — toda clase empieza aquí | 8 · 1105 | 5 · 492 | 0.45 |
+| **buscar/crear** | **siempre** — toda clase empieza aquí | 8 · 1111 | 5 · 492 | 0.44 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 11 · 2399 | 12 · 1112 | 0.46 |
-| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 18 · 3632 | 18 · 2816 | 0.78 |
+| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 18 · 3633 | 18 · 2816 | 0.78 |
 | **informes/tareas** | después de clase | 11 · 1133 | 3 · 381 | 0.34 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5792 | 12 · 975 | 0.17 |
-| **infra/común** | todo lo anterior | 127 · 12269 | 32 · 3228 | 0.26 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5807 | 12 · 975 | 0.17 |
+| **infra/común** | todo lo anterior | 128 · 12374 | 33 · 3313 | 0.27 |
 
 > Un ratio bajo en un tramo muy usado es deuda de PRIORIDAD, no de calidad: ese
 > código funciona, pero si se rompe nadie se entera hasta que hay 33 críos
@@ -49,18 +49,18 @@ abajo, nunca al revés** (ley §0). Lo vigila `tests/layers.test.mjs`.
 ```mermaid
 graph TD
   A["<b>arranque</b><br/><small>cablea cada página (main.*.js, sw.js)</small><br/><small>3 módulos</small>"]
-  V["<b>vistas</b><br/><small>el chrome: navegación, setup, informes</small><br/><small>28 módulos</small>"]
+  V["<b>vistas</b><br/><small>el chrome: navegación, setup, informes</small><br/><small>29 módulos</small>"]
   AD["<b>adaptadores</b><br/><small>el transporte: PocketBase | local</small><br/><small>7 módulos</small>"]
   C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>119 módulos</small>"]
   K["<b>kernel</b><br/><small>el motor de sesión: cuándo se liquida</small><br/><small>8 módulos</small>"]
   T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>75 módulos</small>"]
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>5 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
-  V -->|248| C
+  V -->|254| C
   T -->|188| C
   A -->|28| C
   AD -->|26| C
-  A -->|17| V
+  A -->|18| V
   C -->|9| K
   CO -->|9| C
   K -->|9| C
@@ -97,7 +97,7 @@ graph TD
 
 | Capa | Módulos más grandes |
 |---|---|
-| **arranque** | `main.teacher.js` (156) · `main.embed.js` (68) · `main.student.js` (45) |
+| **arranque** | `main.teacher.js` (164) · `main.embed.js` (68) · `main.student.js` (45) |
 | **vistas** | `views/hostLive.js` (1031) · `views/adminView.js` (942) · `views/studentLive.js` (868) · `views/vsView.js` (487) · `views/playerView.js` (367) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1107) · `adapters/local/realtime.js` (321) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
 | **core** | `core/selftest.js` (331) · `core/skins.js` (327) · `core/textCorrectionRound.js` (325) · `core/auth.js` (307) · `core/vsAnimations.js` (269) |
@@ -112,11 +112,11 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 
 | Módulo | Lo importan |
 |---|---|
-| `core/html.js` | 82 |
-| `core/events.js` | 45 |
-| `core/registry.js` | 40 |
+| `core/html.js` | 83 |
+| `core/events.js` | 46 |
+| `core/registry.js` | 41 |
+| `core/storage.js` | 23 |
 | `core/ids.js` | 22 |
-| `core/storage.js` | 22 |
 | `core/clock.js` | 21 |
 | `core/toast.js` | 20 |
 | `core/ls.js` | 17 |

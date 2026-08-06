@@ -15,6 +15,7 @@ export class ComasTemplate extends BaseTemplate {
     label: 'Comas',
     icon: 'bi-cursor-text',
     color: 'success',
+    kind:            'ejercicio',   // familia (norte §4c): quién pone el contenido
     contentModel: 'textCorrection',
     templateVersion: 1,
     paginated: true,   // una frase por pantalla → nº de páginas = nº de frases

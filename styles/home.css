@@ -494,6 +494,18 @@ body {
   margin-top: 18px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
 }
 
+/* Estantería de JUEGOS (§4c/§7c): tarjeta sin preview de contenido (no lo hay —
+   la plantilla genera el tablero); un icono grande sobre el color del juego. */
+.juego-card { cursor: pointer; }
+.juego-card__pv { display: flex; align-items: center; justify-content: center; background: #141c2e; }
+.juego-card__icon { font-size: 64px; color: #f5c518; line-height: 1; }
+.juego-card .acard-sub { min-height: 2.6em; }
+.juego-card .juego-play { margin-top: 10px; }
+
+/* Entrada discreta del alumno en la portada (§7c): existe, no protagoniza. */
+.landing-hero__pin { margin-top: 14px; font-size: 13px; color: var(--dash-muted); }
+.landing-hero__pin a { font-weight: 700; }
+
 /* ───────────────────────────── Responsive ───────────────────────────── */
 @media (max-width: 640px) {
   /* Barra compacta: marca + hamburguesa. Todas las acciones caen en un menú
