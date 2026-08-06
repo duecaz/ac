@@ -53,7 +53,7 @@ export async function renderReports(rootSel) {
               <b>${escapeHtml(a.title)}</b>
               <div class="small text-muted">${activityItemCount(a)} elementos · ${escapeHtml(a.template)}</div>
             </div>
-            <span class="badge bg-primary rounded-pill">${counts[a.id] || 0} partidas</span>
+            <span class="badge bg-primary rounded-pill">${counts[a.id] || 0} salas</span>
           </a>
         `).join('')}
       </div>`}
@@ -72,7 +72,7 @@ export async function renderActivityReport(rootSel, activityId) {
   mount(rootSel, html`
     <a href="#/reports" class="btn btn-link"><i class="bi bi-arrow-left"></i> Reportes</a>
     <h2 class="mb-3">${escapeHtml(a.title)}</h2>
-    ${sessions.length === 0 ? `<p class="text-muted">Sin partidas todavía.</p>` : `
+    ${sessions.length === 0 ? `<p class="text-muted">Sin salas todavía.</p>` : `
       <table class="table table-hover">
         <thead><tr><th>Fecha</th><th>PIN</th><th>Estado</th><th>Jugadores</th><th>Pregunta</th><th></th></tr></thead>
         <tbody>

@@ -779,7 +779,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     if (phaseChanged) startRaceLoop(paintLiveBoardHost, BOARD_POLL_MS);
 
     on(rootSel, 'click', '#btn-end-race', async () => {
-      const ok = await confirmModal('¿Terminar la partida? Se calculará la clasificación final.', { okText: 'Terminar' });
+      const ok = await confirmModal('¿Terminar la sala? Se calculará la clasificación final.', { okText: 'Terminar' });
       if (!ok) return;
       const btn = document.getElementById('btn-end-race');
       if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Finalizando…'; }
@@ -900,7 +900,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     });
 
     on(rootSel, 'click', '#ql-end', async () => {
-      const ok = await confirmModal('¿Terminar la sesión?', { okText: 'Terminar' });
+      const ok = await confirmModal('¿Terminar la sala?', { okText: 'Terminar' });
       if (!ok) return;
       await endSession(sessionId);
     });

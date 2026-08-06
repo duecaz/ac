@@ -541,7 +541,10 @@ sesión 24 · partida 15** para el mismo objeto; **tarea 31 · intento 28 ·
 entrega 5**. Eso no es cosmética: el profe aprende un nombre, el código usa otro
 y la documentación un tercero, y cada uno arrastra su malentendido.
 
-**La palabra que manda** (propuesta, y luego se aplica en UI y docs):
+**La palabra que manda** — ✅ APLICADA en la interfaz (v1.51.385) y vigilada por
+`tests/vocabulario.test.mjs`, que destierra del texto visible las palabras con
+sustituto decidido. Con contra-prueba: «iniciar sesión» (autenticación) es OTRA
+cosa y se queda — una norma demasiado ancha se descubre con la clase delante.
 
 | Concepto | **Se dice** | En el código | Nunca se dice |
 |---|---|---|---|
@@ -754,7 +757,7 @@ en "ideas".
 | **5** | Partir `views/hostLive.js` (1031 líneas) | §23 + "candidatos a partir" del mapa | Mismo motivo que el 4: es deuda real, pero de la zona menos usada |
 | **6** | **D1 · identidad del alumno**, con estudio propio previo | §7 (el viaje se corta ahí) · R2 · R3 · §4 | Cierra el viaje y desbloquea 3 cosas, pero toda solución conocida choca con el norte: primero se estudia cómo lo resuelven otros |
 | **6b** | **Estudio de los referentes** (§5): documentarse y probar Wordwall y Kahoot a fondo | §5, marcado pendiente | No es redactar mejor la tabla: es usarlos de verdad para saber qué encaja. Sin ese estudio, "lo hace Kahoot" seguirá siendo un argumento suelto |
-| **7** | **Unificar el vocabulario en la UI** (§6e) | §6e, medido: sala/sesión/partida conviven | Barato y se nota: el profe aprende UN nombre. Se hace de paso al tocar cada pantalla, no como obra aparte |
+| **7** | ✅ **HECHO (v1.51.385)** — vocabulario unificado en la UI: el encuentro en vivo es **sala** en todas partes (fuera «partida»), y lo que entrega el alumno es **intento** | §6e, medido: sala/sesión/partida convivían | `tests/vocabulario.test.mjs` lo vigila, con contra-prueba de que «iniciar sesión» no se toca |
 | **8** | D3 imprimible · D5 taxonomía · D2 duplicar como otra plantilla | `decisiones-pendientes.md` | Módulos que se pueden añadir después sin rediseñar nada |
 
 **Fuera de la cola, y a propósito**: R7 (privacidad de menores) no es una tarea

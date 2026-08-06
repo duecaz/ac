@@ -809,7 +809,7 @@ export async function renderPlay(rootSel, code) {
         emitGame(GameEvents.ANSWER_CORRECT, { idx: 0, points: 0 });
         const st = document.getElementById('bs-status');
         if (st) { st.className = 'badge bg-success'; st.textContent = '🏆 ¡Resuelto!'; }
-        toast('¡Resuelto! Espera a que el profesor cierre la partida.', 'success', 4000);
+        toast('¡Resuelto! Espera a que el profesor cierre la sala.', 'success', 4000);
       },
     });
   }
@@ -849,7 +849,7 @@ export async function renderPlay(rootSel, code) {
       emitGame(GameEvents.PODIUM, { top: [{ name: player.name, score: finalScore }] });
     }
     const rankIcon = rank === 1 ? '🏆' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '<i class="bi bi-trophy-fill display-1 text-warning"></i>';
-    const rankMsg  = rank === 1 ? '¡Ganaste!' : rank === 2 ? '¡Segundo lugar!' : rank === 3 ? '¡Tercer lugar!' : '¡Fin de la partida!';
+    const rankMsg  = rank === 1 ? '¡Ganaste!' : rank === 2 ? '¡Segundo lugar!' : rank === 3 ? '¡Tercer lugar!' : '¡Se acabó!';
     mount(rootSel, html`
       <div class="text-center py-5">
         <div class="display-1">${rankIcon}</div>
