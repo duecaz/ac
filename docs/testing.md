@@ -11,6 +11,7 @@
 <!-- GENERADO:nav -->
 ### Índice de este documento
 
+- [0. El PREFLIGHT — la orden que hay que teclear (ley §27)](#0-el-preflight--la-orden-que-hay-que-teclear-ley-27)
 - [1. Suite Node (la de CI)](#1-suite-node-la-de-ci)
   - [Mapa de suites (qué protege cada una)](#mapa-de-suites-qué-protege-cada-una)
   - [Añadir una suite](#añadir-una-suite)
@@ -33,6 +34,30 @@
 | [`guia-testeo-companero.md`](guia-testeo-companero.md) | guía de pruebas paso a paso, para alguien no técnico |
 | [`../CLAUDE.md`](../CLAUDE.md) | el mapa de entrada del repo: "quiero X → voy a Y" |
 <!-- /GENERADO:nav -->
+
+## 0. El PREFLIGHT — la orden que hay que teclear (ley §27)
+
+```bash
+node tools/preflight.mjs           # suite + los 3 recorridos, ~45 s
+node tools/preflight.mjs --rapido  # solo la suite (NO basta si tocas vistas/CSS/router)
+```
+
+Encadena las cuatro redes y **para en la primera que falle**, enseñando su salida
+y el comando para reproducirla. Existe porque `tests/run.mjs` verifica PIEZAS: los
+cinco fallos que la clase encontró en una semana vivían en la COSTURA entre piezas
+correctas (el enlace contra el router, el veredicto del móvil contra el snapshot,
+el botón contra el marcador que se pintaba encima). Ninguno se ve sin abrir un
+navegador y caminar el viaje.
+
+| Red | Qué camina | Segundos |
+|---|---|---|
+| `tests/run.mjs` | lógica pura: contrato · normas · leyes · scorers | ~3 |
+| `tools/matrix-smoke.mjs` | cada plantilla × cada modo + un gesto de envío + controles tocables | ~23 |
+| `tools/find-smoke.mjs` | buscar/crear: portada → biblioteca → mis actividades → crear → volver a buscar | ~8 |
+| `tools/live-smoke.mjs` | en vivo con dos pantallas: sala → PIN → responder → settle → podio | ~9 |
+
+Fuera del preflight a propósito: `race-e2e` (PocketBase real + credenciales),
+`stress-live` (carga contra la Pi) y `shots` (comparación visual antes/después).
 
 ## 1. Suite Node (la de CI)
 

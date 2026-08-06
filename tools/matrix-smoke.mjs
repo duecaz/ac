@@ -52,6 +52,28 @@ await new Promise(r => setTimeout(r, 700));
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 
+// TOCABLE, no solo presente. `querySelector` dice que el control existe; el dedo
+// del profe dice otra cosa cuando algo se pinta encima (el marcador del duelo
+// tapaba el botón de pantalla completa con z-index y NADIE lo vio: existía, se
+// veía a medias y no se podía pulsar). Esta comprobación pregunta lo único que
+// importa: si tocas el centro del control, ¿quién recibe el toque?
+const TOCABLE = `(sel) => {
+  const el = document.querySelector(sel);
+  if (!el) return 'ausente';
+  const r = el.getBoundingClientRect();
+  if (!r.width || !r.height) return 'sin tamaño';
+  if (r.bottom < 0 || r.top > innerHeight || r.right < 0 || r.left > innerWidth) return 'fuera de pantalla';
+  const cs = getComputedStyle(el);
+  if (cs.visibility === 'hidden' || cs.display === 'none' || Number(cs.opacity) === 0) return 'invisible';
+  if (el.disabled) return 'deshabilitado';
+  const top = document.elementFromPoint(Math.round(r.x + r.width / 2), Math.round(r.y + r.height / 2));
+  if (!top || !(el === top || el.contains(top) || top.contains(el))) {
+    return 'tapado por ' + String(top?.className || top?.tagName || '?').slice(0, 40);
+  }
+  return 'ok';
+}`;
+const tocable = (sel) => page.evaluate(`(${TOCABLE})(${JSON.stringify(sel)})`);
+
 // Errores del navegador durante el paso actual (se vacía entre combinaciones).
 // Se ignoran los de RED: este sandbox no tiene salida a internet, así que una
 // imagen o fuente que no carga es ruido del entorno, no un fallo de la app.
@@ -106,7 +128,7 @@ const submitKind = await page.evaluate(async () => {
 
 const results = [];
 const taps = [];
-const fsBtn = [];
+const hits = [];   // hit-testing de los controles críticos
 for (const t of seeded) {
   if (only.length && !only.includes(t.name)) continue;
   const cap = caps.find(c => c.name === t.name);
@@ -142,19 +164,28 @@ for (const t of seeded) {
       // sí; el dedo del profe decía que no. Por eso aquí se comprueba con
       // hit-testing: quién recibe el toque en el centro del botón.
       if (['solo', 'vs', 'teams'].includes(mode) && status === 'ok') {
-        const fs = await page.evaluate(() => {
-          const btn = document.querySelector('#ww-frame .ww-fs-btn--corner');
-          if (!btn) return { estado: 'ausente' };
-          const r = btn.getBoundingClientRect();
-          if (!r.width || !r.height) return { estado: 'sin tamaño' };
-          const top = document.elementFromPoint(Math.round(r.x + r.width / 2), Math.round(r.y + r.height / 2));
-          if (!top || !btn.contains(top)) {
-            return { estado: 'tapado por ' + String(top?.className || top?.tagName || '?').slice(0, 40) };
-          }
-          return { estado: 'ok' };
-        });
-        if (fs.estado !== 'ok') { status = 'error'; detail = `pantalla completa: ${fs.estado}`; }
-        fsBtn.push({ t: t.name, label: t.label, mode, estado: fs.estado });
+        // Los controles de los que depende una clase: si uno no se puede tocar,
+        // el profe se queda parado con 33 críos mirando. Se comprueban DONDE
+        // aparecen, no en abstracto.
+        // `gateable`: el control PUEDE estar legítimamente deshabilitado en este
+        // instante ("Revelar" no se activa hasta que el equipo elige respuesta).
+        // Para esos, deshabilitado es correcto; lo que nunca es correcto —para
+        // ninguno— es estar TAPADO, invisible o sin tamaño: eso es un fallo de
+        // maquetación que el profe descubre pulsando y no pasando nada.
+        const CONTROLES = [
+          { nombre: 'pantalla completa', sel: '#ww-frame .ww-fs-btn--corner' },
+          ...(submitKind[t.name] === 'boton' ? [{ nombre: 'envío de la ronda', sel: '#ww-frame [data-ww-submit]' }] : []),
+          ...(mode === 'teams' ? [{ nombre: 'revelar (Equipos)', sel: '#teams-reveal', gateable: true }] : []),
+        ];
+        for (const { nombre, sel, gateable } of CONTROLES) {
+          const estado = await tocable(sel);
+          // Un control que esta combinación no pinta no es un fallo: lo que no se
+          // tolera es que ESTÉ y no se pueda tocar.
+          if (estado === 'ausente') continue;
+          const mal = estado !== 'ok' && !(gateable && estado === 'deshabilitado');
+          if (mal) { status = 'error'; detail = `${nombre}: ${estado}`; }
+          hits.push({ label: t.label, mode, control: nombre, estado, mal });
+        }
       }
       if (mode === 'vs' && status === 'ok') {
         const n = await page.evaluate(() => {
@@ -207,11 +238,20 @@ if (tapBad.length) {
   for (const x of tapBad) console.log(`  ❌ ${x.label} — declara '${x.declared}' pero el panel tiene ${x.found} control(es) [data-ww-submit]`);
 }
 
-// ── Pantalla completa: presente Y tocable en los 3 modos embebidos ──────────
-const fsBad = fsBtn.filter(x => x.estado !== 'ok');
-if (fsBtn.length) {
-  console.log(`\nPANTALLA COMPLETA (botón del marco) — ${fsBtn.length - fsBad.length}/${fsBtn.length} tocables`);
-  if (fsBad.length) for (const x of fsBad) console.log(`  ❌ ${x.label} · ${x.mode} — ${x.estado}`);
+// ── Controles críticos: presentes Y TOCABLES (no basta con querySelector) ───
+const hitBad = hits.filter(x => x.mal);
+if (hits.length) {
+  const porControl = {};
+  for (const h of hits) (porControl[h.control] ??= []).push(h);
+  console.log(`\nCONTROLES TOCABLES (hit-testing real, no querySelector)\n`);
+  for (const [c, lista] of Object.entries(porControl)) {
+    const mal = lista.filter(x => x.mal).length;
+    console.log(`  ${mal ? '❌' : '✅'} ${c.padEnd(20)} ${lista.length - mal}/${lista.length}`);
+  }
+  if (hitBad.length) {
+    console.log('\nCONTROLES QUE NO SE PUEDEN TOCAR:');
+    for (const x of hitBad) console.log(`  ❌ ${x.label} · ${x.mode} · ${x.control} — ${x.estado}`);
+  }
 }
 
 const seedBad = seeded.filter(s => s.seedError);
@@ -221,4 +261,4 @@ console.log(`\n✅ ok: ${results.filter(r => r.status === 'ok').length}` +
   ` · ❌ fallos: ${bad.length}` +
   ` · · no aplica: ${results.filter(r => r.status === 'n/a').length}`);
 console.log('El ALUMNO en vivo lo cubre tools/live-smoke.mjs (dos contextos). Sin cubrir: Tarea e2e y carrera con 2 alumnos.');
-bye(bad.length || seedBad.length || tapBad.length ? 1 : 0);
+bye(bad.length || seedBad.length || tapBad.length || hitBad.length ? 1 : 0);

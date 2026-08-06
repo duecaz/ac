@@ -54,6 +54,8 @@
 - [24) ⚖️ LEY DE CONTENIDO — el modelo evoluciona por caminos declarados](#24--ley-de-contenido--el-modelo-evoluciona-por-caminos-declarados)
 - [§25 · CAPACIDAD — el sistema tiene límites, y son UNO](#25--capacidad--el-sistema-tiene-límites-y-son-uno)
 - [§26 · BUCLES EN VIVO — el catálogo está congelado](#26--bucles-en-vivo--el-catálogo-está-congelado)
+- [§27 · VIAJES — si es un tramo del norte, tiene su RECORRIDO](#27--viajes--si-es-un-tramo-del-norte-tiene-su-recorrido)
+  - [Corolario: al unificar, migrar también la DECISIÓN](#corolario-al-unificar-migrar-también-la-decisión)
   - [Cómo se auto-verifica todo](#cómo-se-auto-verifica-todo)
 
 ### Ir a otro documento
@@ -663,8 +665,73 @@ rechazos en 439 ms contra un PocketBase local y ocioso). Vigilado por
 `tests/stressClaim.test.mjs`, con contra-prueba de que un rechazo se INFORMA como
 rechazo, con su código HTTP.
 
+## §27 · VIAJES — si es un tramo del norte, tiene su RECORRIDO
+
+> **Dueño**: `tools/preflight.mjs` (las redes) + `tests/helpers/journeyTracks.mjs`
+> (los tramos) · **PROHIBIDO**: dar por probado un tramo del viaje del profesor
+> sin un recorrido que lo camine con el navegador; y prohibido que un recorrido
+> se salte la interfaz o se dé a sí mismo el veredicto. · **Vigilada por**:
+> `tests/journeys.test.mjs`.
+
+La extensión natural de *"si es norma, es test"*. Teníamos 87 suites verdes y la
+clase encontró cinco fallos en una semana. Ninguno estaba en una pieza: **los
+cinco vivían en la costura entre piezas correctas.**
+
+| Lo que falló | Las piezas | Los tests decían | El profe vio |
+|---|---|---|---|
+| Buscar desde la portada | el enlace y el router, cada uno correcto | ✅ routing 5/5 | "Ruta no encontrada" |
+| Carrera en vivo | snapshot, PATCH y scorer, cada uno correcto | ✅ race-e2e verde | todo suena a error |
+| Pantalla completa en VS | el botón, en el DOM, con su CSS | ✅ `querySelector` lo veía | no se puede pulsar |
+| Nº de páginas | el componente, ya unificado | ✅ activityCard verde | no sale en la portada |
+
+De ahí las tres reglas:
+
+**1 · Cada tramo del norte (§1) tiene UN recorrido automático.** Los tramos están
+declarados en `tests/helpers/journeyTracks.mjs` y son los mismos que mide la
+radiografía. Hoy: buscar/crear → `find-smoke` · pizarra → `matrix-smoke` · en
+vivo → `live-smoke` · carrera contra PocketBase real → `race-e2e` (manual, pide
+credenciales). Un tramo sin recorrido es un tramo donde el primero en enterarse
+es el profesor.
+
+**2 · El recorrido usa la app como el profe, y NO se da el veredicto a sí mismo.**
+Se teclea en la caja real, se pulsa el botón real, y quien decide es la
+aplicación. `race-e2e` llamaba a `submitRaceAttempt` con el `correct` ya
+calculado por el test: probaba el ranking fingiendo probar la carrera, y por eso
+no vio que el móvil daba por fallada una hoja perfecta.
+
+**3 · Se comprueba lo que TOCA EL DEDO, no lo que existe en el DOM.** El botón de
+pantalla completa existía, se veía a medias y estaba debajo del marcador del
+duelo (z-index 10 vs 5). `querySelector` decía que sí; el dedo del profe decía
+que no. Los controles de los que depende una clase se verifican con
+`elementFromPoint`: pantalla completa, el envío de la ronda y el "Revelar" de
+Equipos — 47 comprobaciones por pasada en `matrix-smoke`.
+
+### Corolario: al unificar, migrar también la DECISIÓN
+
+El quinto fallo no fue de costura sino de configuración, y merece su propia
+frase porque es el error más fácil de repetir: **un componente compartido con una
+lista de banderitas por llamador no está unificado.** `activityCardHtml` era
+único desde julio… y cada vista decidía por su cuenta qué enseñaba, así que el
+badge de nº de páginas solo salía en "Mis actividades" y el subtítulo faltaba en
+la portada. La duplicación se había mudado del markup a la configuración, donde
+no se ve.
+
+Señal de alarma medible: **más de ~3 banderitas booleanas por llamador**. Cuando
+pasa eso, la pieza necesita VARIANTES declaradas (`variant: 'mine' | 'library'`)
+con los campos informativos encendidos por defecto, y un ratchet que impida
+apagarlos en silencio (`tests/activityCard.test.mjs`). Lo mismo aplica a
+`meta.play`: ahí funcionó desde el principio porque la plantilla DECLARA y la
+vista LEE, en vez de que cada vista configure.
+
+**Antes de tocar `main` (que sirve la web): `node tools/preflight.mjs`** — las
+cuatro redes en ~45 s, y para en la primera que falle enseñando SU salida. La
+suite sola (`--rapido`) no basta para un cambio en vistas, CSS o router: es
+exactamente el hueco por el que se colaron los cinco.
+
 ---
 ### Cómo se auto-verifica todo
+`node tools/preflight.mjs` corre las CUATRO redes (suites + los tres recorridos)
+antes de subir a `main` — es la orden que hay que teclear (§27).
 `node tests/run.mjs` corre TODAS las suites. Los escáneres compartidos
 (`core/normsCheck.js` / `core/templateContract.js` / `core/skinContract.js`) corren
 también en `#/admin` → "Ejecutar tests". Si añades una norma nueva: **escríbela como

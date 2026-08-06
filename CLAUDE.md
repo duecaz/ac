@@ -35,7 +35,7 @@ git push origin <rama-de-trabajo>:ACTIVIDAD2         # legado, opcional (ya no s
   autenticado**: para acciones sobre sus repos fuera del alcance de la sesión (p.ej.
   `duecaz/ww-assets`), pásale los comandos `gh`/PS listos para pegar y él los ejecuta.
 
-### 4. LAS OCHO LEYES — contrastar TODO diseño contra ellas ANTES de escribir código
+### 4. LAS NUEVE LEYES — contrastar TODO diseño contra ellas ANTES de escribir código
 Cada ley es un cuadro **dueño → PROHIBIDO** con su test que rompe CI. Si un cambio
 necesita violar una prohibición, el diseño está mal planteado: no se parchea, se
 replantea. Texto completo en **`docs/leyes.md`** (índice único de normas).
@@ -50,6 +50,7 @@ replantea. Texto completo en **`docs/leyes.md`** (índice único de normas).
 | **§24 · CONTENIDO** | el contenido es del usuario: cambia solo por migración versionada, conversión declarada e ids con `rid()` | regla `id-rid` · `templateContract` (versión>1 ⇒ migrate) |
 | **§25 · CAPACIDAD** | el sistema tiene límites y son UNO (`core/quotas.js`): 200 actividades · 2 MB por actividad · 120 días de salas | `quotas` (paridad módulo↔panel↔ps1) |
 | **§26 · BUCLES LIVE** | el catálogo (rondas·carrera·tablero·pedir la palabra) está CONGELADO: fase nueva = decisión escrita | `liveLoops` |
+| **§27 · VIAJES** | cada tramo del norte tiene su RECORRIDO con navegador; se comprueba lo que toca el dedo, no lo que existe en el DOM | `journeys` + `tools/preflight.mjs` |
 
 - **Si es norma, es test**: una regla nueva se escribe como test, no solo en un MD.
 - **Si una ley cierra una puerta, la UI lo DICE ANTES**: dirigir en vivo / crear
@@ -108,7 +109,11 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | **Cómo está la BD/Pi de VERDAD** (PocketBase, Docker, backups, OAuth Google, quirks) | **[`docs/infraestructura-pb.md`](docs/infraestructura-pb.md)** (fuente de infra; actualizar si cambia el servidor) |
 | **Plan de usuarios/acceso docente** (endurecer reglas, PIN, NFC, pizarras, panel profes) | **[`docs/handoff-acceso-docente.md`](docs/handoff-acceso-docente.md)** (incluye auditoría del sistema de usuarios) |
 
-Verificar SIEMPRE antes de commitear: `node tests/run.mjs` (todas las suites). El contrato,
+Verificar SIEMPRE antes de commitear: **`node tools/preflight.mjs`** — la suite + los
+TRES recorridos (matriz jugable · buscar/crear · en vivo) en ~45 s, ley §27. `node
+tests/run.mjs` solo verifica PIEZAS: los cinco fallos que la clase encontró en una
+semana vivían en la COSTURA entre piezas correctas y ninguna suite podía verlos. Si el
+cambio toca vistas, CSS o el router, el preflight NO es opcional. El contrato,
 las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecutar tests".
 
 ## Arquitectura (resumen)
