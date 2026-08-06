@@ -496,9 +496,9 @@ cada una tiene un test que la hace cumplir. Se lee de izquierda a derecha:
 
 | Hueco | Estado |
 |---|---|
-| **R2 "el profe no configura nada" no tiene ley ni test.** Es la restricción que más decisiones de UI debería gobernar (cuántos ajustes salen antes de jugar, qué se deriva solo) y hoy vive solo como intención | ⚠️ **falta la ley** — candidata a §27 |
+| **R2 "el profe no configura nada"** — la restricción que más decisiones de UI gobierna | ✅ **ley §28** (v1.51.382): máx. 2 opciones de partida con el vigente ya elegido (contrato) + R2b: ningún control de profe dentro del marco de juego (escaneo de `matrix-smoke`) |
 | **R2b tampoco tiene ley ni test**, y este es más delicado: mientras un alumno juega en la pizarra, la cuenta del profe está abierta. Hoy no hay nada destructivo a la vista porque el juego va a pantalla completa, pero es una propiedad no vigilada: una pantalla nueva podría dejar un "Editar" al alcance | ⚠️ **falta la ley** — se puede escribir como test: en modo juego, ningún control destructivo en el DOM |
-| **El tramo "buscar/crear" no tiene ley propia**, pese a ser por donde pasa TODA clase (§1) y tener el ratio de test más bajo (0,29 → 0,39 con el buscador único) | ⚠️ deuda de prioridad, ya medida en [`arquitectura-modulos.md`](arquitectura-modulos.md). Primera regla escrita como test: **buscar es binario** (§2b) → `tests/search.test.mjs` |
+| **El tramo "buscar/crear"** (por donde pasa TODA clase, §1) | ✅ cubierto: buscador único (`tests/search.test.mjs`) + recorrido `find-smoke` bajo la **ley §27** (todo tramo del norte con su viaje automático) |
 | §26 (bucles congelados) se desprende de R6, pero **cubre el modo minoritario**; ninguna ley cubre con el mismo detalle los modos de pizarra, que son los habituales | ⚠️ desequilibrio declarado |
 
 ## 6c. CÓMO SE DECIDE LA ARQUITECTURA
@@ -748,7 +748,7 @@ en "ideas".
 | **1** | **Cubrir "buscar/crear"**: la home, la biblioteca y el editor | §1 (por ahí pasa TODA clase) + la medición 0,29 | Es el tramo más usado y el menos protegido. Si el editor rompe la clave de una actividad, el profe lo descubre con 33 críos delante. **En marcha** (v1.51.375): el BUSCADOR ya es uno solo y testeado (`core/search.js` · `tests/search.test.mjs`, ratio del tramo 0,29 → 0,39). Queda el EDITOR |
 | **1b** | ✅ **HECHO (v1.51.381)** — `meta.kind` en las 13 (contrato + techo de 8), Pelotas fuera de Tarea, estantería `#/juegos`, menú de cuatro, portada hablando al profe y `#/` → Mis actividades con sesión | §4c · §7c | Vigilado por `tests/kind.test.mjs` (con contra-prueba: Sopa/Crucigrama siguen siendo ejercicios) |
 | **1c** | ✅ **HECHO (v1.51.380)** — ley §27 · VIAJES: cada tramo del norte con su recorrido + `tools/preflight.mjs` | los 5 fallos de la semana, todos en la costura | Era el hueco que dejaba al profesor de red de seguridad |
-| **2** | **Las leyes que faltan para R2 y R2b** ("el profe no configura" · "el que toca es un alumno sobre la cuenta del profe") | §6b, huecos declarados | Sin la primera, cada pantalla nueva decide por su cuenta cuántos ajustes enseña. La segunda es **testeable hoy**: en modo juego, ningún control destructivo en el DOM — y protege de un error caro (un niño tocando "borrar" en la cuenta del profe, con la clase mirando) |
+| **2** | ✅ **HECHO (v1.51.382)** — ley §28 · EN CLASE: R2 acotada (máx. 2 opciones de partida, el techo lo exige el contrato) y R2b ejecutable (matrix-smoke escanea el marco: ningún control destructivo/de identidad dentro del juego) | §6b, huecos declarados | Con contra-pruebas: 3 opciones rompen CI, y quitar el escaneo también |
 | **3** | **Cubrir las mecánicas en pizarra** (Individual · VS · Equipos) | §1 ("lo habitual") + medición 0,47 y 0,17 | Es donde se juega de verdad. Las 13 plantillas tienen el ratio de test más bajo del repo |
 | **4** | Terminar la ficha 2b de live (ventana de lectura en carrera · dial del lobby) | §26 + estudio D7 | Sigue siendo correcto, pero sirve al modo minoritario: va DESPUÉS de lo de arriba |
 | **5** | Partir `views/hostLive.js` (1031 líneas) | §23 + "candidatos a partir" del mapa | Mismo motivo que el 4: es deuda real, pero de la zona menos usada |

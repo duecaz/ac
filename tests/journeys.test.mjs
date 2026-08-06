@@ -89,6 +89,14 @@ const RECORRIDOS = {
     assert.ok(mx.includes(control), `matrix-smoke no comprueba el control «${control}»`);
   }
   ok('los controles de los que depende una clase se verifican con elementFromPoint');
+
+  // Ley §28 (R2b): el escaneo de controles de profe DENTRO del marco de juego
+  // sigue conectado. Si alguien lo quita, "no debería tocarlo" vuelve a ser la
+  // única defensa contra un dedo curioso con la clase mirando.
+  for (const sel of ['.act-del', '.act-edit', '.pub-toggle']) {
+    assert.ok(mx.includes(sel), `matrix-smoke perdió el escaneo R2b de «${sel}»`);
+  }
+  ok('LEY §28-R2b: el escaneo del marco (sin controles de profe) sigue conectado');
 }
 
 // ── 6. CONTRA-PRUEBA: la ley está escrita donde se busca ────────────────────

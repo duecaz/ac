@@ -103,4 +103,32 @@ const ballsort = () => {
   ok('el control marca la opción vigente (no hay que adivinar cuál está puesta)');
 }
 
+// ── 7. LEY §28 (R2): el techo de opciones lo EXIGE el contrato ─────────────
+// playOptions.js prometía este tope en un comentario y nadie lo vigilaba. R2 no
+// muere de un golpe: muere opción a opción razonable.
+{
+  const { checkTemplateContract } = await import('../core/templateContract.js');
+  const base = getTemplate('ballsort');
+  const clon = (play) => ({
+    meta: { ...base.meta, name: 'fake', play: { ...base.meta.play, ...play } },
+    renderPlayer: () => {}, renderEditor: () => {}, previewHtml: () => '<div></div>',
+    scoreSubmission: base.scoreSubmission, getRoundPayload: base.getRoundPayload,
+    renderRound: base.renderRound, migrateContent: (c) => c,
+  });
+  const opcion = (id) => ({ id, label: id, values: [{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }], get: () => 'a', set: (a) => a });
+
+  const tres = checkTemplateContract(clon({ options: [opcion('x'), opcion('y'), opcion('z')] }));
+  assert.ok(tres.some(i => /techo de R2 es 2/.test(i)), `3 opciones deben romper el contrato: ${tres.join(' | ')}`);
+
+  const sinSet = checkTemplateContract(clon({ options: [{ ...opcion('x'), set: undefined }] }));
+  assert.ok(sinSet.some(i => /get\/set obligatorios/.test(i)), 'una opción sin set debe romper');
+
+  const unValor = checkTemplateContract(clon({ options: [{ ...opcion('x'), values: [{ value: 'a', label: 'A' }] }] }));
+  assert.ok(unValor.some(i => /entre 2 y 4 valores/.test(i)), 'una "opción" de un solo valor no es una opción');
+
+  const dosOk = checkTemplateContract(clon({ options: [opcion('x'), opcion('y')] }));
+  assert.ok(!dosOk.some(i => /options/.test(i)), `dos opciones válidas pasan: ${dosOk.join(' | ')}`);
+  ok('LEY §28-R2: el contrato rechaza 3 opciones, valores fuera de 2-4 y opciones sin get/set');
+}
+
 console.log(`\n  ${passed} playOptions checks passed`);

@@ -88,6 +88,26 @@ export function checkTemplateContract(T) {
     if (m.modes?.live && liveLoops.length === 0) issues.push('incoherencia: modes.live=true pero play.live no declara ningún bucle (declara cómo corre en vivo)');
     if (!m.modes?.live && liveLoops.length > 0) issues.push('incoherencia: play.live declara bucles pero modes.live=false');
     if ('retry' in m.play && typeof m.play.retry !== 'boolean') issues.push('meta.play.retry debe ser booleano');
+    // R2 del norte ("el profe no configura nada para empezar"), ACOTADA: las
+    // opciones de partida existen como excepción declarada y con techo — máximo
+    // DOS por plantilla y de 2 a 4 valores cada una, siempre con un vigente.
+    // Sin este tope, la pantalla de inicio acaba siendo un formulario y R2 se
+    // muere por acumulación, opción a opción razonable.
+    if ('options' in m.play) {
+      const opts = m.play.options;
+      if (!Array.isArray(opts)) issues.push('meta.play.options debe ser una lista');
+      else {
+        if (opts.length > 2) issues.push(`meta.play.options: ${opts.length} opciones — el techo de R2 es 2 (más que eso es un formulario)`);
+        for (const o of opts) {
+          if (!o?.id || !Array.isArray(o.values) || o.values.length < 2 || o.values.length > 4) {
+            issues.push(`meta.play.options «${o?.id || '?'}»: entre 2 y 4 valores (tiene ${o?.values?.length ?? 0})`);
+          }
+          if (typeof o?.get !== 'function' || typeof o?.set !== 'function') {
+            issues.push(`meta.play.options «${o?.id || '?'}»: get/set obligatorios (el vigente viene YA elegido, R2)`);
+          }
+        }
+      }
+    }
     // Solo se exige a quien tiene ronda: una plantilla que no corre en
     // VS/Equipos/Live no manda respuestas por ahí y no tiene nada que declarar.
     const SUBMIT_KINDS = ['gesto', 'boton'];

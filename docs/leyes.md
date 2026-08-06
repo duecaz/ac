@@ -56,6 +56,7 @@
 - [§26 · BUCLES EN VIVO — el catálogo está congelado](#26--bucles-en-vivo--el-catálogo-está-congelado)
 - [§27 · VIAJES — si es un tramo del norte, tiene su RECORRIDO](#27--viajes--si-es-un-tramo-del-norte-tiene-su-recorrido)
   - [Corolario: al unificar, migrar también la DECISIÓN](#corolario-al-unificar-migrar-también-la-decisión)
+- [§28 · EN CLASE — el profe no configura y el alumno no puede romper](#28--en-clase--el-profe-no-configura-y-el-alumno-no-puede-romper)
   - [Cómo se auto-verifica todo](#cómo-se-auto-verifica-todo)
 
 ### Ir a otro documento
@@ -727,6 +728,36 @@ vista LEE, en vez de que cada vista configure.
 cuatro redes en ~45 s, y para en la primera que falle enseñando SU salida. La
 suite sola (`--rapido`) no basta para un cambio en vistas, CSS o router: es
 exactamente el hueco por el que se colaron los cinco.
+
+## §28 · EN CLASE — el profe no configura y el alumno no puede romper
+
+> **Dueño**: `core/templateContract.js` (tope de opciones) + `tools/matrix-smoke.mjs`
+> (escaneo del marco) · **PROHIBIDO**: un tercer control de partida en una
+> plantilla, y cualquier control destructivo o de identidad DENTRO del marco de
+> juego. · **Vigilada por**: `tests/playOptions.test.mjs` (contra-prueba del
+> tope) + `tests/journeys.test.mjs` (que el escaneo siga conectado).
+
+Las dos restricciones del norte que faltaban por convertir en test (§6b las
+tenía como hueco declarado):
+
+**R2 — "el profe no configura nada para empezar", ACOTADA.** Las opciones de
+partida (`meta.play.options`) existen como excepción declarada y con techo que
+el contrato EXIGE: máximo **dos** por plantilla, de 2 a 4 valores cada una, y el
+vigente viene siempre YA elegido. Sin el techo, R2 no muere de un golpe: muere
+por acumulación — cada opción nueva es razonable y la pantalla de inicio acaba
+siendo un formulario. `core/playOptions.js` prometía este tope en un comentario
+("lo vigila el contrato") y nadie lo vigilaba: una promesa en un comentario no
+es una norma.
+
+**R2b — quien toca la pizarra es UN ALUMNO sobre la sesión del profe.** El profe
+lanza la actividad y sale el alumno a resolver (§1, la mayoría de las veces).
+Dentro del marco de juego (`#ww-frame`, que es TODO lo visible en pantalla
+completa) no puede existir ningún control destructivo ni de identidad: borrar o
+editar la actividad, publicar/despublicar, la papelera, el menú de sesión.
+"No debería tocarlo" no protege de un dedo curioso con la clase mirando; que NO
+ESTÉ en el DOM, sí. `matrix-smoke` escanea el marco en cada plantilla × modo,
+por SELECTORES concretos y no por texto — el teclado numérico tiene un "Borrar"
+(un dígito) perfectamente legítimo.
 
 ---
 ### Cómo se auto-verifica todo

@@ -33,7 +33,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 18 · 3633 | 18 · 2816 | 0.78 |
 | **informes/tareas** | después de clase | 11 · 1133 | 3 · 381 | 0.34 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5807 | 12 · 975 | 0.17 |
-| **infra/común** | todo lo anterior | 128 · 12374 | 33 · 3313 | 0.27 |
+| **infra/común** | todo lo anterior | 128 · 12394 | 33 · 3349 | 0.27 |
 
 > Un ratio bajo en un tramo muy usado es deuda de PRIORIDAD, no de calidad: ese
 > código funciona, pero si se rompe nadie se entera hasta que hay 33 críos

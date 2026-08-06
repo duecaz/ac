@@ -187,6 +187,27 @@ for (const t of seeded) {
           hits.push({ label: t.label, mode, control: nombre, estado, mal });
         }
       }
+      // R2b (norte §6b, ley §28): quien toca la pizarra es UN ALUMNO sobre la
+      // sesión del profe. Dentro del marco de juego no puede existir ningún
+      // control destructivo ni de identidad — con un dedo curioso y la clase
+      // mirando, "no debería tocarlo" no protege nada; que NO ESTÉ, sí. Por
+      // selectores concretos y no por texto: el teclado numérico tiene un
+      // "Borrar" (un dígito) totalmente legítimo.
+      if (['solo', 'vs', 'teams'].includes(mode) && status === 'ok') {
+        const peligros = await page.evaluate(() => {
+          const PROHIBIDO = [
+            ['borrar actividad', '.act-del, .icon-btn.del'],
+            ['editar contenido', '.act-edit, .icon-btn.edit'],
+            ['publicar/despublicar', '.pub-toggle'],
+            ['papelera', '.bi-trash3, .bi-trash-fill'],
+            ['sesión del profe', '#ww-auth-slot .ww-auth__menu:not([hidden])'],
+          ];
+          const frame = document.getElementById('ww-frame');
+          if (!frame) return [];
+          return PROHIBIDO.filter(([, sel]) => frame.querySelector(sel)).map(([que]) => que);
+        });
+        if (peligros.length) { status = 'error'; detail = `R2b: control(es) de profe DENTRO del juego: ${peligros.join(' · ')}`; }
+      }
       if (mode === 'vs' && status === 'ok') {
         const n = await page.evaluate(() => {
           const panel = document.querySelector('#vs-body-left') || document.querySelector('.vs-panel');
