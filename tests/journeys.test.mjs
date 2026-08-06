@@ -97,6 +97,15 @@ const RECORRIDOS = {
     assert.ok(mx.includes(sel), `matrix-smoke perdió el escaneo R2b de «${sel}»`);
   }
   ok('LEY §28-R2b: el escaneo del marco (sin controles de profe) sigue conectado');
+
+  // Cola #3 del norte: la matriz JUEGA una ronda (toque real → la app juzga y
+  // el lado avanza), no solo comprueba que monta. Si el driver desaparece, la
+  // cobertura de mecánicas vuelve a ser "arranca sin crash", que es lo que dejó
+  // pasar los bugs de juego.
+  for (const driver of ['.rq-opt', '.gl-balloon', '.tc-target', '.tube', 'ww-key[data-k]']) {
+    assert.ok(mx.includes(driver), `matrix-smoke perdió el driver de ronda «${driver}»`);
+  }
+  ok('la matriz JUEGA una ronda por mecánica (opción · globo · trazo · tap-tap · teclado)');
 }
 
 // ── 6. CONTRA-PRUEBA: la ley está escrita donde se busca ────────────────────
