@@ -25,7 +25,11 @@ curl -s "$PB/api/health" | jq -e '.code==200' >/dev/null && green "API health" |
 [ -n "$TOKEN" ] && green "auth superadmin" || { red "auth superadmin" "sin token (password?)"; echo "Aborta."; exit 1; }
 
 # 3) colecciones esperadas
-for c in users activities activity_likes reports results profiles live_answers live_players; do
+# Las TRECE del esquema (views/adminView.js DEFS) + `users`. Esta lista estaba
+# escrita a mano y se quedó en 8: faltaban live_sessions, live_keys, live_claims,
+# assignments y assignment_attempts — justo las que, si no están, la app degrada
+# EN SILENCIO al blob legado. Lo vigila tests/pbSchema.test.mjs.
+for c in users activities results live_sessions live_claims live_keys live_answers live_players assignments assignment_attempts activity_likes reports profiles; do
   curl -s "$PB/api/collections/$c" -H "Authorization: $TOKEN" | jq -e '.id' >/dev/null \
     && green "colección $c existe" || red "colección $c" "no existe"
 done
@@ -61,6 +65,27 @@ LPI=$(curl -s "$PB/api/collections/live_players" -H "Authorization: $TOKEN" | jq
 echo "$LPI" | grep -qi "unique" && echo "$LPI" | grep -qi "session" \
   && green "live_players índice único (session,name)" \
   || red "live_players índice único" "falta el UNIQUE (session,name) → apodos podrían duplicarse"
+
+# 4e) Los campos MUDOS: si faltan, PocketBase ignora la clave al escribir y no
+#     hay ningún error — el dato se pierde y nadie se entera.
+#     · live_answers.unscorable: sin él, un ítem sin clave de respuesta (Pregunta
+#       en Vivo, Ruleta) se guarda como INCORRECTO para toda la clase.
+#     · results.qid / assignment_attempts.qid: sin ellos (y sin su índice único
+#       parcial) un ACK perdido duplica la fila y gasta un intento del alumno.
+echo "$LAF" | grep -qw unscorable && green "live_answers.unscorable" || red "live_answers.unscorable" "campo ausente → un ítem no puntuable se guardaría como fallo de toda la clase"
+RF=$(curl -s "$PB/api/collections/results" -H "Authorization: $TOKEN" | jq -r '.fields[].name' | tr '\n' ' ')
+echo "$RF" | grep -qw qid && green "results.qid" || red "results.qid" "campo ausente → un reintento tras ACK perdido duplica el resultado"
+for f in qid attempt_no; do
+  echo "$AAF" | grep -qw "$f" && green "assignment_attempts.$f" || red "assignment_attempts.$f" "campo ausente (corre 'Crear colecciones' en #/admin)"
+done
+AAI=$(curl -s "$PB/api/collections/assignment_attempts" -H "Authorization: $TOKEN" | jq -r '.indexes[]?' | tr '\n' ' ')
+echo "$AAI" | grep -qi "qid" && green "assignment_attempts índice de qid" || red "assignment_attempts índice de qid" "falta el UNIQUE parcial sobre qid → la idempotencia no aplica"
+
+# 4f) El TOPE de una actividad (§25): 2 MB. El panel #/admin NO corrige atributos
+#     de un campo que ya existe, así que este valor se queda desfasado en silencio.
+DMAX=$(curl -s "$PB/api/collections/activities" -H "Authorization: $TOKEN" | jq -r '.fields[] | select(.name=="data") | .maxSize')
+[ "$DMAX" = "2097152" ] && green "activities.data maxSize = 2 MB (§25)" \
+  || red "activities.data maxSize" "es $DMAX y debería ser 2097152 (ajústalo a mano en pb/_/ → activities → data)"
 
 # 5) La consulta de EXPLORAR / PORTADA (como la hace el navegador, anónimo, SIN sort)
 Q=$(curl -s -G "$PB/api/collections/activities/records" \

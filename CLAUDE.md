@@ -109,6 +109,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | **Centralizar decisiones repartidas en vistas** (fase→pantalla, payload, meta, prompt…) | **[`docs/handoff-centralizacion.md`](docs/handoff-centralizacion.md)** |
 | **Bugs abiertos / deuda** | la sección "Deuda técnica registrada" (abajo) + notas `docs/handoff-*.md` |
 | **Plan biblioteca pública** (portada, likes, gate de login, admin) | **[`docs/handoff-biblioteca-publica.md`](docs/handoff-biblioteca-publica.md)** (+ `handoff-google-classroom.md` y `handoff-seguridad-pb.md`) |
+| **Verificar la Pi contra el esquema del código** (13 colecciones · campos mudos · índices · tope §25) | `PB=https://pb.lanube.uno bash tools/check-pb.sh` — lo cruza `tests/pbSchema.test.mjs` |
 | **Cómo está la BD/Pi de VERDAD** (PocketBase, Docker, backups, OAuth Google, quirks) | **[`docs/infraestructura-pb.md`](docs/infraestructura-pb.md)** (fuente de infra; actualizar si cambia el servidor) |
 | **Plan de usuarios/acceso docente** (endurecer reglas, PIN, NFC, pizarras, panel profes) | **[`docs/handoff-acceso-docente.md`](docs/handoff-acceso-docente.md)** (incluye auditoría del sistema de usuarios) |
 

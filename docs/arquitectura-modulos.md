@@ -33,7 +33,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 18 · 3664 | 18 · 2846 | 0.78 |
 | **informes/tareas** | después de clase | 11 · 1131 | 4 · 435 | 0.38 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5810 | 12 · 975 | 0.17 |
-| **infra/común** | todo lo anterior | 126 · 12207 | 37 · 3998 | 0.33 |
+| **infra/común** | todo lo anterior | 126 · 12231 | 38 · 4084 | 0.33 |
 
 > Un ratio bajo en un tramo muy usado es deuda de PRIORIDAD, no de calidad: ese
 > código funciona, pero si se rompe nadie se entera hasta que hay 33 críos
@@ -98,7 +98,7 @@ graph TD
 | Capa | Módulos más grandes |
 |---|---|
 | **arranque** | `main.teacher.js` (168) · `main.embed.js` (68) · `main.student.js` (49) |
-| **vistas** | `views/hostLive.js` (1032) · `views/adminView.js` (954) · `views/studentLive.js` (867) · `views/vsView.js` (487) · `views/playerView.js` (367) |
+| **vistas** | `views/hostLive.js` (1032) · `views/adminView.js` (978) · `views/studentLive.js` (867) · `views/vsView.js` (487) · `views/playerView.js` (367) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1107) · `adapters/local/realtime.js` (321) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
 | **core** | `core/selftest.js` (331) · `core/skins.js` (327) · `core/textCorrectionRound.js` (325) · `core/auth.js` (313) · `core/vsAnimations.js` (269) |
 | **kernel** | `kernel/session/engine.js` (541) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/realtimePort.js` (31) |
@@ -132,7 +132,7 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 |---|---|---|
 | `adapters/pocketbase/realtime.js` | 1107 | 0 |
 | `views/hostLive.js` | 1032 | 1 |
-| `views/adminView.js` | 954 | 1 |
+| `views/adminView.js` | 978 | 1 |
 | `views/studentLive.js` | 867 | 1 |
 | `kernel/session/engine.js` | 541 | 16 |
 | `views/vsView.js` | 487 | 2 |

@@ -55,6 +55,7 @@ console.log('\n▶ stageClaim'); await import('./stageClaim.test.mjs');
 console.log('\n▶ bugReport'); await import('./bugReport.test.mjs');
 console.log('\n▶ menu'); await import('./menu.test.mjs');
 console.log('\n▶ pbQueries'); await import('./pbQueries.test.mjs');
+console.log('\n▶ pbSchema'); await import('./pbSchema.test.mjs');
 console.log('\n▶ clock'); await import('./clock.test.mjs');
 console.log('\n▶ offlineQueue'); await import('./offlineQueue.test.mjs');
 console.log('\n▶ ballsort'); await import('./ballsort.test.mjs');

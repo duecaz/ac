@@ -911,7 +911,31 @@ function renderPanel(rootSel) {
                   results.push({ name: col.name, ok: false, msg: `reglas OK pero el servidor QUEDÓ SIN: ${[...lackF.map(f => 'campo ' + f), ...lackI.map(i => 'índice ' + i)].join(', ')}` });
                   continue;
                 }
+                // DERIVA DE ATRIBUTOS (R6 · fallar en silencio está prohibido).
+                // La rama "ya existía" es APPEND-ONLY: añade campos e índices que
+                // falten POR NOMBRE, pero nunca toca los atributos de un campo que
+                // ya está. Eso dejó un agujero mudo: cuando el tope de una
+                // actividad bajó de 5 MB a 2 MB (§25, v1.51.340), el `maxSize` de
+                // `activities.data` se quedó en 5 MB en la Pi y ni el panel ni
+                // `check-pb.sh` lo miraban — el límite de §25 era solo un aviso del
+                // cliente. NO se auto-corrige a propósito: cambiar el atributo de
+                // un campo con datos dentro, en una Pi COMPARTIDA con otros
+                // proyectos, es una decisión del dueño. Se DICE, con el valor
+                // exacto que hay que poner.
+                const desvíos = [];
+                for (const want of (col[schemaKey] || [])) {
+                  const have = (post[schemaKey] || post.fields || []).find(f => f.name === want.name);
+                  if (!have) continue;
+                  for (const [k, v] of Object.entries(want)) {
+                    if (k === 'name' || k === 'type' || v === undefined) continue;
+                    const actual = have[k] ?? (have.options || {})[k];
+                    if (actual !== undefined && String(actual) !== String(v)) {
+                      desvíos.push(`${want.name}.${k}: el servidor tiene ${actual}, debería ser ${v}`);
+                    }
+                  }
+                }
                 verify = ` · verificado: ${wantF.length} campos`;
+                if (desvíos.length) verify += ` · ⚠ AJUSTAR A MANO en pb: ${desvíos.join(' · ')}`;
               } catch { verify = ' · (sin verificar: relectura falló)'; }
               results.push({ name: col.name, ok: true, msg: (extras.length ? `reglas + ${extras.join(', ')} (ya existía)` : 'reglas actualizadas (ya existía)') + verify });
             } else {
