@@ -241,11 +241,15 @@ for (const t of seeded) {
         // UN selector por modo (una coma aquí partiría el CSS: `.a, .b .rq-opt`
         // no es lo que parece — me costó cuatro falsos fallos descubrirlo).
         const CAJA = { solo: '#ww-player-widget', vs: '#vs-body-left', teams: '#teams-round' };
+        // La Memoria por Equipos es una vista PROPIA (#/memory/:id, tablero
+        // compartido): no hay #teams-round ni "Revelar" — voltear repinta.
+        const memoTeams = mode === 'teams' && t.name === 'memory';
+        const caja = memoTeams ? '.teams-arena' : CAJA[mode];
         const prog = mode === 'vs' ? '#vs-prog-left' : '';
         // En Equipos el gesto no avanza la ronda: HABILITA "Revelar" (el equipo
         // elige, el docente revela). Ahí se mira ese efecto, no el avance.
-        const efecto = mode === 'teams' ? '#teams-reveal' : '';
-        const r = await playRound(page, CAJA[mode], { ...(hints[t.name] || {}), progressSel: prog, effectSel: efecto });
+        const efecto = (mode === 'teams' && !memoTeams) ? '#teams-reveal' : '';
+        const r = await playRound(page, caja, { ...(hints[t.name] || {}), progressSel: prog, effectSel: efecto });
         // RATCHET de deuda conocida (mismo patrón que el ratchet de estilos): una
         // combinación rota Y DECLARADA no tumba la matriz, pero sale en el
         // informe con su motivo. Lo que no se tolera es una rotura NUEVA.

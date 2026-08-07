@@ -104,7 +104,7 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
         state.busy = true;
         addScore(scoreMemorySubmission({ value: pb, item: byId.get(pa), activity }));   // pa ≠ pb → fallo
         state.mistakes += 1;
-        setTimeout(() => { state.open = []; state.busy = false; paint(); ctx.saveProgress(snapshot()); }, revealMs);
+        setTimeout(() => { if (!ctx.alive()) return; state.open = []; state.busy = false; paint(); ctx.saveProgress(snapshot()); }, revealMs);
       }
     }
   }

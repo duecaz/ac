@@ -51,6 +51,7 @@ console.log('\n▶ sessionTable'); await import('./sessionTable.test.mjs');
 console.log('\n▶ roles'); await import('./roles.test.mjs');
 console.log('\n▶ soloTimer'); await import('./soloTimer.test.mjs');
 console.log('\n▶ soloPlayer'); await import('./soloPlayer.test.mjs');
+console.log('\n▶ stageClaim'); await import('./stageClaim.test.mjs');
 console.log('\n▶ clock'); await import('./clock.test.mjs');
 console.log('\n▶ offlineQueue'); await import('./offlineQueue.test.mjs');
 console.log('\n▶ ballsort'); await import('./ballsort.test.mjs');
@@ -90,4 +91,20 @@ console.log('\n▶ scoringSources'); await import('./scoringSources.test.mjs');
 console.log('\n▶ persistPolicy'); await import('./persistPolicy.test.mjs');
 console.log('\n▶ deadlineTicker'); await import('./deadlineTicker.test.mjs');
 console.log('\n▶ answerSafety'); await import('./answerSafety.test.mjs');
+
+// GUARDARRAÍL DE DESCUBRIMIENTO (la lección de la tarjeta única, v1.51.388):
+// esta lista es ENUMERADA, y una lista enumerada vigila el pasado — una suite
+// nueva olvidada aquí simplemente NO corre y todo sigue verde. Se escanea la
+// carpeta y se exige que cada *.test.mjs esté citado arriba.
+{
+  const { readdirSync, readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('./run.mjs', import.meta.url), 'utf8');
+  const sinRegistrar = readdirSync(new URL('.', import.meta.url))
+    .filter(f => f.endsWith('.test.mjs') && !src.includes(`./${f}`));
+  if (sinRegistrar.length) {
+    console.error(`\n❌ suites en tests/ que run.mjs NO importa (no corren en CI): ${sinRegistrar.join(', ')}`);
+    process.exit(1);
+  }
+}
+
 console.log('\n✅ all suites passed');

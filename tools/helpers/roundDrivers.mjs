@@ -119,6 +119,52 @@ const DRIVERS = [
     return true;
   }],
 
+  // Cuerda entre los dos lados (Emparejar · Etiqueta el diagrama): coger la
+  // primera tarjeta/etiqueta y soltarla sobre la primera del lado contrario.
+  // La conexión puede salir bien o mal — quien la juzga es la app (§27); lo que
+  // se comprueba es que el arrastre CONECTA (la cuerda se pinta y la ronda
+  // responde). El bug de Emparejar-vertical que abrió esta rama vivía justo en
+  // este gesto y ninguna red lo veía.
+  ['cuerda', async (page, root) => {
+    const LADOS = [
+      ['.ww-card[data-side="L"]', '.ww-card[data-side="R"]'],   // Emparejar
+      ['.dg-label', '.dg-pin'],                                  // Diagrama
+    ];
+    for (const [a, b] of LADOS) {
+      const from = page.locator(`${root} ${a}`).first();
+      const to = page.locator(`${root} ${b}`).first();
+      if (!await from.count() || !await to.count()) continue;
+      const f = await from.boundingBox();
+      const t = await to.boundingBox();
+      if (!f || !t) continue;
+      await page.mouse.move(f.x + f.width / 2, f.y + f.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2, { steps: 10 });
+      await page.mouse.up();
+      return true;
+    }
+    return false;
+  }],
+
+  // Voltear una carta (Memoria) — `.mc` en Individual, `.mem-card` en Equipos.
+  ['voltear', async (page, root) =>
+    (await tap(page, root, '.mc:not([disabled])')) || (await tap(page, root, '.mem-card:not([disabled])'))],
+
+  // Abrir una caja (Abre Cajas): el toque abre la pregunta.
+  ['abrir', async (page, root) => tap(page, root, '.ab-box:not(.ab-done)')],
+
+  // Girar la ruleta: el botón arranca la animación (la ronda responde girando).
+  ['girar', async (page, root) => tap(page, root, '#btn-spin:not([disabled])')],
+
+  // Escribir una letra (Crucigrama): tocar una casilla y teclear. La letra puede
+  // no ser la correcta — la app la pinta igual y juzga al comprobar.
+  ['letra', async (page, root) => {
+    if (!await tap(page, root, '.cw-cell.cw-white')) return false;
+    await page.waitForTimeout(120);
+    await page.keyboard.type('A');
+    return true;
+  }],
+
   // Teclear el resultado y ✓ (Operaciones). La respuesta viene de la semilla.
   ['teclado', async (page, root, hints) => {
     if (!await page.locator(`${root} .ww-key[data-k]`).count()) return false;
@@ -160,8 +206,14 @@ export async function playRound(page, root, hints = {}) {
   const antes = await foto();
   const efectoAntes = await efecto();
   let mecanica = null;
-  for (const [nombre, fn] of DRIVERS) {
-    if (await fn(page, root, hints)) { mecanica = nombre; break; }
+  // Hasta 3 pasadas con espera: la ronda puede entrar con cuenta atrás o
+  // animación y a la primera no haber nada que tocar — el dedo también espera.
+  // (Se vio de verdad: Emparejar VS fallaba solo cuando la Ruleta iba antes.)
+  for (let intento = 0; intento < 3 && !mecanica; intento++) {
+    if (intento) await page.waitForTimeout(900);
+    for (const [nombre, fn] of DRIVERS) {
+      if (await fn(page, root, hints)) { mecanica = nombre; break; }
+    }
   }
   if (!mecanica) return { mecanica: null, avanzo: null };
 

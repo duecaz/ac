@@ -33,6 +33,7 @@ import { getTemplate } from './registry.js';
 import { isVsCompatible, sessionItems } from '../kernel/session/engine.js';
 import { canAutoScoreRound } from './templateCapability.js';
 import { HOST_ONLY_WRITES, LIVE_SESSIONS, ASSIGNMENTS } from './pbRules.js';
+import { claimStage } from './stageClaim.js';
 
 export const MODE_DEFS = [
   {
@@ -152,6 +153,10 @@ export function isModeAvailable(modeId, activity) {
  *  Views are pulled with DYNAMIC import so this module (and its tests) stay
  *  free of DOM/browser dependencies at import time. */
 export async function runMode(modeId, host, activity, ctx) {
+  // Ficha de ocupación (§23): montar un modo RECLAMA el escenario, así los
+  // relojes pendientes del modo anterior (el spin de la Ruleta, el avance del
+  // shell secuencial) descubren en su alive() que ya no son los dueños.
+  claimStage(host);
   switch (modeId) {
     case 'solo': {
       // `host` is the stage selector/element; the template paints straight into

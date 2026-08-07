@@ -312,6 +312,13 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   `core/deadlineTicker.js`, con `clock.now()` y guard `while` para que un reloj zombi no repinte
   sobre la fase siguiente). Las vistas de Live ya NO usan `Date.now()` crudo → son testeables con
   tiempo congelado (`tests/deadlineTicker.test.mjs`).
+- **Ficha de ocupación del escenario** (`core/stageClaim.js`, §23): quien monta un modo
+  RECLAMA el stage (`claimStage`, lo hace `runMode()` y los dos shells de
+  `core/soloPlayer.js`); un timer tardío pregunta `alive()` antes de repintar. Nunca
+  guardar "¿existe el selector?" como guard: el selector genérico existe también en la
+  página SIGUIENTE (la Ruleta girada pintaba su ganador encima del VS de Emparejar
+  montado después — lo cazó la matriz al jugar las rondas). Vigilado por
+  `tests/stageClaim.test.mjs` (con contra-prueba: el flujo legítimo termina igual).
 - **ResizeObserver en players**: NUNCA `new ResizeObserver(cb)` directo si el callback
   muta layout — usar `observeResize()` (`core/observeResize.js`, rAF-debounced). Un RO
   directo dispara el aviso benigno "ResizeObserver loop…" que el boot-guard de los HTML

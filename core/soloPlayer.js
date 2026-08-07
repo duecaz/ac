@@ -16,6 +16,7 @@ import { createCountdown } from './soloTimer.js';
 import { clock } from './clock.js';
 import { defaultMaxScore } from './scoring/index.js';
 import { lsGet, lsSet, lsDel } from './ls.js';
+import { claimStage } from './stageClaim.js';
 
 // Reanudar al recargar (F5) SOLO en modo individual: guarda el avance (idx/score/
 // answers/startedAt) por actividad y lo retoma si el navegador se recarga a mitad.
@@ -31,6 +32,10 @@ export function clearSoloProgress(activityId) { if (activityId) lsDel(progressKe
 export function runFreeformPlayer(rootSel, activity, opts = {}) {
   let startedAt = clock.now();
   let finished = false;
+  // Ficha de ocupación (§23): un timer del core (el spin de la Ruleta, el
+  // voltear de Memoria) que dispare con el escenario ya en manos de otra vista
+  // u otro modo NO debe repintar — el core pregunta ctx.alive() antes.
+  const alive = claimStage(rootSel);
 
   // Progreso opt-in para players LIBRES (Memoria, etc.): como el shell no posee
   // el estado del tablero, el core lo aporta. loadProgress() devuelve el snapshot
@@ -67,7 +72,7 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
     after = '',        // HTML extra BAJO la pantalla estándar (p.ej. revisión de errores)
     answers = undefined, // detalle por ítem → llega a opts.onFinish (analítica de Tarea)
   } = {}) {
-    if (finished) return;
+    if (finished || !alive()) return;   // un final zombi ni guarda ni repinta (§23)
     finished = true;
     if (resumeOn) lsDel(pKey); // partida terminada → no reanudar
 
@@ -95,7 +100,7 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
     return { timeUsed, score, maxScore };
   }
 
-  return { finish, saveProgress, loadProgress };
+  return { finish, saveProgress, loadProgress, alive };
 }
 
 // SequentialShell: drives the item-by-item loop common to Quiz and Math.
@@ -129,6 +134,9 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
   const items = (activity.rules?.randomize ? shuffle(source.slice()) : source).slice();
   const state = { idx: 0, score: 0, startedAt: clock.now(), answers: [] };
   const timerSecs = activity.rules?.timer ?? 0;
+  // Ficha de ocupación (§23): `setTimeout(next)` y el countdown por ítem
+  // sobreviven al cambio de ruta/modo; sus repintados tardíos se descartan.
+  const alive = claimStage(rootSel);
 
   // Reanudar (F5): retoma el avance guardado si es de ESTA versión y va a medias.
   const resumeOn = canResumeSolo(activity, opts);
@@ -175,6 +183,7 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
 
   function next() {
     if (stepped) return;
+    if (!alive()) { stopTimer(); return; }   // avance zombi: el escenario ya es de otro (§23)
     stepped = true;
     stopTimer();
     state.idx++;
@@ -191,8 +200,8 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
     if (!(timerSecs > 0)) return null;
     stopTimer();
     timerHandle = createCountdown(timerSecs, {
-      onTick,
-      onTimeout: () => { timerHandle = null; onTimeout?.(); },
+      onTick: (s) => { if (!alive()) { stopTimer(); return; } onTick?.(s); },
+      onTimeout: () => { timerHandle = null; if (alive()) onTimeout?.(); },
     });
     timerHandle.start();
     return timerHandle;
@@ -214,7 +223,7 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
   }
 
   function finish() {
-    if (finished) return;
+    if (finished || !alive()) return;   // un final zombi ni guarda ni repinta (§23)
     finished = true;
     stopTimer();
     if (resumeOn) lsDel(pKey); // partida terminada → no reanudar

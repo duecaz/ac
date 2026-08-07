@@ -27,7 +27,10 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
   const rootEl = () => (typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel);
 
   function paint(winner = null) {
-    if (!rootEl()) return;
+    // ctx.alive() y no "¿existe el selector?": el selector es GENÉRICO y existe
+    // también en la página del SIGUIENTE juego — con solo rootEl(), el giro
+    // pendiente pintaba la Ruleta encima del VS de Emparejar (§23).
+    if (!ctx.alive() || !rootEl()) return;
     const exhausted = entries.length === 0;
     mount(rootSel, html`
       <div class="ww-wheel text-center py-3">
@@ -70,7 +73,7 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
 
     setTimeout(() => {
       spinning = false;
-      if (!rootEl()) return;
+      if (!ctx.alive() || !rootEl()) return;
       history.push(winner);
       if (remove) {
         entries = entries.filter((_, i) => i !== target);
