@@ -5,7 +5,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **247 módulos · 900 imports internos.**
+> **248 módulos · 902 imports internos.**
 
 ### Ir a otro documento
 
@@ -28,12 +28,12 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
-| **buscar/crear** | **siempre** — toda clase empieza aquí | 11 · 1462 | 5 · 558 | 0.38 |
+| **buscar/crear** | **siempre** — toda clase empieza aquí | 11 · 1462 | 6 · 645 | 0.44 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 11 · 2413 | 12 · 1112 | 0.46 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 18 · 3646 | 18 · 2846 | 0.78 |
 | **informes/tareas** | después de clase | 11 · 1064 | 4 · 435 | 0.41 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5541 | 12 · 975 | 0.18 |
-| **infra/común** | todo lo anterior | 125 · 12214 | 38 · 4084 | 0.33 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5470 | 12 · 975 | 0.18 |
+| **infra/común** | todo lo anterior | 126 · 12329 | 38 · 4084 | 0.33 |
 
 > Un ratio bajo en un tramo muy usado es deuda de PRIORIDAD, no de calidad: ese
 > código funciona, pero si se rompe nadie se entera hasta que hay 33 críos
@@ -51,13 +51,13 @@ graph TD
   A["<b>arranque</b><br/><small>cablea cada página (main.*.js, sw.js)</small><br/><small>3 módulos</small>"]
   V["<b>vistas</b><br/><small>el chrome: navegación, setup, informes</small><br/><small>29 módulos</small>"]
   AD["<b>adaptadores</b><br/><small>el transporte: PocketBase | local</small><br/><small>7 módulos</small>"]
-  C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>119 módulos</small>"]
+  C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>120 módulos</small>"]
   K["<b>kernel</b><br/><small>el motor de sesión: cuándo se liquida</small><br/><small>8 módulos</small>"]
   T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>75 módulos</small>"]
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>5 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
   V -->|258| C
-  T -->|184| C
+  T -->|183| C
   A -->|28| C
   AD -->|26| C
   A -->|18| V
@@ -102,7 +102,7 @@ graph TD
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1107) · `adapters/local/realtime.js` (321) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
 | **core** | `core/selftest.js` (331) · `core/skins.js` (327) · `core/textCorrectionRound.js` (325) · `core/auth.js` (313) · `core/vsAnimations.js` (269) |
 | **kernel** | `kernel/session/engine.js` (549) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/realtimePort.js` (31) |
-| **plantillas** | `templates/crossword/player.js` (464) · `templates/wordsearch/player.js` (405) · `templates/match/player.js` (296) · `templates/quiz/editor.js` (283) · `templates/diagram/player.js` (233) |
+| **plantillas** | `templates/crossword/player.js` (464) · `templates/wordsearch/player.js` (405) · `templates/match/player.js` (296) · `templates/diagram/player.js` (233) · `templates/quiz/editor.js` (212) |
 | **contenido** | `kernel/content/qaAdapt.js` (104) · `kernel/content/convert.js` (95) · `kernel/content/switch.js` (82) · `kernel/content/models.js` (79) · `kernel/content/index.js` (5) |
 | **config** | `pocketbase.config.js` (13) |
 
@@ -113,7 +113,7 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 | Módulo | Lo importan |
 |---|---|
 | `core/html.js` | 82 |
-| `core/events.js` | 46 |
+| `core/events.js` | 47 |
 | `core/registry.js` | 44 |
 | `core/storage.js` | 23 |
 | `core/ids.js` | 22 |

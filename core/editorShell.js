@@ -19,6 +19,7 @@ import { getTemplate, listTemplates } from './registry.js';
 import { modesForTemplate } from './modes.js';
 import { renderModesTab, wireModesTab } from './editorModes.js';
 import { listSkins, skinPreviewHtml, applySkin } from './skins.js';
+import { scoringPanelHtml, wireScoringPanel, livePanelHtml, wireLivePanel } from './editorPanels.js';
 import { listBackgrounds, backgroundPreviewHtml, applyBackground, readBackgroundImage } from './backgrounds.js';
 
 function presentationHtml(a) {
@@ -64,6 +65,17 @@ function presentationHtml(a) {
 
 export function renderEditorShell(root, a, onChange, spec) {
   const T = getTemplate(a.template);
+  // PANELES POR DEFECTO (core/editorPanels.js). "Puntuación" existía en 5 de 13
+  // plantillas y "En vivo" SOLO en Quiz, aunque SIETE declaran `modes.live` y
+  // sus datos (`a.scoring.mode`, `a.live.*`) los leen el motor y el marcador en
+  // todas por igual: era funcionalidad ausente, no un adorno. Ahora el chasis
+  // los pone y la plantilla solo los DECLARA si necesita otra cosa.
+  const paneles = {
+    ...spec,
+    scoring: spec.scoring || { html: scoringPanelHtml, wire: wireScoringPanel },
+    live: spec.live || { html: livePanelHtml, wire: wireLivePanel },
+  };
+  spec = paneles;
   const liveOn = !!T?.meta?.modes?.live && !!spec.live;
   // "Modos" aparece si la plantilla soporta VS/Equipos/Tarea (En vivo va aparte)
   // O si hay un bloque Individual (spec.rules). Individual es la primera sección.
