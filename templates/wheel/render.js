@@ -1,5 +1,9 @@
-// Shared SVG wheel drawing — used by the wheel player and the standalone Sorteo
-// classroom tool, so the wheel face lives in one place. Pure string builder.
+// SVG wheel drawing de la plantilla Ruleta. Pure string builder.
+// (Tenía un segundo consumidor, la vista suelta `#/sorteo`: una ruleta de aula
+// que no colgaba de ninguna actividad y a la que NO se llegaba desde ningún
+// enlace del producto — solo tecleando la dirección. Se borró en v1.51.414
+// por decisión del usuario: código sin puerta de entrada es código que nadie
+// mantiene y que un día aparece roto.)
 import { escapeHtml } from '../../core/html.js';
 import { truncLabel } from './logic.js';
 

@@ -40,7 +40,7 @@ const BS_FAMILIES = [
   ['misc',     /^(rounded(-\d|-circle|-pill)?|border(-\d|-top|-bottom|-start|-end)?|shadow(-sm|-lg|-none)?|overflow-(hidden|auto|scroll)|position-(relative|absolute|fixed|sticky)|top-\d+|start-\d+|visually-hidden|opacity-\d+|img-fluid|progress|progress-bar|text-uppercase|bg-(primary|secondary|success|danger|warning|info|light|dark|white|transparent|body))$/],
 ];
 // Nuestros prefijos: no son Bootstrap, no cuentan.
-const OURS = /^(ww-|vs-|vss-|acard|home-|lp-|au-|exp-|st-|cw-|dg-|mem-|memo|teams-|bs-|tc-|rq-|ws-|pcal|login-modal|auth-|mod-|tag|icon-btn|pub-toggle|heart|t$|s$|is-|has-|open$|arcade|tvs|skin-|hl-|f-|btn-join|race-|qlw?|sorteo|el-|item-|list-)/;
+const OURS = /^(ww-|vs-|vss-|acard|home-|lp-|au-|exp-|st-|cw-|dg-|mem-|memo|teams-|bs-|tc-|rq-|ws-|pcal|login-modal|auth-|mod-|tag|icon-btn|pub-toggle|heart|t$|s$|is-|has-|open$|arcade|tvs|skin-|hl-|f-|btn-join|race-|qlw?|el-|item-|list-)/;
 
 const files = [];
 (function walk(dir) {

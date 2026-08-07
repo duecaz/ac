@@ -248,7 +248,7 @@ export const BROWSER_SCAN_FILES = [
   'views/adminView.js', 'views/assignments.js', 'views/editList.js', 'views/editView.js',
   'views/embedModal.js', 'views/explore.js', 'views/home.js', 'views/hostLive.js',
   'views/listView.js', 'views/memoryView.js', 'views/modeSetup.js', 'views/playerView.js',
-  'views/reports.js', 'views/sorteoView.js', 'views/startScreen.js', 'views/studentLive.js',
+  'views/reports.js', 'views/startScreen.js', 'views/studentLive.js',
   'views/studentTask.js', 'views/switchTemplate.js', 'views/teamsView.js',
   'views/templateSelector.js', 'views/vsView.js',
   'core/textCorrectionRound.js', 'core/textCorrectionDraw.js',

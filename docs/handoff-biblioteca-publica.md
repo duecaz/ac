@@ -106,7 +106,7 @@ Nada se rompe si el usuario aún no configuró Google/PB; el gate solo aparece d
 1. **`core/authGate.js`**: `requireTeacher(rootSel, renderFn)` — si no hay sesión pinta
    una pantalla amable ("Entra con Google para crear y gestionar tus actividades",
    botón del authWidget); si hay, delega en la vista. Gatear: `#/new`, `#/edit*`,
-   `#/mine`, `#/edit-list`, `#/tasks`. NO gatear: portada, explore, play, live, sorteo.
+   `#/mine`, `#/edit-list`, `#/tasks`. NO gatear: portada, explore, play, live.
 2. **Almacén por usuario** (`core/storage.js`): `currentKey()` pasa a
    `ww.activities.<userId>` (guest = clave legacy `ww.activities`). `setStorageUser`
    ya existe y los mains ya lo llaman — implementar de verdad la separación.

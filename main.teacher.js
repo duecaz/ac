@@ -11,7 +11,6 @@ import { renderHome } from './views/home.js';
 import { renderLanding } from './views/landing.js';
 import { renderTemplateSelector } from './views/templateSelector.js';
 import { renderPlayerView } from './views/playerView.js';
-import { renderSorteoView } from './views/sorteoView.js';
 import { renderEditView } from './views/editView.js';
 import { renderHostLaunch, renderHostByCode } from './views/hostLive.js';
 import { renderReports, renderActivityReport, renderSessionReport } from './views/reports.js';
@@ -93,7 +92,6 @@ route('#/autor/:id', ({ id }) => renderAuthor(APP, id));
 route('#/moderar', () => renderModerate(APP));
 route('#/admin', () => renderAdmin(APP));
 route('#/modos', () => renderAdmin(APP));
-route('#/sorteo', () => renderSorteoView(APP));
 
 setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encontrada. <a href="#/home">Inicio</a></div>`));
 
