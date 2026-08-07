@@ -52,6 +52,7 @@ console.log('\n▶ roles'); await import('./roles.test.mjs');
 console.log('\n▶ soloTimer'); await import('./soloTimer.test.mjs');
 console.log('\n▶ soloPlayer'); await import('./soloPlayer.test.mjs');
 console.log('\n▶ stageClaim'); await import('./stageClaim.test.mjs');
+console.log('\n▶ bugReport'); await import('./bugReport.test.mjs');
 console.log('\n▶ clock'); await import('./clock.test.mjs');
 console.log('\n▶ offlineQueue'); await import('./offlineQueue.test.mjs');
 console.log('\n▶ ballsort'); await import('./ballsort.test.mjs');

@@ -5,7 +5,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **248 módulos · 899 imports internos.**
+> **249 módulos · 903 imports internos.**
 
 ### Ir a otro documento
 
@@ -31,9 +31,9 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 8 · 1121 | 5 · 558 | 0.50 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 11 · 2413 | 12 · 1112 | 0.46 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 18 · 3665 | 18 · 2846 | 0.78 |
-| **informes/tareas** | después de clase | 11 · 1126 | 3 · 381 | 0.34 |
+| **informes/tareas** | después de clase | 11 · 1126 | 4 · 435 | 0.39 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5810 | 12 · 975 | 0.17 |
-| **infra/común** | todo lo anterior | 129 · 12436 | 35 · 3581 | 0.29 |
+| **infra/común** | todo lo anterior | 130 · 12489 | 35 · 3581 | 0.29 |
 
 > Un ratio bajo en un tramo muy usado es deuda de PRIORIDAD, no de calidad: ese
 > código funciona, pero si se rompe nadie se entera hasta que hay 33 críos
@@ -51,7 +51,7 @@ graph TD
   A["<b>arranque</b><br/><small>cablea cada página (main.*.js, sw.js)</small><br/><small>3 módulos</small>"]
   V["<b>vistas</b><br/><small>el chrome: navegación, setup, informes</small><br/><small>29 módulos</small>"]
   AD["<b>adaptadores</b><br/><small>el transporte: PocketBase | local</small><br/><small>7 módulos</small>"]
-  C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>120 módulos</small>"]
+  C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>121 módulos</small>"]
   K["<b>kernel</b><br/><small>el motor de sesión: cuándo se liquida</small><br/><small>8 módulos</small>"]
   T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>75 módulos</small>"]
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>5 módulos</small>"]
@@ -118,7 +118,7 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 | `core/storage.js` | 23 |
 | `core/ids.js` | 22 |
 | `core/clock.js` | 21 |
-| `core/toast.js` | 20 |
+| `core/toast.js` | 21 |
 | `core/ls.js` | 17 |
 | `core/gameEvents.js` | 17 |
 | `kernel/session/engine.js` | 16 |

@@ -45,6 +45,15 @@ Arriba, en la barra oscura, hay una etiqueta pequeña con un número tipo
 > ✍️ **Apunta aquí la versión que ves en cada aparato**, y ponla en cada fallo
 > que reportes: `ordenador ______ · móvil 1 ______ · móvil 2 ______`
 
+### 🆕 El reporte de UN TOQUE (desde v1.51.394)
+
+Cuando algo falle, **toca esa misma etiqueta de versión**: se copia solo al
+portapapeles un reporte con la versión, la pantalla exacta donde estabas y los
+últimos errores que la app registró por dentro (esos que "salen un segundo y
+desaparecen"). Pégalo tal cual en el chat y añade una frase con lo que estabas
+haciendo. Con eso el fallo se puede reproducir a la primera — sin el reporte,
+toca adivinar. No lleva ningún dato de alumnos ni del aparato.
+
 ---
 
 ## PASO 1 — Entrar como profesor (solo en el ordenador)

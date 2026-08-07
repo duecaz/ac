@@ -16,9 +16,29 @@ import { applyPerfClass } from './perf.js';
 applyPerfClass();
 
 // Escribe `v<VERSION>` en el slot de versión del navbar, si existe.
+// Y lo convierte en el REPORTE DE UN TOQUE (core/bugReport.js): tocarlo copia
+// versión + pantalla + últimos errores al portapapeles — el compañero que
+// testea ya usa este chip para citar la versión; ahora el mismo gesto se lleva
+// el contexto entero. Sin dato de alumno ni de aparato (R7).
 export function stampVersion(id = 'ww-version') {
   const el = document.getElementById(id);
-  if (el) el.textContent = 'v' + VERSION;
+  if (!el) return;
+  el.textContent = 'v' + VERSION;
+  el.title = 'Tocar para copiar un reporte (versión · pantalla · últimos errores)';
+  el.style.cursor = 'pointer';
+  el.addEventListener('click', async () => {
+    const { buildBugReport } = await import('./bugReport.js');
+    const { toast } = await import('./toast.js');
+    const texto = buildBugReport();
+    try {
+      await navigator.clipboard.writeText(texto);
+      toast('Reporte copiado: pégalo en el chat del proyecto.', 'success', 4000);
+    } catch {
+      // Sin permiso de portapapeles (http, iframe): enséñalo para copiar a mano.
+      toast('No se pudo copiar solo — cópialo de la consola.', 'warning', 5000);
+      console.log(texto);
+    }
+  });
 }
 
 // Monta el botón de silencio en su slot del navbar (idempotente, se redibuja
