@@ -29,7 +29,9 @@ import { readdirSync } from 'node:fs';
 // Tarjetas escritas A MANO fuera del componente, con su motivo (ratchet: esta
 // lista solo puede ENCOGER, y cada entrada dice por qué existe).
 const EXCEPCIONES_ACARD = {
-  'views/home.js': 'listCard(): la tarjeta de LISTA de actividades es otro objeto (rondas encadenadas, sin preview de juego) — pendiente de decidir si se absorbe como variante',
+  // (vacío — la última excepción, listCard de home.js, se absorbió como
+  // variante 'list' del componente en v1.51.392. Si necesitas añadir una,
+  // declara el MOTIVO y la deuda; el ratchet solo debe ENCOGER.)
 };
 
 /** Vistas con `<article class="acard…` escrito a mano (no vía el componente). */

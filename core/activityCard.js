@@ -64,6 +64,10 @@ const VARIANTS = {
   mine:    { modes: 'all',  playablePreview: false },
   library: { modes: 'play', playablePreview: true  },
   plain:   { modes: 'none', playablePreview: false },
+  // Lista de actividades (rondas encadenadas): sin preview de juego (cabecera
+  // propia con título) y con un único modo "Jugar lista". Era la última tarjeta
+  // escrita a mano fuera del componente (views/home.js listCard).
+  list:    { modes: 'none', pages: false, playablePreview: false },
 };
 
 // Pinta la tarjeta canónica. `opts`:
@@ -82,15 +86,16 @@ export function activityCardHtml(a, opts = {}) {
     topRight = '', footer = '', extraClass = '', previewClass = '',
   } = { ...preset, ...opts };
   const T = getTemplate(a.template);
-  const color = T?.meta?.color || 'info';
+  const color = opts.variant === 'list' ? 'primary' : (T?.meta?.color || 'info');
   // Un JUEGO (§4c) se presenta por la HABILIDAD que entrena — es su eje de
   // catálogo y lo que le sirve al profe para elegir y justificar. Decidido AQUÍ
   // y no en cada vista: la misma tarjeta se ve igual en la estantería, en "Mis
   // actividades" y donde aparezca (la lección de las variantes: unificar el
   // markup sin unificar la decisión es como divergieron las tarjetas).
   const esJuego = T?.meta?.kind === 'juego';
-  const icon  = esJuego ? 'bi-controller' : (T?.meta?.icon || 'bi-puzzle');
-  const label = esJuego ? (T?.meta?.skill || T?.meta?.label) : (T?.meta?.label || a.template);
+  const esLista = opts.variant === 'list';
+  const icon  = esLista ? 'bi-collection-play' : esJuego ? 'bi-controller' : (T?.meta?.icon || 'bi-puzzle');
+  const label = esLista ? 'Lista' : esJuego ? (T?.meta?.skill || T?.meta?.label) : (T?.meta?.label || a.template);
   const bg = previewBgStyle(a.presentation);
   const id = escapeHtml(a.id);
   const strip = modes === 'none' ? '' : modeStripHtml(a, { includeManage: modes === 'all', authed });
@@ -99,20 +104,33 @@ export function activityCardHtml(a, opts = {}) {
     const p = activityPageCount(a);
     pagesBadge = `<span class="acard-pages" title="${p} ${p === 1 ? 'página' : 'páginas'}"><i class="bi bi-files"></i> ${p}</span>`;
   }
-  return `
-    <article class="acard${extraClass ? ' ' + extraClass : ''}" data-id="${id}">
-      <div class="acard-preview${previewClass ? ' ' + previewClass : ''}"${bg ? ` style="background:${bg}"` : ''}${playablePreview ? ` data-play="${id}" role="button" title="Jugar"` : ''}>
+  // La LISTA no tiene juego que previsualizar: cabecera propia con el título
+  // (y por eso el cuerpo no lo repite), y un único modo "Jugar lista".
+  const head = esLista
+    ? `<div class="acard-listhead">
+        <i class="bi bi-collection-play-fill"></i>
+        <div class="overflow-hidden">
+          <div class="t text-truncate">${escapeHtml(a.title || 'Sin título')}</div>
+          ${a.subtitle ? `<div class="s text-truncate">${escapeHtml(a.subtitle)}</div>` : ''}
+        </div>
+      </div>`
+    : `<div class="acard-preview${previewClass ? ' ' + previewClass : ''}"${bg ? ` style="background:${bg}"` : ''}${playablePreview ? ` data-play="${id}" role="button" title="Jugar"` : ''}>
         ${homePreviewHtml(a)}
         ${pagesBadge}
-      </div>
-      ${strip ? `<div class="acard-modes">${strip}</div>` : ''}
+      </div>`;
+  const listStrip = `<button class="mode-list act-list" data-id="${id}" title="Jugar lista">
+        <i class="bi bi-play-fill"></i> Jugar</button>`;
+  return `
+    <article class="acard${extraClass ? ' ' + extraClass : ''}" data-id="${id}">
+      ${head}
+      ${esLista ? `<div class="acard-modes">${listStrip}</div>` : (strip ? `<div class="acard-modes">${strip}</div>` : '')}
       <div class="acard-body">
         <div class="acard-toprow">
           <span class="tag tag--${color}"><i class="bi ${icon}"></i> ${escapeHtml(label)}</span>
           ${topRight}
         </div>
-        <h3 class="acard-title">${escapeHtml(a.title || 'Sin título')}</h3>
-        ${subtitle && a.subtitle ? `<p class="acard-sub">${escapeHtml(a.subtitle)}</p>` : ''}
+        ${esLista ? '' : `<h3 class="acard-title">${escapeHtml(a.title || 'Sin título')}</h3>`}
+        ${!esLista && subtitle && a.subtitle ? `<p class="acard-sub">${escapeHtml(a.subtitle)}</p>` : ''}
         ${author && a.author?.id ? `<a class="lp-author" href="#/autor/${escapeHtml(a.author.id)}">por ${escapeHtml(a.author.name || 'Profesor')}</a>` : ''}
         ${tags && (a.tags || []).length ? `<div class="acard-tags">${a.tags.slice(0, 3).map(t => `<span class="t">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
         ${footer}

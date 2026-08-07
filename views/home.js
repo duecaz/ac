@@ -127,36 +127,21 @@ export function renderHome(rootSel) {
     return activityCardHtml(a, { variant: 'mine', authed: canHost(), topRight, footer });
   }
 
+  // La tarjeta de LISTA también sale del componente único (variante 'list'):
+  // era la última tarjeta escrita a mano y el escáner de
+  // tests/activityCard.test.mjs la tenía como excepción declarada. La vista
+  // solo aporta lo SUYO: los iconos de dueño y el pie con el nº de rondas.
   function listCard(a) {
     const rounds = (a.content?.items || []).length;
-    return `
-      <article class="acard">
-        <div class="acard-listhead">
-          <i class="bi bi-collection-play-fill"></i>
-          <div class="overflow-hidden">
-            <div class="t text-truncate">${escapeHtml(a.title)}</div>
-            ${a.subtitle ? `<div class="s text-truncate">${escapeHtml(a.subtitle)}</div>` : ''}
-          </div>
-        </div>
-        <div class="acard-modes">
-          <button class="mode-list act-list" data-id="${escapeHtml(a.id)}" title="Jugar lista">
-            <i class="bi bi-play-fill"></i> Jugar
-          </button>
-        </div>
-        <div class="acard-body">
-          <div class="acard-toprow">
-            <span class="tag tag--primary"><i class="bi bi-collection-play"></i> Lista</span>
-            <div class="acard-icons">
-              <button class="icon-btn edit act-edit-list" data-id="${escapeHtml(a.id)}" title="Editar lista"><i class="bi bi-pencil-fill"></i></button>
-              <button class="icon-btn del act-del" data-id="${escapeHtml(a.id)}" title="Eliminar"><i class="bi bi-trash3"></i></button>
-              ${a._unsynced ? '<i class="bi bi-cloud-slash acard-unsync" title="No sincronizada"></i>' : ''}
-            </div>
-          </div>
-          <div class="acard-foot" style="margin-top:8px">
-            <span><i class="bi bi-collection"></i> ${rounds} rondas</span>
-          </div>
-        </div>
-      </article>`;
+    const topRight = `<div class="acard-icons">
+        <button class="icon-btn edit act-edit-list" data-id="${escapeHtml(a.id)}" title="Editar lista"><i class="bi bi-pencil-fill"></i></button>
+        <button class="icon-btn del act-del" data-id="${escapeHtml(a.id)}" title="Eliminar"><i class="bi bi-trash3"></i></button>
+        ${a._unsynced ? '<i class="bi bi-cloud-slash acard-unsync" title="No sincronizada"></i>' : ''}
+      </div>`;
+    const footer = `<div class="acard-foot" style="margin-top:8px">
+        <span><i class="bi bi-collection"></i> ${rounds} rondas</span>
+      </div>`;
+    return activityCardHtml(a, { variant: 'list', topRight, footer });
   }
 
   on(rootSel, 'click', '.act-play', (_, b) => navigate(`#/play/${b.dataset.id}`));
