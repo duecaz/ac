@@ -116,9 +116,20 @@ const QUIZ = { id: 'a2', template: 'uns_quiz', live: {}, content: { items: [{ id
   assert.match(block, /unscorable: true/,
     'y NO puntuable: sin clave que acertar, la tabla la pinta "—" en vez de fingir un acierto');
   assert.match(block, /conflict/, 'si la caja se reabre y se re-premia, se actualiza la fila (no se duplica)');
+  // El parche del premio lo CONSTRUYE su dueño (core/questionLive.js): antes el
+  // literal vivía escrito a mano en la vista del host, y este test vigilaba esa
+  // línea concreta. Ahora se comprueba lo que de verdad importa —que el parche
+  // lleve la caja— sobre el constructor, y que el host lo use en vez de
+  // escribirlo él (v1.51.409).
+  const { qlAwardPatch } = await import('../core/questionLive.js');
+  const parche = qlAwardPatch({ playerId: 'p1', points: 50, item: 3, points0: { 1: 10 }, taken0: { 1: 'p9' } });
+  assert.deepStrictEqual(parche.ql_award, { playerId: 'p1', points: 50, item: 3 },
+    'el parche del premio manda la caja: sin `item` los puntos se quedarían solo en el blob');
+  assert.strictEqual(parche.ql_open, null, 'y cierra la caja abierta');
+  assert.deepStrictEqual(parche.ql_points, { 1: 10, 3: 50 }, 'acumula sin pisar lo anterior');
+  assert.deepStrictEqual(parche.ql_taken, { 1: 'p9', 3: 'p1' }, 'y registra QUIÉN se la llevó (CL-1)');
   const host = readFileSync(new URL('../views/hostLive.js', import.meta.url), 'utf8');
-  assert.match(host, /ql_award: \{ playerId: qlBy, points, item: qlOpen \}/,
-    'el host manda la caja premiada: sin `item` los puntos se quedarían solo en el blob');
+  assert.match(host, /qlAwardPatch\(/, 'el host premia por el constructor de su dueño, no con un literal a mano');
   ok('pedir la palabra: el premio del docente es una fila de live_answers → llega al podio');
 }
 
@@ -131,9 +142,15 @@ const QUIZ = { id: 'a2', template: 'uns_quiz', live: {}, content: { items: [{ id
 // problema es de gestión de aula, no de trampa).
 {
   const { readFileSync } = await import('node:fs');
-  const host = readFileSync(new URL('../views/hostLive.js', import.meta.url), 'utf8');
-  assert.match(host, /ql_points: newPoints, ql_taken: newTaken/,
+  // Igual que arriba: la garantía vive en el constructor, no en una línea de la
+  // vista. Se comprueba el COMPORTAMIENTO (el parche registra quién) en vez de
+  // la forma en que estaba escrito.
+  const { qlAwardPatch: award } = await import('../core/questionLive.js');
+  const p = award({ playerId: 'ana', points: 10, item: 0, points0: {}, taken0: {} });
+  assert.strictEqual(p.ql_taken[0], 'ana',
     'al premiar se registra QUIÉN se llevó la caja, no solo cuánto valió');
+  const host = readFileSync(new URL('../views/hostLive.js', import.meta.url), 'utf8');
+  assert.ok(!/ql_taken:\s*\{/.test(host), 'y la vista ya no arma ese estado a mano');
   assert.match(host, /function participationHtml\(/, 'la pizarra muestra la participación');
   assert.match(host, /Aún no participan/, 'y destaca a los que aún no han participado (lo accionable)');
   // Es un AVISO: la rejilla del ALUMNO no puede depender de ello para bloquear.

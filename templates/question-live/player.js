@@ -8,8 +8,8 @@ import { wheelSvg } from '../wheel/render.js';
 import { pickIndex } from '../wheel/logic.js';
 import { spinTarget, normalizeRotation, animateSpin, SPIN_DUR_PICK } from '../wheel/spin.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
+import { QL_COLORS, qlBoxesHtml, qlCols } from '../../core/questionLive.js';
 
-const COLORS = ['#e74c3c','#e67e22','#d4ac0d','#27ae60','#16a085','#2980b9','#8e44ad','#c0392b'];
 
 function getItems(activity) {
   return sessionItems(activity).map(i =>
@@ -30,21 +30,15 @@ function renderBoxes(rootSel, activity, opts = {}) {
   const done = new Set();
 
   function paint() {
-    const cols = Math.min(4, Math.max(2, Math.ceil(items.length / 2)));
-    const boxesHtml = items.map((_, i) => {
-      const isDone = done.has(i);
-      const isOpen = openIdx === i;
-      const color = COLORS[i % COLORS.length];
-      const style = isDone
-        ? `background:#198754;color:#fff`
-        : isOpen
-          ? `background:#fff;border:3px solid ${color}!important;color:#1f2937`
-          : `background:${color};color:#fff`;
-      return `<button class="ab-box${isDone ? ' ab-done' : ''}" data-i="${i}"
-          style="${style};border-radius:8px;min-height:64px;font-size:1.4rem;font-weight:700;border:none;cursor:${isDone?'default':'pointer'}">
-        ${isDone ? '<i class="bi bi-check2"></i>' : i + 1}
-      </button>`;
-    }).join('');
+    const cols = qlCols(items.length);
+    // El tablero, de su dueño (core/questionLive.js). Aquí las cajas SÍ se tocan
+    // (no hay sala: el que juega abre la que quiera) y una caja hecha muestra
+    // un ✓, porque en Individual no hay puntos que dar.
+    const boxesHtml = qlBoxesHtml(items.length, {
+      done, openIdx, open: openIdx, cls: 'ab-box',
+      pickable: () => true,
+      extraStyle: 'border-radius:8px;min-height:64px;font-size:1.4rem;font-weight:700',
+    });
 
     const openItem = openIdx !== null ? items[openIdx] : null;
     mount(rootSel, html`
@@ -52,7 +46,7 @@ function renderBoxes(rootSel, activity, opts = {}) {
         <h3 class="mb-3">${escapeHtml(activity.title)}</h3>
         <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:10px;max-width:460px;margin:0 auto">${boxesHtml}</div>
         ${openItem != null ? `
-          <div class="card border-2 mx-auto mt-4" style="max-width:480px;border-color:${COLORS[openIdx % COLORS.length]};border-width:2px">
+          <div class="card border-2 mx-auto mt-4" style="max-width:480px;border-color:${QL_COLORS[openIdx % QL_COLORS.length]};border-width:2px">
             <div class="card-body">
               <small class="text-muted d-block mb-2">Caja ${openIdx + 1}</small>
               ${openItem.image ? `<img src="${escapeHtml(openItem.image)}" class="img-fluid rounded mb-3 d-block mx-auto" style="max-height:200px">` : ''}

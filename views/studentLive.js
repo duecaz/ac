@@ -22,7 +22,7 @@ import { getNick, setNick } from '../core/identity.js';
 import { wheelSvg } from '../templates/wheel/render.js';
 import { pickIndex } from '../templates/wheel/logic.js';
 import { spinTarget, normalizeRotation, animateSpin, SPIN_DUR_PICK } from '../templates/wheel/spin.js';
-import { QL_COLORS } from '../core/questionLive.js';
+import { qlBoxesHtml } from '../core/questionLive.js';
 import { RACE_FLASH_MS, questionWindowMs, mmss } from '../core/timings.js';
 import { supportsLoop, pointsModeFor, racePassed } from '../core/liveLoops.js';
 import { endPolicyOf, waitingInfo } from '../core/liveEnd.js';
@@ -280,21 +280,12 @@ export async function renderPlay(rootSel, code) {
     const iMine      = qlBy === player.playerId;
     const canPick    = qlOpen === null; // only 1 box open at a time
 
-    const boxesHtml = allItems.map((_, idx) => {
-      const isDone = qlPoints[idx] != null;
-      const isOpen = qlOpen === idx;
-      const color  = QL_COLORS[idx % QL_COLORS.length];
-      let style, cls = 'ql-sbox';
-      if (isDone)      { style = `background:#198754;`; cls += ' ql-done'; }
-      else if (isOpen) { style = `background:#fff;border:3px solid ${color};`; cls += ' ql-open'; }
-      else             style = `background:${color};`;
-      const clickable = !isDone && canPick && !isOpen;
-      return `<button class="${cls}" data-idx="${idx}" ${!clickable ? 'disabled' : ''} style="${style};border-radius:8px;cursor:${clickable?'pointer':'default'}">
-        ${isDone
-          ? `<span>+${qlPoints[idx]}</span>`
-          : isOpen ? `<span style="color:#1f2937;font-weight:700">${idx + 1}</span>` : `<b>${idx + 1}</b>`}
-      </button>`;
-    }).join('');
+    // El tablero, de su dueño (core/questionLive.js). Lo propio de esta pantalla
+    // es solo QUÉ puede tocar el alumno: una caja libre, y solo si le toca.
+    const boxesHtml = qlBoxesHtml(allItems.length, {
+      done: qlPoints, open: qlOpen, cls: 'ql-sbox',
+      pickable: () => canPick, extraStyle: 'border-radius:8px',
+    });
 
     mount(rootSel, html`
       <div class="text-center py-3">

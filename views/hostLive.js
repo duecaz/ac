@@ -26,7 +26,7 @@ import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { hostPaintDecision } from '../core/livePhases.js';
 import { isStudentSnapshot } from '../core/liveSnapshot.js';
 import { podiumHtml } from '../core/podium.js';
-import { QL_COLORS } from '../core/questionLive.js';
+import { qlBoxesHtml, qlCols, qlAwardPatch, qlClosePatch } from '../core/questionLive.js';
 import { questionWindowMs, RACE_POLL_MS, BOARD_POLL_MS, readSeconds, READ_SECONDS_MAX, itemWindowMs, mmss } from '../core/timings.js';
 import { loopsOf, supportsLoop, defaultLoop, LOOP_LABELS, hasAdvanceChoice, pointsModeFor, racePassedRow } from '../core/liveLoops.js';
 import { END_LABELS, END_POLICIES, DEFAULT_POLICY, DEFAULT_FIRST_N, DEFAULT_MINUTES, MAX_MINUTES, shouldEnd, endPolicyOf } from '../core/liveEnd.js';
@@ -826,27 +826,15 @@ async function renderHost(rootSel, code, sessionId, activity) {
     const qlBy       = session.ql_by ?? null;
     const qlByName   = session.ql_by_name ?? null;
     const doneCount  = Object.keys(qlPoints).length;
-    const cols       = Math.min(6, Math.max(3, Math.ceil(items.length / 2)));
+    const cols       = qlCols(items.length, 6);   // el proyector cabe más ancho que el móvil
     const isWheel    = (activity.rules?.selector || 'boxes') === 'wheel';
     const viewTitle  = isWheel ? 'Ruleta Live' : 'Pregunta Live';
     const viewIcon   = isWheel ? 'bi-bullseye' : 'bi-chat-square-text-fill';
 
-    const boxesHtml = items.map((_, idx) => {
-      const isDone = qlPoints[idx] != null;
-      const isOpen = qlOpen === idx;
-      const color  = QL_COLORS[idx % QL_COLORS.length];
-      let style, cls = 'ql-box';
-      if (isDone)      { style = `background:#198754;border-color:#198754;`; }
-      else if (isOpen) { style = `background:#fff;border-color:${color};`; cls += ' ql-open'; }
-      else             { style = `background:${color};border-color:${color};`; }
-      // Host board is status-only — students pick. Boxes are not interactive.
-      return `<button class="${cls}" data-idx="${idx}" disabled style="${style};opacity:1">
-        ${isDone
-          ? `<span class="ql-num">+${qlPoints[idx]}</span>`
-          : isOpen ? `<span class="ql-num" style="color:#1f2937">${idx + 1}</span>`
-                   : `<span class="ql-num">${idx + 1}</span>`}
-      </button>`;
-    }).join('');
+    // El tablero lo pinta su DUEÑO (core/questionLive.js): estaba escrito tres
+    // veces —aquí, en el alumno y en Individual— con la misma decisión de color.
+    // Esta pantalla es SOLO ESTADO: las cajas las eligen los alumnos.
+    const boxesHtml = qlBoxesHtml(items.length, { done: qlPoints, open: qlOpen, cls: 'ql-box' });
 
     mount(rootSel, html`
       <div class="py-3">
@@ -882,22 +870,15 @@ async function renderHost(rootSel, code, sessionId, activity) {
     on(rootSel, 'click', '.ql-award', async (_, btn) => {
       if (!qlBy || qlOpen === null) return;
       const points    = +btn.dataset.pts;
-      const newPoints = { ...qlPoints, [qlOpen]: points };
-      // CL-1 · queda registrado quién se llevó la caja, para la tira de
-      // participación (antes solo se sabía CUÁNTO valió, no QUIÉN respondió).
-      const newTaken = { ...(session.ql_taken || {}), [qlOpen]: qlBy };
-      await setSessionState(sessionId, {
-        // `item`: sin la caja, el adaptador no puede escribir la fila de
-        // live_answers y los puntos se quedarían solo en el blob (podio a 0).
-        ql_award: { playerId: qlBy, points, item: qlOpen },
-        ql_open: null, ql_question: null, ql_image: null, ql_by: null, ql_by_name: null,
-        ql_points: newPoints, ql_taken: newTaken,
-      });
+      await setSessionState(sessionId, qlAwardPatch({
+        playerId: qlBy, points, item: qlOpen,
+        points0: qlPoints, taken0: session.ql_taken || {},
+      }));
     });
 
     // "Sin puntos" closes the box as if it was never opened — it stays available.
     on(rootSel, 'click', '#ql-close', async () => {
-      await setSessionState(sessionId, { ql_open: null, ql_question: null, ql_image: null, ql_by: null, ql_by_name: null });
+      await setSessionState(sessionId, qlClosePatch());
     });
 
     on(rootSel, 'click', '#ql-end', async () => {
