@@ -254,7 +254,8 @@ for (const t of seeded) {
         // combinación rota Y DECLARADA no tumba la matriz, pero sale en el
         // informe con su motivo. Lo que no se tolera es una rotura NUEVA.
         const CONOCIDOS = {
-          'wordsearch|teams': 'Equipos trata la ronda como UNA respuesta y la Sopa emite una por palabra encontrada → el hallazgo se pierde (deuda registrada en CLAUDE.md)',
+          // (vacío — al declarar una combinación rota, poner el motivo y
+          // registrar la deuda en CLAUDE.md; al arreglarla, QUITARLA de aquí)
         };
         const conocido = CONOCIDOS[`${t.name}|${mode}`];
         if (r.mecanica && r.avanzo === false && !conocido) {

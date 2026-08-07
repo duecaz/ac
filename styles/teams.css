@@ -39,6 +39,16 @@
 .teams-card .ww-kahoot-grid .btn,
 .teams-card .ww-opt        { font-size: clamp(.8rem, 4cqmin, 1.3rem); }
 .teams-card .tc-passage    { font-size: clamp(1rem, 5cqmin, 1.8rem); }
+/* La ronda que pinta la PLANTILLA (renderRound) entra en la CADENA DE FLEX de
+   la tarjeta. Sin esto, una ronda de TABLERO que se mide contra la altura de su
+   contenedor (la Sopa: `.ww-ws { height:100% }` + rejilla en cqb) colapsaba a
+   una rejilla de 4px injugable — era la capa REAL de la deuda "Equipos+Sopa:
+   el hallazgo se pierde" (el arrastre nunca llegaba a las celdas). Las rondas
+   de contenido natural (opciones, teclado) no se estiran: solo la Sopa declara
+   height:100%. */
+#teams-round { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: center; }
+#teams-round > .ww-ws-round { flex: 1 1 auto; min-height: 0; }
+
 .teams-answer { text-align: center; font-size: 1.2rem; margin-top: 1rem; }
 .teams-hint { text-align: center; margin-top: 1rem; color: #6c757d; }
 .teams-hint summary { cursor: pointer; }

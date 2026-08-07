@@ -42,13 +42,13 @@ export function sessionItems(activity) {
 // en vistas y kernel (una versión con try/catch, otras sin → asimetría: una
 // plantilla con getRoundPayload que lanzara caía con gracia en el proyector del
 // host pero crasheaba al alumno). El try/catch degrada igual en todos.
-export function roundPayloadOf(T, activity, itemIndex, fallback = null) {
+export function roundPayloadOf(T, activity, itemIndex, fallback = null, ctx = {}) {
   // Snapshot de sala SANEADO (§22-2): el alumno no tiene `content`, tiene los
   // payloads ya calculados por el host. Se sirven de ahí en vez de recalcular
   // sobre una clave que ya no está (core/liveSnapshot.js).
   const pre = activity?.payloads;
   if (Array.isArray(pre)) return pre[itemIndex] ?? fallback;
-  try { return T?.getRoundPayload ? T.getRoundPayload(activity, { itemIndex }) : fallback; }
+  try { return T?.getRoundPayload ? T.getRoundPayload(activity, { itemIndex, ...ctx }) : fallback; }
   catch { return fallback; }
 }
 
@@ -394,8 +394,12 @@ function createTeamsSession(activity, T, opts) {
     return team.score;
   }
 
+  // MISMO contrato que VS (`found`): las palabras/valores ya respondidos en
+  // turnos ANTERIORES viajan en el payload, para que una ronda de tablero libre
+  // (la Sopa) las pre-marque y no deje re-encontrar la misma palabra cada turno.
   const roundPayload = (itemIndex = state.currentItem) =>
-    roundPayloadOf(T, activity, itemIndex);
+    roundPayloadOf(T, activity, itemIndex, null,
+      { found: Object.values(state.answers).map(a => a?.value).filter(Boolean) });
 
   const leaderboard = () =>
     [...state.teams].sort((a, b) => b.score - a.score)

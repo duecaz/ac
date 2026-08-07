@@ -370,16 +370,22 @@ Biblioteca tipo Wordwall + cuentas de profe, ejecutado y verificado en real:
 - **Pendiente (futuro, pedido por el usuario)**: PIN/NFC para pizarras (U2-U4) →
   `docs/handoff-acceso-docente.md`.
 
-### 🔴 DEUDA NUEVA (v1.51.384) — Equipos + Sopa de Letras: el hallazgo se pierde
-Encontrado por la matriz al JUGAR la ronda (no al montarla): en modo Equipos,
-encontrar una palabra en la Sopa **no produce ningún efecto** — ni se marca, ni
-habilita "Revelar". Causa: `views/teamsView.js` trata la ronda como UNA respuesta
-por turno y `renderWordsearchRound` emite `onSubmit` por CADA palabra encontrada;
-el turno de Equipos no sabe qué hacer con una respuesta que llega N veces.
-- Alcance: solo Equipos (en Individual y VS funciona — 7/7 y 8/8 jugando de verdad).
-- Declarado como CONOCIDO en `tools/matrix-smoke.mjs` (ratchet): sale en el
-  informe con su motivo y NO tumba la matriz; una rotura nueva sí.
-- Al arreglarlo, quitar la entrada de `CONOCIDOS` — si no, el ratchet tapa el fix.
+### ✅ RESUELTO (v1.51.390) — Equipos + Sopa de Letras: el hallazgo se perdía
+El diagnóstico inicial ("una respuesta por turno vs onSubmit por palabra") era la
+capa de ENCIMA; al reproducirlo con el arrastre real se vio la causa primera:
+**la rejilla colapsaba a 4×4 px** — `#teams-round` no entraba en la cadena de
+flex de `.teams-card`, la Sopa mide su tablero contra la altura del contenedor
+(`height:100%` + cqb) y el arrastre nunca llegaba a las celdas (caían fuera,
+sobre la tarjeta). Dos fixes:
+- `styles/teams.css`: `#teams-round` entra en la cadena de flex (las rondas de
+  contenido natural —opciones, teclado— no se estiran; solo la Sopa llena).
+- `kernel/session/engine.js`: el `roundPayload` de Equipos pasa `found` (los
+  valores ya respondidos en turnos anteriores), MISMO contrato que VS — la Sopa
+  pre-marca lo encontrado y un equipo no puede re-usar la misma palabra cada
+  turno. La semántica de turno ya era correcta: el scorer acepta CUALQUIER
+  palabra de la lista, un hallazgo = una respuesta.
+La entrada de `CONOCIDOS` en `tools/matrix-smoke.mjs` se retiró: la matriz juega
+ahora 30/30 y una regresión aquí la tumba.
 
 ### 🟡 DECISIONES APLAZADAS (D1-D5) — deuda de PRODUCTO, no de código
 Decisión del usuario (v1.51.340): se ejecutan solo las estructurales. **D6 hecha**
