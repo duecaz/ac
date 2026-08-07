@@ -181,9 +181,3 @@ export function renderEditorShell(root, a, onChange, spec) {
   render();
 }
 
-// Test helper: confirma que una plantilla expone, vía su editor-spec, un panel
-// "Modos" cuando su capacidad lo incluye. No usado en runtime (solo introspección).
-export function shellWouldShowModes(templateName) {
-  const T = getTemplate(templateName) || listTemplates().find(t => t.meta.name === templateName);
-  return T ? modesForTemplate(T).some(m => ['vs', 'teams', 'task'].includes(m.id)) : false;
-}

@@ -65,6 +65,3 @@ export async function getClassroomToken({ forceConsent = false } = {}) {
   });
 }
 
-export function clearClassroomToken() {
-  try { sessionStorage.removeItem(CACHE_KEY); } catch {}
-}

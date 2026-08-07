@@ -1,5 +1,6 @@
 // Host view for live mode. Drives the phase machine over sessions.phase.
 import { clock } from '../core/clock.js';
+import { studentBase } from '../core/routing.js';
 import { startElapsedTicker } from '../core/deadlineTicker.js';
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
@@ -31,7 +32,6 @@ import { questionWindowMs, RACE_POLL_MS, BOARD_POLL_MS, readSeconds, READ_SECOND
 import { loopsOf, supportsLoop, defaultLoop, LOOP_LABELS, hasAdvanceChoice, pointsModeFor, racePassedRow } from '../core/liveLoops.js';
 import { END_LABELS, END_POLICIES, DEFAULT_POLICY, DEFAULT_FIRST_N, DEFAULT_MINUTES, MAX_MINUTES, shouldEnd, endPolicyOf } from '../core/liveEnd.js';
 
-const STUDENT_BASE = location.origin + location.pathname.replace(/teacher\.html.*/, 'student.html');
 
 export async function renderHostLaunch(rootSel, activityId) {
   // Igual que el modo solo (playerView): primero local, y si no está, se trae de
@@ -215,7 +215,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     });
   }
 
-  function joinUrl() { return `${STUDENT_BASE}#/play/${code}`; }
+  function joinUrl() { return `${studentBase()}#/play/${code}`; }
   function qrUrl() { return `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(joinUrl())}`; }
 
   function paint() {
@@ -293,7 +293,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
             </div>
           </div>` : ''}
         <h5 class="text-muted mb-1">Únete en</h5>
-        <div class="h3"><b>${escapeHtml(STUDENT_BASE.replace(/^https?:\/\//,''))}</b></div>
+        <div class="h3"><b>${escapeHtml(studentBase().replace(/^https?:\/\//,''))}</b></div>
         <h5 class="text-muted mt-3 mb-1">PIN</h5>
         <div class="ww-pin">${escapeHtml(code)}</div>
         <img src="${qrUrl()}" alt="QR" class="my-3" style="max-width:240px">

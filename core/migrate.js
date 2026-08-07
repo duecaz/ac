@@ -97,7 +97,10 @@ export function newActivityId() {
 // DÓNDE VIVEN LOS ELEMENTOS de una actividad, por orden de preferencia. Cada
 // plantilla nombra su colección a su manera y este es el único sitio que lo
 // sabe: lo consultan el contador de ítems y el buscador (`core/search.js`).
-export const ITEM_KEYS = ['items', 'entries', 'pairs', 'groups', 'words', 'passages', 'pins'];
+// (`groups` salió de aquí en v1.51.410: ninguna plantilla produce
+// `content.groups` — era una rama muerta arrastrada por las cinco copias
+// de esta lista que había antes de unificarla.)
+export const ITEM_KEYS = ['items', 'entries', 'pairs', 'words', 'passages', 'pins'];
 
 export function activityItemCount(a) {
   const c = a?.content || {};

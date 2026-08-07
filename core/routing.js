@@ -60,3 +60,11 @@ export function matchRoute(hash, routes) {
   }
   return null;
 }
+
+/** La URL base de la página del ALUMNO, derivada de dónde está la del profe.
+ *  Estaba calculada IDÉNTICA en views/hostLive.js y views/assignments.js: un
+ *  cambio de despliegue (otro nombre de fichero, otra carpeta) arreglaba el PIN
+ *  de la sala y dejaba roto el enlace de las tareas, o al revés. */
+export function studentBase() {
+  return location.origin + location.pathname.replace(/teacher\.html.*/, 'student.html');
+}

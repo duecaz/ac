@@ -4,6 +4,7 @@
 // el podio del host (hostLive), en el informe de sesión y en los intentos de
 // tarea (F3). Ver docs/handoff-analitica-items.md.
 import { escapeHtml } from '../core/html.js';
+import { sessionItems } from '../kernel/session/engine.js';
 import { getTemplate } from '../core/registry.js';
 import { aggregate, heatClass } from '../core/itemStats.js';
 import { textHeatmapHtml } from '../core/textCorrectionRound.js';

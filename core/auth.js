@@ -73,11 +73,6 @@ export async function authRefresh() {
   } catch { return stored.record; /* sin red: conserva lo guardado */ }
 }
 
-export async function getProfile() {
-  const u = await getUser();
-  if (!u) return null;
-  return { display_name: u.name || u.email?.split('@')[0] || null };
-}
 
 async function pbPost(path, body) {
   const r = await fetch(`${PB_URL}${path}`, {
@@ -260,25 +255,6 @@ export async function signOut() {
   notify();
 }
 
-export async function updateProfile(patch) {
-  const u = await getUser();
-  if (!u) throw new Error('not signed in');
-  const stored = loadStored();
-  const r = await fetch(`${PB_URL}/api/collections/users/records/${u.id}`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(stored?.token ? { Authorization: `Bearer ${stored.token}` } : {}),
-    },
-    body: JSON.stringify({ name: patch.display_name ?? patch.name }),
-  });
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(data?.message || 'Error al actualizar perfil');
-  _user = data;
-  saveStored(stored?.token, data);
-  notify();
-  return { display_name: data.name };
-}
 
 // Cambia la contraseña del profe. PB exige la actual (`oldPassword`). Al cambiarla
 // PB revoca el token, así que re-autenticamos con la nueva para no cerrar sesión.
@@ -300,9 +276,6 @@ export async function changePassword(oldPassword, newPassword) {
   return true;
 }
 
-export function isAnonymous(user) {
-  return !user || !user.email;
-}
 
 export function onAuthChange(fn) {
   listeners.add(fn);

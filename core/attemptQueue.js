@@ -55,6 +55,5 @@ export async function submitAttempt({ assignmentId, activityId, playerName, scor
 }
 
 export const flushAttempts = () => queue.flush();
-export const pendingAttempts = () => queue.pending();
 
 // El flush al volver la red lo cablea la factory (core/offlineQueue.js), una vez.

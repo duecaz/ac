@@ -39,9 +39,6 @@ export function saveThresholds(thr) {
   return thr;
 }
 
-export function isCalibrated() {
-  try { return !!sessionStorage.getItem(STORAGE_KEY); } catch { return false; }
-}
 
 // Radio medio del contacto de un PointerEvent. `width`/`height` son el DIÁMETRO
 // del área de contacto en px CSS (el ratón suele reportar ~1 → métrica ~0.5).

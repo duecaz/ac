@@ -24,7 +24,6 @@ const ALLOWED = {
 // El aviso salta ANTES del tope (QUOTAS.activityWarnRatio), no al rebotar.
 export const ACTIVITY_SIZE_WARN_BYTES = QUOTAS.activityBytes * QUOTAS.activityWarnRatio;
 
-export const activitySizeBytes = activityBytes;
 export function activityTooLarge(a) { return checkActivitySize(a).level !== 'ok'; }
 
 export async function uploadMedia(file) {

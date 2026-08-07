@@ -1,4 +1,6 @@
 import { html, escapeHtml, mount } from '../core/html.js';
+import { sessionItems } from '../kernel/session/engine.js';
+import { studentBase } from '../core/routing.js';
 import { on } from '../core/events.js';
 import { get } from '../core/storage.js';
 import { rowsFromAttempts, rowsFromAttempt } from '../core/answerRows.js';
@@ -8,7 +10,6 @@ import { getTemplate } from '../core/registry.js';
 import { createAssignment, listAssignmentsForActivity, listAttempts, closeAssignment, rotateAssignmentCode } from '../core/assignmentsTransport.js';
 import { toast, confirmModal } from '../core/toast.js';
 
-const STUDENT_BASE = location.origin + location.pathname.replace(/teacher\.html.*/, 'student.html');
 
 export async function renderAssignmentsForActivity(rootSel, activityId) {
   const a = get(activityId);
@@ -48,7 +49,7 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
       ${items.length === 0 ? `<p class="text-muted">No hay tareas todavía.</p>` : `
         <div class="list-group">
           ${items.map(t => {
-            const url = `${STUDENT_BASE}#/task/${t.code}`;
+            const url = `${studentBase()}#/task/${t.code}`;
             const due = t.due_at ? new Date(t.due_at).toLocaleString() : 'sin fecha límite';
             const past = t.due_at && new Date(t.due_at) < new Date();
             return `
@@ -133,7 +134,9 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
   refresh();
 }
 
-const itemsOf = (a) => { const c = a?.content || {}; return c.items ?? c.entries ?? c.pairs ?? c.groups ?? c.words ?? c.passages ?? []; };
+// La lista de claves de contenido vive UNA vez (sessionItems): estaba copiada
+// aquí, en reports.js y en itemStatsView.js — y ya había divergido (`pins`).
+const itemsOf = (a) => sessionItems(a);
 
 export async function renderAttempts(rootSel, assignmentId) {
   const attempts = await listAttempts(assignmentId);
