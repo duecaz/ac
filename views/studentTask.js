@@ -5,17 +5,15 @@ import { findAssignmentByCode, countOwnAttempts } from '../core/assignmentsTrans
 import { submitAttempt, flushAttempts } from '../core/attemptQueue.js';
 import { isAcceptableNickname } from '../core/nicknameFilter.js';
 import { getTemplate } from '../core/registry.js';
-import { ensureIdentity } from '../core/identity.js';
+import { ensureIdentity, getNick, setNick } from '../core/identity.js';
 import { runPlayer } from '../core/player.js';
 import { packAnswers } from '../core/answerDetail.js';
 import { activityItemCount } from '../core/migrate.js';
 import { assignmentGate } from '../core/assignmentRules.js';
 import { defaultMaxScore } from '../core/scoring/index.js';
-import { lsGet, lsSet } from '../core/ls.js';
 import { clock } from '../core/clock.js';
 import { toast } from '../core/toast.js';
 
-const NICK_KEY = 'ww.nick';
 
 export async function renderTask(rootSel, code) {
   await ensureIdentity();
@@ -41,8 +39,7 @@ export async function renderTask(rootSel, code) {
   }
 
   // Nickname gate.
-  let nick = lsGet(NICK_KEY) || '';
-  if (!isAcceptableNickname(nick).ok) nick = '';
+  let nick = getNick();   // dueño único del apodo: core/identity.js (§21 · ls-dueno)
   if (!nick) {
     const attemptsInfo = t.max_attempts != null && t.max_attempts > 1
       ? `<p class="text-muted small mb-0 mt-2">Intento ${taken + 1} de ${t.max_attempts}</p>` : '';
@@ -60,7 +57,7 @@ export async function renderTask(rootSel, code) {
       const v = document.getElementById('f-nick').value.trim();
       const f = isAcceptableNickname(v);
       if (!f.ok) { document.getElementById('err').textContent = 'Apodo: ' + f.reason; return; }
-      lsSet(NICK_KEY, f.value);
+      setNick(f.value);
       renderTask(rootSel, code);
     });
     return;

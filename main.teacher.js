@@ -104,7 +104,11 @@ setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encon
 setBeforeResolve(() => clearListeners(APP));
 
 (async function boot() {
-  applySkin(localStorage.getItem('ww.skin') || 'default');
+  // Baseline NEUTRO del chrome. Antes leía `ww.skin` de localStorage — una
+  // clave que NADIE escribía en todo el repo (el skin es de la ACTIVIDAD,
+  // `presentation.skin`, y se aplica al marco, no a la página). Se quitó la
+  // lectura muerta, no el baseline: una clave fantasma es una promesa falsa.
+  applySkin('default');
   stampVersion();
   initCustomAnims(); // register any animations added from the Admin panel
 

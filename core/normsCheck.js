@@ -11,6 +11,11 @@
 //   · kernel-puro     : kernel/** es el cerebro PURO y determinista: sin
 //                       `Date.now()` ni `new Date()` (el reloj se inyecta vía
 //                       core/clock.js; sin esto los tests dejan de ser deterministas).
+//   · ls-dueno        : LEY DE DATOS (docs/leyes.md §21) aplicada al ALMACÉN —
+//                       cada clave `ww.*` de localStorage/sessionStorage está
+//                       DECLARADA en LS_OWNERS con UN dueño; nadie más la nombra.
+//                       Sin esta regla `ww.nick` acabó declarada en dos vistas y
+//                       `ww.skin` se leía sin que nadie la escribiera nunca.
 //   · pb-dueno        : LEY DE DATOS (docs/leyes.md §21) — cada colección de
 //                       PocketBase tiene UN módulo dueño; nadie más la nombra
 //                       (ni por URL `collections/x` ni por literal 'x'). Un
@@ -84,6 +89,51 @@ export const PB_OWNERS = {
   users: ['core/auth.js', 'core/teachers.js', 'views/adminView.js'],
   _superusers: ['views/adminView.js'],
 };
+// LEY DE DATOS, aplicada al ALMACÉN LOCAL (§21) — prefijo de clave → ficheros
+// que pueden nombrarla; el PRIMERO es el dueño. Las colecciones de PocketBase
+// tenían registro y guardián desde L1; las ~30 claves `ww.*` no tenían ni una
+// cosa ni la otra, y se notó (auditoría v1.51.397): `ww.nick` acabó DECLARADA
+// DOS VECES (studentLive y studentTask, una de ellas escribiendo con
+// `localStorage` crudo) y `ww.skin` se leía en los dos `main.*` sin que nadie
+// la escribiera jamás. Con este registro, las dos se cazan solas.
+//
+// Se casa por PREFIJO (gana el más largo declarado) porque muchas claves llevan
+// sufijo dinámico: `ww.activities.<uid>`, `ww.solo.progress.<id>`, `ww.live.<code>`…
+export const LS_OWNERS = {
+  'ww.activities': ['core/storage.js', 'core/io.js'],  // io.js: export/import del dueño
+  'ww.tombstones': ['core/storage.js'],
+  'ww.anonId': ['core/state.js', 'core/pbRules.js'],   // pbRules la NOMBRA al declarar reglas
+  'ww.nick': ['core/identity.js'],                     // el apodo es de la identidad, no de una pantalla
+  'ww.pb.auth': ['core/auth.js'],
+  'ww.pb.synced': ['adapters/pocketbase/remoteStore.js'],
+  'ww.oauth.pending': ['core/auth.js'],
+  'ww.google.token': ['core/auth.js'],
+  'ww.classroom.token': ['core/classroomAuth.js'],
+  'ww.claim.': ['adapters/pocketbase/realtime.js'],
+  'ww.live_words': ['core/liveWords.js'],
+  'ww.live.': ['adapters/local/realtime.js'],
+  'ww.assignments': ['adapters/local/assignments.js'],
+  'ww.assignment_attempts': ['adapters/local/assignments.js'],
+  'ww.remote.': ['adapters/local/remoteStore.js'],
+  'ww.backend': ['adapters/index.js'],
+  'ww.resultQueue': ['core/results.js'],
+  'ww.submitQueue': ['core/submitQueue.js'],
+  'ww.attemptQueue': ['core/attemptQueue.js'],
+  'ww.errlog': ['core/errorLog.js'],
+  'ww.profile.': ['core/profile.js'],
+  'ww.muted': ['core/sounds.js'],
+  'ww.fxMuted': ['core/effects.js'],
+  'ww.solo.progress.': ['core/soloPlayer.js'],
+  'ww.vs.anims': ['core/vsAnimStore.js'],
+  'ww.vsavatar.': ['views/vsView.js'],
+  'ww.streaks': ['core/streaks.js'],
+  'ww.player.': ['views/studentLive.js'],   // sessionStorage: la fila de jugador de ESTA sala
+  'ww.vreload.': ['views/studentLive.js'],
+};
+const LS_PREFIXES = Object.keys(LS_OWNERS).sort((a, b) => b.length - a.length);
+// Cualquier literal 'ww.…' que aparezca en el código.
+const LS_LITERAL_RE = /['"`](ww\.[A-Za-z0-9_.]*)/g;
+
 // Precompilado: nombre → regex que caza `collections/<x>` o el literal '<x>'.
 const PB_RES = Object.keys(PB_OWNERS).map(c => ({
   coll: c,
@@ -125,6 +175,17 @@ export function scanNormsSource(path, source) {
     for (const { coll, re, allow } of PB_RES) {
       if (re.test(ln) && !allow.some(a => path.endsWith(a))) {
         out.push({ path, line: i + 1, rule: 'pb-dueno', text: `[${coll}] ${ln.trim()}` });
+      }
+    }
+    // ls-dueno: toda clave del almacén está DECLARADA y solo la nombra su dueño.
+    // (Este mismo fichero ES el registro: nombra todas por definición.)
+    for (const m of (path.endsWith('core/normsCheck.js') ? [] : ln.matchAll(LS_LITERAL_RE))) {
+      const clave = m[1];
+      const pref = LS_PREFIXES.find(p => clave.startsWith(p));
+      if (!pref) {
+        out.push({ path, line: i + 1, rule: 'ls-dueno', text: `[${clave}] clave sin dueño declarado en LS_OWNERS` });
+      } else if (!LS_OWNERS[pref].some(a => path.endsWith(a))) {
+        out.push({ path, line: i + 1, rule: 'ls-dueno', text: `[${clave}] la escribe/lee ${path}, y su dueño es ${LS_OWNERS[pref][0]}` });
       }
     }
     if (path.startsWith('views/student') && HOST_VERBS_RE.test(ln)) {

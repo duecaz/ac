@@ -18,7 +18,7 @@ import { getTemplate } from '../core/registry.js';
 import { sessionItems, roundPayloadOf } from '../kernel/session/engine.js';
 import { visibleItem, hasClientKey } from '../core/liveSnapshot.js';
 import { VERSION } from '../core/constants.js';
-import { lsGet, lsSet } from '../core/ls.js';
+import { getNick, setNick } from '../core/identity.js';
 import { wheelSvg } from '../templates/wheel/render.js';
 import { pickIndex } from '../templates/wheel/logic.js';
 import { spinTarget, normalizeRotation, animateSpin, SPIN_DUR_PICK } from '../templates/wheel/spin.js';
@@ -27,14 +27,13 @@ import { RACE_FLASH_MS, questionWindowMs, mmss } from '../core/timings.js';
 import { supportsLoop, pointsModeFor, racePassed } from '../core/liveLoops.js';
 import { endPolicyOf, waitingInfo } from '../core/liveEnd.js';
 
-const NICK_KEY = 'ww.nick';
 
 export function renderJoin(rootSel, prefilledCode = '') {
   mount(rootSel, html`
     <div class="text-center py-4" style="max-width:420px;margin:0 auto">
       <h2 class="mb-4">Unirme a la sala</h2>
       <input id="f-code" class="form-control form-control-lg text-center mb-3 ww-pin-input" maxlength="8" placeholder="Código" autocomplete="off" autocapitalize="characters" value="${escapeHtml(prefilledCode)}">
-      <input id="f-nick" class="form-control form-control-lg text-center mb-3" placeholder="Tu apodo" value="${escapeHtml(lsGet(NICK_KEY) || '')}">
+      <input id="f-nick" class="form-control form-control-lg text-center mb-3" placeholder="Tu apodo" value="${escapeHtml(getNick())}">
       <button id="btn-join" class="btn btn-warning btn-lg w-100">Entrar</button>
       <div id="err" class="text-danger mt-3"></div>
     </div>
@@ -56,12 +55,12 @@ export function renderJoin(rootSel, prefilledCode = '') {
       let task = null;
       try { task = await findAssignmentByCode(code); } catch { /* fall through to live join */ }
       if (task) {
-        lsSet(NICK_KEY, f.value);
+        setNick(f.value);
         location.hash = `#/task/${code}`;
         return;
       }
       const r = await joinSession(code, nick);
-      localStorage.setItem(NICK_KEY, f.value);
+      setNick(f.value);
       sessionStorage.setItem(`ww.player.${code}`, JSON.stringify(r));
       location.hash = `#/play/${code}`;
     } catch (e) {

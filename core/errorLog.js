@@ -57,4 +57,16 @@ export function installErrorHandlers(page) {
       toast('Almacenamiento del navegador lleno. Exporta tus actividades a JSON y borra la caché para liberar espacio.', 'warning', 8000);
     } catch { /* sin DOM aún: el aviso queda en el log */ }
   });
+  // R6 — FALLAR EN SILENCIO ESTÁ PROHIBIDO. `core/results.js` emite este evento
+  // cuando la cola de resultados se llena y descarta los más antiguos; se emitía
+  // desde el primer día y NADIE lo escuchaba (auditoría v1.51.397), así que el
+  // alumno perdía resultados exactamente en silencio — lo que el evento existía
+  // para evitar. Ahora se dice, y queda en el registro para el reporte.
+  window.addEventListener('ww:results-dropped', (e) => {
+    const n = e?.detail?.dropped || 0;
+    logClientError({ message: `cola de resultados llena: ${n} resultado(s) descartado(s)`, page });
+    try {
+      toast(`Se han perdido ${n} resultado(s) sin enviar: el dispositivo lleva demasiado tiempo sin conexión. Conéctate para que los pendientes suban.`, 'warning', 9000);
+    } catch { /* sin DOM: queda en el log */ }
+  });
 }

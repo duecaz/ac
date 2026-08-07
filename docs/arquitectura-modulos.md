@@ -5,7 +5,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **249 módulos · 903 imports internos.**
+> **249 módulos · 904 imports internos.**
 
 ### Ir a otro documento
 
@@ -30,10 +30,10 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 |---|---|---|---|---|
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 12 · 1556 | 5 · 558 | 0.36 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 11 · 2413 | 12 · 1112 | 0.46 |
-| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 18 · 3665 | 18 · 2846 | 0.78 |
+| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 18 · 3664 | 18 · 2846 | 0.78 |
 | **informes/tareas** | después de clase | 11 · 1126 | 4 · 435 | 0.39 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5810 | 12 · 975 | 0.17 |
-| **infra/común** | todo lo anterior | 126 · 12054 | 35 · 3632 | 0.30 |
+| **infra/común** | todo lo anterior | 126 · 12156 | 35 · 3639 | 0.30 |
 
 > Un ratio bajo en un tramo muy usado es deuda de PRIORIDAD, no de calidad: ese
 > código funciona, pero si se rompe nadie se entera hasta que hay 33 críos
@@ -56,7 +56,7 @@ graph TD
   T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>75 módulos</small>"]
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>5 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
-  V -->|257| C
+  V -->|256| C
   T -->|188| C
   A -->|28| C
   AD -->|26| C
@@ -97,8 +97,8 @@ graph TD
 
 | Capa | Módulos más grandes |
 |---|---|
-| **arranque** | `main.teacher.js` (164) · `main.embed.js` (68) · `main.student.js` (45) |
-| **vistas** | `views/hostLive.js` (1032) · `views/adminView.js` (942) · `views/studentLive.js` (868) · `views/vsView.js` (487) · `views/playerView.js` (367) |
+| **arranque** | `main.teacher.js` (168) · `main.embed.js` (68) · `main.student.js` (49) |
+| **vistas** | `views/hostLive.js` (1032) · `views/adminView.js` (942) · `views/studentLive.js` (867) · `views/vsView.js` (487) · `views/playerView.js` (367) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1107) · `adapters/local/realtime.js` (321) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
 | **core** | `core/selftest.js` (331) · `core/skins.js` (327) · `core/textCorrectionRound.js` (325) · `core/auth.js` (307) · `core/vsAnimations.js` (269) |
 | **kernel** | `kernel/session/engine.js` (541) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/realtimePort.js` (31) |
@@ -119,8 +119,8 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 | `core/ids.js` | 22 |
 | `core/clock.js` | 21 |
 | `core/toast.js` | 21 |
-| `core/ls.js` | 17 |
 | `core/gameEvents.js` | 17 |
+| `core/ls.js` | 16 |
 | `kernel/session/engine.js` | 16 |
 
 ## Los módulos más grandes (candidatos a partir)
@@ -133,7 +133,7 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 | `adapters/pocketbase/realtime.js` | 1107 | 0 |
 | `views/hostLive.js` | 1032 | 1 |
 | `views/adminView.js` | 942 | 1 |
-| `views/studentLive.js` | 868 | 1 |
+| `views/studentLive.js` | 867 | 1 |
 | `kernel/session/engine.js` | 541 | 16 |
 | `views/vsView.js` | 487 | 2 |
 | `templates/crossword/player.js` | 464 | 1 |

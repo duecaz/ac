@@ -44,7 +44,7 @@ replantea. Texto completo en **`docs/leyes.md`** (índice único de normas).
 |---|---|---|
 | **§0 · CUATRO CAPAS** | contenido · plantilla · modo · plataforma: una plantilla no sabe en qué modo corre (lo DECLARA), un modo no conoce plantillas concretas | `scoringSources` · `persistPolicy` · `templateContract` · matriz jugable |
 | **§3 · ESTILO** | 4 capas del píxel: el skin cambia TOKENS, la actividad consume TOKENS; nada de tamaños fijos en el juego | `styles` (ratchet + gate de themes) · `skins` |
-| **§21 · DATOS** | cada colección PB tiene UN módulo dueño; quien necesite datos **pide un método al dueño**, nunca hace fetch propio | regla `pb-dueno` (`norms`) |
+| **§21 · DATOS** | cada colección PB **y cada clave `ww.*` del almacén** tiene UN módulo dueño; quien necesite datos **pide un método al dueño**, nunca hace fetch ni `lsGet` propio | reglas `pb-dueno` + `ls-dueno` (`norms`) |
 | **§22 · CONFIANZA** | el cliente **AFIRMA**, el veredicto lo pone el host o una regla del servidor | `pbRules` + `liveRules` (evaluador de reglas) · `confianza-alumno` · `answerSafety` · `modeAuth` (avisar ANTES) |
 | **§23 · VISTA** | la vista posee su render y sus handlers; el router el ciclo de vida; los relojes van por su primitivo | regla `reloj-primitivo` · `events` · `deadlineTicker` |
 | **§24 · CONTENIDO** | el contenido es del usuario: cambia solo por migración versionada, conversión declarada e ids con `rid()` | regla `id-rid` · `templateContract` (versión>1 ⇒ migrate) |
@@ -261,6 +261,11 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   también DENTRO del contenido (el tema suele estar en las preguntas). El "no hay" no es un
   callejón: lleva a CREAR. Vigilado por `tests/search.test.mjs` — cada caso es un falso
   negativo que mandaría al profe a rehacer algo que ya tiene, con la clase delante.
+- **Claves del almacén** (`ww.*`): cada una con UN dueño declarado en `LS_OWNERS`
+  (`core/normsCheck.js`), igual que las colecciones PB. Una vista NUNCA declara su
+  propia clave: `ww.nick` acabó definida en `studentLive` y `studentTask` a la vez
+  (el apodo es de `core/identity.js`), y `ww.skin` se leía sin que nadie la escribiera.
+  Vigilado por la regla `ls-dueno`; una clave nueva sin declarar rompe CI.
 - **Filtros PocketBase**: SIEMPRE `pbEscape`/`pbFilterParam` (`core/pbFilter.js`), nunca
   `encodeURIComponent` a pelo (no escapa la comilla simple).
 - **Qué persiste cada modo**: cuadro único en `core/persistPolicy.js` (Individual → `results`;

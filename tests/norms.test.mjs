@@ -70,7 +70,14 @@ assert.strictEqual(scanNormsSource('core/observeResize.js', 'new ResizeObserver(
 assert.strictEqual(scanNormsSource('views/x.js', `fetch('/api/collections/results/records')`).length, 1, 'caza fetch a colección ajena');
 assert.strictEqual(scanNormsSource('views/x.js', `const c = 'live_answers';`).length, 1, 'caza el literal de colección');
 assert.strictEqual(scanNormsSource('adapters/pocketbase/remoteStore.js', `fetch('/api/collections/results/records')`).length, 0, 'el dueño puede');
-assert.strictEqual(scanNormsSource('views/x.js', `ls('ww.activities.' + uid)`).length, 0, 'no confunde substrings (ww.activities.)');
+assert.strictEqual(scanNormsSource('core/storage.js', `ls('ww.activities.' + uid)`).length, 0, 'no confunde substrings (ww.activities.)');
+// ls-dueno (ley §21 aplicada al ALMACÉN): cada clave `ww.*` tiene UN dueño
+// declarado en LS_OWNERS. Sin esta regla, `ww.nick` acabó declarada en DOS
+// vistas y `ww.skin` se leía sin que nadie la escribiera nunca.
+assert.strictEqual(scanNormsSource('views/studentTask.js', `const K = 'ww.nick';`).length, 1, 'una vista no puede poseer el apodo');
+assert.strictEqual(scanNormsSource('core/identity.js', `const K = 'ww.nick';`).length, 0, 'su dueño sí');
+assert.strictEqual(scanNormsSource('views/x.js', `lsGet('ww.inventada')`).length, 1, 'una clave nueva sin declarar se caza');
+assert.strictEqual(scanNormsSource('core/soloPlayer.js', `lsDel('ww.solo.progress.' + id)`).length, 0, 'el prefijo dinámico del dueño es legítimo');
 // confianza-alumno (ley §22): el lado alumno no nombra verbos del host; el host sí puede.
 assert.strictEqual(scanNormsSource('views/studentLive.js', `import { settleItem } from '../core/liveTransport.js';`).length, 1, 'alumno no liquida');
 assert.strictEqual(scanNormsSource('views/hostLive.js', `await settleItem(sessionId, i);`).length, 0, 'el host sí liquida');
@@ -83,6 +90,6 @@ assert.strictEqual(scanNormsSource('core/soloTimer.js', `setInterval(tick, 1000)
 // id-rid (ley §24): base36 a mano → violación; rid() y la implementación, no.
 assert.strictEqual(scanNormsSource('templates/x/editor.js', `const id = 'q_' + Math.random().toString(36).slice(2, 8);`).length, 1, 'caza el id a mano');
 assert.strictEqual(scanNormsSource('core/ids.js', `return prefix + Math.random().toString(36).slice(2, 8);`).length, 0, 'ids.js es la implementación');
-ok('el escáner caza cada norma (pb-dueno · confianza-alumno · reloj-primitivo · id-rid) y respeta comentarios + allowlist');
+ok('el escáner caza cada norma (pb-dueno · ls-dueno · confianza-alumno · reloj-primitivo · id-rid) y respeta comentarios + allowlist');
 
 console.log(`\nnorms.test: ${passed} checks passed`);
