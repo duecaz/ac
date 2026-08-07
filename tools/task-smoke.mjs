@@ -137,8 +137,46 @@ try {
   if (!/2/.test(informe)) fail('el informe no muestra el puntaje');
   ok('el profe abre "Intentos" y ve a Vega con su puntaje — el ciclo se cierra');
 
+  // ── INFORMES: las tres rutas que nadie caminaba ───────────────────────────
+  // `#/reports` tiene botón propio en la barra y es el lunes por la mañana del
+  // profe. Ninguna de sus tres rutas se abría en ningún test (auditoría
+  // v1.51.401), y `#/reports/session/:id` compite con `#/reports/:id` en el
+  // matcher: es justo donde un cambio de router rompe en silencio.
+  await profe.evaluate(() => { location.hash = '#/reports'; });
+  await profe.waitForTimeout(700);
+  const informes = (await profe.locator('#app').innerText()).replace(/\s+/g, ' ');
+  if (/Ruta no encontrada/i.test(informes)) fail('#/reports no resuelve');
+  if (!/Informes/i.test(informes)) fail(`#/reports no pinta la portada de informes: "${informes.slice(0, 120)}"`);
+  if (!/Repaso del sistema solar/.test(informes)) fail('la actividad del profe no aparece en informes');
+  ok('#/reports lista las actividades del profe (y resuelve, que competía en el matcher)');
+
+  // Y el detalle por actividad, que es el otro salto del matcher.
+  await profe.click('a[href="#/reports/tk_quiz"]');
+  await profe.waitForTimeout(700);
+  const detalle = (await profe.locator('#app').innerText()).replace(/\s+/g, ' ');
+  if (/Ruta no encontrada/i.test(detalle)) fail('#/reports/:id no resuelve');
+  if (!/Repaso del sistema solar/.test(detalle)) fail('el informe de la actividad no la nombra');
+  ok('#/reports/:id abre el informe de esa actividad');
+
+  // §4c: un JUEGO no entra en informes de aprendizaje — no hay contenido del
+  // profe del que informar. La derivación estaba escrita y sin aplicar.
+  await profe.evaluate(async () => {
+    const { newActivity } = await import('/core/migrate.js');
+    const s = await import('/core/storage.js');
+    const g = newActivity('ballsort');
+    g.id = 'game_ballsort'; g.title = 'Ordena las Pelotas';
+    s.save(g);
+  });
+  await profe.evaluate(() => { location.hash = '#/mine'; });
+  await profe.waitForTimeout(200);
+  await profe.evaluate(() => { location.hash = '#/reports'; });
+  await profe.waitForTimeout(700);
+  const conJuego = (await profe.locator('#app').innerText());
+  if (/Ordena las Pelotas/.test(conJuego)) fail('§4c: un JUEGO no puede aparecer en los informes de aprendizaje');
+  ok('§4c: el juego NO aparece en informes (un ranking de sudokus no dice nada de nadie)');
+
   if (errs.length) fail(`errores de página durante el viaje: ${errs[0]}`);
-  console.log(`\n✅ TAREAS/INFORMES — ${pasos} pasos del viaje, sin errores de página.`);
+  console.log(`\n✅ TAREAS/INFORMES — ${pasos} pasos del viaje (tarea → PIN → jugar → tope → intentos → informes), sin errores de página.`);
   await browser.close();
   bye(0);
 } catch (e) {

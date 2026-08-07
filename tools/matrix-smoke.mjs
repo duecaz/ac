@@ -306,8 +306,6 @@ for (const t of seeded) {
   }
 }
 
-await browser.close();
-
 // ── Informe ──────────────────────────────────────────────────────────────────
 const ICON = { ok: '✅', error: '⚠️ ', fail: '❌', 'n/a': '· ' };
 const modes = Object.keys(DRIVERS);
@@ -395,6 +393,57 @@ if (presupuesto.length) {
   for (const p of presuBad) console.log(`  ❌ ${p.label} · ${p.mode} — ${p.regla}`);
 }
 
+// ── EMBED: la página que el profe pega en su blog ───────────────────────────
+// `embed.html` era un HUECO TOTAL: ningún test la abría jamás (auditoría
+// v1.51.401). Es el producto COMPARTIBLE — el iframe se queda meses en un
+// Moodle y, si se rompe, no hay quien lo vea hasta que un colega se queja.
+// Se abren dos plantillas y la rama sin `?id=` (que debe AVISAR, no quedarse en
+// blanco: R6). El embed lee de `getRemote`, así que se siembra en el almacén
+// remoto local del mismo modo que hace la app.
+const embed = [];
+{
+  const page2 = await browser.newPage({ viewport: { width: 900, height: 600 } });
+  const errs2 = [];
+  page2.on('pageerror', e => { const m = String(e.message).split('\n')[0]; if (!NOISE.test(m)) errs2.push(m); });
+  page2.on('console', m => { if (m.type() === 'error' && !NOISE.test(m.text())) errs2.push(m.text().split('\n')[0]); });
+  await page2.route('**/esm.sh/**', r => r.fulfill({ contentType: 'application/javascript', body: 'export default function(){}' }));
+  await page2.route('**/cdn.jsdelivr.net/**', r => r.fulfill({ contentType: 'text/css', body: '' }));
+  for (const name of ['quiz', 'math']) {
+    errs2.length = 0;
+    try {
+      await page2.goto(`${BASE}/embed.html?backend=local&id=mx_${name}`, { waitUntil: 'domcontentloaded' });
+      // La actividad la siembra la propia página (mismo almacén que usa getRemote).
+      await page2.evaluate(async (n) => {
+        await import('/core/registerTemplates.js');
+        const { getTemplate } = await import('/core/registry.js');
+        const { getRemoteStore } = await import('/adapters/index.js');
+        const T = getTemplate(n);
+        const rs = await getRemoteStore();
+        await rs.saveActivity({ id: `mx_${n}`, template: n, title: `Embed · ${T.meta.label}`,
+          visibility: 'public', content: T.meta.defaultContent(),
+          rules: T.meta.defaultRules ? T.meta.defaultRules() : {},
+          scoring: T.meta.defaultScoring ? T.meta.defaultScoring() : {}, updatedAt: new Date().toISOString() });
+      }, name);
+      await page2.reload({ waitUntil: 'domcontentloaded' });
+      await page2.waitForFunction(() => window.__APP_READY__ === true, { timeout: 12000 });
+      const pintado = await page2.evaluate(() => (document.querySelector('#ww-player-widget')?.children.length || 0) > 0);
+      embed.push({ caso: `?id=mx_${name}`, ok: pintado && !errs2.length, detalle: errs2[0] || (pintado ? '' : 'el widget quedó vacío') });
+    } catch (e) { embed.push({ caso: `?id=mx_${name}`, ok: false, detalle: String(e.message).slice(0, 90) }); }
+  }
+  // Sin `?id=`: tiene que DECIRLO (R6), no quedarse en blanco.
+  errs2.length = 0;
+  await page2.goto(`${BASE}/embed.html?backend=local`, { waitUntil: 'domcontentloaded' });
+  await page2.waitForFunction(() => window.__APP_READY__ === true, { timeout: 9000 }).catch(() => {});
+  const aviso = await page2.evaluate(() => document.body.innerText || '');
+  embed.push({ caso: 'sin ?id= (debe avisar)', ok: /id=|no disponible|falta/i.test(aviso), detalle: aviso.slice(0, 60) });
+  await page2.close();
+}
+const embedBad = embed.filter(e => !e.ok);
+if (embed.length) {
+  console.log('\nEMBED (la página que el profe pega en su blog)\n');
+  for (const e of embed) console.log(`  ${e.ok ? '✅' : '❌'} ${e.caso}${e.detalle && !e.ok ? ' — ' + e.detalle : ''}`);
+}
+
 const seedBad = seeded.filter(s => s.seedError);
 if (seedBad.length) { console.log('\nSIEMBRA FALLIDA:'); seedBad.forEach(s => console.log(`  ❌ ${s.name} — ${s.seedError}`)); }
 
@@ -402,4 +451,5 @@ console.log(`\n✅ ok: ${results.filter(r => r.status === 'ok').length}` +
   ` · ❌ fallos: ${bad.length}` +
   ` · · no aplica: ${results.filter(r => r.status === 'n/a').length}`);
 console.log('El ALUMNO en vivo lo cubre tools/live-smoke.mjs (dos contextos) y la Tarea tools/task-smoke.mjs. Sin cubrir: carrera con 2 alumnos.');
-bye(bad.length || seedBad.length || tapBad.length || hitBad.length || roundBad.length || presuBad.length ? 1 : 0);
+await browser.close();
+bye(bad.length || seedBad.length || tapBad.length || hitBad.length || roundBad.length || presuBad.length || embedBad.length ? 1 : 0);

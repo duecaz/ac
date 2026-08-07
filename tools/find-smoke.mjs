@@ -196,6 +196,36 @@ try {
   if (toques > 3) fail(`de la lista a jugar hacen falta ${toques} toques; el presupuesto del norte §2b son 3`);
   ok(`§29 · de "Mis actividades" a la actividad jugándose: ${toques} toques (presupuesto: 3)`);
 
+  // 13. LISTAS de actividades — 3 rutas y ~350 líneas con entrada visible desde
+  //     dos sitios, y cobertura CERO hasta la auditoría v1.51.401. Un profe de
+  //     idiomas vive de las listas de vocabulario encadenadas.
+  await ir('#/new-list');
+  await page.waitForSelector('#list-title', { timeout: 9000 })
+    .catch(() => fail('#/new-list no abre el editor de listas'));
+  await teclear('#list-title', 'Repaso del viernes');
+  const añadibles = await page.locator('.list-add').count();
+  if (!añadibles) fail('el editor de listas no ofrece actividades que encadenar');
+  await page.click('.list-add');
+  await page.waitForTimeout(400);
+  await page.click('#list-save');
+  await page.waitForTimeout(700);
+  await ir('#/mine');
+  // La caja de búsqueda conserva lo tecleado antes (es lo correcto: el profe
+  // vuelve y sigue donde estaba), así que se limpia para ver la lista entera.
+  await teclear('#h-q', '');
+  const enMisActividades = (await page.locator('#app').innerText());
+  if (!/Repaso del viernes/.test(enMisActividades)) fail('la lista guardada no aparece en Mis actividades');
+  ok('listas: crear → encadenar una actividad → guardar → aparece en Mis actividades');
+
+  // Y se puede JUGAR, que es para lo que existe.
+  await page.click('.mode-list');
+  await page.waitForTimeout(800);
+  const jugandoLista = await page.evaluate(() => location.hash);
+  if (!/^#\/list\//.test(jugandoLista)) fail(`"Jugar lista" no lleva a #/list/:id, fue a ${jugandoLista}`);
+  const pantallaLista = (await page.locator('#app').innerText());
+  if (/Ruta no encontrada/i.test(pantallaLista)) fail('#/list/:id no resuelve');
+  ok(`la lista se juega: "Jugar" lleva a ${jugandoLista} y monta`);
+
   if (errs.length) {
     console.error('\nERRORES DE PÁGINA:');
     errs.slice(0, 6).forEach(e => console.error('  ✗', e));

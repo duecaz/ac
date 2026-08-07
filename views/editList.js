@@ -115,6 +115,7 @@ export function renderEditList(rootSel, { id } = {}) {
     document.querySelectorAll('.list-remove').forEach(btn => {
       btn.addEventListener('click', () => {
         const rmId = btn.dataset.id;
+        recogerCampos();   // lo tecleado sobrevive al repintado
         lista.content.items = (lista.content.items || []).filter(i => i.activityId !== rmId);
         lista.updatedAt = new Date().toISOString();
         save(lista);
@@ -125,6 +126,7 @@ export function renderEditList(rootSel, { id } = {}) {
     document.querySelectorAll('.list-add').forEach(btn => {
       btn.addEventListener('click', () => {
         const addId = btn.dataset.id;
+        recogerCampos();   // lo tecleado sobrevive al repintado
         if (!(lista.content.items || []).some(i => i.activityId === addId)) {
           lista.content.items = [...(lista.content.items || []), { activityId: addId }];
           lista.updatedAt = new Date().toISOString();
@@ -135,11 +137,20 @@ export function renderEditList(rootSel, { id } = {}) {
     });
   }
 
-  function doSave() {
+  // Título y subtítulo viven en INPUTS, y añadir o quitar una actividad
+  // REPINTA la pantalla entera desde `lista` — así que lo tecleado y aún no
+  // volcado se perdía: escribías el nombre de la lista, añadías la primera
+  // actividad y el título volvía a "Nueva lista" (§24: el contenido es del
+  // usuario, no se pierde por un repintado). Se recoge ANTES de cada repintado.
+  function recogerCampos() {
     const title = document.getElementById('list-title')?.value?.trim();
     const subtitle = document.getElementById('list-subtitle')?.value?.trim();
     if (title) lista.title = title;
     if (subtitle !== undefined) lista.subtitle = subtitle;
+  }
+
+  function doSave() {
+    recogerCampos();
     lista.updatedAt = new Date().toISOString();
     save(lista);
     toast('Lista guardada.', 'success');
