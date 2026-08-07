@@ -40,7 +40,6 @@ const FUERA_DEL_PREFLIGHT = {
   'tools/race-e2e.mjs':       'PocketBase REAL: pide credenciales por entorno (WW_EMAIL/WW_PASS)',
   'tools/stress-live.mjs':    'prueba de CARGA contra la Pi: no puede correr en cada commit',
   'tools/shots.mjs':          'comparación visual: necesita un "before" grabado a mano antes del cambio',
-  'tools/vs-teams-smoke.mjs': 'OBSOLETO: superado por matrix-smoke (juega la ronda) + shots (diff por píxel); exige un servidor en :8000 arrancado a mano — candidato a borrar',
 };
 
 // ── 1. Cada tramo JUGABLE del norte tiene su recorrido, y existe ────────────
