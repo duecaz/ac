@@ -3,19 +3,16 @@ import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { itemControlsHtml, reorderArray } from '../../core/editorPrimitives.js';
 import { renderEditorShell } from '../../core/editorShell.js';
+// La subida de imagen pasa por core/upload.js (uploadMedia), que es el dueño
+// único: aplica el tope de core/quotas.js (§25) Y valida el MIME contra su
+// allowlist. Este editor tenía su propio IMG_MAX_BYTES + readDataUrl copiados
+// —el mismo bloque en wheel y question-live, byte por byte— y NO miraba el
+// tipo: `accept="image/*"` es una sugerencia del navegador, no una validación,
+// así que cualquier fichero entraba como data-URL en el JSON de la actividad.
+import { uploadMedia } from '../../core/upload.js';
 import { toast } from '../../core/toast.js';
 import { newItem, migrateLegacyItems } from '../../core/contentModels/items.js';
 
-const IMG_MAX_BYTES = 200 * 1024; // 200 KB — stored inline as data-URL
-
-function readDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = e => resolve(e.target.result);
-    r.onerror = () => reject(new Error('No se pudo leer la imagen.'));
-    r.readAsDataURL(file);
-  });
-}
 
 export function renderWheelEditor(root, activity, onChange) {
   const a = activity;
@@ -78,9 +75,8 @@ function wireContent(root, a, ctx) {
     const i = tileIndex(input);
     const f = input.files?.[0];
     if (i < 0 || !f) return;
-    if (f.size > IMG_MAX_BYTES) { toast(`Imagen demasiado grande (${Math.round(f.size / 1024)} KB). Máximo 200 KB.`, 'danger', 5000); input.value = ''; return; }
     try {
-      a.content.items[i].image = await readDataUrl(f);
+      a.content.items[i].image = await uploadMedia(f);
       ctx.onChange(a); ctx.repaint();
     } catch (err) { toast(err.message, 'danger', 4000); }
   });

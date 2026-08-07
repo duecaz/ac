@@ -1,5 +1,7 @@
 // Editor de Emparejar — aporta sus paneles; el chasis lo pone el shell.
 import { escapeHtml } from '../../core/html.js';
+import { toast } from '../../core/toast.js';
+import { uploadMedia } from '../../core/upload.js';
 import { on } from '../../core/events.js';
 import { newPair } from '../../core/contentModels/pairs.js';
 import { itemControlsHtml, reorderArray, ruleScopeNote } from '../../core/editorPrimitives.js';
@@ -68,18 +70,18 @@ function wireContent(root, a, ctx) {
     const inp  = document.createElement('input');
     inp.type   = 'file';
     inp.accept = 'image/*';
-    inp.onchange = () => {
+    // Por el dueño único (core/upload.js): tope de §25 + allowlist de MIME. Este
+    // bloque leía el fichero a mano con un 200 KB escrito aquí, sin mirar el
+    // tipo, y avisaba con `alert()` en vez del toast de la app.
+    inp.onchange = async () => {
       const file = inp.files[0];
       if (!file) return;
-      if (file.size > 200 * 1024) { alert('Imagen demasiado grande (máx 200 KB)'); return; }
-      const reader = new FileReader();
-      reader.onload = () => {
+      try {
         const field = side === 'L' ? 'leftImage' : 'rightImage';
-        a.content.pairs[i][field] = reader.result;
+        a.content.pairs[i][field] = await uploadMedia(file);
         ctx.onChange(a);
         ctx.repaint();
-      };
-      reader.readAsDataURL(file);
+      } catch (err) { toast(err.message, 'danger', 5000); }
     };
     inp.click();
   });
