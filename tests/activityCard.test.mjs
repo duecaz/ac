@@ -17,13 +17,13 @@ let n = 0;
 const ok = (m) => { console.log('  ✓', m); n++; };
 
 // Las 4 vistas de listado usan el componente compartido.
-const VIEWS = ['views/home.js', 'views/landing.js', 'views/explore.js', 'views/author.js'];
+const VIEWS = ['views/home.js', 'views/landing.js', 'views/explore.js', 'views/author.js', 'views/juegos.js'];
 for (const v of VIEWS) {
   const src = read(v);
   assert.match(src, /from '\.\.\/core\/activityCard\.js'/, `${v} debe importar activityCardHtml`);
   assert.match(src, /activityCardHtml\(/, `${v} debe pintar con activityCardHtml`);
 }
-ok('las 4 vistas de listado importan y usan activityCardHtml');
+ok('las 5 vistas de listado importan y usan activityCardHtml');
 
 // Explorar ya NO usa tarjetas Bootstrap (era la vista "horrible").
 const explore = read('views/explore.js');
@@ -96,7 +96,7 @@ ok('activityCard.js expone el componente y la tira de modos con clases compartid
     assert.ok(!/(pages|subtitle|tags|author):\s*false/.test(llamada[0]),
       `${v} apaga un campo informativo — eso es lo que hizo divergir las tarjetas`);
   }
-  ok('las 4 vistas declaran variante y ninguna apaga un campo informativo');
+  ok('las 5 vistas declaran variante y ninguna apaga un campo informativo');
 }
 
 console.log(`\nactivityCard.test: ${n} checks passed`);

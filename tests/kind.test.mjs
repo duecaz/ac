@@ -81,4 +81,21 @@ const all = listTemplates().filter(T => reales.has(T.meta.name));
   ok('CONTRA-PRUEBA: Sopa y Crucigrama siguen siendo ejercicios con Tarea');
 }
 
+// ── 6. La tarjeta de un juego la pinta EL COMPONENTE, con su habilidad ─────
+// "Una gota no dice qué juego es" (reporte real): la estantería llegó a pintar
+// tarjeta propia con el icono de la plantilla en vez del preview del tablero.
+// La regla es la de siempre: la tarjeta es ÚNICA, y cómo se presenta un juego
+// (preview real + pastilla de HABILIDAD) lo decide core/activityCard.js.
+{
+  const { activityCardHtml } = await import('../core/activityCard.js');
+  const T = all.find(x => x.meta.kind === 'juego');
+  const a = { id: 'g1', title: T.meta.label, template: T.meta.name,
+    content: T.meta.defaultContent() };
+  const htmlCard = activityCardHtml(a, { variant: 'library' });
+  assert.ok(htmlCard.includes(T.meta.skill), 'la pastilla dice la HABILIDAD, no el nombre de la plantilla');
+  assert.ok(htmlCard.includes('bi-controller'), 'con el icono de juego');
+  assert.ok(!/juego-card__icon/.test(htmlCard), 'sin markup propio de la estantería');
+  ok('la tarjeta de un juego sale del componente único: preview real + habilidad');
+}
+
 console.log(`\n  ${passed} kind checks passed`);

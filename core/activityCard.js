@@ -83,8 +83,14 @@ export function activityCardHtml(a, opts = {}) {
   } = { ...preset, ...opts };
   const T = getTemplate(a.template);
   const color = T?.meta?.color || 'info';
-  const icon  = T?.meta?.icon  || 'bi-puzzle';
-  const label = T?.meta?.label || a.template;
+  // Un JUEGO (§4c) se presenta por la HABILIDAD que entrena — es su eje de
+  // catálogo y lo que le sirve al profe para elegir y justificar. Decidido AQUÍ
+  // y no en cada vista: la misma tarjeta se ve igual en la estantería, en "Mis
+  // actividades" y donde aparezca (la lección de las variantes: unificar el
+  // markup sin unificar la decisión es como divergieron las tarjetas).
+  const esJuego = T?.meta?.kind === 'juego';
+  const icon  = esJuego ? 'bi-controller' : (T?.meta?.icon || 'bi-puzzle');
+  const label = esJuego ? (T?.meta?.skill || T?.meta?.label) : (T?.meta?.label || a.template);
   const bg = previewBgStyle(a.presentation);
   const id = escapeHtml(a.id);
   const strip = modes === 'none' ? '' : modeStripHtml(a, { includeManage: modes === 'all', authed });

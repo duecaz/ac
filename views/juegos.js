@@ -6,26 +6,37 @@
 // del profe — no una sección para alumnos (§7c: quien los lanza es el profe, en
 // su clase, para los cinco minutos de cambio de ritmo).
 //
-// La vista no conoce ningún juego por nombre: lista lo que declare
-// `meta.kind: 'juego'` (contrato §4c), con su HABILIDAD como subtítulo. Un juego
-// nuevo aparece aquí solo. El catálogo está acotado en OCHO (norte §4c) y eso lo
-// vigila `tests/kind.test.mjs`, no esta vista.
+// La vista NO pinta tarjetas propias: usa LA TARJETA ÚNICA (core/activityCard.js,
+// variante 'library'), que es la que ya sabe dibujar el preview real del tablero
+// y decide que un juego se presenta por su HABILIDAD. Aquí solo se decide QUÉ se
+// lista (kind 'juego', del registro) y el pie ("Jugar"). Un juego nuevo aparece
+// solo; el techo de OCHO lo vigila `tests/kind.test.mjs`.
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { navigate } from '../core/router.js';
 import { listTemplates } from '../core/registry.js';
 import { newActivity } from '../core/migrate.js';
 import { get, save } from '../core/storage.js';
+import { activityCardHtml } from '../core/activityCard.js';
 
 /** Los juegos instalados, del registro (nunca cableados aquí). */
 export function gameTemplates() {
   return listTemplates().filter(T => T.meta?.kind === 'juego');
 }
 
-// El juego se juega sobre una actividad LOCAL fija por plantilla (`game_<name>`):
-// se crea la primera vez con el contenido por defecto y se reutiliza — el juego
-// es UNO (§4c), no una actividad que el profe colecciona.
-function gameActivityId(name) { return `game_${name}`; }
+// Cada juego vive sobre UNA actividad local fija (`game_<name>`): se crea la
+// primera vez con el contenido por defecto y se reutiliza — el juego es UNO
+// (§4c), no algo que el profe colecciona.
+function ensureGameActivity(T) {
+  const id = `game_${T.meta.name}`;
+  const existente = get(id);
+  if (existente) return existente;
+  const a = newActivity(T.meta.name);
+  a.id = id;
+  a.title = T.meta.label;
+  save(a);
+  return a;
+}
 
 export function renderJuegos(rootSel) {
   const juegos = gameTemplates();
@@ -40,22 +51,12 @@ export function renderJuegos(rootSel) {
       </div>
       ${juegos.length ? `
         <div class="home-grid">
-          ${juegos.map(T => `
-            <article class="acard juego-card" data-game="${escapeHtml(T.meta.name)}" role="button" tabindex="0">
-              <div class="acard-preview juego-card__pv">
-                <div class="juego-card__icon"><i class="bi ${escapeHtml(T.meta.icon || 'bi-controller')}"></i></div>
-              </div>
-              <div class="acard-body">
-                <div class="acard-toprow">
-                  <span class="tag tag--${escapeHtml(T.meta.color || 'info')}"><i class="bi bi-controller"></i> ${escapeHtml(T.meta.skill || 'Juego')}</span>
-                </div>
-                <h3 class="acard-title">${escapeHtml(T.meta.label)}</h3>
-                <p class="acard-sub">${escapeHtml(T.meta.instructions || '')}</p>
-                <button class="btn-primary-solid w-100 juego-play" data-game="${escapeHtml(T.meta.name)}">
-                  <i class="bi bi-play-fill"></i> Jugar
-                </button>
-              </div>
-            </article>`).join('')}
+          ${juegos.map(T => {
+            const a = ensureGameActivity(T);
+            const footer = `<button class="btn-primary-solid w-100" data-play="${escapeHtml(a.id)}">
+              <i class="bi bi-play-fill"></i> Jugar</button>`;
+            return activityCardHtml(a, { variant: 'library', footer });
+          }).join('')}
         </div>` : `
         <div class="home-empty"><i class="bi bi-controller"></i><p>Aún no hay juegos instalados.</p></div>`}
       <p class="text-muted small mt-4" style="max-width:640px">
@@ -66,18 +67,9 @@ export function renderJuegos(rootSel) {
     </div>
   `);
 
-  const play = (name, mode = '') => {
-    const T = gameTemplates().find(x => x.meta.name === name);
-    if (!T) return;
-    const id = gameActivityId(name);
-    if (!get(id)) {
-      const a = newActivity(name);
-      a.id = id;
-      a.title = T.meta.label;
-      save(a);
-    }
-    navigate(`#/${mode || 'play'}/${id}`);
-  };
-  on(rootSel, 'click', '.juego-play', (e, b) => { e.stopPropagation(); play(b.dataset.game); });
-  on(rootSel, 'click', '.juego-card', (_, c) => play(c.dataset.game));
+  // Los MISMOS handlers de la tira de modos que usan portada y biblioteca.
+  on(rootSel, 'click', '[data-play]', (_, b) => navigate(`#/play/${b.dataset.play}`));
+  on(rootSel, 'click', '.act-play', (_, b) => navigate(`#/play/${b.dataset.id}`));
+  on(rootSel, 'click', '.act-vs', (_, b) => navigate(`#/vs/${b.dataset.id}`));
+  on(rootSel, 'click', '.act-teams', (_, b) => navigate(`#/${b.dataset.tpl === 'memory' ? 'memory' : 'teams'}/${b.dataset.id}`));
 }

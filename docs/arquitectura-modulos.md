@@ -5,7 +5,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **247 módulos · 896 imports internos.**
+> **247 módulos · 897 imports internos.**
 
 ### Ir a otro documento
 
@@ -33,7 +33,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 18 · 3661 | 18 · 2846 | 0.78 |
 | **informes/tareas** | después de clase | 11 · 1133 | 3 · 381 | 0.34 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5807 | 12 · 975 | 0.17 |
-| **infra/común** | todo lo anterior | 128 · 12394 | 34 · 3450 | 0.28 |
+| **infra/común** | todo lo anterior | 128 · 12392 | 34 · 3467 | 0.28 |
 
 > Un ratio bajo en un tramo muy usado es deuda de PRIORIDAD, no de calidad: ese
 > código funciona, pero si se rompe nadie se entera hasta que hay 33 críos
@@ -56,7 +56,7 @@ graph TD
   T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>75 módulos</small>"]
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>5 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
-  V -->|256| C
+  V -->|257| C
   T -->|188| C
   A -->|28| C
   AD -->|26| C
