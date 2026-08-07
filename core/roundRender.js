@@ -6,7 +6,10 @@
 // render their own.
 import { escapeHtml } from './html.js';
 
-const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
+// Iconos de forma de las opciones (Quiz/Live), en orden. DUEÑO ÚNICO: estaban
+// escritos cuatro veces (aquí, quiz/player.js y los dos módulos de preview que
+// se retiraron en v1.51.406).
+export const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
 
 export function renderChoiceRound(root, payload, { onSubmit } = {}) {
   const opts = payload?.options || [];

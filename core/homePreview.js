@@ -1,5 +1,5 @@
 // Preview LIGERO y esquemático de una actividad para la rejilla del home.
-// A diferencia de core/activityThumb.js (que renderiza el JUEGO real escalado —
+// A diferencia del antiguo activityThumb (que renderizaba el JUEGO real escalado —
 // caro con muchas tarjetas), esto devuelve un dibujo fijo por tipo de plantilla:
 // unos pocos <div>/<svg> estáticos, sin timers, sin skin/fondo, sin transform.
 // CADA plantilla registrada tiene su esquema (nunca cae al genérico): lo garantiza

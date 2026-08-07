@@ -4,6 +4,7 @@
 // Loop/timer/finish are handled by the SequentialShell (core/soloPlayer.js);
 // this core renders the kahoot-style options grid and scores each click.
 import { html, escapeHtml, mount } from '../../core/html.js';
+import { SHAPE_ICONS } from '../../core/roundRender.js';
 import { on } from '../../core/events.js';
 import { scoreQuizSubmission } from './scorer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
@@ -12,7 +13,7 @@ import { shuffle } from '../../core/roundRender.js';
 import { runSequentialPlayer } from '../../core/soloPlayer.js';
 import { clock } from '../../core/clock.js';
 
-const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
+
 
 export async function renderQuizPlayer(rootSel, activity, opts = {}) {
   // Techo = lo que da el PROPIO scorer si se acierta todo al instante

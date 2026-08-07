@@ -20,7 +20,7 @@ export const TRACKS = [
   // `editor` y el fichero se llama `editView.js`: no casaba, así que las 5
   // vistas del editor caían en `infra/común` y el tramo más usado después de
   // jugar parecía cubierto sin estarlo (auditoría v1.51.396).
-  ['buscar/crear', /^views\/(home|explore|landing|author|edit|templateSelector|switchTemplate)|^core\/(homePreview|activityThumb|likes|search)\.js/],
+  ['buscar/crear', /^views\/(home|explore|landing|author|edit|templateSelector|switchTemplate)|^core\/(homePreview|likes|search)\.js/],
   ['jugar en pizarra', /^views\/(playerView|startScreen|vsView|teamsView|memoryView|listView)|^core\/(soloPlayer|soloTimer|teams|vsAnimations|modes)/],
   ['jugar en vivo', /live|Live|^kernel\/session|^views\/session/],
   ['informes/tareas', /reports|sessionTable|sessionModel|itemStats|assignment|attempt/i],

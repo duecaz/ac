@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Generador de plantilla — crea templates/<name>/ cumpliendo el contrato desde
-// el primer segundo (meta completa, previewHtml, editor sobre el shell, player
+// el primer segundo (meta completa, editor sobre el shell, player
 // sobre los shells de solo, CSS tokenizado, GameEvents cableados) y la registra
 // en core/registerTemplates.js. Su honestidad la vigila tests/newTemplate.test.mjs:
 // genera en un scratch y corre los MISMOS checkers del contrato/normas — si el
@@ -102,7 +102,6 @@ import { render${fn}Player } from './player.js';
 import { render${fn}Editor } from './editor.js';
 import { score${fn}Submission } from './scorer.js';
 import { escapeHtml } from '${REL}/core/html.js';
-import { emptyHtml } from '${REL}/core/previewKit.js';
 
 export class ${Cls}Template extends BaseTemplate {
   static meta = {
@@ -157,15 +156,6 @@ ${wantVs || wantLive ? `
 ` : ''}
   // Preview de tarjeta (miniatura del home) — OBLIGATORIO (contrato). Markup
   // estático de la primera pantalla; reusa los builders del player cuando puedas.
-  static previewHtml(act) {
-    const first = (act.content?.${collectionKey} || [])[0];
-    if (!first) return emptyHtml(act);
-    const text = typeof first === 'string' ? first : (first.question ?? first.q ?? first.left ?? first.text ?? '');
-    return \`<div class="ww-player" style="display:flex;flex-direction:column;height:100%;justify-content:center;gap:1rem">
-      <div class="fs-3 fw-bold text-center">\${escapeHtml(act.title || '${label}')}</div>
-      <div class="fs-4 text-center" style="color:var(--ww-fg)">\${escapeHtml(String(text))}</div>
-    </div>\`;
-  }
 
   static migrateContent(content) { return content; }
 }
@@ -348,6 +338,6 @@ console.log(`
 Siguientes pasos (lo que no puedo automatizar):
   1. Añade '${name}' a la lista GAME de tests/styles.test.mjs (el ratchet lo exige).
   2. Enlaza el CSS: los HTML cargan styles/*.css — añade <link> de styles/${name}.css donde estén los demás.
-  3. Rellena los TODO (mecánica del player, scorer real, editor de ítems, previewHtml fiel).
+  3. Rellena los TODO (mecánica del player, scorer real, editor de ítems).
   4. node tests/run.mjs  → contrato + normas + estilos deben salir en verde.
   5. Menciona la actividad en docs/panorama-actividades.md y README.md.`);

@@ -45,9 +45,6 @@ export class ComasTemplate extends BaseTemplate {
   static renderEditor = renderComasEditor;
   static scoreSubmission = scoreComasSubmission;
 
-  // Preview de tarjeta: reusa el markup real del player (passageHtml) vía el
-  // helper compartido → la miniatura no puede desincronizarse del juego.
-  static previewHtml(act) { return textCorrectionPreviewHtml(act, 'coma'); }
 
   // One passage = one round. The answer key (marks) is stripped from the payload.
   static getRoundPayload(activity, ctx) {

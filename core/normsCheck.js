@@ -251,6 +251,6 @@ export const BROWSER_SCAN_FILES = [
   'views/reports.js', 'views/sorteoView.js', 'views/startScreen.js', 'views/studentLive.js',
   'views/studentTask.js', 'views/switchTemplate.js', 'views/teamsView.js',
   'views/templateSelector.js', 'views/vsView.js',
-  'core/textCorrectionRound.js', 'core/textCorrectionDraw.js', 'core/activityThumb.js',
+  'core/textCorrectionRound.js', 'core/textCorrectionDraw.js',
   'core/soloPlayer.js', 'core/connectRope.js', 'core/liveTransport.js',
 ];

@@ -7,7 +7,6 @@ import { renderQuizEditor } from '../quiz/editor.js';
 import { scoreQuizSubmission } from '../quiz/scorer.js';
 import { shuffle } from '../../core/roundRender.js';
 import { escapeHtml } from '../../core/html.js';
-import { emptyHtml } from '../../core/previewKit.js';
 
 export class GlobosTemplate extends BaseTemplate {
   static meta = {
@@ -65,23 +64,6 @@ export class GlobosTemplate extends BaseTemplate {
     } });
   }
 
-  // Preview de tarjeta: la pregunta + un puñado de globos con los colores de las
-  // formas del skin (los mismos tokens que pinta el juego).
-  static previewHtml(act) {
-    const it = (act.content?.items || [])[0];
-    if (!it) return emptyHtml(act);
-    const opts = (it.options || []).slice(0, 4);
-    return `<div class="ww-player" style="display:flex;flex-direction:column;height:100%;gap:1rem">
-      <h3 class="ww-q">${escapeHtml(it.question || '')}</h3>
-      <div style="flex:1;display:flex;align-items:center;justify-content:space-evenly;">
-        ${opts.map((o, i) => `
-          <div style="width:150px;height:180px;border-radius:50% 50% 48% 48% / 55% 55% 45% 45%;
-            background:var(--ww-shape-${(i % 4) + 1});display:flex;align-items:center;justify-content:center;
-            color:#fff;font-weight:800;font-size:1.15rem;text-align:center;padding:10px;
-            box-shadow:inset -8px -10px 0 rgba(0,0,0,.12);">${escapeHtml(o)}</div>`).join('')}
-      </div>
-    </div>`;
-  }
 
   static migrateContent(content) { return content; }
 }

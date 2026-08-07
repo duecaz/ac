@@ -45,9 +45,6 @@ export class TildesTemplate extends BaseTemplate {
   static renderEditor = renderTildesEditor;
   static scoreSubmission = scoreTildesSubmission;
 
-  // Preview de tarjeta: reusa el markup real del player (passageHtml) vía el
-  // helper compartido → la miniatura no puede desincronizarse del juego.
-  static previewHtml(act) { return textCorrectionPreviewHtml(act, 'tilde'); }
 
   // One passage = one round. The answer key (marks) is stripped from the payload.
   static getRoundPayload(activity, ctx) {

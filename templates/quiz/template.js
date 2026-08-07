@@ -1,5 +1,6 @@
 // Quiz template: classic multiple-choice. Uses contentModels/qa.
 import { BaseTemplate } from '../base.js';
+import { SHAPE_ICONS } from '../../core/roundRender.js';
 import { rid } from '../../core/ids.js';
 import { renderQuizPlayer } from './player.js';
 import { renderQuizEditor } from './editor.js';
@@ -7,7 +8,6 @@ import { scoreQuizSubmission } from './scorer.js';
 import { renderChoiceRound, shuffle } from '../../core/roundRender.js';
 import { escapeHtml } from '../../core/html.js';
 import { adoptForQuiz } from '../../kernel/content/qaAdapt.js';
-import { headHtml, emptyHtml, SHAPE_ICONS } from '../../core/previewKit.js';
 
 export class QuizTemplate extends BaseTemplate {
   static meta = {
@@ -47,23 +47,6 @@ export class QuizTemplate extends BaseTemplate {
   static renderEditor = renderQuizEditor;
   static scoreSubmission = scoreQuizSubmission;
 
-  // Preview de tarjeta (miniatura del home): primera pregunta con su rejilla
-  // Kahoot. Markup estático que reusa las mismas clases del player.
-  static previewHtml(act) {
-    const items = act.content?.items || [];
-    const it = items[0];
-    if (!it) return emptyHtml(act);
-    const opts = (it.options || []).slice(0, 6);
-    return `<div class="ww-player">
-      ${headHtml(1, items.length)}
-      <h3 class="ww-q">${escapeHtml(it.question || '')}</h3>
-      <div class="ww-q-media">${it.image ? `<img src="${escapeHtml(it.image)}" alt="">` : ''}</div>
-      <div class="ww-kahoot-grid ww-options">
-        ${opts.map((o, i) => `<button class="btn btn-lg w-100 ww-opt ww-shape-${(i % 4) + 1}">
-          <i class="bi ${SHAPE_ICONS[i % 4]} me-2"></i>${escapeHtml(o)}</button>`).join('')}
-      </div>
-    </div>`;
-  }
 
   // Adapta el contenido al cambiar de formato HACIA Quiz (genera opciones).
   static adoptContent(content) { return adoptForQuiz(content); }

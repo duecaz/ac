@@ -45,7 +45,7 @@ export function textCorrectionPreviewHtml(act, kind) {
 }
 // Build the inline passage. `reveal` (optional) bakes correct/wrong/missed
 // classes for a read-only answer review; otherwise targets are interactive.
-// Exportada: el preview de tarjeta (core/activityThumb.js) reutiliza ESTE mismo
+// Exportada: el preview de tarjeta (core/homePreview.js) reutiliza ESTE mismo
 // markup para que la miniatura sea fiel al juego y no se desfase (los targets
 // son spans limpios; solo el canvas los vuelve interactivos).
 export function passageHtml(text, kind, reveal) {

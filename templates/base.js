@@ -2,11 +2,11 @@
 //   - static meta = { name, label, icon, contentModel, modes, defaultContent, defaultRules, ... }
 //   - static renderPlayer(rootSel, activity, opts)   // SOLO + async-tracked
 //   - static renderEditor(root, activity, onChange)
-//   - static previewHtml(act)                        // miniatura de la tarjeta (home)
-//       Markup ESTÁTICO de la primera pantalla del juego, escalado por
-//       core/activityThumb.js. Reutiliza los builders del player o los helpers de
-//       core/previewKit.js. Lo EXIGE tests/templateContract.test.mjs → no hay
-//       switch central que olvidar y la miniatura no se desfasa del juego.
+//   (La miniatura de la tarjeta NO se declara aquí: la pinta core/homePreview.js
+//    con un dibujo ligero por tipo, y lo exige tests/homePreview.test.mjs. Hubo
+//    un `static previewHtml(act)` en las 13 plantillas cuyo único consumidor
+//    —core/activityThumb.js— llevaba tiempo sin importadores: dos contratos para
+//    la misma tarjeta, uno fantasma. Retirado en v1.51.406.)
 // Optional but recommended:
 //   - static getRoundPayload(activity, ctx)          // strip server-only data for LIVE
 //   - static renderRound(root, payload, { onSubmit }) // interactive device round (LIVE/VS/Equipos)

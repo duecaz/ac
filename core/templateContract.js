@@ -115,10 +115,12 @@ export function checkTemplateContract(T) {
       issues.push(`meta.play.submit inválido: ${JSON.stringify(m.play.submit)} — con renderRound hay que declarar cómo se envía (${SUBMIT_KINDS.join(' | ')})`);
     }
   }
-  // Preview de tarjeta obligatorio: cada plantilla declara su `previewHtml(act)`
-  // → no hay switch central que olvidar y la miniatura no se desfasa del juego
-  // (vive en la propia plantilla). Ver core/activityThumb.js / core/previewKit.js.
-  if (typeof T.previewHtml !== 'function') issues.push('falta static previewHtml(act) (preview de tarjeta del home)');
+  // (Aquí se exigía `static previewHtml(act)`. Se retiró en v1.51.406: su ÚNICO
+  // consumidor era core/activityThumb.js, que NADIE importaba desde que
+  // core/homePreview.js pasó a pintar las tarjetas. Eran 285 líneas repartidas
+  // en las 13 plantillas y, peor, una obligación FALSA para cada plantilla
+  // nueva: el contrato pedía un preview que no se veía en ninguna pantalla,
+  // mientras tests/homePreview.test.mjs exigía el otro, el que sí se ve.)
 
   // ── modelo de contenido registrado + defaultContent válido ────────────────
   const model = getModel(m.contentModel);

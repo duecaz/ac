@@ -115,7 +115,7 @@ export async function probeActivitiesPayload(fields) {
 }
 
 // Saves locally immediately and to remote in the background. The home preview
-// is rendered live from the activity content (see core/activityThumb.js), so
+// is rendered live from the activity content (see core/homePreview.js), so
 // no image generation/upload happens here.
 // keepUpdatedAt: conserva el updatedAt de la actividad (import 'preserve', P1-5)
 // en vez de re-sellarlo con ahora; así un backup VIEJO no gana el LWW.
