@@ -15,6 +15,20 @@
 importante de cada fallo: **el número de versión**, qué esperabas, qué pasó, y
 una foto de la pantalla.
 
+## EN QUÉ ORDEN — lo esencial primero
+
+Si solo tienes un rato, haz **la parte esencial y manda el reporte**; el resto
+puede esperar a otra tarde. Cada bloque es útil por sí solo.
+
+| | Pasos | Cuánto | Por qué van primero |
+|---|---|---|---|
+| **🔴 ESENCIAL** | **0 → 1 → 2 → 3 → 4** | ~25-30 min | El paso 0 (versión) es obligatorio o pruebas la web de ayer. El 4 (**carrera en vivo con los dos móviles**) es lo que más queremos: es donde se cruzan pizarra, móviles y servidor, y donde aparecen los fallos que no vemos aquí |
+| **🟠 Si te queda tiempo** | **5 → 6** | ~10 min | Rondas juntas, y VS/Equipos en el ordenador (sin móviles) |
+| **🟡 Al final** | **7 → 8** | ~10 min | Tarea para casa, y las torturas (romper a propósito: quitar la wifi, recargar a mitad, girar el móvil) |
+
+> **Manda el reporte al terminar lo ESENCIAL**, aunque vayas a seguir. Así se
+> empieza a arreglar mientras tú sigues probando.
+
 ---
 
 ## PASO 0 — ACTUALIZAR FUERTE (no te lo saltes)
@@ -37,9 +51,9 @@ arreglados. Esto es lo más importante de toda la guía.
 ### Comprobar la versión (obligatorio)
 
 Arriba, en la barra oscura, hay una etiqueta pequeña con un número tipo
-**`v1.51.359`**. En el móvil puede estar dentro del menú de las tres rayas (☰).
+**`v1.51.412`**. En el móvil puede estar dentro del menú de las tres rayas (☰).
 
-- **Tiene que poner `1.51.359` o un número MAYOR.**
+- **Tiene que poner `1.51.412` o un número MAYOR.**
 - Si pone menos, repite el Paso 0. Si sigue igual, prueba en modo incógnito.
 
 > ✍️ **Apunta aquí la versión que ves en cada aparato**, y ponla en cada fallo
@@ -237,7 +251,7 @@ Copia esta plantilla por cada fallo:
 
 ```
 FALLO Nº:
-Versión que salía en pantalla:      (p. ej. 1.51.359)
+Versión que salía en pantalla:      (p. ej. 1.51.412)
 Aparato:                            (ordenador Windows / iPhone / Android)
 Dónde:                              (paso 4.4, podio de la carrera)
 Qué hice:                           (Ana terminó a los 47 s, Luis a 1:20)
