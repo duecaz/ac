@@ -5,7 +5,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **249 módulos · 904 imports internos.**
+> **249 módulos · 905 imports internos.**
 
 ### Ir a otro documento
 
@@ -31,9 +31,9 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 12 · 1556 | 5 · 558 | 0.36 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 11 · 2413 | 12 · 1112 | 0.46 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 18 · 3664 | 18 · 2846 | 0.78 |
-| **informes/tareas** | después de clase | 11 · 1126 | 4 · 435 | 0.39 |
+| **informes/tareas** | después de clase | 11 · 1131 | 4 · 435 | 0.38 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5810 | 12 · 975 | 0.17 |
-| **infra/común** | todo lo anterior | 126 · 12207 | 35 · 3662 | 0.30 |
+| **infra/común** | todo lo anterior | 126 · 12207 | 36 · 3827 | 0.31 |
 
 > Un ratio bajo en un tramo muy usado es deuda de PRIORIDAD, no de calidad: ese
 > código funciona, pero si se rompe nadie se entera hasta que hay 33 críos
@@ -56,7 +56,7 @@ graph TD
   T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>75 módulos</small>"]
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>5 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
-  V -->|256| C
+  V -->|257| C
   T -->|188| C
   A -->|28| C
   AD -->|26| C
@@ -114,7 +114,7 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 |---|---|
 | `core/html.js` | 83 |
 | `core/events.js` | 46 |
-| `core/registry.js` | 44 |
+| `core/registry.js` | 45 |
 | `core/storage.js` | 23 |
 | `core/ids.js` | 22 |
 | `core/clock.js` | 21 |

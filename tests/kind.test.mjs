@@ -98,4 +98,66 @@ const all = listTemplates().filter(T => reales.has(T.meta.name));
   ok('la tarjeta de un juego sale del componente único: preview real + habilidad');
 }
 
+// ── 7. Las OTRAS derivaciones de §4c, como assert y no como motivación ─────
+// El norte deriva CUATRO consecuencias de "un juego no lleva contenido del
+// profe"; este test solo comprobaba una (no es Tarea). Las otras tres estaban
+// escritas en la cabecera —"Pelotas entraba en informes"— y NO como
+// comprobación, así que una de ellas seguía viva: los informes listaban el
+// juego (auditoría v1.51.400).
+{
+  const { readFileSync } = await import('node:fs');
+  const raiz = join(TDIR, '..');
+  const lee = (p) => readFileSync(join(raiz, p), 'utf8');
+
+  // (a) No se PUBLICA en la biblioteca: la tarjeta no ofrece el control.
+  assert.match(lee('views/home.js'), /esJuego \? '' :[\s\S]{0,120}pub-toggle/,
+    'la tarjeta de un juego no puede ofrecer publicar (§4c)');
+
+  // (b) No aparece en INFORMES de aprendizaje: no hay contenido del profe del
+  //     que informar (y un ranking de sudokus no dice nada de nadie).
+  assert.match(lee('views/reports.js'), /kind\s*!==\s*'juego'/,
+    'los informes deben excluir los juegos (§4c)');
+
+  // (c) No se PUBLICA tampoco desde la biblioteca: Explorar los filtra.
+  assert.match(lee('views/explore.js'), /kind\s*!==\s*'juego'/,
+    'la biblioteca pública no lista juegos (§4c)');
+
+  // (d) Y su contenido no se indexa por tema (lo genera la plantilla, no el profe).
+  assert.match(lee('core/search.js'), /kind\s*!==\s*'juego'/,
+    'el buscador no indexa las tripas generadas de un juego (§4c)');
+  ok('las 4 derivaciones de §4c son assert: ni Tarea, ni publicar, ni informes, ni indexar contenido');
+}
+
+// ── 8. R7 · el docente NO ve el aparato del alumno ─────────────────────────
+// "Son MENORES: lo que se guarda es lo MÍNIMO" (norte §3 R7) — y en particular
+// "el docente NO ve marca ni modelo del aparato". Estaba comprobado SOLO en el
+// reporte de fallos (`tests/bugReport.test.mjs`); cualquier otra superficie
+// (tabla de jugadores, informe de sesión, CSV del podio) podía pintar el
+// user-agent y nadie se enteraba. Se escanea el repo, no una lista.
+{
+  const { readFileSync, readdirSync, statSync } = await import('node:fs');
+  const raiz = join(TDIR, '..');
+  // `core/perf.js` es la excepción LEGÍTIMA y declarada: mide el aparato para
+  // encender `ww-lite` (R1, pizarras de gama baja). Nadie más lo necesita, y
+  // sobre todo: ese dato no viaja ni se enseña.
+  const EXCEPCIONES_APARATO = { 'core/perf.js': 'mide el dispositivo para el modo lite (R1); no lo guarda ni lo enseña' };
+  const HUELLA = /navigator\.(userAgent|platform|vendor|userAgentData)/;
+  const fuera = [];
+  const walk = (dir, base) => {
+    for (const n of readdirSync(dir)) {
+      const p = join(dir, n);
+      if (statSync(p).isDirectory()) { walk(p, `${base}${n}/`); continue; }
+      if (!n.endsWith('.js')) continue;
+      const rel = `${base}${n}`;
+      if (HUELLA.test(readFileSync(p, 'utf8')) && !EXCEPCIONES_APARATO[rel]) fuera.push(rel);
+    }
+  };
+  for (const d of ['core', 'views', 'adapters', 'kernel', 'templates']) walk(join(raiz, d), `${d}/`);
+  assert.deepStrictEqual(fuera, [],
+    `R7: estos módulos leen la huella del aparato sin ser la excepción declarada: ${fuera.join(' · ')}`);
+  // CONTRA-PRUEBA: el escaneo tiene dientes (si no, pasaría mirando a nada).
+  assert.ok(HUELLA.test('const ua = navigator.userAgent;'), 'el escáner detecta la huella del aparato');
+  ok('R7: nadie lee la huella del aparato salvo core/perf.js (modo lite), y se comprueba escaneando');
+}
+
 console.log(`\n  ${passed} kind checks passed`);

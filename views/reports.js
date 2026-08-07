@@ -5,6 +5,7 @@ import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { list as listActivities } from '../core/storage.js';
 import { activityItemCount } from '../core/migrate.js';
+import { getTemplate } from '../core/registry.js';
 import { listSessions, fetchSessionRecord } from '../core/liveTransport.js';
 import { rowsFromLiveState } from '../core/answerRows.js';
 import { itemStatsHtml } from './itemStatsView.js';
@@ -34,7 +35,11 @@ function parseState(rec) {
 }
 
 export async function renderReports(rootSel) {
-  const acts = listActivities();
+  // Los JUEGOS no entran en los informes de aprendizaje (§4c): no llevan
+  // contenido del profe, así que no hay nada de lo que informar — un ranking de
+  // sudokus no dice nada de nadie. La derivación estaba escrita en el norte y
+  // sin aplicar: "Ordena las Pelotas" aparecía en la lista (auditoría v1.51.400).
+  const acts = listActivities().filter(a => getTemplate(a.template)?.meta?.kind !== 'juego');
   let sessions = [];
   try { sessions = (await fetchAllSessions()).map(parseState); } catch { /* offline */ }
 
@@ -44,7 +49,7 @@ export async function renderReports(rootSel) {
   }
 
   mount(rootSel, html`
-    <h2 class="mb-3"><i class="bi bi-bar-chart-line-fill"></i> Reportes</h2>
+    <h2 class="mb-3"><i class="bi bi-bar-chart-line-fill"></i> Informes</h2>
     ${acts.length === 0 ? `<p class="text-muted">Aún no hay actividades.</p>` : `
       <div class="list-group">
         ${acts.map(a => `
@@ -70,7 +75,7 @@ export async function renderActivityReport(rootSel, activityId) {
   const sessions = allSessions.filter(s => s.activityId === activityId);
 
   mount(rootSel, html`
-    <a href="#/reports" class="btn btn-link"><i class="bi bi-arrow-left"></i> Reportes</a>
+    <a href="#/reports" class="btn btn-link"><i class="bi bi-arrow-left"></i> Informes</a>
     <h2 class="mb-3">${escapeHtml(a.title)}</h2>
     ${sessions.length === 0 ? `<p class="text-muted">Sin salas todavía.</p>` : `
       <table class="table table-hover">
