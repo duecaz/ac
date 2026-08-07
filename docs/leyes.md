@@ -690,7 +690,7 @@ De ahí las tres reglas:
 **1 · Cada tramo del norte (§1) tiene UN recorrido automático.** Los tramos están
 declarados en `tests/helpers/journeyTracks.mjs` y son los mismos que mide la
 radiografía. Hoy: buscar/crear → `find-smoke` · pizarra → `matrix-smoke` · en
-vivo → `live-smoke` · tareas/informes → `task-smoke` (crear → PIN → jugar → tope
+vivo → `live-smoke` · tareas/informes → `task-smoke` · los 13 editores → `edit-audit` (crear → PIN → jugar → tope
 de intentos → informe) · carrera contra PocketBase real → `race-e2e` (manual,
 pide credenciales). Un tramo sin recorrido es un tramo donde el primero en
 enterarse es el profesor — y en TAREAS ni siquiera eso: el fallo es silencioso
@@ -763,7 +763,7 @@ por SELECTORES concretos y no por texto — el teclado numérico tiene un "Borra
 
 ---
 ### Cómo se auto-verifica todo
-`node tools/preflight.mjs` corre las CINCO redes (suites + los cuatro recorridos)
+`node tools/preflight.mjs` corre las SEIS redes (suites + los cinco recorridos)
 antes de subir a `main` — es la orden que hay que teclear (§27).
 `node tests/run.mjs` corre TODAS las suites. Los escáneres compartidos
 (`core/normsCheck.js` / `core/templateContract.js` / `core/skinContract.js`) corren

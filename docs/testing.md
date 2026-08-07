@@ -38,7 +38,7 @@
 ## 0. El PREFLIGHT — la orden que hay que teclear (ley §27)
 
 ```bash
-node tools/preflight.mjs           # suite + los 4 recorridos, ~2 min
+node tools/preflight.mjs           # suite + los 5 recorridos, ~100 s
 node tools/preflight.mjs --rapido  # solo la suite (NO basta si tocas vistas/CSS/router)
 ```
 
@@ -56,6 +56,7 @@ navegador y caminar el viaje.
 | `tools/find-smoke.mjs` | buscar/crear: portada → biblioteca → mis actividades → crear → volver a buscar | ~8 |
 | `tools/live-smoke.mjs` | en vivo con dos pantallas: sala → PIN → responder → settle → podio | ~9 |
 | `tools/task-smoke.mjs` | tareas/informes: crear tarea → PIN → jugar → tope de intentos → informe del profe | ~8 |
+| `tools/edit-audit.mjs` | teclear en los 13 editores y re-preguntar al scorer: la clave correcta sobrevive | ~9 |
 
 Fuera del preflight a propósito: `race-e2e` (PocketBase real + credenciales),
 `stress-live` (carga contra la Pi) y `shots` (comparación visual antes/después).

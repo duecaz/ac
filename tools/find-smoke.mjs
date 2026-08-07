@@ -149,16 +149,30 @@ try {
   if (plantillas < 13) fail(`la pantalla de crear ofrece ${plantillas} plantillas; deben ser 13+`);
   ok(`desde el vacío se llega a elegir plantilla (${plantillas} disponibles)`);
 
-  // 9. Lo recién creado se ENCUENTRA buscándolo: sin esto, "crea la tuya" es un
-  //    consejo hueco — el profe la crea y luego no la localiza.
-  await page.evaluate(async () => {
-    const { newActivity } = await import('/core/migrate.js');
-    const s = await import('/core/storage.js');
-    const a = newActivity('quiz');
-    a.title = 'Fotosíntesis avanzada';
-    a.updatedAt = '2026-08-02T00:00:00Z';
-    s.save(a);
-  });
+  // 9. ELEGIR PLANTILLA → EL EDITOR MONTA. Aquí se paraba este recorrido, y
+  //    detrás quedaba el tramo más usado después de jugar: `views/editView.js`
+  //    no lo montaba NADIE (ni test ni smoke), así que "Guardar" podía romperse
+  //    con el preflight en verde.
+  await page.click('.tpl-pick[data-name="quiz"]');
+  await page.waitForSelector('#f-title', { timeout: 9000 })
+    .catch(() => fail('elegir plantilla no abre el editor (#f-title no aparece)'));
+  const hashEd = await page.evaluate(() => location.hash);
+  if (!/^#\/edit-new\/quiz/.test(hashEd)) fail(`elegir plantilla debía ir a #/edit-new/quiz, fue a ${hashEd}`);
+  ok('elegir plantilla abre el editor de contenido (#/edit-new/quiz)');
+
+  // 10. ESCRIBIR y GUARDAR: el gesto por el que el profe existe en esta app.
+  await teclear('#f-title', 'Fotosíntesis avanzada');
+  await teclear('.it-q', '¿Qué gas absorbe la planta?');
+  await page.click('#btn-save-draft');
+  await page.waitForTimeout(900);
+  const estado = await page.locator('#save-state').innerText();
+  if (!/Guardado/i.test(estado)) fail(`tras "Guardar borrador" el estado dice «${estado.trim()}»`);
+  ok(`escribir título y pregunta + Guardar borrador deja el estado en «${estado.trim()}»`);
+
+  // 11. Lo recién creado se ENCUENTRA buscándolo: sin esto, "crea la tuya" es un
+  //    consejo hueco — el profe la crea y luego no la localiza. Y ahora se busca
+  //    lo que se TECLEÓ en el editor, no una actividad sembrada por el test:
+  //    el ciclo entero (buscar → crear → editar → guardar → buscar) es real.
   await ir('#/mine');
   await page.waitForSelector('#h-q', { timeout: 9000 });
   await teclear('#h-q', 'fotosintesis');

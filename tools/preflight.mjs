@@ -34,7 +34,8 @@ const soloRapido = process.argv.includes('--rapido');
 const PASOS = [
   { id: 'suites',  cmd: 'tests/run.mjs',        que: 'lógica pura (contrato · normas · leyes · scorers)', rapido: true },
   { id: 'matriz',  cmd: 'tools/matrix-smoke.mjs', que: 'cada plantilla × cada modo arranca, un gesto de envío, fullscreen tocable' },
-  { id: 'buscar',  cmd: 'tools/find-smoke.mjs',   que: 'el viaje buscar/crear (portada → biblioteca → mis actividades → crear)' },
+  { id: 'buscar',  cmd: 'tools/find-smoke.mjs',   que: 'el viaje buscar/crear (portada → biblioteca → elegir plantilla → EDITAR → guardar → buscarla)' },
+  { id: 'editar',  cmd: 'tools/edit-audit.mjs',   que: 'teclear en los 13 editores sin que la actividad pierda su respuesta correcta' },
   { id: 'vivo',    cmd: 'tools/live-smoke.mjs',   que: 'el viaje en vivo con dos pantallas (sala → PIN → responder → podio)' },
   { id: 'tareas',  cmd: 'tools/task-smoke.mjs',   que: 'el viaje de tareas (crear → PIN → jugar → tope de intentos → informe)' },
 ];

@@ -11,7 +11,7 @@
 //
 // Run: node tests/journeys.test.mjs
 import assert from 'node:assert';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { TRACK_ORDER } from './helpers/journeyTracks.mjs';
@@ -24,10 +24,23 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 // Qué recorrido cubre cada TRAMO del viaje del profesor (docs/norte.md §1).
 // `manual` = existe pero no entra en el preflight, y por qué.
 const RECORRIDOS = {
-  'buscar/crear':      { tool: 'tools/find-smoke.mjs' },
+  // `tool` = el recorrido principal · `tambien` = otras redes del MISMO tramo
+  // que también tienen que estar enchufadas al preflight.
+  'buscar/crear':      { tool: 'tools/find-smoke.mjs', tambien: ['tools/edit-audit.mjs'] },
   'jugar en pizarra':  { tool: 'tools/matrix-smoke.mjs' },
   'jugar en vivo':     { tool: 'tools/live-smoke.mjs' },
   'informes/tareas':   { tool: 'tools/task-smoke.mjs' },
+};
+
+// Redes que EXISTEN y no están en el preflight, cada una con su motivo. Es un
+// ratchet: si una red no está aquí ni en el preflight, el escaneo de abajo la
+// caza. `tools/edit-audit.mjs` vivió meses fuera de las dos listas —una red
+// escrita, funcionando y que no corría nadie— y ninguna ley lo veía.
+const FUERA_DEL_PREFLIGHT = {
+  'tools/race-e2e.mjs':       'PocketBase REAL: pide credenciales por entorno (WW_EMAIL/WW_PASS)',
+  'tools/stress-live.mjs':    'prueba de CARGA contra la Pi: no puede correr en cada commit',
+  'tools/shots.mjs':          'comparación visual: necesita un "before" grabado a mano antes del cambio',
+  'tools/vs-teams-smoke.mjs': 'OBSOLETO: superado por matrix-smoke (juega la ronda) + shots (diff por píxel); exige un servidor en :8000 arrancado a mano — candidato a borrar',
 };
 
 // ── 1. Cada tramo JUGABLE del norte tiene su recorrido, y existe ────────────
@@ -53,15 +66,53 @@ const RECORRIDOS = {
 }
 
 // ── 3. El preflight los corre TODOS (un smoke que nadie corre es un MD) ─────
+// Lo que el preflight CORRE de verdad (sus `cmd:`), no lo que menciona: su nota
+// final nombra race-e2e/stress-live/shots para decir que quedan FUERA, y un
+// `includes` ingenuo los daba por conectados.
+const CORRE = (read('tools/preflight.mjs').match(/cmd:\s*'([^']+)'/g) || [])
+  .map(s => s.replace(/.*'([^']+)'.*/, '$1'));
 {
-  const pre = read('tools/preflight.mjs');
   for (const r of Object.values(RECORRIDOS)) {
-    if (!r.tool) continue;
-    assert.ok(pre.includes(r.tool.replace('tools/', '')),
-      `tools/preflight.mjs no corre ${r.tool} — desconectado, no protege de nada`);
+    for (const t of [r.tool, ...(r.tambien || [])]) {
+      if (!t) continue;
+      assert.ok(CORRE.includes(t), `tools/preflight.mjs no corre ${t} — desconectado, no protege de nada`);
+    }
   }
-  assert.ok(pre.includes('tests/run.mjs'), 'el preflight debe correr también la suite');
-  ok('el preflight encadena la suite + los 4 recorridos (nadie queda desconectado)');
+  assert.ok(CORRE.includes('tests/run.mjs'), 'el preflight debe correr también la suite');
+  ok(`el preflight encadena ${CORRE.length} redes: la suite + las de los 4 tramos`);
+}
+
+// ── 3b. NINGUNA red queda huérfana — se DESCUBREN, no se enumeran ──────────
+// La lección de la tarjeta única, aplicada a §27: una lista enumerada vigila el
+// pasado. `tools/edit-audit.mjs` existía, funcionaba y no lo corría nadie
+// porque no estaba en ninguna lista — y la ley que debía verlo miraba solo las
+// listas. Ahora se escanea la carpeta: toda red (smoke · audit · e2e · stress)
+// está en el preflight o declarada fuera CON SU MOTIVO.
+{
+  const REDES = /(smoke|audit|e2e|stress)/i;
+  const todas = readdirSync(join(ROOT, 'tools'))
+    .filter(f => f.endsWith('.mjs') && REDES.test(f))
+    .map(f => `tools/${f}`);
+  const huerfanas = todas.filter(t => !CORRE.includes(t) && !FUERA_DEL_PREFLIGHT[t]);
+  assert.deepStrictEqual(huerfanas, [],
+    `RED HUÉRFANA (existe y no la corre nadie): ${huerfanas.join(' · ')}\n` +
+    '  → mételas en tools/preflight.mjs o declara su motivo en FUERA_DEL_PREFLIGHT.\n');
+  // Y una excepción muerta también miente: si la red ya entró al preflight,
+  // su motivo tiene que salir de la lista.
+  const muertas = Object.keys(FUERA_DEL_PREFLIGHT)
+    .filter(t => CORRE.includes(t) || !existsSync(join(ROOT, t)));
+  assert.deepStrictEqual(muertas, [],
+    `declaradas fuera del preflight pero ya conectadas (o inexistentes): ${muertas.join(' · ')}`);
+  ok(`${todas.length} redes escaneadas: 0 huérfanas (${Object.keys(FUERA_DEL_PREFLIGHT).length} fuera, con motivo)`);
+
+  // CONTRA-PRUEBA: una red NUEVA que nadie enchufa tiene que salir. Sin esto el
+  // escaneo podría estar mirando a otro sitio y nadie lo notaría — que es
+  // exactamente lo que pasó durante meses con edit-audit.
+  const inventada = ['tools/pizarra-smoke.mjs', ...todas]
+    .filter(t => !CORRE.includes(t) && !FUERA_DEL_PREFLIGHT[t]);
+  assert.deepStrictEqual(inventada, ['tools/pizarra-smoke.mjs'],
+    'el escaneo no cazaría una red nueva sin enchufar');
+  ok('CONTRA-PRUEBA: una red nueva sin enchufar al preflight rompe CI');
 }
 
 // ── 4. Un recorrido NO se da el veredicto a sí mismo ────────────────────────
@@ -76,7 +127,7 @@ const RECORRIDOS = {
     assert.match(src, /page\.(click|type|fill|tap)|\.click\(|\.type\(|\.fill\(/,
       `${tramo}: ${r.tool} no pulsa ni teclea nada — no está caminando el viaje`);
   }
-  ok('los 4 recorridos interactúan de verdad (teclean y pulsan, no llaman a funciones)');
+  ok('los recorridos interactúan de verdad (teclean y pulsan, no llaman a funciones)');
 }
 
 // ── 5. Los controles críticos se comprueban con el DEDO, no con querySelector ─
