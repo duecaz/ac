@@ -26,7 +26,7 @@
 | Documento | Qué responde |
 |---|---|
 | [`norte.md`](norte.md) | para quién es la app, la escena real y cómo se decide (**manda sobre el resto**) |
-| [`leyes.md`](leyes.md) | las 8 leyes, cada una con el test que la vigila |
+| [`leyes.md`](leyes.md) | TODAS las leyes, cada una con el test que la vigila |
 | [`arquitectura-modulos.md`](arquitectura-modulos.md) | la radiografía: capas, imports, esfuerzo por tramo y mapa de datos (GENERADO) |
 | [`modos-de-juego.md`](modos-de-juego.md) | contrato de los 5 modos y los 4 bucles en vivo |
 | [`decisiones-pendientes.md`](decisiones-pendientes.md) | lo aplazado, con su condición para reabrirlo |

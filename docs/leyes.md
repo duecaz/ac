@@ -57,6 +57,7 @@
 - [§27 · VIAJES — si es un tramo del norte, tiene su RECORRIDO](#27--viajes--si-es-un-tramo-del-norte-tiene-su-recorrido)
   - [Corolario: al unificar, migrar también la DECISIÓN](#corolario-al-unificar-migrar-también-la-decisión)
 - [§28 · EN CLASE — el profe no configura y el alumno no puede romper](#28--en-clase--el-profe-no-configura-y-el-alumno-no-puede-romper)
+- [⚖️ §29 · PRESUPUESTO — el coste de conducir la clase se MIDE](#-29--presupuesto--el-coste-de-conducir-la-clase-se-mide)
   - [Cómo se auto-verifica todo](#cómo-se-auto-verifica-todo)
 
 ### Ir a otro documento
@@ -760,6 +761,47 @@ editar la actividad, publicar/despublicar, la papelera, el menú de sesión.
 ESTÉ en el DOM, sí. `matrix-smoke` escanea el marco en cada plantilla × modo,
 por SELECTORES concretos y no por texto — el teclado numérico tiene un "Borrar"
 (un dígito) perfectamente legítimo.
+
+---
+
+## ⚖️ §29 · PRESUPUESTO — el coste de conducir la clase se MIDE
+
+> **Dueño**: `tools/matrix-smoke.mjs` (el coste dentro de la ronda) +
+> `tools/find-smoke.mjs` (el coste de llegar a ella) · **PROHIBIDO**: añadir un
+> toque, un diálogo o un avance automático al camino que el profe recorre con la
+> clase delante. · **Vigilada por**: la sección "PRESUPUESTO DE CONDUCCIÓN" de
+> `matrix-smoke` + el conteo de toques de `find-smoke`.
+
+El norte abre §2b diciendo *"la promesa de §2 es medible o no es nada"* — y sus
+18 filas llevaban meses sin medirse ni una. Esta ley empieza por los que el
+propio norte marca como **los de más peso**, porque son los que deciden si el
+profe vuelve a usar la actividad al día siguiente:
+
+**1 · Jugar no abre diálogos.** Ni `confirm`, ni `alert`, ni `prompt` durante la
+ronda, en ninguno de los tres modos de pizarra. "Pasar a la siguiente pregunta:
+1 toque, **sin diálogos ni confirmaciones**" es el gesto que se repite toda la
+clase; un `confirm()` metido "por seguridad" lo dobla y nadie lo nota en el
+portátil del que programa — se nota con 33 críos esperando. La matriz sustituye
+los tres diálogos por espías antes de jugar y falla si alguno se llama.
+
+**2 · Revelar nunca solo.** En Equipos, tras responder se espera **sin tocar
+nada** y la respuesta NO puede aparecer: la destapa el docente con su botón, o
+no se destapa. *"La clase responde en voz alta primero; si la pantalla se
+adelanta, mata la participación"* — y matar la participación es matar el
+producto, porque para eso existe (§1). Un autoavance añadido "para pulir" sería
+invisible para todas las demás redes: monta bien, juega bien, puntúa bien.
+
+**3 · De la lista a jugar, ≤ 3 toques.** `find-smoke` los cuenta de verdad
+(pulsa lo que pulsaría el profe y para cuando el juego está montado): hoy son
+**2**. Es el momento en que la clase está esperando y el que más barato se
+encarece — una pantalla intermedia "solo para elegir el modo" lo dobla.
+
+**Lo que esta ley todavía NO mide** (declarado, no escondido): los tiempos
+(≤ 15 s al montar, ≤ 3 min crear, ≤ 30 s abrir sala) y "se lee desde el fondo
+del aula". Los tiempos piden un banco de medida estable —en este sandbox el
+reloj miente— y la legibilidad pide medir tamaño y contraste computados, que es
+la extensión natural de §3. Ninguno de los dos es excusa para no tener los tres
+de arriba.
 
 ---
 ### Cómo se auto-verifica todo

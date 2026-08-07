@@ -180,6 +180,22 @@ try {
   if (!encontrada.some(t => /Fotos/i.test(t))) fail(`la recién creada no se encuentra: ${JSON.stringify(encontrada)}`);
   ok('lo recién creado se encuentra al buscarlo (el ciclo buscar→crear→buscar cierra)');
 
+  // 12. ⚖️ LEY §29 · PRESUPUESTO — "de la lista a la actividad en pantalla:
+  //     ≤ 3 toques". Es el momento en que la clase ESTÁ ESPERANDO, y el número
+  //     que el norte (§2b) declaraba "medible o no es nada" sin medirlo nunca.
+  //     Se cuentan toques REALES: se pulsa lo que pulsaría el profe y se para
+  //     en cuanto el juego está montado.
+  await ir('#/mine');
+  await page.waitForSelector('.acard', { timeout: 9000 });
+  let toques = 0;
+  const tocar = async (sel) => { await page.click(sel); toques++; await page.waitForTimeout(500); };
+  await tocar('.acard .act-play');           // 1 · el modo Individual de su tarjeta
+  await page.waitForSelector('.ww-start-go', { timeout: 9000 });
+  await tocar('.ww-start-go');               // 2 · Iniciar
+  await page.waitForSelector('#ww-player-widget *', { timeout: 12000 });
+  if (toques > 3) fail(`de la lista a jugar hacen falta ${toques} toques; el presupuesto del norte §2b son 3`);
+  ok(`§29 · de "Mis actividades" a la actividad jugándose: ${toques} toques (presupuesto: 3)`);
+
   if (errs.length) {
     console.error('\nERRORES DE PÁGINA:');
     errs.slice(0, 6).forEach(e => console.error('  ✗', e));

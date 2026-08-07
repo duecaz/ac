@@ -21,7 +21,7 @@ export function anchorOf(heading) {
  *  recomendada: primero para quién es la app, luego cómo se construye. */
 export const DOC_MAP = [
   ['`docs/norte.md`', 'norte.md', 'para quién es la app, la escena real y cómo se decide (**manda sobre el resto**)'],
-  ['`docs/leyes.md`', 'leyes.md', 'las 8 leyes, cada una con el test que la vigila'],
+  ['`docs/leyes.md`', 'leyes.md', 'TODAS las leyes, cada una con el test que la vigila'],
   ['`docs/arquitectura-modulos.md`', 'arquitectura-modulos.md', 'la radiografía: capas, imports, esfuerzo por tramo y mapa de datos (GENERADO)'],
   ['`docs/modos-de-juego.md`', 'modos-de-juego.md', 'contrato de los 5 modos y los 4 bucles en vivo'],
   ['`docs/decisiones-pendientes.md`', 'decisiones-pendientes.md', 'lo aplazado, con su condición para reabrirlo'],

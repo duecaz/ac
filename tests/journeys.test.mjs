@@ -172,6 +172,21 @@ const CORRE = (read('tools/preflight.mjs').match(/cmd:\s*'([^']+)'/g) || [])
   ok(`deuda de juego conocida y declarada: ${entradas} combinación(es), con su motivo`);
 }
 
+// ── 5b. LEY §29 · PRESUPUESTO: las tres medidas siguen enchufadas ──────────
+// El coste de conducir la clase (§2b del norte) se mide en dos recorridos. Si
+// alguien quita el espía de diálogos o el conteo de toques, el presupuesto
+// vuelve a ser prosa — que es como estuvo desde que se escribió.
+{
+  const mx = read('tools/matrix-smoke.mjs');
+  assert.ok(/__wwDialogos/.test(mx), 'matrix-smoke perdió el espía de confirm/alert/prompt (§29-1)');
+  assert.ok(/teams-answer/.test(mx), 'matrix-smoke ya no comprueba que nadie revele solo (§29-2)');
+  const fs = read('tools/find-smoke.mjs');
+  assert.ok(/toques/.test(fs), 'find-smoke ya no cuenta los toques de la lista a jugar (§29-3)');
+  const leyes = read('docs/leyes.md');
+  assert.match(leyes, /§29 · PRESUPUESTO/, 'la ley §29 debe estar en el índice único de normas');
+  ok('LEY §29: diálogos · revelar solo con el docente · toques hasta jugar, las tres conectadas');
+}
+
 // ── 6. CONTRA-PRUEBA: la ley está escrita donde se busca ────────────────────
 // Una ley que no se puede citar es una ley huérfana (§6b del norte).
 {

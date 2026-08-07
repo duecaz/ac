@@ -35,7 +35,7 @@ git push origin <rama-de-trabajo>:ACTIVIDAD2         # legado, opcional (ya no s
   autenticado**: para acciones sobre sus repos fuera del alcance de la sesión (p.ej.
   `duecaz/ww-assets`), pásale los comandos `gh`/PS listos para pegar y él los ejecuta.
 
-### 4. LAS DIEZ LEYES — contrastar TODO diseño contra ellas ANTES de escribir código
+### 4. LAS ONCE LEYES — contrastar TODO diseño contra ellas ANTES de escribir código
 Cada ley es un cuadro **dueño → PROHIBIDO** con su test que rompe CI. Si un cambio
 necesita violar una prohibición, el diseño está mal planteado: no se parchea, se
 replantea. Texto completo en **`docs/leyes.md`** (índice único de normas).
@@ -52,6 +52,7 @@ replantea. Texto completo en **`docs/leyes.md`** (índice único de normas).
 | **§26 · BUCLES LIVE** | el catálogo (rondas·carrera·tablero·pedir la palabra) está CONGELADO: fase nueva = decisión escrita | `liveLoops` |
 | **§27 · VIAJES** | cada tramo del norte tiene su RECORRIDO con navegador; se comprueba lo que toca el dedo, no lo que existe en el DOM | `journeys` + `tools/preflight.mjs` |
 | **§28 · EN CLASE** | R2: máx. 2 opciones de partida, ya elegidas (el techo lo exige el contrato) · R2b: dentro del marco de juego, ningún control destructivo ni de identidad | `templateContract` · escaneo R2b de `matrix-smoke` |
+| **§29 · PRESUPUESTO** | el coste de conducir se MIDE: jugar sin diálogos · nadie revela solo · de la lista a jugar ≤3 toques | `matrix-smoke` (presupuesto) · `find-smoke` (toques) |
 
 - **Si es norma, es test**: una regla nueva se escribe como test, no solo en un MD.
 - **Si una ley cierra una puerta, la UI lo DICE ANTES**: dirigir en vivo / crear

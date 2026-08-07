@@ -12,7 +12,7 @@
 | Documento | Qué responde |
 |---|---|
 | [`norte.md`](norte.md) | para quién es la app, la escena real y cómo se decide (**manda sobre el resto**) |
-| [`leyes.md`](leyes.md) | las 8 leyes, cada una con el test que la vigila |
+| [`leyes.md`](leyes.md) | TODAS las leyes, cada una con el test que la vigila |
 | [`modos-de-juego.md`](modos-de-juego.md) | contrato de los 5 modos y los 4 bucles en vivo |
 | [`decisiones-pendientes.md`](decisiones-pendientes.md) | lo aplazado, con su condición para reabrirlo |
 | [`estudio-bucles-live.md`](estudio-bucles-live.md) | por qué el vivo es como es (estudio medido) |
@@ -33,7 +33,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 18 · 3664 | 18 · 2846 | 0.78 |
 | **informes/tareas** | después de clase | 11 · 1126 | 4 · 435 | 0.39 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5810 | 12 · 975 | 0.17 |
-| **infra/común** | todo lo anterior | 126 · 12207 | 35 · 3647 | 0.30 |
+| **infra/común** | todo lo anterior | 126 · 12207 | 35 · 3662 | 0.30 |
 
 > Un ratio bajo en un tramo muy usado es deuda de PRIORIDAD, no de calidad: ese
 > código funciona, pero si se rompe nadie se entera hasta que hay 33 críos

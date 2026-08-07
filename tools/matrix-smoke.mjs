@@ -155,6 +155,7 @@ const results = [];
 const taps = [];
 const hits = [];   // hit-testing de los controles críticos
 const rounds = [];  // rondas JUGADAS con un toque real (cola #3)
+const presupuesto = [];  // ley §29: el coste en toques/diálogos de conducir la clase
 for (const t of seeded) {
   if (only.length && !only.includes(t.name)) continue;
   const cap = caps.find(c => c.name === t.name);
@@ -249,7 +250,32 @@ for (const t of seeded) {
         // En Equipos el gesto no avanza la ronda: HABILITA "Revelar" (el equipo
         // elige, el docente revela). Ahí se mira ese efecto, no el avance.
         const efecto = (mode === 'teams' && !memoTeams) ? '#teams-reveal' : '';
+        // ⚖️ LEY §29 · PRESUPUESTO (norte §2b) — dos de los números con más peso,
+        // medidos aquí porque es donde de verdad se juega una ronda:
+        //  1. NINGÚN DIÁLOGO del navegador durante el juego. "Pasar a la
+        //     siguiente pregunta: 1 toque, sin diálogos ni confirmaciones" es EL
+        //     número que decide si el profe vuelve a usar la actividad, y un
+        //     `confirm()` metido "por seguridad" lo dobla sin que nadie lo note.
+        await page.evaluate(() => {
+          window.__wwDialogos = [];
+          for (const k of ['confirm', 'alert', 'prompt']) {
+            window[k] = (...a) => { window.__wwDialogos.push(`${k}(${String(a[0] ?? '').slice(0, 40)})`); return true; };
+          }
+        });
         const r = await playRound(page, caja, { ...(hints[t.name] || {}), progressSel: prog, effectSel: efecto });
+        const dialogos = await page.evaluate(() => window.__wwDialogos || []);
+        if (dialogos.length) { status = 'error'; detail = `§29: la ronda abre diálogo(s) del navegador: ${dialogos.join(' · ')}`; }
+        //  2. REVELAR NUNCA SOLO (Equipos). "La clase responde en voz alta
+        //     primero; si la pantalla se adelanta, mata la participación." Se
+        //     espera SIN TOCAR NADA y la respuesta no puede aparecer: el
+        //     veredicto lo destapa el docente con su botón, o no se destapa.
+        if (mode === 'teams' && status === 'ok' && r.mecanica) {
+          await page.waitForTimeout(2600);
+          const soloSeReveló = await page.evaluate(() => !!document.querySelector('.teams-answer'));
+          if (soloSeReveló) { status = 'error'; detail = '§29: la respuesta se reveló SOLA (sin que el docente lo decidiera)'; }
+          presupuesto.push({ label: t.label, mode, regla: 'revelar solo con el docente', ok: !soloSeReveló });
+        }
+        presupuesto.push({ label: t.label, mode, regla: 'jugar sin diálogos', ok: !dialogos.length });
         // RATCHET de deuda conocida (mismo patrón que el ratchet de estilos): una
         // combinación rota Y DECLARADA no tumba la matriz, pero sale en el
         // informe con su motivo. Lo que no se tolera es una rotura NUEVA.
@@ -356,6 +382,19 @@ if (rounds.length) {
   }
 }
 
+// ── Ley §29 · PRESUPUESTO (norte §2b) ───────────────────────────────────────
+const presuBad = presupuesto.filter(p => !p.ok);
+if (presupuesto.length) {
+  const porRegla = {};
+  for (const p of presupuesto) (porRegla[p.regla] ??= []).push(p);
+  console.log('\nPRESUPUESTO DE CONDUCCIÓN (ley §29 · el coste de llevar la clase)\n');
+  for (const [regla, lista] of Object.entries(porRegla)) {
+    const mal = lista.filter(x => !x.ok).length;
+    console.log(`  ${mal ? '❌' : '✅'} ${regla.padEnd(30)} ${lista.length - mal}/${lista.length}`);
+  }
+  for (const p of presuBad) console.log(`  ❌ ${p.label} · ${p.mode} — ${p.regla}`);
+}
+
 const seedBad = seeded.filter(s => s.seedError);
 if (seedBad.length) { console.log('\nSIEMBRA FALLIDA:'); seedBad.forEach(s => console.log(`  ❌ ${s.name} — ${s.seedError}`)); }
 
@@ -363,4 +402,4 @@ console.log(`\n✅ ok: ${results.filter(r => r.status === 'ok').length}` +
   ` · ❌ fallos: ${bad.length}` +
   ` · · no aplica: ${results.filter(r => r.status === 'n/a').length}`);
 console.log('El ALUMNO en vivo lo cubre tools/live-smoke.mjs (dos contextos) y la Tarea tools/task-smoke.mjs. Sin cubrir: carrera con 2 alumnos.');
-bye(bad.length || seedBad.length || tapBad.length || hitBad.length || roundBad.length ? 1 : 0);
+bye(bad.length || seedBad.length || tapBad.length || hitBad.length || roundBad.length || presuBad.length ? 1 : 0);
