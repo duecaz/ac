@@ -87,6 +87,13 @@ function dateTag() {
   const d = new Date();
   return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
 }
+/** Descarga un texto como fichero. El trío blob→<a>→click()→revokeObjectURL
+ *  estaba copiado en cuatro sitios (io, hostLive, reports, assignments), cada
+ *  uno con su propio retardo de revoke. Aquí una vez. */
+export function downloadText(filename, mime, text, { bom = true } = {}) {
+  triggerDownload(new Blob([(bom ? '\ufeff' : '') + text], { type: `${mime};charset=utf-8` }), filename);
+}
+
 function triggerDownload(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

@@ -20,7 +20,9 @@ export function itemStatsHtml(activity, rows) {
   const stats = aggregate({ items, template: T, rows, activity });
   if (!stats.nPlayers) return `<p class="text-muted text-center py-3">Sin respuestas para analizar todavía.</p>`;
   const isText = T?.meta?.contentModel === 'textCorrection';
-  const kind = activity?.template === 'comas' ? 'coma' : 'tilde';
+  // Qué se marca lo DECLARA la plantilla (`meta.markNoun`), no el nombre del
+  // fichero: era la última bandera `template === 'comas'` de esta vista.
+  const kind = T?.meta?.markNoun || 'marca';
   return `<div class="istats">
     <p class="istats__head"><i class="bi bi-people-fill"></i> ${stats.nPlayers} ${stats.nPlayers === 1 ? 'participante' : 'participantes'} · análisis de aciertos por ${isText ? 'palabra' : 'ítem'}</p>
     ${stats.items.map((it, i) => itemBlock(it, items[i], isText, kind)).join('')}

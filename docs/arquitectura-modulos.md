@@ -5,7 +5,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **249 módulos · 905 imports internos.**
+> **249 módulos · 909 imports internos.**
 
 ### Ir a otro documento
 
@@ -30,10 +30,10 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 |---|---|---|---|---|
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 12 · 1567 | 5 · 558 | 0.36 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 11 · 2413 | 12 · 1112 | 0.46 |
-| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 18 · 3664 | 18 · 2846 | 0.78 |
-| **informes/tareas** | después de clase | 11 · 1131 | 4 · 435 | 0.38 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5810 | 12 · 975 | 0.17 |
-| **infra/común** | todo lo anterior | 126 · 12231 | 38 · 4084 | 0.33 |
+| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 18 · 3672 | 18 · 2846 | 0.78 |
+| **informes/tareas** | después de clase | 11 · 1064 | 4 · 435 | 0.41 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5812 | 12 · 975 | 0.17 |
+| **infra/común** | todo lo anterior | 126 · 12243 | 38 · 4084 | 0.33 |
 
 > Un ratio bajo en un tramo muy usado es deuda de PRIORIDAD, no de calidad: ese
 > código funciona, pero si se rompe nadie se entera hasta que hay 33 críos
@@ -56,15 +56,15 @@ graph TD
   T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>75 módulos</small>"]
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>5 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
-  V -->|257| C
+  V -->|258| C
   T -->|188| C
   A -->|28| C
   AD -->|26| C
   A -->|18| V
+  K -->|10| C
   C -->|9| K
   CO -->|9| C
-  K -->|9| C
-  V -->|8| K
+  V -->|9| K
   C -.->|6 · excepción| AD
   C -->|5| CF
   V -->|5| T
@@ -101,7 +101,7 @@ graph TD
 | **vistas** | `views/hostLive.js` (1032) · `views/adminView.js` (978) · `views/studentLive.js` (867) · `views/vsView.js` (487) · `views/playerView.js` (367) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1107) · `adapters/local/realtime.js` (321) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
 | **core** | `core/selftest.js` (331) · `core/skins.js` (327) · `core/textCorrectionRound.js` (325) · `core/auth.js` (313) · `core/vsAnimations.js` (269) |
-| **kernel** | `kernel/session/engine.js` (541) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/realtimePort.js` (31) |
+| **kernel** | `kernel/session/engine.js` (549) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/realtimePort.js` (31) |
 | **plantillas** | `templates/crossword/player.js` (464) · `templates/wordsearch/player.js` (405) · `templates/match/player.js` (296) · `templates/quiz/editor.js` (283) · `templates/diagram/player.js` (233) |
 | **contenido** | `kernel/content/qaAdapt.js` (104) · `kernel/content/convert.js` (95) · `kernel/content/switch.js` (82) · `kernel/content/models.js` (79) · `kernel/content/index.js` (5) |
 | **config** | `pocketbase.config.js` (13) |
@@ -119,9 +119,9 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 | `core/ids.js` | 22 |
 | `core/clock.js` | 21 |
 | `core/toast.js` | 21 |
+| `kernel/session/engine.js` | 17 |
 | `core/gameEvents.js` | 17 |
 | `core/ls.js` | 16 |
-| `kernel/session/engine.js` | 16 |
 
 ## Los módulos más grandes (candidatos a partir)
 
@@ -134,7 +134,7 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 | `views/hostLive.js` | 1032 | 1 |
 | `views/adminView.js` | 978 | 1 |
 | `views/studentLive.js` | 867 | 1 |
-| `kernel/session/engine.js` | 541 | 16 |
+| `kernel/session/engine.js` | 549 | 17 |
 | `views/vsView.js` | 487 | 2 |
 | `templates/crossword/player.js` | 464 | 1 |
 | `templates/wordsearch/player.js` | 405 | 1 |

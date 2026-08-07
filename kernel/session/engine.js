@@ -24,6 +24,7 @@ import { supportsLoop } from '../../core/liveLoops.js';
 import { getTemplate } from '../../core/registry.js';
 import { canAutoScoreRound } from '../../core/templateCapability.js';
 import { basePoints } from '../../core/scoring/index.js';
+import { ITEM_KEYS } from '../../core/migrate.js';
 
 export const FORMATS = Object.freeze({ SOLO: 'solo', LIVE: 'live', TEAMS: 'teams', VS: 'vs' });
 
@@ -33,7 +34,14 @@ export const FORMATS = Object.freeze({ SOLO: 'solo', LIVE: 'live', TEAMS: 'teams
 // the sequence of rounds. Mirrors core/migrate.js activityItemCount.
 export function sessionItems(activity) {
   const c = activity?.content || {};
-  return c.items ?? c.entries ?? c.pairs ?? c.groups ?? c.words ?? c.passages ?? [];
+  // Las claves salen de ITEM_KEYS (core/migrate.js), que es la MISMA lista que
+  // usa activityItemCount. Estaban escritas a mano en los dos sitios y ya
+  // habían divergido: `pins` (Etiqueta el Diagrama) se añadió solo a una, así
+  // que para esa plantilla el contador decía N y esta función devolvía [] —
+  // `core/editorModes.js` y el contrato la trataban como si no tuviera
+  // contenido (auditoría v1.51.405).
+  for (const k of ITEM_KEYS) if (c[k] != null) return c[k];
+  return [];
 }
 
 // Payload de una ronda para el ítem `itemIndex`: lo que la plantilla expone al

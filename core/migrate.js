@@ -53,7 +53,12 @@ export function normalize(a) {
   const T = getTemplate(a.template);
   const ruleDefs = T?.meta?.defaultRules?.() || { ...DEFAULT_RULES };
   const scoreDefs = T?.meta?.defaultScoring?.() || { ...DEFAULT_SCORING };
-  const liveDefs = T?.meta?.defaultLive?.() || { ...DEFAULT_LIVE };
+  // MERGE, no reemplazo: `defaultLive: () => ({})` es truthy, así que las 10
+  // plantillas que devuelven un objeto vacío se quedaban SIN los valores de
+  // DEFAULT_LIVE. Sobrevivían porque cada lector tenía su propio respaldo
+  // (`|| 20`, `?? 1000`, `|| 60`) — es decir, el default de live estaba
+  // duplicado en tres módulos y el declarado aquí no llegaba nunca.
+  const liveDefs = { ...DEFAULT_LIVE, ...(T?.meta?.defaultLive?.() || {}) };
   const contentDefs = T?.meta?.defaultContent?.() || {};
   return {
     id: a.id,

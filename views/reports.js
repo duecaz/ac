@@ -8,6 +8,9 @@ import { activityItemCount } from '../core/migrate.js';
 import { getTemplate } from '../core/registry.js';
 import { listSessions, fetchSessionRecord } from '../core/liveTransport.js';
 import { rowsFromLiveState } from '../core/answerRows.js';
+import { sessionTableHtml, sessionTableCsv } from './sessionTable.js';
+import { sessionItems } from '../kernel/session/engine.js';
+import { downloadText } from '../core/io.js';
 import { itemStatsHtml } from './itemStatsView.js';
 
 // Las filas de salas las sirve el DUEÑO de la colección (ley de datos §21):
@@ -107,43 +110,21 @@ export async function renderSessionReport(rootSel, sessionId) {
     return;
   }
 
-  const players = [...sess.players].sort((a, b) => (b.score || 0) - (a.score || 0));
   const activity = sess.activitySnap || {};
-  const c = activity.content || {};
-  const items = c.items ?? c.entries ?? c.pairs ?? c.groups ?? c.words ?? c.passages ?? [];
-
-  // Build ansByPlayer: playerId → itemIndex → answer
-  const ansByPlayer = {};
-  for (const [key, ans] of Object.entries(sess.answers)) {
-    const colonIdx = key.indexOf(':');
-    const iStr = key.slice(0, colonIdx);
-    const pid = key.slice(colonIdx + 1);
-    const i = parseInt(iStr);
-    (ansByPlayer[pid] ||= {})[i] = ans;
-  }
-
-  // Aggregates per item.
-  const itemStats = items.map((_, i) => {
-    let correct = 0, answered = 0;
-    for (const p of players) {
-      const a = ansByPlayer[p.id]?.[i];
-      if (!a) continue;
-      answered++;
-      if (a.correct === true) correct++;
-    }
-    return { answered, correct, pct: answered ? Math.round(100 * correct / answered) : null };
-  });
-
-  const avgScore = players.length ? Math.round(players.reduce((s, p) => s + (p.score || 0), 0) / players.length) : 0;
-  const overallPct = (() => {
-    const total = items.length * players.length;
-    if (!total) return 0;
-    let c = 0;
-    for (const p of players) for (let i = 0; i < items.length; i++) {
-      if (ansByPlayer[p.id]?.[i]?.correct === true) c++;
-    }
-    return Math.round(100 * c / total);
-  })();
+  const tpl = getTemplate(activity.template);
+  const items = sessionItems(activity);
+  // LAS MISMAS matemáticas que el informe del host y que el de tareas
+  // (core/sessionModel.js). Esta vista tenía su propia matriz alumno×ítem, con
+  // la aritmética de ANTES de dos arreglos: contaba `correct === true` sobre
+  // ítems×jugadores, así que (a) un ítem SIN CLAVE —Abre Cajas, Ruleta, donde
+  // los puntos los da el docente— contaba como fallo y el informe decía 0 %, y
+  // (b) el mérito por partes de Tildes/Comas ("3 de 8") se perdía. El mismo
+  // profe veía DOS porcentajes distintos de la MISMA sesión según por dónde
+  // entrara. Las filas ya se calculaban aquí para el análisis por ítem.
+  const rows = rowsFromLiveState(sess);
+  const labels = items.map((it, i) => { try { return tpl?.itemLabel?.(it) || `Pregunta ${i + 1}`; } catch { return `Pregunta ${i + 1}`; } });
+  const opts = { labels, items, template: tpl, activity };
+  const jugadores = sess.players.length;
 
   mount(rootSel, html`
     <a href="#/reports/${sess.activityId}" class="btn btn-link"><i class="bi bi-arrow-left"></i> Volver</a>
@@ -151,72 +132,22 @@ export async function renderSessionReport(rootSel, sessionId) {
       <h2 class="mb-0">Sesión <code>${escapeHtml(sess.code)}</code></h2>
       <button id="btn-csv" class="btn btn-outline-success"><i class="bi bi-download"></i> Exportar CSV</button>
     </div>
-    <p class="text-muted">${sess.startedAt ? new Date(sess.startedAt).toLocaleString() : '—'} · ${players.length} jugadores · ${items.length} preguntas</p>
+    <p class="text-muted">${sess.startedAt ? new Date(sess.startedAt).toLocaleString() : '—'} · ${jugadores} jugadores · ${items.length} preguntas</p>
 
-    <div class="row g-2 mb-3">
-      <div class="col-md-4"><div class="card text-center"><div class="card-body p-2"><div class="small text-muted">Promedio</div><div class="h4 mb-0">${avgScore}</div></div></div></div>
-      <div class="col-md-4"><div class="card text-center"><div class="card-body p-2"><div class="small text-muted">% acierto</div><div class="h4 mb-0">${overallPct}%</div></div></div></div>
-      <div class="col-md-4"><div class="card text-center"><div class="card-body p-2"><div class="small text-muted">Mejor</div><div class="h4 mb-0">${players[0]?.score ?? 0}</div></div></div></div>
-    </div>
+    <div class="istats-wrap mb-4">${sessionTableHtml(rows, items.length, opts)}</div>
 
-    <div class="table-responsive">
-      <table class="table table-sm table-bordered align-middle">
-        <thead>
-          <tr><th>Jugador</th>${items.map((_, i) => `<th class="text-center" title="${itemStats[i].correct}/${itemStats[i].answered} aciertos">Q${i+1}<br><small class="text-muted">${itemStats[i].pct == null ? '—' : itemStats[i].pct + '%'}</small></th>`).join('')}<th class="text-center">Total</th></tr>
-        </thead>
-        <tbody>
-          ${players.map(p => `
-            <tr>
-              <td><b>${escapeHtml(p.name)}</b></td>
-              ${items.map((_, i) => {
-                const a = ansByPlayer[p.id]?.[i];
-                if (!a) return `<td class="text-center text-muted">—</td>`;
-                const cls = a.correct === true ? 'text-bg-success' : a.correct === false ? 'text-bg-danger' : 'text-bg-secondary';
-                return `<td class="text-center ${cls}" title="${escapeHtml(JSON.stringify(a.value))} · ${a.points}pts · ${a.msTaken ?? '?'}ms">${a.points || 0}</td>`;
-              }).join('')}
-              <td class="text-center fw-bold">${p.score}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>
-
-    <h4 class="mt-4 mb-2"><i class="bi bi-bar-chart-line-fill"></i> Análisis por ${activity?.template === 'tildes' || activity?.template === 'comas' ? 'palabra' : 'ítem'}</h4>
-    <div class="istats-wrap">${itemStatsHtml(activity, rowsFromLiveState(sess))}</div>
+    <h4 class="mt-4 mb-2"><i class="bi bi-bar-chart-line-fill"></i> Análisis por ${tpl?.meta?.contentModel === 'textCorrection' ? 'palabra' : 'ítem'}</h4>
+    <div class="istats-wrap">${itemStatsHtml(activity, rows)}</div>
   `);
 
-  on(rootSel, 'click', '#btn-csv', () => downloadCsv(sess, players, items, ansByPlayer));
+  // UN solo CSV (views/sessionTable.js): antes esta pantalla exportaba columnas
+  // distintas a las del host para la misma sesión, y las mejoras del compartido
+  // (etiqueta de ítem, mérito por partes) no llegaban aquí.
+  on(rootSel, 'click', '#btn-csv', () =>
+    downloadText(`sesion-${sess.code}.csv`, 'text/csv', sessionTableCsv(rows, items.length, opts)));
 }
 
 function badgeFor(s) {
   return s === 'ended' ? 'secondary' : s === 'running' ? 'success' : s === 'review' ? 'warning' : 'info';
 }
 
-function downloadCsv(sess, players, items, ansByPlayer) {
-  const rows = [];
-  const head = ['player', ...items.map((_, i) => `q${i+1}_value`), ...items.map((_, i) => `q${i+1}_correct`), ...items.map((_, i) => `q${i+1}_points`), ...items.map((_, i) => `q${i+1}_ms`), 'total'];
-  rows.push(head.join(','));
-  for (const p of players) {
-    const row = [csv(p.name)];
-    for (const k of ['value', 'correct', 'points', 'msTaken']) {
-      for (let i = 0; i < items.length; i++) {
-        const a = ansByPlayer[p.id]?.[i];
-        row.push(csv(a ? a[k] : ''));
-      }
-    }
-    row.push(p.score);
-    rows.push(row.join(','));
-  }
-  const blob = new Blob(['﻿' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `ww-session-${sess.code}.csv`;
-  a.click(); URL.revokeObjectURL(url);
-}
-
-function csv(v) {
-  if (v == null) return '';
-  const s = typeof v === 'object' ? JSON.stringify(v) : String(v);
-  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
-}

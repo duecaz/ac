@@ -17,6 +17,7 @@ export class TildesTemplate extends BaseTemplate {
     color: 'warning',
     kind:            'ejercicio',   // familia (norte §4c): quién pone el contenido
     contentModel: 'textCorrection',
+    markNoun:        'tilde',   // lo que el alumno marca (informes) — §26: la plantilla lo DECLARA
     templateVersion: 1,
     paginated: true,   // una frase por pantalla → nº de páginas = nº de frases
     instructions: 'Dibuja la tilde (´) sobre las vocales que la llevan. Cuando termines, pulsa “Listo” para corregir.',
