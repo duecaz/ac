@@ -16,18 +16,11 @@
 // encola — reintentar no lo arregla y "se enviará al reconectar" sería mentira.
 import { recordAttempt as transportRecord } from './assignmentsTransport.js';
 import { createOfflineQueue } from './offlineQueue.js';
-import { lsGet, lsSet } from './ls.js';
+import { lsSet, lsGetJsonArray } from './ls.js';
 import { clock } from './clock.js';
 import { rid } from './ids.js';
 
 const KEY = 'ww.attemptQueue';
-
-function load() {
-  try {
-    const v = JSON.parse(lsGet(KEY) || '[]');
-    return Array.isArray(v) ? v : [];
-  } catch { return []; }
-}
 
 const send = (it) => transportRecord(
   it.assignmentId, it.activityId, it.playerName,
@@ -35,7 +28,7 @@ const send = (it) => transportRecord(
 );
 
 const queue = createOfflineQueue({
-  load,
+  load: () => lsGetJsonArray(KEY),
   save: (q) => lsSet(KEY, JSON.stringify(q)),
   send,
   idOf: (it) => it.qid,

@@ -528,9 +528,10 @@ temporales retirados.
     también la CARRERA (cronómetro vivo → progreso del alumno → podio).
   - **Core**: ✅ los deadlines de hostLive/studentLive ya van por `clock.now()` y los primitivos
     de `core/deadlineTicker.js` (lo fija `tests/clock.test.mjs`, que falla si vuelve un
-    `Date.now()` crudo). QUEDA: load-guard + wiring 'online' duplicado entre submitQueue y
-    results (absorber en la factory de offlineQueue; NO fusionar las colas — identidad/evicción
-    distintas es correcto).
+    `Date.now()` crudo). ✅ RESUELTO (v1.51.393): el wiring 'online' vive UNA vez en la
+    factory (`core/offlineQueue.js`, R2) y el load-guard (parse+array) UNA vez en
+    `lsGetJsonArray` (`core/ls.js`) — las tres colas lo consumen. Las colas siguen
+    separadas A PROPÓSITO (identidad/evicción distintas es correcto).
   - La fusión real de `raceQueue`/scoring de studentLive va con la deuda A (lost-update): mismo flujo.
 
 #### G. Auditoría de estructura (motor/plantillas/vistas/docs) — RESUELTO

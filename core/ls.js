@@ -25,3 +25,13 @@ export function lsSet(key, val) {
 export function lsDel(key) {
   try { localStorage.removeItem(key); } catch { }
 }
+/** Lee una LISTA JSON con guard completo (parse roto o no-array ⇒ []). Era el
+ *  mismo bloque try/parse/Array.isArray copiado en las TRES colas offline
+ *  (respuestas en vivo · resultados · intentos de tarea) — el load-guard vive
+ *  aquí una vez, junto a sus hermanos lsGet/lsSet. */
+export function lsGetJsonArray(key) {
+  try {
+    const v = JSON.parse(lsGet(key) || '[]');
+    return Array.isArray(v) ? v : [];
+  } catch { return []; }
+}

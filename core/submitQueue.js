@@ -8,20 +8,13 @@
 // per player, so this both de-dupes resends and survives concurrent flushes.
 import { submitAnswer as transportSubmit } from './liveTransport.js';
 import { clock } from './clock.js';
-import { lsGet, lsSet } from './ls.js';
+import { lsSet, lsGetJsonArray } from './ls.js';
 import { createOfflineQueue } from './offlineQueue.js';
 
 const KEY = 'ww.submitQueue';
 
-function load() {
-  try {
-    const v = JSON.parse(lsGet(KEY) || '[]');
-    return Array.isArray(v) ? v : [];
-  } catch { return []; }
-}
-
 const queue = createOfflineQueue({
-  load,
+  load: () => lsGetJsonArray(KEY),
   save: (q) => lsSet(KEY, JSON.stringify(q)),
   send: (it) => transportSubmit(it.sessionId, it.playerId, it.itemIndex, it.value, it.msTaken),
   idOf: (it) => `${it.sessionId}:${it.playerId}:${it.itemIndex}`,

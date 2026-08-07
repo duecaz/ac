@@ -5,7 +5,7 @@
 import { savesResult } from './persistPolicy.js';
 import { getRemoteStore } from '../adapters/index.js';
 import { clock } from './clock.js';
-import { lsGet, lsSet } from './ls.js';
+import { lsSet, lsGetJsonArray } from './ls.js';
 import { createOfflineQueue } from './offlineQueue.js';
 
 const QUEUE_KEY = 'ww.resultQueue';
@@ -33,11 +33,7 @@ function qSave(q) {
 // Loads the queue, backfilling a stable _qid on any legacy items (queued before
 // _qid existed) and persisting it, so removal-by-id is reliable across flushes.
 function qLoad() {
-  let arr;
-  try {
-    const v = JSON.parse(lsGet(QUEUE_KEY) || '[]');
-    arr = Array.isArray(v) ? v : [];
-  } catch { arr = []; }
+  let arr = lsGetJsonArray(QUEUE_KEY);
   let changed = false;
   arr = arr.map(it => (it._qid ? it : (changed = true, { ...it, _qid: qid() })));
   if (changed) qSave(arr);
