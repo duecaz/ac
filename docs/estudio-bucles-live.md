@@ -57,7 +57,7 @@ código, no de memoria (v1.51.340).
 | [`arquitectura-modulos.md`](arquitectura-modulos.md) | la radiografía: capas, imports, esfuerzo por tramo y mapa de datos (GENERADO) |
 | [`modos-de-juego.md`](modos-de-juego.md) | contrato de los 5 modos y los 4 bucles en vivo |
 | [`decisiones-pendientes.md`](decisiones-pendientes.md) | lo aplazado, con su condición para reabrirlo |
-| [`testing.md`](testing.md) | las suites y las cuatro redes de seguridad |
+| [`testing.md`](testing.md) | las suites y las redes de seguridad del preflight |
 | [`guia-testeo-companero.md`](guia-testeo-companero.md) | guía de pruebas paso a paso, para alguien no técnico |
 | [`../CLAUDE.md`](../CLAUDE.md) | el mapa de entrada del repo: "quiero X → voy a Y" |
 <!-- /GENERADO:nav -->

@@ -69,7 +69,7 @@
 | [`modos-de-juego.md`](modos-de-juego.md) | contrato de los 5 modos y los 4 bucles en vivo |
 | [`decisiones-pendientes.md`](decisiones-pendientes.md) | lo aplazado, con su condición para reabrirlo |
 | [`estudio-bucles-live.md`](estudio-bucles-live.md) | por qué el vivo es como es (estudio medido) |
-| [`testing.md`](testing.md) | las suites y las cuatro redes de seguridad |
+| [`testing.md`](testing.md) | las suites y las redes de seguridad del preflight |
 | [`guia-testeo-companero.md`](guia-testeo-companero.md) | guía de pruebas paso a paso, para alguien no técnico |
 | [`../CLAUDE.md`](../CLAUDE.md) | el mapa de entrada del repo: "quiero X → voy a Y" |
 <!-- /GENERADO:nav -->
@@ -485,7 +485,7 @@ cada una tiene un test que la hace cumplir. Se lee de izquierda a derecha:
 | **§2 la promesa** (un contenido, muchos modos) | [**§0 · CUATRO CAPAS**](leyes.md#0--el-modelo-de-cuatro-capas--el-norte-de-la-arquitectura) — la plantilla DECLARA sus políticas (`meta.play`), el modo las consume; una plantilla no sabe en qué modo corre | `layers` · `templateContract` · `scoringSources` · matriz jugable |
 | **§2 la promesa** (el contenido sobrevive al cambio de plantilla) | [**§24 · CONTENIDO**](leyes.md#24--ley-de-contenido--el-modelo-evoluciona-por-caminos-declarados) — modelos versionados, migración declarada, ids con `rid()` | `templateContract` · regla `id-rid` |
 | **R1 pizarra de gama baja, mirada a 3 m** | [**§3 · ESTILO**](leyes.md#3--ley-de-estilo--las-cuatro-capas-del-píxel) — el skin cambia TOKENS, la actividad los consume; nada de tamaños fijos; sin bucles de animación en reposo | `styles` (ratchet) · `skins` |
-| **R2b el que toca es un ALUMNO, sobre la cuenta del profe** | ⚠️ **sin ley todavía** — hoy lo cumple el diseño (el juego entra a pantalla completa y el chrome desaparece), pero nada lo impide en una pantalla nueva | ⚠️ ningún test |
+| **R2 el profe no configura nada** + **R2b el que toca es un ALUMNO, sobre la cuenta del profe** | [**§28 · EN CLASE**](leyes.md#28--en-clase--el-profe-no-configura-y-el-alumno-no-puede-romper) — máx. 2 opciones de partida y ya elegidas; dentro del marco de juego, ningún control destructivo ni de identidad | `templateContract` · `playOptions` · escaneo R2b de `matrix-smoke` |
 | **R3 el alumno no tiene cuenta** | [**§22 · CONFIANZA**](leyes.md#22--ley-de-confianza--el-cliente-afirma-el-veredicto-lo-pone-otro) — el cliente AFIRMA, el veredicto lo pone el host o una regla del servidor | `pbRules` · `liveRules` · `answerSafety` · `modeAuth` |
 | **R3 + R6** (nadie edita lo de otro, y el fallo se ve) | [**§21 · DATOS**](leyes.md#21--ley-de-datos--cada-colección-tiene-un-dueño) — cada colección tiene UN dueño; quien necesite datos le pide un método | regla `pb-dueno` |
 | **R4 la red del colegio es mala** | [**§23 · VISTA**](leyes.md#23--ley-de-vista--ciclo-de-vida-de-una-pantalla) — el ritmo es un INSTANTE del servidor, nunca un temporizador local; cada reloj por su primitivo; la vista posee su ciclo de vida | `deadlineTicker` · `clock` · `events` · `idempotency` |
@@ -496,9 +496,11 @@ cada una tiene un test que la hace cumplir. Se lee de izquierda a derecha:
 
 | Hueco | Estado |
 |---|---|
-| **R2 "el profe no configura nada"** — la restricción que más decisiones de UI gobierna | ✅ **ley §28** (v1.51.382): máx. 2 opciones de partida con el vigente ya elegido (contrato) + R2b: ningún control de profe dentro del marco de juego (escaneo de `matrix-smoke`) |
-| **R2b tampoco tiene ley ni test**, y este es más delicado: mientras un alumno juega en la pizarra, la cuenta del profe está abierta. Hoy no hay nada destructivo a la vista porque el juego va a pantalla completa, pero es una propiedad no vigilada: una pantalla nueva podría dejar un "Editar" al alcance | ⚠️ **falta la ley** — se puede escribir como test: en modo juego, ningún control destructivo en el DOM |
-| **El tramo "buscar/crear"** (por donde pasa TODA clase, §1) | ✅ cubierto: buscador único (`tests/search.test.mjs`) + recorrido `find-smoke` bajo la **ley §27** (todo tramo del norte con su viaje automático) |
+| **R2 / R2b** — el profe no configura, y el que toca es un alumno sobre su cuenta | ✅ **ley §28** (v1.51.382). *(Este cuadro decía a la vez que R2b tenía ley y que no la tenía: dos filas de la MISMA sección contradiciéndose. Corregido en v1.51.402.)* |
+| **§2b el presupuesto de tiempo** — "medible o no es nada", y llevaba 18 filas sin medirse ni una | ✅ **ley §29** (v1.51.399): jugar sin diálogos · nadie revela solo · de la lista a jugar ≤3 toques. Los tiempos y la legibilidad a 3 m siguen sin medirse, declarado en la propia ley |
+| **R6 "fallar en silencio está prohibido"** — la restricción más citada del norte | ✅ regla `fallo-mudo` (v1.51.398): un `catch {}` que se traga algo que el usuario pidió rompe CI salvo que lleve su motivo escrito |
+| **El almacén local** — las colecciones PB tenían dueño declarado; las ~30 claves `ww.*`, no | ✅ regla `ls-dueno` (v1.51.397): registro `LS_OWNERS` + escáner. Cazó `ww.nick` con dos dueños y `ww.skin` sin escritor |
+| **El tramo "buscar/crear"** (por donde pasa TODA clase, §1) | ✅ cubierto: buscador único (`tests/search.test.mjs`) + recorrido `find-smoke` bajo la **ley §27**, que desde v1.51.396 camina también el EDITOR (crear → escribir → guardar → encontrarla) |
 | §26 (bucles congelados) se desprende de R6, pero **cubre el modo minoritario**; ninguna ley cubre con el mismo detalle los modos de pizarra, que son los habituales | ⚠️ desequilibrio declarado |
 
 ## 6c. CÓMO SE DECIDE LA ARQUITECTURA
@@ -678,7 +680,7 @@ físico** — no por capricho de la interfaz.
 
 | Pieza | Qué es | Estado |
 |---|---|---|
-| 4 capas + 8 leyes | la arquitectura, cada ley con su test | ✅ vigilado (84 suites) — [`leyes.md`](leyes.md) |
+| 4 capas + las leyes §0/§3/§21-§29 | la arquitectura, cada ley con su test | ✅ vigilado — [`leyes.md`](leyes.md) |
 | Mapa de módulos y de datos | generado del código | ✅ [`arquitectura-modulos.md`](arquitectura-modulos.md) |
 | Biblioteca pública + cuentas de profe | buscar/usar/publicar | ✅ funciona · ⚠️ poco cubierto (0,29) |
 | Informes (partida y tarea) | quién falló qué | ✅ funciona |
@@ -775,7 +777,7 @@ futura pide datos del alumno "porque son útiles", esa es la conversación.
 | Documento | Responde a |
 |---|---|
 | **este** | qué construimos, para quién, y cómo se decide |
-| `docs/leyes.md` | cómo se construye (8 leyes, cada una con su test) |
+| `docs/leyes.md` | cómo se construye (cada ley con su test) |
 | `docs/arquitectura-modulos.md` | cómo está montado HOY (generado del código) |
 | `docs/modos-de-juego.md` | el contrato de los 5 modos y los 4 bucles |
 | `docs/decisiones-pendientes.md` | qué está sin decidir, y la recomendación |

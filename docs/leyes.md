@@ -2,9 +2,10 @@
 
 > **Cada ley se DESPRENDE de una restricción del norte** — la cadena completa
 > (restricción → ley → test) está en `docs/norte.md` §6b, y ahí se ven también
-> los huecos: R2 ("el profe no configura nada") todavía no tiene ley, y el tramo
-> "buscar/crear" tampoco. Una ley que no puede citar su origen es una ley
-> huérfana.
+> los huecos que van quedando. Una ley que no puede citar su origen es una ley
+> huérfana. (Esta cabecera decía que R2 y "buscar/crear" seguían sin ley cuando
+> hacía quince versiones que tenían §28 y §27: un índice que grita una urgencia
+> falsa entrena a ignorar los avisos de verdad.)
 >
 > **Por encima de estas leyes está `docs/norte.md`**: para quién es la app, la
 > escena real de uso (una pizarra táctil, 45 minutos, tres minutos de
@@ -69,7 +70,7 @@
 | [`modos-de-juego.md`](modos-de-juego.md) | contrato de los 5 modos y los 4 bucles en vivo |
 | [`decisiones-pendientes.md`](decisiones-pendientes.md) | lo aplazado, con su condición para reabrirlo |
 | [`estudio-bucles-live.md`](estudio-bucles-live.md) | por qué el vivo es como es (estudio medido) |
-| [`testing.md`](testing.md) | las suites y las cuatro redes de seguridad |
+| [`testing.md`](testing.md) | las suites y las redes de seguridad del preflight |
 | [`guia-testeo-companero.md`](guia-testeo-companero.md) | guía de pruebas paso a paso, para alguien no técnico |
 | [`../CLAUDE.md`](../CLAUDE.md) | el mapa de entrada del repo: "quiero X → voy a Y" |
 <!-- /GENERADO:nav -->
@@ -675,7 +676,7 @@ rechazo, con su código HTTP.
 > se salte la interfaz o se dé a sí mismo el veredicto. · **Vigilada por**:
 > `tests/journeys.test.mjs`.
 
-La extensión natural de *"si es norma, es test"*. Teníamos 87 suites verdes y la
+La extensión natural de *"si es norma, es test"*. Teníamos las suites en verde y la
 clase encontró cinco fallos en una semana. Ninguno estaba en una pieza: **los
 cinco vivían en la costura entre piezas correctas.**
 
@@ -728,7 +729,7 @@ apagarlos en silencio (`tests/activityCard.test.mjs`). Lo mismo aplica a
 vista LEE, en vez de que cada vista configure.
 
 **Antes de tocar `main` (que sirve la web): `node tools/preflight.mjs`** — las
-cuatro redes en ~45 s, y para en la primera que falle enseñando SU salida. La
+redes del preflight en ~2 min, y para en la primera que falle enseñando SU salida. La
 suite sola (`--rapido`) no basta para un cambio en vistas, CSS o router: es
 exactamente el hueco por el que se colaron los cinco.
 

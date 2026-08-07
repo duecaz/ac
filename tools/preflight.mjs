@@ -3,9 +3,9 @@
 //
 //   node tools/preflight.mjs
 //
-// POR QUÉ EXISTE. Las cuatro redes de seguridad ya existían… pero cada una nació
+// POR QUÉ EXISTE. Las redes de seguridad ya existían… pero cada una nació
 // DESPUÉS de su propio incendio y ninguna se corría sola. `node tests/run.mjs`
-// verifica PIEZAS —87 suites de lógica pura— y los bugs que la clase encontró
+// verifica PIEZAS —las suites de lógica pura— y los bugs que la clase encontró
 // esta semana no vivían en ninguna pieza: vivían en la COSTURA entre piezas
 // correctas. El enlace que la app generaba contra el router que lo leía. El
 // veredicto que calculaba el móvil contra el snapshot que le dio el servidor. El
@@ -15,7 +15,7 @@
 // el preflight incluye los recorridos, no solo la suite: un cambio en vistas,
 // CSS o router puede dejar la suite verde y la app rota.
 //
-// Los cuatro juntos tardan ~45 s. Ese es el precio de no enterarse con 33 críos
+// Todas juntas tardan ~2 min. Ese es el precio de no enterarse con 33 críos
 // delante.
 //
 // Fuera del preflight a propósito:

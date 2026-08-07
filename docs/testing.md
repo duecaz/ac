@@ -42,7 +42,7 @@ node tools/preflight.mjs           # suite + los 5 recorridos, ~100 s
 node tools/preflight.mjs --rapido  # solo la suite (NO basta si tocas vistas/CSS/router)
 ```
 
-Encadena las cuatro redes y **para en la primera que falle**, enseñando su salida
+Encadena las seis redes y **para en la primera que falle**, enseñando su salida
 y el comando para reproducirla. Existe porque `tests/run.mjs` verifica PIEZAS: los
 cinco fallos que la clase encontró en una semana vivían en la COSTURA entre piezas
 correctas (el enlace contra el router, el veredicto del móvil contra el snapshot,

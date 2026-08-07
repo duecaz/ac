@@ -16,7 +16,7 @@
 | [`modos-de-juego.md`](modos-de-juego.md) | contrato de los 5 modos y los 4 bucles en vivo |
 | [`decisiones-pendientes.md`](decisiones-pendientes.md) | lo aplazado, con su condición para reabrirlo |
 | [`estudio-bucles-live.md`](estudio-bucles-live.md) | por qué el vivo es como es (estudio medido) |
-| [`testing.md`](testing.md) | las suites y las cuatro redes de seguridad |
+| [`testing.md`](testing.md) | las suites y las redes de seguridad del preflight |
 | [`guia-testeo-companero.md`](guia-testeo-companero.md) | guía de pruebas paso a paso, para alguien no técnico |
 | [`../CLAUDE.md`](../CLAUDE.md) | el mapa de entrada del repo: "quiero X → voy a Y" |
 
@@ -33,7 +33,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 18 · 3664 | 18 · 2846 | 0.78 |
 | **informes/tareas** | después de clase | 11 · 1131 | 4 · 435 | 0.38 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5810 | 12 · 975 | 0.17 |
-| **infra/común** | todo lo anterior | 126 · 12207 | 37 · 3968 | 0.33 |
+| **infra/común** | todo lo anterior | 126 · 12207 | 37 · 3999 | 0.33 |
 
 > Un ratio bajo en un tramo muy usado es deuda de PRIORIDAD, no de calidad: ese
 > código funciona, pero si se rompe nadie se entera hasta que hay 33 críos

@@ -143,4 +143,35 @@ const run = (args) => execFileSync(process.execPath, args, { cwd: ROOT, encoding
   }
 }
 
+// ── CIFRAS A MANO: si un documento cuenta algo, tiene que salir la cuenta ───
+// La auditoría v1.51.402 encontró tres respuestas distintas a "¿cuántas leyes
+// hay?" (8 / 10 / 10) y tres a "¿cuántas suites?" (84 / 87 / 89). Son cifras
+// escritas a mano en prosa: envejecen calladas, y un documento que se equivoca
+// en lo comprobable pierde autoridad en lo que no lo es. Las que hablan del
+// PREFLIGHT sí se pueden derivar del código, así que se derivan.
+{
+  const NUM = { una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10, once: 11, doce: 12 };
+  const pre = readFileSync(join(ROOT, 'tools/preflight.mjs'), 'utf8');
+  const redes = (pre.match(/cmd:\s*'[^']+'/g) || []).length;      // suites + recorridos
+  const recorridos = redes - 1;                                    // …sin la suite de lógica pura
+  const PAT = /\b(\d+|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\s+(redes|recorridos)\b/gi;
+  const malas = [];
+  for (const rel of ['docs/leyes.md', 'docs/testing.md', 'CLAUDE.md']) {
+    const src = readFileSync(join(ROOT, rel), 'utf8').split('\n');
+    src.forEach((ln, i) => {
+      // Solo las frases que hablan del preflight: "dos redes" en otro contexto
+      // (p. ej. las dos que cubren los crashes de primera pantalla) es correcto.
+      if (!/preflight/i.test(ln)) return;
+      for (const m of ln.matchAll(PAT)) {
+        const n = NUM[m[1].toLowerCase()] ?? Number(m[1]);
+        const esperado = m[2].toLowerCase() === 'redes' ? redes : recorridos;
+        if (n !== esperado) malas.push(`${rel}:${i + 1} dice "${m[0]}" y el preflight tiene ${esperado}`);
+      }
+    });
+  }
+  assert.deepStrictEqual(malas, [],
+    `cifras del preflight desactualizadas en los docs:\n  ${malas.join('\n  ')}\n`);
+  ok(`las cifras del preflight en los docs cuadran con el código (${redes} redes · ${recorridos} recorridos)`);
+}
+
 console.log(`\n  ${passed} docs checks passed`);

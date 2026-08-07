@@ -26,7 +26,7 @@ export const DOC_MAP = [
   ['`docs/modos-de-juego.md`', 'modos-de-juego.md', 'contrato de los 5 modos y los 4 bucles en vivo'],
   ['`docs/decisiones-pendientes.md`', 'decisiones-pendientes.md', 'lo aplazado, con su condición para reabrirlo'],
   ['`docs/estudio-bucles-live.md`', 'estudio-bucles-live.md', 'por qué el vivo es como es (estudio medido)'],
-  ['`docs/testing.md`', 'testing.md', 'las suites y las cuatro redes de seguridad'],
+  ['`docs/testing.md`', 'testing.md', 'las suites y las redes de seguridad del preflight'],
   ['`docs/guia-testeo-companero.md`', 'guia-testeo-companero.md', 'guía de pruebas paso a paso, para alguien no técnico'],
 ];
 
