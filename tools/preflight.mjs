@@ -36,6 +36,7 @@ const PASOS = [
   { id: 'matriz',  cmd: 'tools/matrix-smoke.mjs', que: 'cada plantilla × cada modo arranca, un gesto de envío, fullscreen tocable' },
   { id: 'buscar',  cmd: 'tools/find-smoke.mjs',   que: 'el viaje buscar/crear (portada → biblioteca → mis actividades → crear)' },
   { id: 'vivo',    cmd: 'tools/live-smoke.mjs',   que: 'el viaje en vivo con dos pantallas (sala → PIN → responder → podio)' },
+  { id: 'tareas',  cmd: 'tools/task-smoke.mjs',   que: 'el viaje de tareas (crear → PIN → jugar → tope de intentos → informe)' },
 ];
 
 const correr = (cmd) => new Promise((res) => {

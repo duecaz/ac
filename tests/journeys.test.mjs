@@ -27,7 +27,7 @@ const RECORRIDOS = {
   'buscar/crear':      { tool: 'tools/find-smoke.mjs' },
   'jugar en pizarra':  { tool: 'tools/matrix-smoke.mjs' },
   'jugar en vivo':     { tool: 'tools/live-smoke.mjs' },
-  'informes/tareas':   { tool: null, motivo: 'sin recorrido todavía — deuda declarada, no olvido' },
+  'informes/tareas':   { tool: 'tools/task-smoke.mjs' },
 };
 
 // ── 1. Cada tramo JUGABLE del norte tiene su recorrido, y existe ────────────
@@ -61,7 +61,7 @@ const RECORRIDOS = {
       `tools/preflight.mjs no corre ${r.tool} — desconectado, no protege de nada`);
   }
   assert.ok(pre.includes('tests/run.mjs'), 'el preflight debe correr también la suite');
-  ok('el preflight encadena la suite + los 3 recorridos (nadie queda desconectado)');
+  ok('el preflight encadena la suite + los 4 recorridos (nadie queda desconectado)');
 }
 
 // ── 4. Un recorrido NO se da el veredicto a sí mismo ────────────────────────
@@ -76,7 +76,7 @@ const RECORRIDOS = {
     assert.match(src, /page\.(click|type|fill|tap)|\.click\(|\.type\(|\.fill\(/,
       `${tramo}: ${r.tool} no pulsa ni teclea nada — no está caminando el viaje`);
   }
-  ok('los 3 recorridos interactúan de verdad (teclean y pulsan, no llaman a funciones)');
+  ok('los 4 recorridos interactúan de verdad (teclean y pulsan, no llaman a funciones)');
 }
 
 // ── 5. Los controles críticos se comprueban con el DEDO, no con querySelector ─

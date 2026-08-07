@@ -111,7 +111,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | **Plan de usuarios/acceso docente** (endurecer reglas, PIN, NFC, pizarras, panel profes) | **[`docs/handoff-acceso-docente.md`](docs/handoff-acceso-docente.md)** (incluye auditoría del sistema de usuarios) |
 
 Verificar SIEMPRE antes de commitear: **`node tools/preflight.mjs`** — la suite + los
-TRES recorridos (matriz jugable · buscar/crear · en vivo) en ~45 s, ley §27. `node
+CUATRO recorridos (matriz jugable · buscar/crear · en vivo · tareas) en ~2 min, ley §27. `node
 tests/run.mjs` solo verifica PIEZAS: los cinco fallos que la clase encontró en una
 semana vivían en la COSTURA entre piezas correctas y ninguna suite podía verlos. Si el
 cambio toca vistas, CSS o el router, el preflight NO es opcional. El contrato,
