@@ -11,6 +11,12 @@
 //   · kernel-puro     : kernel/** es el cerebro PURO y determinista: sin
 //                       `Date.now()` ni `new Date()` (el reloj se inyecta vía
 //                       core/clock.js; sin esto los tests dejan de ser deterministas).
+//   · fallo-mudo      : R6 del norte ("la clase no espera": fallar en silencio
+//                       está PROHIBIDO) — un `catch {}` vacío que se traga una
+//                       operación que el usuario PIDIÓ (guardar, borrar,
+//                       entregar, sincronizar). El best-effort no se prohíbe: se
+//                       exige DECIR el motivo en un comentario, que es justo
+//                       cuando uno se da cuenta de si de verdad lo era.
 //   · ls-dueno        : LEY DE DATOS (docs/leyes.md §21) aplicada al ALMACÉN —
 //                       cada clave `ww.*` de localStorage/sessionStorage está
 //                       DECLARADA en LS_OWNERS con UN dueño; nadie más la nombra.
@@ -131,6 +137,17 @@ export const LS_OWNERS = {
   'ww.vreload.': ['views/studentLive.js'],
 };
 const LS_PREFIXES = Object.keys(LS_OWNERS).sort((a, b) => b.length - a.length);
+
+// R6 · FALLAR EN SILENCIO ESTÁ PROHIBIDO. Un `catch {}` vacío alrededor de una
+// operación que el usuario PIDIÓ (guardar, borrar, entregar…) es la forma más
+// barata de perder el trabajo de una clase sin que nadie se entere.
+const CATCH_VACIO_RE = /catch\s*(\([A-Za-z_$][\w$]*\))?\s*\{\s*\}/;
+// Como CADENAS y no regex literal: escritos como identificadores, moduleRefs
+// los contaría como "usados sin importar" en este mismo fichero (mismo truco
+// que HOST_VERBS más abajo).
+const VERBOS_USUARIO = ['save', 'remove', 'delete', 'submit', 'record', 'create', 'update',
+  'patch', 'post', 'fetch', 'send', 'upload', 'publish', 'flush', 'settle', 'end' + 'Session'];
+const VERBO_USUARIO_RE = new RegExp(`\\b(${VERBOS_USUARIO.join('|')})\\w*\\s*\\(`, 'i');
 // Cualquier literal 'ww.…' que aparezca en el código.
 const LS_LITERAL_RE = /['"`](ww\.[A-Za-z0-9_.]*)/g;
 
@@ -160,6 +177,7 @@ const blank = (s) => s
  */
 export function scanNormsSource(path, source) {
   const out = [];
+  const crudas = String(source || '').split('\n');   // CON comentarios: el motivo se lee ahí
   const lines = blank(String(source || '')).split('\n');
   const allowed = (rule) => ALLOW[rule].some(a => path.endsWith(a));
   lines.forEach((ln, i) => {
@@ -186,6 +204,21 @@ export function scanNormsSource(path, source) {
         out.push({ path, line: i + 1, rule: 'ls-dueno', text: `[${clave}] clave sin dueño declarado en LS_OWNERS` });
       } else if (!LS_OWNERS[pref].some(a => path.endsWith(a))) {
         out.push({ path, line: i + 1, rule: 'ls-dueno', text: `[${clave}] la escribe/lee ${path}, y su dueño es ${LS_OWNERS[pref][0]}` });
+      }
+    }
+    // fallo-mudo: un `catch {}` VACÍO que se traga una operación que el usuario
+    // PIDIÓ (guardar, borrar, entregar, sincronizar) sin decir por qué. R6 del
+    // norte: "fallar en silencio está prohibido". No se prohíbe el best-effort
+    // —hay teardowns y `setPointerCapture` que deben poder fallar—: se exige
+    // DECIR el motivo en un comentario, que es cuando uno se da cuenta de si de
+    // verdad lo era. El almacén local queda fuera (su aviso ya lo da core/ls.js
+    // con `ww:storage-full`, y limpiar una clave que no está es inofensivo).
+    if (CATCH_VACIO_RE.test(ln)) {
+      const ctxTry = lines.slice(Math.max(0, i - 3), i + 1).join(' ');
+      const almacen = /(local|session)Storage/.test(ctxTry);
+      const conMotivo = /\/\/|\/\*/.test(crudas[i] || '') || /\/\/|\*/.test(crudas[i - 1] || '');
+      if (VERBO_USUARIO_RE.test(ctxTry) && !almacen && !conMotivo) {
+        out.push({ path, line: i + 1, rule: 'fallo-mudo', text: ln.trim() });
       }
     }
     if (path.startsWith('views/student') && HOST_VERBS_RE.test(ln)) {

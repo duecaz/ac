@@ -454,8 +454,20 @@ function renderPanel(rootSel) {
     const ok = await confirmModal('¿Borrar TODAS tus actividades de este dispositivo y de la nube? No se puede deshacer.', { okText: 'Borrar todo', danger: true });
     if (!ok) return;
     const ids = list().map(a => a.id);
-    for (const id of ids) { try { await remove(id); } catch {} }
-    toast(`Listo: ${ids.length} actividades borradas.`, 'success');
+    // R6 · fallar en silencio está prohibido: antes se tragaba cada error y
+    // decía "Listo: N borradas" aunque hubieran fallado TODAS — el profe se
+    // quedaba creyendo que su nube estaba limpia. Se cuentan y se dicen.
+    const fallos = [];
+    for (const id of ids) {
+      try { await remove(id); }
+      catch (e) { fallos.push(`${id}: ${e.message}`); console.warn('[admin] no se pudo borrar', id, e); }
+    }
+    const hechas = ids.length - fallos.length;
+    if (fallos.length) {
+      toast(`Se borraron ${hechas} de ${ids.length}. ${fallos.length} no se pudieron borrar (¿sin conexión?): ${fallos.slice(0, 2).join(' · ')}`, 'warning', 9000);
+    } else {
+      toast(`Listo: ${ids.length} actividades borradas.`, 'success');
+    }
     renderPanel(rootSel);
   });
   on(rootSel, 'click', '#admin-db', async () => {

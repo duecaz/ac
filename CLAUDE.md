@@ -261,6 +261,11 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   también DENTRO del contenido (el tema suele estar en las preguntas). El "no hay" no es un
   callejón: lleva a CREAR. Vigilado por `tests/search.test.mjs` — cada caso es un falso
   negativo que mandaría al profe a rehacer algo que ya tiene, con la clase delante.
+- **Fallar en silencio está PROHIBIDO** (R6): un `catch {}` vacío alrededor de algo
+  que el usuario pidió (guardar · borrar · entregar · sincronizar) rompe CI por la regla
+  `fallo-mudo`. El best-effort sigue permitido, pero con su motivo ESCRITO al lado —
+  escribirlo es cuando se ve si de verdad lo era. Cazó "Borrar todo" del admin, que
+  decía «Listo: N borradas» aunque hubieran fallado las N.
 - **Claves del almacén** (`ww.*`): cada una con UN dueño declarado en `LS_OWNERS`
   (`core/normsCheck.js`), igual que las colecciones PB. Una vista NUNCA declara su
   propia clave: `ww.nick` acabó definida en `studentLive` y `studentTask` a la vez

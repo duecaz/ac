@@ -78,6 +78,14 @@ assert.strictEqual(scanNormsSource('views/studentTask.js', `const K = 'ww.nick';
 assert.strictEqual(scanNormsSource('core/identity.js', `const K = 'ww.nick';`).length, 0, 'su dueño sí');
 assert.strictEqual(scanNormsSource('views/x.js', `lsGet('ww.inventada')`).length, 1, 'una clave nueva sin declarar se caza');
 assert.strictEqual(scanNormsSource('core/soloPlayer.js', `lsDel('ww.solo.progress.' + id)`).length, 0, 'el prefijo dinámico del dueño es legítimo');
+// fallo-mudo (R6 del norte: fallar en silencio está prohibido): un catch VACÍO
+// que se traga una operación que el usuario PIDIÓ. El best-effort no se
+// prohíbe — se exige DECIR el motivo, que es cuando uno ve si de verdad lo era.
+assert.strictEqual(scanNormsSource('views/x.js', `try { await remove(id); } catch {}`).length, 1, 'caza un borrado tragado');
+assert.strictEqual(scanNormsSource('views/x.js', `try { await saveActivity(a); } catch {}`).length, 1, 'y un guardado tragado');
+assert.strictEqual(scanNormsSource('views/x.js', `try { await remove(id); } catch {}   // best-effort: la fila ya no estaba`).length, 0, 'con el motivo escrito, pasa');
+assert.strictEqual(scanNormsSource('views/x.js', `try { el.dispose(); } catch {}`).length, 0, 'un teardown no es una operación del usuario');
+assert.strictEqual(scanNormsSource('views/x.js', `try { localStorage.removeItem(k); } catch {}`).length, 0, 'limpiar el almacén tiene su propio aviso (ww:storage-full)');
 // confianza-alumno (ley §22): el lado alumno no nombra verbos del host; el host sí puede.
 assert.strictEqual(scanNormsSource('views/studentLive.js', `import { settleItem } from '../core/liveTransport.js';`).length, 1, 'alumno no liquida');
 assert.strictEqual(scanNormsSource('views/hostLive.js', `await settleItem(sessionId, i);`).length, 0, 'el host sí liquida');
@@ -90,6 +98,6 @@ assert.strictEqual(scanNormsSource('core/soloTimer.js', `setInterval(tick, 1000)
 // id-rid (ley §24): base36 a mano → violación; rid() y la implementación, no.
 assert.strictEqual(scanNormsSource('templates/x/editor.js', `const id = 'q_' + Math.random().toString(36).slice(2, 8);`).length, 1, 'caza el id a mano');
 assert.strictEqual(scanNormsSource('core/ids.js', `return prefix + Math.random().toString(36).slice(2, 8);`).length, 0, 'ids.js es la implementación');
-ok('el escáner caza cada norma (pb-dueno · ls-dueno · confianza-alumno · reloj-primitivo · id-rid) y respeta comentarios + allowlist');
+ok('el escáner caza cada norma (pb-dueno · ls-dueno · fallo-mudo · confianza-alumno · reloj-primitivo · id-rid) y respeta comentarios + allowlist');
 
 console.log(`\nnorms.test: ${passed} checks passed`);

@@ -224,9 +224,15 @@ export async function completeOAuthLogin(code, returnedState) {
     const name = data.record?.name || (data.record?.email ? data.record.email.split('@')[0] : '');
     if (data.record?.id && (avatar || name)) {
       const { saveProfile } = await import('./profile.js');
-      saveProfile(data.record.id, { ...(name ? { name } : {}), ...(avatar ? { avatar } : {}) }).catch(() => {});
+      saveProfile(data.record.id, { ...(name ? { name } : {}), ...(avatar ? { avatar } : {}) })
+        .catch(e => console.warn('[auth] no se pudo sellar el perfil público:', e.message));
     }
-  } catch {}
+  } catch (e) {
+    // Best-effort DECLARADO (R6): que falle el sello del perfil NO puede tumbar
+    // un login que ya está hecho — pero se dice, o el profe se pregunta por qué
+    // sale sin foto y no hay ni rastro de por qué.
+    console.warn('[auth] perfil público no sellado tras el login de Google:', e.message);
+  }
   notify();
   return { ...data, returnHash: pending.returnHash || '' };
 }
