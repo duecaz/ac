@@ -400,6 +400,17 @@ sobre la tarjeta). Dos fixes:
 La entrada de `CONOCIDOS` en `tools/matrix-smoke.mjs` se retiró: la matriz juega
 ahora 30/30 y una regresión aquí la tumba.
 
+### 🟡 DEUDA CONDICIONADA — partir los 4 módulos grandes (TRAS los tests del compañero)
+Registrada en la cola del norte (#5). NO ejecutar hasta que el compañero termine su ronda
+rigurosa de pruebas manuales: partir es cirugía y se opera sobre un cuerpo verificado.
+Los cortes ya están mapeados (no re-diseñar al ejecutar):
+- `adapters/pocketbase/realtime.js` (1106) → **POR COLECCIÓN**: claims / answers / rooms / mantenimiento.
+- `views/hostLive.js` (1031) + `views/studentLive.js` → **POR BUCLE**: lobby / rondas / carrera / tablero / pedir-la-palabra / informe.
+- `views/adminView.js` (953) → **POR PANEL** (precedente ya en el repo: `views/admin/matrix.js`).
+- `kernel/session/engine.js` (540) → **POR MÁQUINA**: items / score / live / teams / vs.
+Al partir: `node tools/module-map.mjs` + preflight completo; los guardianes (layers, moduleRefs,
+realtimePort) deben seguir verdes sin tocar sus listas.
+
 ### 🟡 DECISIONES APLAZADAS (D1-D5) — deuda de PRODUCTO, no de código
 Decisión del usuario (v1.51.340): se ejecutan solo las estructurales. **D6 hecha**
 (ley §25 · cuotas y retención) y **D7 estudiada y congelada** (ley §26 + estudio medido
