@@ -52,9 +52,10 @@ navegador y caminar el viaje.
 | Red | Qué camina | Segundos |
 |---|---|---|
 | `tests/run.mjs` | lógica pura: contrato · normas · leyes · scorers | ~3 |
-| `tools/matrix-smoke.mjs` | cada plantilla × cada modo + un gesto de envío + controles tocables | ~23 |
+| `tools/matrix-smoke.mjs` | cada plantilla × cada modo + la ronda JUGADA con gesto real (30/30, 11 mecánicas) + controles tocables | ~60 |
 | `tools/find-smoke.mjs` | buscar/crear: portada → biblioteca → mis actividades → crear → volver a buscar | ~8 |
 | `tools/live-smoke.mjs` | en vivo con dos pantallas: sala → PIN → responder → settle → podio | ~9 |
+| `tools/task-smoke.mjs` | tareas/informes: crear tarea → PIN → jugar → tope de intentos → informe del profe | ~8 |
 
 Fuera del preflight a propósito: `race-e2e` (PocketBase real + credenciales),
 `stress-live` (carga contra la Pi) y `shots` (comparación visual antes/después).

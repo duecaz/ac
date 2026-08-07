@@ -96,6 +96,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | **Tocar CSS del juego sin romper nada** (capturas antes/después, diff por píxel) | `node tools/shots.mjs before` → cambios → `node tools/shots.mjs after` |
 | **Matriz JUGABLE** (cada plantilla × cada modo arranca sin crash) | `node tools/matrix-smoke.mjs` + `tests/moduleRefs.test.mjs` (imports olvidados) |
 | **EN VIVO e2e** (host+alumno en dos páginas: sala→PIN→respuesta→settle→podio) | `node tools/live-smoke.mjs` |
+| **TAREAS e2e** (crear tarea → PIN → el alumno juega → tope de intentos → informe) | `node tools/task-smoke.mjs` |
 | **CARRERA e2e contra PocketBase REAL** (puntos planos · gana quien acabó antes · meta del servidor · la trampa rebota) | `node tools/race-e2e.mjs [PB_URL]` (credenciales por entorno `WW_EMAIL`/`WW_PASS`) |
 | **¿Editar el contenido pierde la respuesta correcta?** (teclea en los 13 editores y re-pregunta al scorer) | `node tools/edit-audit.mjs` |
 | **Prueba de CARGA** (N alumnos concurrentes live+tareas contra PB real) | `core/stressTest.js` · botón `#/admin` "Simular carga" · `node tools/stress-live.mjs [N]` |
