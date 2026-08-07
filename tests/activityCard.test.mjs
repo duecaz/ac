@@ -16,14 +16,55 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 let n = 0;
 const ok = (m) => { console.log('  ✓', m); n++; };
 
-// Las 4 vistas de listado usan el componente compartido.
-const VIEWS = ['views/home.js', 'views/landing.js', 'views/explore.js', 'views/author.js', 'views/juegos.js'];
-for (const v of VIEWS) {
-  const src = read(v);
-  assert.match(src, /from '\.\.\/core\/activityCard\.js'/, `${v} debe importar activityCardHtml`);
-  assert.match(src, /activityCardHtml\(/, `${v} debe pintar con activityCardHtml`);
+// ── DESCUBRIMIENTO, no enumeración ──────────────────────────────────────────
+// Este guardarraíl era una LISTA de vistas ("estas 4 usan el componente") y por
+// eso NO cazó a views/juegos.js cuando nació pintando tarjeta propia (la "gota"
+// que reportó el usuario, v1.51.387): una vista nueva no estaba en la lista,
+// así que nacía fuera de la ley sin que nadie lo dijera. Una lista enumerada
+// vigila el pasado; la norma es sobre el futuro. Ahora el test ESCANEA views/
+// entero: quien escriba markup de tarjeta a mano aparece aquí, exista hoy o se
+// cree mañana.
+import { readdirSync } from 'node:fs';
+
+// Tarjetas escritas A MANO fuera del componente, con su motivo (ratchet: esta
+// lista solo puede ENCOGER, y cada entrada dice por qué existe).
+const EXCEPCIONES_ACARD = {
+  'views/home.js': 'listCard(): la tarjeta de LISTA de actividades es otro objeto (rondas encadenadas, sin preview de juego) — pendiente de decidir si se absorbe como variante',
+};
+
+/** Vistas con `<article class="acard…` escrito a mano (no vía el componente). */
+export function tarjetasAMano(files) {
+  return files.filter(([, src]) => /<article class="acard/.test(src));
 }
-ok('las 5 vistas de listado importan y usan activityCardHtml');
+
+const ALL_VIEWS = readdirSync(join(ROOT, 'views')).filter(f => f.endsWith('.js')).map(f => `views/${f}`);
+const fuentes = ALL_VIEWS.map(v => [v, read(v)]);
+
+{
+  const aMano = tarjetasAMano(fuentes).map(([v]) => v);
+  const sinPermiso = aMano.filter(v => !EXCEPCIONES_ACARD[v]);
+  assert.deepStrictEqual(sinPermiso, [],
+    `TARJETA ESCRITA A MANO fuera de core/activityCard.js:\n  ${sinPermiso.join('\n  ')}\n`
+    + '  La tarjeta es ÚNICA: usa activityCardHtml con su variante. Si de verdad es\n'
+    + '  otro objeto, decláralo en EXCEPCIONES_ACARD con su motivo.');
+  const muertas = Object.keys(EXCEPCIONES_ACARD).filter(v => !aMano.includes(v));
+  assert.deepStrictEqual(muertas, [], `excepciones muertas (ya no hay tarjeta a mano ahí): ${muertas.join(', ')}`);
+  ok(`escaneadas ${ALL_VIEWS.length} vistas: 0 tarjetas a mano sin declarar (${aMano.length} excepción con motivo)`);
+}
+
+// Las vistas que usan el componente se DESCUBREN igual (y no pueden bajar de 5:
+// si una migra fuera del componente en silencio, este número lo dice).
+const VIEWS = fuentes.filter(([, src]) => /activityCardHtml\(/.test(src)).map(([v]) => v);
+assert.ok(VIEWS.length >= 5, `solo ${VIEWS.length} vistas usan activityCardHtml (antes 5+): ¿alguna volvió al markup a mano?`);
+ok(`${VIEWS.length} vistas usan el componente (descubiertas escaneando, no listadas): ${VIEWS.join(' · ')}`);
+
+// CONTRA-PRUEBA del escáner: una vista nueva con tarjeta a mano NO pasaría.
+{
+  const falsa = ['views/__nueva.js', '<div><article class="acard"><h3>a mano</h3></article></div>'];
+  assert.deepStrictEqual(tarjetasAMano([falsa]).map(([v]) => v), ['views/__nueva.js'],
+    'el escáner debe cazar una vista nueva con markup de tarjeta propio');
+  ok('CONTRA-PRUEBA: una vista futura con tarjeta a mano rompe CI (el agujero de juegos.js, cerrado)');
+}
 
 // Explorar ya NO usa tarjetas Bootstrap (era la vista "horrible").
 const explore = read('views/explore.js');

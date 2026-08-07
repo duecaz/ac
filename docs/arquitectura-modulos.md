@@ -28,7 +28,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
-| **buscar/crear** | **siempre** — toda clase empieza aquí | 8 · 1136 | 5 · 515 | 0.45 |
+| **buscar/crear** | **siempre** — toda clase empieza aquí | 8 · 1136 | 5 · 556 | 0.49 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 11 · 2399 | 12 · 1112 | 0.46 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 18 · 3661 | 18 · 2846 | 0.78 |
 | **informes/tareas** | después de clase | 11 · 1133 | 3 · 381 | 0.34 |
