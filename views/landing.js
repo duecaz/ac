@@ -8,6 +8,7 @@ import { navigate } from '../core/router.js';
 import { activityCardHtml } from '../core/activityCard.js';
 import { listPublicActivities } from '../core/storage.js';
 import { computeFeatured } from '../core/ranking.js';
+import { getTemplate } from '../core/registry.js';
 import { fetchLikeCounts, fetchMyLikes, toggleLike } from '../core/likes.js';
 import { getUser } from '../core/auth.js';
 import { mountAuthSlot } from '../core/authWidget.js';
@@ -71,7 +72,9 @@ export async function renderLanding(rootSel) {
     }
     const [likeCounts, mine] = await Promise.all([fetchLikeCounts(), fetchMyLikes()]);
     myLikes = mine;
-    const featured = computeFeatured(rows, likeCounts, {}, 8);
+    // §4c: los juegos no compiten en las destacadas — su sitio es #/juegos.
+    const soloEjercicios = rows.filter(r => getTemplate((r.data || r).template)?.meta?.kind !== 'juego');
+    const featured = computeFeatured(soloEjercicios, likeCounts, {}, 8);
     if (!document.getElementById('lp-grid')) return; // navegó fuera
     if (!featured.length) { setGrid(`<p class="text-muted text-center py-4 w-100">Aún no hay actividades publicadas.</p>`); return; }
     setGrid(featured.map(a => card(a, likeCounts[a.id] || 0)).join(''));

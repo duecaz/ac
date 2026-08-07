@@ -104,3 +104,30 @@ export function racePassed(result) {
   if (!result) return false;
   return result.perfect ?? !!result.correct;
 }
+
+/**
+ * ¿Esta FILA de respuesta cuenta como ítem SUPERADO en carrera? La versión
+ * para el HOST de `racePassed`: re-puntúa con la clave (que el host sí tiene)
+ * y aplica LA MISMA vara que el móvil. Existió una divergencia real: el host
+ * contaba el avance con `scoreSubmission().correct` —para Tildes, `net>0`— así
+ * que una hoja 3/4 le contaba como terminada, cerraba la sala con la política
+ * "terminan todos", y el alumno veía "¡Ganaste!" encima del aviso de que su
+ * hoja volvía a la cola (encontrado en prueba real, v1.51.386). Dos varas para
+ * la misma pregunta es exactamente lo que esta función elimina.
+ *
+ * Si no se puede puntuar (fila vieja sin ítem, scorer que lanza), se cae al
+ * veredicto guardado en la fila — mejor un dato viejo que inventar uno.
+ */
+export function racePassedRow(tpl, row, item, activity, loop) {
+  // Sin ítem no hay qué re-puntuar (fila de una sesión vieja, índice fuera de
+  // rango): vale el veredicto guardado. OJO: no basta confiar en el catch —
+  // los scorers de marcas no lanzan con ítem ausente, devuelven "todo mal".
+  if (item == null) return row.correct === true;
+  try {
+    return racePassed(tpl.scoreSubmission({
+      value: row.value, item, activity, mode: pointsModeFor(loop),
+    }));
+  } catch {
+    return row.correct === true;
+  }
+}

@@ -28,7 +28,7 @@ import { isStudentSnapshot } from '../core/liveSnapshot.js';
 import { podiumHtml } from '../core/podium.js';
 import { QL_COLORS } from '../core/questionLive.js';
 import { questionWindowMs, RACE_POLL_MS, BOARD_POLL_MS, readSeconds, READ_SECONDS_MAX, itemWindowMs, mmss } from '../core/timings.js';
-import { loopsOf, supportsLoop, defaultLoop, LOOP_LABELS, hasAdvanceChoice, pointsModeFor } from '../core/liveLoops.js';
+import { loopsOf, supportsLoop, defaultLoop, LOOP_LABELS, hasAdvanceChoice, pointsModeFor, racePassedRow } from '../core/liveLoops.js';
 import { END_LABELS, END_POLICIES, DEFAULT_POLICY, DEFAULT_FIRST_N, DEFAULT_MINUTES, MAX_MINUTES, shouldEnd, endPolicyOf } from '../core/liveEnd.js';
 
 const STUDENT_BASE = location.origin + location.pathname.replace(/teacher\.html.*/, 'student.html');
@@ -655,12 +655,13 @@ async function renderHost(rootSel, code, sessionId, activity) {
     for (const a of allAnswers) {
       const pid = a.playerId || a.player_id;
       if (!prog[pid]) continue;
-      let ok = a.correct === true;
-      if (a.correct == null) {
-        try { ok = !!tpl.scoreSubmission({ value: a.value, item: items[a.itemIndex], activity, mode: pointsModeFor(loop) }).correct; }
-        catch { ok = false; }
+      // LA MISMA VARA que el móvil (§26, la regla de hoja completa): un ítem se
+      // supera con la hoja COMPLETA. Aquí el host contaba `correct` a secas
+      // —para Tildes, net>0— y una hoja 3/4 le contaba como terminada: cerraba
+      // la sala por "terminan todos" mientras el móvil re-encolaba la hoja.
+      if (racePassedRow(tpl, a, items[a.itemIndex], activity, loop)) {
+        prog[pid].items.add(a.itemIndex);
       }
-      if (ok) prog[pid].items.add(a.itemIndex);   // only correct items count as progress
     }
     // POLÍTICA DE EXPOSICIÓN (decisión, docs/estudio-bucles-live.md ficha 2 C-2):
     // durante el juego la pizarra muestra AVANCE, no RANKING. Antes esta lista

@@ -25,6 +25,7 @@
 //
 // Es un módulo PURO: sin DOM, sin red. Lo vigila `tests/search.test.mjs`.
 import { ITEM_KEYS } from './migrate.js';
+import { getTemplate } from './registry.js';
 
 /** Texto comparable: minúsculas y SIN diacríticos (NFD + fuera las marcas). */
 export function fold(s) {
@@ -61,9 +62,22 @@ export function haystackOf(a) {
   const key = a?.id ? `${a.id}:${a.updatedAt || ''}` : null;
   if (key && cache.has(key)) return cache.get(key);
   const out = { parts: [], len: 0 };
-  for (const s of [a?.title, a?.subtitle, ...(a?.tags || [])]) collect(s, out);
-  const c = a?.content || {};
-  for (const k of ITEM_KEYS) if (c[k]) collect(c[k], out);
+  // LA ETIQUETA DE LA PLANTILLA también se busca. La tarjeta la ENSEÑA en
+  // grande ("Ordena las Pelotas", "Quiz")… y el buscador no la miraba: teclear
+  // "ordena" no encontraba una actividad de Ordena las Pelotas titulada "Nueva
+  // actividad" (prueba real, v1.51.386). Lo que la tarjeta muestra, el buscador
+  // lo encuentra — si no, el profe cree que no existe y se pone a crearla.
+  const T = getTemplate(a?.template);
+  for (const s of [a?.title, a?.subtitle, T?.meta?.label, ...(a?.tags || [])]) collect(s, out);
+  // El contenido de un JUEGO no se indexa (§4c): lo genera la plantilla, no el
+  // profe — son datos de tablero ('orange', niveles…), y esa basura producía
+  // FALSOS POSITIVOS ("or" encontraba Pelotas por el color de una bola). Un
+  // juego se encuentra por su nombre y su habilidad, no por sus tripas.
+  if (T?.meta?.kind !== 'juego') {
+    const c = a?.content || {};
+    for (const k of ITEM_KEYS) if (c[k]) collect(c[k], out);
+  }
+  if (T?.meta?.kind === 'juego') collect(T?.meta?.skill, out);
   const text = fold(out.parts.join(' '));
   if (key) {
     if (cache.size > 300) cache.clear();   // tope duro: nunca crece sin límite

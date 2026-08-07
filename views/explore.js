@@ -6,6 +6,7 @@ import { navigate } from '../core/router.js';
 import { activityCardHtml } from '../core/activityCard.js';
 import { listPublic } from '../core/storage.js';
 import { searchActivities } from '../core/search.js';
+import { getTemplate } from '../core/registry.js';
 
 // `q0` = término que llega EN LA URL (`#/explore?q=comas`). Es como aterriza el
 // profe desde el buscador de la portada: si la vista no lo leyera, llegaría a la
@@ -41,6 +42,10 @@ export async function renderExplore(rootSel, q0 = '') {
     // contenido y la migración del modelo viven ahí, una sola vez.
     try {
       cache = await listPublic({ language: lang, limit: 120 });
+      // §4c: un JUEGO no se publica — viene con la app y vive en la estantería
+      // #/juegos. Las filas viejas de juegos publicadas antes de la distinción
+      // se filtran aquí para no enseñar duplicados de lo que la estantería ya da.
+      cache = cache.filter(r => getTemplate(r.data?.template)?.meta?.kind !== 'juego');
     } catch (e) {
       document.getElementById('exp-list').innerHTML = `<div class="alert alert-danger">${escapeHtml(e.message)}</div>`;
       return;

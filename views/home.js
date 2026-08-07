@@ -2,7 +2,7 @@ import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { list, remove, get, save } from '../core/storage.js';
 import { navigate } from '../core/router.js';
-import { listTemplates } from '../core/registry.js';
+import { listTemplates, getTemplate } from '../core/registry.js';
 import { confirmModal, toast } from '../core/toast.js';
 import { activityItemCount as itemCount } from '../core/migrate.js';
 import { activityCardHtml } from '../core/activityCard.js';
@@ -99,8 +99,11 @@ export function renderHome(rootSel) {
     if (a.template === 'list') return listCard(a);
     const n = itemCount(a);
     // Esquina sup-der (dueño): publicar/despublicar + editar + borrar.
+    // §4c: un JUEGO no se publica (el contenido no es del profe) — sin botón
+    // Publicar/Borrador en su tarjeta. Editar/borrar sí: la actividad es suya.
+    const esJuego = getTemplate(a.template)?.meta?.kind === 'juego';
     const topRight = `<div class="acard-icons">
-        ${a.visibility === 'public'
+        ${esJuego ? '' : a.visibility === 'public'
           ? `<button class="pub-toggle is-pub act-unpublish" data-id="${a.id}" title="Publicada — clic para pasar a borrador"><i class="bi bi-globe"></i> Pública</button>`
           : `<button class="pub-toggle act-publish" data-id="${a.id}" title="Borrador — clic para publicar en la biblioteca"><i class="bi bi-eye-slash"></i> Borrador</button>`}
         <button class="icon-btn edit act-edit" data-id="${a.id}" title="Editar"><i class="bi bi-pencil-fill"></i></button>

@@ -170,4 +170,34 @@ const tildes = () => ({
   ok('carrera = hoja COMPLETA (perfect), con contra-prueba de que Quiz/Operaciones siguen igual');
 }
 
+// ── 7. EL HOST USA LA MISMA VARA (bug de prueba real, v1.51.386) ───────────
+// El compañero jugó Tildes en carrera: hoja 1 perfecta (8/8), hoja 2 a medias
+// (3/4). El móvil re-encoló la hoja… y medio segundo después vio "¡Ganaste!":
+// el HOST contaba el avance con `correct` a secas (net>0) y con la política
+// "terminan todos" cerró la sala. Dos varas para la misma pregunta.
+{
+  const { racePassedRow } = await import('../core/liveLoops.js');
+  const T = getTemplate('tildes');
+  const act = tildes();
+  const item = { id: 'ps_x', text: 'El arbol es mas grande', marks: [
+    { kind: 'tilde', pos: 3 }, { kind: 'tilde', pos: 13 },
+  ] };
+
+  assert.strictEqual(racePassedRow(T, { value: [3] }, item, act, 'race'), false,
+    'hoja a medias: para el HOST tampoco cuenta como superada');
+  assert.strictEqual(racePassedRow(T, { value: [3, 13] }, item, act, 'race'), true,
+    'hoja completa: superada');
+
+  const Q = getTemplate('quiz');
+  const qItem = { id: 'q1', question: '2+2', answer: '4', options: ['4', '5'], points: 1 };
+  const qAct = { ...act, template: 'quiz', content: { items: [qItem] } };
+  assert.strictEqual(racePassedRow(Q, { value: '4' }, qItem, qAct, 'race'), true);
+  assert.strictEqual(racePassedRow(Q, { value: '5' }, qItem, qAct, 'race'), false);
+
+  // Fila que no se puede re-puntuar (ítem ausente): se cae al veredicto guardado.
+  assert.strictEqual(racePassedRow(T, { value: [3], correct: true }, undefined, act, 'race'), true,
+    'sin ítem que puntuar, vale el veredicto de la fila (dato viejo > dato inventado)');
+  ok('host y móvil comparten la vara: la hoja 3/4 ya no cierra la sala por "terminan todos"');
+}
+
 console.log(`\n  ${passed} raceKey checks passed`);

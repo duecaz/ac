@@ -149,4 +149,27 @@ const BIBLIOTECA = [
   ok('la caché se invalida con `updatedAt`: lo que acabas de escribir se encuentra');
 }
 
+// ── 10. Lo que la tarjeta ENSEÑA, el buscador lo encuentra ─────────────────
+// Prueba real (v1.51.386): actividades de "Ordena las Pelotas" tituladas "Nueva
+// actividad" — teclear "ordena" no encontraba NADA, pero "or" sí (por el color
+// 'orange' de una bola del tablero). Las dos mitades del mismo error: la
+// etiqueta visible no se indexaba y las tripas generadas sí.
+{
+  await import('../core/registerTemplates.js');
+  const pelotas = { id: 'g1', title: 'Nueva actividad', template: 'ballsort',
+    content: { level: 'classic', mode: 'moves', items: [{ id: 'b1', mode: 'moves',
+      board: { tubes: [['orange', 'red'], ['red', 'orange'], []], tubeCapacity: 4 } }] } };
+
+  assert.ok(matches(pelotas, 'ordena'), '"ordena" encuentra la plantilla por su etiqueta');
+  assert.ok(matches(pelotas, 'pelotas'), 'y "pelotas" también');
+  assert.ok(matches(pelotas, 'logica'), 'y por su habilidad (§4c), sin tilde');
+  assert.ok(!matches(pelotas, 'orange'), 'las tripas del tablero NO se indexan (falso positivo real)');
+
+  const quiz = { id: 'q9', title: 'Nueva actividad', template: 'quiz',
+    content: { items: [{ q: '¿Capital de Francia?', a: 'París' }] } };
+  assert.ok(matches(quiz, 'quiz'), 'un ejercicio también se encuentra por su plantilla');
+  assert.ok(matches(quiz, 'paris'), 'y su contenido SÍ se sigue indexando (es del profe)');
+  ok('la etiqueta de la plantilla se busca; el tablero generado de un juego, no');
+}
+
 console.log(`\n  ${passed} search checks passed`);

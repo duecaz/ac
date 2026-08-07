@@ -66,7 +66,12 @@
   width: max(34px, 5cqmin); height: max(34px, 5cqmin);
   display: flex; align-items: center; justify-content: center;
   padding: 0; border: 0; border-radius: 50%;
-  background: var(--ww-card-bg, #fff); color: var(--ww-fg, #1f2937);
+  /* VELO NEUTRO, no tokens de skin: es un control DE SUPERPOSICIÓN (como los de
+     YouTube) y debe leerse sobre CUALQUIER fondo. Con var(--ww-card-bg)/--ww-fg
+     el skin Kahoot lo dejaba blanco-sobre-blanco: el icono existía y no se veía
+     (reporte de prueba real, v1.51.386). Un velo oscuro + icono blanco es
+     legible sobre los 6 skins sin conocer ninguno. */
+  background: rgba(0, 0, 0, .45); color: #fff;
   box-shadow: 0 1px 6px rgba(0,0,0,.22);
   opacity: .38; cursor: pointer;
   transition: opacity .15s ease, transform .15s ease;
