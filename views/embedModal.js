@@ -1,5 +1,11 @@
 // "Embed" modal. Generates the <iframe> snippet for an activity, lets the
 // user pick size + skin/bg/template overrides, shows a live preview.
+//
+// ESTADO: BETA declarada (norte §7c, v1.51.412). Embeber está FUERA DE LA
+// ESCENA por ahora — el código pinta, pero nadie lo ha probado dentro de un
+// blog ni de un LMS (cookies de terceros, fullscreen denegado en iframe,
+// PocketBase desde otro origen). Se reabre solo si Google Classroom lo pide.
+// Por eso el diálogo avisa: la puerta entornada se dice ANTES.
 import { rid } from '../core/ids.js';
 import { escapeHtml } from '../core/html.js';
 import { listSkins } from '../core/skins.js';
@@ -32,6 +38,11 @@ export function openEmbedModal(activity) {
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
+            <div class="alert alert-secondary small">
+              <i class="bi bi-cone-striped"></i> <b>Función beta.</b> Está sin validar fuera de aulareto.com:
+              dentro de un blog o un LMS pueden fallar la pantalla completa y el guardado de resultados.
+              Úsalo para probar, no para una clase que dependa de ello.
+            </div>
             ${isPublic ? '' : `
               <div class="alert alert-warning small">
                 <i class="bi bi-eye-slash"></i> Esta actividad es <b>privada</b>. Para que el embed funcione fuera, cambia la visibilidad a <b>Pública</b> o <b>No listada</b> en el editor.

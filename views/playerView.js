@@ -223,7 +223,10 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
           <button class="btn btn-sm btn-outline-secondary" id="btn-fs"><i class="bi bi-arrows-fullscreen"></i> Pantalla completa</button>
           ${canEdit ? `<a href="#/edit/${a.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>` : ''}
           <button class="btn btn-sm btn-outline-secondary" id="btn-link"><i class="bi bi-link-45deg"></i> Copiar link</button>
-          <button class="btn btn-sm btn-outline-secondary" id="btn-embed"><i class="bi bi-code-square"></i> Embed</button>
+          <!-- «beta» a propósito: embeber está FUERA DE LA ESCENA por ahora
+               (norte §7c) — pinta, pero nadie lo ha validado dentro de un blog
+               o un LMS. La puerta entornada se DICE ANTES, no se descubre. -->
+          <button class="btn btn-sm btn-outline-secondary" id="btn-embed"><i class="bi bi-code-square"></i> Embed <span class="badge bg-secondary">beta</span></button>
           <button class="btn btn-sm btn-outline-secondary" id="btn-fork"><i class="bi bi-files"></i> Duplicar</button>
         </div>
 

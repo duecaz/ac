@@ -29,11 +29,11 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 11 · 1462 | 6 · 645 | 0.44 |
-| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 11 · 2413 | 12 · 1112 | 0.46 |
+| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 11 · 2416 | 12 · 1112 | 0.46 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 18 · 3684 | 18 · 2863 | 0.78 |
 | **informes/tareas** | después de clase | 11 · 1067 | 4 · 435 | 0.41 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5470 | 12 · 975 | 0.18 |
-| **infra/común** | todo lo anterior | 126 · 12249 | 39 · 4158 | 0.34 |
+| **infra/común** | todo lo anterior | 126 · 12260 | 39 · 4158 | 0.34 |
 
 > Un ratio bajo en un tramo muy usado es deuda de PRIORIDAD, no de calidad: ese
 > código funciona, pero si se rompe nadie se entera hasta que hay 33 críos
@@ -98,7 +98,7 @@ graph TD
 | Capa | Módulos más grandes |
 |---|---|
 | **arranque** | `main.teacher.js` (168) · `main.embed.js` (68) · `main.student.js` (49) |
-| **vistas** | `views/hostLive.js` (1013) · `views/adminView.js` (978) · `views/studentLive.js` (858) · `views/vsView.js` (487) · `views/playerView.js` (367) |
+| **vistas** | `views/hostLive.js` (1013) · `views/adminView.js` (978) · `views/studentLive.js` (858) · `views/vsView.js` (487) · `views/playerView.js` (370) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1107) · `adapters/local/realtime.js` (321) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
 | **core** | `core/selftest.js` (331) · `core/skins.js` (327) · `core/textCorrectionRound.js` (325) · `core/auth.js` (286) · `core/vsAnimations.js` (269) |
 | **kernel** | `kernel/session/engine.js` (549) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/realtimePort.js` (34) · `kernel/contracts/contentModel.js` (33) |

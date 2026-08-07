@@ -411,6 +411,14 @@ Los cortes ya están mapeados (no re-diseñar al ejecutar):
 Al partir: `node tools/module-map.mjs` + preflight completo; los guardianes (layers, moduleRefs,
 realtimePort) deben seguir verdes sin tocar sus listas.
 
+### 🟡 FUERA DE LA ESCENA — embeber en otra web (`embed.html`), BETA declarada
+Decisión del usuario (v1.51.412): embeber **no se soporta por ahora**. El código existe y
+pinta (la matriz lo abre en local para que no muera en silencio), pero nadie lo ha validado
+dentro de un blog ni de un LMS — cookies de terceros, fullscreen denegado en iframe y PB
+desde otro origen están SIN probar. **Se reabre solo si Google Classroom lo necesita.**
+La UI lo dice antes: botón «Embed **beta**» + aviso en el diálogo. Detalle y condición de
+reapertura en `docs/norte.md` §7c.
+
 ### 🟡 DECISIONES APLAZADAS (D1-D5) — deuda de PRODUCTO, no de código
 Decisión del usuario (v1.51.340): se ejecutan solo las estructurales. **D6 hecha**
 (ley §25 · cuotas y retención) y **D7 estudiada y congelada** (ley §26 + estudio medido

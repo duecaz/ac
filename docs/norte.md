@@ -742,6 +742,19 @@ Condiciones escritas, para no rediscutirlo por intuición:
 - **Área de alumno**: solo si se levanta el aplazamiento de §4d/D1. No antes.
 - **Un quinto botón en la barra**: no. Con cinco ya nadie lee ninguno; si algo
   entra, algo sale.
+- **Embeber la actividad en otra web** (`embed.html` + el botón «Embed» del
+  reproductor): **fuera de la escena por ahora** (decisión del usuario, v1.51.412).
+  El código existe y pinta, pero **no se ha tocado ni validado fuera de este
+  dominio** — un `<iframe>` en un blog o en un LMS mete cookies de terceros,
+  pantalla completa denegada y PocketBase desde otro origen, y ninguna de las
+  tres se ha probado con una clase. **Se reabre SOLO si Google Classroom lo
+  necesita**, que es la única integración que el norte reconoce (§5: nos
+  integramos con lo que el colegio ya use, no lo sustituimos). Mientras tanto:
+  el recorrido de la matriz sigue abriendo `embed.html` en local para que no
+  muera en silencio (R6), y la UI lo DICE ANTES — el botón lleva «beta» y el
+  diálogo avisa de que no está validado fuera. Prometer una función que no
+  sostenemos es peor que no tenerla: el profe la pega en su blog y descubre el
+  fallo con la clase mirando.
 
 ## 8. LA COLA, DERIVADA DEL NORTE (no de la inercia)
 
