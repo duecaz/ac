@@ -115,7 +115,6 @@ ok('math.css y quiz.css siguen limpios (0 fija / 0 color hardcodeado)');
 // baseline congelado (mismo contrato ratchet: solo encoge, nunca crece).
 const THEME_BASELINE = {
   arcade:   ['.45rem', '.5em', '.5rem'],
-  colegios: ['.85rem', '1.1rem'],
   'tv-show': ['1.05rem', '1.4rem'],
 };
 {
@@ -167,10 +166,11 @@ const THEME_BASELINE = {
   for (const p of declared) {
     assert.ok(statSync(join(ROOT, p), { throwIfNoEntry: false }), `core/skins.js declara stylesheet inexistente: ${p}`);
   }
-  // Huérfanos CONOCIDOS (deuda registrada en docs/leyes.md §3): colegios existe
-  // en disco pero ningún registerSkin lo usa. Al registrarlo o borrarlo, quita
-  // la entrada de aquí (ratchet: la lista solo encoge).
-  const KNOWN_ORPHANS = ['themes/colegios/skin.css'];
+  // Huérfanos CONOCIDOS: vacío desde v1.51.415 — `themes/colegios/skin.css`
+  // llevaba en disco sin ningún `registerSkin` que lo cargara (135 líneas que
+  // NADIE podía elegir) y se BORRÓ en la caza de tumores. La lista es ratchet:
+  // solo encoge. Un skin nuevo sin registrar rompe CI aquí.
+  const KNOWN_ORPHANS = [];
   const themeFiles = readdirSync(join(ROOT, 'themes'), { withFileTypes: true })
     .filter(d => d.isDirectory()).map(d => `themes/${d.name}/skin.css`)
     .filter(p => statSync(join(ROOT, p), { throwIfNoEntry: false }));

@@ -53,6 +53,7 @@ replantea. Texto completo en **`docs/leyes.md`** (índice único de normas).
 | **§27 · VIAJES** | cada tramo del norte tiene su RECORRIDO con navegador; se comprueba lo que toca el dedo, no lo que existe en el DOM | `journeys` + `tools/preflight.mjs` |
 | **§28 · EN CLASE** | R2: máx. 2 opciones de partida, ya elegidas (el techo lo exige el contrato) · R2b: dentro del marco de juego, ningún control destructivo ni de identidad | `templateContract` · escaneo R2b de `matrix-smoke` |
 | **§29 · PRESUPUESTO** | el coste de conducir se MIDE: jugar sin diálogos · nadie revela solo · de la lista a jugar ≤3 toques | `matrix-smoke` (presupuesto) · `find-smoke` (toques) |
+| **§30 · ALCANZABLE** | lo que no tiene puerta de entrada se BORRA: ni módulo sin importador, ni ruta sin enlace, ni CSS que nadie cargue | `huerfanos` (escaneo + `PUERTAS` con motivo) |
 
 - **Si es norma, es test**: una regla nueva se escribe como test, no solo en un MD.
 - **Si una ley cierra una puerta, la UI lo DICE ANTES**: dirigir en vivo / crear
@@ -410,6 +411,23 @@ Los cortes ya están mapeados (no re-diseñar al ejecutar):
 - `kernel/session/engine.js` (540) → **POR MÁQUINA**: items / score / live / teams / vs.
 Al partir: `node tools/module-map.mjs` + preflight completo; los guardianes (layers, moduleRefs,
 realtimePort) deben seguir verdes sin tocar sus listas.
+
+### ✅ RESUELTO (v1.51.414 → v1.51.415) — CAZA DE TUMORES + ley §30
+Código que la app NO PODÍA ALCANZAR, y ninguna ley lo veía (`layers` mira la dirección de
+los imports, `moduleRefs` que lo importado exista; nadie miraba los nodos sueltos):
+- `views/sorteoView.js` + ruta `#/sorteo` (107) — ruleta de aula sin un solo enlace.
+- `core/tts.js` (38) · `themes/colegios/skin.css` (135, skin que ningún `registerSkin`
+  cargaba) · `tools/test.html` (154, SEGUNDA suite en el navegador que nadie abría) ·
+  `kernel/contracts/index.js` + `kernel/contracts/realtimePort.js` (el typedef `RoomChange`
+  se mudó a `core/liveTransport.js`, junto al código que lo cumple) · alias de ruta `#/modos`.
+- **Ley §30 · ALCANZABLE** (`tests/huerfanos.test.mjs`): escanea el repo y exige que todo
+  módulo/ruta/CSS sea alcanzable o esté en `PUERTAS` con su motivo. Con contra-prueba.
+- Lo que NO se tocó (falsos positivos comprobados): `assets/js/lottie_light.min.js` (se
+  inyecta con un `<script>` en runtime), los 13 `templates/*/index.js` (import de efecto
+  secundario desde `registerTemplates.js`), `$`/`$$` de `core/html.js` (sí se usan).
+- Queda como observación, no como deuda: ~25 `export` de funciones que solo usa su propio
+  módulo (API pública más ancha de lo necesario). Tocarlas es churn sin valor: no son código
+  muerto, solo visibilidad de más.
 
 ### 🟡 FUERA DE LA ESCENA — embeber en otra web (`embed.html`), BETA declarada
 Decisión del usuario (v1.51.412): embeber **no se soporta por ahora**. El código existe y

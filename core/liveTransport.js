@@ -1,8 +1,26 @@
 // LIVE transport facade. Views import these instead of core/transport/* directly,
-// so the active backend (local | supabase) is chosen by getRealtime() and the
+// so the active backend (local | pocketbase) is chosen by getRealtime() and the
 // call sites stay identical. Each call resolves the driver once (cached) and
-// forwards. This is the seam that lets LIVE run fully local (no Supabase).
+// forwards. This is the seam that lets LIVE run fully local (no backend).
+//
+// ESTE ARCHIVO ES EL CONTRATO DEL PUERTO EN VIVO: cada llamada de abajo nombra
+// un método que los DOS adaptadores (pocketbase · local) tienen que
+// implementar. La paridad la deriva `tests/realtimePort.test.mjs` de estas
+// mismas llamadas — no de una lista escrita a mano, que ya mintió una vez.
+// (Vivía en `kernel/contracts/realtimePort.js`, un archivo que NADIE importaba:
+// borrado en la caza de tumores, v1.51.415. El typedef se vino con él, que es
+// donde se puede contrastar con el código que lo produce.)
 import { getRealtime } from '../adapters/index.js';
+
+/**
+ * Lo que entrega `subscribeRoom` a su callback. Es la FORMA que los dos
+ * adaptadores tienen que producir, y ninguna función la declara por sí sola.
+ * @typedef {Object} RoomChange
+ * @property {'sessions'|'players'|'answers'} table
+ * @property {string} eventType  'INSERT' | 'UPDATE' | 'DELETE'
+ * @property {Object} [new]
+ * @property {Object} [old]
+ */
 
 const call = (method) => async (...args) => {
   const rt = await getRealtime();

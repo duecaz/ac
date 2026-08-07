@@ -91,7 +91,6 @@ route('#/juegos', () => renderJuegos(APP));   // la estantería (§4c/§7c): sin
 route('#/autor/:id', ({ id }) => renderAuthor(APP, id));
 route('#/moderar', () => renderModerate(APP));
 route('#/admin', () => renderAdmin(APP));
-route('#/modos', () => renderAdmin(APP));
 
 setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encontrada. <a href="#/home">Inicio</a></div>`));
 

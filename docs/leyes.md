@@ -59,6 +59,7 @@
   - [Corolario: al unificar, migrar también la DECISIÓN](#corolario-al-unificar-migrar-también-la-decisión)
 - [§28 · EN CLASE — el profe no configura y el alumno no puede romper](#28--en-clase--el-profe-no-configura-y-el-alumno-no-puede-romper)
 - [⚖️ §29 · PRESUPUESTO — el coste de conducir la clase se MIDE](#-29--presupuesto--el-coste-de-conducir-la-clase-se-mide)
+- [⚖️ §30 · ALCANZABLE — lo que no tiene puerta de entrada, se borra](#-30--alcanzable--lo-que-no-tiene-puerta-de-entrada-se-borra)
   - [Cómo se auto-verifica todo](#cómo-se-auto-verifica-todo)
 
 ### Ir a otro documento
@@ -188,15 +189,16 @@ escribirse; si necesita violar una prohibición, está en la capa equivocada.
   cuánto falta (debe tender a 0). Los iconos son decisión aparte: `bi` es una
   FUENTE, no CSS — vendorizarla o pasar a SVG inline.
   **Themes ya están en el escáner de px (R3)**: `tests/styles.test.mjs` congela
-  los 7 `font-size` fijos que quedaban en arcade/colegios/tv-show como baseline
+  los `font-size` fijos que quedaban en arcade/tv-show como baseline
   propio (solo encoge) — la cifra "27" de la deuda era vieja; L5/M7 ya habían
   limpiado el resto.
-- **Deuda registrada**: `themes/colegios/skin.css` huérfano (en disco, sin
-  `registerSkin` — decidir si se registra o se retira; fijado en
-  `KNOWN_ORPHANS`; su copia del teclado es CÓDIGO MUERTO, no una 4ª copia viva) · deuda de ratchet en vs/teams/wordsearch (la mayor) +
+- **Deuda registrada**: ~~`themes/colegios/skin.css` huérfano~~ ✅ RESUELTO
+  (v1.51.415): se retiró — estaba en disco sin `registerSkin`, así que ningún
+  profe podía elegirlo, y su copia del teclado era código muerto. `KNOWN_ORPHANS`
+  queda VACÍO · deuda de ratchet en vs/teams/wordsearch (la mayor) +
   match/memory/ballsort/crossword/textCorrection/question-live ·
-  `themes/*/skin.css` aún fuera del escáner de px (27 font-size fijos entre
-  arcade/tv-show/colegios) · el escape por selector `.mem-`/`-ed\b` exime más de
+  `themes/*/skin.css` aún fuera del escáner de px (font-size fijos entre
+  arcade/tv-show) · el escape por selector `.mem-`/`-ed\b` exime más de
   lo que debería (todo memory) · `rgba()` de superficie sin vigilar.
   (Las reglas muertas del skin `space` no registrado se retiraron en L5.)
 
@@ -803,6 +805,50 @@ del aula". Los tiempos piden un banco de medida estable —en este sandbox el
 reloj miente— y la legibilidad pide medir tamaño y contraste computados, que es
 la extensión natural de §3. Ninguno de los dos es excusa para no tener los tres
 de arriba.
+
+## ⚖️ §30 · ALCANZABLE — lo que no tiene puerta de entrada, se borra
+
+> **Dueño**: `tests/huerfanos.test.mjs` · **PROHIBIDO**: dejar en el repo un
+> módulo que nadie importe, una ruta a la que no lleve ningún enlace o una hoja
+> de estilo que nadie cargue. · **Vigilada por**: el escaneo del repo (imports
+> estáticos, de efecto secundario y dinámicos + rutas de las `main.*.js` +
+> `<link>`/`@import`/`stylesheet:`), con `PUERTAS` declaradas y su motivo.
+
+`views/sorteoView.js` era una ruleta de aula suelta, con su ruta `#/sorteo`
+registrada y su vista pintando — **y ni un enlace en todo el producto que
+llevara hasta ella**. Llevaba meses así. Cuando salió en una auditoría, la
+reacción del dueño del proyecto fue *"eso no lo tenemos, ¿te confundes con la
+actividad Ruleta?"*. Detrás vinieron cuatro más: `core/tts.js`,
+`themes/colegios/skin.css` (un skin entero que ningún `registerSkin` cargaba),
+`tools/test.html` (una SEGUNDA suite de tests, en el navegador, que nadie abría)
+y `kernel/contracts/realtimePort.js` (el contrato del puerto en vivo, que no
+importaba nadie — y por eso pudo mentir durante versiones).
+
+**Por qué es una ley y no una limpieza.** Un tumor no es peso muerto: MIENTE.
+Se lee como código vivo al auditar, sale en las búsquedas, alguien lo "arregla"
+cuando lo roza, y el día que se enlaza por casualidad se descubre que llevaba
+meses roto — con la clase delante. Peor con los contratos y los tests: una
+suite que nadie corre y un typedef que nadie lee son las dos cosas que MÁS
+tranquilidad dan y menos vigilan.
+
+**Y ninguna ley anterior lo veía**: `layers` comprueba la DIRECCIÓN de los
+imports (no que exista alguno), `moduleRefs` que lo importado EXISTA (no que a
+lo que existe lo importe alguien). Las dos miran las flechas; ninguna miraba los
+nodos sueltos.
+
+**Las PUERTAS son la parte honesta.** Hay código legítimamente sin importador:
+las entradas de página (`main.*.js`, que carga un `<script type=module>`), el
+service worker, las herramientas de `tools/`, las suites, una librería de
+terceros que se inyecta con un `<script>` en tiempo de ejecución. Cada clase
+está declarada CON SU MOTIVO en el propio test — escribir el motivo es cuando se
+ve si de verdad lo es. Sin motivo, es un tumor con permiso.
+
+**Contra-prueba obligatoria**: el test comprueba que un módulo huérfano
+inventado SÍ sería cazado y que las puertas no eximen de más (una vista
+cualquiera no queda exenta por accidente). Sin eso, un fallo del parser —una
+forma de `import` no contemplada— dejaría la lista vacía y todo verde, que es
+exactamente cómo un tumor sobrevive a su vigilante.
+
 
 ---
 ### Cómo se auto-verifica todo

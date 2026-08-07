@@ -49,16 +49,19 @@ const PEDIDOS = [...new Set([...fachada.matchAll(/call\('([a-zA-Z]+)'/g)].map(m 
 
 // ── 3. El typedef no puede volver a inventarse métodos ────────────────────
 // Lo que tumbó al anterior: declaraba `joinRoom`, que no existe en el repo.
+// Vive ahora EN la propia fachada (v1.51.415): el archivo aparte
+// `kernel/contracts/realtimePort.js` no lo importaba nadie — un contrato que
+// nadie lee es exactamente el que se queda desfasado sin que se note.
 {
-  const port = readFileSync(join(ROOT, 'kernel/contracts/realtimePort.js'), 'utf8');
   // Solo las líneas `@property {(…) => …} nombre`, que es como se declaraba un
   // MÉTODO del puerto (no las del typedef RoomChange, que son campos).
-  const declarados = [...port.matchAll(/@property \{\([^}]*=>[^}]*\}\s+([a-zA-Z]+)/g)].map(m => m[1]);
+  const declarados = [...fachada.matchAll(/@property \{\([^}]*=>[^}]*\}\s+([a-zA-Z]+)/g)].map(m => m[1]);
   const inventados = declarados.filter(m => !PEDIDOS.includes(m));
   assert.deepStrictEqual(inventados, [],
     `el typedef declara métodos que la fachada no llama: ${inventados.join(' · ')}`);
-  assert.match(port, /RoomChange/, 'el typedef sí debe seguir declarando la FORMA del evento de suscripción');
-  ok('el contrato escrito no declara métodos fantasma (el `joinRoom` que nunca existió)');
+  assert.match(fachada, /@typedef \{Object\} RoomChange/,
+    'la fachada debe declarar la FORMA del evento de suscripción, que ninguna función produce por sí sola');
+  ok('el contrato vive junto al código que lo cumple, y no declara métodos fantasma');
 }
 
 // ── 4. CONTRA-PRUEBA: si a un adaptador le faltara uno, se vería ───────────
