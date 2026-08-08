@@ -401,6 +401,18 @@ sobre la tarjeta). Dos fixes:
 La entrada de `CONOCIDOS` en `tools/matrix-smoke.mjs` se retiró: la matriz juega
 ahora 30/30 y una regresión aquí la tumba.
 
+### ✅ HECHO (v1.51.419) — LÁPIZ / BORRADOR en Tildes y Comas
+La herramienta se detecta por el TAMAÑO del contacto (`core/penDetector.js`: punta dibuja,
+palma borra) y acierta casi siempre — pero en una pizarra sin calibrar, o con un lápiz que
+no reporta área de contacto, BORRAR era imposible. Y aquí una marca de más RESTA
+(`scoreMarksPerHit`, puntaje neto): no poder borrar es perder puntos por algo que el alumno
+sabía. Ahora la ronda de dibujo trae **dos botones** (Lápiz · Borrador) cableados al
+`setEraser()` del canvas — que existía desde el primer día y **no lo llamaba nadie**.
+Arranca en LÁPIZ (§29: cero toques extra para responder), tamaños en unidades de contenedor
+y color por token (§3 · R1). Vigilado por `tests/tcTools.test.mjs` (5, con contra-prueba
+§28 R2b: borra el TRAZO, nunca contenido del profe) y probado con toque real (CDP): dibujar
+→ borrar con el botón → se entrega sin marcas.
+
 ### ✅ RESUELTO (v1.51.418) — el reloj de CADA aparato (§22-5) → `docs/handoff-reloj-aparatos.md`
 Los DOS fallos de la ronda del compañero eran UNO: los instantes de la sala
 (`answers_open_at`/`deadline`) se estampaban con el reloj del PROFE y se comparaban contra el

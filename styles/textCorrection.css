@@ -56,6 +56,25 @@
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
 }
+/* ── LÁPIZ / BORRADOR (mando manual del canvas) ──────────────────────────────
+   Tamaños en unidades de contenedor como el resto del player (§3): en la pizarra
+   de 4 m se ven grandes y en un móvil 9:16 no se comen el texto. Colores por
+   TOKEN para que los skins los recoloreen; el activo se distingue por relleno,
+   no solo por color (R1: mirada a 3 m, y no todo el mundo distingue matices). */
+.tc-tools { flex: 0 0 auto; display: flex; gap: .6em; justify-content: center; padding-top: 1cqh; }
+.tc-tool {
+  font-size: clamp(.8rem, 2.1cqmin, 1.3rem); padding: .35em .9em;
+  border: 2px solid var(--ww-accent, #0d6efd);
+  color: var(--ww-accent, #0d6efd); background: transparent;
+  border-radius: 999px; line-height: 1.2;
+}
+.tc-tool.is-on {
+  background: var(--ww-accent, #0d6efd);
+  /* Blanco sobre el acento: neutro permitido por §3 (los skins recolorean el
+     RELLENO con su token; el texto encima se queda legible en los cinco). */
+  color: #fff;
+  box-shadow: 0 0 0 .18em rgba(0,0,0,.14);
+}
 .tc-done-wrap { flex: 0 0 auto; padding-top: 1.8cqh; text-align: center; }
 /* El botón también escala con el marco (no un botón diminuto en pantalla grande). */
 .tc-done-wrap .btn { font-size: clamp(.9rem, 2.6cqmin, 1.7rem); padding: .5em 1.1em; }

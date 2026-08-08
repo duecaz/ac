@@ -12,6 +12,7 @@ console.log('\n▶ render'); await import('./render.test.mjs');
 console.log('\n▶ adapters'); await import('./adapters.test.mjs');
 console.log('\n▶ solo');      await import('./solo.test.mjs');
 console.log('\n▶ textMarks'); await import('./textMarks.test.mjs');
+console.log('\n▶ tcTools'); await import('./tcTools.test.mjs');
 console.log('\n▶ wheel');     await import('./wheel.test.mjs');
 console.log('\n▶ core');      await import('./core.test.mjs');
 console.log('\n▶ routing');   await import('./routing.test.mjs');

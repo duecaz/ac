@@ -105,9 +105,22 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
   // inicio (views/startScreen.js), que es donde van los ajustes previos. En modo
   // tarea (alumno) no hay pizarra que calibrar, así que no debe aparecer nunca
   // durante el ejercicio.
+  // LÁPIZ / BORRADOR explícitos. La detección por tamaño de contacto
+  // (core/penDetector.js) acierta casi siempre —punta dibuja, palma borra—, pero
+  // "casi siempre" con 33 críos delante no basta: en una pizarra sin calibrar, o
+  // con un lápiz que no reporta el área de contacto, borrar era imposible y el
+  // alumno se quedaba con una marca de más (que en Tildes/Comas RESTA: el
+  // puntaje es neto). Estos dos botones son el mando manual — el detector sigue
+  // mandando mientras nadie los toque.
+  // NO añaden toques a responder (§29): se arranca en LÁPIZ, que es lo que el
+  // alumno va a hacer; el borrador es para el que se equivoca.
   root.innerHTML = `
     <div class="tc-round">
       <div class="tc-passage-area"><div class="tc-passage">${passageHtml(text, kind)}</div></div>
+      <div class="tc-tools" role="group" aria-label="Herramienta">
+        <button type="button" class="btn tc-tool is-on" data-tool="pen" aria-pressed="true"><i class="bi bi-pencil-fill"></i> Lápiz</button>
+        <button type="button" class="btn tc-tool" data-tool="eraser" aria-pressed="false"><i class="bi bi-eraser-fill"></i> Borrador</button>
+      </div>
       <div class="tc-done-wrap"><button type="button" class="btn btn-success btn-lg tc-done" data-ww-submit><i class="bi bi-check2-circle"></i> Listo</button></div>
     </div>`;
 
@@ -127,6 +140,19 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
     onSubmit?.(draw.getMarked());
   };
   root.querySelector('.tc-done').addEventListener('click', submit);
+  // El mando manual: pinta cuál está activo y se lo dice al canvas.
+  for (const b of root.querySelectorAll('.tc-tool')) {
+    b.addEventListener('click', () => {
+      if (done) return;
+      const borrar = b.dataset.tool === 'eraser';
+      draw.setEraser(borrar);
+      for (const o of root.querySelectorAll('.tc-tool')) {
+        const on = o === b;
+        o.classList.toggle('is-on', on);
+        o.setAttribute('aria-pressed', String(on));
+      }
+    });
+  }
   // Contrato opcional de renderRound: `{ flush }` entrega lo dibujado hasta ahora
   // (mismo efecto que pulsar "Listo"). Lo usa studentLive para RESCATAR el trazo
   // en curso cuando el profe avanza antes de que el alumno termine — capacidad
