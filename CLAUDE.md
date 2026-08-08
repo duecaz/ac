@@ -427,6 +427,33 @@ cumplió su lectura). Regla **`reloj-sala`** en `core/normsCheck.js` + ley §22-
 `live-smoke` gana la pasada del RELOJ DESFASADO (paridad con servidor · cinturón sin él), y
 se verificó que la red FALLA sin el arreglo. Suites: `serverNow` (7) · `liveGate` (5).
 
+### 🔴 DEUDA ABIERTA (v1.51.420) — verificación EN APARATOS REALES
+Lo que solo se puede comprobar con la pizarra y los móviles delante. Decisión del
+usuario: se deja pendiente, no bloquea el resto.
+- **§22-5 · el reloj (PASO 5 de la guía, «rondas juntas»)**: el arreglo está probado
+  con desfase simulado en `live-smoke`; falta el ✅ de que en un PC + un Android
+  REALES la cuenta de «Preparados…» marque el MISMO número. **No es una prueba
+  táctil**: el paso 5 es el de la ventana de lectura y el cronómetro.
+- **Lápiz / borrador en pizarra REAL** (v1.51.419): probado con toque real headless;
+  falta verlo con lápiz y palma de verdad, y revisar los umbrales del detector.
+- **Calibrador de pizarra**: el usuario tiene uno propio para adaptar; el que hay
+  (`core/penCalibration.js`) funciona pero sus umbrales no se han contrastado.
+- **Contra PocketBase REAL**: `race-e2e` y `stress-live 30` nunca se han corrido
+  desde aquí (piden credenciales y la Pi).
+
+### 🟠 PENDIENTE EN LA PI (v1.51.420) — un solo ajuste a mano
+Tras "Crear colecciones" del usuario, las 13 colecciones existen y sus reglas están
+al día. Queda UNA deriva real de atributo, que el panel NO auto-corrige a propósito
+(cambiar un campo con datos dentro, en una Pi compartida, es decisión del dueño):
+- **`activities.data.maxSize`: el servidor tiene 0 (sin tope) y §25 exige 2097152.**
+  Mientras siga en 0, el tope de 2 MB por actividad es solo un aviso del cliente.
+- `activities.data.required` está en `true` y el esquema dice `false`: el servidor es
+  MÁS estricto, así que no rompe nada hoy (siempre se escribe `data`). Alinearlo es
+  higiene, no urgencia.
+- Los avisos de `tags.maxSize` y `overrides.maxSize` eran **falsa alarma del propio
+  verificador** (comparaba rellenos por defecto, no lo declarado): corregido en
+  v1.51.420 — solo se reportan los atributos que el DEFS declara.
+
 ### 🟡 DEUDA CONDICIONADA — partir los 4 módulos grandes (TRAS los tests del compañero)
 Registrada en la cola del norte (#5). NO ejecutar hasta que el compañero termine su ronda
 rigurosa de pruebas manuales: partir es cirugía y se opera sobre un cuerpo verificado.

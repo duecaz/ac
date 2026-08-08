@@ -742,6 +742,21 @@ Condiciones escritas, para no rediscutirlo por intuición:
 - **Área de alumno**: solo si se levanta el aplazamiento de §4d/D1. No antes.
 - **Un quinto botón en la barra**: no. Con cinco ya nadie lee ninguno; si algo
   entra, algo sale.
+- **Moderación de denuncias** (`#/moderar`): **en espera**, y a propósito. Existe
+  y funciona (un profe denuncia, el admin lo ve y lo borra), pero no se toca ni
+  se amplía hasta terminar el norte y cerrar los huecos de estructura —
+  decisión del usuario. Es la política que hace falta escribir antes que el
+  código: quién modera, en cuánto tiempo, y qué le pasa al que publica.
+- **Google Classroom**: **dentro de la escena y ya en uso** en tareas (enviar la
+  tarea a Classroom, §5: nos integramos con lo que el colegio ya usa). Ampliarlo
+  —devolver notas, traer la lista de alumnos— queda **pendiente**: abre frente
+  nuevo y hay que hacer funcionar bien lo que ya tenemos. Se reabre si el
+  compañero descubre que **en tareas no funciona** (ojo: requiere la Classroom
+  API habilitada en Google Cloud, así que un fallo ahí puede no ser un bug).
+- **Perfil del autor** (`#/autor/:id`): **dentro de la escena**, y no es adorno.
+  Wordwall lo tiene y cumple una función: es el aliciente para que el docente
+  deje sus actividades bien armadas, con título y etiquetas decentes, porque
+  llevan su nombre. Sin perfil, publicar no da nada a cambio.
 - **Embeber la actividad en otra web** (`embed.html` + el botón «Embed» del
   reproductor): **fuera de la escena por ahora** (decisión del usuario, v1.51.412).
   El código existe y pinta, pero **no se ha tocado ni validado fuera de este

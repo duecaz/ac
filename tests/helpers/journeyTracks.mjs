@@ -20,8 +20,12 @@ export const TRACKS = [
   // `editor` y el fichero se llama `editView.js`: no casaba, así que las 5
   // vistas del editor caían en `infra/común` y el tramo más usado después de
   // jugar parecía cubierto sin estarlo (auditoría v1.51.396).
-  ['buscar/crear', /^views\/(home|explore|landing|author|edit|templateSelector|switchTemplate)|^core\/(homePreview|likes|search)\.js/],
-  ['jugar en pizarra', /^views\/(playerView|startScreen|vsView|teamsView|memoryView|listView)|^core\/(soloPlayer|soloTimer|teams|vsAnimations|modes)/],
+  // `juegos` (la estantería) y `moderate` (denuncias de la biblioteca) caían en
+  // "infra/común" y falseaban la foto: son del tramo por el que pasa TODA clase.
+  ['buscar/crear', /^views\/(home|explore|landing|author|edit|templateSelector|switchTemplate|juegos|moderate)|^core\/(homePreview|likes|search|reports)\.js/],
+  // `embedModal` pinta el <iframe> de una actividad para pegarla fuera: es del
+  // reproductor, no de "infra" (fuera de la escena por ahora, norte §7c).
+  ['jugar en pizarra', /^views\/(playerView|startScreen|vsView|teamsView|memoryView|listView|embedModal)|^core\/(soloPlayer|soloTimer|teams|vsAnimations|modes)/],
   ['jugar en vivo', /live|Live|^kernel\/session|^views\/session/],
   ['informes/tareas', /reports|sessionTable|sessionModel|itemStats|assignment|attempt/i],
   ['plantillas (mecánicas)', /^templates\//],

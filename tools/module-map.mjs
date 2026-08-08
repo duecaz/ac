@@ -140,6 +140,11 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 |---|---|---|---|---|
 ${trackRows}
 
+> **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
+> \`tests/\`. Las 13 mecánicas las juega de verdad \`tools/matrix-smoke.mjs\` (30/30
+> con gesto real) y las teclea \`tools/edit-audit.mjs\`, que son ~600 líneas que
+> esta tabla NO ve. El 0,18 es el suelo, no la cobertura real.
+>
 > Un ratio bajo en un tramo muy usado es deuda de PRIORIDAD, no de calidad: ese
 > código funciona, pero si se rompe nadie se entera hasta que hay 33 críos
 > delante. El mapeo módulo→tramo está declarado en

@@ -28,13 +28,18 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
-| **buscar/crear** | **siempre** — toda clase empieza aquí | 11 · 1462 | 6 · 645 | 0.44 |
-| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 11 · 2416 | 12 · 1112 | 0.46 |
+| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1645 | 6 · 645 | 0.39 |
+| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2553 | 12 · 1112 | 0.44 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3771 | 19 · 2941 | 0.78 |
-| **informes/tareas** | después de clase | 11 · 1067 | 4 · 435 | 0.41 |
+| **informes/tareas** | después de clase | 10 · 1029 | 4 · 435 | 0.42 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5474 | 12 · 975 | 0.18 |
-| **infra/común** | todo lo anterior | 123 · 12216 | 42 · 4504 | 0.37 |
+| **infra/común** | todo lo anterior | 120 · 11950 | 42 · 4504 | 0.38 |
 
+> **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
+> `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
+> con gesto real) y las teclea `tools/edit-audit.mjs`, que son ~600 líneas que
+> esta tabla NO ve. El 0,18 es el suelo, no la cobertura real.
+>
 > Un ratio bajo en un tramo muy usado es deuda de PRIORIDAD, no de calidad: ese
 > código funciona, pero si se rompe nadie se entera hasta que hay 33 críos
 > delante. El mapeo módulo→tramo está declarado en
@@ -98,7 +103,7 @@ graph TD
 | Capa | Módulos más grandes |
 |---|---|
 | **arranque** | `main.teacher.js` (165) · `main.embed.js` (68) · `main.student.js` (49) |
-| **vistas** | `views/hostLive.js` (1016) · `views/adminView.js` (978) · `views/studentLive.js` (881) · `views/vsView.js` (487) · `views/playerView.js` (370) |
+| **vistas** | `views/hostLive.js` (1016) · `views/adminView.js` (994) · `views/studentLive.js` (881) · `views/vsView.js` (487) · `views/playerView.js` (370) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1107) · `adapters/local/realtime.js` (321) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
 | **core** | `core/textCorrectionRound.js` (351) · `core/selftest.js` (331) · `core/skins.js` (327) · `core/normsCheck.js` (293) · `core/auth.js` (286) |
 | **kernel** | `kernel/session/engine.js` (549) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/dataPort.js` (28) |
@@ -132,7 +137,7 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 |---|---|---|
 | `adapters/pocketbase/realtime.js` | 1107 | 0 |
 | `views/hostLive.js` | 1016 | 1 |
-| `views/adminView.js` | 978 | 1 |
+| `views/adminView.js` | 994 | 1 |
 | `views/studentLive.js` | 881 | 1 |
 | `kernel/session/engine.js` | 549 | 19 |
 | `views/vsView.js` | 487 | 2 |

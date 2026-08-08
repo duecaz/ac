@@ -793,7 +793,15 @@ function renderPanel(rootSel) {
       // campos json necesitan maxSize explícito en 0.23 vía API.
       const schemaKey = isV23 ? 'fields' : 'schema';
       const buildField = (f) => {
-        const base = { name: f.name, type: f.type, required: !!f.required };
+        // `__declara` = los atributos que el DEFS pone EXPLÍCITAMENTE. Los que
+        // se rellenan aquí por defecto (required:false, el maxSize holgado de
+        // los json que no son `activities.data`) NO son una decisión nuestra,
+        // así que no pueden reportarse como "desvío" del servidor: la primera
+        // verificación real gritó tres falsas alarmas (tags/overrides con
+        // maxSize 0, que en PocketBase significa «sin tope explícito») junto a
+        // la única de verdad. Un aviso que grita en falso entrena a ignorar los
+        // de verdad — la misma lección del bloque de deuda del CLAUDE.md.
+        const base = { name: f.name, type: f.type, required: !!f.required, __declara: Object.keys(f) };
         if (f.type === 'json') {
           // §25 CAPACIDAD: el tope de UNA actividad lo aplica el SERVIDOR aquí
           // (maxSize del campo `data`), y el número sale de core/quotas.js — no
@@ -829,6 +837,10 @@ function renderPanel(rootSel) {
         }
         return [b?.message || `error ${status}`, ...parts].join(' · ');
       };
+      // `__declara` es marca INTERNA (qué atributos declara el DEFS, para no
+      // reportar desvíos de lo que rellenamos por defecto). Nunca viaja a
+      // PocketBase: el cuerpo de la petición se limpia aquí.
+      const sinMarca = (f) => { const { __declara, ...limpio } = f; return limpio; };
       const COLLECTIONS = DEFS.map(d => ({
         name: d.name, type: 'base',
         [schemaKey]: [...d.fields.map(buildField), ...sysFields],
@@ -866,7 +878,7 @@ function renderPanel(rootSel) {
               const curNames = new Set(curFields.map(f => f.name));
               const missing = (col[schemaKey] || []).filter(f => !curNames.has(f.name) && !['id','created','updated'].includes(f.name));
               if (missing.length) {
-                patchBody[schemaKey] = [...curFields, ...missing];
+                patchBody[schemaKey] = [...curFields, ...missing.map(sinMarca)];
                 addedFields = missing.map(f => f.name);
               }
               // Índices que FALTAN (append-only). Sin esto, un índice nuevo (p.ej.
@@ -926,8 +938,12 @@ function renderPanel(rootSel) {
                 for (const want of (col[schemaKey] || [])) {
                   const have = (post[schemaKey] || post.fields || []).find(f => f.name === want.name);
                   if (!have) continue;
+                  const declarados = want.__declara || [];
                   for (const [k, v] of Object.entries(want)) {
-                    if (k === 'name' || k === 'type' || v === undefined) continue;
+                    if (k === 'name' || k === 'type' || k === '__declara' || v === undefined) continue;
+                    // Solo lo que el DEFS DECLARA (ver buildField): comparar los
+                    // rellenos por defecto convierte el aviso en ruido.
+                    if (!declarados.includes(k)) continue;
                     const actual = have[k] ?? (have.options || {})[k];
                     if (actual !== undefined && String(actual) !== String(v)) {
                       desvíos.push(`${want.name}.${k}: el servidor tiene ${actual}, debería ser ${v}`);
@@ -946,7 +962,7 @@ function renderPanel(rootSel) {
             // No existe → crear completa.
             const cr = await fetch(`${PB_URL}/api/collections`, {
               method: 'POST', headers,
-              body: JSON.stringify(col),
+              body: JSON.stringify({ ...col, [schemaKey]: (col[schemaKey] || []).map(sinMarca) }),
             });
             if (cr.ok) {
               results.push({ name: col.name, ok: true, msg: 'creada' });
