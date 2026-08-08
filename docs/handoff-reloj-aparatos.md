@@ -79,6 +79,70 @@ tamaño de pantalla real. El reloj es el primero que sale porque decide puntos.
    solo el que puntúa. Con su contra-prueba: con el reloj movido, el alumno debe
    seguir viendo la misma cuenta atrás que el profe.
 
+## Lo aprendido de la ronda (v1.51.417) — y el plan de arriba, MEJORADO
+
+Releída la ronda completa del compañero como DATO, no solo como lista de ✅/❌,
+salen tres lecciones y cuatro tests concretos. El plan de 4 puntos de arriba
+sigue valiendo; esto lo reordena y le pone las aserciones exactas.
+
+### Tres lecciones
+
+1. **Todo lo que PASÓ tenía una red ejecutable detrás; lo único que FALLÓ era
+   lo único que ninguna red podía ver.** Las 8 torturas pasaron — y 5 tienen
+   suite directa (`raceResume` recargar a media carrera · `offlineQueue` modo
+   avión · `liveJoin` entrar tarde · `live.test` apodo con emojis ·
+   `liveEnd` terminar con uno solo) y las otras 3 red parcial (stability ·
+   live-smoke · shots portrait). No es casualidad: es la confirmación más
+   fuerte que tenemos de "si es norma, es test". Corolario: el testeo manual
+   NO es para re-encontrar lo que las suites ya vigilan — es para descubrir
+   FAMILIAS de puntos ciegos. Encontró una: *lo que difiere entre aparatos*.
+2. **La sonda encontró en 3 minutos lo que la clase tardaría semanas en
+   aislar** (¿quién sospecha del reloj del móvil?). Una sonda parametrizada
+   (`SKEW=±ms`) vale más que diez pruebas manuales del mismo tramo: se queda
+   como herramienta, no como anécdota.
+3. **El formato de la guía funcionó**: preguntas cerradas con el número
+   esperado («¿en PC 10 y en el móvil 20?») hicieron que el compañero
+   reportara EL DATO EXACTO que reproducía el bug. Mantener ese formato en
+   futuras rondas; una pregunta abierta habría devuelto "va raro".
+
+### Cuatro tests que salen de la ronda
+
+- **T1 · PARIDAD de cuenta atrás** (la aserción correcta, que la sonda aún no
+  hace): con desfase ±10/±25 s, host y alumno muestran **el mismo
+  «Preparados… N» (±1)** y las respuestas se abren tras ~los segundos
+  configurados de espera REAL. "Se abre" no basta: con +10 s se abría… al
+  instante, y eso también es fallo.
+- **T2 · TOPE de cordura** (unit, Node, sin navegador): la cuenta de lectura
+  pintada nunca supera los `readSeconds` configurados; si `answers_open_at` ya
+  pasó, la ronda es jugable. Es el cinturón del punto 2, escrito como test
+  ANTES de escribir el cinturón.
+- **T3 · `serverNow()`** (unit): el offset se deriva de una cabecera `Date`
+  simulada y se aplica; **contra-prueba**: con offset 0 todo se comporta
+  EXACTAMENTE como hoy (que es el caso de las seis redes actuales).
+- **T4 · el PROFE también es un cliente**: los instantes que estampa
+  `openQuestion` nacen corregidos — si solo se corrige el alumno, un host con
+  el reloj mal puesto rompe a TODA la clase a la vez.
+
+### El plan, reordenado (rojo primero, cinturón antes que cirugía)
+
+| # | Qué | Por qué en este orden |
+|---|---|---|
+| **0** | La sonda entra en `live-smoke` como caso que HOY FALLA (T1) | Rojo primero: el arreglo de después tiene su contra-prueba desde el minuto cero, y el punto ciego "una máquina, un reloj" queda cerrado para siempre |
+| **1** | Cinturón: topes de cordura (T2) | Barato y sin riesgo: corta YA la pérdida de respuestas («sin respuesta · 0 puntos») aunque la corrección de reloj tarde. Un aparato desfasado jugará con la ventana algo movida, pero JUGARÁ |
+| **2** | `serverNow()` con dueño único (`core/serverNow.js`, junto a `serverMs`): offset = mediana de varias muestras de la cabecera `Date` de PocketBase, re-muestreado en cada respuesta (un móvil que SUSPENDE deriva; medirlo una vez no basta) (T3) | Es la corrección de verdad. R7: el offset es dato del aparato — vive en memoria, no se persiste ni viaja al profe |
+| **3** | Aplicarlo en los gateos de alumno **y de host** (T4) y ampliar §22: «el veredicto del servidor incluye el tiempo con el que el cliente SE GATEA, no solo el que puntúa» | La ley al final, cuando ya es test — como §29 y §30 |
+
+### Qué NO haremos, y por qué (para no sobre-reaccionar)
+
+- **No** vamos a sincronizar relojes en VS/Equipos/Individual: son UNA
+  pantalla, no hay segundo reloj. El problema es exclusivo de "dos aparatos
+  mirando la misma sala".
+- **No** hace falta NTP ni nada exótico: una mediana de la cabecera `Date`
+  con precisión de ±1-2 s sobra — las ventanas son de 10-300 s.
+- **El resto de la familia** (red lenta, suspensión, pantalla real) queda
+  ANOTADA como familia en la cola, no abierta ahora: el reloj era el único
+  que decide puntos.
+
 ## Lo demás del reporte
 
 - **Todo lo de carrera** (podio, hora de meta, orden por tiempo, misma
