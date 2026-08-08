@@ -136,7 +136,10 @@ const read = (p) => readFileSync(new URL(p, new URL('..', import.meta.url)), 'ut
     `hay ${opens} sitios que abren la fase 'question': debe ser SOLO openQuestion(), o un camino se quedará sin lectura`);
   const student = read('views/studentLive.js');
   assert.match(student, /session\.answers_open_at/, 'el alumno lee el instante de la sala');
-  assert.match(student, /lastQuestionShownAt = openAtMs \|\| clock\.now\(\)/,
+  // §22-5: el respaldo ya no es el reloj del móvil sino la HORA COMÚN — un
+  // aparato desfasado afirmaba un `ms` torcido (el servidor lo re-deriva, pero
+  // el respaldo no puede mentir por sistema).
+  assert.match(student, /lastQuestionShownAt = openAtMs \|\| serverNow\(\)/,
     'el ms se mide desde la apertura REAL, no desde que este móvil pintó (si no, el bonus premia al de mejor red)');
   assert.match(host, /itemWindowMs\(activity, items\[idx\]\)/,
     'el host cierra con la ventana DEL ÍTEM (R-3)');

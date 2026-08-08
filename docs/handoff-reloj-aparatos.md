@@ -1,7 +1,8 @@
 # El reloj de CADA aparato — diagnóstico de los dos fallos de la ronda del compañero
 
-> Estado: **CAUSA CONFIRMADA, sin arreglar todavía** (v1.51.416). Este documento
-> es el "por qué se nos dio" que pidió el usuario antes de tocar nada.
+> Estado: **✅ ARREGLADO Y VIGILADO** (v1.51.418). El diagnóstico de abajo se
+> conserva entero porque es el "por qué se nos dio": lo que enseñó este fallo
+> vale más que el fallo. Lo ejecutado, al final del documento.
 
 ## Lo que reportó el compañero (rondas juntas, PC + Android)
 
@@ -156,3 +157,46 @@ sigue valiendo; esto lo reordena y le pone las aserciones exactas.
   botón dice **"Intentos"** y él esperaba algo como *"revisar informes o
   tareas"*. No es un fallo: es que el nombre no dice a dónde lleva. Va al mismo
   saco que §6e (una cosa, un nombre) y se decide, no se parchea.
+
+
+---
+
+## LO EJECUTADO (v1.51.418) — los cuatro pasos del plan
+
+Orden real: **rojo primero, cinturón antes que cirugía**.
+
+**0 · La red, en rojo.** `tools/live-smoke.mjs` gana una tercera pasada con un
+alumno cuyo reloj está desplazado a propósito (±25 s / +10 s), en tres casos:
+CON hora de servidor (paridad) y SIN ella (cinturón). Antes de arreglar nada se
+comprobó que **falla**, y falla con el fallo de aula exacto:
+`§22-5: desfase -25s → el profe ve «Preparados… 6» y el alumno «31»`.
+El punto ciego "una máquina, un reloj" queda cerrado.
+
+**1 · El cinturón** — `core/liveGate.js` (`questionGate`, puro): la espera de
+lectura se ACOTA a la ventana declarada y una pregunta ya cerrada no hace leer a
+nadie. Con el reloj torcido se puede empezar tarde; quedarse fuera, no. Añadido
+al aplicarlo: `studentLive` recuerda **por ítem** que ya cumplió su lectura — sin
+eso, un reloj muy desfasado repetía la espera acotada una y otra vez (el mismo
+fallo disfrazado de cuentas atrás cortas). Test: `tests/liveGate.test.mjs` (5).
+
+**2 · La hora común** — `core/serverNow.js`: cada aparato mide su desfase con la
+cabecera `Date` de PocketBase, guarda la MEDIANA de las últimas 5 muestras y la
+re-mide en CADA respuesta (un móvil que suspende deriva). Se toma en
+`core/pbHttp.js`, puerta única del tráfico PB. Sin servidor → desfase 0 → todo
+igual que antes. R7: en memoria, no se persiste, no viaja al profe. Test:
+`tests/serverNow.test.mjs` (7, incluido el CABLEADO con `fetch` inyectado y la
+contra-prueba de "sin muestras, exactamente como hoy").
+
+**3 · Aplicado a los dos lados + ley.** `studentLive` y `hostLive` comparan y
+SELLAN con `serverNow()` — el profe también es un cliente. Los dos relojes de
+`core/deadlineTicker.js` también. Ley **§22-5** escrita en `docs/leyes.md`, con
+la regla ejecutable **`reloj-sala`** (`core/normsCheck.js`): un instante de la
+sala en la misma línea que el reloj del aparato rompe CI, con contra-prueba de
+que un aparato midiendo SU propia duración (modo Individual) sigue siendo
+legítimo.
+
+### Lo que el compañero debería ver ahora
+Repetir el PASO 5 de la guía con los dos aparatos **sin tocarles la hora**: la
+cuenta de «Preparados…» tiene que ser la MISMA en el PC y en el móvil, y ninguna
+respuesta puede acabar como «sin respuesta · 0 puntos». Si su Android sigue con
+la hora automática apagada, ahora da igual: es justo el caso que se arregló.

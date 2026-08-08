@@ -15,6 +15,8 @@
 // Devuelve la Response CRUDA: cada adaptador conserva su parseo/reintento/timeout.
 import { getAuthToken } from './auth.js';
 import { PB_URL } from '../pocketbase.config.js';
+import { clock } from './clock.js';
+import { noteServerDate } from './serverNow.js';
 
 export async function signedFetch(url, opts = {}) {
   const { headers: extra, ...rest } = opts;
@@ -28,8 +30,15 @@ export async function signedFetch(url, opts = {}) {
     if (token) headers['Authorization'] = token;
     return fetch(url, { method: rest.method || 'GET', ...rest, headers });
   };
+  const enviadoMs = clock.now();
   let r = await run(true);
   if ((r.status === 401 || r.status === 403) && getAuthToken()) r = await run(false);
+  // §22-5 · LA HORA COMÚN: cada respuesta de PocketBase trae su cabecera `Date`.
+  // Es hora de SERVIDOR gratis, y esta es la puerta por la que pasa todo el
+  // tráfico PB, así que el desfase de este aparato se re-mide solo, sin que
+  // ningún llamador tenga que acordarse (core/serverNow.js).
+  try { noteServerDate(r.headers?.get?.('Date'), { enviadoMs, recibidoMs: clock.now() }); }
+  catch { /* best-effort: sin cabecera legible el desfase se queda como estaba (0 = como antes) */ }
   return r;
 }
 

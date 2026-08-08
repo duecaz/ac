@@ -1,5 +1,9 @@
 // Student-side live view. Routes: #/join, #/play/:code.
 import { clock } from '../core/clock.js';
+// §22-5 · la HORA COMÚN: todo lo que se compare con un instante de la SALA va
+// por aquí, nunca por el reloj de este móvil (docs/handoff-reloj-aparatos.md).
+import { serverNow } from '../core/serverNow.js';
+import { questionGate } from '../core/liveGate.js';
 import { startDeadlineTicker } from '../core/deadlineTicker.js';
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
@@ -23,7 +27,7 @@ import { wheelSvg } from '../templates/wheel/render.js';
 import { pickIndex } from '../templates/wheel/logic.js';
 import { spinTarget, normalizeRotation, animateSpin, SPIN_DUR_PICK } from '../templates/wheel/spin.js';
 import { qlBoxesHtml } from '../core/questionLive.js';
-import { RACE_FLASH_MS, questionWindowMs, mmss } from '../core/timings.js';
+import { RACE_FLASH_MS, questionWindowMs, readWindowMs, mmss } from '../core/timings.js';
 import { supportsLoop, pointsModeFor, racePassed } from '../core/liveLoops.js';
 import { endPolicyOf, waitingInfo } from '../core/liveEnd.js';
 
@@ -80,6 +84,7 @@ export async function renderPlay(rootSel, code) {
   let activity = null;
   let lastQuestionShownAt = 0;
   let questionTicker = null;   // cronómetro de pregunta (core/deadlineTicker.js)
+  let lecturaHechaEn = -1;     // §22-5 · índice del ítem cuya ventana de lectura ya cumplió ESTE móvil
   let lastPhaseKey = '';
   let autoFlushQuestion = null;  // capturar el trazo en curso al avanzar sin "Listo"
   let rescuedIdx = -1;           // ítem cuyo trazo se rescató (su POST puede ir en vuelo)
@@ -381,11 +386,24 @@ export async function renderPlay(rootSel, code) {
     // el reloj de respuesta (y con él el bonus de velocidad) empieza igual para
     // todos — antes ganaba quien clicaba antes de leer.
     const openAtMs = session.answers_open_at ? new Date(session.answers_open_at).getTime() : 0;
-    const reading = openAtMs > clock.now();
+    const deadlineMs = session.deadline ? new Date(session.deadline).getTime() : 0;
+    // §22-5 · LA PUERTA, con hora común Y con tope (core/liveGate.js): un móvil
+    // desfasado ya no puede quedarse encerrado en «Preparados…» mientras la
+    // pregunta se liquida sin su respuesta. La espera nunca supera la ventana
+    // de lectura declarada por la actividad, y si la pregunta ya cerró no se
+    // hace leer a nadie.
+    // Ya esperé MI ventana de lectura de esta pregunta: no se vuelve a esperar.
+    // Sin esto, un reloj muy desfasado repetiría la espera acotada una y otra
+    // vez (el instante de la sala sigue "en el futuro" para este aparato) y el
+    // alumno no llegaría a responder nunca — que es el fallo que veníamos a
+    // arreglar, disfrazado de cuentas atrás cortas.
+    const readMs = lecturaHechaEn === idx ? 0 : readWindowMs(activity);
+    const { reading, waitMs } = questionGate({
+      openAtMs, deadlineMs, now: serverNow(), readMs,
+    });
     // El ms se mide desde la apertura REAL de respuestas (no desde que este
     // móvil pintó): misma referencia que el sello del servidor (§22-1).
-    lastQuestionShownAt = openAtMs || clock.now();
-    const deadlineMs = session.deadline ? new Date(session.deadline).getTime() : 0;
+    lastQuestionShownAt = openAtMs || serverNow();
     // MISMA ventana que el host y que el bonus de velocidad (core/timings.js):
     // antes cada uno tenía su copia y award.js omitía el piso de 5 → el reloj del
     // alumno podía no coincidir con el deadline real del servidor.
@@ -418,11 +436,16 @@ export async function renderPlay(rootSel, code) {
       el.classList.add('s-reading');
       try { tpl.renderRound(el, payload, { mode: 'live', onSubmit: () => {} }); } catch { /* payload raro: la cuenta atrás sigue */ }
       const badge = document.getElementById('s-time');
+      // El objetivo se fija UNA vez con el reloj de este móvil a partir de la
+      // espera ya acotada: así la cuenta atrás siempre llega a 0, aunque el
+      // instante de la sala fuera absurdo.
+      const abreEn = clock.now() + waitMs;
       const tick = ctx.setInterval(() => {
-        const left = Math.ceil((openAtMs - clock.now()) / 1000);
+        const left = Math.ceil((abreEn - clock.now()) / 1000);
         if (badge) badge.textContent = `Preparados… ${Math.max(0, left)}`;
         if (left <= 0) {
           clearInterval(tick);
+          lecturaHechaEn = idx;
           if (session.phase === 'question' && session.current_item === idx) paintQuestion();
         }
       }, 200);
@@ -434,7 +457,7 @@ export async function renderPlay(rootSel, code) {
       onSubmit: async (value) => {
         if (sent) return;
         sent = true;
-        const ms = clock.now() - lastQuestionShownAt;
+        const ms = serverNow() - lastQuestionShownAt;
         const p = queuedSubmit(session.id, player.playerId, idx, value, ms);
         rescuedSubmit = p;   // paintRevealOwn puede esperar este POST si hizo falta rescatar
         const r = await p;
@@ -610,7 +633,7 @@ export async function renderPlay(rootSel, code) {
       // mientras que la que ORDENA la mide el servidor (§22). Puede bailar un
       // segundo; por eso se marca como "tu tiempo" y no como el oficial.
       const startMs = session.started_at ? Date.parse(session.started_at) : 0;
-      const myFinish = startMs ? mmss(clock.now() - startMs, Math.floor) : null;
+      const myFinish = startMs ? mmss(serverNow() - startMs, Math.floor) : null;
       mount(rootSel, html`
         <div class="text-center py-5">
           <i class="bi bi-trophy-fill display-1 text-warning"></i>
@@ -640,7 +663,7 @@ export async function renderPlay(rootSel, code) {
     const idx = raceQueue[0];
     const payload = roundPayloadOf(tpl, activity, idx, allItems[idx]);
     const streak = Streaks.get(session.id, player.playerId);
-    lastQuestionShownAt = clock.now();
+    lastQuestionShownAt = serverNow();
     const total = allItems.length;
     emitGame(GameEvents.QUESTION_SHOWN, { idx, total, item: allItems[idx] });
 
@@ -662,7 +685,7 @@ export async function renderPlay(rootSel, code) {
       onSubmit: (value) => {
         if (sent) return;
         sent = true;
-        const ms = clock.now() - lastQuestionShownAt;
+        const ms = serverNow() - lastQuestionShownAt;
 
         // Score locally (activity_snap contains full answers on PocketBase).
         let ok = false;

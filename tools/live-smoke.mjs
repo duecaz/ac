@@ -177,10 +177,120 @@ try {
   if (!/^\d+:[0-5]\d$/.test(meta)) throw new Error(`el podio de carrera no muestra la hora de meta: "${meta}"`);
   log(`el podio muestra la hora de meta (${meta})`);
 
+  // ══ TERCERA PASADA: EL RELOJ DE CADA APARATO (§22-5) ═══════════════════════
+  // El punto ciego que destapó la ronda del compañero: las seis redes corren en
+  // UNA máquina con UN reloj, así que el desfase entre el PC del profe y el
+  // Android del alumno era exactamente 0 y no podía verse. Aquí el alumno entra
+  // con el reloj DESPLAZADO, como un móvil con la hora automática apagada.
+  // Sin la hora común esto fallaba así (medido, docs/handoff-reloj-aparatos.md):
+  //   −10 s → profe «Preparados… 9» / alumno «Preparados… 19»
+  //   −25 s → al alumno no se le abren las respuestas NUNCA: la pregunta se
+  //           liquida «sin respuesta · 0 puntos»
+  //   +10 s → la ventana de lectura desaparece: responde antes de leer
+  //
+  // Se prueban las DOS defensas, que son distintas y hacen falta las dos:
+  //   · CON hora de servidor (lo normal en producción: PocketBase la manda en la
+  //     cabecera `Date` de cada respuesta) → PARIDAD: alumno y profe ven la
+  //     misma cuenta atrás. Aquí se siembran muestras a mano porque el backend
+  //     local no tiene servidor que las mande.
+  //   · SIN hora de servidor (backend local, red caída, cabecera ilegible) → el
+  //     CINTURÓN de core/liveGate.js: la espera se acota y la respuesta cuenta
+  //     igual. Es lo que salva la clase el día que la corrección no está.
+  for (const caso of [{ skew: -25000, servidor: true }, { skew: 10000, servidor: true }, { skew: -25000, servidor: false }]) {
+    const { skew, servidor } = caso;
+    const torcido = await ctx.newPage();
+    torcido.on('pageerror', e => { const m = String(e.message).split('\n')[0]; if (!NOISE.test(m)) errs.push(`alumno-desfasado: ${m}`); });
+    await torcido.route('**/esm.sh/**', r => r.fulfill({ contentType: 'application/javascript', body: 'export default function(){}' }));
+    await torcido.route('**/cdn.jsdelivr.net/**', r => r.fulfill({ contentType: 'text/css', body: '' }));
+    await torcido.addInitScript((ms) => {
+      const real = Date.now;
+      const RealDate = Date;
+      Date.now = () => real() + ms;
+      window.Date = class extends RealDate {
+        constructor(...a) { if (!a.length) super(real() + ms); else super(...a); }
+        static now() { return real() + ms; }
+      };
+      window.__wwSkew = ms;
+    }, skew);
+
+    // Sala con lectura de 6 s y ventana de 12 s: con −25 s de desfase, la
+    // fórmula vieja abría al alumno DESPUÉS del cierre (el fallo de aula).
+    await host.evaluate(async () => {
+      const s = await import('/core/storage.js');
+      const a = s.get('lv_e2e'); a.live = { ...(a.live || {}), questionTimer: 12, readSeconds: 6 }; s.save(a);
+    });
+    await host.evaluate(() => { location.hash = '#/launch/lv_e2e'; });
+    await host.waitForSelector('.ww-pin', { timeout: 12000 });
+    const pin3 = (await host.locator('.ww-pin').textContent()).trim();
+    await torcido.goto(`${BASE}/student.html?backend=local#/join`, { waitUntil: 'domcontentloaded' });
+    await torcido.waitForSelector('#f-code', { timeout: 12000 });
+    if (servidor) {
+      // El "servidor" está en hora; este móvil no. En producción esto lo hace
+      // solo `core/pbHttp.js` con la cabecera `Date` de cada respuesta.
+      await torcido.evaluate(async () => {
+        const m = await import('/core/serverNow.js');
+        for (let i = 0; i < 5; i++) {
+          const t = Date.now();                       // hora (torcida) del móvil
+          m.noteServerDate(new Date(t - window.__wwSkew).toUTCString(), { enviadoMs: t, recibidoMs: t });
+        }
+      });
+    }
+    await torcido.fill('#f-code', pin3);
+    await torcido.fill('#f-nick', `D${servidor ? 'S' : 'N'}${Math.abs(skew / 1000)}`);
+    await torcido.click('#btn-join');
+    await host.waitForSelector('.loop-pick[data-loop="rounds"]', { timeout: 9000 });
+    await host.click('.loop-pick[data-loop="rounds"]');   // la pasada anterior dejó elegida la carrera
+    await host.click('#btn-start');
+
+    await torcido.waitForSelector('#s-round', { timeout: 9000 });
+    const leerCuenta = async (p) => {
+      const t = await p.evaluate(() => document.body.textContent.match(/Preparados…\s*(\d+)/)?.[1] ?? null);
+      return t === null ? null : Number(t);
+    };
+    // Las dos cuentas atrás se pintan en su primer tick (200-250 ms): se espera
+    // a que existan antes de compararlas, y se leen SEGUIDAS para que el propio
+    // tiempo de lectura no falsee la comparación.
+    let nAlumno = null, nHost = null;
+    for (let i = 0; i < 20 && (nAlumno === null || nHost === null); i++) {
+      nHost = await leerCuenta(host);
+      nAlumno = await leerCuenta(torcido);
+      if (nAlumno === null || nHost === null) await host.waitForTimeout(150);
+    }
+
+    if (servidor) {
+      // T1 · PARIDAD: la clase entera ve la misma cuenta atrás. Es la aserción
+      // que faltaba: "que se abra" no basta — con +10 s se abría al INSTANTE.
+      if (nAlumno === null || nHost === null) {
+        throw new Error(`§22-5: con hora de servidor los dos deben estar en la ventana de lectura (host=${nHost}, alumno=${nAlumno})`);
+      }
+      if (Math.abs(nAlumno - nHost) > 1) {
+        throw new Error(`§22-5: desfase ${skew / 1000}s → el profe ve «Preparados… ${nHost}» y el alumno «${nAlumno}»`);
+      }
+      log(`reloj desfasado ${skew / 1000}s CON hora de servidor: profe ${nHost} · alumno ${nAlumno} (misma cuenta atrás)`);
+    } else {
+      // El cinturón solo: puede empezar tarde, pero NUNCA esperar más de lo
+      // configurado (antes pintaba «Preparados… 31» sobre una lectura de 6 s).
+      if (nAlumno !== null && nAlumno > 7) {
+        throw new Error(`§22-5 (cinturón): sin hora de servidor el alumno ve «Preparados… ${nAlumno}» sobre una lectura de 6 s`);
+      }
+      log(`reloj desfasado ${skew / 1000}s SIN hora de servidor: la espera queda acotada (${nAlumno ?? '0'} s)`);
+    }
+
+    // Y en los tres casos, lo que importa: el alumno LLEGA A RESPONDER y cuenta.
+    await torcido.waitForSelector('#s-round:not(.s-reading) .rq-opt, #s-round:not(.s-reading) .ww-opt', { timeout: 15000 });
+    await torcido.locator('.rq-opt, .ww-opt', { hasText: '4' }).first().click();
+    await torcido.waitForFunction(() => /Correcto|enviada|puntos/i.test(document.body.textContent), { timeout: 12000 });
+    log(`   …y su respuesta CUENTA (no «sin respuesta · 0 puntos»)`);
+    await torcido.close();
+    await host.click('#btn-end').catch(() => {});
+    await host.locator('.modal [data-act=ok]').click({ timeout: 3000 }).catch(() => {});
+  }
+
   if (errs.length) { console.error('\nERRORES DE PÁGINA:'); errs.forEach(e => console.error('  ✗', e)); }
   if (!emmaScored || errs.length) { console.log('\n❌ LIVE E2E FALLA'); await browser.close(); bye(1); }
-  console.log('\n✅ LIVE E2E PASA — pregunta (sala→PIN→join→respuesta→settle→clasificación→podio)'
-    + ' Y carrera (cronómetro vivo → progreso → podio), en dos contextos.');
+  console.log('\n✅ LIVE E2E PASA — pregunta (sala→PIN→join→respuesta→settle→clasificación→podio),'
+    + ' carrera (cronómetro vivo → progreso → podio) y RELOJ DESFASADO (±: la lectura se acota'
+    + ' y la respuesta del alumno cuenta), en dos contextos.');
   await browser.close(); bye(0);
 } catch (e) {
   console.error('\n❌ LIVE E2E FALLA:', String(e.message).split('\n')[0]);

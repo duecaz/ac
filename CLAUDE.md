@@ -401,16 +401,19 @@ sobre la tarjeta). Dos fixes:
 La entrada de `CONOCIDOS` en `tools/matrix-smoke.mjs` se retiró: la matriz juega
 ahora 30/30 y una regresión aquí la tumba.
 
-### 🔴 ABIERTO (v1.51.416) — el reloj de CADA aparato → `docs/handoff-reloj-aparatos.md`
-Los DOS fallos de la ronda del compañero son UNO: los instantes de la sala
-(`answers_open_at`/`deadline`) se estampan con el reloj del PROFE y se comparan contra el
-reloj de CADA móvil. Reproducido con sonda de dos pantallas y reloj desplazado: −10 s → el
-profe ve «Preparados… 9» y el alumno «19» (su reporte exacto); −25 s → las respuestas no se
-abren nunca y la pregunta se liquida «sin respuesta · 0 puntos»; +10 s → la ventana de
-lectura (R-1) desaparece. §22-1 arregló el tiempo que PUNTÚA (`core/serverMs.js`), no el
-tiempo con el que el cliente se GATEA. Ninguna red lo veía: las seis corren en UNA máquina
-con UN reloj. Plan (sin ejecutar aún): hora del servidor + `serverNow()` · topes de cordura ·
-la sonda como caso de `live-smoke` · ampliar §22.
+### ✅ RESUELTO (v1.51.418) — el reloj de CADA aparato (§22-5) → `docs/handoff-reloj-aparatos.md`
+Los DOS fallos de la ronda del compañero eran UNO: los instantes de la sala
+(`answers_open_at`/`deadline`) se estampaban con el reloj del PROFE y se comparaban contra el
+reloj de CADA móvil. Reproducido con sonda de dos pantallas: −10 s → el profe ve
+«Preparados… 9» y el alumno «19»; −25 s → las respuestas no se abren nunca y la pregunta se
+liquida «sin respuesta · 0 puntos»; +10 s → la ventana de lectura desaparece.
+DOS defensas: **`core/serverNow.js`** (hora común — desfase medido con la cabecera `Date` de
+PB en `core/pbHttp.js`, mediana de 5 muestras, re-medido en cada respuesta; sin servidor = 0
+= como antes; R7: en memoria) y **`core/liveGate.js`** (cinturón — la espera de lectura se
+acota y una pregunta cerrada no hace leer a nadie; `studentLive` recuerda por ítem que ya
+cumplió su lectura). Regla **`reloj-sala`** en `core/normsCheck.js` + ley §22-5.
+`live-smoke` gana la pasada del RELOJ DESFASADO (paridad con servidor · cinturón sin él), y
+se verificó que la red FALLA sin el arreglo. Suites: `serverNow` (7) · `liveGate` (5).
 
 ### 🟡 DEUDA CONDICIONADA — partir los 4 módulos grandes (TRAS los tests del compañero)
 Registrada en la cola del norte (#5). NO ejecutar hasta que el compañero termine su ronda

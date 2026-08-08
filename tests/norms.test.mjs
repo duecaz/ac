@@ -95,9 +95,22 @@ assert.strictEqual(scanNormsSource('views/studentLive.js', `await claimQuestion(
 assert.strictEqual(scanNormsSource('views/x.js', `const t = setInterval(paint, 500);`).length, 1, 'caza setInterval crudo');
 assert.strictEqual(scanNormsSource('views/x.js', `ctx.setInterval(paint, 500);`).length, 0, 'ctx.setInterval es la vía');
 assert.strictEqual(scanNormsSource('core/soloTimer.js', `setInterval(tick, 1000)`).length, 0, 'el primitivo puede');
+// reloj-sala (ley §22-5): un instante de la SALA medido con el reloj de ESTE
+// aparato → violación. Es el fallo que se comió preguntas en clase: con el
+// Android 25 s atrasado, al alumno no se le abrían las respuestas nunca.
+assert.strictEqual(scanNormsSource('views/studentLive.js', `const reading = openAtMs > clock.now();`).length, 1,
+  'caza la comparación de un instante de la sala contra el reloj del aparato');
+assert.strictEqual(scanNormsSource('views/hostLive.js', `answers_open_at: new Date(clock.now() + 3000).toISOString(),`).length, 1,
+  'y también SELLAR un instante de la sala con el reloj del profe (su reloj torcido rompe a toda la clase)');
+assert.strictEqual(scanNormsSource('views/studentLive.js', `const reading = openAtMs > serverNow();`).length, 0,
+  'con la hora común, bien');
+assert.strictEqual(scanNormsSource('core/soloPlayer.js', `const timeUsed = Math.round((clock.now() - startedAt) / 1000);`).length, 0,
+  'CONTRA-PRUEBA: un aparato midiendo SU propia duración (modo Individual) no es tiempo de sala — el reloj del cacharro es el correcto');
+assert.strictEqual(scanNormsSource('core/serverNow.js', `return clock.now() + offsetMs;`).length, 0,
+  'y la propia hora común puede usar el reloj crudo: es su implementación');
 // id-rid (ley §24): base36 a mano → violación; rid() y la implementación, no.
 assert.strictEqual(scanNormsSource('templates/x/editor.js', `const id = 'q_' + Math.random().toString(36).slice(2, 8);`).length, 1, 'caza el id a mano');
 assert.strictEqual(scanNormsSource('core/ids.js', `return prefix + Math.random().toString(36).slice(2, 8);`).length, 0, 'ids.js es la implementación');
-ok('el escáner caza cada norma (pb-dueno · ls-dueno · fallo-mudo · confianza-alumno · reloj-primitivo · id-rid) y respeta comentarios + allowlist');
+ok('el escáner caza cada norma (pb-dueno · ls-dueno · fallo-mudo · confianza-alumno · reloj-primitivo · reloj-sala · id-rid) y respeta comentarios + allowlist');
 
 console.log(`\nnorms.test: ${passed} checks passed`);

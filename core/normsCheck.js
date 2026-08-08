@@ -41,6 +41,15 @@
 //                       startElapsedTicker) o por `ctx.setInterval` (lifecycle,
 //                       que lo limpia al salir de la ruta). Un interval crudo
 //                       es el reloj zombi que repinta sobre la vista siguiente.
+//   · reloj-sala      : LEY DE CONFIANZA §22-5 (docs/leyes.md) — un INSTANTE DE
+//                       LA SALA (answers_open_at · deadline · started_at ·
+//                       last_seen) lo estampa un aparato y lo leen otros, así
+//                       que se compara y se sella con `serverNow()` (hora
+//                       común), NUNCA con `clock.now()` (el reloj de este
+//                       cacharro). Con un Android 10 s atrasado, el profe veía
+//                       «Preparados… 9» y el alumno «19»; con 25 s, al alumno
+//                       no se le abrían las respuestas y la pregunta se
+//                       liquidaba «sin respuesta · 0 puntos».
 //   · id-rid          : LEY DE CONTENIDO (docs/leyes.md §24) — IDs SIEMPRE con
 //                       `rid()` de core/ids.js, nunca `Math.random().toString(36)`
 //                       a mano (estaba copiado en ~17 sitios con longitudes y
@@ -57,7 +66,27 @@ const ALLOW = {
   // Los primitivos de reloj y el ctx del lifecycle SON la implementación.
   'reloj-primitivo': ['core/lifecycle.js', 'core/soloTimer.js', 'core/deadlineTicker.js'],
   'id-rid': ['core/ids.js'],   // la única implementación permitida
+  // `core/serverNow.js` ES la hora común (usa clock.now para calcularla) y
+  // `core/deadlineTicker.js` ya la consume; `core/clock.js` es el reloj crudo.
+  'reloj-sala': ['core/serverNow.js', 'core/clock.js', 'core/deadlineTicker.js'],
 };
+
+// §22-5 · Los nombres de los INSTANTES DE LA SALA. Si uno de estos aparece en la
+// misma línea que `clock.now()`, se está midiendo tiempo compartido con el reloj
+// de un solo aparato. La lista es de NOMBRES REALES del blob de la sala, no un
+// patrón adivinado: al añadir un instante nuevo, se añade aquí.
+// Solo nombres INEQUÍVOCOS: los campos del blob de la sala y los locales que se
+// derivan de ellos. Fuera quedan a propósito `startedAt`/`timeUsed` (un aparato
+// midiendo SU propia duración: el player Individual, el cronómetro de Pelotas)
+// y los objetivos locales calculados a partir de una espera ya acotada — ahí el
+// reloj del cacharro es el correcto, y meterlos daría un guardián que grita en
+// los sitios buenos hasta que alguien lo apaga.
+const INSTANTES_SALA = [
+  'answers_open_at', 'openAtMs',
+  'deadlineMs', 'liveDeadline',
+  'started_at',
+  'last_seen',
+];
 
 // LEY DE DATOS — colección → ficheros que pueden nombrarla. El PRIMERO es el
 // DUEÑO (único escritor); `views/adminView.js` está en todas por ser el dueño
@@ -230,6 +259,13 @@ export function scanNormsSource(path, source) {
     }
     if (/Math\.random\s*\(\s*\)\s*\.toString\s*\(\s*36\s*\)/.test(ln) && !allowed('id-rid')) {
       out.push({ path, line: i + 1, rule: 'id-rid', text: ln.trim() });
+    }
+    // §22-5 · un instante de la SALA medido con el reloj de ESTE aparato.
+    // (el patrón lleva clase de caracteres a propósito: escrito entero, el
+    //  escáner de imports de moduleRefs lo lee como un uso de `clock` aquí)
+    if (/c[l]ock\.now\s*\(\s*\)/.test(ln) && !allowed('reloj-sala')
+        && INSTANTES_SALA.some(n => ln.includes(n))) {
+      out.push({ path, line: i + 1, rule: 'reloj-sala', text: ln.trim() });
     }
   });
   return out;

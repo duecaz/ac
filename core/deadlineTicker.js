@@ -10,7 +10,7 @@
 // DURACIÓN desde ahora (el temporizador por ítem del modo Individual); éste
 // cuenta hasta un INSTANTE que manda el servidor, que es lo que necesita Live
 // para que host y alumnos vean lo mismo.
-import { clock } from './clock.js';
+import { serverNow } from './serverNow.js';
 import { mmss } from './timings.js';
 
 /**
@@ -43,7 +43,7 @@ export function startDeadlineTicker({
 
   const tick = () => {
     if (keepGoing && !keepGoing()) return stop();
-    const remainMs = Math.max(0, endMs - clock.now());
+    const remainMs = Math.max(0, endMs - serverNow());
     const pct = totalMs > 0 ? Math.max(0, Math.min(100, 100 * remainMs / totalMs)) : 0;
     onTick?.({ remainMs, remainSec: Math.ceil(remainMs / 1000), pct });
     if (remainMs <= 0 && !expired) { expired = true; stop(); onExpire?.(); }
@@ -72,7 +72,8 @@ export function startElapsedTicker({
   const stop = () => { if (handle != null) { clearIntervalFn(handle); handle = null; } };
   const tick = () => {
     if (keepGoing && !keepGoing()) return stop();
-    const elapsedSec = Number.isFinite(startMs) ? Math.max(0, Math.floor((clock.now() - startMs) / 1000)) : 0;
+    // `since` es el `started_at` de la SALA (lo estampó el profe) → hora común.
+    const elapsedSec = Number.isFinite(startMs) ? Math.max(0, Math.floor((serverNow() - startMs) / 1000)) : 0;
     onTick?.({ elapsedSec, label: mmss(elapsedSec * 1000, Math.floor) });
   };
   tick();

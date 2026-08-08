@@ -1,5 +1,8 @@
 // Host view for live mode. Drives the phase machine over sessions.phase.
 import { clock } from '../core/clock.js';
+// §22-5 · el PROFE también es un cliente: los instantes que ESTAMPA en la sala
+// nacen en hora común, o su reloj torcido rompe a la clase entera a la vez.
+import { serverNow } from '../core/serverNow.js';
 import { studentBase } from '../core/routing.js';
 import { startElapsedTicker } from '../core/deadlineTicker.js';
 import { html, escapeHtml, mount } from '../core/html.js';
@@ -191,7 +194,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
   async function maybeAutoEnd(finished) {
     if (autoEnding || session.status === 'ended') return false;
     const { policy, n, deadlineMs } = endPolicyOf(session);
-    if (!shouldEnd({ policy, n, deadlineMs, now: clock.now(), players: players.length, finished })) return false;
+    if (!shouldEnd({ policy, n, deadlineMs, now: serverNow(), players: players.length, finished })) return false;
     autoEnding = true;
     try { await endSession(sessionId); } catch (e) { autoEnding = false; console.warn('[hostLive] cierre automático:', e); }
     return true;
@@ -202,7 +205,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
   // (§26 ficha 1b): un temporizador local se desincroniza entre móviles, no
   // sobrevive a recargar ni a entrar tarde, y no es verificable en el servidor.
   function openQuestion(idx) {
-    const now = clock.now();
+    const now = serverNow();
     const openAt = now + readSecs * 1000;
     // R-3 · cada pregunta puede tener SU tiempo; si no lo declara, hereda el de
     // la actividad. Como el cierre viaja como INSTANTE, el alumno no necesita
@@ -278,7 +281,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
   function paintLobby(phaseChanged = true) {
     if (phaseChanged) emitGame(GameEvents.LOBBY_START, { sessionId });
     const isQL = supportsLoop(tpl, 'claim');
-    const now = clock.now();
+    const now = serverNow();   // se compara con `last_seen` de cada jugador (instante de la sala)
     mount(rootSel, html`
       <div class="text-center py-3">
         <div class="d-flex justify-content-end mb-2">${fullscreenButtonHtml()}</div>
@@ -332,7 +335,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     const readEl = document.getElementById('read-secs');
     if (readEl) readEl.onchange = (e) => { readSecs = Math.max(0, Math.min(READ_SECONDS_MAX, Math.round(+e.target.value || 0))); };
     on(rootSel, 'click', '#btn-start', async () => {
-      const startedAt = new Date(clock.now()).toISOString();
+      const startedAt = new Date(serverNow()).toISOString();
       if (loop === 'claim') {
         await setSessionState(sessionId, { status: 'running', phase: 'question-live', current_item: 0, started_at: startedAt, loop });
       } else if (loop === 'race' || loop === 'board') {
@@ -340,7 +343,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
         // como un contador del host: así el alumno ve el mismo reloj y sobrevive
         // a que el profe recargue.
         const deadline = endPolicy === 'time'
-          ? new Date(clock.now() + endMinutes * 60_000).toISOString() : null;
+          ? new Date(serverNow() + endMinutes * 60_000).toISOString() : null;
         await setSessionState(sessionId, {
           status: 'running', phase: 'race', current_item: 0, started_at: startedAt, loop,
           deadline, end_policy: endPolicy, end_n: endN,
@@ -371,7 +374,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     answers = await listAnswers(sessionId, idx);
     const total = players.length;
     const answered = answers.length;
-    const deadline = session.deadline ? new Date(session.deadline).getTime() : clock.now() + timerSec * 1000;
+    const deadline = session.deadline ? new Date(session.deadline).getTime() : serverNow() + timerSec * 1000;
     let payload;
     try {
       payload = roundPayloadOf(tpl, activity, idx, item);
@@ -402,9 +405,9 @@ async function renderHost(rootSel, code, sessionId, activity) {
     try {
       tpl.renderRoundHost(document.getElementById('host-round'), { phase: 'question', item, payload });
       const hr = document.getElementById('host-round');
-      if (hr && openAtMs > clock.now()) {
+      if (hr && openAtMs > serverNow()) {
         hr.classList.add('hl-reading');
-        ctx.setTimeout(() => hr.classList.remove('hl-reading'), Math.max(0, openAtMs - clock.now()));
+        ctx.setTimeout(() => hr.classList.remove('hl-reading'), Math.max(0, openAtMs - serverNow()));
       }
     } catch (err) {
       console.error('[hostLive] renderRoundHost threw:', err);
@@ -417,11 +420,11 @@ async function renderHost(rootSel, code, sessionId, activity) {
     on(rootSel, 'click', '#btn-pause', async () => {
       if (paused) {
         // Resume: extend deadline by the pauseRemainMs we saved.
-        const newDeadline = new Date(clock.now() + pauseRemainMs).toISOString();
+        const newDeadline = new Date(serverNow() + pauseRemainMs).toISOString();
         await setSessionState(sessionId, { deadline: newDeadline });
         paused = false;
       } else {
-        pauseRemainMs = Math.max(0, deadline - clock.now());
+        pauseRemainMs = Math.max(0, deadline - serverNow());
         await setSessionState(sessionId, { deadline: null });
         paused = true;
       }
@@ -460,7 +463,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
       }
       // Durante la LECTURA el reloj de respuesta aún no corre: se muestra la
       // cuenta atrás de "preparados" y no se liquida por tiempo.
-      const readLeft = openAtMs - clock.now();
+      const readLeft = openAtMs - serverNow();
       if (readLeft > 0) {
         const t0 = document.getElementById('time-left');
         if (t0) t0.textContent = `Preparados… ${Math.ceil(readLeft / 1000)}`;
@@ -469,7 +472,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
         return;
       }
       const liveDeadline = new Date(session.deadline).getTime();
-      const remain = Math.max(0, liveDeadline - clock.now());
+      const remain = Math.max(0, liveDeadline - serverNow());
       const pct = Math.max(0, Math.min(100, 100 * remain / (timerSec * 1000)));
       const t = document.getElementById('time-left');
       const bar = document.getElementById('time-bar');
@@ -629,12 +632,12 @@ async function renderHost(rootSel, code, sessionId, activity) {
   // Valor INICIAL del cronómetro de carrera/tablero: el mismo instante y el mismo
   // formato que luego repinta startElapsedTicker (core/deadlineTicker.js), para
   // que el primer pintado no sea una tercera copia de la aritmética.
-  const raceClock = () => mmss(session.started_at ? clock.now() - Date.parse(session.started_at) : 0, Math.floor);
+  const raceClock = () => mmss(session.started_at ? serverNow() - Date.parse(session.started_at) : 0, Math.floor);
 
   function endBadge() {
     const { policy, n, deadlineMs } = endPolicyOf(session);
     if (policy === 'time' && deadlineMs) {
-      return `queda ${mmss(Math.max(0, deadlineMs - clock.now()), Math.floor)}`;
+      return `queda ${mmss(Math.max(0, deadlineMs - serverNow()), Math.floor)}`;
     }
     if (policy === 'firstN') return `terminan los ${n} primeros`;
     return 'terminan todos';

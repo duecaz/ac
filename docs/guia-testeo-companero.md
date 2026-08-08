@@ -51,9 +51,9 @@ arreglados. Esto es lo más importante de toda la guía.
 ### Comprobar la versión (obligatorio)
 
 Arriba, en la barra oscura, hay una etiqueta pequeña con un número tipo
-**`v1.51.412`**. En el móvil puede estar dentro del menú de las tres rayas (☰).
+**`v1.51.418`**. En el móvil puede estar dentro del menú de las tres rayas (☰).
 
-- **Tiene que poner `1.51.412` o un número MAYOR.**
+- **Tiene que poner `1.51.418` o un número MAYOR.**
 - Si pone menos, repite el Paso 0. Si sigue igual, prueba en modo incógnito.
 
 > ✍️ **Apunta aquí la versión que ves en cada aparato**, y ponla en cada fallo
@@ -181,6 +181,16 @@ Aquí cada alumno va **a su ritmo**. La regla del juego es:
 ---
 
 ## PASO 5 — EN VIVO · **RONDAS JUNTAS** (toda la clase en la misma pregunta)
+
+> 🔧 **Arreglado desde la ronda anterior (v1.51.418).** Los dos fallos que
+> encontraste ("no se abren las respuestas · sale sin respuesta y 0 puntos" y
+> "el tiempo de preparación es 10 en el PC y 20 en el móvil") eran EL MISMO: el
+> reloj de tu Android va unos segundos distinto al del ordenador, y la app
+> comparaba los tiempos de la partida con el reloj de cada aparato. Ahora la
+> hora la pone el servidor. **Míralo con lupa esta vez**: la cuenta de
+> «Preparados…» tiene que marcar el MISMO número en el ordenador y en los dos
+> móviles (±1), y ninguna respuesta puede acabar como «sin respuesta».
+> No hace falta que toques la hora de ningún aparato: déjala como la tengas.
 
 1. Vuelve a **En vivo** → esta vez elige **"Rondas juntas"** → **Empezar**.
 2. Entra otra vez con los dos móviles (PIN nuevo).

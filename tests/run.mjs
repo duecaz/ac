@@ -75,6 +75,8 @@ console.log('\n▶ norms'); await import('./norms.test.mjs');
 console.log('\n▶ pbRules'); await import('./pbRules.test.mjs');
 console.log('\n▶ modeAuth'); await import('./modeAuth.test.mjs');
 console.log('\n▶ serverMs'); await import('./serverMs.test.mjs');
+console.log('\n▶ serverNow'); await import('./serverNow.test.mjs');
+console.log('\n▶ liveGate'); await import('./liveGate.test.mjs');
 console.log('\n▶ liveSnapshot'); await import('./liveSnapshot.test.mjs');
 console.log('\n▶ taskRules'); await import('./taskRules.test.mjs');
 console.log('\n▶ unscorable'); await import('./unscorable.test.mjs');

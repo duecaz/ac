@@ -490,6 +490,47 @@ servidor.** Una feature nueva que confíe en el móvil está mal diseñada.
   duplicado y por PATCH · listar credenciales) **+ la contra-prueba de que la
   dueña de la credencial sigue respondiendo** y el alumno anónimo juega entero.
   **PASO DEL USUARIO**: `#/admin` → "Crear colecciones" (añade `live_claims`).
+- **⑤ LA HORA COMÚN — CERRADO (v1.51.418)**: el veredicto del servidor no es
+  solo el que PUNTÚA (①), también es **el tiempo con el que el cliente SE
+  GATEA**. Los instantes de la sala (`answers_open_at`, `deadline`,
+  `started_at`, `last_seen`) los estampaba el aparato del PROFE con su reloj y
+  los comparaba CADA móvil con el suyo. Nadie medía el desfase, y en un aula lo
+  normal es que los relojes NO coincidan (un Android con la hora automática
+  apagada, una pizarra sin sincronizar). Lo destapó una ronda de pruebas real y
+  se reprodujo con dos pantallas y el reloj desplazado a propósito:
+  **−10 s** → el profe ve «Preparados… 9» y el alumno «19» · **−25 s** → al
+  alumno no se le abren las respuestas NUNCA y su pregunta se liquida «sin
+  respuesta · 0 puntos» · **+10 s** → la ventana de lectura (R-1) desaparece y
+  responde antes de leer, que es justo lo que R-1 vino a impedir.
+  DOS defensas, y hacen falta las dos:
+  **(a) `core/serverNow.js`** — cada aparato mide su desfase con la cabecera
+  `Date` de las respuestas de PocketBase (hora de servidor gratis, sin endpoint
+  ni NTP), guarda la MEDIANA de las últimas muestras y la re-mide en cada
+  respuesta, porque un móvil que suspende deriva. Se toma en `core/pbHttp.js`,
+  puerta única del tráfico PB, así que ningún llamador tiene que acordarse. Sin
+  servidor (backend local, red caída, cabecera ilegible) el desfase es 0 y todo
+  se comporta EXACTAMENTE como antes. R7: el desfase vive en memoria, no se
+  persiste, no viaja al profe y no entra en ningún informe.
+  **(b) `core/liveGate.js`** — el cinturón: la espera de lectura se ACOTA a la
+  ventana declarada y una pregunta ya cerrada no hace leer a nadie. Es lo que
+  salva la clase el día que (a) no esté. Con el reloj torcido se puede empezar
+  tarde; quedarse fuera de la pregunta, no.
+  El PROFE también es un cliente: sus instantes NACEN en hora común, o su reloj
+  torcido rompe a toda la clase a la vez.
+  Regla ejecutable **`reloj-sala`** (`core/normsCheck.js`): un instante de la
+  sala en la misma línea que `clock.now()` rompe CI — con contra-prueba de que
+  un aparato midiendo SU propia duración (el player Individual) sigue siendo
+  legítimo. Tests: `tests/serverNow.test.mjs` (7, incluido el CABLEADO real con
+  `fetch` inyectado) · `tests/liveGate.test.mjs` (5) · y `tools/live-smoke.mjs`
+  gana un alumno con el reloj desplazado: **paridad** de cuenta atrás con hora
+  de servidor y **cinturón** sin ella. Verificado que la red FALLA sin el
+  arreglo (se revirtieron las dos defensas y salió el fallo de aula exacto:
+  «el profe ve 6 y el alumno 31»).
+  **Por qué ninguna red lo veía antes**: las seis corren en UNA máquina con UN
+  reloj — `live-smoke` abría host y alumno en el mismo navegador, desfase 0. Era
+  un punto ciego estructural, y de una FAMILIA entera: todo lo que DIFIERE entre
+  aparatos (red, suspensión, pantalla real). El reloj salió primero porque
+  decide puntos. Diagnóstico completo: `docs/handoff-reloj-aparatos.md`.
 - **Sigue pendiente**: nada de los cuatro. Lo que queda en §22 son los límites
   DECLARADOS: el veredicto autodeclarado de Individual/Tarea (`results` y
   `assignment_attempts` son afirmaciones del cliente, append-only), el tope de
