@@ -401,6 +401,17 @@ sobre la tarjeta). Dos fixes:
 La entrada de `CONOCIDOS` en `tools/matrix-smoke.mjs` se retiró: la matriz juega
 ahora 30/30 y una regresión aquí la tumba.
 
+### 🔴 ABIERTO (v1.51.416) — el reloj de CADA aparato → `docs/handoff-reloj-aparatos.md`
+Los DOS fallos de la ronda del compañero son UNO: los instantes de la sala
+(`answers_open_at`/`deadline`) se estampan con el reloj del PROFE y se comparan contra el
+reloj de CADA móvil. Reproducido con sonda de dos pantallas y reloj desplazado: −10 s → el
+profe ve «Preparados… 9» y el alumno «19» (su reporte exacto); −25 s → las respuestas no se
+abren nunca y la pregunta se liquida «sin respuesta · 0 puntos»; +10 s → la ventana de
+lectura (R-1) desaparece. §22-1 arregló el tiempo que PUNTÚA (`core/serverMs.js`), no el
+tiempo con el que el cliente se GATEA. Ninguna red lo veía: las seis corren en UNA máquina
+con UN reloj. Plan (sin ejecutar aún): hora del servidor + `serverNow()` · topes de cordura ·
+la sonda como caso de `live-smoke` · ampliar §22.
+
 ### 🟡 DEUDA CONDICIONADA — partir los 4 módulos grandes (TRAS los tests del compañero)
 Registrada en la cola del norte (#5). NO ejecutar hasta que el compañero termine su ronda
 rigurosa de pruebas manuales: partir es cirugía y se opera sobre un cuerpo verificado.
