@@ -51,6 +51,7 @@
 - [20) OAuth redirect canónico](#20-oauth-redirect-canónico)
 - [21) ⚖️ LEY DE DATOS — cada colección tiene UN dueño](#21--ley-de-datos--cada-colección-tiene-un-dueño)
 - [22) ⚖️ LEY DE CONFIANZA — el cliente AFIRMA, el veredicto lo pone otro](#22--ley-de-confianza--el-cliente-afirma-el-veredicto-lo-pone-otro)
+  - [Los LÍMITES de esta ley — permanentes, no pendientes (v1.51.421)](#los-límites-de-esta-ley--permanentes-no-pendientes-v151421)
 - [23) ⚖️ LEY DE VISTA — ciclo de vida de una pantalla](#23--ley-de-vista--ciclo-de-vida-de-una-pantalla)
 - [24) ⚖️ LEY DE CONTENIDO — el modelo evoluciona por caminos declarados](#24--ley-de-contenido--el-modelo-evoluciona-por-caminos-declarados)
 - [§25 · CAPACIDAD — el sistema tiene límites, y son UNO](#25--capacidad--el-sistema-tiene-límites-y-son-uno)
@@ -531,13 +532,33 @@ servidor.** Una feature nueva que confíe en el móvil está mal diseñada.
   un punto ciego estructural, y de una FAMILIA entera: todo lo que DIFIERE entre
   aparatos (red, suspensión, pantalla real). El reloj salió primero porque
   decide puntos. Diagnóstico completo: `docs/handoff-reloj-aparatos.md`.
-- **Sigue pendiente**: nada de los cuatro. Lo que queda en §22 son los límites
-  DECLARADOS: el veredicto autodeclarado de Individual/Tarea (`results` y
-  `assignment_attempts` son afirmaciones del cliente, append-only), el tope de
-  intentos por IDENTIDAD y no por persona (rotar el anon id da intentos nuevos), y
-  la carrera libre, que necesita un validador en el servidor. Los tres piden lo
-  mismo para cerrarse de verdad: **identidad de alumno** (PIN/NFC,
-  `docs/handoff-acceso-docente.md`) o **código en el servidor** (hook de PB).
+  **Lo que queda FUERA de §22-5, declarado** (decisión v1.51.421): el resto de la
+  familia —red lenta, móvil que se suspende, tamaño de pantalla real— NO tiene
+  ley propia. Se pensó §31 y se descartó: una ley sin red que la vigile es
+  decoración, y hoy solo sabemos escribir la red del reloj (la del desfase, en
+  `live-smoke`). Escribir §31 sin test incumpliría *«si es norma, es test»* en su
+  propio estreno. Queda como **límite conocido**: si uno de los tres muerde,
+  primero se escribe su red y después su ley — en ese orden, como se hizo aquí.
+### Los LÍMITES de esta ley — permanentes, no pendientes (v1.51.421)
+
+Los cuatro puntos de arriba están cerrados. Lo que queda **no es una lista de
+tareas**: son tres límites que se ACEPTAN por escrito. Se cambia el rótulo a
+propósito — un "pendiente" que nadie puede resolver deja de leerse como tarea y
+empieza a leerse como reproche; a los tres meses ya nadie sabe si es grave.
+
+| Límite | Por qué es estructural | Qué haría falta |
+|---|---|---|
+| **El veredicto de Individual y Tarea lo AFIRMA el cliente** (`results` y `assignment_attempts` son declaraciones, append-only) | Sin identidad de alumno ni validación en el servidor, no hay contra quién contrastar. Y el daño real es bajo: el que se engaña a sí mismo en Individual no le quita nada a nadie | Identidad de alumno (D1) **o** código en el servidor |
+| **El tope de intentos es por IDENTIDAD, no por persona** — borrar los datos del navegador o entrar en incógnito da intentos nuevos | El alumno es anónimo POR DISEÑO (R3). Cerrar esto exige lo contrario de lo que el norte protege | Identidad de alumno (D1) |
+| **En carrera la clave viaja al móvil** (excepción declarada en §22-2) | Cada alumno va a su ritmo: sin clave local, el móvil no puede decir "correcto" y re-encolar el fallo al instante | Un **hook de PocketBase** en la Pi que juzgue en el servidor |
+
+**Decisión del usuario (v1.51.421)**: los dos primeros quedan como límites
+permanentes — D1 está en estudio y **no se ejecuta** hasta responder si le
+compensa al docente (ver `docs/decisiones-pendientes.md`). El tercero, el hook,
+**queda fuera por ahora**: sería la primera vez que metemos código de servidor,
+en una Pi COMPARTIDA con otros proyectos, y ahora mismo estamos cerrando huecos,
+no abriendo superficie. Se reabre solo si aparece un caso real de trampa en
+clase — que hasta hoy no ha aparecido.
 
 ## 23) ⚖️ LEY DE VISTA — ciclo de vida de una pantalla
 Las normas 4, 6 y 10 son piezas de esta ley; aquí está el cuadro completo de

@@ -41,11 +41,11 @@
   - [El momento de clase de cada familia — esto es lo que manda](#el-momento-de-clase-de-cada-familia--esto-es-lo-que-manda)
   - [Lo que se DERIVA de la distinción (para no discutirlo pieza a pieza)](#lo-que-se-deriva-de-la-distinción-para-no-discutirlo-pieza-a-pieza)
 - [4d. Y lo que NO haremos con los juegos](#4d-y-lo-que-no-haremos-con-los-juegos)
-- [5. Los referentes: qué tomamos y qué no ✅ CONFIRMADO · ⏳ falta detallar](#5-los-referentes-qué-tomamos-y-qué-no--confirmado---falta-detallar)
+- [5. Los referentes: qué tomamos y qué no ✅ CERRADO](#5-los-referentes-qué-tomamos-y-qué-no--cerrado)
 - [6. El criterio de decisión](#6-el-criterio-de-decisión)
 - [6b. DE DÓNDE SE DESPRENDE CADA LEY — la cadena de derivación](#6b-de-dónde-se-desprende-cada-ley--la-cadena-de-derivación)
 - [6c. CÓMO SE DECIDE LA ARQUITECTURA](#6c-cómo-se-decide-la-arquitectura)
-- [6d. Señales de que vamos bien — APLAZADO](#6d-señales-de-que-vamos-bien--aplazado)
+- [6d. Señales de que vamos bien ✅ CERRADO](#6d-señales-de-que-vamos-bien--cerrado)
 - [6e. UNA COSA, UN NOMBRE (vocabulario)](#6e-una-cosa-un-nombre-vocabulario)
 - [7. El viaje del profesor — dónde estamos](#7-el-viaje-del-profesor--dónde-estamos)
 - [7b. INVENTARIO: lo que YA tenemos, y dónde encaja](#7b-inventario-lo-que-ya-tenemos-y-dónde-encaja)
@@ -309,8 +309,7 @@ Cada uno con la condición que tendría que cumplirse para reabrirlo.
 | Idea | Por qué no ahora | Qué tendría que pasar |
 |---|---|---|
 | **Generar actividades con IA** | Encaja con la promesa (§2) y sería la vía (d) del ANTES, pero **añadiría superficie nueva sobre una estructura que todavía estamos ordenando**. Meterlo hoy complica justo lo que estamos arreglando | Que la estructura esté sólida y **sin huecos**, y que la IA entre obedeciendo a un plan específico y escrito — no como añadido |
-| **Identidad del alumno (D1)** | toda solución conocida choca con R2/R3/R7 | estudio propio previo, incluido cómo lo resuelven otras apps (§7) |
-| **Medir "cómo vamos" (§6d)** | primero se termina el norte | tener el norte cerrado |
+| **Identidad del alumno (D1)** | toda solución conocida choca con R2/R3/R7. **Hipótesis actual del usuario** (v1.51.421): damos actividades para un MOMENTO en el aula, no somos el sistema del colegio → el alumno sigue ANÓNIMO por defecto y la identidad es una OPCIÓN del docente (subir un txt/Excel con su lista). Está meditándose | responder primero si **le COMPENSA al docente** el trabajo extra: subir la lista solo vale si el seguimiento le sirve de verdad. Detalle en `decisiones-pendientes.md` |
 | **Otros idiomas** | **por ahora, solo español**. Traducir hoy multiplicaría el trabajo de cada pantalla sin que nadie lo pida | que aparezca un colegio que lo necesite; entonces se decide catálogo de textos vs. duplicar |
 | **Alumnos jugando entre ellos, sin profe** (área de alumno, juegos fuera de clase) | Cambia el norte, no la interfaz: otro público, otro momento, y arrastra cuentas de menores y ranking entre alumnos — justo lo que R7 y §4 cierran | Que se levante D1 (identidad del alumno) con su estudio previo. Ver §4d |
 | **Accesibilidad avanzada** (daltonismo, lectores de pantalla) | no toca ahora: primero se ordena lo que hay. R1 ya cubre lo básico de aula (tamaño, contraste, legible a 3 m) | terminar el orden que estamos haciendo; entonces se revisa el color como única señal (Tildes/Comas) |
@@ -435,19 +434,22 @@ Escrito aquí porque es donde se va a intentar colar:
 - **Una sección "Juegos" fuera del catálogo**: ver §7c — hoy no, y con condición
   escrita para reabrirlo.
 
-## 5. Los referentes: qué tomamos y qué no ✅ CONFIRMADO · ⏳ falta detallar
+## 5. Los referentes: qué tomamos y qué no ✅ CERRADO
 
-> **Confirmado en lo esencial · pendiente de un ESTUDIO propio.** Bajar esta
-> tabla a ejemplos concretos no es cuestión de redactarla mejor: hace falta
-> **documentarse y probar extensamente** Wordwall y Kahoot —usarlos como los usa
-> un profe, con una clase en mente— para saber **qué partes encajarían con
-> nuestra escena** y cuáles no. Hasta entonces la tabla vale como orientación,
-> no como criterio para zanjar discusiones.
+> **CERRADO con lo que sabemos** (v1.51.421). Llevaba meses con un ⏳ esperando
+> un estudio a fondo de Wordwall y Kahoot, y ese ⏳ bloqueaba el cierre del norte
+> entero por algo que la tabla **ya decide bien**: nuestro norte es el DOCENTE,
+> así que la referencia correcta es Wordwall/Educaplay y no los sitios para
+> alumnos. Lo que faltaba no era detalle: era cerrar el argumento vago.
 >
-> **Alcance del estudio, cuando toque**: por cada referente, qué pantalla
-> resuelve bien y por qué · qué estorba al usarlo de verdad · qué puede hacer un
-> profe allí que aquí todavía no · y, de cada cosa, si encaja o choca con §1
-> (pizarra, alumno al frente, minutos dentro de la clase).
+> **LA REGLA (esto es lo que se aplica a partir de ahora):** *«lo hace Kahoot»*
+> o *«en Wordwall es así»* **NO son argumentos por sí solos**. Quien invoque un
+> referente aporta el caso concreto: qué pantalla, qué resuelve, y si encaja o
+> choca con §1 (pizarra, alumno al frente, minutos dentro de la clase). Sin eso,
+> la comparación no entra en la discusión.
+>
+> Si algún día se usan los dos productos a fondo, ese trabajo **mejora la tabla,
+> no la desbloquea**: lo que salga se añade como fila con su caso concreto.
 
 | | Wordwall | Kahoot | Nosotros |
 |---|---|---|---|
@@ -528,13 +530,27 @@ estructural, en este orden:
 > el norte es una decisión huérfana. Con el tiempo, las huérfanas son las que
 > nadie sabe por qué están y nadie se atreve a quitar.
 
-## 6d. Señales de que vamos bien — APLAZADO
+## 6d. Señales de que vamos bien ✅ CERRADO
 
-Decisión del usuario: **primero se termina de establecer el norte**. Cómo
-sabremos que vamos bien (y qué se mide, si es que se mide algo del alumno) se
-verá mucho después, junto con la decisión sobre alumnos identificados (D1).
-Hasta entonces, la prioridad se decide con §1, §2b y §8, que no necesitan medir
-a nadie.
+Esta sección decía *"aplazado: primero se termina el norte"* — y era una sección
+DEL norte. El documento no podía cerrarse mientras contuviera una parte que
+esperaba a que el documento estuviera cerrado. El motivo original era bueno (no
+discutir métricas antes de tiempo); el efecto era un bucle.
+
+Se cierra con **señales CUALITATIVAS que no miden a nadie**. Ninguna necesita
+identificar al alumno (R7 intacto) ni depender de D1, y las tres las puede
+comprobar una persona mirando:
+
+| Señal | Cómo se comprueba | Por qué esta y no un número |
+|---|---|---|
+| **Una clase entera sin tocar nada raro** | el docente da su clase y no tiene que salir del juego, recargar, ni explicar un fallo | Es la promesa de §2b en una frase. Si se cumple, el producto hizo su trabajo |
+| **Una ronda de pruebas sin fallos NUEVOS** | el compañero recorre la guía y lo que aparece ya está registrado como deuda conocida | Distingue "no hay fallos" de "no los estamos viendo" |
+| **El profe vuelve al día siguiente** | usa la app dos clases seguidas sin que nadie se lo recuerde | Es el único juicio que importa, y no hace falta telemetría para saberlo: se pregunta |
+
+**Lo que NO se medirá** (y queda escrito para no rediscutirlo): nada del alumno
+—ni tiempo de uso, ni progreso individual, ni comparativas entre críos— mientras
+R7 siga vigente. Si algún día hay identidad de alumno (D1), esa conversación se
+abre entera y de cero, no por goteo.
 
 ## 6e. UNA COSA, UN NOMBRE (vocabulario)
 

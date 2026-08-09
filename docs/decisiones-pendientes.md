@@ -20,6 +20,7 @@ sale de aquí.
 - [Estado (decisión del usuario, v1.51.340)](#estado-decisión-del-usuario-v151340)
   - [Lo aplicado en D6](#lo-aplicado-en-d6)
 - [D1 · Identidad del alumno — POSPUESTA CON MOTIVO (v1.51.365)](#d1--identidad-del-alumno--pospuesta-con-motivo-v151365)
+  - [Cómo lo está pensando el usuario hoy (v1.51.421) — hipótesis EN ESTUDIO](#cómo-lo-está-pensando-el-usuario-hoy-v151421--hipótesis-en-estudio)
 
 ### Ir a otro documento
 
@@ -188,3 +189,33 @@ marcar como *sospechoso* un cambio. Ojo con dos cosas:
 
 **Qué arrastra**: el PIN/NFC para pizarras (U2-U4) y los informes por alumno
 dependen de esta pieza. Por eso, cuando se estudie, se estudia entero.
+
+### Cómo lo está pensando el usuario hoy (v1.51.421) — hipótesis EN ESTUDIO
+
+Reafirmada la pausa, con un razonamiento nuevo que cambia el planteamiento y
+conviene tener escrito porque **acota mucho el problema**:
+
+> *"Solo damos actividades para un momento en el aula, no somos el sistema del
+> colegio. Así que es probable que todos los alumnos estén como ANÓNIMOS, y una
+> opción, si el docente lo quiere, de poder subir un txt o un excel con sus
+> alumnos. Pero eso se está meditando."*
+
+Lo que implica, y por qué es mejor que lo que había en la ficha de arriba:
+
+- **El caso por defecto NO cambia: anónimo.** La identidad deja de ser un
+  requisito del sistema y pasa a ser **una opción del docente**, que es justo lo
+  que R2 pide (nada obligatorio para empezar) y lo que R3 protege (el alumno no
+  tiene cuenta). Los salones con lista dejan de ser la base para ser el caso
+  avanzado.
+- **La lista la trae el profe en un archivo** (txt o Excel) en vez de teclearla:
+  el coste de entrada baja de "declarar 12 salones a mano" a "arrastrar el
+  fichero que el colegio ya tiene". Esa era la objeción de R2 al planteamiento
+  anterior.
+- **La pregunta que decide sigue abierta, y es de producto, no técnica**: ¿le
+  COMPENSA al docente el trabajo extra? Subir la lista solo vale la pena si lo
+  que recibe a cambio (seguimiento del alumno durante el curso) le sirve de
+  verdad en su día a día. Si la app es "un momento en el aula", puede que no.
+
+**Sigue sin decidirse, y sin fecha.** Lo que hay aquí es la hipótesis con la que
+se está meditando, no un plan. Cuando se retome, la primera pregunta a responder
+es la de si compensa — antes de diseñar nada.
