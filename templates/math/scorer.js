@@ -1,6 +1,6 @@
 // Numeric scorer for the Operaciones template. Same shape as the other scorers.
 // Mérito binario (hits/total; total 0 = sin clave de respuesta → no puntuable).
-// P5 (docs/handoff-puntuacion.md): puntos por la fórmula común awardPoints —
+// P5 (docs/historico/handoff-puntuacion.md): puntos por la fórmula común awardPoints —
 // plano por defecto, y en VIVO con el mismo bonus de velocidad Kahoot que quiz
 // (antes math pagaba 1 punto plano en live mientras quiz pagaba ~1500: escalas
 // incomparables en la misma sesión de clase).

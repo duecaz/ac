@@ -1,5 +1,10 @@
 # HANDOFF — Puntuación: dónde vive la decisión de puntos de CADA actividad
 
+> 🗄️ **HISTÓRICO — EJECUTADO.** Se archivó en v1.51.424 al consolidar la
+> documentación: el mapa de puntuación se cerró: un solo scorer por plantilla, vigilado por `tests/scoringSources.test.mjs`.
+> Se conserva porque explica **por qué** se hizo así, que es lo que un plan
+> terminado sigue valiendo. **No es trabajo pendiente.**
+
 > Estado: **P1–P5 EJECUTADAS (v1.51.268–269)** — `core/scoring/` existe, los 11
 > scorers devuelven mérito `{hits, total}`, el contrato lo exige
 > (`tests/templateContract.test.mjs` + generador `tools/new-template.mjs`), la

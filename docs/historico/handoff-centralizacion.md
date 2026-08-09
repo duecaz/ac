@@ -1,5 +1,10 @@
 # HANDOFF — Centralizar decisiones que hoy viven repartidas en vistas
 
+> 🗄️ **HISTÓRICO — EJECUTADO en lo esencial.** Se archivó en v1.51.424 al consolidar la
+> documentación: paneles del editor, questionLive, sessionTable y la tarjeta única ya tienen dueño; lo que quede se pide como deuda concreta, no como plan.
+> Se conserva porque explica **por qué** se hizo así, que es lo que un plan
+> terminado sigue valiendo. **No es trabajo pendiente.**
+
 > Origen: pase de limpieza tras el sistema de puntuación (v1.51.270, 4 agentes de
 > revisión). El ESPÍRITU es el mismo que `core/scoring/`: la decisión vive en la
 > PLANTILLA o en UN módulo core; las vistas solo la consumen. Cada ítem indica

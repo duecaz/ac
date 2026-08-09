@@ -107,10 +107,10 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | **DECISIONES de producto pendientes** (contrastadas con Wordwall/Kahoot: identidad del alumno, imprimible, cuotas…) | **[`docs/decisiones-pendientes.md`](docs/decisiones-pendientes.md)** |
 | **Cuántos bucles de juego en vivo hay y qué cuestan** (estudio D7, medido) | **[`docs/estudio-bucles-live.md`](docs/estudio-bucles-live.md)** + ley §26 |
 | Índice completo de docs | [`docs/README.md`](docs/README.md) (lo histórico vive en `docs/historico/`) |
-| **Cómo se puntúa CADA actividad** (mapa de los 7 sitios que deciden puntos + plan) | **[`docs/handoff-puntuacion.md`](docs/handoff-puntuacion.md)** |
-| **Centralizar decisiones repartidas en vistas** (fase→pantalla, payload, meta, prompt…) | **[`docs/handoff-centralizacion.md`](docs/handoff-centralizacion.md)** |
+| **Cómo se puntúa CADA actividad** | `core/scoring/` + el scorer de cada plantilla; la ley y su test, en [`docs/leyes.md`](docs/leyes.md) (`scoringSources`). El plan original, ya ejecutado, en `docs/historico/handoff-puntuacion.md` |
 | **Bugs abiertos / deuda** | la sección "Deuda técnica registrada" (abajo) + notas `docs/handoff-*.md` |
-| **Plan biblioteca pública** (portada, likes, gate de login, admin) | **[`docs/handoff-biblioteca-publica.md`](docs/handoff-biblioteca-publica.md)** (+ `handoff-google-classroom.md` y `handoff-seguridad-pb.md`) |
+| **Configurar Google Classroom** (pasos en Google Cloud) | [`docs/handoff-google-classroom.md`](docs/handoff-google-classroom.md) |
+| **Seguridad de PocketBase por fases** | [`docs/handoff-seguridad-pb.md`](docs/handoff-seguridad-pb.md) — su Fase 3 es hoy un LÍMITE declarado en `leyes.md` §22 |
 | **Verificar la Pi contra el esquema del código** (13 colecciones · campos mudos · índices · tope §25) | `PB=https://pb.lanube.uno bash tools/check-pb.sh` — lo cruza `tests/pbSchema.test.mjs` |
 | **Cómo está la BD/Pi de VERDAD** (PocketBase, Docker, backups, OAuth Google, quirks) | **[`docs/infraestructura-pb.md`](docs/infraestructura-pb.md)** (fuente de infra; actualizar si cambia el servidor) |
 | **Plan de usuarios/acceso docente** (endurecer reglas, PIN, NFC, pizarras, panel profes) | **[`docs/handoff-acceso-docente.md`](docs/handoff-acceso-docente.md)** (incluye auditoría del sistema de usuarios) |
@@ -217,7 +217,7 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   `build()`, falla en CI). Es distinto de `mountThumb`/`core/activityThumb.js` (render real
   escalado 1280×800), que sigue existiendo para otros usos — el home dejó de usarlo por
   rendimiento. Pendiente: que el preview respete tema/fondo de la actividad (ver
-  `docs/handoff-previews-home.md` Fase 2b).
+  `docs/historico/handoff-previews-home.md` Fase 2b).
 - En móvil (≤640px) la barra superior colapsa en un **menú hamburguesa** (`.ww-topbar__burger`
   → clase `.open`); las acciones (incl. `#ww-mute-slot`/`#ww-auth-slot`) caen en el desplegable.
 
@@ -369,7 +369,7 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
 ### ✅ RESUELTO (v1.51.217 → v1.51.235) — Sistema de usuarios + biblioteca pública
 Biblioteca tipo Wordwall + cuentas de profe, ejecutado y verificado en real:
 - **S1-S3** (gate/claim/almacén por usuario · portada+explore+likes+publicar · reglas duras
-  + admin + reportes) → `docs/handoff-biblioteca-publica.md`.
+  + admin + reportes) → `docs/historico/handoff-biblioteca-publica.md`.
 - **U1**: reglas PB ENDURECIDAS (crear exige sesión+owner; sin `owner=''`), signup público
   cerrado (alta = Google o admin), `createTeacher` firma con token, "Probar" ya no clona a PB.
 - **U5**: panel Profesores en `#/admin` (listar, dar/quitar admin) — `core/teachers.js`.
@@ -519,7 +519,7 @@ rediseñar nada — ficha completa y recomendación en **`docs/decisiones-pendie
 - **D2 · "duplicar como otra plantilla"** (hoy el cambio de plantilla es destructivo).
 - **D4 · aula sin internet** (PWA): solo tras estabilizar la caché (ver v1.51.336).
 
-### 🟡 AUDITORÍA INTEGRAL (Fable, 2026-07) — EJECUTADA en su mayoría → `docs/handoff-auditoria-fable.md`
+### 🟡 AUDITORÍA INTEGRAL (Fable, 2026-07) — EJECUTADA en su mayoría → `docs/historico/handoff-auditoria-fable.md`
 4 agentes en paralelo (datos/sync · live · seguridad · UI). **20+ ítems ✅ hechos**
 (XSS de backgroundImage, tombstones, localStorage lleno, fullscreen denegado,
 robustez de colas, batches A-H completos) — el detalle con versión de cada fix
@@ -532,7 +532,7 @@ está en el handoff. QUEDA, y es **paso del usuario o diseño**, no código pend
 > Este bloque decía "PENDIENTE · reglas 100% abiertas" cuando había 20 ✅: un doc
 > de entrada que grita una urgencia falsa entrena a ignorar los avisos reales.
 
-### ✅ RESUELTO (v1.51.178 → v1.51.180) — Emparejar no conectaba en VERTICAL → `docs/handoff-emparejar-vertical.md`
+### ✅ RESUELTO (v1.51.178 → v1.51.180) — Emparejar no conectaba en VERTICAL → `docs/historico/handoff-emparejar-vertical.md`
 **Eran DOS causas encadenadas + 1 mejora de layout** (cada una tapaba a la siguiente):
 - **v1.51.180 — las cuerdas se SOLAPABAN con las tarjetas en vertical.** Al reordenar el
   andamio a filas arriba/abajo (rejilla 2×2 por grupo), una cuerda entre dos tarjetas de la
@@ -562,7 +562,7 @@ temporales retirados.
 
 ### 🔴 DEUDA DETECTADA EN REVISIÓN (caza de bugs live/session) — PENDIENTE
 
-#### A. ✅ RESUELTO (v1.51.272) — Lost-update en el blob `state` de `live_sessions` → `docs/handoff-deuda-a.md`
+#### A. ✅ RESUELTO (v1.51.272) — Lost-update en el blob `state` de `live_sessions` → `docs/historico/handoff-deuda-a.md`
 - **Qué era**: las respuestas ya vivían en `live_answers`; quedaba `joinSession` (load→push a
   `players[]`→PATCH del blob completo) → 30 entradas a la vez se pisaban ("un alumno no entra y hay
   que refrescarle").

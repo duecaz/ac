@@ -5,7 +5,7 @@
 //   · runner de texto:  { i, v, c, p }
 // Con TOPE de tamaño: si el JSON excede maxBytes, suelta primero `v` de los ítems
 // CORRECTOS (para el heatmap importan los fallos), luego el resto de `v`.
-// Ver docs/handoff-analitica-items.md.
+// Ver docs/historico/handoff-analitica-items.md.
 
 function normOne(a, idx) {
   return {

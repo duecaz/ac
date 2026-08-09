@@ -1,6 +1,6 @@
 // MÉRITO por marcas (Tildes/Comas y cualquier futura plantilla "marca el texto").
 // Movido desde core/textMarks.js (que re-exporta y se queda con texto+marcas):
-// esto es puntuación, no manipulación de texto. Ver docs/handoff-puntuacion.md.
+// esto es puntuación, no manipulación de texto. Ver docs/historico/handoff-puntuacion.md.
 import { basePoints } from './award.js';
 
 // Puntuación TODO-O-NADA por pasaje (la usa el modo VS clásico de sesión):

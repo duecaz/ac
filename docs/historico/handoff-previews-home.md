@@ -1,5 +1,10 @@
 # HANDOFF — Previews del HOME: contrato por plantilla, esquemas faltantes, centrado y rendimiento
 
+> 🗄️ **HISTÓRICO — EJECUTADO (Fases 1-2b).** Se archivó en v1.51.424 al consolidar la
+> documentación: el preview del home lo pinta `core/homePreview.js`, vigilado por `tests/homePreview.test.mjs`.
+> Se conserva porque explica **por qué** se hizo así, que es lo que un plan
+> terminado sigue valiendo. **No es trabajo pendiente.**
+
 > ## ✅ EJECUTADO (v1.51.200) — lo hecho y lo que queda
 > - **Fase 2 (HECHO):** las 13 plantillas tienen esquema propio en `core/homePreview.js`
 >   (nuevos: wheel/ruleta, wordsearch/sopa, crossword/crucigrama, ballsort/pelotas,

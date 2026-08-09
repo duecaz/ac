@@ -1,5 +1,10 @@
 # HANDOFF — Biblioteca pública tipo Wordwall (portada · cuentas de profe · admin)
 
+> 🗄️ **HISTÓRICO — EJECUTADO (S1-S4).** Se archivó en v1.51.424 al consolidar la
+> documentación: portada, likes, publicar, admin y reportes están en producción; las decisiones de producto viven en `norte.md` §7c.
+> Se conserva porque explica **por qué** se hizo así, que es lo que un plan
+> terminado sigue valiendo. **No es trabajo pendiente.**
+
 > **Estado: PLAN definitivo (Fable, 2026-07-21) → para ejecutar por Opus 4.8.**
 > Sustituye/absorbe la discusión de chat. Prerequisito ya en código: login con Google
 > (Fase A, v1.51.215, `docs/handoff-google-classroom.md`) y firma de escrituras +

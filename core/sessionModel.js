@@ -16,7 +16,7 @@ import { finishMsOf, byFinish } from './liveRank.js';
 
 // Mérito de una respuesta a un ítem: { hits, over, total, binary }. Fuente única:
 // el scorer de la plantilla (contrato {correct, points, hits, total} — fase P4 de
-// docs/handoff-puntuacion.md); aquí ya no se reimplementa el conteo por partes.
+// docs/historico/handoff-puntuacion.md); aquí ya no se reimplementa el conteo por partes.
 // Para ítems BINARIOS manda el veredicto GUARDADO (`row.correct`, del settle
 // autoritativo), no un re-scoring: solo el mérito multi-parte (tildes "3/8") se
 // recalcula del value, porque no viaja en la fila.

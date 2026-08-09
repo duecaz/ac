@@ -2,7 +2,7 @@
 // kind 'tilde' applies acute accent to vowels; case-preserved.
 //
 // La PUNTUACIÓN por marcas ya NO vive aquí: se movió a core/scoring/marks.js
-// (fase P1 de docs/handoff-puntuacion.md — este módulo es texto, no puntos).
+// (fase P1 de docs/historico/handoff-puntuacion.md — este módulo es texto, no puntos).
 // Re-export de compatibilidad para los llamadores existentes:
 export { scoreMarks, scoreMarksPerHit } from './scoring/marks.js';
 

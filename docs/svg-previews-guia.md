@@ -1,7 +1,7 @@
 # Guía — Diseñar previews SVG para las tarjetas del home (Fase 2c)
 
 > Para el usuario (diseña en Windows) y para Claude (integra). El plan general
-> vive en `docs/handoff-previews-home.md`; esto es el brief de diseño + entrega.
+> vive en `docs/historico/handoff-previews-home.md`; esto es el brief de diseño + entrega.
 
 ## Lienzo y exportación
 - **viewBox="0 0 320 150"**, `preserveAspectRatio="xMidYMid meet"`. Diseña a 320×150.

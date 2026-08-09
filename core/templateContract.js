@@ -162,7 +162,7 @@ export function checkTemplateContract(T) {
   }
 
   // ── forma del scorer: {correct, points, hits, total} — nunca otra ──────────
-  // hits/total = MÉRITO (docs/handoff-puntuacion.md §3): binarias 1/1 ó 0/1;
+  // hits/total = MÉRITO (docs/historico/handoff-puntuacion.md §3): binarias 1/1 ó 0/1;
   // por partes (tildes) 3/8; total=0 = ítem no auto-puntuable (puntúa el profe).
   // Con el mérito obligatorio, tabla/heatmap/CSV leen igual las 13 plantillas.
   if (typeof T.scoreSubmission === 'function' && dc) {
@@ -174,7 +174,7 @@ export function checkTemplateContract(T) {
       if (typeof r !== 'object' || !('correct' in r) || typeof r.points !== 'number') {
         issues.push(`scoreSubmission devuelve ${JSON.stringify(r)} — el contrato es {correct, points, hits, total}`);
       } else if (!Number.isFinite(r.hits) || !Number.isFinite(r.total)) {
-        issues.push(`scoreSubmission no devuelve el mérito {hits, total} (dio ${JSON.stringify(r)}) — ver docs/handoff-puntuacion.md`);
+        issues.push(`scoreSubmission no devuelve el mérito {hits, total} (dio ${JSON.stringify(r)}) — ver docs/historico/handoff-puntuacion.md`);
       }
     }
   }

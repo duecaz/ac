@@ -1,5 +1,10 @@
 # HANDOFF — Analítica por ítem/parte para el docente (plan de módulos, Etapa 2)
 
+> 🗄️ **HISTÓRICO — EJECUTADO (F1-F3).** Se archivó en v1.51.424 al consolidar la
+> documentación: la analítica por ítem vive en `core/itemStats.js` y `views/sessionTable.js`; su ley, en §21.
+> Se conserva porque explica **por qué** se hizo así, que es lo que un plan
+> terminado sigue valiendo. **No es trabajo pendiente.**
+
 > Objetivo (usuario): que el docente vea **cuántas partes acertó cada alumno** y, sobre
 > todo, **qué partes falla LA CLASE** ("el 50% falló en *jugó*") — en **tareas** y en
 > **modo EN VIVO**, y para **todas las plantillas live** (ballsort, comas, math,

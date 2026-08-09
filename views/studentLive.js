@@ -744,7 +744,7 @@ export async function renderPlay(rootSel, code) {
         // SIEMPRE → captura v0/c0 (el error real) para el análisis de clase. Los
         // reintentos posteriores solo se envían si son CORRECTOS, para avanzar el
         // progreso del host. submitRaceAttempt no cambia el juego: preserva v0/c0
-        // (inmutable) y solo mueve value/correct al acertar. Ver docs/handoff-analitica-items.md.
+        // (inmutable) y solo mueve value/correct al acertar. Ver docs/historico/handoff-analitica-items.md.
         const firstForItem = !raceFirstSent.has(idx);
         if (firstForItem || ok) {
           raceFirstSent.add(idx);

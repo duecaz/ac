@@ -733,7 +733,7 @@ function renderPanel(rootSel) {
         // pisa a otro → 30 alumnos entrando a la vez ya no se clobbean en el blob.
         // playerId = id de la FILA. Índice único (session,name) → apodos únicos
         // ATÓMICOS (el 400 de colisión dispara el retry "Juan 2"). Ver
-        // docs/handoff-deuda-a.md.
+        // docs/historico/handoff-deuda-a.md.
         { name: 'live_players', fields: [
           { name: 'session', type: 'text', required: true },
           { name: 'name',    type: 'text', required: true },

@@ -76,7 +76,7 @@ export class TildesTemplate extends BaseTemplate {
   // texto acentuado (aplicando las marcas conocidas) y lo re-parseamos ahora con
   // NFC → recupera TODAS las tildes. Idempotente en pasajes ya limpios (las comas
   // literales del texto se conservan; parseAccentedText solo toca acentos). Ver
-  // docs/handoff-emparejar-vertical.md (histórico) y core/textMarks.js.
+  // docs/historico/handoff-emparejar-vertical.md (histórico) y core/textMarks.js.
   static migrateContent(content) {
     const passages = content?.passages;
     if (!Array.isArray(passages)) return content;

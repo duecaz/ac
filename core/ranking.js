@@ -2,7 +2,7 @@
 // "Destacadas" = más ❤ likes (de profes logueados), desempate por nº de partidas
 // jugadas y, por último, frescura (updatedAt). El cálculo de likes/plays se hace
 // aparte (agregación client-side en v1; upgrade a contadores con pb_hooks cuando
-// la biblioteca crezca — ver docs/handoff-biblioteca-publica.md).
+// la biblioteca crezca — ver docs/historico/handoff-biblioteca-publica.md).
 
 /**
  * @param {Array<{id:string, updatedAt?:string}>} activities  actividades públicas

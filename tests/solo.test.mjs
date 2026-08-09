@@ -49,7 +49,7 @@ const live = scoreQuizSubmission({ value: 'a', item: { answer: 'a', points: 2 },
 assert.strictEqual(live.points, 2000, 'live mode honours live.pointsModel=kahoot');
 ok('scoreQuizSubmission: kahoot speed bonus (solo advanced + live)');
 
-// ---------- P5: escala UNIFICADA (docs/handoff-puntuacion.md) ----------
+// ---------- P5: escala UNIFICADA (docs/historico/handoff-puntuacion.md) ----------
 // math en VIVO paga con el MISMO bonus de velocidad que quiz (antes: 1 plano
 // mientras quiz pagaba ~1500 en la misma sesión de clase).
 {

@@ -1,5 +1,10 @@
 # HANDOFF — Propuestas: informe LIVE estilo Kahoot + mejoras de TAREAS
 
+> 🗄️ **HISTÓRICO — EJECUTADO (A1·A2·B1·B2).** Se archivó en v1.51.424 al consolidar la
+> documentación: informe con pestañas, ranking, tabla de intentos y ficha por alumno están en `views/sessionTable.js` y `views/assignments.js`.
+> Se conserva porque explica **por qué** se hizo así, que es lo que un plan
+> terminado sigue valiendo. **No es trabajo pendiente.**
+
 > Pedido del usuario (2026-07-23): "desde la visualización no es como la tabla que le
 > aparece en Kahoot; dame propuestas para mejorar tareas y live". Estado: **PROPUESTAS**
 > (elegir paquete y ejecutar). Base ya construida hoy: analítica por ítem/palabra

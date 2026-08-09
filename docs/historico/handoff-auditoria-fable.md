@@ -1,5 +1,10 @@
 # HANDOFF — Auditoría integral (Fable, 2026-07-20) → tareas para Opus 4.8
 
+> 🗄️ **HISTÓRICO — EJECUTADO en su mayoría.** Se archivó en v1.51.424 al consolidar la
+> documentación: los 20+ arreglos están en el código; lo que quedaba (veredicto autodeclarado, tope por identidad, carrera sin validador) son ahora LÍMITES PERMANENTES declarados en `leyes.md` §22.
+> Se conserva porque explica **por qué** se hizo así, que es lo que un plan
+> terminado sigue valiendo. **No es trabajo pendiente.**
+
 Auditoría con 4 agentes en paralelo (datos/sync · live/tiempo real · seguridad ·
 robustez UI), hallazgos verificados en código antes de registrarse. **Excluye** lo ya
 documentado en CLAUDE.md como deuda A (lost-update `state`), B (doble puntuación race),

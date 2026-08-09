@@ -32,20 +32,41 @@ Qué leer según lo que necesites. La **fuente de verdad del estado actual** es
 | **Añadir una plantilla nueva** | `../templates/HOW_TO_ADD.md` (o `node tools/new-template.mjs`) |
 | **Probar** (suites Node + self-tests + headless) | `testing.md` |
 
-## Bugs abiertos / handoffs
-| Tema | Doc |
+## Los SEIS documentos vivos (todo lo demás es referencia o histórico)
+
+Consolidado en v1.51.424: `docs/` tenía 35 archivos, 15 de ellos handoffs, y la
+mayoría describían trabajo TERMINADO. Un índice que ofrece quince sitios donde
+mirar entrena a no mirar en ninguno — y esta semana dos avisos falsos nos
+costaron tiempo por esa misma razón. Lo resuelto se archivó en `historico/`
+(con su cabecera diciendo qué se hizo y dónde vive la regla ahora); lo vivo
+quedó aquí.
+
+| Doc vivo | Para qué, y por qué sigue vivo |
 |---|---|
-| **Emparejar no conecta en vertical** (SIN RESOLVER) | `handoff-emparejar-vertical.md` |
+| **`norte.md`** | QUÉ construimos y para quién. Manda sobre todo lo demás |
+| **`leyes.md`** | CÓMO se construye: las doce leyes, cada una con el test que la vigila |
+| **`handoff-acceso-docente.md`** | PIN/NFC para pizarras (U2-U4): trabajo futuro pedido por el usuario, aún sin hacer |
+| **`handoff-google-classroom.md`** | Guía de CONFIGURACIÓN en Google Cloud: se necesita cada vez que se toque Classroom |
+| **`handoff-seguridad-pb.md`** | Las fases de seguridad de PB; su Fase 3 (validador en el servidor) es hoy un límite declarado en §22 |
+| **`handoff-player-frame.md`** | Etapas 1 y 2 PENDIENTES: el plan para cuando se vuelva al problema del marco |
+
+Se le suman dos que no son handoffs sino REFERENCIA permanente:
+`infraestructura-pb.md` (cómo está la Pi de verdad) y `handoff-esquema-pb.md`
+(el diseño del esquema; el dueño ejecutable es `views/adminView.js` + `tools/check-pb.sh`).
+
+Y el **diagnóstico del reloj** (`handoff-reloj-aparatos.md`) se queda a la vista
+aunque esté resuelto: lo que enseñó —que todo lo que DIFIERE entre aparatos nos
+era invisible— vale más que el fallo.
 
 ## Histórico / temas puntuales
 | Tema | Doc |
 |---|---|
 | Identidad (anon id + auth PocketBase) | `identidad.md` |
 | Auditoría del camino SOLO (resuelta) | `auditoria-solo.md` |
+| **Planes YA EJECUTADOS** (puntuación · biblioteca pública · analítica · auditoría Fable · deuda A · Emparejar vertical · previews · mejoras live/tareas · centralización) | `historico/handoff-*.md` — cada uno con su cabecera de estado |
 | Arquitectura completa (ANTERIOR a PocketBase, ver banner) | `historico/arquitectura.md` |
 | Snapshot antiguo (handoff v1.31.4) | `historico/ESTADO.md` |
 
-> Nota: `auditoria-solo.md` describe una auditoría ya resuelta (queda como
-> registro). `historico/arquitectura.md` y `historico/ESTADO.md` son snapshots
-> ANTERIORES a la migración a PocketBase — llevan su propio aviso. Para el
-> estado vigente, `CLAUDE.md` (raíz) manda siempre.
+> Un documento archivado **no es basura**: explica POR QUÉ se hizo así, que es
+> lo que un plan terminado sigue valiendo. Lo que ya no hace es fingir que hay
+> trabajo pendiente. Para el estado vigente, `CLAUDE.md` (raíz) manda siempre.

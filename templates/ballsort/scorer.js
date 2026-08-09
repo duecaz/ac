@@ -1,5 +1,5 @@
 // Ball Sort scoring. ESCALA PROPIA (0-1000) a propósito, no la común de
-// awardPoints (decisión P5, docs/handoff-puntuacion.md §6): aquí los puntos
+// awardPoints (decisión P5, docs/historico/handoff-puntuacion.md §6): aquí los puntos
 // codifican la EFICIENCIA (menos movimientos / menos tiempo = más puntos), que
 // la escala plana no puede expresar, y un tablero en vivo nunca comparte sesión
 // con otra plantilla, así que no hay informes mezclados que descuadrar.

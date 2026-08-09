@@ -237,7 +237,7 @@ export async function render${fn}Player(rootSel, activity, opts = {}) {
 files['player.js'] = shell === 'sequential' ? playerSequential : playerFreeform;
 
 files['scorer.js'] = `// Scorer PURO de ${label} — contrato: SIEMPRE {correct, points, hits, total}.
-// hits/total = MÉRITO (docs/handoff-puntuacion.md): binarias 1/1 ó 0/1; por
+// hits/total = MÉRITO (docs/historico/handoff-puntuacion.md): binarias 1/1 ó 0/1; por
 // partes (p.ej. tildes) 3/8; total:0 = ítem no auto-puntuable. correct:null =
 // sin clave. Convención de puntos en core/scoring/ (ítem → config → 1).
 import { basePoints, wrongPoints } from '${REL}/core/scoring/index.js';

@@ -2,7 +2,7 @@
 // docente). Genérica para cualquier plantilla (barras por parte, coloreadas por %
 // de acierto de la clase) + heatmap sobre el texto para tildes/comas. Se monta en
 // el podio del host (hostLive), en el informe de sesión y en los intentos de
-// tarea (F3). Ver docs/handoff-analitica-items.md.
+// tarea (F3). Ver docs/historico/handoff-analitica-items.md.
 import { escapeHtml } from '../core/html.js';
 import { sessionItems } from '../kernel/session/engine.js';
 import { getTemplate } from '../core/registry.js';

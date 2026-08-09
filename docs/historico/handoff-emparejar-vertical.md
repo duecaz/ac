@@ -1,5 +1,10 @@
 # HANDOFF — Emparejar (match): conectar en VERTICAL ✅ RESUELTO (v1.51.178 + v1.51.179)
 
+> 🗄️ **HISTÓRICO — RESUELTO (v1.51.180).** Se archivó en v1.51.424 al consolidar la
+> documentación: el motor de cuerdas y el andamio portrait están en `core/connectRope.js` y `styles/match.css`.
+> Se conserva porque explica **por qué** se hizo así, que es lo que un plan
+> terminado sigue valiendo. **No es trabajo pendiente.**
+
 > **SEGUNDA CAUSA (v1.51.179), la que de verdad veía el usuario como "no conecta":**
 > tras arreglar el corredor (abajo), en portrait las cuerdas VERTICALES (dos tarjetas
 > frente a frente, misma columna → mismos x) **no se dibujaban**. Reproducido headless:

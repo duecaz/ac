@@ -1,5 +1,10 @@
 # HANDOFF — Deuda A: lost-update en el blob `state` de `live_sessions`
 
+> 🗄️ **HISTÓRICO — RESUELTO (v1.51.272).** Se archivó en v1.51.424 al consolidar la
+> documentación: `live_players` con su índice único está en la Pi; la regla, en `leyes.md` §21.
+> Se conserva porque explica **por qué** se hizo así, que es lo que un plan
+> terminado sigue valiendo. **No es trabajo pendiente.**
+
 > Estado: **EJECUTADA (v1.51.272)** — A1-A4 completas. `live_players` (fila por
 > jugador) + adaptador dual + marcador derivado + `tools/stress-live.mjs`. El
 > `joinSession` de 30 alumnos ya no se pisa: cada uno CREA su fila. Falta SOLO el

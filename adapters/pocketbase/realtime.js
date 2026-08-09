@@ -740,7 +740,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
     // Carrera (opción A analítica): a diferencia de submitAnswer, aquí llega TODO
     // intento. El PRIMERO (bien o mal) crea la fila y captura v0/c0 (primer intento)
     // para el análisis de clase, SIN cambiar el juego; los reintentos correctos solo
-    // AVANZAN el progreso (value) — v0/c0 son inmutables. Ver docs/handoff-analitica-items.md.
+    // AVANZAN el progreso (value) — v0/c0 son inmutables. Ver docs/historico/handoff-analitica-items.md.
     //
     // ANTI-TRAMPA (C6): el veredicto/los puntos del CLIENTE son solo un hint de
     // flujo — la fila se guarda SIEMPRE `scored:false, points:0`, como las
