@@ -345,7 +345,7 @@ for (const t of seeded) {
               }
               return `rgb(${Math.round(base.r)},${Math.round(base.g)},${Math.round(base.b)})`;
             };
-            let minPct = 100, peorTexto = '', peorRatio = 21, peorC = '';
+            let minPct = 100, peorTexto = '', peorRatio = 21, peorC = '', sinMedir = 0;
             const vistos = [];
             // TAMAÑO: solo dentro de la caja de la ronda.
             for (const el of caja.querySelectorAll('*')) {

@@ -215,6 +215,12 @@ async function renderHost(rootSel, code, sessionId, activity) {
       status: 'running', phase: 'question', current_item: idx,
       answers_open_at: new Date(openAt).toISOString(),
       deadline: new Date(openAt + windowMs).toISOString(),
+      // §26 · el ritmo va EN LA SALA: el dial del lobby puede subir la lectura
+      // por encima de lo que declara la actividad, y el cinturón del alumno
+      // (core/liveGate.js) acota la espera con ESTE número — si leyera el de la
+      // actividad, subir el dial rompería R-1 (el alumno abriría antes de
+      // answers_open_at). Cazado por la revisión de v1.51.429.
+      read_secs: readSecs,
     });
   }
 

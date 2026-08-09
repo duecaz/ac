@@ -419,6 +419,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         current_item: rec.state?.currentItem,
         deadline: rec.state?.deadline ?? null,
         answers_open_at: rec.state?.answersOpenAt ?? null,
+        read_secs: rec.state?.readSecs ?? null,
         loop: rec.state?.loop ?? null,
         end_policy: rec.state?.endPolicy ?? null,
         end_n: rec.state?.endN ?? null,
@@ -438,6 +439,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         current_item: rec.state?.currentItem,
         deadline: rec.state?.deadline ?? null,
         answers_open_at: rec.state?.answersOpenAt ?? null,
+        read_secs: rec.state?.readSecs ?? null,
         loop: rec.state?.loop ?? null,
         end_policy: rec.state?.endPolicy ?? null,
         end_n: rec.state?.endN ?? null,
@@ -585,6 +587,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       // temporizador local — así todos los móviles leen lo mismo y quien entra
       // tarde o recarga ve el tiempo que queda de verdad.
       if ('answers_open_at' in patch) engine.state.answersOpenAt = patch.answers_open_at ?? null;
+      if ('read_secs' in patch) engine.state.readSecs = patch.read_secs ?? null;
       // POLÍTICA DE FIN de carrera/tablero (core/liveEnd.js): vive en la sala
       // porque el ALUMNO también la necesita — es lo que le dice si espera un
       // reloj o a sus compañeros, en vez de un "esperando…" mudo.

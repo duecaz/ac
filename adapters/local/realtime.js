@@ -100,6 +100,7 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
       if ('deadline' in patch) room.deadline = patch.deadline ?? null;
       // R-1 · espejo del driver PB: el instante de apertura de respuestas.
       if ('answers_open_at' in patch) room.answersOpenAt = patch.answers_open_at ?? null;
+      if ('read_secs' in patch) room.readSecs = patch.read_secs ?? null;
       // Espejo: la política de fin de carrera/tablero (core/liveEnd.js).
       if ('loop' in patch) s.loop = patch.loop ?? null;   // el BUCLE de la sala (§26)
       if ('end_policy' in patch) room.endPolicy = patch.end_policy ?? null;
@@ -263,6 +264,7 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
         started_at: r.startedAt ?? null,
         loop: r.state?.loop ?? null,
         answers_open_at: r.answersOpenAt ?? null,
+        read_secs: r.readSecs ?? null,
         end_policy: r.endPolicy ?? null,
         end_n: r.endN ?? null,
         activity_snap: r.activity,

@@ -398,7 +398,10 @@ export async function renderPlay(rootSel, code) {
     // vez (el instante de la sala sigue "en el futuro" para este aparato) y el
     // alumno no llegaría a responder nunca — que es el fallo que veníamos a
     // arreglar, disfrazado de cuentas atrás cortas.
-    const readMs = lecturaHechaEn === idx ? 0 : readWindowMs(activity);
+    // El tope sale de LA SALA (`read_secs`, lo escribe openQuestion con el dial
+    // del lobby): la actividad solo es respaldo para salas de antes del campo.
+    const readMs = lecturaHechaEn === idx ? 0
+      : (Number.isFinite(session.read_secs) ? session.read_secs * 1000 : readWindowMs(activity));
     const { reading, waitMs } = questionGate({
       openAtMs, deadlineMs, now: serverNow(), readMs,
     });

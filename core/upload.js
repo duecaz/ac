@@ -40,6 +40,18 @@ const RECOMPRIMIBLES = new Set(['image/png', 'image/jpeg', 'image/webp']);
 const LADO_MAX = 1280;          // px del lado mayor tras reescalar
 const CALIDADES = [0.85, 0.7, 0.55, 0.4];
 
+/** ¿El lado mayor supera LADO_MAX? Best-effort: sin APIs de imagen, `false`
+ *  (se comporta como siempre — aceptar si cabe en bytes). */
+async function superaLadoMax(file) {
+  if (typeof createImageBitmap !== 'function') return false;
+  try {
+    const bmp = await createImageBitmap(file);
+    const lado = Math.max(bmp.width, bmp.height);
+    bmp.close?.();
+    return lado > LADO_MAX;
+  } catch { return false; }
+}
+
 async function comprimir(file) {
   // Sin las APIs (navegador viejo, test en Node) no se comprime: se cae al
   // comportamiento de siempre (aceptar si cabe, rebotar si no).
@@ -66,12 +78,21 @@ export async function uploadMedia(file) {
   if (!file) throw new Error('no file');
   if (!ALLOWED[file.type]) throw new Error(`Tipo no permitido: ${file.type || 'desconocido'}`);
 
-  // 1º intenta COMPRIMIR lo recomprimible que no cabe (o que cabe pero viene
-  // enorme de píxeles: reescalar también acelera el render en gama baja).
-  if (RECOMPRIMIBLES.has(file.type) && file.size > IMG_MAX_BYTES) {
-    const url = await comprimir(file);
-    if (url) return url;
-    throw new Error(`Imagen demasiado grande (${Math.round(file.size / 1024)} KB) incluso comprimida. Recórtala o usa una más pequeña.`);
+  // 1º intenta COMPRIMIR lo recomprimible que no cabe — o que cabe en BYTES
+  // pero viene enorme de PÍXELES (un JPEG progresivo de 150 KB puede medir
+  // 6000×4000): reescalar también acelera el render en gama baja (R1). La
+  // condición solo miraba los bytes y el comentario prometía lo otro — la
+  // revisión de v1.51.429 los puso de acuerdo: ahora se miran las DOS cosas.
+  if (RECOMPRIMIBLES.has(file.type)) {
+    const pasaBytes = file.size > IMG_MAX_BYTES;
+    const pasaPixeles = !pasaBytes && await superaLadoMax(file);
+    if (pasaBytes || pasaPixeles) {
+      const url = await comprimir(file);
+      if (url) return url;
+      // Sin APIs de canvas (test en Node, navegador viejo): si al menos cabía
+      // en bytes, se acepta como antes; si no cabía, se explica.
+      if (pasaBytes) throw new Error(`Imagen demasiado grande (${Math.round(file.size / 1024)} KB) incluso comprimida. Recórtala o usa una más pequeña.`);
+    }
   }
   if (file.size > IMG_MAX_BYTES) {
     // GIF/SVG que no caben: no se recomprimen (se perdería la animación / no aplica).
