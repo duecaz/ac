@@ -871,7 +871,7 @@ function renderPanel(rootSel) {
             // `assignment_attempts.answers`, `live_answers.v0/c0`) → un update de la
             // app no exige recrear colecciones a mano.
             const patchBody = { ...rulesFor(col.name) };
-            let addedFields = [], addedIdx = [];
+            let addedFields = [], addedIdx = [], fixedAttrs = [];
             try {
               const cur = await (await fetch(`${PB_URL}/api/collections/${existingId}`, { headers })).json();
               const curFields = cur[schemaKey] || cur.fields || cur.schema || [];
@@ -894,7 +894,6 @@ function renderPanel(rootSel) {
               // nunca los rellenos por defecto, y sin tocar campos de otras
               // colecciones/proyectos. Subir o fijar maxSize no reescribe filas:
               // PocketBase lo aplica en las escrituras siguientes.
-              let fixedAttrs = [];
               {
                 const base = patchBody[schemaKey] ? [...patchBody[schemaKey]] : [...curFields];
                 let cambió = false;
@@ -905,10 +904,15 @@ function renderPanel(rootSel) {
                   if (i < 0) continue;
                   for (const k of declarados) {
                     const actual = base[i][k] ?? (base[i].options || {})[k];
-                    if (actual !== undefined && String(actual) !== String(want[k])) {
-                      base[i] = { ...base[i], [k]: want[k] };
-                      if (base[i].options && k in base[i].options) base[i].options = { ...base[i].options, [k]: want[k] };
-                      fixedAttrs.push(`${want.name}.${k}: ${actual} → ${want[k]}`);
+                    // El valor DESEADO puede vivir plano (PB ≥0.23) o en
+                    // `options` (<0.23, buildField lo mete ahí) — mirar ambos,
+                    // o en la rama vieja se "corregía" a undefined (lo cazó la
+                    // sonda de esta misma versión).
+                    const deseado = want[k] ?? (want.options || {})[k];
+                    if (actual !== undefined && deseado !== undefined && String(actual) !== String(deseado)) {
+                      base[i] = { ...base[i], [k]: deseado };
+                      if (base[i].options && k in base[i].options) base[i].options = { ...base[i].options, [k]: deseado };
+                      fixedAttrs.push(`${want.name}.${k}: ${actual} → ${deseado}`);
                       cambió = true;
                     }
                   }

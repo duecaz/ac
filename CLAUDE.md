@@ -486,7 +486,7 @@ usuario: se deja pendiente, no bloquea el resto.
 - **Contra PocketBase REAL**: `race-e2e` y `stress-live 30` nunca se han corrido
   desde aquí (piden credenciales y la Pi).
 
-### 🟠 PASO DEL USUARIO (v1.51.426) — re-correr "Crear colecciones" UNA vez
+### 🟠 PASO DEL USUARIO (v1.51.428) — re-correr "Crear colecciones" UNA vez (la v1.51.427 tenía un ReferenceError de ámbito en el corrector, cazado por el usuario y arreglado con sonda E2E contra un PB simulado)
 El panel ahora **CORRIGE él mismo** los atributos declarados que hayan derivado
 (autorizado por el dueño, 2026-08-09: «establécelo de una vez»): al pulsar
 `#/admin` → "Crear colecciones", `activities.data.maxSize` pasa de 0 a **2097152**
