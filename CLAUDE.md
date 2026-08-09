@@ -402,6 +402,21 @@ sobre la tarjeta). Dos fixes:
 La entrada de `CONOCIDOS` en `tools/matrix-smoke.mjs` se retiró: la matriz juega
 ahora 30/30 y una regresión aquí la tumba.
 
+### ✅ HECHO (v1.51.425) — los tests que vigilan la REDACCIÓN, medidos y en ratchet
+Descubierto trabajando, no auditando: al mover los relojes a la hora común (§22-5) —un
+refactor correcto— una suite falló porque exigía la línea literal
+`lastQuestionShownAt = openAtMs || clock.now()`. Una cita de fuente da TRABAJO cuando
+cambias algo bien hecho, y SILENCIO cuando rompes el comportamiento por otro camino.
+`tests/citasFuente.test.mjs` las cuenta (86 en 22 suites) y las congela: **el número solo
+baja**. No se pueden eliminar todas —hay invariantes de estructura que solo se ven
+leyendo—, pero cada una nueva tiene que justificar por qué no es un test de comportamiento
+(`citaDeFuente()` en `tests/helpers/fuente.mjs` las marca y, al fallar, explica las dos
+posibilidades en vez de gritar "roto").
+**El patrón a repetir** (ejemplar hecho): `roundsLoop` bajó de 12 a 8 porque el cálculo del
+puesto y la distancia del alumno se extrajo de la vista a `core/liveRank.js standingOf`
+(§21, el dueño del ranking) — ahora el test comprueba NÚMEROS (empate, primero, ausente),
+no líneas. No se borra la cita: se mueve el cálculo a donde se puede ejecutar.
+
 ### ✅ HECHO (v1.51.423) — R1 «se lee a 3 m» deja de ser una promesa sin red
 La matriz MIDE ahora el **contraste real** (color computado contra el fondo real, componiendo
 alfa y saltando degradados) de todo el texto del marco, en las 13 plantillas × 3 modos.

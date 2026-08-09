@@ -29,6 +29,7 @@ import { spinTarget, normalizeRotation, animateSpin, SPIN_DUR_PICK } from '../te
 import { qlBoxesHtml } from '../core/questionLive.js';
 import { RACE_FLASH_MS, questionWindowMs, readWindowMs, mmss } from '../core/timings.js';
 import { supportsLoop, pointsModeFor, racePassed } from '../core/liveLoops.js';
+import { standingOf } from '../core/liveRank.js';
 import { endPolicyOf, waitingInfo } from '../core/liveEnd.js';
 
 
@@ -542,14 +543,9 @@ export async function renderPlay(rootSel, code) {
     // pantalla se pinta igual sin esa línea.
     let standing = null;
     try {
-      const lb = await leaderboard(session.id, 100);
-      const meIdx = lb.findIndex(p => p.id === player.playerId);
-      if (meIdx >= 0) {
-        const me = lb[meIdx];
-        const above = meIdx > 0 ? lb[meIdx - 1] : null;
-        standing = { rank: meIdx + 1, total: lb.length, score: me.score,
-                     gap: above ? Math.max(0, above.score - me.score) : 0, aboveName: above?.name || null };
-      }
+      // El cálculo vive en el DUEÑO del ranking (§21) y es puro, así que su test
+      // comprueba números en vez de citar estas líneas.
+      standing = standingOf(await leaderboard(session.id, 100), player.playerId);
     } catch { /* sin marcador: se pinta el resultado igual */ }
     const standingHtml = !standing ? '' : `
       <p class="h5 mt-3 mb-0">${standing.rank}º de ${standing.total} · ${standing.score} pts</p>

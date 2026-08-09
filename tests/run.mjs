@@ -98,6 +98,7 @@ console.log('\n▶ layers'); await import('./layers.test.mjs');
 console.log('\n▶ moduleRefs'); await import('./moduleRefs.test.mjs');
 console.log('\n▶ huerfanos'); await import('./huerfanos.test.mjs');
 console.log('\n▶ rutasNorte'); await import('./rutasNorte.test.mjs');
+console.log('\n▶ citasFuente'); await import('./citasFuente.test.mjs');
 console.log('\n▶ scoringSources'); await import('./scoringSources.test.mjs');
 console.log('\n▶ persistPolicy'); await import('./persistPolicy.test.mjs');
 console.log('\n▶ deadlineTicker'); await import('./deadlineTicker.test.mjs');

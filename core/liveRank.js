@@ -82,3 +82,33 @@ export function rankPlayers(players, rows, limit = 50) {
     .slice(0, limit)
     .map((p, i) => ({ rank: i + 1, id: p.id, name: p.name, score: p.score }));
 }
+
+/**
+ * MI PUESTO Y A CUÁNTO ESTOY DEL DE ARRIBA (R-2 · el enganche entre preguntas).
+ *
+ * Vivía suelto dentro de `views/studentLive.js`, y por eso su test tenía que
+ * CITAR LÍNEAS del fichero («que aparezca `standing.rank`») en vez de comprobar
+ * el resultado. Una cita así da trabajo cuando refactorizas bien y silencio
+ * cuando rompes el cálculo de otra forma. Aquí es una función pura que se puede
+ * ejecutar: mismo dueño que el ranking (§21), y el test comprueba NÚMEROS.
+ *
+ * @param {Array<{id:string,name:string,score:number}>} lb  marcador ya ordenado
+ * @param {string} playerId
+ * @returns {null|{rank:number,total:number,score:number,gap:number,aboveName:string|null}}
+ *   `null` si el jugador no está en el marcador (la pantalla se pinta igual sin
+ *   esta línea: es adorno útil, no información crítica).
+ */
+export function standingOf(lb, playerId) {
+  const lista = Array.isArray(lb) ? lb : [];
+  const i = lista.findIndex(p => p && p.id === playerId);
+  if (i < 0) return null;
+  const yo = lista[i];
+  const arriba = i > 0 ? lista[i - 1] : null;
+  return {
+    rank: i + 1,
+    total: lista.length,
+    score: yo.score ?? 0,
+    gap: arriba ? Math.max(0, (arriba.score ?? 0) - (yo.score ?? 0)) : 0,
+    aboveName: arriba?.name || null,
+  };
+}

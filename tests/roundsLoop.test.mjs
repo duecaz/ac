@@ -13,6 +13,8 @@
 //
 // Run: node tests/roundsLoop.test.mjs
 import assert from 'node:assert';
+import { standingOf } from '../core/liveRank.js';
+import { citaDeFuente } from './helpers/fuente.mjs';
 import { readFileSync } from 'node:fs';
 import { readSeconds, readWindowMs, questionWindowMs, READ_SECONDS_DEFAULT, READ_SECONDS_MAX,
          itemSeconds, itemWindowMs, ITEM_SECONDS_MIN, ITEM_SECONDS_MAX } from '../core/timings.js';
@@ -150,14 +152,40 @@ const read = (p) => readFileSync(new URL(p, new URL('..', import.meta.url)), 'ut
 }
 
 // ── 5. R-2: el alumno ve su puesto y su distancia, del marcador del servidor ─
+// Esto se comprobaba CITANDO LÍNEAS de `studentLive` («que aparezca
+// standing.rank»). Ahora el cálculo vive en el dueño del ranking
+// (`core/liveRank.js standingOf`, §21) y se ejecuta de verdad: se comprueban
+// NÚMEROS, que es lo que le importa al alumno.
 {
-  const student = read('views/studentLive.js');
-  assert.match(student, /await leaderboard\(session\.id/, 'el puesto sale del marcador DERIVADO del servidor, no de una cuenta local');
-  assert.match(student, /standing\.rank/, 'y se pinta el puesto');
-  assert.match(student, /puntos' } de \$\{escapeHtml\(standing\.aboveName\)\}|de \$\{escapeHtml\(standing\.aboveName\)\}/,
-    'con la distancia al de arriba (el motor de enganche de Kahoot)');
-  assert.match(student, /vas primero/, 'y el caso de ir primero está contemplado');
-  ok('R-2: puesto y distancia en el móvil, desde la misma fuente que el podio');
+  const lb = [
+    { id: 'a', name: 'Ana',  score: 900 },
+    { id: 'b', name: 'Beto', score: 700 },
+    { id: 'c', name: 'Caro', score: 700 },
+    { id: 'd', name: 'Dani', score: 100 },
+  ];
+  const beto = standingOf(lb, 'b');
+  assert.strictEqual(beto.rank, 2, 'el puesto es la posición en el marcador del servidor');
+  assert.strictEqual(beto.total, 4);
+  assert.strictEqual(beto.gap, 200, 'la distancia al de ARRIBA es lo que engancha entre preguntas');
+  assert.strictEqual(beto.aboveName, 'Ana', 'y se dice de quién');
+
+  const ana = standingOf(lb, 'a');
+  assert.strictEqual(ana.rank, 1);
+  assert.strictEqual(ana.aboveName, null, 'el primero no tiene a nadie arriba (la vista pinta «¡vas primero!»)');
+  assert.strictEqual(ana.gap, 0);
+
+  const caro = standingOf(lb, 'c');
+  assert.strictEqual(caro.gap, 0, 'empatado: distancia 0');
+  assert.strictEqual(caro.aboveName, 'Beto', 'y con quién empata');
+
+  assert.strictEqual(standingOf(lb, 'zz'), null, 'quien no está en el marcador no rompe la pantalla');
+  assert.strictEqual(standingOf(null, 'a'), null, 'ni un marcador que no llegó');
+
+  // Lo único que SIGUE siendo cita de fuente: que la vista use al dueño en vez
+  // de recalcularlo por su cuenta. Eso no se puede ejecutar, solo leer.
+  citaDeFuente(read('views/studentLive.js'), /standingOf\(await leaderboard\(/,
+    'el móvil pide el puesto al dueño del ranking, no lo cuenta él', 'views/studentLive.js');
+  ok('R-2: puesto, distancia y empate SE CALCULAN bien (números, no líneas de código)');
 }
 
 console.log(`\nroundsLoop.test: ${passed} checks passed`);
