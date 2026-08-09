@@ -885,6 +885,36 @@ function renderPanel(rootSel) {
               // el ÚNICO (session,player,item) de la deuda F, o (session,name) de la
               // deuda A) NUNCA se crea si la colección ya existía → el fix no aplica.
               // Deduplicamos por NOMBRE; nunca quitamos los que ya hay.
+              // ATRIBUTOS DECLARADOS que derivaron (p.ej. `activities.data.maxSize`
+              // en 0 = sin tope, cuando §25 exige 2097152). Hasta v1.51.425 esto
+              // solo se REPORTABA («AJUSTAR A MANO»): cambiar un atributo en una
+              // Pi compartida era decisión del dueño. El dueño la tomó
+              // (2026-08-09: «establécelo de una vez»), así que ahora se CORRIGE
+              // — solo atributos que el DEFS declara explícitamente (__declara),
+              // nunca los rellenos por defecto, y sin tocar campos de otras
+              // colecciones/proyectos. Subir o fijar maxSize no reescribe filas:
+              // PocketBase lo aplica en las escrituras siguientes.
+              let fixedAttrs = [];
+              {
+                const base = patchBody[schemaKey] ? [...patchBody[schemaKey]] : [...curFields];
+                let cambió = false;
+                for (const want of (col[schemaKey] || [])) {
+                  const declarados = (want.__declara || []).filter(k => !['name', 'type'].includes(k));
+                  if (!declarados.length) continue;
+                  const i = base.findIndex(f => f.name === want.name);
+                  if (i < 0) continue;
+                  for (const k of declarados) {
+                    const actual = base[i][k] ?? (base[i].options || {})[k];
+                    if (actual !== undefined && String(actual) !== String(want[k])) {
+                      base[i] = { ...base[i], [k]: want[k] };
+                      if (base[i].options && k in base[i].options) base[i].options = { ...base[i].options, [k]: want[k] };
+                      fixedAttrs.push(`${want.name}.${k}: ${actual} → ${want[k]}`);
+                      cambió = true;
+                    }
+                  }
+                }
+                if (cambió) patchBody[schemaKey] = base;
+              }
               const idxName = (sql) => (String(sql).match(/INDEX\s+[`"']?(\w+)[`"']?/i) || [])[1] || sql;
               const curIdx = cur.indexes || [];
               const curIdxNames = new Set(curIdx.map(idxName));
@@ -905,7 +935,8 @@ function renderPanel(rootSel) {
               body: JSON.stringify(patchBody),
             });
             if (pr.ok) {
-              const extras = [...addedFields.map(f => `campo ${f}`), ...addedIdx.map(i => `índice ${i}`)];
+              const extras = [...addedFields.map(f => `campo ${f}`), ...addedIdx.map(i => `índice ${i}`),
+                              ...fixedAttrs.map(a => `atributo ${a}`)];
               // VERIFICACIÓN post-aplicación: se RELEE el servidor y se compara
               // contra el DEF. La salida deja de ser "lo que intenté" y pasa a ser
               // "lo que HAY" — un campo que falte se dice con nombre, nunca más un

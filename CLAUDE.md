@@ -472,18 +472,22 @@ usuario: se deja pendiente, no bloquea el resto.
 - **Contra PocketBase REAL**: `race-e2e` y `stress-live 30` nunca se han corrido
   desde aquí (piden credenciales y la Pi).
 
-### 🟠 PENDIENTE EN LA PI (v1.51.420) — un solo ajuste a mano
-Tras "Crear colecciones" del usuario, las 13 colecciones existen y sus reglas están
-al día. Queda UNA deriva real de atributo, que el panel NO auto-corrige a propósito
-(cambiar un campo con datos dentro, en una Pi compartida, es decisión del dueño):
-- **`activities.data.maxSize`: el servidor tiene 0 (sin tope) y §25 exige 2097152.**
-  Mientras siga en 0, el tope de 2 MB por actividad es solo un aviso del cliente.
-- `activities.data.required` está en `true` y el esquema dice `false`: el servidor es
-  MÁS estricto, así que no rompe nada hoy (siempre se escribe `data`). Alinearlo es
-  higiene, no urgencia.
-- Los avisos de `tags.maxSize` y `overrides.maxSize` eran **falsa alarma del propio
-  verificador** (comparaba rellenos por defecto, no lo declarado): corregido en
-  v1.51.420 — solo se reportan los atributos que el DEFS declara.
+### 🟠 PASO DEL USUARIO (v1.51.426) — re-correr "Crear colecciones" UNA vez
+El panel ahora **CORRIGE él mismo** los atributos declarados que hayan derivado
+(autorizado por el dueño, 2026-08-09: «establécelo de una vez»): al pulsar
+`#/admin` → "Crear colecciones", `activities.data.maxSize` pasa de 0 a **2097152**
+y `data.required` se alinea a `false`. Solo toca atributos que el DEFS declara
+explícitamente (`__declara`) y solo en NUESTRAS colecciones — nada de otros
+proyectos de la Pi. Subir/fijar `maxSize` no reescribe filas: PocketBase lo aplica
+en las escrituras siguientes. La salida lo nombra («atributo data.maxSize: 0 →
+2097152»); si tras aplicar sigue saliendo «AJUSTAR A MANO», eso ya sería un fallo
+nuestro y hay que reportarlo.
+Además (misma versión): **las imágenes se COMPRIMEN solas** al subirlas
+(`core/upload.js`): reescala a 1280 px de lado mayor y recodifica a WebP bajando
+calidad hasta entrar en los 200 KB. SIN librería externa a propósito — el
+navegador lo trae nativo (canvas) y una dependencia añadiría justo el peso que
+queremos quitar (R1). GIF (animación) y SVG no se recomprimen. Una foto de móvil
+de 3-8 MB ya no rebota: entra convertida.
 
 ### 🟡 DEUDA CONDICIONADA — partir los 4 módulos grandes (TRAS los tests del compañero)
 Registrada en la cola del norte (#5). NO ejecutar hasta que el compañero termine su ronda

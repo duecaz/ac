@@ -26,11 +26,56 @@ export const ACTIVITY_SIZE_WARN_BYTES = QUOTAS.activityBytes * QUOTAS.activityWa
 
 export function activityTooLarge(a) { return checkActivitySize(a).level !== 'ok'; }
 
+// ── COMPRESIÓN AUTOMÁTICA (v1.51.426, decisión del usuario) ──────────────────
+// Antes una foto de móvil (3-8 MB) REBOTABA con «máximo 200 KB» y el profe
+// tenía que reducirla él, con la clase esperando. Ahora se comprime aquí:
+// se REESCALA al lado máximo útil (una imagen inline se ve en tarjetas y
+// rondas, nunca a pantalla 4K) y se recodifica a WebP bajando calidad hasta
+// entrar en el tope de §25. SIN librería externa a propósito: el navegador lo
+// trae nativo (canvas + toBlob) y una dependencia añadiría justo el peso que
+// queremos quitar (R1: pizarras de gama baja).
+// GIF (animación) y SVG (vectorial, ya ligero) no se recomprimen: se aceptan
+// si caben y se explican si no.
+const RECOMPRIMIBLES = new Set(['image/png', 'image/jpeg', 'image/webp']);
+const LADO_MAX = 1280;          // px del lado mayor tras reescalar
+const CALIDADES = [0.85, 0.7, 0.55, 0.4];
+
+async function comprimir(file) {
+  // Sin las APIs (navegador viejo, test en Node) no se comprime: se cae al
+  // comportamiento de siempre (aceptar si cabe, rebotar si no).
+  if (typeof createImageBitmap !== 'function' || typeof document === 'undefined') return null;
+  try {
+    const bmp = await createImageBitmap(file);
+    const escala = Math.min(1, LADO_MAX / Math.max(bmp.width, bmp.height));
+    const w = Math.max(1, Math.round(bmp.width * escala));
+    const h = Math.max(1, Math.round(bmp.height * escala));
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(bmp, 0, 0, w, h);
+    bmp.close?.();
+    for (const q of CALIDADES) {
+      const url = canvas.toDataURL('image/webp', q);
+      // data-URL ≈ bytes·4/3: comparar en su propia unidad, no contra file.size.
+      if (url.length <= IMG_MAX_BYTES * 4 / 3 && url.startsWith('data:image/webp')) return url;
+    }
+    return null;                 // ni a calidad mínima entra (imagen enorme)
+  } catch { return null; }       // best-effort: si falla, manda el camino clásico
+}
+
 export async function uploadMedia(file) {
   if (!file) throw new Error('no file');
   if (!ALLOWED[file.type]) throw new Error(`Tipo no permitido: ${file.type || 'desconocido'}`);
+
+  // 1º intenta COMPRIMIR lo recomprimible que no cabe (o que cabe pero viene
+  // enorme de píxeles: reescalar también acelera el render en gama baja).
+  if (RECOMPRIMIBLES.has(file.type) && file.size > IMG_MAX_BYTES) {
+    const url = await comprimir(file);
+    if (url) return url;
+    throw new Error(`Imagen demasiado grande (${Math.round(file.size / 1024)} KB) incluso comprimida. Recórtala o usa una más pequeña.`);
+  }
   if (file.size > IMG_MAX_BYTES) {
-    throw new Error(`Imagen demasiado grande (${Math.round(file.size / 1024)} KB). Máximo 200 KB.`);
+    // GIF/SVG que no caben: no se recomprimen (se perdería la animación / no aplica).
+    throw new Error(`Imagen demasiado grande (${Math.round(file.size / 1024)} KB). Máximo ${Math.round(IMG_MAX_BYTES / 1024)} KB.`);
   }
   // Lee como data-URL (base64 inline). No hay subida a ningún bucket.
   return await new Promise((resolve, reject) => {

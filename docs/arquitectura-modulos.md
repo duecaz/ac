@@ -33,7 +33,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3797 | 19 · 2941 | 0.77 |
 | **informes/tareas** | después de clase | 10 · 1029 | 4 · 435 | 0.42 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5474 | 12 · 975 | 0.18 |
-| **infra/común** | todo lo anterior | 120 · 11950 | 44 · 4760 | 0.40 |
+| **infra/común** | todo lo anterior | 120 · 12026 | 44 · 4760 | 0.40 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -103,7 +103,7 @@ graph TD
 | Capa | Módulos más grandes |
 |---|---|
 | **arranque** | `main.teacher.js` (165) · `main.embed.js` (68) · `main.student.js` (49) |
-| **vistas** | `views/hostLive.js` (1016) · `views/adminView.js` (994) · `views/studentLive.js` (877) · `views/vsView.js` (487) · `views/playerView.js` (370) |
+| **vistas** | `views/adminView.js` (1025) · `views/hostLive.js` (1016) · `views/studentLive.js` (877) · `views/vsView.js` (487) · `views/playerView.js` (370) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1107) · `adapters/local/realtime.js` (321) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
 | **core** | `core/textCorrectionRound.js` (351) · `core/selftest.js` (331) · `core/skins.js` (327) · `core/normsCheck.js` (293) · `core/auth.js` (286) |
 | **kernel** | `kernel/session/engine.js` (549) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/dataPort.js` (28) |
@@ -136,8 +136,8 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 | Módulo | Líneas | Lo importan |
 |---|---|---|
 | `adapters/pocketbase/realtime.js` | 1107 | 0 |
+| `views/adminView.js` | 1025 | 1 |
 | `views/hostLive.js` | 1016 | 1 |
-| `views/adminView.js` | 994 | 1 |
 | `views/studentLive.js` | 877 | 1 |
 | `kernel/session/engine.js` | 549 | 19 |
 | `views/vsView.js` | 487 | 2 |
