@@ -142,7 +142,13 @@
    periodo = line-height (2em) y se alinean exactas a cada renglón sin importar
    el font-size dinámico (fitPassage). El renglón queda bajo la escritura (a la
    altura de la base de la letra), con sitio arriba para dibujar la tilde. */
-body.bg-notebook .tc-passage { color: #1f2937; }
+/* La TINTA la fija la hoja: quien pinta el papel crema pone el color de lo
+   escrito (neutro permitido §3 — es una hoja, no un tema). Cubría solo `body.`
+   y no el MARCO: con un skin de texto claro (kahoot puso color:#fff en su
+   frame) el pasaje salía blanco sobre crema — invisible. Cazado por el pase de
+   skins v1.51.427 mirando capturas. */
+body.bg-notebook .tc-passage,
+.ww-player-frame.bg-notebook .tc-passage { color: #1f2937; }
 /* Grosor del renglón en `em`: engorda con la letra (no un pelo de 2px fijo cuando
    el texto mide 77px). Periodo y posición ya van en `em` = escalan con el texto. */
 body.bg-notebook .tc-passage,

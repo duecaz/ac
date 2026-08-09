@@ -402,6 +402,20 @@ sobre la tarjeta). Dos fixes:
 La entrada de `CONOCIDOS` en `tools/matrix-smoke.mjs` se retiró: la matriz juega
 ahora 30/30 y una regresión aquí la tumba.
 
+### ✅ HECHO (v1.51.427) — PASE DE SKINS mirando capturas: 3 fallos reales
+Sonda que captura las superficies tocadas (quiz · globos · sopa · tildes) × 3 skins y se
+REVISAN las imágenes (no solo números). Encontró y arregló:
+- **Tokens de TINTA por forma** (`--ww-shape-N-fg`) en los 7 skins, con el valor CALCULADO
+  contra cada paleta: en arcade el cian y el amarillo llevaban letra blanca (1,4-1,8:1 →
+  ahora 8-10:1); en retro/jungle/tv-show, sus combinaciones. `skins.test` exige el set
+  completo, así que un skin nuevo no puede olvidarlos.
+- **Kahoot no ponía `color:`** en su marco (retro y jungle sí): la pregunta del quiz salía
+  en tinta oscura sobre su degradado morado, casi ilegible en pizarra. Una línea.
+- Ese arreglo DESTAPÓ un hueco viejo: la tinta de la hoja de Tildes/Comas solo estaba
+  fijada para `body.bg-notebook`, no para el MARCO → texto blanco sobre crema (invisible)
+  con kahoot. Quien pinta el papel pone la tinta: regla ampliada al frame.
+Verificado con capturas antes/después (kahoot y arcade legibles en quiz, globos y tildes).
+
 ### ✅ HECHO (v1.51.425) — los tests que vigilan la REDACCIÓN, medidos y en ratchet
 Descubierto trabajando, no auditando: al mover los relojes a la hora común (§22-5) —un
 refactor correcto— una suite falló porque exigía la línea literal

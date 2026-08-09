@@ -13,7 +13,10 @@ body.skin-classroom,
 body.skin-classroom { background-attachment: fixed; }
 
 body.skin-kahoot,
-.ww-player-frame.skin-kahoot { background: linear-gradient(135deg, #46178f 0%, #1368ce 100%); }
+/* El `color:` faltaba (retro y jungle sí lo ponen): la pregunta del quiz salía
+   en tinta OSCURA sobre este degradado morado — casi ilegible en la pizarra.
+   Lo cazó el pase de skins de v1.51.427 mirando capturas, no una suite. */
+.ww-player-frame.skin-kahoot { background: linear-gradient(135deg, #46178f 0%, #1368ce 100%); color: #fff; }
 body.skin-kahoot { background-attachment: fixed; }
 body.skin-kahoot .card,
 .ww-player-frame.skin-kahoot .card { background: rgba(255,255,255,.95); }

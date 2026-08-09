@@ -147,6 +147,10 @@ registerSkin({
     '--ww-shape-2': '#1368ce',
     '--ww-shape-3': '#d89e00',
     '--ww-shape-4': '#26890c',
+    '--ww-shape-1-fg': '#ffffff',   // TINTA por forma: la mejor contra ESTE color (medido, no estimado)
+    '--ww-shape-2-fg': '#ffffff',
+    '--ww-shape-3-fg': '#1f2937',
+    '--ww-shape-4-fg': '#ffffff',
     '--ww-success': '#10b981',
     '--ww-danger': '#ef4444',
     '--ww-warning': '#f59e0b'
@@ -171,6 +175,10 @@ registerSkin({
     '--ww-shape-2': '#2563eb',
     '--ww-shape-3': '#ca8a04',
     '--ww-shape-4': '#16a34a',
+    '--ww-shape-1-fg': '#ffffff',
+    '--ww-shape-2-fg': '#ffffff',
+    '--ww-shape-3-fg': '#1f2937',
+    '--ww-shape-4-fg': '#1f2937',
     '--ww-success': '#16a34a',   // verde tiza, encaja con la madera cálida
     '--ww-danger': '#dc2626',
     '--ww-warning': '#ca8a04'    // ámbar de la paleta (no el genérico)
@@ -196,6 +204,10 @@ registerSkin({
     '--ww-shape-2': '#1368ce',
     '--ww-shape-3': '#d89e00',
     '--ww-shape-4': '#26890c',
+    '--ww-shape-1-fg': '#ffffff',   // TINTA por forma: la mejor contra ESTE color (medido, no estimado)
+    '--ww-shape-2-fg': '#ffffff',
+    '--ww-shape-3-fg': '#1f2937',
+    '--ww-shape-4-fg': '#ffffff',
     '--ww-success': '#26890c',   // verde/rojo Kahoot (los mismos de sus formas)
     '--ww-danger': '#e21b3c',
     '--ww-warning': '#d89e00'
@@ -220,6 +232,10 @@ registerSkin({
     '--ww-shape-2': '#5555ff',
     '--ww-shape-3': '#ffff55',
     '--ww-shape-4': '#55ff55',
+    '--ww-shape-1-fg': '#1f2937',
+    '--ww-shape-2-fg': '#ffffff',
+    '--ww-shape-3-fg': '#1f2937',
+    '--ww-shape-4-fg': '#1f2937',
     '--ww-success': '#39ff14',   // verde fósforo del texto retro
     '--ww-danger': '#ff5555',
     '--ww-warning': '#ffff55'
@@ -244,6 +260,10 @@ registerSkin({
     '--ww-shape-2': '#0891b2',
     '--ww-shape-3': '#facc15',
     '--ww-shape-4': '#84cc16',
+    '--ww-shape-1-fg': '#ffffff',
+    '--ww-shape-2-fg': '#1f2937',
+    '--ww-shape-3-fg': '#1f2937',
+    '--ww-shape-4-fg': '#1f2937',
     '--ww-success': '#84cc16',   // lima tropical (borde/acento de la jungla)
     '--ww-danger': '#dc2626',
     '--ww-warning': '#facc15'
@@ -276,6 +296,10 @@ registerSkin({
     '--ww-shape-2': '#2b6fff',
     '--ww-shape-3': '#13c4a3',
     '--ww-shape-4': '#ff8a00',
+    '--ww-shape-1-fg': '#ffffff',
+    '--ww-shape-2-fg': '#ffffff',
+    '--ww-shape-3-fg': '#1f2937',
+    '--ww-shape-4-fg': '#1f2937',
     '--ww-success': '#22c55e',
     '--ww-danger': '#ef4444',
     '--ww-warning': '#fbbf24'
@@ -306,6 +330,10 @@ registerSkin({
     '--ww-shape-2': '#22d3ee',
     '--ww-shape-3': '#a3e635',
     '--ww-shape-4': '#ffd400',
+    '--ww-shape-1-fg': '#1f2937',
+    '--ww-shape-2-fg': '#1f2937',
+    '--ww-shape-3-fg': '#1f2937',
+    '--ww-shape-4-fg': '#1f2937',
     '--ww-success': '#39ff7a',
     '--ww-danger': '#ff3b6b',
     '--ww-warning': '#ffd400',

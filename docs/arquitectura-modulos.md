@@ -33,7 +33,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3797 | 19 · 2941 | 0.77 |
 | **informes/tareas** | después de clase | 10 · 1029 | 4 · 435 | 0.42 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5474 | 12 · 975 | 0.18 |
-| **infra/común** | todo lo anterior | 120 · 12026 | 44 · 4760 | 0.40 |
+| **infra/común** | todo lo anterior | 120 · 12054 | 44 · 4760 | 0.39 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -105,7 +105,7 @@ graph TD
 | **arranque** | `main.teacher.js` (165) · `main.embed.js` (68) · `main.student.js` (49) |
 | **vistas** | `views/adminView.js` (1025) · `views/hostLive.js` (1016) · `views/studentLive.js` (877) · `views/vsView.js` (487) · `views/playerView.js` (370) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1107) · `adapters/local/realtime.js` (321) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
-| **core** | `core/textCorrectionRound.js` (351) · `core/selftest.js` (331) · `core/skins.js` (327) · `core/normsCheck.js` (293) · `core/auth.js` (286) |
+| **core** | `core/skins.js` (355) · `core/textCorrectionRound.js` (351) · `core/selftest.js` (331) · `core/normsCheck.js` (293) · `core/auth.js` (286) |
 | **kernel** | `kernel/session/engine.js` (549) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/dataPort.js` (28) |
 | **plantillas** | `templates/crossword/player.js` (464) · `templates/wordsearch/player.js` (405) · `templates/match/player.js` (296) · `templates/diagram/player.js` (233) · `templates/quiz/editor.js` (212) |
 | **contenido** | `kernel/content/qaAdapt.js` (104) · `kernel/content/convert.js` (95) · `kernel/content/switch.js` (82) · `kernel/content/models.js` (79) · `kernel/content/index.js` (5) |
