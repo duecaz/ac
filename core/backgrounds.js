@@ -8,6 +8,7 @@
 //
 // Heavier backgrounds (interactive whiteboard, IR pen) will live in
 // optional modules under core/canvas/ that load lazily — this stays small.
+import { uploadMedia } from './upload.js';
 import { escapeHtml } from './html.js';
 
 // Whitelist para la imagen de fondo. La ÚNICA fuente legítima es la subida
@@ -65,18 +66,12 @@ export function applyBackground(name, target = null, imageUrl = null) {
 // (presentation.backgroundImage) as a data-URL, so keep it modest.
 export const BG_IMAGE_MAX_BYTES = 800 * 1024; // 800 KB
 
-// Read a File into a data-URL, rejecting oversized ones with a friendly message.
-export function readBackgroundImage(file) {
-  return new Promise((resolve, reject) => {
-    if (!file) return reject(new Error('No se eligió ninguna imagen.'));
-    if (file.size > BG_IMAGE_MAX_BYTES) {
-      return reject(new Error(`Imagen demasiado grande (${Math.round(file.size / 1024)} KB). Máximo: 800 KB.`));
-    }
-    const reader = new FileReader();
-    reader.onload = e => resolve(e.target.result);
-    reader.onerror = () => reject(new Error('No se pudo leer la imagen.'));
-    reader.readAsDataURL(file);
-  });
+// Read a File into a data-URL. Va por core/upload.js (COMPRIME antes de
+// rebotar): una foto de móvil entra reescalada; el fondo cubre el marco,
+// así que su lado máximo es mayor que el de una imagen inline.
+export async function readBackgroundImage(file) {
+  if (!file) throw new Error('No se eligió ninguna imagen.');
+  return uploadMedia(file, { maxBytes: BG_IMAGE_MAX_BYTES, ladoMax: 1920 });
 }
 
 export function listBackgrounds() {

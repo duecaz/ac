@@ -40,25 +40,25 @@ const RECOMPRIMIBLES = new Set(['image/png', 'image/jpeg', 'image/webp']);
 const LADO_MAX = 1280;          // px del lado mayor tras reescalar
 const CALIDADES = [0.85, 0.7, 0.55, 0.4];
 
-/** ¿El lado mayor supera LADO_MAX? Best-effort: sin APIs de imagen, `false`
+/** ¿El lado mayor supera el tope? Best-effort: sin APIs de imagen, `false`
  *  (se comporta como siempre — aceptar si cabe en bytes). */
-async function superaLadoMax(file) {
+async function superaLadoMax(file, ladoMax) {
   if (typeof createImageBitmap !== 'function') return false;
   try {
     const bmp = await createImageBitmap(file);
     const lado = Math.max(bmp.width, bmp.height);
     bmp.close?.();
-    return lado > LADO_MAX;
+    return lado > ladoMax;
   } catch { return false; }
 }
 
-async function comprimir(file) {
+async function comprimir(file, maxBytes, ladoMax) {
   // Sin las APIs (navegador viejo, test en Node) no se comprime: se cae al
   // comportamiento de siempre (aceptar si cabe, rebotar si no).
   if (typeof createImageBitmap !== 'function' || typeof document === 'undefined') return null;
   try {
     const bmp = await createImageBitmap(file);
-    const escala = Math.min(1, LADO_MAX / Math.max(bmp.width, bmp.height));
+    const escala = Math.min(1, ladoMax / Math.max(bmp.width, bmp.height));
     const w = Math.max(1, Math.round(bmp.width * escala));
     const h = Math.max(1, Math.round(bmp.height * escala));
     const canvas = document.createElement('canvas');
@@ -68,13 +68,16 @@ async function comprimir(file) {
     for (const q of CALIDADES) {
       const url = canvas.toDataURL('image/webp', q);
       // data-URL ≈ bytes·4/3: comparar en su propia unidad, no contra file.size.
-      if (url.length <= IMG_MAX_BYTES * 4 / 3 && url.startsWith('data:image/webp')) return url;
+      if (url.length <= maxBytes * 4 / 3 && url.startsWith('data:image/webp')) return url;
     }
     return null;                 // ni a calidad mínima entra (imagen enorme)
   } catch { return null; }       // best-effort: si falla, manda el camino clásico
 }
 
-export async function uploadMedia(file) {
+// `maxBytes`/`ladoMax` por defecto son los de §25 (imagen inline de actividad);
+// un caller con presupuesto propio los pasa (el avatar del VS: 150 KB y 512 px,
+// se ve en una pastilla — antes tenía SU FileReader y rebotaba sin comprimir).
+export async function uploadMedia(file, { maxBytes = IMG_MAX_BYTES, ladoMax = LADO_MAX } = {}) {
   if (!file) throw new Error('no file');
   if (!ALLOWED[file.type]) throw new Error(`Tipo no permitido: ${file.type || 'desconocido'}`);
 
@@ -84,19 +87,19 @@ export async function uploadMedia(file) {
   // condición solo miraba los bytes y el comentario prometía lo otro — la
   // revisión de v1.51.429 los puso de acuerdo: ahora se miran las DOS cosas.
   if (RECOMPRIMIBLES.has(file.type)) {
-    const pasaBytes = file.size > IMG_MAX_BYTES;
-    const pasaPixeles = !pasaBytes && await superaLadoMax(file);
+    const pasaBytes = file.size > maxBytes;
+    const pasaPixeles = !pasaBytes && await superaLadoMax(file, ladoMax);
     if (pasaBytes || pasaPixeles) {
-      const url = await comprimir(file);
+      const url = await comprimir(file, maxBytes, ladoMax);
       if (url) return url;
       // Sin APIs de canvas (test en Node, navegador viejo): si al menos cabía
       // en bytes, se acepta como antes; si no cabía, se explica.
       if (pasaBytes) throw new Error(`Imagen demasiado grande (${Math.round(file.size / 1024)} KB) incluso comprimida. Recórtala o usa una más pequeña.`);
     }
   }
-  if (file.size > IMG_MAX_BYTES) {
+  if (file.size > maxBytes) {
     // GIF/SVG que no caben: no se recomprimen (se perdería la animación / no aplica).
-    throw new Error(`Imagen demasiado grande (${Math.round(file.size / 1024)} KB). Máximo ${Math.round(IMG_MAX_BYTES / 1024)} KB.`);
+    throw new Error(`Imagen demasiado grande (${Math.round(file.size / 1024)} KB). Máximo ${Math.round(maxBytes / 1024)} KB.`);
   }
   // Lee como data-URL (base64 inline). No hay subida a ningún bucket.
   return await new Promise((resolve, reject) => {

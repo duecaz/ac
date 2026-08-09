@@ -28,8 +28,10 @@ import { renderModeSetup } from './modeSetup.js';
 import { applyPlayOptions } from '../core/playOptions.js';
 import { FLASH_MS, WIN_HOLD_MS, CONFETTI_ENCORE_MS } from '../core/timings.js';
 import { getSkin } from '../core/skins.js';
+import { uploadMedia } from '../core/upload.js';
 
-const AVATAR_MAX_BYTES = 150 * 1024; // 150 KB hard limit
+const AVATAR_MAX_BYTES = 150 * 1024; // tope del avatar (lo aplica uploadMedia, comprimiendo antes)
+const AVATAR_LADO_MAX = 512;         // px del lado mayor: se ve en una pastilla, no a pantalla
 
 // Per-answer feedback in VS, configurable from the setup panel. Default: the
 // quiet, focused combo the teacher asked for — colour flash + a short sound,
@@ -149,25 +151,24 @@ export function mountVs(host, a, ctx, opts = {}) {
         // DELEGADO con on() (idempotente por raíz+evento+selector): renderSetup se
         // re-ejecuta en "Otra vez" y el addEventListener directo apilaba un listener
         // por pasada (leak + disparos duplicados).
-        on(host, 'change', 'input[id^="vs-file-"]', (e, input) => {
+        // La foto de móvil pasa por el MISMO camino que toda imagen de la app
+        // (core/upload.js: reescala + WebP hasta entrar en el tope) — antes
+        // había un FileReader propio que rebotaba a 150 KB sin comprimir.
+        on(host, 'change', 'input[id^="vs-file-"]', async (e, input) => {
           const side = input.id.endsWith('left') ? 'left' : 'right';
           const file = input.files[0];
           if (!file) return;
           const errEl = document.getElementById(`vs-av-err-${side}`);
-          if (file.size > AVATAR_MAX_BYTES) {
-            if (errEl) { errEl.textContent = `Imagen demasiado grande (${Math.round(file.size/1024)} KB). Máximo: 150 KB.`; errEl.hidden = false; }
-            input.value = '';
-            return;
-          }
-          if (errEl) errEl.hidden = true;
-          const reader = new FileReader();
-          reader.onload = (ev) => {
-            const data = ev.target.result;
+          try {
+            const data = await uploadMedia(file, { maxBytes: AVATAR_MAX_BYTES, ladoMax: AVATAR_LADO_MAX });
+            if (errEl) errEl.hidden = true;
             saveAvatar(a.id, side, data);
             const preview = document.getElementById(`vs-av-${side}`);
             if (preview) preview.innerHTML = `<img src="${escapeHtml(data)}" class="vs-av-thumb" alt="">`;
-          };
-          reader.readAsDataURL(file);
+          } catch (err) {
+            if (errEl) { errEl.textContent = err?.message || 'No se pudo leer la imagen.'; errEl.hidden = false; }
+            input.value = '';
+          }
         });
 
         // Clear avatar button (only rendered when an avatar exists).
