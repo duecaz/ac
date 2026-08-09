@@ -54,6 +54,7 @@ replantea. Texto completo en **`docs/leyes.md`** (índice único de normas).
 | **§28 · EN CLASE** | R2: máx. 2 opciones de partida, ya elegidas (el techo lo exige el contrato) · R2b: dentro del marco de juego, ningún control destructivo ni de identidad | `templateContract` · escaneo R2b de `matrix-smoke` |
 | **§29 · PRESUPUESTO** | el coste de conducir se MIDE: jugar sin diálogos · nadie revela solo · de la lista a jugar ≤3 toques | `matrix-smoke` (presupuesto) · `find-smoke` (toques) |
 | **§30 · ALCANZABLE** | lo que no tiene puerta de entrada se BORRA: ni módulo sin importador, ni ruta sin enlace, ni CSS que nadie cargue | `huerfanos` (escaneo + `PUERTAS` con motivo) |
+| **§30b · DECIDIDA** | toda ruta cita la sección del norte que la justifica — el sorteo tenía enlace y aun así no respondía a ninguna decisión | `rutasNorte` (escaneo + `DECIDIDA_EN`) |
 
 - **Si es norma, es test**: una regla nueva se escribe como test, no solo en un MD.
 - **Si una ley cierra una puerta, la UI lo DICE ANTES**: dirigir en vivo / crear

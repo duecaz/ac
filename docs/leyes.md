@@ -61,6 +61,7 @@
 - [§28 · EN CLASE — el profe no configura y el alumno no puede romper](#28--en-clase--el-profe-no-configura-y-el-alumno-no-puede-romper)
 - [⚖️ §29 · PRESUPUESTO — el coste de conducir la clase se MIDE](#-29--presupuesto--el-coste-de-conducir-la-clase-se-mide)
 - [⚖️ §30 · ALCANZABLE — lo que no tiene puerta de entrada, se borra](#-30--alcanzable--lo-que-no-tiene-puerta-de-entrada-se-borra)
+  - [§30b · Y ADEMÁS: toda ruta tiene una DECISIÓN escrita](#30b--y-además-toda-ruta-tiene-una-decisión-escrita)
   - [Cómo se auto-verifica todo](#cómo-se-auto-verifica-todo)
 
 ### Ir a otro documento
@@ -910,6 +911,29 @@ inventado SÍ sería cazado y que las puertas no eximen de más (una vista
 cualquiera no queda exenta por accidente). Sin eso, un fallo del parser —una
 forma de `import` no contemplada— dejaría la lista vacía y todo verde, que es
 exactamente cómo un tumor sobrevive a su vigilante.
+
+### §30b · Y ADEMÁS: toda ruta tiene una DECISIÓN escrita
+
+> **Dueño**: `tests/rutasNorte.test.mjs` · **PROHIBIDO**: registrar una ruta en
+> el router sin decir de qué sección del norte sale. · **Vigilada por**: el
+> escaneo de las `main.*.js` cruzado con la tabla `DECIDIDA_EN`.
+
+Lo de arriba caza lo que **nadie alcanza**. Falta la otra mitad, que es la que de
+verdad dejó nacer el sorteo: **una ruta puede estar perfectamente enlazada y aun
+así no responder a ninguna decisión de producto**. El sorteo tenía su enlace el
+día que se escribió; lo perdió después, y nadie se enteró porque nunca hubo una
+línea que dijera qué pintaba ahí.
+
+Cada ruta tiene su fila con **la sección del norte que la justifica** y una frase
+de qué resuelve. No se exige que el norte escriba `#/mine`: el norte habla de
+PANTALLAS, no de URLs, y llenarlo de almohadillas lo volvería ilegible — lo que
+se exige es que alguien haya tenido que ESCRIBIR de dónde sale, y que la sección
+citada **exista** (si no, la tabla sería un trámite: pones «§9» y pasas).
+
+Tres cierres para que no se pudra: una ruta nueva sin fila rompe CI · una fila
+que ya no corresponde a ninguna ruta también (un permiso fantasma acabaría
+justificando a la siguiente que se llame igual) · y la contra-prueba comprueba
+que `#/sorteo` **no habría llegado a existir**.
 
 
 ---
