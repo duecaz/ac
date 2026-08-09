@@ -35,9 +35,20 @@ function cellScore(template, item, row, activity) {
 }
 
 // Modelo puro (sin DOM) → testeable.
-export function buildSessionTable(rows, nItems, { labels = [], items = [], template = null, activity = null } = {}) {
+export function buildSessionTable(rows, nItems, { labels = [], items = [], template = null, activity = null, players: joined = [] } = {}) {
   const deduped = dedupeRows(rows || []);
   const byPlayer = new Map();
+  // Decisión del dueño (2026-08-09): quien ENTRÓ a la sala sale en la lista
+  // aunque no respondiera nada — ocultar a un alumno del podio con la clase
+  // delante es como si no hubiera participado. Las filas solas no pueden
+  // saberlo (sin respuestas no hay fila): la lista viene de live_players.
+  // Efecto colateral que destapó lo mismo: con un solo alumno CON filas, ese
+  // salía «primer lugar» aunque llevara 0 puntos y el resto ni aparecía.
+  for (const j of joined || []) {
+    if (j?.id != null && !byPlayer.has(j.id)) {
+      byPlayer.set(j.id, { name: j.name || String(j.id), cells: Array(nItems).fill(null) });
+    }
+  }
   for (const r of deduped) {
     if (!byPlayer.has(r.player)) byPlayer.set(r.player, { name: r.name || r.player, cells: Array(nItems).fill(null) });
     const p = byPlayer.get(r.player);

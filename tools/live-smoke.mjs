@@ -278,6 +278,26 @@ try {
 
     // Y en los tres casos, lo que importa: el alumno LLEGA A RESPONDER y cuenta.
     await torcido.waitForSelector('#s-round:not(.s-reading) .rq-opt, #s-round:not(.s-reading) .ww-opt', { timeout: 15000 });
+    if (servidor) {
+      // T2 · PARIDAD también en la cuenta de RESPUESTA (reporte del compañero
+      // 2026-08-09: «en el celular 30 s, en el ordenador 20, y cierra cuando el
+      // celular marca 10»). Las dos pantallas leen el MISMO deadline de la
+      // sala: si las cifras no coinciden, algún reloj no está en la hora común.
+      const segundosDe = async (p, sel) => {
+        const t = await p.evaluate(s => document.querySelector(s)?.textContent.match(/(\d+)\s*s/)?.[1] ?? null, sel);
+        return t === null ? null : Number(t);
+      };
+      let aHost = null, aAlumno = null;
+      for (let i = 0; i < 20 && (aHost === null || aAlumno === null); i++) {
+        aHost = await segundosDe(host, '#time-left');
+        aAlumno = await segundosDe(torcido, '#s-time');
+        if (aHost === null || aAlumno === null) await host.waitForTimeout(150);
+      }
+      if (aHost === null || aAlumno === null || Math.abs(aHost - aAlumno) > 1) {
+        throw new Error(`§22-5 (respuesta): desfase ${skew / 1000}s → el profe ve «${aHost}s» y el alumno «${aAlumno}s»`);
+      }
+      log(`   …y la cuenta de RESPUESTA coincide (profe ${aHost}s · alumno ${aAlumno}s)`);
+    }
     await torcido.locator('.rq-opt, .ww-opt', { hasText: '4' }).first().click();
     await torcido.waitForFunction(() => /Correcto|enviada|puntos/i.test(document.body.textContent), { timeout: 12000 });
     log(`   …y su respuesta CUENTA (no «sin respuesta · 0 puntos»)`);

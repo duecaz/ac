@@ -95,6 +95,7 @@ export async function renderPlay(rootSel, code) {
   let endingInProgress = false;
   let raceQueue = null;       // null = not started yet; [] = finished
   let raceCorrectCount = 0;
+  let raceFinishMs = null;    // mi hora de meta (aprox., reloj común) — se congela al vaciar la cola
   let raceFirstSent = new Set();  // ítems cuyo PRIMER intento ya se envió (análisis)
   let raceSeed = null;        // promesa de la siembra de la cola (una sola vez)
   let qlSpinning = false;      // guards the question-live wheel mid-spin
@@ -632,7 +633,10 @@ export async function renderPlay(rootSel, code) {
       // mientras que la que ORDENA la mide el servidor (§22). Puede bailar un
       // segundo; por eso se marca como "tu tiempo" y no como el oficial.
       const startMs = session.started_at ? Date.parse(session.started_at) : 0;
-      const myFinish = startMs ? mmss(serverNow() - startMs, Math.floor) : null;
+      // Se CONGELA la primera vez que la cola queda vacía: si se recalculara en
+      // cada repintado, el "tu tiempo" seguiría subiendo mientras se espera.
+      if (raceFinishMs == null && startMs) raceFinishMs = serverNow() - startMs;
+      const myFinish = raceFinishMs != null ? mmss(raceFinishMs, Math.floor) : null;
       mount(rootSel, html`
         <div class="text-center py-5">
           <i class="bi bi-trophy-fill display-1 text-warning"></i>
@@ -867,7 +871,11 @@ export async function renderPlay(rootSel, code) {
         <div class="display-1">${rankIcon}</div>
         <h2 class="mt-3">${rankMsg}</h2>
         ${rank === 1 ? '<p class="lead text-warning fw-bold">¡Eres el primero!</p>' : ''}
-        <p class="lead">Tu puntuación: <b class="fs-2">${finalScore}</b> puntos</p>
+        ${raceQueue !== null
+          // CARRERA: los puntos planos SON los aciertos — repetir el número como
+          // "puntos" no dice nada; aciertos y tiempo sí (lo que pide la guía).
+          ? `<p class="lead">${raceCorrectCount} / ${sessionItems(activity).length} correctas${raceFinishMs != null ? ` · <b title="Tu tiempo (aprox.). La clasificación usa el reloj del servidor.">${mmss(raceFinishMs, Math.floor)}</b>` : ''}</p>`
+          : `<p class="lead">Tu puntuación: <b class="fs-2">${finalScore}</b> puntos</p>`}
         ${rank > 1 ? `<p class="text-muted">Posición ${rank} en el ranking</p>` : ''}
         <p class="text-muted small">Mira el ranking completo en la pantalla del profesor.</p>
         <a href="#/join" class="btn btn-warning btn-lg mt-2"><i class="bi bi-arrow-left"></i> Otra sala</a>

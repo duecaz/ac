@@ -195,6 +195,45 @@ const THEME_BASELINE = {
   ok(`themes: ${declared.length} stylesheet(s) declarados existen · sin huérfanos nuevos (${KNOWN_ORPHANS.length} deuda conocida)`);
 }
 
+// ── EL VEREDICTO GANA AL SKIN (hallazgo del compañero, 2026-08-09) ───────────
+// El player ponía btn-success/btn-danger al responder, pero los fondos por
+// forma y los skins (que se cargan DESPUÉS) los pisaban por especificidad:
+// «al fallar no se pone rojo». Regla ejecutable, por DESCUBRIMIENTO: la
+// especificidad (nº de clases/pseudoclases) de las reglas de veredicto debe
+// SUPERAR la de todo selector que pinte fondo sobre `.ww-shape-N`, esté donde
+// esté (styles/ y themes/*/skin.css) — un skin nuevo no puede recuperar el bug.
+{
+  const REPO = join(STYLES, '..');
+  const clsCount = (sel) => (sel.match(/\.[\w-]+|:[\w-]+/g) || []).length;
+  const quizCss = blank(readFileSync(join(STYLES, 'quiz.css'), 'utf8'));
+  const verdictSels = [...quizCss.matchAll(/([^{}]+)\{[^}]*background[^}]*\}/g)]
+    .flatMap(m => m[1].split(','))
+    .map(s => s.trim())
+    .filter(s => /\.btn-(success|danger)\b/.test(s));
+  assert.ok(verdictSels.length >= 2, 'quiz.css declara las reglas de veredicto (verde y rojo) con fondo');
+  const verdictMin = Math.min(...verdictSels.map(clsCount));
+
+  const shapeFiles = [
+    ...readdirSync(STYLES).filter(f => f.endsWith('.css')).map(f => join(STYLES, f)),
+    ...readdirSync(join(REPO, 'themes'), { withFileTypes: true })
+      .filter(d => d.isDirectory()).map(d => join(REPO, 'themes', d.name, 'skin.css')),
+  ];
+  const losers = [];
+  for (const f of shapeFiles) {
+    let css; try { css = blank(readFileSync(f, 'utf8')); } catch { continue; }
+    for (const m of css.matchAll(/([^{}]+)\{[^}]*background[^}]*\}/g)) {
+      for (const sel of m[1].split(',').map(s => s.trim())) {
+        if (!/\.ww-shape-\d|\.ww-kahoot-grid/.test(sel)) continue;
+        if (/\.btn-(success|danger)\b/.test(sel)) continue;   // la propia regla de veredicto
+        if (clsCount(sel) >= verdictMin) losers.push(`${f.split('/').slice(-2).join('/')}: «${sel}» (${clsCount(sel)} ≥ ${verdictMin})`);
+      }
+    }
+  }
+  assert.deepStrictEqual(losers, [],
+    `fondos de forma que PISAN el verde/rojo del veredicto (sube la especificidad del veredicto en quiz.css):\n  ${losers.join('\n  ')}`);
+  ok(`veredicto (verde/rojo) por encima de todo fondo de forma/skin (especificidad ${verdictMin})`);
+}
+
 if (newViolations.length) {
   console.error('\n✗ Nuevas violaciones de estilo de actividad:\n  - ' + newViolations.join('\n  - '));
   console.error('\n  Regla (CLAUDE.md): el PLAYER no lleva tamaños fijos (usa cq*/% o piso max()),');

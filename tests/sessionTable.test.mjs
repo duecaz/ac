@@ -66,6 +66,24 @@ const textTpl = {
   assert.strictEqual(t.players[0].marks, 3, 'ranking por el resultado final');
   ok('carrera: tabla usa valueFinal (resultado real), no el primer intento');
 }
+// ── quien ENTRÓ sale en la lista aunque no respondiera nada (decisión del ────
+// dueño, 2026-08-09): sin esto un alumno sin respuestas desaparecía del podio
+// («como si no participara») y con un solo alumno con filas, ese salía «primer
+// lugar» con 0 puntos y el resto ni aparecía.
+{
+  const joined = [{ id: 'p1', name: 'Ana' }, { id: 'p9', name: 'Mudo' }];
+  const jRows = [{ player: 'p1', name: 'Ana', itemIndex: 0, value: 'x', correct: false, points: 0 }];
+  const t = buildSessionTable(jRows, 2, { players: joined });
+  assert.strictEqual(t.players.length, 2, 'el que no respondió también está');
+  const mudo = t.players.find(p => p.name === 'Mudo');
+  assert.ok(mudo, 'aparece con su nombre');
+  assert.strictEqual(mudo.total, 0, 'con 0 puntos');
+  assert.strictEqual(mudo.cells.every(c => c === null), true, 'y celdas vacías («—»)');
+  // contra-prueba: quien tiene fila no se duplica ni pierde su respuesta
+  const ana = t.players.find(p => p.name === 'Ana');
+  assert.ok(ana.cells[0], 'la fila de Ana sigue puntuando su celda');
+  ok('podio/tabla incluyen a todo jugador unido, con 0 si no respondió');
+}
 {
   const csv = sessionTableCsv(rows, 2);
   assert.ok(csv.includes('"alumno","P1","P2","aciertos","puntos"'), 'cabecera CSV con aciertos y puntos');

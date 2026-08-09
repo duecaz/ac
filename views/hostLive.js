@@ -955,7 +955,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     // En CARRERA el puntaje NO ordena por sí solo: un fallo vuelve a la cola, así
     // que todo el que termina lo hace con TODAS bien y el podio sería un empate.
     // Lo que decide (y lo que se MUESTRA) es la hora de meta.
-    let lb = buildSessionTable(rows, items.length, { items, template: tpl, activity }).players.map(p => ({
+    let lb = buildSessionTable(rows, items.length, { items, template: tpl, activity, players }).players.map(p => ({
       name: p.name, score: p.total, marks: p.marks, nCorrect: p.nCorrect,
       // `tie` ordena y `sub` explica: el podio es compartido con el duelo VS, así
       // que no sabe que el desempate es tiempo — recibe el número y el texto.
@@ -992,7 +992,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
       try {
         const { rows, race } = await gatherSessionRows();
         out.innerHTML = tab === 'tabla'
-          ? sessionTableHtml(rows, items.length, { labels: itemLabels(), items, template: tpl, activity, race })
+          ? sessionTableHtml(rows, items.length, { labels: itemLabels(), items, template: tpl, activity, race, players })
           : itemStatsHtml(activity, rows);
       } catch (e) { out.innerHTML = `<div class="alert alert-warning">No se pudo cargar: ${escapeHtml(e.message)}</div>`; }
     }
@@ -1000,7 +1000,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     document.getElementById('ll-csv')?.addEventListener('click', async () => {
       try {
         const { rows, race } = await gatherSessionRows();
-        const csv = sessionTableCsv(rows, items.length, { labels: itemLabels(), items, template: tpl, activity, race });
+        const csv = sessionTableCsv(rows, items.length, { labels: itemLabels(), items, template: tpl, activity, race, players });
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a'); a.href = url; a.download = `sesion-${code}.csv`; a.click();

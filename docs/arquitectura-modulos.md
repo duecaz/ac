@@ -29,9 +29,9 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1645 | 6 · 645 | 0.39 |
-| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2554 | 12 · 1127 | 0.44 |
-| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3806 | 19 · 2941 | 0.77 |
-| **informes/tareas** | después de clase | 10 · 1029 | 4 · 435 | 0.42 |
+| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2554 | 12 · 1166 | 0.46 |
+| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3814 | 19 · 2959 | 0.78 |
+| **informes/tareas** | después de clase | 10 · 1040 | 4 · 435 | 0.42 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5474 | 12 · 975 | 0.18 |
 | **infra/común** | todo lo anterior | 120 · 12082 | 44 · 4760 | 0.39 |
 
@@ -103,7 +103,7 @@ graph TD
 | Capa | Módulos más grandes |
 |---|---|
 | **arranque** | `main.teacher.js` (165) · `main.embed.js` (68) · `main.student.js` (49) |
-| **vistas** | `views/adminView.js` (1029) · `views/hostLive.js` (1022) · `views/studentLive.js` (880) · `views/vsView.js` (488) · `views/playerView.js` (370) |
+| **vistas** | `views/adminView.js` (1029) · `views/hostLive.js` (1022) · `views/studentLive.js` (888) · `views/vsView.js` (488) · `views/playerView.js` (370) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1110) · `adapters/local/realtime.js` (323) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
 | **core** | `core/skins.js` (355) · `core/textCorrectionRound.js` (351) · `core/selftest.js` (331) · `core/normsCheck.js` (293) · `core/auth.js` (286) |
 | **kernel** | `kernel/session/engine.js` (549) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/dataPort.js` (28) |
@@ -138,7 +138,7 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 | `adapters/pocketbase/realtime.js` | 1110 | 0 |
 | `views/adminView.js` | 1029 | 1 |
 | `views/hostLive.js` | 1022 | 1 |
-| `views/studentLive.js` | 880 | 1 |
+| `views/studentLive.js` | 888 | 1 |
 | `kernel/session/engine.js` | 549 | 19 |
 | `views/vsView.js` | 488 | 2 |
 | `templates/crossword/player.js` | 464 | 1 |
