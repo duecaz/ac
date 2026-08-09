@@ -155,7 +155,8 @@ const results = [];
 const taps = [];
 const hits = [];   // hit-testing de los controles críticos
 const rounds = [];  // rondas JUGADAS con un toque real (cola #3)
-const presupuesto = [];  // ley §29: el coste en toques/diálogos de conducir la clase
+const presupuesto = [];
+const legibilidad = [];   // §29 · informe de tamaño (no veredicto: ver el porqué abajo)
 for (const t of seeded) {
   if (only.length && !only.includes(t.name)) continue;
   const cap = caps.find(c => c.name === t.name);
@@ -276,6 +277,129 @@ for (const t of seeded) {
           presupuesto.push({ label: t.label, mode, regla: 'revelar solo con el docente', ok: !soloSeReveló });
         }
         presupuesto.push({ label: t.label, mode, regla: 'jugar sin diálogos', ok: !dialogos.length });
+        //  3. SE LEE DESDE EL FONDO DEL AULA (§29 · R1). Era la promesa más
+        //     repetida del proyecto —«mirada a 3 m»— y la única sin ninguna red:
+        //     §3 vigila que no haya px FIJOS, pero un `clamp()` con tope bajo
+        //     cumple §3 y aun así se lee diminuto en una pizarra. Aquí se mide
+        //     el tamaño COMPUTADO real y el contraste real de lo que el alumno
+        //     tiene que leer. A diferencia de los tiempos (que dependen de la
+        //     máquina y por eso NO se miden), esto sale igual aquí que en el aula.
+        //
+        //     El umbral: 2.2% de la altura del marco. En una pizarra de 55" a
+        //     3 m equivale aproximadamente a lo que se lee sin esfuerzo; en el
+        //     móvil del alumno, a un cuerpo normal de lectura. Es un PISO, no
+        //     un objetivo — casi todo el texto de juego está muy por encima.
+        if (['solo', 'vs', 'teams'].includes(mode) && status === 'ok') {
+          const leg = await page.evaluate((cajaSel) => {
+            const frame = document.querySelector('#ww-frame') || document.body;
+            // LA CAJA DE LA RONDA — la MISMA que usa el driver para jugar. El
+            // tamaño se mide AQUÍ y no en todo el marco: la primera versión de
+            // esta medición daba 3/30 y sus "peores textos" eran «2 / 2»,
+            // «EQUIPO» y «Revelar» — contadores, etiquetas del marcador y
+            // botones del docente. Nada de eso es lo que la clase lee desde el
+            // fondo, así que la red medía una cosa y la promesa hablaba de otra:
+            // con ese ruido, o se apaga la red o se ignora. R1 habla del
+            // CONTENIDO del ejercicio.
+            const caja = document.querySelector(cajaSel) || frame;
+            const alto = frame.getBoundingClientRect().height || 800;
+            const lum = (c) => {
+              const m = String(c).match(/[\d.]+/g) || [];
+              const [r, g, b] = m.slice(0, 3).map(Number);
+              if ([r, g, b].some(v => !Number.isFinite(v))) return null;
+              const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+              return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+            };
+            // EL FONDO REAL. Dos cosas que la primera versión hacía mal y que la
+            // hacían MENTIR — un medidor que miente es peor que no medir:
+            //  · un fondo semitransparente (`rgba(16,185,129,.18)`) se tomaba
+            //    como sólido: la palabra encontrada de la Sopa daba 1,0:1
+            //    (texto y fondo "idénticos") cuando de verdad son 2,4:1. Ahora
+            //    se COMPONE el alfa sobre lo que hay debajo.
+            //  · un degradado o una imagen de fondo no tienen color computado:
+            //    se caía al blanco por defecto y el título del Crucigrama
+            //    —letra blanca sobre un degradado OSCURO— salía como 1,0:1.
+            //    Ahora eso NO se juzga: se cuenta como no medible y se dice.
+            const rgba = (c) => {
+              const m = String(c).match(/[\d.]+/g) || [];
+              if (m.length < 3) return null;
+              return { r: +m[0], g: +m[1], b: +m[2], a: m.length >= 4 ? +m[3] : 1 };
+            };
+            const fondoDe = (el) => {
+              const capas = [];
+              for (let n = el; n && n !== document.documentElement; n = n.parentElement) {
+                const cs = getComputedStyle(n);
+                if (cs.backgroundImage && cs.backgroundImage !== 'none') return null;  // no medible
+                const c = rgba(cs.backgroundColor);
+                if (!c || c.a === 0) continue;
+                capas.push(c);
+                if (c.a === 1) break;                 // opaco: aquí para la pila
+              }
+              let base = { r: 255, g: 255, b: 255 };  // el lienzo, si nadie más pinta
+              for (let i = capas.length - 1; i >= 0; i--) {
+                const c = capas[i];
+                base = {
+                  r: c.r * c.a + base.r * (1 - c.a),
+                  g: c.g * c.a + base.g * (1 - c.a),
+                  b: c.b * c.a + base.b * (1 - c.a),
+                };
+              }
+              return `rgb(${Math.round(base.r)},${Math.round(base.g)},${Math.round(base.b)})`;
+            };
+            let minPct = 100, peorTexto = '', peorRatio = 21, peorC = '';
+            const vistos = [];
+            // TAMAÑO: solo dentro de la caja de la ronda.
+            for (const el of caja.querySelectorAll('*')) {
+              // Solo NODOS DE TEXTO propios y visibles: el contenedor de un
+              // botón no cuenta, cuenta el que pinta las letras.
+              const propio = [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim().length > 1);
+              if (!propio) continue;
+              const cs = getComputedStyle(el);
+              if (cs.visibility === 'hidden' || cs.display === 'none' || Number(cs.opacity) < 0.15) continue;
+              const r = el.getBoundingClientRect();
+              if (!r.width || !r.height) continue;
+              const px = parseFloat(cs.fontSize) || 0;
+              const pct = (px / alto) * 100;
+              const txt = el.textContent.trim().slice(0, 24);
+              vistos.push(pct);
+              if (pct < minPct) { minPct = pct; peorTexto = txt; }
+            }
+            // CONTRASTE: sobre TODO el texto visible del marco — un texto que no
+            // se distingue del fondo lo es igual si es del juego o del chrome.
+            for (const el of frame.querySelectorAll('*')) {
+              const propio = [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim().length > 1);
+              if (!propio) continue;
+              const cs = getComputedStyle(el);
+              if (cs.visibility === 'hidden' || cs.display === 'none' || Number(cs.opacity) < 0.15) continue;
+              const r = el.getBoundingClientRect();
+              if (!r.width || !r.height) continue;
+              const fondo = fondoDe(el);
+              if (fondo === null) { sinMedir++; continue; }   // degradado/imagen: no se juzga
+              const l1 = lum(cs.color), l2 = lum(fondo);
+              if (l1 == null || l2 == null) { sinMedir++; continue; }
+              const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+              if (ratio < peorRatio) { peorRatio = ratio; peorC = el.textContent.trim().slice(0, 24); }
+            }
+            return { minPct, peorTexto, peorRatio, peorC, sinMedir, n: vistos.length };
+          }, caja);
+          if (leg.n >= 2) {
+            // CONTRASTE — VEREDICTO. Está bien definido (todo texto visible
+            // tiene color y fondo) y ya cazó dos fallos reales: el ámbar con
+            // letra blanca en las opciones del quiz y en los globos, 2,4:1 los
+            // dos. Umbral 3:1 = AA para texto grande, que es lo que hay aquí.
+            presupuesto.push({ label: t.label, mode, regla: 'se lee a 3 m (contraste)', ok: leg.peorRatio >= 3.0,
+              nota: `${leg.peorRatio.toFixed(1)}:1 · «${leg.peorC}»${leg.sinMedir ? ` · ${leg.sinMedir} sobre degradado (no medibles)` : ''}` });
+            // TAMAÑO — INFORME, no veredicto, y con el motivo escrito: medir "el
+            // texto más pequeño" mide el CHROME (el contador «1 / 2», el botón
+            // «Girar», el título de la actividad), no lo que la clase lee. Con
+            // ese ruido, un veredicto rojo se apaga a la semana. Para juzgarlo de
+            // verdad hace falta que la PLANTILLA declare cuál es su texto de
+            // lectura (un `data-ww-read`, §0: la plantilla declara, el motor
+            // consume) — decisión de contrato sobre las 13, registrada como
+            // pendiente en docs/leyes.md §29. Mientras tanto se PUBLICA el
+            // número: se ve, se compara entre versiones, y no miente.
+            legibilidad.push({ label: t.label, mode, pct: leg.minPct, texto: leg.peorTexto });
+          }
+        }
         // RATCHET de deuda conocida (mismo patrón que el ratchet de estilos): una
         // combinación rota Y DECLARADA no tumba la matriz, pero sale en el
         // informe con su motivo. Lo que no se tolera es una rotura NUEVA.
@@ -390,7 +514,18 @@ if (presupuesto.length) {
     const mal = lista.filter(x => !x.ok).length;
     console.log(`  ${mal ? '❌' : '✅'} ${regla.padEnd(30)} ${lista.length - mal}/${lista.length}`);
   }
-  for (const p of presuBad) console.log(`  ❌ ${p.label} · ${p.mode} — ${p.regla}`);
+  for (const p of presuBad) console.log(`  ❌ ${p.label} · ${p.mode} — ${p.regla}${p.nota ? ` (${p.nota})` : ''}`);
+}
+
+// §29 · INFORME de tamaño (no veredicto — ver el comentario junto a la medición).
+if (legibilidad.length) {
+  const orden = [...legibilidad].sort((a, b) => a.pct - b.pct).slice(0, 6);
+  const media = legibilidad.reduce((n, x) => n + x.pct, 0) / legibilidad.length;
+  console.log(`\nLEGIBILIDAD · tamaño del texto en la caja de la ronda (informe, no veredicto)`);
+  console.log(`  media del menor texto: ${media.toFixed(1)}% del alto del marco · los 6 más pequeños:`);
+  for (const x of orden) console.log(`    ${x.pct.toFixed(1)}%  ${x.label} · ${x.mode} — «${x.texto}»`);
+  console.log('  (el mínimo suele ser CHROME —contadores, botones, títulos—, no lo que la clase lee:');
+  console.log('   juzgarlo pide que la plantilla DECLARE su texto de lectura. Pendiente en leyes.md §29.)');
 }
 
 // ── EMBED: la página que el profe pega en su blog ───────────────────────────

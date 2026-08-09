@@ -22,9 +22,15 @@ const STYLES = join(dirname(fileURLToPath(import.meta.url)), '..', 'styles');
 // CSS de juego (player). Se excluyen: theme/skins/backgrounds (definen paletas),
 // editor/player-frame/touch/soloAnim/live (chrome, no el ejercicio).
 const GAME = ['ballsort', 'crossword', 'diagram', 'globos', 'match', 'math', 'memory',
-  'question-live', 'quiz', 'textCorrection', 'vs', 'teams', 'wordsearch'];
+  'question-live', 'quiz', 'textCorrection', 'vs', 'teams', 'wordsearch', 'live'];
 // Chrome/paletas explícitamente EXCLUIDOS del ratchet (no son "el juego").
-const EXCLUDED = ['backgrounds', 'editor', 'home', 'live', 'player', 'scaffold', 'skins', 'soloAnim', 'theme', 'touch'];
+// `live` SALIÓ de esta lista en v1.51.423. Estaba clasificado como chrome y
+// dentro vive el JUEGO: `.ww-kahoot-grid` son las opciones de respuesta que la
+// clase entera lee, y llevaban `font-size: 1.5rem` FIJO — 24 px lo mismo en un
+// móvil que en una pizarra 4K. El ratchet no lo veía por estar excluido; lo cazó
+// la medición de legibilidad de §29. Una lista de exclusiones es una lista de
+// sitios donde la ley no mira: cada entrada tiene que ser chrome DE VERDAD.
+const EXCLUDED = ['backgrounds', 'editor', 'home', 'player', 'scaffold', 'skins', 'soloAnim', 'theme', 'touch'];
 
 // Colores skin-independientes POR DISEÑO: no necesitan token.
 //  · neutros (texto sobre superficies de color)
@@ -78,6 +84,15 @@ const BASELINE = {
   match:         { fonts: ['.82rem', '.9rem'], colors: ['background:#6366f1', 'background:#94a3b8'] },
   memory:        { fonts: ['1.4rem', '1rem'], colors: ['background:#d1fae5', 'color:#065f46'] },
   'question-live': { fonts: ['1.3rem', '1.8rem'], colors: [] },
+  // ENTRÓ al escáner en v1.51.423 (estaba excluido como "chrome" y dentro vivía
+  // el juego). Lo GORDO ya está arreglado: las opciones de respuesta
+  // (`.ww-kahoot-grid`) escalan con el marco y su contraste llega a 6,2:1. Esto
+  // que queda es el podio y la clasificación —pantallas de remate, no de
+  // jugar—, congelado como deuda: el ratchet solo encoge.
+  live:          { fonts: ['.85em'],
+                   colors: ['background:#fbbf24', 'background:#d97706', 'color:#141c2e',
+                            'color:#5b6472', 'background:#243149', 'color:#e5edf9',
+                            'background:#2d3d59', 'background:#f5c518', 'background:#ffd534'] },
   textCorrection: { fonts: ['1.1rem'], colors: ['background:#fffdf5', 'color:#0f5132', 'color:#1f2937', 'color:#842029'] },
   vs:            { fonts: ['.5rem', '.72rem', '.95rem', '.9rem', '1.05rem', '1.35rem', '1.7rem', '1rem', '2.6rem', '4.6rem'],
                    colors: ['background:#f8f9fa', 'color:#0d6efd', 'color:#2563eb', 'color:#6c757d', 'color:#f9c700'] },

@@ -140,9 +140,13 @@
 }
 .ws-word-dot { font-size: .85em; opacity: .55; flex-shrink: 0; }
 
+/* La palabra ENCONTRADA. El verde de estado (#10b981) sobre su propio fondo
+   verde claro daba 2,4:1 — medido por §29. Aquí el color no es la única señal
+   (hay tachado y punto), pero 2,4:1 no se lee a 3 m: se usa un verde OSCURO
+   para el texto (≈5:1) manteniendo el mismo lenguaje de color. */
 .ws-word.ws-word-found {
   background: rgba(16,185,129,.18);
-  color: var(--ww-success, #10b981);
+  color: var(--ww-success-ink, #047857);
   text-decoration: line-through;
 }
 .ws-word.ws-word-found .ws-word-dot { opacity: 1; }

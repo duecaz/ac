@@ -402,6 +402,21 @@ sobre la tarjeta). Dos fixes:
 La entrada de `CONOCIDOS` en `tools/matrix-smoke.mjs` se retiró: la matriz juega
 ahora 30/30 y una regresión aquí la tumba.
 
+### ✅ HECHO (v1.51.423) — R1 «se lee a 3 m» deja de ser una promesa sin red
+La matriz MIDE ahora el **contraste real** (color computado contra el fondo real, componiendo
+alfa y saltando degradados) de todo el texto del marco, en las 13 plantillas × 3 modos.
+Umbral 3:1. Nació encontrando **tres fallos reales**, todos invisibles hasta hoy:
+- **Opciones del quiz** (`.ww-kahoot-grid`): letra blanca sobre ámbar = **2,4:1**, y además
+  `font-size: 1.5rem` **FIJO** — 24 px lo mismo en un móvil que en una pizarra 4K, en el texto
+  que la clase entera lee. Ahora escala con el marco y va a 6,2:1.
+- **Globos** (`.gl-c3`): el mismo blanco sobre ámbar, 2,4:1 → 4,5:1 medido.
+- **Sopa, palabra encontrada**: verde claro sobre verde claro, 2,4:1 → 5,1:1.
+Por qué el ratchet de §3 no lo veía: **`styles/live.css` estaba en EXCLUDED como "chrome"** y
+dentro vive el juego. Ya está en la lista escaneada, con su deuda restante congelada.
+El **tamaño** se mide y se PUBLICA pero NO es veredicto, con el motivo escrito: el texto más
+pequeño casi siempre es chrome (contadores, botones, títulos). Juzgarlo pide que la plantilla
+DECLARE su texto de lectura (`data-ww-read`) — decisión de contrato pendiente en §29.
+
 ### ✅ HECHO (v1.51.419) — LÁPIZ / BORRADOR en Tildes y Comas
 La herramienta se detecta por el TAMAÑO del contacto (`core/penDetector.js`: punta dibuja,
 palma borra) y acierta casi siempre — pero en una pizarra sin calibrar, o con un lápiz que

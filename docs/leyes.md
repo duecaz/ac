@@ -862,12 +862,38 @@ invisible para todas las demás redes: monta bien, juega bien, puntúa bien.
 **2**. Es el momento en que la clase está esperando y el que más barato se
 encarece — una pantalla intermedia "solo para elegir el modo" lo dobla.
 
-**Lo que esta ley todavía NO mide** (declarado, no escondido): los tiempos
-(≤ 15 s al montar, ≤ 3 min crear, ≤ 30 s abrir sala) y "se lee desde el fondo
-del aula". Los tiempos piden un banco de medida estable —en este sandbox el
-reloj miente— y la legibilidad pide medir tamaño y contraste computados, que es
-la extensión natural de §3. Ninguno de los dos es excusa para no tener los tres
-de arriba.
+**4 · SE LEE DESDE EL FONDO DEL AULA — el CONTRASTE, medido** (v1.51.423). Era
+la promesa más repetida del proyecto (R1, «mirada a 3 m») y la que menos red
+tenía: §3 vigila que no haya tamaños FIJOS, pero un `clamp()` con tope bajo
+cumple §3 y aun así se lee diminuto. Ahora la matriz mide, en cada plantilla y
+modo, el **contraste real** (color computado contra el fondo real, subiendo por
+los ancestros) de todo el texto visible del marco. Umbral **3:1** (AA para texto
+grande, que es lo que hay aquí).
+
+Nació encontrando dos fallos reales, los dos del mismo tipo — **letra blanca
+sobre el ámbar**, 2,4:1, el peor contraste de la app:
+- las **opciones de respuesta** del quiz (`.ww-kahoot-grid`), que es el texto que
+  la clase entera lee a la vez;
+- los **globos** (`.gl-c3`).
+Arreglados con un token de primer plano por forma (`--ww-shape-N-fg`, oscuro en
+el ámbar): 6,2:1 sin tocar el color de la forma, que es lo que la hace
+reconocible. Y de paso salió por qué el ratchet de §3 no veía el tamaño fijo de
+las opciones: `styles/live.css` estaba clasificado como *chrome* en su lista de
+exclusiones, y dentro vive el juego.
+
+**Lo que esta ley todavía NO mide** (declarado, no escondido):
+- **Los tiempos** (≤ 15 s al montar, ≤ 3 min crear, ≤ 30 s abrir sala): piden un
+  banco de medida estable. En este entorno el reloj mide el rendimiento de un
+  servidor, no el de una pizarra: publicar ese número sería peor que no tenerlo.
+- **El TAMAÑO del texto, como veredicto.** Se mide y se PUBLICA (informe en la
+  matriz: media y los seis textos más pequeños), pero no falla la red — y el
+  motivo es honesto: *el texto más pequeño casi siempre es CHROME* (el contador
+  «1 / 2», el botón «Girar», el título de la actividad), no lo que hay que leer
+  para jugar. Un veredicto rojo sobre ruido se apaga en una semana.
+  **Para juzgarlo hace falta una decisión de contrato**: que la PLANTILLA declare
+  cuál es su texto de lectura (`data-ww-read`, §0 — la plantilla declara, el
+  motor consume), en las 13. Mientras no se tome, el número se ve y se compara
+  entre versiones, que ya es más de lo que había.
 
 ## ⚖️ §30 · ALCANZABLE — lo que no tiene puerta de entrada, se borra
 

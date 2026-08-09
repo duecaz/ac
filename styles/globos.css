@@ -43,11 +43,15 @@
   border-left: 1cqmin solid transparent; border-right: 1cqmin solid transparent;
   border-top: 1.4cqmin solid rgba(0,0,0,.18);
 }
-/* Colores por token de forma → los skins recolorean los globos. */
-.gl-c1 { background: var(--ww-shape-1); }
-.gl-c2 { background: var(--ww-shape-2); }
-.gl-c3 { background: var(--ww-shape-3); }
-.gl-c4 { background: var(--ww-shape-4); }
+/* Colores por token de forma → los skins recolorean los globos.
+   El texto va por su token de PRIMER PLANO: sobre el ámbar (shape-3) la letra
+   blanca daba 2,4:1 —el mismo fallo que tenían las opciones del quiz, y por la
+   misma razón: blanco sobre amarillo—. Con letra oscura sube a 6,2:1. Medido
+   por la matriz (§29), no estimado. */
+.gl-c1 { background: var(--ww-shape-1); color: var(--ww-shape-1-fg, #fff); }
+.gl-c2 { background: var(--ww-shape-2); color: var(--ww-shape-2-fg, #fff); }
+.gl-c3 { background: var(--ww-shape-3); color: var(--ww-shape-3-fg, #1f2937); }
+.gl-c4 { background: var(--ww-shape-4); color: var(--ww-shape-4-fg, #fff); }
 
 /* Bamboleo en reposo — transform puro (compositor). APAGADO en gama baja. */
 @keyframes gl-bob {
