@@ -210,6 +210,7 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
           itemIndex: Number(k.split(':')[0]), value: v.value,
           correct: (v.correct === true || v.hint === true) ? true : (v.correct === false ? false : null),
           points: v.points,
+          ms: v.ms,   // paridad con el adaptador PB: reanudar recupera la hora de meta
         }));
     },
 

@@ -205,33 +205,35 @@ const THEME_BASELINE = {
 {
   const REPO = join(STYLES, '..');
   const clsCount = (sel) => (sel.match(/\.[\w-]+|:[\w-]+/g) || []).length;
-  const quizCss = blank(readFileSync(join(STYLES, 'quiz.css'), 'utf8'));
-  const verdictSels = [...quizCss.matchAll(/([^{}]+)\{[^}]*background[^}]*\}/g)]
-    .flatMap(m => m[1].split(','))
-    .map(s => s.trim())
-    .filter(s => /\.btn-(success|danger)\b/.test(s));
-  assert.ok(verdictSels.length >= 2, 'quiz.css declara las reglas de veredicto (verde y rojo) con fondo');
-  const verdictMin = Math.min(...verdictSels.map(clsCount));
-
   const shapeFiles = [
     ...readdirSync(STYLES).filter(f => f.endsWith('.css')).map(f => join(STYLES, f)),
     ...readdirSync(join(REPO, 'themes'), { withFileTypes: true })
       .filter(d => d.isDirectory()).map(d => join(REPO, 'themes', d.name, 'skin.css')),
   ];
-  const losers = [];
+  // Por DESCUBRIMIENTO en los mismos ficheros: reglas de VEREDICTO (verde/rojo
+  // sobre opciones) y reglas de FORMA — estén donde estén hoy o mañana.
+  const verdicts = [], shapes = [];
   for (const f of shapeFiles) {
     let css; try { css = blank(readFileSync(f, 'utf8')); } catch { continue; }
     for (const m of css.matchAll(/([^{}]+)\{[^}]*background[^}]*\}/g)) {
       for (const sel of m[1].split(',').map(s => s.trim())) {
-        if (!/\.ww-shape-\d|\.ww-kahoot-grid/.test(sel)) continue;
-        if (/\.btn-(success|danger)\b/.test(sel)) continue;   // la propia regla de veredicto
-        if (clsCount(sel) >= verdictMin) losers.push(`${f.split('/').slice(-2).join('/')}: «${sel}» (${clsCount(sel)} ≥ ${verdictMin})`);
+        const esOpcion = /\.ww-shape-\d|\.ww-kahoot-grid|\.ww-options|\.ww-opt\b|\.rq-opt\b/.test(sel);
+        if (!esOpcion) continue;
+        (/\.btn-(success|danger)\b/.test(sel) ? verdicts : shapes)
+          .push({ f: f.split('/').slice(-2).join('/'), sel, n: clsCount(sel) });
       }
     }
   }
+  // Individual (.ww-opt) y rondas (.rq-opt) tienen que estar CUBIERTOS los dos:
+  // el arreglo de v1.51.431 solo cubría el player y en carrera seguía sin rojo.
+  assert.ok(verdicts.some(v => /\.ww-opt\b/.test(v.sel)), 'veredicto declarado para el player Individual (.ww-opt)');
+  assert.ok(verdicts.some(v => /\.rq-opt\b/.test(v.sel)), 'veredicto declarado para las rondas (.rq-opt)');
+  const verdictMin = Math.min(...verdicts.map(v => v.n));
+  const losers = shapes.filter(s => s.n >= verdictMin)
+    .map(s => `${s.f}: «${s.sel}» (${s.n} ≥ ${verdictMin})`);
   assert.deepStrictEqual(losers, [],
-    `fondos de forma que PISAN el verde/rojo del veredicto (sube la especificidad del veredicto en quiz.css):\n  ${losers.join('\n  ')}`);
-  ok(`veredicto (verde/rojo) por encima de todo fondo de forma/skin (especificidad ${verdictMin})`);
+    `fondos de forma que PISAN el verde/rojo del veredicto (sube la especificidad del veredicto):\n  ${losers.join('\n  ')}`);
+  ok(`veredicto (verde/rojo) por encima de todo fondo de forma/skin, en player Y rondas (especificidad ${verdictMin})`);
 }
 
 if (newViolations.length) {

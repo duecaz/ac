@@ -40,31 +40,24 @@ const RECOMPRIMIBLES = new Set(['image/png', 'image/jpeg', 'image/webp']);
 const LADO_MAX = 1280;          // px del lado mayor tras reescalar
 const CALIDADES = [0.85, 0.7, 0.55, 0.4];
 
-/** ¿El lado mayor supera el tope? Best-effort: sin APIs de imagen, `false`
- *  (se comporta como siempre — aceptar si cabe en bytes). */
-async function superaLadoMax(file, ladoMax) {
-  if (typeof createImageBitmap !== 'function') return false;
-  try {
-    const bmp = await createImageBitmap(file);
-    const lado = Math.max(bmp.width, bmp.height);
-    bmp.close?.();
-    return lado > ladoMax;
-  } catch { return false; }
+/** Decodifica el archivo a bitmap, o `null` sin las APIs (navegador viejo,
+ *  test en Node) — ahí se cae al comportamiento clásico (aceptar si cabe en
+ *  bytes). UNA sola decodificación para medir Y comprimir: decodificar dos
+ *  veces una foto de 6000×4000 es caro justo en la gama baja (R1). */
+async function bitmapDe(file) {
+  if (typeof createImageBitmap !== 'function') return null;
+  try { return await createImageBitmap(file); } catch { return null; }
 }
 
-async function comprimir(file, maxBytes, ladoMax) {
-  // Sin las APIs (navegador viejo, test en Node) no se comprime: se cae al
-  // comportamiento de siempre (aceptar si cabe, rebotar si no).
-  if (typeof createImageBitmap !== 'function' || typeof document === 'undefined') return null;
+async function comprimir(bmp, maxBytes, ladoMax) {
+  if (typeof document === 'undefined') return null;
   try {
-    const bmp = await createImageBitmap(file);
     const escala = Math.min(1, ladoMax / Math.max(bmp.width, bmp.height));
     const w = Math.max(1, Math.round(bmp.width * escala));
     const h = Math.max(1, Math.round(bmp.height * escala));
     const canvas = document.createElement('canvas');
     canvas.width = w; canvas.height = h;
-    canvas.getContext('2d').drawImage(bmp, 0, 0, w, h);
-    bmp.close?.();
+    canvas.getContext('2d').drawImage(bmp, 0, 0, w, h);   // el bitmap lo cierra el CALLER
     for (const q of CALIDADES) {
       const url = canvas.toDataURL('image/webp', q);
       // data-URL ≈ bytes·4/3: comparar en su propia unidad, no contra file.size.
@@ -88,13 +81,17 @@ export async function uploadMedia(file, { maxBytes = IMG_MAX_BYTES, ladoMax = LA
   // revisión de v1.51.429 los puso de acuerdo: ahora se miran las DOS cosas.
   if (RECOMPRIMIBLES.has(file.type)) {
     const pasaBytes = file.size > maxBytes;
-    const pasaPixeles = !pasaBytes && await superaLadoMax(file, ladoMax);
+    const bmp = await bitmapDe(file);   // UNA decodificación: mide Y comprime
+    const pasaPixeles = !pasaBytes && !!bmp && Math.max(bmp.width, bmp.height) > ladoMax;
     if (pasaBytes || pasaPixeles) {
-      const url = await comprimir(file, maxBytes, ladoMax);
+      const url = bmp ? await comprimir(bmp, maxBytes, ladoMax) : null;
+      bmp?.close?.();
       if (url) return url;
       // Sin APIs de canvas (test en Node, navegador viejo): si al menos cabía
       // en bytes, se acepta como antes; si no cabía, se explica.
       if (pasaBytes) throw new Error(`Imagen demasiado grande (${Math.round(file.size / 1024)} KB) incluso comprimida. Recórtala o usa una más pequeña.`);
+    } else {
+      bmp?.close?.();
     }
   }
   if (file.size > maxBytes) {

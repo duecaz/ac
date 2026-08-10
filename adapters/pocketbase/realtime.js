@@ -849,6 +849,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
           itemIndex: r.item, value: r.value,
           correct: (r.scored ? !!r.correct : (r.correct === true ? true : null)),
           points: r.points,
+          ms: r.ms,   // ms de SERVIDOR desde la salida: reanudar recupera la hora de meta
         }));
       }
       const { engine } = await load(sessionId);

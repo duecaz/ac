@@ -33,6 +33,12 @@
    Medido, no estimado: lo comprueba la matriz en cada pasada. */
 .ww-kahoot-grid .btn:nth-child(3) { background: var(--ww-shape-3, #d89e00); border-color: var(--ww-shape-3, #d89e00); color: var(--ww-shape-3-fg, #1f2937); }
 .ww-kahoot-grid .btn:nth-child(4) { background: var(--ww-shape-4, #26890c); border-color: var(--ww-shape-4, #26890c); color: var(--ww-shape-4-fg, #fff); }
+/* EL VEREDICTO GANA AL SKIN también en RONDAS (vivo/VS/Equipos, botones
+   `.rq-opt` de renderChoiceRound): el arreglo de v1.51.431 solo cubría el
+   player Individual (`.ww-opt`) y en carrera el fallo seguía sin ponerse rojo.
+   Cuatro clases (0-4-0), por encima de las formas y de cualquier skin. */
+.ww-kahoot-grid .btn.rq-opt.btn-success { background: var(--ww-success); border-color: var(--ww-success); color: #fff; }
+.ww-kahoot-grid .btn.rq-opt.btn-danger { background: var(--ww-danger); border-color: var(--ww-danger); color: #fff; }
 .ww-leaderboard .row { padding: .5rem; border-bottom: 1px solid rgba(255,255,255,.1); }
 .ww-podium { display: flex; align-items: flex-end; gap: 1rem; justify-content: center; }
 .ww-podium .step { background: linear-gradient(180deg, #fbbf24, #d97706); border-radius: 8px 8px 0 0; min-width: 100px; padding: 1rem; text-align: center; }

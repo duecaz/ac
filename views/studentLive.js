@@ -609,6 +609,9 @@ export async function renderPlay(rootSel, code) {
             raceQueue = s.queue;
             raceCorrectCount = s.correctCount;
             raceFirstSent = s.firstSent;
+            // Tras una recarga POST-meta, la hora real sale de las filas del
+            // servidor — no del reloj de "ahora" (revisión v1.51.432).
+            if (s.finishMs != null) raceFinishMs = s.finishMs;
             // ctx.setTimeout: si el alumno navegó (o el profe cerró) mientras la
             // siembra estaba en vuelo, no pintar sobre otra vista/fase.
             ctx.setTimeout(() => { if (session.phase === 'race') paintRace(); }, 0);

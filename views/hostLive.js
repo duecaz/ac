@@ -951,16 +951,25 @@ async function renderHost(rootSel, code, sessionId, activity) {
     // Ranking desde los PUNTOS REALES por respuesta (misma fuente que la Tabla →
     // podio y tabla SIEMPRE coinciden). Si no hay filas (colección vacía), cae al
     // marcador oficial de la sesión (state.players[].score).
-    const { rows, race } = await gatherSessionRows().catch(() => ({ rows: [], race: false }));
-    // En CARRERA el puntaje NO ordena por sí solo: un fallo vuelve a la cola, así
-    // que todo el que termina lo hace con TODAS bien y el podio sería un empate.
-    // Lo que decide (y lo que se MUESTRA) es la hora de meta.
-    let lb = buildSessionTable(rows, items.length, { items, template: tpl, activity, players }).players.map(p => ({
-      name: p.name, score: p.total, marks: p.marks, nCorrect: p.nCorrect,
-      // `tie` ordena y `sub` explica: el podio es compartido con el duelo VS, así
-      // que no sabe que el desempate es tiempo — recibe el número y el texto.
-      ...(race && p.finishMs >= 0 ? { tie: p.finishMs, sub: mmss(p.finishMs) } : {}),
-    }));
+    // Si las filas NO llegan (red caída al terminar), el respaldo es el marcador
+    // del servidor — NO sembrar a los jugadores con 0 encima de un fetch fallido
+    // (revisión v1.51.432: la siembra de la decisión C hacía inalcanzable el
+    // respaldo y un hipo de PB pintaba un podio con todos a 0).
+    let gathered = null;
+    try { gathered = await gatherSessionRows(); } catch { /* respaldo abajo */ }
+    let lb = [];
+    if (gathered) {
+      const { rows, race } = gathered;
+      // En CARRERA el puntaje NO ordena por sí solo: un fallo vuelve a la cola, así
+      // que todo el que termina lo hace con TODAS bien y el podio sería un empate.
+      // Lo que decide (y lo que se MUESTRA) es la hora de meta.
+      lb = buildSessionTable(rows, items.length, { items, template: tpl, activity, players }).players.map(p => ({
+        name: p.name, score: p.total, marks: p.marks, nCorrect: p.nCorrect,
+        // `tie` ordena y `sub` explica: el podio es compartido con el duelo VS, así
+        // que no sabe que el desempate es tiempo — recibe el número y el texto.
+        ...(race && p.finishMs >= 0 ? { tie: p.finishMs, sub: mmss(p.finishMs) } : {}),
+      }));
+    }
     if (!lb.length) { try { lb = await leaderboard(sessionId, 100); } catch { lb = []; } }
     if (phaseChanged) emitGame(GameEvents.PODIUM, { top: lb.slice(0, 3).map(p => ({ name: p.name, score: p.score })) });
     const isText = tpl?.meta?.contentModel === 'textCorrection';

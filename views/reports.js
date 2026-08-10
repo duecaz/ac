@@ -123,7 +123,11 @@ export async function renderSessionReport(rootSel, sessionId) {
   // entrara. Las filas ya se calculaban aquí para el análisis por ítem.
   const rows = rowsFromLiveState(sess);
   const labels = items.map((it, i) => { try { return tpl?.itemLabel?.(it) || `Pregunta ${i + 1}`; } catch { return `Pregunta ${i + 1}`; } });
-  const opts = { labels, items, template: tpl, activity };
+  // Decisión C (2026-08-09) también en el informe HISTÓRICO: quien entró sale
+  // en la tabla y el CSV aunque no respondiera nada — misma regla que el podio
+  // del host (core/sessionModel.js). En tareas no aplica: sin intento no hay
+  // rastro posible del alumno (no existe "unirse" a una tarea).
+  const opts = { labels, items, template: tpl, activity, players: sess.players };
   const jugadores = sess.players.length;
 
   mount(rootSel, html`

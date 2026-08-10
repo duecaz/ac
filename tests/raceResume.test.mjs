@@ -101,4 +101,25 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   ok('studentLive reanuda la carrera desde el servidor en vez de reiniciarla');
 }
 
+// ── 4. La hora de meta SOBREVIVE a la recarga (revisión v1.51.432) ───────────
+// Tras cruzar la meta y recargar, el "tu tiempo" salía del reloj de la RECARGA
+// (contradecía el orden del podio). Ahora se deriva de las filas del servidor:
+// el ms del último acierto — y SOLO si de verdad terminó (cola vacía).
+{
+  const done = raceResumeState(3, [
+    { itemIndex: 0, correct: true, ms: 4000 },
+    { itemIndex: 1, correct: true, ms: 9000 },
+    { itemIndex: 2, correct: true, ms: 7500 },
+  ]);
+  assert.strictEqual(done.finishMs, 9000, 'meta = ms del ÚLTIMO acierto (no el mayor índice)');
+  const aMedias = raceResumeState(3, [
+    { itemIndex: 0, correct: true, ms: 4000 },
+    { itemIndex: 1, correct: false, ms: 6000 },
+  ]);
+  assert.strictEqual(aMedias.finishMs, null, 'sin terminar (cola no vacía) NO hay hora de meta');
+  const sinMs = raceResumeState(1, [{ itemIndex: 0, correct: true }]);
+  assert.strictEqual(sinMs.finishMs, null, 'filas viejas sin ms → null (la vista cae al reloj, como antes)');
+  ok('raceResumeState recupera la hora de meta del servidor (y solo si terminó)');
+}
+
 console.log(`\nraceResume.test: ${passed} checks passed`);

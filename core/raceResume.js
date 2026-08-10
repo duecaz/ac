@@ -18,13 +18,21 @@
 export function raceResumeState(itemCount, rows) {
   const done = new Set();   // ítems ya acertados → NO vuelven a la cola
   const sent = new Set();   // ítems con PRIMER intento ya enviado (analítica v0/c0)
+  let finishMs = null;      // hora de meta (ms de servidor del ÚLTIMO acierto)
   for (const r of rows || []) {
     const i = Number(r?.itemIndex);
     if (!Number.isInteger(i) || i < 0 || i >= itemCount) continue;
     sent.add(i);
-    if (r.correct === true) done.add(i);
+    if (r.correct === true) {
+      done.add(i);
+      if (Number.isFinite(r.ms) && (finishMs == null || r.ms > finishMs)) finishMs = r.ms;
+    }
   }
   const queue = [];
   for (let i = 0; i < itemCount; i++) if (!done.has(i)) queue.push(i);
-  return { queue, correctCount: done.size, firstSent: sent };
+  // `finishMs` solo vale como hora de meta si de verdad TERMINÓ (cola vacía):
+  // sin esto, una recarga tras la meta mostraba como "tu tiempo" la hora de la
+  // RECARGA (se recalculaba con el reloj), contradiciendo el orden del podio.
+  return { queue, correctCount: done.size, firstSent: sent,
+           finishMs: queue.length === 0 ? finishMs : null };
 }
