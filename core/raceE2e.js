@@ -40,6 +40,16 @@ export async function runRaceE2e({ pbUrl, onLog = () => {} } = {}) {
   });
 
   let room = null;
+  // El adaptador AVISA por consola cuando el sello no entra (R6). Se recogen
+  // esos avisos durante la prueba para poder DECIR el motivo — si no, habría
+  // que pedirle al profe que abra la consola en mitad de una clase.
+  const avisos = [];
+  const warnOriginal = console.warn;
+  console.warn = (...a) => {
+    try { avisos.push(a.map(x => (x && x.message) || (x && x.pb && JSON.stringify(x.pb)) || String(x)).join(' ')); } catch { /* nada */ }
+    warnOriginal.apply(console, a);
+  };
+  let selloTrasAbrir = null;
   try {
     onLog('Creando sala de carrera desechable…');
     const items = Array.from({ length: N_ITEMS }, (_, i) => ({
@@ -54,6 +64,10 @@ export async function runRaceE2e({ pbUrl, onLog = () => {} } = {}) {
       status: 'running', phase: 'race', current_item: 0,
       started_at: new Date().toISOString(), deadline: null, end_policy: 'all', loop: 'race',
     });
+    // El sello se mira DOS veces —justo aquí y al cerrar— porque distingue las
+    // dos causas posibles sin adivinar: si no está ya, el PATCH del sello no
+    // entra; si está ahora y falta al final, algo lo PISA después.
+    selloTrasAbrir = (await fetchSessionBlob(room.id).catch(() => null))?.itemOpenedAt?.race ?? null;
 
     // Dos alumnos SIMULADOS: fila propia + credencial de dispositivo (§22-4),
     // el mismo camino que sus móviles. No se usa joinSession: en UN navegador
@@ -137,9 +151,12 @@ export async function runRaceE2e({ pbUrl, onLog = () => {} } = {}) {
     // porque es la CAUSA: cuando falta, la hora de meta sale igual para todos
     // y el fallo aparece dos líneas más abajo, lejos de su motivo.
     const sello = blob?.itemOpenedAt?.race ?? null;
+    const motivo = avisos.filter(a => a.includes('§22-1')).join(' · ');
     check(!!sello, 'el servidor SELLÓ la apertura de la carrera (§22-1)',
       sello ? String(sello)
-            : 'sin sello: los tiempos se miden desde la PRIMERA respuesta (el orden sigue siendo del servidor, pero el número absoluto queda corrido)',
+        : `sin sello (tras abrir: ${selloTrasAbrir ? 'SÍ estaba → algo lo pisa después' : 'tampoco → el PATCH del sello no entra'})`
+          + (motivo ? ` · motivo: ${motivo}` : ' · sin aviso en consola: el PATCH no llegó a intentarse')
+          + ' · los tiempos se miden desde la PRIMERA respuesta (el orden sigue siendo del servidor)',
       { warn: true });
     const caidoAlCliente = p1?.finishMs === 300 && p2?.finishMs === 300;
     check(p2?.finishMs > (p1?.finishMs ?? 0) + GAP_MS / 2,
@@ -168,6 +185,7 @@ export async function runRaceE2e({ pbUrl, onLog = () => {} } = {}) {
   } catch (e) {
     report.notes.push(`Prueba interrumpida: ${e?.message || e}`);
   } finally {
+    console.warn = warnOriginal;   // la consola vuelve a ser de quien era
     // Limpieza SIEMPRE (best-effort con motivo: lo que quede lo purga la
     // retención de §25; las live_claims quedan huérfanas A PROPÓSITO — la
     // regla §22-4 impide borrarlas para que nadie robe el puesto de un vivo).
