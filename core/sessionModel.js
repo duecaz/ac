@@ -85,7 +85,13 @@ export function buildSessionTable(rows, nItems, { labels = [], items = [], templ
              finishMs: finishMsOf(p.cells) };
     // manda nº de aciertos; a igualdad, menos errores (de más); luego puntos; y
     // por último quien LLEGÓ ANTES (empate total = la carrera).
-  }).sort((a, b) => b.marks - a.marks || a.overs - b.overs || b.total - a.total || byFinish(a, b));
+    // …y a igualdad ABSOLUTA, por nombre — el MISMO último desempate que
+    // `rankPlayers` (core/liveRank.js). Sin él, marcador y podio ordenaban
+    // distinto el empate perfecto (uno por nombre, el otro por orden de llegada
+    // de las filas) y la misma partida daba DOS ganadores: lo cazó el botón de
+    // carrera contra la Pi (marcador=TARDON · podio=VELOZ).
+  }).sort((a, b) => b.marks - a.marks || a.overs - b.overs || b.total - a.total || byFinish(a, b)
+    || String(a.name ?? '').localeCompare(String(b.name ?? '')));
 
   const perItem = Array.from({ length: nItems }, (_, i) => {
     let hits = 0, tot = 0, n = 0;

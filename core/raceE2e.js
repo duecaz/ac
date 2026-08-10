@@ -127,8 +127,18 @@ export async function runRaceE2e({ pbUrl, onLog = () => {} } = {}) {
     check(p1?.total === N_ITEMS && p2?.total === N_ITEMS,
       'puntos PLANOS: el puntaje ES el nº de aciertos (sin bonus)', `${p1?.total}/${p2?.total}`);
     check(p1?.name === 'VELOZ', 'gana quien terminó ANTES según el servidor', `ganó ${p1?.name}`);
+    // §22-1 · EL SELLO. Sin él, el tiempo de la carrera cae al `ms` que AFIRMA
+    // el móvil — el podio dejaría de ser verificable. Se comprueba aparte
+    // porque es la CAUSA: cuando falta, la hora de meta sale igual para todos
+    // y el fallo aparece dos líneas más abajo, lejos de su motivo.
+    const sello = blob?.itemOpenedAt?.race ?? blob?.itemOpenedAt?.['race'] ?? null;
+    check(!!sello, 'el servidor SELLÓ la apertura de la carrera (§22-1)',
+      sello ? String(sello) : 'sin sello: el tiempo caería al ms que afirma el móvil');
+    const caidoAlCliente = p1?.finishMs === 300 && p2?.finishMs === 300;
     check(p2?.finishMs > (p1?.finishMs ?? 0) + GAP_MS / 2,
-      'la hora de meta refleja el retraso REAL del lento', `${p1?.finishMs} ms vs ${p2?.finishMs} ms`);
+      'la hora de meta refleja el retraso REAL del lento',
+      caidoAlCliente ? 'los dos con el ms del cliente (300): no se midió en el servidor'
+                     : `${p1?.finishMs} ms vs ${p2?.finishMs} ms`);
     const lb = await leaderboard(room.id, 10);
     check(lb[0]?.name === p1?.name, 'el MARCADOR y el PODIO dan el mismo ganador',
       `marcador=${lb[0]?.name} · podio=${p1?.name}`);

@@ -2,6 +2,7 @@
 import assert from 'node:assert';
 import { buildSessionTable } from '../core/sessionModel.js';   // el MODELO es dominio (§0)
 import { sessionTableCsv } from '../views/sessionTable.js';
+import { rankPlayers } from '../core/liveRank.js';   // el otro ranking: deben coincidir
 
 let passed = 0; const ok = (m) => { passed++; console.log('  ✓', m); };
 
@@ -83,6 +84,23 @@ const textTpl = {
   const ana = t.players.find(p => p.name === 'Ana');
   assert.ok(ana.cells[0], 'la fila de Ana sigue puntuando su celda');
   ok('podio/tabla incluyen a todo jugador unido, con 0 si no respondió');
+}
+// ── empate ABSOLUTO: marcador y podio deben dar el MISMO ganador ────────────
+// Con todo igual (aciertos, puntos, hora de meta), `rankPlayers` desempataba
+// por nombre y esta tabla por orden de llegada de las filas → la misma partida
+// daba dos ganadores (marcador=TARDON · podio=VELOZ, visto contra la Pi).
+{
+  const empate = [
+    { player: 'v', name: 'VELOZ', itemIndex: 0, value: '1', correct: true, points: 1, ms: 300 },
+    { player: 't', name: 'TARDON', itemIndex: 0, value: '1', correct: true, points: 1, ms: 300 },
+  ];
+  const t = buildSessionTable(empate, 1, {});
+  const lb = rankPlayers([{ id: 'v', name: 'VELOZ' }, { id: 't', name: 'TARDON' }],
+    [{ playerId: 'v', points: 1, correct: true, msTaken: 300 },
+     { playerId: 't', points: 1, correct: true, msTaken: 300 }]);
+  assert.strictEqual(t.players[0].name, lb[0].name,
+    `empate absoluto: marcador (${lb[0].name}) y podio (${t.players[0].name}) deben coincidir`);
+  ok('empate absoluto: el marcador y el podio dan el MISMO ganador');
 }
 {
   const csv = sessionTableCsv(rows, 2);
