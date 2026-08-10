@@ -140,6 +140,13 @@ function renderPanel(rootSel) {
       </div>
       <div id="admin-stress-out" class="mt-2"></div>
 
+      <h5 class="mt-4">Carrera e2e <small class="text-muted">(2 alumnos simulados corren una carrera entera: puntos planos · gana el más rápido según el servidor · la trampa rebota)</small></h5>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <button id="admin-race" class="btn btn-primary"><i class="bi bi-flag-fill"></i> Probar carrera</button>
+        <small class="text-muted">Sala desechable (prefijo <code>stress_</code>), se borra al terminar. Tarda ~15 s (incluye 6 s de carrera real).</small>
+      </div>
+      <div id="admin-race-out" class="mt-2"></div>
+
       <h5 class="mt-4">Tests en vivo <small class="text-muted">(${TOTAL_TESTS} comprobaciones · la suite CI es <code>node tests/run.mjs</code>)</small></h5>
       <button id="admin-run" class="btn btn-success"><i class="bi bi-play-circle"></i> Ejecutar tests</button>
       <div id="admin-tests" class="mt-2"></div>
@@ -509,6 +516,37 @@ function renderPanel(rootSel) {
     box.querySelector('.d-flex')?.remove();
     box.insertBefore(banner, ul);
     btn.disabled = false;
+  });
+
+  on(rootSel, 'click', '#admin-race', async () => {
+    const box = document.getElementById('admin-race-out');
+    const btn = document.getElementById('admin-race');
+    const ok = await confirmModal('Se va a jugar una carrera completa con 2 alumnos simulados contra el servidor (crea y borra una sala de prueba, ~15 s). ¿Continuar?', { okText: 'Probar carrera' });
+    if (!ok) return;
+    btn.disabled = true;
+    const log = [];
+    const paint = () => {
+      box.innerHTML = `<div class="d-flex align-items-center gap-2 mb-1 text-muted"><span class="spinner-border spinner-border-sm"></span><small>${escapeHtml(log[log.length - 1] || 'Preparando…')}</small></div>`;
+    };
+    paint();
+    try {
+      const { runRaceE2e } = await import('../core/raceE2e.js');
+      const r = await runRaceE2e({ pbUrl: PB_URL, onLog: (m) => { log.push(m); paint(); } });
+      const notes = r.notes.length ? `<div class="alert alert-warning py-1 px-2 small mb-2">${r.notes.map(escapeHtml).join('<br>')}</div>` : '';
+      box.innerHTML = `
+        ${notes}
+        <div class="alert ${r.ok ? 'alert-success' : 'alert-danger'} py-1 px-2 mb-2 small">
+          <b>${r.ok ? '✅ La carrera se comporta' : '❌ La carrera NO se comporta'}</b> · ${r.ms} ms total
+        </div>
+        <ul class="list-group list-group-flush" style="font-size:.875rem">${r.checks.map(c => `
+          <li class="list-group-item d-flex justify-content-between align-items-center py-1 px-2">
+            <span>${c.ok ? '<span class="text-success fw-semibold me-1">✓</span>' : '<span class="text-danger fw-semibold me-1">✗</span>'}${escapeHtml(c.msg)}</span>
+            <small class="text-muted">${escapeHtml(c.detail)}</small></li>`).join('')}</ul>`;
+    } catch (e) {
+      box.innerHTML = `<div class="alert alert-danger py-1 px-2 small">Error: ${escapeHtml(e.message)}</div>`;
+    } finally {
+      btn.disabled = false;
+    }
   });
 
   on(rootSel, 'click', '#admin-stress', async () => {

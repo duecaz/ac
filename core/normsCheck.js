@@ -107,14 +107,16 @@ export const PB_OWNERS = {
   // encoge: no volver a añadir ficheros aquí, se añade un método al dueño.
   activities: ['adapters/pocketbase/remoteStore.js', 'views/adminView.js'],
   results: ['adapters/pocketbase/remoteStore.js', 'views/adminView.js'],
-  live_sessions: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js'],
-  live_answers: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js'],
-  live_players: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js'],
+  live_sessions: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js', 'core/raceE2e.js'],
+  live_answers: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js', 'core/raceE2e.js'],
+  live_players: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js', 'core/raceE2e.js'],
   live_keys: ['adapters/pocketbase/realtime.js', 'views/adminView.js'],
+  // stressTest y raceE2e (carrera e2e de botón): simulan al alumno — filas
+  // `stress_*` que ellos mismos borran; misma excepción sancionada.
   // stressTest: la prueba de carga registra la credencial del alumno simulado
   // (§22-4) porque sin ella el servidor rechaza sus respuestas — simular al
   // alumno es justo su trabajo, igual que ya lo hace en live_players/answers.
-  live_claims: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js'],
+  live_claims: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js', 'core/raceE2e.js'],
   assignments: ['adapters/pocketbase/assignments.js', 'views/adminView.js', 'core/stressTest.js',
     'adapters/index.js'],  // pbCollectionExists: decide el fallback local, no escribe
   assignment_attempts: ['adapters/pocketbase/assignments.js', 'views/adminView.js', 'core/stressTest.js'],

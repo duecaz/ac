@@ -5,7 +5,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **246 módulos · 909 imports internos.**
+> **247 módulos · 916 imports internos.**
 
 ### Ir a otro documento
 
@@ -33,7 +33,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3826 | 19 · 2980 | 0.78 |
 | **informes/tareas** | después de clase | 10 · 1044 | 4 · 435 | 0.42 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5474 | 12 · 975 | 0.18 |
-| **infra/común** | todo lo anterior | 120 · 12089 | 44 · 4760 | 0.39 |
+| **infra/común** | todo lo anterior | 121 · 12289 | 44 · 4760 | 0.39 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -56,12 +56,12 @@ graph TD
   A["<b>arranque</b><br/><small>cablea cada página (main.*.js, sw.js)</small><br/><small>3 módulos</small>"]
   V["<b>vistas</b><br/><small>el chrome: navegación, setup, informes</small><br/><small>28 módulos</small>"]
   AD["<b>adaptadores</b><br/><small>el transporte: PocketBase | local</small><br/><small>7 módulos</small>"]
-  C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>121 módulos</small>"]
+  C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>122 módulos</small>"]
   K["<b>kernel</b><br/><small>el motor de sesión: cuándo se liquida</small><br/><small>6 módulos</small>"]
   T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>75 módulos</small>"]
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>5 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
-  V -->|262| C
+  V -->|263| C
   T -->|184| C
   A -->|28| C
   AD -->|26| C
@@ -103,9 +103,9 @@ graph TD
 | Capa | Módulos más grandes |
 |---|---|
 | **arranque** | `main.teacher.js` (165) · `main.embed.js` (68) · `main.student.js` (49) |
-| **vistas** | `views/hostLive.js` (1031) · `views/adminView.js` (1029) · `views/studentLive.js` (891) · `views/vsView.js` (488) · `views/playerView.js` (370) |
+| **vistas** | `views/adminView.js` (1067) · `views/hostLive.js` (1031) · `views/studentLive.js` (891) · `views/vsView.js` (488) · `views/playerView.js` (370) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1111) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
-| **core** | `core/skins.js` (355) · `core/textCorrectionRound.js` (351) · `core/selftest.js` (331) · `core/normsCheck.js` (293) · `core/auth.js` (286) |
+| **core** | `core/skins.js` (355) · `core/textCorrectionRound.js` (351) · `core/selftest.js` (331) · `core/normsCheck.js` (295) · `core/auth.js` (286) |
 | **kernel** | `kernel/session/engine.js` (549) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/dataPort.js` (28) |
 | **plantillas** | `templates/crossword/player.js` (464) · `templates/wordsearch/player.js` (405) · `templates/match/player.js` (296) · `templates/diagram/player.js` (233) · `templates/quiz/editor.js` (212) |
 | **contenido** | `kernel/content/qaAdapt.js` (104) · `kernel/content/convert.js` (95) · `kernel/content/switch.js` (82) · `kernel/content/models.js` (79) · `kernel/content/index.js` (5) |
@@ -120,8 +120,8 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 | `core/html.js` | 81 |
 | `core/events.js` | 46 |
 | `core/registry.js` | 44 |
+| `core/ids.js` | 23 |
 | `core/storage.js` | 23 |
-| `core/ids.js` | 22 |
 | `core/clock.js` | 22 |
 | `core/toast.js` | 22 |
 | `kernel/session/engine.js` | 19 |
@@ -136,8 +136,8 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 | Módulo | Líneas | Lo importan |
 |---|---|---|
 | `adapters/pocketbase/realtime.js` | 1111 | 0 |
+| `views/adminView.js` | 1067 | 1 |
 | `views/hostLive.js` | 1031 | 1 |
-| `views/adminView.js` | 1029 | 1 |
 | `views/studentLive.js` | 891 | 1 |
 | `kernel/session/engine.js` | 549 | 19 |
 | `views/vsView.js` | 488 | 2 |
@@ -154,11 +154,11 @@ dueño del ESQUEMA y por eso las nombra todas.
 |---|---|---|
 | `activities` | `adapters/pocketbase/remoteStore.js` | con sesión, y solo como dueño |
 | `results` | `adapters/pocketbase/remoteStore.js` | cualquiera, sin cuenta |
-| `live_sessions` | `adapters/pocketbase/realtime.js` · `core/stressTest.js` | solo con sesión de profe |
-| `live_answers` | `adapters/pocketbase/realtime.js` · `core/stressTest.js` | el alumno, **atado a su dispositivo** (§22-4) |
-| `live_players` | `adapters/pocketbase/realtime.js` · `core/stressTest.js` | cualquiera, sin cuenta |
+| `live_sessions` | `adapters/pocketbase/realtime.js` · `core/stressTest.js` · `core/raceE2e.js` | solo con sesión de profe |
+| `live_answers` | `adapters/pocketbase/realtime.js` · `core/stressTest.js` · `core/raceE2e.js` | el alumno, **atado a su dispositivo** (§22-4) |
+| `live_players` | `adapters/pocketbase/realtime.js` · `core/stressTest.js` · `core/raceE2e.js` | cualquiera, sin cuenta |
 | `live_keys` | `adapters/pocketbase/realtime.js` | solo con sesión de profe |
-| `live_claims` | `adapters/pocketbase/realtime.js` · `core/stressTest.js` | cualquiera, sin cuenta |
+| `live_claims` | `adapters/pocketbase/realtime.js` · `core/stressTest.js` · `core/raceE2e.js` | cualquiera, sin cuenta |
 | `assignments` | `adapters/pocketbase/assignments.js` · `core/stressTest.js` · `adapters/index.js` | solo con sesión de profe |
 | `assignment_attempts` | `adapters/pocketbase/assignments.js` · `core/stressTest.js` | regla propia (ver `core/pbRules.js`) |
 | `reports` | `core/reports.js` | solo con sesión de profe |
