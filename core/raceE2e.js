@@ -66,29 +66,45 @@ export async function runRaceE2e({ pbUrl, onLog = () => {} } = {}) {
     check(veloz.id !== tardon.id && veloz.secret && tardon.secret,
       'dos alumnos simulados, cada uno con su fila y su credencial (§22-4)');
 
-    // Responder = upsert (índice único session·player·item): POST y, si choca,
-    // PATCH de la fila propia — el mismo baile que hace `postAnswer` en el
-    // adaptador. Fallar y corregir es lo que hace la carrera de verdad (un
-    // fallo vuelve a la cola) y el caso que ROMPÍA la hora de meta.
-    const answerRow = async (p, item, value) => {
+    // Responder: MISMO cuerpo y mismos campos que `submitRaceAttempt` del
+    // adaptador (upsert por el índice único session·player·item; al reintentar
+    // se PATCHea `{value, correct}` y NUNCA `ms` — el tiempo es veredicto del
+    // servidor, §22-1, y la regla rechaza la fila entera si el alumno lo manda.
+    // Copiar ese detalle importa: mandarlo hacía que la corrección del TARDÓN
+    // rebotara y el podio saliera 5/0 (cazado en la Pi, v1.51.433).
+    const answerRow = async (p, item, value, correct) => {
       const hdr = p.secret ? { 'X-WW-Claim': p.secret } : undefined;
-      const r = await jpost('live_answers',
-        { session: room.id, player: p.id, item, value, ms: 300, scored: false, correct: false, points: 0 }, hdr);
-      if (r.ok || r.status !== 400) return;
+      const r = await jpost('live_answers', {
+        session: room.id, player: p.id, item, value, ms: 300,
+        scored: false, correct: !!correct, points: 0, v0: value, c0: !!correct,
+      }, hdr);
+      if (r.ok) return true;
+      if (r.status !== 400) return false;                 // rechazo de regla: se ve en el check
       const q = await fetch(`${PB}/api/collections/live_answers/records?filter=${pbFilterParam(`session='${pbEscape(room.id)}' && player='${pbEscape(p.id)}' && item=${item}`)}&perPage=1`);
       const row = (await q.json())?.items?.[0];
-      if (row) await fetch(`${PB}/api/collections/live_answers/records/${row.id}`, {
+      if (!row || !correct || row.correct === true || row.scored) return false;
+      const pr = await fetch(`${PB}/api/collections/live_answers/records/${row.id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json', ...(hdr || {}) },
-        body: JSON.stringify({ value, ms: 500 }),
+        body: JSON.stringify({ value, correct: true }),
       });
+      return pr.ok;
     };
 
     onLog('VELOZ corre limpio…');
-    for (let i = 0; i < N_ITEMS; i++) await answerRow(veloz, i, String(i + 1));
+    let escrituras = 0, rechazos = 0;
+    const anota = (ok) => { escrituras++; if (!ok) rechazos++; };
+    for (let i = 0; i < N_ITEMS; i++) anota(await answerRow(veloz, i, String(i + 1), true));
     onLog(`…${GAP_MS / 1000} s de carrera…`);
     await new Promise(r => setTimeout(r, GAP_MS));
     onLog('TARDON falla y corrige, tarde…');
-    for (let i = 0; i < N_ITEMS; i++) { await answerRow(tardon, i, 'x'); await answerRow(tardon, i, String(i + 1)); }
+    for (let i = 0; i < N_ITEMS; i++) {
+      anota(await answerRow(tardon, i, 'x', false));
+      anota(await answerRow(tardon, i, String(i + 1), true));
+    }
+    // Si el SERVIDOR rechazó escrituras del alumno, el podio que salga después
+    // es basura: se dice aquí en vez de dejar que aparezca como "no terminó".
+    check(rechazos === 0, 'el servidor aceptó las respuestas de los dos alumnos',
+      `${escrituras - rechazos}/${escrituras} escrituras`);
 
     onLog('Cerrando la sala (settle del servidor)…');
     await endSession(room.id);
