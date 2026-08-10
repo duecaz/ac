@@ -27,6 +27,7 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 // Las colecciones declaradas en DEFS (el dueño del esquema). Se leen del BLOQUE
 // DEFS y no de todo el fichero, para no confundir menciones sueltas.
 const admin = read('views/adminView.js');
+const { camposQueFaltan } = await import('../core/pbSchema.js');   // el cálculo, para probarlo de verdad
 const bloque = admin.slice(admin.indexOf('const DEFS = ['), admin.indexOf('const COLLECTIONS'));
 const declaradas = [...bloque.matchAll(/\{\s*name:\s*'([a-z_]+)',\s*fields:/g)].map(m => m[1]);
 const script = read('tools/check-pb.sh');
@@ -80,6 +81,29 @@ const script = read('tools/check-pb.sh');
   const faltarían = ['activities', 'live_players'].filter(c => !comprobadas.has(c));
   assert.deepStrictEqual(faltarían, ['live_players'], 'el cruce no vería una colección sin comprobar');
   ok('CONTRA-PRUEBA: una colección nueva sin añadir a check-pb.sh sería cazada');
+}
+
+// ── REPARAR `created`/`updated`, no solo crearlos (§22-1) ───────────────────
+// Comportamiento, no redacción: `camposQueFaltan` es puro, así que se comprueba
+// con NOMBRES y no citando la línea del panel (tests/helpers/fuente.mjs).
+// El fallo que lo motivó: `live_sessions` de la Pi se creó antes de que
+// declaráramos los autodate y la reparación los excluía igual que en <0.23, así
+// que se quedó sin `updated` PARA SIEMPRE. Sin ese dato el sello de apertura de
+// la carrera ni se intentaba y el tiempo caía al que afirma el móvil, mudo.
+{
+  const deseados = [{ name: 'code' }, { name: 'state' },
+    { name: 'created', type: 'autodate' }, { name: 'updated', type: 'autodate' }];
+  const actuales = [{ name: 'id' }, { name: 'code' }, { name: 'state' }];   // la Pi
+  const v23 = camposQueFaltan({ actuales, deseados, isV23: true }).map(f => f.name);
+  assert.deepStrictEqual(v23, ['created', 'updated'], 'PB ≥0.23: los autodate que falten SE REPARAN');
+  // CONTRA-PRUEBA: en <0.23 son campos de SISTEMA y declararlos revienta el PATCH.
+  const viejo = camposQueFaltan({ actuales, deseados, isV23: false }).map(f => f.name);
+  assert.deepStrictEqual(viejo, [], 'PB <0.23: no se tocan (son de sistema)');
+  // `id` nunca, y lo que ya está no se duplica.
+  assert.deepStrictEqual(
+    camposQueFaltan({ actuales, deseados: [{ name: 'id' }, { name: 'code' }], isV23: true }), [],
+    'ni `id` ni los campos que ya existen');
+  ok('§22-1: el panel REPARA created/updated en colecciones que se crearon sin ellos');
 }
 
 console.log(`\n  ${passed} pbSchema checks passed`);

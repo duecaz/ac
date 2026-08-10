@@ -27,6 +27,7 @@ import { DEFAULT_WORDS, getWordList, setWordList, resetWordList } from '../core/
 import { recentErrors, clearErrors } from '../core/errorLog.js';
 import { isAdmin, createTeacher, getAuthUserId } from '../core/auth.js';
 import { listTeachers, setTeacherRole, countActivitiesByOwner } from '../core/teachers.js';
+import { camposQueFaltan } from '../core/pbSchema.js';   // qué reparar de una colección que ya existe
 
 // Admin UNIFICADO (auth v2): el acceso es por ROL de Google (isAdmin), no por
 // contraseña local. Solo un profe con role='admin' entra. La contraseña 'fernando'
@@ -915,8 +916,9 @@ function renderPanel(rootSel) {
             try {
               const cur = await (await fetch(`${PB_URL}/api/collections/${existingId}`, { headers })).json();
               const curFields = cur[schemaKey] || cur.fields || cur.schema || [];
-              const curNames = new Set(curFields.map(f => f.name));
-              const missing = (col[schemaKey] || []).filter(f => !curNames.has(f.name) && !['id','created','updated'].includes(f.name));
+              // Qué falta = core/pbSchema.js (puro y testeado): ahí vive el
+              // porqué de que `created`/`updated` sí se reparen en PB ≥0.23.
+              const missing = camposQueFaltan({ actuales: curFields, deseados: col[schemaKey] || [], isV23 });
               if (missing.length) {
                 patchBody[schemaKey] = [...curFields, ...missing.map(sinMarca)];
                 addedFields = missing.map(f => f.name);
