@@ -17,7 +17,7 @@ import { pickWord } from '../../core/liveWords.js';
 import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
 import { rankPlayers } from '../../core/liveRank.js';
 import { setConnectionState } from '../../core/connection.js';
-import { deriveAnswerMs, openedKey, openedAtFor } from '../../core/serverMs.js';
+import { deriveAnswerMs, openedKey, openedAtFor, origenServidor } from '../../core/serverMs.js';
 import { studentSnapshot, needsClientKey } from '../../core/liveSnapshot.js';
 import { lsGet, lsSet } from '../../core/ls.js';
 
@@ -258,14 +258,17 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
   // fila YA puntuada es lo que impide el doble conteo: settle() solo suma puntos
   // a players[] cuando la respuesta estaba sin puntuar (wasUnscored). Compartido
   // por settleItem y settlePending — el invariante anti-doble-conteo vive aquí.
-  function hydrateAnswerRow(engine, itemIndex, r) {
+  function hydrateAnswerRow(engine, itemIndex, r, origenRespaldo = null) {
     // §22-1 — el tiempo que PUNTÚA lo mide el SERVIDOR, no el móvil: se deriva de
     // los autodate de la fila contra el sello de apertura del ítem (host-only).
     // El `ms` afirmado por el alumno queda solo como respaldo (ver core/serverMs.js)
     // y se conserva en la fila para el diagnóstico.
+    // Sin sello (ese PATCH aparte puede no haber entrado) se usa el instante
+    // más temprano del SERVIDOR entre las filas: el orden sigue siendo suyo,
+    // no del móvil (core/serverMs.js · origenServidor).
     const { ms, source } = deriveAnswerMs({
       createdAt: r.created, updatedAt: r.updated,
-      openedAt: openedAtFor(engine.state.itemOpenedAt, itemIndex, engine.state.phase),
+      openedAt: openedAtFor(engine.state.itemOpenedAt, itemIndex, engine.state.phase) || origenRespaldo,
       claimedMs: r.ms, phase: engine.state.phase,
     });
     engine.state.answers[`${itemIndex}:${r.player}`] = {
@@ -316,6 +319,9 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
     const probe = await pbFetch(`/api/collections/${ANS}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}' && scored=false`)}&perPage=1&fields=id`);
     if (!probe?.items?.length) return 0;
     const res = await pbFetch(`/api/collections/${ANS}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}'`)}&perPage=500`);
+    // Origen de respaldo por si falta el sello: se calcula sobre TODAS las filas
+    // de la sala (en carrera todos los ítems se abren a la vez).
+    const origen = origenServidor(res?.items || []);
     const byItem = new Map();
     for (const r of res?.items || []) {
       const it = Number(r.item);
@@ -326,7 +332,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
     for (const [itemIndex, itemRows] of byItem) {
       const rows = dedupeByPlayer(itemRows);
       if (!rows.some(r => !r.scored)) continue;       // ese ítem ya está liquidado
-      for (const r of rows) hydrateAnswerRow(engine, itemIndex, r);
+      for (const r of rows) hydrateAnswerRow(engine, itemIndex, r, origen);
       engine.settle(itemIndex, { keepPhase: true });
       for (const r of rows) {
         if (r.scored) continue;                       // ya estaba puntuada: no la tocamos
@@ -667,7 +673,15 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       if (noteItemOpened(engine, patch, rec)) {
         await pbFetch(`/api/collections/${COLL}/records/${sessionId}`, {
           method: 'PATCH', body: JSON.stringify({ state: engine.state }),
-        }).catch(() => { /* el sello es best-effort: sin él se cae al ms afirmado */ });
+        }).catch((e) => {
+          // R6 · NO en silencio: este catch mudo es la razón de que nadie
+          // supiera, durante versiones, que en la Pi el sello no entraba (lo
+          // destapó el botón de carrera: los dos alumnos con el MISMO tiempo,
+          // el que afirmaba su móvil). Se sigue tolerando el fallo —abrir la
+          // pregunta no puede depender de esto— pero se DICE, y el settle ya
+          // no depende de él (core/serverMs.js · origenServidor).
+          console.warn('[live] §22-1: no se pudo guardar el sello de apertura; el tiempo se medirá desde la primera respuesta:', e);
+        });
       }
     },
 
@@ -691,12 +705,13 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       if (await answersReady()) {
         const { engine } = await load(sessionId);
         const rows = await fetchAnswerRows(sessionId, itemIndex);
+        const origen = origenServidor(rows);   // respaldo si falta el sello (§22-1)
         // Hydrate the engine with the collection's answers, then let the SAME
         // engine.settle() score them (single source of truth) — it adds points
         // to state.players[]. The host is the only writer here, so this PATCH
         // can't be clobbered by students. hydrateAnswerRow preserva el veredicto
         // de las filas ya puntuadas → un segundo settle no re-suma (ver helper).
-        for (const r of rows) hydrateAnswerRow(engine, itemIndex, r);
+        for (const r of rows) hydrateAnswerRow(engine, itemIndex, r, origen);
         const settled = engine.settle(itemIndex);
         // Write each answer's verdict back to its row (so students/host see ✓/✗
         // and points). Host-only writes, one per answer — no contention.

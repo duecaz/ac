@@ -55,6 +55,31 @@ export function deriveAnswerMs({ createdAt, updatedAt, openedAt, claimedMs = 0, 
   return { ms: Math.max(0, Number(claimedMs) || 0), source: 'claimed' };
 }
 
+/**
+ * ORIGEN DE RESPALDO cuando falta el sello (§22-1): el `created` MÁS TEMPRANO
+ * de las filas de la sala. Sigue siendo un instante del SERVIDOR (autodate),
+ * así que el ORDEN de la carrera se mantiene verificable aunque el sello se
+ * haya perdido — el número absoluto queda corrido por lo que tardó la primera
+ * respuesta, y eso es MUY preferible a caer en el `ms` que afirma el móvil
+ * (que es una afirmación del cliente decidiendo quién gana).
+ *
+ * Nació de una pasada real del botón de carrera contra la Pi: sin sello, los
+ * dos alumnos salieron con el MISMO tiempo (el que mandaron) y el podio
+ * ordenaba por nombre. El sello se escribe en un PATCH aparte y su fallo era
+ * mudo; ahora, además de avisar, el orden ya no depende de que ese PATCH entre.
+ *
+ * @param {Array<{created?:string}>} rows filas de live_answers de la sala
+ * @returns {string|null} ISO del instante más temprano, o null si no hay marcas
+ */
+export function origenServidor(rows) {
+  let min = null;
+  for (const r of rows || []) {
+    const t = parse(r?.created);
+    if (Number.isFinite(t) && (min === null || t < min)) min = t;
+  }
+  return min === null ? null : new Date(min).toISOString();
+}
+
 /** Clave del sello de apertura dentro del blob: en carrera todos los ítems se
  *  abren a la vez (un solo sello); en fase pregunta, uno por ítem. */
 export function openedKey(phase, itemIndex) {

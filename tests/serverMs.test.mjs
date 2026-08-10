@@ -11,7 +11,7 @@
 //
 // Run: node tests/serverMs.test.mjs
 import assert from 'node:assert';
-import { deriveAnswerMs, openedKey, openedAtFor } from '../core/serverMs.js';
+import { deriveAnswerMs, openedKey, openedAtFor, origenServidor } from '../core/serverMs.js';
 import { registerTemplate } from '../core/registry.js';
 import { createPocketbaseRealtime } from '../adapters/pocketbase/realtime.js';
 import { awardPoints } from '../core/scoring/award.js';
@@ -58,6 +58,32 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   assert.deepStrictEqual(deriveAnswerMs({ claimedMs: -5 }), { ms: 0, source: 'claimed' },
     'un ms afirmado negativo no pasa');
   ok('deriveAnswerMs: reloj del servidor, carrera por `updated`, respaldo marcado');
+}
+
+// ── 1b. SIN SELLO, el orden sigue siendo del SERVIDOR ────────────────────────
+// Visto en la Pi con el botón de carrera: el sello (PATCH aparte, fallo mudo)
+// no entró y los dos alumnos salieron con el MISMO tiempo — el que afirmaban
+// sus móviles —, así que el podio ordenaba por nombre. Con el origen de
+// respaldo, el orden vuelve a salir de marcas del servidor.
+{
+  const filas = [
+    { created: '2026-07-30 10:00:02.000Z', updated: '2026-07-30 10:00:05.000Z', ms: 300 },  // rápido
+    { created: '2026-07-30 10:00:03.000Z', updated: '2026-07-30 10:00:17.000Z', ms: 300 },  // lento
+  ];
+  const origen = origenServidor(filas);
+  assert.strictEqual(origen, '2026-07-30T10:00:02.000Z', 'origen = el `created` más temprano de la sala');
+  const [a, b] = filas.map(f => deriveAnswerMs({
+    createdAt: f.created, updatedAt: f.updated, openedAt: origen, claimedMs: f.ms, phase: 'race',
+  }));
+  assert.strictEqual(a.source, 'server', 'se mide con el servidor, no con el ms del móvil');
+  assert.ok(b.ms > a.ms + 10000, `el lento queda detrás por sus segundos reales (${a.ms} vs ${b.ms})`);
+  // CONTRA-PRUEBA: sin origen los dos empatan en el ms que afirmaron (el fallo).
+  const empate = filas.map(f => deriveAnswerMs({
+    createdAt: f.created, updatedAt: f.updated, claimedMs: f.ms, phase: 'race',
+  }));
+  assert.strictEqual(empate[0].ms, empate[1].ms, 'contra-prueba: sin origen, empate en el ms afirmado');
+  assert.strictEqual(origenServidor([]), null, 'sin filas no hay origen que inventar');
+  ok('origenServidor: sin sello, el ORDEN de la carrera lo sigue poniendo el servidor');
 }
 
 // ── 2. El sello por ítem ────────────────────────────────────────────────────

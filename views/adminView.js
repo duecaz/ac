@@ -536,11 +536,13 @@ function renderPanel(rootSel) {
       box.innerHTML = `
         ${notes}
         <div class="alert ${r.ok ? 'alert-success' : 'alert-danger'} py-1 px-2 mb-2 small">
-          <b>${r.ok ? '✅ La carrera se comporta' : '❌ La carrera NO se comporta'}</b> · ${r.ms} ms total
+          <b>${r.ok ? '✅ La carrera se comporta' : '❌ La carrera NO se comporta'}</b> · ${r.ms} ms total${r.avisos ? ` · ${r.avisos} aviso(s)` : ''}
         </div>
         <ul class="list-group list-group-flush" style="font-size:.875rem">${r.checks.map(c => `
           <li class="list-group-item d-flex justify-content-between align-items-center py-1 px-2">
-            <span>${c.ok ? '<span class="text-success fw-semibold me-1">✓</span>' : '<span class="text-danger fw-semibold me-1">✗</span>'}${escapeHtml(c.msg)}</span>
+            <span>${c.ok ? '<span class="text-success fw-semibold me-1">✓</span>'
+                  : c.warn ? '<span class="text-warning fw-semibold me-1">⚠</span>'
+                  : '<span class="text-danger fw-semibold me-1">✗</span>'}${escapeHtml(c.msg)}</span>
             <small class="text-muted">${escapeHtml(c.detail)}</small></li>`).join('')}</ul>`;
     } catch (e) {
       box.innerHTML = `<div class="alert alert-danger py-1 px-2 small">Error: ${escapeHtml(e.message)}</div>`;

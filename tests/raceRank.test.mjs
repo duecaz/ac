@@ -203,7 +203,10 @@ registerTemplate({
   assert.match(listAnswers, /scored: r\.scored/, 'listAnswers debe pasar `scored` (marca "el servidor ya puso su ms")');
   // Los DOS caminos de liquidación guardan el ms del servidor: si uno se olvida,
   // ese ítem pierde su hora de meta en cuanto el PATCH pisa `updated`.
-  assert.match(cut('async settleItem(', 1600), /ms: scored\.msTaken/, 'settleItem debe persistir el ms del servidor');
+  // Ventana generosa a propósito: es una CITA DE FUENTE (tests/helpers/fuente.mjs)
+  // y un corte justo da trabajo cada vez que se añade una línea correcta arriba
+  // — pasó al añadir el origen de respaldo del sello (v1.51.436).
+  assert.match(cut('async settleItem(', 2200), /ms: scored\.msTaken/, 'settleItem debe persistir el ms del servidor');
   assert.match(cut('async function settlePendingInto(', 2200), /ms: s\.msTaken/, 'settlePending debe persistir el ms del servidor');
   ok('el adaptador conserva y persiste el tiempo del servidor');
 }
