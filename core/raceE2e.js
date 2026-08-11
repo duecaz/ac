@@ -152,11 +152,26 @@ export async function runRaceE2e({ pbUrl, onLog = () => {} } = {}) {
     // y el fallo aparece dos líneas más abajo, lejos de su motivo.
     const sello = blob?.itemOpenedAt?.race ?? null;
     const motivo = avisos.filter(a => a.includes('§22-1')).join(' · ');
+    // ¿Tiene la colección los autodate? En PocketBase ≥0.23 `created`/`updated`
+    // son campos declarados, no de sistema: si `live_sessions` se creó antes de
+    // que los declaráramos, NO están, la respuesta del PATCH no trae `updated`
+    // y el sello ni se intenta (silencio total). Se mira sobre la fila real de
+    // la sala — sin superadmin y sin mandar a nadie al panel de PocketBase.
+    let faltaCampo = null;
+    try {
+      const rec = await (await fetch(`${PB}/api/collections/live_sessions/records/${room.id}`)).json();
+      if (rec && rec.id) faltaCampo = !('updated' in rec);
+    } catch { /* sin lectura: se omite este dato, el resto del aviso vale igual */ }
     check(!!sello, 'el servidor SELLÓ la apertura de la carrera (§22-1)',
       sello ? String(sello)
-        : `sin sello (tras abrir: ${selloTrasAbrir ? 'SÍ estaba → algo lo pisa después' : 'tampoco → el PATCH del sello no entra'})`
-          + (motivo ? ` · motivo: ${motivo}` : ' · sin aviso en consola: el PATCH no llegó a intentarse')
-          + ' · los tiempos se miden desde la PRIMERA respuesta (el orden sigue siendo del servidor)',
+        : `sin sello (tras abrir: ${selloTrasAbrir ? 'SÍ estaba → algo lo pisa después' : 'tampoco'})`
+          + (faltaCampo === true
+              ? ' · CAUSA: la colección live_sessions NO tiene el campo `updated` → corre «Crear colecciones» arriba (v1.51.438 o más) y vuelve a probar'
+              : faltaCampo === false
+                ? ' · la colección SÍ tiene `updated`, así que la causa es otra: avísame con esta línea'
+                : '')
+          + (motivo ? ` · motivo: ${motivo}` : '')
+          + ' · mientras tanto los tiempos se miden desde la PRIMERA respuesta (el orden sigue siendo del servidor)',
       { warn: true });
     const caidoAlCliente = p1?.finishMs === 300 && p2?.finishMs === 300;
     check(p2?.finishMs > (p1?.finishMs ?? 0) + GAP_MS / 2,
