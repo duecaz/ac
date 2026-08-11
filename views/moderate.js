@@ -4,7 +4,7 @@ import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { navigate } from '../core/router.js';
 import { isAdmin } from '../core/auth.js';
-import { listReports, deleteReport } from '../core/reports.js';
+import { listReports, deleteReport, esRondaQa, QA_PREFIX } from '../core/reports.js';
 import { remove } from '../core/storage.js';
 import { toast, confirmModal } from '../core/toast.js';
 
@@ -28,11 +28,27 @@ export async function renderModerate(rootSel) {
     </div>`);
 
   async function load() {
-    const reports = await listReports();
+    const todos = await listReports();
+    // Las rondas de PRUEBA (test.html) viajan por la misma colección con el
+    // prefijo `qa:` — se separan aquí para que no se mezclen con la moderación.
+    const rondas = todos.filter(esRondaQa);
+    const reports = todos.filter(r => !esRondaQa(r));
     const el = document.getElementById('mod-list');
     if (!el) return;
-    if (!reports.length) { el.innerHTML = `<p class="text-muted text-center py-5">No hay reportes. 🎉</p>`; return; }
-    el.innerHTML = `<div class="mod-reports">${reports.map(r => `
+    const rondasHtml = !rondas.length ? '' : `
+      <h4 class="mt-2 mb-2"><i class="bi bi-clipboard-check"></i> Rondas de prueba (QA)</h4>
+      ${rondas.map(r => `
+        <details class="mod-report d-block mb-2" data-report="${escapeHtml(r.id)}">
+          <summary style="cursor:pointer">
+            <b>${escapeHtml(String(r.activity).slice(QA_PREFIX.length))}</b>
+            · ${escapeHtml((r.created || '').slice(0, 16))} · por ${escapeHtml(r.by || '—')}
+            <button class="btn btn-sm btn-outline-secondary ms-2 mod-dismiss"><i class="bi bi-check2"></i> Descartar</button>
+          </summary>
+          <pre class="mt-2 mb-0 p-2" style="white-space:pre-wrap;font-size:.8rem;background:var(--bs-tertiary-bg,#f6f4ec);border-radius:6px">${escapeHtml(r.reason || '(vacío)')}</pre>
+        </details>`).join('')}
+      <hr class="my-3">`;
+    if (!reports.length && !rondas.length) { el.innerHTML = `<p class="text-muted text-center py-5">No hay reportes. 🎉</p>`; return; }
+    el.innerHTML = `${rondasHtml}${!reports.length ? '' : `<div class="mod-reports">${reports.map(r => `
       <div class="mod-report" data-report="${escapeHtml(r.id)}" data-activity="${escapeHtml(r.activity)}">
         <div class="mod-report__main">
           <div class="mod-report__act"><i class="bi bi-puzzle"></i> ${escapeHtml(r.activity)}</div>
@@ -44,7 +60,7 @@ export async function renderModerate(rootSel) {
           <button class="btn btn-sm btn-outline-secondary mod-dismiss" title="Descartar reporte"><i class="bi bi-check2"></i> Descartar</button>
           <button class="btn btn-sm btn-outline-danger mod-delact" title="Borrar la actividad"><i class="bi bi-trash3"></i> Borrar actividad</button>
         </div>
-      </div>`).join('')}</div>`;
+      </div>`).join('')}</div>`}`;
   }
 
   const rowOf = (b) => b.closest('.mod-report');

@@ -1,0 +1,55 @@
+<!doctype html>
+<!-- aulareto.com/test.html — HOJA DE PRUEBAS del equipo (herramienta de QA, no
+     producto). DECIDIDA por el dueño el 2026-08-11: «una vía para testear»
+     tras la ronda que cazó los fallos del iPhone y del empate. No se enlaza
+     desde el juego ni desde el panel del profe: quien la usa recibe la
+     dirección. El motor es qa/hoja.js (portable); la ronda vigente,
+     qa/ronda-actual.json; el envío va a la colección `reports` por su dueño
+     (core/reports.js) y se lee en #/moderar. -->
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AulaReto · Hoja de pruebas</title>
+<style>
+  :root { --qh-line:#e2ddce; --qh-card:#fff; --qh-soft:#56606f; --qh-primario:#141c2e;
+          --qh-primario-fg:#fff; --qh-foco:#c9930c; --qh-bien:#1c7a4f; --qh-bien-bg:#e4f2ea;
+          --qh-mal:#b3402f; --qh-mal-bg:#fbe9e5; }
+  body { margin:0; background:#f3efe4; color:#1f2937;
+         font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+</style>
+</head>
+<body>
+<div id="app"><p style="text-align:center;padding:3rem 1rem;color:#56606f">Cargando la ronda…</p></div>
+<script type="module">
+  import { montarHoja } from './qa/hoja.js';
+  import { VERSION } from './core/constants.js';
+  import { recentErrors } from './core/errorLog.js';
+  import { getAuthToken } from './core/auth.js';
+  import { submitQaRound } from './core/reports.js';
+
+  const app = document.getElementById('app');
+  try {
+    // cache-bust con la versión: al publicar una ronda nueva no hace falta
+    // pelearse con la caché del móvil.
+    const ronda = await (await fetch(`./qa/ronda-actual.json?v=${encodeURIComponent(VERSION)}`)).json();
+    montarHoja(app, {
+      ronda,
+      // El bloque que antes había que pegar a mano (Q6): versión, pantalla y
+      // últimos errores registrados por la app — va solo en cada informe.
+      contexto: () => {
+        const errs = (recentErrors() || []).slice(0, 5)
+          .map(e => `· ${e.ts || ''} ${e.msg || e.message || e}`).join('\n');
+        return `app v${VERSION} · ${navigator.userAgent.slice(0, 80)}\núltimos errores:\n${errs || '(ninguno registrado)'}`;
+      },
+      // Enviar exige sesión de profe (regla de `reports`): se dice ANTES.
+      puedeEnviar: () => getAuthToken() ? null
+        : 'Para enviar directo, inicia sesión de profe en aulareto.com (misma pestaña). Sin sesión, usa «Generar informe» y cópialo.',
+      enviar: ({ rondaId, texto }) => submitQaRound(rondaId, texto),
+    });
+  } catch (e) {
+    app.innerHTML = `<p style="text-align:center;padding:3rem 1rem;color:#b3402f">No se pudo cargar la ronda (${e?.message || e}). Recarga con Ctrl+F5.</p>`;
+  }
+</script>
+</body>
+</html>

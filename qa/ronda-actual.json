@@ -1,0 +1,64 @@
+{
+  "id": "2026-08-11",
+  "titulo": "AulaReto · Hoja de pruebas",
+  "intro": "Solo lo que cambió desde la última tanda. Marca el VEREDICTO de cada prueba: Pasa si ocurrió lo que dice «Tiene que pasar», Falla si no — y cuenta en la nota qué viste.",
+  "versionMin": "1.51.442",
+  "secciones": [
+    {
+      "titulo": "Antes de empezar",
+      "pruebas": [
+        { "n": 0, "titulo": "Versión nueva instalada",
+          "accion": "Abre aulareto.com y recarga con Ctrl+F5. En el móvil, cierra la pestaña y vuelve a abrirla.",
+          "espera": "arriba se ve el número de versión y es 1.51.442 o más. Si es menor, para y avisa: estarías probando la de antes.",
+          "casillas": ["PC", "Móvil"], "notaPista": "Versión que ves" }
+      ]
+    },
+    {
+      "titulo": "Parte 1 · Lo que se arregló de tu ronda anterior",
+      "nota": "Re-test de los fallos que encontraste. Pasa = quedó arreglado de verdad en tus aparatos.",
+      "pruebas": [
+        { "n": 1, "titulo": "Rondas juntas: el mismo número en PC y móvil",
+          "accion": "Sala En vivo → Rondas juntas con un quiz; un móvil dentro. Pulsa Empezar y mira las dos pantallas a la vez.",
+          "espera": "la cuenta de «Preparados…» y los segundos de la pregunta marcan el mismo número en PC y móvil (±1 por redondeo es normal)." },
+        { "n": 2, "titulo": "Empate: los dos leen lo mismo",
+          "accion": "Con dos móviles, que ambos acierten lo mismo y queden empatados. Mira qué le dice la pantalla a cada uno.",
+          "espera": "los dos leen el MISMO puesto («vas primero, empatado con …»). Antes uno leía «¡vas primero!» y el otro «empatas con…»." },
+        { "n": 3, "titulo": "Tarea con foto en iPhone",
+          "accion": "Tarea de un quiz cuya primera pregunta tenga una FOTO grande. Ábrela desde el iPhone.",
+          "espera": "la página entra entera a lo ancho, sin tener que desplazarse a los lados. Antes se veía «una esquinita»." },
+        { "n": 4, "titulo": "El que no responde sale en la lista",
+          "accion": "Partida con dos móviles: uno juega, el otro entra y no responde nada. Termina y mira Ranking y Tabla.",
+          "espera": "el que no respondió aparece con 0 y casillas en «—», y NO sale celebrado como ganador.",
+          "casillas": ["Ranking", "Tabla"] }
+      ]
+    },
+    {
+      "titulo": "Parte 2 · Que no se rompió lo demás",
+      "nota": "Rápido: una pasada por lo más tocado por dentro.",
+      "pruebas": [
+        { "n": 5, "titulo": "Individual: el fallo se pone rojo",
+          "accion": "Quiz en Individual: falla una a propósito.",
+          "espera": "la opción tocada se pone roja y la correcta verde, con cualquier tema." },
+        { "n": 6, "titulo": "Carrera: rojo y re-encolado",
+          "accion": "En vivo → Carrera: falla una desde el móvil.",
+          "espera": "se pone roja y esa pregunta vuelve a salir más adelante." },
+        { "n": 7, "titulo": "Final de carrera con aciertos y tiempo",
+          "accion": "Termina una carrera con un móvil y mira su pantalla final.",
+          "espera": "dice cuántas acertaste y tu tiempo (p. ej. «5 / 5 correctas · 1:12»)." },
+        { "n": 8, "titulo": "Fotos pesadas entran",
+          "accion": "Avatar del VS, fondo del editor e imagen de pregunta con una foto de móvil de 3-8 MB.",
+          "espera": "las tres entran comprimidas y se ven bien; nada rebota por tamaño.",
+          "casillas": ["Avatar", "Fondo", "Imagen"] }
+      ]
+    },
+    {
+      "titulo": "Parte 3 · El dato que falta",
+      "pruebas": [
+        { "n": 9, "titulo": "Fondos oscuros donde no se leen las letras",
+          "accion": "Cuando vuelva a pasar lo de las letras ilegibles en VS/Equipos, apunta las tres cosas en la nota.",
+          "espera": "necesitamos: qué TEMA estaba puesto, qué ACTIVIDAD era y QUÉ TEXTO no se leía. Sin las tres no se puede reproducir.",
+          "notaPista": "Tema · actividad · qué texto" }
+      ]
+    }
+  ]
+}

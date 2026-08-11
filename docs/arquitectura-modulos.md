@@ -5,7 +5,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **248 módulos · 917 imports internos.**
+> **249 módulos · 917 imports internos.**
 
 ### Ir a otro documento
 
@@ -28,12 +28,12 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
-| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1645 | 6 · 645 | 0.39 |
+| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1683 | 6 · 645 | 0.38 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2554 | 12 · 1196 | 0.47 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3843 | 19 · 3001 | 0.78 |
 | **informes/tareas** | después de clase | 10 · 1050 | 4 · 435 | 0.41 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5474 | 12 · 975 | 0.18 |
-| **infra/común** | todo lo anterior | 122 · 12431 | 44 · 4827 | 0.39 |
+| **infra/común** | todo lo anterior | 123 · 12652 | 44 · 4827 | 0.38 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -53,7 +53,7 @@ abajo, nunca al revés** (ley §0). Lo vigila `tests/layers.test.mjs`.
 
 ```mermaid
 graph TD
-  A["<b>arranque</b><br/><small>cablea cada página (main.*.js, sw.js)</small><br/><small>3 módulos</small>"]
+  A["<b>arranque</b><br/><small>cablea cada página (main.*.js, sw.js)</small><br/><small>4 módulos</small>"]
   V["<b>vistas</b><br/><small>el chrome: navegación, setup, informes</small><br/><small>28 módulos</small>"]
   AD["<b>adaptadores</b><br/><small>el transporte: PocketBase | local</small><br/><small>7 módulos</small>"]
   C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>123 módulos</small>"]
@@ -102,7 +102,7 @@ graph TD
 
 | Capa | Módulos más grandes |
 |---|---|
-| **arranque** | `main.teacher.js` (165) · `main.embed.js` (68) · `main.student.js` (49) |
+| **arranque** | `qa/hoja.js` (221) · `main.teacher.js` (165) · `main.embed.js` (68) · `main.student.js` (49) |
 | **vistas** | `views/adminView.js` (1071) · `views/hostLive.js` (1031) · `views/studentLive.js` (895) · `views/vsView.js` (488) · `views/playerView.js` (370) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1126) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
 | **core** | `core/skins.js` (355) · `core/textCorrectionRound.js` (351) · `core/selftest.js` (331) · `core/normsCheck.js` (295) · `core/auth.js` (286) |
