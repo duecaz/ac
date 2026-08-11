@@ -20,6 +20,7 @@ import { itemStatsHtml } from './itemStatsView.js';
 import { computeMedals } from '../core/itemStats.js';
 import { sessionTableHtml, sessionTableCsv } from './sessionTable.js';
 import { buildSessionTable } from '../core/sessionModel.js';   // el modelo es dominio (§0)
+import { origenServidor } from '../core/serverMs.js';   // respaldo del sello en carrera (§22-1)
 import { acquire } from '../core/lifecycle.js';
 import { getAuthUserId } from '../core/auth.js';
 import { openLoginModal } from './loginModal.js';
@@ -921,8 +922,13 @@ async function renderHost(rootSel, code, sessionId, activity) {
     // y corrigió tarde saldría con una meta más temprana que la real — y la meta
     // es lo que decide la carrera.
     const msOpts = { itemOpenedAt: blob?.itemOpenedAt, phase: wasRace ? 'race' : blob?.phase };
-    const all = await Promise.all(items.map((_, i) => listAnswers(sessionId, i).then(a => rowsFromLiveAnswers(a, i, msOpts)).catch(() => [])));
-    let rows = all.flat();
+    // Se baja TODO crudo primero: en CARRERA el origen de respaldo (sin sello,
+    // §22-1) es el `created` más temprano de TODA la sala — todos los ítems
+    // abren a la vez. En rondas cada ítem tiene su hora y el respaldo por ítem
+    // lo pone rowsFromLiveAnswers solo.
+    const crudo = await Promise.all(items.map((_, i) => listAnswers(sessionId, i).catch(() => [])));
+    if (wasRace && !msOpts.itemOpenedAt?.race) msOpts.origen = origenServidor(crudo.flat());
+    let rows = crudo.flatMap((a, i) => rowsFromLiveAnswers(a, i, msOpts));
     try {
       const seen = new Set(rows.map(r => `${r.player} ${r.itemIndex}`));
       for (const r of rowsFromLiveState(blob || {})) if (!seen.has(`${r.player} ${r.itemIndex}`)) rows.push(r);

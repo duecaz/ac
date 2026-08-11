@@ -220,8 +220,11 @@ export async function runRaceE2e({ pbUrl, onLog = () => {} } = {}) {
     }
   }
   report.ms = Date.now() - t0;
-  // Los AVISOS no tumban la prueba: lo que decide es el veredicto.
-  report.ok = checks.length > 0 && checks.every(c => c.ok || c.warn);
+  // Los AVISOS no tumban la prueba, pero una INTERRUPCIÓN sí: si algo reventó a
+  // medias (nota en `notes`), los checks que faltan nunca corrieron y un ✅
+  // sobre una lista parcial sería mentira (revisión de v1.51.444).
+  report.ok = checks.length > 0 && report.notes.length === 0
+    && checks.every(c => c.ok || c.warn);
   report.avisos = checks.filter(c => c.warn).length;
   return report;
 }

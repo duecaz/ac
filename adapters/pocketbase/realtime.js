@@ -319,9 +319,13 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
     const probe = await pbFetch(`/api/collections/${ANS}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}' && scored=false`)}&perPage=1&fields=id`);
     if (!probe?.items?.length) return 0;
     const res = await pbFetch(`/api/collections/${ANS}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}'`)}&perPage=500`);
-    // Origen de respaldo por si falta el sello: se calcula sobre TODAS las filas
-    // de la sala (en carrera todos los ítems se abren a la vez).
-    const origen = origenServidor(res?.items || []);
+    // Origen de respaldo por si falta el sello. En CARRERA todos los ítems se
+    // abren a la vez → el bueno es el de TODA la sala. En RONDAS cada pregunta
+    // abre a su hora: el de toda la sala le daría al ítem 5 un ms de minutos y
+    // le mataría el bonus de velocidad SOLO a los liquidados en el barrido de
+    // cierre (revisión de v1.51.444) → allí se usa el del PROPIO ítem.
+    const esCarrera = engine.state.loop === 'race' || engine.state.phase === 'race';
+    const origenSala = esCarrera ? origenServidor(res?.items || []) : null;
     const byItem = new Map();
     for (const r of res?.items || []) {
       const it = Number(r.item);
@@ -332,6 +336,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
     for (const [itemIndex, itemRows] of byItem) {
       const rows = dedupeByPlayer(itemRows);
       if (!rows.some(r => !r.scored)) continue;       // ese ítem ya está liquidado
+      const origen = origenSala ?? origenServidor(rows);   // rondas: el del propio ítem
       for (const r of rows) hydrateAnswerRow(engine, itemIndex, r, origen);
       engine.settle(itemIndex, { keepPhase: true });
       for (const r of rows) {
