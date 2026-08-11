@@ -483,8 +483,31 @@ usuario: se deja pendiente, no bloquea el resto.
   falta verlo con lápiz y palma de verdad, y revisar los umbrales del detector.
 - **Calibrador de pizarra**: el usuario tiene uno propio para adaptar; el que hay
   (`core/penCalibration.js`) funciona pero sus umbrales no se han contrastado.
-- **Contra PocketBase REAL**: `race-e2e` y `stress-live 30` nunca se han corrido
-  desde aquí (piden credenciales y la Pi).
+- ~~**Contra PocketBase REAL**: `race-e2e` y `stress-live 30` nunca se han corrido~~
+  ✅ **HECHO (2026-08-11)** desde los botones de `#/admin` — no hacen falta ni
+  credenciales ni PowerShell: **Simular carga** aguantó 50 alumnos concurrentes
+  (50/50 filas · 50 apodos únicos · 100 respuestas sin perder ninguna · 50 intentos
+  de tarea) y **Probar carrera** (`core/raceE2e.js`) salió 10/10 contra la Pi
+  (puntos planos · gana el que terminó antes por reloj del SERVIDOR · marcador =
+  podio · la trampa rebota con 404). De paso destapó el agujero de los autodate
+  (ver abajo, v1.51.438).
+
+### ✅ RESUELTO (v1.51.438-439, aplicado en la Pi el 2026-08-11) — §22-1: el sello NO se guardaba porque a 7 colecciones les faltaban `created`/`updated`
+En PocketBase ≥0.23 los autodate **hay que declararlos**; el panel los declaraba al
+CREAR pero al REPARAR una colección existente los excluía igual que en <0.23 (donde
+declararlos sí revienta) → las colecciones VIEJAS no se arreglaban nunca. `live_sessions`
+era una: sin `updated` en la respuesta del PATCH, `noteItemOpened` salía por `!rec.updated`
+y **el sello de apertura ni se intentaba, en silencio** → el tiempo de una carrera caía al
+`ms` que AFIRMA el móvil (con dos alumnos empatados, el podio ordenaba por nombre).
+- Lo cazó el botón `#/admin` → **Probar carrera**, tras tres pasadas en las que el aviso
+  fue afinándose hasta señalar la causa; el `catch` mudo del sello (R6) era lo que lo
+  había mantenido invisible durante versiones.
+- Arreglo: `core/pbSchema.js camposQueFaltan()` (en ≥0.23 los autodate SÍ se reparan) +
+  respaldo `origenServidor()` en `core/serverMs.js`, para que el ORDEN de una carrera no
+  dependa nunca de un PATCH best-effort. Tests: `pbSchema`, `serverMs`, `sessionTable`.
+- Detalle completo (qué colecciones, qué rompía, qué apaños se quedan) en
+  **`docs/infraestructura-pb.md` → Quirks de PB 0.23**.
+- Verificado en la Pi: sello con fecha y 10/10 en «Probar carrera».
 
 ### 🟠 PASO DEL USUARIO (v1.51.428) — re-correr "Crear colecciones" UNA vez (la v1.51.427 tenía un ReferenceError de ámbito en el corrector, cazado por el usuario y arreglado con sonda E2E contra un PB simulado)
 El panel ahora **CORRIGE él mismo** los atributos declarados que hayan derivado

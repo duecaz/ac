@@ -119,13 +119,28 @@ los MISMOS campos y reglas (fuente de verdad en código: `views/adminView.js` DE
 
 ### Quirks de PB 0.23 que YA nos mordieron (no repetir)
 
-- **`activities` NO tiene `created`/`updated`**: en PB ≥0.23 las colecciones creadas por
-  API no traen esos autodate, y añadirlos después por PATCH no aplicó. Por eso **PROHIBIDO
-  `sort=-updated` / `sort=-created` sobre `activities`** — rompe con el error opaco
-  *"Something went wrong while processing your request"* (para TODOS, incluso superadmin:
-  es la query, no las reglas). La app ordena en cliente por `data.updatedAt`
-  (explore.js / landing.js / author.js). `results` sí intenta `sort=-created` con
-  fallback sin orden (remoteStore.listResults).
+- **Los autodate `created`/`updated` hay que DECLARARLOS** (y faltaban en 7 colecciones —
+  RESUELTO 2026-08-11, v1.51.438). En PB ≥0.23 no son campos de sistema: una colección
+  creada por API sin declararlos se queda sin ellos. El panel los declara al CREAR desde
+  v1.51.2xx, pero al REPARAR una colección existente los excluía igual que en <0.23 (donde
+  declararlos sí revienta), así que **las colecciones viejas no se arreglaban nunca**.
+  - Estaban sin ellos: `activities`, `results`, `live_sessions`, `assignments`,
+    `assignment_attempts`, `activity_likes`, `reports`. Las creadas después (`live_answers`,
+    `live_players`, `live_claims`, `live_keys`, `profiles`) sí los tenían.
+  - **Qué rompía, en silencio**: sin `updated` en la respuesta del PATCH, el sello de
+    apertura de §22-1 NI SE INTENTABA (`noteItemOpened` sale por `!rec.updated`), así que el
+    tiempo de una carrera caía al `ms` que AFIRMA el móvil. Y los listados que ordenan por
+    fecha (`listSessions`, `listResults`, `listReports`) caían a "sin orden".
+  - **Cómo se cazó**: el botón `#/admin` → «Probar carrera» (`core/raceE2e.js`), que mira el
+    sello y, si falta, comprueba si la fila trae `updated` y lo dice. Antes se veía como
+    "los dos alumnos empatan en tiempo".
+  - **Arreglo**: `core/pbSchema.js camposQueFaltan()` — en ≥0.23 los autodate SÍ se reparan;
+    en <0.23 se siguen excluyendo. Vigilado por `tests/pbSchema.test.mjs`.
+  - Los cuatro apaños "por si la colección no tiene el campo" (`listSessions`,
+    `listResults`, `listReports`, `listPublicActivities`) **se quedan**: protegen a otra
+    instalación que aún no haya aplicado el panel. `activities` ya no debería romper con
+    `sort=-created`, pero el orden en cliente por `data.updatedAt` funciona y no depende del
+    servidor: si alguien quiere volver al sort del servidor, que lo pruebe antes.
 - **IDs de 15 chars alfanuméricos exactos**: `act_aBcDeFgHiJ` → `actabcdefghij00`
   (strip + pad, `remoteStore.toId`). El id original vive dentro de `data.id`.
 - **Filtros**: SIEMPRE `pbEscape`/`pbFilterParam` (`core/pbFilter.js`) — la comilla simple
