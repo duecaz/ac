@@ -174,9 +174,26 @@ const read = (p) => readFileSync(new URL(p, new URL('..', import.meta.url)), 'ut
   assert.strictEqual(ana.aboveName, null, 'el primero no tiene a nadie arriba (la vista pinta «¡vas primero!»)');
   assert.strictEqual(ana.gap, 0);
 
+  // EMPATE: puesto COMPARTIDO y la misma frase para los dos. Antes el puesto era
+  // la posición en el array (la decidía el desempate por nombre), así que con
+  // 700 y 700 uno leía «2.º · empatas con Beto» y el otro «2.º» a secas — y con
+  // un empate ARRIBA, uno leía «¡vas primero!» y su compañero «empatas con…»
+  // mientras la pizarra mostraba el mismo puntaje (ronda del 2026-08-11).
   const caro = standingOf(lb, 'c');
-  assert.strictEqual(caro.gap, 0, 'empatado: distancia 0');
-  assert.strictEqual(caro.aboveName, 'Beto', 'y con quién empata');
+  assert.strictEqual(caro.rank, 2, 'empatados comparten puesto: Beto y Caro son 2.º');
+  assert.strictEqual(standingOf(lb, 'b').rank, caro.rank, 'y el puesto es EL MISMO para los dos');
+  assert.strictEqual(caro.tied, 1, 'sabe con cuántos empata');
+  assert.strictEqual(caro.tiedName, 'Beto', 'y con quién, para poder decirlo');
+  assert.strictEqual(caro.gap, 200, 'la distancia mide al de ARRIBA de verdad (Ana), no al empatado');
+  assert.strictEqual(caro.aboveName, 'Ana', 'y nombra a quien hay que alcanzar');
+
+  // EMPATE EN CABEZA: los dos son 1.º y ninguno tiene a nadie arriba → los dos
+  // leen lo mismo. Este es el caso exacto que reportó la ronda.
+  const dobleLider = [{ id: 'x', name: 'Uno', score: 1 }, { id: 'y', name: 'Dos', score: 1 }];
+  const uno = standingOf(dobleLider, 'x'), dos = standingOf(dobleLider, 'y');
+  assert.strictEqual(uno.rank, 1); assert.strictEqual(dos.rank, 1);
+  assert.strictEqual(uno.aboveName, null); assert.strictEqual(dos.aboveName, null);
+  assert.strictEqual(uno.tied, 1); assert.strictEqual(dos.tied, 1);
 
   assert.strictEqual(standingOf(lb, 'zz'), null, 'quien no está en el marcador no rompe la pantalla');
   assert.strictEqual(standingOf(null, 'a'), null, 'ni un marcador que no llegó');

@@ -551,13 +551,17 @@ export async function renderPlay(rootSel, code) {
       // comprueba números en vez de citar estas líneas.
       standing = standingOf(await leaderboard(session.id, 100), player.playerId);
     } catch { /* sin marcador: se pinta el resultado igual */ }
+    // El empate se DICE, y se dice IGUAL a los dos: el puesto ya es compartido
+    // (core/liveRank.js), así que la frase solo lo explica.
+    const empateTxt = !standing || !standing.tied ? '' :
+      (standing.tied === 1
+        ? `empatado con ${escapeHtml(standing.tiedName || '')}`
+        : `empatado con ${standing.tied} más`);
     const standingHtml = !standing ? '' : `
       <p class="h5 mt-3 mb-0">${standing.rank}º de ${standing.total} · ${standing.score} pts</p>
       ${standing.aboveName
-        ? `<p class="text-muted">${standing.gap === 0
-             ? `empatas con ${escapeHtml(standing.aboveName)}`
-             : `a ${standing.gap} ${standing.gap === 1 ? 'punto' : 'puntos'} de ${escapeHtml(standing.aboveName)}`}</p>`
-        : '<p class="text-muted">¡vas primero!</p>'}`;
+        ? `<p class="text-muted">a ${standing.gap} ${standing.gap === 1 ? 'punto' : 'puntos'} de ${escapeHtml(standing.aboveName)}${empateTxt ? ` · ${empateTxt}` : ''}</p>`
+        : `<p class="text-muted">${empateTxt ? `vas primero, ${empateTxt}` : '¡vas primero!'}</p>`}`;
     mount(rootSel, html`
       <div class="text-center py-5">
         ${skipped

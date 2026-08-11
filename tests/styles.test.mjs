@@ -236,6 +236,34 @@ const THEME_BASELINE = {
   ok(`veredicto (verde/rojo) por encima de todo fondo de forma/skin, en player Y rondas (especificidad ${verdictMin})`);
 }
 
+// ── LA IMAGEN NO DESBORDA SIN MARCO (§3 · ronda del 2026-08-11, prueba 12) ───
+// El estándar de maquetación vive bajo `.ww-play-page .ww-player-frame`, que solo
+// monta la página del profe: en TAREA y EN VIVO la plantilla va directa a `#app`.
+// Con el tope de la imagen únicamente dentro del marco, una foto de 1280 px
+// empujaba la tarea a 1288 px en un iPhone de 390 (medido: el alumno veía «una
+// esquinita»). Aquí se exige que EXISTA un tope fuera del marco; el ancho real
+// lo mide la sonda de navegador, esto impide que la regla se pierda en un
+// refactor sin que nadie lo note hasta la clase siguiente.
+{
+  const css = blank(readFileSync(join(STYLES, 'player.css'), 'utf8'));
+  const topes = [];
+  for (const m of css.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+    if (!/max-width\s*:\s*100%/.test(m[2])) continue;
+    for (const sel of m[1].split(',').map(s => s.trim())) {
+      if (/\bimg\b/.test(sel)) topes.push(sel);
+    }
+  }
+  assert.ok(topes.length, 'player.css debe topar el ancho de las imágenes del juego');
+  const sinMarco = topes.filter(s => !/ww-player-frame|ww-play-page/.test(s));
+  assert.ok(sinMarco.length,
+    `el tope de la imagen SOLO existe dentro del marco (${topes.join(' · ')}) — en tarea y en vivo no hay marco y la foto desborda`);
+  // CONTRA-PRUEBA: la comprobación distingue de verdad marco de no-marco.
+  assert.strictEqual(
+    ['.ww-play-page .ww-player-frame .ww-q-media img'].filter(s => !/ww-player-frame|ww-play-page/.test(s)).length, 0,
+    'un tope escrito solo dentro del marco no contaría como tope global');
+  ok(`la imagen del juego tiene tope fuera del marco (${sinMarco.length} regla(s)): tarea y en vivo no desbordan`);
+}
+
 if (newViolations.length) {
   console.error('\n✗ Nuevas violaciones de estilo de actividad:\n  - ' + newViolations.join('\n  - '));
   console.error('\n  Regla (CLAUDE.md): el PLAYER no lleva tamaños fijos (usa cq*/% o piso max()),');

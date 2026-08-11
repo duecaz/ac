@@ -22,6 +22,21 @@
   padding: 5px .5rem 0;   /* un respiro entre la barra superior y el marco */
 }
 
+/* LA IMAGEN NUNCA DESBORDA, HAYA MARCO O NO — la regla de suelo (§3).
+   Todo el estándar de maquetación vive bajo `.ww-play-page .ww-player-frame`,
+   que SOLO monta la página del profe (`views/playerView.js`). La TAREA y el EN
+   VIVO montan la plantilla directa en `#app`: allí ninguna de esas reglas
+   aplica, así que una imagen de 1280 px empujaba la página a 1280 px en un
+   iPhone de 390 — el alumno veía «una esquinita» de su tarea. Se notó porque la
+   pregunta SIGUIENTE, sin imagen, entraba bien, y la misma actividad en VS (que
+   sí va enmarcada) escalaba. Ronda del compañero 2026-08-11, prueba 12.
+   Va sin `.ww-play-page` a propósito: es el mínimo que debe cumplirse en las
+   TRES pantallas. Dentro del marco, la regla de abajo (más específica) sigue
+   mandando con su `max-height` + `object-fit`. */
+.ww-player img,
+.ww-q-media img,
+#s-round img { max-width: 100%; height: auto; }
+
 /* The "embed" frame — bounded width, fixed aspect ratio, scrolls inside.
    Like a YouTube embed: small box inside the page, not the whole page. */
 .ww-play-page .ww-player-frame {

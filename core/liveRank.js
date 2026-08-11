@@ -103,12 +103,25 @@ export function standingOf(lb, playerId) {
   const i = lista.findIndex(p => p && p.id === playerId);
   if (i < 0) return null;
   const yo = lista[i];
-  const arriba = i > 0 ? lista[i - 1] : null;
+  const mio = yo.score ?? 0;
+  // PUESTO COMPARTIDO (como en deporte): 1 + cuántos tienen MÁS puntos. Antes
+  // era la posición en el array, que a igualdad la decide el desempate por
+  // nombre — así, con 1 punto cada uno, a un alumno se le decía «¡vas primero!»
+  // y al de al lado «empatas con…», mientras la pizarra mostraba un empate.
+  // Dos chicos sentados juntos leyeron eso a la vez (ronda del 2026-08-11).
+  const rank = lista.filter(p => (p?.score ?? 0) > mio).length + 1;
+  // El de ARRIBA es el más cercano con MÁS puntos, no el vecino del array (que
+  // puede estar empatado conmigo): si no, la distancia salía 0 y no explicaba nada.
+  const arriba = lista.slice(0, i).reverse().find(p => (p?.score ?? 0) > mio) || null;
+  const empatados = lista.filter(p => p && p.id !== playerId && (p.score ?? 0) === mio);
   return {
-    rank: i + 1,
+    rank,
     total: lista.length,
-    score: yo.score ?? 0,
-    gap: arriba ? Math.max(0, (arriba.score ?? 0) - (yo.score ?? 0)) : 0,
+    score: mio,
+    gap: arriba ? Math.max(0, (arriba.score ?? 0) - mio) : 0,
     aboveName: arriba?.name || null,
+    // Con quién comparto puesto: el nombre para decirlo y el número para el resto.
+    tied: empatados.length,
+    tiedName: empatados[0]?.name || null,
   };
 }
