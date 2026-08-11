@@ -1,5 +1,7 @@
 # Decisiones de producto pendientes — contrastadas con Wordwall y Kahoot
 
+> **Tipo**: decisión · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 Los referentes ya tomaron estas decisiones; nosotros aún no. Este documento NO
 es un plan de tareas: es la lista de bifurcaciones donde el proyecto todavía
 puede ir a dos sitios distintos, con una recomendación por cada una. Cuando una

@@ -1,5 +1,7 @@
 # EL NORTE — para quién es esto, y cómo se decide
 
+> **Tipo**: decisión · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 > **Rango**: este documento manda sobre los demás. [`leyes.md`](leyes.md) dice cómo se
 > construye; **este dice qué construimos y para quién**. Si una ley y el norte
 > chocan, gana el norte y la ley se replantea.

@@ -1,5 +1,7 @@
 # D7 · Estudio: ¿cuántos bucles de juego en vivo tenemos, y cuánto cuestan?
 
+> **Tipo**: decisión · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 Kahoot tiene **UN** bucle (pregunta → responder → revelar → ranking) y sus tipos
 de pregunta son variantes dentro de ese bucle, no juegos distintos. Esa decisión
 es la que le permite añadir tipos de pregunta sin tocar el motor de la partida.

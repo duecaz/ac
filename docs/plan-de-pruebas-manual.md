@@ -1,5 +1,7 @@
 # Plan de pruebas manual — mapa completo para el tester
 
+> **Tipo**: guía · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 > **Para quién**: el compañero que va a probar los juegos en **aulareto.com**, sin
 > necesidad de saber programar. **Qué es**: el recorrido completo de la app, en
 > orden, con lo que debe pasar en cada paso y lo que sería un bug.

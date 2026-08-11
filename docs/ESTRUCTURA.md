@@ -1,5 +1,7 @@
 # WW Actividades — Estructura del proyecto y de las actividades
 
+> **Tipo**: guía · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 > Documento de referencia para asistentes (ChatGPT/Claude). Describe cómo está
 > organizado el proyecto y, sobre todo, el **esquema JSON de una actividad** y el
 > **modelo de contenido de cada plantilla**, para poder generar o editar

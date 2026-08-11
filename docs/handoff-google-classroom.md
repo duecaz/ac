@@ -1,5 +1,7 @@
 # Login con Google + Google Classroom — guía de configuración
 
+> **Tipo**: plan · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 > **Fase A (login con Google) IMPLEMENTADA en código (v1.51.215).** Funciona en
 > cuanto configures Google Cloud + PocketBase (abajo). Fase B (enviar tareas a
 > Classroom) es el siguiente paso, ya con base montada.

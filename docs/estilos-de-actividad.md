@@ -1,5 +1,7 @@
 # Estilos de actividad — el contrato que hace que TODA actividad escale y cambie de skin
 
+> **Tipo**: guía · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 > **El problema recurrente**: al crear una actividad nueva, el CSS del juego se
 > escribe con tamaños fijos (`font-size: .9rem`) o colores a pelo (`color: #6c757d`).
 > Resultado: el texto NO crece en 4K ni encoge en 600×800, y los **skins no pueden

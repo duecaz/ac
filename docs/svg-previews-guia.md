@@ -1,5 +1,7 @@
 # Guía — Diseñar previews SVG para las tarjetas del home (Fase 2c)
 
+> **Tipo**: guía · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 > Para el usuario (diseña en Windows) y para Claude (integra). El plan general
 > vive en `docs/historico/handoff-previews-home.md`; esto es el brief de diseño + entrega.
 

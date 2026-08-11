@@ -1,5 +1,7 @@
 # Identidad — anon id local + auth PocketBase
 
+> **Tipo**: guía · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 > Cómo se identifica al usuario y a quién pertenecen las actividades. Verificado
 > contra `core/identity.js`, `core/auth.js`, `core/state.js` y `core/storage.js`.
 > (La versión anterior de este doc describía el flujo Supabase con Google

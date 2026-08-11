@@ -1,5 +1,7 @@
 # Desarrollo local (offline, sin backend)
 
+> **Tipo**: guía · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 La app elige backend automáticamente: en **localhost** usa el backend **`local`**
 (localStorage para datos + un driver realtime sobre `BroadcastChannel` para
 LIVE). En producción (`*.github.io`) usa **PocketBase** (`pb.lanube.uno`), sin

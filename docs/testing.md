@@ -1,5 +1,7 @@
 # Testeo — suites, cómo correrlas y cómo verificar lo visual
 
+> **Tipo**: guía · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 > El MD de referencia para probar el proyecto. Tres niveles: **suite Node** (pura,
 > CI), **self-tests en navegador** (panel admin) y **verificación headless**
 > (Playwright) para lo que la suite no puede ver (DOM, táctil, layout).

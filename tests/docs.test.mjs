@@ -17,7 +17,7 @@
 // Run: node tests/docs.test.mjs
 import assert from 'node:assert';
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
 
@@ -172,6 +172,53 @@ const run = (args) => execFileSync(process.execPath, args, { cwd: ROOT, encoding
   assert.deepStrictEqual(malas, [],
     `cifras del preflight desactualizadas en los docs:\n  ${malas.join('\n  ')}\n`);
   ok(`las cifras del preflight en los docs cuadran con el código (${redes} redes · ${recorridos} recorridos)`);
+}
+
+// ── 4. CLAUDE.md es el MAPA, no el diario (dieta del 2026-08-11) ────────────
+// La crónica de deuda resuelta lo había llevado a 821 líneas: cada sesión
+// añadía su bloque «✅ RESUELTO» y nadie los retiraba — un doc de entrada que
+// hay que scrollear entrena a no leerlo. Lo resuelto vive en
+// docs/historico/deuda-resuelta.md; aquí se fija que no vuelva a acumularse.
+{
+  const claude = readFileSync(join(ROOT, 'CLAUDE.md'), 'utf8');
+  const resueltos = [...claude.matchAll(/^#{3,4} .*(?:✅|RESUELTO|RESUELTA)/gm)].map(m => m[0]);
+  assert.deepStrictEqual(resueltos, [],
+    `CLAUDE.md acumula deuda RESUELTA (muévela a docs/historico/deuda-resuelta.md):\n  ${resueltos.join('\n  ')}`);
+  // PRESUPUESTO de tamaño, no ratchet: CLAUDE.md crece legítimamente con
+  // estándares nuevos — pero pasar el tope obliga a PODAR algo o a subir esta
+  // constante A CONCIENCIA (con el porqué en el commit), nunca sin darse cuenta.
+  const PRESUPUESTO = 560;
+  const lineas = claude.split('\n').length;
+  assert.ok(lineas <= PRESUPUESTO,
+    `CLAUDE.md tiene ${lineas} líneas (presupuesto: ${PRESUPUESTO}) — poda (lo resuelto va a historico) o sube el presupuesto a conciencia`);
+  ok(`CLAUDE.md sin bloques resueltos y dentro de presupuesto (${lineas}/${PRESUPUESTO} líneas)`);
+}
+
+// ── 5. FICHA y ÁRBOL: cada doc dice qué es y desde dónde se llega ───────────
+// Convención del 2026-08-11 (dueño): todo doc vivo lleva una FICHA en su
+// cabecera — Tipo (mapa·norma·decisión·guía·plan·generado) + «Sube a» (el
+// enlace hijo→padre del árbol) + quién lo Vigila — y es ALCANZABLE desde la
+// raíz (CLAUDE.md o docs/README.md lo nombran): el §30 de los docs. Lo
+// histórico queda fuera: está congelado a propósito.
+{
+  const docs = readdirSync(join(ROOT, 'docs')).filter(f => f.endsWith('.md'));
+  const TIPOS = /^> \*\*Tipo\*\*: (mapa|norma|decisión|guía|plan|generado)\b/m;
+  const raiz = readFileSync(join(ROOT, 'CLAUDE.md'), 'utf8') + readFileSync(join(ROOT, 'docs/README.md'), 'utf8');
+  const sinFicha = [], sinArbol = [];
+  for (const f of docs) {
+    const src = readFileSync(join(ROOT, 'docs', f), 'utf8');
+    const cabeza = src.split('\n').slice(0, 6).join('\n');
+    if (!TIPOS.test(cabeza) || !cabeza.includes('**Sube a**') || !cabeza.includes('**Vigila**')) sinFicha.push(f);
+    if (f !== 'README.md' && !raiz.includes(f)) sinArbol.push(f);
+  }
+  assert.deepStrictEqual(sinFicha, [],
+    `docs sin FICHA (> **Tipo**: … · **Sube a**: … · **Vigila**: … en las primeras líneas): ${sinFicha.join(' · ')}`);
+  assert.deepStrictEqual(sinArbol, [],
+    `docs que NADIE enlaza desde la raíz (CLAUDE.md / docs/README.md) — el árbol tiene ramas sueltas: ${sinArbol.join(' · ')}`);
+  // CONTRA-PRUEBA: la ficha exige un tipo VÁLIDO, no cualquier blockquote.
+  assert.ok(!TIPOS.test('> **Tipo**: diario · **Sube a**: x · **Vigila**: y'), 'un tipo inventado no pasa');
+  assert.ok(TIPOS.test('> **Tipo**: guía · **Sube a**: x · **Vigila**: y'), 'y uno válido sí');
+  ok(`ficha y árbol: los ${docs.length} docs declaran qué son y cuelgan de la raíz`);
 }
 
 console.log(`\n  ${passed} docs checks passed`);

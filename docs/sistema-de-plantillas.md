@@ -1,5 +1,7 @@
 # Sistema de plantillas — mapa vivo
 
+> **Tipo**: guía · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 > **Cómo se crea, valida y juega una actividad.** Una plantilla es *contenido +
 > mecánica + presentación* por ejes separados: por eso muchas actividades son el
 > **mismo contenido con distinta mecánica** (el modelo Wordwall). Este documento

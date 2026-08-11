@@ -1,5 +1,7 @@
 # HANDOFF — Separación PLAYER ↔ PÁGINA (escena por fase → frame estilo Wordwall)
 
+> **Tipo**: plan · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 > Problema (recurrente): el fondo/skin de la ACTIVIDAD se aplica al `<body>` en los
 > modos live al MONTAR la vista, así que se come pantallas que NO son juego: el
 > LOBBY del host (PIN/QR — la captura del usuario), el podio, el resultado del

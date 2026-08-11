@@ -1,5 +1,7 @@
 # docs/ — índice de la documentación
 
+> **Tipo**: mapa · **Sube a**: [`CLAUDE.md`](../CLAUDE.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 Qué leer según lo que necesites. La **fuente de verdad del estado actual** es
 `CLAUDE.md` (raíz); estos docs profundizan por tema.
 
@@ -24,6 +26,7 @@ Qué leer según lo que necesites. La **fuente de verdad del estado actual** es
 | **Sistema de plantillas** (crear/validar/jugar · qué módulo hace qué) | **`sistema-de-plantillas.md`** |
 | Contrato de CSS de actividad (relativo + tokens de skin) | `estilos-de-actividad.md` |
 | Mapa de módulos `core/` por rol | `../core/README.md` |
+| Diseñar los previews SVG de las tarjetas del home (brief de diseño) | `svg-previews-guia.md` |
 
 ## Hacer
 | Necesitas… | Lee |
@@ -61,6 +64,7 @@ era invisible— vale más que el fallo.
 ## Histórico / temas puntuales
 | Tema | Doc |
 |---|---|
+| La crónica de deuda YA RESUELTA (movida de CLAUDE.md) | `historico/deuda-resuelta.md` |
 | Identidad (anon id + auth PocketBase) | `identidad.md` |
 | Auditoría del camino SOLO (resuelta) | `auditoria-solo.md` |
 | **Planes YA EJECUTADOS** (puntuación · biblioteca pública · analítica · auditoría Fable · deuda A · Emparejar vertical · previews · mejoras live/tareas · centralización) | `historico/handoff-*.md` — cada uno con su cabecera de estado |

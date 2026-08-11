@@ -1,5 +1,7 @@
 # HANDOFF — Plan de usuarios y acceso docente (endurecer · PIN · NFC · pizarras)
 
+> **Tipo**: plan · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 > Estado: **PLAN aprobable** (2026-07-22). Cierra el sistema de usuarios que empezó en
 > `handoff-biblioteca-publica.md` (S1–S3 hechos) y añade lo que faltaba: acceso FÁCIL del
 > docente en pizarras interactivas (PIN numérico y tarjeta NFC), panel de profesores

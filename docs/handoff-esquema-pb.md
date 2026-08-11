@@ -1,5 +1,7 @@
 # Esquema de PocketBase — diseño definitivo (AulaReto)
 
+> **Tipo**: plan · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 > Consolidación de todo lo aprendido en las fases S1-S3 + auth v2. Fuente de verdad
 > del esquema. Se aplica con **`tools/setup-pocketbase.ps1`** (idempotente) o con el
 > botón "Crear colecciones" de `#/admin`. El script y este doc deben coincidir.

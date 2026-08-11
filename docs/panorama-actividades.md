@@ -1,5 +1,7 @@
 # Panorama de actividades y features — catálogo de referencia
 
+> **Tipo**: guía · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 > **Qué hace cada actividad, en qué modos se juega y qué features transversales
 > existen.** Verificado contra `templates/*/template.js` + `core/registry.js`.
 > Documentos hermanos: modelo de contenido JSON → `docs/ESTRUCTURA.md` ·

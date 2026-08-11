@@ -1,5 +1,7 @@
 # Auditoría del camino SOLO (Wordwall) — solo lectura
 
+> **Tipo**: plan · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 > Revisión de los 6 `templates/*/player.js` y su lógica compartida, de simple a
 > complejo. **No se modificó código.** Severidad: 🔴 alta · 🟠 media · 🟡 baja.
 

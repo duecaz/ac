@@ -119,6 +119,8 @@ const trackRows = TRACK_ORDER.map(t => {
 
 const md = `# Mapa de módulos — GENERADO, no editar a mano
 
+> **Tipo**: generado · **Sube a**: [\`docs/README.md\`](README.md) · **Vigila**: \`tests/layers.test.mjs\` (regenerar: \`node tools/module-map.mjs\`)
+
 > Lo produce \`node tools/module-map.mjs\` del grafo de imports REAL del repo.
 > Si editas este archivo a mano, el siguiente \`node tests/run.mjs\` lo revierte
 > (la suite \`layers\` comprueba que está al día). Para cambiar el dibujo, cambia

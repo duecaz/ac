@@ -1,5 +1,7 @@
 # El reloj de CADA aparato — diagnóstico de los dos fallos de la ronda del compañero
 
+> **Tipo**: plan · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 > Estado: **✅ ARREGLADO Y VIGILADO** (v1.51.418). El diagnóstico de abajo se
 > conserva entero porque es el "por qué se nos dio": lo que enseñó este fallo
 > vale más que el fallo. Lo ejecutado, al final del documento.

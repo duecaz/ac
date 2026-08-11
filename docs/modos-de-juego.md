@@ -1,5 +1,7 @@
 # Modos de juego — contrato único (léelo antes de tocar un modo o una plantilla)
 
+> **Tipo**: guía · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 > Por qué existe este documento: antes, cada modo (VS, Equipos, Memoria)
 > improvisaba su propia pantalla de inicio y su propio enganche en la página de
 > la actividad, y se desincronizaban (markup distinto, un bug de copia‑pega, un

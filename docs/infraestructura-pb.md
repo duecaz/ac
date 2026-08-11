@@ -1,5 +1,7 @@
 # Infraestructura — PocketBase + Raspberry Pi (estado REAL)
 
+> **Tipo**: guía · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 > **✅ REGLAS L6+M1-M5+R1 APLICADAS Y SONDEADAS (2026-07-30, app v1.51.327)**.
 > Las sondas anónimas contra `pb.lanube.uno` dan `200 · 403 · 400` y eso es lo
 > CORRECTO — lección de semántica PocketBase que costó una falsa alarma:
@@ -91,7 +93,7 @@ los MISMOS campos y reglas (fuente de verdad en código: `views/adminView.js` DE
 | Colección | Campos propios | Notas |
 |---|---|---|
 | `users` (auth) | `name`, `role` (**minúscula**; `'admin'` = moderador global), `avatar` | duecaz@gmail.com tiene `role=admin`. Las reglas usan `@request.auth.role` — si el campo se llamara `Role` el servidor NO reconoce el rol (el cliente es tolerante, `getAuthRole()`). |
-| `activities` | `data` (json 5MB), `visibility` (`public`/`unlisted`), `tags`, `language`, `owner` (id del profe) | **SIN campos `created`/`updated`** (ver quirks). El JSON `data` lleva la actividad completa, incluido `author {id,name,signedAt}` denormalizado para las tarjetas. |
+| `activities` | `data` (json 2MB), `visibility` (`public`/`unlisted`), `tags`, `language`, `owner` (id del profe) | `created`/`updated` REPARADOS el 2026-08-11 (ver quirks). El JSON `data` lleva la actividad completa, incluido `author {id,name,signedAt}` denormalizado para las tarjetas. |
 | `activity_likes` | `activity`, `user` + índice ÚNICO (activity,user) | ❤ de la biblioteca. |
 | `reports` | `activity`, `by`, `reason` | 🚩 moderación. |
 | `profiles` | `owner`, `name`, `school`, `bio`, `avatar` + índice ÚNICO (owner) | 👤 Perfil PÚBLICO del profe (colegio/frase/avatar de Google), separado de `users` porque el email es privado. Fila id = id de usuario. Lectura pública; escritura solo del dueño. Lo lee la página `#/autor/:id`. |

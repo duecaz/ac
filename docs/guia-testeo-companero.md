@@ -1,5 +1,7 @@
 # Guía de testeo — paso a paso (no hace falta saber de informática)
 
+> **Tipo**: guía · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 > **Qué es esto.** AulaReto (aulareto.com) es una web para hacer actividades en
 > clase. Tú vas a usarla como lo haría un profe y sus alumnos, y a **anotar todo
 > lo que se vea raro**. No puedes romper nada: si algo falla, ese es justo el

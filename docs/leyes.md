@@ -1,5 +1,7 @@
 # LEYES del proyecto — índice único (qué · dónde está escrito · qué test la vigila)
 
+> **Tipo**: norma · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: cada ley, su test (ver cuadro); enlaces y ficha, `tests/docs.test.mjs`
+
 > **Cada ley se DESPRENDE de una restricción del norte** — la cadena completa
 > (restricción → ley → test) está en `docs/norte.md` §6b, y ahí se ven también
 > los huecos que van quedando. Una ley que no puede citar su origen es una ley
@@ -62,6 +64,7 @@
 - [⚖️ §29 · PRESUPUESTO — el coste de conducir la clase se MIDE](#-29--presupuesto--el-coste-de-conducir-la-clase-se-mide)
 - [⚖️ §30 · ALCANZABLE — lo que no tiene puerta de entrada, se borra](#-30--alcanzable--lo-que-no-tiene-puerta-de-entrada-se-borra)
   - [§30b · Y ADEMÁS: toda ruta tiene una DECISIÓN escrita](#30b--y-además-toda-ruta-tiene-una-decisión-escrita)
+  - [Convención de los MD (decidida el 2026-08-11)](#convención-de-los-md-decidida-el-2026-08-11)
   - [Cómo se auto-verifica todo](#cómo-se-auto-verifica-todo)
 
 ### Ir a otro documento
@@ -961,6 +964,29 @@ que ya no corresponde a ninguna ruta también (un permiso fantasma acabaría
 justificando a la siguiente que se llame igual) · y la contra-prueba comprueba
 que `#/sorteo` **no habría llegado a existir**.
 
+
+---
+### Convención de los MD (decidida el 2026-08-11)
+
+La documentación es un **ÁRBOL** con raíz en `CLAUDE.md` → `docs/README.md` →
+cada doc; se baja de lo general a lo específico por enlaces, y se sube por la
+ficha. Tres reglas, vigiladas por `tests/docs.test.mjs`:
+
+1. **FICHA**: todo doc vivo abre con
+   `> **Tipo**: … · **Sube a**: … · **Vigila**: …`. Tipos válidos: `mapa`
+   (índices) · `norma` (este doc) · `decisión` (norte, pendientes, estudios) ·
+   `guía` (cómo funciona algo hoy) · `plan` (handoffs con trabajo por delante) ·
+   `generado` (NO editar a mano; su ficha la emite el generador). Lo de
+   `docs/historico/` queda fuera: está congelado a propósito.
+2. **CLAUDE.md es el mapa, no el diario**: sin bloques «✅ RESUELTO» (la crónica
+   vive en `historico/deuda-resuelta.md`) y con presupuesto de líneas — pasarlo
+   obliga a podar o a subir el tope a conciencia.
+3. **El comportamiento no se cuenta en prosa**: dado/cuando/entonces (Gherkin)
+   SOLO en las fichas de modo (`modos-de-juego.md` §9) y en las decisiones
+   pendientes; lo que ya es norma va como TEST, y lo que se prueba a mano va
+   como ronda de `qa/` (su `accion`/`espera` ES el cuando/entonces). Un MD que
+   describe comportamiento sin ninguna de esas tres formas es un candidato a
+   pudrirse.
 
 ---
 ### Cómo se auto-verifica todo

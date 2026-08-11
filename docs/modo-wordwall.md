@@ -1,5 +1,7 @@
 # Modo Wordwall (SOLO) — documentación del sistema
 
+> **Tipo**: guía · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 > El modo **SOLO** = una sola pantalla/dispositivo, sin red, puntuación local.
 > Es el "Empezar" de Wordwall (frente al "PIN" tipo Kahoot, que es LIVE). Este
 > documento describe cómo está construido el sistema detrás, ya cubierto por tests.

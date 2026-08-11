@@ -1,5 +1,7 @@
 # Mapa de módulos — GENERADO, no editar a mano
 
+> **Tipo**: generado · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/layers.test.mjs` (regenerar: `node tools/module-map.mjs`)
+
 > Lo produce `node tools/module-map.mjs` del grafo de imports REAL del repo.
 > Si editas este archivo a mano, el siguiente `node tests/run.mjs` lo revierte
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
@@ -33,7 +35,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3843 | 19 · 3001 | 0.78 |
 | **informes/tareas** | después de clase | 10 · 1050 | 4 · 435 | 0.41 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5474 | 12 · 975 | 0.18 |
-| **infra/común** | todo lo anterior | 123 · 12652 | 44 · 4827 | 0.38 |
+| **infra/común** | todo lo anterior | 123 · 12652 | 44 · 4874 | 0.39 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30

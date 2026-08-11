@@ -1,5 +1,7 @@
 # Seguridad PocketBase — plan por fases (P0-1 · P0-2 · P0-3 · P2-1)
 
+> **Tipo**: plan · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 > ## AVANCE v1.51.276 — fundación de token CENTRALIZADA + reglas append-only
 > - **`core/pbHttp.js signedFetch`**: UN solo sitio con la política de auth de PB.
 >   Firma con el token del profe si hay sesión, con **fallback anónimo** ante
