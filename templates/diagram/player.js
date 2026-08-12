@@ -195,7 +195,11 @@ function labelHtml(c) {
   // Color cíclico por índice global (--ww-shape-*): variedad vistosa tipo
   // Wordwall, y el skin lo recolorea. El .ww-dot (conector compartido con
   // Emparejar) lo posiciona diagram.css según el riel Y la orientación.
-  return `<div class="dg-label" data-id="${escapeHtml(c.id)}" style="--dg-color:var(--ww-shape-${(c.i % 4) + 1})">
+  // La TINTA viaja con el fondo (--ww-shape-N-fg): la forma 3 es amarilla y el
+  // blanco fijo daba 2.4:1 sobre ella — «Cabeza» no se leía a 3 m (§29). Globos
+  // y el Kahoot en vivo ya emparejaban fondo+tinta así; esta era la que faltaba.
+  const n = (c.i % 4) + 1;
+  return `<div class="dg-label" data-id="${escapeHtml(c.id)}" style="--dg-color:var(--ww-shape-${n});--dg-fg:var(--ww-shape-${n}-fg, #fff)">
     <span class="dg-label-text">${escapeHtml(c.text)}</span>
     <span class="ww-dot" data-id="${escapeHtml(c.id)}"></span>
   </div>`;

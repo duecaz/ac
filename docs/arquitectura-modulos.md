@@ -34,7 +34,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2554 | 12 · 1196 | 0.47 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3849 | 19 · 3001 | 0.78 |
 | **informes/tareas** | después de clase | 10 · 1050 | 4 · 435 | 0.41 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5474 | 12 · 975 | 0.18 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5478 | 12 · 975 | 0.18 |
 | **infra/común** | todo lo anterior | 124 · 12838 | 45 · 4970 | 0.39 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
@@ -109,7 +109,7 @@ graph TD
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1131) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
 | **core** | `core/skins.js` (355) · `core/textCorrectionRound.js` (351) · `core/selftest.js` (331) · `core/auth.js` (322) · `core/normsCheck.js` (295) |
 | **kernel** | `kernel/session/engine.js` (549) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/dataPort.js` (28) |
-| **plantillas** | `templates/crossword/player.js` (464) · `templates/wordsearch/player.js` (405) · `templates/match/player.js` (296) · `templates/diagram/player.js` (233) · `templates/quiz/editor.js` (212) |
+| **plantillas** | `templates/crossword/player.js` (464) · `templates/wordsearch/player.js` (405) · `templates/match/player.js` (296) · `templates/diagram/player.js` (237) · `templates/quiz/editor.js` (212) |
 | **contenido** | `kernel/content/qaAdapt.js` (104) · `kernel/content/convert.js` (95) · `kernel/content/switch.js` (82) · `kernel/content/models.js` (79) · `kernel/content/index.js` (5) |
 | **config** | `pocketbase.config.js` (13) |
 

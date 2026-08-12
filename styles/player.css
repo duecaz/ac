@@ -37,6 +37,26 @@
 .ww-q-media img,
 #s-round img { max-width: 100%; height: auto; }
 
+/* …Y EN EL MÓVIL LA FOTO LLEGA AL BORDE (§3 · ronda del compañero 2026-08-12,
+   prueba 4: «sale un pequeño margen a los lados de la foto, no hace fill»).
+   La tarea y el en vivo montan la plantilla dentro de `#app.container`, que
+   reserva 12px a cada lado: la foto ya entraba entera (arriba), pero con dos
+   franjas de fondo pegadas al marco del teléfono. En pantalla ancha ese margen
+   es lo correcto — la foto no debe pegarse al borde —; solo estorba cuando el
+   ancho ES la medida del ejercicio. El sangrado se hace SIN conocer el padding
+   del contenedor (centrando en el viewport), así no hay un 12px copiado que se
+   desincronice si Bootstrap cambia. No alcanza al marco del profe: ese monta en
+   un `#app` sin `.container` y sus reglas de `object-fit` siguen mandando. */
+@media (max-width: 640px) {
+  #app.container .ww-q-media img,
+  #app.container #s-round img {
+    width: 100vw;
+    max-width: 100vw;
+    margin-inline: calc(50% - 50vw);
+    border-radius: 0;
+  }
+}
+
 /* The "embed" frame — bounded width, fixed aspect ratio, scrolls inside.
    Like a YouTube embed: small box inside the page, not the whole page. */
 .ww-play-page .ww-player-frame {
@@ -147,6 +167,30 @@
   line-height: 1.15;
   font-size: clamp(1rem, 5cqmin, 2.4rem);
 }
+/* PLACA DE LEGIBILIDAD SOBRE FOTO (§3 · reporte del dueño 2026-08-12).
+   Con `bg-custom` el enunciado y el contador quedaban en texto suelto sobre la
+   foto del profe: en la captura, «¿Cuántos días tiene una semana?» era
+   ILEGIBLE. Con las otras 8 texturas no pasa (son planas y el token de tinta
+   ya contrasta) — por eso la placa va SOLO aquí y no cambia el resto.
+   El color sale de los tokens de tarjeta, así que cada skin la recolorea. */
+.ww-play-page .ww-player-frame.bg-custom .ww-player .ww-phead,
+.ww-play-page .ww-player-frame.bg-custom .ww-player .ww-q,
+body.bg-custom .ww-player .ww-phead,
+body.bg-custom .ww-player .ww-q {
+  background: var(--ww-card-bg, #fff);
+  color: var(--ww-card-fg, var(--ww-fg, #1f2937));
+  border-radius: 12px;
+  padding: .35em .7em;
+  /* La esquina es DEL MARCO: el título no puede correr por debajo del botón de
+     pantalla completa (misma reserva que usa el marcador del duelo). */
+  margin-right: var(--ww-fs-reserve, 52px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .18);
+}
+/* La cabecera (contador · racha · puntos) ya trae sus propias pastillas: la
+   placa aquí solo tiene que separarla de la foto, sin doble relleno. */
+.ww-play-page .ww-player-frame.bg-custom .ww-player .ww-phead,
+body.bg-custom .ww-player .ww-phead { padding: .25em .5em; }
+
 .ww-play-page .ww-player-frame .ww-player .ww-q-media {
   flex: 1 1 auto;
   min-height: 0;

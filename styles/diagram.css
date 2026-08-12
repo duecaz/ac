@@ -20,7 +20,7 @@
   padding: 1.7cqmin 3cqmin;
   border-radius: 999px;
   background: var(--dg-color, var(--ww-accent, #6366f1));
-  color: #fff;
+  color: var(--dg-fg, #fff);   /* la tinta la trae el token del skin (ver player.js) */
   font-weight: 800;
   font-size: max(.8rem, 4.4cqmin);   /* piso legible; crece con el marco */
   line-height: 1.1;
