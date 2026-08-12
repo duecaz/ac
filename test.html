@@ -42,9 +42,11 @@
           .map(e => `· ${e.ts || ''} ${e.msg || e.message || e}`).join('\n');
         return `app v${VERSION} · ${navigator.userAgent.slice(0, 80)}\núltimos errores:\n${errs || '(ninguno registrado)'}`;
       },
-      // Enviar exige sesión de profe (regla de `reports`): se dice ANTES.
+      // Enviar exige sesión de profe (regla de `reports`). Se dice ANTES, con la
+      // salida al lado: la cuenta se crea en un minuto y la hoja re-revisa al
+      // volver a esta pestaña — sin recargar ni perder lo marcado.
       puedeEnviar: () => getAuthToken() ? null
-        : 'Para enviar directo, inicia sesión de profe en aulareto.com (misma pestaña). Sin sesión, usa «Generar informe» y cópialo.',
+        : 'Para enviar necesitas cuenta de profe: ábrela en otra pestaña (aulareto.com → Entrar → «Créala aquí») y vuelve aquí; el botón se activará solo. O usa «Generar informe» y cópialo — funciona igual.',
       enviar: ({ rondaId, texto }) => submitQaRound(rondaId, texto),
     });
   } catch (e) {

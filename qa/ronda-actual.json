@@ -2,7 +2,7 @@
   "id": "2026-08-11",
   "titulo": "AulaReto · Hoja de pruebas",
   "intro": "Solo lo que cambió desde la última tanda. Arriba de cada prueba tienes la RUTA (aparato › actividad › modo › pantalla): si la ruta no coincide con lo que tienes delante, no es esa prueba. Marca el VEREDICTO: Pasa si ocurrió lo que dice «Tiene que pasar», Falla si no — y cuenta en la nota qué viste.",
-  "versionMin": "1.51.448",
+  "versionMin": "1.51.449",
   "secciones": [
     {
       "titulo": "Antes de empezar",
@@ -16,12 +16,29 @@
             "Barra superior"
           ],
           "accion": "Abre aulareto.com y recarga con Ctrl+F5. En el móvil, cierra la pestaña y vuelve a abrirla.",
-          "espera": "arriba se ve el número de versión y es 1.51.448 o más. Si es menor, para y avisa: estarías probando la de antes.",
+          "espera": "arriba se ve el número de versión y es 1.51.449 o más. Si es menor, para y avisa: estarías probando la de antes.",
           "casillas": [
             "PC",
             "Móvil"
           ],
           "notaPista": "Versión que ves"
+        },
+        {
+          "n": 1,
+          "titulo": "Crear tu cuenta de profe (nuevo)",
+          "ruta": [
+            "PC o móvil",
+            "aulareto.com",
+            "Entrar",
+            "Créala aquí"
+          ],
+          "accion": "Pulsa «Entrar» arriba y, en el recuadro, «¿No tienes cuenta? Créala aquí». Rellena correo, tu nombre, tu colegio y la contraseña dos veces.",
+          "espera": "entras directo a «Mis actividades» con tu nombre arriba a la derecha. Prueba también a poner las dos contraseñas distintas: debe avisarte sin crear nada. Esta cuenta te sirve para enviar el informe al final.",
+          "casillas": [
+            "Cuenta creada",
+            "Entré sin problemas"
+          ],
+          "notaPista": "Si algo falla, copia el mensaje exacto"
         }
       ]
     },
@@ -30,7 +47,7 @@
       "nota": "Re-test de los fallos que encontraste. Pasa = quedó arreglado de verdad en tus aparatos.",
       "pruebas": [
         {
-          "n": 1,
+          "n": 2,
           "titulo": "Rondas juntas: el mismo número en PC y móvil",
           "ruta": [
             "PC (profe) + móvil (alumno)",
@@ -43,7 +60,7 @@
           "espera": "la cuenta de «Preparados…» y los segundos de la pregunta marcan el mismo número en PC y móvil (±1 por redondeo es normal)."
         },
         {
-          "n": 2,
+          "n": 3,
           "titulo": "Empate: los dos leen lo mismo",
           "ruta": [
             "2 móviles (alumnos)",
@@ -56,7 +73,7 @@
           "espera": "los dos leen el MISMO puesto («vas primero, empatado con …»). Antes uno leía «¡vas primero!» y el otro «empatas con…»."
         },
         {
-          "n": 3,
+          "n": 4,
           "titulo": "Tarea con foto en iPhone",
           "ruta": [
             "Móvil (alumno)",
@@ -68,7 +85,7 @@
           "espera": "la página entra entera a lo ancho, sin tener que desplazarse a los lados. Antes se veía «una esquinita»."
         },
         {
-          "n": 4,
+          "n": 5,
           "titulo": "El que no responde sale en la lista",
           "ruta": [
             "PC (profe)",
@@ -91,7 +108,7 @@
       "nota": "Rápido: una pasada por lo más tocado por dentro.",
       "pruebas": [
         {
-          "n": 5,
+          "n": 6,
           "titulo": "Individual: el fallo se pone rojo",
           "ruta": [
             "PC o móvil",
@@ -103,7 +120,7 @@
           "espera": "la opción tocada se pone roja y la correcta verde, con cualquier tema."
         },
         {
-          "n": 6,
+          "n": 7,
           "titulo": "Carrera: rojo y re-encolado",
           "ruta": [
             "Móvil (alumno)",
@@ -116,7 +133,7 @@
           "espera": "se pone roja y esa pregunta vuelve a salir más adelante."
         },
         {
-          "n": 7,
+          "n": 8,
           "titulo": "Final de carrera con aciertos y tiempo",
           "ruta": [
             "Móvil (alumno)",
@@ -129,7 +146,7 @@
           "espera": "dice cuántas acertaste y tu tiempo (p. ej. «5 / 5 correctas · 1:12»)."
         },
         {
-          "n": 8,
+          "n": 9,
           "titulo": "Fotos pesadas entran",
           "ruta": [
             "PC (profe)",
@@ -151,7 +168,7 @@
       "titulo": "Parte 3 · El dato que falta",
       "pruebas": [
         {
-          "n": 9,
+          "n": 10,
           "titulo": "Fondos oscuros donde no se leen las letras",
           "ruta": [
             "PC o pizarra",

@@ -213,14 +213,29 @@ export function montarHoja(root, { ronda, storageKey, contexto, enviar, puedeEnv
   if (enviar) {
     const btn = $('#qh-enviar');
     // Si hay un motivo por el que no se puede, se dice ANTES de pulsar — nunca
-    // dejar que falle para explicarlo después.
-    const motivo = puedeEnviar ? puedeEnviar() : null;
-    if (motivo) { btn.disabled = true; btn.title = motivo; estado(motivo, ''); }
+    // dejar que falle para explicarlo después. Y se REVISA al volver a la
+    // pestaña: el motivo típico es «no has iniciado sesión», que se arregla en
+    // OTRA pestaña — evaluarlo solo al montar dejaba el botón muerto hasta
+    // recargar, y el probador no tiene por qué adivinar eso.
+    let enviado = false;
+    const revisar = () => {
+      if (enviado) return;
+      const motivo = puedeEnviar ? puedeEnviar() : null;
+      btn.disabled = !!motivo;
+      btn.title = motivo || 'Enviar el informe';
+      const est = $('#qh-estado');
+      if (motivo) estado(motivo, '');
+      else if (est && est.textContent && !est.classList.contains('qh-ok')) estado('');
+    };
+    revisar();
+    window.addEventListener('focus', revisar);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) revisar(); });
     btn.addEventListener('click', async () => {
       const { texto, resumen } = informe();
       btn.disabled = true; estado('Enviando…', '');
       try {
         await enviar({ rondaId: ronda.id, texto, resumen });
+        enviado = true;
         estado('Informe enviado ✓', 'qh-ok');
       } catch (e) {
         // R6: un envío fallido se DICE, y el texto queda como respaldo.
