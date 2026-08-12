@@ -204,7 +204,12 @@
 .vs-skin-arcade .vs-body .ww-q,
 .vs-skin-arcade .vs-body .ww-phead,
 .vs-skin-arcade .vs-body .tc-passage { color: #eafcff; }
-.vs-skin-arcade .vs-body .ww-opt { color: #fff; border-radius: .5rem; box-shadow: 0 3px 0 rgba(0,0,0,.5); }
+/* SIN `color` a pelo: la tinta la trae `--ww-shape-N-fg`, que este tema declara
+   OSCURA en las cuatro formas (core/skins.js) porque su paleta es de neón. El
+   `#fff` que había aquí pisaba su propia respuesta: 1,4:1 sobre el amarillo,
+   1,5:1 sobre el lima, 1,8:1 sobre el cian — el peor contraste del repo, y en
+   la pantalla del duelo. Con el token sube a 8-10:1. */
+.vs-skin-arcade .vs-body .ww-opt { border-radius: .5rem; box-shadow: 0 3px 0 rgba(0,0,0,.5); }
 .vs-skin-arcade .vs-body .ww-shape-1 { background: #ff2e88; }
 .vs-skin-arcade .vs-body .ww-shape-2 { background: #22d3ee; }
 .vs-skin-arcade .vs-body .ww-shape-3 { background: #a3e635; }

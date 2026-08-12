@@ -14,7 +14,7 @@
 import assert from 'node:assert';
 import { listSkins } from '../core/skins.js';   // side-effect: registra los built-in
 import { BACKGROUNDS } from '../core/backgrounds.js';
-import { ratio, luminancia, mejorTinta, AA_TEXTO, AA_GRANDE } from '../core/contrast.js';
+import { ratio, luminancia, AA_TEXTO, AA_GRANDE } from '../core/contrast.js';
 import {
   checkSkinContrast, checkBackgroundContrast,
   checkAllSkinContrast, checkAllBackgroundContrast,
@@ -33,7 +33,6 @@ assert.strictEqual(ratio('#fff', 'rgba(0,0,0,.5)'), null, 'lo que no es hex sól
 // El caso real que dio origen a todo: ámbar del Kahoot-grid con letra blanca.
 assert.ok(r2('#ffffff', '#d89e00') < 3, `el ámbar con letra blanca es ${r2('#ffffff', '#d89e00')}:1 — por debajo de AA grande`);
 assert.ok(r2('#1f2937', '#d89e00') >= 4.5, `con letra oscura sube a ${r2('#1f2937', '#d89e00')}:1`);
-assert.strictEqual(mejorTinta('#d89e00'), '#1f2937', 'mejorTinta elige la que más contrasta');
 ok('aritmética WCAG: 21:1 · 1:1 · simétrica · hex corto · rechaza lo no medible');
 
 // ── Los TEMAS registrados ────────────────────────────────────────────────────

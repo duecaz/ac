@@ -23,7 +23,7 @@ export const AA_GRANDE = 3;
  * Hex (#rgb o #rrggbb) → [r, g, b] en 0-255.
  * @returns {number[]|null} null si no es un hex sólido (gradiente, rgba, token…).
  */
-export function rgbDe(hex) {
+function rgbDe(hex) {
   const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(hex || '').trim());
   if (!m) return null;
   const h = m[1].length === 3 ? m[1].replace(/./g, c => c + c) : m[1];
@@ -56,14 +56,4 @@ export function ratio(hexA, hexB) {
 export function ratioLegible(hexA, hexB) {
   const r = ratio(hexA, hexB);
   return r == null ? '?' : `${Math.round(r * 100) / 100}:1`;
-}
-
-/**
- * De dos tintas candidatas, la que más contraste da contra `fondo`.
- * Útil para DECIDIR la tinta de un lienzo nuevo, no solo para verificarla.
- */
-export function mejorTinta(fondo, claro = '#ffffff', oscuro = '#1f2937') {
-  const rc = ratio(fondo, claro) ?? 0;
-  const ro = ratio(fondo, oscuro) ?? 0;
-  return rc >= ro ? claro : oscuro;
 }

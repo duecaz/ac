@@ -33,7 +33,7 @@ export function isSafeBgImage(url) {
 //
 //   ink        la tinta legible sobre su textura. Se aplica como `--ww-bg-ink`
 //              (una sola regla en backgrounds.css la consume) en vez de un
-//              `color: #f5f5dc` repetido por fondo. null = el fondo NO manda
+//              `color: #f5f5dc` repetido por fondo. Ausente = el fondo NO manda
 //              tinta y el texto se queda con la del tema.
 //   colorBase  el sólido representativo de la textura, en su punto MÁS
 //              desfavorable para `ink` (la parada más clara de un degradado
@@ -43,6 +43,7 @@ export function isSafeBgImage(url) {
 //              meses contando estos fondos como «no medibles»).
 //   plate      true = sobre esta textura NINGUNA tinta plana es fiable, así que
 //              el texto va sobre una PLACA con los tokens de tarjeta del tema.
+//              Ausente = false: se declara solo quien la pide.
 //              Hoy solo la foto del profe: es la única cuyo lienzo no podemos
 //              conocer ni medir. Los demás tienen su ink verificada en CI
 //              (`tests/contrast.test.mjs`).
@@ -50,28 +51,26 @@ export function isSafeBgImage(url) {
 // Un fondo nuevo que no declare (ink + colorBase) o plate rompe CI: la
 // legibilidad se DECIDE al añadirlo, no se descubre con la clase delante.
 export const BACKGROUNDS = {
-  none:       { label: 'Ninguno',      description: 'Sin fondo.',
-                ink: null, colorBase: null, plate: false },   // el lienzo es el del TEMA
+  none:       { label: 'Ninguno',      description: 'Sin fondo.' },   // el lienzo es el del TEMA
   notebook:   { label: 'Cuaderno',     description: 'Hoja con renglones.',
-                ink: '#1f2937', colorBase: '#fdfcf6', plate: false },
+                ink: '#1f2937', colorBase: '#fdfcf6' },
   blackboard: { label: 'Pizarra',      description: 'Pizarra de tiza.',
-                ink: '#f5f5dc', colorBase: '#2d3a2e', plate: false },
+                ink: '#f5f5dc', colorBase: '#2d3a2e' },
   greenboard: { label: 'Pizarra verde',description: 'Pizarra escolar verde.',
-                ink: '#f5f5dc', colorBase: '#1f5135', plate: false },
+                ink: '#f5f5dc', colorBase: '#1f5135' },
   paper:      { label: 'Papel',        description: 'Papel beige liso.',
-                ink: '#1f2937', colorBase: '#f5f1e6', plate: false },
+                ink: '#1f2937', colorBase: '#f5f1e6' },
   grid:       { label: 'Cuadrícula',   description: 'Hoja cuadriculada.',
-                ink: '#1f2937', colorBase: '#fafafa', plate: false },
+                ink: '#1f2937', colorBase: '#fafafa' },
   corkboard:  { label: 'Corcho',       description: 'Tablero de corcho.',
-                ink: '#1f2937', colorBase: '#c8985a', plate: false },
+                ink: '#1f2937', colorBase: '#c8985a' },
   classroom:  { label: 'Aula',         description: 'Pared de aula cálida.',
-                ink: '#1f2937', colorBase: '#efe2c4', plate: false },
+                ink: '#1f2937', colorBase: '#efe2c4' },
   arena:      { label: 'Arena',        description: 'Escenario de concurso.',
-                ink: '#e2e8f0', colorBase: '#0c1530', plate: false },
+                ink: '#e2e8f0', colorBase: '#0c1530' },
   stars:      { label: 'Estrellado',   description: 'Cielo de noche.',
-                ink: '#e0e7ff', colorBase: '#1e1b4b', plate: false },
-  custom:     { label: 'Mi imagen',    description: 'Sube tu propia foto.',
-                ink: null, colorBase: null, plate: true }
+                ink: '#e0e7ff', colorBase: '#1e1b4b' },
+  custom:     { label: 'Mi imagen',    description: 'Sube tu propia foto.', plate: true }
 };
 
 const ALL_CLS = Object.keys(BACKGROUNDS).map(k => `bg-${k}`);

@@ -28,6 +28,7 @@ const PORT = Number(process.env.PORT || 8477);
 const BASE = `http://127.0.0.1:${PORT}`;
 const only = process.argv.slice(2);
 const { playRound, MECANICAS } = await import('./helpers/roundDrivers.mjs');
+const { medirLegibilidad } = await import('./helpers/legibilidad.mjs');
 
 // Modos que esta matriz sabe conducir hoy. `live` cubre el LADO DEL HOST (crear
 // sala + lobby con PIN), que es donde vive la máquina de fases; el lado del alumno
@@ -93,6 +94,15 @@ await page.goto(`${BASE}/teacher.html?backend=local`, { waitUntil: 'domcontentlo
 await page.waitForFunction(() => document.querySelector('#app')?.children.length > 0, { timeout: 20000 });
 
 // Siembra: una actividad por plantilla, hecha con SU PROPIO defaultContent().
+// Los lienzos DECLARADOS por cada fondo (`BACKGROUNDS[x].colorBase`), para que
+// el medidor pueda juzgar el texto sobre una textura: un degradado no tiene
+// color computado y sin esto se contaba como «no medible».
+const LIENZOS = await page.evaluate(async () => {
+  const { BACKGROUNDS } = await import('/core/backgrounds.js');
+  return Object.fromEntries(Object.entries(BACKGROUNDS)
+    .filter(([, d]) => d.colorBase).map(([n, d]) => [`bg-${n}`, d.colorBase]));
+});
+
 const seeded = await page.evaluate(async () => {
   await import('/core/registerTemplates.js');
   const { listTemplates } = await import('/core/registry.js');
@@ -290,97 +300,12 @@ for (const t of seeded) {
         //     móvil del alumno, a un cuerpo normal de lectura. Es un PISO, no
         //     un objetivo — casi todo el texto de juego está muy por encima.
         if (['solo', 'vs', 'teams'].includes(mode) && status === 'ok') {
-          const leg = await page.evaluate((cajaSel) => {
-            const frame = document.querySelector('#ww-frame') || document.body;
-            // LA CAJA DE LA RONDA — la MISMA que usa el driver para jugar. El
-            // tamaño se mide AQUÍ y no en todo el marco: la primera versión de
-            // esta medición daba 3/30 y sus "peores textos" eran «2 / 2»,
-            // «EQUIPO» y «Revelar» — contadores, etiquetas del marcador y
-            // botones del docente. Nada de eso es lo que la clase lee desde el
-            // fondo, así que la red medía una cosa y la promesa hablaba de otra:
-            // con ese ruido, o se apaga la red o se ignora. R1 habla del
-            // CONTENIDO del ejercicio.
-            const caja = document.querySelector(cajaSel) || frame;
-            const alto = frame.getBoundingClientRect().height || 800;
-            const lum = (c) => {
-              const m = String(c).match(/[\d.]+/g) || [];
-              const [r, g, b] = m.slice(0, 3).map(Number);
-              if ([r, g, b].some(v => !Number.isFinite(v))) return null;
-              const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
-              return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
-            };
-            // EL FONDO REAL. Dos cosas que la primera versión hacía mal y que la
-            // hacían MENTIR — un medidor que miente es peor que no medir:
-            //  · un fondo semitransparente (`rgba(16,185,129,.18)`) se tomaba
-            //    como sólido: la palabra encontrada de la Sopa daba 1,0:1
-            //    (texto y fondo "idénticos") cuando de verdad son 2,4:1. Ahora
-            //    se COMPONE el alfa sobre lo que hay debajo.
-            //  · un degradado o una imagen de fondo no tienen color computado:
-            //    se caía al blanco por defecto y el título del Crucigrama
-            //    —letra blanca sobre un degradado OSCURO— salía como 1,0:1.
-            //    Ahora eso NO se juzga: se cuenta como no medible y se dice.
-            const rgba = (c) => {
-              const m = String(c).match(/[\d.]+/g) || [];
-              if (m.length < 3) return null;
-              return { r: +m[0], g: +m[1], b: +m[2], a: m.length >= 4 ? +m[3] : 1 };
-            };
-            const fondoDe = (el) => {
-              const capas = [];
-              for (let n = el; n && n !== document.documentElement; n = n.parentElement) {
-                const cs = getComputedStyle(n);
-                if (cs.backgroundImage && cs.backgroundImage !== 'none') return null;  // no medible
-                const c = rgba(cs.backgroundColor);
-                if (!c || c.a === 0) continue;
-                capas.push(c);
-                if (c.a === 1) break;                 // opaco: aquí para la pila
-              }
-              let base = { r: 255, g: 255, b: 255 };  // el lienzo, si nadie más pinta
-              for (let i = capas.length - 1; i >= 0; i--) {
-                const c = capas[i];
-                base = {
-                  r: c.r * c.a + base.r * (1 - c.a),
-                  g: c.g * c.a + base.g * (1 - c.a),
-                  b: c.b * c.a + base.b * (1 - c.a),
-                };
-              }
-              return `rgb(${Math.round(base.r)},${Math.round(base.g)},${Math.round(base.b)})`;
-            };
-            let minPct = 100, peorTexto = '', peorRatio = 21, peorC = '', sinMedir = 0;
-            const vistos = [];
-            // TAMAÑO: solo dentro de la caja de la ronda.
-            for (const el of caja.querySelectorAll('*')) {
-              // Solo NODOS DE TEXTO propios y visibles: el contenedor de un
-              // botón no cuenta, cuenta el que pinta las letras.
-              const propio = [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim().length > 1);
-              if (!propio) continue;
-              const cs = getComputedStyle(el);
-              if (cs.visibility === 'hidden' || cs.display === 'none' || Number(cs.opacity) < 0.15) continue;
-              const r = el.getBoundingClientRect();
-              if (!r.width || !r.height) continue;
-              const px = parseFloat(cs.fontSize) || 0;
-              const pct = (px / alto) * 100;
-              const txt = el.textContent.trim().slice(0, 24);
-              vistos.push(pct);
-              if (pct < minPct) { minPct = pct; peorTexto = txt; }
-            }
-            // CONTRASTE: sobre TODO el texto visible del marco — un texto que no
-            // se distingue del fondo lo es igual si es del juego o del chrome.
-            for (const el of frame.querySelectorAll('*')) {
-              const propio = [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim().length > 1);
-              if (!propio) continue;
-              const cs = getComputedStyle(el);
-              if (cs.visibility === 'hidden' || cs.display === 'none' || Number(cs.opacity) < 0.15) continue;
-              const r = el.getBoundingClientRect();
-              if (!r.width || !r.height) continue;
-              const fondo = fondoDe(el);
-              if (fondo === null) { sinMedir++; continue; }   // degradado/imagen: no se juzga
-              const l1 = lum(cs.color), l2 = lum(fondo);
-              if (l1 == null || l2 == null) { sinMedir++; continue; }
-              const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
-              if (ratio < peorRatio) { peorRatio = ratio; peorC = el.textContent.trim().slice(0, 24); }
-            }
-            return { minPct, peorTexto, peorRatio, peorC, sinMedir, n: vistos.length };
-          }, caja);
+          // El MEDIDOR es compartido con tools/contrast-torture.mjs
+          // (tools/helpers/legibilidad.mjs): estaba forkeado y las dos copias
+          // divergieron el mismo día. Se le pasa el mapa de lienzos DECLARADOS,
+          // así que los fondos con textura dejan de contarse como «no medibles».
+          const leg = await page.evaluate(
+            `(${medirLegibilidad})('#ww-frame', ${JSON.stringify(caja)}, ${JSON.stringify({ colorBases: LIENZOS })})`);
           if (leg.n >= 2) {
             // CONTRASTE — VEREDICTO. Está bien definido (todo texto visible
             // tiene color y fondo) y ya cazó dos fallos reales: el ámbar con

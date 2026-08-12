@@ -29,7 +29,6 @@ body.bg-set.bg-notebook,
     linear-gradient(to right, transparent 0, transparent 60px, rgba(220,38,38,.5) 60px, rgba(220,38,38,.5) 62px, transparent 62px),
     repeating-linear-gradient(to bottom, #fdfcf6 0, #fdfcf6 31px, rgba(99,102,241,.25) 31px, rgba(99,102,241,.25) 32px);
 }
-body.bg-set.bg-notebook { background-attachment: fixed; }
 
 body.bg-set.bg-blackboard,
 .ww-player-frame.bg-set.bg-blackboard {
@@ -40,7 +39,6 @@ body.bg-set.bg-blackboard,
   background-size: 4px 4px, 7px 7px;
   background-position: 0 0, 2px 3px;
 }
-body.bg-set.bg-blackboard { background-attachment: fixed; }
 
 /* Green school chalkboard — distinct from the dark slate blackboard above. */
 body.bg-set.bg-greenboard,
@@ -52,7 +50,6 @@ body.bg-set.bg-greenboard,
   background-size: 4px 4px, 7px 7px;
   background-position: 0 0, 2px 3px;
 }
-body.bg-set.bg-greenboard { background-attachment: fixed; }
 
 body.bg-set.bg-paper,
 .ww-player-frame.bg-set.bg-paper {
@@ -60,7 +57,6 @@ body.bg-set.bg-paper,
   background-image: radial-gradient(rgba(180, 150, 90, .15) 1px, transparent 1px);
   background-size: 6px 6px;
 }
-body.bg-set.bg-paper { background-attachment: fixed; }
 
 body.bg-set.bg-grid,
 .ww-player-frame.bg-set.bg-grid {
@@ -69,7 +65,6 @@ body.bg-set.bg-grid,
     linear-gradient(to bottom, rgba(99,102,241,.15) 1px, transparent 1px) 0 0/24px 24px,
     #fafafa;
 }
-body.bg-set.bg-grid { background-attachment: fixed; }
 
 body.bg-set.bg-corkboard,
 .ww-player-frame.bg-set.bg-corkboard {
@@ -80,7 +75,6 @@ body.bg-set.bg-corkboard,
   background-size: 5px 5px, 8px 8px;
   background-position: 0 0, 3px 4px;
 }
-body.bg-set.bg-corkboard { background-attachment: fixed; }
 
 /* Classroom — warm soft wall, light enough for any skin. */
 body.bg-set.bg-classroom,
@@ -92,7 +86,6 @@ body.bg-set.bg-classroom,
     radial-gradient(rgba(180,150,90,.10) 1px, transparent 1px);
   background-size: 7px 7px;
 }
-body.bg-set.bg-classroom { background-attachment: fixed; }
 
 /* Arena — game-show / sports stage. Deep blue with team spotlights; pairs with
    the Colegios skin's floating panels (which show through over it). */
@@ -105,7 +98,6 @@ body.bg-set.bg-arena,
     repeating-linear-gradient(135deg, transparent 0 30px, rgba(255,255,255,.016) 30px 31px),
     linear-gradient(180deg, #0c1530 0%, #070a16 100%);
 }
-body.bg-set.bg-arena { background-attachment: fixed; }
 
 /* Custom — teacher-uploaded photo, painted from the --ww-bg-image inline var. */
 body.bg-set.bg-custom,
@@ -115,7 +107,6 @@ body.bg-set.bg-custom,
   background-position: center;
   background-repeat: no-repeat;
 }
-body.bg-set.bg-custom { background-attachment: fixed; }
 
 body.bg-set.bg-stars,
 .ww-player-frame.bg-set.bg-stars {
@@ -126,7 +117,12 @@ body.bg-set.bg-stars,
   background-size: 80px 80px, 120px 120px;
   background-position: 0 0, 40px 60px;
 }
-body.bg-set.bg-stars { background-attachment: fixed; }
+
+/* La textura acompaña al scroll, no a la página (una sola regla: eran diez
+   idénticas, una por fondo). Va DESPUÉS de las texturas porque sus atajos
+   `background:` reinician `background-attachment` a `scroll`, y con `:not()`
+   para igualar su especificidad — si no, no llegaría a aplicarse. */
+body.bg-set:not(.bg-none) { background-attachment: fixed; }
 
 /* Preview tiles (editor picker) — same backgrounds but contained. */
 .ww-bg-preview.bg-notebook    { background: linear-gradient(to right, transparent 0, transparent 12px, rgba(220,38,38,.5) 12px, rgba(220,38,38,.5) 13px, transparent 13px), repeating-linear-gradient(to bottom, #fdfcf6 0, #fdfcf6 7px, rgba(99,102,241,.25) 7px, rgba(99,102,241,.25) 8px); }

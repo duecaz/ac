@@ -59,7 +59,6 @@ export function checkSkinContrast(skin) {
 export function checkBackgroundContrast(name, def) {
   const issues = [];
   if (!def) return [`fondo ${name} sin manifest`];
-  if (typeof def.plate !== 'boolean') issues.push('no declara `plate`');
   if (def.plate) {
     // Con placa el texto va sobre los tokens de tarjeta del tema: el lienzo ya
     // no toca al texto, así que declarar tinta sería una promesa que nadie usa.

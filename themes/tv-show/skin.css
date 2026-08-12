@@ -334,8 +334,13 @@ body.skin-tv-show .card,
 /* ── Opciones de quiz dentro del panel ────────────────────────────────────── */
 .vs-skin-tv-show .vs-body .ww-q,
 .vs-skin-tv-show .vs-body .ww-phead { color: #eaf2ff; }
+/* SIN `color` a pelo, igual que en la página: la tinta la trae `--ww-shape-N-fg`.
+   Aquí seguía viva la misma trampa después de arreglar la de arriba — sobre la
+   forma 3 (turquesa) daba 1,7:1 y sobre la 4 (naranja) 1,9:1. La tortura no la
+   veía porque solo juega el modo Individual; ahora lo caza el escáner de
+   `tests/styles.test.mjs`, que no depende de que nadie renderice la pantalla. */
 .vs-skin-tv-show .vs-body .ww-opt {
-  color: #fff; border: none; border-radius: .85rem; font-weight: 800;
+  border: none; border-radius: .85rem; font-weight: 800;
   font-size: clamp(.74rem, 9cqw, .95rem); padding: .5em .65em;
   box-shadow: 0 4px 0 rgba(0,0,0,.5);
 }

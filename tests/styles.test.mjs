@@ -234,6 +234,44 @@ const THEME_BASELINE = {
   assert.deepStrictEqual(losers, [],
     `fondos de forma que PISAN el verde/rojo del veredicto (sube la especificidad del veredicto):\n  ${losers.join('\n  ')}`);
   ok(`veredicto (verde/rojo) por encima de todo fondo de forma/skin, en player Y rondas (especificidad ${verdictMin})`);
+
+  // ── LA TINTA VIAJA CON LA FORMA (§3c · ronda del compañero, prueba 10) ─────
+  // Mismo escaneo, otra propiedad. Un selector que pinta una OPCIÓN no puede
+  // fijar `color` a un literal: la tinta la manda `--ww-shape-N-fg`, que el tema
+  // ya declara y que CI mide en `tests/contrast.test.mjs`.
+  // Por qué es DESCUBRIMIENTO y no una lista: el mismo `color:#fff` apareció
+  // TRES veces —página de tv-show (2,2:1), duelo de tv-show (1,7:1) y duelo de
+  // arcade (1,4:1, el peor del repo)— y arreglar la primera dejó vivas las otras
+  // dos. Arcade además declaraba tinta OSCURA en sus cuatro formas: su CSS
+  // pisaba su propia respuesta. Ninguna red lo veía: la tortura solo juega el
+  // modo Individual, así que el duelo quedaba fuera de su cono.
+  const tintasFijas = [];
+  for (const f of shapeFiles) {
+    let css; try { css = blank(readFileSync(f, 'utf8')); } catch { continue; }
+    for (const m of css.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+      const cuerpo = m[2];
+      // `color:` propio, no `background-color` ni `border-color`.
+      const decl = cuerpo.match(/(^|[;{\s])color\s*:\s*([^;}]+)/);
+      if (!decl) continue;
+      const valor = decl[2].trim();
+      // Vale cualquier token del tema (`--ww-shape-N-fg` en las fichas de color,
+      // `--ww-card-fg` en la opción lisa): lo que se persigue es el LITERAL.
+      if (/var\(\s*--ww-/.test(valor) || valor === 'inherit') continue;
+      for (const sel of m[1].split(',').map(s => s.trim())) {
+        // Solo lo que PINTA una opción: `.ww-q`/`.ww-phead` son texto sobre el
+        // lienzo (los rige la tinta del fondo), no fichas de color.
+        if (!/\.ww-shape-\d|\.ww-opt\b|\.rq-opt\b/.test(sel)) continue;
+        // El VEREDICTO es la excepción declarada: verde/rojo con letra blanca es
+        // su convención y ya tiene su propia regla ejecutable (arriba).
+        if (/\.btn-(success|danger)\b/.test(sel)) continue;
+        tintasFijas.push(`${f.split('/').slice(-2).join('/')}: «${sel}» → color: ${valor}`);
+      }
+    }
+  }
+  assert.deepStrictEqual(tintasFijas, [],
+    'opciones con la tinta fija (usa var(--ww-shape-N-fg), que el tema declara y CI mide):\n  '
+    + tintasFijas.join('\n  '));
+  ok('ninguna opción fija su tinta a un literal: la trae el token del tema (escaneo de styles/ + themes/)');
 }
 
 // ── LA IMAGEN NO DESBORDA SIN MARCO (§3 · ronda del 2026-08-11, prueba 12) ───
