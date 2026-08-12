@@ -94,6 +94,7 @@ console.log('\n▶ journeys'); await import('./journeys.test.mjs');
 console.log('\n▶ kind'); await import('./kind.test.mjs');
 console.log('\n▶ vocabulario'); await import('./vocabulario.test.mjs');
 console.log('\n▶ docs'); await import('./docs.test.mjs');
+console.log('\n▶ qaRonda'); await import('./qaRonda.test.mjs');
 console.log('\n▶ layers'); await import('./layers.test.mjs');
 console.log('\n▶ moduleRefs'); await import('./moduleRefs.test.mjs');
 console.log('\n▶ huerfanos'); await import('./huerfanos.test.mjs');

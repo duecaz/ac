@@ -10,6 +10,11 @@
 // Contrato:
 //   montarHoja(rootEl, {
 //     ronda,                  // ver qa/ronda-actual.json (id, titulo, versionMin, secciones[].pruebas[])
+//                             // cada prueba: { n, titulo, accion, espera, ruta[], casillas[]? }
+//                             // `ruta` = DÓNDE se hace, de lo general a lo concreto
+//                             //   ['PC (profe)', 'Quiz', 'En vivo', 'Carrera libre', 'Pantalla final']
+//                             // Va arriba del todo y también en el informe: sin ella,
+//                             // «la 3 falla» obliga a preguntar dónde miraba.
 //     storageKey,             // clave de localStorage (por defecto deriva de ronda.id)
 //     contexto (opcional),    // () => string — se añade al informe (versión, errores…)
 //     enviar (opcional),      // async (payload) => void — si falta, no hay botón Enviar
@@ -33,6 +38,12 @@ const CSS = `
 .qh .qh-prueba { border: 1px solid var(--qh-line, #ddd); border-radius: 4px; padding: .9rem 1rem;
   margin-bottom: .8rem; background: var(--qh-card, #fff); }
 .qh .qh-prueba.qh-con-falla { border-left: 4px solid var(--qh-mal, #b3402f); }
+.qh .qh-ruta { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .35rem;
+  margin: 0 0 .5rem; font-size: .72rem; }
+.qh .qh-ruta b { font-weight: 700; letter-spacing: .02em; padding: .12rem .45rem; border-radius: 3px;
+  background: var(--qh-ruta-bg, #eef1f5); color: var(--qh-ruta, #45505f); }
+.qh .qh-ruta b:first-child { background: var(--qh-ruta-1-bg, #16202f); color: var(--qh-ruta-1, #fff); }
+.qh .qh-ruta i { font-style: normal; opacity: .45; }
 .qh .qh-accion { margin: 0 0 .35rem; font-weight: 600; }
 .qh .qh-num { opacity: .55; font-weight: 700; margin-right: .35rem; }
 .qh .qh-espera { margin: 0 0 .7rem; color: var(--qh-soft, #566); font-size: .93rem; }
@@ -91,6 +102,8 @@ export function montarHoja(root, { ronda, storageKey, contexto, enviar, puedeEnv
       ${sec.nota ? `<p class="qh-secnota">${esc(sec.nota)}</p>` : ''}
       ${(sec.pruebas || []).map(p => `
         <div class="qh-prueba" data-n="${esc(p.n)}">
+          ${(p.ruta || []).length ? `<div class="qh-ruta" aria-label="Dónde se hace">${
+            p.ruta.map(t => `<b>${esc(t)}</b>`).join('<i>›</i>')}</div>` : ''}
           <p class="qh-accion"><span class="qh-num">${esc(p.n)}</span>${esc(p.accion)}</p>
           ${p.espera ? `<p class="qh-espera">Tiene que pasar: ${esc(p.espera)}</p>` : ''}
           <div class="qh-veredicto" role="radiogroup" aria-label="Veredicto de la prueba ${esc(p.n)}">
@@ -164,6 +177,7 @@ export function montarHoja(root, { ronda, storageKey, contexto, enviar, puedeEnv
         extra = ' (' + p.casillas.map((c, i) => `${c}: ${d.casillas[i] ? 'sí' : 'no'}`).join(' · ') + ')';
       }
       lineas.push(`${V[d.v]} ${d.n} · ${p.titulo || p.accion || ''}${extra}`);
+      if ((p.ruta || []).length) lineas.push(`        dónde: ${p.ruta.join(' › ')}`);
       if (d.nota.trim()) lineas.push(`        nota: ${d.nota.trim()}`);
     }
     const ahora = new Date();
