@@ -1,5 +1,7 @@
 # Plan · Estandarizar TEMAS (skins) y FONDOS — quién pinta qué, quién gana y cómo se garantiza el contraste
 
+> **Tipo**: plan · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
 > Decidido con el dueño el 2026-08-12, a raíz de dos hallazgos de la misma semana:
 > el enunciado ilegible sobre una foto (resuelto con la placa, v1.51.450) y el
 > reporte «algunos fondos son muy oscuros y no se ven las letras» (prueba 10 de la

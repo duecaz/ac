@@ -52,6 +52,7 @@ quedó aquí.
 | **`handoff-google-classroom.md`** | Guía de CONFIGURACIÓN en Google Cloud: se necesita cada vez que se toque Classroom |
 | **`handoff-seguridad-pb.md`** | Las fases de seguridad de PB; su Fase 3 (validador en el servidor) es hoy un límite declarado en §22 |
 | **`handoff-player-frame.md`** | Etapas 1 y 2 PENDIENTES: el plan para cuando se vuelva al problema del marco |
+| **`handoff-estilos-temas.md`** | Estandarizar temas y fondos: qué declara cada eje, quién gana y el contraste en 3 niveles (decidido 2026-08-12, sin ejecutar) |
 
 Se le suman dos que no son handoffs sino REFERENCIA permanente:
 `infraestructura-pb.md` (cómo está la Pi de verdad) y `handoff-esquema-pb.md`
