@@ -75,6 +75,25 @@ export const ATTEMPT_CREATE = [
 ].join(' && ');
 
 /**
+ * `users` (colección de AUTH) — aparte del cuadro de abajo A PROPÓSITO: el panel
+ * `#/admin` NO la toca (tocar el esquema de auth desde el navegador es la clase
+ * de accidente que te deja sin poder entrar). La aplican las dos herramientas de
+ * línea de comandos: `tools/pb-reglas-users.sh` (Pi) y `setup-pocketbase.ps1`
+ * (Windows). Vive AQUÍ para que la regla esté escrita en UN solo sitio; que las
+ * tres copias digan lo mismo lo vigila `tests/pbRules.test.mjs`.
+ *
+ * ALTA REABIERTA (decisión del dueño, 2026-08-11; U1 la había cerrado): el profe
+ * se registra por correo desde `#/registro` porque no todos tienen Google. La
+ * condición es que el cuerpo NO traiga `role` → nadie se registra como admin.
+ * OJO: el login con OAuth2 no pasa por createRule, así que Google va igual.
+ */
+export const USERS_RULES = {
+  viewRule:   'id = @request.auth.id || @request.auth.role = "admin"',
+  listRule:   '@request.auth.role = "admin"',
+  createRule: '@request.body.role:isset = false || @request.auth.role = "admin"',
+};
+
+/**
  * Reglas por colección. Cambiar algo aquí exige re-aplicarlas desde
  * `#/admin` → "Crear colecciones" (y verificar con `bash tools/check-pb.sh`).
  */

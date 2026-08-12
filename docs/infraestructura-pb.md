@@ -117,10 +117,19 @@ los MISMOS campos y reglas (fuente de verdad en código: `views/adminView.js` DE
   (`@request.body.role:isset = false || @request.auth.role='admin'`) → el profe se
   registra desde `#/registro` con correo+clave, y nadie puede registrarse con rol.
   Google sigue igual (OAuth no pasa por createRule). Las cuentas de pizarra las sigue
-  pudiendo crear el admin (panel Profesores). Aplicado por `setup-pocketbase.ps1`
-  (`Apply-Users`), no por el panel `#/admin` (que no toca `users`). ⚠ SMTP sin
-  configurar: «olvidé mi contraseña» no envía correos hasta que se configure
-  (Settings → Mail settings en PB).
+  pudiendo crear el admin (panel Profesores). **APLICADA Y PROBADA en la Pi el
+  2026-08-11** (alta sin `role` → 200 · alta con `role` → 400).
+  Se aplica con una de las dos herramientas (el panel `#/admin` NO toca `users`
+  a propósito: tocar el esquema de auth desde el navegador puede dejarte sin
+  entrar) — la regla se declara UNA vez en `core/pbRules.js` (`USERS_RULES`) y
+  `tests/pbRules.test.mjs` comprueba que las tres copias coinciden:
+  ```bash
+  ssh duecaz@pio.local
+  git -C ~/ac pull && bash ~/ac/tools/pb-reglas-users.sh   # aplica, PRUEBA la puerta y limpia
+  ```
+  (En Windows: `.\tools\setup-pocketbase.ps1`, que hace lo mismo entre otras cosas.)
+  ⚠ SMTP sin configurar: «olvidé mi contraseña» no envía correos hasta que se
+  configure (PocketBase → Settings → Mail settings).
 
 ### Quirks de PB 0.23 que YA nos mordieron (no repetir)
 

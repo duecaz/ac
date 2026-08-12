@@ -108,6 +108,37 @@ for (const a of ['create', 'update', 'delete']) {
 assert.strictEqual(RULES.assignments.viewRule, '', 'el alumno debe poder abrir la tarea por código');
 ok('assignments: crear/cerrar/rotar exige sesión; el alumno solo lee');
 
+// ── 6b. `users`: las TRES copias de su regla dicen lo mismo ─────────────────
+// La colección de AUTH no la toca el panel (tocar el esquema de auth desde el
+// navegador te puede dejar sin entrar), así que su regla vive en USERS_RULES y
+// la aplican DOS herramientas: el .sh de la Pi y el .ps1 de Windows. Tres sitios
+// = tres oportunidades de divergir, que es exactamente el fallo que este archivo
+// existe para impedir (el cuadro de abajo nació de eso).
+{
+  const { USERS_RULES } = await import('../core/pbRules.js');
+  const norm = (v) => String(v).replace(/'/g, '"').replace(/\s+/g, ' ').trim();
+  const sh = readFileSync(join(ROOT, 'tools/pb-reglas-users.sh'), 'utf8');
+  const ps1u = readFileSync(join(ROOT, 'tools/setup-pocketbase.ps1'), 'utf8');
+  // Del .sh: el diccionario REGLAS. Del .ps1: el $body de Apply-Users.
+  const leerSh = (k) => (sh.match(new RegExp(`'${k}':\\s*'([^']*)'`)) || [])[1];
+  const bloquePs1 = ps1u.slice(ps1u.indexOf('function Apply-Users'), ps1u.indexOf('Write-Host "Configurando'));
+  const leerPs1 = (k) => (bloquePs1.match(new RegExp(`${k}\\s*=\\s*'([^']*)'`)) || [])[1];
+
+  for (const [k, want] of Object.entries(USERS_RULES)) {
+    assert.strictEqual(norm(leerSh(k) ?? ''), norm(want),
+      `DIVERGENCIA en users.${k}:\n  core/pbRules.js USERS_RULES → ${JSON.stringify(want)}\n  tools/pb-reglas-users.sh   → ${JSON.stringify(leerSh(k))}`);
+    assert.strictEqual(norm(leerPs1(k) ?? ''), norm(want),
+      `DIVERGENCIA en users.${k}:\n  core/pbRules.js USERS_RULES → ${JSON.stringify(want)}\n  setup-pocketbase.ps1       → ${JSON.stringify(leerPs1(k))}`);
+  }
+  // La condición del alta es la que decide quién entra: se nombra aparte para
+  // que un cambio silencioso (p.ej. volver a abrirla del todo) no pase de largo.
+  assert.match(USERS_RULES.createRule, /role:isset = false/,
+    'el alta pública debe seguir prohibiendo que el cuerpo traiga `role` (nadie se registra como admin)');
+  // CONTRA-PRUEBA: el lector no devuelve cualquier cosa.
+  assert.strictEqual(leerSh('reglaInventada'), undefined, 'el lector del .sh no inventa reglas');
+  ok('users: USERS_RULES, el .sh de la Pi y el .ps1 declaran la MISMA regla (y el alta no admite `role`)');
+}
+
 // ── 7. ANTI-DIVERGENCIA: el script de PowerShell dice lo MISMO ──────────────
 // Se parsea `tools/setup-pocketbase.ps1` y se compara regla a regla.
 {
