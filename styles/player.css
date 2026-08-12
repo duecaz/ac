@@ -207,6 +207,17 @@ body.bg-custom .ww-player .ww-q {
    solo tiene que separarla de la foto, sin doble relleno. */
 .ww-play-page .ww-player-frame.bg-custom .ww-player .ww-phead,
 body.bg-custom .ww-player .ww-phead { padding: .25em .5em; }
+/* Sobre foto el CONTADOR se funde con su placa (cuadrito blanco con el número
+   oscuro, como el «2/5» del mockup): el badge gris de Bootstrap encima de la
+   placa blanca era una pastilla dentro de otra. El !important es obligado —
+   `.bg-secondary` de Bootstrap trae el suyo. */
+.ww-play-page .ww-player-frame.bg-custom .ww-player .ww-phead .badge.bg-secondary,
+body.bg-custom .ww-player .ww-phead .badge.bg-secondary {
+  background: transparent !important;
+  color: inherit;
+  font-size: 1em;
+  padding: 0;
+}
 /* Sobre FOTO el botón de pantalla completa se viste como las placas (círculo de
    tarjeta, mismo icono): es lo que dibujó el dueño en su mockup. El velo oscuro
    sigue siendo el default en el resto de fondos — la lección de v1.51.386

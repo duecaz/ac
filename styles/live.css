@@ -24,6 +24,12 @@
   font-size: max(1rem, 3.4cqmin);
   padding: clamp(.7rem, 3.2cqmin, 2.2rem);
   font-weight: 600;
+  /* Esquinas redondeadas (mockup del dueño 2026-08-12): pastilla, no ladrillo.
+     Escala con el marco y con piso — un radio en px fijo se vería enorme en un
+     móvil y ridículo en la pizarra. La rejilla es UNA para todos los modos
+     (Individual, rondas en vivo, VS, Equipos, tarea): se redondea aquí y se
+     hereda coherente en los cinco. */
+  border-radius: max(10px, 1.6cqmin);
 }
 .ww-kahoot-grid .btn:nth-child(1) { background: var(--ww-shape-1, #e21b3c); border-color: var(--ww-shape-1, #e21b3c); color: var(--ww-shape-1-fg, #fff); }
 .ww-kahoot-grid .btn:nth-child(2) { background: var(--ww-shape-2, #1368ce); border-color: var(--ww-shape-2, #1368ce); color: var(--ww-shape-2-fg, #fff); }
