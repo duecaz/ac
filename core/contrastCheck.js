@@ -43,9 +43,15 @@ export function checkSkinContrast(skin) {
   const issues = [];
   for (const p of PARES) {
     const r = ratio(v[p.tinta], v[p.relleno]);
-    // null = alguno no es un hex sólido (un tema podría usar rgba o un
-    // degradado): no se juzga lo que no se puede medir, pero se DICE.
-    if (r == null) { issues.push(`${p.que}: no medible (${p.tinta}=${v[p.tinta]} · ${p.relleno}=${v[p.relleno]})`); continue; }
+    // Un token AUSENTE sí es un fallo (el contrato de skin exige el set
+    // completo). Un token PRESENTE pero no medible —rgba, degradado— no se
+    // juzga: tumbar CI por lo que no se puede medir contradiría la regla de
+    // «no medir» que aplican el resto de redes. Queda para la tortura, que sí
+    // ve el píxel.
+    if (r == null) {
+      if (v[p.tinta] == null || v[p.relleno] == null) issues.push(`${p.que}: falta ${v[p.tinta] == null ? p.tinta : p.relleno}`);
+      continue;
+    }
     if (r < p.min) issues.push(`${p.que}: ${ratioLegible(v[p.tinta], v[p.relleno])} (mínimo ${p.min}:1)`);
   }
   return issues;

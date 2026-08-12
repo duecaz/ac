@@ -162,8 +162,13 @@ body.bg-notebook .tc-passage,
 }
 /* El marco solo aporta el papel crema; el margen rojo se pinta en .tc-solo con
    unidades del contenedor (cqw) para que su posición/grosor crezcan con el marco. */
-.ww-player-frame.bg-notebook:has(.tc-solo),
-body.bg-notebook:has(.tc-solo) {
+/* Lleva `.bg-set` (la pone `applyBackground`) para SEGUIR ganando a la textura
+   genérica de `styles/backgrounds.css`: al pasar aquella a 3 clases quedaban
+   empatadas, y backgrounds.css carga después → la hoja crema perdía y salían
+   los renglones dobles. La excepción de una plantilla manda sobre la textura
+   común, y ahora lo dice la especificidad, no el orden de los <link>. */
+.ww-player-frame.bg-set.bg-notebook:has(.tc-solo),
+body.bg-set.bg-notebook:has(.tc-solo) {
   background: #fffdf5;
   /* Viñeta cálida sutil → la hoja crema toma profundidad de papel real. */
   box-shadow: inset 0 0 8cqmin rgba(120,90,40,.07);

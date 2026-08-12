@@ -36,6 +36,10 @@ const server = spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '1
   { cwd: ROOT, stdio: 'ignore' });
 const bye = (code) => { try { server.kill(); } catch {} process.exit(code); };
 process.on('SIGINT', () => bye(130));
+// Un fallo a mitad dejaba el servidor vivo y la pasada SIGUIENTE medía contra el
+// repo viejo sin enterarse — un medidor que miente es peor que no medir (R6).
+process.on('uncaughtException', (e) => { console.error('\n❌ TORTURA ABORTADA:', e?.message || e); bye(1); });
+process.on('unhandledRejection', (e) => { console.error('\n❌ TORTURA ABORTADA:', e?.message || e); bye(1); });
 await new Promise(r => setTimeout(r, 700));
 
 const browser = await chromium.launch();
@@ -98,7 +102,7 @@ const colorBases = await page.evaluate(async () => {
 
 console.log(`\n🎨 TORTURA DE LEGIBILIDAD — ${skins.length} temas × ${fondos.length} fondos (umbral ${MIN}:1)\n`);
 const fallos = [];
-let medidas = 0, peorGlobal = { peorRatio: 21 };
+let medidas = 0, minMedidos = Infinity, peorGlobal = { peorRatio: 21 };
 for (const skin of skins) {
   const fila = [];
   for (const bg of fondos) {
@@ -122,6 +126,7 @@ for (const skin of skins) {
     }, [skin, bg]);
     const m = await page.evaluate(`(${medirLegibilidad})('.ww-player-frame', null, ${JSON.stringify({ colorBases, hayBootstrap })})`);
     medidas++;
+    if (m.n < minMedidos) minMedidos = m.n;
     if (m.peorRatio < peorGlobal.peorRatio) peorGlobal = { ...m, skin, bg };
     if (m.peorRatio < MIN) fallos.push({ skin, bg, ...m });
     fila.push(`${bg}=${m.peorRatio.toFixed(1)}`);
@@ -136,6 +141,13 @@ if (!hayBootstrap) {
   console.log('     con relleno suyo (pastillas .bg-*) quedan SIN JUZGAR. Lo que se mide aquí es el CSS del proyecto.');
 }
 if (errores.length) console.log(`  ⚠️ errores de página: ${[...new Set(errores)].join(' · ')}`);
+// SIN MEDICIONES NO HAY VEREDICTO. `peorRatio` nace en 21, así que una pasada
+// que no mida nada (la ruta cambió, el juego no montó) saldría verde diciendo
+// que todo se lee. Se exige que cada combinación haya medido texto de verdad.
+if (medidas === 0 || minMedidos < 3) {
+  console.log(`\n❌ la pasada no midió lo suficiente (mínimo ${minMedidos} textos en una combinación): el verde seria falso.`);
+  bye(1);
+}
 if (fallos.length) {
   console.log(`\n❌ ${fallos.length} combinación(es) por debajo de ${MIN}:1 — la clase no lo lee:`);
   for (const f of fallos) console.log(`   · tema ${f.skin} × fondo ${f.bg}: ${f.peorRatio.toFixed(2)}:1 en «${f.peorC}»`);

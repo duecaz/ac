@@ -23,6 +23,14 @@ body.bg-none { /* default; nothing */ }
 body.bg-set.bg-inked,
 .ww-player-frame.bg-set.bg-inked { color: var(--ww-bg-ink); }
 
+/* …pero la tinta del lienzo NO entra en lo que tiene relleno propio. Al retirar
+   los `body.bg-X .card{…}` (un fondo estilando componentes) las tarjetas
+   quedaron dependiendo de que Bootstrap 5.3 fije el `color` de `.card`. Aquí el
+   CDN está bloqueado y no se puede comprobar, así que se declara explícito: la
+   tarjeta es del TEMA, pase lo que pase con la hoja de terceros. */
+body.bg-set.bg-inked .card,
+.ww-player-frame.bg-set.bg-inked .card { color: var(--ww-card-fg, var(--ww-fg, #1f2937)); }
+
 body.bg-set.bg-notebook,
 .ww-player-frame.bg-set.bg-notebook {
   background:
