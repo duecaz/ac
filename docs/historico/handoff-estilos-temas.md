@@ -1,6 +1,19 @@
 # Plan · Estandarizar TEMAS (skins) y FONDOS — quién pinta qué, quién gana y cómo se garantiza el contraste
 
-> **Tipo**: plan · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+> **Tipo**: plan · **Sube a**: [`docs/historico/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
+
+> 🗄️ **HISTÓRICO — EJECUTADO ENTERO (v1.51.455).** La ley vive ahora en
+> [`docs/leyes.md`](../leyes.md) §3c y los guardianes en `tests/contrast.test.mjs`
+> + `tools/contrast-torture.mjs` (en el preflight). Se conserva porque explica el
+> **porqué** y lo que la ejecución CORRIGIÓ del plan. **No es trabajo pendiente.**
+>
+> Lo que el plan suponía y la MEDICIÓN desmintió: se dio por hecho que corcho,
+> aula, arena y estrellado necesitarían placa. Medidos, sus tintas dan entre
+> 5,7:1 y 14,6:1 → placa solo para la foto del profe, el único lienzo que no se
+> puede conocer. Y la tortura destapó dos defectos que el plan no preveía: el
+> tema TV Show fijaba `color:#fff` en las opciones (2,2:1 sobre su turquesa y su
+> naranja, con CUALQUIER fondo — el «no se ven las letras» del reporte) y pintaba
+> el lienzo por encima del fondo elegido (pedías «Papel» y salía el plató).
 
 > Decidido con el dueño el 2026-08-12, a raíz de dos hallazgos de la misma semana:
 > el enunciado ilegible sobre una foto (resuelto con la placa, v1.51.450) y el

@@ -65,6 +65,28 @@ las permite):
 .mi-hint { color: var(--ww-fg); opacity: .7; }
 ```
 
+**Y la tinta viaja con el relleno.** Todo color que lleve texto encima tiene su
+pareja `-fg` (`--ww-shape-3` ⇒ `--ww-shape-3-fg`): pintar el fondo con token y la
+letra con `#fff` a pelo es el bug que ya cazamos tres veces (opciones del quiz,
+etiquetas del diagrama y el tema TV Show, los tres a 2,2-2,4:1 — ilegibles a 3 m).
+
+```css
+/* ❌ la letra no sigue a la forma: sobre la 3 (ámbar) da 2,4:1 */
+.mi-ficha { background: var(--ww-shape-3); color: #fff; }
+/* ✅ el tema decide las dos */
+.mi-ficha { background: var(--ww-shape-3); color: var(--ww-shape-3-fg, #fff); }
+```
+
+### Regla C — El FONDO pone el lienzo; el TEMA, la paleta
+Los dos ejes y quién gana al cruzarse (spoiler: gana la cercanía al píxel, y el
+fondo ELEGIDO gana al lienzo que pinte el tema) están en **[`leyes.md` §3c](leyes.md#3c--tema-y-fondo--dos-ejes-y-quién-gana-cuando-se-cruzan)**.
+Lo mínimo que hay que saber al escribir CSS de actividad:
+- no estiles por clase de fondo (`body.bg-arena .mi-cosa`): el fondo no decide
+  componentes;
+- el texto suelto sobre el lienzo hereda `--ww-bg-ink` — no le fijes color;
+- un fondo nuevo se AÑADE en `core/backgrounds.js` declarando `ink` +
+  `colorBase` (o `plate: true`), y CI le mide el contraste.
+
 ## 3. Ejemplares y checklist
 
 - **Ejemplares**: `styles/math.css` y `styles/quiz.css` — 0 fija, 0 color a pelo. Cópialos

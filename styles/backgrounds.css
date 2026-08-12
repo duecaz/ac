@@ -1,63 +1,78 @@
 /* Background classes. Apply on <body> AND on .ww-player-frame so
    :fullscreen on the embed shows the same texture. SVG inline / CSS
-   gradients as data URIs to avoid network round-trips. */
+   gradients as data URIs to avoid network round-trips.
+   Todas las texturas se escriben con `.bg-set` (la pone `applyBackground`
+   cuando el fondo NO es «ninguno»): así el lienzo ELEGIDO gana al que pinte el
+   tema, sin depender de qué hoja cargue después. Ver core/backgrounds.js. */
 
 body.bg-none { /* default; nothing */ }
 
-body.bg-notebook,
-.ww-player-frame.bg-notebook {
+/* LA TINTA DEL LIENZO, EN UNA SOLA REGLA (§3 · plan de temas y fondos).
+   Antes cada fondo oscuro traía su propio `color: #f5f5dc` y hasta su propio
+   `.card { … }`: un FONDO estilando COMPONENTES, que es terreno del tema. La
+   tinta ahora la DECLARA el manifest (`BACKGROUNDS[x].ink`), `applyBackground`
+   la pone en `--ww-bg-ink` y esta regla la aplica. Un fondo nuevo no escribe
+   CSS de legibilidad: declara su tinta (o pide placa) y CI le mide el contraste
+   contra su `colorBase`.
+   Lleva `.bg-set` por el mismo motivo que las texturas: un tema puede fijar el
+   color del lienzo (`.ww-player-frame.skin-tv-show { color: var(--ww-fg) }`) y
+   su hoja carga después. Con el empate ganaba el tema y el texto salía en la
+   tinta del PLATÓ sobre el papel del profe: 1,0:1, invisible. La tinta del
+   lienzo manda sobre la paleta base del tema — es la regla de cercanía al
+   píxel (veredicto > placa > tinta del lienzo > paleta). */
+body.bg-set.bg-inked,
+.ww-player-frame.bg-set.bg-inked { color: var(--ww-bg-ink); }
+
+body.bg-set.bg-notebook,
+.ww-player-frame.bg-set.bg-notebook {
   background:
     linear-gradient(to right, transparent 0, transparent 60px, rgba(220,38,38,.5) 60px, rgba(220,38,38,.5) 62px, transparent 62px),
     repeating-linear-gradient(to bottom, #fdfcf6 0, #fdfcf6 31px, rgba(99,102,241,.25) 31px, rgba(99,102,241,.25) 32px);
 }
-body.bg-notebook { background-attachment: fixed; }
+body.bg-set.bg-notebook { background-attachment: fixed; }
 
-body.bg-blackboard,
-.ww-player-frame.bg-blackboard {
+body.bg-set.bg-blackboard,
+.ww-player-frame.bg-set.bg-blackboard {
   background: #2d3a2e;
-  color: #f5f5dc;
   background-image:
     radial-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
     radial-gradient(rgba(255,255,255,.03) 1px, transparent 1px);
   background-size: 4px 4px, 7px 7px;
   background-position: 0 0, 2px 3px;
 }
-body.bg-blackboard { background-attachment: fixed; }
-body.bg-blackboard .card { background: rgba(245,245,220,.95); color: #1f2937; }
+body.bg-set.bg-blackboard { background-attachment: fixed; }
 
 /* Green school chalkboard — distinct from the dark slate blackboard above. */
-body.bg-greenboard,
-.ww-player-frame.bg-greenboard {
+body.bg-set.bg-greenboard,
+.ww-player-frame.bg-set.bg-greenboard {
   background: #1f5135;
-  color: #f5f5dc;
   background-image:
     radial-gradient(rgba(255,255,255,.06) 1px, transparent 1px),
     radial-gradient(rgba(255,255,255,.04) 1px, transparent 1px);
   background-size: 4px 4px, 7px 7px;
   background-position: 0 0, 2px 3px;
 }
-body.bg-greenboard { background-attachment: fixed; }
-body.bg-greenboard .card { background: rgba(245,245,220,.95); color: #1f2937; }
+body.bg-set.bg-greenboard { background-attachment: fixed; }
 
-body.bg-paper,
-.ww-player-frame.bg-paper {
+body.bg-set.bg-paper,
+.ww-player-frame.bg-set.bg-paper {
   background: #f5f1e6;
   background-image: radial-gradient(rgba(180, 150, 90, .15) 1px, transparent 1px);
   background-size: 6px 6px;
 }
-body.bg-paper { background-attachment: fixed; }
+body.bg-set.bg-paper { background-attachment: fixed; }
 
-body.bg-grid,
-.ww-player-frame.bg-grid {
+body.bg-set.bg-grid,
+.ww-player-frame.bg-set.bg-grid {
   background:
     linear-gradient(to right, rgba(99,102,241,.15) 1px, transparent 1px) 0 0/24px 24px,
     linear-gradient(to bottom, rgba(99,102,241,.15) 1px, transparent 1px) 0 0/24px 24px,
     #fafafa;
 }
-body.bg-grid { background-attachment: fixed; }
+body.bg-set.bg-grid { background-attachment: fixed; }
 
-body.bg-corkboard,
-.ww-player-frame.bg-corkboard {
+body.bg-set.bg-corkboard,
+.ww-player-frame.bg-set.bg-corkboard {
   background: #c8985a;
   background-image:
     radial-gradient(rgba(80,50,20,.25) 1.5px, transparent 1.5px),
@@ -65,11 +80,11 @@ body.bg-corkboard,
   background-size: 5px 5px, 8px 8px;
   background-position: 0 0, 3px 4px;
 }
-body.bg-corkboard { background-attachment: fixed; }
+body.bg-set.bg-corkboard { background-attachment: fixed; }
 
 /* Classroom — warm soft wall, light enough for any skin. */
-body.bg-classroom,
-.ww-player-frame.bg-classroom {
+body.bg-set.bg-classroom,
+.ww-player-frame.bg-set.bg-classroom {
   background:
     radial-gradient(ellipse 90% 60% at 50% 0%, rgba(255,255,255,.5), transparent 60%),
     linear-gradient(180deg, #fbf3df 0%, #efe2c4 100%);
@@ -77,45 +92,41 @@ body.bg-classroom,
     radial-gradient(rgba(180,150,90,.10) 1px, transparent 1px);
   background-size: 7px 7px;
 }
-body.bg-classroom { background-attachment: fixed; }
+body.bg-set.bg-classroom { background-attachment: fixed; }
 
 /* Arena — game-show / sports stage. Deep blue with team spotlights; pairs with
    the Colegios skin's floating panels (which show through over it). */
-body.bg-arena,
-.ww-player-frame.bg-arena {
+body.bg-set.bg-arena,
+.ww-player-frame.bg-set.bg-arena {
   background:
     radial-gradient(ellipse 70% 55% at 50% -10%, rgba(120,140,255,.28), transparent 60%),
     radial-gradient(circle at 14% 92%, rgba(37,99,235,.22), transparent 46%),
     radial-gradient(circle at 86% 92%, rgba(220,38,38,.18), transparent 46%),
     repeating-linear-gradient(135deg, transparent 0 30px, rgba(255,255,255,.016) 30px 31px),
     linear-gradient(180deg, #0c1530 0%, #070a16 100%);
-  color: #e2e8f0;
 }
-body.bg-arena { background-attachment: fixed; }
-body.bg-arena .card { background: rgba(20, 28, 56, .85); color: #e2e8f0; border-color: #334155; }
+body.bg-set.bg-arena { background-attachment: fixed; }
 
 /* Custom — teacher-uploaded photo, painted from the --ww-bg-image inline var. */
-body.bg-custom,
-.ww-player-frame.bg-custom {
+body.bg-set.bg-custom,
+.ww-player-frame.bg-set.bg-custom {
   background-image: var(--ww-bg-image);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
 }
-body.bg-custom { background-attachment: fixed; }
+body.bg-set.bg-custom { background-attachment: fixed; }
 
-body.bg-stars,
-.ww-player-frame.bg-stars {
+body.bg-set.bg-stars,
+.ww-player-frame.bg-set.bg-stars {
   background: radial-gradient(ellipse at top, #1e1b4b 0%, #0c0a1f 70%);
-  color: #e0e7ff;
   background-image:
     radial-gradient(white 0.5px, transparent 0.5px),
     radial-gradient(rgba(200,220,255,.5) 1px, transparent 1px);
   background-size: 80px 80px, 120px 120px;
   background-position: 0 0, 40px 60px;
 }
-body.bg-stars { background-attachment: fixed; }
-body.bg-stars .card { background: rgba(30, 27, 75, .85); color: #e0e7ff; border-color: #6366f1; }
+body.bg-set.bg-stars { background-attachment: fixed; }
 
 /* Preview tiles (editor picker) — same backgrounds but contained. */
 .ww-bg-preview.bg-notebook    { background: linear-gradient(to right, transparent 0, transparent 12px, rgba(220,38,38,.5) 12px, rgba(220,38,38,.5) 13px, transparent 13px), repeating-linear-gradient(to bottom, #fdfcf6 0, #fdfcf6 7px, rgba(99,102,241,.25) 7px, rgba(99,102,241,.25) 8px); }

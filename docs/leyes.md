@@ -33,6 +33,7 @@
 - [1) Versión — en CADA commit y en CADA respuesta](#1-versión--en-cada-commit-y-en-cada-respuesta)
 - [2) Todo a `main` (sirve la web)](#2-todo-a-main-sirve-la-web)
 - [3) ⚖️ LEY DE ESTILO — las cuatro capas del píxel](#3--ley-de-estilo--las-cuatro-capas-del-píxel)
+  - [§3c · TEMA y FONDO — dos ejes, y quién gana cuando se cruzan](#3c--tema-y-fondo--dos-ejes-y-quién-gana-cuando-se-cruzan)
 - [4) ResizeObserver → `observeResize()`](#4-resizeobserver--observeresize)
 - [5) Filtros PocketBase → `pbEscape`/`pbFilterParam`](#5-filtros-pocketbase--pbescapepbfilterparam)
 - [6) `kernel/` sin `Date.now()` → `clock.now()`](#6-kernel-sin-datenow--clocknow)
@@ -206,6 +207,59 @@ escribirse; si necesita violar una prohibición, está en la capa equivocada.
   arcade/tv-show) · el escape por selector `.mem-`/`-ed\b` exime más de
   lo que debería (todo memory) · `rgba()` de superficie sin vigilar.
   (Las reglas muertas del skin `space` no registrado se retiraron en L5.)
+
+### §3c · TEMA y FONDO — dos ejes, y quién gana cuando se cruzan
+
+Decidido el 2026-08-12, a raíz de dos hallazgos de la misma semana: el enunciado
+ilegible sobre la foto del profe y «algunos fondos son muy oscuros que hacen que
+no se vean las otras letras» (ronda del compañero, prueba 10). Los dos eran el
+mismo defecto: **el fondo no declaraba nada**, así que la legibilidad dependía de
+parches caso a caso.
+
+| Eje | Dueño | Declara | PROHIBIDO |
+|---|---|---|---|
+| **TEMA** (skin) | `core/skins.js` | la PALETA: los `--ww-*` completos **y la pareja `-fg` de todo color que lleve texto** | pintar el LIENZO cuando el profe ha elegido fondo · fijar `color` a pelo en un componente que ya tiene su token (`.skin-tv-show .ww-opt{color:#fff}` daba 2,2:1) |
+| **FONDO** | `core/backgrounds.js` | el LIENZO: la textura + (`ink` + `colorBase`) **o** `plate:true` | definir tokens del tema · estilar componentes (`body.bg-arena .card{…}` era un fondo decidiendo el color de una tarjeta) |
+
+**Quién gana: no un eje sobre el otro, sino la CERCANÍA al píxel.**
+
+```
+veredicto (verde/rojo)  >  placa/tarjeta (--ww-card-*)  >  tinta del lienzo (--ww-bg-ink)  >  paleta base del tema
+```
+
+- Texto DENTRO de una tarjeta o placa → tinta del TEMA: el lienzo no le toca.
+- Texto SUELTO sobre el lienzo → tinta del FONDO: el tema no puede saber si el
+  lienzo elegido es claro u oscuro.
+- Y el **fondo elegido gana al lienzo del tema**: `applyBackground` marca
+  `bg-set`, que sube la especificidad de la textura y de la tinta por encima de
+  lo que pinte el tema. Sin esto ganaba quien cargara después — pedías «Papel» y
+  salía el plató de TV Show, con su tinta clara sobre papel claro (1,0:1).
+- La **placa** no es un parche: la PIDE el fondo con `plate:true` y
+  `applyBackground` pone `bg-plated`. Hoy solo la foto del profe, porque es el
+  único lienzo que no se puede conocer ni medir.
+
+**El contraste se garantiza en TRES niveles**, del origen a la red final:
+
+1. **Al declarar** — `tests/contrast.test.mjs` calcula el ratio WCAG sobre los
+   hex de los manifests, sin navegador: cada par tinta/relleno del tema (4,5:1
+   texto · 3:1 opciones) y cada `ink` contra su `colorBase`. Los dos bugs de
+   contraste que ya tuvimos habrían muerto aquí.
+2. **Con placa** donde no se puede garantizar (fotos): tokens de tarjeta.
+3. **Al pintar** — `node tools/contrast-torture.mjs` mide las **70
+   combinaciones** tema × fondo en el juego real. Es la red que faltaba: la
+   matriz sube por los padres buscando color y ABANDONA al topar con un
+   `background-image`, y las 10 texturas son degradados → los fondos llevaban
+   meses contados como «no medibles». Aquí el lienzo se resuelve por el
+   `colorBase` DECLARADO, que existe justo para eso. Entra en el preflight.
+
+- **Un fondo nuevo** que no declare (`ink` + `colorBase`) o `plate` rompe CI: la
+  legibilidad se DECIDE al añadirlo, no se descubre con la clase delante.
+- **Tests que lo vigilan**: `tests/contrast.test.mjs` (con contra-prueba: un tema
+  con el ámbar en letra blanca es rechazado, y el camino legítimo sigue pasando)
+  · `tools/contrast-torture.mjs` en el preflight.
+- **Límite declarado**: en este entorno el CDN de Bootstrap está bloqueado, así
+  que la tortura no juzga los rellenos suyos (`.badge.bg-*`) y lo DICE en cada
+  pasada en vez de dar un falso ilegible. Lo que mide es el CSS del proyecto.
 
 ## 4) ResizeObserver → `observeResize()`
 - Nunca `new ResizeObserver(cb)` directo si el callback muta layout: usa
@@ -990,7 +1044,7 @@ ficha. Tres reglas, vigiladas por `tests/docs.test.mjs`:
 
 ---
 ### Cómo se auto-verifica todo
-`node tools/preflight.mjs` corre las SEIS redes (suites + los cinco recorridos)
+`node tools/preflight.mjs` corre las SIETE redes (suites + los seis recorridos)
 antes de subir a `main` — es la orden que hay que teclear (§27).
 `node tests/run.mjs` corre TODAS las suites. Los escáneres compartidos
 (`core/normsCheck.js` / `core/templateContract.js` / `core/skinContract.js`) corren

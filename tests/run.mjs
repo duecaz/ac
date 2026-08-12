@@ -84,6 +84,7 @@ console.log('\n▶ unscorable'); await import('./unscorable.test.mjs');
 console.log('\n▶ idempotency'); await import('./idempotency.test.mjs');
 console.log('\n▶ liveRules'); await import('./liveRules.test.mjs');
 console.log('\n▶ skins'); await import('./skins.test.mjs');
+console.log('\n▶ contrast'); await import('./contrast.test.mjs');
 console.log('\n▶ newTemplate'); await import('./newTemplate.test.mjs');
 console.log('\n▶ activityCard'); await import('./activityCard.test.mjs');
 console.log('\n▶ search'); await import('./search.test.mjs');

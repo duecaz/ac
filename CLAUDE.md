@@ -77,6 +77,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 |---|---|
 | **SABER PARA QUIÉN ES LA APP y cómo se decide** (la escena, restricciones, qué NO somos, referentes, **de dónde se desprende cada ley**, y la COLA de trabajo derivada) | **[`docs/norte.md`](docs/norte.md)** — manda sobre el resto: las leyes dicen CÓMO, el norte dice QUÉ y PARA QUIÉN |
 | **Ver TODAS las leyes/normas del proyecto** (px/token del juego, PB, XSS, versión…) | **[`docs/leyes.md`](docs/leyes.md)** (índice único: qué · dónde · qué test la vigila) |
+| **TEMAS y FONDOS**: qué declara cada eje, quién gana al cruzarse y cómo se garantiza el contraste | **[`docs/leyes.md`](docs/leyes.md) §3c** — `tests/contrast.test.mjs` + `tools/contrast-torture.mjs` |
 | **VER EL MAPA DE MÓDULOS** (capas, quién importa a quién, dónde está el tamaño) | **[`docs/arquitectura-modulos.md`](docs/arquitectura-modulos.md)** — GENERADO: `node tools/module-map.mjs` (lo vigila `tests/layers.test.mjs`) |
 | **Tocar un cuadro de bucles/modos en un MD** | NO se edita a mano: sale del código con `node tools/docgen.mjs` (lo vigila `tests/docs.test.mjs`) |
 | **EL NORTE: modelo de 4 capas** (contenido·plantilla·modo·plataforma, dueños y prohibiciones) | **[`docs/leyes.md`](docs/leyes.md) §0** — contrastar TODO diseño contra ese cuadro |
@@ -109,7 +110,6 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | Índice completo de docs | [`docs/README.md`](docs/README.md) (lo histórico vive en `docs/historico/`) |
 | **Cómo se puntúa CADA actividad** | `core/scoring/` + el scorer de cada plantilla; la ley y su test, en [`docs/leyes.md`](docs/leyes.md) (`scoringSources`). El plan original, ya ejecutado, en `docs/historico/handoff-puntuacion.md` |
 | **Bugs abiertos / deuda** | la sección "Deuda técnica registrada" (abajo) + notas `docs/handoff-*.md` |
-| **Plan de TEMAS y FONDOS** (qué declara cada eje, quién gana, contraste en 3 niveles) | **[`docs/handoff-estilos-temas.md`](docs/handoff-estilos-temas.md)** (decidido 2026-08-12, sin ejecutar) |
 | **Configurar Google Classroom** (pasos en Google Cloud) | [`docs/handoff-google-classroom.md`](docs/handoff-google-classroom.md) |
 | **Seguridad de PocketBase por fases** | [`docs/handoff-seguridad-pb.md`](docs/handoff-seguridad-pb.md) — su Fase 3 es hoy un LÍMITE declarado en `leyes.md` §22 |
 | **Verificar la Pi contra el esquema del código** (13 colecciones · campos mudos · índices · tope §25) | `PB=https://pb.lanube.uno bash tools/check-pb.sh` — lo cruza `tests/pbSchema.test.mjs` |
@@ -117,7 +117,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | **Plan de usuarios/acceso docente** (endurecer reglas, PIN, NFC, pizarras, panel profes) | **[`docs/handoff-acceso-docente.md`](docs/handoff-acceso-docente.md)** (incluye auditoría del sistema de usuarios) |
 
 Verificar SIEMPRE antes de commitear: **`node tools/preflight.mjs`** — la suite + los
-CINCO recorridos (matriz jugable · buscar/crear+EDITAR · editores · en vivo · tareas) en ~100 s, ley §27. `node
+SEIS recorridos (matriz jugable · tema×fondo legible · buscar/crear+EDITAR · editores · en vivo · tareas) en ~100 s, ley §27. `node
 tests/run.mjs` solo verifica PIEZAS: los cinco fallos que la clase encontró en una
 semana vivían en la COSTURA entre piezas correctas y ninguna suite podía verlos. Si el
 cambio toca vistas, CSS o el router, el preflight NO es opcional. El contrato,

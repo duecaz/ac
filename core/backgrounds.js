@@ -26,18 +26,52 @@ export function isSafeBgImage(url) {
     && /^data:image\/(?:png|jpe?g|webp|gif|avif);base64,[A-Za-z0-9+/=\s]+$/i.test(url);
 }
 
+// EL FONDO DECLARA SU LEGIBILIDAD (§3 · plan de temas y fondos, 2026-08-12).
+// Un fondo pone el LIENZO; el tema pone la PALETA. Para que el texto suelto
+// sobre el lienzo se lea sin que cada fondo invente su propio CSS, cada uno
+// declara aquí:
+//
+//   ink        la tinta legible sobre su textura. Se aplica como `--ww-bg-ink`
+//              (una sola regla en backgrounds.css la consume) en vez de un
+//              `color: #f5f5dc` repetido por fondo. null = el fondo NO manda
+//              tinta y el texto se queda con la del tema.
+//   colorBase  el sólido representativo de la textura, en su punto MÁS
+//              desfavorable para `ink` (la parada más clara de un degradado
+//              oscuro, y al revés). Existe para poder VERIFICAR el contraste:
+//              sin él la comprobación headless no puede medir nada, porque un
+//              degradado no tiene color computado (por eso la matriz llevaba
+//              meses contando estos fondos como «no medibles»).
+//   plate      true = sobre esta textura NINGUNA tinta plana es fiable, así que
+//              el texto va sobre una PLACA con los tokens de tarjeta del tema.
+//              Hoy solo la foto del profe: es la única cuyo lienzo no podemos
+//              conocer ni medir. Los demás tienen su ink verificada en CI
+//              (`tests/contrast.test.mjs`).
+//
+// Un fondo nuevo que no declare (ink + colorBase) o plate rompe CI: la
+// legibilidad se DECIDE al añadirlo, no se descubre con la clase delante.
 export const BACKGROUNDS = {
-  none:       { label: 'Ninguno',      description: 'Sin fondo.' },
-  notebook:   { label: 'Cuaderno',     description: 'Hoja con renglones.' },
-  blackboard: { label: 'Pizarra',      description: 'Pizarra de tiza.' },
-  greenboard: { label: 'Pizarra verde',description: 'Pizarra escolar verde.' },
-  paper:      { label: 'Papel',        description: 'Papel beige liso.' },
-  grid:       { label: 'Cuadrícula',   description: 'Hoja cuadriculada.' },
-  corkboard:  { label: 'Corcho',       description: 'Tablero de corcho.' },
-  classroom:  { label: 'Aula',         description: 'Pared de aula cálida.' },
-  arena:      { label: 'Arena',        description: 'Escenario de concurso.' },
-  stars:      { label: 'Estrellado',   description: 'Cielo de noche.' },
-  custom:     { label: 'Mi imagen',    description: 'Sube tu propia foto.' }
+  none:       { label: 'Ninguno',      description: 'Sin fondo.',
+                ink: null, colorBase: null, plate: false },   // el lienzo es el del TEMA
+  notebook:   { label: 'Cuaderno',     description: 'Hoja con renglones.',
+                ink: '#1f2937', colorBase: '#fdfcf6', plate: false },
+  blackboard: { label: 'Pizarra',      description: 'Pizarra de tiza.',
+                ink: '#f5f5dc', colorBase: '#2d3a2e', plate: false },
+  greenboard: { label: 'Pizarra verde',description: 'Pizarra escolar verde.',
+                ink: '#f5f5dc', colorBase: '#1f5135', plate: false },
+  paper:      { label: 'Papel',        description: 'Papel beige liso.',
+                ink: '#1f2937', colorBase: '#f5f1e6', plate: false },
+  grid:       { label: 'Cuadrícula',   description: 'Hoja cuadriculada.',
+                ink: '#1f2937', colorBase: '#fafafa', plate: false },
+  corkboard:  { label: 'Corcho',       description: 'Tablero de corcho.',
+                ink: '#1f2937', colorBase: '#c8985a', plate: false },
+  classroom:  { label: 'Aula',         description: 'Pared de aula cálida.',
+                ink: '#1f2937', colorBase: '#efe2c4', plate: false },
+  arena:      { label: 'Arena',        description: 'Escenario de concurso.',
+                ink: '#e2e8f0', colorBase: '#0c1530', plate: false },
+  stars:      { label: 'Estrellado',   description: 'Cielo de noche.',
+                ink: '#e0e7ff', colorBase: '#1e1b4b', plate: false },
+  custom:     { label: 'Mi imagen',    description: 'Sube tu propia foto.',
+                ink: null, colorBase: null, plate: true }
 };
 
 const ALL_CLS = Object.keys(BACKGROUNDS).map(k => `bg-${k}`);
@@ -52,9 +86,27 @@ const ALL_CLS = Object.keys(BACKGROUNDS).map(k => `bg-${k}`);
 // its own photo without a dedicated CSS class.
 export function applyBackground(name, target = null, imageUrl = null) {
   const valid = name in BACKGROUNDS ? name : 'none';
+  const def = BACKGROUNDS[valid];
   const el = target || document.body;
-  el.classList.remove(...ALL_CLS);
+  el.classList.remove(...ALL_CLS, 'bg-inked', 'bg-plated', 'bg-set');
   el.classList.add(`bg-${valid}`);
+  // EL FONDO ELEGIDO GANA AL TEMA. Un tema puede pintar el lienzo (el estudio de
+  // TV Show lo hace) y su hoja se carga DESPUÉS de backgrounds.css: con la misma
+  // especificidad ganaba el tema y la textura que el profe había elegido no se
+  // veía — pedías «Papel» y salía el plató. `bg-set` sube la especificidad de la
+  // textura elegida por encima de la del tema, sin depender del orden de carga.
+  // Con `none` NO se pone: ahí el lienzo ES el del tema, que es lo correcto.
+  if (valid !== 'none') el.classList.add('bg-set');
+  // La legibilidad sale del MANIFEST, no de una regla por fondo: `bg-inked`
+  // enciende la tinta declarada y `bg-plated` el lienzo de placa. Así un fondo
+  // nuevo elige su modo declarándolo y no escribiendo CSS.
+  if (def.ink) {
+    el.classList.add('bg-inked');
+    el.style.setProperty('--ww-bg-ink', def.ink);
+  } else {
+    el.style.removeProperty('--ww-bg-ink');
+  }
+  if (def.plate) el.classList.add('bg-plated');
   if (valid === 'custom' && isSafeBgImage(imageUrl)) {
     el.style.setProperty('--ww-bg-image', `url("${imageUrl}")`);
   } else {

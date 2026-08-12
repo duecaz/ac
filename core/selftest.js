@@ -21,6 +21,7 @@ import { normalizeCode, isPastDue, attemptsRemaining, assignmentGate } from './a
 import { checkAllTemplates } from './templateContract.js';
 import { scanNormsSource, BROWSER_SCAN_FILES } from './normsCheck.js';
 import { checkAllSkins } from './skinContract.js';
+import { checkAllSkinContrast, checkAllBackgroundContrast } from './contrastCheck.js';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 function assert(cond, msg) { if (!cond) throw new Error(msg); }
@@ -302,6 +303,19 @@ const TESTS = [
   // ── Contrato de skin (mismo checker que tests/skins.test.mjs) ──────────────
   { group: 'Skins', name: 'cada skin define el set completo de tokens pintables', fn: () => {
     const failing = checkAllSkins();
+    assert(failing.length === 0, failing.map(f => `${f.name}: ${f.issues.join(' · ')}`).join(' | '));
+  } },
+
+  // ── Contraste declarado (mismo checker que tests/contrast.test.mjs) ────────
+  // Se juzga en el ORIGEN: la matriz mide lo pintado pero es ciega al lienzo
+  // (un degradado no tiene color computado), así que los fondos solo se pueden
+  // vigilar por lo que DECLARAN.
+  { group: 'Contraste', name: 'cada tema: texto legible y las 4 opciones con su tinta', fn: () => {
+    const failing = checkAllSkinContrast();
+    assert(failing.length === 0, failing.map(f => `${f.name}: ${f.issues.join(' · ')}`).join(' | '));
+  } },
+  { group: 'Contraste', name: 'cada fondo: placa, o tinta medida contra su lienzo', fn: () => {
+    const failing = checkAllBackgroundContrast();
     assert(failing.length === 0, failing.map(f => `${f.name}: ${f.issues.join(' · ')}`).join(' | '));
   } },
 ];
