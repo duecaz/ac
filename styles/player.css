@@ -160,9 +160,29 @@
   height: 100%;
   gap: 1.4cqh;
 }
+/* CABECERA EN UNA FILA (pedido del dueño 2026-08-12, contra su mockup):
+   un respiro arriba y después contador · enunciado · esquina del botón de
+   pantalla completa — todo a la misma altura, nada apilado. El badge «★ puntos»
+   se ELIMINÓ de los players secuenciales: en Individual el puntaje se entrega
+   al terminar («X / max») y en pantalla ese badge solo competía con el
+   enunciado. Va sin `.ww-play-page` porque la tarea y el en vivo montan sin
+   marco y comparten la fila. */
+.ww-player .ww-prow {
+  display: flex;
+  align-items: center;
+  gap: .5em;
+  margin-top: .25em;   /* el «pequeño espacio primero para la página» */
+}
+.ww-player .ww-prow .ww-phead { flex: 0 0 auto; }
+.ww-player .ww-prow .ww-q { flex: 1 1 auto; }
+.ww-play-page .ww-player-frame .ww-player .ww-prow {
+  flex: 0 0 auto;
+  /* La esquina es DEL MARCO (donde flota el botón de pantalla completa): la
+     fila entera la respeta, misma reserva que usa el marcador del duelo. */
+  padding-right: var(--ww-fs-reserve);
+}
 .ww-play-page .ww-player-frame .ww-player .ww-phead { flex: 0 0 auto; }
 .ww-play-page .ww-player-frame .ww-player .ww-q {
-  flex: 0 0 auto;
   margin: 0;
   line-height: 1.15;
   font-size: clamp(1rem, 5cqmin, 2.4rem);
@@ -181,15 +201,23 @@ body.bg-custom .ww-player .ww-q {
   color: var(--ww-card-fg, var(--ww-fg, #1f2937));
   border-radius: 12px;
   padding: .35em .7em;
-  /* La esquina es DEL MARCO: el título no puede correr por debajo del botón de
-     pantalla completa (misma reserva que usa el marcador del duelo). */
-  margin-right: var(--ww-fs-reserve, 52px);
   box-shadow: 0 2px 10px rgba(0, 0, 0, .18);
 }
-/* La cabecera (contador · racha · puntos) ya trae sus propias pastillas: la
-   placa aquí solo tiene que separarla de la foto, sin doble relleno. */
+/* La cabecera (contador · racha) ya trae sus propias pastillas: la placa aquí
+   solo tiene que separarla de la foto, sin doble relleno. */
 .ww-play-page .ww-player-frame.bg-custom .ww-player .ww-phead,
 body.bg-custom .ww-player .ww-phead { padding: .25em .5em; }
+/* Sobre FOTO el botón de pantalla completa se viste como las placas (círculo de
+   tarjeta, mismo icono): es lo que dibujó el dueño en su mockup. El velo oscuro
+   sigue siendo el default en el resto de fondos — la lección de v1.51.386
+   (blanco-sobre-blanco en el skin Kahoot) era sobre el marco plano, no sobre
+   fotos, donde el círculo claro contrasta igual que las placas de al lado. */
+.ww-play-page .ww-player-frame.bg-custom .ww-fs-btn--corner {
+  background: var(--ww-card-bg, #fff);
+  color: var(--ww-card-fg, var(--ww-fg, #1f2937));
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .18);
+  opacity: 1;
+}
 
 .ww-play-page .ww-player-frame .ww-player .ww-q-media {
   flex: 1 1 auto;

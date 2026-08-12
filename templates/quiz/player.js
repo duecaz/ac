@@ -35,13 +35,14 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
       const streak = Streaks.get('solo', activity.id);
       mount(rootSel, html`
         <div class="ww-player">
-          <div class="ww-phead d-flex justify-content-between align-items-center">
-            <span class="badge bg-secondary">${idx + 1} / ${total}</span>
-            ${streak >= 2 ? `<span class="badge bg-warning text-dark">🔥 ${streak}</span>` : ''}
-            ${timerSecs > 0 ? `<span class="badge bg-danger ww-timer-badge">⏱ ${timerSecs}</span>` : ''}
-            <span class="badge bg-primary">★ ${score}</span>
+          <div class="ww-prow">
+            <div class="ww-phead d-flex align-items-center gap-1">
+              <span class="badge bg-secondary">${idx + 1} / ${total}</span>
+              ${streak >= 2 ? `<span class="badge bg-warning text-dark">🔥 ${streak}</span>` : ''}
+              ${timerSecs > 0 ? `<span class="badge bg-danger ww-timer-badge">⏱ ${timerSecs}</span>` : ''}
+            </div>
+            <h3 class="ww-q">${escapeHtml(item.question)}</h3>
           </div>
-          <h3 class="ww-q">${escapeHtml(item.question)}</h3>
           <div class="ww-q-media">${item.image ? `<img src="${escapeHtml(item.image)}" alt="">` : ''}</div>
           <div class="ww-kahoot-grid ww-options">
             ${opts2.map((o, i) => `

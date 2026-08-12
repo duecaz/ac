@@ -13,9 +13,10 @@ export async function renderMathPlayer(rootSel, activity, opts = {}) {
     renderItem({ rootSel, activity, item, idx, total, score, submit }) {
       mount(rootSel, html`
         <div class="ww-player ww-math">
-          <div class="ww-phead d-flex justify-content-between align-items-center">
-            <span class="badge bg-secondary">${idx + 1} / ${total}</span>
-            <span class="badge bg-primary">&#9733; ${score}</span>
+          <div class="ww-prow">
+            <div class="ww-phead d-flex align-items-center gap-1">
+              <span class="badge bg-secondary">${idx + 1} / ${total}</span>
+            </div>
           </div>
           <div id="ww-math-round" class="ww-math-round"></div>
         </div>`);

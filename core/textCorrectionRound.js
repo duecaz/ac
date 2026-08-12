@@ -31,9 +31,8 @@ export function textCorrectionPreviewHtml(act, kind) {
       <h2 class="text-center">${escapeHtml(act.title || 'Actividad')}</h2></div>`;
   }
   return `<div class="tc-solo">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <span class="badge bg-secondary">Frase 1 / ${passages.length}</span>
-      <span class="badge bg-primary">★ 0</span></div>
+    <div class="d-flex align-items-center mb-2">
+      <span class="badge bg-secondary">Frase 1 / ${passages.length}</span></div>
     <h4 class="text-center mb-1">${escapeHtml(act.title || '')}</h4>
     <div class="tc-round">
       <div class="tc-passage">${passageHtml(passages[0].text, kind)}</div>

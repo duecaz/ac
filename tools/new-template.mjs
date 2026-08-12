@@ -176,10 +176,11 @@ export async function render${fn}Player(rootSel, activity, opts = {}) {
     renderItem({ rootSel, item, idx, total, score, timerSecs, submit, startTimer }) {
       mount(rootSel, html\`
         <div class="ww-player ${prefix}-play">
-          <div class="ww-phead d-flex justify-content-between align-items-center">
-            <span class="badge bg-secondary">\${idx + 1} / \${total}</span>
-            \${timerSecs > 0 ? \`<span class="badge bg-danger ww-timer-badge">⏱ \${timerSecs}</span>\` : ''}
-            <span class="badge bg-primary">★ \${score}</span>
+          <div class="ww-prow">
+            <div class="ww-phead d-flex align-items-center gap-1">
+              <span class="badge bg-secondary">\${idx + 1} / \${total}</span>
+              \${timerSecs > 0 ? \`<span class="badge bg-danger ww-timer-badge">⏱ \${timerSecs}</span>\` : ''}
+            </div>
           </div>
           <div class="${prefix}-item">
             <p class="${prefix}-q">\${escapeHtml(item.question ?? item.q ?? item.left ?? String(item))}</p>
