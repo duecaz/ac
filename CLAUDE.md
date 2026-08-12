@@ -109,6 +109,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | Índice completo de docs | [`docs/README.md`](docs/README.md) (lo histórico vive en `docs/historico/`) |
 | **Cómo se puntúa CADA actividad** | `core/scoring/` + el scorer de cada plantilla; la ley y su test, en [`docs/leyes.md`](docs/leyes.md) (`scoringSources`). El plan original, ya ejecutado, en `docs/historico/handoff-puntuacion.md` |
 | **Bugs abiertos / deuda** | la sección "Deuda técnica registrada" (abajo) + notas `docs/handoff-*.md` |
+| **Plan de TEMAS y FONDOS** (qué declara cada eje, quién gana, contraste en 3 niveles) | **[`docs/handoff-estilos-temas.md`](docs/handoff-estilos-temas.md)** (decidido 2026-08-12, sin ejecutar) |
 | **Configurar Google Classroom** (pasos en Google Cloud) | [`docs/handoff-google-classroom.md`](docs/handoff-google-classroom.md) |
 | **Seguridad de PocketBase por fases** | [`docs/handoff-seguridad-pb.md`](docs/handoff-seguridad-pb.md) — su Fase 3 es hoy un LÍMITE declarado en `leyes.md` §22 |
 | **Verificar la Pi contra el esquema del código** (13 colecciones · campos mudos · índices · tope §25) | `PB=https://pb.lanube.uno bash tools/check-pb.sh` — lo cruza `tests/pbSchema.test.mjs` |
