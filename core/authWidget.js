@@ -7,6 +7,7 @@ import { getLocalProfile } from './profile.js';
 import { escapeHtml } from './html.js';
 
 let _wired = false;
+const _slots = new Set();   // todos los slots montados (el cierre-al-clic-fuera los recorre)
 
 export async function mountAuthSlot(selector = '#ww-auth-slot') {
   const slot = typeof selector === 'string' ? document.querySelector(selector) : selector;
@@ -42,8 +43,13 @@ export async function mountAuthSlot(selector = '#ww-auth-slot') {
     }
   }
 
-  if (!_wired) {
-    _wired = true;
+  // CABLEADO POR SLOT, no por módulo: la portada monta DOS («Entrar» de la
+  // barra y el del héroe) y la bandera única dejaba SORDO al segundo — el
+  // botón se pintaba y no hacía nada (reporte del dueño, 2026-08-11). La
+  // marca vive en el propio elemento: si el slot se re-monta, se re-cablea.
+  if (!slot.dataset.wwAuthWired) {
+    slot.dataset.wwAuthWired = '1';
+    _slots.add(slot);
     slot.addEventListener('click', async (e) => {
       const menu = slot.querySelector('.ww-auth__menu');
       if (e.target.closest('.ww-auth__btn')) {
@@ -59,13 +65,18 @@ export async function mountAuthSlot(selector = '#ww-auth-slot') {
         if (menu) menu.hidden = true;   // navega por el href; solo cerramos el menú
       }
     });
-    // Cerrar el menú al hacer clic fuera.
-    document.addEventListener('click', (e) => {
-      if (slot.contains(e.target)) return;
-      const menu = slot.querySelector('.ww-auth__menu');
-      if (menu) menu.hidden = true;
-    });
     onAuthChange(() => { paint(); });
+  }
+  if (!_wired) {
+    _wired = true;
+    // Cerrar los menús al hacer clic fuera — UNO global para todos los slots.
+    document.addEventListener('click', (e) => {
+      for (const s of _slots) {
+        if (s.contains(e.target)) continue;
+        const menu = s.querySelector('.ww-auth__menu');
+        if (menu) menu.hidden = true;
+      }
+    });
   }
   await paint();
 }
