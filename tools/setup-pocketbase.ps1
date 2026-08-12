@@ -221,14 +221,15 @@ function Apply-Users {
   if (-not $hasRole) {
     Write-Host "  ! users NO tiene el campo 'role'. Añádelo a mano en PB (Plain text, nombre 'role' en minúscula) y re-corre este script." -ForegroundColor Red
   }
-  # U1: alta de cuentas de correo SOLO por admin (el signup público se retiró; el
-  # alta de autoservicio queda por Google/OAuth). OJO: en PocketBase el login
-  # con OAuth2 NO pasa por createRule, así que cerrar create no impide el primer
-  # login con Google — solo bloquea el signup anónimo por correo.
+  # ALTA PUBLICA REABIERTA (decision del dueño 2026-08-11; U1 la habia cerrado):
+  # el profe se registra con correo+clave desde #/registro. La condicion de la
+  # regla es que el cuerpo NO traiga `role` — nadie se registra como admin ni
+  # con rol alguno (el rol lo pone el admin despues, si toca). El login OAuth2
+  # sigue sin pasar por createRule (Google crea su user igual que siempre).
   $body = @{
     viewRule   = 'id = @request.auth.id || @request.auth.role = "admin"'
     listRule   = '@request.auth.role = "admin"'
-    createRule = '@request.auth.role = "admin"'
+    createRule = '@request.body.role:isset = false || @request.auth.role = "admin"'
   }
   Invoke-RestMethod -Method Patch -Uri "$PbUrl/api/collections/$($u.id)" -Headers $H `
     -ContentType "application/json" -Body ($body | ConvertTo-Json -Depth 12) | Out-Null

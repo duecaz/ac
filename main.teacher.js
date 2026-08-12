@@ -20,6 +20,7 @@ import { renderEditList } from './views/editList.js';
 import { renderExplore } from './views/explore.js';
 import { renderJuegos } from './views/juegos.js';
 import { renderModerate } from './views/moderate.js';
+import { renderRegistro } from './views/registro.js';
 import { renderAuthor } from './views/author.js';
 import { renderAdmin } from './views/adminView.js';
 import { sync, setStorageUser, claimGuestActivities, retryUnsynced } from './core/storage.js';
@@ -89,6 +90,7 @@ route('#/new-list', () => requireTeacher(APP, () => renderEditList(APP, {})));
 route('#/explore', (_, q) => renderExplore(APP, q?.q || ''));
 route('#/juegos', () => renderJuegos(APP));   // la estantería (§4c/§7c): sin crear, sin login
 route('#/autor/:id', ({ id }) => renderAuthor(APP, id));
+route('#/registro', () => renderRegistro(APP));   // alta de profe por correo (decisión 2026-08-11)
 route('#/moderar', () => renderModerate(APP));
 route('#/admin', () => renderAdmin(APP));
 

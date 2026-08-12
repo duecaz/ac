@@ -85,8 +85,44 @@ async function pbPost(path, body) {
   return data;
 }
 
-// (Se retiró signUp(): el alta pública por correo se cerró en U1 — las cuentas
-// nuevas son por Google, o las crea el admin con createTeacher.)
+// ALTA PÚBLICA por correo — REABIERTA por decisión del dueño (2026-08-11): no
+// todos los profes tienen Google (o lo tienen capado por el colegio). U1 la
+// había cerrado; ahora el createRule del servidor permite el alta anónima PERO
+// prohíbe traer `role` en el cuerpo (nadie se registra como admin) — la regla
+// vive en tools/setup-pocketbase.ps1 (Apply-Users) y hay que re-aplicarla.
+// Crea la cuenta e INICIA sesión con ella (a diferencia de createTeacher).
+export async function signUp(email, password, name) {
+  if (!password || password.length < 8) throw new Error('La contraseña debe tener al menos 8 caracteres.');
+  const r = await fetch(`${PB_URL}/api/collections/users/records`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, passwordConfirm: password, name: name || email.split('@')[0] }),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    // Los 400 de PB traen el detalle por campo; el del email repetido es el
+    // que más va a salir y merece frase propia.
+    const emailErr = data?.data?.email?.message || '';
+    if (/unique|already/i.test(emailErr) || r.status === 400 && /email/i.test(JSON.stringify(data?.data || {})))
+      throw new Error('Ya existe una cuenta con ese correo. Prueba a entrar, o recupera la contraseña.');
+    throw new Error(data?.message || `No se pudo crear la cuenta (error ${r.status}).`);
+  }
+  await signIn(email, password);
+  return { ok: true, id: data.id };
+}
+
+// «Olvidé mi contraseña»: PB envía el correo de restablecimiento… si el servidor
+// tiene SMTP configurado. Responde 204 igual (no filtra si el correo existe),
+// así que el mensaje al usuario debe ser honesto sobre la espera.
+export async function requestPasswordReset(email) {
+  const r = await fetch(`${PB_URL}/api/collections/users/request-password-reset`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  if (!r.ok && r.status !== 204) throw new Error(`No se pudo pedir el restablecimiento (error ${r.status}).`);
+  return true;
+}
 
 // Crea una cuenta de profe SIN iniciar sesión como ella (la usa el admin para
 // provisionar accesos de pizarra: correo + contraseña sencilla). No toca la sesión

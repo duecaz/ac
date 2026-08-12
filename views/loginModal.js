@@ -33,13 +33,14 @@ export function openLoginModal({ reason = '' } = {}) {
         <div id="lm-err" class="login-modal__err"></div>
         <button type="submit" class="login-modal__submit" id="lm-submit">Entrar</button>
       </form>
-      <p class="login-modal__hint text-muted small mt-2 mb-0">¿No tienes cuenta? Entra con Google, o pídele al administrador que te cree un acceso de correo para las pizarras.</p>
+      <p class="login-modal__hint text-muted small mt-2 mb-0">¿No tienes cuenta?
+        <a href="#/registro" data-close>Créala aquí</a> — solo correo, nombre y contraseña.</p>
     </div>`;
   document.body.appendChild(host);
 
-  // Solo INICIO de sesión: el alta pública se retiró (biblioteca curada de
-  // colegio). Cuentas nuevas = Google (autoservicio) o el admin las crea por
-  // correo desde el panel Profesores (#/admin). Ver docs/handoff-acceso-docente.md U1.
+  // Inicio de sesión + enlace al ALTA (#/registro, reabierta por decisión del
+  // dueño 2026-08-11; U1 la había cerrado). El admin sigue pudiendo crear
+  // accesos de pizarra desde el panel Profesores (#/admin).
   const $ = (id) => host.querySelector(id);
   const close = () => { _open = false; host.remove(); window.removeEventListener('hashchange', close); };
   // El modal vive en <body> (fuera de #app), así que el router no lo desmonta:

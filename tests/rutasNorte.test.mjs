@@ -48,6 +48,7 @@ const DECIDIDA_EN = {
   '#/reports/session': ['§7', 'el informe de UNA sala, al terminar el tramo en vivo'],
   '#/autor':       ['§7c', 'perfil del autor: el aliciente para armar bien las actividades (como Wordwall)'],
   '#/moderar':     ['§7c', 'denuncias de la biblioteca pública; solo admin'],
+  '#/registro':    ['§7c', 'alta de profe por correo (decisión 2026-08-11): no todo profe tiene Google, y sin cuenta no hay creación ni salas'],
   '#/admin':       ['§3b', 'el panel del dueño: colecciones, tests, capacidad. No es del profe de aula'],
   // — Crear y editar (tramo buscar/crear) —
   '#/new':         ['§1b', 'crear la actividad: la vía (c) del ANTES'],

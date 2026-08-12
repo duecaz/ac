@@ -112,12 +112,15 @@ los MISMOS campos y reglas (fuente de verdad en código: `views/adminView.js` DE
 - `reports`: crear con sesión; listar/borrar solo admin.
 - `results`, `live_sessions`, `assignments`, `assignment_attempts`: **públicas** (alumnos
   anónimos). Riesgo conocido y aceptado por ahora (deuda: auditoría Fable P0).
-- `users` (**ENDURECIDO U1**): view = uno mismo o admin; list = solo admin;
-  **create = solo admin** (`@request.auth.role='admin'`). El signup público por correo se
-  cerró; el alta de autoservicio queda por Google (OAuth **no** pasa por createRule en PB,
-  así que el primer login con Google sigue creando su user). Las cuentas de correo para
-  pizarras las crea el admin (panel Profesores). Aplicado por `setup-pocketbase.ps1`
-  (`Apply-Users`), no por el panel `#/admin` (que no toca `users`).
+- `users` (**ALTA REABIERTA 2026-08-11**; U1 la había cerrado): view = uno mismo o admin;
+  list = solo admin; **create = abierto SI el cuerpo no trae `role`**
+  (`@request.body.role:isset = false || @request.auth.role='admin'`) → el profe se
+  registra desde `#/registro` con correo+clave, y nadie puede registrarse con rol.
+  Google sigue igual (OAuth no pasa por createRule). Las cuentas de pizarra las sigue
+  pudiendo crear el admin (panel Profesores). Aplicado por `setup-pocketbase.ps1`
+  (`Apply-Users`), no por el panel `#/admin` (que no toca `users`). ⚠ SMTP sin
+  configurar: «olvidé mi contraseña» no envía correos hasta que se configure
+  (Settings → Mail settings en PB).
 
 ### Quirks de PB 0.23 que YA nos mordieron (no repetir)
 
