@@ -92,8 +92,11 @@ ok('el checker caza plantillas rotas (instructions vacío, ronda a medias, score
     if (v && typeof v === 'object') return Object.entries(v).some(([k, x]) => k !== 'id' && conTexto(x));
     return false;
   };
+  // Solo las plantillas REALES: al correr la suite entera hay dobles de prueba
+  // registrados por otras suites (solo.test.mjs registra una sin defaultContent).
+  const reales = listTemplates().filter(T => typeof T.meta?.defaultContent === 'function');
   const sucias = [];
-  for (const T of listTemplates()) {
+  for (const T of reales) {
     const a = newActivity(T.meta.name);
     // Las de contenido GENERADO nacen con su tablero A PROPÓSITO: vaciarlas
     // daría una actividad injugable esperando un botón que la app sabe pulsar.
@@ -108,12 +111,10 @@ ok('el checker caza plantillas rotas (instructions vacío, ronda a medias, score
   // CONTRA-PRUEBA: `defaultContent()` sigue trayendo contenido JUGABLE — es con
   // lo que siembran la matriz, el edit-audit y media docena de suites. Vaciar
   // eso habría dejado ciegas a todas ellas de golpe.
-  const sinDemo = listTemplates()
-    .filter(T => !conTexto(T.meta.defaultContent()))
-    .map(T => T.meta.name);
+  const sinDemo = reales.filter(T => !conTexto(T.meta.defaultContent())).map(T => T.meta.name);
   assert.deepStrictEqual(sinDemo, [],
     'defaultContent() debe seguir siendo contenido jugable (lo usan las redes): ' + sinDemo.join(', '));
-  ok(`las ${listTemplates().length} nacen vacías y su defaultContent() sigue siendo jugable`);
+  ok(`las ${reales.length} nacen vacías y su defaultContent() sigue siendo jugable`);
 }
 
 console.log(`\ntemplateContract.test: ${passed} checks passed`);
