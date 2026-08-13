@@ -105,6 +105,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | **¿Editar el contenido pierde la respuesta correcta?** (teclea en los 13 editores y re-pregunta al scorer) | `node tools/edit-audit.mjs` |
 | **Prueba de CARGA** (N alumnos concurrentes live+tareas contra PB real) | `core/stressTest.js` · botón `#/admin` "Simular carga" · `node tools/stress-live.mjs [N]` |
 | Modo SOLO (Wordwall) por dentro · identidad/auth · dev local | [`docs/modo-wordwall.md`](docs/modo-wordwall.md) · [`docs/identidad.md`](docs/identidad.md) · [`docs/dev-local.md`](docs/dev-local.md) |
+| **Plan del EDITOR** (márgenes · «+ Añadir» · imagen↔pines · ejemplo · buscador de imágenes) | **[`docs/handoff-editor-general.md`](docs/handoff-editor-general.md)** (decidido 2026-08-13, sin ejecutar) |
 | **DECISIONES de producto pendientes** (contrastadas con Wordwall/Kahoot: identidad del alumno, imprimible, cuotas…) | **[`docs/decisiones-pendientes.md`](docs/decisiones-pendientes.md)** |
 | **Cuántos bucles de juego en vivo hay y qué cuestan** (estudio D7, medido) | **[`docs/estudio-bucles-live.md`](docs/estudio-bucles-live.md)** + ley §26 |
 | Índice completo de docs | [`docs/README.md`](docs/README.md) (lo histórico vive en `docs/historico/`) |
