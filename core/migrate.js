@@ -8,6 +8,7 @@
 // supply their own default factories via T.meta.defaultRules / defaultScoring /
 // defaultLive / defaultContent.
 import { SCHEMA_VERSION, DEFAULT_RULES, DEFAULT_SCORING, DEFAULT_REVIEW, DEFAULT_PRESENTATION, DEFAULT_LIVE, DEFAULT_AUTHOR } from './constants.js';
+import { getModel } from '../kernel/content/models.js';
 import { getTemplate } from './registry.js';
 
 const STEPS = {
@@ -120,7 +121,26 @@ export function activityPageCount(a) {
 
 export function newActivity(template = 'quiz') {
   const T = getTemplate(template);
-  const content = T?.meta?.defaultContent?.() || {};
+  // NACE VACÍA (R-D · plan del editor, decisión del dueño 2026-08-13). Antes
+  // toda actividad nueva llegaba con el contenido de MUESTRA de su plantilla
+  // («Cabeza / Ojo / Nariz / Boca» sobre una cara de ejemplo), y empezar el
+  // trabajo real costaba borrarlo de uno en uno. Lo que enseña ahora es el
+  // ESTADO VACÍO: la frase que cada plantilla declara en `meta.editor.primerPaso`
+  // y que pinta el chasis del editor.
+  //
+  // La forma vacía la da el MODELO de contenido, no cada plantilla: ya sabía
+  // cuál es (`newEmpty()`), así que no hay 13 sitios que mantener. Ojo: el
+  // `defaultContent()` NO se toca — sigue siendo el contenido JUGABLE con el que
+  // siembran la matriz, el edit-audit y las suites.
+  //
+  // EXCEPCIÓN declarada: las plantillas de contenido GENERADO (Ordena las
+  // Pelotas) nacen con su tablero. Vaciarlas no daría libertad: daría una
+  // actividad injugable esperando a que el profe pulse un botón que la app sabe
+  // pulsar sola.
+  const model = T?.meta?.contentModel ? getModel(T.meta.contentModel) : null;
+  const content = (!T?.meta?.editor?.generado && model?.newEmpty)
+    ? model.newEmpty()
+    : (T?.meta?.defaultContent?.() || {});
   const presentation = T?.meta?.defaultPresentation?.() || {};
   return normalize({
     id: newActivityId(),

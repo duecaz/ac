@@ -9,7 +9,8 @@ import { readdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import '../core/registerTemplates.js';   // side-effect: registra las 12
-import { getTemplate } from '../core/registry.js';
+import { getTemplate, listTemplates } from '../core/registry.js';
+import { newActivity } from '../core/migrate.js';
 import { checkTemplateContract, checkAllTemplates } from '../core/templateContract.js';
 
 let passed = 0;
@@ -78,5 +79,41 @@ const noMerit = { ...badScorer, scoreSubmission: () => ({ correct: true, points:
 assert.ok(checkTemplateContract(noMerit).some(i => i.includes('mérito')),
   'detecta un scorer sin mérito {hits, total}');
 ok('el checker caza plantillas rotas (instructions vacío, ronda a medias, scorer con forma equivocada)');
+
+// ── R-D · LA ACTIVIDAD NUEVA NACE VACÍA ──────────────────────────────────────
+// Antes llegaba con el contenido de MUESTRA de su plantilla y empezar el trabajo
+// real costaba borrarlo de uno en uno («Cabeza / Ojo / Nariz / Boca» sobre una
+// cara de ejemplo). Lo que enseña ahora es el ESTADO VACÍO del editor.
+// Se comprueba por RECORRIDO del registro: una plantilla nueva entra sola.
+{
+  const conTexto = (v) => {
+    if (typeof v === 'string') return v.trim() !== '';
+    if (Array.isArray(v)) return v.some(conTexto);
+    if (v && typeof v === 'object') return Object.entries(v).some(([k, x]) => k !== 'id' && conTexto(x));
+    return false;
+  };
+  const sucias = [];
+  for (const T of listTemplates()) {
+    const a = newActivity(T.meta.name);
+    // Las de contenido GENERADO nacen con su tablero A PROPÓSITO: vaciarlas
+    // daría una actividad injugable esperando un botón que la app sabe pulsar.
+    if (T.meta.editor?.generado) {
+      if (!conTexto(a.content)) sucias.push(`${T.meta.name}: declara \`generado\` pero nace sin contenido jugable`);
+      continue;
+    }
+    if (conTexto(a.content)) sucias.push(`${T.meta.name}: nace con contenido escrito — ${JSON.stringify(a.content).slice(0, 90)}`);
+  }
+  assert.deepStrictEqual(sucias, [], 'actividades nuevas que NO nacen vacías:\n  ' + sucias.join('\n  '));
+
+  // CONTRA-PRUEBA: `defaultContent()` sigue trayendo contenido JUGABLE — es con
+  // lo que siembran la matriz, el edit-audit y media docena de suites. Vaciar
+  // eso habría dejado ciegas a todas ellas de golpe.
+  const sinDemo = listTemplates()
+    .filter(T => !conTexto(T.meta.defaultContent()))
+    .map(T => T.meta.name);
+  assert.deepStrictEqual(sinDemo, [],
+    'defaultContent() debe seguir siendo contenido jugable (lo usan las redes): ' + sinDemo.join(', '));
+  ok(`las ${listTemplates().length} nacen vacías y su defaultContent() sigue siendo jugable`);
+}
 
 console.log(`\ntemplateContract.test: ${passed} checks passed`);

@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **252 módulos · 933 imports internos.**
+> **252 módulos · 934 imports internos.**
 
 ### Ir a otro documento
 
@@ -34,8 +34,8 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2554 | 12 · 1234 | 0.48 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3863 | 19 · 3001 | 0.78 |
 | **informes/tareas** | después de clase | 10 · 1050 | 4 · 435 | 0.41 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5579 | 12 · 1004 | 0.18 |
-| **infra/común** | todo lo anterior | 126 · 13173 | 46 · 5093 | 0.39 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5579 | 12 · 1041 | 0.19 |
+| **infra/común** | todo lo anterior | 126 · 13193 | 46 · 5093 | 0.39 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -78,10 +78,10 @@ graph TD
   AD -->|3| CF
   AD -->|3| K
   V -->|3| T
+  C -->|2| CO
   T -->|2| CO
   V -->|2| CO
   C -.->|1 · excepción| T
-  C -->|1| CO
   CO -->|1| K
   T -.->|1 · excepción| K
   V -->|1| AD
