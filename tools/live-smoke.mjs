@@ -297,6 +297,15 @@ try {
         throw new Error(`§22-5 (respuesta): desfase ${skew / 1000}s → el profe ve «${aHost}s» y el alumno «${aAlumno}s»`);
       }
       log(`   …y la cuenta de RESPUESTA coincide (profe ${aHost}s · alumno ${aAlumno}s)`);
+      // R-3 · Y LA BARRA DEL PROFE MIDE ESA MISMA VENTANA. Con tiempo POR
+      // PREGUNTA el cierre lo fija `itemWindowMs` y el denominador de la barra
+      // se quedaba en el de la actividad: con un ítem de 30 s y actividad de 20
+      // se quedaba LLENA los primeros 10 s y luego caía de golpe. El número era
+      // correcto, así que la parida de arriba no lo veía — la barra mentía sola.
+      const ancho = await host.evaluate(() => parseFloat(document.getElementById('time-bar')?.style.width) || 0);
+      if (ancho >= 99.99) {
+        throw new Error(`R-3: la barra del profe sigue al 100% con ${aHost}s corridos — mide una ventana que no es la de esta pregunta`);
+      }
     }
     await torcido.locator('.rq-opt, .ww-opt', { hasText: '4' }).first().click();
     await torcido.waitForFunction(() => /Correcto|enviada|puntos/i.test(document.body.textContent), { timeout: 12000 });

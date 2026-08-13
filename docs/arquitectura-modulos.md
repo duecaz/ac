@@ -32,7 +32,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 |---|---|---|---|---|
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1683 | 6 · 645 | 0.38 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2554 | 12 · 1234 | 0.48 |
-| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3849 | 19 · 3001 | 0.78 |
+| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3858 | 19 · 3001 | 0.78 |
 | **informes/tareas** | después de clase | 10 · 1050 | 4 · 435 | 0.41 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5481 | 12 · 975 | 0.18 |
 | **infra/común** | todo lo anterior | 126 · 13065 | 46 · 5056 | 0.39 |
@@ -105,7 +105,7 @@ graph TD
 | Capa | Módulos más grandes |
 |---|---|
 | **arranque** | `qa/hoja.js` (250) · `main.teacher.js` (167) · `main.embed.js` (68) · `main.student.js` (49) |
-| **vistas** | `views/adminView.js` (1071) · `views/hostLive.js` (1037) · `views/studentLive.js` (895) · `views/vsView.js` (488) · `views/playerView.js` (370) |
+| **vistas** | `views/adminView.js` (1071) · `views/hostLive.js` (1046) · `views/studentLive.js` (895) · `views/vsView.js` (488) · `views/playerView.js` (370) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1131) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
 | **core** | `core/skins.js` (355) · `core/textCorrectionRound.js` (350) · `core/selftest.js` (345) · `core/auth.js` (322) · `core/normsCheck.js` (295) |
 | **kernel** | `kernel/session/engine.js` (549) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/dataPort.js` (28) |
@@ -139,7 +139,7 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 |---|---|---|
 | `adapters/pocketbase/realtime.js` | 1131 | 0 |
 | `views/adminView.js` | 1071 | 1 |
-| `views/hostLive.js` | 1037 | 1 |
+| `views/hostLive.js` | 1046 | 1 |
 | `views/studentLive.js` | 895 | 1 |
 | `kernel/session/engine.js` | 549 | 19 |
 | `views/vsView.js` | 488 | 2 |

@@ -480,7 +480,16 @@ async function renderHost(rootSel, code, sessionId, activity) {
       }
       const liveDeadline = new Date(session.deadline).getTime();
       const remain = Math.max(0, liveDeadline - serverNow());
-      const pct = Math.max(0, Math.min(100, 100 * remain / (timerSec * 1000)));
+      // La ventana sale de los DOS INSTANTES de la sala, igual que en el móvil
+      // (`views/studentLive.js`), no de la de la actividad: con R-3 (tiempo por
+      // pregunta) el cierre lo fija `itemWindowMs` y el denominador se quedaba
+      // en el de la actividad — con un ítem de 30 s y actividad de 20 la barra
+      // se quedaba LLENA los primeros 10 s y luego caía de golpe. El número era
+      // correcto y la barra mentía, que es peor que no tenerla.
+      const ventanaMs = (openAtMs && liveDeadline > openAtMs)
+        ? liveDeadline - openAtMs
+        : timerSec * 1000;
+      const pct = Math.max(0, Math.min(100, 100 * remain / ventanaMs));
       const t = document.getElementById('time-left');
       const bar = document.getElementById('time-bar');
       const ac = document.getElementById('ans-count');
