@@ -56,6 +56,18 @@ function wireContent(root, a, ctx) {
     if (!file) return;
     try {
       a.content.image = await uploadMedia(file);
+      // CAMBIAR EL SOPORTE INVALIDA LO ANCLADO A ÉL (R-C · plan del editor).
+      // Los pines guardan x/y como FRACCIÓN de ESTA imagen: al cambiarla se
+      // quedaban clavados donde estaban y «Nariz» aparecía en medio de tu mapa
+      // — que es lo que veía cualquiera que subiera su propio diagrama sobre el
+      // ejemplo. Se quitan y se DICE cuántos: dejarlo mudo es lo que hacía que
+      // pareciera que el editor estaba roto.
+      const habia = a.content.pins.length;
+      if (habia) {
+        a.content.pins = [];
+        toast(`Imagen nueva: se quitaron ${habia} etiqueta${habia === 1 ? '' : 's'} — estaban colocadas sobre la anterior. `
+          + 'Haz clic en la imagen para poner las tuyas.', 'info', 6000);
+      }
       ctx.onChange(a); ctx.repaint();
     } catch (err) { toast('No se pudo cargar la imagen: ' + err.message, 'warning', 5000); }
   });

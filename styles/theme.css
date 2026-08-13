@@ -1,3 +1,13 @@
+/* LA CAJA LA MEDIMOS NOSOTROS. `box-sizing: border-box` lo ponía el reboot de
+   Bootstrap, que entra por CDN: en un colegio sin internet —o el día que el CDN
+   falle— TODA la maquetación cambia de modelo de caja y los anchos en % se
+   desbordan por su propio relleno. No es cosmética, es geometría, y no puede
+   depender de la red (deuda declarada en leyes.md §3: «CSS propio, Bootstrap
+   fuera»; esto es su primer trozo, el que más barato sale).
+   Lo destapó la sonda de márgenes: la tarjeta de #/registro medía 375px dentro
+   de un contenedor de 374 porque su relleno de 26px se sumaba al 92% de ancho. */
+*, *::before, *::after { box-sizing: border-box; }
+
 :root {
   --ww-primary: #6366f1;
   --ww-accent: #ec4899;

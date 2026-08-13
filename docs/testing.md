@@ -40,11 +40,11 @@
 ## 0. El PREFLIGHT — la orden que hay que teclear (ley §27)
 
 ```bash
-node tools/preflight.mjs           # suite + los 6 recorridos, ~100 s
+node tools/preflight.mjs           # suite + los 7 recorridos, ~100 s
 node tools/preflight.mjs --rapido  # solo la suite (NO basta si tocas vistas/CSS/router)
 ```
 
-Encadena las siete redes y **para en la primera que falle**, enseñando su salida
+Encadena las ocho redes y **para en la primera que falle**, enseñando su salida
 y el comando para reproducirla. Existe porque `tests/run.mjs` verifica PIEZAS: los
 cinco fallos que la clase encontró en una semana vivían en la COSTURA entre piezas
 correctas (el enlace contra el router, el veredicto del móvil contra el snapshot,

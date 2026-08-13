@@ -39,6 +39,31 @@ body {
 }
 #app { min-height: 40vh; }
 
+/* ── MÁRGENES DEL PANEL DEL PROFE (R-A · plan del editor, 2026-08-13) ────────
+   El editor, los reportes y el admin se pintaban PEGADOS al borde de la
+   pantalla: «está ahogado». No era de ninguna vista — `#app` traía su
+   `container py-3` de Bootstrap y lo perdió cuando la home pasó a poner su
+   propio `.home-wrap` en el rediseño. La home quedó bien y las otras 15
+   pantallas se quedaron sin nada, que es lo que pasa cuando el aire lo pone
+   cada vista en vez de un sitio único.
+   Va aquí, en el chrome, y NO en cada vista: así una pantalla nueva nace con
+   márgenes sin acordarse de nada.
+   · `:not(.container)` — en `student.html` el `#app` ya lleva el contenedor de
+     Bootstrap; sin esto se sumarían los dos.
+   · Las vistas que traen su PROPIO envoltorio a ancho completo se declaran
+     abajo: la home necesita sus 1440 para la rejilla de tarjetas, y el juego
+     manda sobre su propio marco. */
+#app:not(.container) {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1rem .9rem 2.5rem;
+}
+#app:not(.container):has(> .home-wrap),
+#app:not(.container):has(> .ww-play-page) { max-width: none; padding: 0; }
+@media (max-width: 640px) {
+  #app:not(.container) { padding: .75rem .7rem 2rem; }
+}
+
 /* ─────────────────────────── Barra superior ─────────────────────────── */
 .ww-topbar {
   position: relative;
@@ -531,7 +556,12 @@ body {
   /* "Nueva" a lo ancho en móvil, debajo del título. */
   .home-head { gap: 10px; }
   .home-head .btn-primary-solid { width: 100%; justify-content: center; }
-  .home-filter-pop { right: auto; left: 0; }
+  /* El desplegable se ancla por la DERECHA también en el móvil: el botón vive
+     al final de la barra, así que `left: 0` lo lanzaba hacia fuera de la
+     pantalla (medido: 150px fuera en un teléfono de 390). Anclado a la derecha
+     crece hacia dentro. El tope evita el caso contrario en pantallas muy
+     estrechas. Lo cazó tools/margenes-smoke.mjs. */
+  .home-filter-pop { right: 0; left: auto; max-width: calc(100vw - 24px); }
   .home-grid { grid-template-columns: 1fr; }   /* una sola columna en teléfono */
 }
 

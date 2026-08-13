@@ -35,6 +35,7 @@ const PASOS = [
   { id: 'suites',  cmd: 'tests/run.mjs',        que: 'lógica pura (contrato · normas · leyes · scorers)', rapido: true },
   { id: 'matriz',  cmd: 'tools/matrix-smoke.mjs', que: 'cada plantilla × cada modo arranca, un gesto de envío, fullscreen tocable' },
   { id: 'colores', cmd: 'tools/contrast-torture.mjs', que: 'cada tema × cada fondo: ningún texto por debajo de 3:1 (la combinación, no cada eje por su lado)' },
+  { id: 'margenes', cmd: 'tools/margenes-smoke.mjs', que: 'ninguna pantalla del profe pegada al borde, en PC y en móvil' },
   { id: 'buscar',  cmd: 'tools/find-smoke.mjs',   que: 'el viaje buscar/crear (portada → biblioteca → elegir plantilla → EDITAR → guardar → buscarla)' },
   { id: 'editar',  cmd: 'tools/edit-audit.mjs',   que: 'teclear en los 13 editores sin que la actividad pierda su respuesta correcta' },
   { id: 'vivo',    cmd: 'tools/live-smoke.mjs',   que: 'el viaje en vivo con dos pantallas (sala → PIN → responder → podio)' },

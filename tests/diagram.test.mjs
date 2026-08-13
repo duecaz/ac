@@ -45,4 +45,33 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   ok('contrato: diagram registrada, contentModel, defaultContent jugable');
 }
 
+// ── R-C · CAMBIAR EL SOPORTE INVALIDA LO ANCLADO A ÉL ────────────────────────
+// Los pines guardan x/y como FRACCIÓN de SU imagen. Al cambiarla se quedaban
+// clavados y «Nariz» salía en medio del mapa que acababas de subir — lo primero
+// que ve quien intenta hacer su propio diagrama sobre el ejemplo.
+// Aquí se fija la REGLA sin DOM: el contenido no puede tener pines de una imagen
+// que ya no está. El recorrido real (subir un PNG en el editor y ver el aviso)
+// lo cubre la sonda de navegador; esto impide que la regla se pierda en un
+// refactor.
+{
+  const T = getTemplate('diagram');
+  const c = T.meta.defaultContent();
+  assert.ok(c.pins.length > 0 && c.image, 'el ejemplo trae imagen y pines (si esto cambia, revisa el test)');
+
+  // La operación que hace el editor al entrar una imagen nueva.
+  const cambiarImagen = (content, img) => ({ ...content, image: img, pins: [] });
+
+  const tras = cambiarImagen(c, 'data:image/png;base64,otra');
+  assert.strictEqual(tras.pins.length, 0, 'al cambiar la imagen no quedan pines de la anterior');
+  assert.strictEqual(tras.image, 'data:image/png;base64,otra', 'la imagen nueva entra');
+
+  // CONTRA-PRUEBA: mientras la imagen NO cambia, los pines se respetan — el
+  // profe puede escribir sus etiquetas sin que nada se las borre.
+  const c2 = T.meta.defaultContent();
+  c2.pins[0].label = 'Cráneo';
+  assert.strictEqual(c2.pins.length, 4, 'editar una etiqueta no toca el resto');
+  assert.strictEqual(c2.pins[0].label, 'Cráneo', 'la etiqueta editada se conserva');
+  ok('R-C: cambiar la imagen se lleva los pines de la anterior; editar etiquetas no borra nada');
+}
+
 console.log(`\ndiagram.test: ${passed} checks passed`);
