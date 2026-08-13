@@ -129,7 +129,12 @@ los MISMOS campos y reglas (fuente de verdad en código: `views/adminView.js` DE
   ```
   (En Windows: `.\tools\setup-pocketbase.ps1`, que hace lo mismo entre otras cosas.)
   ⚠ SMTP sin configurar: «olvidé mi contraseña» no envía correos hasta que se
-  configure (PocketBase → Settings → Mail settings).
+  configure. **Hazlo con `bash ~/ac/tools/pb-smtp.sh`** (pide los datos por
+  teclado, guarda los ajustes y ENVÍA un correo de prueba: guardar no es enviar
+  — PocketBase acepta cualquier host y solo falla al intentarlo de verdad).
+  Necesita un proveedor SMTP: Brevo gratis 300/día, o Gmail con contraseña de
+  APLICACIÓN. En cuanto la prueba llegue, se puede activar el botón
+  «¿Olvidaste tu contraseña?» (`requestPasswordReset()` ya existe).
 
 ### Quirks de PB 0.23 que YA nos mordieron (no repetir)
 
