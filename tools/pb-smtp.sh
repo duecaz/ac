@@ -50,6 +50,13 @@ echo
 echo "── Datos del proveedor de correo ──"
 read -rp  "Host SMTP [smtp-relay.sendinblue.com]: " SMTP_HOST
 SMTP_HOST="${SMTP_HOST:-smtp-relay.sendinblue.com}"
+# Se CORRIGE, no se avisa: el nombre que Brevo publica no coincide con su propio
+# certificado, y equivocarse cuesta una vuelta entera del script (pasó).
+if [[ "$SMTP_HOST" == *brevo.com ]]; then
+  echo "   ⚠️ «$SMTP_HOST» no coincide con el certificado de Brevo (emitido para"
+  echo "      *.sendinblue.com). Se usa smtp-relay.sendinblue.com — mismos servidores."
+  SMTP_HOST="smtp-relay.sendinblue.com"
+fi
 read -rp  "Puerto [587]: " SMTP_PORT
 SMTP_PORT="${SMTP_PORT:-587}"
 read -rp  "Usuario SMTP: " SMTP_USER
@@ -59,6 +66,22 @@ echo "    & IP → Senders. Un dominio propio como noresponder@tudominio.com exi
 echo "    además verificar el dominio con sus registros DNS.)"
 read -rp  "Remitente (correo que verá el profe) [$PB_EMAIL]: " FROM_ADDR
 FROM_ADDR="${FROM_ADDR:-$PB_EMAIL}"
+# Limpiar lo invisible (espacios raros, marcas de dirección que pega el móvil o
+# el portapapeles) ANTES de mandarlo: PocketBase solo dice «no es un correo».
+# Se conserva SOLO lo que puede aparecer en una dirección: así un espacio de
+# ancho cero pegado desde el móvil o los <> del portapapeles no llegan a
+# PocketBase, que solo sabría decir «no es un correo». Se limpia y se ENSEÑA.
+FROM_ADDR="$(printf '%s' "$FROM_ADDR" | tr -cd 'A-Za-z0-9._%+@-')"
+if ! printf '%s' "$FROM_ADDR" | grep -Eq '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'; then
+  echo
+  echo "❌ El remitente no es un correo válido. Esto es lo que se ha capturado,"
+  echo "   entre comillas para que se vea si hay algo raro:  «$FROM_ADDR»"
+  printf '   bytes: '; printf '%s' "$FROM_ADDR" | od -c | head -2
+  echo "   Vuelve a correrlo y tecléalo (no lo pegues): el portapapeles cuela"
+  echo "   caracteres invisibles que PocketBase rechaza sin decir cuál."
+  exit 1
+fi
+echo "   remitente: «$FROM_ADDR»"
 read -rp  "Nombre del remitente [AulaReto]: " FROM_NAME
 FROM_NAME="${FROM_NAME:-AulaReto}"
 read -rp  "Correo al que mandar la PRUEBA [$PB_EMAIL]: " TEST_TO
@@ -120,7 +143,15 @@ AJUSTES = {
 st, d = req('/api/settings', AJUSTES, tok, 'PATCH')
 print('guardar ajustes:', st)
 if st != 200:
-    print('  ✗ no se guardaron:', d.get('message', ''), d.get('data', ''))
+    detalle = f"{d.get('message', '')} {d.get('data', '')}"
+    print('  ✗ no se guardaron:', detalle)
+    if 'senderAddress' in detalle:
+        print(f"\n   PocketBase rechaza el remitente «{os.environ['FROM_ADDR']}».")
+        print('   El formato ya se comprobó aquí, así que lo que no le gusta es el')
+        print('   valor en sí. Sal del paso con tu propio correo como remitente')
+        print(f"   ({os.environ['PB_EMAIL']}): la prueba de envío es lo que importa")
+        print('   ahora, y el remitente definitivo se pone cuando el dominio esté')
+        print('   verificado en el proveedor.')
     raise SystemExit(1)
 
 # ── LA PRUEBA. Guardar no es enviar: PocketBase acepta cualquier host y solo
