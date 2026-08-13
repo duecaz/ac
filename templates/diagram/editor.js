@@ -5,6 +5,7 @@ import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { ruleScopeNote } from '../../core/editorPrimitives.js';
 import { uploadMedia } from '../../core/upload.js';
+import { QUOTAS } from '../../core/quotas.js';
 import { newPin } from '../../core/contentModels/diagram.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 import { toast } from '../../core/toast.js';
@@ -29,7 +30,7 @@ function contentHtml(a) {
         <i class="bi bi-image"></i> ${img ? 'Cambiar imagen' : 'Subir imagen de fondo'}
         <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml" id="dg-img-file" hidden>
       </label>
-      <span class="text-muted small ms-2">Se guarda dentro de la actividad (imagen ligera, &lt;200 KB).</span>
+      <span class="text-muted small ms-2">Se guarda dentro de la actividad (se comprime sola; hasta 800 KB).</span>
     </div>
     ${img ? `
       <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
@@ -59,7 +60,11 @@ function wireContent(root, a, ctx) {
     const file = e.target.files[0];
     if (!file) return;
     try {
-      a.content.image = await uploadMedia(file);
+      // Presupuesto de LIENZO, no de imagen de pregunta (§25): un diagrama se
+      // mira de cerca y sus rótulos se leen. Con los 200 KB / 1280 px de una
+      // foto de enunciado salía borroso justo donde hay que señalar.
+      a.content.image = await uploadMedia(file,
+        { maxBytes: QUOTAS.canvasImageBytes, ladoMax: QUOTAS.canvasImageSide });
       // CAMBIAR EL SOPORTE INVALIDA LO ANCLADO A ÉL (R-C · plan del editor).
       // Los pines guardan x/y como FRACCIÓN de ESTA imagen: al cambiarla se
       // quedaban clavados donde estaban y «Nariz» aparecía en medio de tu mapa

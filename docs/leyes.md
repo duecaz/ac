@@ -721,8 +721,17 @@ en vivo, que crecen para siempre aunque la partida durase 20 minutos.
 |---|---|---|
 | Actividades por profe | 200 | **AVISO** — una regla de PB no sabe contar filas, y se dice |
 | Tamaño de UNA actividad | 2 MB | **EL SERVIDOR** (`maxSize` del campo `data`) |
-| Una imagen | 200 KB | el cliente, al subirla |
+| Una imagen DENTRO de un ítem (foto de la pregunta) | 200 KB | el cliente, al subirla |
+| Una imagen que es el LIENZO (fondo · dibujo del diagrama) | 800 KB / 1920 px | el cliente, al subirla |
 | Retención de salas en vivo | 120 días | el profe, desde `#/admin` → Capacidad |
+
+**Por qué DOS presupuestos de imagen** (2026-08-13): no es lo mismo la foto que
+acompaña un enunciado —se ve pequeña— que el lienzo sobre el que se trabaja. Un
+diagrama se mira de cerca y sus rótulos se leen: con 200 KB / 1280 px salía
+borroso justo donde hay que señalar. El fondo ya usaba el presupuesto grande por
+su cuenta; ahora el número está UNA vez y el diagrama entra en él. Dos lienzos al
+máximo siguen cabiendo de sobra en los 2 MB que aplica el servidor — lo comprueba
+`tests/quotas.test.mjs`.
 
 **Reglas que se derivan:**
 - **Un número, un sitio**: el panel `#/admin`, `tools/setup-pocketbase.ps1` y

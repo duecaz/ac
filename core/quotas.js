@@ -31,8 +31,18 @@ export const QUOTAS = {
   /** A partir de qué porcentaje se avisa al profe (antes de que rebote). */
   activityWarnRatio: 0.7,
 
-  /** Una imagen suelta (ya se aplicaba en core/upload.js). */
+  /** Una imagen suelta DENTRO de un ítem (la foto de una pregunta): se ve
+   *  pequeña y acompaña al enunciado. */
   imageBytes: 200 * 1024,
+
+  /** Una imagen que es el LIENZO de la actividad — el fondo, y el dibujo de
+   *  «Etiqueta el diagrama». No es lo mismo que la foto de una pregunta: se
+   *  mira de cerca y tiene detalle fino (rótulos, líneas, nombres de huesos),
+   *  así que con 200 KB / 1280 px salía borrosa justo donde hay que señalar.
+   *  El fondo ya usaba este presupuesto por su cuenta; ahora es UNO (§25) y el
+   *  diagrama entra en él. Sigue cabiendo de sobra en los 2 MB de la actividad. */
+  canvasImageBytes: 800 * 1024,
+  canvasImageSide: 1920,
 
   /** Retención de las salas EN VIVO y todo lo que cuelga de ellas
    *  (live_sessions · live_answers · live_players · live_claims). Pasado esto,

@@ -10,6 +10,7 @@
 // optional modules under core/canvas/ that load lazily — this stays small.
 import { uploadMedia } from './upload.js';
 import { escapeHtml } from './html.js';
+import { QUOTAS } from './quotas.js';
 
 // Whitelist para la imagen de fondo. La ÚNICA fuente legítima es la subida
 // (readBackgroundImage → data-URL base64 raster). Un JSON importado o una
@@ -115,14 +116,16 @@ export function applyBackground(name, target = null, imageUrl = null) {
 
 // Cap on uploaded background images. They travel inside the activity JSON
 // (presentation.backgroundImage) as a data-URL, so keep it modest.
-export const BG_IMAGE_MAX_BYTES = 800 * 1024; // 800 KB
+// El número vive en core/quotas.js (§25: los límites del sistema son UNO), donde
+// lo comparte con el dibujo de «Etiqueta el diagrama» — el mismo tipo de uso.
+export const BG_IMAGE_MAX_BYTES = QUOTAS.canvasImageBytes;
 
 // Read a File into a data-URL. Va por core/upload.js (COMPRIME antes de
 // rebotar): una foto de móvil entra reescalada; el fondo cubre el marco,
 // así que su lado máximo es mayor que el de una imagen inline.
 export async function readBackgroundImage(file) {
   if (!file) throw new Error('No se eligió ninguna imagen.');
-  return uploadMedia(file, { maxBytes: BG_IMAGE_MAX_BYTES, ladoMax: 1920 });
+  return uploadMedia(file, { maxBytes: BG_IMAGE_MAX_BYTES, ladoMax: QUOTAS.canvasImageSide });
 }
 
 export function listBackgrounds() {

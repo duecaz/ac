@@ -12,6 +12,7 @@
 // Run: node tests/quotas.test.mjs
 import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
+import { BG_IMAGE_MAX_BYTES } from '../core/backgrounds.js';
 import { QUOTAS, activityBytes, checkActivitySize, checkActivityCount,
          liveRetentionCutoff, partitionByAge } from '../core/quotas.js';
 import { ACTIVITY_SIZE_WARN_BYTES, activityTooLarge } from '../core/upload.js';
@@ -124,6 +125,25 @@ const read = (p) => readFileSync(new URL(p, ROOT), 'utf8');
     assert.strictEqual(RULES.live_claims[k], null, `live_claims.${k} sigue cerrada (§22-4)`);
   }
   ok('retención vs §22-4: se purgan credenciales viejas, nunca las de la partida en curso');
+}
+
+// ── EL PRESUPUESTO DE LIENZO ES UNO (§25) ────────────────────────────────────
+// Hay DOS imágenes que son el lienzo de la actividad —el fondo y el dibujo de
+// «Etiqueta el diagrama»— y son el mismo tipo de uso: se miran de cerca y su
+// detalle importa. El fondo ya usaba 800 KB/1920 px por su cuenta mientras el
+// diagrama se quedaba con los 200 KB de una foto de enunciado, y salía borroso
+// justo donde hay que señalar. Ahora el número está UNA vez.
+{
+  assert.ok(QUOTAS.canvasImageBytes > QUOTAS.imageBytes,
+    'el lienzo tiene MÁS presupuesto que la foto de una pregunta (si no, no hacía falta distinguirlos)');
+  assert.strictEqual(BG_IMAGE_MAX_BYTES, QUOTAS.canvasImageBytes,
+    'el fondo no puede tener su propia copia del número');
+  assert.ok(QUOTAS.canvasImageSide >= 1920, 'el lado del lienzo permite leer rótulos finos');
+  // Y sigue cabiendo de sobra dentro de una actividad: dos lienzos al máximo no
+  // se acercan al tope que aplica el servidor.
+  assert.ok(QUOTAS.canvasImageBytes * 2 < QUOTAS.activityBytes,
+    'dos imágenes de lienzo al máximo caben en una actividad');
+  ok(`lienzo ${QUOTAS.canvasImageBytes / 1024} KB / ${QUOTAS.canvasImageSide} px — uno solo para fondo y diagrama`);
 }
 
 console.log(`\nquotas.test: ${passed} checks passed`);
