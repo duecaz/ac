@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **252 módulos · 934 imports internos.**
+> **254 módulos · 949 imports internos.**
 
 ### Ir a otro documento
 
@@ -30,12 +30,12 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
-| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1683 | 6 · 645 | 0.38 |
+| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1683 | 7 · 769 | 0.46 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2554 | 12 · 1234 | 0.48 |
-| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3863 | 19 · 3001 | 0.78 |
+| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3876 | 19 · 3001 | 0.77 |
 | **informes/tareas** | después de clase | 10 · 1050 | 4 · 435 | 0.41 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5579 | 12 · 1042 | 0.19 |
-| **infra/común** | todo lo anterior | 126 · 13193 | 46 · 5093 | 0.39 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5641 | 12 · 1042 | 0.18 |
+| **infra/común** | todo lo anterior | 128 · 13585 | 46 · 5103 | 0.38 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -58,13 +58,13 @@ graph TD
   A["<b>arranque</b><br/><small>cablea cada página (main.*.js, sw.js)</small><br/><small>4 módulos</small>"]
   V["<b>vistas</b><br/><small>el chrome: navegación, setup, informes</small><br/><small>29 módulos</small>"]
   AD["<b>adaptadores</b><br/><small>el transporte: PocketBase | local</small><br/><small>7 módulos</small>"]
-  C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>125 módulos</small>"]
+  C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>127 módulos</small>"]
   K["<b>kernel</b><br/><small>el motor de sesión: cuándo se liquida</small><br/><small>6 módulos</small>"]
   T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>75 módulos</small>"]
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>5 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
   V -->|271| C
-  T -->|185| C
+  T -->|190| C
   A -->|28| C
   AD -->|26| C
   A -->|18| V
@@ -107,9 +107,9 @@ graph TD
 | **arranque** | `qa/hoja.js` (254) · `main.teacher.js` (167) · `main.embed.js` (68) · `main.student.js` (49) |
 | **vistas** | `views/adminView.js` (1071) · `views/hostLive.js` (1046) · `views/studentLive.js` (895) · `views/vsView.js` (488) · `views/playerView.js` (370) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1131) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
-| **core** | `core/skins.js` (355) · `core/textCorrectionRound.js` (350) · `core/selftest.js` (345) · `core/auth.js` (322) · `core/normsCheck.js` (295) |
+| **core** | `core/skins.js` (355) · `core/textCorrectionRound.js` (350) · `core/selftest.js` (345) · `core/normsCheck.js` (325) · `core/auth.js` (322) |
 | **kernel** | `kernel/session/engine.js` (549) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/dataPort.js` (28) |
-| **plantillas** | `templates/crossword/player.js` (464) · `templates/wordsearch/player.js` (405) · `templates/match/player.js` (296) · `templates/diagram/player.js` (237) · `templates/quiz/editor.js` (217) |
+| **plantillas** | `templates/crossword/player.js` (464) · `templates/wordsearch/player.js` (405) · `templates/match/player.js` (296) · `templates/diagram/player.js` (237) · `templates/quiz/editor.js` (222) |
 | **contenido** | `kernel/content/qaAdapt.js` (104) · `kernel/content/convert.js` (95) · `kernel/content/switch.js` (82) · `kernel/content/models.js` (79) · `kernel/content/index.js` (5) |
 | **config** | `pocketbase.config.js` (13) |
 
@@ -119,10 +119,10 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 
 | Módulo | Lo importan |
 |---|---|
-| `core/html.js` | 82 |
+| `core/html.js` | 83 |
 | `core/events.js` | 47 |
 | `core/registry.js` | 44 |
-| `core/ids.js` | 23 |
+| `core/ids.js` | 24 |
 | `core/toast.js` | 23 |
 | `core/storage.js` | 23 |
 | `core/clock.js` | 22 |

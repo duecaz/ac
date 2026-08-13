@@ -35,6 +35,12 @@
 //                       alumno AFIRMA, nunca liquida ni controla la sala. Para
 //                       pedir la palabra tiene `claimQuestion`, que escribe
 //                       SOLO el campo `ql` (fuera del blob de control).
+//   · imagen-buscable : toda puerta de imagen de CONTENIDO ofrece las DOS vías —
+//                       subir un archivo Y buscar una libre (core/imageSearchModal.js).
+//                       «Etiqueta el diagrama» solo dejaba subir: quien quería un
+//                       corazón humano no tenía ninguno en el móvil y no podía ni
+//                       empezar. Las excepciones (perfil, avatar, fondo de partida)
+//                       están declaradas con su motivo en ALLOW.
 //   · reloj-primitivo : LEY DE VISTA (docs/leyes.md §23) — nunca `setInterval(`
 //                       a pelo: un reloj repetitivo va por su primitivo
 //                       (createCountdown / startDeadlineTicker /
@@ -69,6 +75,15 @@ const ALLOW = {
   // `core/serverNow.js` ES la hora común (usa clock.now para calcularla) y
   // `core/deadlineTicker.js` ya la consume; `core/clock.js` es el reloj crudo.
   'reloj-sala': ['core/serverNow.js', 'core/clock.js', 'core/deadlineTicker.js'],
+  // imagen-buscable · quién puede pedir una imagen SIN ofrecer buscarla, y por qué.
+  // Los dos primeros SON la implementación; los tres siguientes no piden imagen
+  // de CONTENIDO: la foto de perfil y el avatar del duelo son de una PERSONA
+  // (buscarle la cara en internet es justo lo que R7 no quiere) y el fondo del
+  // player es un capricho de ESTA partida, que no se guarda en la actividad.
+  'imagen-buscable': [
+    'core/upload.js', 'core/backgrounds.js',
+    'views/author.js', 'views/vsView.js', 'views/playerView.js',
+  ],
 };
 
 // §22-5 · Los nombres de los INSTANTES DE LA SALA. Si uno de estos aparece en la
@@ -270,6 +285,21 @@ export function scanNormsSource(path, source) {
       out.push({ path, line: i + 1, rule: 'reloj-sala', text: ln.trim() });
     }
   });
+  // imagen-buscable · TODA puerta de imagen ofrece BUSCARLA (F6, 2026-08-13).
+  // Es de FICHERO, no de línea: lo que se comprueba es que quien pide una
+  // imagen de contenido tenga las DOS puertas. Nació porque «Etiqueta el
+  // diagrama» solo dejaba subir: el dueño quería un corazón humano y no tenía
+  // ninguno en el móvil, con lo que la actividad no se podía ni empezar. Un
+  // editor nuevo que copie el bloque de subir y olvide el de buscar rompe CI —
+  // que es lo que impide que la puerta se vuelva a cerrar en un sitio solo.
+  // (los nombres van con clase de caracteres a propósito: escritos enteros, el
+  //  escáner de imports de moduleRefs los lee como usos REALES en este fichero)
+  if (/\b(u[p]loadMedia|r[e]adBackgroundImage)\s*\(/.test(blank(String(source || '')))
+      && !/a[b]rirBuscadorImagenes/.test(String(source || ''))
+      && !allowed('imagen-buscable')) {
+    out.push({ path, line: 1, rule: 'imagen-buscable',
+               text: 'pide una imagen pero no ofrece buscarla (core/imageSearchModal.js)' });
+  }
   return out;
 }
 

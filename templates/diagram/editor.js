@@ -9,6 +9,8 @@ import { QUOTAS } from '../../core/quotas.js';
 import { newPin } from '../../core/contentModels/diagram.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 import { toast } from '../../core/toast.js';
+import { abrirBuscadorImagenes } from '../../core/imageSearchModal.js';
+import { creditoTexto } from '../../core/imageSearch.js';
 
 export function renderDiagramEditor(root, activity, onChange) {
   const a = activity;
@@ -25,13 +27,17 @@ function contentHtml(a) {
   const pins = a.content.pins;
   const img = a.content.image;
   return `
-    <div class="mb-3">
-      <label class="btn btn-outline-primary">
+    <div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
+      <label class="btn btn-outline-primary mb-0">
         <i class="bi bi-image"></i> ${img ? 'Cambiar imagen' : 'Subir imagen de fondo'}
         <input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml" id="dg-img-file" hidden>
       </label>
-      <span class="text-muted small ms-2">Se guarda dentro de la actividad (se comprime sola; hasta 800 KB).</span>
+      <button type="button" class="btn btn-outline-primary" id="dg-img-search">
+        <i class="bi bi-search"></i> Buscar imagen
+      </button>
+      <span class="text-muted small">Se guarda dentro de la actividad (se comprime sola; hasta 800 KB).</span>
     </div>
+    ${a.content.imageCredit ? `<p class="text-muted small mb-2"><i class="bi bi-c-circle"></i> Imagen de ${escapeHtml(creditoTexto(a.content.imageCredit))}</p>` : ''}
     ${img ? `
       <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
         <button type="button" class="btn btn-outline-success btn-sm" id="dg-add">
@@ -56,6 +62,30 @@ function contentHtml(a) {
 }
 
 function wireContent(root, a, ctx) {
+  // SUBIR y BUSCAR acaban aquí: una sola función pone la imagen, con lo que la
+  // regla dura (cambiar el soporte invalida los pines) no puede quedarse en uno
+  // de los dos caminos.
+  const ponerImagen = (dataUrl, atribucion = null) => {
+    a.content.image = dataUrl;
+    // El crédito viaja CON el píxel, o se va con él (§24: campo declarado del
+    // contenido). Atribuir la imagen anterior sería peor que no atribuir.
+    if (atribucion) a.content.imageCredit = atribucion;
+    else delete a.content.imageCredit;
+    // CAMBIAR EL SOPORTE INVALIDA LO ANCLADO A ÉL (R-C · plan del editor).
+    // Los pines guardan x/y como FRACCIÓN de ESTA imagen: al cambiarla se
+    // quedaban clavados donde estaban y «Nariz» aparecía en medio de tu mapa
+    // — que es lo que veía cualquiera que subiera su propio diagrama sobre el
+    // ejemplo. Se quitan y se DICE cuántos: dejarlo mudo es lo que hacía que
+    // pareciera que el editor estaba roto.
+    const habia = a.content.pins.length;
+    if (habia) {
+      a.content.pins = [];
+      toast(`Imagen nueva: se quitaron ${habia} etiqueta${habia === 1 ? '' : 's'} — estaban colocadas sobre la anterior. `
+        + 'Haz clic en la imagen para poner las tuyas.', 'info', 6000);
+    }
+    ctx.onChange(a); ctx.repaint();
+  };
+
   on(root, 'change', '#dg-img-file', async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -63,22 +93,19 @@ function wireContent(root, a, ctx) {
       // Presupuesto de LIENZO, no de imagen de pregunta (§25): un diagrama se
       // mira de cerca y sus rótulos se leen. Con los 200 KB / 1280 px de una
       // foto de enunciado salía borroso justo donde hay que señalar.
-      a.content.image = await uploadMedia(file,
-        { maxBytes: QUOTAS.canvasImageBytes, ladoMax: QUOTAS.canvasImageSide });
-      // CAMBIAR EL SOPORTE INVALIDA LO ANCLADO A ÉL (R-C · plan del editor).
-      // Los pines guardan x/y como FRACCIÓN de ESTA imagen: al cambiarla se
-      // quedaban clavados donde estaban y «Nariz» aparecía en medio de tu mapa
-      // — que es lo que veía cualquiera que subiera su propio diagrama sobre el
-      // ejemplo. Se quitan y se DICE cuántos: dejarlo mudo es lo que hacía que
-      // pareciera que el editor estaba roto.
-      const habia = a.content.pins.length;
-      if (habia) {
-        a.content.pins = [];
-        toast(`Imagen nueva: se quitaron ${habia} etiqueta${habia === 1 ? '' : 's'} — estaban colocadas sobre la anterior. `
-          + 'Haz clic en la imagen para poner las tuyas.', 'info', 6000);
-      }
-      ctx.onChange(a); ctx.repaint();
+      ponerImagen(await uploadMedia(file,
+        { maxBytes: QUOTAS.canvasImageBytes, ladoMax: QUOTAS.canvasImageSide }));
     } catch (err) { toast('No se pudo cargar la imagen: ' + err.message, 'warning', 5000); }
+  });
+
+  // BUSCAR (F6): el diagrama es el caso que lo pidió — nadie tiene a mano un
+  // dibujo del corazón, y subirlo desde el móvil con la clase delante no pasa.
+  on(root, 'click', '#dg-img-search', async () => {
+    const elegido = await abrirBuscadorImagenes({
+      maxBytes: QUOTAS.canvasImageBytes, ladoMax: QUOTAS.canvasImageSide,
+      consulta: a.title && a.title !== 'Sin título' ? a.title : '',
+    });
+    if (elegido) ponerImagen(elegido.url, elegido.atribucion);
   });
 
   // «+ Añadir etiqueta» (R-B): el clic sobre la imagen sigue siendo un ATAJO,

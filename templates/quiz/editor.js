@@ -74,7 +74,12 @@ function wireContent(root, a, ctx) {
     ctx.onChange(a);
   });
   a.content.items.forEach((item, i) => {
-    attachImagePicker(root, `#img-${i}`, item.image, (url) => { item.image = url; ctx.onChange(a); });
+    attachImagePicker(root, `#img-${i}`, item.image, (url, atribucion) => {
+      item.image = url;
+      // El crédito viaja CON el píxel (§24) o se va con él.
+      if (atribucion) item.imageCredit = atribucion; else delete item.imageCredit;
+      ctx.onChange(a);
+    }, { credito: item.imageCredit || null, consulta: item.question || '' });
   });
 }
 
@@ -194,7 +199,7 @@ function renderItems(a) {
           </div>
         </div>
         <div class="col-md-4">
-          <div id="img-${i}">${renderImagePicker(it.image)}</div>
+          <div id="img-${i}">${renderImagePicker(it.image, it.imageCredit || null)}</div>
         </div>
       </div>
       <div class="d-flex align-items-center gap-2 flex-wrap">

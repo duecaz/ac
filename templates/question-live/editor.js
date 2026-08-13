@@ -9,6 +9,7 @@ import { renderEditorShell } from '../../core/editorShell.js';
 // tipo: `accept="image/*"` es una sugerencia del navegador, no una validación,
 // así que cualquier fichero entraba como data-URL en el JSON de la actividad.
 import { uploadMedia } from '../../core/upload.js';
+import { abrirBuscadorImagenes } from '../../core/imageSearchModal.js';
 import { toast } from '../../core/toast.js';
 import { newItem } from '../../core/contentModels/items.js';
 
@@ -37,6 +38,7 @@ function imgTileHtml(url) {
       : `<div class="d-flex flex-column align-items-center justify-content-center text-muted bg-body-secondary rounded mb-1" style="height:80px"><i class="bi bi-image fs-4"></i><small>Sin imagen</small></div>`}
     <div class="d-flex gap-1 justify-content-center flex-wrap">
       <button type="button" class="btn btn-sm btn-outline-primary ql-img-add"><i class="bi ${url ? 'bi-arrow-repeat' : 'bi-plus-lg'}"></i> ${url ? 'Cambiar' : 'Imagen'}</button>
+      <button type="button" class="btn btn-sm btn-outline-primary ql-img-search" title="Buscar una imagen libre"><i class="bi bi-search"></i></button>
       ${url ? `<button type="button" class="btn btn-sm btn-outline-danger ql-img-del"><i class="bi bi-trash"></i></button>` : ''}
     </div>`;
 }
@@ -76,8 +78,19 @@ function wireContent(root, a, ctx) {
     if (i < 0 || !f) return;
     try {
       a.content.items[i].image = await uploadMedia(f);
+      delete a.content.items[i].imageCredit;   // el crédito se va con su imagen
       ctx.onChange(a); ctx.repaint();
     } catch (err) { toast(err.message, 'danger', 4000); }
+  });
+  // Buscar una imagen libre (F6): la misma puerta que en el resto de editores.
+  on(root, 'click', '.ql-img-search', async (_, b) => {
+    const i = tileIndex(b);
+    if (i < 0) return;
+    const r = await abrirBuscadorImagenes({ consulta: a.content.items[i].question || '' });
+    if (!r) return;
+    a.content.items[i].image = r.url;
+    a.content.items[i].imageCredit = r.atribucion;
+    ctx.onChange(a); ctx.repaint();
   });
 }
 

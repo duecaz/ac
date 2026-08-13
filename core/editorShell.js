@@ -20,8 +20,11 @@ import { modesForTemplate } from './modes.js';
 import { renderModesTab, wireModesTab } from './editorModes.js';
 import { listSkins, skinPreviewHtml, applySkin } from './skins.js';
 import { scoringPanelHtml, wireScoringPanel, livePanelHtml, wireLivePanel } from './editorPanels.js';
-import { listBackgrounds, backgroundPreviewHtml, applyBackground, readBackgroundImage } from './backgrounds.js';
+import { listBackgrounds, backgroundPreviewHtml, applyBackground, readBackgroundImage, BG_IMAGE_MAX_BYTES } from './backgrounds.js';
 import { activityItemCount } from './migrate.js';
+import { abrirBuscadorImagenes } from './imageSearchModal.js';
+import { creditoTexto } from './imageSearch.js';
+import { QUOTAS } from './quotas.js';
 
 function presentationHtml(a) {
   const cs = a.presentation?.skin || 'default';
@@ -55,6 +58,9 @@ function presentationHtml(a) {
                <i class="bi bi-upload"></i> ${a.presentation?.backgroundImage ? 'Cambiar' : 'Subir'}
                <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" id="bg-custom-file" hidden>
              </label>
+             <button type="button" class="btn btn-sm btn-outline-secondary w-100 mt-1" id="bg-custom-search">
+               <i class="bi bi-search"></i> Buscar
+             </button>
            </div>`
         : `<div class="ww-skin-tile bg-pick ${cb === b.name ? 'is-active' : ''}" data-name="${b.name}" role="button" style="width:120px">
              ${backgroundPreviewHtml(b.name)}
@@ -184,27 +190,48 @@ export function renderEditorShell(root, a, onChange, spec) {
         applyPrevBg();
       });
       // Custom background upload — read → validate size → store in the activity.
+      // SUBIR y BUSCAR terminan en el mismo sitio: la única diferencia es de
+      // dónde sale el data-URL (y que la búsqueda trae además su crédito).
+      const ponerFondo = (dataUrl, atribucion = null) => {
+        a.presentation = a.presentation || {};
+        a.presentation.backgroundImage = dataUrl;
+        a.presentation.background = 'custom';
+        // El crédito viaja CON el píxel (§24: campo declarado del contenido) o
+        // se borra al cambiar de imagen — atribuir la foto anterior es peor que
+        // no atribuir.
+        if (atribucion) a.presentation.backgroundImageCredit = atribucion;
+        else delete a.presentation.backgroundImageCredit;
+        onChange(a);
+        // Update the custom tile in place (avoid a full repaint that would
+        // bounce the user off the Presentación tab).
+        const tile = root.querySelector('.bg-pick[data-name="custom"]');
+        const pv = tile?.querySelector('.ww-bg-preview');
+        if (pv) { pv.style.background = `center/cover no-repeat url("${dataUrl}")`; pv.innerHTML = ''; }
+        root.querySelectorAll('.bg-pick').forEach(x => x.classList.toggle('is-active', x === tile));
+        applyPrevBg();
+        const errEl = root.querySelector('#bg-custom-err');
+        if (errEl) {
+          errEl.hidden = !atribucion;
+          errEl.className = atribucion ? 'text-muted small mt-2' : 'text-danger small mt-2';
+          errEl.textContent = atribucion ? `Imagen de ${creditoTexto(atribucion)}` : '';
+        }
+      };
       const bgFile = root.querySelector('#bg-custom-file');
       if (bgFile) bgFile.addEventListener('change', async (e) => {
         const errEl = root.querySelector('#bg-custom-err');
         try {
-          const dataUrl = await readBackgroundImage(e.target.files[0]);
-          a.presentation = a.presentation || {};
-          a.presentation.backgroundImage = dataUrl;
-          a.presentation.background = 'custom';
-          onChange(a);
-          if (errEl) errEl.hidden = true;
-          // Update the custom tile in place (avoid a full repaint that would
-          // bounce the user off the Presentación tab).
-          const tile = root.querySelector('.bg-pick[data-name="custom"]');
-          const pv = tile?.querySelector('.ww-bg-preview');
-          if (pv) { pv.style.background = `center/cover no-repeat url("${dataUrl}")`; pv.innerHTML = ''; }
-          root.querySelectorAll('.bg-pick').forEach(x => x.classList.toggle('is-active', x === tile));
-          applyPrevBg();
+          ponerFondo(await readBackgroundImage(e.target.files[0]));
         } catch (err) {
-          if (errEl) { errEl.textContent = err.message; errEl.hidden = false; }
+          if (errEl) { errEl.className = 'text-danger small mt-2'; errEl.textContent = err.message; errEl.hidden = false; }
           e.target.value = '';
         }
+      });
+      root.querySelector('#bg-custom-search')?.addEventListener('click', async () => {
+        const elegido = await abrirBuscadorImagenes({
+          maxBytes: BG_IMAGE_MAX_BYTES, ladoMax: QUOTAS.canvasImageSide,
+          consulta: a.title && a.title !== 'Sin título' ? a.title : '',
+        });
+        if (elegido) ponerFondo(elegido.url, elegido.atribucion);
       });
     }
     // Template-specific wiring.

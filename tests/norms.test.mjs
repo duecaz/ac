@@ -111,6 +111,16 @@ assert.strictEqual(scanNormsSource('core/serverNow.js', `return clock.now() + of
 // id-rid (ley §24): base36 a mano → violación; rid() y la implementación, no.
 assert.strictEqual(scanNormsSource('templates/x/editor.js', `const id = 'q_' + Math.random().toString(36).slice(2, 8);`).length, 1, 'caza el id a mano');
 assert.strictEqual(scanNormsSource('core/ids.js', `return prefix + Math.random().toString(36).slice(2, 8);`).length, 0, 'ids.js es la implementación');
-ok('el escáner caza cada norma (pb-dueno · ls-dueno · fallo-mudo · confianza-alumno · reloj-primitivo · reloj-sala · id-rid) y respeta comentarios + allowlist');
+// imagen-buscable (F6): pedir una imagen sin ofrecer BUSCARLA. El bug que lo
+// creó: «Etiqueta el diagrama» solo dejaba subir, y quien quería un corazón
+// humano no tenía ninguno en el móvil — la actividad no se podía ni empezar.
+assert.strictEqual(scanNormsSource('templates/x/editor.js', `a.content.image = await uploadMedia(f);`).length, 1,
+  'caza el editor que solo deja subir');
+assert.strictEqual(scanNormsSource('templates/x/editor.js',
+  `a.content.image = await uploadMedia(f);\nconst r = await abrirBuscadorImagenes({});`).length, 0,
+  'CONTRA-PRUEBA: con las DOS puertas, el camino legítimo pasa limpio');
+assert.strictEqual(scanNormsSource('views/vsView.js', `const data = await uploadMedia(file, {});`).length, 0,
+  'y el avatar del duelo está exento CON motivo: es la cara de una persona, no contenido (R7)');
+ok('el escáner caza cada norma (pb-dueno · ls-dueno · fallo-mudo · confianza-alumno · reloj-primitivo · reloj-sala · id-rid · imagen-buscable) y respeta comentarios + allowlist');
 
 console.log(`\nnorms.test: ${passed} checks passed`);

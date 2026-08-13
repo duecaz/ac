@@ -2,6 +2,7 @@
 import { escapeHtml } from '../../core/html.js';
 import { toast } from '../../core/toast.js';
 import { uploadMedia } from '../../core/upload.js';
+import { abrirBuscadorImagenes } from '../../core/imageSearchModal.js';
 import { on } from '../../core/events.js';
 import { newPair } from '../../core/contentModels/pairs.js';
 import { itemControlsHtml, reorderArray, ruleScopeNote } from '../../core/editorPrimitives.js';
@@ -35,6 +36,7 @@ function pairRowHtml(p, i, total) {
         <div class="input-group mb-1">
           <input class="form-control mp-l" data-i="${i}" placeholder="Izquierda ${i + 1}" value="${escapeHtml(p.left || '')}">
           <button class="btn btn-outline-secondary mp-img-btn" data-i="${i}" data-side="L" type="button" title="Subir imagen"><i class="bi bi-camera"></i></button>
+          <button class="btn btn-outline-secondary mp-img-search" data-i="${i}" data-side="L" type="button" title="Buscar una imagen libre"><i class="bi bi-search"></i></button>
         </div>
         ${limg ? `<div class="d-flex align-items-center gap-1 mt-1">
           <img src="${limg}" style="height:44px;object-fit:contain;border-radius:6px;border:1px solid #dee2e6;" alt="">
@@ -45,6 +47,7 @@ function pairRowHtml(p, i, total) {
         <div class="input-group mb-1">
           <input class="form-control mp-r" data-i="${i}" placeholder="Derecha ${i + 1}" value="${escapeHtml(p.right || '')}">
           <button class="btn btn-outline-secondary mp-img-btn" data-i="${i}" data-side="R" type="button" title="Subir imagen"><i class="bi bi-camera"></i></button>
+          <button class="btn btn-outline-secondary mp-img-search" data-i="${i}" data-side="R" type="button" title="Buscar una imagen libre"><i class="bi bi-search"></i></button>
         </div>
         ${rimg ? `<div class="d-flex align-items-center gap-1 mt-1">
           <img src="${rimg}" style="height:44px;object-fit:contain;border-radius:6px;border:1px solid #dee2e6;" alt="">
@@ -79,11 +82,25 @@ function wireContent(root, a, ctx) {
       try {
         const field = side === 'L' ? 'leftImage' : 'rightImage';
         a.content.pairs[i][field] = await uploadMedia(file);
+        delete a.content.pairs[i][field + 'Credit'];   // el crédito se va con su imagen
         ctx.onChange(a);
         ctx.repaint();
       } catch (err) { toast(err.message, 'danger', 5000); }
     };
     inp.click();
+  });
+
+  // Buscar una imagen libre (F6): la misma puerta que en el resto de editores.
+  on(root, 'click', '.mp-img-search', async (_, btn) => {
+    const i = +btn.dataset.i;
+    const side = btn.dataset.side;
+    const field = side === 'L' ? 'leftImage' : 'rightImage';
+    const par = a.content.pairs[i];
+    const r = await abrirBuscadorImagenes({ consulta: (side === 'L' ? par.left : par.right) || '' });
+    if (!r) return;
+    par[field] = r.url;
+    par[field + 'Credit'] = r.atribucion;
+    ctx.onChange(a); ctx.repaint();
   });
 
   // Image remove

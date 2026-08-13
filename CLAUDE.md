@@ -267,6 +267,17 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   también DENTRO del contenido (el tema suele estar en las preguntas). El "no hay" no es un
   callejón: lleva a CREAR. Vigilado por `tests/search.test.mjs` — cada caso es un falso
   negativo que mandaría al profe a rehacer algo que ya tiene, con la clase delante.
+- **Toda puerta de imagen ofrece BUSCARLA**, no solo subirla: `core/imageSearchModal.js`
+  (`abrirBuscadorImagenes`) sobre el núcleo puro `core/imageSearch.js` (Wikimedia
+  Commons + Openverse, sin clave; el `fetch` se INYECTA, por eso se prueba entero sin
+  red). La imagen elegida entra por `core/upload.js` igual que un archivo local → el
+  tope de §25 se respeta solo. La **atribución** viaja con el píxel (`imageCredit` /
+  `backgroundImageCredit`, §24) porque con Creative Commons el crédito es la condición
+  de uso — y se borra al cambiar de imagen. Vigilado por la regla `imagen-buscable`
+  (`core/normsCheck.js`): quien llame a `uploadMedia`/`readBackgroundImage` sin ofrecer
+  el buscador rompe CI. Excepciones DECLARADAS con motivo (perfil, avatar del duelo,
+  fondo de esta partida): no son contenido. Nació de «Etiqueta el diagrama», que solo
+  dejaba subir: sin un corazón humano en el móvil, la actividad no se podía ni empezar.
 - **Fallar en silencio está PROHIBIDO** (R6): un `catch {}` vacío alrededor de algo
   que el usuario pidió (guardar · borrar · entregar · sincronizar) rompe CI por la regla
   `fallo-mudo`. El best-effort sigue permitido, pero con su motivo ESCRITO al lado —

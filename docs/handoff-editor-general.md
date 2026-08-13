@@ -74,11 +74,32 @@ cero: cada plantilla podrá declarar `meta.editor.tutorial` (una URL); el editor
 pinta el botón **solo si esa URL existe**. Hoy no la declara ninguna → no hay
 botón, y no hay que tocar 13 ficheros el día que se graben.
 
-### F6 · Buscador de imágenes
-Un componente único `core/imagePicker.js` con dos pestañas —**Subir** y
-**Buscar**— usado por los TRES sitios que hoy solo suben: imagen del diagrama,
-fondo de la actividad e imagen de pregunta. Al elegir, pasa por `core/upload.js`
-(comprime) igual que un archivo local, así el tope de §25 se respeta solo.
+### F6 · Buscador de imágenes — ✅ HECHO (v1.51.471)
+Un componente único con dos puertas —**Subir** y **Buscar**— en **los SEIS** sitios
+que piden una imagen de contenido, no en los tres del plan: al escribirlo se vio que
+la lista de tres era otra lista enumerada, y que wheel/question-live/match tenían el
+mismo agujero esperando. Al elegir, la imagen pasa por `core/upload.js` (comprime)
+igual que un archivo local, así el tope de §25 se respeta solo.
+
+- `core/imageSearch.js` — el NÚCLEO: sin DOM y sin red propia (recibe el `fetch`),
+  construye la petición y normaliza las dos fuentes a la MISMA forma. Testeado
+  entero con respuestas de mentira (`tests/imageSearch.test.mjs`).
+- `core/imageSearchModal.js` — el diálogo: rejilla, descarga de lo elegido y
+  conversión por `uploadMedia`. Devuelve `{ url, atribucion }`.
+- Puertas: diagrama · fondo de la actividad · imagen de pregunta (quiz, vía
+  `core/imagePicker.js`) · ruleta · pregunta en vivo · emparejar.
+- **Es norma, no costumbre**: la regla `imagen-buscable` (`core/normsCheck.js`)
+  ESCANEA — un fichero que llame a `uploadMedia`/`readBackgroundImage` sin ofrecer
+  el buscador rompe CI. Las tres excepciones (foto de perfil, avatar del duelo,
+  fondo de ESTA partida) están declaradas con su motivo: no son contenido, y
+  buscarle la cara a alguien en internet es justo lo que R7 no quiere.
+- La **atribución** se guarda junto a la imagen y se muestra en el editor:
+  `content.imageCredit` (diagrama) · `presentation.backgroundImageCredit` (fondo) ·
+  `item.imageCredit` (pregunta/ruleta) · `left|rightImageCredit` (emparejar).
+  Campos opcionales, sin migración (§24). **Pendiente**: pintarla también en el
+  player para quien JUEGA la actividad publicada.
+- **Sin verificar desde aquí**: la llamada REAL a las dos APIs. Este entorno no
+  sale a internet (los dos `curl` de abajo, desde la Pi, lo cierran en un minuto).
 
 **Sobre Google, que es lo que se preguntó.** No hay una API de imágenes de Google
 que se pueda cablear: la vieja *Google Image Search API* está retirada. Lo que
@@ -122,3 +143,6 @@ Toca §25 (cuotas), así que va con su test de paridad.
 F1 (barato, 15 pantallas) → F3 (el bug feo) → F2 (+Añadir y estado vacío, con su
 regla) → F7 (presupuesto) → F4 (nacer en blanco: la que más redes toca) → F6 (el
 buscador) → F5 queda esperando a los vídeos.
+
+**Estado (v1.51.471): F1 · F2 · F3 · F4 · F6 · F7 hechos. Solo queda F5**, que no
+espera a código sino a que existan los vídeos.
