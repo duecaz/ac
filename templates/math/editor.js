@@ -8,7 +8,10 @@ import { renderEditorShell } from '../../core/editorShell.js';
 
 export function renderMathEditor(root, activity, onChange) {
   const a = activity;
-  if (!a.content) a.content = { items: [] };
+  // Mismo blindaje que el resto: con el contenido vacío o a medias, el editor
+  // pinta su estado vacío en vez de lanzar antes de dibujar nada.
+  if (!a.content || typeof a.content !== 'object') a.content = {};
+  if (!Array.isArray(a.content.items)) a.content.items = [];
   if (!a.scoring) a.scoring = { mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0 };
   if (!a.rules) a.rules = { randomize: true };
   renderEditorShell(root, a, onChange, {

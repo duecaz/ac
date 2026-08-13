@@ -13,6 +13,11 @@ export class WordsearchTemplate extends BaseTemplate {
     kind:            'ejercicio',   // familia (norte §4c): quién pone el contenido
     contentModel:    'words',
     templateVersion: 1,
+    // El EDITOR se declara aquí (§0: la vista no conoce plantillas concretas):
+    // `elemento` es lo que el profe AÑADE y `primerPaso` lo que se lee con la
+    // actividad vacía — es lo que enseña, en vez de contenido de muestra que
+    // hay que borrar antes de empezar (R-D).
+    editor: { elemento: 'palabra', primerPaso: 'Pulsa «Añadir palabra» y escribe las que el alumno tendrá que encontrar.' },
     instructions:    'Encuentra las palabras ocultas arrastrando sobre la sopa de letras.',
     modes:           { solo: true, live: false, async: true, practice: true },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).

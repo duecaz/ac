@@ -18,6 +18,11 @@ export class BallsortTemplate extends BaseTemplate {
     skill:           'Lógica y deducción',   // el eje del catálogo de juegos
     contentModel:    'ballsort',
     templateVersion: 1,
+    // El EDITOR se declara aquí (§0: la vista no conoce plantillas concretas):
+    // `elemento` es lo que el profe AÑADE y `primerPaso` lo que se lee con la
+    // actividad vacía — es lo que enseña, en vez de contenido de muestra que
+    // hay que borrar antes de empezar (R-D).
+    editor: { generado: true, primerPaso: 'Pulsa «Generar nuevo tablero» y ajusta los tubos y colores a tu clase.' },
     instructions:    'Ordena las bolas: mueve la de arriba de un tubo a otro hasta que cada tubo quede de un solo color.',
     aspectRatio:     '4/3',
     // async:false — es un JUEGO (§4c): sin contenido del docente no hay nada que

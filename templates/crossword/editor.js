@@ -26,7 +26,7 @@ function contentHtml(a) {
           <label class="form-label fw-semibold mb-0">${words.length} palabra(s)</label>
           <div class="d-flex gap-1">
             <button class="btn btn-outline-primary btn-sm" id="cw-auto"><i class="bi bi-magic"></i> Auto-colocar</button>
-            <button class="btn btn-outline-success btn-sm" id="cw-add"><i class="bi bi-plus-lg"></i> Añadir</button>
+            <button class="btn btn-outline-success btn-sm" id="cw-add"><i class="bi bi-plus-lg"></i> Añadir palabra</button>
           </div>
         </div>
 

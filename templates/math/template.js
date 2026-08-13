@@ -16,6 +16,11 @@ export class MathTemplate extends BaseTemplate {
     contentModel: 'qa',
     templateVersion: 1,
     paginated: true,   // una operación por pantalla → nº de páginas = nº de ítems
+    // El EDITOR se declara aquí (§0: la vista no conoce plantillas concretas):
+    // `elemento` es lo que el profe AÑADE y `primerPaso` lo que se lee con la
+    // actividad vacía — es lo que enseña, en vez de contenido de muestra que
+    // hay que borrar antes de empezar (R-D).
+    editor: { elemento: 'operación', primerPaso: 'Pulsa «Generar» para crear operaciones de golpe, o «Añadir operación» para escribirlas tú.' },
     instructions: 'Resuelve cada operación y escribe el resultado con el teclado.',
     panelFit: 'block',   // el teclado es UN bloque: no se estira en el panel VS
     aspectRatio: '16/10',

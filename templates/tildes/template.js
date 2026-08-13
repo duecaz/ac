@@ -20,6 +20,11 @@ export class TildesTemplate extends BaseTemplate {
     markNoun:        'tilde',   // lo que el alumno marca (informes) — §26: la plantilla lo DECLARA
     templateVersion: 1,
     paginated: true,   // una frase por pantalla → nº de páginas = nº de frases
+    // El EDITOR se declara aquí (§0: la vista no conoce plantillas concretas):
+    // `elemento` es lo que el profe AÑADE y `primerPaso` lo que se lee con la
+    // actividad vacía — es lo que enseña, en vez de contenido de muestra que
+    // hay que borrar antes de empezar (R-D).
+    editor: { elemento: 'frase', primerPaso: 'Pulsa «Añadir frase» y escribe una oración; luego marca qué vocales llevan tilde.' },
     instructions: 'Dibuja la tilde (´) sobre las vocales que la llevan. Cuando termines, pulsa “Listo” para corregir.',
     panelFit: 'fill',    // el texto llena el panel y se escala para caber
     aspectRatio: '16/10',

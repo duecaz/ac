@@ -18,6 +18,11 @@ export class GlobosTemplate extends BaseTemplate {
     contentModel: 'qa',           // mismo contenido que Quiz/Operaciones
     templateVersion: 1,
     paginated: true,   // una pregunta por pantalla → nº de páginas = nº de ítems
+    // El EDITOR se declara aquí (§0: la vista no conoce plantillas concretas):
+    // `elemento` es lo que el profe AÑADE y `primerPaso` lo que se lee con la
+    // actividad vacía — es lo que enseña, en vez de contenido de muestra que
+    // hay que borrar antes de empezar (R-D).
+    editor: { elemento: 'pregunta', primerPaso: 'Pulsa «Añadir pregunta» y escribe la pregunta con sus respuestas: una correcta y las demás no.' },
     instructions: 'Lee la pregunta y toca el globo con la respuesta correcta para explotarlo.',
     panelFit: 'fill',
     aspectRatio: '16/10',

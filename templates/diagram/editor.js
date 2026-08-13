@@ -32,7 +32,12 @@ function contentHtml(a) {
       <span class="text-muted small ms-2">Se guarda dentro de la actividad (imagen ligera, &lt;200 KB).</span>
     </div>
     ${img ? `
-      <p class="small text-muted mb-1"><i class="bi bi-info-circle"></i> Haz clic en la imagen para añadir un pin; arrástralo para moverlo.</p>
+      <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+        <button type="button" class="btn btn-outline-success btn-sm" id="dg-add">
+          <i class="bi bi-plus-lg"></i> Añadir etiqueta
+        </button>
+        <span class="small text-muted"><i class="bi bi-info-circle"></i> …o haz clic sobre la imagen. Arrastra un pin para moverlo.</span>
+      </div>
       <div class="dg-edit-stage mb-3">
         <div class="dg-img-box" id="dg-edit-box">
           <img class="dg-img" src="${escapeHtml(img)}" alt="" draggable="false">
@@ -46,8 +51,7 @@ function contentHtml(a) {
           <input class="form-control dg-label-input" data-i="${i}" placeholder="Etiqueta del pin ${i + 1}" value="${escapeHtml(p.label || '')}">
           <button class="btn btn-outline-danger dg-pin-del" data-i="${i}" type="button" title="Eliminar pin"><i class="bi bi-trash"></i></button>
         </div>`).join('')}
-      ${pins.length === 0 ? '<p class="text-muted">Aún no hay pines. Haz clic en la imagen.</p>' : ''}
-    ` : '<p class="text-muted">Sube una imagen para empezar a colocar pines.</p>'}`;
+    ` : ''}`;
 }
 
 function wireContent(root, a, ctx) {
@@ -70,6 +74,15 @@ function wireContent(root, a, ctx) {
       }
       ctx.onChange(a); ctx.repaint();
     } catch (err) { toast('No se pudo cargar la imagen: ' + err.message, 'warning', 5000); }
+  });
+
+  // «+ Añadir etiqueta» (R-B): el clic sobre la imagen sigue siendo un ATAJO,
+  // pero no puede ser la ÚNICA puerta — vivía en una línea gris y el dueño no la
+  // encontró. El pin nace en el CENTRO, a la vista y listo para arrastrar.
+  on(root, 'click', '#dg-add', () => {
+    if (!a.content.image) { toast('Primero sube el dibujo: las etiquetas se colocan encima.', 'info', 4000); return; }
+    a.content.pins.push(newPin(0.5, 0.5));
+    ctx.onChange(a); ctx.repaint();
   });
 
   on(root, 'input', '.dg-label-input', (e, el) => { a.content.pins[+el.dataset.i].label = el.value; ctx.onChange(a); });

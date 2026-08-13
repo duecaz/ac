@@ -15,6 +15,11 @@ export class WheelTemplate extends BaseTemplate {
     kind:            'ejercicio',   // familia (norte §4c): quién pone el contenido
     contentModel: 'items',
     templateVersion: 3,   // v3: campo `q` → `question` (vocabulario reservado)
+    // El EDITOR se declara aquí (§0: la vista no conoce plantillas concretas):
+    // `elemento` es lo que el profe AÑADE y `primerPaso` lo que se lee con la
+    // actividad vacía — es lo que enseña, en vez de contenido de muestra que
+    // hay que borrar antes de empezar (R-D).
+    editor: { elemento: 'opción', primerPaso: 'Pulsa «Añadir opción» y escribe cada casilla de la ruleta.' },
     instructions: 'Gira la ruleta y responde la pregunta que toque.',
     aspectRatio: '1/1',
     modes: { solo: true, live: true, async: false, practice: true },

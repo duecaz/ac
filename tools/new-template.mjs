@@ -116,6 +116,14 @@ export class ${Cls}Template extends BaseTemplate {
     templateVersion: 1,
     // OBLIGATORIO (contrato): frase corta de cómo se juega — la pantalla de inicio.
     instructions: 'TODO: explica en una frase cómo se juega.',
+    // El EDITOR se declara (lo exige el contrato): 'elemento' es el nombre
+    // SINGULAR de lo que el profe añade —de ahí sale «+ Añadir …»— y
+    // 'primerPaso' es lo que se lee con la actividad vacía, que es lo que
+    // enseña ahora que no nacen con contenido de muestra.
+    editor: {
+      elemento: 'elemento',
+      primerPaso: 'TODO: di en una frase qué tiene que hacer el profe primero para llenar esta actividad.',
+    },
     panelFit: 'fill',             // panel VS: 'fill' (llena y escala) | 'block' | 'center'
     aspectRatio: '16/10',         // marco del player: '16/10' | '4/3' | '1/1' | 'auto'
     modes: { solo: true, live: ${wantLive}, async: true, practice: true },

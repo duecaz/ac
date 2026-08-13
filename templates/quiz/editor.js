@@ -12,7 +12,12 @@ export function renderQuizEditor(root, activity, onChange) {
   const a = activity;
   // Auto-cura ítems sin opciones (p. ej. convertidos desde Matemáticas) para que
   // el editor no falle al escribir en item.options[k].
-  (a.content?.items || []).forEach(it => { if (!Array.isArray(it.options)) it.options = ['', '', '', '']; });
+  // El editor no puede reventar con el contenido vacío: lo produce una actividad
+  // recién creada y también un JSON importado a medias. Antes `renderItems`
+  // leía `a.content.items.length` y lanzaba antes de pintar nada.
+  if (!a.content || typeof a.content !== 'object') a.content = {};
+  if (!Array.isArray(a.content.items)) a.content.items = [];
+  a.content.items.forEach(it => { if (!Array.isArray(it.options)) it.options = ['', '', '', '']; });
   renderEditorShell(root, a, onChange, {
     content: { label: 'Contenido', html: contentHtml, wire: wireContent },
     rules: { html: rulesHtml, wire: wireRules },

@@ -17,6 +17,11 @@ export class MemoryTemplate extends BaseTemplate {
     kind:            'ejercicio',   // familia (norte §4c): quién pone el contenido
     contentModel: 'pairs',
     templateVersion: 1,
+    // El EDITOR se declara aquí (§0: la vista no conoce plantillas concretas):
+    // `elemento` es lo que el profe AÑADE y `primerPaso` lo que se lee con la
+    // actividad vacía — es lo que enseña, en vez de contenido de muestra que
+    // hay que borrar antes de empezar (R-D).
+    editor: { elemento: 'par', primerPaso: 'Pulsa «Añadir par» y escribe las dos caras que el alumno tendrá que emparejar.' },
     instructions: 'Encuentra las parejas: voltea dos cartas; si coinciden, se quedan descubiertas.',
     aspectRatio: '1/1',
     modes: { solo: true, live: false, async: true, practice: true },

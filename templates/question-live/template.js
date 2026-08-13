@@ -15,6 +15,11 @@ export class QuestionLiveTemplate extends BaseTemplate {
     kind:            'ejercicio',   // familia (norte §4c): quién pone el contenido
     contentModel: 'items',
     templateVersion: 2,   // v2: campo `q` → `question` (vocabulario reservado)
+    // El EDITOR se declara aquí (§0: la vista no conoce plantillas concretas):
+    // `elemento` es lo que el profe AÑADE y `primerPaso` lo que se lee con la
+    // actividad vacía — es lo que enseña, en vez de contenido de muestra que
+    // hay que borrar antes de empezar (R-D).
+    editor: { elemento: 'pregunta', primerPaso: 'Pulsa «Añadir pregunta» y escribe lo que preguntarás en clase; los puntos los pones tú al responder.' },
     instructions: 'Espera tu turno: cuando salga tu pregunta, respóndela como indique el docente.',
     aspectRatio: '4/3',
     modes: { solo: true, live: true, async: false, practice: false },

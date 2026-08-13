@@ -31,6 +31,30 @@ export function checkTemplateContract(T) {
   if (!String(m.icon || '').trim()) issues.push('meta.icon vacío');
   // Regla CLAUDE.md: instrucciones cortas obligatorias (las muestra la pantalla de inicio).
   if (!String(m.instructions || '').trim()) issues.push('meta.instructions vacío (obligatorio: lo muestra la pantalla de inicio)');
+  // EL EDITOR SE DECLARA (R-B/R-D · plan del editor, 2026-08-13). Dos cosas que
+  // la vista no puede adivinar sin conocer plantillas concretas (§0):
+  //   · `elemento` — cómo se llama, en singular, lo que el profe AÑADE
+  //     («pregunta», «par», «etiqueta»). De ahí sale el botón «+ Añadir …», que
+  //     11 de 13 tenían y el diagrama no: sus pines se ponían clicando la
+  //     imagen, escrito en una línea gris que nadie lee.
+  //   · `primerPaso` — lo que se lee con la actividad VACÍA. Es lo que enseña,
+  //     ahora que las actividades no nacen con contenido de muestra: la frase
+  //     ocupa el sitio donde antes había ejemplos que tocaba borrar.
+  // `generado: true` exime de `elemento` a las plantillas cuyo contenido NO es
+  // una lista que el profe amplía, sino un tablero que la plantilla genera.
+  if (!m.editor || typeof m.editor !== 'object') {
+    issues.push("meta.editor ausente (declara { elemento: 'pregunta', primerPaso: '…' })");
+  } else {
+    const paso = String(m.editor.primerPaso || '').trim();
+    if (paso.length < 25) issues.push('meta.editor.primerPaso: hace falta una frase que diga qué hacer primero, no una etiqueta');
+    if (m.editor.generado) {
+      if (m.editor.elemento) issues.push('meta.editor: `generado` y `elemento` a la vez — o el profe añade elementos, o los genera la plantilla');
+    } else {
+      const el = String(m.editor.elemento || '').trim();
+      if (!el) issues.push("meta.editor.elemento ausente (el nombre SINGULAR de lo que se añade, o `generado: true`)");
+      else if (/s$|^[A-Z]/.test(el)) issues.push(`meta.editor.elemento «${el}»: en SINGULAR y en minúscula (se usa dentro de «+ Añadir …»)`);
+    }
+  }
   if (!Number.isInteger(m.templateVersion) || m.templateVersion < 1) issues.push(`meta.templateVersion inválido: ${m.templateVersion}`);
   if (!m.modes || typeof m.modes !== 'object') issues.push('meta.modes ausente');
   // LAS DOS FAMILIAS (norte §4c): 'ejercicio' (el contenido lo pone el docente)

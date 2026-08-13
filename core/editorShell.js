@@ -21,6 +21,7 @@ import { renderModesTab, wireModesTab } from './editorModes.js';
 import { listSkins, skinPreviewHtml, applySkin } from './skins.js';
 import { scoringPanelHtml, wireScoringPanel, livePanelHtml, wireLivePanel } from './editorPanels.js';
 import { listBackgrounds, backgroundPreviewHtml, applyBackground, readBackgroundImage } from './backgrounds.js';
+import { activityItemCount } from './migrate.js';
 
 function presentationHtml(a) {
   const cs = a.presentation?.skin || 'default';
@@ -63,6 +64,35 @@ function presentationHtml(a) {
     <div class="text-danger small mt-2" id="bg-custom-err" hidden></div>`;
 }
 
+/** El aviso de «aquí no hay nada todavía, empieza por esto». Se pinta SOLO con
+ *  la actividad vacía; en cuanto hay un elemento, desaparece sin dejar hueco. */
+function sinEscribirNada(a) {
+  if (activityItemCount(a) === 0) return true;
+  // Varios editores SIEMBRAN filas en blanco al abrir (la ruleta pone 4), así
+  // que «cero elementos» no describe el estado que ve el profe. Lo que importa
+  // es si hay algo ESCRITO: mientras no lo haya, la pista sigue siendo útil.
+  const conTexto = (v) => {
+    if (typeof v === 'string') return v.trim() !== '';
+    if (Array.isArray(v)) return v.some(conTexto);
+    if (v && typeof v === 'object') {
+      return Object.entries(v).some(([k, x]) => k !== 'id' && conTexto(x));
+    }
+    return false;
+  };
+  return !conTexto(a?.content);
+}
+
+function primerPasoHtml(T, a) {
+  const paso = T?.meta?.editor?.primerPaso;
+  if (!paso) return '';
+  // Con contenido GENERADO (Ordena las Pelotas) no hay «estado vacío» que
+  // detectar: la plantilla siempre trae un tablero, así que la pista no marca
+  // un principio sino que ORIENTA — qué se puede tocar aquí. Se queda puesta.
+  if (!T.meta.editor.generado && !sinEscribirNada(a)) return '';
+  return `<div class="alert alert-info d-flex align-items-start gap-2 py-2">
+    <i class="bi bi-lightbulb mt-1"></i><div>${escapeHtml(paso)}</div></div>`;
+}
+
 export function renderEditorShell(root, a, onChange, spec) {
   const T = getTemplate(a.template);
   // PANELES POR DEFECTO (core/editorPanels.js). "Puntuación" existía en 5 de 13
@@ -86,7 +116,13 @@ export function renderEditorShell(root, a, onChange, spec) {
   // Pestañas en orden fijo. id = el data-bs-target; cada una se incluye solo si
   // su contenido existe (Contenido y Presentación según spec).
   const tabs = [
-    { id: 'tab-content', label: spec.content.label || 'Contenido', body: () => spec.content.html(a) },
+    { id: 'tab-content', label: spec.content.label || 'Contenido',
+      // EL ESTADO VACÍO ENSEÑA (R-D · plan del editor). Las actividades dejan de
+      // nacer con contenido de muestra —había que borrarlo antes de empezar— y
+      // lo que ocupa su sitio es la frase que la plantilla DECLARA en
+      // `meta.editor.primerPaso`. Va aquí y no en cada editor: así las 13 dicen
+      // qué hacer primero sin que ninguna se acuerde de ponerlo.
+      body: () => primerPasoHtml(T, a) + spec.content.html(a) },
     spec.scoring && { id: 'tab-scoring', label: 'Puntuación', body: () => spec.scoring.html(a) },
     showModes && { id: 'tab-modes', label: 'Modos', icon: 'bi-controller', body: () => {
       const indiv = spec.rules ? `
