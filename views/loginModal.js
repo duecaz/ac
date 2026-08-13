@@ -2,8 +2,10 @@
 //  - Google (OAuth) — cómodo en el equipo propio del profe.
 //  - Correo + contraseña — para PIZARRAS interactivas donde no hay cuenta de
 //    Google puesta; el admin puede crear estas cuentas (ver panel de Profesores).
+// …y la salida cuando la contraseña se pierde, que en una pizarra compartida
+// pasa: «¿Olvidaste tu contraseña?» manda el correo de restablecimiento.
 import { html, escapeHtml } from '../core/html.js';
-import { signInWithGoogle, signIn } from '../core/auth.js';
+import { signInWithGoogle, signIn, requestPasswordReset } from '../core/auth.js';
 
 let _open = false;
 
@@ -33,7 +35,9 @@ export function openLoginModal({ reason = '' } = {}) {
         <div id="lm-err" class="login-modal__err"></div>
         <button type="submit" class="login-modal__submit" id="lm-submit">Entrar</button>
       </form>
-      <p class="login-modal__hint text-muted small mt-2 mb-0">¿No tienes cuenta?
+      <p class="login-modal__hint text-muted small mt-2 mb-1">
+        <a href="#" id="lm-forgot">¿Olvidaste tu contraseña?</a></p>
+      <p class="login-modal__hint text-muted small mb-0">¿No tienes cuenta?
         <a href="#/registro" data-close>Créala aquí</a> — solo correo, nombre y contraseña.</p>
     </div>`;
   document.body.appendChild(host);
@@ -65,6 +69,33 @@ export function openLoginModal({ reason = '' } = {}) {
     } catch (err) {
       showErr(err.message || 'No se pudo iniciar sesión.');
       $('#lm-submit').disabled = false;
+    }
+  });
+
+  // ¿OLVIDASTE TU CONTRASEÑA? Activado el 2026-08-13, cuando el correo saliente
+  // de la Pi quedó configurado y PROBADO (tools/pb-smtp.sh). Antes el enlace no
+  // podía existir: PocketBase habría aceptado la petición y no habría salido
+  // ningún correo — un botón que promete algo que no ocurre es peor que no
+  // tenerlo.
+  $('#lm-forgot').addEventListener('click', async (e) => {
+    e.preventDefault();
+    const email = $('#lm-email').value.trim();
+    // Se reutiliza el campo de arriba en vez de abrir otra pantalla: si ya lo
+    // escribió, un toque; si no, se le pide ahí mismo y el foco lo lleva.
+    if (!email) { $('#lm-email').focus(); return showErr('Escribe tu correo arriba y vuelve a pulsar.'); }
+    const enlace = $('#lm-forgot');
+    enlace.textContent = 'Enviando…';
+    try {
+      await requestPasswordReset(email);
+      // MISMA respuesta exista o no la cuenta: decir «ese correo no está
+      // registrado» convierte este formulario en un comprobador de quién tiene
+      // cuenta. PocketBase responde igual a propósito; aquí no se deshace.
+      showErr('');
+      enlace.outerHTML = `<span class="text-success">Si <b>${escapeHtml(email)}</b> tiene cuenta, `
+        + 'le llega un correo con el enlace para cambiar la contraseña. Mira también la carpeta de spam.</span>';
+    } catch (err) {
+      enlace.textContent = '¿Olvidaste tu contraseña?';
+      showErr(err.message || 'No se pudo enviar el correo. Inténtalo en un minuto.');
     }
   });
 

@@ -128,16 +128,17 @@ los MISMOS campos y reglas (fuente de verdad en código: `views/adminView.js` DE
   git -C ~/ac pull && bash ~/ac/tools/pb-reglas-users.sh   # aplica, PRUEBA la puerta y limpia
   ```
   (En Windows: `.\tools\setup-pocketbase.ps1`, que hace lo mismo entre otras cosas.)
-  ⚠ SMTP sin configurar: «olvidé mi contraseña» no envía correos hasta que se
-  configure. **Hazlo con `bash ~/ac/tools/pb-smtp.sh`** (pide los datos por
-  teclado, guarda los ajustes y ENVÍA un correo de prueba: guardar no es enviar
-  — PocketBase acepta cualquier host y solo falla al intentarlo de verdad).
-  Necesita un proveedor SMTP: Brevo gratis 300/día, o Gmail con contraseña de
-  APLICACIÓN. **Con Brevo, el host es `smtp-relay.sendinblue.com`** y no el
-  `smtp-relay.brevo.com` que ellos publican: su certificado sigue emitido para
-  la marca antigua y la conexión se cae con `x509: certificate is valid for
-  …sendinblue.com` ANTES de enviar (visto el 2026-08-13). Mismos servidores. En cuanto la prueba llegue, se puede activar el botón
-  «¿Olvidaste tu contraseña?» (`requestPasswordReset()` ya existe).
+  ✅ SMTP CONFIGURADO Y PROBADO (2026-08-13): Brevo, `smtp-relay.sendinblue.com`
+  puerto 587, remitente `duecaz@gmail.com`. Se hizo con `bash ~/ac/tools/pb-smtp.sh`,
+  que guarda los ajustes y ENVÍA un correo real — el correo llegó. Con esto quedó
+  activado «¿Olvidaste tu contraseña?» en el modal de entrar (`views/loginModal.js`).
+  Dos cosas que costaron una vuelta cada una y están cosidas en el script:
+  el host **NO** es `smtp-relay.brevo.com` (su certificado sigue emitido para
+  `*.sendinblue.com` y la conexión se cae con un `x509` antes de enviar), y el
+  remitente se limpia de caracteres invisibles antes de mandarlo (PocketBase solo
+  sabe decir «Must be a valid email address» sobre un correo que a la vista es
+  correcto). PENDIENTE si se quiere `noresponder@aulareto.com`: verificar el
+  dominio en Brevo con sus registros DNS.
 
 ### Quirks de PB 0.23 que YA nos mordieron (no repetir)
 
