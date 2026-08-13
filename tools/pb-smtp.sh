@@ -20,7 +20,13 @@
 #
 #   · Brevo (recomendado, gratis 300 correos/día, sin tarjeta)
 #       Alta en brevo.com → SMTP & API → SMTP → crear una clave.
-#       host: smtp-relay.brevo.com   puerto: 587   TLS: sí (STARTTLS)
+#       host: smtp-relay.sendinblue.com   puerto: 587   TLS: sí (STARTTLS)
+#       OJO con el host: Brevo se llamaba Sendinblue y su certificado sigue
+#       emitido para `*.sendinblue.com`. Si pones `smtp-relay.brevo.com` —el
+#       nombre que ellos mismos publican— la conexión se cae antes de enviar:
+#         x509: certificate is valid for …sendinblue.com, not smtp-relay.brevo.com
+#       Son los MISMOS servidores; usando el nombre del certificado, el cifrado
+#       se verifica de verdad y no hay que desactivar nada.
 #       usuario: el que te dé Brevo (algo como 8a1b2c001@smtp-brevo.com)
 #       clave:   la clave SMTP que generas ahí
 #       remitente: un correo TUYO ya verificado en Brevo.
@@ -42,12 +48,15 @@ read -rsp "Contraseña superadmin: " PB_PASS; echo
 
 echo
 echo "── Datos del proveedor de correo ──"
-read -rp  "Host SMTP [smtp-relay.brevo.com]: " SMTP_HOST
-SMTP_HOST="${SMTP_HOST:-smtp-relay.brevo.com}"
+read -rp  "Host SMTP [smtp-relay.sendinblue.com]: " SMTP_HOST
+SMTP_HOST="${SMTP_HOST:-smtp-relay.sendinblue.com}"
 read -rp  "Puerto [587]: " SMTP_PORT
 SMTP_PORT="${SMTP_PORT:-587}"
 read -rp  "Usuario SMTP: " SMTP_USER
 read -rsp "Clave SMTP: " SMTP_PASS; echo
+echo "   (el remitente debe estar VERIFICADO en el proveedor: en Brevo, Senders"
+echo "    & IP → Senders. Un dominio propio como noresponder@tudominio.com exige"
+echo "    además verificar el dominio con sus registros DNS.)"
 read -rp  "Remitente (correo que verá el profe) [$PB_EMAIL]: " FROM_ADDR
 FROM_ADDR="${FROM_ADDR:-$PB_EMAIL}"
 read -rp  "Nombre del remitente [AulaReto]: " FROM_NAME
@@ -125,8 +134,21 @@ if st in (200, 204):
     print('\n   Siguiente paso, del lado del código: activar «¿Olvidaste tu contraseña?»')
     print('   en el modal de entrar (core/auth.js ya tiene requestPasswordReset).')
 else:
+    detalle = f"{d.get('message', '')} {d.get('data', '')}"
     print(f'\n❌ los ajustes se guardaron pero el envío FALLA ({st}):')
-    print('  ', d.get('message', ''), d.get('data', ''))
+    print('  ', detalle)
+    # El fallo de Brevo tiene nombre y una salida exacta: no dejar que se pierda
+    # entre las causas genéricas, que mandan a mirar la clave y el remitente
+    # cuando el problema es el NOMBRE del host.
+    if 'x509' in detalle or 'certificate is valid for' in detalle:
+        print('\n   ⚠️ ES EL NOMBRE DEL HOST, no tus credenciales.')
+        print('      Brevo se llamaba Sendinblue y su certificado sigue emitido para')
+        print('      *.sendinblue.com, así que `smtp-relay.brevo.com` no lo verifica.')
+        print('      SOLUCIÓN: vuelve a correr este script y pon como host')
+        print('          smtp-relay.sendinblue.com')
+        print('      (mismos servidores, mismo usuario y clave; el cifrado se sigue')
+        print('       verificando — no hace falta desactivar nada).')
+        raise SystemExit(1)
     print('\n   Lo más habitual, por orden:')
     print('   · usuario/clave del proveedor mal (en Gmail hace falta contraseña de APLICACIÓN)')
     print('   · el remitente no está verificado en el proveedor')

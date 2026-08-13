@@ -133,7 +133,10 @@ los MISMOS campos y reglas (fuente de verdad en código: `views/adminView.js` DE
   teclado, guarda los ajustes y ENVÍA un correo de prueba: guardar no es enviar
   — PocketBase acepta cualquier host y solo falla al intentarlo de verdad).
   Necesita un proveedor SMTP: Brevo gratis 300/día, o Gmail con contraseña de
-  APLICACIÓN. En cuanto la prueba llegue, se puede activar el botón
+  APLICACIÓN. **Con Brevo, el host es `smtp-relay.sendinblue.com`** y no el
+  `smtp-relay.brevo.com` que ellos publican: su certificado sigue emitido para
+  la marca antigua y la conexión se cae con `x509: certificate is valid for
+  …sendinblue.com` ANTES de enviar (visto el 2026-08-13). Mismos servidores. En cuanto la prueba llegue, se puede activar el botón
   «¿Olvidaste tu contraseña?» (`requestPasswordReset()` ya existe).
 
 ### Quirks de PB 0.23 que YA nos mordieron (no repetir)
