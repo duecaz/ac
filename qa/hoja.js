@@ -10,7 +10,7 @@
 // Contrato:
 //   montarHoja(rootEl, {
 //     ronda,                  // ver qa/ronda-actual.json (id, titulo, versionMin, secciones[].pruebas[])
-//                             // cada prueba: { n, titulo, accion, espera, ruta[], casillas[]? }
+//                             // cada prueba: { n, titulo, accion, pasos[]?, espera, ruta[], casillas[]? }
 //                             // `ruta` = DÓNDE se hace, de lo general a lo concreto
 //                             //   ['PC (profe)', 'Quiz', 'En vivo', 'Carrera libre', 'Pantalla final']
 //                             // Va arriba del todo y también en el informe: sin ella,
@@ -46,6 +46,8 @@ const CSS = `
 .qh .qh-ruta i { font-style: normal; opacity: .45; }
 .qh .qh-accion { margin: 0 0 .35rem; font-weight: 600; }
 .qh .qh-num { opacity: .55; font-weight: 700; margin-right: .35rem; }
+.qh .qh-pasos { margin: 0 0 .5rem; padding-left: 1.35rem; font-size: .93rem; }
+.qh .qh-pasos li { margin: .12rem 0; }
 .qh .qh-espera { margin: 0 0 .7rem; color: var(--qh-soft, #566); font-size: .93rem; }
 .qh .qh-veredicto { display: flex; flex-wrap: wrap; gap: .45rem; margin-bottom: .55rem; }
 .qh .qh-veredicto label { display: inline-flex; align-items: center; gap: .32rem; cursor: pointer;
@@ -105,6 +107,8 @@ export function montarHoja(root, { ronda, storageKey, contexto, enviar, puedeEnv
           ${(p.ruta || []).length ? `<div class="qh-ruta" aria-label="Dónde se hace">${
             p.ruta.map(t => `<b>${esc(t)}</b>`).join('<i>›</i>')}</div>` : ''}
           <p class="qh-accion"><span class="qh-num">${esc(p.n)}</span>${esc(p.accion)}</p>
+          ${(p.pasos || []).length ? `<ol class="qh-pasos">${
+            p.pasos.map(x => `<li>${esc(x)}</li>`).join('')}</ol>` : ''}
           ${p.espera ? `<p class="qh-espera">Tiene que pasar: ${esc(p.espera)}</p>` : ''}
           <div class="qh-veredicto" role="radiogroup" aria-label="Veredicto de la prueba ${esc(p.n)}">
             <label data-v="pasa"><input type="radio" name="qh-v-${esc(p.n)}" value="pasa">✓ Pasa</label>

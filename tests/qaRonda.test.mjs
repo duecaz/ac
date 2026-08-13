@@ -60,4 +60,21 @@ const pruebas = (ronda.secciones || []).flatMap(s => s.pruebas || []);
   ok('CONTRA-PRUEBA: una ronda mal escrita sería cazada');
 }
 
+// PASOS (campo opcional, v1.51.459): si una prueba los trae, tienen que ser
+// frases de verdad. Nació porque de 11 pruebas solo se hicieron 3: una prueba de
+// varias pantallas contada en un párrafo se abandona; numerada, se sigue.
+{
+  const conPasos = pruebas.filter(p => p.pasos !== undefined);
+  for (const p of conPasos) {
+    assert.ok(Array.isArray(p.pasos) && p.pasos.length >= 2,
+      `prueba ${p.n}: \`pasos\` debe ser una lista de 2 o más (si es uno solo, va en \`accion\`)`);
+    for (const x of p.pasos) {
+      assert.ok(typeof x === 'string' && x.trim().length >= 10,
+        `prueba ${p.n}: un paso vacío o telegráfico no guía a nadie («${x}»)`);
+    }
+  }
+  assert.ok(conPasos.length >= 1, 'la ronda usa pasos numerados en al menos la prueba más larga');
+  ok(`${conPasos.length} prueba(s) con pasos numerados, todos con texto útil`);
+}
+
 console.log(`\n  ${passed} qaRonda checks passed`);

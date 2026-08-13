@@ -39,6 +39,7 @@ una página de ~20 líneas:
           { n: 1, titulo: 'Login',
             ruta: ['PC', 'Panel', 'Pantalla de entrada'],   // DÓNDE se hace
             accion: 'Entra con tu usuario.',
+            pasos: ['Abre el panel.', 'Escribe usuario y contraseña.'],  // opcional
             espera: 'llegas al panel sin error.', casillas: ['PC', 'Móvil'] },
         ],
       }],
@@ -62,12 +63,16 @@ JSON en vez de inline — así las rondas son datos, no páginas.
 ## Reglas de diseño (por qué es así)
 
 1. **Veredicto, no marca**: Pasa/Falla/No probado. «Lo probé» no dice si pasó.
-2. **Cada prueba dice DÓNDE se hace** (`ruta`: aparato › actividad › modo ›
+2. **Lo que cruza varias pantallas va en PASOS numerados** (`pasos`): de once
+   pruebas escritas en párrafo solo se hicieron tres — una prueba que exige
+   montar sala, entrar con PIN y mirar dos relojes a la vez se abandona si hay
+   que releerla; numerada, se sigue. Lo vigila `tests/qaRonda.test.mjs`.
+3. **Cada prueba dice DÓNDE se hace** (`ruta`: aparato › actividad › modo ›
    pantalla). Va arriba del todo y también en el informe: sin ella, «la 3 falla»
    obliga a preguntar en qué pantalla miraba. En AulaReto lo vigila
    `tests/qaRonda.test.mjs` (ronda sin rutas = CI en rojo).
-3. **El texto es el camino base**: funciona sin red, sin permisos y sin backend.
+4. **El texto es el camino base**: funciona sin red, sin permisos y sin backend.
    El envío es un extra que decide el probador, nunca automático.
-4. **Si no se puede enviar, se dice ANTES** (`puedeEnviar`), no al fallar.
-5. **Un envío fallido se dice** y el texto queda como respaldo (R6 de AulaReto).
-6. **El informe incluye lo NO probado**: dice hasta dónde llegó la ronda.
+5. **Si no se puede enviar, se dice ANTES** (`puedeEnviar`), no al fallar.
+6. **Un envío fallido se dice** y el texto queda como respaldo (R6 de AulaReto).
+7. **El informe incluye lo NO probado**: dice hasta dónde llegó la ronda.
