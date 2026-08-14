@@ -114,10 +114,70 @@ const respuesta = (json, okFlag = true, status = 200) => ({
   ok('la atribución guarda autor/licencia/fuente/página — el crédito que la licencia exige, y nada más');
 }
 
+// ── Wikipedia: busca por TEMA y trae el crédito de Commons ───────────────────
+// El hallazgo que la creó: «Partes de la planta» en Commons devuelve archivos
+// que se LLAMAN así (buscando «corazón» salía «Corazon Aquino»), porque busca
+// por nombre de archivo. Wikipedia responde qué artículos hablan del tema y se
+// cogen SUS ilustraciones — que son los dibujos escolares que uno esperaba.
+{
+  const pedidas = [];
+  const fetchFn = async (u) => {
+    pedidas.push(u);
+    if (u.includes('es.wikipedia.org')) {
+      return respuesta({ query: { pages: {
+        7: { pageid: 7, index: 2, title: 'Raíz',  pageimage: 'Raiz.jpg' },
+        3: { pageid: 3, index: 1, title: 'Hoja',  pageimage: 'Hoja_planta.jpg' },
+        9: { pageid: 9, index: 3, title: 'Tallo' },              // artículo sin imagen
+      } } });
+    }
+    return respuesta({ query: { pages: {
+      21: { pageid: 21, title: 'File:Raiz.jpg', imageinfo: [{
+        url: 'https://upload/Raiz.jpg', thumburl: 'https://upload/320px-Raiz.jpg',
+        extmetadata: { Artist: { value: 'Ana' }, LicenseShortName: { value: 'CC BY 4.0' } } }] },
+      22: { pageid: 22, title: 'File:Hoja planta.jpg', imageinfo: [{
+        url: 'https://upload/Hoja.jpg', thumburl: 'https://upload/320px-Hoja.jpg',
+        extmetadata: { Artist: { value: 'Luis' }, LicenseShortName: { value: 'CC BY-SA 4.0' } } }] },
+    } } });
+  };
+  const r = await buscarImagenes('partes de la planta', { fuente: 'wikipedia', fetchFn });
+
+  assert.strictEqual(pedidas.length, 2, 'son DOS peticiones: el tema y luego la licencia');
+  assert.ok(pedidas[0].includes('es.wikipedia.org') && pedidas[0].includes('origin=*'),
+    'primero se le pregunta a Wikipedia en español, con CORS');
+  assert.ok(pedidas[1].includes('commons.wikimedia.org') && pedidas[1].includes('extmetadata'),
+    'y después a Commons por el píxel Y su licencia — sin este paso habría imagen sin crédito');
+  assert.strictEqual(r.length, 2, 'el artículo sin ilustración no aporta nada y no rompe');
+  assert.strictEqual(r[0].titulo, 'Hoja planta.jpg',
+    'manda el orden de RELEVANCIA de Wikipedia (index 1), no el del objeto de páginas');
+  assert.strictEqual(r[0].licencia, 'CC BY-SA 4.0', 'y la licencia llega de verdad');
+  assert.strictEqual(r[0].fuente, 'Wikimedia Commons', 'el crédito nombra a quien aloja el archivo');
+
+  // Sin artículos con imagen no se gasta la segunda petición.
+  const vacio = [];
+  assert.deepStrictEqual(await buscarImagenes('xyzzy', { fuente: 'wikipedia', fetchFn: async (u) => {
+    vacio.push(u); return respuesta({ query: { pages: { 1: { pageid: 1, title: 'X' } } } });
+  } }), []);
+  assert.strictEqual(vacio.length, 1, 'sin ninguna ilustración, no se pregunta por licencias que no hacen falta');
+  ok('Wikipedia busca por TEMA, ordena por relevancia y trae el crédito de Commons');
+}
+
+// ── Un 401/403 no es «no hay internet» ───────────────────────────────────────
+// Openverse responde a un curl pero devuelve 401 al navegador: pide cuenta.
+// Decirle al profe «comprueba tu conexión» lo manda a mirar donde no es.
+{
+  const f503 = async () => respuesta({}, false, 503);
+  const f401 = async () => respuesta({}, false, 401);
+  await assert.rejects(() => buscarImagenes('x', { fuente: 'openverse', fetchFn: f401 }),
+    /no permite buscar sin cuenta \(error 401\).*Cambia de fuente/s, 'el 401 dice el motivo REAL y la salida');
+  await assert.rejects(() => buscarImagenes('x', { fuente: 'openverse', fetchFn: f503 }),
+    /no respondió \(error 503\)/, 'CONTRA-PRUEBA: un fallo del servidor sigue contándose como tal');
+  ok('un 401/403 se explica como «pide cuenta» y manda a cambiar de fuente, no a revisar la conexión');
+}
+
 // ── La fuente por defecto existe y es la de los diagramas escolares ──────────
 assert.ok(FUENTES[FUENTE_POR_DEFECTO], 'la fuente por defecto está registrada');
-assert.strictEqual(FUENTE_POR_DEFECTO, 'wikimedia',
-  'por defecto se busca donde están los diagramas escolares, no fotos de banco');
+assert.strictEqual(FUENTE_POR_DEFECTO, 'wikipedia',
+  'por defecto se busca por TEMA (lo que el profe escribe), no por nombre de archivo');
 ok(`fuente por defecto «${FUENTE_POR_DEFECTO}» · registradas: ${Object.keys(FUENTES).join(', ')}`);
 
 console.log(`\n  ${passed} imageSearch checks passed`);

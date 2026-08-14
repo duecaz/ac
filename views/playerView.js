@@ -38,6 +38,33 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     mount(rootSel, html`<div class="alert alert-warning">Actividad no encontrada. <a href="#/home">Volver</a></div>`);
     return;
   }
+  // LA ACTIVIDAD VACÍA NO ES UN CALLEJÓN (F4 · nacer en blanco). Desde que las
+  // actividades nacen sin contenido de muestra, darle a Jugar antes de escribir
+  // nada es un camino NORMAL, no un error — y cada plantilla lo contaba a su
+  // manera («Esta actividad no tiene imagen o pines») en una pantalla sin
+  // salida, que es lo que se ve al hacerlo. Aquí se resuelve UNA vez para las
+  // 13, con el MISMO primer paso que enseña el editor y el botón para ir a
+  // escribirlo. Las de contenido GENERADO (Pelotas) no pasan por aquí: nacen
+  // jugables por definición.
+  {
+    const T = getTemplate(a.template);
+    if (!T?.meta?.editor?.generado && activityItemCount(a) === 0) {
+      const paso = T?.meta?.editor?.primerPaso || 'Ábrela en Editar y añade su contenido.';
+      mount(rootSel, html`
+        <div class="alert alert-info d-flex align-items-start gap-2">
+          <i class="bi bi-lightbulb mt-1"></i>
+          <div>
+            <b>«${a.title || 'Sin título'}» todavía está vacía.</b><br>
+            ${paso}
+          </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <a class="btn btn-primary" href="#/edit/${a.id}"><i class="bi bi-pencil"></i> Editar la actividad</a>
+          <a class="btn btn-outline-secondary" href="#/home"><i class="bi bi-arrow-left"></i> Volver</a>
+        </div>`);
+      return;
+    }
+  }
   const ctx = acquire('playerPage');
   let liveTemplate = a.template;
   let currentSkin = a.presentation?.skin || 'default';
