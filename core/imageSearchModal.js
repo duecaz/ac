@@ -14,7 +14,7 @@
 // LA ATRIBUCIÓN VIAJA CON EL PÍXEL. Quien llama recibe `{ url, atribucion }` y
 // la guarda junto a la imagen: con Creative Commons el crédito es la condición
 // de uso, y los profes PUBLICAN sus actividades.
-import { FUENTES, FUENTE_POR_DEFECTO, buscarImagenes, atribucionDe, creditoTexto } from './imageSearch.js';
+import { FUENTES, FUENTE_POR_DEFECTO, fuentesDisponibles, buscarImagenes, atribucionDe, creditoTexto } from './imageSearch.js';
 import { uploadMedia } from './upload.js';
 import { escapeHtml } from './html.js';
 import { QUOTAS } from './quotas.js';
@@ -97,7 +97,7 @@ export function abrirBuscadorImagenes(opts = {}) {
               <input id="${id}-q" class="form-control" style="min-width:200px;flex:1"
                      placeholder="Qué buscas (p. ej. «corazón humano»)" value="${escapeHtml(consulta)}">
               <select id="${id}-src" class="form-select" style="max-width:220px">
-                ${Object.entries(FUENTES).map(([k, f]) =>
+                ${fuentesDisponibles().map(([k, f]) =>
                   `<option value="${k}" ${k === FUENTE_POR_DEFECTO ? 'selected' : ''}>${escapeHtml(f.etiqueta)}</option>`).join('')}
               </select>
               <button id="${id}-go" class="btn btn-primary"><i class="bi bi-search"></i> Buscar</button>

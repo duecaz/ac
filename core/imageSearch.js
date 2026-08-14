@@ -1,16 +1,19 @@
 // BUSCAR IMÁGENES LIBRES — el núcleo, sin DOM y sin red propia (F6 del plan del
 // editor, 2026-08-13).
 //
-// POR QUÉ ESTAS FUENTES Y NO GOOGLE. La antigua API de imágenes de Google está
-// retirada; lo que queda (Programmable Search) exige una clave que no puede
-// vivir en el navegador, se paga pasadas 100 consultas al día y —lo que decide—
-// devuelve imágenes de CUALQUIER web, con derechos desconocidos. Como los profes
-// PUBLICAN sus actividades en la biblioteca, eso trasladaría un problema legal
-// al proyecto por cada imagen que alguien meta. Se busca en catálogos con la
-// licencia resuelta:
-//   · Wikimedia Commons — donde están los diagramas escolares de verdad
-//     (anatomía, mapas, ciclos, geometría). Sin clave.
-//   · Openverse — fotos y dibujos con licencia Creative Commons. Sin clave.
+// POR QUÉ ESTAS FUENTES Y NO GOOGLE. La rejilla de Wordwall sale de Google
+// Imágenes —sus miniaturas son `gstatic.com/images?q=tbn:…`, el CDN de Google—,
+// y por eso se ve tan llena: enseña TODA la web. Enchufarlo aquí se puede
+// (Programmable Search, `searchType=image`), pero (a) la clave no puede vivir en
+// el navegador, (b) se paga pasadas 100 consultas al día y (c) —lo que decide—
+// devuelve imágenes de cualquier sitio, con derechos desconocidos. Como los
+// profes PUBLICAN sus actividades en la biblioteca, ese problema viajaría con
+// ellas. Decisión del dueño (2026-08-14): catálogos con la licencia resuelta.
+//   · Wikipedia (es) — busca por TEMA y trae las ilustraciones del artículo.
+//   · Wikimedia Commons — los diagramas escolares de verdad. Sin clave.
+//   · Pixabay — dibujos y fotos de uso libre. Gratis, con clave (ver
+//     core/imageKeys.js); sin ella la fuente ni se ofrece.
+//   · Openverse — hoy pide cuenta desde el navegador; se queda de tercera.
 //
 // LA ATRIBUCIÓN NO ES OPCIONAL. Con Creative Commons hay que decir de dónde
 // salió cada imagen y bajo qué licencia, así que cada resultado la trae y quien
@@ -24,6 +27,8 @@
 /** Lo que devuelve una búsqueda, venga de donde venga. */
 /** @typedef {{id:string, miniatura:string, imagen:string, titulo:string,
  *             autor:string, licencia:string, pagina:string, fuente:string}} Imagen */
+
+import { PIXABAY_KEY } from './imageKeys.js';
 
 const LIMPIA = (s) => String(s ?? '').replace(/<[^>]*>/g, '').trim();
 
@@ -107,6 +112,41 @@ export const FUENTES = {
     parse: parseCommons,
   },
 
+  // ── Pixabay ────────────────────────────────────────────────────────────────
+  // Elegida por el dueño frente a Google: la rejilla de Wordwall sale de Google
+  // Imágenes (esas miniaturas `gstatic.com/…?q=tbn:` lo delatan), que muestra
+  // TODA la web con derechos desconocidos. Como aquí los profes PUBLICAN sus
+  // actividades, eso trasladaría el problema a la biblioteca. Pixabay es gratis
+  // sin límite de gasto y sus imágenes son de uso libre, así que no hay ni
+  // factura ni permiso que perseguir.
+  //
+  // `image_type=all` a propósito: para «partes de la planta» los DIBUJOS sirven
+  // más que las fotos, y filtrar a fotografía es justo lo que hacía parecer
+  // pobres a los otros bancos. `lang=es` porque el profe escribe en español.
+  pixabay: {
+    etiqueta: 'Pixabay',
+    nota: 'Dibujos y fotos de uso libre, sin pedir permiso ni atribución.',
+    necesitaClave: true,
+    clavePuesta: () => !!PIXABAY_KEY,
+    url: (q, { limite = 24 } = {}) =>
+      'https://pixabay.com/api/?key=' + encodeURIComponent(PIXABAY_KEY)
+      + '&q=' + encodeURIComponent(q)
+      + '&lang=es&image_type=all&safesearch=true&per_page=' + Math.max(3, limite),
+    parse: (json) => (json?.hits || []).map((h) => ({
+      id: `px_${h.id}`,
+      miniatura: h.webformatURL || h.previewURL || '',
+      // `webformatURL` (≤640 px) y no `largeImageURL`: es el tamaño que se usa
+      // de verdad —el tope de §25 la reescalaría igual— y baja una imagen de
+      // 200 KB en vez de una de 3 MB con la clase esperando.
+      imagen: h.webformatURL || h.largeImageURL || '',
+      titulo: LIMPIA(h.tags) || 'Sin título',
+      autor: LIMPIA(h.user) || 'Pixabay',
+      licencia: 'Uso libre (Pixabay)',
+      pagina: h.pageURL || '',
+      fuente: 'Pixabay',
+    })).filter(r => r.miniatura && r.imagen),
+  },
+
   // ── Openverse ──────────────────────────────────────────────────────────────
   // Responde sin clave a un `curl` (comprobado desde la Pi) pero devuelve 401
   // al pedírselo el NAVEGADOR: pide cuenta para el uso desde una web. Se queda
@@ -131,6 +171,17 @@ export const FUENTES = {
     })).filter(r => r.miniatura && r.imagen),
   },
 };
+
+/**
+ * Las fuentes que HOY pueden funcionar. Una que necesita clave y no la tiene no
+ * se ofrece: un desplegable con una opción que falla al tocarla es peor que un
+ * desplegable con una opción menos — el profe no puede saber que le faltaba una
+ * clave, solo ve que la app no encuentra nada.
+ * @returns {[string, object][]} pares [nombre, fuente], en orden de menú
+ */
+export function fuentesDisponibles() {
+  return Object.entries(FUENTES).filter(([, f]) => !f.necesitaClave || f.clavePuesta?.());
+}
 
 // Por defecto se busca por TEMA (Wikipedia), no por nombre de archivo: es lo
 // que un profe escribe («partes de la planta»), y buscarlo en Commons devolvía

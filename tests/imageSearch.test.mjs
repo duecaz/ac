@@ -12,8 +12,9 @@
 // Run: node tests/imageSearch.test.mjs
 import assert from 'node:assert';
 import {
-  FUENTES, FUENTE_POR_DEFECTO, buscarImagenes, atribucionDe, creditoTexto,
+  FUENTES, FUENTE_POR_DEFECTO, fuentesDisponibles, buscarImagenes, atribucionDe, creditoTexto,
 } from '../core/imageSearch.js';
+import { PIXABAY_KEY } from '../core/imageKeys.js';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
@@ -172,6 +173,35 @@ const respuesta = (json, okFlag = true, status = 200) => ({
   await assert.rejects(() => buscarImagenes('x', { fuente: 'openverse', fetchFn: f503 }),
     /no respondió \(error 503\)/, 'CONTRA-PRUEBA: un fallo del servidor sigue contándose como tal');
   ok('un 401/403 se explica como «pide cuenta» y manda a cambiar de fuente, no a revisar la conexión');
+}
+
+// ── Pixabay: gratis, y solo se OFRECE si puede funcionar ─────────────────────
+{
+  const px = FUENTES.pixabay.parse({ hits: [
+    { id: 7, webformatURL: 'https://px/640.jpg', largeImageURL: 'https://px/1280.jpg',
+      previewURL: 'https://px/150.jpg', tags: 'planta, hoja', user: 'Ana', pageURL: 'https://px/foto' },
+    { id: 8, tags: 'sin imagen' },
+  ] });
+  assert.strictEqual(px.length, 1, 'un resultado sin imagen no llega a la rejilla');
+  assert.deepStrictEqual(Object.keys(px[0]).sort(), Object.keys(FUENTES.wikimedia.parse({
+    query: { pages: { 1: { pageid: 1, title: 'File:X.jpg', imageinfo: [{ url: 'u', thumburl: 't' }] } } },
+  })[0]).sort(), 'misma forma que las demás: la rejilla no sabe de dónde vino');
+  // Se descarga el tamaño WEB (≤640 px), no el grande: §25 lo reescalaría igual
+  // y bajar 3 MB con la clase esperando no se recupera.
+  assert.strictEqual(px[0].imagen, 'https://px/640.jpg');
+  assert.strictEqual(px[0].licencia, 'Uso libre (Pixabay)');
+
+  // UNA FUENTE QUE NO PUEDE FUNCIONAR NO SE OFRECE. Un desplegable con una
+  // opción que falla al tocarla es peor que uno con una opción menos: el profe
+  // no puede saber que faltaba una clave, solo ve que la app no encuentra nada.
+  const ofrecidas = fuentesDisponibles().map(([k]) => k);
+  assert.strictEqual(ofrecidas.includes('pixabay'), !!PIXABAY_KEY,
+    'Pixabay aparece si y solo si hay clave puesta en core/imageKeys.js');
+  assert.ok(ofrecidas.includes('wikipedia') && ofrecidas.includes('wikimedia'),
+    'CONTRA-PRUEBA: las que no necesitan clave se ofrecen siempre');
+  assert.ok(FUENTES.pixabay.url('flor').includes('image_type=all'),
+    'se piden también DIBUJOS: para «partes de la planta» sirven más que las fotos');
+  ok(`Pixabay se normaliza igual, baja el tamaño web, y se ofrece solo con clave (hoy: ${PIXABAY_KEY ? 'puesta' : 'sin poner'})`);
 }
 
 // ── La fuente por defecto existe y es la de los diagramas escolares ──────────
