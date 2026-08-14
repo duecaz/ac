@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **256 módulos · 970 imports internos.**
+> **257 módulos · 977 imports internos.**
 
 ### Ir a otro documento
 
@@ -32,10 +32,10 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 |---|---|---|---|---|
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1712 | 7 · 859 | 0.50 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2571 | 12 · 1234 | 0.48 |
-| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3918 | 19 · 3001 | 0.77 |
+| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3924 | 19 · 3001 | 0.76 |
 | **informes/tareas** | después de clase | 10 · 1056 | 4 · 435 | 0.41 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5694 | 12 · 1042 | 0.18 |
-| **infra/común** | todo lo anterior | 130 · 14143 | 50 · 5602 | 0.40 |
+| **infra/común** | todo lo anterior | 131 · 14222 | 50 · 5602 | 0.39 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -58,12 +58,12 @@ graph TD
   A["<b>arranque</b><br/><small>cablea cada página (main.*.js, sw.js)</small><br/><small>4 módulos</small>"]
   V["<b>vistas</b><br/><small>el chrome: navegación, setup, informes</small><br/><small>29 módulos</small>"]
   AD["<b>adaptadores</b><br/><small>el transporte: PocketBase | local</small><br/><small>7 módulos</small>"]
-  C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>129 módulos</small>"]
+  C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>130 módulos</small>"]
   K["<b>kernel</b><br/><small>el motor de sesión: cuándo se liquida</small><br/><small>6 módulos</small>"]
   T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>75 módulos</small>"]
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>5 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
-  V -->|276| C
+  V -->|277| C
   T -->|198| C
   A -->|28| C
   AD -->|26| C
@@ -105,7 +105,7 @@ graph TD
 | Capa | Módulos más grandes |
 |---|---|
 | **arranque** | `qa/hoja.js` (254) · `main.teacher.js` (167) · `main.embed.js` (68) · `main.student.js` (49) |
-| **vistas** | `views/hostLive.js` (1078) · `views/adminView.js` (1071) · `views/studentLive.js` (895) · `views/vsView.js` (488) · `views/playerView.js` (387) |
+| **vistas** | `views/hostLive.js` (1078) · `views/adminView.js` (1071) · `views/studentLive.js` (901) · `views/vsView.js` (488) · `views/playerView.js` (387) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1131) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
 | **core** | `core/skins.js` (355) · `core/textCorrectionRound.js` (350) · `core/selftest.js` (345) · `core/auth.js` (330) · `core/normsCheck.js` (325) |
 | **kernel** | `kernel/session/engine.js` (559) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/dataPort.js` (28) |
@@ -119,7 +119,7 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 
 | Módulo | Lo importan |
 |---|---|
-| `core/html.js` | 84 |
+| `core/html.js` | 85 |
 | `core/events.js` | 47 |
 | `core/registry.js` | 45 |
 | `core/ids.js` | 24 |
@@ -140,7 +140,7 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 | `adapters/pocketbase/realtime.js` | 1131 | 0 |
 | `views/hostLive.js` | 1078 | 1 |
 | `views/adminView.js` | 1071 | 1 |
-| `views/studentLive.js` | 895 | 1 |
+| `views/studentLive.js` | 901 | 1 |
 | `kernel/session/engine.js` | 559 | 19 |
 | `views/vsView.js` | 488 | 2 |
 | `templates/crossword/player.js` | 485 | 1 |

@@ -23,6 +23,8 @@
 // que es exactamente aquí, y con valores por defecto ya puestos.
 import { on } from './events.js';
 import { readSeconds } from './timings.js';
+import { activityItemCount } from './migrate.js';
+import { defaultMaxScore } from './scoring/index.js';
 
 // ── Puntuación ─────────────────────────────────────────────────────────────
 export function scoringPanelHtml(a) {
@@ -35,13 +37,34 @@ export function scoringPanelHtml(a) {
       </select></div>
     <div class="col-md-4"><label class="form-label">Puntos por acierto</label><input type="number" class="form-control" id="f-ppc" value="${s.pointsPerCorrect ?? 1}"></div>
     <div class="col-md-4"><label class="form-label">Puntos por error</label><input type="number" class="form-control" id="f-ppw" value="${s.pointsPerWrong ?? 0}"></div>
+    <!-- EL EFECTO, A LA VISTA. El bug de «puse 10 y el duelo dio 1» vivió meses
+         porque el ajuste no tenía NINGUNA consecuencia visible hasta el podio.
+         Esta línea cierra el circuito: cambias el número y ves al instante qué
+         vale un acierto y cuál es el máximo de ESTA actividad — si algún día un
+         cambio no la mueve, el mando desconectado se delata solo. -->
+    <div class="col-12"><p class="text-muted small mb-0" id="f-resumen-pts">${resumenPuntosHtml(a)}</p></div>
   </div>`;
 }
 
+function resumenPuntosHtml(a) {
+  const n = activityItemCount(a);
+  const max = defaultMaxScore(a, n);
+  const ppc = a.scoring?.pointsPerCorrect ?? 1;
+  const kahoot = a.scoring?.mode === 'kahoot';
+  if (!n) return `Cada acierto vale <b>${ppc}</b>. Cuando añadas contenido verás aquí el máximo de la actividad.`;
+  return `Cada acierto vale <b>${ppc}</b> punto${ppc === 1 ? '' : 's'} → con ${n} elemento${n === 1 ? '' : 's'}, `
+    + `el máximo de esta actividad es <b>${max}</b>`
+    + (kahoot ? ' <i>(en modo Kahoot se suma además el bonus por velocidad)</i>.' : '.');
+}
+
 export function wireScoringPanel(root, a, ctx) {
-  on(root, 'change', '#f-mode', e => { a.scoring.mode = e.target.value; ctx.onChange(a); });
-  on(root, 'input', '#f-ppc', e => { a.scoring.pointsPerCorrect = +e.target.value || 1; ctx.onChange(a); });
-  on(root, 'input', '#f-ppw', e => { a.scoring.pointsPerWrong = +e.target.value || 0; ctx.onChange(a); });
+  const refrescar = () => {
+    const el = root.querySelector('#f-resumen-pts');
+    if (el) el.innerHTML = resumenPuntosHtml(a);
+  };
+  on(root, 'change', '#f-mode', e => { a.scoring.mode = e.target.value; ctx.onChange(a); refrescar(); });
+  on(root, 'input', '#f-ppc', e => { a.scoring.pointsPerCorrect = +e.target.value || 1; ctx.onChange(a); refrescar(); });
+  on(root, 'input', '#f-ppw', e => { a.scoring.pointsPerWrong = +e.target.value || 0; ctx.onChange(a); refrescar(); });
 }
 
 // ── En vivo ────────────────────────────────────────────────────────────────

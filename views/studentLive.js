@@ -15,7 +15,7 @@ import { acquire } from '../core/lifecycle.js';
 import { toast } from '../core/toast.js';
 import { submit as queuedSubmit, flush as flushQueue, pendingCount } from '../core/submitQueue.js';
 import { sceneToggle, resetScene } from '../core/presentation.js';
-import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
+import { montarMarcoAlumno } from '../core/studentFrame.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import * as Streaks from '../core/streaks.js';
 import { getTemplate } from '../core/registry.js';
@@ -137,6 +137,14 @@ export async function renderPlay(rootSel, code) {
     console.warn(`[studentLive] versión desfasada tras recargar (app ${VERSION} vs sala ${activity.appVersion}) — se intenta jugar igual`);
   }
 
+  // EL MARCO DEL ALUMNO (core/studentFrame.js): el mismo marco de juego del
+  // profe — esquina de pantalla completa incluida — con el tema y el fondo que
+  // viajan en el snapshot. Se monta UNA vez; cada fase pinta en su escenario,
+  // así el botón sobrevive del lobby al podio. A partir de aquí `rootSel` ES el
+  // escenario: las diecinueve pantallas de esta vista no cambian ni una línea.
+  const marco = montarMarcoAlumno(rootSel, activity);
+  rootSel = marco.stageSel;
+
   // Escena POR FASE (docs/handoff-player-frame.md, Etapa 1): el fondo de la
   // actividad va SOLO en las pantallas de JUEGO; lobby/espera/resultado (chrome)
   // van neutros. Toggle compartido con hostLive (core/presentation.js).
@@ -226,7 +234,6 @@ export async function renderPlay(rootSel, code) {
   function paintLobby() {
     mount(rootSel, html`
       <div class="text-center py-5">
-        <div class="d-flex justify-content-end mb-2">${fullscreenButtonHtml()}</div>
         <h1 class="display-4">${escapeHtml(player.name)}</h1>
         <p class="lead">¡Estás dentro!</p>
         <p>PIN: <b>${escapeHtml(code)}</b></p>
@@ -234,7 +241,6 @@ export async function renderPlay(rootSel, code) {
         <div class="spinner-border"></div>
       </div>
     `);
-    attachFullscreenButton(rootSel);
   }
 
   const rootEl = () => (typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel);

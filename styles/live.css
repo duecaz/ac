@@ -80,3 +80,34 @@
   background: #f5c518; color: #141c2e; border-color: #d9ad0f; font-weight: 700;
 }
 .ll-pick.is-on:hover { background: #ffd534; color: #141c2e; }
+
+/* ── EL MARCO DEL ALUMNO (core/studentFrame.js) ──────────────────────────────
+   El móvil del alumno juega DENTRO del mismo `.ww-player-frame` que el profe:
+   esquina de pantalla completa, tema y fondo incluidos. Estas reglas solo
+   dimensionan ese marco para un teléfono en vertical — todo relativo (dvh/%),
+   nada que congele el crecimiento (contrato de estilos §3). */
+.ww-student-page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: max(8px, 1.5dvh) max(8px, 2vw);
+}
+.ww-student-frame {
+  /* En un teléfono el marco ES la pantalla: alto casi completo, y el escenario
+     hace scroll interno si una fase (tabla, podio) no cabe. */
+  min-height: 92dvh;
+  container-type: inline-size;
+}
+.ww-student-stage {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: max(10px, 2cqmin);
+  /* La primera fila de cada fase no se mete debajo del botón de la esquina. */
+  padding-top: max(14px, var(--ww-fs-reserve, 52px) * 0.35);
+}
+/* En pantalla ancha (el alumno con portátil) el marco no se estira a lo bruto. */
+@media (min-width: 900px) {
+  .ww-student-frame { min-height: 86dvh; }
+}
