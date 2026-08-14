@@ -1,3 +1,4 @@
+import { stripSeededPoints } from '../../core/contentModels/qa.js';
 import { BaseTemplate } from '../base.js';
 import { renderMathPlayer } from './player.js';
 import { renderMathEditor } from './editor.js';
@@ -14,7 +15,7 @@ export class MathTemplate extends BaseTemplate {
     color: 'warning',
     kind:            'ejercicio',   // familia (norte §4c): quién pone el contenido
     contentModel: 'qa',
-    templateVersion: 1,
+    templateVersion: 2,
     paginated: true,   // una operación por pantalla → nº de páginas = nº de ítems
     // El EDITOR se declara aquí (§0: la vista no conoce plantillas concretas):
     // `elemento` es lo que el profe AÑADE y `primerPaso` lo que se lee con la
@@ -33,10 +34,10 @@ export class MathTemplate extends BaseTemplate {
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0 }),
     defaultLive: () => ({}),
     defaultContent: () => ({ items: [
-      { id: 'm1', question: '2 × 6', answer: '12', points: 1 },
-      { id: 'm2', question: '2 × 7', answer: '14', points: 1 },
-      { id: 'm3', question: '3 × 4', answer: '12', points: 1 },
-      { id: 'm4', question: '5 × 3', answer: '15', points: 1 },
+      { id: 'm1', question: '2 × 6', answer: '12' },
+      { id: 'm2', question: '2 × 7', answer: '14' },
+      { id: 'm3', question: '3 × 4', answer: '12' },
+      { id: 'm4', question: '5 × 3', answer: '15' },
     ] }),
   };
   static renderPlayer = renderMathPlayer;
@@ -45,7 +46,9 @@ export class MathTemplate extends BaseTemplate {
 
   static getRoundPayload(activity, ctx) { const it = activity.content.items[ctx.itemIndex]; return it ? { question: it.question } : null; }
   static renderRound(root, payload, opts) { return renderKeypadRound(root, payload, opts); }
-  static migrateContent(content) { return content; }
+  // v1→v2: fuera el `points: 1` sembrado, que anulaba «Puntos por acierto»
+  // del panel (el profe ponía 10 y el duelo seguía dando 1).
+  static migrateContent(content) { return stripSeededPoints(content); }
   // Adapta el contenido al cambiar de formato HACIA Matemáticas (quita opciones).
   static adoptContent(content) { return adoptForMath(content); }
 }

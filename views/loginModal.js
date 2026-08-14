@@ -5,7 +5,7 @@
 // …y la salida cuando la contraseña se pierde, que en una pizarra compartida
 // pasa: «¿Olvidaste tu contraseña?» manda el correo de restablecimiento.
 import { html, escapeHtml } from '../core/html.js';
-import { signInWithGoogle, signIn, requestPasswordReset } from '../core/auth.js';
+import { signInWithGoogle, signIn, requestPasswordReset, oauthRedirectUrl } from '../core/auth.js';
 
 let _open = false;
 
@@ -26,6 +26,21 @@ export function openLoginModal({ reason = '' } = {}) {
         : 'Inicia sesión para crear y gestionar tus actividades.'}</p>
 
       <button class="login-modal__google" id="lm-google"><i class="bi bi-google"></i> Entrar con Google</button>
+      <!-- EL DATO QUE PIDE GOOGLE, A MANO. Cuando Google responde «Acceso
+           bloqueado: la solicitud de esta aplicación no es válida» (error 400
+           redirect_uri_mismatch) lo hace en SU página: la app ya no puede
+           explicar nada, y el dueño se queda adivinando qué URI falta. Aquí
+           está, exacta y copiable, en un detalle plegado que no estorba a
+           quien solo quiere entrar. -->
+      <details class="login-modal__hint text-muted small mt-1">
+        <summary style="cursor:pointer">¿Google dice que la solicitud no es válida?</summary>
+        <p class="mb-1 mt-1">Falta registrar esta dirección en Google Cloud →
+          <i>Credenciales → tu ID de cliente → URIs de redireccionamiento autorizados</i>:</p>
+        <div class="d-flex gap-1 align-items-center flex-wrap">
+          <code id="lm-uri" style="word-break:break-all">${escapeHtml(oauthRedirectUrl())}</code>
+          <button type="button" class="btn btn-sm btn-outline-secondary py-0" id="lm-copiar">Copiar</button>
+        </div>
+      </details>
 
       <div class="login-modal__or"><span>o con correo</span></div>
 
@@ -53,6 +68,22 @@ export function openLoginModal({ reason = '' } = {}) {
   window.addEventListener('hashchange', close);
 
   host.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', close));
+  $('#lm-copiar')?.addEventListener('click', async () => {
+    const uri = $('#lm-uri').textContent;
+    try {
+      await navigator.clipboard.writeText(uri);
+      $('#lm-copiar').textContent = 'Copiada';
+    } catch {
+      // Sin portapapeles (pizarra vieja, contexto no seguro): se selecciona
+      // para que se pueda copiar a mano. Fallar en silencio dejaría al dueño
+      // creyendo que ya la tiene copiada (R6).
+      const r = document.createRange();
+      r.selectNodeContents($('#lm-uri'));
+      const sel = window.getSelection();
+      sel.removeAllRanges(); sel.addRange(r);
+      $('#lm-copiar').textContent = 'Selecciónala y copia';
+    }
+  });
   $('#lm-google').addEventListener('click', async () => {
     try { await signInWithGoogle(); } // redirige
     catch (err) { showErr(err.message); }

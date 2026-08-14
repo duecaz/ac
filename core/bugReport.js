@@ -11,10 +11,17 @@
 // Solo lo que ya es de la app: su versión, su ruta y sus propios errores.
 // Puro e inyectable → testeable sin navegador (tests/bugReport.test.mjs).
 import { VERSION } from './constants.js';
+import { estadoSonido } from './sounds.js';
+import { isEffectsMuted } from './effects.js';
 import { recentErrors } from './errorLog.js';
 
 export function buildBugReport({
   version = VERSION,
+  // Estado de sonido y efectos: «no se escucha» y «no sale la animación» son
+  // los dos reportes que más veces han llegado sin datos suficientes. Se
+  // inyectan para poder probarlo sin navegador.
+  son = estadoSonido(),
+  fxApagados = isEffectsMuted(),
   href = (typeof location !== 'undefined' ? location.href : ''),
   errors = recentErrors(),
   now = new Date(),
@@ -26,6 +33,9 @@ export function buildBugReport({
     `REPORTE AulaReto v${version}`,
     `fecha: ${now.toISOString()}`,
     `pantalla: ${href}`,
+    `sonido: ${son.silenciado ? 'SILENCIADO' : 'activo'} · cargados: ${son.sonidosCargados}`
+      + (son.ultimoFallo ? ` · último fallo → ${son.ultimoFallo}` : ' · sin fallos'),
+    `efectos: ${fxApagados ? 'APAGADOS' : 'activos'}`,
     ult ? `últimos errores:\n${ult}` : 'últimos errores: (ninguno registrado)',
     '¿qué estabas haciendo cuando pasó? → ',
   ].join('\n');

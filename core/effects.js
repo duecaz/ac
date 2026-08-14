@@ -24,7 +24,15 @@ function confetti(opts = {}) {
   const cv = document.createElement('canvas');
   cv.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:99999';
   cv.width = window.innerWidth; cv.height = window.innerHeight;
-  document.body.appendChild(cv);
+  // EN PANTALLA COMPLETA, EL CONFETI VA DENTRO. El navegador solo pinta el
+  // elemento a pantalla completa y SUS HIJOS: un canvas colgado de <body> se
+  // dibuja fuera de lo visible. Y «Iniciar» entra SIEMPRE en pantalla completa
+  // (views/startScreen.js), así que en modo Individual la celebración del final
+  // no se veía NUNCA — el efecto existía, se ejecutaba entero y no llegaba a
+  // ningún píxel. Por eso «antes funcionaba»: dejó de verse el día que Iniciar
+  // pasó a poner el juego a pantalla completa, sin tocar los efectos.
+  const escena = document.fullscreenElement || document.webkitFullscreenElement || document.body;
+  escena.appendChild(cv);
   const ctx = cv.getContext('2d');
   const cx = (origin.x ?? 0.5) * cv.width, cy = (origin.y ?? 0.7) * cv.height;
   const parts = Array.from({ length: particleCount }, () => {

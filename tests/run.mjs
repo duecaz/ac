@@ -85,6 +85,8 @@ console.log('\n▶ idempotency'); await import('./idempotency.test.mjs');
 console.log('\n▶ liveRules'); await import('./liveRules.test.mjs');
 console.log('\n▶ skins'); await import('./skins.test.mjs');
 console.log('\n▶ contrast'); await import('./contrast.test.mjs');
+console.log('\n▶ puntosPorAcierto'); await import('./puntosPorAcierto.test.mjs');
+console.log('\n▶ effects'); await import('./effects.test.mjs');
 console.log('\n▶ activityCheck'); await import('./activityCheck.test.mjs');
 console.log('\n▶ imageSearch'); await import('./imageSearch.test.mjs');
 console.log('\n▶ newTemplate'); await import('./newTemplate.test.mjs');

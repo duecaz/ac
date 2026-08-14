@@ -35,12 +35,14 @@ function contentHtml(a) {
 }
 function wireContent(root, a, ctx) {
   on(root, 'click', '#add-op', () => {
-    a.content.items.push({ id: rid('m_'), question: '', answer: '', points: 1 });
+    // SIN `points`: Operaciones no tiene campo de puntos por ítem, así que
+    // sembrarlo dejaba mudo el «Puntos por acierto» del panel.
+    a.content.items.push({ id: rid('m_'), question: '', answer: '' });
     ctx.onChange(a); ctx.repaint();
   });
   on(root, 'click', '#gen-table', () => {
     const n = Math.max(1, Math.min(12, +(root.querySelector('#gen-n')?.value) || 2));
-    for (let i = 1; i <= 10; i++) a.content.items.push({ id: rid('m_'), question: `${n} × ${i}`, answer: String(n * i), points: 1 });
+    for (let i = 1; i <= 10; i++) a.content.items.push({ id: rid('m_'), question: `${n} × ${i}`, answer: String(n * i) });
     ctx.onChange(a); ctx.repaint();
   });
   on(root, 'input', '.it-q', (e, el) => { a.content.items[+el.dataset.i].question = e.target.value; ctx.onChange(a); });

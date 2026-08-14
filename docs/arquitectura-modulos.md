@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **256 módulos · 964 imports internos.**
+> **256 módulos · 970 imports internos.**
 
 ### Ir a otro documento
 
@@ -34,8 +34,8 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2571 | 12 · 1234 | 0.48 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3884 | 19 · 3001 | 0.77 |
 | **informes/tareas** | después de clase | 10 · 1056 | 4 · 435 | 0.41 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5646 | 12 · 1042 | 0.18 |
-| **infra/común** | todo lo anterior | 130 · 14031 | 47 · 5293 | 0.38 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5667 | 12 · 1042 | 0.18 |
+| **infra/común** | todo lo anterior | 130 · 14143 | 49 · 5492 | 0.39 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -64,7 +64,7 @@ graph TD
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>5 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
   V -->|276| C
-  T -->|194| C
+  T -->|198| C
   A -->|28| C
   AD -->|26| C
   A -->|18| V
@@ -107,10 +107,10 @@ graph TD
 | **arranque** | `qa/hoja.js` (254) · `main.teacher.js` (167) · `main.embed.js` (68) · `main.student.js` (49) |
 | **vistas** | `views/adminView.js` (1071) · `views/hostLive.js` (1054) · `views/studentLive.js` (895) · `views/vsView.js` (488) · `views/playerView.js` (387) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1131) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
-| **core** | `core/skins.js` (355) · `core/textCorrectionRound.js` (350) · `core/selftest.js` (345) · `core/normsCheck.js` (325) · `core/auth.js` (322) |
+| **core** | `core/skins.js` (355) · `core/textCorrectionRound.js` (350) · `core/selftest.js` (345) · `core/auth.js` (330) · `core/normsCheck.js` (325) |
 | **kernel** | `kernel/session/engine.js` (549) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/dataPort.js` (28) |
-| **plantillas** | `templates/crossword/player.js` (464) · `templates/wordsearch/player.js` (405) · `templates/match/player.js` (296) · `templates/diagram/player.js` (238) · `templates/quiz/editor.js` (222) |
-| **contenido** | `kernel/content/qaAdapt.js` (104) · `kernel/content/convert.js` (95) · `kernel/content/switch.js` (82) · `kernel/content/models.js` (79) · `kernel/content/index.js` (5) |
+| **plantillas** | `templates/crossword/player.js` (464) · `templates/wordsearch/player.js` (405) · `templates/match/player.js` (296) · `templates/diagram/player.js` (238) · `templates/quiz/editor.js` (225) |
+| **contenido** | `kernel/content/qaAdapt.js` (104) · `kernel/content/convert.js` (95) · `kernel/content/models.js` (83) · `kernel/content/switch.js` (82) · `kernel/content/index.js` (5) |
 | **config** | `pocketbase.config.js` (13) |
 
 ## Los módulos más importados (fan-in)

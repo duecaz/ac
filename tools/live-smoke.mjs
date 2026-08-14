@@ -302,9 +302,19 @@ try {
       // se quedaba en el de la actividad: con un ítem de 30 s y actividad de 20
       // se quedaba LLENA los primeros 10 s y luego caía de golpe. El número era
       // correcto, así que la parida de arriba no lo veía — la barra mentía sola.
-      const ancho = await host.evaluate(() => parseFloat(document.getElementById('time-bar')?.style.width) || 0);
+      // Se ESPERA a que la barra baje, no se mira en un instante cualquiera: al
+      // abrirse la respuesta quedan 12 s de una ventana de 12 s, así que el 100%
+      // es CORRECTO ahí. Mirarlo sin esperar hacía fallar esta red una vez de
+      // cada dos —un guardián que grita en los sitios buenos es el que la gente
+      // acaba apagando—. Lo que de verdad se comprueba es que la barra AVANCE
+      // dentro de la ventana de ESTA pregunta.
+      let ancho = 100;
+      for (let i = 0; i < 30 && ancho >= 99.99; i++) {
+        ancho = await host.evaluate(() => parseFloat(document.getElementById('time-bar')?.style.width) || 0);
+        if (ancho >= 99.99) await host.waitForTimeout(200);
+      }
       if (ancho >= 99.99) {
-        throw new Error(`R-3: la barra del profe sigue al 100% con ${aHost}s corridos — mide una ventana que no es la de esta pregunta`);
+        throw new Error('R-3: la barra del profe sigue al 100% tras 6 s de espera — mide una ventana que no es la de esta pregunta');
       }
     }
     await torcido.locator('.rq-opt, .ww-opt', { hasText: '4' }).first().click();

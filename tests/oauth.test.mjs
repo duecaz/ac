@@ -79,12 +79,23 @@ const auth = await import('../core/auth.js');
     ['/teacher',       'https://aulareto.com/teacher.html'],
     ['/teacher.html',  'https://aulareto.com/teacher.html'],
     ['/teacher/',      'https://aulareto.com/teacher.html'],
+    // …y desde CUALQUIER otra página se vuelve también a teacher.html, que es
+    // la única que sabe canjear el código. Con la portada mandando `/` o
+    // `/index.html`, Google respondía «Acceso bloqueado: la solicitud de esta
+    // aplicación no es válida» (400 redirect_uri_mismatch) en su propia página,
+    // donde la app ya no puede explicar nada.
+    ['/',              'https://aulareto.com/teacher.html'],
+    ['/index.html',    'https://aulareto.com/teacher.html'],
+    ['/student.html',  'https://aulareto.com/teacher.html'],
+    // Y si la app se sirve en un subdirectorio (GitHub Pages sin dominio
+    // propio: duecaz.github.io/ac/), la URI es la de ESE directorio.
+    ['/ac/index.html', 'https://aulareto.com/ac/teacher.html'],
   ]) {
     global.location = { origin: 'https://aulareto.com', pathname };
     assert.strictEqual(auth.oauthRedirectUrl(), expected, `redirect canónico para ${pathname}`);
   }
   delete global.location;
-  ok('oauthRedirectUrl canonicaliza /teacher(/) → /teacher.html (evita redirect_uri_mismatch)');
+  ok('oauthRedirectUrl da UNA sola URI (teacher.html) desde cualquier página — evita redirect_uri_mismatch');
 }
 
 delete global.fetch; delete global.sessionStorage; delete global.localStorage;

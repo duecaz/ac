@@ -427,6 +427,25 @@ Los cortes ya están mapeados (no re-diseñar al ejecutar):
 Al partir: `node tools/module-map.mjs` + preflight completo; los guardianes (layers, moduleRefs,
 realtimePort) deben seguir verdes sin tocar sus listas.
 
+### 🟡 IMÁGENES COMO WORDWALL (Google) — decisión TOMADA, ejecución aplazada
+Decisión del dueño (2026-08-14): «al final haremos lo que Wordwall y usaremos la
+búsqueda de imágenes de Google, luego lo veremos». Se apunta para no volver a
+investigarlo desde cero:
+- La rejilla de Wordwall **es Google Imágenes** (sus miniaturas son
+  `encrypted-tbn0.gstatic.com/images?q=tbn:…`). Vía real hoy: **Programmable
+  Search** con `searchType=image`; 100 consultas/día gratis y ~5 $/1000 después.
+  Bing Search API está RETIRADA (2025), así que no es alternativa.
+- **La clave NO puede vivir en el repo** (web estática: todo se lee). Va en la
+  Pi — `pb_hooks` de PocketBase 0.23 basta, sin montar otro servicio, pero toca
+  el compose de un servidor COMPARTIDO con `aportes` y `equipos_activados`.
+- El punto medio, si se quiere bajar el riesgo: Google acepta
+  `rights=cc_publicdomain|cc_attribute|cc_sharealike` → calidad de búsqueda de
+  Google con licencia resuelta.
+- **Lo que hay que decidir al ejecutar**: los profes PUBLICAN en la biblioteca,
+  así que una imagen con derechos desconocidos viaja con la actividad. Wordwall
+  se lo pasa al usuario en sus términos; aquí hace falta decidirlo por escrito.
+- Mientras tanto están Wikipedia (es) · Commons · Pixabay (`core/imageKeys.js`).
+
 ### 🟡 FUERA DE LA ESCENA — embeber en otra web (`embed.html`), BETA declarada
 Decisión del usuario (v1.51.412): embeber **no se soporta por ahora**. El código existe y
 pinta (la matriz lo abre en local para que no muera en silencio), pero nadie lo ha validado

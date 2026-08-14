@@ -171,15 +171,23 @@ export async function listOAuthProviders() {
   } catch { return []; }
 }
 
-// El origen+ruta actual, sin query ni hash — debe coincidir EXACTAMENTE con una
-// "Authorized redirect URI" registrada en Google Cloud. CANONICALIZAMOS a
-// `/teacher.html` porque GitHub Pages sirve la misma página también como `/teacher`
-// (sin extensión): sin esto, entrar por `/teacher` mandaba un redirect_uri que no
-// coincidía con la URI `.../teacher.html` autorizada → error redirect_uri_mismatch.
-// Así basta con UNA sola URI autorizada. El hash (#/play/...) nunca viaja a Google.
+// LA URI DE VUELTA — una sola, y SIEMPRE `teacher.html`.
+//
+// Google exige que coincida EXACTAMENTE con una "Authorized redirect URI"
+// registrada en su consola; cualquier otra cosa da el error 400
+// `redirect_uri_mismatch` en su propia página, donde la app ya no puede
+// explicar nada. Por eso aquí se fija UNA:
+//   · `/teacher` → `/teacher.html`: GitHub Pages sirve la misma página con y sin
+//     extensión, y entrar por la corta mandaba una URI no registrada.
+//   · desde CUALQUIER otra página (index.html, student.html) se vuelve también
+//     a teacher.html — que además es la ÚNICA que sabe canjear el código: sin
+//     esto, un botón de entrar en otra página mandaría una URI que ni está
+//     registrada ni completaría el login.
+// El hash (#/edit-new/quiz) nunca viaja a Google; se guarda aparte y se
+// restaura al volver.
 export function oauthRedirectUrl() {
-  const path = location.pathname.replace(/\/teacher\/?$/, '/teacher.html');
-  return location.origin + path;
+  const dir = location.pathname.replace(/\/teacher\/?$/, '/').replace(/[^/]*$/, '');
+  return location.origin + dir + 'teacher.html';
 }
 
 // Paso 1: pide a PB los datos del proveedor (authURL/state/codeVerifier), guarda

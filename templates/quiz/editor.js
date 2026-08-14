@@ -40,11 +40,14 @@ function contentHtml(a) {
 
 function wireContent(root, a, ctx) {
   on(root, 'click', '#add-item', () => {
-    a.content.items.push({ id: rid('q_'), question: '', answer: '', options: ['', '', '', ''], points: 1, image: null, audio: null });
+    // SIN `points`: sembrarlo hacía que la pregunta ignorara «Puntos por
+    // acierto» del panel. El campo de Avanzado lo escribe si el profe quiere
+    // que ESTA pregunta valga distinto.
+    a.content.items.push({ id: rid('q_'), question: '', answer: '', options: ['', '', '', ''], image: null, audio: null });
     ctx.onChange(a); ctx.repaint();
   });
   on(root, 'click', '#add-tf', () => {
-    a.content.items.push({ id: rid('q_'), question: '', answer: 'Verdadero', options: ['Verdadero', 'Falso'], points: 1, image: null, audio: null, kind: 'truefalse' });
+    a.content.items.push({ id: rid('q_'), question: '', answer: 'Verdadero', options: ['Verdadero', 'Falso'], image: null, audio: null, kind: 'truefalse' });
     ctx.onChange(a); ctx.repaint();
   });
   on(root, 'click', '.item-del', (_, btn) => { a.content.items.splice(+btn.dataset.i, 1); ctx.onChange(a); ctx.repaint(); });
@@ -210,7 +213,7 @@ function renderItems(a) {
           <div class="d-flex align-items-center gap-3 flex-wrap">
             <div class="d-flex align-items-center gap-2">
               <label class="form-label small text-muted mb-0">Puntos</label>
-              <input type="number" min="1" class="form-control form-control-sm it-pts" style="width:5rem" data-i="${i}" value="${it.points || 1}">
+              <input type="number" min="1" class="form-control form-control-sm it-pts" style="width:5rem" data-i="${i}" value="${it.points ?? (a.scoring?.pointsPerCorrect ?? 1)}">
             </div>
             ${itemSecondsFieldHtml(a, it, i)}
           </div>

@@ -46,6 +46,11 @@ function get(name) {
   if (_cache.has(name)) return _cache.get(name);
   const url = _pack[name];
   if (!url) return null;
+  // Sin `Audio` no hay sonido que dar: pasa en Node (este módulo entró en la
+  // cadena de los tests al añadir el estado de sonido al reporte de un toque) y
+  // en cualquier entorno sin DOM. Devolver null es lo correcto —el llamador ya
+  // sabe tratarlo— y evita que un evento del bus reviente la suite entera.
+  if (typeof Audio === 'undefined') return null;
   const a = new Audio(url);
   a.preload = 'auto';
   _cache.set(name, a);
@@ -58,6 +63,25 @@ function get(name) {
 const COOLDOWN_MS = { tick: 800, reveal: 1500, correct: 1500, wrong: 1500, podium: 5000, lobby: 0 };
 const _lastPlayed = new Map();
 
+// POR QUÉ FALLÓ EL SONIDO, ANOTADO. El `catch` vacío que había aquí estaba
+// razonado —el navegador bloquea el audio hasta el primer toque y no se puede
+// hacer nada— pero convertía «no se oye nada» en un misterio: sin el motivo no
+// se distingue un bloqueo de autoplay (NotAllowedError) de un mp3 que ese
+// aparato no sabe decodificar (NotSupportedError) de un volumen a cero, y el
+// dueño lo reportó desde una pizarra a la que no tenemos acceso. No se le grita
+// al profe con un toast por un sonido: se GUARDA, y el chip de versión ya se
+// lleva el contexto al portapapeles (core/bugReport.js).
+let _ultimoFalloSonido = null;
+const anotarFallo = (name) => (e) => {
+  _ultimoFalloSonido = `${name}: ${e?.name || 'Error'}${e?.message ? ' · ' + String(e.message).slice(0, 80) : ''}`;
+};
+
+/** Lo que hace falta para diagnosticar «no se escucha»: silenciado, si llegó a
+ *  sonar algo y el último motivo real de fallo. */
+export function estadoSonido() {
+  return { silenciado: _muted, sonidosCargados: _cache.size, ultimoFallo: _ultimoFalloSonido };
+}
+
 export function play(name) {
   if (_muted) return;
   const a = get(name);
@@ -69,14 +93,14 @@ export function play(name) {
     if (now - last < cooldown) return;
     _lastPlayed.set(name, now);
   }
-  try { a.currentTime = 0; a.loop = false; a.play().catch(() => {}); } catch {}
+  try { a.currentTime = 0; a.loop = false; a.play().catch(anotarFallo(name)); } catch (e) { anotarFallo(name)(e); }
 }
 
 export function loop(name) {
   if (_muted) return;
   const a = get(name);
   if (!a) return;
-  try { a.loop = true; a.play().catch(() => {}); } catch {}
+  try { a.loop = true; a.play().catch(anotarFallo(name)); } catch (e) { anotarFallo(name)(e); }
 }
 
 export function stop(name) {

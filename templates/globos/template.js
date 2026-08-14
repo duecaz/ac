@@ -1,6 +1,8 @@
 // Explota Globos — pregunta arriba, las opciones flotan como GLOBOS de colores;
 // tocas el globo correcto y explota. MISMO contenido que Quiz (modelo qa, mismo
 // scorer y mismo editor): solo cambia la mecánica — el caso "Wordwall" puro.
+import { basePoints } from '../../core/scoring/index.js';
+import { stripSeededPoints } from '../../core/contentModels/qa.js';
 import { BaseTemplate } from '../base.js';
 import { renderGlobosPlayer, balloonFieldHtml, wireBalloonField } from './player.js';
 import { renderQuizEditor } from '../quiz/editor.js';
@@ -16,7 +18,7 @@ export class GlobosTemplate extends BaseTemplate {
     color: 'danger',
     kind:            'ejercicio',   // familia (norte §4c): quién pone el contenido
     contentModel: 'qa',           // mismo contenido que Quiz/Operaciones
-    templateVersion: 1,
+    templateVersion: 2,
     paginated: true,   // una pregunta por pantalla → nº de páginas = nº de ítems
     // El EDITOR se declara aquí (§0: la vista no conoce plantillas concretas):
     // `elemento` es lo que el profe AÑADE y `primerPaso` lo que se lee con la
@@ -35,9 +37,9 @@ export class GlobosTemplate extends BaseTemplate {
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
     defaultLive: () => ({}),
     defaultContent: () => ({ items: [
-      { id: 'gl1', question: '¿Cuál es la capital de España?', answer: 'Madrid', options: ['Madrid', 'Barcelona', 'Lisboa', 'París'], points: 1, image: null, audio: null },
-      { id: 'gl2', question: '¿Cuánto es 6 × 7?', answer: '42', options: ['36', '42', '48'], points: 1, image: null, audio: null },
-      { id: 'gl3', question: '¿De qué color es el sol?', answer: 'Amarillo', options: ['Amarillo', 'Verde', 'Azul', 'Rojo'], points: 1, image: null, audio: null },
+      { id: 'gl1', question: '¿Cuál es la capital de España?', answer: 'Madrid', options: ['Madrid', 'Barcelona', 'Lisboa', 'París'], image: null, audio: null },
+      { id: 'gl2', question: '¿Cuánto es 6 × 7?', answer: '42', options: ['36', '42', '48'], image: null, audio: null },
+      { id: 'gl3', question: '¿De qué color es el sol?', answer: 'Amarillo', options: ['Amarillo', 'Verde', 'Azul', 'Rojo'], image: null, audio: null },
     ] }),
   };
 
@@ -53,7 +55,11 @@ export class GlobosTemplate extends BaseTemplate {
     if (!item) return null;
     const opts = (item.options || []).slice();
     if (activity.rules?.shuffleOptions) shuffle(opts);
-    return { id: item.id, question: item.question, image: item.image || null, options: opts, points: item.points || 1 };
+    // Los puntos salen de la fórmula única (item si lo tiene, si no el panel):
+    // aquí estaba cableado `|| 1`, así que «Puntos por acierto: 10» tampoco
+    // llegaba a la ronda de VS/Equipos.
+    return { id: item.id, question: item.question, image: item.image || null, options: opts,
+             points: basePoints(item, activity?.scoring) };
   }
 
   // Ronda VS/Equipos-auto: el mismo campo de globos; tocar = responder.
@@ -70,5 +76,7 @@ export class GlobosTemplate extends BaseTemplate {
   }
 
 
-  static migrateContent(content) { return content; }
+  // v1→v2: fuera el `points: 1` sembrado, que anulaba «Puntos por acierto»
+  // del panel (el profe ponía 10 y el duelo seguía dando 1).
+  static migrateContent(content) { return stripSeededPoints(content); }
 }

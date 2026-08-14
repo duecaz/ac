@@ -31,7 +31,11 @@ export const MODELS = {
   // qa's leaf module only exposes isCorrect; define the contract surface here.
   qa: {
     name: 'qa',
-    newEmpty: () => ({ items: [{ id: rid('q_'), question: '', answer: '', options: ['', '', '', ''], points: 1, image: null, audio: null }] }),
+    // SIN `points`: sembrarlo con 1 hacía que el ítem ganara siempre a «Puntos
+    // por acierto» del panel (core/contentModels/qa.js · stripSeededPoints).
+    // Ausente = vale lo que diga la actividad; el editor de Quiz lo escribe
+    // solo si el profe pone otra cosa.
+    newEmpty: () => ({ items: [{ id: rid('q_'), question: '', answer: '', options: ['', '', '', ''], image: null, audio: null }] }),
     validate(content) {
       const errors = [];
       if (!Array.isArray(content?.items)) errors.push('items must be an array');

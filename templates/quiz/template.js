@@ -1,4 +1,5 @@
 // Quiz template: classic multiple-choice. Uses contentModels/qa.
+import { stripSeededPoints } from '../../core/contentModels/qa.js';
 import { BaseTemplate } from '../base.js';
 import { SHAPE_ICONS } from '../../core/roundRender.js';
 import { rid } from '../../core/ids.js';
@@ -17,7 +18,7 @@ export class QuizTemplate extends BaseTemplate {
     color: 'primary',
     kind:            'ejercicio',   // familia (norte §4c): quién pone el contenido
     contentModel: 'qa',
-    templateVersion: 1,
+    templateVersion: 2,
     paginated: true,   // una pregunta por pantalla → nº de páginas = nº de ítems
     // El EDITOR se declara aquí (§0: la vista no conoce plantillas concretas):
     // `elemento` es lo que el profe AÑADE y `primerPaso` lo que se lee con la
@@ -41,9 +42,9 @@ export class QuizTemplate extends BaseTemplate {
       const id = () => rid('q_');
       return { items: [
         { id: id(), question: '¿Cuál es la capital de España?', answer: 'Madrid',
-          options: ['Madrid', 'Barcelona', 'Lisboa', 'París'], points: 1, image: null, audio: null },
+          options: ['Madrid', 'Barcelona', 'Lisboa', 'París'], image: null, audio: null },
         { id: id(), question: '¿Cuántos días tiene una semana?', answer: '7',
-          options: ['5', '6', '7', '8'], points: 1, image: null, audio: null },
+          options: ['5', '6', '7', '8'], image: null, audio: null },
       ]};
     }
   };
@@ -112,6 +113,10 @@ export class QuizTemplate extends BaseTemplate {
 
   // Migrate this template's content from older templateVersion if needed.
   static migrateContent(content /*, fromVersion */) {
+    // v1→v2: fuera el `points: 1` sembrado. Aquí el campo SÍ es visible
+    // («Avanzado → puntos»), pero seguía naciendo escrito, así que cambiar
+    // «Puntos por acierto» tampoco hacía nada hasta tocar pregunta por pregunta.
+    stripSeededPoints(content);
     // Ensure each item carries answerIdx (the correct option INDICES) so the
     // editor never re-derives correctness from option TEXT — which mismarks
     // options that share text. Idempotent: only fills it when missing.
