@@ -121,9 +121,14 @@ buscar en fuentes **libres**:
 navegador sin clave y con CORS. No se pudo comprobar desde el entorno de
 desarrollo (bloquea la salida a internet). Se comprueba en un minuto desde la Pi:
 
+**Ojo con el `gsrnamespace=6`**: sin él, Commons busca en las galerías (espacio
+principal), donde `filetype:bitmap` no aplica, y devuelve `{"batchcomplete":""}` —
+cero resultados que parecen «la API no sirve» cuando en realidad la consulta estaba
+mal. La URL de abajo es la que CONSTRUYE el código (sale de `FUENTES.wikimedia.url`).
+
 ```bash
 curl -s "https://api.openverse.org/v1/images/?q=corazon&page_size=1" | head -c 300
-curl -s "https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=filetype:bitmap%20corazon&gsrlimit=1&prop=imageinfo&iiprop=url&iiurlwidth=400&format=json&origin=*" | head -c 300
+curl -s "https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit=2&gsrsearch=filetype%3Abitmap%20corazon&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=320" | head -c 400
 ```
 
 Dos avisos que van en el plan para que no sorprendan:
