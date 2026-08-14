@@ -551,17 +551,39 @@ async function renderHost(rootSel, code, sessionId, activity) {
     });
 
     const isLast = idx + 1 >= items.length;
+    // «Mostrar respuesta tras cada» del panel: la pantalla de revelado (que es
+    // la que ENSEÑA la respuesta correcta y quién eligió qué) se pintaba
+    // siempre, así que el interruptor no hacía nada. Apagado, se pasa de largo
+    // — la última sí se revela: cerrar la ronda sin decir la respuesta deja la
+    // clase a medias.
+    if (!isLast && live.showAnswerAfterEach === false) {
+      if (live.showLeaderboardBetween !== false) setSessionState(sessionId, { phase: 'leaderboard' });
+      else openQuestion(idx + 1);
+      return;
+    }
+    // «Leaderboard entre preguntas» del panel: estaba escrito por el editor y no
+    // lo leía nadie — la clasificación se pintaba SIEMPRE, así que apagarlo no
+    // hacía nada. Al final de la ronda se enseña igualmente (ahí es el podio).
+    const conClasificacion = isLast || live.showLeaderboardBetween !== false;
     mount(rootSel, html`
       <div id="host-round" class="mb-4"></div>
       <div class="text-center">
         <button class="btn btn-primary btn-lg" id="btn-lb">
-          <i class="bi bi-bar-chart-fill"></i>
-          <span id="btn-lb-txt">${isLast ? 'Ver clasificación final' : 'Ver clasificación'}</span>
+          <i class="bi ${conClasificacion ? 'bi-bar-chart-fill' : 'bi-arrow-right-circle-fill'}"></i>
+          <span id="btn-lb-txt">${conClasificacion
+            ? (isLast ? 'Ver clasificación final' : 'Ver clasificación')
+            : 'Siguiente pregunta'}</span>
         </button>
       </div>
     `);
     tpl.renderRoundHost(document.getElementById('host-round'), { phase: 'reveal', item, answers, playerMap });
-    on(rootSel, 'click', '#btn-lb', () => setSessionState(sessionId, { phase: 'leaderboard' }));
+    // Sin clasificación intermedia se va DIRECTO a la siguiente pregunta, que
+    // es lo que el profe pidió al apagar el interruptor. La última siempre pasa
+    // por la clasificación: ahí es el podio.
+    const seguir = () => (conClasificacion
+      ? setSessionState(sessionId, { phase: 'leaderboard' })
+      : openQuestion(idx + 1));
+    on(rootSel, 'click', '#btn-lb', seguir);
 
     // Auto-advance countdown: tick down in the button text, then trigger leaderboard.
     if (autoAdvance && phaseChanged) {
@@ -570,8 +592,10 @@ async function renderHost(rootSel, code, sessionId, activity) {
         if (session.phase !== 'reveal') { clearInterval(tick); return; }
         secs--;
         const t = document.getElementById('btn-lb-txt');
-        if (t) t.textContent = isLast ? `Clasificación final (${secs}s)` : `Clasificación (${secs}s)`;
-        if (secs <= 0) { clearInterval(tick); setSessionState(sessionId, { phase: 'leaderboard' }); }
+        if (t) t.textContent = conClasificacion
+          ? (isLast ? `Clasificación final (${secs}s)` : `Clasificación (${secs}s)`)
+          : `Siguiente pregunta (${secs}s)`;
+        if (secs <= 0) { clearInterval(tick); seguir(); }
       }, 1000);
     }
   }

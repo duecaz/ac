@@ -24,6 +24,11 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
 
   const ctx = runFreeformPlayer(rootSel, activity, opts);
   const totalWords = words.length;
+  // AYUDA DECLARADA por el editor («Sin ayuda» / «Primera letra de cada
+  // palabra»). El ajuste existía y no lo leía nadie: el botón «Pista» salía
+  // siempre, también con «Sin ayuda» elegido, y la primera letra no se
+  // regalaba nunca. Un mando que no manda es peor que no tenerlo.
+  const hintMode = activity.rules?.hintMode || 'none';
 
   // User state: 2D array of typed letters, set of solved word IDs
   const userGrid  = Array.from({ length: rows }, () => Array(cols).fill(''));
@@ -83,7 +88,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
         <!-- Footer -->
         <div class="cw-footer">
           <button class="btn btn-success btn-sm" id="cw-check"><i class="bi bi-check2-circle"></i> Verificar</button>
-          <button class="btn btn-outline-secondary btn-sm" id="cw-hint"><i class="bi bi-lightbulb"></i> Pista</button>
+          ${hintMode === 'none' ? '' : `<button class="btn btn-outline-secondary btn-sm" id="cw-hint"><i class="bi bi-lightbulb"></i> Pista</button>`}
           <button class="btn btn-outline-danger btn-sm" id="cw-reset"><i class="bi bi-arrow-counterclockwise"></i> Reiniciar</button>
         </div>
 
@@ -173,6 +178,9 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     // Buttons
     on(rootSel, 'click', '#cw-check', checkAll);
     on(rootSel, 'click', '#cw-hint',  giveHint);
+    // Con «Primera letra de cada palabra» se regalan AL EMPEZAR, una vez
+    // montada la rejilla (antes hace falta que existan las celdas).
+    if (hintMode === 'first') regalarPrimerasLetras();
     on(rootSel, 'click', '#cw-reset', resetGrid);
   }
 
@@ -182,6 +190,19 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     return document.querySelector(`#cw-grid [data-r="${r}"][data-c="${c}"]`);
   }
   function letterEl(r, c) { return document.getElementById(`cwl-${r}-${c}`); }
+
+  /** Regala la PRIMERA letra de cada palabra (modo «first»). Se pinta como una
+   *  pista porque lo es, y se hace tras montar la rejilla. */
+  function regalarPrimerasLetras() {
+    for (const w of words) {
+      const r = w.row, c = w.col;
+      if (userGrid[r][c]) continue;
+      userGrid[r][c] = w.word[0];
+      const el = letterEl(r, c);
+      if (el) { el.textContent = w.word[0]; el.classList.add('cw-hint-letter'); }
+    }
+    updateProgress();
+  }
   function clueEl(wid)    { return document.getElementById(`cwc-${wid}`); }
 
   function isWhite(r, c) {

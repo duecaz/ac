@@ -41,18 +41,21 @@ function wireContent(root, a, ctx) {
   on(root, 'click', '.item-down', (_, b) => { reorderArray(a.content.passages, +b.dataset.i, +1); ctx.onChange(a); ctx.repaint(); });
 }
 
+// NOTA: aquí vivía «Tildes ilimitadas en la paleta» / «marcas ilimitadas». El
+// tope NUNCA se implementó (la ronda no cuenta marcas disponibles), así que
+// desmarcarlo no hacía nada. Se quita el mando y la función queda como deuda
+// escrita en CLAUDE.md — un control que no controla engaña al que prepara la
+// clase.
 function rulesHtml(a) {
   return `<div class="row g-3">
     <div class="col-md-4 form-check pt-4 ms-3"><input id="t-rand" class="form-check-input" type="checkbox" ${a.rules.randomize ? 'checked' : ''}><label class="form-check-label" for="t-rand">Mezclar frases</label></div>
     <div class="col-12">${ruleScopeNote()}</div>
-    <div class="col-md-4 form-check pt-4"><input id="t-overflow" class="form-check-input" type="checkbox" ${a.rules.allowOverflow !== false ? 'checked' : ''}><label class="form-check-label" for="t-overflow">Tildes ilimitadas en la paleta</label></div>
     <div class="col-md-4"><label class="form-label">Puntos por acierto</label><input id="t-ppc" type="number" min="0" class="form-control" value="${a.scoring.pointsPerCorrect ?? 1}"></div>
     <div class="col-md-4"><label class="form-label">Puntos por error</label><input id="t-ppw" type="number" class="form-control" value="${a.scoring.pointsPerWrong ?? 0}"></div>
   </div>`;
 }
 function wireRules(root, a, ctx) {
   on(root, 'change', '#t-rand', e => { a.rules.randomize = e.target.checked; ctx.onChange(a); });
-  on(root, 'change', '#t-overflow', e => { a.rules.allowOverflow = e.target.checked; ctx.onChange(a); });
   on(root, 'input', '#t-ppc', e => { a.scoring.pointsPerCorrect = +e.target.value || 0; ctx.onChange(a); });
   on(root, 'input', '#t-ppw', e => { a.scoring.pointsPerWrong = +e.target.value || 0; ctx.onChange(a); });
 }

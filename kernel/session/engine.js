@@ -146,8 +146,13 @@ function createLiveSession(activity, T, opts) {
   function join(userId, nickname) {
     const existing = state.players.find(p => p.userId === userId);
     if (existing) return existing; // reconnect — name unchanged
+    // El interruptor del panel MANDA. Estaba escrito por el editor («Filtro de
+    // apodos») y no lo leía nadie: se rechazaba siempre, así que apagarlo no
+    // hacía nada. Ojo: lo que el interruptor decide es si se RECHAZA, no si se
+    // normaliza — `f.value` (el apodo limpio, recortado) se sigue usando abajo,
+    // y saltárselo dejaba entrar nombres sin normalizar.
     const f = isAcceptableNickname(nickname);
-    if (!f.ok) throw new Error('Apodo: ' + f.reason);
+    if (!f.ok && activity?.live?.nicknameFilter !== false) throw new Error('Apodo: ' + f.reason);
     if (state.status === 'ended') throw new Error('La sala ha terminado');
     if (state.status !== 'lobby' && !allowLateJoin) throw new Error('La partida ya empezó');
     if (state.players.length >= maxPlayers) throw new Error('La sala está llena');
@@ -319,8 +324,13 @@ function createTeamsSession(activity, T, opts) {
   function join(userId, nickname, teamId) {
     const team = teamById(teamId) || activeTeam();
     if (!team) throw new Error('Equipo desconocido');
+    // El interruptor del panel MANDA. Estaba escrito por el editor («Filtro de
+    // apodos») y no lo leía nadie: se rechazaba siempre, así que apagarlo no
+    // hacía nada. Ojo: lo que el interruptor decide es si se RECHAZA, no si se
+    // normaliza — `f.value` (el apodo limpio, recortado) se sigue usando abajo,
+    // y saltárselo dejaba entrar nombres sin normalizar.
     const f = isAcceptableNickname(nickname);
-    if (!f.ok) throw new Error('Apodo: ' + f.reason);
+    if (!f.ok && activity?.live?.nicknameFilter !== false) throw new Error('Apodo: ' + f.reason);
     const member = { id: 'p' + (++state._seq), userId, name: f.value };
     team.members.push(member);
     return { ...member, teamId: team.id };

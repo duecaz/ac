@@ -75,12 +75,14 @@ export function livePanelHtml(a) {
     <div class="col-md-4 form-check pt-4"><input id="l-after" class="form-check-input" type="checkbox" ${l.showAnswerAfterEach ? 'checked' : ''}><label class="form-check-label" for="l-after">Mostrar respuesta tras cada</label></div>
     <div class="col-md-4 form-check pt-4"><input id="l-lb" class="form-check-input" type="checkbox" ${l.showLeaderboardBetween ? 'checked' : ''}><label class="form-check-label" for="l-lb">Leaderboard entre preguntas</label></div>
     <div class="col-md-4 form-check pt-4"><input id="l-nick" class="form-check-input" type="checkbox" ${l.nicknameFilter ? 'checked' : ''}><label class="form-check-label" for="l-nick">Filtro de apodos</label></div>
-    <div class="col-md-12">
-      <hr>
-      <div class="form-check"><input id="l-streak" class="form-check-input" type="checkbox" ${l.streakBonus ? 'checked' : ''}><label class="form-check-label" for="l-streak"><b>Bonus por racha</b> — suma puntos extra por aciertos consecutivos</label></div>
-      <div class="row mt-2"><div class="col-md-4"><label class="form-label small">Puntos extra por paso de racha</label><input id="l-streak-step" type="number" min="0" max="500" class="form-control form-control-sm" value="${l.streakBonusPerStep ?? 50}"></div></div>
-      <small class="text-muted d-block mt-1">Ej: con paso 50, una racha de 3 aciertos seguidos da +50 al 2º, +100 al 3º.</small>
-    </div>
+    <!-- BONUS POR RACHA: el mando estaba aquí y la función NO EXISTE. Su
+         comentario en core/streaks.js lo dice: los puntos extra los calculaba
+         una Edge Function de Supabase, y Supabase se RETIRÓ del proyecto. El
+         profe lo encendía, ponía «50 por paso» y no pasaba nada nunca.
+         Se quita el mando en vez de dejarlo mintiendo; la función queda como
+         deuda en CLAUDE.md con lo que hay que decidir (¿lo calcula el settle
+         del host? ¿cuenta la racha por alumno o por sala?). La racha SÍ se
+         sigue viendo en pantalla (🔥), que es lo que ya funcionaba. -->
   </div>`;
 }
 
@@ -97,6 +99,4 @@ export function wireLivePanel(root, a, ctx) {
   on(root, 'change', '#l-after', e => { a.live.showAnswerAfterEach = e.target.checked; oc(a); });
   on(root, 'change', '#l-lb', e => { a.live.showLeaderboardBetween = e.target.checked; oc(a); });
   on(root, 'change', '#l-nick', e => { a.live.nicknameFilter = e.target.checked; oc(a); });
-  on(root, 'change', '#l-streak', e => { a.live.streakBonus = e.target.checked; oc(a); });
-  on(root, 'input', '#l-streak-step', e => { a.live.streakBonusPerStep = +e.target.value || 0; oc(a); });
 }

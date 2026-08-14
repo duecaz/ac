@@ -427,6 +427,22 @@ Los cortes ya están mapeados (no re-diseñar al ejecutar):
 Al partir: `node tools/module-map.mjs` + preflight completo; los guardianes (layers, moduleRefs,
 realtimePort) deben seguir verdes sin tocar sus listas.
 
+### 🟡 TRES FUNCIONES QUE EL PANEL PROMETÍA Y NO EXISTEN (v1.51.482)
+El escaneo de «ajustes desconectados» encontró SIETE mandos que el editor
+escribía y nadie leía. Cuatro se conectaron (filtro de apodos · leaderboard
+entre preguntas · mostrar respuesta tras cada · ayuda del crucigrama). Los otros
+tres se QUITARON del panel —un control que no controla engaña a quien prepara la
+clase— y quedan aquí como función a decidir:
+- **Bonus por racha** (`live.streakBonus` + `streakBonusPerStep`): los puntos
+  extra los calculaba una **Edge Function de Supabase**, y Supabase se retiró.
+  Para reponerlo hay que decidir dónde se calcula (¿el settle del host?) y si la
+  racha cuenta por alumno o por sala. La racha SÍ se sigue viendo (🔥).
+- **Marcas ilimitadas en la paleta** (Tildes y Comas, `rules.allowOverflow`): el
+  tope nunca se implementó — la ronda no cuenta marcas disponibles. Decidir si
+  limitar es buena mecánica antes de escribirlo.
+> Lo vigila `tests/ajusteConectado.test.mjs`: un ajuste nuevo que nadie lea
+> rompe CI. Su lista de excepciones debe quedarse en 1 (el crédito de imagen).
+
 ### 🟡 IMÁGENES COMO WORDWALL (Google) — decisión TOMADA, ejecución aplazada
 Decisión del dueño (2026-08-14): «al final haremos lo que Wordwall y usaremos la
 búsqueda de imágenes de Google, luego lo veremos». Se apunta para no volver a
