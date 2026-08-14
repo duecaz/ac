@@ -111,3 +111,9 @@
 @media (min-width: 900px) {
   .ww-student-frame { min-height: 86dvh; }
 }
+
+/* La cabecera de la carrera (aciertos · racha · restantes) es una barra a todo
+   el ancho dentro del marco: respeta la esquina reservada del botón de
+   pantalla completa (estándar del marco) o el chip de «restantes» queda
+   debajo del botón — se veía tapado en la captura del dueño. */
+.ww-player-frame .s-race-head { padding-right: var(--ww-fs-reserve, 52px); }

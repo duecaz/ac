@@ -167,7 +167,13 @@ function fitPassage(areaEl, passageEl) {
   const fit = () => {
     const availW = areaEl.clientWidth, availH = areaEl.clientHeight;
     if (!availW || !availH) return;
-    let lo = 16, hi = 220, best = 16;
+    // MEDIDA TIPOGRÁFICA, no relleno. El tope antes era 220px a secas: en el
+    // marco estrecho del móvil el ajuste «cabía» partiendo el texto en líneas
+    // de dos palabras gigantes — llenaba el área, que no es lo mismo que
+    // maquetarla. El techo se ata al ANCHO: con ~availW/12 la línea conserva
+    // como mínimo unas 24 letras, que es el suelo de una medida legible. En la
+    // pizarra (1900px) sigue dando el texto grande de proyector (~158px).
+    let lo = 16, hi = Math.max(24, Math.min(220, availW / 12)), best = 16;
     for (let i = 0; i < 13; i++) {
       const mid = (lo + hi) / 2;
       passageEl.style.fontSize = mid + 'px';

@@ -32,10 +32,10 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 |---|---|---|---|---|
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1712 | 7 · 859 | 0.50 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2571 | 12 · 1234 | 0.48 |
-| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3924 | 19 · 3001 | 0.76 |
+| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3928 | 19 · 3001 | 0.76 |
 | **informes/tareas** | después de clase | 10 · 1056 | 4 · 435 | 0.41 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5694 | 12 · 1042 | 0.18 |
-| **infra/común** | todo lo anterior | 131 · 14222 | 50 · 5602 | 0.39 |
+| **infra/común** | todo lo anterior | 131 · 14228 | 50 · 5602 | 0.39 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -105,9 +105,9 @@ graph TD
 | Capa | Módulos más grandes |
 |---|---|
 | **arranque** | `qa/hoja.js` (254) · `main.teacher.js` (167) · `main.embed.js` (68) · `main.student.js` (49) |
-| **vistas** | `views/hostLive.js` (1078) · `views/adminView.js` (1071) · `views/studentLive.js` (901) · `views/vsView.js` (488) · `views/playerView.js` (387) |
+| **vistas** | `views/hostLive.js` (1078) · `views/adminView.js` (1071) · `views/studentLive.js` (905) · `views/vsView.js` (488) · `views/playerView.js` (387) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1131) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
-| **core** | `core/skins.js` (355) · `core/textCorrectionRound.js` (350) · `core/selftest.js` (345) · `core/auth.js` (330) · `core/normsCheck.js` (325) |
+| **core** | `core/textCorrectionRound.js` (356) · `core/skins.js` (355) · `core/selftest.js` (345) · `core/auth.js` (330) · `core/normsCheck.js` (325) |
 | **kernel** | `kernel/session/engine.js` (559) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/dataPort.js` (28) |
 | **plantillas** | `templates/crossword/player.js` (485) · `templates/wordsearch/player.js` (405) · `templates/match/player.js` (296) · `templates/diagram/player.js` (238) · `templates/quiz/editor.js` (225) |
 | **contenido** | `kernel/content/qaAdapt.js` (104) · `kernel/content/convert.js` (95) · `kernel/content/models.js` (83) · `kernel/content/switch.js` (82) · `kernel/content/index.js` (5) |
@@ -140,7 +140,7 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 | `adapters/pocketbase/realtime.js` | 1131 | 0 |
 | `views/hostLive.js` | 1078 | 1 |
 | `views/adminView.js` | 1071 | 1 |
-| `views/studentLive.js` | 901 | 1 |
+| `views/studentLive.js` | 905 | 1 |
 | `kernel/session/engine.js` | 559 | 19 |
 | `views/vsView.js` | 488 | 2 |
 | `templates/crossword/player.js` | 485 | 1 |

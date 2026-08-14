@@ -14,7 +14,7 @@ import { isAcceptableNickname } from '../core/nicknameFilter.js';
 import { acquire } from '../core/lifecycle.js';
 import { toast } from '../core/toast.js';
 import { submit as queuedSubmit, flush as flushQueue, pendingCount } from '../core/submitQueue.js';
-import { sceneToggle, resetScene } from '../core/presentation.js';
+import { resetScene } from '../core/presentation.js';
 import { montarMarcoAlumno } from '../core/studentFrame.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import * as Streaks from '../core/streaks.js';
@@ -148,7 +148,11 @@ export async function renderPlay(rootSel, code) {
   // Escena POR FASE (docs/handoff-player-frame.md, Etapa 1): el fondo de la
   // actividad va SOLO en las pantallas de JUEGO; lobby/espera/resultado (chrome)
   // van neutros. Toggle compartido con hostLive (core/presentation.js).
-  const scene = sceneToggle(activity);
+  // El tema y el fondo viven en el MARCO (core/studentFrame.js), no en la
+  // página: aquí había un sceneToggle que tematizaba <body> en las fases de
+  // juego — tenía sentido cuando el alumno jugaba a página desnuda, pero con el
+  // marco el fondo se pintaba DOS veces y la web entera parecía el cuaderno de
+  // la actividad (hallazgo del dueño, 2026-08-14, con captura).
   ctx.add(() => resetScene());
   // Prevent overscroll while playing.
   document.body.classList.add('ww-play-noscroll');
@@ -221,14 +225,14 @@ export async function renderPlay(rootSel, code) {
       try { autoFlushQuestion(); } catch { /* best-effort */ }
       autoFlushQuestion = null;
     }
-    if (session.status === 'lobby') { scene(false); return paintLobby(); }
-    if (session.status === 'ended') { scene(false); return paintEnded(); }
-    if (session.phase === 'question-live') { scene(true); return paintQuestionLive(); }
-    if (session.phase === 'race') { scene(true); return isLiveBoard() ? paintLiveBoard() : paintRace(); }
-    if (session.phase === 'question') { scene(true); return paintQuestion(); }
-    if (session.phase === 'reveal') { scene(true); return paintRevealOwn(); }
-    if (session.phase === 'leaderboard') { scene(false); return paintWaiting('Mira la pizarra del profesor.'); }
-    scene(false); paintWaiting('Esperando…');
+    if (session.status === 'lobby') { return paintLobby(); }
+    if (session.status === 'ended') { return paintEnded(); }
+    if (session.phase === 'question-live') { return paintQuestionLive(); }
+    if (session.phase === 'race') { return isLiveBoard() ? paintLiveBoard() : paintRace(); }
+    if (session.phase === 'question') { return paintQuestion(); }
+    if (session.phase === 'reveal') { return paintRevealOwn(); }
+    if (session.phase === 'leaderboard') { return paintWaiting('Mira la pizarra del profesor.'); }
+    paintWaiting('Esperando…');
   }
 
   function paintLobby() {
@@ -684,7 +688,7 @@ export async function renderPlay(rootSel, code) {
     emitGame(GameEvents.QUESTION_SHOWN, { idx, total, item: allItems[idx] });
 
     mount(rootSel, html`
-      <div class="d-flex justify-content-between align-items-center mb-2">
+      <div class="d-flex justify-content-between align-items-center mb-2 s-race-head">
         <span class="badge bg-success fs-6"><i class="bi bi-check2-circle"></i> ${raceCorrectCount}/${total}</span>
         ${streak >= 2 ? `<span class="badge bg-warning text-dark fs-5">🔥 ${streak}</span>` : '<span></span>'}
         <span class="badge bg-info text-dark fs-6">${raceQueue.length} restantes</span>
@@ -855,7 +859,7 @@ export async function renderPlay(rootSel, code) {
   async function paintEnded() {
     if (endingInProgress) return;
     endingInProgress = true;
-    scene(false); // resultado = chrome → fondo neutro (Etapa 1)
+    // resultado = chrome → fondo neutro (Etapa 1)
     Streaks.reset(session.id, player.playerId);
     // La puntuación AUTORITATIVA es la del leaderboard del servidor. `myScore` es
     // solo una ESTIMACIÓN local de respaldo (acumulada en submit/reveal) para el
