@@ -38,7 +38,34 @@
 .tc-calib:hover { background: rgba(0,0,0,.72); }
 
 .tc-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
-.tc-round { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+/* MAQUETA (dueño, 2026-08-14): barra arriba · texto ARRIBA con aire a los
+   costados · botón ABAJO. Antes todo se centraba en vertical y en pantalla
+   completa quedaba amontonado en la mitad superior con el resto vacío. El aire
+   lateral va AQUÍ (no solo en .tc-solo): en carrera/duelo la ronda se pinta sin
+   ese envoltorio y el texto tocaba los bordes. */
+.tc-round {
+  flex: 1 1 auto; min-height: 0;
+  display: flex; flex-direction: column;
+  text-align: center;
+  padding: max(8px, 1.2cqmin) max(14px, 6cqw) max(10px, 2cqmin);
+}
+
+/* ── LA BARRA: progreso + herramientas, como una app de dibujo ───────────────
+   Respeta la esquina del botón de pantalla completa cuando está arriba del
+   marco (misma reserva que el marcador del duelo). */
+.tc-bar {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: .6em;
+  padding-bottom: max(6px, 1cqmin);
+}
+.ww-player-frame .tc-bar { padding-right: var(--ww-fs-reserve, 52px); }
+.tc-chip {
+  font-size: clamp(.75rem, 2cqmin, 1.2rem); font-weight: 700; line-height: 1;
+  padding: .45em .8em; border-radius: 999px;
+  background: var(--ww-card-bg, #fff); color: var(--ww-card-fg, #1f2937);
+  box-shadow: 0 1px 3px rgba(0,0,0,.12);
+}
+.tc-chip--right { margin-left: auto; }
 
 /* ── Aire extra SOLO en modo Individual ──────────────────────────────────────
    VS/Equipos/Live renderizan `.tc-round` SIN el envoltorio `.tc-solo` (panel
@@ -47,13 +74,16 @@
    lea como escrito en una hoja, a la derecha del margen rojo. Como `fitPassage`
    mide `.tc-passage-area` (hijo flex), el padding reduce el área y la letra se
    ajusta sola: no hace falta tocar el JS. */
-.tc-solo .tc-round { padding: 3cqmin 5cqw 2cqmin 7cqw; }
+.tc-solo .tc-round { padding-left: max(14px, 7cqw); padding-right: max(14px, 5cqw); }
 
 /* El área del texto toma toda la altura libre; el texto se centra y NO desborda
    (fitPassage encoge la letra si hiciera falta). */
 .tc-passage-area {
   flex: 1 1 auto; min-height: 0;
-  display: flex; align-items: center; justify-content: center;
+  /* El texto arranca ARRIBA (con un respiro), como una hoja: centrado en
+     vertical, en pantalla completa flotaba a media altura con el fondo vacío. */
+  display: flex; align-items: flex-start; justify-content: center;
+  padding-top: max(8px, 3cqmin);
   overflow: hidden;
 }
 /* ── LÁPIZ / BORRADOR (mando manual del canvas) ──────────────────────────────
@@ -61,7 +91,7 @@
    de 4 m se ven grandes y en un móvil 9:16 no se comen el texto. Colores por
    TOKEN para que los skins los recoloreen; el activo se distingue por relleno,
    no solo por color (R1: mirada a 3 m, y no todo el mundo distingue matices). */
-.tc-tools { flex: 0 0 auto; display: flex; gap: .6em; justify-content: center; padding-top: 1cqh; }
+.tc-tools { flex: 0 0 auto; display: flex; gap: .6em; justify-content: center; }
 .tc-tool {
   font-size: clamp(.8rem, 2.1cqmin, 1.3rem); padding: .35em .9em;
   border: 2px solid var(--ww-accent, #0d6efd);
@@ -75,7 +105,9 @@
   color: #fff;
   box-shadow: 0 0 0 .18em rgba(0,0,0,.14);
 }
-.tc-done-wrap { flex: 0 0 auto; padding-top: 1.8cqh; text-align: center; }
+/* El botón vive ABAJO: margin-top auto lo ancla al pie aunque el texto sea
+   corto — es lo que separa «hoja con su botón» de «todo amontonado arriba». */
+.tc-done-wrap { flex: 0 0 auto; margin-top: auto; padding-top: 1.2cqh; text-align: center; }
 /* El botón también escala con el marco (no un botón diminuto en pantalla grande). */
 .tc-done-wrap .btn { font-size: clamp(.9rem, 2.6cqmin, 1.7rem); padding: .5em 1.1em; }
 

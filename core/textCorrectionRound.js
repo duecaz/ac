@@ -98,7 +98,7 @@ export function passageHtml(text, kind, reveal) {
 // Interactive round (VS / Equipos-auto / LIVE / Solo) — modo DIBUJO: el alumno
 // dibuja la marca con lápiz/táctil sobre el texto. onSubmit(value:number[]) al
 // pulsar "Listo" (mismas posiciones que el modo tocar → scoring intacto).
-export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSubmit } = {}) {
+export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSubmit, chips = {} } = {}) {
   const text = payload?.text || '';
   // El botón "Calibrar pizarra" NO va aquí (en el juego): vive en la pantalla de
   // inicio (views/startScreen.js), que es donde van los ajustes previos. En modo
@@ -113,13 +113,23 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
   // mandando mientras nadie los toque.
   // NO añaden toques a responder (§29): se arranca en LÁPIZ, que es lo que el
   // alumno va a hacer; el borrador es para el que se equivoca.
+  // MAQUETA (dueño, 2026-08-14): barra ARRIBA con el progreso y las
+  // herramientas —como cualquier app de dibujo—, el texto arranca arriba con
+  // aire a los costados, y el botón vive ABAJO. Antes las herramientas
+  // flotaban en mitad de la pantalla, pegadas al texto, y todo quedaba
+  // amontonado en la mitad superior. `chips` lo pasa el caller (HTML propio,
+  // ya escapado): la ronda no sabe si corre en solo, carrera o duelo (§0).
   root.innerHTML = `
     <div class="tc-round">
-      <div class="tc-passage-area"><div class="tc-passage">${passageHtml(text, kind)}</div></div>
-      <div class="tc-tools" role="group" aria-label="Herramienta">
-        <button type="button" class="btn tc-tool is-on" data-tool="pen" aria-pressed="true"><i class="bi bi-pencil-fill"></i> Lápiz</button>
-        <button type="button" class="btn tc-tool" data-tool="eraser" aria-pressed="false"><i class="bi bi-eraser-fill"></i> Borrador</button>
+      <div class="tc-bar">
+        ${chips.left ? `<span class="tc-chip">${chips.left}</span>` : ''}
+        <div class="tc-tools" role="group" aria-label="Herramienta">
+          <button type="button" class="btn tc-tool is-on" data-tool="pen" aria-pressed="true"><i class="bi bi-pencil-fill"></i> Lápiz</button>
+          <button type="button" class="btn tc-tool" data-tool="eraser" aria-pressed="false"><i class="bi bi-eraser-fill"></i> Borrador</button>
+        </div>
+        ${chips.right ? `<span class="tc-chip tc-chip--right">${chips.right}</span>` : ''}
       </div>
+      <div class="tc-passage-area"><div class="tc-passage">${passageHtml(text, kind)}</div></div>
       <div class="tc-done-wrap"><button type="button" class="btn btn-success btn-lg tc-done" data-ww-submit><i class="bi bi-check2-circle"></i> Listo</button></div>
     </div>`;
 
@@ -167,13 +177,13 @@ function fitPassage(areaEl, passageEl) {
   const fit = () => {
     const availW = areaEl.clientWidth, availH = areaEl.clientHeight;
     if (!availW || !availH) return;
-    // MEDIDA TIPOGRÁFICA, no relleno. El tope antes era 220px a secas: en el
-    // marco estrecho del móvil el ajuste «cabía» partiendo el texto en líneas
-    // de dos palabras gigantes — llenaba el área, que no es lo mismo que
-    // maquetarla. El techo se ata al ANCHO: con ~availW/12 la línea conserva
-    // como mínimo unas 24 letras, que es el suelo de una medida legible. En la
-    // pizarra (1900px) sigue dando el texto grande de proyector (~158px).
-    let lo = 16, hi = Math.max(24, Math.min(220, availW / 12)), best = 16;
+    // MEDIDA TIPOGRÁFICA, no relleno. Dos correcciones del dueño con captura:
+    // el tope a secas (220px) partía el texto del móvil en líneas de dos
+    // palabras gigantes, y availW/12 seguía siendo enorme en PANTALLA COMPLETA
+    // (el marco a 1900px daba 158px: tres líneas de borde a borde). Con
+    // availW/18 la línea conserva ~30 letras — la maqueta de referencia ronda
+    // las 40 por línea — y el piso de 26px mantiene el móvil marcable a dedo.
+    let lo = 16, hi = Math.max(26, Math.min(200, availW / 18)), best = 16;
     for (let i = 0; i < 13; i++) {
       const mid = (lo + hi) / 2;
       passageEl.style.fontSize = mid + 'px';
@@ -187,11 +197,26 @@ function fitPassage(areaEl, passageEl) {
     passageEl.style.fontSize = best + 'px';
     // El canvas de dibujo observa passageEl y recalcula sus zonas solo.
   };
-  // observeResize (rAF-debounced): fit muta font-size, que puede re-disparar al
-  // observer en el mismo frame — norma del proyecto, nunca RO directo en players.
-  const stopRo = observeResize(areaEl, fit);
+  // ANTI-TEMBLOR (dueño, con captura): al entrar en pantalla completa el marco
+  // se agranda durante varios frames y cada uno re-ajustaba la letra — las
+  // palabras se reordenaban en cascada, «como si temblara». El re-ajuste espera
+  // a que el tamaño se ASIENTE (dos medidas iguales con 150 ms entre ellas) y
+  // reflowea UNA vez. El primer ajuste sigue siendo inmediato: al abrir la
+  // ronda no hay transición que esperar.
+  let esperando = null, ultimo = '';
+  const asentado = () => {
+    esperando = null;
+    const ahora = areaEl.clientWidth + 'x' + areaEl.clientHeight;
+    if (ahora !== ultimo) { ultimo = ahora; esperando = setTimeout(asentado, 150); return; }
+    fit();
+  };
+  const stopRo = observeResize(areaEl, () => {
+    ultimo = areaEl.clientWidth + 'x' + areaEl.clientHeight;
+    if (esperando) clearTimeout(esperando);
+    esperando = setTimeout(asentado, 150);
+  });
   requestAnimationFrame(fit);
-  return stopRo;
+  return () => { if (esperando) clearTimeout(esperando); stopRo(); };
 }
 
 // Projector (host) view for LIVE: the passage big and read-only. In the reveal
@@ -252,16 +277,21 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     results: passageResults.map((r, i) => ({ i, got: [...r.got], hits: r.hits, misses: r.misses, over: r.over, total: r.total, correct: r.correct, points: r.points })),
   });
 
-  const shell = (bodyHtml) => mount(rootSel, html`
+  // `conFrase`: el chip «N / M» absoluto solo en las pantallas SIN barra (la
+  // corrección); en la ronda el progreso viaja en la barra y duplicarlo estorba.
+  const shell = (bodyHtml, { conFrase = true } = {}) => mount(rootSel, html`
     <div class="tc-solo">
-      <span class="tc-frase">${idx + 1} / ${passages.length}</span>
+      ${conFrase ? `<span class="tc-frase">${idx + 1} / ${passages.length}</span>` : ''}
       <div id="tc-body" class="tc-body">${bodyHtml}</div>
     </div>`);
 
   function ask() {
-    shell('');
+    shell('', { conFrase: false });
     const body = document.getElementById('tc-body');
-    renderTextCorrectionRound(body, passages[idx], { kind, onSubmit: grade });
+    renderTextCorrectionRound(body, passages[idx], {
+      kind, onSubmit: grade,
+      chips: { left: `${idx + 1} / ${passages.length}` },
+    });
   }
 
   function grade(value) {
