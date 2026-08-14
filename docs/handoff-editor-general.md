@@ -98,8 +98,11 @@ igual que un archivo local, así el tope de §25 se respeta solo.
   `item.imageCredit` (pregunta/ruleta) · `left|rightImageCredit` (emparejar).
   Campos opcionales, sin migración (§24). **Pendiente**: pintarla también en el
   player para quien JUEGA la actividad publicada.
-- **Sin verificar desde aquí**: la llamada REAL a las dos APIs. Este entorno no
-  sale a internet (los dos `curl` de abajo, desde la Pi, lo cierran en un minuto).
+- **VERIFICADO contra las APIs reales** (2026-08-14, desde la Pi): Openverse
+  responde sin clave; Commons devuelve resultados con su `thumburl`; y
+  `upload.wikimedia.org` manda `access-control-allow-origin: *`, que era lo único
+  que ninguna prueba de la API cubría — sin esa cabecera el buscador encontraría
+  imágenes y fallaría justo al elegir una. Los tres comandos, abajo.
 
 **Sobre Google, que es lo que se preguntó.** No hay una API de imágenes de Google
 que se pueda cablear: la vieja *Google Image Search API* está retirada. Lo que
@@ -129,6 +132,8 @@ mal. La URL de abajo es la que CONSTRUYE el código (sale de `FUENTES.wikimedia.
 ```bash
 curl -s "https://api.openverse.org/v1/images/?q=corazon&page_size=1" | head -c 300
 curl -s "https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit=2&gsrsearch=filetype%3Abitmap%20corazon&prop=imageinfo&iiprop=url%7Cextmetadata&iiurlwidth=320" | head -c 400
+# …y que el NAVEGADOR pueda descargar el píxel, no solo consultar la API:
+curl -sI "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Heart_diagram-es.svg/320px-Heart_diagram-es.svg.png" | grep -i "access-control-allow-origin"
 ```
 
 Dos avisos que van en el plan para que no sorprendan:
