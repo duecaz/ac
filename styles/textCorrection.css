@@ -43,11 +43,26 @@
    completa quedaba amontonado en la mitad superior con el resto vacío. El aire
    lateral va AQUÍ (no solo en .tc-solo): en carrera/duelo la ronda se pinta sin
    ese envoltorio y el texto tocaba los bordes. */
+/* 2ª iteración con la maqueta al lado: «no se parecen en nada — fíjate en las
+   líneas rayadas, que están exactas». La diferencia de fondo: en la maqueta la
+   ronda ES una hoja — tarjeta crema OPACA, renglones que nacen del propio texto
+   (en `em`, uno por línea de escritura), margen rojo, texto a la IZQUIERDA y
+   letra escolar. Antes la hoja era la textura del marco: sus renglones iban a
+   otro ritmo que el texto y se veían dos rayados que no coincidían. */
 .tc-round {
   flex: 1 1 auto; min-height: 0;
   display: flex; flex-direction: column;
-  text-align: center;
-  padding: max(8px, 1.2cqmin) max(14px, 6cqw) max(10px, 2cqmin);
+  text-align: left;
+  padding: max(8px, 1.4cqmin) max(14px, 3.5cqw) max(12px, 2cqmin);
+  /* Hoja OPACA: neutros permitidos (§3 — es papel, no un tema); al ser opaca,
+     la textura que el profe elija para el marco queda alrededor, nunca debajo
+     del texto — que es lo que producía el doble rayado. */
+  /* Por TOKEN con respaldo crema: hoy ningún skin define el papel (cae al
+     crema siempre), y el día que uno quiera tematizar la hoja, puede. */
+  background: var(--ww-paper, #fffdf6);
+  color: var(--ww-paper-ink, #1f2937);
+  border-radius: max(10px, 1.6cqmin);
+  box-shadow: 0 2px 10px rgba(0,0,0,.08), inset 0 0 6cqmin rgba(120,90,40,.05);
 }
 
 /* ── LA BARRA: progreso + herramientas, como una app de dibujo ───────────────
@@ -56,7 +71,10 @@
 .tc-bar {
   flex: 0 0 auto;
   display: flex; align-items: center; gap: .6em;
-  padding-bottom: max(6px, 1cqmin);
+  background: rgba(0, 0, 0, .05);
+  border-radius: 999px;
+  padding: max(4px, .6cqmin) max(8px, 1cqmin);
+  margin-bottom: max(6px, 1cqmin);
 }
 .ww-player-frame .tc-bar { padding-right: var(--ww-fs-reserve, 52px); }
 .tc-chip {
@@ -79,12 +97,17 @@
 /* El área del texto toma toda la altura libre; el texto se centra y NO desborda
    (fitPassage encoge la letra si hiciera falta). */
 .tc-passage-area {
-  flex: 1 1 auto; min-height: 0;
-  /* El texto arranca ARRIBA (con un respiro), como una hoja: centrado en
-     vertical, en pantalla completa flotaba a media altura con el fondo vacío. */
-  display: flex; align-items: flex-start; justify-content: center;
-  padding-top: max(8px, 3cqmin);
+  flex: 1 1 auto; min-height: 0; position: relative;
+  /* Arriba y a la IZQUIERDA, como se escribe en una hoja. */
+  display: flex; align-items: flex-start; justify-content: flex-start;
+  padding: max(10px, 3.5cqmin) max(8px, 1.5cqw) 0 max(18px, 4cqw);
   overflow: hidden;
+}
+/* EL MARGEN ROJO es de la hoja (no de la textura del fondo): una línea que
+   recorre el área de escritura, con el texto arrancando a su derecha. */
+.tc-passage-area::before {
+  content: ''; position: absolute; left: max(8px, 1.8cqw); top: 0; bottom: 0;
+  width: .14em; background: rgba(214, 80, 70, .5);
 }
 /* ── LÁPIZ / BORRADOR (mando manual del canvas) ──────────────────────────────
    Tamaños en unidades de contenedor como el resto del player (§3): en la pizarra
@@ -116,10 +139,22 @@
   width: 100%;
   font-size: clamp(1.5rem, 4.5vw, 2.6rem);  /* fallback; fitPassage fija el real en px */
   line-height: 2.0;          /* hueco arriba de la vocal para dibujar la tilde */
-  text-align: center;
+  text-align: left;
   overflow-wrap: break-word; /* parte solo entre palabras o palabras larguísimas */
   margin: 0;
   min-width: 0; max-width: 100%;
+  /* Letra ESCOLAR (la maqueta): redonda, de cuaderno. Pila del sistema — sin
+     webfonts (la app no depende de la red, lección de la CDN de Bootstrap). */
+  font-family: 'Segoe Print', 'Comic Sans MS', 'Chalkboard SE', 'Comic Neue', cursive;
+  /* LOS RENGLONES NACEN DEL TEXTO — siempre, no solo con el fondo «Cuaderno»:
+     periodo en `em` = interlineado, así cada línea de escritura lleva SU
+     renglón exacto debajo, se ajuste como se ajuste la letra. */
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0, transparent 1.5em,
+    rgba(37,99,235,.30) 1.5em, rgba(37,99,235,.30) calc(1.5em + .05em),
+    transparent calc(1.5em + .05em), transparent 2em);
+  background-position: left top;
 }
 /* Espacios NORMALES → el texto envuelve al ancho del marco (pre-wrap los preservaba
    y bloqueaba el corte de línea, desbordando). */
@@ -174,45 +209,6 @@
    periodo = line-height (2em) y se alinean exactas a cada renglón sin importar
    el font-size dinámico (fitPassage). El renglón queda bajo la escritura (a la
    altura de la base de la letra), con sitio arriba para dibujar la tilde. */
-/* La TINTA la fija la hoja: quien pinta el papel crema pone el color de lo
-   escrito (neutro permitido §3 — es una hoja, no un tema). Cubría solo `body.`
-   y no el MARCO: con un skin de texto claro (kahoot puso color:#fff en su
-   frame) el pasaje salía blanco sobre crema — invisible. Cazado por el pase de
-   skins v1.51.427 mirando capturas. */
-body.bg-notebook .tc-passage,
-.ww-player-frame.bg-notebook .tc-passage { color: #1f2937; }
-/* Grosor del renglón en `em`: engorda con la letra (no un pelo de 2px fijo cuando
-   el texto mide 77px). Periodo y posición ya van en `em` = escalan con el texto. */
-body.bg-notebook .tc-passage,
-.ww-player-frame.bg-notebook .tc-passage {
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent 0, transparent 1.5em,
-    rgba(37,99,235,.32) 1.5em, rgba(37,99,235,.32) calc(1.5em + .05em),
-    transparent calc(1.5em + .05em), transparent 2em);
-  background-position: left top;
-}
-/* El marco solo aporta el papel crema; el margen rojo se pinta en .tc-solo con
-   unidades del contenedor (cqw) para que su posición/grosor crezcan con el marco. */
-/* Lleva `.bg-set` (la pone `applyBackground`) para SEGUIR ganando a la textura
-   genérica de `styles/backgrounds.css`: al pasar aquella a 3 clases quedaban
-   empatadas, y backgrounds.css carga después → la hoja crema perdía y salían
-   los renglones dobles. La excepción de una plantilla manda sobre la textura
-   común, y ahora lo dice la especificidad, no el orden de los <link>. */
-.ww-player-frame.bg-set.bg-notebook:has(.tc-solo),
-body.bg-set.bg-notebook:has(.tc-solo) {
-  background: #fffdf5;
-  /* Viñeta cálida sutil → la hoja crema toma profundidad de papel real. */
-  box-shadow: inset 0 0 8cqmin rgba(120,90,40,.07);
-}
-.ww-player-frame.bg-notebook .tc-solo,
-body.bg-notebook .tc-solo {
-  background: linear-gradient(to right,
-    transparent calc(4cqw - .18cqw),
-    rgba(220,38,38,.4) calc(4cqw - .18cqw),
-    rgba(220,38,38,.4) calc(4cqw + .18cqw),
-    transparent calc(4cqw + .18cqw));
-}
 
 /* ── Panel "Calibrar pizarra" (core/penCalibration.js) ──────────────────────── */
 .pcal-overlay {
