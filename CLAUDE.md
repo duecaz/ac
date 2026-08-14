@@ -117,6 +117,18 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | **Cómo está la BD/Pi de VERDAD** (PocketBase, Docker, backups, OAuth Google, quirks) | **[`docs/infraestructura-pb.md`](docs/infraestructura-pb.md)** (fuente de infra; actualizar si cambia el servidor) |
 | **Plan de usuarios/acceso docente** (endurecer reglas, PIN, NFC, pizarras, panel profes) | **[`docs/handoff-acceso-docente.md`](docs/handoff-acceso-docente.md)** (incluye auditoría del sistema de usuarios) |
 
+### 5. EL RITUAL DE ENTREGA ESTÁ ESCRITO — `/entregar`
+No hay que acordarse de los pasos: son un skill del proyecto
+(`.claude/skills/entregar/SKILL.md`). Al terminar un cambio, `/entregar` recorre
+versión → regenerados → preflight → `/code-review` → `/simplify` → sonda en
+navegador → docs → push a las tres ramas → qué queda sin verificar y por quién.
+Y lo que de verdad no se puede olvidar está ATADO, no confiado a la memoria:
+- **`.githooks/pre-push`** para el push a `main`. `tools/preflight.mjs` sella
+  `.preflight-ok` con el hash del árbol que verificó; el hook lo compara con lo
+  que se empuja y PARA si no coinciden. Se instala una vez por copia del repo
+  (también en Windows): `git config core.hooksPath .githooks`. Salida de
+  emergencia con la clase delante: `git push --no-verify`.
+
 Verificar SIEMPRE antes de commitear: **`node tools/preflight.mjs`** — la suite + los
 OCHO recorridos (matriz jugable · tema×fondo legible · márgenes del panel · puertas del editor · buscar/crear+EDITAR · editores · en vivo · tareas) en ~100 s, ley §27. `node
 tests/run.mjs` solo verifica PIEZAS: los cinco fallos que la clase encontró en una

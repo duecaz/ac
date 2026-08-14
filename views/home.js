@@ -1,6 +1,7 @@
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { list, remove, get, save } from '../core/storage.js';
+import { revisarActividad } from '../core/activityCheck.js';
 import { navigate } from '../core/router.js';
 import { listTemplates, getTemplate } from '../core/registry.js';
 import { confirmModal, toast } from '../core/toast.js';
@@ -150,6 +151,21 @@ export function renderHome(rootSel) {
   // Modo host-only con candado: no navegues a una pantalla que va a rebotar —
   // di POR QUÉ y ofrece entrar ahí mismo. La frase sale de core/modes.js (una
   // sola redacción para botón, tooltip, modal y gate del router).
+  // …y tampoco se lleva a la clase una actividad A MEDIAS. El diagrama con las
+  // etiquetas en blanco llegaba a los móviles por el botón de PIN aunque
+  // «Jugar» ya lo bloqueara: los dos botones que reúnen a 30 críos son
+  // justamente donde más caro sale enterarse.
+  const listaParaLaClase = (id) => {
+    const act = get(id) || {};        // UNA lectura: `get` reparsea todo el almacén
+    const rev = revisarActividad(act);
+    if (rev.jugable) return true;
+    // Las rutas #/launch y #/tasks ya se niegan por su cuenta (ahí está la
+    // puerta de verdad). Esto solo evita el viaje: se dice qué falta y se lleva
+    // directamente a arreglarlo, en vez de a una pantalla que dice que no.
+    toast(`«${act.title || 'Esta actividad'}» aún no se puede lanzar: ${rev.problemasDeJuego[0]}`, 'danger', 6000);
+    navigate(`#/edit/${id}`);
+    return false;
+  };
   const hostClick = (mode, go) => (_, b) => {
     if (b.dataset.locked) {
       const hint = modeAuthHint(mode);
@@ -157,6 +173,7 @@ export function renderHome(rootSel) {
       openLoginModal({ reason: hint });
       return;
     }
+    if (!listaParaLaClase(b.dataset.id)) return;
     go(b.dataset.id);
   };
   on(rootSel, 'click', '.act-pin', hostClick('live', id => navigate(`#/launch/${id}`)));

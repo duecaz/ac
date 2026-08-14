@@ -3,6 +3,7 @@ import { on } from '../core/events.js';
 import { get, save } from '../core/storage.js';
 import { newActivity } from '../core/migrate.js';
 import { getEditor, getTemplate } from '../core/registry.js';
+import { revisarActividad } from '../core/activityCheck.js';
 import { navigate } from '../core/router.js';
 import { toast, confirmModal } from '../core/toast.js';
 import { acquire } from '../core/lifecycle.js';
@@ -186,6 +187,17 @@ export function renderEditView(rootSel, { id, template }) {
   on(rootSel, 'click', '#btn-save-draft', () => doSave(false, 'unlisted'));
   on(rootSel, 'click', '#btn-publish', () => doSave(false, 'public'));
   on(rootSel, 'click', '#btn-test', async () => {
+    // No se prueba lo que no se puede jugar: se DICE qué falta y se deja al
+    // profe donde puede arreglarlo, en vez de mandarlo a una pantalla de error.
+    // El panel rojo de la pestaña Contenido lleva la lista completa.
+    const rev = revisarActividad(activity);
+    if (!rev.listo) {
+      toast(`Todavía no se puede probar: ${rev.problemas[0]}`
+        + (rev.problemas.length > 1 ? ` (y ${rev.problemas.length - 1} más — mira el aviso rojo en Contenido)` : ''),
+        'danger', 6000);
+      document.querySelector('#ww-falta')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     if (dirty) await doSave(true);
     navigate(`#/play/${activity.id}`);
   });

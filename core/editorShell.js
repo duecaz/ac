@@ -21,8 +21,8 @@ import { renderModesTab, wireModesTab } from './editorModes.js';
 import { listSkins, skinPreviewHtml, applySkin } from './skins.js';
 import { scoringPanelHtml, wireScoringPanel, livePanelHtml, wireLivePanel } from './editorPanels.js';
 import { listBackgrounds, backgroundPreviewHtml, applyBackground, readBackgroundImage, BG_IMAGE_MAX_BYTES } from './backgrounds.js';
-import { activityItemCount } from './migrate.js';
 import { abrirBuscadorImagenes } from './imageSearchModal.js';
+import { revisarActividad, sinEscribirNada } from './activityCheck.js';
 import { creditoTexto } from './imageSearch.js';
 import { QUOTAS } from './quotas.js';
 
@@ -71,23 +71,9 @@ function presentationHtml(a) {
 }
 
 /** El aviso de «aquí no hay nada todavía, empieza por esto». Se pinta SOLO con
- *  la actividad vacía; en cuanto hay un elemento, desaparece sin dejar hueco. */
-function sinEscribirNada(a) {
-  if (activityItemCount(a) === 0) return true;
-  // Varios editores SIEMBRAN filas en blanco al abrir (la ruleta pone 4), así
-  // que «cero elementos» no describe el estado que ve el profe. Lo que importa
-  // es si hay algo ESCRITO: mientras no lo haya, la pista sigue siendo útil.
-  const conTexto = (v) => {
-    if (typeof v === 'string') return v.trim() !== '';
-    if (Array.isArray(v)) return v.some(conTexto);
-    if (v && typeof v === 'object') {
-      return Object.entries(v).some(([k, x]) => k !== 'id' && conTexto(x));
-    }
-    return false;
-  };
-  return !conTexto(a?.content);
-}
-
+ *  la actividad vacía; en cuanto hay un elemento, desaparece sin dejar hueco.
+ *  Qué cuenta como «nada escrito» lo decide core/activityCheck.js: el editor y
+ *  el jugador tenían cada uno su criterio y discrepaban. */
 function primerPasoHtml(T, a) {
   const paso = T?.meta?.editor?.primerPaso;
   if (!paso) return '';
@@ -97,6 +83,41 @@ function primerPasoHtml(T, a) {
   if (!T.meta.editor.generado && !sinEscribirNada(a)) return '';
   return `<div class="alert alert-info d-flex align-items-start gap-2 py-2">
     <i class="bi bi-lightbulb mt-1"></i><div>${escapeHtml(paso)}</div></div>`;
+}
+
+/** LO QUE FALTA, EN ROJO (decisión del dueño, 2026-08-14). Mientras la
+ *  actividad no esté lista se ve AQUÍ, no al llegar a la clase y descubrir que
+ *  no hay nada que arrastrar. Con el primer paso ya puesto (actividad recién
+ *  empezada) no se repite el sermón: ahí la pista azul basta. */
+function faltaHtml(a) {
+  const rev = revisarActividad(a);
+  if (rev.vacia) return '';            // la pista azul del primer paso ya lo dice
+  if (rev.listo) {
+    return `<div class="alert alert-success d-flex align-items-center gap-2 py-2 mb-3">
+      <i class="bi bi-check-circle-fill"></i><div>Lista para jugar.</div></div>`;
+  }
+  return `<div class="alert alert-danger d-flex align-items-start gap-2 py-2 mb-3">
+    <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+    <div><b>Falta${rev.problemas.length === 1 ? '' : 'n'} ${rev.problemas.length} dato${rev.problemas.length === 1 ? '' : 's'} para poder jugarla:</b>
+      <ul class="mb-0 mt-1 ps-3">${rev.problemas.map(p => `<li>${escapeHtml(p)}</li>`).join('')}</ul>
+    </div></div>`;
+}
+
+/** Repinta el panel de «lo que falta» y marca el título en rojo si está vacío.
+ *  Se llama en cada tecla: la revisión es pura y barata (recorre el contenido
+ *  en memoria), y un aviso que solo se actualiza al repintar miente justo
+ *  mientras el profe escribe, que es cuando lo está mirando. */
+function refrescarFalta(root, a) {
+  const caja = root.querySelector('#ww-falta');
+  const nuevo = faltaHtml(a);
+  // Solo se escribe si CAMBIA. Tecleando la palabra número 30 de la pregunta 12
+  // el panel dice exactamente lo mismo, y reescribirlo reparsea su HTML y
+  // ensucia el layout de toda la pestaña en cada letra.
+  if (caja && caja.dataset.ww !== nuevo) { caja.innerHTML = nuevo; caja.dataset.ww = nuevo; }
+  const titulo = root.querySelector('#f-title');
+  // La regla del título la calcula el revisor: escrita otra vez aquí ya
+  // discrepaba (sin `trim()`, « Sin título » pasaba por bueno).
+  if (titulo) titulo.classList.toggle('is-invalid', revisarActividad(a).faltaTitulo);
 }
 
 export function renderEditorShell(root, a, onChange, spec) {
@@ -128,7 +149,7 @@ export function renderEditorShell(root, a, onChange, spec) {
       // lo que ocupa su sitio es la frase que la plantilla DECLARA en
       // `meta.editor.primerPaso`. Va aquí y no en cada editor: así las 13 dicen
       // qué hacer primero sin que ninguna se acuerde de ponerlo.
-      body: () => primerPasoHtml(T, a) + spec.content.html(a) },
+      body: () => primerPasoHtml(T, a) + '<div id="ww-falta">' + faltaHtml(a) + '</div>' + spec.content.html(a) },
     spec.scoring && { id: 'tab-scoring', label: 'Puntuación', body: () => spec.scoring.html(a) },
     showModes && { id: 'tab-modes', label: 'Modos', icon: 'bi-controller', body: () => {
       const indiv = spec.rules ? `
@@ -236,6 +257,17 @@ export function renderEditorShell(root, a, onChange, spec) {
     }
     // Template-specific wiring.
     spec.content.wire?.(root, a, ctx);
+    // «Lo que falta» se recalcula con CADA tecla y cada cambio del editor. Los
+    // handlers de las plantillas llaman a onChange pero NO repintan (repintar
+    // en cada letra movería el cursor), así que sin esto el panel rojo se
+    // quedaría contando errores ya corregidos — que es peor que no tenerlo.
+    // Por `on()` (core/events.js) y NO con addEventListener: `render()` se
+    // re-ejecuta en cada repaint sobre la misma raíz, así que un listener crudo
+    // se APILA —21 copias tras 20 «Añadir pregunta», y 21 revisiones por tecla—.
+    // `on()` es idempotente por (raíz, evento, selector); para eso existe.
+    on(root, 'input', () => refrescarFalta(root, a));
+    on(root, 'change', () => refrescarFalta(root, a));
+    refrescarFalta(root, a);
     spec.rules?.wire?.(root, a, ctx);
     spec.scoring?.wire?.(root, a, ctx);
     if (liveOn) spec.live.wire?.(root, a, ctx);

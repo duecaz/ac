@@ -1,3 +1,4 @@
+import { revisarActividad, pantallaNoListaHtml } from '../core/activityCheck.js';
 import { html, escapeHtml, mount } from '../core/html.js';
 import { sessionItems } from '../kernel/session/engine.js';
 import { studentBase } from '../core/routing.js';
@@ -14,6 +15,11 @@ import { toast, confirmModal } from '../core/toast.js';
 export async function renderAssignmentsForActivity(rootSel, activityId) {
   const a = get(activityId);
   if (!a) { mount(rootSel, html`<div class="alert alert-warning">Actividad no encontrada.</div>`); return; }
+  // Una tarea se manda a casa: enterarse allí de que faltaban datos es peor que
+  // en clase. La puerta va en la RUTA (`#/tasks/:id` tiene enlace propio), no en
+  // el botón de la portada.
+  const rev = revisarActividad(a);
+  if (!rev.jugable) { mount(rootSel, pantallaNoListaHtml(a, rev)); return; }
 
   async function refresh() {
     const items = await listAssignmentsForActivity(activityId);

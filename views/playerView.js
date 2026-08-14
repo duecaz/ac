@@ -7,6 +7,7 @@ import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { get, save, getRemote, remove as removeActivity } from '../core/storage.js';
 import { activityItemCount, newActivityId } from '../core/migrate.js';
+import { revisarActividad, pantallaNoListaHtml } from '../core/activityCheck.js';
 import { getTemplate, compatibleTemplates } from '../core/registry.js';
 import { isVsCompatible } from '../kernel/session/engine.js';
 import { availableModes, getMode, runMode, modeNeedsAuth, modeAuthHint } from '../core/modes.js';
@@ -38,32 +39,21 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     mount(rootSel, html`<div class="alert alert-warning">Actividad no encontrada. <a href="#/home">Volver</a></div>`);
     return;
   }
-  // LA ACTIVIDAD VACÍA NO ES UN CALLEJÓN (F4 · nacer en blanco). Desde que las
-  // actividades nacen sin contenido de muestra, darle a Jugar antes de escribir
-  // nada es un camino NORMAL, no un error — y cada plantilla lo contaba a su
-  // manera («Esta actividad no tiene imagen o pines») en una pantalla sin
-  // salida, que es lo que se ve al hacerlo. Aquí se resuelve UNA vez para las
-  // 13, con el MISMO primer paso que enseña el editor y el botón para ir a
-  // escribirlo. Las de contenido GENERADO (Pelotas) no pasan por aquí: nacen
-  // jugables por definición.
+  // NI VACÍA NI A MEDIAS. Dos caminos que la app trataba como si nada:
+  //   · vacía — desde F4 las actividades nacen en blanco, así que darle a Jugar
+  //     antes de escribir nada es NORMAL; cada plantilla lo contaba a su manera
+  //     («Esta actividad no tiene imagen o pines») en una pantalla sin salida.
+  //   · a medias — el dueño subió el dibujo de «Etiqueta el diagrama», dejó las
+  //     etiquetas sin escribir y la app le dejó JUGAR: en el juego no había nada
+  //     que arrastrar. Lo que falta va EN ROJO y señalando el elemento, como en
+  //     cualquier aplicación a la que le faltan datos.
+  // La lista la pone core/activityCheck.js: una sola para las 13.
   {
-    const T = getTemplate(a.template);
-    if (!T?.meta?.editor?.generado && activityItemCount(a) === 0) {
-      const paso = T?.meta?.editor?.primerPaso || 'Ábrela en Editar y añade su contenido.';
-      mount(rootSel, html`
-        <div class="alert alert-info d-flex align-items-start gap-2">
-          <i class="bi bi-lightbulb mt-1"></i>
-          <div>
-            <b>«${a.title || 'Sin título'}» todavía está vacía.</b><br>
-            ${paso}
-          </div>
-        </div>
-        <div class="d-flex gap-2 flex-wrap">
-          <a class="btn btn-primary" href="#/edit/${a.id}"><i class="bi bi-pencil"></i> Editar la actividad</a>
-          <a class="btn btn-outline-secondary" href="#/home"><i class="bi bi-arrow-left"></i> Volver</a>
-        </div>`);
-      return;
-    }
+    const rev = revisarActividad(a);
+    // El TÍTULO no entra en esta puerta (`jugable`, no `listo`): `migrate` pone
+    // «Sin título» por defecto y atarlo aquí dejaría injugable una actividad
+    // completa traída del banco compartido. Se reclama en el editor.
+    if (!rev.jugable) { mount(rootSel, pantallaNoListaHtml(a, rev)); return; }
   }
   const ctx = acquire('playerPage');
   let liveTemplate = a.template;

@@ -9,12 +9,12 @@ import { shuffle } from '../../core/roundRender.js';
 import { scoreMatchSubmission } from './scorer.js';
 import { ROPES, OK_COL, NO_COL, mountRopeLayer, ropeHtml, ghostHtml, dotPos, svgPt } from '../../core/connectRope.js';
 import { observeResize } from '../../core/observeResize.js';
+import { pairComplete } from '../../core/contentModels/pairs.js';
 
 export async function renderMatchPlayer(rootSel, activity, opts = {}) {
-  const raw = (activity.content?.pairs || []).filter(p =>
-    (String(p.left || '').trim() || p.leftImage || p.image) &&
-    (String(p.right || '').trim() || p.rightImage)
-  );
+  // La regla la pone el modelo (core/contentModels/pairs.js), no esta copia:
+  // es la misma con la que el editor decide si la actividad está lista.
+  const raw = (activity.content?.pairs || []).filter(pairComplete);
   if (!raw.length) {
     mount(rootSel, html`<div class="alert alert-warning m-4">Esta actividad no tiene pares.</div>`);
     return;

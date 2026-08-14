@@ -1,0 +1,34 @@
+#!/bin/sh
+# NO SE EMPUJA A main SIN PREFLIGHT — el guardarraíl que no depende de acordarse.
+#
+# Por qué existe: `main` sirve aulareto.com. El preflight (9 redes, ~5 min) ya
+# existía y ya lo pasábamos… salvo la vez que un `| tail -5` se comió su código
+# de salida y subió una suite ROJA. Un ritual que depende de la memoria falla el
+# día que hay prisa, que es justo el día que importa.
+#
+# Cómo funciona: `tools/preflight.mjs` sella `.preflight-ok` con el hash del
+# ÁRBOL que verificó. Aquí se compara con el árbol que se va a empujar. Si no
+# coinciden, se para y se dice qué correr — nunca "prueba otra vez".
+#
+# Se instala UNA vez por copia del repo (también en Windows/PowerShell):
+#     git config core.hooksPath .githooks
+#
+# Salida de emergencia (con la clase delante): git push --no-verify
+set -e
+
+arbol=$(git rev-parse HEAD^{tree})
+sello=$(cat .preflight-ok 2>/dev/null || echo '')
+
+if [ "$arbol" = "$sello" ]; then
+  exit 0
+fi
+
+echo ""
+echo "  ⛔ PUSH DETENIDO — el preflight no ha verificado ESTE código."
+echo ""
+echo "     Corre:  node tools/preflight.mjs"
+echo "     (~5 min · 9 redes. Sella lo verificado y este hook te deja pasar.)"
+echo ""
+echo "     Si de verdad hay que subir ya:  git push --no-verify"
+echo ""
+exit 1

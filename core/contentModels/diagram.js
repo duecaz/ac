@@ -11,6 +11,12 @@ export function newEmpty() {
   return { image: null, pins: [] };
 }
 
+/** ¿ESTE PIN SE PUEDE JUGAR? El player descarta los que no tienen etiqueta; el
+ *  revisor los reclama. Tienen que ser LA MISMA regla o el aviso miente. */
+export function pinUsable(p) {
+  return !!p && !!p.id && String(p.label ?? '').trim() !== '';
+}
+
 export function validate(content) {
   const errs = [];
   if (!Array.isArray(content?.pins)) errs.push('pins must be an array');

@@ -6,6 +6,7 @@ import { on } from '../../core/events.js';
 import { renderImagePicker, attachImagePicker } from '../../core/imagePicker.js';
 import { itemControlsHtml, reorderArray, ruleScopeNote, itemSecondsFieldHtml, wireItemSeconds } from '../../core/editorPrimitives.js';
 import { rid } from '../../core/ids.js';
+import { hasCorrectAnswer } from '../../core/contentModels/qa.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 
 export function renderQuizEditor(root, activity, onChange) {
@@ -155,11 +156,10 @@ export function setOptionText(item, k, text) {
 
 /** ¿Esta pregunta puede puntuarse? Sin correcta marcada, TODA respuesta cuenta
  *  como fallo — el modo de fallar silencioso que nadie ve hasta jugar. */
-export function itemHasNoAnswer(it) {
-  const ans = it?.answer;
-  if (Array.isArray(ans)) return ans.filter(s => String(s ?? '').trim() !== '').length === 0;
-  return String(ans ?? '').trim() === '';
-}
+// La regla vive en el modelo (core/contentModels/qa.js). Esta copia miraba solo
+// `answer`, así que daba por buena una pregunta cuya opción marcada se había
+// quedado sin texto — y ahí el scorer falla TODAS las respuestas.
+export function itemHasNoAnswer(it) { return !hasCorrectAnswer(it); }
 export function someItemHasNoAnswer(a) {
   return (a?.content?.items || []).some(itemHasNoAnswer);
 }

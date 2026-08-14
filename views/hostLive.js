@@ -14,6 +14,7 @@ import { createRoom, findRoomByCode, fetchSession, fetchSessionBlob,
          realtimeKind }
        from '../core/liveTransport.js';
 import { getTemplate } from '../core/registry.js';
+import { revisarActividad, pantallaNoListaHtml } from '../core/activityCheck.js';
 import { sessionItems, roundPayloadOf } from '../kernel/session/engine.js';
 import { rowsFromLiveAnswers, rowsFromLiveState } from '../core/answerRows.js';
 import { itemStatsHtml } from './itemStatsView.js';
@@ -48,7 +49,14 @@ export async function renderHostLaunch(rootSel, activityId) {
     a = await getRemote(activityId).catch(() => null);
   }
   if (!a) { mount(rootSel, html`<div class="alert alert-danger">Actividad no encontrada.</div>`); return; }
-  if (!sessionItems(a).length) { mount(rootSel, html`<div class="alert alert-warning">La actividad no tiene preguntas.</div>`); return; }
+  // A MEDIAS NO SE LLEVA A CLASE, y se comprueba AQUÍ y no en el botón de la
+  // portada: `#/launch/:id` es una ruta con enlace propio (marcador, atrás,
+  // cualquier vista futura con un botón de PIN). La comprobación en el botón
+  // deja la puerta de al lado abierta; en la ruta las cubre todas.
+  // Sustituye a un «La actividad no tiene preguntas» que era un callejón: ahora
+  // se dice QUÉ falta y se ofrece ir a arreglarlo.
+  const rev = revisarActividad(a);
+  if (!rev.jugable) { mount(rootSel, pantallaNoListaHtml(a, rev)); return; }
 
   mount(rootSel, html`<div class="text-center py-5"><div class="spinner-border"></div><p class="mt-2">Creando sala…</p></div>`);
   try {

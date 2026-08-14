@@ -22,7 +22,9 @@
 //   · tools/race-e2e.mjs   → necesita PocketBase REAL y credenciales (manual).
 //   · tools/stress-live.mjs → prueba de carga contra la Pi (manual).
 //   · tools/shots.mjs      → comparación visual antes/después (manual, por diseño).
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
+import { writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -68,6 +70,29 @@ for (const paso of pasos) {
     console.log(`   Reproduce con:  node ${paso.cmd}\n`);
     process.exit(1);
   }
+}
+
+// EL SELLO. Se guarda el hash del ÁRBOL verificado para que el hook de
+// pre-push (.githooks/pre-push) sepa si lo que se empuja es exactamente esto.
+// Así el ritual deja de depender de acordarse: si el código cambió después del
+// preflight, el push se para solo. En modo --rapido NO se sella: solo se ha
+// corrido la suite, y sellar ahí sería firmar lo que no se ha mirado.
+if (!soloRapido) {
+  try {
+    // Índice TEMPORAL, y FUERA del repo: se calcula el árbol del código tal y
+    // como está AHORA sin tocar lo que el usuario tenga preparado en su índice
+    // real. Ese hash es el mismo que tendrá el commit, así que el hook puede
+    // compararlos. Dentro del repo no vale: git deja un `.lock` al lado que el
+    // `add -A` recogía, y el sello salía de un árbol que no existe — el propio
+    // hook lo cazó al primer push.
+    const idx = join(tmpdir(), `ww-preflight-${process.pid}.index`);
+    const git = (args) => execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', env: { ...process.env, GIT_INDEX_FILE: idx } }).trim();
+    git(['read-tree', 'HEAD']);
+    git(['add', '-A']);
+    writeFileSync(join(ROOT, '.preflight-ok'), git(['write-tree']));
+    rmSync(idx, { force: true });
+    rmSync(idx + '.lock', { force: true });
+  } catch { /* fuera de un repo git (contenedor de pruebas): el sello es una comodidad, no un requisito */ }
 }
 
 const total = resultados.reduce((n, r) => n + r.secs, 0);

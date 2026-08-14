@@ -9,9 +9,10 @@ import { shuffle } from '../../core/roundRender.js';
 import { scoreDiagramSubmission } from './scorer.js';
 import { ROPES, OK_COL, NO_COL, mountRopeLayer, ropeHtml, ghostHtml, dotPos, svgPt } from '../../core/connectRope.js';
 import { observeResize } from '../../core/observeResize.js';
+import { pinUsable } from '../../core/contentModels/diagram.js';
 
 export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
-  const pins = (activity.content?.pins || []).filter(p => p && p.id && String(p.label || '').trim());
+  const pins = (activity.content?.pins || []).filter(pinUsable);
   const image = activity.content?.image || null;
   if (!image || !pins.length) {
     mount(rootSel, html`<div class="alert alert-warning m-4">Esta actividad no tiene imagen o pines.</div>`);

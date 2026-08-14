@@ -163,6 +163,30 @@ try {
   // 10. ESCRIBIR y GUARDAR: el gesto por el que el profe existe en esta app.
   await teclear('#f-title', 'Fotosíntesis avanzada');
   await teclear('.it-q', '¿Qué gas absorbe la planta?');
+
+  // 10b. A MEDIAS NO SE JUEGA (v1.51.475). Con la pregunta escrita pero SIN
+  //      respuesta correcta marcada, «Probar» tiene que negarse y DECIR por qué:
+  //      así se jugaba antes, y todo contaba como fallo hasta el podio. Se mide
+  //      aquí, en el editor, que es donde el profe lo vive.
+  await page.click('#btn-test');
+  await page.waitForTimeout(600);
+  const avisoRojo = await page.locator('#ww-falta .alert-danger').count();
+  const hashTrasProbar = await page.evaluate(() => location.hash);
+  if (/#\/play\//.test(hashTrasProbar)) fail('«Probar» dejó jugar una actividad sin respuesta correcta marcada');
+  if (!avisoRojo) fail('falta el aviso ROJO de lo que le falta a la actividad');
+  ok('a medias NO se juega: «Probar» se niega y el editor dice EN ROJO qué falta');
+
+  // 10c. …y en cuanto se completa, deja de estorbar (contra-prueba: un guardián
+  //      que nunca abre la puerta es tan inútil como no tenerlo).
+  await teclear('.it-opt[data-i="0"][data-k="0"]', 'Dióxido de carbono');
+  await teclear('.it-opt[data-i="0"][data-k="1"]', 'Helio');
+  await page.click('.it-correct[data-i="0"][data-k="0"]');
+  await page.waitForTimeout(400);
+  if (await page.locator('#ww-falta .alert-danger').count()) {
+    fail('el aviso rojo sigue puesto con la actividad ya completa');
+  }
+  ok('al marcar la respuesta el aviso rojo desaparece solo (sin repintar la pestaña)');
+
   await page.click('#btn-save-draft');
   await page.waitForTimeout(900);
   const estado = await page.locator('#save-state').innerText();

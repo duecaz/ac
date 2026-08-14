@@ -6,9 +6,13 @@ import { on } from '../../core/events.js';
 import { scoreMemorySubmission } from './scorer.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { shuffle } from '../../core/roundRender.js';
+import { pairComplete } from '../../core/contentModels/pairs.js';
 
 export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
-  const pairs = (activity.content?.pairs || []).filter(p => String(p.left||'').trim() && String(p.right||'').trim());
+  // Misma regla que el editor y que Emparejar (core/contentModels/pairs.js).
+  // Esta copia además ignoraba las imágenes: una pareja dibujo↔palabra se caía
+  // del juego aunque el editor la diera por buena.
+  const pairs = (activity.content?.pairs || []).filter(pairComplete);
   if (!pairs.length) { mount(rootSel, html`<div class="alert alert-warning m-4">Sin pares.</div>`); return; }
 
   const ctx = runFreeformPlayer(rootSel, activity, opts);
