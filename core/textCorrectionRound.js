@@ -156,7 +156,6 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
           <span class="tc-switch__side tc-switch__side--pen">
             ${LUCIDE.pencil}<span class="tc-switch__word">Lápiz</span>
           </span>
-          <span class="tc-switch__track"><span class="tc-switch__knob"></span></span>
           <span class="tc-switch__side tc-switch__side--er" data-tool="eraser">
             ${LUCIDE.eraser}<span class="tc-switch__word">Borrador</span>
           </span>

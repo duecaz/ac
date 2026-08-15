@@ -147,56 +147,42 @@ body.bg-set.bg-set:has(.tc-round) {
   content: ''; position: absolute; left: max(8px, 1.8cqw); top: 0; bottom: 0;
   width: .14em; background: rgba(214, 80, 70, .5);
 }
-/* ── LÁPIZ / BORRADOR: UN INTERRUPTOR (mando manual del canvas) ──────────────
-   Forma de interruptor de la luz (dueño, 2026-08-15): dos iconos fijos —lápiz a
-   la izquierda, borrador a la derecha— y una pastilla cuya bolita se va al lado
-   que manda. Se lee de un vistazo a 3 m sin comparar rellenos, y es UN solo
-   blanco táctil en vez de dos.
-   Tamaños en unidades de contenedor como el resto del player (§3): en la pizarra
-   de 4 m se ve grande y en un móvil 9:16 no se come el texto. El color del lado
-   activo sale de un TOKEN para que los skins lo recoloreen; además del color, la
-   POSICIÓN de la bolita y la opacidad del icono distinguen el estado (R1: no
-   todo el mundo distingue matices). */
+/* ── LÁPIZ / BORRADOR: UN MANDO DE DOS PASTILLAS ────────────────────────────
+   Tercera forma, y la que pidió el dueño con maqueta (2026-08-15): «los iconos
+   van dentro». Un solo carril con DOS pastillas dentro —lápiz y borrador, cada
+   una con su icono y su palabra—, y la activa RELLENA. La bolita de interruptor
+   de luz obligaba a deducir a qué lado apuntaba; aquí el que manda es el que
+   está pintado, sin traducir nada.
+   Sigue siendo UN control (un `<button>` que conmuta), no dos: pulsar donde sea
+   cambia de herramienta, así que no hay estado "ninguna" ni un toque de más.
+   Tamaños en unidades de contenedor como el resto del player (§3): grande en la
+   pizarra de 4 m, sin comerse el texto en un móvil 9:16. El relleno sale de un
+   TOKEN para que lo recoloreen los skins, y el estado se distingue por RELLENO
+   —no solo por matiz— para la mirada a 3 m y para quien no separa colores. */
 .tc-switch {
-  flex: 0 0 auto; display: inline-flex; align-items: center; gap: .45em;
-  border: 0; background: transparent; padding: .2em .35em; cursor: pointer;
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: .15em;
+  border: 0; cursor: pointer; padding: .18em;
+  border-radius: 999px; background: rgba(0, 0, 0, .07);
   font-size: clamp(.8rem, 2.1cqmin, 1.3rem); line-height: 1;
 }
 .tc-switch__side {
-  display: inline-flex; align-items: center; gap: .3em;
-  opacity: .35; font-weight: 700;
-  transition: opacity .15s ease, color .15s ease;
+  display: inline-flex; align-items: center; gap: .35em;
+  padding: .34em .75em; border-radius: 999px;
+  font-weight: 700; color: var(--ww-paper-ink, #1f2937); opacity: .55;
+  transition: background .15s ease, color .15s ease, opacity .15s ease;
 }
-/* EL LADO ENCENDIDO LLEVA SU PALABRA (dueño, 2026-08-15). El apagado se queda
-   solo con el icono: así el mando dice a la vez en qué está («Lápiz») y qué es
-   lo otro (el icono de goma), sin ocupar el doble de barra ni obligar a leer
-   dos etiquetas para saber cuál manda. */
-.tc-switch__word { display: none; }
+/* LA PASTILLA ACTIVA VA RELLENA, con su icono y su palabra dentro. */
 .tc-switch:not(.is-on) .tc-switch__side--pen,
-.tc-switch.is-on .tc-switch__side--er { opacity: 1; color: var(--ww-accent, #0d6efd); }
-.tc-switch:not(.is-on) .tc-switch__side--pen .tc-switch__word,
-.tc-switch.is-on .tc-switch__side--er .tc-switch__word { display: inline; }
+.tc-switch.is-on .tc-switch__side--er {
+  background: var(--ww-accent, #0d6efd);
+  /* Blanco sobre el acento: neutro permitido por §3 — los skins recolorean el
+     RELLENO con su token y el texto encima sigue legible en los seis. */
+  color: #fff; opacity: 1;
+  box-shadow: 0 1px 3px rgba(0,0,0,.22);
+}
 /* Los iconos son SVG de Lucide en línea: escalan con la letra del mando y toman
    su color de `currentColor` (el token del skin), como hacía el icono de fuente. */
-.tc-ico { width: 1.15em; height: 1.15em; display: block; }
-/* La pastilla: carril + bolita, como el interruptor de un móvil. */
-.tc-switch__track {
-  position: relative; display: inline-block;
-  width: 2.6em; height: 1.35em; border-radius: 999px;
-  background: rgba(0,0,0,.18);
-  box-shadow: inset 0 1px 3px rgba(0,0,0,.25);
-  transition: background .15s ease;
-}
-.tc-switch.is-on .tc-switch__track { background: var(--ww-accent, #0d6efd); }
-.tc-switch__knob {
-  position: absolute; top: .16em; left: .16em;
-  width: 1.03em; height: 1.03em; border-radius: 50%;
-  /* Blanco: neutro permitido por §3 — es la bolita del interruptor, y tiene que
-     leerse igual sobre el carril apagado y sobre el acento de cualquier skin. */
-  background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35);
-  transition: transform .15s ease;
-}
-.tc-switch.is-on .tc-switch__knob { transform: translateX(1.25em); }
+.tc-ico { width: 1.1em; height: 1.1em; display: block; }
 .tc-switch:focus-visible { outline: 2px solid var(--ww-accent, #0d6efd); outline-offset: 2px; border-radius: 999px; }
 
 /* ── Pantalla completa DENTRO de la barra ────────────────────────────────────
