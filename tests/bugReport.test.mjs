@@ -6,7 +6,7 @@
 //
 // Run: node tests/bugReport.test.mjs
 import assert from 'node:assert';
-import { buildBugReport } from '../core/bugReport.js';
+import { buildBugReport, medidasPantalla } from '../core/bugReport.js';
 import { VERSION } from '../core/constants.js';
 
 let passed = 0;
@@ -48,6 +48,35 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   assert.ok(r.includes('ninguno registrado'), 'dice explícitamente que no hay errores');
   assert.ok(r.includes(`v${VERSION}`) && r.includes('#/mine'), 'y aun así lleva versión y pantalla');
   ok('CONTRA-PRUEBA: sin errores, el reporte sigue diciendo versión y pantalla');
+}
+
+// ── LA MAQUETA VIENE MEDIDA ────────────────────────────────────────────────
+// «Todavía tiene scroll, ¿o aún no se actualizó?» (dueño, 2026-08-15). Con
+// versión y ruta solamente, esa pregunta no tiene respuesta, y la alternativa
+// era pedirle que pegara código en la consola — que Chrome bloquea hasta
+// escribir «allow pasting». Cinco números en el reporte la contestan solos.
+{
+  const r = buildBugReport({
+    version: '9.9.9', errors: [], now: new Date('2026-01-01T00:00:00Z'),
+    medidas: { ventana: '412x915', sobra: 72, barra: 56, barraVar: '56px', marco: 913, ronda: 436 },
+  });
+  assert.match(r, /maqueta: ventana 412x915/, 'el reporte dice el tamaño de la ventana');
+  assert.match(r, /scroll sobrante 72px/, 'y si sobra pantalla (la pregunta que no se podía responder)');
+  assert.match(r, /barra 56px \(descontada 56px\)/, 'y si el marco descuenta la barra REAL');
+  assert.match(r, /marco 913px · ejercicio 436px/, 'y si el ejercicio llena el marco');
+  // R7 intacto: son medidas de MAQUETA, no del aparato.
+  assert.ok(!/userAgent|Android|iPhone|modelo/i.test(r), 'sigue sin datos del aparato');
+  ok('el reporte trae la maqueta medida (ventana · scroll · barra · marco · ejercicio) sin datos del aparato');
+}
+
+// ── CONTRA-PRUEBA: sin DOM, el reporte no se rompe ─────────────────────────
+// `medidasPantalla()` corre en Node (tests, herramientas) donde no hay document.
+{
+  assert.strictEqual(medidasPantalla(null, null), null, 'sin DOM no hay medidas');
+  const r = buildBugReport({ version: '9.9.9', errors: [], medidas: null, now: new Date() });
+  assert.ok(!/maqueta:/.test(r), 'y la línea simplemente no sale');
+  assert.match(r, /REPORTE AulaReto v9\.9\.9/, 'el resto del reporte sigue entero');
+  ok('CONTRA-PRUEBA: sin DOM no hay línea de maqueta y el reporte sigue válido');
 }
 
 console.log(`\n  ${passed} bugReport checks passed`);
