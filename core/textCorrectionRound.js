@@ -153,10 +153,10 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
         ${chips.left ? `<span class="tc-chip">${chips.left}</span>` : ''}
         <button type="button" class="tc-switch" data-tool="pen" aria-pressed="false"
                 title="Lápiz — toca para borrar" aria-label="Lápiz activo. Tocar para pasar al borrador">
-          <span class="tc-switch__side tc-switch__side--pen">
+          <span class="tc-switch__side tc-switch__side--pen" data-side="pen">
             ${LUCIDE.pencil}<span class="tc-switch__word">Lápiz</span>
           </span>
-          <span class="tc-switch__side tc-switch__side--er" data-tool="eraser">
+          <span class="tc-switch__side tc-switch__side--er" data-side="eraser">
             ${LUCIDE.eraser}<span class="tc-switch__word">Borrador</span>
           </span>
         </button>
@@ -191,12 +191,22 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
     onSubmit?.(draw.getMarked());
   };
   root.querySelector('.tc-done').addEventListener('click', submit);
-  // EL INTERRUPTOR: apagado = lápiz, encendido = borrador. Un solo control que
-  // se conmuta, y lo que diga se lo lleva el canvas (`setEraser`).
+  // EL MANDO: apagado = lápiz, encendido = borrador. Lo que diga se lo lleva el
+  // canvas (`setEraser`).
+  //
+  // OJO con el gesto: al pasar de bolita a DOS PASTILLAS ETIQUETADAS, el mando
+  // dejó de parecer un interruptor y pasó a parecer un selector — y con un
+  // conmutador ciego, tocar la pastilla que YA estaba activa te cambiaba a la
+  // otra. El alumno que está en «Lápiz» y toca «Lápiz» se llevaba el borrador, y
+  // su siguiente trazo BORRABA una marca: en Tildes/Comas el puntaje es neto, así
+  // que eso cuesta puntos sin decir nada. Manda el lado tocado; solo el hueco
+  // entre pastillas conmuta.
   const sw = root.querySelector('.tc-switch');
-  sw.addEventListener('click', () => {
+  sw.addEventListener('click', (e) => {
     if (done) return;
-    const borrar = !sw.classList.contains('is-on');
+    const lado = e.target.closest('.tc-switch__side')?.dataset.side;
+    const borrar = lado ? lado === 'eraser' : !sw.classList.contains('is-on');
+    if (borrar === sw.classList.contains('is-on')) return;   // ya estaba en ese
     sw.classList.toggle('is-on', borrar);
     sw.dataset.tool = borrar ? 'eraser' : 'pen';
     sw.setAttribute('aria-pressed', String(borrar));
@@ -363,8 +373,17 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     const want = new Set((p.marks || []).filter(m => m.kind === kind).map(m => m.pos));
     const got = new Set(value.map(Number));
     const last = idx === passages.length - 1;
+    // LA BARRA SIGUE AHÍ EN LA CORRECCIÓN. Sin ella, esta pantalla no tenía
+    // `.tc-bar--fs` y el botón de pantalla completa volvía a la esquina
+    // flotante: saltaba de sitio en cada frase (barra → esquina → barra). El
+    // sitio de un mando no puede depender de en qué mitad del ejercicio estás.
+    // Sin herramientas: aquí no se dibuja.
     shell(`
       <div class="tc-round">
+        <div class="tc-bar tc-bar--fs">
+          <span class="tc-chip">${idx + 1} / ${passages.length}</span>
+          ${fullscreenButtonHtml({ inline: true })}
+        </div>
         <div class="tc-passage-area"><div class="tc-passage">${passageHtml(p.text, kind, { got, want })}</div></div>
         <div class="tc-done-wrap">
           <span class="tc-verdict ${r.correct ? 'ok' : 'bad'}">
@@ -375,13 +394,16 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
             ${last ? '<i class="bi bi-flag-fill"></i> Ver resultado' : 'Siguiente <i class="bi bi-arrow-right"></i>'}
           </button></div>
         </div>
-      </div>`);
+      </div>`, { conFrase: false });
     // El texto de la corrección también LLENA el área (mismo tamaño grande).
     const areaEl = document.querySelector('.tc-passage-area');
     const passageEl = areaEl.querySelector('.tc-passage');
     const stopFit = fitPassage(areaEl, passageEl);
+    const marco = areaEl.closest('.ww-player-frame') || document.documentElement;
+    const soltarFs = attachFullscreenButton(document.querySelector('.tc-bar'), { target: marco });
     document.querySelector('.tc-next').addEventListener('click', () => {
       stopFit();
+      soltarFs();
       if (last) finish();
       else { idx++; ctx.saveProgress(snapshot()); ask(); }
     });

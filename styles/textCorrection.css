@@ -186,8 +186,11 @@ body.bg-set.bg-set:has(.tc-round) {
 .tc-switch:focus-visible { outline: 2px solid var(--ww-accent, #0d6efd); outline-offset: 2px; border-radius: 999px; }
 
 /* ── Pantalla completa DENTRO de la barra ────────────────────────────────────
-   Se pega al extremo derecho (si hay chip de «restantes», detrás de él). Sin
-   caja propia: la barra ya es la caja. */
+   Se pega al extremo derecho. Sin caja propia: la barra ya es la caja.
+   OJO con el `margin-left:auto`: si lo llevan A LA VEZ el chip de «restantes» y
+   este botón, el hueco libre se REPARTE entre los dos y el chip queda flotando
+   en mitad de la barra (y la separación crece con la pantalla). Cuando hay chip
+   derecho, el que empuja es ÉL y el botón solo se separa un poco. */
 .tc-bar .ww-fs-btn--inline {
   flex: 0 0 auto; margin-left: auto;
   display: inline-flex; align-items: center; justify-content: center;
@@ -199,6 +202,7 @@ body.bg-set.bg-set:has(.tc-round) {
 }
 .tc-bar .ww-fs-btn--inline:hover,
 .tc-bar .ww-fs-btn--inline:focus-visible { background: rgba(0,0,0,.18); }
+.tc-bar .tc-chip--right + .ww-fs-btn--inline { margin-left: .45em; }
 .tc-bar .ww-fs-btn--inline i { font-size: inherit; line-height: 1; }
 /* El botón vive ABAJO: margin-top auto lo ancla al pie aunque el texto sea
    corto — es lo que separa «hoja con su botón» de «todo amontonado arriba». */

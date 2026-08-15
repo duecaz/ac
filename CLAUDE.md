@@ -234,6 +234,11 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   `docs/historico/handoff-previews-home.md` Fase 2b).
 - En móvil (≤640px) la barra superior colapsa en un **menú hamburguesa** (`.ww-topbar__burger`
   → clase `.open`); las acciones (incl. `#ww-mute-slot`/`#ww-auth-slot`) caen en el desplegable.
+  Lo cablea **`wireTopbarMenu()`** (`core/boot.js`), que lo llaman las dos `main.*` con
+  barra — NUNCA un `onclick` en el HTML (estaba repetido en los dos y ninguno cerraba al
+  tocar fuera). Cierra por las cuatro vías que el usuario espera: el botón, una acción,
+  un toque FUERA y Escape; y al navegar, para no quedarse encima de la vista siguiente
+  (§23). Vigilado ejecutando el cableado en `tests/menu.test.mjs`.
 
 ## Estándares transversales (no romper)
 - **Pantalla de inicio** (`views/startScreen.js`): todo modo Individual pasa por ella (título +
@@ -273,6 +278,13 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   todo el ancho dentro del marco debe respetar `--ww-fs-reserve` (lo hace el marcador
   del duelo). El marcador VS lo tapaba: el botón existía y NO se podía tocar. Vigilado
   por `node tools/matrix-smoke.mjs` con hit-testing real, no con `querySelector`.
+  **Excepción DECLARADA**: una ronda que pinte su propia barra a todo el ancho puede
+  ALOJAR el botón dentro (`fullscreenButtonHtml({ inline: true })`) y marcar esa barra
+  con `tc-bar--fs`; entonces la esquina flotante se retira (CSS) para que no queden dos
+  mandos iguales. Solo cuando la ronda ES la pantalla entera: en el duelo hay DOS rondas
+  y la esquina —que es UNA— sigue mandando. Y si una pantalla de la misma plantilla se
+  queda sin barra, el botón SALTA de sitio: la corrección de Tildes/Comas también pinta
+  su barra por eso. Lo mide `matrix-smoke` con estilos computados.
 - **Buscar actividades**: SIEMPRE `searchActivities` (`core/search.js`) — uno solo para la
   home y la biblioteca (estaba copiado en las dos, con `includes` sobre título/subtítulo/tags).
   Buscar es BINARIO (norte §2b): sin tildes ni mayúsculas, por PALABRAS en cualquier orden, y

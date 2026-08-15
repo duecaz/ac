@@ -40,11 +40,25 @@ const css = leer('styles/textCorrection.css');
 // ── 1. UN interruptor con los dos lados a la vista ──────────────────────────
 {
   citaDeFuente(ronda, /class="tc-switch"/, 'el mando lápiz/borrador existe', 'textCorrectionRound.js');
-  citaDeFuente(ronda, /data-tool="pen"/, 'con su lado LÁPIZ', 'textCorrectionRound.js');
-  citaDeFuente(ronda, /data-tool="eraser"/, 'y su lado BORRADOR', 'textCorrectionRound.js');
+  citaDeFuente(ronda, /data-side="pen"/, 'con su lado LÁPIZ', 'textCorrectionRound.js');
+  citaDeFuente(ronda, /data-side="eraser"/, 'y su lado BORRADOR', 'textCorrectionRound.js');
   assert.strictEqual((ronda.match(/class="tc-switch"/g) || []).length, 1,
-    'es UN mando, no dos: el dueño pidió un interruptor de luz, no dos pastillas');
-  ok('la ronda trae UN interruptor con los dos lados siempre a la vista');
+    'es UN mando, no dos controles sueltos');
+  ok('la ronda trae UN mando con los dos lados siempre a la vista');
+}
+
+// ── 1b. TOCAR EL LADO ACTIVO NO CAMBIA DE HERRAMIENTA ──────────────────────
+// Al pasar de bolita a dos pastillas etiquetadas, el mando dejó de parecer un
+// interruptor y pasó a parecer un SELECTOR — pero el manejador seguía siendo un
+// conmutador ciego: el alumno en «Lápiz» que toca «Lápiz» se llevaba el
+// borrador, y su siguiente trazo borraba una marca. En Tildes/Comas el puntaje
+// es NETO, así que ese gesto costaba puntos sin decir nada.
+{
+  citaDeFuente(ronda, /closest\('\.tc-switch__side'\)\?\.dataset\.side/,
+    'manda el LADO tocado, no un toggle a ciegas', 'textCorrectionRound.js');
+  citaDeFuente(ronda, /if \(borrar === sw\.classList\.contains\('is-on'\)\) return;/,
+    'y tocar el que ya estaba activo no cambia nada', 'textCorrectionRound.js');
+  ok('tocar la pastilla activa NO cambia de herramienta (no se borra una marca por error)');
 }
 
 // ── 2. Y están CABLEADOS al canvas ──────────────────────────────────────────
@@ -108,7 +122,14 @@ const css = leer('styles/textCorrection.css');
     'la barra ALOJA el botón de pantalla completa (no lo deja flotando)', 'textCorrectionRound.js');
   citaDeFuente(ronda, /attachFullscreenButton\(/,
     'y está cableado: pulsarlo expande de verdad', 'textCorrectionRound.js');
-  ok('pantalla completa vive en la barra y está cableada');
+  // Y TAMBIÉN EN LA CORRECCIÓN: esa pantalla no pintaba barra, así que el botón
+  // se iba a la esquina flotante y volvía en la frase siguiente. Un mando que
+  // salta de sitio según la mitad del ejercicio en la que estás no es un mando.
+  const corr = ronda.slice(ronda.indexOf('function reveal('), ronda.indexOf('function finish('));
+  assert.match(corr, /tc-bar tc-bar--fs/, 'la pantalla de corrección también pinta su barra');
+  assert.match(corr, /fullscreenButtonHtml\(\{ inline: true \}\)/, 'con el botón dentro');
+  assert.match(corr, /soltarFs\(\)/, 'y lo suelta al avanzar (ley §23)');
+  ok('pantalla completa vive en la barra —también en la corrección— y está cableada');
 }
 
 // ── 5. CONTRA-PRUEBA: no es un control destructivo (§28 R2b) ───────────────
