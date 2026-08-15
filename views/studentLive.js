@@ -15,7 +15,7 @@ import { acquire } from '../core/lifecycle.js';
 import { toast } from '../core/toast.js';
 import { submit as queuedSubmit, flush as flushQueue, pendingCount } from '../core/submitQueue.js';
 import { resetScene } from '../core/presentation.js';
-import { montarMarcoAlumno } from '../core/studentFrame.js';
+import { montarMarcoJuego } from '../core/gameFrame.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import * as Streaks from '../core/streaks.js';
 import { getTemplate } from '../core/registry.js';
@@ -137,18 +137,18 @@ export async function renderPlay(rootSel, code) {
     console.warn(`[studentLive] versión desfasada tras recargar (app ${VERSION} vs sala ${activity.appVersion}) — se intenta jugar igual`);
   }
 
-  // EL MARCO DEL ALUMNO (core/studentFrame.js): el mismo marco de juego del
+  // EL MARCO DEL ALUMNO (core/gameFrame.js): el mismo marco de juego del
   // profe — esquina de pantalla completa incluida — con el tema y el fondo que
   // viajan en el snapshot. Se monta UNA vez; cada fase pinta en su escenario,
   // así el botón sobrevive del lobby al podio. A partir de aquí `rootSel` ES el
   // escenario: las diecinueve pantallas de esta vista no cambian ni una línea.
-  const marco = montarMarcoAlumno(rootSel, activity);
+  const marco = montarMarcoJuego(rootSel, activity);
   rootSel = marco.stageSel;
 
   // Escena POR FASE (docs/handoff-player-frame.md, Etapa 1): el fondo de la
   // actividad va SOLO en las pantallas de JUEGO; lobby/espera/resultado (chrome)
   // van neutros. Toggle compartido con hostLive (core/presentation.js).
-  // El tema y el fondo viven en el MARCO (core/studentFrame.js), no en la
+  // El tema y el fondo viven en el MARCO (core/gameFrame.js), no en la
   // página: aquí había un sceneToggle que tematizaba <body> en las fases de
   // juego — tenía sentido cuando el alumno jugaba a página desnuda, pero con el
   // marco el fondo se pintaba DOS veces y la web entera parecía el cuaderno de

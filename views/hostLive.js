@@ -27,6 +27,7 @@ import { getAuthUserId } from '../core/auth.js';
 import { openLoginModal } from './loginModal.js';
 import { toast, confirmModal } from '../core/toast.js';
 import { sceneToggle, resetScene } from '../core/presentation.js';
+import { montarMarcoJuego } from '../core/gameFrame.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { hostPaintDecision } from '../core/livePhases.js';
@@ -115,11 +116,27 @@ async function renderHost(rootSel, code, sessionId, activity) {
   let driverKind = 'unknown';
   try { driverKind = await realtimeKind(); } catch { /* keep unknown */ }
 
+  // EL MARCO DE JUEGO, TAMBIÉN AQUÍ (core/gameFrame.js). Esta vista es la que se
+  // PROYECTA en la pared: es tan «juego» como la del alumno, y sin embargo era la
+  // única que se pintaba a página desnuda. El dueño lo vio por su síntoma
+  // (2026-08-15, con captura): «la página del docente tiene el fondo de la
+  // actividad, ¿por qué?». Porque el tema y el fondo se aplicaban al <body>: el
+  // cuaderno se pintaba por toda la web —barra incluida— y el juego no tenía
+  // caja, así que la carrera quedaba arriba y debajo un campo de renglones hasta
+  // el final del scroll. Con marco, el fondo tiene DÓNDE ponerse.
+  // Se monta UNA vez; cada fase pinta en su escenario, así el botón de pantalla
+  // completa —imprescindible para proyectar— sobrevive del lobby al podio.
+  const marco = montarMarcoJuego(rootSel, activity, { escena: false });
+  ctx.add(() => marco.dispose());
+  rootSel = marco.stageSel;
+
   // Escena POR FASE (docs/handoff-player-frame.md, Etapa 1): el fondo/skin de la
   // actividad se aplica SOLO en las pantallas de JUEGO; lobby y podio (chrome) van
   // con el fondo neutro de la app. El enrutador paint() decide por rama.
-  const scene = sceneToggle(activity);
-  ctx.add(() => resetScene());
+  // El ÁMBITO es el marco, nunca la página (§23): un tema global se queda pegado
+  // a la vista siguiente, y aquí además tapaba el chrome del profe.
+  const scene = sceneToggle(activity, { target: marco.frame });
+  ctx.add(() => resetScene(marco.frame));
   // Stage class for big-screen typography.
   // `ww-livestage` (NO `ww-stage`): activa las fuentes grandes de proyector
   // (touch.css) SIN heredar la región de andamio `.ww-stage` (scaffold.css), que

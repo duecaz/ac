@@ -65,11 +65,15 @@ body {
 }
 
 /* ─────────────────────────── Barra superior ─────────────────────────── */
-/* SU ALTO ES UN DATO, no un número que cada pantalla recuerde. Quien tenga que
-   llenar «lo que queda de ventana» (el marco del alumno) lo descuenta con
-   `var(--ww-topbar-h)`. Antes nadie lo descontaba: la página del alumno pedía
-   100dvh DEBAJO de una barra de 56px, así que el documento medía 72px más que
-   la ventana y siempre había scroll (medido, 2026-08-15). */
+/* SU ALTO ES UN DATO MEDIDO, no un número que cada pantalla recuerde. Quien
+   tenga que llenar «lo que queda de ventana» (el marco del alumno) lo descuenta
+   con `var(--ww-topbar-h)`. Antes nadie lo descontaba: la página del alumno
+   pedía 100dvh DEBAJO de la barra, así que el documento medía 72px más que la
+   ventana y siempre había scroll (medido, 2026-08-15).
+   El 56 de aquí es solo el valor de ARRANQUE, para el primer pintado: el real
+   lo escribe `medirBarra()` (core/boot.js) desde la caja del elemento, porque
+   la barra es `flex-wrap: wrap` y a ciertos anchos ocupa dos líneas — un número
+   fijo volvía a dejar scroll, con otra cifra. */
 :root { --ww-topbar-h: 56px; }
 .ww-topbar {
   position: relative;

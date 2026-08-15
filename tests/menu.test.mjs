@@ -118,6 +118,9 @@ const enlaces = [...nav.matchAll(/<a\s+href="(#\/[^"]*)"([^>]*)>([\s\S]*?)<\/a>/
         toggle(c) { this._s.has(c) ? this._s.delete(c) : this._s.add(c); },
       },
       setAttribute(k, v) { n.attrs[k] = v; },
+      // La barra se MIDE (core/boot.js `medirBarra`): el mando de la hoja del
+      // alumno descuenta su alto real, así que el doble tiene que devolver uno.
+      getBoundingClientRect: () => ({ height: 56 }),
       addEventListener(t, f) { n['on_' + t] = f; },
       contains(o) { for (let p = o; p; p = p.parentNode) if (p === n) return true; return false; },
       closest(sel) {
@@ -135,7 +138,9 @@ const enlaces = [...nav.matchAll(/<a\s+href="(#\/[^"]*)"([^>]*)>([\s\S]*?)<\/a>/
   const acciones = nodo('ww-topbar__actions', bar);
   const fuera = nodo('otra-cosa');
 
+  global.ResizeObserver = class { observe() {} disconnect() {} };
   global.document = {
+    documentElement: { style: { setProperty(k, v) { this[k] = v; } } },
     querySelector: (s) => (s === '.ww-topbar' ? bar : null),
     addEventListener: (t, f) => { oyentes.document[t] = f; },
     removeEventListener: (t) => { delete oyentes.document[t]; },
@@ -146,7 +151,8 @@ const enlaces = [...nav.matchAll(/<a\s+href="(#\/[^"]*)"([^>]*)>([\s\S]*?)<\/a>/
     matchMedia: () => ({ matches: false, addEventListener() {} }),
   };
   global.localStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
-  global.requestAnimationFrame = () => {};
+  global.requestAnimationFrame = () => 1;
+  global.cancelAnimationFrame = () => {};
 
   const { wireTopbarMenu } = await import('../core/boot.js');
   const soltar = wireTopbarMenu();
@@ -176,6 +182,9 @@ const enlaces = [...nav.matchAll(/<a\s+href="(#\/[^"]*)"([^>]*)>([\s\S]*?)<\/a>/
   oyentes.window.hashchange();
   assert.ok(!bar.classList.contains('open'), 'navegar lo cierra (no queda encima de la vista nueva)');
 
+  assert.strictEqual(document.documentElement.style['--ww-topbar-h'], '56px',
+    'el alto REAL de la barra se publica como dato (--ww-topbar-h), no se declara a mano');
+
   soltar();
   assert.ok(!oyentes.document.click && !oyentes.document.keydown,
     'el disposer suelta los oyentes globales (ley §23)');
@@ -189,7 +198,7 @@ const enlaces = [...nav.matchAll(/<a\s+href="(#\/[^"]*)"([^>]*)>([\s\S]*?)<\/a>/
   ok('el cableado vive en core/boot.js, no repetido en cada HTML');
 
   delete global.document; delete global.window; delete global.localStorage;
-  delete global.requestAnimationFrame;
+  delete global.requestAnimationFrame; delete global.cancelAnimationFrame; delete global.ResizeObserver;
 }
 
 // ── 7. «Crear cuenta» es un BOTÓN, no una nota al pie ──────────────────────

@@ -181,6 +181,22 @@ try {
   await host.waitForSelector('#race-timer', { timeout: 9000 });
   log(`carrera arrancada · PIN ${pin2}`);
 
+  // ── EL FONDO DE LA ACTIVIDAD VA EN EL MARCO, NO EN LA PÁGINA ─────────────
+  // La vista que se PROYECTA en la pared era la única sin marco: el tema y el
+  // fondo se aplicaban al <body>, así que el cuaderno de la actividad se pintaba
+  // por toda la web —barra del profe incluida— y el juego no tenía caja (dueño,
+  // 2026-08-15, con captura). Se comprueba en la fase de JUEGO, que es cuando el
+  // fondo está encendido: si vuelve a colgarse del body, aquí se ve.
+  {
+    const m = await host.evaluate(() => ({
+      body: getComputedStyle(document.body).backgroundImage,
+      marco: !!document.getElementById('ww-frame'),
+    }));
+    if (!m.marco) throw new Error('el docente proyecta sin marco de juego');
+    if (m.body !== 'none') throw new Error(`el fondo de la actividad se coló en la página del docente (${m.body})`);
+    log('el docente juega DENTRO del marco y la página no lleva el fondo de la actividad');
+  }
+
   // El cronómetro es un reloj de verdad: su etiqueta cambia sola.
   const t0 = (await host.locator('#race-timer').textContent()).trim();
   await host.waitForFunction((prev) => (document.getElementById('race-timer')?.textContent || '').trim() !== prev,

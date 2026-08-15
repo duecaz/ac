@@ -10,6 +10,7 @@ import './effects.js';  // efecto: suscribe confeti/efectos a GameEvents
 import { VERSION } from './constants.js';
 import { isMuted, setMuted } from './sounds.js';
 import { applyPerfClass } from './perf.js';
+import { observeResize } from './observeResize.js';
 
 // Marca el dispositivo como lite (gama baja) lo antes posible → el CSS y la
 // animación central degradan para que el VS responda fluido en pizarras lentas.
@@ -69,11 +70,43 @@ export function wireTopbarMenu(sel = '.ww-topbar') {
   // Navegar también cierra: con el menú abierto encima de la vista nueva, el
   // profe cree que no pasó nada y vuelve a pulsar (ley de vista §23).
   window.addEventListener('hashchange', cerrar);
+  const soltarMedida = medirBarra(bar);
   return () => {
     document.removeEventListener('click', fuera);
     document.removeEventListener('keydown', esc);
     window.removeEventListener('hashchange', cerrar);
+    soltarMedida();
   };
+}
+
+// EL ALTO DE LA BARRA SE MIDE, NO SE DECLARA.
+//
+// La pantalla del alumno se compromete a llenar la ventana sin scroll, y para
+// eso descuenta la barra con `--ww-topbar-h`. Ese valor nació como un 56 escrito
+// en el CSS… y un número escrito es una promesa que el navegador no firmó: la
+// barra es `flex-wrap: wrap`, así que a ciertos anchos las acciones saltan de
+// línea y mide bastante más; y con el zoom del navegador, o una fuente de
+// sistema más grande, tampoco son 56. Cada píxel que la barra crece por encima
+// del número es un píxel de scroll en el móvil del alumno — que es justo lo que
+// seguía apareciendo tras «arreglarlo» con la constante (dueño, 2026-08-15:
+// «seguro no cuenta el tamaño del navbar»).
+//
+// Se mide la caja REAL y se reescribe cuando cambia (rotar, redimensionar,
+// abrir el desplegable). `observeResize` está rAF-debounced (§ ResizeObserver en
+// players), así que esto no dispara bucles de layout.
+function medirBarra(bar) {
+  const raiz = document.documentElement;
+  const anota = () => {
+    const alto = Math.ceil(bar.getBoundingClientRect().height);
+    // Con el desplegable ABIERTO la barra crece hacia abajo en `position:
+    // absolute` (no ocupa flujo): ese alto no se descuenta, o el juego pegaría
+    // un salto cada vez que el alumno abre el menú.
+    if (!bar.classList.contains('open') && alto > 0) {
+      raiz.style.setProperty('--ww-topbar-h', alto + 'px');
+    }
+  };
+  anota();
+  return observeResize(bar, anota);
 }
 
 // Monta el botón de silencio en su slot del navbar (idempotente, se redibuja

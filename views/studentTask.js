@@ -9,7 +9,7 @@ import { ensureIdentity, getNick, setNick } from '../core/identity.js';
 import { runPlayer } from '../core/player.js';
 import { packAnswers } from '../core/answerDetail.js';
 import { activityItemCount } from '../core/migrate.js';
-import { montarMarcoAlumno } from '../core/studentFrame.js';
+import { montarMarcoJuego } from '../core/gameFrame.js';
 import { assignmentGate } from '../core/assignmentRules.js';
 import { defaultMaxScore } from '../core/scoring/index.js';
 import { clock } from '../core/clock.js';
@@ -93,11 +93,11 @@ export async function renderTask(rootSel, code) {
   const tpl = getTemplate(activity.template);
   if (!tpl) { mount(rootSel, html`<div class="alert alert-danger m-3">Plantilla no soportada: ${escapeHtml(activity.template)}</div>`); return; }
 
-  // EL MARCO DEL ALUMNO (core/studentFrame.js): mismo marco, misma esquina de
+  // EL MARCO DEL ALUMNO (core/gameFrame.js): mismo marco, misma esquina de
   // pantalla completa y mismo tema que vería en clase. Se monta al COMENZAR
   // (las pantallas de puerta —PIN, apodo, intentos— son formularios, no juego)
   // y el player y la pantalla de entrega pintan dentro.
-  const marco = montarMarcoAlumno(rootSel, activity);
+  const marco = montarMarcoJuego(rootSel, activity);
   rootSel = marco.stageSel;
 
   await runPlayer(rootSel, activity, {
