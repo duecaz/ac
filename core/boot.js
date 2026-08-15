@@ -41,6 +41,41 @@ export function stampVersion(id = 'ww-version') {
   });
 }
 
+// EL MENÚ HAMBURGUESA (móvil) — abrir, y sobre todo CERRAR.
+//
+// Estaba resuelto con `onclick` en el HTML: toggle al pulsar y quitar la clase
+// al pulsar una acción. Faltaba lo que todo el mundo hace sin pensar — tocar
+// FUERA para cerrar—, así que el desplegable se quedaba abierto tapando la
+// pantalla hasta acertarle otra vez al botón (reporte del dueño, 2026-08-15).
+// Se cablea aquí, donde ya vive el resto del chrome de la barra, y no en cada
+// HTML: dos copias de un mismo comportamiento derivan (esa es la lección de la
+// semana). Cierra por las CUATRO vías que un usuario espera: el propio botón,
+// una acción del menú, un toque fuera, y Escape.
+export function wireTopbarMenu(sel = '.ww-topbar') {
+  const bar = document.querySelector(sel);
+  if (!bar || bar.dataset.wwMenuWired) return () => {};
+  bar.dataset.wwMenuWired = '1';
+  const boton = bar.querySelector('.ww-topbar__burger');
+  const sello = () => boton?.setAttribute('aria-expanded', String(bar.classList.contains('open')));
+  const cerrar = () => { bar.classList.remove('open'); sello(); };
+  bar.addEventListener('click', (e) => {
+    if (e.target.closest('.ww-topbar__burger')) { bar.classList.toggle('open'); sello(); return; }
+    if (e.target.closest('.ww-topbar__actions')) cerrar();
+  });
+  const fuera = (e) => { if (!bar.contains(e.target)) cerrar(); };
+  const esc = (e) => { if (e.key === 'Escape') cerrar(); };
+  document.addEventListener('click', fuera);
+  document.addEventListener('keydown', esc);
+  // Navegar también cierra: con el menú abierto encima de la vista nueva, el
+  // profe cree que no pasó nada y vuelve a pulsar (ley de vista §23).
+  window.addEventListener('hashchange', cerrar);
+  return () => {
+    document.removeEventListener('click', fuera);
+    document.removeEventListener('keydown', esc);
+    window.removeEventListener('hashchange', cerrar);
+  };
+}
+
 // Monta el botón de silencio en su slot del navbar (idempotente, se redibuja
 // al alternar). No hace nada si el slot no existe (p.ej. en el embed).
 export function attachMuteButton(slotId = 'ww-mute-slot') {

@@ -60,7 +60,15 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 // veía a medias y no se podía pulsar). Esta comprobación pregunta lo único que
 // importa: si tocas el centro del control, ¿quién recibe el toque?
 const TOCABLE = `(sel) => {
-  const el = document.querySelector(sel);
+  // Un control puede tener DOS formas según la pantalla (pantalla completa: la
+  // esquina del marco o el botón que aloja la barra de la ronda). Se comprueba
+  // la que está PUESTA; si todas están retiradas, se cae a la primera y el
+  // veredicto de abajo la declara invisible, que es lo correcto.
+  const todos = [...document.querySelectorAll(sel)];
+  const el = todos.find(e => {
+    const cs = getComputedStyle(e);
+    return cs.display !== 'none' && cs.visibility !== 'hidden';
+  }) || todos[0];
   if (!el) return 'ausente';
   const r = el.getBoundingClientRect();
   if (!r.width || !r.height) return 'sin tamaño';
@@ -211,7 +219,11 @@ for (const t of seeded) {
         // ninguno— es estar TAPADO, invisible o sin tamaño: eso es un fallo de
         // maquetación que el profe descubre pulsando y no pasando nada.
         const CONTROLES = [
-          { nombre: 'pantalla completa', sel: '#ww-frame .ww-fs-btn--corner' },
+          // Las DOS formas del mismo control: la esquina flotante del marco y,
+          // cuando la ronda pinta su propia barra (Tildes/Comas), el botón que
+          // esa barra aloja. Buscar solo la esquina daría «ausente» —y por tanto
+          // verde— justo en las plantillas donde el dueño lo encontró mal puesto.
+          { nombre: 'pantalla completa', sel: '#ww-frame .ww-fs-btn--corner, #ww-frame .tc-bar .ww-fs-btn' },
           ...(submitKind[t.name] === 'boton' ? [{ nombre: 'envío de la ronda', sel: '#ww-frame [data-ww-submit]' }] : []),
           ...(mode === 'teams' ? [{ nombre: 'revelar (Equipos)', sel: '#teams-reveal', gateable: true }] : []),
         ];
@@ -245,6 +257,54 @@ for (const t of seeded) {
           return PROHIBIDO.filter(([, sel]) => frame.querySelector(sel)).map(([que]) => que);
         });
         if (peligros.length) { status = 'error'; detail = `R2b: control(es) de profe DENTRO del juego: ${peligros.join(' · ')}`; }
+      }
+      // ── UNA SOLA TARJETA, Y EL MANDO DENTRO DE SU BARRA ─────────────────
+      // Las dos correcciones del dueño (2026-08-15, con captura) en la ronda de
+      // Tildes/Comas: «hay doble marco, es solo la hoja» y «el botón de pantalla
+      // completa está fuera de la barra». Se miden con ESTILOS COMPUTADOS y con
+      // la caja real del botón, no leyendo el CSS: la regla que aquieta el marco
+      // usa `:has()` y ya perdió una vez por especificidad frente a
+      // backgrounds.css — existía, estaba bien escrita, y no pintaba nada.
+      if (status === 'ok') {
+        const hoja = await page.evaluate(() => {
+          const marco = document.getElementById('ww-frame');
+          const round = marco?.querySelector('.tc-round');
+          if (!marco || !round) return null;                  // otra plantilla
+          const cs = getComputedStyle(marco);
+          const esquinas = [...marco.querySelectorAll('.ww-fs-btn--corner')]
+            .filter(b => getComputedStyle(b).display !== 'none').length;
+          // Solo la ronda a pantalla entera aloja el botón (`.tc-bar--fs`); en
+          // el duelo hay DOS rondas y el mando sigue siendo la esquina del marco.
+          const barra = marco.querySelector('.tc-bar--fs');
+          const fs = barra?.querySelector('.ww-fs-btn') || null;
+          let dentro = false;
+          if (fs && barra) {
+            const b = fs.getBoundingClientRect(), r = barra.getBoundingClientRect();
+            dentro = b.top >= r.top - 1 && b.bottom <= r.bottom + 1
+                  && b.left >= r.left - 1 && b.right <= r.right + 1;
+          }
+          return {
+            sombra: cs.boxShadow, radio: parseFloat(cs.borderTopLeftRadius) || 0,
+            esquinas, aloja: !!barra, hayFs: !!fs, dentro,
+            rondas: marco.querySelectorAll('.tc-round').length,
+            switches: marco.querySelectorAll('.tc-switch').length,
+          };
+        });
+        if (hoja) {
+          const fallos = [];
+          if (hoja.sombra && hoja.sombra !== 'none') fallos.push('el marco sigue proyectando sombra de tarjeta (doble marco)');
+          if (hoja.radio > 0) fallos.push(`el marco conserva esquinas redondas (${hoja.radio}px): sigue leyéndose como una segunda tarjeta`);
+          if (hoja.aloja) {
+            if (hoja.esquinas) fallos.push('la esquina flotante de pantalla completa sigue puesta (dos mandos para lo mismo)');
+            if (!hoja.hayFs) fallos.push('la barra no aloja el botón de pantalla completa');
+            else if (!hoja.dentro) fallos.push('el botón de pantalla completa se sale de la caja de la barra');
+          } else if (!hoja.esquinas) {
+            fallos.push('sin barra que lo aloje (duelo), la esquina del marco tiene que seguir puesta');
+          }
+          if (hoja.switches !== hoja.rondas) fallos.push(`UN interruptor por ronda: ${hoja.rondas} ronda(s), ${hoja.switches} mando(s)`);
+          if (fallos.length) { status = 'error'; detail = `hoja: ${fallos[0]}`; }
+          hits.push({ label: t.label, mode, control: 'hoja (marco único + mando en barra)', estado: fallos.length ? fallos[0] : 'ok', mal: !!fallos.length });
+        }
       }
       // ── LA RONDA SE JUEGA, no solo se monta (cola #3 del norte) ─────────
       // Un gesto REAL en los tres modos embebidos. La vara: que el juego

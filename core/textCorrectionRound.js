@@ -14,6 +14,7 @@ import { GameEvents, emitGame } from './gameEvents.js';
 import { runFreeformPlayer } from './soloPlayer.js';
 import { mountTcDraw } from './textCorrectionDraw.js';
 import { observeResize } from './observeResize.js';
+import { fullscreenButtonHtml, attachFullscreenButton } from './fullscreen.js';
 import { heatClass } from './itemStats.js';
 
 const HINTS = {
@@ -104,30 +105,47 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
   // inicio (views/startScreen.js), que es donde van los ajustes previos. En modo
   // tarea (alumno) no hay pizarra que calibrar, así que no debe aparecer nunca
   // durante el ejercicio.
-  // LÁPIZ / BORRADOR explícitos. La detección por tamaño de contacto
-  // (core/penDetector.js) acierta casi siempre —punta dibuja, palma borra—, pero
-  // "casi siempre" con 33 críos delante no basta: en una pizarra sin calibrar, o
-  // con un lápiz que no reporta el área de contacto, borrar era imposible y el
-  // alumno se quedaba con una marca de más (que en Tildes/Comas RESTA: el
-  // puntaje es neto). Estos dos botones son el mando manual — el detector sigue
-  // mandando mientras nadie los toque.
-  // NO añaden toques a responder (§29): se arranca en LÁPIZ, que es lo que el
-  // alumno va a hacer; el borrador es para el que se equivoca.
+  // LÁPIZ / BORRADOR: UN interruptor, no dos botones. La detección por tamaño de
+  // contacto (core/penDetector.js) acierta casi siempre —punta dibuja, palma
+  // borra—, pero "casi siempre" con 33 críos delante no basta: en una pizarra sin
+  // calibrar, o con un lápiz que no reporta el área de contacto, borrar era
+  // imposible y el alumno se quedaba con una marca de más (que en Tildes/Comas
+  // RESTA: el puntaje es neto). Este mando es el manual — el detector sigue
+  // mandando mientras nadie lo toque.
+  // FORMA (dueño, 2026-08-15): «lápiz con el borrador es un botón al estilo de
+  // switch de apagar/prender luz». Dos pastillas separadas obligaban a leer cuál
+  // estaba rellena; un interruptor SE VE de un vistazo a 3 m y dice a la vez en
+  // qué está y qué pasa si lo tocas. Y es un solo blanco táctil en vez de dos.
+  // NO añade toques a responder (§29): arranca en LÁPIZ, que es lo que el alumno
+  // va a hacer; el borrador es para el que se equivoca.
   // MAQUETA (dueño, 2026-08-14): barra ARRIBA con el progreso y las
   // herramientas —como cualquier app de dibujo—, el texto arranca arriba con
   // aire a los costados, y el botón vive ABAJO. Antes las herramientas
   // flotaban en mitad de la pantalla, pegadas al texto, y todo quedaba
   // amontonado en la mitad superior. `chips` lo pasa el caller (HTML propio,
   // ya escapado): la ronda no sabe si corre en solo, carrera o duelo (§0).
+  // El botón de PANTALLA COMPLETA va DENTRO de esta barra, no flotando en la
+  // esquina del marco: cuando la ronda ya pinta una barra a todo el ancho, un
+  // control suelto encima se lee como un segundo mando pegado al papel. La
+  // esquina del marco sigue siendo del marco para todo lo demás — aquí la barra
+  // la ocupa y por eso la ALOJA (CSS esconde la de la esquina si hay `.tc-bar`).
+  // …pero SOLO cuando esta ronda es la pantalla entera (la que trae chips: solo,
+  // carrera, tarea). En el duelo se montan DOS rondas, una por jugador: ahí un
+  // botón de pantalla completa por panel serían dos mandos para el mismo marco,
+  // y la esquina del marco —que es UNA— sigue siendo el sitio correcto.
+  const propio = !!(chips.left || chips.right);
   root.innerHTML = `
     <div class="tc-round">
-      <div class="tc-bar">
+      <div class="tc-bar${propio ? ' tc-bar--fs' : ''}">
         ${chips.left ? `<span class="tc-chip">${chips.left}</span>` : ''}
-        <div class="tc-tools" role="group" aria-label="Herramienta">
-          <button type="button" class="btn tc-tool is-on" data-tool="pen" aria-pressed="true"><i class="bi bi-pencil-fill"></i> Lápiz</button>
-          <button type="button" class="btn tc-tool" data-tool="eraser" aria-pressed="false"><i class="bi bi-eraser-fill"></i> Borrador</button>
-        </div>
+        <button type="button" class="tc-switch" data-tool="pen" aria-pressed="false"
+                title="Lápiz — toca para borrar" aria-label="Lápiz activo. Tocar para pasar al borrador">
+          <i class="bi bi-pencil-fill tc-switch__ic tc-switch__ic--pen" aria-hidden="true"></i>
+          <span class="tc-switch__track"><span class="tc-switch__knob"></span></span>
+          <i class="bi bi-eraser-fill tc-switch__ic tc-switch__ic--er" data-tool="eraser" aria-hidden="true"></i>
+        </button>
         ${chips.right ? `<span class="tc-chip tc-chip--right">${chips.right}</span>` : ''}
+        ${propio ? fullscreenButtonHtml({ inline: true }) : ''}
       </div>
       <div class="tc-passage-area"><div class="tc-passage">${passageHtml(text, kind)}</div></div>
       <div class="tc-done-wrap"><button type="button" class="btn btn-success btn-lg tc-done" data-ww-submit><i class="bi bi-check2-circle"></i> Listo</button></div>
@@ -140,28 +158,38 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
   const draw = mountTcDraw(passageEl, { targets: passageEl.querySelectorAll('.tc-target') });
   const stopFit = fitPassage(areaEl, passageEl);
 
+  // El botón de pantalla completa expande el MARCO del juego (el del profe o el
+  // del alumno); si la ronda corre sin marco, la página entera.
+  const marco = root.closest('.ww-player-frame') || document.documentElement;
+  const soltarFs = propio
+    ? attachFullscreenButton(root.querySelector('.tc-bar'), { target: marco })
+    : () => {};
+
   let done = false;
   const submit = () => {
     if (done) return;
     done = true;
     stopFit();
+    soltarFs();
     draw.freeze();
     onSubmit?.(draw.getMarked());
   };
   root.querySelector('.tc-done').addEventListener('click', submit);
-  // El mando manual: pinta cuál está activo y se lo dice al canvas.
-  for (const b of root.querySelectorAll('.tc-tool')) {
-    b.addEventListener('click', () => {
-      if (done) return;
-      const borrar = b.dataset.tool === 'eraser';
-      draw.setEraser(borrar);
-      for (const o of root.querySelectorAll('.tc-tool')) {
-        const on = o === b;
-        o.classList.toggle('is-on', on);
-        o.setAttribute('aria-pressed', String(on));
-      }
-    });
-  }
+  // EL INTERRUPTOR: apagado = lápiz, encendido = borrador. Un solo control que
+  // se conmuta, y lo que diga se lo lleva el canvas (`setEraser`).
+  const sw = root.querySelector('.tc-switch');
+  sw.addEventListener('click', () => {
+    if (done) return;
+    const borrar = !sw.classList.contains('is-on');
+    sw.classList.toggle('is-on', borrar);
+    sw.dataset.tool = borrar ? 'eraser' : 'pen';
+    sw.setAttribute('aria-pressed', String(borrar));
+    sw.title = borrar ? 'Borrador — toca para escribir' : 'Lápiz — toca para borrar';
+    sw.setAttribute('aria-label', borrar
+      ? 'Borrador activo. Tocar para volver al lápiz'
+      : 'Lápiz activo. Tocar para pasar al borrador');
+    draw.setEraser(borrar);
+  });
   // Contrato opcional de renderRound: `{ flush }` entrega lo dibujado hasta ahora
   // (mismo efecto que pulsar "Listo"). Lo usa studentLive para RESCATAR el trazo
   // en curso cuando el profe avanza antes de que el alumno termine — capacidad

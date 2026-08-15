@@ -52,8 +52,19 @@ export function openLoginModal({ reason = '' } = {}) {
       </form>
       <p class="login-modal__hint text-muted small mt-2 mb-1">
         <a href="#" id="lm-forgot">¿Olvidaste tu contraseña?</a></p>
-      <p class="login-modal__hint text-muted small mb-0">¿No tienes cuenta?
-        <a href="#/registro" data-close>Créala aquí</a> — solo correo, nombre y contraseña.</p>
+      <!-- CREAR CUENTA ES UN BOTÓN, no una nota al pie (dueño, 2026-08-15:
+           «crea tu cuenta más vistoso, podría ser botón»). Quien llega aquí sin
+           cuenta es un profe nuevo — el camino que le toca no puede ser el más
+           pequeño de la pantalla. Va en segundo plano visual (contorno, no
+           relleno) para no competir con «Entrar», que es lo que hace todo el
+           mundo que ya está dentro. -->
+      <div class="login-modal__alta">
+        <span class="login-modal__alta-q">¿Todavía no tienes cuenta?</span>
+        <a href="#/registro" class="login-modal__create" data-close>
+          <i class="bi bi-person-plus-fill"></i> Crear mi cuenta
+        </a>
+        <span class="login-modal__alta-note">Gratis — solo correo, nombre y contraseña. Tus alumnos no necesitan cuenta.</span>
+      </div>
     </div>`;
   document.body.appendChild(host);
 

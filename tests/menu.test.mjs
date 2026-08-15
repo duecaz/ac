@@ -11,6 +11,7 @@ import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { citaDeFuente } from './helpers/fuente.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
@@ -97,6 +98,110 @@ const enlaces = [...nav.matchAll(/<a\s+href="(#\/[^"]*)"([^>]*)>([\s\S]*?)<\/a>/
   assert.strictEqual(falsos.length, 5, 'el escaneo cuenta las entradas de verdad');
   assert.ok(falsos.some(e => /alumn/i.test(e.texto)), 'y ve la entrada prohibida');
   ok('CONTRA-PRUEBA: una barra con 5 entradas y una "Alumno" sería cazada');
+}
+
+// ── 6. EL HAMBURGUESA SE CIERRA AL TOCAR FUERA ─────────────────────────────
+// Se abría con un `onclick` en el HTML y solo se cerraba pulsándole otra vez o
+// tocando una acción. Tocar fuera —lo que hace todo el mundo— no hacía nada y
+// el desplegable tapaba la pantalla (dueño, 2026-08-15). Se comprueba
+// EJECUTANDO el cableado con un DOM de juguete: los cuatro cierres que un
+// usuario espera, y la contra-prueba de que sigue abriendo.
+{
+  const oyentes = { document: {}, window: {} };
+  const nodo = (cls, padre = null) => {
+    const n = {
+      className: cls, dataset: {}, parentNode: padre, hijos: [], attrs: {},
+      classList: {
+        _s: new Set(cls.split(' ')),
+        add(c) { this._s.add(c); }, remove(c) { this._s.delete(c); },
+        contains(c) { return this._s.has(c); },
+        toggle(c) { this._s.has(c) ? this._s.delete(c) : this._s.add(c); },
+      },
+      setAttribute(k, v) { n.attrs[k] = v; },
+      addEventListener(t, f) { n['on_' + t] = f; },
+      contains(o) { for (let p = o; p; p = p.parentNode) if (p === n) return true; return false; },
+      closest(sel) {
+        const c = sel.replace('.', '');
+        for (let p = n; p; p = p.parentNode) if (p.classList.contains(c)) return p;
+        return null;
+      },
+      querySelector(sel) { return n.hijos.find(h => h.classList.contains(sel.replace('.', ''))) || null; },
+    };
+    if (padre) padre.hijos.push(n);
+    return n;
+  };
+  const bar = nodo('ww-topbar');
+  const boton = nodo('ww-topbar__burger', bar);
+  const acciones = nodo('ww-topbar__actions', bar);
+  const fuera = nodo('otra-cosa');
+
+  global.document = {
+    querySelector: (s) => (s === '.ww-topbar' ? bar : null),
+    addEventListener: (t, f) => { oyentes.document[t] = f; },
+    removeEventListener: (t) => { delete oyentes.document[t]; },
+  };
+  global.window = {
+    addEventListener: (t, f) => { oyentes.window[t] = f; },
+    removeEventListener: (t) => { delete oyentes.window[t]; },
+    matchMedia: () => ({ matches: false, addEventListener() {} }),
+  };
+  global.localStorage = { getItem: () => null, setItem: () => {}, removeItem: () => {} };
+  global.requestAnimationFrame = () => {};
+
+  const { wireTopbarMenu } = await import('../core/boot.js');
+  const soltar = wireTopbarMenu();
+
+  const abrir = () => bar.on_click({ target: boton });
+  abrir();
+  assert.ok(bar.classList.contains('open'), 'el botón abre el menú');
+  assert.strictEqual(bar.attrs['aria-expanded'], undefined, 'el aria vive en el botón, no en la barra');
+  assert.strictEqual(boton.attrs['aria-expanded'], 'true', 'y el botón anuncia que está abierto');
+
+  oyentes.document.click({ target: fuera });
+  assert.ok(!bar.classList.contains('open'), 'UN TOQUE FUERA lo cierra (era el fallo)');
+  assert.strictEqual(boton.attrs['aria-expanded'], 'false', 'y el aria se entera');
+
+  abrir();
+  oyentes.document.click({ target: boton });   // dentro de la barra: no cierra por "fuera"
+  assert.ok(bar.classList.contains('open'), 'CONTRA-PRUEBA: tocar DENTRO no lo cierra por la espalda');
+
+  bar.on_click({ target: acciones });
+  assert.ok(!bar.classList.contains('open'), 'elegir una acción lo cierra');
+
+  abrir();
+  oyentes.document.keydown({ key: 'Escape' });
+  assert.ok(!bar.classList.contains('open'), 'Escape lo cierra');
+
+  abrir();
+  oyentes.window.hashchange();
+  assert.ok(!bar.classList.contains('open'), 'navegar lo cierra (no queda encima de la vista nueva)');
+
+  soltar();
+  assert.ok(!oyentes.document.click && !oyentes.document.keydown,
+    'el disposer suelta los oyentes globales (ley §23)');
+  ok('el menú hamburguesa cierra al tocar fuera, con Escape, al elegir y al navegar');
+
+  // Y el HTML ya no lleva el cableado a mano: dos copias de lo mismo derivan.
+  for (const [f, src] of [['teacher.html', teacher], ['student.html', read('student.html')]]) {
+    assert.ok(!/ww-topbar__burger[^>]*onclick/.test(src),
+      `${f}: el hamburguesa no puede volver a cablearse con onclick en el HTML`);
+  }
+  ok('el cableado vive en core/boot.js, no repetido en cada HTML');
+
+  delete global.document; delete global.window; delete global.localStorage;
+  delete global.requestAnimationFrame;
+}
+
+// ── 7. «Crear cuenta» es un BOTÓN, no una nota al pie ──────────────────────
+// Quien abre el modal sin cuenta es un profe nuevo: su camino no puede ser el
+// texto más pequeño de la pantalla (dueño, 2026-08-15).
+{
+  const lm = read('views/loginModal.js');
+  citaDeFuente(lm, /class="login-modal__create"/, 'el alta tiene su propio botón', 'loginModal.js');
+  citaDeFuente(lm, /href="#\/registro"/, 'y lleva al alta (#/registro)', 'loginModal.js');
+  citaDeFuente(read('styles/home.css'), /\.login-modal__create\s*\{[^}]*border:/s,
+    'con forma de botón (borde), no de enlace suelto', 'home.css');
+  ok('«Crear mi cuenta» es un botón con su bloque propio en el modal de entrada');
 }
 
 console.log(`\n  ${passed} menu checks passed`);

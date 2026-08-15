@@ -12,7 +12,7 @@ import { ensureIdentity } from './core/identity.js';
 import { applySkin } from './core/skins.js';
 // Side-effect: boot.js wires sounds + effects to the GameEvents bus and exposes
 // the navbar helpers (version stamp + mute button).
-import { stampVersion, attachMuteButton } from './core/boot.js';
+import { stampVersion, attachMuteButton, wireTopbarMenu } from './core/boot.js';
 import { renderJoin, renderPlay } from './views/studentLive.js';
 import { renderTask } from './views/studentTask.js';
 
@@ -43,6 +43,7 @@ setBeforeResolve(() => clearListeners(APP));
   } catch (err) { console.warn('[boot] auth failed:', err.message); }
   stampVersion();
   attachMuteButton();
+  wireTopbarMenu();
   start();
   window.__APP_READY__ = true;
 })();

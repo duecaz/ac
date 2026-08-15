@@ -20,12 +20,15 @@ export function isFullscreen() {
 
 /**
  * El botón. `corner: true` lo pinta DISCRETO y flotando en la esquina del juego
- * (lo que hace Wordwall): durante la actividad nadie busca un control en una
- * barra de abajo — se toca la esquina y ya. Sin `corner` sale el botón de barra
- * que usan las pantallas en vivo.
+ * (lo que hace Wordwall). `inline: true` lo entrega DESNUDO —sin caja ni
+ * posición propias— para que lo aloje quien ya tiene una barra: la ronda de
+ * Tildes/Comas lo mete DENTRO de su barra de herramientas («el botón de pantalla
+ * completa está fuera de la barra», dueño 2026-08-15) y ahí una esquina flotante
+ * sobraba. Sin ninguno de los dos sale el botón de barra de las pantallas en vivo.
  */
-export function fullscreenButtonHtml({ corner = false } = {}) {
-  const cls = corner ? 'ww-fs-btn ww-fs-btn--corner' : 'btn btn-sm btn-outline-light ww-fs-btn';
+export function fullscreenButtonHtml({ corner = false, inline = false } = {}) {
+  const cls = inline ? 'ww-fs-btn ww-fs-btn--inline'
+    : corner ? 'ww-fs-btn ww-fs-btn--corner' : 'btn btn-sm btn-outline-light ww-fs-btn';
   return `<button type="button" class="${cls}" title="Pantalla completa" aria-label="Pantalla completa">`
     + `<i class="bi bi-arrows-fullscreen"></i></button>`;
 }
@@ -43,7 +46,16 @@ export function attachFullscreenButton(rootSel, { target } = {}) {
   const root = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
   const btns = [...(root?.querySelectorAll('.ww-fs-btn') || [])];
   if (!btns.length) return () => {};
+  const soltar = () => {
+    document.removeEventListener('fullscreenchange', paint);
+    document.removeEventListener('webkitfullscreenchange', paint);
+  };
   const paint = () => {
+    // AUTO-SOLTARSE: si ninguno de los botones sigue en el documento, esta
+    // instancia ya no pinta nada — se quita de `document` sola. Sin esto, un
+    // botón que vive DENTRO de una vista que se re-renderiza (la barra de la
+    // ronda de Tildes/Comas, una por frase) dejaba un listener por montaje.
+    if (btns.every(b => b.isConnected === false)) { soltar(); return; }
     const on = isFullscreen();
     for (const b of btns) {
       const i = b.querySelector('i');
@@ -57,8 +69,5 @@ export function attachFullscreenButton(rootSel, { target } = {}) {
   document.addEventListener('fullscreenchange', paint);
   document.addEventListener('webkitfullscreenchange', paint);
   paint();
-  return () => {
-    document.removeEventListener('fullscreenchange', paint);
-    document.removeEventListener('webkitfullscreenchange', paint);
-  };
+  return soltar;
 }

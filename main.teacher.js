@@ -32,7 +32,7 @@ import { modeAuthHint } from './core/modes.js';
 import { applySkin } from './core/skins.js';
 // Side-effect: boot.js wires sounds + visual effects to the GameEvents bus and
 // exposes the navbar helpers (version stamp + mute button).
-import { stampVersion } from './core/boot.js';
+import { stampVersion, wireTopbarMenu } from './core/boot.js';
 import { initCustomAnims } from './core/vsAnimations.js';
 import { html, mount } from './core/html.js';
 
@@ -109,6 +109,7 @@ setBeforeResolve(() => clearListeners(APP));
   // lectura muerta, no el baseline: una clave fantasma es una promesa falsa.
   applySkin('default');
   stampVersion();
+  wireTopbarMenu();
   initCustomAnims(); // register any animations added from the Admin panel
 
   // Retorno de Google OAuth: aterriza en teacher.html?code=…&state=… . Se canjea

@@ -36,6 +36,27 @@ body.bg-set.bg-set:has(.tc-round) {
   background-color: var(--ww-paper-dim, #e9e5da);
 }
 
+/* ── UN SOLO MARCO: la HOJA (dueño, 2026-08-15, con captura) ─────────────────
+   Quitada la textura seguían viéndose DOS tarjetas: el marco es un card
+   (blanco, esquinas redondas, sombra) y la hoja es otro card dentro. Con la
+   ronda montada el marco deja de ser tarjeta y pasa a ser el ESCRITORIO: un
+   liso cálido sin borde ni sombra, para que lo único con forma de objeto sea la
+   hoja. El marco sigue siendo tarjeta en el resto de plantillas y en las demás
+   pantallas de esta (inicio, corrección, podio). */
+.ww-play-page .ww-player-frame:has(.tc-round),
+.ww-player-frame:has(.tc-round) {
+  background: var(--ww-paper-dim, #e9e5da);
+  border-radius: 0;
+  box-shadow: none;
+}
+/* Y la esquina flotante de pantalla completa se retira cuando la ronda pinta su
+   barra: el botón vive DENTRO de la barra (ver `.tc-bar .ww-fs-btn--inline`).
+   Dos mandos para lo mismo, uno encima del papel, era la captura del dueño.
+   `.tc-bar--fs` = la barra que SÍ lo aloja (la ronda a pantalla entera). En el
+   duelo se montan dos rondas, ninguna aloja nada, y la esquina del marco sigue
+   siendo el único mando — por eso la condición no es «hay barra». */
+.ww-player-frame:has(.tc-bar--fs) > .ww-fs-btn--corner { display: none; }
+
 /* "Frase X/Y" en una esquina, fuera del flujo, para no robar espacio al texto.
    Escala con el marco (cqmin) para no verse minúsculo en pantalla completa. */
 .tc-frase {
@@ -83,9 +104,9 @@ body.bg-set.bg-set:has(.tc-round) {
   box-shadow: 0 2px 10px rgba(0,0,0,.08), inset 0 0 6cqmin rgba(120,90,40,.05);
 }
 
-/* ── LA BARRA: progreso + herramientas, como una app de dibujo ───────────────
-   Respeta la esquina del botón de pantalla completa cuando está arriba del
-   marco (misma reserva que el marcador del duelo). */
+/* ── LA BARRA: progreso + herramientas + pantalla completa ───────────────────
+   Como cualquier app de dibujo. Aloja el botón de pantalla completa (por eso ya
+   no reserva su esquina: no hay nada flotando encima del papel). */
 .tc-bar {
   flex: 0 0 auto;
   display: flex; align-items: center; gap: .6em;
@@ -94,7 +115,6 @@ body.bg-set.bg-set:has(.tc-round) {
   padding: max(4px, .6cqmin) max(8px, 1cqmin);
   margin-bottom: max(6px, 1cqmin);
 }
-.ww-player-frame .tc-bar { padding-right: var(--ww-fs-reserve, 52px); }
 .tc-chip {
   font-size: clamp(.75rem, 2cqmin, 1.2rem); font-weight: 700; line-height: 1;
   padding: .45em .8em; border-radius: 999px;
@@ -127,25 +147,59 @@ body.bg-set.bg-set:has(.tc-round) {
   content: ''; position: absolute; left: max(8px, 1.8cqw); top: 0; bottom: 0;
   width: .14em; background: rgba(214, 80, 70, .5);
 }
-/* ── LÁPIZ / BORRADOR (mando manual del canvas) ──────────────────────────────
+/* ── LÁPIZ / BORRADOR: UN INTERRUPTOR (mando manual del canvas) ──────────────
+   Forma de interruptor de la luz (dueño, 2026-08-15): dos iconos fijos —lápiz a
+   la izquierda, borrador a la derecha— y una pastilla cuya bolita se va al lado
+   que manda. Se lee de un vistazo a 3 m sin comparar rellenos, y es UN solo
+   blanco táctil en vez de dos.
    Tamaños en unidades de contenedor como el resto del player (§3): en la pizarra
-   de 4 m se ven grandes y en un móvil 9:16 no se comen el texto. Colores por
-   TOKEN para que los skins los recoloreen; el activo se distingue por relleno,
-   no solo por color (R1: mirada a 3 m, y no todo el mundo distingue matices). */
-.tc-tools { flex: 0 0 auto; display: flex; gap: .6em; justify-content: center; }
-.tc-tool {
-  font-size: clamp(.8rem, 2.1cqmin, 1.3rem); padding: .35em .9em;
-  border: 2px solid var(--ww-accent, #0d6efd);
-  color: var(--ww-accent, #0d6efd); background: transparent;
-  border-radius: 999px; line-height: 1.2;
+   de 4 m se ve grande y en un móvil 9:16 no se come el texto. El color del lado
+   activo sale de un TOKEN para que los skins lo recoloreen; además del color, la
+   POSICIÓN de la bolita y la opacidad del icono distinguen el estado (R1: no
+   todo el mundo distingue matices). */
+.tc-switch {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: .45em;
+  border: 0; background: transparent; padding: .2em .35em; cursor: pointer;
+  font-size: clamp(.8rem, 2.1cqmin, 1.3rem); line-height: 1;
 }
-.tc-tool.is-on {
-  background: var(--ww-accent, #0d6efd);
-  /* Blanco sobre el acento: neutro permitido por §3 (los skins recolorean el
-     RELLENO con su token; el texto encima se queda legible en los cinco). */
-  color: #fff;
-  box-shadow: 0 0 0 .18em rgba(0,0,0,.14);
+.tc-switch__ic { opacity: .35; transition: opacity .15s ease, color .15s ease; }
+.tc-switch:not(.is-on) .tc-switch__ic--pen,
+.tc-switch.is-on .tc-switch__ic--er { opacity: 1; color: var(--ww-accent, #0d6efd); }
+/* La pastilla: carril + bolita, como el interruptor de un móvil. */
+.tc-switch__track {
+  position: relative; display: inline-block;
+  width: 2.6em; height: 1.35em; border-radius: 999px;
+  background: rgba(0,0,0,.18);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,.25);
+  transition: background .15s ease;
 }
+.tc-switch.is-on .tc-switch__track { background: var(--ww-accent, #0d6efd); }
+.tc-switch__knob {
+  position: absolute; top: .16em; left: .16em;
+  width: 1.03em; height: 1.03em; border-radius: 50%;
+  /* Blanco: neutro permitido por §3 — es la bolita del interruptor, y tiene que
+     leerse igual sobre el carril apagado y sobre el acento de cualquier skin. */
+  background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.35);
+  transition: transform .15s ease;
+}
+.tc-switch.is-on .tc-switch__knob { transform: translateX(1.25em); }
+.tc-switch:focus-visible { outline: 2px solid var(--ww-accent, #0d6efd); outline-offset: 2px; border-radius: 999px; }
+
+/* ── Pantalla completa DENTRO de la barra ────────────────────────────────────
+   Se pega al extremo derecho (si hay chip de «restantes», detrás de él). Sin
+   caja propia: la barra ya es la caja. */
+.tc-bar .ww-fs-btn--inline {
+  flex: 0 0 auto; margin-left: auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.9em; height: 1.9em; padding: 0;
+  border: 0; border-radius: 50%; cursor: pointer;
+  font-size: clamp(.8rem, 2.1cqmin, 1.3rem);
+  background: rgba(0,0,0,.08); color: inherit;
+  transition: background .15s ease;
+}
+.tc-bar .ww-fs-btn--inline:hover,
+.tc-bar .ww-fs-btn--inline:focus-visible { background: rgba(0,0,0,.18); }
+.tc-bar .ww-fs-btn--inline i { font-size: inherit; line-height: 1; }
 /* El botón vive ABAJO: margin-top auto lo ancla al pie aunque el texto sea
    corto — es lo que separa «hoja con su botón» de «todo amontonado arriba». */
 .tc-done-wrap { flex: 0 0 auto; margin-top: auto; padding-top: 1.2cqh; text-align: center; }
