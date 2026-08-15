@@ -18,36 +18,30 @@
 /* Anula el centrado por margin:auto del widget para que .tc-solo llene la altura. */
 .ww-play-page .ww-player-frame > #ww-player-widget > .tc-solo { margin: 0; }
 
-/* ── SIN DOBLE FONDO (dueño, 2026-08-14, con captura) ────────────────────────
-   La ronda ES una hoja de papel; si el marco pinta detrás su textura de
-   cuaderno (el fondo por defecto de Tildes/Comas), se ven DOS papeles: los
-   renglones del marco asomando alrededor de la hoja. Cuando la ronda está
-   montada, el marco se AQUIETA: fuera la textura, un liso cálido y ya. Lleva
-   `.bg-set` para ganar a la textura de backgrounds.css por especificidad (misma
-   técnica que usaba la hoja antigua). El fondo elegido sigue mandando en el
-   resto de plantillas y en las demás pantallas de esta. */
-/* `.bg-set` DOS veces a propósito: la textura de backgrounds.css pesa (0,3,0)
-   —frame + bg-set + bg-nombre— y con `:has()` esta regla empataba y perdía por
-   orden de carga (backgrounds.css va después). Repetir la clase sube a (0,4,0):
-   gana por especificidad, no por suerte de <link>. */
-.ww-player-frame.bg-set.bg-set:has(.tc-round),
-body.bg-set.bg-set:has(.tc-round) {
-  background-image: none;
-  background-color: var(--ww-paper-dim, #e9e5da);
-}
-
-/* ── UN SOLO MARCO: la HOJA (dueño, 2026-08-15, con captura) ─────────────────
-   Quitada la textura seguían viéndose DOS tarjetas: el marco es un card
-   (blanco, esquinas redondas, sombra) y la hoja es otro card dentro. Con la
-   ronda montada el marco deja de ser tarjeta y pasa a ser el ESCRITORIO: un
-   liso cálido sin borde ni sombra, para que lo único con forma de objeto sea la
-   hoja. El marco sigue siendo tarjeta en el resto de plantillas y en las demás
-   pantallas de esta (inicio, corrección, podio). */
+/* ── PAPEL SOBRE LA MESA (dueño, 2026-08-15) ─────────────────────────────────
+   Tercera y última versión de esta pelea, y la que decidió el dueño. Historia
+   corta, porque explica por qué NO se vuelve atrás:
+     1. Al principio la hoja era la textura del marco: sus renglones iban a otro
+        ritmo que el texto y se veían dos rayados que no coincidían.
+     2. Se apagó el fondo del marco cuando la ronda está montada. Se acabó el
+        doble rayado… y con él, el selector de fondo del profe: elegía Cuaderno,
+        se veía un instante al montar y desaparecía. Un mando que no manda.
+     3. Ahora: la hoja es OPACA y llena el escenario, y el marco conserva un
+        MARGEN por el que se ve el fondo elegido, como un papel apoyado en la
+        mesa. Los dos rayados no pueden solaparse (la hoja tapa lo de debajo) y
+        el ajuste del profe vuelve a hacer algo.
+   El marco deja de ser TARJETA mientras hay ronda —ni sombra ni esquinas: la
+   única cosa con forma de objeto es la hoja—, pero su fondo se respeta. */
 .ww-play-page .ww-player-frame:has(.tc-round),
 .ww-player-frame:has(.tc-round) {
-  background: var(--ww-paper-dim, #e9e5da);
   border-radius: 0;
   box-shadow: none;
+}
+/* El margen que enseña la mesa. En `cq*` para que crezca con el marco: en un
+   móvil es un filo y en la pizarra una orla, siempre en proporción. */
+.ww-player-frame:has(.tc-round) > #ww-player-widget,
+.ww-player-frame:has(.tc-round) > .ww-student-stage {
+  padding: max(8px, 2.2cqmin);
 }
 /* Y la esquina flotante de pantalla completa se retira cuando la ronda pinta su
    barra: el botón vive DENTRO de la barra (ver `.tc-bar .ww-fs-btn--inline`).

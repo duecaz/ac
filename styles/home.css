@@ -65,12 +65,18 @@ body {
 }
 
 /* ─────────────────────────── Barra superior ─────────────────────────── */
+/* SU ALTO ES UN DATO, no un número que cada pantalla recuerde. Quien tenga que
+   llenar «lo que queda de ventana» (el marco del alumno) lo descuenta con
+   `var(--ww-topbar-h)`. Antes nadie lo descontaba: la página del alumno pedía
+   100dvh DEBAJO de una barra de 56px, así que el documento medía 72px más que
+   la ventana y siempre había scroll (medido, 2026-08-15). */
+:root { --ww-topbar-h: 56px; }
 .ww-topbar {
   position: relative;
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px;
   background: var(--dash-navy); color: #fff;
-  padding: 0 18px; min-height: 56px;
+  padding: 0 18px; min-height: var(--ww-topbar-h);
   flex-wrap: wrap;
 }
 /* Botón hamburguesa — oculto en escritorio, visible en móvil. */
@@ -527,7 +533,10 @@ body {
 @media (max-width: 640px) {
   /* Barra compacta: marca + hamburguesa. Todas las acciones caen en un menú
      desplegable (mismos botones, incluidos mute/auth inyectados en sus slots). */
-  .ww-topbar { flex-wrap: nowrap; padding: 8px 12px; min-height: 52px; }
+  /* El alto NO baja en móvil: el hamburguesa mide 40px y con los 8px de aire
+     arriba y abajo la barra sigue midiendo 56. Declararla en 52 era una mentira
+     de 4px que se convertía en 4px de scroll en la página del alumno. */
+  .ww-topbar { flex-wrap: nowrap; padding: 8px 12px; }
   .ww-topbar__burger { display: inline-flex; }
   .ww-topbar__actions {
     display: none;

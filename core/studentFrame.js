@@ -26,11 +26,19 @@ import { html, mount } from './html.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from './fullscreen.js';
 import { applySkin } from './skins.js';
 import { applyBackground } from './backgrounds.js';
+import { getTemplate } from './registry.js';
 
 export function montarMarcoAlumno(rootSel, activity) {
+  // LA PROPORCIÓN, DEL MISMO SITIO QUE EN EL PROFE. La declara la plantilla
+  // (`meta.aspectRatio`) y `views/playerView.js` la escribe igual; aquí viaja
+  // como `--ww-ar` y solo la usa el CSS a partir de 900px de ancho (en vertical
+  // el marco ES la pantalla). Sin esto el marco del alumno no tenía proporción
+  // ninguna y lo que se veía era casualidad del respaldo.
+  const ar = getTemplate(activity?.template)?.meta?.aspectRatio;
+  const estilo = ar && ar !== 'auto' ? ` style="--ww-ar: ${ar}"` : '';
   mount(rootSel, html`
     <div class="ww-play-page ww-student-page">
-      <div class="ww-player-frame ww-student-frame" id="ww-frame">
+      <div class="ww-player-frame ww-student-frame" id="ww-frame"${estilo}>
         ${fullscreenButtonHtml({ corner: true })}
         <div id="s-stage" class="ww-student-stage"></div>
       </div>

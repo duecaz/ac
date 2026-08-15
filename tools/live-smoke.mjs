@@ -99,6 +99,35 @@ try {
   log('lectura: la pregunta se ve pero no se puede tocar (R-1)');
   await student.waitForSelector('#s-round:not(.s-reading) .rq-opt, #s-round:not(.s-reading) .ww-opt', { timeout: 15000 });
   log('se abren las respuestas solas al llegar el instante de la sala');
+
+  // ── LA PANTALLA DEL ALUMNO CABE, Y EL EJERCICIO LA LLENA ──────────────────
+  // Dos fallos que solo se ven MIDIENDO, y que estuvieron a la vez (dueño,
+  // 2026-08-15, con captura): (a) la página pedía 100dvh DEBAJO de una barra de
+  // 56px, así que el documento medía 72px más que la ventana y siempre había
+  // scroll; (b) el escenario era un bloque de altura automática, así que el
+  // `flex:1` de la actividad no tenía contra qué crecer y la ronda ocupaba
+  // menos de la mitad del marco. Ninguna suite de lógica puede ver esto: son
+  // píxeles, y el reparto de alturas atraviesa cuatro ficheros de CSS.
+  {
+    const m = await student.evaluate(() => {
+      const doc = document.documentElement;
+      const marco = document.getElementById('ww-frame');
+      const ronda = document.getElementById('s-round');
+      return {
+        sobra: doc.scrollHeight - window.innerHeight,
+        marco: marco ? Math.round(marco.getBoundingClientRect().height) : 0,
+        ronda: ronda ? Math.round(ronda.getBoundingClientRect().height) : 0,
+      };
+    });
+    // 2px de holgura: el redondeo de un dvh fraccionario no es un fallo.
+    if (m.sobra > 2) throw new Error(`la pantalla del alumno no cabe: sobran ${m.sobra}px de scroll`);
+    if (!m.marco) throw new Error('el alumno juega sin marco');
+    if (m.ronda < m.marco * 0.7) {
+      throw new Error(`el ejercicio no llena el marco del alumno: ronda ${m.ronda}px de un marco de ${m.marco}px`);
+    }
+    log(`el alumno cabe en su pantalla (0 scroll) y el ejercicio la llena (${m.ronda}/${m.marco}px)`);
+  }
+
   await student.locator('.rq-opt, .ww-opt', { hasText: '4' }).first().click();
   // Con todos respondidos el host puede AUTO-liquidar (pasa directo a reveal);
   // si no, se revela a mano. Ambos caminos terminan en #btn-lb.
