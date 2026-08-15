@@ -1,8 +1,8 @@
 {
-  "id": "2026-08-13",
+  "id": "2026-08-15",
   "titulo": "AulaReto · Hoja de pruebas",
-  "intro": "Van por ORDEN DE IMPORTANCIA: si solo tienes un rato, haz la Parte 1 entera y para. Cada prueba dice la RUTA (aparato › actividad › modo › pantalla): si no coincide con lo que tienes delante, no es esa prueba. Marca Pasa si ocurrió lo que dice «Tiene que pasar», Falla si no — y cuenta en la nota qué viste. «No probado» también vale: dice hasta dónde llegaste.",
-  "versionMin": "1.51.458",
+  "intro": "Ronda CORTA a propósito: solo lo que no puede comprobar el ordenador solo. Todo lo de la ronda anterior que era de aspecto (cabeceras, botones, temas oscuros, fotos) ya lo verifica el preflight en cada cambio, así que se ha quitado de aquí. Queda lo que necesita TUS aparatos y TU mano: el reloj, la pizarra y las pantallas nuevas de esta semana. Marca Pasa si ocurrió lo que dice «Tiene que pasar», Falla si no — y cuenta en la nota qué viste. «No probado» también vale: dice hasta dónde llegaste.",
+  "versionMin": "1.51.493",
   "secciones": [
     {
       "titulo": "Antes de empezar",
@@ -12,171 +12,110 @@
           "titulo": "Versión nueva instalada",
           "ruta": ["PC + móvil", "aulareto.com", "Barra superior"],
           "accion": "Abre aulareto.com y recarga con Ctrl+F5. En el móvil, cierra la pestaña y vuelve a abrirla.",
-          "espera": "arriba se ve el número de versión y es 1.51.458 o más. Si es menor, para y avisa: estarías probando la de antes.",
+          "espera": "arriba se ve el número de versión y es 1.51.493 o más. Si es menor, para y avisa: estarías probando la de antes.",
           "casillas": ["PC", "Móvil"],
           "notaPista": "Versión que ves en cada aparato"
         }
       ]
     },
     {
-      "titulo": "Parte 1 · EL RELOJ — lo único que sigue abierto",
-      "nota": "Ayer reportaste «el profesor tiene 20s y el estudiante 30s». Lo intenté reproducir con dos pantallas a la vez, midiendo segundo a segundo, y me salió SIEMPRE el mismo número. Así que necesito los datos de TU caso para encontrarlo. Aunque la 1 te salga Pasa, rellena igual la nota de la 2: son los datos que faltan.",
+      "titulo": "Parte 1 · EL RELOJ — lo único que sigue abierto de antes",
+      "nota": "Sigue sin reproducirse: con dos pantallas delante, midiendo segundo a segundo, sale SIEMPRE el mismo número. La prueba 2 no es jugar, es apuntar tres datos — con ellos lo reproduzco en un minuto; sin ellos, no. Aunque la 1 te salga Pasa, rellena igual la nota de la 2.",
       "pruebas": [
         {
           "n": 1,
           "titulo": "El mismo número en PC y móvil",
           "ruta": ["PC (profe) + móvil (alumno)", "Quiz", "En vivo", "Rondas juntas", "Pantalla de la pregunta"],
-          "accion": "Repite lo de ayer con las dos pantallas delante y mira los DOS relojes a la vez.",
+          "accion": "Crea una sala en vivo con un quiz, entra con el móvil por PIN y mira los DOS relojes a la vez cuando se abre la pregunta.",
           "pasos": [
-            "En el PC: abre el quiz, «En vivo», elige «Rondas juntas» y crea la sala.",
-            "En el móvil: entra con el PIN y pon tu nombre.",
-            "En el PC: pulsa Empezar.",
-            "Primero salen los «Preparados…»: comprueba que los dos bajan igual.",
-            "Cuando desaparezca «Preparados…» empieza el reloj de la PREGUNTA: mira el número de arriba en las dos pantallas AL MISMO TIEMPO.",
-            "Apunta en la nota los dos números tal cual (por ejemplo: «profe 20 / alumno 30»)."
+            "Abre la pregunta desde el PC y NO respondas todavía.",
+            "Mira el número que marca la cuenta atrás en el PC y en el móvil en el mismo instante.",
+            "Repite en la segunda y en la tercera pregunta: el fallo de ayer apareció con la partida ya empezada."
           ],
-          "espera": "los dos marcan el mismo número (±1 por redondeo es normal), y siguen bajando a la vez.",
-          "notaPista": "Profe __ / alumno __ (en el mismo instante)"
+          "espera": "los dos aparatos marcan el mismo número (±1 segundo, que es lo que tarda el ojo en ir de una pantalla a la otra).",
+          "casillas": ["Pregunta 1", "Pregunta 2", "Pregunta 3"],
+          "notaPista": "Qué número marcaba cada aparato en cada pregunta"
         },
         {
           "n": 2,
           "titulo": "Los 3 datos que faltan del reloj",
-          "ruta": ["PC (profe)", "Quiz de la prueba 1", "Editor › En vivo", "y las dos pantallas del juego"],
-          "accion": "Esto NO es jugar: es apuntar tres datos. Con ellos reproduzco el fallo en un minuto; sin ellos no puedo.",
+          "ruta": ["PC (profe)", "El quiz de la prueba 1", "Editor › En vivo", "y las dos pantallas del juego"],
+          "accion": "Esto NO es jugar: es apuntar tres datos.",
           "pasos": [
             "DATO 1 — Abre ese quiz en el editor, pestaña «En vivo», y apunta qué número tiene «Tiempo por pregunta».",
-            "DATO 2 — En el editor, mira si ALGUNA pregunta tiene su propio tiempo distinto del general. Apunta cuál y cuánto (o «ninguna»).",
-            "DATO 3 — Vuelve a jugar la partida y, en el momento en que veas los relojes distintos, mira arriba en las DOS pantallas dónde dice «Pregunta X / N». Apunta el X del profe y el X del alumno."
+            "DATO 2 — Mira si ALGUNA pregunta tiene su propio tiempo distinto del general. Apunta cuál y cuánto (o «ninguna»).",
+            "DATO 3 — Vuelve a jugar y, en el momento en que veas los relojes distintos, mira arriba en las DOS pantallas dónde dice «Pregunta X / N». Apunta el X del profe y el X del alumno."
           ],
-          "espera": "no hay nada que pase o falle: marca Pasa cuando tengas los tres datos apuntados en la nota. Si el DATO 3 sale distinto (profe «Pregunta 2 / 5» y alumno «Pregunta 1 / 5»), ESO es el fallo y ya está localizado.",
+          "espera": "no hay nada que pase o falle: marca Pasa cuando tengas los tres datos en la nota. Si el DATO 3 sale distinto (profe «Pregunta 2 / 5» y alumno «Pregunta 1 / 5»), ESO es el fallo y queda localizado.",
           "notaPista": "1) Tiempo por pregunta = __ · 2) Preguntas con tiempo propio = __ · 3) Profe «Pregunta _ / _» y alumno «Pregunta _ / _»"
-        },
-        {
-          "n": 3,
-          "titulo": "La barra del profe baja de verdad (nuevo)",
-          "ruta": ["PC (profe)", "Quiz", "En vivo", "Rondas juntas", "Pantalla de la pregunta"],
-          "accion": "En la misma partida, mira la barra amarilla que hay bajo el número.",
-          "espera": "la barra empieza a encogerse desde el primer segundo y llega vacía al final. Antes, si una pregunta tenía su propio tiempo, se quedaba LLENA un rato y luego caía de golpe.",
-          "notaPista": "¿Se encoge desde el principio o se queda llena?"
         }
       ]
     },
     {
-      "titulo": "Parte 2 · Lo que cambió de aspecto (rápido, tú solo)",
-      "nota": "Todo esto es de hoy y se ve en un minuto: NO hace falta un segundo aparato ni otra persona.",
+      "titulo": "Parte 2 · LA HOJA DE TILDES/COMAS — rehecha esta semana",
+      "nota": "Cambió entera: una sola hoja (antes se veían dos marcos), la barra de arriba con el progreso, el mando de lápiz/borrador y el botón de pantalla completa dentro de ella. Lo geométrico ya lo mide el ordenador; lo que necesito de ti es la MANO en la pizarra y el ojo a 3 metros.",
       "pruebas": [
         {
+          "n": 3,
+          "titulo": "El mando de lápiz/borrador hace lo que dice",
+          "ruta": ["Pizarra o PC", "Tildes (o Comas)", "Individual", "Pantalla del texto"],
+          "accion": "Con el ejercicio abierto, juega con el mando de arriba antes de escribir nada.",
+          "pasos": [
+            "Toca «Lápiz» estando YA en lápiz: no debe cambiar nada.",
+            "Marca una tilde. Toca «Borrador» y pasa por encima de esa marca: tiene que desaparecer.",
+            "Vuelve a tocar «Lápiz» y marca otra: tiene que volver a escribir."
+          ],
+          "espera": "el lado encendido es siempre el que manda, y tocar el que ya estaba encendido no cambia de herramienta.",
+          "casillas": ["Pizarra", "PC"],
+          "notaPista": "Si alguna vez escribió cuando esperabas borrar (o al revés), en qué paso"
+        },
+        {
           "n": 4,
-          "titulo": "El enunciado se lee sobre la foto de fondo",
-          "ruta": ["PC o móvil", "Quiz CON foto de fondo", "Individual", "Primera pregunta"],
-          "accion": "Un quiz que tenga FOTO DE FONDO (editor → Aspecto → Fondo → «Mi imagen»). Juégalo en Individual.",
-          "espera": "el enunciado va dentro de un recuadro claro y se lee sin esfuerzo, no suelto sobre la foto. En la captura de ayer «¿Cuántos días tiene una semana?» era ilegible.",
-          "casillas": ["PC", "Móvil"]
+          "titulo": "Se lee y se toca a 3 metros",
+          "ruta": ["Pizarra del aula", "Tildes (o Comas)", "Individual", "Pantalla del texto"],
+          "accion": "Ponte donde se sienta la última fila y mira la pizarra.",
+          "espera": "desde ahí se distingue cuál de los dos está encendido, se lee el texto del ejercicio, y al tocar una vocal con el dedo (no con el lápiz) la marca cae donde apuntabas.",
+          "casillas": ["Se ve cuál manda", "Se lee el texto", "El dedo acierta"],
+          "notaPista": "A qué distancia dejaste de distinguirlo"
         },
         {
           "n": 5,
-          "titulo": "La cabecera, en una sola fila",
-          "ruta": ["PC o móvil", "Cualquier quiz", "Individual", "Pantalla de la pregunta"],
-          "accion": "Mira la franja de arriba del juego.",
-          "espera": "en la MISMA línea: el contador «1 / 5» a la izquierda, el enunciado, y a la derecha el botón de pantalla completa — sin que el botón tape el título. Y ya NO existe el recuadro «★ 0»: el puntaje sale al terminar.",
-          "casillas": ["Una sola fila", "Sin ★", "El botón no tapa"]
+          "titulo": "Pantalla completa: el botón no se mueve de sitio",
+          "ruta": ["PC o pizarra", "Tildes (o Comas)", "Individual", "Texto y corrección"],
+          "accion": "Toca el botón de pantalla completa (arriba a la derecha de la barra), responde y pulsa Listo.",
+          "espera": "el botón está SIEMPRE en el mismo sitio —dentro de la barra— tanto en la pantalla del texto como en la de corrección, y nunca hay dos botones de pantalla completa a la vez.",
+          "casillas": ["Al entrar", "En la corrección"],
+          "notaPista": "Si en alguna pantalla apareció en otro sitio o duplicado"
         },
         {
           "n": 6,
-          "titulo": "Los botones de respuesta, redondeados",
-          "ruta": ["PC o móvil", "Cualquier quiz", "Individual", "Pantalla de la pregunta"],
-          "accion": "Mira las cuatro opciones de colores.",
-          "espera": "tienen las esquinas redondeadas (pastilla), no cuadradas."
-        },
+          "titulo": "El ejercicio ocupa la pantalla",
+          "ruta": ["PC (pantalla grande)", "Cualquier actividad", "Individual", "Sin pantalla completa"],
+          "accion": "Sin entrar en pantalla completa, mira cuánto ocupa el recuadro del juego.",
+          "espera": "el recuadro llena el ancho útil y llega casi hasta abajo, sin una franja grande de fondo vacío debajo y sin que haya que bajar con la rueda para ver el botón de responder.",
+          "casillas": ["PC", "Pizarra"],
+          "notaPista": "Tamaño de tu pantalla y qué parte quedó vacía"
+        }
+      ]
+    },
+    {
+      "titulo": "Parte 3 · La barra de arriba y la entrada",
+      "pruebas": [
         {
           "n": 7,
-          "titulo": "La foto llega al borde en el móvil",
-          "ruta": ["Móvil (alumno)", "Quiz CON foto en la pregunta", "Tarea", "Primera pregunta"],
-          "accion": "Tarea de un quiz cuya primera pregunta tenga una FOTO grande. Ábrela desde el móvil.",
-          "espera": "la foto llega de lado a lado, sin las dos franjas de fondo que viste ayer. Y la página sigue entrando entera, sin desplazarse a los lados.",
-          "notaPista": "¿Sigue viéndose el borde a los lados?"
-        }
-      ]
-    },
-    {
-      "titulo": "Parte 3 · Los temas oscuros (aquí estaba el fallo que reportaste)",
-      "nota": "Encontré por qué «no se veían las letras»: en el duelo, los temas Arcade y TV Show pintaban las respuestas en BLANCO sobre sus colores claros. Estas dos pruebas confirman que quedó arreglado en tus pantallas.",
-      "pruebas": [
+          "titulo": "El menú del móvil se cierra al tocar fuera",
+          "ruta": ["Móvil", "aulareto.com", "Barra superior"],
+          "accion": "Toca el botón de las tres rayas para abrir el menú y luego toca en cualquier sitio de la página, fuera del menú.",
+          "espera": "el menú se cierra solo. También al elegir una opción y al cambiar de pantalla.",
+          "notaPista": "Si se quedó abierto, qué tocaste"
+        },
         {
           "n": 8,
-          "titulo": "Arcade y TV Show en el duelo",
-          "ruta": ["PC o pizarra", "Quiz", "VS (duelo)", "Con tema Arcade y con TV Show"],
-          "accion": "Juega un quiz en VS con el tema «Arcade» y luego repite con «TV Show» (editor → Aspecto → Tema).",
-          "espera": "en los DOS temas se leen las cuatro respuestas, también la amarilla y la verde claro. Antes salían en blanco sobre amarillo: invisibles.",
-          "casillas": ["Arcade", "TV Show"],
-          "notaPista": "Si alguna no se lee, di CUÁL color y qué palabra"
-        },
-        {
-          "n": 9,
-          "titulo": "El fondo que eliges es el que sale",
-          "ruta": ["PC", "Cualquier quiz", "Individual", "Tema TV Show + Fondo Papel"],
-          "accion": "En el editor pon TEMA «TV Show» y FONDO «Papel». Juégalo.",
-          "espera": "se ve el PAPEL claro que elegiste, no el fondo azul oscuro del tema. Antes ganaba el tema y tu fondo se ignoraba.",
-          "notaPista": "¿Sale papel o sale el azul del tema?"
-        },
-        {
-          "n": 10,
-          "titulo": "La hoja de Tildes con fondo Cuaderno",
-          "ruta": ["PC", "Tildes o Comas", "Individual", "Fondo Cuaderno"],
-          "accion": "Una actividad de Tildes (o Comas) con FONDO «Cuaderno». Juégala.",
-          "espera": "se ve UNA hoja crema con sus renglones y el margen rojo — limpia. No dos juegos de rayas superpuestos.",
-          "notaPista": "¿Rayas dobles o una sola hoja?"
-        }
-      ]
-    },
-    {
-      "titulo": "Parte 4 · Lo que quedó sin probar ayer",
-      "nota": "Nada de esto ha cambiado desde ayer: es cobertura que falta. Si no llegas, marca «No probado» y ya está — no lo adivines.",
-      "pruebas": [
-        {
-          "n": 11,
-          "titulo": "Empate: los dos leen lo mismo",
-          "ruta": ["2 móviles (alumnos)", "Quiz", "En vivo", "Rondas juntas", "Pantalla tras responder"],
-          "accion": "Con dos móviles, que ambos acierten lo mismo y queden empatados. Mira qué le dice la pantalla a cada uno.",
-          "espera": "los dos leen el MISMO puesto («vas primero, empatado con …»), no uno «¡vas primero!» y el otro «empatas con…»."
-        },
-        {
-          "n": 12,
-          "titulo": "El que no responde sale en la lista",
-          "ruta": ["PC (profe)", "Quiz", "En vivo", "Al terminar", "Ranking y Tabla"],
-          "accion": "Partida con dos móviles: uno juega, el otro entra y no responde nada. Termina y mira Ranking y Tabla.",
-          "espera": "el que no respondió aparece con 0 y casillas en «—», y NO sale celebrado como ganador.",
-          "casillas": ["Ranking", "Tabla"]
-        },
-        {
-          "n": 13,
-          "titulo": "Individual: el fallo se pone rojo",
-          "ruta": ["PC o móvil", "Quiz", "Individual", "Al fallar una"],
-          "accion": "Quiz en Individual: falla una a propósito.",
-          "espera": "la opción que tocaste se pone roja y la correcta verde, con cualquier tema."
-        },
-        {
-          "n": 14,
-          "titulo": "Carrera: rojo y la pregunta vuelve",
-          "ruta": ["Móvil (alumno)", "Quiz", "En vivo", "Carrera libre", "Al fallar una"],
-          "accion": "En vivo → Carrera libre: falla una desde el móvil.",
-          "espera": "se pone roja y esa misma pregunta vuelve a salir más adelante."
-        },
-        {
-          "n": 15,
-          "titulo": "Final de carrera con aciertos y tiempo",
-          "ruta": ["Móvil (alumno)", "Quiz", "En vivo", "Carrera libre", "Pantalla final"],
-          "accion": "Termina una carrera con un móvil y mira su pantalla final.",
-          "espera": "dice cuántas acertaste y tu tiempo (p. ej. «5 / 5 correctas · 1:12»)."
-        },
-        {
-          "n": 16,
-          "titulo": "Fotos pesadas entran",
-          "ruta": ["PC (profe)", "Cualquier actividad", "Editor + setup de VS", "Subir foto pesada"],
-          "accion": "Sube una foto de móvil de 3-8 MB en los tres sitios: avatar del VS, fondo del editor e imagen de una pregunta.",
-          "espera": "las tres entran comprimidas y se ven bien; ninguna rebota por tamaño.",
-          "casillas": ["Avatar", "Fondo", "Imagen"],
-          "notaPista": "Si alguna rebota, copia el mensaje exacto"
+          "titulo": "Crear cuenta se ve",
+          "ruta": ["PC o móvil", "aulareto.com", "Entrar"],
+          "accion": "Pulsa «Entrar» sin haber iniciado sesión y mira el cuadro que sale.",
+          "espera": "abajo hay un botón «Crear mi cuenta» (con recuadro, no una frase pequeña) y lleva al alta.",
+          "notaPista": "Lo viste sin buscarlo, o tuviste que fijarte"
         }
       ]
     }

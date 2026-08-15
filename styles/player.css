@@ -17,7 +17,11 @@
 /* === Wordwall-style activity page === */
 
 .ww-play-page {
-  max-width: 1100px;
+  /* Techo de la PÁGINA, no del marco: quien decide cuánto crece el ejercicio es
+     la regla de abajo (alto libre × proporción). Con 1100 aquí, ese cálculo se
+     quedaba corto en cualquier monitor de escritorio — el marco tenía sitio
+     para 1400 y la página no le dejaba pasar de 1100. */
+  max-width: 1400px;
   margin: 0 auto;
   padding: 5px .5rem 0;   /* un respiro entre la barra superior y el marco */
 }
@@ -399,8 +403,21 @@ body.bg-plated .ww-player .ww-phead .badge.bg-secondary {
   }
 }
 
-/* Modest cap on big screens. Fullscreen still expands to the full viewport
-   (1280x800 on the interactive board) thanks to :fullscreen rules above. */
+/* LA MEDIDA DEL MARCO LA PONE EL ALTO QUE HAY, NO UN NÚMERO (dueño,
+   2026-08-15, con captura: «la actividad no está a la medida del player»).
+   Había un tope plano de 800px: en una pantalla de 1920×1030 el ejercicio
+   ocupaba 800×500 y el resto era fondo vacío — y en la pizarra del aula, que es
+   ancha y baja, pasaba lo mismo. El marco tiene una PROPORCIÓN declarada por la
+   plantilla (`meta.aspectRatio`), así que su ancho máximo se DEDUCE del alto
+   libre: `alto disponible × proporción`. Así crece hasta donde llega la
+   pantalla y ni desborda por abajo ni deja una franja muerta.
+   `--ww-ar` lo escribe `views/playerView.js` junto al `aspect-ratio` (una sola
+   fuente: la proporción de la plantilla). El tope duro de 1400px es para que en
+   un monitor 21:9 el texto no quede a metro y medio de ancho.
+   El descuento de alto cubre la barra superior + el aire de la página; en
+   pantalla completa mandan las reglas `:fullscreen` de arriba. */
 @media (min-width: 1100px) {
-  .ww-play-page .ww-player-frame { max-width: 800px; }
+  .ww-play-page .ww-player-frame {
+    max-width: min(1400px, calc((100dvh - 130px) * var(--ww-ar, 1.6)));
+  }
 }

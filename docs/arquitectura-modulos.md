@@ -31,7 +31,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1712 | 7 · 859 | 0.50 |
-| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2571 | 12 · 1234 | 0.48 |
+| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2577 | 12 · 1234 | 0.48 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3946 | 19 · 3001 | 0.76 |
 | **informes/tareas** | después de clase | 10 · 1056 | 4 · 435 | 0.41 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5700 | 12 · 1042 | 0.18 |
@@ -105,7 +105,7 @@ graph TD
 | Capa | Módulos más grandes |
 |---|---|
 | **arranque** | `qa/hoja.js` (254) · `main.teacher.js` (168) · `main.embed.js` (68) · `main.student.js` (50) |
-| **vistas** | `views/hostLive.js` (1078) · `views/adminView.js` (1071) · `views/studentLive.js` (923) · `views/vsView.js` (488) · `views/playerView.js` (387) |
+| **vistas** | `views/hostLive.js` (1078) · `views/adminView.js` (1071) · `views/studentLive.js` (923) · `views/vsView.js` (488) · `views/playerView.js` (393) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1131) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
 | **core** | `core/textCorrectionRound.js` (455) · `core/skins.js` (355) · `core/selftest.js` (345) · `core/auth.js` (330) · `core/normsCheck.js` (325) |
 | **kernel** | `kernel/session/engine.js` (559) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/dataPort.js` (28) |

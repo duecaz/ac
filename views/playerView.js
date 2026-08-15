@@ -380,7 +380,13 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   }
 }
 
+// La proporción va DOS veces al estilo y con un solo origen: `aspect-ratio`
+// para el navegador y `--ww-ar` para que el CSS pueda deducir de ella el ancho
+// máximo a partir del alto libre (ver styles/player.css, «la medida del marco
+// la pone el alto que hay»). Escribir el número a mano en el CSS habría creado
+// una segunda verdad que se desincroniza en cuanto una plantilla cambie de
+// proporción.
 function aspectStyle(aspect) {
   if (aspect === 'auto') return 'aspect-ratio: auto; min-height: 50vh;';
-  return `aspect-ratio: ${aspect};`;
+  return `aspect-ratio: ${aspect}; --ww-ar: (${aspect});`;
 }
