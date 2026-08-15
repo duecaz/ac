@@ -58,8 +58,11 @@ export class TildesTemplate extends BaseTemplate {
   }
 
   // One passage = one round (tap the accented vowels). Shared renderer.
-  static renderRound(root, payload, { onSubmit } = {}) {
-    return renderTextCorrectionRound(root, payload, { kind: 'tilde', onSubmit });   // devuelve { flush }
+  // `chips` viaja tal cual a la ronda (contrato de barra única): quedarse solo
+  // con onSubmit era lo que dejaba a la vista pintando su fila ENCIMA de la
+  // barra de la hoja — las dos barras de la captura del dueño.
+  static renderRound(root, payload, { onSubmit, chips } = {}) {
+    return renderTextCorrectionRound(root, payload, { kind: 'tilde', onSubmit, chips });   // devuelve { flush }
   }
 
   // Projector view for LIVE (passage big; solution on reveal).

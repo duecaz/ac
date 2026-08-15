@@ -166,7 +166,10 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
   // (mismo efecto que pulsar "Listo"). Lo usa studentLive para RESCATAR el trazo
   // en curso cuando el profe avanza antes de que el alumno termine — capacidad
   // declarada por la plantilla, no un querySelector a clases internas.
-  return { flush: submit };
+  // `chromePropio`: esta ronda YA pinta su barra (progreso + herramientas), así
+  // que la vista que le pasó `chips` no debe apilar otra encima — dos barras
+  // era la captura del dueño. Quien no pase chips no nota nada.
+  return { flush: submit, chromePropio: !!(chips.left || chips.right) };
 }
 
 // Ajusta el tamaño de letra para que el texto LLENE el área (sin desbordar): el

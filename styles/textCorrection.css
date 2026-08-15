@@ -18,6 +18,24 @@
 /* Anula el centrado por margin:auto del widget para que .tc-solo llene la altura. */
 .ww-play-page .ww-player-frame > #ww-player-widget > .tc-solo { margin: 0; }
 
+/* ── SIN DOBLE FONDO (dueño, 2026-08-14, con captura) ────────────────────────
+   La ronda ES una hoja de papel; si el marco pinta detrás su textura de
+   cuaderno (el fondo por defecto de Tildes/Comas), se ven DOS papeles: los
+   renglones del marco asomando alrededor de la hoja. Cuando la ronda está
+   montada, el marco se AQUIETA: fuera la textura, un liso cálido y ya. Lleva
+   `.bg-set` para ganar a la textura de backgrounds.css por especificidad (misma
+   técnica que usaba la hoja antigua). El fondo elegido sigue mandando en el
+   resto de plantillas y en las demás pantallas de esta. */
+/* `.bg-set` DOS veces a propósito: la textura de backgrounds.css pesa (0,3,0)
+   —frame + bg-set + bg-nombre— y con `:has()` esta regla empataba y perdía por
+   orden de carga (backgrounds.css va después). Repetir la clase sube a (0,4,0):
+   gana por especificidad, no por suerte de <link>. */
+.ww-player-frame.bg-set.bg-set:has(.tc-round),
+body.bg-set.bg-set:has(.tc-round) {
+  background-image: none;
+  background-color: var(--ww-paper-dim, #e9e5da);
+}
+
 /* "Frase X/Y" en una esquina, fuera del flujo, para no robar espacio al texto.
    Escala con el marco (cqmin) para no verse minúsculo en pantalla completa. */
 .tc-frase {

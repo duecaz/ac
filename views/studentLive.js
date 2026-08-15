@@ -687,21 +687,28 @@ export async function renderPlay(rootSel, code) {
     const total = allItems.length;
     emitGame(GameEvents.QUESTION_SHOWN, { idx, total, item: allItems[idx] });
 
-    mount(rootSel, html`
-      <div class="d-flex justify-content-between align-items-center mb-2 s-race-head">
-        <span class="badge bg-success fs-6"><i class="bi bi-check2-circle"></i> ${raceCorrectCount}/${total}</span>
-        ${streak >= 2 ? `<span class="badge bg-warning text-dark fs-5">🔥 ${streak}</span>` : '<span></span>'}
-        <span class="badge bg-info text-dark fs-6">${raceQueue.length} restantes</span>
-      </div>
-      <div class="progress mb-3" style="height:6px">
-        <div class="progress-bar bg-success" style="width:${total > 0 ? Math.round(100*raceCorrectCount/total) : 0}%"></div>
-      </div>
-      <div id="s-round"></div>
-    `);
+    // UNA SOLA BARRA (dueño, 2026-08-14, con captura): los chips de la carrera
+    // (aciertos · racha · restantes) se le OFRECEN a la ronda por su contrato
+    // (`opts.chips`). Si la plantilla trae su propia barra (Tildes/Comas la
+    // tienen, con Lápiz/Borrador), los integra y responde `chromePropio` — y
+    // esta vista NO pinta su fila encima: dos barras apiladas era el fallo.
+    // Si la plantilla no sabe de chips, la vista pinta su fila como siempre.
+    // La vista sigue sin conocer plantillas concretas (§0): pregunta, no adivina.
+    // Contenido PLANO (icono + texto): la barra de la ronda ya pinta cada chip
+    // como pastilla; meterle dentro un badge de Bootstrap daba pastilla sobre
+    // pastilla. El respaldo de abajo (plantillas sin barra propia) construye
+    // sus badges aparte.
+    const chips = {
+      left: `<i class="bi bi-check2-circle"></i> ${raceCorrectCount}/${total}`
+        + (streak >= 2 ? ` · 🔥 ${streak}` : ''),
+      right: `${raceQueue.length} restantes`,
+    };
+    mount(rootSel, html`<div id="s-race-extra"></div><div id="s-round"></div>`);
 
     let sent = false;
-    tpl.renderRound(document.getElementById('s-round'), payload, {
+    const ronda = tpl.renderRound(document.getElementById('s-round'), payload, {
       mode: 'live',
+      chips,
       onSubmit: (value) => {
         if (sent) return;
         sent = true;
@@ -784,6 +791,17 @@ export async function renderPlay(rootSel, code) {
         ctx.setTimeout(() => { if (session.phase === 'race') paintRace(); }, RACE_FLASH_MS);
       }
     });
+    if (!ronda?.chromePropio) {
+      const extra = document.getElementById('s-race-extra');
+      if (extra) extra.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-2 s-race-head">
+          <span class="badge bg-success fs-6">${chips.left}</span>
+          <span class="badge bg-info text-dark fs-6">${chips.right}</span>
+        </div>
+        <div class="progress mb-3" style="height:6px">
+          <div class="progress-bar bg-success" style="width:${total > 0 ? Math.round(100 * raceCorrectCount / total) : 0}%"></div>
+        </div>`;
+    }
   }
 
   function isLiveBoard() {
