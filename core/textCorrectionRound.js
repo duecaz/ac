@@ -17,6 +17,19 @@ import { observeResize } from './observeResize.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from './fullscreen.js';
 import { heatClass } from './itemStats.js';
 
+// ICONOS LUCIDE, EN LÍNEA (dueño, 2026-08-15: «usa iconos lucide»). Se pegan
+// aquí como SVG en vez de cargar la librería: la app no depende de la red —la
+// misma lección que la CDN de Bootstrap y las webfonts—, y con la clase delante
+// un icono que no llega es un mando invisible. `stroke:currentColor` deja que el
+// color lo ponga el token del skin (§3), igual que hacía el icono de fuente.
+// Fuente: lucide.dev · iconos `pencil` y `eraser` · licencia ISC.
+const svgLucide = (d) => `<svg class="tc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor"`
+  + ` stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const LUCIDE = {
+  pencil: svgLucide('<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>'),
+  eraser: svgLucide('<path d="M21 21H8a2 2 0 0 1-1.42-.587l-3.994-3.999a2 2 0 0 1 0-2.828l10-10a2 2 0 0 1 2.829 0l5.999 6a2 2 0 0 1 0 2.828L12.834 21"/><path d="m5.082 11.09 8.828 8.828"/>'),
+};
+
 const HINTS = {
   tilde: 'Toca las vocales que llevan tilde.',
   coma: 'Toca el hueco donde falta una coma.'
@@ -140,9 +153,13 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
         ${chips.left ? `<span class="tc-chip">${chips.left}</span>` : ''}
         <button type="button" class="tc-switch" data-tool="pen" aria-pressed="false"
                 title="Lápiz — toca para borrar" aria-label="Lápiz activo. Tocar para pasar al borrador">
-          <i class="bi bi-pencil-fill tc-switch__ic tc-switch__ic--pen" aria-hidden="true"></i>
+          <span class="tc-switch__side tc-switch__side--pen">
+            ${LUCIDE.pencil}<span class="tc-switch__word">Lápiz</span>
+          </span>
           <span class="tc-switch__track"><span class="tc-switch__knob"></span></span>
-          <i class="bi bi-eraser-fill tc-switch__ic tc-switch__ic--er" data-tool="eraser" aria-hidden="true"></i>
+          <span class="tc-switch__side tc-switch__side--er" data-tool="eraser">
+            ${LUCIDE.eraser}<span class="tc-switch__word">Borrador</span>
+          </span>
         </button>
         ${chips.right ? `<span class="tc-chip tc-chip--right">${chips.right}</span>` : ''}
         ${propio ? fullscreenButtonHtml({ inline: true }) : ''}

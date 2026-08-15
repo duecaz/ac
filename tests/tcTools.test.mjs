@@ -77,6 +77,24 @@ const css = leer('styles/textCorrection.css');
   ok('el interruptor escala con el marco y se recolorea por token (§3 · R1)');
 }
 
+// ── 4a. La PALABRA va en el lado encendido, y los iconos no piden red ───────
+// «El interruptor activado lleva texto» (dueño, 2026-08-15): a 3 m un icono
+// solo no dice si estás escribiendo o borrando. Y los iconos son SVG de Lucide
+// PEGADOS, no una librería de CDN: la clase no se queda sin mando porque el
+// colegio filtre un dominio (la lección de la CDN de Bootstrap).
+{
+  const bloque = css.slice(css.indexOf('.tc-switch'), css.indexOf('.tc-done-wrap'));
+  citaDeFuente(bloque, /\.tc-switch__word\s*\{\s*display:\s*none/,
+    'la palabra nace oculta y solo la enseña el lado encendido', 'textCorrection.css');
+  citaDeFuente(bloque, /\.tc-switch\.is-on\s+\.tc-switch__side--er\s+\.tc-switch__word[^{]*\{\s*display:\s*inline/,
+    'encendido = borrador, y ese lado muestra su palabra', 'textCorrection.css');
+  citaDeFuente(ronda, /<svg class="tc-ico"[\s\S]*stroke="currentColor"/,
+    'los iconos son SVG en línea y toman el color del token (no una fuente ni un CDN)', 'textCorrectionRound.js');
+  const zonaSw = ronda.slice(ronda.indexOf('class="tc-switch"'), ronda.indexOf('tc-passage-area'));
+  assert.ok(!/https?:\/\//.test(zonaSw), 'el mando no puede depender de ningún dominio externo');
+  ok('el lado encendido lleva su palabra · iconos Lucide en línea, sin red');
+}
+
 // ── 4b. El botón de pantalla completa lo ALOJA la barra ────────────────────
 // Que quede DENTRO de la caja de la barra y que la esquina flotante desaparezca
 // se mide en el navegador (matrix-smoke, «un solo marco / botón en la barra»).

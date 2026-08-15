@@ -162,9 +162,23 @@ body.bg-set.bg-set:has(.tc-round) {
   border: 0; background: transparent; padding: .2em .35em; cursor: pointer;
   font-size: clamp(.8rem, 2.1cqmin, 1.3rem); line-height: 1;
 }
-.tc-switch__ic { opacity: .35; transition: opacity .15s ease, color .15s ease; }
-.tc-switch:not(.is-on) .tc-switch__ic--pen,
-.tc-switch.is-on .tc-switch__ic--er { opacity: 1; color: var(--ww-accent, #0d6efd); }
+.tc-switch__side {
+  display: inline-flex; align-items: center; gap: .3em;
+  opacity: .35; font-weight: 700;
+  transition: opacity .15s ease, color .15s ease;
+}
+/* EL LADO ENCENDIDO LLEVA SU PALABRA (dueño, 2026-08-15). El apagado se queda
+   solo con el icono: así el mando dice a la vez en qué está («Lápiz») y qué es
+   lo otro (el icono de goma), sin ocupar el doble de barra ni obligar a leer
+   dos etiquetas para saber cuál manda. */
+.tc-switch__word { display: none; }
+.tc-switch:not(.is-on) .tc-switch__side--pen,
+.tc-switch.is-on .tc-switch__side--er { opacity: 1; color: var(--ww-accent, #0d6efd); }
+.tc-switch:not(.is-on) .tc-switch__side--pen .tc-switch__word,
+.tc-switch.is-on .tc-switch__side--er .tc-switch__word { display: inline; }
+/* Los iconos son SVG de Lucide en línea: escalan con la letra del mando y toman
+   su color de `currentColor` (el token del skin), como hacía el icono de fuente. */
+.tc-ico { width: 1.15em; height: 1.15em; display: block; }
 /* La pastilla: carril + bolita, como el interruptor de un móvil. */
 .tc-switch__track {
   position: relative; display: inline-block;
