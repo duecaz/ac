@@ -70,7 +70,10 @@ const ALLOW = {
   'pb-filter': ['core/pbFilter.js'],   // pbFilterParam usa encodeURIComponent legítimamente
   'kernel-puro': [],
   // Los primitivos de reloj y el ctx del lifecycle SON la implementación.
-  'reloj-primitivo': ['core/lifecycle.js', 'core/soloTimer.js', 'core/deadlineTicker.js'],
+  'reloj-primitivo': ['core/lifecycle.js', 'core/soloTimer.js', 'core/deadlineTicker.js',
+    // El vigía de un flujo permanente (SSE) es el CUARTO primitivo de reloj: no
+    // pinta, vigila silencio y renueva la conexión. Su scheduler se inyecta.
+    'core/streamWatchdog.js'],
   'id-rid': ['core/ids.js'],   // la única implementación permitida
   // `core/serverNow.js` ES la hora común (usa clock.now para calcularla) y
   // `core/deadlineTicker.js` ya la consume; `core/clock.js` es el reloj crudo.

@@ -13,6 +13,7 @@ import { createLiveRoom } from '../../kernel/live/engine.js';
 import { isAcceptableNickname } from '../../core/nicknameFilter.js';
 import { pbJson } from '../../core/pbHttp.js';
 import { PB_URL } from '../../pocketbase.config.js';
+import { startStreamWatchdog } from '../../core/streamWatchdog.js';
 import { pickWord } from '../../core/liveWords.js';
 import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
 import { rankPlayers } from '../../core/liveRank.js';
@@ -1006,6 +1007,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       let es = null;
       let retries = 0;          // consecutive failed connection attempts
       let retryTimer = null;
+      let vigia = null;         // renovación preventiva (core/streamWatchdog.js)
 
       // Exponential backoff with jitter, capped at 30s. The native EventSource
       // reconnect hammers a downed server every ~3s; this backs off instead so
@@ -1047,6 +1049,33 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         try { src.close(); } catch {}
       }
 
+      // RENOVAR ANTES DE QUE LO CORTEN (propuesta del dueño, 2026-08-16: «si es
+      // por inactividad debería tener un aviso antes de cumplirse la
+      // inactividad»). El porqué y el matiz de SSE están en el primitivo
+      // (core/streamWatchdog.js); aquí solo se elige el umbral.
+      //
+      // 80 s va por debajo del corte por inactividad más común en un
+      // intermediario (Cloudflare cierra a los 100 s) y muy por encima del ritmo
+      // normal de la sala: el host sella `host_seen_at` cada ~10 s, así que un
+      // flujo vivo nunca llega a 80 s sin recibir nada. Si llega, o está muerto
+      // o está a punto de que lo maten — en los dos casos, renovar.
+      const SILENCIO_MAX = 80000;
+      function pararVigia() { if (vigia) { vigia.stop(); vigia = null; } }
+      function armarVigia() {
+        pararVigia();
+        vigia = startStreamWatchdog({
+          silencioMs: SILENCIO_MAX,
+          onRenew: () => {
+            if (!active || !es) return;
+            // Sin ruido y sin banner: esto NO es un fallo, es mantenimiento.
+            teardown(es);
+            es = null;
+            retries = 0;
+            connect();
+          },
+        });
+      }
+
       function connect() {
         if (!active) return;
         teardown(es);
@@ -1056,6 +1085,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         self.addEventListener('PB_CONNECT', async (e) => {
           if (!active || es !== self) return;
           retries = 0; // a successful handshake resets the backoff
+          armarVigia();
           try { setConnectionState('connected'); } catch {}
           try {
             const { clientId } = JSON.parse(e.data);
@@ -1085,6 +1115,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
 
         self.addEventListener(topic, (e) => {
           if (!active || es !== self) return;
+          vigia?.touch();
           try {
             const { action } = JSON.parse(e.data);
             // All state is in one record: fire all three virtual tables so views
@@ -1101,6 +1132,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         // despreciable. Payload ignorado a propósito: forzamos un re-fetch.
         self.addEventListener(PLR, (e) => {
           if (!active || es !== self) return;
+          vigia?.touch();
           try { onChange({ table: 'players', eventType: JSON.parse(e.data).action }); }
           catch { onChange({ table: 'players' }); }
         });
@@ -1119,6 +1151,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       connect();
       return () => {
         active = false;
+        pararVigia();
         if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
         teardown(es);
         es = null;

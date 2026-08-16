@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **257 módulos · 980 imports internos.**
+> **258 módulos · 982 imports internos.**
 
 ### Ir a otro documento
 
@@ -35,7 +35,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3979 | 19 · 3001 | 0.75 |
 | **informes/tareas** | después de clase | 10 · 1056 | 4 · 466 | 0.44 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5700 | 12 · 1042 | 0.18 |
-| **infra/común** | todo lo anterior | 131 · 14507 | 51 · 5869 | 0.40 |
+| **infra/común** | todo lo anterior | 132 · 14603 | 52 · 5971 | 0.41 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -58,7 +58,7 @@ graph TD
   A["<b>arranque</b><br/><small>cablea cada página (main.*.js, sw.js)</small><br/><small>4 módulos</small>"]
   V["<b>vistas</b><br/><small>el chrome: navegación, setup, informes</small><br/><small>29 módulos</small>"]
   AD["<b>adaptadores</b><br/><small>el transporte: PocketBase | local</small><br/><small>7 módulos</small>"]
-  C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>130 módulos</small>"]
+  C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>131 módulos</small>"]
   K["<b>kernel</b><br/><small>el motor de sesión: cuándo se liquida</small><br/><small>6 módulos</small>"]
   T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>75 módulos</small>"]
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>5 módulos</small>"]
@@ -66,7 +66,7 @@ graph TD
   V -->|278| C
   T -->|198| C
   A -->|28| C
-  AD -->|26| C
+  AD -->|27| C
   A -->|18| V
   V -->|11| K
   K -->|10| C
@@ -106,8 +106,8 @@ graph TD
 |---|---|
 | **arranque** | `qa/hoja.js` (254) · `main.teacher.js` (168) · `main.embed.js` (68) · `main.student.js` (50) |
 | **vistas** | `views/hostLive.js` (1111) · `views/adminView.js` (1071) · `views/studentLive.js` (923) · `views/vsView.js` (488) · `views/playerView.js` (393) |
-| **adaptadores** | `adapters/pocketbase/realtime.js` (1131) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
-| **core** | `core/textCorrectionRound.js` (455) · `core/skins.js` (355) · `core/selftest.js` (345) · `core/auth.js` (330) · `core/normsCheck.js` (325) |
+| **adaptadores** | `adapters/pocketbase/realtime.js` (1164) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
+| **core** | `core/textCorrectionRound.js` (455) · `core/skins.js` (355) · `core/selftest.js` (345) · `core/auth.js` (330) · `core/normsCheck.js` (328) |
 | **kernel** | `kernel/session/engine.js` (559) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/dataPort.js` (28) |
 | **plantillas** | `templates/crossword/player.js` (485) · `templates/wordsearch/player.js` (405) · `templates/match/player.js` (296) · `templates/diagram/player.js` (238) · `templates/quiz/editor.js` (225) |
 | **contenido** | `kernel/content/qaAdapt.js` (104) · `kernel/content/convert.js` (95) · `kernel/content/models.js` (83) · `kernel/content/switch.js` (82) · `kernel/content/index.js` (5) |
@@ -123,9 +123,9 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 | `core/events.js` | 47 |
 | `core/registry.js` | 45 |
 | `core/ids.js` | 24 |
+| `core/clock.js` | 23 |
 | `core/toast.js` | 23 |
 | `core/storage.js` | 23 |
-| `core/clock.js` | 22 |
 | `kernel/session/engine.js` | 19 |
 | `core/ls.js` | 16 |
 | `core/auth.js` | 16 |
@@ -137,7 +137,7 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 
 | Módulo | Líneas | Lo importan |
 |---|---|---|
-| `adapters/pocketbase/realtime.js` | 1131 | 0 |
+| `adapters/pocketbase/realtime.js` | 1164 | 0 |
 | `views/hostLive.js` | 1111 | 1 |
 | `views/adminView.js` | 1071 | 1 |
 | `views/studentLive.js` | 923 | 1 |

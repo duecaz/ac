@@ -110,6 +110,7 @@ console.log('\n▶ citasFuente'); await import('./citasFuente.test.mjs');
 console.log('\n▶ scoringSources'); await import('./scoringSources.test.mjs');
 console.log('\n▶ persistPolicy'); await import('./persistPolicy.test.mjs');
 console.log('\n▶ deadlineTicker'); await import('./deadlineTicker.test.mjs');
+console.log('\n▶ streamWatchdog'); await import('./streamWatchdog.test.mjs');
 console.log('\n▶ answerSafety'); await import('./answerSafety.test.mjs');
 
 // GUARDARRAÍL DE DESCUBRIMIENTO (la lección de la tarjeta única, v1.51.388):
