@@ -67,9 +67,9 @@ Panel: **dash.cloudflare.com → lanube.uno → Speed → Settings → Protocol 
 |---|---|---|
 | **HTTP/2** | ON | Es el transporte del modo en vivo tras apagar HTTP/3. |
 | **HTTP/2 to Origin** | ON | Entre Cloudflare y la Pi; no afecta al navegador. |
-| **HTTP/3 (with QUIC)** | **OFF** | Con él encendido, Chrome abre el flujo SSE (`/api/realtime`) por QUIC y el navegador lo aborta con `ERR_QUIC_PROTOCOL_ERROR` una y otra vez: el profe y los alumnos ven cortes continuos (reportado 2026-08-16, en las dos pantallas a la vez). La app reconecta y resincroniza sola, así que la clase no pierde datos — pero el marcador va a tirones. |
+| **HTTP/3 (with QUIC)** | **OFF** ← apagado el 2026-08-16 | Con él encendido, Chrome abre el flujo SSE (`/api/realtime`) por QUIC y el navegador lo aborta con `ERR_QUIC_PROTOCOL_ERROR` una y otra vez: el profe y los alumnos veían cortes continuos, en las dos pantallas a la vez. **Apagarlo los eliminó por completo** (consola limpia, verificado por el dueño) — o sea que la causa era el camino QUIC, no un corte por inactividad. La app reconectaba y resincronizaba sola, así que la clase nunca perdió datos, pero el marcador iba a tirones. |
 | **Enhanced HTTP/2 Prioritization** | (requiere Pro) | No disponible en free. |
-| **0-RTT Connection Resumption** | OFF | Sin motivo para encenderlo; reenvía peticiones en la reconexión. |
+| **0-RTT Connection Resumption** | ON | Está encendido y se deja: Cloudflare solo manda datos anticipados en peticiones GET, así que el riesgo de repetición no toca nada que escriba. Si algún día aparece un fallo raro de duplicados en lecturas, es el primer sospechoso. |
 
 **Lo que NO se puede arreglar desde el código**: `EventSource` no permite elegir la
 versión de HTTP — la negocian navegador y servidor. Lo que sí hay del lado del cliente es
@@ -79,7 +79,8 @@ corte por inactividad valga la causa que valga, pero NO sustituye a apagar HTTP/
 
 **Al diagnosticar un corte del modo en vivo**, el dato que separa las dos causas es la
 DURACIÓN de la petición `/api/realtime` en la pestaña Network: ~100 s → inactividad
-(cubierto por el vigía); unos segundos → el camino QUIC (interruptor).
+(cubierto por el vigía); unos segundos → el camino QUIC (interruptor). En el caso de
+2026-08-16 fue lo segundo: el interruptor lo resolvió y no hubo que medir nada más.
 
 ## El contenedor PocketBase
 
