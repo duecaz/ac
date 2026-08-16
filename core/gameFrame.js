@@ -37,7 +37,15 @@ import { fullscreenButtonHtml, attachFullscreenButton } from './fullscreen.js';
 import { applySkin } from './skins.js';
 import { applyBackground } from './backgrounds.js';
 
-export function montarMarcoJuego(rootSel, activity, { escena = true } = {}) {
+// `caja`: si la superficie es un MARCO con forma (proporción, esquinas, sombra)
+// o solo un ÁMBITO. El alumno quiere caja — el juego es una cosa dentro de una
+// página, y con 4:3 se dimensiona sola. El docente NO: sus pantallas tienen
+// alturas muy distintas (el lobby lleva «Únete en…», el PIN y un QR; la carrera,
+// tres líneas) y encerrarlas en una proporción CORTA lo que sobra — con el QR a
+// medias nadie entra a la sala (dueño, 2026-08-16, con captura). Ahí la
+// superficie solo sirve para dos cosas que sí hacen falta: acotar el fondo (que
+// si no se va al <body>) y alojar el botón de pantalla completa.
+export function montarMarcoJuego(rootSel, activity, { escena = true, caja = true } = {}) {
   // 4:3, Y EL RESTO LO HACE PANTALLA COMPLETA (dueño, 2026-08-16). Esto NO es
   // una medida más: es dejar de tener las mías. La pantalla del alumno intentaba
   // LLENAR la ventana, y para eso hacía falta saber cuánto mide la ventana —
@@ -49,7 +57,7 @@ export function montarMarcoJuego(rootSel, activity, { escena = true } = {}) {
   // estaba ahí.
   mount(rootSel, html`
     <div class="ww-play-page">
-      <div class="ww-player-frame ww-student-frame" id="ww-frame" style="aspect-ratio: 4 / 3; --ww-ar: (4 / 3)">
+      <div class="ww-player-frame ww-student-frame${caja ? '' : ' ww-frame--libre'}" id="ww-frame"${caja ? ' style="aspect-ratio: 4 / 3; --ww-ar: (4 / 3)"' : ''}>
         ${fullscreenButtonHtml({ corner: true })}
         <div id="s-stage" class="ww-student-stage"></div>
       </div>

@@ -93,6 +93,26 @@
    ancho máximo del alto libre. Cero líneas de alto propias, cero restas que
    equivocar, y una sola forma de dimensionar un juego en toda la app. */
 .ww-student-frame { container-type: inline-size; }
+/* ── SUPERFICIE SIN CAJA (la del docente) ────────────────────────────────────
+   Sus pantallas no miden lo mismo: el lobby lleva el «Únete en…», el PIN y un
+   QR; la carrera, tres líneas. Con una proporción fija, lo que sobra se CORTA —
+   y el QR a medias significa que nadie entra a la sala. Aquí la superficie no
+   tiene forma propia: crece con su contenido, como cualquier página. Sigue
+   siendo un elemento (y no el <body>) porque es el ámbito del fondo y el sitio
+   del botón de pantalla completa. */
+.ww-frame--libre {
+  aspect-ratio: auto;
+  max-width: none;
+  width: 100%;
+  height: auto;
+  border-radius: 0;
+  box-shadow: none;
+}
+.ww-frame--libre .ww-student-stage {
+  flex: 0 0 auto;
+  overflow: visible;
+  container-type: inline-size;
+}
 /* EL ESLABÓN QUE FALTABA. El escenario era un bloque de altura automática, así
    que el `flex:1` de la actividad no tenía contra qué crecer: el marco medía
    913px y la hoja 436 (medido). Con la columna flex —y `container-type:size`,

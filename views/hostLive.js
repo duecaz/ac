@@ -134,7 +134,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
   // puede pulsar «Terminar carrera»— venía en realidad de anclar la página con
   // `position: fixed`. Se reabre midiendo, no a ojo, y sin tocar la red del EN
   // VIVO: es la que protege una clase en marcha.
-  const marco = montarMarcoJuego(rootSel, activity, { escena: false });
+  const marco = montarMarcoJuego(rootSel, activity, { escena: false, caja: false });
   ctx.add(() => marco.dispose());
   rootSel = marco.stageSel;
 
