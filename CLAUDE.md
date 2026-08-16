@@ -114,7 +114,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | **Configurar Google Classroom** (pasos en Google Cloud) | [`docs/handoff-google-classroom.md`](docs/handoff-google-classroom.md) |
 | **Seguridad de PocketBase por fases** | [`docs/handoff-seguridad-pb.md`](docs/handoff-seguridad-pb.md) — su Fase 3 es hoy un LÍMITE declarado en `leyes.md` §22 |
 | **Verificar la Pi contra el esquema del código** (13 colecciones · campos mudos · índices · tope §25) | `PB=https://pb.lanube.uno bash tools/check-pb.sh` — lo cruza `tests/pbSchema.test.mjs` |
-| **Cómo está la BD/Pi de VERDAD** (PocketBase, Docker, backups, OAuth Google, quirks) | **[`docs/infraestructura-pb.md`](docs/infraestructura-pb.md)** (fuente de infra; actualizar si cambia el servidor) |
+| **Cómo está la BD/Pi de VERDAD** (PocketBase, Docker, backups, OAuth Google, quirks) y **los ajustes de CLOUDFLARE** (HTTP/3 apagado: con él, el modo en vivo se corta) | **[`docs/infraestructura-pb.md`](docs/infraestructura-pb.md)** (fuente de infra; actualizar si cambia el servidor) |
 | **Plan de usuarios/acceso docente** (endurecer reglas, PIN, NFC, pizarras, panel profes) | **[`docs/handoff-acceso-docente.md`](docs/handoff-acceso-docente.md)** (incluye auditoría del sistema de usuarios) |
 
 ### 5. EL RITUAL DE ENTREGA ESTÁ ESCRITO — `/entregar`

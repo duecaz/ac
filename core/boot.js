@@ -81,30 +81,20 @@ export function wireTopbarMenu(sel = '.ww-topbar') {
 
 // EL ALTO DE LA BARRA SE MIDE, NO SE DECLARA.
 //
-// La pantalla del alumno se compromete a llenar la ventana sin scroll, y para
-// eso descuenta la barra con `--ww-topbar-h`. Ese valor nació como un 56 escrito
-// en el CSS… y un número escrito es una promesa que el navegador no firmó: la
-// barra es `flex-wrap: wrap`, así que a ciertos anchos las acciones saltan de
-// línea y mide bastante más; y con el zoom del navegador, o una fuente de
-// sistema más grande, tampoco son 56. Cada píxel que la barra crece por encima
-// del número es un píxel de scroll en el móvil del alumno — que es justo lo que
-// seguía apareciendo tras «arreglarlo» con la constante (dueño, 2026-08-15:
-// «seguro no cuenta el tamaño del navbar»).
+// Quien reserve sitio bajo la barra lo hace con `--ww-topbar-h` — hoy el marco
+// del player (`styles/player.css`), que deduce su ancho máximo del alto que
+// queda. Ese valor nació como un 56 escrito en el CSS… y un número escrito es
+// una promesa que el navegador no firmó: la barra es `flex-wrap: wrap`, así que
+// a ciertos anchos las acciones saltan de línea y mide bastante más; y con zoom
+// o una fuente de sistema mayor, tampoco son 56 (dueño, 2026-08-15: «seguro no
+// cuenta el tamaño del navbar»).
 //
-// Se mide la caja REAL y se reescribe cuando cambia (rotar, redimensionar,
-// abrir el desplegable). `observeResize` está rAF-debounced (§ ResizeObserver en
-// players), así que esto no dispara bucles de layout.
-// …Y EL ALTO DE LA VENTANA TAMPOCO ES `100dvh` (dueño, 2026-08-16, con el
-// reporte medido: «barra 56px (descontada 56px)» — la barra estaba BIEN, y aun
-// así sobraban 32px). `100dvh` es el viewport IGNORANDO las barras de
-// desplazamiento: si aparece una horizontal —o el navegador está con zoom, o en
-// modo de emulación— el alto que reserva el CSS es mayor que el que hay de
-// verdad, y la diferencia sale por abajo como scroll. `clientHeight` del <html>
-// sí es el alto de maquetación real.
-//
-// Se publican los DOS y el CSS toma el menor: `dvh` sabe de la barra dinámica
-// del móvil (que `clientHeight` no anticipa) y `clientHeight` sabe de las barras
-// de desplazamiento y del zoom (que `dvh` ignora). El mínimo nunca se pasa.
+// Se mide la caja REAL y se reescribe cuando cambia. `observeResize` está
+// rAF-debounced (§ ResizeObserver en players), así que no dispara bucles.
+// (Hubo aquí un segundo dato, `--ww-vh` con el `clientHeight` real, porque el
+// alto de la pantalla del alumno se calculaba restando a `100dvh`. Ese cálculo
+// se BORRÓ al pasar el marco a 4:3 — ahora es un elemento normal en una página
+// normal— así que la variable se quedó sin un solo lector y se fue con él.)
 function medirChrome(bar) {
   const raiz = document.documentElement;
   const anota = () => {
@@ -115,14 +105,12 @@ function medirChrome(bar) {
     if (!bar.classList.contains('open') && alto > 0) {
       raiz.style.setProperty('--ww-topbar-h', alto + 'px');
     }
-    if (raiz.clientHeight > 0) raiz.style.setProperty('--ww-vh', raiz.clientHeight + 'px');
   };
   anota();
-  const soltarRo = observeResize(bar, anota);
-  // La ventana cambia sin que la barra cambie (rotar, abrir DevTools, zoom):
-  // el ResizeObserver de la barra no se entera, así que hace falta el evento.
-  window.addEventListener('resize', anota);
-  return () => { soltarRo(); window.removeEventListener('resize', anota); };
+  // La barra se re-mide sola cuando cambia de alto (envolver a dos líneas al
+  // estrechar la ventana, otro tamaño de fuente): con eso basta, y no hace falta
+  // escuchar `resize` en todas las páginas.
+  return observeResize(bar, anota);
 }
 
 // Monta el botón de silencio en su slot del navbar (idempotente, se redibuja

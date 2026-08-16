@@ -100,11 +100,15 @@
    tiene forma propia: crece con su contenido, como cualquier página. Sigue
    siendo un elemento (y no el <body>) porque es el ámbito del fondo y el sitio
    del botón de pantalla completa. */
-.ww-frame--libre {
-  aspect-ratio: auto;
+/* OJO CON LA ESPECIFICIDAD, que ya mordió una vez: la base del player es
+   `.ww-play-page .ww-player-frame` (0,2,0) y declara `max-width`, esquinas y
+   sombra; este marco SIEMPRE está dentro de `.ww-play-page`, así que una clase
+   suelta (0,1,0) no la gana — el docente seguía con su caja de 720px y el
+   commit que la quitaba no hacía nada. Se escribe con el mismo peso que la base
+   y ya. (Aquí no hace falta anular `aspect-ratio` ni `height`: sin `caja` no se
+   emite el estilo inline que los pone.) */
+.ww-play-page .ww-player-frame.ww-frame--libre {
   max-width: none;
-  width: 100%;
-  height: auto;
   border-radius: 0;
   box-shadow: none;
 }

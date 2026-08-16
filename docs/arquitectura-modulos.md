@@ -32,10 +32,10 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 |---|---|---|---|---|
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1712 | 7 · 859 | 0.50 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2577 | 12 · 1234 | 0.48 |
-| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3979 | 19 · 3001 | 0.75 |
+| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3976 | 19 · 3001 | 0.75 |
 | **informes/tareas** | después de clase | 10 · 1056 | 4 · 466 | 0.44 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5700 | 12 · 1042 | 0.18 |
-| **infra/común** | todo lo anterior | 132 · 14603 | 52 · 5971 | 0.41 |
+| **infra/común** | todo lo anterior | 132 · 14584 | 52 · 5971 | 0.41 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -105,7 +105,7 @@ graph TD
 | Capa | Módulos más grandes |
 |---|---|
 | **arranque** | `qa/hoja.js` (254) · `main.teacher.js` (168) · `main.embed.js` (68) · `main.student.js` (50) |
-| **vistas** | `views/hostLive.js` (1111) · `views/adminView.js` (1071) · `views/studentLive.js` (923) · `views/vsView.js` (488) · `views/playerView.js` (393) |
+| **vistas** | `views/hostLive.js` (1108) · `views/adminView.js` (1071) · `views/studentLive.js` (923) · `views/vsView.js` (488) · `views/playerView.js` (393) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1164) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
 | **core** | `core/textCorrectionRound.js` (455) · `core/skins.js` (355) · `core/selftest.js` (345) · `core/auth.js` (330) · `core/normsCheck.js` (328) |
 | **kernel** | `kernel/session/engine.js` (559) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/dataPort.js` (28) |
@@ -138,7 +138,7 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 | Módulo | Líneas | Lo importan |
 |---|---|---|
 | `adapters/pocketbase/realtime.js` | 1164 | 0 |
-| `views/hostLive.js` | 1111 | 1 |
+| `views/hostLive.js` | 1108 | 1 |
 | `views/adminView.js` | 1071 | 1 |
 | `views/studentLive.js` | 923 | 1 |
 | `kernel/session/engine.js` | 559 | 19 |

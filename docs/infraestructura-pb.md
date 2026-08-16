@@ -50,6 +50,37 @@ los comandos; el usuario (duecaz) los ejecuta en la Pi.
 `aportes` y `equipos_activados` conviven en la misma instancia). NUNCA borrar/renombrar
 colecciones que no sean de AulaReto, y nunca "reset" global de PB.
 
+## Cloudflare — la puerta de `pb.lanube.uno`
+
+Delante de la Pi hay **Cloudflare** (plan **free**), y sus ajustes son parte de la
+infraestructura tanto como el contenedor: un interruptor de esa pantalla puede tirar el
+modo EN VIVO sin que cambie una línea de código. Comprobado con las cabeceras:
+
+```
+curl.exe -sI https://pb.lanube.uno/api/health
+→ Server: cloudflare · CF-RAY: … · cf-cache-status: DYNAMIC · alt-svc: h3=":443"
+```
+
+Panel: **dash.cloudflare.com → lanube.uno → Speed → Settings → Protocol Optimization**.
+
+| Ajuste | Cómo debe estar | Por qué |
+|---|---|---|
+| **HTTP/2** | ON | Es el transporte del modo en vivo tras apagar HTTP/3. |
+| **HTTP/2 to Origin** | ON | Entre Cloudflare y la Pi; no afecta al navegador. |
+| **HTTP/3 (with QUIC)** | **OFF** | Con él encendido, Chrome abre el flujo SSE (`/api/realtime`) por QUIC y el navegador lo aborta con `ERR_QUIC_PROTOCOL_ERROR` una y otra vez: el profe y los alumnos ven cortes continuos (reportado 2026-08-16, en las dos pantallas a la vez). La app reconecta y resincroniza sola, así que la clase no pierde datos — pero el marcador va a tirones. |
+| **Enhanced HTTP/2 Prioritization** | (requiere Pro) | No disponible en free. |
+| **0-RTT Connection Resumption** | OFF | Sin motivo para encenderlo; reenvía peticiones en la reconexión. |
+
+**Lo que NO se puede arreglar desde el código**: `EventSource` no permite elegir la
+versión de HTTP — la negocian navegador y servidor. Lo que sí hay del lado del cliente es
+`core/streamWatchdog.js`: si el flujo lleva 80 s callado, lo renueva por decisión propia
+(por debajo de los ~100 s a los que Cloudflare cierra una conexión inactiva). Eso cubre el
+corte por inactividad valga la causa que valga, pero NO sustituye a apagar HTTP/3.
+
+**Al diagnosticar un corte del modo en vivo**, el dato que separa las dos causas es la
+DURACIÓN de la petición `/api/realtime` en la pestaña Network: ~100 s → inactividad
+(cubierto por el vigía); unos segundos → el camino QUIC (interruptor).
+
 ## El contenedor PocketBase
 
 | Qué | Valor |

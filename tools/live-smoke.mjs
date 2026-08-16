@@ -100,14 +100,19 @@ try {
   await student.waitForSelector('#s-round:not(.s-reading) .rq-opt, #s-round:not(.s-reading) .ww-opt', { timeout: 15000 });
   log('se abren las respuestas solas al llegar el instante de la sala');
 
-  // ── LA PANTALLA DEL ALUMNO CABE, Y EL EJERCICIO LA LLENA ──────────────────
-  // Dos fallos que solo se ven MIDIENDO, y que estuvieron a la vez (dueño,
-  // 2026-08-15, con captura): (a) la página pedía 100dvh DEBAJO de una barra de
-  // 56px, así que el documento medía 72px más que la ventana y siempre había
-  // scroll; (b) el escenario era un bloque de altura automática, así que el
-  // `flex:1` de la actividad no tenía contra qué crecer y la ronda ocupaba
-  // menos de la mitad del marco. Ninguna suite de lógica puede ver esto: son
-  // píxeles, y el reparto de alturas atraviesa cuatro ficheros de CSS.
+  // ── LA PANTALLA DEL ALUMNO CABE, Y EL EJERCICIO LLENA EL MARCO ────────────
+  // Dos promesas de la maqueta, que solo se comprueban MIDIENDO:
+  //   (a) SIN SCROLL. El marco es 4:3 dentro de una página normal, y su ancho
+  //       máximo se deduce del alto libre (styles/player.css) descontando la
+  //       barra REAL (`--ww-topbar-h`). Si alguien vuelve a meter un alto
+  //       absoluto —hubo cuatro intentos, todos con su resta equivocada— el
+  //       documento crece más que la ventana y aquí se ve.
+  //   (b) EL EJERCICIO LLENA SU MARCO. El escenario es una columna flex con
+  //       `container-type:size`; si ese eslabón se rompe, el `flex:1` de la
+  //       actividad no tiene contra qué crecer y la ronda se queda a media
+  //       altura (pasó: marco 913px, hoja 436).
+  // Ninguna suite de lógica puede ver esto: son píxeles, y el reparto atraviesa
+  // varios ficheros de CSS.
   {
     const m = await student.evaluate(() => {
       const doc = document.documentElement;

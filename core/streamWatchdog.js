@@ -53,7 +53,5 @@ export function startStreamWatchdog({
   return {
     touch() { ultimo = now(); },
     stop() { vivo = false; clearIntervalFn(id); },
-    /** Solo para pruebas y diagnóstico: cuánto lleva callado el flujo. */
-    silencio() { return now() - ultimo; },
   };
 }

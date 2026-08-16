@@ -126,14 +126,6 @@ async function renderHost(rootSel, code, sessionId, activity) {
   // el final del scroll. Con marco, el fondo tiene DÓNDE ponerse.
   // Se monta UNA vez; cada fase pinta en su escenario, así el botón de pantalla
   // completa —imprescindible para proyectar— sobrevive del lobby al podio.
-  // PENDIENTE, con motivo escrito (dueño, 2026-08-16: «¿el player del docente no
-  // debería ser como lo hace Kahoot?»). Sí: esa vista se PROYECTA, así que la
-  // pantalla ES el marco, y encajar 16/10 en un proyector 16/9 solo añade
-  // franjas muertas. La variante a sangre está escrita y funciona a mano, pero
-  // se retiró al descubrir que el fallo que atribuí a ella —`live-smoke` no
-  // puede pulsar «Terminar carrera»— venía en realidad de anclar la página con
-  // `position: fixed`. Se reabre midiendo, no a ojo, y sin tocar la red del EN
-  // VIVO: es la que protege una clase en marcha.
   const marco = montarMarcoJuego(rootSel, activity, { escena: false, caja: false });
   ctx.add(() => marco.dispose());
   rootSel = marco.stageSel;
@@ -281,9 +273,14 @@ async function renderHost(rootSel, code, sessionId, activity) {
     // pantalla casi vacía y la hacía parecer un ejercicio que nadie está
     // jugando. El fondo es de las pantallas donde se VE el contenido; esta es
     // chrome, como el lobby y el podio.
-    const monitor = session.phase === 'race';
-    scene(!monitor);
-    if (session.phase === 'race') return isBoard ? paintLiveBoardHost(phaseChanged) : paintRace(phaseChanged);
+    // …salvo el TABLERO, que aunque comparte la fase `race` SÍ pinta contenido
+    // de la actividad en la pizarra (paintLiveBoardHost): ahí el fondo es del
+    // juego, como en cualquier otra pantalla donde se ve el ejercicio.
+    if (session.phase === 'race') {
+      scene(isBoard);
+      return isBoard ? paintLiveBoardHost(phaseChanged) : paintRace(phaseChanged);
+    }
+    scene(true);
     if (session.phase === 'question') return paintQuestion(phaseChanged);
     if (session.phase === 'reveal') return paintReveal(phaseChanged);
     if (session.phase === 'leaderboard') return paintLeaderboard(phaseChanged);
