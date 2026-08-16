@@ -148,24 +148,14 @@
    ronda en esta vista, y `#s-race-extra` la cabecera que a veces la acompaña. */
 .ww-student-stage > #s-round { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 .ww-student-stage > #s-race-extra { flex: 0 0 auto; }
-/* PROPORCIÓN DECLARADA, no heredada por accidente. En un móvil vertical forzar
-   16/10 dejaría dos franjas muertas: ahí el marco ES la pantalla. En cuanto hay
-   ancho de sobra (portátil, pizarra) el alumno ve la MISMA proporción que el
-   profe — `--ww-ar` lo escribe core/studentFrame.js desde `meta.aspectRatio`,
-   la misma fuente que usa views/playerView.js. */
-@media (min-width: 900px) {
-  /* Clase repetida a propósito: `player.css` acota el marco del PROFE con
-     `.ww-play-page .ww-player-frame` (0,2,0) y se carga DESPUÉS que este
-     fichero. Aquí manda la proporción, no aquel tope: quien decide el ancho es
-     el alto disponible × la proporción de la plantilla. */
-  .ww-student-frame.ww-student-frame.ww-student-frame {
-    flex: 0 1 auto;
-    aspect-ratio: var(--ww-ar, 16 / 10);
-    height: 100%;
-    width: auto;
-    max-width: 100%;
-  }
-}
+/* NADA DE PROPORCIONES FORZADAS (dueño, 2026-08-16: «no fuerces nada, todo es
+   responsive; siguiendo esa regla evitamos estos problemas del scroll y muchos
+   otros, y menos parches»). Aquí hubo un `aspect-ratio` que obligaba al marco a
+   16/10 en pantalla ancha: otra medida impuesta que había que cuadrar con el
+   alto disponible, y por tanto otra fuente de sobras y faltas. El marco llena lo
+   que le da la página y ya — la proporción de la plantilla la sigue usando el
+   player del profe, donde el marco SÍ es una pieza dentro de una página. */
+
 /* EL CHROME DE LA PÁGINA CEDE. `#app` es `.container py-3` en las dos entradas
    (16px arriba y abajo): con el marco pidiendo «todo lo que queda de ventana»,
    esos 16px eran scroll garantizado — medidos, exactamente los que sobraban.

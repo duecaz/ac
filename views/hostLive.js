@@ -274,7 +274,15 @@ async function renderHost(rootSel, code, sessionId, activity) {
     lastPhaseKey = key;
     if (session.status === 'lobby') { scene(false); return paintLobby(phaseChanged); }
     if (session.status === 'ended') { scene(false); return paintPodium(phaseChanged); }
-    scene(true); // el resto son pantallas de JUEGO → fondo de la actividad
+    // EN CARRERA, LA PIZARRA NO JUEGA: MONITORIZA (dueño, 2026-08-16, con
+    // captura: «el player del docente tiene fondo»). Cada alumno va a su ritmo
+    // en su móvil; aquí solo hay un título, el avance y el botón de terminar. El
+    // fondo de la actividad —el cuaderno de Tildes— se extendía por toda esa
+    // pantalla casi vacía y la hacía parecer un ejercicio que nadie está
+    // jugando. El fondo es de las pantallas donde se VE el contenido; esta es
+    // chrome, como el lobby y el podio.
+    const monitor = session.phase === 'race';
+    scene(!monitor);
     if (session.phase === 'race') return isBoard ? paintLiveBoardHost(phaseChanged) : paintRace(phaseChanged);
     if (session.phase === 'question') return paintQuestion(phaseChanged);
     if (session.phase === 'reveal') return paintReveal(phaseChanged);

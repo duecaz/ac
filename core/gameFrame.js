@@ -22,8 +22,6 @@
 // Qué da este módulo:
 //   · el marco `.ww-player-frame` con su esquina de pantalla completa
 //     (`.ww-fs-btn--corner`, la misma pieza y el mismo cableado que el profe);
-//   · la PROPORCIÓN declarada por la plantilla (`meta.aspectRatio` → `--ww-ar`),
-//     la misma fuente que usa views/playerView.js;
 //   · un ESCENARIO (`#s-stage`) donde la vista pinta sus fases. El marco vive
 //     FUERA del escenario: los `mount()` de cada fase no se lo llevan por
 //     delante, y el botón sobrevive de la primera pantalla al podio.
@@ -38,18 +36,16 @@ import { html, mount } from './html.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from './fullscreen.js';
 import { applySkin } from './skins.js';
 import { applyBackground } from './backgrounds.js';
-import { getTemplate } from './registry.js';
 
 export function montarMarcoJuego(rootSel, activity, { escena = true } = {}) {
-  // LA PROPORCIÓN, DEL MISMO SITIO QUE EN EL PROFE. La declara la plantilla
-  // (`meta.aspectRatio`); aquí viaja como `--ww-ar` y solo la usa el CSS a
-  // partir de 900px de ancho (en vertical el marco ES la pantalla). Sin esto el
-  // marco no tenía proporción ninguna y lo que se veía era casualidad.
-  const ar = getTemplate(activity?.template)?.meta?.aspectRatio;
-  const estilo = ar && ar !== 'auto' ? ` style="--ww-ar: ${ar}"` : '';
+  // SIN PROPORCIÓN IMPUESTA (dueño, 2026-08-16: «no fuerces nada, todo es
+  // responsive»). Se llegó a escribir aquí la `meta.aspectRatio` de la plantilla
+  // para que el marco del alumno se pareciera al del profe; era una medida más
+  // que cuadrar contra el alto disponible, y por tanto otra fuente de sobras.
+  // Estas páginas EN VIVO son la pantalla entera: el marco llena lo que hay.
   mount(rootSel, html`
     <div class="ww-play-page ww-student-page">
-      <div class="ww-player-frame ww-student-frame" id="ww-frame"${estilo}>
+      <div class="ww-player-frame ww-student-frame" id="ww-frame">
         ${fullscreenButtonHtml({ corner: true })}
         <div id="s-stage" class="ww-student-stage"></div>
       </div>
