@@ -35,11 +35,21 @@ export function medidasPantalla(doc = (typeof document !== 'undefined' ? documen
   const ronda = alto('#s-round') ?? alto('.tc-round') ?? alto('#ww-player-widget');
   const varH = doc.documentElement && win.getComputedStyle
     ? win.getComputedStyle(doc.documentElement).getPropertyValue('--ww-topbar-h').trim() : '';
+  // El alto que el CSS CREYÓ que había, frente al que hay. Esta pareja es la que
+  // localizó el último caso: la barra se descontaba bien (56 de 56) y aun así
+  // sobraban 32px, porque `100dvh` no es el alto de maquetación cuando hay
+  // barras de desplazamiento o zoom. Sin estos dos números no se puede
+  // distinguir «el CSS calcula mal» de «el CSS calcula bien sobre un dato malo».
+  const vhVar = doc.documentElement && win.getComputedStyle
+    ? win.getComputedStyle(doc.documentElement).getPropertyValue('--ww-vh').trim() : '';
   return {
     ventana: `${win.innerWidth}x${win.innerHeight}`,
     sobra: (doc.documentElement?.scrollHeight || 0) - (win.innerHeight || 0),
     barra: alto('.ww-topbar'),
     barraVar: varH || '(sin dato)',
+    vh: doc.documentElement?.clientHeight ?? null,
+    vhVar: vhVar || '(sin dato)',
+    pagina: alto('.ww-student-page') ?? alto('.ww-play-page'),
     marco, ronda,
   };
 }
@@ -68,7 +78,9 @@ export function buildBugReport({
     `efectos: ${fxApagados ? 'APAGADOS' : 'activos'}`,
     medidas ? `maqueta: ventana ${medidas.ventana} · scroll sobrante ${medidas.sobra}px`
       + ` · barra ${medidas.barra ?? '—'}px (descontada ${medidas.barraVar})`
-      + ` · marco ${medidas.marco ?? '—'}px · ejercicio ${medidas.ronda ?? '—'}px` : null,
+      + ` · alto útil ${medidas.vh ?? '—'}px (publicado ${medidas.vhVar})`
+      + ` · página ${medidas.pagina ?? '—'}px · marco ${medidas.marco ?? '—'}px`
+      + ` · ejercicio ${medidas.ronda ?? '—'}px` : null,
     ult ? `últimos errores:\n${ult}` : 'últimos errores: (ninguno registrado)',
     '¿qué estabas haciendo cuando pasó? → ',
   ].join('\n');

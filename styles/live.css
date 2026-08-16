@@ -94,7 +94,12 @@
    `flex:1`, escenario `flex:1`, ronda `flex:1`. Nadie vuelve a pedir un alto
    absoluto, así que el scroll no puede reaparecer por suma. */
 .ww-student-page {
-  height: calc(100dvh - var(--ww-topbar-h, 56px));
+  /* El alto de la ventana ES el menor de los dos que sabe medir el navegador:
+     `100dvh` (que ignora las barras de desplazamiento y el zoom) y `--ww-vh`,
+     que es el `clientHeight` real que publica core/boot.js. Con solo `dvh`
+     sobraban 32px en una ventana de 993 —medidos por el dueño— porque el CSS
+     reservaba el viewport SIN descontar una barra horizontal. */
+  height: calc(min(100dvh, var(--ww-vh, 100dvh)) - var(--ww-topbar-h, 56px));
   min-height: 0;
   box-sizing: border-box;      /* el aire va DENTRO de la altura, no encima */
   display: flex;

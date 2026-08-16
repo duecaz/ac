@@ -70,7 +70,7 @@ export function wireTopbarMenu(sel = '.ww-topbar') {
   // Navegar también cierra: con el menú abierto encima de la vista nueva, el
   // profe cree que no pasó nada y vuelve a pulsar (ley de vista §23).
   window.addEventListener('hashchange', cerrar);
-  const soltarMedida = medirBarra(bar);
+  const soltarMedida = medirChrome(bar);
   return () => {
     document.removeEventListener('click', fuera);
     document.removeEventListener('keydown', esc);
@@ -94,7 +94,18 @@ export function wireTopbarMenu(sel = '.ww-topbar') {
 // Se mide la caja REAL y se reescribe cuando cambia (rotar, redimensionar,
 // abrir el desplegable). `observeResize` está rAF-debounced (§ ResizeObserver en
 // players), así que esto no dispara bucles de layout.
-function medirBarra(bar) {
+// …Y EL ALTO DE LA VENTANA TAMPOCO ES `100dvh` (dueño, 2026-08-16, con el
+// reporte medido: «barra 56px (descontada 56px)» — la barra estaba BIEN, y aun
+// así sobraban 32px). `100dvh` es el viewport IGNORANDO las barras de
+// desplazamiento: si aparece una horizontal —o el navegador está con zoom, o en
+// modo de emulación— el alto que reserva el CSS es mayor que el que hay de
+// verdad, y la diferencia sale por abajo como scroll. `clientHeight` del <html>
+// sí es el alto de maquetación real.
+//
+// Se publican los DOS y el CSS toma el menor: `dvh` sabe de la barra dinámica
+// del móvil (que `clientHeight` no anticipa) y `clientHeight` sabe de las barras
+// de desplazamiento y del zoom (que `dvh` ignora). El mínimo nunca se pasa.
+function medirChrome(bar) {
   const raiz = document.documentElement;
   const anota = () => {
     const alto = Math.ceil(bar.getBoundingClientRect().height);
@@ -104,9 +115,14 @@ function medirBarra(bar) {
     if (!bar.classList.contains('open') && alto > 0) {
       raiz.style.setProperty('--ww-topbar-h', alto + 'px');
     }
+    if (raiz.clientHeight > 0) raiz.style.setProperty('--ww-vh', raiz.clientHeight + 'px');
   };
   anota();
-  return observeResize(bar, anota);
+  const soltarRo = observeResize(bar, anota);
+  // La ventana cambia sin que la barra cambie (rotar, abrir DevTools, zoom):
+  // el ResizeObserver de la barra no se entera, así que hace falta el evento.
+  window.addEventListener('resize', anota);
+  return () => { soltarRo(); window.removeEventListener('resize', anota); };
 }
 
 // Monta el botón de silencio en su slot del navbar (idempotente, se redibuja

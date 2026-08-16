@@ -58,12 +58,14 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 {
   const r = buildBugReport({
     version: '9.9.9', errors: [], now: new Date('2026-01-01T00:00:00Z'),
-    medidas: { ventana: '412x915', sobra: 72, barra: 56, barraVar: '56px', marco: 913, ronda: 436 },
+    medidas: { ventana: '412x915', sobra: 72, barra: 56, barraVar: '56px', vh: 915, vhVar: '915px', pagina: 859, marco: 913, ronda: 436 },
   });
   assert.match(r, /maqueta: ventana 412x915/, 'el reporte dice el tamaño de la ventana');
   assert.match(r, /scroll sobrante 72px/, 'y si sobra pantalla (la pregunta que no se podía responder)');
   assert.match(r, /barra 56px \(descontada 56px\)/, 'y si el marco descuenta la barra REAL');
   assert.match(r, /marco 913px · ejercicio 436px/, 'y si el ejercicio llena el marco');
+  assert.match(r, /alto útil 915px \(publicado 915px\)/,
+    'y el alto que el CSS creyó que había frente al que hay (sin esto, «la barra está bien y aun así sobra» no se puede distinguir)');
   // R7 intacto: son medidas de MAQUETA, no del aparato.
   assert.ok(!/userAgent|Android|iPhone|modelo/i.test(r), 'sigue sin datos del aparato');
   ok('el reporte trae la maqueta medida (ventana · scroll · barra · marco · ejercicio) sin datos del aparato');
