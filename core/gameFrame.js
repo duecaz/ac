@@ -38,14 +38,18 @@ import { applySkin } from './skins.js';
 import { applyBackground } from './backgrounds.js';
 
 export function montarMarcoJuego(rootSel, activity, { escena = true } = {}) {
-  // SIN PROPORCIÓN IMPUESTA (dueño, 2026-08-16: «no fuerces nada, todo es
-  // responsive»). Se llegó a escribir aquí la `meta.aspectRatio` de la plantilla
-  // para que el marco del alumno se pareciera al del profe; era una medida más
-  // que cuadrar contra el alto disponible, y por tanto otra fuente de sobras.
-  // Estas páginas EN VIVO son la pantalla entera: el marco llena lo que hay.
+  // 4:3, Y EL RESTO LO HACE PANTALLA COMPLETA (dueño, 2026-08-16). Esto NO es
+  // una medida más: es dejar de tener las mías. La pantalla del alumno intentaba
+  // LLENAR la ventana, y para eso hacía falta saber cuánto mide la ventana —
+  // 100dvh, menos la barra, menos las barras de desplazamiento…— y cada resta
+  // fallaba en algún aparato. Con una proporción, el marco es un elemento normal
+  // en una página normal: el mismo `.ww-play-page .ww-player-frame` que el profe
+  // usa desde el principio, con sus reglas, y sin una sola línea de alto propia.
+  // Quien quiera la pantalla entera pulsa el botón de pantalla completa, que ya
+  // estaba ahí.
   mount(rootSel, html`
-    <div class="ww-play-page ww-student-page">
-      <div class="ww-player-frame ww-student-frame" id="ww-frame">
+    <div class="ww-play-page">
+      <div class="ww-player-frame ww-student-frame" id="ww-frame" style="aspect-ratio: 4 / 3; --ww-ar: (4 / 3)">
         ${fullscreenButtonHtml({ corner: true })}
         <div id="s-stage" class="ww-student-stage"></div>
       </div>

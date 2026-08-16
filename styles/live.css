@@ -81,46 +81,18 @@
 }
 .ll-pick.is-on:hover { background: #ffd534; color: #141c2e; }
 
-/* ── EL MARCO DEL ALUMNO (core/studentFrame.js) ──────────────────────────────
-   El móvil del alumno juega DENTRO del mismo `.ww-player-frame` que el profe:
-   esquina de pantalla completa, tema y fondo incluidos. Estas reglas solo
-   dimensionan ese marco para un teléfono en vertical — todo relativo (dvh/%),
-   nada que congele el crecimiento (contrato de estilos §3). */
-/* UNA SOLA ALTURA, REPARTIDA (dueño, 2026-08-15: «hay scroll, el player es
-   innecesariamente alto»). Había TRES que se sumaban: 100dvh de la página,
-   92dvh del marco y 56px de barra que nadie descontaba — 72px de scroll fijos,
-   medidos igual en móvil y en portátil. Ahora la página vale EXACTAMENTE lo que
-   queda de ventana bajo la barra, y de ahí para abajo todo es reparto: marco
-   `flex:1`, escenario `flex:1`, ronda `flex:1`. Nadie vuelve a pedir un alto
-   absoluto, así que el scroll no puede reaparecer por suma. */
-/* EL ALTO ÚTIL ES EL MENOR DE LOS DOS que sabe medir el navegador: `100dvh`
-   (que ignora las barras de desplazamiento y el zoom) y `--ww-vh`, el
-   `clientHeight` real que publica core/boot.js. Con solo `dvh` sobraban 32px en
-   la ventana del dueño (993) porque el CSS reservaba el viewport SIN descontar
-   una barra horizontal.
-   PROBADO Y DESCARTADO: anclar la página con `position: fixed` + `inset` es más
-   limpio sobre el papel —no hay cuenta que equivocar— y funciona en pantalla,
-   pero rompe `tools/live-smoke.mjs`: con la página fuera del flujo, el escenario
-   pasa a interceptar el toque de «Terminar carrera» para Playwright (el
-   navegador sí da el botón por tocable, comprobado con `elementFromPoint` en
-   tres puntos). No se enciende hasta entender esa contradicción: la red del EN
-   VIVO protege una clase en marcha y no se cambia por una mejora de forma. */
-.ww-student-page {
-  height: calc(min(100dvh, var(--ww-vh, 100dvh)) - var(--ww-topbar-h, 56px));
-  min-height: 0;
-  box-sizing: border-box;      /* el aire va DENTRO de la altura, no encima */
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: max(8px, 1.5dvh) max(8px, 2vw);
-}
-.ww-student-frame {
-  /* En un teléfono el marco ES la pantalla: llena lo que le da la página. */
-  flex: 1 1 auto;
-  min-height: 0;
-  container-type: inline-size;
-  margin: 0 auto;
-}
+/* ── EL MARCO EN VIVO (core/gameFrame.js) ────────────────────────────────────
+   Aquí vivían ~40 líneas de reparto de alturas para que la pantalla del alumno
+   LLENARA la ventana: 92dvh, luego `100dvh − barra`, luego el menor de dvh y
+   `clientHeight`, luego `position: fixed`… Cada versión arreglaba un aparato y
+   fallaba en otro, porque todas necesitaban saber cuánto mide la ventana.
+   Se borraron TODAS (dueño, 2026-08-16): «el player debe ser 4:3 y luego con el
+   fullscreen se acomoda». Con una proporción el marco es un elemento normal en
+   una página normal, así que le sirven tal cual las reglas del player del profe
+   (`.ww-play-page .ww-player-frame`, styles/player.css) — que ya deducen su
+   ancho máximo del alto libre. Cero líneas de alto propias, cero restas que
+   equivocar, y una sola forma de dimensionar un juego en toda la app. */
+.ww-student-frame { container-type: inline-size; }
 /* EL ESLABÓN QUE FALTABA. El escenario era un bloque de altura automática, así
    que el `flex:1` de la actividad no tenía contra qué crecer: el marco medía
    913px y la hoja 436 (medido). Con la columna flex —y `container-type:size`,
@@ -148,26 +120,6 @@
    ronda en esta vista, y `#s-race-extra` la cabecera que a veces la acompaña. */
 .ww-student-stage > #s-round { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 .ww-student-stage > #s-race-extra { flex: 0 0 auto; }
-/* NADA DE PROPORCIONES FORZADAS (dueño, 2026-08-16: «no fuerces nada, todo es
-   responsive; siguiendo esa regla evitamos estos problemas del scroll y muchos
-   otros, y menos parches»). Aquí hubo un `aspect-ratio` que obligaba al marco a
-   16/10 en pantalla ancha: otra medida impuesta que había que cuadrar con el
-   alto disponible, y por tanto otra fuente de sobras y faltas. El marco llena lo
-   que le da la página y ya — la proporción de la plantilla la sigue usando el
-   player del profe, donde el marco SÍ es una pieza dentro de una página. */
-
-/* EL CHROME DE LA PÁGINA CEDE. `#app` es `.container py-3` en las dos entradas
-   (16px arriba y abajo): con el marco pidiendo «todo lo que queda de ventana»,
-   esos 16px eran scroll garantizado — medidos, exactamente los que sobraban.
-   Cuando el marco del alumno está montado, la página no reserva nada. */
-#app:has(.ww-student-page) { padding-top: 0; padding-bottom: 0; max-width: none; }
-/* Y el margen del <body>. Hoy lo pone a cero el reseteo de Bootstrap, pero eso
-   es una CDN: el día que un colegio la filtre, el navegador vuelve a su margen
-   de 8px y la página del alumno recupera 16px de scroll — exactamente lo que se
-   midió aquí con la CDN caída. Una pantalla que se compromete a llenar la
-   ventana no puede depender de un reseteo remoto. */
-body:has(.ww-student-page) { margin: 0; }
-
 /* La cabecera de la carrera (aciertos · racha · restantes) es una barra a todo
    el ancho dentro del marco: respeta la esquina reservada del botón de
    pantalla completa (estándar del marco) o el chip de «restantes» queda
