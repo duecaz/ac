@@ -161,18 +161,37 @@
 }
 .tc-switch__side {
   display: inline-flex; align-items: center; gap: .35em;
-  padding: .34em .75em; border-radius: 999px;
+  padding: .34em .6em; border-radius: 999px;
   font-weight: 700; color: var(--ww-paper-ink, #1f2937); opacity: .55;
-  transition: background .15s ease, color .15s ease, opacity .15s ease;
+  transition: background .22s cubic-bezier(.4, 0, .2, 1),
+              color .22s ease, opacity .22s ease, padding .22s ease;
 }
-/* LA PASTILLA ACTIVA VA RELLENA, con su icono y su palabra dentro. */
+/* SOLO EL ACTIVO LLEVA TEXTO, y la palabra CRECE al encenderse (dueño,
+   2026-08-16: «el efecto propio del botón que emulamos»). La pastilla llena se
+   ensancha y la apagada se encoge a su icono, así que el relleno parece
+   DESLIZARSE de un lado al otro — el gesto de un interruptor de verdad, hecho
+   solo con transiciones de ancho y color. Sin JS, sin medir nada: `max-width`
+   en `ch` anima porque el valor de partida y el de llegada son largos, no
+   `auto`. */
+.tc-switch__word {
+  max-width: 0; opacity: 0; overflow: hidden; white-space: nowrap;
+  transition: max-width .22s cubic-bezier(.4, 0, .2, 1), opacity .16s ease;
+}
 .tc-switch:not(.is-on) .tc-switch__side--pen,
 .tc-switch.is-on .tc-switch__side--er {
   background: var(--ww-accent, #0d6efd);
   /* Blanco sobre el acento: neutro permitido por §3 — los skins recolorean el
      RELLENO con su token y el texto encima sigue legible en los seis. */
   color: #fff; opacity: 1;
+  padding-right: .85em;
   box-shadow: 0 1px 3px rgba(0,0,0,.22);
+}
+.tc-switch:not(.is-on) .tc-switch__side--pen .tc-switch__word,
+.tc-switch.is-on .tc-switch__side--er .tc-switch__word { max-width: 9ch; opacity: 1; }
+/* En «sin animaciones» el cambio es instantáneo, pero sigue siendo evidente:
+   el relleno y la palabra no dependen de la transición para existir. */
+@media (prefers-reduced-motion: reduce) {
+  .tc-switch__side, .tc-switch__word { transition: none; }
 }
 /* Los iconos son SVG de Lucide en línea: escalan con la letra del mando y toman
    su color de `currentColor` (el token del skin), como hacía el icono de fuente. */

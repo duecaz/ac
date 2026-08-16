@@ -93,12 +93,19 @@
    queda de ventana bajo la barra, y de ahí para abajo todo es reparto: marco
    `flex:1`, escenario `flex:1`, ronda `flex:1`. Nadie vuelve a pedir un alto
    absoluto, así que el scroll no puede reaparecer por suma. */
+/* EL ALTO ÚTIL ES EL MENOR DE LOS DOS que sabe medir el navegador: `100dvh`
+   (que ignora las barras de desplazamiento y el zoom) y `--ww-vh`, el
+   `clientHeight` real que publica core/boot.js. Con solo `dvh` sobraban 32px en
+   la ventana del dueño (993) porque el CSS reservaba el viewport SIN descontar
+   una barra horizontal.
+   PROBADO Y DESCARTADO: anclar la página con `position: fixed` + `inset` es más
+   limpio sobre el papel —no hay cuenta que equivocar— y funciona en pantalla,
+   pero rompe `tools/live-smoke.mjs`: con la página fuera del flujo, el escenario
+   pasa a interceptar el toque de «Terminar carrera» para Playwright (el
+   navegador sí da el botón por tocable, comprobado con `elementFromPoint` en
+   tres puntos). No se enciende hasta entender esa contradicción: la red del EN
+   VIVO protege una clase en marcha y no se cambia por una mejora de forma. */
 .ww-student-page {
-  /* El alto de la ventana ES el menor de los dos que sabe medir el navegador:
-     `100dvh` (que ignora las barras de desplazamiento y el zoom) y `--ww-vh`,
-     que es el `clientHeight` real que publica core/boot.js. Con solo `dvh`
-     sobraban 32px en una ventana de 993 —medidos por el dueño— porque el CSS
-     reservaba el viewport SIN descontar una barra horizontal. */
   height: calc(min(100dvh, var(--ww-vh, 100dvh)) - var(--ww-topbar-h, 56px));
   min-height: 0;
   box-sizing: border-box;      /* el aire va DENTRO de la altura, no encima */
@@ -124,6 +131,11 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  /* HUECO DE BARRA RESERVADO. El escenario crece y encoge con la fase (en
+     carrera, el cronómetro cambia de dígitos cada segundo): si la barra de
+     desplazamiento aparece y desaparece, TODO se desplaza unos píxeles a cada
+     tic. En la pared es un temblor, y para un dedo es un blanco que se mueve. */
+  scrollbar-gutter: stable;
   display: flex;
   flex-direction: column;
   container-type: size;

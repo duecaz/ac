@@ -126,6 +126,14 @@ async function renderHost(rootSel, code, sessionId, activity) {
   // el final del scroll. Con marco, el fondo tiene DÓNDE ponerse.
   // Se monta UNA vez; cada fase pinta en su escenario, así el botón de pantalla
   // completa —imprescindible para proyectar— sobrevive del lobby al podio.
+  // PENDIENTE, con motivo escrito (dueño, 2026-08-16: «¿el player del docente no
+  // debería ser como lo hace Kahoot?»). Sí: esa vista se PROYECTA, así que la
+  // pantalla ES el marco, y encajar 16/10 en un proyector 16/9 solo añade
+  // franjas muertas. La variante a sangre está escrita y funciona a mano, pero
+  // se retiró al descubrir que el fallo que atribuí a ella —`live-smoke` no
+  // puede pulsar «Terminar carrera»— venía en realidad de anclar la página con
+  // `position: fixed`. Se reabre midiendo, no a ojo, y sin tocar la red del EN
+  // VIVO: es la que protege una clase en marcha.
   const marco = montarMarcoJuego(rootSel, activity, { escena: false });
   ctx.add(() => marco.dispose());
   rootSel = marco.stageSel;
