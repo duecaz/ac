@@ -283,13 +283,15 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   distintas (`caja:false`) — con 4:3 le cortaba el QR del lobby. Vigilado en `live-smoke`
   (proporción declarada = la del marco · sin scroll en cuatro ventanas).
 - **LA DIAGRAMACIÓN DEL PLAYER: CUATRO roles** (dueño 2026-08-17, detalle en
-  `docs/estilos-de-actividad.md` §3b0): **`edu-hud`** (`core/playerHud.js` —
-  los indicadores FLOTAN en las esquinas y NUNCA crean franja) · **`edu-topbar`**
-  (solo si hay herramienta que tocar: 3 de 13) · **el juego** (todo el alto, en
-  subsecciones que refluyen por `aspect-ratio`, nunca por px) · **`edu-send`**.
-  El TÍTULO vive en la ANTESALA, jamás dentro del juego; el enunciado no es
-  barra, es la primera subsección.
-- **La esquina superior derecha del marco de juego es DEL MARCO**: ahí va el botón de
+  `docs/estilos-de-actividad.md` §3b0): **`edu-hud`** (indicadores flotando en las
+  esquinas, `core/playerHud.js`, nunca crean franja) · **`edu-topbar`** (solo si hay
+  herramienta: 3 de 13) · **el juego** (`edu-sec--*`, subsecciones con nombre que
+  refluyen por `aspect-ratio`) · **`edu-send`**. Se marcan con DOBLE CLASE
+  (`edu-topbar tc-bar`). El TÍTULO vive en la ANTESALA; el enunciado no es barra.
+  `edu-send` sale del PLAYER, no de `meta.play.submit` (que describe la ronda
+  compartida): lo vigila `matrix-smoke` montando las 13, con 3 excepciones donde
+  el control ES la mecánica (teclado · Girar · caja abierta).
+- **La esquina superior derecha del marco es DEL MARCO**: ahí va el botón de
   pantalla completa (`.ww-fs-btn--corner`, z-index 30). Un modo que pinte una barra a
   todo el ancho dentro del marco debe respetar `--ww-fs-reserve` (lo hace el marcador
   del duelo). El marcador VS lo tapaba: el botón existía y NO se podía tocar. Vigilado
@@ -435,14 +437,6 @@ usuario: se deja pendiente, no bloquea el resto.
   falta verlo con lápiz y palma de verdad, y revisar los umbrales del detector.
 - **Calibrador de pizarra**: el usuario tiene uno propio para adaptar; el que hay
   (`core/penCalibration.js`) funciona pero sus umbrales no se han contrastado.
-- ~~**Contra PocketBase REAL**: `race-e2e` y `stress-live 30` nunca se han corrido~~
-  ✅ **HECHO (2026-08-11)** desde los botones de `#/admin` — no hacen falta ni
-  credenciales ni PowerShell: **Simular carga** aguantó 50 alumnos concurrentes
-  (50/50 filas · 50 apodos únicos · 100 respuestas sin perder ninguna · 50 intentos
-  de tarea) y **Probar carrera** (`core/raceE2e.js`) salió 10/10 contra la Pi
-  (puntos planos · gana el que terminó antes por reloj del SERVIDOR · marcador =
-  podio · la trampa rebota con 404). De paso destapó el agujero de los autodate
-  (ver abajo, v1.51.438).
 
 ### 🟡 DEUDA CONDICIONADA — partir los 4 módulos grandes (TRAS los tests del compañero)
 Registrada en la cola del norte (#5). NO ejecutar hasta que el compañero termine su ronda

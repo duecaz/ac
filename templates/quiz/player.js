@@ -41,11 +41,11 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
             racha: streak >= 2 ? `🔥 ${streak}` : null,
             tiempo: timerSecs > 0 ? `⏱ ${timerSecs}` : null,
           })}
-          <div class="ww-prow">
+          <div class="edu-sec edu-sec--enunciado ww-prow">
             <h3 class="ww-q">${escapeHtml(item.question)}</h3>
           </div>
           ${item.image ? `<div class="ww-q-media"><img src="${escapeHtml(item.image)}" alt=""></div>` : ''}
-          <div class="ww-kahoot-grid ww-options">
+          <div class="edu-sec edu-sec--tablero ww-kahoot-grid ww-options">
             ${opts2.map((o, i) => `
               <button class="btn btn-lg w-100 ww-opt ww-shape-${(i % 4) + 1}" data-value="${escapeHtml(o)}">
                 <i class="bi ${SHAPE_ICONS[i % 4]} me-2"></i>${escapeHtml(o)}

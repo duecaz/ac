@@ -364,3 +364,17 @@ frescura de docs). Arreglado:
   devuelve esos valores (para overlays propios con `skipResultScreen`, p.ej. la celebración de Crossword).
 - **Tests**: `tests/soloTimer.test.mjs` (5) + `tests/soloPlayer.test.mjs` (5, incl. submit idempotente, avance manual y finish temprano).
 
+
+
+## Contra PocketBase REAL — ✅ HECHO (2026-08-11)
+
+Estaba en la deuda abierta de `CLAUDE.md` como «nunca se han corrido»; se
+ejecutó desde los botones de `#/admin`, sin credenciales ni PowerShell:
+
+- **Simular carga**: aguantó 50 alumnos concurrentes — 50/50 filas · 50 apodos
+  únicos · 100 respuestas sin perder ninguna · 50 intentos de tarea.
+- **Probar carrera** (`core/raceE2e.js`): 10/10 contra la Pi — puntos planos ·
+  gana quien terminó antes por reloj del SERVIDOR · marcador = podio · la
+  trampa rebota con 404.
+
+De paso destapó el agujero de los autodate (v1.51.438).

@@ -214,7 +214,7 @@ function buildLayout(leftLabels, rightLabels, pins, image, activity, total) {
   // columnas laterales (ancho) a filas arriba/abajo (alto), con el escenario en medio.
   return `<div class="ww-scaffold dg-play p-2">
   ${hudHtml({ pagina: `0 / ${total}` })}
-  <div class="ww-field dg-field">
+  <div class="edu-sec edu-sec--campo ww-field dg-field">
     <div class="ww-rail dg-rail" data-rail="start">${leftLabels.map(labelHtml).join('')}</div>
     <div class="ww-stage dg-stage">
       <div class="dg-img-box">

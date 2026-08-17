@@ -66,24 +66,32 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
       <div class="cw-wrap">
         ${hudHtml({ pagina: `0 / ${totalWords}` })}
 
+        <!-- HERRAMIENTAS (edu-topbar): lo que se toca para AYUDARSE, arriba y
+             separado del envío. Antes pista y reiniciar compartían el pie con
+             «Verificar», así que ayudarse y entregar se leían como lo mismo. -->
+        ${hintMode === 'none' ? `<div class="edu-topbar cw-tools">
+          <button class="btn btn-outline-danger btn-sm" id="cw-reset"><i class="bi bi-arrow-counterclockwise"></i> Reiniciar</button>
+        </div>` : `<div class="edu-topbar cw-tools">
+          <button class="btn btn-outline-secondary btn-sm" id="cw-hint"><i class="bi bi-lightbulb"></i> Pista</button>
+          <button class="btn btn-outline-danger btn-sm" id="cw-reset"><i class="bi bi-arrow-counterclockwise"></i> Reiniciar</button>
+        </div>`}
+
         <!-- Body: clues + grid -->
         <div class="cw-body">
-          <div class="cw-clues" id="cw-clues">
+          <div class="edu-sec edu-sec--pistas cw-clues" id="cw-clues">
             ${clueList(hWords, 'Horizontales →')}
             ${clueList(vWords, 'Verticales ↓')}
           </div>
-          <div class="cw-grid-wrap">
+          <div class="edu-sec edu-sec--tablero cw-grid-wrap">
             <div class="cw-grid" id="cw-grid" style="--cw-cols:${cols};--cw-rows:${rows}">
               ${gridCells}
             </div>
           </div>
         </div>
 
-        <!-- Footer -->
-        <div class="cw-footer">
-          <button class="btn btn-success btn-sm" id="cw-check"><i class="bi bi-check2-circle"></i> Verificar</button>
-          ${hintMode === 'none' ? '' : `<button class="btn btn-outline-secondary btn-sm" id="cw-hint"><i class="bi bi-lightbulb"></i> Pista</button>`}
-          <button class="btn btn-outline-danger btn-sm" id="cw-reset"><i class="bi bi-arrow-counterclockwise"></i> Reiniciar</button>
+        <!-- ENVÍO (edu-send): UN control, el que entrega. -->
+        <div class="edu-send cw-footer">
+          <button class="btn btn-success btn-lg" id="cw-check" data-ww-submit><i class="bi bi-check2-circle"></i> Verificar</button>
         </div>
 
         <!-- Hidden input for mobile keyboard -->

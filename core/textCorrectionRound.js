@@ -151,7 +151,7 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
   root.innerHTML = `
     <div class="tc-round">
       ${hudHtml({ pagina: chips.left || null, puntos: chips.right || null })}
-      <div class="tc-bar${propio ? ' tc-bar--fs' : ''}">
+      <div class="edu-topbar tc-bar${propio ? ' tc-bar--fs' : ''}">
         <button type="button" class="tc-switch" data-tool="pen" aria-pressed="false"
                 title="Lápiz — toca para borrar" aria-label="Lápiz activo. Tocar para pasar al borrador">
           <span class="tc-switch__side tc-switch__side--pen" data-side="pen">
@@ -163,7 +163,7 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
         </button>
         ${propio ? fullscreenButtonHtml({ inline: true }) : ''}
       </div>
-      <div class="tc-passage-area"><div class="tc-passage">${passageHtml(text, kind)}</div></div>
+      <div class="edu-sec edu-sec--texto tc-passage-area"><div class="tc-passage">${passageHtml(text, kind)}</div></div>
       <div class="tc-done-wrap edu-send"><button type="button" class="btn btn-success btn-lg tc-done" data-ww-submit><i class="bi bi-check2-circle"></i> Listo</button></div>
     </div>`;
 
@@ -381,10 +381,10 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     shell(`
       <div class="tc-round">
         ${hudHtml({ pagina: `${idx + 1} / ${passages.length}` })}
-        <div class="tc-bar tc-bar--fs">
+        <div class="edu-topbar tc-bar tc-bar--fs">
           ${fullscreenButtonHtml({ inline: true })}
         </div>
-        <div class="tc-passage-area"><div class="tc-passage">${passageHtml(p.text, kind, { got, want })}</div></div>
+        <div class="edu-sec edu-sec--texto tc-passage-area"><div class="tc-passage">${passageHtml(p.text, kind, { got, want })}</div></div>
         <div class="tc-done-wrap edu-send">
           <span class="tc-verdict ${r.correct ? 'ok' : 'bad'}">
             <i class="bi ${r.correct ? 'bi-check-circle-fill' : 'bi-x-circle-fill'}"></i>

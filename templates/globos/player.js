@@ -16,7 +16,7 @@ import { hudHtml, hudSet } from '../../core/playerHud.js';
 // Offsets de altura por índice (pseudo-aleatorio ESTABLE, sin Math.random:
 // mismo layout en cada repintado del mismo ítem).
 export function balloonFieldHtml(options) {
-  return `<div class="gl-field">
+  return `<div class="edu-sec edu-sec--tablero gl-field">
     ${options.map((o, i) => `
       <button type="button" class="gl-balloon gl-c${(i % 4) + 1}" data-value="${escapeHtml(o)}"
         style="--gl-lift:${(i * 37) % 24}cqh; --gl-sway:${(i % 3) - 1}">
@@ -50,7 +50,7 @@ export async function renderGlobosPlayer(rootSel, activity, opts = {}) {
             racha: streak >= 2 ? `🔥 ${streak}` : null,
             tiempo: timerSecs > 0 ? `⏱ ${timerSecs}` : null,
           })}
-          <div class="ww-prow">
+          <div class="edu-sec edu-sec--enunciado ww-prow">
             <h3 class="ww-q gl-q">${escapeHtml(item.question || '')}</h3>
           </div>
           ${item.image ? `<div class="ww-q-media gl-media"><img src="${escapeHtml(item.image)}" alt=""></div>` : ''}

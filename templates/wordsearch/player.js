@@ -88,7 +88,7 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
           puntos: '★ 0',
         })}
         <div class="ww-ws-body">
-          <div class="ww-ws-grid-wrap">
+          <div class="edu-sec edu-sec--tablero ww-ws-grid-wrap">
             <div class="ww-ws-grid" id="ws-grid" style="--ws-cols:${cols}">
               ${grid.flatMap((row, r) => row.map((l, c) =>
                 `<span class="ws-cell" data-r="${r}" data-c="${c}">${l}</span>`
@@ -97,7 +97,7 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
             <svg id="ws-svg" class="ww-ws-svg" aria-hidden="true"></svg>
           </div>
 
-          <div class="ww-ws-words">
+          <div class="edu-sec edu-sec--banco ww-ws-words">
             <div class="ww-ws-words-title">Palabras</div>
             ${placed.map(p => `
               <div class="ws-word" data-word="${escapeHtml(p.word)}">

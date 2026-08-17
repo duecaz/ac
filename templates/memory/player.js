@@ -70,7 +70,7 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
           extra: `Flips: ${state.flips}`,
           puntos: `★ ${state.score}`,
         })}
-        <div class="ww-memo-grid" style="grid-template-columns:repeat(${columns},1fr)">
+        <div class="edu-sec edu-sec--tablero ww-memo-grid" style="grid-template-columns:repeat(${columns},1fr)">
           ${deck.map(c => {
             const isOpen = state.open.includes(c.cardId);
             const isLocked = state.locked.has(c.cardId);

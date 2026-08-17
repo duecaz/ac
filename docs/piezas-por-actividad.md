@@ -13,37 +13,37 @@ Andamio = la plantilla ya usa `styles/scaffold.css` (roles declarados, §3b).
 
 | Actividad | Proporción | Andamio | Piezas en **ancho** (1280×800) | Piezas en **alto** (520×900) |
 |---|---|---|---|---|
-| **Quiz** (`quiz`) | `16/10` | — | `ww-prow` 100%×6% → **barra**<br>`ww-kahoot-grid` 100%×92% → **escenario** | `ww-prow` 100%×6% → **barra**<br>`ww-kahoot-grid` 100%×92% → **escenario** |
-| **Ruleta** (`wheel`) | `1/1` | — | `ww-wheel-stage` 47%×78% → **—**<br>`wh-side` 4%×15% → **—** | `ww-wheel-stage` 78%×43% → **—**<br>`wh-side` 10%×13% → **—** |
-| **Emparejar** (`match`) | `16/10` | ✅ | `ww-field` 100%×94% → **escenario**<br>`ww-bar` 100%×5% → **barra** | `ww-field` 100%×95% → **escenario**<br>`ww-bar` 100%×4% → **barra** |
+| **Quiz** (`quiz`) | `16/10` | — | `edu-sec` 100%×6% → **barra**<br>`edu-sec` 100%×92% → **escenario** | `edu-sec` 100%×6% → **barra**<br>`edu-sec` 100%×92% → **escenario** |
+| **Ruleta** (`wheel`) | `1/1` | — | `edu-sec` 47%×78% → **—**<br>`edu-sec` 4%×15% → **—** | `edu-sec` 78%×43% → **—**<br>`edu-sec` 10%×13% → **—** |
+| **Emparejar** (`match`) | `16/10` | ✅ | `edu-sec` 100%×94% → **escenario**<br>`ww-bar` 100%×5% → **barra** | `edu-sec` 100%×95% → **escenario**<br>`ww-bar` 100%×4% → **barra** |
 | **Memoria** (`memory`) | `1/1` | — | `mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—** | `mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—** |
-| **Tildes** (`tildes`) | `16/10` | — | `tc-bar` 88%×6% → **barra**<br>`tc-passage-area` 88%×82% → **escenario**<br>`tc-done-wrap` 88%×8% → **barra** | `tc-bar` 88%×4% → **barra**<br>`tc-passage-area` 88%×86% → **escenario**<br>`tc-done-wrap` 88%×7% → **barra** |
-| **Comas** (`comas`) | `16/10` | — | `tc-bar` 88%×6% → **barra**<br>`tc-passage-area` 88%×82% → **escenario**<br>`tc-done-wrap` 88%×8% → **barra** | `tc-bar` 88%×4% → **barra**<br>`tc-passage-area` 88%×86% → **escenario**<br>`tc-done-wrap` 88%×7% → **barra** |
-| **Operaciones** (`math`) | `16/10` | — | `ww-keypad-head` 33%×8% → **—**<br>`ww-keypad` 32%×69% → **carril** | `ww-keypad-head` 57%×6% → **—**<br>`ww-keypad` 92%×69% → **escenario** |
-| **Sopa de Letras** (`wordsearch`) | `4/3` | — | `ww-ws-grid-wrap` 90%×100% → **escenario**<br>`ww-ws-words` 9%×100% → **carril** | `ww-ws-grid-wrap` 100%×94% → **escenario**<br>`ww-ws-words` 100%×5% → **barra** |
-| **Crucigrama** (`crossword`) | `4/3` | — | `cw-body` 99%×92% → **escenario**<br>`cw-footer` 99%×5% → **barra** | `cw-body` 97%×93% → **escenario**<br>`cw-footer` 97%×4% → **barra** |
-| **Abre Cajas** (`question-live`) | `4/3` | — | `ab-board` 37%×73% → **—**<br>`ab-hint` 100%×10% → **barra** | `ab-board` 94%×73% → **escenario**<br>`ab-hint` 100%×10% → **barra** |
-| **Ordena las Pelotas** (`ballsort`) | `4/3` | — | `bs-toolbar` 100%×13% → **barra**<br>`tubes` 100%×81% → **escenario** | `bs-toolbar` 100%×13% → **barra**<br>`tubes` 100%×81% → **escenario** |
-| **Etiqueta el diagrama** (`diagram`) | `16/10` | ✅ | `ww-field` 100%×93% → **escenario**<br>`ww-bar` 100%×6% → **barra** | `ww-field` 100%×95% → **escenario**<br>`ww-bar` 100%×4% → **barra** |
-| **Explota Globos** (`globos`) | `16/10` | — | `ww-prow` 100%×6% → **barra**<br>`gl-field` 100%×92% → **escenario** | `ww-prow` 100%×6% → **barra**<br>`gl-field` 100%×92% → **escenario** |
+| **Tildes** (`tildes`) | `16/10` | — | `edu-topbar` 88%×6% → **barra**<br>`edu-sec` 88%×82% → **escenario**<br>`tc-done-wrap` 88%×8% → **barra** | `edu-topbar` 88%×4% → **barra**<br>`edu-sec` 88%×86% → **escenario**<br>`tc-done-wrap` 88%×7% → **barra** |
+| **Comas** (`comas`) | `16/10` | — | `edu-topbar` 88%×6% → **barra**<br>`edu-sec` 88%×82% → **escenario**<br>`tc-done-wrap` 88%×8% → **barra** | `edu-topbar` 88%×4% → **barra**<br>`edu-sec` 88%×86% → **escenario**<br>`tc-done-wrap` 88%×7% → **barra** |
+| **Operaciones** (`math`) | `16/10` | — | `edu-sec` 33%×8% → **—**<br>`edu-sec` 32%×69% → **carril** | `edu-sec` 57%×6% → **—**<br>`edu-sec` 92%×69% → **escenario** |
+| **Sopa de Letras** (`wordsearch`) | `4/3` | — | `edu-sec` 90%×100% → **escenario**<br>`edu-sec` 9%×100% → **carril** | `edu-sec` 100%×94% → **escenario**<br>`edu-sec` 100%×5% → **barra** |
+| **Crucigrama** (`crossword`) | `4/3` | — | `edu-topbar` 99%×5% → **barra**<br>`cw-body` 99%×85% → **escenario**<br>`edu-send` 99%×6% → **barra** | `edu-topbar` 97%×4% → **barra**<br>`cw-body` 97%×87% → **escenario**<br>`edu-send` 97%×6% → **barra** |
+| **Abre Cajas** (`question-live`) | `4/3` | — | `edu-sec` 37%×18% → **—**<br>`ab-hint` 100%×2% → **barra** | `edu-sec` 94%×16% → **barra**<br>`ab-hint` 100%×2% → **barra** |
+| **Ordena las Pelotas** (`ballsort`) | `4/3` | — | `edu-topbar` 100%×13% → **barra**<br>`edu-sec` 100%×81% → **escenario** | `edu-topbar` 100%×13% → **barra**<br>`edu-sec` 100%×81% → **escenario** |
+| **Etiqueta el diagrama** (`diagram`) | `16/10` | ✅ | `edu-sec` 100%×93% → **escenario**<br>`ww-bar` 100%×6% → **barra** | `edu-sec` 100%×95% → **escenario**<br>`ww-bar` 100%×4% → **barra** |
+| **Explota Globos** (`globos`) | `16/10` | — | `edu-sec` 100%×6% → **barra**<br>`edu-sec` 100%×92% → **escenario** | `edu-sec` 100%×6% → **barra**<br>`edu-sec` 100%×92% → **escenario** |
 
 ## Qué cambia al girar el hueco
 
 Piezas que cambian de rol entre ancho y alto (misma pieza, otra función):
 
-- **Quiz**: 0 de 2
+- **Quiz**: 1 de 2
 - **Ruleta**: 0 de 2
 - **Emparejar**: 0 de 2
 - **Memoria**: 0 de 12
 - **Tildes**: 0 de 3
 - **Comas**: 0 de 3
-- **Operaciones**: 1 de 2
-- **Sopa de Letras**: 1 de 2
-- **Crucigrama**: 0 de 2
+- **Operaciones**: 2 de 2
+- **Sopa de Letras**: 2 de 2
+- **Crucigrama**: 0 de 3
 - **Abre Cajas**: 1 de 2
 - **Ordena las Pelotas**: 0 de 2
 - **Etiqueta el diagrama**: 0 de 2
-- **Explota Globos**: 0 de 2
+- **Explota Globos**: 1 de 2
 
 ## Piezas sin nombre propio
 

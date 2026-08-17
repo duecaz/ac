@@ -1,3 +1,17 @@
+/* La raíz del player LLENA su hueco: es el ámbito del HUD de esquinas
+   (core/playerHud.js) — sin esto los chips flotaban a media altura, junto al
+   tablero, en vez de en la esquina (mismo caso que Memoria, v1.51.511). */
+.ab-play {
+  height: 100%; min-height: 0;
+  display: flex; flex-direction: column;
+  justify-content: center;
+  gap: max(8px, 2cqmin);
+}
+/* El tablero se CENTRA con márgenes automáticos, y eso ANULA el estirado del
+   flex (un margen auto en el eje cruzado gana a `align-items: stretch`): sin un
+   ancho propio se encogía al contenido y las cajas salían diminutas. */
+.ab-play .ab-board { width: min(100%, 460px); margin-inline: auto; }
+
 .ql-grid {
   display: grid;
   gap: .6rem;

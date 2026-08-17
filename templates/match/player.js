@@ -264,7 +264,7 @@ function buildLayout(lefts, rights, activity, total) {
   // así las cuerdas cruzan el pasillo en horizontal y no se solapan con las tarjetas.
   return `<div class="ww-scaffold ww-match p-2">
   ${hudHtml({ pagina: `0 / ${total}` })}
-  <div class="ww-field ww-match-field">
+  <div class="edu-sec edu-sec--campo ww-field ww-match-field">
     <div class="ww-rail ww-match-col" data-rail="start">${lefts.map(c => cardHtml(c, 'L')).join('')}</div>
     <div class="ww-stage ww-match-gap"></div>
     <div class="ww-rail ww-match-col" data-rail="end">${rights.map(c => cardHtml(c, 'R')).join('')}</div>

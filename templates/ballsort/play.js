@@ -30,11 +30,11 @@ export function mountBallSort(host, { board, mode = 'moves', onProgress, onSolve
         pagina: 'Movs: 0',
         tiempo: mode === 'time' ? '⏱ 0:00' : null,
       })}
-      <div class="bs-toolbar">
+      <div class="edu-topbar bs-toolbar">
         <button type="button" data-bs="letters" class="btn btn-outline-secondary btn-sm" title="Mostrar letras (modo daltónico)">Aa</button>
         <button type="button" data-bs="undo" class="btn btn-secondary btn-sm">Deshacer</button>
       </div>
-      <div data-bs="tubes" class="tubes"></div>
+      <div data-bs="tubes" class="edu-sec edu-sec--tablero tubes"></div>
       <p data-bs="winmsg" class="bs-hidden bs-win">¡Resuelto!</p>
     </div>
   `;

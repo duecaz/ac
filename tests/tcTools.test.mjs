@@ -136,7 +136,10 @@ const css = leer('styles/textCorrection.css');
 // Dentro del marco de juego solo puede haber controles DEL JUEGO: quien toca la
 // pantalla suele ser un alumno, sobre la cuenta del profe.
 {
-  const zona = ronda.slice(ronda.indexOf('<div class="tc-bar'), ronda.indexOf('tc-done-wrap'));
+  // Se ancla al ROL (`edu-topbar`), que es lo que la norma define, no al nombre
+  // propio de la clase — que puede cambiar con el CSS de la plantilla.
+  const zona = ronda.slice(ronda.indexOf('<div class="edu-topbar'), ronda.indexOf('tc-done-wrap'));
+  assert.ok(zona.length > 40, 'la barra de herramientas se localiza por su rol edu-topbar');
   for (const prohibido of ['Borrar todo', 'Eliminar', 'Editar', 'Cerrar sesión', 'href=']) {
     assert.ok(!zona.includes(prohibido), `la barra de herramientas no puede llevar «${prohibido}»`);
   }

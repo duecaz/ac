@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **261 módulos · 1002 imports internos.**
+> **261 módulos · 1004 imports internos.**
 
 ### Ir a otro documento
 
@@ -32,10 +32,10 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 |---|---|---|---|---|
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1712 | 7 · 859 | 0.50 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2590 | 12 · 1242 | 0.48 |
-| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3973 | 19 · 3001 | 0.76 |
+| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3975 | 19 · 3001 | 0.75 |
 | **informes/tareas** | después de clase | 10 · 1056 | 4 · 466 | 0.44 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5679 | 12 · 1042 | 0.18 |
-| **infra/común** | todo lo anterior | 135 · 14813 | 53 · 6086 | 0.41 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5692 | 12 · 1042 | 0.18 |
+| **infra/común** | todo lo anterior | 135 · 14813 | 53 · 6089 | 0.41 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -64,7 +64,7 @@ graph TD
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>5 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
   V -->|283| C
-  T -->|207| C
+  T -->|209| C
   A -->|28| C
   AD -->|27| C
   A -->|18| V
@@ -109,7 +109,7 @@ graph TD
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1172) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
 | **core** | `core/textCorrectionRound.js` (455) · `core/skins.js` (355) · `core/selftest.js` (345) · `core/auth.js` (330) · `core/normsCheck.js` (328) |
 | **kernel** | `kernel/session/engine.js` (559) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/dataPort.js` (28) |
-| **plantillas** | `templates/crossword/player.js` (475) · `templates/wordsearch/player.js` (397) · `templates/match/player.js` (292) · `templates/diagram/player.js` (235) · `templates/quiz/editor.js` (225) |
+| **plantillas** | `templates/crossword/player.js` (483) · `templates/wordsearch/player.js` (397) · `templates/match/player.js` (292) · `templates/diagram/player.js` (235) · `templates/quiz/editor.js` (225) |
 | **contenido** | `kernel/content/qaAdapt.js` (104) · `kernel/content/convert.js` (95) · `kernel/content/models.js` (83) · `kernel/content/switch.js` (82) · `kernel/content/index.js` (5) |
 | **config** | `pocketbase.config.js` (13) |
 
@@ -143,7 +143,7 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 | `views/studentLive.js` | 922 | 1 |
 | `kernel/session/engine.js` | 559 | 19 |
 | `views/vsView.js` | 488 | 2 |
-| `templates/crossword/player.js` | 475 | 1 |
+| `templates/crossword/player.js` | 483 | 1 |
 | `core/textCorrectionRound.js` | 455 | 5 |
 
 ## El mapa de DATOS: quién escribe cada colección

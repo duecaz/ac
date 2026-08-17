@@ -104,13 +104,37 @@ Todo player se lee con cuatro roles — el prefijo `edu-` marca lo nuevo:
 |---|---|---|
 | **`edu-hud`** | los INDICADORES: página, ⏱, ★, 🔥 | flotan en las esquinas (`core/playerHud.js`, `hudHtml`/`hudSet`); **nunca crean franja** ni capturan toques |
 | **`edu-topbar`** | las HERRAMIENTAS que se tocan | existe **solo** si hay herramienta: lápiz/borrador (Tildes/Comas), Aa/Deshacer (Pelotas), verificar/pista/reiniciar (Crucigrama) — 3 de 13 |
-| **el juego** | todo el alto restante | dividido en subsecciones que refluyen por `aspect-ratio` del contenedor (nunca por px); el **enunciado es la primera subsección**, no una barra |
-| **`edu-send`** | el espacio del botón de enviar | solo cuando el envío se construye y confirma (marcador sobre `ww-bar-actions`/`tc-done-wrap`) |
+| **el juego** (`edu-sec`) | todo el alto restante, en subsecciones CON NOMBRE (`edu-sec--enunciado`, `--tablero`, `--texto`, `--pistas`, `--banco`, `--panel`, `--campo`) | refluyen por `aspect-ratio` del contenedor, nunca por px; el **enunciado es la primera subsección**, no una barra |
+| **`edu-send`** | el espacio del botón de enviar | UNO como mucho, y todo control de envío dentro (marcador sobre `ww-bar-actions`/`tc-done-wrap`/`cw-footer`) |
 
 Y dos prohibiciones que salieron del inventario (`docs/piezas-por-actividad.md`):
 el **título** de la actividad vive en la antesala (inicio · setup · lobby · ficha de
 la tarea), jamás dentro del juego; y una **pieza sin clase propia** (solo utilidades
 de Bootstrap) no se puede repartir — nómbrala.
+
+**Cómo se marca**: DOBLE CLASE — `class="edu-topbar tc-bar"`. El rol es lo que se
+escanea y se verifica; el nombre propio se queda con su CSS y con lo que apuntan
+los skins. Así el vocabulario entra sin un renombrado masivo y sin tocar los temas.
+
+**De dónde sale `edu-send`** (decidido 2026-08-17, corrige una regla anterior):
+del **player**, no de `meta.play.submit`. Ese campo describe la **ronda
+compartida** (VS · Equipos · live), que es otra pantalla: Emparejar declara
+`'gesto'` porque su ronda de duelo es una elección de un toque, y aun así su
+player de Individual tiene *Enviar*. Una casilla por plantilla no puede describir
+cinco pantallas — que es justo el problema que Wordwall y Kahoot no tienen
+(allí plantilla = pantalla) y por eso copiarles el modelo salió mal.
+
+La garantía no se pierde, cambia de sitio: la vigila `tools/matrix-smoke.mjs`
+MONTANDO las 13 en Individual — **un `edu-hud`, al menos una `edu-sec`, como
+mucho un `edu-send`, y todo `[data-ww-submit]` dentro de él**. Con tres
+excepciones DECLARADAS (`ENVIO_ES_MECANICA`), las tres por el mismo motivo — el
+control **es** el juego, no un paso más:
+
+| Excepción | Motivo |
+|---|---|
+| ✓ del teclado (Operaciones) | es una TECLA: sacarla suma un toque a cada respuesta (§29) |
+| «Girar» (Ruleta) | girar ES el juego; no hay nada que enviar aparte |
+| «Listo/Cerrar» (Abre Cajas) | viven dentro de la caja abierta; fuera, la metáfora se rompe |
 
 ## 3b. Andamio de regiones — el responsive compartido (`styles/scaffold.css`)
 

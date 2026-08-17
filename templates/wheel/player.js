@@ -5,6 +5,7 @@ import { pickIndex } from './logic.js';
 import { wheelSvg } from './render.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { spinTarget, normalizeRotation, animateSpin, clampSpinDur } from './spin.js';
+import { hudHtml } from '../../core/playerHud.js';
 
 // Support both old flat-entries format and new items format.
 function getEntries(activity) {
@@ -37,12 +38,16 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
     // fila —panel al costado— en hueco cuadrado/ancho.
     mount(rootSel, html`
       <div class="ww-wheel wh-play">
+        ${hudHtml({
+          pagina: history.length ? `Giros: ${history.length}` : null,
+          extra: `${entries.length} sin salir`,
+        })}
         <div class="wh-flow">
-          <div class="ww-wheel-stage wh-stage">
+          <div class="edu-sec edu-sec--tablero ww-wheel-stage wh-stage">
             ${wheelSvg(entries, { rotation, dur, spinning: false })}
             <div class="ww-wheel-pointer wh-pointer">▶</div>
           </div>
-          <div class="wh-side">
+          <div class="edu-sec edu-sec--panel wh-side">
             <div class="wh-result">
               ${winner != null ? `<div class="alert alert-success d-inline-block mb-0 fs-5"><b>${escapeHtml(winner)}</b></div>`
                 : exhausted ? `<div class="text-muted">Se acabaron las opciones.</div>` : ''}
