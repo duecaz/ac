@@ -131,6 +131,22 @@ try {
       throw new Error(`el ejercicio no llena el marco del alumno: ronda ${m.ronda}px de un marco de ${m.marco}px`);
     }
     log(`el alumno cabe en su pantalla (0 scroll) y el ejercicio la llena (${m.ronda}/${m.marco}px)`);
+
+    // …Y EN OTRAS VENTANAS. Medir en UNA sola es lo que dejó pasar el fallo: el
+    // tope de ancho por alto libre vivía dentro de un `@media (min-width:1100px)`
+    // mientras la proporción se aplicaba siempre, así que a 1280x800 salía 0 y en
+    // un móvil apaisado el documento desbordaba 227px. Tres ventanas de formas
+    // distintas: teléfono de pie, teléfono tumbado y tableta.
+    for (const [w, h] of [[390, 844], [844, 390], [912, 600]]) {
+      await student.setViewportSize({ width: w, height: h });
+      await student.waitForTimeout(250);
+      const sobra = await student.evaluate(() =>
+        document.documentElement.scrollHeight - window.innerHeight);
+      if (sobra > 2) throw new Error(`la pantalla del alumno no cabe a ${w}x${h}: sobran ${sobra}px`);
+    }
+    await student.setViewportSize({ width: 1280, height: 800 });
+    await student.waitForTimeout(250);
+    log('y cabe también en 390x844, 844x390 y 912x600 (el tope por alto se aplica en todos los anchos)');
   }
 
   await student.locator('.rq-opt, .ww-opt', { hasText: '4' }).first().click();

@@ -43,8 +43,11 @@ import { applyBackground } from './backgrounds.js';
 // alturas muy distintas (el lobby lleva «Únete en…», el PIN y un QR; la carrera,
 // tres líneas) y encerrarlas en una proporción CORTA lo que sobra — con el QR a
 // medias nadie entra a la sala (dueño, 2026-08-16, con captura). Ahí la
-// superficie solo sirve para dos cosas que sí hacen falta: acotar el fondo (que
-// si no se va al <body>) y alojar el botón de pantalla completa.
+// superficie solo sirve para UNA cosa que sí hace falta: acotar el fondo, que si
+// no se va al <body> y pinta la web entera. El botón de pantalla completa NO lo
+// pone: las pantallas del docente ya traen el suyo (cada `paint*` de hostLive lo
+// pinta en su barra), y añadir la esquina del marco dejaba DOS botones visibles,
+// con el de la fase debajo del de la esquina por z-index.
 export function montarMarcoJuego(rootSel, activity, { escena = true, caja = true } = {}) {
   // 4:3, Y EL RESTO LO HACE PANTALLA COMPLETA (dueño, 2026-08-16). Esto NO es
   // una medida más: es dejar de tener las mías. La pantalla del alumno intentaba
@@ -58,7 +61,7 @@ export function montarMarcoJuego(rootSel, activity, { escena = true, caja = true
   mount(rootSel, html`
     <div class="ww-play-page">
       <div class="ww-player-frame ww-student-frame${caja ? '' : ' ww-frame--libre'}" id="ww-frame"${caja ? ' style="aspect-ratio: 4 / 3; --ww-ar: (4 / 3)"' : ''}>
-        ${fullscreenButtonHtml({ corner: true })}
+        ${caja ? fullscreenButtonHtml({ corner: true }) : ''}
         <div id="s-stage" class="ww-student-stage"></div>
       </div>
     </div>

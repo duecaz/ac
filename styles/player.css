@@ -416,6 +416,15 @@ body.bg-plated .ww-player .ww-phead .badge.bg-secondary {
    un monitor 21:9 el texto no quede a metro y medio de ancho.
    El descuento de alto cubre la barra superior + el aire de la página; en
    pantalla completa mandan las reglas `:fullscreen` de arriba. */
+/* Y VA EN TODOS LOS ANCHOS, no solo en pantalla grande. Estuvo dentro de un
+   `@media (min-width: 1100px)` mientras la proporción se aplicaba SIEMPRE: en un
+   móvil apaisado (844x390) el marco salía 720x540 sobre 334px de alto útil y el
+   documento desbordaba 227px. El tope por ancho sigue siendo el de cada tramo
+   —720 normal, 1400 en pantalla grande—; lo que ahora acompaña a los dos es el
+   tope por ALTO, que es el que impide el scroll. */
+.ww-play-page .ww-player-frame {
+  max-width: min(720px, calc((100dvh - var(--ww-topbar-h, 56px) - 74px) * var(--ww-ar, 1.6)));
+}
 @media (min-width: 1100px) {
   .ww-play-page .ww-player-frame {
     max-width: min(1400px, calc((100dvh - var(--ww-topbar-h, 56px) - 74px) * var(--ww-ar, 1.6)));

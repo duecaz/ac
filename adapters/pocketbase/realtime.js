@@ -1055,10 +1055,17 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       // (core/streamWatchdog.js); aquí solo se elige el umbral.
       //
       // 80 s va por debajo del corte por inactividad más común en un
-      // intermediario (Cloudflare cierra a los 100 s) y muy por encima del ritmo
-      // normal de la sala: el host sella `host_seen_at` cada ~10 s, así que un
-      // flujo vivo nunca llega a 80 s sin recibir nada. Si llega, o está muerto
-      // o está a punto de que lo maten — en los dos casos, renovar.
+      // intermediario (Cloudflare cierra a los 100 s).
+      //
+      // OJO con la premisa: escribí que «un flujo vivo nunca llega a 80 s porque
+      // el host sella `host_seen_at` cada ~10 s», y es FALSO en este adaptador —
+      // `pingHost()` es un no-op aquí. Así que en los tramos tranquilos (lobby,
+      // ventana de lectura, carrera sin envíos) la renovación NO es excepcional:
+      // es rutina, cada 80 s y en cada aparato. Eso es justo lo que evita el
+      // corte, pero cuesta un POST de suscripción y un `resync` por cliente, así
+      // que se hace solo con la pestaña VISIBLE: un móvil en el bolsillo no
+      // necesita el flujo al día, y al volver, `visibilitychange` ya dispara su
+      // propia resincronización.
       const SILENCIO_MAX = 80000;
       function pararVigia() { if (vigia) { vigia.stop(); vigia = null; } }
       function armarVigia() {
@@ -1067,6 +1074,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
           silencioMs: SILENCIO_MAX,
           onRenew: () => {
             if (!active || !es) return;
+            if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
             // Sin ruido y sin banner: esto NO es un fallo, es mantenimiento.
             teardown(es);
             es = null;
