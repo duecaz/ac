@@ -20,34 +20,56 @@ una foto de la pantalla.
 ## ⚡ GUÍA EXPRÉS — SOLO lo que cambió desde tu ronda (15 minutos)
 
 Tu ronda anterior ya validó casi todo (carrera, VS, Equipos, tarea y las 8
-torturas: **no las repitas**). Desde entonces se arregló lo que encontraste y
-se añadió una cosa. Esto es lo ÚNICO que hace falta mirar:
+torturas: **no las repitas**). Esto es lo ÚNICO que hace falta mirar ahora.
+
+> **La hoja con casillas está en [aulareto.com/test](https://aulareto.com/test)**
+> — se marca desde el móvil y se guarda sola. Esta guía es el resumen; la hoja
+> es la que manda.
 
 **0 · Versión (2 min, obligatorio).** Ctrl+F5 dos veces en el ordenador; cerrar
-y reabrir la pestaña en los móviles. La etiqueta debe poner **`1.51.426` o
+y reabrir la pestaña en los móviles. La etiqueta debe poner **`1.51.511` o
 más** en TODOS los aparatos. Sin esto, pruebas la web de ayer.
 
-**1 · EL RELOJ (8 min) — el fallo que TÚ encontraste, ya arreglado.**
-Rondas juntas con el ordenador y un móvil (vale uno):
-1. Tu actividad → **En vivo** → elige **"Rondas juntas"** → entra con el móvil → Empezar.
-2. Mira la cuenta de **«Preparados…»** en las dos pantallas A LA VEZ:
-   → **tiene que marcar el MISMO número (±1)**. En tu ronda salía 10 y 20.
-3. Deja que se abran las respuestas y contesta en el móvil:
-   → **tiene que contar** (nunca «sin respuesta · 0 puntos»).
-4. **No toques la hora de ningún aparato**: si tu Android sigue con la hora
-   automática apagada, mejor — ese es justo el caso arreglado.
+**1 · LAS PASTILLAS DE LAS ESQUINAS (5 min) — lo nuevo.**
+El «1 / 8», el reloj y los puntos ya **no** están en una franja arriba: son
+pastillas oscuras que flotan en las **esquinas** y el ejercicio se queda toda la
+pantalla. Abre un **Quiz** con temporizador en Individual:
+1. Ponte donde la última fila: ¿se **leen** los números de las dos esquinas?
+2. Cambia el tema y pon un fondo con dibujo (en la pantalla de inicio, antes de
+   Iniciar): ¿se siguen leyendo?
+3. En **Globos**, **Sopa**, **Crucigrama** y **Pelotas**: ¿alguna pastilla
+   **tapa** algo que tengas que tocar? ¿El botón redondo de pantalla completa
+   se pulsa a la primera?
+4. Jugando: el «1 / 8» sube, el reloj baja, los ★ suben. Ninguno se queda
+   congelado.
 
-**2 · LÁPIZ / BORRADOR (5 min) — lo nuevo.**
-Una actividad de **Tildes** (o Comas) → **Individual** → Iniciar:
-1. Bajo el texto hay dos botones nuevos: **Lápiz · Borrador**. ¿Se ven bien?
-2. Dibuja una tilde con el dedo → toca **Borrador** → pasa el dedo por encima:
-   → la marca **se borra**.
-3. Vuelve a **Lápiz** y dibuja de nuevo → **Listo**: ¿cuenta la marca?
-4. Si tienes pizarra táctil: prueba también **borrar con la palma** (sin tocar
-   el botón). Debe borrar igual.
+**2 · GIRAR EL MÓVIL (4 min) — lo nuevo.**
+Con el giro de pantalla desbloqueado, en el teléfono:
+1. **Crucigrama**: en vertical las pistas van **debajo** del tablero; en
+   horizontal, **al lado**.
+2. **Sopa**: igual con la lista de palabras.
+3. **Ruleta**: en el PC el botón «Girar» va **al lado** de la rueda; en el móvil
+   en vertical, **debajo**. La rueda se ve grande en los dos casos.
+4. **Quiz sin fotos**: los cuatro botones de colores llenan la pantalla (como
+   Kahoot), sin franja blanca en medio.
+
+**3 · EL TÍTULO YA NO ESTÁ DENTRO DEL JUEGO (2 min).**
+Solo aparece **antes** de jugar (pantalla de Iniciar, lobby del en vivo, ficha
+de la tarea). Comprueba en **Memoria**, **Ruleta**, **Abre Cajas** y
+**Crucigrama** que nunca entras a jugar sin haber visto antes el nombre.
+
+**4 · LO QUE SIGUE ABIERTO (8 min) — si te queda tiempo.**
+- **Lápiz / borrador en la pizarra de verdad**: tocar «Lápiz» estando ya en
+  lápiz no cambia nada; el borrador borra; con la **palma** apoyada no borra
+  solo. El mando va **centrado** en su barra (los contadores se fueron a las
+  esquinas).
+- **El reloj en vivo**: el número de «Preparados…» tiene que ser el **mismo**
+  (±1) en el PC y en el móvil, y en la 2ª y 3ª pregunta también. Si sale
+  distinto, apunta los **tres datos** que pide la prueba 9 de la hoja.
 
 **Cómo reportar**: si algo falla, toca la etiqueta de versión (se copia un
-reporte solo) y pégalo con una frase. Si todo pasa, di solo: «reloj ✓ lápiz ✓».
+reporte solo) y pégalo con una frase. Si todo pasa, di solo: «esquinas ✓
+girar ✓ título ✓».
 
 ---
 
@@ -87,9 +109,9 @@ arreglados. Esto es lo más importante de toda la guía.
 ### Comprobar la versión (obligatorio)
 
 Arriba, en la barra oscura, hay una etiqueta pequeña con un número tipo
-**`v1.51.426`**. En el móvil puede estar dentro del menú de las tres rayas (☰).
+**`v1.51.511`**. En el móvil puede estar dentro del menú de las tres rayas (☰).
 
-- **Tiene que poner `1.51.426` o un número MAYOR.**
+- **Tiene que poner `1.51.511` o un número MAYOR.**
 - Si pone menos, repite el Paso 0. Si sigue igual, prueba en modo incógnito.
 
 > ✍️ **Apunta aquí la versión que ves en cada aparato**, y ponla en cada fallo
@@ -285,7 +307,7 @@ pantallas en blanco o rojas.
 | 3 | **Bloquea la pantalla** del móvil un minuto y vuelve | Sigue la partida, no se queda colgado |
 | 4 | Entra con un **tercer** móvil **a mitad** de la carrera | Debe poder entrar y empezar |
 | 5 | En el ordenador, **recarga** durante la partida | La sala sigue viva, con los mismos alumnos |
-| 6 | Gira los móviles (vertical ↔ horizontal) | Todo se recoloca, nada se corta |
+| 6 | Gira los móviles (vertical ↔ horizontal) | Todo se recoloca, nada se corta. En Crucigrama y Sopa las pistas/palabras deben CAMBIAR de sitio (al lado en horizontal, debajo en vertical) |
 | 7 | Escribe un nombre de alumno con **emojis o símbolos raros** | O lo acepta o lo rechaza con un mensaje claro; nunca se rompe |
 | 8 | Pulsa **Terminar carrera** cuando solo uno ha acabado | Se cierra bien y el podio sale con los dos |
 
