@@ -98,6 +98,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | **Testeo MANUAL por un compañero** (recorrido completo, matriz por juego×modo, torturas) | [`docs/plan-de-pruebas-manual.md`](docs/plan-de-pruebas-manual.md) |
 | **Guía de testeo PARA ALGUIEN NO TÉCNICO** (paso a paso: Ctrl+F5, versión, carrera, torturas, plantilla de reporte) | [`docs/guia-testeo-companero.md`](docs/guia-testeo-companero.md) |
 | **Tocar CSS del juego sin romper nada** (capturas antes/después, diff por píxel) | `node tools/shots.mjs before` → cambios → `node tools/shots.mjs after` |
+| **QUÉ PIEZAS tiene cada actividad y cuánto ocupan** (en hueco ancho y en hueco alto) | **[`docs/piezas-por-actividad.md`](docs/piezas-por-actividad.md)** — GENERADO: `node tools/piezas.mjs` (es el dato de D8) |
 | **Matriz JUGABLE** (cada plantilla × cada modo arranca sin crash) | `node tools/matrix-smoke.mjs` + `tests/moduleRefs.test.mjs` (imports olvidados) |
 | **EN VIVO e2e** (host+alumno en dos páginas: sala→PIN→respuesta→settle→podio) | `node tools/live-smoke.mjs` |
 | **TAREAS e2e** (crear tarea → PIN → el alumno juega → tope de intentos → informe) | `node tools/task-smoke.mjs` |

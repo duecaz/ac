@@ -138,6 +138,31 @@ que permite decidir un reparto en vez de improvisarlo plantilla a plantilla. Sin
 esa lista, cualquier norma que se escriba ahora sería otra medida impuesta —
 justo el patrón que costó cuatro maquetas en un día.
 
+**La condición ya está CUMPLIDA** (v1.51.510): la lista existe y es GENERADA —
+`node tools/piezas.mjs` → **[`docs/piezas-por-actividad.md`](piezas-por-actividad.md)**.
+Juega las 13 en Individual y mide sus bloques de primer nivel en un hueco ANCHO
+(1280×800) y en uno ALTO (520×900). Lo que dice el primer inventario:
+
+- **Las 13 caben en el mismo esquema de tres franjas**: barra · masa · barra.
+  Ninguna usa carriles laterales de verdad — no hay una sola pieza que sea
+  columna en ancho Y en alto. El andamio de regiones estaba pensado para un
+  reparto que nadie tiene todavía.
+- **Solo 3 piezas cambian de rol al girar el hueco** (Ruleta, Memoria y Abre
+  Cajas): las tres son la MISMA cosa —una zona de juego cuadrada que en un hueco
+  ancho deja aire a los lados y en uno alto lo llena—, y las tres lo resuelven
+  solas por proporción. No es un problema de reparto: es el continente haciendo
+  su trabajo.
+- **Lo que sí es una tarea concreta**: 8 bloques de tres plantillas (Ruleta,
+  Memoria, Abre Cajas) no tienen nombre propio — su único identificador es un
+  margen de Bootstrap (`mb-3`, `text-center`) o un `<div>` pelado. No se puede
+  asignar rol a lo que no está identificado, así que ese es el primer paso de
+  cualquier reparto, y es barato.
+
+**Sigue abierto** lo que el inventario no puede contestar: cuál de las dos
+franjas se encoge primero cuando falta alto, y si el enunciado y la media deben
+separarse en piezas distintas (hoy `ww-q-media` es una sola). Eso es una
+decisión de producto, y ahora se puede tomar mirando una tabla de 13 filas.
+
 ## D6 · Cuotas y retención — ✅ DECIDIDA Y APLICADA (v1.51.340, ley §25)
 
 - **Ellos**: Wordwall limita el plan gratuito (nº de recursos); es una decisión

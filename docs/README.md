@@ -25,6 +25,7 @@ Qué leer según lo que necesites. La **fuente de verdad del estado actual** es
 | El modo SOLO (Wordwall) por dentro | `modo-wordwall.md` |
 | **Sistema de plantillas** (crear/validar/jugar · qué módulo hace qué) | **`sistema-de-plantillas.md`** |
 | Contrato de CSS de actividad (relativo + tokens de skin) | `estilos-de-actividad.md` |
+| **Qué piezas tiene cada actividad y cuánto ocupan** (ancho vs alto, medido) | `piezas-por-actividad.md` (GENERADO: `node tools/piezas.mjs`) |
 | Mapa de módulos `core/` por rol | `../core/README.md` |
 | Diseñar los previews SVG de las tarjetas del home (brief de diseño) | `svg-previews-guia.md` |
 
