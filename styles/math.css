@@ -23,6 +23,19 @@
   box-sizing: border-box;
 }
 
+/* «2 × 2 =» Y EL RESULTADO, EN LA MISMA LÍNEA (dueño, 2026-08-17, con captura):
+   apilados, la operación y su hueco de respuesta se leían como dos cosas
+   distintas y el bloque quedaba alto y suelto. Juntos son UNA frase —el
+   enunciado completo— y el conjunto queda compacto. Si no cabe (móvil muy
+   estrecho o número largo), el hueco baja solo: `flex-wrap`, no un breakpoint. */
+.ww-keypad-head {
+  flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--math-head-gap, clamp(.35rem, 1.8cqmin, 1.1rem));
+  max-width: 100%;
+}
+
 .ww-keypad-q {
   flex: 0 0 auto;
   font-size: var(--math-q-size, clamp(1.2rem, 7cqmin, 3.4rem));
@@ -77,6 +90,30 @@
   -webkit-tap-highlight-color: transparent;
 }
 .ww-keypad .ww-key:active { transform: translateY(1px); }
+
+/* ── NI ESTIRADO NI DEFORMADO (dueño, 2026-08-17, con captura de pantalla
+   completa: «está súper estirado, y peor aún solo en una dirección»).
+   Llenar el hueco NO es la meta: el teclado tiene una FORMA (3 columnas × 4
+   filas) y estirarlo solo a lo alto convierte las teclas en rectángulos
+   larguísimos. Aquí el ancho es el mayor que cabe SIN pasarse de alto —el alto
+   sale de la proporción, no del hueco— y lo que sobra queda como AIRE
+   alrededor, con el bloque centrado.
+   Alcance: la pantalla del alumno (Individual, Tarea, En vivo). VS y Equipos
+   NO entran: ahí el teclado comparte un panel estrecho con el del rival y su
+   reparto está verificado con capturas (styles/scaffold.css §andamio). */
+.ww-math-round .ww-keypad-round,
+#s-round .ww-keypad-round { justify-content: center; }
+.ww-math-round .ww-keypad,
+#s-round .ww-keypad {
+  flex: 0 1 auto;
+  align-self: center;
+  aspect-ratio: var(--key-cols, 3) / var(--key-rows, 4);
+  height: auto;
+  /* `52cqh` es el tope que deja aire: 52 de ancho ⇒ 69 de alto, y el resto del
+     hueco queda para el enunciado y el margen. `100%` manda en pantallas
+     estrechas, donde el ancho es el que aprieta. */
+  width: min(100%, 52cqh);
+}
 .ww-keypad .ww-key-ok {
   background: var(--key-ok-bg, var(--ww-success, #198754));
   color: var(--key-ok-fg, #fff);

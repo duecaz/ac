@@ -19,7 +19,7 @@ Andamio = la plantilla ya usa `styles/scaffold.css` (roles declarados, §3b).
 | **Memoria** (`memory`) | `1/1` | — | `mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—** | `mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—** |
 | **Tildes** (`tildes`) | `16/10` | — | `tc-bar` 88%×6% → **barra**<br>`tc-passage-area` 88%×82% → **escenario**<br>`tc-done-wrap` 88%×8% → **barra** | `tc-bar` 88%×4% → **barra**<br>`tc-passage-area` 88%×86% → **escenario**<br>`tc-done-wrap` 88%×7% → **barra** |
 | **Comas** (`comas`) | `16/10` | — | `tc-bar` 88%×6% → **barra**<br>`tc-passage-area` 88%×82% → **escenario**<br>`tc-done-wrap` 88%×8% → **barra** | `tc-bar` 88%×4% → **barra**<br>`tc-passage-area` 88%×86% → **escenario**<br>`tc-done-wrap` 88%×7% → **barra** |
-| **Operaciones** (`math`) | `16/10` | — | `ww-keypad-q` 18%×8% → **—**<br>`ww-keypad-display` 14%×8% → **—**<br>`ww-keypad` 29%×80% → **carril** | `ww-keypad-q` 29%×4% → **—**<br>`ww-keypad-display` 26%×6% → **—**<br>`ww-keypad` 74%×88% → **escenario** |
+| **Operaciones** (`math`) | `16/10` | — | `ww-keypad-head` 33%×8% → **—**<br>`ww-keypad` 32%×69% → **carril** | `ww-keypad-head` 57%×6% → **—**<br>`ww-keypad` 92%×69% → **escenario** |
 | **Sopa de Letras** (`wordsearch`) | `4/3` | — | `ww-ws-grid-wrap` 90%×100% → **escenario**<br>`ww-ws-words` 9%×100% → **carril** | `ww-ws-grid-wrap` 100%×94% → **escenario**<br>`ww-ws-words` 100%×5% → **barra** |
 | **Crucigrama** (`crossword`) | `4/3` | — | `cw-body` 99%×92% → **escenario**<br>`cw-footer` 99%×5% → **barra** | `cw-body` 97%×93% → **escenario**<br>`cw-footer` 97%×4% → **barra** |
 | **Abre Cajas** (`question-live`) | `4/3` | — | `ab-board` 37%×73% → **—**<br>`ab-hint` 100%×10% → **barra** | `ab-board` 94%×73% → **escenario**<br>`ab-hint` 100%×10% → **barra** |
@@ -37,7 +37,7 @@ Piezas que cambian de rol entre ancho y alto (misma pieza, otra función):
 - **Memoria**: 0 de 12
 - **Tildes**: 0 de 3
 - **Comas**: 0 de 3
-- **Operaciones**: 1 de 3
+- **Operaciones**: 1 de 2
 - **Sopa de Letras**: 1 de 2
 - **Crucigrama**: 0 de 2
 - **Abre Cajas**: 1 de 2

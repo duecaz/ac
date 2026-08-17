@@ -47,8 +47,10 @@ export function renderChoiceRound(root, payload, { onSubmit } = {}) {
 export function renderKeypadRound(root, payload, { onSubmit } = {}) {
   root.innerHTML = `
     <div class="ww-keypad-round">
-      <div class="ww-keypad-q">${escapeHtml(payload?.question || '')} <span class="ww-keypad-eq">=</span></div>
-      <div class="ww-keypad-display" data-display>0</div>
+      <div class="ww-keypad-head">
+        <div class="ww-keypad-q">${escapeHtml(payload?.question || '')} <span class="ww-keypad-eq">=</span></div>
+        <div class="ww-keypad-display" data-display>0</div>
+      </div>
       <div class="ww-keypad">
         ${[1,2,3,4,5,6,7,8,9].map(n => `<button type="button" class="btn ww-key" data-k="${n}">${n}</button>`).join('')}
         <button type="button" class="btn ww-key ww-key-fn" data-k="back" aria-label="Borrar"><i class="bi bi-backspace"></i></button>
