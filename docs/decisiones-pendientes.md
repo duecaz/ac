@@ -17,6 +17,7 @@ sale de aquí.
 - [D3 · ¿Imprimimos? (hoja de trabajo)](#d3--imprimimos-hoja-de-trabajo)
 - [D4 · ¿Aula SIN internet es un caso soportado?](#d4--aula-sin-internet-es-un-caso-soportado)
 - [D5 · Taxonomía de la biblioteca](#d5--taxonomía-de-la-biblioteca)
+- [D8 · Cómo se REPARTE cada actividad en vertical y en horizontal](#d8--cómo-se-reparte-cada-actividad-en-vertical-y-en-horizontal)
 - [D6 · Cuotas y retención — ✅ DECIDIDA Y APLICADA (v1.51.340, ley §25)](#d6--cuotas-y-retención---decidida-y-aplicada-v151340-ley-25)
 - [D7 · Congelar el catálogo de bucles en vivo — ✅ ESTUDIADA Y CONGELADA (ley §26)](#d7--congelar-el-catálogo-de-bucles-en-vivo---estudiada-y-congelada-ley-26)
 - [Estado (decisión del usuario, v1.51.340)](#estado-decisión-del-usuario-v151340)
@@ -112,6 +113,30 @@ sale de aquí.
 - **Recomendación: campos obligatorios al publicar** (grado · área · tema) con
   vocabulario CERRADO (currículo peruano). Sin eso, la biblioteca no pasa de
   "lo último publicado" por muchos likes que tenga.
+
+## D8 · Cómo se REPARTE cada actividad en vertical y en horizontal
+
+**Aplazada a propósito** (dueño, 2026-08-17): «lo del fullscreen está muy claro:
+siempre es responsive y siempre se acomodan los elementos, en vertical u
+horizontal. Estudiaremos eso muy detenidamente cuando tengamos todos los
+elementos concretos por actividad para saber qué distribuir.»
+
+**Lo que ya está cerrado y NO se re-litiga** (v1.51.508, CLAUDE.md · «la forma
+del marco de juego»): la plantilla DECLARA su proporción y la plataforma obedece;
+el tamaño sale del hueco; pantalla completa suelta la proporción. Eso decide el
+CONTINENTE.
+
+**Lo que queda abierto es el CONTENIDO**: dentro de ese marco, qué va arriba, qué
+al lado y qué se encoge primero cuando la pantalla es alta y estrecha en vez de
+ancha y baja. Hoy cada plantilla lo resuelve por su cuenta con `cq*` y algún
+`fitLayout`, que es suficiente para que quepa pero no es una distribución
+DECIDIDA.
+
+**Condición para abrirla**: tener la lista de elementos concretos de cada
+actividad (enunciado · media · zona de juego · controles · marcador), que es lo
+que permite decidir un reparto en vez de improvisarlo plantilla a plantilla. Sin
+esa lista, cualquier norma que se escriba ahora sería otra medida impuesta —
+justo el patrón que costó cuatro maquetas en un día.
 
 ## D6 · Cuotas y retención — ✅ DECIDIDA Y APLICADA (v1.51.340, ley §25)
 
