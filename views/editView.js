@@ -32,7 +32,7 @@ export function renderEditView(rootSel, { id, template }) {
 
   mount(rootSel, html`
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-      <a href="#/home" class="btn btn-link"><i class="bi bi-arrow-left"></i> Volver</a>
+      <a href="#/mine" class="btn btn-link"><i class="bi bi-arrow-left"></i> Volver</a>
       <div class="d-flex gap-2 align-items-center flex-wrap">
         <span id="vis-badge" class="badge ${activity.visibility==='public'?'bg-success':'bg-secondary'}" title="Estado de publicación">
           ${activity.visibility==='public' ? '<i class="bi bi-globe"></i> Pública' : '<i class="bi bi-eye-slash"></i> Borrador'}

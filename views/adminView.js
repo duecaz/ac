@@ -57,7 +57,7 @@ function renderPanel(rootSel) {
   mount(rootSel, html`
     <div class="container py-3">
       <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
-        <a href="#/home" class="btn btn-sm btn-link p-0"><i class="bi bi-arrow-left"></i> Inicio</a>
+        <a href="#/mine" class="btn btn-sm btn-link p-0"><i class="bi bi-arrow-left"></i> Inicio</a>
         <a href="#/moderar" class="btn btn-sm btn-outline-warning"><i class="bi bi-flag"></i> Moderación</a>
       </div>
       <h3><i class="bi bi-shield-lock"></i> Panel de administración</h3>

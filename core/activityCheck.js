@@ -157,7 +157,7 @@ export function pantallaNoListaHtml(a, rev) {
     </div>
     <div class="d-flex gap-2 flex-wrap">
       <a class="btn btn-primary" href="#/edit/${encodeURIComponent(a?.id || '')}"><i class="bi bi-pencil"></i> Editar la actividad</a>
-      <a class="btn btn-outline-secondary" href="#/home"><i class="bi bi-arrow-left"></i> Volver</a>
+      <a class="btn btn-outline-secondary" href="#/mine"><i class="bi bi-arrow-left"></i> Volver</a>
     </div>`;
 }
 

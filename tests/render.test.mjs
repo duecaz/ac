@@ -12,8 +12,16 @@ let passed = 0; const ok = (m) => { passed++; console.log('  ✓', m); };
 
 const rs = resultScreenHtml({ title: '¡Listo!', lead: 'Puntos: <b>3</b>', stats: '10s' });
 assert.ok(rs.includes('¡Listo!') && rs.includes('Puntos: <b>3</b>') && rs.includes('10s'), 'título/lead/stats');
-assert.ok(rs.includes('href="#/home"') && rs.includes('Inicio'), 'SIEMPRE el enlace Inicio (#/home)');
-ok('resultScreenHtml: contenido + enlace Inicio único');
+// SIEMPRE hay UNA salida, y la decide el cuadro (core/afterPlay.js), no esta
+// pantalla: sin sesión, terminar no puede dejarte en «Mis actividades» (fallo
+// del dueño, 2026-08-17). Aquí el test corre sin almacén → sin sesión.
+assert.ok(rs.includes('href="#/explore"'), 'sin sesión, la salida es la biblioteca');
+assert.ok(!rs.includes('#/mine'), 'sin sesión NUNCA a Mis actividades');
+assert.ok(rs.includes('data-ww-replay'), 'Individual ofrece «jugar otra vez» (es lo que quiere quien acaba de jugar)');
+// CONTRA-PRUEBA: donde repetir no es gratis, el botón no aparece.
+assert.ok(!resultScreenHtml({ mode: 'async-tracked' }).includes('data-ww-replay'),
+  'en Tarea (tope de intentos, §22-3) no se ofrece repetir');
+ok('resultScreenHtml: salida según el cuadro + repetir solo donde es gratis');
 
 const pod = podiumHtml([{ name: 'Ana', score: 5 }, { name: 'Beto', score: 2 }]);
 assert.ok(pod.includes('Ana') && pod.includes('Beto'), 'pinta el ranking');

@@ -14,6 +14,7 @@ import { assignmentGate } from '../core/assignmentRules.js';
 import { defaultMaxScore } from '../core/scoring/index.js';
 import { clock } from '../core/clock.js';
 import { toast } from '../core/toast.js';
+import { destinoTrasJugar } from '../core/afterPlay.js';
 
 
 export async function renderTask(rootSel, code) {
@@ -135,9 +136,12 @@ export async function renderTask(rootSel, code) {
           }
         })
         .catch(e => console.warn('record failed', e.message));
-      // Override the template's own finish screen (which links to #/home — a
-      // teacher-only route absent from the student app, hence "ruta no
-      // encontrada"). Show a student-safe completion screen instead.
+      // Pantalla de fin PROPIA (el mensaje es otro: aquí se ENTREGA, no se
+      // puntúa para uno mismo). El destino NO se escribe aquí: sale del cuadro
+      // único `core/afterPlay.js`, el mismo que usa la pantalla estándar — y
+      // ese cuadro declara que en Tarea NO se ofrece «jugar otra vez», porque
+      // los intentos tienen tope (§22-3).
+      const salida = destinoTrasJugar('async-tracked');
       mount(rootSel, html`
         <div class="text-center py-5">
           <i class="bi bi-check-circle-fill display-1 text-success"></i>
@@ -145,7 +149,7 @@ export async function renderTask(rootSel, code) {
           <p class="lead">Puntos: <b>${state.score}</b> / ${max}</p>
           <p class="text-muted">Tu profe verá tu resultado. Ya puedes cerrar esta página.</p>
           <p id="st-record-note" class="text-danger small"></p>
-          <a href="#/join" class="btn btn-primary"><i class="bi bi-arrow-left"></i> Volver</a>
+          <a href="${salida.href}" class="btn btn-primary"><i class="bi ${salida.icon}"></i> ${salida.label}</a>
         </div>`);
     }
   });

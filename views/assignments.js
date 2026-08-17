@@ -28,7 +28,7 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
 
   function paint(items) {
     mount(rootSel, html`
-      <a href="#/home" class="btn btn-link"><i class="bi bi-arrow-left"></i> Inicio</a>
+      <a href="#/mine" class="btn btn-link"><i class="bi bi-arrow-left"></i> Inicio</a>
       <h2 class="mb-3"><i class="bi bi-clipboard-check"></i> Tareas — ${escapeHtml(a.title)}</h2>
 
       <div class="card mb-4"><div class="card-body">
@@ -189,7 +189,7 @@ export async function renderAttempts(rootSel, assignmentId) {
     </tr>`).join('')}</tbody></table></div>`;
 
   mount(rootSel, html`
-    <a href="#/home" class="btn btn-link"><i class="bi bi-arrow-left"></i> Inicio</a>
+    <a href="#/mine" class="btn btn-link"><i class="bi bi-arrow-left"></i> Inicio</a>
     <h2 class="mb-2">Intentos${activity ? ` — ${escapeHtml(activity.title || '')}` : ''}</h2>
     ${attempts.length === 0 ? `<p class="text-muted">Sin intentos todavía.</p>` : `
       <div class="row g-2 mb-3" style="max-width:640px">

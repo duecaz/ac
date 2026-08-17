@@ -37,6 +37,7 @@ import { qlBoxesHtml, qlCols, qlAwardPatch, qlClosePatch } from '../core/questio
 import { questionWindowMs, RACE_POLL_MS, BOARD_POLL_MS, readSeconds, READ_SECONDS_MAX, itemWindowMs, mmss } from '../core/timings.js';
 import { loopsOf, supportsLoop, defaultLoop, LOOP_LABELS, hasAdvanceChoice, pointsModeFor, racePassedRow } from '../core/liveLoops.js';
 import { END_LABELS, END_POLICIES, DEFAULT_POLICY, DEFAULT_FIRST_N, DEFAULT_MINUTES, MAX_MINUTES, shouldEnd, endPolicyOf } from '../core/liveEnd.js';
+import { destinoTrasJugar } from '../core/afterPlay.js';
 
 
 export async function renderHostLaunch(rootSel, activityId) {
@@ -1050,6 +1051,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
     if (!lb.length) { try { lb = await leaderboard(sessionId, 100); } catch { lb = []; } }
     if (phaseChanged) emitGame(GameEvents.PODIUM, { top: lb.slice(0, 3).map(p => ({ name: p.name, score: p.score })) });
     const isText = tpl?.meta?.contentModel === 'textCorrection';
+    const salidaHost = destinoTrasJugar('live-host');
     mount(rootSel, html`
       <h2 class="text-center mb-3"><i class="bi bi-trophy-fill text-warning"></i> Podio</h2>
       ${podiumHtml(lb.slice(0, 3))}
@@ -1062,7 +1064,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
       <div id="ll-tabout" class="mt-1"></div>
       <div class="text-center mt-3 d-flex gap-2 justify-content-center flex-wrap">
         <button id="ll-csv" class="btn btn-outline-success btn-sm"><i class="bi bi-download"></i> Exportar CSV</button>
-        <a href="#/home" class="btn btn-outline-secondary btn-sm"><i class="bi bi-house"></i> Volver a inicio</a>
+        <a href="${salidaHost.href}" class="btn btn-outline-secondary btn-sm"><i class="bi ${salidaHost.icon}"></i> ${salidaHost.label}</a>
       </div>
     `);
 

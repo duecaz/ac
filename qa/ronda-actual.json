@@ -10,10 +10,17 @@
         {
           "n": 0,
           "titulo": "Versión nueva instalada",
-          "ruta": ["PC + móvil", "aulareto.com", "Barra superior"],
+          "ruta": [
+            "PC + móvil",
+            "aulareto.com",
+            "Barra superior"
+          ],
           "accion": "Abre aulareto.com y recarga con Ctrl+F5. En el móvil, cierra la pestaña y vuelve a abrirla.",
           "espera": "arriba se ve el número de versión y es 1.51.511 o más. Si es menor, para y avisa: estarías probando la de antes.",
-          "casillas": ["PC", "Móvil"],
+          "casillas": [
+            "PC",
+            "Móvil"
+          ],
           "notaPista": "Versión que ves en cada aparato"
         }
       ]
@@ -25,7 +32,12 @@
         {
           "n": 1,
           "titulo": "Las pastillas se leen a 3 metros",
-          "ruta": ["Pizarra del aula", "Quiz", "Individual", "Pantalla de la pregunta"],
+          "ruta": [
+            "Pizarra del aula",
+            "Quiz",
+            "Individual",
+            "Pantalla de la pregunta"
+          ],
           "accion": "Abre un quiz con temporizador puesto y ponte donde se sienta la última fila.",
           "pasos": [
             "Mira la esquina de ARRIBA A LA IZQUIERDA: ahí va «1 / 8» (y 🔥 si llevas racha).",
@@ -33,13 +45,22 @@
             "Prueba también con un tema oscuro y con un fondo con dibujo (cuaderno, pizarra): se cambian en la pantalla de inicio, antes de Iniciar."
           ],
           "espera": "desde la última fila se leen los números de las dos esquinas, en tema claro, en tema oscuro y sobre un fondo con dibujo.",
-          "casillas": ["Tema claro", "Tema oscuro", "Fondo con dibujo"],
+          "casillas": [
+            "Tema claro",
+            "Tema oscuro",
+            "Fondo con dibujo"
+          ],
           "notaPista": "Con qué tema o fondo se leyó peor, y a qué distancia dejaste de distinguir los números"
         },
         {
           "n": 2,
           "titulo": "Las pastillas no tapan nada que haya que tocar",
-          "ruta": ["PC o pizarra", "Varias actividades", "Individual", "Pantalla del juego"],
+          "ruta": [
+            "PC o pizarra",
+            "Varias actividades",
+            "Individual",
+            "Pantalla del juego"
+          ],
           "accion": "Juega un poco en cuatro actividades distintas y fíjate SOLO en las esquinas de arriba.",
           "pasos": [
             "Explota Globos: un globo que suba por una esquina, ¿se puede explotar igual aunque pase por debajo de la pastilla?",
@@ -48,16 +69,29 @@
             "En todas: el botón redondo de pantalla completa sigue arriba a la derecha y se puede pulsar."
           ],
           "espera": "en ninguna actividad una pastilla impide tocar algo del juego, y el botón de pantalla completa se pulsa siempre a la primera.",
-          "casillas": ["Globos", "Sopa", "Crucigrama", "Pelotas"],
+          "casillas": [
+            "Globos",
+            "Sopa",
+            "Crucigrama",
+            "Pelotas"
+          ],
           "notaPista": "En qué actividad y qué te tapaba"
         },
         {
           "n": 3,
           "titulo": "Los números avanzan de verdad",
-          "ruta": ["PC o móvil", "Quiz y Sopa de Letras", "Individual", "Durante el juego"],
+          "ruta": [
+            "PC o móvil",
+            "Quiz y Sopa de Letras",
+            "Individual",
+            "Durante el juego"
+          ],
           "accion": "Juega media actividad mirando las pastillas de las esquinas.",
           "espera": "el «1 / 8» sube al pasar de pregunta, el reloj baja segundo a segundo, y en la Sopa los ★ suben al encontrar una palabra. Ninguna pastilla se queda congelada en su valor inicial.",
-          "casillas": ["Quiz", "Sopa"],
+          "casillas": [
+            "Quiz",
+            "Sopa"
+          ],
           "notaPista": "Cuál se quedó parada, si alguna"
         }
       ]
@@ -69,7 +103,12 @@
         {
           "n": 4,
           "titulo": "Crucigrama y Sopa al girar el móvil",
-          "ruta": ["Móvil", "Crucigrama y Sopa de Letras", "Individual", "Pantalla del juego"],
+          "ruta": [
+            "Móvil",
+            "Crucigrama y Sopa de Letras",
+            "Individual",
+            "Pantalla del juego"
+          ],
           "accion": "Abre cada una en el móvil y gíralo de vertical a horizontal y al revés (con el giro de pantalla desbloqueado).",
           "pasos": [
             "Crucigrama en VERTICAL: la lista de pistas tiene que quedar DEBAJO del tablero, no en una columna estrecha al lado.",
@@ -78,25 +117,46 @@
             "Sopa en HORIZONTAL: la lista vuelve al costado."
           ],
           "espera": "en las dos posiciones se ve el tablero entero sin tener que bajar con el dedo, y la letra se lee.",
-          "casillas": ["Crucigrama vertical", "Crucigrama horizontal", "Sopa vertical", "Sopa horizontal"],
+          "casillas": [
+            "Crucigrama vertical",
+            "Crucigrama horizontal",
+            "Sopa vertical",
+            "Sopa horizontal"
+          ],
           "notaPista": "Si en alguna posición hubo que hacer scroll o la letra quedó diminuta"
         },
         {
           "n": 5,
           "titulo": "La Ruleta usa el hueco que hay",
-          "ruta": ["PC y móvil", "Ruleta", "Individual", "Pantalla del juego"],
+          "ruta": [
+            "PC y móvil",
+            "Ruleta",
+            "Individual",
+            "Pantalla del juego"
+          ],
           "accion": "Abre la Ruleta en el PC y en el móvil en vertical, y gira un par de veces.",
           "espera": "en el PC (pantalla ancha) el botón «Girar» y el resultado están AL LADO de la rueda, aprovechando el sitio; en el móvil en vertical están DEBAJO. La rueda se ve grande en los dos casos, no un círculo pequeño en medio de la pantalla.",
-          "casillas": ["PC", "Móvil vertical"],
+          "casillas": [
+            "PC",
+            "Móvil vertical"
+          ],
           "notaPista": "Tamaño de la rueda respecto a la pantalla"
         },
         {
           "n": 6,
           "titulo": "El Quiz llena la pantalla como Kahoot",
-          "ruta": ["PC o pizarra", "Quiz SIN imágenes", "Individual", "Pantalla de la pregunta"],
+          "ruta": [
+            "PC o pizarra",
+            "Quiz SIN imágenes",
+            "Individual",
+            "Pantalla de la pregunta"
+          ],
           "accion": "Abre un quiz cuyas preguntas NO tengan foto y mira cuánto ocupan los botones de respuesta.",
           "espera": "los cuatro botones de colores llenan todo el alto que queda bajo la pregunta, como en Kahoot — sin una franja blanca vacía en medio. Con una pregunta que SÍ tenga foto, la foto aparece entre la pregunta y los botones.",
-          "casillas": ["Sin foto", "Con foto"],
+          "casillas": [
+            "Sin foto",
+            "Con foto"
+          ],
           "notaPista": "Si quedó hueco vacío, en qué parte"
         }
       ]
@@ -108,7 +168,12 @@
         {
           "n": 7,
           "titulo": "Siempre sabes qué actividad es antes de empezar",
-          "ruta": ["PC + móvil", "Memoria · Ruleta · Abre Cajas · Crucigrama", "Individual y En vivo", "Antes y durante"],
+          "ruta": [
+            "PC + móvil",
+            "Memoria · Ruleta · Abre Cajas · Crucigrama",
+            "Individual y En vivo",
+            "Antes y durante"
+          ],
           "accion": "Entra en esas cuatro actividades y fíjate en la pantalla ANTERIOR al juego.",
           "pasos": [
             "En Individual: la pantalla de inicio tiene que decir el título antes de pulsar Iniciar.",
@@ -116,7 +181,10 @@
             "Durante el juego: el título ya NO aparece — eso es lo correcto, no es un fallo."
           ],
           "espera": "en ningún momento entras a jugar sin haber visto antes el nombre de la actividad.",
-          "casillas": ["Individual", "En vivo"],
+          "casillas": [
+            "Individual",
+            "En vivo"
+          ],
           "notaPista": "En qué actividad echaste de menos el título"
         }
       ]
@@ -127,23 +195,37 @@
       "pruebas": [
         {
           "n": 8,
-          "titulo": "El mando de lápiz/borrador hace lo que dice",
-          "ruta": ["Pizarra del aula", "Tildes (o Comas)", "Individual", "Pantalla del texto"],
-          "accion": "Con el ejercicio abierto, juega con el mando de arriba antes de escribir nada.",
-          "pasos": [
-            "Toca «Lápiz» estando YA en lápiz: no debe cambiar nada.",
-            "Marca una tilde. Toca «Borrador» y pasa por encima de esa marca: tiene que desaparecer.",
-            "Vuelve a tocar «Lápiz» y marca otra: tiene que volver a escribir.",
-            "Prueba también con la PALMA apoyada mientras escribes con el lápiz: no debe borrar solo."
+          "titulo": "El interruptor Lápiz | Borrador hace lo que dice",
+          "ruta": [
+            "Pizarra del aula",
+            "Tildes (o Comas)",
+            "Individual",
+            "Pantalla del texto"
           ],
-          "espera": "el lado encendido es siempre el que manda, tocar el que ya estaba encendido no cambia de herramienta, y el mando se ve centrado en su barra (los contadores ya no están ahí: se fueron a las esquinas).",
-          "casillas": ["Pizarra", "PC"],
+          "accion": "Con el ejercicio abierto, busca la BARRA GRIS que hay justo encima del texto: en el centro tiene un interruptor con dos lados, «✏ Lápiz» y «◻ Borrador» (el lado encendido va en color). Juega con él ANTES de escribir nada.",
+          "pasos": [
+            "Toca el lado «Lápiz» estando YA en lápiz: no debe cambiar nada.",
+            "Marca una tilde en una vocal. Toca «Borrador» y pasa por encima de esa marca: tiene que desaparecer.",
+            "Vuelve a tocar «Lápiz» y marca otra: tiene que volver a escribir.",
+            "En la pizarra, escribe con el lápiz apoyando la PALMA en el cristal: no debe borrar solo."
+          ],
+          "espera": "el lado encendido (en color) es siempre el que manda, tocar el que ya estaba encendido no cambia de herramienta, y el interruptor se ve centrado en su barra — los contadores ya no están ahí: se fueron a las esquinas.",
+          "casillas": [
+            "Pizarra",
+            "PC"
+          ],
           "notaPista": "Si alguna vez escribió cuando esperabas borrar (o al revés), en qué paso"
         },
         {
           "n": 9,
           "titulo": "El mismo número de reloj en PC y móvil",
-          "ruta": ["PC (profe) + móvil (alumno)", "Quiz", "En vivo", "Rondas juntas", "Pantalla de la pregunta"],
+          "ruta": [
+            "PC (profe) + móvil (alumno)",
+            "Quiz",
+            "En vivo",
+            "Rondas juntas",
+            "Pantalla de la pregunta"
+          ],
           "accion": "Crea una sala en vivo con un quiz, entra con el móvil por PIN y mira los DOS relojes a la vez cuando se abre la pregunta.",
           "pasos": [
             "Abre la pregunta desde el PC y NO respondas todavía.",
@@ -154,8 +236,42 @@
             "DATO 3 — Si ves los relojes distintos, mira en las DOS pantallas dónde dice «Pregunta X / N» y apunta el X de cada una."
           ],
           "espera": "los dos aparatos marcan el mismo número (±1 segundo, lo que tarda el ojo en ir de una pantalla a otra). Aunque salga bien, rellena igual los tres datos en la nota.",
-          "casillas": ["Pregunta 1", "Pregunta 2", "Pregunta 3"],
+          "casillas": [
+            "Pregunta 1",
+            "Pregunta 2",
+            "Pregunta 3"
+          ],
           "notaPista": "1) Tiempo por pregunta = __ · 2) Preguntas con tiempo propio = __ · 3) Profe «Pregunta _ / _» y alumno «Pregunta _ / _»"
+        }
+      ]
+    },
+    {
+      "titulo": "Parte 5 · AL TERMINAR — a dónde te lleva",
+      "nota": "Antes, terminar una actividad te mandaba SIEMPRE a «Mis actividades», aunque no hubieras iniciado sesión: una pantalla que no es tuya. Ahora depende de si tienes cuenta, y además se ofrece volver a jugar. Es de las cosas que solo se ven usándolo de las dos maneras.",
+      "pruebas": [
+        {
+          "n": 10,
+          "titulo": "Al terminar, te lleva a donde toca",
+          "ruta": [
+            "PC o móvil",
+            "Cualquier actividad",
+            "Individual",
+            "Pantalla de fin"
+          ],
+          "accion": "Termina una actividad entera (llega a la pantalla del trofeo) SIN haber iniciado sesión, y luego repite CON tu cuenta iniciada.",
+          "pasos": [
+            "SIN sesión: termina la actividad y mira los dos botones de abajo.",
+            "Pulsa «Ver más actividades»: tiene que llevarte a la biblioteca (con actividades para jugar), NO a una pantalla vacía de «Mis actividades».",
+            "Vuelve a terminar otra y pulsa «Jugar otra vez»: tiene que empezar la misma actividad desde cero, con el marcador a 0.",
+            "Ahora inicia sesión con tu cuenta y termina una actividad: el segundo botón ahora dice «Mis actividades» y te lleva a las tuyas."
+          ],
+          "espera": "sin cuenta terminas en la biblioteca; con cuenta, en Mis actividades. «Jugar otra vez» reinicia de verdad (no te deja en el resultado ni continúa donde ibas).",
+          "casillas": [
+            "Sin sesión",
+            "Con sesión",
+            "Jugar otra vez"
+          ],
+          "notaPista": "A dónde te llevó cada botón"
         }
       ]
     }

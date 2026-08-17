@@ -14,6 +14,7 @@ import { podiumHtml } from '../core/podium.js';
 import { renderModeSetup } from './modeSetup.js';
 import { mountVs } from './vsView.js';
 import { sessionItems } from '../kernel/session/engine.js';
+import { destinoTrasJugar } from '../core/afterPlay.js';
 
 export async function renderListView(rootSel, id) {
   const host = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
@@ -25,7 +26,7 @@ export async function renderListView(rootSel, id) {
     if (lista) save(lista);
   }
   if (!lista) {
-    mount(host, html`<div class="alert alert-warning m-3">Lista no encontrada. <a href="#/home">Volver</a></div>`);
+    mount(host, html`<div class="alert alert-warning m-3">Lista no encontrada. <a href="${destinoTrasJugar('solo').href}">Volver</a></div>`);
     return;
   }
 
@@ -132,6 +133,7 @@ export async function renderListView(rootSel, id) {
   }
 
   function showRoundIntro(roundNum, total, a, onGo) {
+    const salida = destinoTrasJugar('solo');
     mount(host, html`
       <div class="list-round-intro text-center py-5 px-3">
         <p class="text-muted text-uppercase small mb-1">Ronda ${roundNum} de ${total}</p>
@@ -139,7 +141,7 @@ export async function renderListView(rootSel, id) {
         ${a.subtitle ? `<p class="text-muted mb-3">${escapeHtml(a.subtitle)}</p>` : ''}
         <p class="text-muted mb-4">${sessionItems(a).length} preguntas</p>
         <button id="list-go" class="btn btn-primary btn-lg px-5"><i class="bi bi-play-fill"></i> ¡A jugar!</button>
-        <a href="#/home" class="btn btn-link ms-3">Salir</a>
+        <a href="${salida.href}" class="btn btn-link ms-3">Salir</a>
       </div>`);
     const btn = document.getElementById('list-go');
     if (btn) btn.onclick = () => onGo();
@@ -183,6 +185,7 @@ export async function renderListView(rootSel, id) {
     const tie = scores.left === scores.right;
     const winnerName = tie ? null : ranked[0].name;
 
+    const salida = destinoTrasJugar('solo');
     mount(host, html`
       <div class="list-final text-center py-5 px-3">
         <p class="text-muted text-uppercase small mb-1">Resultado final · ${activities.length} rondas</p>
@@ -192,7 +195,7 @@ export async function renderListView(rootSel, id) {
         ${podiumHtml(ranked)}
         <div class="mt-4 d-flex gap-2 justify-content-center flex-wrap">
           <button id="list-again" class="btn btn-primary btn-lg"><i class="bi bi-arrow-repeat"></i> Jugar de nuevo</button>
-          <a href="#/home" class="btn btn-outline-secondary btn-lg">Salir</a>
+          <a href="${salida.href}" class="btn btn-outline-secondary btn-lg">Salir</a>
         </div>
       </div>`);
     const btn = document.getElementById('list-again');

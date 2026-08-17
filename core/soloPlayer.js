@@ -29,6 +29,22 @@ function canResumeSolo(activity, opts) {
 }
 export function clearSoloProgress(activityId) { if (activityId) lsDel(progressKey(activityId)); }
 
+// «Jugar otra vez» (core/resultScreen.js) → volver a montar la actividad desde
+// cero. Se hace RECARGANDO la página en vez de re-ejecutando el player: la
+// ruta ya es la de esta actividad (`#/play/:id`, o el `?id=` del embed), así
+// que la recarga es la única forma que no depende de en qué shell/modo estamos
+// ni deja a medias los relojes, listeners y progresos del intento anterior.
+// El progreso guardado se borra ANTES (si no, «otra vez» reanudaría el final).
+function cablearRepetir(rootSel, activityId) {
+  const raiz = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
+  const btn = raiz?.querySelector('[data-ww-replay]');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    clearSoloProgress(activityId);
+    location.reload();
+  }, { once: true });
+}
+
 export function runFreeformPlayer(rootSel, activity, opts = {}) {
   let startedAt = clock.now();
   let finished = false;
@@ -90,8 +106,9 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
     });
 
     if (!skipResultScreen) {
-      mount(rootSel, resultScreenHtml({ icon, iconColor, title, lead: leadStr, stats: statsStr, score, maxScore })
+      mount(rootSel, resultScreenHtml({ icon, iconColor, title, lead: leadStr, stats: statsStr, score, maxScore, mode: opts.mode })
         + (typeof after === 'function' ? after(ctx) : after));
+      cablearRepetir(rootSel, activity.id);
     }
 
     if (opts.onFinish) opts.onFinish({ score, maxScore, timeUsed, ...(answers !== undefined ? { answers } : {}) });
@@ -235,9 +252,10 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
       mount(rootSel, resultScreenHtml({
         lead: `Puntos: <b>${state.score}</b> / ${max}`,
         stats: `Tiempo: ${timeUsed}s`,
-        score: state.score, maxScore: max,
+        score: state.score, maxScore: max, mode: opts.mode,
         ...custom,
       }));
+      cablearRepetir(rootSel, activity.id);
     }
     trySaveResult(opts, { activityId: activity.id, scoreAuto: state.score, scoreFinal: state.score, maxScore: max, timeUsed });
     // Template-level teardown (e.g. reset streaks) runs before the caller's hook.

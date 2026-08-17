@@ -26,6 +26,7 @@ import { toast, confirmModal } from '../core/toast.js';
 import { openEmbedModal } from './embedModal.js';
 import { mountSoloAnimator } from '../core/soloAnimator.js';
 import { aspectStyle, ASPECTO_POR_DEFECTO } from '../core/frameAspect.js';
+import { destinoTrasJugar } from '../core/afterPlay.js';
 
 export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   let a = get(id);
@@ -37,7 +38,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     a = await getRemote(id).catch(() => null);
   }
   if (!a) {
-    mount(rootSel, html`<div class="alert alert-warning">Actividad no encontrada. <a href="#/home">Volver</a></div>`);
+    mount(rootSel, html`<div class="alert alert-warning">Actividad no encontrada. <a href="${destinoTrasJugar('solo').href}">Volver</a></div>`);
     return;
   }
   // NI VACÍA NI A MEDIAS. Dos caminos que la app trataba como si nada:
