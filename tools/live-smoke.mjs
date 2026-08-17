@@ -102,7 +102,8 @@ try {
 
   // ── LA PANTALLA DEL ALUMNO CABE, Y EL EJERCICIO LLENA EL MARCO ────────────
   // Dos promesas de la maqueta, que solo se comprueban MIDIENDO:
-  //   (a) SIN SCROLL. El marco es 4:3 dentro de una página normal, y su ancho
+  //   (a) SIN SCROLL. El marco lleva la proporción de la plantilla dentro de una
+  //       página normal, y su ancho
   //       máximo se deduce del alto libre (styles/player.css) descontando la
   //       barra REAL (`--ww-topbar-h`). Si alguien vuelve a meter un alto
   //       absoluto —hubo cuatro intentos, todos con su resta equivocada— el
@@ -147,6 +148,26 @@ try {
     await student.setViewportSize({ width: 1280, height: 800 });
     await student.waitForTimeout(250);
     log('y cabe también en 390x844, 844x390 y 912x600 (el tope por alto se aplica en todos los anchos)');
+
+    // LA MISMA FORMA QUE VE SU PROFESOR. La proporción la DECLARA la plantilla
+    // (`meta.aspectRatio`) y la plataforma obedece, juegue quien juegue (§0).
+    // Hubo un 4:3 escrito a mano en el marco del alumno: servía para la tarea,
+    // pero le daba otra forma que a su profe en 11 de las 13 plantillas — y a la
+    // Ruleta, que pide un cuadrado, un rectángulo. El quiz de esta sala declara
+    // 16/10, así que eso es lo que tiene que medir su marco.
+    const forma = await student.evaluate(async () => {
+      await import('/core/registerTemplates.js');
+      const { getTemplate } = await import('/core/registry.js');
+      return {
+        marco: getComputedStyle(document.getElementById('ww-frame')).aspectRatio.replace(/\s/g, ''),
+        declara: (getTemplate('quiz')?.meta?.aspectRatio || '').replace(/\s/g, ''),
+      };
+    });
+    if (!forma.declara) throw new Error('la plantilla del quiz debería declarar su proporción');
+    if (forma.marco !== forma.declara) {
+      throw new Error(`el marco del alumno usa ${forma.marco} y su plantilla declara ${forma.declara}`);
+    }
+    log(`el marco del alumno lleva la proporción que DECLARA la plantilla (${forma.declara}), la misma que ve el profe`);
   }
 
   await student.locator('.rq-opt, .ww-opt', { hasText: '4' }).first().click();

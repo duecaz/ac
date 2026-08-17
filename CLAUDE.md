@@ -273,6 +273,14 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   Unificar el markup no bastó: la CONFIGURACIÓN divergió igual (el badge de páginas solo
   lo pedía la home y el profe preguntó por qué no salía en la portada).
   Vigilado por `tests/activityCard.test.mjs` (ninguna vista puede apagar un campo).
+- **LA FORMA DEL MARCO DE JUEGO** (`core/frameAspect.js`): la PLANTILLA declara su
+  proporción (`meta.aspectRatio`, def. 4/3) y la plataforma OBEDECE — profe, alumno en
+  vivo y tarea llevan la MISMA (§0). El tamaño sale del hueco: ancho máx. = alto libre ×
+  proporción (`--ww-ar`), nunca un alto absoluto. Pantalla completa la SUELTA (100vw×100vh),
+  igual que VS/Equipos (`.is-expanded`), que piden más caja. El panel del docente en vivo
+  no lleva proporción: no es un juego en una página, es un tablero con pantallas de alturas
+  distintas (`caja:false`) — con 4:3 le cortaba el QR del lobby. Vigilado en `live-smoke`
+  (proporción declarada = la del marco · sin scroll en cuatro ventanas).
 - **La esquina superior derecha del marco de juego es DEL MARCO**: ahí va el botón de
   pantalla completa (`.ww-fs-btn--corner`, z-index 30). Un modo que pinte una barra a
   todo el ancho dentro del marco debe respetar `--ww-fs-reserve` (lo hace el marcador

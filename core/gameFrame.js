@@ -36,6 +36,7 @@ import { html, mount } from './html.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from './fullscreen.js';
 import { applySkin } from './skins.js';
 import { applyBackground } from './backgrounds.js';
+import { aspectoDe, aspectStyle } from './frameAspect.js';
 
 // `caja`: si la superficie es un MARCO con forma (proporción, esquinas, sombra)
 // o solo un ÁMBITO. El alumno quiere caja — el juego es una cosa dentro de una
@@ -49,18 +50,22 @@ import { applyBackground } from './backgrounds.js';
 // pinta en su barra), y añadir la esquina del marco dejaba DOS botones visibles,
 // con el de la fase debajo del de la esquina por z-index.
 export function montarMarcoJuego(rootSel, activity, { escena = true, caja = true } = {}) {
-  // 4:3, Y EL RESTO LO HACE PANTALLA COMPLETA (dueño, 2026-08-16). Esto NO es
-  // una medida más: es dejar de tener las mías. La pantalla del alumno intentaba
-  // LLENAR la ventana, y para eso hacía falta saber cuánto mide la ventana —
-  // 100dvh, menos la barra, menos las barras de desplazamiento…— y cada resta
+  // UNA PROPORCIÓN, Y EL RESTO LO HACE PANTALLA COMPLETA (dueño, 2026-08-16).
+  // Esto NO es una medida más: es dejar de tener las mías. La pantalla del
+  // alumno intentaba LLENAR la ventana, y para eso hacía falta saber cuánto mide
+  // —100dvh, menos la barra, menos las barras de desplazamiento…— y cada resta
   // fallaba en algún aparato. Con una proporción, el marco es un elemento normal
   // en una página normal: el mismo `.ww-play-page .ww-player-frame` que el profe
-  // usa desde el principio, con sus reglas, y sin una sola línea de alto propia.
-  // Quien quiera la pantalla entera pulsa el botón de pantalla completa, que ya
-  // estaba ahí.
+  // usa desde el principio, con sus reglas y sin una línea de alto propia.
+  //
+  // Y la proporción es la que DECLARA LA PLANTILLA, la misma que ve el profe
+  // (core/frameAspect.js). Estuvo un 4:3 escrito aquí a mano: servía para la
+  // tarea, pero dejaba al alumno con otra forma que a su profesor en 11 de las
+  // 13 — y la Ruleta, que pide un cuadrado, jugándose en un rectángulo.
+  const estilo = aspectStyle(aspectoDe(activity));
   mount(rootSel, html`
     <div class="ww-play-page">
-      <div class="ww-player-frame ww-student-frame${caja ? '' : ' ww-frame--libre'}" id="ww-frame"${caja ? ' style="aspect-ratio: 4 / 3; --ww-ar: (4 / 3)"' : ''}>
+      <div class="ww-player-frame ww-student-frame${caja ? '' : ' ww-frame--libre'}" id="ww-frame"${caja ? ` style="${estilo}"` : ''}>
         ${caja ? fullscreenButtonHtml({ corner: true }) : ''}
         <div id="s-stage" class="ww-student-stage"></div>
       </div>
