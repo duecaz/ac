@@ -7,6 +7,7 @@ import { scoreMemorySubmission } from './scorer.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { shuffle } from '../../core/roundRender.js';
 import { pairComplete } from '../../core/contentModels/pairs.js';
+import { hudHtml } from '../../core/playerHud.js';
 
 export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
   // Misma regla que el editor y que Emparejar (core/contentModels/pairs.js).
@@ -64,12 +65,11 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
   function paint() {
     mount(rootSel, html`
       <div class="ww-memory">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <span class="badge bg-secondary">${state.matched} / ${pairs.length}</span>
-          <span class="badge bg-info text-dark">Flips: ${state.flips}</span>
-          <span class="badge bg-primary">★ ${state.score}</span>
-        </div>
-        <h5 class="text-center mb-3">${escapeHtml(activity.title)}</h5>
+        ${hudHtml({
+          pagina: `${state.matched} / ${pairs.length}`,
+          extra: `Flips: ${state.flips}`,
+          puntos: `★ ${state.score}`,
+        })}
         <div class="ww-memo-grid" style="grid-template-columns:repeat(${columns},1fr)">
           ${deck.map(c => {
             const isOpen = state.open.includes(c.cardId);

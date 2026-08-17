@@ -694,13 +694,12 @@ export async function renderPlay(rootSel, code) {
     // esta vista NO pinta su fila encima: dos barras apiladas era el fallo.
     // Si la plantilla no sabe de chips, la vista pinta su fila como siempre.
     // La vista sigue sin conocer plantillas concretas (§0): pregunta, no adivina.
-    // Contenido PLANO (icono + texto): la barra de la ronda ya pinta cada chip
-    // como pastilla; meterle dentro un badge de Bootstrap daba pastilla sobre
-    // pastilla. El respaldo de abajo (plantillas sin barra propia) construye
-    // sus badges aparte.
+    // TEXTO PLANO, sin HTML: los chips van al HUD de las esquinas
+    // (core/playerHud.js), que escapa su contenido — un icono de Bootstrap aquí
+    // se vería como texto literal. El respaldo de abajo (plantillas sin barra
+    // propia) construye sus badges aparte.
     const chips = {
-      left: `<i class="bi bi-check2-circle"></i> ${raceCorrectCount}/${total}`
-        + (streak >= 2 ? ` · 🔥 ${streak}` : ''),
+      left: `✓ ${raceCorrectCount}/${total}` + (streak >= 2 ? ` · 🔥 ${streak}` : ''),
       right: `${raceQueue.length} restantes`,
     };
     mount(rootSel, html`<div id="s-race-extra"></div><div id="s-round"></div>`);

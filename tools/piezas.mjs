@@ -69,10 +69,16 @@ function rolDe(b, area) {
 const PIEZAS = `(sel) => {
   let raiz = document.querySelector(sel);
   if (!raiz) return null;
-  let hijos = [...raiz.children].filter(e => getComputedStyle(e).display !== 'none');
+  // Un hijo ABSOLUTO (el HUD de esquinas, un input fantasma) no participa del
+  // reparto: flota encima. Se excluye — este inventario mide lo que OCUPA.
+  const enFlujo = (e) => {
+    const cs = getComputedStyle(e);
+    return cs.display !== 'none' && cs.position !== 'absolute' && cs.position !== 'fixed';
+  };
+  let hijos = [...raiz.children].filter(enFlujo);
   while (hijos.length === 1 && hijos[0].children.length) {
     raiz = hijos[0];
-    hijos = [...raiz.children].filter(e => getComputedStyle(e).display !== 'none');
+    hijos = [...raiz.children].filter(enFlujo);
   }
   const R = raiz.getBoundingClientRect();
   // El nombre de la pieza tiene que DECIR qué es. Las utilidades de Bootstrap

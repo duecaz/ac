@@ -19,8 +19,10 @@
 .bs-hidden { display: none !important; }
 
 .bs-toolbar {
+  /* Solo HERRAMIENTAS (Aa · Deshacer): los contadores viven en el HUD de las
+     esquinas (core/playerHud.js), así que la barra va centrada y compacta. */
   display: flex; flex-wrap: wrap; gap: 12px;
-  align-items: center; justify-content: space-between;
+  align-items: center; justify-content: center;
   padding: 4px 0 10px;
 }
 .bs-win { text-align: center; font-weight: 700; color: var(--bs-accent); }

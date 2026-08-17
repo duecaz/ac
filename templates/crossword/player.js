@@ -6,6 +6,7 @@ import { scoreCrosswordSubmission } from './scorer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { buildGrid } from './generator.js';
 import { observeResize } from '../../core/observeResize.js';
+import { hudHtml, hudSet } from '../../core/playerHud.js';
 
 export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
   const wordsRaw = (activity.content?.words || [])
@@ -63,14 +64,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
 
     return html`
       <div class="cw-wrap">
-        <!-- Header -->
-        <div class="cw-header">
-          <span class="cw-title">${escapeHtml(activity.title || 'Crucigrama')}</span>
-          <div class="cw-progress-wrap">
-            <div class="cw-progress-bar" id="cw-pbar" style="width:0%"></div>
-          </div>
-          <span class="cw-progress-txt" id="cw-ptxt">0 / ${totalWords}</span>
-        </div>
+        ${hudHtml({ pagina: `0 / ${totalWords}` })}
 
         <!-- Body: clues + grid -->
         <div class="cw-body">
@@ -440,11 +434,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
   // ── Progress + finish ─────────────────────────────────────────────────────
 
   function updateProgress() {
-    const pct = totalWords ? Math.round(solvedIds.size / totalWords * 100) : 0;
-    const pbar = document.getElementById('cw-pbar');
-    const ptxt = document.getElementById('cw-ptxt');
-    if (pbar) pbar.style.width = `${pct}%`;
-    if (ptxt) ptxt.textContent = `${solvedIds.size} / ${totalWords}`;
+    hudSet(document.querySelector('.cw-wrap'), 'pagina', `${solvedIds.size} / ${totalWords}`);
   }
 
   function finishGame() {

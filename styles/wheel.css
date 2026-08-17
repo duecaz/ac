@@ -1,0 +1,48 @@
+/* Ruleta — subsecciones del juego (D8, 2026-08-17): «rueda» + «panel»
+   (resultado · botones · historial). La ruleta es CUADRADA y en un hueco ancho
+   dejaba aire muerto a los lados con todo apilado en columna; ahora el panel
+   VIAJA al eje largo: hueco alto → panel debajo (columna), hueco cuadrado o
+   ancho → panel al costado (fila). Mismo mecanismo que el andamio de regiones
+   (aspect-ratio del contenedor, sin breakpoints de píxeles).
+   Antes de este archivo la Ruleta no tenía CSS propio: la maqueta vivía en
+   utilidades de Bootstrap y estilos inline del player. */
+
+.wh-play {
+  height: 100%; min-height: 0; min-width: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 2cqmin;
+  container-type: size;
+}
+/* Quien REFLUYE es el hijo: el @container se resuelve contra un ancestro. */
+.wh-flow {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: max(8px, 2.4cqmin);
+  min-height: 0; min-width: 0;
+  width: 100%; height: 100%;
+}
+@container (aspect-ratio >= 1/1) {
+  .wh-flow { flex-direction: row; }
+}
+
+/* La rueda toma el tamaño del HUECO, no el de su atributo (400): el ancho es
+   el lado corto del contenedor menos el aire, y el SVG lo llena. */
+.wh-stage { position: relative; flex: 0 1 auto; min-width: 0; min-height: 0; display: flex; width: min(78cqmin, 100%); }
+.wh-stage svg { width: 100%; height: auto; display: block; }
+.wh-pointer {
+  position: absolute; top: 50%; left: -0.5em; transform: translateY(-50%);
+  font-size: max(20px, 5cqmin); line-height: 1;
+  color: var(--ww-danger, #e53935);
+}
+
+.wh-side {
+  flex: 0 1 auto; min-width: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: max(6px, 1.6cqmin);
+  text-align: center;
+}
+/* Hueco fijo del veredicto: que el botón no salte cuando aparece el ganador. */
+.wh-result { min-height: 3.2em; display: flex; align-items: center; justify-content: center; }
+.wh-actions { display: flex; gap: .5em; flex-wrap: wrap; justify-content: center; }
+.wh-history { font-size: max(12px, 2cqmin); opacity: .7; }

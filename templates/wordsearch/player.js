@@ -9,6 +9,7 @@ import { createCountdown } from '../../core/soloTimer.js';
 import { generateGrid, cellLine, SIZE_MAP } from './generator.js';
 import { scoreWordsearch } from './scorer.js';
 import { basePoints } from '../../core/scoring/index.js';
+import { hudHtml, hudSet } from '../../core/playerHud.js';
 
 // Per-player color palette (supports up to 6 players)
 const PLAYER_COLORS = [
@@ -81,15 +82,11 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
   function render() {
     mount(rootSel, html`
       <div class="ww-ws">
-        <div class="ww-ws-head">
-          <div class="ww-ws-head-left">
-            <span class="badge bg-secondary ww-ws-count">0/${total}</span>
-            <div class="progress ww-ws-progress"><div class="progress-bar bg-success ww-ws-pbar" style="width:0%"></div></div>
-          </div>
-          ${timerSecs > 0 ? `<span class="badge bg-danger ww-ws-timer">⏱ ${timerSecs}s</span>` : ''}
-          <span class="badge bg-primary ww-ws-score">★ 0</span>
-        </div>
-
+        ${hudHtml({
+          pagina: `0 / ${total}`,
+          tiempo: timerSecs > 0 ? `⏱ ${timerSecs}` : null,
+          puntos: '★ 0',
+        })}
         <div class="ww-ws-body">
           <div class="ww-ws-grid-wrap">
             <div class="ww-ws-grid" id="ws-grid" style="--ws-cols:${cols}">
@@ -236,12 +233,8 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
 
     // Update counters
     const found = state.found.size;
-    const countEl = rootEl()?.querySelector('.ww-ws-count');
-    if (countEl) countEl.textContent = `${found}/${total}`;
-    const pbar = rootEl()?.querySelector('.ww-ws-pbar');
-    if (pbar) pbar.style.width = `${Math.round(found / total * 100)}%`;
-    const scoreEl = rootEl()?.querySelector('.ww-ws-score');
-    if (scoreEl) scoreEl.textContent = `★ ${state.score}`;
+    hudSet(rootEl(), 'pagina', `${found} / ${total}`);
+    hudSet(rootEl(), 'puntos', `★ ${state.score}`);
 
     if (found >= total) finish();
   }
@@ -251,8 +244,7 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
     timer = createCountdown(timerSecs, {
       onTick: (remaining) => {
         emitGame(GameEvents.TICK, { remainSec: remaining });
-        const el = rootEl()?.querySelector('.ww-ws-timer');
-        if (el) el.textContent = `⏱ ${remaining}s`;
+        hudSet(rootEl(), 'tiempo', `⏱ ${remaining}`);
       },
       onTimeout: () => finish(),
     });

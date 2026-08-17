@@ -10,6 +10,7 @@ import { createTimer, formatMs } from './timer.js';
 import { startElapsedTicker } from '../../core/deadlineTicker.js';
 import { clock } from '../../core/clock.js';
 import { lsGet, lsSet } from '../../core/ls.js';
+import { hudHtml, hudSet } from '../../core/playerHud.js';
 
 const LETTERS_KEY = 'yu_show_letters';   // preferencia de accesibilidad (letras en las bolas)
 
@@ -25,9 +26,11 @@ const LETTERS_KEY = 'yu_show_letters';   // preferencia de accesibilidad (letras
 export function mountBallSort(host, { board, mode = 'moves', onProgress, onSolve } = {}) {
   host.innerHTML = `
     <div class="ww-bs bs-player">
+      ${hudHtml({
+        pagina: 'Movs: 0',
+        tiempo: mode === 'time' ? '⏱ 0:00' : null,
+      })}
       <div class="bs-toolbar">
-        <span>Movimientos: <strong data-bs="moves">0</strong></span>
-        <span data-bs="time-box" class="${mode === 'time' ? '' : 'bs-hidden'}">Tiempo: <strong data-bs="time">0:00</strong></span>
         <button type="button" data-bs="letters" class="btn btn-outline-secondary btn-sm" title="Mostrar letras (modo daltónico)">Aa</button>
         <button type="button" data-bs="undo" class="btn btn-secondary btn-sm">Deshacer</button>
       </div>
@@ -37,8 +40,7 @@ export function mountBallSort(host, { board, mode = 'moves', onProgress, onSolve
   `;
 
   const tubesEl   = host.querySelector('[data-bs="tubes"]');
-  const movesEl   = host.querySelector('[data-bs="moves"]');
-  const timeEl    = host.querySelector('[data-bs="time"]');
+  const raizBs    = host.querySelector('.ww-bs');
   const undoBtn   = host.querySelector('[data-bs="undo"]');
   const lettersBtn = host.querySelector('[data-bs="letters"]');
   const winMsg    = host.querySelector('[data-bs="winmsg"]');
@@ -63,8 +65,8 @@ export function mountBallSort(host, { board, mode = 'moves', onProgress, onSolve
   // (jank en pizarras de gama baja) hasta que se le parchó un auto-corte.
   const timeTicker = startElapsedTicker({
     since: clock.now(), everyMs: 250,
-    while: () => !state.finished && (!timeEl || timeEl.isConnected),
-    onTick: () => { if (timeEl) timeEl.textContent = formatMs(state.timer.elapsedMs()); },
+    while: () => !state.finished && raizBs.isConnected,
+    onTick: () => { if (mode === 'time') hudSet(raizBs, 'tiempo', `⏱ ${formatMs(state.timer.elapsedMs())}`); },
   });
   state.timerHandle = timeTicker;   // se detiene en finish()/unmount() vía .stop()
 
@@ -88,7 +90,7 @@ export function mountBallSort(host, { board, mode = 'moves', onProgress, onSolve
       showLetters: state.showLetters
     });
     state.lastMove = null;
-    if (movesEl) movesEl.textContent = String(state.moveCount);
+    hudSet(raizBs, 'pagina', `Movs: ${state.moveCount}`);
     if (undoBtn) undoBtn.disabled = state.history.length === 0 || state.finished;
     if (lettersBtn) {
       lettersBtn.classList.toggle('active', state.showLetters);

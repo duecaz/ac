@@ -9,6 +9,7 @@ import { clock } from '../../core/clock.js';
 import { shuffle } from '../../core/roundRender.js';
 import { scoreQuizSubmission } from '../quiz/scorer.js';
 import * as Streaks from '../../core/streaks.js';
+import { hudHtml, hudSet } from '../../core/playerHud.js';
 
 // Campo de globos: cada opción es un globo de color (tokens --ww-shape-1..4 →
 // los skins recolorean). El bamboleo va por CSS y se apaga bajo ww-lite.
@@ -44,12 +45,12 @@ export async function renderGlobosPlayer(rootSel, activity, opts = {}) {
       const streak = Streaks.get('solo', activity.id);
       mount(rootSel, html`
         <div class="ww-player gl-play">
+          ${hudHtml({
+            pagina: `${idx + 1} / ${total}`,
+            racha: streak >= 2 ? `🔥 ${streak}` : null,
+            tiempo: timerSecs > 0 ? `⏱ ${timerSecs}` : null,
+          })}
           <div class="ww-prow">
-            <div class="ww-phead d-flex align-items-center gap-1">
-              <span class="badge bg-secondary">${idx + 1} / ${total}</span>
-              ${streak >= 2 ? `<span class="badge bg-warning text-dark">🔥 ${streak}</span>` : ''}
-              ${timerSecs > 0 ? `<span class="badge bg-danger ww-timer-badge">⏱ ${timerSecs}</span>` : ''}
-            </div>
             <h3 class="ww-q gl-q">${escapeHtml(item.question || '')}</h3>
           </div>
           ${item.image ? `<div class="ww-q-media gl-media"><img src="${escapeHtml(item.image)}" alt=""></div>` : ''}
@@ -71,7 +72,7 @@ export async function renderGlobosPlayer(rootSel, activity, opts = {}) {
       const disableAll = () => root.querySelectorAll('.gl-balloon').forEach(b => { b.disabled = true; });
 
       startTimer({
-        onTick: (remaining) => { const el = root.querySelector('.ww-timer-badge'); if (el) el.textContent = `⏱ ${remaining}`; },
+        onTick: (remaining) => hudSet(root, 'tiempo', `⏱ ${remaining}`),
         onTimeout: () => {
           disableAll(); revealCorrect();
           Streaks.bump('solo', activity.id, false);

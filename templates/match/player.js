@@ -10,6 +10,7 @@ import { scoreMatchSubmission } from './scorer.js';
 import { ROPES, OK_COL, NO_COL, mountRopeLayer, ropeHtml, ghostHtml, dotPos, svgPt } from '../../core/connectRope.js';
 import { observeResize } from '../../core/observeResize.js';
 import { pairComplete } from '../../core/contentModels/pairs.js';
+import { hudHtml, hudSet } from '../../core/playerHud.js';
 
 export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   // La regla la pone el modelo (core/contentModels/pairs.js), no esta copia:
@@ -44,14 +45,13 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   const root       = document.querySelector(rootSel);
   const arena      = root.querySelector('.ww-field');
   const svg        = root.querySelector('.ww-lines-svg');
-  const progressEl = root.querySelector('.ww-matched');
   const submitBtn  = root.querySelector('.ww-match-submit');
 
   // Capa de cuerdas — motor compartido core/connectRope.js.
   const { layer } = mountRopeLayer(svg);
 
   function updateProgress() {
-    if (progressEl) progressEl.textContent = `${state.links.size} / ${raw.length}`;
+    hudSet(root, 'pagina', `${state.links.size} / ${raw.length}`);
   }
   function updateSubmit() {
     if (submitBtn) submitBtn.disabled = state.graded || state.links.size < raw.length;
@@ -263,18 +263,14 @@ function buildLayout(lefts, rights, activity, total) {
   // rieles como DOS COLUMNAS laterales en ambas orientaciones (ver match.css portrait):
   // así las cuerdas cruzan el pasillo en horizontal y no se solapan con las tarjetas.
   return `<div class="ww-scaffold ww-match p-2">
-  <div class="ww-bar d-flex align-items-center gap-2 px-1">
-    <span class="badge bg-secondary ww-matched flex-shrink-0">0 / ${total}</span>
-    <span class="fw-bold text-truncate flex-grow-1 text-center small">${escapeHtml(activity.title || '')}</span>
-    <span class="badge bg-secondary flex-shrink-0" style="visibility:hidden">0 / ${total}</span>
-  </div>
+  ${hudHtml({ pagina: `0 / ${total}` })}
   <div class="ww-field ww-match-field">
     <div class="ww-rail ww-match-col" data-rail="start">${lefts.map(c => cardHtml(c, 'L')).join('')}</div>
     <div class="ww-stage ww-match-gap"></div>
     <div class="ww-rail ww-match-col" data-rail="end">${rights.map(c => cardHtml(c, 'R')).join('')}</div>
     <svg class="ww-lines-svg" xmlns="http://www.w3.org/2000/svg"></svg>
   </div>
-  <div class="ww-bar ww-bar-actions">
+  <div class="ww-bar ww-bar-actions edu-send">
     <button type="button" class="btn btn-success ww-match-submit" disabled>
       <i class="bi bi-check2-circle"></i> Enviar
     </button>

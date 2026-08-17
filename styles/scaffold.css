@@ -24,6 +24,13 @@
 }
 .ww-bar { flex: 0 0 auto; min-height: 0; }
 .ww-bar-actions { display: flex; justify-content: center; align-items: center; }
+/* `edu-send` = el ROL del espacio del botón de enviar (decisión del dueño,
+   2026-08-17: topbar · game · send, y los indicadores al HUD). Hoy es un
+   MARCADOR sobre las barras existentes (ww-bar-actions, tc-done-wrap) para que
+   el rol se pueda escanear y estilar en un solo sitio; solo lo llevan las
+   plantillas cuyo envío se CONSTRUYE y confirma (`meta.play.submit:'boton'` o
+   el Enviar del player libre). */
+.edu-send { flex: 0 0 auto; }
 
 .ww-field {
   position: relative;                 /* capas absolutas (cuerdas SVG) inset:0 */

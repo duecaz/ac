@@ -32,22 +32,28 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
     // pendiente pintaba la Ruleta encima del VS de Emparejar (§23).
     if (!ctx.alive() || !rootEl()) return;
     const exhausted = entries.length === 0;
+    // Subsecciones nombradas (D8): «rueda» + «panel» (resultado · botones ·
+    // historial). El reparto vive en styles/wheel.css: columna en hueco alto,
+    // fila —panel al costado— en hueco cuadrado/ancho.
     mount(rootSel, html`
-      <div class="ww-wheel text-center py-3">
-        <h3 class="mb-3">${escapeHtml(activity.title)}</h3>
-        <div class="ww-wheel-stage" style="position:relative;display:inline-block">
-          ${wheelSvg(entries, { rotation, dur, spinning: false })}
-          <div class="ww-wheel-pointer" style="position:absolute;top:50%;left:-18px;transform:translateY(-50%);font-size:36px;color:#e53935;line-height:1">▶</div>
+      <div class="ww-wheel wh-play">
+        <div class="wh-flow">
+          <div class="ww-wheel-stage wh-stage">
+            ${wheelSvg(entries, { rotation, dur, spinning: false })}
+            <div class="ww-wheel-pointer wh-pointer">▶</div>
+          </div>
+          <div class="wh-side">
+            <div class="wh-result">
+              ${winner != null ? `<div class="alert alert-success d-inline-block mb-0 fs-5"><b>${escapeHtml(winner)}</b></div>`
+                : exhausted ? `<div class="text-muted">Se acabaron las opciones.</div>` : ''}
+            </div>
+            <div class="wh-actions">
+              ${!exhausted ? `<button class="btn btn-primary btn-lg" id="btn-spin" ${spinning ? 'disabled' : ''}><i class="bi bi-arrow-repeat"></i> Girar</button>` : ''}
+              ${(history.length || exhausted) ? `<button class="btn btn-outline-secondary btn-lg" id="btn-end" ${spinning ? 'disabled' : ''}><i class="bi bi-house"></i> Terminar</button>` : ''}
+            </div>
+            ${history.length ? `<div class="wh-history">Historial: ${history.map(escapeHtml).join(' · ')}</div>` : ''}
+          </div>
         </div>
-        <div class="mt-3" style="min-height:3.2rem">
-          ${winner != null ? `<div class="alert alert-success d-inline-block mb-0 fs-5"><b>${escapeHtml(winner)}</b></div>`
-            : exhausted ? `<div class="text-muted">Se acabaron las opciones.</div>` : ''}
-        </div>
-        <div class="mt-2">
-          ${!exhausted ? `<button class="btn btn-primary btn-lg" id="btn-spin" ${spinning ? 'disabled' : ''}><i class="bi bi-arrow-repeat"></i> Girar</button>` : ''}
-          ${(history.length || exhausted) ? `<button class="btn btn-outline-secondary btn-lg ${!exhausted ? 'ms-2' : ''}" id="btn-end" ${spinning ? 'disabled' : ''}><i class="bi bi-house"></i> Terminar</button>` : ''}
-        </div>
-        ${history.length ? `<div class="mt-3 small text-muted">Historial: ${history.map(escapeHtml).join(' · ')}</div>` : ''}
       </div>
     `);
 

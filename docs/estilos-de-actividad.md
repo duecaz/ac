@@ -96,6 +96,22 @@ Lo mínimo que hay que saber al escribir CSS de actividad:
   2. ¿`color`/`background` con `#hex` que no sea neutro ni estado? → token `var(--ww-*)`.
   3. Corre `node tests/styles.test.mjs`. Debe pasar **sin tocar el BASELINE**.
 
+## 3b0. Los CUATRO roles del player (decisión del dueño, 2026-08-17)
+
+Todo player se lee con cuatro roles — el prefijo `edu-` marca lo nuevo:
+
+| Rol | Qué es | Regla |
+|---|---|---|
+| **`edu-hud`** | los INDICADORES: página, ⏱, ★, 🔥 | flotan en las esquinas (`core/playerHud.js`, `hudHtml`/`hudSet`); **nunca crean franja** ni capturan toques |
+| **`edu-topbar`** | las HERRAMIENTAS que se tocan | existe **solo** si hay herramienta: lápiz/borrador (Tildes/Comas), Aa/Deshacer (Pelotas), verificar/pista/reiniciar (Crucigrama) — 3 de 13 |
+| **el juego** | todo el alto restante | dividido en subsecciones que refluyen por `aspect-ratio` del contenedor (nunca por px); el **enunciado es la primera subsección**, no una barra |
+| **`edu-send`** | el espacio del botón de enviar | solo cuando el envío se construye y confirma (marcador sobre `ww-bar-actions`/`tc-done-wrap`) |
+
+Y dos prohibiciones que salieron del inventario (`docs/piezas-por-actividad.md`):
+el **título** de la actividad vive en la antesala (inicio · setup · lobby · ficha de
+la tarea), jamás dentro del juego; y una **pieza sin clase propia** (solo utilidades
+de Bootstrap) no se puede repartir — nómbrala.
+
 ## 3b. Andamio de regiones — el responsive compartido (`styles/scaffold.css`)
 
 Las actividades con "un centro + piezas alrededor" (Etiqueta el diagrama, Emparejar,

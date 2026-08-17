@@ -11,7 +11,6 @@
   --cw-frame:            #1e293b;   /* rejilla, celdas bloqueadas, header oscuro */
   --cw-frame-2:          #334155;   /* fin del degradado del header */
   --cw-focus:            #3b82f6;   /* contorno de foco */
-  --cw-progress:         var(--ww-success, #4ade80);
   --cw-active-word:      #dbeafe;   /* tinte de la palabra activa (pastel) */
   --cw-active-cell:      #fde68a;   /* celda enfocada (pastel ámbar) */
   --cw-correct-bg:       #bbf7d0;   --cw-correct-fg: #15803d;
@@ -35,47 +34,6 @@
   overflow: hidden;
   padding: .4rem;
   box-sizing: border-box;
-}
-
-/* ── Header ────────────────────────────────────────── */
-.cw-header {
-  display: flex;
-  align-items: center;
-  gap: .6rem;
-  flex-shrink: 0;
-  padding: .4rem .75rem;
-  background: linear-gradient(135deg, var(--cw-frame, #1e293b) 0%, var(--cw-frame-2, #334155) 100%);
-  border-radius: .6rem;
-  color: #fff;
-}
-.cw-title {
-  font-weight: 700;
-  font-size: clamp(.8rem, 2.2cqw, 1.05rem);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  flex: 1 1 auto;
-  min-width: 0;
-}
-.cw-progress-wrap {
-  width: clamp(60px, 10cqw, 140px);
-  height: 8px;
-  background: rgba(255,255,255,.2);
-  border-radius: 4px;
-  flex-shrink: 0;
-  overflow: hidden;
-}
-.cw-progress-bar {
-  height: 100%;
-  background: var(--cw-progress, #4ade80);
-  border-radius: 4px;
-  transition: width .35s ease;
-}
-.cw-progress-txt {
-  font-size: .78rem;
-  color: #94a3b8;
-  flex-shrink: 0;
-  font-variant-numeric: tabular-nums;
 }
 
 /* ── Body: clues + grid ────────────────────────────── */
@@ -251,8 +209,14 @@
 }
 .cw-pre-blk { background: var(--cw-frame, #1e293b); }
 
-/* ── Responsive: stack clues below grid on small cq ── */
-@container (max-width: 480px) {
+/* ── Reflujo por FORMA, no por píxeles (D8, 2026-08-17) ──────────────────────
+   Las dos subsecciones del juego son «pistas» y «rejilla». En un hueco ANCHO
+   las pistas son un carril lateral (arriba); cuando el hueco es ALTO —móvil en
+   vertical— el carril roba ancho a la rejilla, que es cuadrada y manda: las
+   pistas BAJAN a fila completa bajo la rejilla, con su propio scroll. Antes el
+   corte era `max-width:480px`: una tablet vertical de 600px se quedaba con el
+   carril lateral y la rejilla diminuta. */
+@container (aspect-ratio < 1/1) {
   .cw-body        { flex-direction: column-reverse; }
-  .cw-clues       { width: 100%; max-height: 110px; overflow-y: auto; }
+  .cw-clues       { width: 100%; max-height: 28cqh; overflow-y: auto; }
 }

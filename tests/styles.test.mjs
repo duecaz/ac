@@ -21,7 +21,7 @@ const STYLES = join(dirname(fileURLToPath(import.meta.url)), '..', 'styles');
 
 // CSS de juego (player). Se excluyen: theme/skins/backgrounds (definen paletas),
 // editor/player-frame/touch/soloAnim/live (chrome, no el ejercicio).
-const GAME = ['ballsort', 'crossword', 'diagram', 'globos', 'match', 'math', 'memory',
+const GAME = ['ballsort', 'crossword', 'diagram', 'globos', 'match', 'math', 'memory', 'wheel',
   'question-live', 'quiz', 'textCorrection', 'vs', 'teams', 'wordsearch', 'live'];
 // Chrome/paletas explícitamente EXCLUIDOS del ratchet (no son "el juego").
 // `live` SALIÓ de esta lista en v1.51.423. Estaba clasificado como chrome y

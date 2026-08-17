@@ -282,6 +282,13 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   no lleva proporción: no es un juego en una página, es un tablero con pantallas de alturas
   distintas (`caja:false`) — con 4:3 le cortaba el QR del lobby. Vigilado en `live-smoke`
   (proporción declarada = la del marco · sin scroll en cuatro ventanas).
+- **LA DIAGRAMACIÓN DEL PLAYER: CUATRO roles** (dueño 2026-08-17, detalle en
+  `docs/estilos-de-actividad.md` §3b0): **`edu-hud`** (`core/playerHud.js` —
+  los indicadores FLOTAN en las esquinas y NUNCA crean franja) · **`edu-topbar`**
+  (solo si hay herramienta que tocar: 3 de 13) · **el juego** (todo el alto, en
+  subsecciones que refluyen por `aspect-ratio`, nunca por px) · **`edu-send`**.
+  El TÍTULO vive en la ANTESALA, jamás dentro del juego; el enunciado no es
+  barra, es la primera subsección.
 - **La esquina superior derecha del marco de juego es DEL MARCO**: ahí va el botón de
   pantalla completa (`.ww-fs-btn--corner`, z-index 30). Un modo que pinte una barra a
   todo el ancho dentro del marco debe respetar `--ww-fs-reserve` (lo hace el marcador

@@ -16,6 +16,7 @@ import { mountTcDraw } from './textCorrectionDraw.js';
 import { observeResize } from './observeResize.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from './fullscreen.js';
 import { heatClass } from './itemStats.js';
+import { hudHtml } from './playerHud.js';
 
 // ICONOS LUCIDE, EN LÍNEA (dueño, 2026-08-15: «usa iconos lucide»). Se pegan
 // aquí como SVG en vez de cargar la librería: la app no depende de la red —la
@@ -149,8 +150,8 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
   const propio = !!(chips.left || chips.right);
   root.innerHTML = `
     <div class="tc-round">
+      ${hudHtml({ pagina: chips.left || null, puntos: chips.right || null })}
       <div class="tc-bar${propio ? ' tc-bar--fs' : ''}">
-        ${chips.left ? `<span class="tc-chip">${chips.left}</span>` : ''}
         <button type="button" class="tc-switch" data-tool="pen" aria-pressed="false"
                 title="Lápiz — toca para borrar" aria-label="Lápiz activo. Tocar para pasar al borrador">
           <span class="tc-switch__side tc-switch__side--pen" data-side="pen">
@@ -160,11 +161,10 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
             ${LUCIDE.eraser}<span class="tc-switch__word">Borrador</span>
           </span>
         </button>
-        ${chips.right ? `<span class="tc-chip tc-chip--right">${chips.right}</span>` : ''}
         ${propio ? fullscreenButtonHtml({ inline: true }) : ''}
       </div>
       <div class="tc-passage-area"><div class="tc-passage">${passageHtml(text, kind)}</div></div>
-      <div class="tc-done-wrap"><button type="button" class="btn btn-success btn-lg tc-done" data-ww-submit><i class="bi bi-check2-circle"></i> Listo</button></div>
+      <div class="tc-done-wrap edu-send"><button type="button" class="btn btn-success btn-lg tc-done" data-ww-submit><i class="bi bi-check2-circle"></i> Listo</button></div>
     </div>`;
 
   const areaEl = root.querySelector('.tc-passage-area');
@@ -380,12 +380,12 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     // Sin herramientas: aquí no se dibuja.
     shell(`
       <div class="tc-round">
+        ${hudHtml({ pagina: `${idx + 1} / ${passages.length}` })}
         <div class="tc-bar tc-bar--fs">
-          <span class="tc-chip">${idx + 1} / ${passages.length}</span>
           ${fullscreenButtonHtml({ inline: true })}
         </div>
         <div class="tc-passage-area"><div class="tc-passage">${passageHtml(p.text, kind, { got, want })}</div></div>
-        <div class="tc-done-wrap">
+        <div class="tc-done-wrap edu-send">
           <span class="tc-verdict ${r.correct ? 'ok' : 'bad'}">
             <i class="bi ${r.correct ? 'bi-check-circle-fill' : 'bi-x-circle-fill'}"></i>
             ${r.hits}/${r.total} aciertos${r.over ? ` · ${r.over} de más` : ''}

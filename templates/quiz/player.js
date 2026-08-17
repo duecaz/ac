@@ -11,6 +11,7 @@ import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import * as Streaks from '../../core/streaks.js';
 import { shuffle } from '../../core/roundRender.js';
 import { runSequentialPlayer } from '../../core/soloPlayer.js';
+import { hudHtml, hudSet } from '../../core/playerHud.js';
 import { clock } from '../../core/clock.js';
 
 
@@ -35,15 +36,15 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
       const streak = Streaks.get('solo', activity.id);
       mount(rootSel, html`
         <div class="ww-player">
+          ${hudHtml({
+            pagina: `${idx + 1} / ${total}`,
+            racha: streak >= 2 ? `🔥 ${streak}` : null,
+            tiempo: timerSecs > 0 ? `⏱ ${timerSecs}` : null,
+          })}
           <div class="ww-prow">
-            <div class="ww-phead d-flex align-items-center gap-1">
-              <span class="badge bg-secondary">${idx + 1} / ${total}</span>
-              ${streak >= 2 ? `<span class="badge bg-warning text-dark">🔥 ${streak}</span>` : ''}
-              ${timerSecs > 0 ? `<span class="badge bg-danger ww-timer-badge">⏱ ${timerSecs}</span>` : ''}
-            </div>
             <h3 class="ww-q">${escapeHtml(item.question)}</h3>
           </div>
-          <div class="ww-q-media">${item.image ? `<img src="${escapeHtml(item.image)}" alt="">` : ''}</div>
+          ${item.image ? `<div class="ww-q-media"><img src="${escapeHtml(item.image)}" alt=""></div>` : ''}
           <div class="ww-kahoot-grid ww-options">
             ${opts2.map((o, i) => `
               <button class="btn btn-lg w-100 ww-opt ww-shape-${(i % 4) + 1}" data-value="${escapeHtml(o)}">
@@ -70,10 +71,7 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
       }
 
       startTimer({
-        onTick: (remaining) => {
-          const el = document.querySelector(`${rootSel} .ww-timer-badge`);
-          if (el) el.textContent = `⏱ ${remaining}`;
-        },
+        onTick: (remaining) => hudSet(rootSel, 'tiempo', `⏱ ${remaining}`),
         onTimeout: () => {
           opts$().forEach(b => { b.disabled = true; });
           revealCorrect();

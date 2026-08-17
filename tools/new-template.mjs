@@ -177,6 +177,7 @@ import { on } from '${REL}/core/events.js';
 import { runSequentialPlayer } from '${REL}/core/soloPlayer.js';
 import { GameEvents, emitGame } from '${REL}/core/gameEvents.js';
 import { clock } from '${REL}/core/clock.js';
+import { hudHtml, hudSet } from '${REL}/core/playerHud.js';
 import { score${fn}Submission } from './scorer.js';
 
 export async function render${fn}Player(rootSel, activity, opts = {}) {
@@ -184,12 +185,10 @@ export async function render${fn}Player(rootSel, activity, opts = {}) {
     renderItem({ rootSel, item, idx, total, score, timerSecs, submit, startTimer }) {
       mount(rootSel, html\`
         <div class="ww-player ${prefix}-play">
-          <div class="ww-prow">
-            <div class="ww-phead d-flex align-items-center gap-1">
-              <span class="badge bg-secondary">\${idx + 1} / \${total}</span>
-              \${timerSecs > 0 ? \`<span class="badge bg-danger ww-timer-badge">⏱ \${timerSecs}</span>\` : ''}
-            </div>
-          </div>
+          \${hudHtml({
+            pagina: \`\${idx + 1} / \${total}\`,
+            tiempo: timerSecs > 0 ? \`⏱ \${timerSecs}\` : null,
+          })}
           <div class="${prefix}-item">
             <p class="${prefix}-q">\${escapeHtml(item.question ?? item.q ?? item.left ?? String(item))}</p>
             <!-- TODO: tu mecánica. El botón de ejemplo registra un acierto. -->
@@ -199,7 +198,7 @@ export async function render${fn}Player(rootSel, activity, opts = {}) {
 
       const t0 = clock.now();
       startTimer({
-        onTick: (remaining) => { const el = document.querySelector('.ww-timer-badge'); if (el) el.textContent = \`⏱ \${remaining}\`; },
+        onTick: (remaining) => hudSet(rootSel, 'tiempo', \`⏱ \${remaining}\`),
         onTimeout: () => {
           emitGame(GameEvents.ANSWER_WRONG, { idx });   // ← sonidos/efectos gratis (bus)
           submit({ itemId: item.id, value: null, correct: false, points: 0, msTaken: timerSecs * 1000 });

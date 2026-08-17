@@ -10,6 +10,7 @@ import { scoreDiagramSubmission } from './scorer.js';
 import { ROPES, OK_COL, NO_COL, mountRopeLayer, ropeHtml, ghostHtml, dotPos, svgPt } from '../../core/connectRope.js';
 import { observeResize } from '../../core/observeResize.js';
 import { pinUsable } from '../../core/contentModels/diagram.js';
+import { hudHtml, hudSet } from '../../core/playerHud.js';
 
 export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
   const pins = (activity.content?.pins || []).filter(pinUsable);
@@ -41,11 +42,11 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
   const root       = document.querySelector(rootSel);
   const arena      = root.querySelector('.ww-field');
   const svg        = root.querySelector('.ww-lines-svg');
-  const progressEl = root.querySelector('.dg-progress');
+
   const submitBtn  = root.querySelector('.dg-submit');
   const { layer } = mountRopeLayer(svg);
 
-  const updateProgress = () => { if (progressEl) progressEl.textContent = `${state.links.size} / ${pins.length}`; };
+  const updateProgress = () => hudSet(root, 'pagina', `${state.links.size} / ${pins.length}`);
   const updateSubmit   = () => { if (submitBtn) submitBtn.disabled = state.graded || state.links.size < pins.length; };
 
   function updateSvg() {
@@ -212,11 +213,7 @@ function buildLayout(leftLabels, rightLabels, pins, image, activity, total) {
   // Andamio de regiones (styles/scaffold.css): rieles start/end que refluyen de
   // columnas laterales (ancho) a filas arriba/abajo (alto), con el escenario en medio.
   return `<div class="ww-scaffold dg-play p-2">
-  <div class="ww-bar d-flex align-items-center gap-2 px-1">
-    <span class="badge bg-secondary dg-progress flex-shrink-0">0 / ${total}</span>
-    <span class="fw-bold text-truncate flex-grow-1 text-center small">${escapeHtml(activity.title || '')}</span>
-    <span class="badge bg-secondary flex-shrink-0" style="visibility:hidden">0 / ${total}</span>
-  </div>
+  ${hudHtml({ pagina: `0 / ${total}` })}
   <div class="ww-field dg-field">
     <div class="ww-rail dg-rail" data-rail="start">${leftLabels.map(labelHtml).join('')}</div>
     <div class="ww-stage dg-stage">
@@ -228,7 +225,7 @@ function buildLayout(leftLabels, rightLabels, pins, image, activity, total) {
     <div class="ww-rail dg-rail" data-rail="end">${rightLabels.map(labelHtml).join('')}</div>
     <svg class="ww-lines-svg" xmlns="http://www.w3.org/2000/svg"></svg>
   </div>
-  <div class="ww-bar ww-bar-actions">
+  <div class="ww-bar ww-bar-actions edu-send">
     <button type="button" class="btn btn-success dg-submit" disabled>
       <i class="bi bi-check2-circle"></i> Enviar respuestas
     </button>

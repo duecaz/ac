@@ -98,24 +98,20 @@
   box-shadow: 0 2px 10px rgba(0,0,0,.08), inset 0 0 6cqmin rgba(120,90,40,.05);
 }
 
-/* ── LA BARRA: progreso + herramientas + pantalla completa ───────────────────
-   Como cualquier app de dibujo. Aloja el botón de pantalla completa (por eso ya
-   no reserva su esquina: no hay nada flotando encima del papel). */
+/* ── LA BARRA: SOLO herramientas (edu-topbar) ────────────────────────────────
+   Como cualquier app de dibujo, pero sin polizones: el progreso y los aciertos
+   son INDICADORES y viven en el HUD de las esquinas (core/playerHud.js) — aquí
+   queda lo que se TOCA: el interruptor lápiz/borrador, centrado, y el botón de
+   pantalla completa que la barra aloja (`tc-bar--fs`), pegado a la derecha. */
 .tc-bar {
   flex: 0 0 auto;
-  display: flex; align-items: center; gap: .6em;
+  position: relative;
+  display: flex; align-items: center; justify-content: center; gap: .6em;
   background: rgba(0, 0, 0, .05);
   border-radius: 999px;
   padding: max(4px, .6cqmin) max(8px, 1cqmin);
   margin-bottom: max(6px, 1cqmin);
 }
-.tc-chip {
-  font-size: clamp(.75rem, 2cqmin, 1.2rem); font-weight: 700; line-height: 1;
-  padding: .45em .8em; border-radius: 999px;
-  background: var(--ww-card-bg, #fff); color: var(--ww-card-fg, #1f2937);
-  box-shadow: 0 1px 3px rgba(0,0,0,.12);
-}
-.tc-chip--right { margin-left: auto; }
 
 /* ── Aire extra SOLO en modo Individual ──────────────────────────────────────
    VS/Equipos/Live renderizan `.tc-round` SIN el envoltorio `.tc-solo` (panel
@@ -201,11 +197,11 @@
 /* ── Pantalla completa DENTRO de la barra ────────────────────────────────────
    Se pega al extremo derecho. Sin caja propia: la barra ya es la caja.
    OJO con el `margin-left:auto`: si lo llevan A LA VEZ el chip de «restantes» y
-   este botón, el hueco libre se REPARTE entre los dos y el chip queda flotando
-   en mitad de la barra (y la separación crece con la pantalla). Cuando hay chip
-   derecho, el que empuja es ÉL y el botón solo se separa un poco. */
+   este botón, el hueco libre se REPARTE entre los dos y el interruptor deja
+   de estar centrado. Absoluto sobre la barra: el centro es del interruptor y
+   la derecha, del botón. */
 .tc-bar .ww-fs-btn--inline {
-  flex: 0 0 auto; margin-left: auto;
+  position: absolute; right: max(6px, .8cqmin); top: 50%; transform: translateY(-50%);
   display: inline-flex; align-items: center; justify-content: center;
   width: 1.9em; height: 1.9em; padding: 0;
   border: 0; border-radius: 50%; cursor: pointer;
@@ -215,7 +211,6 @@
 }
 .tc-bar .ww-fs-btn--inline:hover,
 .tc-bar .ww-fs-btn--inline:focus-visible { background: rgba(0,0,0,.18); }
-.tc-bar .tc-chip--right + .ww-fs-btn--inline { margin-left: .45em; }
 .tc-bar .ww-fs-btn--inline i { font-size: inherit; line-height: 1; }
 /* El botón vive ABAJO: margin-top auto lo ancla al pie aunque el texto sea
    corto — es lo que separa «hoja con su botón» de «todo amontonado arriba». */

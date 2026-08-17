@@ -42,11 +42,10 @@ function renderBoxes(rootSel, activity, opts = {}) {
 
     const openItem = openIdx !== null ? items[openIdx] : null;
     mount(rootSel, html`
-      <div class="text-center py-3 px-2">
-        <h3 class="mb-3">${escapeHtml(activity.title)}</h3>
-        <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:10px;max-width:460px;margin:0 auto">${boxesHtml}</div>
+      <div class="ab-play text-center py-3 px-2">
+        <div class="ab-board" style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:10px;max-width:460px;margin:0 auto">${boxesHtml}</div>
         ${openItem != null ? `
-          <div class="card border-2 mx-auto mt-4" style="max-width:480px;border-color:${QL_COLORS[openIdx % QL_COLORS.length]};border-width:2px">
+          <div class="ab-open card border-2 mx-auto mt-4" style="max-width:480px;border-color:${QL_COLORS[openIdx % QL_COLORS.length]};border-width:2px">
             <div class="card-body">
               <small class="text-muted d-block mb-2">Caja ${openIdx + 1}</small>
               ${openItem.image ? `<img src="${escapeHtml(openItem.image)}" class="img-fluid rounded mb-3 d-block mx-auto" style="max-height:200px">` : ''}
@@ -57,7 +56,7 @@ function renderBoxes(rootSel, activity, opts = {}) {
               </div>
             </div>
           </div>`
-        : `<p class="text-muted mt-4"><i class="bi bi-hand-index"></i> Toca una caja para ver la pregunta</p>
+        : `<p class="ab-hint text-muted mt-4"><i class="bi bi-hand-index"></i> Toca una caja para ver la pregunta</p>
            ${done.size === items.length && items.length > 0 ? '<div class="alert alert-success d-inline-block mt-2"><i class="bi bi-check2-all"></i> ¡Todas respondidas!</div>' : ''}`}
       </div>
     `);
@@ -92,9 +91,8 @@ function renderWheel(rootSel, activity, opts = {}) {
     if (openIdx !== null) {
       const item = items[openIdx];
       mount(rootSel, html`
-        <div class="text-center py-3 px-2">
-          <h3 class="mb-3">${escapeHtml(activity.title)}</h3>
-          <div class="card border-warning mx-auto" style="max-width:480px;border-width:2px">
+        <div class="ab-play text-center py-3 px-2">
+            <div class="ab-open card border-warning mx-auto" style="max-width:480px;border-width:2px">
             <div class="card-body">
               <small class="text-muted d-block mb-2">Pregunta ${openIdx + 1}</small>
               ${item.image ? `<img src="${escapeHtml(item.image)}" class="img-fluid rounded mb-3 d-block mx-auto" style="max-height:200px">` : ''}
@@ -117,7 +115,6 @@ function renderWheel(rootSel, activity, opts = {}) {
       ctx.finish({ score: done.size, maxScore: items.length, skipResultScreen: true });
       mount(rootSel, html`
         <div class="text-center py-5">
-          <h3>${escapeHtml(activity.title)}</h3>
           <i class="bi bi-check2-all display-1 text-success mt-3"></i>
           <p class="lead mt-3">¡Todas las preguntas respondidas!</p>
         </div>
@@ -127,8 +124,7 @@ function renderWheel(rootSel, activity, opts = {}) {
 
     const entries = available.map(i => String(i + 1));
     mount(rootSel, html`
-      <div class="text-center py-3">
-        <h3 class="mb-3">${escapeHtml(activity.title)}</h3>
+      <div class="ab-play text-center py-3">
         <div style="position:relative;display:inline-block">
           ${wheelSvg(entries, { rotation, dur: 0, spinning: false })}
           <div style="position:absolute;top:50%;left:-18px;transform:translateY(-50%);font-size:36px;color:#e53935;line-height:1">▶</div>

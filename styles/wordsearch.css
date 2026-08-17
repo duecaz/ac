@@ -11,18 +11,6 @@
   container-type: size;
 }
 
-/* Header: progress + timer + score */
-.ww-ws-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: .5rem;
-  flex-wrap: wrap;
-  flex-shrink: 0;
-}
-.ww-ws-head-left { display: flex; align-items: center; gap: .5rem; }
-.ww-ws-progress  { width: clamp(60px, 12cqw, 140px); height: 7px; }
-
 /* Body: grid + word list side by side */
 .ww-ws-body {
   display: flex;
@@ -169,8 +157,13 @@
   padding: .1em .4em;
 }
 
-/* ── Responsive: stack vertically on narrow screens ── */
-@container (max-width: 500px) {
+/* ── Reflujo por FORMA, no por píxeles (D8, 2026-08-17) ──────────────────────
+   Subsecciones del juego: «rejilla» (cuadrada, manda) y «banco de palabras».
+   Hueco ANCHO → el banco es carril lateral (arriba). Hueco ALTO → el banco
+   baja a filas envueltas bajo la rejilla, para devolverle todo el ancho.
+   Antes el corte era `max-width:500px` (píxeles): una tablet vertical se
+   quedaba con el carril lateral y la rejilla pequeña. */
+@container (aspect-ratio < 1/1) {
   .ww-ws-body { flex-direction: column; }
   .ww-ws-words {
     flex-direction: row;
@@ -179,7 +172,7 @@
     min-width: 0;
     gap: 4px;
   }
-  .ws-word { font-size: .7rem; padding: 3px 8px; }
+  .ws-word { font-size: max(.7rem, 1.8cqmin); padding: 3px 8px; }
 }
 
 /* ════════════════════════════════════════════════════
