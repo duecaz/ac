@@ -47,8 +47,12 @@ export function renderModeSetup(host, opts) {
       ${playOpts ? playOptionsHtml(playOpts.T, playOpts.activity, playOpts.choices) : ''}
       <div class="ww-mode-setup-body">${body}</div>
       <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
+        <!-- DOS botones, DOS textos: los dos ponían «¡Empezar!» y solo cambiaba
+             el icono, así que parecía el mismo botón duplicado (lo vio el dueño
+             en una captura). Empiezan igual; lo que los separa es que el
+             segundo abre a pantalla completa, y eso es lo que dice. -->
         <button class="btn btn-outline-${color} btn-lg px-4 ww-mode-start"><i class="bi bi-play-fill"></i> ${escapeHtml(startLabel)}</button>
-        <button class="btn btn-${color} btn-lg px-4 ww-mode-start-fs"><i class="bi bi-arrows-fullscreen"></i> ${escapeHtml(startLabel)}</button>
+        <button class="btn btn-${color} btn-lg px-4 ww-mode-start-fs"><i class="bi bi-arrows-fullscreen"></i> Pantalla completa</button>
       </div>
       ${note ? `<p class="text-muted small mt-3">${escapeHtml(note)}</p>` : ''}
     </div>`);

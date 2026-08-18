@@ -136,7 +136,7 @@
 .pp-title { font-size: 1.6rem; font-weight: 800; margin: 0; line-height: 1.2; }
 .pp-meta a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .pp-header-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
-.pp-appearance-title { font-weight: 800; margin-bottom: .75rem; }
+.pp-appearance-title { font-weight: 800; font-size: 1.15rem; margin-bottom: .75rem; }
 
 /* Tema y Fondo dentro de la tarjeta de Apariencia: en la columna lateral de PC
    van uno debajo del otro; a todo el ancho (tablet) caben lado a lado, que es
@@ -149,6 +149,53 @@
 @media (min-width: 992px) {
   .pp-appearance-sections { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ── Los cuadritos de Tema y Fondo (dueño, 2026-08-18: «se ven muy mal, que
+   entren 3 o 4 bien puestos, pequeños, y su relación de aspecto creo que es
+   16:10») ────────────────────────────────────────────────────────────────────
+   Estaban en `flex-wrap` con un ancho FIJO por cuadro (96px), así que el
+   reparto del hueco lo decidía el cuadro y no la columna: sobraba un canal a
+   la derecha y las filas quedaban desiguales. Ahora manda la REJILLA
+   (auto-fill + 1fr): los cuadros se estiran para llenar el ancho exacto que
+   haya, y su alto sale de la proporción, no de un px escrito. 16/10 porque es
+   la forma de una pantalla — que es lo que el cuadro está enseñando.
+   El `minmax` es el único número: «no bajes de 78px», y de ahí sale que entren
+   3 en la columna lateral y 4-6 a todo el ancho. */
+.pp-pick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: .5rem;
+}
+.pp-appearance .ww-pick-tile { width: auto; padding: .25rem; }
+/* Los dos previews comparten forma; cada uno conserva su contenido (el del
+   tema enseña su tipografía sobre su fondo, el del fondo es solo textura). */
+.pp-appearance .ww-skin-preview,
+.pp-appearance .ww-bg-preview {
+  height: auto;
+  aspect-ratio: 16 / 10;
+}
+.pp-appearance .ww-skin-preview { padding: .35rem; border-radius: 5px; }
+.pp-appearance .ww-skin-preview .d-flex { gap: 2px; }
+.pp-appearance .ww-skin-preview span { width: 100%; height: 8px; border-radius: 2px; }
+.pp-appearance .ww-skin-preview small { font-size: .62rem; line-height: 1.1; }
+.pp-appearance .ww-bg-preview + small { font-size: .62rem; line-height: 1.15; }
+/* La puerta de «Mi imagen»: el botón entero no cabe a 78px de ancho. */
+.pp-appearance .bg-pick .btn { font-size: .62rem; padding: .15rem .25rem; }
+
+/* ── Apariencia PLEGABLE (pedido) ─────────────────────────────────────────── */
+.pp-acc > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  cursor: pointer;
+  list-style: none;          /* sin el triángulo del navegador: hay chevron */
+  margin-bottom: .75rem;
+}
+.pp-acc > summary::-webkit-details-marker { display: none; }
+.pp-acc > summary .pp-appearance-title { margin: 0; }
+.pp-acc-chev { transition: transform .15s; color: #64748b; }
+.pp-acc[open] > summary .pp-acc-chev { transform: rotate(180deg); }
 
 /* The "embed" frame — bounded width, fixed aspect ratio, scrolls inside.
    Like a YouTube embed: small box inside the page, not the whole page. */

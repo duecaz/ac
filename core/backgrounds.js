@@ -136,7 +136,11 @@ export function listBackgrounds() {
 // uploaded image when present, otherwise an "upload" affordance.
 export function backgroundPreviewHtml(name, imageUrl = '') {
   const b = BACKGROUNDS[name] || BACKGROUNDS.none;
-  const style = 'width:100%;height:60px;border-radius:6px;border:1px solid #dee2e6';
+  // El ALTO no va aquí: en línea gana a todo y dejaba el preview incrusteable
+  // en cualquier rejilla (la página de jugar lo quiere a 16:10 y pequeño). El
+  // valor de siempre vive ahora en styles/backgrounds.css, donde se puede
+  // sobrescribir por contexto.
+  const style = 'width:100%;border-radius:6px;border:1px solid #dee2e6';
   if (name === 'custom') {
     // url() en comillas SIMPLES: el atributo style va en comillas dobles, así que
     // anidar dobles rompía el atributo (bug de render además del de seguridad).

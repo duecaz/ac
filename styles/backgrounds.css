@@ -132,7 +132,10 @@ body.bg-set.bg-stars,
    para igualar su especificidad — si no, no llegaría a aplicarse. */
 body.bg-set:not(.bg-none) { background-attachment: fixed; }
 
-/* Preview tiles (editor picker) — same backgrounds but contained. */
+/* Preview tiles (editor picker) — same backgrounds but contained.
+   El alto por defecto (antes en línea, dentro de backgroundPreviewHtml): aquí
+   se puede sobrescribir por contexto, que es lo que hace la página de jugar. */
+.ww-bg-preview { height: 60px; }
 .ww-bg-preview.bg-notebook    { background: linear-gradient(to right, transparent 0, transparent 12px, rgba(220,38,38,.5) 12px, rgba(220,38,38,.5) 13px, transparent 13px), repeating-linear-gradient(to bottom, #fdfcf6 0, #fdfcf6 7px, rgba(99,102,241,.25) 7px, rgba(99,102,241,.25) 8px); }
 .ww-bg-preview.bg-blackboard  { background: #2d3a2e; }
 .ww-bg-preview.bg-greenboard  { background: #1f5135; }

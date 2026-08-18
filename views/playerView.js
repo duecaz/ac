@@ -276,13 +276,34 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
             </div>
           </div>
 
+          <!-- ORDEN pedido por el dueño (2026-08-18): «otra plantilla» ANTES de
+               Apariencia. Cambiar de plantilla cambia el JUEGO; el tema y el
+               fondo solo lo visten — la decisión gorda va primero. -->
           <div class="pp-appearance">
-            <div class="pp-card">
-              <h5 class="pp-appearance-title">Apariencia</h5>
+            ${compat.length ? `
+              <div class="pp-card mb-3">
+                <h6 class="text-muted text-uppercase small mb-2">Otra plantilla, mismo contenido</h6>
+                <div class="d-flex flex-wrap gap-2">
+                  ${compat.map(t => `
+                    <button class="btn btn-outline-${t.meta.color || 'secondary'} btn-sm tpl-switch" data-name="${t.meta.name}">
+                      <i class="bi ${t.meta.icon}"></i> ${escapeHtml(t.meta.label)}
+                    </button>
+                  `).join('')}
+                </div>
+              </div>` : ''}
+
+            <!-- ACORDEÓN (pedido): se puede plegar cuando el tema ya está
+                 elegido. Nace ABIERTO — plegado por defecto escondería los
+                 temas a quien entra por primera vez y no sabe que están ahí. -->
+            <details class="pp-card pp-acc" open>
+              <summary class="pp-acc-summary">
+                <span class="pp-appearance-title">Apariencia</span>
+                <i class="bi bi-chevron-down pp-acc-chev"></i>
+              </summary>
               <div class="pp-appearance-sections">
                 <div>
                   <h6 class="text-muted text-uppercase small mb-2">Tema</h6>
-                  <div class="d-flex flex-wrap gap-2">
+                  <div class="pp-pick-grid">
                     ${listSkins().map(s => `
                       <div class="ww-pick-tile skin-pick ${currentSkin===s.name?'is-active':''}" data-name="${s.name}" role="button" title="${escapeHtml(s.description||'')}">
                         ${skinPreviewHtml(s.name)}
@@ -292,34 +313,22 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
                 </div>
                 <div>
                   <h6 class="text-muted text-uppercase small mb-2">Fondo</h6>
-                  <div class="d-flex flex-wrap gap-2">
+                  <div class="pp-pick-grid">
                     ${listBackgrounds().map(b => b.name === 'custom'
-                      ? `<div class="ww-pick-tile bg-pick ${currentBg==='custom'?'is-active':''}" data-name="custom" role="button" title="${escapeHtml(b.description||'')}" style="width:88px">
+                      ? `<div class="ww-pick-tile bg-pick ${currentBg==='custom'?'is-active':''}" data-name="custom" role="button" title="${escapeHtml(b.description||'')}">
                            ${backgroundPreviewHtml('custom', a.presentation?.backgroundImage || '')}
                            <label class="btn btn-sm btn-outline-secondary w-100 mt-1" style="cursor:pointer" title="Máx 800 KB">
                              <i class="bi bi-upload"></i> ${a.presentation?.backgroundImage ? 'Cambiar' : 'Subir'}
                              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" id="bg-custom-file" hidden>
                            </label>
                          </div>`
-                      : `<div class="ww-pick-tile bg-pick ${currentBg===b.name?'is-active':''}" data-name="${b.name}" role="button" title="${escapeHtml(b.description||'')}" style="width:88px">
+                      : `<div class="ww-pick-tile bg-pick ${currentBg===b.name?'is-active':''}" data-name="${b.name}" role="button" title="${escapeHtml(b.description||'')}">
                            ${backgroundPreviewHtml(b.name)}
                          </div>`).join('')}
                   </div>
                 </div>
               </div>
-            </div>
-
-            ${compat.length ? `
-              <div class="pp-card mt-3">
-                <h6 class="text-muted text-uppercase small mb-2">Mismo contenido, otra plantilla</h6>
-                <div class="d-flex flex-wrap gap-2">
-                  ${compat.map(t => `
-                    <button class="btn btn-outline-${t.meta.color || 'secondary'} btn-sm tpl-switch" data-name="${t.meta.name}">
-                      <i class="bi ${t.meta.icon}"></i> ${escapeHtml(t.meta.label)}
-                    </button>
-                  `).join('')}
-                </div>
-              </div>` : ''}
+            </details>
           </div>
 
         </div>
