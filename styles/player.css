@@ -83,6 +83,10 @@
      la derecha. Quien pinte una barra a todo el ancho dentro del marco la
      respeta con este valor — una sola medida, no un número copiado. */
   --ww-fs-reserve: 52px;
+  /* LA PROPORCIÓN QUE DECLARA LA PLANTILLA (core/frameAspect.js la pone como
+     variable, no como `aspect-ratio` en línea: en línea ganaba a todo y no se
+     podía soltar donde hace falta). */
+  aspect-ratio: var(--ww-ar-css, 4/3);
 }
 
 /* El marcador del duelo cede la esquina (si no, el botón taparía el puntaje del
@@ -442,5 +446,28 @@ body.bg-plated .ww-player .ww-q {
 @media (min-width: 1100px) {
   .ww-play-page .ww-player-frame {
     max-width: min(1400px, calc((100dvh - var(--ww-topbar-h, 56px) - 74px) * var(--ww-ar, 1.6)));
+  }
+}
+
+/* ── VENTANA CLARAMENTE VERTICAL: la proporción es un OBJETIVO, no una jaula ──
+   El TERCER caso de «pantalla completa suelta la proporción» (§ la forma del
+   marco de juego), y estaba previsto sin escribir. Medido en un móvil de
+   390x844 con el marco 4/3: 358x269 — el juego se quedaba con el **29 % de la
+   pantalla** y ~445 px de alto muerto debajo. La proporción está para que la
+   mecánica tenga la forma que pide, no para tirar dos tercios del teléfono del
+   alumno.
+   Y tiene un segundo efecto que importa igual: con el marco apaisado a la
+   fuerza, el reflujo por forma del andamio (`aspect-ratio < 1/1`) era
+   INALCANZABLE en las 13 — el contenedor nunca era vertical. Al soltar la
+   proporción aquí, los rieles del andamio, las pistas del crucigrama y el banco
+   de la sopa vuelven a poder bajar, sin un solo breakpoint de píxeles.
+   El corte es 3/4: más vertical que eso ya no es «una pantalla apaisada de
+   lado», es un teléfono en la mano. */
+@media (max-aspect-ratio: 3/4) {
+  .ww-play-page .ww-player-frame {
+    aspect-ratio: auto;
+    max-width: 100%;
+    /* El alto que queda tras la barra y el aire de la página. */
+    height: calc(100dvh - var(--ww-topbar-h, 56px) - 74px);
   }
 }

@@ -213,13 +213,16 @@
 }
 .cw-pre-blk { background: var(--cw-frame, #1e293b); }
 
-/* ── Reflujo por FORMA, no por píxeles (D8, 2026-08-17) ──────────────────────
-   Las dos subsecciones del juego son «pistas» y «rejilla». En un hueco ANCHO
-   las pistas son un carril lateral (arriba); cuando el hueco es ALTO —móvil en
-   vertical— el carril roba ancho a la rejilla, que es cuadrada y manda: las
-   pistas BAJAN a fila completa bajo la rejilla, con su propio scroll. Antes el
-   corte era `max-width:480px`: una tablet vertical de 600px se quedaba con el
-   carril lateral y la rejilla diminuta. */
+/* ── Reflujo: DOS condiciones, y hacen falta las dos (D8, 2026-08-17) ────────
+   Las subsecciones son «pistas» y «rejilla»: el carril lateral solo se sostiene
+   si sobra ANCHO. Refluye a columna cuando el hueco es ESTRECHO o cuando es más
+   alto que ancho.
+   Estuvo un rato solo con la forma (`aspect-ratio < 1/1`) y era INALCANZABLE:
+   el marco lo fija la plantilla a 4/3, así que fuera de pantalla completa el
+   contenedor NUNCA es vertical — en un móvil de 390 el crucigrama seguía con
+   las pistas al lado y el tablero a 318 px. Medido, no razonado.
+   Y la forma sola tampoco basta al revés: en pantalla completa vertical el
+   aspecto sí manda, y ahí el ancho puede ser holgado. Por eso van las dos. */
 @container (aspect-ratio < 1/1) {
   .cw-body        { flex-direction: column-reverse; }
   .cw-clues       { width: 100%; max-height: 28cqh; overflow-y: auto; }

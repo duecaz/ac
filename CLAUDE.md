@@ -277,8 +277,11 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
 - **LA FORMA DEL MARCO DE JUEGO** (`core/frameAspect.js`): la PLANTILLA declara su
   proporción (`meta.aspectRatio`, def. 4/3) y la plataforma OBEDECE — profe, alumno en
   vivo y tarea llevan la MISMA (§0). El tamaño sale del hueco: ancho máx. = alto libre ×
-  proporción (`--ww-ar`), nunca un alto absoluto. Pantalla completa la SUELTA (100vw×100vh),
-  igual que VS/Equipos (`.is-expanded`), que piden más caja. El panel del docente en vivo
+  proporción (`--ww-ar`), nunca un alto absoluto. La SUELTAN tres casos: pantalla
+  completa (100vw×100vh), VS/Equipos (`.is-expanded`) y **la ventana claramente
+  vertical** (`max-aspect-ratio: 3/4`) — con 4:3 a la fuerza, un móvil dejaba al
+  juego en el 29 % de la pantalla. Por eso la proporción viaja como VARIABLE
+  (`--ww-ar-css`), nunca como estilo en línea: en línea no se puede soltar. El panel del docente en vivo
   no lleva proporción: no es un juego en una página, es un tablero con pantallas de alturas
   distintas (`caja:false`) — con 4:3 le cortaba el QR del lobby. Vigilado en `live-smoke`
   (proporción declarada = la del marco · sin scroll en cuatro ventanas).

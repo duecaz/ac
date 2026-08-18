@@ -15,11 +15,17 @@
    `.ww-wheel-stage` / `.ww-wheel-pointer` (styles/wheel.css): es el mismo
    `wheelSvg()`. Tener aquí su copia era garantizar que el próximo ajuste de la
    punta ▶ arreglara una rueda y dejara la otra rota. */
-/* El ancho del tablero se declara AQUÍ y solo aquí: el `max-width` inline que
-   traía el markup ganaba en especificidad, así que ajustar esta regla no hacía
-   nada hasta descubrir el `style=`. El inline se queda con lo único dinámico
-   (las columnas, que dependen del nº de cajas). */
-.ab-play .ab-board { width: min(100%, 460px); }
+/* El tablero se declara AQUÍ y solo aquí: el `style=` inline que traía el
+   markup ganaba en especificidad, así que ajustar el CSS no hacía nada hasta
+   descubrir el inline. Al moverlo se me quedaron por el camino el `display` y
+   el `gap` y las cajas salieron en una fila de 32 px — mover maqueta a CSS es
+   mover TODA la maqueta. El inline conserva lo único dinámico: las columnas,
+   que dependen del nº de cajas. */
+.ab-play .ab-board {
+  display: grid;
+  gap: max(6px, 1.6cqmin);
+  width: min(100%, 460px);
+}
 
 .ql-grid {
   display: grid;

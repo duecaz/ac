@@ -157,12 +157,13 @@
   padding: .1em .4em;
 }
 
-/* ── Reflujo por FORMA, no por píxeles (D8, 2026-08-17) ──────────────────────
-   Subsecciones del juego: «rejilla» (cuadrada, manda) y «banco de palabras».
-   Hueco ANCHO → el banco es carril lateral (arriba). Hueco ALTO → el banco
-   baja a filas envueltas bajo la rejilla, para devolverle todo el ancho.
-   Antes el corte era `max-width:500px` (píxeles): una tablet vertical se
-   quedaba con el carril lateral y la rejilla pequeña. */
+/* ── Reflujo: DOS condiciones (D8, 2026-08-17) ───────────────────────────────
+   «rejilla» (cuadrada, manda) y «banco de palabras». El banco es carril lateral
+   solo si sobra ANCHO; si el hueco es estrecho O más alto que ancho, baja a
+   filas envueltas y le devuelve la anchura a la rejilla.
+   Igual que en el crucigrama: la forma SOLA no llegaba, porque el marco está
+   fijado a la proporción de la plantilla y fuera de pantalla completa nunca es
+   vertical (medido en un móvil de 390). */
 @container (aspect-ratio < 1/1) {
   .ww-ws-body { flex-direction: column; }
   .ww-ws-words {

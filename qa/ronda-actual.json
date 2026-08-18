@@ -109,7 +109,7 @@
             "Individual",
             "Pantalla del juego"
           ],
-          "accion": "Abre cada una en el móvil y gíralo de vertical a horizontal y al revés (con el giro de pantalla desbloqueado).",
+          "accion": "Abre cada una en el móvil y gíralo de vertical a horizontal y al revés (con el giro de pantalla desbloqueado). Hazlo con pantalla completa Y sin ella: en un iPhone la pantalla completa no existe, así que ese es el caso que más importa.",
           "pasos": [
             "Crucigrama en VERTICAL: la lista de pistas tiene que quedar DEBAJO del tablero, no en una columna estrecha al lado.",
             "Crucigrama en HORIZONTAL: las pistas pasan a la columna del lado y el tablero se queda el centro.",
@@ -121,7 +121,8 @@
             "Crucigrama vertical",
             "Crucigrama horizontal",
             "Sopa vertical",
-            "Sopa horizontal"
+            "Sopa horizontal",
+            "Sin pantalla completa"
           ],
           "notaPista": "Si en alguna posición hubo que hacer scroll o la letra quedó diminuta"
         },

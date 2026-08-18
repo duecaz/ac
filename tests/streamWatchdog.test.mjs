@@ -98,4 +98,96 @@ function banco() {
   ok('CONTRA-PRUEBA: el tiempo falso avanza y dispara (si no, todo pasaría en vacío)');
 }
 
+// ── LA PESTAÑA OCULTA (v1.51.518) ───────────────────────────────────────────
+// Vivió unos días cableada a mano en `adapters/pocketbase/realtime.js`, donde
+// ningún test podía llegar: hacía falta un navegador de verdad. Aquí es un
+// `document` de mentira. Lo que se vigila es la regla completa, que tiene dos
+// mitades y las dos cuestan dinero si fallan:
+//   · con la pantalla apagada NO se gasta (un móvil en el bolsillo no necesita
+//     el flujo al día — son 3 peticiones por renovación y por alumno);
+//   · al volver se renueva SOLO si hubo silencio de verdad (si no, cada Alt-Tab
+//     del profe tiraba la conexión y resincronizaba tres veces).
+function pantalla(estado = 'visible') {
+  const oyentes = [];
+  return {
+    visibilityState: estado,
+    addEventListener: (ev, fn) => { if (ev === 'visibilitychange') oyentes.push(fn); },
+    removeEventListener: (ev, fn) => { const i = oyentes.indexOf(fn); if (i >= 0) oyentes.splice(i, 1); },
+    // helpers del test
+    cambiar(nuevo) { this.visibilityState = nuevo; oyentes.slice().forEach(f => f()); },
+    oyentes,
+  };
+}
+
+{
+  const b = banco();
+  const doc = pantalla('hidden');
+  let renov = 0;
+  const v = startStreamWatchdog({ silencioMs: 80000, onRenew: () => renov++, pausarOculto: true, doc, ...b, now: b.now });
+  b.tic(300000);   // cinco minutos de silencio con la pantalla apagada
+  assert.strictEqual(renov, 0, 'con la pestaña oculta no se gasta ni una renovación');
+  ok('pantalla apagada: 5 minutos de silencio y CERO reconexiones');
+  v.stop();
+}
+
+{
+  const b = banco();
+  const doc = pantalla('hidden');
+  let renov = 0;
+  const v = startStreamWatchdog({ silencioMs: 80000, onRenew: () => renov++, pausarOculto: true, doc, ...b, now: b.now });
+  b.tic(120000);                       // silencio largo con el móvil bloqueado
+  doc.visibilityState = 'visible';
+  doc.cambiar('visible');
+  assert.strictEqual(renov, 1, 'al desbloquear el móvil, el flujo se renueva en el acto');
+  ok('al volver con silencio largo: renueva una vez');
+  v.stop();
+}
+
+{
+  // CONTRA-PRUEBA: el salto corto (mirar una notificación) NO debe costar nada.
+  const b = banco();
+  const doc = pantalla('visible');
+  let renov = 0;
+  const v = startStreamWatchdog({ silencioMs: 80000, onRenew: () => renov++, pausarOculto: true, doc, ...b, now: b.now });
+  doc.cambiar('hidden');
+  b.tic(2000);                         // dos segundos en otra app
+  doc.visibilityState = 'visible';
+  doc.cambiar('visible');
+  assert.strictEqual(renov, 0, 'un salto de 2 s no justifica tirar la conexión');
+  ok('CONTRA-PRUEBA: volver tras 2 s no reconecta (el flujo no se cayó)');
+  v.stop();
+}
+
+{
+  // El listener se suelta al parar: una vista que se cierra no deja rastro (§23).
+  const doc = pantalla('visible');
+  const b = banco();
+  const v = startStreamWatchdog({ silencioMs: 80000, onRenew: () => {}, pausarOculto: true, doc, ...b, now: b.now });
+  assert.strictEqual(doc.oyentes.length, 1, 'se registra un oyente de visibilidad');
+  v.stop();
+  assert.strictEqual(doc.oyentes.length, 0, 'y se suelta al parar');
+  ok('el oyente de visibilidad se suelta en stop() (sin fugas)');
+}
+
+{
+  // JITTER: 30 móviles desbloqueados a la vez no pueden salir todos en el mismo
+  // instante contra una Pi compartida. Con `jitterMs` la renovación se reparte.
+  const b = banco();
+  const doc = pantalla('hidden');
+  const salidas = [];
+  let reloj = 0;
+  const v = startStreamWatchdog({
+    silencioMs: 80000, onRenew: () => salidas.push(reloj),
+    pausarOculto: true, jitterMs: 2000, doc, ...b, now: b.now,
+    setTimeoutFn: (fn, ms) => { reloj = ms; fn(); },
+    aleatorio: () => 0.5,
+  });
+  b.tic(120000);
+  doc.visibilityState = 'visible';
+  doc.cambiar('visible');
+  assert.deepStrictEqual(salidas, [1000], 'la renovación se retrasa por el jitter (0.5 x 2000)');
+  ok('jitter: la reconexión sale repartida, no todas en el mismo instante');
+  v.stop();
+}
+
 console.log(`\n  ${passed} streamWatchdog checks passed`);

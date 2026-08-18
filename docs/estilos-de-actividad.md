@@ -104,7 +104,7 @@ Todo player se lee con cuatro roles — el prefijo `edu-` marca lo nuevo:
 |---|---|---|
 | **`edu-hud`** | los INDICADORES: página, ⏱, ★, 🔥 | flotan en las esquinas (`core/playerHud.js`, `hudHtml`/`hudSet`); **nunca crean franja** ni capturan toques |
 | **`edu-topbar`** | las HERRAMIENTAS que se tocan | existe **solo** si hay herramienta: lápiz/borrador (Tildes/Comas), Aa/Deshacer (Pelotas), pista/reiniciar (Crucigrama — *Verificar* es envío y vive en `edu-send`) — 3 de 13 |
-| **el juego** (`edu-sec`) | todo el alto restante, en subsecciones CON NOMBRE (`edu-sec--enunciado`, `--tablero`, `--texto`, `--pistas`, `--banco`, `--panel`, `--campo`) | refluyen por `aspect-ratio` del contenedor, nunca por px; el **enunciado es la primera subsección**, no una barra |
+| **el juego** (`edu-sec`) | todo el alto restante, en subsecciones CON NOMBRE (`edu-sec--enunciado`, `--tablero`, `--texto`, `--pistas`, `--banco`, `--panel`, `--campo`) | refluyen con el contenedor (**ancho estrecho O más alto que ancho**, ver abajo); el **enunciado es la primera subsección**, no una barra |
 | **`edu-send`** | el espacio del botón de enviar | UNO como mucho, y todo control de envío dentro (marcador sobre `ww-bar-actions`/`tc-done-wrap`/`cw-footer`) |
 
 Y dos prohibiciones que salieron del inventario (`docs/piezas-por-actividad.md`):
@@ -115,6 +115,32 @@ de Bootstrap) no se puede repartir — nómbrala.
 **Cómo se marca**: DOBLE CLASE — `class="edu-topbar tc-bar"`. El rol es lo que se
 escanea y se verifica; el nombre propio se queda con su CSS y con lo que apuntan
 los skins. Así el vocabulario entra sin un renombrado masivo y sin tocar los temas.
+
+### El reflujo se quedó muerto por culpa del MARCO, no del CSS de la plantilla
+
+Historia corta y con moraleja. El reflujo por forma (`aspect-ratio < 1/1`) era
+**inalcanzable en las 13**: el marco aplicaba la proporción declarada como
+estilo EN LÍNEA, que gana a todo, así que fuera de pantalla completa el
+contenedor nunca era vertical. En un móvil de 390×844 el marco medía 358×269
+—el **29 % de la pantalla**, con 445 px de alto muerto— y el crucigrama seguía
+con las pistas al lado y el tablero a 318 px.
+
+El primer arreglo fue añadir un `max-width: 520px` a la condición, en Crucigrama
+y Sopa. Funcionaba… y era el parche equivocado: no devolvía la pantalla al
+alumno, reintroducía el breakpoint de píxeles que §3b prohíbe, y dejaba con el
+mismo branch muerto a `scaffold.css`, `diagram.css` y `match.css`.
+
+**El arreglo correcto está en el marco** (`core/frameAspect.js` +
+`styles/player.css`): la proporción viaja como VARIABLE (`--ww-ar-css`), no como
+estilo en línea, y con la ventana claramente vertical (`max-aspect-ratio: 3/4`)
+el marco la SUELTA y toma el alto disponible — el tercer caso, junto a pantalla
+completa y VS/Equipos. Medido después: el marco pasa a 358×714 y refluyen el
+crucigrama, la sopa **y el andamio compartido** (Diagrama vuelve a mover sus
+rieles); los dos `max-width` en píxeles se borraron.
+
+La moraleja, que vale para el resto del CSS de actividad: **el contenedor no es
+la ventana**. Una regla que mira la forma del contenedor hay que comprobarla
+midiendo el contenedor, no razonando sobre el móvil.
 
 ### Dónde se ancla el HUD, y por qué cada player declara su alto
 

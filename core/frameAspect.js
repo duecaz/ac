@@ -38,13 +38,23 @@ export function aspectoDe(activity) {
 }
 
 /**
- * El `style` del marco. Va DOS veces y con un solo origen: `aspect-ratio` para
- * el navegador y `--ww-ar` para que el CSS deduzca de ella el ancho máximo a
- * partir del alto libre (styles/player.css).
+ * El `style` del marco: SOLO variables, nunca `aspect-ratio` directo.
+ *
+ * Las dos formas de la misma proporción, con un solo origen:
+ *   · `--ww-ar-css` la aplica `styles/player.css` (`aspect-ratio: var(...)`);
+ *   · `--ww-ar` es la forma numérica para el `calc()` del ancho máximo.
+ *
+ * POR QUÉ NO SE ESCRIBE `aspect-ratio` AQUÍ: un estilo en línea gana a
+ * cualquier hoja, y eso convertía la proporción en una JAULA — en un móvil de
+ * 390x844 el marco 4/3 medía 358x269, o sea el 29 % de la pantalla, con 445 px
+ * de alto muerto debajo (medido). Con la proporción en una variable, el CSS
+ * puede soltarla donde toca: pantalla completa, VS/Equipos y **ventana
+ * claramente vertical**. La plantilla sigue DECLARANDO (§0); lo que cambia es
+ * que la plataforma puede obedecer con criterio en vez de a rajatabla.
  * `auto` = la plantilla dice que no tiene forma fija; entonces manda un mínimo
  * para que no colapse a nada.
  */
 export function aspectStyle(aspect) {
-  if (!aspect || aspect === 'auto') return 'aspect-ratio: auto; min-height: 50vh;';
-  return `aspect-ratio: ${aspect}; --ww-ar: (${aspect});`;
+  if (!aspect || aspect === 'auto') return '--ww-ar-css: auto; min-height: 50vh;';
+  return `--ww-ar-css: ${aspect}; --ww-ar: (${aspect});`;
 }

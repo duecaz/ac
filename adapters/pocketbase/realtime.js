@@ -1062,25 +1062,40 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       // `pingHost()` es un no-op aquí. Así que en los tramos tranquilos (lobby,
       // ventana de lectura, carrera sin envíos) la renovación NO es excepcional:
       // es rutina, cada 80 s y en cada aparato. Eso es justo lo que evita el
-      // corte, pero cuesta un POST de suscripción y un `resync` por cliente, así
-      // que se hace solo con la pestaña VISIBLE: un móvil en el bolsillo no
-      // necesita el flujo al día, y al volver, `visibilitychange` ya dispara su
-      // propia resincronización.
+      // corte, pero cuesta un POST de suscripción y un `resync` por cliente.
+      //
+      // QUÉ HACER CON LA PESTAÑA OCULTA lo decide el PRIMITIVO (§23), no este
+      // adaptador: `pausarOculto` no gasta con la pantalla apagada y, al volver
+      // a primer plano, renueva solo si hubo silencio de verdad. Y `jitterMs`
+      // reparte las reconexiones: cuando el profe dice «sacad el móvil», 30
+      // aparatos disparan `visibilitychange` en el mismo segundo y la Pi —que
+      // además sirve a otros dos proyectos— recibía las 30 de golpe. Aquí solo
+      // queda el UMBRAL, que es lo único de PocketBase.
       const SILENCIO_MAX = 80000;
       function pararVigia() { if (vigia) { vigia.stop(); vigia = null; } }
+      function renovar() {
+        if (!active) return;
+        // Si estamos en pleno backoff (sin flujo y con reintento pendiente), la
+        // renovación ADELANTA ese reintento en vez de no hacer nada: volver a
+        // mirar el móvil con la pantalla congelada y esperar otros 30 s era lo
+        // contrario de lo que el alumno espera.
+        if (!es) {
+          if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; connect(); }
+          return;
+        }
+        // Sin ruido y sin banner: esto NO es un fallo, es mantenimiento.
+        teardown(es);
+        es = null;
+        retries = 0;
+        connect();
+      }
       function armarVigia() {
         pararVigia();
         vigia = startStreamWatchdog({
           silencioMs: SILENCIO_MAX,
-          onRenew: () => {
-            if (!active || !es) return;
-            if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
-            // Sin ruido y sin banner: esto NO es un fallo, es mantenimiento.
-            teardown(es);
-            es = null;
-            retries = 0;
-            connect();
-          },
+          pausarOculto: true,
+          jitterMs: 2000,
+          onRenew: renovar,
         });
       }
 

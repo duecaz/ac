@@ -22,8 +22,8 @@ Andamio = la plantilla ya usa `styles/scaffold.css` (roles declarados, §3b).
 | **Operaciones** (`math`) | `16/10` | — | `ww-keypad-head` 33%×8% → **—**<br>`ww-keypad` 32%×69% → **carril** | `ww-keypad-head` 57%×6% → **—**<br>`ww-keypad` 92%×69% → **escenario** |
 | **Sopa de Letras** (`wordsearch`) | `4/3` | — | `ww-ws-grid-wrap` 90%×100% → **escenario**<br>`ww-ws-words` 9%×100% → **carril** | `ww-ws-grid-wrap` 100%×94% → **escenario**<br>`ww-ws-words` 100%×5% → **barra** |
 | **Crucigrama** (`crossword`) | `4/3` | — | `cw-tools` 99%×5% → **barra**<br>`cw-body` 99%×85% → **escenario**<br>`cw-footer` 99%×6% → **barra** | `cw-tools` 97%×4% → **barra**<br>`cw-body` 97%×87% → **escenario**<br>`cw-footer` 97%×6% → **barra** |
-| **Abre Cajas** (`question-live`) | `4/3` | — | `ab-board` 37%×8% → **—**<br>`ab-hint` 22%×2% → **—** | `ab-board` 94%×7% → **barra**<br>`ab-hint` 57%×2% → **—** |
-| **Ordena las Pelotas** (`ballsort`) | `4/3` | — | `bs-toolbar` 100%×13% → **barra**<br>`tubes` 100%×81% → **escenario** | `bs-toolbar` 100%×13% → **barra**<br>`tubes` 100%×81% → **escenario** |
+| **Abre Cajas** (`question-live`) | `4/3` | — | `ab-board` 37%×18% → **—**<br>`ab-hint` 22%×2% → **—** | `ab-board` 94%×16% → **barra**<br>`ab-hint` 57%×2% → **—** |
+| **Ordena las Pelotas** (`ballsort`) | `4/3` | — | `bs-toolbar` 100%×7% → **barra**<br>`tubes` 100%×41% → **—** | `bs-toolbar` 100%×6% → **barra**<br>`tubes` 100%×36% → **—** |
 | **Etiqueta el diagrama** (`diagram`) | `16/10` | ✅ | `ww-field` 100%×93% → **escenario**<br>`ww-bar` 100%×6% → **barra** | `ww-field` 100%×95% → **escenario**<br>`ww-bar` 100%×4% → **barra** |
 | **Explota Globos** (`globos`) | `16/10` | — | `ww-prow` 100%×6% → **barra**<br>`gl-field` 100%×92% → **escenario** | `ww-prow` 100%×6% → **barra**<br>`gl-field` 100%×92% → **escenario** |
 
