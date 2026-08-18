@@ -116,6 +116,31 @@ de Bootstrap) no se puede repartir — nómbrala.
 escanea y se verifica; el nombre propio se queda con su CSS y con lo que apuntan
 los skins. Así el vocabulario entra sin un renombrado masivo y sin tocar los temas.
 
+### Dónde se ancla el HUD, y por qué cada player declara su alto
+
+El HUD se posiciona contra **quien lo contiene** (`:where(:has(> .edu-hud))` en
+`styles/player.css`), así que la raíz del player tiene que LLENAR su hueco o
+«la esquina» acaba siendo la esquina de un trozo. Suena a requisito frágil —y
+lo era— pero las tres alternativas se midieron (2026-08-17) y esta gana:
+
+| Opción | Medido |
+|---|---|
+| **Anclar siempre al marco** (borrar la regla) | En Individual perfecto… pero en el DUELO cada HUD pasa de 534 px (su panel) a **1100 px**: se escapa sobre el panel del rival. El día que el duelo muestre indicadores por jugador, se solapan. **Descartada.** |
+| **Propagar `height:100%` a los 12** | Es la enfermedad que costó tres copias de la rueda, multiplicada por cuatro. Y no basta: Pelotas tiene TRES envoltorios, así que ninguna regla genérica del marco le llega. **Descartada.** |
+| **Que cada player lo declare y la norma lo MIDA** ✅ | 12 de 13 ya lo declaraban; el 13º (Pelotas) tenía el chip a **213 px** del borde y pasaba en verde porque el escaneo contaba nodos. Ahora `matrix-smoke` mide la distancia a la esquina (tope 48 px) y el siguiente que se equivoque falla en rojo. |
+
+La lección general: el problema no era que cada plantilla declarara su alto —era
+que **nadie comprobaba el resultado**. Con la medida puesta, doce «funcionan por
+accidente» pasan a ser doce verificados.
+
+**Aplazado con motivo**: mover el HUD al MARCO, como el botón de pantalla
+completa —que vive ahí y por eso nunca ha tenido este fallo—. Quitaría el
+requisito de raíz, pero toca los 13 players, los dos shells y los paneles del
+duelo (donde «el marco» es el panel, no la página). Con la medición puesta, su
+beneficio baja de «evita un fallo invisible» a «evita un rojo de CI de un
+minuto», y a ese precio no compensa. Se retoma si algún día el duelo necesita
+indicadores por jugador.
+
 **De dónde sale `edu-send`** (decidido 2026-08-17, corrige una regla anterior):
 del **player**, no de `meta.play.submit`. Ese campo describe la **ronda
 compartida** (VS · Equipos · live), que es otra pantalla: Emparejar declara

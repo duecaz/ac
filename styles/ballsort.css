@@ -5,7 +5,26 @@
    (.ball--ghost) is intentionally self-contained and unscoped.
    ═══════════════════════════════════════════════════ */
 
+/* LA CADENA LLENA EL HUECO. El player monta `.ww-bs-solo > #bs-solo-host >
+   .ww-bs`, y ninguno de los tres declaraba alto: la raíz se quedaba al 49 % del
+   marco y el chip «Movs: 0» del HUD —que se ancla a quien lo contiene— caía a
+   213 px del borde, en mitad del tablero. Con tres envoltorios no vale una
+   regla genérica del marco: la cadena entera tiene que estirar.
+   Lo mide `tools/matrix-smoke.mjs` (tope de 48 px a la esquina), así que si
+   alguien rompe un eslabón, falla en rojo en vez de descolocarse en silencio. */
+.ww-bs-solo,
+#bs-solo-host {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
 .ww-bs {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   --bs-tube-w:      clamp(28px, 11cqw, 52px);
   --bs-tube-gap:    clamp(3px, 1.4cqw, 14px);
   --bs-ball-size:   calc(var(--bs-tube-w) - 12px);

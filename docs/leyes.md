@@ -158,9 +158,12 @@ escribirse; si necesita violar una prohibición, está en la capa equivocada.
 - **La DIAGRAMACIÓN también es norma** (2026-08-17): un indicador nunca crea
   franja, una barra existe solo si hay herramienta que tocar, el juego se queda
   el resto y el envío tiene su región. Lo vigila `tools/matrix-smoke.mjs`
-  MONTANDO las 13 en Individual (un `edu-hud`, ≥1 `edu-sec`, ≤1 `edu-send` y
-  todo `[data-ww-submit]` dentro), con las excepciones declaradas en
-  `ENVIO_ES_MECANICA` — cada una con su motivo escrito.
+  MONTANDO las 13 en Individual (un `edu-hud`, ≥1 sección CON NOMBRE
+  `edu-sec--*`, ≤1 `edu-send` y todo `[data-ww-submit]` dentro), con las
+  excepciones declaradas en `ENVIO_ES_MECANICA` — cada una con su motivo.
+- **Y se mide DÓNDE, no solo SI**: el chip del HUD tiene que quedar a ≤48 px de
+  la esquina del marco. Contar nodos daba verde a Pelotas con el indicador a
+  213 px, en mitad del tablero — la norma existía y el fallo pasaba igual.
 - **Tests que lo vigilan**: `tests/styles.test.mjs` (ratchet + completeness gate
   23/23 + **gate de themes**: todo `stylesheet:` declarado existe y ningún
   `themes/*/skin.css` queda huérfano sin documentar) · `tests/skins.test.mjs`

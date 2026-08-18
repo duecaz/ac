@@ -386,6 +386,19 @@ for (const t of seeded) {
               sec: w.querySelectorAll('[class*="edu-sec--"]').length,
               send: w.querySelectorAll('.edu-send').length,
               fuera: envios.filter(b => !b.closest('.edu-send')).length,
+              // DÓNDE ESTÁ, no solo si está. Contar nodos daba verde a Pelotas
+              // con el chip «Movs: 0» a 213 px del borde, en mitad del tablero:
+              // el HUD se ancla a quien lo contiene, y si esa raíz no llena su
+              // hueco, «la esquina» es la esquina de un trozo, no del marco.
+              // Se mide el chip VISIBLE más alto y a la izquierda.
+              esquina: (() => {
+                const hud = w.querySelector('.edu-hud');
+                if (!hud) return null;
+                const chip = [...hud.querySelectorAll('.edu-hud__chip')].find(c => !c.hidden && vis(c));
+                const r = (chip || hud).getBoundingClientRect();
+                const rw = w.getBoundingClientRect();
+                return { top: Math.round(r.top - rw.top), left: Math.round(r.left - rw.left) };
+              })(),
             };
           });
           const exc = ENVIO_ES_MECANICA[t.name];
@@ -399,6 +412,15 @@ for (const t of seeded) {
             if (rr.sec < 1) fallos.push('sin sección de juego con nombre (edu-sec--*)');
             if (rr.send > 1) fallos.push(`${rr.send} regiones edu-send (como mucho 1)`);
             if (rr.fuera > 0 && !exc) fallos.push(`${rr.fuera} control(es) de envío fuera de edu-send`);
+            // El tope: el chip tiene que estar EN la esquina del marco. 48 px da
+            // aire para el relleno del propio HUD (9-25 px según la plantilla)
+            // y para el sangrado de la hoja de Tildes/Comas, y sigue estando
+            // lejísimos de los 213 px con los que Pelotas pasaba en verde.
+            const TOPE_ESQUINA = 48;
+            if (rr.esquina && (rr.esquina.top > TOPE_ESQUINA || rr.esquina.left > TOPE_ESQUINA)) {
+              fallos.push(`el HUD no está en la esquina: ${rr.esquina.top}px desde arriba, `
+                + `${rr.esquina.left}px desde la izquierda (tope ${TOPE_ESQUINA}) — su raíz no llena el hueco`);
+            }
           }
           roles.push({ label: t.label, ...medida, exc, fallos });
           if (fallos.length) { status = 'error'; detail = `roles: ${fallos[0]}`; }
