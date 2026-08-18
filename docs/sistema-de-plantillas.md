@@ -66,6 +66,13 @@ En cuanto se registra e importa:
 El autor toca **dos ficheros de verdad**: `player.js` y `styles/<name>.css`. El
 resto son huecos rellenos por el generador.
 
+**Y su player nace con los CUATRO ROLES** (`docs/estilos-de-actividad.md` §3b0):
+`hudHtml({...})` como primer hijo (los indicadores flotan, nunca crean franja),
+al menos una sección de juego con nombre (`edu-sec edu-sec--tablero`),
+`edu-topbar` SOLO si hay herramienta que tocar, y `edu-send` si el envío se
+construye y confirma. No es cosmética: `tools/matrix-smoke.mjs` lo comprueba
+montando la plantilla, así que una nueva que se los salte rompe CI.
+
 ## 4. Quién interviene al JUGARLA
 
 ```

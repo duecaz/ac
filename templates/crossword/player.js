@@ -69,12 +69,10 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
         <!-- HERRAMIENTAS (edu-topbar): lo que se toca para AYUDARSE, arriba y
              separado del envío. Antes pista y reiniciar compartían el pie con
              «Verificar», así que ayudarse y entregar se leían como lo mismo. -->
-        ${hintMode === 'none' ? `<div class="edu-topbar cw-tools">
+        <div class="edu-topbar cw-tools">
+          ${hintMode === 'none' ? '' : `<button class="btn btn-outline-secondary btn-sm" id="cw-hint"><i class="bi bi-lightbulb"></i> Pista</button>`}
           <button class="btn btn-outline-danger btn-sm" id="cw-reset"><i class="bi bi-arrow-counterclockwise"></i> Reiniciar</button>
-        </div>` : `<div class="edu-topbar cw-tools">
-          <button class="btn btn-outline-secondary btn-sm" id="cw-hint"><i class="bi bi-lightbulb"></i> Pista</button>
-          <button class="btn btn-outline-danger btn-sm" id="cw-reset"><i class="bi bi-arrow-counterclockwise"></i> Reiniciar</button>
-        </div>`}
+        </div>
 
         <!-- Body: clues + grid -->
         <div class="cw-body">

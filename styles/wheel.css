@@ -25,11 +25,20 @@
   .wh-flow { flex-direction: row; }
 }
 
-/* La rueda toma el tamaño del HUECO, no el de su atributo (400): el ancho es
+/* LA RUEDA ES UNA PIEZA COMPARTIDA, no de esta plantilla: el mismo `wheelSvg()`
+   (templates/wheel/render.js) lo pintan TRES pantallas — la Ruleta, Abre Cajas
+   con `rules.selector='wheel'` y la pantalla del alumno en vivo. Por eso sus
+   clases llevan el prefijo genérico `ww-wheel-*` y viven aquí: la geometría de
+   la punta ▶ ya se corrigió dos veces y la tercera copia (la del alumno) seguía
+   con `left:-14px` y `#e53935` a pelo, o sea rota desde el primer arreglo.
+   La rueda toma el tamaño del HUECO, no el de su atributo (400): el ancho es
    el lado corto del contenedor menos el aire, y el SVG lo llena. */
-.wh-stage { position: relative; flex: 0 1 auto; min-width: 0; min-height: 0; display: flex; width: min(78cqmin, 100%); }
-.wh-stage svg { width: 100%; height: auto; display: block; }
-.wh-pointer {
+.ww-wheel-stage {
+  position: relative; flex: 0 1 auto; min-width: 0; min-height: 0;
+  display: flex; width: min(78cqmin, 100%); margin-inline: auto;
+}
+.ww-wheel-stage svg { width: 100%; height: auto; display: block; }
+.ww-wheel-pointer {
   position: absolute; top: 50%; left: -0.5em; transform: translateY(-50%);
   font-size: max(20px, 5cqmin); line-height: 1;
   color: var(--ww-danger, #e53935);

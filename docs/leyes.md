@@ -152,7 +152,15 @@ escribirse; si necesita violar una prohibición, está en la capa equivocada.
   archivo+valor; actividad nueva (sin entrada) nace limpia; al arreglar deuda se
   BORRA su entrada; nunca se añade una violación para callar el test.
 - **Dónde se explica**: `docs/estilos-de-actividad.md` (contrato + ejemplares
-  `math.css`/`quiz.css` con assert duro a cero; §3b andamio de regiones).
+  `math.css`/`quiz.css` con assert duro a cero; **§3b0 los CUATRO roles del
+  player** —`edu-hud` · `edu-topbar` · `edu-sec--*` · `edu-send`— y §3b andamio
+  de regiones).
+- **La DIAGRAMACIÓN también es norma** (2026-08-17): un indicador nunca crea
+  franja, una barra existe solo si hay herramienta que tocar, el juego se queda
+  el resto y el envío tiene su región. Lo vigila `tools/matrix-smoke.mjs`
+  MONTANDO las 13 en Individual (un `edu-hud`, ≥1 `edu-sec`, ≤1 `edu-send` y
+  todo `[data-ww-submit]` dentro), con las excepciones declaradas en
+  `ENVIO_ES_MECANICA` — cada una con su motivo escrito.
 - **Tests que lo vigilan**: `tests/styles.test.mjs` (ratchet + completeness gate
   23/23 + **gate de themes**: todo `stylesheet:` declarado existe y ningún
   `themes/*/skin.css` queda huérfano sin documentar) · `tests/skins.test.mjs`

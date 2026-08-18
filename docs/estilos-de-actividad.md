@@ -103,7 +103,7 @@ Todo player se lee con cuatro roles — el prefijo `edu-` marca lo nuevo:
 | Rol | Qué es | Regla |
 |---|---|---|
 | **`edu-hud`** | los INDICADORES: página, ⏱, ★, 🔥 | flotan en las esquinas (`core/playerHud.js`, `hudHtml`/`hudSet`); **nunca crean franja** ni capturan toques |
-| **`edu-topbar`** | las HERRAMIENTAS que se tocan | existe **solo** si hay herramienta: lápiz/borrador (Tildes/Comas), Aa/Deshacer (Pelotas), verificar/pista/reiniciar (Crucigrama) — 3 de 13 |
+| **`edu-topbar`** | las HERRAMIENTAS que se tocan | existe **solo** si hay herramienta: lápiz/borrador (Tildes/Comas), Aa/Deshacer (Pelotas), pista/reiniciar (Crucigrama — *Verificar* es envío y vive en `edu-send`) — 3 de 13 |
 | **el juego** (`edu-sec`) | todo el alto restante, en subsecciones CON NOMBRE (`edu-sec--enunciado`, `--tablero`, `--texto`, `--pistas`, `--banco`, `--panel`, `--campo`) | refluyen por `aspect-ratio` del contenedor, nunca por px; el **enunciado es la primera subsección**, no una barra |
 | **`edu-send`** | el espacio del botón de enviar | UNO como mucho, y todo control de envío dentro (marcador sobre `ww-bar-actions`/`tc-done-wrap`/`cw-footer`) |
 
@@ -125,16 +125,19 @@ cinco pantallas — que es justo el problema que Wordwall y Kahoot no tienen
 (allí plantilla = pantalla) y por eso copiarles el modelo salió mal.
 
 La garantía no se pierde, cambia de sitio: la vigila `tools/matrix-smoke.mjs`
-MONTANDO las 13 en Individual — **un `edu-hud`, al menos una `edu-sec`, como
-mucho un `edu-send`, y todo `[data-ww-submit]` dentro de él**. Con tres
-excepciones DECLARADAS (`ENVIO_ES_MECANICA`), las tres por el mismo motivo — el
-control **es** el juego, no un paso más:
+MONTANDO las 13 en Individual — **un `edu-hud`, al menos una sección CON NOMBRE
+(`edu-sec--*`), como mucho un `edu-send`, y todo `[data-ww-submit]` dentro de
+él**. Con UNA excepción DECLARADA (`ENVIO_ES_MECANICA`):
 
 | Excepción | Motivo |
 |---|---|
 | ✓ del teclado (Operaciones) | es una TECLA: sacarla suma un toque a cada respuesta (§29) |
-| «Girar» (Ruleta) | girar ES el juego; no hay nada que enviar aparte |
-| «Listo/Cerrar» (Abre Cajas) | viven dentro de la caja abierta; fuera, la metáfora se rompe |
+
+Empezó siendo tres —«Girar» de la Ruleta y «Listo/Cerrar» de Abre Cajas
+entraban «porque su botón es la mecánica»—, pero esas dos no marcan ningún
+control como envío: su acción es un GESTO. La excepción no se aplicaba nunca y
+el informe presumía de un control inexistente. Una excepción que no protege
+nada es una mentira que hay que mantener.
 
 ## 3b. Andamio de regiones — el responsive compartido (`styles/scaffold.css`)
 

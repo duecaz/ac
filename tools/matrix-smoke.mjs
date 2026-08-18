@@ -45,15 +45,18 @@ const DRIVERS = {
 };
 const MEMORY_TEAMS_ROUTE = (id) => `#/memory/${id}`;
 
-// EL CONTROL DE ENVÍO QUE **ES** LA MECÁNICA — excepciones DECLARADAS al rol
+// EL CONTROL DE ENVÍO QUE **ES** LA MECÁNICA — excepción DECLARADA al rol
 // `edu-send` (docs/estilos-de-actividad.md §3b0). No es una lista de perdones:
-// cada una dice por qué sacar ese control a una franja propia EMPEORARÍA el
-// juego, y sin motivo escrito no entra. Las tres comparten la razón: el control
-// no es un paso más, es el juego.
+// dice por qué sacar ese control a una franja propia EMPEORARÍA el juego, y sin
+// motivo escrito no entra.
+//
+// Es UNA sola. Empezó siendo tres, con la Ruleta y Abre Cajas dentro «porque su
+// botón es la mecánica» — pero esos dos no marcan NINGÚN control con
+// `data-ww-submit`: su acción es un gesto, no un envío, así que la excepción
+// nunca se aplicaba y el informe presumía de un control que no existe. Una
+// excepción que no protege nada es una mentira mantenida.
 const ENVIO_ES_MECANICA = {
-  math:            'el ✓ es una TECLA del teclado — sacarlo suma un toque a cada respuesta (§29)',
-  wheel:           'girar ES el juego: no hay nada que enviar aparte',
-  'question-live': 'Listo/Cerrar viven dentro de la caja abierta; fuera de ella la metáfora se rompe',
+  math: 'el ✓ es una TECLA del teclado — sacarlo suma un toque a cada respuesta (§29)',
 };
 
 const server = spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'],
@@ -377,22 +380,28 @@ for (const t of seeded) {
             const envios = [...w.querySelectorAll('[data-ww-submit]')].filter(vis);
             return {
               hud: w.querySelectorAll('.edu-hud').length,
-              sec: w.querySelectorAll('.edu-sec').length,
+              // CON NOMBRE: `edu-sec` a secas no identifica nada, y el caso que
+              // originó la regla (la rejilla suelta de Memoria) volvería a pasar
+              // en verde. Se exige el modificador.
+              sec: w.querySelectorAll('[class*="edu-sec--"]').length,
               send: w.querySelectorAll('.edu-send').length,
-              envios: envios.length,
               fuera: envios.filter(b => !b.closest('.edu-send')).length,
             };
           });
+          const exc = ENVIO_ES_MECANICA[t.name];
+          // Sin widget no se puede escanear — y callarlo sería lo peor: la ley
+          // §3b0 dejaría de vigilarse, en silencio, el día que un player cambie
+          // de raíz. Se cuenta como fallo con su motivo.
+          const medida = rr || { hud: 0, sec: 0, send: 0, fuera: 0 };
+          const fallos = rr ? [] : ['sin #ww-player-widget: no se pudo escanear'];
           if (rr) {
-            const exc = ENVIO_ES_MECANICA[t.name];
-            const fallos = [];
             if (rr.hud !== 1) fallos.push(`edu-hud: ${rr.hud} (debe ser 1)`);
-            if (rr.sec < 1) fallos.push('sin sección de juego con nombre (edu-sec)');
+            if (rr.sec < 1) fallos.push('sin sección de juego con nombre (edu-sec--*)');
             if (rr.send > 1) fallos.push(`${rr.send} regiones edu-send (como mucho 1)`);
             if (rr.fuera > 0 && !exc) fallos.push(`${rr.fuera} control(es) de envío fuera de edu-send`);
-            roles.push({ label: t.label, name: t.name, ...rr, exc, fallos });
-            if (fallos.length) { status = 'error'; detail = `roles: ${fallos[0]}`; }
           }
+          roles.push({ label: t.label, ...medida, exc, fallos });
+          if (fallos.length) { status = 'error'; detail = `roles: ${fallos[0]}`; }
         }
         //  3. SE LEE DESDE EL FONDO DEL AULA (§29 · R1). Era la promesa más
         //     repetida del proyecto —«mirada a 3 m»— y la única sin ninguna red:
@@ -611,13 +620,18 @@ if (embed.length) {
   for (const e of embed) console.log(`  ${e.ok ? '✅' : '❌'} ${e.caso}${e.detalle && !e.ok ? ' — ' + e.detalle : ''}`);
 }
 
+// Solo para pintar el ❌ del informe: un fallo de roles ya marcó la combinación
+// como 'error', así que el código de salida sale de `bad` (no hay tercera vía).
 const rolesBad = roles.filter(r => r.fallos.length);
+void rolesBad;
 if (roles.length) {
   console.log('\nLOS CUATRO ROLES DE LA DIAGRAMACIÓN (Individual)\n');
   const w2 = Math.max(...roles.map(r => r.label.length));
   for (const r of roles) {
     const marca = r.fallos.length ? '❌' : '✅';
-    const envio = r.send ? `edu-send` : (r.exc ? 'la mecánica' : (r.envios ? '¿?' : 'gesto'));
+    const envio = r.send ? 'edu-send'
+      : r.fuera ? (r.exc ? 'la mecánica (excepción)' : `${r.fuera} suelto(s)`)
+      : 'gesto';
     console.log(`  ${marca} ${r.label.padEnd(w2)}  hud:${r.hud} · secciones:${r.sec} · envío: ${envio}` +
       (r.fallos.length ? `  → ${r.fallos.join(' · ')}` : ''));
   }
@@ -631,4 +645,4 @@ console.log(`\n✅ ok: ${results.filter(r => r.status === 'ok').length}` +
   ` · · no aplica: ${results.filter(r => r.status === 'n/a').length}`);
 console.log('El ALUMNO en vivo lo cubre tools/live-smoke.mjs (dos contextos) y la Tarea tools/task-smoke.mjs. Sin cubrir: carrera con 2 alumnos.');
 await browser.close();
-bye(bad.length || seedBad.length || tapBad.length || hitBad.length || roundBad.length || presuBad.length || embedBad.length || rolesBad.length ? 1 : 0);
+bye(bad.length || seedBad.length || tapBad.length || hitBad.length || roundBad.length || presuBad.length || embedBad.length ? 1 : 0);

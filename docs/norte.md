@@ -460,6 +460,7 @@ Escrito aquí porque es donde se va a intentar colar:
 | **Qué NO tomamos** | la maraña de opciones por actividad (choca con R2) · el muro de pago por plantilla | que TODO sea la misma carrera de preguntas · el ranking en pantalla durante el juego (decisión C-2: durante el juego se muestra **avance**, no puestos) | — |
 | **Dónde vamos por delante** | — | — | el mismo contenido en 5 modos · 4 bucles en vivo distintos (no solo rondas) · funciona en la pizarra sin que los alumnos tengan dispositivo |
 | **Dónde vamos por detrás** | biblioteca enorme y taxonomía (D5) · imprimibles (D3) | analítica pulida · identidad del alumno a lo largo del curso (D1) | — |
+| **Caso concreto (2026-08-17): dónde se declara «aquí se envía»** | no lo declara: cada plantilla ES una pantalla con su interacción fija | tampoco: un bucle, y la respuesta es tocar una forma | **plantilla ≠ pantalla**: la misma juega en 5 modos y responde distinto en cada uno. Copiarles «una declaración por plantilla» produjo una regla falsa (Emparejar declara `gesto` y su player Individual tiene *Enviar*) → la declaración baja a la PANTALLA y se verifica montando |
 
 ## 6. El criterio de decisión
 

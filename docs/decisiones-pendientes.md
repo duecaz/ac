@@ -18,6 +18,7 @@ sale de aquí.
 - [D4 · ¿Aula SIN internet es un caso soportado?](#d4--aula-sin-internet-es-un-caso-soportado)
 - [D5 · Taxonomía de la biblioteca](#d5--taxonomía-de-la-biblioteca)
 - [D8 · Cómo se REPARTE cada actividad en vertical y en horizontal](#d8--cómo-se-reparte-cada-actividad-en-vertical-y-en-horizontal)
+  - [Lo EJECUTADO desde el inventario (v1.51.511-515)](#lo-ejecutado-desde-el-inventario-v151511-515)
 - [D6 · Cuotas y retención — ✅ DECIDIDA Y APLICADA (v1.51.340, ley §25)](#d6--cuotas-y-retención---decidida-y-aplicada-v151340-ley-25)
 - [D7 · Congelar el catálogo de bucles en vivo — ✅ ESTUDIADA Y CONGELADA (ley §26)](#d7--congelar-el-catálogo-de-bucles-en-vivo---estudiada-y-congelada-ley-26)
 - [Estado (decisión del usuario, v1.51.340)](#estado-decisión-del-usuario-v151340)
@@ -157,6 +158,20 @@ Juega las 13 en Individual y mide sus bloques de primer nivel en un hueco ANCHO
   margen de Bootstrap (`mb-3`, `text-center`) o un `<div>` pelado. No se puede
   asignar rol a lo que no está identificado, así que ese es el primer paso de
   cualquier reparto, y es barato.
+
+### Lo EJECUTADO desde el inventario (v1.51.511-515)
+
+El reparto ya tiene vocabulario y guardián — **los CUATRO roles**
+(`docs/estilos-de-actividad.md` §3b0): `edu-hud` (los indicadores flotan en las
+esquinas y NUNCA crean franja) · `edu-topbar` (solo si hay herramienta que
+tocar: 3 de 13) · el juego en subsecciones con nombre (`edu-sec--*`, que
+refluyen por `aspect-ratio`) · `edu-send`. Se marcan con doble clase
+(`edu-topbar tc-bar`) y lo comprueba `tools/matrix-smoke.mjs` montando las 13.
+
+Con eso cerrado, el reparto dejó de ser opinión: el título salió del juego (6
+players), Crucigrama separó ayudarse de entregar, Sopa y Crucigrama refluyen
+por forma en vez de por píxeles, el Quiz sin foto llena como Kahoot y la Ruleta
+usa el hueco que hay.
 
 **Sigue abierto** lo que el inventario no puede contestar: cuál de las dos
 franjas se encoge primero cuando falta alto, y si el enunciado y la media deben

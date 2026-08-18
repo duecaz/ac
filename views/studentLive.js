@@ -346,9 +346,9 @@ export async function renderPlay(rootSel, code) {
     const entries = available.map(i => String(i + 1));
     mount(rootSel, html`
       <div class="text-center py-3">
-        <div class="ql-wheel d-inline-block" style="position:relative">
+        <div class="ql-wheel ww-wheel-stage">
           ${wheelSvg(entries, { rotation: qlRotation, dur: 0, spinning: false, size: 300 })}
-          <div style="position:absolute;top:50%;left:-14px;transform:translateY(-50%);font-size:30px;color:#e53935;line-height:1">▶</div>
+          <div class="ww-wheel-pointer">▶</div>
         </div>
         <div class="mt-3">
           <button class="btn btn-warning btn-lg px-5" id="ql-spin"><i class="bi bi-arrow-repeat"></i> Girar</button>

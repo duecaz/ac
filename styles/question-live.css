@@ -4,13 +4,22 @@
 .ab-play {
   height: 100%; min-height: 0;
   display: flex; flex-direction: column;
-  justify-content: center;
+  align-items: center; justify-content: center;
   gap: max(8px, 2cqmin);
+  /* Contenedor de consulta propio, igual que `.wh-play`: sin él los `cqmin` de
+     la rueda se resolvían contra un ancestro lejano y la MISMA rueda salía de
+     otro tamaño en el marco del profe, en la tarea y en el panel del duelo. */
+  container-type: size;
 }
-/* El tablero se CENTRA con márgenes automáticos, y eso ANULA el estirado del
-   flex (un margen auto en el eje cruzado gana a `align-items: stretch`): sin un
-   ancho propio se encogía al contenido y las cajas salían diminutas. */
-.ab-play .ab-board { width: min(100%, 460px); margin-inline: auto; }
+/* La RULETA de esta plantilla (rules.selector='wheel') usa la pieza COMPARTIDA
+   `.ww-wheel-stage` / `.ww-wheel-pointer` (styles/wheel.css): es el mismo
+   `wheelSvg()`. Tener aquí su copia era garantizar que el próximo ajuste de la
+   punta ▶ arreglara una rueda y dejara la otra rota. */
+/* El ancho del tablero se declara AQUÍ y solo aquí: el `max-width` inline que
+   traía el markup ganaba en especificidad, así que ajustar esta regla no hacía
+   nada hasta descubrir el `style=`. El inline se queda con lo único dinámico
+   (las columnas, que dependen del nº de cajas). */
+.ab-play .ab-board { width: min(100%, 460px); }
 
 .ql-grid {
   display: grid;

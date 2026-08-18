@@ -40,12 +40,15 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
       <div class="ww-wheel wh-play">
         ${hudHtml({
           pagina: history.length ? `Giros: ${history.length}` : null,
-          extra: `${entries.length} sin salir`,
+          // «sin salir» solo tiene sentido si la opción se RETIRA al salir; con
+          // `removeAfterSpin` apagado (el defecto) el número no bajaría nunca y
+          // diría «8 sin salir» junto a un historial de 5.
+          extra: remove ? `${entries.length} sin salir` : null,
         })}
         <div class="wh-flow">
-          <div class="edu-sec edu-sec--tablero ww-wheel-stage wh-stage">
+          <div class="edu-sec edu-sec--tablero ww-wheel-stage">
             ${wheelSvg(entries, { rotation, dur, spinning: false })}
-            <div class="ww-wheel-pointer wh-pointer">▶</div>
+            <div class="ww-wheel-pointer">▶</div>
           </div>
           <div class="edu-sec edu-sec--panel wh-side">
             <div class="wh-result">

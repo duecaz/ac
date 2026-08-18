@@ -169,12 +169,7 @@
 /* ── Footer ────────────────────────────────────────── */
 /* Los DOS roles del crucigrama, separados (2026-08-17): arriba lo que se toca
    para ayudarse (edu-topbar), abajo lo que entrega (edu-send). */
-.cw-tools {
-  display: flex;
-  gap: .5rem;
-  flex-shrink: 0;
-  justify-content: center;
-}
+.cw-tools,
 .cw-footer {
   display: flex;
   gap: .5rem;

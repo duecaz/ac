@@ -45,7 +45,7 @@ function renderBoxes(rootSel, activity, opts = {}) {
     mount(rootSel, html`
       <div class="ab-play text-center py-3 px-2">
         ${hudHtml({ pagina: `${done.size} / ${items.length}` })}
-        <div class="edu-sec edu-sec--tablero ab-board" style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:10px;max-width:460px;margin:0 auto">${boxesHtml}</div>
+        <div class="edu-sec edu-sec--tablero ab-board" style="grid-template-columns:repeat(${cols},1fr)">${boxesHtml}</div>
         ${openItem != null ? `
           <div class="ab-open card border-2 mx-auto mt-4" style="max-width:480px;border-color:${QL_COLORS[openIdx % QL_COLORS.length]};border-width:2px">
             <div class="card-body">
@@ -127,16 +127,16 @@ function renderWheel(rootSel, activity, opts = {}) {
     const entries = available.map(i => String(i + 1));
     mount(rootSel, html`
       <div class="ab-play text-center py-3">
-        <div style="position:relative;display:inline-block">
+        ${hudHtml({ pagina: `${done.size} / ${items.length}` })}
+        <div class="edu-sec edu-sec--tablero ww-wheel-stage">
           ${wheelSvg(entries, { rotation, dur: 0, spinning: false })}
-          <div style="position:absolute;top:50%;left:-18px;transform:translateY(-50%);font-size:36px;color:#e53935;line-height:1">▶</div>
+          <div class="ww-wheel-pointer">▶</div>
         </div>
         <div class="mt-3">
           <button class="btn btn-warning btn-lg px-5" id="ab-spin" ${spinning ? 'disabled' : ''}>
             <i class="bi bi-arrow-repeat"></i> Girar
           </button>
         </div>
-        ${done.size ? `<p class="text-muted small mt-2">${done.size} de ${items.length} respondida(s)</p>` : ''}
       </div>
     `);
 
