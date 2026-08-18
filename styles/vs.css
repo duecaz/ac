@@ -53,6 +53,15 @@
   flex: 0 0 auto;
   height: clamp(90px, 32cqh, 280px);
 }
+/* «Más arriba please esa animación» (dueño, 2026-08-18, tras ver la v1.51.520):
+   compacta ya encogía el CANVAS, pero antes de él seguía el hueco de SIEMPRE
+   —el padding-top de `.vs-stage` y el margen/alto de `.vs-tug-label`— pensado
+   para cuando la animación llena todo el carril. Medido con Playwright
+   (`.vs-stage-canvas svg` contra el borde de la barra): 33px de hueco muerto
+   antes de que empezara el dibujo. En compacta ese hueco no cumple ningún
+   propósito (no hay nada más arriba que respirar), así que se quita. */
+.vs-arena.vs-anim-compact .vs-stage { padding-top: 0; }
+.vs-arena.vs-anim-compact .vs-tug-label { margin: 0; font-size: clamp(.8rem, 1.6cqw, 1.15rem); }
 
 /* ── Activity panels ─────────────────────────────────────────────────────── */
 .vs-panel { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
