@@ -22,6 +22,8 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { VERSION } from '../core/constants.js';
 import { sellarHtml, htmlsDelProyecto } from '../tools/stamp-assets.mjs';
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const leer = (f) => readFileSync(join(ROOT, f), 'utf8');
@@ -71,6 +73,39 @@ const HTMLS = htmlsDelProyecto();
   const cdn = '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap/x.css">';
   assert.strictEqual(sellarHtml(cdn, '9.9.9'), cdn, 'no toca las de CDN');
   ok('CONTRA-PRUEBA: el sellador encaja, reemplaza el sello viejo y es idempotente');
+}
+
+// ── 4. LOS ASSETS QUE SE PIDEN POR FETCH (no por <link>) TAMBIÉN VAN SELLADOS ─
+// El caso que lo destapó (dueño, 2026-08-18): editó `assets/animations/cuerda.json`
+// (la animación del VS), borró cookies y Service Worker desde el admin, y
+// seguía viendo la vieja. No era el SW —está desregistrado a propósito— era el
+// HTTP normal + Cloudflare cacheando la URL: ese `.json` lo pide `lottie-web`
+// con `fetch`, no una etiqueta `<link>`, así que `tools/stamp-assets.mjs` (que
+// solo mira `<link>`) nunca lo tocaba. Aquí se escanean los módulos de `core/`
+// por rutas locales `./assets/**/*.json` y se exige el mismo `?v=VERSION`.
+{
+  const rutaAssetJson = /(['"`])\.\/assets\/[^'"` ]+\.json(\?[^'"` ]*)?\1/g;
+  const sinSellar = [];
+  let total = 0;
+  const fs = require('node:fs');
+  const walk = (dir) => fs.readdirSync(join(ROOT, dir), { withFileTypes: true }).flatMap(e => {
+    const rel = join(dir, e.name);
+    if (e.isDirectory()) return walk(rel);
+    return e.name.endsWith('.js') ? [rel] : [];
+  });
+  for (const f of walk('core')) {
+    const src = leer(f);
+    for (const m of src.matchAll(rutaAssetJson)) {
+      total++;
+      if (!(m[2] || '').includes(`v=${VERSION}`) && !(m[2] || '').includes('v=${VERSION}')) {
+        sinSellar.push(`${f} → ${m[0]}`);
+      }
+    }
+  }
+  assert.ok(total >= 1, 'debe haber al menos un .json de assets/ referenciado desde core/ (si no, la regla no prueba nada)');
+  assert.deepStrictEqual(sinSellar, [],
+    `.json de assets/ sin sellar (llegarán tarde tras editarlos): ${sinSellar.join(' · ')}`);
+  ok(`los ${total} .json de assets/ pedidos por fetch llevan el sello de versión`);
 }
 
 console.log(`\n  ${passed} cacheBusting checks passed`);

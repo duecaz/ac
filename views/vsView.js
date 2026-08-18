@@ -211,6 +211,10 @@ export function mountVs(host, a, ctx, opts = {}) {
     // con presentation.vsAnimationOff (si está definido, manda sobre el default).
     const textTight = getTemplate(a.template)?.meta?.contentModel === 'textCorrection';
     const animOff = a.presentation?.vsAnimationOff ?? textTight;
+    // Compacta = la animación se queda en la franja de arriba del carril y
+    // suelta el resto (Presentación → «Animación compacta»); es puro tamaño,
+    // no interfiere con animOff (que oculta el carril entero).
+    const animCompact = !!a.presentation?.vsAnimCompact;
     // "Board" templates (Ordena las Pelotas): one shared board, no per-question
     // score during play, so the rope is fed by each side's BOARD progress instead.
     const isBoard = supportsLoop(T, 'board');
@@ -234,7 +238,7 @@ export function mountVs(host, a, ctx, opts = {}) {
       const st = session.standings();
       mount(host, html`
         <div class="vs-wrap">
-          <div class="vs-arena vs-skin-${vsTheme}${animOff ? ' vs-no-stage' : ''}">
+          <div class="vs-arena vs-skin-${vsTheme}${animOff ? ' vs-no-stage' : ''}${animCompact ? ' vs-anim-compact' : ''}">
             ${vsBarHtml(st.left.name, st.right.name, avatars.left, avatars.right)}
             <div class="vs-main">
               <div class="vs-panel vs-left" data-side="left">

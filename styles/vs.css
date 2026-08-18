@@ -42,6 +42,18 @@
 .vs-anim-fallback { margin: auto; max-width: 18rem; padding: 1rem; color: #6c757d; font-size: .95rem; border: 2px dashed #ced4da; border-radius: .6rem; }
 .vs-tug-label { font-weight: 800; font-size: clamp(1rem, 2cqw, 1.6rem); margin: 0 0 .1rem; transition: color .2s; }
 
+/* ── Animación COMPACTA (dueño, 2026-08-18, con foto de referencia) ──────────
+   Por defecto la animación LLENA el carril central (flex:1). Con esta opción
+   de Presentación (`vsAnimCompact`) se encoge a la franja de arriba —donde el
+   dueño marcó el hueco en su foto— y la mitad de abajo del carril queda LIBRE,
+   con el fondo del skin, para lo que se quiera poner ahí más adelante (no lo
+   decide este cambio). `cqh` porque `.vs-wrap` ya es contenedor de consulta
+   (container-name: vs): escala con el ALTO real del duelo, no con el viewport. */
+.vs-arena.vs-anim-compact .vs-stage-canvas {
+  flex: 0 0 auto;
+  height: clamp(90px, 32cqh, 280px);
+}
+
 /* ── Activity panels ─────────────────────────────────────────────────────── */
 .vs-panel { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .vs-body  { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; justify-content: center; overflow: auto; padding: .5rem .75rem;

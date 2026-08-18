@@ -34,6 +34,7 @@ const fxRow = (key, label, hint, on) => `
 function vsBlock(a) {
   const cur = a.presentation?.vsAnimation || DEFAULT_VS_ANIMATION;
   const animOn = !a.presentation?.vsAnimationOff;   // por defecto: cuerda activa
+  const compact = !!a.presentation?.vsAnimCompact;
   const curSrc = a.presentation?.vsAnimationSrc || '';
   const fx = { ...VS_FX_DEFAULTS, ...(a.presentation?.vsFeedback || {}) };
   const anims = listVsAnimations();
@@ -47,6 +48,12 @@ function vsBlock(a) {
           <input class="form-check-input vsanim-toggle" type="checkbox" role="switch" ${animOn ? 'checked' : ''}>
         </span>
         <span class="vs-fx-label">Animación central<small class="d-block text-muted">Cuerda (tira y afloja) por defecto. Apágala para dar todo el ancho a los dos lados.</small></span>
+      </label>
+      <label class="vs-fx-row mb-2 ${animOn ? '' : 'd-none'}" id="vsanim-compact-row" title="La animación se queda arriba y suelta la mitad de abajo del centro.">
+        <span class="form-check form-switch m-0">
+          <input class="form-check-input vsanim-compact-toggle" type="checkbox" role="switch" ${compact ? 'checked' : ''}>
+        </span>
+        <span class="vs-fx-label">Animación compacta (arriba)<small class="d-block text-muted">Encoge la animación a la franja de arriba; el resto del centro queda libre.</small></span>
       </label>
       <label class="form-label small text-muted">Animación central del duelo</label>
       <div class="d-flex flex-wrap gap-2 mb-2 vsanim-list ${animOn ? '' : 'vsanim-list-off'}">
@@ -173,6 +180,12 @@ export function wireModesTab(root, a, onChange) {
     pres().vsAnimationOff = !el.checked;
     onChange(a);
     root.querySelector('.vsanim-list')?.classList.toggle('vsanim-list-off', !el.checked);
+    // Sin animación no hay nada que compactar: el control se esconde con ella.
+    root.querySelector('#vsanim-compact-row')?.classList.toggle('d-none', !el.checked);
+  });
+  on(root, 'change', '.vsanim-compact-toggle', (_, el) => {
+    pres().vsAnimCompact = el.checked;
+    onChange(a);
   });
   // VS — animation tiles.
   on(root, 'click', '.vsanim-pick', (_, b) => {

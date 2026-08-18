@@ -18,6 +18,7 @@
 // The engine scrubs to the frame matching the live score lead automatically.
 
 import { isLowEndDevice } from './perf.js';
+import { VERSION } from './constants.js';
 
 // En gama baja, la animación central NO corre en reposo (ver idle() en
 // createLottie) para no robar CPU al teclado del VS.
@@ -250,11 +251,19 @@ registerVsAnimation({
 });
 
 // ── Bundled animations ────────────────────────────────────────────────────
+// `?v=VERSION` en la propia URL — como llevan las hojas de estilo
+// (tools/stamp-assets.mjs) — porque este .json NO pasaba por ese sellado y
+// quedó cacheado en el navegador y en Cloudflare para siempre: el dueño editó
+// el archivo, borró cookies y Service Worker desde el admin, y la animación
+// vieja seguía saliendo — porque el SW ya está desregistrado a propósito
+// (§ dev-local) y el que cachea es el HTTP normal, que solo mira la URL.
+// Puesta aquí (en vez de en el HTML) porque este archivo lo pide `lottie-web`
+// por `fetch`, no por una etiqueta `<link>` que el sellador pueda tocar.
 registerVsAnimation(lottieProvider({
   id:          'lottie-cuerda',
   label:       'Cuerda (personajes)',
   description: 'Tira y afloja ilustrado con dos personajes.',
-  src:         './assets/animations/cuerda.json',
+  src:         `./assets/animations/cuerda.json?v=${VERSION}`,
 }));
 
 // ── Custom animations added from the Admin panel (localStorage) ───────────
