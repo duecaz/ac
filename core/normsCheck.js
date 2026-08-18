@@ -89,6 +89,21 @@ const ALLOW = {
   ],
 };
 
+// chrome-boton · las vistas del PANEL que ya visten con la familia propia
+// (.btn-ghost / .btn-primary-solid, styles/home.css) y por tanto NO pueden
+// volver a Bootstrap. Es un RATCHET con lista declarada, igual que LS_OWNERS:
+// lo que está limpio no retrocede, y lo que falta por migrar (adminView,
+// assignments, editView, editList, reports, moderate, templateSelector…) sigue
+// siendo legal hasta que se decidan las variantes que la familia aún no tiene
+// (no hay `.btn-ghost--danger` para los borrados del admin).
+// `views/playerView.js` NO está aquí a propósito: su cabecera es chrome, pero
+// los botones de MODO (Individual/VS/Equipos) llevan el color del modo y son
+// affordance de JUEGO, no de panel — el día que se separen, entra en la lista.
+export const CHROME_VIEWS = [
+  'views/home.js', 'views/landing.js', 'views/explore.js',
+  'views/juegos.js', 'views/author.js',
+];
+
 // §22-5 · Los nombres de los INSTANTES DE LA SALA. Si uno de estos aparece en la
 // misma línea que `clock.now()`, se está midiendo tiempo compartido con el reloj
 // de un solo aparato. La lista es de NOMBRES REALES del blob de la sala, no un
@@ -302,6 +317,27 @@ export function scanNormsSource(path, source) {
       && !allowed('imagen-buscable')) {
     out.push({ path, line: 1, rule: 'imagen-buscable',
                text: 'pide una imagen pero no ofrece buscarla (core/imageSearchModal.js)' });
+  }
+
+  // chrome-boton · UNA gramática de botón en el panel del profe. Las vistas de
+  // CHROME_VIEWS visten con la familia propia (.btn-ghost / .btn-primary-solid,
+  // styles/home.css), no con la de Bootstrap. Nació de una captura del dueño:
+  // «Crear actividad» llevaba `btn btn-primary` y salía en azul de Bootstrap,
+  // con esquina afilada y otra altura, dentro de una barra crema/naranja —
+  // «está horrible». Arreglarlo a mano en una vista no impide que la siguiente
+  // pantalla del panel vuelva a nacer con Bootstrap, que es exactamente cómo
+  // llegó: es un RATCHET, no una migración. Las vistas que aún no están en la
+  // lista (admin, tareas, editor, informes…) siguen siendo legales; migrarlas
+  // pide antes decidir las variantes que la familia no tiene (peligro, aviso).
+  // El JUEGO queda fuera a propósito: allí manda el skin con sus tokens --ww-*.
+  if (CHROME_VIEWS.includes(path) && /class="[^"]*\bbtn\s+btn-/.test(String(source || ''))) {
+    const src = String(source || '').split(/\r?\n/);
+    src.forEach((ln, i) => {
+      if (/class="[^"]*\bbtn\s+btn-/.test(ln)) {
+        out.push({ path, line: i + 1, rule: 'chrome-boton',
+                   text: `botón de Bootstrap en una vista de chrome: usa .btn-ghost / .btn-primary-solid — ${ln.trim().slice(0, 90)}` });
+      }
+    });
   }
   return out;
 }

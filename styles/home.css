@@ -206,6 +206,13 @@ body {
 .btn-ghost:hover { border-color: #c9c2ad; background: #faf8f2; color: #374151; }
 .btn-ghost:disabled { opacity: .5; cursor: not-allowed; }
 .btn-ghost i { font-size: 15px; }
+/* Solo icono (tres puntos, lápiz suelto…): cuadrado, para que no quede un botón
+   ancho y medio vacío junto a los que sí llevan texto. Vive AQUÍ, al lado de la
+   familia, y no en la hoja de la vista que primero lo necesitó: la medida que
+   corrige (`.btn-ghost { padding: 9px 14px }`) está en este archivo, así que
+   separarlas es garantizar que se desincronicen. Misma forma que
+   `.ww-navbtn--icon`, que es la convención ya establecida para lo mismo. */
+.btn-ghost--icon { width: 36px; padding: 0; justify-content: center; }
 .btn-primary-solid {
   background: var(--dash-primary); color: #fff; border: none;
   padding: 10px 18px; font-weight: 700;

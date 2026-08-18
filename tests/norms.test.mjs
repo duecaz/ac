@@ -121,6 +121,21 @@ assert.strictEqual(scanNormsSource('templates/x/editor.js',
   'CONTRA-PRUEBA: con las DOS puertas, el camino legítimo pasa limpio');
 assert.strictEqual(scanNormsSource('views/vsView.js', `const data = await uploadMedia(file, {});`).length, 0,
   'y el avatar del duelo está exento CON motivo: es la cara de una persona, no contenido (R7)');
-ok('el escáner caza cada norma (pb-dueno · ls-dueno · fallo-mudo · confianza-alumno · reloj-primitivo · reloj-sala · id-rid · imagen-buscable) y respeta comentarios + allowlist');
+// chrome-boton: UNA gramática de botón en el panel. Nació de una captura del
+// dueño — «Crear actividad» con `btn btn-primary` salía en azul de Bootstrap,
+// esquina afilada y otra altura, dentro de la barra crema/naranja del panel.
+assert.strictEqual(scanNormsSource('views/home.js',
+  `<a href="#/new" class="btn btn-sm btn-primary">Nueva</a>`).length, 1,
+  'caza el botón de Bootstrap en una vista de chrome ya migrada');
+assert.strictEqual(scanNormsSource('views/home.js',
+  `<a href="#/new" class="btn-primary-solid">Nueva</a>`).length, 0,
+  'CONTRA-PRUEBA: con la familia del panel, el camino legítimo pasa limpio');
+assert.strictEqual(scanNormsSource('views/adminView.js',
+  `<button class="btn btn-sm btn-danger">Borrar todo</button>`).length, 0,
+  'y el ratchet NO tumba lo que aún no se ha migrado: el admin usa btn-danger, y la familia del panel todavía no tiene esa variante');
+assert.strictEqual(scanNormsSource('views/hostLive.js',
+  `<button class="btn btn-lg btn-success">Siguiente</button>`).length, 0,
+  'CONTRA-PRUEBA: el JUEGO queda fuera — allí manda el skin, no el chrome del panel');
+ok('el escáner caza cada norma (pb-dueno · ls-dueno · fallo-mudo · confianza-alumno · reloj-primitivo · reloj-sala · id-rid · imagen-buscable · chrome-boton) y respeta comentarios + allowlist');
 
 console.log(`\nnorms.test: ${passed} checks passed`);

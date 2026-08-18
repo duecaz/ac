@@ -75,6 +75,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   let currentMode = initialMode;
   let currentDisposer = null;
   let currentAnim = null;   // animación de progreso del modo solo (carril)
+  let fsDisposer = null;    // enganche del botón de pantalla completa (uno vivo)
   // Ficha de generación: cada selectMode() la incrementa. runMode()/mountSoloStart
   // son ASÍNCRONOS (dynamic import + montaje); si el usuario cambia de modo otra
   // vez antes de que resuelvan, el resultado tardío NO debe pisar currentDisposer
@@ -83,6 +84,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   let modeToken = 0;
   ctx.add(() => { if (currentDisposer) { try { currentDisposer.dispose(); } catch {} currentDisposer = null; } });
   ctx.add(() => { if (currentAnim) { try { currentAnim.dispose(); } catch {} currentAnim = null; } });
+  ctx.add(() => { if (fsDisposer) { try { fsDisposer(); } catch {} fsDisposer = null; } });
   // This page themes only the embed frame (scoped, after paint()). Keep the
   // page chrome neutral on enter AND restore it on teardown, clearing any
   // global theme a prior view (host/student live) may have left on <body>.
@@ -116,6 +118,13 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     // "Equipos" aparecía en Ruleta/Pregunta Live (que no tienen renderRound) y
     // "Individual" en plantillas solo-en-vivo. La gating de disponibilidad
     // (isAvailable) decide habilitado/gris dentro de los que sí soporta.
+    //
+    // Y SÍ, estos van con Bootstrap a propósito, aunque la cabecera de esta
+    // misma pantalla vista con la familia del panel (.btn-ghost): un botón de
+    // modo lleva el COLOR DE SU MODO (`m.color`) y es affordance de JUEGO —
+    // elegir cómo se juega—, no una acción de panel. Escrito aquí porque si no
+    // se lee como una migración a medias. Por eso esta vista no entra en
+    // CHROME_VIEWS (core/normsCheck.js): tiene las dos gramáticas, con motivo.
     const T = getTemplate(act.template);
     return availableModes(act).filter(m => m.supportsTemplate(T)).map(m => {
       const ok = m.isAvailable(act);
@@ -235,13 +244,15 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
                  button + "jugar otra vez" de cada modo, core/afterPlay.js) — no se
                  repiten aquí. Editar sale arriba junto a Crear SOLO si es tuya
                  (canEdit real, ya no un valor fijo). Lo que sobra — reiniciar
-                 desde fuera, Embed, Duplicar — va al menú de puntos. -->
+                 desde fuera, Embed, Duplicar — va al menú de puntos.
+                 Con la MISMA gramática de botón que «Mis actividades»
+                 (.btn-ghost / .btn-primary-solid), no la de Bootstrap. -->
             <div class="pp-header-actions">
-              ${canEdit ? `<a href="#/edit/${a.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> Editar actividad</a>` : ''}
-              <a href="#/new" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg"></i> Crear actividad</a>
-              <button class="btn btn-sm btn-outline-secondary" id="btn-share"><i class="bi bi-share"></i> Compartir</button>
+              ${canEdit ? `<a href="#/edit/${a.id}" class="btn-ghost"><i class="bi bi-pencil"></i> Editar actividad</a>` : ''}
+              <a href="#/new" class="btn-primary-solid"><i class="bi bi-plus-lg"></i> Crear actividad</a>
+              <button class="btn-ghost" id="btn-share"><i class="bi bi-share"></i> Compartir</button>
               <div class="dropdown">
-                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones">
+                <button class="btn-ghost btn-ghost--icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones" aria-label="Más acciones">
                   <i class="bi bi-three-dots"></i>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
@@ -407,7 +418,12 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     // El de la esquina expande el MISMO marco, y su disposer se cuelga del ctx
     // de la vista (§23): sin él, el listener de `fullscreenchange` sobreviviría
     // al cambio de ruta y repintaría botones de una pantalla que ya no existe.
-    ctx.add(attachFullscreenButton('#ww-frame', { target: document.getElementById('ww-frame') }));
+    // Se SUELTA el anterior antes de enganchar el nuevo: `paint()` no se llama
+    // una vez, se repite en cada cambio de plantilla, y cada enganche registra
+    // dos oyentes de `fullscreenchange` en `document`. Colgarlos solo del ctx de
+    // la vista los acumulaba hasta salir de la ruta (2 por cada cambio).
+    if (fsDisposer) { try { fsDisposer(); } catch { /* ya suelto */ } }
+    fsDisposer = attachFullscreenButton('#ww-frame', { target: document.getElementById('ww-frame') });
     on(rootSel, 'click', '#btn-share', async () => {
       try { await navigator.clipboard.writeText(location.href); toast('Link copiado.', 'success'); }
       catch { toast('No se pudo copiar — copia manualmente: ' + location.href, 'warning', 6000); }

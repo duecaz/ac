@@ -198,6 +198,19 @@ escribirse; si necesita violar una prohibición, está en la capa equivocada.
   del chrome (hoy §3 solo legisla el JUEGO). Mientras tanto, cualquier trabajo
   offline debe recordar que `confirmModal` depende del CDN (el shim de
   `tools/live-smoke.mjs` existe por esto).
+  **PRIMER TRAMO DE ESA LEY, ya ejecutable (2026-08-18)**: la regla
+  `chrome-boton` (`core/normsCheck.js`, vigilada por `tests/norms.test.mjs`).
+  Las vistas declaradas en `CHROME_VIEWS` visten con la familia propia del panel
+  (`.btn-ghost` / `.btn-primary-solid`, `styles/home.css`) y no pueden volver a
+  `btn btn-*`. Nació de una captura del dueño: «Crear actividad» llevaba
+  `btn btn-primary` y salía en azul de Bootstrap, con esquina afilada y otra
+  altura, dentro de la barra crema/naranja — arreglarlo a mano en una vista no
+  impedía que la siguiente pantalla naciera igual, que es cómo llegó. Es un
+  RATCHET con lista declarada (como `LS_OWNERS`): lo limpio no retrocede, y lo
+  que falta por migrar (admin, tareas, editor, informes) sigue siendo legal
+  hasta que se decidan las variantes que la familia no tiene — no hay
+  `.btn-ghost--danger` para los borrados del admin, y ESA es la decisión que
+  bloquea el resto. El juego queda fuera: allí manda el skin (§3).
   **La especificación ya es ejecutable (R3/R4)**: `node tools/css-inventory.mjs`
   cuenta qué clases de Bootstrap usa la app de verdad, por familia (hoy ~3.900
   usos: texto 761 · iconos `bi` 690 · spacing 613 · botones 507 · flex 371 ·
