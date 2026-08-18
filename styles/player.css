@@ -62,58 +62,93 @@
 }
 
 /* ── Diagramación de la página de jugar (dueño, 2026-08-18, dos capturas) ────
-   Tres áreas — cabecera · escenario (marco+modos) · apariencia (tema/fondo/
-   cambiar plantilla) — repartidas por `grid-template-areas`. El ORDEN VISUAL
-   lo decide el CSS por breakpoint, no el DOM (que es siempre header→stage→
-   appearance): en PC la cabecera manda arriba y escenario+apariencia van en
-   dos columnas; en tablet-o-menos se JUEGA primero (el escenario sube) y la
-   cabecera con los botones baja debajo. Duplicar el marcado por breakpoint
-   hubiera sido el camino fácil pero rompe "una sola fuente de verdad".
-   TRES escalones, no dos — el de en medio existe por una razón MEDIDA, no
-   estética: el VS/Equipos "expandido" (`.is-expanded`, más abajo) necesita
-   hasta 1100px para que sus controles no se solapen (matrix-smoke lo cazó:
-   con la columna de Apariencia robándole sitio a 1280px, el botón de enviar
-   de Tildes/Comas quedaba tapado). Por eso la columna de Apariencia solo
-   aparece al lado cuando SOBRA sitio de verdad (≥1450, deja 1100 al
-   escenario); entre 769 y 1449 se apila igual que en tablet, solo que con
-   la cabecera arriba en vez de debajo del marco. */
+   CUATRO áreas — cabecera · marco · modo de juego · apariencia — repartidas
+   por `grid-template-areas`. El ORDEN VISUAL lo decide el CSS por breakpoint,
+   no el DOM (que es siempre header→stage→modes→appearance):
+
+     · PC (≥992px, la captura ancha mide 1064): cabecera arriba a todo el
+       ancho; marco + «Modo de juego» a la izquierda; Apariencia a la derecha.
+     · tablet-o-menos (la captura estrecha mide 807): se JUEGA primero — el
+       marco arriba, la cabecera debajo, luego modos y Apariencia.
+
+   «Modo de juego» es área PROPIA (no vive dentro del escenario) porque en
+   tablet la foto lo pone DESPUÉS de la cabecera, y solo un área independiente
+   puede reordenarse. Duplicar el marcado por breakpoint hubiera sido el
+   camino fácil pero rompe "una sola fuente de verdad".
+
+   El primer intento puso el corte de las dos columnas en 1450px «para que el
+   VS expandido conservara sus 1100» — y la ventana del dueño mide 1443: nunca
+   vio el modo PC. El fallo que motivó aquel 1450 era en realidad VERTICAL
+   (los smokes tocaban sin hacer scroll; ya corregidos), así que el corte
+   vuelve a donde manda la foto. El VS en columna estrecha se adapta solo:
+   toda su maquetación es de contenedor (cq*), no de viewport. */
 .pp-layout {
   display: grid;
-  grid-template-columns: 1fr;
-  grid-template-areas: "stage" "header" "appearance";
-  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "stage" "header" "modes" "appearance";
+  gap: 1rem;
   align-items: start;
 }
 .pp-header      { grid-area: header; }
 .pp-stage       { grid-area: stage; min-width: 0; }
+.pp-modes       { grid-area: modes; min-width: 0; }
 .pp-appearance  { grid-area: appearance; min-width: 0; }
 
-/* 769px: la cabecera sube (mockup 1) pero todavía en una sola columna. */
-@media (min-width: 769px) {
-  .pp-layout { grid-template-areas: "header" "stage" "appearance"; }
-}
-/* 1450px: recién aquí hay sitio para el escenario a su ancho de siempre
-   (1100 del VS expandido) MÁS la columna de Apariencia sin robárselo. */
-@media (min-width: 1450px) {
+@media (min-width: 992px) {
   .pp-layout {
-    grid-template-columns: minmax(0, 1100px) minmax(280px, 1fr);
+    grid-template-columns: minmax(0, 1fr) clamp(300px, 32%, 430px);
+    /* La última fila (1fr) absorbe el alto sobrante de la columna de
+       Apariencia (que abarca dos filas): sin esto, ese alto infla la fila del
+       marco y «Modo de juego» queda descolgado un pantallazo más abajo. */
+    grid-template-rows: auto auto 1fr;
     grid-template-areas:
       "header header"
-      "stage  appearance";
+      "stage  appearance"
+      "modes  appearance";
   }
+}
+
+/* La TARJETA de sección (como en las fotos): blanca, redondeada, con su
+   etiqueta gris en versalitas dentro. Es CHROME del panel (paleta de la home),
+   no juego: por eso los colores van directos y no por tokens --ww-*. */
+.pp-card {
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, .08);
+  border-radius: 16px;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, .05);
 }
 
 .pp-header {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: .75rem;
+  align-items: center;
+  gap: .5rem .75rem;
 }
-.pp-title { font-size: 1.5rem; font-weight: 800; margin: 0 0 .25rem; line-height: 1.2; }
+.pp-header-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .25rem .6rem;
+  min-width: 0;
+}
+.pp-title { font-size: 1.6rem; font-weight: 800; margin: 0; line-height: 1.2; }
 .pp-meta a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
-.pp-header-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: flex-start; }
+.pp-header-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
 .pp-appearance-title { font-weight: 800; margin-bottom: .75rem; }
+
+/* Tema y Fondo dentro de la tarjeta de Apariencia: en la columna lateral de PC
+   van uno debajo del otro; a todo el ancho (tablet) caben lado a lado, que es
+   exactamente cómo los pinta la captura estrecha. */
+.pp-appearance-sections {
+  display: grid;
+  gap: 1rem 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+}
+@media (min-width: 992px) {
+  .pp-appearance-sections { grid-template-columns: minmax(0, 1fr); }
+}
 
 /* The "embed" frame — bounded width, fixed aspect ratio, scrolls inside.
    Like a YouTube embed: small box inside the page, not the whole page. */

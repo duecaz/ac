@@ -210,24 +210,26 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     mount(rootSel, html`
       <div class="ww-play-page">
         <!-- LA DIAGRAMACIÓN (dueño, 2026-08-18, con dos capturas de referencia):
-             .pp-layout es un grid con TRES áreas — cabecera · escenario ·
-             apariencia — que en PC pone la cabecera arriba a todo el ancho y
-             escenario+apariencia en dos columnas, y en tablet-o-menos APILA con
-             el escenario PRIMERO (jugar antes de leer botones). El orden lo
-             decide el CSS (grid-template-areas por media query), no el DOM: así
-             no hace falta duplicar el marcado por breakpoint. Ver styles/player.css. -->
+             .pp-layout es un grid con CUATRO áreas — cabecera · marco · modo de
+             juego · apariencia — cada una en su TARJETA blanca (como en las
+             fotos). En PC la cabecera va arriba a todo el ancho, marco+modos a
+             la izquierda y Apariencia a la derecha; en tablet-o-menos se APILA
+             con el marco PRIMERO (jugar antes de leer botones) y la cabecera
+             debajo. El orden lo decide el CSS (grid-template-areas por media
+             query), no el DOM: así no hay marcado duplicado por breakpoint.
+             Ver styles/player.css. -->
         <div class="pp-layout">
 
           <div class="pp-header">
+            <!-- Como en la foto: título · etiqueta de plantilla · «N elementos ·
+                 por fulano», todo en UNA línea de base (envuelve si no cabe). -->
             <div class="pp-header-info">
               <h1 class="pp-title">${escapeHtml(a.title)}</h1>
-              <div class="text-muted small pp-meta">
-                <span class="badge bg-${T?.meta?.color || 'info'}"><i class="bi ${T?.meta?.icon || 'bi-puzzle'}"></i> ${escapeHtml(T?.meta?.label || liveTemplate)}</span>
-                · ${activityItemCount(a)} elementos
+              <span class="badge bg-${T?.meta?.color || 'info'}"><i class="bi ${T?.meta?.icon || 'bi-puzzle'}"></i> ${escapeHtml(T?.meta?.label || liveTemplate)}</span>
+              <span class="text-muted small pp-meta">${activityItemCount(a)} elementos
                 · por ${a.author?.id ? `<a href="#/autor/${escapeHtml(a.author.id)}">${escapeHtml(a.author.name || 'Profesor')}</a>` : 'anónimo'}
-                ${a.subtitle ? `· ${escapeHtml(a.subtitle)}` : ''}
-              </div>
-              ${(a.tags||[]).length ? `<div class="mt-1">${(a.tags||[]).map(t => `<span class="badge bg-light text-dark border me-1">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+                ${a.subtitle ? `· ${escapeHtml(a.subtitle)}` : ''}</span>
+              ${(a.tags||[]).length ? `<span class="pp-tags">${(a.tags||[]).map(t => `<span class="badge bg-light text-dark border me-1">${escapeHtml(t)}</span>`).join('')}</span>` : ''}
             </div>
             <!-- Reiniciar y pantalla completa YA VIVEN dentro del marco (corner
                  button + "jugar otra vez" de cada modo, core/afterPlay.js) — no se
@@ -257,53 +259,66 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
           <div class="pp-stage">
             <!-- El botón de pantalla completa va DENTRO del marco, discreto y en
                  la esquina (como Wordwall). -->
-            <div class="ww-player-frame mb-3" style="${aspectStyle(aspect)}" id="ww-frame">
+            <div class="ww-player-frame" style="${aspectStyle(aspect)}" id="ww-frame">
               <div id="ww-solo-anim" class="ww-solo-anim" hidden></div>
               <div id="ww-player-widget"></div>
               ${fullscreenButtonHtml({ corner: true })}
             </div>
+          </div>
 
-            <h6 class="text-muted text-uppercase small mb-2">Modos de juego</h6>
-            <div class="d-flex flex-wrap gap-2 mb-4 ww-modes">
+          <!-- Área propia (no dentro del escenario): en tablet la foto la pone
+               DESPUÉS de la cabecera, y solo un área independiente puede
+               reordenarse por grid-template-areas. -->
+          <div class="pp-modes pp-card">
+            <h6 class="text-muted text-uppercase small mb-2">Modo de juego</h6>
+            <div class="d-flex flex-wrap gap-2 ww-modes">
               ${modeBarHtml(playActivity())}
             </div>
           </div>
 
           <div class="pp-appearance">
-            <h5 class="pp-appearance-title">Apariencia</h5>
-
-            <h6 class="text-muted text-uppercase small mb-2">Tema</h6>
-            <div class="d-flex flex-wrap gap-2 mb-4">
-              ${listSkins().map(s => `
-                <div class="ww-pick-tile skin-pick ${currentSkin===s.name?'is-active':''}" data-name="${s.name}" role="button" title="${escapeHtml(s.description||'')}">
-                  ${skinPreviewHtml(s.name)}
+            <div class="pp-card">
+              <h5 class="pp-appearance-title">Apariencia</h5>
+              <div class="pp-appearance-sections">
+                <div>
+                  <h6 class="text-muted text-uppercase small mb-2">Tema</h6>
+                  <div class="d-flex flex-wrap gap-2">
+                    ${listSkins().map(s => `
+                      <div class="ww-pick-tile skin-pick ${currentSkin===s.name?'is-active':''}" data-name="${s.name}" role="button" title="${escapeHtml(s.description||'')}">
+                        ${skinPreviewHtml(s.name)}
+                      </div>
+                    `).join('')}
+                  </div>
                 </div>
-              `).join('')}
-            </div>
-
-            <h6 class="text-muted text-uppercase small mb-2">Fondo</h6>
-            <div class="d-flex flex-wrap gap-2 mb-4">
-              ${listBackgrounds().map(b => b.name === 'custom'
-                ? `<div class="ww-pick-tile bg-pick ${currentBg==='custom'?'is-active':''}" data-name="custom" role="button" title="${escapeHtml(b.description||'')}" style="width:88px">
-                     ${backgroundPreviewHtml('custom', a.presentation?.backgroundImage || '')}
-                     <label class="btn btn-sm btn-outline-secondary w-100 mt-1" style="cursor:pointer" title="Máx 800 KB">
-                       <i class="bi bi-upload"></i> ${a.presentation?.backgroundImage ? 'Cambiar' : 'Subir'}
-                       <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" id="bg-custom-file" hidden>
-                     </label>
-                   </div>`
-                : `<div class="ww-pick-tile bg-pick ${currentBg===b.name?'is-active':''}" data-name="${b.name}" role="button" title="${escapeHtml(b.description||'')}" style="width:88px">
-                     ${backgroundPreviewHtml(b.name)}
-                   </div>`).join('')}
+                <div>
+                  <h6 class="text-muted text-uppercase small mb-2">Fondo</h6>
+                  <div class="d-flex flex-wrap gap-2">
+                    ${listBackgrounds().map(b => b.name === 'custom'
+                      ? `<div class="ww-pick-tile bg-pick ${currentBg==='custom'?'is-active':''}" data-name="custom" role="button" title="${escapeHtml(b.description||'')}" style="width:88px">
+                           ${backgroundPreviewHtml('custom', a.presentation?.backgroundImage || '')}
+                           <label class="btn btn-sm btn-outline-secondary w-100 mt-1" style="cursor:pointer" title="Máx 800 KB">
+                             <i class="bi bi-upload"></i> ${a.presentation?.backgroundImage ? 'Cambiar' : 'Subir'}
+                             <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" id="bg-custom-file" hidden>
+                           </label>
+                         </div>`
+                      : `<div class="ww-pick-tile bg-pick ${currentBg===b.name?'is-active':''}" data-name="${b.name}" role="button" title="${escapeHtml(b.description||'')}" style="width:88px">
+                           ${backgroundPreviewHtml(b.name)}
+                         </div>`).join('')}
+                  </div>
+                </div>
+              </div>
             </div>
 
             ${compat.length ? `
-              <h6 class="text-muted text-uppercase small mb-2">Mismo contenido, otra plantilla</h6>
-              <div class="d-flex flex-wrap gap-2 mb-4">
-                ${compat.map(t => `
-                  <button class="btn btn-outline-${t.meta.color || 'secondary'} btn-sm tpl-switch" data-name="${t.meta.name}">
-                    <i class="bi ${t.meta.icon}"></i> ${escapeHtml(t.meta.label)}
-                  </button>
-                `).join('')}
+              <div class="pp-card mt-3">
+                <h6 class="text-muted text-uppercase small mb-2">Mismo contenido, otra plantilla</h6>
+                <div class="d-flex flex-wrap gap-2">
+                  ${compat.map(t => `
+                    <button class="btn btn-outline-${t.meta.color || 'secondary'} btn-sm tpl-switch" data-name="${t.meta.name}">
+                      <i class="bi ${t.meta.icon}"></i> ${escapeHtml(t.meta.label)}
+                    </button>
+                  `).join('')}
+                </div>
               </div>` : ''}
           </div>
 
