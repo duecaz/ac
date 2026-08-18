@@ -61,6 +61,60 @@
   }
 }
 
+/* ── Diagramación de la página de jugar (dueño, 2026-08-18, dos capturas) ────
+   Tres áreas — cabecera · escenario (marco+modos) · apariencia (tema/fondo/
+   cambiar plantilla) — repartidas por `grid-template-areas`. El ORDEN VISUAL
+   lo decide el CSS por breakpoint, no el DOM (que es siempre header→stage→
+   appearance): en PC la cabecera manda arriba y escenario+apariencia van en
+   dos columnas; en tablet-o-menos se JUEGA primero (el escenario sube) y la
+   cabecera con los botones baja debajo. Duplicar el marcado por breakpoint
+   hubiera sido el camino fácil pero rompe "una sola fuente de verdad".
+   TRES escalones, no dos — el de en medio existe por una razón MEDIDA, no
+   estética: el VS/Equipos "expandido" (`.is-expanded`, más abajo) necesita
+   hasta 1100px para que sus controles no se solapen (matrix-smoke lo cazó:
+   con la columna de Apariencia robándole sitio a 1280px, el botón de enviar
+   de Tildes/Comas quedaba tapado). Por eso la columna de Apariencia solo
+   aparece al lado cuando SOBRA sitio de verdad (≥1450, deja 1100 al
+   escenario); entre 769 y 1449 se apila igual que en tablet, solo que con
+   la cabecera arriba en vez de debajo del marco. */
+.pp-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-areas: "stage" "header" "appearance";
+  gap: 1.5rem;
+  align-items: start;
+}
+.pp-header      { grid-area: header; }
+.pp-stage       { grid-area: stage; min-width: 0; }
+.pp-appearance  { grid-area: appearance; min-width: 0; }
+
+/* 769px: la cabecera sube (mockup 1) pero todavía en una sola columna. */
+@media (min-width: 769px) {
+  .pp-layout { grid-template-areas: "header" "stage" "appearance"; }
+}
+/* 1450px: recién aquí hay sitio para el escenario a su ancho de siempre
+   (1100 del VS expandido) MÁS la columna de Apariencia sin robárselo. */
+@media (min-width: 1450px) {
+  .pp-layout {
+    grid-template-columns: minmax(0, 1100px) minmax(280px, 1fr);
+    grid-template-areas:
+      "header header"
+      "stage  appearance";
+  }
+}
+
+.pp-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: .75rem;
+}
+.pp-title { font-size: 1.5rem; font-weight: 800; margin: 0 0 .25rem; line-height: 1.2; }
+.pp-meta a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.pp-header-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: flex-start; }
+.pp-appearance-title { font-weight: 800; margin-bottom: .75rem; }
+
 /* The "embed" frame — bounded width, fixed aspect ratio, scrolls inside.
    Like a YouTube embed: small box inside the page, not the whole page. */
 .ww-play-page .ww-player-frame {

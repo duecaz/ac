@@ -84,7 +84,17 @@ const TOCABLE = `(sel) => {
     return cs.display !== 'none' && cs.visibility !== 'hidden';
   }) || todos[0];
   if (!el) return 'ausente';
-  const r = el.getBoundingClientRect();
+  // Como haría cualquiera con el dedo: si el control cae fuera de la ventana
+  // se BAJA hasta él antes de tocar (dueño, 2026-08-18 — la página de jugar
+  // ganó una cabecera arriba del marco y el control quedaba a un scroll de
+  // distancia; elementFromPoint en un punto fuera del viewport siempre
+  // devuelve null, así que sin este scroll el veredicto sería "tapado por
+  // nadie" aunque el control se vea y funcione perfectamente).
+  let r = el.getBoundingClientRect();
+  if (r.top < 0 || r.bottom > innerHeight) {
+    el.scrollIntoView({ block: 'center' });
+    r = el.getBoundingClientRect();
+  }
   if (!r.width || !r.height) return 'sin tamaño';
   if (r.bottom < 0 || r.top > innerHeight || r.right < 0 || r.left > innerWidth) return 'fuera de pantalla';
   const cs = getComputedStyle(el);

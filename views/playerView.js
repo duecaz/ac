@@ -12,6 +12,7 @@ import { getTemplate, compatibleTemplates } from '../core/registry.js';
 import { isVsCompatible } from '../kernel/session/engine.js';
 import { availableModes, getMode, runMode, modeNeedsAuth, modeAuthHint } from '../core/modes.js';
 import { canHost } from '../core/authGate.js';
+import { getAuthUserId } from '../core/auth.js';
 import { openLoginModal } from './loginModal.js';
 import { clearSoloProgress } from '../core/soloPlayer.js';
 import { renderStartScreen } from './startScreen.js';
@@ -19,7 +20,7 @@ import { listSkins, applySkin, skinPreviewHtml } from '../core/skins.js';
 
 import { listBackgrounds, applyBackground, backgroundPreviewHtml, readBackgroundImage } from '../core/backgrounds.js';
 import { resetScene } from '../core/presentation.js';
-import { toggleFullscreen, fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
+import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
 import { applyPlayOptions } from '../core/playOptions.js';
 import { acquire } from '../core/lifecycle.js';
 import { toast, confirmModal } from '../core/toast.js';
@@ -88,9 +89,11 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   resetScene();
   ctx.add(() => resetScene());
 
-  // Auth check for "Edit" visibility.
-  // Banco compartido sin dueño: cualquiera puede editar.
-  const canEdit = true;
+  // Auth check for "Edit" visibility (dueño 2026-08-18: era `true` fijo — el
+  // botón "Editar" salía en actividades ajenas). Banco compartido SIN dueño
+  // sigue siendo editable por cualquiera (`a.author?.id` vacío, p. ej. las
+  // sembradas antes de que existiera autoría); con dueño, solo el dueño.
+  const canEdit = !a.author?.id || a.author.id === getAuthUserId();
 
   paint();
 
@@ -206,84 +209,105 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
 
     mount(rootSel, html`
       <div class="ww-play-page">
+        <!-- LA DIAGRAMACIÓN (dueño, 2026-08-18, con dos capturas de referencia):
+             .pp-layout es un grid con TRES áreas — cabecera · escenario ·
+             apariencia — que en PC pone la cabecera arriba a todo el ancho y
+             escenario+apariencia en dos columnas, y en tablet-o-menos APILA con
+             el escenario PRIMERO (jugar antes de leer botones). El orden lo
+             decide el CSS (grid-template-areas por media query), no el DOM: así
+             no hace falta duplicar el marcado por breakpoint. Ver styles/player.css. -->
+        <div class="pp-layout">
 
-        <!-- Orden tipo Wordwall: primero la ACTIVIDAD, luego título + autor, luego
-             los modos. La navegación "Inicio" ya vive en la barra superior (un solo
-             nav), así que aquí no se repite la miga de pan. -->
-        <!-- El botón de pantalla completa va DENTRO del marco, discreto y en la
-             esquina (como Wordwall): durante la actividad el profe no baja a
-             buscar un control en una barra, y el mismo botón sirve para SALIR
-             (cambia de icono). Al vivir en el marco compartido sale en los tres
-             modos embebidos —Individual, VS y Equipos— sin repetirlo en cada uno. -->
-        <div class="ww-player-frame mb-3" style="${aspectStyle(aspect)}" id="ww-frame">
-          <div id="ww-solo-anim" class="ww-solo-anim" hidden></div>
-          <div id="ww-player-widget"></div>
-          ${fullscreenButtonHtml({ corner: true })}
-        </div>
-
-        <div class="mb-3">
-          <h3 class="mb-1">${escapeHtml(a.title)}</h3>
-          ${a.author?.name ? `<div class="text-muted small mb-1">por ${escapeHtml(a.author.name)}</div>` : ''}
-          <div class="text-muted small">
-            <span class="badge bg-${T?.meta?.color || 'info'}"><i class="bi ${T?.meta?.icon || 'bi-puzzle'}"></i> ${escapeHtml(T?.meta?.label || liveTemplate)}</span>
-            · ${activityItemCount(a)} elementos
-            ${a.subtitle ? `· ${escapeHtml(a.subtitle)}` : ''}
-          </div>
-          ${(a.tags||[]).length ? `<div class="mt-1">${(a.tags||[]).map(t => `<span class="badge bg-light text-dark border me-1">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
-        </div>
-
-        <h6 class="text-muted text-uppercase small mb-2">Modos de juego</h6>
-        <div class="d-flex flex-wrap gap-2 mb-4 ww-modes">
-          ${modeBarHtml(playActivity())}
-        </div>
-
-        <div class="d-flex flex-wrap gap-2 mb-4">
-          <button class="btn btn-sm btn-outline-secondary" id="btn-restart"><i class="bi bi-arrow-clockwise"></i> Reiniciar</button>
-          <button class="btn btn-sm btn-outline-secondary" id="btn-fs"><i class="bi bi-arrows-fullscreen"></i> Pantalla completa</button>
-          ${canEdit ? `<a href="#/edit/${a.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> Editar</a>` : ''}
-          <button class="btn btn-sm btn-outline-secondary" id="btn-link"><i class="bi bi-link-45deg"></i> Copiar link</button>
-          <!-- «beta» a propósito: embeber está FUERA DE LA ESCENA por ahora
-               (norte §7c) — pinta, pero nadie lo ha validado dentro de un blog
-               o un LMS. La puerta entornada se DICE ANTES, no se descubre. -->
-          <button class="btn btn-sm btn-outline-secondary" id="btn-embed"><i class="bi bi-code-square"></i> Embed <span class="badge bg-secondary">beta</span></button>
-          <button class="btn btn-sm btn-outline-secondary" id="btn-fork"><i class="bi bi-files"></i> Duplicar</button>
-        </div>
-
-        <h6 class="text-muted text-uppercase small mb-2">Tema</h6>
-        <div class="d-flex flex-wrap gap-2 mb-4">
-          ${listSkins().map(s => `
-            <div class="ww-pick-tile skin-pick ${currentSkin===s.name?'is-active':''}" data-name="${s.name}" role="button" title="${escapeHtml(s.description||'')}">
-              ${skinPreviewHtml(s.name)}
+          <div class="pp-header">
+            <div class="pp-header-info">
+              <h1 class="pp-title">${escapeHtml(a.title)}</h1>
+              <div class="text-muted small pp-meta">
+                <span class="badge bg-${T?.meta?.color || 'info'}"><i class="bi ${T?.meta?.icon || 'bi-puzzle'}"></i> ${escapeHtml(T?.meta?.label || liveTemplate)}</span>
+                · ${activityItemCount(a)} elementos
+                · por ${a.author?.id ? `<a href="#/autor/${escapeHtml(a.author.id)}">${escapeHtml(a.author.name || 'Profesor')}</a>` : 'anónimo'}
+                ${a.subtitle ? `· ${escapeHtml(a.subtitle)}` : ''}
+              </div>
+              ${(a.tags||[]).length ? `<div class="mt-1">${(a.tags||[]).map(t => `<span class="badge bg-light text-dark border me-1">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
             </div>
-          `).join('')}
+            <!-- Reiniciar y pantalla completa YA VIVEN dentro del marco (corner
+                 button + "jugar otra vez" de cada modo, core/afterPlay.js) — no se
+                 repiten aquí. Editar sale arriba junto a Crear SOLO si es tuya
+                 (canEdit real, ya no un valor fijo). Lo que sobra — reiniciar
+                 desde fuera, Embed, Duplicar — va al menú de puntos. -->
+            <div class="pp-header-actions">
+              ${canEdit ? `<a href="#/edit/${a.id}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i> Editar actividad</a>` : ''}
+              <a href="#/new" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg"></i> Crear actividad</a>
+              <button class="btn btn-sm btn-outline-secondary" id="btn-share"><i class="bi bi-share"></i> Compartir</button>
+              <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones">
+                  <i class="bi bi-three-dots"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li><button class="dropdown-item" id="btn-restart"><i class="bi bi-arrow-clockwise"></i> Reiniciar</button></li>
+                  <!-- «beta» a propósito: embeber está FUERA DE LA ESCENA por ahora
+                       (norte §7c) — pinta, pero nadie lo ha validado dentro de un
+                       blog o un LMS. La puerta entornada se DICE ANTES. -->
+                  <li><button class="dropdown-item" id="btn-embed"><i class="bi bi-code-square"></i> Embed <span class="badge bg-secondary">beta</span></button></li>
+                  <li><button class="dropdown-item" id="btn-fork"><i class="bi bi-files"></i> Duplicar</button></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="pp-stage">
+            <!-- El botón de pantalla completa va DENTRO del marco, discreto y en
+                 la esquina (como Wordwall). -->
+            <div class="ww-player-frame mb-3" style="${aspectStyle(aspect)}" id="ww-frame">
+              <div id="ww-solo-anim" class="ww-solo-anim" hidden></div>
+              <div id="ww-player-widget"></div>
+              ${fullscreenButtonHtml({ corner: true })}
+            </div>
+
+            <h6 class="text-muted text-uppercase small mb-2">Modos de juego</h6>
+            <div class="d-flex flex-wrap gap-2 mb-4 ww-modes">
+              ${modeBarHtml(playActivity())}
+            </div>
+          </div>
+
+          <div class="pp-appearance">
+            <h5 class="pp-appearance-title">Apariencia</h5>
+
+            <h6 class="text-muted text-uppercase small mb-2">Tema</h6>
+            <div class="d-flex flex-wrap gap-2 mb-4">
+              ${listSkins().map(s => `
+                <div class="ww-pick-tile skin-pick ${currentSkin===s.name?'is-active':''}" data-name="${s.name}" role="button" title="${escapeHtml(s.description||'')}">
+                  ${skinPreviewHtml(s.name)}
+                </div>
+              `).join('')}
+            </div>
+
+            <h6 class="text-muted text-uppercase small mb-2">Fondo</h6>
+            <div class="d-flex flex-wrap gap-2 mb-4">
+              ${listBackgrounds().map(b => b.name === 'custom'
+                ? `<div class="ww-pick-tile bg-pick ${currentBg==='custom'?'is-active':''}" data-name="custom" role="button" title="${escapeHtml(b.description||'')}" style="width:88px">
+                     ${backgroundPreviewHtml('custom', a.presentation?.backgroundImage || '')}
+                     <label class="btn btn-sm btn-outline-secondary w-100 mt-1" style="cursor:pointer" title="Máx 800 KB">
+                       <i class="bi bi-upload"></i> ${a.presentation?.backgroundImage ? 'Cambiar' : 'Subir'}
+                       <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" id="bg-custom-file" hidden>
+                     </label>
+                   </div>`
+                : `<div class="ww-pick-tile bg-pick ${currentBg===b.name?'is-active':''}" data-name="${b.name}" role="button" title="${escapeHtml(b.description||'')}" style="width:88px">
+                     ${backgroundPreviewHtml(b.name)}
+                   </div>`).join('')}
+            </div>
+
+            ${compat.length ? `
+              <h6 class="text-muted text-uppercase small mb-2">Mismo contenido, otra plantilla</h6>
+              <div class="d-flex flex-wrap gap-2 mb-4">
+                ${compat.map(t => `
+                  <button class="btn btn-outline-${t.meta.color || 'secondary'} btn-sm tpl-switch" data-name="${t.meta.name}">
+                    <i class="bi ${t.meta.icon}"></i> ${escapeHtml(t.meta.label)}
+                  </button>
+                `).join('')}
+              </div>` : ''}
+          </div>
+
         </div>
-
-        <h6 class="text-muted text-uppercase small mb-2">Fondo</h6>
-        <div class="d-flex flex-wrap gap-2 mb-4">
-          ${listBackgrounds().map(b => b.name === 'custom'
-            ? `<div class="ww-pick-tile bg-pick ${currentBg==='custom'?'is-active':''}" data-name="custom" role="button" title="${escapeHtml(b.description||'')}" style="width:88px">
-                 ${backgroundPreviewHtml('custom', a.presentation?.backgroundImage || '')}
-                 <label class="btn btn-sm btn-outline-secondary w-100 mt-1" style="cursor:pointer" title="Máx 800 KB">
-                   <i class="bi bi-upload"></i> ${a.presentation?.backgroundImage ? 'Cambiar' : 'Subir'}
-                   <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" id="bg-custom-file" hidden>
-                 </label>
-               </div>`
-            : `<div class="ww-pick-tile bg-pick ${currentBg===b.name?'is-active':''}" data-name="${b.name}" role="button" title="${escapeHtml(b.description||'')}" style="width:88px">
-                 ${backgroundPreviewHtml(b.name)}
-               </div>`).join('')}
-        </div>
-
-
-        ${compat.length ? `
-          <h6 class="text-muted text-uppercase small mb-2">Cambiar plantilla (mismo contenido)</h6>
-          <div class="d-flex flex-wrap gap-2 mb-4">
-            ${compat.map(t => `
-              <button class="btn btn-outline-${t.meta.color || 'secondary'} btn-sm tpl-switch" data-name="${t.meta.name}">
-                <i class="bi ${t.meta.icon}"></i> ${escapeHtml(t.meta.label)}
-              </button>
-            `).join('')}
-          </div>` : ''}
-
       </div>
     `);
 
@@ -353,14 +377,14 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     });
     // Restart re-mounts whatever mode is active (new game / fresh setup).
     // Borra el progreso guardado para que REINICIE de verdad (no reanude).
+    // Vive en el menú de puntos ahora: el corner button del marco ya cubre
+    // pantalla completa, así que ese botón suelto se quitó sin reemplazo.
     on(rootSel, 'click', '#btn-restart', () => { clearSoloProgress(id); selectMode(currentMode); });
-    // Frame-level fullscreen: only the embed expands, not the page (YouTube-like).
-    on(rootSel, 'click', '#btn-fs', () => toggleFullscreen(document.getElementById('ww-frame')));
     // El de la esquina expande el MISMO marco, y su disposer se cuelga del ctx
     // de la vista (§23): sin él, el listener de `fullscreenchange` sobreviviría
     // al cambio de ruta y repintaría botones de una pantalla que ya no existe.
     ctx.add(attachFullscreenButton('#ww-frame', { target: document.getElementById('ww-frame') }));
-    on(rootSel, 'click', '#btn-link', async () => {
+    on(rootSel, 'click', '#btn-share', async () => {
       try { await navigator.clipboard.writeText(location.href); toast('Link copiado.', 'success'); }
       catch { toast('No se pudo copiar — copia manualmente: ' + location.href, 'warning', 6000); }
     });

@@ -16,10 +16,16 @@
 // teclado numérico, la sopa de letras— se lee de la PROPIA SEMILLA que el test
 // sembró, que no es lo mismo que calcular el resultado: es saber qué pusiste.
 
-/** Un toque real (pointer del navegador) en el centro del primer `sel`. */
+/** Un toque real (pointer del navegador) en el centro del primer `sel`.
+ *  `scrollIntoViewIfNeeded` primero: como haría cualquiera con el dedo. Sin
+ *  esto, un control que cae fuera de la ventana (la página de jugar ganó una
+ *  cabecera arriba del marco, 2026-08-18) recibe coordenadas fuera del
+ *  viewport y el click no toca nada — «la ronda no avanza» aunque el control
+ *  se vea y funcione perfectamente con un scroll de por medio. */
 async function tap(page, root, sel) {
   const el = page.locator(`${root} ${sel}`).first();
   if (!await el.count()) return false;
+  await el.scrollIntoViewIfNeeded();
   const box = await el.boundingBox();
   if (!box) return false;
   await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
@@ -43,6 +49,7 @@ const DRIVERS = [
   ['trazo', async (page, root) => {
     const t = page.locator(`${root} .tc-target`).first();
     if (!await t.count()) return false;
+    await t.scrollIntoViewIfNeeded();
     const b = await t.boundingBox();
     if (!b) return false;
     const y = b.y + b.height / 2;
@@ -60,6 +67,7 @@ const DRIVERS = [
     const tubos = page.locator(`${root} .tube`);
     const n = await tubos.count();
     if (n < 2) return false;
+    await tubos.nth(0).scrollIntoViewIfNeeded();
     const a = await tubos.nth(0).boundingBox();
     const z = await tubos.nth(n - 1).boundingBox();
     if (!a || !z) return false;
@@ -106,6 +114,7 @@ const DRIVERS = [
     const punto = async (rc) => {
       const el = page.locator(`${root} .ws-cell[data-r="${rc.r}"][data-c="${rc.c}"]`).first();
       if (!await el.count()) return null;
+      await el.scrollIntoViewIfNeeded();
       const b = await el.boundingBox();
       return b && { x: b.x + b.width / 2, y: b.y + b.height / 2 };
     };
@@ -134,6 +143,7 @@ const DRIVERS = [
       const from = page.locator(`${root} ${a}`).first();
       const to = page.locator(`${root} ${b}`).first();
       if (!await from.count() || !await to.count()) continue;
+      await from.scrollIntoViewIfNeeded();
       const f = await from.boundingBox();
       const t = await to.boundingBox();
       if (!f || !t) continue;
