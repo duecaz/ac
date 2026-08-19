@@ -429,6 +429,34 @@ function renderPanel(rootSel) {
   // El aviso de nº de actividades es AVISO, no veredicto: una regla de PB no
   // sabe contar filas (§22 — se dice lo que se puede aplicar). El tope de
   // TAMAÑO sí lo aplica el servidor (maxSize del campo `data`).
+  // ESTADO DE LA IA AL ABRIR, sin tocar nada y sin gastar una generación. La
+  // norma del proyecto es que la puerta cerrada se DIGA ANTES, no que se
+  // descubra al chocar: aquí se ve de un vistazo si falta el hook, si falta la
+  // clave, o si está todo puesto.
+  (async function pintarEstadoIA() {
+    const box = document.getElementById('ia-out');
+    if (!box) return;
+    try {
+      const { PB_URL } = await import('../pocketbase.config.js');
+      const r = await fetch(`${PB_URL}/api/ia/estado`);
+      if (r.status === 404) {
+        box.innerHTML = '<div class="alert alert-warning py-1 px-2 small mb-0">'
+          + '<b>El hook no está instalado en la Pi.</b> Copia <code>pb_hooks/aulareto.pb.js</code> '
+          + '(y monta <code>./pb_hooks:/pb_hooks</code> si usas Docker). Pasos: <code>docs/handoff-ia-contenido.md §7</code>.</div>';
+        return;
+      }
+      if (!r.ok) throw new Error(`estado ${r.status}`);
+      const e = await r.json();
+      box.innerHTML = e.configurado
+        ? `<div class="alert alert-success py-1 px-2 small mb-0">Hook instalado y con clave de <b>${escapeHtml(e.proveedor || '?')}</b> (en ${escapeHtml(e.origen)}). Tope ${e.topeDiario}/día por profe.</div>`
+        : '<div class="alert alert-info py-1 px-2 small mb-0">Hook instalado, <b>falta la clave</b>: pégala aquí arriba y pulsa «Guardar clave».</div>';
+    } catch (err) {
+      // best-effort: es un informe, no una función. Si la Pi no contesta, el
+      // resto del panel no se bloquea — pero se dice, no se calla (R6).
+      box.innerHTML = `<div class="alert alert-secondary py-1 px-2 small mb-0">No se pudo consultar el estado de la IA: ${escapeHtml(err.message)}</div>`;
+    }
+  })();
+
   (function paintQuota() {
     const box = document.getElementById('admin-quota');
     if (!box) return;
@@ -729,7 +757,11 @@ function renderPanel(rootSel) {
       // Una sola fila: si ya hay una, se actualiza (no se acumulan claves viejas
       // que sigan siendo válidas en un sitio que nadie mira).
       const lista = await fetch(`${PB_URL}/api/collections/ia_config/records?perPage=1`, { headers });
-      if (!lista.ok) throw new Error('No existe la colección ia_config — pulsa antes «Crear colecciones».');
+      // 404 aquí es SIEMPRE «la colección no existe todavía»: el mensaje de
+      // PocketBase («The requested resource wasn't found») no lo dice, y sin
+      // saberlo uno se queda mirando la clave pensando que está mal.
+      if (lista.status === 404) throw new Error('Todavía no existe la colección ia_config: pulsa arriba «Crear colecciones» y vuelve a intentarlo.');
+      if (!lista.ok) { const b = await lista.json().catch(() => ({})); throw new Error(b.message || `Error ${lista.status} al leer ia_config.`); }
       const previa = (await lista.json()).items?.[0];
       const r = await fetch(`${PB_URL}/api/collections/ia_config/records${previa ? '/' + previa.id : ''}`,
         { method: previa ? 'PATCH' : 'POST', headers, body: JSON.stringify({ proveedor, clave }) });
@@ -749,10 +781,23 @@ function renderPanel(rootSel) {
       const { PB_URL } = await import('../pocketbase.config.js');
       const { pedirContenido } = await import('../core/aiContent.js');
       const { getAuthToken } = await import('../core/auth.js');
+      // 1) ESTADO primero: es gratis y distingue los dos fallos que de otro modo
+      //    se confunden — «el hook no está» vs «está pero sin clave». Sin esto,
+      //    un 404 de PocketBase («The requested resource wasn't found») deja
+      //    mirando la clave pensando que está mal escrita.
+      const est = await fetch(`${PB_URL}/api/ia/estado`).catch(() => null);
+      if (!est || est.status === 404) {
+        throw new Error('El hook NO está instalado en la Pi: falta pb_hooks/aulareto.pb.js '
+          + '(y montar ./pb_hooks:/pb_hooks si es Docker). Pasos en docs/handoff-ia-contenido.md §7.');
+      }
+      const estado = await est.json().catch(() => ({}));
+      if (!estado.configurado) throw new Error('El hook está instalado pero sin clave: guárdala aquí arriba.');
+      // 2) Ahora sí, una generación de verdad.
       const r = await pedirContenido({ modelo: 'qa', tema: 'los planetas del sistema solar',
         curso: '5.º de primaria', cantidad: 2, url: `${PB_URL}/api/ia/contenido`, token: getAuthToken() });
       if (r.error) throw new Error(r.error);
-      iaOut(`<div class="alert alert-success py-1 px-2 small">Funciona. ${r.piezas} pregunta(s):<ul class="mb-0 mt-1">`
+      iaOut(`<div class="alert alert-success py-1 px-2 small">Funciona con <b>${escapeHtml(estado.proveedor || '?')}</b>`
+        + ` (clave en ${escapeHtml(estado.origen)}, tope ${estado.topeDiario}/día). ${r.piezas} pregunta(s):<ul class="mb-0 mt-1">`
         + r.content.items.map(i => `<li>${escapeHtml(i.question)} → <b>${escapeHtml(i.answer)}</b></li>`).join('')
         + '</ul></div>');
     } catch (e) {

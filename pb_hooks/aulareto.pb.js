@@ -166,7 +166,10 @@ routerAdd('POST', '/api/ia/contenido', (c) => {
   // debe gastarle una generación al profe.
   try {
     const coll = $app.findCollectionByNameOrId('ia_usos');
-    const rec = new Record(coll, { profe: auth.id, dia: hoy, modelo: datos.modelo });
+    const rec = new Record(coll);
+    rec.set('profe', auth.id);
+    rec.set('dia', hoy);
+    rec.set('modelo', datos.modelo);
     $app.save(rec);
   } catch (e) {
     // best-effort: no contar un uso es preferible a perder el contenido ya
@@ -175,4 +178,34 @@ routerAdd('POST', '/api/ia/contenido', (c) => {
   }
 
   return c.json(200, { contenido: texto });
+});
+
+// ── ¿ESTÁ ESTO PUESTO? ───────────────────────────────────────────────────────
+// Un extremo que NO gasta una generación. Sin él, la única forma de saber si el
+// hook está instalado era pedirle contenido de verdad a Gemini — y si algo
+// fallaba, no se distinguía «no está el hook» de «la clave está mal». Como la
+// ruta solo existe si el fichero está cargado, un 404 aquí YA es la respuesta.
+// No devuelve la clave ni un trozo de ella: solo si hay una.
+routerAdd('GET', '/api/ia/estado', (c) => {
+  let proveedor = ($os.getenv('WW_IA_PROVEEDOR') || '').toLowerCase();
+  let hayClave = !!$os.getenv('WW_IA_CLAVE');
+  let origen = hayClave ? 'entorno' : 'ninguno';
+  try {
+    const cfg = $app.findFirstRecordByFilter('ia_config', 'clave != ""');
+    if (cfg) {
+      hayClave = true;
+      origen = 'ia_config';
+      proveedor = (cfg.getString('proveedor') || proveedor).toLowerCase();
+    }
+  } catch (e) {
+    // best-effort: si la colección no existe todavía, `hayClave` se queda como
+    // esté por entorno. El motivo, escrito (R6).
+  }
+  return c.json(200, {
+    instalado: true,
+    configurado: hayClave,
+    proveedor: proveedor || null,
+    origen,
+    topeDiario: TOPE_DIARIO,
+  });
 });

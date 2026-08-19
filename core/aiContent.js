@@ -260,6 +260,14 @@ export async function pedirContenido({
     if (r.status === 401 || r.status === 403) throw new Error('Necesitas entrar con tu cuenta para usar la IA.');
     if (r.status === 429) throw new Error(cuerpo?.message || 'Has llegado al límite de generaciones por hoy. Mañana se renueva.');
     if (r.status === 501 || r.status === 503) throw new Error('La IA todavía no está configurada en el servidor.');
+    // 404 = la RUTA no existe, que es distinto de «falta la clave»: significa
+    // que el hook no está instalado en la Pi. PocketBase contesta con su
+    // «The requested resource wasn't found», que es cierto y no sirve de nada
+    // — el mensaje tiene que decir qué hacer, no qué pasó (R6).
+    if (r.status === 404) {
+      throw new Error('El servidor no tiene instalado el asistente de IA '
+        + '(falta pb_hooks/aulareto.pb.js en la Pi). Pasos en docs/handoff-ia-contenido.md §7.');
+    }
     throw new Error(cuerpo?.message || `El servidor respondió ${r.status}.`);
   }
 
