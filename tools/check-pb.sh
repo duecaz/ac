@@ -29,7 +29,7 @@ curl -s "$PB/api/health" | jq -e '.code==200' >/dev/null && green "API health" |
 # escrita a mano y se quedó en 8: faltaban live_sessions, live_keys, live_claims,
 # assignments y assignment_attempts — justo las que, si no están, la app degrada
 # EN SILENCIO al blob legado. Lo vigila tests/pbSchema.test.mjs.
-for c in users activities results live_sessions live_claims live_keys live_answers live_players assignments assignment_attempts activity_likes reports profiles; do
+for c in users activities results live_sessions live_claims live_keys live_answers live_players assignments assignment_attempts activity_likes reports profiles ia_config ia_usos; do
   curl -s "$PB/api/collections/$c" -H "Authorization: $TOKEN" | jq -e '.id' >/dev/null \
     && green "colección $c existe" || red "colección $c" "no existe"
 done

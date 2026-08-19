@@ -25,6 +25,8 @@ import { abrirBuscadorImagenes } from './imageSearchModal.js';
 import { revisarActividad, sinEscribirNada } from './activityCheck.js';
 import { creditoTexto } from './imageSearch.js';
 import { QUOTAS } from './quotas.js';
+import { iaSabeEscribir, fusionarContenido, MODELOS_IA } from './aiContent.js';
+import { toast } from './toast.js';
 
 function presentationHtml(a) {
   const cs = a.presentation?.skin || 'default';
@@ -68,6 +70,25 @@ function presentationHtml(a) {
            </div>`).join('')}
     </div>
     <div class="text-danger small mt-2" id="bg-custom-err" hidden></div>`;
+}
+
+/** «ESCRIBIR CON IA» — una puerta más para llenar la actividad, junto al
+ *  «+ Añadir» de siempre. Vive AQUÍ, en el chasis, y no en cada editor: la IA
+ *  escribe por MODELO DE CONTENIDO, así que las once plantillas cuyo modelo sabe
+ *  escribir lo heredan sin tocar ninguna (§0 · la plantilla DECLARA su modelo).
+ *  Ordena las Pelotas genera sus tableros sola y Etiqueta el diagrama necesita
+ *  una imagen: en esas dos no sale el botón, que es lo correcto — una opción que
+ *  no puede funcionar no se ofrece. Plan: docs/handoff-ia-contenido.md */
+function iaBotonHtml(T) {
+  const modelo = T?.meta?.contentModel;
+  if (!iaSabeEscribir(modelo)) return '';
+  return `<div class="ww-ia-puerta mb-3">
+    <button type="button" class="btn btn-outline-primary btn-sm" id="ww-ia-go"
+            title="La IA propone ${escapeHtml(MODELOS_IA[modelo].etiqueta)}; tú decides si entran">
+      <i class="bi bi-stars"></i> Escribir con IA
+    </button>
+    <span class="text-muted small ms-2">Lo verás antes de añadirlo. Lo que ya has escrito no se toca.</span>
+  </div>`;
 }
 
 /** El aviso de «aquí no hay nada todavía, empieza por esto». Se pinta SOLO con
@@ -149,7 +170,7 @@ export function renderEditorShell(root, a, onChange, spec) {
       // lo que ocupa su sitio es la frase que la plantilla DECLARA en
       // `meta.editor.primerPaso`. Va aquí y no en cada editor: así las 13 dicen
       // qué hacer primero sin que ninguna se acuerde de ponerlo.
-      body: () => primerPasoHtml(T, a) + '<div id="ww-falta">' + faltaHtml(a) + '</div>' + spec.content.html(a) },
+      body: () => primerPasoHtml(T, a) + iaBotonHtml(T) + '<div id="ww-falta">' + faltaHtml(a) + '</div>' + spec.content.html(a) },
     spec.scoring && { id: 'tab-scoring', label: 'Puntuación', body: () => spec.scoring.html(a) },
     showModes && { id: 'tab-modes', label: 'Modos', icon: 'bi-controller', body: () => {
       const indiv = spec.rules ? `
@@ -255,6 +276,32 @@ export function renderEditorShell(root, a, onChange, spec) {
         if (elegido) ponerFondo(elegido.url, elegido.atribucion);
       });
     }
+    // «Escribir con IA» — misma mecánica que cualquier «+ Añadir»: se mete en
+    // `a.content`, se avisa y se repinta. El diálogo se carga SOLO al tocarlo
+    // (import dinámico): quien no lo use no paga su descarga, y el editor sigue
+    // abriendo aunque ese módulo falle.
+    on(root, 'click', '#ww-ia-go', async (_, b) => {
+      b.disabled = true;
+      try {
+        const { abrirEscribirConIA } = await import('./aiContentModal.js');
+        const nuevo = await abrirEscribirConIA({
+          modelo: T?.meta?.contentModel,
+          elemento: T?.meta?.editor?.elemento,
+          tema: a.title || '',
+          // Sopa de Letras guarda cadenas sueltas y Crucigrama fichas con pista:
+          // se pide una vez (con pista) y se aplana aquí. Ver core/aiContent.js.
+          palabrasComoTexto: a.template === 'wordsearch',
+        });
+        if (!nuevo) return;                       // cerró sin aceptar
+        a.content = fusionarContenido(a.content, nuevo);
+        onChange(a);
+        repaint();
+      } catch (e) {
+        // R6: el botón no puede quedarse mudo. Si el módulo no carga (red, caché
+        // a medias), se dice — no se deja al profe tocando algo que no responde.
+        toast('No se pudo abrir el asistente: ' + e.message, 'danger', 6000);
+      } finally { b.disabled = false; }
+    });
     // Template-specific wiring.
     spec.content.wire?.(root, a, ctx);
     // «Lo que falta» se recalcula con CADA tecla y cada cambio del editor. Los

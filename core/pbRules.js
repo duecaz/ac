@@ -197,6 +197,24 @@ export const RULES = {
     updateRule: 'owner = @request.auth.id',
     deleteRule: 'owner = @request.auth.id',
   },
+  // 🔐 CLAVES DE LA IA — la colección MÁS CERRADA del proyecto: las CINCO reglas
+  // a `null` (solo superadmin, ni siquiera un profe con sesión). Una clave de
+  // Gemini o Grok cuesta dinero y sirve fuera de AulaReto, así que no puede
+  // llegar a ningún navegador que no sea el del dueño al escribirla. Quien la
+  // usa es el hook de la Pi (`pb_hooks/aulareto.pb.js`), y el código de servidor
+  // se salta las reglas — por eso puede leerla sin abrirle la puerta a nadie.
+  ia_config: {
+    listRule: null, viewRule: null, createRule: null, updateRule: null, deleteRule: null,
+  },
+  // Contador de uso de la IA: cada fila es una generación. El profe puede CREAR
+  // la suya (el hook la escribe en su nombre) y ver las suyas para saber cuánto
+  // le queda; no puede ver las de nadie más ni borrar ninguna — si pudiera
+  // borrarlas, el tope diario no sería un tope.
+  ia_usos: {
+    listRule: 'profe = @request.auth.id',
+    viewRule: 'profe = @request.auth.id',
+    createRule: null, updateRule: null, deleteRule: null,
+  },
 };
 
 /** Reglas de una colección (o `null` si no está declarada). */

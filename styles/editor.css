@@ -16,3 +16,25 @@
 .ww-skin-preview .d-flex { gap: 4px; }
 .ww-skin-preview span { width: 22px; height: 22px; border-radius: 4px; }
 .ww-skin-preview small { font-weight: 600; }
+
+/* ── «Escribir con IA» (core/aiContentModal.js) ──────────────────────────────
+   La lista de lo PROPUESTO, que es la pieza que hace aceptable la función: el
+   contenido es del usuario (§24), así que la IA propone y él ve antes de
+   aceptar. Chrome del panel, no juego: colores directos y no tokens --ww-*. */
+.ww-ia-puerta { display: flex; align-items: center; flex-wrap: wrap; gap: .25rem; }
+.ia-lista {
+  list-style: none; margin: 0; padding: 0;
+  max-height: 40vh; overflow-y: auto;
+  border: 1px solid #e2e8f0; border-radius: 10px;
+}
+.ia-pieza {
+  display: flex; flex-direction: column; gap: .25rem;
+  padding: .5rem .75rem; border-bottom: 1px solid #f1f5f9;
+}
+.ia-pieza:last-child { border-bottom: 0; }
+.ia-pieza__a { font-weight: 600; }
+.ia-pieza__b { color: #64748b; font-size: .875rem; display: flex; flex-wrap: wrap; gap: .3rem; }
+/* La correcta se distingue A LA VISTA: repasar diez preguntas sin ver cuál es
+   la buena es justo el trabajo que esta función viene a ahorrar. */
+.ia-opt { border: 1px solid #e2e8f0; border-radius: 999px; padding: .05rem .5rem; }
+.ia-opt.is-ok { border-color: #16a34a; color: #15803d; font-weight: 600; }

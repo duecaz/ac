@@ -111,6 +111,31 @@ function renderPanel(rootSel) {
       </div>
       <div id="pb-setup-out" class="mt-2"></div>
 
+      <h5 class="mt-4"><i class="bi bi-stars"></i> IA que escribe contenido <small class="text-muted">(la clave vive en la Pi, nunca en el navegador)</small></h5>
+      <p class="small text-muted mb-2">
+        La clave se guarda en la colección <code>ia_config</code>, que está cerrada a cal y canto: sus cinco
+        reglas son <code>null</code>, así que <b>ni un profe con sesión puede leerla</b>. Quien la usa es el hook
+        <code>pb_hooks/aulareto.pb.js</code> de la Pi, que al ser código de servidor se salta las reglas.
+        Necesita tu superadmin de PocketBase (el mismo de arriba) y que el hook esté instalado —
+        pasos en <code>docs/handoff-ia-contenido.md</code>.
+      </p>
+      <div class="d-flex gap-2 align-items-end flex-wrap mb-1">
+        <div>
+          <label class="form-label small mb-1">Proveedor</label>
+          <select id="ia-prov" class="form-select form-select-sm" style="width:140px">
+            <option value="gemini">Gemini</option>
+            <option value="grok">Grok</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label small mb-1">Clave (API key)</label>
+          <input id="ia-key" type="password" class="form-control form-control-sm" style="width:320px" placeholder="se guarda en la Pi, no aquí" autocomplete="off">
+        </div>
+        <button id="ia-save" class="btn btn-warning btn-sm"><i class="bi bi-key"></i> Guardar clave</button>
+        <button id="ia-test" class="btn btn-outline-secondary btn-sm"><i class="bi bi-stars"></i> Probar</button>
+      </div>
+      <div id="ia-out" class="mt-2"></div>
+
       <h5 class="mt-4">Capacidad <small class="text-muted">(§25 · el servidor es una Pi COMPARTIDA con otros proyectos)</small></h5>
       <div id="admin-quota" class="mb-2"></div>
       <div class="d-flex gap-2 align-items-end flex-wrap">
@@ -669,6 +694,72 @@ function renderPanel(rootSel) {
     btn.disabled = false;
   });
 
+  // ── IA: guardar la clave (en la Pi) y probar que el hook responde ──────────
+  // Reutiliza el superadmin de PocketBase de la sección de arriba: es el único
+  // que puede escribir en `ia_config`, y eso es justo lo que hace segura la
+  // colección. El navegador toca la clave UNA vez —al escribirla— y nunca la
+  // vuelve a leer: para eso están las reglas a null.
+  async function tokenSuperadmin() {
+    const email = document.getElementById('pb-email')?.value?.trim();
+    const pass  = document.getElementById('pb-pass')?.value;
+    if (!email || !pass) throw new Error('Pon el email y la contraseña de superadmin de PocketBase (sección de arriba).');
+    const { PB_URL } = await import('../pocketbase.config.js');
+    for (const url of [`${PB_URL}/api/collections/_superusers/auth-with-password`, `${PB_URL}/api/admins/auth-with-password`]) {
+      const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identity: email, password: pass }) });
+      if (r.ok) return { token: (await r.json()).token, PB_URL };
+      if (r.status !== 404) {
+        const b = await r.json().catch(() => ({}));
+        throw new Error(b.message || `Error de autenticación (${r.status})`);
+      }
+    }
+    throw new Error('No se pudo autenticar como superadmin.');
+  }
+  const iaOut = (html) => { const o = document.getElementById('ia-out'); if (o) o.innerHTML = html; };
+
+  on(rootSel, 'click', '#ia-save', async (_, btn) => {
+    const clave = document.getElementById('ia-key')?.value?.trim();
+    const proveedor = document.getElementById('ia-prov')?.value || 'gemini';
+    if (!clave) { iaOut('<div class="alert alert-warning py-1 px-2 small">Pega la clave.</div>'); return; }
+    btn.disabled = true;
+    iaOut('<div class="text-muted small"><span class="spinner-border spinner-border-sm me-1"></span>Guardando en la Pi…</div>');
+    try {
+      const { token, PB_URL } = await tokenSuperadmin();
+      const headers = { 'Content-Type': 'application/json', Authorization: token };
+      // Una sola fila: si ya hay una, se actualiza (no se acumulan claves viejas
+      // que sigan siendo válidas en un sitio que nadie mira).
+      const lista = await fetch(`${PB_URL}/api/collections/ia_config/records?perPage=1`, { headers });
+      if (!lista.ok) throw new Error('No existe la colección ia_config — pulsa antes «Crear colecciones».');
+      const previa = (await lista.json()).items?.[0];
+      const r = await fetch(`${PB_URL}/api/collections/ia_config/records${previa ? '/' + previa.id : ''}`,
+        { method: previa ? 'PATCH' : 'POST', headers, body: JSON.stringify({ proveedor, clave }) });
+      if (!r.ok) { const b = await r.json().catch(() => ({})); throw new Error(b.message || `Error ${r.status}`); }
+      document.getElementById('ia-key').value = '';
+      iaOut(`<div class="alert alert-success py-1 px-2 small">Clave de ${proveedor} guardada en la Pi. Pulsa «Probar» para comprobar que el hook responde.</div>`);
+    } catch (e) {
+      // R6: el motivo, no un «algo falló» — cada uno se arregla distinto.
+      iaOut(`<div class="alert alert-danger py-1 px-2 small">${escapeHtml(e.message)}</div>`);
+    } finally { btn.disabled = false; }
+  });
+
+  on(rootSel, 'click', '#ia-test', async (_, btn) => {
+    btn.disabled = true;
+    iaOut('<div class="text-muted small"><span class="spinner-border spinner-border-sm me-1"></span>Pidiéndole 2 preguntas de prueba…</div>');
+    try {
+      const { PB_URL } = await import('../pocketbase.config.js');
+      const { pedirContenido } = await import('../core/aiContent.js');
+      const { getAuthToken } = await import('../core/auth.js');
+      const r = await pedirContenido({ modelo: 'qa', tema: 'los planetas del sistema solar',
+        curso: '5.º de primaria', cantidad: 2, url: `${PB_URL}/api/ia/contenido`, token: getAuthToken() });
+      if (r.error) throw new Error(r.error);
+      iaOut(`<div class="alert alert-success py-1 px-2 small">Funciona. ${r.piezas} pregunta(s):<ul class="mb-0 mt-1">`
+        + r.content.items.map(i => `<li>${escapeHtml(i.question)} → <b>${escapeHtml(i.answer)}</b></li>`).join('')
+        + '</ul></div>');
+    } catch (e) {
+      iaOut(`<div class="alert alert-danger py-1 px-2 small">${escapeHtml(e.message)}</div>`);
+    } finally { btn.disabled = false; }
+  });
+
   on(rootSel, 'click', '#pb-setup', async () => {
     const email = document.getElementById('pb-email')?.value?.trim();
     const pass  = document.getElementById('pb-pass')?.value;
@@ -828,6 +919,20 @@ function renderPanel(rootSel) {
           { name: 'avatar', type: 'text' },
           { name: 'banner', type: 'text' },   // portada estilo Facebook (data-URL o vacío)
         ], indexes: ['CREATE UNIQUE INDEX `idx_profile_owner` ON `profiles` (`owner`)'] },
+        // 🔐 La clave de la IA. Reglas a null (solo superadmin) en core/pbRules.js:
+        // quien la LEE es el hook de la Pi, que al ser código de servidor se
+        // salta las reglas. Ver docs/handoff-ia-contenido.md.
+        { name: 'ia_config', fields: [
+          { name: 'proveedor', type: 'text' },
+          { name: 'clave',     type: 'text' },
+        ]},
+        // Una fila por generación: es el tope diario por profe (§25 aplicado a
+        // la IA — el coste lo paga el dueño y una clase no puede vaciarle la cuota).
+        { name: 'ia_usos', fields: [
+          { name: 'profe',  type: 'text', required: true },
+          { name: 'dia',    type: 'text', required: true },
+          { name: 'modelo', type: 'text' },
+        ], indexes: ['CREATE INDEX `idx_ia_usos` ON `ia_usos` (`profe`, `dia`)'] },
       ];
 
       // En PB ≥0.23 la clave del esquema es `fields`; en <0.23 es `schema`. Los

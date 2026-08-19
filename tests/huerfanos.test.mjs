@@ -38,6 +38,11 @@ const PUERTAS = [
   [/^tests\//,                  'suites: las arranca tests/run.mjs'],
   [/^assets\/js\//,             'librería de terceros: se carga con un <script> creado en tiempo de ejecución'],
   [/^pocketbase\.config\.js$/,  'configuración: la leen los adaptadores por import dinámico según el backend'],
+  // El único código que NO corre en el navegador: lo carga PocketBase en la Pi
+  // (carpeta `pb_hooks/`). Nadie lo importa porque nadie PUEDE — está en otro
+  // runtime. Existe para que la clave de la IA no tenga que viajar al navegador;
+  // que el cliente y él no se desincronicen lo vigila tests/aiContent.test.mjs.
+  [/^pb_hooks\//,              'hook de PocketBase: lo carga el servidor de la Pi, no un import'],
 ];
 const puertaDe = (f) => PUERTAS.find(([re]) => re.test(f));
 

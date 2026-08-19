@@ -7,11 +7,11 @@
 > malograr el resto del code**; la IA será como la que usa Wordwall, para
 > escribir directamente el contenido de la actividad que estamos creando».
 >
-> **Esto NO es código nuevo todavía.** Es la condición que el propio norte puso
-> para reabrir el tema (`norte.md` §4b): *«que la estructura esté sólida y sin
-> huecos, y que la IA entre obedeciendo a un plan específico y escrito — no como
-> añadido»*. Este documento es ese plan. Lo que queda por DECIDIR está en §6, y
-> sin esa decisión no se empieza.
+> **ESTADO: CONSTRUIDO (v1.51.532), a falta de instalar el hook en la Pi.**
+> El documento nació como el plan que exigía `norte.md` §4b para reabrir el tema
+> (*«que la IA entre obedeciendo a un plan específico y escrito, no como
+> añadido»*); las decisiones de §6 las tomó el dueño el 2026-08-18 y están
+> aplicadas. Lo que falta es un paso TUYO, no de código: §7.
 
 ## 1 · La idea en una frase
 
@@ -110,7 +110,38 @@ generador produce contenido que `revisarActividad()` da por jugable. Y, aparte,
 una comprobación manual con el modelo real antes de encenderlo, porque la
 calidad pedagógica no la mide un test.
 
-## 6 · LO QUE FALTA DECIDIR (y bloquea empezar)
+## 6 · LO DECIDIDO (dueño, 2026-08-18) y cómo quedó
+
+| Decisión | Elegido | Dónde vive |
+|---|---|---|
+| Dónde está la clave | **en la Pi**, que hace la llamada | `pb_hooks/aulareto.pb.js` + colección `ia_config` |
+| Quién puede usarla | **cualquier profe con sesión**, con tope diario | tope de 30/día por profe, en el hook |
+| Qué hace con lo que ya hay | **añade**, nunca reemplaza | `fusionarContenido()` |
+| Proveedores | **Gemini y Grok**, elegibles en el administrador | cuadro `PROVEEDORES` del hook |
+
+**Cómo quedó la seguridad de la clave, que era lo único que bloqueaba.** La
+colección `ia_config` tiene las CINCO reglas a `null`: no la puede leer ni un
+profe con sesión, solo el superadmin de PocketBase. Quien la lee es el hook, y
+el código de servidor se salta las reglas — por eso puede usarla sin abrirle la
+puerta a nadie. El navegador toca la clave UNA vez: cuando el dueño la escribe
+en `#/admin`. El extremo `/api/ia/contenido` recibe DATOS (modelo, tema,
+cantidad, curso) y nunca un prompt: si aceptara texto libre, cualquiera con
+cuenta de profe tendría un modelo de lenguaje gratis pagado por el dueño.
+
+### Lo que se construyó
+
+| Fichero | Qué hace | Probado por |
+|---|---|---|
+| `core/aiContent.js` | núcleo PURO: qué se pide y —lo que importa— cómo se REVISA lo que vuelve | `tests/aiContent.test.mjs`, sin red |
+| `core/aiContentModal.js` | el diálogo: tema · curso · cuántas → se VE → se añade | sonda headless |
+| `core/editorShell.js` | el botón, en la pestaña Contenido de las **13** | `matrix-smoke` |
+| `pb_hooks/aulareto.pb.js` | la Pi: guarda la clave, llama al proveedor, cuenta el uso | pendiente en la Pi |
+| `views/adminView.js` | donde se pega la clave y se prueba | — |
+
+Once plantillas tienen el botón; Ordena las Pelotas y Etiqueta el diagrama no,
+y eso es lo correcto: una opción que no puede funcionar no se ofrece.
+
+## 6b · Lo que se descartó por el camino (y por qué)
 
 ### D-IA-1 · Dónde vive la clave
 
@@ -148,17 +179,53 @@ en la interfaz antes de que se agote (misma norma que §25).
 **Recomendación: (i) primero, (iii) después** — (iii) resuelve un hueco REAL y
 ya identificado, y (ii) es el que más superficie nueva añade.
 
-## 7 · Orden propuesto
+## 7 · LO QUE FALTA — instalar el hook en la Pi (paso del dueño)
 
-1. `core/aiContent.js` con **los cinco generadores y su validación**, probado
-   con respuestas grabadas y sin red. Es el 80 % del valor y no necesita
-   ninguna decisión de infraestructura.
-2. El diálogo, con la vía **(c)** — se toca, se ve, se juzga la calidad de
-   verdad, sin montar nada en la Pi.
-3. Con eso delante, decidir D-IA-1 y D-IA-2 sabiendo lo que se compra.
-4. El hook en la Pi, si la respuesta es (a).
-5. (iii) las pistas del Crucigrama, que es el hueco más claro.
+El código está. Sin este paso, el botón sale, se toca, y dice *«La IA todavía no
+está configurada en el servidor»* — que es lo correcto: la puerta se avisa, no
+se descubre fallando.
 
-> Lo que este orden evita: montar servidor y elegir proveedor ANTES de saber si
-> el contenido que sale sirve para una clase. Si los generadores no producen
-> algo que un profesor usaría, lo demás sobra.
+**1. Subir el hook.** En la Pi, junto al binario de PocketBase:
+
+```bash
+mkdir -p /ruta/a/pocketbase/pb_hooks
+# copiar pb_hooks/aulareto.pb.js del repo a esa carpeta
+```
+
+Si PocketBase corre en Docker, montar la carpeta en el compose y reiniciar:
+
+```yaml
+    volumes:
+      - ./pb_data:/pb_data
+      - ./pb_hooks:/pb_hooks      # ← esta línea
+```
+
+```bash
+docker compose up -d --force-recreate pocketbase
+```
+
+**2. Crear las colecciones.** En `#/admin` → «Crear colecciones» (crea
+`ia_config` e `ia_usos` con sus reglas; es append-only, no borra nada).
+
+**3. Pegar la clave.** En `#/admin` → «IA que escribe contenido»: proveedor,
+clave, «Guardar clave». Después «Probar», que pide dos preguntas de verdad y
+enseña el resultado.
+
+**Comprobar que quedó bien cerrado** (debe responder 403/404, nunca la clave):
+
+```bash
+curl -s https://pb.lanube.uno/api/collections/ia_config/records | head -c 200
+```
+
+## 8 · Lo que queda para otro día
+
+- **(iii) las pistas del Crucigrama.** `conversiones.md` documenta que
+  Sopa → Crucigrama traslada las palabras pero no puede inventar las pistas, y
+  hoy se le dejan al profe. Es el hueco donde la IA encaja sin discusión.
+- **(ii) el botón al CREAR** («¿de qué va tu actividad?»), que es lo que hace
+  Wordwall y ahorra la pantalla en blanco. Se dejó fuera a propósito: es lo que
+  más superficie nueva añade y conviene verlo funcionando en el editor primero.
+- **La calidad pedagógica no la mide un test.** Los generadores están probados
+  contra las trampas de §5, pero si las preguntas que salen sirven o no para una
+  clase de 5.º solo se sabe usándolo. Es lo primero que hay que mirar tras el
+  paso 3.
