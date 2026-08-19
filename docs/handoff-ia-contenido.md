@@ -185,24 +185,20 @@ El código está. Sin este paso, el botón sale, se toca, y dice *«La IA todav�
 está configurada en el servidor»* — que es lo correcto: la puerta se avisa, no
 se descubre fallando.
 
-**1. Subir el hook.** En la Pi, junto al binario de PocketBase:
+**1. Subir el hook.** El repo es PÚBLICO, así que la Pi se lo descarga sola —
+no hay que copiar ficheros a mano:
 
 ```bash
-mkdir -p /ruta/a/pocketbase/pb_hooks
-# copiar pb_hooks/aulareto.pb.js del repo a esa carpeta
+ssh duecaz@pio.local
+curl -fsSL https://raw.githubusercontent.com/duecaz/ac/main/tools/pi-instalar-hook.sh | bash
 ```
 
-Si PocketBase corre en Docker, montar la carpeta en el compose y reiniciar:
-
-```yaml
-    volumes:
-      - ./pb_data:/pb_data
-      - ./pb_hooks:/pb_hooks      # ← esta línea
-```
-
-```bash
-docker compose up -d --force-recreate pocketbase
-```
+`tools/pi-instalar-hook.sh` averigua cómo está montado PocketBase (no da por
+supuesto lo que dice este documento: el servidor es el que manda), baja el hook,
+reinicia y comprueba que la ruta responde. **No toca el compose**: si falta el
+montaje `./pb_hooks:/pb_hooks` lo dice y enseña la línea exacta — la Pi está
+compartida con `aportes` y `equipos_activados`, y editar a ciegas el compose de
+un servidor compartido es justo lo que no se hace.
 
 **2. Crear las colecciones.** En `#/admin` → «Crear colecciones» (crea
 `ia_config` e `ia_usos` con sus reglas; es append-only, no borra nada).
