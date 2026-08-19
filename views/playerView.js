@@ -29,7 +29,7 @@ import { mountSoloAnimator } from '../core/soloAnimator.js';
 import { aspectStyle, ASPECTO_POR_DEFECTO } from '../core/frameAspect.js';
 import { destinoTrasJugar } from '../core/afterPlay.js';
 import { navigate } from '../core/router.js';
-import { buildSwitchOptions, duplicateAsTemplate } from './switchTemplate.js';
+import { buildSwitchOptions, duplicateAsTemplate, switchWillNeed } from './switchTemplate.js';
 
 export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   let a = get(id);
@@ -221,7 +221,11 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     // kernel/content/convert.js rellena lo que falta). Antes salían solo las
     // del mismo modelo, así que desde aquí no se podía llegar a media docena
     // de plantillas que sí admiten este contenido.
-    const compat = buildSwitchOptions(a).filter(o => o.valid);
+    const compat = buildSwitchOptions(a).filter(o => o.valid)
+      // Lo que quedará por completar en cada destino, calculado ANTES de
+      // ofrecerlo: Sopa de Letras → Crucigrama traslada las palabras pero no
+      // puede inventar las pistas, y eso se dice, no se descubre al llegar.
+      .map(o => ({ ...o, faltara: switchWillNeed(a, o.template.meta.name) }));
 
     mount(rootSel, html`
       <div class="ww-play-page">
@@ -305,9 +309,12 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
                   ${compat.map(o => `
                     <button class="btn btn-outline-${o.template.meta.color || 'secondary'} btn-sm tpl-switch"
                             data-name="${o.template.meta.name}" data-kind="${o.kind}"
-                            title="${o.kind === 'direct' ? 'Mismo contenido, tal cual' : 'Adapta el contenido a esta plantilla'}">
+                            data-faltara="${escapeHtml((o.faltara || []).join(' · '))}"
+                            title="${o.faltara.length ? escapeHtml('Habrá que completarla: ' + o.faltara[0])
+                                     : (o.kind === 'direct' ? 'Mismo contenido, tal cual' : 'Adapta el contenido a esta plantilla')}">
                       <i class="bi ${o.template.meta.icon}"></i> ${escapeHtml(o.template.meta.label)}
-                      ${o.kind === 'convert' ? '<i class="bi bi-shuffle ms-1 opacity-50"></i>' : ''}
+                      ${o.faltara.length ? '<i class="bi bi-pencil-fill ms-1 opacity-75"></i>'
+                        : (o.kind === 'convert' ? '<i class="bi bi-shuffle ms-1 opacity-50"></i>' : '')}
                     </button>
                   `).join('')}
                 </div>
@@ -418,10 +425,16 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     on(rootSel, 'click', '.tpl-switch', async (_, b) => {
       const name = b.dataset.name;
       const label = b.textContent.trim();
+      const faltara = (b.dataset.faltara || '').split(' · ').filter(Boolean);
       const ok = await confirmModal(
         `Se creará una copia de "${a.title || 'esta actividad'}" con la plantilla “${label}”.`
         + (b.dataset.kind === 'convert' ? ' El contenido se adapta al formato nuevo y algunos datos podrían no trasladarse.' : '')
-        + ' La actividad actual no se modifica.',
+        + ' La actividad actual no se modifica.'
+        // Lo que la conversión NO puede traer se dice AQUÍ, no al llegar a una
+        // pantalla que avisa de que falta algo: Crucigrama necesita pistas y una
+        // palabra suelta no las trae — inventarlas revelaría la respuesta.
+        + (faltara.length ? `\n\nDespués tendrás que completarla en el editor: ${faltara[0]}`
+            + (faltara.length > 1 ? ` (y ${faltara.length - 1} cosa${faltara.length > 2 ? 's' : ''} más).` : '') : ''),
         { title: 'Duplicar como otra plantilla', okText: 'Crear la copia', cancelText: 'Cancelar' });
       if (!ok) return;
       const copia = duplicateAsTemplate(a, name);

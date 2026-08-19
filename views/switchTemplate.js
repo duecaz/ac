@@ -4,6 +4,7 @@
 import { listTemplates } from '../core/registry.js';
 import { switchOptions, applySwitch, duplicateSwitch } from '../kernel/content/index.js';
 import { save } from '../core/storage.js';
+import { revisarActividad } from '../core/activityCheck.js';
 import { newActivityId } from '../core/migrate.js';
 
 /** Options this activity can switch to (direct + convertible), against the live registry. */
@@ -48,4 +49,27 @@ export function duplicateAsTemplate(activity, targetName) {
   if (!copia) return null;
   save(copia);
   return copia;
+}
+
+/**
+ * QUÉ QUEDARÁ POR COMPLETAR si se convierte a `targetName` — para decirlo ANTES,
+ * no después (norma del proyecto: si una puerta se cierra a medias, la UI lo
+ * avisa; nunca se deja fallar para explicarlo luego).
+ *
+ * Hay conversiones legítimas que NO pueden salir jugables por sí solas: Sopa de
+ * Letras → Crucigrama traslada las palabras, pero una palabra suelta no trae
+ * pista y sin pista no hay crucigrama. Eso no es un fallo del conversor —
+ * inventar la pista sería peor, porque «pista: CABALLO» revela la respuesta—,
+ * es trabajo del profe. Lo que sí era un fallo es no avisarlo.
+ *
+ * Se convierte en memoria (no se guarda nada) y se le pregunta al revisor de
+ * siempre, el mismo que gatea el juego: una sola definición de "qué le falta".
+ *
+ * @returns {string[]} lo que faltará (vacío si queda lista para jugar).
+ */
+export function switchWillNeed(activity, targetName) {
+  const next = applySwitch(activity, targetName, listTemplates());
+  if (!next) return [];
+  const rev = revisarActividad(next);
+  return rev.jugable ? [] : (rev.problemas || []);
 }
