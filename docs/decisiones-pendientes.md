@@ -82,6 +82,19 @@ sale de aquí.
 - **Recomendación: (b) ahora, (c) nunca salvo que la biblioteca lo pida**. (b) da
   el 80% del valor de Wordwall con una fracción del coste y sin tocar el modelo
   de datos; (c) es un rediseño de `storage`, informes y biblioteca entera.
+- **✅ (b) DECIDIDA Y APLICADA en la página de jugar (v1.51.526)**. El dueño hizo
+  clic en «Explota Globos» esperando que convirtiera y no pasó nada: esos
+  botones solo PREVISUALIZABAN —cambiaban la plantilla en pantalla sin guardar—
+  desde que nacieron (v1.51.455). Al arreglarlo se eligió (b): el clic crea una
+  COPIA convertida (`duplicateSwitch`, `kernel/content/switch.js`) y la original
+  queda intacta. Convertir en el sitio desde ahí habría sido lo peor de las dos
+  opciones: es la pantalla donde se toca por curiosidad. Se ofrece además la
+  lista COMPLETA (mismo modelo + convertibles), la misma que el editor.
+  Vigilado por `tests/content.test.mjs` (con contra-prueba: destino imposible ⇒
+  null, no una copia vacía).
+  **Sigue abierto**: el editor conserva su «Cambiar formato» DESTRUCTIVO (mismo
+  id). Es defendible —allí uno va a propósito— pero la decisión de si también
+  debe duplicar no está tomada.
 
 ## D3 · ¿Imprimimos? (hoja de trabajo)
 

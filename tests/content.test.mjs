@@ -2,7 +2,7 @@
 import assert from 'node:assert';
 import { getModel, listModelNames } from '../kernel/content/models.js';
 import { canConvert, convert, convertibleTargets } from '../kernel/content/convert.js';
-import { switchOptions, applySwitch } from '../kernel/content/switch.js';
+import { switchOptions, applySwitch, duplicateSwitch } from '../kernel/content/switch.js';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
@@ -106,5 +106,37 @@ ok('applySwitch converts content and does not mutate input');
 
 assert.strictEqual(applySwitch(activity, 'tildes', templates), null);
 ok('applySwitch returns null for impossible switch');
+
+// --- DUPLICAR como otra plantilla (D2 opción b) — la vía NO destructiva ------
+// Desde la página de JUGAR, «otra plantilla» se toca por curiosidad («a ver
+// cómo queda de globos»). Antes eso solo previsualizaba y no guardaba nada, y
+// el dueño lo leyó como que «ya no convierte». Convertirlo en el sitio habría
+// sido peor: lo que la plantilla destino no usa se pierde para siempre. Estas
+// dos comprobaciones son justo esa promesa — nace una copia, la original no se
+// toca — y la contra-prueba de que el destino imposible no inventa nada.
+{
+  const original = { id: 'act_orig', template: 'quiz', title: 'Capitales',
+                     content: qa, rules: { timer: 99 }, visibility: 'public',
+                     author: { id: 'u1', name: 'Profe' } };
+  const antes = JSON.stringify(original);
+  const copia = duplicateSwitch(original, 'match', templates, { id: 'act_nueva', now: '2026-08-18T00:00:00.000Z' });
+
+  assert.ok(copia, 'la copia se crea');
+  assert.notStrictEqual(copia.id, original.id, 'la copia tiene id PROPIO (si no, sobrescribe la original)');
+  assert.strictEqual(copia.template, 'match', 'la copia lleva la plantilla pedida');
+  assert.strictEqual(copia.forkOf, original.id, 'la copia recuerda de quién salió');
+  assert.ok(copia.title.includes('Capitales'), 'conserva el título…');
+  assert.ok(/\(.+\)/.test(copia.title), '…y añade la plantilla entre paréntesis, para distinguirlas en Mis actividades');
+  assert.strictEqual(copia.visibility, 'unlisted', 'nace como borrador: publicar la copia lo decide quien la hizo');
+  assert.strictEqual(copia.author, null, 'sin autor heredado — lo pone save() con la sesión de quien duplica');
+  assert.ok(copia.content.pairs?.length, 'el contenido viene CONVERTIDO al modelo del destino');
+  assert.strictEqual(JSON.stringify(original), antes,
+    'LA ORIGINAL NO SE TOCA — es la promesa entera de esta vía frente a «Cambiar formato»');
+  ok('duplicateSwitch crea una copia convertida y deja intacta la original (D2 · opción b)');
+
+  assert.strictEqual(duplicateSwitch(original, 'tildes', templates, { id: 'x', now: 'x' }), null,
+    'CONTRA-PRUEBA: a un destino inalcanzable no se le inventa una copia vacía');
+  ok('duplicateSwitch devuelve null cuando la conversión no es posible');
+}
 
 console.log(`\ncontent.test: ${passed} checks passed`);

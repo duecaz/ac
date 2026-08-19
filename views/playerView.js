@@ -8,7 +8,7 @@ import { on } from '../core/events.js';
 import { get, save, getRemote, remove as removeActivity } from '../core/storage.js';
 import { activityItemCount, newActivityId } from '../core/migrate.js';
 import { revisarActividad, pantallaNoListaHtml } from '../core/activityCheck.js';
-import { getTemplate, compatibleTemplates } from '../core/registry.js';
+import { getTemplate } from '../core/registry.js';
 import { isVsCompatible } from '../kernel/session/engine.js';
 import { availableModes, getMode, runMode, modeNeedsAuth, modeAuthHint } from '../core/modes.js';
 import { canHost } from '../core/authGate.js';
@@ -28,6 +28,8 @@ import { openEmbedModal } from './embedModal.js';
 import { mountSoloAnimator } from '../core/soloAnimator.js';
 import { aspectStyle, ASPECTO_POR_DEFECTO } from '../core/frameAspect.js';
 import { destinoTrasJugar } from '../core/afterPlay.js';
+import { navigate } from '../core/router.js';
+import { buildSwitchOptions, duplicateAsTemplate } from './switchTemplate.js';
 
 export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   let a = get(id);
@@ -59,7 +61,6 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     if (!rev.jugable) { mount(rootSel, pantallaNoListaHtml(a, rev)); return; }
   }
   const ctx = acquire('playerPage');
-  let liveTemplate = a.template;
   let currentSkin = a.presentation?.skin || 'default';
   let currentBg = a.presentation?.background || 'none';
   let currentBgImage = a.presentation?.backgroundImage || '';
@@ -99,15 +100,16 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
 
   paint();
 
-  // The activity as it will be PLAYED: the chosen "switch template" wins over
-  // the stored one, so mode gating + the running game both follow the preview.
+  // The activity as it will be PLAYED. (Ya no lleva plantilla "en vivo": el
+  // cambio de plantilla dejó de ser una vista previa y pasó a crear una COPIA,
+  // así que la que se juega es siempre la guardada.)
   // Carry the LIVE theme picks into the activity each mode receives, so views
   // that read presentation (e.g. vsView's vs-skin-<vsLayout> arena class) reflect
   // the theme chosen in the picker — not just the originally saved one.
   function playActivity() {
-    const base = { ...a, template: liveTemplate,
+    const base = { ...a,
       presentation: { ...a.presentation, skin: currentSkin, background: currentBg, backgroundImage: currentBgImage } };
-    return applyPlayOptions(getTemplate(liveTemplate), base, playChoices);
+    return applyPlayOptions(getTemplate(a.template), base, playChoices);
   }
 
   // The "Modos de juego" bar, built entirely from the mode registry so gating
@@ -212,9 +214,14 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   }
 
   function paint() {
-    const T = getTemplate(liveTemplate) || getTemplate(a.template);
+    const T = getTemplate(a.template);
     const aspect = T?.meta?.aspectRatio || ASPECTO_POR_DEFECTO;
-    const compat = compatibleTemplates(liveTemplate);
+    // La lista COMPLETA, la misma que el editor: las del mismo modelo (juegan
+    // el contenido tal cual) y las CONVERTIBLES (la máquina de
+    // kernel/content/convert.js rellena lo que falta). Antes salían solo las
+    // del mismo modelo, así que desde aquí no se podía llegar a media docena
+    // de plantillas que sí admiten este contenido.
+    const compat = buildSwitchOptions(a).filter(o => o.valid);
 
     mount(rootSel, html`
       <div class="ww-play-page">
@@ -234,7 +241,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
                  por fulano», todo en UNA línea de base (envuelve si no cabe). -->
             <div class="pp-header-info">
               <h1 class="pp-title">${escapeHtml(a.title)}</h1>
-              <span class="badge bg-${T?.meta?.color || 'info'}"><i class="bi ${T?.meta?.icon || 'bi-puzzle'}"></i> ${escapeHtml(T?.meta?.label || liveTemplate)}</span>
+              <span class="badge bg-${T?.meta?.color || 'info'}"><i class="bi ${T?.meta?.icon || 'bi-puzzle'}"></i> ${escapeHtml(T?.meta?.label || a.template)}</span>
               <span class="text-muted small pp-meta">${activityItemCount(a)} elementos
                 · por ${a.author?.id ? `<a href="#/autor/${escapeHtml(a.author.id)}">${escapeHtml(a.author.name || 'Profesor')}</a>` : 'anónimo'}
                 ${a.subtitle ? `· ${escapeHtml(a.subtitle)}` : ''}</span>
@@ -293,14 +300,18 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
           <div class="pp-appearance">
             ${compat.length ? `
               <div class="pp-card mb-3">
-                <h6 class="text-muted text-uppercase small mb-2">Otra plantilla, mismo contenido</h6>
+                <h6 class="text-muted text-uppercase small mb-2">Otra plantilla</h6>
                 <div class="d-flex flex-wrap gap-2">
-                  ${compat.map(t => `
-                    <button class="btn btn-outline-${t.meta.color || 'secondary'} btn-sm tpl-switch" data-name="${t.meta.name}">
-                      <i class="bi ${t.meta.icon}"></i> ${escapeHtml(t.meta.label)}
+                  ${compat.map(o => `
+                    <button class="btn btn-outline-${o.template.meta.color || 'secondary'} btn-sm tpl-switch"
+                            data-name="${o.template.meta.name}" data-kind="${o.kind}"
+                            title="${o.kind === 'direct' ? 'Mismo contenido, tal cual' : 'Adapta el contenido a esta plantilla'}">
+                      <i class="bi ${o.template.meta.icon}"></i> ${escapeHtml(o.template.meta.label)}
+                      ${o.kind === 'convert' ? '<i class="bi bi-shuffle ms-1 opacity-50"></i>' : ''}
                     </button>
                   `).join('')}
                 </div>
+                <p class="text-muted small mb-0 mt-2">Se crea una copia; esta actividad no se toca.</p>
               </div>` : ''}
 
             <!-- ACORDEÓN (pedido): se puede plegar cuando el tema ya está
@@ -395,9 +406,29 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
         e.target.value = '';
       }
     });
-    on(rootSel, 'click', '.tpl-switch', (_, b) => {
-      liveTemplate = b.dataset.name;
-      paint();
+    // OTRA PLANTILLA = DUPLICAR, no convertir en el sitio (dueño 2026-08-18;
+    // opción (b) de D2, docs/decisiones-pendientes.md). Antes esto solo
+    // PREVISUALIZABA —cambiaba la plantilla en pantalla y no guardaba nada—, así
+    // que el dueño hacía clic, veía el juego nuevo, salía de la página y volvía
+    // a encontrarse Operaciones: «ya no los convierte». Ahora convierte de
+    // verdad, pero sobre una COPIA: convertir en el sitio pierde lo que la
+    // plantilla destino no usa, y desde la página de jugar se toca por
+    // curiosidad. El editor conserva su «Cambiar formato» destructivo, que es
+    // donde uno va a propósito.
+    on(rootSel, 'click', '.tpl-switch', async (_, b) => {
+      const name = b.dataset.name;
+      const label = b.textContent.trim();
+      const ok = await confirmModal(
+        `Se creará una copia de "${a.title || 'esta actividad'}" con la plantilla “${label}”.`
+        + (b.dataset.kind === 'convert' ? ' El contenido se adapta al formato nuevo y algunos datos podrían no trasladarse.' : '')
+        + ' La actividad actual no se modifica.',
+        { title: 'Duplicar como otra plantilla', okText: 'Crear la copia', cancelText: 'Cancelar' });
+      if (!ok) return;
+      const copia = duplicateAsTemplate(a, name);
+      // R6 · fallar en silencio está prohibido: si no se pudo, se dice.
+      if (!copia) { toast('No se pudo crear la copia con esa plantilla.', 'danger', 5000); return; }
+      toast(`Copia creada: “${copia.title}”. La original queda intacta.`, 'success', 5000);
+      navigate(`#/play/${copia.id}`);
     });
     // Mode bar: embedded modes mount into the stage (embed:false modes are
     // plain links and navigate on their own).

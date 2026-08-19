@@ -79,3 +79,35 @@ export function applySwitch(activity, targetName, templates) {
     updatedAt: new Date(clock.now()).toISOString(),
   };
 }
+
+/**
+ * DUPLICAR a otra plantilla — como `applySwitch`, pero devolviendo una actividad
+ * NUEVA en vez de la misma con otra plantilla. Puro: el id y el instante se
+ * INYECTAN (kernel/ debe ser determinista, ley `kernel-puro`).
+ *
+ * Existe porque convertir en el sitio es DESTRUCTIVO —lo que la plantilla
+ * destino no usa se pierde— y eso no vale para la página de jugar, donde se
+ * toca por curiosidad. Es la opción (b) de D2 (docs/decisiones-pendientes.md).
+ *
+ * @param {{id:string, now:string}} sellos  id nuevo e instante ISO.
+ * @returns {Object|null}
+ */
+export function duplicateSwitch(activity, targetName, templates, { id, now }) {
+  const next = applySwitch(activity, targetName, templates);
+  if (!next) return null;
+  const label = templates.find(t => t.meta?.name === targetName)?.meta?.label || targetName;
+  return {
+    ...next,
+    id,
+    // La plantilla en el título para distinguirlas en "Mis actividades", que es
+    // donde las dos van a aparecer juntas.
+    title: `${activity.title || 'Sin título'} (${label})`,
+    forkOf: activity.id,
+    // Nace borrador y sin autor heredado: publicarla la decide quien la duplica,
+    // y el autor lo pone la capa de guardado con la sesión en curso.
+    visibility: 'unlisted',
+    author: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
