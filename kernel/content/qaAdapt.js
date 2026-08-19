@@ -14,6 +14,7 @@
 // Puro: sin DOM, testeable en Node (tests/qaAdapt.test.mjs).
 
 import { rid } from '../../core/ids.js';
+import { answerIndices } from '../../core/contentModels/qa.js';
 const str = (v) => (v == null ? '' : String(v));
 const firstAnswer = (a) => (Array.isArray(a) ? a[0] : a);
 
@@ -67,37 +68,58 @@ export function adoptForQuiz(content) {
   const items = Array.isArray(content?.items) ? content.items : [];
   return {
     items: items.map((it) => {
-      const answer = str(firstAnswer(it?.answer));
+      // COMPLETAR, NO REESCRIBIR. Esta función existe para una sola cosa: que el
+      // ítem tenga opciones donde hacían falta. Reconstruía el ítem entero desde
+      // una lista fija de campos, y eso rompía dos cosas al pasar de Quiz a
+      // Globos —que es contenido IDÉNTICO y no debería tocar nada—:
+      //   · una pregunta con VARIAS respuestas correctas se quedaba con la
+      //     primera, así que el alumno que explotaba otra correcta puntuaba mal;
+      //   · sembraba `points: 1`, justo lo que `stripSeededPoints` (migración
+      //     v1→v2 de Globos y Quiz) existe para deshacer: con `points` en el
+      //     ítem, «Puntos por acierto» del panel deja de aplicarse.
+      // Ahora se PARTE del ítem tal cual y solo se añade lo que falta.
+      const respuestas = Array.isArray(it?.answer) ? it.answer.map(str) : [str(it?.answer)];
+      const primera = respuestas.find(r => r.trim() !== '') || '';
       let options = Array.isArray(it?.options) ? it.options.map(str) : [];
-      if (options.filter((o) => o.trim() !== '').length < 2) options = buildQuizOptions(answer, it?.question);
-      if (answer && !options.includes(answer)) options[0] = answer;
-      while (options.length < 4) options.push('');
-      const answerIdx = answer
-        ? options.map((o, i) => (o === answer ? i : -1)).filter((i) => i >= 0).slice(0, 1)
-        : [];
+      // `buildQuizOptions` ya deja la respuesta en la posición 0 y rellena
+      // hasta 4, así que aquí no hace falta repetirlo.
+      if (options.filter((o) => o.trim() !== '').length < 2) {
+        options = buildQuizOptions(primera, it?.question);
+      }
+      // Quién es la correcta lo decide `answerIndices` (core/contentModels/qa.js),
+      // que es donde vive esa definición y compara como compara el juego.
+      const answerIdx = answerIndices({ ...it, options });
       return {
+        ...it,                       // lo que la plantilla destino no conozca, se conserva
         id: it?.id || rid('q_'),
         question: str(it?.question),
         options,
-        answer: answer || '',
+        answer: Array.isArray(it?.answer) ? it.answer : (primera || ''),
         answerIdx,
-        points: it?.points || 1,
-        image: it?.image || null,
-        audio: it?.audio || null,
+        image: it?.image ?? null,
+        audio: it?.audio ?? null,
       };
     }),
   };
 }
 
-/** Normaliza items `qa` para MATEMÁTICAS: {question, answer, points}, sin options. */
+/** Normaliza items `qa` para MATEMÁTICAS: se responde con el TECLADO, así que
+ *  aquí las opciones sobran y se quitan. Por lo demás, mismo criterio que su
+ *  hermana `adoptForQuiz`: se COMPLETA lo que falta, no se reconstruye el ítem
+ *  —y no se siembra `points`, que es justo lo que `stripSeededPoints` existe
+ *  para deshacer (con `points` en el ítem, «Puntos por acierto» no se aplica).
+ */
 export function adoptForMath(content) {
   const items = Array.isArray(content?.items) ? content.items : [];
   return {
-    items: items.map((it) => ({
-      id: it?.id || rid('m_'),
-      question: str(it?.question),
-      answer: str(firstAnswer(it?.answer)),
-      points: it?.points || 1,
-    })),
+    items: items.map((it) => {
+      const { options, answerIdx, ...resto } = it || {};
+      return {
+        ...resto,
+        id: it?.id || rid('m_'),
+        question: str(it?.question),
+        answer: str(firstAnswer(it?.answer)),
+      };
+    }),
   };
 }

@@ -176,8 +176,10 @@ export function renderEditView(rootSel, { id, template }) {
       if (!ok) return;
     }
     if (autosaveTimer) clearTimeout(autosaveTimer);
-    const next = applyAndSave(activity, name);
-    if (!next) { toast('No se pudo cambiar a ese formato.', 'danger'); return; }
+    const { actividad: next, error } = applyAndSave(activity, name);
+    // Con la cuota llena el contenido ya está convertido EN MEMORIA: decir que
+    // se guardó le hace perder el original. Se dice, y no se limpia `dirty`.
+    if (error) { toast(error, 'danger', 8000); return; }
     dirty = false;
     toast(`Formato cambiado a “${label}”.`, 'success');
     navigate(`#/edit/${next.id}`); // same hash → re-renders the editor cleanly

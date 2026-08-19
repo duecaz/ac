@@ -29,6 +29,27 @@ export function hasCorrectAnswer(item) {
   return Array.isArray(ans) ? ans.some(lleno) : lleno(ans);
 }
 
+/** QUÉ OPCIONES SON LA RESPUESTA, por posición.
+ *
+ *  Vive aquí, con `isCorrect` y `hasCorrectAnswer`, y compara con el MISMO
+ *  `norm` que ellas: sin tildes ni mayúsculas. Derivarlo fuera con `===` hacía
+ *  que una opción «madrid» y una respuesta «Madrid» —que el juego da por
+ *  buena— saliera sin marcar. Eran cuatro definiciones de "la correcta" antes
+ *  de unificarlas; esta es la quinta cara del mismo dado.
+ *  Si el ítem ya trae `answerIdx`, manda él (resiste opciones repetidas).
+ */
+export function answerIndices(item) {
+  const idx = item?.answerIdx;
+  if (Array.isArray(idx) && idx.length) return idx;
+  const ans = item?.answer;
+  const respuestas = (Array.isArray(ans) ? ans : [ans])
+    .map(a => norm(a)).filter(a => a !== '');
+  if (!respuestas.length) return [];
+  return (item?.options || [])
+    .map((o, i) => (respuestas.includes(norm(o)) ? i : -1))
+    .filter(i => i >= 0);
+}
+
 /**
  * QUITA LOS PUNTOS SEMBRADOS (migración qa v1→v2, 2026-08-14).
  *

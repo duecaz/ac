@@ -57,7 +57,7 @@ export function switchOptions(activity, templates) {
  * Does not mutate the input.
  * @returns {Object|null}
  */
-export function applySwitch(activity, targetName, templates) {
+export function applySwitch(activity, targetName, templates, opts = {}) {
   const fromModel = modelOf(activity.template, templates);
   const target = templates.find(t => t.meta?.name === targetName);
   const toModel = target?.meta?.contentModel;
@@ -66,7 +66,10 @@ export function applySwitch(activity, targetName, templates) {
   if (content == null) return null;
   // Afinado por plantilla: adapta la FORMA del ítem a la plantilla destino
   // (Matemáticas→Quiz genera opciones; Quiz→Matemáticas las quita).
-  if (typeof target.adoptContent === 'function') content = target.adoptContent(content, fromModel) ?? content;
+  // `opts` viaja hasta la plantilla: hoy solo lo usa `soloForma` (sondear qué
+  // faltará sin pagar la colocación del crucigrama). Una plantilla que no lo
+  // mire se comporta igual que siempre.
+  if (typeof target.adoptContent === 'function') content = target.adoptContent(content, fromModel, opts) ?? content;
   return {
     ...activity,
     template: targetName,

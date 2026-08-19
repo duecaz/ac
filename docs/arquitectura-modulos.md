@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **261 módulos · 1011 imports internos.**
+> **261 módulos · 1012 imports internos.**
 
 ### Ir a otro documento
 
@@ -30,12 +30,12 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
-| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1763 | 7 · 859 | 0.49 |
-| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2711 | 12 · 1242 | 0.46 |
+| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1780 | 7 · 859 | 0.48 |
+| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2722 | 12 · 1242 | 0.46 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3975 | 19 · 3001 | 0.75 |
 | **informes/tareas** | después de clase | 10 · 1056 | 4 · 466 | 0.44 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5701 | 12 · 1134 | 0.20 |
-| **infra/común** | todo lo anterior | 135 · 14978 | 53 · 6231 | 0.42 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5709 | 12 · 1181 | 0.21 |
+| **infra/común** | todo lo anterior | 135 · 15036 | 53 · 6231 | 0.41 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -69,9 +69,9 @@ graph TD
   AD -->|27| C
   A -->|18| V
   V -->|11| K
+  CO -->|10| C
   K -->|10| C
   C -->|9| K
-  CO -->|9| C
   C -.->|6 · excepción| AD
   C -->|5| CF
   C -.->|4 · excepción| V
@@ -105,12 +105,12 @@ graph TD
 | Capa | Módulos más grandes |
 |---|---|
 | **arranque** | `qa/hoja.js` (254) · `main.teacher.js` (168) · `main.embed.js` (68) · `main.student.js` (50) |
-| **vistas** | `views/hostLive.js` (1110) · `views/adminView.js` (1071) · `views/studentLive.js` (922) · `views/playerView.js` (493) · `views/vsView.js` (492) |
+| **vistas** | `views/hostLive.js` (1110) · `views/adminView.js` (1071) · `views/studentLive.js` (922) · `views/playerView.js` (504) · `views/vsView.js` (492) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1187) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
 | **core** | `core/textCorrectionRound.js` (455) · `core/normsCheck.js` (364) · `core/skins.js` (355) · `core/selftest.js` (345) · `core/auth.js` (330) |
 | **kernel** | `kernel/session/engine.js` (559) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/dataPort.js` (28) |
 | **plantillas** | `templates/crossword/player.js` (481) · `templates/wordsearch/player.js` (397) · `templates/match/player.js` (292) · `templates/diagram/player.js` (235) · `templates/quiz/editor.js` (225) |
-| **contenido** | `kernel/content/switch.js` (114) · `kernel/content/qaAdapt.js` (104) · `kernel/content/convert.js` (95) · `kernel/content/models.js` (83) · `kernel/content/index.js` (5) |
+| **contenido** | `kernel/content/qaAdapt.js` (126) · `kernel/content/switch.js` (117) · `kernel/content/convert.js` (95) · `kernel/content/models.js` (83) · `kernel/content/index.js` (5) |
 | **config** | `pocketbase.config.js` (13) |
 
 ## Los módulos más importados (fan-in)
@@ -142,7 +142,7 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 | `views/adminView.js` | 1071 | 1 |
 | `views/studentLive.js` | 922 | 1 |
 | `kernel/session/engine.js` | 559 | 19 |
-| `views/playerView.js` | 493 | 1 |
+| `views/playerView.js` | 504 | 1 |
 | `views/vsView.js` | 492 | 2 |
 | `templates/crossword/player.js` | 481 | 1 |
 

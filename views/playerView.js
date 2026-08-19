@@ -437,11 +437,22 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
             + (faltara.length > 1 ? ` (y ${faltara.length - 1} cosa${faltara.length > 2 ? 's' : ''} más).` : '') : ''),
         { title: 'Duplicar como otra plantilla', okText: 'Crear la copia', cancelText: 'Cancelar' });
       if (!ok) return;
-      const copia = duplicateAsTemplate(a, name);
-      // R6 · fallar en silencio está prohibido: si no se pudo, se dice.
-      if (!copia) { toast('No se pudo crear la copia con esa plantilla.', 'danger', 5000); return; }
-      toast(`Copia creada: “${copia.title}”. La original queda intacta.`, 'success', 5000);
-      navigate(`#/play/${copia.id}`);
+      // R6 · fallar en silencio está prohibido: si no se pudo, se dice, y el
+      // motivo viene como VALOR (no como excepción, que sería un embudo por
+      // donde saldría cualquier fallo técnico a la cara del profe).
+      const { actividad: copia, error } = duplicateAsTemplate(a, name);
+      if (error) { toast(error, 'danger', 8000); return; }
+      // A DONDE HAY QUE IR: si la copia queda por completar, al EDITOR. Llevarla
+      // a jugar la dejaba en la pantalla de «falta algo» que el diálogo acababa
+      // de anunciar — mandar a alguien a una puerta cerrada que tú mismo le has
+      // descrito es peor que no avisar.
+      if (faltara.length) {
+        toast(`Copia creada: “${copia.title}”. Complétala y ya se puede jugar.`, 'info', 6000);
+        navigate(`#/edit/${copia.id}`);
+      } else {
+        toast(`Copia creada: “${copia.title}”. La original queda intacta.`, 'success', 5000);
+        navigate(`#/play/${copia.id}`);
+      }
     });
     // Mode bar: embedded modes mount into the stage (embed:false modes are
     // plain links and navigate on their own).

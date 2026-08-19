@@ -38,12 +38,17 @@ export function confirmModal(message, { title = 'Confirmar', okText = 'Aceptar',
   return new Promise(resolve => {
     const id = rid('ww-cm-');
     const wrap = document.createElement('div');
+    // `white-space: pre-line` en el cuerpo: un mensaje con saltos de línea se LEE
+    // como se escribió. El aviso «esto tendrás que completarlo» iba tras un salto
+    // doble y el HTML lo colapsaba en un espacio, sepultando justo la frase por
+    // la que existe el diálogo. Sigue escapado: se respetan los saltos, no se
+    // admite marcado.
     wrap.innerHTML = `
       <div class="modal fade" id="${id}" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header"><h5 class="modal-title">${escapeHtml(title)}</h5></div>
-            <div class="modal-body">${escapeHtml(message)}</div>
+            <div class="modal-body" style="white-space: pre-line">${escapeHtml(message)}</div>
             <div class="modal-footer">
               <button type="button" class="btn btn-outline-secondary" data-act="cancel">${escapeHtml(cancelText)}</button>
               <button type="button" class="btn btn-${danger ? 'danger' : 'primary'}" data-act="ok">${escapeHtml(okText)}</button>

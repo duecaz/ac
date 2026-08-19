@@ -45,10 +45,18 @@ export class CrosswordTemplate extends BaseTemplate {
   // posición — el auto-layout del generador las CRUZA de verdad (antes el
   // switch "directo" dejaba strings y el crucigrama quedaba inservible).
   // Las pistas nacen vacías: el editor es la siguiente parada del gesto.
-  static adoptContent(content) {
+  //
+  // `opts.soloForma` es para los SONDEOS: quien solo quiere saber «qué le
+  // faltará a esto» no necesita la rejilla, y colocarla es lo caro —
+  // `autoLayout` prueba cada cruce contra cada palabra ya puesta, y con 60
+  // palabras eso midió ~1 s de congelación al pintar la página de jugar (que
+  // sondea todos los destinos). El veredicto es el mismo con rejilla y sin
+  // ella: lo que falta son las PISTAS, que nacen vacías por definición.
+  static adoptContent(content, _desde, opts = {}) {
     const ws = content?.words || [];
     if (!ws.length || typeof ws[0] === 'object') return content;
-    return { ...content, words: autoLayout(ws.map(w => ({ word: String(w), clue: '' }))) };
+    const defs = ws.map(w => ({ word: String(w), clue: '' }));
+    return { ...content, words: opts.soloForma ? defs : autoLayout(defs) };
   }
 
   // ANSWER-SAFETY (R5): el payload de ronda lleva la FORMA del crucigrama

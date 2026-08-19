@@ -119,6 +119,13 @@ export async function probeActivitiesPayload(fields) {
 // no image generation/upload happens here.
 // keepUpdatedAt: conserva el updatedAt de la actividad (import 'preserve', P1-5)
 // en vez de re-sellarlo con ahora; así un backup VIEJO no gana el LWW.
+// UNA sola redacción para el almacén lleno, como `checkActivitySize` hace con
+// la suya (core/quotas.js). Estaba escrita dos veces con palabras distintas —
+// el editor y el duplicado— y cambiarla en un sitio dejaba la otra puerta
+// diciendo otra cosa.
+export const ALMACEN_LLENO =
+  'Almacenamiento del navegador lleno. Exporta a JSON y libera espacio; tu cambio NO se guardó.';
+
 export function save(activity, { keepUpdatedAt = false } = {}) {
   const stamp = keepUpdatedAt && activity.updatedAt ? activity.updatedAt : new Date().toISOString();
   const a = normalize({ ...activity, updatedAt: stamp });

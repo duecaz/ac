@@ -3,7 +3,7 @@
 // storage wiring out of the engine so the engine stays Node-testable.
 import { listTemplates } from '../core/registry.js';
 import { switchOptions, applySwitch, duplicateSwitch } from '../kernel/content/index.js';
-import { save } from '../core/storage.js';
+import { save, ALMACEN_LLENO } from '../core/storage.js';
 import { revisarActividad } from '../core/activityCheck.js';
 import { newActivityId } from '../core/migrate.js';
 
@@ -20,9 +20,13 @@ export function buildSwitchOptions(activity) {
  */
 export function applyAndSave(activity, targetName) {
   const next = applySwitch(activity, targetName, listTemplates());
-  if (!next) return null;
-  save(next);
-  return next;
+  if (!next) return { actividad: null, error: 'No se pudo cambiar a ese formato.' };
+  // Mira `persisted` igual que el duplicado: aquí es MÁS grave, porque esta vía
+  // es la destructiva — con la cuota llena, el contenido ya está convertido en
+  // memoria y decirle al profe que se guardó le hace perder el original.
+  const { persisted } = save(next);
+  if (persisted === false) return { actividad: null, error: ALMACEN_LLENO };
+  return { actividad: next, error: null };
 }
 
 /**
@@ -41,14 +45,21 @@ export function applyAndSave(activity, targetName) {
  * para que las dos se distingan en "Mis actividades" — que es donde van a
  * aparecer juntas.
  *
- * @returns {Object|null} la actividad nueva ya guardada, o null si no se puede.
+ * @returns {{actividad: Object|null, error: string|null}}
  */
 export function duplicateAsTemplate(activity, targetName) {
   const copia = duplicateSwitch(activity, targetName, listTemplates(),
     { id: newActivityId(), now: new Date().toISOString() });
-  if (!copia) return null;
-  save(copia);
-  return copia;
+  if (!copia) return { actividad: null, error: 'No se pudo crear la copia con esa plantilla.' };
+  // R6 · fallar en silencio está prohibido. `save` devuelve `persisted:false`
+  // cuando el almacén del navegador está lleno; sin mirarlo, el usuario leía
+  // «Copia creada» y acto seguido «Actividad no encontrada» al navegar a ella.
+  // Se devuelve como VALOR y no como excepción: un `catch` que enseña
+  // `err.message` es un embudo por donde acabaría saliendo cualquier fallo
+  // técnico a la cara del profe. Misma forma que `save` y que `checkActivitySize`.
+  const { persisted } = save(copia);
+  if (persisted === false) return { actividad: null, error: ALMACEN_LLENO };
+  return { actividad: copia, error: null };
 }
 
 /**
@@ -68,7 +79,11 @@ export function duplicateAsTemplate(activity, targetName) {
  * @returns {string[]} lo que faltará (vacío si queda lista para jugar).
  */
 export function switchWillNeed(activity, targetName) {
-  const next = applySwitch(activity, targetName, listTemplates());
+  // `soloForma`: es un SONDEO, no la conversión de verdad — se pregunta qué
+  // faltará, no se construye el resultado. Sin esto, pintar la página de jugar
+  // de una Sopa de 60 palabras colocaba el crucigrama entero para acabar
+  // diciendo «faltan las pistas», que se sabe sin colocar nada (~1 s medido).
+  const next = applySwitch(activity, targetName, listTemplates(), { soloForma: true });
   if (!next) return [];
   const rev = revisarActividad(next);
   return rev.jugable ? [] : (rev.problemas || []);
