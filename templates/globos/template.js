@@ -3,6 +3,7 @@
 // scorer y mismo editor): solo cambia la mecánica — el caso "Wordwall" puro.
 import { basePoints } from '../../core/scoring/index.js';
 import { stripSeededPoints } from '../../core/contentModels/qa.js';
+import { adoptForQuiz } from '../../kernel/content/qaAdapt.js';
 import { BaseTemplate } from '../base.js';
 import { renderGlobosPlayer, balloonFieldHtml, wireBalloonField } from './player.js';
 import { renderQuizEditor } from '../quiz/editor.js';
@@ -48,6 +49,13 @@ export class GlobosTemplate extends BaseTemplate {
   // plantilla solo aporta la mecánica de globos.
   static renderEditor = renderQuizEditor;
   static scoreSubmission = scoreQuizSubmission;
+  // …y por lo mismo, la MISMA adopción de contenido. Faltaba, y el fallo no se
+  // veía hasta jugar: al traer contenido de Operaciones —que es `qa` pero SIN
+  // opciones, porque se responde con el teclado— los ítems entraban tal cual y
+  // la pantalla salía vacía, sin un globo que tocar. `adoptForQuiz` construye
+  // las opciones que faltan. Reutilizar el editor y el scorer de otra plantilla
+  // y NO reutilizar su adopción es la costura por donde se coló.
+  static adoptContent(content) { return adoptForQuiz(content); }
 
   // Payload de ronda (VS/Equipos): igual que Quiz — pregunta + opciones, SIN answer.
   static getRoundPayload(activity, ctx) {

@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **261 módulos · 1009 imports internos.**
+> **261 módulos · 1010 imports internos.**
 
 ### Ir a otro documento
 
@@ -34,7 +34,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2698 | 12 · 1242 | 0.46 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3975 | 19 · 3001 | 0.75 |
 | **informes/tareas** | después de clase | 10 · 1056 | 4 · 466 | 0.44 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5693 | 12 · 1074 | 0.19 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5701 | 12 · 1134 | 0.20 |
 | **infra/común** | todo lo anterior | 135 · 14978 | 53 · 6231 | 0.42 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
@@ -77,9 +77,9 @@ graph TD
   C -.->|4 · excepción| V
   AD -->|3| CF
   AD -->|3| K
+  T -->|3| CO
   V -->|3| T
   C -->|2| CO
-  T -->|2| CO
   V -->|2| CO
   C -.->|1 · excepción| T
   CO -->|1| K

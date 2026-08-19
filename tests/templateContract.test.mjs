@@ -12,6 +12,7 @@ import '../core/registerTemplates.js';   // side-effect: registra las 12
 import { getTemplate, listTemplates } from '../core/registry.js';
 import { newActivity } from '../core/migrate.js';
 import { checkTemplateContract, checkAllTemplates } from '../core/templateContract.js';
+import { switchOptions, applySwitch } from '../kernel/content/switch.js';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
@@ -115,6 +116,65 @@ ok('el checker caza plantillas rotas (instructions vacío, ronda a medias, score
   assert.deepStrictEqual(sinDemo, [],
     'defaultContent() debe seguir siendo contenido jugable (lo usan las redes): ' + sinDemo.join(', '));
   ok(`las ${reales.length} nacen vacías y su defaultContent() sigue siendo jugable`);
+}
+
+// ── CONVERTIR TIENE QUE DAR ALGO JUGABLE (dueño, 2026-08-18) ────────────────
+// «al pasar de calcula a explota globos, explota globos queda vacía; de calcula
+// a quiz sí tiene contenido, y de quiz a explota globos también».
+//
+// La causa: `switchOptions` daba por VÁLIDO un destino con solo mirar el modelo
+// de contenido (`qa` == `qa`), y eso no basta — dentro de `qa` conviven ítems
+// CON opciones (Quiz, Globos: se elige) y SIN ellas (Operaciones: se teclea).
+// Globos reutiliza el editor y el scorer de Quiz pero NO reutilizaba su
+// `adoptContent`, así que al traer ítems de Operaciones no había opciones que
+// convertir en globos: pantalla vacía. Ninguna red lo veía porque todas siembran
+// con el `defaultContent` de la PROPIA plantilla — el fallo vivía en la costura.
+//
+// Esto recorre CADA par que la app llega a ofrecer, con el contenido real de
+// origen, y pregunta a la plantilla DESTINO por su primera ronda: si su payload
+// trae `options`, tiene que traer al menos DOS con texto. Descubre por barrido,
+// así que una plantilla nueva que olvide su adopción rompe CI sin tocar listas.
+{
+  const conAmbos = listTemplates().filter(T =>
+    typeof T.meta?.defaultContent === 'function' && typeof T.getRoundPayload === 'function');
+  const rotos = [];
+  let pares = 0;
+  for (const origen of listTemplates()) {
+    if (typeof origen.meta?.defaultContent !== 'function') continue;
+    const actividad = {
+      id: 'x', template: origen.meta.name, title: 't',
+      content: origen.meta.defaultContent(),
+      rules: origen.meta.defaultRules?.() || {},
+      scoring: origen.meta.defaultScoring?.() || {},
+    };
+    for (const o of switchOptions(actividad, listTemplates())) {
+      if (!o.valid) continue;
+      const destino = o.template;
+      if (!conAmbos.includes(destino)) continue;
+      pares++;
+      const convertida = applySwitch(actividad, destino.meta.name, listTemplates());
+      let payload = null;
+      try { payload = destino.getRoundPayload(convertida, { itemIndex: 0 }); } catch (e) {
+        rotos.push(`${origen.meta.name} → ${destino.meta.name}: getRoundPayload reventó (${e.message})`);
+        continue;
+      }
+      if (!payload) {
+        rotos.push(`${origen.meta.name} → ${destino.meta.name}: la primera ronda sale vacía`);
+        continue;
+      }
+      if ('options' in payload) {
+        const utiles = (payload.options || []).filter(x => String(x ?? '').trim() !== '');
+        if (utiles.length < 2) {
+          rotos.push(`${origen.meta.name} → ${destino.meta.name}: la ronda pide opciones y llegan ${utiles.length}`
+            + ' (¿le falta declarar adoptContent?)');
+        }
+      }
+    }
+  }
+  assert.ok(pares >= 5, `el barrido tiene que encontrar pares que comprobar (encontró ${pares})`);
+  assert.deepStrictEqual(rotos, [],
+    'conversiones que se ofrecen pero no dan una ronda jugable:\n  ' + rotos.join('\n  '));
+  ok(`las ${pares} conversiones ofrecidas producen una primera ronda jugable`);
 }
 
 console.log(`\ntemplateContract.test: ${passed} checks passed`);
