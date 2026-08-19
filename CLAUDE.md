@@ -107,6 +107,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | **¿Editar el contenido pierde la respuesta correcta?** (teclea en los 13 editores y re-pregunta al scorer) | `node tools/edit-audit.mjs` |
 | **Prueba de CARGA** (N alumnos concurrentes live+tareas contra PB real) | `core/stressTest.js` · botón `#/admin` "Simular carga" · `node tools/stress-live.mjs [N]` |
 | Modo SOLO (Wordwall) por dentro · identidad/auth · dev local | [`docs/modo-wordwall.md`](docs/modo-wordwall.md) · [`docs/identidad.md`](docs/identidad.md) · [`docs/dev-local.md`](docs/dev-local.md) |
+| **Plan de la IA que ESCRIBE el contenido** (por modelo · módulo aparte · qué falta decidir) | **[`docs/handoff-ia-contenido.md`](docs/handoff-ia-contenido.md)** (plan escrito 2026-08-18, sin ejecutar) |
 | **Plan del EDITOR** (márgenes · «+ Añadir» · imagen↔pines · nacer en blanco · buscador) | **[`docs/handoff-editor-general.md`](docs/handoff-editor-general.md)** (decidido 2026-08-13, sin ejecutar) |
 | **DECISIONES de producto pendientes** (contrastadas con Wordwall/Kahoot: identidad del alumno, imprimible, cuotas…) | **[`docs/decisiones-pendientes.md`](docs/decisiones-pendientes.md)** |
 | **Cuántos bucles de juego en vivo hay y qué cuestan** (estudio D7, medido) | **[`docs/estudio-bucles-live.md`](docs/estudio-bucles-live.md)** + ley §26 |
