@@ -240,7 +240,9 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   // Un `fetch` de mentira al que se le dice qué sonda funciona y cuál no.
   const falso = (vale) => async (url, opt = {}) => {
     const sonda = (opt.method || 'GET') === 'GET' ? 'estado'
-      : (opt.mode === 'no-cors' ? 'opaca' : 'simple');
+      : opt.mode === 'no-cors' ? 'opaca'
+      : opt.headers?.Authorization ? 'sesion'
+      : 'simple';
     if (!vale[sonda]) throw new TypeError('Failed to fetch');
     return { ok: true, status: sonda === 'estado' ? 200 : 401 };
   };
@@ -253,9 +255,20 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
     'si ni el GET simple pasa, no puede ser el permiso de origen del POST');
   assert.ok(nada.includes('/api/ia/estado'), 'y dice QUÉ dirección probar en una pestaña');
 
+  // EL CASO REAL (lo que enseñó la consola): el preflight pasa, la petición
+  // llega y el servidor devuelve 502 sin cabecera de permiso. La primera
+  // versión de esta sonda decía «falla la comprobación previa» — lo contrario
+  // de lo que pasaba — porque probaba con un POST simple, que ni siquiera la
+  // dispara. Con sesión de mentira el trámite previo es el mismo que el real.
+  const error502 = await diagnosticarFalloDeRed({
+    url: URL_IA, fetchFn: falso({ estado: true, sesion: true, simple: true, opaca: true }) });
+  assert.match(error502, /respondió con un ERROR/,
+    'si la sonda con sesión pasa, el permiso está bien: lo que falla es la respuesta del servidor');
+  assert.match(error502, /_\/#\/logs/, 'y dice DÓNDE está el motivo que el navegador oculta');
+
   const previa = await diagnosticarFalloDeRed({ url: URL_IA, fetchFn: falso({ estado: true, simple: true }) });
   assert.match(previa, /comprobación previa \(CORS\)/,
-    'si lo simple pasa y lo de la sesión no, es la comprobación previa');
+    'si lo simple pasa y lo de la sesión no, ahí sí es la comprobación previa');
   assert.match(previa, /pi-instalar-hook\.sh/, 'y dice qué hacer, no qué pasó (R6)');
 
   const respuesta = await diagnosticarFalloDeRed({ url: URL_IA, fetchFn: falso({ estado: true, opaca: true }) });
@@ -268,18 +281,21 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 
   // Las cinco frases son DISTINTAS: si dos coincidieran, la sonda no serviría
   // para nada — que es exactamente el punto de partida de todo esto.
-  const frases = new Set([sinRed, nada, previa, respuesta, bloqueo]);
-  assert.strictEqual(frases.size, 5, 'cada fallo distinto tiene que decir algo distinto');
+  const frases = new Set([sinRed, nada, error502, previa, respuesta, bloqueo]);
+  assert.strictEqual(frases.size, 6, 'cada fallo distinto tiene que decir algo distinto');
 
-  // CONTRA-PRUEBA: ninguna sonda genera contenido ni gasta cuota — solo GET de
-  // estado y POST sin sesión (el extremo contesta 401 antes de llamar a nadie).
-  let conSesion = 0;
+  // CONTRA-PRUEBA: ninguna sonda puede gastar una generación. La que lleva
+  // Authorization la lleva de MENTIRA — el extremo contesta 401 antes de llamar
+  // a nadie — y en ningún caso viaja la sesión de verdad del profe.
+  const sesiones = [];
   await diagnosticarFalloDeRed({ url: URL_IA, fetchFn: async (_u, o = {}) => {
-    if (o.headers?.Authorization) conSesion++;
-    throw new TypeError('Failed to fetch');
+    if ((o.method || 'GET') === 'GET') return { ok: true, status: 200 };  // llega al estado…
+    if (o.headers?.Authorization) sesiones.push(o.headers.Authorization);
+    throw new TypeError('Failed to fetch');                               // …y falla todo POST
   } });
-  assert.strictEqual(conSesion, 0, 'las sondas nunca mandan la sesión: no pueden gastar una generación');
-  ok('el fallo de red se DIAGNOSTICA con sondas (5 causas, 5 frases) en vez de suponerse');
+  assert.deepStrictEqual(sesiones, ['sonda'],
+    'la única cabecera de sesión que mandan las sondas es una falsa (401 seguro, sin generar)');
+  ok('el fallo de red se DIAGNOSTICA con sondas (6 causas, 6 frases) en vez de suponerse');
 }
 
 console.log(`\naiContent.test: ${passed} checks passed`);

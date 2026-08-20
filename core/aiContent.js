@@ -231,19 +231,27 @@ function enBlanco(p) {
  * Lo que faltaba no era otro arreglo: era preguntárselo al navegador, que es el
  * único que sabe qué le pasó.
  *
- * Tres sondas que se van estrechando, todas baratas y ninguna genera contenido:
+ * LA SONDA QUE IMPORTA ES LA SEGUNDA, Y LA PRIMERA VERSIÓN LA TENÍA MAL: usaba
+ * un POST *simple* (`text/plain`, sin sesión), que precisamente por ser simple
+ * NO dispara la comprobación previa. Respondía, y de ahí se concluía «falla la
+ * comprobación previa» — justo lo contrario de lo que ese resultado demuestra.
+ * La consola del navegador enseñó la verdad: el preflight pasaba y la petición
+ * de verdad volvía con **502**, sin cabecera de permiso, así que el navegador
+ * ocultaba el motivo. Una sonda que no puede fallar donde falla el original no
+ * mide nada. Ahora lleva una cabecera Authorization de mentira: mismo trámite
+ * previo que la petición real, y el extremo contesta 401 sin generar nada.
  *
- *   1. GET de estado — petición SIMPLE (sin cabeceras propias ⇒ sin comprobación
- *      previa). Si esta también falla, no es el permiso de origen: es la red, un
- *      bloqueador del navegador o el servidor caído.
- *   2. POST simple (`text/plain`, sin Authorization) — llega SIN comprobación
- *      previa. Si esta responde y la de verdad no, lo que falla es justo esa
- *      comprobación previa, que solo existe por la cabecera Authorization.
- *   3. La misma en modo opaco — si ni siquiera así hay respuesta, la petición no
- *      sale del navegador; si sale, lo que falta es la cabecera de permiso en la
- *      RESPUESTA.
+ * Cuatro sondas que se estrechan, ninguna gasta una generación:
  *
- * Devuelve la frase para el profe: qué pasa y qué hacer (R6).
+ *   1. GET de estado — petición SIMPLE. Si falla, no es el permiso de origen:
+ *      es la red, un bloqueador del navegador o el servidor caído.
+ *   2. POST con sesión FALSA — mismo preflight que la real. Si esta pasa, el
+ *      permiso está bien y lo que falló fue la RESPUESTA de la petición real:
+ *      el servidor devolvió un error (502/500) que el navegador oculta.
+ *   3. POST simple — separa «falla el preflight» de «no sale ningún POST».
+ *   4. Modo opaco — última comprobación de si la petición llega a salir.
+ *
+ * Devuelve la frase para el profe: qué pasa y dónde mirarlo (R6).
  */
 export async function diagnosticarFalloDeRed({ url, estadoUrl = '', fetchFn = fetch, enLinea = true } = {}) {
   if (enLinea === false) return 'Sin conexión a internet. La IA necesita red.';
@@ -260,16 +268,33 @@ export async function diagnosticarFalloDeRed({ url, estadoUrl = '', fetchFn = fe
       + 'navegador (una extensión, el antivirus o la red del centro).';
   }
 
-  // El servidor SÍ contesta a lo simple. Ahora, ¿es la comprobación previa?
+  // LA MISMA FORMA QUE LA PETICIÓN REAL, pero con una sesión que no vale: el
+  // preflight es idéntico (lo dispara la cabecera Authorization) y el extremo
+  // contesta 401 antes de llamar a nadie, así que no cuesta una generación.
   try {
-    // `text/plain` es de los tipos que NO disparan comprobación previa. El
-    // extremo contestará 401 (falta la sesión) y eso ya es la respuesta que
-    // buscamos: lo que importa es que HAYA respuesta, no cuál.
+    await fetchFn(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'sonda' },
+      body: JSON.stringify({ sonda: true }),
+    });
+    // Pasó. Entonces el permiso NO es el problema: lo que falló fue la respuesta
+    // de la petición de verdad — un error del servidor que viene sin cabecera de
+    // permiso y que el navegador, por seguridad, no deja leer.
+    return 'El permiso del navegador está bien: el servidor recibió la petición y respondió con un '
+      + 'ERROR (no con el contenido). El navegador oculta el motivo porque esa respuesta de error no '
+      + 'lleva la cabecera de permiso. El motivo está en el registro de PocketBase '
+      + '(https://pb.lanube.uno/_/#/logs) — suele ser que la Pi no pudo hablar con la IA o que la '
+      + 'clave no vale.';
+  } catch { /* seguimos estrechando */ }
+
+  try {
+    // Simple (sin Authorization ⇒ sin preflight). Si ESTA pasa y la de arriba no,
+    // lo que falla es justo el trámite previo de la cabecera de sesión.
     await fetchFn(url, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: '{}' });
     return 'El servidor responde, pero el navegador no le deja mandar la petición con tu sesión: '
       + 'falla la comprobación previa (CORS) de la cabecera Authorization. Actualiza el hook en la Pi '
       + 'con tools/pi-instalar-hook.sh y vuelve a probar.';
-  } catch { /* seguimos estrechando */ }
+  } catch { /* seguimos */ }
 
   try {
     await fetchFn(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: '{}' });
