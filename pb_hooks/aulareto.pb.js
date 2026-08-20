@@ -91,38 +91,38 @@ routerAdd('GET', '/api/ia/estado', (e) => {
 routerAdd('POST', '/api/ia/contenido', (e) => {
   const lib = require(`${__hooks}/aulareto-lib.js`);
   lib.permitirNavegador(e);
-
-  const cfg = lib.leerConfigIA();
-  const proveedor = lib.PROVEEDORES[cfg.proveedor];
-  if (!cfg.clave || !proveedor) {
-    // El motivo VIAJA: «no está configurada» a secas dejaba al dueño mirando la
-    // clave sin saber si el problema era ella, la fila o la lectura (R6).
-    return e.json(503, { message: 'La IA no está configurada en el servidor.'
-      + (cfg.error ? ' Motivo: ' + cfg.error : '')
-      + (!proveedor && cfg.proveedor ? ' Proveedor desconocido: ' + cfg.proveedor : '') });
-  }
-
-  // SESIÓN OBLIGATORIA: escribir contenido es acto de profe (§22), y sin esto
-  // el extremo sería un modelo de lenguaje abierto a internet.
-  const auth = e.auth;
-  if (!auth || !auth.id) return e.json(401, { message: 'Entra con tu cuenta para usar la IA.' });
-
-  const datos = new DynamicModel({ modelo: '', tema: '', cantidad: 0, curso: '' });
-  e.bindBody(datos);
-
-  const esquema = lib.ESQUEMAS[datos.modelo];
-  if (!esquema) return e.json(400, { message: 'Tipo de contenido desconocido.' });
-  const tema = String(datos.tema || '').trim().slice(0, 300);
-  if (!tema) return e.json(400, { message: 'Falta el tema.' });
-  const cantidad = Math.max(1, Math.min(lib.MAX_ELEMENTOS, parseInt(datos.cantidad, 10) || 8));
-  const curso = String(datos.curso || '').trim().slice(0, 120);
-
-  // TOPE POR PROFE Y DÍA. El coste lo paga el dueño, así que una clase entera
-  // no puede vaciarle la cuota. Se cuenta en una colección propia (`ia_usos`).
-  const hoy = new Date().toISOString().slice(0, 10);
-  let usos = 0;
   try {
-    usos = $app.countRecords('ia_usos', $dbx.exp('profe = {:p} AND dia = {:d}', { p: auth.id, d: hoy }));
+    const cfg = lib.leerConfigIA();
+    const proveedor = lib.PROVEEDORES[cfg.proveedor];
+    if (!cfg.clave || !proveedor) {
+      // El motivo VIAJA: «no está configurada» a secas dejaba al dueño mirando la
+      // clave sin saber si el problema era ella, la fila o la lectura (R6).
+      return lib.responder(e, 503, { message: 'La IA no está configurada en el servidor.'
+        + (cfg.error ? ' Motivo: ' + cfg.error : '')
+        + (!proveedor && cfg.proveedor ? ' Proveedor desconocido: ' + cfg.proveedor : '') });
+    }
+
+    // SESIÓN OBLIGATORIA: escribir contenido es acto de profe (§22), y sin esto
+    // el extremo sería un modelo de lenguaje abierto a internet.
+    const auth = e.auth;
+    if (!auth || !auth.id) return lib.responder(e, 401, { message: 'Entra con tu cuenta para usar la IA.' });
+
+    const datos = new DynamicModel({ modelo: '', tema: '', cantidad: 0, curso: '' });
+    e.bindBody(datos);
+
+    const esquema = lib.ESQUEMAS[datos.modelo];
+    if (!esquema) return lib.responder(e, 400, { message: 'Tipo de contenido desconocido.' });
+    const tema = String(datos.tema || '').trim().slice(0, 300);
+    if (!tema) return lib.responder(e, 400, { message: 'Falta el tema.' });
+    const cantidad = Math.max(1, Math.min(lib.MAX_ELEMENTOS, parseInt(datos.cantidad, 10) || 8));
+    const curso = String(datos.curso || '').trim().slice(0, 120);
+
+    // TOPE POR PROFE Y DÍA. El coste lo paga el dueño, así que una clase entera
+    // no puede vaciarle la cuota. Se cuenta en una colección propia (`ia_usos`).
+    const hoy = new Date().toISOString().slice(0, 10);
+    let usos = 0;
+    try {
+      usos = $app.countRecords('ia_usos', $dbx.exp('profe = {:p} AND dia = {:d}', { p: auth.id, d: hoy }));
   } catch (err) {
     // best-effort: si la colección aún no existe, se deja pasar en vez de
     // bloquear la función entera. Queda en el log, no en silencio (R6).
@@ -130,7 +130,7 @@ routerAdd('POST', '/api/ia/contenido', (e) => {
     usos = 0;
   }
   if (usos >= lib.TOPE_DIARIO) {
-    return e.json(429, { message: 'Has llegado a ' + lib.TOPE_DIARIO + ' generaciones hoy. Mañana se renueva.' });
+    return lib.responder(e, 429, { message: 'Has llegado a ' + lib.TOPE_DIARIO + ' generaciones hoy. Mañana se renueva.' });
   }
 
   const sistema = 'Eres un maestro de primaria y secundaria que prepara material para el aula, en español. '
@@ -151,19 +151,22 @@ routerAdd('POST', '/api/ia/contenido', (e) => {
       timeout: 60,
     });
   } catch (err) {
-    $app.logger().error('IA: no se pudo llamar al proveedor', 'error', String(err));
-    return e.json(502, { message: 'No se pudo hablar con la IA. Inténtalo otra vez.' });
+    // El motivo VIAJA, ya limpio de la clave: «inténtalo otra vez» a secas
+    // dejaba al dueño sin saber si la Pi no llega a internet, si el nombre no
+    // resuelve o si la clave no vale. Cada uno se arregla en un sitio distinto.
+    $app.logger().error('IA: no se pudo llamar al proveedor', 'error', lib.sinSecretos(err));
+    return lib.responder(e, 502, { message: 'La Pi no pudo hablar con la IA: ' + lib.sinSecretos(err) });
   }
   if (res.statusCode >= 400) {
     // El cuerpo del proveedor NO se reenvía: puede traer la clave o detalles de
     // la cuenta. Se registra en el servidor y al profe le llega lo accionable.
     $app.logger().error('IA: el proveedor respondió ' + res.statusCode, 'proveedor', cfg.proveedor);
-    return e.json(502, { message: 'La IA no pudo responder (' + res.statusCode + '). '
+    return lib.responder(e, 502, { message: 'La IA no pudo responder (' + res.statusCode + '). '
       + 'Si se repite, revisa la clave en el panel.' });
   }
 
   const texto = proveedor.texto(res.json);
-  if (!texto) return e.json(502, { message: 'La IA devolvió una respuesta vacía.' });
+  if (!texto) return lib.responder(e, 502, { message: 'La IA devolvió una respuesta vacía.' });
 
   // Se apunta el uso DESPUÉS de que haya salido bien: un fallo del proveedor no
   // debe gastarle una generación al profe.
@@ -180,5 +183,14 @@ routerAdd('POST', '/api/ia/contenido', (e) => {
     $app.logger().warn('IA: no se pudo apuntar el uso', 'error', String(err));
   }
 
-  return e.json(200, { contenido: texto });
+  return lib.responder(e, 200, { contenido: texto });
+  } catch (err) {
+    // NADA PUEDE MORIR EN SILENCIO AQUÍ. Si el handler revienta, PocketBase
+    // devuelve su propia respuesta —y esa NO lleva la cabecera de permiso—, así
+    // que el navegador se queda con «no se pudo conectar» y el motivo se pierde.
+    // Es exactamente lo que pasó: un 502 que el navegador no dejaba leer. Con
+    // esto, cualquier fallo sale como frase, y sin la clave dentro (R6).
+    $app.logger().error('IA: el handler falló', 'error', lib.sinSecretos(err));
+    return lib.responder(e, 500, { message: 'El servidor falló al preparar el contenido: ' + lib.sinSecretos(err) });
+  }
 });

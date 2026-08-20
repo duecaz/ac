@@ -149,4 +149,33 @@ function permitirNavegador(e) {
   }
 }
 
-module.exports = { TOPE_DIARIO, MAX_ELEMENTOS, ESQUEMAS, PROVEEDORES, leerConfigIA, permitirNavegador };
+// RESPONDER PONIENDO EL PERMISO OTRA VEZ, JUSTO ANTES.
+//
+// La consola del navegador enseñó lo que ninguna prueba con `curl` podía: la
+// petición de verdad llegaba y volvía un 502 **sin** cabecera de permiso, así
+// que el navegador escondía el cuerpo — el motivo, precisamente. Con `curl` no
+// se veía porque `curl` no aplica esa política y lee la respuesta igual.
+//
+// Se ponen al empezar el handler, pero si en el camino algo las pisa, el error
+// se vuelve INVISIBLE justo cuando más falta hace leerlo. Volver a ponerlas
+// aquí es barato y convierte «no se pudo conectar» en una frase que se entiende.
+// QUITARLE LOS SECRETOS A UN TEXTO ANTES DE ENSEÑARLO.
+//
+// Para que un error se pueda leer hay que enviarlo, y ahí está la trampa: el
+// error de una llamada HTTP suele traer la URL entera, y la de Gemini lleva la
+// clave EN la URL (`?key=…`). Enseñar el motivo no puede costar la clave — que
+// es la razón de que exista este hook. Se tapa el patrón, no una clave concreta:
+// así también cubre la de mañana.
+function sinSecretos(txt) {
+  return String(txt)
+    .replace(/([?&]key=)[^&\s"']+/gi, '$1…')
+    .replace(/(Bearer\s+)[A-Za-z0-9._\-]+/gi, '$1…')
+    .replace(/\b(AIza|xai-|sk-)[A-Za-z0-9._\-]{8,}/g, '$1…');
+}
+
+function responder(e, status, cuerpo) {
+  permitirNavegador(e);
+  return e.json(status, cuerpo);
+}
+
+module.exports = { TOPE_DIARIO, MAX_ELEMENTOS, ESQUEMAS, PROVEEDORES, leerConfigIA, permitirNavegador, responder, sinSecretos };

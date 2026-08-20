@@ -228,6 +228,40 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   ok('el hook no declara nada fuera de sus handlers (la trampa que devolvía 400)');
 }
 
+// ── UN ERROR QUE EL NAVEGADOR NO PUEDE LEER ES UN ERROR PERDIDO ──────────────
+// La consola enseñó un 502 bloqueado por no traer cabecera de permiso: la app
+// decía «no se pudo conectar» y el motivo —que el servidor SÍ había escrito—
+// se quedaba en la Pi. Con `curl` no se ve, porque `curl` no aplica esa
+// política. Así que la ruta de contenido responde SIEMPRE por `lib.responder`,
+// que vuelve a poner el permiso justo antes de salir.
+//
+// Y el precio de enseñar el motivo no puede ser la clave: el error de una
+// llamada HTTP trae la URL, y la de Gemini lleva la clave DENTRO (`?key=…`).
+{
+  const hook = readFileSync(join(ROOT, 'pb_hooks/aulareto.pb.js'), 'utf8');
+  const post = hook.slice(hook.indexOf("routerAdd('POST', '/api/ia/contenido'"));
+  const crudas = post.split(/\r?\n/).filter(l => /\breturn e\.json\(/.test(l));
+  assert.deepStrictEqual(crudas, [],
+    `la ruta de contenido responde sin volver a poner el permiso (usa lib.responder): ${crudas.join(' · ')}`);
+  assert.ok(/} catch \(err\) {[\s\S]*lib\.responder\(e, 500/.test(post),
+    'y el handler entero va dentro de un try: si revienta, PocketBase responde por él y sin cabeceras');
+  // CONTRA-PRUEBA de que el barrido mira donde debe: las rutas de arriba SÍ
+  // usan e.json directamente (no pasan por el motivo del profe) y no se cuentan.
+  assert.ok(/return e\.json\(200, \{ ok: true \}\)/.test(hook), 'el preflight sigue respondiendo directo');
+  ok('todo error de la ruta de contenido sale con permiso de origen (o el navegador lo esconde)');
+
+  // La redacción, PROBADA: el patrón, no una clave concreta — así tapa también
+  // la de mañana. Es el único trozo del hook que se puede ejecutar aquí.
+  const { createRequire } = await import('node:module');
+  const { sinSecretos } = createRequire(import.meta.url)(join(ROOT, 'pb_hooks/aulareto-lib.js'));
+  const real = 'Post "https://generativelanguage.googleapis.com/v1beta/x:generateContent?key=AIzaSyABCDEF123456": dial tcp';
+  assert.ok(!sinSecretos(real).includes('AIzaSyABCDEF123456'), 'la clave de la URL no viaja al navegador');
+  assert.ok(sinSecretos(real).includes('dial tcp'), 'pero el motivo sí: taparlo todo sería volver al silencio');
+  assert.ok(!sinSecretos('Bearer xai-abcdef1234567890').includes('xai-abcdef1234567890'),
+    'y la de Grok, que va en la cabecera, tampoco');
+  ok('el motivo del fallo viaja limpio de claves (patrón, no lista)');
+}
+
 // ── CUANDO `fetch` LANZA, EL MENSAJE TIENE QUE VENIR DE UNA MEDIDA ───────────
 // Se gastaron tres arreglos seguidos culpando al permiso de origen (CORS) sin
 // una sola medida delante, y el servidor estaba impecable: el diagnóstico desde
