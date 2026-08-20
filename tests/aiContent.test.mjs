@@ -179,14 +179,36 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   // runtimes distintos. Un modelo nuevo que se declare aquí y no allí devolvería
   // «tipo de contenido desconocido» al tocar el botón. Se comprueba leyendo el
   // fichero del hook: es la única forma de atarlos sin una Pi delante.
-  const hook = readFileSync(join(ROOT, 'pb_hooks/aulareto.pb.js'), 'utf8');
-  const sinEsquema = modelos.filter(m => !new RegExp(`\\b${m}\\s*:`).test(hook.split('const PROVEEDORES')[0]));
+  const lib = readFileSync(join(ROOT, 'pb_hooks/aulareto-lib.js'), 'utf8');
+  const esquemas = lib.split('const PROVEEDORES')[0];
+  const sinEsquema = modelos.filter(m => !new RegExp(`\\b${m}\\s*:`).test(esquemas));
   assert.deepStrictEqual(sinEsquema, [],
-    `modelos declarados en MODELOS_IA sin esquema en pb_hooks/aulareto.pb.js: ${sinEsquema.join(', ')}`);
+    `modelos declarados en MODELOS_IA sin esquema en pb_hooks/aulareto-lib.js: ${sinEsquema.join(', ')}`);
   // CONTRA-PRUEBA: la comprobación mira de verdad (si no, pasaría con cualquier cosa).
-  assert.ok(!/\bballsort\s*:/.test(hook.split('const PROVEEDORES')[0]),
-    'y el hook no declara esquemas de más');
+  assert.ok(!/\bballsort\s*:/.test(esquemas), 'y el hook no declara esquemas de más');
   ok('los esquemas del hook cubren los mismos modelos que el cliente (no pueden divergir)');
+}
+
+// ── EL HOOK NO PUEDE DECLARAR NADA FUERA DE SUS HANDLERS ─────────────────────
+// La trampa nº1 de PocketBase, y costó un 400 en la Pi: cada handler corre en un
+// runtime APARTE y NO ve el ámbito exterior, así que una constante declarada
+// arriba del fichero simplemente no existe dentro del callback — el handler
+// revienta con un ReferenceError y PocketBase lo devuelve como «Something went
+// wrong». No se ve en ninguna prueba local porque este fichero no corre aquí:
+// solo se puede vigilar leyéndolo.
+{
+  const hook = readFileSync(join(ROOT, 'pb_hooks/aulareto.pb.js'), 'utf8');
+  // Fuera de comentarios, a nivel de línea sin sangrar, solo puede haber
+  // `routerAdd(` (y sus cierres). Nada de const/let/var/function.
+  const sueltas = hook.split(/\r?\n/)
+    .filter(l => /^(const|let|var|function|class)\s/.test(l));
+  assert.deepStrictEqual(sueltas, [],
+    'pb_hooks/aulareto.pb.js declara cosas FUERA de un handler; los handlers no las verán '
+    + `(muévelas a aulareto-lib.js y usa require): ${sueltas.join(' · ')}`);
+  // Y lo compartido se pide DENTRO, con require.
+  assert.ok(/require\(`\$\{__hooks\}\/aulareto-lib\.js`\)/.test(hook),
+    'cada handler debe hacer su propio require del módulo compartido');
+  ok('el hook no declara nada fuera de sus handlers (la trampa que devolvía 400)');
 }
 
 console.log(`\naiContent.test: ${passed} checks passed`);

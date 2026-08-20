@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **264 módulos · 1023 imports internos.**
+> **265 módulos · 1023 imports internos.**
 
 ### Ir a otro documento
 
@@ -34,8 +34,8 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2722 | 12 · 1242 | 0.46 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3975 | 19 · 3001 | 0.75 |
 | **informes/tareas** | después de clase | 10 · 1056 | 4 · 466 | 0.44 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5709 | 13 · 1374 | 0.24 |
-| **infra/común** | todo lo anterior | 138 · 15989 | 53 · 6236 | 0.39 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5709 | 13 · 1396 | 0.24 |
+| **infra/común** | todo lo anterior | 139 · 16027 | 53 · 6236 | 0.39 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -55,7 +55,7 @@ abajo, nunca al revés** (ley §0). Lo vigila `tests/layers.test.mjs`.
 
 ```mermaid
 graph TD
-  A["<b>arranque</b><br/><small>cablea cada página (main.*.js, sw.js)</small><br/><small>5 módulos</small>"]
+  A["<b>arranque</b><br/><small>cablea cada página (main.*.js, sw.js)</small><br/><small>6 módulos</small>"]
   V["<b>vistas</b><br/><small>el chrome: navegación, setup, informes</small><br/><small>29 módulos</small>"]
   AD["<b>adaptadores</b><br/><small>el transporte: PocketBase | local</small><br/><small>7 módulos</small>"]
   C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>136 módulos</small>"]
@@ -104,7 +104,7 @@ graph TD
 
 | Capa | Módulos más grandes |
 |---|---|
-| **arranque** | `qa/hoja.js` (254) · `pb_hooks/aulareto.pb.js` (250) · `main.teacher.js` (168) · `main.embed.js` (68) · `main.student.js` (50) |
+| **arranque** | `qa/hoja.js` (254) · `main.teacher.js` (168) · `pb_hooks/aulareto.pb.js` (155) · `pb_hooks/aulareto-lib.js` (133) · `main.embed.js` (68) |
 | **vistas** | `views/adminView.js` (1229) · `views/hostLive.js` (1110) · `views/studentLive.js` (922) · `views/playerView.js` (504) · `views/vsView.js` (492) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1187) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
 | **core** | `core/textCorrectionRound.js` (455) · `core/normsCheck.js` (364) · `core/skins.js` (355) · `core/selftest.js` (345) · `core/auth.js` (330) |

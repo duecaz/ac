@@ -33,11 +33,16 @@ ok "compose en $DIR"
 
 azul "2. Bajar el hook del repo público"
 mkdir -p "$DIR/pb_hooks" || exit 1
-if curl -fsSL "$REPO_RAW/pb_hooks/aulareto.pb.js" -o "$DIR/pb_hooks/aulareto.pb.js"; then
-  ok "$DIR/pb_hooks/aulareto.pb.js ($(wc -c < "$DIR/pb_hooks/aulareto.pb.js") bytes)"
-else
-  mal "No se pudo descargar. ¿Tiene la Pi salida a internet?"; exit 1
-fi
+# DOS ficheros: el que registra las rutas y el módulo con todo lo demás. Van
+# separados porque los handlers de PocketBase corren en un runtime aparte y no
+# ven el ámbito exterior — con todo en un fichero, la ruta devolvía 400.
+for f in aulareto.pb.js aulareto-lib.js; do
+  if curl -fsSL "$REPO_RAW/pb_hooks/$f" -o "$DIR/pb_hooks/$f"; then
+    ok "$DIR/pb_hooks/$f ($(wc -c < "$DIR/pb_hooks/$f") bytes)"
+  else
+    mal "No se pudo descargar $f. ¿Tiene la Pi salida a internet?"; exit 1
+  fi
+done
 
 azul "3. ¿Está /pb_hooks montado en el contenedor?"
 if echo "$MONTAJES" | grep -q '> */pb_hooks'; then
