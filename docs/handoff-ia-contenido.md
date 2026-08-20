@@ -7,11 +7,14 @@
 > malograr el resto del code**; la IA será como la que usa Wordwall, para
 > escribir directamente el contenido de la actividad que estamos creando».
 >
-> **ESTADO: CONSTRUIDO (v1.51.532), a falta de instalar el hook en la Pi.**
+> **ESTADO: FUNCIONANDO EN PRODUCCIÓN (v1.51.548, 2026-08-20).** El hook está
+> instalado en la Pi, la clave de Gemini guardada en `ia_config` y la primera
+> generación real salió correcta desde `#/admin` → «Probar». Lo que costó
+> ponerlo en pie —tres trampas que no se ven desde el repo— está en §7b.
 > El documento nació como el plan que exigía `norte.md` §4b para reabrir el tema
 > (*«que la IA entre obedeciendo a un plan específico y escrito, no como
 > añadido»*); las decisiones de §6 las tomó el dueño el 2026-08-18 y están
-> aplicadas. Lo que falta es un paso TUYO, no de código: §7.
+> aplicadas.
 
 ## 1 · La idea en una frase
 
@@ -179,11 +182,12 @@ en la interfaz antes de que se agote (misma norma que §25).
 **Recomendación: (i) primero, (iii) después** — (iii) resuelve un hueco REAL y
 ya identificado, y (ii) es el que más superficie nueva añade.
 
-## 7 · LO QUE FALTA — instalar el hook en la Pi (paso del dueño)
+## 7 · INSTALAR EL HOOK EN LA PI — HECHO (2026-08-20), y cómo repetirlo
 
-El código está. Sin este paso, el botón sale, se toca, y dice *«La IA todavía no
-está configurada en el servidor»* — que es lo correcto: la puerta se avisa, no
-se descubre fallando.
+> Queda escrito porque hay que rehacerlo al cambiar de servidor, al restaurar un
+> backup o el día que otra persona monte esto. Sin este paso el botón sale, se
+> toca, y dice *«La IA todavía no está configurada en el servidor»* — que es lo
+> correcto: la puerta se avisa, no se descubre fallando.
 
 **1. Subir el hook.** El repo es PÚBLICO, así que la Pi se lo descarga sola —
 no hay que copiar ficheros a mano:
