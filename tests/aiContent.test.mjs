@@ -319,6 +319,73 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   // propósito: sería citar una frase, y el ratchet de `citasFuente` existe justo
   // para que una redacción no se convierta en trabajo cada vez que se mejora.)
   ok('una negativa temporal (503) prueba con otro modelo en vez de rendirse');
+
+  // VARIAS CLAVES: cuándo se baja a la siguiente y cuándo no. Cambiar de clave
+  // solo arregla lo que ES la clave — que no valga (401/403) o que se haya
+  // quedado sin cuota (429). Ante un 400 el problema es la petición, y probar la
+  // siguiente únicamente gastaría también la otra cuota; ante un 404 lo que
+  // falta es el modelo, no la clave. Se prueban las dos direcciones porque la
+  // regla de más aquí cuesta dinero de verdad.
+  const { CULPA_DE_LA_CLAVE } = createRequire(import.meta.url)(join(ROOT, 'pb_hooks/aulareto-lib.js'));
+  for (const s of [401, 403, 429]) {
+    assert.ok(CULPA_DE_LA_CLAVE.includes(s), `un ${s} sí se arregla con otra clave`);
+  }
+  for (const s of [400, 404, 500, 503]) {
+    assert.ok(!CULPA_DE_LA_CLAVE.includes(s), `un ${s} NO se arregla con otra clave: no gastes la de al lado`);
+  }
+  ok('con varias claves solo se baja a la siguiente cuando el problema ES la clave');
+}
+
+// ── LA CLAVE NO SALE DE LA PI, TAMPOCO PARA GESTIONARLA ──────────────────────
+// Gestionar varias claves es justo donde se pierde ese cuidado: para listar hace
+// falta el id, y traerse el registro entero —con el secreto dentro— es lo cómodo.
+// `fields=` filtra EN EL SERVIDOR, así que la clave no llega al navegador ni con
+// el token del superadmin. Y probar una clave lo hace la Pi, que es la única que
+// la tiene: aquí no hay con qué llamar al proveedor.
+{
+  // Se EJECUTA el dueño con un `fetch` de mentira, en vez de leer su código: así
+  // lo que se comprueba es la petición que de verdad sale, no cómo está escrita.
+  const salidas = [];
+  const fetchReal = globalThis.fetch;
+  globalThis.fetch = async (url, opt = {}) => {
+    salidas.push({ url: String(url), opt });
+    return { ok: true, status: 200, json: async () => ({ items: [], ok: true, modelos: [] }) };
+  };
+  try {
+    const { listarClaves, probarClave: probarEnLaPi } = await import('../core/iaKeys.js');
+    await listarClaves('token-de-mentira');
+    await probarEnLaPi('token-de-mentira', 'id1');
+  } finally { globalThis.fetch = fetchReal; }
+
+  const listado = salidas.find(s => s.url.includes('/records'));
+  assert.ok(listado, 'listar tiene que pedirle las filas a PocketBase');
+  const campos = /[?&]fields=([^&]+)/.exec(listado.url);
+  assert.ok(campos, 'y pedirlas con `fields=`: sin eso PocketBase devuelve el registro ENTERO');
+  assert.ok(!decodeURIComponent(campos[1]).split(',').includes('clave'),
+    'el listado NO puede pedir el campo `clave`: es lo único que no debe salir de la Pi');
+
+  for (const s of salidas) {
+    assert.ok(!/generativelanguage|api\.x\.ai/.test(s.url),
+      `el navegador no llama al proveedor (${s.url}): no tiene la clave y no debe tenerla`);
+  }
+  assert.ok(salidas.some(s => s.url.endsWith('/api/ia/probar')),
+    'probar una clave se le pide a la Pi, que es la única que la tiene');
+
+  // Y el panel ya no habla con la colección: se lo pide al dueño (§21). Sin esto
+  // la lógica del `fields=` acabaría copiada en cada sitio que liste claves.
+  const admin = readFileSync(join(ROOT, 'views/adminView.js'), 'utf8');
+  assert.ok(!/collections\/ia_config\/records/.test(admin),
+    'views/adminView.js no puede tocar ia_config directamente: pídeselo a core/iaKeys.js');
+  ok('gestionar las claves no saca ninguna de la Pi (y la vista pasa por el dueño)');
+
+  // Probar una clave es de SUPERADMIN. Sin ese cerrojo, cualquiera con cuenta de
+  // profe podría ir probando claves ajenas contra el proveedor.
+  const hook = readFileSync(join(ROOT, 'pb_hooks/aulareto.pb.js'), 'utf8');
+  const probar = hook.slice(hook.indexOf("routerAdd('POST', '/api/ia/probar'"));
+  assert.match(probar.slice(0, 1200), /hasSuperuserAuth|_superusers/,
+    'la ruta de probar tiene que comprobar que quien llama es superadmin');
+  assert.match(probar.slice(0, 2000), /responder\(e, 403/, 'y negarse con un 403 si no lo es');
+  ok('probar una clave exige superadmin (la usa, y ni un profe puede leerla)');
 }
 
 // ── CUANDO `fetch` LANZA, EL MENSAJE TIENE QUE VENIR DE UNA MEDIDA ───────────

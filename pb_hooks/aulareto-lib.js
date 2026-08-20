@@ -60,6 +60,12 @@ const MODELO_GEMINI = 'gemini-flash-latest';
 // suele responder — y esperar no es opción: el JSVM no tiene forma de dormir.
 const MERECE_OTRO_MODELO = [404, 429, 500, 503];
 
+// Y estas son culpa de LA CLAVE, no del modelo ni de la petición: no vale
+// (401/403) o se quedó sin cuota (429). Solo ante una de estas se baja a la
+// siguiente clave guardada — con un 400 la petición es la que está mal, y
+// probar otra clave únicamente gastaría también la otra cuota.
+const CULPA_DE_LA_CLAVE = [401, 403, 429];
+
 const PROVEEDORES = {
   gemini: {
     url: function (clave, modelo) {
@@ -99,6 +105,50 @@ const PROVEEDORES = {
   },
 };
 
+// TODAS las claves guardadas, en el orden en que merecen usarse. Antes era UNA
+// fila y punto; con varias, el dueño puede tener la del centro y la suya, jubilar
+// una sin borrarla y —lo que de verdad importa un martes por la mañana— seguir
+// funcionando cuando la primera se queda sin cuota.
+//
+// El orden: las marcadas `activa` primero. Una fila SIN ese campo cuenta como
+// activa, porque las que ya existían no lo tienen y apagarlas al actualizar
+// sería romper lo que funciona para estrenar una funcionalidad.
+function clavesIA() {
+  const out = { claves: [], via: '', error: '' };
+  let todas = [];
+  try {
+    todas = $app.findAllRecords('ia_config');
+    out.via = 'findAllRecords';
+  } catch (err) {
+    out.error = 'lectura: ' + String(err && err.message ? err.message : err);
+    return out;
+  }
+  const conClave = [];
+  for (let i = 0; i < todas.length; i++) {
+    const r = todas[i];
+    const clave = r.getString('clave');
+    if (!clave) continue;
+    let activa = true;
+    try { activa = r.get('activa') === undefined || r.get('activa') === null ? true : !!r.getBool('activa'); } catch (err) { activa = true; }
+    conClave.push({
+      id: r.id,
+      clave: clave,
+      proveedor: (r.getString('proveedor') || 'gemini').toLowerCase(),
+      etiqueta: r.getString('etiqueta') || '',
+      activa: activa,
+    });
+  }
+  if (!conClave.length) {
+    out.error = todas.length
+      ? 'hay ' + todas.length + ' fila(s) en ia_config pero ninguna con clave'
+      : 'ia_config está vacía';
+    return out;
+  }
+  out.claves = conClave.filter(function (c) { return c.activa; })
+    .concat(conClave.filter(function (c) { return !c.activa; }));
+  return out;
+}
+
 // LEER LA CONFIGURACIÓN — y DECIR por qué si no se puede.
 //
 // La primera versión envolvía esto en un `try {} catch {}` mudo: cuando el dueño
@@ -107,11 +157,8 @@ const PROVEEDORES = {
 // alrededor de algo que el usuario acaba de pedir es justo lo que la regla
 // `fallo-mudo` prohíbe en el resto del proyecto.
 //
-// Dos caminos a propósito: `findFirstRecordByFilter` es lo natural, pero si esa
-// firma o la sintaxis del filtro no son las de ESTA versión de PocketBase, el
-// segundo (traer las filas y mirarlas en JavaScript) funciona igual. Esto no se
-// puede probar desde el repo contra una Pi real, así que se prueban los dos y
-// se informa de cuál valió.
+// Devuelve la PRIMERA utilizable y, aparte, la lista entera: quien pide contenido
+// va bajando por ella si la de arriba dice que no (§ handler).
 function leerConfigIA() {
   const out = {
     proveedor: ($os.getenv('WW_IA_PROVEEDOR') || '').toLowerCase(),
@@ -119,37 +166,59 @@ function leerConfigIA() {
     origen: '',
     via: '',
     error: '',
+    claves: [],
   };
   if (out.clave) { out.origen = 'entorno'; out.via = 'env'; }
 
-  let fila = null;
-  try {
-    fila = $app.findFirstRecordByFilter('ia_config', 'clave != ""');
-    if (fila) out.via = 'findFirstRecordByFilter';
-  } catch (e) {
-    out.error = 'filtro: ' + String(e && e.message ? e.message : e);
-  }
-  if (!fila) {
-    try {
-      const todas = $app.findAllRecords('ia_config');
-      for (let i = 0; i < todas.length; i++) {
-        if (todas[i].getString('clave')) { fila = todas[i]; out.via = 'findAllRecords'; break; }
-      }
-      if (!fila && todas.length) out.error = 'hay ' + todas.length + ' fila(s) en ia_config pero ninguna con clave';
-      if (!fila && !todas.length) out.error = out.error || 'ia_config está vacía';
-    } catch (e2) {
-      out.error = (out.error ? out.error + ' · ' : '') + 'lectura: ' + String(e2 && e2.message ? e2.message : e2);
-    }
-  }
-  if (fila) {
-    out.clave = fila.getString('clave') || out.clave;
-    out.proveedor = (fila.getString('proveedor') || out.proveedor).toLowerCase();
+  const guardadas = clavesIA();
+  out.claves = guardadas.claves;
+  if (guardadas.claves.length) {
+    const primera = guardadas.claves[0];
+    out.clave = primera.clave;
+    out.proveedor = primera.proveedor;
     out.origen = 'ia_config';
+    out.via = guardadas.via;
     out.error = '';
+  } else if (!out.clave) {
+    out.error = guardadas.error;
   }
   if (!out.proveedor) out.proveedor = 'gemini';
   if (!out.clave && !out.origen) out.origen = 'ninguno';
+  // La del entorno también es candidata: si no hay ninguna en la base, es la
+  // única, y si las hay va detrás (la base es lo que el dueño gestiona a mano).
+  if (!out.claves.length && out.clave) {
+    out.claves = [{ id: '', clave: out.clave, proveedor: out.proveedor, etiqueta: 'variable de entorno', activa: true }];
+  }
   return out;
+}
+
+// ¿VALE ESTA CLAVE? Se pregunta con la llamada MÁS BARATA que tiene cada
+// proveedor —la lista de modelos—, que no genera nada y por tanto no cuesta ni
+// gasta cuota. Un «probar» que costara dinero sería un botón que nadie pulsa.
+function probarClave(proveedor, clave) {
+  const p = String(proveedor || '').toLowerCase();
+  if (p === 'gemini') {
+    const cat = modelosGemini(clave);
+    return { ok: !!cat.modelos.length, motivo: cat.error || '', modelos: cat.modelos };
+  }
+  if (p === 'grok') {
+    let res;
+    try {
+      res = $http.send({ url: 'https://api.x.ai/v1/models', method: 'GET', timeout: 20,
+        headers: { Authorization: 'Bearer ' + clave } });
+    } catch (err) {
+      return { ok: false, motivo: sinSecretos(err), modelos: [] };
+    }
+    if (res.statusCode >= 400) {
+      return { ok: false, modelos: [],
+        motivo: 'respondió ' + res.statusCode + (motivoProveedor(res.json) ? ': ' + sinSecretos(motivoProveedor(res.json)) : '') };
+    }
+    const datos = (res.json && res.json.data) || [];
+    const nombres = [];
+    for (let i = 0; i < datos.length; i++) if (datos[i].id) nombres.push(String(datos[i].id));
+    return { ok: true, motivo: '', modelos: nombres };
+  }
+  return { ok: false, motivo: 'proveedor desconocido: ' + p, modelos: [] };
 }
 
 // EL PERMISO DEL NAVEGADOR (CORS). El navegador, ANTES de un POST con cabeceras
@@ -281,4 +350,4 @@ function responder(e, status, cuerpo) {
   return e.json(status, cuerpo);
 }
 
-module.exports = { TOPE_DIARIO, MAX_ELEMENTOS, ESQUEMAS, PROVEEDORES, leerConfigIA, permitirNavegador, responder, sinSecretos, motivoProveedor, modelosGemini, ordenarModelos, MODELO_GEMINI, MERECE_OTRO_MODELO };
+module.exports = { TOPE_DIARIO, MAX_ELEMENTOS, ESQUEMAS, PROVEEDORES, leerConfigIA, clavesIA, probarClave, permitirNavegador, responder, sinSecretos, motivoProveedor, modelosGemini, ordenarModelos, MODELO_GEMINI, MERECE_OTRO_MODELO, CULPA_DE_LA_CLAVE };

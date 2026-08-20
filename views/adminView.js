@@ -122,19 +122,33 @@ function renderPanel(rootSel) {
       <div class="d-flex gap-2 align-items-end flex-wrap mb-1">
         <div>
           <label class="form-label small mb-1">Proveedor</label>
-          <select id="ia-prov" class="form-select form-select-sm" style="width:140px">
+          <select id="ia-prov" class="form-select form-select-sm" style="width:130px">
             <option value="gemini">Gemini</option>
             <option value="grok">Grok</option>
           </select>
         </div>
         <div>
-          <label class="form-label small mb-1">Clave (API key)</label>
-          <input id="ia-key" type="password" class="form-control form-control-sm" style="width:320px" placeholder="se guarda en la Pi, no aquí" autocomplete="off">
+          <label class="form-label small mb-1">Nombre <span class="text-muted">(para reconocerla)</span></label>
+          <input id="ia-label" type="text" class="form-control form-control-sm" style="width:170px" placeholder="p. ej. la del cole" autocomplete="off">
         </div>
-        <button id="ia-save" class="btn btn-warning btn-sm"><i class="bi bi-key"></i> Guardar clave</button>
-        <button id="ia-test" class="btn btn-outline-secondary btn-sm"><i class="bi bi-stars"></i> Probar</button>
+        <div>
+          <label class="form-label small mb-1">Clave (API key)</label>
+          <input id="ia-key" type="password" class="form-control form-control-sm" style="width:300px" placeholder="se guarda en la Pi, no aquí" autocomplete="off">
+        </div>
+        <button id="ia-save" class="btn btn-warning btn-sm"><i class="bi bi-plus-lg"></i> Añadir clave</button>
+        <button id="ia-test" class="btn btn-outline-secondary btn-sm"><i class="bi bi-stars"></i> Probar generando</button>
       </div>
       <div id="ia-out" class="mt-2"></div>
+
+      <!-- LA LISTA. Nunca trae la clave: se pide a PocketBase con el parámetro
+           fields, que filtra EN EL SERVIDOR, así que el secreto no llega ni al
+           navegador del dueño. De cada una se ve de quién es y si vale. -->
+      <div class="d-flex align-items-center gap-2 mt-3 mb-1">
+        <b class="small">Claves guardadas</b>
+        <button id="ia-refresh" class="btn btn-outline-secondary btn-sm py-0"><i class="bi bi-arrow-clockwise"></i> Actualizar</button>
+        <span class="small text-muted">Se usa la primera ACTIVA; si esa no vale o se queda sin cuota, se baja a la siguiente.</span>
+      </div>
+      <div id="ia-lista" class="small text-muted">Pulsa «Actualizar» (pide el superadmin de arriba).</div>
 
       <h5 class="mt-4">Capacidad <small class="text-muted">(§25 · el servidor es una Pi COMPARTIDA con otros proyectos)</small></h5>
       <div id="admin-quota" class="mb-2"></div>
@@ -747,29 +761,105 @@ function renderPanel(rootSel) {
   }
   const iaOut = (html) => { const o = document.getElementById('ia-out'); if (o) o.innerHTML = html; };
 
+  // ── LA LISTA DE CLAVES ────────────────────────────────────────────────────
+  // `fields=` filtra EN EL SERVIDOR: la clave no viaja al navegador ni siquiera
+  // con el token de superadmin. La versión anterior traía el registro entero
+  // para sacarle el id — el secreto acababa en la pestaña sin ninguna razón.
+  const iaLista = (html) => { const o = document.getElementById('ia-lista'); if (o) o.innerHTML = html; };
+
+  async function pintarClaves(msg = '') {
+    const { token } = await tokenSuperadmin();
+    const { listarClaves } = await import('../core/iaKeys.js');
+    const filas = await listarClaves(token);
+    if (!filas.length) { iaLista('<div class="text-muted">No hay ninguna clave guardada todavía.</div>'); return; }
+    // La primera ACTIVA es la que se usa: se dice, porque una lista de cuatro
+    // claves sin saber cuál manda no explica nada de lo que va a pasar.
+    const enUso = filas.find(f => f.activa !== false)?.id;
+    iaLista(`${msg}<table class="table table-sm align-middle mb-0">
+      <thead><tr><th>Proveedor</th><th>Nombre</th><th>Estado</th><th>Añadida</th><th></th></tr></thead>
+      <tbody>${filas.map(f => `<tr data-id="${f.id}">
+        <td>${escapeHtml(f.proveedor || 'gemini')}</td>
+        <td>${escapeHtml(f.etiqueta || '—')}</td>
+        <td>${f.activa === false
+          ? '<span class="badge bg-secondary">apagada</span>'
+          : (f.id === enUso ? '<span class="badge bg-success">en uso</span>' : '<span class="badge bg-primary-subtle text-primary">activa</span>')}
+          <span class="ia-veredicto ms-1"></span></td>
+        <td class="text-muted">${escapeHtml(String(f.created || '').slice(0, 10))}</td>
+        <td class="text-end">
+          <button class="btn btn-outline-secondary btn-sm py-0 ia-probar" data-id="${f.id}">Probar</button>
+          <button class="btn btn-outline-secondary btn-sm py-0 ia-toggle" data-id="${f.id}" data-activa="${f.activa === false ? '0' : '1'}">${f.activa === false ? 'Encender' : 'Apagar'}</button>
+          <button class="btn btn-outline-danger btn-sm py-0 ia-borrar" data-id="${f.id}">Eliminar</button>
+        </td></tr>`).join('')}</tbody></table>`);
+  }
+
+  const iaListaError = (e) => iaLista(`<div class="alert alert-danger py-1 px-2 small mb-0">${escapeHtml(e.message)}</div>`);
+
+  on(rootSel, 'click', '#ia-refresh', async (_, btn) => {
+    btn.disabled = true;
+    iaLista('<span class="spinner-border spinner-border-sm me-1"></span>Leyendo…');
+    try { await pintarClaves(); } catch (e) { iaListaError(e); } finally { btn.disabled = false; }
+  });
+
+  on(rootSel, 'click', '.ia-probar', async (_, btn) => {
+    const id = btn.dataset.id;
+    const celda = btn.closest('tr')?.querySelector('.ia-veredicto');
+    btn.disabled = true;
+    if (celda) celda.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    try {
+      const { token } = await tokenSuperadmin();
+      // La prueba la hace la PI, no el navegador: aquí no hay clave con la que
+      // llamar al proveedor, y ese es justo el punto de todo el montaje.
+      const { probarClave } = await import('../core/iaKeys.js');
+      const d = await probarClave(token, id);
+      if (celda) {
+        celda.innerHTML = d.ok
+          ? `<span class="badge bg-success-subtle text-success" title="${escapeHtml((d.modelos || []).join(', '))}">vale · ${(d.modelos || []).length} modelos</span>`
+          : `<span class="badge bg-danger-subtle text-danger">no vale</span>`;
+      }
+      if (!d.ok && d.motivo) iaOut(`<div class="alert alert-warning py-1 px-2 small">${escapeHtml(d.motivo)}</div>`);
+    } catch (e) {
+      if (celda) celda.innerHTML = '<span class="badge bg-danger-subtle text-danger">?</span>';
+      iaOut(`<div class="alert alert-danger py-1 px-2 small">${escapeHtml(e.message)}</div>`);
+    } finally { btn.disabled = false; }
+  });
+
+  on(rootSel, 'click', '.ia-toggle', async (_, btn) => {
+    btn.disabled = true;
+    try {
+      const { token } = await tokenSuperadmin();
+      const { cambiarEstado } = await import('../core/iaKeys.js');
+      await cambiarEstado(token, btn.dataset.id, btn.dataset.activa === '0');
+      await pintarClaves();
+    } catch (e) { iaListaError(e); } finally { btn.disabled = false; }
+  });
+
+  on(rootSel, 'click', '.ia-borrar', async (_, btn) => {
+    // Borrar una clave no se deshace, y la de al lado se parece: se pregunta.
+    if (!confirm('¿Eliminar esta clave de la Pi? No se puede deshacer.')) return;
+    btn.disabled = true;
+    try {
+      const { token } = await tokenSuperadmin();
+      const { eliminarClave } = await import('../core/iaKeys.js');
+      await eliminarClave(token, btn.dataset.id);
+      await pintarClaves('<div class="alert alert-success py-1 px-2 small">Clave eliminada.</div>');
+    } catch (e) { iaListaError(e); } finally { btn.disabled = false; }
+  });
+
   on(rootSel, 'click', '#ia-save', async (_, btn) => {
     const clave = document.getElementById('ia-key')?.value?.trim();
     const proveedor = document.getElementById('ia-prov')?.value || 'gemini';
+    const etiqueta = document.getElementById('ia-label')?.value?.trim() || '';
     if (!clave) { iaOut('<div class="alert alert-warning py-1 px-2 small">Pega la clave.</div>'); return; }
     btn.disabled = true;
     iaOut('<div class="text-muted small"><span class="spinner-border spinner-border-sm me-1"></span>Guardando en la Pi…</div>');
     try {
-      const { token, PB_URL } = await tokenSuperadmin();
-      const headers = { 'Content-Type': 'application/json', Authorization: token };
-      // Una sola fila: si ya hay una, se actualiza (no se acumulan claves viejas
-      // que sigan siendo válidas en un sitio que nadie mira).
-      const lista = await fetch(`${PB_URL}/api/collections/ia_config/records?perPage=1`, { headers });
-      // 404 aquí es SIEMPRE «la colección no existe todavía»: el mensaje de
-      // PocketBase («The requested resource wasn't found») no lo dice, y sin
-      // saberlo uno se queda mirando la clave pensando que está mal.
-      if (lista.status === 404) throw new Error('Todavía no existe la colección ia_config: pulsa arriba «Crear colecciones» y vuelve a intentarlo.');
-      if (!lista.ok) { const b = await lista.json().catch(() => ({})); throw new Error(b.message || `Error ${lista.status} al leer ia_config.`); }
-      const previa = (await lista.json()).items?.[0];
-      const r = await fetch(`${PB_URL}/api/collections/ia_config/records${previa ? '/' + previa.id : ''}`,
-        { method: previa ? 'PATCH' : 'POST', headers, body: JSON.stringify({ proveedor, clave }) });
-      if (!r.ok) { const b = await r.json().catch(() => ({})); throw new Error(b.message || `Error ${r.status}`); }
+      const { token } = await tokenSuperadmin();
+      const { anadirClave } = await import('../core/iaKeys.js');
+      await anadirClave(token, { proveedor, clave, etiqueta });
       document.getElementById('ia-key').value = '';
-      iaOut(`<div class="alert alert-success py-1 px-2 small">Clave de ${proveedor} guardada en la Pi. Pulsa «Probar» para comprobar que el hook responde.</div>`);
+      document.getElementById('ia-label').value = '';
+      iaOut(`<div class="alert alert-success py-1 px-2 small">Clave de ${proveedor} guardada en la Pi. Pulsa «Probar» en su fila para comprobarla.</div>`);
+      await pintarClaves();
     } catch (e) {
       // R6: el motivo, no un «algo falló» — cada uno se arregla distinto.
       iaOut(`<div class="alert alert-danger py-1 px-2 small">${escapeHtml(e.message)}</div>`);
@@ -996,6 +1086,13 @@ function renderPanel(rootSel) {
         { name: 'ia_config', fields: [
           { name: 'proveedor', type: 'text' },
           { name: 'clave',     type: 'text' },
+          // Varias claves conviven: `etiqueta` para reconocerlas de un vistazo
+          // («la del cole», «la mía») y `activa` para jubilar una sin borrarla
+          // —probar una nueva sin perder la que funciona—. Una fila antigua no
+          // tiene `activa`, y el hook la cuenta como encendida a propósito:
+          // estrenar esto no puede apagar lo que ya iba bien.
+          { name: 'etiqueta',  type: 'text' },
+          { name: 'activa',    type: 'bool' },
         ]},
         // Una fila por generación: es el tope diario por profe (§25 aplicado a
         // la IA — el coste lo paga el dueño y una clase no puede vaciarle la cuota).

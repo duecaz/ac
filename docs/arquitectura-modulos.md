@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **265 módulos · 1023 imports internos.**
+> **266 módulos · 1025 imports internos.**
 
 ### Ir a otro documento
 
@@ -34,8 +34,8 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2722 | 12 · 1242 | 0.46 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3975 | 19 · 3001 | 0.75 |
 | **informes/tareas** | después de clase | 10 · 1056 | 4 · 466 | 0.44 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5709 | 13 · 1576 | 0.28 |
-| **infra/común** | todo lo anterior | 139 · 16417 | 54 · 6300 | 0.38 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5709 | 13 · 1643 | 0.29 |
+| **infra/común** | todo lo anterior | 140 · 16793 | 54 · 6314 | 0.38 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -58,12 +58,12 @@ graph TD
   A["<b>arranque</b><br/><small>cablea cada página (main.*.js, sw.js)</small><br/><small>6 módulos</small>"]
   V["<b>vistas</b><br/><small>el chrome: navegación, setup, informes</small><br/><small>29 módulos</small>"]
   AD["<b>adaptadores</b><br/><small>el transporte: PocketBase | local</small><br/><small>7 módulos</small>"]
-  C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>136 módulos</small>"]
+  C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>137 módulos</small>"]
   K["<b>kernel</b><br/><small>el motor de sesión: cuándo se liquida</small><br/><small>6 módulos</small>"]
   T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>75 módulos</small>"]
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>5 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
-  V -->|288| C
+  V -->|289| C
   T -->|209| C
   A -->|28| C
   AD -->|27| C
@@ -72,7 +72,7 @@ graph TD
   CO -->|10| C
   K -->|10| C
   C -->|9| K
-  C -->|6| CF
+  C -->|7| CF
   C -.->|6 · excepción| AD
   C -.->|4 · excepción| V
   AD -->|3| CF
@@ -104,10 +104,10 @@ graph TD
 
 | Capa | Módulos más grandes |
 |---|---|
-| **arranque** | `pb_hooks/aulareto-lib.js` (285) · `pb_hooks/aulareto.pb.js` (284) · `qa/hoja.js` (254) · `main.teacher.js` (168) · `main.embed.js` (68) |
-| **vistas** | `views/adminView.js` (1247) · `views/hostLive.js` (1110) · `views/studentLive.js` (922) · `views/playerView.js` (504) · `views/vsView.js` (492) |
+| **arranque** | `pb_hooks/aulareto-lib.js` (354) · `pb_hooks/aulareto.pb.js` (354) · `qa/hoja.js` (254) · `main.teacher.js` (168) · `main.embed.js` (68) |
+| **vistas** | `views/adminView.js` (1344) · `views/hostLive.js` (1110) · `views/studentLive.js` (922) · `views/playerView.js` (504) · `views/vsView.js` (492) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1187) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
-| **core** | `core/textCorrectionRound.js` (455) · `core/aiContent.js` (369) · `core/normsCheck.js` (364) · `core/skins.js` (355) · `core/selftest.js` (345) |
+| **core** | `core/textCorrectionRound.js` (455) · `core/normsCheck.js` (392) · `core/aiContent.js` (369) · `core/skins.js` (355) · `core/selftest.js` (345) |
 | **kernel** | `kernel/session/engine.js` (559) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/dataPort.js` (28) |
 | **plantillas** | `templates/crossword/player.js` (481) · `templates/wordsearch/player.js` (397) · `templates/match/player.js` (292) · `templates/diagram/player.js` (235) · `templates/quiz/editor.js` (225) |
 | **contenido** | `kernel/content/qaAdapt.js` (126) · `kernel/content/switch.js` (117) · `kernel/content/convert.js` (95) · `kernel/content/models.js` (83) · `kernel/content/index.js` (5) |
@@ -137,7 +137,7 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 
 | Módulo | Líneas | Lo importan |
 |---|---|---|
-| `views/adminView.js` | 1247 | 1 |
+| `views/adminView.js` | 1344 | 1 |
 | `adapters/pocketbase/realtime.js` | 1187 | 0 |
 | `views/hostLive.js` | 1110 | 1 |
 | `views/studentLive.js` | 922 | 1 |
@@ -167,6 +167,7 @@ dueño del ESQUEMA y por eso las nombra todas.
 | `activity_likes` | `core/likes.js` | con sesión, o el alumno bajo condiciones |
 | `profiles` | `core/profile.js` | con sesión, y solo como dueño |
 | `users` | `core/auth.js` · `core/teachers.js` | **nadie** (cerrado por API) |
+| `ia_config` | `core/iaKeys.js` | **nadie** (cerrado por API) |
 | `_superusers` | — | **nadie** (cerrado por API) |
 
 > Un módulo que necesite datos no hace fetch a la colección: **le pide un método

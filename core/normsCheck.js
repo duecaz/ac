@@ -157,6 +157,10 @@ export const PB_OWNERS = {
   activity_likes: ['core/likes.js', 'views/adminView.js'],
   profiles: ['core/profile.js', 'views/adminView.js'],
   users: ['core/auth.js', 'core/teachers.js', 'views/adminView.js'],
+  // Las claves de la IA: dueño ÚNICO desde que hubo que gestionar varias. El
+  // panel le pide métodos; no habla con la colección, y así el `fields=` que
+  // deja la clave en el servidor vive en un solo sitio.
+  ia_config: ['core/iaKeys.js'],
   _superusers: ['views/adminView.js'],
 };
 // LEY DE DATOS, aplicada al ALMACÉN LOCAL (§21) — prefijo de clave → ficheros
@@ -338,6 +342,30 @@ export function scanNormsSource(path, source) {
                    text: `botón de Bootstrap en una vista de chrome: usa .btn-ghost / .btn-primary-solid — ${ln.trim().slice(0, 90)}` });
       }
     });
+  }
+  // comilla-en-comentario · UN ACENTO GRAVE DENTRO DE UN COMENTARIO HTML CIERRA
+  // LA PLANTILLA DE TEXTO. Las vistas escriben su markup con plantillas de texto
+  // (backticks), así que un comentario HTML con acentos graves
+  // dentro TERMINA la plantilla ahí: el fichero deja de parsearse y la página
+  // entera muere con «SyntaxError: missing ) after argument list». Sin pista de
+  // dónde, porque el error apunta al final del fichero.
+  //
+  // Ha pasado TRES veces en este proyecto (dos en playerView, una en adminView),
+  // siempre por documentar bien: el hábito de citar código con acentos graves es
+  // correcto en Markdown y letal aquí. No lo caza `node --check` (el fichero
+  // sigue siendo sintaxis válida hasta que se lee entero) y no lo caza ningún
+  // test de unidad: solo el navegador, o esto.
+  {
+    const src = String(source || '');
+    const re = /<!--[\s\S]*?-->/g;
+    let m;
+    while ((m = re.exec(src)) !== null) {
+      if (m[0].indexOf('`') === -1) continue;
+      const linea = src.slice(0, m.index).split('\n').length;
+      out.push({ path, line: linea, rule: 'comilla-en-comentario',
+                 text: 'comentario HTML con acento grave: cierra la plantilla de texto y mata la página. '
+                     + 'Escribe el nombre sin comillas.' });
+    }
   }
   return out;
 }

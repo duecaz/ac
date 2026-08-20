@@ -7,10 +7,11 @@
 > malograr el resto del code**; la IA será como la que usa Wordwall, para
 > escribir directamente el contenido de la actividad que estamos creando».
 >
-> **ESTADO: FUNCIONANDO EN PRODUCCIÓN (v1.51.548, 2026-08-20).** El hook está
+> **ESTADO: FUNCIONANDO EN PRODUCCIÓN (v1.51.550, 2026-08-20).** El hook está
 > instalado en la Pi, la clave de Gemini guardada en `ia_config` y la primera
 > generación real salió correcta desde `#/admin` → «Probar». Lo que costó
-> ponerlo en pie —tres trampas que no se ven desde el repo— está en §7b.
+> ponerlo en pie —tres trampas que no se ven desde el repo— está en §7b, y
+> la gestión de varias claves desde el panel, en §7c.
 > El documento nació como el plan que exigía `norte.md` §4b para reabrir el tema
 > (*«que la IA entre obedeciendo a un plan específico y escrito, no como
 > añadido»*); las decisiones de §6 las tomó el dueño el 2026-08-18 y están
@@ -256,6 +257,30 @@ compara localhost con el dominio público) y `tools/pi-probar-ia.sh` (hace la
 petición autenticada de verdad, que es la única que toca el trozo que fallaba).
 Ante un fallo que solo se ve en casa del usuario, el siguiente paso es una medida,
 no otro parche.
+
+## 7c · VARIAS CLAVES, gestionadas desde el panel (v1.51.550)
+
+Pedido por el dueño: *«ahora en admin se tiene que gestionar las claves, ver las
+que están válidas, agregar, eliminar»*. Antes había UNA fila y guardar otra
+pisaba la anterior — cambiar de clave era perder la que funcionaba, y si la
+nueva no valía no había vuelta atrás.
+
+| Acción | Quién la hace | Nota |
+|---|---|---|
+| Listar | `core/iaKeys.js` (dueño de `ia_config`, §21) | con `fields=`: **la clave no sale de la Pi** ni con el token de superadmin |
+| Añadir | el panel → el dueño | AÑADE, nunca pisa; nace encendida |
+| Encender / apagar | el panel → el dueño | apagar **no** es borrar: se puede volver |
+| Eliminar | el panel → el dueño | pregunta antes; no se deshace |
+| ¿Vale? | **la Pi** (`POST /api/ia/probar`, solo superadmin) | usa la llamada más barata del proveedor (su lista de modelos): no genera nada, así que probar no cuesta |
+
+**Se usa la primera ACTIVA**, y si esa dice que no se baja a la siguiente — pero
+solo cuando el problema ES la clave (`CULPA_DE_LA_CLAVE`: 401/403 no vale ·
+429 sin cuota). Con un 400 la petición es la que está mal y probar otra clave
+únicamente gastaría también la otra cuota. Quedarse sin cuota a media mañana
+dejaba de ser el final de la clase.
+
+Una fila antigua no tiene el campo `activa`, y el hook la cuenta como encendida
+**a propósito**: estrenar esto no puede apagar lo que ya funcionaba.
 
 ## 8 · Lo que queda para otro día
 

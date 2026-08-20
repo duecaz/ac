@@ -136,6 +136,20 @@ assert.strictEqual(scanNormsSource('views/adminView.js',
 assert.strictEqual(scanNormsSource('views/hostLive.js',
   `<button class="btn btn-lg btn-success">Siguiente</button>`).length, 0,
   'CONTRA-PRUEBA: el JUEGO queda fuera — allí manda el skin, no el chrome del panel');
-ok('el escáner caza cada norma (pb-dueno · ls-dueno · fallo-mudo · confianza-alumno · reloj-primitivo · reloj-sala · id-rid · imagen-buscable · chrome-boton) y respeta comentarios + allowlist');
+// comilla-en-comentario: un acento grave dentro de un comentario HTML CIERRA la
+// plantilla de texto de la vista, el fichero deja de parsearse y la página entera
+// muere con «missing ) after argument list» — apuntando al final del fichero, sin
+// pista de dónde. Ha pasado TRES veces, siempre al documentar bien: citar código
+// con acentos graves es correcto en Markdown y letal dentro de una plantilla.
+// No lo caza `node --check` ni ningún test de unidad; solo el navegador, o esto.
+assert.strictEqual(scanNormsSource('views/x.js',
+  'const html = `<div>' + String.fromCharCode(10) + '  <!-- usa `fields=` para filtrar -->'
+  + String.fromCharCode(10) + '</div>`;').length, 1,
+  'caza el acento grave dentro de un comentario HTML');
+assert.strictEqual(scanNormsSource('views/x.js',
+  'const html = `<div>' + String.fromCharCode(10) + '  <!-- usa el parámetro fields para filtrar -->'
+  + String.fromCharCode(10) + '</div>`;').length, 0,
+  'CONTRA-PRUEBA: comentar el markup SIGUE siendo legal — lo que sobra son las comillas');
+ok('el escáner caza cada norma (pb-dueno · ls-dueno · fallo-mudo · confianza-alumno · reloj-primitivo · reloj-sala · id-rid · imagen-buscable · chrome-boton · comilla-en-comentario) y respeta comentarios + allowlist');
 
 console.log(`\nnorms.test: ${passed} checks passed`);
