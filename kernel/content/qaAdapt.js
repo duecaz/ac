@@ -14,7 +14,7 @@
 // Puro: sin DOM, testeable en Node (tests/qaAdapt.test.mjs).
 
 import { rid } from '../../core/ids.js';
-import { answerIndices } from '../../core/contentModels/qa.js';
+import { answerIndices, repartirCorrecta } from '../../core/contentModels/qa.js';
 const str = (v) => (v == null ? '' : String(v));
 const firstAnswer = (a) => (Array.isArray(a) ? a[0] : a);
 
@@ -67,7 +67,7 @@ export function buildQuizOptions(answer, question) {
 export function adoptForQuiz(content) {
   const items = Array.isArray(content?.items) ? content.items : [];
   return {
-    items: items.map((it) => {
+    items: items.map((it, idx) => {
       // COMPLETAR, NO REESCRIBIR. Esta función existe para una sola cosa: que el
       // ítem tenga opciones donde hacían falta. Reconstruía el ítem entero desde
       // una lista fija de campos, y eso rompía dos cosas al pasar de Quiz a
@@ -81,14 +81,29 @@ export function adoptForQuiz(content) {
       const respuestas = Array.isArray(it?.answer) ? it.answer.map(str) : [str(it?.answer)];
       const primera = respuestas.find(r => r.trim() !== '') || '';
       let options = Array.isArray(it?.options) ? it.options.map(str) : [];
-      // `buildQuizOptions` ya deja la respuesta en la posición 0 y rellena
-      // hasta 4, así que aquí no hace falta repetirlo.
+      // AL REHACER LAS OPCIONES, EL ÍNDICE QUE TRAÍA EL ÍTEM YA NO VALE: apuntaba
+      // a la lista anterior, y sobre la nueva señala un distractor. La forma
+      // sigue siendo válida, así que nadie lo nota hasta que un alumno acierta y
+      // la app le dice que no. Por eso al construirlas se decide aquí dónde va la
+      // correcta, en vez de preguntárselo a `answerIndices`.
+      let answerIdx;
       if (options.filter((o) => o.trim() !== '').length < 2) {
-        options = buildQuizOptions(primera, it?.question);
+        // `buildQuizOptions` deja la respuesta en la posición 0; repartirla es
+        // lo mismo que hace la IA, y por el mismo motivo: con «Mezclar opciones»
+        // apagado, la de arriba sería siempre la buena.
+        ({ options, answerIdx } = repartirCorrecta(buildQuizOptions(primera, it?.question), idx));
+      } else {
+        // Con las opciones del profe intactas, quién es la correcta lo decide
+        // `answerIndices`, que compara como compara el juego.
+        answerIdx = answerIndices({ ...it, options });
+        // Y SI NO HAY NINGUNA, se pone. Un ítem cuyas opciones no contienen la
+        // respuesta es una pregunta que NADIE puede acertar; entre perder un
+        // distractor y dejar eso, se pierde el distractor.
+        if (!answerIdx.length && primera) {
+          ({ options, answerIdx } = repartirCorrecta(
+            [primera, ...options.filter(o => o.trim() !== '')].slice(0, Math.max(2, options.length)), idx));
+        }
       }
-      // Quién es la correcta lo decide `answerIndices` (core/contentModels/qa.js),
-      // que es donde vive esa definición y compara como compara el juego.
-      const answerIdx = answerIndices({ ...it, options });
       return {
         ...it,                       // lo que la plantilla destino no conozca, se conserva
         id: it?.id || rid('q_'),

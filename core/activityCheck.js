@@ -25,6 +25,7 @@ import { escapeHtml } from './html.js';
 import { pairComplete } from './contentModels/pairs.js';
 import { pinUsable } from './contentModels/diagram.js';
 import { hasCorrectAnswer } from './contentModels/qa.js';
+import { esFicha, palabraColocada } from './contentModels/words.js';
 
 const vacio = (s) => !String(s ?? '').trim();
 
@@ -93,10 +94,27 @@ const POR_MODELO = {
   },
   words: (c) => {
     const out = [];
-    empezados(c.words).forEach(({ el: w, i }) => {
+    // SIN SITIO EN LA REJILLA, LA PALABRA NO EXISTE. El player del crucigrama
+    // filtra las que no tienen `row`/`col`/`dir`, así que una lista llena de
+    // palabras perfectas puede dar «No hay palabras configuradas» — y el profe
+    // mira las palabras, que están bien, sin entender nada. Le pasó al contenido
+    // escrito por la IA, que no puede saber dónde va cada una.
+    //
+    // Solo se le pide sitio a las FICHAS (palabra + pista): la Sopa guarda
+    // cadenas sueltas y las coloca ella al generar la rejilla. Esa distinción es
+    // del MODELO, no de una plantilla concreta — por eso `esFicha` vive con él.
+    const ws = empezados(c.words);
+    const fichas = ws.filter(({ el: w }) => esFicha(w));
+    const sueltas = fichas.filter(({ el: w }) => !palabraColocada(w)).length;
+    if (sueltas) {
+      out.push(sueltas === fichas.length
+        ? 'Ninguna palabra está colocada en la rejilla: pulsa «Auto-colocar».'
+        : `${sueltas} palabra(s) están fuera de la rejilla: pulsa «Auto-colocar».`);
+    }
+    ws.forEach(({ el: w, i }) => {
       const palabra = typeof w === 'string' ? w : w?.word;
       if (vacio(palabra)) out.push(`La palabra ${i + 1} está vacía.`);
-      else if (typeof w === 'object' && w && 'clue' in w && vacio(w.clue)) out.push(`La palabra «${palabra}» no tiene pista.`);
+      else if (esFicha(w) && vacio(w.clue)) out.push(`La palabra «${palabra}» no tiene pista.`);
     });
     return out;
   },

@@ -1,6 +1,7 @@
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { renderEditorShell } from '../../core/editorShell.js';
+import { palabraJugable } from '../../core/contentModels/words.js';
 import { autoLayout, buildGrid } from './generator.js';
 import { rid } from '../../core/ids.js';
 
@@ -71,7 +72,7 @@ function contentHtml(a) {
 
 function buildPreviewHtml(words) {
   if (!words.length) return `<div class="text-muted text-center py-4">Sin palabras</div>`;
-  const filtered = words.filter(w => w.word && w.row != null && w.col != null && w.dir);
+  const filtered = words.filter(palabraJugable);
   if (!filtered.length) return `<div class="text-muted text-center py-4">Configura posiciones</div>`;
 
   try {

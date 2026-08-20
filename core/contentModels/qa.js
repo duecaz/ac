@@ -38,6 +38,26 @@ export function hasCorrectAnswer(item) {
  *  de unificarlas; esta es la quinta cara del mismo dado.
  *  Si el ítem ya trae `answerIdx`, manda él (resiste opciones repetidas).
  */
+/**
+ * DÓNDE CAE LA CORRECTA. Ponerla siempre la primera deja la actividad entera
+ * contestable sin leer nada en cuanto el profe apaga «Mezclar opciones» —que es
+ * un ajuste suyo, no una garantía—. Se reparte por el NÚMERO de elemento, sin
+ * azar, para que la misma entrada dé siempre la misma actividad (y se pueda
+ * comprobar). Vive aquí, con `answerIndices`, porque es la otra mitad de la
+ * misma pregunta: quién es la correcta y dónde se pone.
+ *
+ * @param {string[]} options  la correcta va en la posición 0 al entrar
+ * @param {number} i          número del elemento en la lista
+ * @returns {{options: string[], answerIdx: number[]}}
+ */
+export function repartirCorrecta(options, i = 0) {
+  const lista = [...options];
+  if (lista.length < 2) return { options: lista, answerIdx: lista.length ? [0] : [] };
+  const donde = ((i % lista.length) + lista.length) % lista.length;
+  lista.splice(donde, 0, lista.shift());
+  return { options: lista, answerIdx: [donde] };
+}
+
 export function answerIndices(item) {
   const idx = item?.answerIdx;
   if (Array.isArray(idx) && idx.length) return idx;

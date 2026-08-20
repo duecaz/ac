@@ -293,7 +293,14 @@ export function renderEditorShell(root, a, onChange, spec) {
           palabrasComoTexto: a.template === 'wordsearch',
         });
         if (!nuevo) return;                       // cerró sin aceptar
-        a.content = fusionarContenido(a.content, nuevo);
+        // LA PLANTILLA REMATA LO QUE LA IA NO PUEDE SABER. `adoptContent` es el
+        // mismo gancho que usa la conversión entre plantillas, y aquí hace falta
+        // por lo mismo: el modelo escribe el CONTENIDO (`{palabra, pista}`) pero
+        // no dónde va cada palabra en la rejilla del crucigrama. Sin este paso
+        // el crucigrama decía «No hay palabras configuradas» con la lista llena.
+        // El shell sigue sin conocer plantillas (§0): pregunta, no decide.
+        const fusionado = fusionarContenido(a.content, nuevo);
+        a.content = T?.adoptContent ? T.adoptContent(fusionado, T?.meta?.contentModel) : fusionado;
         onChange(a);
         repaint();
       } catch (e) {

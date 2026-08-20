@@ -189,9 +189,9 @@ export async function render${fn}Player(rootSel, activity, opts = {}) {
             pagina: \`\${idx + 1} / \${total}\`,
             tiempo: timerSecs > 0 ? \`⏱ \${timerSecs}\` : null,
           })}
-          <div class="${prefix}-item">
+          <div class="edu-sec edu-sec--${prefix} ${prefix}-item">
             <p class="${prefix}-q">\${escapeHtml(item.question ?? item.q ?? item.left ?? String(item))}</p>
-            <!-- TODO: tu mecánica. El botón de ejemplo registra un acierto. -->
+            <!-- TODO: tu mecanica. El boton de ejemplo registra un acierto. -->
             <button type="button" class="btn btn-success ${prefix}-ok">¡Lo tengo!</button>
           </div>
         </div>\`);
@@ -220,7 +220,7 @@ export async function render${fn}Player(rootSel, activity, opts = {}) {
 const playerFreeform = `// ${label} — player SOLO sobre el SHELL LIBRE (core/soloPlayer.js): tablero de
 // una pantalla; cuando el alumno termina, llama ctx.finish({score, maxScore}).
 // El shell garantiza pantalla de resultado + trySaveResult + PODIUM.
-import { html, escapeHtml, mount } from '${REL}/core/html.js';
+import { html, mount } from '${REL}/core/html.js';
 import { runFreeformPlayer } from '${REL}/core/soloPlayer.js';
 import { GameEvents, emitGame } from '${REL}/core/gameEvents.js';
 
@@ -230,9 +230,11 @@ export async function render${fn}Player(rootSel, activity, opts = {}) {
 
   mount(rootSel, html\`
     <div class="ww-player ${prefix}-play">
-      <div class="fs-4 fw-bold text-center mb-3">\${escapeHtml(activity.title || '${label}')}</div>
-      <!-- TODO: tu tablero. El botón de ejemplo termina con todo correcto. -->
-      <div class="text-center"><button type="button" class="btn btn-success ${prefix}-done">Terminar</button></div>
+      <div class="edu-sec edu-sec--${prefix}">
+        <!-- TODO: tu tablero. El boton de ejemplo termina con todo correcto.
+             El TITULO no va aqui: vive en la antesala (views/startScreen.js). -->
+        <div class="text-center"><button type="button" class="btn btn-success ${prefix}-done">Terminar</button></div>
+      </div>
     </div>\`);
 
   document.querySelector('.${prefix}-done')?.addEventListener('click', () => {

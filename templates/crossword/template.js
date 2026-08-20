@@ -3,6 +3,7 @@ import { renderCrosswordPlayer } from './player.js';
 import { renderCrosswordEditor } from './editor.js';
 import { scoreCrosswordSubmission } from './scorer.js';
 import { buildGrid, autoLayout } from './generator.js';
+import { palabraColocada, palabraJugable } from '../../core/contentModels/words.js';
 import { escapeHtml } from '../../core/html.js';
 
 export class CrosswordTemplate extends BaseTemplate {
@@ -52,11 +53,28 @@ export class CrosswordTemplate extends BaseTemplate {
   // palabras eso midió ~1 s de congelación al pintar la página de jugar (que
   // sondea todos los destinos). El veredicto es el mismo con rejilla y sin
   // ella: lo que falta son las PISTAS, que nacen vacías por definición.
+  // COLOCARLAS ES PARTE DE ADOPTARLAS. Una palabra sin `row`/`col`/`dir` no
+  // existe para el player (las filtra) ni para el preview: el crucigrama dice
+  // «No hay palabras configuradas» con la lista llena. Le pasó al contenido
+  // escrito por la IA, que trae `{word, clue}` pero no puede saber dónde va cada
+  // una — y la versión anterior se daba por satisfecha en cuanto veía objetos.
+  // Ahora la vara es la que usa el juego: si ALGUNA no está colocada, se coloca.
   static adoptContent(content, _desde, opts = {}) {
     const ws = content?.words || [];
-    if (!ws.length || typeof ws[0] === 'object') return content;
-    const defs = ws.map(w => ({ word: String(w), clue: '' }));
-    return { ...content, words: opts.soloForma ? defs : autoLayout(defs) };
+    // Se comprueba ANTES de construir nada: esto se llama una vez por cada
+    // destino convertible al pintar la página de jugar, y ahí ya se midió un
+    // parón de un segundo. El caso corriente —todo colocado— sale sin asignar.
+    if (!ws.length || ws.every(palabraColocada)) return content;
+    // Y NO SE REHACE UN TABLERO YA COLOCADO. `autoLayout` recoloca TODO y
+    // renumera: si el profe puso sus palabras a mano y luego añade una, rehacer
+    // la rejilla le cambia lo suyo sin pedirle permiso (§24 · el contenido es
+    // del usuario). Cuando ya hay algo colocado, las nuevas entran sin sitio y
+    // es el revisor quien le dice que pulse «Auto-colocar» — su decisión.
+    const defs = ws.map(w => (w && typeof w === 'object'
+      ? { ...w, word: String(w.word || ''), clue: String(w.clue || '') }
+      : { word: String(w), clue: '' }));
+    if (opts.soloForma || ws.some(palabraColocada)) return { ...content, words: defs };
+    return { ...content, words: autoLayout(defs) };
   }
 
   // ANSWER-SAFETY (R5): el payload de ronda lleva la FORMA del crucigrama
@@ -65,7 +83,7 @@ export class CrosswordTemplate extends BaseTemplate {
   // getRoundPayload es "apto para enviarse a un alumno" SIEMPRE.
   static getRoundPayload(activity) {
     const words = (activity.content?.words || [])
-      .filter(w => w.word && w.row != null && w.col != null && w.dir)
+      .filter(palabraJugable)
       .map(w => ({ id: w.id, clue: w.clue, row: w.row, col: w.col, dir: w.dir, len: String(w.word).length }));
     return { words };
   }

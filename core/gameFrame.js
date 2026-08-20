@@ -62,10 +62,19 @@ export function montarMarcoJuego(rootSel, activity, { escena = true, caja = true
   // (core/frameAspect.js). Estuvo un 4:3 escrito aquí a mano: servía para la
   // tarea, pero dejaba al alumno con otra forma que a su profesor en 11 de las
   // 13 — y la Ruleta, que pide un cuadrado, jugándose en un rectángulo.
-  const estilo = aspectStyle(aspectoDe(activity));
+  // SIN CAJA TAMBIÉN SE DECLARA, y se declara «sin forma». La proporción viaja
+  // como VARIABLE, y la regla base de `styles/player.css` es
+  // `aspect-ratio: var(--ww-ar-css, 4/3)`: un marco que no emitiera nada caería
+  // en ese 4:3 de respaldo — justo lo que `caja:false` existe para evitar (el
+  // panel del docente no es un juego en una página, y con 4:3 le cortaba el QR
+  // del lobby). Callarse no es lo mismo que decir «auto».
+  // Solo la variable: `aspectStyle('auto')` añade además un `min-height: 50vh`
+  // pensado para una plantilla sin forma, y esta superficie no lo quiere —
+  // crece con su contenido, que es justo su razón de ser.
+  const estilo = caja ? aspectStyle(aspectoDe(activity)) : '--ww-ar-css: auto;';
   mount(rootSel, html`
     <div class="ww-play-page">
-      <div class="ww-player-frame ww-student-frame${caja ? '' : ' ww-frame--libre'}" id="ww-frame"${caja ? ` style="${estilo}"` : ''}>
+      <div class="ww-player-frame ww-student-frame${caja ? '' : ' ww-frame--libre'}" id="ww-frame" style="${estilo}">
         ${caja ? fullscreenButtonHtml({ corner: true }) : ''}
         <div id="s-stage" class="ww-student-stage"></div>
       </div>

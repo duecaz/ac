@@ -52,6 +52,27 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   ok('qa: quita el distractor que también era correcto, y descarta lo que no se puede usar');
 }
 
+// ── LA CORRECTA NO PUEDE IR SIEMPRE LA PRIMERA ──────────────────────────────
+// «Mezclar opciones» es un ajuste del panel y se puede apagar. Con la respuesta
+// siempre en la posición 0, una actividad entera escrita por la IA se contesta
+// sin leer nada: siempre la de arriba. Se reparte por número de pregunta —sin
+// azar— para que la misma respuesta del modelo dé siempre la misma actividad.
+{
+  const cuatro = interpretarRespuesta('qa', Array.from({ length: 4 }, (_, i) => ({
+    pregunta: `¿Pregunta ${i}?`, respuesta: `buena${i}`,
+    opciones: [`buena${i}`, `mala${i}a`, `mala${i}b`, `mala${i}c`],
+  })));
+  assert.strictEqual(cuatro.piezas, 4, 'las cuatro son utilizables');
+  const posiciones = new Set();
+  cuatro.content.items.forEach((it, i) => {
+    assert.strictEqual(it.options[it.answerIdx[0]], `buena${i}`,
+      'el índice marcado sigue señalando la respuesta después de moverla');
+    posiciones.add(it.answerIdx[0]);
+  });
+  assert.ok(posiciones.size > 1, 'la correcta no cae siempre en el mismo sitio');
+  ok('qa: la respuesta se reparte por la lista (sin mezclar, la primera sería siempre la buena)');
+}
+
 // ── pairs · uno a uno ────────────────────────────────────────────────────────
 {
   const r = interpretarRespuesta('pairs', JSON.stringify([

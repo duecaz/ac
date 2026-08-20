@@ -20,6 +20,7 @@
 // DESCARTA y se cuenta por qué — nunca se cuela a medias (§24 · R6).
 import { rid } from './ids.js';
 import { parseRichText } from './textMarks.js';
+import { repartirCorrecta } from './contentModels/qa.js';
 
 // ── Qué sabe escribir, y con qué forma ───────────────────────────────────────
 // `pide` es lo que se le manda a la Pi; el TEXTO del prompt vive en el hook (no
@@ -115,11 +116,13 @@ export function interpretarRespuesta(modelo, bruto, opts = {}) {
         distractores.push(s);
       }
       if (!distractores.length) return rechaza(i, 'sin ninguna opción falsa usable');
-      const options = [answer, ...distractores].slice(0, 4);
+      // LA CORRECTA NO PUEDE IR SIEMPRE LA PRIMERA: con «Mezclar opciones»
+      // apagado —es un ajuste del panel— la actividad entera se contesta sin
+      // leer nada. Repartirla es de `core/contentModels/qa.js`, que es el dueño
+      // de «quién es la correcta», y lo comparte con la conversión.
+      const { options, answerIdx } = repartirCorrecta([answer, ...distractores].slice(0, 4), i);
       return {
-        id: rid('q_'), question, answer,
-        answerIdx: [0],
-        options,
+        id: rid('q_'), question, answer, answerIdx, options,
         image: null, audio: null,
       };
     }).filter(Boolean);

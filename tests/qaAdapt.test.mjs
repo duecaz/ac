@@ -86,4 +86,35 @@ ok('Quiz→Matemáticas conserva pregunta+respuesta, quita opciones');
   ok('answerIdx se deriva como puntúa el juego, no con comparación exacta');
 }
 
+// ── UN ÍNDICE VIEJO SOBRE OPCIONES NUEVAS SEÑALA UN DISTRACTOR ──────────────
+// `answerIndices` devuelve `answerIdx` tal cual cuando existe, y eso es correcto
+// mientras las opciones sean las mismas. Al REHACERLAS (el ítem venía con menos
+// de dos), ese número apuntaba a la lista anterior: sobre la nueva marca una
+// opción falsa. Y la forma es válida, así que ni el validador ni el revisor
+// dicen nada — se descubre cuando un alumno acierta y la app le dice que no.
+{
+  const it = adoptForQuiz({ items: [
+    { id: 'q5', question: '¿Capital de Francia?', answer: 'París', options: ['París'], answerIdx: [2] },
+  ] }).items[0];
+  assert.ok(it.answerIdx.length, 'la pregunta tiene que tener alguna correcta');
+  for (const i of it.answerIdx) {
+    assert.strictEqual(it.options[i], 'París', 'el índice marcado ES la respuesta, no un distractor');
+  }
+  ok('al rehacer las opciones se recalcula el índice: el viejo apuntaba a otra lista');
+}
+
+// ── UNA PREGUNTA SIN NINGUNA CORRECTA ES UNA PREGUNTA IMPOSIBLE ─────────────
+// Si las opciones que traía el ítem no contienen la respuesta, `answerIndices`
+// devuelve vacío: nadie puede acertarla. Entre perder un distractor y dejar eso
+// en la actividad del profe, se pierde el distractor.
+{
+  const it = adoptForQuiz({ items: [
+    { id: 'q6', question: '¿Capital de Italia?', answer: 'Roma', options: ['Milán', 'Nápoles', 'Turín'] },
+  ] }).items[0];
+  assert.ok(it.answerIdx.length, 'ninguna pregunta puede quedarse sin respuesta correcta');
+  for (const i of it.answerIdx) assert.strictEqual(it.options[i], 'Roma', 'y la marcada es la respuesta');
+  assert.ok(it.options.length >= 2, 'sigue habiendo entre qué elegir');
+  ok('si las opciones no traían la correcta, se pone (una pregunta imposible es peor)');
+}
+
 console.log(`\nqaAdapt.test: ${passed} checks passed`);

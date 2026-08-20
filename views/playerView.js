@@ -422,7 +422,24 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     // plantilla destino no usa, y desde la página de jugar se toca por
     // curiosidad. El editor conserva su «Cambiar formato» destructivo, que es
     // donde uno va a propósito.
+    // UNA SOLA FORMA DE PEDIR LA CUENTA. Son dos puertas distintas —el modo que
+    // exige sesión y crear una copia— pero el usuario ve la misma pared, así que
+    // le llega el mismo par: el motivo (que también entra en el modal, para que
+    // no tenga que recordarlo) y qué SÍ funciona sin cuenta.
+    const pedirCuenta = (razon, cola) => {
+      toast(`${razon}. ${cola}`, 'info', 5000);
+      openLoginModal({ reason: razon });
+    };
     on(rootSel, 'click', '.tpl-switch', async (_, b) => {
+      // LA PUERTA SE AVISA ANTES DE CRUZARLA, y «antes» es ANTES del diálogo: la
+      // copia acaba en `#/edit/:id`, que exige sesión (`requireTeacher`),
+      // mientras que esta página es pública. Sin cuenta se prometía el editor,
+      // se preguntaba si crear la copia, se creaba… y lo que salía era el muro
+      // de acceso. Preguntar primero y cerrar después es peor que no preguntar.
+      if (!getAuthUserId()) {
+        pedirCuenta('Inicia sesión para crear actividades', 'Jugar y entrar con PIN no necesitan cuenta.');
+        return;
+      }
       const name = b.dataset.name;
       const label = b.textContent.trim();
       const faltara = (b.dataset.faltara || '').split(' · ').filter(Boolean);
@@ -457,9 +474,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     // Mode bar: embedded modes mount into the stage (embed:false modes are
     // plain links and navigate on their own).
     on(rootSel, 'click', '.ww-mode-locked', (_, b) => {
-      const hint = modeAuthHint(b.dataset.lock);
-      toast(hint + '. Tus alumnos entran con el PIN, sin cuenta.', 'info', 5000);
-      openLoginModal({ reason: hint });
+      pedirCuenta(modeAuthHint(b.dataset.lock), 'Tus alumnos entran con el PIN, sin cuenta.');
     });
     on(rootSel, 'click', '.ww-mode', (_, b) => {
       selectMode(b.dataset.mode);

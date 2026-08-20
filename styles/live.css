@@ -105,8 +105,10 @@
    sombra; este marco SIEMPRE está dentro de `.ww-play-page`, así que una clase
    suelta (0,1,0) no la gana — el docente seguía con su caja de 720px y el
    commit que la quitaba no hacía nada. Se escribe con el mismo peso que la base
-   y ya. (Aquí no hace falta anular `aspect-ratio` ni `height`: sin `caja` no se
-   emite el estilo inline que los pone.) */
+   y ya. (La proporción no se anula AQUÍ: un marco sin `caja` ya declara
+   `--ww-ar-css: auto` al montarse, que es donde nace la decisión —si se
+   arreglara en este fichero, «sin caja» solo funcionaría en las páginas de
+   live y cualquier otra pantalla heredaría el 4:3 de respaldo.) */
 .ww-play-page .ww-player-frame.ww-frame--libre {
   max-width: none;
   border-radius: 0;

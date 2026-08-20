@@ -4,13 +4,14 @@ import { on } from '../../core/events.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { scoreCrosswordSubmission } from './scorer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
+import { palabraJugable } from '../../core/contentModels/words.js';
 import { buildGrid } from './generator.js';
 import { observeResize } from '../../core/observeResize.js';
 import { hudHtml, hudSet } from '../../core/playerHud.js';
 
 export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
   const wordsRaw = (activity.content?.words || [])
-    .filter(w => w.word && w.clue && w.row != null && w.col != null && w.dir);
+    .filter(w => palabraJugable(w) && w.clue);
 
   if (!wordsRaw.length) {
     mount(rootSel, html`<div class="alert alert-warning m-3">No hay palabras configuradas.</div>`);

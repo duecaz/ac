@@ -186,4 +186,49 @@ const act = (template, content, title = 'Mi actividad') =>
   ok(`las ${listTemplates().length} plantillas registradas tienen revisor y ninguna rompe al revisarla vacía`);
 }
 
+// ── LO QUE ESCRIBE LA IA TIENE QUE PASAR ESTA MISMA REVISIÓN ────────────────
+// El contenido del modelo entra en la actividad del profe por la misma puerta
+// que lo tecleado, así que se le exige lo mismo: que la actividad quede jugable.
+//
+// Y hay un paso que es fácil olvidar: la IA escribe el CONTENIDO, pero no puede
+// saber lo que la plantilla necesita ADEMÁS. El Crucigrama es el caso: recibía
+// `{palabra, pista}` correctísimas y sin `row`/`col`/`dir` —que las coloca la
+// plantilla— el player las filtraba todas y decía «No hay palabras
+// configuradas» con la lista llena. Por eso el editor le pasa lo escrito por
+// `adoptContent`, y por eso esto barre TODAS las plantillas escribibles: una
+// nueva que olvide ese remate rompe CI sin tocar ninguna lista.
+{
+  const { interpretarRespuesta, MODELOS_IA } = await import('../core/aiContent.js');
+  // Respuestas GRABADAS, una por modelo: sin red y siempre iguales.
+  const RESPUESTAS = {
+    qa: [{ pregunta: '¿Capital de Perú?', respuesta: 'Lima', opciones: ['Lima', 'Quito', 'La Paz', 'Bogotá'] },
+         { pregunta: '¿Capital de Chile?', respuesta: 'Santiago', opciones: ['Santiago', 'Lima', 'Quito', 'Sucre'] }],
+    pairs: [{ izquierda: 'perro', derecha: 'dog' }, { izquierda: 'gato', derecha: 'cat' }],
+    items: [{ pregunta: '¿Qué desayunaste?' }, { pregunta: '¿A qué juegas en el recreo?' }],
+    words: [{ palabra: 'caballo', pista: 'Animal que se monta' }, { palabra: 'perro', pista: 'Ladra' }],
+    textCorrection: [{ frase: 'El pájaro cantó, y después voló.' },
+                     { frase: 'Mi mamá compró pan, leche y café.' }],
+  };
+  const rotas = [];
+  let cubiertas = 0;
+  for (const T of listTemplates()) {
+    const modelo = T.meta?.contentModel;
+    if (!MODELOS_IA[modelo]) continue;            // la IA no escribe este modelo
+    const bruto = RESPUESTAS[modelo];
+    assert.ok(bruto, `falta una respuesta grabada para el modelo ${modelo}`);
+    const r = interpretarRespuesta(modelo, JSON.stringify(bruto),
+      { palabrasComoTexto: T.meta.name === 'wordsearch' });
+    assert.strictEqual(r.error, null, `${T.meta.name}: la respuesta grabada tiene que ser utilizable`);
+    cubiertas++;
+    // El mismo remate que hace el editor tras aceptar lo propuesto.
+    const content = T.adoptContent ? T.adoptContent(r.content, modelo) : r.content;
+    const rev = revisarActividad(act(T.meta.name, content, 'Escrita por la IA'));
+    if (rev.problemas.length) rotas.push(`${T.meta.name}: ${rev.problemas.map(p => p.texto || p).join(' · ')}`);
+  }
+  assert.ok(cubiertas >= 8, `el barrido tiene que cubrir las plantillas escribibles (cubrió ${cubiertas})`);
+  assert.deepStrictEqual(rotas, [],
+    `plantillas que quedan INJUGABLES con contenido de la IA: ${rotas.join(' | ')}`);
+  ok(`lo que escribe la IA queda jugable en las ${cubiertas} plantillas que sabe escribir`);
+}
+
 console.log(`\n  ${passed} activityCheck checks passed`);
