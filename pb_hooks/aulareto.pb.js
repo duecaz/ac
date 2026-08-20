@@ -35,6 +35,28 @@
 //     que es donde se puede probar sin red y donde ya viven las reglas de cada
 //     modelo. Aquí solo se traslada.
 
+// ── EL PERMISO DEL NAVEGADOR (CORS) ──────────────────────────────────────────
+// El navegador, ANTES de un POST con cabeceras propias (Authorization y
+// Content-Type), manda una petición OPTIONS preguntando si puede. Si esa no
+// responde bien, el `fetch` LANZA —no devuelve un error, lanza— y en la app se
+// veía como «No se pudo conectar. Comprueba la conexión a internet», con la
+// conexión perfectamente. Desde la Pi funcionaba porque `curl` en localhost no
+// hace ninguna de estas dos cosas.
+//
+// PocketBase pone sus propias cabeceras CORS, pero solo para las rutas que
+// conoce; una ruta añadida a mano solo para POST puede dejar el OPTIONS sin
+// respuesta. Se contesta explícitamente, que es barato y quita la duda.
+routerAdd('OPTIONS', '/api/ia/contenido', (e) => {
+  const lib = require(`${__hooks}/aulareto-lib.js`);
+  lib.permitirNavegador(e);
+  return e.noContent(204);
+});
+routerAdd('OPTIONS', '/api/ia/estado', (e) => {
+  const lib = require(`${__hooks}/aulareto-lib.js`);
+  lib.permitirNavegador(e);
+  return e.noContent(204);
+});
+
 // ── ¿ESTÁ ESTO PUESTO? ───────────────────────────────────────────────────────
 // Un extremo que NO gasta una generación. Sin él, la única forma de saber si el
 // hook está instalado era pedirle contenido de verdad a Gemini — y si algo
@@ -43,6 +65,7 @@
 // No devuelve la clave ni un trozo de ella: solo si hay una y de dónde salió.
 routerAdd('GET', '/api/ia/estado', (e) => {
   const lib = require(`${__hooks}/aulareto-lib.js`);
+  lib.permitirNavegador(e);
   const cfg = lib.leerConfigIA();
   return e.json(200, {
     instalado: true,
@@ -61,6 +84,7 @@ routerAdd('GET', '/api/ia/estado', (e) => {
 // ── ESCRIBIR CONTENIDO ───────────────────────────────────────────────────────
 routerAdd('POST', '/api/ia/contenido', (e) => {
   const lib = require(`${__hooks}/aulareto-lib.js`);
+  lib.permitirNavegador(e);
 
   const cfg = lib.leerConfigIA();
   const proveedor = lib.PROVEEDORES[cfg.proveedor];

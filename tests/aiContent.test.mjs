@@ -149,11 +149,25 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   assert.match(await falla(401), /cuenta/i, '401: hay que entrar');
   assert.match(await falla(429, { message: 'Máximo 20 al día.' }), /20 al día/, '429: el tope, con su cifra');
   assert.match(await falla(503), /no está configurada/i, '503: falta la clave en el servidor');
-  const sinRed = await (async () => {
-    try { await pedirContenido({ ...base, fetchFn: async () => { throw new Error('offline'); } }); }
+  // UN `fetch` QUE LANZA SON DOS COSAS DISTINTAS, y confundirlas manda a mirar
+  // al sitio equivocado: el dueño leyó «comprueba tu internet» con la conexión
+  // perfecta y el servidor respondiendo bien — lo que fallaba era el permiso de
+  // origen (CORS) del hook. Se distinguen por lo que dice el propio navegador.
+  const lanza = async () => {
+    try { await pedirContenido({ ...base, fetchFn: async () => { throw new Error('boom'); } }); }
     catch (e) { return e.message; }
-  })();
-  assert.match(sinRed, /conexión/i, 'sin red: lo dice, y es lo que el profe puede arreglar');
+  };
+  // `navigator` en Node es de solo lectura: se sustituye con defineProperty.
+  const antes = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  const fingir = (onLine) => Object.defineProperty(globalThis, 'navigator',
+    { value: { onLine }, configurable: true, writable: true });
+  fingir(false);
+  assert.match(await lanza(), /Sin conexión/i, 'sin red: se dice, y es lo que el profe puede arreglar');
+  fingir(true);
+  assert.match(await lanza(), /CORS|permiso de origen/i,
+    'CON red y aun así falla: NO se culpa a su internet — se señala el permiso del navegador');
+  if (antes) Object.defineProperty(globalThis, 'navigator', antes);
+  else delete globalThis.navigator;
 
   await assert.rejects(() => pedirContenido({ ...base, tema: '  ' }), /de qué va/i,
     'sin tema no se gasta una llamada');

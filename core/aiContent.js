@@ -250,9 +250,16 @@ export async function pedirContenido({
       signal,
     });
   } catch {
-    // R6: el motivo, no un «algo falló». Sin red es el caso más frecuente y el
-    // que el profe puede resolver solo.
-    throw new Error('No se pudo conectar. Comprueba la conexión a internet.');
+    // `fetch` LANZA (en vez de devolver un error) por dos motivos muy distintos,
+    // y confundirlos manda a mirar el sitio equivocado: el dueño leyó «comprueba
+    // tu internet» con la conexión perfecta, mientras el servidor respondía de
+    // maravilla — lo que fallaba era el permiso del navegador (CORS) en la
+    // petición previa. Si el navegador dice que HAY red, el problema no es esa.
+    const sinRed = typeof navigator !== 'undefined' && navigator.onLine === false;
+    throw new Error(sinRed
+      ? 'Sin conexión a internet. La IA necesita red.'
+      : 'El servidor no aceptó la petición del navegador. Suele ser el permiso de origen '
+        + '(CORS) del hook: actualízalo en la Pi con tools/pi-instalar-hook.sh.');
   }
 
   if (!r.ok) {

@@ -129,4 +129,24 @@ function leerConfigIA() {
   return out;
 }
 
-module.exports = { TOPE_DIARIO, MAX_ELEMENTOS, ESQUEMAS, PROVEEDORES, leerConfigIA };
+// EL PERMISO DEL NAVEGADOR (CORS). El navegador, ANTES de un POST con cabeceras
+// propias (Authorization, Content-Type), manda un OPTIONS preguntando si puede.
+// Si eso no responde bien, el `fetch` LANZA —no devuelve error, lanza— y en la
+// app se veía «No se pudo conectar. Comprueba la conexión a internet» con la
+// conexión perfecta. Desde la Pi no se notaba porque `curl` en localhost no
+// hace preflight ni tiene origen.
+function permitirNavegador(e) {
+  try {
+    const h = e.response.header();
+    h.set('Access-Control-Allow-Origin', '*');
+    h.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+    h.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    h.set('Access-Control-Max-Age', '86400');
+  } catch (err) {
+    // Si esta versión de PocketBase nombra la respuesta de otra forma, no se
+    // rompe la petición por ello: puede que las suyas basten. Al log (R6).
+    $app.logger().warn('IA: no se pudieron poner las cabeceras CORS', 'error', String(err));
+  }
+}
+
+module.exports = { TOPE_DIARIO, MAX_ELEMENTOS, ESQUEMAS, PROVEEDORES, leerConfigIA, permitirNavegador };
