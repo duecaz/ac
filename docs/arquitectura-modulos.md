@@ -34,8 +34,8 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2722 | 12 · 1242 | 0.46 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3975 | 19 · 3001 | 0.75 |
 | **informes/tareas** | después de clase | 10 · 1056 | 4 · 466 | 0.44 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5709 | 13 · 1410 | 0.25 |
-| **infra/común** | todo lo anterior | 139 · 16084 | 54 · 6300 | 0.39 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5709 | 13 · 1467 | 0.26 |
+| **infra/común** | todo lo anterior | 139 · 16143 | 54 · 6300 | 0.39 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -107,7 +107,7 @@ graph TD
 | **arranque** | `qa/hoja.js` (254) · `pb_hooks/aulareto.pb.js` (185) · `main.teacher.js` (168) · `pb_hooks/aulareto-lib.js` (153) · `main.embed.js` (68) |
 | **vistas** | `views/adminView.js` (1229) · `views/hostLive.js` (1110) · `views/studentLive.js` (922) · `views/playerView.js` (504) · `views/vsView.js` (492) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1187) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
-| **core** | `core/textCorrectionRound.js` (455) · `core/normsCheck.js` (364) · `core/skins.js` (355) · `core/selftest.js` (345) · `core/auth.js` (330) |
+| **core** | `core/textCorrectionRound.js` (455) · `core/normsCheck.js` (364) · `core/skins.js` (355) · `core/selftest.js` (345) · `core/aiContent.js` (344) |
 | **kernel** | `kernel/session/engine.js` (559) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/dataPort.js` (28) |
 | **plantillas** | `templates/crossword/player.js` (481) · `templates/wordsearch/player.js` (397) · `templates/match/player.js` (292) · `templates/diagram/player.js` (235) · `templates/quiz/editor.js` (225) |
 | **contenido** | `kernel/content/qaAdapt.js` (126) · `kernel/content/switch.js` (117) · `kernel/content/convert.js` (95) · `kernel/content/models.js` (83) · `kernel/content/index.js` (5) |

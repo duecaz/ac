@@ -221,6 +221,68 @@ function enBlanco(p) {
 }
 
 /**
+ * CUANDO `fetch` LANZA, MEDIR — NO ADIVINAR.
+ *
+ * `fetch` lanza (en vez de devolver una respuesta) por motivos muy distintos y
+ * el navegador, por diseño, no dice cuál: «Failed to fetch» y nada más. Se
+ * gastaron TRES intentos seguidos culpando al permiso de origen sin ninguna
+ * medida delante, y el servidor estaba impecable — el diagnóstico desde la Pi
+ * daba 200 y 401 correctos, con sus cabeceras, también por el dominio público.
+ * Lo que faltaba no era otro arreglo: era preguntárselo al navegador, que es el
+ * único que sabe qué le pasó.
+ *
+ * Tres sondas que se van estrechando, todas baratas y ninguna genera contenido:
+ *
+ *   1. GET de estado — petición SIMPLE (sin cabeceras propias ⇒ sin comprobación
+ *      previa). Si esta también falla, no es el permiso de origen: es la red, un
+ *      bloqueador del navegador o el servidor caído.
+ *   2. POST simple (`text/plain`, sin Authorization) — llega SIN comprobación
+ *      previa. Si esta responde y la de verdad no, lo que falla es justo esa
+ *      comprobación previa, que solo existe por la cabecera Authorization.
+ *   3. La misma en modo opaco — si ni siquiera así hay respuesta, la petición no
+ *      sale del navegador; si sale, lo que falta es la cabecera de permiso en la
+ *      RESPUESTA.
+ *
+ * Devuelve la frase para el profe: qué pasa y qué hacer (R6).
+ */
+export async function diagnosticarFalloDeRed({ url, estadoUrl = '', fetchFn = fetch, enLinea = true } = {}) {
+  if (enLinea === false) return 'Sin conexión a internet. La IA necesita red.';
+  const estado = estadoUrl || String(url || '').replace(/\/contenido$/, '/estado');
+
+  let estadoVale = false;
+  try {
+    const r = await fetchFn(estado, { method: 'GET' });
+    estadoVale = !!r;
+  } catch { estadoVale = false; }
+  if (!estadoVale) {
+    return 'El navegador no consigue llegar al servidor (' + estado + '). No es la clave de la IA: '
+      + 'prueba a abrir esa dirección en una pestaña. Si ahí sí responde, lo está bloqueando algo del '
+      + 'navegador (una extensión, el antivirus o la red del centro).';
+  }
+
+  // El servidor SÍ contesta a lo simple. Ahora, ¿es la comprobación previa?
+  try {
+    // `text/plain` es de los tipos que NO disparan comprobación previa. El
+    // extremo contestará 401 (falta la sesión) y eso ya es la respuesta que
+    // buscamos: lo que importa es que HAYA respuesta, no cuál.
+    await fetchFn(url, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: '{}' });
+    return 'El servidor responde, pero el navegador no le deja mandar la petición con tu sesión: '
+      + 'falla la comprobación previa (CORS) de la cabecera Authorization. Actualiza el hook en la Pi '
+      + 'con tools/pi-instalar-hook.sh y vuelve a probar.';
+  } catch { /* seguimos estrechando */ }
+
+  try {
+    await fetchFn(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: '{}' });
+    return 'La petición llega al servidor pero su respuesta viene sin el permiso de origen, y el '
+      + 'navegador la descarta. Actualiza el hook en la Pi con tools/pi-instalar-hook.sh.';
+  } catch { /* ni así */ }
+
+  return 'El estado del servidor responde pero las peticiones de escritura no salen del navegador. '
+    + 'Suele ser una extensión que bloquea peticiones o un proxy de la red. Prueba en una ventana de '
+    + 'incógnito sin extensiones.';
+}
+
+/**
  * PIDE el contenido a NUESTRO extremo (la Pi). No conoce a Gemini ni a Grok:
  * quien elige el proveedor y guarda la clave es el hook.
  *
@@ -250,16 +312,13 @@ export async function pedirContenido({
       signal,
     });
   } catch {
-    // `fetch` LANZA (en vez de devolver un error) por dos motivos muy distintos,
-    // y confundirlos manda a mirar el sitio equivocado: el dueño leyó «comprueba
-    // tu internet» con la conexión perfecta, mientras el servidor respondía de
-    // maravilla — lo que fallaba era el permiso del navegador (CORS) en la
-    // petición previa. Si el navegador dice que HAY red, el problema no es esa.
-    const sinRed = typeof navigator !== 'undefined' && navigator.onLine === false;
-    throw new Error(sinRed
-      ? 'Sin conexión a internet. La IA necesita red.'
-      : 'El servidor no aceptó la petición del navegador. Suele ser el permiso de origen '
-        + '(CORS) del hook: actualízalo en la Pi con tools/pi-instalar-hook.sh.');
+    // `fetch` LANZA (en vez de devolver un error) por motivos muy distintos y no
+    // dice cuál. Aquí NO se adivina —ya se adivinó tres veces seguidas, y las
+    // tres mal—: se mide con sondas baratas y se devuelve lo que digan.
+    throw new Error(await diagnosticarFalloDeRed({
+      url, fetchFn,
+      enLinea: typeof navigator === 'undefined' ? true : navigator.onLine !== false,
+    }));
   }
 
   if (!r.ok) {

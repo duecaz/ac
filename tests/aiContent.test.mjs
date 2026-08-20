@@ -10,7 +10,7 @@ import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { interpretarRespuesta, fusionarContenido, pedirContenido, MODELOS_IA, iaSabeEscribir }
+import { interpretarRespuesta, fusionarContenido, pedirContenido, diagnosticarFalloDeRed, MODELOS_IA, iaSabeEscribir }
   from '../core/aiContent.js';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -149,10 +149,11 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   assert.match(await falla(401), /cuenta/i, '401: hay que entrar');
   assert.match(await falla(429, { message: 'Máximo 20 al día.' }), /20 al día/, '429: el tope, con su cifra');
   assert.match(await falla(503), /no está configurada/i, '503: falta la clave en el servidor');
-  // UN `fetch` QUE LANZA SON DOS COSAS DISTINTAS, y confundirlas manda a mirar
-  // al sitio equivocado: el dueño leyó «comprueba tu internet» con la conexión
-  // perfecta y el servidor respondiendo bien — lo que fallaba era el permiso de
-  // origen (CORS) del hook. Se distinguen por lo que dice el propio navegador.
+  // UN `fetch` QUE LANZA SON VARIAS COSAS DISTINTAS, y confundirlas manda a
+  // mirar al sitio equivocado: el dueño leyó «comprueba tu internet» con la
+  // conexión perfecta y el servidor respondiendo bien. Aquí se comprueba lo
+  // mínimo —que se distingue «no hay red» de «hay red y aun así falla»—; el
+  // reparto fino de causas lo miden las sondas de `diagnosticarFalloDeRed`.
   const lanza = async () => {
     try { await pedirContenido({ ...base, fetchFn: async () => { throw new Error('boom'); } }); }
     catch (e) { return e.message; }
@@ -164,8 +165,10 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   fingir(false);
   assert.match(await lanza(), /Sin conexión/i, 'sin red: se dice, y es lo que el profe puede arreglar');
   fingir(true);
-  assert.match(await lanza(), /CORS|permiso de origen/i,
-    'CON red y aun así falla: NO se culpa a su internet — se señala el permiso del navegador');
+  const conRed = await lanza();
+  assert.doesNotMatch(conRed, /Sin conexión/i,
+    'CON red y aun así falla: NO se culpa a su internet');
+  assert.match(conRed, /servidor|navegador/i, 'y el mensaje señala dónde mirar');
   if (antes) Object.defineProperty(globalThis, 'navigator', antes);
   else delete globalThis.navigator;
 
@@ -223,6 +226,60 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   assert.ok(/require\(`\$\{__hooks\}\/aulareto-lib\.js`\)/.test(hook),
     'cada handler debe hacer su propio require del módulo compartido');
   ok('el hook no declara nada fuera de sus handlers (la trampa que devolvía 400)');
+}
+
+// ── CUANDO `fetch` LANZA, EL MENSAJE TIENE QUE VENIR DE UNA MEDIDA ───────────
+// Se gastaron tres arreglos seguidos culpando al permiso de origen (CORS) sin
+// una sola medida delante, y el servidor estaba impecable: el diagnóstico desde
+// la Pi devolvía 200 y 401 con sus cabeceras, también por el dominio público.
+// El navegador no dice por qué lanza, así que hay que preguntárselo con sondas.
+// Cada caso de abajo es un fallo REAL distinto que antes se contaba igual —y
+// mandaba a arreglar el sitio equivocado.
+{
+  const URL_IA = 'https://pb.lanube.uno/api/ia/contenido';
+  // Un `fetch` de mentira al que se le dice qué sonda funciona y cuál no.
+  const falso = (vale) => async (url, opt = {}) => {
+    const sonda = (opt.method || 'GET') === 'GET' ? 'estado'
+      : (opt.mode === 'no-cors' ? 'opaca' : 'simple');
+    if (!vale[sonda]) throw new TypeError('Failed to fetch');
+    return { ok: true, status: sonda === 'estado' ? 200 : 401 };
+  };
+
+  const sinRed = await diagnosticarFalloDeRed({ url: URL_IA, enLinea: false, fetchFn: falso({}) });
+  assert.match(sinRed, /Sin conexión/, 'sin red, se dice sin red');
+
+  const nada = await diagnosticarFalloDeRed({ url: URL_IA, fetchFn: falso({}) });
+  assert.match(nada, /no consigue llegar al servidor/,
+    'si ni el GET simple pasa, no puede ser el permiso de origen del POST');
+  assert.ok(nada.includes('/api/ia/estado'), 'y dice QUÉ dirección probar en una pestaña');
+
+  const previa = await diagnosticarFalloDeRed({ url: URL_IA, fetchFn: falso({ estado: true, simple: true }) });
+  assert.match(previa, /comprobación previa \(CORS\)/,
+    'si lo simple pasa y lo de la sesión no, es la comprobación previa');
+  assert.match(previa, /pi-instalar-hook\.sh/, 'y dice qué hacer, no qué pasó (R6)');
+
+  const respuesta = await diagnosticarFalloDeRed({ url: URL_IA, fetchFn: falso({ estado: true, opaca: true }) });
+  assert.match(respuesta, /sin el permiso de origen/,
+    'si solo pasa en modo opaco, llega la petición y falta la cabecera en la RESPUESTA');
+
+  const bloqueo = await diagnosticarFalloDeRed({ url: URL_IA, fetchFn: falso({ estado: true }) });
+  assert.match(bloqueo, /incógnito|extensión/,
+    'si el estado responde pero nada más sale, el sospechoso es el navegador, no la Pi');
+
+  // Las cinco frases son DISTINTAS: si dos coincidieran, la sonda no serviría
+  // para nada — que es exactamente el punto de partida de todo esto.
+  const frases = new Set([sinRed, nada, previa, respuesta, bloqueo]);
+  assert.strictEqual(frases.size, 5, 'cada fallo distinto tiene que decir algo distinto');
+
+  // CONTRA-PRUEBA: ninguna sonda genera contenido ni gasta cuota — solo GET de
+  // estado y POST sin sesión (el extremo contesta 401 antes de llamar a nadie).
+  let conSesion = 0;
+  await diagnosticarFalloDeRed({ url: URL_IA, fetchFn: async (_u, o = {}) => {
+    if (o.headers?.Authorization) conSesion++;
+    throw new TypeError('Failed to fetch');
+  } });
+  assert.strictEqual(conSesion, 0, 'las sondas nunca mandan la sesión: no pueden gastar una generación');
+  ok('el fallo de red se DIAGNOSTICA con sondas (5 causas, 5 frases) en vez de suponerse');
 }
 
 console.log(`\naiContent.test: ${passed} checks passed`);
