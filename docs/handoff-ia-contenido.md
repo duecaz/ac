@@ -234,6 +234,12 @@ porque las tres se repiten en cualquier hook nuevo:
    Con `curl` no se ve nunca: `curl` no aplica la política de origen.
 
 3. **Un 404 de Google no es «clave mala»**, es «esa clave no tiene ESE modelo».
+   Y la causa de fondo: **una versión escrita en la URL es una fecha de caducidad
+   escondida**. Google contestó, literal: *«This model models/gemini-2.5-flash is
+   no longer available to new users»* — el modelo seguía APARECIENDO en el
+   catálogo de la clave y aun así no se servía. Por eso se pide el alias
+   (`gemini-flash-latest`), que Google mantiene apuntando al vigente, y el
+   reintento recorre VARIOS candidatos por orden en vez de fiarse del primero.
    El catálogo cambia. En vez de cablear otro nombre, el hook le pregunta a la
    API cuáles tiene esa clave (`modelosGemini`) y reintenta — y si aun así
    falla, el mensaje trae lo que dijo Google y la lista de modelos que sí

@@ -38,12 +38,20 @@ const ESQUEMAS = {
 };
 
 // ── Proveedores. Se añade uno tocando SOLO este cuadro. ──────────────────────
-// Cuál se pide por defecto. NO es una constante escondida en la URL: el catálogo
-// de Google cambia y una clave nueva puede no tener este modelo — que es
-// exactamente lo que pasó (Gemini contestaba 404 y desde el navegador solo se
-// veía «no se pudo conectar»). Si este no está, se busca uno que sí (ver
-// `modelosGemini`), en vez de dejar al profe adivinando.
-const MODELO_GEMINI = 'gemini-2.0-flash';
+// SE PIDE EL ALIAS, NO LA VERSIÓN. Lo enseñó la propia respuesta de Google:
+//
+//   «This model models/gemini-2.5-flash is no longer available to new users.
+//    Please update your code to use models/gemini-3.6-flash»
+//
+// Un número de versión en la URL es una fecha de caducidad escondida: hoy
+// funciona, y el día que Google jubile esa generación la app se cae sola, con la
+// clase delante y sin que nadie haya tocado nada. `gemini-flash-latest` es un
+// alias que Google mantiene apuntando al flash vigente — que es justo lo que
+// hace falta aquí: el barato y el rápido, siempre el de ahora.
+//
+// Si ni el alias existe, se pregunta el catálogo (`modelosGemini`) y se prueban
+// los candidatos por orden, en vez de dejar al profe adivinando nombres.
+const MODELO_GEMINI = 'gemini-flash-latest';
 
 const PROVEEDORES = {
   gemini: {
@@ -207,10 +215,31 @@ function modelosGemini(clave) {
     return { modelos: [], error: 'la clave tiene ' + lista.length
       + ' modelo(s), pero ninguno sirve para escribir texto' };
   }
-  let elegido = '';
-  for (let i = 0; i < sirven.length && !elegido; i++) if (/flash/i.test(sirven[i]) && !/lite/i.test(sirven[i])) elegido = sirven[i];
-  for (let i = 0; i < sirven.length && !elegido; i++) if (/flash/i.test(sirven[i])) elegido = sirven[i];
-  return { modelos: sirven, elegido: elegido || sirven[0], error: '' };
+  // POR ORDEN DE PREFERENCIA, y el primer criterio es que no caduque: un alias
+  // `-latest` lo mantiene Google apuntando al modelo vigente. Después, flash
+  // (barato y rápido) antes que pro; lo `preview` al final, que puede
+  // desaparecer sin avisar; y `gemma`, que es otra familia y más floja, de
+  // último recurso. Estar en la lista NO garantiza que sirva —`gemini-2.5-flash`
+  // aparecía y contestaba «no longer available to new users»—, así que quien
+  // llama prueba en este orden hasta que uno responda.
+  const orden = ordenarModelos(sirven);
+  return { modelos: orden, elegido: orden[0], error: '' };
+}
+
+// El orden, aparte y PURO: es lo único de todo esto que se puede probar sin una
+// Pi y sin una clave, y es donde está la decisión que importa.
+function ordenarModelos(nombres) {
+  const punto = function (n) {
+    if (/flash-latest/i.test(n) && !/lite/i.test(n)) return 0;
+    if (/-latest/i.test(n) && !/lite/i.test(n)) return 1;
+    if (/-latest/i.test(n)) return 2;
+    if (/gemma/i.test(n)) return 9;
+    if (/preview|exp/i.test(n)) return 8;
+    if (/flash/i.test(n) && !/lite/i.test(n)) return 3;
+    if (/flash/i.test(n)) return 4;
+    return 5;
+  };
+  return nombres.slice().sort(function (a, b) { return punto(a) - punto(b); });
 }
 
 // LO QUE EL PROVEEDOR DICE CUANDO RECHAZA. Se decidió NO reenviar su cuerpo
@@ -245,4 +274,4 @@ function responder(e, status, cuerpo) {
   return e.json(status, cuerpo);
 }
 
-module.exports = { TOPE_DIARIO, MAX_ELEMENTOS, ESQUEMAS, PROVEEDORES, leerConfigIA, permitirNavegador, responder, sinSecretos, motivoProveedor, modelosGemini, MODELO_GEMINI };
+module.exports = { TOPE_DIARIO, MAX_ELEMENTOS, ESQUEMAS, PROVEEDORES, leerConfigIA, permitirNavegador, responder, sinSecretos, motivoProveedor, modelosGemini, ordenarModelos, MODELO_GEMINI };

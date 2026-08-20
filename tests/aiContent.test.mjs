@@ -274,6 +274,32 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   assert.ok(!sinSecretos('Bearer xai-abcdef1234567890').includes('xai-abcdef1234567890'),
     'y la de Grok, que va en la cabecera, tampoco');
   ok('el motivo del fallo viaja limpio de claves (patrón, no lista)');
+
+  // EL NOMBRE DEL MODELO NO PUEDE LLEVAR FECHA DE CADUCIDAD. Google contestó,
+  // palabra por palabra: «This model models/gemini-2.5-flash is no longer
+  // available to new users». Una versión escrita en la URL funciona hasta el día
+  // en que Google jubila esa generación, y entonces la app se cae sola —con la
+  // clase delante y sin que nadie haya tocado nada—. Los alias `-latest` los
+  // mantiene Google apuntando al vigente.
+  const { ordenarModelos, MODELO_GEMINI } = createRequire(import.meta.url)(join(ROOT, 'pb_hooks/aulareto-lib.js'));
+  assert.match(MODELO_GEMINI, /-latest$/, 'el modelo por defecto tiene que ser un alias, no una versión');
+
+  // La lista REAL de la clave del dueño (2026-08-20). Vale como caso porque
+  // contiene las tres trampas juntas: el modelo jubilado que sigue apareciendo
+  // en el catálogo, los `preview` que pueden desaparecer y `gemma`, que es otra
+  // familia y más floja.
+  const suya = ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemma-4-26b-a4b-it', 'gemma-4-31b-it',
+    'gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-pro-latest', 'gemini-2.5-flash-lite',
+    'gemini-3-flash-preview', 'gemini-3.1-pro-preview'];
+  const puesto = ordenarModelos(suya);
+  assert.strictEqual(puesto[0], 'gemini-flash-latest', 'gana el alias de flash: barato, rápido y siempre el de ahora');
+  assert.ok(puesto.indexOf('gemini-pro-latest') < puesto.indexOf('gemini-2.5-pro'),
+    'un alias va antes que su versión numerada, aunque sea de la misma familia');
+  assert.ok(puesto.indexOf('gemini-3-flash-preview') < puesto.indexOf('gemma-4-31b-it'),
+    'y entre los peores, antes un preview de la casa que otra familia');
+  assert.strictEqual(puesto.length, suya.length, 'ordenar no pierde candidatos: el reintento los recorre');
+  assert.deepStrictEqual(suya[0], 'gemini-2.5-flash', 'ordenarModelos no toca la lista que recibe');
+  ok('el modelo se elige por alias, no por versión (una versión en la URL caduca sola)');
 }
 
 // ── CUANDO `fetch` LANZA, EL MENSAJE TIENE QUE VENIR DE UNA MEDIDA ───────────

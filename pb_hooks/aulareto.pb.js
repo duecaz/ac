@@ -201,10 +201,16 @@ routerAdd('POST', '/api/ia/contenido', (e) => {
     if (res.statusCode === 404 && cfg.proveedor === 'gemini') {
       catalogo = lib.modelosGemini(cfg.clave);
       if (catalogo.elegido) {
-        modeloUsado = catalogo.elegido;
-        $app.logger().warn('IA: ' + lib.MODELO_GEMINI + ' no está en esta clave; se usa ' + modeloUsado);
-        try { res = pedir(modeloUsado); } catch (err) {
-          return lib.responder(e, 424, { message: 'La Pi no pudo hablar con la IA: ' + lib.sinSecretos(err) });
+        // SE PRUEBAN VARIOS, no uno. Aparecer en el catálogo no garantiza que
+        // sirva: `gemini-2.5-flash` estaba listado y contestaba «no longer
+        // available to new users». Con un solo reintento eso era otro callejón;
+        // con tres, la clase no se queda esperando y tampoco se agota la cuota.
+        for (let i = 0; i < catalogo.modelos.length && i < 3 && res.statusCode === 404; i++) {
+          modeloUsado = catalogo.modelos[i];
+          $app.logger().warn('IA: ' + lib.MODELO_GEMINI + ' no valió; se prueba ' + modeloUsado);
+          try { res = pedir(modeloUsado); } catch (err) {
+            return lib.responder(e, 424, { message: 'La Pi no pudo hablar con la IA: ' + lib.sinSecretos(err) });
+          }
         }
       } else {
         // Aquí NO se puede decir «revisa la clave» y quedarse tan ancho: si la

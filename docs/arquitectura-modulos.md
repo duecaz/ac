@@ -34,8 +34,8 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2722 | 12 · 1242 | 0.46 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3975 | 19 · 3001 | 0.75 |
 | **informes/tareas** | después de clase | 10 · 1056 | 4 · 466 | 0.44 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5709 | 13 · 1531 | 0.27 |
-| **infra/común** | todo lo anterior | 139 · 16363 | 54 · 6300 | 0.39 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5709 | 13 · 1557 | 0.27 |
+| **infra/común** | todo lo anterior | 139 · 16398 | 54 · 6300 | 0.38 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -104,7 +104,7 @@ graph TD
 
 | Capa | Módulos más grandes |
 |---|---|
-| **arranque** | `pb_hooks/aulareto.pb.js` (266) · `qa/hoja.js` (254) · `pb_hooks/aulareto-lib.js` (249) · `main.teacher.js` (168) · `main.embed.js` (68) |
+| **arranque** | `pb_hooks/aulareto-lib.js` (278) · `pb_hooks/aulareto.pb.js` (272) · `qa/hoja.js` (254) · `main.teacher.js` (168) · `main.embed.js` (68) |
 | **vistas** | `views/adminView.js` (1247) · `views/hostLive.js` (1110) · `views/studentLive.js` (922) · `views/playerView.js` (504) · `views/vsView.js` (492) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1187) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
 | **core** | `core/textCorrectionRound.js` (455) · `core/aiContent.js` (369) · `core/normsCheck.js` (364) · `core/skins.js` (355) · `core/selftest.js` (345) |
