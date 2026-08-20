@@ -46,15 +46,21 @@
 // PocketBase pone sus propias cabeceras CORS, pero solo para las rutas que
 // conoce; una ruta añadida a mano solo para POST puede dejar el OPTIONS sin
 // respuesta. Se contesta explícitamente, que es barato y quita la duda.
+// Se responde con `e.json`, NO con `e.noContent`: es el único método de
+// respuesta que sabemos que funciona en ESTA versión (lo usa la ruta de estado,
+// que responde bien desde la Pi). Un método que no exista revienta el handler y
+// entonces el preflight falla igual — que es justo lo que se está intentando
+// arreglar. Un 200 con cuerpo vale como respuesta al preflight: lo que el
+// navegador mira son las cabeceras.
 routerAdd('OPTIONS', '/api/ia/contenido', (e) => {
   const lib = require(`${__hooks}/aulareto-lib.js`);
   lib.permitirNavegador(e);
-  return e.noContent(204);
+  return e.json(200, { ok: true });
 });
 routerAdd('OPTIONS', '/api/ia/estado', (e) => {
   const lib = require(`${__hooks}/aulareto-lib.js`);
   lib.permitirNavegador(e);
-  return e.noContent(204);
+  return e.json(200, { ok: true });
 });
 
 // ── ¿ESTÁ ESTO PUESTO? ───────────────────────────────────────────────────────
