@@ -83,11 +83,12 @@ function iaBotonHtml(T) {
   const modelo = T?.meta?.contentModel;
   if (!iaSabeEscribir(modelo)) return '';
   return `<div class="ww-ia-puerta mb-3">
-    <button type="button" class="btn btn-outline-primary btn-sm" id="ww-ia-go"
+    <button type="button" class="btn btn-primary" id="ww-ia-go"
             title="La IA propone ${escapeHtml(MODELOS_IA[modelo].etiqueta)}; tú decides si entran">
       <i class="bi bi-stars"></i> Escribir con IA
     </button>
-    <span class="text-muted small ms-2">Lo verás antes de añadirlo. Lo que ya has escrito no se toca.</span>
+    <span class="text-muted small">Escribe ${escapeHtml(MODELOS_IA[modelo].etiqueta)} sobre el tema que le digas.
+      Lo verás antes de añadirlo y podrás quitar las que no quieras. Lo que ya has escrito no se toca.</span>
   </div>`;
 }
 

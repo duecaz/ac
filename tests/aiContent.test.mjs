@@ -10,7 +10,7 @@ import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { interpretarRespuesta, fusionarContenido, pedirContenido, diagnosticarFalloDeRed, MODELOS_IA, iaSabeEscribir }
+import { interpretarRespuesta, fusionarContenido, piezasDe, pedirContenido, diagnosticarFalloDeRed, MODELOS_IA, iaSabeEscribir }
   from '../core/aiContent.js';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -355,6 +355,36 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
     assert.ok(!CULPA_DE_LA_CLAVE.includes(s), `un ${s} NO se arregla con otra clave: no gastes la de al lado`);
   }
   ok('con varias claves solo se baja a la siguiente cuando el problema ES la clave');
+}
+
+// ── QUITAR UNA PROPUESTA ANTES DE QUE ENTRE ─────────────────────────────────
+// El diálogo enseña lo escrito y deja quitar las que no gusten. Para eso hace
+// falta saber DÓNDE viven las piezas, y cada modelo las guarda con otro nombre
+// (`items`, `pairs`, `words`, `passages`). `piezasDe` es esa pregunta, y la
+// comparte con `fusionarContenido`: si el diálogo quitara de un sitio y la
+// fusión leyera de otro, el profe vería desaparecer una y llegarían todas.
+{
+  const casos = {
+    items: { items: [{ id: 'a' }, { id: 'b' }] },
+    pairs: { pairs: [{ id: 'a' }] },
+    words: { words: ['GATO', 'PERRO'] },
+    passages: { passages: [{ text: 'x' }] },
+  };
+  for (const [clave, content] of Object.entries(casos)) {
+    const donde = piezasDe(content);
+    assert.strictEqual(donde?.clave, clave, `piezasDe encuentra la lista del modelo con ${clave}`);
+    assert.strictEqual(donde.lista, content[clave], 'y devuelve la lista DE VERDAD, no una copia');
+  }
+  assert.strictEqual(piezasDe(null), null, 'sin contenido no hay lista');
+  assert.strictEqual(piezasDe({ algo: 1 }), null, 'y un contenido de otra forma tampoco inventa una');
+
+  // Quitar es un splice sobre esa lista: lo que quede es lo que se añade.
+  const propuesto = { items: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] };
+  piezasDe(propuesto).lista.splice(1, 1);
+  assert.deepStrictEqual(propuesto.items.map(i => i.id), ['a', 'c'], 'quitar la del medio deja las otras dos');
+  const fus = fusionarContenido({ items: [] }, propuesto);
+  assert.deepStrictEqual(fus.items.map(i => i.id), ['a', 'c'], 'y a la actividad llega exactamente eso');
+  ok('las piezas se localizan igual para quitarlas que para fusionarlas (los cuatro modelos)');
 }
 
 // ── LA CLAVE NO SALE DE LA PI, TAMPOCO PARA GESTIONARLA ──────────────────────

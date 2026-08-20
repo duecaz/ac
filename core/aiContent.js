@@ -205,10 +205,23 @@ export function interpretarRespuesta(modelo, bruto, opts = {}) {
  * actividad vacía —el caso normal— el resultado es el mismo que reemplazar.
  * No muta: devuelve contenido nuevo.
  */
+/**
+ * DÓNDE VIVEN LAS PIEZAS de un contenido, sea del modelo que sea. Cada modelo
+ * las guarda con su nombre (`items`, `pairs`, `words`, `passages`) y quien
+ * trabaja con lo propuesto —fusionarlo, o quitar una que no gusta— no tiene por
+ * qué saber cuál: pregunta.
+ * @returns {{clave: string, lista: any[]}|null}
+ */
+export function piezasDe(content) {
+  const clave = ['items', 'pairs', 'words', 'passages'].find(k => Array.isArray(content?.[k]));
+  return clave ? { clave, lista: content[clave] } : null;
+}
+
 export function fusionarContenido(actual, nuevo) {
   if (!nuevo) return actual;
-  const clave = ['items', 'pairs', 'words', 'passages'].find(k => Array.isArray(nuevo[k]));
-  if (!clave) return actual;
+  const donde = piezasDe(nuevo);
+  if (!donde) return actual;
+  const clave = donde.clave;
   const previas = Array.isArray(actual?.[clave]) ? actual[clave] : [];
   // Lo que estaba EN BLANCO no cuenta como trabajo del profe: las plantillas
   // nacen con una pieza vacía (R-D) y conservarla dejaría un hueco delante de

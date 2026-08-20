@@ -13,7 +13,7 @@ import { escapeHtml } from './html.js';
 import { rid } from './ids.js';
 import { PB_URL } from '../pocketbase.config.js';
 import { getAuthToken } from './auth.js';
-import { MODELOS_IA, iaSabeEscribir, pedirContenido } from './aiContent.js';
+import { MODELOS_IA, iaSabeEscribir, pedirContenido, piezasDe } from './aiContent.js';
 
 const EXTREMO = () => `${PB_URL}/api/ia/contenido`;
 
@@ -43,29 +43,44 @@ function abrirDialogo(el) {
   };
 }
 
-/** Cómo se enseña una pieza propuesta, según su modelo. Solo lectura. */
-function vistaPrevia(modelo, content) {
-  const fila = (izq, der = '') =>
-    `<li class="ia-pieza"><span class="ia-pieza__a">${escapeHtml(izq)}</span>`
-    + (der ? `<span class="ia-pieza__b">${escapeHtml(der)}</span>` : '') + '</li>';
+/** Cómo se enseña UNA pieza propuesta, según su modelo. Solo lectura. */
+function piezaHtml(modelo, x) {
+  const cuerpo = (izq, der = '') =>
+    `<span class="ia-pieza__a">${escapeHtml(izq)}</span>`
+    + (der ? `<span class="ia-pieza__b">${escapeHtml(der)}</span>` : '');
   if (modelo === 'qa') {
-    return (content.items || []).map(it =>
-      `<li class="ia-pieza"><span class="ia-pieza__a">${escapeHtml(it.question)}</span>
-        <span class="ia-pieza__b">${(it.options || []).map(o =>
-          `<span class="ia-opt${o === it.answer ? ' is-ok' : ''}">${escapeHtml(o)}</span>`).join('')}</span></li>`).join('');
+    return `<span class="ia-pieza__a">${escapeHtml(x.question)}</span>
+      <span class="ia-pieza__b">${(x.options || []).map(o =>
+        `<span class="ia-opt${o === x.answer ? ' is-ok' : ''}">${escapeHtml(o)}</span>`).join('')}</span>`;
   }
-  if (modelo === 'pairs') return (content.pairs || []).map(p => fila(p.left, `↔ ${p.right}`)).join('');
-  if (modelo === 'items') return (content.items || []).map(it => fila(it.question)).join('');
-  if (modelo === 'words') {
-    return (content.words || []).map(w => (typeof w === 'string' ? fila(w) : fila(w.word, w.clue))).join('');
-  }
-  if (modelo === 'textCorrection') {
-    // Se enseña la frase YA CORREGIDA (que es lo que el profe reconoce), no el
-    // texto pelado que se guarda: leer «El pajaro canto» y creer que la IA
-    // escribe sin tildes sería el malentendido garantizado.
-    return (content.passages || []).map(p => fila(conMarcas(p))).join('');
-  }
+  if (modelo === 'pairs') return cuerpo(x.left, `↔ ${x.right}`);
+  if (modelo === 'items') return cuerpo(x.question);
+  if (modelo === 'words') return typeof x === 'string' ? cuerpo(x) : cuerpo(x.word, x.clue);
+  // Se enseña la frase YA CORREGIDA (que es lo que el profe reconoce), no el
+  // texto pelado que se guarda: leer «El pajaro canto» y creer que la IA escribe
+  // sin tildes sería el malentendido garantizado.
+  if (modelo === 'textCorrection') return cuerpo(conMarcas(x));
   return '';
+}
+
+/**
+ * La lista de lo propuesto, CON su botón de quitar.
+ *
+ * Aceptar en bloque obligaba a lo de siempre: añadir las ocho y borrar a mano
+ * las dos que no valen, ya dentro de la actividad. Quitarlas aquí es un toque, y
+ * mantiene la promesa del diálogo — se ve ANTES de que entre nada (§24).
+ */
+function vistaPrevia(modelo, content) {
+  const donde = piezasDe(content);
+  if (!donde) return '';
+  return donde.lista.map((x, i) =>
+    `<li class="ia-pieza" data-i="${i}">
+      <div class="ia-pieza__txt">${piezaHtml(modelo, x)}</div>
+      <button type="button" class="btn btn-sm btn-link text-danger ia-quitar p-0 ms-2"
+              data-i="${i}" title="Quitar esta">
+        <i class="bi bi-x-lg"></i><span class="visually-hidden">Quitar</span>
+      </button>
+    </li>`).join('');
 }
 
 // Reconstruye la frase con sus tildes y comas, solo para enseñarla.
@@ -120,7 +135,16 @@ export function abrirEscribirConIA(opts = {}) {
               </div>
               <div class="col-6 col-md-3">
                 <label class="form-label small fw-semibold" for="${suf}curso">¿Para quién?</label>
-                <input id="${suf}curso" class="form-control" placeholder="5.º de primaria" maxlength="120">
+                <!-- ELEGIR, NO ESCRIBIR. Era un campo libre con «5.º de primaria»
+                     de ejemplo: quien lo dejaba vacío recibía preguntas de nivel
+                     indefinido, y el nivel es lo que decide si la actividad
+                     sirve. Tres niveles bastan para que el modelo apunte, y
+                     viene ya elegido (R2: nada que configurar para empezar). -->
+                <select id="${suf}curso" class="form-select">
+                  <option value="alumnos de primaria">Primaria</option>
+                  <option value="alumnos de secundaria" selected>Secundaria</option>
+                  <option value="estudiantes de nivel superior">Superior</option>
+                </select>
               </div>
               <div class="col-6 col-md-3">
                 <label class="form-label small fw-semibold" for="${suf}n">¿Cuántas?</label>
@@ -146,10 +170,27 @@ export function abrirEscribirConIA(opts = {}) {
 
   let propuesto = null;
   let aceptado = null;
+  let sobrante = '';        // lo que la revisión descartó, para no repetirlo al repintar
 
   const aviso = (texto, tipo = 'warning') => {
     $('estado').innerHTML = `<div class="alert alert-${tipo} py-2 mb-0 small">${escapeHtml(texto)}</div>`;
   };
+
+  /** Repinta la lista y el recuento. Se llama al escribir y cada vez que el
+   *  profe quita una: el número de arriba tiene que ser el de abajo. */
+  function pintarPropuesta() {
+    const donde = piezasDe(propuesto);
+    const n = donde ? donde.lista.length : 0;
+    $('lista').innerHTML = n ? vistaPrevia(modelo, propuesto) : '';
+    $('lista').hidden = !n;
+    $('ok').disabled = !n;
+    if (!n) {
+      aviso(`No queda ninguna ${elemento}. Escribe otra vez o cambia el tema.`, 'warning');
+      return;
+    }
+    aviso(`${n} ${elemento}${n === 1 ? '' : 's'} lista${n === 1 ? '' : 's'}.${sobrante}`,
+      sobrante ? 'warning' : 'success');
+  }
 
   async function escribir() {
     const tema = $('tema').value.trim();
@@ -166,21 +207,17 @@ export function abrirEscribirConIA(opts = {}) {
     aviso('Pensando… suele tardar unos segundos.', 'info');
     try {
       const r = await pedirContenido({
-        modelo, tema, curso: $('curso').value.trim(), cantidad: $('n').value,
+        modelo, tema, curso: $('curso').value, cantidad: $('n').value,
         url: EXTREMO(), token: getAuthToken(), fetchFn, palabrasComoTexto,
       });
       if (r.error) { aviso(r.error); propuesto = null; return; }
       propuesto = r.content;
-      $('lista').innerHTML = vistaPrevia(modelo, r.content);
-      $('lista').hidden = false;
-      $('ok').disabled = false;
       // Lo DESCARTADO se cuenta, no se esconde: si de 10 salen 6, el profe tiene
       // que saber por qué antes de darle a añadir (R6).
-      const n = r.piezas;
-      const sobra = r.descartadas.length
+      sobrante = r.descartadas.length
         ? ` Se descartaron ${r.descartadas.length}: ${r.descartadas.slice(0, 2).join('; ')}${r.descartadas.length > 2 ? '…' : ''}`
         : '';
-      aviso(`${n} ${elemento}${n === 1 ? '' : 's'} lista${n === 1 ? '' : 's'}.${sobra}`, sobra ? 'warning' : 'success');
+      pintarPropuesta();
     } catch (e) {
       propuesto = null;
       aviso(e.message);
@@ -194,6 +231,16 @@ export function abrirEscribirConIA(opts = {}) {
     $('go').addEventListener('click', escribir);
     $('tema').addEventListener('keydown', (e) => { if (e.key === 'Enter') escribir(); });
     $('ok').addEventListener('click', () => { aceptado = propuesto; m.hide(); });
+    // Quitar una propuesta. Delegado en la lista: se repinta entera, así que un
+    // handler por fila sobreviviría a su fila.
+    $('lista').addEventListener('click', (ev) => {
+      const b = ev.target.closest('.ia-quitar');
+      if (!b) return;
+      const donde = piezasDe(propuesto);
+      if (!donde) return;
+      donde.lista.splice(Number(b.dataset.i), 1);
+      pintarPropuesta();
+    });
     el.addEventListener('hidden.bs.modal', () => { el.remove(); resolve(aceptado); });
     m.show();
     setTimeout(() => $('tema')?.focus(), 150);

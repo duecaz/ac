@@ -21,16 +21,33 @@
    La lista de lo PROPUESTO, que es la pieza que hace aceptable la función: el
    contenido es del usuario (§24), así que la IA propone y él ve antes de
    aceptar. Chrome del panel, no juego: colores directos y no tokens --ww-*. */
-.ww-ia-puerta { display: flex; align-items: center; flex-wrap: wrap; gap: .25rem; }
+/* LA PUERTA SE TIENE QUE VER. Era un botón con contorno perdido entre el aviso
+   azul de «primer paso» y el panel rojo de «qué falta»: el dueño lo probó y
+   funcionaba, pero «debe ser más visible». Va en su propia tarjeta, con el botón
+   RELLENO (es una acción principal, no un enlace más) y la promesa al lado, que
+   es lo que quita el miedo a pulsarlo. */
+.ww-ia-puerta {
+  display: flex; align-items: center; flex-wrap: wrap; gap: .5rem;
+  padding: .6rem .75rem; border-radius: 12px;
+  background: linear-gradient(135deg, #eef2ff, #faf5ff);
+  border: 1px solid #c7d2fe;
+}
+.ww-ia-puerta .btn { font-weight: 600; }
 .ia-lista {
   list-style: none; margin: 0; padding: 0;
   max-height: 40vh; overflow-y: auto;
   border: 1px solid #e2e8f0; border-radius: 10px;
 }
+/* La fila: el contenido a la izquierda y el aspa a la derecha. Poder quitar una
+   ANTES de añadirla evita el trabajo de siempre —meter las ocho y borrar dos ya
+   dentro de la actividad— y mantiene la promesa del diálogo. */
 .ia-pieza {
-  display: flex; flex-direction: column; gap: .25rem;
+  display: flex; align-items: flex-start; gap: .5rem;
   padding: .5rem .75rem; border-bottom: 1px solid #f1f5f9;
 }
+.ia-pieza__txt { display: flex; flex-direction: column; gap: .25rem; flex: 1 1 auto; min-width: 0; }
+.ia-quitar { line-height: 1; opacity: .55; }
+.ia-quitar:hover, .ia-quitar:focus-visible { opacity: 1; }
 .ia-pieza:last-child { border-bottom: 0; }
 .ia-pieza__a { font-weight: 600; }
 .ia-pieza__b { color: #64748b; font-size: .875rem; display: flex; flex-wrap: wrap; gap: .3rem; }
