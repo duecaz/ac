@@ -38,6 +38,60 @@
 const TOPE_DIARIO = 30;          // generaciones por profe y día
 const MAX_ELEMENTOS = 20;
 
+// LEER LA CONFIGURACIÓN — y DECIR por qué si no se puede.
+//
+// La primera versión envolvía esto en un `try {} catch {}` mudo: cuando el dueño
+// guardó su clave de Gemini, el panel decía «guardada» y acto seguido «falta la
+// clave», sin ninguna pista de cuál de los dos era mentira. Un catch vacío
+// alrededor de algo que el usuario acaba de pedir es justo lo que la regla
+// `fallo-mudo` prohíbe en el resto del proyecto, y aquí faltó aplicarla.
+//
+// Dos caminos a propósito: `findFirstRecordByFilter` es lo natural, pero si esa
+// firma o la sintaxis del filtro no son las de ESTA versión de PocketBase, el
+// segundo camino (traer las filas y mirarlas en JavaScript) funciona igual. No
+// se puede probar desde el repo contra una Pi real, así que se prueban las dos
+// y se informa de cuál valió.
+function leerConfigIA() {
+  const out = {
+    proveedor: ($os.getenv('WW_IA_PROVEEDOR') || '').toLowerCase(),
+    clave: $os.getenv('WW_IA_CLAVE') || '',
+    origen: '',
+    via: '',
+    error: '',
+  };
+  if (out.clave) { out.origen = 'entorno'; out.via = 'env'; }
+
+  let fila = null;
+  try {
+    fila = $app.findFirstRecordByFilter('ia_config', 'clave != ""');
+    if (fila) out.via = 'findFirstRecordByFilter';
+  } catch (e) {
+    out.error = 'filtro: ' + String(e && e.message ? e.message : e);
+  }
+  if (!fila) {
+    try {
+      const todas = $app.findAllRecords('ia_config');
+      for (let i = 0; i < todas.length; i++) {
+        if (todas[i].getString('clave')) { fila = todas[i]; out.via = 'findAllRecords'; break; }
+      }
+      if (!fila && todas.length) out.error = 'hay ' + todas.length + ' fila(s) en ia_config pero ninguna con clave';
+      if (!fila && !todas.length) out.error = out.error || 'ia_config está vacía';
+    } catch (e2) {
+      out.error = (out.error ? out.error + ' · ' : '') + 'lectura: ' + String(e2 && e2.message ? e2.message : e2);
+    }
+  }
+  if (fila) {
+    out.clave = fila.getString('clave') || out.clave;
+    out.proveedor = (fila.getString('proveedor') || out.proveedor).toLowerCase();
+    out.origen = 'ia_config';
+    out.error = '';
+  }
+  if (!out.proveedor) out.proveedor = 'gemini';
+  if (!out.clave && !out.origen) out.origen = 'ninguno';
+  if (out.error) $app.logger().warn('IA: no se pudo leer ia_config', 'motivo', out.error);
+  return out;
+}
+
 // Qué se le pide al modelo para cada modelo de contenido. El JSON que se espera
 // va descrito aquí porque el prompt es cosa del servidor (ver arriba).
 const ESQUEMAS = {
@@ -82,25 +136,17 @@ const PROVEEDORES = {
 };
 
 routerAdd('POST', '/api/ia/contenido', (c) => {
-  // La fila manda; el entorno es la alternativa para quien no quiera la clave
-  // en la base de datos. Si no hay ninguna de las dos: 503 con su motivo.
-  let proveedorId = ($os.getenv('WW_IA_PROVEEDOR') || 'gemini').toLowerCase();
-  let clave = $os.getenv('WW_IA_CLAVE') || '';
-  try {
-    const cfg = $app.findFirstRecordByFilter('ia_config', 'clave != ""');
-    if (cfg) {
-      clave = cfg.getString('clave') || clave;
-      proveedorId = (cfg.getString('proveedor') || proveedorId).toLowerCase();
-    }
-  } catch (e) {
-    // best-effort: sin fila se sigue con el entorno. El motivo, escrito (R6).
+  const cfg = leerConfigIA();
+  const proveedor = PROVEEDORES[cfg.proveedor];
+  if (!cfg.clave || !proveedor) {
+    // El motivo VIAJA: «no está configurada» a secas dejaba al dueño mirando la
+    // clave sin saber si el problema era ella, la fila o la lectura (R6).
+    return c.json(503, { message: 'La IA no está configurada en el servidor.'
+      + (cfg.error ? ' Motivo: ' + cfg.error : '')
+      + (!proveedor && cfg.proveedor ? ' Proveedor desconocido: ' + cfg.proveedor : '') });
   }
-  const proveedor = PROVEEDORES[proveedorId];
-  if (!clave || !proveedor) {
-    // La UI lo DICE ANTES de dejar tocar el botón, pero si se llega aquí el
-    // motivo tiene que ser inequívoco (R6).
-    return c.json(503, { message: 'La IA no está configurada en el servidor.' });
-  }
+  const proveedorId = cfg.proveedor;
+  const clave = cfg.clave;
 
   // SESIÓN OBLIGATORIA: escribir contenido es acto de profe (§22), y sin esto
   // el extremo sería un modelo de lenguaje abierto a internet.
@@ -187,25 +233,17 @@ routerAdd('POST', '/api/ia/contenido', (c) => {
 // ruta solo existe si el fichero está cargado, un 404 aquí YA es la respuesta.
 // No devuelve la clave ni un trozo de ella: solo si hay una.
 routerAdd('GET', '/api/ia/estado', (c) => {
-  let proveedor = ($os.getenv('WW_IA_PROVEEDOR') || '').toLowerCase();
-  let hayClave = !!$os.getenv('WW_IA_CLAVE');
-  let origen = hayClave ? 'entorno' : 'ninguno';
-  try {
-    const cfg = $app.findFirstRecordByFilter('ia_config', 'clave != ""');
-    if (cfg) {
-      hayClave = true;
-      origen = 'ia_config';
-      proveedor = (cfg.getString('proveedor') || proveedor).toLowerCase();
-    }
-  } catch (e) {
-    // best-effort: si la colección no existe todavía, `hayClave` se queda como
-    // esté por entorno. El motivo, escrito (R6).
-  }
+  const cfg = leerConfigIA();
   return c.json(200, {
     instalado: true,
-    configurado: hayClave,
-    proveedor: proveedor || null,
-    origen,
+    configurado: !!cfg.clave,
+    proveedor: cfg.proveedor || null,
+    origen: cfg.origen,
+    // De DÓNDE salió y, si no salió, POR QUÉ. Sin esto, «configurado:false» era
+    // indistinguible de «la clave está mal guardada» y de «esta versión de
+    // PocketBase no entiende la llamada». Nunca la clave ni un trozo de ella.
+    via: cfg.via || null,
+    motivo: cfg.error || null,
     topeDiario: TOPE_DIARIO,
   });
 });

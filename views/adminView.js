@@ -448,8 +448,10 @@ function renderPanel(rootSel) {
       if (!r.ok) throw new Error(`estado ${r.status}`);
       const e = await r.json();
       box.innerHTML = e.configurado
-        ? `<div class="alert alert-success py-1 px-2 small mb-0">Hook instalado y con clave de <b>${escapeHtml(e.proveedor || '?')}</b> (en ${escapeHtml(e.origen)}). Tope ${e.topeDiario}/día por profe.</div>`
-        : '<div class="alert alert-info py-1 px-2 small mb-0">Hook instalado, <b>falta la clave</b>: pégala aquí arriba y pulsa «Guardar clave».</div>';
+        ? `<div class="alert alert-success py-1 px-2 small mb-0">Hook instalado y con clave de <b>${escapeHtml(e.proveedor || '?')}</b> (en ${escapeHtml(e.origen)}${e.via ? ', vía ' + escapeHtml(e.via) : ''}). Tope ${e.topeDiario}/día por profe.</div>`
+        : (e.motivo
+          ? `<div class="alert alert-danger py-1 px-2 small mb-0"><b>El hook no pudo leer la clave.</b> Motivo del servidor: <code>${escapeHtml(e.motivo)}</code></div>`
+          : '<div class="alert alert-info py-1 px-2 small mb-0">Hook instalado, <b>falta la clave</b>: pégala aquí arriba y pulsa «Guardar clave».</div>');
     } catch (err) {
       // best-effort: es un informe, no una función. Si la Pi no contesta, el
       // resto del panel no se bloquea — pero se dice, no se calla (R6).
@@ -791,7 +793,13 @@ function renderPanel(rootSel) {
           + '(y montar ./pb_hooks:/pb_hooks si es Docker). Pasos en docs/handoff-ia-contenido.md §7.');
       }
       const estado = await est.json().catch(() => ({}));
-      if (!estado.configurado) throw new Error('El hook está instalado pero sin clave: guárdala aquí arriba.');
+      if (!estado.configurado) {
+        // El MOTIVO viene del hook: «sin clave» a secas dejaba mirando la clave
+        // recién guardada sin saber si el fallo era ella o la lectura.
+        throw new Error(estado.motivo
+          ? `El hook no pudo leer la clave de ia_config. Motivo del servidor: ${estado.motivo}`
+          : 'El hook está instalado pero sin clave: guárdala aquí arriba.');
+      }
       // 2) Ahora sí, una generación de verdad.
       const r = await pedirContenido({ modelo: 'qa', tema: 'los planetas del sistema solar',
         curso: '5.º de primaria', cantidad: 2, url: `${PB_URL}/api/ia/contenido`, token: getAuthToken() });
