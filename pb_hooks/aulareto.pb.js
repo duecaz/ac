@@ -192,22 +192,29 @@ routerAdd('POST', '/api/ia/contenido', (e) => {
       return lib.responder(e, 424, { message: 'La Pi no pudo hablar con la IA: ' + lib.sinSecretos(err) });
     }
 
-    // 404 DE GOOGLE NO ES «CLAVE MALA»: es «esa clave no tiene ESE modelo». Es lo
-    // que estaba pasando, y desde el navegador se veía como un fallo de conexión.
-    // El catálogo cambia, así que en vez de cablear otro nombre —y volver aquí
-    // dentro de un año— se le pregunta a la propia API cuáles tiene esta clave.
+    // CUANDO EL MODELO FALLA, PROBAR OTRO — Y NO SOLO POR 404.
+    //
+    // Dos negativas distintas del mismo sitio, las dos con la clase esperando:
+    //   404 → «esa clave no tiene ese modelo» (el catálogo cambia).
+    //   503 → «This model is currently experiencing high demand» — el modelo
+    //         existe y está saturado AHORA. Rendirse al primer intento convierte
+    //         un pico de un minuto en «la IA no funciona».
+    // Y no se puede esperar: el JSVM no tiene forma de dormir. Lo que sí se
+    // puede es preguntar el catálogo y probar otro, que además reparte la carga.
     let modeloUsado = lib.MODELO_GEMINI;
     let catalogo = null;
-    if (res.statusCode === 404 && cfg.proveedor === 'gemini') {
+    if (lib.MERECE_OTRO_MODELO.indexOf(res.statusCode) !== -1 && cfg.proveedor === 'gemini') {
       catalogo = lib.modelosGemini(cfg.clave);
       if (catalogo.elegido) {
         // SE PRUEBAN VARIOS, no uno. Aparecer en el catálogo no garantiza que
         // sirva: `gemini-2.5-flash` estaba listado y contestaba «no longer
         // available to new users». Con un solo reintento eso era otro callejón;
         // con tres, la clase no se queda esperando y tampoco se agota la cuota.
-        for (let i = 0; i < catalogo.modelos.length && i < 3 && res.statusCode === 404; i++) {
+        for (let i = 0; i < catalogo.modelos.length && i < 3
+          && lib.MERECE_OTRO_MODELO.indexOf(res.statusCode) !== -1; i++) {
+          if (catalogo.modelos[i] === modeloUsado) continue;   // ese ya falló
           modeloUsado = catalogo.modelos[i];
-          $app.logger().warn('IA: ' + lib.MODELO_GEMINI + ' no valió; se prueba ' + modeloUsado);
+          $app.logger().warn('IA: ' + res.statusCode + ' con el anterior; se prueba ' + modeloUsado);
           try { res = pedir(modeloUsado); } catch (err) {
             return lib.responder(e, 424, { message: 'La Pi no pudo hablar con la IA: ' + lib.sinSecretos(err) });
           }
@@ -237,7 +244,12 @@ routerAdd('POST', '/api/ia/contenido', (e) => {
         + (catalogo && catalogo.modelos.length
           ? ' Esta clave ofrece: ' + catalogo.modelos.slice(0, 8).join(', ') + '.'
           : '')
-        + (res.statusCode === 400 || res.statusCode === 403 ? ' Suele ser la clave: revísala en el panel.' : '') });
+        + (res.statusCode === 400 || res.statusCode === 403 ? ' Suele ser la clave: revísala en el panel.' : '')
+        // Saturación NO es avería: decir «revisa la clave» ahí manda a tocar lo
+        // único que está bien. Es un pico, se pasa, y el profe necesita saber
+        // que puede volver a intentarlo en un minuto — no ponerse a investigar.
+        + (res.statusCode === 429 || res.statusCode === 503
+          ? ' No es tu clave: la IA está saturada ahora mismo. Vuelve a intentarlo en un minuto.' : '') });
     }
 
     const texto = proveedor.texto(res.json);

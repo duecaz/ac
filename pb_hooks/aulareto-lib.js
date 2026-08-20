@@ -53,6 +53,13 @@ const ESQUEMAS = {
 // los candidatos por orden, en vez de dejar al profe adivinando nombres.
 const MODELO_GEMINI = 'gemini-flash-latest';
 
+// Negativas que MERECEN probar con otro modelo en vez de rendirse. No son la
+// misma cosa y por eso están juntas: 404 es «esa clave no tiene ese modelo»,
+// 429/503 es «este modelo está saturado ahora mismo» («This model is currently
+// experiencing high demand»). En los dos casos, otro modelo de la misma clave
+// suele responder — y esperar no es opción: el JSVM no tiene forma de dormir.
+const MERECE_OTRO_MODELO = [404, 429, 500, 503];
+
 const PROVEEDORES = {
   gemini: {
     url: function (clave, modelo) {
@@ -274,4 +281,4 @@ function responder(e, status, cuerpo) {
   return e.json(status, cuerpo);
 }
 
-module.exports = { TOPE_DIARIO, MAX_ELEMENTOS, ESQUEMAS, PROVEEDORES, leerConfigIA, permitirNavegador, responder, sinSecretos, motivoProveedor, modelosGemini, ordenarModelos, MODELO_GEMINI };
+module.exports = { TOPE_DIARIO, MAX_ELEMENTOS, ESQUEMAS, PROVEEDORES, leerConfigIA, permitirNavegador, responder, sinSecretos, motivoProveedor, modelosGemini, ordenarModelos, MODELO_GEMINI, MERECE_OTRO_MODELO };

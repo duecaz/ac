@@ -300,6 +300,25 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   assert.strictEqual(puesto.length, suya.length, 'ordenar no pierde candidatos: el reintento los recorre');
   assert.deepStrictEqual(suya[0], 'gemini-2.5-flash', 'ordenarModelos no toca la lista que recibe');
   ok('el modelo se elige por alias, no por versión (una versión en la URL caduca sola)');
+
+  // NO RENDIRSE AL PRIMER «NO». Google dice que no de dos formas distintas y con
+  // la clase esperando: 404 («esa clave no tiene ese modelo») y 503 («this model
+  // is currently experiencing high demand»). La segunda es un pico de un minuto;
+  // tratarla como avería la convierte en «la IA no funciona». Y esperar no es
+  // opción: el JSVM no tiene forma de dormir, así que se prueba otro modelo.
+  const { MERECE_OTRO_MODELO } = createRequire(import.meta.url)(join(ROOT, 'pb_hooks/aulareto-lib.js'));
+  for (const s of [404, 429, 503]) {
+    assert.ok(MERECE_OTRO_MODELO.includes(s), `un ${s} tiene que hacer que se pruebe otro modelo`);
+  }
+  // CONTRA-PRUEBA: reintentar cuando la clave está mal (401/403) o cuando la
+  // petición no vale (400) solo gasta cuota y tarda más en decir la verdad.
+  for (const s of [400, 401, 403]) {
+    assert.ok(!MERECE_OTRO_MODELO.includes(s), `un ${s} NO se arregla cambiando de modelo`);
+  }
+  // (Que el mensaje DIGA que es saturación y no la clave se queda sin test a
+  // propósito: sería citar una frase, y el ratchet de `citasFuente` existe justo
+  // para que una redacción no se convierta en trabajo cada vez que se mejora.)
+  ok('una negativa temporal (503) prueba con otro modelo en vez de rendirse');
 }
 
 // ── CUANDO `fetch` LANZA, EL MENSAJE TIENE QUE VENIR DE UNA MEDIDA ───────────
