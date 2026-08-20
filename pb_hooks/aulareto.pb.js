@@ -73,8 +73,26 @@ routerAdd('GET', '/api/ia/estado', (e) => {
   const lib = require(`${__hooks}/aulareto-lib.js`);
   lib.permitirNavegador(e);
   const cfg = lib.leerConfigIA();
+  // ¿QUÉ MODELOS TIENE ESTA CLAVE? Solo si se piden (`?modelos=1`): cuesta una
+  // llamada a Google y la mayoría de las veces no hace falta. Se añadió porque
+  // un «(404)» sin lista deja al dueño adivinando qué nombre poner, y la
+  // respuesta la tiene la API. No enseña la clave: solo nombres de modelos.
+  let pideModelos = false;
+  try {
+    const u = e.request.url;
+    pideModelos = String(u.rawQuery || u).indexOf('modelos=1') !== -1;
+  } catch (err) {
+    // Si esta versión nombra la URL de otra forma, se responde SIN catálogo en
+    // vez de tumbar la ruta de estado, que es la que sirve para diagnosticar.
+    $app.logger().warn('IA: no se pudo leer la consulta del estado', 'error', String(err));
+  }
+  const catalogo = (pideModelos && cfg.clave && cfg.proveedor === 'gemini')
+    ? lib.modelosGemini(cfg.clave) : null;
   return e.json(200, {
     instalado: true,
+    modelos: catalogo ? catalogo.modelos : null,
+    modeloElegido: catalogo ? (catalogo.elegido || null) : null,
+    modelosError: catalogo ? (catalogo.error || null) : null,
     configurado: !!cfg.clave,
     proveedor: cfg.proveedor || null,
     origen: cfg.origen,
@@ -178,28 +196,42 @@ routerAdd('POST', '/api/ia/contenido', (e) => {
     // que estaba pasando, y desde el navegador se veía como un fallo de conexión.
     // El catálogo cambia, así que en vez de cablear otro nombre —y volver aquí
     // dentro de un año— se le pregunta a la propia API cuáles tiene esta clave.
+    let modeloUsado = lib.MODELO_GEMINI;
+    let catalogo = null;
     if (res.statusCode === 404 && cfg.proveedor === 'gemini') {
-      const alterno = lib.modeloAlternativoGemini(cfg.clave);
-      if (alterno) {
-        $app.logger().warn('IA: ' + lib.MODELO_GEMINI + ' no está en esta clave; se usa ' + alterno);
-        try { res = pedir(alterno); } catch (err) {
+      catalogo = lib.modelosGemini(cfg.clave);
+      if (catalogo.elegido) {
+        modeloUsado = catalogo.elegido;
+        $app.logger().warn('IA: ' + lib.MODELO_GEMINI + ' no está en esta clave; se usa ' + modeloUsado);
+        try { res = pedir(modeloUsado); } catch (err) {
           return lib.responder(e, 424, { message: 'La Pi no pudo hablar con la IA: ' + lib.sinSecretos(err) });
         }
       } else {
-        return lib.responder(e, 424, { message: 'Esta clave de Gemini no tiene el modelo «' + lib.MODELO_GEMINI
-          + '» y tampoco ofrece ninguno que sirva para escribir texto. Revisa en Google AI Studio que la '
-          + 'clave esté activa y que su proyecto tenga habilitada la API de Gemini.' });
+        // Aquí NO se puede decir «revisa la clave» y quedarse tan ancho: si la
+        // lista tampoco se pudo leer, el motivo de ESA lectura es el dato que
+        // falta. Fue el paso que dejó al dueño con un «(404)» pelado.
+        return lib.responder(e, 424, { message: 'Esta clave de Gemini no tiene «' + lib.MODELO_GEMINI
+          + '» y no se pudo elegir otro: ' + (catalogo.error || 'la lista de modelos vino vacía')
+          + '. Comprueba en Google AI Studio que la clave esté activa y que su proyecto tenga '
+          + 'habilitada la API de Gemini.' });
       }
     }
 
     if (res.statusCode >= 400) {
-      // El cuerpo del proveedor NO se reenvía: puede traer la clave o detalles de
-      // la cuenta. Se registra en el servidor y al profe le llega lo accionable.
-      $app.logger().error('IA: el proveedor respondió ' + res.statusCode, 'proveedor', cfg.proveedor);
-      return lib.responder(e, 424, { message: 'La IA rechazó la petición (' + res.statusCode + '). '
-        + (res.statusCode === 400 || res.statusCode === 403
-          ? 'Suele ser la clave: revísala en el panel.'
-          : 'Inténtalo otra vez en un momento.') });
+      // EL MOTIVO DEL PROVEEDOR VIAJA (limpio de claves). No hacerlo dejaba un
+      // «(404)» sin nada accionable: ni qué modelo se pidió, ni qué dijo Google
+      // —que lo dice, y bien: «models/x is not found for API version v1beta»—.
+      // El miedo a reenviarlo estaba mal dirigido: la clave va en la URL, no en
+      // el mensaje, y `sinSecretos` la taparía igual.
+      const motivo = lib.sinSecretos(lib.motivoProveedor(res.json)).slice(0, 300);
+      $app.logger().error('IA: el proveedor respondió ' + res.statusCode,
+        'proveedor', cfg.proveedor, 'modelo', modeloUsado, 'motivo', motivo);
+      return lib.responder(e, 424, { message: 'La IA rechazó la petición (' + res.statusCode + ')'
+        + ' con el modelo «' + modeloUsado + '»' + (motivo ? ': ' + motivo : '.')
+        + (catalogo && catalogo.modelos.length
+          ? ' Esta clave ofrece: ' + catalogo.modelos.slice(0, 8).join(', ') + '.'
+          : '')
+        + (res.statusCode === 400 || res.statusCode === 403 ? ' Suele ser la clave: revísala en el panel.' : '') });
     }
 
     const texto = proveedor.texto(res.json);

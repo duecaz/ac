@@ -809,7 +809,25 @@ function renderPanel(rootSel) {
         + r.content.items.map(i => `<li>${escapeHtml(i.question)} → <b>${escapeHtml(i.answer)}</b></li>`).join('')
         + '</ul></div>');
     } catch (e) {
-      iaOut(`<div class="alert alert-danger py-1 px-2 small">${escapeHtml(e.message)}</div>`);
+      // AL FALLAR, ENSEÑAR EL CATÁLOGO. Un «(404)» a secas deja adivinando qué
+      // nombre de modelo tiene esa clave, y la respuesta la sabe la propia API:
+      // se le pide al hook (`?modelos=1`, que no gasta generación) y se pinta.
+      let extra = '';
+      try {
+        const { PB_URL } = await import('../pocketbase.config.js');
+        const est = await fetch(`${PB_URL}/api/ia/estado?modelos=1`);
+        const d = est.ok ? await est.json() : null;
+        if (d?.modelos?.length) {
+          extra = `<div class="mt-1">Modelos de esta clave: <code>${d.modelos.slice(0, 10).map(escapeHtml).join('</code>, <code>')}</code></div>`;
+        } else if (d?.modelosError) {
+          extra = `<div class="mt-1">Y la lista de modelos tampoco se pudo leer: ${escapeHtml(d.modelosError)}</div>`;
+        }
+      } catch (err2) {
+        // best-effort: es información de apoyo. Si no se puede, el mensaje
+        // principal ya está escrito y es el que importa.
+        console.warn('IA: no se pudo pedir el catálogo de modelos', err2);
+      }
+      iaOut(`<div class="alert alert-danger py-1 px-2 small">${escapeHtml(e.message)}${extra}</div>`);
     } finally { btn.disabled = false; }
   });
 

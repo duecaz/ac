@@ -42,7 +42,7 @@ const ESQUEMAS = {
 // de Google cambia y una clave nueva puede no tener este modelo — que es
 // exactamente lo que pasó (Gemini contestaba 404 y desde el navegador solo se
 // veía «no se pudo conectar»). Si este no está, se busca uno que sí (ver
-// `modeloAlternativoGemini`), en vez de dejar al profe adivinando.
+// `modelosGemini`), en vez de dejar al profe adivinando.
 const MODELO_GEMINI = 'gemini-2.0-flash';
 
 const PROVEEDORES = {
@@ -167,6 +167,7 @@ function permitirNavegador(e) {
 // Se ponen al empezar el handler, pero si en el camino algo las pisa, el error
 // se vuelve INVISIBLE justo cuando más falta hace leerlo. Volver a ponerlas
 // aquí es barato y convierte «no se pudo conectar» en una frase que se entiende.
+
 // SI EL MODELO NO EXISTE, PREGUNTAR CUÁLES SÍ.
 //
 // Gemini contestaba 404 al modelo cableado en la URL. Un 404 de Google no
@@ -175,19 +176,23 @@ function permitirNavegador(e) {
 // dueño que adivine el nombre correcto sería trasladarle un problema que el
 // servidor puede resolver solo — la API tiene una lista y basta con leerla.
 //
-// Devuelve el nombre de un modelo que sirva para generar texto, o '' si no hay.
-// Se prefiere un «flash»: es el barato y el rápido, y esto se usa con la clase
-// delante.
-function modeloAlternativoGemini(clave) {
+// Devuelve TODOS los que sirven, no solo el elegido: cuando aun así falla, la
+// lista es lo único que convierte «(404)» en algo accionable — el dueño ve de
+// un vistazo qué tiene su clave. Se prefiere un «flash»: es el barato y el
+// rápido, y esto se usa con la clase delante.
+function modelosGemini(clave) {
   let res;
   try {
     res = $http.send({ url: 'https://generativelanguage.googleapis.com/v1beta/models?key=' + clave
       + '&pageSize=100', method: 'GET', timeout: 20 });
   } catch (err) {
     $app.logger().warn('IA: no se pudo listar los modelos', 'error', sinSecretos(err));
-    return '';
+    return { modelos: [], error: sinSecretos(err) };
   }
-  if (res.statusCode >= 400) return '';
+  if (res.statusCode >= 400) {
+    return { modelos: [], error: 'la lista de modelos respondió ' + res.statusCode
+      + (motivoProveedor(res.json) ? ': ' + sinSecretos(motivoProveedor(res.json)) : '') };
+  }
   const lista = (res.json && res.json.models) || [];
   const sirven = [];
   for (let i = 0; i < lista.length; i++) {
@@ -198,10 +203,27 @@ function modeloAlternativoGemini(clave) {
     if (!nombre || /embedding|vision|image|tts|audio/i.test(nombre)) continue;
     sirven.push(nombre);
   }
-  if (!sirven.length) return '';
-  for (let i = 0; i < sirven.length; i++) if (/flash/i.test(sirven[i]) && !/lite/i.test(sirven[i])) return sirven[i];
-  for (let i = 0; i < sirven.length; i++) if (/flash/i.test(sirven[i])) return sirven[i];
-  return sirven[0];
+  if (!sirven.length) {
+    return { modelos: [], error: 'la clave tiene ' + lista.length
+      + ' modelo(s), pero ninguno sirve para escribir texto' };
+  }
+  let elegido = '';
+  for (let i = 0; i < sirven.length && !elegido; i++) if (/flash/i.test(sirven[i]) && !/lite/i.test(sirven[i])) elegido = sirven[i];
+  for (let i = 0; i < sirven.length && !elegido; i++) if (/flash/i.test(sirven[i])) elegido = sirven[i];
+  return { modelos: sirven, elegido: elegido || sirven[0], error: '' };
+}
+
+// LO QUE EL PROVEEDOR DICE CUANDO RECHAZA. Se decidió NO reenviar su cuerpo
+// entero por miedo a que trajera la clave, y el resultado fue un «(404)» pelado
+// que no se podía accionar: ni qué modelo, ni por qué. El miedo estaba mal
+// dirigido — el que la lleva es la URL, no el mensaje —, y de todas formas
+// `sinSecretos` la tapa. Google y xAI escriben aquí frases útiles del tipo
+// «models/x is not found for API version v1beta»: eso es justo lo que hay que
+// enseñar. Se manda el mensaje, nunca el objeto entero.
+function motivoProveedor(j) {
+  if (!j || !j.error) return '';
+  if (typeof j.error === 'string') return j.error;
+  return String(j.error.message || '');
 }
 
 // QUITARLE LOS SECRETOS A UN TEXTO ANTES DE ENSEÑARLO.
@@ -223,4 +245,4 @@ function responder(e, status, cuerpo) {
   return e.json(status, cuerpo);
 }
 
-module.exports = { TOPE_DIARIO, MAX_ELEMENTOS, ESQUEMAS, PROVEEDORES, leerConfigIA, permitirNavegador, responder, sinSecretos, modeloAlternativoGemini, MODELO_GEMINI };
+module.exports = { TOPE_DIARIO, MAX_ELEMENTOS, ESQUEMAS, PROVEEDORES, leerConfigIA, permitirNavegador, responder, sinSecretos, motivoProveedor, modelosGemini, MODELO_GEMINI };

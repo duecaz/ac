@@ -235,7 +235,9 @@ porque las tres se repiten en cualquier hook nuevo:
 
 3. **Un 404 de Google no es «clave mala»**, es «esa clave no tiene ESE modelo».
    El catálogo cambia. En vez de cablear otro nombre, el hook le pregunta a la
-   API cuáles tiene esa clave (`modeloAlternativoGemini`) y reintenta.
+   API cuáles tiene esa clave (`modelosGemini`) y reintenta — y si aun así
+   falla, el mensaje trae lo que dijo Google y la lista de modelos que sí
+   tiene, que es lo único accionable. El panel la pide con `?modelos=1`.
 
 Y la lección de método, que es la que más caro salió: **tres arreglos seguidos
 apuntando a CORS sin una sola medida delante**. Lo que lo desatascó fueron dos
