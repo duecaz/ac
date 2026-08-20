@@ -243,12 +243,26 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   const crudas = post.split(/\r?\n/).filter(l => /\breturn e\.json\(/.test(l));
   assert.deepStrictEqual(crudas, [],
     `la ruta de contenido responde sin volver a poner el permiso (usa lib.responder): ${crudas.join(' · ')}`);
-  assert.ok(/} catch \(err\) {[\s\S]*lib\.responder\(e, 500/.test(post),
+  assert.ok(/} catch \(err\) {[\s\S]*El servidor falló al preparar el contenido/.test(post),
     'y el handler entero va dentro de un try: si revienta, PocketBase responde por él y sin cabeceras');
   // CONTRA-PRUEBA de que el barrido mira donde debe: las rutas de arriba SÍ
   // usan e.json directamente (no pasan por el motivo del profe) y no se cuentan.
   assert.ok(/return e\.json\(200, \{ ok: true \}\)/.test(hook), 'el preflight sigue respondiendo directo');
   ok('todo error de la ruta de contenido sale con permiso de origen (o el navegador lo esconde)');
+
+  // NINGÚN ERROR CON ESTADO 5xx. La prueba desde la Pi lo enseñó de golpe: por
+  // 127.0.0.1 el hook contestaba `502 {"message":"La IA no pudo responder
+  // (404)"}` —correcto y legible— y por el dominio público llegaba `error code:
+  // 502` a secas. Cloudflare sustituye las respuestas de error del origen por su
+  // propia página: sin cuerpo, sin cabeceras, invisible para el navegador. Un
+  // 4xx pasa intacto. Todo el tiempo que se gastó buscando un fallo de permisos
+  // era esto, así que la regla se escribe, no se recuerda.
+  const estados = [...post.matchAll(/lib\.responder\(e, (\d{3})/g)].map(m => Number(m[1]));
+  assert.ok(estados.length >= 5, 'el barrido tiene que estar viendo las respuestas de verdad');
+  assert.deepStrictEqual(estados.filter(s => s >= 500), [],
+    'un error 5xx del origen lo sustituye Cloudflare por una página sin cuerpo: usa 424');
+  assert.ok(estados.includes(200), 'y el camino bueno sigue devolviendo 200');
+  ok('ningún error sale con estado 5xx (Cloudflare se los come y el motivo se pierde)');
 
   // La redacción, PROBADA: el patrón, no una clave concreta — así tapa también
   // la de mañana. Es el único trozo del hook que se puede ejecutar aquí.

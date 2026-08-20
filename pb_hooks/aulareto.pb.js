@@ -19,7 +19,7 @@
 // INSTALACIÓN (una vez, en la Pi):
 //   curl -fsSL https://raw.githubusercontent.com/duecaz/ac/main/tools/pi-instalar-hook.sh | bash
 //   Luego, en #/admin: «Crear colecciones» y pegar la clave.
-//   Sin clave, el extremo responde 503 y la app lo DICE en vez de fallar raro.
+//   Sin clave, el extremo responde 424 y la app lo DICE en vez de fallar raro.
 //
 // DÓNDE ESTÁ LA CLAVE Y POR QUÉ AHÍ: en la colección `ia_config`, con sus CINCO
 // reglas a `null` (core/pbRules.js) — ni un profe con sesión puede leerla. Este
@@ -88,6 +88,18 @@ routerAdd('GET', '/api/ia/estado', (e) => {
 });
 
 // ── ESCRIBIR CONTENIDO ───────────────────────────────────────────────────────
+//
+// AQUÍ NINGÚN ERROR LLEVA ESTADO 5xx, Y NO ES UN CAPRICHO. La prueba desde la
+// Pi lo enseñó de golpe: el hook contestaba `502 {"message":"La IA no pudo
+// responder (404)"}` por 127.0.0.1 —correcto y legible— y por pb.lanube.uno
+// llegaba `error code: 502` a secas. Cloudflare SUSTITUYE las respuestas de
+// error del origen por su propia página: sin cuerpo, sin cabeceras y, por
+// tanto, invisible para el navegador. Todo el rato que se pasó buscando un
+// problema de permisos era esto.
+//
+// Un 4xx pasa intacto. Así que los fallos que no son culpa del navegador salen
+// como 424 («falló algo de lo que dependo»), que es además lo que de verdad
+// ocurre: el que falla es el proveedor, no la petición del profe.
 routerAdd('POST', '/api/ia/contenido', (e) => {
   const lib = require(`${__hooks}/aulareto-lib.js`);
   lib.permitirNavegador(e);
@@ -97,7 +109,7 @@ routerAdd('POST', '/api/ia/contenido', (e) => {
     if (!cfg.clave || !proveedor) {
       // El motivo VIAJA: «no está configurada» a secas dejaba al dueño mirando la
       // clave sin saber si el problema era ella, la fila o la lectura (R6).
-      return lib.responder(e, 503, { message: 'La IA no está configurada en el servidor.'
+      return lib.responder(e, 424, { message: 'La IA no está configurada en el servidor.'
         + (cfg.error ? ' Motivo: ' + cfg.error : '')
         + (!proveedor && cfg.proveedor ? ' Proveedor desconocido: ' + cfg.proveedor : '') });
     }
@@ -123,67 +135,92 @@ routerAdd('POST', '/api/ia/contenido', (e) => {
     let usos = 0;
     try {
       usos = $app.countRecords('ia_usos', $dbx.exp('profe = {:p} AND dia = {:d}', { p: auth.id, d: hoy }));
-  } catch (err) {
-    // best-effort: si la colección aún no existe, se deja pasar en vez de
-    // bloquear la función entera. Queda en el log, no en silencio (R6).
-    $app.logger().warn('IA: no se pudo contar ia_usos', 'error', String(err));
-    usos = 0;
-  }
-  if (usos >= lib.TOPE_DIARIO) {
-    return lib.responder(e, 429, { message: 'Has llegado a ' + lib.TOPE_DIARIO + ' generaciones hoy. Mañana se renueva.' });
-  }
+    } catch (err) {
+      // best-effort: si la colección aún no existe, se deja pasar en vez de
+      // bloquear la función entera. Queda en el log, no en silencio (R6).
+      $app.logger().warn('IA: no se pudo contar ia_usos', 'error', String(err));
+      usos = 0;
+    }
+    if (usos >= lib.TOPE_DIARIO) {
+      return lib.responder(e, 429, { message: 'Has llegado a ' + lib.TOPE_DIARIO + ' generaciones hoy. Mañana se renueva.' });
+    }
 
-  const sistema = 'Eres un maestro de primaria y secundaria que prepara material para el aula, en español. '
-    + 'Respondes SIEMPRE con un array JSON y nada más: sin explicaciones y sin envolverlo en ```. '
-    + 'El contenido es para proyectar en clase: enunciados cortos, claros y correctos. '
-    + esquema;
-  const usuario = 'Tema: ' + tema + '\n'
-    + (curso ? 'Para: ' + curso + '\n' : '')
-    + 'Escribe exactamente ' + cantidad + ' elementos.';
+    const sistema = 'Eres un maestro de primaria y secundaria que prepara material para el aula, en español. '
+      + 'Respondes SIEMPRE con un array JSON y nada más: sin explicaciones y sin envolverlo en ```. '
+      + 'El contenido es para proyectar en clase: enunciados cortos, claros y correctos. '
+      + esquema;
+    const usuario = 'Tema: ' + tema + '\n'
+      + (curso ? 'Para: ' + curso + '\n' : '')
+      + 'Escribe exactamente ' + cantidad + ' elementos.';
 
-  let res;
-  try {
-    res = $http.send({
-      url: proveedor.url(cfg.clave),
-      method: 'POST',
-      headers: proveedor.cabeceras(cfg.clave),
-      body: JSON.stringify(proveedor.cuerpo(sistema, usuario)),
-      timeout: 60,
-    });
-  } catch (err) {
-    // El motivo VIAJA, ya limpio de la clave: «inténtalo otra vez» a secas
-    // dejaba al dueño sin saber si la Pi no llega a internet, si el nombre no
-    // resuelve o si la clave no vale. Cada uno se arregla en un sitio distinto.
-    $app.logger().error('IA: no se pudo llamar al proveedor', 'error', lib.sinSecretos(err));
-    return lib.responder(e, 502, { message: 'La Pi no pudo hablar con la IA: ' + lib.sinSecretos(err) });
-  }
-  if (res.statusCode >= 400) {
-    // El cuerpo del proveedor NO se reenvía: puede traer la clave o detalles de
-    // la cuenta. Se registra en el servidor y al profe le llega lo accionable.
-    $app.logger().error('IA: el proveedor respondió ' + res.statusCode, 'proveedor', cfg.proveedor);
-    return lib.responder(e, 502, { message: 'La IA no pudo responder (' + res.statusCode + '). '
-      + 'Si se repite, revisa la clave en el panel.' });
-  }
+    const pedir = function (modelo) {
+      return $http.send({
+        url: proveedor.url(cfg.clave, modelo),
+        method: 'POST',
+        headers: proveedor.cabeceras(cfg.clave),
+        body: JSON.stringify(proveedor.cuerpo(sistema, usuario)),
+        timeout: 60,
+      });
+    };
 
-  const texto = proveedor.texto(res.json);
-  if (!texto) return lib.responder(e, 502, { message: 'La IA devolvió una respuesta vacía.' });
+    let res;
+    try {
+      res = pedir('');
+    } catch (err) {
+      // El motivo VIAJA, ya limpio de la clave: «inténtalo otra vez» a secas
+      // dejaba al dueño sin saber si la Pi no llega a internet, si el nombre no
+      // resuelve o si la clave no vale. Cada uno se arregla en un sitio distinto.
+      $app.logger().error('IA: no se pudo llamar al proveedor', 'error', lib.sinSecretos(err));
+      return lib.responder(e, 424, { message: 'La Pi no pudo hablar con la IA: ' + lib.sinSecretos(err) });
+    }
 
-  // Se apunta el uso DESPUÉS de que haya salido bien: un fallo del proveedor no
-  // debe gastarle una generación al profe.
-  try {
-    const coll = $app.findCollectionByNameOrId('ia_usos');
-    const rec = new Record(coll);
-    rec.set('profe', auth.id);
-    rec.set('dia', hoy);
-    rec.set('modelo', datos.modelo);
-    $app.save(rec);
-  } catch (err) {
-    // best-effort: no contar un uso es preferible a perder el contenido ya
-    // generado y cobrado al proveedor. Queda en el log.
-    $app.logger().warn('IA: no se pudo apuntar el uso', 'error', String(err));
-  }
+    // 404 DE GOOGLE NO ES «CLAVE MALA»: es «esa clave no tiene ESE modelo». Es lo
+    // que estaba pasando, y desde el navegador se veía como un fallo de conexión.
+    // El catálogo cambia, así que en vez de cablear otro nombre —y volver aquí
+    // dentro de un año— se le pregunta a la propia API cuáles tiene esta clave.
+    if (res.statusCode === 404 && cfg.proveedor === 'gemini') {
+      const alterno = lib.modeloAlternativoGemini(cfg.clave);
+      if (alterno) {
+        $app.logger().warn('IA: ' + lib.MODELO_GEMINI + ' no está en esta clave; se usa ' + alterno);
+        try { res = pedir(alterno); } catch (err) {
+          return lib.responder(e, 424, { message: 'La Pi no pudo hablar con la IA: ' + lib.sinSecretos(err) });
+        }
+      } else {
+        return lib.responder(e, 424, { message: 'Esta clave de Gemini no tiene el modelo «' + lib.MODELO_GEMINI
+          + '» y tampoco ofrece ninguno que sirva para escribir texto. Revisa en Google AI Studio que la '
+          + 'clave esté activa y que su proyecto tenga habilitada la API de Gemini.' });
+      }
+    }
 
-  return lib.responder(e, 200, { contenido: texto });
+    if (res.statusCode >= 400) {
+      // El cuerpo del proveedor NO se reenvía: puede traer la clave o detalles de
+      // la cuenta. Se registra en el servidor y al profe le llega lo accionable.
+      $app.logger().error('IA: el proveedor respondió ' + res.statusCode, 'proveedor', cfg.proveedor);
+      return lib.responder(e, 424, { message: 'La IA rechazó la petición (' + res.statusCode + '). '
+        + (res.statusCode === 400 || res.statusCode === 403
+          ? 'Suele ser la clave: revísala en el panel.'
+          : 'Inténtalo otra vez en un momento.') });
+    }
+
+    const texto = proveedor.texto(res.json);
+    if (!texto) return lib.responder(e, 424, { message: 'La IA devolvió una respuesta vacía.' });
+
+    // Se apunta el uso DESPUÉS de que haya salido bien: un fallo del proveedor no
+    // debe gastarle una generación al profe.
+    try {
+      const coll = $app.findCollectionByNameOrId('ia_usos');
+      const rec = new Record(coll);
+      rec.set('profe', auth.id);
+      rec.set('dia', hoy);
+      rec.set('modelo', datos.modelo);
+      $app.save(rec);
+    } catch (err) {
+      // best-effort: no contar un uso es preferible a perder el contenido ya
+      // generado y cobrado al proveedor. Queda en el log.
+      $app.logger().warn('IA: no se pudo apuntar el uso', 'error', String(err));
+    }
+
+    return lib.responder(e, 200, { contenido: texto });
   } catch (err) {
     // NADA PUEDE MORIR EN SILENCIO AQUÍ. Si el handler revienta, PocketBase
     // devuelve su propia respuesta —y esa NO lleva la cabecera de permiso—, así
@@ -191,6 +228,6 @@ routerAdd('POST', '/api/ia/contenido', (e) => {
     // Es exactamente lo que pasó: un 502 que el navegador no dejaba leer. Con
     // esto, cualquier fallo sale como frase, y sin la clave dentro (R6).
     $app.logger().error('IA: el handler falló', 'error', lib.sinSecretos(err));
-    return lib.responder(e, 500, { message: 'El servidor falló al preparar el contenido: ' + lib.sinSecretos(err) });
+    return lib.responder(e, 424, { message: 'El servidor falló al preparar el contenido: ' + lib.sinSecretos(err) });
   }
 });

@@ -213,6 +213,38 @@ enseña el resultado.
 curl -s https://pb.lanube.uno/api/collections/ia_config/records | head -c 200
 ```
 
+## 7b · LO QUE COSTÓ PONERLO EN PIE (2026-08-20) — tres trampas que no se ven desde el repo
+
+Se gastaron cinco versiones en un fallo que desde el navegador siempre decía lo
+mismo («no se pudo conectar») y desde la Pi siempre respondía bien. Queda escrito
+porque las tres se repiten en cualquier hook nuevo:
+
+1. **Los handlers no ven el ámbito exterior.** Cada uno corre en su runtime: una
+   constante declarada arriba del fichero no existe dentro del callback, y el
+   handler revienta con un 400 seco. Todo lo compartido va en `aulareto-lib.js`
+   y cada handler hace su propio `require()`. Lo vigila `tests/aiContent.test.mjs`.
+
+2. **Cloudflare se COME los 5xx del origen.** Es la que costó cuatro intentos.
+   El hook contestaba, por `127.0.0.1`,
+   `502 {"message":"La IA no pudo responder (404)"}` —correcto y legible—; por
+   `pb.lanube.uno` llegaba `error code: 502` a secas, sin cuerpo y **sin las
+   cabeceras CORS**. El navegador lo bloqueaba y el motivo se perdía, así que
+   todo parecía un problema de permisos y no lo era. **Ningún error de la ruta
+   lleva estado 5xx**: salen como 424, que pasa intacto. Es norma con test.
+   Con `curl` no se ve nunca: `curl` no aplica la política de origen.
+
+3. **Un 404 de Google no es «clave mala»**, es «esa clave no tiene ESE modelo».
+   El catálogo cambia. En vez de cablear otro nombre, el hook le pregunta a la
+   API cuáles tiene esa clave (`modeloAlternativoGemini`) y reintenta.
+
+Y la lección de método, que es la que más caro salió: **tres arreglos seguidos
+apuntando a CORS sin una sola medida delante**. Lo que lo desatascó fueron dos
+guiones que MIDEN — `tools/pi-diagnostico-ia.sh` (llega la ruta, el preflight, y
+compara localhost con el dominio público) y `tools/pi-probar-ia.sh` (hace la
+petición autenticada de verdad, que es la única que toca el trozo que fallaba).
+Ante un fallo que solo se ve en casa del usuario, el siguiente paso es una medida,
+no otro parche.
+
 ## 8 · Lo que queda para otro día
 
 - **(iii) las pistas del Crucigrama.** `conversiones.md` documenta que
