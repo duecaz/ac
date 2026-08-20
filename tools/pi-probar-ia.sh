@@ -25,25 +25,30 @@ if [ ! -t 0 ] && [ ! -r /dev/tty ]; then
   echo "  curl -fsSLO https://raw.githubusercontent.com/duecaz/ac/main/tools/pi-probar-ia.sh && bash pi-probar-ia.sh"
   exit 1
 fi
-printf 'Email de profe (aulareto.com): ' > /dev/tty
+printf 'Email (de profe o de superadmin de PocketBase): ' > /dev/tty
 read -r EMAIL < /dev/tty
 printf 'Contraseña: ' > /dev/tty
 read -rs PASS < /dev/tty
 echo > /dev/tty
 
 # 1. Entrar. Si esto falla, lo demás no significa nada.
-linea "Entrando como profe"
-AUTH=$(curl -s -X POST "$LOCAL/api/collections/users/auth-with-password" \
-  -H 'Content-Type: application/json' \
-  --data-binary "$(printf '{"identity":"%s","password":"%s"}' "$EMAIL" "$PASS")")
-TOKEN=$(printf '%s' "$AUTH" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
+#    Vale la cuenta de profe O la de superadmin: la ruta solo mira que HAYA
+#    sesión, y así no hay que acordarse de cuál de las dos se pidió.
+linea "Entrando"
+TOKEN=""
+for col in users _superusers; do
+  AUTH=$(curl -s -X POST "$LOCAL/api/collections/$col/auth-with-password" \
+    -H 'Content-Type: application/json' \
+    --data-binary "$(printf '{"identity":"%s","password":"%s"}' "$EMAIL" "$PASS")")
+  TOKEN=$(printf '%s' "$AUTH" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
+  if [ -n "$TOKEN" ]; then echo "   ✓ sesión obtenida como $col (no se imprime)"; break; fi
+done
 if [ -z "$TOKEN" ]; then
-  echo "   NO se pudo entrar. Respuesta del servidor:"
+  echo "   NO se pudo entrar (ni como profe ni como superadmin). Última respuesta:"
   printf '%s\n' "$AUTH" | head -c 300 | sed 's/^/   /'
   echo; echo "   (email o contraseña equivocados, o la cuenta no es de esta base)"
   exit 1
 fi
-echo "   ✓ sesión obtenida (no se imprime)"
 
 # 2. LA PETICIÓN QUE FALLA, con sesión. Local y público: si local va y público
 #    no, el problema está delante de PocketBase (Cloudflare); si fallan las dos,
