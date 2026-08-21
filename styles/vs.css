@@ -64,15 +64,22 @@
 .vs-arena.vs-anim-compact .vs-tug-label { margin: 0; font-size: clamp(.8rem, 1.6cqw, 1.15rem); }
 
 /* ── Activity panels ─────────────────────────────────────────────────────── */
-.vs-panel { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
-.vs-body  { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; justify-content: center; overflow: auto; padding: .5rem .75rem;
-  box-sizing: border-box;
-  /* CONTENEDOR COMPLETO, no solo de ancho. Con `inline-size`, las unidades de
-     contenedor que usan las plantillas (`cqmin`, `cqh`) SE SALTAN esta caja y se
-     resuelven contra la arena entera: la actividad se dimensionaba contra una
-     pantalla de 1920 mientras vivía en un panel de 470. Medido en pantalla
-     completa, el teclado de Operaciones llenaba el 47 % del alto de su caja. */
+/* QUIÉN MIDE ES EL PANEL, QUIEN SE VE ES EL CUERPO — y por eso están separados.
+   La caja de medida (`container-type: size`) vivía en `.vs-body`, que es también
+   la que los skins PINTAN (borde, fondo, esquinas). Eso ataba las dos cosas: un
+   contenedor de tamaño se mide por FUERA —su contenido no cuenta, si no
+   colapsaría a cero—, así que el marco no podía nunca encoger hasta su bloque y
+   el aire sobrante quedaba DENTRO del marco de colores («el aire debe estar por
+   fuera de las actividades, no por dentro», dueño con captura).
+   El panel es un hijo del grid: su tamaño ya viene dado desde fuera, así que
+   medir ahí no es circular, y mide prácticamente la misma caja (el cuerpo es el
+   panel menos su relleno) — las plantillas siguen escalando igual. Ya libre, el
+   cuerpo puede abrazar a su actividad cuando la plantilla lo declara (abajo,
+   `ww-fit-block`). */
+.vs-panel { display: flex; flex-direction: column; min-width: 0; min-height: 0;
   container-type: size; }
+.vs-body  { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; justify-content: center; overflow: auto; padding: .5rem .75rem;
+  box-sizing: border-box; }
 /* ESTÁNDAR: el panel de actividad y todo su contenido usan border-box, para que
    width:100% + padding NO desborde el panel (el bug que partía las tarjetas en
    móvil). Aplica a CUALQUIER plantilla embebida en VS, en todos los skins. */
@@ -231,7 +238,16 @@
                     (teclas larguísimas); en panel bajo encoge para caber.
      ww-fit-center → tamaño natural, centrado, sin llenar (contenido pequeño).
    ══════════════════════════════════════════════════════════════════════════ */
-.vs-body.ww-fit-block  { justify-content: center; overflow: hidden; }
+/* EL MARCO ABRAZA A LA ACTIVIDAD y el aire se va FUERA. `flex: 0 1 auto` +
+   `margin: auto`: el cuerpo mide lo que mide su bloque y se centra en el panel;
+   `max-height: 100%` es lo que impide que se salga cuando el panel es bajo (el
+   teclado encoge, ver más abajo). Antes el cuerpo llenaba la columna (`flex: 1`)
+   y el bloque se centraba DENTRO: el borde de colores quedaba larguísimo con dos
+   bandas vacías dentro de él. Solo aplica al caso BLOQUE que declara la
+   plantilla (`meta.panelFit`): en `fill` el contenido SÍ llena y el marco debe
+   seguir llenando la columna. */
+.vs-body.ww-fit-block  { justify-content: center; overflow: hidden;
+  flex: 0 1 auto; height: auto; max-height: 100%; margin: auto; }
 .vs-body.ww-fit-center { justify-content: center; overflow: auto; }
 .vs-body.ww-fit-center > * { flex: 0 0 auto; margin: auto; }
 /* EL BLOQUE LLENA SU CAJA, y su forma la guarda el ANCHO DEL PANEL.
@@ -246,7 +262,7 @@
    topadas por el ancho del panel (`34cqw`, debajo), que es lo que impide teclas
    larguísimas. */
 .vs-body.ww-fit-block .ww-keypad-round {
-  height: 100%;
+  height: auto;   /* el cuerpo ya no tiene alto fijo: el bloque LO DA, no lo hereda */
   width: 100%; max-width: min(100%, 62cqh); margin: auto;
 }
 /* Las teclas no se hacen más altas que ~1 ancho y pico (cqw = ancho del panel):

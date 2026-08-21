@@ -169,6 +169,13 @@ const submitKind = await page.evaluate(async () => {
   return Object.fromEntries(listTemplates().map(T => [T.meta.name, T.meta.play?.submit]));
 });
 
+// Lo que cada plantilla DECLARA sobre su maquetación en el panel (`meta.panelFit`),
+// para contrastarlo con el MARCO real (§0: la plantilla declara, la plataforma obedece).
+const panelFitKind = await page.evaluate(async () => {
+  const { listTemplates } = await import('/core/registry.js');
+  return Object.fromEntries(listTemplates().map(T => [T.meta.name, T.meta.panelFit || 'fill']));
+});
+
 // PISTAS DE LA SEMILLA (no del veredicto, §27): la respuesta que el test sembró
 // para el teclado, y las celdas de la primera palabra colocada en la sopa. Se
 // las pide a la PROPIA plantilla con su defaultContent — el test no resuelve
@@ -197,6 +204,7 @@ const results = [];
 const taps = [];
 const hits = [];   // hit-testing de los controles críticos
 const rounds = [];  // rondas JUGADAS con un toque real (cola #3)
+const marcos = [];  // el marco del panel VS contra lo que declara meta.panelFit
 const presupuesto = [];
 const roles = [];        // LOS CUATRO ROLES de la diagramación (edu-hud · edu-topbar · edu-sec · edu-send)
 const legibilidad = [];   // §29 · informe de tamaño (no veredicto: ver el porqué abajo)
@@ -494,6 +502,24 @@ for (const t of seeded) {
         });
         taps.push({ t: t.name, label: t.label, declared: submitKind[t.name] ?? '(sin declarar)', found: n });
 
+        // EL AIRE VA FUERA DEL MARCO, NO DENTRO. El marco de colores lo pinta el
+        // skin sobre `.vs-body`; cuánto ocupa lo decide `meta.panelFit`:
+        //   fill  → el contenido llena, así que el marco llena la columna;
+        //   block → la actividad es un bloque indivisible (la calculadora), el
+        //           marco la ABRAZA y lo que sobra queda por fuera.
+        // Se mide, no se mira: `.vs-body` llenaba SIEMPRE la columna porque era
+        // la caja de medida (`container-type: size`, que no puede encogerse hasta
+        // su contenido), y el sobrante se quedaba dentro del borde — el dueño lo
+        // vio en la foto antes que ninguna suite («el aire debe estar por fuera
+        // de las actividades, no por dentro»).
+        const m = await page.evaluate(() => {
+          const panel = document.querySelector('.vs-panel'), body = document.querySelector('#vs-body-left');
+          if (!panel || !body) return null;
+          const p = panel.getBoundingClientRect(), b = body.getBoundingClientRect();
+          if (!p.height || !b.height) return null;
+          return { llena: b.height / p.height };
+        });
+        if (m) marcos.push({ label: t.label, declared: panelFitKind[t.name], ...m });
       }
     } catch (e) {
       status = 'fail';
@@ -535,6 +561,23 @@ if (taps.length) {
 if (tapBad.length) {
   console.log('\nENVÍO QUE NO CUADRA CON LO DECLARADO:');
   for (const x of tapBad) console.log(`  ❌ ${x.label} — declara '${x.declared}' pero el panel tiene ${x.found} control(es) [data-ww-submit]`);
+}
+// ── El marco obedece a meta.panelFit (§0) ──────────────────────────────────
+// Los umbrales son HOLGADOS a propósito: no fijan un diseño, cazan el fallo que
+// se vio —un marco que llena la columna con el bloque flotando dentro—. `fill`
+// debe cubrir casi toda la columna; `block` debe DEJAR aire fuera (llenar menos
+// del 95 %) y no acumularlo dentro (tope: 25 % de su propio alto).
+const marcoMal = (x) => x.declared === 'block' ? x.llena > .95 : x.llena < .9;
+const marcoBad = marcos.filter(marcoMal);
+if (marcos.length) {
+  console.log('\nEL MARCO OBEDECE A meta.panelFit (declarado → medido)\n');
+  for (const x of marcos) {
+    console.log(`  ${marcoMal(x) ? '❌' : '✅'} ${x.label.padEnd(width)}  ${x.declared.padEnd(5)} → el marco llena el ${Math.round(100 * x.llena)}% de la columna`);
+  }
+}
+if (marcoBad.length) {
+  console.log('\nMARCO QUE NO CUADRA CON LO DECLARADO:');
+  for (const x of marcoBad) console.log(`  ❌ ${x.label} — declara '${x.declared}' y su marco llena el ${Math.round(100 * x.llena)}% de la columna (el aire debe quedar FUERA del marco, no dentro)`);
 }
 
 // ── Controles críticos: presentes Y TOCABLES (no basta con querySelector) ───
@@ -677,4 +720,4 @@ console.log(`\n✅ ok: ${results.filter(r => r.status === 'ok').length}` +
   ` · · no aplica: ${results.filter(r => r.status === 'n/a').length}`);
 console.log('El ALUMNO en vivo lo cubre tools/live-smoke.mjs (dos contextos) y la Tarea tools/task-smoke.mjs. Sin cubrir: carrera con 2 alumnos.');
 await browser.close();
-bye(bad.length || seedBad.length || tapBad.length || hitBad.length || roundBad.length || presuBad.length || embedBad.length ? 1 : 0);
+bye(bad.length || seedBad.length || tapBad.length || hitBad.length || roundBad.length || presuBad.length || embedBad.length || marcoBad.length ? 1 : 0);
