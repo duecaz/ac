@@ -179,8 +179,7 @@
 /* ── Teclado numérico (Operaciones) ───────────────────────────────────────── */
 .vs-skin-arcade .ww-keypad-q {
   text-align: center; color: #ffd400;
-  font-size: clamp(.8rem, 13cqw, 1.25rem);
-  text-shadow: 0 0 6px rgba(255,170,0,.7);
+    text-shadow: 0 0 6px rgba(255,170,0,.7);
   border: 2px solid rgba(255,212,0,.45); border-radius: .45rem;
   background: rgba(0,0,0,.35); padding: .45em .3em;
 }
@@ -192,15 +191,13 @@
 .vs-skin-arcade .ww-keypad-display {
   color: #39ff7a; text-shadow: 0 0 8px rgba(57,255,122,.7);
   background: rgba(0,0,0,.6); border-radius: .35rem;
-  font-size: clamp(.85rem, 12cqw, 1.2rem);
-}
+  }
 .vs-skin-arcade .ww-key {
   color: #eafcff; background: rgba(34,211,238,.10);
   border: 2px solid rgba(34,211,238,.5); border-radius: .4rem;
   box-shadow: inset 0 0 8px rgba(34,211,238,.15);
   text-shadow: 0 0 4px rgba(255,255,255,.3);
-  font-size: clamp(.7rem, 9cqw, 1rem);
-}
+  }
 .vs-skin-arcade .vs-panel.vs-right .ww-key {
   background: rgba(255,59,107,.10); border-color: rgba(255,59,107,.5);
   box-shadow: inset 0 0 8px rgba(255,59,107,.15);

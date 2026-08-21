@@ -428,9 +428,27 @@ body.bg-plated .ww-player .ww-q {
   border-radius: 0;
   box-shadow: none;
 }
+/* EN PANTALLA COMPLETA, LA ACTIVIDAD RESPIRA AL 90 % (dueño, 2026-08-21: «para
+   full screen vamos a hacer más pequeñas esas actividades, pues están muy
+   grandes»). Al arreglar el fill, en una pizarra grande el juego pasó a ocupar
+   literalmente todo y quedaba agobiado contra los bordes. El margen es
+   RELATIVO (`vmin`), no un número de píxeles: en un monitor de 27" y en una
+   pizarra de 86" recorta la misma proporción. Vale para las 13, porque lo pone
+   el marco y no cada plantilla. */
 .ww-play-page .ww-player-frame:fullscreen > #ww-player-widget,
 .ww-play-page .ww-player-frame:-webkit-full-screen > #ww-player-widget {
   padding: 1rem;
+}
+/* …Y EL JUEGO RESPIRA, pero NO el HUD. El margen va sobre el andamio y sobre el
+   reparto del duelo —lo que contiene el juego—, nunca sobre el widget entero:
+   los indicadores flotan en las ESQUINAS del marco (`.edu-hud`, absoluto contra
+   el widget) y al padear el widget se despegaban de su esquina. Lo cazó la
+   matriz al primer intento: «el HUD no está en la esquina: 49px, tope 48». */
+.ww-play-page .ww-player-frame:fullscreen .ww-scaffold,
+.ww-play-page .ww-player-frame:-webkit-full-screen .ww-scaffold,
+.ww-play-page .ww-player-frame:fullscreen .vs-main,
+.ww-play-page .ww-player-frame:-webkit-full-screen .vs-main {
+  padding: 5vmin;
 }
 
 /* Embedded modes (VS / Equipos / Memoria) need more room than the solo

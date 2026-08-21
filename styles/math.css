@@ -17,13 +17,14 @@
 
 .ww-keypad-round {
   display: flex; flex-direction: column; align-items: center;
-  /* EL AIRE SE REPARTE. Con `flex-start` el enunciado quedaba pegado arriba y
-     todo el hueco sobrante caía de golpe entre la pregunta y las teclas: una
-     banda vacía en medio de la pantalla. Un teclado de 3×4 en un panel el doble
-     de alto que ancho NO puede llenar sin estirar las teclas, así que lo que
-     sobra se reparte a partes iguales y deja de parecer un hueco. Si algo
-     desborda, `min-height: 0` + el recorte de abajo siguen mandando. */
-  justify-content: space-evenly;
+  /* EL BLOQUE VA JUNTO Y EL AIRE A LOS BORDES. Primero fue `flex-start` (todo el
+     hueco de golpe entre la pregunta y las teclas: una banda vacía en medio) y
+     luego `space-evenly`, que lo repartió en tres huecos y separó el enunciado
+     de su teclado. Un teclado de 3×4 en un panel el doble de alto que ancho NO
+     puede llenar sin deformarse, así que lo que sobra va FUERA del bloque: la
+     pregunta y las teclas quedan juntas —se leen como una sola cosa— y el aire
+     se reparte arriba y abajo. */
+  justify-content: center;
   gap: var(--math-gap, clamp(.4rem, 2cqmin, 1.1rem));
   height: 100%; min-height: 0;
   box-sizing: border-box;
@@ -36,7 +37,11 @@
    estrecho o número largo), el hueco baja solo: `flex-wrap`, no un breakpoint. */
 .ww-keypad-head {
   flex: 0 0 auto;
-  display: flex; align-items: center; justify-content: center;
+  /* LOS DOS MARCOS, LA MISMA ALTURA. El hueco del «0» salía más bajo que la
+     chapa del «2 × 6» —cada uno con su relleno— y juntos parecían dos piezas de
+     sitios distintos. `stretch` los iguala al más alto sea cual sea el tema, sin
+     que ninguno tenga que saber cuánto mide el otro. */
+  display: flex; align-items: stretch; justify-content: center;
   flex-wrap: wrap;
   gap: var(--math-head-gap, clamp(.35rem, 1.8cqmin, 1.1rem));
   max-width: 100%;
@@ -44,6 +49,7 @@
 
 .ww-keypad-q {
   flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center;
   /* LA PREGUNTA ES EL ENUNCIADO, no una etiqueta. Con `7cqmin` se quedaba en
      33 px en un panel de 470 con teclas de 150: la operación —lo único que hay
      que LEER— era lo más pequeño de la pantalla. Crece con la caja como crecen
@@ -57,6 +63,7 @@
 
 .ww-keypad-display {
   flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center;
   min-width: clamp(5rem, 34cqmin, 16rem);
   font-size: var(--display-size, clamp(1.3rem, 13cqmin, 4.5rem));
   font-weight: 800; text-align: center; font-variant-numeric: tabular-nums;

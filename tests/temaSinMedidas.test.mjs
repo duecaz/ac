@@ -53,7 +53,18 @@ const MIDEN = ['width', 'min-width', 'max-width', 'height', 'min-height', 'max-h
   // decide contra QUÉ CAJA se resuelven las unidades que usan las 13 plantillas.
   // Los dos temas lo bajaban a `inline-size`, así que la actividad se
   // dimensionaba contra la arena entera en vez de contra su panel.
-  'container-type'];
+  'container-type',
+  // Y `grid-auto-rows`, que es la altura de las filas del teclado con otro nombre.
+  'grid-auto-rows'];
+
+// EL TAMAÑO DEL TEXTO DEL JUEGO TAMPOCO ES DEL TEMA. Un tema elige la FAMILIA,
+// el grosor y el color; cuánto crece la letra lo reparte quien reparte el
+// espacio. Los dos temas ponían su propio `clamp(...)` con techo de ~1rem sobre
+// las teclas, la operación y las opciones: en pantalla completa, cifras de 16,8
+// px dentro de teclas de 180 px, mientras la plantilla las quería a 54,4.
+// Es la misma trampa que los anchos en px, pero disfrazada de tipografía.
+const TEXTO_DEL_JUEGO = ['ww-key', 'ww-keypad-q', 'ww-keypad-display', 'ww-keypad-eq',
+  'tc-passage', 'tc-mark', 'ww-q', 'ww-phead', 'ww-opt', 'ww-player'];
 
 /** Bloques `selector { … }` de una hoja, sin comentarios. */
 function bloques(css) {
@@ -93,10 +104,30 @@ for (const tema of temas) {
   }
 }
 
+// Y el mismo barrido, para el tamaño de la letra del juego.
+const letra = [];
+for (const tema of temas) {
+  const ruta = join('themes', tema, 'skin.css');
+  let css;
+  try { css = readFileSync(join(ROOT, ruta), 'utf8'); } catch { continue; }
+  for (const { sel, cuerpo } of bloques(css)) {
+    if (!/(^|;)\s*font-size\s*:/i.test(cuerpo)) continue;
+    const ultimo = sel.split(',').map(x => x.trim().split(/\s+|>/).filter(Boolean).pop() || '');
+    if (ultimo.some(u => TEXTO_DEL_JUEGO.some(c => u === `.${c}`))) {
+      letra.push(`${ruta} · ${sel.replace(/\s+/g, ' ')} → font-size`);
+    }
+  }
+}
+
 assert.deepStrictEqual(infracciones, [],
   'un tema está midiendo un contenedor compartido (§3: el tema pinta, la plataforma mide):\n  '
   + infracciones.join('\n  '));
 ok(`los ${temas.length} temas con hoja propia pintan sin medir lo compartido`);
+
+assert.deepStrictEqual(letra, [],
+  'un tema fija el tamaño de la letra del JUEGO (la reparte la plantilla, no el tema):\n  '
+  + letra.join('\n  '));
+ok('ni congelan cuánto crece la letra del juego');
 
 // CONTRA-PRUEBA: el barrido ve de verdad. Si el parser se rompiera, daría cero
 // infracciones siempre — que es exactamente como se ve un test inútil.
