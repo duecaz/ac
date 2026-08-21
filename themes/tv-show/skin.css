@@ -276,7 +276,13 @@ body.skin-tv-show .card,
   /* el `container-type` lo declara el modo (styles/vs.css) */
   margin-top: auto;                          /* empuja la tarjeta al fondo (esquina) */
   border-radius: 1.5rem; overflow: auto; padding: .85rem .9rem 1rem;
-  animation: tvs-float 6s ease-in-out infinite;
+  /* SIN FLOTAR. Aquí había `animation: tvs-float` — la caja donde vive la
+     actividad subía y bajaba 7 px cada 6 segundos, para siempre. Tres motivos
+     para quitarlo: mueve el JUEGO (un `transform` sobre el contenedor, no un
+     adorno del tema); es un bucle de animación permanente, justo lo que la app
+     evita en pizarras de gama baja (core/perf.js); y con la clase delante, un
+     teclado que se mueve es un teclado más difícil de tocar. Si el tema quiere
+     su balanceo, va sobre un adorno SUYO, no sobre la caja del juego. */
 }
 /* Teclas más altas (cuadradas), separación cómoda — como la foto */
 /* La rejilla del teclado ya la pone el andamio compartido con `minmax(0, 1fr)`
@@ -293,14 +299,17 @@ body.skin-tv-show .card,
   border: 2.5px solid #ef2b5b;
   box-shadow: 0 0 0 1px rgba(239,43,91,.45), 0 0 48px rgba(239,43,91,.55), 0 18px 40px rgba(0,0,0,.7);
 }
-@keyframes tvs-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
 
 .vs-skin-tv-show .vs-body { --vs-done-fg: #eaf2ff; --vs-done-muted: rgba(255,255,255,.6); }
 
 /* ── Teclado 3D dentro del panel ──────────────────────────────────────────── */
 /* La pregunta como "chapa" superior (como ¡RESUELVE! / 2 × 6 = de la foto) */
 .vs-skin-tv-show .vs-body .ww-keypad-q  {
-  font-size: clamp(.95rem, 15cqw, 1.35rem); font-weight: 900; color: #fff;
+  /* SIN TECHO BAJO (§3). El `1.35rem` de aquí ganaba al tamaño que reparte la
+     plantilla: con un panel de 590 px y teclas de 180, la operación —lo único
+     que hay que LEER— se quedaba en 21 px. Un tema puede elegir la tipografía;
+     lo que no puede es congelar cuánto crece. El piso se queda. */
+  font-weight: 900; color: #fff;
   border-radius: .8rem; padding: .35em .6em; margin-bottom: .5rem;
   text-shadow: 0 1px 4px rgba(0,0,0,.5);
 }
@@ -308,7 +317,7 @@ body.skin-tv-show .card,
 .vs-skin-tv-show .vs-panel.vs-right .vs-body .ww-keypad-q { background: linear-gradient(180deg, #b01c3a, #7e1228); box-shadow: inset 0 0 0 2px rgba(255,255,255,.18), 0 4px 10px rgba(0,0,0,.4); }
 .vs-skin-tv-show .vs-body .ww-keypad-eq { color: rgba(255,255,255,.7); }
 .vs-skin-tv-show .vs-body .ww-keypad-display {
-  font-size: clamp(.9rem, 13cqw, 1.25rem); background: rgba(2,8,24,.6);
+  background: rgba(2,8,24,.6);
   color: #fff; border-radius: .8rem; box-shadow: inset 0 0 18px rgba(43,111,255,.3);
 }
 .vs-skin-tv-show .vs-body .ww-key {
@@ -403,14 +412,17 @@ body.skin-tv-show .card,
   /* Teclado: la ESTRUCTURA es del andamio compartido (styles/scaffold.css); el
      skin solo cambia TAMAÑOS y su propio relleno/estirado. */
   .vs-skin-tv-show .vs-body .ww-keypad-round   { gap: 1.8cqw; padding: 0; }
-  .vs-skin-tv-show .vs-body .ww-keypad-q       { font-size: clamp(.7rem, 11cqw, 1.4rem); margin: 0; padding: 1.4cqw 3cqw; }
-  .vs-skin-tv-show .vs-body .ww-keypad-display { font-size: clamp(.65rem, 10cqw, 1.2rem); padding: .5cqw 3cqw; }
+  .vs-skin-tv-show .vs-body .ww-keypad-q       { margin: 0; padding: 1.4cqw 3cqw; }
+  .vs-skin-tv-show .vs-body .ww-keypad-display { padding: .5cqw 3cqw; }
   /* `grid-auto-rows: 1fr` NO es duplicación: es el override de este skin sobre el
      tope de filas que vs.css pone por defecto (`minmax(0, 34cqw)`, teclas casi
      cuadradas). Sin él, la tarjeta-esquina se queda con un hueco muerto debajo
      del teclado (lo pilló `node tools/shots.mjs`). */
   .vs-skin-tv-show .vs-body .ww-keypad         { gap: 1.8cqw; grid-auto-rows: 1fr; align-content: stretch; }
-  .vs-skin-tv-show .vs-body .ww-key            { font-size: clamp(.55rem, 8cqw, 1.1rem); }
+  /* SIN TAMAÑO DE LETRA. Estas tres reglas ponían el texto del juego MÁS
+     pequeño que la plantilla: 16,8 px de cifra en una tecla de 180 px. El
+     tamaño del texto del juego lo reparte quien reparte el espacio; el tema
+     elige la familia, el grosor y el color. */
 }
 
 /* Accesibilidad: respeta "reducir movimiento" */
@@ -419,7 +431,6 @@ body.skin-tv-show .card,
   .vs-skin-tv-show .vss-badge::before,
   .vs-skin-tv-show .vss-left::after,
   .vs-skin-tv-show .vss-right::after,
-  .vs-skin-tv-show .vs-body { animation: none; }
 }
 
 /* ════════════════════════════ CELEBRACIÓN DEL GANADOR ═════════════════════

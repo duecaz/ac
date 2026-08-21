@@ -17,7 +17,13 @@
 
 .ww-keypad-round {
   display: flex; flex-direction: column; align-items: center;
-  justify-content: flex-start;            /* flex-start: si algo desborda, recorta por ABAJO, nunca por arriba */
+  /* EL AIRE SE REPARTE. Con `flex-start` el enunciado quedaba pegado arriba y
+     todo el hueco sobrante caía de golpe entre la pregunta y las teclas: una
+     banda vacía en medio de la pantalla. Un teclado de 3×4 en un panel el doble
+     de alto que ancho NO puede llenar sin estirar las teclas, así que lo que
+     sobra se reparte a partes iguales y deja de parecer un hueco. Si algo
+     desborda, `min-height: 0` + el recorte de abajo siguen mandando. */
+  justify-content: space-evenly;
   gap: var(--math-gap, clamp(.4rem, 2cqmin, 1.1rem));
   height: 100%; min-height: 0;
   box-sizing: border-box;
@@ -38,7 +44,11 @@
 
 .ww-keypad-q {
   flex: 0 0 auto;
-  font-size: var(--math-q-size, clamp(1.2rem, 7cqmin, 3.4rem));
+  /* LA PREGUNTA ES EL ENUNCIADO, no una etiqueta. Con `7cqmin` se quedaba en
+     33 px en un panel de 470 con teclas de 150: la operación —lo único que hay
+     que LEER— era lo más pequeño de la pantalla. Crece con la caja como crecen
+     las teclas; el piso de 1.2rem protege el móvil. */
+  font-size: var(--math-q-size, clamp(1.2rem, 13cqmin, 4.5rem));
   font-weight: var(--math-q-weight, 800);
   color: var(--math-q-color, inherit);
   text-align: center; line-height: 1.1;
@@ -47,8 +57,8 @@
 
 .ww-keypad-display {
   flex: 0 0 auto;
-  min-width: clamp(6rem, 26cqmin, 11rem);
-  font-size: var(--display-size, clamp(1.3rem, 7cqmin, 3rem));
+  min-width: clamp(5rem, 34cqmin, 16rem);
+  font-size: var(--display-size, clamp(1.3rem, 13cqmin, 4.5rem));
   font-weight: 800; text-align: center; font-variant-numeric: tabular-nums;
   padding: var(--display-pad, .1rem 1rem);
   border: var(--display-border, 3px solid #dee2e6);
