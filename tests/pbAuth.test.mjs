@@ -75,6 +75,54 @@ const act = { id: 'act_owned01', template: 'quiz', title: 'T', visibility: 'priv
   ok('listActivities filtra por owner cuando se pide');
 }
 
+// ── UN TROPIEZO DE RED NO TE CIERRA LA SESIÓN, UN 401 SÍ ─────────────────────
+// El navegador del dueño registró un fallo de CORS en `auth-refresh` (2026-08-21,
+// v1.51.563): la petición ni siquiera llegó a tener respuesta. Medido después,
+// el servidor estaba limpio —204 al preflight por Cloudflare Y en el origen—,
+// así que fue un tropiezo puntual. Lo que decide si eso se nota o no es esta
+// función: si un fallo así borrara la sesión, al profe se le cerraría la cuenta
+// en mitad de la clase por un parpadeo de la red. La distinción —transitorio
+// conserva, 401/403 limpia— estaba escrita en un comentario y sin test.
+{
+  const { authRefresh, getAuthToken } = await import('../core/auth.js');
+  const sesion = () => JSON.stringify({ token: 'TOK123', record: { id: 'teacher_9' } });
+
+  // 1) Sin respuesta (CORS / red caída): fetch LANZA.
+  store.set('ww.pb.auth', sesion());
+  const realFetch = global.fetch;
+  global.fetch = async () => { throw new TypeError('Failed to fetch'); };
+  let rec = await authRefresh();
+  assert.ok(rec, 'devuelve el usuario guardado pese al fallo de red');
+  assert.strictEqual(getAuthToken(), 'TOK123', 'la sesión SIGUE guardada');
+  ok('CORS/red caída: conserva la sesión (no expulsa al profe)');
+
+  // 2) 5xx del servidor: tampoco expulsa.
+  global.fetch = realFetch;
+  store.set('ww.pb.auth', sesion());
+  script = [{ status: 503, body: {} }];
+  rec = await authRefresh();
+  assert.ok(rec, 'devuelve el usuario guardado pese al 5xx');
+  assert.strictEqual(getAuthToken(), 'TOK123', 'la sesión SIGUE guardada');
+  ok('5xx transitorio: conserva la sesión');
+
+  // 3) CONTRA-PRUEBA: un 401 de verdad (sesión expirada) SÍ limpia — si no,
+  //    se arrastraría un token muerto y cada escritura fallaría en silencio.
+  store.set('ww.pb.auth', sesion());
+  script = [{ status: 401, body: {} }];
+  rec = await authRefresh();
+  assert.strictEqual(rec, null, 'el 401 devuelve null');
+  assert.strictEqual(getAuthToken(), null, 'el 401 SÍ limpia la sesión');
+  ok('CONTRA-PRUEBA · 401 real: limpia la sesión (no arrastra un token muerto)');
+
+  // 4) El camino legítimo sigue funcionando: renueva token y record.
+  store.set('ww.pb.auth', sesion());
+  script = [{ status: 200, body: { token: 'TOK456', record: { id: 'teacher_9', name: 'Ana' } } }];
+  rec = await authRefresh();
+  assert.strictEqual(rec.name, 'Ana', 'devuelve el record renovado');
+  assert.strictEqual(getAuthToken(), 'TOK456', 'guarda el token nuevo');
+  ok('CONTRA-PRUEBA · refresco normal: renueva token y record');
+}
+
 delete global.fetch; delete global.localStorage;
 
 console.log(`\npbAuth.test: ${passed} checks passed`);
