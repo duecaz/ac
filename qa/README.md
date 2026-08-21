@@ -16,7 +16,13 @@ marcados [OK] y solo las notas los salvaron.
 - **Enviar** crea una fila `qa:<ronda>` en la colección `reports` (exige sesión
   de profe; la página lo dice antes). Se leen en **`#/moderar`** → «Rondas de
   prueba (QA)», desplegables y con el informe en texto tal cual.
-- Sin sesión o sin red: **«Generar informe»** + copiar sigue funcionando siempre.
+- **Entregar NUNCA es un callejón** (lección del 2026-08-19: un probador marcó las
+  11 pruebas y el botón, que exigía cuenta, no se habilitó jamás — se perdió la
+  ronda). «Entregar informe» baja una escalera: **1)** con sesión, al panel;
+  **2)** sin ella, la **hoja de compartir del móvil** (WhatsApp, correo…);
+  **3)** si no hay ni eso, **copiado** y el texto a la vista. Y mientras no haya
+  entregado, al terminar la hoja lo DICE. Vigilado por `tools/hoja-smoke.mjs`,
+  que la recorre SIN SESIÓN, que es como la abre quien nos hace el favor.
 
 ## En cualquier otra aplicación
 

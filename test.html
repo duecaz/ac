@@ -42,11 +42,13 @@
           .map(e => `· ${e.ts || ''} ${e.msg || e.message || e}`).join('\n');
         return `app v${VERSION} · ${navigator.userAgent.slice(0, 80)}\núltimos errores:\n${errs || '(ninguno registrado)'}`;
       },
-      // Enviar exige sesión de profe (regla de `reports`). Se dice ANTES, con la
-      // salida al lado: la cuenta se crea en un minuto y la hoja re-revisa al
-      // volver a esta pestaña — sin recargar ni perder lo marcado.
+      // Guardar en el panel exige sesión de profe (regla de `reports`), pero eso
+      // NO puede bloquear la entrega: el probador no tiene por qué ser profe.
+      // Se dice como AVISO —qué vía se va a usar— y el botón entrega igual por
+      // la hoja de compartir del móvil o copiando. Si abre sesión en otra
+      // pestaña, esta re-revisa al volver y usará la vía buena, sin recargar.
       puedeEnviar: () => getAuthToken() ? null
-        : 'Para enviar necesitas cuenta de profe: ábrela en otra pestaña (aulareto.com → Entrar → «Créala aquí») y vuelve aquí; el botón se activará solo. O usa «Generar informe» y cópialo — funciona igual.',
+        : 'Sin cuenta de profe no se guarda en el panel, pero puedes entregarlo igual: «Entregar informe» lo manda por WhatsApp o correo desde tu móvil. (Si tienes cuenta, ábrela en otra pestaña y vuelve: se guardará en el panel.)',
       enviar: ({ rondaId, texto }) => submitQaRound(rondaId, texto),
     });
   } catch (e) {

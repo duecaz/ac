@@ -67,9 +67,13 @@ de la tarea). Comprueba en **Memoria**, **Ruleta**, **Abre Cajas** y
   (±1) en el PC y en el móvil, y en la 2ª y 3ª pregunta también. Si sale
   distinto, apunta los **tres datos** que pide la prueba 9 de la hoja.
 
-**Cómo reportar**: si algo falla, toca la etiqueta de versión (se copia un
-reporte solo) y pégalo con una frase. Si todo pasa, di solo: «esquinas ✓
-girar ✓ título ✓».
+**Cómo entregar**: al terminar la hoja de [aulareto.com/test](https://aulareto.com/test),
+pulsa **«Entregar informe»**. **No necesitas cuenta de nada**: en el móvil se abre
+tu WhatsApp o tu correo con el informe ya escrito; en el ordenador se copia solo
+para que lo pegues. Si tienes cuenta de profe, se guarda además en el panel.
+Mientras no lo entregues, la hoja te lo recuerda en rojo: marcarlo todo **no** es
+entregarlo. Y si algo falla, toca la etiqueta de versión (se copia un reporte
+solo) y pégalo con una frase.
 
 ---
 

@@ -17,12 +17,28 @@
 //                             // «la 3 falla» obliga a preguntar dónde miraba.
 //     storageKey,             // clave de localStorage (por defecto deriva de ronda.id)
 //     contexto (opcional),    // () => string — se añade al informe (versión, errores…)
-//     enviar (opcional),      // async (payload) => void — si falta, no hay botón Enviar
-//     puedeEnviar (opcional), // () => string|null — motivo por el que NO se puede (se dice ANTES)
+//     enviar (opcional),      // async (payload) => void — la vía PREFERIDA (guarda en el panel)
+//     puedeEnviar (opcional), // () => string|null — motivo por el que esa vía no está disponible
+//     compartir (opcional),   // async (texto, titulo) => bool — se inyecta para probarlo; por
+//                             // defecto, la hoja de compartir del móvil (navigator.share)
 //   })
 // El informe de TEXTO existe siempre: es el respaldo que funciona sin red,
 // sin permisos y sin backend. `enviar` solo corre cuando el probador pulsa
 // su botón — nunca solo.
+//
+// ENTREGAR NO PUEDE SER UN CALLEJÓN (lección del 2026-08-19, cara).
+// «Entregar» era UN camino —guardar en el servidor— y exigía cuenta de profe.
+// El probador no es profe: hizo las 11 pruebas en su móvil, lo marcó todo, y el
+// botón nunca se habilitó. El motivo se decía ANTES y con la salida al lado
+// («créate una cuenta»), así que la regla de «decirlo antes» se cumplía… y aun
+// así se perdió una ronda entera de trabajo ajeno, porque pedirle una cuenta a
+// quien te está haciendo un favor es un peaje, no una salida.
+// Ahora entregar es una ESCALERA que siempre acaba en algo:
+//   1) hay sesión  → al panel del profe (#/moderar), que es lo mejor;
+//   2) si no, la hoja de compartir del móvil → WhatsApp, correo, lo que use;
+//   3) si no hay ni eso → el texto copiado al portapapeles.
+// Y mientras no haya entregado, la hoja lo DICE al terminar: marcarlo todo no
+// es entregarlo. Vigilado por tools/hoja-smoke.mjs (sin sesión, como él).
 
 const CSS = `
 .qh { max-width: 44rem; margin: 0 auto; padding: 0 1rem 4rem; font-size: 17px; line-height: 1.55; }
@@ -70,6 +86,9 @@ const CSS = `
 .qh button:disabled { opacity: .45; cursor: not-allowed; }
 .qh button:focus-visible { outline: 2px solid var(--qh-foco, #c9930c); outline-offset: 2px; }
 .qh .qh-estado { font-size: .88rem; font-weight: 600; }
+.qh .qh-pendiente { margin: 1.6rem 0 .2rem; padding: .8rem 1rem; font-weight: 700;
+  border-radius: 6px; border: 2px solid var(--qh-mal, #b3402f);
+  background: var(--qh-mal-bg, #fbe9e5); color: var(--qh-mal, #b3402f); }
 .qh .qh-estado.qh-ok { color: var(--qh-bien, #1c7a4f); }
 .qh .qh-estado.qh-err { color: var(--qh-mal, #b3402f); }
 .qh .qh-salida { width: 100%; margin-top: .8rem; min-height: 15rem; resize: vertical;
@@ -81,10 +100,11 @@ const CSS = `
 const V = { pasa: '[PASA] ', falla: '[FALLA]', np: '[  —  ]' };
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-export function montarHoja(root, { ronda, storageKey, contexto, enviar, puedeEnviar } = {}) {
+export function montarHoja(root, { ronda, storageKey, contexto, enviar, puedeEnviar, compartir } = {}) {
   if (!root || !ronda) throw new Error('montarHoja: falta root o ronda');
   const KEY = storageKey || `qa.hoja.${ronda.id || 'ronda'}`;
   const pruebas = (ronda.secciones || []).flatMap(s => s.pruebas || []);
+  let entregado = false;
 
   if (!document.getElementById('qh-css')) {
     const st = document.createElement('style');
@@ -120,9 +140,10 @@ export function montarHoja(root, { ronda, storageKey, contexto, enviar, puedeEnv
           <input type="text" class="qh-nota" placeholder="${esc(p.notaPista || 'Nota (qué viste, en qué aparato)')}">
         </div>`).join('')}
     `).join('')}
+    <p class="qh-pendiente" id="qh-pendiente" hidden></p>
     <div class="qh-final">
-      <button type="button" class="qh-primario" id="qh-generar">Generar informe</button>
-      ${enviar ? `<button type="button" id="qh-enviar">Enviar informe</button>` : ''}
+      <button type="button" class="qh-primario" id="qh-enviar">Entregar informe</button>
+      <button type="button" id="qh-generar">Ver el texto</button>
       <button type="button" id="qh-copiar" hidden>Copiar</button>
       <span class="qh-estado" id="qh-estado" role="status"></span>
     </div>
@@ -147,6 +168,13 @@ export function montarHoja(root, { ronda, storageKey, contexto, enviar, puedeEnv
     }
     $('#qh-avance').innerHTML =
       `${pasa + falla} de ${fichas.length} con veredicto${falla ? ` · <span class="qh-falla-n">${falla} falla${falla === 1 ? '' : 'n'}</span>` : ''}`;
+    // MARCARLO TODO NO ES ENTREGARLO. Al terminar, la hoja lo dice: sin este
+    // aviso, el probador de la ronda 2026-08-17 dio por hecho que su trabajo
+    // había llegado, y estaba solo en su móvil.
+    const p = $('#qh-pendiente');
+    const completa = pasa + falla === fichas.length && fichas.length > 0;
+    p.hidden = entregado || !completa;
+    if (!p.hidden) p.textContent = `Ya has puesto veredicto a las ${fichas.length} pruebas — pero tu informe TODAVÍA NO SE HA ENTREGADO. Pulsa «Entregar informe» aquí abajo.`;
   }
 
   function guardar() {
@@ -214,19 +242,32 @@ export function montarHoja(root, { ronda, storageKey, contexto, enviar, puedeEnv
     } else estado('Seleccionado — copia con Ctrl+C', 'qh-ok');
   });
 
-  if (enviar) {
+  // ── ENTREGAR: una escalera que SIEMPRE acaba en algo ───────────────────────
+  {
     const btn = $('#qh-enviar');
-    // Si hay un motivo por el que no se puede, se dice ANTES de pulsar — nunca
-    // dejar que falle para explicarlo después. Y se REVISA al volver a la
-    // pestaña: el motivo típico es «no has iniciado sesión», que se arregla en
-    // OTRA pestaña — evaluarlo solo al montar dejaba el botón muerto hasta
-    // recargar, y el probador no tiene por qué adivinar eso.
-    let enviado = false;
+    // La hoja de compartir del móvil es la salida de quien no tiene cuenta: con
+    // ella el informe se va por WhatsApp o correo sin registrarse en nada. Se
+    // INYECTA para poder probarla sin un móvil de verdad.
+    const compartirFn = compartir || (async (texto, titulo) => {
+      if (!navigator.share) return false;
+      await navigator.share({ title: titulo, text: texto });
+      return true;
+    });
+    const copiar = async (texto) => {
+      try { await navigator.clipboard.writeText(texto); return true; } catch { return false; }
+    };
+    const verTexto = (texto) => {
+      $('#qh-salida').value = texto; $('#qh-salida').hidden = false; $('#qh-copiar').hidden = false;
+    };
+    const listo = (msg) => { entregado = true; $('#qh-pendiente').hidden = true; estado(msg, 'qh-ok'); };
+
+    // El motivo por el que la MEJOR vía no está disponible se sigue diciendo
+    // ANTES (nunca dejar que falle para explicarlo después) — pero como aviso,
+    // no como cerrojo: el botón entrega igual por la vía siguiente.
     const revisar = () => {
-      if (enviado) return;
+      if (entregado) return;
       const motivo = puedeEnviar ? puedeEnviar() : null;
-      btn.disabled = !!motivo;
-      btn.title = motivo || 'Enviar el informe';
+      btn.title = motivo || 'Entregar el informe';
       const est = $('#qh-estado');
       if (motivo) estado(motivo, '');
       else if (est && est.textContent && !est.classList.contains('qh-ok')) estado('');
@@ -234,16 +275,36 @@ export function montarHoja(root, { ronda, storageKey, contexto, enviar, puedeEnv
     revisar();
     window.addEventListener('focus', revisar);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) revisar(); });
+
     btn.addEventListener('click', async () => {
       const { texto, resumen } = informe();
-      btn.disabled = true; estado('Enviando…', '');
+      const motivo = puedeEnviar ? puedeEnviar() : null;
+      btn.disabled = true;
       try {
-        await enviar({ rondaId: ronda.id, texto, resumen });
-        enviado = true;
-        estado('Informe enviado ✓', 'qh-ok');
+        // 1) Al panel del profe: lo mejor, queda guardado y con acuse.
+        if (enviar && !motivo) {
+          estado('Enviando…', '');
+          await enviar({ rondaId: ronda.id, texto, resumen });
+          listo('Informe enviado ✓ — ya lo tiene el equipo.');
+          return;
+        }
+        // 2) La hoja de compartir del móvil: sin cuenta y sin registrarse.
+        if (await compartirFn(texto, `${ronda.titulo || 'Hoja de pruebas'} · ${ronda.id || ''}`)) {
+          listo('Informe compartido ✓ — comprueba que se envió en la app que elegiste.');
+          return;
+        }
+        // 3) Copiado: funciona hasta sin red y sin permisos.
+        verTexto(texto);
+        estado(await copiar(texto)
+          ? 'Informe COPIADO ✓ — pégalo en el chat del equipo (aquí abajo lo tienes también).'
+          : 'Tu informe está aquí abajo: cópialo y pégalo en el chat del equipo.', 'qh-ok');
       } catch (e) {
-        // R6: un envío fallido se DICE, y el texto queda como respaldo.
-        estado(`No se pudo enviar (${e?.message || e}). Usa «Generar informe» y cópialo.`, 'qh-err');
+        // Cancelar la hoja de compartir NO es un fallo: se vuelve sin drama.
+        if (e?.name === 'AbortError') { estado('Entrega cancelada — puedes pulsar otra vez.', ''); return; }
+        // R6: un envío fallido se DICE, y el texto queda como respaldo A LA VISTA.
+        verTexto(texto);
+        estado(`No se pudo entregar (${e?.message || e}). Tu informe está aquí abajo: cópialo y pégalo en el chat.`, 'qh-err');
+      } finally {
         btn.disabled = false;
       }
     });

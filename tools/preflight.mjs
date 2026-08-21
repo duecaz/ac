@@ -43,6 +43,7 @@ const PASOS = [
   { id: 'editar',  cmd: 'tools/edit-audit.mjs',   que: 'teclear en los 13 editores sin que la actividad pierda su respuesta correcta' },
   { id: 'vivo',    cmd: 'tools/live-smoke.mjs',   que: 'el viaje en vivo con dos pantallas (sala → PIN → responder → podio)' },
   { id: 'tareas',  cmd: 'tools/task-smoke.mjs',   que: 'el viaje de tareas (crear → PIN → jugar → tope de intentos → informe)' },
+  { id: 'hoja',    cmd: 'tools/hoja-smoke.mjs',   que: 'la hoja de pruebas se puede ENTREGAR sin cuenta de profe (se perdió una ronda entera por eso)' },
 ];
 
 const correr = (cmd) => new Promise((res) => {
