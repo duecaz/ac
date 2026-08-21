@@ -1,6 +1,7 @@
 // Editor de Tildes: lista de frases (escribe CON tildes; la app las quita y
 // guarda dónde van). Solo aporta sus paneles; el chasis lo pone el shell.
 import { escapeHtml } from '../../core/html.js';
+import { toast } from '../../core/toast.js';
 import { on } from '../../core/events.js';
 import { newPassage, partirEnFrases } from '../../core/contentModels/textCorrection.js';
 import { applyMarks, parseAccentedText } from '../../core/textMarks.js';
@@ -22,7 +23,21 @@ function contentHtml(a) {
     ${pegarTextoHtml({ titulo: 'Pegar un texto (un poema, una lectura…)' })}
     <p class="small text-muted">Escribe el texto SIN tildes. Después haz clic en cada vocal que debería llevar tilde.</p>
     ${a.content.passages.map((p, i) => renderPassage(p, i, a.content.passages.length, a)).join('')}
-    <button class="btn btn-outline-primary mt-2" id="t-add"><i class="bi bi-plus-lg"></i> Añadir frase</button>`;
+    <button class="btn btn-outline-primary mt-2" id="t-add"><i class="bi bi-plus-lg"></i> Añadir frase</button>
+    ${limpiarBotonHtml(a)}`;
+}
+
+/** QUITAR DE GOLPE LAS QUE NO DAN JUEGO. Una frase sin una sola tilde no
+ *  tiene nada que tocar, y el panel rojo la reprocha una por una: con un poema
+ *  pegado eran cuarenta reproches y cuarenta borrados a mano. El botón solo
+ *  aparece cuando hay algo que quitar, y dice CUÁNTAS — borrar a ciegas trabajo
+ *  del profe es justo lo que §24 no permite. */
+function limpiarBotonHtml(a) {
+  const n = a.content.passages.filter(p => String(p.text || '').trim() && !(p.marks || []).length).length;
+  if (!n) return '';
+  return `<button class="btn btn-outline-danger mt-2 ms-2" id="t-limpiar">
+    <i class="bi bi-eraser"></i> Quitar las ${n} frase${n === 1 ? '' : 's'} sin nada que corregir
+  </button>`;
 }
 function wireContent(root, a, ctx) {
   wireItemSeconds(root, a, ctx, a.content.passages);   // R-3 · tiempo por frase
@@ -57,6 +72,14 @@ function wireContent(root, a, ctx) {
     if (anadidas) a.content.passages = a.content.passages.filter(p => String(p.text || '').trim() !== '');
     if (anadidas) { ctx.onChange(a); ctx.repaint(); }
     return { anadidas, omitidas };
+  });
+  on(root, 'click', '#t-limpiar', () => {
+    const antes = a.content.passages.length;
+    a.content.passages = a.content.passages.filter(p => !String(p.text || '').trim() || (p.marks || []).length);
+    const fuera = antes - a.content.passages.length;
+    if (!a.content.passages.length) a.content.passages.push(newPassage());
+    ctx.onChange(a); ctx.repaint();
+    toast(`Quitada${fuera === 1 ? '' : 's'} ${fuera} frase${fuera === 1 ? '' : 's'} sin nada que corregir.`, 'success', 4000);
   });
   on(root, 'click', '#t-add', () => { a.content.passages.push(newPassage()); ctx.onChange(a); ctx.repaint(); });
   on(root, 'click', '.item-del', (_, b) => { a.content.passages.splice(+b.dataset.i, 1); ctx.onChange(a); ctx.repaint(); });

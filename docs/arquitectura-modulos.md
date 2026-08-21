@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **267 módulos · 1031 imports internos.**
+> **267 módulos · 1033 imports internos.**
 
 ### Ir a otro documento
 
@@ -34,7 +34,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2737 | 12 · 1242 | 0.45 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3975 | 19 · 3001 | 0.75 |
 | **informes/tareas** | después de clase | 10 · 1056 | 4 · 466 | 0.44 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5775 | 13 · 1772 | 0.31 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5821 | 13 · 1772 | 0.30 |
 | **infra/común** | todo lo anterior | 141 · 17077 | 54 · 6359 | 0.37 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
@@ -64,7 +64,7 @@ graph TD
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>5 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
   V -->|289| C
-  T -->|212| C
+  T -->|214| C
   A -->|28| C
   AD -->|27| C
   A -->|18| V
@@ -122,8 +122,8 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 | `core/html.js` | 87 |
 | `core/events.js` | 47 |
 | `core/registry.js` | 46 |
+| `core/toast.js` | 27 |
 | `core/ids.js` | 26 |
-| `core/toast.js` | 25 |
 | `core/clock.js` | 23 |
 | `core/storage.js` | 23 |
 | `core/auth.js` | 19 |
