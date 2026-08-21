@@ -262,9 +262,11 @@ body.skin-tv-show .card,
 
 /* ── TECLADOS FLOTANTES en las esquinas inferiores ────────────────────────── */
 .vs-skin-tv-show .vs-main  { padding: 1rem 1.3rem 1.4rem; }
-.vs-skin-tv-show .vs-panel { display: flex; flex-direction: column; justify-content: flex-end; background: none; padding: 0; }
-.vs-skin-tv-show .vs-panel.vs-left  { align-items: flex-start; }
-.vs-skin-tv-show .vs-panel.vs-right { align-items: flex-end; }
+/* SIN ALINEAR (§3): `align-items: flex-start/flex-end` pegaba la tarjeta a su
+   esquina, y en una columna flex eso la encoge al ancho de su contenido. Se
+   sostenía sobre el `width: 216px` de abajo; sin él, el juego se quedaba en una
+   tira. La colocación de la caja dentro del panel es del modo. */
+.vs-skin-tv-show .vs-panel { background: none; padding: 0; }
 
 /* SIN MEDIDAS (§3): aquí estaban `flex: 0 1 auto; width: min(100%, 216px);
    max-height: 94%`. La tarjeta de concurso quedaba preciosa y estrecha, y el
@@ -377,7 +379,7 @@ body.skin-tv-show .card,
      dos columnas es mejor en pantallas apretadas, se sube a styles/vs.css para
      todos, y se decide una vez; no se cuela por un tema. */
   .vs-skin-tv-show .vs-main { padding: .5rem .5rem .7rem; row-gap: .4rem; column-gap: .6rem; }
-  .vs-skin-tv-show .vs-stage { justify-content: center; padding: .2rem; }
+  .vs-skin-tv-show .vs-stage { padding: .2rem; }
   .vs-skin-tv-show .vs-stage-canvas::after { display: none; }
 }
 
@@ -388,7 +390,6 @@ body.skin-tv-show .card,
    las 4 filas (incl. borrar/enviar) SIEMPRE caben. En desktop ALTO no aplica y
    se conserva la tarjeta-esquina compacta del mockup. */
 @container vs (max-aspect-ratio: 5/4) or (max-height: 700px) {
-  .vs-skin-tv-show .vs-panel { justify-content: stretch; align-items: stretch; }
   /* Aquí había SEIS medidas (width/max-width/height/max-height/flex/min-*) para
      deshacer el `width: 216px` de arriba en pantallas apretadas: un parche que
      compensaba otro parche. Sin el tope, la caja ya la mide el modo y esto se

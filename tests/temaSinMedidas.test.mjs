@@ -43,7 +43,12 @@ const CONTENEDORES_COMPARTIDOS = [
 // Lo que MIDE. `padding` y `gap` quedan fuera a propósito: son respiración, y
 // prohibirlos dejaría a los temas sin poder ajustar su propio aire.
 const MIDEN = ['width', 'min-width', 'max-width', 'height', 'min-height', 'max-height',
-  'flex', 'flex-basis', 'grid-template-columns', 'grid-template-rows', 'grid-template-areas'];
+  'flex', 'flex-basis', 'grid-template-columns', 'grid-template-rows', 'grid-template-areas',
+  // ALINEAR TAMBIÉN ES MAQUETAR, y se aprendió por las malas: quitados los
+  // anchos, quedó `align-items: center` sobre el panel… que en una columna flex
+  // encoge la caja al ancho de su contenido. El teclado de Operaciones se
+  // convirtió en una tira de 30 px — dos lápices en la captura del dueño.
+  'align-items', 'justify-content', 'align-self', 'justify-self', 'place-items', 'place-content'];
 
 /** Bloques `selector { … }` de una hoja, sin comentarios. */
 function bloques(css) {

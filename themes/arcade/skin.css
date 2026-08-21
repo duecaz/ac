@@ -138,7 +138,13 @@
     linear-gradient(0deg, transparent calc(50% - 1px), rgba(236,72,153,.4) 50%, transparent calc(50% + 1px)),
     linear-gradient(90deg, rgba(34,211,238,.07) 0%, transparent 42%, transparent 58%, rgba(255,59,107,.07) 100%);
 }
-.vs-skin-arcade .vs-panel { align-items: center; justify-content: center; padding: .55rem .4rem; }
+/* SIN ALINEAR TAMPOCO (§3). Aquí estaba `align-items: center; justify-content:
+   center`, y en una columna flex eso ENCOGE la caja al ancho de su contenido:
+   con el tope de 230 px puesto no se notaba, y al quitarlo el teclado de
+   Operaciones se quedó en una tira de 30 px —el dueño mandó la captura con dos
+   lápices—. Dónde se coloca la caja del juego dentro del panel es maqueta, y la
+   maqueta la reparte el modo. */
+.vs-skin-arcade .vs-panel { padding: .55rem .4rem; }
 .vs-skin-arcade .vs-panel.vs-left  { background: radial-gradient(ellipse 120% 80% at 60% 50%, rgba(34,211,238,.08), transparent 70%); }
 .vs-skin-arcade .vs-panel.vs-right { background: radial-gradient(ellipse 120% 80% at 40% 50%, rgba(255,59,107,.08), transparent 70%); }
 
