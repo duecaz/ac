@@ -41,8 +41,22 @@ function wireContent(root, a, ctx) {
   // de esta plantilla, el mismo que usa el profe al teclear. No inventa nada —
   // que es justo lo que se le pedía a la IA y no podía cumplir con un poema.
   wirePegarTexto(root, partirEnFrases, (frases) => {
-    for (const f of frases) a.content.passages.push({ ...newPassage(), ...parseTextWithCommas(f) });
-    ctx.onChange(a); ctx.repaint();
+    // Solo entran las que TIENEN algo que corregir: un verso sin una sola
+    // coma no da juego —no hay nada que tocar— y al colarlo el panel de
+    // «lo que falta» se llenaba de reproches por líneas que el profe no escribió.
+    let omitidas = 0;
+    for (const f of frases) {
+      const trozo = parseTextWithCommas(f);
+      if (!trozo.marks.length) { omitidas++; continue; }
+      a.content.passages.push({ ...newPassage(), ...trozo });
+    }
+    const anadidas = frases.length - omitidas;
+    // La frase vacía con la que nace la plantilla no cuenta como trabajo del
+    // profe: dejarla deja un hueco delante de lo que acaba de pegar (mismo
+    // criterio que `fusionarContenido` usa con lo que escribe la IA).
+    if (anadidas) a.content.passages = a.content.passages.filter(p => String(p.text || '').trim() !== '');
+    if (anadidas) { ctx.onChange(a); ctx.repaint(); }
+    return { anadidas, omitidas };
   });
   on(root, 'click', '#t-add', () => { a.content.passages.push(newPassage()); ctx.onChange(a); ctx.repaint(); });
   on(root, 'click', '.item-del', (_, b) => { a.content.passages.splice(+b.dataset.i, 1); ctx.onChange(a); ctx.repaint(); });

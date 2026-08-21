@@ -135,6 +135,14 @@ ok('stripAccents removes accents; hasMarks detects presence');
   const verso = 'Jamás tanto cariño doloroso, jamás tanta cerca arremetió lo lejos';
   const { text, marks } = parseAccentedText(partirEnFrases(verso)[0]);
   assert.strictEqual(applyMarks(text, marks), verso, 'el texto vuelve tal cual: ni una palabra cambiada');
+  // Y EL CRITERIO PARA DEJARLA ENTRAR: que TENGA algo que corregir. Un poema
+  // trae versos sin una sola tilde; colarlos llenaba el panel de «el texto 43 no
+  // tiene ninguna marca señalada» — cuarenta reproches por líneas que el profe
+  // no había escrito. La marca es lo que decide, no la longitud.
+  assert.strictEqual(parseAccentedText('crece a treinta minutos por segundo').marks.length, 0,
+    'un verso sin tildes no da ninguna marca: en el juego no habría nada que tocar');
+  assert.ok(parseAccentedText('Jamás, hombres humanos,').marks.length > 0,
+    'CONTRA-PRUEBA: el verso que sí lleva tilde entra');
   ok('pegar un texto lo parte en frases y lo conserva LITERAL (la IA imita; esto no)');
 }
 

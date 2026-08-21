@@ -3,6 +3,7 @@
 // Pure functions: return HTML strings; attach handlers via separate helpers.
 import { escapeHtml } from './html.js';
 import { on } from './events.js';
+import { toast } from './toast.js';
 import { questionWindowMs, ITEM_SECONDS_MIN, ITEM_SECONDS_MAX } from './timings.js';
 
 
@@ -104,14 +105,31 @@ export function wirePegarTexto(root, partir, alPegar) {
   on(root, 'click', '#ww-pegar-go', () => {
     const caja = document.getElementById('ww-pegar-txt');
     const err = document.getElementById('ww-pegar-err');
+    const decir = (t) => { if (err) { err.textContent = t; err.hidden = false; } };
     const frases = partir(caja?.value || '');
     if (!frases.length) {
       // R6: no se queda mudo. Pegar algo y que no pase nada es peor que un error.
-      if (err) { err.textContent = 'No se ha reconocido ninguna frase utilizable en ese texto.'; err.hidden = false; }
+      decir('No se ha reconocido ninguna frase utilizable en ese texto.');
       return;
     }
     if (err) err.hidden = true;
+    // La plantilla decide QUÉ frases sirven —solo ella sabe qué es una marca— y
+    // devuelve la cuenta. Pegar un poema entero mete también los versos que no
+    // llevan ni una tilde ni una coma: en el juego no hay nada que tocar ahí, y
+    // el panel rojo se llenaba de «el texto 43 no tiene ninguna marca». Colarlos
+    // y reprocharlos después es hacerle a mano el trabajo que evita esta puerta.
+    const { anadidas = frases.length, omitidas = 0 } = alPegar(frases) || {};
+    if (!anadidas) {
+      decir(`Ninguna de las ${frases.length} líneas tenía nada que corregir.`);
+      return;
+    }
     if (caja) caja.value = '';
-    alPegar(frases);
+    // Por `toast` y no en el hueco de al lado: al añadir se repinta el panel
+    // entero, así que un mensaje ahí desaparecería en el mismo instante.
+    toast(omitidas
+      ? `${anadidas} frase${anadidas === 1 ? '' : 's'} añadida${anadidas === 1 ? '' : 's'}.`
+        + ` Se omitieron ${omitidas} línea${omitidas === 1 ? '' : 's'} sin nada que corregir.`
+      : `${anadidas} frase${anadidas === 1 ? '' : 's'} añadida${anadidas === 1 ? '' : 's'}.`,
+      omitidas ? 'warning' : 'success', 6000);
   });
 }
