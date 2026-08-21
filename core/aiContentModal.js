@@ -126,7 +126,16 @@ export function abrirEscribirConIA(opts = {}) {
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
           </div>
           <div class="modal-body">
-            <p class="text-muted small">Se escriben ${escapeHtml(def.describe)}. Lo verás antes de añadirlo.</p>
+            <p class="text-muted small">Se escriben ${escapeHtml(def.describe)}. Lo verás antes de añadirlo
+              y podrás quitar las que no quieras.</p>
+            <!-- SI EL TEXTO YA EXISTE, LA IA SOBRA. Pedirle frases de un poema
+                 concreto devolvió versos AL ESTILO del autor, ninguno del poema:
+                 imitar es lo que un modelo hace bien, y aquí es el resultado
+                 equivocado. Se dice AQUÍ, antes de gastar una generación. -->
+            ${modelo === 'textCorrection' ? `<div class="alert alert-info py-2 small">
+              ¿Ya tienes el texto (un poema, una lectura)? Ciérra esto y usa
+              <b>«Pegar un texto»</b>: se parte en frases tal cual, sin que nadie lo reescriba.
+            </div>` : ''}
             <div class="row g-2 align-items-end">
               <div class="col-12 col-md-6">
                 <label class="form-label small fw-semibold" for="${suf}tema">¿De qué va?</label>

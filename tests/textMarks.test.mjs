@@ -99,4 +99,43 @@ ok('stripAccents removes accents; hasMarks detects presence');
   ok('scoreMarksPerHit: NETO (buenas − de más, piso 0); marcar todo no gana');
 }
 
+// ── PEGAR UN TEXTO QUE YA EXISTE ────────────────────────────────────────────
+// El caso que lo pidió: el dueño quería frases de «Los nueve monstruos» y la IA
+// devolvió versos AL ESTILO de Vallejo, ninguno del poema. Un modelo imita — eso
+// es lo que hace bien— y para un texto concreto imitar es el resultado
+// equivocado: se proyecta en clase como si fuera el poema y no lo es. Cuando el
+// profe ya tiene el texto no hay nada que inventar, y este corte es exacto.
+{
+  const { partirEnFrases } = await import('../core/contentModels/textCorrection.js');
+  const poema = [
+    '«Los nueve monstruos»',
+    'Y, desgraciadamente,',
+    'el dolor crece en el mundo a cada rato,',
+    '',
+    'Jamás, hombres humanos,',
+    'hubo tanto dolor en el pecho, en la solapa, en la cartera.',
+  ].join('\n');
+  const frases = partirEnFrases(poema);
+  assert.ok(frases.includes('Y, desgraciadamente,'),
+    'EL VERSO ES LA UNIDAD: en un poema, cortar solo por puntos juntaría media estrofa');
+  assert.ok(!frases.some(f => f === ''), 'las líneas en blanco no llegan como frases vacías');
+  assert.ok(frases.includes('«Los nueve monstruos»'), 'el título entra: es texto del profe, y borrarlo por él sería decidir por él');
+
+  // Dentro de una línea, un punto sí termina frase — y el punto se queda con ella.
+  const prosa = partirEnFrases('Vino el lunes por la tarde. Se marchó el miércoles temprano.');
+  assert.deepStrictEqual(prosa, ['Vino el lunes por la tarde.', 'Se marchó el miércoles temprano.'],
+    'la prosa se parte por frases, con su puntuación');
+
+  // Lo que no da juego no se cuela: un «Sí.» suelto no tiene nada que corregir.
+  assert.deepStrictEqual(partirEnFrases('Sí.\nNo.\n  \n'), [], 'los restos demasiado cortos no entran');
+  assert.strictEqual(partirEnFrases('').length, 0, 'y pegar nada no crea nada');
+
+  // CONTRA-PRUEBA: lo pegado llega LITERAL a la actividad — es todo el motivo de
+  // que exista esta puerta. Se comprueba con el parser real de Tildes.
+  const verso = 'Jamás tanto cariño doloroso, jamás tanta cerca arremetió lo lejos';
+  const { text, marks } = parseAccentedText(partirEnFrases(verso)[0]);
+  assert.strictEqual(applyMarks(text, marks), verso, 'el texto vuelve tal cual: ni una palabra cambiada');
+  ok('pegar un texto lo parte en frases y lo conserva LITERAL (la IA imita; esto no)');
+}
+
 console.log(`\ntextMarks.test: ${passed} checks passed`);

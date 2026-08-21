@@ -34,7 +34,17 @@ const ESQUEMAS = {
     + 'espacios ni signos ni números. La pista la define SIN nombrarla ni contenerla.',
   textCorrection: 'Cada elemento: {"frase": string}. La frase va escrita CORRECTAMENTE, con todas sus '
     + 'tildes y sus comas. No incluyas posiciones ni marcas: solo la frase bien escrita. '
-    + 'Cada frase debe llevar al menos una tilde o una coma.',
+    + 'Cada frase debe llevar al menos una tilde o una coma. '
+    // NO IMITAR AL AUTOR. El dueño pidió frases de «Los nueve monstruos» y el
+    // modelo devolvió versos AL ESTILO de Vallejo —«El monstruo mayor, de
+    // repente, se acercó»—, ninguno del poema. Para una clase eso es peor que
+    // no tener nada: se proyecta como si fuera el texto y no lo es. Un modelo
+    // no puede garantizar una cita literal, así que aquí se le pide lo único
+    // honesto: citar solo si está seguro, y si no, no fingir.
+    + 'Si el tema nombra una OBRA, un AUTOR o un texto concreto: usa fragmentos LITERALES de esa obra, '
+    + 'tal y como están escritos. Si no recuerdas el texto con exactitud, NO lo imites ni escribas versos '
+    + '«al estilo de»: escribe entonces frases normales sobre el tema y ya está. Inventar y presentarlo '
+    + 'como del autor es el peor resultado posible.',
 };
 
 // ── Proveedores. Se añade uno tocando SOLO este cuadro. ──────────────────────

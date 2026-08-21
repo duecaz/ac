@@ -65,3 +65,53 @@ export function wireItemSeconds(root, a, ctx, list) {
     ctx.onChange(a);
   });
 }
+
+/**
+ * «PEGAR UN TEXTO» — la puerta para cuando el profe YA tiene el texto.
+ *
+ * La IA imita, y a veces esa es exactamente la respuesta equivocada: pedirle
+ * frases de un poema concreto devolvió versos AL ESTILO del autor, ninguno del
+ * poema. Cuando el texto ya existe no hay nada que inventar — pegarlo es exacto,
+ * instantáneo, gratis y funciona sin red. Va al lado de «Escribir con IA» a
+ * propósito: son las dos maneras de llenar la actividad de golpe, y el profe
+ * elige según lo que tenga en la mano.
+ *
+ * @param {object} [o]
+ * @param {string} [o.titulo]  qué se pega («un poema, una lectura…»)
+ * @param {string} [o.nota]    cómo se va a cortar, dicho ANTES de pegar
+ */
+export function pegarTextoHtml(o = {}) {
+  const titulo = escapeHtml(o.titulo || 'Pegar un texto');
+  const nota = escapeHtml(o.nota || 'Cada línea (o cada frase) se convierte en un elemento. Se añade a lo que ya hay.');
+  return `<details class="ww-pegar mb-3">
+    <summary><i class="bi bi-clipboard-plus"></i> ${titulo}</summary>
+    <p class="small text-muted mb-1 mt-2">${nota}</p>
+    <textarea id="ww-pegar-txt" class="form-control" rows="5"
+      placeholder="Pega aquí el poema, la lectura o las frases…"></textarea>
+    <button type="button" class="btn btn-primary btn-sm mt-2" id="ww-pegar-go">
+      <i class="bi bi-plus-lg"></i> Añadir estas frases
+    </button>
+    <span class="small text-danger ms-2" id="ww-pegar-err" hidden></span>
+  </details>`;
+}
+
+/**
+ * Cablea la puerta de pegar. `alPegar(frases)` recibe las frases YA partidas y
+ * decide qué hacer con ellas (cada plantilla las analiza con SU parser: las
+ * tildes y las comas no se derivan igual).
+ */
+export function wirePegarTexto(root, partir, alPegar) {
+  on(root, 'click', '#ww-pegar-go', () => {
+    const caja = document.getElementById('ww-pegar-txt');
+    const err = document.getElementById('ww-pegar-err');
+    const frases = partir(caja?.value || '');
+    if (!frases.length) {
+      // R6: no se queda mudo. Pegar algo y que no pase nada es peor que un error.
+      if (err) { err.textContent = 'No se ha reconocido ninguna frase utilizable en ese texto.'; err.hidden = false; }
+      return;
+    }
+    if (err) err.hidden = true;
+    if (caja) caja.value = '';
+    alPegar(frases);
+  });
+}

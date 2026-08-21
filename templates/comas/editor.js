@@ -2,9 +2,10 @@
 // posiciones. Solo aporta sus paneles; el chasis lo pone el shell.
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { newPassage } from '../../core/contentModels/textCorrection.js';
+import { newPassage, partirEnFrases } from '../../core/contentModels/textCorrection.js';
 import { applyMarks, parseTextWithCommas } from '../../core/textMarks.js';
-import { itemControlsHtml, reorderArray, ruleScopeNote, itemSecondsFieldHtml, wireItemSeconds } from '../../core/editorPrimitives.js';
+import { itemControlsHtml, reorderArray, ruleScopeNote, itemSecondsFieldHtml, wireItemSeconds,
+  pegarTextoHtml, wirePegarTexto } from '../../core/editorPrimitives.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 
 export function renderComasEditor(root, activity, onChange) {
@@ -18,6 +19,7 @@ export function renderComasEditor(root, activity, onChange) {
 
 function contentHtml(a) {
   return `
+    ${pegarTextoHtml({ titulo: 'Pegar un texto (un poema, una lectura…)' })}
     <p class="small text-muted">Escribe la frase <b>con sus comas</b>. La app las quita y guarda dónde van.</p>
     ${a.content.passages.map((p, i) => renderPassage(p, i, a.content.passages.length, a)).join('')}
     <button class="btn btn-outline-primary mt-2" id="t-add"><i class="bi bi-plus-lg"></i> Añadir frase</button>`;
@@ -34,6 +36,13 @@ function wireContent(root, a, ctx) {
     if (preview) preview.textContent = text || '(vacío)';
     const expected = document.querySelector(`[data-expected="${idx}"]`);
     if (expected) expected.textContent = applyMarks(text, marks);
+  });
+  // Pegar un texto EXISTENTE: se parte en frases y cada una pasa por el parser
+  // de esta plantilla, el mismo que usa el profe al teclear. No inventa nada —
+  // que es justo lo que se le pedía a la IA y no podía cumplir con un poema.
+  wirePegarTexto(root, partirEnFrases, (frases) => {
+    for (const f of frases) a.content.passages.push({ ...newPassage(), ...parseTextWithCommas(f) });
+    ctx.onChange(a); ctx.repaint();
   });
   on(root, 'click', '#t-add', () => { a.content.passages.push(newPassage()); ctx.onChange(a); ctx.repaint(); });
   on(root, 'click', '.item-del', (_, b) => { a.content.passages.splice(+b.dataset.i, 1); ctx.onChange(a); ctx.repaint(); });
