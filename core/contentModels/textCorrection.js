@@ -35,8 +35,16 @@ export function validate(content) {
   return errs;
 }
 
+/** Cuántas líneas seguidas forman un párrafo, y cuántos párrafos entran de una
+ *  pegada. Decisión del dueño (2026-08-21) después de pegar un poema entero: le
+ *  salieron 29 frases de un verso cada una. Un verso suelto es poco texto para
+ *  corregir y demasiados elementos para jugar; tres líneas seguidas son un
+ *  párrafo con sentido, y cuatro párrafos son una actividad de clase. */
+export const LINEAS_POR_PARRAFO = 3;
+export const MAX_PARRAFOS = 4;
+
 /**
- * PARTIR UN TEXTO PEGADO EN FRASES JUGABLES.
+ * PARTIR UN TEXTO PEGADO EN PÁRRAFOS JUGABLES.
  *
  * Nació de un caso del dueño: pidió a la IA frases sobre «Poema 9 monstruos» y
  * el modelo escribió versos AL ESTILO de Vallejo —ninguno del poema—. Es lo que
@@ -44,27 +52,37 @@ export function validate(content) {
  * tiene el texto, no hay nada que inventar y pedírselo a una IA solo añade el
  * riesgo de que lo cambie. Pegarlo es exacto, gratis y no depende de la red.
  *
- * Se corta por SALTOS DE LÍNEA primero —en un poema el verso es la unidad— y
- * dentro de cada línea por punto, signo de cierre o punto y coma. Lo que queda
- * demasiado corto para tener tildes o comas no se cuela como frase suelta.
+ * Se agrupan LÍNEAS SEGUIDAS, no frases sueltas: en un poema el verso es la
+ * unidad de escritura, pero no la de trabajo — «jamás el fuego nunca» no da
+ * para un ejercicio. Las líneas en blanco no cortan el grupo (separan estrofas,
+ * no ideas), solo se ignoran.
+ *
+ * NO aplica el tope: devuelve todos los párrafos y deja que quien llama decida.
+ * El motivo es que el tope se cuenta sobre los que SIRVEN, y qué sirve lo sabe
+ * la plantilla (Tildes mira tildes, Comas mira comas), no este módulo.
  *
  * @param {string} texto
  * @param {object} [opts]
- * @param {number} [opts.minimo=12]   caracteres mínimos de una frase utilizable
- * @param {number} [opts.maximo=300]  tope por frase (una frase de tres líneas no se lee en clase)
+ * @param {number} [opts.lineas=3]    líneas seguidas por párrafo
+ * @param {number} [opts.minimo=12]   caracteres mínimos de un párrafo utilizable
+ * @param {number} [opts.maximo=600]  tope por párrafo (se corta por la última palabra entera)
  * @returns {string[]}
  */
-export function partirEnFrases(texto, opts = {}) {
-  const { minimo = 12, maximo = 300 } = opts;
+export function partirEnParrafos(texto, opts = {}) {
+  const { lineas = LINEAS_POR_PARRAFO, minimo = 12, maximo = 600 } = opts;
+  const utiles = String(texto || '').split(/\r?\n/)
+    .map(l => l.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
   const out = [];
-  for (const linea of String(texto || '').split(/\r?\n/)) {
-    // El punto y los signos de cierre TERMINAN frase y se quedan con ella; los
-    // dos puntos y el punto y coma también cortan, que si no salen párrafos.
-    for (const trozo of linea.split(/(?<=[.!?;:…])\s+/)) {
-      const f = trozo.replace(/\s+/g, ' ').trim();
-      if (f.length < minimo) continue;
-      out.push(f.length > maximo ? f.slice(0, maximo).trim() : f);
-    }
+  for (let i = 0; i < utiles.length; i += lineas) {
+    const p = utiles.slice(i, i + lineas).join(' ').trim();
+    if (p.length < minimo) continue;
+    if (p.length <= maximo) { out.push(p); continue; }
+    // Cortar a mitad de palabra deja «carnívo» en la pantalla de un alumno: se
+    // corta por el último espacio que quepa.
+    const recorte = p.slice(0, maximo);
+    const corte = recorte.lastIndexOf(' ');
+    out.push((corte > minimo ? recorte.slice(0, corte) : recorte).trim());
   }
   return out;
 }

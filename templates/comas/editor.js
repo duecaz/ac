@@ -3,7 +3,7 @@
 import { escapeHtml } from '../../core/html.js';
 import { toast } from '../../core/toast.js';
 import { on } from '../../core/events.js';
-import { newPassage, partirEnFrases } from '../../core/contentModels/textCorrection.js';
+import { newPassage, partirEnParrafos } from '../../core/contentModels/textCorrection.js';
 import { applyMarks, parseTextWithCommas } from '../../core/textMarks.js';
 import { itemControlsHtml, reorderArray, ruleScopeNote, itemSecondsFieldHtml, wireItemSeconds,
   pegarTextoHtml, wirePegarTexto } from '../../core/editorPrimitives.js';
@@ -55,23 +55,26 @@ function wireContent(root, a, ctx) {
   // Pegar un texto EXISTENTE: se parte en frases y cada una pasa por el parser
   // de esta plantilla, el mismo que usa el profe al teclear. No inventa nada —
   // que es justo lo que se le pedía a la IA y no podía cumplir con un poema.
-  wirePegarTexto(root, partirEnFrases, (frases) => {
-    // Solo entran las que TIENEN algo que corregir: un verso sin una sola
-    // coma no da juego —no hay nada que tocar— y al colarlo el panel de
-    // «lo que falta» se llenaba de reproches por líneas que el profe no escribió.
-    let omitidas = 0;
-    for (const f of frases) {
-      const trozo = parseTextWithCommas(f);
+  wirePegarTexto(root, partirEnParrafos, (parrafos, { tope }) => {
+    // Solo entran los que TIENEN algo que corregir —un párrafo sin una sola
+    // coma no da juego, no hay nada que tocar— y se para al llegar al tope,
+    // que se cuenta sobre los que sirven: pedir cuatro y recibir uno porque tres
+    // no tenían marcas sería cumplir el número y fallar la promesa.
+    let omitidas = 0; let anadidas = 0; let i = 0;
+    for (; i < parrafos.length && anadidas < tope; i++) {
+      const trozo = parseTextWithCommas(parrafos[i]);
       if (!trozo.marks.length) { omitidas++; continue; }
       a.content.passages.push({ ...newPassage(), ...trozo });
+      anadidas++;
     }
-    const anadidas = frases.length - omitidas;
     // La frase vacía con la que nace la plantilla no cuenta como trabajo del
     // profe: dejarla deja un hueco delante de lo que acaba de pegar (mismo
     // criterio que `fusionarContenido` usa con lo que escribe la IA).
-    if (anadidas) a.content.passages = a.content.passages.filter(p => String(p.text || '').trim() !== '');
-    if (anadidas) { ctx.onChange(a); ctx.repaint(); }
-    return { anadidas, omitidas };
+    if (anadidas) {
+      a.content.passages = a.content.passages.filter(p => String(p.text || '').trim() !== '');
+      ctx.onChange(a); ctx.repaint();
+    }
+    return { anadidas, omitidas, sobrantes: parrafos.length - i };
   });
   on(root, 'click', '#t-limpiar', () => {
     const antes = a.content.passages.length;

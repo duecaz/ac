@@ -106,44 +106,50 @@ ok('stripAccents removes accents; hasMarks detects presence');
 // equivocado: se proyecta en clase como si fuera el poema y no lo es. Cuando el
 // profe ya tiene el texto no hay nada que inventar, y este corte es exacto.
 {
-  const { partirEnFrases } = await import('../core/contentModels/textCorrection.js');
+  const { partirEnParrafos, LINEAS_POR_PARRAFO } = await import('../core/contentModels/textCorrection.js');
   const poema = [
     '«Los nueve monstruos»',
     'Y, desgraciadamente,',
     'el dolor crece en el mundo a cada rato,',
-    '',
+    '',                                        // la estrofa separa, no corta
+    'crece a treinta minutos por segundo, paso a paso,',
     'Jamás, hombres humanos,',
     'hubo tanto dolor en el pecho, en la solapa, en la cartera.',
   ].join('\n');
-  const frases = partirEnFrases(poema);
-  assert.ok(frases.includes('Y, desgraciadamente,'),
-    'EL VERSO ES LA UNIDAD: en un poema, cortar solo por puntos juntaría media estrofa');
-  assert.ok(!frases.some(f => f === ''), 'las líneas en blanco no llegan como frases vacías');
-  assert.ok(frases.includes('«Los nueve monstruos»'), 'el título entra: es texto del profe, y borrarlo por él sería decidir por él');
 
-  // Dentro de una línea, un punto sí termina frase — y el punto se queda con ella.
-  const prosa = partirEnFrases('Vino el lunes por la tarde. Se marchó el miércoles temprano.');
-  assert.deepStrictEqual(prosa, ['Vino el lunes por la tarde.', 'Se marchó el miércoles temprano.'],
-    'la prosa se parte por frases, con su puntuación');
+  // LA UNIDAD ES EL PÁRRAFO, NO EL VERSO. Cortar por versos daba 29 elementos de
+  // una línea: «jamás el fuego nunca» no da para un ejercicio, y 29 pantallas no
+  // son una clase. Tres líneas seguidas sí tienen sentido y sí dan trabajo.
+  const parrafos = partirEnParrafos(poema);
+  assert.strictEqual(LINEAS_POR_PARRAFO, 3, 'tres líneas por defecto (decisión del dueño)');
+  assert.strictEqual(parrafos.length, 2, '7 líneas útiles en grupos de 3 → 2 párrafos (el último, corto)');
+  assert.ok(parrafos[0].includes('«Los nueve monstruos»') && parrafos[0].includes('a cada rato'),
+    'el párrafo junta las líneas seguidas, saltándose los blancos');
+  assert.ok(!parrafos.some(p => /\n/.test(p)), 'y queda como texto continuo, que es lo que el alumno lee');
 
-  // Lo que no da juego no se cuela: un «Sí.» suelto no tiene nada que corregir.
-  assert.deepStrictEqual(partirEnFrases('Sí.\nNo.\n  \n'), [], 'los restos demasiado cortos no entran');
-  assert.strictEqual(partirEnFrases('').length, 0, 'y pegar nada no crea nada');
+  // El número de líneas lo elige el profe: un poema no se corta como una lectura.
+  assert.strictEqual(partirEnParrafos(poema, { lineas: 1 }).length, 6, 'con 1 línea, cada verso es un elemento');
+  assert.strictEqual(partirEnParrafos(poema, { lineas: 6 }).length, 1, 'con 6, el poema entero cabe en uno');
+
+  assert.deepStrictEqual(partirEnParrafos('Sí.\nNo.\n  \n', { lineas: 1 }), [],
+    'los restos demasiado cortos no entran');
+  assert.strictEqual(partirEnParrafos('').length, 0, 'y pegar nada no crea nada');
 
   // CONTRA-PRUEBA: lo pegado llega LITERAL a la actividad — es todo el motivo de
   // que exista esta puerta. Se comprueba con el parser real de Tildes.
   const verso = 'Jamás tanto cariño doloroso, jamás tanta cerca arremetió lo lejos';
-  const { text, marks } = parseAccentedText(partirEnFrases(verso)[0]);
+  const { text, marks } = parseAccentedText(partirEnParrafos(verso, { lineas: 1 })[0]);
   assert.strictEqual(applyMarks(text, marks), verso, 'el texto vuelve tal cual: ni una palabra cambiada');
-  // Y EL CRITERIO PARA DEJARLA ENTRAR: que TENGA algo que corregir. Un poema
-  // trae versos sin una sola tilde; colarlos llenaba el panel de «el texto 43 no
-  // tiene ninguna marca señalada» — cuarenta reproches por líneas que el profe
-  // no había escrito. La marca es lo que decide, no la longitud.
+
+  // Y EL CRITERIO PARA DEJARLO ENTRAR: que TENGA algo que corregir. Un poema trae
+  // versos sin una sola tilde; colarlos llenaba el panel de «el texto 43 no tiene
+  // ninguna marca señalada» — cuarenta reproches por líneas que el profe no
+  // había escrito. La marca es lo que decide, no la longitud.
   assert.strictEqual(parseAccentedText('crece a treinta minutos por segundo').marks.length, 0,
     'un verso sin tildes no da ninguna marca: en el juego no habría nada que tocar');
   assert.ok(parseAccentedText('Jamás, hombres humanos,').marks.length > 0,
     'CONTRA-PRUEBA: el verso que sí lleva tilde entra');
-  ok('pegar un texto lo parte en frases y lo conserva LITERAL (la IA imita; esto no)');
+  ok('pegar un texto lo agrupa en párrafos y lo conserva LITERAL (la IA imita; esto no)');
 }
 
 console.log(`\ntextMarks.test: ${passed} checks passed`);

@@ -77,59 +77,81 @@ export function wireItemSeconds(root, a, ctx, list) {
  * propósito: son las dos maneras de llenar la actividad de golpe, y el profe
  * elige según lo que tenga en la mano.
  *
- * @param {object} [o]
- * @param {string} [o.titulo]  qué se pega («un poema, una lectura…»)
- * @param {string} [o.nota]    cómo se va a cortar, dicho ANTES de pegar
+ * LOS DOS NÚMEROS SE ELIGEN AQUÍ, y vienen ya puestos (R2: nada que configurar
+ * para empezar). Nacieron de pegar un poema entero y recibir 29 elementos de un
+ * verso cada uno: cuántas líneas hacen un párrafo y cuántos párrafos entran no
+ * es lo mismo para un poema que para una lectura de sociales, y adivinarlo por
+ * el profe se equivoca la mitad de las veces.
  */
 export function pegarTextoHtml(o = {}) {
   const titulo = escapeHtml(o.titulo || 'Pegar un texto');
-  const nota = escapeHtml(o.nota || 'Cada línea (o cada frase) se convierte en un elemento. Se añade a lo que ya hay.');
+  const lineas = Number(o.lineas) || 3;
+  const tope = Number(o.tope) || 4;
   return `<details class="ww-pegar mb-3">
     <summary><i class="bi bi-clipboard-plus"></i> ${titulo}</summary>
-    <p class="small text-muted mb-1 mt-2">${nota}</p>
+    <div class="d-flex flex-wrap align-items-end gap-2 mt-2 mb-2">
+      <label class="small text-muted">Líneas por párrafo
+        <input id="ww-pegar-lineas" type="number" class="form-control form-control-sm"
+               style="width:5rem" min="1" max="12" value="${lineas}">
+      </label>
+      <label class="small text-muted">Cuántos añadir
+        <input id="ww-pegar-tope" type="number" class="form-control form-control-sm"
+               style="width:5rem" min="1" max="50" value="${tope}">
+      </label>
+      <span class="small text-muted">Se ignoran las líneas en blanco y las que no tengan nada que corregir.</span>
+    </div>
     <textarea id="ww-pegar-txt" class="form-control" rows="5"
       placeholder="Pega aquí el poema, la lectura o las frases…"></textarea>
     <button type="button" class="btn btn-primary btn-sm mt-2" id="ww-pegar-go">
-      <i class="bi bi-plus-lg"></i> Añadir estas frases
+      <i class="bi bi-plus-lg"></i> Añadir
     </button>
     <span class="small text-danger ms-2" id="ww-pegar-err" hidden></span>
   </details>`;
 }
 
 /**
- * Cablea la puerta de pegar. `alPegar(frases)` recibe las frases YA partidas y
- * decide qué hacer con ellas (cada plantilla las analiza con SU parser: las
- * tildes y las comas no se derivan igual).
+ * Cablea la puerta. `alPegar(parrafos, { tope })` recibe los párrafos ya
+ * agrupados y devuelve `{ anadidas, omitidas, sobrantes }`: quién decide cuáles
+ * SIRVEN es la plantilla —solo ella sabe qué es una marca—, y el tope se cuenta
+ * sobre las que sirven, no sobre las que se pegaron. Pegar un poema entero metía
+ * también los versos sin una sola tilde: en el juego no hay nada que tocar ahí,
+ * y el panel de «lo que falta» se llenaba de reproches por líneas que el profe
+ * no había escrito.
  */
 export function wirePegarTexto(root, partir, alPegar) {
   on(root, 'click', '#ww-pegar-go', () => {
     const caja = document.getElementById('ww-pegar-txt');
     const err = document.getElementById('ww-pegar-err');
     const decir = (t) => { if (err) { err.textContent = t; err.hidden = false; } };
-    const frases = partir(caja?.value || '');
-    if (!frases.length) {
+    const num = (id, def, min, max) => {
+      const v = Math.round(Number(document.getElementById(id)?.value));
+      return Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : def;
+    };
+    const lineas = num('ww-pegar-lineas', 3, 1, 12);
+    const tope = num('ww-pegar-tope', 4, 1, 50);
+    const parrafos = partir(caja?.value || '', { lineas });
+    if (!parrafos.length) {
       // R6: no se queda mudo. Pegar algo y que no pase nada es peor que un error.
-      decir('No se ha reconocido ninguna frase utilizable en ese texto.');
+      decir('No se ha reconocido ningún párrafo utilizable en ese texto.');
       return;
     }
     if (err) err.hidden = true;
-    // La plantilla decide QUÉ frases sirven —solo ella sabe qué es una marca— y
-    // devuelve la cuenta. Pegar un poema entero mete también los versos que no
-    // llevan ni una tilde ni una coma: en el juego no hay nada que tocar ahí, y
-    // el panel rojo se llenaba de «el texto 43 no tiene ninguna marca». Colarlos
-    // y reprocharlos después es hacerle a mano el trabajo que evita esta puerta.
-    const { anadidas = frases.length, omitidas = 0 } = alPegar(frases) || {};
+    const { anadidas = 0, omitidas = 0, sobrantes = 0 } = alPegar(parrafos, { tope }) || {};
     if (!anadidas) {
-      decir(`Ninguna de las ${frases.length} líneas tenía nada que corregir.`);
+      decir(`Ninguno de los ${parrafos.length} párrafos tenía nada que corregir.`);
       return;
     }
     if (caja) caja.value = '';
     // Por `toast` y no en el hueco de al lado: al añadir se repinta el panel
-    // entero, así que un mensaje ahí desaparecería en el mismo instante.
-    toast(omitidas
-      ? `${anadidas} frase${anadidas === 1 ? '' : 's'} añadida${anadidas === 1 ? '' : 's'}.`
-        + ` Se omitieron ${omitidas} línea${omitidas === 1 ? '' : 's'} sin nada que corregir.`
-      : `${anadidas} frase${anadidas === 1 ? '' : 's'} añadida${anadidas === 1 ? '' : 's'}.`,
-      omitidas ? 'warning' : 'success', 6000);
+    // entero, así que un mensaje ahí desaparecería en el mismo instante. Y se
+    // cuenta lo que NO entró: pegas un poema, aparecen cuatro párrafos y sin
+    // decir nada uno se queda contando versos.
+    const resto = [
+      omitidas ? `${omitidas} sin nada que corregir` : '',
+      sobrantes ? `${sobrantes} por encima del tope` : '',
+    ].filter(Boolean).join(' y ');
+    toast(`${anadidas} párrafo${anadidas === 1 ? '' : 's'} añadido${anadidas === 1 ? '' : 's'}.`
+      + (resto ? ` Quedaron fuera ${resto}.` : ''),
+      resto ? 'warning' : 'success', 6000);
   });
 }
