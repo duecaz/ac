@@ -273,7 +273,7 @@ body.skin-tv-show .card,
    juego —que es lo que la clase mira— se quedaba con 216 px pasara lo que
    pasara. El ancho lo reparte el modo, igual para los siete temas. */
 .vs-skin-tv-show .vs-body {
-  container-type: inline-size;
+  /* el `container-type` lo declara el modo (styles/vs.css) */
   margin-top: auto;                          /* empuja la tarjeta al fondo (esquina) */
   border-radius: 1.5rem; overflow: auto; padding: .85rem .9rem 1rem;
   animation: tvs-float 6s ease-in-out infinite;
@@ -397,7 +397,7 @@ body.skin-tv-show .card,
   .vs-skin-tv-show .vs-body  {
     box-sizing: border-box;               /* content-box desbordaba el panel */
     margin-top: 0;
-    container-type: inline-size; overflow: hidden;
+    overflow: hidden;
     border-radius: 1rem; padding: 3cqw 3.2cqw; animation: none;
   }
   /* Teclado: la ESTRUCTURA es del andamio compartido (styles/scaffold.css); el

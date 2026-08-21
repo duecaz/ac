@@ -66,7 +66,13 @@
 /* ── Activity panels ─────────────────────────────────────────────────────── */
 .vs-panel { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .vs-body  { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; justify-content: center; overflow: auto; padding: .5rem .75rem;
-  box-sizing: border-box; container-type: inline-size; }
+  box-sizing: border-box;
+  /* CONTENEDOR COMPLETO, no solo de ancho. Con `inline-size`, las unidades de
+     contenedor que usan las plantillas (`cqmin`, `cqh`) SE SALTAN esta caja y se
+     resuelven contra la arena entera: la actividad se dimensionaba contra una
+     pantalla de 1920 mientras vivía en un panel de 470. Medido en pantalla
+     completa, el teclado de Operaciones llenaba el 47 % del alto de su caja. */
+  container-type: size; }
 /* ESTÁNDAR: el panel de actividad y todo su contenido usan border-box, para que
    width:100% + padding NO desborde el panel (el bug que partía las tarjetas en
    móvil). Aplica a CUALQUIER plantilla embebida en VS, en todos los skins. */
@@ -228,13 +234,20 @@
 .vs-body.ww-fit-block  { justify-content: center; overflow: hidden; }
 .vs-body.ww-fit-center { justify-content: center; overflow: auto; }
 .vs-body.ww-fit-center > * { flex: 0 0 auto; margin: auto; }
-/* TOPE de altura del bloque (la calculadora). El teclado llena su bloque (filas
-   1fr), pero el bloque no pasa de ~500px (su tamaño natural cómodo) → en un panel
-   alto NO se estira (se centra con margin:auto); en uno bajo, height:100% manda y
-   encoge para caber. */
+/* EL BLOQUE LLENA SU CAJA, y su forma la guarda el ANCHO DEL PANEL.
+   Aquí ponía `height: min(500px, 100%); max-width: 290px`: un «tamaño natural
+   cómodo» en píxeles que, en pantalla completa, dejaba el teclado en el 47 % del
+   alto y el 62 % del ancho — el dueño mandó la captura: «fíjate en todo el aire
+   que tiene, está horrible». Un tope en px es un tope que no escala (§3), y en
+   una pizarra de 4K es exactamente igual de grande que en un móvil.
+   Ahora crece con su caja y no se deforma porque el tope va en `cqh`: el ancho
+   no puede pasar del 62 % del ALTO del panel, así que el bloque se mantiene
+   vertical y proporcionado en vez de estirarse a lo ancho. Las filas ya estaban
+   topadas por el ancho del panel (`34cqw`, debajo), que es lo que impide teclas
+   larguísimas. */
 .vs-body.ww-fit-block .ww-keypad-round {
-  height: min(500px, 100%);
-  width: 100%; max-width: 290px; margin: auto;
+  height: 100%;
+  width: 100%; max-width: min(100%, 62cqh); margin: auto;
 }
 /* Las teclas no se hacen más altas que ~1 ancho y pico (cqw = ancho del panel):
    en un panel muy alto las filas se topan ahí y el teclado se centra en su hueco,

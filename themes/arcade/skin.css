@@ -155,7 +155,7 @@
    previsto». El ancho lo reparte el MODO (styles/vs.css), igual para los siete
    temas; aquí solo se pinta la carcasa. Lo vigila tests/temaSinMedidas.mjs. */
 .vs-skin-arcade .vs-body {
-  position: relative; container-type: inline-size;
+  position: relative;   /* el `container-type` lo declara el modo (styles/vs.css) */
   border-radius: .9rem; padding: .7rem .65rem; overflow: hidden auto;
   background: #05030f;
 }
