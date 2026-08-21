@@ -255,6 +255,14 @@
    altas — no barras verticales. */
 .vs-body .ww-keypad {
   grid-auto-rows: minmax(0, 34cqw); align-content: center;
+  /* EL TECLADO MIDE LO QUE MIDEN SUS FILAS, no todo el hueco. Con `flex: 1` se
+     estiraba a lo alto del panel y, como sus filas están topadas para que las
+     teclas no se conviertan en barras, el sobrante se quedaba DENTRO: una banda
+     de aire encima y otra debajo de las teclas, dentro del propio teclado. Así
+     el bloque —enunciado + teclado— queda junto y el aire se va a los bordes,
+     que es donde no molesta. Puede encoger si el panel es bajo (`0 1 auto` +
+     filas `minmax(0, …)`), que es lo que impide que se salga. */
+  flex: 0 1 auto; height: auto;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
