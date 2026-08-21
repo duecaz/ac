@@ -8,7 +8,8 @@
 //
 // Recorre lo que toca el dedo: marca las pruebas, comprueba que la hoja AVISA
 // de que aún no ha entregado, pulsa Entregar y verifica que el informe SALE por
-// alguna vía. Y la contra-prueba: con sesión, sigue yendo al panel.
+// alguna vía. Y las contra-pruebas: con sesión sigue yendo al panel, y en un PC
+// NO se abre la hoja de compartir aunque el navegador la tenga.
 //
 //   node tools/hoja-smoke.mjs
 import { createRequire } from 'node:module';
@@ -68,7 +69,10 @@ async function abrirYMarcar(page, { conSesion, conCompartir }) {
 
 // ── 1 · SIN SESIÓN, EN EL MÓVIL — el caso que se perdió ──────────────────────
 {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  // Un móvil DE VERDAD: con dedo. Sin `hasTouch`/`isMobile` el navegador emula
+  // un ratón, `(pointer: coarse)` no casa y esta prueba estaría comprobando un
+  // PC mientras dice «móvil».
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
   const page = await ctx.newPage();
   const n = await abrirYMarcar(page, { conSesion: false, conCompartir: true });
   console.log(`\n── sin sesión, en el móvil (${n} pruebas marcadas) ──`);
@@ -110,12 +114,35 @@ async function abrirYMarcar(page, { conSesion, conCompartir }) {
   await ctx.close();
 }
 
-// ── 3 · CONTRA-PRUEBA: con sesión sigue yendo al panel ──────────────────────
+// ── 3 · PC CON hoja de compartir — el fallo que vio el dueño ────────────────
+// Chrome en Windows TIENE `navigator.share`, pero su diálogo se queda en
+// «Enviar por correo». En un PC eso es un rodeo peor que copiar y pegar: la
+// escalera debe SALTARSE el escalón 2 aunque la API exista.
+{
+  const ctx = await browser.newContext({ permissions: ['clipboard-read', 'clipboard-write'] });
+  const page = await ctx.newPage();
+  await abrirYMarcar(page, { conSesion: false, conCompartir: true });
+  console.log('\n── PC CON navigator.share (Chrome en Windows) ──');
+  await page.locator('#qh-enviar').click();
+  await page.waitForTimeout(400);
+  const compartido = await page.evaluate(() => window.__compartido);
+  if (compartido) mal('en un PC se abrió la hoja de compartir («Enviar por correo») en vez de copiar');
+  else ok('en un PC NO se abre la hoja de compartir aunque el navegador la tenga');
+  const texto = await page.locator('#qh-salida').inputValue();
+  if (await page.locator('#qh-salida').isVisible() && texto.includes('Veredictos:')) ok('en un PC el informe se copia y queda a la vista');
+  else mal('en un PC el informe no aparece por ningún lado');
+  await ctx.close();
+}
+
+// ── 4 · CONTRA-PRUEBA: con sesión sigue yendo al panel ──────────────────────
 {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await abrirYMarcar(page, { conSesion: true, conCompartir: true });
   console.log('\n── CONTRA-PRUEBA · con sesión de profe ──');
+  const etiqueta = (await page.locator('#qh-enviar').textContent()).trim();
+  if (/panel/i.test(etiqueta)) ok(`el botón DICE a dónde va ANTES de pulsarlo: «${etiqueta}»`);
+  else mal(`teniendo sesión, el botón no dice que va al panel: «${etiqueta}»`);
   if (await page.locator('#qh-enviar').isDisabled()) mal('el botón de entregar está deshabilitado incluso CON sesión');
   else { await page.locator('#qh-enviar').click(); await page.waitForTimeout(600); }
   const alPanel = await page.evaluate(() => window.__enviadoAlPanel);

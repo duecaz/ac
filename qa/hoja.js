@@ -35,7 +35,7 @@
 // quien te está haciendo un favor es un peaje, no una salida.
 // Ahora entregar es una ESCALERA que siempre acaba en algo:
 //   1) hay sesión  → al panel del profe (#/moderar), que es lo mejor;
-//   2) si no, la hoja de compartir del móvil → WhatsApp, correo, lo que use;
+//   2) si no, y ESTÁ EN UN MÓVIL, su hoja de compartir → WhatsApp, correo…;
 //   3) si no hay ni eso → el texto copiado al portapapeles.
 // Y mientras no haya entregado, la hoja lo DICE al terminar: marcarlo todo no
 // es entregarlo. Vigilado por tools/hoja-smoke.mjs (sin sesión, como él).
@@ -248,8 +248,17 @@ export function montarHoja(root, { ronda, storageKey, contexto, enviar, puedeEnv
     // La hoja de compartir del móvil es la salida de quien no tiene cuenta: con
     // ella el informe se va por WhatsApp o correo sin registrarse en nada. Se
     // INYECTA para poder probarla sin un móvil de verdad.
+    // LA HOJA DE COMPARTIR ES DEL MÓVIL, NO DEL PC (dueño, con la pantalla
+    // delante: «sale enviar por correo»). Chrome en Windows TAMBIÉN tiene
+    // `navigator.share`, así que dar por hecho «hay share ⇒ es un móvil» estaba
+    // mal: en un PC ese diálogo suele quedarse en «Enviar por correo», que es un
+    // rodeo peor que copiar y pegar. Se pregunta por el DEDO, no por la API.
+    const enMovil = () => {
+      try { return matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0; }
+      catch { return false; }
+    };
     const compartirFn = compartir || (async (texto, titulo) => {
-      if (!navigator.share) return false;
+      if (!navigator.share || !enMovil()) return false;
       await navigator.share({ title: titulo, text: texto });
       return true;
     });
@@ -267,7 +276,12 @@ export function montarHoja(root, { ronda, storageKey, contexto, enviar, puedeEnv
     const revisar = () => {
       if (entregado) return;
       const motivo = puedeEnviar ? puedeEnviar() : null;
-      btn.title = motivo || 'Entregar el informe';
+      // EL BOTÓN DICE A DÓNDE VA. «Entregar informe» a secas no distingue entre
+      // «se guarda en el panel» y «se te abre el correo», y el dueño pulsó
+      // esperando lo primero (era lo que veía cuando tenía sesión) y le salió lo
+      // segundo. El destino se sabe ANTES de pulsar, no después.
+      btn.textContent = motivo ? 'Entregar informe' : 'Entregar al panel';
+      btn.title = motivo || 'Se guardará en el panel del profe';
       const est = $('#qh-estado');
       if (motivo) estado(motivo, '');
       else if (est && est.textContent && !est.classList.contains('qh-ok')) estado('');
@@ -288,7 +302,8 @@ export function montarHoja(root, { ronda, storageKey, contexto, enviar, puedeEnv
           listo('Informe enviado ✓ — ya lo tiene el equipo.');
           return;
         }
-        // 2) La hoja de compartir del móvil: sin cuenta y sin registrarse.
+        // 2) La hoja de compartir DEL MÓVIL: sin cuenta y sin registrarse.
+        //    En un PC se salta a copiar, que es lo que allí sirve.
         if (await compartirFn(texto, `${ronda.titulo || 'Hoja de pruebas'} · ${ronda.id || ''}`)) {
           listo('Informe compartido ✓ — comprueba que se envió en la app que elegiste.');
           return;
