@@ -31,13 +31,6 @@ body.bg-set.bg-inked,
 body.bg-set.bg-inked .card,
 .ww-player-frame.bg-set.bg-inked .card { color: var(--ww-card-fg, var(--ww-fg, #1f2937)); }
 
-body.bg-set.bg-notebook,
-.ww-player-frame.bg-set.bg-notebook {
-  background:
-    linear-gradient(to right, transparent 0, transparent 60px, rgba(220,38,38,.5) 60px, rgba(220,38,38,.5) 62px, transparent 62px),
-    repeating-linear-gradient(to bottom, #fdfcf6 0, #fdfcf6 31px, rgba(99,102,241,.25) 31px, rgba(99,102,241,.25) 32px);
-}
-
 /* Pizarra escolar verde. */
 body.bg-set.bg-greenboard,
 .ww-player-frame.bg-set.bg-greenboard {
@@ -109,7 +102,6 @@ body.bg-set:not(.bg-none) { background-attachment: fixed; }
    El alto por defecto (antes en línea, dentro de backgroundPreviewHtml): aquí
    se puede sobrescribir por contexto, que es lo que hace la página de jugar. */
 .ww-bg-preview { height: 60px; }
-.ww-bg-preview.bg-notebook    { background: linear-gradient(to right, transparent 0, transparent 12px, rgba(220,38,38,.5) 12px, rgba(220,38,38,.5) 13px, transparent 13px), repeating-linear-gradient(to bottom, #fdfcf6 0, #fdfcf6 7px, rgba(99,102,241,.25) 7px, rgba(99,102,241,.25) 8px); }
 .ww-bg-preview.bg-greenboard  { background: #1f5135; }
 .ww-bg-preview.bg-grid        { background: linear-gradient(to right, rgba(99,102,241,.3) 1px, transparent 1px) 0 0/8px 8px, linear-gradient(to bottom, rgba(99,102,241,.3) 1px, transparent 1px) 0 0/8px 8px, #fafafa; }
 .ww-bg-preview.bg-corkboard   { background: #c8985a; }

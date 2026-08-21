@@ -98,7 +98,7 @@ Toda actividad pasa por `normalize()` (core/migrate.js). Forma canónica
 
   "presentation": {              // DEFAULT_PRESENTATION
     "skin": "default",           // 'default' | 'space' | 'colegios' | …
-    "background": "none",        // 'none' | 'notebook' | 'stars' | …
+    "background": "none",        // 'none' | 'greenboard' | 'corkboard' | … (ver core/backgrounds.js)
     "layout": "auto",
     "sound": true,
     "showTimer": true,

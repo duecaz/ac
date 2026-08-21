@@ -1,7 +1,7 @@
 // Background system. Independent axis from skins.
 //   - skin = colors + sounds (per-activity, applied in player)
-//   - background = visual texture (cuaderno, pizarra verde, …)
-// The combo lets a "notebook" paper coexist with any skin's color palette.
+//   - background = visual texture (pizarra verde, corcho, …)
+// The combo lets a textured canvas coexist with any skin's color palette.
 // Backgrounds are CSS-only (class on body); no JS-rendered canvas — EXCEPT
 // 'custom', whose image travels in the activity (presentation.backgroundImage)
 // and is applied as an inline CSS var so it can be any teacher-uploaded photo.
@@ -53,8 +53,6 @@ export function isSafeBgImage(url) {
 // legibilidad se DECIDE al añadirlo, no se descubre con la clase delante.
 export const BACKGROUNDS = {
   none:       { label: 'Ninguno',      description: 'Sin fondo.' },   // el lienzo es el del TEMA
-  notebook:   { label: 'Cuaderno',     description: 'Hoja con renglones.',
-                ink: '#1f2937', colorBase: '#fdfcf6' },
   greenboard: { label: 'Pizarra verde',description: 'Pizarra escolar verde.',
                 ink: '#f5f5dc', colorBase: '#1f5135' },
   grid:       { label: 'Cuadrícula',   description: 'Hoja cuadriculada.',

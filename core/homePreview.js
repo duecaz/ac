@@ -14,7 +14,6 @@ import { getSkin } from './skins.js';
 // exactamente igual que hace el juego (`applyBackground` cae a 'none'), para que
 // la tarjeta no prometa una textura que ya no se va a ver.
 const BG_REPR = {
-  notebook:   'repeating-linear-gradient(#ffffff,#ffffff 13px,#d7e3f0 14px,#ffffff 15px)',
   greenboard: '#1f5c43',
   grid:       'repeating-linear-gradient(#ffffff,#ffffff 12px,#e3e9f2 13px),repeating-linear-gradient(90deg,#ffffff,#ffffff 12px,#e3e9f2 13px)',
   corkboard:  '#c8a06a',
