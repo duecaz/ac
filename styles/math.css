@@ -67,13 +67,23 @@
   grid-template-columns: repeat(var(--key-cols, 3), minmax(0, 1fr));
   grid-auto-rows: minmax(0, 1fr);
   gap: var(--key-gap, clamp(.3rem, 1.4cqmin, .7rem));
-  width: min(100%, 360px);
+  /* EL TOPE ES LA FORMA, NO UN NÚMERO. Aquí ponía `min(100%, 360px)`: en una
+     pizarra 4K el teclado se quedaba en 360 px —el 60 % de su caja— y el resto
+     era aire («fíjate en todo el aire que tiene», con captura). Un tope en px no
+     escala (§3). El tope de verdad es que las teclas no se estiren: el ancho no
+     pasa de 3/4 del ALTO de la caja, que es la proporción del propio teclado
+     (3 columnas × 4 filas). Así llena lo que puede y conserva su forma. */
+  width: min(100%, 75cqh);
   height: 100%;                            /* respaldo para navegadores que no resuelven flex-basis en grid */
 }
 .ww-keypad .ww-key {
   min-height: 0; min-width: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: var(--key-size, clamp(1rem, 5cqmin, 1.9rem));
+  /* La cifra crece CON la tecla. `1.9rem` era otro techo fijo: con teclas de
+     190 px en pantalla completa, el dígito se quedaba en 30 px —perdido en medio
+     del botón— y en un móvil ese mismo techo no llegaba a estorbar. El piso sí
+     se queda: por debajo de 1rem no se lee a tres metros. */
+  font-size: var(--key-size, clamp(1rem, 11cqmin, 3.4rem));
   font-weight: var(--key-weight, 700);
   padding: var(--key-pad, 0);
   border: var(--key-border, 2px solid #ced4da);
