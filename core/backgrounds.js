@@ -1,6 +1,6 @@
 // Background system. Independent axis from skins.
 //   - skin = colors + sounds (per-activity, applied in player)
-//   - background = visual texture (paper, blackboard, …)
+//   - background = visual texture (cuaderno, pizarra verde, …)
 // The combo lets a "notebook" paper coexist with any skin's color palette.
 // Backgrounds are CSS-only (class on body); no JS-rendered canvas — EXCEPT
 // 'custom', whose image travels in the activity (presentation.backgroundImage)
@@ -55,12 +55,8 @@ export const BACKGROUNDS = {
   none:       { label: 'Ninguno',      description: 'Sin fondo.' },   // el lienzo es el del TEMA
   notebook:   { label: 'Cuaderno',     description: 'Hoja con renglones.',
                 ink: '#1f2937', colorBase: '#fdfcf6' },
-  blackboard: { label: 'Pizarra',      description: 'Pizarra de tiza.',
-                ink: '#f5f5dc', colorBase: '#2d3a2e' },
   greenboard: { label: 'Pizarra verde',description: 'Pizarra escolar verde.',
                 ink: '#f5f5dc', colorBase: '#1f5135' },
-  paper:      { label: 'Papel',        description: 'Papel beige liso.',
-                ink: '#1f2937', colorBase: '#f5f1e6' },
   grid:       { label: 'Cuadrícula',   description: 'Hoja cuadriculada.',
                 ink: '#1f2937', colorBase: '#fafafa' },
   corkboard:  { label: 'Corcho',       description: 'Tablero de corcho.',
@@ -69,8 +65,6 @@ export const BACKGROUNDS = {
                 ink: '#1f2937', colorBase: '#efe2c4' },
   arena:      { label: 'Arena',        description: 'Escenario de concurso.',
                 ink: '#e2e8f0', colorBase: '#0c1530' },
-  stars:      { label: 'Estrellado',   description: 'Cielo de noche.',
-                ink: '#e0e7ff', colorBase: '#1e1b4b' },
   custom:     { label: 'Mi imagen',    description: 'Sube tu propia foto.', plate: true }
 };
 

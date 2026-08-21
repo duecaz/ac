@@ -10,16 +10,16 @@ import { getSkin } from './skins.js';
 
 // Fondo REPRESENTATIVO por textura (backgrounds.css vive en clases body/frame que no
 // alcanzan a .acard-preview; a tamaño miniatura basta el color/gradiente dominante).
+// Solo los fondos VIVOS: una actividad guardada con uno retirado cae al skin,
+// exactamente igual que hace el juego (`applyBackground` cae a 'none'), para que
+// la tarjeta no prometa una textura que ya no se va a ver.
 const BG_REPR = {
   notebook:   'repeating-linear-gradient(#ffffff,#ffffff 13px,#d7e3f0 14px,#ffffff 15px)',
-  blackboard: '#2f4a3a',
   greenboard: '#1f5c43',
-  paper:      '#efe7d3',
   grid:       'repeating-linear-gradient(#ffffff,#ffffff 12px,#e3e9f2 13px),repeating-linear-gradient(90deg,#ffffff,#ffffff 12px,#e3e9f2 13px)',
   corkboard:  '#c8a06a',
   classroom:  '#f3e7d2',
   arena:      'radial-gradient(circle at 50% 0%,#25325a,#0f1830)',
-  stars:      'radial-gradient(circle at 50% 20%,#1e1b4b,#0b1024)',
 };
 
 // Fondo del preview según la presentación de la actividad: fondo elegido > skin >

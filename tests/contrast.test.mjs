@@ -51,8 +51,14 @@ assert.deepStrictEqual(malosBg, [],
 ok(`los ${fondos.length} fondos declaran placa, o tinta + lienzo con ≥${AA_TEXTO}:1`);
 
 // Cada fondo con lienzo propio se mide de verdad (no basta con que exista el campo).
+// La regla NO es «hay al menos N fondos»: ese número había que bajarlo a mano al
+// retirar uno de la apariencia (Pizarra, Papel y Estrellado salieron en
+// v1.51.567) y un contador que se edita a mano acaba tapando lo que vigila. Lo
+// que de verdad importa es que NINGÚN fondo se quede sin medir: todo el que no
+// sea `none` (el lienzo es del tema) ni lleve placa DEBE declarar tinta+lienzo.
 const conLienzo = fondos.filter(([, d]) => d.ink && d.colorBase);
-assert.ok(conLienzo.length >= 9, `esperaba ≥9 fondos con tinta declarada, hay ${conLienzo.length}`);
+const sinMedir = fondos.filter(([n, d]) => n !== 'none' && !d.plate && !(d.ink && d.colorBase)).map(([n]) => n);
+assert.deepStrictEqual(sinMedir, [], `fondos sin tinta+lienzo declarados (nadie puede medir su contraste): ${sinMedir.join(', ')}`);
 for (const [name, d] of conLienzo) {
   assert.ok(ratio(d.ink, d.colorBase) >= AA_TEXTO, `${name}: ${r2(d.ink, d.colorBase)}:1`);
 }
