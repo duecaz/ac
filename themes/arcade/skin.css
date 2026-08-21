@@ -142,9 +142,14 @@
 .vs-skin-arcade .vs-panel.vs-left  { background: radial-gradient(ellipse 120% 80% at 60% 50%, rgba(34,211,238,.08), transparent 70%); }
 .vs-skin-arcade .vs-panel.vs-right { background: radial-gradient(ellipse 120% 80% at 40% 50%, rgba(255,59,107,.08), transparent 70%); }
 
+/* SIN MEDIDAS (§3). Aquí vivía `flex: 1; width: 100%; max-width: 230px`, y ese
+   tope de 230 px era la «cabina» de la máquina recreativa: se veía bien en la
+   maqueta y dejaba la columna del juego a un tercio de lo que le toca. El dueño
+   lo vio jugando: «con el tema Arcade las columnas no llenan como estaba
+   previsto». El ancho lo reparte el MODO (styles/vs.css), igual para los siete
+   temas; aquí solo se pinta la carcasa. Lo vigila tests/temaSinMedidas.mjs. */
 .vs-skin-arcade .vs-body {
   position: relative; container-type: inline-size;
-  flex: 1; width: 100%; max-width: 230px;
   border-radius: .9rem; padding: .7rem .65rem; overflow: hidden auto;
   background: #05030f;
 }
@@ -202,8 +207,19 @@
 
 /* ── Otras plantillas en VS (Quiz/Tildes…) — texto legible sobre la pantalla ─ */
 .vs-skin-arcade .vs-body .ww-q,
-.vs-skin-arcade .vs-body .ww-phead,
-.vs-skin-arcade .vs-body .tc-passage { color: #eafcff; }
+.vs-skin-arcade .vs-body .ww-phead { color: #eafcff; }
+
+/* LA HOJA VIENE EN PAREJA. Aquí estaba `.tc-passage { color: #eafcff }`, tinta
+   casi blanca… sobre el papel color crema que pinta la hoja de Tildes/Comas
+   (`--ww-paper`, styles/textCorrection.css). Resultado: 1,05:1 — el dueño mandó
+   la captura con los dos cuadernos EN BLANCO, sin una letra visible.
+   El fallo no fue el color: fue tocar UNA mitad de una pareja. El papel y la
+   tinta se declaran juntos o no se declaran, y así el tema puede tener su hoja
+   negra de máquina recreativa sin dejar a nadie sin texto. */
+.vs-skin-arcade .vs-body {
+  --ww-paper: #0b0a1c;
+  --ww-paper-ink: #eafcff;
+}
 /* SIN `color` a pelo: la tinta la trae `--ww-shape-N-fg`, que este tema declara
    OSCURA en las cuatro formas (core/skins.js) porque su paleta es de neón. El
    `#fff` que había aquí pisaba su propia respuesta: 1,4:1 sobre el amarillo,
@@ -228,7 +244,7 @@
   .vs-skin-arcade .vss-bar    { height: 46px; }
   .vs-skin-arcade .vss-info::after { display: none; }
   .vs-skin-arcade .vss-badge  { animation: none; }
-  .vs-skin-arcade .vs-body    { max-width: 100%; width: 100%; border-radius: .55rem; }
+  .vs-skin-arcade .vs-body    { border-radius: .55rem; }
 }
 
 /* Sin animaciones continuas si el usuario las reduce O en dispositivos lite
