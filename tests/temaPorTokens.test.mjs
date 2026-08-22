@@ -23,6 +23,13 @@
 // de un tirón, sin valla y sin capturas, es como se rompió la barra del
 // marcador (256k píxeles de diferencia).
 //
+// LÍMITE DECLARADO: la anatomía se reconoce por NOMBRE DE CLASE, así que un
+// tema que escriba `.vs-body > *` o `.vs-body :is(button, input)` invade sin
+// que este barrido lo cuente. No se cierra hoy porque la heurística que haría
+// falta («desciende de un contenedor de plantilla y pinta») da falsos positivos
+// sobre el chrome propio del tema, que sí usa `> *`. Queda dicho aquí en vez de
+// ser un agujero silencioso, y se revisa al cerrar la migración (TANDA 4).
+//
 // Run: node tests/temaPorTokens.test.mjs
 import assert from 'node:assert';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -38,10 +45,17 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 // Se declara lo contrario —las hojas de CHROME, que son pocas y estables— y
 // TODO lo demás en styles/ es anatomía de juego. Así una plantilla nueva nace
 // protegida sin que nadie se acuerde de apuntarla.
+// OJO: esta partición es la MISMA pregunta que el `EXCLUDED` de
+// tests/styles.test.mjs («¿esta hoja es el juego?»), y no puede contradecirla.
+// Aquí son sus nueve entradas MÁS `vs`/`teams`, que son la arena del duelo y de
+// eso el tema SÍ es dueño. `live.css` estuvo un rato en esta lista y era un
+// agujero: dentro vive `.ww-kahoot-grid` —las opciones que lee la clase—, así
+// que un tema habría podido pintarlas sin subir el ratchet. Es la misma lección
+// que ya está escrita en styles.test.mjs: una lista de exclusiones es una lista
+// de sitios donde la ley no mira.
 const CHROME = {
   'home.css':        'la barra y «Mis actividades»: chrome del profe, no juego',
   'editor.css':      'el editor es un formulario, no el juego',
-  'live.css':        'el tablero del docente en vivo',
   'teams.css':       'el montaje de equipos',
   'vs.css':          'la arena del duelo: marcador, escenario, paneles — de esto SÍ es dueño el tema',
   'backgrounds.css': 'las texturas de fondo (otro eje)',
@@ -56,13 +70,14 @@ const CHROME = {
 const clasesDe = (css) => new Set(
   [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)].map(m => m[1]));
 
+const HOJAS_DE_JUEGO = readdirSync(join(ROOT, 'styles'))
+  .filter(f => f.endsWith('.css') && !CHROME[f]);
 const anatomia = new Set();
-for (const f of readdirSync(join(ROOT, 'styles')).filter(f => f.endsWith('.css'))) {
-  if (CHROME[f]) continue;
+for (const f of HOJAS_DE_JUEGO) {
   for (const c of clasesDe(readFileSync(join(ROOT, 'styles', f), 'utf8'))) anatomia.add(c);
 }
 assert.ok(anatomia.size > 50, `se esperaba descubrir la anatomía de las plantillas, hay ${anatomia.size} clases`);
-ok(`anatomía descubierta: ${anatomia.size} clases de juego en ${readdirSync(join(ROOT, 'styles')).filter(f => f.endsWith('.css') && !CHROME[f]).length} hojas de plantilla (las de chrome se declaran aparte, con motivo)`);
+ok(`anatomía descubierta: ${anatomia.size} clases de juego en ${HOJAS_DE_JUEGO.length} hojas de plantilla (las de chrome se declaran aparte, con motivo)`);
 
 // ── LAS REGLAS DE CADA TEMA ─────────────────────────────────────────────────
 /** Parte una hoja en reglas {selector, propiedades[]}, sin comentarios. */
@@ -77,6 +92,13 @@ function reglas(css) {
 /** Las clases que el selector ALCANZA (cualquiera de sus partes). */
 const clasesDelSelector = (sel) => [...sel.matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)].map(m => m[1]);
 
+/** ¿Esta regla pinta DENTRO de una plantilla? UN solo sitio lo decide: estaba
+ *  escrito tres veces (escaneo + las dos contra-pruebas) y con eso la
+ *  contra-prueba podía acabar validando un criterio distinto del vigilado. */
+const esInvasora = (r) =>
+  r.props.some(p => !p.startsWith('--')) &&
+  clasesDelSelector(r.selector).some(c => anatomia.has(c));
+
 const invasoras = {};
 const temas = readdirSync(join(ROOT, 'themes'), { withFileTypes: true })
   .filter(e => e.isDirectory()).map(e => e.name);
@@ -87,8 +109,13 @@ for (const tema of temas) {
   for (const r of reglas(css)) {
     const pintadas = r.props.filter(p => !p.startsWith('--'));
     if (!pintadas.length) continue;                       // solo tokens: la vía legítima
-    const toca = clasesDelSelector(r.selector).filter(c => anatomia.has(c));
-    if (toca.length) invasoras[tema].push({ sel: r.selector, toca: [...new Set(toca)], props: pintadas });
+    // Se cuenta por SELECTOR SUELTO, no por regla: con `a, b, c { … }` seis
+    // invasiones se disfrazan de una y el tope bajaría cinco puntos sin haber
+    // migrado nada — el ratchet dejaría entrar cinco gratis en la tanda
+    // siguiente. Un número que se puede maquillar no vigila.
+    for (const sel of r.selector.split(',').map(x => x.trim()).filter(Boolean)) {
+      if (esInvasora({ selector: sel, props: r.props })) invasoras[tema].push({ sel, props: pintadas });
+    }
   }
 }
 
@@ -102,8 +129,8 @@ const TOPE = {
   // tokens, verificado con `tools/shots.mjs` (11/12 capturas idénticas y la
   // otra a 2 píxeles de antialias). Lo que queda es Quiz (`ww-opt`) y la
   // tarjeta/marco → TANDA 3.
-  'tv-show': 7,
-  'arcade':  12,   // TANDA 3: su Operaciones va con la tipografía Press Start 2P
+  'tv-show': 8,   // se cuenta por selector suelto, no por regla (ver abajo)
+  'arcade':  16,   // TANDA 3: su Operaciones va con la tipografía Press Start 2P
 };
 const filas = temas.map(t => ({ tema: t, n: (invasoras[t] || []).length, tope: TOPE[t] }));
 console.log('\n  reglas de tema que PINTAN dentro de la anatomía de una plantilla:');
@@ -127,20 +154,18 @@ ok('el tope refleja la deuda real de hoy (un ratchet suelto deja entrar reglas g
 // Sin esto el test podría estar prohibiéndolo todo —incluido lo correcto— y
 // nadie lo notaría hasta intentar escribir un tema.
 {
-  const anatomico = [...anatomia].find(c => /^ww-key$|^ww-opt$/.test(c)) || [...anatomia][0];
+  const anatomico = 'ww-key';
+  assert.ok(anatomia.has(anatomico), 'la anatomía debe incluir .ww-key (la tecla de Operaciones)');
   const legitimas = reglas(`
     .vs-skin-x .vs-left { --key-bg: red; --key-fg: white; }
     .vs-skin-x .vss-bar { height: 46px; background: navy; }
     .vs-skin-x .${anatomico} { --algo: 2px; }
   `);
   for (const r of legitimas) {
-    const pintadas = r.props.filter(p => !p.startsWith('--'));
-    const toca = clasesDelSelector(r.selector).filter(c => anatomia.has(c));
-    assert.ok(!(pintadas.length && toca.length), `esta regla es legítima y el test la acusa: ${r.selector}`);
+    assert.ok(!esInvasora(r), `esta regla es legítima y el test la acusa: ${r.selector}`);
   }
-  const invasora = reglas(`.vs-skin-x .${anatomico} { background: red; }`)[0];
-  assert.ok(clasesDelSelector(invasora.selector).some(c => anatomia.has(c))
-    && invasora.props.some(p => !p.startsWith('--')), 'el test debe cazar una invasión nueva');
+  assert.ok(esInvasora(reglas(`.vs-skin-x .${anatomico} { background: red; }`)[0]),
+    'el test debe cazar una invasión nueva');
   ok(`CONTRA-PRUEBA: los tokens por contenedor y el chrome del tema pasan; pintar «.${anatomico}» se caza`);
 }
 
