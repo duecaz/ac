@@ -345,6 +345,20 @@
   margin-top: .25em;
   padding-inline: var(--ww-fs-reserve, 52px);
 }
+/* EN VERTICAL EL ENUNCIADO BAJA DE LA FRANJA DE CHIPS. Compartir línea con los
+   chips ahorra alto en apaisado, pero en un marco alto la pregunta ENVUELVE y
+   sus letras acaban debajo de «⏱ 12 · ★ 40» (lo cazó la matriz en vertical al
+   estrenar el chip de puntos del Quiz). En vertical sobra alto y falta ancho:
+   el enunciado toma el ancho entero y empieza bajo los chips — misma reserva
+   que la Sopa (fuente del chip × su caja + el relleno del HUD). */
+/* Sin nombre de contenedor: el Quiz no monta el andamio (`player` es
+   .ww-scaffold), así que la consulta resuelve contra el contenedor más
+   cercano — el widget (#ww-player-widget, container-type: size). Y gateado a
+   que HAYA chips: la ronda de VS monta .ww-player sin HUD y no debe pagar la
+   franja. */
+@container (aspect-ratio < 1/1) {
+  .ww-player:has(> .edu-hud) .ww-prow { padding-inline: .5rem; margin-top: max(30px, 6.5cqmin); }
+}
 .ww-player .ww-prow .ww-q { flex: 1 1 auto; text-align: center; }
 .ww-play-page .ww-player-frame .ww-player .ww-prow { flex: 0 0 auto; }
 .ww-play-page .ww-player-frame .ww-player .ww-q {

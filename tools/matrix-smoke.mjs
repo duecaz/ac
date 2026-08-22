@@ -108,6 +108,42 @@ const TOCABLE = `(sel) => {
 }`;
 const tocable = (sel) => page.evaluate(`(${TOCABLE})(${JSON.stringify(sel)})`);
 
+// UN CHIP NO PISA TEXTO DEL JUEGO (ronda 2026-08-17: en la Sopa las pastillas
+// tapaban las letras). El HUD no captura toques (pointer-events: none), así que
+// el hit-testing no lo ve: el daño es LEGIBLE — texto del juego debajo de una
+// pastilla. Se miden las LETRAS (Range), no la caja: un enunciado centrado
+// tiene caja a todo el ancho y acusaría a Quiz/Globos sin tocar nada. Se pasa
+// al montar, quieto: lo que se MUEVE por debajo (un globo) está permitido.
+const FN_TAPADO = `() => {
+  const w = document.querySelector('#ww-player-widget');
+  const hud = w?.querySelector('.edu-hud');
+  if (!hud) return null;
+  const vis = (e) => { const c = getComputedStyle(e); return c.display !== 'none' && c.visibility !== 'hidden'; };
+  const chips = [...hud.querySelectorAll('.edu-hud__chip')].filter(c => !c.hidden && vis(c));
+  const conTexto = [...w.querySelectorAll('*')].filter(e =>
+    !hud.contains(e) && vis(e)
+    && [...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()));
+  for (const c of chips) {
+    const a = c.getBoundingClientRect();
+    if (!a.width) continue;
+    for (const e of conTexto) {
+      for (const nodo of e.childNodes) {
+        if (nodo.nodeType !== 3 || !nodo.textContent.trim()) continue;
+        const rango = document.createRange();
+        rango.selectNodeContents(nodo);
+        for (const b of rango.getClientRects()) {
+          const solape = Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left))
+                       * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+          if (solape > 0.3 * a.width * a.height) {
+            return '«' + c.textContent.trim() + '» pisa «' + e.textContent.trim().slice(0, 24) + '»';
+          }
+        }
+      }
+    }
+  }
+  return null;
+}`;
+
 // Errores del navegador durante el paso actual (se vacía entre combinaciones).
 // Se ignoran los de RED: este sandbox no tiene salida a internet, así que una
 // imagen o fuente que no carga es ruido del entorno, no un fallo de la app.
@@ -417,8 +453,31 @@ for (const t of seeded) {
                 const rw = w.getBoundingClientRect();
                 return { top: Math.round(r.top - rw.top), left: Math.round(r.left - rw.left) };
               })(),
+              // UN CHIP NO PISA TEXTO DEL JUEGO (ronda 2026-08-17: en la Sopa
+              // las pastillas tapaban las letras). El HUD no captura toques
+              // (pointer-events: none), así que el hit-testing de arriba no lo
+              // ve: el daño es LEGIBLE, no táctil — texto del juego debajo de
+              // una pastilla. Se mide al montar: cada chip visible contra cada
+              // nodo con texto propio fuera del HUD; solape >30 % del chip =
+              // tapado. Al montar, no jugando: lo que se MUEVE por debajo (un
+              // globo subiendo) está permitido por diseño.
             };
           });
+          if (rr) rr.tapado = await page.evaluate(`(${FN_TAPADO})()`);
+          // EN VERTICAL TAMBIÉN: a 1280×800 la rejilla centrada no llega arriba
+          // y el solape que reportó el compañero (móvil/marco alto) no existe.
+          // Se estrecha la ventana, se re-mide, y se restaura.
+          // Tres geometrías: la de siembra (1280×800), un móvil en vertical y
+          // un apaisado BAJO (donde a un tablero le falta alto, crece hasta el
+          // borde y mete sus letras bajo los chips — el caso de la Sopa).
+          for (const [w, h, nombre] of [[480, 900, 'en vertical'], [1100, 430, 'en apaisado bajo']]) {
+            if (!rr || rr.tapado) break;
+            await page.setViewportSize({ width: w, height: h });
+            await page.waitForTimeout(250);
+            rr.tapado = await page.evaluate(`(${FN_TAPADO})()`);
+            if (rr.tapado) rr.tapado += ` (${nombre})`;
+          }
+          if (rr) { await page.setViewportSize({ width: 1280, height: 800 }); await page.waitForTimeout(150); }
           const exc = ENVIO_ES_MECANICA[t.name];
           // Sin widget no se puede escanear — y callarlo sería lo peor: la ley
           // §3b0 dejaría de vigilarse, en silencio, el día que un player cambie
@@ -439,6 +498,7 @@ for (const t of seeded) {
               fallos.push(`el HUD no está en la esquina: ${rr.esquina.top}px desde arriba, `
                 + `${rr.esquina.left}px desde la izquierda (tope ${TOPE_ESQUINA}) — su raíz no llena el hueco`);
             }
+            if (rr.tapado) fallos.push(`un chip del HUD pisa texto del juego: ${rr.tapado}`);
           }
           roles.push({ label: t.label, ...medida, exc, fallos });
           if (fallos.length) { status = 'error'; detail = `roles: ${fallos[0]}`; }
