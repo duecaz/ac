@@ -46,6 +46,14 @@
   flex-wrap: wrap;
   gap: var(--math-head-gap, clamp(.35rem, 1.8cqmin, 1.1rem));
   max-width: 100%;
+  /* LA CHAPA ES DEL TAMAÑO DE UNA TECLA, no de su texto (dueño, 2026-08-22:
+     «2×6 y 0 están muy pequeños sus cajas respecto de las de abajo»). La letra
+     ya era la MAYOR de la pantalla —1,3× la cifra de una tecla—, pero su caja
+     medía el texto más un relleno mínimo: 29 px de alto contra teclas de 71.
+     En una calculadora de verdad el visor no es más bajo que una fila de
+     teclas. Se pide por token para que cada modo diga cuánto vale ahí «una
+     tecla»; sin token, el alto lo sigue dando el contenido. */
+  min-height: var(--math-head-min, auto);
 }
 
 .ww-keypad-q {

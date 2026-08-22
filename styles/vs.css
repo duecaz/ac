@@ -216,8 +216,20 @@
      conocer la anatomía. Lo destapó `tools/shots.mjs`: sin esto el teclado se
      movía 2 px (migración de temas, 2026-08-22). */
   .vs-body .ww-keypad-round   { gap: var(--math-gap, 2cqw); }
-  .vs-body .ww-keypad-q       { font-size: clamp(.7rem, 11cqw, 1.3rem); }
-  .vs-body .ww-keypad-display { font-size: clamp(.7rem, 10cqw, 1.05rem); }
+  /* EL VALOR DEL MODO ES EL FALLBACK DEL TOKEN (misma regla que el resto del
+     teclado): con un `clamp()` a secas, estas reglas (0,2,0) ganan a las de la
+     plantilla (0,1,0) y el token del tema queda muerto. */
+  .vs-body .ww-keypad-q       { font-size: var(--math-q-size, clamp(.7rem, 11cqw, 1.3rem)); }
+  .vs-body .ww-keypad-display { font-size: var(--display-size, clamp(.7rem, 10cqw, 1.05rem)); }
+  /* LA CABECERA, A LA ALTURA DE UNA FILA DE TECLAS. Una fila mide ~28 % del
+     ancho del panel (el teclado ocupa ~85 % y tiene 3 columnas). Sin esto, la
+     chapa medía su texto más un relleno mínimo —29 px contra teclas de 71— y
+     el visor parecía de otra actividad.
+     El segundo tope (`18cqh`) es para el panel ANCHO Y BAJO que queda cuando el
+     profe apaga la animación central: allí el 28 % del ancho son 117 px de
+     cabecera, que se comían el alto del teclado. La cabecera acompaña a la
+     tecla, y la tecla la limita el lado corto. */
+  .vs-body                    { --math-head-min: min(28cqw, 18cqh); }
   .vs-body .ww-keypad         { gap: var(--key-gap, 1.8cqw); }
   /* OJO con la especificidad: `.vs-body .ww-key` (y no `.ww-keypad .ww-key`) para
      que un skin con su propio tamaño de tecla —arcade— siga mandando, como antes. */
@@ -287,7 +299,27 @@
    en uno bajo encogen (min 0) para caber. Así quedan casi cuadradas, un punto más
    altas — no barras verticales. */
 .vs-body .ww-keypad {
-  grid-auto-rows: minmax(0, 34cqw); align-content: center;
+  /* LA FORMA DEL TECLADO LA DECIDE SU REJILLA, no el hueco (dueño, 2026-08-22:
+     «la forma de la pieza manda sobre llenar el hueco»).
+     Aquí había un tope de alto de fila en `34cqw` — el 34 % del ancho del
+     PANEL— calibrado suponiendo que el teclado llena el panel. No lo llena
+     (relleno del cuerpo, del bloque y hueco entre teclas), así que el tope
+     quedaba ~1,8× por encima del ancho real de una tecla y las filas se
+     estiraban hasta él: teclas casi el doble de altas que anchas.
+     Declarando la proporción de la rejilla (3 columnas × 4 filas) las teclas
+     salen cuadradas SOLAS, sea cual sea la forma de la ventana, y el sobrante
+     queda como aire — que es lo que pide la ley. Medido en seis formas de
+     ventana: proporción de la tecla entre 1,01 y 1,06 (antes, 0,55 a 0,86).
+     El tope en `cqh` es el que impide que un panel muy alto haga un teclado
+     gigante: el ancho no pasa del 62 % del ALTO del panel. */
+  aspect-ratio: var(--key-cols, 3) / var(--key-rows, 4);
+  /* EL TOPE SALE DE LA GEOMETRÍA, no de un número a ojo. Al teclado le queda el
+     alto del panel menos la cabecera; de ahí, por su propia proporción (3 de
+     ancho por cada 4 de alto), sale su ancho máximo. Con un número fijo cuadraba
+     con la animación puesta y desperdiciaba medio panel al apagarla. */
+  width: min(100%, calc((100cqh - var(--math-head-min, 0px) - 1.5rem) * 3 / 4));
+  align-self: center;
+  grid-auto-rows: minmax(0, 1fr); align-content: center;
   /* EL TECLADO MIDE LO QUE MIDEN SUS FILAS, no todo el hueco. Con `flex: 1` se
      estiraba a lo alto del panel y, como sus filas están topadas para que las
      teclas no se conviertan en barras, el sobrante se quedaba DENTRO: una banda

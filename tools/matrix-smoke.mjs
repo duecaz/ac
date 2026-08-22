@@ -241,6 +241,7 @@ const taps = [];
 const hits = [];   // hit-testing de los controles críticos
 const rounds = [];  // rondas JUGADAS con un toque real (cola #3)
 const marcos = [];  // el marco del panel VS contra lo que declara meta.panelFit
+const formaBad = [];  // piezas cuadradas que se deforman al cambiar la ventana
 const presupuesto = [];
 const roles = [];        // LOS CUATRO ROLES de la diagramación (edu-hud · edu-topbar · edu-sec · edu-send)
 const legibilidad = [];   // §29 · informe de tamaño (no veredicto: ver el porqué abajo)
@@ -562,6 +563,30 @@ for (const t of seeded) {
         });
         taps.push({ t: t.name, label: t.label, declared: submitKind[t.name] ?? '(sin declarar)', found: n });
 
+        // LA FORMA DE LA PIEZA MANDA SOBRE LLENAR EL HUECO (dueño, 2026-08-22).
+        // Una pieza cuadrada —una tecla, una carta, una casilla— no puede
+        // deformarse para tapar el hueco: el sobrante es AIRE. Se midió con el
+        // duelo montado en la ventana del dueño y las teclas de Operaciones
+        // salían de 39×71 (proporción 0,55, casi el doble de altas que anchas)
+        // porque el tope de alto se calibraba sobre el ancho del panel.
+        // Se comprueba en TRES formas de ventana, no en una: la deformación
+        // aparece cuando el panel se estrecha o se acorta, no en la de siembra.
+        for (const [vw, vh, forma] of [[1280, 800, 'apaisada'], [900, 750, 'casi cuadrada'], [800, 1280, 'vertical']]) {
+          if (formaBad.some(x => x.t === t.name)) break;   // ya cazada, no repetir
+          await page.setViewportSize({ width: vw, height: vh });
+          await page.waitForTimeout(250);
+          const p2 = await page.evaluate(() => {
+            const k = document.querySelector('#vs-body-left .ww-key, #vs-body-left .memo-card, #vs-body-left .ws-cell');
+            if (!k) return null;
+            const b = k.getBoundingClientRect();
+            return b.width && b.height ? b.width / b.height : null;
+          });
+          if (p2 == null) break;                            // esta plantilla no tiene pieza cuadrada
+          if (p2 < .85 || p2 > 1.15) formaBad.push({ t: t.name, label: t.label, forma, prop: p2 });
+        }
+        await page.setViewportSize({ width: 1280, height: 800 });
+        await page.waitForTimeout(150);
+
         // EL AIRE VA FUERA DEL MARCO, NO DENTRO. El marco de colores lo pinta el
         // skin sobre `.vs-body`; cuánto ocupa lo decide `meta.panelFit`:
         //   fill  → el contenido llena, así que el marco llena la columna;
@@ -622,6 +647,16 @@ if (tapBad.length) {
   console.log('\nENVÍO QUE NO CUADRA CON LO DECLARADO:');
   for (const x of tapBad) console.log(`  ❌ ${x.label} — declara '${x.declared}' pero el panel tiene ${x.found} control(es) [data-ww-submit]`);
 }
+// ── La forma de la pieza manda sobre llenar el hueco ───────────────────────
+if (formaBad.length) {
+  console.log('\nPIEZAS CUADRADAS QUE SE DEFORMAN (tope ±15 %)\n');
+  for (const x of formaBad) {
+    console.log(`  ❌ ${x.label} · ventana ${x.forma} — proporción ${x.prop.toFixed(2)} (1,00 = cuadrada)`);
+  }
+  console.log('  La pieza declara su forma (aspect-ratio) y el sobrante queda como AIRE:');
+  console.log('  llenar el hueco estirando la pieza no es responsive, es deformar.');
+}
+
 // ── El marco obedece a meta.panelFit (§0) ──────────────────────────────────
 // Los umbrales son HOLGADOS a propósito: no fijan un diseño, cazan el fallo que
 // se vio —un marco que llena la columna con el bloque flotando dentro—. `fill`
@@ -780,4 +815,4 @@ console.log(`\n✅ ok: ${results.filter(r => r.status === 'ok').length}` +
   ` · · no aplica: ${results.filter(r => r.status === 'n/a').length}`);
 console.log('El ALUMNO en vivo lo cubre tools/live-smoke.mjs (dos contextos) y la Tarea tools/task-smoke.mjs. Sin cubrir: carrera con 2 alumnos.');
 await browser.close();
-bye(bad.length || seedBad.length || tapBad.length || hitBad.length || roundBad.length || presuBad.length || embedBad.length || marcoBad.length ? 1 : 0);
+bye(bad.length || seedBad.length || tapBad.length || hitBad.length || roundBad.length || presuBad.length || embedBad.length || marcoBad.length || formaBad.length ? 1 : 0);

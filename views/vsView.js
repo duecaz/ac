@@ -64,6 +64,16 @@ export function mountVs(host, a, ctx, opts = {}) {
   }
 
   const fxCfg = () => ({ ...FX_DEFAULTS, ...(a.presentation?.vsFeedback || {}) });
+  // ¿SE VE LA ANIMACIÓN CENTRAL? UN solo sitio lo decide, porque lo preguntan
+  // dos: el interruptor de la antesala y el montaje del duelo. Si cada uno lo
+  // calculara por su cuenta, el interruptor podría salir encendido y la
+  // animación no aparecer (o al revés) — mentirle al profe sobre lo que va a
+  // ver es peor que no ofrecer el interruptor.
+  // Las hojas de Tildes/Comas la apagan SOLAS: su texto necesita el ancho. Por
+  // eso el defecto no es `false`, es lo que pida la plantilla; el profe puede
+  // encenderla igualmente, pero entonces es su decisión y no una sorpresa.
+  const animOn = () => !(a.presentation?.vsAnimationOff
+    ?? (getTemplate(a.template)?.meta?.contentModel === 'textCorrection'));
   let currentAnim = null; // the running central animation (destroyed on dispose)
   // Ley de vista §23: los setTimeout de RITMO (destello, celebración, confeti)
   // se registran en el lifecycle — un cambio de modo o de ruta a mitad de
@@ -89,6 +99,18 @@ export function mountVs(host, a, ctx, opts = {}) {
   function renderSetup() {
     if (currentAnim) { currentAnim.destroy(); currentAnim = null; }
     const fx = fxCfg();
+    // El interruptor de la animación va INVERTIDO respecto al dato guardado
+    // (`vsAnimationOff`): al profe se le pregunta si la QUIERE, no si la apaga.
+    // Su defecto no es fijo — lo decide la plantilla si su texto es apretado
+    // (`textTight`), y por eso se lee igual que en el duelo, no con un `?? false`.
+    const anim = (label, hint) => `
+      <label class="vs-fx-row" title="${escapeHtml(hint)}">
+        <span class="form-check form-switch m-0">
+          <input class="form-check-input vs-anim" type="checkbox" role="switch" ${animOn() ? 'checked' : ''}>
+        </span>
+        <span class="vs-fx-label">${label}<small class="d-block text-muted">${escapeHtml(hint)}</small></span>
+      </label>`;
+
     const sw = (key, label, hint) => `
       <label class="vs-fx-row" title="${escapeHtml(hint)}">
         <span class="form-check form-switch m-0">
@@ -127,6 +149,14 @@ export function mountVs(host, a, ctx, opts = {}) {
           ${sw('sound',    'Sonido',             'Un sonido corto al acertar o fallar.')}
           ${sw('flash',    'Destello de color',  'Fondo verde al acertar, rojo al fallar.')}
           ${sw('confetti', 'Confeti por pregunta','Lluvia de confeti en cada acierto (desactivado por defecto).')}
+          <!-- LA ANIMACIÓN, DECISIÓN DEL DOCENTE Y EN LA ANTESALA (dueño,
+               2026-08-22). El dibujo central se lleva la mitad del ancho, así que
+               los dos paneles se quedan con un cuarto cada uno: en una ventana
+               de 908px eso son 209px por alumno. Apagarla es la diferencia entre
+               una calculadora cómoda y una estrecha, y esa decisión la toma quien
+               monta la clase — no estaba en la antesala, solo escondida en el
+               editor. Se guarda en la actividad como los otros tres. -->
+          ${anim('Animación central', 'El dibujo entre los dos paneles. Apagada, cada jugador gana la mitad del ancho.')}
         </div>
       </details>`;
 
@@ -144,6 +174,12 @@ export function mountVs(host, a, ctx, opts = {}) {
         on(host, 'change', '.vs-fx', (_, el) => {
           if (!a.presentation) a.presentation = {};
           a.presentation.vsFeedback = { ...fxCfg(), [el.dataset.fx]: el.checked };
+          save(a);
+        });
+
+        on(host, 'change', '.vs-anim', (_, el) => {
+          if (!a.presentation) a.presentation = {};
+          a.presentation.vsAnimationOff = !el.checked;
           save(a);
         });
 
@@ -209,8 +245,7 @@ export function mountVs(host, a, ctx, opts = {}) {
     // (Tildes/Comas): el texto necesita el ancho y el carril central lo robaba.
     // Los dos paneles pasan a 50%/50% (vs-no-stage). El profe puede forzar on/off
     // con presentation.vsAnimationOff (si está definido, manda sobre el default).
-    const textTight = getTemplate(a.template)?.meta?.contentModel === 'textCorrection';
-    const animOff = a.presentation?.vsAnimationOff ?? textTight;
+    const animOff = !animOn();
     // Compacta = la animación se queda en la franja de arriba del carril y
     // suelta el resto (Presentación → «Animación compacta»); es puro tamaño,
     // no interfiere con animOff (que oculta el carril entero).
