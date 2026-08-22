@@ -1,8 +1,8 @@
 {
-  "id": "2026-08-17",
+  "id": "2026-08-22",
   "titulo": "AulaReto · Hoja de pruebas",
-  "intro": "Ronda CORTA a propósito: solo lo que no puede comprobar el ordenador solo. Esta semana el juego cambió de maqueta — los contadores (1/8, el reloj, los puntos) ya no ocupan una franja arriba: son pastillas que FLOTAN en las esquinas, y el ejercicio se queda toda la pantalla. Eso hay que verlo con tus aparatos, a tu distancia y con el móvil girado. Marca Pasa si ocurrió lo que dice «Tiene que pasar», Falla si no — y cuenta en la nota qué viste. «No probado» también vale: dice hasta dónde llegaste.",
-  "versionMin": "1.51.511",
+  "intro": "Gracias por la ronda anterior: de tus 3 fallos, 2 están arreglados y aquí los tienes para confirmar. El otro (el reloj) sigue abierto y esta vez te pido tres datos concretos para poder cerrarlo. Lo demás es lo que cambió esta semana. Ronda CORTA otra vez: solo lo que no puede comprobar el ordenador solo. Marca Pasa si ocurrió lo que dice «Tiene que pasar», Falla si no — y cuenta en la nota qué viste. «No probado» también vale: dice hasta dónde llegaste.",
+  "versionMin": "1.51.576",
   "secciones": [
     {
       "titulo": "Antes de empezar",
@@ -10,269 +10,168 @@
         {
           "n": 0,
           "titulo": "Versión nueva instalada",
-          "ruta": [
-            "PC + móvil",
-            "aulareto.com",
-            "Barra superior"
+          "ruta": ["PC + móvil", "aulareto.com", "Barra superior"],
+          "accion": "Abre aulareto.com y recarga con Ctrl+F5 dos veces. En el móvil, cierra la pestaña y vuelve a abrirla.",
+          "espera": "arriba se ve el número de versión y es 1.51.576 o más. Si es menor, para y avisa: estarías probando la de antes.",
+          "casillas": ["PC", "Móvil"],
+          "notaPista": "Qué versión salía en cada aparato"
+        },
+        {
+          "n": 1,
+          "titulo": "Entregar la hoja funciona sin tener cuenta",
+          "ruta": ["Móvil", "aulareto.com/test", "Al final de la hoja"],
+          "accion": "Esto es lo que te falló la vez pasada: marcaste las 11 pruebas y el botón de entregar nunca se activó, porque exigía cuenta de profe. Baja del todo AHORA MISMO, sin haber terminado, y mira el botón.",
+          "pasos": [
+            "El botón «Entregar informe» tiene que estar ACTIVO, aunque no hayas iniciado sesión.",
+            "No lo pulses todavía: primero termina la ronda. Al poner veredicto a la última prueba debe aparecer un AVISO EN ROJO diciendo que aún no has entregado.",
+            "Al final, púlsalo: en el móvil se abre tu WhatsApp o tu correo con el informe ya escrito."
           ],
-          "accion": "Abre aulareto.com y recarga con Ctrl+F5. En el móvil, cierra la pestaña y vuelve a abrirla.",
-          "espera": "arriba se ve el número de versión y es 1.51.511 o más. Si es menor, para y avisa: estarías probando la de antes.",
-          "casillas": [
-            "PC",
-            "Móvil"
-          ],
-          "notaPista": "Versión que ves en cada aparato"
+          "espera": "el botón está activo desde el principio sin cuenta, y al terminar sale el aviso rojo de que aún no has entregado.",
+          "casillas": ["El botón está activo", "Sale el aviso rojo al terminar"],
+          "notaPista": "Si el botón sigue apagado, dilo aquí y avisa por WhatsApp: sin eso se pierde la ronda otra vez"
         }
       ]
     },
     {
-      "titulo": "Parte 1 · LOS CONTADORES EN LAS ESQUINAS — lo nuevo de esta semana",
-      "nota": "Antes cada actividad pintaba su propia franja arriba con «1/8», el reloj y los puntos, y esa franja le robaba sitio al ejercicio. Ahora son pastillas oscuras que flotan ENCIMA del juego, en las esquinas de arriba. El ordenador ya comprueba que están y que el juego llena el hueco; lo que no puede comprobar es si se LEEN en tu pizarra y si TAPAN algo que necesitas tocar.",
+      "titulo": "Parte 1 · TUS DOS FALLOS DE LA RONDA ANTERIOR",
+      "nota": "Los reportaste tú el 19/8 y están arreglados. Confirma que de verdad lo están.",
       "pruebas": [
         {
-          "n": 1,
-          "titulo": "Las pastillas se leen a 3 metros",
-          "ruta": [
-            "Pizarra del aula",
-            "Quiz",
-            "Individual",
-            "Pantalla de la pregunta"
-          ],
-          "accion": "Abre un quiz con temporizador puesto y ponte donde se sienta la última fila.",
-          "pasos": [
-            "Mira la esquina de ARRIBA A LA IZQUIERDA: ahí va «1 / 8» (y 🔥 si llevas racha).",
-            "Mira la esquina de ARRIBA A LA DERECHA: ahí va el reloj (⏱) y, en algunas actividades, los puntos (★).",
-            "Prueba también con un tema oscuro y con un fondo con dibujo (cuaderno, pizarra): se cambian en la pantalla de inicio, antes de Iniciar."
-          ],
-          "espera": "desde la última fila se leen los números de las dos esquinas, en tema claro, en tema oscuro y sobre un fondo con dibujo.",
-          "casillas": [
-            "Tema claro",
-            "Tema oscuro",
-            "Fondo con dibujo"
-          ],
-          "notaPista": "Con qué tema o fondo se leyó peor, y a qué distancia dejaste de distinguir los números"
-        },
-        {
           "n": 2,
-          "titulo": "Las pastillas no tapan nada que haya que tocar",
-          "ruta": [
-            "PC o pizarra",
-            "Varias actividades",
-            "Individual",
-            "Pantalla del juego"
-          ],
-          "accion": "Juega un poco en cuatro actividades distintas y fíjate SOLO en las esquinas de arriba.",
+          "titulo": "En el Quiz YA se ve el puntaje",
+          "ruta": ["PC o pizarra", "Quiz", "Individual", "Durante el juego"],
+          "accion": "Tu nota decía: «en ningún quiz se ve el puntaje». Abre un Quiz y juega tres preguntas seguidas.",
           "pasos": [
-            "Explota Globos: un globo que suba por una esquina, ¿se puede explotar igual aunque pase por debajo de la pastilla?",
-            "Sopa de Letras y Crucigrama: ¿tapa alguna letra de la primera fila?",
-            "Ordena las Pelotas: ¿tapa el primer tubo?",
-            "En todas: el botón redondo de pantalla completa sigue arriba a la derecha y se puede pulsar."
+            "Mira la esquina de ARRIBA A LA DERECHA: tiene que haber una pastilla con «★ 0».",
+            "Acierta una: el número del ★ tiene que SUBIR mientras la respuesta está en verde, no en la pregunta siguiente.",
+            "Falla otra a propósito: el ★ se queda igual."
           ],
-          "espera": "en ninguna actividad una pastilla impide tocar algo del juego, y el botón de pantalla completa se pulsa siempre a la primera.",
-          "casillas": [
-            "Globos",
-            "Sopa",
-            "Crucigrama",
-            "Pelotas"
-          ],
-          "notaPista": "En qué actividad y qué te tapaba"
+          "espera": "el ★ está desde la primera pregunta y sube en el momento de acertar.",
+          "casillas": ["Se ve el ★", "Sube al acertar"],
+          "notaPista": "Si sube tarde o no se ve, di en qué pregunta y con qué tema"
         },
         {
           "n": 3,
-          "titulo": "Los números avanzan de verdad",
-          "ruta": [
-            "PC o móvil",
-            "Quiz y Sopa de Letras",
-            "Individual",
-            "Durante el juego"
+          "titulo": "En la Sopa las pastillas YA no tapan las letras",
+          "ruta": ["PC o pizarra + móvil", "Sopa de Letras", "Individual", "Pantalla del juego"],
+          "accion": "Tu nota decía: «en la sopa de letras tapa las letras, se cruza con el puntaje». Abre una Sopa y busca una palabra entera.",
+          "pasos": [
+            "Mira la FILA DE ARRIBA del tablero: ninguna letra puede quedar debajo de las pastillas de las esquinas.",
+            "Pruébalo también con la ventana BAJA Y ANCHA (arrastra el borde de abajo hacia arriba hasta dejarla como una franja): es donde peor se portaba.",
+            "Y en el móvil en vertical."
           ],
-          "accion": "Juega media actividad mirando las pastillas de las esquinas.",
-          "espera": "el «1 / 8» sube al pasar de pregunta, el reloj baja segundo a segundo, y en la Sopa los ★ suben al encontrar una palabra. Ninguna pastilla se queda congelada en su valor inicial.",
-          "casillas": [
-            "Quiz",
-            "Sopa"
-          ],
-          "notaPista": "Cuál se quedó parada, si alguna"
+          "espera": "en las tres formas de pantalla se leen todas las letras, incluidas las de la primera fila.",
+          "casillas": ["PC normal", "Ventana baja y ancha", "Móvil vertical"],
+          "notaPista": "Si alguna letra sigue tapada, di en cuál de las tres formas y haz una foto"
         }
       ]
     },
     {
-      "titulo": "Parte 2 · EL MÓVIL GIRADO — el ejercicio se recoloca",
-      "nota": "Tres actividades reparten sus piezas según la FORMA del hueco, no según el tamaño: en horizontal las pistas y las palabras van al costado; en vertical bajan y le devuelven el ancho al tablero. Es lo que hay que ver girando el teléfono.",
+      "titulo": "Parte 2 · EL RELOJ — el fallo que sigue abierto",
+      "nota": "Es el único de los tuyos sin arreglar. Necesito los tres datos de abajo para poder cerrarlo; sin ellos no puedo saber de dónde sale el desfase.",
       "pruebas": [
         {
           "n": 4,
-          "titulo": "Crucigrama y Sopa al girar el móvil",
-          "ruta": [
-            "Móvil",
-            "Crucigrama y Sopa de Letras",
-            "Individual",
-            "Pantalla del juego"
-          ],
-          "accion": "Abre cada una en el móvil y gíralo de vertical a horizontal y al revés (con el giro de pantalla desbloqueado). Hazlo con pantalla completa Y sin ella: en un iPhone la pantalla completa no existe, así que ese es el caso que más importa.",
+          "titulo": "El mismo número de reloj en el PC y en el móvil",
+          "ruta": ["PC (profe) + móvil (alumno)", "Quiz", "En vivo", "Rondas juntas", "Pantalla de la pregunta"],
+          "accion": "Tu nota decía: «en el cronómetro del alumno sale 15 y del profesor 20». Abre una sala en vivo con un Quiz, entra con un móvil y lanza la primera pregunta.",
           "pasos": [
-            "Crucigrama en VERTICAL: la lista de pistas tiene que quedar DEBAJO del tablero, no en una columna estrecha al lado.",
-            "Crucigrama en HORIZONTAL: las pistas pasan a la columna del lado y el tablero se queda el centro.",
-            "Sopa en VERTICAL: la lista de palabras queda debajo de la rejilla, en filas.",
-            "Sopa en HORIZONTAL: la lista vuelve al costado."
+            "En el momento en que aparece la pregunta, mira los DOS números a la vez (o haz una foto de las dos pantallas juntas).",
+            "Apunta: qué número marca el PC, qué número marca el móvil, y en qué segundo lo miraste.",
+            "Repite en la pregunta 2 y en la 3: la vez pasada la 2 salió bien y la 1 y la 3 mal, así que interesa saber si se repite ese patrón.",
+            "Apunta también si el móvil entró a la sala ANTES o DESPUÉS de que el profe lanzara la pregunta."
           ],
-          "espera": "en las dos posiciones se ve el tablero entero sin tener que bajar con el dedo, y la letra se lee.",
-          "casillas": [
-            "Crucigrama vertical",
-            "Crucigrama horizontal",
-            "Sopa vertical",
-            "Sopa horizontal",
-            "Sin pantalla completa"
-          ],
-          "notaPista": "Si en alguna posición hubo que hacer scroll o la letra quedó diminuta"
+          "espera": "los dos números son el mismo (±1) en las tres preguntas.",
+          "casillas": ["Pregunta 1 igual", "Pregunta 2 igual", "Pregunta 3 igual"],
+          "notaPista": "OBLIGATORIO si falla: número del PC, número del móvil, y si el alumno entró antes o después de lanzar la pregunta"
         },
         {
           "n": 5,
-          "titulo": "La Ruleta usa el hueco que hay",
-          "ruta": [
-            "PC y móvil",
-            "Ruleta",
-            "Individual",
-            "Pantalla del juego"
+          "titulo": "El lápiz y el borrador en la pizarra de verdad",
+          "ruta": ["Pizarra del aula", "Tildes (o Comas)", "Individual", "Pantalla del texto"],
+          "accion": "La vez pasada marcaste PASA pero con «Pizarra: no», y eso se contradice: en la pizarra es justo donde importa. Vuelve a probarlo SOLO en la pizarra y esta vez marca según lo que pase ahí.",
+          "pasos": [
+            "Toca «Lápiz» estando ya en lápiz: no tiene que cambiar nada.",
+            "Cambia a borrador y borra una marca: tiene que borrarse.",
+            "APOYA LA PALMA de la mano en la pizarra mientras escribes con el dedo o el lápiz: no debe borrar ni pintar solo."
           ],
-          "accion": "Abre la Ruleta en el PC y en el móvil en vertical, y gira un par de veces.",
-          "espera": "en el PC (pantalla ancha) el botón «Girar» y el resultado están AL LADO de la rueda, aprovechando el sitio; en el móvil en vertical están DEBAJO. La rueda se ve grande en los dos casos, no un círculo pequeño en medio de la pantalla.",
-          "casillas": [
-            "PC",
-            "Móvil vertical"
-          ],
-          "notaPista": "Tamaño de la rueda respecto a la pantalla"
-        },
+          "espera": "las tres cosas se cumplen en la pizarra del aula.",
+          "casillas": ["Tocar Lápiz no rompe nada", "El borrador borra", "La palma no estropea nada"],
+          "notaPista": "Qué pizarra es (marca y tamaño) y qué hiciste con la mano cuando falló"
+        }
+      ]
+    },
+    {
+      "titulo": "Parte 3 · LO QUE CAMBIÓ ESTA SEMANA",
+      "pruebas": [
         {
           "n": 6,
-          "titulo": "El Quiz llena la pantalla como un concurso",
-          "ruta": [
-            "PC o pizarra",
-            "Quiz SIN imágenes",
-            "Individual",
-            "Pantalla de la pregunta"
+          "titulo": "El marco de la actividad ya no tiene aire dentro",
+          "ruta": ["PC o pizarra", "Operaciones", "VS (duelo)", "Pantalla del juego"],
+          "accion": "El borde de colores de cada jugador abrazaba mal la actividad y dejaba un hueco vacío dentro. Abre Operaciones en modo VS y ponlo a pantalla completa.",
+          "pasos": [
+            "Mira el borde de colores de cada lado: tiene que quedar CEÑIDO al bloque de la calculadora.",
+            "El hueco que sobre debe quedar FUERA del borde (arriba y abajo), no dentro.",
+            "Comprueba que la operación y el teclado se ven juntos, no separados por una banda vacía."
           ],
-          "accion": "Abre un quiz cuyas preguntas NO tengan foto y mira cuánto ocupan los botones de respuesta.",
-          "espera": "los cuatro botones de colores llenan todo el alto que queda bajo la pregunta, como en un concurso — sin una franja blanca vacía en medio. Con una pregunta que SÍ tenga foto, la foto aparece entre la pregunta y los botones.",
-          "casillas": [
-            "Sin foto",
-            "Con foto"
-          ],
-          "notaPista": "Si quedó hueco vacío, en qué parte"
-        }
-      ]
-    },
-    {
-      "titulo": "Parte 3 · EL TÍTULO SE FUE DEL JUEGO",
-      "nota": "El nombre de la actividad ya no se repinta encima del ejercicio: estaba en seis actividades robando alto. Ahora vive SOLO en la pantalla de antes (la de «Iniciar»), en el lobby del en vivo y en la ficha de la tarea. Hay que confirmar que en ningún momento te quedas sin saber qué estás jugando.",
-      "pruebas": [
+          "espera": "el borde de colores abraza la calculadora y el aire sobrante queda fuera de él.",
+          "casillas": ["Ventana normal", "Pantalla completa"],
+          "notaPista": "Si queda hueco dentro del borde, haz una foto y di si era en ventana o en pantalla completa"
+        },
         {
           "n": 7,
-          "titulo": "Siempre sabes qué actividad es antes de empezar",
-          "ruta": [
-            "PC + móvil",
-            "Memoria · Ruleta · Abre Cajas · Crucigrama",
-            "Individual y En vivo",
-            "Antes y durante"
-          ],
-          "accion": "Entra en esas cuatro actividades y fíjate en la pantalla ANTERIOR al juego.",
+          "titulo": "Los temas Arcade y TV Show se ven igual que antes",
+          "ruta": ["PC o pizarra", "Operaciones", "VS (duelo)", "Apariencia"],
+          "accion": "Se ha cambiado por dentro cómo se pintan los temas. NO debería notarse nada: si ves algo distinto, es un fallo. Abre Operaciones en VS y ve cambiando de tema en «Apariencia».",
           "pasos": [
-            "En Individual: la pantalla de inicio tiene que decir el título antes de pulsar Iniciar.",
-            "En En vivo: el lobby (donde sale el PIN y el QR) tiene que decir el título.",
-            "Durante el juego: el título ya NO aparece — eso es lo correcto, no es un fallo."
+            "Con TV Show: las teclas azules a la izquierda y rojas a la derecha, con relieve; la chapa de la operación con su color; el ✓ verde y el borrar del mismo color que las teclas.",
+            "Con Arcade: las teclas con su borde de neón y la letra de máquina recreativa.",
+            "Pulsa varias teclas: al pulsar tienen que hundirse igual que antes, sin quedarse planas."
           ],
-          "espera": "en ningún momento entras a jugar sin haber visto antes el nombre de la actividad.",
-          "casillas": [
-            "Individual",
-            "En vivo"
-          ],
-          "notaPista": "En qué actividad echaste de menos el título"
-        }
-      ]
-    },
-    {
-      "titulo": "Parte 4 · LA PIZARRA Y EL RELOJ — lo que sigue abierto de antes",
-      "nota": "Estas dos no cambiaron esta semana, pero siguen sin el visto bueno en aparatos de verdad. La 9 no es jugar: es apuntar tres datos — con ellos reproduzco el fallo del reloj en un minuto; sin ellos, no.",
-      "pruebas": [
+          "espera": "los dos temas se ven exactamente como los recordabas y las teclas se hunden al pulsarlas.",
+          "casillas": ["TV Show igual", "Arcade igual", "Las teclas se hunden"],
+          "notaPista": "Si algo se ve distinto, di QUÉ pieza (tecla, ✓, borrar, la chapa de la operación) y con qué tema"
+        },
         {
           "n": 8,
-          "titulo": "El interruptor Lápiz | Borrador hace lo que dice",
-          "ruta": [
-            "Pizarra del aula",
-            "Tildes (o Comas)",
-            "Individual",
-            "Pantalla del texto"
-          ],
-          "accion": "Con el ejercicio abierto, busca la BARRA GRIS que hay justo encima del texto: en el centro tiene un interruptor con dos lados, «✏ Lápiz» y «◻ Borrador» (el lado encendido va en color). Juega con él ANTES de escribir nada.",
+          "titulo": "Los fondos que quedan y el tema que cambió de nombre",
+          "ruta": ["PC", "Cualquier actividad", "Individual", "Apariencia"],
+          "accion": "Se han retirado cuatro fondos (Pizarra, Papel, Estrellado y Cuaderno) y un tema se llama ahora «Vibrante». Abre una actividad y mira el panel de Apariencia.",
           "pasos": [
-            "Toca el lado «Lápiz» estando YA en lápiz: no debe cambiar nada.",
-            "Marca una tilde en una vocal. Toca «Borrador» y pasa por encima de esa marca: tiene que desaparecer.",
-            "Vuelve a tocar «Lápiz» y marca otra: tiene que volver a escribir.",
-            "En la pizarra, escribe con el lápiz apoyando la PALMA en el cristal: no debe borrar solo."
+            "En «Fondo» tienen que quedar 7: Ninguno · Pizarra verde · Cuadrícula · Corcho · Aula · Arena · Mi imagen.",
+            "En «Tema» aparece «Vibrante» (el morado y azul fuerte). No debe aparecer ningún nombre de otra aplicación.",
+            "IMPORTANTE: si tienes alguna actividad guardada de antes con uno de los fondos retirados, ábrela: tiene que abrirse y jugarse con normalidad (se verá con el lienzo del tema)."
           ],
-          "espera": "el lado encendido (en color) es siempre el que manda, tocar el que ya estaba encendido no cambia de herramienta, y el interruptor se ve centrado en su barra — los contadores ya no están ahí: se fueron a las esquinas.",
-          "casillas": [
-            "Pizarra",
-            "PC"
-          ],
-          "notaPista": "Si alguna vez escribió cuando esperabas borrar (o al revés), en qué paso"
+          "espera": "quedan esos 7 fondos, el tema se llama «Vibrante», y ninguna actividad vieja se rompe.",
+          "casillas": ["7 fondos", "Se ve «Vibrante»", "Las actividades viejas abren bien"],
+          "notaPista": "Si alguna actividad vieja da error o sale en blanco, dime su nombre"
         },
         {
           "n": 9,
-          "titulo": "El mismo número de reloj en PC y móvil",
-          "ruta": [
-            "PC (profe) + móvil (alumno)",
-            "Quiz",
-            "En vivo",
-            "Rondas juntas",
-            "Pantalla de la pregunta"
-          ],
-          "accion": "Crea una sala en vivo con un quiz, entra con el móvil por PIN y mira los DOS relojes a la vez cuando se abre la pregunta.",
+          "titulo": "La hora del panel de moderación",
+          "ruta": ["PC (con cuenta de profe)", "#/moderar", "Rondas de prueba (QA)"],
+          "accion": "El panel mostraba la hora de Greenwich, cinco horas adelantada. Entra en Moderación y mira las fechas de las rondas de prueba.",
           "pasos": [
-            "Abre la pregunta desde el PC y NO respondas todavía.",
-            "Mira el número que marca la cuenta atrás en el PC y en el móvil en el mismo instante.",
-            "Repite en la segunda y en la tercera pregunta: el fallo apareció con la partida ya empezada.",
-            "DATO 1 — En el editor de ese quiz, pestaña «En vivo», apunta qué número tiene «Tiempo por pregunta».",
-            "DATO 2 — Mira si ALGUNA pregunta tiene su propio tiempo distinto del general. Apunta cuál y cuánto (o «ninguna»).",
-            "DATO 3 — Si ves los relojes distintos, mira en las DOS pantallas dónde dice «Pregunta X / N» y apunta el X de cada una."
+            "Compara la hora de la lista con la hora que pone DENTRO del informe (despliega uno).",
+            "Cuando entregues ESTA ronda, mírala otra vez: debe aparecer con la hora en la que la enviaste."
           ],
-          "espera": "los dos aparatos marcan el mismo número (±1 segundo, lo que tarda el ojo en ir de una pantalla a otra). Aunque salga bien, rellena igual los tres datos en la nota.",
-          "casillas": [
-            "Pregunta 1",
-            "Pregunta 2",
-            "Pregunta 3"
-          ],
-          "notaPista": "1) Tiempo por pregunta = __ · 2) Preguntas con tiempo propio = __ · 3) Profe «Pregunta _ / _» y alumno «Pregunta _ / _»"
+          "espera": "la hora de la lista es la tuya, la misma que pone dentro del informe.",
+          "casillas": ["Coinciden"],
+          "notaPista": "Si no coinciden, apunta las dos horas tal cual salen"
         }
       ]
     },
     {
-      "titulo": "Parte 5 · AL TERMINAR — a dónde te lleva",
-      "nota": "Antes, terminar una actividad te mandaba SIEMPRE a «Mis actividades», aunque no hubieras iniciado sesión: una pantalla que no es tuya. Ahora depende de si tienes cuenta, y además se ofrece volver a jugar. Es de las cosas que solo se ven usándolo de las dos maneras.",
+      "titulo": "Parte 4 · SI TE QUEDA TIEMPO",
+      "nota": "Nada de esto es urgente. Si llegas, mejor; si no, marca «No probado» y ya está.",
       "pruebas": [
         {
           "n": 10,
-          "titulo": "Al terminar, te lleva a donde toca",
-          "ruta": [
-            "PC o móvil",
-            "Cualquier actividad",
-            "Individual",
-            "Pantalla de fin"
-          ],
-          "accion": "Termina una actividad entera (llega a la pantalla del trofeo) SIN haber iniciado sesión, y luego repite CON tu cuenta iniciada.",
-          "pasos": [
-            "SIN sesión: termina la actividad y mira los dos botones de abajo.",
-            "Pulsa «Ver más actividades»: tiene que llevarte a la biblioteca (con actividades para jugar), NO a una pantalla vacía de «Mis actividades».",
-            "Vuelve a terminar otra y pulsa «Jugar otra vez»: tiene que empezar la misma actividad desde cero, con el marcador a 0.",
-            "Ahora inicia sesión con tu cuenta y termina una actividad: el segundo botón ahora dice «Mis actividades» y te lleva a las tuyas."
-          ],
-          "espera": "sin cuenta terminas en la biblioteca; con cuenta, en Mis actividades. «Jugar otra vez» reinicia de verdad (no te deja en el resultado ni continúa donde ibas).",
-          "casillas": [
-            "Sin sesión",
-            "Con sesión",
-            "Jugar otra vez"
-          ],
-          "notaPista": "A dónde te llevó cada botón"
+          "titulo": "Una vuelta libre buscando roturas",
+          "ruta": ["Lo que tengas a mano", "Varias actividades", "El modo que quieras"],
+          "accion": "Sin guion: juega un rato como jugaría un alumno y rompe lo que puedas. Gira el móvil, recarga a mitad, entra tarde a una sala, escribe nombres raros.",
+          "espera": "nada se queda colgado, en blanco, ni pierde lo que llevabas hecho.",
+          "notaPista": "Cuenta cualquier cosa que te haya chirriado, aunque no sepas si es un fallo"
         }
       ]
     }
