@@ -111,6 +111,7 @@ console.log('\n▶ rutasNorte'); await import('./rutasNorte.test.mjs');
 console.log('\n▶ citasFuente'); await import('./citasFuente.test.mjs');
 console.log('\n▶ guiones'); await import('./guiones.test.mjs');
 console.log('\n▶ temaSinMedidas'); await import('./temaSinMedidas.test.mjs');
+console.log('\n▶ temaPorTokens'); await import('./temaPorTokens.test.mjs');
 console.log('\n▶ scoringSources'); await import('./scoringSources.test.mjs');
 console.log('\n▶ persistPolicy'); await import('./persistPolicy.test.mjs');
 console.log('\n▶ afterPlay'); await import('./afterPlay.test.mjs');
