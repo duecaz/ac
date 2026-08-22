@@ -26,6 +26,7 @@
      se reparte arriba y abajo. */
   justify-content: center;
   gap: var(--math-gap, clamp(.4rem, 2cqmin, 1.1rem));
+  padding: var(--math-pad, 0);
   height: 100%; min-height: 0;
   box-sizing: border-box;
 }
@@ -57,9 +58,31 @@
   font-size: var(--math-q-size, clamp(1.2rem, 13cqmin, 4.5rem));
   font-weight: var(--math-q-weight, 800);
   color: var(--math-q-color, inherit);
+  /* La CHAPA: sin tema, el enunciado es texto suelto (todo transparente y sin
+     relleno). Un tema la convierte en la placa del plató o el cartel de la
+     recreativa pidiendo estos tokens — nunca escribiendo sobre esta regla. */
+  background: var(--math-q-bg, transparent);
+  border: var(--math-q-border, 0);
+  border-radius: var(--math-q-radius, 0);
+  padding: var(--math-q-pad, 0);
+  box-shadow: var(--math-q-shadow, none);
+  text-shadow: var(--math-q-text-shadow, none);
   text-align: center; line-height: 1.1;
 }
-.ww-keypad-eq { opacity: .55; }
+/* EL RÓTULO DE ENCIMA («¡RESUELVE!» del plató, «SOLVE!» de la recreativa) es
+   del TEMA, pero su hueco es de la plantilla. Con `content: none` por defecto
+   el pseudo-elemento NI SIQUIERA se genera: sin tema no hay caja vacía que
+   empuje nada. El tema lo enciende dando texto a `--math-q-tag`. */
+.ww-keypad-q::before {
+  content: var(--math-q-tag, none);
+  display: block;
+  margin-bottom: var(--math-q-tag-gap, .4em);
+  font-size: var(--math-q-tag-size, .5em);
+  letter-spacing: var(--math-q-tag-spacing, .15em);
+  color: var(--math-q-tag-color, inherit);
+  text-shadow: var(--math-q-tag-shadow, none);
+}
+.ww-keypad-eq { opacity: var(--math-eq-opacity, .55); color: var(--math-eq-color, inherit); }
 
 .ww-keypad-display {
   flex: 0 0 auto;
@@ -72,6 +95,8 @@
   border-radius: var(--display-radius, .6rem);
   background: var(--display-bg, #fff);
   color: var(--display-fg, #212529);
+  text-shadow: var(--display-text-shadow, none);
+  box-shadow: var(--display-shadow, none);
 }
 .ww-keypad-display.is-ok { border-color: var(--ww-success, #198754); color: var(--ww-success, #198754); }
 .ww-keypad-display.is-no { border-color: var(--ww-danger, #dc3545); color: var(--ww-danger, #dc3545); }
@@ -84,6 +109,7 @@
   grid-template-columns: repeat(var(--key-cols, 3), minmax(0, 1fr));
   grid-auto-rows: minmax(0, 1fr);
   gap: var(--key-gap, clamp(.3rem, 1.4cqmin, .7rem));
+  margin-top: var(--keypad-top, 0);
   /* EL TOPE ES LA FORMA, NO UN NÚMERO. Aquí ponía `min(100%, 360px)`: en una
      pizarra 4K el teclado se quedaba en 360 px —el 60 % de su caja— y el resto
      era aire («fíjate en todo el aire que tiene», con captura). Un tope en px no
@@ -108,6 +134,14 @@
   color: var(--key-fg, #212529);
   border-radius: var(--key-radius, .5rem);
   box-shadow: var(--key-shadow, none);
+  /* VOCABULARIO DEL SKIN (§3, ampliado en la migración de temas 2026-08-22).
+     Lo que un tema necesita para hacer una tecla de plató o de recreativa —
+     tipografía, relieve del texto, alto del cuerpo, cómo se hunde al pulsar—
+     ahora se PIDE por token en vez de escribirse encima de esta regla. El
+     fallback es exactamente lo que había, así que sin tema nada cambia. */
+  text-shadow: var(--key-text-shadow, none);
+  padding-block: var(--key-pad-block, 0);
+  transition: var(--key-transition, none);
   line-height: 1;
   /* Respuesta táctil inmediata y MULTITÁCTIL fiable: `none` evita que el
      navegador trate cada toque como posible scroll/zoom (lo que añade latencia
@@ -116,7 +150,10 @@
   user-select: none; -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
-.ww-keypad .ww-key:active { transform: translateY(1px); }
+.ww-keypad .ww-key:active {
+  transform: var(--key-press, translateY(1px));
+  box-shadow: var(--key-shadow-active, var(--key-shadow, none));
+}
 
 /* ── NI ESTIRADO NI DEFORMADO (dueño, 2026-08-17, con captura de pantalla
    completa: «está súper estirado, y peor aún solo en una dirección»).
@@ -144,6 +181,13 @@
 .ww-keypad .ww-key-ok {
   background: var(--key-ok-bg, var(--ww-success, #198754));
   color: var(--key-ok-fg, #fff);
-  border-color: transparent;
+  border: var(--key-ok-border, var(--key-border, 2px solid #ced4da));
+  border-color: var(--key-ok-border-color, transparent);
+  box-shadow: var(--key-ok-shadow, var(--key-shadow, none));
 }
-.ww-keypad .ww-key-fn { background: var(--key-fn-bg, #f1f3f5); color: var(--key-fg, #212529); }
+.ww-keypad .ww-key-fn {
+  background: var(--key-fn-bg, #f1f3f5);
+  color: var(--key-fn-fg, var(--key-fg, #212529));
+  border: var(--key-fn-border, var(--key-border, 2px solid #ced4da));
+  box-shadow: var(--key-fn-shadow, var(--key-shadow, none));
+}

@@ -98,8 +98,12 @@ for (const tema of temas) {
 // también si BAJAN sin actualizar el tope (para que el ratchet no se quede
 // mintiendo hacia arriba y deje entrar reglas gratis).
 const TOPE = {
-  'tv-show': 28,   // TANDA 2-3: Operaciones (ww-keypad*/ww-key*) y luego ww-opt/ww-shape
-  'arcade':  12,   // idem
+  // TANDA 2 (v1.51.573) bajó tv-show de 28 a 7: todo Operaciones migrado a
+  // tokens, verificado con `tools/shots.mjs` (11/12 capturas idénticas y la
+  // otra a 2 píxeles de antialias). Lo que queda es Quiz (`ww-opt`) y la
+  // tarjeta/marco → TANDA 3.
+  'tv-show': 7,
+  'arcade':  12,   // TANDA 3: su Operaciones va con la tipografía Press Start 2P
 };
 const filas = temas.map(t => ({ tema: t, n: (invasoras[t] || []).length, tope: TOPE[t] }));
 console.log('\n  reglas de tema que PINTAN dentro de la anatomía de una plantilla:');

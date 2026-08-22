@@ -77,19 +77,46 @@ body.skin-tv-show .card,
 .skin-tv-show .ww-q { font-weight: 800; text-shadow: 0 2px 10px rgba(0,0,0,.5); }
 .skin-tv-show .ww-timer-badge { box-shadow: 0 0 14px rgba(251,191,36,.5); }
 
-/* Teclado numérico (math) en página — efecto 3D */
-.skin-tv-show .ww-key {
-  background: linear-gradient(180deg, #1c2c5e 0%, #142347 100%);
-  color: var(--ww-fg); border: 1px solid rgba(120,160,255,.25);
-  border-radius: .8rem; font-weight: 800;
-  box-shadow: 0 4px 0 #0a1430, 0 6px 14px rgba(0,0,0,.4);
-  transition: transform .1s ease, box-shadow .1s ease;
-}
-.skin-tv-show .ww-key:active { transform: translateY(3px); box-shadow: 0 1px 0 #0a1430, 0 3px 8px rgba(0,0,0,.4); }
-.skin-tv-show .ww-key-ok { background: linear-gradient(180deg, #34d36b, #15a04a); box-shadow: 0 4px 0 #0c6e30, 0 6px 14px rgba(21,160,74,.5); }
-.skin-tv-show .ww-keypad-display {
-  background: rgba(2,8,24,.6); color: #fff; border: 2px solid rgba(120,160,255,.35);
-  border-radius: .8rem; box-shadow: inset 0 0 18px rgba(43,111,255,.25);
+/* Teclado numérico (math) en página — efecto 3D, POR TOKENS.
+   Esto era CSS escrito sobre `.ww-key` y `.ww-keypad-display`: el tema conocía
+   la anatomía de Operaciones y cualquier cambio de la plantilla lo rompía.
+   Ahora se PIDE el mismo relieve con el vocabulario que la plantilla publica —
+   mismo píxel, sin tocar su interior (migración de temas, 2026-08-22). */
+.skin-tv-show {
+  --key-bg: linear-gradient(180deg, #1c2c5e 0%, #142347 100%);
+  --key-fg: var(--ww-fg);
+  --key-border: 1px solid rgba(120,160,255,.25);
+  --key-radius: .8rem;
+  --key-weight: 800;
+  --key-shadow: 0 4px 0 #0a1430, 0 6px 14px rgba(0,0,0,.4);
+  --key-transition: transform .1s ease, box-shadow .1s ease;
+  --key-press: translateY(3px);
+  --key-shadow-active: 0 1px 0 #0a1430, 0 3px 8px rgba(0,0,0,.4);
+  --key-ok-bg: linear-gradient(180deg, #34d36b, #15a04a);
+  --key-ok-shadow: 0 4px 0 #0c6e30, 0 6px 14px rgba(21,160,74,.5);
+  /* EL BORRAR, IGUAL QUE UNA TECLA — y ahora DICHO, no heredado por accidente.
+     Antes este tema no declaraba nada para `.ww-key-fn`: se veía azul porque
+     `.skin-tv-show .ww-key` empataba en especificidad con la regla del borrar y
+     ganaba por ORDEN DE CARGA (la hoja del tema va después). Al pasar a tokens
+     ese empate desapareció y el borrar se volvió gris claro — lo cazó
+     `tools/shots.mjs` en Equipos. Un píxel que dependía del orden de los
+     ficheros no era una decisión: ahora sí lo es. */
+  --key-fn-bg: var(--key-bg);
+  /* EL ANILLO AZUL DE LA TECLA ✓, preservado A PROPÓSITO. La plantilla pone
+     `border-color: transparent` en el ✓, pero esa regla EMPATABA en
+     especificidad con el `border` que este tema ponía a todas las teclas y
+     perdía por orden de carga: el ✓ salía con un aro azul de 1 px. Al pasar a
+     tokens el empate desapareció y el aro se iba — un refactor no puede cambiar
+     el diseño a escondidas, así que se declara igual que estaba. Medido con
+     `tools/shots.mjs` (448 px de diferencia en el borde superior). Si el aro no
+     gusta, se quita AQUÍ y con su captura: ahora es una decisión, no un
+     accidente del orden de los ficheros. */
+  --key-ok-border-color: rgba(120,160,255,.25);
+  --display-bg: rgba(2,8,24,.6);
+  --display-fg: #fff;
+  --display-border: 2px solid rgba(120,160,255,.35);
+  --display-radius: .8rem;
+  --display-shadow: inset 0 0 18px rgba(43,111,255,.25);
 }
 
 /* ── LEGIBILIDAD: contenedores claros + texto apagado ────────────────────────
@@ -287,8 +314,8 @@ body.skin-tv-show .card,
 /* Teclas más altas (cuadradas), separación cómoda — como la foto */
 /* La rejilla del teclado ya la pone el andamio compartido con `minmax(0, 1fr)`
    (styles/scaffold.css): esta copia solo podía divergir. Aquí, el aire. */
-.vs-skin-tv-show .vs-body .ww-keypad { gap: .5rem; margin-top: .3rem; }
-.vs-skin-tv-show .vs-body .ww-key { padding-block: .62em; }
+.vs-skin-tv-show .vs-body { --key-gap: .5rem; --keypad-top: .3rem; }
+.vs-skin-tv-show .vs-body { --key-pad-block: .62em; }
 .vs-skin-tv-show .vs-panel.vs-left .vs-body {
   background: linear-gradient(180deg, #0a1844 0%, #060f2c 100%);
   border: 2.5px solid #2b6fff;
@@ -302,48 +329,53 @@ body.skin-tv-show .card,
 
 .vs-skin-tv-show .vs-body { --vs-done-fg: #eaf2ff; --vs-done-muted: rgba(255,255,255,.6); }
 
-/* ── Teclado 3D dentro del panel ──────────────────────────────────────────── */
-/* La pregunta como "chapa" superior (como ¡RESUELVE! / 2 × 6 = de la foto) */
-.vs-skin-tv-show .vs-body .ww-keypad-q  {
-  /* SIN TECHO BAJO (§3). El `1.35rem` de aquí ganaba al tamaño que reparte la
-     plantilla: con un panel de 590 px y teclas de 180, la operación —lo único
-     que hay que LEER— se quedaba en 21 px. Un tema puede elegir la tipografía;
-     lo que no puede es congelar cuánto crece. El piso se queda. */
-  font-weight: 900; color: #fff;
-  border-radius: .8rem; padding: .35em .6em;   /* sin margen propio: desigualaba las dos chapas */
-  text-shadow: 0 1px 4px rgba(0,0,0,.5);
+/* ── Teclado 3D dentro del panel, POR TOKENS ──────────────────────────────
+   El AZUL/ROJO por lado se resuelve redefiniendo los mismos tokens en el
+   contenedor de cada panel. Eso es lo que hace innecesarios los selectores de
+   cuatro niveles (`.vs-panel.vs-left .vs-body .ww-keypad-q`): el tema dice «en
+   el panel izquierdo la chapa es azul», no «pinta ese elemento de ahí dentro».
+   El ✓ y el borrar ya no pelean especificidad con la regla del teclado: son
+   tokens distintos, no reglas que compiten por ganar.
+   SIN TECHO BAJO (§3): aquí hubo un `font-size: 1.35rem` que ganaba al tamaño
+   que reparte la plantilla y dejaba la operación en 21 px con teclas de 180 px.
+   Un tema elige la tipografía; no congela cuánto crece. */
+.vs-skin-tv-show .vs-body {
+  --math-q-weight: 900;
+  --math-q-color: #fff;
+  --math-q-radius: .8rem;
+  --math-q-text-shadow: 0 1px 4px rgba(0,0,0,.5);
+  --math-eq-color: rgba(255,255,255,.7);
+  --display-bg: rgba(2,8,24,.6);
+  --display-fg: #fff;
+  --display-radius: .8rem;
+  --display-shadow: inset 0 0 18px rgba(43,111,255,.3);
+  --key-fg: #eaf2ff;
+  --key-radius: .8rem;
+  --key-weight: 800;
+  --key-transition: transform .1s ease, box-shadow .1s ease;
+  --key-press: translateY(3px);
+  --key-ok-bg: linear-gradient(180deg, #34d36b, #15a04a);
+  --key-ok-border: 1px solid #0c6e30;
+  --key-ok-border-color: #0c6e30;
+  --key-ok-fg: #fff;
+  --key-ok-shadow: 0 4px 0 #0a5827, 0 6px 12px rgba(21,160,74,.5);
+  --key-fn-bg: rgba(255,255,255,.08);
+  --key-fn-border: 1px solid rgba(255,255,255,.14);
+  --key-fn-shadow: 0 4px 0 rgba(0,0,0,.4), 0 6px 12px rgba(0,0,0,.35);
 }
-.vs-skin-tv-show .vs-panel.vs-left  .vs-body .ww-keypad-q { background: linear-gradient(180deg, #1c47b0, #12317e); box-shadow: inset 0 0 0 2px rgba(255,255,255,.18), 0 4px 10px rgba(0,0,0,.4); }
-.vs-skin-tv-show .vs-panel.vs-right .vs-body .ww-keypad-q { background: linear-gradient(180deg, #b01c3a, #7e1228); box-shadow: inset 0 0 0 2px rgba(255,255,255,.18), 0 4px 10px rgba(0,0,0,.4); }
-.vs-skin-tv-show .vs-body .ww-keypad-eq { color: rgba(255,255,255,.7); }
-.vs-skin-tv-show .vs-body .ww-keypad-display {
-  background: rgba(2,8,24,.6);
-  color: #fff; border-radius: .8rem; box-shadow: inset 0 0 18px rgba(43,111,255,.3);
+.vs-skin-tv-show .vs-panel.vs-left .vs-body {
+  --math-q-bg: linear-gradient(180deg, #1c47b0, #12317e);
+  --math-q-shadow: inset 0 0 0 2px rgba(255,255,255,.18), 0 4px 10px rgba(0,0,0,.4);
+  --key-bg: linear-gradient(180deg, #15347e, #0c2050);
+  --key-border: 1px solid rgba(43,111,255,.45);
+  --key-shadow: 0 4px 0 #07142f, 0 6px 12px rgba(0,0,0,.45);
 }
-.vs-skin-tv-show .vs-body .ww-key {
-  color: #eaf2ff; border-radius: .8rem;
-  font-weight: 800; transition: transform .1s ease, box-shadow .1s ease;
-}
-.vs-skin-tv-show .vs-body .ww-key:active { transform: translateY(3px); }
-.vs-skin-tv-show .vs-panel.vs-left .vs-body .ww-key {
-  background: linear-gradient(180deg, #15347e, #0c2050); border: 1px solid rgba(43,111,255,.45);
-  box-shadow: 0 4px 0 #07142f, 0 6px 12px rgba(0,0,0,.45);
-}
-.vs-skin-tv-show .vs-panel.vs-right .vs-body .ww-key {
-  background: linear-gradient(180deg, #6e1228, #44081a); border: 1px solid rgba(239,43,91,.45);
-  box-shadow: 0 4px 0 #2a0510, 0 6px 12px rgba(0,0,0,.45);
-}
-/* La tecla ✓ (verde) y borrar deben ganar a la regla por-panel del teclado:
-   misma especificidad (con .vs-left/.vs-right) y declaradas DESPUÉS → ganan. */
-.vs-skin-tv-show .vs-panel.vs-left  .vs-body .ww-key-ok,
-.vs-skin-tv-show .vs-panel.vs-right .vs-body .ww-key-ok {
-  background: linear-gradient(180deg, #34d36b, #15a04a); border: 1px solid #0c6e30; color: #fff;
-  box-shadow: 0 4px 0 #0a5827, 0 6px 12px rgba(21,160,74,.5);
-}
-.vs-skin-tv-show .vs-panel.vs-left  .vs-body .ww-key-fn,
-.vs-skin-tv-show .vs-panel.vs-right .vs-body .ww-key-fn {
-  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14);
-  box-shadow: 0 4px 0 rgba(0,0,0,.4), 0 6px 12px rgba(0,0,0,.35);
+.vs-skin-tv-show .vs-panel.vs-right .vs-body {
+  --math-q-bg: linear-gradient(180deg, #b01c3a, #7e1228);
+  --math-q-shadow: inset 0 0 0 2px rgba(255,255,255,.18), 0 4px 10px rgba(0,0,0,.4);
+  --key-bg: linear-gradient(180deg, #6e1228, #44081a);
+  --key-border: 1px solid rgba(239,43,91,.45);
+  --key-shadow: 0 4px 0 #2a0510, 0 6px 12px rgba(0,0,0,.45);
 }
 
 /* ── Opciones de quiz dentro del panel ────────────────────────────────────── */
@@ -410,15 +442,20 @@ body.skin-tv-show .card,
     border-radius: 1rem; padding: 3cqw 3.2cqw; animation: none;
   }
   /* Teclado: la ESTRUCTURA es del andamio compartido (styles/scaffold.css); el
-     skin solo cambia TAMAÑOS y su propio relleno/estirado. */
-  .vs-skin-tv-show .vs-body .ww-keypad-round   { gap: 1.8cqw; padding: 0; }
-  .vs-skin-tv-show .vs-body .ww-keypad-q       { margin: 0; padding: 1.4cqw 3cqw; }
-  .vs-skin-tv-show .vs-body .ww-keypad-display { padding: .5cqw 3cqw; }
+     skin solo pide su propio relleno y su aire, POR TOKEN. El `margin: 0` de la
+     chapa desapareció con la migración: era para desempatar contra el margen
+     que ponía el propio tema, y ya no lo pone nadie. */
+  .vs-skin-tv-show .vs-body {
+    --math-gap: 1.8cqw;
+    --math-pad: 0;
+    --math-q-pad: 1.4cqw 3cqw;
+    --display-pad: .5cqw 3cqw;
+  }
   /* El alto de las filas ya NO se toca aquí: era el override de este tema sobre
      el tope que pone el modo, y existía para tapar el hueco muerto que dejaba su
      propia tarjeta-esquina de 216 px. Sin esa tarjeta, el reparto del modo vale
      igual para los siete temas. Aquí queda el aire entre teclas, que sí es suyo. */
-  .vs-skin-tv-show .vs-body .ww-keypad         { gap: 1.8cqw; }
+  .vs-skin-tv-show .vs-body { --key-gap: 1.8cqw; }
   /* SIN TAMAÑO DE LETRA. Estas tres reglas ponían el texto del juego MÁS
      pequeño que la plantilla: 16,8 px de cifra en una tecla de 180 px. El
      tamaño del texto del juego lo reparte quien reparte el espacio; el tema

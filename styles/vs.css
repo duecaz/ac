@@ -207,13 +207,21 @@
   /* Teclado numérico (Operaciones): la ESTRUCTURA (que quepa) vive UNA vez en
      styles/scaffold.css; aquí solo los TAMAÑOS de este panel, en cqw porque en VS
      manda el ancho del panel. */
-  .vs-body .ww-keypad-round   { gap: 2cqw; }
+  /* EL VALOR DEL MODO ES EL FALLBACK DEL TOKEN, no un muro. Aquí ponía
+     `gap: 2cqw` a secas, y como esta regla (0,2,0) gana a la de la plantilla
+     (0,1,0), el token del tema quedaba MUERTO: tv-show tenía que escribir su
+     propio `.vs-body .ww-keypad-round { gap: … }` para colarse por encima —
+     justo la invasión que la migración quiere retirar. Consumiendo el token
+     aquí, el modo pone su valor por defecto Y el tema puede cambiarlo sin
+     conocer la anatomía. Lo destapó `tools/shots.mjs`: sin esto el teclado se
+     movía 2 px (migración de temas, 2026-08-22). */
+  .vs-body .ww-keypad-round   { gap: var(--math-gap, 2cqw); }
   .vs-body .ww-keypad-q       { font-size: clamp(.7rem, 11cqw, 1.3rem); }
   .vs-body .ww-keypad-display { font-size: clamp(.7rem, 10cqw, 1.05rem); }
-  .vs-body .ww-keypad         { gap: 1.8cqw; }
+  .vs-body .ww-keypad         { gap: var(--key-gap, 1.8cqw); }
   /* OJO con la especificidad: `.vs-body .ww-key` (y no `.ww-keypad .ww-key`) para
      que un skin con su propio tamaño de tecla —arcade— siga mandando, como antes. */
-  .vs-body .ww-key            { font-size: clamp(.6rem, 8cqw, 1rem); }
+  .vs-body .ww-key            { font-size: var(--key-size, clamp(.6rem, 8cqw, 1rem)); }
 }
 
 /* MARCADOR EN VERTICAL — POR QUÉ SIGUE EN CADA SKIN (§3, medido)

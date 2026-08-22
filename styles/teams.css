@@ -30,11 +30,15 @@
 /* Teclado (Operaciones) en Teams: la ESTRUCTURA (llenar la tarjeta y repartir las
    filas para caber en cualquier altura) vive UNA vez en styles/scaffold.css; aquí
    solo los TAMAÑOS, en cqmin, que es la medida de la tarjeta. */
-.teams-card .ww-keypad-round   { gap: 2cqmin; }
-.teams-card .ww-keypad-q       { font-size: clamp(.9rem, 7cqmin, 2rem); }
-.teams-card .ww-keypad-display { font-size: clamp(.85rem, 6cqmin, 1.8rem); }
-.teams-card .ww-keypad         { gap: 2cqmin; }
-.teams-card .ww-key            { font-size: clamp(.7rem, 5cqmin, 1.5rem); }
+/* EL VALOR DEL MODO ES EL FALLBACK DEL TOKEN (igual que en styles/vs.css).
+   Estas reglas (0,2,0) ganan a las de la plantilla (0,1,0), así que sin
+   consumir el token el tema no podía cambiarlas más que escribiendo su propio
+   selector sobre la anatomía — la invasión que la migración retira. */
+.teams-card .ww-keypad-round   { gap: var(--math-gap, 2cqmin); }
+.teams-card .ww-keypad-q       { font-size: var(--math-q-size, clamp(.9rem, 7cqmin, 2rem)); }
+.teams-card .ww-keypad-display { font-size: var(--display-size, clamp(.85rem, 6cqmin, 1.8rem)); }
+.teams-card .ww-keypad         { gap: var(--key-gap, 2cqmin); }
+.teams-card .ww-key            { font-size: var(--key-size, clamp(.7rem, 5cqmin, 1.5rem)); }
 /* Opciones (Quiz) y texto (Tildes/Comas) por cqmin */
 .teams-card .ww-kahoot-grid .btn,
 .teams-card .ww-opt        { font-size: clamp(.8rem, 4cqmin, 1.3rem); }
