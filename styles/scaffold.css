@@ -114,6 +114,13 @@
     grid-template-columns: repeat(var(--key-cols, 3), minmax(0, 1fr));
   }
   .vs-body .ww-keypad .ww-key {
+    /* AQUÍ EL `0` MANDA A PROPÓSITO, y no es un descuido de la migración: en
+       panel compacto las teclas no llevan relleno propio —el alto lo reparte
+       la rejilla— y esta regla (0,3,0) ya ganaba ANTES al `padding-block` que
+       tv-show ponía a (0,3,0), por orden de carga. Consumir aquí el token
+       parecía coherente, pero hacía las teclas más altas que en la versión
+       anterior: sería reformar el diseño escondido en un refactor. Medido con
+       `tools/shots.mjs` (una línea de 1 px se movía en todo el ancho). */
     padding: 0; min-height: 0; min-width: 0;
     display: flex; align-items: center; justify-content: center;
   }

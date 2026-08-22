@@ -69,19 +69,7 @@
   text-shadow: var(--math-q-text-shadow, none);
   text-align: center; line-height: 1.1;
 }
-/* EL RÓTULO DE ENCIMA («¡RESUELVE!» del plató, «SOLVE!» de la recreativa) es
-   del TEMA, pero su hueco es de la plantilla. Con `content: none` por defecto
-   el pseudo-elemento NI SIQUIERA se genera: sin tema no hay caja vacía que
-   empuje nada. El tema lo enciende dando texto a `--math-q-tag`. */
-.ww-keypad-q::before {
-  content: var(--math-q-tag, none);
-  display: block;
-  margin-bottom: var(--math-q-tag-gap, .4em);
-  font-size: var(--math-q-tag-size, .5em);
-  letter-spacing: var(--math-q-tag-spacing, .15em);
-  color: var(--math-q-tag-color, inherit);
-  text-shadow: var(--math-q-tag-shadow, none);
-}
+
 .ww-keypad-eq { opacity: var(--math-eq-opacity, .55); color: var(--math-eq-color, inherit); }
 
 .ww-keypad-display {
@@ -98,8 +86,20 @@
   text-shadow: var(--display-text-shadow, none);
   box-shadow: var(--display-shadow, none);
 }
-.ww-keypad-display.is-ok { border-color: var(--ww-success, #198754); color: var(--ww-success, #198754); }
-.ww-keypad-display.is-no { border-color: var(--ww-danger, #dc3545); color: var(--ww-danger, #dc3545); }
+/* EL ACIERTO/ERROR TAMBIÉN ES DEL TEMA. Antes tv-show fijaba `color: #fff` con
+   más especificidad que estas dos reglas y el visor NO cambiaba de color al
+   acertar; al pasar a tokens, `.is-ok` empezó a ganar y el visor se volvía
+   verde. Ni una cosa ni la otra por accidente: el color de acierto y de error
+   son tokens propios, con el verde/rojo de siempre por defecto, y un tema que
+   quiera el suyo (o ninguno) lo declara. */
+.ww-keypad-display.is-ok {
+  border-color: var(--display-ok, var(--ww-success, #198754));
+  color: var(--display-ok-fg, var(--display-ok, var(--ww-success, #198754)));
+}
+.ww-keypad-display.is-no {
+  border-color: var(--display-no, var(--ww-danger, #dc3545));
+  color: var(--display-no-fg, var(--display-no, var(--ww-danger, #dc3545)));
+}
 
 /* El teclado es el elemento FLEXIBLE: ocupa el alto restante y sus filas se
    reparten ese alto (grid-auto-rows: 1fr) → siempre caben las 4 filas. */
@@ -128,6 +128,10 @@
      se queda: por debajo de 1rem no se lee a tres metros. */
   font-size: var(--key-size, clamp(1rem, 11cqmin, 3.4rem));
   font-weight: var(--key-weight, 700);
+  /* UN SOLO token de relleno. Hubo un `padding-block` aparte y le comía la
+     mitad vertical al `--key-pad` público; luego un `--key-pad-block` anidado
+     DENTRO de su fallback, que lo volvía invisible en cuanto alguien declarara
+     `--key-pad`. Un token, dos ejes: `--key-pad: .62em 0`. */
   padding: var(--key-pad, 0);
   border: var(--key-border, 2px solid #ced4da);
   background: var(--key-bg, #fff);
@@ -140,7 +144,6 @@
      ahora se PIDE por token en vez de escribirse encima de esta regla. El
      fallback es exactamente lo que había, así que sin tema nada cambia. */
   text-shadow: var(--key-text-shadow, none);
-  padding-block: var(--key-pad-block, 0);
   transition: var(--key-transition, none);
   line-height: 1;
   /* Respuesta táctil inmediata y MULTITÁCTIL fiable: `none` evita que el
@@ -152,6 +155,12 @@
 }
 .ww-keypad .ww-key:active {
   transform: var(--key-press, translateY(1px));
+  /* La sombra al pulsar cae en la NORMAL si el tema no declara una propia. Ojo:
+     el defecto tiene que ser `--key-shadow` y no `none` — esta regla es (0,3,0)
+     y con `none` borraba al pulsar el resplandor que un tema declare en su
+     `.ww-key` (0,2,0): la tecla parpadeaba a plano (lo cazó /code-review).
+     Por eso un tema con relieve DEBE declarar `--key-shadow`, aunque además lo
+     pinte directo mientras le quede deuda de migración. */
   box-shadow: var(--key-shadow-active, var(--key-shadow, none));
 }
 
@@ -181,7 +190,10 @@
 .ww-keypad .ww-key-ok {
   background: var(--key-ok-bg, var(--ww-success, #198754));
   color: var(--key-ok-fg, #fff);
-  border: var(--key-ok-border, var(--key-border, 2px solid #ced4da));
+  /* El ✓ hereda el BORDE de la tecla y solo decide su COLOR: es lo único que
+     cambia en los dos temas, así que un token de borde entero sobraba (y su
+     color quedaba pisado por este de todas formas). Transparente por defecto. */
+  border: var(--key-border, 2px solid #ced4da);
   border-color: var(--key-ok-border-color, transparent);
   box-shadow: var(--key-ok-shadow, var(--key-shadow, none));
 }

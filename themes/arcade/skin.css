@@ -192,6 +192,11 @@
   color: #39ff7a; text-shadow: 0 0 8px rgba(57,255,122,.7);
   background: rgba(0,0,0,.6); border-radius: .35rem;
   }
+/* El resplandor va TAMBIÉN por token (además de pintarse aquí, que es deuda de
+   la tanda 3): al pulsar, la regla `:active` de la plantilla usa `--key-shadow`
+   y sin declararlo la tecla se quedaba plana durante el toque. */
+.vs-skin-arcade { --key-shadow: inset 0 0 8px rgba(34,211,238,.15); }
+.vs-skin-arcade .vs-panel.vs-right { --key-shadow: inset 0 0 8px rgba(255,59,107,.15); }
 .vs-skin-arcade .ww-key {
   color: #eafcff; background: rgba(34,211,238,.10);
   border: 2px solid rgba(34,211,238,.5); border-radius: .4rem;

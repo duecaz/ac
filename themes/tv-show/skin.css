@@ -314,8 +314,6 @@ body.skin-tv-show .card,
 /* Teclas más altas (cuadradas), separación cómoda — como la foto */
 /* La rejilla del teclado ya la pone el andamio compartido con `minmax(0, 1fr)`
    (styles/scaffold.css): esta copia solo podía divergir. Aquí, el aire. */
-.vs-skin-tv-show .vs-body { --key-gap: .5rem; --keypad-top: .3rem; }
-.vs-skin-tv-show .vs-body { --key-pad-block: .62em; }
 .vs-skin-tv-show .vs-panel.vs-left .vs-body {
   background: linear-gradient(180deg, #0a1844 0%, #060f2c 100%);
   border: 2.5px solid #2b6fff;
@@ -343,25 +341,36 @@ body.skin-tv-show .card,
   --math-q-weight: 900;
   --math-q-color: #fff;
   --math-q-radius: .8rem;
+  /* El relleno de la chapa iba en la regla común y se quedó SOLO dentro de la
+     container query al migrar: en un panel ancho la chapa salía sin relleno
+     (lo cazó /code-review, no las capturas — sus dos tamaños entran en la
+     query). Abajo la query lo sustituye por el suyo en cqw. */
+  --math-q-pad: .35em .6em;
   --math-q-text-shadow: 0 1px 4px rgba(0,0,0,.5);
   --math-eq-color: rgba(255,255,255,.7);
   --display-bg: rgba(2,8,24,.6);
   --display-fg: #fff;
   --display-radius: .8rem;
   --display-shadow: inset 0 0 18px rgba(43,111,255,.3);
+  /* El visor de este tema NO cambia de color al acertar (era el efecto de su
+     `color: #fff`, que ganaba a `.is-ok`): se mantiene, ahora dicho. */
+  --display-ok-fg: #fff;
+  --display-no-fg: #fff;
   --key-fg: #eaf2ff;
   --key-radius: .8rem;
   --key-weight: 800;
   --key-transition: transform .1s ease, box-shadow .1s ease;
   --key-press: translateY(3px);
   --key-ok-bg: linear-gradient(180deg, #34d36b, #15a04a);
-  --key-ok-border: 1px solid #0c6e30;
   --key-ok-border-color: #0c6e30;
   --key-ok-fg: #fff;
   --key-ok-shadow: 0 4px 0 #0a5827, 0 6px 12px rgba(21,160,74,.5);
   --key-fn-bg: rgba(255,255,255,.08);
   --key-fn-border: 1px solid rgba(255,255,255,.14);
   --key-fn-shadow: 0 4px 0 rgba(0,0,0,.4), 0 6px 12px rgba(0,0,0,.35);
+  --key-gap: .5rem;
+  --keypad-top: .3rem;
+  --key-pad: .62em 0;
 }
 .vs-skin-tv-show .vs-panel.vs-left .vs-body {
   --math-q-bg: linear-gradient(180deg, #1c47b0, #12317e);
@@ -450,12 +459,12 @@ body.skin-tv-show .card,
     --math-pad: 0;
     --math-q-pad: 1.4cqw 3cqw;
     --display-pad: .5cqw 3cqw;
+    --key-gap: 1.8cqw;
   }
   /* El alto de las filas ya NO se toca aquí: era el override de este tema sobre
      el tope que pone el modo, y existía para tapar el hueco muerto que dejaba su
      propia tarjeta-esquina de 216 px. Sin esa tarjeta, el reparto del modo vale
      igual para los siete temas. Aquí queda el aire entre teclas, que sí es suyo. */
-  .vs-skin-tv-show .vs-body { --key-gap: 1.8cqw; }
   /* SIN TAMAÑO DE LETRA. Estas tres reglas ponían el texto del juego MÁS
      pequeño que la plantilla: 16,8 px de cifra en una tecla de 180 px. El
      tamaño del texto del juego lo reparte quien reparte el espacio; el tema
