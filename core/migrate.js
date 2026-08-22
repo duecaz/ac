@@ -30,8 +30,31 @@ const STEPS = {
   }
 };
 
+// EL NOMBRE DE LA COMPETENCIA SE BORRA DE LOS DATOS, no solo del código.
+// (dueño, 2026-08-22: «no puede estar ese nombre en ninguna parte»).
+// Renombrar en el código no basta: había actividades guardadas con ese valor en
+// `presentation.skin` y en los dos modelos de puntos. Si solo se renombra, esas
+// actividades pierden su tema (cae a `default`) y su bonus por velocidad (cae a
+// plano) EN SILENCIO — y el nombre sigue viviendo en la base de datos.
+// Esta tabla es la ÚNICA aparición que queda, y existe justamente para
+// erradicarlo: corre en cada lectura, así que cada actividad que se abre y se
+// guarda queda limpia. Cuando no queden actividades viejas, se borra esto y el
+// nombre no estará en ningún sitio, ni en el código ni en los datos.
+const NOMBRES_RETIRADOS = { 'kahoot': { skin: 'vibrante', puntos: 'velocidad' } };
+
+function renombrar(a) {
+  const skin = NOMBRES_RETIRADOS[a.presentation?.skin];
+  if (skin) a = { ...a, presentation: { ...a.presentation, skin: skin.skin } };
+  const solo = NOMBRES_RETIRADOS[a.scoring?.mode];
+  if (solo) a = { ...a, scoring: { ...a.scoring, mode: solo.puntos } };
+  const vivo = NOMBRES_RETIRADOS[a.live?.pointsModel];
+  if (vivo) a = { ...a, live: { ...a.live, pointsModel: vivo.puntos } };
+  return a;
+}
+
 export function migrate(a) {
   if (!a || typeof a !== 'object') throw new Error('migrate: not an object');
+  a = renombrar(a);
   let v = a.schemaVersion || (a.live ? 3 : a.rules ? 2 : 1);
   while (v < SCHEMA_VERSION) {
     a = STEPS[v](a);

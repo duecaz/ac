@@ -151,12 +151,12 @@
 /* SKIN: COLEGIOS — rules live in themes/colegios/skin.css, loaded by applySkin() */
 
 /* ══════════════════════════════════════════════════════════════════════════
-   KAHOOT GRID INSIDE VS PANELS
+   REJILLA DE OPCIONES DENTRO DE LOS PANELES DEL DUELO
    Override live.css projector sizes (padding:2rem, font-size:1.5rem) so
    choice options fit inside the narrow side panels at any orientation.
    ══════════════════════════════════════════════════════════════════════════ */
-.vs-body .ww-kahoot-grid { gap: .4rem; }
-.vs-body .ww-kahoot-grid .btn {
+.vs-body .ww-opt-grid { gap: .4rem; }
+.vs-body .ww-opt-grid .btn {
   font-size: clamp(.7rem, 2.4cqw, 1rem);
   padding: .4em .45em;
   font-weight: 600;

@@ -514,7 +514,7 @@ escrita, no un `if` en una vista.
 <!-- GENERADO:bucles -->
 | Bucle | Fase | Quién avanza | **Cómo se gana** | Puntos | Fin | Plantillas que lo declaran |
 |---|---|---|---|---|---|---|
-| `rounds` · Rondas juntas | `question` | el profe o el reloj | más puntos | Kahoot: base×500 + bonus por velocidad | al agotar las preguntas | Comas · Operaciones · Quiz · Tildes |
+| `rounds` · Rondas juntas | `question` | el profe o el reloj | más puntos | bonus: base×500 + bonus por velocidad | al agotar las preguntas | Comas · Operaciones · Quiz · Tildes |
 | `race` · Carrera libre | `race` | cada alumno | **terminar primero con todas bien** (empate ⇒ hora de meta) | **planos**: el puntaje ES el nº de aciertos | política declarada: todos · primeros N · tiempo | Comas · Operaciones · Quiz · Tildes |
 | `board` · Tablero | `race` | cada alumno | avanzar más en el tablero | escala propia de la plantilla (Pelotas: 0-1000 por eficiencia) | igual que la carrera | Ordena las Pelotas |
 | `claim` · Pedir la palabra | `question-live` | el profe (a quien pide turno) | los puntos que da el docente | manuales (+10/+50), sin clave de respuesta | lo cierra el docente | Abre Cajas · Ruleta |
@@ -664,7 +664,7 @@ Y el resto de las cinco preguntas, a mano:
   declara la PLANTILLA (`meta.play.live`), no un `<select>` fijo ni el nombre de
   la plantilla dentro de una vista.
 - **Cada bucle dice cómo se GANA** y esa regla vive en el motor, no en la vista:
-  rondas → puntos (Kahoot); carrera → terminar primero con todas bien (puntos
+  rondas → puntos (un concurso); carrera → terminar primero con todas bien (puntos
   planos + hora de meta); tablero → avance; pedir la palabra → puntos del docente.
 
 - Una vez `status === 'ended'`, `answer()` / `dispatch()` rechazan más jugadas.

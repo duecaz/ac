@@ -43,7 +43,7 @@ Los problemas nacen todos del segundo eje:
 3. **El contraste se vigila al final del túnel** (la matriz mide «se lee a 3 m» en
    headless), pero no en el ORIGEN: nada impide registrar un skin cuyo ámbar con
    letra blanca dé 2.4:1 — se descubre al correr la matriz, no al declararlo.
-   Ya pasó dos veces (ámbar del Kahoot-grid, etiquetas del diagrama).
+   Ya pasó dos veces (ámbar de la rejilla de opciones, etiquetas del diagrama).
 
 ## 1 · Las reglas que se fijan (la respuesta a «¿gana fondo o tema?»)
 
@@ -80,7 +80,7 @@ cada fondo declara `plate: true|false` en su manifest (`BACKGROUNDS`):
 
 **R4 — Ningún color pintable sin su pareja de tinta:**
 todo token de skin que lleve texto encima tiene su `-fg` (`--ww-shape-3` ⇒
-`--ww-shape-3-fg`). Ya es el patrón de Globos/Kahoot-grid/diagram; se vuelve
+`--ww-shape-3-fg`). Ya es el patrón de Globos/rejilla de opciones/diagram; se vuelve
 obligatorio en el contrato. Y cada fondo con `plate:false` declara un `colorBase`
 (hex representativo de su textura) para poder VERIFICAR su `--ww-bg-ink`.
 

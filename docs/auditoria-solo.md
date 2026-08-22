@@ -8,8 +8,8 @@
 ## Estado (actualizado 2026-06-09) — TODOS los bugs listados resueltos
 - **Bug 1 (ruleta)** ✅ resuelto por reescritura: `wheel/player.js` captura
   `const winner = entries[target]` ANTES de mutar y pinta ese valor.
-- **Bug 2 (quiz kahoot maxScore)** ✅ resuelto: `quiz/player.js maxScore()` calcula
-  el techo real en modo kahoot (`base*500 + speedBonus` por ítem puntuable).
+- **Bug 2 (quiz velocidad maxScore)** ✅ resuelto: `quiz/player.js maxScore()` calcula
+  el techo real en modo velocidad (`base*500 + speedBonus` por ítem puntuable).
 - **Bug 3 (tildes/comas inacabable)** ✅ resuelto por reescritura a la mecánica
   táctil compartida (`core/textCorrectionRound.js`): el botón **Listo** existe
   siempre, así que una frase sin marcas es completable.
@@ -31,9 +31,9 @@
 Además la rueda se repinta con menos sectores sin recalcular la rotación → el puntero
 señala un sector distinto al anunciado. Solo ocurre con `removeAfterSpin` activo.
 
-### 🟠 2. Quiz en modo Kahoot: "puntos / máximo" sin sentido
+### 🟠 2. Quiz en modo con bonus por velocidad: "puntos / máximo" sin sentido
 `templates/quiz/player.js:18-21` y `:83`. `maxScore()` usa `pointsPerCorrect*nItems`
-(p. ej. 5), pero en modo kahoot los puntos reales son miles → se muestra
+(p. ej. 5), pero en modo velocidad los puntos reales son miles → se muestra
 "Puntos: 7000 / 5". El cálculo del máximo no contempla el modelo de velocidad.
 
 ### 🟠 3. Tildes/Comas: una frase sin marcas deja la actividad atascada
@@ -77,6 +77,6 @@ Consecuencias concretas:
 1. **Tests de `core/textMarks.js`** (clave de respuestas tildes/comas) — sin tocar UI.
 2. **Wheel**: arreglar bug 🔴 1 + extraer `pickWinner/removeEntry` a módulo puro.
 3. **Memory** y **Match**: extraer detección de pareja + scoring a `logic.js` testeable.
-4. **Quiz**: arreglar bugs 2 y 4 (maxScore kahoot + resaltado de array).
+4. **Quiz**: arreglar bugs 2 y 4 (maxScore velocidad + resaltado de array).
 5. **Tildes/Comas**: arreglar bug 🔴 3 (botón Terminar cuando no hay marcas esperadas).
 6. Util común: un único `shuffle` en `core/` y un helper `finishResult()` compartido.

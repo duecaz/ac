@@ -29,7 +29,7 @@ python3 -m http.server 8000
 
 > Todo SOLO funciona 100% offline contra el backend `local`.
 
-## Probar el modo LIVE (Kahoot) — 2 pestañas, sin red
+## Probar el modo LIVE (un concurso) — 2 pestañas, sin red
 > Importante: usa **dos pestañas del MISMO navegador** (comparten `localStorage` y
 > `BroadcastChannel`). El driver `local` da a cada pestaña un `userId` distinto, así que
 > el host y el alumno son jugadores diferentes.

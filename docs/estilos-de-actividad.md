@@ -172,7 +172,7 @@ del **player**, no de `meta.play.submit`. Ese campo describe la **ronda
 compartida** (VS · Equipos · live), que es otra pantalla: Emparejar declara
 `'gesto'` porque su ronda de duelo es una elección de un toque, y aun así su
 player de Individual tiene *Enviar*. Una casilla por plantilla no puede describir
-cinco pantallas — que es justo el problema que Wordwall y Kahoot no tienen
+cinco pantallas — que es justo el problema que Wordwall y un concurso no tienen
 (allí plantilla = pantalla) y por eso copiarles el modelo salió mal.
 
 La garantía no se pierde, cambia de sitio: la vigila `tools/matrix-smoke.mjs`

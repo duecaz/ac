@@ -2,7 +2,7 @@
 // multiplayer / classroom format from a single brain, so scoring and flow live
 // in ONE place (and stay in parity with the Supabase Edge Functions):
 //
-//   live   Kahoot-style hosted room: many players, a synchronized
+//   live   sala con anfitrión, al estilo de un concurso: many players, a synchronized
 //          question→reveal→leaderboard flow, anti-cheat scoring at settle()
 //          (never when a client submits). Byte-for-byte the old createLiveRoom.
 //   teams  One screen, no 1:1 devices (Baamboozle/Factile-style): fixed teams
@@ -192,7 +192,7 @@ function createLiveSession(activity, T, opts) {
     }
     const key = answerKey(itemIndex, playerId);
     const prev = state.answers[key];
-    // Lock the first answer (Kahoot-style). In the standard question phase a
+    // Lock the first answer (como en un concurso). In the standard question phase a
     // duplicate submit — double-tap, or a submitQueue retry landing after the
     // original already saved — must NOT overwrite the recorded answer (which
     // would clobber its msTaken and let a slower resend beat the real one).
@@ -223,7 +223,7 @@ function createLiveSession(activity, T, opts) {
       // MODO DE PUNTOS: lo decide el BUCLE que declaró el lobby (§26), no la
       // fase. La fase es transitoria y AMBIGUA: `race` y `board` comparten la
       // fase 'race', y este mismo settle corre con la sala ya en 'ended' (el
-      // barrido de cierre) — mirar la fase le daría bonus Kahoot a una carrera.
+      // barrido de cierre) — mirar la fase le daría bonus por velocidad a una carrera.
       // El respaldo por fase es solo para salas abiertas ANTES de que el bucle
       // se guardara. En carrera los puntos son PLANOS: quien acertaba 2 de 5 en
       // los primeros segundos superaba a quien acertaba las 5 (medido: 2997 vs

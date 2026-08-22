@@ -110,8 +110,8 @@ registerTemplate({
 
 const ACTIVITY = {
   id: 'a1', template: 'sms_quiz',
-  // Kahoot: los puntos DEPENDEN del tiempo → es donde mentir con `ms` pagaba.
-  live: { pointsModel: 'kahoot', questionTimer: 20, speedBonusMax: 1000 },
+  // con bonus por velocidad: los puntos DEPENDEN del tiempo → es donde mentir con `ms` pagaba.
+  live: { pointsModel: 'velocidad', questionTimer: 20, speedBonusMax: 1000 },
   content: { items: [{ q: '2+2', a: '4', points: 1 }] },
 };
 
@@ -169,7 +169,7 @@ function makeFetch({ createdAt, claimedMs }) {
   // 12 s de 20 → queda 40% de ventana → 500·1 + 1000·0.4 = 900.
   const honest = awardPoints({ correct: true, item: ACTIVITY.content.items[0], msTaken: 12000, activity: ACTIVITY, mode: 'live' });
   const cheated = awardPoints({ correct: true, item: ACTIVITY.content.items[0], msTaken: 0, activity: ACTIVITY, mode: 'live' });
-  assert.notStrictEqual(honest, cheated, 'premisa del test: en Kahoot el tiempo CAMBIA los puntos');
+  assert.notStrictEqual(honest, cheated, 'premisa del test: con bonus por velocidad el tiempo CAMBIA los puntos');
   assert.strictEqual(verdict.points, honest, `debe puntuar por los 12 s reales (${honest}), no por el ms:0 afirmado (${cheated})`);
   ok('mentir con ms:0 ya NO cobra el bonus: puntúa el tiempo del servidor');
 }

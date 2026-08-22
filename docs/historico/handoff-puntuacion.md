@@ -16,7 +16,7 @@
 
 | # | Módulo que decide los puntos | Plantillas | Escala típica de un acierto |
 |---|---|---|---|
-| 1 | `core/scoreHelpers.js` (`basePoints`/`wrongPoints`/`useKahoot`) | quiz, globos (reusa el scorer de quiz), math, match, diagram | 1 · con Kahoot ~500–1500 |
+| 1 | `core/scoreHelpers.js` (`basePoints`/`wrongPoints`/`usaBonusVelocidad`) | quiz, globos (reusa el scorer de quiz), math, match, diagram | 1 · con un concurso ~500–1500 |
 | 2 | `core/textMarks.js` → `scoreMarksPerHit` | tildes, comas | 1 por marca buena |
 | 3 | `templates/wordsearch/scorer.js` (propio) | wordsearch | 10–25 (ppc **default 10**) |
 | 4 | `templates/ballsort/scorer.js` (propio) | ballsort | 0–1000 |
@@ -32,12 +32,12 @@
   algún punto" (parcial). Por eso `views/sessionTable.js` necesita `cellScore()` con
   una rama por partes y un *fallback* binario. Origen directo de los bugs "la tabla
   dice 3/4 en vez de 3/8" y "0 pts aunque tenga aciertos".
-- **B. Escalas incomparables.** 1 pt/tilde · ~1500 pt/quiz-Kahoot · 1000 ballsort ·
+- **B. Escalas incomparables.** 1 pt/tilde · ~1500 pt/quiz-un concurso · 1000 ballsort ·
   10–25 wordsearch. Un informe que mezcle actividades no significa nada, y el podio
   de una no se puede leer con la vara de otra.
 - **C. `pointsPerCorrect` con defaults distintos**: 1 en todas menos **10** en
   wordsearch. El mismo campo del editor no significa lo mismo según la actividad.
-- **D. Kahoot implementado DOS veces**: `scoreHelpers.useKahoot` (oficial, quiz) y
+- **D. un concurso implementado DOS veces**: `scoreHelpers.usaBonusVelocidad` (oficial, quiz) y
   una fórmula propia dentro de wordsearch. Dos bonus de velocidad distintos.
 - **E. `maxScore` lo calcula cada runner** por su cuenta → no hay % fiable común.
 - **F. Analítica por partes solo en 3 de 13** (`itemParts`: quiz, tildes, comas).
@@ -72,8 +72,8 @@ core/scoring/
   contract.js   — forma del resultado + normalize(): rellena correct/points a
                   partir de hits/total si el scorer no los da
   award.js      — awardPoints({hits,total,msTaken,activity,mode}) → ÚNICA fórmula
-                  de puntos (flat | kahoot con bonus de velocidad).
-                  Absorbe basePoints/wrongPoints/useKahoot de scoreHelpers.js
+                  de puntos (flat | velocidad con bonus de velocidad).
+                  Absorbe basePoints/wrongPoints/usaBonusVelocidad de scoreHelpers.js
   marks.js      — scoreMarksPerHit (se MUEVE desde core/textMarks.js, que debe
                   ser texto y marcas, no puntuación)
   index.js      — re-exporta (punto único de importación)
@@ -101,7 +101,7 @@ hereda mérito+puntos coherentes sin tocar nada.
 | **P2** | Añadir `hits/total` a los scorers que no lo daban. Binarias: `1/1` ó `0/1`; wheel/question-live `total:0` (puntúa el profe). Quiz además usa `awardPoints` (misma fórmula, un solo sitio) | bajo | ✅ v1.51.268 |
 | **P3** | Contrato exige el mérito (`core/templateContract.js` + self-test + generador `new-template.mjs`) | bajo | ✅ v1.51.268 |
 | **P4** | `cellScore` de sessionTable lee el mérito del SCORER (multi-parte); en binarias sigue mandando el veredicto guardado del settle (autoritativo, sin re-scoring). `itemParts` queda SOLO para el heatmap por parte (itemStats), que sí necesita el desglose | bajo | ✅ v1.51.268 |
-| **P5** | **Unificar escalas** (cambió puntajes; autorizado en modo debug): **wordsearch** ppc default 10→1, fuera el Kahoot propio y el bonus de longitud, y el player SOLO llama al scorer (tenía copia en línea); **math** paga en vivo con el mismo bonus Kahoot que quiz (antes 1 plano vs ~1500); **ballsort** mérito fraccional `hits/100` (% ordenado) y conserva su escala 0–1000 A PROPÓSITO (codifica eficiencia y nunca comparte sesión con otra plantilla, ver §6) | **cambia puntajes** | ✅ v1.51.269 |
+| **P5** | **Unificar escalas** (cambió puntajes; autorizado en modo debug): **wordsearch** ppc default 10→1, fuera el un concurso propio y el bonus de longitud, y el player SOLO llama al scorer (tenía copia en línea); **math** paga en vivo con el mismo bonus por velocidad que quiz (antes 1 plano vs ~1500); **ballsort** mérito fraccional `hits/100` (% ordenado) y conserva su escala 0–1000 A PROPÓSITO (codifica eficiencia y nunca comparte sesión con otra plantilla, ver §6) | **cambia puntajes** | ✅ v1.51.269 |
 
 **P5 cambia los números que ven los alumnos** en Sopa de Letras y Ordena las Pelotas.
 No se ejecuta sin el OK explícito del usuario; P1–P4 son invisibles para él.

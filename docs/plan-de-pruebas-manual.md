@@ -114,7 +114,7 @@ ahora el comportamiento correcto:
 | Carrera y tablero ordenaban por puntuación | Muestran **avance**, en orden fijo. La clasificación es del **podio** |
 | Tras responder solo veías "+80 puntos" | También **tu puesto y a cuánto estás** del de arriba |
 
-### 4a · Rondas (tipo Kahoot) — con Quiz
+### 4a · Rondas (tipo un concurso) — con Quiz
 1. PC (profe, con sesión): actividad → **En vivo** → sala con **PIN y QR**.
 2. Móvil (alumno, SIN cuenta): entrar con el PIN y apodo → aparece en el lobby del PC.
 3. Incógnito: entrar con **el mismo apodo** → debe entrar como "Nombre 2" (no expulsar al primero).
@@ -144,7 +144,7 @@ ahora el comportamiento correcto:
 1. Edita el Quiz: en una pregunta, abre **Avanzado** → "Tiempo en vivo (s)" → pon **60**.
    Deja otra en blanco (hereda el de la actividad, 20 s).
 2. Juega en vivo: la pregunta de 60 s debe **durar 60 s**, y la otra 20.
-3. Con puntuación **Kahoot**: responder **a la mitad** de su tiempo debe dar
+3. Con puntuación **un concurso**: responder **a la mitad** de su tiempo debe dar
    aproximadamente **los mismos puntos** en la de 20 y en la de 60. Lo que premia es
    ir rápido *para esa pregunta*, no que la pregunta sea corta.
 4. El mismo campo existe en **Operaciones, Tildes y Comas**. Vacío = el de la actividad.

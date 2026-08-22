@@ -25,14 +25,14 @@ export function wrongPoints(scoring) {
   return ppw < 0 ? ppw : 0;
 }
 
-// ¿Puntuación estilo Kahoot (con bonus por velocidad)? En vivo manda
+// ¿Puntuación estilo concurso (con bonus por velocidad)? En vivo manda
 // live.pointsModel; en solo, el modo avanzado scoring.mode.
-export function useKahoot(mode, scoring, live) {
-  return (mode === 'live' && live?.pointsModel === 'kahoot')
-      || (mode === 'solo' && scoring?.mode === 'kahoot');
+export function usaBonusVelocidad(mode, scoring, live) {
+  return (mode === 'live' && live?.pointsModel === 'velocidad')
+      || (mode === 'solo' && scoring?.mode === 'velocidad');
 }
 
-// Fórmula ÚNICA de puntos para un acierto binario: plana o Kahoot (base×500 +
+// Fórmula ÚNICA de puntos para un acierto binario: plana o con bonus por velocidad (base×500 +
 // bonus por velocidad restante). Es LA implementación oficial — ninguna
 // plantilla debe re-escribir su propio bonus de velocidad (deuda D del handoff:
 // wordsearch aún tiene uno propio; migrarlo es la fase P5, cambia puntajes).
@@ -41,7 +41,7 @@ export function awardPoints({ correct, item, msTaken, activity, mode = 'solo' })
   if (correct === null) return 0;
   if (!correct) return wrongPoints(scoring);
   const base = basePoints(item, scoring);
-  if (useKahoot(mode, scoring, activity?.live)) {
+  if (usaBonusVelocidad(mode, scoring, activity?.live)) {
     const live = activity?.live || {};
     // La ventana es la DEL ÍTEM (R-3): con tiempo por pregunta, dividir por la
     // ventana de la actividad daría un bonus mal calculado en silencio — de más

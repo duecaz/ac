@@ -153,8 +153,8 @@ function scoringHtml(a) {
       <div class="col-md-4">
         <label class="form-label">Modo</label>
         <select class="form-select" id="ws-smode">
-          <option value="flat"   ${a.scoring?.mode !== 'kahoot' ? 'selected' : ''}>Plano</option>
-          <option value="kahoot" ${a.scoring?.mode === 'kahoot' ? 'selected' : ''}>Kahoot (bonus velocidad, para VS)</option>
+          <option value="flat"   ${a.scoring?.mode !== 'velocidad' ? 'selected' : ''}>Plano</option>
+          <option value="velocidad" ${a.scoring?.mode === 'velocidad' ? 'selected' : ''}>Bonus por velocidad (para VS)</option>
         </select>
       </div>
       <div class="col-md-4">

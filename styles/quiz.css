@@ -1,6 +1,6 @@
 /* EL VEREDICTO GANA AL SKIN (hallazgo del compañero, 2026-08-09): el player SÍ
    ponía btn-success/btn-danger al responder, pero el fondo por forma
-   (`.ww-kahoot-grid .btn:nth-child(N)`, 0-3-0) y los `.skin-X .ww-shape-N` de
+   (`.ww-opt-grid .btn:nth-child(N)`, 0-3-0) y los `.skin-X .ww-shape-N` de
    los skins (que además se cargan DESPUÉS) lo pisaban — «al fallar no se pone
    rojo, solo sale confeti con las buenas». Cuatro clases a propósito (0-4-0):
    por encima de cualquier regla de forma o de skin, sin `!important`. */

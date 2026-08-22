@@ -33,7 +33,7 @@ Reglas de compatibilidad (derivadas, no configuradas — `core/modes.js`):
 
 ## 2. Cómo funciona cada actividad (mecánica)
 
-- **Quiz** — rejilla estilo Kahoot; puntúa con velocidad si `pointsModel:'kahoot'`.
+- **Quiz** — rejilla estilo concurso; puntúa con velocidad si `pointsModel:'velocidad'`.
 - **Operaciones** — teclado numérico (`core/roundRender.js`); `vsCanRetry` deja reintentar en VS hasta acertar. En VS es un **bloque** (no se estira).
 - **Tildes / Comas** — el alumno **dibuja** la marca con lápiz/táctil sobre el texto (`core/textCorrectionDraw.js`), no la toca; el inicio del trazo dentro de la zona de una vocal/hueco la marca. Tildes en VS puntúa **1 punto por tilde buena** (las de más restan). Fase 2: calibración lápiz/borrador por tamaño de contacto (`core/penDetector.js`).
 - **Emparejar** — emparejado libre; se corrige al pulsar Enviar. En sesión, cada par es una "pregunta de emparejado".
@@ -66,7 +66,7 @@ qa ⇄ pairs        qa ──▶ items        pairs ──▶ items
 |---|---|---|
 | **Pantalla de inicio** | `views/startScreen.js` | Todo modo Individual pasa por título + instrucciones + ajustes + **Iniciar → pantalla completa**. Oculta el ejercicio hasta empezar. |
 | **`meta.panelFit`** | `views/vsView.js` + `styles/vs.css` | Cada actividad declara cómo se maqueta en el panel VS: `fill` (llena y escala) · `block` (bloque con tope, la calculadora) · `center`. |
-| **Skins / temas** | `core/skins.js` + `themes/*/skin.css` | Paletas y layouts VS: default, aula, espacio, kahoot, retro, jungla, **colegios**, **tv-show**, **arcade** (recreativa de neón). Los skins definen **tokens**, no repiten reglas. |
+| **Skins / temas** | `core/skins.js` + `themes/*/skin.css` | Paletas y layouts VS: default, aula, espacio, velocidad, retro, jungla, **colegios**, **tv-show**, **arcade** (recreativa de neón). Los skins definen **tokens**, no repiten reglas. |
 | **Fondos** | `core/backgrounds.js` | Pizarra, cuaderno (rayado alineado al texto en Tildes), etc. |
 | **Calibrar pizarra** | `core/penCalibration.js` | En Tildes/Comas: mide el tamaño de contacto de lápiz punta/dedo/trasero/palma para distinguir dibujar vs borrar. |
 | **Animación de progreso (Solo)** | `core/soloAnimator.js` | Carril opcional sobre el ejercicio (la rana que salta), gated a modo Individual. |

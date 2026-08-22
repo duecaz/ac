@@ -93,7 +93,7 @@ const room = await host.evaluate(async () => {
   }));
   const r = await createRoom({
     id: 'e2e_race', template: 'quiz', title: 'Carrera e2e', rules: {},
-    live: { pointsModel: 'kahoot', questionTimer: 20, speedBonusMax: 1000 },
+    live: { pointsModel: 'velocidad', questionTimer: 20, speedBonusMax: 1000 },
     scoring: { pointsPerCorrect: 1 }, content: { items },
   });
   await setSessionState(r.id, {

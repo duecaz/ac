@@ -49,7 +49,7 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 // tests/styles.test.mjs («¿esta hoja es el juego?»), y no puede contradecirla.
 // Aquí son sus nueve entradas MÁS `vs`/`teams`, que son la arena del duelo y de
 // eso el tema SÍ es dueño. `live.css` estuvo un rato en esta lista y era un
-// agujero: dentro vive `.ww-kahoot-grid` —las opciones que lee la clase—, así
+// agujero: dentro vive `.ww-opt-grid` —las opciones que lee la clase—, así
 // que un tema habría podido pintarlas sin subir el ratchet. Es la misma lección
 // que ya está escrita en styles.test.mjs: una lista de exclusiones es una lista
 // de sitios donde la ley no mira.

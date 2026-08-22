@@ -40,7 +40,7 @@
 .teams-card .ww-keypad         { gap: var(--key-gap, 2cqmin); }
 .teams-card .ww-key            { font-size: var(--key-size, clamp(.7rem, 5cqmin, 1.5rem)); }
 /* Opciones (Quiz) y texto (Tildes/Comas) por cqmin */
-.teams-card .ww-kahoot-grid .btn,
+.teams-card .ww-opt-grid .btn,
 .teams-card .ww-opt        { font-size: clamp(.8rem, 4cqmin, 1.3rem); }
 .teams-card .tc-passage    { font-size: clamp(1rem, 5cqmin, 1.8rem); }
 /* La ronda que pinta la PLANTILLA (renderRound) entra en la CADENA DE FLEX de

@@ -5,7 +5,7 @@ import { awardPoints } from '../../core/scoring/index.js';
 // In SOLO we read activity.scoring.mode; in LIVE the caller passes mode: 'live'
 // which switches to activity.live.pointsModel. El MÉRITO (hits/total) es binario:
 // 1/1 ó 0/1 (total 0 = ítem sin clave → no puntuable). Los PUNTOS los pone la
-// fórmula común awardPoints (flat | kahoot) — sin copia local del bonus.
+// fórmula común awardPoints (flat | velocidad) — sin copia local del bonus.
 export function scoreQuizSubmission({ value, item, msTaken, activity, mode = 'solo' }) {
   const ok = isCorrect(item, value);
   if (ok === null) return { correct: null, points: 0, hits: 0, total: 0 };

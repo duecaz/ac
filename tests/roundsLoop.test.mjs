@@ -3,7 +3,7 @@
 //
 // El problema que cierra: enunciado y opciones aparecían a la vez, con bonus por
 // velocidad — así que ganaba quien hacía clic antes de leer, y el alumno que leía
-// la pregunta entera ya había perdido los puntos. Kahoot separa "leer" de
+// la pregunta entera ya había perdido los puntos. un concurso separa "leer" de
 // "responder" desde su primera versión.
 //
 // Y la regla que se deriva y hay que proteger: **el ritmo se escribe como
@@ -68,8 +68,8 @@ const read = (p) => readFileSync(new URL(p, new URL('..', import.meta.url)), 'ut
 // ventana de la ACTIVIDAD da bonus de más en las largas y de menos en las
 // cortas — nadie lo vería, solo saldrían puntos raros.
 {
-  // En vivo el bonus lo activa `live.pointsModel` (no `scoring.mode`) — ver useKahoot.
-  const act = { scoring: { pointsPerCorrect: 1 }, live: { pointsModel: 'kahoot', questionTimer: 20, speedBonusMax: 1000 } };
+  // En vivo el bonus lo activa `live.pointsModel` (no `scoring.mode`) — ver usaBonusVelocidad.
+  const act = { scoring: { pointsPerCorrect: 1 }, live: { pointsModel: 'velocidad', questionTimer: 20, speedBonusMax: 1000 } };
   const half = (secs) => awardPoints({ correct: true, item: { seconds: secs }, msTaken: secs * 1000 / 2, activity: act, mode: 'live' });
   // Responder a MITAD de ventana debe dar el mismo bonus, dure 20 s o 60 s.
   assert.strictEqual(half(20), half(60),

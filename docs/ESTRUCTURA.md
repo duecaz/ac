@@ -82,7 +82,7 @@ Toda actividad pasa por `normalize()` (core/migrate.js). Forma canónica
   },
 
   "scoring": {                   // DEFAULT_SCORING
-    "mode": "flat",              // 'flat' | 'kahoot'
+    "mode": "flat",              // 'flat' | 'velocidad'
     "pointsPerCorrect": 1,
     "pointsPerWrong": 0,         // negativo = penaliza; nunca baja de 0
     "penaltyRatio": 0,
@@ -106,14 +106,14 @@ Toda actividad pasa por `normalize()` (core/migrate.js). Forma canónica
     "teams": false
   },
 
-  "live": {                      // DEFAULT_LIVE (modo en vivo tipo Kahoot)
+  "live": {                      // DEFAULT_LIVE (modo en vivo tipo un concurso)
     "enabled": true,
     "advanceMode": "manual",     // 'manual' | 'autoOnAllAnswered' | 'autoOnTimer'
     "questionTimer": 20,
     "lockAnswersOn": "allAnswered", // 'firstOf' | 'timer' | 'allAnswered'
     "showAnswerAfterEach": true,
     "showLeaderboardBetween": true,
-    "pointsModel": "kahoot",     // 'kahoot' (bonus por velocidad) | 'flat'
+    "pointsModel": "velocidad",     // 'velocidad' (bonus por velocidad) | 'flat'
     "speedBonusMax": 1000,
     "allowLateJoin": true,
     "maxPlayers": 60,
@@ -246,7 +246,7 @@ etiqueta a su pin (estilo Wordwall). `x`/`y` son fracciones 0..1 de la imagen.
 - **solo**: un dispositivo, autopuntuado localmente.
 - **async** (Tarea): el alumno juega solo y se registra el intento (assignments).
 - **practice**: práctica libre sin guardar.
-- **live**: sala tipo Kahoot (profe hostea, alumnos en sus móviles; PIN/QR).
+- **live**: sala tipo un concurso (profe hostea, alumnos en sus móviles; PIN/QR).
   - Fases: `lobby → question → reveal → leaderboard …`; variantes `race`
     (carrera libre) y `question-live` (Abre Cajas / Ruleta Live).
 - **vs**: duelo 1v1 a pantalla compartida. Requiere que la plantilla exponga

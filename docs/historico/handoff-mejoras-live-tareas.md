@@ -1,4 +1,4 @@
-# HANDOFF — Propuestas: informe LIVE estilo Kahoot + mejoras de TAREAS
+# HANDOFF — Propuestas: informe LIVE estilo concurso + mejoras de TAREAS
 
 > 🗄️ **HISTÓRICO — EJECUTADO (A1·A2·B1·B2).** Se archivó en v1.51.424 al consolidar la
 > documentación: informe con pestañas, ranking, tabla de intentos y ficha por alumno están en `views/sessionTable.js` y `views/assignments.js`.
@@ -6,20 +6,20 @@
 > terminado sigue valiendo. **No es trabajo pendiente.**
 
 > Pedido del usuario (2026-07-23): "desde la visualización no es como la tabla que le
-> aparece en Kahoot; dame propuestas para mejorar tareas y live". Estado: **PROPUESTAS**
+> aparece en un concurso; dame propuestas para mejorar tareas y live". Estado: **PROPUESTAS**
 > (elegir paquete y ejecutar). Base ya construida hoy: analítica por ítem/palabra
 > (`handoff-analitica-items.md` F1-F3 + v0/c0 carrera + nombres por veredicto).
 
 ## Qué EXISTE ya (no re-proponer)
 - **Podio live**: top-3 + botón "Análisis de la clase" (heatmap/partes + quién acertó/falló).
 - **Informe de sesión** (`#/reports/session/:id`): TABLA jugador×pregunta con ✓/✗/puntos
-  por celda, % por columna, promedio, mejor, **CSV**. ← la "tabla Kahoot" YA existe aquí,
+  por celda, % por columna, promedio, mejor, **CSV**. ← la "tabla un concurso" YA existe aquí,
   pero está escondida en Reportes y con estilo Bootstrap plano.
-- **Kahoot reveal**: distribución por opción tras cada pregunta (quiz renderRoundHost).
+- **un concurso reveal**: distribución por opción tras cada pregunta (quiz renderRoundHost).
 - **Tareas**: lista de intentos plana + "Análisis de la clase" agregado.
 - Gate de tarea (cerrada/vencida/intentos) ya testeado en `core/assignmentRules.js`.
 
-## A. LIVE — el final de partida como Kahoot (lo que más se nota)
+## A. LIVE — el final de partida como un concurso (lo que más se nota)
 
 ### A1 ⭐ Informe post-partida unificado en el PODIO (M)
 El problema real: al terminar, el profe ve el podio "pelado" y la tabla buena vive en
@@ -37,9 +37,9 @@ otra página. Propuesta: pantalla final con PESTAÑAS, sin salir del live:
 ### A2 — Ranking completo + medallas (S)
 Debajo del top-3: lista 4º-N con puntos. Medallas calculables gratis con lo capturado:
 ⚡ respuesta más rápida (ms mínimo en aciertos) · 🎯 más aciertos a la primera (c0) ·
-🔥 mejor racha. Se muestran como chips en el podio (efecto Kahoot "fun").
+🔥 mejor racha. Se muestran como chips en el podio (efecto un concurso "fun").
 
-### A3 — Reveal entre preguntas más Kahoot (S-M)
+### A3 — Reveal entre preguntas más un concurso (S-M)
 En modo pregunta-a-pregunta ya hay distribución por opción; añadir: barra de % de acierto
 grande + los 3 más rápidos de esa pregunta. En texto (tildes/comas), el reveal del host
 puede pintar el MISMO heatmap de la clase de esa frase (reutiliza textHeatmapHtml con las

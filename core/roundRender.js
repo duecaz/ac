@@ -16,7 +16,7 @@ export function renderChoiceRound(root, payload, { onSubmit } = {}) {
   root.innerHTML = `
     <div class="rq-q text-center fs-4 fw-semibold mb-3">${escapeHtml(payload?.question || '')}</div>
     ${payload?.image ? `<div class="text-center mb-2"><img src="${escapeHtml(payload.image)}" style="max-height:130px" class="img-fluid"></div>` : ''}
-    <div class="ww-kahoot-grid">
+    <div class="ww-opt-grid">
       ${opts.map((o, i) => `
         <button class="btn vs-opt rq-opt" data-value="${escapeHtml(o)}">
           <i class="bi ${SHAPE_ICONS[i % 4]} me-2"></i>${escapeHtml(o)}

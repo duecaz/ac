@@ -53,14 +53,14 @@ body.skin-tv-show .card,
   box-shadow: 0 5px 0 #b87400, 0 8px 18px rgba(255,164,0,.45);
 }
 
-/* Cuadrícula Kahoot (quiz / live) — fichas 3D con color de forma.
+/* Cuadrícula un concurso (quiz / live) — fichas 3D con color de forma.
    SIN `color` a pelo: la tinta de cada ficha la manda su token
    `--ww-shape-N-fg` (styles/live.css). Este bloque fijaba `color:#fff` y, por
    empate de especificidad, ganaba por cargarse después: sobre la forma 3
    (turquesa) y la 4 (naranja) daba 2,2:1 — «París» y «Madrid» no se leían con
    NINGÚN fondo. Es el «no se ven las letras» del reporte del compañero
    (2026-08-11, prueba 10), y lo cazó tools/contrast-torture.mjs. */
-.skin-tv-show .ww-kahoot-grid .btn,
+.skin-tv-show .ww-opt-grid .btn,
 .skin-tv-show .ww-opt {
   border: none; border-radius: .9rem; font-weight: 800;
   box-shadow: 0 5px 0 rgba(0,0,0,.45), 0 8px 20px rgba(0,0,0,.35);

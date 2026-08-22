@@ -5,7 +5,7 @@
 // (`core/backgrounds.js`) son hex CONOCIDOS en tiempo de test. Hasta hoy el
 // contraste solo se comprobaba al final del túnel — la matriz headless mide
 // «se lee a 3 m» sobre estilos computados —, así que un par mal elegido se
-// descubría con la clase delante. Ya pasó dos veces: el ámbar del Kahoot-grid
+// descubría con la clase delante. Ya pasó dos veces: el ámbar de la rejilla de opciones
 // con letra blanca (2.4:1, el peor de la app y en el sitio más visible) y las
 // etiquetas de Etiqueta el diagrama sobre la forma amarilla.
 //

@@ -102,13 +102,13 @@ const NO_PLAYER_SCORING = new Set(['wheel', 'question-live']);
     const p = join(TPL, t, 'player.js');
     if (!existsSync(p)) continue;
     const src = code(p);
-    // La firma del techo hecho a mano: multiplicar por 500 (bonus Kahoot) fuera
+    // La firma del techo hecho a mano: multiplicar por 500 (bonus por velocidad) fuera
     // de core/scoring, o construir el máximo con speedBonusMax.
     if (/\*\s*500\b/.test(src) || /speedBonusMax/.test(src)) offenders.push(`templates/${t}/player.js`);
   }
   assert.deepStrictEqual(offenders, [],
-    'estos players reimplementan la fórmula de puntos (Kahoot) para su techo:\n      ' + offenders.join('\n      '));
-  ok('ningún player reimplementa la fórmula Kahoot para calcular su techo');
+    'estos players reimplementan la fórmula del bonus por velocidad para su techo:\n      ' + offenders.join('\n      '));
+  ok('ningún player reimplementa la fórmula del bonus por velocidad para calcular su techo');
 }
 
 console.log(`\nscoringSources.test: ${passed} checks passed`);

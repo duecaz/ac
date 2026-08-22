@@ -1,4 +1,4 @@
-// Pure LIVE phase machine — the Kahoot-style host flow, extracted from the DOM
+// Pure LIVE phase machine — the estilo concurso host flow, extracted from the DOM
 // of views/hostLive.js so the legal transitions are explicit and testable.
 // Backend-agnostic: it computes WHAT should happen (a state patch or an intent);
 // the view/transport layer carries it out (setSessionState / settleItem / endSession).

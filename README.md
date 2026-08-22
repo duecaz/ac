@@ -1,4 +1,4 @@
-# AC — plataforma de actividades (Wordwall + Kahoot)
+# AC — plataforma de actividades (Wordwall + un concurso)
 
 Plataforma de actividades educativas en **JS vanilla (ES Modules)**, sin bundler,
 desplegada en **GitHub Pages** con **PocketBase** como backend. Una misma actividad
@@ -7,7 +7,7 @@ desplegada en **GitHub Pages** con **PocketBase** como backend. Una misma activi
 - **Individual** — un dispositivo, sin red, puntuación local (estilo Wordwall).
 - **VS (duelo)** — dos alumnos compiten en la misma pantalla (carrera).
 - **Equipos** — por turnos en pantalla compartida (auto o juez docente); Memoria juega su variante nativa.
-- **En vivo** — sala con código/QR, alumnos en sus móviles (estilo Kahoot).
+- **En vivo** — sala con código/QR, alumnos en sus móviles (estilo concurso).
 - **Tarea** — asignación asíncrona con intentos.
 
 Qué modo ofrece cada actividad se **deriva** de la plantilla — contrato y reglas

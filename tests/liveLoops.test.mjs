@@ -1,6 +1,6 @@
 // D7 · EL CATÁLOGO DE BUCLES EN VIVO ESTÁ CONGELADO.
 //
-// Kahoot tiene UN bucle de juego y por eso puede añadir tipos de pregunta sin
+// un concurso tiene UN solo bucle de juego y por eso puede añadir tipos de pregunta sin
 // tocar el motor de la partida. Nosotros tenemos CUATRO (rondas · carrera ·
 // tablero · pedir la palabra) repartidos entre dos vistas de 840 y 714 líneas,
 // y las tres regresiones en vivo de este mes cayeron justo donde se cruzan
@@ -111,7 +111,7 @@ const LOOPS = {
 // puntuación deja al que menos sabe el último de una lista proyectada todo ese
 // rato — mucho más exposición que la revelación de una pregunta. La
 // clasificación existe, pero en el PODIO. (En RONDAS el marcador entre
-// preguntas sí es un ranking: dura segundos y es el bucle de Kahoot.)
+// preguntas sí es un ranking: dura segundos y es el bucle del concurso.)
 {
   const host = read('views/hostLive.js');
   const fn = (name, end) => host.slice(host.indexOf(name), host.indexOf(end));

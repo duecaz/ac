@@ -4,7 +4,7 @@
 // todas bien, no que haya más puntos por velocidad». Medido antes del arreglo
 // (tres navegadores contra PocketBase real): RAPIDO, con 2 aciertos de 5 en los
 // primeros segundos, hacía 2997 puntos y GANABA a LENTO, que acertó las 5 (2500).
-// El bonus de velocidad de Kahoot convertía la carrera en "quien madruga".
+// El bonus de velocidad convertía la carrera en "quien madruga".
 //
 // Dos reglas, dos sitios:
 //   · puntos PLANOS en carrera  → kernel/session/engine.js (mode 'race')
@@ -30,7 +30,7 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 
 const activity = {
   id: 'r', template: 'quiz-rank', title: 'Carrera',
-  live: { pointsModel: 'kahoot', speedBonusMax: 1000, questionTimer: 20 },
+  live: { pointsModel: 'velocidad', speedBonusMax: 1000, questionTimer: 20 },
   scoring: { pointsPerCorrect: 1 },
   content: { items: Array.from({ length: 5 }, (_, i) => ({
     id: 'q' + i, question: `${i}+1`, answer: String(i + 1), options: [String(i + 1), 'x'],
@@ -214,7 +214,7 @@ registerTemplate({
 // ── 9. El modelo de puntos lo decide el BUCLE, no la fase ──────────────────
 // La fase es AMBIGUA (`race` y `board` comparten la fase 'race') y transitoria
 // (el barrido de cierre liquida con la sala ya en 'ended'). Antes el settle
-// miraba la fase: una carrera liquidada al cerrar habría cobrado bonus Kahoot.
+// miraba la fase: una carrera liquidada al cerrar habría cobrado bonus por velocidad.
 {
   assert.strictEqual(pointsModeFor('rounds'), 'live');
   assert.strictEqual(pointsModeFor('claim'), 'live');

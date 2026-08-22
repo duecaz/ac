@@ -189,8 +189,8 @@ registerSkin({
 
 registerSkin({
   // Card bg is WHITE → card text must be DARK, even though page fg is white.
-  name: 'kahoot',
-  label: 'Kahoot',
+  name: 'vibrante',
+  label: 'Vibrante',
   description: 'Magenta y azul vibrantes.',
   cssVars: {
     '--ww-bg': '#46178f',
@@ -208,7 +208,7 @@ registerSkin({
     '--ww-shape-2-fg': '#ffffff',
     '--ww-shape-3-fg': '#1f2937',
     '--ww-shape-4-fg': '#ffffff',
-    '--ww-success': '#26890c',   // verde/rojo Kahoot (los mismos de sus formas)
+    '--ww-success': '#26890c',   // verde/rojo del concurso (los mismos de sus formas)
     '--ww-danger': '#e21b3c',
     '--ww-warning': '#d89e00'
   },

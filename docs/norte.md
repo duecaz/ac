@@ -439,12 +439,12 @@ Escrito aquí porque es donde se va a intentar colar:
 ## 5. Los referentes: qué tomamos y qué no ✅ CERRADO
 
 > **CERRADO con lo que sabemos** (v1.51.421). Llevaba meses con un ⏳ esperando
-> un estudio a fondo de Wordwall y Kahoot, y ese ⏳ bloqueaba el cierre del norte
+> un estudio a fondo de Wordwall y un concurso, y ese ⏳ bloqueaba el cierre del norte
 > entero por algo que la tabla **ya decide bien**: nuestro norte es el DOCENTE,
 > así que la referencia correcta es Wordwall/Educaplay y no los sitios para
 > alumnos. Lo que faltaba no era detalle: era cerrar el argumento vago.
 >
-> **LA REGLA (esto es lo que se aplica a partir de ahora):** *«lo hace Kahoot»*
+> **LA REGLA (esto es lo que se aplica a partir de ahora):** *«lo hace un concurso»*
 > o *«en Wordwall es así»* **NO son argumentos por sí solos**. Quien invoque un
 > referente aporta el caso concreto: qué pantalla, qué resuelve, y si encaja o
 > choca con §1 (pizarra, alumno al frente, minutos dentro de la clase). Sin eso,
@@ -453,7 +453,7 @@ Escrito aquí porque es donde se va a intentar colar:
 > Si algún día se usan los dos productos a fondo, ese trabajo **mejora la tabla,
 > no la desbloquea**: lo que salga se añade como fila con su caso concreto.
 
-| | Wordwall | Kahoot | Nosotros |
+| | Wordwall | un concurso | Nosotros |
 |---|---|---|---|
 | **Idea central** | un contenido, muchas plantillas | una sala en vivo con PIN | **las dos**: un contenido, muchas plantillas Y muchos modos |
 | **Qué TOMAMOS** | el catálogo de mecánicas · cambiar de plantilla sin reescribir · la biblioteca reutilizable | el PIN + QR · el ritmo marcado por el profe · el podio como cierre emocional | — |
@@ -806,7 +806,7 @@ en "ideas".
 | **4** | Terminar la ficha 2b de live (ventana de lectura en carrera · dial del lobby) | §26 + estudio D7 | Sigue siendo correcto, pero sirve al modo minoritario: va DESPUÉS de lo de arriba |
 | **5** | Partir los 4 módulos grandes — **CONDICIONADO: después de la ronda de pruebas del compañero** (partir es cirugía; se opera sobre un cuerpo verificado, no antes). Cortes ya mapeados: `adapters/pocketbase/realtime.js` (1106) POR COLECCIÓN (claims/answers/rooms/mantenimiento) · `views/hostLive.js` (1031) y `studentLive` POR BUCLE (lobby/rondas/carrera/tablero/pedir-la-palabra/informe) · `views/adminView.js` (953) POR PANEL (precedente: `views/admin/matrix.js`) · `kernel/session/engine.js` (540) POR MÁQUINA (items/score/live/teams/vs) | §23 + "candidatos a partir" del mapa | Mismo motivo que el 4: deuda real, zona menos usada — y el riesgo de partir sin validación externa supera al beneficio |
 | **6** | **D1 · identidad del alumno**, con estudio propio previo | §7 (el viaje se corta ahí) · R2 · R3 · §4 | Cierra el viaje y desbloquea 3 cosas, pero toda solución conocida choca con el norte: primero se estudia cómo lo resuelven otros |
-| **6b** | **Estudio de los referentes** (§5): documentarse y probar Wordwall y Kahoot a fondo | §5, marcado pendiente | No es redactar mejor la tabla: es usarlos de verdad para saber qué encaja. Sin ese estudio, "lo hace Kahoot" seguirá siendo un argumento suelto |
+| **6b** | **Estudio de los referentes** (§5): documentarse y probar Wordwall y un concurso a fondo | §5, marcado pendiente | No es redactar mejor la tabla: es usarlos de verdad para saber qué encaja. Sin ese estudio, "lo hace un concurso" seguirá siendo un argumento suelto |
 | **7** | ✅ **HECHO (v1.51.385)** — vocabulario unificado en la UI: el encuentro en vivo es **sala** en todas partes (fuera «partida»), y lo que entrega el alumno es **intento** | §6e, medido: sala/sesión/partida convivían | `tests/vocabulario.test.mjs` lo vigila, con contra-prueba de que «iniciar sesión» no se toca |
 | **8** | D3 imprimible · D5 taxonomía · D2 duplicar como otra plantilla | `decisiones-pendientes.md` | Módulos que se pueden añadir después sin rediseñar nada |
 

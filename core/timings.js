@@ -21,7 +21,7 @@ export const BOARD_POLL_MS = 2000;  // tablero compartido: se mueve más, refres
 
 // Ventana de una pregunta en vivo, en ms (default 20s, piso 5s). ÚNICA fuente:
 // la usan el deadline del host, la barra de cuenta atrás del alumno y el
-// denominador del bonus de velocidad Kahoot (core/scoring/award.js). Antes iban
+// denominador del bonus de velocidad (core/scoring/award.js). Antes iban
 // por separado y award.js OMITÍA el piso de 5 → el bonus mentía con timers < 5s.
 export function questionWindowMs(activity) {
   return Math.max(5, activity?.live?.questionTimer || 20) * 1000;

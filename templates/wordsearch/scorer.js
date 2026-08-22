@@ -5,8 +5,8 @@
 // correct find advances exactly one segment.
 //
 // P5 (docs/historico/handoff-puntuacion.md): escala UNIFICADA — los puntos los pone la
-// fórmula común awardPoints (ppc default 1, flat|kahoot). Se retiraron el ppc
-// default 10, el bonus Kahoot propio y el bonus por longitud (>6 letras): eran
+// fórmula común awardPoints (ppc default 1, flat|velocidad). Se retiraron el ppc
+// default 10, el bonus por velocidad propio y el bonus por longitud (>6 letras): eran
 // una segunda moneda que hacía ilegibles los informes entre actividades. El
 // player SOLO llama a este mismo scorer (un solo scorer por plantilla).
 import { awardPoints } from '../../core/scoring/index.js';

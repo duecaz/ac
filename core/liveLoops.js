@@ -40,7 +40,7 @@ export const LOOP_LABELS = {
  *  La REGLA ejecutable es `pointsModeFor` + el scorer de la plantilla; esto es
  *  su traducción a castellano, en el mismo sitio para que no diverja. */
 export const LOOP_POINTS = {
-  rounds: 'Kahoot: base×500 + bonus por velocidad',
+  rounds: 'bonus: base×500 + bonus por velocidad',
   race:   '**planos**: el puntaje ES el nº de aciertos',
   board:  'escala propia de la plantilla (Pelotas: 0-1000 por eficiencia)',
   claim:  'manuales (+10/+50), sin clave de respuesta',
@@ -75,9 +75,9 @@ export function hasAdvanceChoice(loop) { return loop === 'rounds'; }
  *  aquí. Antes estaba cableada como `mode: 'race'` en tres llamadores distintos
  *  (el settle del motor, el estimador del alumno y el re-scoring del host), cada
  *  uno con un comentario pidiendo que los otros dos no cambiaran. Es el valor
- *  que reciben los scorers como `mode` (ver core/scoring/award.js `useKahoot`).
+ *  que reciben los scorers como `mode` (ver core/scoring/award.js `usaBonusVelocidad`).
  *  - `rounds`/`claim` → 'live': toda la clase abre la pregunta en el MISMO
- *    instante, así que comparar velocidades es justo (bonus Kahoot).
+ *    instante, así que comparar velocidades es justo (bonus por velocidad).
  *  - `race`/`board`  → 'race': cada alumno va a su ritmo; la velocidad ya se
  *    mide por cuándo terminas, y medirla dos veces premiaba al que madruga. */
 export function pointsModeFor(loop) {

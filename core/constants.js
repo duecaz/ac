@@ -1,4 +1,4 @@
-export const VERSION = '1.51.575';
+export const VERSION = '1.51.576';
 export const SCHEMA_VERSION = 4;
 
 // PIN alphabet: no O/I/0/1 to avoid ambiguity. 6 chars => 32^6 ≈ 1.07B combos.
@@ -15,7 +15,7 @@ export const DEFAULT_RULES = {
 };
 
 export const DEFAULT_SCORING = {
-  mode: 'flat',            // 'flat' | 'kahoot'
+  mode: 'flat',            // 'flat' (puntos planos) | 'velocidad' (bonus por rapidez)
   pointsPerCorrect: 1,
   pointsPerWrong: 0,
   penaltyRatio: 0,
@@ -46,7 +46,7 @@ export const DEFAULT_LIVE = {
   lockAnswersOn: 'allAnswered',    // firstOf | timer | allAnswered
   showAnswerAfterEach: true,
   showLeaderboardBetween: true,
-  pointsModel: 'kahoot',           // kahoot | flat
+  pointsModel: 'velocidad',        // 'velocidad' (bonus por rapidez) | 'flat'
   speedBonusMax: 1000,
   allowLateJoin: true,
   maxPlayers: 60,

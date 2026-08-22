@@ -43,7 +43,7 @@ export function aggregate({ items = [], template = null, rows = [], activity = n
     const ans = byItem.get(index) || [];
     const n = ans.length;
     const nCorrect = ans.filter(a => a.correct === true).length;
-    // Nombres por veredicto (estilo Kahoot): quién acertó y quién falló este ítem.
+    // Nombres por veredicto (estilo concurso): quién acertó y quién falló este ítem.
     const nameOf = (a) => a.name || a.player || '?';
     const correctNames = ans.filter(a => a.correct === true).map(nameOf);
     const wrongNames = ans.filter(a => a.correct === false).map(nameOf);

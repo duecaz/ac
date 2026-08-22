@@ -1,4 +1,4 @@
-# Auditoría del sistema LIVE (Kahoot-style) — solo lectura
+# Auditoría del sistema LIVE (estilo concurso) — solo lectura
 
 > Revisión de `core/transport/live.js`, `room.js`, y las Edge Functions
 > `create-session` / `settle-item`. Severidad: 🔴 alta · 🟠 media · 🟡 baja.

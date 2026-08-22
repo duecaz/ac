@@ -550,7 +550,7 @@ export async function renderPlay(rootSel, code) {
       if (!unscored) Streaks.bump(session.id, player.playerId, ok);
     }
     const streak = Streaks.get(session.id, player.playerId);
-    // R-2 · TU PUESTO Y TU DISTANCIA (el motor de enganche de Kahoot): el
+    // R-2 · TU PUESTO Y TU DISTANCIA (el motor de enganche de los concursos): el
     // alumno veía "+80 puntos" y nada más — ni dónde está ni cuánto le falta.
     // Sale del leaderboard DERIVADO del servidor (misma fuente que el podio),
     // así que no puede discrepar de la pizarra. Fail-soft: si no llega, la

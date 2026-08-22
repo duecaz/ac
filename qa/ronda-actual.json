@@ -145,7 +145,7 @@
         },
         {
           "n": 6,
-          "titulo": "El Quiz llena la pantalla como Kahoot",
+          "titulo": "El Quiz llena la pantalla como un concurso",
           "ruta": [
             "PC o pizarra",
             "Quiz SIN imágenes",
@@ -153,7 +153,7 @@
             "Pantalla de la pregunta"
           ],
           "accion": "Abre un quiz cuyas preguntas NO tengan foto y mira cuánto ocupan los botones de respuesta.",
-          "espera": "los cuatro botones de colores llenan todo el alto que queda bajo la pregunta, como en Kahoot — sin una franja blanca vacía en medio. Con una pregunta que SÍ tenga foto, la foto aparece entre la pregunta y los botones.",
+          "espera": "los cuatro botones de colores llenan todo el alto que queda bajo la pregunta, como en un concurso — sin una franja blanca vacía en medio. Con una pregunta que SÍ tenga foto, la foto aparece entre la pregunta y los botones.",
           "casillas": [
             "Sin foto",
             "Con foto"

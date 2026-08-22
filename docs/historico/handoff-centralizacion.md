@@ -16,7 +16,7 @@
   exportado del kernel; 5 sitios en vistas + 2 internos del kernel colapsados. El
   try/catch degrada IGUAL en todos (antes host tenía guarda y el alumno no).
 - **#4 Ventana de pregunta** → `questionWindowMs(activity)` en `core/timings.js`;
-  usado por deadline del host, barra del alumno y bonus Kahoot (`award.js`) — que
+  usado por deadline del host, barra del alumno y bonus por velocidad (`award.js`) — que
   OMITÍA el piso de 5s: ya no puede mentir el bonus con timers < 5s.
 
 ## Ya hecho en el pase v1.51.270 (referencia del patrón)
@@ -52,7 +52,7 @@ el caso VS con params extra `side`/`found` en engine.js — distinto, no se toc�
   (es el input `labels` que sessionTable ya consume).
 
 ### 4. ✅ HECHO (v1.51.278) Ventana de pregunta — `questionWindowMs` en timings.js
-Un solo default (piso 5s incluido); host + alumno + bonus Kahoot lo comparten.
+Un solo default (piso 5s incluido); host + alumno + bonus por velocidad lo comparten.
 
 ### 5. Identidad de plantilla por META, no por string
 - **Duplicado**: `template === 'wheel'` / `=== 'question-live'` en hostLive:180,

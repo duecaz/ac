@@ -20,7 +20,7 @@ Fix (opción A, no cambia el juego): `submitRaceAttempt` guarda el PRIMER intent
 `live_answers.v0/c0` (inmutable) mientras `value/correct` siguen llevando el progreso; la
 analítica prefiere `v0/c0` (answerRows.firstVal/firstCorrect). Requiere los campos
 `v0`(json)/`c0`(bool) en `live_answers` (setup-pocketbase.ps1 + check-pb.sh los vigilan).
-En Kahoot no hace falta: el candado de primera respuesta ya guarda el primer intento.
+En un concurso no hace falta: el candado de primera respuesta ya guarda el primer intento.
 
 ## 0. Hechos del código que anclan el diseño (verificados)
 

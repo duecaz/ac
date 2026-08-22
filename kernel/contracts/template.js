@@ -11,7 +11,7 @@
 /**
  * @typedef {Object} TemplateModes
  * @property {boolean} [solo]     Single-device, local scoring (Wordwall-style).
- * @property {boolean} [live]     Hosted room with PIN/QR + realtime (Kahoot-style).
+ * @property {boolean} [live]     Hosted room with PIN/QR + realtime (estilo concurso).
  * @property {boolean} [async]    Self-paced / homework.
  * @property {boolean} [practice] Untracked practice.
  */

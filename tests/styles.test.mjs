@@ -25,7 +25,7 @@ const GAME = ['ballsort', 'crossword', 'diagram', 'globos', 'match', 'math', 'me
   'question-live', 'quiz', 'textCorrection', 'vs', 'teams', 'wordsearch', 'live'];
 // Chrome/paletas explícitamente EXCLUIDOS del ratchet (no son "el juego").
 // `live` SALIÓ de esta lista en v1.51.423. Estaba clasificado como chrome y
-// dentro vive el JUEGO: `.ww-kahoot-grid` son las opciones de respuesta que la
+// dentro vive el JUEGO: `.ww-opt-grid` son las opciones de respuesta que la
 // clase entera lee, y llevaban `font-size: 1.5rem` FIJO — 24 px lo mismo en un
 // móvil que en una pizarra 4K. El ratchet no lo veía por estar excluido; lo cazó
 // la medición de legibilidad de §29. Una lista de exclusiones es una lista de
@@ -86,7 +86,7 @@ const BASELINE = {
   'question-live': { fonts: ['1.3rem', '1.8rem'], colors: [] },
   // ENTRÓ al escáner en v1.51.423 (estaba excluido como "chrome" y dentro vivía
   // el juego). Lo GORDO ya está arreglado: las opciones de respuesta
-  // (`.ww-kahoot-grid`) escalan con el marco y su contraste llega a 6,2:1. Esto
+  // (`.ww-opt-grid`) escalan con el marco y su contraste llega a 6,2:1. Esto
   // que queda es el podio y la clasificación —pantallas de remate, no de
   // jugar—, congelado como deuda: el ratchet solo encoge.
   live:          { fonts: ['.85em'],
@@ -217,7 +217,7 @@ const THEME_BASELINE = {
     let css; try { css = blank(readFileSync(f, 'utf8')); } catch { continue; }
     for (const m of css.matchAll(/([^{}]+)\{[^}]*background[^}]*\}/g)) {
       for (const sel of m[1].split(',').map(s => s.trim())) {
-        const esOpcion = /\.ww-shape-\d|\.ww-kahoot-grid|\.ww-options|\.ww-opt\b|\.rq-opt\b/.test(sel);
+        const esOpcion = /\.ww-shape-\d|\.ww-opt-grid|\.ww-options|\.ww-opt\b|\.rq-opt\b/.test(sel);
         if (!esOpcion) continue;
         (/\.btn-(success|danger)\b/.test(sel) ? verdicts : shapes)
           .push({ f: f.split('/').slice(-2).join('/'), sel, n: clsCount(sel) });

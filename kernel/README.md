@@ -34,7 +34,7 @@ que conduce **todos** los formatos de juego, para que el flujo y la puntuación
 vivan en un solo sitio (y en paridad con las Edge Functions de Supabase):
 
 - `engine.js` — `createSession(activity, { format, ... })` con `FORMATS`:
-  - **live** — sala estilo Kahoot: muchos jugadores, flujo sincronizado
+  - **live** — sala estilo concurso: muchos jugadores, flujo sincronizado
     question→reveal→leaderboard, scoring anti-trampa en `settle()`. Idéntico al
     antiguo `createLiveRoom` (que ahora es un alias delgado en `live/engine.js`).
   - **teams** — una sola pantalla, por **turnos** (estilo Baamboozle/Factile):

@@ -334,7 +334,7 @@ veredicto (verde/rojo)  >  placa/tarjeta (--ww-card-*)  >  tinta del lienzo (--w
   debe ir fluido en pizarras A55.
 
 ## 14) Puntos (`core/scoring/`)
-- `basePoints`/`wrongPoints`/`useKahoot`. Tildes VS: 1 punto fijo por tilde buena
+- `basePoints`/`wrongPoints`/`usaBonusVelocidad`. Tildes VS: 1 punto fijo por tilde buena
   (`scoreMarksPerHit`).
 
 ## ── LEYES DE DATOS / SEGURIDAD (biblioteca pública) ──────────────────────────
@@ -780,7 +780,7 @@ máximo siguen cabiendo de sobra en los 2 MB que aplica el servidor — lo compr
 > un bucle o una fase de sala sin decisión escrita. · **Vigilada por**:
 > `tests/liveLoops.test.mjs`.
 
-Kahoot tiene UN bucle de juego; nosotros **cuatro** (rondas · carrera · tablero ·
+un concurso tiene UN solo bucle de juego; nosotros **cuatro** (rondas · carrera · tablero ·
 pedir la palabra) repartidos entre dos vistas de 840 y 714 líneas — y las tres
 regresiones en vivo de julio cayeron justo donde se cruzan. Mientras se decide el
 rediseño (**estudio completo y medido en `docs/estudio-bucles-live.md`**), el
@@ -793,7 +793,7 @@ nueva, o una elección de bucle más por NOMBRE de plantilla rompen CI.
 <!-- GENERADO:bucles -->
 | Bucle | Fase | Quién avanza | **Cómo se gana** | Puntos | Fin | Plantillas que lo declaran |
 |---|---|---|---|---|---|---|
-| `rounds` · Rondas juntas | `question` | el profe o el reloj | más puntos | Kahoot: base×500 + bonus por velocidad | al agotar las preguntas | Comas · Operaciones · Quiz · Tildes |
+| `rounds` · Rondas juntas | `question` | el profe o el reloj | más puntos | bonus: base×500 + bonus por velocidad | al agotar las preguntas | Comas · Operaciones · Quiz · Tildes |
 | `race` · Carrera libre | `race` | cada alumno | **terminar primero con todas bien** (empate ⇒ hora de meta) | **planos**: el puntaje ES el nº de aciertos | política declarada: todos · primeros N · tiempo | Comas · Operaciones · Quiz · Tildes |
 | `board` · Tablero | `race` | cada alumno | avanzar más en el tablero | escala propia de la plantilla (Pelotas: 0-1000 por eficiencia) | igual que la carrera | Ordena las Pelotas |
 | `claim` · Pedir la palabra | `question-live` | el profe (a quien pide turno) | los puntos que da el docente | manuales (+10/+50), sin clave de respuesta | lo cierra el docente | Abre Cajas · Ruleta |
@@ -962,7 +962,7 @@ grande, que es lo que hay aquí).
 
 Nació encontrando dos fallos reales, los dos del mismo tipo — **letra blanca
 sobre el ámbar**, 2,4:1, el peor contraste de la app:
-- las **opciones de respuesta** del quiz (`.ww-kahoot-grid`), que es el texto que
+- las **opciones de respuesta** del quiz (`.ww-opt-grid`), que es el texto que
   la clase entera lee a la vez;
 - los **globos** (`.gl-c3`).
 Arreglados con un token de primer plano por forma (`--ww-shape-N-fg`, oscuro en

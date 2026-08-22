@@ -126,7 +126,7 @@ const items = [{ text: 'ajugo', marks: [{ pos: 0, kind: 'tilde' }, { pos: 3, kin
   ok('v0/c0: la analítica de carrera refleja el primer intento (captura errores)');
 }
 
-// ── nombres por veredicto (quién acertó/falló, estilo Kahoot) ────────────────
+// ── nombres por veredicto (quién acertó/falló, estilo concurso) ────────────────
 {
   const rows = [
     { player: 'p1', name: 'Ana', itemIndex: 0, value: [3], correct: true, points: 1 },

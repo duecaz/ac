@@ -1,6 +1,6 @@
 // TIEMPO DE RESPUESTA MEDIDO POR EL SERVIDOR (ley de confianza §22).
 //
-// El bonus de velocidad (`awardPoints` estilo Kahoot) se calculaba con el `ms`
+// El bonus de velocidad (`awardPoints` estilo concurso) se calculaba con el `ms`
 // que MANDA EL MÓVIL. Eso es una afirmación del cliente decidiendo puntos: basta
 // enviar `ms:0` (o atrasar el reloj del teléfono) para cobrar el bonus máximo en
 // cada pregunta, sin DevTools, y el marcador lo sumaba tal cual.

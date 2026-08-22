@@ -247,7 +247,7 @@
   padding: 0; border: 0; border-radius: 50%;
   /* VELO NEUTRO, no tokens de skin: es un control DE SUPERPOSICIÓN (como los de
      YouTube) y debe leerse sobre CUALQUIER fondo. Con var(--ww-card-bg)/--ww-fg
-     el skin Kahoot lo dejaba blanco-sobre-blanco: el icono existía y no se veía
+     el skin un concurso lo dejaba blanco-sobre-blanco: el icono existía y no se veía
      (reporte de prueba real, v1.51.386). Un velo oscuro + icono blanco es
      legible sobre los 6 skins sin conocer ninguno. */
   background: rgba(0, 0, 0, .45); color: #fff;
@@ -386,7 +386,7 @@ body.bg-plated .ww-player .ww-q {
 /* Sobre FOTO el botón de pantalla completa se viste como las placas (círculo de
    tarjeta, mismo icono): es lo que dibujó el dueño en su mockup. El velo oscuro
    sigue siendo el default en el resto de fondos — la lección de v1.51.386
-   (blanco-sobre-blanco en el skin Kahoot) era sobre el marco plano, no sobre
+   (blanco-sobre-blanco en el skin un concurso) era sobre el marco plano, no sobre
    fotos, donde el círculo claro contrasta igual que las placas de al lado. */
 .ww-play-page .ww-player-frame.bg-plated .ww-fs-btn--corner {
   background: var(--ww-card-bg, #fff);
@@ -410,16 +410,16 @@ body.bg-plated .ww-player .ww-q {
 }
 .ww-play-page .ww-player-frame .ww-player .ww-options { flex: 0 0 auto; gap: 1.2cqh; }
 /* SIN imagen no hay sección de media (el player ya no la pinta vacía): las
-   opciones heredan su espacio y crecen a lo Kahoot, en vez de dejar un hueco
+   opciones heredan su espacio y crecen a lo un concurso, en vez de dejar un hueco
    muerto del 70 % entre pregunta y respuestas (medido en piezas.mjs, D8). El
    selector es el hueco mismo: la rejilla PEGADA al enunciado. */
-.ww-play-page .ww-player-frame .ww-player > .ww-prow + .ww-kahoot-grid {
+.ww-play-page .ww-player-frame .ww-player > .ww-prow + .ww-opt-grid {
   flex: 1 1 auto;
   min-height: 0;
   grid-auto-rows: 1fr;
 }
-.ww-play-page .ww-player-frame .ww-player > .ww-prow + .ww-kahoot-grid .btn { height: 100%; }
-.ww-play-page .ww-player-frame .ww-player .ww-kahoot-grid .btn {
+.ww-play-page .ww-player-frame .ww-player > .ww-prow + .ww-opt-grid .btn { height: 100%; }
+.ww-play-page .ww-player-frame .ww-player .ww-opt-grid .btn {
   font-size: clamp(.9rem, 3.4cqmin, 1.9rem);
   padding: clamp(.45rem, 2.2cqh, 1.6rem);
   min-height: 0;
@@ -583,7 +583,7 @@ body.bg-plated .ww-player .ww-q {
 @container (max-width: 420px) {
   .ww-play-page .ww-player-frame .ww-player { gap: .6rem; }
   .ww-play-page .ww-player-frame .ww-player .ww-q { font-size: clamp(.85rem, 5cqmin, 1.4rem); }
-  .ww-play-page .ww-player-frame .ww-player .ww-kahoot-grid .btn {
+  .ww-play-page .ww-player-frame .ww-player .ww-opt-grid .btn {
     font-size: clamp(.8rem, 3cqmin, 1.1rem);
     padding: clamp(.35rem, 2cqh, .9rem);
   }

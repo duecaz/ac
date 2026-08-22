@@ -25,7 +25,7 @@
 |---|---|---|---|
 | host | `paintLobby` (PIN/QR) | **chrome** | neutro |
 | host | `paintQuestion` / `paintReveal` / `paintRace` / `paintLiveBoardHost` / `paintQuestionLive` | juego | actividad |
-| host | `paintLeaderboard` (entre preguntas) | juego (flujo Kahoot) | actividad |
+| host | `paintLeaderboard` (entre preguntas) | juego (flujo un concurso) | actividad |
 | host | `paintPodium` (ended) | **chrome** | neutro |
 | alumno | `paintLobby` / `paintWaiting` / `paintEnded` | **chrome** | neutro |
 | alumno | `paintQuestion` / `paintRevealOwn` / `paintRace` / `paintLiveBoard` / `paintQuestionLive` | juego | actividad |
@@ -38,7 +38,7 @@ Sin tocar maquetación: mover la decisión de escena al enrutador `paint()`.
    let sceneOn = null; // evita re-aplicar en cada repaint
    function scene(game) {
      if (game === sceneOn) return; sceneOn = game;
-     if (game) applyScene(activity, null, { defaultSkin: 'kahoot' });
+     if (game) applyScene(activity, null, { defaultSkin: 'vibrante' });
      else resetScene();
    }
    ```

@@ -23,7 +23,7 @@
    nombre propio, `ww-livestage`, y `.ww-stage` queda solo para el player. */
 .ww-livestage h1, .ww-livestage h2 { font-size: clamp(2rem, 4vw, 4rem); }
 .ww-livestage .ww-pin { font-size: clamp(3rem, 10vw, 7rem); }
-.ww-livestage .ww-kahoot-grid .btn { font-size: clamp(1.4rem, 3vw, 2.5rem); padding: clamp(1rem, 3vw, 3rem); }
+.ww-livestage .ww-opt-grid .btn { font-size: clamp(1.4rem, 3vw, 2.5rem); padding: clamp(1rem, 3vw, 3rem); }
 
 /* Prevent overscroll while playing live; keeps the question fixed. */
 body.ww-play-noscroll { overscroll-behavior: none; }

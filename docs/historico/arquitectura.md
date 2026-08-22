@@ -180,7 +180,7 @@ ac/
 │   ├── live.css          Pantalla grande del anfitrión; colores de opciones → --ww-shape-*
 │   ├── vs.css            Layout VS (clásico + base); skins viven en themes/*/skin.css
 │   ├── teams.css         Layout de turnos de equipos
-│   ├── quiz.css          Estilo de la grilla Kahoot
+│   ├── quiz.css          Estilo de la grilla un concurso
 │   ├── match.css         Tablero de pares de emparejar
 │   ├── memory.css        Tablero de cartas de memoria
 │   ├── math.css          Keypad matemático; propiedades visuales → CSS vars (--key-*, --display-*)
@@ -498,7 +498,7 @@ hash → #/play/id  (o #/vs/id, #/teams/id)
 
 ---
 
-## 11. Flujo: Modo En vivo (Live — Kahoot-style)
+## 11. Flujo: Modo En vivo (Live — estilo concurso)
 
 ```
 ANFITRIÓN (teacher.html)                  ALUMNOS (student.html)
@@ -517,8 +517,8 @@ hash → #/host/PIN                                │
   renderHostByCode(APP, PIN)                     ▼
     findRoomByCode(PIN)                       renderPlay(APP, PIN)
     renderHost(rootSel, PIN, sessId, act)       acquire('studentLive')
-      acquire('hostLive')                       applyScene(act, ctx, {defaultSkin:'kahoot'})
-      applyScene(act, ctx, {defaultSkin:'kahoot'})
+      acquire('hostLive')                       applyScene(act, ctx, {defaultSkin:'velocidad'})
+      applyScene(act, ctx, {defaultSkin:'velocidad'})
       body.classList.add('ww-stage')            subscribeRoom(sessId, onEvent)
       subscribeRoom(sessId, onEvent)            ─────────────────────────────────
       ──────────────────────────────            FASES (máquina de estados en livePhases.js):

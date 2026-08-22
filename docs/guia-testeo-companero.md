@@ -51,7 +51,7 @@ Con el giro de pantalla desbloqueado, en el teléfono:
 3. **Ruleta**: en el PC el botón «Girar» va **al lado** de la rueda; en el móvil
    en vertical, **debajo**. La rueda se ve grande en los dos casos.
 4. **Quiz sin fotos**: los cuatro botones de colores llenan la pantalla (como
-   Kahoot), sin franja blanca en medio.
+   un concurso), sin franja blanca en medio.
 
 **3 · EL TÍTULO YA NO ESTÁ DENTRO DEL JUEGO (2 min).**
 Solo aparece **antes** de jugar (pantalla de Iniciar, lobby del en vivo, ficha

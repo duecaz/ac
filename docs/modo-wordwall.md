@@ -3,7 +3,7 @@
 > **Tipo**: guía · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
 
 > El modo **SOLO** = una sola pantalla/dispositivo, sin red, puntuación local.
-> Es el "Empezar" de Wordwall (frente al "PIN" tipo Kahoot, que es LIVE). Este
+> Es el "Empezar" de Wordwall (frente al "PIN" tipo un concurso, que es LIVE). Este
 > documento describe cómo está construido el sistema detrás, ya cubierto por tests.
 
 ## 1. Idea central: contenido como dato
@@ -65,7 +65,7 @@ home (#/home)
 La puntuación del quiz es una función pura `templates/quiz/scorer.js`
 (`scoreQuizSubmission`) — **la misma** que usa el servidor en LIVE. Soporta:
 - **flat**: `item.points || scoring.pointsPerCorrect`; penalización si `pointsPerWrong<0`.
-- **kahoot** (avanzado en SOLO o en LIVE): `base*500 + speedBonus*(tiempo restante)`.
+- **velocidad** (avanzado en SOLO o en LIVE): `base*500 + speedBonus*(tiempo restante)`.
 - `correct === null` cuando el ítem no es puntuable (sin clave de respuesta).
 
 Las demás plantillas puntúan dentro de su `player.js` (deuda conocida: extraer a
@@ -121,7 +121,7 @@ Lo **no** automatizable aquí (sin navegador headless): el render DOM y la inter
 táctil de las plantillas — eso se verifica en navegador (`python3 -m http.server`).
 
 ## 10. Deuda conocida del modo SOLO
-Ver `docs/auditoria-solo.md`: bugs por arreglar (quiz kahoot maxScore, frase sin marcas
+Ver `docs/auditoria-solo.md`: bugs por arreglar (quiz velocidad maxScore, frase sin marcas
 inacabable en tildes/comas) y la tarea estructural de **extraer la lógica de
 acierto/puntuación** de match/memory/tildes/comas a módulos puros testeables (como ya
 se hizo con quiz y wheel).

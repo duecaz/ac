@@ -109,7 +109,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | Modo SOLO (Wordwall) por dentro · identidad/auth · dev local | [`docs/modo-wordwall.md`](docs/modo-wordwall.md) · [`docs/identidad.md`](docs/identidad.md) · [`docs/dev-local.md`](docs/dev-local.md) |
 | **La IA que ESCRIBE el contenido** (por modelo · módulo aparte · el hook de la Pi) | **[`docs/handoff-ia-contenido.md`](docs/handoff-ia-contenido.md)** — FUNCIONANDO desde v1.51.548; su §7b guarda las tres trampas que costaron ponerlo en pie (los 5xx que se come Cloudflare, el ámbito de los handlers, el modelo con caducidad) |
 | **Plan del EDITOR** (márgenes · «+ Añadir» · imagen↔pines · nacer en blanco · buscador) | **[`docs/handoff-editor-general.md`](docs/handoff-editor-general.md)** (decidido 2026-08-13, sin ejecutar) |
-| **DECISIONES de producto pendientes** (contrastadas con Wordwall/Kahoot: identidad del alumno, imprimible, cuotas…) | **[`docs/decisiones-pendientes.md`](docs/decisiones-pendientes.md)** |
+| **DECISIONES de producto pendientes** (contrastadas con Wordwall y similares: identidad del alumno, imprimible, cuotas…) | **[`docs/decisiones-pendientes.md`](docs/decisiones-pendientes.md)** |
 | **Cuántos bucles de juego en vivo hay y qué cuestan** (estudio D7, medido) | **[`docs/estudio-bucles-live.md`](docs/estudio-bucles-live.md)** + ley §26 |
 | Índice completo de docs | [`docs/README.md`](docs/README.md) (lo histórico vive en `docs/historico/`) |
 | **Cómo se puntúa CADA actividad** | `core/scoring/` + el scorer de cada plantilla; la ley y su test, en [`docs/leyes.md`](docs/leyes.md) (`scoringSources`). El plan original, ya ejecutado, en `docs/historico/handoff-puntuacion.md` |
@@ -185,7 +185,7 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
 <!-- GENERADO:bucles -->
 | Bucle | Fase | Quién avanza | **Cómo se gana** | Puntos | Fin | Plantillas que lo declaran |
 |---|---|---|---|---|---|---|
-| `rounds` · Rondas juntas | `question` | el profe o el reloj | más puntos | Kahoot: base×500 + bonus por velocidad | al agotar las preguntas | Comas · Operaciones · Quiz · Tildes |
+| `rounds` · Rondas juntas | `question` | el profe o el reloj | más puntos | bonus: base×500 + bonus por velocidad | al agotar las preguntas | Comas · Operaciones · Quiz · Tildes |
 | `race` · Carrera libre | `race` | cada alumno | **terminar primero con todas bien** (empate ⇒ hora de meta) | **planos**: el puntaje ES el nº de aciertos | política declarada: todos · primeros N · tiempo | Comas · Operaciones · Quiz · Tildes |
 | `board` · Tablero | `race` | cada alumno | avanzar más en el tablero | escala propia de la plantilla (Pelotas: 0-1000 por eficiencia) | igual que la carrera | Ordena las Pelotas |
 | `claim` · Pedir la palabra | `question-live` | el profe (a quien pide turno) | los puntos que da el docente | manuales (+10/+50), sin clave de respuesta | lo cierra el docente | Abre Cajas · Ruleta |
@@ -346,7 +346,7 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
 - **Gateo de tareas** (cerrada / vencida / sin intentos): SIEMPRE `assignmentGate`
   (`core/assignmentRules.js`, puro y testeado). `views/studentTask.js` lo reimplementaba con otra
   semántica (`max_attempts` nulo = ilimitado vs 1).
-- **Puntos**: convención en `core/scoring/` (basePoints/wrongPoints/useKahoot/awardPoints); Tildes/Comas
+- **Puntos**: convención en `core/scoring/` (basePoints/wrongPoints/usaBonusVelocidad/awardPoints); Tildes/Comas
   puntúan **NETO por marca** (`scoreMarksPerHit`, `pointsPerCorrect` default 1): puntaje =
   `max(0, aciertos − de más) × ppc` — cada marca buena suma, cada marca de MÁS resta, así "marcar
   todo" NO gana (neto 0). `hits`/`over`/`total` se conservan para la tabla ("3/8 · 2 de más") y
@@ -360,7 +360,7 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   `tests/scoringSources.test.mjs` (4 reglas ejecutables) — antes match/diagram/crossword/memory
   llevaban aritmética propia en Individual.
   El runner Solo (`runTextCorrectionSolo`) también llama a `scoreMarksPerHit` (no tiene copia propia).
-  **En CARRERA los puntos son PLANOS** (`mode:'race'` en el settle → `useKahoot()` no enciende el
+  **En CARRERA los puntos son PLANOS** (`mode:'race'` en el settle → `usaBonusVelocidad()` no enciende el
   bonus): la carrera la gana *quien termina primero con todas bien*, así que el puntaje ES el
   número de aciertos y el tiempo solo DESEMPATA. El ranking (marcador y podio) sale de
   **`core/liveRank.js`** (`rankPlayers`), compartido por el adaptador PocketBase y el motor; la

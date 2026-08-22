@@ -101,6 +101,7 @@ console.log('\n▶ playOptions'); await import('./playOptions.test.mjs');
 console.log('\n▶ journeys'); await import('./journeys.test.mjs');
 console.log('\n▶ kind'); await import('./kind.test.mjs');
 console.log('\n▶ vocabulario'); await import('./vocabulario.test.mjs');
+console.log('\n▶ nombresRetirados'); await import('./nombresRetirados.test.mjs');
 console.log('\n▶ cacheBusting'); await import('./cacheBusting.test.mjs');
 console.log('\n▶ docs'); await import('./docs.test.mjs');
 console.log('\n▶ qaRonda'); await import('./qaRonda.test.mjs');

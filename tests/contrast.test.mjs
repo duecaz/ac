@@ -30,7 +30,7 @@ assert.strictEqual(r2('#ffffff', '#ffffff'), 1, 'un color contra sí mismo = 1:1
 assert.strictEqual(r2('#ffffff', '#000000'), 21, 'el orden no importa');
 assert.strictEqual(luminancia('#fff'), luminancia('#ffffff'), 'acepta el hex corto');
 assert.strictEqual(ratio('#fff', 'rgba(0,0,0,.5)'), null, 'lo que no es hex sólido NO se juzga');
-// El caso real que dio origen a todo: ámbar del Kahoot-grid con letra blanca.
+// El caso real que dio origen a todo: ámbar de la rejilla de opciones con letra blanca.
 assert.ok(r2('#ffffff', '#d89e00') < 3, `el ámbar con letra blanca es ${r2('#ffffff', '#d89e00')}:1 — por debajo de AA grande`);
 assert.ok(r2('#1f2937', '#d89e00') >= 4.5, `con letra oscura sube a ${r2('#1f2937', '#d89e00')}:1`);
 ok('aritmética WCAG: 21:1 · 1:1 · simétrica · hex corto · rechaza lo no medible');

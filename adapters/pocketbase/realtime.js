@@ -242,7 +242,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
   };
 
   // Deduplica filas de respuesta a UNA por jugador: nos quedamos con la más
-  // TEMPRANA (menor `ms`) para conservar la semántica Kahoot de primera
+  // TEMPRANA (menor `ms`) para conservar la semántica de primera
   // respuesta/velocidad. ÚNICO sitio donde vive este criterio (lo usan
   // fetchAnswerRows y settlePending); si la deuda F cambia el desempate a
   // "más reciente", se cambia solo aquí.
@@ -747,7 +747,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
 
     async submitAnswer(sessionId, playerId, itemIndex, value, msTaken) {
       if (await answersReady()) {
-        // Candado de primera respuesta (Kahoot): si ya hay fila para este ítem, se
+        // Candado de primera respuesta (como en un concurso): si ya hay fila para este ítem, se
         // conserva. Un doble-tap simultáneo choca contra el índice único → `conflict`,
         // que aquí significa "ya respondió" → se ignora (antes creaba una 2ª fila).
         // scored=false = "respondió, sin puntuar" (PB bool no admite null).

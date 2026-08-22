@@ -11,13 +11,13 @@
 - **`/ac` (WW, v1.12.1) es la base ganadora.** Ya tiene la arquitectura correcta:
   plantillas pluggables que consumen *modelos de contenido* abstractos (`qa`, `pairs`,
   `groups`, `words`, `entries`, `diagram`), tres modos de juego (SOLO tipo Wordwall,
-  LIVE tipo Kahoot con PIN/QR + realtime, ASYNC/tareas), scoring anti-trampa en
+  LIVE tipo un concurso con PIN/QR + realtime, ASYNC/tareas), scoring anti-trampa en
   Edge Functions, skins y fondos. Es justo el esqueleto que necesita una plataforma
-  estilo Wordwall+Kahoot.
+  estilo Wordwall+un concurso.
 - **`/play` (EduPlay, v0.9.50) es la mina de features de aula** que `/ac` todavía no
   tiene: detección de **lápiz IR** para pizarras, **corrección sobre canvas**
   (textCorrection / tildes), **modo equipo por turnos**, **calibración** y
-  **bloqueo por patrón**. Esto es nuestro diferenciador frente a Wordwall/Kahoot.
+  **bloqueo por patrón**. Esto es nuestro diferenciador frente a Wordwall y similares.
 - **Plan:** consolidar sobre `/ac`, **portar selectivamente** lo valioso de `/play`
   como nuevas plantillas/capacidades, y completar el modelo Wordwall de
   **"crea una vez, cambia de formato con un clic"** que `/ac` ya tiene a medio camino.
@@ -26,10 +26,10 @@
 
 ---
 
-## 1. Estudio de referentes (Wordwall, Kahoot y alternativas)
+## 1. Estudio de referentes (Wordwall, un concurso y alternativas)
 
 ### Dos familias + un tercer modelo
-- **Quiz-céntricas** (el juego envuelve un cuestionario): **Kahoot**, **Quizizz**.
+- **Quiz-céntricas** (el juego envuelve un cuestionario): **un concurso**, **Quizizz**.
 - **Juego-céntricas** (el quiz alimenta una mecánica propia): **Blooket** (mini-juegos
   + avatares coleccionables), **Gimkit** (economía y power-ups).
 - **Fábrica de formatos**: **Wordwall** — un mismo contenido se reutiliza en decenas
@@ -85,7 +85,7 @@ Lo logran con:
 - **Tres entrypoints:** `teacher.html`, `student.html`, `embed.html` (iframe sin chrome).
 - **Tres modos:**
   - **SOLO** (Wordwall): un dispositivo, scoring local, frame fijo 1280×800 (16:10).
-  - **LIVE** (Kahoot): sesión con PIN+QR, lobby → pregunta → reveal → leaderboard →
+  - **LIVE** (un concurso): sesión con PIN+QR, lobby → pregunta → reveal → leaderboard →
     podio, **scoring anti-trampa en Edge Function `settle-item`** con `activity_snap`.
   - **ASYNC**: tareas a ritmo del alumno.
 - **6 plantillas pluggables:** quiz, memory, match, wheel, tildes, comas. Cada una es un

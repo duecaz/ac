@@ -90,8 +90,8 @@ const act = { presentation: { skin: 'jungle', background: BG } };
 // ── Fallback skin is honored when the activity has none ───────────────────────
 {
   resetScene();
-  applyScene({ presentation: {} }, null, { defaultSkin: 'kahoot' });
-  assert.ok(document.body.classList.contains('skin-kahoot'), 'falls back to kahoot');
+  applyScene({ presentation: {} }, null, { defaultSkin: 'vibrante' });
+  assert.ok(document.body.classList.contains('skin-vibrante'), 'falls back to vibrante');
   resetScene();
   ok('applyScene uses defaultSkin when the activity has no skin');
 }
@@ -107,13 +107,13 @@ const act = { presentation: { skin: 'jungle', background: BG } };
   scene(false);   // repaint de la misma fase → no-op (short-circuit)
   scene(true);
   assert.ok(document.body.classList.contains('skin-jungle'), 'vuelve al juego');
-  // sin skin en la actividad → cae al default kahoot (mismo default que el live)
+  // sin skin en la actividad → cae al default vibrante (mismo default que el live)
   resetScene();
   const scene2 = sceneToggle({ presentation: {} });
   scene2(true);
-  assert.ok(document.body.classList.contains('skin-kahoot'), 'default kahoot');
+  assert.ok(document.body.classList.contains('skin-vibrante'), 'default vibrante');
   resetScene();
-  ok('sceneToggle: aplica solo en juego, resetea en chrome, default kahoot');
+  ok('sceneToggle: aplica solo en juego, resetea en chrome, default velocidad');
 }
 
 delete global.document;

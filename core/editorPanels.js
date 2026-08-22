@@ -33,7 +33,7 @@ export function scoringPanelHtml(a) {
     <div class="col-md-4"><label class="form-label">Modo</label>
       <select class="form-select" id="f-mode">
         <option value="flat" ${s.mode === 'flat' ? 'selected' : ''}>Plano</option>
-        <option value="kahoot" ${s.mode === 'kahoot' ? 'selected' : ''}>Kahoot (bonus por velocidad)</option>
+        <option value="velocidad" ${s.mode === 'velocidad' ? 'selected' : ''}>Bonus por velocidad</option>
       </select></div>
     <div class="col-md-4"><label class="form-label">Puntos por acierto</label><input type="number" class="form-control" id="f-ppc" value="${s.pointsPerCorrect ?? 1}"></div>
     <div class="col-md-4"><label class="form-label">Puntos por error</label><input type="number" class="form-control" id="f-ppw" value="${s.pointsPerWrong ?? 0}"></div>
@@ -50,11 +50,11 @@ function resumenPuntosHtml(a) {
   const n = activityItemCount(a);
   const max = defaultMaxScore(a, n);
   const ppc = a.scoring?.pointsPerCorrect ?? 1;
-  const kahoot = a.scoring?.mode === 'kahoot';
+  const porVelocidad = a.scoring?.mode === 'velocidad';
   if (!n) return `Cada acierto vale <b>${ppc}</b>. Cuando añadas contenido verás aquí el máximo de la actividad.`;
   return `Cada acierto vale <b>${ppc}</b> punto${ppc === 1 ? '' : 's'} → con ${n} elemento${n === 1 ? '' : 's'}, `
     + `el máximo de esta actividad es <b>${max}</b>`
-    + (kahoot ? ' <i>(en modo Kahoot se suma además el bonus por velocidad)</i>.' : '.');
+    + (porVelocidad ? ' <i>(además se suma un bonus por responder rápido)</i>.' : '.');
 }
 
 export function wireScoringPanel(root, a, ctx) {
@@ -89,7 +89,7 @@ export function livePanelHtml(a) {
       </select></div>
     <div class="col-md-4"><label class="form-label">Modelo de puntos</label>
       <select class="form-select" id="l-points">
-        <option value="kahoot" ${l.pointsModel === 'kahoot' ? 'selected' : ''}>kahoot</option>
+        <option value="velocidad" ${l.pointsModel === 'velocidad' ? 'selected' : ''}>bonus por velocidad</option>
         <option value="flat" ${l.pointsModel === 'flat' ? 'selected' : ''}>flat</option>
       </select></div>
     <div class="col-md-4"><label class="form-label">Speed bonus máx</label><input id="l-bonus" type="number" min="0" class="form-control" value="${l.speedBonusMax}"></div>

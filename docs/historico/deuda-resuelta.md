@@ -51,12 +51,12 @@ REVISAN las imágenes (no solo números). Encontró y arregló:
   contra cada paleta: en arcade el cian y el amarillo llevaban letra blanca (1,4-1,8:1 →
   ahora 8-10:1); en retro/jungle/tv-show, sus combinaciones. `skins.test` exige el set
   completo, así que un skin nuevo no puede olvidarlos.
-- **Kahoot no ponía `color:`** en su marco (retro y jungle sí): la pregunta del quiz salía
+- **un concurso no ponía `color:`** en su marco (retro y jungle sí): la pregunta del quiz salía
   en tinta oscura sobre su degradado morado, casi ilegible en pizarra. Una línea.
 - Ese arreglo DESTAPÓ un hueco viejo: la tinta de la hoja de Tildes/Comas solo estaba
   fijada para `body.bg-notebook`, no para el MARCO → texto blanco sobre crema (invisible)
-  con kahoot. Quien pinta el papel pone la tinta: regla ampliada al frame.
-Verificado con capturas antes/después (kahoot y arcade legibles en quiz, globos y tildes).
+  con velocidad. Quien pinta el papel pone la tinta: regla ampliada al frame.
+Verificado con capturas antes/después (velocidad y arcade legibles en quiz, globos y tildes).
 
 ### ✅ HECHO (v1.51.425) — los tests que vigilan la REDACCIÓN, medidos y en ratchet
 Descubierto trabajando, no auditando: al mover los relojes a la hora común (§22-5) —un
@@ -77,7 +77,7 @@ no líneas. No se borra la cita: se mueve el cálculo a donde se puede ejecutar.
 La matriz MIDE ahora el **contraste real** (color computado contra el fondo real, componiendo
 alfa y saltando degradados) de todo el texto del marco, en las 13 plantillas × 3 modos.
 Umbral 3:1. Nació encontrando **tres fallos reales**, todos invisibles hasta hoy:
-- **Opciones del quiz** (`.ww-kahoot-grid`): letra blanca sobre ámbar = **2,4:1**, y además
+- **Opciones del quiz** (`.ww-opt-grid`): letra blanca sobre ámbar = **2,4:1**, y además
   `font-size: 1.5rem` **FIJO** — 24 px lo mismo en un móvil que en una pizarra 4K, en el texto
   que la clase entera lee. Ahora escala con el marco y va a 6,2:1.
 - **Globos** (`.gl-c3`): el mismo blanco sobre ámbar, 2,4:1 → 4,5:1 medido.

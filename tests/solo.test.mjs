@@ -37,29 +37,29 @@ assert.strictEqual(
   'unscorable item → correct null');
 ok('scoreQuizSubmission: flat scoring, penalties, unscorable');
 
-// kahoot speed scoring (solo advanced + live)
-const kahoot = { scoring: { mode: 'kahoot' }, live: { questionTimer: 20, speedBonusMax: 1000 } };
-const fast = scoreQuizSubmission({ value: 'a', item: { answer: 'a', points: 2 }, msTaken: 0, activity: kahoot, mode: 'solo' });
-const slow = scoreQuizSubmission({ value: 'a', item: { answer: 'a', points: 2 }, msTaken: 20000, activity: kahoot, mode: 'solo' });
-assert.strictEqual(fast.points, 2000, 'kahoot: instant answer = base*500 + full speed bonus');
-assert.strictEqual(slow.points, 1000, 'kahoot: at deadline = base*500 + 0 bonus');
-assert.ok(fast.points > slow.points, 'kahoot: faster scores higher');
+// velocidad speed scoring (solo advanced + live)
+const velocidad = { scoring: { mode: 'velocidad' }, live: { questionTimer: 20, speedBonusMax: 1000 } };
+const fast = scoreQuizSubmission({ value: 'a', item: { answer: 'a', points: 2 }, msTaken: 0, activity: velocidad, mode: 'solo' });
+const slow = scoreQuizSubmission({ value: 'a', item: { answer: 'a', points: 2 }, msTaken: 20000, activity: velocidad, mode: 'solo' });
+assert.strictEqual(fast.points, 2000, 'velocidad: instant answer = base*500 + full speed bonus');
+assert.strictEqual(slow.points, 1000, 'velocidad: at deadline = base*500 + 0 bonus');
+assert.ok(fast.points > slow.points, 'velocidad: faster scores higher');
 const live = scoreQuizSubmission({ value: 'a', item: { answer: 'a', points: 2 }, msTaken: 0,
-  activity: { live: { pointsModel: 'kahoot', questionTimer: 20, speedBonusMax: 1000 } }, mode: 'live' });
-assert.strictEqual(live.points, 2000, 'live mode honours live.pointsModel=kahoot');
-ok('scoreQuizSubmission: kahoot speed bonus (solo advanced + live)');
+  activity: { live: { pointsModel: 'velocidad', questionTimer: 20, speedBonusMax: 1000 } }, mode: 'live' });
+assert.strictEqual(live.points, 2000, 'live mode honours live.pointsModel=velocidad');
+ok('scoreQuizSubmission: velocidad speed bonus (solo advanced + live)');
 
 // ---------- P5: escala UNIFICADA (docs/historico/handoff-puntuacion.md) ----------
 // math en VIVO paga con el MISMO bonus de velocidad que quiz (antes: 1 plano
 // mientras quiz pagaba ~1500 en la misma sesión de clase).
 {
-  const liveKahoot = { live: { pointsModel: 'kahoot', questionTimer: 20, speedBonusMax: 1000 } };
-  const m = scoreMathSubmission({ value: '4', item: { answer: '4', points: 2 }, msTaken: 0, activity: liveKahoot, mode: 'live' });
-  assert.deepStrictEqual(m, { correct: true, points: 2000, hits: 1, total: 1 }, 'math live = misma fórmula kahoot que quiz');
+  const liveVelocidad = { live: { pointsModel: 'velocidad', questionTimer: 20, speedBonusMax: 1000 } };
+  const m = scoreMathSubmission({ value: '4', item: { answer: '4', points: 2 }, msTaken: 0, activity: liveVelocidad, mode: 'live' });
+  assert.deepStrictEqual(m, { correct: true, points: 2000, hits: 1, total: 1 }, 'math live = misma fórmula velocidad que quiz');
   assert.strictEqual(scoreMathSubmission({ value: '4', item: { answer: '4' }, activity: {} }).points, 1, 'math solo plano = 1');
-  ok('P5 math: awardPoints — plano en solo, kahoot en vivo (como quiz)');
+  ok('P5 math: awardPoints — plano en solo, velocidad en vivo (como quiz)');
 }
-// wordsearch: ppc default 1 (antes 10), SIN bonus de longitud ni kahoot propio.
+// wordsearch: ppc default 1 (antes 10), SIN bonus de longitud ni velocidad propio.
 {
   const act = { content: { words: ['ELEFANTE', 'SOL'] }, scoring: {} };
   assert.deepStrictEqual(scoreWordsearch({ value: 'elefante', activity: act }), { correct: true, points: 1, hits: 1, total: 1 },

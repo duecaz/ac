@@ -1,4 +1,4 @@
-# Decisiones de producto pendientes — contrastadas con Wordwall y Kahoot
+# Decisiones de producto pendientes — contrastadas con Wordwall y un concurso
 
 > **Tipo**: decisión · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
 
@@ -44,9 +44,9 @@ sale de aquí.
 
 | Decisión | Igual que… |
 |---|---|
-| Alumno **sin cuenta**: PIN + apodo | Kahoot |
-| **Puntos por velocidad** (kahoot) + podio como ceremonia | Kahoot |
-| Mismo contenido en **vivo** y en **tarea** (student-paced) | Kahoot |
+| Alumno **sin cuenta**: PIN + apodo | un concurso |
+| **Puntos por velocidad** (velocidad) + podio como ceremonia | un concurso |
+| Mismo contenido en **vivo** y en **tarea** (student-paced) | un concurso |
 | **Biblioteca pública** con likes y publicar/borrador | Wordwall |
 | **Cambiar de plantilla** sobre el mismo contenido | Wordwall |
 | **Skins/temas** separados del juego (tokens, §3) | Wordwall (temas) |
@@ -55,7 +55,7 @@ sale de aquí.
 
 ## D1 · Identidad del alumno: ¿apodo, clase o cuenta?
 
-- **Ellos**: Kahoot resuelve la partida con apodo y el seguimiento con
+- **Ellos**: un concurso resuelve la partida con apodo y el seguimiento con
   grupos/roster; Wordwall pide el nombre al asignar una tarea.
 - **Nosotros hoy**: apodo por sala + id anónimo por dispositivo. Un alumno no
   existe entre una actividad y la siguiente → **no hay seguimiento en el año**,
@@ -110,7 +110,7 @@ sale de aquí.
 
 ## D4 · ¿Aula SIN internet es un caso soportado?
 
-- **Ellos**: Kahoot y Wordwall exigen internet, sin matices.
+- **Ellos**: un concurso y Wordwall exigen internet, sin matices.
 - **Nosotros hoy**: existe el backend `local` (misma máquina, BroadcastChannel) y
   los HTML **desregistran** el service worker a propósito. O sea: la decisión
   está tomada de hecho ("siempre hay internet") pero no declarada.
@@ -183,7 +183,7 @@ refluyen por `aspect-ratio`) · `edu-send`. Se marcan con doble clase
 
 Con eso cerrado, el reparto dejó de ser opinión: el título salió del juego (6
 players), Crucigrama separó ayudarse de entregar, Sopa y Crucigrama refluyen
-por forma en vez de por píxeles, el Quiz sin foto llena como Kahoot y la Ruleta
+por forma en vez de por píxeles, el Quiz sin foto llena como un concurso y la Ruleta
 usa el hueco que hay.
 
 **Sigue abierto** lo que el inventario no puede contestar: cuál de las dos
@@ -205,7 +205,7 @@ decisión de producto, y ahora se puede tomar mirando una tabla de 13 filas.
 
 ## D7 · Congelar el catálogo de bucles en vivo — ✅ ESTUDIADA Y CONGELADA (ley §26)
 
-- **Ellos**: Kahoot tiene UN bucle (pregunta → responder → revelar → ranking) y
+- **Ellos**: un concurso tiene UN bucle (pregunta → responder → revelar → ranking) y
   los tipos de pregunta son variantes, no juegos distintos.
 - **Nosotros hoy**: cuatro bucles declarados en `meta.play.live` (`rounds`,
   `race`, `board`, y la fase `question-live`). Están declarados, que es lo

@@ -56,7 +56,7 @@ export function applyScene(activity, ctx = null, { defaultSkin = NEUTRAL_SKIN, d
  * studentLive (antes cada vista llevaba su copia).
  * El teardown NO va aquí: cada vista registra `ctx.add(() => resetScene())`.
  */
-export function sceneToggle(activity, { defaultSkin = 'kahoot', target = null } = {}) {
+export function sceneToggle(activity, { defaultSkin = 'vibrante', target = null } = {}) {
   let on = null;
   return (game) => {
     if (game === on) return;

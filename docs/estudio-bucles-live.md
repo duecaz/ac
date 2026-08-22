@@ -2,7 +2,7 @@
 
 > **Tipo**: decisión · **Sube a**: [`docs/README.md`](README.md) · **Vigila**: `tests/docs.test.mjs` (enlaces y ficha)
 
-Kahoot tiene **UN** bucle (pregunta → responder → revelar → ranking) y sus tipos
+un concurso tiene **UN** bucle (pregunta → responder → revelar → ranking) y sus tipos
 de pregunta son variantes dentro de ese bucle, no juegos distintos. Esa decisión
 es la que le permite añadir tipos de pregunta sin tocar el motor de la partida.
 
@@ -18,14 +18,14 @@ código, no de memoria (v1.51.340).
 - [3. Qué NO hay que hacer](#3-qué-no-hay-que-hacer)
 - [4. Propuesta (para decidir, no ejecutada)](#4-propuesta-para-decidir-no-ejecutada)
 - [El bucle, paso a paso](#el-bucle-paso-a-paso)
-- [Lo que hay que tomar de Kahoot, por orden de valor/coste](#lo-que-hay-que-tomar-de-kahoot-por-orden-de-valorcoste)
+- [Lo que hay que tomar de un concurso, por orden de valor/coste](#lo-que-hay-que-tomar-de-un-concurso-por-orden-de-valorcoste)
 - [Lo que NO hay que copiar (y por qué)](#lo-que-no-hay-que-copiar-y-por-qué)
-- [Riesgo propio a decidir (no es de Kahoot)](#riesgo-propio-a-decidir-no-es-de-kahoot)
+- [Riesgo propio a decidir (no es de un concurso)](#riesgo-propio-a-decidir-no-es-de-un-concurso)
 - [Sobre los tres botones del lobby (manual · automático · carrera)](#sobre-los-tres-botones-del-lobby-manual--automático--carrera)
 - [Orden sugerido para seguir](#orden-sugerido-para-seguir)
 - [A · ¿Por horario o por retardo? — por INSTANTE, y ya lo hacemos así](#a--por-horario-o-por-retardo--por-instante-y-ya-lo-hacemos-así)
 - [B · El bucle, paso a paso (con los dos instantes)](#b--el-bucle-paso-a-paso-con-los-dos-instantes)
-- [C · ¿Quitamos "manual" y dejamos solo automático, como Kahoot?](#c--quitamos-manual-y-dejamos-solo-automático-como-kahoot)
+- [C · ¿Quitamos "manual" y dejamos solo automático, como un concurso?](#c--quitamos-manual-y-dejamos-solo-automático-como-un-concurso)
 - [D · Qué habría que tocar (estimación honesta)](#d--qué-habría-que-tocar-estimación-honesta)
 - [Cómo corre hoy](#cómo-corre-hoy)
 - [Diferencias de fondo con `rounds`](#diferencias-de-fondo-con-rounds)
@@ -117,7 +117,7 @@ se cruzan los bucles.
 Unificar los cuatro bucles en uno **no** es la conclusión. Cada uno responde a
 una necesidad de aula real y distinta:
 
-- **Rondas**: la clase entera en la misma pregunta (el bucle de Kahoot).
+- **Rondas**: la clase entera en la misma pregunta (el bucle del concurso).
 - **Carrera**: cada alumno a su ritmo, el profe ve avanzar a todos.
 - **Tablero**: un puzzle único que cada alumno resuelve (Ordena las Pelotas).
 - **Pedir la palabra**: el contenido no tiene clave — puntúa el docente.
@@ -145,15 +145,15 @@ hay ningún bug abierto por esto. Es deuda de DISEÑO, y ahora está medida.
 
 ---
 
-# Ficha 1 · `rounds` — contrastada paso a paso con Kahoot
+# Ficha 1 · `rounds` — contrastada paso a paso con un concurso
 
-Kahoot es el modelo declarado para este bucle. Aquí está su secuencia real frente
+un concurso es el modelo declarado para este bucle. Aquí está su secuencia real frente
 a la nuestra, paso por paso, con lo que falta y lo que **no** conviene copiar.
 Medido sobre `views/hostLive.js` y `views/studentLive.js` (v1.51.341).
 
 ## El bucle, paso a paso
 
-| # | Kahoot | Nosotros hoy | Veredicto |
+| # | un concurso | Nosotros hoy | Veredicto |
 |---|---|---|---|
 | 1 | Lobby con PIN, apodos apareciendo, música | Lobby con PIN + **QR**, lista de jugadores, expulsar | ✅ igual o mejor |
 | 2 | **Se muestra SOLO el enunciado** unos segundos ("prepárate") — el móvil aún no deja responder | ❌ **no existe**: se abre la pregunta y las respuestas a la vez | 🔴 **falta lo más importante** |
@@ -165,11 +165,11 @@ Medido sobre `views/hostLive.js` y `views/studentLive.js` (v1.51.341).
 | 8 | Siguiente pregunta | Igual (manual o automático con cuenta atrás) | ✅ igual |
 | 9 | Podio + resumen personal ("acertaste 7 de 10") | Podio + pantalla de final | ✅ igual |
 
-## Lo que hay que tomar de Kahoot, por orden de valor/coste
+## Lo que hay que tomar de un concurso, por orden de valor/coste
 
 **R-1 · Fase de LECTURA antes de abrir respuestas** (la más importante).
 Hoy la pregunta y las opciones aparecen juntas: gana quien hace clic rápido, no
-quien lee. Kahoot separa "lee el enunciado" de "responde" desde su primera
+quien lee. un concurso separa "lee el enunciado" de "responde" desde su primera
 versión, y es lo que hace que el bonus por velocidad sea justo — el cronómetro
 de respuesta empieza cuando **todos** han podido leer.
 Implementación honesta: NO hace falta una fase de sala nueva (§26 la congela);
@@ -178,14 +178,14 @@ el enunciado en modo "prepárate" hasta ese instante. El sello ya lo sabe poner
 el servidor (§22-1, `itemOpenedAt`). Duración: configurable, 0 = como ahora.
 
 **R-2 · Tu puesto y tu distancia, en el móvil, tras cada pregunta.**
-Es el motor de enganche de Kahoot: "2º · a 120 puntos de Ana" hace que el alumno
+Es el motor de enganche de un concurso: "2º · a 120 puntos de Ana" hace que el alumno
 levante la vista. Tenemos el `leaderboard()` derivado y ya se consulta en la
 pantalla de clasificación: es coserlo en el reveal del alumno. Coste bajo,
 efecto alto.
 
 **R-3 · Tiempo POR pregunta.**
 Hoy hay UNA ventana para toda la actividad (`live.questionTimer`, 20s por
-defecto: `core/timings.js`). Kahoot deja 5-240s por pregunta. Una de comprensión
+defecto: `core/timings.js`). un concurso deja 5-240s por pregunta. Una de comprensión
 lectora y un 2+2 no pueden compartir cronómetro. Cambio de modelo de contenido
 (campo `seconds` por ítem, con la ventana de la actividad como valor por
 defecto) → toca migración versionada (§24).
@@ -195,7 +195,7 @@ Cosmético comparado con R-1/R-2, pero es lo que convierte la tabla en narrativa
 
 ## Lo que NO hay que copiar (y por qué)
 
-- **Ocultar el texto de las opciones en el móvil**: en Kahoot funciona porque
+- **Ocultar el texto de las opciones en el móvil**: en un concurso funciona porque
   SIEMPRE hay pizarra. Nosotros corremos en aulas donde a veces solo hay móviles;
   sin texto en el móvil, el juego es imposible. Y nuestras plantillas no son solo
   opción múltiple: en Tildes/Comas el texto **es** la pregunta. Si se hace, que
@@ -203,11 +203,11 @@ Cosmético comparado con R-1/R-2, pero es lo que convierte la tabla en narrativa
 - **La música y la ceremonia continua**: en pizarras de gama baja (`ww-lite`) el
   coste de animación importa más que el espectáculo.
 
-## Riesgo propio a decidir (no es de Kahoot)
+## Riesgo propio a decidir (no es de un concurso)
 
 En la revelación mostramos **los nombres de quién eligió cada opción**. Para el
 docente es oro (ve al instante quién no entendió); proyectado en la pizarra, es
-exponer al que falló delante de toda la clase. Kahoot no lo hace por eso.
+exponer al que falló delante de toda la clase. un concurso no lo hace por eso.
 **Sugerencia**: mantenerlo, pero como interruptor del profe y **apagado por
 defecto en la proyección**; en el informe posterior, siempre visible.
 
@@ -252,7 +252,7 @@ Tres preguntas que quedaban abiertas, respondidas.
 
 ## A · ¿Por horario o por retardo? — por INSTANTE, y ya lo hacemos así
 
-Kahoot no "abre a una hora": el anfitrión abre la pregunta y **el servidor fija
+un concurso no "abre a una hora": el anfitrión abre la pregunta y **el servidor fija
 el instante de cierre**; cada dispositivo solo calcula *cuánto falta*. Nosotros
 ya funcionamos exactamente así (`views/hostLive.js:261` escribe un `deadline`
 ISO en la sala; el móvil hace `deadline - clock.now()`), y es la decisión
@@ -317,15 +317,15 @@ PODIO + resumen personal ("acertaste 7 de 10")
 Casos borde que este diseño resuelve solo, y hay que probar:
 - **Entrar a mitad de lectura** → ve la lectura y responde con todos.
 - **Entrar a mitad de respuesta** → responde con el tiempo que queda (menos), que
-  es lo justo y lo que hace Kahoot.
+  es lo justo y lo que hace un concurso.
 - **Recargar el móvil** → ambos instantes vienen de la sala; no gana tiempo extra.
 - **Pausa del profe** → ya existe (`deadline: null` congela la barra); con la
   lectura, pausar durante la lectura la congela igual.
 - **`lectura = 0`** → se comporta exactamente como hoy (retrocompatible).
 
-## C · ¿Quitamos "manual" y dejamos solo automático, como Kahoot?
+## C · ¿Quitamos "manual" y dejamos solo automático, como un concurso?
 
-**No, y el motivo es que la premisa no es exacta**: en Kahoot en vivo el docente
+**No, y el motivo es que la premisa no es exacta**: en un concurso en vivo el docente
 **también avanza a mano** entre preguntas por defecto — el automatismo está
 DENTRO de la pregunta (el cronómetro cierra solo), y "avanzar solo por las
 preguntas" es una opción que se activa, no el comportamiento base. Nuestro
@@ -408,7 +408,7 @@ de contenido y su migración (§24), y no se ha hecho.
 # Ficha 2 · `race` — la carrera libre
 
 Medido sobre `views/hostLive.js paintRace` y `views/studentLive.js paintRace`
-(v1.51.344). **No tiene referente en Kahoot**: lo más parecido es su modo
+(v1.51.344). **No tiene referente en un concurso**: lo más parecido es su modo
 asignado (student-paced), pero ese es una TAREA, no una clase en directo con la
 pizarra puesta. Aquí el referente somos nosotros, así que las decisiones hay que
 tomarlas, no copiarlas.
@@ -481,7 +481,7 @@ como hoy. Nada de temporizadores locales.
 # Ficha 3 · `board` — el tablero compartido
 
 Medido sobre `paintLiveBoardHost` y `paintLiveBoard`. Hoy solo lo usa **Ordena
-las Pelotas**. Tampoco tiene equivalente en Kahoot ni en Wordwall en vivo.
+las Pelotas**. Tampoco tiene equivalente en un concurso ni en Wordwall en vivo.
 
 ## Cómo corre hoy
 
@@ -583,7 +583,7 @@ Hacerlas una vez y que los tres bucles las consuman es lo que evita que
 **Decisión del usuario**: en los bucles a ritmo del alumno se elimina el ranking
 de la pizarra y se deja el AVANCE.
 
-**Matiz honesto sobre el referente**: en el Kahoot **en vivo** el marcador entre
+**Matiz honesto sobre el referente**: en el un concurso **en vivo** el marcador entre
 preguntas **sí** es una clasificación — y por eso lo conservamos en `rounds`,
 donde dura segundos y es el momento de la ceremonia. Es en sus modos **a ritmo
 del alumno** (los que se parecen a nuestra carrera y a nuestro tablero) donde la
@@ -845,7 +845,7 @@ resolvían (responder antes de leer) existe igual cuando un alumno va solo.
 El sello de tiempo del servidor en carrera es **uno solo para toda la partida**
 (`openedKey('race')` devuelve `'race'`, no el índice del ítem). O sea: el `ms`
 que puntúa **no es "lo que tardaste en ESA pregunta"**, es **"cuánto llevabas de
-carrera"**. Con puntos Kahoot y ventana de 20 s, medido:
+carrera"**. Con puntos con bonus por velocidad y ventana de 20 s, medido:
 
 | El alumno responde… | Puntos |
 |---|---|
@@ -921,7 +921,7 @@ dos alumnos comparten anon id y reconectan como el MISMO jugador):
 Ganaba quien no terminó. Dos cambios, cada uno en UN sitio:
 
 1. **Puntos PLANOS en carrera** — `kernel/session/engine.js`: el settle pasa
-   `mode: 'race'` cuando la fase es carrera, y `useKahoot()` (`core/scoring/award.js`)
+   `mode: 'race'` cuando la fase es carrera, y `usaBonusVelocidad()` (`core/scoring/award.js`)
    solo enciende el bonus con `mode:'live'`. Ni una plantilla se entera: la
    fórmula sigue siendo la única. **El puntaje de una carrera ES su número de
    aciertos.**

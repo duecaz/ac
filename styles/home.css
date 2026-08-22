@@ -748,14 +748,14 @@ body {
 .tc-heat__pct { font-size: .5em; font-weight: 700; vertical-align: super; margin-left: 1px; opacity: .8; }
 .tc-heat__coma { color: inherit; }
 
-/* nombres por veredicto (quién acertó/falló) — estilo Kahoot */
+/* nombres por veredicto (quién acertó/falló) — estilo concurso */
 .istats-names { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 10px; padding-top: 8px; border-top: 1px dashed #ece7d8; font-size: 13px; }
 .istats-who { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-right: 6px; }
 .istats-chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-weight: 600; }
 .istats-who--ok .istats-chip { background: #e8f6ee; color: #15803d; }
 .istats-who--bad .istats-chip { background: #fdeaea; color: #b91c1c; }
 
-/* ── Tabla alumno×ítem estilo Kahoot (views/sessionTable.js) ─────────────────── */
+/* ── Tabla alumno×ítem estilo concurso (views/sessionTable.js) ─────────────────── */
 .st-wrap { overflow-x: auto; margin: 8px 0; -webkit-overflow-scrolling: touch; }
 .st-table { border-collapse: separate; border-spacing: 0; font-size: 13px; min-width: 100%; background: #fff; border-radius: 12px; overflow: hidden; }
 .st-table th, .st-table td { padding: 7px 9px; text-align: center; border-bottom: 1px solid #f0ecdf; white-space: nowrap; }

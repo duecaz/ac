@@ -13,7 +13,7 @@ Andamio = la plantilla ya usa `styles/scaffold.css` (roles declarados, §3b).
 
 | Actividad | Proporción | Andamio | Piezas en **ancho** (1280×800) | Piezas en **alto** (520×900) |
 |---|---|---|---|---|
-| **Quiz** (`quiz`) | `16/10` | — | `ww-prow` 100%×6% → **barra**<br>`ww-kahoot-grid` 100%×92% → **escenario** | `ww-prow` 100%×6% → **barra**<br>`ww-kahoot-grid` 100%×92% → **escenario** |
+| **Quiz** (`quiz`) | `16/10` | — | `ww-prow` 100%×6% → **barra**<br>`ww-opt-grid` 100%×92% → **escenario** | `ww-prow` 100%×6% → **barra**<br>`ww-opt-grid` 100%×92% → **escenario** |
 | **Ruleta** (`wheel`) | `1/1` | — | `ww-wheel-stage` 47%×78% → **—**<br>`wh-side` 4%×15% → **—** | `ww-wheel-stage` 78%×43% → **—**<br>`wh-side` 10%×13% → **—** |
 | **Emparejar** (`match`) | `16/10` | ✅ | `ww-field` 100%×94% → **escenario**<br>`ww-bar` 100%×5% → **barra** | `ww-field` 100%×95% → **escenario**<br>`ww-bar` 100%×4% → **barra** |
 | **Memoria** (`memory`) | `1/1` | — | `mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—** | `mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—** |

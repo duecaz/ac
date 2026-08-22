@@ -36,7 +36,7 @@ export class QuizTemplate extends BaseTemplate {
     defaultRules: () => ({ timer: 0, randomize: false, shuffleOptions: true }),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0, penaltyRatio: 0, maxScore: 0 }),
     defaultLive: () => ({ enabled: true, advanceMode: 'manual', questionTimer: 20, lockAnswersOn: 'allAnswered',
-                          showAnswerAfterEach: true, showLeaderboardBetween: true, pointsModel: 'kahoot',
+                          showAnswerAfterEach: true, showLeaderboardBetween: true, pointsModel: 'velocidad',
                           speedBonusMax: 1000, allowLateJoin: true, maxPlayers: 60, nicknameFilter: true }),
     defaultContent: () => {
       const id = () => rid('q_');
@@ -78,7 +78,7 @@ export class QuizTemplate extends BaseTemplate {
   // One multiple-choice round for the session formats (VS / Equipos-auto).
   static renderRound(root, payload, opts) { renderChoiceRound(root, payload, opts); }
 
-  // Projector view for LIVE: the Kahoot-style colour grid (question phase) and
+  // Projector view for LIVE: the rejilla de opciones de colores (question phase) and
   // the per-option answer distribution + correct option (reveal phase).
   // playerMap: optional { [optionValue]: ['Ana', 'Beto', …] } built by the host.
   static renderRoundHost(root, { phase, item, answers = [], playerMap = {} } = {}) {
@@ -106,7 +106,7 @@ export class QuizTemplate extends BaseTemplate {
     root.innerHTML = `
       <h2 class="text-center my-4">${escapeHtml(item?.question || '')}</h2>
       ${item?.image ? `<div class="text-center mb-3"><img src="${escapeHtml(item.image)}" class="img-fluid" style="max-height:240px"></div>` : ''}
-      <div class="ww-kahoot-grid mb-4">
+      <div class="ww-opt-grid mb-4">
         ${opts.map((o, i) => `<button class="btn btn-lg ww-shape-${(i % 4) + 1}" disabled><i class="bi ${SHAPE_ICONS[i % 4]} me-2"></i>${escapeHtml(o)}</button>`).join('')}
       </div>`;
   }
