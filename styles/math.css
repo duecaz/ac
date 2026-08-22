@@ -45,6 +45,11 @@
   display: flex; align-items: stretch; justify-content: center;
   flex-wrap: wrap;
   gap: var(--math-head-gap, clamp(.35rem, 1.8cqmin, 1.1rem));
+  /* LA CABECERA OCUPA EL ANCHO DEL TECLADO, como el visor de una calculadora
+     de verdad: si mide solo su texto, queda una pastilla estrecha encima de un
+     teclado ancho. La operación se lleva el sobrante y el hueco de respuesta
+     conserva su ancho mínimo. */
+  width: 100%;
   max-width: 100%;
   /* LA CHAPA ES DEL TAMAÑO DE UNA TECLA, no de su texto (dueño, 2026-08-22:
      «2×6 y 0 están muy pequeños sus cajas respecto de las de abajo»). La letra
@@ -57,7 +62,7 @@
 }
 
 .ww-keypad-q {
-  flex: 0 0 auto;
+  flex: 1 1 auto;   /* se lleva el ancho que sobra tras el hueco de respuesta */
   display: flex; align-items: center; justify-content: center;
   /* LA PREGUNTA ES EL ENUNCIADO, no una etiqueta. Con `7cqmin` se quedaba en
      33 px en un panel de 470 con teclas de 150: la operación —lo único que hay

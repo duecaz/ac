@@ -91,9 +91,8 @@
    de `math.css`. Este archivo se carga ANTES de vs.css/teams.css, así que sus
    ajustes (p.ej. el tope de filas del modo bloque) siguen mandando. */
 .teams-card .ww-keypad-round { height: 100%; justify-content: flex-start; }
-.teams-card .ww-keypad-q,
-.teams-card .ww-keypad-display { flex: 0 0 auto; }
-.teams-card .ww-keypad-display { min-width: 0; }
+.teams-card .ww-keypad-q       { flex: 1 1 auto; }
+.teams-card .ww-keypad-display { flex: 0 0 30%; min-width: 0; }
 .teams-card .ww-keypad {
   flex: 1 1 auto; min-height: 0; grid-auto-rows: 1fr;
   grid-template-columns: repeat(var(--key-cols, 3), minmax(0, 1fr));
@@ -106,9 +105,15 @@
 /* MISMA condición que el resto del ajuste de panel en vs.css y en el skin. */
 @container vs (max-aspect-ratio: 5/4) or (max-height: 700px) {
   .vs-body .ww-keypad-round { height: 100%; justify-content: flex-start; }
-  .vs-body .ww-keypad-q,
-  .vs-body .ww-keypad-display { flex: 0 0 auto; }
-  .vs-body .ww-keypad-display { min-width: 0; }
+  /* LA CABECERA SE REPARTE EL ANCHO, como el visor de una calculadora: la
+     operación se lleva el sobrante y el hueco de respuesta un tercio fijo.
+     Aquí ponía `flex: 0 0 auto` a los dos —para que no desbordaran cuando el
+     panel era estrecho— y con eso medían su TEXTO: chapa y visor sumaban 144 px
+     de un teclado de 258, así que salían como pastillas verticales encima de un
+     teclado ancho (dueño, 2026-08-22, con captura). Ya no hace falta: la
+     cabecera tiene ancho definido y el teclado su proporción declarada. */
+  .vs-body .ww-keypad-q       { flex: 1 1 auto; }
+  .vs-body .ww-keypad-display { flex: 0 0 30%; min-width: 0; }
   .vs-body .ww-keypad {
     flex: 1 1 auto; min-height: 0; grid-auto-rows: 1fr;
     grid-template-columns: repeat(var(--key-cols, 3), minmax(0, 1fr));

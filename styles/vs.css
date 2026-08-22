@@ -233,7 +233,11 @@
   .vs-body .ww-keypad         { gap: var(--key-gap, 1.8cqw); }
   /* OJO con la especificidad: `.vs-body .ww-key` (y no `.ww-keypad .ww-key`) para
      que un skin con su propio tamaño de tecla —arcade— siga mandando, como antes. */
-  .vs-body .ww-key            { font-size: var(--key-size, clamp(.6rem, 8cqw, 1rem)); }
+  /* SIN TECHO BAJO (§3). Aquí ponía `clamp(.6rem, 8cqw, 1rem)`: un techo de
+     16 px. Medido con la animación apagada y teclas de 110 px, la cifra seguía
+     en 16 — el 15 % de su tecla. El piso se queda (por debajo de .6rem no se
+     lee a tres metros); el techo lo pone ahora el tamaño de la tecla. */
+  .vs-body .ww-key            { font-size: var(--key-size, clamp(.6rem, 11cqw, 3.4rem)); }
 }
 
 /* MARCADOR EN VERTICAL — POR QUÉ SIGUE EN CADA SKIN (§3, medido)
@@ -292,7 +296,15 @@
    larguísimas. */
 .vs-body.ww-fit-block .ww-keypad-round {
   height: auto;   /* el cuerpo ya no tiene alto fijo: el bloque LO DA, no lo hereda */
-  width: 100%; max-width: min(100%, 62cqh); margin: auto;
+  /* EL TOPE ES DEL BLOQUE ENTERO, y por eso la cabecera mide lo que el teclado.
+     Estaba en el teclado, así que la cabecera se quedaba con el ancho de su
+     texto: medido, chapa+visor sumaban 144 px de un teclado de 258 — de ahí que
+     el «2 × 6» y el «0» salieran como pastillas verticales. El tope sale de la
+     geometría: lo que le queda al teclado es el alto del panel menos la
+     cabecera, y de ahí, por la proporción de su rejilla, su ancho máximo. */
+  width: 100%;
+  max-width: min(100%, calc((100cqh - var(--math-head-min, 0px) - 1.5rem) * 3 / 4));
+  margin: auto;
 }
 /* Las teclas no se hacen más altas que ~1 ancho y pico (cqw = ancho del panel):
    en un panel muy alto las filas se topan ahí y el teclado se centra en su hueco,
@@ -313,11 +325,7 @@
      El tope en `cqh` es el que impide que un panel muy alto haga un teclado
      gigante: el ancho no pasa del 62 % del ALTO del panel. */
   aspect-ratio: var(--key-cols, 3) / var(--key-rows, 4);
-  /* EL TOPE SALE DE LA GEOMETRÍA, no de un número a ojo. Al teclado le queda el
-     alto del panel menos la cabecera; de ahí, por su propia proporción (3 de
-     ancho por cada 4 de alto), sale su ancho máximo. Con un número fijo cuadraba
-     con la animación puesta y desperdiciaba medio panel al apagarla. */
-  width: min(100%, calc((100cqh - var(--math-head-min, 0px) - 1.5rem) * 3 / 4));
+  width: 100%;
   align-self: center;
   grid-auto-rows: minmax(0, 1fr); align-content: center;
   /* EL TECLADO MIDE LO QUE MIDEN SUS FILAS, no todo el hueco. Con `flex: 1` se
