@@ -244,6 +244,8 @@ const marcos = [];  // el marco del panel VS contra lo que declara meta.panelFit
 const formaBad = [];  // piezas cuadradas que se deforman al cambiar la ventana
 const escalaBad = []; // partes del marcador del duelo que NO crecen con la arena
 let escalaHecha = false;
+const espejoBad = []; // el marcador del duelo deja de ser un espejo
+const bloqueBad = []; // la cabecera de un bloque se dispersa de su pieza
 const presupuesto = [];
 const roles = [];        // LOS CUATRO ROLES de la diagramación (edu-hud · edu-topbar · edu-sec · edu-send)
 const legibilidad = [];   // §29 · informe de tamaño (no veredicto: ver el porqué abajo)
@@ -430,6 +432,37 @@ for (const t of seeded) {
         //     La excepción es el control que ES la mecánica; va DECLARADA abajo
         //     con su motivo, nunca en silencio.
         if (mode === 'solo' && status === 'ok') {
+          // UN BLOQUE NO SE DISPERSA. Cuando una actividad declara que es una
+          // pieza indivisible (`meta.panelFit: 'block'`, la calculadora), su
+          // cabecera y su pieza tienen que medir LO MISMO de ancho. El tope vivía
+          // solo en el teclado, así que en pantalla ancha el teclado se quedaba
+          // en su sitio y la cabecera se estiraba a todo el marco: la operación a
+          // la izquierda y el visor pegado al borde derecho, a un palmo de las
+          // teclas («la actividad se dispersó», dueño con captura a pantalla
+          // completa). No se ve en la ventana de siembra —solo cuando sobra
+          // ancho—, así que se mide con el marco lleno.
+          if (panelFitKind[t.name] === 'block') {
+            // La hoja se pone y se QUITA (no `addStyleTag`, que no se puede
+            // retirar): las comprobaciones de después miden el marco de verdad.
+            await page.evaluate(() => {
+              const s = document.createElement('style');
+              s.id = 'ww-sonda-lleno';
+              s.textContent = '#ww-frame{position:fixed!important;inset:0!important;width:100vw!important;' +
+                'height:100vh!important;max-width:none!important;aspect-ratio:auto!important;z-index:9999}';
+              document.head.appendChild(s);
+            });
+            await page.waitForTimeout(350);
+            const disp = await page.evaluate(() => {
+              const cab = document.querySelector('.ww-keypad-head');
+              const pieza = document.querySelector('.ww-keypad');
+              if (!cab || !pieza) return null;
+              const a = cab.getBoundingClientRect(), b = pieza.getBoundingClientRect();
+              return b.width ? { cab: a.width, pieza: b.width, factor: a.width / b.width } : null;
+            });
+            if (disp && disp.factor > 1.05) bloqueBad.push({ label: t.label, ...disp });
+            await page.evaluate(() => document.getElementById('ww-sonda-lleno')?.remove());
+            await page.waitForTimeout(300);
+          }
           const rr = await page.evaluate(() => {
             const w = document.querySelector('#ww-player-widget');
             if (!w) return null;
@@ -605,11 +638,19 @@ for (const t of seeded) {
         // vuelve a clavar `.vss-bar { height: 72px }` lo caza allí como invasión.
         if (!escalaHecha) {
           escalaHecha = true;
-          const LLENAR = '#ww-frame{position:fixed!important;inset:0!important;width:100vw!important;' +
-            'height:100vh!important;max-width:none!important;aspect-ratio:auto!important;z-index:9999}';
+          // La hoja se pone y se QUITA por id: `addStyleTag` no se puede retirar,
+          // y el marco se quedaba forzado a pantalla completa para TODO lo que se
+          // midiera después en esta misma página (el espejo y el marco de abajo).
           const medir = async (w, h) => {
             await page.setViewportSize({ width: w, height: h });
-            await page.addStyleTag({ content: LLENAR });
+            await page.evaluate(() => {
+              if (document.getElementById('ww-sonda-lleno')) return;
+              const s = document.createElement('style');
+              s.id = 'ww-sonda-lleno';
+              s.textContent = '#ww-frame{position:fixed!important;inset:0!important;width:100vw!important;' +
+                'height:100vh!important;max-width:none!important;aspect-ratio:auto!important;z-index:9999}';
+              document.head.appendChild(s);
+            });
             await page.waitForTimeout(300);
             return page.evaluate(() => {
               const arena = document.querySelector('.vs-wrap');
@@ -648,9 +689,30 @@ for (const t of seeded) {
             escalaBad.push({ parte: 'NO SE PUDO MEDIR (la arena no creció)', factor: 0,
               chico: chico?.arena ?? 0, grande: grande?.arena ?? 0 });
           }
+          await page.evaluate(() => document.getElementById('ww-sonda-lleno')?.remove());
           await page.setViewportSize({ width: 1280, height: 800 });
-          await page.waitForTimeout(200);
+          await page.waitForTimeout(250);
         }
+
+        // EL DUELO ES UN ESPEJO. Las dos fichas de alumno tienen que estar a la
+        // MISMA distancia de su borde: son dos mitades iguales enfrentadas y la
+        // clase lo ve al instante. Se rompió sin que ninguna regla fuera falsa —
+        // la reserva de la esquina del botón de pantalla completa iba solo en la
+        // mitad derecha (12 px a la izquierda contra 52 a la derecha, dueño con
+        // captura: «¿qué pasó ahí?»). La simetría es una propiedad del conjunto,
+        // así que solo se caza midiendo el conjunto.
+        const esp = await page.evaluate(() => {
+          const bar = document.querySelector('.vss-bar');
+          const aL = document.querySelector('.vss-left .vss-av');
+          const aR = document.querySelector('.vss-right .vss-av');
+          if (!bar || !aL || !aR) return null;
+          const b = bar.getBoundingClientRect();
+          return { izq: aL.getBoundingClientRect().left - b.left,
+                   der: b.right - aR.getBoundingClientRect().right };
+        });
+        // Tope en PÍXELES, no en porcentaje: lo que se ve es la diferencia
+        // absoluta entre los dos huecos, y un 10 % de una barra ancha son 90 px.
+        if (esp && Math.abs(esp.izq - esp.der) > 6) espejoBad.push({ label: t.label, ...esp });
 
         // EL AIRE VA FUERA DEL MARCO, NO DENTRO. El marco de colores lo pinta el
         // skin sobre `.vs-body`; cuánto ocupa lo decide `meta.panelFit`:
@@ -730,6 +792,25 @@ if (escalaBad.length) {
   }
   console.log('  Un tope en px o en rem no escala: en la pizarra del aula el marcador');
   console.log('  se queda igual de pequeño que en un portátil y no se lee a tres metros.');
+}
+
+// ── El duelo es un espejo ───────────────────────────────────────────────────
+if (espejoBad.length) {
+  console.log('\nEL MARCADOR DEJÓ DE SER UN ESPEJO (tope: 6 px de diferencia)\n');
+  for (const x of espejoBad) {
+    console.log(`  ❌ ${x.label.padEnd(22)} la ficha del alumno: ${Math.round(x.izq)} px del borde a la izquierda, ${Math.round(x.der)} px a la derecha`);
+  }
+  console.log('  Dos mitades iguales enfrentadas: la clase ve la asimetría al instante.');
+}
+
+// ── Un bloque no se dispersa ────────────────────────────────────────────────
+if (bloqueBad.length) {
+  console.log('\nBLOQUE DISPERSO — la cabecera es más ancha que su pieza\n');
+  for (const x of bloqueBad) {
+    console.log(`  ❌ ${x.label.padEnd(22)} cabecera ${Math.round(x.cab)} px sobre una pieza de ${Math.round(x.pieza)} (×${x.factor.toFixed(2)})`);
+  }
+  console.log('  Una actividad que declara ser un BLOQUE indivisible tiene que medir');
+  console.log('  lo mismo de arriba abajo: si no, en pantalla ancha se desparrama.');
 }
 
 // ── El marco obedece a meta.panelFit (§0) ──────────────────────────────────
@@ -890,4 +971,4 @@ console.log(`\n✅ ok: ${results.filter(r => r.status === 'ok').length}` +
   ` · · no aplica: ${results.filter(r => r.status === 'n/a').length}`);
 console.log('El ALUMNO en vivo lo cubre tools/live-smoke.mjs (dos contextos) y la Tarea tools/task-smoke.mjs. Sin cubrir: carrera con 2 alumnos.');
 await browser.close();
-bye(bad.length || seedBad.length || tapBad.length || hitBad.length || roundBad.length || presuBad.length || embedBad.length || marcoBad.length || formaBad.length || escalaBad.length ? 1 : 0);
+bye(bad.length || seedBad.length || tapBad.length || hitBad.length || roundBad.length || presuBad.length || embedBad.length || marcoBad.length || formaBad.length || escalaBad.length || espejoBad.length || bloqueBad.length ? 1 : 0);

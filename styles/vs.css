@@ -133,7 +133,15 @@
   flex: 1; display: flex; align-items: center; gap: .5rem;
   padding: .4rem .75rem; overflow: hidden;
 }
-.vss-right { flex-direction: row-reverse; }
+/* EL ESPEJO YA ESTÁ EN EL DOM (vsView: la mitad izquierda es ficha·nombre·puntos
+   y la derecha puntos·nombre·ficha). Aquí ponía `row-reverse`, que lo volvía a
+   invertir: la ficha del alumno de la derecha acababa pegada al centro, junto al
+   rombo VS, mientras la del alumno de la izquierda estaba en el borde. Medido:
+   52 px del borde a la izquierda contra 338 a la derecha. tv-show lo tapaba con
+   su propio `flex-direction: row` —por eso solo se veía sin tema—, y la red del
+   espejo de `matrix-smoke` lo cazó a la primera en las cinco plantillas de duelo.
+   Sin la doble inversión, `.vss-info-r { text-align: right }` (abajo) queda del
+   lado correcto: el nombre pegado a su ficha, como en la mitad izquierda. */
 .vss-info   { flex: 1; min-width: 0; }
 .vss-info-r { text-align: right; }
 .vss-label  { font-size: var(--vss-label-size, clamp(.5rem, 1.3cqh, 1.3rem)); font-weight: 700; letter-spacing: .18em; color: rgba(255,255,255,.8); text-transform: uppercase; text-shadow: 0 1px 2px rgba(0,0,0,.45); }

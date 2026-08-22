@@ -227,8 +227,16 @@
 
 /* El marcador del duelo cede la esquina (si no, el botón taparía el puntaje del
    jugador de la derecha). Los skins solo tocan el FONDO de `.vss-right`, no su
-   relleno, así que esta regla no entra en la guerra de especificidad del skin. */
+   relleno, así que esta regla no entra en la guerra de especificidad del skin.
+   LA RESERVA VA EN LAS DOS MITADES, aunque el botón solo esté a la derecha (dueño,
+   2026-08-22, con captura: «el avatar de alumno 1 está pegado al borde y el otro
+   no, ¿qué pasó ahí?»). Medido: 12 px de hueco a la izquierda contra 52 a la
+   derecha. El duelo es un ESPEJO —dos mitades iguales enfrentadas—, y una reserva
+   en un solo lado lo rompe a la vista aunque cada regla por separado sea correcta.
+   Cuesta un poco de relleno a la izquierda; que las dos fichas de alumno estén a
+   la misma distancia de su borde vale más. */
 .ww-play-page .ww-player-frame .vss-right { padding-right: var(--ww-fs-reserve); }
+.ww-play-page .ww-player-frame .vss-left  { padding-left:  var(--ww-fs-reserve); }
 
 /* BOTÓN DE PANTALLA COMPLETA, DISCRETO (como Wordwall). Flota en la esquina del
    marco, translúcido, y se afirma al pasar el dedo/ratón. Está DENTRO del marco

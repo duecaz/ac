@@ -29,6 +29,18 @@
   padding: var(--math-pad, 0);
   height: 100%; min-height: 0;
   box-sizing: border-box;
+  /* LA CALCULADORA ES UNA SOLA PIEZA, y el tope de ancho es del BLOQUE, no del
+     teclado (dueño, 2026-08-22, con captura de Individual a pantalla completa:
+     «la actividad se dispersó»). El tope vivía en `.ww-keypad`, así que en una
+     pantalla ancha el teclado se quedaba en su sitio pero la cabecera —que mide
+     el 100 % de su caja— se estiraba a todo el marco: la operación quedaba a la
+     izquierda y el visor pegado al borde derecho, a un palmo del teclado. Con el
+     tope aquí, cabecera y teclado comparten ancho y se leen como una calculadora.
+     En VS el bloque ya trae su propio tope (más estricto, calculado con la
+     cabecera) y sigue mandando por especificidad. */
+  width: 100%;
+  max-width: min(100%, 75cqh);
+  margin-inline: auto;
 }
 
 /* «2 × 2 =» Y EL RESULTADO, EN LA MISMA LÍNEA (dueño, 2026-08-17, con captura):
@@ -129,7 +141,7 @@
      escala (§3). El tope de verdad es que las teclas no se estiren: el ancho no
      pasa de 3/4 del ALTO de la caja, que es la proporción del propio teclado
      (3 columnas × 4 filas). Así llena lo que puede y conserva su forma. */
-  width: min(100%, 75cqh);
+  width: 100%;                             /* el tope de ancho lo pone el BLOQUE (.ww-keypad-round) */
   height: 100%;                            /* respaldo para navegadores que no resuelven flex-basis en grid */
 }
 .ww-keypad .ww-key {
@@ -192,18 +204,29 @@
    Alcance: la pantalla del alumno (Individual, Tarea, En vivo). VS y Equipos
    NO entran: ahí el teclado comparte un panel estrecho con el del rival y su
    reparto está verificado con capturas (styles/scaffold.css §andamio). */
+/* EL TOPE ES DEL BLOQUE, NO DEL TECLADO. `52cqh` vivía solo en `.ww-keypad`, así
+   que en una pantalla ancha el teclado se quedaba en su sitio y la cabecera —que
+   mide el 100 % de su caja— se estiraba a todo el marco: medido a pantalla
+   completa, bloque 403..1162 con el teclado en 520..1045 y el visor pegado al
+   borde derecho, a 120 px del teclado («la actividad se dispersó», dueño con
+   captura). Con el tope en el bloque, cabecera y teclado comparten ancho y se
+   leen como una sola calculadora. */
 .ww-math-round .ww-keypad-round,
-#s-round .ww-keypad-round { justify-content: center; }
+#s-round .ww-keypad-round {
+  justify-content: center;
+  /* `52cqh` es el tope que deja aire: 52 de ancho ⇒ 69 de alto, y el resto del
+     hueco queda para el enunciado y el margen. `100%` manda en pantallas
+     estrechas, donde el ancho es el que aprieta. */
+  max-width: min(100%, 52cqh);
+  margin-inline: auto;
+}
 .ww-math-round .ww-keypad,
 #s-round .ww-keypad {
   flex: 0 1 auto;
   align-self: center;
   aspect-ratio: var(--key-cols, 3) / var(--key-rows, 4);
   height: auto;
-  /* `52cqh` es el tope que deja aire: 52 de ancho ⇒ 69 de alto, y el resto del
-     hueco queda para el enunciado y el margen. `100%` manda en pantallas
-     estrechas, donde el ancho es el que aprieta. */
-  width: min(100%, 52cqh);
+  width: 100%;
 }
 .ww-keypad .ww-key-ok {
   background: var(--key-ok-bg, var(--ww-success, #198754));

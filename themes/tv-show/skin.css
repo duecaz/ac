@@ -221,8 +221,10 @@ body.skin-tv-show .card,
   clip-path: polygon(0 0, 100% 0, 95% 100%, 0 100%);     /* extremo der. en ángulo */
 }
 .vs-skin-tv-show .vss-mid { width: 0; overflow: visible; background: transparent; z-index: 3; }
-/* Espejo: avatar al BORDE exterior, marcador hacia el centro (como la foto). */
-.vs-skin-tv-show .vss-right { flex-direction: row; }
+/* Espejo: avatar al BORDE exterior, marcador hacia el centro (como la foto).
+   El `flex-direction: row` que había aquí ya no hace falta: la doble inversión
+   estaba en la regla base (`vs.css`) y se quitó de raíz — este tema la tapaba
+   solo para él, y sin tema el marcador no era un espejo. */
 .vs-skin-tv-show .vss-info-r { text-align: left; }
 
 /* Etiqueta + nombre + marcador */
