@@ -7,6 +7,7 @@ import { isAdmin } from '../core/auth.js';
 import { listReports, deleteReport, esRondaQa, QA_PREFIX } from '../core/reports.js';
 import { remove } from '../core/storage.js';
 import { toast, confirmModal } from '../core/toast.js';
+import { fechaHora, fechaCorta } from '../core/fechas.js';
 
 export async function renderModerate(rootSel) {
   if (!isAdmin()) {
@@ -41,7 +42,7 @@ export async function renderModerate(rootSel) {
         <details class="mod-report d-block mb-2" data-report="${escapeHtml(r.id)}">
           <summary style="cursor:pointer">
             <b>${escapeHtml(String(r.activity).slice(QA_PREFIX.length))}</b>
-            · ${escapeHtml((r.created || '').slice(0, 16))} · por ${escapeHtml(r.by || '—')}
+            · ${escapeHtml(fechaHora(r.created))} · por ${escapeHtml(r.by || '—')}
             <button class="btn btn-sm btn-outline-secondary ms-2 mod-dismiss"><i class="bi bi-check2"></i> Descartar</button>
           </summary>
           <pre class="mt-2 mb-0 p-2" style="white-space:pre-wrap;font-size:.8rem;background:var(--bs-tertiary-bg,#f6f4ec);border-radius:6px">${escapeHtml(r.reason || '(vacío)')}</pre>
@@ -53,7 +54,7 @@ export async function renderModerate(rootSel) {
         <div class="mod-report__main">
           <div class="mod-report__act"><i class="bi bi-puzzle"></i> ${escapeHtml(r.activity)}</div>
           ${r.reason ? `<div class="mod-report__reason">${escapeHtml(r.reason)}</div>` : ''}
-          <div class="mod-report__meta">Por: ${escapeHtml(r.by || '—')} · ${escapeHtml((r.created || '').slice(0,10))}</div>
+          <div class="mod-report__meta">Por: ${escapeHtml(r.by || '—')} · ${escapeHtml(fechaCorta(r.created))}</div>
         </div>
         <div class="mod-report__actions">
           <button class="btn btn-sm btn-outline-primary mod-play"><i class="bi bi-play-fill"></i> Ver</button>

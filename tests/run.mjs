@@ -61,6 +61,7 @@ console.log('\n▶ pbSchema'); await import('./pbSchema.test.mjs');
 console.log('\n▶ editorPanels'); await import('./editorPanels.test.mjs');
 console.log('\n▶ realtimePort'); await import('./realtimePort.test.mjs');
 console.log('\n▶ clock'); await import('./clock.test.mjs');
+console.log('\n▶ fechas'); await import('./fechas.test.mjs');
 console.log('\n▶ offlineQueue'); await import('./offlineQueue.test.mjs');
 console.log('\n▶ ballsort'); await import('./ballsort.test.mjs');
 console.log('\n▶ penDetector'); await import('./penDetector.test.mjs');

@@ -4,6 +4,7 @@
 // virtuales VS y En vivo). El login es un candado simple del lado cliente
 // (sessionStorage), no seguridad real — la protección de datos es la RLS.
 import { html, escapeHtml, mount } from '../core/html.js';
+import { fechaCorta } from '../core/fechas.js';
 import { on } from '../core/events.js';
 import { VERSION } from '../core/constants.js';
 import { backendName } from '../adapters/index.js';
@@ -784,7 +785,7 @@ function renderPanel(rootSel) {
           ? '<span class="badge bg-secondary">apagada</span>'
           : (f.id === enUso ? '<span class="badge bg-success">en uso</span>' : '<span class="badge bg-primary-subtle text-primary">activa</span>')}
           <span class="ia-veredicto ms-1"></span></td>
-        <td class="text-muted">${escapeHtml(String(f.created || '').slice(0, 10))}</td>
+        <td class="text-muted">${escapeHtml(fechaCorta(f.created))}</td>
         <td class="text-end">
           <button class="btn btn-outline-secondary btn-sm py-0 ia-probar" data-id="${f.id}">Probar</button>
           <button class="btn btn-outline-secondary btn-sm py-0 ia-toggle" data-id="${f.id}" data-activa="${f.activa === false ? '0' : '1'}">${f.activa === false ? 'Encender' : 'Apagar'}</button>
