@@ -255,7 +255,16 @@
    plantilla (`meta.panelFit`): en `fill` el contenido SÍ llena y el marco debe
    seguir llenando la columna. */
 .vs-body.ww-fit-block  { justify-content: center; overflow: hidden;
-  flex: 0 1 auto; height: auto; max-height: 100%; margin: auto; }
+  /* SOLO EN VERTICAL. Aquí ponía `margin: auto` para centrar el bloque, y en
+     una columna flex los márgenes automáticos ganan a `align-items: stretch`
+     TAMBIÉN en horizontal: el cuerpo dejaba de estirarse a lo ancho del panel
+     y se quedaba con el ancho de su contenido. Medido con el duelo montado:
+     panel 209 px, cuerpo 142 — 33 px de margen a cada lado. Como el tope de
+     alto de las filas se calcula sobre el ancho del PANEL, las teclas salían
+     de 39 de ancho por 71 de alto (proporción 0,55: casi el doble de altas
+     que anchas). Centrar en vertical era lo que se quería; estrechar el panel,
+     no. */
+  flex: 0 1 auto; height: auto; max-height: 100%; margin-block: auto; }
 .vs-body.ww-fit-center { justify-content: center; overflow: auto; }
 .vs-body.ww-fit-center > * { flex: 0 0 auto; margin: auto; }
 /* EL BLOQUE LLENA SU CAJA, y su forma la guarda el ANCHO DEL PANEL.
