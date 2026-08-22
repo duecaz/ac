@@ -242,6 +242,8 @@ const hits = [];   // hit-testing de los controles críticos
 const rounds = [];  // rondas JUGADAS con un toque real (cola #3)
 const marcos = [];  // el marco del panel VS contra lo que declara meta.panelFit
 const formaBad = [];  // piezas cuadradas que se deforman al cambiar la ventana
+const escalaBad = []; // partes del marcador del duelo que NO crecen con la arena
+let escalaHecha = false;
 const presupuesto = [];
 const roles = [];        // LOS CUATRO ROLES de la diagramación (edu-hud · edu-topbar · edu-sec · edu-send)
 const legibilidad = [];   // §29 · informe de tamaño (no veredicto: ver el porqué abajo)
@@ -587,6 +589,69 @@ for (const t of seeded) {
         await page.setViewportSize({ width: 1280, height: 800 });
         await page.waitForTimeout(150);
 
+        // EL MARCADOR SE LEE DESDE EL FONDO DEL AULA (§3). Lo único que la clase
+        // mira para saber quién va ganando es la barra de arriba, y estaba escrita
+        // en píxeles fijos: en la pizarra 4K a pantalla completa se quedaba en
+        // 72 px —el 3 % de la pantalla— con la etiqueta del equipo a 8 px. Un
+        // techo en px o en rem no escala NUNCA, y en un portátil no llega a
+        // estorbar, así que ninguna suite podía verlo.
+        // Se mide creciendo la arena al triple de alto y comprobando que cada
+        // parte CREZCA. No se fija un tamaño (eso es diseño): se fija que el
+        // tamaño DEPENDA de la arena. Basta una plantilla — el marcador es del
+        // modo, no de la actividad.
+        // LÍMITE DECLARADO: la siembra usa el tema por defecto, así que esta red
+        // cubre `styles/vs.css`, no lo que declare cada tema. La frontera de los
+        // temas la vigila `tests/temaPorTokens.test.mjs` (estática): si un tema
+        // vuelve a clavar `.vss-bar { height: 72px }` lo caza allí como invasión.
+        if (!escalaHecha) {
+          escalaHecha = true;
+          const LLENAR = '#ww-frame{position:fixed!important;inset:0!important;width:100vw!important;' +
+            'height:100vh!important;max-width:none!important;aspect-ratio:auto!important;z-index:9999}';
+          const medir = async (w, h) => {
+            await page.setViewportSize({ width: w, height: h });
+            await page.addStyleTag({ content: LLENAR });
+            await page.waitForTimeout(300);
+            return page.evaluate(() => {
+              const arena = document.querySelector('.vs-wrap');
+              if (!arena) return null;
+              const px = (sel, prop) => {
+                const e = document.querySelector(sel); if (!e) return null;
+                return prop === 'h' ? e.getBoundingClientRect().height
+                                    : parseFloat(getComputedStyle(e).fontSize);
+              };
+              return {
+                arena: arena.getBoundingClientRect().height,
+                'la barra':            px('.vss-bar', 'h'),
+                'el nombre':           px('.vss-name', 'f'),
+                'el marcador':         px('.vss-score', 'f'),
+                'la foto del alumno':  px('.vss-av', 'h'),
+              };
+            });
+          };
+          // Las dos ventanas son 16:9 A PROPÓSITO: el marcador se COMPRIME por
+          // diseño cuando la arena se vuelve casi cuadrada o vertical (container
+          // query `max-aspect-ratio: 5/4`), así que medir con proporciones
+          // distintas mezcla dos cosas y da un falso positivo — pasó al escribir
+          // esta red con 2560×2160 (1,19 de proporción: entraba en vertical y
+          // «encogía» de 54 a 46 px con razón).
+          const chico = await medir(1280, 720);
+          const grande = await medir(2560, 1440);
+          if (chico && grande && grande.arena > chico.arena * 1.8) {
+            // La arena crece ×2; se exige ×1,5 — holgado a propósito: no fija un
+            // diseño, caza el tope clavado (que da exactamente ×1,00).
+            for (const k of Object.keys(chico)) {
+              if (k === 'arena' || !chico[k] || !grande[k]) continue;
+              const factor = grande[k] / chico[k];
+              if (factor < 1.5) escalaBad.push({ parte: k, factor, chico: chico[k], grande: grande[k] });
+            }
+          } else {
+            escalaBad.push({ parte: 'NO SE PUDO MEDIR (la arena no creció)', factor: 0,
+              chico: chico?.arena ?? 0, grande: grande?.arena ?? 0 });
+          }
+          await page.setViewportSize({ width: 1280, height: 800 });
+          await page.waitForTimeout(200);
+        }
+
         // EL AIRE VA FUERA DEL MARCO, NO DENTRO. El marco de colores lo pinta el
         // skin sobre `.vs-body`; cuánto ocupa lo decide `meta.panelFit`:
         //   fill  → el contenido llena, así que el marco llena la columna;
@@ -655,6 +720,16 @@ if (formaBad.length) {
   }
   console.log('  La pieza declara su forma (aspect-ratio) y el sobrante queda como AIRE:');
   console.log('  llenar el hueco estirando la pieza no es responsive, es deformar.');
+}
+
+// ── El marcador del duelo crece con la arena ────────────────────────────────
+if (escalaBad.length) {
+  console.log('\nMARCADOR QUE NO CRECE CON LA ARENA (arena ×2 ⇒ se exige ×1,5)\n');
+  for (const x of escalaBad) {
+    console.log(`  ❌ ${x.parte.padEnd(22)} ${Math.round(x.chico)} → ${Math.round(x.grande)} px (×${x.factor.toFixed(2)})`);
+  }
+  console.log('  Un tope en px o en rem no escala: en la pizarra del aula el marcador');
+  console.log('  se queda igual de pequeño que en un portátil y no se lee a tres metros.');
 }
 
 // ── El marco obedece a meta.panelFit (§0) ──────────────────────────────────
@@ -815,4 +890,4 @@ console.log(`\n✅ ok: ${results.filter(r => r.status === 'ok').length}` +
   ` · · no aplica: ${results.filter(r => r.status === 'n/a').length}`);
 console.log('El ALUMNO en vivo lo cubre tools/live-smoke.mjs (dos contextos) y la Tarea tools/task-smoke.mjs. Sin cubrir: carrera con 2 alumnos.');
 await browser.close();
-bye(bad.length || seedBad.length || tapBad.length || hitBad.length || roundBad.length || presuBad.length || embedBad.length || marcoBad.length || formaBad.length ? 1 : 0);
+bye(bad.length || seedBad.length || tapBad.length || hitBad.length || roundBad.length || presuBad.length || embedBad.length || marcoBad.length || formaBad.length || escalaBad.length ? 1 : 0);

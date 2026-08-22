@@ -64,8 +64,20 @@
 @keyframes arc-blink { 50% { opacity: .4; } }
 
 /* ── Scoreboard — DOS paneles separados (cian / rojo) con el VS flotando ───── */
+/* Medidas por TOKEN (§3): el tema declara cuánto, `vs.css` lo pinta. El techo de
+   120 px dejaba el marcador de la máquina recreativa en una franja mínima en la
+   pizarra 4K; ahora crece con el alto de la arena, que es lo que decide si se lee
+   desde el fondo del aula. Las letras siguen en `cqw` (el ancho manda en el texto
+   del panel de cada jugador). */
+.vs-skin-arcade {
+  --vss-alto: clamp(82px, 17cqh, 230px);
+  --vss-mid: clamp(54px, 10cqw, 78px);
+  --vss-badge: clamp(40px, 7cqw, 58px);
+  --vss-badge-size: clamp(.6rem, 1.4cqw, .9rem);
+  --vss-name-size: clamp(.6rem, 1.4cqw, 1rem);
+  --vss-score-size: clamp(1.5rem, 3.6cqw, 2.8rem);
+}
 .vs-skin-arcade .vss-bar {
-  height: clamp(82px, 17cqh, 120px);
   background: transparent; border: none; box-shadow: none;
   align-items: center; gap: .4rem; padding: .35rem .6rem 0;
 }
@@ -84,19 +96,18 @@
   background: linear-gradient(260deg, rgba(255,59,107,.16), rgba(255,59,107,.03));
   box-shadow: 0 0 18px rgba(255,59,107,.4), inset 0 0 26px rgba(255,59,107,.14);
 }
-.vs-skin-arcade .vss-mid   { width: clamp(46px, 8cqw, 70px); background: transparent; }
+.vs-skin-arcade .vss-mid   { background: transparent; }
 
 /* Etiqueta "PLAYER 1/2" (el DOM dice EQUIPO → se oculta y se reemplaza por CSS). */
 .vs-skin-arcade .vss-label { font-size: 0; letter-spacing: .12em; }
 .vs-skin-arcade .vss-left  .vss-label::before { content: "PLAYER 1"; font-size: clamp(.4rem, .92cqw, .58rem); color: #22d3ee; }
 .vs-skin-arcade .vss-right .vss-label::before { content: "PLAYER 2"; font-size: clamp(.4rem, .92cqw, .58rem); color: #ff3b6b; }
 
-.vs-skin-arcade .vss-name  { font-size: clamp(.6rem, 1.4cqw, 1rem); font-weight: 400; }
+.vs-skin-arcade .vss-name  { font-weight: 400; }
 .vs-skin-arcade .vss-left  .vss-name { color: #eafcff; text-shadow: 0 0 8px rgba(34,211,238,.85); }
 .vs-skin-arcade .vss-right .vss-name { color: #eafcff; text-shadow: 0 0 8px rgba(255,59,107,.85); }
 /* Marcadores en DORADO (como la referencia), grandes y con halo de neón. */
 .vs-skin-arcade .vss-score {
-  font-size: clamp(1.5rem, 3.6cqw, 2.8rem);
   color: #ffd400; text-shadow: 0 0 14px rgba(255,170,0,.95), 0 0 4px rgba(255,212,0,.8);
 }
 
@@ -111,11 +122,9 @@
 .vs-skin-arcade .vss-info-r::after { text-align: right; }
 
 /* Badge VS de neón. */
-.vs-skin-arcade .vss-mid   { width: clamp(54px, 10cqw, 78px); }
 .vs-skin-arcade .vss-badge {
-  width: clamp(40px, 7cqw, 58px); height: clamp(40px, 7cqw, 58px);
   border-radius: .35rem; background: #1a0a3a; color: #ff2e88;
-  border: 3px solid #ff2e88; font-size: clamp(.6rem, 1.4cqw, .9rem);
+  border: 3px solid #ff2e88;
   box-shadow: 0 0 14px rgba(255,46,136,.7), inset 0 0 10px rgba(255,46,136,.3);
   text-shadow: 0 0 8px rgba(255,46,136,.9);
   animation: arc-vs-pulse 1.4s ease-in-out infinite;
@@ -249,7 +258,8 @@
 @container vs (max-aspect-ratio: 5/4) {
   .vs-arena.vs-skin-arcade::before { height: 20px; line-height: 20px; font-size: .5rem; }
   .vs-arena.vs-skin-arcade::after  { height: 18px; line-height: 18px; font-size: .45rem; }
-  .vs-skin-arcade .vss-bar    { height: 46px; }
+  /* El token compartido de `vs.css` ya comprime la barra en vertical; aquí solo
+     lo que es de arcade. */
   .vs-skin-arcade .vss-info::after { display: none; }
   .vs-skin-arcade .vss-badge  { animation: none; }
   .vs-skin-arcade .vs-body    { border-radius: .55rem; }

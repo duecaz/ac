@@ -471,6 +471,13 @@ body.bg-plated .ww-player .ww-q {
    inset:0, scrolls if needed). The arenas — designed for the full viewport —
    are re-scoped just below to fill THIS frame instead of 100vh, so they sit
    neatly inside the activity page (and grow with the Pantalla completa button). */
+/* MEDIDO (v1.51.581): subir estos topes NO agranda el duelo en una pizarra 4K —
+   el ancho lo manda la COLUMNA de la página (~960 px), no este `max-width`, así
+   que crecer solo de alto vuelve el marco VERTICAL, dispara el container query de
+   `max-aspect-ratio: 5/4` y el marcador se COMPRIME a 46 px: peor que antes.
+   Agrandar el duelo dentro de la página exige ensanchar la columna primero (otra
+   decisión). Para el aula la vía es «Pantalla completa», donde el marco es 100vh
+   y todo el marcador escala con `cqh` como debe. NO tocar sin re-medir. */
 .ww-play-page .ww-player-frame.is-expanded {
   aspect-ratio: auto !important;
   max-width: 1100px;

@@ -9,11 +9,22 @@
 .vs-arena { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 
 /* ── 3-column game area ──────────────────────────────────────────────────── */
+/* EL REPARTO DEL ANCHO. Aquí ponía `1fr 2fr 1fr`: la animación —que es DECORADO—
+   se llevaba la MITAD del ancho y a cada alumno le quedaba el 24 %. En un portátil
+   eso es una columna de 224 px para jugar contra una cuerda de 448 px. Lo que se
+   juega manda: los paneles se llevan el grueso y el escenario se queda con lo que
+   necesita para leerse. Medido: la tecla de Operaciones pasa de 58 px a 74 px de
+   lado en el portátil, sin dejar de ser cuadrada. */
 .vs-main {
   flex: 1; min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.4fr) minmax(0, 1.3fr);
   grid-template-areas: "s1 stage s2";
+}
+/* Con la animación COMPACTA el escenario es una franja: no necesita ancho de
+   cuerda, así que lo que sobra vuelve a los dos que juegan. */
+.vs-arena.vs-anim-compact .vs-main {
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr) minmax(0, 1.55fr);
 }
 .vs-panel.vs-left  { grid-area: s1; }
 .vs-panel.vs-right { grid-area: s2; }
@@ -102,9 +113,20 @@
 /* ══════════════════════════════════════════════════════════════════════════
    SCOREBOARD BAR  —  always present, skins override colours below
    ══════════════════════════════════════════════════════════════════════════ */
+/* EL MARCADOR CRECE CON LA ARENA (§3). Aquí ponía `height: 68px`: en la pizarra
+   4K del aula, a pantalla completa, la barra que dice de quién es cada lado y
+   cómo va el duelo se quedaba en 72 px — el 3 % de la pantalla— con la etiqueta
+   del equipo a 8 px de letra. Un tope en px no escala, y este es el peor sitio
+   para tenerlo: es lo único que la clase mira para saber quién gana.
+   Todo el marcador se pide por TOKEN para que un tema pueda recolorearlo y
+   ajustarlo sin volver a escribir estas reglas (ley del skin). El piso protege
+   el móvil; el techo evita que en una pizarra gigantesca la barra se coma el
+   juego. Se escala con `cqh` —el ALTO de la arena— porque es una franja
+   horizontal: lo que decide si se lee es cuánto alto se le da. */
 .vss-bar {
   display: flex; flex-shrink: 0;
-  height: 68px; z-index: 10;
+  height: var(--vss-alto, clamp(46px, 7.5cqh, 132px));
+  z-index: 10;
 }
 /* Left + right team halves */
 .vss-team {
@@ -114,30 +136,33 @@
 .vss-right { flex-direction: row-reverse; }
 .vss-info   { flex: 1; min-width: 0; }
 .vss-info-r { text-align: right; }
-.vss-label  { font-size: .5rem; font-weight: 700; letter-spacing: .18em; color: rgba(255,255,255,.8); text-transform: uppercase; text-shadow: 0 1px 2px rgba(0,0,0,.45); }
+.vss-label  { font-size: var(--vss-label-size, clamp(.5rem, 1.3cqh, 1.3rem)); font-weight: 700; letter-spacing: .18em; color: rgba(255,255,255,.8); text-transform: uppercase; text-shadow: 0 1px 2px rgba(0,0,0,.45); }
 /* Names sit on skin gradients (blue/red, sometimes mid-tone) — without a shadow
    the white washes out and is unreadable. A dark halo guarantees contrast on any
    skin, matching how .vss-score is already treated. */
-.vss-name   { font-size: clamp(.78rem, 1.5cqw, 1.15rem); font-weight: 900; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 4px rgba(0,0,0,.6), 0 0 2px rgba(0,0,0,.4); }
-.vss-score  { font-size: clamp(1.5rem, 3cqw, 2.2rem); font-weight: 900; color: #fff; font-variant-numeric: tabular-nums; flex-shrink: 0; text-shadow: 0 2px 8px rgba(0,0,0,.3); }
+.vss-name   { font-size: var(--vss-name-size, clamp(.78rem, 2.2cqh, 2.4rem)); font-weight: 900; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 4px rgba(0,0,0,.6), 0 0 2px rgba(0,0,0,.4); }
+.vss-score  { font-size: var(--vss-score-size, clamp(1.5rem, 3.8cqh, 4.2rem)); font-weight: 900; color: #fff; font-variant-numeric: tabular-nums; flex-shrink: 0; text-shadow: 0 2px 8px rgba(0,0,0,.3); }
 /* Progress bar inside bar */
 .vs-prog     { height: 4px; border-radius: 999px; background: rgba(255,255,255,.22); margin-top: .3rem; overflow: hidden; }
 .vs-prog-bar { height: 100%; width: 0; background: rgba(255,255,255,.75); transition: width .4s ease; }
 /* Centred VS badge — lives in .vss-mid, a fixed-width flex child (not absolute) */
 .vss-mid {
-  width: 68px; flex-shrink: 0;
+  width: var(--vss-mid, 68px); flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
 }
 .vss-badge {
-  width: 50px; height: 50px; border-radius: 50%; flex-shrink: 0;
+  width: var(--vss-badge, 50px); height: var(--vss-badge, 50px);
+  border-radius: 50%; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  font-weight: 900; font-size: .9rem; letter-spacing: .04em;
+  font-weight: 900; font-size: var(--vss-badge-size, .9rem); letter-spacing: .04em;
   border: 3px solid rgba(255,255,255,.9);
 }
 /* Avatar in bar */
 .vs-avatar { width: 2.2rem; height: 2.2rem; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,.5); flex-shrink: 0; }
 .vs-avatar-init { display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.22); font-size: 1rem; font-weight: 800; color: #fff; }
-.vss-av { width: 2.6rem; height: 2.6rem; }
+/* La FOTO del alumno: era 2.6rem clavados — un punto de 42 px en una pizarra de
+   2160. Escala con la barra que la contiene. */
+.vss-av { width: var(--vss-av, clamp(2rem, 5cqh, 5.5rem)); height: var(--vss-av, clamp(2rem, 5cqh, 5.5rem)); }
 
 /* ══════════════════════════════════════════════════════════════════════════
    SKIN: CLÁSICO
@@ -177,13 +202,21 @@
    minúscula. minmax(0,…) deja que las columnas/filas encojan (si no, el
    contenido las fuerza a crecer y los paneles se solapan). */
 @container vs (max-aspect-ratio: 5/4) {
-  .vss-bar   { height: 46px; }
+  /* En vertical el marcador se COMPRIME, y se hace declarando los MISMOS tokens
+     en la propia `.vss-bar`: una declaración en el elemento gana a la del tema
+     (que vive en el ancestro `.vs-skin-*`), así la compresión vale para TODOS los
+     temas sin que ninguno tenga que repetirla. Un tema que quiera otra medida en
+     vertical redeclara el token en `.vs-skin-X .vss-bar` (0,2,0). */
+  .vss-bar {
+    --vss-alto: 46px;
+    --vss-badge: 36px;
+    --vss-badge-size: .72rem;
+    --vss-mid: 50px;
+    --vss-av: 1.9rem;
+    --vss-score-size: clamp(1rem, 2.2cqw, 1.5rem);
+    --vss-name-size: clamp(.62rem, 1.2cqw, .88rem);
+  }
   .vss-label { display: none; }
-  .vss-badge { width: 36px; height: 36px; font-size: .72rem; }
-  .vss-mid   { width: 50px; }
-  .vs-avatar.vss-av { width: 1.9rem; height: 1.9rem; }
-  .vss-score { font-size: clamp(1rem, 2.2cqw, 1.5rem); }
-  .vss-name  { font-size: clamp(.62rem, 1.2cqw, .88rem); }
 
   .vs-main {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -219,8 +252,8 @@
   /* EL VALOR DEL MODO ES EL FALLBACK DEL TOKEN (misma regla que el resto del
      teclado): con un `clamp()` a secas, estas reglas (0,2,0) ganan a las de la
      plantilla (0,1,0) y el token del tema queda muerto. */
-  .vs-body .ww-keypad-q       { font-size: var(--math-q-size, clamp(.7rem, 11cqw, 1.3rem)); }
-  .vs-body .ww-keypad-display { font-size: var(--display-size, clamp(.7rem, 10cqw, 1.05rem)); }
+  .vs-body .ww-keypad-q       { font-size: var(--math-q-size, clamp(.7rem, 11cqw, 4cqh)); }
+  .vs-body .ww-keypad-display { font-size: var(--display-size, clamp(.7rem, 10cqw, 3.3cqh)); }
   /* LA CABECERA, A LA ALTURA DE UNA FILA DE TECLAS. Una fila mide ~28 % del
      ancho del panel (el teclado ocupa ~85 % y tiene 3 columnas). Sin esto, la
      chapa medía su texto más un relleno mínimo —29 px contra teclas de 71— y
@@ -236,8 +269,14 @@
   /* SIN TECHO BAJO (§3). Aquí ponía `clamp(.6rem, 8cqw, 1rem)`: un techo de
      16 px. Medido con la animación apagada y teclas de 110 px, la cifra seguía
      en 16 — el 15 % de su tecla. El piso se queda (por debajo de .6rem no se
-     lee a tres metros); el techo lo pone ahora el tamaño de la tecla. */
-  .vs-body .ww-key            { font-size: var(--key-size, clamp(.6rem, 11cqw, 3.4rem)); }
+     lee a tres metros); el techo lo pone ahora el tamaño de la tecla.
+     SEGUNDA VUELTA (v1.51.581): el techo era `3.4rem` = 54 px clavados, y en la
+     pizarra 4K a pantalla completa la cifra seguía en 54 sobre una tecla de
+     395 px — el 14 %. Un techo en `rem` NUNCA escala; el de arriba tampoco lo
+     hacía. Ahora los tres techos son del CONTENEDOR (`cqh`, el lado que no manda
+     en el ancho) y están calibrados para dar exactamente el mismo píxel que antes
+     en portátil y en ventana pequeña: solo se sueltan hacia arriba. */
+  .vs-body .ww-key            { font-size: var(--key-size, clamp(.6rem, 11cqw, 12cqh)); }
 }
 
 /* MARCADOR EN VERTICAL — POR QUÉ SIGUE EN CADA SKIN (§3, medido)

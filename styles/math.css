@@ -68,7 +68,7 @@
      33 px en un panel de 470 con teclas de 150: la operación —lo único que hay
      que LEER— era lo más pequeño de la pantalla. Crece con la caja como crecen
      las teclas; el piso de 1.2rem protege el móvil. */
-  font-size: var(--math-q-size, clamp(1.2rem, 13cqmin, 4.5rem));
+  font-size: var(--math-q-size, max(1.2rem, min(13cqmin, 8cqh)));
   font-weight: var(--math-q-weight, 800);
   color: var(--math-q-color, inherit);
   /* La CHAPA: sin tema, el enunciado es texto suelto (todo transparente y sin
@@ -88,8 +88,8 @@
 .ww-keypad-display {
   flex: 0 0 auto;
   display: flex; align-items: center; justify-content: center;
-  min-width: clamp(5rem, 34cqmin, 16rem);
-  font-size: var(--display-size, clamp(1.3rem, 13cqmin, 4.5rem));
+  min-width: max(5rem, 34cqmin);
+  font-size: var(--display-size, max(1.3rem, min(13cqmin, 8cqh)));
   font-weight: 800; text-align: center; font-variant-numeric: tabular-nums;
   padding: var(--display-pad, .1rem 1rem);
   border: var(--display-border, 3px solid #dee2e6);
@@ -138,8 +138,13 @@
   /* La cifra crece CON la tecla. `1.9rem` era otro techo fijo: con teclas de
      190 px en pantalla completa, el dígito se quedaba en 30 px —perdido en medio
      del botón— y en un móvil ese mismo techo no llegaba a estorbar. El piso sí
-     se queda: por debajo de 1rem no se lee a tres metros. */
-  font-size: var(--key-size, clamp(1rem, 11cqmin, 3.4rem));
+     se queda: por debajo de 1rem no se lee a tres metros.
+     SEGUNDA VUELTA (v1.51.581): quedaba `3.4rem` = 54 px, y en la pizarra 4K a
+     pantalla completa la cifra seguía en 54 sobre una tecla de 395 px. Un techo
+     en `rem` no escala NUNCA: el techo real ya lo pone `cqmin` (el lado corto de
+     la caja), así que sobra. Mismo razonamiento para el enunciado, el visor y su
+     ancho mínimo. Medido: por debajo de 4K no cambia ni un píxel. */
+  font-size: var(--key-size, max(1rem, 11cqmin));
   font-weight: var(--key-weight, 700);
   /* UN SOLO token de relleno. Hubo un `padding-block` aparte y le comía la
      mitad vertical al `--key-pad` público; luego un `--key-pad-block` anidado

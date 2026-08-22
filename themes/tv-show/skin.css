@@ -177,11 +177,26 @@ body.skin-tv-show .card,
    y el borde dorado van en ::before (clip-path + 4 drop-shadows dorados) para que
    el TEXTO no se recorte y el medallón siga pudiendo sobresalir (la barra y
    .vss-mid NO se recortan). drop-shadow sigue la forma recortada → borde dorado. */
+/* Las MEDIDAS se declaran como TOKENS (§3): el tema dice cuánto, `vs.css` lo
+   pinta. Antes iban clavadas en px (72/64/42) y en la pizarra 4K del aula el
+   banner del plató se quedaba en el 3 % de la pantalla. Todo cuelga del alto de
+   la arena (`cqh`), que es lo que decide si la clase lee el marcador desde el
+   fondo; el hueco del medallón y su subida se derivan del propio medallón para
+   que la composición no se descuadre al crecer. */
+.vs-skin-tv-show {
+  --vss-alto: clamp(72px, 11cqh, 168px);
+  --vss-badge: clamp(64px, 9.6cqh, 148px);
+  --vss-badge-size: clamp(1.05rem, 1.6cqh, 2.4rem);
+  --vss-name-size: clamp(.85rem, 2.6cqh, 2.6rem);
+  --vss-score-size: clamp(1.9rem, 6cqh, 5.6rem);
+  --vss-av: clamp(2.8rem, 7cqh, 6.8rem);
+}
 .vs-skin-tv-show .vss-bar {
   align-self: center;
-  width: min(95%, 1080px);
-  height: 72px;
-  margin: 42px auto 0;            /* hueco arriba para el medallón */
+  /* Un banner de 1080 px clavados ocupaba el 28 % del ancho de una pizarra 4K:
+     el techo crece con la arena, con 1080 como suelo para no tocar el escritorio. */
+  width: min(95%, max(1080px, 62cqw));
+  margin: calc(var(--vss-badge) * .66) auto 0;   /* hueco arriba para el medallón */
   overflow: visible;
   background: transparent;
   box-shadow: none;
@@ -213,12 +228,12 @@ body.skin-tv-show .card,
 /* Etiqueta + nombre + marcador */
 .vs-skin-tv-show .vss-label { letter-spacing: .26em; color: rgba(255,255,255,.78); }
 .vs-skin-tv-show .vss-name  {
-  font-size: clamp(.85rem, 1.7cqw, 1.4rem); font-weight: 900;
+  font-weight: 900;
   text-transform: uppercase; letter-spacing: .05em;
   text-shadow: 0 0 16px rgba(255,255,255,.35), 0 2px 4px rgba(0,0,0,.6);
 }
 .vs-skin-tv-show .vss-score {
-  font-size: clamp(1.9rem, 4cqw, 3.1rem); font-weight: 900; color: #fff;
+  font-weight: 900; color: #fff;
   text-shadow: 0 0 24px rgba(255,196,0,.5), 0 2px 6px rgba(0,0,0,.6);
 }
 /* Apartar los marcadores del centro para que el medallón VS no los tape. */
@@ -228,8 +243,7 @@ body.skin-tv-show .card,
 /* ── MEDALLÓN VS dorado que SOBRESALE ─────────────────────────────────────── */
 .vs-skin-tv-show .vss-badge {
   position: relative; z-index: 5;
-  width: 64px; height: 64px; font-size: 1.05rem;
-  transform: translateY(-22px);              /* sube por encima de la barra */
+  transform: translateY(-34%);               /* sube por encima de la barra */
   background: radial-gradient(circle at 38% 30%, #fff7b8, #ffc400 50%, #d98a00 100%);
   color: #5a2f00; border: 4px solid #fff; font-weight: 900; letter-spacing: .04em;
   box-shadow: 0 0 0 3px rgba(255,196,0,.4), 0 10px 22px rgba(0,0,0,.65), 0 0 30px rgba(255,196,0,.55);
@@ -248,11 +262,10 @@ body.skin-tv-show .card,
 
 /* Avatares (foto del colegio) lo MÁS GRANDES posible dentro de la barra */
 .vs-skin-tv-show .vss-av {
-  width: clamp(2.8rem, 7cqw, 3.6rem); height: clamp(2.8rem, 7cqw, 3.6rem);
   border: 3px solid rgba(255,196,0,.9);
   box-shadow: 0 0 16px rgba(255,196,0,.55), 0 2px 10px rgba(0,0,0,.55);
 }
-.vs-skin-tv-show .vs-avatar-init { background: rgba(255,255,255,.18); font-size: 1.4rem; }
+.vs-skin-tv-show .vs-avatar-init { background: rgba(255,255,255,.18); font-size: calc(var(--vss-av) * .4); }
 
 /* Barras de progreso: N segmentos = N preguntas (--vs-total lo pone vsView en
    .vss-bar). Avanza un segmento por acierto; un fallo no avanza (el cursor solo
@@ -413,10 +426,14 @@ body.skin-tv-show .card,
 /* PORTRAIT (vertical): apilar — animación arriba (toma el ancho), teclados
    abajo lado a lado — y compactar la barra. SOLO en vertical. */
 @container vs (max-aspect-ratio: 5/4) {
-  .vs-skin-tv-show .vss-bar  { width: 96%; height: 46px; margin: 10px auto 0; box-shadow: none; }
-  .vs-skin-tv-show .vss-score { font-size: clamp(1.1rem, 2.4cqw, 1.7rem); }
-  .vs-skin-tv-show .vss-name  { font-size: clamp(.7rem, 1.8cqw, 1rem); }
-  .vs-skin-tv-show .vss-av    { width: 2.4rem; height: 2.4rem; }
+  /* Los tokens se redeclaran EN la barra (0,2,0) para ganarle a los del tema,
+     que cuelgan del ancestro `.vs-skin-tv-show`. */
+  .vs-skin-tv-show .vss-bar  {
+    width: 96%; margin: 10px auto 0; box-shadow: none;
+    --vss-score-size: clamp(1.1rem, 2.4cqw, 1.7rem);
+    --vss-name-size: clamp(.7rem, 1.8cqw, 1rem);
+    --vss-av: 2.4rem;
+  }
   .vs-skin-tv-show .vss-badge { width: 44px; height: 44px; transform: translateY(-12px); animation: none; }
   .vs-skin-tv-show .vss-badge::before { animation: none; }
   .vs-skin-tv-show .vss-left::after,
