@@ -257,11 +257,14 @@
      conocer la anatomía. Lo destapó `tools/shots.mjs`: sin esto el teclado se
      movía 2 px (migración de temas, 2026-08-22). */
   .vs-body .ww-keypad-round   { gap: var(--math-gap, 2cqw); }
-  /* EL VALOR DEL MODO ES EL FALLBACK DEL TOKEN (misma regla que el resto del
-     teclado): con un `clamp()` a secas, estas reglas (0,2,0) ganan a las de la
-     plantilla (0,1,0) y el token del tema queda muerto. */
-  .vs-body .ww-keypad-q       { font-size: var(--math-q-size, clamp(.7rem, 11cqw, 4cqh)); }
-  .vs-body .ww-keypad-display { font-size: var(--display-size, clamp(.7rem, 10cqw, 3.3cqh)); }
+  /* UN SOLO TAMAÑO PARA EL MODO. Aquí había TRES fórmulas —enunciado, visor y
+     tecla, cada una con sus propios topes— y otras tres en Equipos y otras tres
+     en la plantilla: nueve para tres textos que en una calculadora miden lo
+     mismo. El modo ya solo dice cuánto vale UNA CIFRA en este panel; el
+     enunciado y el visor salen de ahí (ver `--math-cifra` en styles/math.css).
+     En VS manda el ancho del panel (`cqw`), con `cqh` de tope para que la
+     cabecera no se coma el teclado. */
+  .vs-body .ww-keypad-round   { --math-cifra: clamp(.6rem, 11cqw, 12cqh); }
   /* LA CABECERA, A LA ALTURA DE UNA FILA DE TECLAS. Una fila mide ~28 % del
      ancho del panel (el teclado ocupa ~85 % y tiene 3 columnas). Sin esto, la
      chapa medía su texto más un relleno mínimo —29 px contra teclas de 71— y
@@ -272,19 +275,6 @@
      tecla, y la tecla la limita el lado corto. */
   .vs-body                    { --math-head-min: min(28cqw, 18cqh); }
   .vs-body .ww-keypad         { gap: var(--key-gap, 1.8cqw); }
-  /* OJO con la especificidad: `.vs-body .ww-key` (y no `.ww-keypad .ww-key`) para
-     que un skin con su propio tamaño de tecla —arcade— siga mandando, como antes. */
-  /* SIN TECHO BAJO (§3). Aquí ponía `clamp(.6rem, 8cqw, 1rem)`: un techo de
-     16 px. Medido con la animación apagada y teclas de 110 px, la cifra seguía
-     en 16 — el 15 % de su tecla. El piso se queda (por debajo de .6rem no se
-     lee a tres metros); el techo lo pone ahora el tamaño de la tecla.
-     SEGUNDA VUELTA (v1.51.581): el techo era `3.4rem` = 54 px clavados, y en la
-     pizarra 4K a pantalla completa la cifra seguía en 54 sobre una tecla de
-     395 px — el 14 %. Un techo en `rem` NUNCA escala; el de arriba tampoco lo
-     hacía. Ahora los tres techos son del CONTENEDOR (`cqh`, el lado que no manda
-     en el ancho) y están calibrados para dar exactamente el mismo píxel que antes
-     en portátil y en ventana pequeña: solo se sueltan hacia arriba. */
-  .vs-body .ww-key            { font-size: var(--key-size, clamp(.6rem, 11cqw, 12cqh)); }
 }
 
 /* MARCADOR EN VERTICAL — POR QUÉ SIGUE EN CADA SKIN (§3, medido)

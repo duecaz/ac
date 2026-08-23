@@ -246,6 +246,7 @@ const escalaBad = []; // partes del marcador del duelo que NO crecen con la aren
 let escalaHecha = false;
 const espejoBad = []; // el marcador del duelo deja de ser un espejo
 const bloqueBad = []; // la cabecera de un bloque se dispersa de su pieza
+const origenBad = []; // textos que deberían medir lo mismo y salen de fórmulas distintas
 const presupuesto = [];
 const roles = [];        // LOS CUATRO ROLES de la diagramación (edu-hud · edu-topbar · edu-sec · edu-send)
 const legibilidad = [];   // §29 · informe de tamaño (no veredicto: ver el porqué abajo)
@@ -431,6 +432,28 @@ for (const t of seeded) {
         //       · como mucho UN `edu-send`, y todo control de envío vive dentro
         //     La excepción es el control que ES la mecánica; va DECLARADA abajo
         //     con su motivo, nunca en silencio.
+        // UN SOLO ORIGEN PARA LO QUE ES DEL MISMO TAMAÑO (dueño, 2026-08-22:
+        // «el 3×4 está de diferente tamaño que los números; eso es porque no
+        // tienen la misma regla en el CSS, deben tener el mismo origen»).
+        // En una calculadora el enunciado, el visor y la cifra de una tecla
+        // miden LO MISMO. Salían de fórmulas distintas —y de una tripleta por
+        // modo: nueve en total—, así que nunca cuadraban y un tema tenía que
+        // perseguirlas de una en una. Ahora las tres son múltiplos de
+        // `--math-cifra` con la escala en 1; esta red comprueba el resultado
+        // RENDERIZADO en los tres modos, que es lo que el dueño ve. Un tema o un
+        // modo que vuelva a escribir su propia fórmula lo rompe aquí.
+        if (status === 'ok') {
+          const tipo = await page.evaluate(() => {
+            const f = s => { const e = document.querySelector(s);
+              return e ? Math.round(parseFloat(getComputedStyle(e).fontSize)) : null; };
+            const q = f('.ww-keypad-q'), d = f('.ww-keypad-display'), k = f('.ww-key');
+            return (q && d && k) ? { q, d, k } : null;   // null = no es la calculadora
+          });
+          if (tipo && (tipo.q !== tipo.k || tipo.d !== tipo.k)) {
+            origenBad.push({ label: t.label, mode, ...tipo });
+          }
+        }
+
         if (mode === 'solo' && status === 'ok') {
           // UN BLOQUE NO SE DISPERSA. Cuando una actividad declara que es una
           // pieza indivisible (`meta.panelFit: 'block'`, la calculadora), su
@@ -803,6 +826,16 @@ if (espejoBad.length) {
   console.log('  Dos mitades iguales enfrentadas: la clase ve la asimetría al instante.');
 }
 
+// ── Un solo origen para lo que es del mismo tamaño ─────────────────────────
+if (origenBad.length) {
+  console.log('\nTEXTOS QUE DEBERÍAN MEDIR LO MISMO Y NO LO MIDEN\n');
+  for (const x of origenBad) {
+    console.log(`  ❌ ${x.label} · ${x.mode.padEnd(6)} enunciado ${x.q} px · visor ${x.d} px · cifra de la tecla ${x.k} px`);
+  }
+  console.log('  En una calculadora los tres son el mismo tamaño: tienen que salir de UNA');
+  console.log('  medida (`--math-cifra`), no de una fórmula por pieza y por modo.');
+}
+
 // ── Un bloque no se dispersa ────────────────────────────────────────────────
 if (bloqueBad.length) {
   console.log('\nBLOQUE DISPERSO — la cabecera es más ancha que su pieza\n');
@@ -971,4 +1004,4 @@ console.log(`\n✅ ok: ${results.filter(r => r.status === 'ok').length}` +
   ` · · no aplica: ${results.filter(r => r.status === 'n/a').length}`);
 console.log('El ALUMNO en vivo lo cubre tools/live-smoke.mjs (dos contextos) y la Tarea tools/task-smoke.mjs. Sin cubrir: carrera con 2 alumnos.');
 await browser.close();
-bye(bad.length || seedBad.length || tapBad.length || hitBad.length || roundBad.length || presuBad.length || embedBad.length || marcoBad.length || formaBad.length || escalaBad.length || espejoBad.length || bloqueBad.length ? 1 : 0);
+bye(bad.length || seedBad.length || tapBad.length || hitBad.length || roundBad.length || presuBad.length || embedBad.length || marcoBad.length || formaBad.length || escalaBad.length || espejoBad.length || bloqueBad.length || origenBad.length ? 1 : 0);

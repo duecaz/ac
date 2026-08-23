@@ -34,11 +34,14 @@
    Estas reglas (0,2,0) ganan a las de la plantilla (0,1,0), así que sin
    consumir el token el tema no podía cambiarlas más que escribiendo su propio
    selector sobre la anatomía — la invasión que la migración retira. */
-.teams-card .ww-keypad-round   { gap: var(--math-gap, 2cqmin); }
-.teams-card .ww-keypad-q       { font-size: var(--math-q-size, clamp(.9rem, 7cqmin, 2rem)); }
-.teams-card .ww-keypad-display { font-size: var(--display-size, clamp(.85rem, 6cqmin, 1.8rem)); }
+/* UN SOLO TAMAÑO PARA EL MODO: aquí había tres fórmulas (enunciado 7cqmin, visor
+   6cqmin, tecla 5cqmin) para tres textos que en una calculadora miden lo mismo —
+   y otras tres en VS y otras tres en la plantilla. El modo dice cuánto vale UNA
+   CIFRA en una tarjeta de equipo y el resto sale de ahí (`--math-cifra`, en
+   styles/math.css). El techo en `rem` se retira por la misma razón que en los
+   otros dos modos: no escala en una pizarra grande. */
+.teams-card .ww-keypad-round   { gap: var(--math-gap, 2cqmin); --math-cifra: max(.7rem, 5cqmin); }
 .teams-card .ww-keypad         { gap: var(--key-gap, 2cqmin); }
-.teams-card .ww-key            { font-size: var(--key-size, clamp(.7rem, 5cqmin, 1.5rem)); }
 /* Opciones (Quiz) y texto (Tildes/Comas) por cqmin */
 .teams-card .ww-opt-grid .btn,
 .teams-card .ww-opt        { font-size: clamp(.8rem, 4cqmin, 1.3rem); }
