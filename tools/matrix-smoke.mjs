@@ -29,6 +29,7 @@ const BASE = `http://127.0.0.1:${PORT}`;
 const only = process.argv.slice(2);
 const { playRound, MECANICAS } = await import('./helpers/roundDrivers.mjs');
 const { medirLegibilidad } = await import('./helpers/legibilidad.mjs');
+const { conMarcoLleno } = await import('./helpers/marcoLleno.mjs');
 
 // Modos que esta matriz sabe conducir hoy. `live` cubre el LADO DEL HOST (crear
 // sala + lobby con PIN), que es donde vive la máquina de fases; el lado del alumno
@@ -246,7 +247,8 @@ const escalaBad = []; // partes del marcador del duelo que NO crecen con la aren
 let escalaHecha = false;
 const espejoBad = []; // el marcador del duelo deja de ser un espejo
 const bloqueBad = []; // la cabecera de un bloque se dispersa de su pieza
-const origenBad = []; // textos que deberían medir lo mismo y salen de fórmulas distintas
+const origenBad = [];   // textos que deberían medir lo mismo y salen de fórmulas distintas
+const origenVisto = []; // casos en los que la red del origen SÍ pudo medir
 const presupuesto = [];
 const roles = [];        // LOS CUATRO ROLES de la diagramación (edu-hud · edu-topbar · edu-sec · edu-send)
 const legibilidad = [];   // §29 · informe de tamaño (no veredicto: ver el porqué abajo)
@@ -438,19 +440,25 @@ for (const t of seeded) {
         // En una calculadora el enunciado, el visor y la cifra de una tecla
         // miden LO MISMO. Salían de fórmulas distintas —y de una tripleta por
         // modo: nueve en total—, así que nunca cuadraban y un tema tenía que
-        // perseguirlas de una en una. Ahora las tres son múltiplos de
-        // `--math-cifra` con la escala en 1; esta red comprueba el resultado
-        // RENDERIZADO en los tres modos, que es lo que el dueño ve. Un tema o un
-        // modo que vuelva a escribir su propia fórmula lo rompe aquí.
-        if (status === 'ok') {
+        // perseguirlas de una en una. Ahora las tres salen de `--math-cifra`;
+        // esta red comprueba el resultado RENDERIZADO en los tres modos, que es
+        // lo que el dueño ve. Un modo que vuelva a escribir su propia fórmula lo
+        // rompe aquí.
+        // Solo se pregunta a quien TIENE calculadora: preguntárselo a las 13 son
+        // 30 viajes al navegador para que 27 devuelvan null.
+        if (status === 'ok' && t.name === 'math') {
           const tipo = await page.evaluate(() => {
             const f = s => { const e = document.querySelector(s);
               return e ? Math.round(parseFloat(getComputedStyle(e).fontSize)) : null; };
             const q = f('.ww-keypad-q'), d = f('.ww-keypad-display'), k = f('.ww-key');
-            return (q && d && k) ? { q, d, k } : null;   // null = no es la calculadora
+            return (q && d && k) ? { q, d, k } : null;
           });
-          if (tipo && (tipo.q !== tipo.k || tipo.d !== tipo.k)) {
-            origenBad.push({ label: t.label, mode, ...tipo });
+          // Se CUENTAN los casos medidos: si un cambio deja de montar el teclado,
+          // esta red se quedaría muda y «no se ejecutó» se leería igual que
+          // «pasó». El informe publica el número.
+          if (tipo) {
+            origenVisto.push(`${t.label}·${mode}`);
+            if (tipo.q !== tipo.k || tipo.d !== tipo.k) origenBad.push({ label: t.label, mode, ...tipo });
           }
         }
 
@@ -465,26 +473,14 @@ for (const t of seeded) {
           // completa). No se ve en la ventana de siembra —solo cuando sobra
           // ancho—, así que se mide con el marco lleno.
           if (panelFitKind[t.name] === 'block') {
-            // La hoja se pone y se QUITA (no `addStyleTag`, que no se puede
-            // retirar): las comprobaciones de después miden el marco de verdad.
-            await page.evaluate(() => {
-              const s = document.createElement('style');
-              s.id = 'ww-sonda-lleno';
-              s.textContent = '#ww-frame{position:fixed!important;inset:0!important;width:100vw!important;' +
-                'height:100vh!important;max-width:none!important;aspect-ratio:auto!important;z-index:9999}';
-              document.head.appendChild(s);
-            });
-            await page.waitForTimeout(350);
-            const disp = await page.evaluate(() => {
+            const disp = await conMarcoLleno(page, () => page.evaluate(() => {
               const cab = document.querySelector('.ww-keypad-head');
               const pieza = document.querySelector('.ww-keypad');
               if (!cab || !pieza) return null;
               const a = cab.getBoundingClientRect(), b = pieza.getBoundingClientRect();
               return b.width ? { cab: a.width, pieza: b.width, factor: a.width / b.width } : null;
-            });
+            }));
             if (disp && disp.factor > 1.05) bloqueBad.push({ label: t.label, ...disp });
-            await page.evaluate(() => document.getElementById('ww-sonda-lleno')?.remove());
-            await page.waitForTimeout(300);
           }
           const rr = await page.evaluate(() => {
             const w = document.querySelector('#ww-player-widget');
@@ -629,9 +625,42 @@ for (const t of seeded) {
         // porque el tope de alto se calibraba sobre el ancho del panel.
         // Se comprueba en TRES formas de ventana, no en una: la deformación
         // aparece cuando el panel se estrecha o se acorta, no en la de siembra.
-        for (const [vw, vh, forma] of [[1280, 800, 'apaisada'], [900, 750, 'casi cuadrada'], [800, 1280, 'vertical']]) {
+        // Y CON LA ANIMACIÓN CENTRAL APAGADA, que es OTRO panel: ancho y bajo en
+        // vez de estrecho y alto. Ahí el reparto del alto del bloque no estaba
+        // calibrado (el token de la cabecera vivía dentro del container query de
+        // pantalla estrecha) y las teclas salían de 128×101. Es una opción que el
+        // profe tiene en la antesala del duelo, no un caso raro: si no se prueba,
+        // media matriz se juega en un panel que nadie mide.
+        // El caso se DERIVA de la bandera, nunca al revés: `sinAnim` salía de
+        // buscar el texto «sin animación» en la etiqueta, así que renombrar la
+        // etiqueta del informe habría apagado la prueba en silencio dejando el
+        // informe diciendo que se hizo.
+        const FORMAS = [[1280, 800, 'apaisada'], [900, 750, 'casi cuadrada'], [800, 1280, 'vertical']];
+        const CASOS = [
+          ...FORMAS.map(([w, h, f]) => [w, h, f, false]),
+          ...FORMAS.slice(0, 2).map(([w, h, f]) => [w, h, `${f} · sin animación`, true]),
+        ];
+        let animApagada = false;
+        for (const [vw, vh, forma, sinAnim] of CASOS) {
           if (formaBad.some(x => x.t === t.name)) break;   // ya cazada, no repetir
           await page.setViewportSize({ width: vw, height: vh });
+          if (sinAnim !== animApagada) {
+            animApagada = sinAnim;
+            // Y SE COMPRUEBA QUE HIZO EFECTO: la clase es de `views/vsView.js`;
+            // si allí se renombra, aquí seguiríamos midiendo el panel con
+            // animación y el informe diría «sin animación» igual.
+            const aplicado = await page.evaluate(off => {
+              const a = document.querySelector('.vs-arena');
+              if (!a) return null;
+              a.classList.toggle('vs-no-stage', off);
+              const st = a.querySelector('.vs-stage');
+              return !st || getComputedStyle(st).display === 'none' ? off : !off;
+            }, sinAnim);
+            if (aplicado !== sinAnim) {
+              formaBad.push({ t: t.name, label: t.label, forma: `${forma} (NO se pudo apagar la animación)`, prop: NaN });
+              break;
+            }
+          }
           await page.waitForTimeout(250);
           const p2 = await page.evaluate(() => {
             const k = document.querySelector('#vs-body-left .ww-key, #vs-body-left .memo-card, #vs-body-left .ws-cell');
@@ -642,8 +671,11 @@ for (const t of seeded) {
           if (p2 == null) break;                            // esta plantilla no tiene pieza cuadrada
           if (p2 < .85 || p2 > 1.15) formaBad.push({ t: t.name, label: t.label, forma, prop: p2 });
         }
-        await page.setViewportSize({ width: 1280, height: 800 });
-        await page.waitForTimeout(150);
+        if (animApagada) {
+          await page.evaluate(() => document.querySelector('.vs-arena')?.classList.remove('vs-no-stage'));
+          await page.setViewportSize({ width: 1280, height: 800 });
+          await page.waitForTimeout(150);
+        }
 
         // EL MARCADOR SE LEE DESDE EL FONDO DEL AULA (§3). Lo único que la clase
         // mira para saber quién va ganando es la barra de arriba, y estaba escrita
@@ -661,21 +693,9 @@ for (const t of seeded) {
         // vuelve a clavar `.vss-bar { height: 72px }` lo caza allí como invasión.
         if (!escalaHecha) {
           escalaHecha = true;
-          // La hoja se pone y se QUITA por id: `addStyleTag` no se puede retirar,
-          // y el marco se quedaba forzado a pantalla completa para TODO lo que se
-          // midiera después en esta misma página (el espejo y el marco de abajo).
           const medir = async (w, h) => {
             await page.setViewportSize({ width: w, height: h });
-            await page.evaluate(() => {
-              if (document.getElementById('ww-sonda-lleno')) return;
-              const s = document.createElement('style');
-              s.id = 'ww-sonda-lleno';
-              s.textContent = '#ww-frame{position:fixed!important;inset:0!important;width:100vw!important;' +
-                'height:100vh!important;max-width:none!important;aspect-ratio:auto!important;z-index:9999}';
-              document.head.appendChild(s);
-            });
-            await page.waitForTimeout(300);
-            return page.evaluate(() => {
+            return conMarcoLleno(page, () => page.evaluate(() => {
               const arena = document.querySelector('.vs-wrap');
               if (!arena) return null;
               const px = (sel, prop) => {
@@ -690,7 +710,7 @@ for (const t of seeded) {
                 'el marcador':         px('.vss-score', 'f'),
                 'la foto del alumno':  px('.vss-av', 'h'),
               };
-            });
+            }), 300);
           };
           // Las dos ventanas son 16:9 A PROPÓSITO: el marcador se COMPRIME por
           // diseño cuando la arena se vuelve casi cuadrada o vertical (container
@@ -712,7 +732,6 @@ for (const t of seeded) {
             escalaBad.push({ parte: 'NO SE PUDO MEDIR (la arena no creció)', factor: 0,
               chico: chico?.arena ?? 0, grande: grande?.arena ?? 0 });
           }
-          await page.evaluate(() => document.getElementById('ww-sonda-lleno')?.remove());
           await page.setViewportSize({ width: 1280, height: 800 });
           await page.waitForTimeout(250);
         }
@@ -827,6 +846,9 @@ if (espejoBad.length) {
 }
 
 // ── Un solo origen para lo que es del mismo tamaño ─────────────────────────
+console.log(`\nUN SOLO ORIGEN (enunciado = visor = cifra): ${origenVisto.length - origenBad.length}/${origenVisto.length} · ${origenVisto.join(' · ') || 'ningún caso medido'}`);
+console.log('  LÍMITE: la siembra usa el tema por defecto; la frontera de los temas la');
+console.log('  vigila tests/temaPorTokens.test.mjs (estática).');
 if (origenBad.length) {
   console.log('\nTEXTOS QUE DEBERÍAN MEDIR LO MISMO Y NO LO MIDEN\n');
   for (const x of origenBad) {

@@ -40,7 +40,7 @@
    CIFRA en una tarjeta de equipo y el resto sale de ahí (`--math-cifra`, en
    styles/math.css). El techo en `rem` se retira por la misma razón que en los
    otros dos modos: no escala en una pizarra grande. */
-.teams-card .ww-keypad-round   { gap: var(--math-gap, 2cqmin); --math-cifra: max(.7rem, 5cqmin); }
+.teams-card .ww-keypad-round   { gap: var(--math-gap, 2cqmin); --math-cifra: max(.9rem, 7cqmin); }
 .teams-card .ww-keypad         { gap: var(--key-gap, 2cqmin); }
 /* Opciones (Quiz) y texto (Tildes/Comas) por cqmin */
 .teams-card .ww-opt-grid .btn,

@@ -20,17 +20,31 @@
 //   --ww-danger        wrong answer red
 //   --ww-warning       warning / time-running-out amber
 //
-// KEYPAD  (math activity)
+// KEYPAD  (math activity) - la fuente es styles/math.css; esto es el indice.
+//
+//   LA MEDIDA MADRE. El enunciado, el visor y la cifra de una tecla son EL MISMO
+//   tamano y salen de UN token. Cambiando `--math-cifra` se reescala toda la
+//   calculadora de una vez: es la palanca que un tema quiere el 90 % de las veces.
+//   El MODO (VS, Equipos) declara su valor; el TEMA gana por especificidad.
+//   `tools/matrix-smoke.mjs` mide los tres RENDERIZADOS y exige que coincidan, asi
+//   que un tema que use las escotillas absolutas debe moverlas LAS TRES JUNTAS.
+//   --math-cifra       lo que mide una cifra      default: max(1rem, 11cqmin)
+//   --math-head-min    alto de la banda cabecera  default: auto (lo declara el modo)
+//   --math-tope        tope de ancho del bloque   default: 75cqh (Individual: 52cqh)
+//   --key-size         key font-size              default: var(--math-cifra)
+//   --display-size     answer display font-size   default: var(--math-cifra)
+//   --math-q-size      question font-size         default: var(--math-cifra)
+//
 //   --key-bg           key fill                  default: #fff
 //   --key-fg           key text                  default: #212529
 //   --key-border       key border shorthand       default: 2px solid #ced4da
 //   --key-radius       key corner radius          default: .5rem
-//   --key-size         key font-size              default: clamp(1.1rem,3.6vmin,1.9rem)
 //   --key-weight       key font-weight            default: 700
-//   --key-pad          key padding shorthand      default: clamp(.4rem,1.6vmin,1rem) 0
+//   --key-pad          key padding shorthand      default: 0
 //   --key-shadow       key box-shadow             default: none
 //   --key-cols         keypad grid columns        default: 3
-//   --key-gap          keypad grid gap            default: clamp(.3rem,1.2vmin,.7rem)
+//   --key-rows         keypad grid rows           default: 4
+//   --key-gap          keypad grid gap            default: clamp(.3rem,1.4cqmin,.7rem)
 //   --key-ok-bg        submit key fill            default: --ww-success
 //   --key-ok-fg        submit key text            default: #fff
 //   --key-fn-bg        backspace key fill         default: #f1f3f5
@@ -38,12 +52,10 @@
 //   --display-fg       answer display text        default: #212529
 //   --display-border   answer display border      default: 3px solid #dee2e6
 //   --display-radius   answer display radius      default: .6rem
-//   --display-size     answer display font-size   default: clamp(1.6rem,6vmin,3rem)
-//   --display-pad      answer display padding     default: .15rem 1rem
-//   --math-q-size      question font-size         default: clamp(1.6rem,6vmin,3.4rem)
+//   --display-pad      answer display padding     default: .1rem 1rem
 //   --math-q-weight    question font-weight       default: 800
 //   --math-q-color     question text color        default: inherit
-//   --math-gap         round flex gap             default: clamp(.5rem,1.6vh,1.1rem)
+//   --math-gap         round flex gap             default: clamp(.4rem,2cqmin,1.1rem)
 //
 // VS LAYOUT (set by vsView on each panel; skins read in skin.css overrides)
 //   --panel-bg         device panel fill

@@ -39,8 +39,24 @@
      En VS el bloque ya trae su propio tope (más estricto, calculado con la
      cabecera) y sigue mandando por especificidad. */
   width: 100%;
-  max-width: min(100%, 75cqh);
   margin-inline: auto;
+  /* EL BLOQUE REPARTE SU PROPIO ALTO (§0: un modo no puede conocer una plantilla
+     concreta). Esta cuenta vivía en `styles/vs.css`: era el MODO quien restaba la
+     cabecera, quien sabía que la rejilla es de 3 columnas por 4 filas y quien
+     tenía escrito el hueco en `1.5rem`. Tres datos privados de la calculadora en
+     una hoja que no debería saber que la calculadora existe — y por eso la
+     plantilla tuvo que volverse rígida para que la cuenta ajena siguiera siendo
+     cierta. Ahora el modo solo dice DOS valores (cuánto vale ahí una cabecera y
+     cuál es su tope) y la cuenta la hace quien conoce la anatomía.
+     El tope sale de la geometría: al teclado le queda el alto de la caja menos la
+     cabecera y el hueco, y de ahí —por la proporción de su propia rejilla— su
+     ancho máximo. Así el bloque llena lo que puede sin deformar las teclas. */
+  max-width: min(
+    100%,
+    var(--math-tope, 75cqh),
+    calc((100cqh - var(--math-head-min, 0px) - var(--math-gap, 1.1rem))
+         * var(--key-cols, 3) / var(--key-rows, 4))
+  );
 
   /* ══ LA MEDIDA MADRE: UNA CIFRA ═════════════════════════════════════════════
      El «3 × 4 =» y el «7» de una tecla salían de fórmulas DISTINTAS —y había
@@ -49,17 +65,19 @@
      eso un tema tenía que perseguirlos de uno en uno (dueño, 2026-08-22: «deben
      tener el mismo origen para que sí sean idénticos y poder controlar los temas
      más fácilmente»).
-     Ahora hay UNA medida —lo que mide una cifra— y los tres textos son múltiplos
-     suyos, con la escala en 1 por defecto: idénticos, como pidió el dueño.
+     Ahora hay UNA medida —lo que mide una cifra— y los tres textos SON esa medida:
+     idénticos, como pidió el dueño.
      · Un MODO (VS, Equipos) redeclara SOLO `--math-cifra`, no tres fórmulas.
-     · Un TEMA cambia toda la escala tipográfica de la calculadora con ese mismo
-       token, o afina una pieza con su `--*-escala` sin tocar las otras dos.
+     · Un TEMA cambia toda la tipografía de la calculadora con ese mismo token.
      · `--key-size` / `--math-q-size` / `--display-size` siguen existiendo como
-       escotilla de tamaño absoluto: quien los declare se salta la escala entera,
-       que es lo que a veces necesita un tema.
+       escotilla para un tema que necesite descuadrar una pieza a propósito.
+     Hubo un momento un multiplicador por pieza (`--key-escala` y compañía): no lo
+     consumía nadie, y como la red «un solo origen» exige que las tres midan lo
+     mismo, cualquier valor distinto de 1 rompía CI. Una escotilla que el propio
+     test prohíbe usar no es una escotilla.
      El piso protege el móvil; `cqmin` (el lado corto de la caja) es el techo
      natural y `8cqh` impide que la cabecera se coma el teclado. */
-  --math-cifra: max(1rem, min(11cqmin, 8cqh));
+  --math-cifra: max(1rem, 11cqmin);
 }
 
 /* «2 × 2 =» Y EL RESULTADO, EN LA MISMA LÍNEA (dueño, 2026-08-17, con captura):
@@ -88,8 +106,18 @@
      medía el texto más un relleno mínimo: 29 px de alto contra teclas de 71.
      En una calculadora de verdad el visor no es más bajo que una fila de
      teclas. Se pide por token para que cada modo diga cuánto vale ahí «una
-     tecla»; sin token, el alto lo sigue dando el contenido. */
-  min-height: var(--math-head-min, auto);
+     tecla»; sin token, el alto lo sigue dando el contenido.
+     Y ES UN ALTO EXACTO, NO UN MÍNIMO, cuando el modo lo declara. Con `min-height`
+     el modo creía saber cuánto medía la cabecera —resta ese valor para calcular
+     el hueco del teclado (`.vs-body.ww-fit-block .ww-keypad-round`)— pero un tema
+     que le pone relleno a la chapa la hacía más alta, el teclado se quedaba sin
+     el alto que el cálculo le había prometido y las teclas se APLASTABAN. Medido
+     con la animación central apagada y tv-show: teclas de 128×81 (proporción
+     1,58, casi el doble de anchas que altas). Con la banda fija, el tema pinta
+     DENTRO de un alto que ya está repartido y la geometría deja de depender de
+     lo que decore cada tema. `min-height` sobraba: la cabecera es `flex: 0 0 auto`
+     en una columna, no puede encoger por debajo de su `height`. */
+  height: var(--math-head-min, auto);
 }
 
 .ww-keypad-q {
@@ -97,7 +125,7 @@
   display: flex; align-items: center; justify-content: center;
   /* MISMA MEDIDA QUE UNA CIFRA (ver `--math-cifra` en .ww-keypad-round). Antes
      tenía fórmula propia y por eso el enunciado nunca casaba con las teclas. */
-  font-size: var(--math-q-size, calc(var(--math-cifra) * var(--math-q-escala, 1)));
+  font-size: var(--math-q-size, var(--math-cifra));
   font-weight: var(--math-q-weight, 800);
   color: var(--math-q-color, inherit);
   /* La CHAPA: sin tema, el enunciado es texto suelto (todo transparente y sin
@@ -118,7 +146,7 @@
   flex: 0 0 auto;
   display: flex; align-items: center; justify-content: center;
   min-width: max(5rem, 34cqmin);
-  font-size: var(--display-size, calc(var(--math-cifra) * var(--display-escala, 1)));
+  font-size: var(--display-size, var(--math-cifra));
   font-weight: 800; text-align: center; font-variant-numeric: tabular-nums;
   padding: var(--display-pad, .1rem 1rem);
   border: var(--display-border, 3px solid #dee2e6);
@@ -171,7 +199,7 @@
      190 px el dígito se quedaba en 30) y luego `3.4rem` (en la pizarra 4K a
      pantalla completa, 54 px sobre una tecla de 395). Un techo en `rem` no
      escala NUNCA; el techo real lo pone `cqmin`. */
-  font-size: var(--key-size, calc(var(--math-cifra) * var(--key-escala, 1)));
+  font-size: var(--key-size, var(--math-cifra));
   font-weight: var(--key-weight, 700);
   /* UN SOLO token de relleno. Hubo un `padding-block` aparte y le comía la
      mitad vertical al `--key-pad` público; luego un `--key-pad-block` anidado
@@ -230,9 +258,9 @@
 #s-round .ww-keypad-round {
   justify-content: center;
   /* `52cqh` es el tope que deja aire: 52 de ancho ⇒ 69 de alto, y el resto del
-     hueco queda para el enunciado y el margen. `100%` manda en pantallas
-     estrechas, donde el ancho es el que aprieta. */
-  max-width: min(100%, 52cqh);
+     hueco queda para el enunciado y el margen. Se declara como TOPE y la cuenta
+     del bloque (arriba) ya lo mete en su `min()`. */
+  --math-tope: 52cqh;
   margin-inline: auto;
 }
 .ww-math-round .ww-keypad,

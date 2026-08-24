@@ -189,7 +189,15 @@
    choice options fit inside the narrow side panels at any orientation.
    ══════════════════════════════════════════════════════════════════════════ */
 .vs-body .ww-opt-grid { gap: .4rem; }
-.vs-body .ww-opt-grid .btn {
+/* LAS DOS FORMAS DE PINTAR UNA OPCIÓN, EL MISMO TAMAÑO. Aquí solo estaba el
+   botón de la rejilla; `.ww-opt` (la otra manera de pintar la misma opción) se
+   quedaba con el tamaño de proyector de `live.css`, así que dos opciones de la
+   misma pregunta podían salir de tamaños distintos según cómo las pintara la
+   plantilla. Equipos ya las llevaba juntas (styles/teams.css). Es el mismo
+   principio que la medida madre de la calculadora: lo que el alumno ve como una
+   sola cosa no puede tener dos orígenes. */
+.vs-body .ww-opt-grid .btn,
+.vs-body .ww-opt {
   font-size: clamp(.7rem, 2.4cqw, 1rem);
   padding: .4em .45em;
   font-weight: 600;
@@ -256,7 +264,6 @@
      aquí, el modo pone su valor por defecto Y el tema puede cambiarlo sin
      conocer la anatomía. Lo destapó `tools/shots.mjs`: sin esto el teclado se
      movía 2 px (migración de temas, 2026-08-22). */
-  .vs-body .ww-keypad-round   { gap: var(--math-gap, 2cqw); }
   /* UN SOLO TAMAÑO PARA EL MODO. Aquí había TRES fórmulas —enunciado, visor y
      tecla, cada una con sus propios topes— y otras tres en Equipos y otras tres
      en la plantilla: nueve para tres textos que en una calculadora miden lo
@@ -264,28 +271,36 @@
      enunciado y el visor salen de ahí (ver `--math-cifra` en styles/math.css).
      En VS manda el ancho del panel (`cqw`), con `cqh` de tope para que la
      cabecera no se coma el teclado. */
-  .vs-body .ww-keypad-round   { --math-cifra: clamp(.6rem, 11cqw, 12cqh); }
-  /* LA CABECERA, A LA ALTURA DE UNA FILA DE TECLAS. Una fila mide ~28 % del
-     ancho del panel (el teclado ocupa ~85 % y tiene 3 columnas). Sin esto, la
-     chapa medía su texto más un relleno mínimo —29 px contra teclas de 71— y
-     el visor parecía de otra actividad.
-     El segundo tope (`18cqh`) es para el panel ANCHO Y BAJO que queda cuando el
-     profe apaga la animación central: allí el 28 % del ancho son 117 px de
-     cabecera, que se comían el alto del teclado. La cabecera acompaña a la
-     tecla, y la tecla la limita el lado corto. */
-  .vs-body                    { --math-head-min: min(28cqw, 18cqh); }
+  .vs-body .ww-keypad-round   { gap: var(--math-gap, 2cqw); --math-cifra: clamp(.6rem, 11cqw, 12cqh); }
   .vs-body .ww-keypad         { gap: var(--key-gap, 1.8cqw); }
 }
 
-/* MARCADOR EN VERTICAL — POR QUÉ SIGUE EN CADA SKIN (§3, medido)
-   La deuda decía "el andamio portrait del scoreboard está copiado en los skins".
-   Se intentó traerlo aquí (barra a 46px + animaciones OFF, que además es cosa de
-   la ORIENTACIÓN y no del skin) y `node tools/shots.mjs` lo tumbó: cada skin
-   define su propia `.vs-skin-X .vss-bar` (especificidad 0,2,0), así que una regla
-   compartida `.vss-bar` (0,1,0) PIERDE — la barra volvía a su alto de escritorio y
-   el marcador de tv-show se descuadraba (256k píxeles de diferencia). Para ganar
-   habría que escribir selectores más específicos que los propios skins o tirar de
-   `!important`: peor que la repetición. Se queda en cada skin, ADREDE y dicho aquí.
+/* LA CABECERA, A LA ALTURA DE UNA FILA DE TECLAS, Y SIEMPRE. Una fila mide ~28 %
+   del ancho del panel (el teclado ocupa ~85 % y tiene 3 columnas). Sin esto, la
+   chapa medía su texto más un relleno mínimo —29 px contra teclas de 71— y el
+   visor parecía de otra actividad. El segundo tope (`18cqh`) es para el panel
+   ANCHO Y BAJO que queda cuando el profe apaga la animación central: allí el
+   28 % del ancho son 117 px de cabecera, que se comían el alto del teclado.
+   ESTABA DENTRO del container query de vertical/bajo, así que en la ventana de
+   escritorio con la animación APAGADA no existía: el bloque calculaba el hueco
+   del teclado restando CERO de cabecera, el teclado no se topaba y el flex lo
+   aplastaba — teclas de 128×101 (proporción 1,27). Es el reparto del alto del
+   bloque, no un ajuste de pantalla estrecha: va fuera, para las dos. */
+.vs-body { --math-head-min: min(28cqw, 18cqh); }
+
+/* MARCADOR EN VERTICAL — RESUELTO, y cómo (§3, medido)
+   Este comentario explicaba una deuda que ya no existe, y encima se quedó SIN
+   CERRAR (le faltaba el `*​/`), así que se tragaba el banner siguiente.
+   La deuda decía: «el andamio portrait del marcador está copiado en los skins».
+   Traerlo aquí como PROPIEDADES no funcionaba —cada skin define su propia
+   `.vs-skin-X .vss-bar` (0,2,0) y una regla compartida `.vss-bar` (0,1,0) pierde:
+   la barra volvía a su alto de escritorio y tv-show se descuadraba, 256k píxeles
+   de diferencia según `tools/shots.mjs`—. La salida no era ganar la guerra de
+   especificidad, era dejar de pelearla: en vertical se redeclaran los TOKENS
+   (`--vss-alto` y compañía) en la propia `.vss-bar`, y una declaración en el
+   elemento gana a la del tema, que cuelga del ancestro `.vs-skin-*`. Una sola
+   compresión para todos los temas, y el que quiera otra la pide en
+   `.vs-skin-X .vss-bar` (0,2,0). Ver el bloque PORTRAIT / NARROW de arriba. */
 
 /* ══════════════════════════════════════════════════════════════════════════
    POLÍTICA DE MAQUETACIÓN DEL PANEL (declarada por meta.panelFit de la plantilla;
@@ -320,27 +335,13 @@
   flex: 0 1 auto; height: auto; max-height: 100%; margin-block: auto; }
 .vs-body.ww-fit-center { justify-content: center; overflow: auto; }
 .vs-body.ww-fit-center > * { flex: 0 0 auto; margin: auto; }
-/* EL BLOQUE LLENA SU CAJA, y su forma la guarda el ANCHO DEL PANEL.
-   Aquí ponía `height: min(500px, 100%); max-width: 290px`: un «tamaño natural
-   cómodo» en píxeles que, en pantalla completa, dejaba el teclado en el 47 % del
-   alto y el 62 % del ancho — el dueño mandó la captura: «fíjate en todo el aire
-   que tiene, está horrible». Un tope en px es un tope que no escala (§3), y en
-   una pizarra de 4K es exactamente igual de grande que en un móvil.
-   Ahora crece con su caja y no se deforma porque el tope va en `cqh`: el ancho
-   no puede pasar del 62 % del ALTO del panel, así que el bloque se mantiene
-   vertical y proporcionado en vez de estirarse a lo ancho. Las filas ya estaban
-   topadas por el ancho del panel (`34cqw`, debajo), que es lo que impide teclas
-   larguísimas. */
+/* EL BLOQUE LLENA SU CAJA. Aquí había un `max-width` que restaba la cabecera,
+   sabía que la rejilla del teclado es 3×4 y llevaba el hueco escrito en `1.5rem`:
+   un MODO haciendo cuentas con la anatomía de UNA plantilla, que es justo lo que
+   §0 prohíbe. La cuenta se mudó a `styles/math.css` —su dueña— y aquí queda solo
+   lo que sí es del modo: que el bloque no herede un alto fijo del cuerpo. */
 .vs-body.ww-fit-block .ww-keypad-round {
   height: auto;   /* el cuerpo ya no tiene alto fijo: el bloque LO DA, no lo hereda */
-  /* EL TOPE ES DEL BLOQUE ENTERO, y por eso la cabecera mide lo que el teclado.
-     Estaba en el teclado, así que la cabecera se quedaba con el ancho de su
-     texto: medido, chapa+visor sumaban 144 px de un teclado de 258 — de ahí que
-     el «2 × 6» y el «0» salieran como pastillas verticales. El tope sale de la
-     geometría: lo que le queda al teclado es el alto del panel menos la
-     cabecera, y de ahí, por la proporción de su rejilla, su ancho máximo. */
-  width: 100%;
-  max-width: min(100%, calc((100cqh - var(--math-head-min, 0px) - 1.5rem) * 3 / 4));
   margin: auto;
 }
 /* Las teclas no se hacen más altas que ~1 ancho y pico (cqw = ancho del panel):
