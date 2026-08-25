@@ -462,6 +462,73 @@ for (const t of seeded) {
           }
         }
 
+        // El fallo que originó esto es del DUELO a pantalla completa; estaba escrito
+        // dentro de la rama de Individual, donde no hay panel de duelo, así que la
+        // contra-prueba pasaba en verde con el fallo delante. Va por MODO.
+        if (status === 'ok' && panelFitKind[t.name] === 'block') {
+          // TODO LO DE LA CABECERA TIENE SITIO. Además de que no se disperse a
+          // lo ancho, ninguna de sus piezas puede quedar FUERA de la cabecera
+          // ni por debajo de donde empieza el teclado: así es como el hueco de
+          // la respuesta acabó asomando a medias detrás de la tecla del 2
+          // (dueño, 2026-08-24, con captura a 1280×800). Se mira en varias
+          // ventanas porque solo fallaba en algunas: con la de siembra sola
+          // habría pasado en verde.
+          // Y CON UN TEMA PUESTO. La siembra usa el tema por defecto, y este
+          // fallo NO se ve sin tema: parte de lo que desborda la fila es el
+          // relleno que un tema le pone a la chapa del enunciado. Con la red
+          // ciega a los temas, la contra-prueba pasaba en verde teniendo el
+          // fallo delante — que es como llegó a producción. Se aplica el tema
+          // por su propia puerta (`applySkin`), no pegando una clase a mano.
+          for (const [vw, vh, tema] of [[1280, 800, 'tv-show'], [1366, 768, 'tv-show'],
+                                        [1920, 1080, 'arcade'], [1280, 800, 'default']]) {
+            if (bloqueBad.some(x => x.t === t.name)) break;
+            await page.setViewportSize({ width: vw, height: vh });
+            await page.evaluate(async nombre => {
+              const m = await import('/core/skins.js');
+              m.applySkin(nombre);
+              // SE CAMBIA, NO SE ACUMULA: al tercer tema la arena llevaba las
+              // clases de los tres a la vez y las redes de detrás medían una
+              // mezcla que no existe.
+              for (const el of document.querySelectorAll('[class*="vs-skin-"], [class*="skin-"]')) {
+                el.className = el.className.replace(/\b(vs-)?skin-[\w-]+/g, '').trim();
+              }
+              document.querySelector('.vs-arena, .ww-scaffold, #ww-player-widget')
+                ?.classList.add(`vs-skin-${nombre}`, `skin-${nombre}`);
+            }, tema);
+            await page.waitForTimeout(300);
+            const disp = await conMarcoLleno(page, () => page.evaluate(() => {
+              const cab = document.querySelector('.ww-keypad-head');
+              const pieza = document.querySelector('.ww-keypad');
+              if (!cab || !pieza) return null;
+              const a = cab.getBoundingClientRect(), b = pieza.getBoundingClientRect();
+              if (!b.width) return null;
+              const escapa = [...cab.children].filter(h => {
+                const r = h.getBoundingClientRect();
+                return r.height && (r.bottom > a.bottom + 1 || r.bottom > b.top + 1);
+              }).length;
+              return { cab: a.width, pieza: b.width, factor: a.width / b.width, escapa };
+            }));
+            if (disp && (disp.factor > 1.05 || disp.escapa)) {
+              bloqueBad.push({ t: t.name, label: t.label, ventana: `${vw}x${vh} · ${tema}`, ...disp });
+            }
+          }
+          // Y SE DEVUELVE LA PÁGINA COMO ESTABA — RECARGÁNDOLA. Quitar las clases
+          // no basta: `applySkin` deja CARGADA la hoja del tema, y el resto de
+          // redes de esta misma página seguían midiendo con ella (la de contraste
+          // daba 1,4:1 en la operación, con el código bueno). El navegador es
+          // quien sabe deshacer eso; nosotros solo sabemos empezar de cero.
+          await page.setViewportSize({ width: 1280, height: 800 });
+          await page.goto(`${BASE}/teacher.html?backend=local`, { waitUntil: 'domcontentloaded' });
+          await page.waitForTimeout(250);
+          await page.evaluate(h => { location.hash = h; }, route);
+          if (drv.start) {
+            await page.waitForSelector(drv.start, { timeout: 9000 });
+            await page.click(drv.start);
+          }
+          await page.waitForSelector(drv.ready, { timeout: 12000 });
+          await page.waitForTimeout(350);
+        }
+
         if (mode === 'solo' && status === 'ok') {
           // UN BLOQUE NO SE DISPERSA. Cuando una actividad declara que es una
           // pieza indivisible (`meta.panelFit: 'block'`, la calculadora), su
@@ -472,16 +539,6 @@ for (const t of seeded) {
           // teclas («la actividad se dispersó», dueño con captura a pantalla
           // completa). No se ve en la ventana de siembra —solo cuando sobra
           // ancho—, así que se mide con el marco lleno.
-          if (panelFitKind[t.name] === 'block') {
-            const disp = await conMarcoLleno(page, () => page.evaluate(() => {
-              const cab = document.querySelector('.ww-keypad-head');
-              const pieza = document.querySelector('.ww-keypad');
-              if (!cab || !pieza) return null;
-              const a = cab.getBoundingClientRect(), b = pieza.getBoundingClientRect();
-              return b.width ? { cab: a.width, pieza: b.width, factor: a.width / b.width } : null;
-            }));
-            if (disp && disp.factor > 1.05) bloqueBad.push({ label: t.label, ...disp });
-          }
           const rr = await page.evaluate(() => {
             const w = document.querySelector('#ww-player-widget');
             if (!w) return null;
@@ -860,12 +917,14 @@ if (origenBad.length) {
 
 // ── Un bloque no se dispersa ────────────────────────────────────────────────
 if (bloqueBad.length) {
-  console.log('\nBLOQUE DISPERSO — la cabecera es más ancha que su pieza\n');
+  console.log('\nLA CABECERA DEL BLOQUE NO CABE EN SU SITIO\n');
   for (const x of bloqueBad) {
-    console.log(`  ❌ ${x.label.padEnd(22)} cabecera ${Math.round(x.cab)} px sobre una pieza de ${Math.round(x.pieza)} (×${x.factor.toFixed(2)})`);
+    console.log(`  ❌ ${x.label.padEnd(18)} ${(x.ventana || '').padEnd(10)} cabecera ${Math.round(x.cab)} px sobre una pieza de ${Math.round(x.pieza)} (×${x.factor.toFixed(2)})` +
+      (x.escapa ? ` · ${x.escapa} pieza(s) de la cabecera se salen de su sitio` : ''));
   }
-  console.log('  Una actividad que declara ser un BLOQUE indivisible tiene que medir');
-  console.log('  lo mismo de arriba abajo: si no, en pantalla ancha se desparrama.');
+  console.log('  Una actividad que declara ser un BLOQUE indivisible mide lo mismo de');
+  console.log('  arriba abajo, y todo lo suyo cabe dentro: si una pieza se sale, acaba');
+  console.log('  DEBAJO de la siguiente — y desde fuera parece que no existe.');
 }
 
 // ── El marco obedece a meta.panelFit (§0) ──────────────────────────────────

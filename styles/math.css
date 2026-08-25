@@ -51,12 +51,13 @@
      El tope sale de la geometría: al teclado le queda el alto de la caja menos la
      cabecera y el hueco, y de ahí —por la proporción de su propia rejilla— su
      ancho máximo. Así el bloque llena lo que puede sin deformar las teclas. */
-  max-width: min(
-    100%,
+  --math-ancho: min(
+    100cqw,
     var(--math-tope, 75cqh),
     calc((100cqh - var(--math-head-min, 0px) - var(--math-gap, 1.1rem))
          * var(--key-cols, 3) / var(--key-rows, 4))
   );
+  max-width: min(100%, var(--math-ancho));
 
   /* ══ LA MEDIDA MADRE: UNA CIFRA ═════════════════════════════════════════════
      El «3 × 4 =» y el «7» de una tecla salían de fórmulas DISTINTAS —y había
@@ -75,9 +76,20 @@
      consumía nadie, y como la red «un solo origen» exige que las tres midan lo
      mismo, cualquier valor distinto de 1 rompía CI. Una escotilla que el propio
      test prohíbe usar no es una escotilla.
-     El piso protege el móvil; `cqmin` (el lado corto de la caja) es el techo
-     natural y `8cqh` impide que la cabecera se coma el teclado. */
-  --math-cifra: max(1rem, 11cqmin);
+     Y LA LETRA MIRA EL ANCHO EN EL QUE TIENE QUE CABER. Este era el fondo del
+     fallo de «la caja del resultado no tiene un lugar» (dueño, 2026-08-24, con
+     captura a 1280×800): la medida salía del lado corto de la CAJA, sin saber
+     nada del ancho del BLOQUE, así que al crecer la letra el enunciado y el hueco
+     de respuesta dejaban de caber en su fila; `flex-wrap` partía la cabecera en
+     dos y la segunda línea se salía de su banda, con el teclado encima. Se probó
+     dejar encoger al hueco (arregla 7 de 11 tamaños), y también al enunciado
+     (entonces «2 × 6 =» se parte en dos líneas: peor). Ninguna de las dos toca la
+     causa — que la letra no cabe—, solo mueven dónde se ve.
+     El techo por ancho la hace caber POR CONSTRUCCIÓN: la cabecera es una fila
+     con la operación y el hueco, y `/12` es lo que necesita la operación más
+     larga que genera la plantilla. Al ir en la MEDIDA MADRE, las teclas encogen
+     con ella y los tres textos siguen siendo el mismo tamaño. */
+  --math-cifra: max(1rem, min(11cqmin, calc(var(--math-ancho) / 10)));
 }
 
 /* «2 × 2 =» Y EL RESULTADO, EN LA MISMA LÍNEA (dueño, 2026-08-17, con captura):
@@ -107,17 +119,19 @@
      En una calculadora de verdad el visor no es más bajo que una fila de
      teclas. Se pide por token para que cada modo diga cuánto vale ahí «una
      tecla»; sin token, el alto lo sigue dando el contenido.
-     Y ES UN ALTO EXACTO, NO UN MÍNIMO, cuando el modo lo declara. Con `min-height`
-     el modo creía saber cuánto medía la cabecera —resta ese valor para calcular
-     el hueco del teclado (`.vs-body.ww-fit-block .ww-keypad-round`)— pero un tema
-     que le pone relleno a la chapa la hacía más alta, el teclado se quedaba sin
-     el alto que el cálculo le había prometido y las teclas se APLASTABAN. Medido
-     con la animación central apagada y tv-show: teclas de 128×81 (proporción
-     1,58, casi el doble de anchas que altas). Con la banda fija, el tema pinta
-     DENTRO de un alto que ya está repartido y la geometría deja de depender de
-     lo que decore cada tema. `min-height` sobraba: la cabecera es `flex: 0 0 auto`
-     en una columna, no puede encoger por debajo de su `height`. */
-  height: var(--math-head-min, auto);
+     LA BANDA ES UN SUELO, NO UN TECHO — y ese es el segundo medio filo del fallo
+     de «la caja del resultado no tiene un lugar» (dueño, 2026-08-24). Llegó a ser
+     un alto EXACTO para que la cuenta del bloque —que resta este valor— siguiera
+     siendo cierta cuando un tema le añade relleno a la chapa. Pero un alto exacto
+     no da sitio: cuando el contenido no cabía en la fila, `flex-wrap` lo mandaba a
+     una segunda línea que caía FUERA de la banda, y el teclado se pintaba encima.
+     El primer medio filo (el techo por ancho de `--math-cifra`) hace que quepa en
+     una fila con la operación que genera la plantilla. Pero la operación la
+     escribe el profe y puede ser «144 ÷ 12» o más larga: no hay medida que valga
+     para todo. Con un suelo, ese caso raro ENSANCHA la banda y el teclado encoge
+     un poco —feo pero legible— en vez de esconder el hueco de la respuesta.
+     Correcto por construcción en lo normal, y que ceda por lo bajo en lo raro. */
+  min-height: var(--math-head-min, auto);
 }
 
 .ww-keypad-q {
@@ -142,10 +156,25 @@
 
 .ww-keypad-eq { opacity: var(--math-eq-opacity, .55); color: var(--math-eq-color, inherit); }
 
+/* EL HUECO DE LA RESPUESTA SE REPARTE LA FILA, no la rompe (dueño, 2026-08-24,
+   con captura a 1280×800: «la caja del resultado no tiene un lugar»).
+   Aquí pedía un ancho MÍNIMO duro (`max(5rem, 34cqmin)`) y encima no podía
+   encoger (`flex: 0 0 auto`). Con la cifra pequeña sobraba sitio y no se notaba;
+   al crecer la letra, el enunciado más ese mínimo dejaron de caber en la fila, la
+   cabecera se partió en dos líneas —`flex-wrap` haciendo lo que se le pidió— y la
+   segunda línea se salió de la banda de la cabecera, que tiene alto declarado:
+   el teclado se pintó encima y la caja del «0» quedó asomando detrás de la tecla
+   del 2. No era un caso raro: pasaba en 6 de 7 tamaños a pantalla completa.
+   La cabecera es UNA fila con dos partes: la operación se lleva el sobrante y el
+   hueco de respuesta un tercio, y AMBOS pueden encoger. Así no hay nada que
+   partir. No es una medida nueva: es exactamente lo que ya declaraban los dos
+   modos que alguien se paró a afinar (`styles/scaffold.css`, para el duelo y para
+   equipos) — la regla base era la única que seguía pidiendo un mínimo duro, y por
+   eso el fallo aparecía justo donde esos ajustes no llegaban. */
 .ww-keypad-display {
-  flex: 0 0 auto;
+  flex: 0 1 30%;
   display: flex; align-items: center; justify-content: center;
-  min-width: max(5rem, 34cqmin);
+  min-width: 0;
   font-size: var(--display-size, var(--math-cifra));
   font-weight: 800; text-align: center; font-variant-numeric: tabular-nums;
   padding: var(--display-pad, .1rem 1rem);

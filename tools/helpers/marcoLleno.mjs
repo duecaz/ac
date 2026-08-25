@@ -13,17 +13,21 @@
 // hoja atada a un `id`, quitarla es una línea; teniéndola aquí, no se puede
 // olvidar en el segundo sitio.
 //
-// LÍMITE DECLARADO: esto NO reproduce el fullscreen real del producto —
-// `styles/player.css` le añade `padding: 5vmin` al contenido cuando el marco
-// está de verdad en `:fullscreen`. Lo que se mide aquí es «el marco tiene mucho
-// sitio», que es la condición que destapa los topes fijos, no la maqueta exacta
-// del aula. Para lo que se toca con el dedo está el hit-testing del botón de la
-// esquina, que sí usa el marco real.
+// EL PADDING DEL FULLSCREEN REAL VA INCLUIDO. La primera versión solo estiraba el
+// marco, y aquí quedó escrito como límite: «no reproduce el fullscreen real, que
+// añade `padding: 5vmin`». Ese límite se cobró un fallo — con el padding los
+// paneles son más estrechos y la cabecera de la calculadora dejaba de caber en su
+// fila, cosa que la sonda sin padding no veía en ninguna medida. Un límite
+// declarado sigue siendo un agujero: si se puede cerrar, se cierra.
 
 const ID = 'ww-sonda-marco-lleno';
 
-const CSS = '#ww-frame{position:fixed!important;inset:0!important;width:100vw!important;' +
-  'height:100vh!important;max-width:none!important;aspect-ratio:auto!important;z-index:9999}';
+const CSS =
+  '#ww-frame{position:fixed!important;inset:0!important;width:100vw!important;' +
+  'height:100vh!important;max-width:none!important;aspect-ratio:auto!important;z-index:9999}' +
+  // Espejo de `styles/player.css` (`.ww-player-frame:fullscreen .vs-main` y
+  // `.ww-scaffold`). Si allí cambia el valor, aquí también.
+  '#ww-frame .vs-main,#ww-frame .ww-scaffold{padding:5vmin!important}';
 
 /**
  * Agranda el marco a toda la ventana, ejecuta `medir()` y lo deja como estaba.
