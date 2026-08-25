@@ -9,22 +9,23 @@
 .vs-arena { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 
 /* ── 3-column game area ──────────────────────────────────────────────────── */
-/* EL REPARTO DEL ANCHO. Aquí ponía `1fr 2fr 1fr`: la animación —que es DECORADO—
-   se llevaba la MITAD del ancho y a cada alumno le quedaba el 24 %. En un portátil
-   eso es una columna de 224 px para jugar contra una cuerda de 448 px. Lo que se
-   juega manda: los paneles se llevan el grueso y el escenario se queda con lo que
-   necesita para leerse. Medido: la tecla de Operaciones pasa de 58 px a 74 px de
-   lado en el portátil, sin dejar de ser cuadrada. */
+/* EL REPARTO DEL ANCHO: 1 / 2 / 1, DECIDIDO POR EL DUEÑO (2026-08-25).
+   En v1.51.581 se cambió a 1.3 / 1.4 / 1.3 con este argumento medido: la
+   animación —que es decorado— se llevaba la MITAD del ancho y a cada alumno le
+   quedaba el 24 % (en un portátil, 224 px para jugar contra 448 px de cuerda).
+   Con el reparto nuevo el panel subía al 31 % y la tecla de Operaciones de 58 a
+   81 px. El dato es cierto, pero la decisión NO era técnica: cuánto pesa la
+   cuerda frente a lo que juega el alumno es producto, y se tomó al vuelo dentro
+   de una tanda de maquetación sin preguntar. El dueño vio el cambio, pidió los
+   números de las tres opciones y eligió volver a 1 / 2 / 1.
+   Queda escrito para que no se «arregle» otra vez desde la medida: el coste
+   (panel 24 %, tecla 63 px, cifra 24 px en su ventana) está aceptado a sabiendas.
+   Cambiarlo es decisión suya, no de quien mida. */
 .vs-main {
   flex: 1; min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.4fr) minmax(0, 1.3fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
   grid-template-areas: "s1 stage s2";
-}
-/* Con la animación COMPACTA el escenario es una franja: no necesita ancho de
-   cuerda, así que lo que sobra vuelve a los dos que juegan. */
-.vs-arena.vs-anim-compact .vs-main {
-  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr) minmax(0, 1.55fr);
 }
 .vs-panel.vs-left  { grid-area: s1; }
 .vs-panel.vs-right { grid-area: s2; }
