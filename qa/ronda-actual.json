@@ -1,8 +1,8 @@
 {
   "id": "2026-08-24",
   "titulo": "AulaReto · Hoja de pruebas",
-  "intro": "Esta ronda va casi entera de UNA cosa: cómo se ve el duelo y la calculadora en la pizarra grande. Se han quitado un montón de medidas fijas que no crecían con la pantalla, y eso el ordenador ya lo mide solo — lo que NO puede medir es si desde el fondo del aula se lee. Por eso casi todo se prueba en la pizarra, de pie y a tres metros. Ronda corta. Marca Pasa si ocurrió lo que dice «Tiene que pasar», Falla si no — y cuenta en la nota qué viste. «No probado» también vale: dice hasta dónde llegaste.",
-  "versionMin": "1.51.584",
+  "intro": "Esta ronda va casi entera de UNA cosa: cómo se ve el duelo y la calculadora en la pizarra grande. Se han quitado un montón de medidas fijas que no crecían con la pantalla, y eso el ordenador ya lo mide solo — lo que NO puede medir es si desde el fondo del aula se lee. Por eso casi todo se prueba en la pizarra, de pie y a tres metros. Ronda corta. Y una buena noticia: el fallo del reloj que reportaste está resuelto — no era de la web, le faltaba un permiso al servidor. La prueba 8 vuelve a estar activa. Marca Pasa si ocurrió lo que dice «Tiene que pasar», Falla si no — y cuenta en la nota qué viste. «No probado» también vale: dice hasta dónde llegaste.",
+  "versionMin": "1.51.587",
   "secciones": [
     {
       "titulo": "Antes de empezar",
@@ -10,16 +10,27 @@
         {
           "n": 0,
           "titulo": "Versión nueva instalada",
-          "ruta": ["PC + móvil", "aulareto.com", "Barra superior"],
+          "ruta": [
+            "PC + móvil",
+            "aulareto.com",
+            "Barra superior"
+          ],
           "accion": "Abre aulareto.com y recarga con Ctrl+F5 dos veces. En el móvil, cierra la pestaña y vuelve a abrirla.",
-          "espera": "arriba se ve el número de versión y es 1.51.584 o más. Si es menor, para y avisa: estarías probando la de antes.",
-          "casillas": ["PC", "Móvil"],
+          "espera": "arriba se ve el número de versión y es 1.51.587 o más. Si es menor, para y avisa: estarías probando la de antes.",
+          "casillas": [
+            "PC",
+            "Móvil"
+          ],
           "notaPista": "Qué versión salía en cada aparato"
         },
         {
           "n": 1,
           "titulo": "Entregar la hoja funciona sin tener cuenta",
-          "ruta": ["Móvil", "aulareto.com/test", "Al final de la hoja"],
+          "ruta": [
+            "Móvil",
+            "aulareto.com/test",
+            "Al final de la hoja"
+          ],
           "accion": "En la ronda del 22 pusiste que el botón no se activaba, pero el informe SÍ me llegó. No sé cuál de las dos cosas viste, así que lo miramos otra vez con calma. Baja del todo AHORA MISMO, sin haber terminado nada.",
           "pasos": [
             "El botón «Entregar informe» tiene que estar ACTIVO ya, aunque no hayas iniciado sesión y no hayas marcado nada.",
@@ -27,7 +38,10 @@
             "Si está activo, no lo pulses todavía: termina la ronda. Al poner veredicto a la última prueba debe salir un AVISO EN ROJO de que aún no has entregado."
           ],
           "espera": "el botón está activo desde el principio sin cuenta, y al terminar sale el aviso rojo.",
-          "casillas": ["El botón está activo", "Sale el aviso rojo al terminar"],
+          "casillas": [
+            "El botón está activo",
+            "Sale el aviso rojo al terminar"
+          ],
           "notaPista": "Si está apagado, la foto es lo importante: sin ella no puedo saber si es la web o la versión que tenías"
         }
       ]
@@ -39,7 +53,12 @@
         {
           "n": 2,
           "titulo": "El marcador del duelo se lee desde el fondo",
-          "ruta": ["Pizarra del aula", "Operaciones", "VS (duelo)", "Pantalla completa"],
+          "ruta": [
+            "Pizarra del aula",
+            "Operaciones",
+            "VS (duelo)",
+            "Pantalla completa"
+          ],
           "accion": "La barra de arriba —la que dice de quién es cada lado y cómo van los puntos— estaba escrita en un tamaño fijo: en una pizarra grande se quedaba igual de pequeña que en un portátil. Abre Operaciones en VS, dale a pantalla completa y VETE AL FONDO DE LA CLASE.",
           "pasos": [
             "Desde el fondo, sin acercarte: ¿se leen los nombres de los dos alumnos?",
@@ -48,13 +67,22 @@
             "Compáralo con la MISMA actividad en tu portátil: en el portátil debe verse como siempre, ni más grande ni más pequeña que antes."
           ],
           "espera": "en la pizarra se lee todo desde el fondo, y en el portátil no ha cambiado nada.",
-          "casillas": ["Nombres legibles desde el fondo", "Puntos legibles desde el fondo", "En el portátil sigue igual"],
+          "casillas": [
+            "Nombres legibles desde el fondo",
+            "Puntos legibles desde el fondo",
+            "En el portátil sigue igual"
+          ],
           "notaPista": "A cuántos pasos estabas y qué pizarra es (marca y pulgadas). Si algo no se lee, foto desde donde estabas"
         },
         {
           "n": 3,
           "titulo": "Las cifras de la calculadora en la pizarra",
-          "ruta": ["Pizarra del aula", "Operaciones", "Individual", "Pantalla completa"],
+          "ruta": [
+            "Pizarra del aula",
+            "Operaciones",
+            "Individual",
+            "Pantalla completa"
+          ],
           "accion": "Las cifras de las teclas también tenían tope: en la pizarra salía un número pequeñito en medio de un botón enorme. Abre Operaciones en Individual, pantalla completa, y mírala desde el fondo.",
           "pasos": [
             "Cada número tiene que llenar bien su tecla, no ser un puntito en el centro.",
@@ -62,27 +90,45 @@
             "Los tres deben verse como UNA calculadora junta, no como piezas sueltas repartidas por la pantalla."
           ],
           "espera": "los tres textos son del mismo tamaño y el conjunto se lee como una sola calculadora.",
-          "casillas": ["Las cifras llenan la tecla", "Los tres textos del mismo tamaño", "Se ve como una sola pieza"],
+          "casillas": [
+            "Las cifras llenan la tecla",
+            "Los tres textos del mismo tamaño",
+            "Se ve como una sola pieza"
+          ],
           "notaPista": "Si alguno se ve más grande o más pequeño, di CUÁL de los tres y haz una foto de frente"
         },
         {
           "n": 4,
-          "titulo": "Cada alumno tiene más sitio para jugar",
-          "ruta": ["Pizarra o PC", "Operaciones", "VS (duelo)", "Pantalla del juego"],
-          "accion": "La animación del centro (los dos tirando de la cuerda) se llevaba la MITAD del ancho, y a cada alumno le quedaba una columna estrecha. Se ha repartido al revés. Abre Operaciones en VS.",
-          "pasos": [
-            "Mira las dos columnas de los alumnos: tienen que ser claramente más anchas que la cuerda del centro.",
-            "Las teclas tienen que salir CUADRADAS, ni estiradas a lo alto ni aplastadas.",
-            "Esto es un juicio tuyo, no hay número: ¿se juega más cómodo que antes, o has perdido algo por el camino?"
+          "titulo": "El reparto del duelo: ¿la cuerda se lleva demasiado?",
+          "ruta": [
+            "Pizarra o PC",
+            "Operaciones",
+            "VS (duelo)",
+            "Pantalla del juego"
           ],
-          "espera": "los paneles de los alumnos mandan sobre la animación y las teclas son cuadradas.",
-          "casillas": ["Los paneles son más anchos que el centro", "Teclas cuadradas"],
-          "notaPista": "Dime tu opinión aunque sea «me gustaba más antes»: eso también es un resultado"
+          "accion": "Aquí quiero tu OPINIÓN, no un veredicto técnico. La animación del centro (los dos tirando de la cuerda) se lleva la mitad del ancho y a cada alumno le queda una columna más estrecha. Se probó a repartirlo más a favor de los alumnos y el dueño prefirió dejarlo como está — pero tú eres quien lo va a usar en clase. Abre Operaciones en VS y juega una ronda entera.",
+          "pasos": [
+            "Lo que SÍ es un fallo si pasa: que las teclas salgan estiradas o aplastadas. Tienen que ser cuadradas.",
+            "Lo que SÍ es un fallo: que se corte alguna fila del teclado por abajo.",
+            "Lo que es OPINIÓN: ¿el panel de cada alumno te parece suficiente para jugar, o la cuerda se lleva demasiado sitio?",
+            "Si puedes, pruébalo con dos alumnos de verdad en la pizarra: es distinto de mirarlo tú solo."
+          ],
+          "espera": "las teclas son cuadradas y no se corta ninguna fila. Lo del reparto es tu opinión.",
+          "casillas": [
+            "Teclas cuadradas",
+            "No se corta ninguna fila"
+          ],
+          "notaPista": "¿Le darías más sitio al alumno y menos a la cuerda? Contesta aunque sea «está bien así»"
         },
         {
           "n": 5,
           "titulo": "El duelo con la animación del centro APAGADA",
-          "ruta": ["Pizarra o PC", "Operaciones", "VS (duelo)", "Antesala del duelo"],
+          "ruta": [
+            "Pizarra o PC",
+            "Operaciones",
+            "VS (duelo)",
+            "Antesala del duelo"
+          ],
           "accion": "En la pantalla de antes de empezar el duelo hay un interruptor para quitar la animación del centro. Con ella apagada los paneles cambian de forma (anchos y bajos) y ahí es donde peor se portaba. Apágala y juega una ronda.",
           "pasos": [
             "Las teclas tienen que seguir CUADRADAS, no aplastadas a lo ancho.",
@@ -90,7 +136,10 @@
             "Pruébalo también con el tema TV Show puesto, que es el que más adornos añade."
           ],
           "espera": "con la animación apagada las teclas siguen cuadradas y se ven las cuatro filas, con y sin tema.",
-          "casillas": ["Sin tema", "Con TV Show"],
+          "casillas": [
+            "Sin tema",
+            "Con TV Show"
+          ],
           "notaPista": "Si algo se aplasta o se corta, di con qué tema y haz una foto"
         }
       ]
@@ -101,7 +150,12 @@
         {
           "n": 6,
           "titulo": "Las fotos de los dos alumnos, a la misma distancia del borde",
-          "ruta": ["PC o pizarra", "Cualquier actividad", "VS (duelo)", "Barra de arriba"],
+          "ruta": [
+            "PC o pizarra",
+            "Cualquier actividad",
+            "VS (duelo)",
+            "Barra de arriba"
+          ],
           "accion": "La ficha del Alumno 1 estaba pegada al borde y la del Alumno 2 no; y sin tema, la del Alumno 2 se iba directamente al centro. Abre un duelo y mira solo la barra de arriba.",
           "pasos": [
             "El duelo tiene que verse como un ESPEJO: la ficha del Alumno 1 en el borde izquierdo y la del Alumno 2 en el derecho, a la misma distancia.",
@@ -109,13 +163,22 @@
             "El botón de pantalla completa (la esquina de arriba a la derecha) no puede tapar la ficha ni los puntos del Alumno 2."
           ],
           "espera": "las dos fichas están a la misma distancia de su borde en los tres temas.",
-          "casillas": ["Por defecto", "TV Show", "Arcade"],
+          "casillas": [
+            "Por defecto",
+            "TV Show",
+            "Arcade"
+          ],
           "notaPista": "Si una está más metida que la otra, di con qué tema y haz una foto de la barra"
         },
         {
           "n": 7,
           "titulo": "Los temas Arcade y TV Show se ven igual que siempre",
-          "ruta": ["PC o pizarra", "Operaciones", "VS (duelo)", "Apariencia"],
+          "ruta": [
+            "PC o pizarra",
+            "Operaciones",
+            "VS (duelo)",
+            "Apariencia"
+          ],
           "accion": "Se sigue cambiando por dentro cómo se pintan los temas. NO debería notarse: si ves algo distinto, es un fallo. Ve cambiando de tema en «Apariencia».",
           "pasos": [
             "Con TV Show: teclas azules a la izquierda y rojas a la derecha con relieve, la chapa de la operación con su color, el medallón «VS» dorado sobresaliendo de la barra.",
@@ -123,7 +186,11 @@
             "Pulsa varias teclas: al pulsar tienen que hundirse, no quedarse planas."
           ],
           "espera": "los dos temas se ven como los recordabas y las teclas se hunden al pulsarlas.",
-          "casillas": ["TV Show igual", "Arcade igual", "Las teclas se hunden"],
+          "casillas": [
+            "TV Show igual",
+            "Arcade igual",
+            "Las teclas se hunden"
+          ],
           "notaPista": "Si algo cambió, di QUÉ pieza (tecla, ✓, borrar, la chapa, el medallón) y con qué tema"
         }
       ]
@@ -134,20 +201,40 @@
       "pruebas": [
         {
           "n": 8,
-          "titulo": "EL RELOJ — NO lo pruebes esta ronda",
-          "ruta": ["—", "—", "—"],
-          "accion": "Tu fallo del cronómetro (el alumno marcaba 15 y el profe 20) ya está localizado: NO es de la web, es un ajuste que falta en el servidor. Hasta que ese ajuste esté puesto, el arreglo no puede funcionar por mucho que lo pruebes. Probarlo ahora sería tirar tu tiempo.",
-          "pasos": [
-            "Marca «No probado» y sigue con la siguiente.",
-            "Te aviso en cuanto el servidor esté puesto y lo metemos en la ronda siguiente."
+          "titulo": "EL RELOJ — ya se puede probar (era del servidor)",
+          "ruta": [
+            "PC (profe) + móvil (alumno)",
+            "Quiz",
+            "En vivo",
+            "Rondas juntas",
+            "Pantalla de la pregunta"
           ],
-          "espera": "nada — esta prueba está en pausa a propósito.",
-          "notaPista": "No hace falta nota"
+          "accion": "Tu fallo del cronómetro (el alumno marcaba 15 y el profe 20) NO era de la web: al servidor le faltaba un permiso para que el navegador pudiera leer su hora, y la app caía al reloj del aparato. Se puso el 25/8 y ya está comprobado que funciona. Ahora hace falta verlo con dos aparatos DE VERDAD. Antes de empezar, mira que el móvil tenga la hora automática ACTIVADA o DESACTIVADA a propósito y apúntalo: si está desactivada y aun así los números coinciden, es la mejor prueba de todas.",
+          "pasos": [
+            "Abre una sala en vivo con un Quiz, entra con el móvil y lanza la primera pregunta.",
+            "En el momento en que aparece, mira los DOS números a la vez (o haz una foto de las dos pantallas juntas).",
+            "Apunta: qué número marca el PC, qué número marca el móvil.",
+            "Repite en la pregunta 2 y en la 3: la vez pasada la 2 salió bien y la 1 y la 3 mal, así que interesa saber si el patrón desapareció.",
+            "Prueba también entrando a la sala DESPUÉS de que el profe haya lanzado la pregunta: era el caso peor."
+          ],
+          "espera": "los dos números son el mismo (±1) en las tres preguntas, incluso entrando tarde.",
+          "notaPista": "Si falla: número del PC, número del móvil, y si la hora automática del móvil estaba activada",
+          "casillas": [
+            "Pregunta 1 igual",
+            "Pregunta 2 igual",
+            "Pregunta 3 igual",
+            "Entrando tarde también"
+          ]
         },
         {
           "n": 9,
           "titulo": "El lápiz y el borrador en la pizarra de verdad",
-          "ruta": ["Pizarra del aula", "Tildes (o Comas)", "Individual", "Pantalla del texto"],
+          "ruta": [
+            "Pizarra del aula",
+            "Tildes (o Comas)",
+            "Individual",
+            "Pantalla del texto"
+          ],
           "accion": "Esto sigue sin el visto bueno de nadie con una pizarra real delante. Es lo único de la lista que no puedo comprobar yo de ninguna manera.",
           "pasos": [
             "Toca «Lápiz» estando ya en lápiz: no tiene que cambiar nada.",
@@ -155,7 +242,11 @@
             "APOYA LA PALMA de la mano en la pizarra mientras escribes con el dedo o el lápiz: no debe borrar ni pintar solo."
           ],
           "espera": "las tres cosas se cumplen en la pizarra del aula.",
-          "casillas": ["Tocar Lápiz no rompe nada", "El borrador borra", "La palma no estropea nada"],
+          "casillas": [
+            "Tocar Lápiz no rompe nada",
+            "El borrador borra",
+            "La palma no estropea nada"
+          ],
           "notaPista": "Qué pizarra es (marca y tamaño) y qué hiciste con la mano cuando falló"
         }
       ]
@@ -167,7 +258,11 @@
         {
           "n": 10,
           "titulo": "Una vuelta libre buscando roturas",
-          "ruta": ["Lo que tengas a mano", "Varias actividades", "El modo que quieras"],
+          "ruta": [
+            "Lo que tengas a mano",
+            "Varias actividades",
+            "El modo que quieras"
+          ],
           "accion": "Sin guion: juega un rato como jugaría un alumno y rompe lo que puedas. Gira el móvil, recarga a mitad, entra tarde a una sala, escribe nombres raros, ponte a pantalla completa y sal.",
           "espera": "nada se queda colgado, en blanco, ni pierde lo que llevabas hecho.",
           "notaPista": "Cuenta cualquier cosa que te haya chirriado, aunque no sepas si es un fallo"

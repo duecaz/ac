@@ -44,7 +44,21 @@ los comandos; el usuario (duecaz) los ejecuta en la Pi.
 | IP LAN | `192.168.1.50` |
 | Acceso | `ssh duecaz@192.168.1.50` (desde Windows PowerShell del usuario) |
 | Repo clonado en la Pi | `~/ac` (para correr `bash ~/ac/tools/check-pb.sh`; actualizar con `git -C ~/ac pull`) |
-| Exposición pública | túnel **cloudflared** + **nginx-proxy-manager** → `https://pb.lanube.uno` |
+| Exposición pública | túnel **cloudflared** → **directo a PocketBase `:8090`** → `https://pb.lanube.uno` |
+
+> **EL NGINX NO ESTÁ EN EL CAMINO DE `pb.lanube.uno`** (comprobado 2026-08-25).
+> Esta fila decía «cloudflared + nginx-proxy-manager», y por eso el primer intento de
+> arreglar el reloj fue a editar el proxy: no habría hecho nada. La Pi SÍ tiene un
+> `nginx_proxy` (jc21/nginx-proxy-manager, puerto 81) pero sirve a OTROS servicios;
+> para `pb.lanube.uno` no hay ningún *proxy host* definido. Cómo se comprueba:
+>
+> ```bash
+> docker exec nginx_proxy sh -c 'ls /data/nginx/proxy_host/; grep -rl pb.lanube.uno /data/nginx/'
+> ```
+> Vacío = el nginx no interviene. Además el túnel es de **token**
+> (`cloudflared tunnel run --token …`), así que el enrutado NO vive en la Pi sino en
+> **Cloudflare → Zero Trust → Networks → Tunnels → Public Hostnames**. Cualquier cosa
+> que haya que tocar «en el servidor» para este dominio se toca en Cloudflare.
 
 ⚠️ **La Pi y este PocketBase están COMPARTIDOS con otros proyectos** (colecciones de
 `aportes` y `equipos_activados` conviven en la misma instancia). NUNCA borrar/renombrar
@@ -69,6 +83,7 @@ Panel: **dash.cloudflare.com → lanube.uno → Speed → Settings → Protocol 
 | **HTTP/2 to Origin** | ON | Entre Cloudflare y la Pi; no afecta al navegador. |
 | **HTTP/3 (with QUIC)** | **OFF** ← apagado el 2026-08-16 | Con él encendido, Chrome abre el flujo SSE (`/api/realtime`) por QUIC y el navegador lo aborta con `ERR_QUIC_PROTOCOL_ERROR` una y otra vez: el profe y los alumnos veían cortes continuos, en las dos pantallas a la vez. **Apagarlo los eliminó por completo** (consola limpia, verificado por el dueño) — o sea que la causa era el camino QUIC, no un corte por inactividad. La app reconectaba y resincronizaba sola, así que la clase nunca perdió datos, pero el marcador iba a tirones. |
 | **Enhanced HTTP/2 Prioritization** | (requiere Pro) | No disponible en free. |
+| **Transform Rule · «Exponer Date (reloj de AulaReto)»** | **PUESTA el 2026-08-25** | *Response Header Transform Rule*: si `http.host eq "pb.lanube.uno"`, añade `Access-Control-Expose-Headers: Date`. **Sin ella el modo EN VIVO va con relojes distintos.** PocketBase manda `Date` en cada respuesta y `core/serverNow.js` (§22-5) la usa como hora común; pero `Date` NO es una cabecera que el navegador deje leer a otro origen salvo que el servidor lo autorice, así que la app recibía `null` y caía al reloj del aparato. Ese era el fallo que el compañero reportaba («el alumno marca 15 y el profe 20»): el arreglo estaba en el código desde v1.51.417 pero INERTE en producción. Se comprueba con `curl.exe -s -D - -o NUL -H "Origin: https://aulareto.com" https://pb.lanube.uno/api/health` — tiene que aparecer `access-control-expose-headers: Date`. |
 | **0-RTT Connection Resumption** | ON | Está encendido y se deja: Cloudflare solo manda datos anticipados en peticiones GET, así que el riesgo de repetición no toca nada que escriba. Si algún día aparece un fallo raro de duplicados en lecturas, es el primer sospechoso. |
 
 **Lo que NO se puede arreglar desde el código**: `EventSource` no permite elegir la
