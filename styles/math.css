@@ -140,18 +140,19 @@
 /* LA TIPOGRAFÍA DE LA CALCULADORA, por token. Arcade la escribía directamente
    sobre `.ww-keypad-q`, `.ww-keypad-display` y `.ww-key` (tres invasiones para
    una sola decisión); ahora declara `--math-font` una vez y estas tres la leen.
-   OJO CON EL RESPALDO, que costó una captura: la TECLA es un `<button>`, y los
-   controles de formulario NO heredan la fuente — el navegador les pone la suya.
-   Medido: hoy el enunciado y el visor salen en la fuente de la página y las
-   cifras de las teclas en **Arial**; la calculadora lleva dos tipografías sin
-   que nadie lo decidiera. Poner `inherit` de respaldo lo «arreglaba» de paso, y
-   eso es una decisión de diseño, no de refactor (§ dueño, 2026-08-25: los
-   criterios de aspecto los elige él). `revert` devuelve exactamente lo que el
-   navegador tenía, así que sin tema no cambia ni un píxel. Unificarlo es cambiar
-   `revert` por `inherit` en esta línea: una decisión de una palabra. */
+   EL RESPALDO ES `inherit`, Y LA HISTORIA IMPORTA. La TECLA es un `<button>` y
+   los controles de formulario no heredan la fuente por su cuenta, así que primero
+   se puso `revert` «para no cambiar nada». Estaba medido… en un entorno donde
+   **Bootstrap no carga**: viene de un CDN y la herramienta de capturas lo
+   sustituía por vacío. Sin él, la tecla cae a la fuente del navegador (Arial) y
+   `revert` parecía inocuo. En producción Bootstrap SÍ carga y su `.btn` deja al
+   botón heredando la fuente de la página; como esta regla (0,2,0) le gana a
+   `.btn` (0,1,0), `revert` habría puesto las cifras en Arial en el sitio real —
+   una regresión invisible desde aquí. `inherit` es lo que ya hace producción.
+   Lección: una medida tomada con media página sin cargar no es una medida. */
 .ww-keypad-q,
 .ww-keypad-display,
-.ww-keypad .ww-key { font-family: var(--math-font, revert); }
+.ww-keypad .ww-key { font-family: var(--math-font, inherit); }
 
 /* EL RÓTULO DEL TEMA — un hueco declarado, no una invasión. Arcade le pone
    «SOLVE!» encima al enunciado con un `::before` escrito sobre la anatomía de

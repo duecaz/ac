@@ -61,13 +61,24 @@ await new Promise(r => setTimeout(r, 700));
 
 const browser = await chromium.launch();
 const shots = [];
+const faltaBootstrap = [];
 
 for (const size of SIZES) {
   const page = await browser.newPage({ viewport: { width: size.width, height: size.height } });
   // Sin red saliente en el sandbox: el confetti (CDN) se sustituye por un módulo
   // vacío para que su fallo no ensucie la captura.
   await page.route('**/esm.sh/**', r => r.fulfill({ contentType: 'application/javascript', body: 'export default function(){}' }));
-  await page.route('**/cdn.jsdelivr.net/**', r => r.fulfill({ contentType: 'text/css', body: '' }));
+  // BOOTSTRAP: se DEJA cargar. Estuvo sustituido por vacío «para no depender de
+  // la red», y con eso las capturas dejaron de parecerse a producción: sin él,
+  // los botones caen a la fuente del navegador, y una comparación 24/24 idéntica
+  // daba por bueno un cambio de tipografía que en el sitio real sí se habría
+  // visto. Si no llega (sandbox sin salida), se AVISA en voz alta al final en vez
+  // de fingir que la captura es la pantalla del profe.
+  let bootstrapOk = false;
+  page.on('response', r => {
+    if (/cdn\.jsdelivr\.net\/.*bootstrap.*\.css/.test(r.url()) && r.ok()) bootstrapOk = true;
+  });
+  faltaBootstrap.push(() => bootstrapOk);
   await page.goto(`${BASE}/teacher.html?backend=local`, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => document.querySelector('#app')?.children.length > 0, { timeout: 20000 });
   // Animaciones y transiciones OFF: una captura no puede depender de en qué
@@ -127,6 +138,11 @@ await browser.close();
 // El servidor sigue vivo: la comparación carga los PNG por HTTP (un canvas no
 // puede leer file:// sin origen). Lo cierra bye() al final.
 console.log(`\n${shots.length} capturas en .shots/${label}/`);
+if (faltaBootstrap.length && !faltaBootstrap.some(f => f())) {
+  console.log('\n⚠  BOOTSTRAP NO CARGÓ (sin salida a la red): estas capturas NO son');
+  console.log('   la pantalla de producción — los botones caen a la fuente del');
+  console.log('   navegador. Sirven para comparar ENTRE ELLAS, no como verdad visual.');
+}
 
 // Comparación con `before` si estamos guardando otra tanda.
 const TOL_PX = 8;          // píxeles sueltos tolerados (antialias del borde)

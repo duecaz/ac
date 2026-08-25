@@ -96,8 +96,18 @@ const clasesDelSelector = (sel) => [...sel.matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)].m
  *  escrito tres veces (escaneo + las dos contra-pruebas) y con eso la
  *  contra-prueba podía acabar validando un criterio distinto del vigilado. */
 /** El SUJETO del selector: la última parte, la que de verdad recibe la pintura.
- *  `.ww-lite .vs-arena::before` → `.vs-arena::before`. */
-const sujetoDe = (sel) => sel.trim().split(/\s+|>|\+|~/).filter(Boolean).pop() || '';
+ *  `.ww-lite .vs-arena::before` → `.vs-arena::before`.
+ *
+ *  SI EL SUJETO NO LLEVA CLASE, manda el compuesto con clase más cercano por la
+ *  izquierda: `.vs-skin-x .ww-key i` pinta el icono que va DENTRO de una tecla,
+ *  y eso es pintar la tecla. Sin esta vuelta, mirar solo la última parte dejaba
+ *  invisible a toda esa familia — y con arcade en tope 0 el comentario prometía
+ *  que «cualquier regla nueva rompe CI», que habría sido mentira. */
+const sujetoDe = (sel) => {
+  const partes = sel.trim().split(/\s+|>|\+|~/).filter(Boolean);
+  for (let i = partes.length - 1; i >= 0; i--) if (partes[i].includes('.')) return partes[i];
+  return partes[partes.length - 1] || '';
+};
 
 /** ¿Esta regla pinta DENTRO de una plantilla? UN solo sitio lo decide: estaba
  *  escrito tres veces (escaneo + las dos contra-pruebas) y con eso la
@@ -207,10 +217,11 @@ ok('el tope refleja la deuda real de hoy (un ratchet suelto deja entrar reglas g
     `.vs-skin-x .${anatomico} { background: red; }`,
     `.skin-x .${anatomico}:hover { transform: none; }`,
     `.ww-player-frame.skin-x .${anatomico} { color: red; }`,
+    `.vs-skin-x .${anatomico} i { color: red; }`,
   ]) {
     assert.ok(esInvasora(reglas(invasora)[0]), `el test debe cazar esta invasión: ${invasora}`);
   }
-  ok(`CONTRA-PRUEBA: escuchar por un ancestro y pintar la propia superficie pasan; pintar «.${anatomico}» se caza (3 formas)`);
+  ok(`CONTRA-PRUEBA: escuchar por un ancestro y pintar la propia superficie pasan; pintar «.${anatomico}» se caza (4 formas, icono interior incluido)`);
 }
 
 console.log(`\ntemaPorTokens.test: ${passed} checks passed`);
