@@ -29,6 +29,16 @@
 //   `tools/matrix-smoke.mjs` mide los tres RENDERIZADOS y exige que coincidan, asi
 //   que un tema que use las escotillas absolutas debe moverlas LAS TRES JUNTAS.
 //   --math-cifra       lo que mide una cifra      default: max(1rem, 11cqmin)
+//   --math-font        tipografia de la calculadora  default: inherit (la del marco)
+//
+//   EL ROTULO DEL TEMA sobre el enunciado (arcade pone «SOLVE!»). Sin el primero,
+//   el pseudo-elemento no existe y no ocupa un pixel:
+//   --math-q-rotulo          texto (`content`)      default: none (no se pinta)
+//   --math-q-rotulo-color    su tinta               default: inherit
+//   --math-q-rotulo-shadow   su sombra              default: none
+//   --math-q-rotulo-size     su tamano              default: .5em
+//   --math-q-rotulo-hueco    hueco bajo el rotulo   default: .4em
+//   --math-q-rotulo-tracking espaciado de letra     default: .15em
 //   --math-head-min    alto de la banda cabecera  default: auto (lo declara el modo)
 //   --math-tope        tope de ancho del bloque   default: 75cqh (Individual: 52cqh)
 //   --key-size         key font-size              default: var(--math-cifra)
