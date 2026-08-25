@@ -27,6 +27,7 @@ import assert from 'node:assert';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { reglas, sujetoDe, selectoresDe } from './helpers/css.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 let passed = 0;
@@ -66,15 +67,11 @@ const MIDEN = ['width', 'min-width', 'max-width', 'height', 'min-height', 'max-h
 const TEXTO_DEL_JUEGO = ['ww-key', 'ww-keypad-q', 'ww-keypad-display', 'ww-keypad-eq',
   'tc-passage', 'tc-mark', 'ww-q', 'ww-phead', 'ww-opt', 'ww-player'];
 
-/** Bloques `selector { … }` de una hoja, sin comentarios. */
-function bloques(css) {
-  const limpio = css.replace(/\/\*[\s\S]*?\*\//g, '');
-  const out = [];
-  const re = /([^{}]+)\{([^{}]*)\}/g;
-  let m;
-  while ((m = re.exec(limpio)) !== null) out.push({ sel: m[1].trim(), cuerpo: m[2] });
-  return out;
-}
+/** Bloques `selector { … }` de una hoja. El lector es COMPARTIDO con
+ *  `tests/temaPorTokens.test.mjs` (tests/helpers/css.mjs): las dos leyes vigilan
+ *  las MISMAS hojas y con dos lectores privados veían reglas distintas — una se
+ *  saltaba lo que hay dentro de `@media`/`@container` y la otra no. */
+const bloques = (css) => reglas(css).map(r => ({ sel: r.selector, cuerpo: r.cuerpo }));
 
 const temas = readdirSync(join(ROOT, 'themes'), { withFileTypes: true })
   .filter(d => d.isDirectory()).map(d => d.name);
@@ -92,7 +89,7 @@ for (const tema of temas) {
     // Un `::before` es un elemento que CREA el tema: la marquesina de la máquina
     // recreativa es suya y puede medir lo que quiera. Lo que no puede es medir
     // la caja donde vive la actividad.
-    const ultimo = sel.split(',').map(s => s.trim().split(/\s+|>/).filter(Boolean).pop() || '')
+    const ultimo = selectoresDe(sel).map(x => sujetoDe(x))
       .filter(u => !u.includes('::'));
     const tocaCompartido = ultimo.some(u =>
       CONTENEDORES_COMPARTIDOS.some(c => u === `.${c}` || u.startsWith(`.${c}.`) || u.startsWith(`.${c}:`)));
@@ -112,7 +109,7 @@ for (const tema of temas) {
   try { css = readFileSync(join(ROOT, ruta), 'utf8'); } catch { continue; }
   for (const { sel, cuerpo } of bloques(css)) {
     if (!/(^|;)\s*font-size\s*:/i.test(cuerpo)) continue;
-    const ultimo = sel.split(',').map(x => x.trim().split(/\s+|>/).filter(Boolean).pop() || '');
+    const ultimo = selectoresDe(sel).map(x => sujetoDe(x));
     if (ultimo.some(u => TEXTO_DEL_JUEGO.some(c => u === `.${c}`))) {
       letra.push(`${ruta} · ${sel.replace(/\s+/g, ' ')} → font-size`);
     }
@@ -176,7 +173,7 @@ ok('ni congelan cuánto crece la letra del juego');
     const out = [];
     for (const { sel, cuerpo } of bloques(css)) {
       if (!/(^|;)\s*color\s*:/i.test(cuerpo)) continue;
-      const finales = sel.split(',').map(x => x.trim().split(/\s+|>/).filter(Boolean).pop() || '');
+      const finales = selectoresDe(sel).map(x => sujetoDe(x));
       for (const par of PAREJAS) {
         if (!finales.some(f => par.elementos.includes(f))) continue;
         // Declarar la pareja entera SÍ vale — es la forma correcta de tener una

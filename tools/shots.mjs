@@ -61,7 +61,7 @@ await new Promise(r => setTimeout(r, 700));
 
 const browser = await chromium.launch();
 const shots = [];
-const faltaBootstrap = [];
+let bootstrapVisto = false;   // ¿ha llegado alguna vez la hoja del CDN?
 
 for (const size of SIZES) {
   const page = await browser.newPage({ viewport: { width: size.width, height: size.height } });
@@ -74,11 +74,9 @@ for (const size of SIZES) {
   // daba por bueno un cambio de tipografía que en el sitio real sí se habría
   // visto. Si no llega (sandbox sin salida), se AVISA en voz alta al final en vez
   // de fingir que la captura es la pantalla del profe.
-  let bootstrapOk = false;
   page.on('response', r => {
-    if (/cdn\.jsdelivr\.net\/.*bootstrap.*\.css/.test(r.url()) && r.ok()) bootstrapOk = true;
+    if (/cdn\.jsdelivr\.net\/.*bootstrap.*\.css/.test(r.url()) && r.ok()) bootstrapVisto = true;
   });
-  faltaBootstrap.push(() => bootstrapOk);
   await page.goto(`${BASE}/teacher.html?backend=local`, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => document.querySelector('#app')?.children.length > 0, { timeout: 20000 });
   // Animaciones y transiciones OFF: una captura no puede depender de en qué
@@ -93,7 +91,6 @@ for (const size of SIZES) {
     const storage = await import('/core/storage.js');
     for (const pl of plantillas) {
       const T = getTemplate(pl.id);
-      if (!T) continue;
       for (const skin of skins) {
         storage.save({
           id: `shot_${pl.id}_${skin}`, template: pl.id, title: pl.titulo,
@@ -113,8 +110,8 @@ for (const size of SIZES) {
     }
   }, { skins: SKINS, plantillas: PLANTILLAS });
 
-  for (const pl of PLANTILLAS)
-  for (const skin of SKINS) {
+  for (const pl of PLANTILLAS) {
+   for (const skin of SKINS) {
     for (const mode of MODES) {
       const name = `${mode.id}-${pl.id}-${skin}-${size.id}.png`;
       try {
@@ -131,6 +128,7 @@ for (const size of SIZES) {
         console.log(`  ⚠ ${name}: ${String(e.message).split('\n')[0]}`);
       }
     }
+   }
   }
   await page.close();
 }
@@ -138,7 +136,7 @@ await browser.close();
 // El servidor sigue vivo: la comparación carga los PNG por HTTP (un canvas no
 // puede leer file:// sin origen). Lo cierra bye() al final.
 console.log(`\n${shots.length} capturas en .shots/${label}/`);
-if (faltaBootstrap.length && !faltaBootstrap.some(f => f())) {
+if (!bootstrapVisto) {
   console.log('\n⚠  BOOTSTRAP NO CARGÓ (sin salida a la red): estas capturas NO son');
   console.log('   la pantalla de producción — los botones caen a la fuente del');
   console.log('   navegador. Sirven para comparar ENTRE ELLAS, no como verdad visual.');

@@ -35,6 +35,7 @@ import assert from 'node:assert';
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { reglas, clasesDe, sujetoDe, selectoresDe } from './helpers/css.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 let passed = 0;
@@ -67,47 +68,36 @@ const CHROME = {
   'scaffold.css':    'el andamio de regiones (maquetación pura: ya lo vigila temaSinMedidas)',
 };
 
-const clasesDe = (css) => new Set(
-  [...css.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)].map(m => m[1]));
+const clasesDeHoja = (css) => new Set(clasesDe(css.replace(/\/\*[\s\S]*?\*\//g, '')));
 
 const HOJAS_DE_JUEGO = readdirSync(join(ROOT, 'styles'))
   .filter(f => f.endsWith('.css') && !CHROME[f]);
+// LA ANATOMÍA SON LAS CLASES QUE LA PLANTILLA PINTA, no las que menciona.
+// Antes valía con que la clase apareciera en cualquier sitio de la hoja, y eso
+// metía en el saco a clases de PLATAFORMA que las plantillas solo usan como
+// ancestro para acotarse: `.ww-player-frame …` (styles/live.css) o `.ww-lite …`
+// (styles/globos.css). Resultado: el tema pintando SU PROPIO marco
+// (`.ww-player-frame.skin-tv-show`, que es justo donde `applySkin()` cuelga la
+// clase) contaba como invadir una plantilla. Se mira el SUJETO de cada regla —
+// la parte que recibe la pintura—, que es exactamente la misma pregunta que le
+// hacemos a los temas. Una ley que se mide a sí misma con otra vara no vale.
 const anatomia = new Set();
 for (const f of HOJAS_DE_JUEGO) {
-  for (const c of clasesDe(readFileSync(join(ROOT, 'styles', f), 'utf8'))) anatomia.add(c);
+  const css = readFileSync(join(ROOT, 'styles', f), 'utf8');
+  for (const r of reglas(css)) {
+    for (const sel of selectoresDe(r.selector)) {
+      for (const c of clasesDe(sujetoDe(sel))) anatomia.add(c);
+    }
+  }
 }
 assert.ok(anatomia.size > 50, `se esperaba descubrir la anatomía de las plantillas, hay ${anatomia.size} clases`);
 ok(`anatomía descubierta: ${anatomia.size} clases de juego en ${HOJAS_DE_JUEGO.length} hojas de plantilla (las de chrome se declaran aparte, con motivo)`);
 
 // ── LAS REGLAS DE CADA TEMA ─────────────────────────────────────────────────
-/** Parte una hoja en reglas {selector, propiedades[]}, sin comentarios. */
-function reglas(css) {
-  const limpio = css.replace(/\/\*[\s\S]*?\*\//g, '');
-  return [...limpio.matchAll(/([^{}@]+)\{([^{}]*)\}/g)].map(m => ({
-    selector: m[1].trim().replace(/\s+/g, ' '),
-    props: m[2].split(';').map(p => p.split(':')[0].trim()).filter(Boolean),
-  }));
-}
-
-/** Las clases que el selector ALCANZA (cualquiera de sus partes). */
-const clasesDelSelector = (sel) => [...sel.matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)].map(m => m[1]);
 
 /** ¿Esta regla pinta DENTRO de una plantilla? UN solo sitio lo decide: estaba
  *  escrito tres veces (escaneo + las dos contra-pruebas) y con eso la
  *  contra-prueba podía acabar validando un criterio distinto del vigilado. */
-/** El SUJETO del selector: la última parte, la que de verdad recibe la pintura.
- *  `.ww-lite .vs-arena::before` → `.vs-arena::before`.
- *
- *  SI EL SUJETO NO LLEVA CLASE, manda el compuesto con clase más cercano por la
- *  izquierda: `.vs-skin-x .ww-key i` pinta el icono que va DENTRO de una tecla,
- *  y eso es pintar la tecla. Sin esta vuelta, mirar solo la última parte dejaba
- *  invisible a toda esa familia — y con arcade en tope 0 el comentario prometía
- *  que «cualquier regla nueva rompe CI», que habría sido mentira. */
-const sujetoDe = (sel) => {
-  const partes = sel.trim().split(/\s+|>|\+|~/).filter(Boolean);
-  for (let i = partes.length - 1; i >= 0; i--) if (partes[i].includes('.')) return partes[i];
-  return partes[partes.length - 1] || '';
-};
 
 /** ¿Esta regla pinta DENTRO de una plantilla? UN solo sitio lo decide: estaba
  *  escrito tres veces (escaneo + las dos contra-pruebas) y con eso la
@@ -123,17 +113,43 @@ const sujetoDe = (sel) => {
  *  menos creíble, y un ratchet en el que no se confía deja de frenar.
  *  Un tema puede ESCUCHAR por un ancestro; lo que no puede es PINTAR la pieza.
  *
- *  Y SI EL SUJETO LLEVA LA CLASE DEL PROPIO TEMA, tampoco invade: es la SUPERFICIE
- *  donde el tema está montado (`.ww-player-frame.skin-tv-show` = el fondo de
- *  estudio sobre su propio marco). Pintar donde te han puesto no es meter la mano
- *  dentro de una plantilla. `.skin-tv-show .ww-opt` sí lo es: ahí el sujeto es la
- *  opción, y la clase del tema solo hace de ancestro. */
-const esDelTema = (sel) => /(^|[.\s])(vs-)?skin-[\w-]+/.test(sujetoDe(sel));
+ *  Y SI EL SUJETO LLEVA LA CLASE DEL PROPIO TEMA Y NINGUNA DE PLANTILLA, tampoco
+ *  invade: es la SUPERFICIE donde el tema está montado
+ *  (`.ww-player-frame.skin-tv-show` = el fondo de estudio sobre su propio marco).
+ *  Pintar donde te han puesto no es meter la mano dentro de una plantilla.
+ *
+ *  LO DE «Y NINGUNA DE PLANTILLA» NO ES ADORNO. La primera versión eximía a
+ *  cualquier sujeto cuyo texto contuviera `skin-`, y con eso
+ *  `.ww-key.skin-arcade { background: red }` pasaba el ratchet: bastaba pegarle
+ *  al selector la clase del propio tema para desaparecer del recuento. Hoy no
+ *  hay ningún elemento de plantilla que lleve clase de tema —`applySkin()` la
+ *  pone en el body, el marco o la arena, que son chrome— pero eso es una
+ *  casualidad de los cinco sitios que llaman, no una regla escrita. Un número
+ *  que se puede maquillar no vigila (lo dice este mismo fichero doce líneas más
+ *  arriba, sobre contar por selector suelto). */
+const esTema = (c) => /^(vs-)?skin-/.test(c);
+const esRelevante = (c) => anatomia.has(c) || esTema(c);
 
-const esInvasora = (r) =>
-  r.props.some(p => !p.startsWith('--')) &&
-  !esDelTema(r.selector) &&
-  clasesDelSelector(sujetoDe(r.selector)).some(c => anatomia.has(c));
+// DÓNDE SE MONTA UN TEMA. `applySkin(nombre, destino)` cuelga la clase en un
+// puñado de sitios y solo en esos: el `body`, el marco del juego
+// (`core/gameFrame.js`, `views/playerView.js`), la arena del duelo y la previsión
+// del editor (`core/editorShell.js`). Pintar AHÍ es pintar la superficie que te
+// han dado; pintar cualquier otra cosa que lleve la clase pegada, no.
+// Es una lista DECLARADA a propósito, con su origen escrito: la alternativa —
+// «cualquier sujeto que mencione `skin-`»— dejaba pasar
+// `.ww-key.skin-arcade { background: red }`, que es colarse pegándole al
+// selector la clase del propio tema.
+const SUPERFICIES = ['ww-player-frame', 'vs-arena', 'ww-play-page'];
+
+const esInvasora = (r) => {
+  if (!r.props.some(p => !p.startsWith('--'))) return false;   // solo tokens: vía legítima
+  const sujeto = sujetoDe(r.selector, esRelevante);
+  const cls = clasesDe(sujeto);
+  const enSuSuperficie = cls.some(esTema) &&
+    (/^body\b/.test(sujeto) || cls.some(c => SUPERFICIES.includes(c)));
+  if (enSuSuperficie) return false;
+  return cls.some(c => anatomia.has(c));
+};
 
 const invasoras = {};
 const temas = readdirSync(join(ROOT, 'themes'), { withFileTypes: true })
@@ -149,7 +165,7 @@ for (const tema of temas) {
     // invasiones se disfrazan de una y el tope bajaría cinco puntos sin haber
     // migrado nada — el ratchet dejaría entrar cinco gratis en la tanda
     // siguiente. Un número que se puede maquillar no vigila.
-    for (const sel of r.selector.split(',').map(x => x.trim()).filter(Boolean)) {
+    for (const sel of selectoresDe(r.selector)) {
       if (esInvasora({ selector: sel, props: r.props })) invasoras[tema].push({ sel, props: pintadas });
     }
   }
@@ -167,13 +183,15 @@ const TOPE = {
   // rótulo «SOLVE!» por `--math-q-rotulo`), y se borraron 5 reglas MUERTAS que
   // pintaban `.vs-body .ww-opt`/`.ww-shape-N`, clases que en el duelo no existen.
   // Verificado con `node tools/shots.mjs`: 24/24 capturas idénticas.
-  // Lo que queda en tv-show son las OPCIONES de Quiz (4 selectores). No se migran
-  // hoy a propósito: la regla base vive en `styles/live.css` y no declara
-  // `border`/`box-shadow`/`transition`, así que el respaldo del token tendría que
-  // ser `revert` — y `revert` en origen de autor se salta TAMBIÉN lo que ponga
-  // Bootstrap, que es de donde sale el aspecto actual del botón. Migrarlas pide
-  // fijar antes el valor real de esas tres propiedades y medirlo; hacerlo al
-  // final de una sesión larga es como se rompió la barra del marcador. TANDA 4.
+  // Lo que queda en tv-show son las OPCIONES de Quiz (4 selectores), y el motivo
+  // de aplazarlas es más hondo de lo que parecía: la opción NO TIENE UNA REGLA
+  // DUEÑA. Se pinta en cinco sitios bajo dos nombres — `.ww-opt`
+  // (styles/player.css, styles/quiz.css) y `.ww-opt-grid .btn` (styles/live.css,
+  // styles/vs.css, styles/player.css) —, y encima player.css está en la lista
+  // CHROME de aquí arriba: media pieza es anatomía y media no, así que este mismo
+  // test la clasifica de forma incoherente. Sin regla dueña, ningún token puede
+  // tener un respaldo con sentido. La TANDA 4 es consolidarla igual que
+  // `styles/math.css` hizo con el teclado, no perseguir cuatro selectores.
   'tv-show': 4,
   'arcade':  0,   // ← nace limpio a partir de aquí: cualquier regla nueva rompe CI
 };
@@ -207,6 +225,7 @@ ok('el tope refleja la deuda real de hoy (un ratchet suelto deja entrar reglas g
     .vs-skin-x .${anatomico} { --algo: 2px; }
     .ww-lite .vs-arena.vs-skin-x::before { animation: none; }
     .ww-player-frame.skin-x { background: navy; }
+    .ww-player-frame.skin-x .card { background: navy; }
     body.skin-x { background: navy; }
   `);
   for (const r of legitimas) {
@@ -218,10 +237,12 @@ ok('el tope refleja la deuda real de hoy (un ratchet suelto deja entrar reglas g
     `.skin-x .${anatomico}:hover { transform: none; }`,
     `.ww-player-frame.skin-x .${anatomico} { color: red; }`,
     `.vs-skin-x .${anatomico} i { color: red; }`,
+    `.${anatomico}.skin-x { background: red; }`,
+    `.skin-x .${anatomico} span.brillo { color: red; }`,
   ]) {
     assert.ok(esInvasora(reglas(invasora)[0]), `el test debe cazar esta invasión: ${invasora}`);
   }
-  ok(`CONTRA-PRUEBA: escuchar por un ancestro y pintar la propia superficie pasan; pintar «.${anatomico}» se caza (4 formas, icono interior incluido)`);
+  ok(`CONTRA-PRUEBA: escuchar por un ancestro y pintar la propia superficie pasan; pintar «.${anatomico}» se caza (6 formas: icono interior, y colarse pegándole la clase del tema al sujeto)`);
 }
 
 console.log(`\ntemaPorTokens.test: ${passed} checks passed`);

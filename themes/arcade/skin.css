@@ -9,15 +9,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
 /* Fuente de píxeles reutilizable (con respaldo monospace si no carga la web). */
+/* La pila de fuentes, UNA vez. Estaba escrita dos veces (aquí y en el token de la
+   calculadora) con el comentario en medio diciendo que el token era el único
+   sitio: cambiarla obligaba a acordarse de las dos. */
+.vs-skin-arcade { --math-font: "Press Start 2P", "Courier New", ui-monospace, monospace; }
 .vs-skin-arcade,
 .vs-skin-arcade .vss-name, .vs-skin-arcade .vss-label, .vs-skin-arcade .vss-score,
 .vs-skin-arcade .vss-badge, .vs-skin-arcade .vs-tug-label,
 .vs-skin-arcade .vs-celeb-label, .vs-skin-arcade .vs-celeb-name {
-  font-family: "Press Start 2P", "Courier New", ui-monospace, monospace;
+  font-family: var(--math-font);
 }
-/* La calculadora la pedía por su anatomía (tres selectores dentro de Operaciones
-   para una sola decisión). Un token, y la plantilla la reparte. */
-.vs-skin-arcade { --math-font: "Press Start 2P", "Courier New", ui-monospace, monospace; }
 
 /* ── Arena: fondo oscuro + rejilla de neón en perspectiva + viñeta ─────────── */
 .vs-skin-arcade {

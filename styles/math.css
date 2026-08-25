@@ -140,34 +140,15 @@
 /* LA TIPOGRAFÍA DE LA CALCULADORA, por token. Arcade la escribía directamente
    sobre `.ww-keypad-q`, `.ww-keypad-display` y `.ww-key` (tres invasiones para
    una sola decisión); ahora declara `--math-font` una vez y estas tres la leen.
-   EL RESPALDO ES `inherit`, Y LA HISTORIA IMPORTA. La TECLA es un `<button>` y
-   los controles de formulario no heredan la fuente por su cuenta, así que primero
-   se puso `revert` «para no cambiar nada». Estaba medido… en un entorno donde
-   **Bootstrap no carga**: viene de un CDN y la herramienta de capturas lo
-   sustituía por vacío. Sin él, la tecla cae a la fuente del navegador (Arial) y
-   `revert` parecía inocuo. En producción Bootstrap SÍ carga y su `.btn` deja al
-   botón heredando la fuente de la página; como esta regla (0,2,0) le gana a
-   `.btn` (0,1,0), `revert` habría puesto las cifras en Arial en el sitio real —
-   una regresión invisible desde aquí. `inherit` es lo que ya hace producción.
-   Lección: una medida tomada con media página sin cargar no es una medida. */
+   El respaldo es `inherit` A PROPÓSITO: la tecla es un `<button>` y los controles
+   de formulario no heredan la fuente solos. `revert` (devolver la del navegador)
+   parecía más conservador y NO lo es — en producción Bootstrap deja al botón
+   heredando, así que habría cambiado la tipografía en el sitio real. La historia
+   completa, en `tools/shots.mjs`: se midió con Bootstrap sin cargar. */
 .ww-keypad-q,
 .ww-keypad-display,
 .ww-keypad .ww-key { font-family: var(--math-font, inherit); }
 
-/* EL RÓTULO DEL TEMA — un hueco declarado, no una invasión. Arcade le pone
-   «SOLVE!» encima al enunciado con un `::before` escrito sobre la anatomía de
-   Operaciones. Es decoración legítima del tema, así que la plantilla le OFRECE
-   el sitio: sin `--math-q-rotulo` el pseudo-elemento no existe (`content: none`)
-   y no ocupa ni un píxel. */
-.ww-keypad-q::before {
-  content: var(--math-q-rotulo, none);
-  display: block;
-  margin-bottom: var(--math-q-rotulo-hueco, .4em);
-  letter-spacing: var(--math-q-rotulo-tracking, .15em);
-  font-size: var(--math-q-rotulo-size, .5em);
-  color: var(--math-q-rotulo-color, inherit);
-  text-shadow: var(--math-q-rotulo-shadow, none);
-}
 
 .ww-keypad-q {
   flex: 1 1 auto;   /* se lleva el ancho que sobra tras el hueco de respuesta */
@@ -187,6 +168,27 @@
   box-shadow: var(--math-q-shadow, none);
   text-shadow: var(--math-q-text-shadow, none);
   text-align: center; line-height: 1.1;
+}
+
+/* EL RÓTULO DEL TEMA — un hueco declarado, no una invasión. Arcade le pone
+   «SOLVE!» encima al enunciado con un `::before` escrito sobre la anatomía de
+   Operaciones. Es decoración legítima del tema, así que la plantilla le OFRECE
+   el sitio: sin `--math-q-rotulo` el pseudo-elemento no existe (`content: none`)
+   y no ocupa ni un píxel. */
+.ww-keypad-q::before {
+  content: var(--math-q-rotulo, none);
+  display: block;
+  /* Hueco y espaciado van FIJOS: se ofrecieron como tokens y no los pedía nadie.
+     Este fichero ya tuvo que retirar `--key-escala` y compañía por lo mismo
+     (arriba); un mando que nadie usa no es flexibilidad, es superficie que
+     mantener. El TAMAÑO sí queda por token, y no por si acaso: en `math.css`
+     ningún `font-size` puede ir literal —lo exige el ratchet de §3, que trata
+     esta hoja como ejemplar— y quitarlo rompió CI al instante. */
+  margin-bottom: .4em;
+  letter-spacing: .15em;
+  font-size: var(--math-q-rotulo-size, .5em);
+  color: var(--math-q-rotulo-color, inherit);
+  text-shadow: var(--math-q-rotulo-shadow, none);
 }
 
 .ww-keypad-eq { opacity: var(--math-eq-opacity, .55); color: var(--math-eq-color, inherit); }
