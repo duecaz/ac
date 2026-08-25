@@ -410,15 +410,11 @@ body.skin-tv-show .card,
    forma 3 (turquesa) daba 1,7:1 y sobre la 4 (naranja) 1,9:1. La tortura no la
    veía porque solo juega el modo Individual; ahora lo caza el escáner de
    `tests/styles.test.mjs`, que no depende de que nadie renderice la pantalla. */
-.vs-skin-tv-show .vs-body .ww-opt {
-  border: none; border-radius: .85rem; font-weight: 800;
-  padding: .5em .65em;
-  box-shadow: 0 4px 0 rgba(0,0,0,.5);
-}
-.vs-skin-tv-show .vs-body .ww-shape-1 { background: linear-gradient(180deg, #ff4d72, #d11540); }
-.vs-skin-tv-show .vs-body .ww-shape-2 { background: linear-gradient(180deg, #4d8cff, #1a52e0); }
-.vs-skin-tv-show .vs-body .ww-shape-3 { background: linear-gradient(180deg, #2fe0bf, #0f9e85); }
-.vs-skin-tv-show .vs-body .ww-shape-4 { background: linear-gradient(180deg, #ffa64d, #e06f00); }
+/* AQUÍ HABÍA CINCO REGLAS MUERTAS (§30, borradas el 2026-08-25), gemelas de las
+   de arcade: `.vs-body .ww-opt` y `.vs-body .ww-shape-N` no existen en el duelo
+   —esas clases las emite solo el player Individual de Quiz— y la ronda del duelo
+   emite `.vs-opt.rq-opt`. El color de las opciones en el duelo viene de los
+   tokens `--ww-shape-N`, no de aquí. Comprobado montando la pantalla. */
 
 /* ════════════════════════════ RESPONSIVE ══════════════════════════════════
    Container query 'vs' (definida en styles/vs.css). Retrato / pantallas

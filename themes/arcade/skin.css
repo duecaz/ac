@@ -12,10 +12,12 @@
 .vs-skin-arcade,
 .vs-skin-arcade .vss-name, .vs-skin-arcade .vss-label, .vs-skin-arcade .vss-score,
 .vs-skin-arcade .vss-badge, .vs-skin-arcade .vs-tug-label,
-.vs-skin-arcade .ww-keypad-q, .vs-skin-arcade .ww-keypad-display, .vs-skin-arcade .ww-key,
 .vs-skin-arcade .vs-celeb-label, .vs-skin-arcade .vs-celeb-name {
   font-family: "Press Start 2P", "Courier New", ui-monospace, monospace;
 }
+/* La calculadora la pedía por su anatomía (tres selectores dentro de Operaciones
+   para una sola decisión). Un token, y la plantilla la reparte. */
+.vs-skin-arcade { --math-font: "Press Start 2P", "Courier New", ui-monospace, monospace; }
 
 /* ── Arena: fondo oscuro + rejilla de neón en perspectiva + viñeta ─────────── */
 .vs-skin-arcade {
@@ -185,41 +187,49 @@
 }
 .vs-skin-arcade .vs-body { --vs-done-fg: #eafcff; --vs-done-muted: rgba(255,255,255,.6); }
 
-/* ── Teclado numérico (Operaciones) ───────────────────────────────────────── */
-.vs-skin-arcade .ww-keypad-q {
-  text-align: center; color: #ffd400;
-    text-shadow: 0 0 6px rgba(255,170,0,.7);
-  border: 2px solid rgba(255,212,0,.45); border-radius: .45rem;
-  background: rgba(0,0,0,.35); padding: .45em .3em;
+/* ── Teclado numérico (Operaciones) — TODO POR TOKENS (tanda 3) ────────────
+   Aquí había once reglas escritas SOBRE la anatomía de Operaciones
+   (`.ww-keypad-q`, `.ww-key`, `.ww-key-ok`…). El tema no reformaba nada: solo
+   quería otros colores, otro borde y otra letra — justo lo que un token hace.
+   Ahora se declaran valores y la plantilla los reparte; el pixel es el mismo
+   (verificado con `node tools/shots.mjs`). El azul/rojo por lado sigue saliendo
+   de redeclarar el token EN EL CONTENEDOR del panel, sin conocer el DOM. */
+.vs-skin-arcade {
+  --math-q-color: #ffd400;
+  --math-q-text-shadow: 0 0 6px rgba(255,170,0,.7);
+  --math-q-border: 2px solid rgba(255,212,0,.45);
+  --math-q-radius: .45rem;
+  --math-q-bg: rgba(0,0,0,.35);
+  --math-q-pad: .45em .3em;
+  /* El rótulo del plató: la plantilla ofrece el hueco, el tema pone el texto. */
+  --math-q-rotulo: "SOLVE!";
+  --math-q-rotulo-color: #ff2e88;
+  --math-q-rotulo-shadow: 0 0 6px rgba(255,46,136,.7);
+  --math-eq-color: rgba(255,255,255,.4);
+
+  --display-fg: #39ff7a;
+  --display-text-shadow: 0 0 8px rgba(57,255,122,.7);
+  --display-bg: rgba(0,0,0,.6);
+  --display-radius: .35rem;
+
+  --key-fg: #eafcff;
+  --key-bg: rgba(34,211,238,.10);
+  --key-border: 2px solid rgba(34,211,238,.5);
+  --key-radius: .4rem;
+  --key-shadow: inset 0 0 8px rgba(34,211,238,.15);
+  --key-text-shadow: 0 0 4px rgba(255,255,255,.3);
+  --key-fn-bg: rgba(255,255,255,.05);
+  --key-ok-bg: #0e7a3a;
+  --key-ok-border-color: #39ff7a;
+  --key-ok-fg: #eafff0;
+  --key-ok-shadow: 0 0 12px rgba(57,255,122,.6), inset 0 0 8px rgba(57,255,122,.3);
 }
-.vs-skin-arcade .ww-keypad-q::before {
-  content: "SOLVE!"; display: block; margin-bottom: .4em; letter-spacing: .15em;
-  font-size: .5em; color: #ff2e88; text-shadow: 0 0 6px rgba(255,46,136,.7);
-}
-.vs-skin-arcade .ww-keypad-eq { color: rgba(255,255,255,.4); }
-.vs-skin-arcade .ww-keypad-display {
-  color: #39ff7a; text-shadow: 0 0 8px rgba(57,255,122,.7);
-  background: rgba(0,0,0,.6); border-radius: .35rem;
-  }
-/* El resplandor va TAMBIÉN por token (además de pintarse aquí, que es deuda de
-   la tanda 3): al pulsar, la regla `:active` de la plantilla usa `--key-shadow`
-   y sin declararlo la tecla se quedaba plana durante el toque. */
-.vs-skin-arcade { --key-shadow: inset 0 0 8px rgba(34,211,238,.15); }
-.vs-skin-arcade .vs-panel.vs-right { --key-shadow: inset 0 0 8px rgba(255,59,107,.15); }
-.vs-skin-arcade .ww-key {
-  color: #eafcff; background: rgba(34,211,238,.10);
-  border: 2px solid rgba(34,211,238,.5); border-radius: .4rem;
-  box-shadow: inset 0 0 8px rgba(34,211,238,.15);
-  text-shadow: 0 0 4px rgba(255,255,255,.3);
-  }
-.vs-skin-arcade .vs-panel.vs-right .ww-key {
-  background: rgba(255,59,107,.10); border-color: rgba(255,59,107,.5);
-  box-shadow: inset 0 0 8px rgba(255,59,107,.15);
-}
-.vs-skin-arcade .ww-key-fn { background: rgba(255,255,255,.05); }
-.vs-skin-arcade .ww-key-ok {
-  background: #0e7a3a; border-color: #39ff7a; color: #eafff0;
-  box-shadow: 0 0 12px rgba(57,255,122,.6), inset 0 0 8px rgba(57,255,122,.3);
+/* El panel de la derecha es ROJO: mismo vocabulario, otro valor, y ni una regla
+   que sepa que dentro hay un teclado. */
+.vs-skin-arcade .vs-panel.vs-right {
+  --key-bg: rgba(255,59,107,.10);
+  --key-border: 2px solid rgba(255,59,107,.5);
+  --key-shadow: inset 0 0 8px rgba(255,59,107,.15);
 }
 
 /* ── Otras plantillas en VS (Quiz/Tildes…) — texto legible sobre la pantalla ─ */
@@ -242,11 +252,14 @@
    `#fff` que había aquí pisaba su propia respuesta: 1,4:1 sobre el amarillo,
    1,5:1 sobre el lima, 1,8:1 sobre el cian — el peor contraste del repo, y en
    la pantalla del duelo. Con el token sube a 8-10:1. */
-.vs-skin-arcade .vs-body .ww-opt { border-radius: .5rem; box-shadow: 0 3px 0 rgba(0,0,0,.5); }
-.vs-skin-arcade .vs-body .ww-shape-1 { background: #ff2e88; }
-.vs-skin-arcade .vs-body .ww-shape-2 { background: #22d3ee; }
-.vs-skin-arcade .vs-body .ww-shape-3 { background: #a3e635; }
-.vs-skin-arcade .vs-body .ww-shape-4 { background: #ffd400; }
+/* AQUÍ HABÍA CINCO REGLAS MUERTAS (§30, borradas el 2026-08-25). Pintaban
+   `.vs-body .ww-opt` y `.vs-body .ww-shape-N` — clases que en el DUELO no existen:
+   `.ww-opt`/`.ww-shape-N` las emite SOLO el player Individual de Quiz
+   (`templates/quiz/player.js`), mientras que la ronda compartida que usan duelo,
+   equipos y en vivo emite `.vs-opt.rq-opt` (`core/roundRender.js`). Comprobado en
+   el DOM montado, no leyendo: los hijos de la rejilla son `BUTTON.btn.vs-opt`.
+   Las opciones del duelo SÍ salen con los colores del tema — pero por los tokens
+   `--ww-shape-N`, que es la vía buena. Estas cinco no hacían nada. */
 
 /* ── Pantalla de resultado / celebración ──────────────────────────────────── */
 .vs-skin-arcade .vs-celeb-label { letter-spacing: .25em; }

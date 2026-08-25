@@ -190,15 +190,12 @@
    choice options fit inside the narrow side panels at any orientation.
    ══════════════════════════════════════════════════════════════════════════ */
 .vs-body .ww-opt-grid { gap: .4rem; }
-/* LAS DOS FORMAS DE PINTAR UNA OPCIÓN, EL MISMO TAMAÑO. Aquí solo estaba el
-   botón de la rejilla; `.ww-opt` (la otra manera de pintar la misma opción) se
-   quedaba con el tamaño de proyector de `live.css`, así que dos opciones de la
-   misma pregunta podían salir de tamaños distintos según cómo las pintara la
-   plantilla. Equipos ya las llevaba juntas (styles/teams.css). Es el mismo
-   principio que la medida madre de la calculadora: lo que el alumno ve como una
-   sola cosa no puede tener dos orígenes. */
-.vs-body .ww-opt-grid .btn,
-.vs-body .ww-opt {
+/* CORRECCIÓN (2026-08-25): ayer añadí aquí `.vs-body .ww-opt` diciendo que era
+   «la otra manera de pintar la misma opción». No lo comprobé, y es FALSO: en el
+   duelo no existe ningún `.ww-opt` — esa clase la emite solo el player Individual
+   de Quiz, y la ronda compartida emite `.vs-opt.rq-opt`. Era un selector muerto,
+   justo lo que la ley §30 prohíbe. Se queda solo el que sí pinta. */
+.vs-body .ww-opt-grid .btn {
   font-size: clamp(.7rem, 2.4cqw, 1rem);
   padding: .4em .45em;
   font-weight: 600;

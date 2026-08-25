@@ -31,8 +31,18 @@ const OUT = join(ROOT, '.shots', label);
 mkdirSync(OUT, { recursive: true });
 
 // Las combinaciones que la deuda §3 pide verificar: los dos modos de pantalla
-// compartida × los skins con CSS propio × las dos orientaciones. Operaciones
-// (math) es la plantilla del TECLADO, que es lo que se está unificando.
+// compartida × los skins con CSS propio × las dos orientaciones.
+//
+// DOS PLANTILLAS, no una. Empezó solo con Operaciones (el teclado, que era lo que
+// se estaba unificando) y con eso la red no cubría la mitad del trabajo: la
+// TANDA 3 de la migración de temas es justo Quiz —las opciones que lee la clase—
+// y se habría migrado a ciegas, que es como se rompió la barra del marcador
+// (256k píxeles). Una red de capturas que no ve la pantalla que estás tocando no
+// es una red.
+const PLANTILLAS = [
+  { id: 'math', titulo: 'Capturas · Operaciones' },
+  { id: 'quiz', titulo: 'Capturas · Quiz' },
+];
 const SKINS = ['default', 'tv-show', 'arcade'];
 const MODES = [
   { id: 'vs',    route: (id) => `#/vs/${id}`,    ready: '.vs-arena' },
@@ -65,32 +75,41 @@ for (const size of SIZES) {
   await page.addStyleTag({ content: `*, *::before, *::after {
     animation: none !important; transition: none !important; caret-color: transparent !important; }` });
 
-  // Una actividad de Operaciones por skin (el skin viaja en presentation).
-  await page.evaluate(async (skins) => {
+  // Una actividad por plantilla y skin (el skin viaja en presentation).
+  await page.evaluate(async ({ skins, plantillas }) => {
     await import('/core/registerTemplates.js');
     const { getTemplate } = await import('/core/registry.js');
     const storage = await import('/core/storage.js');
-    const T = getTemplate('math');
-    for (const skin of skins) {
-      const a = {
-        id: `shot_math_${skin}`, template: 'math', title: 'Capturas · Operaciones',
-        content: T.meta.defaultContent ? T.meta.defaultContent() : {},
-        rules: T.meta.defaultRules ? T.meta.defaultRules() : {},
-        scoring: T.meta.defaultScoring ? T.meta.defaultScoring() : {},
-        presentation: { skin, background: 'none' },
-        updatedAt: '2026-01-01T00:00:00.000Z',
-      };
-      storage.save(a);
+    for (const pl of plantillas) {
+      const T = getTemplate(pl.id);
+      if (!T) continue;
+      for (const skin of skins) {
+        storage.save({
+          id: `shot_${pl.id}_${skin}`, template: pl.id, title: pl.titulo,
+          content: T.meta.defaultContent ? T.meta.defaultContent() : {},
+          // SIN BARAJAR. Quiz mezcla las opciones en cada montaje, así que dos
+          // capturas de la MISMA versión salían con «Madrid» en sitios distintos
+          // y la comparación cantaba 2.500 píxeles de cambio sin que nadie
+          // hubiera tocado nada. Una red que da falsos positivos se acaba
+          // ignorando, y entonces ya no protege de los verdaderos.
+          rules: { ...(T.meta.defaultRules ? T.meta.defaultRules() : {}),
+                   shuffleOptions: false, randomize: false },
+          scoring: T.meta.defaultScoring ? T.meta.defaultScoring() : {},
+          presentation: { skin, background: 'none' },
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        });
+      }
     }
-  }, SKINS);
+  }, { skins: SKINS, plantillas: PLANTILLAS });
 
+  for (const pl of PLANTILLAS)
   for (const skin of SKINS) {
     for (const mode of MODES) {
-      const name = `${mode.id}-math-${skin}-${size.id}.png`;
+      const name = `${mode.id}-${pl.id}-${skin}-${size.id}.png`;
       try {
         await page.evaluate(() => { location.hash = '#/mine'; });
         await page.waitForTimeout(120);
-        await page.evaluate(h => { location.hash = h; }, mode.route(`shot_math_${skin}`));
+        await page.evaluate(h => { location.hash = h; }, mode.route(`shot_${pl.id}_${skin}`));
         await page.waitForSelector('.ww-mode-start', { timeout: 9000 });
         await page.click('.ww-mode-start');
         await page.waitForSelector(mode.ready, { timeout: 9000 });

@@ -95,9 +95,35 @@ const clasesDelSelector = (sel) => [...sel.matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)].m
 /** ¿Esta regla pinta DENTRO de una plantilla? UN solo sitio lo decide: estaba
  *  escrito tres veces (escaneo + las dos contra-pruebas) y con eso la
  *  contra-prueba podía acabar validando un criterio distinto del vigilado. */
+/** El SUJETO del selector: la última parte, la que de verdad recibe la pintura.
+ *  `.ww-lite .vs-arena::before` → `.vs-arena::before`. */
+const sujetoDe = (sel) => sel.trim().split(/\s+|>|\+|~/).filter(Boolean).pop() || '';
+
+/** ¿Esta regla pinta DENTRO de una plantilla? UN solo sitio lo decide: estaba
+ *  escrito tres veces (escaneo + las dos contra-pruebas) y con eso la
+ *  contra-prueba podía acabar validando un criterio distinto del vigilado.
+ *
+ *  MIRA EL SUJETO, NO EL SELECTOR ENTERO (afinado 2026-08-25). Antes bastaba con
+ *  que CUALQUIER parte del selector nombrara una clase de plantilla, y eso contaba
+ *  como deuda cosas que no lo son: `.ww-lite .vs-arena.vs-skin-arcade::before`
+ *  pinta la MARQUESINA del tema (chrome suyo) y solo mencionaba `ww-lite` —una
+ *  clase que aparece en `globos.css`— como ancestro. Igual
+ *  `.ww-player-frame.skin-tv-show .card`, que pinta una tarjeta del marco.
+ *  Siete de las veinticuatro «invasiones» eran esto: ruido que hacía el ratchet
+ *  menos creíble, y un ratchet en el que no se confía deja de frenar.
+ *  Un tema puede ESCUCHAR por un ancestro; lo que no puede es PINTAR la pieza.
+ *
+ *  Y SI EL SUJETO LLEVA LA CLASE DEL PROPIO TEMA, tampoco invade: es la SUPERFICIE
+ *  donde el tema está montado (`.ww-player-frame.skin-tv-show` = el fondo de
+ *  estudio sobre su propio marco). Pintar donde te han puesto no es meter la mano
+ *  dentro de una plantilla. `.skin-tv-show .ww-opt` sí lo es: ahí el sujeto es la
+ *  opción, y la clase del tema solo hace de ancestro. */
+const esDelTema = (sel) => /(^|[.\s])(vs-)?skin-[\w-]+/.test(sujetoDe(sel));
+
 const esInvasora = (r) =>
   r.props.some(p => !p.startsWith('--')) &&
-  clasesDelSelector(r.selector).some(c => anatomia.has(c));
+  !esDelTema(r.selector) &&
+  clasesDelSelector(sujetoDe(r.selector)).some(c => anatomia.has(c));
 
 const invasoras = {};
 const temas = readdirSync(join(ROOT, 'themes'), { withFileTypes: true })
@@ -125,12 +151,21 @@ for (const tema of temas) {
 // también si BAJAN sin actualizar el tope (para que el ratchet no se quede
 // mintiendo hacia arriba y deje entrar reglas gratis).
 const TOPE = {
-  // TANDA 2 (v1.51.573) bajó tv-show de 28 a 7: todo Operaciones migrado a
-  // tokens, verificado con `tools/shots.mjs` (11/12 capturas idénticas y la
-  // otra a 2 píxeles de antialias). Lo que queda es Quiz (`ww-opt`) y la
-  // tarjeta/marco → TANDA 3.
-  'tv-show': 8,   // se cuenta por selector suelto, no por regla (ver abajo)
-  'arcade':  16,   // TANDA 3: su Operaciones va con la tipografía Press Start 2P
+  // TANDA 2 (v1.51.573) bajó tv-show de 28 a 7: todo Operaciones migrado a tokens.
+  // TANDA 3 (v1.51.588) deja ARCADE EN CERO: su calculadora entera pasó a tokens
+  // (11 reglas → declaraciones, incluida la tipografía por `--math-font` y el
+  // rótulo «SOLVE!» por `--math-q-rotulo`), y se borraron 5 reglas MUERTAS que
+  // pintaban `.vs-body .ww-opt`/`.ww-shape-N`, clases que en el duelo no existen.
+  // Verificado con `node tools/shots.mjs`: 24/24 capturas idénticas.
+  // Lo que queda en tv-show son las OPCIONES de Quiz (4 selectores). No se migran
+  // hoy a propósito: la regla base vive en `styles/live.css` y no declara
+  // `border`/`box-shadow`/`transition`, así que el respaldo del token tendría que
+  // ser `revert` — y `revert` en origen de autor se salta TAMBIÉN lo que ponga
+  // Bootstrap, que es de donde sale el aspecto actual del botón. Migrarlas pide
+  // fijar antes el valor real de esas tres propiedades y medirlo; hacerlo al
+  // final de una sesión larga es como se rompió la barra del marcador. TANDA 4.
+  'tv-show': 4,
+  'arcade':  0,   // ← nace limpio a partir de aquí: cualquier regla nueva rompe CI
 };
 const filas = temas.map(t => ({ tema: t, n: (invasoras[t] || []).length, tope: TOPE[t] }));
 console.log('\n  reglas de tema que PINTAN dentro de la anatomía de una plantilla:');
@@ -160,13 +195,22 @@ ok('el tope refleja la deuda real de hoy (un ratchet suelto deja entrar reglas g
     .vs-skin-x .vs-left { --key-bg: red; --key-fg: white; }
     .vs-skin-x .vss-bar { height: 46px; background: navy; }
     .vs-skin-x .${anatomico} { --algo: 2px; }
+    .ww-lite .vs-arena.vs-skin-x::before { animation: none; }
+    .ww-player-frame.skin-x { background: navy; }
+    body.skin-x { background: navy; }
   `);
   for (const r of legitimas) {
     assert.ok(!esInvasora(r), `esta regla es legítima y el test la acusa: ${r.selector}`);
   }
-  assert.ok(esInvasora(reglas(`.vs-skin-x .${anatomico} { background: red; }`)[0]),
-    'el test debe cazar una invasión nueva');
-  ok(`CONTRA-PRUEBA: los tokens por contenedor y el chrome del tema pasan; pintar «.${anatomico}» se caza`);
+  // Y las tres formas de invadir que SÍ tienen que caer.
+  for (const invasora of [
+    `.vs-skin-x .${anatomico} { background: red; }`,
+    `.skin-x .${anatomico}:hover { transform: none; }`,
+    `.ww-player-frame.skin-x .${anatomico} { color: red; }`,
+  ]) {
+    assert.ok(esInvasora(reglas(invasora)[0]), `el test debe cazar esta invasión: ${invasora}`);
+  }
+  ok(`CONTRA-PRUEBA: escuchar por un ancestro y pintar la propia superficie pasan; pintar «.${anatomico}» se caza (3 formas)`);
 }
 
 console.log(`\ntemaPorTokens.test: ${passed} checks passed`);
