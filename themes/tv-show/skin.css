@@ -53,7 +53,7 @@ body.skin-tv-show .card,
   box-shadow: 0 5px 0 #b87400, 0 8px 18px rgba(255,164,0,.45);
 }
 
-/* Cuadrícula tipo concurso (quiz / live) — fichas 3D con color de forma. */
+/* Cuadrícula tipo concurso (quiz / live) — fichas 3D, PEDIDAS por tokens `--opt-*`. */
 /* La ficha 3D se PIDE con el vocabulario que publica `styles/opcion.css`, no se
    escribe dentro de la opción. Eran las CUATRO reglas que le quedaban a este
    tema dentro de la anatomía de una plantilla — la deuda que congelaba el

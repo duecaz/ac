@@ -9,7 +9,7 @@
 Los tokens son la INTERFAZ entre el tema y el juego (ley §3: el skin
 cambia tokens, la actividad los consume). Este es el contrato completo.
 
-**206 tokens** en 17 familias.
+**205 tokens** en 17 familias.
 
 ## `--bs-*` (23)
 
@@ -258,11 +258,10 @@ cambia tokens, la actividad los consume). Este es el contrato completo.
 | `--vss-name-size` | styles/vs.css · themes/arcade/skin.css · themes/tv-show/skin.css | styles/vs.css |
 | `--vss-score-size` | styles/vs.css · themes/arcade/skin.css · themes/tv-show/skin.css | styles/vs.css |
 
-## `--ws-*` (3)
+## `--ws-*` (2)
 
 | Token | Lo DECLARA | Lo CONSUME |
 |---|---|---|
-| `--ws-cell` | styles/wordsearch.css | styles/wordsearch.css |
 | `--ws-cols` | templates/wordsearch/editor.js · templates/wordsearch/player.js | styles/wordsearch.css |
 | `--ws-lado` | styles/wordsearch.css | styles/wordsearch.css |
 

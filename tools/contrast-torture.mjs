@@ -19,28 +19,28 @@
 //
 // Umbral 3:1 = AA para texto grande, el MISMO que usa la matriz: una sola vara.
 import { createRequire } from 'node:module';
-import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { medirLegibilidad } from './helpers/legibilidad.mjs';
+import { abrirServidor } from './helpers/servidorSonda.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PW || '/opt/node22/lib/node_modules/playwright');
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const PORT = Number(process.env.PORT || 8479);
-const BASE = `http://127.0.0.1:${PORT}`;
 const MIN = 3.0;
 const verLista = process.argv.includes('--lista');
 
-const server = spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'],
-  { cwd: ROOT, stdio: 'ignore' });
-const bye = (code) => { try { server.kill(); } catch {} process.exit(code); };
+// Servidor con puerto EFÍMERO y verificación de árbol (tools/helpers/servidorSonda.mjs).
+// Las tres sondas que usaban este bloque compartían el puerto 8479 a mano: dos a
+// la vez —o un zombi de una pasada anterior— y la segunda medía lo que servía la
+// primera, callando.
+const { base: BASE, cerrar } = await abrirServidor();
+const bye = (code) => { cerrar(); process.exit(code); };
 process.on('SIGINT', () => bye(130));
 // Un fallo a mitad dejaba el servidor vivo y la pasada SIGUIENTE medía contra el
 // repo viejo sin enterarse — un medidor que miente es peor que no medir (R6).
 process.on('uncaughtException', (e) => { console.error('\n❌ TORTURA ABORTADA:', e?.message || e); bye(1); });
 process.on('unhandledRejection', (e) => { console.error('\n❌ TORTURA ABORTADA:', e?.message || e); bye(1); });
-await new Promise(r => setTimeout(r, 700));
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });

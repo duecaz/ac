@@ -29,17 +29,15 @@
 //
 // Requiere: python3 (servidor estático) y el Chromium preinstalado.
 import { createRequire } from 'node:module';
-import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { writeFileSync, readFileSync } from 'node:fs';
+import { abrirServidor } from './helpers/servidorSonda.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PW || '/opt/node22/lib/node_modules/playwright');
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'docs', 'piezas-por-actividad.md');
-const PORT = Number(process.env.PORT || 8479);
-const BASE = `http://127.0.0.1:${PORT}`;
 const argv = process.argv.slice(2);
 const check = argv.includes('--check');
 const only = argv.filter(a => !a.startsWith('--'));
@@ -118,11 +116,13 @@ const PIEZAS = `(sel) => {
   };
 }`;
 
-const server = spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'],
-  { cwd: ROOT, stdio: 'ignore' });
-const bye = (code) => { try { server.kill(); } catch {} process.exit(code); };
+// Servidor con puerto EFÍMERO y verificación de árbol (tools/helpers/servidorSonda.mjs).
+// Las tres sondas que usaban este bloque compartían el puerto 8479 a mano: dos a
+// la vez —o un zombi de una pasada anterior— y la segunda medía lo que servía la
+// primera, callando.
+const { base: BASE, cerrar } = await abrirServidor();
+const bye = (code) => { cerrar(); process.exit(code); };
 process.on('SIGINT', () => bye(130));
-await new Promise(r => setTimeout(r, 700));
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: FORMAS[0].vp });

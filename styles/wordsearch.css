@@ -52,9 +52,7 @@
   border-radius: 10px;
   overflow: hidden;
   /* EL LADO DE UNA REJILLA CUADRADA = el menor de (ancho del carril, alto del
-     carril), y se consigue con `aspect-ratio` + `max-height`, sin unidades de
-     consulta: si el alto recorta, el navegador recalcula el ancho para mantener
-     la proporción. Aquí ponía `min(100%, 100cqb, 580px)` y las dos partes
+     carril), preguntados con `cqi`/`cqb` al carril. Aquí ponía `min(100%, 100cqb, 580px)` y las dos partes
      estaban mal:
      · `100cqb` se medía contra `.ww-ws` —toda la pantalla, incluida la reserva
        del HUD y el banco de palabras—, no contra ESTE carril: daba de más;
@@ -68,10 +66,16 @@
      dimensiones del carril y quedarse con la menor. */
   --ws-lado: min(100cqi, 100cqb);
   width: var(--ws-lado);
-  /* EL LADO DE LA CELDA, PUBLICADO. La letra tiene que crecer con SU celda, no
-     con el contenedor: sin esto la rejilla creció y las letras se quedaron
-     donde estaban (ver `.ws-cell`). */
-  --ws-cell: calc(var(--ws-lado) / var(--ws-cols, 15));
+  /* LA LETRA SE CALCULA AQUÍ, UNA VEZ, y las 225 celdas la HEREDAN.
+     Una custom property no calcula nada: guarda una ristra de tokens que se
+     sustituye EN EL PUNTO DE USO. Publicar `--ws-cell` y leerlo desde `.ws-cell`
+     parecía limpio y significaba resolver `min(100cqi,100cqb)/15*.45` doscientas
+     veinticinco veces por recálculo —cada una subiendo a buscar el contenedor—,
+     en la ruta que corre en cada `resize`. `font-size` se HEREDA: calcularlo en
+     la rejilla es el mismo píxel por 1/225 del trabajo.
+     Y sigue siendo proporcional a la CELDA (lado ÷ columnas), que es lo que
+     importaba: sin eso la rejilla crecía y las letras no. */
+  font-size: max(9px, calc(var(--ws-lado) / var(--ws-cols, 15) * .45));
   aspect-ratio: 1;
   touch-action: none;
   user-select: none;
@@ -86,14 +90,12 @@
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  /* PROPORCIONAL A LA CELDA, con piso de legibilidad y SIN TECHO. Era
-     `clamp(.45rem, 2cqmin, 1.05rem)`: medido contra el CONTENEDOR y con un tope
+  /* La letra la pone la REJILLA y aquí se hereda (ver arriba). Era
+     `clamp(.45rem, 2cqmin, 1.05rem)`: medida contra el CONTENEDOR y con un tope
      fijo de 16.8px, así que al soltar el techo de la rejilla (v1.51.600) la sopa
      creció y las letras NO — el relleno de la celda cayó del ~45 % al ~20 % y en
      la pizarra quedó más grande y menos legible que antes. Justo el defecto §3
-     que ese mismo cambio venía a quitar, una capa más abajo. El `max()` es un
-     PISO, que §3 permite; el techo es lo que prohíbe. */
-  font-size: max(9px, calc(var(--ws-cell, 2cqmin) * .45));
+     que ese mismo cambio venía a quitar, una capa más abajo. */
   line-height: 1;
   background: var(--ww-card-bg, #fff);
   color: var(--ww-card-fg, var(--ww-fg, #212529));
@@ -217,8 +219,13 @@
      contenido se lo pediría a él: colapsa a 4×4 px). No hace falta: aquí el
      hueco es más alto que ancho POR DEFINICIÓN de este `@container`, así que el
      lado corto es el ancho y la rejilla no tiene nada que preguntar. */
-  .ww-ws-grid-wrap { flex: 0 0 auto; container-type: normal; }
-  .ww-ws-grid { width: 100%; }
+  .ww-ws-grid-wrap { flex: 0 0 auto; container-type: inline-size; }
+  /* Se sobreescribe la VARIABLE, no el ancho: de `--ws-lado` salen el ancho Y el
+     tamaño de letra, así que fijar solo `width: 100%` dejaba la letra calculada
+     contra `.ww-ws` —toda la pantalla— y solo daba bien porque ahí coinciden los
+     anchos. `inline-size` basta y no tiene la circularidad de `size`: mide el
+     ancho, que no depende del contenido. */
+  .ww-ws-grid { --ws-lado: 100cqi; }
   .ww-ws-words {
     flex-direction: row;
     flex-wrap: wrap;

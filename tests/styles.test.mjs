@@ -8,7 +8,7 @@
 //
 // No es un formateador: es un RATCHET (trinquete). La deuda actual queda
 // congelada en BASELINE (por archivo, por valor) y NO puede crecer; cualquier
-// actividad NUEVA (archivo sin baseline) debe nacer limpia. math.css y quiz.css
+// actividad NUEVA (archivo sin baseline) debe nacer limpia. math.css y opcion.css
 // son los ejemplares: 0 violaciones, baseline vacío.
 //
 // Run: node tests/styles.test.mjs
@@ -26,7 +26,7 @@ const STYLES = join(dirname(fileURLToPath(import.meta.url)), '..', 'styles');
 // en `player.css` (EXCLUIDO como chrome) y media en `live.css` (GAME), así que
 // este mismo ratchet la clasificaba de dos maneras a la vez.
 const GAME = ['ballsort', 'crossword', 'diagram', 'globos', 'match', 'math', 'memory', 'wheel',
-  'opcion', 'question-live', 'quiz', 'textCorrection', 'vs', 'teams', 'wordsearch', 'live'];
+  'opcion', 'question-live', 'textCorrection', 'vs', 'teams', 'wordsearch', 'live'];
 // Chrome/paletas explícitamente EXCLUIDOS del ratchet (no son "el juego").
 // `live` SALIÓ de esta lista en v1.51.423. Estaba clasificado como chrome y
 // dentro vive el JUEGO: `.ww-opt-grid` son las opciones de respuesta que la
@@ -50,8 +50,28 @@ const blank = s => s.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '))
 
 // Recorre el CSS por bloques {sel { decls }} rastreando el selector para saltar
 // los scopes de editor. Devuelve { fonts:Set, colors:Set } de VIOLACIONES.
+// El TERCER argumento de un `clamp(a, b, c)` — el techo — o null si no lo es.
+// Se parte a mano respetando paréntesis: `clamp(1rem, calc(2cqmin + 1px), 2rem)`
+// tiene comas dentro que un `split(',')` destrozaría.
+function topeDeClamp(v) {
+  const m = /clamp\s*\(/.exec(v);
+  if (!m) return null;
+  let prof = 0, arg = '', args = [];
+  for (let i = m.index + m[0].length; i < v.length; i++) {
+    const c = v[i];
+    if (c === '(') prof++;
+    else if (c === ')') { if (!prof) break; prof--; }
+    if (c === ',' && !prof) { args.push(arg); arg = ''; continue; }
+    arg += c;
+  }
+  args.push(arg);
+  return args.length === 3 ? args[2].trim() : null;
+}
+// ¿Es un valor CONGELADO? `em` no cuenta: escala con el texto del elemento.
+const esLiteral = (v) => /\d(px|rem)\b/.test(v) && !/cq|vw|vh|vmin|vmax|%/.test(v);
+
 function scan(css) {
-  const fonts = new Set(), colors = new Set();
+  const fonts = new Set(), colors = new Set(), ceilings = new Set();
   const re = /([^{}]+)\{([^{}]*)\}/g;
   let m;
   while ((m = re.exec(css))) {
@@ -61,10 +81,38 @@ function scan(css) {
     // font-size congelado
     for (const d of body.matchAll(/font-size\s*:\s*([^;}]+)/g)) {
       const v = d[1].trim();
+      // UN `clamp()` CON TERCER ARGUMENTO LITERAL ES UN TECHO DISFRAZADO DE PISO,
+      // y era el agujero por el que se colaba lo que esta ley existe para cazar.
+      // El escaneo dejaba pasar cualquier valor con una unidad responsiva EN
+      // CUALQUIER POSICIÓN, así que `clamp(.45rem, 2cqmin, 1.05rem)` pasaba por
+      // «piso responsivo» — y era el tope que congelaba las letras de la Sopa en
+      // 16.8px mientras la rejilla crecía a 1316px en una pizarra 4K (v1.51.601).
+      // Un `max()` sí es un piso de verdad; en un `clamp` hay que mirar el TERCER
+      // argumento, que es donde vive el techo.
+      const techo = topeDeClamp(v);
+      if (techo) { if (esLiteral(techo)) fonts.add(v.replace(/\s+/g, ' ')); continue; }
       if (/cq|vw|vh|vmin|vmax|%/.test(v)) continue;                       // responsivo
-      if (/(max|clamp)\s*\(/.test(v) && /cq|vw|vh|vmin|%/.test(v)) continue; // piso responsivo
       if (/\bvar\(/.test(v)) continue;                                    // derivado de var
       if (/\d(px|rem|em)\b/.test(v)) fonts.add(v.replace(/\s+/g, ' '));
+    }
+    // TECHOS DE TAMAÑO. §3 lo prohíbe desde siempre («nada con tamaño fijo que
+    // congele el crecimiento»), pero la ley solo vigilaba tipografía y color: el
+    // `max-width: 580px` de la rejilla de la Sopa dejaba la actividad clavada
+    // con hueco para 718px, y ninguna red lo vio. Se congela lo que hay hoy y no
+    // puede crecer — el mismo trato que la deuda de fuentes y colores.
+    for (const d of body.matchAll(/(?:^|[;\s])(max-width|max-height|width|height)\s*:\s*([^;}]+)/g)) {
+      const v = d[2].trim();
+      if (/\bvar\(/.test(v)) continue;                       // derivado de un token
+      // `max(12px, Xcqmin)` es un PISO de legibilidad, que §3 permite expresamente.
+      if (/max\s*\(/.test(v) && !/clamp\s*\(/.test(v) && /cq|vw|vh|vmin|vmax|%/.test(v)) continue;
+      // `calc(100vh - 70px)` tampoco: es una RESTA sobre una medida del viewport
+      // (descontar una barra), no un tope. Un techo LIMITA; esto acompaña.
+      if (/calc\s*\(/.test(v) && !/clamp\s*\(|min\s*\(/.test(v) && /cq|vw|vh|vmin|vmax|%/.test(v)) continue;
+      // `em` NO congela: escala con el propio texto del elemento (iconos).
+      if (!/\d(px|rem)\b/.test(v)) continue;
+      const tope = topeDeClamp(v);
+      if (tope && !esLiteral(tope)) continue;                // clamp con techo responsivo
+      ceilings.add(`${d[1]}:${v.replace(/\s+/g, ' ')}`);
     }
     // color pintable hardcodeado (no token)
     for (const d of body.matchAll(/(?:^|[;\s])(color|background|background-color)\s*:\s*([^;}]+)/g)) {
@@ -76,7 +124,7 @@ function scan(css) {
       }
     }
   }
-  return { fonts, colors };
+  return { fonts, colors, ceilings };
 }
 
 // ── BASELINE: deuda registrada, congelada. No agregar entradas nuevas: si una
@@ -106,25 +154,66 @@ const BASELINE = {
                    colors: ['background:#f8f9fa', 'color:#4f46e5', 'color:#6c757d', 'color:#adb5bd'] },
 };
 
+// ── TECHOS, congelados aparte (v1.51.602) ────────────────────────────────────
+// Dos agujeros que la ley §3 prohibía desde siempre y esta red no miraba:
+//   · `clamps` — un `clamp(a, b, LITERAL)` es un TECHO disfrazado de piso. El
+//     escaneo dejaba pasar cualquier valor con una unidad responsiva en
+//     CUALQUIER posición, así que los 25 de aquí abajo eran invisibles. Uno de
+//     ellos —`clamp(.45rem, 2cqmin, 1.05rem)` en la Sopa— congelaba las letras
+//     en 16.8px mientras la rejilla crecía a 1316px en una pizarra 4K.
+//   · `ceilings` — el `max-width: 580px` de esa misma rejilla la dejaba clavada
+//     con hueco para 718px. La ley solo vigilaba tipografía y color.
+// Se aplazó dos veces con «destaparía media app». Medido: son 61 entradas, no
+// media app — y entre ellas están cuatro rejillas con el MISMO defecto que la
+// Sopa (memory 720px, question-live 720/480/460, ballsort 1100px). Ninguna se
+// arregla aquí: cada una cambia píxeles y necesita su propia medición. Se
+// CONGELAN para que dejen de ser invisibles y solo puedan bajar.
+const TECHOS = {
+  ballsort: { ceilings: ['height:12px', 'height:40px', 'max-width:1100px', 'width:12px', 'width:16px', 'width:40px'] },
+  crossword: { clamps: ['clamp(.63rem, 1.5cqw, .78rem)', 'clamp(.68rem, 1.7cqw, .9rem)'], ceilings: ['width:clamp(130px, 24cqw, 240px)'] },
+  diagram: { ceilings: ['height:20px', 'width:20px'] },
+  match: { ceilings: ['height:20px', 'height:54px', 'width:20px'] },
+  memory: { ceilings: ['height:90px', 'max-width:720px'] },
+  'question-live': { ceilings: ['height:60px', 'height:90px', 'max-width:480px', 'max-width:720px', 'width:min(100%, 460px)'] },
+  'textCorrection': { clamps: ['clamp(.68rem, 2.1cqmin, 1.05rem)', 'clamp(.7rem, 2.3cqmin, 1.4rem)', 'clamp(.8rem, 2.1cqmin, 1.3rem)', 'clamp(.9rem, 2.6cqmin, 1.7rem)', 'clamp(1.5rem, 4.5vw, 2.6rem)'] },
+  vs: { clamps: ['clamp(.85rem, 9cqw, 1.4rem)', 'clamp(.7rem, 2.4cqw, 1rem)', 'clamp(.85rem, 4cqw, 1.3rem)', 'clamp(.8rem, 1.6cqw, 1.15rem)', 'clamp(1.1rem, 2.4cqw, 1.8rem)', 'clamp(1rem, 2cqw, 1.6rem)', 'clamp(2rem, 7vw, 3.6rem)', 'var(--vss-label-size, clamp(.5rem, 1.3cqh, 1.3rem))', 'var(--vss-name-size, clamp(.78rem, 2.2cqh, 2.4rem))', 'var(--vss-score-size, clamp(1.5rem, 3.8cqh, 4.2rem))'], ceilings: ['height:2.2rem', 'height:4px', 'height:52px', 'height:76px', 'height:clamp(90px, 32cqh, 280px)', 'max-width:18rem', 'max-width:420px', 'max-width:560px', 'max-width:640px', 'width:2.2rem', 'width:52px'] },
+  teams: { clamps: ['clamp(.8rem, 4cqmin, 1.3rem)', 'clamp(.9rem, 1.8vw, 1.4rem)', 'clamp(1.1rem, 6cqmin, 2.2rem)', 'clamp(1rem, 5cqmin, 1.8rem)'], ceilings: ['max-width:340px', 'max-width:900px'] },
+  wordsearch: { clamps: ['clamp(.72rem, 1.4cqw, .88rem)', 'clamp(1.2rem, 4cqmin, 2rem)', 'clamp(1rem, 3cqmin, 1.4rem)'], ceilings: ['max-width:150px'] },
+  live: { clamps: ['clamp(1.5rem, 7vw, 2.5rem)', 'clamp(2rem, 8vw, 5rem)'], ceilings: ['height:120px', 'height:160px', 'height:220px'] },
+};
+
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
 const newViolations = [];
 
 for (const g of GAME) {
   const css = blank(readFileSync(join(STYLES, `${g}.css`), 'utf8'));
-  const { fonts, colors } = scan(css);
+  const { fonts, colors, ceilings } = scan(css);
   const base = BASELINE[g] || { fonts: [], colors: [] };
-  const baseFonts = new Set(base.fonts), baseColors = new Set(base.colors);
+  const techos = TECHOS[g] || {};
+  const baseFonts = new Set([...base.fonts, ...(techos.clamps || [])]);
+  const baseColors = new Set(base.colors);
+  const baseTechos = new Set(techos.ceilings || []);
   for (const v of fonts) if (!baseFonts.has(v)) newViolations.push(`${g}.css: font-size fija sin token responsivo → "${v}"`);
   for (const v of colors) if (!baseColors.has(v)) newViolations.push(`${g}.css: color pintable hardcodeado (usa var(--ww-*)) → "${v}"`);
+  for (const v of ceilings) if (!baseTechos.has(v)) newViolations.push(`${g}.css: TECHO fijo que congela el crecimiento (§3) → "${v}"`);
 }
 
-// math.css / quiz.css son los ejemplares: deben quedar SIEMPRE limpios.
-for (const clean of ['math', 'quiz']) {
-  const { fonts, colors } = scan(blank(readFileSync(join(STYLES, `${clean}.css`), 'utf8')));
-  assert.strictEqual(fonts.size + colors.size, 0, `${clean}.css debe seguir 100% relativo + tokenizado (ejemplar)`);
+// LOS EJEMPLARES deben quedar SIEMPRE limpios — y tienen que tener algo que
+// mirar: `quiz.css` estaba en esta lista y se quedó SIN REGLAS al mudarse la
+// opción a `opcion.css` (v1.51.599). Una aserción sobre un fichero vacío no
+// puede fallar: llevaba una versión dando verde gratis mientras anunciaba que
+// vigilaba al ejemplar. Ahora el ejemplar es el que de verdad enseña algo, y se
+// comprueba que TIENE reglas antes de celebrar que están limpias.
+for (const clean of ['math', 'opcion']) {
+  const css = blank(readFileSync(join(STYLES, `${clean}.css`), 'utf8'));
+  const { fonts, colors, ceilings } = scan(css);
+  assert.ok((css.match(/\{/g) || []).length >= 3,
+    `${clean}.css es el ejemplar y está vacío: una aserción sobre la nada no vigila nada`);
+  assert.strictEqual(fonts.size + colors.size + ceilings.size, 0,
+    `${clean}.css debe seguir 100% relativo + tokenizado, sin techos (ejemplar)`);
 }
-ok('math.css y quiz.css siguen limpios (0 fija / 0 color hardcodeado)');
+ok('math.css y opcion.css siguen limpios y con contenido (0 fija / 0 color / 0 techo)');
 
 // ── THEMES en el escáner de px (§3, R3) ──────────────────────────────────────
 // Los skins definen su PALETA (colores propios, por diseño: el escáner de arriba

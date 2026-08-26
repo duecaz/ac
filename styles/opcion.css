@@ -45,17 +45,24 @@
   padding: 1rem;
   text-align: left;
   white-space: normal;
-  box-shadow: var(--opt-shadow, none);
+  /* `box-shadow` NO se repite aquí: la regla de la rejilla ya lo declara con el
+     mismo token y el mismo respaldo, y todo `.ww-opt` es también `.btn` dentro
+     de `.ww-opt-grid`. Duplicarlo era dejar dos sitios que mantener a la vez
+     para un solo hecho visual — el mismo fallo que esta hoja vino a terminar. */
   transition: var(--opt-transition, transform .1s, box-shadow .1s);
 }
 .ww-player .ww-opt-grid .ww-opt:hover:not(:disabled) {
   transform: var(--opt-hover, translateY(-2px));
   box-shadow: var(--opt-shadow-hover, 0 4px 12px rgba(0,0,0,.1));
-  filter: var(--opt-hover-filter, none);
+  /* (el `filter` del hover lo pone la rejilla, para las dos superficies) */
 }
 .ww-player .ww-opt-grid .ww-opt:active:not(:disabled) {
   transform: var(--opt-press, translateY(-2px));
-  box-shadow: var(--opt-shadow-active, var(--opt-shadow-hover, 0 4px 12px rgba(0,0,0,.1)));
+  /* Misma cadena que la rejilla: el pulsado cae al reposo. La anidación
+     `--opt-shadow-active → --opt-shadow-hover` obligaba a copiar el literal del
+     hover aquí, y CSS no sabe referirse al defecto de otro token: cambiar uno
+     dejaba al otro con el valor viejo y nada lo cazaba. */
+  box-shadow: var(--opt-shadow-active, var(--opt-shadow, none));
 }
 .ww-player .ww-opt-grid .ww-opt:disabled { opacity: .9; }
 

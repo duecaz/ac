@@ -153,7 +153,7 @@ escribirse; si necesita violar una prohibición, está en la capa equivocada.
   archivo+valor; actividad nueva (sin entrada) nace limpia; al arreglar deuda se
   BORRA su entrada; nunca se añade una violación para callar el test.
 - **Dónde se explica**: `docs/estilos-de-actividad.md` (contrato + ejemplares
-  `math.css`/`quiz.css` con assert duro a cero; **§3b0 los CUATRO roles del
+  `math.css`/`opcion.css` con assert duro a cero; **§3b0 los CUATRO roles del
   player** —`edu-hud` · `edu-topbar` · `edu-sec--*` · `edu-send`— y §3b andamio
   de regiones).
 - **La DIAGRAMACIÓN también es norma** (2026-08-17): un indicador nunca crea
@@ -200,6 +200,37 @@ escribirse; si necesita violar una prohibición, está en la capa equivocada.
   quedaba uno, y sin red el tema Arcade se quedaba en Courier. La fuente está
   ahora en `vendor/press-start-2p-5.3.0/` (subconjunto latin) y la red mira las
   tres. Una red que cubre una puerta de tres no protege: enseña a confiar.
+- **EL RATCHET DE §3 YA MIRA LOS TECHOS** (v1.51.602). Se aplazó dos veces con
+  «destaparía media app». Medido: **61 entradas**, no media app. Dos agujeros:
+  · un **`clamp(a, b, LITERAL)` es un techo disfrazado de piso** — el escaneo
+    dejaba pasar cualquier valor con una unidad responsiva en CUALQUIER posición,
+    así que 25 topes de tipografía eran invisibles, incluido el que congelaba las
+    letras de la Sopa (y `clamp(.7rem, 2.4cqw, 1rem)` en la opción del duelo, el
+    tamaño que §29 condenó en v1.51.423);
+  · y los **techos de tamaño** no se miraban en absoluto: 36 en las hojas de
+    juego, entre ellos CUATRO rejillas con el mismo defecto que la Sopa
+    (`memory` 720px · `question-live` 720/480/460 · `ballsort` 1100px).
+  Ninguno se arregla aquí —cada uno cambia píxeles y pide su medición—: se
+  CONGELAN en `TECHOS` para que dejen de ser invisibles y solo puedan bajar.
+  `max(12px, Xcqmin)` sigue siendo un piso legal, y `calc(100vh - 70px)` tampoco
+  es un techo: es una resta sobre el viewport, no un tope. `opcion.css` nace con
+  cero. **Aplazar una ley por miedo a lo que destape es la ley sin escribir**:
+  el ratchet existe justamente para que la deuda se vea sin tener que arreglarla
+  hoy — este repo ya lo hizo con `live.css` en v1.51.423 y no se rompió nada.
+- **UNA ASERCIÓN SOBRE UN FICHERO VACÍO NO VIGILA NADA** (v1.51.602). Al mudar la
+  opción a su hoja, `styles/quiz.css` se quedó sin reglas — y el test seguía
+  proclamando que «el ejemplar sigue limpio: 0 fija, 0 color». Verde gratis
+  durante una versión, y encima servido en tres páginas con su `?v=`. Borrado; el
+  ejemplar es ahora `opcion.css`, y antes de celebrar que está limpio se
+  comprueba que TIENE reglas.
+- **UNA SONDA QUE MIENTE ES PEOR QUE NINGUNA — y la idea vivía encerrada.**
+  El puerto efímero + la verificación de «esto es ESTE árbol» nacieron en la
+  sonda de la opción, la única herramienta que nadie importa: el sitio donde no
+  arregla nada. Ahora es `tools/helpers/servidorSonda.mjs` y lo usan también
+  `piezas`, `contrast-torture` y `hoja-smoke` — que **compartían el puerto 8479 a
+  mano**, así que dos a la vez (o un zombi) y la segunda medía lo que servía la
+  primera. Quedan nueve herramientas con puerto fijo propio, ya sin colisión,
+  pendientes de migrar.
 - **SOLTAR UN TECHO ARRIBA SIN SOLTARLO ABAJO EMPEORA LA PANTALLA** (v1.51.601).
   Al quitarle el techo a la rejilla de la Sopa, la rejilla creció… y las letras
   NO: `.ws-cell` seguía con `clamp(.45rem, 2cqmin, 1.05rem)`, medido contra el

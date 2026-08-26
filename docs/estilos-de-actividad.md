@@ -20,7 +20,7 @@
   - Superficie: `--ww-bg`, `--ww-bg-soft`, `--ww-fg`
   - Tarjeta / pieza: `--ww-card-bg`, `--ww-card-fg`, `--ww-card-border`
   - Acentos y formas: `--ww-accent`, `--ww-shape-1..4`
-  - Especializados: `--key-*` (teclado), `--display-*` (visor), `--math-*`
+  - Especializados: `--key-*` (teclado), `--display-*` (visor), `--math-*`, `--opt-*` (la opción de respuesta, `styles/opcion.css`)
 - **`styles/player.css`** — `#ww-player-widget { container-type: size }`: es el ANCESTRO de
   consulta, por eso los hijos pueden medir en `cqmin/cqw/cqh` y escalar con el marco.
 
@@ -89,7 +89,7 @@ Lo mínimo que hay que saber al escribir CSS de actividad:
 
 ## 3. Ejemplares y checklist
 
-- **Ejemplares**: `styles/math.css` y `styles/quiz.css` — 0 fija, 0 color a pelo. Cópialos
+- **Ejemplares**: `styles/math.css` y `styles/opcion.css` — 0 fija, 0 color a pelo, 0 techo. Cópialos
   de referencia. La suite los verifica limpios en cada corrida.
 - **Checklist al crear una actividad**:
   1. ¿Alguna `font-size` en `px/rem/em` sin `cq/%` ni piso `max()`/`clamp()`? → relativízala.
