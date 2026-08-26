@@ -6,7 +6,8 @@ import { rid } from '../../core/ids.js';
 import { renderQuizPlayer } from './player.js';
 import { renderQuizEditor } from './editor.js';
 import { scoreQuizSubmission } from './scorer.js';
-import { renderChoiceRound, shuffle } from '../../core/roundRender.js';
+import { renderChoiceRound } from '../../core/roundRender.js';
+import { shuffle } from '../../core/azar.js';
 import { escapeHtml } from '../../core/html.js';
 import { adoptForQuiz } from '../../kernel/content/qaAdapt.js';
 

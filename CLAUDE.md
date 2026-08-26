@@ -389,10 +389,11 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   `core/deadlineTicker.js`, con `clock.now()` y guard `while` para que un reloj zombi no repinte
   sobre la fase siguiente). Las vistas de Live ya NO usan `Date.now()` crudo → son testeables con
   tiempo congelado (`tests/deadlineTicker.test.mjs`).
-- **Azar**: gemelo del reloj — en `kernel/` y `templates/` se INYECTA (primitivo
-  `azar.random()` de `core/azar.js`, con `semilla(n)`; o `rnd = Math.random` en la
-  firma), nunca `Math.random()` en su sitio; `shuffle()` es su dueño único. Fuera:
-  confeti, IDs, jitter y los PIN (impredecibles a propósito). Regla `azar-primitivo`.
+- **Azar**: gemelo del reloj — el primitivo `azar.random()` (`core/azar.js`, con
+  `semilla(n)`) y su `shuffle()`, dueño único del barajado. `Math.random` no se
+  nombra en NINGÚN sitio salvo lo declarado en `ALLOW` con su motivo: IDs,
+  confeti, partículas, jitter y los PIN (impredecibles a propósito). Un defecto
+  que esquiva el primitivo ES el primitivo sin usar. Regla `azar-primitivo`.
 - **Ficha de ocupación del escenario** (`core/stageClaim.js`, §23): quien monta un modo
   RECLAMA el stage (`claimStage`, lo hace `runMode()` y los dos shells de
   `core/soloPlayer.js`); un timer tardío pregunta `alive()` antes de repintar. Nunca

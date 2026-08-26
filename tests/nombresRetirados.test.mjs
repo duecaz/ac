@@ -21,6 +21,7 @@ import assert from 'node:assert';
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, relative } from 'node:path';
+import { TERCEROS } from './helpers/inventario.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 let passed = 0;
@@ -36,7 +37,7 @@ const RETIRADOS = ['kahoot'];
 const ERRADICADOR = join('core', 'migrate.js');
 
 const EXTS = ['.js', '.mjs', '.css', '.html', '.json', '.md', '.sh', '.ps1'];
-const SALTAR = ['node_modules', '.git', '.shots', 'docs/historico', 'vendor'];
+const SALTAR = [...TERCEROS, 'docs/historico'];
 
 const ficheros = [];
 {

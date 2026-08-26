@@ -17,14 +17,13 @@ import assert from 'node:assert';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, relative } from 'node:path';
+import { TERCEROS } from './helpers/inventario.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
 
-// `vendor/` fuera: es código de terceros copiado tal cual (ver vendor/README.md).
-// Escanearlo no es vigilar NUESTRO codigo, es opinar sobre el de Bootstrap.
-const SKIP_DIRS = new Set(['node_modules', '.git', 'docs', 'scratchpad', 'tests', 'tools', 'vendor']);
+const SKIP_DIRS = new Set([...TERCEROS, 'docs', 'tests', 'tools']);
 function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {
     if (SKIP_DIRS.has(name)) continue;

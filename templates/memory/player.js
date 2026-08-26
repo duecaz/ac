@@ -5,7 +5,7 @@ import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { scoreMemorySubmission } from './scorer.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
-import { shuffle } from '../../core/roundRender.js';
+import { shuffle } from '../../core/azar.js';
 import { pairComplete } from '../../core/contentModels/pairs.js';
 import { hudHtml } from '../../core/playerHud.js';
 

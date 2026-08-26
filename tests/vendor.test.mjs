@@ -20,51 +20,51 @@
 //
 // Run: node tests/vendor.test.mjs
 import assert from 'node:assert';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { hojasDelRepo, leer, paginasDelRepo, ROOT } from './helpers/inventario.mjs';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
-const HTML = ['index.html', 'teacher.html', 'student.html', 'embed.html'];
+// Las páginas se DERIVAN del disco, no se escriben. La lista literal de «las
+// cuatro» estaba copiada en tres sitios y ya se había quedado corta: `test.html`
+// —la hoja de pruebas del equipo, que sirve aulareto.com/test— no estaba en
+// ninguna, así que ni esta red ni el índice de tokens la habían mirado nunca.
+const HTML = paginasDelRepo();
+const HOJAS = hojasDelRepo();
+const FUENTES = new Map([...HTML, ...HOJAS].map(f => [f, leer(f)]));
 
 // ── 1) Nada de la app se carga desde fuera ───────────────────────────────────
 // Se mira el ORIGEN, no el nombre: la red tiene que cazar también el CDN nuevo
 // que a nadie se le ha ocurrido todavía.
 //
-// Y se miran las TRES puertas, no solo la evidente. La primera versión de esta
-// red solo leía `href`/`src` de los cuatro HTML y por eso daba verde con
-// `themes/arcade/skin.css` importando la fuente de píxeles de
-// fonts.googleapis.com: en un aula sin internet el tema Arcade se quedaba en
-// Courier mientras la ley proclamaba «cero recursos externos». Una red que
-// mira una sola puerta enseña a confiar en una promesa que no cubre.
+// Esta red va por su TERCERA forma, y las dos primeras fallaron igual: por mirar
+// menos de lo que decían mirar.
+//   1ª (v1.51.594): solo `href`/`src` de los HTML → daba verde con
+//      `themes/arcade/skin.css` importando la fuente de píxeles de
+//      fonts.googleapis.com. Sin internet, Arcade se quedaba en Courier mientras
+//      la ley proclamaba «cero recursos externos».
+//   2ª (v1.51.596): tres «puertas» enumeradas, pero una era postiza —la rama
+//      `@import url(` está enteramente subsumida por la rama `url(`— y NINGUNA
+//      cazaba la forma sin paréntesis, `@import "https://…";`. Un regex que
+//      NOMBRA un caso que no trata aparte se lee como cobertura que no está.
+// Ahora son DOS formas de verdad distintas, cada una con su contra-prueba, sobre
+// TODO el texto de páginas y hojas (así entra también un `url(https://…)` dentro
+// de un `<style>`, que ninguna versión anterior veía).
+const EXTERNO = String.raw`https?:\/\/[^"')\s]+`;
+const FORMAS = [
+  { que: 'url(…) — hojas, <style> y @import con paréntesis', re: new RegExp(String.raw`url\(\s*["']?(${EXTERNO})`, 'g') },
+  { que: '@import "…" — sin paréntesis', re: new RegExp(String.raw`@import\s+["'](${EXTERNO})`, 'g') },
+  { que: 'href/src de una página', re: new RegExp(String.raw`(?:href|src)\s*=\s*["'](${EXTERNO})["']`, 'g') },
+];
 const EXENTAS = [
   // Ninguna. Si algún día hace falta un origen externo, va aquí CON su motivo y
   // con qué pasa en un colegio sin red.
 ];
-const PUERTAS = [
-  { que: 'HTML (href/src)', ficheros: HTML, re: /(?:href|src)\s*=\s*["'](https?:\/\/[^"']+)["']/g },
-  { que: 'CSS (@import / url())', ficheros: hojas(), re: /(?:@import\s+url\(\s*["']?|url\(\s*["']?)(https?:\/\/[^"')]+)/g },
-  { que: 'HTML (@import en <style>)', ficheros: HTML, re: /@import\s+url\(\s*["']?(https?:\/\/[^"')]+)/g },
-];
-function hojas() {
-  const out = [];
-  for (const dir of ['styles', 'themes']) {
-    (function walk(d) {
-      for (const f of readdirSync(join(ROOT, d), { withFileTypes: true })) {
-        if (f.isDirectory()) walk(`${d}/${f.name}`);
-        else if (f.name.endsWith('.css')) out.push(`${d}/${f.name}`);
-      }
-    })(dir);
-  }
-  return out;
-}
 const conCdn = [];
-for (const { que, ficheros, re } of PUERTAS) {
-  for (const f of ficheros) {
-    const src = readFileSync(join(ROOT, f), 'utf8');
+for (const [f, src] of FUENTES) {
+  for (const { que, re } of FORMAS) {
     for (const m of src.matchAll(re)) {
       if (!EXENTAS.some(e => m[1].includes(e))) conCdn.push(`${f} [${que}] → ${m[1]}`);
     }
@@ -77,28 +77,30 @@ if (conCdn.length) {
   console.log('  diciendo qué se ve en un colegio sin red.\n');
 }
 assert.strictEqual(conCdn.length, 0, `${conCdn.length} recurso(s) externos`);
-// CONTRA-PRUEBA de la puerta que se escapó: si el escáner de CSS no viera los
-// `@import`, este caso pasaría por bueno y la fuente volvería al CDN sin ruido.
-const falso = [...'@import url(\'https://fonts.googleapis.com/css2?family=X\');'
-  .matchAll(PUERTAS[1].re)].map(m => m[1]);
-assert.deepStrictEqual(falso, ['https://fonts.googleapis.com/css2?family=X'],
-  'CONTRA-PRUEBA: el escáner de hojas ve un @import a un CDN');
-ok(`${HTML.length} páginas + ${hojas().length} hojas: nada se carga de fuera (3 puertas miradas)`);
+
+// CONTRA-PRUEBA: cada forma tiene que cazar SU caso. Sin esto, un escáner que no
+// encontrase nada nunca —por un regex roto— pasaría por verde para siempre, que
+// es exactamente como fallaron las dos versiones anteriores.
+const CASOS = [
+  `@import url('https://fonts.googleapis.com/css2?family=X');`,
+  `@import "https://fonts.googleapis.com/css2?family=X";`,
+  `<link href="https://cdn.jsdelivr.net/npm/x/y.css" rel="stylesheet">`,
+  `.a { background: url(https://ejemplo.com/f.png); }`,
+];
+for (const caso of CASOS) {
+  const visto = FORMAS.some(({ re }) => { re.lastIndex = 0; return re.test(caso); });
+  assert.ok(visto, `CONTRA-PRUEBA: ninguna forma caza ${caso}`);
+}
+ok(`${HTML.length} páginas + ${HOJAS.length} hojas: nada se carga de fuera (${FORMAS.length} formas, ${CASOS.length} casos de contra-prueba)`);
 
 // ── 2) Cada ruta local de vendor/ apunta a un fichero que existe ─────────────
 // Una ruta mal escrita no da error: da una app sin estilos, y eso se descubre
-// con la clase delante.
-// Se recogen por las MISMAS puertas del punto 1: los HTML apuntan a `vendor/…`
-// y las hojas con `../../vendor/…` (así llega la fuente de píxeles a Arcade).
-// Mirar solo los HTML dejaría media carpeta fuera del control de versiones.
+// con la clase delante. Se recogen del MISMO texto ya leído: los HTML apuntan a
+// `vendor/…` y las hojas con `../../vendor/…` (así llega la fuente al tema).
 const rutas = new Set();
-for (const f of HTML) {
-  const html = readFileSync(join(ROOT, f), 'utf8');
-  for (const m of html.matchAll(/(?:href|src)\s*=\s*["'](vendor\/[^"'?]+)/g)) rutas.add(m[1]);
-}
-for (const f of hojas()) {
-  const css = readFileSync(join(ROOT, f), 'utf8');
-  for (const m of css.matchAll(/url\(\s*["']?(?:\.\.\/)*(vendor\/[^"')?]+)/g)) rutas.add(m[1]);
+for (const src of FUENTES.values()) {
+  for (const m of src.matchAll(/(?:href|src)\s*=\s*["'](vendor\/[^"'?]+)/g)) rutas.add(m[1]);
+  for (const m of src.matchAll(/url\(\s*["']?(?:\.\.\/)*(vendor\/[^"')?]+)/g)) rutas.add(m[1]);
 }
 assert.ok(rutas.size >= 4, 'siguen cargándose desde vendor/ Bootstrap (CSS, iconos, bundle) y la fuente del tema');
 const faltan = [...rutas].filter(r => !existsSync(join(ROOT, r)));
@@ -123,7 +125,7 @@ ok(`vendor/ no acumula versiones muertas: ${carpetas.join(' · ')}`);
 const HERRAMIENTAS = ['matrix-smoke.mjs', 'piezas.mjs', 'find-smoke.mjs',
   'live-smoke.mjs', 'task-smoke.mjs', 'shots.mjs'];
 const anulan = HERRAMIENTAS.filter(h => {
-  const src = readFileSync(join(ROOT, 'tools', h), 'utf8');
+  const src = leer(`tools/${h}`);
   return /route\([^)]*bootstrap[^)]*\)|route\([^)]*vendor\/[^)]*\)/i.test(src);
 });
 assert.deepStrictEqual(anulan, [],

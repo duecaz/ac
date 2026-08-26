@@ -35,7 +35,11 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
    nada estructural, y sin pisar el juego (pinta con tokens --ww-*/skins).
    Es chrome → EXCLUIDO del ratchet styles.test.mjs. */
 :root {
-  --bs-primary: #2563eb;
+  /* `--bs-primary` a secas NO existe aquí a propósito: Bootstrap 5.3 nunca lo
+     lee. Sus utilidades (.text-primary, .bg-primary) van por el `-rgb`, y los
+     botones por `--bs-btn-*`. Estuvo declarado y muerto, tapado por una exención
+     de la ley §3c que eximía TODO el prefijo `--bs-` — y de paso eximía también
+     los siete tokens NUESTROS del Ball Sort que empiezan igual. */
   --bs-primary-rgb: 37, 99, 235;
   --bs-link-color: #2563eb;
   --bs-link-hover-color: #1d4ed8;

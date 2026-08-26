@@ -9,31 +9,30 @@
 Los tokens son la INTERFAZ entre el tema y el juego (ley §3: el skin
 cambia tokens, la actividad los consume). Este es el contrato completo.
 
-**195 tokens** en 16 familias.
+**194 tokens** en 16 familias.
 
-## `--bs-*` (24)
+## `--bs-*` (23)
 
 | Token | Lo DECLARA | Lo CONSUME |
 |---|---|---|
 | `--bs-accent` | styles/ballsort.css | styles/ballsort.css |
 | `--bs-ball-size` | styles/ballsort.css | styles/ballsort.css |
-| `--bs-border-radius` | styles/theme.css | — |
-| `--bs-border-radius-lg` | styles/theme.css | — |
-| `--bs-border-radius-sm` | styles/theme.css | — |
-| `--bs-btn-active-bg` | styles/theme.css | — |
-| `--bs-btn-active-border-color` | styles/theme.css | — |
-| `--bs-btn-bg` | styles/theme.css | — |
-| `--bs-btn-border-color` | styles/theme.css | — |
-| `--bs-btn-color` | styles/theme.css | — |
-| `--bs-btn-disabled-bg` | styles/theme.css | — |
-| `--bs-btn-disabled-border-color` | styles/theme.css | — |
-| `--bs-btn-hover-bg` | styles/theme.css | — |
-| `--bs-btn-hover-border-color` | styles/theme.css | — |
-| `--bs-danger` | styles/ballsort.css | styles/ballsort.css |
-| `--bs-link-color` | styles/theme.css | — |
-| `--bs-link-hover-color` | styles/theme.css | — |
-| `--bs-primary` | styles/theme.css | — |
-| `--bs-primary-rgb` | styles/theme.css | — |
+| `--bs-border-radius` | styles/theme.css | vendor/bootstrap-5.3.3/css/bootstrap.min.css |
+| `--bs-border-radius-lg` | styles/theme.css | vendor/bootstrap-5.3.3/css/bootstrap.min.css |
+| `--bs-border-radius-sm` | styles/theme.css | vendor/bootstrap-5.3.3/css/bootstrap.min.css |
+| `--bs-btn-active-bg` | styles/theme.css | vendor/bootstrap-5.3.3/css/bootstrap.min.css |
+| `--bs-btn-active-border-color` | styles/theme.css | vendor/bootstrap-5.3.3/css/bootstrap.min.css |
+| `--bs-btn-bg` | styles/theme.css | vendor/bootstrap-5.3.3/css/bootstrap.min.css |
+| `--bs-btn-border-color` | styles/theme.css | vendor/bootstrap-5.3.3/css/bootstrap.min.css |
+| `--bs-btn-color` | styles/theme.css | vendor/bootstrap-5.3.3/css/bootstrap.min.css |
+| `--bs-btn-disabled-bg` | styles/theme.css | vendor/bootstrap-5.3.3/css/bootstrap.min.css |
+| `--bs-btn-disabled-border-color` | styles/theme.css | vendor/bootstrap-5.3.3/css/bootstrap.min.css |
+| `--bs-btn-hover-bg` | styles/theme.css | vendor/bootstrap-5.3.3/css/bootstrap.min.css |
+| `--bs-btn-hover-border-color` | styles/theme.css | vendor/bootstrap-5.3.3/css/bootstrap.min.css |
+| `--bs-danger` | styles/ballsort.css | styles/ballsort.css · vendor/bootstrap-5.3.3/css/bootstrap.min.css |
+| `--bs-link-color` | styles/theme.css | vendor/bootstrap-5.3.3/css/bootstrap.min.css |
+| `--bs-link-hover-color` | styles/theme.css | vendor/bootstrap-5.3.3/css/bootstrap.min.css |
+| `--bs-primary-rgb` | styles/theme.css | vendor/bootstrap-5.3.3/css/bootstrap.min.css |
 | `--bs-tertiary-bg` | — *(solo respaldo)* | views/moderate.js |
 | `--bs-tube-bg` | styles/ballsort.css | styles/ballsort.css |
 | `--bs-tube-border` | styles/ballsort.css | styles/ballsort.css |
@@ -181,20 +180,20 @@ cambia tokens, la actividad los consume). Este es el contrato completo.
 
 | Token | Lo DECLARA | Lo CONSUME |
 |---|---|---|
-| `--qh-bien` | — *(solo respaldo)* | qa/hoja.js |
-| `--qh-bien-bg` | — *(solo respaldo)* | qa/hoja.js |
-| `--qh-card` | — *(solo respaldo)* | qa/hoja.js |
-| `--qh-foco` | — *(solo respaldo)* | qa/hoja.js |
-| `--qh-line` | — *(solo respaldo)* | qa/hoja.js |
-| `--qh-mal` | — *(solo respaldo)* | qa/hoja.js |
-| `--qh-mal-bg` | — *(solo respaldo)* | qa/hoja.js |
-| `--qh-primario` | — *(solo respaldo)* | qa/hoja.js |
-| `--qh-primario-fg` | — *(solo respaldo)* | qa/hoja.js |
+| `--qh-bien` | test.html | qa/hoja.js |
+| `--qh-bien-bg` | test.html | qa/hoja.js |
+| `--qh-card` | test.html | qa/hoja.js |
+| `--qh-foco` | test.html | qa/hoja.js |
+| `--qh-line` | test.html | qa/hoja.js |
+| `--qh-mal` | test.html | qa/hoja.js |
+| `--qh-mal-bg` | test.html | qa/hoja.js |
+| `--qh-primario` | test.html | qa/hoja.js |
+| `--qh-primario-fg` | test.html | qa/hoja.js |
 | `--qh-ruta` | — *(solo respaldo)* | qa/hoja.js |
 | `--qh-ruta-1` | — *(solo respaldo)* | qa/hoja.js |
 | `--qh-ruta-1-bg` | — *(solo respaldo)* | qa/hoja.js |
 | `--qh-ruta-bg` | — *(solo respaldo)* | qa/hoja.js |
-| `--qh-soft` | — *(solo respaldo)* | qa/hoja.js |
+| `--qh-soft` | test.html | qa/hoja.js |
 
 ## `--soft-*` (12)
 

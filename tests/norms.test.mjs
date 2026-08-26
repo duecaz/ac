@@ -113,8 +113,10 @@ assert.strictEqual(scanNormsSource('core/serverNow.js', `return clock.now() + of
 //  llamado en su sitio — por eso se comprueba la REGLA, no cuántas saltan)
 assert.ok(scanNormsSource('templates/x/editor.js', `const id = 'q_' + Math.random().toString(36).slice(2, 8);`)
   .some(v => v.rule === 'id-rid'), 'caza el id a mano');
-assert.strictEqual(scanNormsSource('views/x.js', `const id = 'q_' + Math.random().toString(36).slice(2, 8);`).length, 1,
-  'y fuera de una plantilla salta ella sola');
+// (desde que `azar-primitivo` mira TODO el repo, este renglón rompe las dos
+//  leyes en cualquier fichero: el id a mano y el azar fuera del primitivo)
+assert.ok(scanNormsSource('views/x.js', `const id = 'q_' + Math.random().toString(36).slice(2, 8);`)
+  .some(v => v.rule === 'azar-primitivo'), 'y el azar salta también fuera de una plantilla');
 assert.strictEqual(scanNormsSource('core/ids.js', `return prefix + Math.random().toString(36).slice(2, 8);`).length, 0, 'ids.js es la implementación');
 // azar-primitivo (ley §23, gemela de reloj-primitivo): en las superficies de
 // juego el azar se INYECTA. Nació de una red que mentía: `tools/shots.mjs`
@@ -140,9 +142,16 @@ assert.strictEqual(scanNormsSource('templates/quiz/player.js', `if (activity.rul
 assert.strictEqual(scanNormsSource('core/azar.js', `const j = Math.floor(dado() * (i + 1));\n[a[i], a[j]] = [a[j], a[i]];`).length, 0,
   'y core/azar.js es la implementación');
 assert.strictEqual(scanNormsSource('core/effects.js', `const v = startVelocity * (0.5 + Math.random());`).length, 0,
-  'CONTRA-PRUEBA: el confeti NO es contenido jugable — la ley no se mete donde no le toca');
+  'CONTRA-PRUEBA: el confeti está DECLARADO en ALLOW con su motivo — no es contenido jugable');
 assert.strictEqual(scanNormsSource('adapters/pocketbase/assignments.js', `s += LETTERS[Math.floor(Math.random() * LETTERS.length)];`).length, 0,
   'ni el PIN de una tarea, que debe ser IMPREDECIBLE (reproducirlo sería el fallo)');
+// Y el cambio de altitud, comprobado: la ley ya no mira solo donde se le dijo.
+// Con el alcance viejo (kernel/ + templates/ + tres ficheros de core NOMBRADOS)
+// un módulo nuevo de core que ordenase lo que ve la clase pasaba invisible.
+assert.strictEqual(scanNormsSource('core/moduloNuevo.js', `const i = Math.floor(Math.random() * items.length);`).length, 1,
+  'un módulo de core NUEVO que sortea contenido salta sin que nadie amplíe una lista de rutas');
+assert.strictEqual(scanNormsSource('views/hostLive.js', `const orden = Math.random() - 0.5;`).length, 1,
+  'y una vista, también: el modo de fallar de esta ley ya es ruidoso, como el de las otras diez');
 // imagen-buscable (F6): pedir una imagen sin ofrecer BUSCARLA. El bug que lo
 // creó: «Etiqueta el diagrama» solo dejaba subir, y quien quería un corazón
 // humano no tenía ninguno en el móvil — la actividad no se podía ni empezar.

@@ -80,8 +80,11 @@ export function renderKeypadRound(root, payload, { onSubmit } = {}) {
   draw();
 }
 
-// El barajado vive en `core/azar.js` (con la fuente de azar que lo alimenta):
-// este módulo pinta una ronda y arrastra DOM, y el mazo de Equipos —que es puro
-// kernel— también necesita barajar. Se RE-EXPORTA para que los ocho módulos que
-// ya lo importaban de aquí no tengan que cambiar de puerta.
-export { shuffle } from './azar.js';
+// `shuffle` YA NO SE RE-EXPORTA desde aquí. Vive en `core/azar.js`, con la
+// fuente de azar que lo alimenta. La re-exportación era una puerta de cortesía
+// para no tocar los importadores, y contradecía justo lo que el movimiento venía
+// a establecer: `azar.js` se declara «dueño único del barajado» y nueve de los
+// once consumidores llegaban por otra puerta. Peor: `globos/template.js` no
+// importaba NADA más de aquí, así que un módulo de declaración —que corre en
+// Node, en los tests de contrato— dependía de un renderizador con DOM solo para
+// barajar. Los nueve apuntan ya a `core/azar.js`.

@@ -31,7 +31,7 @@ costes, y ninguno era teórico:
 |---|---|---|
 | `bootstrap-5.3.3/` | 5.3.3 | `npm pack bootstrap@5.3.3` → `dist/css/bootstrap.min.css` + `dist/js/bootstrap.bundle.min.js` |
 | `bootstrap-icons-1.11.3/` | 1.11.3 | `npm pack bootstrap-icons@1.11.3` → `font/bootstrap-icons.min.css` + `font/fonts/*` |
-| `press-start-2p-5.3.0/` | 5.3.0 | `npm pack @fontsource/press-start-2p` → `latin.css` + los dos `latin-400-normal` (woff2/woff) |
+| `press-start-2p-5.3.0/` | 5.3.0 | `npm pack @fontsource/press-start-2p` → los dos ficheros `latin-400-normal` (woff2/woff). El `@font-face` NO se copia: vive en `themes/arcade/skin.css`, porque esa hoja ya se inyecta en tiempo de ejecución y un `@import` añadía un tercer viaje en fila antes de que entrara la fuente. |
 
 La fuente de píxeles del tema Arcade venía de `fonts.googleapis.com` y se coló
 por donde la primera versión de la red no miraba: un `@import` DENTRO de una

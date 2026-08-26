@@ -11,7 +11,7 @@ import { resultScreenHtml } from './resultScreen.js';
 import { trySaveResult } from './results.js';
 import { FEEDBACK_DELAY } from './constants.js';
 import { GameEvents, emitGame } from './gameEvents.js';
-import { shuffle } from './roundRender.js';
+import { shuffle } from './azar.js';
 import { createCountdown } from './soloTimer.js';
 import { clock } from './clock.js';
 import { defaultMaxScore } from './scoring/index.js';

@@ -18,6 +18,7 @@ import assert from 'node:assert';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { TERCEROS } from './helpers/inventario.mjs';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
@@ -26,7 +27,7 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const ficheros = [];
 (function walk(d) {
   for (const f of readdirSync(d)) {
-    if (['node_modules', '.git', 'docs', 'sounds', 'scratchpad', 'themes', 'vendor'].includes(f)) continue;
+    if ([...TERCEROS, 'docs', 'sounds', 'themes'].includes(f)) continue;
     const p = join(d, f);
     if (statSync(p).isDirectory()) walk(p);
     else if (f.endsWith('.js') || f.endsWith('.mjs')) ficheros.push(p);

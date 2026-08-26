@@ -32,49 +32,35 @@ import { escanear, familiaDe, generar } from '../tools/tokens.mjs';
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
 
-// EXENCIONES, cada una con su motivo. Un token exento sigue en el índice.
-//
-// `--bs-*` los declara `styles/theme.css` para que los LEA BOOTSTRAP. El
-// escáner no mira `vendor/` a propósito (es código de terceros: opinar sobre él
-// no es vigilar el nuestro), así que su consumidor le queda invisible.
-//
-// El motivo decía antes «llega por CDN y no se puede escanear», y prometía caer
-// solo cuando Bootstrap se vendorizara. Se vendorizó una versión después y la
-// exención siguió ahí con la razón vieja: una exención cuyo motivo ya no es
-// cierto es exactamente por donde vuelve a entrar lo que se quería impedir. Así
-// que aquí el motivo no se cree — SE COMPRUEBA: el fichero vendorizado tiene que
-// leer de verdad los tokens que se están exentando.
-const DECLARADO_SIN_LEER = [
-  { prefijo: '--bs-', motivo: 'los consume Bootstrap, en vendor/ (terceros, fuera del escáner)',
-    loLee: 'vendor/bootstrap-5.3.3/css/bootstrap.min.css' },
-];
-const exento = (t) => DECLARADO_SIN_LEER.some(e => t.startsWith(e.prefijo));
-
+// SIN EXENCIONES. Hubo una —los `--bs-*`, «los consume Bootstrap y no se puede
+// escanear»— y contar su final vale más que la exención misma:
+//   · su motivo caducó a la versión siguiente (Bootstrap se vendorizó) y se
+//     quedó ahí con el cartel viejo, que es por donde vuelve a entrar lo que se
+//     quería impedir;
+//   · eximía por PREFIJO, así que se llevaba por delante los siete tokens
+//     NUESTROS del Ball Sort (`--bs-tube-*`, `--bs-ball-size`…), que nada tienen
+//     que ver con Bootstrap y llevaban desde entonces fuera de la ley;
+//   · y tapaba un muerto de verdad: `--bs-primary`, que Bootstrap 5.3 no lee
+//     nunca (sus utilidades van por `--bs-primary-rgb` y los botones por
+//     `--bs-btn-*`). Borrado.
+// El arreglo no fue verificar mejor la exención, sino quitarle la causa: el
+// escáner usaba UNA frontera de carpetas para DOS preguntas distintas —«¿de
+// quién es este token?» (nuestro) y «¿quién lo lee?» (cualquiera a quien el
+// navegador cargue, Bootstrap incluido)—. Separadas, 22 de los 23 `--bs-*` que
+// declaramos tienen consumidor visible y el 23º sale muerto, como debía.
 const { declara, consume, conRespaldo, todos } = escanear();
 
 // ── 1) Ningún token declarado se queda sin lector ────────────────────────────
-const muertos = todos.filter(t => declara.has(t) && !consume.has(t) && !exento(t));
+const muertos = todos.filter(t => declara.has(t) && !consume.has(t));
 if (muertos.length) {
   console.log('\n  Tokens DECLARADOS que nadie consume (un mando que no manda):');
   for (const t of muertos) console.log(`    ✗ ${t} — lo declara ${[...declara.get(t)].join(', ')}`);
-  console.log('\n  Bórralo, o conéctalo con un var() de verdad. Si su consumidor');
-  console.log('  está fuera del repo, decláralo en DECLARADO_SIN_LEER con su motivo.\n');
+  console.log('\n  Bórralo, o conéctalo con un var() de verdad. Si quien lo lee es');
+  console.log('  una dependencia de vendor/, el escáner ya la mira: revisa el nombre.\n');
 }
 assert.strictEqual(muertos.length, 0, `${muertos.length} token(s) declarados y nunca consumidos`);
 
-// La exención se COMPRUEBA, no se cree: el consumidor declarado tiene que leer
-// de verdad los tokens exentos. El día que Bootstrap se sustituya por CSS
-// propio, este fichero desaparecerá y la exención caerá aquí, en voz alta, en
-// vez de quedarse como una puerta abierta con un cartel viejo.
-for (const e of DECLARADO_SIN_LEER) {
-  const exentos = todos.filter(t => t.startsWith(e.prefijo) && declara.has(t) && !consume.has(t));
-  if (!exentos.length) continue;   // nadie los declara ya: la exención sobra, pero no rompe
-  const src = readFileSync(fileURLToPath(new URL(`../${e.loLee}`, import.meta.url)), 'utf8');
-  const leidos = exentos.filter(t => src.includes(`var(${t}`));
-  assert.ok(leidos.length >= Math.ceil(exentos.length / 2),
-    `la exención «${e.prefijo}» dice que los lee ${e.loLee}, pero ahí solo aparecen ${leidos.length}/${exentos.length}`);
-}
-ok(`${todos.length} tokens: ninguno declarado sin que alguien lo consuma (${DECLARADO_SIN_LEER.length} exención, con su consumidor VERIFICADO)`);
+ok(`${todos.length} tokens: ninguno declarado sin que alguien lo consuma (cero exenciones)`);
 
 // ── 2) Ningún var() se lee sobre la nada ─────────────────────────────────────
 const huerfanos = todos.filter(t => !declara.has(t) && !conRespaldo.has(t));

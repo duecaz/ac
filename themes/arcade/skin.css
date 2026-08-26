@@ -11,8 +11,21 @@
    colegio sin internet el tema Arcade se quedaba en Courier. Y se coló por
    donde la red de v1.51.594 no miraba —un `@import` dentro de un CSS, no un
    `<link>` en el HTML—, así que la ley decía «cero recursos externos» mientras
-   quedaba uno. Ahora la red mira también las hojas. */
-@import url('../../vendor/press-start-2p-5.3.0/press-start-2p.css');
+   quedaba uno. Ahora la red mira también las hojas.
+   El `@font-face` va AQUÍ, no en un `@import`: esta hoja ya la inyecta
+   `applySkin()` en tiempo de ejecución, así que con el import eran TRES viajes
+   en fila —bajar skin.css, parsearlo para descubrir el import, bajar 290 bytes
+   para descubrir el .woff2— antes de que entrara la fuente. O sea el mismo
+   destello de Courier que la vendorización venía a quitar, solo que más corto.
+   Copiado tal cual del paquete, solo con la ruta reescrita. */
+@font-face {
+  font-family: 'Press Start 2P';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('../../vendor/press-start-2p-5.3.0/files/press-start-2p-latin-400-normal.woff2') format('woff2'),
+       url('../../vendor/press-start-2p-5.3.0/files/press-start-2p-latin-400-normal.woff') format('woff');
+}
 
 /* LA FUENTE DEL TEMA NO SE DECLARA AQUÍ. La pila de píxeles vive UNA vez, en el
    manifiesto del skin (`fontFamily` en core/skins.js), que `applySkin` pone en

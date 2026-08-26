@@ -6,7 +6,7 @@ import { html, escapeHtml, mount } from '../../core/html.js';
 import { runSequentialPlayer } from '../../core/soloPlayer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { clock } from '../../core/clock.js';
-import { shuffle } from '../../core/roundRender.js';
+import { shuffle } from '../../core/azar.js';
 import { scoreQuizSubmission } from '../quiz/scorer.js';
 import * as Streaks from '../../core/streaks.js';
 import { hudHtml, hudSet } from '../../core/playerHud.js';

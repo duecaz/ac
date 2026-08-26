@@ -9,17 +9,20 @@
 import { readdirSync, statSync, readFileSync } from 'node:fs';
 import { join, dirname, relative, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { TERCEROS } from './inventario.mjs';
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 // Se escanea el CÓDIGO DE LA APP. Fuera: pruebas, herramientas, documentación y
 // lo que no es JS del repo (los tests sí pueden importar lo que quieran: son el
 // observador, no una capa).
-// `vendor/` fuera: es código de terceros copiado tal cual (ver vendor/README.md).
-// Sin esto, el bundle de Bootstrap entraba en el grafo de capas de la §0 como si
-// fuera un módulo nuestro de la capa «arranque», y el mapa generado pasó de 268 a
-// 270 módulos sin que nadie hubiera escrito una línea.
-const SKIP_DIRS = new Set(['node_modules', '.git', 'docs', 'scratchpad', 'tests', 'tools', 'themes', 'styles', 'assets', 'vendor']);
+// Dos ejes, y solo uno se comparte. Lo de TERCEROS lo pone el inventario (un
+// dueño único, ver su cabecera): sin ello el bundle de Bootstrap entraba en el
+// grafo de capas de la §0 como módulo NUESTRO de la capa «arranque» —`layerOf`
+// tiene un `return 'arranque'` de cajón de sastre— y el mapa generado pasó de
+// 268 a 270 sin que nadie escribiera una línea. Lo de después es el SUJETO de
+// este grafo en concreto: el código de la app, sin observadores ni pintura.
+const SKIP_DIRS = new Set([...TERCEROS, 'docs', 'tests', 'tools', 'themes', 'styles', 'assets']);
 
 export function appFiles(root = ROOT) {
   const out = [];

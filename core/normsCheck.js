@@ -57,19 +57,17 @@
 //                       no se le abrían las respuestas y la pregunta se
 //                       liquidaba «sin respuesta · 0 puntos».
 //   · azar-primitivo  : LEY DE VISTA (docs/leyes.md §23), gemela de reloj-primitivo
-//                       — en las SUPERFICIES DE JUEGO (kernel/ y templates/, más
-//                       los dos módulos de core que arman lo jugado) el azar se
-//                       INYECTA: o por el primitivo `azar.random()` de
-//                       core/azar.js, o por parámetro con `= Math.random` en la
-//                       firma (el patrón de wheel/logic.js y ballsort/board.js).
-//                       Lo prohibido es LLAMARLO en su sitio, `Math.random()`,
-//                       porque entonces nadie de fuera puede reproducir la
-//                       partida. Se paga en herramientas: `tools/shots.mjs`
-//                       comparaba dos capturas del MISMO árbol y cantaba 2.500
-//                       píxeles de cambio porque Quiz baraja al montar, y el
-//                       apaño fue apagar el barajado de UNA plantilla desde su
-//                       `rules`. Prohibido también el Fisher–Yates a mano (el
-//                       intercambio `[a[i],a[j]]=[a[j],a[i]]`): estaba copiado
+//                       — el azar sale del PRIMITIVO `azar.random()`
+//                       (core/azar.js) y el barajado, de su `shuffle`. Nadie
+//                       nombra `Math.random` salvo los usos declarados en ALLOW
+//                       con su motivo: IDs, confeti, partículas, jitter de
+//                       reconexión y los PIN de sala y tarea, que deben ser
+//                       IMPREDECIBLES (reproducirlos sería el fallo).
+//                       Se paga en herramientas: `tools/shots.mjs` comparaba dos
+//                       capturas del MISMO árbol y cantaba 2.500 píxeles de
+//                       cambio porque Quiz baraja al montar, y el apaño fue
+//                       apagar el barajado de UNA plantilla desde su `rules`.
+//                       Prohibido también el Fisher–Yates a mano: estaba copiado
 //                       en cuatro sitios y el dueño es `shuffle` de core/azar.js.
 //   · id-rid          : LEY DE CONTENIDO (docs/leyes.md §24) — IDs SIEMPRE con
 //                       `rid()` de core/ids.js, nunca `Math.random().toString(36)`
@@ -90,8 +88,19 @@ const ALLOW = {
     // pinta, vigila silencio y renueva la conexión. Su scheduler se inyecta.
     'core/streamWatchdog.js'],
   'id-rid': ['core/ids.js'],   // la única implementación permitida
-  // core/azar.js ES el primitivo (y el dueño del barajado).
-  'azar-primitivo': ['core/azar.js'],
+  // azar-primitivo · quién PUEDE nombrar `Math.random`, y por qué. Los dos
+  // primeros SON la implementación; el resto no es contenido que nadie juegue, y
+  // los PIN además tienen que ser IMPREDECIBLES: reproducirlos sería el fallo.
+  'azar-primitivo': [
+    'core/azar.js', 'core/ids.js',
+    'core/effects.js',          // confeti
+    'core/soloAnimations.js',   // partículas
+    'core/migrate.js',          // PIN de sala
+    'core/liveWords.js',        // palabra-código de la sala (misma familia que el PIN)
+    'core/streamWatchdog.js',   // jitter de reconexión (y su scheduler ya se inyecta)
+    'adapters/pocketbase/assignments.js', 'adapters/local/assignments.js',  // PIN de tarea
+    'adapters/pocketbase/realtime.js',    // jitter
+  ],
   // `core/serverNow.js` ES la hora común (usa clock.now para calcularla) y
   // `core/deadlineTicker.js` ya la consume; `core/clock.js` es el reloj crudo.
   'reloj-sala': ['core/serverNow.js', 'core/clock.js', 'core/deadlineTicker.js'],
@@ -250,17 +259,12 @@ const HOST_VERBS = ['settleItem', 'endSession', 'startSession', 'kickPlayer', 's
   'fetchSessionKey', 'fetchSessionBlob'];
 const HOST_VERBS_RE = new RegExp(`\\b(${HOST_VERBS.join('|')})\\b`);
 
-// azar-primitivo · dónde manda la ley. NO es "todo el repo": el PIN de una sala
-// y el de una tarea (adapters/*/assignments.js, core/migrate.js) tienen que ser
-// impredecibles, y el confeti, las partículas y el jitter de reconexión no son
-// contenido que nadie juegue. La ley vigila lo que el alumno VE ordenado o
-// elegido: el cerebro del juego, las trece plantillas, y los dos módulos de
-// core que arman la partida (el mazo del shell Individual y la ronda de opciones).
-// (`a[z]ar` con clase de caracteres a propósito: escrito entero, el escáner de
-//  imports de moduleRefs lo lee como un uso del módulo `azar` en este fichero)
-const SUPERFICIE_JUEGO = /^(kernel\/|templates\/|core\/(soloPlayer|roundRender|a[z]ar)\.js)/;
 // El intercambio de Fisher–Yates, escrito a mano: `[a[i], a[j]] = [a[j], a[i]]`.
-const BARAJADO_A_MANO = /\[\s*(\w+)\s*\[\s*(\w+)\s*\]\s*,\s*\1\s*\[\s*(\w+)\s*\]\s*\]\s*=\s*\[\s*\1\s*\[\s*\3\s*\]\s*,\s*\1\s*\[\s*\2\s*\]\s*\]/;
+// Con UNA retro-referencia basta (el array tiene que ser el mismo); pedir además
+// que los índices se crucen era precisión que no compraba nada —un barajado con
+// variable temporal se escapa de las dos formas— a cambio de un regex que nadie
+// puede verificar de un vistazo. Comprobado sobre todo el repo: mismas líneas.
+const BARAJADO_A_MANO = /\[\s*(\w+)\[[^\]]+\]\s*,\s*\1\[[^\]]+\]\]\s*=\s*\[\s*\1\[/;
 
 // Comentarios fuera (mismo truco que tests/styles.test.mjs: se preservan los
 // saltos de línea para que los números de línea no se corran).
@@ -328,16 +332,23 @@ export function scanNormsSource(path, source) {
     if (/Math\.random\s*\(\s*\)\s*\.toString\s*\(\s*36\s*\)/.test(ln) && !allowed('id-rid')) {
       out.push({ path, line: i + 1, rule: 'id-rid', text: ln.trim() });
     }
-    // azar-primitivo · en las superficies de juego el azar sale del PRIMITIVO.
-    // Aquí hubo un hueco legal que duró tres versiones: se dejaba pasar
-    // `Math.random` como VALOR (`rnd = Math.random` en una firma) por considerar
-    // que «eso ES inyectarlo». No lo era: ningún llamador inyectaba nunca —ni la
-    // ruleta, ni Pregunta en vivo, ni el tablero de las Pelotas—, así que el
-    // defecto era el que corría siempre y sembrar el azar no llegaba a ninguno
-    // de los tres. Un parámetro inyectable cuyo defecto esquiva el primitivo es
-    // el primitivo sin usar. Se inyecta pasando `azar.random` o una fuente
-    // sembrada; `Math.random` no se nombra.
-    if (SUPERFICIE_JUEGO.test(path) && !allowed('azar-primitivo')) {
+    // azar-primitivo · el azar sale del PRIMITIVO, en TODO el repo.
+    //
+    // Dos correcciones de altitud, las dos aprendidas en caliente:
+    // · El alcance era una lista de rutas (`kernel/`, `templates/` y tres
+    //   ficheros de core NOMBRADOS). Eso lo hacía la única regla del fichero que
+    //   mira solo donde se le dice: su modo de fallar era SILENCIOSO —un
+    //   `core/loQueSea.js` nuevo que ordenase lo que ve la clase simplemente no
+    //   se miraba—. Las otras diez escanean todo y declaran sus excepciones con
+    //   motivo, y su modo de fallar es RUIDOSO. Ahora esta también.
+    // · Se dejaba pasar `Math.random` como VALOR (`rnd = Math.random` en una
+    //   firma) por considerar que «eso ES inyectarlo». No lo era: ningún
+    //   llamador inyectaba nunca, así que el defecto era el que corría siempre y
+    //   sembrar el azar no llegaba a la ruleta, a Pregunta en vivo ni al tablero
+    //   de las Pelotas. Un parámetro cuyo defecto esquiva el primitivo ES el
+    //   primitivo sin usar. Se inyecta pasando `azar.random` o una fuente
+    //   sembrada; `Math.random` no se nombra fuera de ALLOW.
+    if (!allowed('azar-primitivo')) {
       if (/Math\.random\b/.test(ln)) {
         out.push({ path, line: i + 1, rule: 'azar-primitivo', text: ln.trim() });
       }

@@ -4,7 +4,8 @@ import { rid } from '../../core/ids.js';
 import { renderMatchPlayer } from './player.js';
 import { renderMatchEditor } from './editor.js';
 import { newPair } from '../../core/contentModels/pairs.js';
-import { renderChoiceRound, shuffle } from '../../core/roundRender.js';
+import { renderChoiceRound } from '../../core/roundRender.js';
+import { shuffle } from '../../core/azar.js';
 import { scoreMatchSubmission } from './scorer.js';
 import { escapeHtml } from '../../core/html.js';
 

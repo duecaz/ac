@@ -23,6 +23,7 @@ import assert from 'node:assert';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, relative, resolve } from 'node:path';
+import { esDeTerceros } from './helpers/inventario.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 let passed = 0;
@@ -47,11 +48,18 @@ const PUERTAS = [
 const puertaDe = (f) => PUERTAS.find(([re]) => re.test(f));
 
 // ── El repo, leído ────────────────────────────────────────────────────────
-const SALTAR = /node_modules|[/\\]\.git|scratchpad|docs[/\\]historico|\.min\.js$/;
+// Lo de terceros lo decide el inventario (tests/helpers/inventario.mjs). Esta
+// suite se escribió ANTES de que `vendor/` existiera y por eso llevaba tres
+// versiones aplicando la ley §30 —«ni CSS que nadie cargue»— a la hoja de
+// Bootstrap. Estaba verde POR SUERTE: las dos `.min.css` resultan estar
+// `<link>`eadas y el bundle acaba en `.min.js`, que este filtro ya saltaba por
+// otro motivo. Una librería con un `.js` sin minificar la habría puesto roja
+// acusando a un tercero de no tener importadores.
+const SALTAR = /docs[/\\]historico|\.min\.js$/;
 function paseo(dir, out = []) {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
     const p = join(dir, e.name);
-    if (SALTAR.test(p)) continue;
+    if (esDeTerceros(relative(ROOT, p).split('\\').join('/')) || SALTAR.test(p)) continue;
     if (e.isDirectory()) paseo(p, out); else out.push(relative(ROOT, p).split('\\').join('/'));
   }
   return out;

@@ -8,7 +8,7 @@ import { BaseTemplate } from '../base.js';
 import { renderGlobosPlayer, balloonFieldHtml, wireBalloonField } from './player.js';
 import { renderQuizEditor } from '../quiz/editor.js';
 import { scoreQuizSubmission } from '../quiz/scorer.js';
-import { shuffle } from '../../core/roundRender.js';
+import { shuffle } from '../../core/azar.js';
 import { escapeHtml } from '../../core/html.js';
 
 export class GlobosTemplate extends BaseTemplate {
