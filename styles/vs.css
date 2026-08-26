@@ -198,7 +198,12 @@
 .vs-body .ww-opt-grid .btn {
   font-size: clamp(.7rem, 2.4cqw, 1rem);
   padding: .4em .45em;
-  font-weight: 600;
+  /* El valor del MODO es el RESPALDO del token, no un literal que lo pise: con
+     `font-weight: 600` a secas esta regla (0,3,0) ganaba al `var(--opt-weight)`
+     de la rejilla (0,2,0) y el tema perdía su 800 solo en el duelo. Es la misma
+     trampa del teclado en v1.51.58x: quien manda es el token, y lo del modo es
+     lo que se ve cuando nadie lo declara. */
+  font-weight: var(--opt-weight, 600);
 }
 
 /* ESTÁNDAR: el contenido de ronda de CADA plantilla embebida en VS se dimensiona

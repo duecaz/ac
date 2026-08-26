@@ -200,6 +200,31 @@ escribirse; si necesita violar una prohibición, está en la capa equivocada.
   quedaba uno, y sin red el tema Arcade se quedaba en Courier. La fuente está
   ahora en `vendor/press-start-2p-5.3.0/` (subconjunto latin) y la red mira las
   tres. Una red que cubre una puerta de tres no protege: enseña a confiar.
+- **MIGRACIÓN DE TEMAS TERMINADA — los cinco a CERO** (v1.51.599). La última
+  deuda eran 4 selectores de tv-show sobre las opciones de Quiz, y el motivo de
+  que resistieran tres tandas era más hondo que perseguirlos: **la opción no
+  tenía regla dueña**. Se pintaba en CINCO sitios bajo DOS nombres —`.ww-opt` en
+  `player.css`/`quiz.css` y `.ww-opt-grid .btn` en `live.css`/`vs.css`/`player.css`—
+  y encima `player.css` estaba en la lista CHROME del propio ratchet, así que
+  media pieza era anatomía y media no. Sin dueño, ningún token puede tener un
+  respaldo con sentido. Se consolidó en **`styles/opcion.css`**, igual que
+  `math.css` hizo con el teclado, y el tema pasó a PEDIR el relieve por `--opt-*`.
+- **Y lo que destapó al consolidarla, que el ojo no ve** (`tools/opcion-sonda.mjs`,
+  estilos computados: 6 contextos × 4 botones × 15 propiedades). `shots.mjs`
+  compara PÍXELES, y estos tres no se ven hasta que se ven mal:
+  1. `.ww-opt-grid .btn` **empata** en especificidad con `.ww-player .ww-opt` y
+     le ganaba por ORDEN DE CARGA. En cuanto la rejilla declaró un token de
+     relieve, el borde del Individual pasó de 2px a 1px y la transición cambió
+     entera — 24 propiedades. Arreglo: la base se escribe con la especificidad
+     que de verdad necesita (`.ww-player .ww-opt-grid .ww-opt`), no ganando de
+     rebote. **Una regla que gana por orden de carga es una regla que perderá.**
+  2. `vs.css` declaraba `font-weight: 600` LITERAL, que pisaba el token y dejaba
+     al tema sin su 800 solo en el duelo. Es la misma trampa del teclado: **el
+     valor del modo tiene que ser el RESPALDO del token, nunca un literal**.
+  3. Un `font-weight: 500` en la base que NUNCA había ganado; al hacer explícita
+     la especificidad habría mandado por primera vez y adelgazado el Individual.
+     Una declaración que nunca gana es indistinguible de una que no existe —
+     hasta que arreglas la cascada.
 - **Un token que nadie lee es un mando que no manda** (v1.51.593). Si el skin
   cambia TOKENS y la actividad los consume, los tokens son un CONTRATO — y un
   contrato se rompe por sus dos lados: declarar `--x` que ningún `var()` lee (el

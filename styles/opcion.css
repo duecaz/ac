@@ -1,0 +1,119 @@
+/* LA OPCIÓN DE RESPUESTA — dueño único de la pieza más tocada de la app.
+   La pastilla que el alumno pulsa para responder, en TODOS los modos:
+   Individual (quiz/player.js emite `.ww-opt-grid` + `.btn.ww-opt.ww-shape-N`),
+   rondas de VS/Equipos/En vivo (core/roundRender.js emite `.ww-opt-grid` +
+   `.btn.vs-opt.rq-opt`) y el proyector del host (quiz/template.js).
+
+   POR QUÉ EXISTE ESTA HOJA. La pieza se pintaba en CINCO sitios bajo DOS
+   nombres: la rejilla y los colores por forma en live.css, el aspecto del
+   Individual en player.css, el veredicto en quiz.css, y los tamaños por modo en
+   vs.css/teams.css. Con la base repartida, un tema no tenía a quién pedirle las
+   cosas: tv-show acabó escribiendo CUATRO reglas dentro de la anatomía (la
+   deuda que congelaba el ratchet de temas). Ahora la base vive aquí, declara
+   sus TOKENS `--opt-*`, y el tema los declara en su superficie — mismo patrón
+   que el teclado de Operaciones (`--key-*`).
+
+   QUÉ NO VIVE AQUÍ, y a propósito:
+   · los TAMAÑOS por modo (vs.css/teams.css/touch.css): el contenedor solo pone
+     tamaños, como en el andamio §3b;
+   · `.hl-reading .ww-opt-grid` (live.css): ocultar las opciones en la ventana
+     de lectura es conducta del MODO en vivo, no aspecto de la pieza;
+   · los `px` de página del solo (player.css `.ww-play-page …`): maquetación de
+     esa página.
+
+   ORDEN INTERNO = el orden de cascada que tenían las tres hojas de origen
+   (player 16 → quiz 18 → live 21): en los empates de especificidad ganaba la
+   rejilla sobre la base del Individual (p. ej. font-weight 600 sobre 500), y
+   moverlas de fichero no puede cambiar quién gana. */
+
+/* ── 1 · La base del player Individual (antes en player.css) ─────────────── */
+/* `.ww-opt` lo emite SOLO `templates/quiz/player.js`, y siempre dentro de la
+   rejilla — así que nombrarla aquí no inventa nada: hace EXPLÍCITO (0,3,0) que
+   la base del Individual gana a la rejilla (0,2,0), que hasta ahora ganaba por
+   EMPATE resuelto por orden de carga. Sin esto, en cuanto la rejilla declara un
+   token de relieve le roba el borde de 2px al Individual — pasó, y lo cazó la
+   sonda de estilos computados. */
+.ww-player .ww-opt-grid .ww-opt {
+  border: var(--opt-border, 2px solid var(--ww-card-border, #dee2e6));
+  background: var(--ww-card-bg, #fff);
+  color: var(--ww-card-fg, var(--ww-fg, #1f2937));
+  /* SIN `font-weight`: aquí ponía 500 y NUNCA se veía — la rejilla (que iba
+     después y empataba) lo subía a 600. Al hacer explícita la victoria de esta
+     regla, ese 500 muerto habría pasado a mandar por primera vez y el Individual
+     habría adelgazado de golpe. El peso de la pastilla lo pone la rejilla, que
+     es quien lo ponía de verdad. */
+  padding: 1rem;
+  text-align: left;
+  white-space: normal;
+  box-shadow: var(--opt-shadow, none);
+  transition: var(--opt-transition, transform .1s, box-shadow .1s);
+}
+.ww-player .ww-opt-grid .ww-opt:hover:not(:disabled) {
+  transform: var(--opt-hover, translateY(-2px));
+  box-shadow: var(--opt-shadow-hover, 0 4px 12px rgba(0,0,0,.1));
+  filter: var(--opt-hover-filter, none);
+}
+.ww-player .ww-opt-grid .ww-opt:active:not(:disabled) {
+  transform: var(--opt-press, translateY(-2px));
+  box-shadow: var(--opt-shadow-active, var(--opt-shadow-hover, 0 4px 12px rgba(0,0,0,.1)));
+}
+.ww-player .ww-opt-grid .ww-opt:disabled { opacity: .9; }
+
+/* ── 2 · El veredicto del Individual (antes en quiz.css) ─────────────────────
+   EL VEREDICTO GANA AL SKIN (hallazgo del compañero, 2026-08-09): el player SÍ
+   ponía btn-success/btn-danger al responder, pero el fondo por forma
+   (`.ww-opt-grid .btn:nth-child(N)`, 0-3-0) y los `.skin-X .ww-shape-N` de
+   los skins (que además se cargan DESPUÉS) lo pisaban — «al fallar no se pone
+   rojo, solo sale confeti con las buenas». Cuatro clases a propósito (0-4-0):
+   por encima de cualquier regla de forma o de skin, sin `!important`. */
+.ww-options .btn.ww-opt.btn-success { background: var(--ww-success); border-color: var(--ww-success); color: #fff; }
+.ww-options .btn.ww-opt.btn-danger { background: var(--ww-danger); border-color: var(--ww-danger); color: #fff; }
+
+/* ── 3 · La rejilla y los colores por forma (antes en live.css) ──────────── */
+.ww-opt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+/* R1 · SE LEE A 3 METROS. Esto era `font-size: 1.5rem; padding: 2rem` — tamaño
+   FIJO en el player, justo lo que §3 prohíbe: 24 px son 24 px lo mismo en un
+   móvil que en una pizarra 4K, así que en el aula las OPCIONES DE RESPUESTA
+   —el texto que la clase entera tiene que leer— se quedaban en el 1,3-2% del
+   alto del marco. Lo cazó la medición de legibilidad de §29 (v1.51.423); el
+   ratchet de §3 no lo veía porque busca `px` y esto iba en `rem`.
+   Ahora escala con el marco (que es contenedor de consulta, ver player.css) y
+   conserva un piso legible en pantallas pequeñas. */
+.ww-opt-grid .btn {
+  font-size: max(1rem, 3.4cqmin);
+  padding: clamp(.7rem, 3.2cqmin, 2.2rem);
+  font-weight: var(--opt-weight, 600);
+  /* Esquinas redondeadas (mockup del dueño 2026-08-12): pastilla, no ladrillo.
+     Escala con el marco y con piso — un radio en px fijo se vería enorme en un
+     móvil y ridículo en la pizarra. La rejilla es UNA para todos los modos
+     (Individual, rondas en vivo, VS, Equipos, tarea): se redondea aquí y se
+     hereda coherente en los cinco. */
+  border-radius: var(--opt-radius, max(10px, 1.6cqmin));
+  /* El respaldo es EXACTAMENTE lo que Bootstrap `.btn` deja hoy en la ronda, así
+     que con el tema por defecto esto no mueve un píxel. Ojo con el empate: en
+     Individual el mismo botón lleva las dos clases, y esto (0,2,0) empataba con
+     la base (0,2,0) ganando por orden de carga — al declarar aquí el borde, el
+     Individual perdió sus 2px. Por eso la base se escribe con 0,3,0 arriba. */
+  border: var(--opt-border, 1px solid transparent);
+  box-shadow: var(--opt-shadow, none);
+  transition: var(--opt-transition, color .15s ease-in-out, background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out);
+}
+.ww-opt-grid .btn:hover:not(:disabled) { filter: var(--opt-hover-filter, none); }
+.ww-opt-grid .btn:active:not(:disabled) {
+  transform: var(--opt-press, none);
+  box-shadow: var(--opt-shadow-active, var(--opt-shadow, none));
+}
+.ww-opt-grid .btn:nth-child(1) { background: var(--ww-shape-1, #e21b3c); border-color: var(--ww-shape-1, #e21b3c); color: var(--ww-shape-1-fg, #fff); }
+.ww-opt-grid .btn:nth-child(2) { background: var(--ww-shape-2, #1368ce); border-color: var(--ww-shape-2, #1368ce); color: var(--ww-shape-2-fg, #fff); }
+/* El ámbar con letra BLANCA daba 2,4:1 — el peor contraste de toda la app y en
+   el sitio más visible. Con la letra oscura sube a 6,2:1 sin tocar el color de
+   la forma (la paleta tipo un concurso se reconoce por el color, no por la letra).
+   Medido, no estimado: lo comprueba la matriz en cada pasada. */
+.ww-opt-grid .btn:nth-child(3) { background: var(--ww-shape-3, #d89e00); border-color: var(--ww-shape-3, #d89e00); color: var(--ww-shape-3-fg, #1f2937); }
+.ww-opt-grid .btn:nth-child(4) { background: var(--ww-shape-4, #26890c); border-color: var(--ww-shape-4, #26890c); color: var(--ww-shape-4-fg, #fff); }
+/* EL VEREDICTO GANA AL SKIN también en RONDAS (vivo/VS/Equipos, botones
+   `.rq-opt` de renderChoiceRound): el arreglo de v1.51.431 solo cubría el
+   player Individual (`.ww-opt`) y en carrera el fallo seguía sin ponerse rojo.
+   Cuatro clases (0-4-0), por encima de las formas y de cualquier skin. */
+.ww-opt-grid .btn.rq-opt.btn-success { background: var(--ww-success); border-color: var(--ww-success); color: #fff; }
+.ww-opt-grid .btn.rq-opt.btn-danger { background: var(--ww-danger); border-color: var(--ww-danger); color: #fff; }

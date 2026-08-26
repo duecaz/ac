@@ -1,3 +1,6 @@
 .claude/
 .preflight-ok
 .shots/
+
+# Tomas de tools/opcion-sonda.mjs (mediciones de una sesión, no producto)
+.opcion-sonda.*.json

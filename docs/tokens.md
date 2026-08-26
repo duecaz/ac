@@ -9,7 +9,7 @@
 Los tokens son la INTERFAZ entre el tema y el juego (ley §3: el skin
 cambia tokens, la actividad los consume). Este es el contrato completo.
 
-**194 tokens** en 16 familias.
+**204 tokens** en 17 familias.
 
 ## `--bs-*` (23)
 
@@ -176,6 +176,21 @@ cambia tokens, la actividad los consume). Este es el contrato completo.
 | `--math-q-weight` | themes/tv-show/skin.css | styles/math.css |
 | `--math-tope` | styles/math.css | styles/math.css |
 
+## `--opt-*` (10)
+
+| Token | Lo DECLARA | Lo CONSUME |
+|---|---|---|
+| `--opt-border` | themes/tv-show/skin.css | styles/opcion.css |
+| `--opt-hover` | themes/tv-show/skin.css | styles/opcion.css |
+| `--opt-hover-filter` | themes/tv-show/skin.css | styles/opcion.css |
+| `--opt-press` | themes/tv-show/skin.css | styles/opcion.css |
+| `--opt-radius` | themes/tv-show/skin.css | styles/opcion.css |
+| `--opt-shadow` | themes/tv-show/skin.css | styles/opcion.css · themes/tv-show/skin.css |
+| `--opt-shadow-active` | themes/tv-show/skin.css | styles/opcion.css |
+| `--opt-shadow-hover` | themes/tv-show/skin.css | styles/opcion.css |
+| `--opt-transition` | themes/tv-show/skin.css | styles/opcion.css |
+| `--opt-weight` | themes/tv-show/skin.css | styles/opcion.css · styles/vs.css |
+
 ## `--qh-*` (14)
 
 | Token | Lo DECLARA | Lo CONSUME |
@@ -262,25 +277,25 @@ cambia tokens, la actividad los consume). Este es el contrato completo.
 | `--ww-bg-image` | core/backgrounds.js | styles/backgrounds.css |
 | `--ww-bg-ink` | core/backgrounds.js | styles/backgrounds.css |
 | `--ww-bg-soft` | core/skins.js | styles/crossword.css · styles/diagram.css · styles/wordsearch.css |
-| `--ww-card-bg` | core/skins.js | embed.html · styles/crossword.css · styles/match.css · styles/memory.css · styles/player.css · styles/question-live.css · styles/wordsearch.css |
-| `--ww-card-border` | core/skins.js | core/skins.js · styles/crossword.css · styles/diagram.css · styles/match.css · styles/player.css · styles/question-live.css · styles/wordsearch.css |
-| `--ww-card-fg` | core/skins.js | styles/backgrounds.css · styles/crossword.css · styles/globos.css · styles/match.css · styles/memory.css · styles/player.css · styles/question-live.css · styles/wordsearch.css |
-| `--ww-danger` | core/skins.js · styles/theme.css | styles/crossword.css · styles/live.css · styles/math.css · styles/quiz.css · styles/wheel.css |
-| `--ww-fg` | core/skins.js | core/editorShell.js · core/skins.js · embed.html · styles/backgrounds.css · styles/crossword.css · styles/globos.css · styles/match.css · styles/memory.css · styles/player.css · styles/question-live.css · styles/wordsearch.css · themes/tv-show/skin.css |
+| `--ww-card-bg` | core/skins.js | embed.html · styles/crossword.css · styles/match.css · styles/memory.css · styles/opcion.css · styles/player.css · styles/question-live.css · styles/wordsearch.css |
+| `--ww-card-border` | core/skins.js | core/skins.js · styles/crossword.css · styles/diagram.css · styles/match.css · styles/opcion.css · styles/question-live.css · styles/wordsearch.css |
+| `--ww-card-fg` | core/skins.js | styles/backgrounds.css · styles/crossword.css · styles/globos.css · styles/match.css · styles/memory.css · styles/opcion.css · styles/player.css · styles/question-live.css · styles/wordsearch.css |
+| `--ww-danger` | core/skins.js · styles/theme.css | styles/crossword.css · styles/math.css · styles/opcion.css · styles/wheel.css |
+| `--ww-fg` | core/skins.js | core/editorShell.js · core/skins.js · embed.html · styles/backgrounds.css · styles/crossword.css · styles/globos.css · styles/match.css · styles/memory.css · styles/opcion.css · styles/player.css · styles/question-live.css · styles/wordsearch.css · themes/tv-show/skin.css |
 | `--ww-fs-reserve` | styles/player.css | styles/live.css · styles/player.css |
 | `--ww-line` | — *(solo respaldo)* | styles/player.css |
 | `--ww-muted` | — *(solo respaldo)* | styles/player.css |
 | `--ww-paper` | themes/arcade/skin.css | styles/textCorrection.css |
 | `--ww-paper-ink` | themes/arcade/skin.css | styles/textCorrection.css |
-| `--ww-shape-1` | core/skins.js | core/editorShell.js · core/skins.js · styles/globos.css · styles/live.css |
-| `--ww-shape-1-fg` | core/skins.js | styles/globos.css · styles/live.css |
-| `--ww-shape-2` | core/skins.js | core/editorShell.js · core/skins.js · styles/globos.css · styles/live.css |
-| `--ww-shape-2-fg` | core/skins.js | styles/globos.css · styles/live.css |
-| `--ww-shape-3` | core/skins.js | core/editorShell.js · core/skins.js · styles/globos.css · styles/live.css |
-| `--ww-shape-3-fg` | core/skins.js | styles/globos.css · styles/live.css |
-| `--ww-shape-4` | core/skins.js | core/editorShell.js · core/skins.js · styles/globos.css · styles/live.css |
-| `--ww-shape-4-fg` | core/skins.js | styles/globos.css · styles/live.css |
-| `--ww-success` | core/skins.js · styles/theme.css | styles/crossword.css · styles/live.css · styles/math.css · styles/quiz.css |
+| `--ww-shape-1` | core/skins.js · themes/tv-show/skin.css | core/editorShell.js · core/skins.js · styles/globos.css · styles/opcion.css |
+| `--ww-shape-1-fg` | core/skins.js | styles/globos.css · styles/opcion.css |
+| `--ww-shape-2` | core/skins.js · themes/tv-show/skin.css | core/editorShell.js · core/skins.js · styles/globos.css · styles/opcion.css |
+| `--ww-shape-2-fg` | core/skins.js | styles/globos.css · styles/opcion.css |
+| `--ww-shape-3` | core/skins.js · themes/tv-show/skin.css | core/editorShell.js · core/skins.js · styles/globos.css · styles/opcion.css |
+| `--ww-shape-3-fg` | core/skins.js | styles/globos.css · styles/opcion.css |
+| `--ww-shape-4` | core/skins.js · themes/tv-show/skin.css | core/editorShell.js · core/skins.js · styles/globos.css · styles/opcion.css |
+| `--ww-shape-4-fg` | core/skins.js | styles/globos.css · styles/opcion.css |
+| `--ww-success` | core/skins.js · styles/theme.css | styles/crossword.css · styles/math.css · styles/opcion.css |
 | `--ww-success-ink` | — *(solo respaldo)* | styles/wordsearch.css |
 | `--ww-topbar-h` | core/boot.js · styles/home.css | styles/home.css · styles/player.css |
 | `--ww-warning` | core/skins.js · styles/theme.css | styles/memory.css |

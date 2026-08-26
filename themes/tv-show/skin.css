@@ -53,25 +53,35 @@ body.skin-tv-show .card,
   box-shadow: 0 5px 0 #b87400, 0 8px 18px rgba(255,164,0,.45);
 }
 
-/* Cuadrícula un concurso (quiz / live) — fichas 3D con color de forma.
-   SIN `color` a pelo: la tinta de cada ficha la manda su token
-   `--ww-shape-N-fg` (styles/live.css). Este bloque fijaba `color:#fff` y, por
-   empate de especificidad, ganaba por cargarse después: sobre la forma 3
-   (turquesa) y la 4 (naranja) daba 2,2:1 — «París» y «Madrid» no se leían con
-   NINGÚN fondo. Es el «no se ven las letras» del reporte del compañero
-   (2026-08-11, prueba 10), y lo cazó tools/contrast-torture.mjs. */
-.skin-tv-show .ww-opt-grid .btn,
-.skin-tv-show .ww-opt {
-  border: none; border-radius: .9rem; font-weight: 800;
-  box-shadow: 0 5px 0 rgba(0,0,0,.45), 0 8px 20px rgba(0,0,0,.35);
-  transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+/* Cuadrícula tipo concurso (quiz / live) — fichas 3D con color de forma. */
+/* La ficha 3D se PIDE con el vocabulario que publica `styles/opcion.css`, no se
+   escribe dentro de la opción. Eran las CUATRO reglas que le quedaban a este
+   tema dentro de la anatomía de una plantilla — la deuda que congelaba el
+   ratchet de §3c. Mismo píxel, sin tocar su interior. */
+.skin-tv-show {
+  --opt-border: none;
+  --opt-radius: .9rem;
+  --opt-weight: 800;
+  --opt-shadow: 0 5px 0 rgba(0,0,0,.45), 0 8px 20px rgba(0,0,0,.35);
+  --opt-transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+  --opt-hover: translateY(-2px);
+  --opt-hover-filter: brightness(1.07);
+  --opt-shadow-hover: var(--opt-shadow);
+  --opt-press: translateY(3px);
+  --opt-shadow-active: 0 2px 0 rgba(0,0,0,.45);
+  /* Los degradados de cada forma van por el token que la rejilla YA consumía
+     (`--ww-shape-N`): un `background` acepta un gradiente igual que un color, y
+     así el tema no necesita nombrar `.ww-shape-N`. El `-fg` lo sigue poniendo
+     el manifiesto del skin — este bloque fijaba `color:#fff` y, por empate de
+     especificidad, ganaba por cargarse después: sobre la forma 3 (turquesa) y la
+     4 (naranja) daba 2,2:1 y «París» y «Madrid» no se leían con NINGÚN fondo.
+     Es el «no se ven las letras» del reporte del compañero (2026-08-11, prueba
+     10), que cazó tools/contrast-torture.mjs. */
+  --ww-shape-1: linear-gradient(180deg, #ff4d72, #d11540);
+  --ww-shape-2: linear-gradient(180deg, #4d8cff, #1a52e0);
+  --ww-shape-3: linear-gradient(180deg, #2fe0bf, #0f9e85);
+  --ww-shape-4: linear-gradient(180deg, #ffa64d, #e06f00);
 }
-.skin-tv-show .ww-opt:hover { transform: translateY(-2px); filter: brightness(1.07); }
-.skin-tv-show .ww-opt:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0,0,0,.45); }
-.skin-tv-show .ww-shape-1 { background: linear-gradient(180deg, #ff4d72, #d11540); }
-.skin-tv-show .ww-shape-2 { background: linear-gradient(180deg, #4d8cff, #1a52e0); }
-.skin-tv-show .ww-shape-3 { background: linear-gradient(180deg, #2fe0bf, #0f9e85); }
-.skin-tv-show .ww-shape-4 { background: linear-gradient(180deg, #ffa64d, #e06f00); }
 
 /* Pregunta + cronómetro grandes */
 .skin-tv-show .ww-q { font-weight: 800; text-shadow: 0 2px 10px rgba(0,0,0,.5); }

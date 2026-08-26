@@ -178,21 +178,23 @@ for (const tema of temas) {
 // mintiendo hacia arriba y deje entrar reglas gratis).
 const TOPE = {
   // TANDA 2 (v1.51.573) bajó tv-show de 28 a 7: todo Operaciones migrado a tokens.
-  // TANDA 3 (v1.51.588) deja ARCADE EN CERO: su calculadora entera pasó a tokens
+  // TANDA 3 (v1.51.588) dejó ARCADE EN CERO: su calculadora entera pasó a tokens
   // (11 reglas → declaraciones, incluida la tipografía por `--math-font` y el
   // rótulo «SOLVE!» por `--math-q-rotulo`), y se borraron 5 reglas MUERTAS que
   // pintaban `.vs-body .ww-opt`/`.ww-shape-N`, clases que en el duelo no existen.
-  // Verificado con `node tools/shots.mjs`: 24/24 capturas idénticas.
-  // Lo que queda en tv-show son las OPCIONES de Quiz (4 selectores), y el motivo
-  // de aplazarlas es más hondo de lo que parecía: la opción NO TIENE UNA REGLA
-  // DUEÑA. Se pinta en cinco sitios bajo dos nombres — `.ww-opt`
-  // (styles/player.css, styles/quiz.css) y `.ww-opt-grid .btn` (styles/live.css,
-  // styles/vs.css, styles/player.css) —, y encima player.css está en la lista
-  // CHROME de aquí arriba: media pieza es anatomía y media no, así que este mismo
-  // test la clasifica de forma incoherente. Sin regla dueña, ningún token puede
-  // tener un respaldo con sentido. La TANDA 4 es consolidarla igual que
-  // `styles/math.css` hizo con el teclado, no perseguir cuatro selectores.
-  'tv-show': 4,
+  // TANDA 4 (v1.51.599) CIERRA LA MIGRACIÓN: los 4 selectores que le quedaban a
+  // tv-show eran las OPCIONES de Quiz, y el motivo de aplazarlas era más hondo
+  // que perseguir cuatro reglas — la opción NO TENÍA REGLA DUEÑA. Se pintaba en
+  // cinco sitios bajo dos nombres, así que ningún token podía tener un respaldo
+  // con sentido. Se consolidó en `styles/opcion.css` igual que `styles/math.css`
+  // hizo con el teclado, y el tema pasó a PEDIR el relieve por `--opt-*`.
+  // Medido con una sonda de estilos computados (6 contextos × 4 botones × 15
+  // propiedades, Individual y VS, los tres temas): 352 propiedades, 0 cambios.
+  // De paso destapó dos cosas que la vista no enseña: la rejilla EMPATABA en
+  // especificidad con la base del Individual y le ganaba por orden de carga (al
+  // tokenizar, el borde del Individual pasó de 2px a 1px), y `vs.css` declaraba
+  // `font-weight: 600` literal, que pisaba el token y dejaba al tema sin su 800
+  // solo en el duelo. Las dos ya están escritas donde tocaba.
   'arcade':  0,   // ← nace limpio a partir de aquí: cualquier regla nueva rompe CI
 };
 const filas = temas.map(t => ({ tema: t, n: (invasoras[t] || []).length, tope: TOPE[t] }));

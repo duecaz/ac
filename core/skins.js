@@ -37,6 +37,20 @@
 //   --math-cifra       lo que mide una cifra      default: max(1rem, 11cqmin)
 //   --math-font        tipografia de la calculadora  default: inherit (la del marco)
 //
+// LA OPCIÓN DE RESPUESTA (styles/opcion.css) — la pastilla que el alumno pulsa,
+// igual en los cinco modos. El tema pide el relieve; no escribe dentro.
+//   --opt-border        borde                default: 2px card (solo) / 1px transparente (ronda)
+//   --opt-radius        redondeo             default: max(10px, 1.6cqmin)
+//   --opt-weight        grosor de la letra   default: 600
+//   --opt-shadow        sombra en reposo     default: ninguna
+//   --opt-transition    transicion           default: la del modo
+//   --opt-hover         transform al pasar   default: translateY(-2px)
+//   --opt-hover-filter  filtro al pasar      default: ninguno
+//   --opt-shadow-hover  sombra al pasar      default: 0 4px 12px rgba(0,0,0,.1)
+//   --opt-press         transform al pulsar  default: como el hover
+//   --opt-shadow-active sombra al pulsar     default: como la de reposo
+//   --ww-shape-1..4     fondo de cada forma (acepta color O degradado)
+//
 //   EL ROTULO DEL TEMA sobre el enunciado (arcade pone «SOLVE!»). Sin el primero,
 //   el pseudo-elemento no existe y no ocupa un pixel:
 //   --math-q-rotulo          texto (`content`)      default: none (no se pinta)

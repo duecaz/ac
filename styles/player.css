@@ -1,18 +1,8 @@
-.ww-player .ww-opt {
-  border: 2px solid var(--ww-card-border, #dee2e6);
-  background: var(--ww-card-bg, #fff);
-  color: var(--ww-card-fg, var(--ww-fg, #1f2937));
-  font-weight: 500;
-  padding: 1rem;
-  text-align: left;
-  white-space: normal;
-  transition: transform .1s, box-shadow .1s;
-}
-.ww-player .ww-opt:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,.1);
-}
-.ww-player .ww-opt:disabled { opacity: .9; }
+/* La OPCIÓN DE RESPUESTA vive en `styles/opcion.css` (dueño único). Estaba
+   aquí su aspecto en Individual, mientras la rejilla y los colores por forma
+   estaban en live.css y el veredicto en quiz.css: cinco sitios y dos nombres
+   para la misma pastilla, que es por lo que un tema no tenía a quién pedírsela
+   y acababa escribiendo dentro de la anatomía. */
 
 /* === Wordwall-style activity page === */
 

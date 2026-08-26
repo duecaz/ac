@@ -21,8 +21,12 @@ const STYLES = join(dirname(fileURLToPath(import.meta.url)), '..', 'styles');
 
 // CSS de juego (player). Se excluyen: theme/skins/backgrounds (definen paletas),
 // editor/player-frame/touch/soloAnim/live (chrome, no el ejercicio).
+// `opcion` es JUEGO sin discusión: es la pastilla que el alumno pulsa. Y de paso
+// deshace la incoherencia que bloqueaba la TANDA 4 de temas — media pieza vivía
+// en `player.css` (EXCLUIDO como chrome) y media en `live.css` (GAME), así que
+// este mismo ratchet la clasificaba de dos maneras a la vez.
 const GAME = ['ballsort', 'crossword', 'diagram', 'globos', 'match', 'math', 'memory', 'wheel',
-  'question-live', 'quiz', 'textCorrection', 'vs', 'teams', 'wordsearch', 'live'];
+  'opcion', 'question-live', 'quiz', 'textCorrection', 'vs', 'teams', 'wordsearch', 'live'];
 // Chrome/paletas explícitamente EXCLUIDOS del ratchet (no son "el juego").
 // `live` SALIÓ de esta lista en v1.51.423. Estaba clasificado como chrome y
 // dentro vive el JUEGO: `.ww-opt-grid` son las opciones de respuesta que la
