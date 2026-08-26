@@ -21,12 +21,24 @@
 //   · un `font-weight: 500` en la base que nunca había ganado y que, al hacer
 //     explícita la especificidad, habría adelgazado el Individual de golpe.
 //
+// UNA SONDA QUE MIENTE ES PEOR QUE NINGUNA. Este script lanza su propio
+// servidor estático, y con un puerto FIJO un servidor zombi de una pasada
+// anterior seguiría atendiendo: mediría el checkout VIEJO y luego imprimiría un
+// «✅ IDÉNTICO» de lo más convencido — precisamente la evidencia que se cita en
+// `tests/temaPorTokens.test.mjs` y en el mensaje del commit. Por eso el puerto
+// se pide LIBRE al sistema, el servidor se mata en un `finally`, y antes de
+// medir se comprueba que lo servido es ESTE árbol (se compara la VERSION que
+// devuelve el HTTP con la del disco). Verificado inyectando una versión falsa:
+// la comprobación para la medición en vez de dar un verde tranquilizador.
+//
 // DOS TRAMPAS DE MEDICIÓN que también aprendió, y por eso están escritas aquí:
 // el ratón se queda donde cayó el último clic y deja un botón en `:hover` (su
 // sombra sale distinta), y un `border-color` con grosor 0 no pinta nada, así
 // que compararlo es ruido. Las dos están resueltas abajo.
 import { createRequire } from 'node:module';
 import { spawn } from 'node:child_process';
+import { createServer } from 'node:net';
+import { readFile } from 'node:fs/promises';
 import { writeFileSync } from 'node:fs';
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PW || '/opt/node22/lib/node_modules/playwright');
@@ -57,11 +69,28 @@ if (process.argv.includes('--diff')) {
     : `\n✅ IDÉNTICO: ${tot} propiedades computadas, 0 cambios (${omitidas} colores de borde con grosor 0 omitidos).`);
   process.exit(dif ? 1 : 0);
 }
-const srv = spawn('python3', ['-m', 'http.server', '8898'], { cwd: process.cwd(), stdio: 'ignore' });
+// Un puerto que el sistema acaba de dar por libre no puede tener un zombi.
+const puertoLibre = await new Promise((res, rej) => {
+  const s = createServer();
+  s.on('error', rej);
+  s.listen(0, '127.0.0.1', () => { const { port } = s.address(); s.close(() => res(port)); });
+});
+const BASE = `http://127.0.0.1:${puertoLibre}`;
+const srv = spawn('python3', ['-m', 'http.server', String(puertoLibre)], { cwd: process.cwd(), stdio: 'ignore' });
+let b;
+try {
 await new Promise(r => setTimeout(r, 1200));
-const b = await chromium.launch();
+
+// ¿Lo que sirve ese puerto es ESTE árbol? Si no, todo lo demás es ficción.
+const enDisco = (await readFile('core/constants.js', 'utf8')).match(/VERSION = '([^']+)'/)?.[1];
+const porHttp = (await (await fetch(`${BASE}/core/constants.js`)).text()).match(/VERSION = '([^']+)'/)?.[1];
+if (!enDisco || enDisco !== porHttp) {
+  throw new Error(`el servidor sirve v${porHttp} y en disco hay v${enDisco} — no se mide sobre otro árbol`);
+}
+
+b = await chromium.launch();
 const page = await b.newPage({ viewport: { width: 1280, height: 800 } });
-await page.goto('http://localhost:8898/teacher.html?backend=local', { waitUntil: 'domcontentloaded' });
+await page.goto(`${BASE}/teacher.html?backend=local`, { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => document.querySelector('#app')?.children.length > 0, { timeout: 20000 });
 await page.evaluate(async () => {
   await import('/core/registerTemplates.js');
@@ -103,4 +132,9 @@ for (const skin of ['default', 'tv-show', 'arcade']) {
 }
 writeFileSync(SALIDA(OUT), JSON.stringify(res, null, 1));
 console.log(`escrito ${SALIDA(OUT)} (${Object.keys(res).length} contextos × 4 botones × ${PROPS.length} props)`);
-await b.close(); srv.kill();
+} finally {
+  // El servidor se mata SIEMPRE, también si la medición revienta: si no, el
+  // zombi se queda escuchando y la próxima pasada mide el árbol de ésta.
+  await b?.close();
+  srv.kill();
+}

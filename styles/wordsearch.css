@@ -66,7 +66,12 @@
      ancho ya DEFINIDO, `aspect-ratio` no lo recalcula cuando el alto recorta —
      medido, salía 1125×718, deformada. Hace falta preguntar por las DOS
      dimensiones del carril y quedarse con la menor. */
-  width: min(100cqi, 100cqb);
+  --ws-lado: min(100cqi, 100cqb);
+  width: var(--ws-lado);
+  /* EL LADO DE LA CELDA, PUBLICADO. La letra tiene que crecer con SU celda, no
+     con el contenedor: sin esto la rejilla creció y las letras se quedaron
+     donde estaban (ver `.ws-cell`). */
+  --ws-cell: calc(var(--ws-lado) / var(--ws-cols, 15));
   aspect-ratio: 1;
   touch-action: none;
   user-select: none;
@@ -81,7 +86,14 @@
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  font-size: clamp(.45rem, 2cqmin, 1.05rem);
+  /* PROPORCIONAL A LA CELDA, con piso de legibilidad y SIN TECHO. Era
+     `clamp(.45rem, 2cqmin, 1.05rem)`: medido contra el CONTENEDOR y con un tope
+     fijo de 16.8px, así que al soltar el techo de la rejilla (v1.51.600) la sopa
+     creció y las letras NO — el relleno de la celda cayó del ~45 % al ~20 % y en
+     la pizarra quedó más grande y menos legible que antes. Justo el defecto §3
+     que ese mismo cambio venía a quitar, una capa más abajo. El `max()` es un
+     PISO, que §3 permite; el techo es lo que prohíbe. */
+  font-size: max(9px, calc(var(--ws-cell, 2cqmin) * .45));
   line-height: 1;
   background: var(--ww-card-bg, #fff);
   color: var(--ww-card-fg, var(--ww-fg, #212529));

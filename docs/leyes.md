@@ -200,6 +200,25 @@ escribirse; si necesita violar una prohibición, está en la capa equivocada.
   quedaba uno, y sin red el tema Arcade se quedaba en Courier. La fuente está
   ahora en `vendor/press-start-2p-5.3.0/` (subconjunto latin) y la red mira las
   tres. Una red que cubre una puerta de tres no protege: enseña a confiar.
+- **SOLTAR UN TECHO ARRIBA SIN SOLTARLO ABAJO EMPEORA LA PANTALLA** (v1.51.601).
+  Al quitarle el techo a la rejilla de la Sopa, la rejilla creció… y las letras
+  NO: `.ws-cell` seguía con `clamp(.45rem, 2cqmin, 1.05rem)`, medido contra el
+  contenedor y con tope fijo de 16.8px. Resultado en una pizarra 2560×1440: celda
+  de 38→86px y letra clavada en 16.8 → **el relleno cayó del ~45 % al ~20 %**, o
+  sea más grande y MENOS legible que antes. La letra tiene que crecer con SU
+  celda, no con el contenedor: la rejilla publica `--ws-cell` (lado ÷ columnas) y
+  la celda pide `max(9px, calc(var(--ws-cell) * .45))` — piso, que §3 permite,
+  sin techo. Medido: relleno **48 % / 47 % / 46 %** en móvil, apaisado y 4K, donde
+  antes era 32 / 36 / 20. Regla: **un techo nunca está solo**; al quitar uno, hay
+  que mirar la capa de dentro antes de dar la mejora por hecha.
+- **UNA DECLARACIÓN QUE NUNCA GANA ES INDISTINGUIBLE DE UNA QUE NO EXISTE.**
+  Tercera vez en dos versiones. `applySkin()` estampa los `cssVars` del manifiesto
+  como propiedades EN LÍNEA, así que los cuatro degradados que tv-show declaraba
+  para `--ww-shape-N` estaban muertos —y los `.skin-tv-show .ww-shape-N` de antes
+  también, porque la regla de la rejilla es más específica—. Llevaban tiempo sin
+  verse y nadie lo notó: la ficha se pinta con el color plano. Borrados (§30); si
+  se quieren degradados de verdad, el sitio es el `cssVars`, y toca rehacer el
+  contraste porque `--ww-shape-N-fg` está calculado contra los planos.
 - **UN TECHO EN `px` CONGELA EL CRECIMIENTO, y el ratchet de §3 no lo ve**
   (v1.51.600). La Sopa limitaba su rejilla con `width: min(100%, 100cqb, 580px)`
   y las dos partes estaban mal: `100cqb` se medía contra `.ww-ws` —toda la

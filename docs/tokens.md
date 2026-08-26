@@ -9,7 +9,7 @@
 Los tokens son la INTERFAZ entre el tema y el juego (ley §3: el skin
 cambia tokens, la actividad los consume). Este es el contrato completo.
 
-**204 tokens** en 17 familias.
+**206 tokens** en 17 familias.
 
 ## `--bs-*` (23)
 
@@ -258,11 +258,13 @@ cambia tokens, la actividad los consume). Este es el contrato completo.
 | `--vss-name-size` | styles/vs.css · themes/arcade/skin.css · themes/tv-show/skin.css | styles/vs.css |
 | `--vss-score-size` | styles/vs.css · themes/arcade/skin.css · themes/tv-show/skin.css | styles/vs.css |
 
-## `--ws-*` (1)
+## `--ws-*` (3)
 
 | Token | Lo DECLARA | Lo CONSUME |
 |---|---|---|
+| `--ws-cell` | styles/wordsearch.css | styles/wordsearch.css |
 | `--ws-cols` | templates/wordsearch/editor.js · templates/wordsearch/player.js | styles/wordsearch.css |
+| `--ws-lado` | styles/wordsearch.css | styles/wordsearch.css |
 
 ## `--ww-*` (31)
 
@@ -287,13 +289,13 @@ cambia tokens, la actividad los consume). Este es el contrato completo.
 | `--ww-muted` | — *(solo respaldo)* | styles/player.css |
 | `--ww-paper` | themes/arcade/skin.css | styles/textCorrection.css |
 | `--ww-paper-ink` | themes/arcade/skin.css | styles/textCorrection.css |
-| `--ww-shape-1` | core/skins.js · themes/tv-show/skin.css | core/editorShell.js · core/skins.js · styles/globos.css · styles/opcion.css |
+| `--ww-shape-1` | core/skins.js | core/editorShell.js · core/skins.js · styles/globos.css · styles/opcion.css |
 | `--ww-shape-1-fg` | core/skins.js | styles/globos.css · styles/opcion.css |
-| `--ww-shape-2` | core/skins.js · themes/tv-show/skin.css | core/editorShell.js · core/skins.js · styles/globos.css · styles/opcion.css |
+| `--ww-shape-2` | core/skins.js | core/editorShell.js · core/skins.js · styles/globos.css · styles/opcion.css |
 | `--ww-shape-2-fg` | core/skins.js | styles/globos.css · styles/opcion.css |
-| `--ww-shape-3` | core/skins.js · themes/tv-show/skin.css | core/editorShell.js · core/skins.js · styles/globos.css · styles/opcion.css |
+| `--ww-shape-3` | core/skins.js | core/editorShell.js · core/skins.js · styles/globos.css · styles/opcion.css |
 | `--ww-shape-3-fg` | core/skins.js | styles/globos.css · styles/opcion.css |
-| `--ww-shape-4` | core/skins.js · themes/tv-show/skin.css | core/editorShell.js · core/skins.js · styles/globos.css · styles/opcion.css |
+| `--ww-shape-4` | core/skins.js | core/editorShell.js · core/skins.js · styles/globos.css · styles/opcion.css |
 | `--ww-shape-4-fg` | core/skins.js | styles/globos.css · styles/opcion.css |
 | `--ww-success` | core/skins.js · styles/theme.css | styles/crossword.css · styles/math.css · styles/opcion.css |
 | `--ww-success-ink` | — *(solo respaldo)* | styles/wordsearch.css |

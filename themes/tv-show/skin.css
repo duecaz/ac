@@ -69,18 +69,23 @@ body.skin-tv-show .card,
   --opt-shadow-hover: var(--opt-shadow);
   --opt-press: translateY(3px);
   --opt-shadow-active: 0 2px 0 rgba(0,0,0,.45);
-  /* Los degradados de cada forma van por el token que la rejilla YA consumía
-     (`--ww-shape-N`): un `background` acepta un gradiente igual que un color, y
-     así el tema no necesita nombrar `.ww-shape-N`. El `-fg` lo sigue poniendo
-     el manifiesto del skin — este bloque fijaba `color:#fff` y, por empate de
-     especificidad, ganaba por cargarse después: sobre la forma 3 (turquesa) y la
-     4 (naranja) daba 2,2:1 y «París» y «Madrid» no se leían con NINGÚN fondo.
-     Es el «no se ven las letras» del reporte del compañero (2026-08-11, prueba
-     10), que cazó tools/contrast-torture.mjs. */
-  --ww-shape-1: linear-gradient(180deg, #ff4d72, #d11540);
-  --ww-shape-2: linear-gradient(180deg, #4d8cff, #1a52e0);
-  --ww-shape-3: linear-gradient(180deg, #2fe0bf, #0f9e85);
-  --ww-shape-4: linear-gradient(180deg, #ffa64d, #e06f00);
+  /* EL COLOR DE CADA FORMA NO SE DECLARA AQUÍ, y no por gusto: no se PUEDE.
+     `applySkin()` estampa los `cssVars` del manifiesto como propiedades EN
+     LÍNEA sobre este mismo elemento, y lo inline gana a cualquier hoja. Aquí
+     vivían cuatro degradados (`.skin-tv-show .ww-shape-N { background: … }`)
+     que llevaban tiempo SIN VERSE: la regla de la rejilla es más específica
+     (0,3,0 con `:nth-child`) y ya pintaba el color plano del manifiesto. Por eso
+     la sonda de estilos no detectó ningún cambio al retirarlos — estaban
+     muertos antes y después. Borrados (§30).
+     DECISIÓN PENDIENTE: si se quieren fichas con degradado de verdad, el sitio
+     es el `cssVars` del manifiesto (`core/skins.js`), que sí manda — y habrá
+     que pasar el contraste, porque `--ww-shape-N-fg` está calculado contra los
+     colores planos. Es un cambio de ASPECTO, no de fontanería, así que se
+     decide aparte.
+     El `-fg` lo sigue poniendo el manifiesto: este bloque fijaba `color:#fff` y
+     ganaba por orden de carga, dando 2,2:1 sobre la forma 3 (turquesa) y la 4
+     (naranja) — el «no se ven las letras» del reporte del compañero
+     (2026-08-11, prueba 10) que cazó tools/contrast-torture.mjs. */
 }
 
 /* Pregunta + cronómetro grandes */
