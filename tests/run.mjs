@@ -94,6 +94,7 @@ console.log('\n▶ inventario'); await import('./inventario.test.mjs');
 console.log('\n▶ puntosPorAcierto'); await import('./puntosPorAcierto.test.mjs');
 console.log('\n▶ effects'); await import('./effects.test.mjs');
 console.log('\n▶ activityCheck'); await import('./activityCheck.test.mjs');
+console.log('\n▶ publicarListo'); await import('./publicarListo.test.mjs');
 console.log('\n▶ imageSearch'); await import('./imageSearch.test.mjs');
 console.log('\n▶ newTemplate'); await import('./newTemplate.test.mjs');
 console.log('\n▶ activityCard'); await import('./activityCard.test.mjs');

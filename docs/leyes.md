@@ -200,6 +200,28 @@ escribirse; si necesita violar una prohibición, está en la capa equivocada.
   quedaba uno, y sin red el tema Arcade se quedaba en Courier. La fuente está
   ahora en `vendor/press-start-2p-5.3.0/` (subconjunto latin) y la red mira las
   tres. Una red que cubre una puerta de tres no protege: enseña a confiar.
+- **PUBLICAR NO ES GUARDAR** (v1.51.604). Un borrador a medias es legítimo —se
+  guarda y se sigue mañana—; PUBLICAR mete la actividad en la biblioteca, de
+  donde otro profe se la lleva a su clase. El guardián de «¿esto se puede jugar?»
+  (`core/activityCheck.js`) llevaba versiones existiendo, y lo consultaban el
+  jugador y el lanzador de salas… pero **no la puerta de publicar**: se podía
+  publicar una actividad SIN NADA dentro. Lo encontró el dueño con una Ruleta sin
+  casillas. Cerrada en `views/editView.js` y vigilada por
+  `tests/publicarListo.test.mjs`, que comprueba las DOS mitades — que no pase lo
+  vacío Y que lo lleno pase, porque una guardia demasiado celosa cuesta igual.
+  La excepción sale de lo DECLARADO, no del nombre: quien GENERA su contenido
+  (`meta.editor.generado`, hoy Ball Sort) no espera que el profe escriba nada.
+  **Un guardián existente no cubre una puerta hasta que alguien lo llama en ella.**
+- **LA TARJETA QUE NO CABÍA** (v1.51.604). «Mi imagen», en Apariencia › Fondo,
+  llevaba dentro un botón «Subir» de ancho completo: eso la dejaba **42 px más
+  alta que sus vecinas** (medido a cinco anchos), rompía la fila de la rejilla y
+  quedaba descolgada, con la letra del botón encogida hasta **9,92 px reales**.
+  El parche estaba en `player.css` con un comentario que ya confesaba el
+  problema —«el botón entero no cabe a 78px de ancho»— y aun así se quedó. No
+  cabía porque no tenía que estar: la tarjeta YA es pulsable. Ahora sin imagen
+  toda la tarjeta abre el selector, y con imagen un lápiz en la esquina la
+  cambia. Las siete miden lo mismo. **Cuando un comentario dice que algo no
+  cabe, el defecto no es el tamaño: es la pieza de más.**
 - **EL RATCHET DE §3 YA MIRA LOS TECHOS** (v1.51.602). Se aplazó dos veces con
   «destaparía media app». Medido: **61 entradas**, no media app. Dos agujeros:
   · un **`clamp(a, b, LITERAL)` es un techo disfrazado de piso** — el escaneo

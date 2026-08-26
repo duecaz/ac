@@ -169,8 +169,34 @@
 .pp-appearance .ww-skin-preview span { width: 100%; height: 8px; border-radius: 2px; }
 .pp-appearance .ww-skin-preview small { font-size: .62rem; line-height: 1.1; }
 .pp-appearance .ww-bg-preview + small { font-size: .62rem; line-height: 1.15; }
-/* La puerta de «Mi imagen»: el botón entero no cabe a 78px de ancho. */
-.pp-appearance .bg-pick .btn { font-size: .62rem; padding: .15rem .25rem; }
+/* «MI IMAGEN» mide lo mismo que sus vecinas. Aquí vivía el parche de cuando
+   llevaba un botón dentro —encoger su letra a .62rem, que en pantalla eran 9,92
+   px reales— con el comentario «el botón entero no cabe a 78px de ancho». No
+   cabía porque no tenía que estar: la tarjeta ya es pulsable, así que ahora ES
+   la puerta. Sin imagen, toda la tarjeta abre el selector; con imagen, un lápiz
+   en la esquina la cambia sin robarle alto a la fila. */
+.pp-appearance .bg-pick--mia { position: relative; cursor: pointer; }
+.pp-appearance .bg-pick__cambiar {
+  position: absolute;
+  top: .35rem;
+  right: .35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Blanco de contraste sobre CUALQUIER foto que suba el profe, no un token del
+     tema: el fondo de esta pastilla es la imagen del usuario, no la paleta. */
+  width: max(20px, 26cqw);
+  height: max(20px, 26cqw);
+  max-width: 26px;
+  max-height: 26px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.92);
+  color: #1f2937;
+  box-shadow: 0 1px 4px rgba(0,0,0,.35);
+  font-size: max(9px, 11cqw);
+  cursor: pointer;
+}
+.pp-appearance .bg-pick__cambiar:hover { background: #fff; }
 
 /* ── Apariencia PLEGABLE (pedido) ─────────────────────────────────────────── */
 .pp-acc > summary {

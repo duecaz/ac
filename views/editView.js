@@ -120,6 +120,23 @@ export function renderEditView(rootSel, { id, template }) {
   // EXPLÍCITA (Guardar borrador vs Publicar); el autosave (silent) la respeta (null).
   async function doSave(silent = false, setVis = null) {
     if (saving) return;
+    // PUBLICAR ES OTRA COSA QUE GUARDAR. Un borrador a medias es legítimo —se
+    // guarda y se sigue mañana—, pero PUBLICAR la mete en la biblioteca, donde
+    // otro profe se la lleva a su clase. El guardián de «¿esto se puede jugar?»
+    // existía desde v1.51.4xx y lo consultaban el jugador y el lanzador de
+    // salas… pero no esta puerta: se podía publicar una actividad SIN NADA
+    // dentro, y el siguiente que la abriera se encontraba el cartel de «todavía
+    // está vacía» (lo cazó el dueño con una Ruleta sin casillas, 2026-08-26).
+    // Se dice lo que falta, con las mismas palabras que el resto de la app.
+    if (setVis === 'public') {
+      const rev = revisarActividad(activity);
+      if (!rev.jugable) {
+        toast(`No se puede publicar: ${rev.problemasDeJuego.join(' · ')}`
+              + (rev.vacia ? ` ${rev.primerPaso}` : ''), 'warning', 8000);
+        setState('Sin publicar: aún no se puede jugar', 'warning', 'bi-exclamation-triangle-fill');
+        return;
+      }
+    }
     if (setVis) { activity.visibility = setVis; paintVis(); }
     saving = true;
     setState('Guardando…', 'info', 'bi-cloud-arrow-up');

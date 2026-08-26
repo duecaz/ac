@@ -344,13 +344,29 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
                   <h6 class="text-muted text-uppercase small mb-2">Fondo</h6>
                   <div class="pp-pick-grid">
                     ${listBackgrounds().map(b => b.name === 'custom'
-                      ? `<div class="ww-pick-tile bg-pick ${currentBg==='custom'?'is-active':''}" data-name="custom" role="button" title="${escapeHtml(b.description||'')}">
-                           ${backgroundPreviewHtml('custom', a.presentation?.backgroundImage || '')}
-                           <label class="btn btn-sm btn-outline-secondary w-100 mt-1" style="cursor:pointer" title="Máx 800 KB">
-                             <i class="bi bi-upload"></i> ${a.presentation?.backgroundImage ? 'Cambiar' : 'Subir'}
+                      // «MI IMAGEN» ES UNA TARJETA COMO LAS DEMÁS. Llevaba dentro un
+                      // botón «Subir» de ancho completo, y eso la dejaba 42 px MÁS
+                      // ALTA que sus vecinas (medido a cinco anchos): rompía la fila
+                      // de la rejilla y quedaba descolgada. El parche había sido
+                      // encoger la letra del botón —hasta 9,92 px reales, ilegible—
+                      // con un comentario en player.css que ya confesaba el
+                      // problema: «el botón entero no cabe a 78px de ancho». No cabe
+                      // porque no tiene que estar: la tarjeta YA es pulsable.
+                      //   · sin imagen  → la tarjeta ENTERA abre el selector;
+                      //   · con imagen  → la tarjeta selecciona ese fondo (como las
+                      //     otras) y para cambiarla hay un lápiz en su esquina.
+                      ? (a.presentation?.backgroundImage
+                        ? `<div class="ww-pick-tile bg-pick bg-pick--mia ${currentBg==='custom'?'is-active':''}" data-name="custom" role="button" title="${escapeHtml(b.description||'')}">
+                             ${backgroundPreviewHtml('custom', a.presentation.backgroundImage)}
+                             <label class="bg-pick__cambiar" title="Cambiar mi imagen (máx 800 KB)" aria-label="Cambiar mi imagen">
+                               <i class="bi bi-pencil-fill"></i>
+                               <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" id="bg-custom-file" hidden>
+                             </label>
+                           </div>`
+                        : `<label class="ww-pick-tile bg-pick bg-pick--mia" data-name="custom" title="${escapeHtml(b.description||'')} (máx 800 KB)">
+                             ${backgroundPreviewHtml('custom', '')}
                              <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" id="bg-custom-file" hidden>
-                           </label>
-                         </div>`
+                           </label>`)
                       : `<div class="ww-pick-tile bg-pick ${currentBg===b.name?'is-active':''}" data-name="${b.name}" role="button" title="${escapeHtml(b.description||'')}">
                            ${backgroundPreviewHtml(b.name)}
                          </div>`).join('')}
