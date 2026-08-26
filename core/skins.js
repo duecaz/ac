@@ -8,6 +8,12 @@
 // All activity CSS defines fallback defaults so a skin only needs to set
 // what it actually changes.
 //
+// EL CONTRATO COMPLETO Y AL DÍA está en `docs/tokens.md` — GENERADO por
+// `node tools/tokens.mjs`, con quién declara y quién consume CADA token. Lo que
+// sigue es un resumen de orientación, escrito a mano y por tanto sujeto a
+// quedarse viejo (lo estuvo: tenía valores por defecto que ya no eran los del
+// código). Ante una discrepancia, manda el índice generado.
+//
 // GLOBAL
 //   --ww-bg            page / player background
 //   --ww-bg-soft       secondary / soft background

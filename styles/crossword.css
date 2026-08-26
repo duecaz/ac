@@ -9,7 +9,6 @@
    viéndose igual aunque no hereden estas variables. */
 .cw-wrap {
   --cw-frame:            #1e293b;   /* rejilla, celdas bloqueadas, header oscuro */
-  --cw-frame-2:          #334155;   /* fin del degradado del header */
   --cw-focus:            #3b82f6;   /* contorno de foco */
   --cw-active-word:      #dbeafe;   /* tinte de la palabra activa (pastel) */
   --cw-active-cell:      #fde68a;   /* celda enfocada (pastel ámbar) */
@@ -21,7 +20,6 @@
   --cw-clue-wrong:       var(--ww-danger,  #dc2626);
   --cw-heading:          #475569;   --cw-heading-border: #cbd5e1;
   --cw-clue-hover:       #f1f5f9;
-  --cw-num:              #64748b;
 }
 
 /* ── Outer wrapper ─────────────────────────────────── */

@@ -88,6 +88,7 @@ console.log('\n▶ liveRules'); await import('./liveRules.test.mjs');
 console.log('\n▶ skins'); await import('./skins.test.mjs');
 console.log('\n▶ contrast'); await import('./contrast.test.mjs');
 console.log('\n▶ ajusteConectado'); await import('./ajusteConectado.test.mjs');
+console.log('\n▶ tokenConectado'); await import('./tokenConectado.test.mjs');
 console.log('\n▶ puntosPorAcierto'); await import('./puntosPorAcierto.test.mjs');
 console.log('\n▶ effects'); await import('./effects.test.mjs');
 console.log('\n▶ activityCheck'); await import('./activityCheck.test.mjs');

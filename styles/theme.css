@@ -9,7 +9,6 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 :root {
-  --ww-primary: #6366f1;
   --ww-accent: #ec4899;
   --ww-success: #10b981;
   --ww-warning: #f59e0b;

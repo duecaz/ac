@@ -164,10 +164,25 @@ escribirse; si necesita violar una prohibición, está en la capa equivocada.
 - **Y se mide DÓNDE, no solo SI**: el chip del HUD tiene que quedar a ≤48 px de
   la esquina del marco. Contar nodos daba verde a Pelotas con el indicador a
   213 px, en mitad del tablero — la norma existía y el fallo pasaba igual.
+- **Un token que nadie lee es un mando que no manda** (v1.51.593). Si el skin
+  cambia TOKENS y la actividad los consume, los tokens son un CONTRATO — y un
+  contrato se rompe por sus dos lados: declarar `--x` que ningún `var()` lee (el
+  tema cree que pinta y no pinta), o leer `var(--x)` sin fallback y sin que nadie
+  lo declare (eso no es un color pálido: la propiedad se cae entera). Es la misma
+  enfermedad que los siete ajustes desconectados del panel, en la otra interfaz
+  de la app, y se caza igual: **escaneando**, no con una lista. Lo vigila
+  `tests/tokenConectado.test.mjs`; el mapa legible —quién declara y quién consume
+  cada uno de los 195— lo genera `node tools/tokens.mjs` en `docs/tokens.md`.
+  Al escribir la red había tres muertos, todos borrados: `--ww-primary` (el color
+  «primario» de la app, que no coloreaba nada), `--cw-frame-2` (el degradado de
+  una cabecera del crucigrama que ya no existe) y `--cw-num` (la numeración, que
+  acabó leyendo `--ww-card-fg` y dejó su token atrás). Exención declarada: los
+  `--bs-*`, que los consume Bootstrap desde el CDN y no se pueden escanear.
 - **Tests que lo vigilan**: `tests/styles.test.mjs` (ratchet + completeness gate
   23/23 + **gate de themes**: todo `stylesheet:` declarado existe y ningún
   `themes/*/skin.css` queda huérfano sin documentar) · `tests/skins.test.mjs`
-  (set COMPLETO de tokens por skin).
+  (set COMPLETO de tokens por skin) · `tests/tokenConectado.test.mjs`
+  (declarado ⇔ consumido, + índice generado al día).
 - **✅ CERRADO (M7) — el reparto del TECLADO ya no está copiado**: lo tenían
   `styles/vs.css`, `styles/teams.css` y el skin tv-show con los mismos flex/grid.
   Ahora vive una vez en `styles/scaffold.css` y cada contenedor solo pone TAMAÑOS
