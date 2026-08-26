@@ -33,6 +33,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /* CONTENEDOR DE CONSULTA DEL CARRIL, para que la rejilla pueda preguntar por
+     el hueco QUE LE TOCA. Funciona porque este carril se dimensiona por FLEX
+     (`flex: 1 1 0` sobre un body con altura), no por su contenido: si se le
+     pone `flex: 0 0 auto`, su alto lo daría la rejilla y la rejilla se lo
+     pediría a él — probado, colapsa a 4×4 px. Un `container-type: size` NUNCA
+     puede dimensionarse por lo que lleva dentro. */
+  container-type: size;
 }
 
 /* Square CSS-grid of letter cells */
@@ -44,7 +51,22 @@
   border: 2px solid var(--ww-card-border, #ced4da);
   border-radius: 10px;
   overflow: hidden;
-  width: min(100%, 100cqb, 580px);
+  /* EL LADO DE UNA REJILLA CUADRADA = el menor de (ancho del carril, alto del
+     carril), y se consigue con `aspect-ratio` + `max-height`, sin unidades de
+     consulta: si el alto recorta, el navegador recalcula el ancho para mantener
+     la proporción. Aquí ponía `min(100%, 100cqb, 580px)` y las dos partes
+     estaban mal:
+     · `100cqb` se medía contra `.ww-ws` —toda la pantalla, incluida la reserva
+       del HUD y el banco de palabras—, no contra ESTE carril: daba de más;
+     · y el techo de `580px` estaba para tapar ese exceso. Es tamaño fijo que
+       CONGELA el crecimiento, justo lo que §3 prohíbe: medido, la sopa se
+       quedaba en 580px con hueco para 718 (apaisado) y 768 (tablet vertical).
+       El ratchet de §3 no lo veía porque escanea tipografía y color, no anchos.
+     Tampoco vale `width:100%` + `max-height:100%` + `aspect-ratio`: con el
+     ancho ya DEFINIDO, `aspect-ratio` no lo recalcula cuando el alto recorta —
+     medido, salía 1125×718, deformada. Hace falta preguntar por las DOS
+     dimensiones del carril y quedarse con la menor. */
+  width: min(100cqi, 100cqb);
   aspect-ratio: 1;
   touch-action: none;
   user-select: none;
@@ -171,7 +193,20 @@
    fijado a la proporción de la plantilla y fuera de pantalla completa nunca es
    vertical (medido en un móvil de 390). */
 @container (aspect-ratio < 1/1) {
-  .ww-ws-body { flex-direction: column; }
+  .ww-ws-body { flex-direction: column; justify-content: center; }
+  /* EL AIRE, EN UN SITIO. Medido en un móvil de 390: el carril se estiraba a
+     704px y la rejilla cuadrada solo puede medir 358 (su lado es el ANCHO), así
+     que el sobrante se partía en DOS bandas —~170px encima y ~180px debajo— con
+     el banco de palabras descolgado al fondo. La rejilla no puede crecer más;
+     lo que sí puede es que rejilla y palabras formen UN bloque centrado y el
+     aire quede fuera, no en medio.
+     Para eso el carril deja de estirarse — y entonces NO puede seguir siendo
+     contenedor de consulta de TAMAÑO (su alto lo daría el contenido y el
+     contenido se lo pediría a él: colapsa a 4×4 px). No hace falta: aquí el
+     hueco es más alto que ancho POR DEFINICIÓN de este `@container`, así que el
+     lado corto es el ancho y la rejilla no tiene nada que preguntar. */
+  .ww-ws-grid-wrap { flex: 0 0 auto; container-type: normal; }
+  .ww-ws-grid { width: 100%; }
   .ww-ws-words {
     flex-direction: row;
     flex-wrap: wrap;

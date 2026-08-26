@@ -200,6 +200,36 @@ escribirse; si necesita violar una prohibición, está en la capa equivocada.
   quedaba uno, y sin red el tema Arcade se quedaba en Courier. La fuente está
   ahora en `vendor/press-start-2p-5.3.0/` (subconjunto latin) y la red mira las
   tres. Una red que cubre una puerta de tres no protege: enseña a confiar.
+- **UN TECHO EN `px` CONGELA EL CRECIMIENTO, y el ratchet de §3 no lo ve**
+  (v1.51.600). La Sopa limitaba su rejilla con `width: min(100%, 100cqb, 580px)`
+  y las dos partes estaban mal: `100cqb` se medía contra `.ww-ws` —toda la
+  pantalla, con la reserva del HUD y el banco de palabras dentro—, no contra el
+  carril de la rejilla, así que daba de más; y el `580px` estaba para tapar ese
+  exceso. Medido: la sopa se quedaba en **580px con hueco para 718** (apaisado) y
+  **768** (tablet vertical) — un −24 % y −32 % de lado en la pizarra del aula.
+  §3 lo prohíbe desde siempre («prohibido px/rem fijos que congelen el
+  crecimiento; los `max()` valen como PISO, nunca como techo»), pero
+  `tests/styles.test.mjs` escanea **tipografía y color**, no anchos: la ley
+  cubría más de lo que su red miraba. **Deuda abierta**: extender el ratchet a
+  los techos de tamaño; hacerlo hoy destaparía media app y toca medirlo primero.
+- **Dos trampas de CSS que costaron dos intentos cada una** (v1.51.600), por si
+  vuelven a aparecer:
+  1. **Un `container-type: size` NUNCA puede dimensionarse por su contenido.**
+     Al poner `flex: 0 0 auto` en el carril que era contenedor de consulta, su
+     alto pasó a darlo la rejilla y la rejilla se lo pedía a él: **colapsó a
+     4×4 px**. Si el carril debe encogerse, el `container-type` sobra ahí.
+  2. **`aspect-ratio` no recalcula la dimensión que ya está DEFINIDA.** Con
+     `width: 100%` + `max-height: 100%` + `aspect-ratio: 1`, el alto se recorta y
+     el ancho se queda: salió **1125×718, deformada**. Para un cuadrado inscrito
+     hay que preguntar por las dos dimensiones (`min(100cqi, 100cqb)`) o
+     asegurarse de que el lado corto es el que manda.
+- **El aire que sobra se AGRUPA, no se parte** (v1.51.600). En un móvil de 390 la
+  rejilla cuadrada solo puede medir 358 (su lado es el ancho), así que sobran
+  ~346px de alto. Estaban repartidos en DOS bandas —~170 encima, ~180 debajo— con
+  el banco de palabras descolgado al fondo: la pantalla se leía rota. Ahora
+  rejilla y palabras forman UN bloque centrado (**185px entre ellas → 12px**) y
+  el aire queda fuera. Lo que sobra después es geometría, no maquetación: una
+  rejilla cuadrada no llena un hueco alto.
 - **MIGRACIÓN DE TEMAS TERMINADA — los cinco a CERO** (v1.51.599). La última
   deuda eran 4 selectores de tv-show sobre las opciones de Quiz, y el motivo de
   que resistieran tres tandas era más hondo que perseguirlos: **la opción no
