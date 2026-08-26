@@ -1,8 +1,8 @@
 {
-  "id": "2026-08-24",
+  "id": "2026-08-26",
   "titulo": "AulaReto · Hoja de pruebas",
-  "intro": "Esta ronda va casi entera de UNA cosa: cómo se ve el duelo y la calculadora en la pizarra grande. Se han quitado un montón de medidas fijas que no crecían con la pantalla, y eso el ordenador ya lo mide solo — lo que NO puede medir es si desde el fondo del aula se lee. Por eso casi todo se prueba en la pizarra, de pie y a tres metros. Ronda corta. Y una buena noticia: el fallo del reloj que reportaste está resuelto — no era de la web, le faltaba un permiso al servidor. La prueba 8 vuelve a estar activa. Marca Pasa si ocurrió lo que dice «Tiene que pasar», Falla si no — y cuenta en la nota qué viste. «No probado» también vale: dice hasta dónde llegaste.",
-  "versionMin": "1.51.587",
+  "intro": "Ronda corta y rara: casi todo lo que se ha tocado NO se tiene que notar. Han sido quince versiones de fontanería —ordenar CSS que estaba repartido en cinco sitios, traerse Bootstrap y la fuente del tema Arcade al propio servidor— y el ordenador ya ha medido que no cambia ni un píxel. Lo que la máquina NO puede comprobar es lo de la prueba 1: que la app funcione con el wifi caído. Esa es la importante de esta ronda. Lo que SÍ ha cambiado a propósito es la Sopa de Letras: ahora ocupa la pizarra entera y las letras crecen con ella. Y siguen abiertas las dos de siempre (el reloj y el lápiz): si ya las hiciste en la ronda del 24, dilo en la nota y sáltalas. Marca Pasa si ocurrió lo que dice «Tiene que pasar», Falla si no — y cuenta en la nota qué viste. «No probado» también vale: dice hasta dónde llegaste.",
+  "versionMin": "1.51.602",
   "secciones": [
     {
       "titulo": "Antes de empezar",
@@ -16,192 +16,148 @@
             "Barra superior"
           ],
           "accion": "Abre aulareto.com y recarga con Ctrl+F5 dos veces. En el móvil, cierra la pestaña y vuelve a abrirla.",
-          "espera": "arriba se ve el número de versión y es 1.51.587 o más. Si es menor, para y avisa: estarías probando la de antes.",
+          "espera": "arriba se ve el número de versión y es 1.51.602 o más. Si es menor, para y avisa: estarías probando la de antes.",
           "casillas": [
             "PC",
             "Móvil"
           ],
           "notaPista": "Qué versión salía en cada aparato"
-        },
-        {
-          "n": 1,
-          "titulo": "Entregar la hoja funciona sin tener cuenta",
-          "ruta": [
-            "Móvil",
-            "aulareto.com/test",
-            "Al final de la hoja"
-          ],
-          "accion": "En la ronda del 22 pusiste que el botón no se activaba, pero el informe SÍ me llegó. No sé cuál de las dos cosas viste, así que lo miramos otra vez con calma. Baja del todo AHORA MISMO, sin haber terminado nada.",
-          "pasos": [
-            "El botón «Entregar informe» tiene que estar ACTIVO ya, aunque no hayas iniciado sesión y no hayas marcado nada.",
-            "Si está apagado: haz una FOTO de la pantalla entera (con la barra de arriba, para ver la versión) y avísame por WhatsApp antes de seguir.",
-            "Si está activo, no lo pulses todavía: termina la ronda. Al poner veredicto a la última prueba debe salir un AVISO EN ROJO de que aún no has entregado."
-          ],
-          "espera": "el botón está activo desde el principio sin cuenta, y al terminar sale el aviso rojo.",
-          "casillas": [
-            "El botón está activo",
-            "Sale el aviso rojo al terminar"
-          ],
-          "notaPista": "Si está apagado, la foto es lo importante: sin ella no puedo saber si es la web o la versión que tenías"
         }
       ]
     },
     {
-      "titulo": "Parte 1 · LA PIZARRA GRANDE — esto es el grueso de la ronda",
-      "nota": "TODO esto se prueba en la pizarra del aula y A PANTALLA COMPLETA (el botón de la esquina de arriba a la derecha del marco). Y de pie, al fondo de la clase: si hay que acercarse a leerlo, es un fallo.",
+      "titulo": "Parte 1 · SIN INTERNET — la prueba importante de esta ronda",
+      "nota": "Hasta ahora la app se bajaba dos cosas de servidores ajenos: la librería de estilos (Bootstrap) y la fuente de píxeles del tema Arcade. Si el colegio se quedaba sin línea, la app no se veía «un poco peor»: se veía ROTA, con los recuadros descolocados. Ya está todo dentro de nuestro servidor, pero eso solo se puede comprobar de una manera.",
+      "pruebas": [
+        {
+          "n": 1,
+          "titulo": "La app entera funciona con el wifi cortado",
+          "ruta": [
+            "Móvil (o portátil)",
+            "aulareto.com",
+            "Modo avión",
+            "Cualquier actividad en Individual"
+          ],
+          "accion": "Con internet: abre aulareto.com y entra en una actividad cualquiera en Individual (que cargue del todo). AHORA pon el modo avión — o apaga el wifi y los datos. Con la página ya abierta, recarga (Ctrl+F5 en el portátil; en el móvil, tirar hacia abajo).",
+          "pasos": [
+            "Con el modo avión puesto, recarga la página.",
+            "Mira la FORMA: los botones tienen que seguir siendo botones, las tarjetas tarjetas, y nada debe salirse por los lados ni pisarse.",
+            "Entra en una actividad y juégala un poco: las opciones de respuesta tienen que seguir en su rejilla de colores.",
+            "Cambia el tema a Arcade (Apariencia › Arcade) y mira el texto: tiene que verse con LETRAS DE VIDEOJUEGO (cuadraditas), no con una letra de máquina de escribir normal.",
+            "Si algo de esto sale mal, haz FOTO de la pantalla entera (con la barra de arriba, para que se vea la versión)."
+          ],
+          "espera": "sin internet la app se ve EXACTAMENTE igual que con internet: nada descolocado, nada desbordado, y el tema Arcade con su letra de píxeles.",
+          "casillas": [
+            "La forma es la misma sin internet",
+            "Arcade conserva su letra de píxeles"
+          ],
+          "notaPista": "Si algo se descoloca, describe QUÉ pantalla y adjunta la foto — es el fallo que esta ronda busca"
+        }
+      ]
+    },
+    {
+      "titulo": "Parte 2 · LA SOPA DE LETRAS — esto SÍ cambia, y a mejor",
+      "nota": "La rejilla estaba topada a un tamaño fijo: se quedaba a la mitad aunque la pizarra diera para más, y las letras encima no crecían. Ahora la rejilla llena el hueco y la letra crece con su casilla. Se prueba en la pizarra Y en el móvil, porque son dos problemas distintos.",
       "pruebas": [
         {
           "n": 2,
-          "titulo": "El marcador del duelo se lee desde el fondo",
+          "titulo": "La sopa llena la pizarra y se lee desde el fondo",
           "ruta": [
             "Pizarra del aula",
-            "Operaciones",
-            "VS (duelo)",
-            "Pantalla completa"
-          ],
-          "accion": "La barra de arriba —la que dice de quién es cada lado y cómo van los puntos— estaba escrita en un tamaño fijo: en una pizarra grande se quedaba igual de pequeña que en un portátil. Abre Operaciones en VS, dale a pantalla completa y VETE AL FONDO DE LA CLASE.",
-          "pasos": [
-            "Desde el fondo, sin acercarte: ¿se leen los nombres de los dos alumnos?",
-            "¿Se leen los dos números de puntos?",
-            "Ahora acércate: la barra tiene que ocupar una franja de verdad, no una tira fina perdida arriba.",
-            "Compáralo con la MISMA actividad en tu portátil: en el portátil debe verse como siempre, ni más grande ni más pequeña que antes."
-          ],
-          "espera": "en la pizarra se lee todo desde el fondo, y en el portátil no ha cambiado nada.",
-          "casillas": [
-            "Nombres legibles desde el fondo",
-            "Puntos legibles desde el fondo",
-            "En el portátil sigue igual"
-          ],
-          "notaPista": "A cuántos pasos estabas y qué pizarra es (marca y pulgadas). Si algo no se lee, foto desde donde estabas"
-        },
-        {
-          "n": 3,
-          "titulo": "Las cifras de la calculadora en la pizarra",
-          "ruta": [
-            "Pizarra del aula",
-            "Operaciones",
+            "Sopa de Letras",
             "Individual",
             "Pantalla completa"
           ],
-          "accion": "Las cifras de las teclas también tenían tope: en la pizarra salía un número pequeñito en medio de un botón enorme. Abre Operaciones en Individual, pantalla completa, y mírala desde el fondo.",
+          "accion": "Abre una Sopa de Letras en la pizarra, dale a Iniciar y pon PANTALLA COMPLETA (el botón de la esquina de arriba a la derecha del marco). Después vete al FONDO de la clase y mira desde ahí, de pie.",
           "pasos": [
-            "Cada número tiene que llenar bien su tecla, no ser un puntito en el centro.",
-            "La operación de arriba («3 × 4 =»), el hueco de la respuesta y las cifras de las teclas tienen que verse del MISMO tamaño. Esto es nuevo: antes eran tres tamaños distintos.",
-            "Los tres deben verse como UNA calculadora junta, no como piezas sueltas repartidas por la pantalla."
+            "La rejilla tiene que ocupar casi todo el alto disponible, no quedarse en un cuadrado pequeño en medio con hueco de sobra a los lados.",
+            "Desde el fondo del aula, las letras se tienen que LEER sin acercarse.",
+            "Vuelve a la pizarra y busca una palabra arrastrando el dedo: la selección tiene que ir casilla por casilla sin saltarse ninguna ni marcar la de al lado."
           ],
-          "espera": "los tres textos son del mismo tamaño y el conjunto se lee como una sola calculadora.",
+          "espera": "la rejilla ocupa el hueco, las letras se leen desde el fondo y arrastrar el dedo selecciona bien.",
           "casillas": [
-            "Las cifras llenan la tecla",
-            "Los tres textos del mismo tamaño",
-            "Se ve como una sola pieza"
+            "Ocupa el hueco",
+            "Se lee desde el fondo",
+            "El dedo selecciona bien"
           ],
-          "notaPista": "Si alguno se ve más grande o más pequeño, di CUÁL de los tres y haz una foto de frente"
+          "notaPista": "Si sobra mucho hueco arriba y abajo, dime cuánto más o menos (¿un palmo? ¿medio?)"
         },
         {
-          "n": 4,
-          "titulo": "El reparto del duelo: ¿la cuerda se lleva demasiado?",
+          "n": 3,
+          "titulo": "La sopa en el móvil, de pie",
           "ruta": [
-            "Pizarra o PC",
-            "Operaciones",
-            "VS (duelo)",
+            "Móvil",
+            "Sopa de Letras",
+            "Individual",
             "Pantalla del juego"
           ],
-          "accion": "Aquí quiero tu OPINIÓN, no un veredicto técnico. La animación del centro (los dos tirando de la cuerda) se lleva la mitad del ancho y a cada alumno le queda una columna más estrecha. Se probó a repartirlo más a favor de los alumnos y el dueño prefirió dejarlo como está — pero tú eres quien lo va a usar en clase. Abre Operaciones en VS y juega una ronda entera.",
+          "accion": "Abre la misma Sopa en el móvil, en VERTICAL (sin girarlo).",
           "pasos": [
-            "Lo que SÍ es un fallo si pasa: que las teclas salgan estiradas o aplastadas. Tienen que ser cuadradas.",
-            "Lo que SÍ es un fallo: que se corte alguna fila del teclado por abajo.",
-            "Lo que es OPINIÓN: ¿el panel de cada alumno te parece suficiente para jugar, o la cuerda se lleva demasiado sitio?",
-            "Si puedes, pruébalo con dos alumnos de verdad en la pizarra: es distinto de mirarlo tú solo."
+            "La rejilla y la lista de palabras de abajo tienen que verse como UN bloque junto, centrado.",
+            "Antes había un hueco grande en medio, con las palabras descolgadas al fondo de la pantalla: eso ya no debería pasar.",
+            "Las letras tienen que leerse con el móvil en la mano, sin acercárselo a la cara."
           ],
-          "espera": "las teclas son cuadradas y no se corta ninguna fila. Lo del reparto es tu opinión.",
+          "espera": "rejilla y palabras van juntas y centradas, sin un hueco grande entre ellas.",
           "casillas": [
-            "Teclas cuadradas",
-            "No se corta ninguna fila"
+            "Van juntas, sin hueco en medio",
+            "Las letras se leen"
           ],
-          "notaPista": "¿Le darías más sitio al alumno y menos a la cuerda? Contesta aunque sea «está bien así»"
+          "notaPista": "Si sigue habiendo hueco, ¿dónde está: encima, debajo, o entre la rejilla y las palabras?"
+        }
+      ]
+    },
+    {
+      "titulo": "Parte 3 · QUE NO SE HAYA MOVIDO NADA",
+      "nota": "Se ha reordenado por dentro cómo se pintan los botones de respuesta y los temas. El ordenador ha medido 352 propiedades en seis pantallas distintas y dice que no cambia nada. Esto es el segundo par de ojos: un vistazo rápido, no un examen.",
+      "pruebas": [
+        {
+          "n": 4,
+          "titulo": "Los botones de respuesta, iguales en los tres temas",
+          "ruta": [
+            "PC o pizarra",
+            "Quiz",
+            "Individual y VS (duelo)",
+            "Apariencia"
+          ],
+          "accion": "Abre un Quiz. Míralo en Individual y en VS (duelo), y en cada uno cambia el tema entre Por defecto, TV Show y Arcade.",
+          "pasos": [
+            "Los cuatro botones de respuesta tienen sus cuatro colores (rojo, azul, ámbar, verde) en todos los temas.",
+            "En TV Show tienen que verse con relieve, como fichas con sombra debajo.",
+            "El texto de dentro se tiene que LEER en los cuatro colores — sobre todo en el ámbar y el verde.",
+            "Responde una MAL a propósito: el botón que has pulsado tiene que ponerse ROJO (no quedarse de su color)."
+          ],
+          "espera": "los cuatro colores, el relieve de TV Show, el texto legible en los cuatro, y el fallo se pone rojo.",
+          "casillas": [
+            "Los cuatro colores, en los tres temas",
+            "TV Show con relieve",
+            "El fallo se pone rojo"
+          ],
+          "notaPista": "Si algo se ve distinto a como lo recordabas, dilo aunque no sepas qué: es justo lo que busco aquí"
         },
         {
           "n": 5,
-          "titulo": "El duelo con la animación del centro APAGADA",
+          "titulo": "Memoria por equipos sigue abriendo su tablero",
           "ruta": [
-            "Pizarra o PC",
-            "Operaciones",
-            "VS (duelo)",
-            "Antesala del duelo"
+            "PC o pizarra",
+            "Memoria",
+            "Equipos"
           ],
-          "accion": "En la pantalla de antes de empezar el duelo hay un interruptor para quitar la animación del centro. Con ella apagada los paneles cambian de forma (anchos y bajos) y ahí es donde peor se portaba. Apágala y juega una ronda.",
-          "pasos": [
-            "Las teclas tienen que seguir CUADRADAS, no aplastadas a lo ancho.",
-            "No puede quedar ninguna fila cortada por abajo: se ven las cuatro filas enteras.",
-            "Pruébalo también con el tema TV Show puesto, que es el que más adornos añade."
-          ],
-          "espera": "con la animación apagada las teclas siguen cuadradas y se ven las cuatro filas, con y sin tema.",
+          "accion": "Desde «Mis actividades» (o desde la portada), abre una actividad de Memoria y dale a Equipos.",
+          "espera": "se abre el tablero de cartas por turnos de Memoria, no una pantalla de preguntas. Se ha cambiado por dentro cómo se decide a qué pantalla ir, y esto lo confirma.",
           "casillas": [
-            "Sin tema",
-            "Con TV Show"
+            "Abre el tablero de Memoria"
           ],
-          "notaPista": "Si algo se aplasta o se corta, di con qué tema y haz una foto"
+          "notaPista": "Si abre otra cosa, di desde dónde entraste (portada, mis actividades, biblioteca…)"
         }
       ]
     },
     {
-      "titulo": "Parte 2 · DETALLES QUE SE ARREGLARON",
+      "titulo": "Parte 4 · LO QUE SIGUE ABIERTO",
+      "nota": "Estas dos vienen de la ronda anterior y siguen sin verificar en aparatos de verdad. Si ya las hiciste el 24, ponlo en la nota y márcalas como quedaron.",
       "pruebas": [
         {
           "n": 6,
-          "titulo": "Las fotos de los dos alumnos, a la misma distancia del borde",
-          "ruta": [
-            "PC o pizarra",
-            "Cualquier actividad",
-            "VS (duelo)",
-            "Barra de arriba"
-          ],
-          "accion": "La ficha del Alumno 1 estaba pegada al borde y la del Alumno 2 no; y sin tema, la del Alumno 2 se iba directamente al centro. Abre un duelo y mira solo la barra de arriba.",
-          "pasos": [
-            "El duelo tiene que verse como un ESPEJO: la ficha del Alumno 1 en el borde izquierdo y la del Alumno 2 en el derecho, a la misma distancia.",
-            "Cámbialo a «Por defecto», luego a «TV Show» y luego a «Arcade»: en los tres tiene que estar igual de simétrico.",
-            "El botón de pantalla completa (la esquina de arriba a la derecha) no puede tapar la ficha ni los puntos del Alumno 2."
-          ],
-          "espera": "las dos fichas están a la misma distancia de su borde en los tres temas.",
-          "casillas": [
-            "Por defecto",
-            "TV Show",
-            "Arcade"
-          ],
-          "notaPista": "Si una está más metida que la otra, di con qué tema y haz una foto de la barra"
-        },
-        {
-          "n": 7,
-          "titulo": "Los temas Arcade y TV Show se ven igual que siempre",
-          "ruta": [
-            "PC o pizarra",
-            "Operaciones",
-            "VS (duelo)",
-            "Apariencia"
-          ],
-          "accion": "Se sigue cambiando por dentro cómo se pintan los temas. NO debería notarse: si ves algo distinto, es un fallo. Ve cambiando de tema en «Apariencia».",
-          "pasos": [
-            "Con TV Show: teclas azules a la izquierda y rojas a la derecha con relieve, la chapa de la operación con su color, el medallón «VS» dorado sobresaliendo de la barra.",
-            "Con Arcade: teclas con borde de neón y letra de máquina recreativa.",
-            "Pulsa varias teclas: al pulsar tienen que hundirse, no quedarse planas."
-          ],
-          "espera": "los dos temas se ven como los recordabas y las teclas se hunden al pulsarlas.",
-          "casillas": [
-            "TV Show igual",
-            "Arcade igual",
-            "Las teclas se hunden"
-          ],
-          "notaPista": "Si algo cambió, di QUÉ pieza (tecla, ✓, borrar, la chapa, el medallón) y con qué tema"
-        }
-      ]
-    },
-    {
-      "titulo": "Parte 3 · LO QUE SIGUE ABIERTO",
-      "nota": "Léelo antes de ponerte: uno de los dos NO hay que probarlo esta vez.",
-      "pruebas": [
-        {
-          "n": 8,
-          "titulo": "EL RELOJ — ya se puede probar (era del servidor)",
+          "titulo": "EL RELOJ — el profe y el alumno cuentan lo mismo",
           "ruta": [
             "PC (profe) + móvil (alumno)",
             "Quiz",
@@ -209,25 +165,22 @@
             "Rondas juntas",
             "Pantalla de la pregunta"
           ],
-          "accion": "Tu fallo del cronómetro (el alumno marcaba 15 y el profe 20) NO era de la web: al servidor le faltaba un permiso para que el navegador pudiera leer su hora, y la app caía al reloj del aparato. Se puso el 25/8 y ya está comprobado que funciona. Ahora hace falta verlo con dos aparatos DE VERDAD. Antes de empezar, mira que el móvil tenga la hora automática ACTIVADA o DESACTIVADA a propósito y apúntalo: si está desactivada y aun así los números coinciden, es la mejor prueba de todas.",
+          "accion": "Crea una sala En vivo con un Quiz desde el PC. Entra con el móvil usando el PIN. Lanza la primera pregunta y mira LAS DOS PANTALLAS A LA VEZ mientras corre la cuenta atrás de «Preparados…».",
           "pasos": [
-            "Abre una sala en vivo con un Quiz, entra con el móvil y lanza la primera pregunta.",
-            "En el momento en que aparece, mira los DOS números a la vez (o haz una foto de las dos pantallas juntas).",
-            "Apunta: qué número marca el PC, qué número marca el móvil.",
-            "Repite en la pregunta 2 y en la 3: la vez pasada la 2 salió bien y la 1 y la 3 mal, así que interesa saber si el patrón desapareció.",
-            "Prueba también entrando a la sala DESPUÉS de que el profe haya lanzado la pregunta: era el caso peor."
+            "Cuando aparezca la cuenta atrás, mira el número del PC y el del móvil en el mismo instante.",
+            "Tienen que marcar el MISMO número (o como mucho uno de diferencia por el parpadeo de la pantalla).",
+            "Cuando se abran las respuestas, el móvil te tiene que dejar tocar YA — no unos segundos después.",
+            "Contesta y comprueba que la respuesta cuenta (que no salga «sin respuesta»)."
           ],
-          "espera": "los dos números son el mismo (±1) en las tres preguntas, incluso entrando tarde.",
-          "notaPista": "Si falla: número del PC, número del móvil, y si la hora automática del móvil estaba activada",
+          "espera": "los dos aparatos cuentan el mismo número y el móvil puede responder en cuanto se abre.",
           "casillas": [
-            "Pregunta 1 igual",
-            "Pregunta 2 igual",
-            "Pregunta 3 igual",
-            "Entrando tarde también"
-          ]
+            "Cuentan lo mismo",
+            "El móvil responde a tiempo"
+          ],
+          "notaPista": "Si van desfasados, dime CUÁNTOS segundos y qué aparato iba adelantado"
         },
         {
-          "n": 9,
+          "n": 7,
           "titulo": "El lápiz y el borrador en la pizarra de verdad",
           "ruta": [
             "Pizarra del aula",
@@ -235,37 +188,39 @@
             "Individual",
             "Pantalla del texto"
           ],
-          "accion": "Esto sigue sin el visto bueno de nadie con una pizarra real delante. Es lo único de la lista que no puedo comprobar yo de ninguna manera.",
+          "accion": "Abre una actividad de Tildes en la pizarra y marca con el LÁPIZ de la pizarra, no con el dedo.",
           "pasos": [
-            "Toca «Lápiz» estando ya en lápiz: no tiene que cambiar nada.",
-            "Cambia a borrador y borra una marca: tiene que borrarse.",
-            "APOYA LA PALMA de la mano en la pizarra mientras escribes con el dedo o el lápiz: no debe borrar ni pintar solo."
+            "Marca varias letras seguidas con el lápiz: cada toque tiene que marcar donde apunta la punta.",
+            "Apoya la MANO en la pizarra mientras marcas con el lápiz: la palma no debe marcar nada.",
+            "Prueba el borrador de la pizarra (si el tuyo lo tiene) sobre una marca puesta."
           ],
-          "espera": "las tres cosas se cumplen en la pizarra del aula.",
+          "espera": "el lápiz marca donde apunta, la palma apoyada no marca, y el borrador quita la marca.",
           "casillas": [
-            "Tocar Lápiz no rompe nada",
-            "El borrador borra",
-            "La palma no estropea nada"
+            "El lápiz marca bien",
+            "La palma no marca",
+            "El borrador quita"
           ],
-          "notaPista": "Qué pizarra es (marca y tamaño) y qué hiciste con la mano cuando falló"
+          "notaPista": "Dime qué marca y modelo de pizarra es: los umbrales del detector no se han contrastado con ninguna de verdad"
         }
       ]
     },
     {
-      "titulo": "Parte 4 · SI TE QUEDA TIEMPO",
-      "nota": "Nada de esto es urgente. Si llegas, mejor; si no, marca «No probado» y ya está.",
+      "titulo": "Parte 5 · SI TE QUEDA TIEMPO",
       "pruebas": [
         {
-          "n": 10,
+          "n": 8,
           "titulo": "Una vuelta libre buscando roturas",
           "ruta": [
             "Lo que tengas a mano",
             "Varias actividades",
             "El modo que quieras"
           ],
-          "accion": "Sin guion: juega un rato como jugaría un alumno y rompe lo que puedas. Gira el móvil, recarga a mitad, entra tarde a una sala, escribe nombres raros, ponte a pantalla completa y sal.",
-          "espera": "nada se queda colgado, en blanco, ni pierde lo que llevabas hecho.",
-          "notaPista": "Cuenta cualquier cosa que te haya chirriado, aunque no sepas si es un fallo"
+          "accion": "Juega un rato a lo que quieras, cambiando de tema y de modo, y con el móvil girado y sin girar.",
+          "espera": "nada se sale de la pantalla, nada se pisa, y no aparece ningún texto ilegible o cortado.",
+          "casillas": [
+            "Nada roto"
+          ],
+          "notaPista": "Lo que te chirríe aunque no sea un fallo claro: dónde estabas, qué actividad, qué modo y qué tema"
         }
       ]
     }
