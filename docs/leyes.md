@@ -652,6 +652,7 @@ un handler, un observer, un modal) sigue vivo pintando encima del presente.
 | **VISTA** (`views/*`, montada en `#app`) | su render + sus handlers `on(APP,…)` + sus disposers (`acquire()`/`ctx`) | listeners globales sin remove · guardar referencias DOM entre montajes · estado module-level salvo preferencia declarada (filtro de home) |
 | **ROUTER** (`core/router` + `setBeforeResolve`) | el ciclo de vida: `clearListeners(APP)` antes de CADA ruta | que una vista lo esquive colgando handlers "para siempre" |
 | **RELOJES** | `createCountdown` (duración) · `startDeadlineTicker` (hasta instante del servidor) · `startElapsedTicker` (ascendente) · `ctx.setInterval` (polling con limpieza) | `setInterval` a pelo (regla `reloj-primitivo`) · `Date.now()` en dominio (→ `clock.now()`) |
+| **AZAR** | `azar.random()` de `core/azar.js` (y `shuffle()`, que es su dueño) · o inyectado por parámetro (`rnd = Math.random` en la firma) | `Math.random()` LLAMADO en su sitio dentro de `kernel/` o `templates/` (regla `azar-primitivo`) · Fisher–Yates escrito a mano |
 | **CALLBACKS DIFERIDOS** (`setTimeout` que repinta) | guard de vida: `if (!rootEl()) return` / `host.isConnected` / `ctx.setTimeout` | repintar sin comprobar que la ruta sigue viva (el patrón wheel es el ejemplar) |
 | **OVERLAYS en `<body>`** (toast, modales, banner) | cierre propio + **cierre en `hashchange`** si sobrevive a la ruta (loginModal) | quedar huérfanos encima de la vista siguiente |
 
@@ -659,7 +660,18 @@ un handler, un observer, un modal) sigue vivo pintando encima del presente.
   disposer de suscripción) · `views/playerView.js` (token de generación
   anti-carrera async) · `views/editView.js` (único listener de window en views/,
   con remove en el disposer).
-- **Tests que lo vigilan**: `reloj-primitivo` + `resize-observer` en
+- **El azar es la gemela del reloj** (v1.51.592): lo mismo que se hizo con el
+  tiempo hay que hacerlo con la suerte, y por la misma razón — que se pueda
+  REPRODUCIR desde fuera. Se descubrió por una red que mentía: `tools/shots.mjs`
+  comparaba dos capturas del MISMO árbol y cantaba ~2.500 píxeles de cambio
+  porque Quiz baraja sus opciones al montar. El apaño de entonces apagaba el
+  barajado desde el `rules` de esa actividad: conocía el ajuste de UNA plantilla,
+  no servía para las otras doce, y fotografiaba una pantalla que la clase NO ve.
+  Con `semilla(7)` se siembra la FUENTE y la herramienta retrata el juego de
+  verdad, dos veces igual. Lo que la ley NO toca, porque no es contenido jugable:
+  el confeti, las partículas, los IDs, el jitter de reconexión y —sobre todo—
+  los PIN de sala y de tarea, que deben ser impredecibles.
+- **Tests que lo vigilan**: `reloj-primitivo` + `azar-primitivo` + `resize-observer` en
   `core/normsCheck.js`/`tests/norms.test.mjs` · `tests/events.test.mjs`
   (delegación + clearListeners) · `tests/deadlineTicker.test.mjs` (guard
   anti-zombi).

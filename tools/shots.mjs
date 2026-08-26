@@ -89,19 +89,24 @@ for (const size of SIZES) {
     await import('/core/registerTemplates.js');
     const { getTemplate } = await import('/core/registry.js');
     const storage = await import('/core/storage.js');
+    // AZAR SEMBRADO (core/azar.js). Quiz baraja sus opciones en cada montaje,
+    // así que dos capturas de la MISMA versión salían con «Madrid» en sitios
+    // distintos y la comparación cantaba 2.500 píxeles de cambio sin que nadie
+    // hubiera tocado nada — una red que da falsos positivos se acaba ignorando.
+    // Antes se apagaba el barajado desde el `rules` de la actividad: eso conocía
+    // el ajuste de UNA plantilla y, peor, fotografiaba una pantalla que la clase
+    // NO ve (sin mezclar). Sembrando la FUENTE se retrata el juego de verdad,
+    // dos veces igual. Se re-siembra antes de cada captura para que el orden no
+    // dependa de cuántos barajados hubo antes.
+    const { semilla } = await import('/core/azar.js');
+    window.__wwSemilla = () => semilla(7);
     for (const pl of plantillas) {
       const T = getTemplate(pl.id);
       for (const skin of skins) {
         storage.save({
           id: `shot_${pl.id}_${skin}`, template: pl.id, title: pl.titulo,
           content: T.meta.defaultContent ? T.meta.defaultContent() : {},
-          // SIN BARAJAR. Quiz mezcla las opciones en cada montaje, así que dos
-          // capturas de la MISMA versión salían con «Madrid» en sitios distintos
-          // y la comparación cantaba 2.500 píxeles de cambio sin que nadie
-          // hubiera tocado nada. Una red que da falsos positivos se acaba
-          // ignorando, y entonces ya no protege de los verdaderos.
-          rules: { ...(T.meta.defaultRules ? T.meta.defaultRules() : {}),
-                   shuffleOptions: false, randomize: false },
+          rules: T.meta.defaultRules ? T.meta.defaultRules() : {},
           scoring: T.meta.defaultScoring ? T.meta.defaultScoring() : {},
           presentation: { skin, background: 'none' },
           updatedAt: '2026-01-01T00:00:00.000Z',
@@ -115,7 +120,7 @@ for (const size of SIZES) {
     for (const mode of MODES) {
       const name = `${mode.id}-${pl.id}-${skin}-${size.id}.png`;
       try {
-        await page.evaluate(() => { location.hash = '#/mine'; });
+        await page.evaluate(() => { location.hash = '#/mine'; window.__wwSemilla?.(); });
         await page.waitForTimeout(120);
         await page.evaluate(h => { location.hash = h; }, mode.route(`shot_${pl.id}_${skin}`));
         await page.waitForSelector('.ww-mode-start', { timeout: 9000 });

@@ -56,6 +56,21 @@
 //                       «Preparados… 9» y el alumno «19»; con 25 s, al alumno
 //                       no se le abrían las respuestas y la pregunta se
 //                       liquidaba «sin respuesta · 0 puntos».
+//   · azar-primitivo  : LEY DE VISTA (docs/leyes.md §23), gemela de reloj-primitivo
+//                       — en las SUPERFICIES DE JUEGO (kernel/ y templates/, más
+//                       los dos módulos de core que arman lo jugado) el azar se
+//                       INYECTA: o por el primitivo `azar.random()` de
+//                       core/azar.js, o por parámetro con `= Math.random` en la
+//                       firma (el patrón de wheel/logic.js y ballsort/board.js).
+//                       Lo prohibido es LLAMARLO en su sitio, `Math.random()`,
+//                       porque entonces nadie de fuera puede reproducir la
+//                       partida. Se paga en herramientas: `tools/shots.mjs`
+//                       comparaba dos capturas del MISMO árbol y cantaba 2.500
+//                       píxeles de cambio porque Quiz baraja al montar, y el
+//                       apaño fue apagar el barajado de UNA plantilla desde su
+//                       `rules`. Prohibido también el Fisher–Yates a mano (el
+//                       intercambio `[a[i],a[j]]=[a[j],a[i]]`): estaba copiado
+//                       en cuatro sitios y el dueño es `shuffle` de core/azar.js.
 //   · id-rid          : LEY DE CONTENIDO (docs/leyes.md §24) — IDs SIEMPRE con
 //                       `rid()` de core/ids.js, nunca `Math.random().toString(36)`
 //                       a mano (estaba copiado en ~17 sitios con longitudes y
@@ -75,6 +90,8 @@ const ALLOW = {
     // pinta, vigila silencio y renueva la conexión. Su scheduler se inyecta.
     'core/streamWatchdog.js'],
   'id-rid': ['core/ids.js'],   // la única implementación permitida
+  // core/azar.js ES el primitivo (y el dueño del barajado).
+  'azar-primitivo': ['core/azar.js'],
   // `core/serverNow.js` ES la hora común (usa clock.now para calcularla) y
   // `core/deadlineTicker.js` ya la consume; `core/clock.js` es el reloj crudo.
   'reloj-sala': ['core/serverNow.js', 'core/clock.js', 'core/deadlineTicker.js'],
@@ -233,6 +250,18 @@ const HOST_VERBS = ['settleItem', 'endSession', 'startSession', 'kickPlayer', 's
   'fetchSessionKey', 'fetchSessionBlob'];
 const HOST_VERBS_RE = new RegExp(`\\b(${HOST_VERBS.join('|')})\\b`);
 
+// azar-primitivo · dónde manda la ley. NO es "todo el repo": el PIN de una sala
+// y el de una tarea (adapters/*/assignments.js, core/migrate.js) tienen que ser
+// impredecibles, y el confeti, las partículas y el jitter de reconexión no son
+// contenido que nadie juegue. La ley vigila lo que el alumno VE ordenado o
+// elegido: el cerebro del juego, las trece plantillas, y los dos módulos de
+// core que arman la partida (el mazo del shell Individual y la ronda de opciones).
+// (`a[z]ar` con clase de caracteres a propósito: escrito entero, el escáner de
+//  imports de moduleRefs lo lee como un uso del módulo `azar` en este fichero)
+const SUPERFICIE_JUEGO = /^(kernel\/|templates\/|core\/(soloPlayer|roundRender|a[z]ar)\.js)/;
+// El intercambio de Fisher–Yates, escrito a mano: `[a[i], a[j]] = [a[j], a[i]]`.
+const BARAJADO_A_MANO = /\[\s*(\w+)\s*\[\s*(\w+)\s*\]\s*,\s*\1\s*\[\s*(\w+)\s*\]\s*\]\s*=\s*\[\s*\1\s*\[\s*\3\s*\]\s*,\s*\1\s*\[\s*\2\s*\]\s*\]/;
+
 // Comentarios fuera (mismo truco que tests/styles.test.mjs: se preservan los
 // saltos de línea para que los números de línea no se corran).
 const blank = (s) => s
@@ -298,6 +327,18 @@ export function scanNormsSource(path, source) {
     }
     if (/Math\.random\s*\(\s*\)\s*\.toString\s*\(\s*36\s*\)/.test(ln) && !allowed('id-rid')) {
       out.push({ path, line: i + 1, rule: 'id-rid', text: ln.trim() });
+    }
+    // azar-primitivo · en las superficies de juego el azar se INYECTA.
+    // `Math.random` como VALOR (`rnd = Math.random` en una firma) es legítimo:
+    // eso ES inyectarlo. Lo que se caza es la LLAMADA en su sitio.
+    if (SUPERFICIE_JUEGO.test(path) && !allowed('azar-primitivo')) {
+      if (/Math\.random\s*\(/.test(ln)) {
+        out.push({ path, line: i + 1, rule: 'azar-primitivo', text: ln.trim() });
+      }
+      if (BARAJADO_A_MANO.test(ln)) {
+        out.push({ path, line: i + 1, rule: 'azar-primitivo',
+                   text: `barajado a mano; el dueño es shuffle() de core/azar.js — ${ln.trim()}` });
+      }
     }
     // §22-5 · un instante de la SALA medido con el reloj de ESTE aparato.
     // (el patrón lleva clase de caracteres a propósito: escrito entero, el

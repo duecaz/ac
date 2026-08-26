@@ -109,8 +109,33 @@ assert.strictEqual(scanNormsSource('core/soloPlayer.js', `const timeUsed = Math.
 assert.strictEqual(scanNormsSource('core/serverNow.js', `return clock.now() + offsetMs;`).length, 0,
   'y la propia hora común puede usar el reloj crudo: es su implementación');
 // id-rid (ley §24): base36 a mano → violación; rid() y la implementación, no.
-assert.strictEqual(scanNormsSource('templates/x/editor.js', `const id = 'q_' + Math.random().toString(36).slice(2, 8);`).length, 1, 'caza el id a mano');
+// (en una plantilla el mismo renglón rompe DOS leyes: el id a mano y el azar
+//  llamado en su sitio — por eso se comprueba la REGLA, no cuántas saltan)
+assert.ok(scanNormsSource('templates/x/editor.js', `const id = 'q_' + Math.random().toString(36).slice(2, 8);`)
+  .some(v => v.rule === 'id-rid'), 'caza el id a mano');
+assert.strictEqual(scanNormsSource('views/x.js', `const id = 'q_' + Math.random().toString(36).slice(2, 8);`).length, 1,
+  'y fuera de una plantilla salta ella sola');
 assert.strictEqual(scanNormsSource('core/ids.js', `return prefix + Math.random().toString(36).slice(2, 8);`).length, 0, 'ids.js es la implementación');
+// azar-primitivo (ley §23, gemela de reloj-primitivo): en las superficies de
+// juego el azar se INYECTA. Nació de una red que mentía: `tools/shots.mjs`
+// comparaba dos capturas del MISMO árbol y cantaba 2.500 píxeles porque Quiz
+// baraja al montar; el apaño conocía el `rules` de UNA plantilla.
+assert.strictEqual(scanNormsSource('templates/quiz/player.js', `const i = Math.floor(Math.random() * opts.length);`).length, 1,
+  'caza el azar llamado en su sitio dentro de una plantilla');
+assert.strictEqual(scanNormsSource('kernel/session/engine.js', `if (Math.random() < 0.5) return null;`).length, 1,
+  'y también en el cerebro del juego');
+assert.strictEqual(scanNormsSource('templates/ballsort/game/board.js', `[balls[i], balls[j]] = [balls[j], balls[i]];`).length, 1,
+  'caza el Fisher-Yates a mano: el dueño del barajado es uno');
+assert.strictEqual(scanNormsSource('templates/wheel/logic.js', `export function pickIndex(count, rnd = Math.random) {`).length, 0,
+  'CONTRA-PRUEBA: `= Math.random` en la FIRMA es inyectarlo, que es justo lo que la ley pide');
+assert.strictEqual(scanNormsSource('templates/quiz/player.js', `if (activity.rules?.shuffleOptions) shuffle(opts2);`).length, 0,
+  'CONTRA-PRUEBA: el camino legítimo —barajar por el primitivo— pasa limpio');
+assert.strictEqual(scanNormsSource('core/azar.js', `const j = Math.floor(dado() * (i + 1));\n[a[i], a[j]] = [a[j], a[i]];`).length, 0,
+  'y core/azar.js es la implementación');
+assert.strictEqual(scanNormsSource('core/effects.js', `const v = startVelocity * (0.5 + Math.random());`).length, 0,
+  'CONTRA-PRUEBA: el confeti NO es contenido jugable — la ley no se mete donde no le toca');
+assert.strictEqual(scanNormsSource('adapters/pocketbase/assignments.js', `s += LETTERS[Math.floor(Math.random() * LETTERS.length)];`).length, 0,
+  'ni el PIN de una tarea, que debe ser IMPREDECIBLE (reproducirlo sería el fallo)');
 // imagen-buscable (F6): pedir una imagen sin ofrecer BUSCARLA. El bug que lo
 // creó: «Etiqueta el diagrama» solo dejaba subir, y quien quería un corazón
 // humano no tenía ninguno en el móvil — la actividad no se podía ni empezar.

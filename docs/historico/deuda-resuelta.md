@@ -378,3 +378,16 @@ ejecutó desde los botones de `#/admin`, sin credenciales ni PowerShell:
   trampa rebota con 404.
 
 De paso destapó el agujero de los autodate (v1.51.438).
+
+## Arquitectura de players — orden de migración (COMPLETADO)
+
+Los cinco pasos del plan de estandarización de players, en el orden en que se
+ejecutaron (el cuadro vivo de las tres capas sigue en `CLAUDE.md`):
+
+1. ✅ `core/soloTimer.js` + migrar Quiz/Froggy/Wordsearch (cerró 3
+   implementaciones divergentes del mismo temporizador).
+2. ✅ `FreeformShell` — cerró de paso el bug de `trySaveResult` en Wheel y
+   Question-Live, que terminaban sin registrar el resultado.
+3. ✅ Migrar Math al SequentialShell.
+4. ✅ Migrar Quiz al shell.
+5. ✅ Migrar Froggy al shell, con todas sus animaciones intactas.

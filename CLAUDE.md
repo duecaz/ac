@@ -387,6 +387,10 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   `core/deadlineTicker.js`, con `clock.now()` y guard `while` para que un reloj zombi no repinte
   sobre la fase siguiente). Las vistas de Live ya NO usan `Date.now()` crudo → son testeables con
   tiempo congelado (`tests/deadlineTicker.test.mjs`).
+- **Azar**: gemelo del reloj — en `kernel/` y `templates/` se INYECTA (primitivo
+  `azar.random()` de `core/azar.js`, con `semilla(n)`; o `rnd = Math.random` en la
+  firma), nunca `Math.random()` en su sitio; `shuffle()` es su dueño único. Fuera:
+  confeti, IDs, jitter y los PIN (impredecibles a propósito). Regla `azar-primitivo`.
 - **Ficha de ocupación del escenario** (`core/stageClaim.js`, §23): quien monta un modo
   RECLAMA el stage (`claimStage`, lo hace `runMode()` y los dos shells de
   `core/soloPlayer.js`); un timer tardío pregunta `alive()` antes de repintar. Nunca
@@ -549,9 +553,4 @@ CORES     (templates/*/player.js)  — cómo: drag, click, tipo, animación (ún
 **Timer único** `core/soloTimer.js` — `createCountdown(secs, {onTick, onTimeout, setIntervalFn?, clearIntervalFn?})` ✅:
 - Cierra 3 implementaciones divergentes (Quiz, Froggy, Wordsearch). Scheduler inyectable → tests deterministas.
 
-**Orden de migración** — COMPLETADO:
-1. ✅ `core/soloTimer.js` + migrar Quiz/Froggy/Wordsearch
-2. ✅ `FreeformShell` — cerró bug trySaveResult en Wheel/Question-Live
-3. ✅ Migrar Math al SequentialShell
-4. ✅ Migrar Quiz al shell
-5. ✅ Migrar Froggy al shell (todas sus animaciones intactas)
+**Orden de migración** — COMPLETADO (los 5 pasos, en `docs/historico/deuda-resuelta.md`).

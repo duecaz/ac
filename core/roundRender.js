@@ -80,8 +80,8 @@ export function renderKeypadRound(root, payload, { onSubmit } = {}) {
   draw();
 }
 
-// Fisher–Yates, returns the same array (callers pass a copy when needed).
-export function shuffle(a) {
-  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
-  return a;
-}
+// El barajado vive en `core/azar.js` (con la fuente de azar que lo alimenta):
+// este módulo pinta una ronda y arrastra DOM, y el mazo de Equipos —que es puro
+// kernel— también necesita barajar. Se RE-EXPORTA para que los ocho módulos que
+// ya lo importaban de aquí no tengan que cambiar de puerta.
+export { shuffle } from './azar.js';

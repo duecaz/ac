@@ -1,5 +1,6 @@
 // Ball Sort board factory. Pure; depends only on levels.js.
 import { getLevel } from './levels.js';
+import { shuffle } from '../../../core/azar.js';
 
 export function createBoard(levelId = 'classic') {
   const level = getLevel(levelId);
@@ -34,11 +35,7 @@ export function randomBoard(levelId = 'classic', rand = Math.random) {
     for (let i = 0; i < cap; i++) balls.push(color);
   }
 
-  // Fisher-Yates uniform shuffle
-  for (let i = balls.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [balls[i], balls[j]] = [balls[j], balls[i]];
-  }
+  shuffle(balls, rand);
 
   // Distribute into filled tubes; remaining tubes stay empty
   const tubes = [];

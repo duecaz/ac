@@ -9,6 +9,7 @@
 
 
 import { rid } from '../../core/ids.js';
+import { shuffle } from '../../core/azar.js';
 import { basePoints } from '../../core/scoring/index.js';
 export function createMemoryGame(activity, opts = {}) {
   const pairs = (activity?.content?.pairs || []).filter(p => p?.left && p?.right);
@@ -28,8 +29,7 @@ export function createMemoryGame(activity, opts = {}) {
     }
     // Deterministic shuffle unless a seedOrder is supplied (tests pass one).
     if (Array.isArray(opts.order)) return opts.order.map(i => cards[i]);
-    for (let i = cards.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [cards[i], cards[j]] = [cards[j], cards[i]]; }
-    return cards;
+    return shuffle(cards);
   };
 
   const state = opts.state ? { ...opts.state } : {
