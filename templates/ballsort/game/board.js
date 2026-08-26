@@ -1,6 +1,6 @@
 // Ball Sort board factory. Pure; depends only on levels.js.
 import { getLevel } from './levels.js';
-import { shuffle } from '../../../core/azar.js';
+import { shuffle, azar } from '../../../core/azar.js';
 
 export function createBoard(levelId = 'classic') {
   const level = getLevel(levelId);
@@ -22,8 +22,10 @@ export function cloneBoard(board) {
 }
 
 // rand: optional () => [0,1) generator (inject a seeded one for reproducible
-// boards shared across devices). Defaults to Math.random.
-export function randomBoard(levelId = 'classic', rand = Math.random) {
+// boards shared across devices). Por defecto va por el PRIMITIVO (core/azar.js):
+// con `Math.random` de defecto nadie inyectaba nunca —ni la plantilla ni el
+// editor— y sembrar el azar no llegaba al tablero.
+export function randomBoard(levelId = 'classic', rand = azar.random) {
   const level = getLevel(levelId);
   const numFilled = level.colors.length;
   const totalTubes = level.tubes.length;

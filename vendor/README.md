@@ -31,6 +31,16 @@ costes, y ninguno era teórico:
 |---|---|---|
 | `bootstrap-5.3.3/` | 5.3.3 | `npm pack bootstrap@5.3.3` → `dist/css/bootstrap.min.css` + `dist/js/bootstrap.bundle.min.js` |
 | `bootstrap-icons-1.11.3/` | 1.11.3 | `npm pack bootstrap-icons@1.11.3` → `font/bootstrap-icons.min.css` + `font/fonts/*` |
+| `press-start-2p-5.3.0/` | 5.3.0 | `npm pack @fontsource/press-start-2p` → `latin.css` + los dos `latin-400-normal` (woff2/woff) |
+
+La fuente de píxeles del tema Arcade venía de `fonts.googleapis.com` y se coló
+por donde la primera versión de la red no miraba: un `@import` DENTRO de una
+hoja, no un `<link>` en el HTML. La ley decía «cero recursos externos» mientras
+quedaba uno, y sin red el tema Arcade se quedaba en Courier. Se trae solo el
+subconjunto **latin** (`U+0000-00FF` y algo más): cubre `¡`, `ñ` y las tildes
+del texto de la marquesina. Los símbolos decorativos (★ ◉ ▶) no están en esa
+fuente ni lo estaban en la de Google — el navegador cae a Courier para ellos,
+igual que antes.
 
 Único cambio sobre el original: se han quitado las dos líneas
 `sourceMappingURL`, porque los `.map` no se distribuyen y solo darían un 404 en

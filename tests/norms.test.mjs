@@ -126,8 +126,15 @@ assert.strictEqual(scanNormsSource('kernel/session/engine.js', `if (Math.random(
   'y también en el cerebro del juego');
 assert.strictEqual(scanNormsSource('templates/ballsort/game/board.js', `[balls[i], balls[j]] = [balls[j], balls[i]];`).length, 1,
   'caza el Fisher-Yates a mano: el dueño del barajado es uno');
-assert.strictEqual(scanNormsSource('templates/wheel/logic.js', `export function pickIndex(count, rnd = Math.random) {`).length, 0,
-  'CONTRA-PRUEBA: `= Math.random` en la FIRMA es inyectarlo, que es justo lo que la ley pide');
+// El hueco que duró tres versiones: `= Math.random` en la firma parecía
+// «inyectable» y por eso se dejaba pasar. Ningún llamador inyectaba jamás, así
+// que el defecto era el que corría siempre y `semilla()` no llegaba ni a la
+// ruleta ni al tablero. Un parámetro cuyo defecto esquiva el primitivo ES el
+// primitivo sin usar.
+assert.strictEqual(scanNormsSource('templates/wheel/logic.js', `export function pickIndex(count, rnd = Math.random) {`).length, 1,
+  'caza el defecto que esquiva el primitivo, aunque el parámetro parezca inyectable');
+assert.strictEqual(scanNormsSource('templates/wheel/logic.js', `export function pickIndex(count, rnd = azar.random) {`).length, 0,
+  'CONTRA-PRUEBA: con el primitivo de defecto, el parámetro sigue siendo inyectable y la ley pasa');
 assert.strictEqual(scanNormsSource('templates/quiz/player.js', `if (activity.rules?.shuffleOptions) shuffle(opts2);`).length, 0,
   'CONTRA-PRUEBA: el camino legítimo —barajar por el primitivo— pasa limpio');
 assert.strictEqual(scanNormsSource('core/azar.js', `const j = Math.floor(dado() * (i + 1));\n[a[i], a[j]] = [a[j], a[i]];`).length, 0,

@@ -328,11 +328,17 @@ export function scanNormsSource(path, source) {
     if (/Math\.random\s*\(\s*\)\s*\.toString\s*\(\s*36\s*\)/.test(ln) && !allowed('id-rid')) {
       out.push({ path, line: i + 1, rule: 'id-rid', text: ln.trim() });
     }
-    // azar-primitivo · en las superficies de juego el azar se INYECTA.
-    // `Math.random` como VALOR (`rnd = Math.random` en una firma) es legítimo:
-    // eso ES inyectarlo. Lo que se caza es la LLAMADA en su sitio.
+    // azar-primitivo · en las superficies de juego el azar sale del PRIMITIVO.
+    // Aquí hubo un hueco legal que duró tres versiones: se dejaba pasar
+    // `Math.random` como VALOR (`rnd = Math.random` en una firma) por considerar
+    // que «eso ES inyectarlo». No lo era: ningún llamador inyectaba nunca —ni la
+    // ruleta, ni Pregunta en vivo, ni el tablero de las Pelotas—, así que el
+    // defecto era el que corría siempre y sembrar el azar no llegaba a ninguno
+    // de los tres. Un parámetro inyectable cuyo defecto esquiva el primitivo es
+    // el primitivo sin usar. Se inyecta pasando `azar.random` o una fuente
+    // sembrada; `Math.random` no se nombra.
     if (SUPERFICIE_JUEGO.test(path) && !allowed('azar-primitivo')) {
-      if (/Math\.random\s*\(/.test(ln)) {
+      if (/Math\.random\b/.test(ln)) {
         out.push({ path, line: i + 1, rule: 'azar-primitivo', text: ln.trim() });
       }
       if (BARAJADO_A_MANO.test(ln)) {

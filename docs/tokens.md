@@ -263,11 +263,11 @@ cambia tokens, la actividad los consume). Este es el contrato completo.
 | `--ww-bg-image` | core/backgrounds.js | styles/backgrounds.css |
 | `--ww-bg-ink` | core/backgrounds.js | styles/backgrounds.css |
 | `--ww-bg-soft` | core/skins.js | styles/crossword.css · styles/diagram.css · styles/wordsearch.css |
-| `--ww-card-bg` | core/skins.js | styles/crossword.css · styles/match.css · styles/memory.css · styles/player.css · styles/question-live.css · styles/wordsearch.css |
+| `--ww-card-bg` | core/skins.js | embed.html · styles/crossword.css · styles/match.css · styles/memory.css · styles/player.css · styles/question-live.css · styles/wordsearch.css |
 | `--ww-card-border` | core/skins.js | core/skins.js · styles/crossword.css · styles/diagram.css · styles/match.css · styles/player.css · styles/question-live.css · styles/wordsearch.css |
 | `--ww-card-fg` | core/skins.js | styles/backgrounds.css · styles/crossword.css · styles/globos.css · styles/match.css · styles/memory.css · styles/player.css · styles/question-live.css · styles/wordsearch.css |
 | `--ww-danger` | core/skins.js · styles/theme.css | styles/crossword.css · styles/live.css · styles/math.css · styles/quiz.css · styles/wheel.css |
-| `--ww-fg` | core/skins.js | core/editorShell.js · core/skins.js · styles/backgrounds.css · styles/crossword.css · styles/globos.css · styles/match.css · styles/memory.css · styles/player.css · styles/question-live.css · styles/wordsearch.css · themes/tv-show/skin.css |
+| `--ww-fg` | core/skins.js | core/editorShell.js · core/skins.js · embed.html · styles/backgrounds.css · styles/crossword.css · styles/globos.css · styles/match.css · styles/memory.css · styles/player.css · styles/question-live.css · styles/wordsearch.css · themes/tv-show/skin.css |
 | `--ww-fs-reserve` | styles/player.css | styles/live.css · styles/player.css |
 | `--ww-line` | — *(solo respaldo)* | styles/player.css |
 | `--ww-muted` | — *(solo respaldo)* | styles/player.css |

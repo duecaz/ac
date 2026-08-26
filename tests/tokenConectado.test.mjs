@@ -25,19 +25,28 @@
 //
 // Run: node tests/tokenConectado.test.mjs
 import assert from 'node:assert';
-import { escanear, familiaDe } from '../tools/tokens.mjs';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { escanear, familiaDe, generar } from '../tools/tokens.mjs';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
 
 // EXENCIONES, cada una con su motivo. Un token exento sigue en el índice.
 //
-// `--bs-*` los declara `styles/theme.css` para que los LEA BOOTSTRAP, que entra
-// por CDN y no está en el repo. El consumidor existe y es real; simplemente no
-// se puede escanear. (El día que Bootstrap se vendorice o se sustituya por CSS
-// propio —deuda declarada en §3— esta exención cae sola y la red los mirará.)
+// `--bs-*` los declara `styles/theme.css` para que los LEA BOOTSTRAP. El
+// escáner no mira `vendor/` a propósito (es código de terceros: opinar sobre él
+// no es vigilar el nuestro), así que su consumidor le queda invisible.
+//
+// El motivo decía antes «llega por CDN y no se puede escanear», y prometía caer
+// solo cuando Bootstrap se vendorizara. Se vendorizó una versión después y la
+// exención siguió ahí con la razón vieja: una exención cuyo motivo ya no es
+// cierto es exactamente por donde vuelve a entrar lo que se quería impedir. Así
+// que aquí el motivo no se cree — SE COMPRUEBA: el fichero vendorizado tiene que
+// leer de verdad los tokens que se están exentando.
 const DECLARADO_SIN_LEER = [
-  { prefijo: '--bs-', motivo: 'los consume Bootstrap, que llega por CDN y no se puede escanear' },
+  { prefijo: '--bs-', motivo: 'los consume Bootstrap, en vendor/ (terceros, fuera del escáner)',
+    loLee: 'vendor/bootstrap-5.3.3/css/bootstrap.min.css' },
 ];
 const exento = (t) => DECLARADO_SIN_LEER.some(e => t.startsWith(e.prefijo));
 
@@ -52,7 +61,20 @@ if (muertos.length) {
   console.log('  está fuera del repo, decláralo en DECLARADO_SIN_LEER con su motivo.\n');
 }
 assert.strictEqual(muertos.length, 0, `${muertos.length} token(s) declarados y nunca consumidos`);
-ok(`${todos.length} tokens: ninguno declarado sin que alguien lo consuma (${DECLARADO_SIN_LEER.length} exención declarada)`);
+
+// La exención se COMPRUEBA, no se cree: el consumidor declarado tiene que leer
+// de verdad los tokens exentos. El día que Bootstrap se sustituya por CSS
+// propio, este fichero desaparecerá y la exención caerá aquí, en voz alta, en
+// vez de quedarse como una puerta abierta con un cartel viejo.
+for (const e of DECLARADO_SIN_LEER) {
+  const exentos = todos.filter(t => t.startsWith(e.prefijo) && declara.has(t) && !consume.has(t));
+  if (!exentos.length) continue;   // nadie los declara ya: la exención sobra, pero no rompe
+  const src = readFileSync(fileURLToPath(new URL(`../${e.loLee}`, import.meta.url)), 'utf8');
+  const leidos = exentos.filter(t => src.includes(`var(${t}`));
+  assert.ok(leidos.length >= Math.ceil(exentos.length / 2),
+    `la exención «${e.prefijo}» dice que los lee ${e.loLee}, pero ahí solo aparecen ${leidos.length}/${exentos.length}`);
+}
+ok(`${todos.length} tokens: ninguno declarado sin que alguien lo consuma (${DECLARADO_SIN_LEER.length} exención, con su consumidor VERIFICADO)`);
 
 // ── 2) Ningún var() se lee sobre la nada ─────────────────────────────────────
 const huerfanos = todos.filter(t => !declara.has(t) && !conRespaldo.has(t));
@@ -66,9 +88,6 @@ ok('ningún var() se lee sobre la nada: o hay quien lo declare, o hay respaldo')
 // ── 3) El índice generado está al día ────────────────────────────────────────
 // Un mapa viejo es peor que no tenerlo: se consulta creyéndolo verdad. Mismo
 // trato que `docs/arquitectura-modulos.md` y `docs/piezas-por-actividad.md`.
-const { generar } = await import('../tools/tokens.mjs');
-const { readFileSync } = await import('node:fs');
-const { fileURLToPath } = await import('node:url');
 const doc = fileURLToPath(new URL('../docs/tokens.md', import.meta.url));
 let previo = '';
 try { previo = readFileSync(doc, 'utf8'); } catch { previo = '(no existe)'; }

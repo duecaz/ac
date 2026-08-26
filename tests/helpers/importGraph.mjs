@@ -15,7 +15,11 @@ export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 // Se escanea el CÓDIGO DE LA APP. Fuera: pruebas, herramientas, documentación y
 // lo que no es JS del repo (los tests sí pueden importar lo que quieran: son el
 // observador, no una capa).
-const SKIP_DIRS = new Set(['node_modules', '.git', 'docs', 'scratchpad', 'tests', 'tools', 'themes', 'styles', 'assets']);
+// `vendor/` fuera: es código de terceros copiado tal cual (ver vendor/README.md).
+// Sin esto, el bundle de Bootstrap entraba en el grafo de capas de la §0 como si
+// fuera un módulo nuestro de la capa «arranque», y el mapa generado pasó de 268 a
+// 270 módulos sin que nadie hubiera escrito una línea.
+const SKIP_DIRS = new Set(['node_modules', '.git', 'docs', 'scratchpad', 'tests', 'tools', 'themes', 'styles', 'assets', 'vendor']);
 
 export function appFiles(root = ROOT) {
   const out = [];

@@ -1,6 +1,8 @@
 // Pure wheel logic — no DOM, fully testable. Extracted from player.js so the
 // landing maths and the "remove after spin" handling can be verified in Node.
 
+import { azar } from '../../core/azar.js';
+
 const EMPTY = '(vacío)';
 
 /** Clean entries to non-empty strings; never return an empty wheel. */
@@ -9,8 +11,12 @@ export function normalizeEntries(entries) {
   return out.length ? out : [EMPTY];
 }
 
-/** Random slice index in [0, count). `rnd` injectable for deterministic tests. */
-export function pickIndex(count, rnd = Math.random) {
+/** Random slice index in [0, count). `rnd` injectable for deterministic tests.
+ *  Por defecto va por el PRIMITIVO (core/azar.js), no por `Math.random`: con el
+ *  defecto anterior nadie inyectaba nunca (ni la ruleta ni Pregunta en vivo), así
+ *  que sembrar el azar no llegaba aquí y la ruleta seguía siendo irreproducible
+ *  para el arnés — un hueco legal en la ley, que es la peor clase de hueco. */
+export function pickIndex(count, rnd = azar.random) {
   return Math.floor(rnd() * count);
 }
 

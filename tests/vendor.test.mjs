@@ -30,18 +30,44 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 const HTML = ['index.html', 'teacher.html', 'student.html', 'embed.html'];
 
-// ── 1) Ninguna página carga nada de un CDN ───────────────────────────────────
+// ── 1) Nada de la app se carga desde fuera ───────────────────────────────────
 // Se mira el ORIGEN, no el nombre: la red tiene que cazar también el CDN nuevo
 // que a nadie se le ha ocurrido todavía.
+//
+// Y se miran las TRES puertas, no solo la evidente. La primera versión de esta
+// red solo leía `href`/`src` de los cuatro HTML y por eso daba verde con
+// `themes/arcade/skin.css` importando la fuente de píxeles de
+// fonts.googleapis.com: en un aula sin internet el tema Arcade se quedaba en
+// Courier mientras la ley proclamaba «cero recursos externos». Una red que
+// mira una sola puerta enseña a confiar en una promesa que no cubre.
 const EXENTAS = [
   // Ninguna. Si algún día hace falta un origen externo, va aquí CON su motivo y
-  // con qué pasa en un aula sin internet.
+  // con qué pasa en un colegio sin red.
 ];
+const PUERTAS = [
+  { que: 'HTML (href/src)', ficheros: HTML, re: /(?:href|src)\s*=\s*["'](https?:\/\/[^"']+)["']/g },
+  { que: 'CSS (@import / url())', ficheros: hojas(), re: /(?:@import\s+url\(\s*["']?|url\(\s*["']?)(https?:\/\/[^"')]+)/g },
+  { que: 'HTML (@import en <style>)', ficheros: HTML, re: /@import\s+url\(\s*["']?(https?:\/\/[^"')]+)/g },
+];
+function hojas() {
+  const out = [];
+  for (const dir of ['styles', 'themes']) {
+    (function walk(d) {
+      for (const f of readdirSync(join(ROOT, d), { withFileTypes: true })) {
+        if (f.isDirectory()) walk(`${d}/${f.name}`);
+        else if (f.name.endsWith('.css')) out.push(`${d}/${f.name}`);
+      }
+    })(dir);
+  }
+  return out;
+}
 const conCdn = [];
-for (const f of HTML) {
-  const html = readFileSync(join(ROOT, f), 'utf8');
-  for (const m of html.matchAll(/(?:href|src)\s*=\s*["'](https?:\/\/[^"']+)["']/g)) {
-    if (!EXENTAS.some(e => m[1].includes(e))) conCdn.push(`${f} → ${m[1]}`);
+for (const { que, ficheros, re } of PUERTAS) {
+  for (const f of ficheros) {
+    const src = readFileSync(join(ROOT, f), 'utf8');
+    for (const m of src.matchAll(re)) {
+      if (!EXENTAS.some(e => m[1].includes(e))) conCdn.push(`${f} [${que}] → ${m[1]}`);
+    }
   }
 }
 if (conCdn.length) {
@@ -50,18 +76,31 @@ if (conCdn.length) {
   console.log('\n  Vendorízalo en vendor/ (ver vendor/README.md) o decláralo en EXENTAS');
   console.log('  diciendo qué se ve en un colegio sin red.\n');
 }
-assert.strictEqual(conCdn.length, 0, `${conCdn.length} recurso(s) externos en los HTML`);
-ok(`las ${HTML.length} páginas cargan solo del repo: un aula sin internet ve la app entera`);
+assert.strictEqual(conCdn.length, 0, `${conCdn.length} recurso(s) externos`);
+// CONTRA-PRUEBA de la puerta que se escapó: si el escáner de CSS no viera los
+// `@import`, este caso pasaría por bueno y la fuente volvería al CDN sin ruido.
+const falso = [...'@import url(\'https://fonts.googleapis.com/css2?family=X\');'
+  .matchAll(PUERTAS[1].re)].map(m => m[1]);
+assert.deepStrictEqual(falso, ['https://fonts.googleapis.com/css2?family=X'],
+  'CONTRA-PRUEBA: el escáner de hojas ve un @import a un CDN');
+ok(`${HTML.length} páginas + ${hojas().length} hojas: nada se carga de fuera (3 puertas miradas)`);
 
 // ── 2) Cada ruta local de vendor/ apunta a un fichero que existe ─────────────
 // Una ruta mal escrita no da error: da una app sin estilos, y eso se descubre
 // con la clase delante.
+// Se recogen por las MISMAS puertas del punto 1: los HTML apuntan a `vendor/…`
+// y las hojas con `../../vendor/…` (así llega la fuente de píxeles a Arcade).
+// Mirar solo los HTML dejaría media carpeta fuera del control de versiones.
 const rutas = new Set();
 for (const f of HTML) {
   const html = readFileSync(join(ROOT, f), 'utf8');
   for (const m of html.matchAll(/(?:href|src)\s*=\s*["'](vendor\/[^"'?]+)/g)) rutas.add(m[1]);
 }
-assert.ok(rutas.size >= 3, 'los HTML siguen cargando Bootstrap desde vendor/ (CSS, iconos y bundle)');
+for (const f of hojas()) {
+  const css = readFileSync(join(ROOT, f), 'utf8');
+  for (const m of css.matchAll(/url\(\s*["']?(?:\.\.\/)*(vendor\/[^"')?]+)/g)) rutas.add(m[1]);
+}
+assert.ok(rutas.size >= 4, 'siguen cargándose desde vendor/ Bootstrap (CSS, iconos, bundle) y la fuente del tema');
 const faltan = [...rutas].filter(r => !existsSync(join(ROOT, r)));
 assert.deepStrictEqual(faltan, [], `rutas de vendor/ que no existen: ${faltan.join(', ')}`);
 ok(`las ${rutas.size} rutas de vendor/ apuntan a ficheros que existen`);
@@ -74,7 +113,7 @@ const carpetas = readdirSync(join(ROOT, 'vendor'), { withFileTypes: true })
   .filter(d => d.isDirectory()).map(d => d.name);
 const usadas = new Set([...rutas].map(r => r.split('/')[1]));
 assert.deepStrictEqual([...usadas].sort(), carpetas.sort(),
-  `vendor/ tiene ${carpetas.join(', ')} y los HTML usan ${[...usadas].join(', ')} — sobra o falta una`);
+  `vendor/ tiene ${carpetas.join(', ')} y la app usa ${[...usadas].join(', ')} — sobra o falta una`);
 ok(`vendor/ no acumula versiones muertas: ${carpetas.join(' · ')}`);
 
 // ── 4) El arnés mide lo que ve el profe ──────────────────────────────────────

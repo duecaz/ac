@@ -72,9 +72,19 @@ export function escanear() {
   const consume = new Map();     // token → ficheros que lo leen con var()
   const conRespaldo = new Set(); // token leído con var(--x, algo) en algún sitio
 
+  // Las hojas propias Y los `<style>` de las cuatro páginas. Lo segundo no es
+  // un extra: `embed.html` lee ahí `--ww-card-bg` y `--ww-fg`, y sin mirarlo el
+  // índice diría que nadie los consume. Con la ley de «declarado ⇒ consumido»
+  // eso no es un dato flojo: es una instrucción de BORRAR un token que sí se usa.
+  const inlineHtml = ['index.html', 'teacher.html', 'student.html', 'embed.html']
+    .map(f => join(ROOT, f));
   for (const p of recorrer(join(ROOT, 'styles'), ['.css'])
-    .concat(recorrer(join(ROOT, 'themes'), ['.css']))) {
-    const css = sinComentarios(readFileSync(p, 'utf8'));
+    .concat(recorrer(join(ROOT, 'themes'), ['.css']))
+    .concat(inlineHtml)) {
+    const bruto = readFileSync(p, 'utf8');
+    const css = sinComentarios(p.endsWith('.html')
+      ? [...bruto.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map(m => m[1]).join('\n')
+      : bruto);
     for (const m of css.matchAll(/(?:^|[;{\s])(--[\w-]+)\s*:/g)) anota(declara, m[1], rel(p));
     for (const m of css.matchAll(/var\(\s*(--[\w-]+)\s*(,?)/g)) {
       anota(consume, m[1], rel(p));
@@ -156,5 +166,7 @@ else if (process.argv.includes('--check')) {
 } else {
   const md = generar();
   writeFileSync(SALIDA, md);
-  console.log(`✅ escrito ${rel(SALIDA)} (${escanear().todos.length} tokens)`);
+  // La cuenta sale del propio doc: `escanear()` otra vez era recorrer el repo
+  // entero por segunda vez para averiguar algo que ya está escrito.
+  console.log(`✅ escrito ${rel(SALIDA)} (${md.match(/\*\*(\d+) tokens\*\*/)?.[1]} tokens)`);
 }

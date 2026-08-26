@@ -188,10 +188,17 @@ escribirse; si necesita violar una prohibición, está en la capa equivocada.
   retirar: «la calculadora tiene dos tipografías» era Bootstrap ausente, no el
   código). Al quitar los stubs, el viaje en vivo pasó a ejercitar el
   `bootstrap.Modal` DE VERDAD, que hasta ahora ningún test había tocado. Lo vigila
-  `tests/vendor.test.mjs`: ningún `http(s)://` en los cuatro HTML, las rutas de
-  `vendor/` existen, no se acumulan versiones muertas y ninguna herramienta vuelve
-  a interceptar Bootstrap. Esto NO cierra la deuda de «CSS propio, Bootstrap
-  fuera» — la hace inofensiva mientras tanto.
+  `tests/vendor.test.mjs`: ningún `http(s)://` por **ninguna de las tres puertas**
+  (`href`/`src` de los HTML · `@import`/`url()` de las 26 hojas · `<style>` en
+  línea), las rutas de `vendor/` existen, no se acumulan versiones muertas y
+  ninguna herramienta vuelve a interceptar Bootstrap. Esto NO cierra la deuda de
+  «CSS propio, Bootstrap fuera» — la hace inofensiva mientras tanto.
+  **La primera versión de la red solo miraba una puerta** y por eso daba verde
+  con `themes/arcade/skin.css` importando la fuente de píxeles de
+  fonts.googleapis.com: la ley proclamaba «cero recursos externos» mientras
+  quedaba uno, y sin red el tema Arcade se quedaba en Courier. La fuente está
+  ahora en `vendor/press-start-2p-5.3.0/` (subconjunto latin) y la red mira las
+  tres. Una red que cubre una puerta de tres no protege: enseña a confiar.
 - **Un token que nadie lee es un mando que no manda** (v1.51.593). Si el skin
   cambia TOKENS y la actividad los consume, los tokens son un CONTRATO — y un
   contrato se rompe por sus dos lados: declarar `--x` que ningún `var()` lee (el
@@ -205,7 +212,12 @@ escribirse; si necesita violar una prohibición, está en la capa equivocada.
   «primario» de la app, que no coloreaba nada), `--cw-frame-2` (el degradado de
   una cabecera del crucigrama que ya no existe) y `--cw-num` (la numeración, que
   acabó leyendo `--ww-card-fg` y dejó su token atrás). Exención declarada: los
-  `--bs-*`, que los consume Bootstrap desde el CDN y no se pueden escanear.
+  `--bs-*`, que los consume Bootstrap desde `vendor/` (terceros, fuera del
+  escáner a propósito). Y **la exención no se cree: se COMPRUEBA** — el test
+  abre el fichero vendorizado y exige que ahí aparezcan de verdad. Su motivo
+  original («llega por CDN») dejó de ser cierto una versión después y la
+  exención siguió ahí con el cartel viejo: una exención cuyo motivo caducó es
+  justo por donde vuelve a entrar lo que se quería impedir.
 - **Tests que lo vigilan**: `tests/styles.test.mjs` (ratchet + completeness gate
   23/23 + **gate de themes**: todo `stylesheet:` declarado existe y ningún
   `themes/*/skin.css` queda huérfano sin documentar) · `tests/skins.test.mjs`
@@ -703,6 +715,15 @@ un handler, un observer, un modal) sigue vivo pintando encima del presente.
   disposer de suscripción) · `views/playerView.js` (token de generación
   anti-carrera async) · `views/editView.js` (único listener de window en views/,
   con remove en el disposer).
+- **Un defecto que esquiva el primitivo ES el primitivo sin usar** (v1.51.596).
+  La primera versión de `azar-primitivo` daba por bueno `rnd = Math.random` en
+  una firma, razonando que un parámetro inyectable ya cumple la ley. No cumplía:
+  **ningún llamador inyectaba nunca** —ni la ruleta, ni Pregunta en vivo, ni el
+  tablero de las Pelotas—, así que el defecto era el que corría siempre y
+  `semilla()` no llegaba a ninguno de los tres. Los tres van ahora por
+  `azar.random` de defecto y siguen aceptando una fuente sembrada. Regla general:
+  al escribir una excepción, comprobar que el camino que declara legítimo **se
+  usa de verdad**; si no se usa, es un agujero con buena redacción.
 - **El azar es la gemela del reloj** (v1.51.592): lo mismo que se hizo con el
   tiempo hay que hacerlo con la suerte, y por la misma razón — que se pueda
   REPRODUCIR desde fuera. Se descubrió por una red que mentía: `tools/shots.mjs`
