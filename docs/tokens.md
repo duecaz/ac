@@ -157,7 +157,7 @@ cambia tokens, la actividad los consume). Este es el contrato completo.
 | `--math-cifra` | styles/math.css · styles/teams.css · styles/vs.css | styles/math.css |
 | `--math-eq-color` | themes/arcade/skin.css · themes/tv-show/skin.css | styles/math.css |
 | `--math-eq-opacity` | — *(solo respaldo)* | styles/math.css |
-| `--math-font` | themes/arcade/skin.css | styles/math.css · themes/arcade/skin.css |
+| `--math-font` | — *(solo respaldo)* | styles/math.css |
 | `--math-gap` | themes/tv-show/skin.css | styles/math.css · styles/teams.css · styles/vs.css |
 | `--math-head-gap` | — *(solo respaldo)* | styles/math.css |
 | `--math-head-min` | styles/vs.css | styles/math.css |

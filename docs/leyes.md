@@ -164,6 +164,19 @@ escribirse; si necesita violar una prohibición, está en la capa equivocada.
 - **Y se mide DÓNDE, no solo SI**: el chip del HUD tiene que quedar a ≤48 px de
   la esquina del marco. Contar nodos daba verde a Pelotas con el indicador a
   213 px, en mitad del tablero — la norma existía y el fallo pasaba igual.
+- **La fuente de los controles la decidimos nosotros** (v1.51.595). Un
+  `<button>`/`<input>` NO hereda la tipografía: el navegador le pone la suya. Eso
+  lo arreglaba el reboot de Bootstrap, así que media docena de reglas del proyecto
+  estaban escritas sobre una promesa prestada — la tecla de la calculadora heredaba
+  la fuente del tema PORQUE Bootstrap lo permitía, no porque nadie lo hubiera
+  decidido aquí. Ahora lo decide `styles/theme.css` en una línea, junto al
+  `box-sizing` y por la misma razón. **Lo que destapó al conectarlo**: la pila de
+  arcade estaba escrita en CUATRO sitios —el manifiesto del skin, un token
+  `--math-font` con el mismo valor, siete descendientes nombrados que ya heredaban,
+  y una cuarta pila DISTINTA en el pie «INSERT COIN»—. Queda UNO: `fontFamily` en
+  `core/skins.js`. Medido con `tools/shots.mjs` (24/24 sin cambios) y, para la
+  pantalla de celebración que las capturas no alcanzan, con una sonda de estilos
+  computados: el rótulo, el nombre del ganador y la tecla heredan los tres.
 - **Bootstrap ya no viene de la red** (v1.51.594): está copiado en `vendor/`, con
   la versión en el nombre de la carpeta y su licencia al lado (`vendor/README.md`).
   Dos motivos, ninguno teórico. Uno: sin él desaparece `box-sizing: border-box` y

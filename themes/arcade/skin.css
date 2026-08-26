@@ -8,17 +8,20 @@
    ══════════════════════════════════════════════════════════════════════════ */
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-/* Fuente de píxeles reutilizable (con respaldo monospace si no carga la web). */
-/* La pila de fuentes, UNA vez. Estaba escrita dos veces (aquí y en el token de la
-   calculadora) con el comentario en medio diciendo que el token era el único
-   sitio: cambiarla obligaba a acordarse de las dos. */
-.vs-skin-arcade { --math-font: "Press Start 2P", "Courier New", ui-monospace, monospace; }
-.vs-skin-arcade,
-.vs-skin-arcade .vss-name, .vs-skin-arcade .vss-label, .vs-skin-arcade .vss-score,
-.vs-skin-arcade .vss-badge, .vs-skin-arcade .vs-tug-label,
-.vs-skin-arcade .vs-celeb-label, .vs-skin-arcade .vs-celeb-name {
-  font-family: var(--math-font);
-}
+/* LA FUENTE DEL TEMA NO SE DECLARA AQUÍ. La pila de píxeles vive UNA vez, en el
+   manifiesto del skin (`fontFamily` en core/skins.js), que `applySkin` pone en
+   la raíz de lo skineado; el duelo y la pantalla de resultado cuelgan de ahí y
+   la heredan. Aquí estaba escrita otra vez, más un token `--math-font` con el
+   mismo valor, más siete descendientes nombrados (`.vss-name`, `.vss-score`,
+   `.vs-celeb-*`…) que no hacían nada porque ya heredaban. Cuatro sitios para
+   una decisión: cambiar la fuente obligaba a acordarse de todos.
+   Los siete estaban por una razón que ya no existe: los `<button>` NO heredan
+   la fuente solos, y eso lo arregla ahora UNA línea en `styles/theme.css` para
+   toda la app. Medido con `tools/shots.mjs` (VS y Equipos, arcade, 2 formatos):
+   cero píxeles de cambio.
+   `--math-font` sigue existiendo como extensión —un tema PUEDE querer otra
+   tipografía solo en la calculadora— pero hoy nadie la quiere distinta, así que
+   nadie la declara y `styles/math.css` cae a `inherit`, que es la del tema. */
 
 /* ── Arena: fondo oscuro + rejilla de neón en perspectiva + viñeta ─────────── */
 .vs-skin-arcade {
@@ -56,7 +59,8 @@
   flex: 0 0 auto; display: block;
   height: clamp(20px, 4.5cqh, 34px); line-height: clamp(20px, 4.5cqh, 34px);
   text-align: center; letter-spacing: .08em;
-  font-family: "Press Start 2P", "Courier New", monospace;
+  /* sin font-family: el ::after cuelga de la arena y hereda la del tema (la
+     tenía escrita, con una pila ADEMÁS distinta de las otras tres) */
   font-size: clamp(.45rem, 1.35cqw, .75rem);
   color: #ffd400; text-shadow: 0 0 6px #ffae00;
   background: linear-gradient(0deg, #1a0a3a, #0a0820);

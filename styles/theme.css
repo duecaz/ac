@@ -1,12 +1,24 @@
 /* LA CAJA LA MEDIMOS NOSOTROS. `box-sizing: border-box` lo ponía el reboot de
-   Bootstrap, que entra por CDN: en un colegio sin internet —o el día que el CDN
-   falle— TODA la maquetación cambia de modelo de caja y los anchos en % se
-   desbordan por su propio relleno. No es cosmética, es geometría, y no puede
-   depender de la red (deuda declarada en leyes.md §3: «CSS propio, Bootstrap
-   fuera»; esto es su primer trozo, el que más barato sale).
-   Lo destapó la sonda de márgenes: la tarjeta de #/registro medía 375px dentro
-   de un contenedor de 374 porque su relleno de 26px se sumaba al 92% de ancho. */
+   Bootstrap: el día que Bootstrap se sustituya por CSS propio (deuda declarada
+   en leyes.md §3) TODA la maquetación cambiaría de modelo de caja y los anchos
+   en % se desbordarían por su propio relleno. No es cosmética, es geometría, y
+   no puede vivir prestada. Lo destapó la sonda de márgenes: la tarjeta de
+   #/registro medía 375px dentro de un contenedor de 374 porque su relleno de
+   26px se sumaba al 92% de ancho.
+   (Cuando esto se escribió, Bootstrap llegaba por CDN y el riesgo era además un
+   aula sin internet; desde v1.51.594 es local —`vendor/`— y queda solo el
+   riesgo de la sustitución, que es el que de verdad importa.) */
 *, *::before, *::after { box-sizing: border-box; }
+
+/* LA FUENTE DE LOS CONTROLES, IGUAL. Un `<button>`/`<input>` NO hereda la
+   tipografía: por defecto el navegador le pone la suya. Esto lo arreglaba
+   también el reboot de Bootstrap, y por eso media docena de reglas del proyecto
+   están escritas sobre una promesa que no es nuestra — la tecla de la
+   calculadora hereda la fuente del tema PORQUE Bootstrap lo permite, no porque
+   nadie lo haya decidido aquí. Se decide aquí. Es el segundo trozo de la misma
+   deuda y cuesta una línea. (Bootstrap declara exactamente esto mismo, así que
+   el día de hoy no cambia un píxel: se comprobó con `tools/shots.mjs`.) */
+button, input, optgroup, select, textarea { font-family: inherit; }
 
 :root {
   --ww-accent: #ec4899;

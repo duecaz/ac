@@ -139,12 +139,14 @@
 
 /* LA TIPOGRAFÍA DE LA CALCULADORA, por token. Arcade la escribía directamente
    sobre `.ww-keypad-q`, `.ww-keypad-display` y `.ww-key` (tres invasiones para
-   una sola decisión); ahora declara `--math-font` una vez y estas tres la leen.
-   El respaldo es `inherit` A PROPÓSITO: la tecla es un `<button>` y los controles
-   de formulario no heredan la fuente solos. `revert` (devolver la del navegador)
-   parecía más conservador y NO lo es — en producción Bootstrap deja al botón
-   heredando, así que habría cambiado la tipografía en el sitio real. La historia
-   completa, en `tools/shots.mjs`: se midió con Bootstrap sin cargar. */
+   una sola decisión). Hoy NADIE lo declara y las tres caen a `inherit`: la del
+   tema, que llega sola. El token se queda como extensión —un tema PUEDE querer
+   otra fuente solo en la calculadora— pero ya no hace falta para lo normal.
+   El respaldo es `inherit` A PROPÓSITO, y ahora es verdad de verdad: la tecla es
+   un `<button>` y los controles no heredan la fuente solos, pero `styles/theme.css`
+   lo decide para toda la app. `revert` (devolver la del navegador) parecía más
+   conservador y NO lo es: habría flipado los dígitos a Arial. Se justificó con
+   una medición tomada SIN Bootstrap cargado — la trampa que hizo vendorizarlo. */
 .ww-keypad-q,
 .ww-keypad-display,
 .ww-keypad .ww-key { font-family: var(--math-font, inherit); }
