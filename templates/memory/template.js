@@ -26,7 +26,12 @@ export class MemoryTemplate extends BaseTemplate {
     aspectRatio: '1/1',
     modes: { solo: true, live: false, async: true, practice: true },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
-    play:            { vs: 'none', teams: 'turns', live: [] },
+    // teams:'propio' — Memoria NO se juega con la ronda genérica: trae su
+    // mecánica (mazo compartido, turno que se conserva al acertar) y su vista.
+    // Se DECLARA porque si no, la plataforma tiene que preguntar «¿eres
+    // memory?», y eso es lo que la ley §0 prohíbe: un modo no conoce plantillas
+    // concretas. Estaba preguntado por NOMBRE en siete sitios.
+    play:            { vs: 'none', teams: 'propio', live: [] },
     needsImageUpload: false,
     needsAudioUpload: false,
     defaultRules: () => ({ revealMs: 900, columns: 4 }),

@@ -43,7 +43,7 @@ export function renderStartScreen(host, activity, opts = {}) {
   const color = 'success';
   const soundOn = activity?.presentation?.sound !== false && !isMuted();
   const fxOn = !isEffectsMuted();
-  const isText = activity?.template === 'tildes' || activity?.template === 'comas';
+  const isText = T?.meta?.seMarcaConLapiz === true;
 
   mount(host, html`
     <div class="ww-start">

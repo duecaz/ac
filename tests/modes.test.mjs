@@ -75,9 +75,16 @@ assert.deepStrictEqual(modesForTemplate(Tfull).map(m => m.id), ['solo', 'vs', 't
   'full template can offer every mode');
 assert.deepStrictEqual(modesForTemplate(Ttool).map(m => m.id), ['solo'],
   'a tool template (no scorer/renderRound/live/async) offers only solo');
-// Memory is teams-capable by name even without renderRound (native mechanic).
-assert.ok(modesForTemplate({ meta: { name: 'memory', modes: {} } }).some(m => m.id === 'teams'),
-  'memory is teams-capable via its native mechanic');
+// Una plantilla con MECÁNICA PROPIA de Equipos puede ofrecer el modo aunque no
+// implemente `renderRound` — pero ahora lo DECLARA (`play.teams:'propio'`) en
+// vez de que la plataforma pregunte cómo se llama.
+assert.ok(modesForTemplate({ meta: { name: 'lo_que_sea', modes: {}, play: { teams: 'propio' } } })
+  .some(m => m.id === 'teams'), 'la mecánica propia declarada habilita Equipos');
+// CONTRA-PRUEBA de que la IDENTIDAD dejó de contar: llamarse «memory» ya no
+// basta. Antes esta misma clase pasaba solo por su nombre, y por eso la
+// capacidad estaba preguntada por nombre en siete sitios (ley §0).
+assert.ok(!modesForTemplate({ meta: { name: 'memory', modes: {} } }).some(m => m.id === 'teams'),
+  'llamarse «memory» sin declarar la mecánica ya NO habilita Equipos');
 // Every mode exposes a short label for the selector chips.
 assert.ok(MODE_DEFS.every(m => typeof m.short === 'string' && m.short),
   'every mode has a short label');

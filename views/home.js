@@ -10,7 +10,7 @@ import { activityCardHtml } from '../core/activityCard.js';
 import { searchActivities } from '../core/search.js';
 import { buildSwitchOptions } from './switchTemplate.js';
 import { canHost } from '../core/authGate.js';
-import { modeAuthHint } from '../core/modes.js';
+import { rutaDeModo, modeAuthHint } from '../core/modes.js';
 import { openLoginModal } from './loginModal.js';
 
 let _filter = { q: '', template: '' };
@@ -147,7 +147,7 @@ export function renderHome(rootSel) {
 
   on(rootSel, 'click', '.act-play', (_, b) => navigate(`#/play/${b.dataset.id}`));
   on(rootSel, 'click', '.act-vs', (_, b) => navigate(`#/vs/${b.dataset.id}`));
-  on(rootSel, 'click', '.act-teams', (_, b) => navigate(`#/${b.dataset.tpl === 'memory' ? 'memory' : 'teams'}/${b.dataset.id}`));
+  on(rootSel, 'click', '.act-teams', (_, b) => navigate(rutaDeModo('teams', { id: b.dataset.id, template: b.dataset.tpl })));
   // Modo host-only con candado: no navegues a una pantalla que va a rebotar —
   // di POR QUÉ y ofrece entrar ahí mismo. La frase sale de core/modes.js (una
   // sola redacción para botón, tooltip, modal y gate del router).

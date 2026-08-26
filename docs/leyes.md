@@ -55,6 +55,7 @@
 - [21) ⚖️ LEY DE DATOS — cada colección tiene UN dueño](#21--ley-de-datos--cada-colección-tiene-un-dueño)
 - [22) ⚖️ LEY DE CONFIANZA — el cliente AFIRMA, el veredicto lo pone otro](#22--ley-de-confianza--el-cliente-afirma-el-veredicto-lo-pone-otro)
   - [Los LÍMITES de esta ley — permanentes, no pendientes (v1.51.421)](#los-límites-de-esta-ley--permanentes-no-pendientes-v151421)
+  - [§0 en la práctica — la identidad no habilita nada (v1.51.598)](#0-en-la-práctica--la-identidad-no-habilita-nada-v151598)
 - [23) ⚖️ LEY DE VISTA — ciclo de vida de una pantalla](#23--ley-de-vista--ciclo-de-vida-de-una-pantalla)
 - [24) ⚖️ LEY DE CONTENIDO — el modelo evoluciona por caminos declarados](#24--ley-de-contenido--el-modelo-evoluciona-por-caminos-declarados)
 - [§25 · CAPACIDAD — el sistema tiene límites, y son UNO](#25--capacidad--el-sistema-tiene-límites-y-son-uno)
@@ -696,6 +697,35 @@ compensa al docente (ver `docs/decisiones-pendientes.md`). El tercero, el hook,
 en una Pi COMPARTIDA con otros proyectos, y ahora mismo estamos cerrando huecos,
 no abriendo superficie. Se reabre solo si aparece un caso real de trampa en
 clase — que hasta hoy no ha aparecido.
+
+### §0 en la práctica — la identidad no habilita nada (v1.51.598)
+
+Una revisión del POLIMORFISMO midió el árbol entero. Lo sano: las 13 plantillas
+pasan por un shell de player, las 13 bocas del contrato tienen consumidor real,
+el puerto de adaptadores es simétrico (salvo tres métodos opcionales guardados)
+y las 27 bocas de `realtime` tienen dos consumidores o más. Lo que no lo era:
+
+- **La validación de arranque de las dos bocas OBLIGATORIAS no podía fallar.**
+  `BaseTemplate` definía `renderPlayer`/`renderEditor` como stubs que lanzan, así
+  que `typeof T.renderPlayer !== 'function'` era siempre falso: la subclase los
+  hereda. Comprobado registrando una plantilla sin ninguna de las dos — entraba
+  tan tranquila y reventaba cuando un niño abría la actividad, que es justo lo
+  que esa comprobación existe para impedir. Ahora son `null` declarado.
+  Lo mismo pasaba con `renderRoundHost` en el contrato: se pregunta por
+  propiedad PROPIA, que es lo que distingue «proyecta lo suyo» de «hereda».
+- **Doce sitios elegían por NOMBRE de plantilla, y la red decía «0».** Miraba
+  dos ficheros y una forma sintáctica, y anunciaba el cero sin decir dónde. La
+  peor estaba copiada en CINCO vistas: la plataforma preguntándole a un botón si
+  la plantilla se llama «memory» para elegir a qué pantalla mandar al profe.
+  Se saldó DECLARANDO lo que se adivinaba — `play.teams: 'propio'` (mecánica
+  propia de Equipos) · `seMarcaConLapiz` (Tildes/Comas) · `iaPalabrasComoTexto`
+  (Sopa) — y con un dueño único de la ruta, `rutaDeModo()` en `core/modes.js`.
+  La red escanea ahora TODO el código de la app y las tres formas de preguntar,
+  con contra-prueba de cada una. Tope 0, de verdad.
+
+> Regla que deja esto: **una capacidad se DECLARA y se pregunta por ella; la
+> identidad de la plantilla no habilita nada.** Y un guardián que hereda de la
+> clase que vigila no vigila: comprueba la propiedad propia.
 
 ## 23) ⚖️ LEY DE VISTA — ciclo de vida de una pantalla
 Las normas 4, 6 y 10 son piezas de esta ley; aquí está el cuadro completo de

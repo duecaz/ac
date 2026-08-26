@@ -7,6 +7,7 @@ import { activityCardHtml } from '../core/activityCard.js';
 import { listPublic } from '../core/storage.js';
 import { searchActivities } from '../core/search.js';
 import { getTemplate } from '../core/registry.js';
+import { rutaDeModo } from '../core/modes.js';
 
 // `q0` = término que llega EN LA URL (`#/explore?q=comas`). Es como aterriza el
 // profe desde el buscador de la portada: si la vista no lo leyera, llegaría a la
@@ -92,7 +93,7 @@ export async function renderExplore(rootSel, q0 = '') {
   on(rootSel, 'click', '[data-play]', (_, b) => navigate(`#/play/${b.dataset.play}`));
   on(rootSel, 'click', '.act-play', (_, b) => navigate(`#/play/${b.dataset.id}`));
   on(rootSel, 'click', '.act-vs', (_, b) => navigate(`#/vs/${b.dataset.id}`));
-  on(rootSel, 'click', '.act-teams', (_, b) => navigate(`#/${b.dataset.tpl === 'memory' ? 'memory' : 'teams'}/${b.dataset.id}`));
+  on(rootSel, 'click', '.act-teams', (_, b) => navigate(rutaDeModo('teams', { id: b.dataset.id, template: b.dataset.tpl })));
 
   load();
 }

@@ -18,7 +18,7 @@ export function modeReason(modeId, T) {
       ? 'scoreSubmission + renderRound ✓ (en actividad: ≥2 ítems)'
       : 'falta ' + ['scoreSubmission', 'renderRound'].filter(m => !has(m)).join(' + ');
     case 'teams': return has('renderRound') ? 'renderRound ✓ (auto) o juez'
-      : (T?.meta?.name === 'memory' ? 'mecánica nativa de Memoria' : 'sin renderRound');
+      : (T?.meta?.play?.teams === 'propio' ? 'mecánica propia declarada' : 'sin renderRound');
     case 'live': return T?.meta?.modes?.live ? 'meta.modes.live ✓' : 'meta.modes.live = false';
     case 'task': return T?.meta?.modes?.async ? 'meta.modes.async ✓' : 'meta.modes.async = false';
     default: return '';

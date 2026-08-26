@@ -39,8 +39,16 @@ export class BaseTemplate {
     defaultLive: () => ({}),
     defaultContent: () => ({})
   };
-  static renderPlayer() { throw new Error('renderPlayer not implemented'); }
-  static renderEditor() { throw new Error('renderEditor not implemented'); }
+  // OJO: estos dos son ABSTRACTOS y por eso son un `null` declarado, no un
+  // stub que lanza. Con el stub, `typeof T.renderPlayer !== 'function'` en
+  // `registry.js` era SIEMPRE falso —la subclase lo hereda— y la validación de
+  // arranque de las DOS bocas obligatorias no podía fallar nunca. O sea: la
+  // comprobación que existe para «fallar al arrancar en vez de a mitad de
+  // partida» fallaba justo a mitad de partida, cuando un niño abría la
+  // actividad y saltaba «renderPlayer not implemented». Comprobado registrando
+  // una plantilla sin ninguna de las dos: entraba en el registro tan tranquila.
+  static renderPlayer = null;
+  static renderEditor = null;
 
   // Projector (host) view for LIVE. The host owns the chrome (timer, answered
   // count, controls); this only paints the round CONTENT into `root`.

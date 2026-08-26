@@ -8,12 +8,16 @@ import { templateCapabilities, activityAvailability, modeReason, CONTRACT_METHOD
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
 
-// Arquetipos: full (todo), tool (solo), y memory (teams nativo sin renderRound).
+// Arquetipos: full (todo), tool (solo), y uno con MECÁNICA PROPIA de Equipos
+// (sin renderRound). El tercero se llamaba «memory» a propósito porque la
+// capacidad se preguntaba por NOMBRE; ahora se DECLARA (`play.teams:'propio'`),
+// así que el arquetipo se llama como lo que es y el nombre deja de importar.
 registerTemplate({ meta: { name: 'mm_full', label: 'Full', contentModel: 'qa', modes: { live: true, async: true } },
   renderPlayer() {}, renderEditor() {}, renderRound() {}, getRoundPayload() {}, scoreSubmission() {} });
 registerTemplate({ meta: { name: 'mm_tool', label: 'Tool', contentModel: 'entries', modes: {} },
   renderPlayer() {}, renderEditor() {} });
-registerTemplate({ meta: { name: 'memory', label: 'Memoria', contentModel: 'pairs', modes: { async: true } },
+registerTemplate({ meta: { name: 'mm_propio', label: 'Mecánica propia', contentModel: 'pairs',
+  modes: { async: true }, play: { vs: 'none', teams: 'propio', live: [] } },
   renderPlayer() {}, renderEditor() {} });
 
 const byName = (n) => templateCapabilities().find(c => c.name === n);
@@ -36,12 +40,16 @@ assert.match(tool.modes.find(m => m.id === 'vs').reason, /falta scoreSubmission 
   'el motivo de VS dice qué falta');
 ok('templateCapabilities: tool solo individual, con motivo claro');
 
-// ---- memory: teams por mecánica nativa (sin renderRound) ----
-const mem = byName('memory');
-assert.strictEqual(modeMap(mem).teams, true, 'memory soporta equipos por mecánica nativa');
-assert.strictEqual(modeMap(mem).vs, false, 'memory sin renderRound → no VS');
-assert.match(modeReason('teams', { meta: { name: 'memory' } }), /nativa de Memoria/, 'motivo de equipos para memory');
-ok('templateCapabilities: memory equipos sí, VS no');
+// ---- mecánica propia: Equipos sí, VS no (no tiene renderRound) ----
+const propio = byName('mm_propio');
+assert.strictEqual(modeMap(propio).teams, true, 'la mecánica propia declarada soporta Equipos');
+assert.strictEqual(modeMap(propio).vs, false, 'sin renderRound → no VS');
+assert.match(modeReason('teams', { meta: { play: { teams: 'propio' } } }), /mecánica propia/,
+  'el motivo cita la CAPACIDAD, no la plantilla');
+// CONTRA-PRUEBA: sin declararlo, no hay Equipos aunque se llame «memory».
+assert.strictEqual(modeReason('teams', { meta: { name: 'memory' } }), 'sin renderRound',
+  'la identidad ya no habilita nada: llamarse «memory» no basta');
+ok('templateCapabilities: mecánica propia → equipos sí, VS no (y el nombre ya no cuenta)');
 
 // ---- todas las celdas traen los campos que el panel pinta ----
 assert.ok(CONTRACT_METHODS.length >= 4, 'hay columnas de métodos');

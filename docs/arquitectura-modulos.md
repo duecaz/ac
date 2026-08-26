@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **269 módulos · 1042 imports internos.**
+> **269 módulos · 1046 imports internos.**
 
 ### Ir a otro documento
 
@@ -30,12 +30,12 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
-| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1780 | 7 · 859 | 0.48 |
-| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2772 | 12 · 1262 | 0.46 |
-| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3975 | 19 · 3001 | 0.75 |
+| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1784 | 7 · 859 | 0.48 |
+| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2797 | 12 · 1277 | 0.46 |
+| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3975 | 19 · 3037 | 0.76 |
 | **informes/tareas** | después de clase | 10 · 1056 | 4 · 466 | 0.44 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5841 | 13 · 1778 | 0.30 |
-| **infra/común** | todo lo anterior | 143 · 17402 | 61 · 7437 | 0.43 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5868 | 13 · 1778 | 0.30 |
+| **infra/común** | todo lo anterior | 143 · 17417 | 61 · 7437 | 0.43 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -63,7 +63,7 @@ graph TD
   T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>75 módulos</small>"]
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>5 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
-  V -->|291| C
+  V -->|295| C
   T -->|219| C
   A -->|28| C
   AD -->|27| C

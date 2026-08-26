@@ -291,7 +291,7 @@ export function renderEditorShell(root, a, onChange, spec) {
           tema: a.title || '',
           // Sopa de Letras guarda cadenas sueltas y Crucigrama fichas con pista:
           // se pide una vez (con pista) y se aplana aquí. Ver core/aiContent.js.
-          palabrasComoTexto: a.template === 'wordsearch',
+          palabrasComoTexto: getTemplate(a.template)?.meta?.iaPalabrasComoTexto === true,
         });
         if (!nuevo) return;                       // cerró sin aceptar
         // LA PLANTILLA REMATA LO QUE LA IA NO PUEDE SABER. `adoptContent` es el

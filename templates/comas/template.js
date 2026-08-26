@@ -30,6 +30,11 @@ export class ComasTemplate extends BaseTemplate {
     aspectRatio: '16/10',
     modes: { solo: true, live: true, async: true, practice: true },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
+    // Se juega MARCANDO sobre un texto, así que en una pizarra interactiva
+    // conviene calibrar el lápiz antes de empezar. Lo DECLARA la plantilla: la
+    // pantalla de inicio preguntaba «¿te llamas tildes o comas?», que es la ley
+    // §0 al revés (un modo no conoce plantillas concretas).
+    seMarcaConLapiz: true,
     play:            { vs: 'points', teams: 'turns', live: ['rounds', 'race'], submit: 'boton' },
     needsImageUpload: false,
     needsAudioUpload: false,

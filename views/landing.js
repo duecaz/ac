@@ -13,6 +13,7 @@ import { fetchLikeCounts, fetchMyLikes, toggleLike } from '../core/likes.js';
 import { getUser } from '../core/auth.js';
 import { mountAuthSlot } from '../core/authWidget.js';
 import { toast } from '../core/toast.js';
+import { rutaDeModo } from '../core/modes.js';
 
 export async function renderLanding(rootSel) {
   const user = await getUser();
@@ -103,7 +104,7 @@ export async function renderLanding(rootSel) {
   on(rootSel, 'click', '[data-play]', (_, b) => navigate(`#/play/${b.dataset.play}`));
   on(rootSel, 'click', '.act-play', (_, b) => navigate(`#/play/${b.dataset.id}`));
   on(rootSel, 'click', '.act-vs', (_, b) => navigate(`#/vs/${b.dataset.id}`));
-  on(rootSel, 'click', '.act-teams', (_, b) => navigate(`#/${b.dataset.tpl === 'memory' ? 'memory' : 'teams'}/${b.dataset.id}`));
+  on(rootSel, 'click', '.act-teams', (_, b) => navigate(rutaDeModo('teams', { id: b.dataset.id, template: b.dataset.tpl })));
   on(rootSel, 'click', '[data-like]', async (e, b) => {
     e.stopPropagation();
     try {

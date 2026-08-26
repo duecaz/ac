@@ -96,13 +96,21 @@ export function checkTemplateContract(T) {
   //              botón. Lo vigila `tools/matrix-smoke.mjs` (cuenta los controles
   //              reales en el panel VS y los compara con lo declarado).
   const VS_POLICIES = ['race', 'points', 'none'];
-  const TEAMS_POLICIES = ['turns', 'board', 'none'];
+  // 'propio' = la plantilla trae su mecánica de Equipos y su vista (Memoria);
+  // la plataforma la monta aparte en vez de pintar la ronda genérica.
+  const TEAMS_POLICIES = ['turns', 'board', 'propio', 'none'];
   const LIVE_POLICIES = [...LIVE_LOOPS, 'none'];
   if (!m.play || typeof m.play !== 'object') {
     issues.push("meta.play ausente (declara { vs: 'race'|'points'|'none', teams: 'turns'|'board'|'none', live: 'rounds'|'board'|'none' })");
   } else {
     if (!VS_POLICIES.includes(m.play.vs)) issues.push(`meta.play.vs inválido: ${JSON.stringify(m.play.vs)} (usa ${VS_POLICIES.join(' | ')})`);
     if (!TEAMS_POLICIES.includes(m.play.teams)) issues.push(`meta.play.teams inválido: ${JSON.stringify(m.play.teams)} (usa ${TEAMS_POLICIES.join(' | ')})`);
+    // Quien juega Equipos con la ronda GENÉRICA tiene que poder pintarla; quien
+    // declara 'propio' se monta aparte y no la necesita. Sin esta línea, la
+    // única forma de saberlo era mirar si la plantilla se llamaba «memory».
+    if (['turns', 'board'].includes(m.play.teams) && typeof T.renderRound !== 'function') {
+      issues.push("meta.play.teams usa la ronda genérica pero no implementa renderRound (¿querías teams:'propio'?)");
+    }
     // `play.live` es una LISTA de bucles (§26); se tolera el string heredado.
     const liveRaw = Array.isArray(m.play.live) ? m.play.live : (m.play.live ? [m.play.live] : []);
     for (const l of liveRaw) {
@@ -172,8 +180,15 @@ export function checkTemplateContract(T) {
   }
   if (m.modes?.live) {
     if (typeof T.getRoundPayload !== 'function') issues.push('modes.live sin getRoundPayload');
-    if (typeof T.scoreSubmission !== 'function' && typeof T.renderRoundHost !== 'function') {
-      issues.push('modes.live sin scoreSubmission ni renderRoundHost (ni auto-puntúa ni proyecta)');
+    // `renderRoundHost` NO se pregunta con `typeof`: la clase base trae una
+    // versión por defecto, así que TODA plantilla la tiene y esta condición no
+    // podía darse jamás. Lo que se quiere saber es si la plantilla la HA
+    // ESCRITO —si la sobreescribe—, que es lo que distingue «proyecta lo suyo»
+    // de «hereda el enunciado genérico». Se mira como propiedad PROPIA en vez de
+    // comparar contra la base: `core/` no puede importar de `templates/` (§0).
+    const proyectaPropio = Object.getOwnPropertyNames(T).includes('renderRoundHost');
+    if (typeof T.scoreSubmission !== 'function' && !proyectaPropio) {
+      issues.push('modes.live sin scoreSubmission ni renderRoundHost propio (ni auto-puntúa ni proyecta)');
     }
   }
 

@@ -18,6 +18,7 @@ import { listTemplates } from '../core/registry.js';
 import { newActivity } from '../core/migrate.js';
 import { get, save } from '../core/storage.js';
 import { activityCardHtml } from '../core/activityCard.js';
+import { rutaDeModo } from '../core/modes.js';
 
 /** Los juegos instalados, del registro (nunca cableados aquí). */
 export function gameTemplates() {
@@ -71,5 +72,5 @@ export function renderJuegos(rootSel) {
   on(rootSel, 'click', '[data-play]', (_, b) => navigate(`#/play/${b.dataset.play}`));
   on(rootSel, 'click', '.act-play', (_, b) => navigate(`#/play/${b.dataset.id}`));
   on(rootSel, 'click', '.act-vs', (_, b) => navigate(`#/vs/${b.dataset.id}`));
-  on(rootSel, 'click', '.act-teams', (_, b) => navigate(`#/${b.dataset.tpl === 'memory' ? 'memory' : 'teams'}/${b.dataset.id}`));
+  on(rootSel, 'click', '.act-teams', (_, b) => navigate(rutaDeModo('teams', { id: b.dataset.id, template: b.dataset.tpl })));
 }

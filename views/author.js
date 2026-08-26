@@ -10,6 +10,7 @@ import { getAuthUserId, getAuthName, changePassword, linkGoogle } from '../core/
 import { fetchProfile, getLocalProfile, saveProfile } from '../core/profile.js';
 import { uploadMedia } from '../core/upload.js';
 import { toast, confirmModal } from '../core/toast.js';
+import { rutaDeModo } from '../core/modes.js';
 
 export async function renderAuthor(rootSel, ownerId) {
   const isOwner = getAuthUserId() && getAuthUserId() === ownerId;
@@ -161,7 +162,7 @@ export async function renderAuthor(rootSel, ownerId) {
   on(rootSel, 'click', '[data-play]', (_, b) => navigate(`#/play/${b.dataset.play}`));
   on(rootSel, 'click', '.act-play', (_, b) => navigate(`#/play/${b.dataset.id}`));
   on(rootSel, 'click', '.act-vs', (_, b) => navigate(`#/vs/${b.dataset.id}`));
-  on(rootSel, 'click', '.act-teams', (_, b) => navigate(`#/${b.dataset.tpl === 'memory' ? 'memory' : 'teams'}/${b.dataset.id}`));
+  on(rootSel, 'click', '.act-teams', (_, b) => navigate(rutaDeModo('teams', { id: b.dataset.id, template: b.dataset.tpl })));
   on(rootSel, 'click', '#au-edit', () => paintEditForm(true));
   on(rootSel, 'click', '#au-account', () => paintAccount(true));
   on(rootSel, 'click', '#au-cancel', () => { paintEditForm(false); });

@@ -61,10 +61,10 @@ export const MODE_DEFS = [
     // Capacidad: auto vía scoreSubmission+renderRound, o Memoria con su mecánica
     // nativa por turnos. (No se ofrece en herramientas como la ruleta, que no
     // tienen ronda.)
-    supportsTemplate: (T) => canAutoScoreRound(T) || T?.meta?.name === 'memory',
+    supportsTemplate: (T) => canAutoScoreRound(T) || T?.meta?.play?.teams === 'propio',
     // Disponible: Memoria necesita ≥2 pares; el resto, ≥1 ronda. Coincide con lo
     // que cada vista exige (no ofrecer un modo que luego no arranca).
-    isAvailable: (a) => a?.template === 'memory'
+    isAvailable: (a) => traeMecanicaPropia(a)
       ? (a?.content?.pairs || []).filter(p => p?.left && p?.right).length >= 2
       : sessionItems(a).length >= 1,
     disabledHint: 'Esta actividad no tiene preguntas suficientes'
@@ -101,6 +101,31 @@ export const MODE_DEFS = [
  *  lo que la clase implementa/declara. Lo usa el selector de plantillas para
  *  mostrar "solo · vs · equipos · …" sin contenido todavía. Para una actividad
  *  concreta (con contenido) usa availableModes(). T es la clase de plantilla. */
+/** ¿Esta actividad trae su PROPIA mecánica de Equipos? Lo DECLARA la plantilla
+ *  (`meta.play.teams === 'propio'`), no lo adivina la plataforma por el nombre. */
+export const traeMecanicaPropia = (a) =>
+  getTemplate(a?.template)?.meta?.play?.teams === 'propio';
+
+/**
+ * LA RUTA DE UN MODO — dueño único.
+ *
+ * «Equipos» tiene DOS rutas (`#/teams/:id` y `#/memory/:id`, la mecánica propia)
+ * y elegir entre ellas estaba escrito, palabra por palabra, en CINCO vistas:
+ * home, portada, biblioteca, juegos y autor —
+ *   navigate(`#/${b.dataset.tpl === 'memory' ? 'memory' : 'teams'}/${id}`)
+ * — o sea la plataforma preguntándole a un botón si la plantilla se llama
+ * «memory». Dos cosas mal a la vez: la ley §0 (un modo no conoce plantillas
+ * concretas) y el número — una mecánica propia nueva obligaba a acordarse de
+ * cinco sitios, y el sexto que se olvidara mandaría al profe a la vista que no
+ * es. Aquí se decide una vez, a partir de lo que la plantilla DECLARA.
+ */
+export function rutaDeModo(modeId, activity) {
+  const def = getMode(modeId);
+  if (def?.href) return def.href(activity);
+  if (modeId === 'teams') return `#/${traeMecanicaPropia(activity) ? 'memory' : 'teams'}/${activity.id}`;
+  return `#/${modeId}/${activity.id}`;
+}
+
 export function modesForTemplate(T) {
   return MODE_DEFS.filter(m => m.supportsTemplate(T));
 }
@@ -170,8 +195,8 @@ export async function runMode(modeId, host, activity, ctx) {
       return mountVs(host, activity, ctx) || { dispose() {} };
     }
     case 'teams': {
-      // Memoria es un tablero por turnos (mecánica propia); el resto, secuencia.
-      if (activity.template === 'memory') {
+      // La plantilla DECLARA si trae su mecánica de Equipos (play.teams:'propio').
+      if (traeMecanicaPropia(activity)) {
         const { mountMemory } = await import('../views/memoryView.js');
         return mountMemory(host, activity, ctx) || { dispose() {} };
       }

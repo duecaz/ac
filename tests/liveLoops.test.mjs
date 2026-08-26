@@ -18,6 +18,7 @@ import { readFileSync } from 'node:fs';
 import '../core/registerTemplates.js';
 import { listTemplates } from '../core/registry.js';
 import { LIVE_LOOPS, loopsOf } from '../core/liveLoops.js';
+import { ficheros, leer } from './helpers/inventario.mjs';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
@@ -89,20 +90,55 @@ const LOOPS = {
   ok('las fases de sala usadas por host y alumno están dentro del catálogo');
 }
 
-// ── 4. La deuda §0 medida: cuántos sitios eligen por NOMBRE de plantilla ──
-// No se prohíbe (arreglarlo es el rediseño), pero se fija el número: si crece,
-// el test avisa. Así la deuda no se hace más grande en silencio.
+// ── 4. §0 MEDIDA: cuántos sitios eligen por NOMBRE de plantilla ───────────
+// Esto miraba DOS ficheros (`hostLive`, `studentLive`) y UNA forma sintáctica
+// (`activity.template === '…'`), y anunciaba «0 elecciones por nombre de
+// plantilla» sin decir dónde. Sonaba a todo el repo. No lo era: fuera de su
+// campo de visión había DOCE, y la peor estaba copiada en CINCO vistas —
+//   navigate(`#/${b.dataset.tpl === 'memory' ? 'memory' : 'teams'}/${id}`)
+// — o sea la plataforma preguntándole a un botón si la plantilla se llama
+// «memory» para elegir a qué pantalla mandar al profe. Una red que dice «0»
+// mirando el 15 % del sitio no protege: enseña a creerse el número.
+//
+// Ahora se escanea TODO el código de la app y se aceptan las tres formas de
+// preguntar (`activity.template`, `a?.template`, `T?.meta?.name`). El tope es 0 y
+// se llegó a 0 declarando lo que antes se adivinaba: `play.teams:'propio'`
+// (Memoria trae su mecánica), `seMarcaConLapiz` (Tildes/Comas) y
+// `iaPalabrasComoTexto` (Sopa).
 {
-  const KNOWN = 0;   // §0 SALDADA: ninguna vista elige bucle por nombre de plantilla
-  let n = 0;
-  for (const f of ['views/hostLive.js', 'views/studentLive.js']) {
-    n += [...read(f).matchAll(/activity\.template\s*===\s*'[\w-]+'/g)].length;
+  const NOMBRES = listTemplates().map(T => T.meta.name);
+  const RE = new RegExp(
+    String.raw`([\w.?\[\]']*(?:template|tpl|name)[\w.?\[\]']*)\s*[=!]==\s*'(${NOMBRES.join('|')})'`, 'g');
+  const sinComentarios = (t) => t
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/(^|[^:])\/\/[^\n]*/g, (m, pre) => pre);
+  const hallados = [];
+  for (const f of ficheros('.', (x) => /\.(js|mjs)$/.test(x) && !/^(tests|tools|docs)\//.test(x))) {
+    sinComentarios(leer(f)).split('\n').forEach((ln, i) => {
+      for (const m of ln.matchAll(RE)) hallados.push(`${f}:${i + 1} → ${m[0].trim()}`);
+    });
   }
-  assert.ok(n <= KNOWN,
-    `las vistas de vivo eligen por NOMBRE de plantilla en ${n} sitios (antes ${KNOWN}). `
-    + 'La ley §0 dice que un modo no conoce plantillas concretas: el bucle debe DECLARARSE, no adivinarse. '
-    + 'Ver docs/estudio-bucles-live.md §4.');
-  ok(`deuda §0 acotada: ${n} elecciones por nombre de plantilla (tope ${KNOWN}, no puede crecer)`);
+  if (hallados.length) {
+    console.log('\n  Sitios que eligen por NOMBRE de plantilla (§0):');
+    for (const h of hallados) console.log(`    ✗ ${h}`);
+    console.log('\n  DECLÁRALO en meta y pregunta por la capacidad, no por la identidad.\n');
+  }
+  assert.strictEqual(hallados.length, 0,
+    `${hallados.length} sitio(s) eligen por NOMBRE de plantilla. La ley §0 dice que un modo `
+    + 'no conoce plantillas concretas: la capacidad se DECLARA en meta y se pregunta por ella.');
+  // CONTRA-PRUEBA: el escáner tiene que saber cazar las tres formas. Sin esto,
+  // un regex roto dejaría el cero en verde para siempre — que es exactamente
+  // como esta comprobación estuvo pasando mientras había doce.
+  const CASOS = [
+    `if (activity.template === 'memory') mount();`,
+    `const t = a?.template === 'tildes';`,
+    `supportsTemplate: (T) => T?.meta?.name === 'memory',`,
+  ];
+  for (const caso of CASOS) {
+    RE.lastIndex = 0;
+    assert.ok(RE.test(caso), `CONTRA-PRUEBA: el escáner no ve «${caso}»`);
+  }
+  ok(`§0 SALDADA: 0 elecciones por nombre de plantilla en TODO el código de la app (${CASOS.length} formas vigiladas)`);
 }
 
 // ── 4b. POLÍTICA DE EXPOSICIÓN: durante el juego, AVANCE y no RANKING ─────
