@@ -38,7 +38,7 @@ const rel = (p) => relative(ROOT, p).replace(/\\/g, '/');
 // de ejemplo dentro de una contra-prueba no es un token de la app, y colarlo
 // ensucia justo la lista que hay que poder leer de una pasada.
 const IGNORAR_DIR = ['node_modules', '.git', 'docs', 'sounds', 'assets', '.shots',
-  'scratchpad', 'tests', 'tools'];
+  'scratchpad', 'tests', 'tools', 'vendor'];
 
 // Un token INTERPOLADO (`var(--ww-shape-${i})`) llega al escáner partido por la
 // mitad, como `--ww-shape-`. No es un token: es media cadena. Se descarta por

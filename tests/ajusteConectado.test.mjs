@@ -26,7 +26,7 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const ficheros = [];
 (function walk(d) {
   for (const f of readdirSync(d)) {
-    if (['node_modules', '.git', 'docs', 'sounds', 'scratchpad', 'themes'].includes(f)) continue;
+    if (['node_modules', '.git', 'docs', 'sounds', 'scratchpad', 'themes', 'vendor'].includes(f)) continue;
     const p = join(d, f);
     if (statSync(p).isDirectory()) walk(p);
     else if (f.endsWith('.js') || f.endsWith('.mjs')) ficheros.push(p);

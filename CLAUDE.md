@@ -100,6 +100,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | **Tocar CSS del juego sin romper nada** (capturas antes/después, diff por píxel) | `node tools/shots.mjs before` → cambios → `node tools/shots.mjs after` |
 | **QUÉ PIEZAS tiene cada actividad y cuánto ocupan** (en hueco ancho y en hueco alto) | **[`docs/piezas-por-actividad.md`](docs/piezas-por-actividad.md)** — GENERADO: `node tools/piezas.mjs` (es el dato de D8) |
 | **QUÉ TOKEN declara cada tema y quién lo consume** (la interfaz tema↔juego, §3) | **[`docs/tokens.md`](docs/tokens.md)** — GENERADO: `node tools/tokens.mjs` (lo vigila `tests/tokenConectado.test.mjs`) |
+| **Por qué Bootstrap está COPIADO en el repo** (nada de CDN: aula sin internet + el arnés medía otra pantalla) | **[`vendor/README.md`](vendor/README.md)** — lo vigila `tests/vendor.test.mjs` |
 | **QUÉ PRODUCE CONVERTIR de una plantilla a otra** (las 36, con lo que la conversión no puede inventar) | **[`docs/conversiones.md`](docs/conversiones.md)** — GENERADO: `node tools/conversiones.mjs --md` |
 | **Matriz JUGABLE** (cada plantilla × cada modo arranca sin crash) | `node tools/matrix-smoke.mjs` + `tests/moduleRefs.test.mjs` (imports olvidados) |
 | **EN VIVO e2e** (host+alumno en dos páginas: sala→PIN→respuesta→settle→podio) | `node tools/live-smoke.mjs` |

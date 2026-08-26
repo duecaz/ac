@@ -27,6 +27,7 @@ Qué leer según lo que necesites. La **fuente de verdad del estado actual** es
 | Contrato de CSS de actividad (relativo + tokens de skin) | `estilos-de-actividad.md` |
 | **Qué piezas tiene cada actividad y cuánto ocupan** (ancho vs alto, medido) | `piezas-por-actividad.md` (GENERADO: `node tools/piezas.mjs`) |
 | **Qué token declara cada tema y quién lo consume** (la interfaz tema↔juego, §3) | `tokens.md` (GENERADO: `node tools/tokens.mjs`) |
+| **Por qué Bootstrap está copiado en el repo** y cómo se actualiza | [`../vendor/README.md`](../vendor/README.md) |
 | **Qué produce llevar el contenido de una plantilla a otra** (las 36 conversiones, medidas) | `conversiones.md` (GENERADO: `node tools/conversiones.mjs --md`) |
 | Mapa de módulos `core/` por rol | `../core/README.md` |
 | Diseñar los previews SVG de las tarjetas del home (brief de diseño) | `svg-previews-guia.md` |

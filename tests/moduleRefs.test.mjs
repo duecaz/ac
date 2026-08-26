@@ -22,7 +22,9 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
 
-const SKIP_DIRS = new Set(['node_modules', '.git', 'docs', 'scratchpad', 'tests', 'tools']);
+// `vendor/` fuera: es código de terceros copiado tal cual (ver vendor/README.md).
+// Escanearlo no es vigilar NUESTRO codigo, es opinar sobre el de Bootstrap.
+const SKIP_DIRS = new Set(['node_modules', '.git', 'docs', 'scratchpad', 'tests', 'tools', 'vendor']);
 function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {
     if (SKIP_DIRS.has(name)) continue;

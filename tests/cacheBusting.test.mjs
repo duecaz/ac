@@ -48,15 +48,19 @@ const HTMLS = htmlsDelProyecto();
   ok(`las ${total} hojas propias de las ${HTMLS.length} páginas se piden con ?v=${VERSION}`);
 }
 
-// ── 2. Las de CDN NO se tocan ───────────────────────────────────────────────
-// Bootstrap ya viene versionado en su ruta; añadirle un parámetro solo rompería
-// su caché compartida entre sitios sin ganar nada.
+// ── 2. Las de vendor/ NO se sellan ──────────────────────────────────────────
+// Bootstrap ya viene versionado EN SU RUTA (`vendor/bootstrap-5.3.3/…`), que es
+// justamente por qué la versión va en el nombre de la carpeta: el navegador no
+// puede servir la anterior desde caché. Añadirle además un `?v=` la volvería a
+// descargar en cada versión de la app —228 KB por cada parche— sin ganar nada.
+// (Hasta v1.51.594 esto miraba las hojas de CDN; desde que Bootstrap es local
+// el trato es el mismo, y la razón también.)
 {
   const srcTeacher = leer('teacher.html');
-  const cdn = srcTeacher.match(/<link[^>]*href="https:\/\/[^"]+"/g) || [];
-  assert.strictEqual(cdn.length >= 1, true, 'teacher.html carga alguna hoja de CDN');
-  for (const l of cdn) assert.ok(!/\?v=/.test(l), `una hoja de CDN no debe llevar sello: ${l}`);
-  ok('las hojas de CDN se dejan como están (ya vienen versionadas en su ruta)');
+  const externas = srcTeacher.match(/<link[^>]*href="vendor\/[^"]+"/g) || [];
+  assert.strictEqual(externas.length >= 1, true, 'teacher.html carga las hojas de vendor/');
+  for (const l of externas) assert.ok(!/\?v=/.test(l), `una hoja de vendor/ no debe llevar sello: ${l}`);
+  ok('las hojas de vendor/ se dejan como están (ya vienen versionadas en su ruta)');
 }
 
 // ── 3. CONTRA-PRUEBA: el sellador sella y es idempotente ────────────────────

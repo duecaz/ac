@@ -128,7 +128,6 @@ const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: FORMAS[0].vp });
 // Sin red saliente en el entorno: los CDN se sirven vacíos (igual que la matriz).
 await page.route('**/esm.sh/**', r => r.fulfill({ contentType: 'application/javascript', body: 'export default function(){}' }));
-await page.route('**/cdn.jsdelivr.net/**', r => r.fulfill({ contentType: 'text/css', body: '' }));
 
 await page.goto(`${BASE}/teacher.html?backend=local`, { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => document.querySelector('#app')?.children.length > 0, { timeout: 20000 });

@@ -37,18 +37,11 @@ const errs = [];
 for (const [p, who] of [[host, 'host'], [student, 'alumno']]) {
   p.on('pageerror', e => { const m = String(e.message).split('\n')[0]; if (!NOISE.test(m)) errs.push(`${who}: ${m}`); });
   await p.route('**/esm.sh/**', r => r.fulfill({ contentType: 'application/javascript', body: 'export default function(){}' }));
-  await p.route('**/cdn.jsdelivr.net/**', r => r.fulfill({ contentType: 'text/css', body: '' }));
-  // Bootstrap viene de un CDN y este sandbox no tiene red: sin un mínimo shim,
-  // `confirmModal` (que usa bootstrap.Modal) revienta y no se puede probar NINGÚN
-  // flujo con confirmación — como terminar la carrera. El shim solo muestra y
-  // quita el diálogo; los botones son los de la app.
-  await p.addInitScript(() => {
-    window.bootstrap = {
-      Modal: class { constructor(el) { this.el = el; }
-        show() { this.el.classList.add('show'); this.el.style.display = 'block'; }
-        hide() { this.el.dispatchEvent(new Event('hidden.bs.modal')); } },
-    };
-  });
+  // Aquí vivía un SHIM de `bootstrap.Modal`: Bootstrap venía de un CDN, el
+  // sandbox no tiene red, y sin él `confirmModal` reventaba y no se podía probar
+  // ningún flujo con confirmación. Desde v1.51.594 Bootstrap es local
+  // (`vendor/`), así que este viaje ejercita el diálogo DE VERDAD — que es lo
+  // que ve el profe cuando termina una carrera, y lo que el shim nunca probó.
 }
 const log = (m) => console.log('  ·', m);
 
@@ -288,7 +281,6 @@ try {
     const torcido = await ctx.newPage();
     torcido.on('pageerror', e => { const m = String(e.message).split('\n')[0]; if (!NOISE.test(m)) errs.push(`alumno-desfasado: ${m}`); });
     await torcido.route('**/esm.sh/**', r => r.fulfill({ contentType: 'application/javascript', body: 'export default function(){}' }));
-    await torcido.route('**/cdn.jsdelivr.net/**', r => r.fulfill({ contentType: 'text/css', body: '' }));
     await torcido.addInitScript((ms) => {
       const real = Date.now;
       const RealDate = Date;

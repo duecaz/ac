@@ -68,14 +68,15 @@ for (const size of SIZES) {
   // Sin red saliente en el sandbox: el confetti (CDN) se sustituye por un módulo
   // vacío para que su fallo no ensucie la captura.
   await page.route('**/esm.sh/**', r => r.fulfill({ contentType: 'application/javascript', body: 'export default function(){}' }));
-  // BOOTSTRAP: se DEJA cargar. Estuvo sustituido por vacío «para no depender de
-  // la red», y con eso las capturas dejaron de parecerse a producción: sin él,
-  // los botones caen a la fuente del navegador, y una comparación 24/24 idéntica
-  // daba por bueno un cambio de tipografía que en el sitio real sí se habría
-  // visto. Si no llega (sandbox sin salida), se AVISA en voz alta al final en vez
-  // de fingir que la captura es la pantalla del profe.
+  // BOOTSTRAP: ahora es LOCAL (`vendor/`, v1.51.594), así que la captura sí es
+  // la pantalla de producción. Estuvo sustituido por una hoja vacía «para no
+  // depender de la red»: sin él los botones caen a la fuente del navegador, y
+  // una comparación 24/24 idéntica daba por bueno un cambio de tipografía que en
+  // el sitio real sí se habría visto. La comprobación se queda —ahora ya no
+  // puede fallar por la red, solo por una ruta mal escrita, y eso conviene
+  // enterarse ANTES de mirar 24 capturas creyéndolas verdad.
   page.on('response', r => {
-    if (/cdn\.jsdelivr\.net\/.*bootstrap.*\.css/.test(r.url()) && r.ok()) bootstrapVisto = true;
+    if (/vendor\/bootstrap-[\d.]+\/css\/bootstrap\.min\.css/.test(r.url()) && r.ok()) bootstrapVisto = true;
   });
   await page.goto(`${BASE}/teacher.html?backend=local`, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => document.querySelector('#app')?.children.length > 0, { timeout: 20000 });
@@ -142,9 +143,10 @@ await browser.close();
 // puede leer file:// sin origen). Lo cierra bye() al final.
 console.log(`\n${shots.length} capturas en .shots/${label}/`);
 if (!bootstrapVisto) {
-  console.log('\n⚠  BOOTSTRAP NO CARGÓ (sin salida a la red): estas capturas NO son');
-  console.log('   la pantalla de producción — los botones caen a la fuente del');
-  console.log('   navegador. Sirven para comparar ENTRE ELLAS, no como verdad visual.');
+  console.log('\n⚠  BOOTSTRAP NO CARGÓ. Ahora es local (vendor/), así que esto no es');
+  console.log('   la red: es una ruta mal escrita en los HTML o un fichero que falta.');
+  console.log('   Estas capturas NO son la pantalla de producción — arréglalo antes');
+  console.log('   de dar por buena ninguna comparación.');
 }
 
 // Comparación con `before` si estamos guardando otra tanda.

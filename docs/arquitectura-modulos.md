@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **269 módulos · 1039 imports internos.**
+> **270 módulos · 1039 imports internos.**
 
 ### Ir a otro documento
 
@@ -35,7 +35,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3975 | 19 · 3001 | 0.75 |
 | **informes/tareas** | después de clase | 10 · 1056 | 4 · 466 | 0.44 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5831 | 13 · 1778 | 0.30 |
-| **infra/común** | todo lo anterior | 143 · 17382 | 59 · 7192 | 0.41 |
+| **infra/común** | todo lo anterior | 144 · 17389 | 60 · 7293 | 0.42 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -55,7 +55,7 @@ abajo, nunca al revés** (ley §0). Lo vigila `tests/layers.test.mjs`.
 
 ```mermaid
 graph TD
-  A["<b>arranque</b><br/><small>cablea cada página (main.*.js, sw.js)</small><br/><small>6 módulos</small>"]
+  A["<b>arranque</b><br/><small>cablea cada página (main.*.js, sw.js)</small><br/><small>7 módulos</small>"]
   V["<b>vistas</b><br/><small>el chrome: navegación, setup, informes</small><br/><small>29 módulos</small>"]
   AD["<b>adaptadores</b><br/><small>el transporte: PocketBase | local</small><br/><small>7 módulos</small>"]
   C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>140 módulos</small>"]

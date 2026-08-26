@@ -164,6 +164,21 @@ escribirse; si necesita violar una prohibición, está en la capa equivocada.
 - **Y se mide DÓNDE, no solo SI**: el chip del HUD tiene que quedar a ≤48 px de
   la esquina del marco. Contar nodos daba verde a Pelotas con el indicador a
   213 px, en mitad del tablero — la norma existía y el fallo pasaba igual.
+- **Bootstrap ya no viene de la red** (v1.51.594): está copiado en `vendor/`, con
+  la versión en el nombre de la carpeta y su licencia al lado (`vendor/README.md`).
+  Dos motivos, ninguno teórico. Uno: sin él desaparece `box-sizing: border-box` y
+  TODA la maquetación cambia de modelo de caja — en un colegio sin internet la app
+  no se ve mal, se ve rota. Dos, el que lo puso en marcha: **seis herramientas del
+  arnés sustituían el CDN por una hoja VACÍA**, así que la matriz, las piezas, el
+  viaje en vivo, el de tareas, el de buscar y las capturas llevaban tiempo midiendo
+  una pantalla que ningún profe ve (de ahí salió una conclusión falsa que hubo que
+  retirar: «la calculadora tiene dos tipografías» era Bootstrap ausente, no el
+  código). Al quitar los stubs, el viaje en vivo pasó a ejercitar el
+  `bootstrap.Modal` DE VERDAD, que hasta ahora ningún test había tocado. Lo vigila
+  `tests/vendor.test.mjs`: ningún `http(s)://` en los cuatro HTML, las rutas de
+  `vendor/` existen, no se acumulan versiones muertas y ninguna herramienta vuelve
+  a interceptar Bootstrap. Esto NO cierra la deuda de «CSS propio, Bootstrap
+  fuera» — la hace inofensiva mientras tanto.
 - **Un token que nadie lee es un mando que no manda** (v1.51.593). Si el skin
   cambia TOKENS y la actividad los consume, los tokens son un CONTRATO — y un
   contrato se rompe por sus dos lados: declarar `--x` que ningún `var()` lee (el

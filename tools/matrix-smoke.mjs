@@ -157,7 +157,6 @@ page.on('console', m => { if (m.type() === 'error') note(m.text()); });
 // El sandbox no tiene red saliente: el confetti viene de un CDN → lo sustituimos
 // por un módulo vacío para que su fallo no contamine el informe.
 await page.route('**/esm.sh/**', r => r.fulfill({ contentType: 'application/javascript', body: 'export default function(){}' }));
-await page.route('**/cdn.jsdelivr.net/**', r => r.fulfill({ contentType: 'text/css', body: '' }));
 
 await page.goto(`${BASE}/teacher.html?backend=local`, { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => document.querySelector('#app')?.children.length > 0, { timeout: 20000 });
@@ -1023,7 +1022,6 @@ const embed = [];
   page2.on('pageerror', e => { const m = String(e.message).split('\n')[0]; if (!NOISE.test(m)) errs2.push(m); });
   page2.on('console', m => { if (m.type() === 'error' && !NOISE.test(m.text())) errs2.push(m.text().split('\n')[0]); });
   await page2.route('**/esm.sh/**', r => r.fulfill({ contentType: 'application/javascript', body: 'export default function(){}' }));
-  await page2.route('**/cdn.jsdelivr.net/**', r => r.fulfill({ contentType: 'text/css', body: '' }));
   for (const name of ['quiz', 'math']) {
     errs2.length = 0;
     try {

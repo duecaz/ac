@@ -45,7 +45,6 @@ const errs = [];
 page.on('pageerror', e => { const m = String(e.message).split('\n')[0]; if (!NOISE.test(m)) errs.push(m); });
 page.on('console', m => { if (m.type() === 'error' && !NOISE.test(m.text())) errs.push(m.text().split('\n')[0]); });
 await page.route('**/esm.sh/**', r => r.fulfill({ contentType: 'application/javascript', body: 'export default function(){}' }));
-await page.route('**/cdn.jsdelivr.net/**', r => r.fulfill({ contentType: 'text/css', body: '' }));
 
 let pasos = 0;
 const ok = (m) => { pasos++; console.log('  ✓', m); };

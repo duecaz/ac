@@ -36,7 +36,7 @@ const RETIRADOS = ['kahoot'];
 const ERRADICADOR = join('core', 'migrate.js');
 
 const EXTS = ['.js', '.mjs', '.css', '.html', '.json', '.md', '.sh', '.ps1'];
-const SALTAR = ['node_modules', '.git', '.shots', 'docs/historico'];
+const SALTAR = ['node_modules', '.git', '.shots', 'docs/historico', 'vendor'];
 
 const ficheros = [];
 {
