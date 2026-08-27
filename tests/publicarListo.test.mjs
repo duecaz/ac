@@ -90,11 +90,23 @@ const act = (template, content, title = 'Prueba') =>
 {
   const src = readFileSync(fileURLToPath(new URL('../views/editView.js', import.meta.url)), 'utf8');
   const doSave = src.slice(src.indexOf('async function doSave'), src.indexOf('const { remote, persisted }'));
-  assert.ok(/setVis === 'public'/.test(doSave) && /revisarActividad/.test(doSave),
-    'el camino de PUBLICAR de editView.js tiene que consultar revisarActividad antes de guardar');
+  assert.ok(/revisarActividad/.test(doSave),
+    'el camino de guardar de editView.js tiene que consultar revisarActividad');
+  // LA PREGUNTA ES «¿VA A QUEDAR PÚBLICA?», NO «¿QUÉ BOTÓN SE PULSÓ?». Con la
+  // guarda escrita como `setVis === 'public'` a secas, una actividad YA publicada
+  // que se vacía en el editor la volvía a guardar pública el AUTOSAVE (que pasa
+  // `setVis` nulo): el mismo agujero, entrando por la otra puerta.
+  assert.ok(/\(setVis \|\| activity\.visibility\) === 'public'/.test(doSave),
+    'la guarda tiene que mirar la visibilidad RESULTANTE (setVis || la que ya tiene), no solo el botón');
   assert.ok(/return;/.test(doSave.slice(doSave.indexOf('revisarActividad'))),
-    'y tiene que PARAR: avisar y seguir publicando sería peor que no avisar');
-  ok('editView.js consulta al guardián en el camino de publicar, y para si dice que no');
+    'y tiene que PARAR al PUBLICAR: avisar y seguir publicando sería peor que no avisar');
+  // …pero el autosave NO puede parar: perder lo que el profe acaba de escribir
+  // por una guarda sería mucho peor que el fallo original. Baja a borrador y lo
+  // dice (R6).
+  const tramo = doSave.slice(doSave.indexOf('revisarActividad'));
+  assert.ok(/activity\.visibility = 'unlisted'/.test(tramo) && /toast\(/.test(tramo),
+    'el autosave de algo ya público que deja de ser jugable debe GUARDAR igual, bajar a borrador y decirlo');
+  ok('editView.js gatea por la visibilidad resultante: publicar para, y el autosave baja a borrador sin perder trabajo');
 }
 
 console.log(`\npublicarListo.test: ${passed} checks passed`);

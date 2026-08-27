@@ -12,7 +12,15 @@
 //
 // La idea nació en `tools/opcion-sonda.mjs` (v1.51.601) —«una sonda que miente
 // es peor que ninguna»— y se quedó encerrada en la única herramienta que nadie
-// importa: el sitio donde no arregla nada. Aquí la usan todas.
+// importa: el sitio donde no arregla nada.
+//
+// CUÁNTAS LA USAN HOY: CUATRO — `piezas`, `contrast-torture`, `hoja-smoke` (las
+// tres que compartían el 8479, que era el choque real) y `opcion-sonda`. Las
+// otras ocho —`matrix-smoke`, `live-smoke`, `task-smoke`, `shots`, `find-smoke`,
+// `edit-audit`, `editor-puertas`, `margenes-smoke`— siguen con puerto fijo y sin
+// la comprobación de árbol. Queda escrito aquí y no como «aquí la usan todas»:
+// una nota que se adelanta a los hechos deja el trabajo por hacer y además
+// convence de que ya está hecho.
 //
 // DOS GARANTÍAS, las dos comprobables:
 //   1. PUERTO EFÍMERO. Se le pide al sistema uno libre y se suelta justo antes

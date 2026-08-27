@@ -236,6 +236,21 @@
   .ws-word { font-size: max(.7rem, 1.8cqmin); padding: 3px 8px; }
 }
 
+/* CASI CUADRADA PERO VERTICAL — el bloque centrado se sale por los DOS extremos.
+   La regla de arriba da por bueno que «vertical» significa «MUCHO más alta que
+   ancha»: ahí una rejilla del ancho del hueco cabe de sobra y el banco entra
+   debajo. Entre 3/4 y 1/1 no: a 420×460 la rejilla pide 420 de alto, el banco
+   otros ~70, y el bloque —que ya no se estira, así que nadie lo recorta— desborda
+   34 px por abajo y se mete en la franja de los indicadores por arriba (medido).
+   Aquí SÍ hace falta preguntar por el alto, y aquí `container-type: size` es
+   legítimo: el carril vuelve a estirarse (`flex: 1 1 0`), así que su alto se lo da
+   el flex y no su contenido — sin la circularidad que colapsa a 4×4 px. La
+   rejilla queda acotada por los DOS lados y el carril la centra. */
+@container (aspect-ratio < 1/1) and (aspect-ratio > 3/4) {
+  .ww-ws-grid-wrap { flex: 1 1 0; min-height: 0; container-type: size; }
+  .ww-ws-grid { --ws-lado: min(100cqi, 100cqb); }
+}
+
 /* ════════════════════════════════════════════════════
    Editor preview grid (inside the editor tab)
    ════════════════════════════════════════════════════ */

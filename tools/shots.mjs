@@ -86,7 +86,7 @@ for (const size of SIZES) {
     animation: none !important; transition: none !important; caret-color: transparent !important; }` });
 
   // Una actividad por plantilla y skin (el skin viaja en presentation).
-  await page.evaluate(async ({ skins, plantillas }) => {
+  const faltan = await page.evaluate(async ({ skins, plantillas }) => {
     await import('/core/registerTemplates.js');
     const { getTemplate } = await import('/core/registry.js');
     const storage = await import('/core/storage.js');
@@ -101,8 +101,13 @@ for (const size of SIZES) {
     // dependa de cuántos barajados hubo antes.
     const { semilla } = await import('/core/azar.js');
     window.__wwSemilla = () => semilla(7);
+    const faltan = [];
     for (const pl of plantillas) {
       const T = getTemplate(pl.id);
+      // Un id de PLANTILLAS sin registrar reventaba DENTRO del page.evaluate: se
+      // caía el sembrado entero y las 24 capturas fallaban por timeout, sin decir
+      // cuál era la plantilla. Saltarla deja el fallo donde se entiende.
+      if (!T) { faltan.push(pl.id); continue; }
       for (const skin of skins) {
         storage.save({
           id: `shot_${pl.id}_${skin}`, template: pl.id, title: pl.titulo,
@@ -114,7 +119,12 @@ for (const size of SIZES) {
         });
       }
     }
+    return faltan;
   }, { skins: SKINS, plantillas: PLANTILLAS });
+  if (faltan.length) {
+    console.error(`❌ plantillas de PLANTILLAS que no están en el registro: ${faltan.join(', ')}`);
+    process.exitCode = 1;
+  }
 
   for (const pl of PLANTILLAS) {
    for (const skin of SKINS) {

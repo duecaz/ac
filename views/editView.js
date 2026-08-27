@@ -128,13 +128,27 @@ export function renderEditView(rootSel, { id, template }) {
     // dentro, y el siguiente que la abriera se encontraba el cartel de «todavía
     // está vacía» (lo cazó el dueño con una Ruleta sin casillas, 2026-08-26).
     // Se dice lo que falta, con las mismas palabras que el resto de la app.
-    if (setVis === 'public') {
+    // La pregunta no es «¿qué botón se ha pulsado?» sino «¿va a quedar PÚBLICA?»:
+    // una actividad YA publicada que se vacía en el editor la volvía a guardar
+    // pública el autosave (setVis null) sin pasar por aquí — el mismo agujero que
+    // esta guarda dice cerrar, entrando por la otra puerta.
+    if ((setVis || activity.visibility) === 'public') {
       const rev = revisarActividad(activity);
       if (!rev.jugable) {
-        toast(`No se puede publicar: ${rev.problemasDeJuego.join(' · ')}`
-              + (rev.vacia ? ` ${rev.primerPaso}` : ''), 'warning', 8000);
-        setState('Sin publicar: aún no se puede jugar', 'warning', 'bi-exclamation-triangle-fill');
-        return;
+        const falta = rev.problemasDeJuego.join(' · ') + (rev.vacia ? ` ${rev.primerPaso}` : '');
+        if (setVis === 'public') {
+          // Publicar es una ACCIÓN: no se hace, y se dice por qué.
+          toast(`No se puede publicar: ${falta}`, 'warning', 8000);
+          setState('Sin publicar: aún no se puede jugar', 'warning', 'bi-exclamation-triangle-fill');
+          return;
+        }
+        // Autosave: el trabajo del profe SE GUARDA siempre —perder lo escrito por
+        // una guarda sería mucho peor que el fallo original—, pero baja a borrador
+        // para que la biblioteca no sirva algo que no se puede jugar. Y se dice
+        // (R6: nada en silencio).
+        activity.visibility = 'unlisted';
+        paintVis();
+        toast(`Pasa a borrador mientras no se pueda jugar: ${falta}`, 'warning', 8000);
       }
     }
     if (setVis) { activity.visibility = setVis; paintVis(); }

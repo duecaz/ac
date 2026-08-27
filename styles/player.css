@@ -185,15 +185,19 @@
   justify-content: center;
   /* Blanco de contraste sobre CUALQUIER foto que suba el profe, no un token del
      tema: el fondo de esta pastilla es la imagen del usuario, no la paleta. */
-  width: max(20px, 26cqw);
-  height: max(20px, 26cqw);
-  max-width: 26px;
-  max-height: 26px;
+  /* PX, no cq: el panel de apariencia vive FUERA del marco de juego y ningún
+     ancestro suyo declara `container-type`, así que las unidades cq caen al
+     VIEWPORT. Medido a 1280×800: `font-size: 140.8px` — un lápiz de 141×211 px
+     dentro de un círculo de 26. El width/height se salvaban solo porque el
+     max-width los recortaba; la letra no tenía tope. §3 pide relativo en el
+     JUEGO; esto es chrome del panel, y aquí el px es lo correcto. */
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background: rgba(255,255,255,.92);
   color: #1f2937;
   box-shadow: 0 1px 4px rgba(0,0,0,.35);
-  font-size: max(9px, 11cqw);
+  font-size: 13px;
   cursor: pointer;
 }
 .pp-appearance .bg-pick__cambiar:hover { background: #fff; }

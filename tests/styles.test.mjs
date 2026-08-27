@@ -102,7 +102,10 @@ function scan(css) {
     // puede crecer — el mismo trato que la deuda de fuentes y colores.
     for (const d of body.matchAll(/(?:^|[;\s])(max-width|max-height|width|height)\s*:\s*([^;}]+)/g)) {
       const v = d[2].trim();
-      if (/\bvar\(/.test(v)) continue;                       // derivado de un token
+      // OJO: aquí NO se salta `var(`. `max-width: var(--x, 580px)` es el patrón
+      // habitual del repo y escondía exactamente el techo que esta red vino a
+      // cazar — el token puede no estar definido y entonces manda el literal. Un
+      // `var()` SIN respaldo en px/rem se cae solo unas líneas más abajo.
       // `max(12px, Xcqmin)` es un PISO de legibilidad, que §3 permite expresamente.
       if (/max\s*\(/.test(v) && !/clamp\s*\(/.test(v) && /cq|vw|vh|vmin|vmax|%/.test(v)) continue;
       // `calc(100vh - 70px)` tampoco: es una RESTA sobre una medida del viewport
@@ -168,15 +171,20 @@ const BASELINE = {
 // Sopa (memory 720px, question-live 720/480/460, ballsort 1100px). Ninguna se
 // arregla aquí: cada una cambia píxeles y necesita su propia medición. Se
 // CONGELAN para que dejen de ser invisibles y solo puedan bajar.
+//
+// TERCER agujero (v1.51.606): el escaneo se saltaba TODO valor con `var(`, y
+// `width: var(--cw-cell, 36px)` es el patrón habitual del repo — el token puede
+// no estar definido y entonces manda el literal. Once techos más salieron a la
+// luz al quitar ese salto; se congelan igual que los otros.
 const TECHOS = {
-  ballsort: { ceilings: ['height:12px', 'height:40px', 'max-width:1100px', 'width:12px', 'width:16px', 'width:40px'] },
-  crossword: { clamps: ['clamp(.63rem, 1.5cqw, .78rem)', 'clamp(.68rem, 1.7cqw, .9rem)'], ceilings: ['width:clamp(130px, 24cqw, 240px)'] },
+  ballsort: { ceilings: ['height:12px', 'height:40px', 'height:var(--bs-ball-size, 36px)', 'max-width:1100px', 'width:12px', 'width:16px', 'width:40px', 'width:var(--bs-ball-size, 36px)', 'width:var(--bs-tube-w, 48px)'] },
+  crossword: { clamps: ['clamp(.63rem, 1.5cqw, .78rem)', 'clamp(.68rem, 1.7cqw, .9rem)'], ceilings: ['height:var(--cw-cell, 36px)', 'width:clamp(130px, 24cqw, 240px)', 'width:var(--cw-cell, 36px)'] },
   diagram: { ceilings: ['height:20px', 'width:20px'] },
   match: { ceilings: ['height:20px', 'height:54px', 'width:20px'] },
   memory: { ceilings: ['height:90px', 'max-width:720px'] },
   'question-live': { ceilings: ['height:60px', 'height:90px', 'max-width:480px', 'max-width:720px', 'width:min(100%, 460px)'] },
   'textCorrection': { clamps: ['clamp(.68rem, 2.1cqmin, 1.05rem)', 'clamp(.7rem, 2.3cqmin, 1.4rem)', 'clamp(.8rem, 2.1cqmin, 1.3rem)', 'clamp(.9rem, 2.6cqmin, 1.7rem)', 'clamp(1.5rem, 4.5vw, 2.6rem)'] },
-  vs: { clamps: ['clamp(.85rem, 9cqw, 1.4rem)', 'clamp(.7rem, 2.4cqw, 1rem)', 'clamp(.85rem, 4cqw, 1.3rem)', 'clamp(.8rem, 1.6cqw, 1.15rem)', 'clamp(1.1rem, 2.4cqw, 1.8rem)', 'clamp(1rem, 2cqw, 1.6rem)', 'clamp(2rem, 7vw, 3.6rem)', 'var(--vss-label-size, clamp(.5rem, 1.3cqh, 1.3rem))', 'var(--vss-name-size, clamp(.78rem, 2.2cqh, 2.4rem))', 'var(--vss-score-size, clamp(1.5rem, 3.8cqh, 4.2rem))'], ceilings: ['height:2.2rem', 'height:4px', 'height:52px', 'height:76px', 'height:clamp(90px, 32cqh, 280px)', 'max-width:18rem', 'max-width:420px', 'max-width:560px', 'max-width:640px', 'width:2.2rem', 'width:52px'] },
+  vs: { clamps: ['clamp(.85rem, 9cqw, 1.4rem)', 'clamp(.7rem, 2.4cqw, 1rem)', 'clamp(.85rem, 4cqw, 1.3rem)', 'clamp(.8rem, 1.6cqw, 1.15rem)', 'clamp(1.1rem, 2.4cqw, 1.8rem)', 'clamp(1rem, 2cqw, 1.6rem)', 'clamp(2rem, 7vw, 3.6rem)', 'var(--vss-label-size, clamp(.5rem, 1.3cqh, 1.3rem))', 'var(--vss-name-size, clamp(.78rem, 2.2cqh, 2.4rem))', 'var(--vss-score-size, clamp(1.5rem, 3.8cqh, 4.2rem))'], ceilings: ['height:2.2rem', 'height:4px', 'height:52px', 'height:76px', 'height:clamp(90px, 32cqh, 280px)', 'max-width:18rem', 'max-width:420px', 'max-width:560px', 'max-width:640px', 'height:var(--vss-alto, clamp(46px, 7.5cqh, 132px))', 'height:var(--vss-av, clamp(2rem, 5cqh, 5.5rem))', 'height:var(--vss-badge, 50px)', 'width:2.2rem', 'width:52px', 'width:var(--vss-av, clamp(2rem, 5cqh, 5.5rem))', 'width:var(--vss-badge, 50px)', 'width:var(--vss-mid, 68px)'] },
   teams: { clamps: ['clamp(.8rem, 4cqmin, 1.3rem)', 'clamp(.9rem, 1.8vw, 1.4rem)', 'clamp(1.1rem, 6cqmin, 2.2rem)', 'clamp(1rem, 5cqmin, 1.8rem)'], ceilings: ['max-width:340px', 'max-width:900px'] },
   wordsearch: { clamps: ['clamp(.72rem, 1.4cqw, .88rem)', 'clamp(1.2rem, 4cqmin, 2rem)', 'clamp(1rem, 3cqmin, 1.4rem)'], ceilings: ['max-width:150px'] },
   live: { clamps: ['clamp(1.5rem, 7vw, 2.5rem)', 'clamp(2rem, 8vw, 5rem)'], ceilings: ['height:120px', 'height:160px', 'height:220px'] },

@@ -64,6 +64,29 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   let currentSkin = a.presentation?.skin || 'default';
   let currentBg = a.presentation?.background || 'none';
   let currentBgImage = a.presentation?.backgroundImage || '';
+  // «MI IMAGEN» ES UNA TARJETA COMO LAS DEMÁS. Llevaba dentro un botón «Subir» de
+  // ancho completo, y eso la dejaba 42 px MÁS ALTA que sus vecinas (medido a cinco
+  // anchos): rompía la fila de la rejilla. El parche había sido encoger la letra
+  // del botón —hasta 9,92 px reales, ilegible— con un comentario en player.css que
+  // ya confesaba el problema. No cabe porque no tiene que estar: la tarjeta YA es
+  // pulsable.
+  //   · sin imagen  → la tarjeta ENTERA abre el selector;
+  //   · con imagen  → la tarjeta selecciona ese fondo (como las otras) y para
+  //     cambiarla hay un lápiz en su esquina.
+  // Mira `currentBgImage` (lo VIVO), nunca `a.presentation` (lo guardado): con lo
+  // guardado, la baldosa recién subida se quedaba en la variante «sin imagen».
+  const baldosaMia = (b) => currentBgImage
+    ? `<div class="ww-pick-tile bg-pick bg-pick--mia ${currentBg==='custom'?'is-active':''}" data-name="custom" role="button" title="${escapeHtml(b.description||'')}">
+         ${backgroundPreviewHtml('custom', currentBgImage)}
+         <label class="bg-pick__cambiar" title="Cambiar mi imagen (máx 800 KB)" aria-label="Cambiar mi imagen">
+           <i class="bi bi-pencil-fill"></i>
+           <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" id="bg-custom-file" hidden>
+         </label>
+       </div>`
+    : `<label class="ww-pick-tile bg-pick bg-pick--mia" data-name="custom" title="${escapeHtml(b.description||'')} (máx 800 KB)">
+         ${backgroundPreviewHtml('custom', '')}
+         <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" id="bg-custom-file" hidden>
+       </label>`;
   // Lo elegido para ESTA partida (core/playOptions.js). Vive aquí, no en la
   // actividad: mañana con otro grupo el profe elige otra cosa y lo guardado no
   // se toca. Al vivir en playActivity() sirve a TODOS los modos embebidos.
@@ -342,6 +365,13 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
                 </div>
                 <div>
                   <h6 class="text-muted text-uppercase small mb-2">Fondo</h6>
+                  ${/* la baldosa «Mi imagen» se pinta AQUÍ y se repinta con la
+                        MISMA función al subir una foto (ver el handler de
+                        #bg-custom-file). Estaban escritas dos veces y divergieron:
+                        el primer render miraba el valor GUARDADO y el handler solo
+                        cambiaba el preview, así que tras subir la imagen la baldosa
+                        seguía siendo el <label> que reabre el diálogo de archivo —
+                        justo lo contrario de lo que prometía su comentario. */''}
                   <div class="pp-pick-grid">
                     ${listBackgrounds().map(b => b.name === 'custom'
                       // «MI IMAGEN» ES UNA TARJETA COMO LAS DEMÁS. Llevaba dentro un
@@ -355,18 +385,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
                       //   · sin imagen  → la tarjeta ENTERA abre el selector;
                       //   · con imagen  → la tarjeta selecciona ese fondo (como las
                       //     otras) y para cambiarla hay un lápiz en su esquina.
-                      ? (a.presentation?.backgroundImage
-                        ? `<div class="ww-pick-tile bg-pick bg-pick--mia ${currentBg==='custom'?'is-active':''}" data-name="custom" role="button" title="${escapeHtml(b.description||'')}">
-                             ${backgroundPreviewHtml('custom', a.presentation.backgroundImage)}
-                             <label class="bg-pick__cambiar" title="Cambiar mi imagen (máx 800 KB)" aria-label="Cambiar mi imagen">
-                               <i class="bi bi-pencil-fill"></i>
-                               <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" id="bg-custom-file" hidden>
-                             </label>
-                           </div>`
-                        : `<label class="ww-pick-tile bg-pick bg-pick--mia" data-name="custom" title="${escapeHtml(b.description||'')} (máx 800 KB)">
-                             ${backgroundPreviewHtml('custom', '')}
-                             <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" id="bg-custom-file" hidden>
-                           </label>`)
+                      ? baldosaMia(b)
                       : `<div class="ww-pick-tile bg-pick ${currentBg===b.name?'is-active':''}" data-name="${b.name}" role="button" title="${escapeHtml(b.description||'')}">
                            ${backgroundPreviewHtml(b.name)}
                          </div>`).join('')}
@@ -420,9 +439,11 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
         currentBgImage = await readBackgroundImage(e.target.files[0]);
         currentBg = 'custom';
         applyBackground(currentBg, document.getElementById('ww-frame'), currentBgImage);
+        // Se REPINTA la baldosa entera, no solo su preview: ahora hay imagen, así
+        // que le toca la variante con lápiz. Los handlers están delegados en la
+        // raíz, así que sobreviven al reemplazo.
         const tile = document.querySelector('.bg-pick[data-name="custom"]');
-        const pv = tile?.querySelector('.ww-bg-preview');
-        if (pv) { pv.style.background = `center/cover no-repeat url("${currentBgImage}")`; pv.innerHTML = ''; }
+        if (tile) tile.outerHTML = baldosaMia(listBackgrounds().find(x => x.name === 'custom') || {});
         document.querySelectorAll('.bg-pick').forEach(p => p.classList.toggle('is-active', p.dataset.name === 'custom'));
       } catch (err) {
         toast(err.message, 'warning', 5000);
