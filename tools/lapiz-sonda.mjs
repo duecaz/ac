@@ -74,13 +74,41 @@ const r = await page.evaluate(async () => {
   }));
   const esperar = (ms) => new Promise((res) => setTimeout(res, ms));
 
-  /** Un gesto completo. El primer evento va con `basura` a propósito. */
+  // ¿CUÁNTA TINTA HAY AHORA MISMO EN EL LIENZO? Es la única forma de ver el
+  // RASTRO: `getMarked()` solo dice si la zona quedó marcada AL FINAL, y el
+  // rastro es algo que aparece y se va.
+  //
+  // POR COLOR, y no «píxeles no transparentes» como en el primer intento: el
+  // borrador pinta su propio indicador —un círculo ROJO de puntos (#ef4444)— y
+  // contarlo daba 317 px de «rastro» en un gesto que no había pintado tinta
+  // ninguna. Un contador que no distingue la tinta del cursor mide otra cosa y
+  // habría mandado a arreglar un defecto inexistente.
+  // Tinta = azul (#1d4ed8 → B claramente por encima de R).
+  const tinta = () => {
+    const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+    let n = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] > 8 && d[i + 2] > d[i] + 40) n++;
+    }
+    return n;
+  };
+
+  /** Un gesto completo. El primer evento va con `basura` a propósito.
+   *  Devuelve además el PICO de tinta visto durante el gesto y en qué evento
+   *  apareció la primera. */
   const gesto = async (tamReal, { pasos = 8, pasoMs = 20, id = 1 }) => {
     api.clear();
+    let pico = 0, primerTrazo = -1;
     ev('pointerdown', 120, 100, 0.5, id);
-    for (let i = 0; i < pasos; i++) { await esperar(pasoMs); ev('pointermove', 120 + i * 3, 100, tamReal, id); }
+    for (let i = 0; i < pasos; i++) {
+      await esperar(pasoMs);
+      ev('pointermove', 120 + i * 3, 100, tamReal, id);
+      const t = tinta();
+      if (t > pico) pico = t;
+      if (t > 0 && primerTrazo < 0) primerTrazo = i + 1;   // eventos desde el down
+    }
     ev('pointerup', 120 + pasos * 3, 100, tamReal, id);
-    return api.getMarked().length;
+    return { marcas: api.getMarked().length, pico, primerTrazo };
   };
 
   const palma = await gesto(20, { id: 1 });
@@ -94,11 +122,29 @@ const r = await page.evaluate(async () => {
   return { palma, dedo, toque };
 });
 
-if (r.palma === 0) ok('la PALMA borra aunque el primer evento reporte basura (antes escribía)');
-else mal(`la palma dejó ${r.palma} marca(s): está escribiendo en vez de borrar`);
+if (r.palma.marcas === 0) ok('la PALMA borra aunque el primer evento reporte basura (antes escribía)');
+else mal(`la palma dejó ${r.palma.marcas} marca(s): está escribiendo en vez de borrar`);
 
-if (r.dedo === 1) ok('CONTRA-PRUEBA: el dedo sigue marcando');
-else mal(`CONTRA-PRUEBA rota: el dedo dejó ${r.dedo} marcas (debería dejar 1)`);
+// EL RASTRO DE TINTA (dueño, 2026-08-27). La primera versión pintaba el trazo de
+// forma optimista y lo retiraba si el veredicto decía «borrar»; con la palma
+// moviéndose deprisa, eso era una raya que aparecía y se iba justo antes del
+// borrado. Se mide el PICO de píxeles pintados DURANTE el gesto, no el resultado
+// final: mirar solo el final es exactamente lo que dejaba pasar el defecto.
+if (r.palma.pico === 0) ok('y NO deja rastro: cero píxeles de tinta en todo el gesto de borrado');
+else mal(`la palma pintó ${r.palma.pico} píxeles antes de borrar: el rastro de tinta ha vuelto`);
+
+if (r.dedo.marcas === 1) ok('CONTRA-PRUEBA: el dedo sigue marcando');
+else mal(`CONTRA-PRUEBA rota: el dedo dejó ${r.dedo.marcas} marcas (debería dejar 1)`);
+
+// CONTRA-PRUEBA del rastro: no pintar nada nunca también daría «cero rastro».
+// Al escribir TIENE que aparecer tinta, y pronto — si tardara medio gesto, lo
+// que habríamos hecho es cambiar un defecto visible por otro.
+if (r.dedo.pico > 0 && r.dedo.primerTrazo >= 0 && r.dedo.primerTrazo <= 3) {
+  ok(`CONTRA-PRUEBA: al escribir la tinta aparece en el evento ${r.dedo.primerTrazo} (${r.dedo.pico} px), no a media raya`);
+} else {
+  mal(`al escribir la tinta apareció en el evento ${r.dedo.primerTrazo} (pico ${r.dedo.pico} px): `
+      + 'demasiado tarde — se ha cambiado el rastro por un retardo');
+}
 
 if (r.toque === 1) ok('CONTRA-PRUEBA: un toque corto (marcar una tilde) marca, no borra a ciegas');
 else mal(`CONTRA-PRUEBA rota: el toque corto dejó ${r.toque} marcas (debería dejar 1)`);

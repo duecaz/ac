@@ -12,11 +12,23 @@
 // en el `pointerdown` y se fijaba para todo el trazo. Ese primer evento es
 // justo el que la calibración DESCARTA por basura —en muchas pizarras ni
 // siquiera es una medida: `width`/`height` valen 1 por defecto—, así que el
-// borrador trasero casi no disparaba. Ahora se pinta desde el primer punto
-// (optimista: el retardo se ve, retirar tinta recién puesta no) y el veredicto
-// llega con muestras limpias; si dice BORRAR, se retira el trazo provisional y
-// se borra por donde pasó. La lógica vive entera en `crearVeredicto`, que es
+// borrador casi no disparaba. La lógica vive entera en `crearVeredicto`, que es
 // también quien fija el estadístico que usa la calibración.
+//
+// FASE 2c — NADA SE PINTA ANTES DE DECIDIR (v1.51.611). La primera versión era
+// OPTIMISTA: pintaba desde el primer punto y, si el veredicto decía «borrar»,
+// retiraba el trazo. El razonamiento escrito era «el retardo se ve, retirar tinta
+// recién puesta no» — y era FALSO, lo dijo el dueño probándolo: la palma se mueve
+// deprisa, así que esos ~100 ms de trazo provisional son un RASTRO DE TINTA largo
+// que aparece y desaparece justo antes de borrar.
+//
+// El arreglo no es disimular el rastro: es invertir el compromiso. No se pinta
+// hasta tener veredicto, y a cambio el veredicto llega mucho antes — el descarte
+// pasó de «60 ms» a «el `pointerdown`, que es el evento que de verdad miente»
+// (ver VENTANA en core/penDetector.js). Los puntos se GUARDAN mientras tanto y se
+// sueltan de golpe: para quien escribe, la tinta aparece un par de fotogramas
+// después de tocar; para quien borra, no hay nada que retirar porque nunca se
+// pintó.
 //
 // Adaptado del enfoque de duecaz/play (zonas + trazos en canvas).
 
@@ -161,31 +173,30 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
     }
     if (palmErase) return;
     votos.set(e.pointerId, voto);
-    // OPTIMISTA: se pinta ya. Si el veredicto acaba diciendo «borrar», este trazo
-    // se retira en `resolver()` y se borra por donde pasó.
-    drawing = true; cur = { pts: [p] }; strokes.push(cur);
-    redraw();
+    // NO SE PINTA TODAVÍA: el punto se guarda. Si esto acaba siendo un borrado,
+    // nunca habrá habido tinta que retirar (v1.51.611).
+    voto.pendientes.push(p);
   };
 
-  /** Dicta el veredicto de un puntero y aplica lo que diga: si es BORRAR, retira
-   *  el trazo provisional que se había ido pintando y borra por su recorrido. */
+  /** Dicta el veredicto de un puntero y suelta de golpe los puntos guardados:
+   *  como TINTA si escribe, como BORRADO si borra. */
   function resolver(id) {
     const voto = votos.get(id);
     if (!voto) return pointerAction.get(id) || null;
     votos.delete(id);
     const { accion } = voto.veredicto();
     pointerAction.set(id, accion);
-    if (accion !== 'erase') return accion;
-    // Retirar la tinta provisional y borrar por donde pasó: el alumno quiso
-    // borrar desde el principio, así que el gesto entero cuenta como borrado.
-    const trazo = cur;
-    if (trazo) {
-      const i = strokes.indexOf(trazo);
-      if (i >= 0) strokes.splice(i, 1);
+    const puntos = voto.pendientes;
+    if (accion === 'erase') {
+      for (const pt of puntos) eraseAt(pt);
       drawing = false; cur = null;
-      for (const pt of trazo.pts) eraseAt(pt);
+      return 'erase';
     }
-    return 'erase';
+    // ESCRIBE: el trazo nace ya con todo lo recorrido, así que el alumno ve la
+    // línea completa desde el primer trozo, no un salto desde donde se decidió.
+    drawing = true; cur = { pts: puntos.slice() }; strokes.push(cur);
+    redraw();
+    return 'draw';
   }
   const onMove = (e) => {
     if (frozen) return;
@@ -195,8 +206,11 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
     // son las que llegan ya limpias, pasado el toque basura.
     const voto = votos.get(e.pointerId);
     if (voto) {
+      e.preventDefault();
       voto.muestra(e, active.size);
-      if (voto.listo() && resolver(e.pointerId) === 'erase') { e.preventDefault(); eraseAt(p); return; }
+      voto.pendientes.push(p);          // se guarda, no se pinta
+      if (!voto.listo()) return;        // …hasta que haya veredicto
+      return void resolver(e.pointerId);
     }
     if (pointerAction.get(e.pointerId) === 'erase') { e.preventDefault(); eraseAt(p); return; }
     if (!drawing || !cur) return;

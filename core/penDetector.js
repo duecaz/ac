@@ -111,11 +111,18 @@ export function mediana(a) {
 //
 // DOS DECISIONES, y son decisiones, no detalles:
 //
-//  1. EL TRAZO ES OPTIMISTA. Esperar a tener veredicto antes de pintar mete
-//     retardo visible en CADA trazo, con la clase delante y en una pizarra que
-//     ya va justa. Se pinta desde el primer punto y, si el veredicto acaba
-//     diciendo «borrar», se RETIRA el trazo provisional y se borra por donde
-//     pasó. Retirar tinta recién puesta no se nota; el retardo sí.
+//  1. NADA SE PINTA ANTES DE DECIDIR, y por eso hay que decidir DEPRISA.
+//     La v1.51.609 hizo lo contrario —pintaba desde el primer punto y retiraba
+//     el trazo si el veredicto decía «borrar»— con este razonamiento escrito:
+//     «retirar tinta recién puesta no se nota; el retardo sí». Era falso, y lo
+//     dijo el dueño en cuanto lo probó: la palma se mueve deprisa, así que esos
+//     ~100 ms de trazo provisional son un RASTRO DE TINTA que aparece y se va
+//     justo antes del borrado.
+//     El compromiso está invertido: los puntos se GUARDAN sin pintar y se
+//     sueltan de golpe al dictarse el veredicto. Se paga con retardo, y por eso
+//     el descarte dejó de ser «60 ms» y pasó a ser «el `pointerdown`» — que es
+//     el evento que de verdad miente. Medido: la tinta aparece en el 3.er evento
+//     (~33 ms, dos fotogramas) en vez del 1.º, y el rastro pasa de 50 px a 0.
 //
 //  2. BORRAR PIDE PRUEBAS; DIBUJAR ES EL DEFECTO. Asimétrico a propósito: un
 //     trazo de más se quita con el borrador, pero un borrado de más destruye lo
@@ -130,19 +137,34 @@ export function mediana(a) {
  *  @param {number} o.minMuestras muestras limpias que bastan para decidir antes
  *  @param {Function} o.ahora    reloj inyectable (los tests corren con tiempo falso) */
 /** LA VENTANA, declarada UNA vez. La calibración la importa de aquí: si
- *  descartara MÁS ms que el dibujo, su mediana describiría un tramo distinto del
+ *  descartara más que el dibujo, su mediana describiría un tramo distinto del
  *  toque y los umbrales calibrados no dirían nada sobre lo que el dibujo mide.
- *  Tenía 80 escrito a mano en `penCalibration.js` y 60 aquí. */
-export const VENTANA = { ignoraMs: 60, ventanaMs: 140, minMuestras: 3 };
+ *  Tenía 80 escrito a mano en `penCalibration.js` y 60 aquí.
+ *
+ *  POR QUÉ EL DESCARTE ES POR EVENTO Y NO SOLO POR TIEMPO (v1.51.611). La basura
+ *  es EL `pointerdown`: es el evento que muchas pizarras emiten con `width`/
+ *  `height` a 1 —el valor por defecto, no una medida—. Los `pointermove` que
+ *  siguen ya traen tamaño real. Descartar 60 ms tiraba también 3 o 4 movimientos
+ *  buenos y retrasaba el veredicto hasta ~100 ms, que es lo que se veía como
+ *  RASTRO DE TINTA antes de borrar (dueño, 2026-08-27).
+ *  Se descarta el primer evento y solo ese: es la única basura DOCUMENTADA. Hubo
+ *  además un suelo de 25 ms «por si algún aparato tarda en estabilizar» y costaba
+ *  un fotograma entero de tinta por pura especulación; la robustez se consigue
+ *  ahora exigiendo una muestra MÁS para borrar (ver `listo()`), que no cuesta
+ *  nada porque durante el borrado no se pinta. `ignoraMs` se queda como parámetro
+ *  por si un aparato real lo pide, medido. */
+export const VENTANA = { ignoraEventos: 1, ignoraMs: 0, ventanaMs: 90, minMuestras: 2 };
 
 export function crearVeredicto({
   thr = DEFAULT_THRESHOLDS,
-  ignoraMs = VENTANA.ignoraMs, ventanaMs = VENTANA.ventanaMs, minMuestras = VENTANA.minMuestras,
+  ignoraEventos = VENTANA.ignoraEventos, ignoraMs = VENTANA.ignoraMs,
+  ventanaMs = VENTANA.ventanaMs, minMuestras = VENTANA.minMuestras,
   ahora = () => performance.now(),
 } = {}) {
   const t0 = ahora();
-  const limpias = [];      // muestras posteriores a `ignoraMs`
+  const limpias = [];      // muestras que ya no son basura
   const todas = [];        // TODAS, incluida la basura (para el toque corto)
+  let vistos = 0;          // eventos recibidos (el primero es el pointerdown)
   let puntosMax = 0;
   let cerrado = null;
 
@@ -162,11 +184,18 @@ export function crearVeredicto({
     if (puntosMax >= thr.palma.minPuntos) {
       return { tool: 'palma', accion: 'erase', metrica, muestras: limpias.length, confianza: 'alta' };
     }
-    // Para lo demás manda el TAMAÑO: con muestras limpias, su MEDIANA (el mismo
-    // estadístico que calibró los umbrales). Sin ellas el gesto fue más corto que
-    // la ventana: no hay prueba, así que se DIBUJA (regla 2) y se dice.
-    return { tool, accion: hayLimpias ? toolAction(tool) : 'draw', metrica,
-             muestras: limpias.length, confianza: hayLimpias ? 'alta' : 'baja' };
+    // Para lo demás manda el TAMAÑO: con suficientes muestras limpias, su MEDIANA
+    // (el mismo estadístico que calibró los umbrales).
+    //
+    // «SUFICIENTES» ES ≥ minMuestras, NO ≥ 1. Una sola muestra no es una medida:
+    // es un número. Con el suelo de tiempo puesto, un toque corto no dejaba
+    // ninguna y la regla «sin muestras no se borra» bastaba; al quitarlo (para
+    // que la tinta no espere) un toque de dos eventos pasó a tener UNA, y con ella
+    // ya autorizaba un borrado. Lo cazó el caso del toque corto, que es la
+    // mecánica NORMAL de Tildes y Comas.
+    const prueba = limpias.length >= minMuestras;
+    return { tool, accion: prueba ? toolAction(tool) : 'draw', metrica,
+             muestras: limpias.length, confianza: prueba ? 'alta' : 'baja' };
   };
 
   return {
@@ -175,19 +204,34 @@ export function crearVeredicto({
       if (cerrado) return;
       const m = pointerMetric(e);
       todas.push(m);
+      vistos++;
       if (puntos > puntosMax) puntosMax = puntos;
-      if (ahora() - t0 >= ignoraMs) limpias.push(m);
+      if (vistos > ignoraEventos && ahora() - t0 >= ignoraMs) limpias.push(m);
     },
-    /** ¿Hay ya con qué decidir? Por muestras limpias o porque se acabó el plazo. */
+    /** ¿Hay ya con qué decidir?
+     *
+     *  BORRAR PIDE UNA MUESTRA MÁS QUE ESCRIBIR, y es gratis. Mientras no hay
+     *  veredicto no se pinta nada, así que el fotograma extra que tarda el
+     *  borrado no se ve — pero el de la tinta SÍ se vería. Así que la evidencia
+     *  se cobra donde no duele: la acción destructiva espera un poco más, la
+     *  reversible sale enseguida. Es la misma asimetría de la regla 2, aplicada
+     *  al tiempo en vez de a la ausencia de datos. */
     listo() {
-      return !!cerrado || limpias.length >= minMuestras || (ahora() - t0) >= ventanaMs;
+      if (cerrado) return true;
+      if ((ahora() - t0) >= ventanaMs) return true;
+      if (puntosMax >= thr.palma.minPuntos) return true;   // la palma por conteo no espera
+      if (limpias.length < minMuestras) return false;
+      const provisional = classifyTool(mediana(limpias), puntosMax, thr);
+      return provisional === 'palma' ? limpias.length >= minMuestras + 1 : true;
     },
     /** El veredicto, calculado UNA vez y congelado (el trazo no cambia de idea
      *  a mitad: eso sería peor que decidir tarde). */
     veredicto() { return (cerrado ||= decidir()); },
     /** Cierra el gesto (pointerup) y fuerza el veredicto con lo que haya. */
     cerrar() { return this.veredicto(); },
-    /** Lo que se hace MIENTRAS no hay veredicto (regla 1). */
-    provisional: 'draw',
+    /** Los puntos del gesto que aún no se han pintado. El lienzo los guarda aquí
+     *  mientras no hay veredicto y los suelta de golpe al dictarse — así no hay
+     *  rastro que retirar. */
+    pendientes: [],
   };
 }

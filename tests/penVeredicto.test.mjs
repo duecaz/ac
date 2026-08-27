@@ -42,7 +42,7 @@ function gesto(muestras, { pasoMs = 16, puntos = 1, thr = THR } = {}) {
     if (!v.listo()) trazo.push(tam);          // mientras no hay veredicto, se pinta
     t += pasoMs;
   }
-  return { ...v.cerrar(), pintadoProvisional: trazo.length };
+  return { ...v.cerrar(), eventosSinVeredicto: trazo.length };
 }
 
 // ── 1) EL DEFECTO: la basura inicial ya no decide ────────────────────────────
@@ -71,30 +71,40 @@ function gesto(muestras, { pasoMs = 16, puntos = 1, thr = THR } = {}) {
   ok('CONTRA-PRUEBA: punta, dedo y hasta el borde de la frontera siguen escribiendo');
 }
 
-// ── 3) EL TRAZO ES OPTIMISTA: se pinta desde el primer punto ─────────────────
-// Si hubiera que esperar al veredicto, cada trazo saldría con retardo visible.
-// Se comprueba que se pintó ANTES de decidir — y que se decide pronto, no al
-// final del trazo.
+// ── 3) EL VEREDICTO LLEGA DEPRISA, porque nada se pinta hasta que llega ─────
+// La v1.51.609 pintaba de forma optimista y retiraba el trazo si había que
+// borrar; con la palma en movimiento eso era un rastro de tinta visible (dueño,
+// 2026-08-27). Ahora los puntos se guardan sin pintar, así que el retardo del
+// veredicto ES el retardo de la tinta: tiene que ser de pocos eventos o habremos
+// cambiado un defecto visible por otro.
+// El rastro en píxeles y el retardo real se miden en `tools/lapiz-sonda.mjs`;
+// aquí se fija el número de eventos, que es lo que el primitivo controla.
 {
   const r = gesto([0.5, 1.4, 1.6, 1.5, 1.5, 1.5, 1.5, 1.5]);
-  assert.ok(r.pintadoProvisional >= 1,
-    'tiene que pintarse desde el primer punto: esperar al veredicto es retardo en cada trazo');
-  assert.ok(r.pintadoProvisional <= 6,
-    `el veredicto tiene que llegar pronto, y tardó ${r.pintadoProvisional} eventos`);
-  ok(`optimista: pinta desde el evento 1 y decide en el ${r.pintadoProvisional + 1}`);
+  assert.ok(r.eventosSinVeredicto <= 2,
+    `el veredicto tiene que llegar en 2 eventos o menos, y tardó ${r.eventosSinVeredicto}`);
+  ok(`el veredicto se dicta tras ${r.eventosSinVeredicto} evento(s) sin pintar: la tinta no espera`);
 }
 
 // ── 4) EL TOQUE CORTO — la mecánica NORMAL de Tildes y Comas ─────────────────
-// Marcar una tilde ES un toque, y puede durar menos que la ventana de descarte.
-// Ahí no hay muestra limpia: no hay prueba. Se DIBUJA (nunca se borra sin
-// pruebas) y se dice que la confianza es baja.
+// Marcar una tilde ES un toque: dos eventos y fuera. Ahí solo queda UNA muestra
+// limpia, y una muestra no es una medida, es un número. No basta para autorizar
+// un borrado — que es destructivo — así que se ESCRIBE y se declara confianza
+// baja. Este caso cazó el agujero que abrió acelerar el veredicto: al quitar el
+// suelo de tiempo, ese único número pasó a valer como prueba y un toque con la
+// palma borraba la hoja.
 {
-  const r = gesto([0.5, 20], { pasoMs: 8 });   // 16 ms en total: todo es basura
+  const r = gesto([0.5, 20], { pasoMs: 8 });
   assert.strictEqual(r.accion, 'draw',
-    'sin muestras limpias NUNCA se borra: un borrado de más destruye lo que el alumno llevaba');
-  assert.strictEqual(r.confianza, 'baja', 'y se dice que se decidió sin pruebas');
-  assert.strictEqual(r.muestras, 0, 'porque no sobrevivió ninguna muestra a la ventana');
-  ok('toque corto (marcar una tilde): dibuja y declara confianza baja, no borra a ciegas');
+    'con una sola muestra NUNCA se borra: un borrado de más destruye lo que el alumno llevaba');
+  assert.strictEqual(r.confianza, 'baja', 'y se dice que se decidió sin pruebas suficientes');
+  assert.ok(r.muestras < 2, `solo sobrevivió ${r.muestras} muestra al descarte del primer evento`);
+  // CONTRA-PRUEBA: un toque un pelín más largo —dos muestras limpias— SÍ borra.
+  // Sin esto, «no borrar nunca en toques cortos» podría acabar tragándose la
+  // palma que se apoya y se levanta enseguida.
+  assert.strictEqual(gesto([0.5, 20, 20.5], { pasoMs: 8 }).accion, 'erase',
+    'CONTRA-PRUEBA: con dos muestras limpias, una palma breve sí borra');
+  ok('toque corto: escribe con confianza baja; una muestra más y la palma ya borra');
 }
 
 // ── 5) LAS DOS SEÑALES DE LA PALMA, que NO son la misma prueba ──────────────
