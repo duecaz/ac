@@ -322,3 +322,124 @@
 .pcal-pad-action { font-size: .8rem; color: #6b7280; }
 .pcal-val { font-size: 1.6rem; font-weight: 800; color: #2563eb; margin-top: .2rem; }
 .pcal-foot { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1rem; }
+
+/* ── EL RELOJ GRANDE Y SU BARRA DE PROGRESO (v1.51.612) ──────────────────────
+   Rescatados de la app anterior de Tildes (dueño 2026-08-27, con capturas): un
+   reloj que se lee desde el fondo del aula y una barra que dice cuánto tiempo
+   se ha consumido, sin tener que leer el número.
+
+   Van DENTRO de la barra que ya existe (`.tc-bar`, la del lápiz/borrador), no
+   en una franja nueva: la barra ya está puesta y una cabecera de más se come
+   entre el 4 % y el 25 % del alto del texto, que es lo que se midió al quitar
+   los títulos de los seis players (core/playerHud.js).
+
+   El reloj NO va como chip del HUD a propósito: el HUD son indicadores de
+   esquina, pequeños y discretos. Este número lo tiene que leer la clase entera,
+   así que es grande y va centrado. Los indicadores que SÍ son de esquina
+   —página y puntos— se quedan en el HUD. */
+.tc-clock {
+  /* Centrado ocupando el hueco libre, entre el lápiz y el botón de pantalla
+     completa. `margin: auto` en un flex reparte el sobrante a los dos lados. */
+  margin-inline: auto;
+  display: inline-flex; align-items: center; gap: .35em;
+  font-variant-numeric: tabular-nums;   /* que no baile al bajar de 10 a 9 */
+  font-weight: 800;
+  /* Grande de verdad: es el dato que la clase mira de reojo. Piso en px para el
+     móvil, techo relativo al marco — nada que congele el crecimiento (§3). */
+  font-size: max(15px, 4.2cqmin);
+  line-height: 1;
+  color: var(--ww-fg, #1f2937);
+}
+
+/* La barra de progreso del TIEMPO, pegada bajo la barra de herramientas, como
+   en la app anterior. Es un indicador redundante a propósito: el número dice
+   cuánto queda y la barra dice cuánto se ha ido, que es lo que se capta sin
+   leer. Con PISO en px y sin techo: un `height: 3px` fijo lo cazó el ratchet de
+   §3 y tenía razón — en una pizarra 4K tres píxeles no se ven desde la tercera
+   fila. Crece con el marco, pero muy despacio: sigue siendo una línea, no una
+   franja. */
+.tc-progress {
+  height: max(3px, .5cqmin);
+  background: var(--ww-bg-soft, rgba(0,0,0,.10));
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 0 0 .35rem;
+}
+.tc-progress > i {
+  display: block; height: 100%; width: 100%;
+  background: var(--ww-accent, #2563eb);
+  /* La transición hace que el paso de segundo a segundo se lea como algo que
+     fluye y no como saltos; 1s lineal = exactamente el ritmo del tick. */
+  transition: width 1s linear;
+}
+
+/* ── LA REVISIÓN EN UN CARRIL AL LADO (v1.51.612) ────────────────────────────
+   Rescatada de la app anterior. La corrección se pintaba SOLO dentro del texto,
+   en rojo: para saber qué había fallado había que releer la frase buscando
+   letras de color, y desde el fondo del aula eso no se hace. La lista dice las
+   palabras, con su veredicto, de un vistazo.
+
+   Carril lateral si sobra ANCHO; si no, debajo. Misma regla de reflujo que la
+   Sopa y el crucigrama: la forma sola no basta, porque el marco lleva la
+   proporción de la plantilla y casi nunca es vertical. */
+.tc-corrige {
+  display: flex;
+  gap: 2cqmin;
+  min-height: 0;
+  flex: 1 1 0;
+}
+.tc-corrige > .tc-passage-area { flex: 1 1 0; min-width: 0; }
+.tc-review-slot { flex: 0 0 auto; min-width: 0; max-width: 34%; overflow-y: auto; }
+
+@container (aspect-ratio < 1/1) {
+  .tc-corrige { flex-direction: column; }
+  .tc-review-slot { max-width: none; flex: 0 0 auto; }
+}
+
+.tc-review-side__t {
+  font-size: max(9px, 1.8cqmin);
+  text-transform: uppercase; letter-spacing: .08em;
+  opacity: .65; margin: 0 0 .5em;
+}
+.tc-review-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .4em; }
+
+/* Una fila = una palabra. El icono y la palabra a la izquierda, el botón de
+   anular a la derecha. Los colores por TOKEN salvo el verde/rojo de estado, que
+   es la convención de toda la app y no depende del tema (§3). */
+.tc-rev {
+  display: flex; align-items: center; gap: .5em;
+  padding: .35em .6em; border-radius: .5em;
+  font-size: max(11px, 2.4cqmin); font-weight: 700; line-height: 1.2;
+  background: var(--ww-bg-soft, rgba(0,0,0,.06));
+  color: var(--ww-card-fg, var(--ww-fg, #1f2937));
+}
+.tc-rev__w { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.tc-rev__ico { flex: 0 0 auto; font-weight: 900; }
+.tc-rev--ok    { background: rgba(22,163,74,.18); }
+.tc-rev--ok    .tc-rev__ico { color: #16a34a; }
+.tc-rev--falta { background: rgba(239,68,68,.18); }
+.tc-rev--falta .tc-rev__ico { color: #ef4444; }
+/* La marca DE MÁS no es «un fallo más»: es de otra especie —sobra donde no
+   tocaba— y el puntaje neto la resta. Con el mismo rojo que «faltaba», el profe
+   no puede distinguir por qué bajó la puntuación. */
+.tc-rev--demas { background: rgba(245,158,11,.20); }
+.tc-rev--demas .tc-rev__ico { color: var(--ww-warning, #f59e0b); }
+/* Una fila anulada dice que alguien la tocó a mano: si no se distingue, dentro
+   de dos minutos ya no se sabe qué es del alumno y qué del docente. */
+/* Perdonada: ni verde ni rojo. Ya no resta, pero tampoco fue un acierto. */
+.tc-rev--perdon { background: var(--ww-bg-soft, rgba(0,0,0,.06)); opacity: .7; }
+.tc-rev--perdon .tc-rev__w { text-decoration: line-through; }
+.tc-rev.is-anulada { outline: 2px dashed var(--ww-accent, #2563eb); outline-offset: -2px; }
+
+.tc-rev__btn {
+  flex: 0 0 auto;
+  border: 0; border-radius: .4em; cursor: pointer;
+  width: max(20px, 3.2cqmin); height: max(20px, 3.2cqmin);
+  font-size: max(10px, 1.9cqmin); font-weight: 900; line-height: 1;
+  background: rgba(0,0,0,.14); color: inherit;
+}
+.tc-rev__btn:hover { background: rgba(0,0,0,.26); }
+
+.tc-review-side__pie {
+  margin-top: .6em; font-size: max(10px, 2cqmin); font-weight: 700; opacity: .8;
+}

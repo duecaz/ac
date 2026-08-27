@@ -39,7 +39,13 @@ export class TildesTemplate extends BaseTemplate {
     needsImageUpload: false,
     needsAudioUpload: false,
     defaultRules: () => ({ randomize: false, allowOverflow: true, showHints: false }),
-    defaultScoring: () => ({ pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
+    // DIEZ POR MARCA, no uno (dueño 2026-08-27, comparando con la app anterior:
+    // «cada tilde es 10 puntos por defecto»). En una pizarra a tres metros, 20 y
+    // 120 se leen y 2 y 12 no. Solo cambia el DEFECTO de las actividades nuevas:
+    // las que ya existen llevan su `pointsPerCorrect` guardado y el editor tiene
+    // el campo «Puntos por acierto», así que un 1 almacenado puede ser una
+    // decisión del profe — migrarlo sería pisarle el contenido (§24).
+    defaultScoring: () => ({ pointsPerCorrect: 10, pointsPerWrong: 0, maxScore: 0 }),
     defaultLive: () => ({}),
     defaultContent: () => {
       const examples = [

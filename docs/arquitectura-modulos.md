@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **269 módulos · 1046 imports internos.**
+> **269 módulos · 1047 imports internos.**
 
 ### Ir a otro documento
 
@@ -34,8 +34,8 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2819 | 12 · 1377 | 0.49 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3975 | 19 · 3037 | 0.76 |
 | **informes/tareas** | después de clase | 10 · 1056 | 4 · 466 | 0.44 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5868 | 13 · 1778 | 0.30 |
-| **infra/común** | todo lo anterior | 143 · 17684 | 63 · 7785 | 0.44 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5880 | 13 · 1778 | 0.30 |
+| **infra/común** | todo lo anterior | 143 · 17909 | 64 · 7897 | 0.44 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -107,7 +107,7 @@ graph TD
 | **arranque** | `pb_hooks/aulareto-lib.js` (364) · `pb_hooks/aulareto.pb.js` (354) · `qa/hoja.js` (330) · `main.teacher.js` (168) · `main.embed.js` (68) |
 | **vistas** | `views/adminView.js` (1345) · `views/hostLive.js` (1110) · `views/studentLive.js` (922) · `views/playerView.js` (541) · `views/vsView.js` (527) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1187) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
-| **core** | `core/textCorrectionRound.js` (455) · `core/normsCheck.js` (450) · `core/skins.js` (395) · `core/aiContent.js` (385) · `core/selftest.js` (345) |
+| **core** | `core/textCorrectionRound.js` (680) · `core/normsCheck.js` (450) · `core/skins.js` (395) · `core/aiContent.js` (385) · `core/selftest.js` (345) |
 | **kernel** | `kernel/session/engine.js` (559) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/dataPort.js` (28) |
 | **plantillas** | `templates/crossword/player.js` (482) · `templates/wordsearch/player.js` (397) · `templates/match/player.js` (292) · `templates/diagram/player.js` (235) · `templates/quiz/editor.js` (225) |
 | **contenido** | `kernel/content/qaAdapt.js` (141) · `kernel/content/switch.js` (117) · `kernel/content/convert.js` (95) · `kernel/content/models.js` (83) · `kernel/content/index.js` (5) |
@@ -141,10 +141,10 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 | `adapters/pocketbase/realtime.js` | 1187 | 0 |
 | `views/hostLive.js` | 1110 | 1 |
 | `views/studentLive.js` | 922 | 1 |
+| `core/textCorrectionRound.js` | 680 | 5 |
 | `kernel/session/engine.js` | 559 | 19 |
 | `views/playerView.js` | 541 | 1 |
 | `views/vsView.js` | 527 | 2 |
-| `templates/crossword/player.js` | 482 | 1 |
 
 ## El mapa de DATOS: quién escribe cada colección
 

@@ -9,7 +9,7 @@
 // value is number[]: for tildes, the char positions marked; for comas, the
 // index of the char AFTER which the comma goes (matches the answer-key `pos`).
 import { html, escapeHtml, mount } from './html.js';
-import { isVowel, applyTilde, scoreMarksPerHit } from './textMarks.js';
+import { isVowel, applyTilde, scoreMarksPerHit, wordAtPos } from './textMarks.js';
 import { GameEvents, emitGame } from './gameEvents.js';
 import { runFreeformPlayer } from './soloPlayer.js';
 import { mountTcDraw } from './textCorrectionDraw.js';
@@ -17,6 +17,7 @@ import { observeResize } from './observeResize.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from './fullscreen.js';
 import { heatClass } from './itemStats.js';
 import { hudHtml } from './playerHud.js';
+import { createCountdown } from './soloTimer.js';
 
 // ICONOS LUCIDE, EN LÍNEA (dueño, 2026-08-15: «usa iconos lucide»). Se pegan
 // aquí como SVG en vez de cargar la librería: la app no depende de la red —la
@@ -112,8 +113,138 @@ export function passageHtml(text, kind, reveal) {
 
 // Interactive round (VS / Equipos-auto / LIVE / Solo) — modo DIBUJO: el alumno
 // dibuja la marca con lápiz/táctil sobre el texto. onSubmit(value:number[]) al
+/** La palabra que contiene una marca, ESCRITA YA COMO DEBE QUEDAR («América»,
+ *  no «America»): es lo que el alumno tiene que aprender a ver. `wordAtPos` da
+ *  la palabra cruda del texto sin tildes; aquí se le aplica la marca en su sitio.
+ *  Para la coma se muestra la palabra con la coma detrás. */
+function palabraMarcada(text, pos, kind) {
+  const cruda = wordAtPos(text, pos);
+  if (!cruda) return '';
+  const s = String(text);
+  let ini = pos;
+  while (ini > 0 && !/\s/.test(s[ini - 1])) ini--;
+  const rel = pos - ini;
+  if (kind === 'coma') return `${cruda.slice(0, rel + 1)},${cruda.slice(rel + 1)}`;
+  return cruda.slice(0, rel) + applyTilde(cruda[rel] ?? '') + cruda.slice(rel + 1);
+}
+
+/** LA REVISIÓN, PALABRA POR PALABRA (rescatada de la app anterior; dueño
+ *  2026-08-27 con capturas). La corrección se pintaba SOLO dentro del texto, en
+ *  rojo: para saber qué había fallado había que releer la frase entera buscando
+ *  letras de color, y desde el fondo del aula eso no se hace.
+ *
+ *  Lleva TRES clases de fila, no dos, y la tercera es la importante:
+ *    · acertada  — la marca estaba y el alumno la puso;
+ *    · sin marcar — estaba y no la puso;
+ *    · DE MÁS    — la puso donde no tocaba.
+ *  Las de más no salían en la app anterior, y aquí no se pueden callar: el
+ *  puntaje es NETO (aciertos − de más), así que una lista que dijera «2 / 2
+ *  correctas» junto a un 0 de puntos sería un número imposible de explicar con
+ *  la clase delante.
+ *
+ *  @returns {Array<{pos:number, palabra:string, estado:'ok'|'falta'|'demas'}>} */
+export function filasRevision(p, kind, got) {
+  const want = (p.marks || []).filter(m => m.kind === kind).map(m => m.pos);
+  const filas = want.map(pos => ({
+    pos, palabra: palabraMarcada(p.text, pos, kind),
+    estado: got.has(pos) ? 'ok' : 'falta',
+  }));
+  for (const pos of got) {
+    if (want.includes(pos)) continue;
+    filas.push({ pos, palabra: palabraMarcada(p.text, pos, kind), estado: 'demas' });
+  }
+  return filas.sort((a, b) => a.pos - b.pos);
+}
+
+const ICONO = { ok: '✓', falta: '✗', demas: '+', perdon: '–' };
+const TITULO = { ok: 'Bien puesta', falta: 'Faltaba', demas: 'Marca de más', perdon: 'Marca de más, perdonada' };
+
+/** El veredicto EFECTIVO de una fila tras las anulaciones del docente.
+ *  PERDONAR UNA MARCA DE MÁS NO LA CONVIERTE EN ACIERTO. La primera versión
+ *  volteaba las tres clases con el mismo `ok ↔ falta`, así que perdonar una de
+ *  más la pintaba de verde y el pie decía «1 / 8 correctas» mientras el veredicto
+ *  de al lado seguía en «0/8 aciertos». Dos números que no cuadran, en la pantalla
+ *  cuyo trabajo es que cuadren. Perdonar significa «esto ya no resta», que es
+ *  exactamente lo que hace el scorer al quitar esa posición. */
+export const efectivoDe = (fila, anulada) => {
+  if (!anulada) return fila.estado;
+  if (fila.estado === 'demas') return 'perdon';
+  return fila.estado === 'ok' ? 'falta' : 'ok';
+};
+
+/** EL CONTADOR DEL PIE, con dueño. Cuenta SOLO las marcas que la frase pedía:
+ *  las de más no suman ni restan aquí (restan en el puntaje, que es donde se
+ *  ven). Vive fuera del panel para que `tests/tcRevision.test.mjs` pueda fijar el
+ *  invariante que de verdad importa: este «N / M» y los aciertos que reporta el
+ *  scorer son SIEMPRE el mismo número, con y sin anulaciones. */
+export function resumenRevision(filas, anulados = new Set()) {
+  const pedidas = filas.filter(f => f.estado !== 'demas');
+  return {
+    buenas: pedidas.filter(f => efectivoDe(f, anulados.has(f.pos)) === 'ok').length,
+    total: pedidas.length,
+  };
+}
+
+/** ANULAR = CAMBIAR LAS POSICIONES MARCADAS, y volver a preguntar al MISMO
+ *  scorer. Es la única forma de que la anulación no abra una segunda aritmética:
+ *  la ley del repo es un solo scorer por plantilla, y aquí se cumple sola porque
+ *  el veredicto anulado se EXPRESA como lo que el alumno habría marcado.
+ *    · dar por buena una que faltaba  → se añade su posición;
+ *    · dar por mala una acertada, o perdonar una de más → se quita.
+ *  Recalcular a mano «hits+1, points+ppc» habría sido más corto y habría dejado
+ *  el puntaje del docente y el del scorer pudiendo divergir. */
+export function valorAnulado(value, anulados, p, kind) {
+  const want = new Set((p.marks || []).filter(m => m.kind === kind).map(m => m.pos));
+  const v = new Set((value || []).map(Number));
+  for (const pos of anulados) {
+    if (want.has(pos)) { if (v.has(pos)) v.delete(pos); else v.add(pos); }
+    else v.delete(pos);       // una marca de MÁS solo se puede perdonar
+  }
+  return [...v];
+}
+
+/** El panel. `anulable` lo decide el CALLER (§0): anular es cosa del docente con
+ *  el aparato en la mano, no del alumno haciendo una tarea desde casa. */
+function panelRevisionHtml(filas, anulados, { anulable }) {
+  // El pie cuenta SOLO las marcas que la frase pedía: las de más no suman ni
+  // restan aquí (restan en el puntaje, que es donde se ven). Así este «N / M» y
+  // el «N/M aciertos» del veredicto son el mismo número siempre.
+  const { buenas, total } = resumenRevision(filas, anulados);
+  return `<aside class="tc-review-side" aria-label="Revisión">
+    <h6 class="tc-review-side__t">Revisión</h6>
+    <ul class="tc-review-list">
+      ${filas.map(f => {
+        const anulada = anulados.has(f.pos);
+        // Anular una fila la repinta con lo que el docente acaba de decidir:
+        // verlo aplicado es la mitad del sentido del botón.
+        const efectivo = efectivoDe(f, anulada);
+        return `<li class="tc-rev tc-rev--${efectivo}${anulada ? ' is-anulada' : ''}">
+          <span class="tc-rev__ico" title="${TITULO[efectivo] || ''}">${ICONO[efectivo]}</span>
+          <span class="tc-rev__w">${escapeHtml(f.palabra)}</span>
+          ${anulable ? `<button type="button" class="tc-rev__btn" data-anular="${f.pos}"
+            aria-pressed="${anulada}"
+            title="${anulada ? 'Deshacer el cambio' : 'Cambiar el veredicto de esta palabra'}"
+            aria-label="Cambiar el veredicto de ${escapeHtml(f.palabra)}">${anulada ? '↺' : (f.estado === 'ok' ? '✗' : '✓')}</button>` : ''}
+        </li>`;
+      }).join('')}
+    </ul>
+    <div class="tc-review-side__pie">${buenas} / ${total} correctas</div>
+  </aside>`;
+}
+
+/** EL RELOJ GRANDE, en la barra que ya existe (dueño 2026-08-27, comparando con
+ *  la app anterior: «un reloj grande que indica claramente que tenemos un tiempo
+ *  límite»). Va AQUÍ y no como chip del HUD por una razón: el HUD son
+ *  indicadores de esquina, pequeños y discretos, y este número la clase entera
+ *  tiene que poder leerlo desde el fondo del aula. No crea franja nueva — la
+ *  barra ya está puesta por el lápiz/borrador, que es lo que la justifica.
+ *  Sin tiempo declarado no se pinta NADA: un reloj parado enseña que el tiempo
+ *  no importa aquí, y el hueco vacío desplaza el resto de la barra. */
+const relojHtml = (texto) =>
+  texto == null ? '' : `<span class="tc-clock" data-reloj>${escapeHtml(String(texto))}</span>`;
+
 // pulsar "Listo" (mismas posiciones que el modo tocar → scoring intacto).
-export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSubmit, chips = {} } = {}) {
+export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSubmit, chips = {}, reloj = null } = {}) {
   const text = payload?.text || '';
   // El botón "Calibrar pizarra" NO va aquí (en el juego): vive en la pantalla de
   // inicio (views/startScreen.js), que es donde van los ajustes previos. En modo
@@ -161,8 +292,10 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
             ${LUCIDE.eraser}<span class="tc-switch__word">Borrador</span>
           </span>
         </button>
+        ${relojHtml(reloj)}
         ${propio ? fullscreenButtonHtml({ inline: true }) : ''}
       </div>
+      ${reloj == null ? '' : '<div class="tc-progress" data-progreso><i></i></div>'}
       <div class="edu-sec edu-sec--texto tc-passage-area"><div class="tc-passage">${passageHtml(text, kind)}</div></div>
       <div class="tc-done-wrap edu-send"><button type="button" class="btn btn-success btn-lg tc-done" data-ww-submit><i class="bi bi-check2-circle"></i> Listo</button></div>
     </div>`;
@@ -223,7 +356,20 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
   // `chromePropio`: esta ronda YA pinta su barra (progreso + herramientas), así
   // que la vista que le pasó `chips` no debe apilar otra encima — dos barras
   // era la captura del dueño. Quien no pase chips no nota nada.
-  return { flush: submit, chromePropio: !!(chips.left || chips.right) };
+  return {
+    flush: submit,
+    chromePropio: !!(chips.left || chips.right),
+    /** Repinta el reloj y la barra de progreso. La ronda NO cuenta el tiempo:
+     *  solo lo PINTA. Quién lo cuenta —y con qué primitivo— es del caller (§0:
+     *  una plantilla no sabe en qué modo corre). En Individual lo lleva
+     *  `runTextCorrectionSolo` con `createCountdown`; en vivo, la sala. */
+    setReloj(texto, pct) {
+      const el = root.querySelector('[data-reloj]');
+      if (el) el.textContent = texto;
+      const barra = root.querySelector('[data-progreso] i');
+      if (barra) barra.style.width = `${Math.max(0, Math.min(100, pct ?? 0))}%`;
+    },
+  };
 }
 
 // Ajusta el tamaño de letra para que el texto LLENE el área (sin desbordar): el
@@ -342,16 +488,56 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
       <div id="tc-body" class="tc-body">${bodyHtml}</div>
     </div>`);
 
+  // EL TIEMPO ES POR HOJA (decisión del dueño, 2026-08-27). El campo ya existía
+  // y nadie lo leía en Individual: `rules.timer` son «segundos por ítem», y en
+  // Tildes/Comas un ítem ES una frase. No se inventa un campo nuevo — hacerlo
+  // habría dejado dos sitios donde poner tiempo y ninguno claramente el bueno.
+  // (OJO: `item.seconds` es otra cosa, se llama «Tiempo en vivo» y solo lo lee
+  // el panel del host para la ventana de la ronda.)
+  // El conteo lo lleva `createCountdown`, el primitivo de duración de §23 —
+  // nunca un setInterval a pelo — y la ronda solo PINTA lo que se le diga.
+  const segundos = Math.max(0, Number(activity.rules?.timer) || 0);
+  let reloj = null;
+  const pararReloj = () => { if (reloj) { reloj.stop(); reloj = null; } };
+
   function ask() {
     shell('', { conFrase: false });
     const body = document.getElementById('tc-body');
-    renderTextCorrectionRound(body, passages[idx], {
+    const ronda = renderTextCorrectionRound(body, passages[idx], {
       kind, onSubmit: grade,
-      chips: { left: `${idx + 1} / ${passages.length}` },
+      // El PUNTAJE ACUMULADO viaja con el alumno de hoja en hoja, como en la app
+      // anterior: sin él, cada frase parece empezar de cero y el «X / max» final
+      // sale de la nada. El HUD ya sabía pintarlo (`puntos`); nadie se lo pedía.
+      chips: { left: `${idx + 1} / ${passages.length}`, right: `★ ${score}` },
+      reloj: segundos ? `⏱ ${segundos}` : null,
     });
+    pararReloj();
+    if (!segundos) return;
+    reloj = createCountdown(segundos, {
+      // `alive()` ANTES de repintar (§23, ficha de ocupación del escenario): si
+      // el alumno se fue a otra ruta, este reloj es un zombi y pintaría su cuenta
+      // encima de la pantalla siguiente. El shell libre no tiene gancho de
+      // teardown, así que el guard es la forma declarada de soltarlo.
+      onTick: (quedan) => {
+        if (!ctx.alive()) { pararReloj(); return; }
+        ronda.setReloj(`⏱ ${Math.max(0, quedan)}`, (quedan / segundos) * 100);
+      },
+      // Se acabó el tiempo: se entrega LO QUE HAYA. Ni se pierde el trabajo ni se
+      // deja al alumno bloqueado en una hoja que ya no puede terminar.
+      onTimeout: () => { if (ctx.alive()) ronda.flush(); },
+    });
+    reloj.start();
   }
 
+  // ANULAR ES DEL DOCENTE, NO DEL ALUMNO (§22). El botón solo existe en
+  // Individual —el modo que se juega con el aparato en la mano, en la pizarra—;
+  // en Tarea el alumno juega solo y desde casa, y un botón para darse por bueno
+  // convertiría el informe en una encuesta. Se pregunta por el MODO, que es lo
+  // que la plataforma declara, no por quién creemos que está delante.
+  const anulable = (!opts.mode || opts.mode === 'solo');
+
   function grade(value) {
+    pararReloj();
     const p = passages[idx];
     // MISMO scorer que VS/Equipos/Live/Tarea (fuente única): no reimplementamos
     // el conteo aquí. `want/got` solo alimentan la corrección visual y la analítica.
@@ -368,11 +554,14 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     reveal(value, { hits: r.hits, over: r.over, misses: miss, total: r.total, correct: r.perfect });
   }
 
+
   function reveal(value, r) {
     const p = passages[idx];
     const want = new Set((p.marks || []).filter(m => m.kind === kind).map(m => m.pos));
     const got = new Set(value.map(Number));
     const last = idx === passages.length - 1;
+    const anulados = new Set();
+    const filas = filasRevision(p, kind, got);
     // LA BARRA SIGUE AHÍ EN LA CORRECCIÓN. Sin ella, esta pantalla no tenía
     // `.tc-bar--fs` y el botón de pantalla completa volvía a la esquina
     // flotante: saltaba de sitio en cada frase (barra → esquina → barra). El
@@ -380,13 +569,16 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     // Sin herramientas: aquí no se dibuja.
     shell(`
       <div class="tc-round">
-        ${hudHtml({ pagina: `${idx + 1} / ${passages.length}` })}
+        ${hudHtml({ pagina: `${idx + 1} / ${passages.length}`, puntos: `★ ${score}` })}
         <div class="edu-topbar tc-bar tc-bar--fs">
           ${fullscreenButtonHtml({ inline: true })}
         </div>
-        <div class="edu-sec edu-sec--texto tc-passage-area"><div class="tc-passage">${passageHtml(p.text, kind, { got, want })}</div></div>
+        <div class="edu-sec edu-sec--texto tc-corrige">
+          <div class="tc-passage-area"><div class="tc-passage">${passageHtml(p.text, kind, { got, want })}</div></div>
+          <div class="tc-review-slot">${panelRevisionHtml(filas, anulados, { anulable })}</div>
+        </div>
         <div class="tc-done-wrap edu-send">
-          <span class="tc-verdict ${r.correct ? 'ok' : 'bad'}">
+          <span class="tc-verdict ${r.correct ? 'ok' : 'bad'}" data-verdicto>
             <i class="bi ${r.correct ? 'bi-check-circle-fill' : 'bi-x-circle-fill'}"></i>
             ${r.hits}/${r.total} aciertos${r.over ? ` · ${r.over} de más` : ''}
           </span>
@@ -395,6 +587,25 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
           </button></div>
         </div>
       </div>`, { conFrase: false });
+    // ANULAR: se repinta el panel y se recalcula con el MISMO scorer. El
+    // resultado de la frase NO se cierra hasta pulsar «Siguiente» — mientras el
+    // docente está mirando la revisión, todavía puede cambiar de idea.
+    const slot = document.querySelector('.tc-review-slot');
+    slot?.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-anular]');
+      if (!b) return;
+      const pos = Number(b.dataset.anular);
+      if (anulados.has(pos)) anulados.delete(pos); else anulados.add(pos);
+      slot.innerHTML = panelRevisionHtml(filas, anulados, { anulable });
+      const rr = scoreMarksPerHit(valorAnulado(value, anulados, p, kind), p, [kind], activity);
+      const v = document.querySelector('[data-verdicto]');
+      if (v) {
+        v.className = `tc-verdict ${rr.perfect ? 'ok' : 'bad'}`;
+        v.innerHTML = `<i class="bi ${rr.perfect ? 'bi-check-circle-fill' : 'bi-x-circle-fill'}"></i> `
+          + `${rr.hits}/${rr.total} aciertos${rr.over ? ` · ${rr.over} de más` : ''}`;
+      }
+    });
+
     // El texto de la corrección también LLENA el área (mismo tamaño grande).
     const areaEl = document.querySelector('.tc-passage-area');
     const passageEl = areaEl.querySelector('.tc-passage');
@@ -404,6 +615,20 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     document.querySelector('.tc-next').addEventListener('click', () => {
       stopFit();
       soltarFs();
+      // AQUÍ se cierra la frase, con las anulaciones ya aplicadas. `grade` dejó
+      // un resultado provisional; si el docente tocó algo, se sustituye por el
+      // que sale del scorer con las posiciones ajustadas — nunca por una suma
+      // hecha a mano en esta vista.
+      if (anulados.size) {
+        const prev = passageResults[passageResults.length - 1];
+        const rr = scoreMarksPerHit(valorAnulado(value, anulados, p, kind), p, [kind], activity);
+        score += rr.points - prev.points;
+        hits += rr.hits - prev.hits;
+        over += rr.over - prev.over;
+        misses += (rr.total - rr.hits) - prev.misses;
+        Object.assign(prev, { hits: rr.hits, over: rr.over, misses: rr.total - rr.hits,
+                              correct: rr.perfect, points: rr.points, anuladas: [...anulados] });
+      }
       if (last) finish();
       else { idx++; ctx.saveProgress(snapshot()); ask(); }
     });
