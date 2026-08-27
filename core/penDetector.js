@@ -1,37 +1,41 @@
-// Detección de herramienta por TAMAÑO de contacto, portado del enfoque de
-// duecaz/play (libs/pen-detector.js). La idea: en una pizarra táctil el lápiz
-// (punta) deja un contacto pequeño, el dedo uno mediano, la parte trasera del
-// lápiz / borrador uno grande, y la palma varios puntos a la vez. Midiendo el
-// "radio medio" del contacto podemos decidir si se DIBUJA o se BORRA.
+// DOS HERRAMIENTAS, UNA FRONTERA: el dedo (y todo lo más pequeño) DIBUJA, la
+// palma BORRA. Decisión del dueño, 2026-08-27: «hagámoslo solo con dos opciones,
+// dedo y palma… así simplificamos».
+//
+// Antes había CUATRO (lápiz punta · dedo · parte trasera del lápiz · palma) y por
+// tanto TRES fronteras que calibrar. Cada frontera es una forma de equivocarse
+// con la clase delante, y las dos de en medio no daban nada: punta y dedo hacían
+// lo MISMO (dibujar), así que separarlas solo servía para colocar mal la tercera.
+// Con una sola frontera, la calibración baja de cuatro recuadros a dos y lo que
+// el profe tiene que entender cabe en una frase.
 //
 //   métrica = radio medio del área de contacto (px CSS).
-//   clasificación: palma (≥N puntos) → penThin → penThick → eraser → none.
+//   clasificación: palma si hay ≥N contactos A LA VEZ **o** el contacto es más
+//   grande que la frontera; en cualquier otro caso, dedo.
 //
-// Los umbrales dependen del dispositivo, así que se CALIBRAN (core/penCalibration.js)
-// y se guardan en sessionStorage con la MISMA clave que duecaz/play.
+// DOS SEÑALES PARA LA PALMA, y son distintas a propósito. Unas pizarras reportan
+// la palma como VARIOS punteros (ahí manda el conteo, fiable desde el primer
+// evento) y otras como UN contacto enorme (ahí manda el tamaño, que necesita
+// muestras limpias — ver `crearVeredicto`). Quedarse con una sola dejaba fuera
+// la mitad de los aparatos.
+//
+// La frontera depende del aparato, así que se CALIBRA (core/penCalibration.js) y
+// se guarda en sessionStorage con la MISMA clave que duecaz/play.
 
 export const STORAGE_KEY = 'ep-pen-thresholds';
 
-// Por defecto (SIN calibrar) todo lo que no sea palma DIBUJA: penThin y penThick
-// cubren cualquier tamaño y el borrador por métrica queda deshabilitado (min muy
-// alto). Así el comportamiento base = Fase 1 (dibujar + borrar con la palma).
-// Tras calibrar, deriveThresholds fija los cortes reales y el lápiz trasero borra.
+// SIN CALIBRAR, el tamaño NO borra (`min: 1e9`) y solo la palma por CONTEO lo
+// hace. Es el defecto seguro: sin haber medido el aparato no hay forma de saber
+// qué es «grande» ahí, y equivocarse por ese lado destruye lo que el alumno
+// llevaba escrito. Al calibrar, `deriveThresholds` pone la frontera de verdad.
 export const DEFAULT_THRESHOLDS = {
-  penThin:  { min: 0,    max: 3      },   // lápiz punta  → dibujar
-  penThick: { min: 3,    max: 1e9    },   // dedo         → dibujar
-  eraser:   { min: 1e9,  max: 1e9    },   // lápiz trasero→ borrar (desactivado sin calibrar)
-  palm:     { minPoints: 3            },  // palma        → borrar
+  palma: { min: 1e9, minPuntos: 3 },
 };
 
 export function loadThresholds() {
   let stored = null;
   try { stored = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || 'null'); } catch { stored = null; }
-  return {
-    penThin:  { ...DEFAULT_THRESHOLDS.penThin,  ...stored?.penThin },
-    penThick: { ...DEFAULT_THRESHOLDS.penThick, ...stored?.penThick },
-    eraser:   { ...DEFAULT_THRESHOLDS.eraser,   ...stored?.eraser },
-    palm:     { ...DEFAULT_THRESHOLDS.palm,     ...stored?.palm },
-  };
+  return { palma: { ...DEFAULT_THRESHOLDS.palma, ...stored?.palma } };
 }
 
 export function saveThresholds(thr) {
@@ -47,48 +51,34 @@ export function pointerMetric(e) {
   return (w + h) / 4;   // (diámetro medio) / 2 = radio medio
 }
 
-// Clasifica por métrica y nº de contactos simultáneos. La palma se comprueba
-// primero por conteo de puntos (igual que en duecaz/play).
+/** Palma o dedo, y ya está. Por CONTEO de contactos o por TAMAÑO; cualquiera de
+ *  las dos señales basta, porque cada aparato reporta la palma de una forma. */
 export function classifyTool(metric, pointCount, thr = DEFAULT_THRESHOLDS) {
-  if (pointCount >= thr.palm.minPoints)                              return 'palm';
-  if (metric >= thr.penThin.min  && metric <= thr.penThin.max)       return 'penThin';
-  if (metric >= thr.penThick.min && metric <= thr.penThick.max)      return 'penThick';
-  if (metric >= thr.eraser.min   && metric <= thr.eraser.max)        return 'eraser';
-  return 'none';
+  if (pointCount >= thr.palma.minPuntos) return 'palma';
+  if (metric >= thr.palma.min)           return 'palma';
+  return 'dedo';
 }
 
-// Acción de cada herramienta: lápiz punta y dedo DIBUJAN; lápiz trasero y palma
-// BORRAN. `none` (tamaño sin clasificar) dibuja, para no perder trazos.
+/** El dedo (y todo lo más pequeño: la punta del lápiz, el ratón) DIBUJA; solo la
+ *  palma BORRA. Cualquier nombre que no sea `palma` dibuja, a propósito: si algún
+ *  día se añade una herramienta y se olvida aquí, el defecto es no destruir nada. */
 export function toolAction(tool) {
-  return (tool === 'eraser' || tool === 'palm') ? 'erase' : 'draw';
+  return tool === 'palma' ? 'erase' : 'draw';
 }
 
-// Deriva umbrales a partir de las métricas medidas en la calibración. El orden
-// natural por tamaño es: lápiz punta < dedo < lápiz trasero. Las fronteras se
-// ponen en el punto medio entre herramientas contiguas medidas.
-//   measured: { penTip, dedo, trasera, palma }  (number | null)
+/** LA ÚNICA FRONTERA: el punto medio entre el dedo medido y la palma medida.
+ *
+ *  Hacen falta LAS DOS medidas y, si falta una, la frontera NO se pone (queda en
+ *  1e9 y solo borra el conteo de contactos). Antes se adivinaba con una sola
+ *  —`trasera - 1`—: una frontera inventada a partir de un único punto no describe
+ *  ningún aparato, y el error se paga borrando lo que el alumno había escrito.
+ *  Es mejor quedarse en el defecto seguro y que el profe toque los dos recuadros.
+ *  @param {{dedo?: number, palma?: number}} measured */
 export function deriveThresholds(measured = {}) {
   const thr = loadThresholds();
-  const tip = num(measured.penTip), dedo = num(measured.dedo), tras = num(measured.trasera);
-
-  // Frontera lápiz punta ↔ dedo.
-  if (tip != null && dedo != null) {
-    const b1 = (tip + dedo) / 2;
-    thr.penThin  = { min: 0,  max: b1 };
-    thr.penThick = { min: b1, max: thr.penThick.max };
-  } else if (tip != null) {
-    thr.penThin  = { min: 0,  max: tip + 1 };
-    thr.penThick = { min: tip + 1, max: thr.penThick.max };
-  }
-
-  // Frontera (lo que dibuja) ↔ lápiz trasero (borrador).
-  const maxDraw = Math.max(tip ?? -Infinity, dedo ?? -Infinity);
-  if (tras != null && Number.isFinite(maxDraw)) {
-    const b2 = (maxDraw + tras) / 2;
-    thr.penThick = { min: thr.penThick.min, max: b2 };
-    thr.eraser   = { min: b2, max: 1e9 };
-  } else if (tras != null) {
-    thr.eraser   = { min: Math.max(0, tras - 1), max: 1e9 };
+  const dedo = num(measured.dedo), palma = num(measured.palma);
+  if (dedo != null && palma != null && palma > dedo) {
+    thr.palma = { ...thr.palma, min: (dedo + palma) / 2 };
   }
   return thr;
 }
@@ -166,8 +156,11 @@ export function crearVeredicto({
     // no depende de ninguna medida. Así que la palma decide con confianza alta
     // aunque el gesto sea más corto que la ventana — que es justo como llega una
     // palma: de golpe. Exigirle muestras limpias dejaba a la palma dibujando.
-    if (tool === 'palm') {
-      return { tool, accion: 'erase', metrica, muestras: limpias.length, confianza: 'alta' };
+    // La palma por CONTEO no necesita muestras limpias (el conteo es fiable desde
+    // el primer evento); la palma por TAMAÑO sí, y cae en el caso general de
+    // abajo. Confundir las dos pruebas dejaba a la palma dibujando.
+    if (puntosMax >= thr.palma.minPuntos) {
+      return { tool: 'palma', accion: 'erase', metrica, muestras: limpias.length, confianza: 'alta' };
     }
     // Para lo demás manda el TAMAÑO: con muestras limpias, su MEDIANA (el mismo
     // estadístico que calibró los umbrales). Sin ellas el gesto fue más corto que

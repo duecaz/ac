@@ -8,14 +8,15 @@
 // por basura. Pieza correcta, costura rota. Eso solo se ve reproduciendo la
 // SECUENCIA de eventos contra el lienzo montado.
 //
-// Reproduce tres gestos con `PointerEvent` reales, con el primer evento
-// reportando el tamaño por defecto (1 → métrica 0,5), que es lo que hacen muchas
-// pizarras:
+// DOS HERRAMIENTAS desde v1.51.610: lo pequeño escribe, la palma borra. Reproduce
+// tres gestos con `PointerEvent` reales, con el primer evento reportando el
+// tamaño por defecto (1 → métrica 0,5), que es lo que hacen muchas pizarras:
 //
-//   · trasera del lápiz → tiene que BORRAR (antes de v1.51.609 dibujaba)
-//   · punta fina        → tiene que DIBUJAR  (contra-prueba)
-//   · toque corto       → tiene que DIBUJAR  (marcar una tilde ES un toque, y
-//                          borrar sin muestras limpias destruiría trabajo)
+//   · palma (un contacto grande) → tiene que BORRAR (antes de v1.51.609 dibujaba)
+//   · dedo                       → tiene que ESCRIBIR (contra-prueba)
+//   · toque corto                → tiene que ESCRIBIR (marcar una tilde ES un
+//                                   toque, y borrar sin muestras limpias
+//                                   destruiría trabajo)
 //
 // Las dos contra-pruebas no son adorno: sin ellas, un detector que borrara SIEMPRE
 // pasaría el primer caso y dejaría al alumno sin poder marcar nada.
@@ -55,7 +56,7 @@ const r = await page.evaluate(async () => {
   // Umbrales como los dejaría una pizarra calibrada de verdad. Se DERIVAN con la
   // misma función que usa el panel: unos inventados aquí probarían un aparato
   // que no existe.
-  saveThresholds(deriveThresholds({ penTip: 1.5, dedo: 6, trasera: 14 }));
+  saveThresholds(deriveThresholds({ dedo: 6, palma: 20 }));   // frontera en 13
 
   const host = document.createElement('div');
   host.style.cssText = 'width:600px;height:200px;position:relative';
@@ -82,22 +83,22 @@ const r = await page.evaluate(async () => {
     return api.getMarked().length;
   };
 
-  const trasera = await gesto(14, { id: 1 });
-  const punta   = await gesto(1.5, { id: 2 });
+  const palma = await gesto(20, { id: 1 });
+  const dedo  = await gesto(6, { id: 2 });
   // Toque corto: baja y sube sin dar tiempo a una sola muestra limpia.
   api.clear();
   ev('pointerdown', 120, 100, 0.5, 3);
   ev('pointerup', 120, 100, 0.5, 3);
   const toque = api.getMarked().length;
 
-  return { trasera, punta, toque };
+  return { palma, dedo, toque };
 });
 
-if (r.trasera === 0) ok('la parte trasera del lápiz BORRA aunque el primer evento reporte basura (antes dibujaba)');
-else mal(`la trasera del lápiz dejó ${r.trasera} marca(s): está dibujando en vez de borrar`);
+if (r.palma === 0) ok('la PALMA borra aunque el primer evento reporte basura (antes escribía)');
+else mal(`la palma dejó ${r.palma} marca(s): está escribiendo en vez de borrar`);
 
-if (r.punta === 1) ok('CONTRA-PRUEBA: la punta fina sigue marcando');
-else mal(`CONTRA-PRUEBA rota: la punta fina dejó ${r.punta} marcas (debería dejar 1)`);
+if (r.dedo === 1) ok('CONTRA-PRUEBA: el dedo sigue marcando');
+else mal(`CONTRA-PRUEBA rota: el dedo dejó ${r.dedo} marcas (debería dejar 1)`);
 
 if (r.toque === 1) ok('CONTRA-PRUEBA: un toque corto (marcar una tilde) marca, no borra a ciegas');
 else mal(`CONTRA-PRUEBA rota: el toque corto dejó ${r.toque} marcas (debería dejar 1)`);
@@ -110,8 +111,11 @@ const cal = await page.evaluate(async () => {
   const { openPenCalibration } = await import('/core/penCalibration.js');
   const { VENTANA, mediana } = await import('/core/penDetector.js');
   const panel = openPenCalibration();
-  const pad = document.querySelector('.pcal-field[data-tool="penTip"] [data-pad]');
-  const val = document.querySelector('.pcal-field[data-tool="penTip"] [data-val]');
+  // DOS recuadros desde v1.51.610, ni uno más: si vuelven a ser cuatro, es que
+  // alguien ha reintroducido fronteras que no hacen falta.
+  const recuadros = document.querySelectorAll('.pcal-field').length;
+  const pad = document.querySelector('.pcal-field[data-tool="dedo"] [data-pad]');
+  const val = document.querySelector('.pcal-field[data-tool="dedo"] [data-val]');
   const ev = (tipo, tam) => pad.dispatchEvent(new PointerEvent(tipo, {
     pointerId: 9, isPrimary: true, bubbles: true, pointerType: 'pen',
     clientX: 10, clientY: 10, width: tam * 2, height: tam * 2,
@@ -125,7 +129,8 @@ const cal = await page.evaluate(async () => {
   ev('pointerup', 14);
   const medido = parseFloat(val.textContent);
   panel.close();
-  return { medido, esperado: mediana(limpias), media: limpias.reduce((a, b) => a + b, 0) / limpias.length };
+  return { medido, recuadros, esperado: mediana(limpias),
+           media: limpias.reduce((a, b) => a + b, 0) / limpias.length };
 });
 
 if (Math.abs(cal.medido - cal.esperado) < 0.05) {
@@ -137,6 +142,9 @@ if (Math.abs(cal.medido - cal.esperado) < 0.05) {
 }
 if (Math.abs(cal.medido - cal.media) > 0.05) ok(`CONTRA-PRUEBA: no es la media (${cal.media.toFixed(1)}) — un pico espurio la desplazaría`);
 else mal(`el panel parece usar la MEDIA (${cal.media.toFixed(1)}): un solo pico espurio descalibra la pizarra`);
+
+if (cal.recuadros === 2) ok('el panel de calibración pide DOS medidas (dedo y palma), no cuatro');
+else mal(`el panel pide ${cal.recuadros} medidas: cada frontera de más es otra forma de equivocarse`);
 
 if (errores.length) mal(`errores JS en la página: ${errores.join(' | ')}`);
 else ok('sin errores JS');

@@ -3,10 +3,10 @@
 // la zona de una vocal/hueco marca esa posición → mismo `value` (number[]) que el
 // modo "tocar", así el scoring/solo/host no cambian.
 //
-// FASE 2 — detección por TAMAÑO de contacto (core/penDetector.js): lápiz punta y
-// dedo DIBUJAN; lápiz parte trasera BORRA; palma (≥3 contactos) BORRA. Los
-// umbrales se calibran con "Calibrar pizarra"; SIN calibrar todo dibuja salvo la
-// palma (=Fase 1).
+// FASE 2 — DOS HERRAMIENTAS (core/penDetector.js): el dedo y todo lo más pequeño
+// —la punta del lápiz, el ratón— DIBUJAN; la palma BORRA. Una sola frontera, que
+// se calibra con "Calibrar pizarra"; SIN calibrar solo borra la palma detectada
+// por CONTEO de contactos, que es el defecto seguro.
 //
 // FASE 2b — EL VEREDICTO SE APLAZA (v1.51.609). Antes la herramienta se decidía
 // en el `pointerdown` y se fijaba para todo el trazo. Ese primer evento es
@@ -151,10 +151,10 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
 
     const voto = crearVeredicto({ thr: loadThresholds() });
     voto.muestra(e, active.size);
-    // La PALMA sí se sabe ya: se decide por CONTEO de punteros, no por tamaño, y
-    // el conteo es fiable desde el primer evento (el toque basura ensucia la
-    // medida, no cuántos dedos hay).
-    if (voto.listo() && voto.veredicto().tool === 'palm') {
+    // La palma por CONTEO sí se sabe ya: el número de punteros es fiable desde el
+    // primer evento (el toque basura ensucia la MEDIDA, no cuántos dedos hay). La
+    // palma por TAMAÑO no: esa espera muestras limpias, como todo lo demás.
+    if (active.size >= loadThresholds().palma.minPuntos) {
       if (drawing) return;                  // un fantasma no secuestra un trazo en curso
       palmErase = true; cur = null;
       eraseAt(p); return;

@@ -17,45 +17,49 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   ok('pointerMetric devuelve el radio medio del contacto');
 }
 
-// ── clasificación con umbrales por defecto (SIN calibrar) ─────────────────────
+// ── DOS HERRAMIENTAS, UNA FRONTERA (v1.51.610) ───────────────────────────────
+// Eran cuatro (punta · dedo · trasera · palma) y por tanto tres fronteras. Punta
+// y dedo hacían lo MISMO —dibujar—, así que separarlas no cambiaba nada y daba
+// dos maneras más de colocar mal la única frontera que importa.
 {
   const T = DEFAULT_THRESHOLDS;
-  assert.strictEqual(classifyTool(0.5, 1, T), 'penThin',  'ratón/lápiz fino → penThin');
-  assert.strictEqual(classifyTool(20, 1, T),  'penThick', 'dedo (mediano) → penThick (dibuja) sin calibrar');
-  assert.strictEqual(classifyTool(5, 3, T),   'palm',     '≥3 puntos → palma (prioritario)');
-  assert.strictEqual(toolAction('penThin'),  'draw',  'lápiz punta dibuja');
-  assert.strictEqual(toolAction('penThick'), 'draw',  'dedo dibuja');
-  assert.strictEqual(toolAction('eraser'),   'erase', 'lápiz trasero borra');
-  assert.strictEqual(toolAction('palm'),     'erase', 'palma borra');
-  ok('sin calibrar: todo dibuja salvo la palma (=Fase 1)');
+  // SIN CALIBRAR el tamaño no borra: no se ha medido el aparato, así que no hay
+  // forma de saber qué es «grande» en él. Solo el conteo de contactos borra.
+  assert.strictEqual(classifyTool(0.5, 1, T), 'dedo', 'ratón / punta de lápiz → dedo (dibuja)');
+  assert.strictEqual(classifyTool(20, 1, T),  'dedo',
+    'SIN calibrar, ni un contacto enorme borra: el defecto seguro es no destruir nada');
+  assert.strictEqual(classifyTool(5, 3, T),   'palma', '≥3 contactos a la vez → palma, sin mirar el tamaño');
+  assert.strictEqual(toolAction('dedo'),  'draw',  'el dedo y todo lo más pequeño escriben');
+  assert.strictEqual(toolAction('palma'), 'erase', 'solo la palma borra');
+  ok('dos herramientas: lo pequeño escribe, la palma borra (y sin calibrar solo borra por conteo)');
 }
 
-// ── derivación de umbrales tras calibrar ──────────────────────────────────────
+// ── LA FRONTERA sale del punto medio, y hacen falta LAS DOS medidas ──────────
 {
-  // lápiz punta pequeño, dedo mediano, lápiz trasero grande.
-  const thr = deriveThresholds({ penTip: 1, dedo: 5, trasera: 15 });
-  // frontera punta↔dedo = 3 ; frontera dedo↔trasero = 10
-  assert.strictEqual(thr.penThin.max, 3,  'frontera lápiz↔dedo = punto medio (3)');
-  assert.strictEqual(thr.penThick.min, 3, 'penThick empieza en la frontera');
-  assert.strictEqual(thr.penThick.max, 10, 'frontera dedo↔borrador = punto medio (10)');
-  assert.strictEqual(thr.eraser.min, 10, 'borrador empieza en la frontera');
-
-  // ahora el lápiz trasero (métrica 15) SÍ se clasifica como borrador → borra.
-  assert.strictEqual(classifyTool(15, 1, thr), 'eraser', 'tras calibrar, lápiz trasero → eraser');
-  assert.strictEqual(toolAction(classifyTool(15, 1, thr)), 'erase', 'y por tanto BORRA');
-  // el dedo (5) sigue dibujando.
-  assert.strictEqual(toolAction(classifyTool(5, 1, thr)), 'draw', 'el dedo sigue dibujando');
-  ok('deriveThresholds separa dibujar/borrar por punto medio entre herramientas');
+  const thr = deriveThresholds({ dedo: 6, palma: 20 });
+  assert.strictEqual(thr.palma.min, 13, 'la frontera es el punto medio entre dedo y palma');
+  assert.strictEqual(classifyTool(10, 1, thr), 'dedo',  'por debajo de la frontera, escribe');
+  assert.strictEqual(classifyTool(16, 1, thr), 'palma', 'por encima, borra — aunque sea UN solo contacto');
+  // Con UNA sola medida NO se inventa la frontera. Antes se adivinaba
+  // (`trasera - 1`): un punto no describe un aparato, y el error se paga borrando
+  // lo que el alumno había escrito.
+  assert.strictEqual(deriveThresholds({ palma: 20 }).palma.min, 1e9,
+    'con solo la palma medida no hay frontera: se queda en el defecto seguro');
+  assert.strictEqual(deriveThresholds({ dedo: 6 }).palma.min, 1e9,
+    'y con solo el dedo, tampoco');
+  // CONTRA-PRUEBA: una palma medida MÁS PEQUEÑA que el dedo es una calibración
+  // mal hecha (recuadros al revés). No se acepta, o todo pasaría a borrar.
+  assert.strictEqual(deriveThresholds({ dedo: 20, palma: 6 }).palma.min, 1e9,
+    'CONTRA-PRUEBA: si la palma mide menos que el dedo, la calibración está al revés y no se aplica');
+  ok('la frontera es el punto medio, exige las DOS medidas, y rechaza una calibración al revés');
 }
 
-// ── tolera medidas parciales y entorno sin sessionStorage (node) ──────────────
+// ── El conteo manda aunque el tamaño diga lo contrario ──────────────────────
 {
-  const base = loadThresholds();
-  assert.ok(base.penThin && base.eraser && base.palm, 'loadThresholds devuelve defaults sin sessionStorage');
-  const thr = deriveThresholds({ penTip: 2 });  // solo midió el lápiz
-  assert.strictEqual(thr.penThin.max, 3, 'solo lápiz: penThin.max = tip+1');
-  assert.strictEqual(thr.eraser.min, DEFAULT_THRESHOLDS.eraser.min, 'sin trasera, borrador sigue desactivado');
-  ok('robusto ante calibración parcial y sin almacenamiento');
+  const thr = deriveThresholds({ dedo: 6, palma: 20 });
+  assert.strictEqual(classifyTool(1, 3, thr), 'palma',
+    'tres contactos finos siguen siendo una palma: hay pizarras que la reportan así');
+  ok('las DOS señales valen: una pizarra reporta la palma como un contacto grande y otra como varios');
 }
 
 console.log(`\npenDetector.test: ${passed} checks passed`);

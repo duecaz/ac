@@ -23,10 +23,10 @@ import { crearVeredicto, deriveThresholds, mediana } from '../core/penDetector.j
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
 
-// Umbrales como los dejaría calibrar una pizarra real: punta 1,5 · dedo 6 ·
-// trasera 14. Se derivan con la MISMA función que usa el panel, no a mano: unos
-// umbrales inventados aquí probarían un aparato que no existe.
-const THR = deriveThresholds({ penTip: 1.5, dedo: 6, trasera: 14 });
+// Umbrales como los dejaría calibrar una pizarra real: dedo 6 · palma 20, o sea
+// frontera en 13. Se derivan con la MISMA función que usa el panel, no a mano:
+// unos umbrales inventados aquí probarían un aparato que no existe.
+const THR = deriveThresholds({ dedo: 6, palma: 20 });
 
 /** Reproduce un gesto. `muestras` son los tamaños de contacto que reporta el
  *  aparato, uno por evento, con `pasoMs` entre ellos. Devuelve el veredicto tal
@@ -47,23 +47,28 @@ function gesto(muestras, { pasoMs = 16, puntos = 1, thr = THR } = {}) {
 
 // ── 1) EL DEFECTO: la basura inicial ya no decide ────────────────────────────
 // El aparato reporta 1 (valor por defecto, no medida) en el primer evento y
-// enseguida el tamaño real de la parte trasera del lápiz.
+// enseguida el tamaño real de la PALMA, que aquí llega como UN contacto grande —
+// así la reportan muchas pizarras, y por eso el tamaño es una señal y no un lujo.
 {
-  const r = gesto([0.5, 14, 14.5, 13.8, 14.2, 14]);
+  const r = gesto([0.5, 20, 21, 19.5, 20.4, 20]);
   assert.strictEqual(r.accion, 'erase',
-    'la trasera del lápiz tiene que BORRAR aunque el primer evento reporte basura');
+    'la palma tiene que BORRAR aunque el primer evento reporte basura');
   assert.strictEqual(r.confianza, 'alta', 'y con muestras limpias la confianza es alta');
   ok(`la basura inicial (0.5) no secuestra el veredicto: métrica ${r.metrica} → ${r.accion}`);
 }
 
-// ── 2) CONTRA-PRUEBA: el lápiz fino sigue dibujando ──────────────────────────
+// ── 2) CONTRA-PRUEBA: todo lo más pequeño que la frontera escribe ────────────
 // Una regla que «borre más» se descubre con la clase delante y es igual de cara.
 {
   const r = gesto([0.5, 1.4, 1.6, 1.5, 1.5]);
-  assert.strictEqual(r.accion, 'draw', 'CONTRA-PRUEBA: la punta del lápiz DIBUJA');
+  assert.strictEqual(r.accion, 'draw', 'CONTRA-PRUEBA: la punta del lápiz ESCRIBE');
   const dedo = gesto([0.5, 6, 6.2, 5.8, 6]);
-  assert.strictEqual(dedo.accion, 'draw', 'CONTRA-PRUEBA: el dedo también dibuja');
-  ok('CONTRA-PRUEBA: punta y dedo siguen dibujando (la regla no borra de más)');
+  assert.strictEqual(dedo.accion, 'draw', 'CONTRA-PRUEBA: el dedo también escribe');
+  // Y justo por debajo de la frontera (13) sigue escribiendo: es el borde, que es
+  // donde una frontera mal puesta se nota.
+  assert.strictEqual(gesto([0.5, 12, 12.4, 12, 12]).accion, 'draw',
+    'CONTRA-PRUEBA: rozando la frontera por debajo, todavía escribe');
+  ok('CONTRA-PRUEBA: punta, dedo y hasta el borde de la frontera siguen escribiendo');
 }
 
 // ── 3) EL TRAZO ES OPTIMISTA: se pinta desde el primer punto ─────────────────
@@ -84,7 +89,7 @@ function gesto(muestras, { pasoMs = 16, puntos = 1, thr = THR } = {}) {
 // Ahí no hay muestra limpia: no hay prueba. Se DIBUJA (nunca se borra sin
 // pruebas) y se dice que la confianza es baja.
 {
-  const r = gesto([0.5, 12], { pasoMs: 8 });   // 16 ms en total: todo es basura
+  const r = gesto([0.5, 20], { pasoMs: 8 });   // 16 ms en total: todo es basura
   assert.strictEqual(r.accion, 'draw',
     'sin muestras limpias NUNCA se borra: un borrado de más destruye lo que el alumno llevaba');
   assert.strictEqual(r.confianza, 'baja', 'y se dice que se decidió sin pruebas');
@@ -92,15 +97,24 @@ function gesto(muestras, { pasoMs = 16, puntos = 1, thr = THR } = {}) {
   ok('toque corto (marcar una tilde): dibuja y declara confianza baja, no borra a ciegas');
 }
 
-// ── 5) LA PALMA sigue mandando, y por CONTEO, no por tamaño ─────────────────
+// ── 5) LAS DOS SEÑALES DE LA PALMA, que NO son la misma prueba ──────────────
+// Por CONTEO: fiable desde el primer evento, así que decide aunque el gesto sea
+// corto — que es justo como llega una palma, de golpe. Por TAMAÑO: necesita
+// muestras limpias como todo lo demás.
 {
   const r = gesto([0.5, 9, 9.5, 9.2], { puntos: 3 });
-  assert.strictEqual(r.tool, 'palm', 'tres contactos a la vez son una palma');
-  assert.strictEqual(r.accion, 'erase', 'y la palma borra');
-  // CONTRA-PRUEBA: el mismo tamaño con UN solo contacto no es palma.
-  assert.notStrictEqual(gesto([0.5, 9, 9.5, 9.2], { puntos: 1 }).tool, 'palm',
-    'CONTRA-PRUEBA: un contacto del mismo tamaño no puede ser palma');
-  ok('la palma se decide por CONTEO de puntos (y un solo contacto igual de grande no lo es)');
+  assert.strictEqual(r.tool, 'palma', 'tres contactos a la vez son una palma…');
+  assert.strictEqual(r.accion, 'erase', '…y borran');
+  // CONTRA-PRUEBA: ese mismo tamaño (9, por debajo de la frontera 13) con UN solo
+  // contacto NO es palma. Si lo fuera, apoyar dos dedos borraría la hoja.
+  assert.strictEqual(gesto([0.5, 9, 9.5, 9.2], { puntos: 1 }).tool, 'dedo',
+    'CONTRA-PRUEBA: un solo contacto de ese tamaño escribe, no borra');
+  // Y la palma por CONTEO manda aunque el gesto sea demasiado corto para tener
+  // muestras limpias: ahí el tamaño no sabría nada y el conteo sí.
+  const golpe = gesto([0.5, 9], { pasoMs: 8, puntos: 3 });
+  assert.strictEqual(golpe.accion, 'erase', 'una palma de golpe borra aunque no dé tiempo a medir');
+  assert.strictEqual(golpe.confianza, 'alta', 'y con confianza alta: el conteo no depende de la medida');
+  ok('las dos señales de palma: por conteo decide de golpe, por tamaño espera muestras limpias');
 }
 
 // ── 6) EL VEREDICTO NO CAMBIA DE IDEA A MITAD DEL TRAZO ──────────────────────
@@ -137,7 +151,7 @@ function gesto(muestras, { pasoMs = 16, puntos = 1, thr = THR } = {}) {
 // primitivo?»). Los quitó la regla del propio repo —`tests/citasFuente.test.mjs`:
 // si se puede comprobar EJECUTANDO, no se cita la fuente— y hoy los dos se
 // comprueban por COMPORTAMIENTO en `tools/lapiz-sonda.mjs`, sobre el lienzo y el
-// panel de verdad: que la trasera del lápiz borre YA demuestra que el lienzo no
+// panel de verdad: que la PALMA borre YA demuestra que el lienzo no
 // decide en el `pointerdown`, y que el panel mida la mediana de las muestras
 // limpias demuestra que comparte ventana y estadístico con el veredicto.
 

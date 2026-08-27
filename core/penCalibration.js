@@ -1,8 +1,14 @@
-// Panel "Calibrar pizarra" — el profesor toca cada recuadro con la herramienta
-// indicada (lápiz punta, dedo, lápiz parte trasera, palma) y se mide el tamaño
-// de su contacto. Se IGNORAN los primeros ms del toque (error del primer punto,
-// que suele venir con un tamaño espurio). Al guardar, se derivan los umbrales
-// (core/penDetector.js) y se persisten en sessionStorage.
+// Panel "Calibrar pizarra" — DOS recuadros: dedo y palma. El profesor toca cada
+// uno con lo que dice y se mide el tamaño de su contacto; la frontera es el punto
+// medio entre ambos (core/penDetector.js). Se IGNORAN los primeros ms del toque
+// (el primer punto suele traer un tamaño espurio, o directamente el valor por
+// defecto del navegador).
+//
+// Eran CUATRO recuadros (lápiz punta · dedo · parte trasera · palma) y por tanto
+// tres fronteras. Punta y dedo hacían lo mismo —dibujar—, así que distinguirlos
+// no cambiaba nada y encima daba dos formas más de colocar mal la frontera que sí
+// importa. Con dos, lo que el profe tiene que entender cabe en una frase: lo
+// pequeño escribe, la palma borra.
 
 import { pointerMetric, saveThresholds, deriveThresholds, mediana, VENTANA } from './penDetector.js';
 
@@ -14,14 +20,12 @@ import { pointerMetric, saveThresholds, deriveThresholds, mediana, VENTANA } fro
 const IGNORE_MS = VENTANA.ignoraMs;
 
 const TOOLS = [
-  { key: 'penTip',  label: 'Lápiz (punta)',         hint: 'Dibuja', icon: 'bi-pencil-fill' },
-  { key: 'dedo',    label: 'Dedo',                  hint: 'Dibuja', icon: 'bi-hand-index-fill' },
-  { key: 'trasera', label: 'Lápiz (parte trasera)', hint: 'Borra',  icon: 'bi-eraser-fill' },
-  { key: 'palma',   label: 'Palma',                 hint: 'Borra',  icon: 'bi-hand-thumbs-up-fill' },
+  { key: 'dedo',  label: 'Dedo o lápiz', hint: 'Escribe', icon: 'bi-hand-index-fill' },
+  { key: 'palma', label: 'Palma',        hint: 'Borra',   icon: 'bi-hand-thumbs-up-fill' },
 ];
 
 export function openPenCalibration() {
-  const measured = { penTip: null, dedo: null, trasera: null, palma: null };
+  const measured = { dedo: null, palma: null };
 
   const overlay = document.createElement('div');
   overlay.className = 'pcal-overlay';
@@ -31,8 +35,10 @@ export function openPenCalibration() {
         <h5 class="m-0"><i class="bi bi-sliders"></i> Calibrar pizarra</h5>
         <button type="button" class="btn-close" data-close aria-label="Cerrar"></button>
       </div>
-      <p class="pcal-sub">Toca cada recuadro con la herramienta indicada y mantén el contacto un instante.
-        Se ignoran los primeros ${IGNORE_MS} ms (error del primer toque). El número es el tamaño del contacto.</p>
+      <p class="pcal-sub">Toca el primer recuadro con el <b>dedo o la punta del lápiz</b> y el segundo con la
+        <b>palma</b>, manteniendo el contacto un instante. Lo pequeño escribirá y la palma borrará.
+        Hacen falta <b>los dos</b>: con uno solo no se puede saber dónde está la frontera de esta pizarra.
+        Se ignoran los primeros ${IGNORE_MS} ms (el primer toque no es una medida). El número es el tamaño del contacto.</p>
       <div class="pcal-grid">
         ${TOOLS.map(t => `
           <div class="pcal-field" data-tool="${t.key}">
