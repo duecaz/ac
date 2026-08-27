@@ -4,7 +4,7 @@
 import { html, escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { renderImagePicker, attachImagePicker } from '../../core/imagePicker.js';
-import { itemControlsHtml, reorderArray, ruleScopeNote, itemSecondsFieldHtml, wireItemSeconds } from '../../core/editorPrimitives.js';
+import { itemControlsHtml, reorderArray, ruleScopeNote, itemSecondsFieldHtml, wireItemSeconds, timerFieldHtml, wireTimerField } from '../../core/editorPrimitives.js';
 import { rid } from '../../core/ids.js';
 import { hasCorrectAnswer } from '../../core/contentModels/qa.js';
 import { renderEditorShell } from '../../core/editorShell.js';
@@ -90,7 +90,7 @@ function wireContent(root, a, ctx) {
 // ── Individual (reglas) ──
 function rulesHtml(a) {
   return `<div class="row g-3">
-    <div class="col-md-4"><label class="form-label">Timer (s, 0=off)</label><input type="number" min="0" class="form-control" id="f-timer" value="${a.rules.timer || 0}"></div>
+    ${timerFieldHtml(a, 'pregunta')}
     <div class="col-md-4 form-check pt-4"><input class="form-check-input" type="checkbox" id="f-rand" ${a.rules.randomize ? 'checked' : ''}><label class="form-check-label" for="f-rand">Orden aleatorio</label></div>
     <div class="col-12">${ruleScopeNote()}</div>
     <div class="col-md-4 form-check pt-4"><input class="form-check-input" type="checkbox" id="f-shuf" ${a.rules.shuffleOptions ? 'checked' : ''}><label class="form-check-label" for="f-shuf">Mezclar opciones</label></div>
@@ -99,7 +99,7 @@ function rulesHtml(a) {
 function wireRules(root, a, ctx) {
   on(root, 'change', '#f-rand', e => { a.rules.randomize = e.target.checked; ctx.onChange(a); });
   on(root, 'change', '#f-shuf', e => { a.rules.shuffleOptions = e.target.checked; ctx.onChange(a); });
-  on(root, 'input', '#f-timer', e => { a.rules.timer = +e.target.value || 0; ctx.onChange(a); });
+  wireTimerField(root, a, ctx);
 }
 
 

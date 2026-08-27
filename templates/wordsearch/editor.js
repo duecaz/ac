@@ -1,6 +1,6 @@
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { itemControlsHtml, reorderArray, ruleScopeNote } from '../../core/editorPrimitives.js';
+import { itemControlsHtml, reorderArray, ruleScopeNote, timerFieldHtml, wireTimerField } from '../../core/editorPrimitives.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 import { generateGrid, SIZE_MAP } from './generator.js';
 
@@ -133,17 +133,14 @@ function rulesHtml(a) {
           <option value="hard"   ${r.directions === 'hard'   ? 'selected' : ''}>Difícil (todas, incl. ← ↑)</option>
         </select>
       </div>
-      <div class="col-md-4">
-        <label class="form-label">Tiempo límite (s, 0=libre)</label>
-        <input type="number" min="0" class="form-control" id="ws-timer" value="${r.timer || 0}">
-      </div>
+      ${timerFieldHtml(a, 'sopa')}
       ${ruleScopeNote()}
     </div>`;
 }
 function wireRules(root, a, ctx) {
   on(root, 'change', '#ws-size',  e => { a.rules.gridSize    = e.target.value; ctx.onChange(a); ctx.repaint(); });
   on(root, 'change', '#ws-dirs',  e => { a.rules.directions  = e.target.value; ctx.onChange(a); ctx.repaint(); });
-  on(root, 'input',  '#ws-timer', e => { a.rules.timer       = +e.target.value; ctx.onChange(a); });
+  wireTimerField(root, a, ctx);
 }
 
 // ── Puntuación ────────────────────────────────────────────────────────────────

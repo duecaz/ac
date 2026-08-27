@@ -54,6 +54,25 @@ const r = await p.evaluate(async () => {
         // subir el dibujo y en Ordena las Pelotas se GENERA el tablero. Lo que
         // se exige es que exista una y sea visible, no una palabra concreta.
         /Añadir|Generar|Subir/.test([...host.querySelectorAll('button,.btn,label')].map(x=>x.textContent).join(' ')),
+      // UN AJUSTE, UNA CASILLA. `templates/tildes/editor.js` pintaba «Puntos por
+      // acierto» y «Puntos por error» en su panel de Modos… y el panel compartido
+      // de Puntuación los pintaba OTRA VEZ, en otra pestaña, escribiendo el mismo
+      // `a.scoring.pointsPerCorrect`. El profe veía el número en dos sitios y solo
+      // uno recalculaba el «máximo de esta actividad» de al lado. Lo cazó el dueño
+      // en dos capturas (v1.51.613).
+      // Se comparan las ETIQUETAS visibles: es lo que el profe ve, y no depende de
+      // cómo se llamen los `id` por dentro.
+      duplicados: (() => {
+        const vistas = new Map();
+        for (const l of host.querySelectorAll('label')) {
+          const t = l.textContent.trim().replace(/\s+/g, ' ');
+          // Las casillas de verificación repiten su etiqueta por ÍTEM (una por
+          // frase, una por pregunta): eso es una lista, no un ajuste duplicado.
+          if (!t || t.length < 6 || l.closest('[data-i], .card')) continue;
+          vistas.set(t, (vistas.get(t) || 0) + 1);
+        }
+        return [...vistas].filter(([, n]) => n > 1).map(([t, n]) => `${t} ×${n}`);
+      })(),
       err,
     });
   }
@@ -63,8 +82,10 @@ await b.close(); web.kill();
 console.log('\n🚪 PUERTAS DEL EDITOR — las 13 con el contenido vacío\n');
 console.log('  plantilla        elemento        enseña  puerta');
 for (const x of r) console.log(`  ${x.name.padEnd(16)} ${String(x.elemento).padEnd(14)} ${x.enseña?'  ✅  ':'  ❌  '}  ${x.puerta?'✅':'❌'}${x.err?' · ERROR: '+x.err:''}`);
-const mal = r.filter(x=>!x.enseña || !x.puerta || x.err);
-console.log(mal.length ? `\n❌ ${mal.length} plantilla(s) sin estado vacío o sin puerta de añadir`
+const dobles = r.filter(x => x.duplicados?.length);
+for (const x of dobles) console.log(`  ⚠ ${x.name}: el mismo ajuste sale dos veces → ${x.duplicados.join(' · ')}`);
+const mal = r.filter(x=>!x.enseña || !x.puerta || x.err || x.duplicados?.length);
+console.log(mal.length ? `\n❌ ${mal.length} plantilla(s) sin estado vacío, sin puerta de añadir, o con un ajuste duplicado`
                        : `\n✅ las ${r.length}: estado vacío que enseña + puerta visible para añadir`);
 console.log(errs.length ? 'errores de página: '+[...new Set(errs)].join(' · ') : '');
 process.exit(mal.length?1:0);

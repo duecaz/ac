@@ -6,7 +6,7 @@ import { on } from '../../core/events.js';
 import { newPassage, partirEnParrafos } from '../../core/contentModels/textCorrection.js';
 import { applyMarks, parseTextWithCommas } from '../../core/textMarks.js';
 import { itemControlsHtml, reorderArray, ruleScopeNote, itemSecondsFieldHtml, wireItemSeconds,
-  pegarTextoHtml, wirePegarTexto } from '../../core/editorPrimitives.js';
+  pegarTextoHtml, wirePegarTexto, timerFieldHtml, wireTimerField } from '../../core/editorPrimitives.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 
 export function renderComasEditor(root, activity, onChange) {
@@ -99,14 +99,12 @@ function rulesHtml(a) {
   return `<div class="row g-3">
     <div class="col-md-4 form-check pt-4 ms-3"><input id="t-rand" class="form-check-input" type="checkbox" ${a.rules.randomize ? 'checked' : ''}><label class="form-check-label" for="t-rand">Mezclar frases</label></div>
     <div class="col-12">${ruleScopeNote()}</div>
-    <div class="col-md-4"><label class="form-label">Puntos por acierto</label><input id="t-ppc" type="number" min="0" class="form-control" value="${a.scoring.pointsPerCorrect ?? 1}"></div>
-    <div class="col-md-4"><label class="form-label">Puntos por error</label><input id="t-ppw" type="number" class="form-control" value="${a.scoring.pointsPerWrong ?? 0}"></div>
+    ${timerFieldHtml(a, 'frase')}
   </div>`;
 }
 function wireRules(root, a, ctx) {
   on(root, 'change', '#t-rand', e => { a.rules.randomize = e.target.checked; ctx.onChange(a); });
-  on(root, 'input', '#t-ppc', e => { a.scoring.pointsPerCorrect = +e.target.value || 0; ctx.onChange(a); });
-  on(root, 'input', '#t-ppw', e => { a.scoring.pointsPerWrong = +e.target.value || 0; ctx.onChange(a); });
+  wireTimerField(root, a, ctx);
 }
 
 function renderPassage(p, i, total, A) {

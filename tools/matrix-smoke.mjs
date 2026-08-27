@@ -312,6 +312,33 @@ for (const t of seeded) {
           if (mal) { status = 'error'; detail = `${nombre}: ${estado}`; }
           hits.push({ label: t.label, mode, control: nombre, estado, mal });
         }
+
+        // EL HUD NO SE PONE ENCIMA DEL BOTÓN DE PANTALLA COMPLETA. Los chips del
+        // HUD llevan `pointer-events: none`, así que el hit-testing de arriba los
+        // atraviesa y da verde: el botón SE PUEDE tocar. Pero se VE tapado, y eso
+        // basta para que el profe no lo encuentre — el dueño lo cazó en una
+        // captura (v1.51.613, un chip de puntos montado sobre el botón).
+        // La esquina superior derecha del marco es DEL MARCO: quien pinte ahí, se
+        // aparta. Se mide con cajas, no con `querySelector`.
+        const choque = await page.evaluate(() => {
+          const btn = document.querySelector('#ww-frame .ww-fs-btn--corner, #ww-frame .tc-bar .ww-fs-btn');
+          if (!btn) return null;
+          const b = btn.getBoundingClientRect();
+          if (!b.width) return null;
+          for (const chip of document.querySelectorAll('#ww-frame .edu-hud__chip')) {
+            if (chip.hidden || !chip.textContent.trim()) continue;
+            const c = chip.getBoundingClientRect();
+            if (!c.width) continue;
+            const solapa = !(b.right <= c.left || c.right <= b.left || b.bottom <= c.top || c.bottom <= b.top);
+            if (solapa) return chip.textContent.trim().slice(0, 20);
+          }
+          return null;
+        });
+        if (choque) {
+          status = 'error';
+          detail = `el chip «${choque}» del HUD tapa el botón de pantalla completa`;
+          hits.push({ label: t.label, mode, control: 'HUD vs pantalla completa', estado: detail, mal: true });
+        }
       }
       // R2b (norte §6b, ley §28): quien toca la pizarra es UN ALUMNO sobre la
       // sesión del profe. Dentro del marco de juego no puede existir ningún

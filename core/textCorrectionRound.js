@@ -505,10 +505,12 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     const body = document.getElementById('tc-body');
     const ronda = renderTextCorrectionRound(body, passages[idx], {
       kind, onSubmit: grade,
-      // El PUNTAJE ACUMULADO viaja con el alumno de hoja en hoja, como en la app
-      // anterior: sin él, cada frase parece empezar de cero y el «X / max» final
-      // sale de la nada. El HUD ya sabía pintarlo (`puntos`); nadie se lo pedía.
-      chips: { left: `${idx + 1} / ${passages.length}`, right: `★ ${score}` },
+      // SIN CHIP DE PUNTOS. Lo puse en v1.51.612 «para que el puntaje viaje de
+      // hoja en hoja» y el dueño lo quitó a la primera, con razón: el puntaje ya
+      // sale en la corrección de cada frase y en la pantalla final, así que el
+      // chip era un tercer sitio para el mismo número — y encima se solapaba con
+      // el botón de pantalla completa, que vive en esa misma esquina.
+      chips: { left: `${idx + 1} / ${passages.length}` },
       reloj: segundos ? `⏱ ${segundos}` : null,
     });
     pararReloj();
@@ -569,7 +571,7 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     // Sin herramientas: aquí no se dibuja.
     shell(`
       <div class="tc-round">
-        ${hudHtml({ pagina: `${idx + 1} / ${passages.length}`, puntos: `★ ${score}` })}
+        ${hudHtml({ pagina: `${idx + 1} / ${passages.length}` })}
         <div class="edu-topbar tc-bar tc-bar--fs">
           ${fullscreenButtonHtml({ inline: true })}
         </div>

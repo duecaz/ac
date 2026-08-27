@@ -40,6 +40,30 @@ export function ruleScopeNote() {
 }
 
 
+/** EL TEMPORIZADOR DE LA ACTIVIDAD (`rules.timer`, segundos por ítem; 0 = sin
+ *  límite). Escrito UNA vez, como el de «tiempo en vivo» de abajo y por el mismo
+ *  motivo: lo tenían Quiz y Sopa con dos redacciones distintas, y Tildes y Comas
+ *  no lo tenían en absoluto… mientras `ruleScopeNote()` —justo al lado— prometía
+ *  que «el temporizador aplica en Individual y Tarea». Un aviso que anuncia un
+ *  control inexistente es peor que no decir nada: el profe lo busca y no está.
+ *  @param {object} a  la actividad
+ *  @param {string} etiqueta  cómo se llama la unidad en esta plantilla */
+export function timerFieldHtml(a, etiqueta = 'ítem') {
+  return `<div class="col-md-4">
+    <label class="form-label" for="f-timer">Tiempo por ${escapeHtml(etiqueta)} (s)</label>
+    <input id="f-timer" type="number" min="0" max="600" class="form-control"
+           value="${a.rules?.timer || 0}" placeholder="0">
+    <div class="form-text">0 = sin límite de tiempo</div>
+  </div>`;
+}
+
+export function wireTimerField(root, a, ctx) {
+  on(root, 'input', '#f-timer', (e) => {
+    a.rules.timer = Math.max(0, +e.target.value || 0);
+    ctx.onChange(a);
+  });
+}
+
 // R-3 · CAMPO "tiempo en vivo" POR ÍTEM, compartido por los editores de rondas.
 // El motor ya soporta `item.seconds` (core/timings.js); esto es solo su casilla,
 // escrita UNA vez para que las cuatro plantillas de rondas no lleven cuatro
