@@ -1,8 +1,8 @@
 {
   "id": "2026-08-26",
   "titulo": "AulaReto · Hoja de pruebas",
-  "intro": "Ronda corta y rara: casi todo lo que se ha tocado NO se tiene que notar. Han sido quince versiones de fontanería —ordenar CSS que estaba repartido en cinco sitios, traerse Bootstrap y la fuente del tema Arcade al propio servidor— y el ordenador ya ha medido que no cambia ni un píxel. Lo que la máquina NO puede comprobar es lo de la prueba 1: que la app funcione con el wifi caído. Esa es la importante de esta ronda. Lo que SÍ ha cambiado a propósito es la Sopa de Letras: ahora ocupa la pizarra entera y las letras crecen con ella. Y siguen abiertas las dos de siempre (el reloj y el lápiz): si ya las hiciste en la ronda del 24, dilo en la nota y sáltalas. Marca Pasa si ocurrió lo que dice «Tiene que pasar», Falla si no — y cuenta en la nota qué viste. «No probado» también vale: dice hasta dónde llegaste.",
-  "versionMin": "1.51.602",
+  "intro": "Ronda corta y rara: casi todo lo que se ha tocado NO se tiene que notar. Han sido quince versiones de fontanería —ordenar CSS que estaba repartido en cinco sitios, traerse Bootstrap y la fuente del tema Arcade al propio servidor— y el ordenador ya ha medido que no cambia ni un píxel. Lo que la máquina NO puede comprobar es lo de la prueba 1: que la app funcione con el wifi caído. Esa es la importante de esta ronda. Lo que SÍ ha cambiado a propósito es la Sopa de Letras: ahora ocupa la pizarra entera y las letras crecen con ella. Y siguen abiertas las dos de siempre (el reloj y el lápiz): si ya las hiciste en la ronda del 24, dilo en la nota y sáltalas. Se han añadido dos pruebas de última hora (9 y 10) por dos cosas que encontró el dueño mirando capturas. Marca Pasa si ocurrió lo que dice «Tiene que pasar», Falla si no — y cuenta en la nota qué viste. «No probado» también vale: dice hasta dónde llegaste.",
+  "versionMin": "1.51.605",
   "secciones": [
     {
       "titulo": "Antes de empezar",
@@ -152,6 +152,60 @@
       ]
     },
     {
+      "titulo": "Parte 4 · LO QUE ENCONTRÓ EL DUEÑO EL 26",
+      "nota": "Dos cosas salidas de dos capturas suyas. La primera es de fondo (se publicaba en la biblioteca algo sin contenido); la segunda es puro aspecto, pero de las que cantan.",
+      "pruebas": [
+        {
+          "n": 9,
+          "titulo": "No deja publicar una actividad vacía",
+          "ruta": [
+            "PC",
+            "Cualquier plantilla",
+            "Crear actividad",
+            "Editor"
+          ],
+          "accion": "Entra con tu cuenta, crea una actividad NUEVA (la que quieras) y, SIN escribir nada dentro, pulsa «Publicar».",
+          "pasos": [
+            "Tiene que salir un aviso naranja diciendo qué falta y por dónde empezar — no debe publicarse.",
+            "La insignia de arriba tiene que seguir diciendo «Borrador», no «Pública».",
+            "Ahora escribe contenido de verdad (una pregunta, un par, unas casillas… lo que pida esa plantilla) y vuelve a pulsar «Publicar».",
+            "Esta vez SÍ tiene que publicarse y la insignia pasar a «Pública»."
+          ],
+          "espera": "vacía no se publica y dice por qué; con contenido se publica sin estorbo.",
+          "casillas": [
+            "Vacía: avisa y NO publica",
+            "Con contenido: publica"
+          ],
+          "notaPista": "Si te deja publicar la vacía, dime con qué plantilla lo probaste"
+        },
+        {
+          "n": 10,
+          "titulo": "La tarjeta «Mi imagen» está en su sitio",
+          "ruta": [
+            "PC",
+            "Cualquier actividad",
+            "Individual",
+            "Apariencia › Fondo"
+          ],
+          "accion": "Abre una actividad y despliega «Apariencia». Mira la sección FONDO.",
+          "pasos": [
+            "Las siete tarjetas (Ninguno, Pizarra verde, Cuadrícula, Corcho, Aula, Arena, Mi imagen) tienen que ser TODAS del mismo tamaño y estar alineadas en su fila.",
+            "«Mi imagen» ya no debe llevar debajo un botón «Subir» descolgado ni letra diminuta.",
+            "Pulsa «Mi imagen»: tiene que abrirse el selector de archivos del ordenador.",
+            "Sube una foto: se pone de fondo y en la esquina de esa tarjeta aparece un lapicito para cambiarla.",
+            "Pulsa el lapicito: tiene que volver a abrirse el selector."
+          ],
+          "espera": "las siete tarjetas iguales y alineadas; pulsar «Mi imagen» abre el selector; con foto puesta, el lapicito la cambia.",
+          "casillas": [
+            "Las siete iguales y alineadas",
+            "Pulsar la tarjeta abre el selector",
+            "El lapicito cambia la foto"
+          ],
+          "notaPista": "Si alguna tarjeta se descuelga, di a qué ancho tenías la ventana (o si estabas en móvil)"
+        }
+      ]
+    },
+    {
       "titulo": "Parte 4 · LO QUE SIGUE ABIERTO",
       "nota": "Estas dos vienen de la ronda anterior y siguen sin verificar en aparatos de verdad. Si ya las hiciste el 24, ponlo en la nota y márcalas como quedaron.",
       "pruebas": [
@@ -205,7 +259,7 @@
       ]
     },
     {
-      "titulo": "Parte 5 · SI TE QUEDA TIEMPO",
+      "titulo": "Parte 6 · SI TE QUEDA TIEMPO",
       "pruebas": [
         {
           "n": 8,

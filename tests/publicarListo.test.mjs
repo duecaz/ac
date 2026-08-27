@@ -16,10 +16,9 @@
 //
 // Run: node tests/publicarListo.test.mjs
 import assert from 'node:assert';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import '../core/registerTemplates.js';
-import { readdirSync } from 'node:fs';
 import { getTemplate } from '../core/registry.js';
 import { revisarActividad } from '../core/activityCheck.js';
 
