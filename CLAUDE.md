@@ -135,7 +135,7 @@ Y lo que de verdad no se puede olvidar está ATADO, no confiado a la memoria:
   emergencia con la clase delante: `git push --no-verify`.
 
 Verificar SIEMPRE antes de commitear: **`node tools/preflight.mjs`** — la suite + los
-NUEVE recorridos (matriz jugable · tema×fondo legible · márgenes del panel · puertas del editor · buscar/crear+EDITAR · editores · en vivo · tareas · entregar la hoja de pruebas) en ~100 s, ley §27. `node
+DIEZ recorridos (matriz jugable · cq sin contenedor · tema×fondo legible · márgenes del panel · puertas del editor · buscar/crear+EDITAR · editores · en vivo · tareas · entregar la hoja de pruebas) en ~350 s, ley §27. `node
 tests/run.mjs` solo verifica PIEZAS: los cinco fallos que la clase encontró en una
 semana vivían en la COSTURA entre piezas correctas y ninguna suite podía verlos. Si el
 cambio toca vistas, CSS o el router, el preflight NO es opcional. El contrato,

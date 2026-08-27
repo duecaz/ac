@@ -229,6 +229,17 @@
   border-radius: 12px;
   box-shadow: 0 6px 24px rgba(0,0,0,.12);
   overflow: hidden;
+  /* EL MARCO ES CONTENEDOR DE CONSULTA, para lo que flota ENCIMA del juego. El
+     `#ww-player-widget` de dentro ya lo era, pero el botón de pantalla completa
+     es HERMANO del widget, no hijo: sus `cq` no encontraban ningún contenedor y
+     caían al VIEWPORT. Medido: en una pizarra 4K el botón salía de 108 px —el
+     18 % del lado corto de un marco de 938— con un icono de 52, una pelota negra
+     tapando la esquina del juego; el CSS decía 5 %.
+     `inline-size`, NUNCA `size`: hay marcos de alto indefinido (`aspect:auto`,
+     Tildes/Comas) y la contención de tamaño los colapsaría — es la misma trampa
+     que ya está anotada en `#ww-player-widget`. El ancho sí es definido siempre.
+     Lo vigila `tools/cq-sonda.mjs`, que fue quien lo encontró. */
+  container-type: inline-size;
   /* ESTÁNDAR DE MAQUETACIÓN: el marco es una COLUMNA flex y RESERVA el espacio de
      cada parte ANTES de dibujar. Si el modo Individual activa la animación de
      progreso, su carril (.ww-solo-anim) ocupa su franja arriba y el widget toma
@@ -270,7 +281,14 @@
      superior derecha del marco es DEL MARCO; el modo que ponga algo ahí debe
      dejarla libre (ver `--ww-fs-reserve`). */
   position: absolute; top: 8px; right: 8px; z-index: 30;
-  width: max(34px, 5cqmin); height: max(34px, 5cqmin);
+  /* CONTRA EL MARCO (`cqi`), no contra la pantalla. Era `5cqmin` sin contenedor
+     que lo resolviera → viewport, y el botón crecía con el MONITOR mientras el
+     marco se quedaba igual. `cqi` y no `cqmin` porque el marco es contenedor de
+     ANCHO: el alto de un marco `aspect:auto` no se puede preguntar sin colapsarlo.
+     Efecto buscado: EMBEBIDO se queda en su piso de 34 px —discreto y estable en
+     cualquier pantalla— y en PANTALLA COMPLETA crece con el marco, que es cuando
+     hay que encontrar la salida en una pizarra grande y no hay tecla Esc. */
+  width: max(34px, 3.2cqi); height: max(34px, 3.2cqi);
   display: flex; align-items: center; justify-content: center;
   padding: 0; border: 0; border-radius: 50%;
   /* VELO NEUTRO, no tokens de skin: es un control DE SUPERPOSICIÓN (como los de
@@ -286,7 +304,7 @@
 .ww-fs-btn--corner:hover,
 .ww-fs-btn--corner:focus-visible { opacity: 1; transform: scale(1.06); }
 .ww-fs-btn--corner.is-on { opacity: .62; }   /* en pantalla completa se ve más: es la salida */
-.ww-fs-btn--corner i { font-size: max(14px, 2.4cqmin); line-height: 1; }
+.ww-fs-btn--corner i { font-size: max(14px, 1.45cqi); line-height: 1; }
 /* Táctil: no hay hover que revele el botón, así que nace visible. */
 @media (hover: none) { .ww-fs-btn--corner { opacity: .55; } }
 

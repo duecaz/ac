@@ -36,6 +36,7 @@ const soloRapido = process.argv.includes('--rapido');
 const PASOS = [
   { id: 'suites',  cmd: 'tests/run.mjs',        que: 'lógica pura (contrato · normas · leyes · scorers)', rapido: true },
   { id: 'matriz',  cmd: 'tools/matrix-smoke.mjs', que: 'cada plantilla × cada modo arranca, un gesto de envío, fullscreen tocable' },
+  { id: 'cq',      cmd: 'tools/cq-sonda.mjs',    que: 'ninguna unidad cq se resuelve contra el viewport (el lápiz de 141 px no se veía de otra forma)' },
   { id: 'colores', cmd: 'tools/contrast-torture.mjs', que: 'cada tema × cada fondo: ningún texto por debajo de 3:1 (la combinación, no cada eje por su lado)' },
   { id: 'margenes', cmd: 'tools/margenes-smoke.mjs', que: 'ninguna pantalla del profe pegada al borde, en PC y en móvil' },
   { id: 'puertas', cmd: 'tools/editor-puertas.mjs', que: 'las 13 tienen puerta visible para añadir y dicen qué hacer con la actividad vacía' },

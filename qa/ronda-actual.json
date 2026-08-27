@@ -2,7 +2,7 @@
   "id": "2026-08-26",
   "titulo": "AulaReto · Hoja de pruebas",
   "intro": "Ronda corta y rara: casi todo lo que se ha tocado NO se tiene que notar. Han sido quince versiones de fontanería —ordenar CSS que estaba repartido en cinco sitios, traerse Bootstrap y la fuente del tema Arcade al propio servidor— y el ordenador ya ha medido que no cambia ni un píxel. Lo que la máquina NO puede comprobar es lo de la prueba 1: que la app funcione con el wifi caído. Esa es la importante de esta ronda. Lo que SÍ ha cambiado a propósito es la Sopa de Letras: ahora ocupa la pizarra entera y las letras crecen con ella. Y siguen abiertas las dos de siempre (el reloj y el lápiz): si ya las hiciste en la ronda del 24, dilo en la nota y sáltalas. Se han añadido dos pruebas de última hora (9 y 10) por dos cosas que encontró el dueño mirando capturas. Marca Pasa si ocurrió lo que dice «Tiene que pasar», Falla si no — y cuenta en la nota qué viste. «No probado» también vale: dice hasta dónde llegaste.",
-  "versionMin": "1.51.607",
+  "versionMin": "1.51.608",
   "secciones": [
     {
       "titulo": "Antes de empezar",
