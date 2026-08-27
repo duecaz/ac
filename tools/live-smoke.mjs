@@ -166,9 +166,21 @@ try {
   await student.locator('.rq-opt, .ww-opt', { hasText: '4' }).first().click();
   // Con todos respondidos el host puede AUTO-liquidar (pasa directo a reveal);
   // si no, se revela a mano. Ambos caminos terminan en #btn-lb.
+  //
+  // CARRERA COMPROBAR-LUEGO-ACTUAR (arreglada v1.51.609). Esto preguntaba «¿está
+  // #btn-lb?» y, si no, pulsaba #btn-reveal — pero entre la pregunta y el clic la
+  // auto-liquidación puede dispararse, quitar #btn-reveal del DOM y poner #btn-lb.
+  // Playwright se quedaba 30 s esperando un botón que ya no vuelve: la red fallaba
+  // ~2 de cada 3 pasadas SIN que hubiera nada roto en el producto. Una red que a
+  // veces falla enseña a re-ejecutar hasta que salga verde, que es exactamente
+  // como se cuela un fallo de verdad.
+  // Lo que importa es LLEGAR a #btn-lb: se intenta revelar a mano y se tolera que
+  // el botón ya se haya ido solo. La comprobación de verdad es la línea siguiente
+  // —si el revelado hacía falta y no funcionó, #btn-lb no aparece y esto falla
+  // ahí, con su mensaje—, así que tolerar el clic no tapa nada.
   await host.waitForSelector('#btn-lb, #btn-reveal', { timeout: 9000 });
   if (!(await host.locator('#btn-lb').count())) {
-    await host.click('#btn-reveal');
+    await host.click('#btn-reveal', { timeout: 4000 }).catch(() => {});
   }
   await host.waitForSelector('#btn-lb', { timeout: 9000 });
   log('respuesta recibida y liquidada por el settle del host');

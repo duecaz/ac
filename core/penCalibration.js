@@ -4,9 +4,14 @@
 // que suele venir con un tamaño espurio). Al guardar, se derivan los umbrales
 // (core/penDetector.js) y se persisten en sessionStorage.
 
-import { pointerMetric, saveThresholds, deriveThresholds } from './penDetector.js';
+import { pointerMetric, saveThresholds, deriveThresholds, mediana, VENTANA } from './penDetector.js';
 
-const IGNORE_MS = 80;   // descarta los primeros 80 ms (error del primer toque)
+// LA MISMA VENTANA Y LA MISMA MEDIANA QUE EL DIBUJO (`core/penDetector.js`).
+// Estaban por separado —80 ms aquí, 60 allí, y una `median()` privada— y esa es
+// la grieta exacta que hacía inútil calibrar: si la calibración resume el toque
+// con un estadístico y una ventana, y el dibujo lo resume con otros, los
+// umbrales medidos no describen lo que el dibujo va a medir.
+const IGNORE_MS = VENTANA.ignoraMs;
 
 const TOOLS = [
   { key: 'penTip',  label: 'Lápiz (punta)',         hint: 'Dibuja', icon: 'bi-pencil-fill' },
@@ -55,7 +60,7 @@ export function openPenCalibration() {
       if (!capturing) return;
       if (performance.now() - t0 < IGNORE_MS) return;   // descarta el primer toque
       samples.push(pointerMetric(e));
-      valEl.textContent = median(samples).toFixed(1);
+      valEl.textContent = mediana(samples).toFixed(1);
     };
     const start = (e) => {
       e.preventDefault();
@@ -68,7 +73,7 @@ export function openPenCalibration() {
       if (!capturing) return;
       capturing = false; pad.classList.remove('is-capturing');
       if (samples.length) {
-        const m = median(samples);
+        const m = mediana(samples);
         measured[key] = m;
         valEl.textContent = m.toFixed(1);
         field.classList.add('is-set');
@@ -90,11 +95,4 @@ export function openPenCalibration() {
   });
 
   return { close };
-}
-
-function median(a) {
-  if (!a.length) return 0;
-  const s = [...a].sort((x, y) => x - y);
-  const m = s.length >> 1;
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 }

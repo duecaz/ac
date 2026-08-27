@@ -65,6 +65,7 @@ console.log('\n▶ fechas'); await import('./fechas.test.mjs');
 console.log('\n▶ offlineQueue'); await import('./offlineQueue.test.mjs');
 console.log('\n▶ ballsort'); await import('./ballsort.test.mjs');
 console.log('\n▶ penDetector'); await import('./penDetector.test.mjs');
+console.log('\n▶ penVeredicto'); await import('./penVeredicto.test.mjs');
 console.log('\n▶ diagram'); await import('./diagram.test.mjs');
 console.log('\n▶ styles'); await import('./styles.test.mjs');
 console.log('\n▶ templateContract'); await import('./templateContract.test.mjs');

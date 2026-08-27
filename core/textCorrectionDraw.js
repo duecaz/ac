@@ -3,14 +3,24 @@
 // la zona de una vocal/hueco marca esa posición → mismo `value` (number[]) que el
 // modo "tocar", así el scoring/solo/host no cambian.
 //
-// FASE 2 — detección por TAMAÑO de contacto (core/penDetector.js): cada puntero
-// se clasifica al bajar → lápiz punta/dedo DIBUJAN; lápiz parte trasera BORRA;
-// palma (≥3 contactos) BORRA. Los umbrales se calibran con "Calibrar pizarra" y
-// se guardan en sessionStorage; SIN calibrar todo dibuja salvo la palma (=Fase 1).
+// FASE 2 — detección por TAMAÑO de contacto (core/penDetector.js): lápiz punta y
+// dedo DIBUJAN; lápiz parte trasera BORRA; palma (≥3 contactos) BORRA. Los
+// umbrales se calibran con "Calibrar pizarra"; SIN calibrar todo dibuja salvo la
+// palma (=Fase 1).
+//
+// FASE 2b — EL VEREDICTO SE APLAZA (v1.51.609). Antes la herramienta se decidía
+// en el `pointerdown` y se fijaba para todo el trazo. Ese primer evento es
+// justo el que la calibración DESCARTA por basura —en muchas pizarras ni
+// siquiera es una medida: `width`/`height` valen 1 por defecto—, así que el
+// borrador trasero casi no disparaba. Ahora se pinta desde el primer punto
+// (optimista: el retardo se ve, retirar tinta recién puesta no) y el veredicto
+// llega con muestras limpias; si dice BORRAR, se retira el trazo provisional y
+// se borra por donde pasó. La lógica vive entera en `crearVeredicto`, que es
+// también quien fija el estadístico que usa la calibración.
 //
 // Adaptado del enfoque de duecaz/play (zonas + trazos en canvas).
 
-import { pointerMetric, classifyTool, toolAction, loadThresholds } from './penDetector.js';
+import { crearVeredicto, loadThresholds } from './penDetector.js';
 import { observeResize } from './observeResize.js';
 
 export function mountTcDraw(passageEl, { targets, onChange } = {}) {
@@ -26,7 +36,8 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
   let zones = [];               // { pos, el, x, y, w, h, hit }
   let strokes = [];             // [{ pts:[{x,y}] }]
   const active = new Set();     // pointerIds activos (para detectar palma)
-  const pointerAction = new Map(); // pointerId → 'draw' | 'erase' (clasificado al bajar)
+  const pointerAction = new Map(); // pointerId → 'draw' | 'erase' (YA dictaminado)
+  const votos = new Map();         // pointerId → veredicto en curso (aún sin dictaminar)
   let drawing = false, palmErase = false, eraserMode = false, frozen = false, cur = null, dpr = 1;
 
   function resize() {
@@ -130,26 +141,63 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
     // ÚNICO puntero activo según el SO → reseteamos el conteo y salimos de borrado.
     if (e.isPrimary) { active.clear(); palmErase = false; }
     active.add(e.pointerId);
-    const tool = classifyTool(pointerMetric(e), active.size, loadThresholds());
-    if (tool === 'palm') {                  // palma (varios dedos) → borrar…
-      if (drawing) return;                  // …pero NO si ya hay un trazo en curso
-      palmErase = true; cur = null;         //   (un fantasma no secuestra el dibujo)
-      e.preventDefault(); eraseAt(toCanvas(e)); return;
-    }
-    if (palmErase) return;
     e.preventDefault();
-    const action = eraserMode ? 'erase' : toolAction(tool);
-    pointerAction.set(e.pointerId, action);
     const p = toCanvas(e);
     try { canvas.setPointerCapture(e.pointerId); } catch {}
-    if (action === 'erase') { eraseAt(p); drawing = false; return; }   // lápiz trasero / borrador
+
+    // El BOTÓN de borrador del alumno no se vota: lo ha pulsado él a propósito y
+    // ninguna medida puede contradecirlo.
+    if (eraserMode) { pointerAction.set(e.pointerId, 'erase'); eraseAt(p); drawing = false; return; }
+
+    const voto = crearVeredicto({ thr: loadThresholds() });
+    voto.muestra(e, active.size);
+    // La PALMA sí se sabe ya: se decide por CONTEO de punteros, no por tamaño, y
+    // el conteo es fiable desde el primer evento (el toque basura ensucia la
+    // medida, no cuántos dedos hay).
+    if (voto.listo() && voto.veredicto().tool === 'palm') {
+      if (drawing) return;                  // un fantasma no secuestra un trazo en curso
+      palmErase = true; cur = null;
+      eraseAt(p); return;
+    }
+    if (palmErase) return;
+    votos.set(e.pointerId, voto);
+    // OPTIMISTA: se pinta ya. Si el veredicto acaba diciendo «borrar», este trazo
+    // se retira en `resolver()` y se borra por donde pasó.
     drawing = true; cur = { pts: [p] }; strokes.push(cur);
     redraw();
   };
+
+  /** Dicta el veredicto de un puntero y aplica lo que diga: si es BORRAR, retira
+   *  el trazo provisional que se había ido pintando y borra por su recorrido. */
+  function resolver(id) {
+    const voto = votos.get(id);
+    if (!voto) return pointerAction.get(id) || null;
+    votos.delete(id);
+    const { accion } = voto.veredicto();
+    pointerAction.set(id, accion);
+    if (accion !== 'erase') return accion;
+    // Retirar la tinta provisional y borrar por donde pasó: el alumno quiso
+    // borrar desde el principio, así que el gesto entero cuenta como borrado.
+    const trazo = cur;
+    if (trazo) {
+      const i = strokes.indexOf(trazo);
+      if (i >= 0) strokes.splice(i, 1);
+      drawing = false; cur = null;
+      for (const pt of trazo.pts) eraseAt(pt);
+    }
+    return 'erase';
+  }
   const onMove = (e) => {
     if (frozen) return;
     if (palmErase) { e.preventDefault(); eraseAt(toCanvas(e)); return; }
     const p = toCanvas(e);
+    // Mientras el veredicto no esté dictado, cada movimiento es una MUESTRA más:
+    // son las que llegan ya limpias, pasado el toque basura.
+    const voto = votos.get(e.pointerId);
+    if (voto) {
+      voto.muestra(e, active.size);
+      if (voto.listo() && resolver(e.pointerId) === 'erase') { e.preventDefault(); eraseAt(p); return; }
+    }
     if (pointerAction.get(e.pointerId) === 'erase') { e.preventDefault(); eraseAt(p); return; }
     if (!drawing || !cur) return;
     e.preventDefault();
@@ -157,7 +205,10 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
   };
   const onUp = (e) => {
     active.delete(e.pointerId);
-    const action = pointerAction.get(e.pointerId);
+    // Un gesto que se levanta sin veredicto (más corto que la ventana: marcar una
+    // tilde ES un toque) se cierra con lo que haya. `crearVeredicto` nunca borra
+    // sin muestras limpias, así que un toque corto siempre DIBUJA.
+    const action = votos.has(e.pointerId) ? resolver(e.pointerId) : pointerAction.get(e.pointerId);
     pointerAction.delete(e.pointerId);
     if (palmErase) { if (active.size < 3) { palmErase = false; redraw(); } return; }
     if (action === 'erase') { redraw(); return; }     // limpiar el indicador del borrador
