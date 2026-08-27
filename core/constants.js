@@ -1,4 +1,4 @@
-export const VERSION = '1.51.613';
+export const VERSION = '1.51.614';
 export const SCHEMA_VERSION = 4;
 
 // PIN alphabet: no O/I/0/1 to avoid ambiguity. 6 chars => 32^6 ≈ 1.07B combos.
@@ -26,8 +26,18 @@ export const DEFAULT_REVIEW = {
   allowOverride: true,
   showCorrectAnswer: true,
   autoAdvanceToSummary: false,
-  skipReview: false
+  skipReview: false,
+  alFinal: true            // la corrección sale al terminar, no entre hojas
 };
+
+/** ¿SE CORRIGE AL FINAL? Con UN dueño, porque lo preguntan DOS sitios: el runner
+ *  (para saltarse la corrección entre frases) y el editor (para marcar la
+ *  casilla). Escrito dos veces, un `!== false` aquí y un `=== true` allí darían
+ *  defectos OPUESTOS y nadie lo notaría hasta tener la clase delante — que es
+ *  exactamente la forma de fallo que se repitió tres veces esta semana.
+ *  Vive aquí, junto al defecto que lee, y no en la ronda: el editor no tiene por
+ *  qué cargarse el módulo del lienzo para responder a una pregunta de una línea. */
+export const corrigeAlFinal = (activity) => activity?.review?.alFinal !== false;
 
 export const DEFAULT_PRESENTATION = {
   skin: 'default',

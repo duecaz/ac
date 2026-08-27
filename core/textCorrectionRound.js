@@ -17,6 +17,7 @@ import { observeResize } from './observeResize.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from './fullscreen.js';
 import { heatClass } from './itemStats.js';
 import { hudHtml } from './playerHud.js';
+import { corrigeAlFinal } from './constants.js';
 import { createCountdown } from './soloTimer.js';
 
 // ICONOS LUCIDE, EN LÍNEA (dueño, 2026-08-15: «usa iconos lucide»). Se pegan
@@ -536,7 +537,37 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
   // en Tarea el alumno juega solo y desde casa, y un botón para darse por bueno
   // convertiría el informe en una encuesta. Se pregunta por el MODO, que es lo
   // que la plataforma declara, no por quién creemos que está delante.
-  const anulable = (!opts.mode || opts.mode === 'solo');
+  const anulable = (!opts.mode || opts.mode === 'solo') && activity.review?.allowOverride !== false;
+
+  // CORREGIR AL FINAL, POR DEFECTO (dueño 2026-08-27). Enseñar la corrección
+  // entre frase y frase parte el trabajo del alumno: el que va bien pierde el
+  // hilo y el que va mal se desanima a mitad. Al final, la hoja se ha hecho
+  // entera y la corrección es lo que el PROFE repasa con la clase — que es
+  // cuando de verdad sirve. Se puede apagar desde el editor para practicar con
+  // realimentación inmediata, pero el defecto es el que pidió el aula.
+  const alFinal = corrigeAlFinal(activity);
+
+  /** Aplica las anulaciones del docente a una frase YA cerrada y ajusta los
+   *  totales. Puntúa el MISMO scorer (nunca una suma a mano) y vive en un solo
+   *  sitio porque lo usan los dos caminos: la corrección entre frases y la del
+   *  final. Tenerlo dos veces era pedir que divergieran. */
+  function recalcular(i, anulados) {
+    const prev = passageResults[i];
+    const rr = scoreMarksPerHit(valorAnulado([...prev.got], anulados, prev.p, kind), prev.p, [kind], activity);
+    score += rr.points - prev.points;
+    hits += rr.hits - prev.hits;
+    over += rr.over - prev.over;
+    misses += (rr.total - rr.hits) - prev.misses;
+    Object.assign(prev, { hits: rr.hits, over: rr.over, misses: rr.total - rr.hits,
+                          correct: rr.perfect, points: rr.points, anuladas: [...anulados] });
+    return rr;
+  }
+
+  /** Pasar de frase: al final de la última, a la corrección o al resultado. */
+  function siguiente() {
+    if (idx === passages.length - 1) { alFinal ? corregirTodo() : finish(); return; }
+    idx++; ctx.saveProgress(snapshot()); ask();
+  }
 
   function grade(value) {
     pararReloj();
@@ -553,6 +584,7 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     passageResults.push({ p, got, want, hits: r.hits, misses: miss, over: r.over, total: r.total, correct: r.perfect, points: r.points });
     if (r.perfect) emitGame(GameEvents.ANSWER_CORRECT, { points: r.points });
     else emitGame(GameEvents.ANSWER_WRONG, {});
+    if (alFinal) { siguiente(); return; }
     reveal(value, { hits: r.hits, over: r.over, misses: miss, total: r.total, correct: r.perfect });
   }
 
@@ -621,24 +653,63 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
       // un resultado provisional; si el docente tocó algo, se sustituye por el
       // que sale del scorer con las posiciones ajustadas — nunca por una suma
       // hecha a mano en esta vista.
-      if (anulados.size) {
-        const prev = passageResults[passageResults.length - 1];
-        const rr = scoreMarksPerHit(valorAnulado(value, anulados, p, kind), p, [kind], activity);
-        score += rr.points - prev.points;
-        hits += rr.hits - prev.hits;
-        over += rr.over - prev.over;
-        misses += (rr.total - rr.hits) - prev.misses;
-        Object.assign(prev, { hits: rr.hits, over: rr.over, misses: rr.total - rr.hits,
-                              correct: rr.perfect, points: rr.points, anuladas: [...anulados] });
-      }
-      if (last) finish();
-      else { idx++; ctx.saveProgress(snapshot()); ask(); }
+      if (anulados.size) recalcular(passageResults.length - 1, anulados);
+      siguiente();
     });
+  }
+
+  /** LA CORRECCIÓN AL FINAL — todas las hojas de una vez, cada una con su lista
+   *  de palabras. Es a la vez la corrección del alumno y el RESUMEN POR PÁGINA
+   *  del docente: con la hoja entera hecha, el profe la repasa con la clase y
+   *  puede anular lo que quiera antes de cerrar el resultado.
+   *  Nada se guarda hasta pulsar «Finalizar»: mientras se repasa todavía se
+   *  puede cambiar de idea, y un puntaje que se cierra a mitad de la revisión no
+   *  es el que el profe acabó dando. */
+  function corregirTodo() {
+    const anuladosDe = new Map(passageResults.map((_, i) => [i, new Set()]));
+    const pinta = () => {
+      shell(`
+        <div class="tc-final">
+          <div class="tc-final__cab">
+            <b>Corrección</b>
+            <span class="tc-final__tot" data-total>${hits} de ${totalMarks} · ${score} pts</span>
+            <button type="button" class="btn btn-primary tc-fin"><i class="bi bi-flag-fill"></i> Finalizar</button>
+          </div>
+          ${passageResults.map((r, i) => `
+            <section class="tc-final__hoja">
+              <h6 class="tc-final__n">Frase ${i + 1}</h6>
+              <div class="tc-final__cuerpo">
+                <div class="tc-passage tc-review-passage">${passageHtml(r.p.text, kind, { got: r.got, want: r.want })}</div>
+                <div class="tc-review-slot" data-hoja="${i}">
+                  ${panelRevisionHtml(filasRevision(r.p, kind, r.got), anuladosDe.get(i), { anulable })}
+                </div>
+              </div>
+            </section>`).join('')}
+        </div>`, { conFrase: false });
+
+      document.querySelector('.tc-final')?.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-anular]');
+        if (b) {
+          const i = Number(b.closest('[data-hoja]').dataset.hoja);
+          const pos = Number(b.dataset.anular);
+          const set = anuladosDe.get(i);
+          if (set.has(pos)) set.delete(pos); else set.add(pos);
+          recalcular(i, set);
+          pinta();                       // re-pinta con los totales ya ajustados
+          return;
+        }
+        if (e.target.closest('.tc-fin')) finish();
+      });
+    };
+    pinta();
   }
 
   function finish() {
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score }] });
-    const wrongResults = passageResults.filter(r => !r.correct);
+    // Con la corrección al final ya se han visto TODAS las hojas una por una:
+    // repetir aquí las falladas es enseñar dos veces lo mismo en dos pantallas
+    // seguidas.
+    const wrongResults = alFinal ? [] : passageResults.filter(r => !r.correct);
     const reviewHtml = wrongResults.length ? `
       <div class="tc-review mt-4 text-start" style="max-width:900px;margin:0 auto;padding:0 1rem">
         <h5 class="mb-3"><i class="bi bi-search"></i> Revisión de errores</h5>

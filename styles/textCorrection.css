@@ -112,6 +112,12 @@
   padding: max(4px, .6cqmin) max(8px, 1cqmin);
   margin-bottom: max(6px, 1cqmin);
 }
+/* El reloj sale del flujo para centrarse en la BARRA (ver `.tc-clock`), y al
+   sacarlo el `justify-content: center` centró a los dos que quedaban: el lápiz
+   se fue al medio, debajo del reloj. Cada mando a su borde, explícitamente —
+   así el reparto no depende de cuántos elementos haya en el flujo. */
+.tc-bar > .tc-switch { margin-right: auto; }
+.tc-bar > .ww-fs-btn { margin-left: auto; }
 
 /* ── Aire extra SOLO en modo Individual ──────────────────────────────────────
    VS/Equipos/Live renderizan `.tc-round` SIN el envoltorio `.tc-solo` (panel
@@ -338,9 +344,12 @@
    así que es grande y va centrado. Los indicadores que SÍ son de esquina
    —página y puntos— se quedan en el HUD. */
 .tc-clock {
-  /* Centrado ocupando el hueco libre, entre el lápiz y el botón de pantalla
-     completa. `margin: auto` en un flex reparte el sobrante a los dos lados. */
-  margin-inline: auto;
+  /* CENTRADO EN LA BARRA, no en el hueco libre. Estaba con `margin-inline: auto`,
+     que en un flex reparte el sobrante entre los DOS vecinos — y como el lápiz
+     mide 145 px y el botón de pantalla completa 31, el reloj acababa 77 px a la
+     derecha del centro (medido). Centrar «en lo que sobra» no es centrar: la
+     referencia tiene que ser la barra, pase lo que pase a los lados. */
+  position: absolute; left: 50%; transform: translateX(-50%);
   display: inline-flex; align-items: center; gap: .35em;
   font-variant-numeric: tabular-nums;   /* que no baile al bajar de 10 a 9 */
   font-weight: 800;
@@ -442,4 +451,25 @@
 
 .tc-review-side__pie {
   margin-top: .6em; font-size: max(10px, 2cqmin); font-weight: 700; opacity: .8;
+}
+
+/* ── LA CORRECCIÓN AL FINAL: todas las hojas, con su lista ───────────────────
+   Es la corrección del alumno y el resumen por página del docente a la vez. A
+   diferencia de la ronda, aquí SÍ se hace scroll: son N hojas y verlas seguidas
+   es justamente lo que se quiere. */
+.tc-final { display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; height: 100%; padding: .5rem; }
+.tc-final__cab {
+  display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
+  position: sticky; top: 0; z-index: 2;
+  background: var(--ww-card-bg, #fff);
+  padding: .5rem; border-radius: .5rem;
+}
+.tc-final__tot { margin-right: auto; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tc-final__n { margin: 0 0 .35rem; font-size: max(10px, 2cqmin); text-transform: uppercase; letter-spacing: .06em; opacity: .6; }
+.tc-final__cuerpo { display: flex; gap: 1rem; align-items: flex-start; }
+.tc-final__cuerpo > .tc-passage { flex: 1 1 0; min-width: 0; }
+.tc-final__cuerpo > .tc-review-slot { flex: 0 0 auto; max-width: 34%; }
+@container (aspect-ratio < 1/1) {
+  .tc-final__cuerpo { flex-direction: column; }
+  .tc-final__cuerpo > .tc-review-slot { max-width: none; }
 }

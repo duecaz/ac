@@ -5,6 +5,7 @@ import { escapeHtml } from './html.js';
 import { on } from './events.js';
 import { toast } from './toast.js';
 import { questionWindowMs, ITEM_SECONDS_MIN, ITEM_SECONDS_MAX } from './timings.js';
+import { corrigeAlFinal } from './constants.js';
 
 
 
@@ -55,6 +56,32 @@ export function timerFieldHtml(a, etiqueta = 'ítem') {
            value="${a.rules?.timer || 0}" placeholder="0">
     <div class="form-text">0 = sin límite de tiempo</div>
   </div>`;
+}
+
+/** CUÁNDO SE CORRIGE. Por defecto AL FINAL: enseñar la corrección entre frase y
+ *  frase parte el trabajo del alumno —el que va bien pierde el hilo, el que va
+ *  mal se desanima a mitad— y la corrección es lo que el PROFE repasa con la
+ *  clase cuando la hoja ya está hecha. Se puede apagar para practicar con
+ *  realimentación inmediata.
+ *  Vive en `a.review`, que es el bloque que YA existía para esto y que llevaba
+ *  versiones viajando en el JSON de todas las actividades sin que nadie lo
+ *  leyera. */
+export function corregirAlFinalHtml(a, unidad = 'frase') {
+  const alFinal = corrigeAlFinal(a);
+  return `<div class="col-12 form-check">
+    <input class="form-check-input" type="checkbox" id="f-alfinal" ${alFinal ? 'checked' : ''}>
+    <label class="form-check-label" for="f-alfinal">Corregir al final</label>
+    <div class="form-text">El alumno hace todas las ${escapeHtml(unidad)}s seguidas y la corrección
+      sale al terminar, con todas juntas. Desmárcalo para corregir después de cada una.</div>
+  </div>`;
+}
+
+export function wireCorregirAlFinal(root, a, ctx) {
+  on(root, 'change', '#f-alfinal', (e) => {
+    a.review = a.review || {};
+    a.review.alFinal = e.target.checked;
+    ctx.onChange(a);
+  });
 }
 
 export function wireTimerField(root, a, ctx) {

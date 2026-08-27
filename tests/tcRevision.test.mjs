@@ -16,6 +16,7 @@
 import assert from 'node:assert';
 import { filasRevision, resumenRevision, valorAnulado, efectivoDe } from '../core/textCorrectionRound.js';
 import { scoreMarksPerHit } from '../core/textMarks.js';
+import { corrigeAlFinal, DEFAULT_REVIEW } from '../core/constants.js';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
@@ -106,6 +107,23 @@ const posDe = (palabra) => P.marks.find(m => TEXTO.slice(m.pos - 4, m.pos + 4).i
   const r2 = scoreMarksPerHit(valorAnulado(buena, anulados, P, 'tilde'), P, ['tilde'], ACT);
   assert.strictEqual(r2.hits, 0, 'CONTRA-PRUEBA: anular una acertada la quita');
   ok('anular se expresa como posiciones y lo puntúa el MISMO scorer (10 pts por marca)');
+}
+
+// ── 6) CORREGIR AL FINAL ES EL DEFECTO, y lo dice UN solo sitio ─────────────
+// Lo preguntan el runner (para saltarse la corrección entre frases) y el editor
+// (para marcar la casilla). Escrito dos veces —un `!== false` y un `=== true`—
+// darían defectos OPUESTOS sin que nadie lo notara hasta tener la clase delante.
+{
+  assert.strictEqual(corrigeAlFinal({}), true,
+    'una actividad sin nada declarado corrige AL FINAL: es lo que pidió el aula');
+  assert.strictEqual(corrigeAlFinal({ review: {} }), true,
+    'y un bloque review vacío tampoco cambia el defecto');
+  assert.strictEqual(corrigeAlFinal({ review: { alFinal: false } }), false,
+    'solo apagarlo a propósito devuelve la corrección entre frases');
+  assert.strictEqual(corrigeAlFinal(null), true, 'sin actividad, el defecto sigue siendo el defecto');
+  assert.strictEqual(DEFAULT_REVIEW.alFinal, true,
+    'y el defecto declarado en constants tiene que decir lo MISMO que el predicado');
+  ok('corregir al final es el defecto, con un solo dueño y coherente con DEFAULT_REVIEW');
 }
 
 console.log(`\ntcRevision.test: ${passed} checks passed`);
