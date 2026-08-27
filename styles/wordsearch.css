@@ -245,7 +245,16 @@
    Aquí SÍ hace falta preguntar por el alto, y aquí `container-type: size` es
    legítimo: el carril vuelve a estirarse (`flex: 1 1 0`), así que su alto se lo da
    el flex y no su contenido — sin la circularidad que colapsa a 4×4 px. La
-   rejilla queda acotada por los DOS lados y el carril la centra. */
+   rejilla queda acotada por los DOS lados y el carril la centra.
+
+   PROVISIONAL, y conviene decirlo: la regla BASE ya dice la verdad entera
+   (`min(100cqi, 100cqb)`, «el lado es el menor de los dos ejes»), y es la banda
+   `< 1/1` la que tira la mitad del alto para poder centrar el bloque en un móvil
+   alto. Lo limpio es devolverle el bound de altura a TODA la banda vertical y
+   resolver el aire con `align-content` en vez de dejando de acotar — pero eso es
+   CSS medido, y cambiarlo pide `tools/shots.mjs before/after` a 390×700, 420×460
+   y un marco 4:3. Mientras no se mida, este tramo es el parche honesto; lo que no
+   se puede es presentar el rango como una frontera de diseño. */
 @container (aspect-ratio < 1/1) and (aspect-ratio > 3/4) {
   .ww-ws-grid-wrap { flex: 1 1 0; min-height: 0; container-type: size; }
   .ww-ws-grid { --ws-lado: min(100cqi, 100cqb); }

@@ -241,3 +241,46 @@ export function revisarActividad(a) {
     primerPaso: T?.meta?.editor?.primerPaso || 'Ábrela en Editar y añade su contenido.',
   };
 }
+
+/** LO QUE LE FALTA, EN UNA FRASE. Estaba compuesta a mano en `editView` y de
+ *  otra forma en `home` (solo el primer problema), y `pantallaNoListaHtml` la
+ *  arma en HTML: tres redacciones de «qué te falta» para el mismo profe. Aquí
+ *  vive el texto plano, junto a quien produce los problemas.
+ *  @param {object} rev  una revisión de `revisarActividad` */
+export function faltaTexto(rev) {
+  return rev.problemasDeJuego.join(' · ') + (rev.vacia ? ` ${rev.primerPaso}` : '');
+}
+
+/** NADA QUE NO SE PUEDA JUGAR LLEGA A LA BIBLIOTECA — la regla, con UN dueño.
+ *
+ *  Es una regla sobre la TRANSICIÓN del dato («¿puede este id quedar público?»),
+ *  no sobre el manejador de guardar de una vista; y había DOS puertas. La de
+ *  `editView` se cerró en v1.51.605 y la del interruptor «Borrador → Pública» de
+ *  la tarjeta del home (`.act-publish`) seguía abierta de par en par: un clic,
+ *  sin pasar por el editor, y la Ruleta sin casillas entraba en la biblioteca
+ *  igual. Con la decisión en un solo sitio, una tercera puerta futura tiene que
+ *  venir aquí a preguntar.
+ *
+ *  La POLÍTICA depende de quién escribe, y por eso el origen es un parámetro:
+ *   · `'accion'`   — alguien PULSÓ publicar. No se hace, y se dice por qué.
+ *   · `'guardado'` — un autosave de fondo. El trabajo se guarda SIEMPRE (perder
+ *     lo que el profe acaba de escribir sería mucho peor que el fallo original),
+ *     pero baja a borrador para que la biblioteca no sirva algo injugable.
+ *  Las dos ramas AVISAN: fallar en silencio está prohibido (R6).
+ *
+ *  @param {object} activity   la actividad tal y como va a guardarse
+ *  @param {string|null} pedida  la visibilidad que pide el botón, o null (autosave)
+ *  @param {'accion'|'guardado'} origen
+ *  @returns {{visibility: string, aviso: string, rechaza: boolean}}
+ *    `visibility` es la que debe quedar; `rechaza` significa «no guardes». */
+export function decidirVisibilidad(activity, pedida, origen = 'accion') {
+  const actual = activity?.visibility || 'unlisted';
+  const quiere = pedida || actual;
+  if (quiere !== 'public') return { visibility: quiere, aviso: '', rechaza: false };
+  const rev = revisarActividad(activity);
+  if (rev.jugable) return { visibility: 'public', aviso: '', rechaza: false };
+  const falta = faltaTexto(rev);
+  return origen === 'accion'
+    ? { visibility: actual, aviso: `No se puede publicar: ${falta}`, rechaza: true }
+    : { visibility: 'unlisted', aviso: `Pasa a borrador mientras no se pueda jugar: ${falta}`, rechaza: false };
+}

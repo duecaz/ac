@@ -17,10 +17,11 @@
 // Run: node tests/publicarListo.test.mjs
 import assert from 'node:assert';
 import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import '../core/registerTemplates.js';
 import { getTemplate } from '../core/registry.js';
-import { revisarActividad } from '../core/activityCheck.js';
+import { revisarActividad, decidirVisibilidad } from '../core/activityCheck.js';
 
 // LAS PLANTILLAS DE VERDAD, leídas del disco. `listTemplates()` no vale aquí: el
 // registro es global y otras suites del runner meten arquetipos de prueba
@@ -83,30 +84,89 @@ const act = (template, content, title = 'Prueba') =>
   ok(`el aviso dice qué falta y por dónde empezar («${rev.primerPaso.slice(0, 46)}…»)`);
 }
 
-// ── 4) La puerta está cableada de verdad en el editor ────────────────────────
-// Los puntos 1-3 verifican el guardián; esto verifica que la VISTA lo llama en
-// el camino de publicar. Sin esta línea, el guardián podría ser perfecto y la
-// puerta seguir abierta — que es justo como estaba.
+// ── 4) LA DECISIÓN, PROBADA POR LO QUE HACE ─────────────────────────────────
+// Antes esto era un regex sobre el TEXTO de `editView.js` —hasta la expresión
+// exacta `(setVis || activity.visibility) === 'public'`—. Un test así se rompe al
+// renombrar una variable y se queda VERDE ante una versión que calcula lo mismo
+// mal: comprueba una ortografía, no una regla. Ahora la decisión es una función
+// pura y se le pregunta lo que de verdad importa.
 {
-  const src = readFileSync(fileURLToPath(new URL('../views/editView.js', import.meta.url)), 'utf8');
-  const doSave = src.slice(src.indexOf('async function doSave'), src.indexOf('const { remote, persisted }'));
-  assert.ok(/revisarActividad/.test(doSave),
-    'el camino de guardar de editView.js tiene que consultar revisarActividad');
-  // LA PREGUNTA ES «¿VA A QUEDAR PÚBLICA?», NO «¿QUÉ BOTÓN SE PULSÓ?». Con la
-  // guarda escrita como `setVis === 'public'` a secas, una actividad YA publicada
-  // que se vacía en el editor la volvía a guardar pública el AUTOSAVE (que pasa
-  // `setVis` nulo): el mismo agujero, entrando por la otra puerta.
-  assert.ok(/\(setVis \|\| activity\.visibility\) === 'public'/.test(doSave),
-    'la guarda tiene que mirar la visibilidad RESULTANTE (setVis || la que ya tiene), no solo el botón');
-  assert.ok(/return;/.test(doSave.slice(doSave.indexOf('revisarActividad'))),
-    'y tiene que PARAR al PUBLICAR: avisar y seguir publicando sería peor que no avisar');
-  // …pero el autosave NO puede parar: perder lo que el profe acaba de escribir
-  // por una guarda sería mucho peor que el fallo original. Baja a borrador y lo
-  // dice (R6).
-  const tramo = doSave.slice(doSave.indexOf('revisarActividad'));
-  assert.ok(/activity\.visibility = 'unlisted'/.test(tramo) && /toast\(/.test(tramo),
-    'el autosave de algo ya público que deja de ser jugable debe GUARDAR igual, bajar a borrador y decirlo');
-  ok('editView.js gatea por la visibilidad resultante: publicar para, y el autosave baja a borrador sin perder trabajo');
+  const vacia = act('wheel', {});
+  const llena = act('wheel', getTemplate('wheel').meta.defaultContent());
+
+  // a) Alguien PULSA publicar algo injugable: no se hace, y se dice por qué.
+  const pulsa = decidirVisibilidad(vacia, 'public', 'accion');
+  assert.strictEqual(pulsa.rechaza, true, 'pulsar publicar en algo injugable tiene que rechazarse');
+  assert.notStrictEqual(pulsa.visibility, 'public', 'y desde luego no puede quedar pública');
+  assert.match(pulsa.aviso, /No se puede publicar/, 'y tiene que decirlo (R6)');
+
+  // b) AUTOSAVE de algo YA público que se ha quedado injugable: se guarda igual
+  //    —perder lo escrito sería peor— pero baja a borrador, y lo dice.
+  const auto = decidirVisibilidad({ ...vacia, visibility: 'public' }, null, 'guardado');
+  assert.strictEqual(auto.rechaza, false, 'el autosave NUNCA puede negarse a guardar el trabajo del profe');
+  assert.strictEqual(auto.visibility, 'unlisted', 'pero lo injugable no se queda en la biblioteca');
+  assert.ok(auto.aviso.length > 20, 'y el profe se entera de que ha pasado a borrador');
+
+  // c) CONTRA-PRUEBA, la que faltaba: con contenido de verdad no estorba en
+  //    NINGUNA de las dos ramas. Una guarda que degrada lo sano es peor que la
+  //    puerta abierta, y no había nada que lo comprobara.
+  assert.deepStrictEqual(
+    decidirVisibilidad(llena, 'public', 'accion'),
+    { visibility: 'public', aviso: '', rechaza: false }, 'publicar algo jugable no puede estorbar');
+  assert.strictEqual(decidirVisibilidad({ ...llena, visibility: 'public' }, null, 'guardado').visibility,
+    'public', 'CONTRA-PRUEBA: el autosave de algo público y sano lo deja público');
+  // d) Y guardar un BORRADOR a medias sigue siendo legítimo: ni avisa ni toca nada.
+  assert.deepStrictEqual(decidirVisibilidad(vacia, 'unlisted', 'accion'),
+    { visibility: 'unlisted', aviso: '', rechaza: false },
+    'un borrador a medias se guarda sin ceremonia: es el caso NORMAL de trabajar');
+  ok('decidirVisibilidad: rechaza al publicar · degrada en autosave · y no estorba a lo sano (4 contra-pruebas)');
+}
+
+// ── 5) Y TODA PUERTA PASA POR ESE DUEÑO ──────────────────────────────────────
+// Esto sí es un escaneo, y DESCUBRE: cualquier módulo que escriba `visibility =
+// 'public'` sin consultar al dueño rompe CI, incluida una tercera puerta que
+// alguien añada mañana. Nació de una: la guarda se puso en el editor y el
+// interruptor «Borrador → Pública» de la tarjeta del home publicaba sin
+// preguntar nada — un clic, sin editor de por medio.
+{
+  const raiz = fileURLToPath(new URL('..', import.meta.url));
+  const dirs = ['views', 'core', 'kernel', 'adapters'];
+  const sueltas = [];
+  const recorrer = (d) => {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      const f = join(d, e.name);
+      if (e.isDirectory()) { recorrer(f); continue; }
+      if (!e.name.endsWith('.js')) continue;
+      const src = readFileSync(f, 'utf8');
+      // El PUNTO importa: `a.visibility = 'public'` es ESCRIBIR, mientras que
+      // `visibility = "public"` suelto es una regla de PocketBase o un filtro de
+      // consulta —LEER lo ya publicado—, y `core/pbRules.js` y el adaptador están
+      // llenos de esos. Sin el punto, el escaneo señalaba a los dos y la única
+      // salida habría sido una lista de excepciones: un test que pide silencio.
+      if (!/\.visibility\s*=\s*['"`]public['"`]/.test(src)) continue;
+      if (/decidirVisibilidad/.test(src)) continue;
+      sueltas.push(f.slice(raiz.length));
+    }
+  };
+  for (const d of dirs) recorrer(join(raiz, d));
+  assert.deepStrictEqual(sueltas, [],
+    `estos módulos ponen visibility='public' sin pasar por decidirVisibilidad: ${sueltas.join(', ')}`);
+  // CONTRA-PRUEBA: el escaneo tiene que estar MIRANDO de verdad. Si nadie
+  // publicara en ningún sitio, la lista vacía de arriba no probaría nada.
+  const puertas = [];
+  for (const d of dirs) {
+    const buscar = (dir) => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        const f = join(dir, e.name);
+        if (e.isDirectory()) { buscar(f); continue; }
+        if (e.name.endsWith('.js') && /decidirVisibilidad/.test(readFileSync(f, 'utf8'))) puertas.push(e.name);
+      }
+    };
+    buscar(join(raiz, d));
+  }
+  assert.ok(puertas.length >= 3,
+    `el escaneo debería ver al dueño y sus dos puertas, y ve ${puertas.length}: ${puertas.join(', ')}`);
+  ok(`ninguna puerta publica por su cuenta (${puertas.length} módulos citan al dueño: ${puertas.join(' · ')})`);
 }
 
 console.log(`\npublicarListo.test: ${passed} checks passed`);

@@ -1,7 +1,7 @@
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { list, remove, get, save } from '../core/storage.js';
-import { revisarActividad } from '../core/activityCheck.js';
+import { revisarActividad, decidirVisibilidad } from '../core/activityCheck.js';
 import { navigate } from '../core/router.js';
 import { listTemplates, getTemplate } from '../core/registry.js';
 import { confirmModal, toast } from '../core/toast.js';
@@ -186,7 +186,14 @@ export function renderHome(rootSel) {
   const setVisibility = async (id, visibility, msg) => {
     const a = get(id);
     if (!a) return;
-    a.visibility = visibility;
+    // MISMA PUERTA QUE EL EDITOR. Este interruptor publicaba sin preguntar nada:
+    // la Ruleta sin casillas que el dueño encontró en la biblioteca podía entrar
+    // por aquí de un solo clic, sin pasar por el editor cuya guarda se cerró en
+    // v1.51.605. La decisión la toma su dueño (§21) y aquí solo se obedece.
+    const vis = decidirVisibilidad(a, visibility, 'accion');
+    if (vis.aviso) toast(vis.aviso, 'warning', 8000);
+    if (vis.rechaza) return;
+    a.visibility = vis.visibility;
     const { remote } = save(a);
     remote.catch(() => {});
     toast(msg, 'success');

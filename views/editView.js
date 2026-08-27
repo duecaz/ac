@@ -3,7 +3,7 @@ import { on } from '../core/events.js';
 import { get, save } from '../core/storage.js';
 import { newActivity } from '../core/migrate.js';
 import { getEditor, getTemplate } from '../core/registry.js';
-import { revisarActividad } from '../core/activityCheck.js';
+import { revisarActividad, decidirVisibilidad } from '../core/activityCheck.js';
 import { navigate } from '../core/router.js';
 import { toast, confirmModal } from '../core/toast.js';
 import { acquire } from '../core/lifecycle.js';
@@ -128,30 +128,17 @@ export function renderEditView(rootSel, { id, template }) {
     // dentro, y el siguiente que la abriera se encontraba el cartel de «todavía
     // está vacía» (lo cazó el dueño con una Ruleta sin casillas, 2026-08-26).
     // Se dice lo que falta, con las mismas palabras que el resto de la app.
-    // La pregunta no es «¿qué botón se ha pulsado?» sino «¿va a quedar PÚBLICA?»:
-    // una actividad YA publicada que se vacía en el editor la volvía a guardar
-    // pública el autosave (setVis null) sin pasar por aquí — el mismo agujero que
-    // esta guarda dice cerrar, entrando por la otra puerta.
-    if ((setVis || activity.visibility) === 'public') {
-      const rev = revisarActividad(activity);
-      if (!rev.jugable) {
-        const falta = rev.problemasDeJuego.join(' · ') + (rev.vacia ? ` ${rev.primerPaso}` : '');
-        if (setVis === 'public') {
-          // Publicar es una ACCIÓN: no se hace, y se dice por qué.
-          toast(`No se puede publicar: ${falta}`, 'warning', 8000);
-          setState('Sin publicar: aún no se puede jugar', 'warning', 'bi-exclamation-triangle-fill');
-          return;
-        }
-        // Autosave: el trabajo del profe SE GUARDA siempre —perder lo escrito por
-        // una guarda sería mucho peor que el fallo original—, pero baja a borrador
-        // para que la biblioteca no sirva algo que no se puede jugar. Y se dice
-        // (R6: nada en silencio).
-        activity.visibility = 'unlisted';
-        paintVis();
-        toast(`Pasa a borrador mientras no se pueda jugar: ${falta}`, 'warning', 8000);
-      }
+    // La pregunta no es «¿qué botón se ha pulsado?» sino «¿va a quedar PÚBLICA?»
+    // —una actividad ya publicada que se vacía aquí la re-guardaba pública el
+    // autosave (setVis null)—, y la decide `decidirVisibilidad`, que es su dueño:
+    // el interruptor de la tarjeta del home entra por la MISMA puerta.
+    const vis = decidirVisibilidad(activity, setVis, setVis ? 'accion' : 'guardado');
+    if (vis.aviso) toast(vis.aviso, 'warning', 8000);
+    if (vis.rechaza) {
+      setState('Sin publicar: aún no se puede jugar', 'warning', 'bi-exclamation-triangle-fill');
+      return;
     }
-    if (setVis) { activity.visibility = setVis; paintVis(); }
+    if (vis.visibility !== activity.visibility) { activity.visibility = vis.visibility; paintVis(); }
     saving = true;
     setState('Guardando…', 'info', 'bi-cloud-arrow-up');
     // §25 CAPACIDAD (antes P1-6): una actividad con muchas imágenes inline deja

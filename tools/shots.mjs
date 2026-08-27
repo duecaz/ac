@@ -16,16 +16,14 @@
 //
 // Requiere: python3 (servidor estático) y el Chromium preinstalado.
 import { createRequire } from 'node:module';
-import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { mkdirSync, existsSync, readdirSync } from 'node:fs';
+import { abrirServidor } from './helpers/servidorSonda.mjs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PW || '/opt/node22/lib/node_modules/playwright');
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const PORT = Number(process.env.PORT || 8492);
-const BASE = `http://127.0.0.1:${PORT}`;
 const label = (process.argv[2] || 'before').replace(/[^\w-]/g, '');
 const OUT = join(ROOT, '.shots', label);
 mkdirSync(OUT, { recursive: true });
@@ -53,14 +51,18 @@ const SIZES = [
   { id: 'portrait',  width: 800,  height: 1280 },
 ];
 
-const server = spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'],
-  { cwd: ROOT, stdio: 'ignore' });
-const bye = (code) => { try { server.kill(); } catch {} process.exit(code); };
+// Servidor con puerto EFÍMERO y verificación de árbol
+// (`tools/helpers/servidorSonda.mjs`). Aquí importa el doble que en las otras
+// sondas: esto compara PÍXELES entre dos pasadas, así que un zombi sirviendo el
+// árbol anterior en el puerto fijo daba «sin cambios visuales» —el veredicto más
+// tranquilizador que produce este repo— sobre un refactor sin medir.
+const { base: BASE, cerrar } = await abrirServidor();
+const bye = (code) => { cerrar(); process.exit(code); };
 process.on('SIGINT', () => bye(130));
-await new Promise(r => setTimeout(r, 700));
 
 const browser = await chromium.launch();
 const shots = [];
+let avisado = false;   // el aviso de plantilla ausente se da UNA vez, no por tamaño
 let bootstrapVisto = false;   // ¿ha llegado alguna vez la hoja del CDN?
 
 for (const size of SIZES) {
@@ -121,12 +123,18 @@ for (const size of SIZES) {
     }
     return faltan;
   }, { skins: SKINS, plantillas: PLANTILLAS });
-  if (faltan.length) {
+  // NO BASTA CON CONTARLO: hay que SALTARLA. Marcar `exitCode` y seguir dejaba el
+  // bucle de abajo intentando SKINS×MODES×SIZES capturas de algo que no existe,
+  // cada una esperando su `waitForSelector` de 9 s — ~108 s muertos y 24 líneas
+  // «⚠» que entierran el único «❌» que explica el porqué.
+  if (faltan.length && !avisado) {
     console.error(`❌ plantillas de PLANTILLAS que no están en el registro: ${faltan.join(', ')}`);
     process.exitCode = 1;
+    avisado = true;
   }
+  const vivas = PLANTILLAS.filter(p => !faltan.includes(p.id));
 
-  for (const pl of PLANTILLAS) {
+  for (const pl of vivas) {
    for (const skin of SKINS) {
     for (const mode of MODES) {
       const name = `${mode.id}-${pl.id}-${skin}-${size.id}.png`;
