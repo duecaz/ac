@@ -15,7 +15,7 @@ sale de aquí.
 - [D1 · Identidad del alumno: ¿apodo, clase o cuenta?](#d1--identidad-del-alumno-apodo-clase-o-cuenta)
 - [D2 · ¿El contenido es un objeto propio o vive dentro de la actividad?](#d2--el-contenido-es-un-objeto-propio-o-vive-dentro-de-la-actividad)
 - [D3 · ¿Imprimimos? (hoja de trabajo)](#d3--imprimimos-hoja-de-trabajo)
-- [D4 · ¿Aula SIN internet es un caso soportado?](#d4--aula-sin-internet-es-un-caso-soportado)
+- [D4 · ¿Aula SIN internet es un caso soportado? — DECIDIDO: NO (2026-08-28)](#d4--aula-sin-internet-es-un-caso-soportado--decidido-no-2026-08-28)
 - [D5 · Taxonomía de la biblioteca](#d5--taxonomía-de-la-biblioteca)
 - [D8 · Cómo se REPARTE cada actividad en vertical y en horizontal](#d8--cómo-se-reparte-cada-actividad-en-vertical-y-en-horizontal)
   - [Lo EJECUTADO desde el inventario (v1.51.511-515)](#lo-ejecutado-desde-el-inventario-v151511-515)
@@ -108,16 +108,21 @@ sale de aquí.
   Coste bajo (CSS de impresión + una vista), valor alto en aulas con pocos
   dispositivos.
 
-## D4 · ¿Aula SIN internet es un caso soportado?
+## D4 · ¿Aula SIN internet es un caso soportado? — **DECIDIDO: NO** (2026-08-28)
 
-- **Ellos**: un concurso y Wordwall exigen internet, sin matices.
-- **Nosotros hoy**: existe el backend `local` (misma máquina, BroadcastChannel) y
-  los HTML **desregistran** el service worker a propósito. O sea: la decisión
-  está tomada de hecho ("siempre hay internet") pero no declarada.
-- **Recomendación: decidirlo explícitamente**. Si se soporta, es nuestra única
-  ventaja estructural frente a los referentes (pizarra + móviles en la misma
-  red). Pero **solo después** de cerrar el problema de caché: ya nos costó dos
-  partidas (v1.51.336) y un PWA multiplica esa clase de fallo.
+**Decisión del dueño: no se hará PWA.** La pregunta era «decidirlo
+explícitamente», y ya está decidida: la app necesita internet, como un concurso y
+como Wordwall. Se cierra.
+
+- **Lo que ya había**, y ahora es la postura declarada y no un accidente: los HTML
+  **desregistran** el service worker a propósito, y el backend `local` (misma
+  máquina, BroadcastChannel) sigue siendo lo que es — una comodidad de desarrollo,
+  no un modo de aula sin red.
+- **Lo que se evita al decir que no**: el service worker fue el que nos costó dos
+  partidas por caché vieja (v1.51.336). Un PWA multiplica esa clase de fallo, y el
+  precio se paga con la clase delante.
+- **Si algún día se reabre**, la condición sigue siendo la misma: cerrar antes el
+  problema de caché. Pero no está en la cola.
 
 ## D5 · Taxonomía de la biblioteca
 
@@ -219,11 +224,12 @@ decisión de producto, y ahora se puede tomar mirando una tabla de 13 filas.
 Se ejecutan **solo las estructurales**: D6 hecha (ley §25) y D7 estudiada +
 congelada (ley §26, estudio en `docs/estudio-bucles-live.md`).
 
-**D1 · D2 · D3 · D4 · D5 quedan como DEUDA REGISTRADA**: son módulos que se
+**D1 · D2 · D3 · D5 quedan como DEUDA REGISTRADA** (D4 cerrada: no se hará PWA):
+son módulos que se
 pueden añadir después sin rediseñar nada de lo que ya existe — no bloquean, y
 por eso no se hacen ahora. Siguen descritas arriba con su recomendación; cuando
 toque una, se retoma desde ahí. Orden si se retoman: D1 (clases) → D3
-(imprimible) → D5 (taxonomía) → D2 (duplicar) → D4 (sin internet).
+(imprimible) → D5 (taxonomía) → D2 (duplicar).
 
 ### Lo aplicado en D6
 - `core/quotas.js`: los cuatro números en un sitio (200 actividades · 2 MB por

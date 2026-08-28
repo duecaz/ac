@@ -504,7 +504,7 @@ desde otro origen están SIN probar. **Se reabre solo si Google Classroom lo nec
 La UI lo dice antes: botón «Embed **beta**» + aviso en el diálogo. Detalle y condición de
 reapertura en `docs/norte.md` §7c.
 
-### 🟡 DECISIONES APLAZADAS (D1-D5) — deuda de PRODUCTO, no de código
+### 🟡 DECISIONES APLAZADAS (D1-D3, D5) — deuda de PRODUCTO, no de código
 Decisión del usuario (v1.51.340): se ejecutan solo las estructurales. **D6 hecha**
 (ley §25 · cuotas y retención) y **D7 estudiada y congelada** (ley §26 + estudio medido
 en `docs/estudio-bucles-live.md`). Quedan como módulos que se pueden añadir DESPUÉS sin
@@ -515,7 +515,6 @@ rediseñar nada — ficha completa y recomendación en **`docs/decisiones-pendie
 - **D3 · imprimible** (hoja de trabajo por MODELO de contenido, no por plantilla).
 - **D5 · taxonomía de la biblioteca** (grado·área·tema con vocabulario cerrado).
 - **D2 · "duplicar como otra plantilla"** (hoy el cambio de plantilla es destructivo).
-- **D4 · aula sin internet** (PWA): solo tras estabilizar la caché (ver v1.51.336).
 
 ### 🟡 AUDITORÍA INTEGRAL (Fable, 2026-07) — EJECUTADA en su mayoría → `docs/historico/handoff-auditoria-fable.md`
 4 agentes en paralelo (datos/sync · live · seguridad · UI). **20+ ítems ✅ hechos**
