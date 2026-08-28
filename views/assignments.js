@@ -3,7 +3,7 @@ import { html, escapeHtml, mount } from '../core/html.js';
 import { sessionItems } from '../kernel/session/engine.js';
 import { studentBase } from '../core/routing.js';
 import { on } from '../core/events.js';
-import { get, getRemote } from '../core/storage.js';
+import { get, getAnywhere } from '../core/storage.js';
 import { rowsFromAttempts, rowsFromAttempt } from '../core/answerRows.js';
 import { itemStatsHtml } from './itemStatsView.js';
 import { sessionTableHtml, sessionTableCsv } from './sessionTable.js';
@@ -13,15 +13,12 @@ import { toast, confirmModal } from '../core/toast.js';
 
 
 export async function renderAssignmentsForActivity(rootSel, activityId) {
-  // Primero local y, si no está, de la nube — igual que `#/play` y `#/launch`.
-  // Con la tarjeta ofreciendo Tarea en TODA la biblioteca (v1.51.621), mandar de
+  // Local y, si no está, de la nube — igual que `#/play` y `#/launch`. Con la
+  // tarjeta ofreciendo Tarea en TODA la biblioteca (v1.51.621), mandar de
   // deberes una actividad publicada por otro profe es un camino normal; mirar
   // solo este navegador lo convertía en «Actividad no encontrada».
-  let a = get(activityId);
-  if (!a) {
-    mount(rootSel, html`<div class="text-center py-5"><div class="spinner-border"></div><p class="mt-2">Cargando actividad…</p></div>`);
-    a = await getRemote(activityId).catch(() => null);
-  }
+  if (!get(activityId)) mount(rootSel, html`<div class="text-center py-5"><div class="spinner-border"></div><p class="mt-2">Cargando actividad…</p></div>`);
+  const a = await getAnywhere(activityId);
   if (!a) { mount(rootSel, html`<div class="alert alert-warning">Actividad no encontrada.</div>`); return; }
   // Una tarea se manda a casa: enterarse allí de que faltaban datos es peor que
   // en clase. La puerta va en la RUTA (`#/tasks/:id` tiene enlace propio), no en
@@ -30,8 +27,7 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
   if (!rev.jugable) { mount(rootSel, pantallaNoListaHtml(a, rev)); return; }
 
   async function refresh() {
-    const items = await listAssignmentsForActivity(activityId);
-    paint(items);
+    paint(await listAssignmentsForActivity(activityId));
   }
 
   function paint(items) {
@@ -159,8 +155,7 @@ export async function renderAttempts(rootSel, assignmentId) {
   // el informe de una tarea sobre una actividad de la biblioteca se quedaba sin
   // título, sin las etiquetas de cada pregunta y sin «la más fallada»: los tres
   // datos por los que se abre el informe.
-  let activity = activityId ? get(activityId) : null;
-  if (activityId && !activity) activity = await getRemote(activityId).catch(() => null);
+  const activity = activityId ? await getAnywhere(activityId) : null;
   const items = activity ? itemsOf(activity) : [];
   const T = activity ? getTemplate(activity.template) : null;
   const labels = items.map((it, i) => { try { return T?.itemLabel?.(it) || `Pregunta ${i + 1}`; } catch { return `Pregunta ${i + 1}`; } });

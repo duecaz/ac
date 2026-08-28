@@ -39,6 +39,11 @@ export const MODE_DEFS = [
   {
     id: 'solo', label: 'Individual', short: 'individual', icon: 'bi-person-fill', color: 'success',
     embed: true,
+    // La ruta del modo, aquí como la de todos. Faltaba —solo la declaraban los
+    // dos que navegan (live/tarea)— y por eso `rutaDeModo('solo')` devolvía
+    // `#/solo/:id`, que no existe: el hueco que obligaba a escribir `#/play/…`
+    // a mano en cada vista que pinta la tira de modos.
+    href: (a) => `#/play/${a.id}`,
     title: 'Jugar aquí, en este dispositivo',
     // Casi todo template implementa renderPlayer, salvo los que se declaran
     // SOLO en vivo (p.ej. Pregunta Live: meta.modes.solo === false). Ese opt-out
@@ -49,6 +54,7 @@ export const MODE_DEFS = [
   {
     id: 'vs', label: 'VS (duelo)', short: 'vs', icon: 'bi-fire', color: 'danger',
     embed: true,
+    href: (a) => `#/vs/${a.id}`,
     // CAPACIDAD (¿puede esta plantilla?): sabe puntuar un ítem y pintarlo.
     supportsTemplate: (T) => canAutoScoreRound(T),
     // DISPONIBLE (¿esta actividad concreta?): además, ≥2 ítems para una carrera justa.

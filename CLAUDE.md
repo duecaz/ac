@@ -262,23 +262,24 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   compara con lo declarado ("cuántos toques cuesta responder" es producto, no detalle).
 - **Opciones de PARTIDA vs ajustes de CONTENIDO**: lo que cambia el juego para ESTA vez
   (Pelotas: ganar por tiempo o por movimientos) se declara en `meta.play.options`
-  (`core/playOptions.js`) y lo pintan la pantalla de inicio y el setup de VS/Equipos —
-  ninguna vista conoce la plantilla. `set` es PURO: se aplica a la copia de juego y la
-  actividad guardada NO se toca (§24). Lo del editor sigue siendo contenido. Tope: la
-  opción viene SIEMPRE ya elegida (R2: el profe no configura nada para empezar).
-  Vigilado por `tests/playOptions.test.mjs`.
+  (`core/playOptions.js`), y los pintan la pantalla de inicio y el setup de VS/Equipos. `set` es PURO: la actividad guardada NO se toca
+  (§24) y lo del editor sigue siendo contenido. Tope: la
+  opción viene SIEMPRE ya elegida (R2: nada que configurar para empezar). Lo vigila
+  `tests/playOptions.test.mjs`.
 - **En CARRERA la vara es COMPLETA**: `racePassed()` (`core/liveLoops.js`) — una hoja de
   Tildes/Comas a medias VUELVE A LA COLA (su scorer da crédito por marca, `correct: net>0`).
   Sin esto la premisa del podio es falsa: ordena por hora de meta PORQUE todos terminan con
-  todas bien. Y el móvil **nunca juzga sin clave**: `hasClientKey()` (`core/liveSnapshot.js`)
-  + el guard de `paintRace`. Vigilado por `tests/raceKey.test.mjs`.
+  todas bien. Y el móvil **nunca juzga sin clave**: `hasClientKey()` + el guard de
+  `paintRace` (`core/liveSnapshot.js`). Lo vigila `tests/raceKey.test.mjs`.
 - **Tarjeta de actividad**: una sola (`core/activityCard.js`) y con VARIANTE, no con
   banderitas sueltas: `variant: 'mine' | 'library' | 'plain'`. Los campos informativos
-  (subtítulo · etiquetas · autor · nº de páginas) van ENCENDIDOS por defecto y se pintan
-  si el dato existe — "qué muestra una tarjeta" lo decide el componente, no cada vista.
-  Unificar el markup no bastó: la CONFIGURACIÓN divergió igual (el badge de páginas solo
-  lo pedía la home y el profe preguntó por qué no salía en la portada).
-  Vigilado por `tests/activityCard.test.mjs` (ninguna vista puede apagar un campo).
+  (subtítulo · etiquetas · autor · páginas) van ENCENDIDOS y se pintan si el dato existe:
+  "qué muestra una tarjeta" lo decide el componente, no cada vista.
+  Unificar el markup no bastó (divergió la CONFIGURACIÓN) ni la configuración (los CLICS
+  seguían copiados en las 5 vistas, y por eso Live/Tarea no salían de "Mis actividades").
+  Cada botón declara su modo (`data-mode`), `rutaDeModo()` pone la ruta y
+  **`views/activityCardWire.js`** cablea; `authed` es fail-CLOSED. Lo vigila
+  `activityCard.test` (nadie apaga un campo ni recablea modos).
 - **LA FORMA DEL MARCO DE JUEGO** (`core/frameAspect.js`): la PLANTILLA declara su
   proporción (`meta.aspectRatio`, def. 4/3) y la plataforma OBEDECE — profe, alumno en
   vivo y tarea llevan la MISMA (§0). El tamaño sale del hueco: ancho máx. = alto libre ×

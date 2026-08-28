@@ -7,7 +7,7 @@ import { studentBase } from '../core/routing.js';
 import { startElapsedTicker } from '../core/deadlineTicker.js';
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
-import { get, getRemote } from '../core/storage.js';
+import { get, getAnywhere } from '../core/storage.js';
 import { createRoom, findRoomByCode, fetchSession, fetchSessionBlob,
          startSession, setSessionState, endSession, settleItem,
          listPlayers, listAnswers, leaderboard, kickPlayer, subscribeRoom, pingHost, fetchSessionKey,
@@ -45,11 +45,8 @@ export async function renderHostLaunch(rootSel, activityId) {
   // la nube. Antes solo miraba local → una actividad que vive en PB pero no en el
   // navegador (otro dispositivo, caché limpiada) daba "Actividad no encontrada"
   // aunque en solo sí abría.
-  let a = get(activityId);
-  if (!a) {
-    mount(rootSel, html`<div class="text-center py-5"><div class="spinner-border"></div><p class="mt-2">Cargando actividad…</p></div>`);
-    a = await getRemote(activityId).catch(() => null);
-  }
+  if (!get(activityId)) mount(rootSel, html`<div class="text-center py-5"><div class="spinner-border"></div><p class="mt-2">Cargando actividad…</p></div>`);
+  const a = await getAnywhere(activityId);
   if (!a) { mount(rootSel, html`<div class="alert alert-danger">Actividad no encontrada.</div>`); return; }
   // A MEDIAS NO SE LLEVA A CLASE, y se comprueba AQUÍ y no en el botón de la
   // portada: `#/launch/:id` es una ruta con enlace propio (marcador, atrás,

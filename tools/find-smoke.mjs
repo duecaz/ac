@@ -212,7 +212,7 @@ try {
   await page.waitForSelector('.acard', { timeout: 9000 });
   let toques = 0;
   const tocar = async (sel) => { await page.click(sel); toques++; await page.waitForTimeout(500); };
-  await tocar('.acard .act-play');           // 1 · el modo Individual de su tarjeta
+  await tocar('.acard [data-mode="solo"]');  // 1 · el modo Individual de su tarjeta
   await page.waitForSelector('.ww-start-go', { timeout: 9000 });
   await tocar('.ww-start-go');               // 2 · Iniciar
   await page.waitForSelector('#ww-player-widget *', { timeout: 12000 });

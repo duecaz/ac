@@ -88,4 +88,29 @@ ok('rotateAssignmentCode issues a fresh code and retires the old');
   ok('la pantalla de tareas lista MIS tareas de esa actividad, no las de otro profe');
 }
 
+// ── «MÍA» ES DE LA CUENTA, NO DEL NAVEGADOR ─────────────────────────────────
+// El primer arreglo filtró por `author_id`… que se sellaba con el id ANÓNIMO del
+// navegador. O sea: «tareas creadas en ESTA pizarra». El mismo profe en otro
+// aparato o tras limpiar la caché habría perdido de vista sus PIN y sus
+// informes, sin recuperación — exactamente el fallo que este mismo trabajo
+// acababa de arreglar para las actividades.
+{
+  const anonA = 'anon-pizarra-A', anonB = 'anon-portatil-B', cuenta = 'u_profe';
+  const enA = createLocalAssignments({ kv, userId: () => cuenta, identities: () => [cuenta, anonA] });
+  const { id: creada } = await enA.createAssignment(activity, { title: 'Desde la pizarra' });
+  const enB = createLocalAssignments({ kv, userId: () => cuenta, identities: () => [cuenta, anonB] });
+  assert.ok((await enB.listAssignmentsForActivity('act1')).some(a => a.id === creada),
+    'el mismo profe en otro aparato tiene que seguir viendo su tarea (y su PIN)');
+  // Y las de ANTES, selladas con el navegador, no se quedan huérfanas aquí.
+  const legado = createLocalAssignments({ kv, userId: () => anonA, identities: () => [anonA] });
+  const { id: vieja } = await legado.createAssignment(activity, { title: 'De antes de la cuenta' });
+  assert.ok((await enA.listAssignmentsForActivity('act1')).some(a => a.id === vieja),
+    'una tarea creada antes de entrar sigue siendo mía en el navegador donde nació');
+  // CONTRA-PRUEBA: y en el otro aparato esa vieja NO aparece — es lo único que
+  // el id del navegador puede afirmar, y afirmar de más sería el bug de antes.
+  assert.ok(!(await enB.listAssignmentsForActivity('act1')).some(a => a.id === vieja),
+    'CONTRA-PRUEBA: la tarea anónima de otra pizarra no es mía');
+  ok('«mía» la decide la CUENTA (y el navegador para las de antes), no el id anónimo');
+}
+
 console.log(`\nassignments.test: ${passed} checks passed`);

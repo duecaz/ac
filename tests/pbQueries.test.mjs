@@ -106,7 +106,9 @@ function espia(responder) {
 // ── 3. listAssignmentsForActivity — las tareas de una actividad ────────────
 {
   const espión = espia((url) => {
-    if (url.includes('/assignments/records')) return res(200, { items: [{ id: 't1', code: 'ABC123' }] });
+    if (url.includes('/assignments/records')) return res(200, {
+      items: [{ id: 't1', code: 'ABC123', author_id: 'u1' }, { id: 't2', code: 'ZZZ999', author_id: 'otro-profe' }],
+    });
     return res(200, {});
   });
   try {
@@ -115,8 +117,12 @@ function espia(responder) {
     const url = decodeURIComponent(espión.urls.find(u => u.includes('assignments')) || '');
     assert.match(url, /activity_id='a\\'1'/, 'la comilla del id se ESCAPA con barra (pbEscape), no rompe el filtro');
     assert.match(url, /sort=-created_at/, 'la más reciente arriba');
+    assert.match(url, /author_id='u1'/, 'y se piden solo LAS MÍAS (la colección tiene list abierto: el alumno lee la suya)');
+    // Y aunque el servidor devolviera de más —list está abierto a propósito—, el
+    // predicado compartido las descarta aquí: la tarea de otro profe traía su PIN
+    // y sus botones de «Cerrar»/«Rotar PIN», que además funcionan (updateRule=AUTH).
     assert.deepStrictEqual(tareas.map(t => t.code), ['ABC123']);
-    ok('listAssignmentsForActivity: filtro escapado, orden por fecha y filas devueltas');
+    ok('listAssignmentsForActivity: filtro escapado, orden por fecha y SOLO mis tareas');
   } finally { espión.restore(); }
 }
 

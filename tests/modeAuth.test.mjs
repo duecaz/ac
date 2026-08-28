@@ -68,48 +68,55 @@ ok('lockedModes(authed) refleja el estado de sesión');
 
 // ── 3. La tarjeta lo PINTA con candado, no lo esconde ───────────────────────
 const locked = modeStripHtml(ACT, { includeManage: true, authed: false });
-assert.ok(locked.includes('act-pin'), 'sin sesión, En vivo SIGUE en la tira (esconderlo enseña que no existe)');
-assert.ok(locked.includes('act-task'), 'sin sesión, Tarea SIGUE en la tira');
+assert.match(locked, /data-mode="live"/, 'sin sesión, En vivo SIGUE en la tira (esconderlo enseña que no existe)');
+assert.match(locked, /data-mode="task"/, 'sin sesión, Tarea SIGUE en la tira');
 assert.match(locked, /data-locked="1"/, 'el botón bloqueado se marca data-locked para que el handler lo intercepte');
 assert.ok(locked.includes('bi-lock-fill'), 'el botón bloqueado muestra candado');
 assert.ok(locked.includes(modeAuthHint('live')), 'el tooltip del botón lleva la MISMA frase que el modal');
 // Los jugables no se tocan nunca.
-for (const cls of ['act-play', 'act-vs', 'act-teams']) {
-  assert.ok(locked.includes(cls), `${cls} sigue disponible sin sesión (jugar es libre)`);
+for (const modo of ['solo', 'vs', 'teams']) {
+  assert.ok(locked.includes(`data-mode="${modo}"`), `${modo} sigue disponible sin sesión (jugar es libre)`);
 }
-const strip = locked.split('act-play')[1].split('act-pin')[0];
+const strip = locked.split('data-mode="solo"')[1].split('data-mode="live"')[0];
 assert.ok(!/data-locked/.test(strip), 'los modos jugables no llevan candado');
 
 const open = modeStripHtml(ACT, { includeManage: true, authed: true });
 assert.ok(!/data-locked/.test(open), 'con sesión no queda ningún candado');
 assert.ok(open.includes('bi-broadcast'), 'con sesión, En vivo recupera su icono');
-// El defecto no puede bloquear a las vistas públicas, que no pasan `authed`.
-assert.ok(!/data-locked/.test(modeStripHtml(ACT, { includeManage: true })), 'por defecto (authed omitido) no se bloquea nada');
+// EL DEFECTO ES FAIL-CLOSED (v1.51.623). Era «hay sesión», y entonces lo único
+// que impedía que una vista olvidadiza pintara los mandos de profe ABIERTOS era
+// una regex sobre el código de las vistas. Ahora olvidarlo pone un candado de
+// más: se ve, se toca y se arregla — en vez de un 403 con la clase delante.
+assert.match(modeStripHtml(ACT, { includeManage: true }), /data-locked="1"/,
+  'por defecto (authed omitido) se bloquea: el olvido tiene que fallar del lado seguro');
 ok('modeStripHtml: candado visible sin sesión, tira intacta con sesión');
 
 // ── 4. El aviso está CABLEADO donde el profe pulsa ──────────────────────────
 // DESCUBIERTO, no enumerado. Aquí se citaba SOLO views/home.js porque era la
 // única vista con modos de profe; desde v1.51.621 la tarjeta los ofrece en toda
-// la biblioteca, y una vista que se olvidara de `authed` pintaría los botones
-// ABIERTOS (el defecto de `authed` es «hay sesión») → clic → 403 en clase.
-// Se escanean TODAS las que pintan tarjeta.
+// la biblioteca. Que cada vista pase la sesión ya no hace falta vigilarlo
+// leyendo su código: el defecto de `authed` es fail-CLOSED (comprobado arriba),
+// así que una vista olvidadiza pinta candados de más, no mandos abiertos.
+// Lo que sí se comprueba es que las que la pasan usen la MISMA condición que el
+// router (`canHost`), y no una propia.
 const { readdirSync } = await import('node:fs');
 const VISTAS_TARJETA = readdirSync(new URL('../views', import.meta.url))
   .filter(f => f.endsWith('.js')).map(f => `views/${f}`)
   .filter(v => /activityCardHtml\(/.test(read(v)));
 assert.ok(VISTAS_TARJETA.length >= 5, `solo ${VISTAS_TARJETA.length} vistas pintan tarjeta: ¿el escáner mira donde debe?`);
-for (const v of VISTAS_TARJETA) {
-  assert.match(read(v), /authed: canHost\(\)/,
-    `${v} debe pasar el estado de sesión a la tarjeta (misma condición que el gate del router)`);
-}
-// Y el clic bloqueado lo intercepta el DUEÑO de los clics de la tarjeta, una vez.
+const conSesionPropia = VISTAS_TARJETA.filter(v => /\bauthed:/.test(read(v)) && !/canHost\(\)/.test(read(v)));
+assert.deepStrictEqual(conSesionPropia, [],
+  `estas vistas deciden la sesión por su cuenta en vez de con canHost(): ${conSesionPropia.join(', ')}`);
+// Y el clic bloqueado lo intercepta el DUEÑO de los clics de la tarjeta, una
+// vez, con la MISMA redacción que la barra de modos del reproductor.
 const wire = read('views/activityCardWire.js');
 assert.match(wire, /data\.locked|dataset\.locked/, 'el dueño de los clics debe interceptar un modo bloqueado');
-assert.match(wire, /openLoginModal\(\{ reason/, 'el clic bloqueado abre el login DICIENDO para qué');
+const modal = read('views/loginModal.js');
+assert.match(modal, /export function pedirCuentaParaModo/, 'la petición de cuenta por modo tiene UN dueño');
 
 const player = read('views/playerView.js');
 assert.match(player, /modeNeedsAuth\(m\) && !canHost\(\)/, 'views/playerView.js debe bloquear Live/Tarea sin sesión en la barra de modos');
-assert.match(player, /openLoginModal\(\{ reason/, 'la barra de modos abre el login con el motivo');
+assert.match(player, /pedirCuentaParaModo/, 'la barra de modos usa la MISMA petición de cuenta que la tarjeta');
 
 // El router gatea las rutas que DIRIGEN (crear sala, reentrar, tareas) con
 // requireHost: exige sesión en PocketBase y deja pasar en el backend `local`

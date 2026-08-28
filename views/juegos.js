@@ -40,6 +40,8 @@ function ensureGameActivity(T) {
 
 export function renderJuegos(rootSel) {
   const juegos = gameTemplates();
+  // Una vez por pintada, no por tarjeta (ver explore.js).
+  const authed = canHost();
   mount(rootSel, html`
     <div class="home-wrap">
       <div class="home-head">
@@ -53,7 +55,7 @@ export function renderJuegos(rootSel) {
         <div class="home-grid">
           ${juegos.map(T => {
             const a = ensureGameActivity(T);
-            return activityCardHtml(a, { variant: 'library', authed: canHost() });
+            return activityCardHtml(a, { variant: 'library', authed });
           }).join('')}
         </div>` : `
         <div class="home-empty"><i class="bi bi-controller"></i><p>Aún no hay juegos instalados.</p></div>`}

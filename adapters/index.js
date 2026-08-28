@@ -95,19 +95,34 @@ export function getAssignments() {
   if (_assignments) return _assignments;
   const name = backendName();
   _assignments = (async () => {
+    // DOS identidades. `userId` sella y `identities` filtra: una tarea es MÍA si
+    // la creó mi CUENTA (lo normal desde v1.51.623 — `#/tasks` exige sesión) o
+    // este NAVEGADOR (las de antes, y el backend local, que no tiene cuentas).
+    // Sellar solo con el id anónimo hacía que el mismo profe en otra pizarra
+    // perdiera de vista sus propios PIN.
+    // Y se resuelven EN CADA LLAMADA, no aquí: este driver se memoiza por carga
+    // de página y el profe suele entrar DESPUÉS de que se construya — con la
+    // identidad congelada, sus tareas se sellarían como anónimas toda la sesión.
+    const anonId = await (async () => {
+      try { return (await import('../core/state.js' + v)).getAnonId(); } catch { return 'local-anon'; }
+    })();
+    const cuenta = await (async () => {
+      try { return (await import('../core/auth.js' + v)).getAuthUserId; } catch { return () => null; }
+    })();
+    const identidades = {
+      userId: () => cuenta() || anonId,
+      identities: () => [cuenta(), anonId].filter(Boolean),
+    };
     if (name === 'local') {
-      let userId;
-      try { userId = (await import('../core/state.js' + v)).getAnonId(); } catch { userId = 'local-anon'; }
-      return (await import('./local/assignments.js' + v)).createLocalAssignments({ userId });
+      return (await import('./local/assignments.js' + v)).createLocalAssignments(identidades);
     }
     if (name === 'pocketbase') {
-      let userId;
-      try { userId = (await import('../core/state.js' + v)).getAnonId(); } catch { userId = 'local-anon'; }
+      const ids = identidades;
       if (await pbCollectionExists('assignments')) {
-        return (await import('./pocketbase/assignments.js' + v)).createPocketbaseAssignments({ userId });
+        return (await import('./pocketbase/assignments.js' + v)).createPocketbaseAssignments(ids);
       }
       console.warn('[assignments] Colección assignments no existe en PocketBase → modo local');
-      return (await import('./local/assignments.js' + v)).createLocalAssignments({ userId });
+      return (await import('./local/assignments.js' + v)).createLocalAssignments(ids);
     }
     throw new Error(`backend desconocido: ${name}`);
   })();

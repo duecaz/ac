@@ -82,6 +82,25 @@ export async function getRemote(id) {
   return data ? migrate(data) : null;
 }
 
+/** LOCAL Y, SI NO ESTÁ, DE LA NUBE — el idioma, con un dueño (§21).
+ *
+ *  Estaba escrito SEIS veces (reproductor, sala en vivo, lista ×2, tareas ×2) y
+ *  ya divergía: unas guardaban lo traído, otras no; unas pintaban «Cargando…»,
+ *  otras dejaban la pantalla muerta. Es una pregunta sobre las actividades, y
+ *  las actividades tienen dueño: este módulo.
+ *
+ *  `cache: true` la guarda en el almacén del usuario (solo donde tiene sentido:
+ *  una lista que se va a jugar entera). El reproductor NO cachea a propósito —
+ *  jugar algo público no debe ensuciar «Mis actividades».
+ */
+export async function getAnywhere(id, { cache = false } = {}) {
+  const local = get(id);
+  if (local) return local;
+  const remote = await getRemote(id).catch(() => null);
+  if (remote && cache) save(remote);
+  return remote;
+}
+
 // ── BIBLIOTECA PÚBLICA (ley de datos §21: la colección tiene UN dueño) ────────
 // Portada, Explorar y el perfil de autor consultaban `activities` por su cuenta,
 // cada uno con su filtro y su normalización. Ahora piden estos métodos al dueño

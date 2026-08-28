@@ -79,10 +79,13 @@ export async function renderLanding(rootSel) {
     const featured = computeFeatured(soloEjercicios, likeCounts, {}, 8);
     if (!document.getElementById('lp-grid')) return; // navegó fuera
     if (!featured.length) { setGrid(`<p class="text-muted text-center py-4 w-100">Aún no hay actividades publicadas.</p>`); return; }
-    setGrid(featured.map(a => card(a, likeCounts[a.id] || 0)).join(''));
+    const authed = canHost();
+    setGrid(featured.map(a => card(a, likeCounts[a.id] || 0, authed)).join(''));
   }
 
-  function card(a, likes) {
+  // canHost() una vez por pintada (ver explore.js): el valor es el mismo para
+  // todas las tarjetas de esta rejilla.
+  function card(a, likes, authed) {
     const liked = myLikes.has(a.id);
     const topRight = `<button class="lp-like ${liked ? 'is-liked' : ''}" data-like="${escapeHtml(a.id)}" title="Me gusta">
         <i class="bi ${liked ? 'bi-heart-fill' : 'bi-heart'}"></i> <span class="lp-like__n">${likes}</span>
@@ -91,7 +94,7 @@ export async function renderLanding(rootSel) {
     // extra ni botón «Jugar» propio. Ese botón era una TERCERA forma de hacer lo
     // mismo (el preview ya juega y la tira tiene Individual) y hacía que la
     // portada se viera distinta del resto sin ninguna razón.
-    return activityCardHtml(a, { variant: 'library', authed: canHost(), topRight });
+    return activityCardHtml(a, { variant: 'library', authed, topRight });
   }
 
   function goSearch() {

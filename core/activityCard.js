@@ -23,28 +23,35 @@ import { activityPageCount } from './migrate.js';
 // Esconderlos hacía lo contrario de lo que la app quiere: quien llega sin cuenta
 // no llega a enterarse de que existe el modo en vivo. Ahora salen SIEMPRE y, sin
 // sesión, con CANDADO y su frase (§22: avisar ANTES, nunca dejar que falle).
-export function modeStripHtml(a, { includeManage = false, authed = true } = {}) {
+export function modeStripHtml(a, { includeManage = false, authed = false } = {}) {
   const T = getTemplate(a.template);
   const m = T?.meta?.modes || { solo: true };
   const teamsMode = getMode('teams');
   const canTeams = teamsMode.supportsTemplate(T) && teamsMode.isAvailable(a);
   const id = escapeHtml(a.id);
+  // CADA BOTÓN DICE QUÉ MODO ES (`data-mode`), y de ahí sale su ruta.
+  // Estuvieron identificados por CLASE (`act-play`/`act-vs`/`act-pin`…) y cada
+  // vista traducía esa clase a una ruta escrita a mano: cinco copias, una de
+  // ellas con nombre heredado —`act-pin` para «En vivo»— que había que traducir
+  // mentalmente. Con el modo declarado, el dueño de los clics llama a
+  // `rutaDeModo()` y un modo nuevo no obliga a tocar ninguna vista.
+  const btn = (modeId, icon, label, { locked = false, tpl = false } = {}) =>
+    `<button class="act-mode mode-${modeId}${locked ? ' is-locked' : ''}" data-mode="${modeId}"`
+    + ` data-id="${id}"${tpl ? ` data-tpl="${escapeHtml(a.template)}"` : ''}${locked ? ' data-locked="1"' : ''}`
+    + ` title="${escapeHtml(label)}"><i class="bi ${locked ? 'bi-lock-fill' : icon}"></i></button>`;
   // Modo host-only sin sesión: se muestra con CANDADO y su frase, no se esconde
   // ni se deja fallar al pulsar. `authed` lo aporta la vista (este módulo es
   // puro). Los modos jugables (Individual/VS/Equipos) nunca se bloquean.
-  const hostBtn = (modeId, cls, icon, label) => {
+  const hostBtn = (modeId, icon, label) => {
     const locked = !authed && modeNeedsAuth(modeId);
-    const title = locked ? modeAuthHint(modeId) : label;
-    return `<button class="${cls} mode-${modeId === 'task' ? 'task' : 'live'}${locked ? ' is-locked' : ''}"`
-      + ` data-id="${id}"${locked ? ' data-locked="1"' : ''} title="${escapeHtml(title)}">`
-      + `<i class="bi ${locked ? 'bi-lock-fill' : icon}"></i></button>`;
+    return btn(modeId, icon, locked ? modeAuthHint(modeId) : label, { locked });
   };
   return [
-    m.solo            ? `<button class="act-play mode-solo"   data-id="${id}" title="Individual"><i class="bi bi-person-fill"></i></button>` : '',
-    isVsCompatible(a) ? `<button class="act-vs mode-vs"       data-id="${id}" title="VS"><i class="bi bi-fire"></i></button>` : '',
-    canTeams          ? `<button class="act-teams mode-teams" data-id="${id}" data-tpl="${escapeHtml(a.template)}" title="Equipos"><i class="bi bi-people-fill"></i></button>` : '',
-    includeManage && m.live  ? hostBtn('live', 'act-pin',  'bi-broadcast',      'En vivo') : '',
-    includeManage && m.async ? hostBtn('task', 'act-task', 'bi-clipboard-check', 'Tarea')  : '',
+    m.solo            ? btn('solo',  'bi-person-fill', 'Individual') : '',
+    isVsCompatible(a) ? btn('vs',    'bi-fire',        'VS') : '',
+    canTeams          ? btn('teams', 'bi-people-fill', 'Equipos', { tpl: true }) : '',
+    includeManage && m.live  ? hostBtn('live', 'bi-broadcast',       'En vivo') : '',
+    includeManage && m.async ? hostBtn('task', 'bi-clipboard-check', 'Tarea')   : '',
   ].filter(Boolean).join('');
 }
 
@@ -69,30 +76,40 @@ export function modeStripHtml(a, { includeManage = false, authed = true } = {}) 
 // no es el sitio donde se decide quién puede dirigir una sala — eso lo dice el
 // candado, y lo vuelve a decir la ruta. Lo que cambia entre variantes es lo que
 // de verdad depende de QUIÉN es la actividad: sus acciones de dueño.
+//
+// `modes` era un TRI-ESTADO ('all' · 'play' · 'none') y desde que la biblioteca
+// ofrece los cinco, 'play' se quedó sin un solo llamante: dos booleanos disfrazados
+// de tabla que había que leer para descubrir que ya daban igual.
 const VARIANTS = {
-  mine:    { modes: 'all',  playablePreview: false },
-  library: { modes: 'all',  playablePreview: true  },
-  plain:   { modes: 'none', playablePreview: false },
+  mine:    { strip: true,  playablePreview: false },
+  library: { strip: true,  playablePreview: true  },
+  plain:   { strip: false, playablePreview: false },
   // Lista de actividades (rondas encadenadas): sin preview de juego (cabecera
   // propia con título) y con un único modo "Jugar lista". Era la última tarjeta
   // escrita a mano fuera del componente (views/home.js listCard).
-  list:    { modes: 'none', pages: false, playablePreview: false },
+  list:    { strip: false, pages: false, playablePreview: false },
 };
 
 // Pinta la tarjeta canónica. `opts`:
 //   variant: 'mine' | 'library' | 'plain'   → el preajuste (ver arriba)
-//   authed: bool                     → hay sesión de profe (false ⇒ Live/Tarea con candado)
+//   authed: bool                     → hay sesión de profe (defecto FALSE ⇒ Live/Tarea
+//                                      con candado). Fail-CLOSED a propósito: era `true`
+//                                      y lo único que impedía que una vista olvidadiza
+//                                      pintara los mandos de profe abiertos era una regex
+//                                      sobre el código de las vistas. Olvidarlo ahora
+//                                      pone un candado de más, que se ve y se arregla.
 //   topRight: html                   → esquina sup-der del cuerpo (like / iconos dueño / idioma…)
-//   footer: html                     → pie del cuerpo (Jugar / Probar+Duplicar / ítems+likes…)
-//   extraClass/previewClass: string  → clases extra opcionales
-//   modes/pages/playablePreview/subtitle/author/tags → sobrescriben el preajuste
+//   footer: html                     → pie del cuerpo (iconos de dueño / ítems+likes…)
+//   strip/pages/playablePreview/subtitle/author/tags → sobrescriben el preajuste
 //                                    (excepción justificada, no la vía normal)
+// Ya no hay `extraClass`/`previewClass`: eran dos vías para decorar la tarjeta
+// DESDE FUERA (la portada se pintaba distinta con ellas) y quedaron sin llamante
+// al unificar el diseño. Dejarlas en la firma es invitar a rehacerlo.
 export function activityCardHtml(a, opts = {}) {
   const preset = VARIANTS[opts.variant] || {};
   const {
-    modes = 'none', pages = true, playablePreview = false, authed = true,
-    subtitle = true, author = true, tags = true,
-    topRight = '', footer = '', extraClass = '', previewClass = '',
+    strip: conModos = false, pages = true, playablePreview = false, authed = false,
+    subtitle = true, author = true, tags = true, topRight = '', footer = '',
   } = { ...preset, ...opts };
   const T = getTemplate(a.template);
   const color = opts.variant === 'list' ? 'primary' : (T?.meta?.color || 'info');
@@ -114,7 +131,7 @@ export function activityCardHtml(a, opts = {}) {
   // la única plantilla que lo declara), así que le quitaba el botón de En vivo
   // hasta en «Mis actividades», donde funcionaba. Lo de «no se manda de
   // deberes» ya lo dice `modes.async: false` en la propia plantilla.
-  const strip = modes === 'none' ? '' : modeStripHtml(a, { includeManage: modes === 'all', authed });
+  const strip = conModos ? modeStripHtml(a, { includeManage: true, authed }) : '';
   let pagesBadge = '';
   if (pages) {
     const p = activityPageCount(a);
@@ -130,14 +147,14 @@ export function activityCardHtml(a, opts = {}) {
           ${a.subtitle ? `<div class="s text-truncate">${escapeHtml(a.subtitle)}</div>` : ''}
         </div>
       </div>`
-    : `<div class="acard-preview${previewClass ? ' ' + previewClass : ''}"${bg ? ` style="background:${bg}"` : ''}${playablePreview ? ` data-play="${id}" role="button" title="Jugar"` : ''}>
+    : `<div class="acard-preview"${bg ? ` style="background:${bg}"` : ''}${playablePreview ? ` data-play="${id}" role="button" title="Jugar"` : ''}>
         ${homePreviewHtml(a)}
         ${pagesBadge}
       </div>`;
-  const listStrip = `<button class="mode-list act-list" data-id="${id}" title="Jugar lista">
+  const listStrip = `<button class="act-mode mode-list" data-mode="list" data-id="${id}" title="Jugar lista">
         <i class="bi bi-play-fill"></i> Jugar</button>`;
   return `
-    <article class="acard${extraClass ? ' ' + extraClass : ''}" data-id="${id}">
+    <article class="acard" data-id="${id}">
       ${head}
       ${esLista ? `<div class="acard-modes">${listStrip}</div>` : (strip ? `<div class="acard-modes">${strip}</div>` : '')}
       <div class="acard-body">

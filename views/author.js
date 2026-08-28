@@ -151,13 +151,13 @@ export async function renderAuthor(rootSel, ownerId) {
       grid.innerHTML = `<p class="text-muted text-center py-4 w-100">${isOwner ? 'Aún no has publicado actividades. Publica una y aparecerá aquí.' : 'Este autor aún no ha publicado actividades.'}</p>`;
       return;
     }
-    grid.innerHTML = rows.map(card).join('');
+    const authed = canHost();
+    grid.innerHTML = rows.map(a => card(a, authed)).join('');
   }
 
-  function card(a) {
-    // Sin decoración propia: la MISMA tarjeta de la portada, Explorar y Juegos.
-    return activityCardHtml(a, { variant: 'library', authed: canHost() });
-  }
+  // Sin decoración propia: la MISMA tarjeta de la portada, Explorar y Juegos.
+  // `authed` se calcula una vez por pintada (ver explore.js).
+  const card = (a, authed) => activityCardHtml(a, { variant: 'library', authed });
 
   wireActivityCard(rootSel);
   on(rootSel, 'click', '#au-edit', () => paintEditForm(true));

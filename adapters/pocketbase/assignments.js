@@ -24,7 +24,7 @@
 //
 // API rules: allow all (or restrict by author_id for mutations).
 import { LETTERS, PIN_LENGTH } from '../../core/constants.js';
-import { normalizeCode } from '../../core/assignmentRules.js';
+import { normalizeCode, esMiTarea } from '../../core/assignmentRules.js';
 import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
 import { pbJson } from '../../core/pbHttp.js';
 
@@ -38,8 +38,14 @@ function genCode() {
 // anónimo, exactamente como antes). Alias local para los llamadores.
 const pbFetch = (path, opts) => pbJson(path, opts);
 
-export function createPocketbaseAssignments({ userId = 'local-anon' } = {}) {
-  const uid = () => userId;
+export function createPocketbaseAssignments({ userId = 'local-anon', identities } = {}) {
+  // La identidad puede venir como VALOR (tests) o como FUNCIÓN (la app): el
+  // driver se memoiza por carga de página y el profe entra después, así que
+  // preguntarla en cada llamada es lo que hace que sus tareas queden selladas
+  // con su cuenta y no con el id anónimo del navegador.
+  const val = (x, def) => (typeof x === 'function' ? x() : x) || def;
+  const uid = () => val(userId, 'local-anon');
+  const mios = () => val(identities, null) || [uid()];
 
   return {
     async createAssignment(activity, { title, dueAt, maxAttempts } = {}) {
@@ -71,12 +77,15 @@ export function createPocketbaseAssignments({ userId = 'local-anon' } = {}) {
     // salía sobre lo tuyo; desde que sale en toda la biblioteca (v1.51.621),
     // dos profes con la misma actividad publicada es el caso NORMAL.
     async listAssignmentsForActivity(activityId) {
-      const me = uid();
-      const filtro = `activity_id='${pbEscape(activityId)}' && author_id='${pbEscape(me)}'`;
+      // El servidor devuelve las de esta actividad; el predicado de quién soy YO
+      // vive en `esMiTarea` (core/assignmentRules.js) y lo comparten los dos
+      // adaptadores. El filtro de aquí es solo para no traerse de más.
+      const autores = mios().map(x => `author_id='${pbEscape(x)}'`).join(' || ');
+      const filtro = `activity_id='${pbEscape(activityId)}' && (${autores})`;
       const res = await pbFetch(
         `/api/collections/assignments/records?filter=${pbFilterParam(filtro)}&sort=-created_at&perPage=200`
       );
-      return res?.items || [];
+      return (res?.items || []).filter(r => esMiTarea(r, mios()));
     },
 
     async findAssignmentByCode(code) {

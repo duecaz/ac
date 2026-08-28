@@ -73,10 +73,14 @@ export async function renderExplore(rootSel, q0 = '') {
       </div>`;
       return;
     }
-    list.innerHTML = `<div class="home-grid">${filtered.map(r => card(r)).join('')}</div>`;
+    const authed = canHost();
+    list.innerHTML = `<div class="home-grid">${filtered.map(r => card(r, authed)).join('')}</div>`;
   }
 
-  function card(r) {
+  // canHost() una vez por PINTADA, no por tarjeta: lee el token y `location`, y
+  // `paint()` corre en CADA tecla del buscador (×N tarjetas). El valor no puede
+  // cambiar a mitad de una pintada síncrona.
+  function card(r, authed) {
     // Los tags e id "reales" viven en la fila PB (r.tags / r.id), fuera del blob
     // data → los normalizamos DENTRO de la actividad para la tarjeta compartida.
     const a = { ...(r.data || {}), id: r.data?.id || r.id, tags: r.tags || [] };
@@ -84,7 +88,7 @@ export async function renderExplore(rootSel, q0 = '') {
     // Sin pie de acciones: jugar se hace por la tira de modos (Individual/VS/
     // Equipos) o clic en el preview. Editar/borrar viven SOLO en "Mis
     // actividades" (son tuyas); para moderar como admin está la vista #/moderar.
-    return activityCardHtml(a, { variant: 'library', authed: canHost(), topRight });
+    return activityCardHtml(a, { variant: 'library', authed, topRight });
   }
 
   on(rootSel, 'input', '#exp-q', () => paint());

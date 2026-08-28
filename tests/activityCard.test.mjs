@@ -75,11 +75,12 @@ assert.ok(!/col-md-\d+ col-lg-\d+/.test(explore), 'explore.js no debe maquetar c
 assert.match(explore, /class="home-grid"/, 'explore.js debe usar la rejilla compartida .home-grid');
 ok('Explorar migrada a .acard + .home-grid (sin Bootstrap card)');
 
-// El componente expone lo esperado y la tira de modos comparte las clases que
-// esperan los handlers de la tarjeta (act-play/act-vs/act-teams/act-pin/act-task).
-// EJECUTÁNDOLO, no leyendo el fichero: esto eran tres citas de fuente y la tira
-// se puede PINTAR, que es la prueba de verdad — un `act-vs` dentro de un
-// comentario habría pasado el escaneo igual de bien.
+// El componente expone lo esperado y CADA BOTÓN DECLARA SU MODO (`data-mode`),
+// que es de donde el dueño de los clics saca la ruta. Antes el modo se
+// identificaba por CLASE (`act-pin` para «En vivo»…) y cada vista traducía esa
+// clase a una ruta a mano. EJECUTÁNDOLO, no leyendo el fichero: esto eran tres
+// citas de fuente y la tira se puede PINTAR, que es la prueba de verdad — un
+// `act-vs` dentro de un comentario habría pasado el escaneo igual de bien.
 {
   const { activityCardHtml, modeStripHtml } = await import('../core/activityCard.js');
   await import('../core/registerTemplates.js');
@@ -87,11 +88,17 @@ ok('Explorar migrada a .acard + .home-grid (sin Bootstrap card)');
   assert.strictEqual(typeof modeStripHtml, 'function', 'modeStripHtml exportada');
   const tira = modeStripHtml(
     { id: 'x', template: 'quiz', content: { items: [{ id: '1' }, { id: '2' }, { id: '3' }, { id: '4' }] } },
-    { includeManage: true });
-  for (const cls of ['act-play', 'act-vs', 'act-teams', 'act-pin', 'act-task']) {
-    assert.ok(tira.includes(cls), `la tira de modos no pinta ${cls}`);
+    { includeManage: true, authed: true });
+  const { rutaDeModo } = await import('../core/modes.js');
+  for (const modo of ['solo', 'vs', 'teams', 'live', 'task']) {
+    assert.ok(tira.includes(`data-mode="${modo}"`), `la tira de modos no pinta ${modo}`);
+    // Y su ruta la resuelve el dueño de las rutas: si `rutaDeModo` no supiera
+    // contestar, el clic llevaría a una pantalla que no existe (le pasaba a
+    // `solo`, cuyo fallback daba `#/solo/:id`).
+    assert.match(rutaDeModo(modo, { id: 'x', template: 'quiz' }), /^#\/[a-z-]+\/x$/,
+      `rutaDeModo('${modo}') tiene que dar una ruta de verdad`);
   }
-  ok('la tira PINTADA lleva las cinco clases que esperan los handlers (medido, no citado)');
+  ok('cada botón declara su modo y `rutaDeModo` sabe llevarlo (medido, no citado)');
 }
 
 // ── LA CONFIGURACIÓN TAMBIÉN ES DUPLICACIÓN ─────────────────────────────────
@@ -123,11 +130,11 @@ ok('Explorar migrada a .acard + .home-grid (sin Bootstrap card)');
   // `#/tasks` resuelven la actividad en la nube, así que dirigir en clase algo de
   // la biblioteca funciona — y esconder el modo dejaba sin enterarse de que
   // existe justo a quien todavía no tiene cuenta.
-  const mine = activityCardHtml(act, { variant: 'mine' });
-  const lib  = activityCardHtml(act, { variant: 'library' });
+  const mine = activityCardHtml(act, { variant: 'mine', authed: true });
+  const lib  = activityCardHtml(act, { variant: 'library', authed: true });
   for (const [nombre, html] of [['mine', mine], ['library', lib]]) {
-    assert.match(html, /act-pin/, `${nombre}: falta el modo En vivo`);
-    assert.match(html, /act-task/, `${nombre}: falta el modo Tarea`);
+    assert.match(html, /data-mode="live"/, `${nombre}: falta el modo En vivo`);
+    assert.match(html, /data-mode="task"/, `${nombre}: falta el modo Tarea`);
   }
   assert.match(lib, /data-play=/, '"library" juega desde el preview');
   assert.match(lib, /por Ana|Ana/, '"library" acredita al autor');
@@ -137,10 +144,11 @@ ok('Explorar migrada a .acard + .home-grid (sin Bootstrap card)');
   // no la variante. Sin `authed`, Live/Tarea siguen ahí y dicen por qué.
   {
     const sinSesion = activityCardHtml(act, { variant: 'library', authed: false });
-    assert.match(sinSesion, /act-pin[^>]*is-locked/, 'sin sesión, En vivo sale CON candado (no escondido)');
+    assert.match(sinSesion, /is-locked[^>]*data-mode="live"|data-mode="live"[^>]*is-locked/,
+      'sin sesión, En vivo sale CON candado (no escondido)');
     assert.match(sinSesion, /data-locked="1"/, 'y marcado, para que el clic explique en vez de rebotar');
     // CONTRA-PRUEBA: los modos JUGABLES nunca se bloquean — el alumno no tiene cuenta.
-    assert.ok(!/act-play[^>]*is-locked/.test(sinSesion), 'CONTRA-PRUEBA: Individual jamás lleva candado');
+    assert.ok(!/mode-solo is-locked/.test(sinSesion), 'CONTRA-PRUEBA: Individual jamás lleva candado');
     ok('el candado lo pone la SESIÓN, no la variante (y Individual nunca se bloquea)');
   }
 
@@ -155,9 +163,9 @@ ok('Explorar migrada a .acard + .home-grid (sin Bootstrap card)');
     const desajustes = [];
     for (const T of listTemplates()) {
       const h = activityCardHtml({ id: 'x', title: T.meta.label, template: T.meta.name, content: {} },
-        { variant: 'library' });
-      if (/act-pin/.test(h) !== !!T.meta.modes?.live)  desajustes.push(`${T.meta.name}: En vivo`);
-      if (/act-task/.test(h) !== !!T.meta.modes?.async) desajustes.push(`${T.meta.name}: Tarea`);
+        { variant: 'library', authed: true });
+      if (/data-mode="live"/.test(h) !== !!T.meta.modes?.live)  desajustes.push(`${T.meta.name}: En vivo`);
+      if (/data-mode="task"/.test(h) !== !!T.meta.modes?.async) desajustes.push(`${T.meta.name}: Tarea`);
     }
     assert.deepStrictEqual(desajustes, [],
       `la tarjeta ofrece modos que la plantilla no declara (o esconde los que sí): ${desajustes.join(' · ')}`);
@@ -198,17 +206,13 @@ ok('Explorar migrada a .acard + .home-grid (sin Bootstrap card)');
 // de "Mis actividades": el botón existiría y no haría nada. Ahora las cablea
 // views/activityCardWire.js. Este escaneo caza a la próxima vista que las repita.
 {
-  const RE_HANDLER = /on\([^,]+,\s*'click',\s*'(\.act-(?:play|vs|teams|pin|task|list)|\[data-play\])'/;
+  const RE_HANDLER = /on\([^,]+,\s*'click',\s*'(\.act-mode|\.act-(?:play|vs|teams|pin|task|list)|\[data-(?:play|mode)[^']*\]|[^']*data-mode[^']*)'/;
   const culpables = VIEWS.filter(v => RE_HANDLER.test(read(v)));
   assert.deepStrictEqual(culpables, [],
     `estas vistas vuelven a cablear los modos de la tarjeta a mano: ${culpables.join(', ')}\n`
     + '  Llama a wireActivityCard(rootSel) — es el dueño de los clics de la tarjeta.');
-  const wire = read('views/activityCardWire.js');
-  for (const cls of ['act-play', 'act-vs', 'act-teams', 'act-pin', 'act-task', 'act-list']) {
-    assert.ok(wire.includes(cls), `el dueño de los clics no cablea ${cls}`);
-  }
   // CONTRA-PRUEBA del escáner: una vista que los repita SÍ se caza.
-  assert.ok(RE_HANDLER.test("on(rootSel, 'click', '.act-vs', () => {});"),
+  assert.ok(RE_HANDLER.test("on(rootSel, 'click', '.act-mode[data-mode]', () => {});"),
     'el escáner debe cazar a una vista futura que recable la tira de modos');
   ok(`${VIEWS.length} vistas y ni una recablea los modos: los clics de la tarjeta tienen un dueño`);
 }

@@ -180,6 +180,25 @@ live_answers:
   `viewRule` público pero SIN el campo `activity`-con-claves (requiere P0-2), o
   (b) un endpoint/función server que resuelva code→sessionId. Decidir con el usuario.
 
+### Fase 2b — `assignments`: la tarea es de SU profe (abierto desde v1.51.623)
+Al ofrecer «Tarea» sobre toda la biblioteca (v1.51.621), dos profes mandando de
+deberes la MISMA actividad publicada pasó a ser el caso normal. El listado ya
+filtra por autor (`esMiTarea`, `core/assignmentRules.js`) **en el cliente**, así
+que en pantalla cada profe ve las suyas. Pero la regla del servidor sigue siendo
+`updateRule/deleteRule: AUTH`: cualquier profe autenticado puede, con la consola,
+CERRAR o ROTAR EL PIN de la tarea de otro. Es esconder el mando, no cerrarlo
+(§22: el veredicto lo pone el servidor).
+```
+assignments:
+  updateRule: "author_id = @request.auth.id"
+  deleteRule: "author_id = @request.auth.id"
+  listRule/viewRule: ""     // SIGUEN abiertos: el alumno anónimo lee la suya por código
+```
+Ojo antes de aplicarlo: las tareas creadas **antes de v1.51.623** llevan en
+`author_id` el id ANÓNIMO del navegador, no el de la cuenta, así que con esa
+regla su propio profe no podría cerrarlas. Hay que decidir la cláusula
+transitoria (como la de `owner = ''` en Fase 1) o migrar esas filas.
+
 ## Qué necesito del usuario para ejecutar
 1. **Decisión de alcance:** ¿hacemos Fase 0+1 ya (protege actividades, bajo riesgo)
    y dejamos Fase 3 para el refactor grande (deuda A/P0-2/P2-1)? Recomendado.

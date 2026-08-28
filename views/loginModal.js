@@ -5,6 +5,8 @@
 // …y la salida cuando la contraseña se pierde, que en una pizarra compartida
 // pasa: «¿Olvidaste tu contraseña?» manda el correo de restablecimiento.
 import { html, escapeHtml } from '../core/html.js';
+import { modeAuthHint } from '../core/modes.js';
+import { toast } from '../core/toast.js';
 import { signInWithGoogle, signIn, requestPasswordReset, oauthRedirectUrl } from '../core/auth.js';
 
 let _open = false;
@@ -142,4 +144,19 @@ export function openLoginModal({ reason = '' } = {}) {
   });
 
   function showErr(m) { const el = $('#lm-err'); if (el) el.textContent = m || ''; }
+}
+
+/** PEDIR LA CUENTA PARA UN MODO — una sola redacción, un solo sitio (§22).
+ *
+ *  El usuario ve la MISMA pared en tres puertas: la tira de modos de la tarjeta,
+ *  la barra de modos del reproductor y el gate del router. Cada una la contaba
+ *  con sus palabras («Los alumnos NO necesitan cuenta» aquí, «Tus alumnos entran
+ *  con el PIN, sin cuenta» allá), que es cómo una frase acaba diciendo dos cosas.
+ *  El motivo sale de `modeAuthHint()` y la cola —qué SÍ funciona sin cuenta— vive
+ *  aquí al lado, porque es la misma respuesta para los dos modos de profe.
+ */
+export function pedirCuentaParaModo(mode) {
+  const razon = modeAuthHint(mode);
+  toast(`${razon}. Tus alumnos entran con el PIN, sin cuenta.`, 'info', 5000);
+  openLoginModal({ reason: razon });
 }

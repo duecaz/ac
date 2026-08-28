@@ -38,9 +38,14 @@ function citasPorSuite() {
       for (const n of m[1].split(',')) vars.add(n.trim());
     }
     if (!vars.size) continue;
+    // Y también la fuente leída EN LÍNEA: la lectura del fichero metida dentro
+    // del propio `assert`, sin pasar por una variable. Es la misma cita con otra
+    // forma, y el contador no la veía — así el ratchet podía bajar por cambiar de
+    // forma en vez de por medir mejor, que es justo lo que este fichero impide.
     const alt = [...vars].map(v => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
-    const re = new RegExp(`assert\\.(?:match|doesNotMatch|ok)\\(\\s*(?:!?\\s*)?(?:${alt})\\b`, 'g');
-    const n = (src.match(re) || []).length;
+    const enVariable = new RegExp(`assert\\.(?:match|doesNotMatch|ok)\\(\\s*(?:!?\\s*)?(?:${alt})\\b`, 'g');
+    const enLinea = /assert\.(?:match|doesNotMatch|ok)\(\s*(?:!?\s*)?(?:read|leer|readFileSync)\s*\(/g;
+    const n = (src.match(enVariable) || []).length + (src.match(enLinea) || []).length;
     if (n) out[f.replace('.test.mjs', '')] = n;
   }
   return out;
@@ -50,10 +55,10 @@ function citasPorSuite() {
 // CÓMO está escrito el código". Solo puede bajar: al convertir una cita en un
 // test de comportamiento, baja el número aquí.
 const BASELINE = {
-  activityCard: 2, citasFuente: 2, docs: 1, idempotency: 2, journeys: 9,
-  liveEnd: 6, liveLoops: 2, liveSnapshot: 6, menu: 2, modeAuth: 7,
+  activityCard: 1, citasFuente: 2, docs: 1, idempotency: 2, journeys: 9,
+  liveEnd: 6, liveLoops: 2, liveSnapshot: 6, menu: 3, modeAuth: 7,
   newTemplate: 2, pbRules: 1, pbSchema: 3, persistPolicy: 6, quizAnswer: 2,
-  quotas: 4, raceResume: 3, realtimePort: 1, roundsLoop: 8,
+  quotas: 5, raceResume: 3, realtimePort: 1, roundsLoop: 8,
   unscorable: 8, vocabulario: 2,
 };
 // `tcTools` salió de la lista en v1.51.488 (bajó de 4 a 0): las dos afirmaciones
@@ -64,6 +69,12 @@ const BASELINE = {
 // `citaDeFuente()`. Motivo para preferir el navegador: la regla que aquieta el
 // marco usa `:has()` y ya perdió una vez por especificidad — un escaneo del CSS
 // la habría dado por buena.
+// `menu` (2→3) y `quotas` (4→5) SUBEN en v1.51.623 sin que nadie haya escrito
+// una cita nueva: el contador aprendió a ver la fuente leída EN LÍNEA
+// —la lectura metida dentro del propio assert—, que llevaba ahí desde siempre y
+// no medía. Un
+// ratchet que no ve una forma de la cosa que vigila invita a usar esa forma.
+// `activityCard` baja otra vez (2→1) al pintar la tira en vez de leerla.
 // `modeAuth` bajó de 8 a 7 en v1.51.621: las tres citas a views/home.js («pasa
 // authed», «intercepta el clic bloqueado», «abre el login con motivo») eran una
 // LISTA de una vista, y desde que la tarjeta ofrece los modos de profe en toda la

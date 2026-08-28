@@ -9,7 +9,7 @@
 // otros modos (equipos/live), ahí sí tocará registrarla como modo; mientras
 // tanto, registrarla solo añadiría gateo y setup que no aplican.
 import { html, escapeHtml, mount } from '../core/html.js';
-import { get, getRemote, save } from '../core/storage.js';
+import { getAnywhere } from '../core/storage.js';
 import { podiumHtml } from '../core/podium.js';
 import { renderModeSetup } from './modeSetup.js';
 import { mountVs } from './vsView.js';
@@ -20,11 +20,7 @@ export async function renderListView(rootSel, id) {
   const host = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
   if (!host) return;
 
-  let lista = get(id);
-  if (!lista) {
-    lista = await getRemote(id).catch(() => null);
-    if (lista) save(lista);
-  }
+  const lista = await getAnywhere(id, { cache: true });
   if (!lista) {
     mount(host, html`<div class="alert alert-warning m-3">Lista no encontrada. <a href="${destinoTrasJugar('solo').href}">Volver</a></div>`);
     return;
@@ -43,11 +39,7 @@ export async function renderListView(rootSel, id) {
   // Pre-load all round activities (local cache first, then remote fallback).
   const activities = [];
   for (const def of roundDefs) {
-    let a = get(def.activityId);
-    if (!a) {
-      a = await getRemote(def.activityId).catch(() => null);
-      if (a) save(a);
-    }
+    const a = await getAnywhere(def.activityId, { cache: true });
     if (a) activities.push(a);
   }
 

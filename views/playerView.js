@@ -5,7 +5,7 @@
 // auto-height frame on mobile portrait.
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
-import { get, save, getRemote, remove as removeActivity } from '../core/storage.js';
+import { save, getAnywhere, remove as removeActivity } from '../core/storage.js';
 import { activityItemCount, newActivityId } from '../core/migrate.js';
 import { revisarActividad, pantallaNoListaHtml } from '../core/activityCheck.js';
 import { getTemplate } from '../core/registry.js';
@@ -13,7 +13,7 @@ import { isVsCompatible } from '../kernel/session/engine.js';
 import { availableModes, getMode, runMode, modeNeedsAuth, modeAuthHint } from '../core/modes.js';
 import { canHost } from '../core/authGate.js';
 import { getAuthUserId } from '../core/auth.js';
-import { openLoginModal } from './loginModal.js';
+import { openLoginModal, pedirCuentaParaModo } from './loginModal.js';
 import { clearSoloProgress } from '../core/soloPlayer.js';
 import { renderStartScreen } from './startScreen.js';
 import { listSkins, applySkin, skinPreviewHtml } from '../core/skins.js';
@@ -32,14 +32,11 @@ import { navigate } from '../core/router.js';
 import { buildSwitchOptions, duplicateAsTemplate, switchWillNeed } from './switchTemplate.js';
 
 export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
-  let a = get(id);
-  // Banco compartido: si no está en local, tráela de la nube (acceso por URL
-  // desde cualquier dispositivo/profe). NO se guarda en el almacén del usuario:
-  // jugar una actividad pública NO debe ensuciar "Mis actividades" (modelo
-  // biblioteca, S2). Se juega en memoria; para tenerla propia se usa "Duplicar".
-  if (!a) {
-    a = await getRemote(id).catch(() => null);
-  }
+  // Banco compartido: si no está en local, se trae de la nube (acceso por URL
+  // desde cualquier dispositivo/profe). SIN cachear: jugar una actividad pública
+  // NO debe ensuciar "Mis actividades" (modelo biblioteca, S2). Se juega en
+  // memoria; para tenerla propia se usa "Duplicar".
+  const a = await getAnywhere(id);
   if (!a) {
     mount(rootSel, html`<div class="alert alert-warning">Actividad no encontrada. <a href="${destinoTrasJugar('solo').href}">Volver</a></div>`);
     return;
@@ -495,9 +492,9 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     });
     // Mode bar: embedded modes mount into the stage (embed:false modes are
     // plain links and navigate on their own).
-    on(rootSel, 'click', '.ww-mode-locked', (_, b) => {
-      pedirCuenta(modeAuthHint(b.dataset.lock), 'Tus alumnos entran con el PIN, sin cuenta.');
-    });
+    // La misma pared que en la tarjeta, con las mismas palabras: la redacción
+    // vive en `pedirCuentaParaModo` (views/loginModal.js), no aquí.
+    on(rootSel, 'click', '.ww-mode-locked', (_, b) => pedirCuentaParaModo(b.dataset.lock));
     on(rootSel, 'click', '.ww-mode', (_, b) => {
       selectMode(b.dataset.mode);
       document.getElementById('ww-frame')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
