@@ -157,7 +157,21 @@ export const RULES = {
   // Crear/cerrar/rotar es del profe; el alumno solo LEE (buscar por código y
   // contar sus intentos). Antes un alumno podía reabrir una tarea cerrada,
   // mover la fecha o subirse el tope de intentos.
-  assignments: { listRule: '', viewRule: '', createRule: AUTH, updateRule: AUTH, deleteRule: AUTH },
+  // Cerrar/rotar/borrar es del AUTOR, no de cualquier profe con cuenta (Fase 2b,
+  // v1.51.625): al ofrecer «Tarea» sobre toda la biblioteca, dos profes con la
+  // misma actividad publicada es el caso normal, y con `updateRule: AUTH` uno
+  // podía cerrar el PIN del otro desde la consola — el filtro del listado solo
+  // escondía el mando. TRANSITORIA: las tareas de antes de v1.51.623 llevan en
+  // `author_id` el id ANÓNIMO del navegador (un UUID, con guiones; un id de
+  // cuenta PB no tiene) — el servidor no puede probar de quién son, así que para
+  // ellas se queda el AUTH de siempre y la fila muere sola a los 120 días (§25).
+  // `author_id` va CONGELADO en el PATCH: sin eso, en una fila legada cualquiera
+  // podría PATCHear el autor y quedársela.
+  assignments: {
+    listRule: '', viewRule: '', createRule: AUTH,
+    updateRule: `${AUTH} && @request.body.author_id:isset = false && (author_id = @request.auth.id || author_id ~ '%-%')`,
+    deleteRule: `${AUTH} && (author_id = @request.auth.id || author_id ~ '%-%')`,
+  },
   // list/view ABIERTOS a propósito: el tope de intentos lo cuenta el alumno
   // ANÓNIMO (countOwnAttempts). Con auth aquí, el gateo de tareas revienta.
   //

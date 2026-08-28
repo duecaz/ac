@@ -169,7 +169,10 @@ $defs = @(
   @{ name = "assignments";
      fields = @( @{ name="code"; type="text"; required=$true }, @{ name="activity_id"; type="text" }, @{ name="activity_snap"; type="json"; maxSize=5242880 }, @{ name="author_id"; type="text" }, @{ name="title"; type="text" }, @{ name="due_at"; type="text" }, @{ name="max_attempts"; type="number" }, @{ name="status"; type="text" } );
      indexes = @( "CREATE INDEX ``idx_asg_code`` ON ``assignments`` (``code``)" );
-     rules = @{ listRule=""; viewRule=""; createRule='@request.auth.id != ""'; updateRule='@request.auth.id != ""'; deleteRule='@request.auth.id != ""' } },
+     # Cerrar/rotar/borrar es del AUTOR (Fase 2b): con AUTH a secas, un profe podia
+     # cerrar el PIN de otro. Transitoria: las filas legadas llevan author_id anonimo
+     # (UUID con guion) y siguen con AUTH hasta morir a los 120 dias (§25).
+     rules = @{ listRule=""; viewRule=""; createRule='@request.auth.id != ""'; updateRule='@request.auth.id != "" && @request.body.author_id:isset = false && (author_id = @request.auth.id || author_id ~ "%-%")'; deleteRule='@request.auth.id != "" && (author_id = @request.auth.id || author_id ~ "%-%")' } },
 
   # list/view ABIERTOS: el tope de intentos lo cuenta el ALUMNO ANONIMO
   # (countOwnAttempts) — con auth-required aqui el gateo de tareas revienta.

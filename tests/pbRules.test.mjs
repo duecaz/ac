@@ -13,6 +13,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { RULES, AUTH } from '../core/pbRules.js';
+import { evalRule } from './helpers/pbRuleEval.mjs';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
@@ -101,12 +102,32 @@ assert.ok(attCreate.includes('max_attempts'),
   'crear intento debe acotar el tope contra la tarea (si no, el límite vive solo en el cliente)');
 ok('results/assignment_attempts append-only, y el alumno anónimo aún puede contar y entregar');
 
-// ── 6. Dirigir una tarea es acto del profe ───────────────────────────────────
-for (const a of ['create', 'update', 'delete']) {
-  assert.strictEqual(RULES.assignments[`${a}Rule`], AUTH, `assignments.${a}Rule debe exigir sesión`);
-}
+// ── 6. Dirigir una tarea es acto del profe — y del SUYO (Fase 2b) ────────────
+// Antes bastaba AUTH: cualquier profe con cuenta podía cerrar o rotar el PIN de
+// la tarea de OTRO (con «Tarea» sobre toda la biblioteca, dos profes con la
+// misma actividad es el caso normal). El filtro del listado solo escondía el
+// mando; la regla lo CIERRA. Se prueba EJECUTANDO la regla con el evaluador.
+assert.strictEqual(RULES.assignments.createRule, AUTH, 'crear una tarea exige sesión');
 assert.strictEqual(RULES.assignments.viewRule, '', 'el alumno debe poder abrir la tarea por código');
-ok('assignments: crear/cerrar/rotar exige sesión; el alumno solo lee');
+{
+  const propia   = { author_id: 'usrProfeA123456' };
+  const deOtro   = { author_id: 'usrProfeB999999' };
+  const legada   = { author_id: '9b2f4a30-1d5e-4c2f-8a77-3f0e1c2d4b5a' };  // anon UUID pre-v1.51.623
+  const yo = { auth: { id: 'usrProfeA123456' }, body: {} };
+  const upd = (row, ctx) => evalRule(RULES.assignments.updateRule, { ...ctx, record: row, ...row });
+  assert.ok(upd(propia, yo), 'el AUTOR cierra/rota su propia tarea');
+  assert.ok(!upd(deOtro, yo), 'otro profe con cuenta YA NO puede cerrar la tarea ajena');
+  assert.ok(!upd(propia, { auth: { id: '' }, body: {} }), 'un anónimo no toca ninguna');
+  // TRANSITORIA: las selladas con el id anónimo del navegador (UUID, con guion)
+  // no tienen dueño demostrable — siguen con AUTH y mueren solas a los 120 días.
+  assert.ok(upd(legada, yo), 'una tarea legada (autor anónimo) sigue gestionable con sesión');
+  // Y el autor va CONGELADO: sin esto, PATCHear author_id en una legada la roba.
+  assert.ok(!upd(legada, { ...yo, body: { author_id: 'usrProfeA123456' } }),
+    'PATCHear author_id se rechaza: nadie se queda una tarea reescribiendo el autor');
+  const del = (row, ctx) => evalRule(RULES.assignments.deleteRule, { ...ctx, record: row, ...row });
+  assert.ok(del(propia, yo) && !del(deOtro, yo), 'borrar: la tuya sí, la ajena no');
+}
+ok('assignments: crear exige sesión; cerrar/rotar/borrar exige ser EL AUTOR (con transitoria legada medida)');
 
 // ── 6b. `users`: las TRES copias de su regla dicen lo mismo ─────────────────
 // La colección de AUTH no la toca el panel (tocar el esquema de auth desde el

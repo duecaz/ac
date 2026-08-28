@@ -74,7 +74,7 @@ function andExpr(e, ctx) {
   return true;
 }
 
-const OPS = ['?>=', '?<=', '?!=', '?=', '?>', '?<', '>=', '<=', '!=', '=', '>', '<'];
+const OPS = ['?>=', '?<=', '?!=', '?=', '?>', '?<', '>=', '<=', '!=', '!~', '=', '~', '>', '<'];
 
 function atom(expr, ctx) {
   let e = expr.trim();
@@ -113,6 +113,11 @@ function compare(L, op, R) {
   switch (op) {
     case '=':  return L === R;
     case '!=': return L !== R;
+    // LIKE de PocketBase: `%` es comodín; sin `%`, PB lo envuelve él solo
+    // (contiene). Entró para la transitoria de assignments (`author_id ~ '%-%'`:
+    // los ids anónimos legados son UUID con guion; los de cuenta PB, no).
+    case '~':  return like(String(L), String(R));
+    case '!~': return !like(String(L), String(R));
     case '>':  return num(L) > num(R);
     case '>=': return num(L) >= num(R);
     case '<':  return num(L) < num(R);
@@ -121,6 +126,11 @@ function compare(L, op, R) {
   }
 }
 const num = (v) => (typeof v === 'number' ? v : Number(v));
+function like(hay, pat) {
+  if (!pat.includes('%')) pat = `%${pat}%`;
+  const re = new RegExp('^' + pat.split('%').map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$');
+  return re.test(hay);
+}
 
 function resolve(tok, ctx) {
   if (/^".*"$/.test(tok) || /^'.*'$/.test(tok)) return tok.slice(1, -1);
