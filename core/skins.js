@@ -191,6 +191,13 @@ registerSkin({
     '--ww-shape-2-fg': '#ffffff',
     '--ww-shape-3-fg': '#1f2937',
     '--ww-shape-4-fg': '#ffffff',
+    
+    // LA HOJA. El papel es una superficie propia: el marco lo tematiza el skin,
+    // pero encima se ESCRIBE, así que necesita su propio par fondo/tinta. Sin
+    // estos dos, el papel caía siempre al crema y el tema solo llegaba al borde —
+    // y lo que se pintara encima con `--ww-fg` (tinta del MARCO) quedaba ilegible.
+    '--ww-paper': '#fffdf6',
+    '--ww-paper-ink': '#1f2937',
     '--ww-success': '#10b981',
     '--ww-danger': '#ef4444',
     '--ww-warning': '#f59e0b'
@@ -219,6 +226,8 @@ registerSkin({
     '--ww-shape-2-fg': '#ffffff',
     '--ww-shape-3-fg': '#1f2937',
     '--ww-shape-4-fg': '#1f2937',
+        '--ww-paper': '#fdf8ec',
+    '--ww-paper-ink': '#1f2937',
     '--ww-success': '#16a34a',   // verde tiza, encaja con la madera cálida
     '--ww-danger': '#dc2626',
     '--ww-warning': '#ca8a04'    // ámbar de la paleta (no el genérico)
@@ -248,6 +257,8 @@ registerSkin({
     '--ww-shape-2-fg': '#ffffff',
     '--ww-shape-3-fg': '#1f2937',
     '--ww-shape-4-fg': '#ffffff',
+        '--ww-paper': '#ffffff',
+    '--ww-paper-ink': '#111827',
     '--ww-success': '#26890c',   // verde/rojo del concurso (los mismos de sus formas)
     '--ww-danger': '#e21b3c',
     '--ww-warning': '#d89e00'
@@ -276,6 +287,8 @@ registerSkin({
     '--ww-shape-2-fg': '#ffffff',
     '--ww-shape-3-fg': '#1f2937',
     '--ww-shape-4-fg': '#1f2937',
+        '--ww-paper': '#fdf6e3',
+    '--ww-paper-ink': '#3b2f2f',
     '--ww-success': '#39ff14',   // verde fósforo del texto retro
     '--ww-danger': '#ff5555',
     '--ww-warning': '#ffff55'
@@ -304,6 +317,8 @@ registerSkin({
     '--ww-shape-2-fg': '#1f2937',
     '--ww-shape-3-fg': '#1f2937',
     '--ww-shape-4-fg': '#1f2937',
+        '--ww-paper': '#e9f7ec',
+    '--ww-paper-ink': '#14311f',
     '--ww-success': '#84cc16',   // lima tropical (borde/acento de la jungla)
     '--ww-danger': '#dc2626',
     '--ww-warning': '#facc15'
@@ -340,6 +355,8 @@ registerSkin({
     '--ww-shape-2-fg': '#ffffff',
     '--ww-shape-3-fg': '#1f2937',
     '--ww-shape-4-fg': '#1f2937',
+        '--ww-paper': '#0e1a3a',
+    '--ww-paper-ink': '#e8eefc',
     '--ww-success': '#22c55e',
     '--ww-danger': '#ef4444',
     '--ww-warning': '#fbbf24'
@@ -374,6 +391,8 @@ registerSkin({
     '--ww-shape-2-fg': '#1f2937',
     '--ww-shape-3-fg': '#1f2937',
     '--ww-shape-4-fg': '#1f2937',
+        '--ww-paper': '#0b0a1c',
+    '--ww-paper-ink': '#eafcff',
     '--ww-success': '#39ff7a',
     '--ww-danger': '#ff3b6b',
     '--ww-warning': '#ffd400',

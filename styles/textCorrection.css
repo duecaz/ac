@@ -90,8 +90,11 @@
   /* Hoja OPACA: neutros permitidos (§3 — es papel, no un tema); al ser opaca,
      la textura que el profe elija para el marco queda alrededor, nunca debajo
      del texto — que es lo que producía el doble rayado. */
-  /* Por TOKEN con respaldo crema: hoy ningún skin define el papel (cae al
-     crema siempre), y el día que uno quiera tematizar la hoja, puede. */
+  /* Por TOKEN, y desde v1.51.615 los SIETE temas lo declaran (`--ww-paper` /
+     `--ww-paper-ink` están en el set canónico de `default`, así que el contrato
+     de skins obliga a todos). Antes solo lo definía `arcade` y el papel caía al
+     crema con cualquier otro tema: el tema llegaba al marco y se paraba en el
+     borde de la hoja — «los temas solo afectan el final», dijo el dueño. */
   background: var(--ww-paper, #fffdf6);
   color: var(--ww-paper-ink, #1f2937);
   border-radius: max(10px, 1.6cqmin);
@@ -357,7 +360,12 @@
      móvil, techo relativo al marco — nada que congele el crecimiento (§3). */
   font-size: max(15px, 4.2cqmin);
   line-height: 1;
-  color: var(--ww-fg, #1f2937);
+  /* TINTA DE LA HOJA, no del MARCO. Estaba con `--ww-fg`, que es la tinta que el
+     tema elige para el marco: en Jungla vale `#ecfccb` (lima pálido) y el reloj
+     se pintaba con ese color SOBRE el papel crema — 1,1:1, invisible (captura
+     del dueño, v1.51.615). La regla es la superficie: lo que se dibuja encima de
+     la hoja se lee con la tinta de la hoja. */
+  color: var(--ww-paper-ink, #1f2937);
 }
 
 /* La barra de progreso del TIEMPO, pegada bajo la barra de herramientas, como
@@ -369,7 +377,9 @@
    franja. */
 .tc-progress {
   height: max(3px, .5cqmin);
-  background: var(--ww-bg-soft, rgba(0,0,0,.10));
+  /* Sobre la hoja: la pista es la tinta del papel muy diluida, para que el surco
+     se vea igual con papel claro y con papel oscuro. */
+  background: color-mix(in srgb, var(--ww-paper-ink, #1f2937) 15%, transparent);
   border-radius: 999px;
   overflow: hidden;
   margin: 0 0 .35rem;
@@ -419,8 +429,11 @@
   display: flex; align-items: center; gap: .5em;
   padding: .35em .6em; border-radius: .5em;
   font-size: max(11px, 2.4cqmin); font-weight: 700; line-height: 1.2;
-  background: var(--ww-bg-soft, rgba(0,0,0,.06));
-  color: var(--ww-card-fg, var(--ww-fg, #1f2937));
+  /* Las filas de revisión viven sobre la HOJA (en la corrección de cada frase) o
+     sobre la tarjeta del final. Se pintan con la tinta del papel, que es la que
+     manda en las dos: en el final la tarjeta usa el mismo papel. */
+  background: color-mix(in srgb, var(--ww-paper-ink, #1f2937) 8%, transparent);
+  color: var(--ww-paper-ink, #1f2937);
 }
 .tc-rev__w { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 .tc-rev__ico { flex: 0 0 auto; font-weight: 900; }
@@ -436,7 +449,7 @@
 /* Una fila anulada dice que alguien la tocó a mano: si no se distingue, dentro
    de dos minutos ya no se sabe qué es del alumno y qué del docente. */
 /* Perdonada: ni verde ni rojo. Ya no resta, pero tampoco fue un acierto. */
-.tc-rev--perdon { background: var(--ww-bg-soft, rgba(0,0,0,.06)); opacity: .7; }
+.tc-rev--perdon { background: color-mix(in srgb, var(--ww-paper-ink, #1f2937) 8%, transparent); opacity: .7; }
 .tc-rev--perdon .tc-rev__w { text-decoration: line-through; }
 .tc-rev.is-anulada { outline: 2px dashed var(--ww-accent, #2563eb); outline-offset: -2px; }
 
@@ -445,9 +458,9 @@
   border: 0; border-radius: .4em; cursor: pointer;
   width: max(20px, 3.2cqmin); height: max(20px, 3.2cqmin);
   font-size: max(10px, 1.9cqmin); font-weight: 900; line-height: 1;
-  background: rgba(0,0,0,.14); color: inherit;
+  background: color-mix(in srgb, var(--ww-paper-ink, #1f2937) 18%, transparent); color: inherit;
 }
-.tc-rev__btn:hover { background: rgba(0,0,0,.26); }
+.tc-rev__btn:hover { background: color-mix(in srgb, var(--ww-paper-ink, #1f2937) 32%, transparent); }
 
 .tc-review-side__pie {
   margin-top: .6em; font-size: max(10px, 2cqmin); font-weight: 700; opacity: .8;
@@ -457,11 +470,30 @@
    Es la corrección del alumno y el resumen por página del docente a la vez. A
    diferencia de la ronda, aquí SÍ se hace scroll: son N hojas y verlas seguidas
    es justamente lo que se quiere. */
-.tc-final { display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; height: 100%; padding: .5rem; }
+.tc-final {
+  display: flex; flex-direction: column; gap: 1rem;
+  height: 100%; padding: .5rem;
+  background: var(--ww-paper, #fffdf6);
+  color: var(--ww-paper-ink, #1f2937);
+  border-radius: max(10px, 1.6cqmin);
+  /* SCROLL DISCRETO. Con la barra por defecto del sistema salía una franja gris
+     ancha pegada al borde del marco, que sobre un tema oscuro canta muchísimo
+     (captura del dueño). `thin` + los colores del papel la dejan como un surco. */
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--ww-paper-ink, #1f2937) 28%, transparent) transparent;
+}
+.tc-final::-webkit-scrollbar { width: max(6px, .9cqmin); }
+.tc-final::-webkit-scrollbar-track { background: transparent; }
+.tc-final::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ww-paper-ink, #1f2937) 28%, transparent);
+}
 .tc-final__cab {
   display: flex; align-items: center; gap: .75rem; flex-wrap: wrap;
   position: sticky; top: 0; z-index: 2;
-  background: var(--ww-card-bg, #fff);
+  background: var(--ww-paper, #fffdf6);
+  color: var(--ww-paper-ink, #1f2937);
   padding: .5rem; border-radius: .5rem;
 }
 .tc-final__tot { margin-right: auto; font-weight: 700; font-variant-numeric: tabular-nums; }

@@ -59,14 +59,23 @@ const { skins, fondos } = await page.evaluate(async () => {
   const { save } = await import('/core/storage.js');
   const { listSkins } = await import('/core/skins.js');
   const { BACKGROUNDS } = await import('/core/backgrounds.js');
-  const T = getTemplate('quiz');
-  save({
-    id: 'tortura', template: 'quiz', title: 'Tortura de contraste',
-    content: T.meta.defaultContent(), rules: T.meta.defaultRules?.() || {},
-    scoring: T.meta.defaultScoring?.() || {},
-    presentation: { skin: 'default', background: 'none' },
-    updatedAt: new Date().toISOString(),
-  });
+  // DOS SUPERFICIES, NO UNA. Se torturaba solo Quiz, que se pinta sobre la
+  // TARJETA del marco (`--ww-card-bg`). Tildes/Comas se pintan sobre una HOJA,
+  // que es otra superficie con su propio par de tokens (`--ww-paper` /
+  // `--ww-paper-ink`) — y por eso este barrido daba verde mientras el reloj de
+  // la hoja salía a 1,07:1 en Jungla, invisible (captura del dueño, v1.51.615).
+  // Una tortura de legibilidad que solo mira una de las dos superficies deja la
+  // otra sin vigilar por completo.
+  for (const [id, tpl] of [['tortura', 'quiz'], ['tortura-hoja', 'tildes']]) {
+    const T = getTemplate(tpl);
+    save({
+      id, template: tpl, title: 'Tortura de contraste',
+      content: T.meta.defaultContent(), rules: { ...(T.meta.defaultRules?.() || {}), timer: 30 },
+      scoring: T.meta.defaultScoring?.() || {},
+      presentation: { skin: 'default', background: 'none' },
+      updatedAt: new Date().toISOString(),
+    });
+  }
   return {
     skins: listSkins().map(s => s.name),
     // `custom` fuera: su lienzo es una foto del profe, no se puede medir — por
@@ -75,10 +84,18 @@ const { skins, fondos } = await page.evaluate(async () => {
   };
 });
 
-await page.evaluate(() => { location.hash = '#/play/tortura'; });
-await page.waitForTimeout(900);
-await page.click('.ww-start-go').catch(() => {});
-await page.waitForSelector('.ww-q', { timeout: 15000 });
+/** Monta una de las dos superficies y espera a que su juego esté en pantalla. */
+async function montar(id, esperar) {
+  await page.evaluate((h) => { location.hash = h; }, `#/play/${id}`);
+  await page.waitForTimeout(900);
+  await page.click('.ww-start-go').catch(() => {});
+  await page.waitForSelector(esperar, { timeout: 15000 });
+}
+const SUPERFICIES = [
+  { id: 'tortura',      espera: '.ww-q',      que: 'tarjeta (Quiz)' },
+  { id: 'tortura-hoja', espera: '.tc-round',  que: 'hoja (Tildes)' },
+];
+await montar(SUPERFICIES[0].id, SUPERFICIES[0].espera);
 
 // ¿Cargó Bootstrap? Aquí sale a internet por un proxy que bloquea el CDN, así
 // que su relleno no existe y sus pastillas medirían un falso ilegible. Se dice
@@ -100,9 +117,13 @@ const colorBases = await page.evaluate(async () => {
   return out;
 });
 
-console.log(`\n🎨 TORTURA DE LEGIBILIDAD — ${skins.length} temas × ${fondos.length} fondos (umbral ${MIN}:1)\n`);
+console.log(`\n🎨 TORTURA DE LEGIBILIDAD — ${skins.length} temas × ${fondos.length} fondos`
+  + ` × ${SUPERFICIES.length} superficies (umbral ${MIN}:1)\n`);
 const fallos = [];
 let medidas = 0, minMedidos = Infinity, peorGlobal = { peorRatio: 21 };
+for (const sup of SUPERFICIES) {
+if (sup !== SUPERFICIES[0]) await montar(sup.id, sup.espera);
+if (verLista) console.log(`  — ${sup.que} —`);
 for (const skin of skins) {
   const fila = [];
   for (const bg of fondos) {
@@ -127,15 +148,16 @@ for (const skin of skins) {
     const m = await page.evaluate(`(${medirLegibilidad})('.ww-player-frame', null, ${JSON.stringify({ colorBases, hayBootstrap })})`);
     medidas++;
     if (m.n < minMedidos) minMedidos = m.n;
-    if (m.peorRatio < peorGlobal.peorRatio) peorGlobal = { ...m, skin, bg };
-    if (m.peorRatio < MIN) fallos.push({ skin, bg, ...m });
+    if (m.peorRatio < peorGlobal.peorRatio) peorGlobal = { ...m, skin, bg, sup: sup.que };
+    if (m.peorRatio < MIN) fallos.push({ skin, bg, sup: sup.que, ...m });
     fila.push(`${bg}=${m.peorRatio.toFixed(1)}`);
   }
   if (verLista) console.log(`  ${skin.padEnd(10)} ${fila.join(' · ')}`);
 }
+}
 
 await browser.close();
-console.log(`  ${medidas} combinaciones medidas · el peor caso: ${peorGlobal.peorRatio.toFixed(2)}:1 (${peorGlobal.skin} × ${peorGlobal.bg} · «${peorGlobal.peorC}»)`);
+console.log(`  ${medidas} combinaciones medidas · el peor caso: ${peorGlobal.peorRatio.toFixed(2)}:1 (${peorGlobal.sup || '?'} · ${peorGlobal.skin} × ${peorGlobal.bg} · «${peorGlobal.peorC}»)`);
 if (!hayBootstrap) {
   console.log(`  ⚠️ Bootstrap NO cargó (el CDN está bloqueado en este entorno): ${peorGlobal.sinBootstrap || 0} elemento(s) por caja`);
   console.log('     con relleno suyo (pastillas .bg-*) quedan SIN JUZGAR. Lo que se mide aquí es el CSS del proyecto.');
