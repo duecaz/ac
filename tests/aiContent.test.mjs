@@ -509,4 +509,72 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   ok('el fallo de red se DIAGNOSTICA con sondas (6 causas, 6 frases) en vez de suponerse');
 }
 
+// ── LA COSTURA COMPLETA: respuesta grabada → interpretar → fusionar → JUGABLE ──
+// Lo que el handoff (§5) encargaba como red aparte («un tools/ia-smoke.mjs con
+// respuestas GRABADAS»): cada generador tiene que producir contenido que
+// `revisarActividad()` dé por jugable EN CADA PLANTILLA de su modelo. Las
+// piezas de arriba prueban interpretar y fusionar por separado; esto prueba que
+// lo interpretado, puesto en una actividad de verdad, SE PUEDE JUGAR — que es
+// la única promesa que le importa al profe que pulsa «Escribir con IA».
+// No hace falta navegador ni red: por eso vive aquí y no en tools/.
+{
+  const { revisarActividad } = await import('../core/activityCheck.js');
+  const { newActivity } = await import('../core/migrate.js');
+  const { listTemplates } = await import('../core/registry.js');
+  await import('../core/registerTemplates.js');
+
+  // Una respuesta GRABADA por modelo, tal y como las devuelve el hook de la Pi
+  // (envuelta en ```json, campos en español — lo que Gemini/Grok producen).
+  const GRABADAS = {
+    qa: '```json\n' + JSON.stringify([
+      { pregunta: '¿Capital del Perú?', respuesta: 'Lima', opciones: ['Cusco', 'Arequipa', 'Trujillo'] },
+      { pregunta: '¿2 + 3?', respuesta: '5', opciones: ['4', '6', '23'] },
+      { pregunta: '¿Océano al oeste del Perú?', respuesta: 'Pacífico', opciones: ['Atlántico', 'Índico', 'Ártico'] },
+    ]) + '\n```',
+    pairs: JSON.stringify([
+      { izquierda: 'perro', derecha: 'dog' }, { izquierda: 'gato', derecha: 'cat' },
+      { izquierda: 'casa', derecha: 'house' }, { izquierda: 'sol', derecha: 'sun' },
+    ]),
+    items: JSON.stringify([{ pregunta: '¿Qué desayunaste hoy?' }, { pregunta: 'Nombra un río del Perú.' }]),
+    words: JSON.stringify([
+      { palabra: 'LIMA', pista: 'Ciudad capital junto al mar' },
+      { palabra: 'ANDES', pista: 'Cordillera que cruza el país' },
+      { palabra: 'PUMA', pista: 'Felino de la sierra' },
+      { palabra: 'CEVICHE', pista: 'Plato de pescado con limón' },
+    ]),
+    textCorrection: JSON.stringify([
+      { frase: 'Santa Rosa de Lima, patrona de América, nació en Lima.' },
+      { frase: 'El cóndor voló, majestuoso, sobre el cañón.' },
+    ]),
+  };
+
+  let jugables = 0;
+  for (const T of listTemplates()) {
+    const modelo = T.meta.contentModel;
+    if (!iaSabeEscribir(modelo)) continue;              // diagram/ballsort: la IA no escribe ahí
+    const bruta = GRABADAS[modelo];
+    assert.ok(bruta, `falta respuesta grabada para el modelo «${modelo}» (plantilla ${T.meta.name})`);
+    // Los MISMOS pasos que el editor (core/editorShell.js), no una copia
+    // aproximada: el flag real (`meta.iaPalabrasComoTexto`) y el remate de la
+    // plantilla (`adoptContent`), que es quien coloca la rejilla del crucigrama
+    // — sin él, este test acusaba a la IA de un paso que nunca fue suyo.
+    const r = interpretarRespuesta(modelo, bruta, { palabrasComoTexto: T.meta.iaPalabrasComoTexto === true });
+    assert.strictEqual(r.error, null, `${T.meta.name}: la respuesta grabada no se interpretó — ${r.error}`);
+    const a = newActivity(T.meta.name);
+    a.title = 'Escrita por la IA';
+    const fusionado = fusionarContenido({}, r.content);
+    a.content = T.adoptContent ? T.adoptContent(fusionado, modelo) : fusionado;
+    const rev = revisarActividad(a);
+    assert.ok(rev.jugable,
+      `${T.meta.name}: lo que la IA escribe NO se puede jugar — ${rev.problemasDeJuego.join(' · ')}`);
+    jugables++;
+  }
+  assert.ok(jugables >= 9, `solo ${jugables} plantillas cubiertas: ¿un modelo se quedó sin respuesta grabada?`);
+  // CONTRA-PRUEBA: el veredicto viene de mirar de verdad — una respuesta rota
+  // (todas las preguntas sin opciones falsas) NO llega a jugable.
+  const rota = interpretarRespuesta('qa', JSON.stringify([{ pregunta: 'x', respuesta: 'y', opciones: ['y'] }]));
+  assert.ok(rota.error, 'CONTRA-PRUEBA: una tanda sin distractores usables se rechaza, no se juega');
+  ok(`la costura entera: respuesta grabada → interpretar → fusionar → JUGABLE en ${jugables} plantillas (con contra-prueba)`);
+}
+
 console.log(`\naiContent.test: ${passed} checks passed`);

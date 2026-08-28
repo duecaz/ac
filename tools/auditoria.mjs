@@ -61,7 +61,6 @@ const CITAS_CRONICA = {
   'docs/leyes.md → kernel/contracts/realtimePort.js': 'tumor borrado — §30',
   'docs/leyes.md → styles/quiz.css': 'crónica §3b: la hoja quedó vacía al nacer opcion.css y se retiró',
   'docs/testing.md → tests/mifeature.test.mjs': 'nombre de EJEMPLO del patrón de suite',
-  'docs/handoff-ia-contenido.md → tools/ia-smoke.mjs': 'red PENDIENTE de construir (el handoff la encarga)',
   'templates/HOW_TO_ADD.md → templates/miplantilla/scorer.js': 'nombre de EJEMPLO de la guía',
 };
 if (!soloListas) {

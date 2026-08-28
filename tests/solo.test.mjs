@@ -77,7 +77,14 @@ const v1 = { id: 'a1', template: 'quiz', items: [{ question: 'q', answer: 'a' }]
              createdAt: '2026-01-01', updatedAt: '2026-01-01' };
 const m = migrate(v1);
 assert.strictEqual(m.schemaVersion, SCHEMA_VERSION, 'reaches current schema');
-assert.deepStrictEqual(m.content.items, [{ question: 'q', answer: 'a' }], 'items moved into content');
+// Se comparan los CAMPOS del ítem, no el objeto exacto: con las plantillas
+// registradas (como en la app real, y como quedan si otra suite las registró
+// antes) migrate NORMALIZA además el ítem (p.ej. `answerIdx` del modelo qa). El
+// deepStrictEqual de antes fijaba el comportamiento del registro VACÍO — un
+// mundo que en producción no existe.
+assert.strictEqual(m.content.items.length, 1, 'items moved into content');
+assert.strictEqual(m.content.items[0].question, 'q', 'question preserved');
+assert.strictEqual(m.content.items[0].answer, 'a', 'answer preserved');
 assert.ok(m.rules && m.scoring && m.review && m.presentation && m.live, 'all sections filled');
 assert.strictEqual(m.visibility, 'private');
 ok('migrate: legacy v1 → current schema, items relocated, defaults filled');

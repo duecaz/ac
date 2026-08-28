@@ -108,10 +108,12 @@ Un generador por modelo no es «escribe preguntas». Cada modelo tiene su trampa
 - **Todos** — español de España vs de América, y el nivel del curso. Una
   pregunta de 5.º escrita para bachillerato es tan inservible como una vacía.
 
-**La red que corresponde**: un `tools/ia-smoke.mjs` que, con respuestas
-GRABADAS (sin red, como `tests/imageSearch.test.mjs`), compruebe que cada
-generador produce contenido que `revisarActividad()` da por jugable. Y, aparte,
-una comprobación manual con el modelo real antes de encenderlo, porque la
+**La red que corresponde** existe desde v1.51.626 y vive en la SUITE, no en
+`tools/`: con respuestas GRABADAS (sin red ni navegador no hacía falta un
+smoke), `tests/aiContent.test.mjs` recorre la costura entera del editor —
+interpretar → fusionar → `adoptContent` de la plantilla → `revisarActividad()`
+JUGABLE en las 11 plantillas cuyo modelo la IA sabe escribir, con contra-prueba.
+Aparte queda, como siempre, la comprobación manual con el modelo real: la
 calidad pedagógica no la mide un test.
 
 ## 6 · LO DECIDIDO (dueño, 2026-08-18) y cómo quedó
