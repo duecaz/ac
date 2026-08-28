@@ -22,7 +22,7 @@
 // La frontera depende del aparato, así que se CALIBRA (core/penCalibration.js) y
 // se guarda en sessionStorage con la MISMA clave que duecaz/play.
 
-export const STORAGE_KEY = 'ep-pen-thresholds';
+const STORAGE_KEY = 'ep-pen-thresholds';
 
 // SIN CALIBRAR, el tamaño NO borra (`min: 1e9`) y solo la palma por CONTEO lo
 // hace. Es el defecto seguro: sin haber medido el aparato no hay forma de saber

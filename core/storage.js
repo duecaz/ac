@@ -233,7 +233,7 @@ async function remoteDelete(id) {
 
 // Reintenta los borrados pendientes (tombstones). Se llama al recuperar red y al
 // sincronizar. Un 404 remoto = la fila ya no existe → limpia el tombstone.
-export async function retryTombstones() {
+async function retryTombstones() {
   const ids = Object.keys(readTombstones());
   for (const id of ids) {
     try { await remoteDelete(id); clearTombstone(id); }

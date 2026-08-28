@@ -49,6 +49,13 @@ page.on('pageerror', e => errores.push(String(e.message).split('\n')[0]));
 
 await page.goto(`${BASE}/teacher.html?backend=local`, { waitUntil: 'domcontentloaded' });
 await page.waitForFunction(() => !!document.querySelector('#app'), { timeout: 20000 });
+// SIN TRANSICIONES: esta tortura mide ESTADOS FINALES, no fotogramas. El
+// interruptor del lápiz transiciona color y fondo 220 ms al cambiar de tema, y
+// la medición leía el estilo computado A MITAD (índigo→amarillo pasa por un
+// oliva que no existe en ningún tema): los fallos aparecían y desaparecían
+// según el timing de la pasada — el peor tipo de rojo, y de verde. Apagarlas
+// vale para TODO control animado futuro, no solo para este.
+await page.addStyleTag({ content: '* { transition: none !important; animation: none !important; }' });
 
 // Una actividad de quiz con su propio defaultContent: el quiz es la plantilla
 // con más texto suelto (enunciado + 4 opciones + cabecera), que es lo que se

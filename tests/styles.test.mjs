@@ -135,7 +135,7 @@ function scan(css) {
 // arreglar deuda existente, borra su entrada. ────────────────────────────────
 const BASELINE = {
   ballsort:      { fonts: ['.82rem', '.9rem'], colors: ['background:#2a3140', 'color:#ffd34d'] },
-  crossword:     { fonts: ['.78rem'], colors: ['color:#94a3b8'] },
+  crossword:     { fonts: [], colors: [] },
   match:         { fonts: ['.82rem', '.9rem'], colors: ['background:#6366f1', 'background:#94a3b8'] },
   memory:        { fonts: ['1.4rem', '1rem'], colors: ['background:#d1fae5', 'color:#065f46'] },
   'question-live': { fonts: ['1.3rem', '1.8rem'], colors: [] },
@@ -148,13 +148,13 @@ const BASELINE = {
                    colors: ['background:#fbbf24', 'background:#d97706', 'color:#141c2e',
                             'color:#5b6472', 'background:#243149', 'color:#e5edf9',
                             'background:#2d3d59', 'background:#f5c518', 'background:#ffd534'] },
-  textCorrection: { fonts: ['1.1rem'], colors: ['background:#fffdf5', 'color:#0f5132', 'color:#1f2937', 'color:#842029'] },
-  vs:            { fonts: ['.5rem', '.72rem', '.95rem', '.9rem', '1.05rem', '1.35rem', '1.7rem', '1rem', '2.6rem', '4.6rem'],
+  textCorrection: { fonts: ['1.1rem'], colors: ['color:#0f5132', 'color:#842029'] },
+  vs:            { fonts: ['.95rem', '1.05rem', '1.35rem', '1.7rem', '1rem', '2.6rem', '4.6rem'],
                    colors: ['background:#f8f9fa', 'color:#0d6efd', 'color:#2563eb', 'color:#6c757d', 'color:#f9c700'] },
   teams:         { fonts: ['1.1rem', '1.2rem', '1.4rem', '1rem'],
-                   colors: ['background:#cfe2ff', 'background:#d1e7dd', 'background:#f1f3f5', 'color:#6c757d'] },
-  wordsearch:    { fonts: ['.72rem', '.7rem', '.85em', '1rem'],
-                   colors: ['background:#f8f9fa', 'color:#4f46e5', 'color:#6c757d', 'color:#adb5bd'] },
+                   colors: ['color:#6c757d'] },
+  wordsearch:    { fonts: ['.72rem', '.85em'],
+                   colors: ['color:#4f46e5', 'color:#6c757d'] },
 };
 
 // ── TECHOS, congelados aparte (v1.51.602) ────────────────────────────────────
@@ -193,6 +193,12 @@ let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
 const newViolations = [];
 
+// …y en el otro sentido: una entrada del BASELINE cuyo defecto YA NO está en el
+// CSS es HOLGURA — deuda pagada que sigue apuntada, y por cuyo hueco cabe una
+// regresión nueva del mismo valor sin que el ratchet la vea. Este es el mismo
+// anti-inflado que ya tenía `citasFuente` y aquí faltaba (lo encontró la
+// primera pasada de /auditoria, 2026-08-28).
+const holguras = [];
 for (const g of GAME) {
   const css = blank(readFileSync(join(STYLES, `${g}.css`), 'utf8'));
   const { fonts, colors, ceilings } = scan(css);
@@ -204,7 +210,11 @@ for (const g of GAME) {
   for (const v of fonts) if (!baseFonts.has(v)) newViolations.push(`${g}.css: font-size fija sin token responsivo → "${v}"`);
   for (const v of colors) if (!baseColors.has(v)) newViolations.push(`${g}.css: color pintable hardcodeado (usa var(--ww-*)) → "${v}"`);
   for (const v of ceilings) if (!baseTechos.has(v)) newViolations.push(`${g}.css: TECHO fijo que congela el crecimiento (§3) → "${v}"`);
+  for (const v of base.fonts) if (![...fonts].includes(v)) holguras.push(`${g}: fonts "${v}"`);
+  for (const v of base.colors) if (![...colors].includes(v)) holguras.push(`${g}: colors "${v}"`);
 }
+assert.deepStrictEqual(holguras, [],
+  `HOLGURA en el BASELINE (la deuda ya se pagó: borra su entrada para que el ratchet apriete):\n  ${holguras.join('\n  ')}`);
 
 // LOS EJEMPLARES deben quedar SIEMPRE limpios — y tienen que tener algo que
 // mirar: `quiz.css` estaba en esta lista y se quedó SIN REGLAS al mudarse la

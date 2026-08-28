@@ -13,7 +13,9 @@ obtener checkeo en editor/CI contra estos contratos sin necesidad de build.
 - `contentModel.js` — `ContentModelContract` (validación + conversión entre modelos;
   base del "cambiar de plantilla en un clic").
 - `dataPort.js` — `DataPort` (persistencia de actividades, sin backend concreto).
-- `realtimePort.js` — `RealtimePort` (juego LIVE, sin backend concreto).
+- (el antiguo `realtimePort.js` se BORRÓ como tumor §30: un typedef que nadie
+  importaba y pudo mentir durante versiones; el contrato del puerto en vivo lo
+  fija ejecutando `tests/realtimePort.test.mjs`.)
 
 ## content/ (motor de contenido — columna vertebral del "switch")
 Núcleo puro y testeable en Node (sin DOM ni backend):

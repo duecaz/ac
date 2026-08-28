@@ -14,7 +14,7 @@ export function toggleFullscreen(el) {
   return Promise.resolve(p).catch(() => {});
 }
 
-export function isFullscreen() {
+function isFullscreen() {
   return !!(document.fullscreenElement || document.webkitFullscreenElement);
 }
 

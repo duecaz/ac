@@ -982,7 +982,8 @@ módulo que lo "arregle" al vuelo.
 
 - **Tests que lo vigilan**: `templateContract` (migrate idempotente + versión>1
   ⇒ migrate) · regla `id-rid` en `normsCheck`/`tests/norms.test.mjs` ·
-  `tests/switchTemplate.test.mjs` (conversores).
+  `tests/templateContract.test.mjs` + `tests/content.test.mjs` (conversores —
+  la antigua suite `switchTemplate` se fusionó ahí).
 - **Arreglado en L4**: los 9 generadores de id a mano migrados a `rid()`
   (quiz/math/match/memory/crossword + toast/embedModal/adaptadores/stressTest —
   el allowlist de la regla es SOLO `core/ids.js`) · `migrate` fail-safe ·
@@ -1352,7 +1353,7 @@ ficha. Tres reglas, vigiladas por `tests/docs.test.mjs`:
 
 ---
 ### Cómo se auto-verifica todo
-`node tools/preflight.mjs` corre las DOCE redes (suites + los once recorridos)
+`node tools/preflight.mjs` corre las TRECE redes (suites + auditoría de basura + los once recorridos)
 antes de subir a `main` — es la orden que hay que teclear (§27).
 `node tests/run.mjs` corre TODAS las suites. Los escáneres compartidos
 (`core/normsCheck.js` / `core/templateContract.js` / `core/skinContract.js`) corren

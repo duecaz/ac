@@ -135,8 +135,8 @@ Y lo que de verdad no se puede olvidar está ATADO, no confiado a la memoria:
   (también en Windows): `git config core.hooksPath .githooks`. Salida de
   emergencia con la clase delante: `git push --no-verify`.
 
-Verificar SIEMPRE antes de commitear: **`node tools/preflight.mjs`** — la suite + los
-ONCE recorridos (matriz jugable · cq sin contenedor · lápiz y borrador · tema×fondo legible · márgenes del panel · puertas del editor · buscar/crear+EDITAR · editores · en vivo · tareas · entregar la hoja de pruebas) en ~350 s, ley §27. `node
+Verificar SIEMPRE antes de commitear: **`node tools/preflight.mjs`** — suite + auditoría
+de basura (`tools/auditoria.mjs`) + los ONCE recorridos (matriz jugable · cq sin contenedor · lápiz y borrador · tema×fondo legible · márgenes del panel · puertas del editor · buscar/crear+EDITAR · editores · en vivo · tareas · entregar la hoja de pruebas) en ~350 s, ley §27. `node
 tests/run.mjs` solo verifica PIEZAS: los cinco fallos que la clase encontró en una
 semana vivían en la COSTURA entre piezas correctas y ninguna suite podía verlos. Si el
 cambio toca vistas, CSS o el router, el preflight NO es opcional. El contrato,
@@ -234,9 +234,9 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   un dibujo LIGERO y estático por tipo de plantilla (sin render del juego), MEMOIZADO por
   `id:updatedAt`. Cubre las **13** plantillas (0 respaldos genéricos) — lo garantiza
   `tests/homePreview.test.mjs` (si añades plantilla y olvidas su esquema en el switch
-  `build()`, falla en CI). Es distinto de `mountThumb`/`core/activityThumb.js` (render real
-  escalado 1280×800), que sigue existiendo para otros usos — el home dejó de usarlo por
-  rendimiento. Pendiente: que el preview respete tema/fondo de la actividad (ver
+  `build()`, falla en CI). El antiguo `activityThumb` (render real
+  escalado) se BORRÓ al quedarse sin importadores (§30) — el home dejó de usarlo por
+  rendimiento y nada más lo pedía. Pendiente: que el preview respete tema/fondo de la actividad (ver
   `docs/historico/handoff-previews-home.md` Fase 2b).
 - En móvil (≤640px) la barra superior colapsa en un **menú hamburguesa** (`.ww-topbar__burger`
   → clase `.open`); las acciones (incl. `#ww-mute-slot`/`#ww-auth-slot`) caen en el desplegable.

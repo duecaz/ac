@@ -152,8 +152,12 @@ const run = (args) => execFileSync(process.execPath, args, { cwd: ROOT, encoding
 {
   const NUM = { una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10, once: 11, doce: 12 };
   const pre = readFileSync(join(ROOT, 'tools/preflight.mjs'), 'utf8');
-  const redes = (pre.match(/cmd:\s*'[^']+'/g) || []).length;      // suites + recorridos
-  const recorridos = redes - 1;                                    // …sin la suite de lógica pura
+  const redes = (pre.match(/cmd:\s*'[^']+'/g) || []).length;      // todas las redes
+  // Un RECORRIDO es una red que levanta navegador. Las redes de lógica pura van
+  // marcadas `rapido: true` (la suite, la auditoría de basura): se derivan del
+  // código, no se restan a ojo — restar "1" dejó la cuenta mal al nacer la 2ª.
+  const rapidas = (pre.match(/rapido:\s*true/g) || []).length;
+  const recorridos = redes - rapidas;
   const PAT = /\b(\d+|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce)\s+(redes|recorridos)\b/gi;
   const malas = [];
   for (const rel of ['docs/leyes.md', 'docs/testing.md', 'CLAUDE.md']) {

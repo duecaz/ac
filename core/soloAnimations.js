@@ -13,7 +13,7 @@
 // Espejo de core/vsAnimations.js, pero para solo. Hoy hay una sola animación: la rana saltarina.
 const _providers = new Map();
 
-export function registerSoloAnimation(provider) { _providers.set(provider.id, provider); }
+function registerSoloAnimation(provider) { _providers.set(provider.id, provider); }
 export function getSoloAnimation(id) { return _providers.get(id) || null; }
 
 // Por defecto: ninguna (no altera las actividades existentes).

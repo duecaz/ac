@@ -64,7 +64,7 @@ export function textCorrectionPreviewHtml(act, kind) {
 // Exportada: el preview de tarjeta (core/homePreview.js) reutiliza ESTE mismo
 // markup para que la miniatura sea fiel al juego y no se desfase (los targets
 // son spans limpios; solo el canvas los vuelve interactivos).
-export function passageHtml(text, kind, reveal) {
+function passageHtml(text, kind, reveal) {
   const chars = [...text];
   // ESPACIOS como texto crudo y rompible (antes era \u00a0 = no-rompible, por eso
   // no cortaba la linea): las palabras quedan enteras y el texto envuelve al marco.

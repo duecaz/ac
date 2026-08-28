@@ -185,9 +185,11 @@
 .tc-switch:not(.is-on) .tc-switch__side--pen,
 .tc-switch.is-on .tc-switch__side--er {
   background: var(--ww-accent, #0d6efd);
-  /* Blanco sobre el acento: neutro permitido por §3 — los skins recolorean el
-     RELLENO con su token y el texto encima sigue legible en los seis. */
-  color: #fff; opacity: 1;
+  /* La tinta sobre el acento es SU PAR (`--ww-accent-ink`), no blanco fijo:
+     con los acentos amarillos (jungle · tv-show · arcade) el blanco daba
+     1.4-1.6:1 y el «Lápiz» activo no se leía — lo midió la tortura de
+     legibilidad, no un ojo. El par lo declara cada skin, medido. */
+  color: var(--ww-accent-ink, #fff); opacity: 1;
   padding-right: .85em;
   box-shadow: 0 1px 3px rgba(0,0,0,.22);
 }

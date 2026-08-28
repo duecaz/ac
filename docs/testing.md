@@ -40,7 +40,7 @@
 ## 0. El PREFLIGHT — la orden que hay que teclear (ley §27)
 
 ```bash
-node tools/preflight.mjs           # suite + los 11 recorridos, ~355 s
+node tools/preflight.mjs           # suite + auditoría + los 11 recorridos, ~355 s
 node tools/preflight.mjs --rapido  # solo la suite (NO basta si tocas vistas/CSS/router)
 ```
 

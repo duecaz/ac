@@ -10,7 +10,7 @@ import { isSafeBgImage } from './backgrounds.js';
 const FORMAT = 'ww-activities';
 const FORMAT_VERSION = 1;
 
-export function exportActivities(ids = null) {
+function exportActivities(ids = null) {
   const all = ids ? ids.map(id => get(id)).filter(Boolean) : list();
   return {
     format: FORMAT,
@@ -31,7 +31,7 @@ export function downloadActivitiesJson(ids = null, filename = null) {
 
 // Reads a File or string, returns { ok, count, errors }.
 // strategy: 'duplicate' (always new id), 'preserve' (keep id, may overwrite local).
-export async function importActivitiesJson(input, { strategy = 'duplicate' } = {}) {
+async function importActivitiesJson(input, { strategy = 'duplicate' } = {}) {
   const text = typeof input === 'string' ? input : await input.text();
   let parsed;
   try { parsed = JSON.parse(text); } catch (e) { return { ok: false, errors: ['JSON inválido: ' + e.message], count: 0 }; }

@@ -22,7 +22,7 @@ export function mountRopeLayer(svg) {
 }
 
 // Curva bezier entre dos puntos, con una leve caída ("sag") para un aire natural.
-export function ropeCurve(p1, p2) {
+function ropeCurve(p1, p2) {
   const mx = (p1.x + p2.x) / 2;
   return `M${p1.x},${p1.y} C${mx},${p1.y + SAG} ${mx},${p2.y + SAG} ${p2.x},${p2.y}`;
 }

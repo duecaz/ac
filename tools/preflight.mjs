@@ -35,6 +35,7 @@ const soloRapido = process.argv.includes('--rapido');
 // sentido gastar 40 s levantando navegadores para verlo otra vez.
 const PASOS = [
   { id: 'suites',  cmd: 'tests/run.mjs',        que: 'lógica pura (contrato · normas · leyes · scorers)', rapido: true },
+  { id: 'basura',  cmd: 'tools/auditoria.mjs',   que: 'citas rotas en docs y exports que nadie nombra (§30 — el ritual /entregar vivió solo en un doc durante versiones)', rapido: true },
   { id: 'matriz',  cmd: 'tools/matrix-smoke.mjs', que: 'cada plantilla × cada modo arranca, un gesto de envío, fullscreen tocable' },
   { id: 'cq',      cmd: 'tools/cq-sonda.mjs',    que: 'ninguna unidad cq se resuelve contra el viewport (el lápiz de 141 px no se veía de otra forma)' },
   { id: 'lapiz',   cmd: 'tools/lapiz-sonda.mjs', que: 'lápiz, borrador y toque corto sobre el lienzo real (el defecto vivía en la secuencia, no en la pieza)' },

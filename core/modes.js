@@ -109,7 +109,7 @@ export const MODE_DEFS = [
  *  concreta (con contenido) usa availableModes(). T es la clase de plantilla. */
 /** ¿Esta actividad trae su PROPIA mecánica de Equipos? Lo DECLARA la plantilla
  *  (`meta.play.teams === 'propio'`), no lo adivina la plataforma por el nombre. */
-export const traeMecanicaPropia = (a) =>
+const traeMecanicaPropia = (a) =>
   getTemplate(a?.template)?.meta?.play?.teams === 'propio';
 
 /**

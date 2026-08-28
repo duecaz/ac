@@ -20,6 +20,7 @@ export function escapeHtml(s) {
   }[c]));
 }
 
+
 export function $(sel, root = document) { return root.querySelector(sel); }
 export function $$(sel, root = document) { return [...root.querySelectorAll(sel)]; }
 

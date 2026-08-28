@@ -1,5 +1,5 @@
 // Ball Sort levels. Copied from the standalone game (yu) — pure data, no deps.
-export const LEVELS = {
+const LEVELS = {
   easy: {
     id: 'easy',
     name: 'Fácil',

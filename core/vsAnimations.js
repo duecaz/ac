@@ -31,7 +31,7 @@ const _providers = new Map();
 // red de seguridad.
 export const DEFAULT_VS_ANIMATION = 'lottie-cuerda';
 
-export function registerVsAnimation(provider) { _providers.set(provider.id, provider); }
+function registerVsAnimation(provider) { _providers.set(provider.id, provider); }
 export function listVsAnimations() { return [..._providers.values()]; }
 export function getVsAnimation(id) { return _providers.get(id) || _providers.get('svg-tug'); }
 
@@ -138,7 +138,7 @@ registerVsAnimation({
 const LOTTIE_LOCAL = './assets/js/lottie_light.min.js';
 let _lottiePromise = null;
 
-export function loadLottie() {
+function loadLottie() {
   if (window.lottie) return Promise.resolve(window.lottie);
   if (_lottiePromise) return _lottiePromise;
   _lottiePromise = new Promise((resolve, reject) => {
@@ -235,7 +235,7 @@ export async function startPreviewAnims(containerEls) {
 }
 
 // Factory for a bundled/known Lottie file (fixed src).
-export function lottieProvider({ id, label, description, src }) {
+function lottieProvider({ id, label, description, src }) {
   return { id, label, description, kind: 'lottie', src, create(container) { return createLottie(container, src); } };
 }
 

@@ -3,6 +3,7 @@
 // Pure functions: return HTML strings; attach handlers via separate helpers.
 import { escapeHtml } from './html.js';
 import { on } from './events.js';
+import { MAX_PARRAFOS } from './contentModels/textCorrection.js';
 import { toast } from './toast.js';
 import { questionWindowMs, ITEM_SECONDS_MIN, ITEM_SECONDS_MAX } from './timings.js';
 import { corrigeAlFinal } from './constants.js';
@@ -137,7 +138,11 @@ export function wireItemSeconds(root, a, ctx, list) {
 export function pegarTextoHtml(o = {}) {
   const titulo = escapeHtml(o.titulo || 'Pegar un texto');
   const lineas = Number(o.lineas) || 3;
-  const tope = Number(o.tope) || 4;
+  // El tope por defecto lo declara el MODELO (con su motivo: «cuatro párrafos
+  // son una actividad de clase»), no un número suelto aquí. La auditoría lo
+  // encontró como export MUERTO: la regla estaba escrita dos veces (§21b) y la
+  // copia viva era el 4 a mano.
+  const tope = Number(o.tope) || MAX_PARRAFOS;
   return `<details class="ww-pegar mb-3">
     <summary><i class="bi bi-clipboard-plus"></i> ${titulo}</summary>
     <div class="d-flex flex-wrap align-items-end gap-2 mt-2 mb-2">

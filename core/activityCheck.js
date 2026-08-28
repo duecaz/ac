@@ -182,7 +182,7 @@ export function pantallaNoListaHtml(a, rev) {
 /** La lista de problemas en HTML, ya escapada. Vive junto a quien la produce
  *  porque el editor y el jugador la pintaban por su cuenta: dos copias del
  *  mismo `<ul>` y dos sitios donde acordarse de escapar. */
-export function problemasListaHtml(problemas) {
+function problemasListaHtml(problemas) {
   return `<ul class="mb-0 mt-1 ps-3">${(problemas || []).map(p => `<li>${escapeHtml(p)}</li>`).join('')}</ul>`;
 }
 
@@ -247,7 +247,7 @@ export function revisarActividad(a) {
  *  arma en HTML: tres redacciones de «qué te falta» para el mismo profe. Aquí
  *  vive el texto plano, junto a quien produce los problemas.
  *  @param {object} rev  una revisión de `revisarActividad` */
-export function faltaTexto(rev) {
+function faltaTexto(rev) {
   return rev.problemasDeJuego.join(' · ') + (rev.vacia ? ` ${rev.primerPaso}` : '');
 }
 

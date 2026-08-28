@@ -5,7 +5,7 @@ import { lsGet, lsSet } from './ls.js';
 import { toast } from './toast.js';
 import { clock } from './clock.js';
 
-export const RING_KEY = 'ww.errlog';
+const RING_KEY = 'ww.errlog';
 const RING_MAX = 30; // conserva los últimos N errores
 let lastSent = 0;
 let storageWarned = false;
@@ -18,7 +18,7 @@ export function recentErrors() {
 /** Vacía el anillo de errores. */
 export function clearErrors() { lsSet(RING_KEY, '[]'); }
 
-export function logClientError({ message, stack, page }) {
+function logClientError({ message, stack, page }) {
   // Throttle: como mucho uno cada 2 s para evitar bucles.
   const now = clock.now();
   if (now - lastSent < 2000) return;

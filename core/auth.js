@@ -192,7 +192,7 @@ export function oauthRedirectUrl() {
 
 // Paso 1: pide a PB los datos del proveedor (authURL/state/codeVerifier), guarda
 // lo necesario para el retorno y redirige al consentimiento de Google.
-export async function startOAuthLogin(providerName = 'google', redirectUrl = oauthRedirectUrl(), { link = false } = {}) {
+async function startOAuthLogin(providerName = 'google', redirectUrl = oauthRedirectUrl(), { link = false } = {}) {
   const provs = await listOAuthProviders();
   const p = provs.find(x => x.name === providerName);
   if (!p) throw new Error(`El proveedor "${providerName}" no está habilitado en PocketBase (Settings → Auth providers).`);
@@ -216,7 +216,7 @@ export async function linkGoogle() {
   return startOAuthLogin('google', oauthRedirectUrl(), { link: true });
 }
 
-export function pendingOAuth() {
+function pendingOAuth() {
   try { return JSON.parse(sessionStorage.getItem(OAUTH_KEY)); } catch { return null; }
 }
 

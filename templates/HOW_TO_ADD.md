@@ -190,9 +190,11 @@ Tu plantilla nueva queda cubierta automáticamente al registrarse:
 `node tests/templateContract.test.mjs` (y el panel `#/admin` → "Ejecutar tests",
 grupo *Contrato*) verifican meta completa (`instructions` obligatorio),
 `contentModel` registrado, `defaultContent` válido y jugable, scorer con forma
-`{correct, points}`, `migrateContent` idempotente y `static previewHtml(act)`
-(la miniatura de la tarjeta del home — reutiliza los builders del player o los
-helpers de `core/previewKit.js`; NO hay switch central que tocar). Si eso pasa y
+`{correct, points}` y `migrateContent` idempotente. La miniatura de la tarjeta
+del home NO es de la plantilla (el `static previewHtml` se retiró en v1.51.406):
+la pinta `core/homePreview.js`, y su esquema para la plantilla nueva se añade en
+el switch `build()` — si lo olvidas, `tests/homePreview.test.mjs` rompe CI y te
+lo dice. Si eso pasa y
 `tests/norms.test.mjs` + `tests/styles.test.mjs` están en verde (sin
 `ResizeObserver` directo, filtros PB por `pbFilter.js`, CSS relativo +
 tokens de skin → `docs/estilos-de-actividad.md`), la plantilla nace estándar.

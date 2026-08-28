@@ -31,7 +31,7 @@ export const DIRS = {
 };
 
 // Difficulty presets for allowed directions
-export const DIR_PRESETS = {
+const DIR_PRESETS = {
   easy:   ['right', 'down'],
   medium: ['right', 'down', 'downRight', 'downLeft'],
   hard:   Object.keys(DIRS),

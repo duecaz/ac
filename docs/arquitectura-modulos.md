@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **270 módulos · 1056 imports internos.**
+> **270 módulos · 1057 imports internos.**
 
 ### Ir a otro documento
 
@@ -31,11 +31,11 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1770 | 7 · 934 | 0.53 |
-| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2814 | 12 · 1398 | 0.50 |
+| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2814 | 12 · 1408 | 0.50 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3972 | 19 · 3037 | 0.76 |
 | **informes/tareas** | después de clase | 10 · 1116 | 4 · 512 | 0.46 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5877 | 13 · 1778 | 0.30 |
-| **infra/común** | todo lo anterior | 144 · 18228 | 64 · 8004 | 0.44 |
+| **infra/común** | todo lo anterior | 144 · 18241 | 64 · 8008 | 0.44 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -107,7 +107,7 @@ graph TD
 | **arranque** | `pb_hooks/aulareto-lib.js` (364) · `pb_hooks/aulareto.pb.js` (354) · `qa/hoja.js` (330) · `main.teacher.js` (168) · `main.embed.js` (68) |
 | **vistas** | `views/adminView.js` (1345) · `views/hostLive.js` (1107) · `views/studentLive.js` (922) · `views/playerView.js` (538) · `views/vsView.js` (527) |
 | **adaptadores** | `adapters/pocketbase/realtime.js` (1187) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (186) · `adapters/index.js` (142) |
-| **core** | `core/textCorrectionRound.js` (759) · `core/normsCheck.js` (450) · `core/skins.js` (414) · `core/aiContent.js` (385) · `core/selftest.js` (345) |
+| **core** | `core/textCorrectionRound.js` (759) · `core/normsCheck.js` (450) · `core/skins.js` (421) · `core/aiContent.js` (385) · `core/selftest.js` (345) |
 | **kernel** | `kernel/session/engine.js` (559) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/dataPort.js` (28) |
 | **plantillas** | `templates/crossword/player.js` (482) · `templates/wordsearch/player.js` (397) · `templates/match/player.js` (292) · `templates/diagram/player.js` (235) · `templates/quiz/editor.js` (225) |
 | **contenido** | `kernel/content/qaAdapt.js` (141) · `kernel/content/switch.js` (117) · `kernel/content/convert.js` (95) · `kernel/content/models.js` (83) · `kernel/content/index.js` (5) |

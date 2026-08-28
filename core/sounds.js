@@ -29,7 +29,7 @@ const DEFAULT_PACK = {
   podium:  `${ASSET_BASE}/win.mp3`
 };
 
-export function setSoundPack(pack) {
+function setSoundPack(pack) {
   _pack = { ...DEFAULT_PACK, ...(pack || {}) };
   _cache.clear();
 }
@@ -109,7 +109,7 @@ export function stop(name) {
   try { a.pause(); a.currentTime = 0; } catch {}
 }
 
-export function stopAll() {
+function stopAll() {
   for (const a of _cache.values()) { try { a.pause(); } catch {} }
 }
 

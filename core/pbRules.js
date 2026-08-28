@@ -68,7 +68,7 @@ const ANON_ROOM_UPDATE = ROOM_FIELDS.map(notSet).join(' && ');
 // `assignment_attempts` más abajo). Se declara aquí arriba para que la regla se
 // lea de una pieza.
 const ASG = '@collection.assignments:asg';
-export const ATTEMPT_CREATE = [
+const ATTEMPT_CREATE = [
   `${ASG}.id ?= @request.body.assignment_id`,
   `${ASG}.status ?!= "closed"`,
   `(@request.body.attempt_no = 1 || ${ASG}.max_attempts ?>= @request.body.attempt_no)`,

@@ -183,6 +183,7 @@ registerSkin({
     '--ww-card-fg': '#1f2937',   // text INSIDE cards — contrasts with card-bg
     '--ww-card-border': '#dee2e6',
     '--ww-accent': '#6366f1',
+    '--ww-accent-ink': '#ffffff',  // TINTA sobre el acento (4.5:1 medido) — el par nació del Lápiz ilegible en arcade
     '--ww-shape-1': '#e21b3c',
     '--ww-shape-2': '#1368ce',
     '--ww-shape-3': '#d89e00',
@@ -218,6 +219,7 @@ registerSkin({
     '--ww-card-fg': '#3a2f1f',
     '--ww-card-border': '#c9b88a',
     '--ww-accent': '#b45309',
+    '--ww-accent-ink': '#ffffff',
     '--ww-shape-1': '#dc2626',
     '--ww-shape-2': '#2563eb',
     '--ww-shape-3': '#ca8a04',
@@ -249,6 +251,7 @@ registerSkin({
     '--ww-card-fg': '#1f2937',   // dark text on white cards (fg≠card-fg here)
     '--ww-card-border': '#46178f',
     '--ww-accent': '#ff3355',
+    '--ww-accent-ink': '#ffffff',
     '--ww-shape-1': '#e21b3c',
     '--ww-shape-2': '#1368ce',
     '--ww-shape-3': '#d89e00',
@@ -279,6 +282,7 @@ registerSkin({
     '--ww-card-fg': '#39ff14',
     '--ww-card-border': '#39ff14',
     '--ww-accent': '#ff00ff',
+    '--ww-accent-ink': '#ffffff',
     '--ww-shape-1': '#ff5555',
     '--ww-shape-2': '#5555ff',
     '--ww-shape-3': '#ffff55',
@@ -309,6 +313,7 @@ registerSkin({
     '--ww-card-fg': '#ecfccb',
     '--ww-card-border': '#84cc16',
     '--ww-accent': '#facc15',
+    '--ww-accent-ink': '#14311f',  // amarillo: la tinta clara ahí no llega ni a 2:1
     '--ww-shape-1': '#dc2626',
     '--ww-shape-2': '#0891b2',
     '--ww-shape-3': '#facc15',
@@ -347,6 +352,7 @@ registerSkin({
     '--ww-card-fg': '#eaf2ff',
     '--ww-card-border': '#3b82f6',
     '--ww-accent': '#ffc400',
+    '--ww-accent-ink': '#0e1a3a',
     '--ww-shape-1': '#ef2b5b',
     '--ww-shape-2': '#2b6fff',
     '--ww-shape-3': '#13c4a3',
@@ -383,6 +389,7 @@ registerSkin({
     '--ww-card-fg': '#eafcff',
     '--ww-card-border': '#22d3ee',
     '--ww-accent': '#ffd400',
+    '--ww-accent-ink': '#0b0a1c',
     '--ww-shape-1': '#ff2e88',
     '--ww-shape-2': '#22d3ee',
     '--ww-shape-3': '#a3e635',

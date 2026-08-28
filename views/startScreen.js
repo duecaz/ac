@@ -25,7 +25,7 @@ import { playOptionsHtml, wirePlayOptions } from '../core/playOptions.js';
 
 // Instrucciones: la actividad puede traerlas (futuro editor); si no, la plantilla
 // puede declarar `meta.instructions`; y si tampoco, un texto genérico.
-export function activityInstructions(activity) {
+function activityInstructions(activity) {
   const T = getTemplate(activity?.template);
   return activity?.instructions || T?.meta?.instructions ||
     'Lee con atención y resuelve cada parte. Pulsa “Iniciar” cuando estés listo.';

@@ -16,7 +16,7 @@ export function getLocalProfile(uid) {
   if (!uid) return { ...EMPTY };
   try { return { ...EMPTY, ...JSON.parse(localStorage.getItem(LKEY(uid)) || '{}') }; } catch { return { ...EMPTY }; }
 }
-export function setLocalProfile(uid, prof) {
+function setLocalProfile(uid, prof) {
   if (!uid) return { ...EMPTY };
   const next = { ...getLocalProfile(uid), ...prof };
   lsSet(LKEY(uid), JSON.stringify(next));
