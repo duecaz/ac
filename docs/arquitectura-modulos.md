@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **269 módulos · 1049 imports internos.**
+> **269 módulos · 1051 imports internos.**
 
 ### Ir a otro documento
 
@@ -35,7 +35,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3975 | 19 · 3037 | 0.76 |
 | **informes/tareas** | después de clase | 10 · 1056 | 4 · 466 | 0.44 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5877 | 13 · 1778 | 0.30 |
-| **infra/común** | todo lo anterior | 143 · 18081 | 64 · 7915 | 0.44 |
+| **infra/común** | todo lo anterior | 143 · 18096 | 64 · 7977 | 0.44 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -119,9 +119,9 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 
 | Módulo | Lo importan |
 |---|---|
-| `core/html.js` | 87 |
+| `core/html.js` | 88 |
+| `core/registry.js` | 47 |
 | `core/events.js` | 47 |
-| `core/registry.js` | 46 |
 | `core/toast.js` | 27 |
 | `core/ids.js` | 26 |
 | `core/clock.js` | 23 |

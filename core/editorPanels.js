@@ -25,8 +25,23 @@ import { on } from './events.js';
 import { readSeconds } from './timings.js';
 import { activityItemCount } from './migrate.js';
 import { defaultMaxScore } from './scoring/index.js';
+import { getTemplate } from './registry.js';
+import { escapeHtml } from './html.js';
 
 // ── Puntuación ─────────────────────────────────────────────────────────────
+/** CÓMO LLAMA CADA PLANTILLA A SU UNIDAD: «Puntos por par», «por palabra», «por
+ *  frase». Lo declara la plantilla (`meta.editor.elemento`) y ya lo usaban las
+ *  puertas del editor; aquí sirve para que la casilla COMPARTIDA hable el idioma
+ *  de cada actividad.
+ *  Era el motivo real por el que Emparejar, Memoria y la Sopa llevaban su propia
+ *  copia del campo: la genérica decía «Puntos por acierto» y ellas querían decir
+ *  «por par» y «por palabra». Duplicar la casilla para cambiarle el rótulo salía
+ *  caro —dos mandos para el mismo dato, y solo uno recalculaba el máximo de la
+ *  actividad—; pedirle la palabra a la plantilla no cuesta nada. */
+function unidadDe(a) {
+  return getTemplate(a?.template)?.meta?.editor?.elemento || 'acierto';
+}
+
 export function scoringPanelHtml(a) {
   const s = a.scoring || {};
   return `<div class="row g-3">
@@ -35,7 +50,7 @@ export function scoringPanelHtml(a) {
         <option value="flat" ${s.mode === 'flat' ? 'selected' : ''}>Plano</option>
         <option value="velocidad" ${s.mode === 'velocidad' ? 'selected' : ''}>Bonus por velocidad</option>
       </select></div>
-    <div class="col-md-4"><label class="form-label">Puntos por acierto</label><input type="number" class="form-control" id="f-ppc" value="${s.pointsPerCorrect ?? 1}"></div>
+    <div class="col-md-4"><label class="form-label">Puntos por ${escapeHtml(unidadDe(a))}</label><input type="number" class="form-control" id="f-ppc" value="${s.pointsPerCorrect ?? 1}"></div>
     <div class="col-md-4"><label class="form-label">Puntos por error</label><input type="number" class="form-control" id="f-ppw" value="${s.pointsPerWrong ?? 0}"></div>
     <!-- EL EFECTO, A LA VISTA. El bug de «puse 10 y el duelo dio 1» vivió meses
          porque el ajuste no tenía NINGUNA consecuencia visible hasta el podio.

@@ -53,6 +53,7 @@
 - [19) Credenciales de PocketBase/Pi — NUNCA en el chat](#19-credenciales-de-pocketbasepi--nunca-en-el-chat)
 - [20) OAuth redirect canónico](#20-oauth-redirect-canónico)
 - [21) ⚖️ LEY DE DATOS — cada colección tiene UN dueño](#21--ley-de-datos--cada-colección-tiene-un-dueño)
+- [§21b) ⚖️ UNA REGLA, UN DUEÑO — la generalización del §21](#21b--una-regla-un-dueño--la-generalización-del-21)
 - [22) ⚖️ LEY DE CONFIANZA — el cliente AFIRMA, el veredicto lo pone otro](#22--ley-de-confianza--el-cliente-afirma-el-veredicto-lo-pone-otro)
   - [Los LÍMITES de esta ley — permanentes, no pendientes (v1.51.421)](#los-límites-de-esta-ley--permanentes-no-pendientes-v151421)
   - [§0 en la práctica — la identidad no habilita nada (v1.51.598)](#0-en-la-práctica--la-identidad-no-habilita-nada-v151598)
@@ -614,6 +615,47 @@ exactamente lo que causó los lost-updates (deuda A) y el guardado doble.
     @pio (añade `qid` + sus 2 índices). Sin eso, el reintento sigue funcionando
     pero sin la garantía del índice (la comprobación por consulta del adaptador
     cubre mientras tanto).
+
+## §21b) ⚖️ UNA REGLA, UN DUEÑO — la generalización del §21
+
+> **Dueño**: quien declare la regla (el módulo, el contrato de skins, el panel
+> compartido) · **PROHIBIDO**: escribir la misma regla en dos sitios y confiar en
+> que se mantengan iguales. · **Vigilada por**: `ajusteConectado` (un ajuste, una
+> casilla) · `skinContract` (un token, todos los temas) · `citasFuente` ·
+> `editor-puertas` (una etiqueta, una vez) · y el §21 para las colecciones.
+
+El §21 dice esto para las colecciones de PocketBase y las claves `ww.*`. La
+semana del 28 de agosto de 2026 el MISMO defecto salió **ocho veces seguidas** en
+sitios que el §21 no cubría, así que la ley es más ancha de lo que estaba escrito:
+
+| Lo que se duplicó | Cómo se notó |
+|---|---|
+| la ventana de descarte del toque: 80 ms en la calibración, 60 ms en el veredicto, con dos medianas | calibrar la pizarra no servía de nada: los umbrales medían un tramo del toque que el dibujo no miraba |
+| la baldosa «Mi imagen», escrita en el player y en el editor | se arregló en uno y el otro siguió roto |
+| la guarda de «no publicar lo injugable», puesta en una puerta de dos | la Ruleta vacía entraba en la biblioteca por el interruptor de la tarjeta |
+| «Puntos por acierto», en el panel compartido y en el de la plantilla | dos casillas para el mismo número, y solo una recalculaba el máximo |
+| el campo de tiempo: «Timer (s, 0=off)» y «Tiempo límite (s, 0=libre)», y ausente en dos plantillas | el aviso de al lado prometía un temporizador que no existía |
+| `--ww-paper`, declarado por 1 tema de 7 | el tema llegaba al marco y se paraba en el borde de la hoja |
+| la tinta del marco usada sobre el papel | el reloj a 1,07:1 en cinco temas: invisible |
+| el defecto «corregir al final», a punto de escribirse en el runner y en el editor | un `!== false` y un `=== true` habrían dado defectos opuestos |
+
+**La forma del fallo siempre es la misma**: dos copias nacen iguales, una cambia,
+y nadie se entera hasta que alguien lo ve con la clase delante. No se arregla con
+disciplina —lo intentamos ocho veces— sino quitando la segunda copia.
+
+**Y su gemelo, que es igual de caro**: una red verde que mira UNA de las dos
+instancias. La tortura de contraste medía la tarjeta y no la hoja, y por eso un
+texto ilegible pasó siete versiones. Cuando una ley tenga dos encarnaciones, la
+red tiene que recorrerlas todas o declarar por escrito cuál no mira.
+
+**Cómo se aplica al escribir**:
+- si dos módulos necesitan la misma constante, la exporta uno y la importa el
+  otro — nunca se escribe dos veces «porque es un número»;
+- si dos pantallas resumen el mismo dato, comparten la función que lo resume;
+- si un tema declara un token, lo declaran TODOS (el contrato lo obliga en
+  cuanto entra en el set de `default`);
+- si el panel compartido ya pinta una casilla, la plantilla no pinta otra: le
+  pide la palabra que le falta (`meta.editor.elemento` → «Puntos por par»).
 
 ## 22) ⚖️ LEY DE CONFIANZA — el cliente AFIRMA, el veredicto lo pone otro
 El principio que ya aplicamos tres veces sin nombrarlo (C6, answer-safety R5,

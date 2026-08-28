@@ -45,6 +45,7 @@ replantea. Texto completo en **`docs/leyes.md`** (índice único de normas).
 | **§0 · CUATRO CAPAS** | contenido · plantilla · modo · plataforma: una plantilla no sabe en qué modo corre (lo DECLARA), un modo no conoce plantillas concretas | `scoringSources` · `persistPolicy` · `templateContract` · matriz jugable |
 | **§3 · ESTILO** | 4 capas del píxel: el skin cambia TOKENS, la actividad consume TOKENS; nada de tamaños fijos en el juego | `styles` (ratchet + gate de themes) · `skins` |
 | **§21 · DATOS** | cada colección PB **y cada clave `ww.*` del almacén** tiene UN módulo dueño; quien necesite datos **pide un método al dueño**, nunca hace fetch ni `lsGet` propio | reglas `pb-dueno` + `ls-dueno` (`norms`) |
+| **§21b · UN DUEÑO** | la misma regla escrita dos veces siempre acaba diciendo dos cosas: se quita la copia, no se vigila | `ajusteConectado` (un ajuste, una casilla) · `skinContract` · `editor-puertas` |
 | **§22 · CONFIANZA** | el cliente **AFIRMA**, el veredicto lo pone el host o una regla del servidor | `pbRules` + `liveRules` (evaluador de reglas) · `confianza-alumno` · `answerSafety` · `modeAuth` (avisar ANTES) |
 | **§23 · VISTA** | la vista posee su render y sus handlers; el router el ciclo de vida; los relojes van por su primitivo | regla `reloj-primitivo` · `events` · `deadlineTicker` |
 | **§24 · CONTENIDO** | el contenido es del usuario: cambia solo por migración versionada, conversión declarada e ids con `rid()` | regla `id-rid` · `templateContract` (versión>1 ⇒ migrate) |
@@ -445,10 +446,9 @@ usuario: se deja pendiente, no bloquea el resto.
   con desfase simulado en `live-smoke`; falta el ✅ de que en un PC + un Android
   REALES la cuenta de «Preparados…» marque el MISMO número. **No es una prueba
   táctil**: el paso 5 es el de la ventana de lectura y el cronómetro.
-- **Lápiz / borrador en pizarra REAL** (v1.51.419): probado con toque real headless;
-  falta verlo con lápiz y palma de verdad, y revisar los umbrales del detector.
-- **Calibrador de pizarra**: el usuario tiene uno propio para adaptar; el que hay
-  (`core/penCalibration.js`) funciona pero sus umbrales no se han contrastado.
+- **Lápiz y palma en pizarra REAL** (v1.51.610: DOS herramientas, frontera única,
+  calibración de 2 recuadros; medido headless en `tools/lapiz-sonda.mjs`). Falta la
+  mano de verdad: es la Parte 1 de la hoja del compañero.
 
 ### 🟡 DEUDA CONDICIONADA — partir los 4 módulos grandes (TRAS los tests del compañero)
 Registrada en la cola del norte (#5). NO ejecutar hasta que el compañero termine su ronda

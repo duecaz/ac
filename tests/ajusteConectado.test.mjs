@@ -1,4 +1,13 @@
-// UN AJUSTE QUE EL PANEL ESCRIBE, ALGUIEN TIENE QUE LEERLO.
+// UN AJUSTE QUE EL PANEL ESCRIBE, ALGUIEN TIENE QUE LEERLO — Y UNO SOLO LO ESCRIBE.
+//
+// Dos mitades de la misma ley (§21b, «una regla, un dueño»). La primera es la de
+// siempre: un mando que no manda engaña a quien prepara la clase. La segunda la
+// pidió la semana del 28: «Puntos por acierto» salía en DOS pestañas del editor
+// de Tildes —el panel compartido y una copia local—, las dos escribiendo
+// `a.scoring.pointsPerCorrect`, y solo una recalculaba el «máximo de esta
+// actividad» de al lado. El profe ve el mismo número en dos sitios y no sabe cuál
+// manda. El campo de tiempo estaba igual: Quiz decía «Timer (s, 0=off)», la Sopa
+// «Tiempo límite (s, 0=libre)», y Tildes y Comas no lo tenían en absoluto.
 //
 // El dueño (2026-08-14): «revisa dónde más pasa, no podemos tener errores tan
 // básicos». Pasaba en SIETE sitios. Un mando que no manda es la peor clase de
@@ -55,6 +64,13 @@ const PERMITIDOS = {
 
 const ESCRIBE = /\ba(?:ctivity)?\.(scoring|rules|live|presentation|review)\.([A-Za-z_$][\w$]*)\s*=(?!=)/g;
 
+// Claves que SÍ pueden escribirse desde varios editores, con su motivo. Vacía es
+// lo correcto: cada línea es un sitio más donde el profe puede tocar lo mismo.
+const ESCRITORES_MULTIPLES = {
+  // (ninguna hoy)
+};
+const EXC_MULT = Object.keys(ESCRITORES_MULTIPLES).length;
+
 const escritos = new Map();
 for (const p of ficheros.filter(esEditor)) {
   for (const m of readFileSync(p, 'utf8').matchAll(ESCRIBE)) {
@@ -67,6 +83,52 @@ for (const p of ficheros.filter(esEditor)) {
 function lectoresDe(grupo, campo) {
   const re = new RegExp(`\\.${grupo}\\??\\.${campo}\\b|\\b${grupo}\\??\\.${campo}\\b|['"\`]${campo}['"\`]`);
   return ficheros.filter(p => !esEditor(p) && !esPrueba(p) && re.test(readFileSync(p, 'utf8'))).map(rel);
+}
+
+// ── UN AJUSTE, UNA CASILLA ───────────────────────────────────────────────────
+// Si dos ficheros de editor escriben la MISMA clave, hay dos casillas para el
+// mismo dato. No es duplicación de código: es que el profe tiene dos mandos y
+// ninguno dice cuál gana. Se cuenta por FICHERO, que es lo que un profe percibe
+// como «otro sitio donde tocarlo».
+{
+  // LO QUE DUPLICA ES «PANEL COMPARTIDO + PLANTILLA», no «dos plantillas». El
+  // panel de `core/` sale en TODOS los editores, así que si además la plantilla
+  // escribe la misma clave, esa actividad enseña DOS casillas para el mismo dato.
+  // Dos plantillas distintas con su propia casilla no se ven nunca juntas — es lo
+  // normal (cada una tiene su «Mezclar frases»), y contarlo como duplicado habría
+  // llenado la lista de ruido hasta que nadie la mirara.
+  // …Y SOLO SI LA PLANTILLA NO SUSTITUYE ESE PANEL. Un editor puede declarar
+  // `scoring: { html, wire }` y entonces el shell NO monta el compartido: su
+  // casilla es la única en pantalla, no una segunda. La primera versión de esta
+  // regla no lo miraba y acusó a Emparejar, Memoria y la Sopa —las tres tienen
+  // panel propio— con la misma cara de certeza que a Tildes, que sí duplicaba.
+  // Yo me fié y borré campos que funcionaban antes de comprobarlo.
+  const sustituye = (fichero, bloque) =>
+    new RegExp(`\\b${bloque}\\s*:\\s*\\{`).test(readFileSync(join(ROOT, fichero), 'utf8'));
+  const dobles = [...escritos]
+    .filter(([k, quien]) => {
+      if (ESCRITORES_MULTIPLES[k]) return false;
+      const [bloque] = k.split('.');
+      const q = [...quien];
+      if (!q.some(f => f.startsWith('core/'))) return false;
+      return q.some(f => f.startsWith('templates/') && !sustituye(f, bloque));
+    })
+    // El mensaje nombra SOLO a quien duplica, no a todo el que escribe la clave:
+    // la primera versión listaba también las plantillas con panel propio —
+    // inocentes— y leerlas ahí es lo que me llevó a borrarles campos buenos.
+    .map(([k, quien]) => {
+      const [bloque] = k.split('.');
+      const culpables = [...quien].filter(f => f.startsWith('templates/') && !sustituye(f, bloque));
+      return `${k} ← core/ (panel compartido) + ${culpables.join(' + ')}`;
+    });
+  assert.deepStrictEqual(dobles, [],
+    `estos ajustes se escriben desde MÁS DE UN editor (dos casillas para el mismo dato):\n  ${dobles.join('\n  ')}`);
+  // CONTRA-PRUEBA: el escaneo tiene que estar viendo de verdad quién escribe. Si
+  // el mapa guardara un solo fichero por clave, la lista saldría vacía siempre.
+  const conNombre = [...escritos].filter(([, q]) => q.size >= 1).length;
+  assert.strictEqual(conNombre, escritos.size, 'el escáner debe registrar el fichero de cada escritura');
+  ok(`ningún ajuste se escribe desde dos editores (${escritos.size} claves, `
+     + `${EXC_MULT} excepción(es) declarada(s))`);
 }
 
 // ── Ningún mando desconectado ────────────────────────────────────────────────
