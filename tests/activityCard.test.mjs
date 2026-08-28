@@ -144,19 +144,28 @@ ok('Explorar migrada a .acard + .home-grid (sin Bootstrap card)');
     ok('el candado lo pone la SESIÓN, no la variante (y Individual nunca se bloquea)');
   }
 
-  // UN JUEGO no se dirige ni se manda de deberes (§4c): lo decide el componente,
-  // no la vista de Juegos — si no, el mismo juego saldría con Live en otra lista.
+  // QUÉ MODOS OFRECE cada actividad lo declara SU PLANTILLA, y la tarjeta no
+  // puede tener una segunda opinión. Aquí hubo un `!esJuego` que dejaba a Ordena
+  // las Pelotas —el bucle `board` del modo en vivo (§26), el único que lo
+  // declara— sin botón de En vivo hasta en "Mis actividades". Se comprueba
+  // DESCUBRIENDO: para cada plantilla registrada, la tira ofrece exactamente lo
+  // que su meta declara.
   {
     const { listTemplates } = await import('../core/registry.js');
-    // DESCUBIERTO, no escrito a mano: si mañana hay otro juego, entra solo.
-    const juegos = listTemplates().filter(T => T?.meta?.kind === 'juego');
-    assert.ok(juegos.length, 'debería haber al menos un juego registrado (§4c)');
-    for (const T of juegos) {
-      const h = activityCardHtml({ id: 'g1', title: T.meta.label, template: T.id, content: {} },
+    const desajustes = [];
+    for (const T of listTemplates()) {
+      const h = activityCardHtml({ id: 'x', title: T.meta.label, template: T.meta.name, content: {} },
         { variant: 'library' });
-      assert.ok(!/act-pin|act-task/.test(h), `el juego ${T.id} no puede ofrecer En vivo ni Tarea`);
+      if (/act-pin/.test(h) !== !!T.meta.modes?.live)  desajustes.push(`${T.meta.name}: En vivo`);
+      if (/act-task/.test(h) !== !!T.meta.modes?.async) desajustes.push(`${T.meta.name}: Tarea`);
     }
-    ok(`los ${juegos.length} JUEGO(s) no ofrecen En vivo ni Tarea, los pinte la vista que los pinte`);
+    assert.deepStrictEqual(desajustes, [],
+      `la tarjeta ofrece modos que la plantilla no declara (o esconde los que sí): ${desajustes.join(' · ')}`);
+    // Y el caso concreto que se rompió: un JUEGO con live declarado LO ofrece,
+    // y su Tarea la niega la plantilla (async:false), no la tarjeta.
+    const juegos = listTemplates().filter(T => T?.meta?.kind === 'juego' && T.meta.modes?.live);
+    assert.ok(juegos.length, 'debería haber un juego con modo en vivo (el bucle `board`, §26)');
+    ok(`las ${listTemplates().length} plantillas ofrecen en la tarjeta EXACTAMENTE los modos que declaran (incl. ${juegos.length} juego con En vivo)`);
   }
 
   // El badge cuenta PÁGINAS, no elementos (corrección de v1.51.184): Emparejar

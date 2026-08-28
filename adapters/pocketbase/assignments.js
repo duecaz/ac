@@ -62,9 +62,19 @@ export function createPocketbaseAssignments({ userId = 'local-anon' } = {}) {
       return { id: rec.id, code: rec.code };
     },
 
+    // MIS tareas de esta actividad, no las de todo el mundo. El filtro era solo
+    // por `activity_id` y `assignments` tiene list/view ABIERTOS a propósito (el
+    // alumno anónimo necesita leer la suya), así que la pantalla enseñaba los
+    // PIN, los intentos y los botones de «Cerrar»/«Rotar PIN» de las tareas de
+    // OTRO profe sobre la misma actividad — y `updateRule` es solo AUTH, así que
+    // el botón además funcionaba. No importaba mientras la puerta de Tarea solo
+    // salía sobre lo tuyo; desde que sale en toda la biblioteca (v1.51.621),
+    // dos profes con la misma actividad publicada es el caso NORMAL.
     async listAssignmentsForActivity(activityId) {
+      const me = uid();
+      const filtro = `activity_id='${pbEscape(activityId)}' && author_id='${pbEscape(me)}'`;
       const res = await pbFetch(
-        `/api/collections/assignments/records?filter=${pbFilterParam(`activity_id='${pbEscape(activityId)}'`)}&sort=-created_at&perPage=200`
+        `/api/collections/assignments/records?filter=${pbFilterParam(filtro)}&sort=-created_at&perPage=200`
       );
       return res?.items || [];
     },

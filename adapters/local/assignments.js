@@ -43,9 +43,12 @@ export function createLocalAssignments({ kv = defaultKV(), userId } = {}) {
       return { id, code: row.code };
     },
 
+    // Mismo criterio que en PocketBase: MIS tareas de esta actividad. Aquí no
+    // hay más profe que uno, pero si los dos adaptadores filtran distinto, el
+    // e2e local deja de probar lo que ocurre en producción.
     async listAssignmentsForActivity(activityId) {
       return Object.values(assignments())
-        .filter(a => a.activity_id === activityId)
+        .filter(a => a.activity_id === activityId && (!a.author_id || a.author_id === uid()))
         .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
     },
 

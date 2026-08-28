@@ -67,4 +67,25 @@ assert.notStrictEqual(newCode, code, 'code rotated');
 assert.strictEqual(await student.findAssignmentByCode(code), null, 'old code no longer resolves');
 ok('rotateAssignmentCode issues a fresh code and retires the old');
 
+// ── LAS TAREAS QUE VES SON LAS TUYAS ────────────────────────────────────────
+// Desde v1.51.621 la tarjeta ofrece «Tarea» en toda la biblioteca, así que dos
+// profes mandando de deberes la MISMA actividad publicada es el caso normal. El
+// listado filtraba solo por `activity_id` y la colección tiene list/view
+// abiertos (el alumno anónimo tiene que poder leer la suya), de modo que la
+// pantalla enseñaba el PIN, los intentos y los botones de «Cerrar» y «Rotar
+// PIN» de las tareas del OTRO profe — y `updateRule` es solo AUTH, así que el
+// botón funcionaba de verdad.
+{
+  const otra = createLocalAssignments({ kv, userId: 'teacher-2' });
+  const mia = await otra.createAssignment(activity, { title: 'La mía' });
+  const suyas = await teacher.listAssignmentsForActivity('act1');
+  assert.ok(!suyas.some(a => a.id === mia.id),
+    'la tarea de otro profe sobre la misma actividad NO puede salir en mi pantalla');
+  // CONTRA-PRUEBA: y las MÍAS siguen saliendo — un filtro de más deja al profe
+  // sin ver el PIN que acaba de crear, con la clase esperando.
+  const propias = await otra.listAssignmentsForActivity('act1');
+  assert.ok(propias.some(a => a.id === mia.id), 'CONTRA-PRUEBA: cada profe sí ve las suyas');
+  ok('la pantalla de tareas lista MIS tareas de esa actividad, no las de otro profe');
+}
+
 console.log(`\nassignments.test: ${passed} checks passed`);

@@ -30,10 +30,10 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
-| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1761 | 7 · 921 | 0.52 |
+| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1761 | 7 · 930 | 0.53 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2819 | 12 · 1391 | 0.49 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3975 | 19 · 3037 | 0.76 |
-| **informes/tareas** | después de clase | 10 · 1064 | 4 · 466 | 0.44 |
+| **informes/tareas** | después de clase | 10 · 1082 | 4 · 487 | 0.45 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5877 | 13 · 1778 | 0.30 |
 | **infra/común** | todo lo anterior | 144 · 18177 | 64 · 7987 | 0.44 |
 
@@ -106,7 +106,7 @@ graph TD
 |---|---|
 | **arranque** | `pb_hooks/aulareto-lib.js` (364) · `pb_hooks/aulareto.pb.js` (354) · `qa/hoja.js` (330) · `main.teacher.js` (168) · `main.embed.js` (68) |
 | **vistas** | `views/adminView.js` (1345) · `views/hostLive.js` (1110) · `views/studentLive.js` (922) · `views/playerView.js` (541) · `views/vsView.js` (527) |
-| **adaptadores** | `adapters/pocketbase/realtime.js` (1187) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (167) · `adapters/index.js` (127) |
+| **adaptadores** | `adapters/pocketbase/realtime.js` (1187) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (177) · `adapters/index.js` (127) |
 | **core** | `core/textCorrectionRound.js` (759) · `core/normsCheck.js` (450) · `core/skins.js` (414) · `core/aiContent.js` (385) · `core/selftest.js` (345) |
 | **kernel** | `kernel/session/engine.js` (559) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/dataPort.js` (28) |
 | **plantillas** | `templates/crossword/player.js` (482) · `templates/wordsearch/player.js` (397) · `templates/match/player.js` (292) · `templates/diagram/player.js` (235) · `templates/quiz/editor.js` (225) |

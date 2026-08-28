@@ -3,9 +3,8 @@
 // tarjeta a mano en ningún sitio. El núcleo (preview + tira de modos + etiqueta +
 // título + subtítulo + autor) es idéntico en todas; lo único que cambia son los
 // "slots" de acciones (`topRight` en la esquina y `footer` al pie), que cada vista
-// inyecta según su contexto. Los handlers siguen viviendo en cada vista (delegados
-// en su raíz) y reutilizan las clases compartidas .act-play/.act-vs/.act-teams
-// (+ .act-pin/.act-task solo en "Mis actividades", que son tuyas).
+// inyecta según su contexto. Los CLICS de la tira los cablea un solo dueño
+// (views/activityCardWire.js), no cada vista.
 //
 // Un solo sitio decide cómo es una tarjeta → cambiar el diseño o un modo se hace
 // aquí una vez y aplica en las 4 páginas. Lo vigila tests/activityCard.test.mjs.
@@ -108,13 +107,14 @@ export function activityCardHtml(a, opts = {}) {
   const label = esLista ? 'Lista' : esJuego ? (T?.meta?.skill || T?.meta?.label) : (T?.meta?.label || a.template);
   const bg = previewBgStyle(a.presentation);
   const id = escapeHtml(a.id);
-  // UN JUEGO no se dirige ni se manda de deberes (§4c: su contenido no es del
-  // profe — no hay hoja que corregir ni informe que leer). Lo decide el
-  // COMPONENTE y no la vista de Juegos: si lo decidiera la vista, el mismo juego
-  // saldría con Live en cuanto apareciera en otra lista.
-  const strip = modes === 'none' ? '' : modeStripHtml(a, {
-    includeManage: modes === 'all' && !esJuego, authed,
-  });
+  // QUÉ MODOS OFRECE una actividad lo declara SU PLANTILLA (`meta.modes`), y
+  // `modeStripHtml` ya lo obedece. Aquí hubo un `&& !esJuego` —«un juego no se
+  // dirige ni se manda de deberes»— y era una segunda regla sobre lo mismo,
+  // escrita peor: Ordena las Pelotas ES el bucle `board` del modo en vivo (§26,
+  // la única plantilla que lo declara), así que le quitaba el botón de En vivo
+  // hasta en «Mis actividades», donde funcionaba. Lo de «no se manda de
+  // deberes» ya lo dice `modes.async: false` en la propia plantilla.
+  const strip = modes === 'none' ? '' : modeStripHtml(a, { includeManage: modes === 'all', authed });
   let pagesBadge = '';
   if (pages) {
     const p = activityPageCount(a);

@@ -155,7 +155,12 @@ const itemsOf = (a) => sessionItems(a);
 export async function renderAttempts(rootSel, assignmentId) {
   const attempts = await listAttempts(assignmentId);
   const activityId = attempts.find(a => a.activity_id)?.activity_id;
-  const activity = activityId ? get(activityId) : null;
+  // Local y, si no, de la nube — como la pantalla de la que se llega. Sin esto,
+  // el informe de una tarea sobre una actividad de la biblioteca se quedaba sin
+  // título, sin las etiquetas de cada pregunta y sin «la más fallada»: los tres
+  // datos por los que se abre el informe.
+  let activity = activityId ? get(activityId) : null;
+  if (activityId && !activity) activity = await getRemote(activityId).catch(() => null);
   const items = activity ? itemsOf(activity) : [];
   const T = activity ? getTemplate(activity.template) : null;
   const labels = items.map((it, i) => { try { return T?.itemLabel?.(it) || `Pregunta ${i + 1}`; } catch { return `Pregunta ${i + 1}`; } });
