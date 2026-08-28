@@ -22,7 +22,8 @@
 //
 // Módulo PURO (sin fetch): entra actividad, sale snapshot.
 import { getTemplate } from './registry.js';
-import { sessionItems, roundPayloadOf } from '../kernel/session/engine.js';
+import { roundPayloadOf } from '../kernel/session/engine.js';
+import { sessionItems } from '../kernel/content/sessionItems.js';
 import { VERSION } from './constants.js';
 
 /** Campos de la actividad que el alumno SÍ necesita (whitelist: un campo nuevo

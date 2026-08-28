@@ -1,6 +1,6 @@
 import { revisarActividad, pantallaNoListaHtml } from '../core/activityCheck.js';
 import { html, escapeHtml, mount } from '../core/html.js';
-import { sessionItems } from '../kernel/session/engine.js';
+import { sessionItems } from '../kernel/content/sessionItems.js';
 import { studentBase } from '../core/routing.js';
 import { on } from '../core/events.js';
 import { get, getAnywhere } from '../core/storage.js';

@@ -21,7 +21,7 @@
 import assert from 'node:assert';
 import '../core/registerTemplates.js';
 import { listTemplates } from '../core/registry.js';
-import { sessionItems } from '../kernel/session/engine.js';
+import { sessionItems } from '../kernel/content/sessionItems.js';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };

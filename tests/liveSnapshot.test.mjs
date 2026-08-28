@@ -16,7 +16,8 @@ import assert from 'node:assert';
 import '../core/registerTemplates.js';
 import { listTemplates, getTemplate } from '../core/registry.js';
 import { studentSnapshot, visibleItem, isStudentSnapshot, needsClientKey } from '../core/liveSnapshot.js';
-import { sessionItems, roundPayloadOf } from '../kernel/session/engine.js';
+import { roundPayloadOf } from '../kernel/session/engine.js';
+import { sessionItems } from '../kernel/content/sessionItems.js';
 import { RULES } from '../core/pbRules.js';
 
 let passed = 0;

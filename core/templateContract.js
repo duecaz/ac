@@ -8,7 +8,7 @@
 // fallan en CI/admin en vez de romperse en silencio a mitad de partida.
 //
 // Sin DOM, sin red: solo registry + modelos de contenido + el motor puro.
-import { sessionItems } from '../kernel/session/engine.js';
+import { sessionItems } from '../kernel/content/sessionItems.js';
 import { getModel } from '../kernel/content/models.js';
 import { canAutoScoreRound } from './templateCapability.js';
 import { LIVE_LOOPS } from './liveLoops.js';

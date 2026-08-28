@@ -2,7 +2,8 @@
 // motor puro (sin DOM, sin Supabase). Verifica el ciclo completo de juego, no
 // solo piezas sueltas. Run: node tests/simPlay.test.mjs
 import assert from 'node:assert';
-import { createSession, FORMATS, sessionItems } from '../kernel/session/engine.js';
+import { createSession, FORMATS } from '../kernel/session/engine.js';
+import { sessionItems } from '../kernel/content/sessionItems.js';
 import { createLiveRoom } from '../kernel/live/engine.js';
 import { registerTemplate } from '../core/registry.js';
 import { scoreQuizSubmission } from '../templates/quiz/scorer.js';

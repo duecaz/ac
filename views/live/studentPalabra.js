@@ -7,7 +7,7 @@
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { claimQuestion } from '../../core/liveTransport.js';
-import { sessionItems } from '../../kernel/session/engine.js';
+import { sessionItems } from '../../kernel/content/sessionItems.js';
 import { visibleItem } from '../../core/liveSnapshot.js';
 import { wheelSvg } from '../../templates/wheel/render.js';
 import { pickIndex } from '../../templates/wheel/logic.js';

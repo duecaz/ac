@@ -6,7 +6,7 @@ import { html, mount } from '../../core/html.js';
 import * as Streaks from '../../core/streaks.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { leaderboard } from '../../core/liveTransport.js';
-import { sessionItems } from '../../kernel/session/engine.js';
+import { sessionItems } from '../../kernel/content/sessionItems.js';
 import { mmss } from '../../core/timings.js';
 
 export function createStudentFin(rt) {

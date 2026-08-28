@@ -21,7 +21,7 @@
 import assert from 'node:assert';
 import '../core/registerTemplates.js';
 import { getTemplate } from '../core/registry.js';
-import { sessionItems } from '../kernel/session/engine.js';
+import { sessionItems } from '../kernel/content/sessionItems.js';
 import { studentSnapshot, hasClientKey, needsClientKey } from '../core/liveSnapshot.js';
 import { createPocketbaseRealtime } from '../adapters/pocketbase/realtime.js';
 

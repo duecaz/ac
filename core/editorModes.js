@@ -13,7 +13,8 @@
 // VS only when isVsCompatible; Tarea only when the template declares modes.async.
 import { escapeHtml } from './html.js';
 import { on } from './events.js';
-import { isVsCompatible, sessionItems } from '../kernel/session/engine.js';
+import { isVsCompatible } from '../kernel/session/engine.js';
+import { sessionItems } from '../kernel/content/sessionItems.js';
 import { listVsAnimations, startPreviewAnims, DEFAULT_VS_ANIMATION } from './vsAnimations.js';
 
 let _editorPreviewAnims = [];

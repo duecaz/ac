@@ -3,7 +3,7 @@
 // selector=wheel: spin a wheel of question numbers → reveals the question card.
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { sessionItems } from '../../kernel/session/engine.js';
+import { sessionItems } from '../../kernel/content/sessionItems.js';
 import { wheelSvg } from '../wheel/render.js';
 import { pickIndex } from '../wheel/logic.js';
 import { spinTarget, normalizeRotation, animateSpin, SPIN_DUR_PICK } from '../wheel/spin.js';

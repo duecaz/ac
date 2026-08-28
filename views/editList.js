@@ -5,7 +5,8 @@ import { get, save, list } from '../core/storage.js';
 import { newActivityId } from '../core/migrate.js';
 import { navigate } from '../core/router.js';
 import { toast } from '../core/toast.js';
-import { sessionItems, isVsCompatible } from '../kernel/session/engine.js';
+import { isVsCompatible } from '../kernel/session/engine.js';
+import { sessionItems } from '../kernel/content/sessionItems.js';
 
 function newListActivity() {
   return {

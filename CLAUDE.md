@@ -451,17 +451,6 @@ usuario: se deja pendiente, no bloquea el resto.
   calibración de 2 recuadros; medido headless en `tools/lapiz-sonda.mjs`). Falta la
   mano de verdad: es la Parte 1 de la hoja del compañero.
 
-### 🟡 DEUDA CONDICIONADA — partir los 4 módulos grandes (TRAS los tests del compañero)
-Registrada en la cola del norte (#5). NO ejecutar hasta que el compañero termine su ronda
-rigurosa de pruebas manuales: partir es cirugía y se opera sobre un cuerpo verificado.
-Los cortes ya están mapeados (no re-diseñar al ejecutar):
-- `adapters/pocketbase/realtime.js` (1106) → **POR COLECCIÓN**: claims / answers / rooms / mantenimiento.
-- `views/hostLive.js` (1031) + `views/studentLive.js` → **POR BUCLE**: lobby / rondas / carrera / tablero / pedir-la-palabra / informe.
-- `views/adminView.js` (953) → **POR PANEL** (precedente ya en el repo: `views/admin/matrix.js`).
-- `kernel/session/engine.js` (540) → **POR MÁQUINA**: items / score / live / teams / vs.
-Al partir: `node tools/module-map.mjs` + preflight completo; los guardianes (layers, moduleRefs,
-realtimePort) deben seguir verdes sin tocar sus listas.
-
 ### 🟡 TRES FUNCIONES QUE EL PANEL PROMETÍA Y NO EXISTEN (v1.51.482)
 El escaneo de «ajustes desconectados» encontró SIETE mandos que el editor
 escribía y nadie leía. Cuatro se conectaron (filtro de apodos · leaderboard

@@ -30,7 +30,8 @@
 // puede avisar ANTES —"inicia sesión para crear la sala"— en vez de dejar que
 // el 403 aparezca con la clase delante.
 import { getTemplate } from './registry.js';
-import { isVsCompatible, sessionItems } from '../kernel/session/engine.js';
+import { isVsCompatible } from '../kernel/session/engine.js';
+import { sessionItems } from '../kernel/content/sessionItems.js';
 import { canAutoScoreRound } from './templateCapability.js';
 import { HOST_ONLY_WRITES, LIVE_SESSIONS, ASSIGNMENTS } from './pbRules.js';
 import { claimStage } from './stageClaim.js';

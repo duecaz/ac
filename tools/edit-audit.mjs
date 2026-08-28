@@ -47,7 +47,7 @@ await page.waitForFunction(() => document.querySelector('#app')?.children.length
 const rows = await page.evaluate(async () => {
   await import('/core/registerTemplates.js');
   const { listTemplates } = await import('/core/registry.js');
-  const { sessionItems } = await import('/kernel/session/engine.js');
+  const { sessionItems } = await import('/kernel/content/sessionItems.js');
   const { migrate } = await import('/core/migrate.js');
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   const out = [];

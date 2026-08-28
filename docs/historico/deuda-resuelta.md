@@ -391,3 +391,29 @@ ejecutaron (el cuadro vivo de las tres capas sigue en `CLAUDE.md`):
 3. ✅ Migrar Math al SequentialShell.
 4. ✅ Migrar Quiz al shell.
 5. ✅ Migrar Froggy al shell, con todas sus animaciones intactas.
+
+
+## Los 4 módulos grandes, partidos (v1.51.627-630, 2026-08-28)
+La deuda condicionada «partir es cirugía y se opera sobre un cuerpo verificado»
+se ejecutó por orden del dueño (levantó él mismo la condición de esperar la
+ronda del compañero), con el reparto Fable-dirige / Sonnet-mueve: el diseño de
+cada corte, las re-declaraciones de dueños y la revisión aquí; el movimiento de
+código en subagentes. Cada corte pasó el preflight completo (13 redes) antes de
+tocar `main`. Los cortes eran los mapeados — no se re-diseñó nada:
+- **v1.51.627** `adapters/pocketbase/realtime.js` (1186→360+4 secciones) POR
+  COLECCIÓN: claims/answers/rooms/mantenimiento, ensamblador con puentes
+  perezosos para el ciclo rooms↔answers. PB_OWNERS/LS_OWNERS re-declarados.
+- **v1.51.628** `views/hostLive.js`+`studentLive.js` (2027→606+12 bucles en
+  `views/live/`) POR BUCLE (§26); citas de fuente negativas pasadas a leer la
+  familia concatenada. Destapó 2 imports muertos y la UI a medio construir de
+  la política de fin en el lobby (pendiente de decidir).
+- **v1.51.629** `views/adminView.js` (1344→91+12 paneles en `views/admin/`)
+  POR PANEL; el permiso de esquema se APRETÓ (PB_SCHEMA_OWNERS a
+  collections.js/ai.js; adminView fuera de todas las listas §21).
+- **v1.51.630** `kernel/session/engine.js` (557→57 fachada + formats/score/
+  liveMachine/teamsMachine/vsMachine) POR MÁQUINA; **sessionItems se mudó a
+  `kernel/content/sessionItems.js`** (21 importadores) y la excepción de capas
+  de question-live —declarada como DEUDA— se borró pagada.
+Deuda de higiene anotada en el camino: `tests/liveJoin.test.mjs` depende de que
+otra suite polyfillee localStorage (falla en solitario); `ia_usos` sin declarar
+en PB_OWNERS.

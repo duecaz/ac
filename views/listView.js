@@ -13,7 +13,7 @@ import { getAnywhere } from '../core/storage.js';
 import { podiumHtml } from '../core/podium.js';
 import { renderModeSetup } from './modeSetup.js';
 import { mountVs } from './vsView.js';
-import { sessionItems } from '../kernel/session/engine.js';
+import { sessionItems } from '../kernel/content/sessionItems.js';
 import { destinoTrasJugar } from '../core/afterPlay.js';
 
 export async function renderListView(rootSel, id) {

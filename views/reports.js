@@ -9,7 +9,7 @@ import { getTemplate } from '../core/registry.js';
 import { listSessions, fetchSessionRecord } from '../core/liveTransport.js';
 import { rowsFromLiveState } from '../core/answerRows.js';
 import { sessionTableHtml, sessionTableCsv } from './sessionTable.js';
-import { sessionItems } from '../kernel/session/engine.js';
+import { sessionItems } from '../kernel/content/sessionItems.js';
 import { downloadText } from '../core/io.js';
 import { itemStatsHtml } from './itemStatsView.js';
 

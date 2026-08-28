@@ -444,7 +444,12 @@ export const BROWSER_SCAN_FILES = [
   'adapters/index.js',
   'adapters/local/assignments.js', 'adapters/local/realtime.js', 'adapters/local/remoteStore.js',
   'adapters/pocketbase/assignments.js', 'adapters/pocketbase/realtime.js', 'adapters/pocketbase/remoteStore.js',
-  'kernel/session/engine.js', 'kernel/session/memory.js', 'kernel/live/engine.js',
+  // El motor de sesión se partió POR MÁQUINA desde v1.51.630 (mismo patrón que
+  // views/live/* y views/admin/* abajo: un fichero por máquina, ensamblados en
+  // engine.js como fachada).
+  'kernel/session/engine.js', 'kernel/session/formats.js', 'kernel/session/score.js',
+  'kernel/session/liveMachine.js', 'kernel/session/teamsMachine.js', 'kernel/session/vsMachine.js',
+  'kernel/session/memory.js', 'kernel/live/engine.js',
   'views/assignments.js', 'views/editList.js', 'views/editView.js',
   'views/embedModal.js', 'views/explore.js', 'views/home.js', 'views/hostLive.js',
   // Los bucles del live viven en su carpeta desde v1.51.628 (partición por bucle).

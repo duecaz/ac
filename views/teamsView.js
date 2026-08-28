@@ -6,15 +6,16 @@
 //   • judge — the TEACHER marks ✓/✗ on whatever the team answered out loud, so
 //             ANY content plays in teams even without a machine scorer.
 //
-// All flow/scoring lives in kernel/session/engine.js; this view paints the
-// board, the scoreboard and the host controls.
+// All flow/scoring lives in kernel/session/teamsMachine.js (via the engine.js
+// facade); this view paints the board, the scoreboard and the host controls.
 //
 // EMBEDDING: mountTeams(host, activity, ctx, opts) renders setup + game INTO
 // `host` (the activity stage). (Wrapper de ruta suelta eliminado: sin callers.)
 import { html, escapeHtml, mount, $, $$ } from '../core/html.js';
 import { on } from '../core/events.js';
 import { getTemplate } from '../core/registry.js';
-import { createSession, FORMATS, sessionItems } from '../kernel/session/engine.js';
+import { createSession, FORMATS } from '../kernel/session/engine.js';
+import { sessionItems } from '../kernel/content/sessionItems.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { applyMarks } from '../core/textMarks.js';
 import { renderModeSetup } from './modeSetup.js';

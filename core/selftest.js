@@ -6,7 +6,8 @@
 import { listTemplates, getTemplate } from './registry.js';
 import { modesForTemplate } from './modes.js';
 import { templateCapabilities } from './modeMatrix.js';
-import { createSession, FORMATS, sessionItems, isVsCompatible } from '../kernel/session/engine.js';
+import { createSession, FORMATS, isVsCompatible } from '../kernel/session/engine.js';
+import { sessionItems } from '../kernel/content/sessionItems.js';
 import { createLiveRoom } from '../kernel/live/engine.js';
 import { scoreQuizSubmission } from '../templates/quiz/scorer.js';
 import { lsGet, lsSet, lsDel } from './ls.js';

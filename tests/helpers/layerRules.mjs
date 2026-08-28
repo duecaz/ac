@@ -39,7 +39,4 @@ export const EXCEPTIONS = new Map(Object.entries({
   'core/storage.js→adapters/index.js': 'fachada de transporte',
   // El auto-test del panel usa un scorer real como banco de pruebas.
   'core/selftest.js→templates/quiz/scorer.js': 'banco de pruebas del panel #/admin',
-  // DEUDA: una plantilla no debería necesitar el motor de sesión. Aquí es solo
-  // `sessionItems` (leer los ítems), que es utilidad de contenido mal ubicada.
-  'templates/question-live/player.js→kernel/session/engine.js': 'DEUDA: sessionItems debería vivir en contenido',
 }));

@@ -3,7 +3,7 @@
 // eventos del juego — sin tocar la plantilla. Solo se usa en modo Individual.
 import { onGame, GameEvents } from './gameEvents.js';
 import { getSoloAnimation } from './soloAnimations.js';
-import { sessionItems } from '../kernel/session/engine.js';
+import { sessionItems } from '../kernel/content/sessionItems.js';
 
 /**
  * @param {HTMLElement} container  el carril donde vive la animación

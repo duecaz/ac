@@ -28,7 +28,7 @@ import { createRoom, findRoomByCode, fetchSession,
        from '../core/liveTransport.js';
 import { getTemplate } from '../core/registry.js';
 import { revisarActividad, pantallaNoListaHtml } from '../core/activityCheck.js';
-import { sessionItems } from '../kernel/session/engine.js';
+import { sessionItems } from '../kernel/content/sessionItems.js';
 import { acquire } from '../core/lifecycle.js';
 import { getAuthUserId } from '../core/auth.js';
 import { openLoginModal } from './loginModal.js';

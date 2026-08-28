@@ -2,7 +2,8 @@
 // memory — no DOM, no backend — to prove the unified engine's new formats.
 // Run: node tests/sessionEngine.test.mjs
 import assert from 'node:assert';
-import { createSession, isVsCompatible, FORMATS, sessionItems } from '../kernel/session/engine.js';
+import { createSession, isVsCompatible, FORMATS } from '../kernel/session/engine.js';
+import { sessionItems } from '../kernel/content/sessionItems.js';
 import { registerTemplate, getTemplate } from '../core/registry.js';
 import { scoreQuizSubmission } from '../templates/quiz/scorer.js';
 

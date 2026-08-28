@@ -3,8 +3,9 @@
 // through the SAME item sequence at their own pace. A central tug-of-war bar,
 // fed by the session engine's standings(), shows who's winning in real time.
 //
-// The flow/scoring live entirely in kernel/session/engine.js (format 'vs'); this
-// view only paints panels and reflects standings — no game logic here.
+// The flow/scoring live entirely in kernel/session/vsMachine.js (via the
+// engine.js facade, format 'vs'); this view only paints panels and reflects
+// standings — no game logic here.
 //
 // EMBEDDING: mountVs(host, activity, ctx, opts) renders setup + duel INTO `host`
 // (the activity stage) and returns { dispose } so the page can stop the central
@@ -16,7 +17,8 @@ import { on } from '../core/events.js';
 import { save } from '../core/storage.js';
 import { lsGet, lsSet } from '../core/ls.js';
 import { getTemplate } from '../core/registry.js';
-import { createSession, isVsCompatible, FORMATS, sessionItems } from '../kernel/session/engine.js';
+import { createSession, isVsCompatible, FORMATS } from '../kernel/session/engine.js';
+import { sessionItems } from '../kernel/content/sessionItems.js';
 import { supportsLoop } from '../core/liveLoops.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { podiumHtml } from '../core/podium.js';

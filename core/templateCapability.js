@@ -2,8 +2,9 @@
 // falta scoreSubmission (puntuar) Y renderRound (pintar el ítem sin backend).
 //
 // Antes vivía triplicado con criterios DISTINTOS: core/modes.js exigía solo
-// renderRound, kernel/session/engine.js (createTeamsSession) exigía solo
-// scoreSubmission, y views/teamsView.js exigía scoreSubmission+getRoundPayload
+// renderRound, el motor de sesión (createTeamsSession, hoy en
+// kernel/session/teamsMachine.js) exigía solo scoreSubmission, y
+// views/teamsView.js exigía scoreSubmission+getRoundPayload
 // (no renderRound). Con eso, una plantilla como Crucigrama/Ruleta/Abre-Cajas
 // (scoreSubmission+getRoundPayload, SIN renderRound) pasaba el check de
 // teamsView pero luego `roundBody()` no podía pintar la ronda (exige
