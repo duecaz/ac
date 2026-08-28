@@ -201,10 +201,12 @@ ok('assignments: crear exige sesión; cerrar/rotar/borrar exige ser EL AUTOR (co
 }
 
 // ── 8. El panel #/admin las LEE del módulo (no lleva copia) ─────────────────
+// v1.51.629: adminView se partió POR PANEL — el DEFS de «Crear colecciones»
+// vive ahora en views/admin/collections.js.
 {
-  const admin = readFileSync(join(ROOT, 'views/adminView.js'), 'utf8');
-  assert.match(admin, /from '\.\.\/core\/pbRules\.js'/, 'views/adminView.js debe importar las reglas del módulo');
-  assert.ok(!/const\s+activityRules\s*=/.test(admin), 'views/adminView.js no debe volver a declarar reglas a mano');
+  const admin = readFileSync(join(ROOT, 'views/admin/collections.js'), 'utf8');
+  assert.match(admin, /from '\.\.\/\.\.\/core\/pbRules\.js'/, 'views/admin/collections.js debe importar las reglas del módulo');
+  assert.ok(!/const\s+activityRules\s*=/.test(admin), 'views/admin/collections.js no debe volver a declarar reglas a mano');
   ok('el panel #/admin aplica las reglas del módulo (sin copia propia)');
 }
 
@@ -230,8 +232,9 @@ ok('assignments: crear exige sesión; cerrar/rotar/borrar exige ser EL AUTOR (co
     if (joins.size) deps[coll] = [...joins];
   }
   assert.ok(Object.keys(deps).length >= 2, 'premisa: hay reglas con join (live_answers, assignment_attempts)');
+  // v1.51.629: adminView se partió POR PANEL — el DEFS vive ahora en views/admin/collections.js.
   for (const [label, order] of [
-    ['views/adminView.js', orderOf(readFileSync(join(ROOT, 'views/adminView.js'), 'utf8'), String.raw`\{ name: '([\w_]+)', fields:`)],
+    ['views/admin/collections.js', orderOf(readFileSync(join(ROOT, 'views/admin/collections.js'), 'utf8'), String.raw`\{ name: '([\w_]+)', fields:`)],
     ['tools/setup-pocketbase.ps1', orderOf(readFileSync(join(ROOT, 'tools/setup-pocketbase.ps1'), 'utf8'), String.raw`@\{ name = "([\w_]+)";`)],
   ]) {
     for (const [coll, needs] of Object.entries(deps)) {
@@ -250,8 +253,9 @@ ok('assignments: crear exige sesión; cerrar/rotar/borrar exige ser EL AUTOR (co
 // del panel falló a medias — el panel aplicó en la Pi sin el campo y NADIE lo vio
 // hasta consultar el servidor a mano. Un campo declarado en una vía tiene que
 // estar en la otra.
+// v1.51.629: adminView se partió POR PANEL — el DEFS vive ahora en views/admin/collections.js.
 {
-  const admin = readFileSync(join(ROOT, 'views/adminView.js'), 'utf8');
+  const admin = readFileSync(join(ROOT, 'views/admin/collections.js'), 'utf8');
   const ps1   = readFileSync(join(ROOT, 'tools/setup-pocketbase.ps1'), 'utf8');
 
   // DEFS del panel: { name: 'coll', fields: [ { name: 'x', ... }, ... ] }

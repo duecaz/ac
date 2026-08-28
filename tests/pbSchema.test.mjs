@@ -26,7 +26,9 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 
 // Las colecciones declaradas en DEFS (el dueño del esquema). Se leen del BLOQUE
 // DEFS y no de todo el fichero, para no confundir menciones sueltas.
-const admin = read('views/adminView.js');
+// v1.51.629: adminView se partió POR PANEL — el DEFS de «Crear colecciones»
+// vive ahora en views/admin/collections.js.
+const admin = read('views/admin/collections.js');
 const { camposQueFaltan } = await import('../core/pbSchema.js');   // el cálculo, para probarlo de verdad
 const bloque = admin.slice(admin.indexOf('const DEFS = ['), admin.indexOf('const COLLECTIONS'));
 const declaradas = [...bloque.matchAll(/\{\s*name:\s*'([a-z_]+)',\s*fields:/g)].map(m => m[1]);

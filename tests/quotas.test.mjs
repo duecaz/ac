@@ -64,7 +64,9 @@ const read = (p) => readFileSync(new URL(p, ROOT), 'utf8');
 
 // ── 3. El tope de TAMAÑO sí lo aplica el servidor, y sin copias ────────────
 {
-  const panel = read('views/adminView.js');
+  // v1.51.629: adminView se partió POR PANEL — el DEFS de «Crear colecciones»
+  // vive ahora en views/admin/collections.js.
+  const panel = read('views/admin/collections.js');
   assert.match(panel, /maxSize:\s*QUOTAS\.activityBytes/,
     'el panel #/admin toma el maxSize del campo `data` de core/quotas.js, no de un número escrito a mano');
   const ps1 = read('tools/setup-pocketbase.ps1');
@@ -109,7 +111,8 @@ const read = (p) => readFileSync(new URL(p, ROOT), 'utf8');
       `la purga NUNCA debe tocar ${forbidden}: es el registro del profe sobre sus alumnos`);
   }
   // Y la vista no borra por su cuenta: se lo pide al transporte (ley de datos).
-  const admin = read('views/adminView.js');
+  // v1.51.629: adminView se partió POR PANEL — esta sección vive en views/admin/capacity.js.
+  const admin = read('views/admin/capacity.js');
   assert.match(admin, /purgeOldLive\(cutoff/, 'el panel PIDE la purga al dueño');
   assert.ok(!/method:\s*'DELETE'/.test(admin), 'el panel no borra filas de PB por su cuenta');
   ok('la purga vive en el dueño de las colecciones y respeta results/intentos');

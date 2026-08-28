@@ -148,7 +148,7 @@ const INSTANTES_SALA = [
 ];
 
 // LEY DE DATOS — colección → ficheros que pueden nombrarla. El PRIMERO es el
-// DUEÑO (único escritor); `views/adminView.js` está en todas por ser el dueño
+// DUEÑO (único escritor); el ESQUEMA (crear colecciones/reglas) tiene su lista
 // del ESQUEMA (crear colecciones/reglas), y `core/stressTest.js` es la
 // excepción sancionada (prueba de carga: escribe filas `stress_*` y las borra).
 // Los marcados "lector directo" son deuda registrada en la ley: leen bien pero
@@ -156,7 +156,11 @@ const INSTANTES_SALA = [
 // Dueños del ESQUEMA y de las REGLAS: nombran TODAS las colecciones por
 // definición (crear colecciones / declarar sus reglas), así que están exentos de
 // la regla de dueño-por-colección. Se añaden a cada lista más abajo.
-const PB_SCHEMA_OWNERS = ['views/adminView.js', 'core/pbRules.js'];
+// v1.51.629: el panel se partió POR PANEL y el esquema/las reglas viven en su
+// sección (collections.js; ai.js prueba la clave con la sesión de _superusers).
+// El ensamblador adminView.js ya no nombra NINGUNA colección — se le quita el
+// permiso en vez de duplicarlo: un dueño que no escribe es un permiso muerto.
+const PB_SCHEMA_OWNERS = ['views/admin/collections.js', 'views/admin/ai.js', 'core/pbRules.js'];
 
 /** Dueño de cada colección (§21). Exportado para que `tools/module-map.mjs`
  *  dibuje el mapa de datos de la misma fuente que lo vigila. */
@@ -164,33 +168,33 @@ export const PB_OWNERS = {
   // Ya NO hay lectores directos: portada, Explorar, perfil de autor, el panel de
   // Profesores y el diagnóstico piden métodos al dueño (M6). El ratchet solo
   // encoge: no volver a añadir ficheros aquí, se añade un método al dueño.
-  activities: ['adapters/pocketbase/remoteStore.js', 'views/adminView.js'],
-  results: ['adapters/pocketbase/remoteStore.js', 'views/adminView.js'],
+  activities: ['adapters/pocketbase/remoteStore.js'],
+  results: ['adapters/pocketbase/remoteStore.js'],
   // El adaptador de live se partió POR COLECCIÓN (v1.51.627): el dueño es la
   // FAMILIA realtime* — el ensamblador declara las constantes y cada sección
   // toca solo la suya. Solo se listan los ficheros que de verdad la NOMBRAN.
-  live_sessions: ['adapters/pocketbase/realtime.js', 'adapters/pocketbase/realtimeRooms.js', 'views/adminView.js', 'core/stressTest.js', 'core/raceE2e.js'],
-  live_answers: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js', 'core/raceE2e.js'],
-  live_players: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js', 'core/raceE2e.js'],
-  live_keys: ['adapters/pocketbase/realtime.js', 'adapters/pocketbase/realtimeRooms.js', 'views/adminView.js'],
+  live_sessions: ['adapters/pocketbase/realtime.js', 'adapters/pocketbase/realtimeRooms.js', 'core/stressTest.js', 'core/raceE2e.js'],
+  live_answers: ['adapters/pocketbase/realtime.js', 'core/stressTest.js', 'core/raceE2e.js'],
+  live_players: ['adapters/pocketbase/realtime.js', 'core/stressTest.js', 'core/raceE2e.js'],
+  live_keys: ['adapters/pocketbase/realtime.js', 'adapters/pocketbase/realtimeRooms.js'],
   // stressTest y raceE2e (carrera e2e de botón): simulan al alumno — filas
   // `stress_*` que ellos mismos borran; misma excepción sancionada.
   // stressTest: la prueba de carga registra la credencial del alumno simulado
   // (§22-4) porque sin ella el servidor rechaza sus respuestas — simular al
   // alumno es justo su trabajo, igual que ya lo hace en live_players/answers.
-  live_claims: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js', 'core/raceE2e.js'],
-  assignments: ['adapters/pocketbase/assignments.js', 'views/adminView.js', 'core/stressTest.js',
+  live_claims: ['adapters/pocketbase/realtime.js', 'core/stressTest.js', 'core/raceE2e.js'],
+  assignments: ['adapters/pocketbase/assignments.js', 'core/stressTest.js',
     'adapters/index.js'],  // pbCollectionExists: decide el fallback local, no escribe
-  assignment_attempts: ['adapters/pocketbase/assignments.js', 'views/adminView.js', 'core/stressTest.js'],
-  reports: ['core/reports.js', 'views/adminView.js'],
-  activity_likes: ['core/likes.js', 'views/adminView.js'],
-  profiles: ['core/profile.js', 'views/adminView.js'],
-  users: ['core/auth.js', 'core/teachers.js', 'views/adminView.js'],
+  assignment_attempts: ['adapters/pocketbase/assignments.js', 'core/stressTest.js'],
+  reports: ['core/reports.js'],
+  activity_likes: ['core/likes.js'],
+  profiles: ['core/profile.js'],
+  users: ['core/auth.js', 'core/teachers.js'],
   // Las claves de la IA: dueño ÚNICO desde que hubo que gestionar varias. El
   // panel le pide métodos; no habla con la colección, y así el `fields=` que
   // deja la clave en el servidor vive en un solo sitio.
   ia_config: ['core/iaKeys.js'],
-  _superusers: ['views/adminView.js'],
+  _superusers: [],   // solo el esquema (PB_SCHEMA_OWNERS) la nombra
 };
 // LEY DE DATOS, aplicada al ALMACÉN LOCAL (§21) — prefijo de clave → ficheros
 // que pueden nombrarla; el PRIMERO es el dueño. Las colecciones de PocketBase
@@ -441,13 +445,20 @@ export const BROWSER_SCAN_FILES = [
   'adapters/local/assignments.js', 'adapters/local/realtime.js', 'adapters/local/remoteStore.js',
   'adapters/pocketbase/assignments.js', 'adapters/pocketbase/realtime.js', 'adapters/pocketbase/remoteStore.js',
   'kernel/session/engine.js', 'kernel/session/memory.js', 'kernel/live/engine.js',
-  'views/adminView.js', 'views/assignments.js', 'views/editList.js', 'views/editView.js',
+  'views/assignments.js', 'views/editList.js', 'views/editView.js',
   'views/embedModal.js', 'views/explore.js', 'views/home.js', 'views/hostLive.js',
   // Los bucles del live viven en su carpeta desde v1.51.628 (partición por bucle).
   'views/live/hostLobby.js', 'views/live/hostRondas.js', 'views/live/hostCarrera.js',
   'views/live/hostTablero.js', 'views/live/hostPalabra.js', 'views/live/hostInforme.js',
   'views/live/studentLobby.js', 'views/live/studentRondas.js', 'views/live/studentCarrera.js',
   'views/live/studentTablero.js', 'views/live/studentPalabra.js', 'views/live/studentFin.js',
+  // El panel #/admin se partió POR PANEL desde v1.51.629 (mismo patrón que
+  // views/live/* arriba: un módulo por sección <h5>, ensamblados en adminView.js).
+  'views/admin/ai.js', 'views/admin/capacity.js', 'views/admin/collections.js',
+  'views/admin/dataSystem.js', 'views/admin/errorLog.js', 'views/admin/liveTests.js',
+  'views/admin/liveWords.js', 'views/admin/loadTests.js', 'views/admin/maintenance.js',
+  'views/admin/matrix.js', 'views/admin/teachers.js', 'views/admin/templateCapacity.js',
+  'views/admin/vsAnimations.js',
   'views/listView.js', 'views/memoryView.js', 'views/modeSetup.js', 'views/playerView.js',
   'views/reports.js', 'views/startScreen.js', 'views/studentLive.js',
   'views/studentTask.js', 'views/switchTemplate.js', 'views/teamsView.js',

@@ -424,9 +424,10 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 
   // Y el panel ya no habla con la colección: se lo pide al dueño (§21). Sin esto
   // la lógica del `fields=` acabaría copiada en cada sitio que liste claves.
-  const admin = readFileSync(join(ROOT, 'views/adminView.js'), 'utf8');
+  // v1.51.629: adminView se partió POR PANEL — esta sección vive en views/admin/ai.js.
+  const admin = readFileSync(join(ROOT, 'views/admin/ai.js'), 'utf8');
   assert.ok(!/collections\/ia_config\/records/.test(admin),
-    'views/adminView.js no puede tocar ia_config directamente: pídeselo a core/iaKeys.js');
+    'views/admin/ai.js no puede tocar ia_config directamente: pídeselo a core/iaKeys.js');
   ok('gestionar las claves no saca ninguna de la Pi (y la vista pasa por el dueño)');
 
   // Probar una clave es de SUPERADMIN. Sin ese cerrojo, cualquiera con cuenta de
