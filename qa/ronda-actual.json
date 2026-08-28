@@ -2,7 +2,7 @@
   "id": "2026-08-28",
   "titulo": "AulaReto · Hoja de pruebas",
   "intro": "Esta ronda es lo contrario de la anterior: casi todo lo que se ha tocado SÍ se nota, y hace falta una pizarra de verdad para verlo. La semana ha ido entera a Tildes y Comas —el lápiz, el reloj, los puntos y cómo se corrige— y a que los temas lleguen a la hoja. Nada de eso lo puede comprobar el ordenador: el lápiz y la palma necesitan una mano, y los colores necesitan que alguien mire desde el fondo del aula.\n\nOJO: el lápiz CAMBIÓ. Antes había cuatro herramientas (punta, dedo, parte trasera y palma); ahora hay DOS: lo pequeño escribe y la palma borra. Si probaste esto en una ronda anterior, vuelve a probarlo — es otro sistema.\n\nMarca Pasa si ocurrió lo que dice «Tiene que pasar», Falla si no, y escribe en la nota lo que viste aunque sea una tontería. Un «me pareció raro» vale más que un Falla sin explicar.",
-  "versionMin": "1.51.617",
+  "versionMin": "1.51.618",
   "secciones": [
     {
       "titulo": "Antes de empezar",

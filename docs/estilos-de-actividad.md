@@ -197,6 +197,18 @@ Quiz, Sopa…) usan un **andamio de regiones** que refluye solo según el aspect
 del área — **sin breakpoints de píxeles**, como Wordwall. El player marca sus partes
 por ROL y el andamio decide dónde van:
 
+> **DOS BANDAS COMO MUCHO, y la de arriba dice la verdad entera.** La Sopa llegó a
+> tener TRES rangos de `aspect-ratio` encadenados: la regla base acotaba los dos
+> ejes, la banda vertical soltaba el alto «para colocar el aire» y una tercera
+> banda (`< 1/1 and > 3/4`) devolvía el alto solo en el tramo donde eso desbordaba.
+> Medidas las cinco formas (móvil alto · casi cuadrada · PC 4:3 · pizarra 4K ·
+> tableta vertical), la de en medio no aportaba nada: acotar los dos ejes en toda
+> la vertical da la MISMA rejilla en las cinco y encima reparte mejor el aire.
+> **Rangos numéricos que se acumulan uno tras otro son la señal de que la regla de
+> arriba estaba bien y alguien la fue recortando** — cada banda nueva se descubrió
+> midiendo una pantalla concreta, y la siguiente pantalla sin medir es la próxima
+> banda. Antes de añadir un rango, mide las formas que ya funcionan.
+
 ```html
 <div class="ww-scaffold">                    <!-- columna raíz (contenedor de consulta) -->
   <div class="ww-bar">…progreso · título…</div>

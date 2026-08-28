@@ -208,24 +208,27 @@
    vertical (medido en un móvil de 390). */
 @container (aspect-ratio < 1/1) {
   .ww-ws-body { flex-direction: column; justify-content: center; }
-  /* EL AIRE, EN UN SITIO. Medido en un móvil de 390: el carril se estiraba a
-     704px y la rejilla cuadrada solo puede medir 358 (su lado es el ANCHO), así
-     que el sobrante se partía en DOS bandas —~170px encima y ~180px debajo— con
-     el banco de palabras descolgado al fondo. La rejilla no puede crecer más;
-     lo que sí puede es que rejilla y palabras formen UN bloque centrado y el
-     aire quede fuera, no en medio.
-     Para eso el carril deja de estirarse — y entonces NO puede seguir siendo
-     contenedor de consulta de TAMAÑO (su alto lo daría el contenido y el
-     contenido se lo pediría a él: colapsa a 4×4 px). No hace falta: aquí el
-     hueco es más alto que ancho POR DEFINICIÓN de este `@container`, así que el
-     lado corto es el ancho y la rejilla no tiene nada que preguntar. */
-  .ww-ws-grid-wrap { flex: 0 0 auto; container-type: inline-size; }
+  /* UNA SOLA REGLA PARA TODA LA BANDA VERTICAL (medido, v1.51.617). Aquí hubo
+     dos intentos y los dos sobran:
+       · el primero soltaba el bound de altura (`--ws-lado: 100cqi`) y dejaba de
+         estirar el carril, «para que el aire quedara fuera del bloque». Con eso
+         el bloque desbordaba en las formas casi cuadradas;
+       · el segundo añadió una TERCERA banda (`< 1/1 and > 3/4`) que devolvía el
+         bound solo en ese tramo, y quedó marcada como provisional.
+     Medidas las cinco formas —móvil alto, casi cuadrada, PC 4:3, pizarra 4K y
+     tableta vertical— la banda de en medio no aportaba nada: acotar los DOS ejes
+     en TODA la vertical da la misma rejilla en las cinco (358 · 320 · 718 · 1990 ·
+     868), nada desborda, y en el móvil alto el hueco de abajo baja de 117px a 16.
+     Es lo que la regla BASE ya decía: el lado es el menor de los dos ejes. Rangos
+     numéricos que se acumulan uno tras otro son la señal de que la regla de
+     arriba estaba bien y alguien la fue recortando. */
+  .ww-ws-grid-wrap { flex: 1 1 0; min-height: 0; container-type: size; }
   /* Se sobreescribe la VARIABLE, no el ancho: de `--ws-lado` salen el ancho Y el
      tamaño de letra, así que fijar solo `width: 100%` dejaba la letra calculada
      contra `.ww-ws` —toda la pantalla— y solo daba bien porque ahí coinciden los
      anchos. `inline-size` basta y no tiene la circularidad de `size`: mide el
      ancho, que no depende del contenido. */
-  .ww-ws-grid { --ws-lado: 100cqi; }
+  .ww-ws-grid { --ws-lado: min(100cqi, 100cqb); }
   .ww-ws-words {
     flex-direction: row;
     flex-wrap: wrap;
@@ -236,28 +239,6 @@
   .ws-word { font-size: max(.7rem, 1.8cqmin); padding: 3px 8px; }
 }
 
-/* CASI CUADRADA PERO VERTICAL — el bloque centrado se sale por los DOS extremos.
-   La regla de arriba da por bueno que «vertical» significa «MUCHO más alta que
-   ancha»: ahí una rejilla del ancho del hueco cabe de sobra y el banco entra
-   debajo. Entre 3/4 y 1/1 no: a 420×460 la rejilla pide 420 de alto, el banco
-   otros ~70, y el bloque —que ya no se estira, así que nadie lo recorta— desborda
-   34 px por abajo y se mete en la franja de los indicadores por arriba (medido).
-   Aquí SÍ hace falta preguntar por el alto, y aquí `container-type: size` es
-   legítimo: el carril vuelve a estirarse (`flex: 1 1 0`), así que su alto se lo da
-   el flex y no su contenido — sin la circularidad que colapsa a 4×4 px. La
-   rejilla queda acotada por los DOS lados y el carril la centra.
-
-   PROVISIONAL, y conviene decirlo: la regla BASE ya dice la verdad entera
-   (`min(100cqi, 100cqb)`, «el lado es el menor de los dos ejes»), y es la banda
-   `< 1/1` la que tira la mitad del alto para poder centrar el bloque en un móvil
-   alto. Lo limpio es devolverle el bound de altura a TODA la banda vertical y
-   resolver el aire con `align-content` en vez de dejando de acotar — pero eso es
-   CSS medido, y cambiarlo pide `tools/shots.mjs before/after` a 390×700, 420×460
-   y un marco 4:3. Mientras no se mida, este tramo es el parche honesto; lo que no
-   se puede es presentar el rango como una frontera de diseño. */
-@container (aspect-ratio < 1/1) and (aspect-ratio > 3/4) {
-  .ww-ws-grid-wrap { flex: 1 1 0; min-height: 0; container-type: size; }
-  .ww-ws-grid { --ws-lado: min(100cqi, 100cqb); }
 }
 
 /* ════════════════════════════════════════════════════
