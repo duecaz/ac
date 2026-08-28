@@ -13,12 +13,13 @@ import { fetchLikeCounts, fetchMyLikes, toggleLike } from '../core/likes.js';
 import { getUser } from '../core/auth.js';
 import { mountAuthSlot } from '../core/authWidget.js';
 import { toast } from '../core/toast.js';
-import { rutaDeModo } from '../core/modes.js';
+import { canHost } from '../core/authGate.js';
+import { wireActivityCard } from './activityCardWire.js';
 
 export async function renderLanding(rootSel) {
   const user = await getUser();
   mount(rootSel, html`
-    <div class="landing">
+    <div class="home-wrap landing">
       <section class="landing-hero">
         <!-- §7c: la portada le habla AL PROFE — "aprende jugando · juega gratis"
              era lenguaje de sitio de alumnos. El alumno tiene su entrada discreta
@@ -86,12 +87,11 @@ export async function renderLanding(rootSel) {
     const topRight = `<button class="lp-like ${liked ? 'is-liked' : ''}" data-like="${escapeHtml(a.id)}" title="Me gusta">
         <i class="bi ${liked ? 'bi-heart-fill' : 'bi-heart'}"></i> <span class="lp-like__n">${likes}</span>
       </button>`;
-    const footer = `<button class="btn-primary-solid w-100 lp-play" data-play="${escapeHtml(a.id)}"><i class="bi bi-play-fill"></i> Jugar</button>`;
-    // modes:'play' = solo Individual/VS/Equipos (jugables sobre cualquier
-    // actividad). Live/Tarea se quedan en "Mis actividades" (son tuyas).
-    return activityCardHtml(a, {
-      variant: 'library', extraClass: 'lp-card', previewClass: 'lp-card__pv', topRight, footer,
-    });
+    // La MISMA tarjeta que Explorar, Juegos y el perfil del autor: sin clases
+    // extra ni botón «Jugar» propio. Ese botón era una TERCERA forma de hacer lo
+    // mismo (el preview ya juega y la tira tiene Individual) y hacía que la
+    // portada se viera distinta del resto sin ninguna razón.
+    return activityCardHtml(a, { variant: 'library', authed: canHost(), topRight });
   }
 
   function goSearch() {
@@ -101,10 +101,7 @@ export async function renderLanding(rootSel) {
 
   on(rootSel, 'click', '#lp-go', goSearch);
   on(rootSel, 'keydown', '#lp-q', (e) => { if (e.key === 'Enter') goSearch(); });
-  on(rootSel, 'click', '[data-play]', (_, b) => navigate(`#/play/${b.dataset.play}`));
-  on(rootSel, 'click', '.act-play', (_, b) => navigate(`#/play/${b.dataset.id}`));
-  on(rootSel, 'click', '.act-vs', (_, b) => navigate(`#/vs/${b.dataset.id}`));
-  on(rootSel, 'click', '.act-teams', (_, b) => navigate(rutaDeModo('teams', { id: b.dataset.id, template: b.dataset.tpl })));
+  wireActivityCard(rootSel);
   on(rootSel, 'click', '[data-like]', async (e, b) => {
     e.stopPropagation();
     try {

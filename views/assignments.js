@@ -3,7 +3,7 @@ import { html, escapeHtml, mount } from '../core/html.js';
 import { sessionItems } from '../kernel/session/engine.js';
 import { studentBase } from '../core/routing.js';
 import { on } from '../core/events.js';
-import { get } from '../core/storage.js';
+import { get, getRemote } from '../core/storage.js';
 import { rowsFromAttempts, rowsFromAttempt } from '../core/answerRows.js';
 import { itemStatsHtml } from './itemStatsView.js';
 import { sessionTableHtml, sessionTableCsv } from './sessionTable.js';
@@ -13,7 +13,15 @@ import { toast, confirmModal } from '../core/toast.js';
 
 
 export async function renderAssignmentsForActivity(rootSel, activityId) {
-  const a = get(activityId);
+  // Primero local y, si no está, de la nube — igual que `#/play` y `#/launch`.
+  // Con la tarjeta ofreciendo Tarea en TODA la biblioteca (v1.51.621), mandar de
+  // deberes una actividad publicada por otro profe es un camino normal; mirar
+  // solo este navegador lo convertía en «Actividad no encontrada».
+  let a = get(activityId);
+  if (!a) {
+    mount(rootSel, html`<div class="text-center py-5"><div class="spinner-border"></div><p class="mt-2">Cargando actividad…</p></div>`);
+    a = await getRemote(activityId).catch(() => null);
+  }
   if (!a) { mount(rootSel, html`<div class="alert alert-warning">Actividad no encontrada.</div>`); return; }
   // Una tarea se manda a casa: enterarse allí de que faltaban datos es peor que
   // en clase. La puerta va en la RUTA (`#/tasks/:id` tiene enlace propio), no en

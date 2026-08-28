@@ -2,12 +2,12 @@
 // tira de modos; editar/borrar viven en "Mis actividades", moderar en #/moderar.
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
-import { navigate } from '../core/router.js';
 import { activityCardHtml } from '../core/activityCard.js';
+import { canHost } from '../core/authGate.js';
+import { wireActivityCard } from './activityCardWire.js';
 import { listPublic } from '../core/storage.js';
 import { searchActivities } from '../core/search.js';
 import { getTemplate } from '../core/registry.js';
-import { rutaDeModo } from '../core/modes.js';
 
 // `q0` = término que llega EN LA URL (`#/explore?q=comas`). Es como aterriza el
 // profe desde el buscador de la portada: si la vista no lo leyera, llegaría a la
@@ -84,16 +84,12 @@ export async function renderExplore(rootSel, q0 = '') {
     // Sin pie de acciones: jugar se hace por la tira de modos (Individual/VS/
     // Equipos) o clic en el preview. Editar/borrar viven SOLO en "Mis
     // actividades" (son tuyas); para moderar como admin está la vista #/moderar.
-    return activityCardHtml(a, { variant: 'library', topRight });
+    return activityCardHtml(a, { variant: 'library', authed: canHost(), topRight });
   }
 
   on(rootSel, 'input', '#exp-q', () => paint());
   on(rootSel, 'change', '#exp-lang', () => load());
-  // Jugar: preview clicable + tira de modos (Individual/VS/Equipos).
-  on(rootSel, 'click', '[data-play]', (_, b) => navigate(`#/play/${b.dataset.play}`));
-  on(rootSel, 'click', '.act-play', (_, b) => navigate(`#/play/${b.dataset.id}`));
-  on(rootSel, 'click', '.act-vs', (_, b) => navigate(`#/vs/${b.dataset.id}`));
-  on(rootSel, 'click', '.act-teams', (_, b) => navigate(rutaDeModo('teams', { id: b.dataset.id, template: b.dataset.tpl })));
+  wireActivityCard(rootSel);
 
   load();
 }

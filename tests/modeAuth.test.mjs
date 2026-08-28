@@ -88,10 +88,24 @@ assert.ok(!/data-locked/.test(modeStripHtml(ACT, { includeManage: true })), 'por
 ok('modeStripHtml: candado visible sin sesión, tira intacta con sesión');
 
 // ── 4. El aviso está CABLEADO donde el profe pulsa ──────────────────────────
-const home = read('views/home.js');
-assert.match(home, /authed: canHost\(\)/, 'views/home.js debe pasar el estado de sesión a la tarjeta (misma condición que el gate)');
-assert.match(home, /data\.locked|dataset\.locked/, 'views/home.js debe interceptar el clic en un modo bloqueado');
-assert.match(home, /openLoginModal\(\{ reason/, 'el clic bloqueado abre el login DICIENDO para qué');
+// DESCUBIERTO, no enumerado. Aquí se citaba SOLO views/home.js porque era la
+// única vista con modos de profe; desde v1.51.621 la tarjeta los ofrece en toda
+// la biblioteca, y una vista que se olvidara de `authed` pintaría los botones
+// ABIERTOS (el defecto de `authed` es «hay sesión») → clic → 403 en clase.
+// Se escanean TODAS las que pintan tarjeta.
+const { readdirSync } = await import('node:fs');
+const VISTAS_TARJETA = readdirSync(new URL('../views', import.meta.url))
+  .filter(f => f.endsWith('.js')).map(f => `views/${f}`)
+  .filter(v => /activityCardHtml\(/.test(read(v)));
+assert.ok(VISTAS_TARJETA.length >= 5, `solo ${VISTAS_TARJETA.length} vistas pintan tarjeta: ¿el escáner mira donde debe?`);
+for (const v of VISTAS_TARJETA) {
+  assert.match(read(v), /authed: canHost\(\)/,
+    `${v} debe pasar el estado de sesión a la tarjeta (misma condición que el gate del router)`);
+}
+// Y el clic bloqueado lo intercepta el DUEÑO de los clics de la tarjeta, una vez.
+const wire = read('views/activityCardWire.js');
+assert.match(wire, /data\.locked|dataset\.locked/, 'el dueño de los clics debe interceptar un modo bloqueado');
+assert.match(wire, /openLoginModal\(\{ reason/, 'el clic bloqueado abre el login DICIENDO para qué');
 
 const player = read('views/playerView.js');
 assert.match(player, /modeNeedsAuth\(m\) && !canHost\(\)/, 'views/playerView.js debe bloquear Live/Tarea sin sesión en la barra de modos');

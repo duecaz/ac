@@ -1,7 +1,7 @@
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { list, remove, get, save } from '../core/storage.js';
-import { revisarActividad, decidirVisibilidad } from '../core/activityCheck.js';
+import { decidirVisibilidad } from '../core/activityCheck.js';
 import { navigate } from '../core/router.js';
 import { listTemplates, getTemplate } from '../core/registry.js';
 import { confirmModal, toast } from '../core/toast.js';
@@ -10,8 +10,7 @@ import { activityCardHtml } from '../core/activityCard.js';
 import { searchActivities } from '../core/search.js';
 import { buildSwitchOptions } from './switchTemplate.js';
 import { canHost } from '../core/authGate.js';
-import { rutaDeModo, modeAuthHint } from '../core/modes.js';
-import { openLoginModal } from './loginModal.js';
+import { wireActivityCard } from './activityCardWire.js';
 
 let _filter = { q: '', template: '' };
 
@@ -145,40 +144,10 @@ export function renderHome(rootSel) {
     return activityCardHtml(a, { variant: 'list', topRight, footer });
   }
 
-  on(rootSel, 'click', '.act-play', (_, b) => navigate(`#/play/${b.dataset.id}`));
-  on(rootSel, 'click', '.act-vs', (_, b) => navigate(`#/vs/${b.dataset.id}`));
-  on(rootSel, 'click', '.act-teams', (_, b) => navigate(rutaDeModo('teams', { id: b.dataset.id, template: b.dataset.tpl })));
-  // Modo host-only con candado: no navegues a una pantalla que va a rebotar —
-  // di POR QUÉ y ofrece entrar ahí mismo. La frase sale de core/modes.js (una
-  // sola redacción para botón, tooltip, modal y gate del router).
-  // …y tampoco se lleva a la clase una actividad A MEDIAS. El diagrama con las
-  // etiquetas en blanco llegaba a los móviles por el botón de PIN aunque
-  // «Jugar» ya lo bloqueara: los dos botones que reúnen a 30 críos son
-  // justamente donde más caro sale enterarse.
-  const listaParaLaClase = (id) => {
-    const act = get(id) || {};        // UNA lectura: `get` reparsea todo el almacén
-    const rev = revisarActividad(act);
-    if (rev.jugable) return true;
-    // Las rutas #/launch y #/tasks ya se niegan por su cuenta (ahí está la
-    // puerta de verdad). Esto solo evita el viaje: se dice qué falta y se lleva
-    // directamente a arreglarlo, en vez de a una pantalla que dice que no.
-    toast(`«${act.title || 'Esta actividad'}» aún no se puede lanzar: ${rev.problemasDeJuego[0]}`, 'danger', 6000);
-    navigate(`#/edit/${id}`);
-    return false;
-  };
-  const hostClick = (mode, go) => (_, b) => {
-    if (b.dataset.locked) {
-      const hint = modeAuthHint(mode);
-      toast(hint + '. Los alumnos NO necesitan cuenta.', 'info', 5000);
-      openLoginModal({ reason: hint });
-      return;
-    }
-    if (!listaParaLaClase(b.dataset.id)) return;
-    go(b.dataset.id);
-  };
-  on(rootSel, 'click', '.act-pin', hostClick('live', id => navigate(`#/launch/${id}`)));
-  on(rootSel, 'click', '.act-task', hostClick('task', id => navigate(`#/tasks/${id}`)));
-  on(rootSel, 'click', '.act-list', (_, b) => navigate(`#/list/${b.dataset.id}`));
+  // Los cinco modos (y su candado) los cablea el DUEÑO de la tarjeta: estaban
+  // escritos aquí y copiados en portada, biblioteca, juegos y perfil, y por eso
+  // Live/Tarea no podían salir fuera de esta vista.
+  wireActivityCard(rootSel);
   on(rootSel, 'click', '.act-edit-list', (_, b) => navigate(`#/edit-list/${b.dataset.id}`));
   on(rootSel, 'click', '.act-edit', (_, b) => navigate(`#/edit/${b.dataset.id}`));
   // Publicar / despublicar (S2): alterna visibility unlisted↔public. Publicar la

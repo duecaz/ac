@@ -11,14 +11,13 @@
 // y decide que un juego se presenta por su HABILIDAD. Aquí solo se decide QUÉ se
 // lista (kind 'juego', del registro) y el pie ("Jugar"). Un juego nuevo aparece
 // solo; el techo de OCHO lo vigila `tests/kind.test.mjs`.
-import { html, escapeHtml, mount } from '../core/html.js';
-import { on } from '../core/events.js';
-import { navigate } from '../core/router.js';
+import { html, mount } from '../core/html.js';
 import { listTemplates } from '../core/registry.js';
 import { newActivity } from '../core/migrate.js';
 import { get, save } from '../core/storage.js';
 import { activityCardHtml } from '../core/activityCard.js';
-import { rutaDeModo } from '../core/modes.js';
+import { canHost } from '../core/authGate.js';
+import { wireActivityCard } from './activityCardWire.js';
 
 /** Los juegos instalados, del registro (nunca cableados aquí). */
 export function gameTemplates() {
@@ -54,9 +53,7 @@ export function renderJuegos(rootSel) {
         <div class="home-grid">
           ${juegos.map(T => {
             const a = ensureGameActivity(T);
-            const footer = `<button class="btn-primary-solid w-100" data-play="${escapeHtml(a.id)}">
-              <i class="bi bi-play-fill"></i> Jugar</button>`;
-            return activityCardHtml(a, { variant: 'library', footer });
+            return activityCardHtml(a, { variant: 'library', authed: canHost() });
           }).join('')}
         </div>` : `
         <div class="home-empty"><i class="bi bi-controller"></i><p>Aún no hay juegos instalados.</p></div>`}
@@ -68,9 +65,5 @@ export function renderJuegos(rootSel) {
     </div>
   `);
 
-  // Los MISMOS handlers de la tira de modos que usan portada y biblioteca.
-  on(rootSel, 'click', '[data-play]', (_, b) => navigate(`#/play/${b.dataset.play}`));
-  on(rootSel, 'click', '.act-play', (_, b) => navigate(`#/play/${b.dataset.id}`));
-  on(rootSel, 'click', '.act-vs', (_, b) => navigate(`#/vs/${b.dataset.id}`));
-  on(rootSel, 'click', '.act-teams', (_, b) => navigate(rutaDeModo('teams', { id: b.dataset.id, template: b.dataset.tpl })));
+  wireActivityCard(rootSel);
 }

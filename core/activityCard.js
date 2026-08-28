@@ -16,10 +16,14 @@ import { isVsCompatible } from '../kernel/session/engine.js';
 import { homePreviewHtml, previewBgStyle } from './homePreview.js';
 import { activityPageCount } from './migrate.js';
 
-// Tira de modos. Por defecto solo los JUGABLES sobre cualquier actividad
-// (Individual/VS/Equipos). `includeManage` añade Live/Tarea, que crean
-// sesión/asignación y solo tienen sentido sobre TUS propias actividades
-// ("Mis actividades") — en la biblioteca pública romperían sobre una ajena.
+// Tira de modos. `includeManage` añade Live/Tarea, que crean sesión/asignación.
+// Estuvieron RESERVADOS a "Mis actividades" con el motivo «en la biblioteca
+// romperían sobre una ajena», y era falso: `#/launch` y `#/tasks` resuelven la
+// actividad en la nube si no está en este navegador — dirigir en clase una
+// actividad publicada por otro profe es justo para lo que existe la biblioteca.
+// Esconderlos hacía lo contrario de lo que la app quiere: quien llega sin cuenta
+// no llega a enterarse de que existe el modo en vivo. Ahora salen SIEMPRE y, sin
+// sesión, con CANDADO y su frase (§22: avisar ANTES, nunca dejar que falle).
 export function modeStripHtml(a, { includeManage = false, authed = true } = {}) {
   const T = getTemplate(a.template);
   const m = T?.meta?.modes || { solo: true };
@@ -57,12 +61,18 @@ export function modeStripHtml(a, { includeManage = false, authed = true } = {}) 
 // por defecto y se pintan solo si el dato existe. La vista elige su VARIANTE
 // (qué modos ofrece y si el preview juega) y aporta sus slots.
 //
-//   'mine'    Mis actividades — es tuya: tira completa (incl. Live/Tarea).
-//   'library' Portada · Explorar · Perfil — de otro: se juega, no se gestiona.
+//   'mine'    Mis actividades — es tuya: además de jugarla, se edita/borra/publica.
+//   'library' Portada · Explorar · Juegos · Perfil — de otro: se juega y se lleva
+//             a clase, pero no se toca su contenido.
 //   'plain'   sin tira de modos (listados donde jugar no toca).
+//
+// LOS CINCO MODOS SALEN EN LAS DOS (v1.51.621, decisión del dueño): la tarjeta
+// no es el sitio donde se decide quién puede dirigir una sala — eso lo dice el
+// candado, y lo vuelve a decir la ruta. Lo que cambia entre variantes es lo que
+// de verdad depende de QUIÉN es la actividad: sus acciones de dueño.
 const VARIANTS = {
   mine:    { modes: 'all',  playablePreview: false },
-  library: { modes: 'play', playablePreview: true  },
+  library: { modes: 'all',  playablePreview: true  },
   plain:   { modes: 'none', playablePreview: false },
   // Lista de actividades (rondas encadenadas): sin preview de juego (cabecera
   // propia con título) y con un único modo "Jugar lista". Era la última tarjeta
@@ -98,7 +108,13 @@ export function activityCardHtml(a, opts = {}) {
   const label = esLista ? 'Lista' : esJuego ? (T?.meta?.skill || T?.meta?.label) : (T?.meta?.label || a.template);
   const bg = previewBgStyle(a.presentation);
   const id = escapeHtml(a.id);
-  const strip = modes === 'none' ? '' : modeStripHtml(a, { includeManage: modes === 'all', authed });
+  // UN JUEGO no se dirige ni se manda de deberes (§4c: su contenido no es del
+  // profe — no hay hoja que corregir ni informe que leer). Lo decide el
+  // COMPONENTE y no la vista de Juegos: si lo decidiera la vista, el mismo juego
+  // saldría con Live en cuanto apareciera en otra lista.
+  const strip = modes === 'none' ? '' : modeStripHtml(a, {
+    includeManage: modes === 'all' && !esJuego, authed,
+  });
   let pagesBadge = '';
   if (pages) {
     const p = activityPageCount(a);

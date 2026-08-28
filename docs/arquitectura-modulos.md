@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **269 módulos · 1051 imports internos.**
+> **270 módulos · 1057 imports internos.**
 
 ### Ir a otro documento
 
@@ -30,12 +30,12 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
-| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1809 | 7 · 859 | 0.47 |
-| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2819 | 12 · 1377 | 0.49 |
+| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1761 | 7 · 921 | 0.52 |
+| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2819 | 12 · 1391 | 0.49 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3975 | 19 · 3037 | 0.76 |
-| **informes/tareas** | después de clase | 10 · 1056 | 4 · 466 | 0.44 |
+| **informes/tareas** | después de clase | 10 · 1064 | 4 · 466 | 0.44 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5877 | 13 · 1778 | 0.30 |
-| **infra/común** | todo lo anterior | 143 · 18096 | 64 · 7977 | 0.44 |
+| **infra/común** | todo lo anterior | 144 · 18177 | 64 · 7987 | 0.44 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -56,14 +56,14 @@ abajo, nunca al revés** (ley §0). Lo vigila `tests/layers.test.mjs`.
 ```mermaid
 graph TD
   A["<b>arranque</b><br/><small>cablea cada página (main.*.js, sw.js)</small><br/><small>6 módulos</small>"]
-  V["<b>vistas</b><br/><small>el chrome: navegación, setup, informes</small><br/><small>29 módulos</small>"]
+  V["<b>vistas</b><br/><small>el chrome: navegación, setup, informes</small><br/><small>30 módulos</small>"]
   AD["<b>adaptadores</b><br/><small>el transporte: PocketBase | local</small><br/><small>7 módulos</small>"]
   C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>140 módulos</small>"]
   K["<b>kernel</b><br/><small>el motor de sesión: cuándo se liquida</small><br/><small>6 módulos</small>"]
   T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>75 módulos</small>"]
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>5 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
-  V -->|295| C
+  V -->|296| C
   T -->|219| C
   A -->|28| C
   AD -->|27| C
@@ -122,10 +122,10 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 | `core/html.js` | 88 |
 | `core/registry.js` | 47 |
 | `core/events.js` | 47 |
-| `core/toast.js` | 27 |
+| `core/toast.js` | 28 |
 | `core/ids.js` | 26 |
+| `core/storage.js` | 24 |
 | `core/clock.js` | 23 |
-| `core/storage.js` | 23 |
 | `core/auth.js` | 19 |
 | `kernel/session/engine.js` | 19 |
 | `core/ls.js` | 16 |

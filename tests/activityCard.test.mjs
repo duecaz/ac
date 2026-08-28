@@ -76,14 +76,23 @@ assert.match(explore, /class="home-grid"/, 'explore.js debe usar la rejilla comp
 ok('Explorar migrada a .acard + .home-grid (sin Bootstrap card)');
 
 // El componente expone lo esperado y la tira de modos comparte las clases que
-// esperan los handlers de las vistas (act-play/act-vs/act-teams).
-const card = read('core/activityCard.js');
-assert.match(card, /export function activityCardHtml/, 'activityCardHtml exportada');
-assert.match(card, /export function modeStripHtml/, 'modeStripHtml exportada');
-for (const cls of ['act-play', 'act-vs', 'act-teams', 'act-pin', 'act-task']) {
-  assert.ok(card.includes(cls), `la tira de modos define ${cls}`);
+// esperan los handlers de la tarjeta (act-play/act-vs/act-teams/act-pin/act-task).
+// EJECUTÁNDOLO, no leyendo el fichero: esto eran tres citas de fuente y la tira
+// se puede PINTAR, que es la prueba de verdad — un `act-vs` dentro de un
+// comentario habría pasado el escaneo igual de bien.
+{
+  const { activityCardHtml, modeStripHtml } = await import('../core/activityCard.js');
+  await import('../core/registerTemplates.js');
+  assert.strictEqual(typeof activityCardHtml, 'function', 'activityCardHtml exportada');
+  assert.strictEqual(typeof modeStripHtml, 'function', 'modeStripHtml exportada');
+  const tira = modeStripHtml(
+    { id: 'x', template: 'quiz', content: { items: [{ id: '1' }, { id: '2' }, { id: '3' }, { id: '4' }] } },
+    { includeManage: true });
+  for (const cls of ['act-play', 'act-vs', 'act-teams', 'act-pin', 'act-task']) {
+    assert.ok(tira.includes(cls), `la tira de modos no pinta ${cls}`);
+  }
+  ok('la tira PINTADA lleva las cinco clases que esperan los handlers (medido, no citado)');
 }
-ok('activityCard.js expone el componente y la tira de modos con clases compartidas');
 
 // ── LA CONFIGURACIÓN TAMBIÉN ES DUPLICACIÓN ─────────────────────────────────
 // El markup era único desde la unificación… pero CADA VISTA decidía con
@@ -109,14 +118,46 @@ ok('activityCard.js expone el componente y la tira de modos con clases compartid
   }
   ok('las variantes `mine` y `library` enseñan LO MISMO de la actividad (páginas · subtítulo · etiquetas)');
 
-  // Lo que cambia entre variantes es lo que SÍ depende de la vista.
+  // LOS CINCO MODOS SALEN EN LAS DOS VARIANTES (v1.51.621). Live/Tarea estaban
+  // reservados a "Mis actividades" y el motivo escrito era falso: `#/launch` y
+  // `#/tasks` resuelven la actividad en la nube, así que dirigir en clase algo de
+  // la biblioteca funciona — y esconder el modo dejaba sin enterarse de que
+  // existe justo a quien todavía no tiene cuenta.
   const mine = activityCardHtml(act, { variant: 'mine' });
   const lib  = activityCardHtml(act, { variant: 'library' });
-  assert.match(mine, /act-pin|mode-live|act-task/, '"mine" ofrece Live/Tarea: la actividad es tuya');
-  assert.ok(!/act-pin|act-task/.test(lib), '"library" no ofrece gestionar lo de otro');
+  for (const [nombre, html] of [['mine', mine], ['library', lib]]) {
+    assert.match(html, /act-pin/, `${nombre}: falta el modo En vivo`);
+    assert.match(html, /act-task/, `${nombre}: falta el modo Tarea`);
+  }
   assert.match(lib, /data-play=/, '"library" juega desde el preview');
   assert.match(lib, /por Ana|Ana/, '"library" acredita al autor');
-  ok('y lo que cambia es lo que DEBE cambiar: gestionar lo tuyo vs jugar lo de otro');
+  ok('los cinco modos salen en las dos variantes: la tarjeta no esconde lo que la app sabe hacer');
+
+  // …y lo que gatea el modo de profe es la SESIÓN, con candado y frase (§22),
+  // no la variante. Sin `authed`, Live/Tarea siguen ahí y dicen por qué.
+  {
+    const sinSesion = activityCardHtml(act, { variant: 'library', authed: false });
+    assert.match(sinSesion, /act-pin[^>]*is-locked/, 'sin sesión, En vivo sale CON candado (no escondido)');
+    assert.match(sinSesion, /data-locked="1"/, 'y marcado, para que el clic explique en vez de rebotar');
+    // CONTRA-PRUEBA: los modos JUGABLES nunca se bloquean — el alumno no tiene cuenta.
+    assert.ok(!/act-play[^>]*is-locked/.test(sinSesion), 'CONTRA-PRUEBA: Individual jamás lleva candado');
+    ok('el candado lo pone la SESIÓN, no la variante (y Individual nunca se bloquea)');
+  }
+
+  // UN JUEGO no se dirige ni se manda de deberes (§4c): lo decide el componente,
+  // no la vista de Juegos — si no, el mismo juego saldría con Live en otra lista.
+  {
+    const { listTemplates } = await import('../core/registry.js');
+    // DESCUBIERTO, no escrito a mano: si mañana hay otro juego, entra solo.
+    const juegos = listTemplates().filter(T => T?.meta?.kind === 'juego');
+    assert.ok(juegos.length, 'debería haber al menos un juego registrado (§4c)');
+    for (const T of juegos) {
+      const h = activityCardHtml({ id: 'g1', title: T.meta.label, template: T.id, content: {} },
+        { variant: 'library' });
+      assert.ok(!/act-pin|act-task/.test(h), `el juego ${T.id} no puede ofrecer En vivo ni Tarea`);
+    }
+    ok(`los ${juegos.length} JUEGO(s) no ofrecen En vivo ni Tarea, los pinte la vista que los pinte`);
+  }
 
   // El badge cuenta PÁGINAS, no elementos (corrección de v1.51.184): Emparejar
   // son 4 pares en UNA pantalla. Volver a contar ítems aquí sería reabrir ese bug.
@@ -140,6 +181,27 @@ ok('activityCard.js expone el componente y la tira de modos con clases compartid
       `${v} apaga un campo informativo — eso es lo que hizo divergir las tarjetas`);
   }
   ok('las 5 vistas declaran variante y ninguna apaga un campo informativo');
+}
+
+// ── Y SUS CLICS TAMBIÉN TIENEN UN DUEÑO (§21b) ──────────────────────────────
+// El markup era único y la configuración también; lo que seguía copiado eran las
+// cuatro líneas de handlers en cada vista — y por eso Live/Tarea no podían salir
+// de "Mis actividades": el botón existiría y no haría nada. Ahora las cablea
+// views/activityCardWire.js. Este escaneo caza a la próxima vista que las repita.
+{
+  const RE_HANDLER = /on\([^,]+,\s*'click',\s*'(\.act-(?:play|vs|teams|pin|task|list)|\[data-play\])'/;
+  const culpables = VIEWS.filter(v => RE_HANDLER.test(read(v)));
+  assert.deepStrictEqual(culpables, [],
+    `estas vistas vuelven a cablear los modos de la tarjeta a mano: ${culpables.join(', ')}\n`
+    + '  Llama a wireActivityCard(rootSel) — es el dueño de los clics de la tarjeta.');
+  const wire = read('views/activityCardWire.js');
+  for (const cls of ['act-play', 'act-vs', 'act-teams', 'act-pin', 'act-task', 'act-list']) {
+    assert.ok(wire.includes(cls), `el dueño de los clics no cablea ${cls}`);
+  }
+  // CONTRA-PRUEBA del escáner: una vista que los repita SÍ se caza.
+  assert.ok(RE_HANDLER.test("on(rootSel, 'click', '.act-vs', () => {});"),
+    'el escáner debe cazar a una vista futura que recable la tira de modos');
+  ok(`${VIEWS.length} vistas y ni una recablea los modos: los clics de la tarjeta tienen un dueño`);
 }
 
 console.log(`\nactivityCard.test: ${n} checks passed`);

@@ -606,7 +606,16 @@ body {
 .auth-gate__back:hover { color: #2563eb; }
 
 /* ── Portada pública (views/landing.js) — chrome, EXCLUIDO del ratchet ──────── */
-.landing { max-width: 1200px; margin: 0 auto; padding: 8px 20px 40px; }
+/* LA PORTADA USA EL MISMO ENVOLTORIO QUE EL RESTO (`.home-wrap`, v1.51.621).
+   Tenía su propio `max-width: 1200px`… y encima no estaba en la lista de
+   excepciones de `#app` de arriba, así que `#app` la recortaba a 1100: medido,
+   la rejilla se quedaba en 1031 px y TRES columnas para siempre, aunque la
+   pantalla fuese de 2400, mientras la biblioteca daba cinco. Dos anchos de
+   página escritos por separado, y uno de ellos olvidado en una lista que hay que
+   acordarse de actualizar — §21b otra vez.
+   Ahora `.landing` solo aporta lo suyo (el aire de la portada); el ANCHO lo pone
+   `.home-wrap`, que es el dueño, y la excepción de `#app` la hereda gratis. */
+.landing { padding-top: 8px; }
 .landing-hero { text-align: center; padding: 32px 12px 28px; }
 .landing-hero__title { font-size: clamp(28px, 5vw, 44px); font-weight: 800; color: #141c2e; margin: 0 0 10px; }
 .landing-hero__sub { color: #6b7280; font-size: 16px; max-width: 640px; margin: 0 auto 22px; line-height: 1.5; }
@@ -623,8 +632,11 @@ body {
 .landing-featured__head { display: flex; align-items: baseline; justify-content: space-between; margin: 0 4px 14px; }
 .landing-featured__head h2 { font-size: 20px; font-weight: 800; color: #141c2e; margin: 0; }
 .landing-featured__all { color: #2563eb; font-size: 14px; text-decoration: none; font-weight: 600; }
-.lp-card__pv { cursor: pointer; }
-.lp-play { margin-top: 10px; }
+/* El preview que JUEGA se ve clicable, y lo declara el propio componente
+   (`data-play` + role=button) — no una clase que cada vista tenía que acordarse
+   de pasar: `.lp-card__pv` la ponían la portada y el perfil, y Explorar no, así
+   que en Explorar el mismo preview clicable no decía que lo fuera. */
+.acard-preview[data-play] { cursor: pointer; }
 
 /* ❤ Like + toggle Borrador/Publicada (landing + home) */
 .lp-like {

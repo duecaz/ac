@@ -3,14 +3,14 @@
 // es el propio profe, puede editar colegio y frase. Estilo Wordwall.
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
-import { navigate } from '../core/router.js';
 import { activityCardHtml } from '../core/activityCard.js';
+import { canHost } from '../core/authGate.js';
+import { wireActivityCard } from './activityCardWire.js';
 import { listPublicActivities } from '../core/storage.js';
 import { getAuthUserId, getAuthName, changePassword, linkGoogle } from '../core/auth.js';
 import { fetchProfile, getLocalProfile, saveProfile } from '../core/profile.js';
 import { uploadMedia } from '../core/upload.js';
 import { toast, confirmModal } from '../core/toast.js';
-import { rutaDeModo } from '../core/modes.js';
 
 export async function renderAuthor(rootSel, ownerId) {
   const isOwner = getAuthUserId() && getAuthUserId() === ownerId;
@@ -155,14 +155,11 @@ export async function renderAuthor(rootSel, ownerId) {
   }
 
   function card(a) {
-    const footer = `<button class="btn-primary-solid w-100 lp-play" data-play="${escapeHtml(a.id)}"><i class="bi bi-play-fill"></i> Jugar</button>`;
-    return activityCardHtml(a, { variant: 'library', previewClass: 'lp-card__pv', footer });
+    // Sin decoración propia: la MISMA tarjeta de la portada, Explorar y Juegos.
+    return activityCardHtml(a, { variant: 'library', authed: canHost() });
   }
 
-  on(rootSel, 'click', '[data-play]', (_, b) => navigate(`#/play/${b.dataset.play}`));
-  on(rootSel, 'click', '.act-play', (_, b) => navigate(`#/play/${b.dataset.id}`));
-  on(rootSel, 'click', '.act-vs', (_, b) => navigate(`#/vs/${b.dataset.id}`));
-  on(rootSel, 'click', '.act-teams', (_, b) => navigate(rutaDeModo('teams', { id: b.dataset.id, template: b.dataset.tpl })));
+  wireActivityCard(rootSel);
   on(rootSel, 'click', '#au-edit', () => paintEditForm(true));
   on(rootSel, 'click', '#au-account', () => paintAccount(true));
   on(rootSel, 'click', '#au-cancel', () => { paintEditForm(false); });

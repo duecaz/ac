@@ -50,8 +50,8 @@ function citasPorSuite() {
 // CÓMO está escrito el código". Solo puede bajar: al convertir una cita en un
 // test de comportamiento, baja el número aquí.
 const BASELINE = {
-  activityCard: 4, citasFuente: 2, docs: 1, idempotency: 2, journeys: 9,
-  liveEnd: 6, liveLoops: 2, liveSnapshot: 6, menu: 2, modeAuth: 8,
+  activityCard: 2, citasFuente: 2, docs: 1, idempotency: 2, journeys: 9,
+  liveEnd: 6, liveLoops: 2, liveSnapshot: 6, menu: 2, modeAuth: 7,
   newTemplate: 2, pbRules: 1, pbSchema: 3, persistPolicy: 6, quizAnswer: 2,
   quotas: 4, raceResume: 3, realtimePort: 1, roundsLoop: 8,
   unscorable: 8, vocabulario: 2,
@@ -64,6 +64,16 @@ const BASELINE = {
 // `citaDeFuente()`. Motivo para preferir el navegador: la regla que aquieta el
 // marco usa `:has()` y ya perdió una vez por especificidad — un escaneo del CSS
 // la habría dado por buena.
+// `modeAuth` bajó de 8 a 7 en v1.51.621: las tres citas a views/home.js («pasa
+// authed», «intercepta el clic bloqueado», «abre el login con motivo») eran una
+// LISTA de una vista, y desde que la tarjeta ofrece los modos de profe en toda la
+// biblioteca la afirmación es sobre TODAS: ahora se descubren escaneando views/ y
+// la intercepción se comprueba en su dueño único.
+// `activityCard` bajó de 4 a 2 en v1.51.621: «el componente exporta X» y «la tira
+// define la clase act-*» se leían del fichero y ahora se PINTAN — un `act-vs`
+// dentro de un comentario pasaba el escaneo igual de bien. Las 2 que quedan son
+// estructurales: «Explorar no volvió a Bootstrap» y «el dueño de los clics los
+// cablea todos».
 // 86 en total. `roundsLoop` bajó de 12 a 8 en v1.51.425: su cálculo de
 // puesto y distancia se extrajo a `core/liveRank.js standingOf` (§21, el dueño
 // del ranking) y ahora el test comprueba NÚMEROS. Ese es el patrón a repetir:
