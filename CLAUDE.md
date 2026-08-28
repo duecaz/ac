@@ -350,7 +350,7 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   (`core/assignmentRules.js`, puro y testeado). `views/studentTask.js` lo reimplementaba con otra
   semántica (`max_attempts` nulo = ilimitado vs 1).
 - **Puntos**: convención en `core/scoring/` (basePoints/wrongPoints/usaBonusVelocidad/awardPoints); Tildes/Comas
-  puntúan **NETO por marca** (`scoreMarksPerHit`, `pointsPerCorrect` default 1): puntaje =
+  puntúan **NETO por marca** (`scoreMarksPerHit`; `pointsPerCorrect` **10** en las nuevas desde v1.51.612, las viejas conservan el suyo §24): puntaje =
   `max(0, aciertos − de más) × ppc` — cada marca buena suma, cada marca de MÁS resta, así "marcar
   todo" NO gana (neto 0). `hits`/`over`/`total` se conservan para la tabla ("3/8 · 2 de más") y
   `perfect` = todas y ninguna de más. Así `player.score`, la tabla y el podio muestran el MISMO número.
