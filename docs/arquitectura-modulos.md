@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **270 módulos · 1057 imports internos.**
+> **274 módulos · 1065 imports internos.**
 
 ### Ir a otro documento
 
@@ -32,10 +32,10 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 |---|---|---|---|---|
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1770 | 7 · 934 | 0.53 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2814 | 12 · 1415 | 0.50 |
-| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3972 | 19 · 3037 | 0.76 |
+| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 19 · 3972 | 19 · 3042 | 0.77 |
 | **informes/tareas** | después de clase | 10 · 1116 | 4 · 512 | 0.46 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5877 | 13 · 1846 | 0.31 |
-| **infra/común** | todo lo anterior | 144 · 18255 | 64 · 8029 | 0.44 |
+| **infra/común** | todo lo anterior | 148 · 18433 | 64 · 8031 | 0.44 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -57,7 +57,7 @@ abajo, nunca al revés** (ley §0). Lo vigila `tests/layers.test.mjs`.
 graph TD
   A["<b>arranque</b><br/><small>cablea cada página (main.*.js, sw.js)</small><br/><small>6 módulos</small>"]
   V["<b>vistas</b><br/><small>el chrome: navegación, setup, informes</small><br/><small>30 módulos</small>"]
-  AD["<b>adaptadores</b><br/><small>el transporte: PocketBase | local</small><br/><small>7 módulos</small>"]
+  AD["<b>adaptadores</b><br/><small>el transporte: PocketBase | local</small><br/><small>11 módulos</small>"]
   C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>140 módulos</small>"]
   K["<b>kernel</b><br/><small>el motor de sesión: cuándo se liquida</small><br/><small>6 módulos</small>"]
   T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>75 módulos</small>"]
@@ -65,8 +65,8 @@ graph TD
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
   V -->|295| C
   T -->|219| C
+  AD -->|31| C
   A -->|28| C
-  AD -->|27| C
   A -->|18| V
   K -->|11| C
   V -->|11| K
@@ -106,8 +106,8 @@ graph TD
 |---|---|
 | **arranque** | `pb_hooks/aulareto-lib.js` (364) · `pb_hooks/aulareto.pb.js` (354) · `qa/hoja.js` (330) · `main.teacher.js` (168) · `main.embed.js` (68) |
 | **vistas** | `views/adminView.js` (1345) · `views/hostLive.js` (1107) · `views/studentLive.js` (922) · `views/playerView.js` (538) · `views/vsView.js` (527) |
-| **adaptadores** | `adapters/pocketbase/realtime.js` (1187) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) · `adapters/pocketbase/assignments.js` (186) · `adapters/index.js` (142) |
-| **core** | `core/textCorrectionRound.js` (759) · `core/normsCheck.js` (450) · `core/skins.js` (421) · `core/aiContent.js` (385) · `core/selftest.js` (345) |
+| **adaptadores** | `adapters/pocketbase/realtimeRooms.js` (483) · `adapters/pocketbase/realtimeAnswers.js` (388) · `adapters/pocketbase/realtime.js` (361) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) |
+| **core** | `core/textCorrectionRound.js` (759) · `core/normsCheck.js` (453) · `core/skins.js` (421) · `core/aiContent.js` (385) · `core/selftest.js` (345) |
 | **kernel** | `kernel/session/engine.js` (559) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) · `kernel/contracts/contentModel.js` (33) · `kernel/contracts/dataPort.js` (28) |
 | **plantillas** | `templates/crossword/player.js` (482) · `templates/wordsearch/player.js` (397) · `templates/match/player.js` (292) · `templates/diagram/player.js` (235) · `templates/quiz/editor.js` (225) |
 | **contenido** | `kernel/content/qaAdapt.js` (141) · `kernel/content/switch.js` (117) · `kernel/content/convert.js` (95) · `kernel/content/models.js` (83) · `kernel/content/index.js` (5) |
@@ -123,7 +123,7 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 | `core/registry.js` | 47 |
 | `core/events.js` | 47 |
 | `core/toast.js` | 28 |
-| `core/ids.js` | 26 |
+| `core/ids.js` | 27 |
 | `core/clock.js` | 23 |
 | `core/storage.js` | 23 |
 | `core/auth.js` | 19 |
@@ -138,13 +138,13 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 | Módulo | Líneas | Lo importan |
 |---|---|---|
 | `views/adminView.js` | 1345 | 1 |
-| `adapters/pocketbase/realtime.js` | 1187 | 0 |
 | `views/hostLive.js` | 1107 | 1 |
 | `views/studentLive.js` | 922 | 1 |
 | `core/textCorrectionRound.js` | 759 | 5 |
 | `kernel/session/engine.js` | 559 | 19 |
 | `views/playerView.js` | 538 | 1 |
 | `views/vsView.js` | 527 | 2 |
+| `adapters/pocketbase/realtimeRooms.js` | 483 | 1 |
 
 ## El mapa de DATOS: quién escribe cada colección
 
@@ -156,10 +156,10 @@ dueño del ESQUEMA y por eso las nombra todas.
 |---|---|---|
 | `activities` | `adapters/pocketbase/remoteStore.js` | con sesión, y solo como dueño |
 | `results` | `adapters/pocketbase/remoteStore.js` | cualquiera, sin cuenta |
-| `live_sessions` | `adapters/pocketbase/realtime.js` · `core/stressTest.js` · `core/raceE2e.js` | solo con sesión de profe |
+| `live_sessions` | `adapters/pocketbase/realtime.js` · `adapters/pocketbase/realtimeRooms.js` · `core/stressTest.js` · `core/raceE2e.js` | solo con sesión de profe |
 | `live_answers` | `adapters/pocketbase/realtime.js` · `core/stressTest.js` · `core/raceE2e.js` | el alumno, **atado a su dispositivo** (§22-4) |
 | `live_players` | `adapters/pocketbase/realtime.js` · `core/stressTest.js` · `core/raceE2e.js` | cualquiera, sin cuenta |
-| `live_keys` | `adapters/pocketbase/realtime.js` | solo con sesión de profe |
+| `live_keys` | `adapters/pocketbase/realtime.js` · `adapters/pocketbase/realtimeRooms.js` | solo con sesión de profe |
 | `live_claims` | `adapters/pocketbase/realtime.js` · `core/stressTest.js` · `core/raceE2e.js` | cualquiera, sin cuenta |
 | `assignments` | `adapters/pocketbase/assignments.js` · `core/stressTest.js` · `adapters/index.js` | solo con sesión de profe |
 | `assignment_attempts` | `adapters/pocketbase/assignments.js` · `core/stressTest.js` | regla propia (ver `core/pbRules.js`) |

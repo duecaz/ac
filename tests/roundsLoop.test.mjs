@@ -116,7 +116,8 @@ const read = (p) => readFileSync(new URL(p, new URL('..', import.meta.url)), 'ut
 
 // ── 3b. El adaptador de PocketBase lo mapea igual (mismo contrato) ─────────
 {
-  const pb = read('adapters/pocketbase/realtime.js');
+  // v1.51.627: el adaptador se partió POR COLECCIÓN — la cita apunta al fichero que recibió el código.
+  const pb = read('adapters/pocketbase/realtimeRooms.js');
   assert.match(pb, /'answers_open_at' in patch/, 'setSessionState de PB acepta answers_open_at');
   assert.match(pb, /answers_open_at: rec\.state\?\.answersOpenAt/, 'y lo devuelve al leer la sala');
   assert.strictEqual((pb.match(/answers_open_at: rec\.state\?\.answersOpenAt/g) || []).length, 2,

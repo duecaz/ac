@@ -195,7 +195,8 @@ registerTemplate({
 
 // ── 8. NORMAS del adaptador (si es norma, es test) ─────────────────────────
 {
-  const src = readFileSync(new URL('../adapters/pocketbase/realtime.js', import.meta.url), 'utf8');
+  // v1.51.627: el adaptador se partió POR COLECCIÓN — la cita apunta al fichero que recibió el código.
+  const src = readFileSync(new URL('../adapters/pocketbase/realtimeAnswers.js', import.meta.url), 'utf8');
   const cut = (from, n) => src.slice(src.indexOf(from), src.indexOf(from) + n);
   const listAnswers = cut('async listAnswers(', 1000);
   assert.match(listAnswers, /created: r\.created/, 'listAnswers debe pasar `created`');

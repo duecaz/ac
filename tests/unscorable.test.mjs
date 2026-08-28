@@ -108,7 +108,8 @@ const QUIZ = { id: 'a2', template: 'uns_quiz', live: {}, content: { items: [{ id
 // acertar; el mérito es del docente, §22-5).
 {
   const { readFileSync } = await import('node:fs');
-  const pb = readFileSync(new URL('../adapters/pocketbase/realtime.js', import.meta.url), 'utf8');
+  // v1.51.627: el adaptador se partió POR COLECCIÓN — la cita apunta al fichero que recibió el código.
+  const pb = readFileSync(new URL('../adapters/pocketbase/realtimeRooms.js', import.meta.url), 'utf8');
   assert.match(pb, /patch\.ql_award && Number\.isInteger\(patch\.ql_award\.item\)/,
     'el adaptador escribe la fila del premio (y necesita saber QUÉ caja se premió)');
   const block = pb.slice(pb.indexOf('patch.ql_award && Number.isInteger'), pb.indexOf('El host puede tocar AMBOS'));
@@ -158,7 +159,8 @@ const QUIZ = { id: 'a2', template: 'uns_quiz', live: {}, content: { items: [{ id
   assert.ok(!/ql_taken/.test(student),
     'el móvil NO usa ql_taken para bloquear: sería una regla que el cliente no puede garantizar (CL-1 opción 1)');
   // Y el dato viaja por los dos adaptadores.
-  for (const drv of ['../adapters/pocketbase/realtime.js', '../adapters/local/realtime.js']) {
+  // v1.51.627: en PB el patch de sala vive en realtimeRooms (partición por colección).
+  for (const drv of ['../adapters/pocketbase/realtimeRooms.js', '../adapters/local/realtime.js']) {
     const src = readFileSync(new URL(drv, import.meta.url), 'utf8');
     assert.match(src, /'ql_taken' in patch/, `${drv}: transporta ql_taken`);
   }

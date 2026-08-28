@@ -8,19 +8,37 @@
 //   activity json
 //   state    json
 // API rules: allow all (or at minimum Create/Read/Update without auth).
+//
+// ── ENSAMBLADOR (partido por colección, deuda condicionada del CLAUDE.md) ──
+// Este fichero ya NO contiene toda la lógica: crea el estado COMPARTIDO
+// (`pbFetch`, las cuatro colecciones, los dos probes de "¿existe esta
+// colección?") y las CUATRO secciones —una por colección PocketBase de la
+// sala en vivo—, cada una en su propio módulo con una única fábrica:
+//   · realtimeClaims.js         → `live_claims`   (§22-4, credencial del móvil)
+//   · realtimeAnswers.js        → `live_answers`  (respuestas, settle, podio)
+//   · realtimeRooms.js          → `live_sessions` + `live_players` (la sala y su roster)
+//   · realtimeMantenimiento.js  → kickPlayer, purgeOldLive (§25), pings no-op
+// La suscripción SSE (`subscribeRoom`) se queda AQUÍ: no pertenece a una sola
+// colección (reenvía cambios de sesión Y de jugadores) y es el movimiento más
+// pequeño correcto.
+//
+// DEPENDENCIA CIRCULAR DECLARADA: `rooms.setSessionState` (ql_award) y
+// `rooms.endSession` necesitan `postAnswer`/`getAnswerRow`/`settlePendingInto`
+// de la sección answers; `answers.*` necesita `load`/`saveState`/`fetchPlayers`
+// de la sección rooms. Como rooms se construye primero, se le pasan tres
+// funciones-puente que reenvían a `answersSection` — una variable `let` que el
+// ensamblador rellena en cuanto crea answers, un instante después. Los métodos
+// de rooms solo LEEN esas funciones cuando se EJECUTAN (nunca durante la
+// construcción), así que el orden de creación no importa, solo el de uso.
 import { rid } from '../../core/ids.js';
-import { createLiveRoom } from '../../kernel/live/engine.js';
-import { isAcceptableNickname } from '../../core/nicknameFilter.js';
 import { pbJson } from '../../core/pbHttp.js';
 import { PB_URL } from '../../pocketbase.config.js';
 import { startStreamWatchdog } from '../../core/streamWatchdog.js';
-import { pickWord } from '../../core/liveWords.js';
-import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
-import { rankPlayers } from '../../core/liveRank.js';
 import { setConnectionState } from '../../core/connection.js';
-import { deriveAnswerMs, openedKey, openedAtFor, origenServidor } from '../../core/serverMs.js';
-import { studentSnapshot, needsClientKey } from '../../core/liveSnapshot.js';
-import { lsGet, lsSet } from '../../core/ls.js';
+import { createClaimsSection } from './realtimeClaims.js';
+import { createAnswersSection } from './realtimeAnswers.js';
+import { createRoomsSection } from './realtimeRooms.js';
+import { createMantenimientoSection } from './realtimeMantenimiento.js';
 
 const COLL = 'live_sessions';
 const ANS = 'live_answers';   // one record per student answer (lost-update fix)
@@ -29,53 +47,6 @@ const KEY = 'live_keys';      // contenido COMPLETO de la sala (host-only, §22-
 const CLM = 'live_claims';    // credencial del dispositivo del alumno (§22-4)
 
 function genUserId() { return rid('u_'); }
-
-// §22-1 — ¿este PATCH del host ABRIÓ un ítem a respuestas? Si sí, sella el
-// instante SERVIDOR de la apertura (`rec.updated`, autodate de PocketBase) en el
-// blob host-only, para que después el tiempo de cada respuesta se mida con el
-// reloj del servidor y no con el del móvil. Devuelve true si el sello es nuevo
-// (y por tanto hay que persistirlo). En CARRERA todos los ítems se abren a la
-// vez → un solo sello 'race'.
-function noteItemOpened(engine, patch, rec) {
-  const iso = rec?.updated;
-  const phase = patch?.phase;
-  if (!iso || (phase !== 'question' && phase !== 'race')) return false;
-  const idx = ('current_item' in patch) ? Number(patch.current_item) : engine.state.currentItem;
-  const key = openedKey(phase, idx);
-  const map = engine.state.itemOpenedAt || (engine.state.itemOpenedAt = {});
-  if (map[key] === iso) return false;
-  map[key] = iso;
-  return true;
-}
-
-// PREGUNTA EN VIVO — el "pedir la palabra" del alumno vive en el campo `ql`,
-// FUERA del blob `state` (ley de confianza §22): así la regla de PocketBase
-// puede dejar `state` (fase, ítem, deadline, puntajes) como HOST-ONLY y el
-// alumno solo escribe este campo. Los PUNTOS otorgados (`qlPoints`) siguen en
-// el blob porque los da el docente. Se lee con respaldo al blob para que una
-// sala creada ANTES de esta versión siga funcionando.
-function qlOf(rec) {
-  const q = rec?.ql || {};
-  const s = rec?.state || {};
-  return {
-    ql_open: q.open ?? s.qlOpen ?? null,
-    ql_question: q.question ?? s.qlQuestion ?? null,
-    ql_image: q.image ?? s.qlImage ?? null,
-    ql_by: q.by ?? s.qlBy ?? null,
-    ql_by_name: q.byName ?? s.qlByName ?? null,
-    ql_points: s.qlPoints ?? {},
-    ql_taken: s.qlTaken ?? {},
-  };
-}
-// Claves `ql_*` de un patch → forma del campo `ql`. Devuelve null si el patch
-// no toca nada de Pregunta en Vivo (para no escribir el campo en vano).
-function qlPatch(patch) {
-  const MAP = { ql_open: 'open', ql_question: 'question', ql_image: 'image', ql_by: 'by', ql_by_name: 'byName' };
-  const out = {};
-  let touched = false;
-  for (const [k, v] of Object.entries(MAP)) if (k in patch) { out[v] = patch[k] ?? null; touched = true; }
-  return touched ? out : null;
-}
 
 async function pbFetchOnce(path, opts = {}) {
   const { body: reqBody, method, headers: extra, timeoutMs = 12000 } = opts;
@@ -114,889 +85,92 @@ async function pbFetch(path, opts = {}) {
   }
 }
 
+// "¿Existe esta colección?" — probe cacheado por adaptador. Si falta, las rutas
+// que la usan caen al blob heredado (cero cambio pre-migración). Una sola
+// implementación para live_answers (lost-update de respuestas) y live_players
+// (deuda A, lost-update del join).
+function collectionProbe(coll) {
+  let cached;   // undefined = desconocido, luego true/false
+  return async () => {
+    if (cached !== undefined) return cached;
+    try {
+      const r = await fetch(`${PB_URL}/api/collections/${coll}/records?perPage=1`);
+      if (r.status === 200) return (cached = true);
+      const body = await r.json().catch(() => ({}));
+      if (body?.message?.includes('Missing collection')) return (cached = false);
+      cached = r.ok;
+    } catch { cached = false; }
+    return cached;
+  };
+}
+
 export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
-  // Load a session record and rebuild the engine over its persisted state.
-  // §22-2 — la sala guarda un snapshot SIN clave; el contenido completo vive en
-  // `live_keys` (host-only). El motor del HOST necesita la clave para puntuar, así
-  // que la trae de ahí. Caché por sala: el contenido no cambia durante la partida,
-  // así un settle no paga una lectura extra por ítem. Respaldo a `rec.activity`
-  // para las salas creadas ANTES de esta versión (y para el alumno, que no puede
-  // leer live_keys: ahí el motor no puntúa, solo hidrata).
-  const keyCache = new Map();
-  async function fullActivity(sessionId, rec) {
-    if (keyCache.has(sessionId)) return keyCache.get(sessionId);
-    let full = null;
-    try {
-      const res = await pbFetch(`/api/collections/${KEY}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}'`)}&perPage=1`);
-      full = res?.items?.[0]?.activity || null;
-    } catch { /* sin sesión de profe, o colección no creada aún */ }
-    const act = full || rec?.activity || null;
-    keyCache.set(sessionId, act);
-    return act;
-  }
-
-  async function load(sessionId) {
-    const rec = await pbFetch(`/api/collections/${COLL}/records/${sessionId}`);
-    if (!rec) throw new Error('Sala no encontrada');
-    const engine = createLiveRoom(await fullActivity(sessionId, rec), { state: rec.state, code: rec.code });
-    return { rec, engine };
-  }
-
-  async function saveState(sessionId, engine) {
-    await pbFetch(`/api/collections/${COLL}/records/${sessionId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ state: engine.state }),
-    });
-  }
-
-  // ── Answers in their own collection (lost-update fix) ───────────────────────
-  // The lost-update bug: every student answer used to load→mutate→PATCH the
-  // SINGLE live_sessions.state blob, so two students answering in the same ~1-2s
-  // window clobbered each other (PATCH B overwrote A's answer; PB returned 200,
-  // so the offline queue never retried → answer silently lost).
-  //
-  // Fix: each student CREATEs a row in `live_answers` (their own record) — a
-  // CREATE never collides with another student's CREATE. The host stays the only
-  // writer of the blob (scores live in state.players[]), so scoring is collision
-  // free too. Activated only when the collection exists; otherwise everything
-  // falls back to the legacy blob path (zero change for existing deployments).
-  // "¿Existe esta colección?" — probe cacheado por adaptador. Si falta, las rutas
-  // que la usan caen al blob heredado (cero cambio pre-migración). Una sola
-  // implementación para live_answers (lost-update de respuestas) y live_players
-  // (deuda A, lost-update del join).
-  function collectionProbe(coll) {
-    let cached;   // undefined = desconocido, luego true/false
-    return async () => {
-      if (cached !== undefined) return cached;
-      try {
-        const r = await fetch(`${PB_URL}/api/collections/${coll}/records?perPage=1`);
-        if (r.status === 200) return (cached = true);
-        const body = await r.json().catch(() => ({}));
-        if (body?.message?.includes('Missing collection')) return (cached = false);
-        cached = r.ok;
-      } catch { cached = false; }
-      return cached;
-    };
-  }
-  // §22-4 — CREDENCIAL DEL DISPOSITIVO. Al entrar, el alumno se queda con un
-  // secreto que registra en `live_claims` (colección cerrada) y que manda en una
-  // CABECERA con cada escritura suya. Sin esto bastaba con VER el `playerId` de un
-  // compañero —la lista de jugadores es pública, y el host la necesita— para
-  // responder en su nombre.
-  //   · En memoria + localStorage: el Map cubre los tests y la sesión en curso; el
-  //     almacenamiento, el F5 a mitad de partida.
-  //   · La cabecera NO se guarda en la fila → el secreto no queda legible en
-  //     `live_answers`, que sí es pública.
-  const claimKey = (sessionId) => `ww.claim.${sessionId}`;
-  const claims = new Map();
-  function claimSecret(sessionId) {
-    if (claims.has(sessionId)) return claims.get(sessionId);
-    const stored = lsGet(claimKey(sessionId));
-    if (stored) claims.set(sessionId, stored);
-    return stored || null;
-  }
-  /** Cabecera de credencial para las escrituras del ALUMNO. Vacía en el host (va
-   *  firmado con su token y la regla lo deja pasar por la otra rama). */
-  function claimHeaders(sessionId) {
-    const secret = claimSecret(sessionId);
-    return secret ? { 'X-WW-Claim': secret } : undefined;
-  }
-  /** Registra la credencial de ESTE dispositivo para el jugador recién creado. */
-  async function registerClaim(sessionId, playerId) {
-    const secret = rid('cl_');
-    try {
-      await pbFetch(`/api/collections/${CLM}/records`, {
-        method: 'POST', body: JSON.stringify({ session: sessionId, player: playerId, secret }),
-      });
-    } catch (e) {
-      // 404 = servidor sin la colección (aún no se han creado): se sigue sin
-      // credencial, que es exactamente el comportamiento anterior. 400 = ese
-      // jugador ya está reclamado (índice único) → no se puede pisar.
-      if (e?.status !== 404 && e?.status !== 400) throw e;
-      if (e?.status === 400) return null;
-    }
-    claims.set(sessionId, secret);
-    lsSet(claimKey(sessionId), secret);
-    return secret;
-  }
-
   const answersReady = collectionProbe(ANS);
   const playersReady = collectionProbe(PLR);
-  const plrFilter = (sessionId, extra) =>
-    pbFilterParam([`session='${pbEscape(sessionId)}'`, ...(extra ? [extra] : [])].join(' && '));
 
-  // Jugadores de una sala desde live_players (deuda A). Standalone (no método)
-  // para que lo compartan listPlayers y el leaderboard derivado sin depender del
-  // binding de `this`.
-  async function fetchPlayers(sessionId) {
-    const res = await pbFetch(`/api/collections/${PLR}/records?filter=${plrFilter(sessionId)}&perPage=200`);
-    return (res?.items || []).map(r => ({ id: r.id, name: r.name, userId: r.user_id, score: 0 }));
-  }
+  const claims = createClaimsSection({ pbFetch, CLM });
 
-  // PB ids (session/player) are alphanumeric, but escape single quotes anyway so
-  // a stray quote can't break (or inject into) the filter. (pbEscape: shared.)
-  const ansFilter = (sessionId, itemIndex, playerId) => {
-    const parts = [`session='${pbEscape(sessionId)}'`, `item=${Number(itemIndex)}`];
-    if (playerId != null) parts.push(`player='${pbEscape(playerId)}'`);
-    return pbFilterParam(parts.join(' && '));
-  };
+  // Ver la nota de "DEPENDENCIA CIRCULAR DECLARADA" en la cabecera: rooms se
+  // crea primero y recibe puentes hacia `answersSection`, rellenada justo
+  // después. Los puentes solo se INVOCAN al ejecutar un método (ql_award,
+  // endSession), nunca durante esta construcción.
+  let answersSection;
+  const rooms = createRoomsSection({
+    pbFetch, COLL, KEY, PLR, ANS, userId, answersReady, playersReady,
+    registerClaim: claims.registerClaim,
+    claimSecret: claims.claimSecret,
+    postAnswer: (...args) => answersSection.postAnswer(...args),
+    getAnswerRow: (...args) => answersSection.getAnswerRow(...args),
+    settlePendingInto: (...args) => answersSection.settlePendingInto(...args),
+  });
 
-  // Deduplica filas de respuesta a UNA por jugador: nos quedamos con la más
-  // TEMPRANA (menor `ms`) para conservar la semántica de primera
-  // respuesta/velocidad. ÚNICO sitio donde vive este criterio (lo usan
-  // fetchAnswerRows y settlePending); si la deuda F cambia el desempate a
-  // "más reciente", se cambia solo aquí.
-  function dedupeByPlayer(rows) {
-    const byPlayer = new Map();
-    for (const r of rows || []) {
-      const prev = byPlayer.get(r.player);
-      if (!prev || (r.ms ?? 0) < (prev.ms ?? Infinity)) byPlayer.set(r.player, r);
-    }
-    return [...byPlayer.values()];
-  }
+  answersSection = createAnswersSection({
+    pbFetch, ANS,
+    claimHeaders: claims.claimHeaders,
+    load: rooms.load,
+    saveState: rooms.saveState,
+    fetchPlayers: rooms.fetchPlayers,
+    playersReady, answersReady,
+  });
 
-  // Hidrata el motor con una fila de la colección. Preservar el veredicto de una
-  // fila YA puntuada es lo que impide el doble conteo: settle() solo suma puntos
-  // a players[] cuando la respuesta estaba sin puntuar (wasUnscored). Compartido
-  // por settleItem y settlePending — el invariante anti-doble-conteo vive aquí.
-  function hydrateAnswerRow(engine, itemIndex, r, origenRespaldo = null) {
-    // §22-1 — el tiempo que PUNTÚA lo mide el SERVIDOR, no el móvil: se deriva de
-    // los autodate de la fila contra el sello de apertura del ítem (host-only).
-    // El `ms` afirmado por el alumno queda solo como respaldo (ver core/serverMs.js)
-    // y se conserva en la fila para el diagnóstico.
-    // Sin sello (ese PATCH aparte puede no haber entrado) se usa el instante
-    // más temprano del SERVIDOR entre las filas: el orden sigue siendo suyo,
-    // no del móvil (core/serverMs.js · origenServidor).
-    const { ms, source } = deriveAnswerMs({
-      createdAt: r.created, updatedAt: r.updated,
-      openedAt: openedAtFor(engine.state.itemOpenedAt, itemIndex, engine.state.phase) || origenRespaldo,
-      claimedMs: r.ms, phase: engine.state.phase,
-    });
-    engine.state.answers[`${itemIndex}:${r.player}`] = {
-      playerId: r.player, value: r.value, msTaken: ms, msClaimed: r.ms ?? 0, msSource: source,
-      // `unscorable` = liquidada pero SIN clave de respuesta (deuda C): se hidrata
-      // como null (no puntuable), no como false (incorrecta).
-      correct: r.scored ? (r.unscorable ? null : r.correct) : null,
-      points: r.scored ? (r.points ?? 0) : 0,
-    };
-  }
-
-  // Fetch a session's answer rows for one item, deduped to ONE per player.
-  // `fields=` explícito: esta consulta la POLLEA la carrera (cada 5 s) y el
-  // tablero (cada 2 s), con hasta 500 filas — traer columnas que nadie lee es
-  // ancho de banda contra la Pi en el peor momento. Si alguien necesita un campo
-  // nuevo de live_answers, se añade AQUÍ (y en listAnswers, que es quien mapea).
-  const ANS_FIELDS = 'id,item,player,value,ms,correct,unscorable,points,scored,v0,c0,created,updated';
-  async function fetchAnswerRows(sessionId, itemIndex) {
-    const res = await pbFetch(`/api/collections/${ANS}/records?filter=${ansFilter(sessionId, itemIndex)}&perPage=500&fields=${ANS_FIELDS}`);
-    return dedupeByPlayer(res?.items);
-  }
-
-  // La fila de UN (jugador, ítem), o null.
-  async function getAnswerRow(sessionId, itemIndex, playerId) {
-    const res = await pbFetch(`/api/collections/${ANS}/records?filter=${ansFilter(sessionId, itemIndex, playerId)}&perPage=1`);
-    return res?.items?.[0] || null;
-  }
-
-  // Crea la fila de una respuesta. Con el índice ÚNICO (session,player,item)
-  // (deuda F), dos creaciones concurrentes de la MISMA celda chocan: la 2ª recibe
-  // 400 → devolvemos `conflict` para que el llamador re-lea y haga PATCH. Así el
-  // upsert es ATÓMICO por la BD, sin el read-then-write que duplicaba filas (el
-  // tablero de Ordena las Pelotas mostraba/puntuaba un estado viejo). Sin el
-  // índice (pre-migración), el 400 no ocurre y todo sigue como antes.
-  async function postAnswer(body) {
-    const headers = claimHeaders(body.session);
-    try { await pbFetch(`/api/collections/${ANS}/records`, { method: 'POST', body: JSON.stringify(body), headers }); return { created: true }; }
-    catch (e) { if (e?.status === 400) return { conflict: true }; throw e; }
-  }
-
-  // Liquida las respuestas que quedaron SIN puntuar en CUALQUIER ítem, sin tocar
-  // la fase (`keepPhase`) y SOBRE el motor que le pasa endSession (así el cierre
-  // hace UNA carga y UN guardado en total). Recoge las REZAGADAS: las que llegaron
-  // después del settle de su pregunta (rescate del trazo, cola offline, red lenta).
-  // Camino común (nada pendiente): un probe de 1 fila y fuera.
-  async function settlePendingInto(engine, sessionId) {
-    // ¿Hay algo sin puntuar? Probe mínimo server-side antes de bajar nada.
-    const probe = await pbFetch(`/api/collections/${ANS}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}' && scored=false`)}&perPage=1&fields=id`);
-    if (!probe?.items?.length) return 0;
-    const res = await pbFetch(`/api/collections/${ANS}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}'`)}&perPage=500`);
-    // Origen de respaldo por si falta el sello. En CARRERA todos los ítems se
-    // abren a la vez → el bueno es el de TODA la sala. En RONDAS cada pregunta
-    // abre a su hora: el de toda la sala le daría al ítem 5 un ms de minutos y
-    // le mataría el bonus de velocidad SOLO a los liquidados en el barrido de
-    // cierre (revisión de v1.51.444) → allí se usa el del PROPIO ítem.
-    const esCarrera = engine.state.loop === 'race' || engine.state.phase === 'race';
-    const origenSala = esCarrera ? origenServidor(res?.items || []) : null;
-    const byItem = new Map();
-    for (const r of res?.items || []) {
-      const it = Number(r.item);
-      if (!byItem.has(it)) byItem.set(it, []);
-      byItem.get(it).push(r);
-    }
-    const toPatch = [];
-    for (const [itemIndex, itemRows] of byItem) {
-      const rows = dedupeByPlayer(itemRows);
-      if (!rows.some(r => !r.scored)) continue;       // ese ítem ya está liquidado
-      const origen = origenSala ?? origenServidor(rows);   // rondas: el del propio ítem
-      for (const r of rows) hydrateAnswerRow(engine, itemIndex, r, origen);
-      engine.settle(itemIndex, { keepPhase: true });
-      for (const r of rows) {
-        if (r.scored) continue;                       // ya estaba puntuada: no la tocamos
-        const s = engine.state.answers[`${itemIndex}:${r.player}`];
-        // `ms` del SERVIDOR (mismo motivo que en settleItem): este PATCH pisa
-        // `updated`, así que el instante derivado se guarda AHORA o se pierde.
-        if (s) toPatch.push({ id: r.id, correct: s.correct === true, unscorable: s.correct == null, points: s.points, ms: s.msTaken ?? 0 });
-      }
-    }
-    engine.state.answers = {};   // el blob queda limpio; las respuestas viven en live_answers
-    await Promise.all(toPatch.map(p => pbFetch(`/api/collections/${ANS}/records/${p.id}`, {
-      method: 'PATCH', body: JSON.stringify({ scored: true, correct: p.correct, unscorable: p.unscorable, points: p.points, ms: p.ms }),
-    }).catch(() => {})));
-    return toPatch.length;
-  }
+  const mantenimiento = createMantenimientoSection({
+    pbFetch, COLL, ANS, PLR, CLM, playersReady,
+    load: rooms.load, saveState: rooms.saveState,
+  });
 
   return {
     kind: 'pocketbase',
 
-    async createRoom(activity) {
-      // Fetch currently active codes so pickWord avoids duplicates. On any
-      // network failure or uniqueness collision we retry once with another word.
-      let usedCodes = new Set();
-      try {
-        const res = await pbFetch(`/api/collections/${COLL}/records?fields=code&perPage=200`);
-        for (const rec of res?.items || []) usedCodes.add(rec.code);
-      } catch { /* proceed with empty set — collision handled by retry below */ }
+    // ── sección rooms (`live_sessions` + `live_players`) ──────────────────
+    createRoom: rooms.createRoom,
+    findRoomByCode: rooms.findRoomByCode,
+    fetchSession: rooms.fetchSession,
+    fetchSessionKey: rooms.fetchSessionKey,
+    listSessions: rooms.listSessions,
+    fetchSessionRecord: rooms.fetchSessionRecord,
+    fetchSessionBlob: rooms.fetchSessionBlob,
+    joinSession: rooms.joinSession,
+    startSession: rooms.startSession,
+    endSession: rooms.endSession,
+    setSessionState: rooms.setSessionState,
+    claimQuestion: rooms.claimQuestion,
+    listPlayers: rooms.listPlayers,
 
-      for (let attempt = 0; attempt < 5; attempt++) {
-        // P2-2: SIEMPRE evitar los códigos conocidos (antes los reintentos usaban
-        // un Set VACÍO, así que tras una colisión podían re-elegir un PIN en uso).
-        const code = pickWord(usedCodes);
-        const engine = createLiveRoom(activity, { code });
-        try {
-          // §22-2 — en la SALA (lectura abierta: el alumno entra por PIN) va el
-          // snapshot SANEADO: payloads de ronda ya sin solución + metadatos. La
-          // actividad completa se guarda aparte, en `live_keys` (host-only).
-          const rec = await pbFetch(`/api/collections/${COLL}/records`, {
-            method: 'POST',
-            body: JSON.stringify({ code, activity: studentSnapshot(activity), state: engine.state }),
-          });
-          // La clave. Si esta escritura falla, la sala se queda SIN clave para el
-          // host → mejor decirlo aquí que descubrirlo al revelar la primera
-          // respuesta, así que se propaga el error (la sala se reintenta).
-          try {
-            await pbFetch(`/api/collections/${KEY}/records`, {
-              method: 'POST', body: JSON.stringify({ session: rec.id, activity }),
-            });
-          } catch (ke) {
-            if (ke?.status === 404) {
-              throw new Error('La colección "live_keys" no existe en el servidor. '
-                + 'Créala una sola vez en Admin → "Crear colecciones" (guarda el contenido de la sala sin exponerlo a los alumnos).');
-            }
-            throw ke;
-          }
-          keyCache.set(rec.id, activity);
-          return { id: rec.id, code };
-        } catch (e) {
-          if (e.status === 404) {
-            throw new Error('La colección "live_sessions" no existe en el servidor. '
-              + 'Créala una sola vez en Admin → "Crear colecciones".');
-          }
-          // El código recién intentado falló (colisión de índice único o blip):
-          // recuérdalo para no re-elegirlo en el siguiente intento.
-          usedCodes.add(code);
-          // Retry on PIN collision (400/409) AND on transient failures (network
-          // error → no status, 5xx, timeout) — a momentary blip shouldn't kill
-          // room creation outright.
-          const retryable = !e.status || e.status === 400 || e.status === 409 || e.status >= 500;
-          if (attempt < 4 && retryable) continue;
-          throw e;
-        }
-      }
-      // All attempts exhausted (persistent collisions / validation): fail loudly
-      // so the caller shows a clear message instead of crashing on undefined.id.
-      throw new Error('No se pudo crear la sala tras varios intentos. Revisa la conexión e inténtalo de nuevo.');
-    },
+    // ── sección answers (`live_answers`) ───────────────────────────────────
+    settleItem: answersSection.settleItem,
+    submitAnswer: answersSection.submitAnswer,
+    submitRaceAttempt: answersSection.submitRaceAttempt,
+    submitProgress: answersSection.submitProgress,
+    getOwnAnswer: answersSection.getOwnAnswer,
+    listOwnAnswers: answersSection.listOwnAnswers,
+    listAnswers: answersSection.listAnswers,
+    leaderboard: answersSection.leaderboard,
 
-    async findRoomByCode(code) {
-      const res = await pbFetch(
-        `/api/collections/${COLL}/records?filter=${pbFilterParam(`code='${pbEscape(code.toUpperCase())}'`)}`
-      );
-      const rec = res?.items?.[0];
-      if (!rec) return null;
-      return {
-        id: rec.id,
-        code: rec.code,
-        status: rec.state?.status,
-        phase: rec.state?.phase,
-        current_item: rec.state?.currentItem,
-        deadline: rec.state?.deadline ?? null,
-        answers_open_at: rec.state?.answersOpenAt ?? null,
-        read_secs: rec.state?.readSecs ?? null,
-        loop: rec.state?.loop ?? null,
-        end_policy: rec.state?.endPolicy ?? null,
-        end_n: rec.state?.endN ?? null,
-        activity_snap: rec.activity,
-        ...qlOf(rec),
-      };
-    },
-
-    async fetchSession(sessionId) {
-      const rec = await pbFetch(`/api/collections/${COLL}/records/${sessionId}`);
-      if (!rec) throw new Error('Sala no encontrada');
-      return {
-        id: rec.id,
-        code: rec.code,
-        status: rec.state?.status,
-        phase: rec.state?.phase,
-        current_item: rec.state?.currentItem,
-        deadline: rec.state?.deadline ?? null,
-        answers_open_at: rec.state?.answersOpenAt ?? null,
-        read_secs: rec.state?.readSecs ?? null,
-        loop: rec.state?.loop ?? null,
-        end_policy: rec.state?.endPolicy ?? null,
-        end_n: rec.state?.endN ?? null,
-        started_at: rec.state?.startedAt ?? null,
-        activity_snap: rec.activity,
-        ...qlOf(rec),
-      };
-    },
-
-    // La actividad COMPLETA (con la clave) para el HOST: vive en `live_keys`, que
-    // solo lee una sesión de profe (§22-2). Respaldo a la sala para las creadas
-    // antes de esta versión.
-    async fetchSessionKey(sessionId) {
-      const rec = await pbFetch(`/api/collections/${COLL}/records/${sessionId}`).catch(() => null);
-      return await fullActivity(sessionId, rec);
-    },
-
-    // ── INFORMES (ley de datos §21) ──────────────────────────────────────────
-    // `views/reports.js` consultaba la colección por su cuenta (y además rompía
-    // el seam local|pb: en dev sin PocketBase no había informes). Ahora se lo
-    // PIDE al dueño. Devuelve las filas crudas (id, code, activity, state) y el
-    // informe se queda con el parseo, que es cosa suya.
-    async listSessions({ limit = 500 } = {}) {
-      // `sort=-created` puede no existir según cómo se creara la colección: si
-      // falla, se reintenta sin orden en vez de dejar la vista vacía.
-      try {
-        const res = await pbFetch(`/api/collections/${COLL}/records?perPage=${Number(limit) || 500}&sort=-created`);
-        return res?.items || [];
-      } catch {
-        const res = await pbFetch(`/api/collections/${COLL}/records?perPage=${Number(limit) || 500}`);
-        return res?.items || [];
-      }
-    },
-
-    /** Fila cruda de UNA sala (informe de sesión). null si no existe. */
-    async fetchSessionRecord(sessionId) {
-      try { return await pbFetch(`/api/collections/${COLL}/records/${sessionId}`); }
-      catch (e) { if (e?.status === 404) return null; throw e; }
-    },
-
-    // Respaldo del informe post-partida (A1): el blob `state` entero, para
-    // rescatar respuestas legadas que no llegaron a live_answers. Solo lo
-    // consume el HOST (rowsFromLiveState); existe para que ninguna vista tenga
-    // que tocar la colección directamente (ley de datos).
-    async fetchSessionBlob(sessionId) {
-      const rec = await pbFetch(`/api/collections/${COLL}/records/${sessionId}`);
-      return rec?.state || {};
-    },
-
-    async joinSession(code, nickname) {
-      const res = await pbFetch(
-        `/api/collections/${COLL}/records?filter=${pbFilterParam(`code='${pbEscape(code.toUpperCase())}'`)}`
-      );
-      const rec = res?.items?.[0];
-      if (!rec) throw new Error('Sala no encontrada');
-      if (rec.state?.status === 'ended') throw new Error('La sala ha terminado');
-      const live = rec.activity?.live || {};
-      if (rec.state?.status !== 'lobby' && live.allowLateJoin === false) throw new Error('La partida ya empezó');
-
-      // Ruta live_players (deuda A): el jugador es su PROPIA fila → dos entradas
-      // simultáneas ya no se pisan en el blob. La validación del apodo y el gateo
-      // de aforo se conservan; la UNICIDAD del nombre la garantiza el índice único
-      // (session,name) de forma atómica: una colisión (400) reintenta con sufijo.
-      if (await playersReady()) {
-        const f = isAcceptableNickname(nickname);
-        if (!f.ok) throw new Error('Apodo: ' + f.reason);
-        // Reconexión: si este dispositivo ya tiene fila en la sala, la conserva —
-        // pero SOLO si además conserva su credencial (§22-4); sin ella no podría
-        // escribir respuestas, así que es mejor entrar como jugador nuevo (el
-        // índice único de apodos le pondrá sufijo) que quedarse mudo.
-        const mine = await pbFetch(`/api/collections/${PLR}/records?filter=${plrFilter(rec.id, `user_id='${pbEscape(userId)}'`)}&perPage=1`);
-        if (mine?.items?.length && claimSecret(rec.id)) {
-          const row = mine.items[0];
-          return { sessionId: rec.id, playerId: row.id, name: row.name };
-        }
-        const maxPlayers = live.maxPlayers || 60;
-        const cnt = await pbFetch(`/api/collections/${PLR}/records?filter=${plrFilter(rec.id)}&perPage=1`);
-        if ((cnt?.totalItems || 0) >= maxPlayers) throw new Error('La sala está llena');
-        let name = f.value;
-        for (let n = 2; ; n++) {
-          try {
-            const row = await pbFetch(`/api/collections/${PLR}/records`, {
-              method: 'POST', body: JSON.stringify({ session: rec.id, name, user_id: userId }),
-            });
-            // Credencial de ESTE dispositivo para ESTE jugador, antes de devolver:
-            // sin ella las respuestas rebotarían (§22-4).
-            await registerClaim(rec.id, row.id);
-            return { sessionId: rec.id, playerId: row.id, name: row.name };
-          } catch (e) {
-            // 400 del índice único (session,name) = apodo ocupado → sufija y reintenta.
-            if (e?.status === 400 && n <= 40) { name = `${f.value} ${n}`; continue; }
-            throw e;
-          }
-        }
-      }
-
-      // Ruta blob heredada (sin la colección): comportamiento anterior.
-      const engine = createLiveRoom(rec.activity, { state: rec.state, code: rec.code });
-      const p = engine.join(userId, nickname);
-      await saveState(rec.id, engine);
-      return { sessionId: rec.id, playerId: p.id, name: p.name };
-    },
-
-    async startSession(sessionId) {
-      const { engine } = await load(sessionId);
-      engine.state.status = 'running';
-      engine.state.phase = 'question';
-      engine.state.currentItem = 0;
-      await saveState(sessionId, engine);
-    },
-
-    // Cerrar la sala LIQUIDA lo pendiente y LUEGO marca 'ended' — todo sobre UN
-    // load y UN saveState. Así ninguna respuesta rezagada (rescate del trazo,
-    // cola offline, red lenta) se queda sin puntuar: llegue cuando llegue, si
-    // está en la colección antes del cierre cuenta. Un fallo al liquidar NO
-    // impide cerrar (la sala debe poder cerrarse siempre).
-    async endSession(sessionId) {
-      const { engine } = await load(sessionId);
-      try {
-        if (await answersReady()) await settlePendingInto(engine, sessionId);
-        else engine.settleAll({ keepPhase: true });   // blob heredado: settle salta lo ya puntuado
-      } catch (e) { console.warn('[live] no se pudieron liquidar rezagadas al cerrar:', e); }
-      engine.state.status = 'ended';
-      engine.state.phase = 'ended';
-      await saveState(sessionId, engine);
-      // Higiene §22-2: si la sala fue una carrera, su snapshot lleva el contenido
-      // completo. Terminada la partida ya no hace falta → se vuelve al saneado
-      // para que la clave no siga en una fila de lectura abierta.
-      try {
-        const full = keyCache.get(sessionId);
-        if (full) await pbFetch(`/api/collections/${COLL}/records/${sessionId}`, {
-          method: 'PATCH', body: JSON.stringify({ activity: studentSnapshot(full) }),
-        });
-      } catch { /* best-effort: la sala ya está cerrada */ }
-    },
-
-    async setSessionState(sessionId, patch) {
-      const { engine } = await load(sessionId);
-      if (patch.status !== undefined) engine.state.status = patch.status;
-      if (patch.phase !== undefined) engine.state.phase = patch.phase;
-      if ('current_item' in patch) engine.state.currentItem = patch.current_item;
-      if ('deadline' in patch) engine.state.deadline = patch.deadline ?? null;
-      // R-1 · instante en que se pueden TOCAR las respuestas (§26 ficha 1b): el
-      // ritmo del juego se escribe como INSTANTE en la sala, nunca como un
-      // temporizador local — así todos los móviles leen lo mismo y quien entra
-      // tarde o recarga ve el tiempo que queda de verdad.
-      if ('answers_open_at' in patch) engine.state.answersOpenAt = patch.answers_open_at ?? null;
-      if ('read_secs' in patch) engine.state.readSecs = patch.read_secs ?? null;
-      // POLÍTICA DE FIN de carrera/tablero (core/liveEnd.js): vive en la sala
-      // porque el ALUMNO también la necesita — es lo que le dice si espera un
-      // reloj o a sus compañeros, en vez de un "esperando…" mudo.
-      // EL BUCLE que corrió la sala (§26). Vive en el blob porque es un HECHO de
-      // la partida, no un detalle de una vista: lo leen el settle (modelo de
-      // puntos), el podio y la tabla. Antes cada uno lo re-adivinaba de la fase
-      // o del sello de apertura, y el lobby lo perdía al recargar.
-      if ('loop' in patch) engine.state.loop = patch.loop ?? null;
-      if ('end_policy' in patch) engine.state.endPolicy = patch.end_policy ?? null;
-      if ('end_n' in patch) engine.state.endN = patch.end_n ?? null;
-      if ('started_at' in patch) engine.state.startedAt = patch.started_at ?? null;
-      if ('ql_points' in patch) engine.state.qlPoints = patch.ql_points ?? {};
-      // CL-1 · quién se llevó cada caja. Se guardaba CUÁNTO valió, no QUIÉN
-      // respondió, así que el docente no tenía forma de ver a quién le faltaba
-      // participar (y los rápidos acaparaban sin que se notara).
-      if ('ql_taken' in patch) engine.state.qlTaken = patch.ql_taken ?? {};
-      if (patch.ql_award) {
-        const { playerId, points } = patch.ql_award;
-        const p = engine.state.players.find(pl => pl.id === playerId);
-        if (p) p.score += points;
-      }
-      // §21 · PEDIR LA PALABRA: los puntos que da el DOCENTE también son una
-      // FILA de live_answers. Sin esto se quedaban SOLO en el blob y el podio
-      // —que se DERIVA de live_answers desde la deuda A— mostraba 0 a todos:
-      // el docente repartía puntos toda la clase y al final no los veía nadie
-      // (verificado contra PocketBase real antes de arreglarlo). La fila va
-      // `scored` (el veredicto ya está dado) y `unscorable` (no hubo clave que
-      // acertar: el mérito es del docente, §22-5) → la tabla la pinta "—" con
-      // sus puntos, sin fingir un acierto automático.
-      if (patch.ql_award && Number.isInteger(patch.ql_award.item) && await answersReady()) {
-        const { playerId, points, item } = patch.ql_award;
-        const row = {
-          session: sessionId, player: playerId, item: Number(item),
-          value: null, ms: 0, scored: true, correct: false, unscorable: true,
-          points: Number(points) || 0,
-        };
-        const r = await postAnswer(row).catch(() => ({}));
-        if (r?.conflict) {
-          // Misma caja reabierta y re-otorgada: se actualiza la fila existente.
-          const prev = await getAnswerRow(sessionId, Number(item), playerId).catch(() => null);
-          if (prev) await pbFetch(`/api/collections/${ANS}/records/${prev.id}`, {
-            method: 'PATCH', body: JSON.stringify({ scored: true, correct: false, unscorable: true, points: row.points }),
-          }).catch(() => {});
-        }
-      }
-      // §22-2 — EXCEPCIÓN DECLARADA de la carrera libre: en ese modo el móvil
-      // juzga cada intento en local (colorea al instante y re-encola los fallos),
-      // así que necesita el contenido completo. Solo entonces, y solo al arrancar,
-      // se sube la actividad entera a la sala; al cerrar se vuelve al snapshot
-      // saneado. Cerrarlo del todo pide un validador en el servidor (ver
-      // core/liveSnapshot.js).
-      //
-      // ANTES DE ABRIR LA FASE, no después: este PATCH iba DESPUÉS del de
-      // `state`, así que el móvil recibía "empieza la carrera" y se ponía a
-      // jugar con el snapshot SIN clave — daba por fallada hasta una hoja
-      // perfecta. Primero la clave, luego la salida.
-      if (needsClientKey(patch.phase)) {
-        const full = await fullActivity(sessionId, null);
-        if (full) await pbFetch(`/api/collections/${COLL}/records/${sessionId}`, {
-          method: 'PATCH', body: JSON.stringify({ activity: full }),
-        }).catch(() => { /* si falla, el móvil ESPERA (no juzga a ciegas) */ });
-      }
-
-      // El host puede tocar AMBOS: el blob y el campo `ql` (p.ej. al cerrar la
-      // caja abierta tras dar puntos) — un solo PATCH.
-      const ql = qlPatch(patch);
-      const rec = await pbFetch(`/api/collections/${COLL}/records/${sessionId}`, {
-        method: 'PATCH',
-        body: JSON.stringify(ql ? { state: engine.state, ql } : { state: engine.state }),
-      });
-      // §22-1 — SELLO DE APERTURA: si este PATCH abrió un ítem a respuestas, el
-      // `updated` que devuelve PocketBase ES el instante servidor de la apertura.
-      // Guardarlo en el blob (host-only, el alumno no lo puede mover) es lo que
-      // permite medir después el tiempo de cada respuesta con el reloj del
-      // SERVIDOR. Cuesta un PATCH diminuto por pregunta —del host, no de los 30
-      // alumnos— y a cambio sobrevive a que el host recargue a mitad de pregunta.
-      if (noteItemOpened(engine, patch, rec)) {
-        await pbFetch(`/api/collections/${COLL}/records/${sessionId}`, {
-          method: 'PATCH', body: JSON.stringify({ state: engine.state }),
-        }).catch((e) => {
-          // R6 · NO en silencio: este catch mudo es la razón de que nadie
-          // supiera, durante versiones, que en la Pi el sello no entraba (lo
-          // destapó el botón de carrera: los dos alumnos con el MISMO tiempo,
-          // el que afirmaba su móvil). Se sigue tolerando el fallo —abrir la
-          // pregunta no puede depender de esto— pero se DICE, y el settle ya
-          // no depende de él (core/serverMs.js · origenServidor).
-          console.warn('[live] §22-1: no se pudo guardar el sello de apertura; el tiempo se medirá desde la primera respuesta:', e);
-        });
-      }
-    },
-
-    // El ALUMNO pide la palabra (Pregunta en Vivo): escribe SOLO el campo `ql`,
-    // nunca el blob. Es la única afirmación que un alumno hace sobre la sala
-    // (ley de confianza §22) y la regla de PB lo permite justo por eso.
-    async claimQuestion(sessionId, claim) {
-      await pbFetch(`/api/collections/${COLL}/records/${sessionId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ ql: {
-          open: claim?.open ?? null,
-          question: claim?.question ?? null,
-          image: claim?.image ?? null,
-          by: claim?.by ?? null,
-          byName: claim?.byName ?? null,
-        } }),
-      });
-    },
-
-    async settleItem(sessionId, itemIndex) {
-      if (await answersReady()) {
-        const { engine } = await load(sessionId);
-        const rows = await fetchAnswerRows(sessionId, itemIndex);
-        const origen = origenServidor(rows);   // respaldo si falta el sello (§22-1)
-        // Hydrate the engine with the collection's answers, then let the SAME
-        // engine.settle() score them (single source of truth) — it adds points
-        // to state.players[]. The host is the only writer here, so this PATCH
-        // can't be clobbered by students. hydrateAnswerRow preserva el veredicto
-        // de las filas ya puntuadas → un segundo settle no re-suma (ver helper).
-        for (const r of rows) hydrateAnswerRow(engine, itemIndex, r, origen);
-        const settled = engine.settle(itemIndex);
-        // Write each answer's verdict back to its row (so students/host see ✓/✗
-        // and points). Host-only writes, one per answer — no contention.
-        await Promise.all(rows.map(r => {
-          const scored = engine.state.answers[`${itemIndex}:${r.player}`];
-          if (!scored) return null;
-          return pbFetch(`/api/collections/${ANS}/records/${r.id}`, {
-            // `ms` se REESCRIBE con el del servidor: el `ms` del cliente era una
-            // afirmación (§22) y el settle es justo el momento en que el servidor
-            // pone su número. Importa porque `updated` deja de servir como
-            // instante del acierto en cuanto este PATCH lo pisa.
-            method: 'PATCH', body: JSON.stringify({ scored: true, correct: scored.correct === true,
-              unscorable: scored.correct == null, points: scored.points, ms: scored.msTaken ?? 0 }),
-          }).catch(() => {});
-        }));
-        // Keep scores (players[]) but drop the hydrated answers so the blob stays
-        // lean — the answers live in live_answers, not in state.
-        engine.state.answers = {};
-        await saveState(sessionId, engine);
-        return { ok: true, settled };
-      }
-      const { engine } = await load(sessionId);
-      const settled = engine.settle(itemIndex);
-      await saveState(sessionId, engine);
-      return { ok: true, settled };
-    },
-
-    async submitAnswer(sessionId, playerId, itemIndex, value, msTaken) {
-      if (await answersReady()) {
-        // Candado de primera respuesta (como en un concurso): si ya hay fila para este ítem, se
-        // conserva. Un doble-tap simultáneo choca contra el índice único → `conflict`,
-        // que aquí significa "ya respondió" → se ignora (antes creaba una 2ª fila).
-        // scored=false = "respondió, sin puntuar" (PB bool no admite null).
-        if (await getAnswerRow(sessionId, itemIndex, playerId)) return;
-        await postAnswer({ session: sessionId, player: playerId, item: Number(itemIndex), value, ms: msTaken ?? 0, scored: false, correct: false, points: 0 });
-        return;
-      }
-      // Legacy blob path (no live_answers collection): load→mutate→PATCH.
-      const { engine } = await load(sessionId);
-      engine.submit(playerId, itemIndex, value, msTaken);
-      await saveState(sessionId, engine);
-    },
-
-    // Carrera (opción A analítica): a diferencia de submitAnswer, aquí llega TODO
-    // intento. El PRIMERO (bien o mal) crea la fila y captura v0/c0 (primer intento)
-    // para el análisis de clase, SIN cambiar el juego; los reintentos correctos solo
-    // AVANZAN el progreso (value) — v0/c0 son inmutables. Ver docs/historico/handoff-analitica-items.md.
-    //
-    // ANTI-TRAMPA (C6): el veredicto/los puntos del CLIENTE son solo un hint de
-    // flujo — la fila se guarda SIEMPRE `scored:false, points:0`, como las
-    // preguntas normales. Antes se persistía `scored:!!correct, points` tal cual
-    // los mandaba el móvil: un alumno podía inyectar correct:true/points:9999 y
-    // el settle lo respetaba ("ya puntuada"). Ahora la verdad la pone el HOST:
-    // paintRace re-puntúa los values para el ranking en vivo (correct llega null
-    // vía listAnswers) y endSession → settlePendingInto liquida con la fórmula
-    // real. Mentir en `correct` solo mueve `value` a una respuesta mala → el
-    // settle la puntúa MAL: mentir resta. (c0 queda como veredicto del primer
-    // intento para la analítica de clase — no otorga puntos.)
-    async submitRaceAttempt(sessionId, playerId, itemIndex, value, correct, points, msTaken) {
-      if (await answersReady()) {
-        let row = await getAnswerRow(sessionId, itemIndex, playerId);
-        if (!row) {
-          const r = await postAnswer({
-            session: sessionId, player: playerId, item: Number(itemIndex),
-            value, ms: msTaken ?? 0, scored: false, correct: !!correct, points: 0,
-            v0: value, c0: !!correct,
-          });
-          if (r.created) return;                 // primer intento creado
-          row = await getAnswerRow(sessionId, itemIndex, playerId);   // chocó → re-leer para avanzar
-        }
-        if (row && correct && row.correct !== true && !row.scored) {
-          await pbFetch(`/api/collections/${ANS}/records/${row.id}`, {
-            // SIN `ms`: el tiempo es VEREDICTO del servidor (§22-1) y la regla ya
-            // no deja al alumno tocarlo. El `ms` del primer intento queda en la
-            // fila como respaldo honesto; el que puntúa lo escribe el settle.
-            method: 'PATCH', body: JSON.stringify({ value, correct: true }),
-            headers: claimHeaders(sessionId),
-          });
-        }
-        return;
-      }
-      // Legacy blob (colección live_answers ausente): mismo principio anti-trampa —
-      // el veredicto del cliente es un HINT (`hint`) para no re-escribir un ítem ya
-      // avanzado; la respuesta queda SIN puntuar (correct:null) y la liquida el
-      // settle del host con la fórmula real.
-      const { engine } = await load(sessionId);
-      const key = `${itemIndex}:${playerId}`;
-      const prev = engine.state.answers[key];
-      const v0 = prev && 'v0' in prev ? prev.v0 : value;
-      const c0 = prev && 'c0' in prev ? prev.c0 : !!correct;
-      if (!prev || (correct && prev.hint !== true)) {
-        engine.state.answers[key] = { playerId, value, msTaken: msTaken ?? 0, correct: null, points: 0, hint: !!correct, v0, c0 };
-        await saveState(sessionId, engine);
-      }
-    },
-
-    // Continuous progress for live "board" templates. UPSERTS the player's own
-    // row (no first-answer lock): PATCH if it exists, else POST. The host reads
-    // these via listAnswers and renders each board live; settleItem() later
-    // scores the latest value. itemIndex defaults to 0 (single shared board).
-    async submitProgress(sessionId, playerId, value, msTaken, itemIndex = 0) {
-      if (await answersReady()) {
-        // Upsert ATÓMICO (deuda F): si no hay fila, POST; si dos progresos
-        // concurrentes chocan (índice único), el 2º re-lee y PATCHea la MISMA
-        // fila → nunca hay dos filas del mismo jugador con estados de tablero
-        // distintos (antes el desempate por `ms` mostraba/puntuaba uno viejo).
-        let row = await getAnswerRow(sessionId, itemIndex, playerId);
-        if (!row) {
-          const r = await postAnswer({ session: sessionId, player: playerId, item: Number(itemIndex), value, ms: msTaken ?? 0, scored: false, correct: false, points: 0 });
-          if (r.created) return;
-          row = await getAnswerRow(sessionId, itemIndex, playerId);
-        }
-        if (row) {
-          // SIN `scored` en el patch: (a) la regla de PB prohíbe al alumno tocar
-          // los campos de veredicto (§22) y (b) re-afirmar scored:false podía
-          // DES-liquidar una fila que el host ya había puntuado.
-          await pbFetch(`/api/collections/${ANS}/records/${row.id}`, {
-            method: 'PATCH', body: JSON.stringify({ value }),   // `ms` es veredicto (§22-1)
-            headers: claimHeaders(sessionId),
-          });
-        }
-        return;
-      }
-      // Legacy blob path: overwrite the player's answer in state (allowed here).
-      const { engine } = await load(sessionId);
-      engine.state.answers[`${Number(itemIndex)}:${playerId}`] = { playerId, value, msTaken: msTaken ?? 0, correct: null, points: 0 };
-      await saveState(sessionId, engine);
-    },
-
-    async getOwnAnswer(sessionId, playerId, itemIndex) {
-      if (await answersReady()) {
-        const res = await pbFetch(`/api/collections/${ANS}/records?filter=${ansFilter(sessionId, itemIndex, playerId)}&perPage=1`);
-        const r = res?.items?.[0];
-        return r ? { playerId: r.player, value: r.value, msTaken: r.ms, correct: r.scored ? r.correct : null, points: r.points } : null;
-      }
-      const { engine } = await load(sessionId);
-      return engine.state.answers[`${itemIndex}:${playerId}`] || null;
-    },
-
-    // Todas las filas PROPIAS del alumno en la sala (reanudar la carrera tras
-    // una recarga: core/raceResume.js). `correct` aquí significa "este
-    // dispositivo ya lo acertó": veredicto del settle O el hint de avance de la
-    // carrera (submitRaceAttempt escribe correct=true al acertar, §22-C6) — un
-    // fallo sin puntuar queda en null, no en false.
-    async listOwnAnswers(sessionId, playerId) {
-      if (await answersReady()) {
-        const filter = pbFilterParam(`session='${pbEscape(sessionId)}' && player='${pbEscape(playerId)}'`);
-        const res = await pbFetch(`/api/collections/${ANS}/records?filter=${filter}&perPage=500`);
-        return (res?.items || []).map(r => ({
-          itemIndex: r.item, value: r.value,
-          correct: (r.scored ? !!r.correct : (r.correct === true ? true : null)),
-          points: r.points,
-          ms: r.ms,   // ms de SERVIDOR desde la salida: reanudar recupera la hora de meta
-        }));
-      }
-      const { engine } = await load(sessionId);
-      return Object.entries(engine.state.answers)
-        .filter(([k]) => k.endsWith(':' + playerId))
-        .map(([k, v]) => ({
-          itemIndex: Number(k.split(':')[0]), value: v.value,
-          correct: (v.correct === true || v.hint === true) ? true : (v.correct === false ? false : null),
-          points: v.points,
-        }));
-    },
-
-    async listPlayers(sessionId) {
-      if (await playersReady()) return fetchPlayers(sessionId);
-      const { engine } = await load(sessionId);
-      return engine.state.players.slice();
-    },
-
-    async listAnswers(sessionId, itemIndex) {
-      if (await answersReady()) {
-        const rows = await fetchAnswerRows(sessionId, itemIndex);
-        // v0/c0 (primer intento, carrera) pasan a la analítica; el resto usa value/correct.
-        // `created`/`updated` VIAJAN: son los autodate del servidor y sin ellos
-        // core/answerRows.js no puede derivar el tiempo (§22-1) y cae al `ms` que
-        // afirma el móvil — que en carrera es el tiempo EN ESA PREGUNTA, no desde
-        // la salida. Como la carrera la decide la HORA DE META, ese respaldo
-        // ordenaba el podio con un dato del cliente y con la semántica equivocada.
-        return rows.map(r => ({ playerId: r.player, value: r.value, msTaken: r.ms, correct: r.scored ? r.correct : null, points: r.points, v0: r.v0, c0: r.c0, created: r.created, updated: r.updated, scored: r.scored }));
-      }
-      const { engine } = await load(sessionId);
-      const a = engine.state.answers;
-      return Object.entries(a)
-        .filter(([k]) => k.startsWith(itemIndex + ':'))
-        .map(([, v]) => v);
-    },
-
-    // Marcador DERIVADO (deuda A A3): con los jugadores fuera del blob, el motor
-    // ya no acumula `state.players[].score`; la puntuación autoritativa vive en
-    // las filas de live_answers (una por respuesta, puntuada por el profe al
-    // settle). Sumamos points por jugador y le pegamos el nombre de live_players
-    // → misma fuente que el podio (buildSessionTable) ⇒ marcador entre preguntas
-    // y podio final SIEMPRE coinciden. Incluye a quien aún no puntúa (0).
-    async leaderboard(sessionId, limit = 50) {
-      if (await playersReady() && await answersReady()) {
-        const players = await fetchPlayers(sessionId);
-        let rows = [];
-        try {
-          // DESEMPATE por hora de meta (core/liveRank.js): a igualdad de puntos
-          // gana quien llegó ANTES — en carrera, quien cruzó la meta primero.
-          // El instante lo pone el SERVIDOR (`created`, autodate inmutable), no
-          // el `ms` que afirma el móvil (§22): si el desempate dependiera del
-          // cliente, bastaría con jurar ms=0 para ganar todos los empates.
-          // `ms` = la MISMA fuente que el podio: el tiempo que el SERVIDOR
-          // escribió en la fila al liquidarla (el `ms` del cliente queda pisado
-          // ahí, §22). Se filtra por scored=true, así que toda fila que llega
-          // aquí ya lo tiene. Ojo: NO sirve derivarlo de `created`/`updated` —
-          // el PATCH del settle pisa `updated` con la misma hora para toda la
-          // clase, y entonces el desempate de la carrera se vuelve aleatorio
-          // (medido: el rápido salía 2.º).
-          const res = await pbFetch(`/api/collections/${ANS}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}' && scored=true`)}&perPage=500&fields=player,points,ms,correct`);
-          rows = res?.items || [];   // core/liveRank.js acepta la fila tal cual
-        } catch { /* sin respuestas todavía → todos a 0 */ }
-        return rankPlayers(players, rows, limit);
-      }
-      const { engine } = await load(sessionId);
-      return engine.leaderboard(limit);
-    },
-
-    async kickPlayer(sessionId, playerId) {
-      if (await playersReady()) {
-        await pbFetch(`/api/collections/${PLR}/records/${playerId}`, { method: 'DELETE' }).catch(() => {});
-        return;
-      }
-      const { engine } = await load(sessionId);
-      engine.state.players = engine.state.players.filter(p => p.id !== playerId);
-      await saveState(sessionId, engine);
-    },
-
-    // ── §25 CAPACIDAD — retención de salas ──────────────────────────────────
-    // Una sala en vivo dura 20 minutos y sus filas viven para siempre: sala,
-    // respuestas, jugadores y credenciales. Pasada la retención son basura (el
-    // informe que importa ya está en `results`). El DUEÑO de estas colecciones
-    // es este adaptador (§21), así que la purga vive aquí y el panel solo la
-    // PIDE. `dryRun` cuenta sin borrar: el profe ve qué se va antes de decidir.
-    // No toca `results` ni `assignment_attempts` — el registro del profe sobre
-    // sus alumnos no caduca por nosotros.
-    async purgeOldLive(cutoffIso, { dryRun = true } = {}) {
-      const out = { cutoff: cutoffIso, dryRun, sessions: 0, answers: 0, players: 0, claims: 0, errors: [] };
-      const older = pbFilterParam(`created < '${pbEscape(cutoffIso)}'`);
-      // Las salas primero: sus ids son el filtro de lo que cuelga.
-      let sessions = [];
-      try {
-        const res = await pbFetch(`/api/collections/${COLL}/records?filter=${older}&perPage=200&fields=id`);
-        sessions = res?.items || [];
-      } catch (e) { out.errors.push(`salas: ${e.message}`); return out; }
-      out.sessions = sessions.length;
-      if (!sessions.length) return out;
-
-      // Hijas de esas salas (una pasada por sala: los filtros con 200 ids
-      // encadenados con || revientan el largo de la URL).
-      const childCounts = { [ANS]: 'answers', [PLR]: 'players', [CLM]: 'claims' };
-      for (const s of sessions) {
-        const f = pbFilterParam(`session='${pbEscape(s.id)}'`);
-        for (const [coll, key] of Object.entries(childCounts)) {
-          try {
-            const res = await pbFetch(`/api/collections/${coll}/records?filter=${f}&perPage=500&fields=id`);
-            const rows = res?.items || [];
-            out[key] += rows.length;
-            if (!dryRun) {
-              for (const r of rows) {
-                await pbFetch(`/api/collections/${coll}/records/${r.id}`, { method: 'DELETE' })
-                  .catch(e => out.errors.push(`${coll}/${r.id}: ${e.message}`));
-              }
-            }
-          } catch (e) { out.errors.push(`${coll}: ${e.message}`); }
-        }
-        if (!dryRun) {
-          await pbFetch(`/api/collections/${COLL}/records/${s.id}`, { method: 'DELETE' })
-            .catch(e => out.errors.push(`sala ${s.id}: ${e.message}`));
-        }
-      }
-      return out;
-    },
-
-    async pingPresence() { /* state is in PB record, no presence table needed */ },
-    async pingHost() { /* no-op */ },
+    // ── sección mantenimiento ───────────────────────────────────────────────
+    kickPlayer: mantenimiento.kickPlayer,
+    purgeOldLive: mantenimiento.purgeOldLive,
+    pingPresence: mantenimiento.pingPresence,
+    pingHost: mantenimiento.pingHost,
 
     // PocketBase SSE realtime. Subscribes to the specific live_sessions record.
     // On any update, notifies the view with all three table types so it re-fetches

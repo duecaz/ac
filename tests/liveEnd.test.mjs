@@ -115,7 +115,8 @@ const NOW = Date.UTC(2026, 7, 1, 10, 0, 0);
   assert.match(host, /id="btn-end-race"/, 'y el profe conserva su botón de cortar antes');
   // El tiempo límite se escribe como INSTANTE en la sala, no como contador local.
   assert.match(host, /deadline = endPolicy === 'time'/, 'el tiempo límite nace como instante');
-  const pb = read('adapters/pocketbase/realtime.js');
+  // v1.51.627: el adaptador se partió POR COLECCIÓN — la cita apunta al fichero que recibió el código.
+  const pb = read('adapters/pocketbase/realtimeRooms.js');
   assert.match(pb, /'end_policy' in patch/, 'el adaptador PocketBase transporta la política');
   assert.match(pb, /end_policy: rec\.state\?\.endPolicy/, 'y la devuelve al leer la sala');
   ok('cableado: una comprobación para carrera y tablero, y el mando sigue en el profe');

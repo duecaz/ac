@@ -166,10 +166,13 @@ export const PB_OWNERS = {
   // encoge: no volver a añadir ficheros aquí, se añade un método al dueño.
   activities: ['adapters/pocketbase/remoteStore.js', 'views/adminView.js'],
   results: ['adapters/pocketbase/remoteStore.js', 'views/adminView.js'],
-  live_sessions: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js', 'core/raceE2e.js'],
+  // El adaptador de live se partió POR COLECCIÓN (v1.51.627): el dueño es la
+  // FAMILIA realtime* — el ensamblador declara las constantes y cada sección
+  // toca solo la suya. Solo se listan los ficheros que de verdad la NOMBRAN.
+  live_sessions: ['adapters/pocketbase/realtime.js', 'adapters/pocketbase/realtimeRooms.js', 'views/adminView.js', 'core/stressTest.js', 'core/raceE2e.js'],
   live_answers: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js', 'core/raceE2e.js'],
   live_players: ['adapters/pocketbase/realtime.js', 'views/adminView.js', 'core/stressTest.js', 'core/raceE2e.js'],
-  live_keys: ['adapters/pocketbase/realtime.js', 'views/adminView.js'],
+  live_keys: ['adapters/pocketbase/realtime.js', 'adapters/pocketbase/realtimeRooms.js', 'views/adminView.js'],
   // stressTest y raceE2e (carrera e2e de botón): simulan al alumno — filas
   // `stress_*` que ellos mismos borran; misma excepción sancionada.
   // stressTest: la prueba de carga registra la credencial del alumno simulado
@@ -209,7 +212,7 @@ export const LS_OWNERS = {
   'ww.oauth.pending': ['core/auth.js'],
   'ww.google.token': ['core/auth.js'],
   'ww.classroom.token': ['core/classroomAuth.js'],
-  'ww.claim.': ['adapters/pocketbase/realtime.js'],
+  'ww.claim.': ['adapters/pocketbase/realtimeClaims.js'],   // la credencial vive en su sección (§22-4)
   'ww.live_words': ['core/liveWords.js'],
   'ww.live.': ['adapters/local/realtime.js'],
   'ww.assignments': ['adapters/local/assignments.js'],

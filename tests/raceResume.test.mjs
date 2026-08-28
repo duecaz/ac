@@ -96,7 +96,8 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   assert.match(src, /listOwnAnswers\(session\.id, player\.playerId\)/, 'y las filas salen de listOwnAnswers (las propias)');
   assert.ok(!/raceQueue = allItems\.map/.test(src), 'la cola ya NO se reconstruye a ciegas con todos los ítems');
   // El adaptador PB expone el método (mismo contrato que el local).
-  const pb = readFileSync(new URL('../adapters/pocketbase/realtime.js', import.meta.url), 'utf8');
+  // v1.51.627: el adaptador se partió POR COLECCIÓN — la cita apunta al fichero que recibió el código.
+  const pb = readFileSync(new URL('../adapters/pocketbase/realtimeAnswers.js', import.meta.url), 'utf8');
   assert.match(pb, /async listOwnAnswers\(/, 'el adaptador PocketBase implementa listOwnAnswers');
   ok('studentLive reanuda la carrera desde el servidor en vez de reiniciarla');
 }

@@ -96,12 +96,13 @@ const read = (p) => readFileSync(new URL(p, ROOT), 'utf8');
 
 // ── 5. La purga la ejecuta el DUEÑO (§21) y no toca el registro del profe ──
 {
-  for (const drv of ['adapters/pocketbase/realtime.js', 'adapters/local/realtime.js']) {
+  // v1.51.627: el adaptador se partió POR COLECCIÓN — la cita apunta al fichero que recibió el código.
+  for (const drv of ['adapters/pocketbase/realtimeMantenimiento.js', 'adapters/local/realtime.js']) {
     const src = read(drv);
     assert.match(src, /async purgeOldLive\(/, `${drv} debe implementar purgeOldLive (contrato del puerto)`);
     assert.match(src, /dryRun/, `${drv}: la purga debe poder CONTAR sin borrar`);
   }
-  const pb = read('adapters/pocketbase/realtime.js');
+  const pb = read('adapters/pocketbase/realtimeMantenimiento.js');
   const fn = pb.slice(pb.indexOf('async purgeOldLive('), pb.indexOf('async pingPresence('));
   for (const forbidden of ['results', 'assignment_attempts', 'activities']) {
     assert.ok(!new RegExp(`collections/${forbidden}`).test(fn),
