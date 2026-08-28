@@ -22,12 +22,6 @@
 
 export const END_POLICIES = ['all', 'firstN', 'time'];
 
-export const END_LABELS = {
-  all:    { label: 'Cuando todos terminen', hint: 'Nadie se queda a medias.' },
-  firstN: { label: 'Los primeros…',         hint: 'Termina en cuanto ese número de alumnos acabe.' },
-  time:   { label: 'Tiempo límite',         hint: 'Termina al agotarse el reloj, hayan acabado o no.' },
-};
-
 export const DEFAULT_POLICY = 'all';
 export const DEFAULT_FIRST_N = 3;
 export const DEFAULT_MINUTES = 10;

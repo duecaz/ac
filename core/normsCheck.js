@@ -443,6 +443,11 @@ export const BROWSER_SCAN_FILES = [
   'kernel/session/engine.js', 'kernel/session/memory.js', 'kernel/live/engine.js',
   'views/adminView.js', 'views/assignments.js', 'views/editList.js', 'views/editView.js',
   'views/embedModal.js', 'views/explore.js', 'views/home.js', 'views/hostLive.js',
+  // Los bucles del live viven en su carpeta desde v1.51.628 (partición por bucle).
+  'views/live/hostLobby.js', 'views/live/hostRondas.js', 'views/live/hostCarrera.js',
+  'views/live/hostTablero.js', 'views/live/hostPalabra.js', 'views/live/hostInforme.js',
+  'views/live/studentLobby.js', 'views/live/studentRondas.js', 'views/live/studentCarrera.js',
+  'views/live/studentTablero.js', 'views/live/studentPalabra.js', 'views/live/studentFin.js',
   'views/listView.js', 'views/memoryView.js', 'views/modeSetup.js', 'views/playerView.js',
   'views/reports.js', 'views/startScreen.js', 'views/studentLive.js',
   'views/studentTask.js', 'views/switchTemplate.js', 'views/teamsView.js',

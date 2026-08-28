@@ -91,9 +91,11 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 
 // ── 3. La vista siembra desde el servidor (no reconstruye la cola a ciegas) ──
 {
-  const src = readFileSync(new URL('../views/studentLive.js', import.meta.url), 'utf8');
+  // v1.51.628: hostLive/studentLive se partieron POR BUCLE — la cita apunta al
+  // fichero que recibió el código (la CARRERA, views/live/studentCarrera.js).
+  const src = readFileSync(new URL('../views/live/studentCarrera.js', import.meta.url), 'utf8');
   assert.match(src, /raceResumeState\(/, 'studentLive siembra la cola con raceResumeState');
-  assert.match(src, /listOwnAnswers\(session\.id, player\.playerId\)/, 'y las filas salen de listOwnAnswers (las propias)');
+  assert.match(src, /listOwnAnswers\(rt\.session\.id, rt\.player\.playerId\)/, 'y las filas salen de listOwnAnswers (las propias)');
   assert.ok(!/raceQueue = allItems\.map/.test(src), 'la cola ya NO se reconstruye a ciegas con todos los ítems');
   // El adaptador PB expone el método (mismo contrato que el local).
   // v1.51.627: el adaptador se partió POR COLECCIÓN — la cita apunta al fichero que recibió el código.

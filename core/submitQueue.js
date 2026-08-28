@@ -37,6 +37,5 @@ export async function submit(sessionId, playerId, itemIndex, value, msTaken) {
 }
 
 export const flush = () => queue.flush();
-export const pendingCount = () => queue.pending();
 
 // El flush al volver la red lo cablea la factory (core/offlineQueue.js), una vez.

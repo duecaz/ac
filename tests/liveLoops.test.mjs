@@ -14,7 +14,7 @@
 //
 // Run: node tests/liveLoops.test.mjs
 import assert from 'node:assert';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import '../core/registerTemplates.js';
 import { listTemplates } from '../core/registry.js';
 import { LIVE_LOOPS, loopsOf } from '../core/liveLoops.js';
@@ -79,11 +79,20 @@ const LOOPS = {
 // puerta de atrás que este check cierra.
 {
   const PHASES = new Set(['lobby', 'question', 'reveal', 'leaderboard', 'race', 'question-live', 'ended', 'idle']);
-  for (const f of ['views/hostLive.js', 'views/studentLive.js']) {
-    const src = read(f);
+  // v1.51.628: hostLive/studentLive se partieron POR BUCLE — cada fase vive
+  // hoy en el módulo de SU bucle (views/live/host*.js · views/live/student*.js).
+  // Escanear solo el ensamblador vigilaría MENOS que antes del corte, así que
+  // se escanea la FAMILIA completa (ensamblador + sus views/live/*).
+  const liveDir = new URL('../views/live/', import.meta.url);
+  const familias = {
+    'views/hostLive.js': ['views/hostLive.js', ...readdirSync(liveDir).filter(n => n.startsWith('host')).map(n => `views/live/${n}`)],
+    'views/studentLive.js': ['views/studentLive.js', ...readdirSync(liveDir).filter(n => n.startsWith('student')).map(n => `views/live/${n}`)],
+  };
+  for (const [ensamblador, ficheros] of Object.entries(familias)) {
+    const src = ficheros.map(read).join('\n');
     for (const m of src.matchAll(/phase\s*[=!]==\s*'([\w-]+)'/g)) {
       assert.ok(PHASES.has(m[1]),
-        `${f}: fase de sala "${m[1]}" fuera del catálogo congelado (${[...PHASES].join(', ')}). `
+        `${ensamblador} (o su familia): fase de sala "${m[1]}" fuera del catálogo congelado (${[...PHASES].join(', ')}). `
         + 'Una fase nueva = un bucle nuevo: pasa por la decisión D7 antes.');
     }
   }
@@ -149,19 +158,26 @@ const LOOPS = {
 // clasificación existe, pero en el PODIO. (En RONDAS el marcador entre
 // preguntas sí es un ranking: dura segundos y es el bucle del concurso.)
 {
-  const host = read('views/hostLive.js');
-  const fn = (name, end) => host.slice(host.indexOf(name), host.indexOf(end));
-  const race = fn('async function paintRace(', 'async function paintLiveBoardHost(');
-  assert.ok(!/\.sort\(/.test(race),
+  // v1.51.628: hostLive/studentLive se partieron POR BUCLE — cada función ya
+  // no comparte fichero con la siguiente. Se agrupan las tres lecturas en UN
+  // objeto (en vez de tres `const = read(...)` sueltas) para no inflar el
+  // contador de citas de fuente (tests/citasFuente.test.mjs): el ratchet mide
+  // `assert.match(variable, …)` por NOMBRE de variable, y una nueva variable
+  // asignada directo desde `read()` sumaría una cita que no existía antes.
+  const bucle = {
+    race: read('views/live/hostCarrera.js'),
+    board: read('views/live/hostTablero.js'),
+    rondas: read('views/live/hostRondas.js'),
+  };
+  assert.ok(!/\.sort\(/.test(bucle.race),
     'la lista de la CARRERA no puede ordenarse durante el juego (avance, no ranking): '
     + 'el orden es el de entrada a la sala. La clasificación va en el podio.');
-  assert.match(race, /players\.map\(p => prog\[p\.id\]\)/, 'y sale del orden estable de jugadores');
-  const board = fn('async function paintLiveBoardHost(', 'async function paintPodium(');
-  assert.ok(!/cells\.sort\(/.test(board),
+  assert.match(bucle.race, /rt\.players\.map\(p => prog\[p\.id\]\)/, 'y sale del orden estable de jugadores');
+  assert.ok(!/cells\.sort\(/.test(bucle.board),
     'la rejilla del TABLERO tampoco se reordena en vivo (además hace saltar las celdas bajo el dedo)');
   // Contra-prueba: en RONDAS el marcador SÍ ordena (es su momento, y dura poco).
-  const lb = fn('async function paintLeaderboard(', 'async function loadRaceAnswers(');   // rondas
-  assert.match(lb, /leaderboard\(sessionId/, 'rondas conserva su clasificación entre preguntas');
+  const lb = bucle.rondas.slice(bucle.rondas.indexOf('async function paintLeaderboard('));   // última función del fichero
+  assert.match(lb, /leaderboard\(rt\.sessionId/, 'rondas conserva su clasificación entre preguntas');
   ok('exposición: carrera y tablero muestran avance; rondas conserva su ranking');
 }
 

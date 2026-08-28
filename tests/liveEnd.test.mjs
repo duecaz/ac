@@ -9,7 +9,7 @@
 //
 // Run: node tests/liveEnd.test.mjs
 import assert from 'node:assert';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { END_POLICIES, DEFAULT_POLICY, DEFAULT_FIRST_N,
          endPolicyOf, shouldEnd, waitingInfo } from '../core/liveEnd.js';
 import { createLocalRealtime } from '../adapters/local/realtime.js';
@@ -17,7 +17,11 @@ import { registerTemplate } from '../core/registry.js';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
-const read = (p) => readFileSync(new URL(p, new URL('..', import.meta.url)), 'utf8');
+// `p` acepta también un ARRAY de rutas (concatenadas): lo usa la sección 7 para
+// leer la familia de un bucle partido (ensamblador + views/live/host*.js) como
+// una sola fuente, igual que antes leía un único fichero.
+const read = (p) => Array.isArray(p) ? p.map(read).join('\n')
+  : readFileSync(new URL(p, new URL('..', import.meta.url)), 'utf8');
 const NOW = Date.UTC(2026, 7, 1, 10, 0, 0);
 
 // ── 1. 'all' — no se cierra hasta que terminan TODOS ───────────────────────
@@ -107,7 +111,13 @@ const NOW = Date.UTC(2026, 7, 1, 10, 0, 0);
 
 // ── 7. Cableado: UNA comprobación para los DOS bucles, y el profe manda ───
 {
-  const host = read('views/hostLive.js');
+  // v1.51.628: hostLive/studentLive se partieron POR BUCLE — `maybeAutoEnd` se
+  // DEFINE en el ensamblador (lo comparten carrera y tablero) pero se LLAMA
+  // desde cada módulo de bucle, y `btn-end-race`/`deadline = endPolicy` viven
+  // en hostCarrera.js/hostTablero.js/hostLobby.js. La cita lee la FAMILIA
+  // completa (ensamblador + views/live/host*.js).
+  const liveDir = new URL('../views/live/', import.meta.url);
+  const host = read(['views/hostLive.js', ...readdirSync(liveDir).filter(n => n.startsWith('host')).map(n => `views/live/${n}`)]);
   assert.match(host, /async function maybeAutoEnd\(/, 'el cierre automático es UNA función compartida');
   assert.strictEqual((host.match(/maybeAutoEnd\(/g) || []).length, 3,
     'la definen 1 vez y la llaman 2 (carrera y tablero): si un bucle se la salta, no termina nunca');

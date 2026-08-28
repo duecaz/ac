@@ -137,12 +137,14 @@ const read = (p) => readFileSync(new URL(p, new URL('..', import.meta.url)), 'ut
   const opens = (host.match(/phase: 'question', current_item/g) || []).length;
   assert.strictEqual(opens, 1,
     `hay ${opens} sitios que abren la fase 'question': debe ser SOLO openQuestion(), o un camino se quedará sin lectura`);
-  const student = read('views/studentLive.js');
-  assert.match(student, /session\.answers_open_at/, 'el alumno lee el instante de la sala');
+  // v1.51.628: hostLive/studentLive se partieron POR BUCLE — la cita apunta al
+  // fichero que recibió el código (las RONDAS, views/live/studentRondas.js).
+  const student = read('views/live/studentRondas.js');
+  assert.match(student, /rt\.session\.answers_open_at/, 'el alumno lee el instante de la sala');
   // §22-5: el respaldo ya no es el reloj del móvil sino la HORA COMÚN — un
   // aparato desfasado afirmaba un `ms` torcido (el servidor lo re-deriva, pero
   // el respaldo no puede mentir por sistema).
-  assert.match(student, /lastQuestionShownAt = openAtMs \|\| serverNow\(\)/,
+  assert.match(student, /rt\.lastQuestionShownAt = openAtMs \|\| serverNow\(\)/,
     'el ms se mide desde la apertura REAL, no desde que este móvil pintó (si no, el bonus premia al de mejor red)');
   assert.match(host, /itemWindowMs\(activity, items\[idx\]\)/,
     'el host cierra con la ventana DEL ÍTEM (R-3)');
@@ -201,8 +203,10 @@ const read = (p) => readFileSync(new URL(p, new URL('..', import.meta.url)), 'ut
 
   // Lo único que SIGUE siendo cita de fuente: que la vista use al dueño en vez
   // de recalcularlo por su cuenta. Eso no se puede ejecutar, solo leer.
-  citaDeFuente(read('views/studentLive.js'), /standingOf\(await leaderboard\(/,
-    'el móvil pide el puesto al dueño del ranking, no lo cuenta él', 'views/studentLive.js');
+  // v1.51.628: hostLive/studentLive se partieron POR BUCLE — la cita apunta al
+  // fichero que recibió el código (las RONDAS, views/live/studentRondas.js).
+  citaDeFuente(read('views/live/studentRondas.js'), /standingOf\(await leaderboard\(/,
+    'el móvil pide el puesto al dueño del ranking, no lo cuenta él', 'views/live/studentRondas.js');
   ok('R-2: puesto, distancia y empate SE CALCULAN bien (números, no líneas de código)');
 }
 

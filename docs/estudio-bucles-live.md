@@ -100,8 +100,10 @@ nombre de la plantilla.
 
 ## 2. Lo que cuesta cada bucle
 
-- `views/hostLive.js`: **840 líneas**, 13 ramas por fase.
-- `views/studentLive.js`: **714 líneas**, 11 ramas por fase.
+- `views/hostLive.js`: **840 líneas**, 13 ramas por fase (medido entonces; desde
+  v1.51.628 cada bucle vive en su módulo de `views/live/` y la vista quedó de
+  ensamblador — el coste que este estudio midió es el que pagó esa partición).
+- `views/studentLive.js`: **714 líneas**, 11 ramas por fase (ídem).
 - La fase `race` está **compartida** entre dos bucles distintos (carrera libre y
   tablero), y cada vista la desambigua con su propio `isBoard`. O sea: un bucle
   nuevo no añade una rama, añade una rama **en cada una de las dos vistas** más

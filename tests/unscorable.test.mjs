@@ -92,7 +92,9 @@ const QUIZ = { id: 'a2', template: 'uns_quiz', live: {}, content: { items: [{ id
   // Guardarraíl de texto: la vista debe distinguir los TRES casos, porque el
   // bug se veía justo ahí ("Incorrecto" a quien no tenía nada que acertar).
   const { readFileSync } = await import('node:fs');
-  const src = readFileSync(new URL('../views/studentLive.js', import.meta.url), 'utf8');
+  // v1.51.628: hostLive/studentLive se partieron POR BUCLE — la cita apunta al
+  // fichero que recibió el código (las RONDAS, views/live/studentRondas.js).
+  const src = readFileSync(new URL('../views/live/studentRondas.js', import.meta.url), 'utf8');
   assert.match(src, /own\.correct == null/, 'studentLive debe detectar el "no puntuable"');
   assert.match(src, /La valora tu profe/, 'y decírselo al alumno en vez de "Incorrecto"');
   assert.match(src, /if \(!unscored\) Streaks\.bump/, 'un ítem no puntuable no rompe ni sube la racha');
@@ -129,7 +131,9 @@ const QUIZ = { id: 'a2', template: 'uns_quiz', live: {}, content: { items: [{ id
   assert.strictEqual(parche.ql_open, null, 'y cierra la caja abierta');
   assert.deepStrictEqual(parche.ql_points, { 1: 10, 3: 50 }, 'acumula sin pisar lo anterior');
   assert.deepStrictEqual(parche.ql_taken, { 1: 'p9', 3: 'p1' }, 'y registra QUIÉN se la llevó (CL-1)');
-  const host = readFileSync(new URL('../views/hostLive.js', import.meta.url), 'utf8');
+  // v1.51.628: hostLive/studentLive se partieron POR BUCLE — la cita apunta al
+  // fichero que recibió el código (PEDIR LA PALABRA, views/live/hostPalabra.js).
+  const host = readFileSync(new URL('../views/live/hostPalabra.js', import.meta.url), 'utf8');
   assert.match(host, /qlAwardPatch\(/, 'el host premia por el constructor de su dueño, no con un literal a mano');
   ok('pedir la palabra: el premio del docente es una fila de live_answers → llega al podio');
 }
@@ -150,12 +154,19 @@ const QUIZ = { id: 'a2', template: 'uns_quiz', live: {}, content: { items: [{ id
   const p = award({ playerId: 'ana', points: 10, item: 0, points0: {}, taken0: {} });
   assert.strictEqual(p.ql_taken[0], 'ana',
     'al premiar se registra QUIÉN se llevó la caja, no solo cuánto valió');
-  const host = readFileSync(new URL('../views/hostLive.js', import.meta.url), 'utf8');
+  // v1.51.628: hostLive/studentLive se partieron POR BUCLE — la cita apunta al
+  // fichero que recibió el código (PEDIR LA PALABRA, views/live/hostPalabra.js).
+  const host = readFileSync(new URL('../views/live/hostPalabra.js', import.meta.url), 'utf8');
   assert.ok(!/ql_taken:\s*\{/.test(host), 'y la vista ya no arma ese estado a mano');
   assert.match(host, /function participationHtml\(/, 'la pizarra muestra la participación');
   assert.match(host, /Aún no participan/, 'y destaca a los que aún no han participado (lo accionable)');
   // Es un AVISO: la rejilla del ALUMNO no puede depender de ello para bloquear.
-  const student = readFileSync(new URL('../views/studentLive.js', import.meta.url), 'utf8');
+  // Aserción NEGATIVA → se lee la FAMILIA completa (ensamblador + views/live/student*.js),
+  // no solo el módulo de pedir-la-palabra, para no vigilar menos que antes del corte.
+  const { readdirSync } = await import('node:fs');
+  const liveDir = new URL('../views/live/', import.meta.url);
+  const student = ['views/studentLive.js', ...readdirSync(liveDir).filter(n => n.startsWith('student')).map(n => `views/live/${n}`)]
+    .map(f => readFileSync(new URL('../' + f, import.meta.url), 'utf8')).join('\n');
   assert.ok(!/ql_taken/.test(student),
     'el móvil NO usa ql_taken para bloquear: sería una regla que el cliente no puede garantizar (CL-1 opción 1)');
   // Y el dato viaja por los dos adaptadores.
