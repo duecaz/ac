@@ -572,6 +572,13 @@ for (const t of seeded) {
             const envios = [...w.querySelectorAll('[data-ww-submit]')].filter(vis);
             return {
               hud: w.querySelectorAll('.edu-hud').length,
+              // ¿La BARRA aloja los indicadores? Misma excepción declarada que ya
+              // tiene el botón de pantalla completa: cuando la ronda pinta su
+              // propia barra a todo el ancho, esa barra es el sitio de los mandos
+              // y de los indicadores, y un chip flotando encima sería un segundo
+              // dueño de la misma franja (en un móvil de 390 el «1 / 2» se montaba
+              // sobre el lápiz — medido, v1.51.616).
+              indicadoresEnBarra: !!w.querySelector('.edu-topbar .tc-pag'),
               // CON NOMBRE: `edu-sec` a secas no identifica nada, y el caso que
               // originó la regla (la rejilla suelta de Memoria) volvería a pasar
               // en verde. Se exige el modificador.
@@ -620,10 +627,17 @@ for (const t of seeded) {
           // Sin widget no se puede escanear — y callarlo sería lo peor: la ley
           // §3b0 dejaría de vigilarse, en silencio, el día que un player cambie
           // de raíz. Se cuenta como fallo con su motivo.
-          const medida = rr || { hud: 0, sec: 0, send: 0, fuera: 0 };
+          const medida = rr || { hud: 0, sec: 0, send: 0, fuera: 0, indicadoresEnBarra: false };
           const fallos = rr ? [] : ['sin #ww-player-widget: no se pudo escanear'];
           if (rr) {
-            if (rr.hud !== 1) fallos.push(`edu-hud: ${rr.hud} (debe ser 1)`);
+            // UNO de los dos, nunca ninguno y nunca los dos: o el HUD flota en las
+            // esquinas, o la barra los aloja. Lo que no se tolera es que el player
+            // no diga DÓNDE viven sus indicadores.
+            if (rr.indicadoresEnBarra) {
+              if (rr.hud > 0) fallos.push(`indicadores duplicados: la barra los aloja y además hay ${rr.hud} edu-hud`);
+            } else if (rr.hud !== 1) {
+              fallos.push(`edu-hud: ${rr.hud} (debe ser 1, o alojarlos en la barra)`);
+            }
             if (rr.sec < 1) fallos.push('sin sección de juego con nombre (edu-sec--*)');
             if (rr.send > 1) fallos.push(`${rr.send} regiones edu-send (como mucho 1)`);
             if (rr.fuera > 0 && !exc) fallos.push(`${rr.fuera} control(es) de envío fuera de edu-send`);

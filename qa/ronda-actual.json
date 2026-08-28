@@ -1,8 +1,8 @@
 {
-  "id": "2026-08-26",
+  "id": "2026-08-28",
   "titulo": "AulaReto · Hoja de pruebas",
-  "intro": "Ronda corta y rara: casi todo lo que se ha tocado NO se tiene que notar. Han sido quince versiones de fontanería —ordenar CSS que estaba repartido en cinco sitios, traerse Bootstrap y la fuente del tema Arcade al propio servidor— y el ordenador ya ha medido que no cambia ni un píxel. Lo que la máquina NO puede comprobar es lo de la prueba 1: que la app funcione con el wifi caído. Esa es la importante de esta ronda. Lo que SÍ ha cambiado a propósito es la Sopa de Letras: ahora ocupa la pizarra entera y las letras crecen con ella. Y siguen abiertas las dos de siempre (el reloj y el lápiz): si ya las hiciste en la ronda del 24, dilo en la nota y sáltalas. Se han añadido dos pruebas de última hora (9 y 10) por dos cosas que encontró el dueño mirando capturas. Marca Pasa si ocurrió lo que dice «Tiene que pasar», Falla si no — y cuenta en la nota qué viste. «No probado» también vale: dice hasta dónde llegaste.",
-  "versionMin": "1.51.615",
+  "intro": "Esta ronda es lo contrario de la anterior: casi todo lo que se ha tocado SÍ se nota, y hace falta una pizarra de verdad para verlo. La semana ha ido entera a Tildes y Comas —el lápiz, el reloj, los puntos y cómo se corrige— y a que los temas lleguen a la hoja. Nada de eso lo puede comprobar el ordenador: el lápiz y la palma necesitan una mano, y los colores necesitan que alguien mire desde el fondo del aula.\n\nOJO: el lápiz CAMBIÓ. Antes había cuatro herramientas (punta, dedo, parte trasera y palma); ahora hay DOS: lo pequeño escribe y la palma borra. Si probaste esto en una ronda anterior, vuelve a probarlo — es otro sistema.\n\nMarca Pasa si ocurrió lo que dice «Tiene que pasar», Falla si no, y escribe en la nota lo que viste aunque sea una tontería. Un «me pareció raro» vale más que un Falla sin explicar.",
+  "versionMin": "1.51.616",
   "secciones": [
     {
       "titulo": "Antes de empezar",
@@ -26,137 +26,261 @@
       ]
     },
     {
-      "titulo": "Parte 1 · SIN INTERNET — la prueba importante de esta ronda",
-      "nota": "Hasta ahora la app se bajaba dos cosas de servidores ajenos: la librería de estilos (Bootstrap) y la fuente de píxeles del tema Arcade. Si el colegio se quedaba sin línea, la app no se veía «un poco peor»: se veía ROTA, con los recuadros descolocados. Ya está todo dentro de nuestro servidor, pero eso solo se puede comprobar de una manera.",
+      "titulo": "Parte 1 · EL LÁPIZ Y LA PALMA — la prueba importante de esta ronda",
       "pruebas": [
         {
           "n": 1,
-          "titulo": "La app entera funciona con el wifi cortado",
-          "ruta": [
-            "Móvil (o portátil)",
-            "aulareto.com",
-            "Modo avión",
-            "Cualquier actividad en Individual"
-          ],
-          "accion": "Con internet: abre aulareto.com y entra en una actividad cualquiera en Individual (que cargue del todo). AHORA pon el modo avión — o apaga el wifi y los datos. Con la página ya abierta, recarga (Ctrl+F5 en el portátil; en el móvil, tirar hacia abajo).",
-          "pasos": [
-            "Con el modo avión puesto, recarga la página.",
-            "Mira la FORMA: los botones tienen que seguir siendo botones, las tarjetas tarjetas, y nada debe salirse por los lados ni pisarse.",
-            "Entra en una actividad y juégala un poco: las opciones de respuesta tienen que seguir en su rejilla de colores.",
-            "Cambia el tema a Arcade (Apariencia › Arcade) y mira el texto: tiene que verse con LETRAS DE VIDEOJUEGO (cuadraditas), no con una letra de máquina de escribir normal.",
-            "Si algo de esto sale mal, haz FOTO de la pantalla entera (con la barra de arriba, para que se vea la versión)."
-          ],
-          "espera": "sin internet la app se ve EXACTAMENTE igual que con internet: nada descolocado, nada desbordado, y el tema Arcade con su letra de píxeles.",
-          "casillas": [
-            "La forma es la misma sin internet",
-            "Arcade conserva su letra de píxeles"
-          ],
-          "notaPista": "Si algo se descoloca, describe QUÉ pantalla y adjunta la foto — es el fallo que esta ronda busca"
-        }
-      ]
-    },
-    {
-      "titulo": "Parte 2 · LA SOPA DE LETRAS — esto SÍ cambia, y a mejor",
-      "nota": "La rejilla estaba topada a un tamaño fijo: se quedaba a la mitad aunque la pizarra diera para más, y las letras encima no crecían. Ahora la rejilla llena el hueco y la letra crece con su casilla. Se prueba en la pizarra Y en el móvil, porque son dos problemas distintos.",
-      "pruebas": [
-        {
-          "n": 2,
-          "titulo": "La sopa llena la pizarra y se lee desde el fondo",
+          "titulo": "Calibrar la pizarra: ahora son DOS recuadros",
           "ruta": [
             "Pizarra del aula",
-            "Sopa de Letras",
+            "Tildes",
             "Individual",
-            "Pantalla completa"
+            "Calibrar pizarra"
           ],
-          "accion": "Abre una Sopa de Letras en la pizarra, dale a Iniciar y pon PANTALLA COMPLETA (el botón de la esquina de arriba a la derecha del marco). Después vete al FONDO de la clase y mira desde ahí, de pie.",
+          "accion": "Abre una actividad de Tildes en la pizarra y entra en «Calibrar pizarra». Antes pedía cuatro medidas; ahora tiene que pedir DOS: «Dedo o lápiz» y «Palma». Toca cada recuadro con lo que dice y MANTÉN el contacto un par de segundos.",
           "pasos": [
-            "La rejilla tiene que ocupar casi todo el alto disponible, no quedarse en un cuadrado pequeño en medio con hueco de sobra a los lados.",
-            "Desde el fondo del aula, las letras se tienen que LEER sin acercarse.",
-            "Vuelve a la pizarra y busca una palabra arrastrando el dedo: la selección tiene que ir casilla por casilla sin saltarse ninguna ni marcar la de al lado."
+            "Solo hay DOS recuadros, no cuatro.",
+            "Al tocar, sale un número y se queda quieto (no baila de 3 a 40 y vuelta).",
+            "El número de la palma tiene que ser CLARAMENTE mayor que el del dedo. Apúntalos los dos en la nota.",
+            "Guarda y cierra."
           ],
-          "espera": "la rejilla ocupa el hueco, las letras se leen desde el fondo y arrastrar el dedo selecciona bien.",
+          "espera": "salen dos recuadros, los dos dan un número estable y el de la palma es mayor.",
           "casillas": [
-            "Ocupa el hueco",
-            "Se lee desde el fondo",
-            "El dedo selecciona bien"
+            "Solo dos recuadros",
+            "Los números no bailan",
+            "Palma > dedo"
           ],
-          "notaPista": "Si sobra mucho hueco arriba y abajo, dime cuánto más o menos (¿un palmo? ¿medio?)"
+          "notaPista": "Apunta los dos números tal cual (p.ej. «dedo 7, palma 22»): son los que decide todo lo demás."
+        },
+        {
+          "n": 2,
+          "titulo": "Escribir con el dedo y borrar con la palma",
+          "ruta": [
+            "Pizarra del aula",
+            "Tildes",
+            "Individual"
+          ],
+          "accion": "Con la pizarra ya calibrada, juega una hoja de Tildes. Marca varias tildes con el dedo (o con la punta del lápiz). Después apoya la PALMA y arrástrala por encima de lo que has marcado.",
+          "pasos": [
+            "Con el dedo o la punta: marca. Toques cortos, de los de marcar una tilde, tienen que marcar SIEMPRE.",
+            "Con la palma: BORRA lo que había, y no deja ninguna marca nueva.",
+            "MIRA BIEN AL EMPEZAR A BORRAR: no tiene que aparecer una rayita de tinta que luego desaparece. Ni un parpadeo. Si ves algo, dilo aunque dudes.",
+            "Escribe una frase entera seguida sin levantar la mano: la línea tiene que salir completa, sin trozos que falten al principio."
+          ],
+          "espera": "el dedo marca siempre, la palma borra, y al borrar NO aparece ningún rastro de tinta.",
+          "casillas": [
+            "El dedo marca siempre",
+            "La palma borra",
+            "Sin rastro al borrar",
+            "La línea sale entera"
+          ],
+          "notaPista": "Si el borrado va mal, prueba también con el canto de la mano y dime si cambia."
         },
         {
           "n": 3,
-          "titulo": "La sopa en el móvil, de pie",
+          "titulo": "Apoyar la mano sin querer",
           "ruta": [
-            "Móvil",
-            "Sopa de Letras",
-            "Individual",
-            "Pantalla del juego"
+            "Pizarra del aula",
+            "Tildes",
+            "Individual"
           ],
-          "accion": "Abre la misma Sopa en el móvil, en VERTICAL (sin girarlo).",
+          "accion": "Escribe como escribiría un niño: apoyando el canto de la mano en la pizarra mientras marca con el dedo. Es la situación real, y es la que más miedo da.",
           "pasos": [
-            "La rejilla y la lista de palabras de abajo tienen que verse como UN bloque junto, centrado.",
-            "Antes había un hueco grande en medio, con las palabras descolgadas al fondo de la pantalla: eso ya no debería pasar.",
-            "Las letras tienen que leerse con el móvil en la mano, sin acercárselo a la cara."
+            "Lo que marcas con el dedo se queda marcado.",
+            "Apoyar la mano no tiene que borrar lo que ya habías puesto.",
+            "Y si de verdad apoyas la palma entera a propósito, sí tiene que borrar."
           ],
-          "espera": "rejilla y palabras van juntas y centradas, sin un hueco grande entre ellas.",
+          "espera": "escribir apoyando la mano no borra nada; apoyar la palma a propósito sí borra.",
           "casillas": [
-            "Van juntas, sin hueco en medio",
-            "Las letras se leen"
+            "Apoyar la mano no borra",
+            "La palma a propósito sí borra"
           ],
-          "notaPista": "Si sigue habiendo hueco, ¿dónde está: encima, debajo, o entre la rejilla y las palabras?"
+          "notaPista": "Esta es la que puede arruinar una clase: si falla, describe exactamente cómo tenías la mano."
         }
       ]
     },
     {
-      "titulo": "Parte 3 · QUE NO SE HAYA MOVIDO NADA",
-      "nota": "Se ha reordenado por dentro cómo se pintan los botones de respuesta y los temas. El ordenador ha medido 352 propiedades en seis pantallas distintas y dice que no cambia nada. Esto es el segundo par de ojos: un vistazo rápido, no un examen.",
+      "titulo": "Parte 2 · EL RELOJ, LOS PUNTOS Y LA CORRECCIÓN (todo nuevo)",
       "pruebas": [
         {
           "n": 4,
-          "titulo": "Los botones de respuesta, iguales en los tres temas",
+          "titulo": "El reloj de la hoja",
           "ruta": [
-            "PC o pizarra",
-            "Quiz",
-            "Individual y VS (duelo)",
-            "Apariencia"
+            "Ordenador",
+            "Tildes",
+            "Editar",
+            "Modos"
           ],
-          "accion": "Abre un Quiz. Míralo en Individual y en VS (duelo), y en cada uno cambia el tema entre Por defecto, TV Show y Arcade.",
+          "accion": "Edita una actividad de Tildes, vete a la pestaña «Modos» y pon 30 en «Tiempo por frase (s)». Guarda y juega en la PIZARRA, a pantalla completa.",
           "pasos": [
-            "Los cuatro botones de respuesta tienen sus cuatro colores (rojo, azul, ámbar, verde) en todos los temas.",
-            "En TV Show tienen que verse con relieve, como fichas con sombra debajo.",
-            "El texto de dentro se tiene que LEER en los cuatro colores — sobre todo en el ámbar y el verde.",
-            "Responde una MAL a propósito: el botón que has pulsado tiene que ponerse ROJO (no quedarse de su color)."
+            "El reloj sale ARRIBA, en el centro de la barra, y es grande.",
+            "Desde el fondo del aula se tiene que leer el número.",
+            "Va bajando y debajo hay una barra fina que se va consumiendo.",
+            "Deja que llegue a cero SIN tocar nada: tiene que pasar de hoja sola, sin perder lo que llevabas marcado.",
+            "Vuelve al editor, pon 0 y juega otra vez: no tiene que salir NINGÚN reloj (ni parado ni a cero)."
           ],
-          "espera": "los cuatro colores, el relieve de TV Show, el texto legible en los cuatro, y el fallo se pone rojo.",
+          "espera": "el reloj se lee desde el fondo, baja con su barra, al llegar a cero pasa sola, y con 0 no aparece.",
           "casillas": [
-            "Los cuatro colores, en los tres temas",
-            "TV Show con relieve",
-            "El fallo se pone rojo"
+            "Se lee desde el fondo",
+            "La barra baja con él",
+            "A cero pasa sola sin perder nada",
+            "Con 0 no sale"
           ],
-          "notaPista": "Si algo se ve distinto a como lo recordabas, dilo aunque no sepas qué: es justo lo que busco aquí"
+          "notaPista": "Dime si el reloj está bien centrado o se ve corrido hacia un lado."
         },
         {
           "n": 5,
-          "titulo": "Memoria por equipos sigue abriendo su tablero",
+          "titulo": "Los puntos: 10 por tilde",
           "ruta": [
-            "PC o pizarra",
-            "Memoria",
-            "Equipos"
+            "Ordenador",
+            "Tildes",
+            "Individual"
           ],
-          "accion": "Desde «Mis actividades» (o desde la portada), abre una actividad de Memoria y dale a Equipos.",
-          "espera": "se abre el tablero de cartas por turnos de Memoria, no una pantalla de preguntas. Se ha cambiado por dentro cómo se decide a qué pantalla ir, y esto lo confirma.",
+          "accion": "CREA una actividad de Tildes NUEVA (no reutilices una vieja) con tres o cuatro tildes. Juégala acertando todas.",
+          "pasos": [
+            "En la pantalla final, cada tilde tiene que valer 10 puntos: cuatro tildes = 40.",
+            "Ahora abre una actividad de Tildes ANTIGUA, de las que ya tenías: esa sigue valiendo 1 por tilde, y es CORRECTO — no se le tocan los puntos a lo que ya estaba hecho.",
+            "En el editor, pestaña «Puntuación», el número se puede cambiar a mano y debajo dice cuánto suma como máximo la actividad."
+          ],
+          "espera": "las nuevas dan 10 por tilde, las viejas siguen como estaban, y el editor deja cambiarlo.",
           "casillas": [
-            "Abre el tablero de Memoria"
+            "Nueva = 10 por tilde",
+            "Antigua sin tocar",
+            "El editor lo deja cambiar"
+          ]
+        },
+        {
+          "n": 6,
+          "titulo": "La corrección sale AL FINAL, con todas las hojas",
+          "ruta": [
+            "Pizarra del aula",
+            "Tildes con 3 frases",
+            "Individual"
           ],
-          "notaPista": "Si abre otra cosa, di desde dónde entraste (portada, mis actividades, biblioteca…)"
+          "accion": "Juega una actividad de Tildes de tres frases entera, marcando algunas bien, dejándote alguna y poniendo alguna tilde DONDE NO VA (a propósito).",
+          "pasos": [
+            "Entre frase y frase NO tiene que salir ninguna corrección: se pasa directo a la siguiente.",
+            "Al terminar sale una pantalla con las TRES frases, cada una con su lista de palabras a la derecha.",
+            "En la lista, las que faltaban salen en rojo, las acertadas en verde, y la que pusiste de más sale en AMBAR — de otro color, porque es otra cosa.",
+            "El contador de cada frase («2 / 5 correctas») tiene que cuadrar con lo que ves en el texto.",
+            "Se puede bajar por la pantalla sin que aparezca una barra gris fea pegada al borde."
+          ],
+          "espera": "no corrige entre frases, al final salen todas con su lista, y los tres colores se distinguen.",
+          "casillas": [
+            "No corrige entre frases",
+            "Al final salen todas",
+            "Las de más se distinguen",
+            "Los números cuadran"
+          ],
+          "notaPista": "Si algún número no cuadra, apunta cuál decía la lista y cuál el texto."
+        },
+        {
+          "n": 7,
+          "titulo": "El profe cambia un veredicto",
+          "ruta": [
+            "Pizarra del aula",
+            "Tildes",
+            "Individual",
+            "pantalla de corrección"
+          ],
+          "accion": "En esa pantalla de corrección, pulsa el botoncito que hay a la derecha de una palabra que aparezca como fallada.",
+          "pasos": [
+            "La palabra cambia a acertada y el contador de esa frase sube.",
+            "El total de arriba («0 de 12 · 0 pts») sube también, de 10 en 10.",
+            "Vuelve a pulsarlo: se deshace.",
+            "Prueba a perdonar una marca DE MÁS (la ámbar): esa NO tiene que contar como acierto — solo deja de restar. Si el contador de correctas sube al perdonarla, es un fallo.",
+            "Pulsa «Finalizar»: el puntaje que se guarda tiene que ser el que dejaste tú."
+          ],
+          "espera": "anular cambia el veredicto y los puntos, se puede deshacer, y perdonar una de más no regala aciertos.",
+          "casillas": [
+            "Anular cambia los puntos",
+            "Se deshace",
+            "Perdonar no regala acierto",
+            "Finalizar guarda lo que dejé"
+          ],
+          "notaPista": "Este botón solo sale en Individual. Si lo ves en una TAREA de alumno, dilo: sería un fallo."
         }
       ]
     },
     {
-      "titulo": "Parte 4 · LO QUE ENCONTRÓ EL DUEÑO EL 26",
-      "nota": "Dos cosas salidas de dos capturas suyas. La primera es de fondo (se publicaba en la biblioteca algo sin contenido); la segunda es puro aspecto, pero de las que cantan.",
+      "titulo": "Parte 3 · LOS TEMAS AHORA LLEGAN A LA HOJA",
       "pruebas": [
         {
+          "n": 8,
+          "titulo": "La hoja de Tildes cambia con el tema",
+          "ruta": [
+            "Pizarra del aula",
+            "Tildes",
+            "Individual",
+            "Apariencia"
+          ],
+          "accion": "Juega una actividad de Tildes y ve cambiando el TEMA en «Apariencia»: prueba Por defecto, Jungla, TV Show y Arcade. Mira la hoja donde está el texto, no solo el borde.",
+          "pasos": [
+            "La HOJA cambia de color con el tema (antes se quedaba siempre crema).",
+            "En los cuatro temas, el reloj de arriba se LEE. Míralo bien en Jungla y en Arcade.",
+            "El texto de la frase se lee en los cuatro, desde el fondo del aula.",
+            "La pantalla de corrección del final tiene el MISMO color de hoja que la de jugar — no una clara y otra oscura."
+          ],
+          "espera": "la hoja se tiñe con el tema, el reloj se lee en todos y jugar y corregir son la misma hoja.",
+          "casillas": [
+            "La hoja cambia de color",
+            "El reloj se lee en los 4",
+            "El texto se lee en los 4",
+            "Jugar y corregir iguales"
+          ],
+          "notaPista": "Si algún tema deja algo casi invisible, dime cuál y qué elemento."
+        },
+        {
           "n": 9,
+          "titulo": "Que no se haya movido nada en el resto",
+          "ruta": [
+            "Ordenador",
+            "varias actividades"
+          ],
+          "accion": "Da una vuelta rápida por Quiz, Sopa de Letras, Memoria y Ordena las Pelotas, cambiando de tema en cada una. No es una prueba a fondo: es mirar que no se haya roto nada de rebote.",
+          "pasos": [
+            "Cada actividad sigue cambiando con el tema, como antes.",
+            "Ninguna se ve con letras invisibles ni con colores raros.",
+            "El botón de pantalla completa se ve y se puede tocar, y nada se le monta encima."
+          ],
+          "espera": "las demás actividades siguen igual de bien que antes.",
+          "casillas": [
+            "Siguen cambiando con el tema",
+            "Nada invisible",
+            "El botón de pantalla completa libre"
+          ]
+        }
+      ]
+    },
+    {
+      "titulo": "Parte 4 · EL EDITOR",
+      "pruebas": [
+        {
+          "n": 10,
+          "titulo": "La pestaña «Modos» de Tildes",
+          "ruta": [
+            "Ordenador",
+            "Tildes",
+            "Editar",
+            "Modos"
+          ],
+          "accion": "Abre el editor de una actividad de Tildes y mira la pestaña «Modos» de arriba abajo.",
+          "pasos": [
+            "«Individual» tiene que salir UNA vez, no dos.",
+            "Están «Tiempo por frase» y «Corregir al final», y «Corregir al final» viene YA marcado.",
+            "«Puntos por acierto» NO tiene que salir aquí: vive en la pestaña «Puntuación» y en ningún otro sitio.",
+            "Cambia «Tiempo por frase», sal del editor, vuelve a entrar: el número tiene que seguir ahí."
+          ],
+          "espera": "un solo «Individual», los dos ajustes nuevos, los puntos en un solo sitio y todo se guarda.",
+          "casillas": [
+            "Un solo «Individual»",
+            "Están los dos ajustes nuevos",
+            "Los puntos en un solo sitio",
+            "Se guarda"
+          ]
+        },
+        {
+          "n": 11,
           "titulo": "No deja publicar una actividad vacía",
           "ruta": [
             "PC",
@@ -179,7 +303,7 @@
           "notaPista": "Si te deja publicar la vacía, dime con qué plantilla lo probaste"
         },
         {
-          "n": 10,
+          "n": 12,
           "titulo": "La tarjeta «Mi imagen» está en su sitio",
           "ruta": [
             "PC",
@@ -206,11 +330,10 @@
       ]
     },
     {
-      "titulo": "Parte 4 · LO QUE SIGUE ABIERTO",
-      "nota": "Estas dos vienen de la ronda anterior y siguen sin verificar en aparatos de verdad. Si ya las hiciste el 24, ponlo en la nota y márcalas como quedaron.",
+      "titulo": "Parte 5 · LO QUE SIGUE ABIERTO DE RONDAS ANTERIORES",
       "pruebas": [
         {
-          "n": 6,
+          "n": 13,
           "titulo": "EL RELOJ — el profe y el alumno cuentan lo mismo",
           "ruta": [
             "PC (profe) + móvil (alumno)",
@@ -234,27 +357,28 @@
           "notaPista": "Si van desfasados, dime CUÁNTOS segundos y qué aparato iba adelantado"
         },
         {
-          "n": 7,
-          "titulo": "El lápiz y el borrador en la pizarra de verdad",
+          "n": 14,
+          "titulo": "La app entera funciona con el wifi cortado",
           "ruta": [
-            "Pizarra del aula",
-            "Tildes (o Comas)",
-            "Individual",
-            "Pantalla del texto"
+            "Móvil (o portátil)",
+            "aulareto.com",
+            "Modo avión",
+            "Cualquier actividad en Individual"
           ],
-          "accion": "Abre una actividad de Tildes en la pizarra y marca con el LÁPIZ de la pizarra, no con el dedo.",
+          "accion": "Con internet: abre aulareto.com y entra en una actividad cualquiera en Individual (que cargue del todo). AHORA pon el modo avión — o apaga el wifi y los datos. Con la página ya abierta, recarga (Ctrl+F5 en el portátil; en el móvil, tirar hacia abajo).",
           "pasos": [
-            "Marca varias letras seguidas con el lápiz: cada toque tiene que marcar donde apunta la punta.",
-            "Apoya la MANO en la pizarra mientras marcas con el lápiz: la palma no debe marcar nada.",
-            "Prueba el borrador de la pizarra (si el tuyo lo tiene) sobre una marca puesta."
+            "Con el modo avión puesto, recarga la página.",
+            "Mira la FORMA: los botones tienen que seguir siendo botones, las tarjetas tarjetas, y nada debe salirse por los lados ni pisarse.",
+            "Entra en una actividad y juégala un poco: las opciones de respuesta tienen que seguir en su rejilla de colores.",
+            "Cambia el tema a Arcade (Apariencia › Arcade) y mira el texto: tiene que verse con LETRAS DE VIDEOJUEGO (cuadraditas), no con una letra de máquina de escribir normal.",
+            "Si algo de esto sale mal, haz FOTO de la pantalla entera (con la barra de arriba, para que se vea la versión)."
           ],
-          "espera": "el lápiz marca donde apunta, la palma apoyada no marca, y el borrador quita la marca.",
+          "espera": "sin internet la app se ve EXACTAMENTE igual que con internet: nada descolocado, nada desbordado, y el tema Arcade con su letra de píxeles.",
           "casillas": [
-            "El lápiz marca bien",
-            "La palma no marca",
-            "El borrador quita"
+            "La forma es la misma sin internet",
+            "Arcade conserva su letra de píxeles"
           ],
-          "notaPista": "Dime qué marca y modelo de pizarra es: los umbrales del detector no se han contrastado con ninguna de verdad"
+          "notaPista": "Si algo se descoloca, describe QUÉ pantalla y adjunta la foto — es el fallo que esta ronda busca"
         }
       ]
     },
@@ -262,7 +386,7 @@
       "titulo": "Parte 6 · SI TE QUEDA TIEMPO",
       "pruebas": [
         {
-          "n": 8,
+          "n": 15,
           "titulo": "Una vuelta libre buscando roturas",
           "ruta": [
             "Lo que tengas a mano",

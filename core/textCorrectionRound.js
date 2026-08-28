@@ -282,8 +282,14 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
   const propio = !!(chips.left || chips.right);
   root.innerHTML = `
     <div class="tc-round">
-      ${hudHtml({ pagina: chips.left || null, puntos: chips.right || null })}
       <div class="edu-topbar tc-bar${propio ? ' tc-bar--fs' : ''}">
+        ${/* LA PÁGINA VA DENTRO DE LA BARRA, no flotando en la esquina. El HUD
+              pinta sus chips en las esquinas del marco y esta ronda YA tiene una
+              barra a todo el ancho en esa misma franja: en un móvil de 390 el
+              «1 / 2» se montaba encima del lápiz (medido: el chip acababa en 74 y
+              el lápiz empezaba en 55). Dos dueños peleando por la misma tira.
+              Con barra, el sitio del indicador es la barra. */''}
+        ${chips.left ? `<span class="tc-pag">${escapeHtml(String(chips.left))}</span>` : ''}
         <button type="button" class="tc-switch" data-tool="pen" aria-pressed="false"
                 title="Lápiz — toca para borrar" aria-label="Lápiz activo. Tocar para pasar al borrador">
           <span class="tc-switch__side tc-switch__side--pen" data-side="pen">

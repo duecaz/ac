@@ -505,3 +505,16 @@
   .tc-final__cuerpo { flex-direction: column; }
   .tc-final__cuerpo > .tc-review-slot { max-width: none; }
 }
+
+/* La PÁGINA («1 / 3») dentro de la barra, a su izquierda. Antes flotaba como
+   chip del HUD en la esquina del marco y en un móvil de 390 se montaba sobre el
+   lápiz: el HUD y la barra se reparten la misma franja, y cuando hay barra la
+   barra manda. Mismo aire visual que el chip que sustituye. */
+.tc-pag {
+  flex: 0 0 auto;
+  font-size: max(10px, 2.1cqmin); font-weight: 700; line-height: 1;
+  padding: .3em .6em; border-radius: 999px;
+  background: color-mix(in srgb, var(--ww-paper-ink, #1f2937) 12%, transparent);
+  color: var(--ww-paper-ink, #1f2937);
+  font-variant-numeric: tabular-nums;
+}

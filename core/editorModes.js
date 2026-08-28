@@ -126,12 +126,19 @@ function taskBlock(a) {
 
 // SOLO (Individual): opciones del modo en solitario. Hoy: animación de progreso
 // (una rana cruza saltando charcos a medida que el alumno acierta). On/off.
-function soloBlock(a) {
+//
+// SIN CABECERA PROPIA CUANDO YA HAY UNA. La pestaña «Modos» pintaba DOS secciones
+// tituladas «Individual», con el mismo icono y una detrás de la otra: la de la
+// plantilla (`spec.rules`, con el temporizador y los puntos) y esta. El profe ve
+// dos veces el mismo rótulo y no puede saber por qué hay dos ni cuál manda.
+// Son el mismo modo, así que son UNA sección: el shell dice si ya puso el título
+// (captura del dueño, v1.51.616).
+function soloBlock(a, { conTitulo = true } = {}) {
   const on = !!a.presentation?.soloAnimation && a.presentation.soloAnimation !== 'none';
   return `
     <section class="ww-mode-cfg" data-mode="solo">
-      <h6 class="mb-1"><i class="bi bi-person-fill text-success"></i> Individual</h6>
-      <p class="text-muted small mb-2">Opciones del modo en solitario.</p>
+      ${conTitulo ? '<h6 class="mb-1"><i class="bi bi-person-fill text-success"></i> Individual</h6>'
+                  + '<p class="text-muted small mb-2">Opciones del modo en solitario.</p>' : ''}
       <label class="vs-fx-row" title="Muestra una rana que avanza con cada acierto.">
         <span class="form-check form-switch m-0">
           <input class="form-check-input solo-anim-toggle" type="checkbox" role="switch" ${on ? 'checked' : ''}>
@@ -142,8 +149,8 @@ function soloBlock(a) {
 }
 
 /** HTML for the "Modos" tab. Empty-ish note if the activity has no extra modes. */
-export function renderModesTab(a) {
-  const blocks = [soloBlock(a)];
+export function renderModesTab(a, { yaHayTituloIndividual = false } = {}) {
+  const blocks = [soloBlock(a, { conTitulo: !yaHayTituloIndividual })];
   if (isVsCompatible(a)) blocks.push(vsBlock(a));
   if (sessionItems(a).length >= 1) blocks.push(teamsBlock(a));
   if (getTemplate(a?.template)?.meta?.modes?.async) blocks.push(taskBlock(a));
