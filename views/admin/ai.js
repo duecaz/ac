@@ -195,8 +195,13 @@ export function createAiSection() {
           const { token } = await tokenSuperadmin();
           const { anadirClave } = await import('../../core/iaKeys.js');
           await anadirClave(token, { proveedor, clave, etiqueta });
-          document.getElementById('ia-key').value = '';
-          document.getElementById('ia-label').value = '';
+          // Tras el `await`, el panel puede haberse ido (el admin cambió de
+          // pantalla mientras guardaba): se comprueba, como en las lecturas de
+          // arriba. Es el mismo defecto que tiró la biblioteca en un aula.
+          const campoClave = document.getElementById('ia-key');
+          const campoEtiqueta = document.getElementById('ia-label');
+          if (campoClave) campoClave.value = '';
+          if (campoEtiqueta) campoEtiqueta.value = '';
           iaOut(`<div class="alert alert-success py-1 px-2 small">Clave de ${proveedor} guardada en la Pi. Pulsa «Probar» en su fila para comprobarla.</div>`);
           await pintarClaves();
         } catch (e) {

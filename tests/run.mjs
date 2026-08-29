@@ -48,6 +48,9 @@ console.log('\n▶ fullscreen'); await import('./fullscreen.test.mjs');
 console.log('\n▶ pbAuth'); await import('./pbAuth.test.mjs');
 console.log('\n▶ oauth'); await import('./oauth.test.mjs');
 console.log('\n▶ authGate'); await import('./authGate.test.mjs');
+// Va DESPUÉS de authGate y en su propio proceso mental: siembra `localStorage`
+// con sesiones vencidas, así que si corriera antes contaminaría a las de al lado.
+console.log('\n▶ sesionCaducada'); await import('./sesionCaducada.test.mjs');
 console.log('\n▶ ranking'); await import('./ranking.test.mjs');
 console.log('\n▶ itemStats'); await import('./itemStats.test.mjs');
 console.log('\n▶ sessionTable'); await import('./sessionTable.test.mjs');

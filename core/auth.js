@@ -1,12 +1,50 @@
 // Auth facade. PocketBase email/password auth.
 import { PB_URL } from '../pocketbase.config.js';
+import { clock } from './clock.js';
 
 const STORE_KEY = 'ww.pb.auth';
 let _user = null;
 const listeners = new Set();
 
+/** ¿ESTE TOKEN YA CADUCÓ? El token lleva la fecha DENTRO (es un JWT: su carga
+ *  trae `exp`), así que se puede saber sin preguntarle a nadie.
+ *
+ *  Existe porque `authRefresh()` —que limpia la sesión muerta con un 401— pide
+ *  RED, y mientras no contesta (o si el wifi del colegio no va) la app ya ha
+ *  decidido que hay sesión: `getAuthUserId()` es SÍNCRONO y lo leen el gate de
+ *  modos, la tarjeta y «a dónde te lleva terminar». Con la sesión vieja de un
+ *  profe en la PC del aula, el siguiente que jugaba acababa en «Mis
+ *  actividades» —la pantalla de OTRO— y con los mandos de profe abiertos.
+ *  Reportado desde un colegio (v1.51.623) y reproducido: con un token caducado
+ *  la app respondía `canHost: true` y `destino: #/mine`.
+ *
+ *  Prudente a propósito: si el token no es un JWT o su carga no se puede leer,
+ *  NO se juzga (decide `authRefresh` cuando haya red). Solo se descarta lo que
+ *  dice de sí mismo que está muerto. */
+function tokenCaducado(token) {
+  try {
+    const carga = String(token || '').split('.')[1];
+    if (!carga) return false;
+    const json = JSON.parse(atob(carga.replace(/-/g, '+').replace(/_/g, '/')));
+    if (!Number.isFinite(json?.exp)) return false;
+    // Margen de un minuto: un reloj local un poco adelantado no debe echar a
+    // nadie de su sesión a mitad de clase.
+    return json.exp * 1000 + 60000 <= clock.now();
+  } catch { return false; }
+}
+
 function loadStored() {
-  try { return JSON.parse(localStorage.getItem(STORE_KEY)); } catch { return null; }
+  try {
+    const guardado = JSON.parse(localStorage.getItem(STORE_KEY));
+    if (guardado?.token && tokenCaducado(guardado.token)) {
+      // Se BORRA, no solo se ignora: si se quedara, cada lectura volvería a
+      // pagar el parseo y —peor— cualquier código que lea la clave a mano
+      // seguiría viendo una sesión que no existe.
+      clearStored(); _user = null;
+      return null;
+    }
+    return guardado;
+  } catch { return null; }
 }
 
 function saveStored(token, record) {

@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **304 módulos · 1231 imports internos.**
+> **304 módulos · 1233 imports internos.**
 
 ### Ir a otro documento
 
@@ -30,12 +30,12 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
-| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1771 | 7 · 934 | 0.53 |
+| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1788 | 7 · 934 | 0.52 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2819 | 12 · 1415 | 0.50 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 38 · 4479 | 19 · 3093 | 0.69 |
 | **informes/tareas** | después de clase | 10 · 1116 | 4 · 512 | 0.46 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5877 | 13 · 1847 | 0.31 |
-| **infra/común** | todo lo anterior | 159 · 18630 | 64 · 8045 | 0.43 |
+| **infra/común** | todo lo anterior | 159 · 18673 | 65 · 8152 | 0.44 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -63,7 +63,7 @@ graph TD
   T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>75 módulos</small>"]
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>6 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
-  V -->|399| C
+  V -->|400| C
   T -->|219| C
   AD -->|31| C
   A -->|28| C
@@ -107,7 +107,7 @@ graph TD
 | **arranque** | `pb_hooks/aulareto-lib.js` (364) · `pb_hooks/aulareto.pb.js` (354) · `qa/hoja.js` (330) · `main.teacher.js` (168) · `main.embed.js` (68) |
 | **vistas** | `views/playerView.js` (538) · `views/vsView.js` (530) · `views/admin/collections.js` (453) · `views/hostLive.js` (341) · `views/live/hostRondas.js` (297) |
 | **adaptadores** | `adapters/pocketbase/realtimeRooms.js` (483) · `adapters/pocketbase/realtimeAnswers.js` (388) · `adapters/pocketbase/realtime.js` (361) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (252) |
-| **core** | `core/textCorrectionRound.js` (761) · `core/normsCheck.js` (474) · `core/skins.js` (421) · `core/aiContent.js` (385) · `core/selftest.js` (346) |
+| **core** | `core/textCorrectionRound.js` (761) · `core/normsCheck.js` (474) · `core/skins.js` (421) · `core/aiContent.js` (385) · `core/auth.js` (368) |
 | **kernel** | `kernel/session/teamsMachine.js` (182) · `kernel/session/liveMachine.js` (166) · `kernel/session/vsMachine.js` (155) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) |
 | **plantillas** | `templates/crossword/player.js` (482) · `templates/wordsearch/player.js` (397) · `templates/match/player.js` (292) · `templates/diagram/player.js` (235) · `templates/quiz/editor.js` (225) |
 | **contenido** | `kernel/content/qaAdapt.js` (141) · `kernel/content/switch.js` (117) · `kernel/content/convert.js` (95) · `kernel/content/models.js` (83) · `kernel/content/sessionItems.js` (25) |
@@ -124,7 +124,7 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 | `core/registry.js` | 51 |
 | `core/toast.js` | 42 |
 | `core/ids.js` | 27 |
-| `core/clock.js` | 25 |
+| `core/clock.js` | 26 |
 | `core/storage.js` | 24 |
 | `kernel/content/sessionItems.js` | 23 |
 | `core/gameEvents.js` | 23 |

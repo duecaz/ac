@@ -3,6 +3,7 @@
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { activityCardHtml } from '../core/activityCard.js';
+import { claimStage } from '../core/stageClaim.js';
 import { canHost } from '../core/authGate.js';
 import { wireActivityCard } from './activityCardWire.js';
 import { listPublic } from '../core/storage.js';
@@ -35,9 +36,20 @@ export async function renderExplore(rootSel, q0 = '') {
     </div>
   `);
 
+  // FICHA DE OCUPACIÓN DEL ESCENARIO (§23, core/stageClaim.js). Cargar la
+  // biblioteca pide RED, y en el wifi de un colegio eso tarda: si el profe se
+  // cansa y cambia de pantalla mientras tanto, la respuesta llega a una vista
+  // que ya no existe y `paint()` busca sus controles en un DOM que se fue —
+  // `Cannot read properties of null (reading 'value')`, reportado desde un aula
+  // (v1.51.623) con su traza justo en esa línea. El primitivo ya existía para
+  // esto mismo: quien monta RECLAMA, quien pinta tarde PREGUNTA.
+  const sigoEnPantalla = claimStage(rootSel);
+
   let cache = [];
   async function load() {
-    const lang = document.getElementById('exp-lang').value;
+    const selLang = document.getElementById('exp-lang');
+    if (!selLang) return;                       // la vista ya no está montada
+    const lang = selLang.value;
     // La colección `activities` tiene UN dueño (ley §21): se le PIDE la lista, no
     // se consulta a mano. El filtro, el escapado, el orden por `updatedAt` del
     // contenido y la migración del modelo viven ahí, una sola vez.
@@ -48,19 +60,24 @@ export async function renderExplore(rootSel, q0 = '') {
       // se filtran aquí para no enseñar duplicados de lo que la estantería ya da.
       cache = cache.filter(r => getTemplate(r.data?.template)?.meta?.kind !== 'juego');
     } catch (e) {
-      document.getElementById('exp-list').innerHTML = `<div class="alert alert-danger">${escapeHtml(e.message)}</div>`;
+      // El aviso de error también pinta: si la vista se fue, no hay dónde.
+      const lista = sigoEnPantalla() && document.getElementById('exp-list');
+      if (lista) lista.innerHTML = `<div class="alert alert-danger">${escapeHtml(e.message)}</div>`;
       return;
     }
+    if (!sigoEnPantalla()) return;              // llegó tarde: el profe ya está en otra
     paint();
   }
 
   function paint() {
-    const term = document.getElementById('exp-q').value.trim();
+    const caja = document.getElementById('exp-q');
+    const list = document.getElementById('exp-list');
+    if (!caja || !list) return;                 // la pantalla cambió bajo los pies
+    const term = caja.value.trim();
     // Mismo buscador que "Mis actividades" (`core/search.js`): sin tildes, por
     // palabras y también dentro del contenido. Los tags reales viven en la FILA
     // (r.tags), fuera del blob → se los damos a la actividad al mirarla.
     const filtered = searchActivities(cache, { q: term }, r => ({ ...(r.data || {}), tags: r.tags || [] }));
-    const list = document.getElementById('exp-list');
     // Buscar es binario (norte §2b): si no está, la salida es CREARLA, no un
     // "sin resultados" que deja al profe parado delante de la clase.
     if (!filtered.length) {
