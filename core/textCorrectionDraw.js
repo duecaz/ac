@@ -123,7 +123,57 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
     redraw(p, rad);
   }
 
+  // UNA PINTADA POR FOTOGRAMA, NO POR EVENTO DE ENTRADA.
+  //
+  // `redraw()` se llamaba en cada `pointermove`, y una pizarra táctil los emite a
+  // 100-240 Hz: con el dedo moviéndose, el lienzo entero (borrar + re-trazar
+  // TODOS los trazos) se repintaba hasta diez veces DENTRO del mismo fotograma,
+  // y solo el último se llegaba a ver. Medido escribiendo en una pizarra 4K con
+  // la CPU frenada 12x: 12 fps. El JS era barato (0,34 ms por evento) — lo caro
+  // era pintar y subir a la GPU un lienzo grande una y otra vez.
+  //
+  // Es el mismo defecto que ya arreglaron `observeResize` (rAF-debounced) y la
+  // barra de progreso: trabajo proporcional al RITMO DE ENTRADA en vez de al
+  // ritmo de la pantalla. Se acumula la petición y se pinta una vez por
+  // fotograma; el indicador del borrador guarda su última posición, que es la
+  // única que importa.
+  let rafPendiente = 0, borradorPt = null, borradorR = 0;
   function redraw(eraserPt, eraserR) {
+    borradorPt = eraserPt || null; borradorR = eraserR || 0;
+    if (rafPendiente) return;
+    rafPendiente = requestAnimationFrame(() => {
+      rafPendiente = 0;
+      pintar(borradorPt, borradorR);
+      borradorPt = null; borradorR = 0;
+    });
+  }
+
+  /** EL TROZO NUEVO, Y SOLO ÉL. Mientras el alumno escribe no hace falta borrar
+   *  y re-trazar la hoja entera: el lienzo YA tiene lo anterior pintado, así que
+   *  basta añadir el segmento que acaba de aparecer. El coste deja de depender
+   *  del tamaño del lienzo y de cuántas marcas lleve hechas.
+   *
+   *  Medido en una pizarra 4K con la CPU frenada 12x: el lienzo del pasaje ocupa
+   *  3074×1759 = 5,4 MILLONES de píxeles, y repintarlo entero dejaba la
+   *  escritura en 12 fps. Antes probé a agrupar los repintados en un fotograma
+   *  (rAF) y NO sirvió de nada —80 ms seguían siendo 78—: el problema no era
+   *  cuántas veces se repintaba, era repintarlo ENTERO aunque fuera una vez.
+   *  Se apunta porque la hipótesis equivocada costó una medición. */
+  function trazarUltimo(s) {
+    const n = s.pts.length;
+    if (n < 2) return;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.strokeStyle = '#1d4ed8'; ctx.lineWidth = 3.2 * dpr;
+    ctx.beginPath();
+    ctx.moveTo(s.pts[n - 2].x, s.pts[n - 2].y);
+    ctx.lineTo(s.pts[n - 1].x, s.pts[n - 1].y);
+    ctx.stroke();
+  }
+
+  // El repintado COMPLETO sigue existiendo para lo que de verdad lo necesita:
+  // borrar, cambiar de tamaño, limpiar y cerrar un trazo. Son gestos sueltos, no
+  // el chorro continuo del dedo moviéndose.
+  function pintar(eraserPt, eraserR) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     ctx.strokeStyle = '#1d4ed8'; ctx.lineWidth = 3.2 * dpr;
@@ -215,7 +265,7 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
     if (pointerAction.get(e.pointerId) === 'erase') { e.preventDefault(); eraseAt(p); return; }
     if (!drawing || !cur) return;
     e.preventDefault();
-    cur.pts.push(p); redraw();
+    cur.pts.push(p); trazarUltimo(cur);
   };
   const onUp = (e) => {
     active.delete(e.pointerId);
@@ -248,6 +298,9 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
     freeze() { frozen = true; canvas.style.pointerEvents = 'none'; },
     destroy() {
       stopRo();
+      // Un repintado en vuelo pintaría sobre un lienzo ya desmontado (§23: la
+      // vista se lleva sus relojes al salir).
+      if (rafPendiente) cancelAnimationFrame(rafPendiente);
       canvas.remove();        // al quitar el canvas se van sus listeners
     },
   };

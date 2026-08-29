@@ -1353,7 +1353,7 @@ ficha. Tres reglas, vigiladas por `tests/docs.test.mjs`:
 
 ---
 ### Cómo se auto-verifica todo
-`node tools/preflight.mjs` corre las TRECE redes (suites + auditoría de basura + los once recorridos)
+`node tools/preflight.mjs` corre las CATORCE redes (suites + auditoría de basura + los doce recorridos)
 antes de subir a `main` — es la orden que hay que teclear (§27).
 `node tests/run.mjs` corre TODAS las suites. Los escáneres compartidos
 (`core/normsCheck.js` / `core/templateContract.js` / `core/skinContract.js`) corren

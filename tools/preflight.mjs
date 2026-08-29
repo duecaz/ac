@@ -39,6 +39,7 @@ const PASOS = [
   { id: 'matriz',  cmd: 'tools/matrix-smoke.mjs', que: 'cada plantilla × cada modo arranca, un gesto de envío, fullscreen tocable' },
   { id: 'cq',      cmd: 'tools/cq-sonda.mjs',    que: 'ninguna unidad cq se resuelve contra el viewport (el lápiz de 141 px no se veía de otra forma)' },
   { id: 'lapiz',   cmd: 'tools/lapiz-sonda.mjs', que: 'lápiz, borrador y toque corto sobre el lienzo real (el defecto vivía en la secuencia, no en la pieza)' },
+  { id: 'aula',    cmd: 'tools/perf-sonda.mjs',   que: 'la PIZARRA LENTA del colegio: reposo fluido y la celebración no la hunde (4K con la CPU frenada 12x)' },
   { id: 'colores', cmd: 'tools/contrast-torture.mjs', que: 'cada tema × cada fondo: ningún texto por debajo de 3:1 (la combinación, no cada eje por su lado)' },
   { id: 'margenes', cmd: 'tools/margenes-smoke.mjs', que: 'ninguna pantalla del profe pegada al borde, en PC y en móvil' },
   { id: 'puertas', cmd: 'tools/editor-puertas.mjs', que: 'las 13 tienen puerta visible para añadir y dicen qué hacer con la actividad vacía' },

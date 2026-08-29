@@ -390,8 +390,15 @@
   display: block; height: 100%; width: 100%;
   background: var(--ww-accent, #2563eb);
   /* La transición hace que el paso de segundo a segundo se lea como algo que
-     fluye y no como saltos; 1s lineal = exactamente el ritmo del tick. */
-  transition: width 1s linear;
+     fluye y no como saltos; 1s lineal = exactamente el ritmo del tick.
+     Y va por `transform`, NO por `width`: animar el ancho obliga al navegador a
+     RECALCULAR LA MAQUETA de la página en cada fotograma, durante todo el
+     segundo, sin parar mientras corre el reloj. Medido en una pizarra 4K con la
+     CPU frenada 12x: con `width` la hoja iba a 19 fps EN REPOSO —sin que el
+     alumno tocara nada— y con `transform` va a 60. `scaleX` lo resuelve el
+     compositor: cero maqueta, cero repintado. */
+  transform-origin: left center;
+  transition: transform 1s linear;
 }
 
 /* ── LA REVISIÓN EN UN CARRIL AL LADO (v1.51.612) ────────────────────────────

@@ -374,7 +374,9 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
       const el = root.querySelector('[data-reloj]');
       if (el) el.textContent = texto;
       const barra = root.querySelector('[data-progreso] i');
-      if (barra) barra.style.width = `${Math.max(0, Math.min(100, pct ?? 0))}%`;
+      // `scaleX`, no `width` (ver styles/textCorrection.css): animar el ancho
+      // relayoutea la página entera en cada fotograma mientras corre el reloj.
+      if (barra) barra.style.transform = `scaleX(${Math.max(0, Math.min(100, pct ?? 0)) / 100})`;
     },
   };
 }

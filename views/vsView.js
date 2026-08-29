@@ -336,7 +336,8 @@ export function mountVs(host, a, ctx, opts = {}) {
       const prog = document.getElementById('vs-prog-' + side);
       // Board templates feed the top bar from board completeness (updateBoardLead);
       // item templates from the item cursor.
-      if (prog && !isBoard) prog.style.width = Math.round((st.cursor / session.totalItems) * 100) + '%';
+      // scaleX y no width: animar el ancho relayoutea (ver styles/vs.css).
+      if (prog && !isBoard) prog.style.transform = `scaleX(${st.cursor / session.totalItems})`;
 
       if (!payload) {
         body.innerHTML = `
@@ -363,7 +364,7 @@ export function mountVs(host, a, ctx, opts = {}) {
       const names = session.standings();
       ['left', 'right'].forEach(s => {
         const prog = document.getElementById('vs-prog-' + s);
-        if (prog) prog.style.width = Math.round(boardProgress[s] * 100) + '%';
+        if (prog) prog.style.transform = `scaleX(${boardProgress[s]})`;
       });
       const diff = boardProgress.left - boardProgress.right;     // -1..1, + = left
       if (currentAnim) currentAnim.setProgress(Math.max(-1, Math.min(1, diff)));

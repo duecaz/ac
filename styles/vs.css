@@ -153,7 +153,10 @@
 .vss-score  { font-size: var(--vss-score-size, clamp(1.5rem, 3.8cqh, 4.2rem)); font-weight: 900; color: #fff; font-variant-numeric: tabular-nums; flex-shrink: 0; text-shadow: 0 2px 8px rgba(0,0,0,.3); }
 /* Progress bar inside bar */
 .vs-prog     { height: 4px; border-radius: 999px; background: rgba(255,255,255,.22); margin-top: .3rem; overflow: hidden; }
-.vs-prog-bar { height: 100%; width: 0; background: rgba(255,255,255,.75); transition: width .4s ease; }
+/* Por `transform` y no por `width`: animar el ancho recalcula la maqueta en cada
+   fotograma (misma corrección que la barra de Tildes, medida en pizarra 4K). */
+.vs-prog-bar { height: 100%; width: 100%; transform: scaleX(0); transform-origin: left center;
+               background: rgba(255,255,255,.75); transition: transform .4s ease; }
 /* Centred VS badge — lives in .vss-mid, a fixed-width flex child (not absolute) */
 .vss-mid {
   width: var(--vss-mid, 68px); flex-shrink: 0;
