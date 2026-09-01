@@ -464,7 +464,7 @@ export const BROWSER_SCAN_FILES = [
   'views/admin/liveWords.js', 'views/admin/loadTests.js', 'views/admin/maintenance.js',
   'views/admin/matrix.js', 'views/admin/teachers.js', 'views/admin/templateCapacity.js',
   'views/admin/vsAnimations.js',
-  'views/listView.js', 'views/memoryView.js', 'views/modeSetup.js', 'views/playerView.js',
+  'views/listView.js', 'views/memoryView.js', 'views/antesala.js', 'views/playerView.js',
   'views/reports.js', 'views/startScreen.js', 'views/studentLive.js',
   'views/studentTask.js', 'views/switchTemplate.js', 'views/teamsView.js',
   'views/templateSelector.js', 'views/vsView.js',

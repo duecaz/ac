@@ -15,6 +15,8 @@ import { defaultMaxScore } from '../core/scoring/index.js';
 import { clock } from '../core/clock.js';
 import { toast } from '../core/toast.js';
 import { destinoTrasJugar } from '../core/afterPlay.js';
+import { renderAntesala } from './antesala.js';
+import { applyPlayOptions } from '../core/playOptions.js';
 
 
 export async function renderTask(rootSel, code) {
@@ -76,30 +78,41 @@ export async function renderTask(rootSel, code) {
   const dueHtml = t.due_at
     ? `<p class="text-muted small mb-3">Fecha límite: ${escapeHtml(new Date(t.due_at).toLocaleString())}</p>` : '';
 
-  await new Promise(resolve => {
-    mount(rootSel, html`
-      <div class="text-center py-4" style="max-width:420px;margin:0 auto">
-        <h2 class="mb-2">${escapeHtml(t.title || '')}</h2>
-        <p class="mb-3">Hola, <b>${escapeHtml(nick)}</b></p>
-        <div class="mb-3">${badgeHtml}</div>
-        ${dueHtml}
-        <button id="btn-start" class="btn btn-success btn-lg w-100"><i class="bi bi-play-fill"></i> Comenzar</button>
-      </div>
-    `);
-    on(rootSel, 'click', '#btn-start', resolve);
-  });
-
   // Run SOLO player and record attempt at finish.
-  const activity = t.activity_snap;
+  let activity = t.activity_snap;
   const tpl = getTemplate(activity.template);
+  // Se avisa ANTES de la antesala: presentar una actividad que no se puede
+  // jugar y descubrirlo al pulsar Comenzar es peor que decirlo de entrada.
   if (!tpl) { mount(rootSel, html`<div class="alert alert-danger m-3">Plantilla no soportada: ${escapeHtml(activity.template)}</div>`); return; }
 
-  // EL MARCO DEL ALUMNO (core/gameFrame.js): mismo marco, misma esquina de
-  // pantalla completa y mismo tema que vería en clase. Se monta al COMENZAR
-  // (las pantallas de puerta —PIN, apodo, intentos— son formularios, no juego)
-  // y el player y la pantalla de entrega pintan dentro.
-  const marco = montarMarcoJuego(rootSel, activity);
-  rootSel = marco.stageSel;
+  // LA ANTESALA, la misma que en clase (views/antesala.js). La tarea tenía una
+  // pantalla propia: sin instrucciones —el único modo donde el alumno juega
+  // SOLO, sin nadie a quien preguntar cómo se juega—, sin sonido ni efectos y
+  // sin pantalla completa, así que la hacía en el móvil dentro de un marco
+  // pequeño. Lo suyo (de quién es, qué intento va, hasta cuándo hay plazo) se
+  // pasa como distintivos; lo demás lo pone la antesala.
+  let marcoTarea = null;
+  // Las opciones de PARTIDA que declara la plantilla también aquí: si se
+  // ofrecen en clase y no en la tarea, el alumno juega otra cosa que su
+  // compañero (core/playOptions.js; se aplican a una COPIA, §24).
+  let elecciones = {};
+  await new Promise(resolve => {
+    renderAntesala(rootSel, {
+      activity, title: t.title || activity?.title,
+      subtitle: `Hola, ${nick}`,
+      badgesHtml: `${badgeHtml}${dueHtml}`,
+      playOpts: { T: tpl, activity, choices: elecciones, onChange: (id, v) => { elecciones = { ...elecciones, [id]: v }; } },
+      // EL MARCO DEL ALUMNO (core/gameFrame.js): mismo marco, misma esquina de
+      // pantalla completa y mismo tema que vería en clase. Se monta al COMENZAR
+      // (las pantallas de puerta —PIN, apodo, intentos— son formularios, no
+      // juego) y el player y la pantalla de entrega pintan dentro. Se DEVUELVE
+      // para que la antesala le pida la pantalla completa a él, sin salirse del
+      // gesto que lo pidió.
+      onStart: () => { marcoTarea = montarMarcoJuego(rootSel, activity); resolve(); return marcoTarea.frame; },
+    });
+  });
+  rootSel = marcoTarea.stageSel;
+  activity = applyPlayOptions(tpl, activity, elecciones);
 
   await runPlayer(rootSel, activity, {
     // 'async-tracked' hace DOS cosas en los shells: (1) results.js NO guarda una

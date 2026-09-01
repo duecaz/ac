@@ -36,9 +36,9 @@ const { conMarcoLleno } = await import('./helpers/marcoLleno.mjs');
 // necesita un segundo contexto de navegador y queda para un runner aparte, igual
 // que Tarea. No se silencian: se listan como "no cubierto" al final.
 const DRIVERS = {
-  solo:  { route: (id) => `#/play/${id}`,  start: '.ww-start-go',   ready: '#ww-player-widget *' },
-  vs:    { route: (id) => `#/vs/${id}`,    start: '.ww-mode-start', ready: '.vs-panel, .vs-arena, .vs-board' },
-  teams: { route: (id) => `#/teams/${id}`, start: '.ww-mode-start', ready: '.teams-arena, .memo-arena, .teams-card' },
+  solo:  { route: (id) => `#/play/${id}`,  start: '[data-ww-start]',   ready: '#ww-player-widget *' },
+  vs:    { route: (id) => `#/vs/${id}`,    start: '[data-ww-start]', ready: '.vs-panel, .vs-arena, .vs-board' },
+  teams: { route: (id) => `#/teams/${id}`, start: '[data-ww-start]', ready: '.teams-arena, .memo-arena, .teams-card' },
   // El host navega solo de #/launch/:id a #/host/:code al crear la sala; no hay
   // botón "empezar" que pulsar hasta que entra un alumno, así que basta con que
   // el lobby aparezca (es donde monta la vista y arrancan sus relojes).
@@ -248,6 +248,7 @@ const espejoBad = []; // el marcador del duelo deja de ser un espejo
 const bloqueBad = []; // la cabecera de un bloque se dispersa de su pieza
 const origenBad = [];   // textos que deberían medir lo mismo y salen de fórmulas distintas
 const origenVisto = []; // casos en los que la red del origen SÍ pudo medir
+const antesalas = [];    // LA ANTESALA ES UNA: un control de arranque y las instrucciones a la vista
 const presupuesto = [];
 const roles = [];        // LOS CUATRO ROLES de la diagramación (edu-hud · edu-topbar · edu-sec · edu-send)
 const legibilidad = [];   // §29 · informe de tamaño (no veredicto: ver el porqué abajo)
@@ -270,6 +271,20 @@ for (const t of seeded) {
       if (drv.start) {
         // 1) La pantalla de arranque (inicio/setup) aparece.
         await page.waitForSelector(drv.start, { timeout: 9000 });
+        // LA ANTESALA ES UNA (dueño 2026-09-01). Se mide con el DOM montado, no
+        // leyendo el código: UN control de arranque —el duelo y los equipos
+        // tenían dos, «¡Empezar!» y «Pantalla completa», y solo el segundo servía
+        // para el aula— y las INSTRUCCIONES a la vista, que hasta hoy solo veía
+        // el modo Individual.
+        const ant = await page.evaluate(() => {
+          const vis = (e) => { const c = getComputedStyle(e); return c.display !== 'none' && c.visibility !== 'hidden'; };
+          const arranques = [...document.querySelectorAll('[data-ww-start]')].filter(vis);
+          const texto = document.querySelector('.ww-antesala .ww-start-instructions');
+          return { arranques: arranques.length, instrucciones: !!(texto && texto.textContent.trim()) };
+        });
+        if (ant.arranques !== 1) { status = 'error'; detail = `la antesala tiene ${ant.arranques} controles de arranque (debe ser 1)`; }
+        else if (!ant.instrucciones) { status = 'error'; detail = 'la antesala no dice cómo se juega (sin instrucciones)'; }
+        antesalas.push({ label: t.label, mode, ...ant });
         // 2) Empezar → el juego se monta de verdad.
         await page.click(drv.start);
       }
@@ -1110,6 +1125,13 @@ const embedBad = embed.filter(e => !e.ok);
 if (embed.length) {
   console.log('\nEMBED (la página que el profe pega en su blog)\n');
   for (const e of embed) console.log(`  ${e.ok ? '✅' : '❌'} ${e.caso}${e.detalle && !e.ok ? ' — ' + e.detalle : ''}`);
+}
+
+if (antesalas.length) {
+  const mal = antesalas.filter(a => a.arranques !== 1 || !a.instrucciones);
+  console.log('\nLA ANTESALA (una sola para los cuatro modos)\n');
+  console.log(`  ${mal.length ? '❌' : '✅'} ${antesalas.length} antesalas: un control de arranque y las instrucciones a la vista`);
+  for (const a of mal) console.log(`     ❌ ${a.label} · ${a.mode} — arranques:${a.arranques} · instrucciones:${a.instrucciones ? 'sí' : 'NO'}`);
 }
 
 // Solo para pintar el ❌ del informe: un fallo de roles ya marcó la combinación

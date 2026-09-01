@@ -247,8 +247,17 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   (§23). Vigilado ejecutando el cableado en `tests/menu.test.mjs`.
 
 ## Estándares transversales (no romper)
-- **Pantalla de inicio** (`views/startScreen.js`): todo modo Individual pasa por ella (título +
-  instrucciones + ajustes + Iniciar→fullscreen). El ejercicio queda oculto hasta Iniciar.
+- **LA ANTESALA ES UNA** (`views/antesala.js`): todo lo de «antes de jugar» —Individual, VS,
+  Equipos, Memoria, Lista y Tarea— pasa por la misma pantalla. Había CUATRO y cada una decidía
+  por su cuenta: **UN** control de arranque (`data-ww-start`) y **siempre** pantalla completa
+  (la elección no es del que juega: en clase se proyecta, y salir es Esc); las **instrucciones**
+  a la vista (`meta.instructions` es obligatorio y lo leía 1 modo de 4); el **ambiente**
+  (sonido·efectos + lo que añada el modo) como pastillas iguales en todas. Si el marco nace al
+  arrancar (la tarea), se monta y se pide la pantalla completa después, en el mismo gesto.
+  Cada modo aporta SOLO su cuerpo (avatares, nº de equipos, intentos). Lo vigilan
+  `tests/antesala.test.mjs` (código) y `matrix-smoke` (DOM montado, cada plantilla × modo).
+  OJO: una utilidad de Bootstrap (`p-2`) en la raíz del juego lleva `!important` y pisa las
+  reglas del propio juego (tapó la reserva del HUD) — el relleno va en la hoja de la plantilla.
 - **Registro de plantillas y arranque**: `core/registerTemplates.js` (las 13, punto único) +
   `core/boot.js` (sonidos/efectos al bus, versión, mute). Las 3 `main.*.js` NO repiten ese wiring.
 - **Gama baja** (`core/perf.js`): `ww-lite` en `<html>` si ≤4 núcleos o ≤2GB → sin bucles de

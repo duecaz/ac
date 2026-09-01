@@ -93,7 +93,7 @@ const res = {};
 for (const skin of TEMAS) {
   for (const [modo, ruta, boton, ready] of [
       ['solo', `#/play/op_${skin}`, '.ww-start-go', '.ww-opt'],
-      ['vs', `#/vs/op_${skin}`, '.ww-mode-start', '.rq-opt']]) {
+      ['vs', `#/vs/op_${skin}`, '[data-ww-start]', '.rq-opt']]) {
     await page.evaluate(() => { location.hash = '#/mine'; });
     await page.evaluate(h => { location.hash = h; }, ruta);
     await page.waitForSelector(boton, { timeout: 9000 });

@@ -158,7 +158,7 @@ completo está en **`docs/modos-de-juego.md`** y el gateo en **`core/modes.js`**
 
 `core/registry.js` valida esto al arrancar y **falla ruidosamente** si declaras
 `modes.live` sin `getRoundPayload`/`scoreSubmission`. No escribas pantallas de
-modo propias: VS/Equipos/Memoria usan el andamiaje común `views/modeSetup.js`.
+modo propias: VS/Equipos/Memoria usan la antesala común `views/antesala.js`.
 
 ## 7. Listo
 

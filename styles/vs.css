@@ -277,7 +277,16 @@
      enunciado y el visor salen de ahí (ver `--math-cifra` en styles/math.css).
      En VS manda el ancho del panel (`cqw`), con `cqh` de tope para que la
      cabecera no se coma el teclado. */
-  .vs-body .ww-keypad-round   { gap: var(--math-gap, 2cqw); --math-cifra: clamp(.6rem, 11cqw, 12cqh); }
+  /* LA CIFRA YA NO SE REDECLARA AQUÍ (2026-09-01). Esta línea ponía
+     `clamp(.6rem, 11cqw, 12cqh)`: el 11 % del ancho del PANEL, sin saber que en
+     esa fila la cabecera lleva la operación Y el hueco de respuesta. En la
+     ventana casi cuadrada eso daban 45 px, la cabecera se partía en dos líneas y
+     esa segunda línea se comía el alto reservado al teclado (teclas 74×57,
+     proporción 1,30 — lo cazó la matriz al empezar a lanzar SIEMPRE a pantalla
+     completa). La fórmula única de styles/math.css ya mira el ancho del BLOQUE,
+     que es donde el texto tiene que caber; el modo solo dice su divisor
+     (`--math-cifra-div`, abajo), como ya decía cuánto vale allí una cabecera. */
+  .vs-body .ww-keypad-round   { gap: var(--math-gap, 2cqw); }
   .vs-body .ww-keypad         { gap: var(--key-gap, 1.8cqw); }
 }
 
@@ -292,7 +301,14 @@
    del teclado restando CERO de cabecera, el teclado no se topaba y el flex lo
    aplastaba — teclas de 128×101 (proporción 1,27). Es el reparto del alto del
    bloque, no un ajuste de pantalla estrecha: va fuera, para las dos. */
-.vs-body { --math-head-min: min(28cqw, 18cqh); }
+/* Y LA CIFRA, UN PUNTO MENOR QUE EN LA PANTALLA ENTERA. La fila de la cabecera
+   lleva la operación y el hueco de respuesta, y aquí tiene la MITAD de ancho:
+   con el divisor de la pantalla completa (10) la fila no cabía y `flex-wrap` la
+   partía en dos, robándole al teclado el alto que el bloque le había reservado.
+   Medido en las seis formas de ventana del duelo: con 12, la cabecera cabe en
+   una línea y la tecla queda entre 1,00 y 1,03 (con 10 llegaba a 1,30). Es UN
+   número, no una fórmula copiada: la fórmula vive en styles/math.css. */
+.vs-body { --math-head-min: min(28cqw, 18cqh); --math-cifra-div: 12; }
 
 /* MARCADOR EN VERTICAL — RESUELTO, y cómo (§3, medido)
    Este comentario explicaba una deuda que ya no existe, y encima se quedó SIN
@@ -455,9 +471,9 @@
 .vs-av-thumb { width: 100%; height: 100%; object-fit: cover; }
 .vs-av-btn   { flex-shrink: 0; }
 
-.vs-fx-panel { max-width: 420px; text-align: left; border: 1px solid #e9ecef; border-radius: .6rem; background: #f8f9fa; }
-.vs-fx-panel > summary { cursor: pointer; padding: .55rem .9rem; font-weight: 600; list-style: none; }
-.vs-fx-panel > summary::-webkit-details-marker { display: none; }
+/* El desplegable «Sonido y efectos» del duelo SE BORRÓ (§30): su ambiente son
+   pastillas en la antesala, como en los demás modos. La rejilla sigue viva —la
+   usa el editor (core/editorModes.js), que sí es un formulario. */
 .vs-fx-grid  { padding: .2rem .9rem .7rem; display: flex; flex-direction: column; gap: .35rem; }
 .vs-fx-row   { display: flex; align-items: center; gap: .7rem; cursor: pointer; margin: 0; }
 .vs-fx-label { font-weight: 600; line-height: 1.15; }

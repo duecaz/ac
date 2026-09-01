@@ -94,8 +94,8 @@ try {
     .catch(() => fail('el enlace de la tarea no lleva a la pantalla de nombre'));
   await alumno.type('#f-nick', 'Vega', { delay: 20 });
   await alumno.click('#btn-go');
-  await alumno.waitForSelector('#btn-start', { timeout: 9000 });
-  await alumno.click('#btn-start');
+  await alumno.waitForSelector('[data-ww-start]', { timeout: 9000 });
+  await alumno.click('[data-ww-start]');
   ok('el alumno entra por el PIN, pone su nombre y arranca la tarea');
 
   // Juega el quiz DE VERDAD: pulsa la opción correcta de cada pregunta (la
@@ -119,7 +119,7 @@ try {
   await alumno.waitForSelector('#app .alert', { timeout: 9000 })
     .catch(() => fail('con el tope agotado, no aparece el aviso del gate'));
   const gateTxt = (await alumno.locator('#app').innerText()).replace(/\s+/g, ' ');
-  const hayStart = await alumno.locator('#btn-start').count();
+  const hayStart = await alumno.locator('[data-ww-start]').count();
   if (hayStart) fail('con el tope agotado, al alumno se le sigue ofreciendo "Comenzar"');
   if (!/intento/i.test(gateTxt)) fail(`el gate no explica por qué no puede entrar: "${gateTxt.slice(0, 160)}"`);
   ok('el 2º intento se cierra en la puerta y se le DICE el porqué (ley: avisar antes)');

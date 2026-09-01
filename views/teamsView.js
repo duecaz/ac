@@ -18,7 +18,7 @@ import { createSession, FORMATS } from '../kernel/session/engine.js';
 import { sessionItems } from '../kernel/content/sessionItems.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { applyMarks } from '../core/textMarks.js';
-import { renderModeSetup } from './modeSetup.js';
+import { renderAntesala } from './antesala.js';
 import { applyPlayOptions } from '../core/playOptions.js';
 import { teamColor, teamNameInputsHtml, teamsScoreboardHtml, teamsPodiumHtml } from '../core/teams.js';
 import { canAutoScoreRound } from '../core/templateCapability.js';
@@ -74,10 +74,11 @@ export function mountTeams(host, a, ctx, opts = {}) {
       </div>
       <div id="teams-hint" class="mt-2"></div>`;
 
-    renderModeSetup(host, {
+    renderAntesala(host, {
+      activity: a,
       icon: 'bi-people-fill', color: 'success', title: 'Modo Equipos',
       subtitle: `${a.title} · ${total} preguntas · por turnos`,
-      body, backHref,
+      bodyHtml: body, backHref,
       playOpts: { T, activity: a, choices: playChoices, onChange: (id, v) => { playChoices = { ...playChoices, [id]: v }; } },
       onMount: () => {
         renderNameInputs();

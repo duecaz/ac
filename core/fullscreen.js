@@ -14,7 +14,10 @@ export function toggleFullscreen(el) {
   return Promise.resolve(p).catch(() => {});
 }
 
-function isFullscreen() {
+/** ¿Hay algo a pantalla completa? Exportada porque el prefijo de WebKit no debe
+ *  saberlo nadie más: la antesala lo había vuelto a escribir a mano y así el
+ *  guard y este módulo podían discrepar el día que uno de los dos cambiara. */
+export function isFullscreen() {
   return !!(document.fullscreenElement || document.webkitFullscreenElement);
 }
 

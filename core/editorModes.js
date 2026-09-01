@@ -4,7 +4,8 @@
 // needs and writes to the SAME fields the play views already read:
 //
 //   VS      → presentation.vsAnimation / vsAnimationSrc (animation) and
-//             presentation.vsFeedback {sound,flash,confetti} (per-answer fx).
+//             presentation.vsFeedback {flash,confetti} (per-answer fx; el sonido
+//             es del silencio global, core/sounds.js — no tiene casilla aquí).
 //   Equipos → presentation.teamsCount (2-4) + presentation.teamsScoring (auto|judge)
 //             used as the SETUP defaults in teamsView / memoryView.
 //   Tarea   → presentation.taskMaxAttempts (default intentos al crear la tarea).
@@ -21,8 +22,12 @@ let _editorPreviewAnims = [];
 let _editorPreviewGen = 0;
 import { getTemplate } from './registry.js';
 import { canAutoScoreRound } from './templateCapability.js';
-
-const VS_FX_DEFAULTS = { sound: true, flash: true, confetti: false };
+// El ambiente del duelo tiene UN dueño (§21b): aquí se lee y se escribe por sus
+// métodos. Este módulo llevaba su propia copia de los defectos y su propio
+// `!vsAnimationOff`, que decía «Animación: sí» en Tildes/Comas mientras el duelo
+// la apagaba sola — el panel prometía lo contrario de lo que veía la clase.
+import { vsFeedback, setVsFeedback, vsAnimacionOn, setVsAnimacion } from './presentation.js';
+import { esHojaDeTexto } from './contentModels/textCorrection.js';
 
 const fxRow = (key, label, hint, on) => `
   <label class="vs-fx-row" title="${escapeHtml(hint)}">
@@ -34,10 +39,10 @@ const fxRow = (key, label, hint, on) => `
 
 function vsBlock(a) {
   const cur = a.presentation?.vsAnimation || DEFAULT_VS_ANIMATION;
-  const animOn = !a.presentation?.vsAnimationOff;   // por defecto: cuerda activa
+  const animOn = vsAnimacionOn(a, { textTight: esHojaDeTexto(a) });   // lo mismo que verá el duelo
   const compact = !!a.presentation?.vsAnimCompact;
   const curSrc = a.presentation?.vsAnimationSrc || '';
-  const fx = { ...VS_FX_DEFAULTS, ...(a.presentation?.vsFeedback || {}) };
+  const fx = vsFeedback(a);
   const anims = listVsAnimations();
   const needsSrcNow = anims.find(v => v.id === cur)?.needsSrc;
   return `
@@ -76,7 +81,10 @@ function vsBlock(a) {
       </div>
       <label class="form-label small text-muted">Feedback en cada respuesta</label>
       <div class="vs-fx-grid">
-        ${fxRow('sound', 'Sonido', 'Un sonido corto al acertar o fallar.', fx.sound)}
+        <!-- El SONIDO no está: su dueño es el silencio global (core/sounds.js),
+             que se enciende en la antesala de cualquier modo. Aquí había una
+             SEGUNDA casilla para lo mismo (§21b) y ganaba la que el profe no
+             había tocado. Retirada 2026-09-01. -->
         ${fxRow('flash', 'Destello de color', 'Fondo verde al acertar, rojo al fallar.', fx.flash)}
         ${fxRow('confetti', 'Confeti por pregunta', 'Lluvia de confeti en cada acierto (desactivado por defecto).', fx.confetti)}
       </div>
@@ -185,7 +193,7 @@ export function wireModesTab(root, a, onChange) {
   });
   // VS — central animation on/off (default on = "cuerda").
   on(root, 'change', '.vsanim-toggle', (_, el) => {
-    pres().vsAnimationOff = !el.checked;
+    setVsAnimacion(a, el.checked);
     onChange(a);
     root.querySelector('.vsanim-list')?.classList.toggle('vsanim-list-off', !el.checked);
     // Sin animación no hay nada que compactar: el control se esconde con ella.
@@ -205,7 +213,7 @@ export function wireModesTab(root, a, onChange) {
   on(root, 'input', '#vsanim-src', (e) => { pres().vsAnimationSrc = e.target.value.trim(); onChange(a); });
   // VS — feedback toggles.
   on(root, 'change', '.vs-fx', (_, el) => {
-    pres().vsFeedback = { ...VS_FX_DEFAULTS, ...(a.presentation?.vsFeedback || {}), [el.dataset.fx]: el.checked };
+    setVsFeedback(a, el.dataset.fx, el.checked);
     onChange(a);
   });
 

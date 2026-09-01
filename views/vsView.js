@@ -17,6 +17,8 @@ import { on } from '../core/events.js';
 import { save } from '../core/storage.js';
 import { lsGet, lsSet } from '../core/ls.js';
 import { getTemplate } from '../core/registry.js';
+import { vsFeedback, setVsFeedback, vsAnimacionOn, setVsAnimacion } from '../core/presentation.js';
+import { esHojaDeTexto } from '../core/contentModels/textCorrection.js';
 import { createSession, isVsCompatible, FORMATS } from '../kernel/session/engine.js';
 import { sessionItems } from '../kernel/content/sessionItems.js';
 import { supportsLoop } from '../core/liveLoops.js';
@@ -26,7 +28,7 @@ import { duelSummaryHtml } from '../core/duelSummary.js';
 import { getVsAnimation, DEFAULT_VS_ANIMATION } from '../core/vsAnimations.js';
 import { play as playSound } from '../core/sounds.js';
 import { answerConfetti } from '../core/effects.js';
-import { renderModeSetup } from './modeSetup.js';
+import { renderAntesala } from './antesala.js';
 import { applyPlayOptions } from '../core/playOptions.js';
 import { FLASH_MS, WIN_HOLD_MS, CONFETTI_ENCORE_MS } from '../core/timings.js';
 import { getSkin } from '../core/skins.js';
@@ -35,10 +37,11 @@ import { uploadMedia } from '../core/upload.js';
 const AVATAR_MAX_BYTES = 150 * 1024; // tope del avatar (lo aplica uploadMedia, comprimiendo antes)
 const AVATAR_LADO_MAX = 512;         // px del lado mayor: se ve en una pastilla, no a pantalla
 
-// Per-answer feedback in VS, configurable from the setup panel. Default: the
-// quiet, focused combo the teacher asked for — colour flash + a short sound,
-// and NO confetti popping on every question (that reads as noise on a duel).
-const FX_DEFAULTS = { sound: true, confetti: false, flash: true };
+// El feedback por respuesta y la animación central son AMBIENTE del duelo, y su
+// dueño es `core/presentation.js` (§21b): esta vista los LEE y los ESCRIBE por
+// sus métodos, nunca con constantes propias. Tenía una copia de los defectos
+// —y el editor otra—, así que retirar el interruptor de sonido pidió tocar los
+// dos ficheros y el defecto de la animación no coincidía entre ambos.
 
 // Avatar helpers — stored in localStorage keyed by activity id so they never
 // bloat the activity JSON and survive across sessions on the same device.
@@ -65,17 +68,17 @@ export function mountVs(host, a, ctx, opts = {}) {
     return { dispose() {} };
   }
 
-  const fxCfg = () => ({ ...FX_DEFAULTS, ...(a.presentation?.vsFeedback || {}) });
+  const fxCfg = () => vsFeedback(a);
   // ¿SE VE LA ANIMACIÓN CENTRAL? UN solo sitio lo decide, porque lo preguntan
-  // dos: el interruptor de la antesala y el montaje del duelo. Si cada uno lo
-  // calculara por su cuenta, el interruptor podría salir encendido y la
-  // animación no aparecer (o al revés) — mentirle al profe sobre lo que va a
-  // ver es peor que no ofrecer el interruptor.
-  // Las hojas de Tildes/Comas la apagan SOLAS: su texto necesita el ancho. Por
-  // eso el defecto no es `false`, es lo que pida la plantilla; el profe puede
-  // encenderla igualmente, pero entonces es su decisión y no una sorpresa.
-  const animOn = () => !(a.presentation?.vsAnimationOff
-    ?? (getTemplate(a.template)?.meta?.contentModel === 'textCorrection'));
+  // TRES: el interruptor de la antesala, el montaje del duelo y el panel del
+  // editor. Si cada uno lo calculara por su cuenta, el interruptor podría salir
+  // encendido y la animación no aparecer (o al revés) — mentirle al profe sobre
+  // lo que va a ver es peor que no ofrecer el interruptor. Y pasaba: el editor
+  // usaba `!vsAnimationOff` a secas y decía «sí» en Tildes/Comas, donde el duelo
+  // la apaga sola porque su texto necesita el ancho.
+  // Quién es «una hoja de texto» lo sabe la PLANTILLA; el dueño del ajuste
+  // (core/presentation.js) solo recibe ese dato.
+  const animOn = () => vsAnimacionOn(a, { textTight: esHojaDeTexto(a) });
   let currentAnim = null; // the running central animation (destroyed on dispose)
   // Ley de vista §23: los setTimeout de RITMO (destello, celebración, confeti)
   // se registran en el lifecycle — un cambio de modo o de ruta a mitad de
@@ -101,25 +104,24 @@ export function mountVs(host, a, ctx, opts = {}) {
   function renderSetup() {
     if (currentAnim) { currentAnim.destroy(); currentAnim = null; }
     const fx = fxCfg();
+    // EL AMBIENTE DEL DUELO son PASTILLAS, como en las demás antesalas (dueño
+    // 2026-09-01: «VS tiene bastante más opciones»). Eran interruptores de
+    // Bootstrap con su explicación debajo, dentro de un desplegable propio: el
+    // mismo ajuste que en Individual es una pastilla, aquí pedía abrir un panel
+    // y leer cuatro filas. La explicación viaja en el `title`; lo que cambia el
+    // JUEGO (no el ambiente) sigue arriba, en las opciones de partida.
     // El interruptor de la animación va INVERTIDO respecto al dato guardado
     // (`vsAnimationOff`): al profe se le pregunta si la QUIERE, no si la apaga.
     // Su defecto no es fijo — lo decide la plantilla si su texto es apretado
     // (`textTight`), y por eso se lee igual que en el duelo, no con un `?? false`.
-    const anim = (label, hint) => `
-      <label class="vs-fx-row" title="${escapeHtml(hint)}">
-        <span class="form-check form-switch m-0">
-          <input class="form-check-input vs-anim" type="checkbox" role="switch" ${animOn() ? 'checked' : ''}>
-        </span>
-        <span class="vs-fx-label">${label}<small class="d-block text-muted">${escapeHtml(hint)}</small></span>
-      </label>`;
-
-    const sw = (key, label, hint) => `
-      <label class="vs-fx-row" title="${escapeHtml(hint)}">
-        <span class="form-check form-switch m-0">
-          <input class="form-check-input vs-fx" type="checkbox" role="switch" data-fx="${key}" ${fx[key] ? 'checked' : ''}>
-        </span>
-        <span class="vs-fx-label">${label}<small class="d-block text-muted">${escapeHtml(hint)}</small></span>
-      </label>`;
+    const ambienteExtra = [
+      { id: 'flash', icon: 'bi-lightning-charge-fill', label: 'Destello', on: !!fx.flash,
+        hint: 'Fondo verde al acertar, rojo al fallar.' },
+      { id: 'confetti', icon: 'bi-balloon-heart-fill', label: 'Confeti', on: !!fx.confetti,
+        hint: 'Lluvia de confeti en cada acierto (desactivado por defecto).' },
+      { id: 'anim', icon: 'bi-easel-fill', label: 'Animación', on: animOn(),
+        hint: 'El dibujo entre los dos paneles. Apagada, cada jugador gana la mitad del ancho.' },
+    ];
 
     const avLeft  = loadAvatar(a.id, 'left');
     const avRight = loadAvatar(a.id, 'right');
@@ -144,47 +146,30 @@ export function mountVs(host, a, ctx, opts = {}) {
       <div class="row justify-content-center g-3 mb-3" style="max-width:520px;margin:auto">
         ${avatarCol('left',  'Equipo izquierda', 'Alumno 1', avLeft)}
         ${avatarCol('right', 'Equipo derecha',   'Alumno 2', avRight)}
-      </div>
-      <details class="vs-fx-panel mx-auto mt-3">
-        <summary><i class="bi bi-sliders"></i> Sonido y efectos</summary>
-        <div class="vs-fx-grid">
-          ${sw('sound',    'Sonido',             'Un sonido corto al acertar o fallar.')}
-          ${sw('flash',    'Destello de color',  'Fondo verde al acertar, rojo al fallar.')}
-          ${sw('confetti', 'Confeti por pregunta','Lluvia de confeti en cada acierto (desactivado por defecto).')}
-          <!-- LA ANIMACIÓN, DECISIÓN DEL DOCENTE Y EN LA ANTESALA (dueño,
-               2026-08-22). El dibujo central se lleva la mitad del ancho, así que
-               los dos paneles se quedan con un cuarto cada uno: en una ventana
-               de 908px eso son 209px por alumno. Apagarla es la diferencia entre
-               una calculadora cómoda y una estrecha, y esa decisión la toma quien
-               monta la clase — no estaba en la antesala, solo escondida en el
-               editor. Se guarda en la actividad como los otros tres. -->
-          ${anim('Animación central', 'El dibujo entre los dos paneles. Apagada, cada jugador gana la mitad del ancho.')}
-        </div>
-      </details>`;
+      </div>`;
 
-    renderModeSetup(host, {
+    renderAntesala(host, {
+      activity: a,
       icon: 'bi-fire', color: 'danger', title: 'Duelo VS',
       subtitle: `${a.title} · ${sessionItems(a).length} preguntas`,
-      body, backHref,
+      bodyHtml: body, backHref,
+      // LA ANIMACIÓN, DECISIÓN DEL DOCENTE Y EN LA ANTESALA (dueño, 2026-08-22).
+      // El dibujo central se lleva la mitad del ancho, así que los dos paneles
+      // se quedan con un cuarto cada uno: en una ventana de 908px eso son 209px
+      // por alumno. Apagarla es la diferencia entre una calculadora cómoda y una
+      // estrecha, y esa decisión la toma quien monta la clase.
+      ambienteExtra,
+      onAmbiente: (id, encendido) => {
+        save(id === 'anim' ? setVsAnimacion(a, encendido) : setVsFeedback(a, id, encendido));
+      },
       // Opciones de partida de la plantilla (p.ej. Pelotas: tiempo o
       // movimientos). Se aplican a la copia de juego al arrancar, no a la
       // actividad guardada.
       playOpts: { T, activity: a, choices: playChoices, onChange: (id, v) => { playChoices = { ...playChoices, [id]: v }; } },
       note: 'Cada jugador responde en su lado. Gana quien sume más puntos.',
       onMount: () => {
-        // Feedback toggles persist per-activity (presentation.vsFeedback).
-        on(host, 'change', '.vs-fx', (_, el) => {
-          if (!a.presentation) a.presentation = {};
-          a.presentation.vsFeedback = { ...fxCfg(), [el.dataset.fx]: el.checked };
-          save(a);
-        });
-
-        on(host, 'change', '.vs-anim', (_, el) => {
-          if (!a.presentation) a.presentation = {};
-          a.presentation.vsAnimationOff = !el.checked;
-          save(a);
-        });
-
+        // Los interruptores de ambiente los cablea la antesala (onAmbiente):
+        // aquí solo queda lo que es del duelo y de nadie más — los avatares.
         // Avatar upload — validate size, read as data-URL, cache in localStorage.
         // DELEGADO con on() (idempotente por raíz+evento+selector): renderSetup se
         // re-ejecuta en "Otra vez" y el addEventListener directo apilaba un listener
@@ -397,7 +382,7 @@ export function mountVs(host, a, ctx, opts = {}) {
           flashing[side] = true;
           const body = document.getElementById('vs-body-' + side);
           if (fx.flash && body) body.classList.add('vs-flash-no');
-          if (fx.sound) playSound('wrong');
+          playSound('wrong');
           life.setTimeout(() => {
             flashing[side] = false;
             if (body) body.classList.remove('vs-flash-no');
@@ -417,7 +402,7 @@ export function mountVs(host, a, ctx, opts = {}) {
       // and the central animation's reaction — but no per-question confetti
       // unless the teacher turned it on. Each piece honours its own toggle.
       if (fx.flash && body) body.classList.add(r.correct ? 'vs-flash-ok' : 'vs-flash-no');
-      if (fx.sound) playSound(r.correct ? 'correct' : 'wrong');
+      playSound(r.correct ? 'correct' : 'wrong');
       updateCenter();
       // The chosen animation reacts to the scorer; its sound (above) is what
       // ties feedback to the animation rather than a detached jingle.

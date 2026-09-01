@@ -91,8 +91,17 @@
      por ser el más conservador de los tres (el 12 llegó a estar escrito en este
      comentario cuando el código ya ponía 10 — un comentario que no cuadra con su
      línea es peor que no tenerlo). Al ir en la MEDIDA MADRE, las teclas encogen
-     con ella y los tres textos siguen siendo el mismo tamaño. */
-  --math-cifra: max(1rem, min(11cqmin, calc(var(--math-ancho) / 10)));
+     con ella y los tres textos siguen siendo el mismo tamaño.
+     EL DIVISOR ES UN TOKEN, porque cuánto texto cabe en la fila depende del
+     PANEL: en la pantalla entera el 10 está medido, pero en medio panel (el
+     duelo) la misma fila lleva la operación Y el hueco de respuesta en la mitad
+     de ancho. Se descubrió al pasar a lanzar SIEMPRE a pantalla completa
+     (2026-09-01): en una ventana casi cuadrada la cabecera ya no cabía en una
+     línea, `flex-wrap` la partía en dos, y esa segunda línea se comía el alto
+     que el bloque había reservado al teclado — teclas de 74×57 (proporción
+     1,30) que la matriz cazó. El modo dice su divisor igual que ya dice cuánto
+     vale allí una cabecera (`--math-head-min`); la fórmula sigue siendo UNA. */
+  --math-cifra: max(1rem, min(11cqmin, calc(var(--math-ancho) / var(--math-cifra-div, 10))));
 }
 
 /* «2 × 2 =» Y EL RESULTADO, EN LA MISMA LÍNEA (dueño, 2026-08-17, con captura):

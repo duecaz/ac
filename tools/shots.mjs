@@ -142,8 +142,8 @@ for (const size of SIZES) {
         await page.evaluate(() => { location.hash = '#/mine'; window.__wwSemilla?.(); });
         await page.waitForTimeout(120);
         await page.evaluate(h => { location.hash = h; }, mode.route(`shot_${pl.id}_${skin}`));
-        await page.waitForSelector('.ww-mode-start', { timeout: 9000 });
-        await page.click('.ww-mode-start');
+        await page.waitForSelector('[data-ww-start]', { timeout: 9000 });
+        await page.click('[data-ww-start]');
         await page.waitForSelector(mode.ready, { timeout: 9000 });
         await page.waitForTimeout(700);        // que el fitLayout haga su pase
         await page.screenshot({ path: join(OUT, name) });

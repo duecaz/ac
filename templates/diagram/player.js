@@ -212,7 +212,12 @@ function pinHtml(p) {
 function buildLayout(leftLabels, rightLabels, pins, image, activity, total) {
   // Andamio de regiones (styles/scaffold.css): rieles start/end que refluyen de
   // columnas laterales (ancho) a filas arriba/abajo (alto), con el escenario en medio.
-  return `<div class="ww-scaffold dg-play p-2">
+  // SIN `p-2`: las utilidades de Bootstrap llevan `!important`, así que ese
+  // relleno ganaba a CUALQUIER regla del juego — incluida la reserva que el HUD
+  // pide cuando el reloj centrado está a la vista, y por eso el chip volvía a
+  // caer sobre «Nariz»/«Ojo» en vertical (medido). El relleno vive ahora en
+  // styles/diagram.css, donde se puede razonar con él.
+  return `<div class="ww-scaffold dg-play">
   ${hudHtml({ pagina: `0 / ${total}` })}
   <div class="edu-sec edu-sec--campo ww-field dg-field">
     <div class="ww-rail dg-rail" data-rail="start">${leftLabels.map(labelHtml).join('')}</div>

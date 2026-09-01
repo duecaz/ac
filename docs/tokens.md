@@ -9,7 +9,7 @@
 Los tokens son la INTERFAZ entre el tema y el juego (ley §3: el skin
 cambia tokens, la actividad los consume). Este es el contrato completo.
 
-**206 tokens** en 17 familias.
+**207 tokens** en 17 familias.
 
 ## `--bs-*` (23)
 
@@ -148,12 +148,13 @@ cambia tokens, la actividad los consume). Este es el contrato completo.
 |---|---|---|
 | `--keypad-top` | themes/tv-show/skin.css | styles/math.css |
 
-## `--math-*` (23)
+## `--math-*` (24)
 
 | Token | Lo DECLARA | Lo CONSUME |
 |---|---|---|
 | `--math-ancho` | styles/math.css | styles/math.css |
-| `--math-cifra` | styles/math.css · styles/teams.css · styles/vs.css | styles/math.css |
+| `--math-cifra` | styles/math.css · styles/teams.css | styles/math.css |
+| `--math-cifra-div` | styles/vs.css | styles/math.css |
 | `--math-eq-color` | themes/arcade/skin.css · themes/tv-show/skin.css | styles/math.css |
 | `--math-eq-opacity` | — *(solo respaldo)* | styles/math.css |
 | `--math-font` | — *(solo respaldo)* | styles/math.css |

@@ -428,7 +428,11 @@
    y las barras que ALOJAN el reloj (Crucigrama, Pelotas) tampoco. El tick
    inicial pinta antes del primer fotograma (deadlineTicker llama onTick al
    arrancar), así que no hay salto de maquetación. */
-:where(:has(> .edu-hud .edu-hud__zona--centro .edu-hud__chip:not([hidden]))) {
+/* SIN `:where()`: envolverlo dejaba la regla en especificidad CERO y cualquier
+   clase de relleno de Bootstrap en la raíz del juego (el `p-2` del Diagrama) la
+   pisaba — el carril reaparecía sin reserva y el chip volvía sobre la etiqueta
+   «Cabeza». Lo cazó la matriz en vertical. */
+:has(> .edu-hud .edu-hud__zona--centro .edu-hud__chip:not([hidden])) {
   padding-top: max(30px, 6.5cqmin);
 }
 .ww-player .ww-prow .ww-q { flex: 1 1 auto; text-align: center; }
@@ -580,15 +584,11 @@ body.bg-plated .ww-player .ww-q {
   font-weight: 600;
 }
 
-/* Shared SETUP scaffold (views/modeSetup.js) — ONE look for every mode's setup
-   so they never drift. Lives inside the stage when embedded. */
-.ww-mode-setup { padding: 1.5rem 1rem; }
-.ww-mode-setup .ww-mode-setup-body { margin: 0 auto; }
-.ww-mode-setup .form-control { max-width: 100%; }
-
-/* Pantalla de INICIO estándar (views/startScreen.js). Vive dentro del escenario
-   (#ww-player-widget, container-type:size) → escala con el marco/pantalla
-   completa usando unidades de contenedor. Oculta el ejercicio hasta "Iniciar". */
+/* LA ANTESALA (views/antesala.js) — la MISMA para los cuatro modos desde
+   2026-09-01. Vive dentro del escenario (#ww-player-widget, container-type:size)
+   → escala con el marco/pantalla completa usando unidades de contenedor. Oculta
+   el ejercicio hasta arrancar. Antes había dos cajas: esta y el andamio de
+   setup de los modos embebidos (`ww-mode-setup`, chrome de Bootstrap). */
 .ww-start {
   width: 100%; min-height: 100%;
   display: flex; align-items: center; justify-content: center;
@@ -598,12 +598,24 @@ body.bg-plated .ww-player .ww-q {
   width: min(640px, 100%); text-align: center;
   display: flex; flex-direction: column; align-items: center; gap: 2.2cqmin;
 }
+/* El color del icono lo pone el MODO (`text-success`, `text-danger`…): el fondo
+   es neutro para que funcione con los cinco y sobre cualquier skin. Era verde
+   fijo, de cuando esta pantalla era solo la de Individual. */
 .ww-start-icon {
   width: clamp(54px, 12cqmin, 110px); height: clamp(54px, 12cqmin, 110px);
   display: flex; align-items: center; justify-content: center;
-  border-radius: 50%; background: rgba(25,135,84,.12); color: #198754;
+  border-radius: 50%; background: rgba(128,128,128,.16);
   font-size: clamp(1.6rem, 6cqmin, 3.4rem);
 }
+/* El cuerpo propio del modo (avatares del duelo, nº de equipos, intentos). No
+   lo maqueta la antesala: solo le da el ancho y evita que un `form-control` de
+   Bootstrap se desborde en un marco estrecho. */
+.ww-antesala-body { width: 100%; margin: 0 auto; }
+.ww-antesala-body .form-control { max-width: 100%; }
+.ww-antesala-sub, .ww-antesala-note { margin: 0; color: var(--ww-muted, #6b7280); }
+.ww-antesala-note { font-size: max(11px, 2cqmin); }
+.ww-antesala-badges > * { margin: 0; }
+.ww-antesala-badges { display: flex; flex-direction: column; align-items: center; gap: .4rem; }
 .ww-start-title { margin: 0; font-weight: 800; font-size: clamp(1.4rem, 5.2cqmin, 3rem); line-height: 1.1; }
 .ww-start-instructions {
   margin: 0; color: var(--ww-muted, #6b7280);
@@ -632,12 +644,19 @@ body.bg-plated .ww-player .ww-q {
 }
 
 .ww-start-settings { display: flex; flex-wrap: wrap; gap: .6rem; justify-content: center; }
+/* POR TOKEN, no por hex (§3): estas pastillas se ven sobre el skin de la
+   actividad —en el duelo son el ambiente entero—, y con #f8fafc fijo
+   desaparecían sobre un tema oscuro. Antes lo parcheaba el propio tema
+   pintando dentro del juego, que es justo lo que la ley prohíbe. */
 .ww-set-toggle {
-  border: 2px solid #e2e8f0; background: #f8fafc; color: #334155;
+  border: 2px solid var(--ww-line, #e2e8f0);
+  background: var(--ww-card-bg, #f8fafc);
+  color: var(--ww-fg, #334155);
   border-radius: 12px; padding: .5em .9em; cursor: pointer;
   font-size: clamp(.82rem, 2.2cqmin, 1.1rem); display: inline-flex; align-items: center; gap: .45em;
 }
-.ww-set-toggle.is-on { border-color: #198754; background: #f0fdf4; color: #166534; }
+/* Encendida: el verde de «sí» es ESTADO (como el acierto/error), no paleta. */
+.ww-set-toggle.is-on { border-color: #198754; background: rgba(25,135,84,.16); color: inherit; }
 .ww-set-state { font-weight: 700; opacity: .85; }
 .ww-start-go {
   margin-top: 1cqmin; border-radius: 999px;

@@ -9,7 +9,7 @@ import { html, escapeHtml, mount, $, $$ } from '../core/html.js';
 import { on } from '../core/events.js';
 import { createMemoryGame } from '../kernel/session/memory.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
-import { renderModeSetup } from './modeSetup.js';
+import { renderAntesala } from './antesala.js';
 import { teamColor, teamNameInputsHtml, teamsScoreboardHtml, teamsPodiumHtml } from '../core/teams.js';
 import { COVER_MS } from '../core/timings.js';
 
@@ -37,10 +37,11 @@ export function mountMemory(host, a, ctx, opts = {}) {
       </div>
       <div id="mem-names" class="row justify-content-center g-2 my-3" style="max-width:560px;margin:auto"></div>`;
 
-    renderModeSetup(host, {
+    renderAntesala(host, {
+      activity: a,
       icon: 'bi-grid-3x3-gap-fill', color: 'primary', title: 'Memoria por equipos',
       subtitle: `${a.title} · ${pairs.length} pares`,
-      body, backHref,
+      bodyHtml: body, backHref,
       note: 'Acierto: sumas y sigues. Fallo: pasa el turno.',
       onMount: () => {
         renderNames();

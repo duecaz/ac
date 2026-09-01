@@ -11,7 +11,7 @@
 import { html, escapeHtml, mount } from '../core/html.js';
 import { getAnywhere } from '../core/storage.js';
 import { podiumHtml } from '../core/podium.js';
-import { renderModeSetup } from './modeSetup.js';
+import { renderAntesala } from './antesala.js';
 import { mountVs } from './vsView.js';
 import { sessionItems } from '../kernel/content/sessionItems.js';
 import { destinoTrasJugar } from '../core/afterPlay.js';
@@ -74,12 +74,18 @@ export async function renderListView(rootSel, id) {
       </div>
       <div class="mx-auto mt-2 text-start" style="max-width:480px">${roundList}</div>`;
 
-    renderModeSetup(host, {
+    renderAntesala(host, {
       icon: 'bi-collection-play-fill',
       color: 'primary',
       title: 'Lista encadenada',
-      subtitle: `${escapeHtml(lista.title)} · ${activities.length} rondas`,
-      body,
+      // Sin escapar aquí: la antesala escapa el subtítulo, y hacerlo dos veces
+      // convertía «Repaso & Ampliación» en «Repaso &amp; Ampliación».
+      subtitle: `${lista.title} · ${activities.length} rondas`,
+      // Una LISTA no tiene UNA forma de jugarse: cada ronda trae la suya, y la
+      // lista de rondas ya está en el cuerpo. Instrucciones vacías A PROPÓSITO
+      // (el resto de antesalas SIEMPRE las llevan).
+      instructions: '',
+      bodyHtml: body,
       note: 'Las puntuaciones de cada ronda se acumulan en el marcador final.',
       backHref: '#/home',
       onStart: () => {

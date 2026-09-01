@@ -65,3 +65,45 @@ export function sceneToggle(activity, { defaultSkin = 'vibrante', target = null 
     else resetScene(target);
   };
 }
+
+// ── EL AMBIENTE DEL DUELO, UN SOLO DUEÑO (§21b, 2026-09-01) ─────────────────
+//
+// `presentation.vsFeedback` y `presentation.vsAnimationOff` los escribían y
+// leían DOS módulos con sus propias constantes: `views/vsView.js` (la antesala y
+// el duelo) y `core/editorModes.js` (el panel del editor). La misma forma escrita
+// dos veces acaba diciendo dos cosas, y ya lo decía: al retirar el interruptor de
+// sonido hubo que tocar los dos ficheros con el mismo comentario, y el defecto de
+// la animación NO coincidía —el editor la daba por encendida siempre, mientras el
+// duelo la apaga sola en las hojas de texto (Tildes/Comas), donde el carril
+// central roba el ancho que necesita el texto—. Es decir: el editor enseñaba
+// «Animación: sí» y la clase veía el duelo sin animación.
+//
+// El sonido NO está aquí: su dueño es `core/sounds.js` (el silencio global).
+// Interno a propósito: quien necesite los valores llama a `vsFeedback(a)` —
+// exportar la constante invitaría a volver a mezclarla a mano en otro módulo,
+// que es de donde venía la divergencia.
+const VS_FX_DEFAULTS = { flash: true, confetti: false };
+
+/** Los interruptores de feedback del duelo, con sus defectos. */
+export function vsFeedback(activity) {
+  return { ...VS_FX_DEFAULTS, ...(activity?.presentation?.vsFeedback || {}) };
+}
+
+/** Enciende/apaga UNO. Muta la actividad (quien llama decide si la guarda). */
+export function setVsFeedback(activity, key, on) {
+  if (!activity.presentation) activity.presentation = {};
+  activity.presentation.vsFeedback = { ...vsFeedback(activity), [key]: !!on };
+  return activity;
+}
+
+/** ¿Se ve la animación central del duelo? El defecto lo pide la PLANTILLA: una
+ *  hoja de texto la apaga sola porque necesita el ancho. */
+export function vsAnimacionOn(activity, { textTight = false } = {}) {
+  return !(activity?.presentation?.vsAnimationOff ?? textTight);
+}
+
+export function setVsAnimacion(activity, on) {
+  if (!activity.presentation) activity.presentation = {};
+  activity.presentation.vsAnimationOff = !on;
+  return activity;
+}

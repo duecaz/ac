@@ -21,6 +21,19 @@
 // so editor preview and player share the logic.
 
 import { rid } from '../ids.js';
+import { getTemplate } from '../registry.js';
+
+/** ¿Esta actividad es una HOJA DE TEXTO (Tildes/Comas)? Lo pregunta quien tiene
+ *  que dejarle el ancho: el duelo apaga su animación central en ellas —el
+ *  carril del centro roba el ancho que el texto necesita— y el panel del editor
+ *  tiene que decir lo MISMO. La pregunta la responde el modelo, no cada vista
+ *  con su `meta.contentModel === 'textCorrection'` a mano (estaba escrito en dos
+ *  sitios y ya discrepaban: el editor decía «Animación: sí» donde la clase la
+ *  veía apagada). */
+export function esHojaDeTexto(activity) {
+  return getTemplate(activity?.template)?.meta?.contentModel === 'textCorrection';
+}
+
 export function newEmpty() {
   return { passages: [{ id: rid('ps_'), text: '', marks: [] }] };
 }

@@ -262,7 +262,12 @@ function buildLayout(lefts, rights, activity, total) {
   // corredor central (ww-stage vacío) que las cuerdas cruzan. Emparejar mantiene los
   // rieles como DOS COLUMNAS laterales en ambas orientaciones (ver match.css portrait):
   // así las cuerdas cruzan el pasillo en horizontal y no se solapan con las tarjetas.
-  return `<div class="ww-scaffold ww-match p-2">
+  // Sin `p-2` por lo mismo que el Diagrama: una utilidad de Bootstrap lleva
+  // `!important` y gana a la reserva que pide el HUD (el relleno vive ahora en
+  // styles/match.css). Aquí no había choque medido —el reloj de Emparejar cabe
+  // sobre el hueco de las cuerdas—, pero dejarlo sería dejar la misma trampa
+  // armada para la siguiente pieza que suba.
+  return `<div class="ww-scaffold ww-match">
   ${hudHtml({ pagina: `0 / ${total}` })}
   <div class="edu-sec edu-sec--campo ww-field ww-match-field">
     <div class="ww-rail ww-match-col" data-rail="start">${lefts.map(c => cardHtml(c, 'L')).join('')}</div>

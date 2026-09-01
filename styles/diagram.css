@@ -6,7 +6,7 @@
    ESTÁNDAR (docs/estilos-de-actividad.md): todo relativo (cq*) y colores pintables
    por token var(--ww-*) — las etiquetas ciclan --ww-shape-1..4 (el skin recolorea). */
 
-.dg-play { touch-action: none; }               /* el arrastre nunca hace scroll */
+.dg-play { touch-action: none; padding: .5rem; }   /* el arrastre nunca hace scroll */
 
 /* Rieles: se CIÑEN a su contenido para que el escenario reclame el máximo (la
    imagen grande, como en Wordwall — antes 2 columnas fijas comían el 52%). */

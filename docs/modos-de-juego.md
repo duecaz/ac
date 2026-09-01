@@ -12,7 +12,7 @@
 Fecha: 2026-07-29 (§9 reescrita como **documento de estudio**: fichas + escenarios
 Gherkin + decisiones de diseño abiertas). Verificado contra `core/modes.js`,
 `core/persistPolicy.js`, `core/deadlineTicker.js`, `kernel/session/engine.js`,
-`kernel/session/memory.js`, `views/modeSetup.js`, `views/playerView.js` y los
+`kernel/session/memory.js`, `views/antesala.js`, `views/playerView.js` y los
 `views/*View.js`.
 
 > **LEY MARCO**: el modelo de cuatro capas (`docs/leyes.md` §0) — la plantilla
@@ -33,8 +33,8 @@ Gherkin + decisiones de diseño abiertas). Verificado contra `core/modes.js`,
   - [Dos niveles de compatibilidad (la forma recomendada)](#dos-niveles-de-compatibilidad-la-forma-recomendada)
   - [El editor es un SHELL compartido (anti-deriva)](#el-editor-es-un-shell-compartido-anti-deriva)
 - [4. Contrato de una vista de modo embebido](#4-contrato-de-una-vista-de-modo-embebido)
-- [5. El andamiaje de setup (`renderModeSetup`)](#5-el-andamiaje-de-setup-rendermodesetup)
-  - [5b. Pantalla de inicio estándar del modo Individual (`views/startScreen.js`)](#5b-pantalla-de-inicio-estándar-del-modo-individual-viewsstartscreenjs)
+- [5. LA ANTESALA, una sola (`views/antesala.js`)](#5-la-antesala-una-sola-viewsantesalajs)
+  - [5b. La antesala del modo Individual (`views/startScreen.js`)](#5b-la-antesala-del-modo-individual-viewsstartscreenjs)
   - [5c. Política de maquetación del panel VS (`meta.panelFit`)](#5c-política-de-maquetación-del-panel-vs-metapanelfit)
 - [6. Cómo se monta en la página (resumen de `playerView.js`)](#6-cómo-se-monta-en-la-página-resumen-de-playerviewjs)
 - [7. Receta: añadir un MODO nuevo](#7-receta-añadir-un-modo-nuevo)
@@ -68,7 +68,7 @@ Gherkin + decisiones de diseño abiertas). Verificado contra `core/modes.js`,
 | Pieza | Archivo | Responsabilidad |
 |---|---|---|
 | **Registro de modos** | `core/modes.js` | Qué modos existen, cuándo está disponible cada uno (`isAvailable`), y cómo se monta (`runMode`). **El gateo vive AQUÍ y solo aquí.** |
-| **Andamiaje de setup** | `views/modeSetup.js` | La cabecera + subtítulo + botón Empezar **idénticos** para todos los modos. |
+| **La antesala** | `views/antesala.js` | La pantalla de **antes de jugar**, idéntica para los seis caminos: icono + título + instrucciones + ambiente + **un** botón que siempre entra a pantalla completa. |
 | **Página de actividad** | `views/playerView.js` | Pinta la barra "Modos de juego" desde el registro y aloja el modo activo en el *escenario* (`#ww-player-widget`). |
 | **Vistas de modo** | `views/vsView.js`, `teamsView.js`, `memoryView.js` | La jugada concreta de cada modo. |
 | **Capacidades de plantilla** | `templates/*/template.js` (`static meta`) | Qué sabe hacer la plantilla (puntuar, servir un ítem, live, async). |
@@ -211,17 +211,41 @@ Reglas del contrato `mountX(host, activity, ctx, opts)`:
 
 ---
 
-## 5. El andamiaje de setup (`renderModeSetup`)
+## 5. LA ANTESALA, una sola (`views/antesala.js`)
 
-Pinta la **misma** cabecera, subtítulo, área de opciones y botón Empezar para
-todos. Tú solo aportas las opciones específicas (`body`) y las lees en `onStart`.
+Todo lo que pasa **antes de jugar** —Individual, VS, Equipos, Memoria, Lista y
+Tarea— se pinta con la MISMA pantalla. Hasta 2026-09-01 había cuatro: Individual
+arrancaba con un botón que siempre entra a pantalla completa, los modos
+embebidos con dos («¡Empezar!» y «Pantalla completa»), y la tarea con un
+formulario sin instrucciones, sin ambiente y sin pantalla completa. Lo que veías
+dependía de por dónde habías entrado.
+
+Sus cuatro reglas, que ninguna vista vuelve a decidir:
+
+1. **UN control de arranque** (`data-ww-start`) y **siempre a pantalla completa**
+   — en clase se proyecta; salir es Esc o el botón de la esquina del marco.
+2. La pantalla completa se pide **sobre el marco**; si el marco nace al arrancar
+   (la tarea), se monta primero y se pide después, en el mismo gesto.
+3. **Se cuenta cómo se juega**: `meta.instructions` a la vista (solo una LISTA
+   puede apagarlo, declarando `instructions: ''`).
+4. El **ambiente** (sonido, efectos y lo que añada el modo) es una fila de
+   pastillas iguales en todas.
+
+Lo vigilan `tests/antesala.test.mjs` (escaneo del código) y `tools/matrix-smoke.mjs`
+(DOM montado: un control y las instrucciones, en cada plantilla × modo).
+
+`renderModeSetup` sigue existiendo como la puerta de los modos embebidos; solo
+traduce a la antesala.
 
 ```js
 renderModeSetup(host, {
+  activity: a,                 // de aquí salen las INSTRUCCIONES
   icon: 'bi-fire', color: 'danger',
   title: 'Duelo VS',
   subtitle: `${a.title} · ${n} preguntas`,
-  body: `…inputs de nombres, contador de equipos, toggles…`,
+  body: `…inputs de nombres, contador de equipos…`,
+  ambienteExtra: [{ id: 'flash', icon: 'bi-lightning-charge-fill', label: 'Destello', on: true, hint: '…' }],
+  onAmbiente: (id, encendido) => { /* guardarlo donde el MODO lo guarde */ },
   startLabel: '¡Empezar!',     // opcional
   note: 'texto pequeño bajo el botón', // opcional
   backHref,                    // opcional (solo ruta suelta)
@@ -231,15 +255,16 @@ renderModeSetup(host, {
 ```
 
 No reescribas este chrome en tu vista. Si necesitas un control nuevo común a
-varios modos, añádelo al andamiaje, no a una vista suelta.
+varios modos, añádelo a la antesala, no a una vista suelta.
 
-### 5b. Pantalla de inicio estándar del modo Individual (`views/startScreen.js`)
+### 5b. La antesala del modo Individual (`views/startScreen.js`)
 
 El modo `solo` NO salta directo al primer ítem: `playerView` monta primero
-`renderStartScreen(widget, activity, { frame, onStart })` — una tarjeta estándar
-con **Título + Instrucciones + Ajustes** (Sonido, Efectos y, en Tildes/Comas,
-"Calibrar pizarra") + botón **Iniciar**, que SIEMPRE entra en pantalla completa
-antes de arrancar. Así el alumno no ve el ejercicio antes de empezar.
+`renderStartScreen(widget, activity, { frame, onStart })` — hoy una llamada
+delgada a la antesala con la variante de este modo: **Título + Instrucciones +
+Ajustes** (Sonido, Efectos y, en Tildes/Comas, "Calibrar pizarra") + botón
+**Iniciar**, que SIEMPRE entra en pantalla completa antes de arrancar. Así el
+alumno no ve el ejercicio antes de empezar.
 
 - Las instrucciones salen de `activity.instructions` → `meta.instructions` de la
   plantilla → texto genérico. **Toda plantilla debe declarar

@@ -49,6 +49,13 @@ import { aspectoDe, aspectStyle } from './frameAspect.js';
 // pone: las pantallas del docente ya traen el suyo (cada `paint*` de hostLive lo
 // pinta en su barra), y añadir la esquina del marco dejaba DOS botones visibles,
 // con el de la fase debajo del de la esquina por z-index.
+/** EL MARCO DE JUEGO DE ESTA PANTALLA, si hay alguno. La búsqueda estaba
+ *  copiada en tres sitios (`document.getElementById('ww-frame')` suelto); el
+ *  dueño del marco es este módulo, así que la pregunta se le hace a él. */
+export function marcoActual() {
+  return typeof document === 'undefined' ? null : document.getElementById('ww-frame');
+}
+
 export function montarMarcoJuego(rootSel, activity, { escena = true, caja = true } = {}) {
   // UNA PROPORCIÓN, Y EL RESTO LO HACE PANTALLA COMPLETA (dueño, 2026-08-16).
   // Esto NO es una medida más: es dejar de tener las mías. La pantalla del

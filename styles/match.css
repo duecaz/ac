@@ -4,6 +4,7 @@
    (.ww-match-gap = ww-stage vacío) es por donde cruzan las cuerdas. El tamaño de
    tarjeta 16/10 lo calcula el player (fitLayout, consciente de la orientación).
    El scaffold aporta la columna raíz, las barras y el reflujo del field. */
+.ww-match { padding: .5rem; }                 /* era `p-2` en el markup (ver player.js) */
 .ww-match-col { gap: 8px; overflow: visible; }
 .ww-match-gap { flex: 1 1 auto; min-width: 6cqmin; min-height: 6cqmin; }
 .ww-match-field { touch-action: none; }   /* el arrastre nunca hace scroll (táctil) */

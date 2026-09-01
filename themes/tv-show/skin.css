@@ -139,13 +139,10 @@ body.skin-tv-show .card,
    la base sea CLARO debe oscurecerse aquí, y .text-muted debe aclararse — si no,
    texto claro sobre fondo claro = ilegible (p.ej. el panel "Sonido y efectos").
    Si cambias el color del texto, SIEMPRE verifica el color del contenedor. */
-.skin-tv-show .vs-fx-panel {
-  background: rgba(12,22,52,.72);
-  border: 1px solid rgba(120,160,255,.28);
-  color: var(--ww-fg);
-}
-.skin-tv-show .vs-fx-panel > summary,
 .skin-tv-show .vs-fx-label { color: var(--ww-fg); }
+/* Las pastillas de ambiente de la antesala NO se listan aquí: consumen los
+   tokens de tarjeta (--ww-card-bg / --ww-line / --ww-fg), que este tema ya
+   declara. Un tema cambia TOKENS; la actividad los consume (§3). */
 /* .text-muted es gris oscuro (Bootstrap): ilegible sobre el fondo oscuro del
    skin. Aclararlo. Los inputs claros usan su propio texto oscuro, no .text-muted,
    así que aclararlo a nivel de página es seguro aquí. */
