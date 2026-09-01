@@ -85,7 +85,6 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
         ${hudHtml({
           pagina: `0 / ${total}`,
           tiempo: timerSecs > 0 ? `⏱ ${timerSecs}` : null,
-          puntos: '★ 0',
         })}
         <div class="ww-ws-body">
           <div class="edu-sec edu-sec--tablero ww-ws-grid-wrap">
@@ -234,7 +233,6 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
     // Update counters
     const found = state.found.size;
     hudSet(rootEl(), 'pagina', `${found} / ${total}`);
-    hudSet(rootEl(), 'puntos', `★ ${state.score}`);
 
     if (found >= total) finish();
   }

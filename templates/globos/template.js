@@ -34,7 +34,8 @@ export class GlobosTemplate extends BaseTemplate {
     play:            { vs: 'points', teams: 'turns', live: [], submit: 'gesto' },
     needsImageUpload: true,       // el editor (el de Quiz) sube imagen por pregunta
     needsAudioUpload: false,
-    defaultRules: () => ({ timer: 0, randomize: false, shuffleOptions: true }),
+    // 30 s por pregunta desde el nacimiento (dueño 2026-09-01, como el quiz).
+    defaultRules: () => ({ timer: 30, randomize: false, shuffleOptions: true }),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
     defaultLive: () => ({}),
     defaultContent: () => ({ items: [

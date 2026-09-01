@@ -8,7 +8,7 @@
 // cabecera robaba un 4-25 % del alto — exactamente lo que le falta a la zona
 // de juego en un móvil en vertical.
 //
-// La regla (decidida con el dueño): un INDICADOR —página, tiempo, puntos,
+// La regla (decidida con el dueño): un INDICADOR —página, tiempo,
 // racha— nunca crea una franja; flota en una esquina, encima del juego, como
 // el botón de pantalla completa («como en la actividad Calcular»). Solo una
 // HERRAMIENTA que se toca (lápiz/borrador, deshacer, pista) justifica una
@@ -32,20 +32,31 @@ const chip = (campo, texto) =>
 /**
  * Los indicadores del juego, por NOMBRE (no por posición en un markup ad hoc):
  *   pagina «3 / 8» · racha «🔥 3» · extra (p.ej. «Flips: 4») → esquina izquierda
- *   tiempo «⏱ 12» · puntos «★ 40»                            → esquina derecha
+ *   tiempo «⏱ 12»                                            → CENTRO
  * Todos opcionales: lo que no se pasa se pinta oculto, listo para `hudSet`.
+ * El chip `puntos` («★ 40») SE RETIRÓ (dueño 2026-09-01): el puntaje ya vive en
+ * la pantalla de resultado y el HUD no debe competir con el juego — «esa
+ * estrella no aporta nada». El reloj va al CENTRO, no a la derecha: la esquina
+ * derecha es del botón de pantalla completa y un dato que se mira cada segundo
+ * merece el sitio donde el ojo ya está.
  */
-export function hudHtml({ pagina, racha, extra, tiempo, puntos } = {}) {
+export function hudHtml({ pagina, racha, extra, tiempo } = {}) {
   return `<div class="edu-hud" aria-hidden="true">
     <span class="edu-hud__zona">${chip('pagina', pagina)}${chip('racha', racha)}${chip('extra', extra)}</span>
-    <span class="edu-hud__zona">${chip('tiempo', tiempo)}${chip('puntos', puntos)}</span>
+    <span class="edu-hud__zona edu-hud__zona--centro">${chip('tiempo', tiempo)}</span>
   </div>`;
 }
 
-/** Actualiza UN indicador dentro de `scope` (Element o selector). */
+/** Actualiza UN indicador dentro de `scope` (Element o selector).
+ *  Si una BARRA (edu-topbar) ALOJA el indicador —misma excepción declarada que
+ *  el botón de pantalla completa: la barra es la dueña de su franja—, ese chip
+ *  manda y el del HUD flotante se queda retirado: el reloj centrado del HUD
+ *  caía justo sobre los mandos centrados de la barra (Crucigrama «Reiniciar»,
+ *  Pelotas «Deshacer» — lo cazó la matriz al estrenar el centro). */
 export function hudSet(scope, campo, texto) {
   const raiz = typeof scope === 'string' ? document.querySelector(scope) : scope;
-  const el = raiz?.querySelector(`.edu-hud [data-hud="${campo}"]`);
+  const el = raiz?.querySelector(`.edu-topbar [data-hud="${campo}"]`)
+          ?? raiz?.querySelector(`.edu-hud [data-hud="${campo}"]`);
   if (!el) return;
   if (texto == null || texto === '') { el.hidden = true; return; }
   el.hidden = false;

@@ -72,6 +72,9 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
              «Verificar», así que ayudarse y entregar se leían como lo mismo. -->
         <div class="edu-topbar cw-tools">
           ${hintMode === 'none' ? '' : `<button class="btn btn-outline-secondary btn-sm" id="cw-hint"><i class="bi bi-lightbulb"></i> Pista</button>`}
+          <!-- La barra ALOJA el reloj (hudSet lo prefiere sobre el chip del
+               HUD): centrado flotante aquí caería sobre estos mismos botones. -->
+          <span class="edu-hud__chip" data-hud="tiempo" hidden></span>
           <button class="btn btn-outline-danger btn-sm" id="cw-reset"><i class="bi bi-arrow-counterclockwise"></i> Reiniciar</button>
         </div>
 

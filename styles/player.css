@@ -309,8 +309,8 @@
 @media (hover: none) { .ww-fs-btn--corner { opacity: .55; } }
 
 /* EL HUD DEL JUEGO (core/playerHud.js): los indicadores —página, tiempo,
-   puntos, racha— FLOTAN en las esquinas superiores, encima del juego, y no
-   crean franja (decisión del dueño, 2026-08-17: «como en la actividad
+   racha— FLOTAN sobre el borde superior (esquinas + reloj al CENTRO), encima
+   del juego, y no crean franja (decisión del dueño, 2026-08-17: «como en la actividad
    Calcular»). Quien tenga un `.edu-hud` como hijo directo se convierte en su
    ámbito de posicionamiento — ninguna plantilla necesita clase extra.
    VELO NEUTRO como el botón de la esquina (y por el mismo reporte v1.51.386):
@@ -327,6 +327,15 @@
   pointer-events: none;
 }
 .edu-hud__zona { display: flex; gap: max(4px, .8cqmin); flex-wrap: wrap; }
+/* EL RELOJ VA AL CENTRO («relog centrado eso es obvio», dueño 2026-09-01).
+   Posicionado en absoluto sobre el 50% REAL del marco: si viviera en el flex,
+   el hueco reservado al botón de pantalla completa (padding-right) y la zona
+   izquierda de anchura variable lo dejarían «casi» centrado, que se nota más
+   que no centrarlo. */
+.edu-hud__zona--centro {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  top: max(6px, 1.2cqmin);
+}
 .edu-hud__chip {
   background: rgba(0, 0, 0, .45); color: #fff;
   border-radius: 999px;
@@ -399,8 +408,8 @@
 }
 /* EN VERTICAL EL ENUNCIADO BAJA DE LA FRANJA DE CHIPS. Compartir línea con los
    chips ahorra alto en apaisado, pero en un marco alto la pregunta ENVUELVE y
-   sus letras acaban debajo de «⏱ 12 · ★ 40» (lo cazó la matriz en vertical al
-   estrenar el chip de puntos del Quiz). En vertical sobra alto y falta ancho:
+   sus letras acaban debajo de «⏱ 12» (lo cazó la matriz en vertical con los
+   chips del Quiz). En vertical sobra alto y falta ancho:
    el enunciado toma el ancho entero y empieza bajo los chips — misma reserva
    que la Sopa (fuente del chip × su caja + el relleno del HUD). */
 /* Sin nombre de contenedor: el Quiz no monta el andamio (`player` es
@@ -410,6 +419,17 @@
    franja. */
 @container (aspect-ratio < 1/1) {
   .ww-player:has(> .edu-hud) .ww-prow { padding-inline: .5rem; margin-top: max(30px, 6.5cqmin); }
+}
+/* EL RELOJ CENTRADO POSEE SU CARRIL (dueño 2026-09-01). Con el reloj en el
+   centro ya no comparte línea con lo que también vive centrado arriba (el
+   enunciado del Quiz, la etiqueta alta del Diagrama en vertical): cuando el
+   chip del centro está VISIBLE, el ámbito del HUD reserva esa franja y el
+   juego empieza debajo. Solo entonces — con el reloj apagado no se paga nada,
+   y las barras que ALOJAN el reloj (Crucigrama, Pelotas) tampoco. El tick
+   inicial pinta antes del primer fotograma (deadlineTicker llama onTick al
+   arrancar), así que no hay salto de maquetación. */
+:where(:has(> .edu-hud .edu-hud__zona--centro .edu-hud__chip:not([hidden]))) {
+  padding-top: max(30px, 6.5cqmin);
 }
 .ww-player .ww-prow .ww-q { flex: 1 1 auto; text-align: center; }
 .ww-play-page .ww-player-frame .ww-player .ww-prow { flex: 0 0 auto; }

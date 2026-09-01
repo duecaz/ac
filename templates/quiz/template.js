@@ -34,7 +34,9 @@ export class QuizTemplate extends BaseTemplate {
     play:            { vs: 'points', teams: 'turns', live: ['rounds', 'race'], submit: 'gesto' },
     needsImageUpload: true,
     needsAudioUpload: true,
-    defaultRules: () => ({ timer: 0, randomize: false, shuffleOptions: true }),
+    // 30 s por pregunta desde el nacimiento (dueño 2026-09-01, como Wordwall);
+    // solo actividades NUEVAS — el contenido guardado no se toca (§24).
+    defaultRules: () => ({ timer: 30, randomize: false, shuffleOptions: true }),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0, penaltyRatio: 0, maxScore: 0 }),
     defaultLive: () => ({ enabled: true, advanceMode: 'manual', questionTimer: 20, lockAnswersOn: 'allAnswered',
                           showAnswerAfterEach: true, showLeaderboardBetween: true, pointsModel: 'velocidad',

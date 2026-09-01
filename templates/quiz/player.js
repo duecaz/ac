@@ -40,10 +40,6 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
             pagina: `${idx + 1} / ${total}`,
             racha: streak >= 2 ? `🔥 ${streak}` : null,
             tiempo: timerSecs > 0 ? `⏱ ${timerSecs}` : null,
-            // El PUNTAJE faltaba: el quiz estrenó el HUD sin el chip «★» y el
-            // compañero lo reportó en la ronda 2026-08-17 («en ningún quiz se
-            // ve el puntaje»). El dato ya lo llevaba el shell; solo no se veía.
-            puntos: `★ ${score}`,
           })}
           <div class="edu-sec edu-sec--enunciado ww-prow">
             <h3 class="ww-q">${escapeHtml(item.question)}</h3>
@@ -100,9 +96,6 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
         } else if (r.correct === false) {
           emitGame(GameEvents.ANSWER_WRONG, { idx });
         }
-        // El chip se actualiza AL ACERTAR, no en la pregunta siguiente: durante
-        // la pausa del feedback (verde/rojo) es cuando el alumno mira el ★.
-        hudSet(rootSel, 'puntos', `★ ${score + (r.points || 0)}`);
         submit({ itemId: item.id, value, correct: r.correct, points: r.points, msTaken: ms });
       });
     },

@@ -593,7 +593,11 @@ for (const t of seeded) {
               esquina: (() => {
                 const hud = w.querySelector('.edu-hud');
                 if (!hud) return null;
-                const chip = [...hud.querySelectorAll('.edu-hud__chip')].find(c => !c.hidden && vis(c));
+                // La zona CENTRO (el cronómetro) queda fuera: está centrada a
+                // propósito (dueño 2026-09-01) y su distancia a las esquinas es
+                // la mitad del marco — mediría rojo justo cuando está bien.
+                const chip = [...hud.querySelectorAll('.edu-hud__zona:not(.edu-hud__zona--centro) .edu-hud__chip')]
+                  .find(c => !c.hidden && vis(c));
                 const r = (chip || hud).getBoundingClientRect();
                 const rw = w.getBoundingClientRect();
                 // El HUD tiene DOS esquinas (zona izquierda y zona derecha): un

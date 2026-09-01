@@ -68,7 +68,6 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
         ${hudHtml({
           pagina: `${state.matched} / ${pairs.length}`,
           extra: `Flips: ${state.flips}`,
-          puntos: `★ ${state.score}`,
         })}
         <div class="edu-sec edu-sec--tablero ww-memo-grid" style="grid-template-columns:repeat(${columns},1fr)">
           ${deck.map(c => {
