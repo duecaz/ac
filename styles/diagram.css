@@ -11,13 +11,33 @@
 /* Rieles: se CIÑEN a su contenido para que el escenario reclame el máximo (la
    imagen grande, como en Wordwall — antes 2 columnas fijas comían el 52%). */
 .dg-rail { gap: 1.4cqmin; padding: .4cqmin; overflow: visible; }
+/* LA IMAGEN ES LA ACTIVIDAD: los rieles no pueden comérsela. Se ciñen a su
+   contenido, pero con TOPE — medido antes del arreglo: dos rieles se llevaban
+   288 px de 664 (43 %) y la foto que la clase tiene que mirar se quedaba con el
+   55 %. Con el tope, cada riel no pasa de un cuarto y la etiqueta larga dobla
+   dentro (arriba) en vez de estirar la columna. */
+@container player (aspect-ratio >= 1/1) {
+  /* Con PISO: en un marco pequeño el 20 % son 112 px y una palabra larga
+     («Aurícula derecha») se partía en cuatro trozos. El piso en px es
+     legibilidad, no medida fija (§3: piso sí, techo no). */
+  .dg-rail { max-width: max(150px, 20cqw); }
+}
+@container player (aspect-ratio < 1/1) {
+  .dg-rail { max-height: max(90px, 20cqh); }
+}
 
 /* Etiqueta: pastilla VISTOSA de color con texto blanco y grande. */
 .dg-label {
   --dg-dot: max(13px, 3.2cqmin);
   position: relative;
   display: flex; align-items: center; justify-content: center;
-  padding: 1.7cqmin 3cqmin;
+  /* EL RELLENO ES DE LA LETRA, NO DEL MARCO (dueño 2026-09-01: «está
+     terriblemente mal diagramado»). Iba en `cqmin` —proporcional al MARCO— así
+     que en una pizarra la pastilla cargaba ~60 px de relleno alrededor de ~30 px
+     de texto: la palabra se quedaba sin sitio y salía «H…» donde decía «Hoja»,
+     mientras el riel le robaba el ancho a la imagen. En `em` el relleno crece
+     con la palabra y no contra ella. */
+  padding: .38em .8em;
   border-radius: 999px;
   background: var(--dg-color, var(--ww-accent, #6366f1));
   color: var(--dg-fg, #fff);   /* la tinta la trae el token del skin (ver player.js) */
@@ -27,12 +47,32 @@
   cursor: grab; touch-action: none;
   user-select: none; -webkit-user-select: none;
   box-shadow: 0 2px 6px rgba(0,0,0,.18);
-  max-width: 100%; overflow: visible;
+  /* La pastilla PIDE lo que mide su palabra (`max-content`) y solo dobla cuando
+     el riel no da para más: sin esto, «Hoja» se partía en dos líneas teniendo
+     sitio de sobra, porque la caja se calculaba con el ancho MÍNIMO del texto. */
+  width: max-content; max-width: 100%; overflow: visible;
   transition: transform .12s, box-shadow .15s;
 }
 .dg-label:active { cursor: grabbing; }
 .dg-label:hover  { transform: scale(1.04); }
-.dg-label-text   { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* UNA ETIQUETA QUE NO SE PUEDE LEER NO ES UNA ETIQUETA. Llevaba `nowrap` +
+   puntos suspensivos, así que «Raíz principal» solo tenía una salida: cortarse.
+   Ahora DOBLA en dos líneas —que es lo que hace una etiqueta de verdad— y los
+   puntos suspensivos quedan como último recurso, no como norma. */
+.dg-label-text {
+  overflow: hidden;
+  /* `break-word`, NO `anywhere`: partir «Cabeza» en «Cabe/za» es tan ilegible
+     como cortarla. Así dobla por los ESPACIOS («Raíz / principal») y solo
+     parte una palabra si ella sola no cabe. */
+  /* Sin `text-wrap: balance`: equilibrar líneas ENCOGE el ancho natural del
+     texto, y por eso «Hoja» se doblaba en dos teniendo sitio. */
+  white-space: normal; overflow-wrap: break-word;
+  /* Con guion cuando hay que partir una palabra larga: «Ven-trículo» se lee;
+     «Ventrícu / lo» hace dudar de si son dos palabras. */
+  hyphens: auto;
+  line-height: 1.05;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3;
+}
 .dg-label.dg-linked  { box-shadow: 0 0 0 max(2px,.5cqmin) #6366f1, 0 2px 6px rgba(0,0,0,.18); }
 .dg-label.dg-correct { box-shadow: 0 0 0 max(2px,.5cqmin) #16a34a, 0 2px 6px rgba(0,0,0,.18); }
 .dg-label.dg-wrong   { box-shadow: 0 0 0 max(2px,.5cqmin) #ef4444, 0 2px 6px rgba(0,0,0,.18); opacity: .85; }

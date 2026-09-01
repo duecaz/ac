@@ -115,6 +115,45 @@ const tocable = (sel) => page.evaluate(`(${TOCABLE})(${JSON.stringify(sel)})`);
 // pastilla. Se miden las LETRAS (Range), no la caja: un enunciado centrado
 // tiene caja a todo el ancho y acusaría a Quiz/Globos sin tocar nada. Se pasa
 // al montar, quieto: lo que se MUEVE por debajo (un globo) está permitido.
+// UNA PALABRA CORTADA NO ES UNA PALABRA (dueño 2026-09-01, con captura del
+// Diagrama: «H…» donde decía «Hoja», «Ta…» donde decía «Tallo»). El defecto era
+// INVISIBLE para CI: el DOM tenía el texto entero, la caja se pintaba entera y
+// ninguna red miraba si la LETRA llegaba a la pantalla. Se mide lo único que lo
+// delata: el texto pide más sitio del que su caja le da (`scrollWidth/Height`
+// contra `clientWidth/Height`) en un elemento que RECORTA.
+// Solo el juego (`#ww-player-widget`): el chrome del profe puede abreviar un
+// título largo, la clase no puede leer media palabra.
+const FN_CORTADO = `() => {
+  const w = document.querySelector('#ww-player-widget');
+  if (!w) return null;
+  // INVISIBLE NO ES CORTADO: el interruptor de lápiz/borrador desliza la palabra
+  // del lado inactivo a ancho 0 con opacidad 0 — nadie está intentando leerla.
+  // Se mira la opacidad heredada hasta la raíz del juego, no solo la propia.
+  const vis = (e) => {
+    for (let n = e; n && n !== w.parentElement; n = n.parentElement) {
+      const c = getComputedStyle(n);
+      if (c.display === 'none' || c.visibility === 'hidden' || parseFloat(c.opacity) === 0) return false;
+    }
+    return true;
+  };
+  for (const e of w.querySelectorAll('*')) {
+    if (!vis(e)) continue;
+    const c = getComputedStyle(e);
+    if (c.overflow === 'visible' && c.overflowX === 'visible' && c.overflowY === 'visible') continue;
+    // Solo nodos con texto PROPIO: un contenedor con scroll legítimo (una lista
+    // de pistas) no es una palabra cortada.
+    const propio = [...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim());
+    if (!propio) continue;
+    const cortaAncho = e.scrollWidth > e.clientWidth + 2;
+    const cortaAlto  = e.scrollHeight > e.clientHeight + 2;
+    if (!cortaAncho && !cortaAlto) continue;
+    const txt = e.textContent.trim().slice(0, 24);
+    if (!txt) continue;
+    return \`«\${txt}» (\${e.className || e.tagName}) pide \${e.scrollWidth}×\${e.scrollHeight} y tiene \${e.clientWidth}×\${e.clientHeight}\`;
+  }
+  return null;
+}`;
+
 const FN_TAPADO = `() => {
   const w = document.querySelector('#ww-player-widget');
   const hud = w?.querySelector('.edu-hud');
@@ -186,6 +225,19 @@ const seeded = await page.evaluate(async () => {
       updatedAt: new Date().toISOString(),
     };
     if (T.migrateContent) { try { a.content = T.migrateContent(a.content) ?? a.content; } catch {} }
+    // UNA PALABRA DE CLASE, no una de ejemplo. Los contenidos por defecto llevan
+    // etiquetas cortas («Ojo», «Sí») y con ellas ninguna red veía el defecto que
+    // el dueño encontró con «Raíz principal»: la palabra cortada. Se alarga UNA
+    // etiqueta de cada lista de texto para que la siembra contenga el caso duro
+    // (a nadie le sirve un examen con las preguntas fáciles).
+    const LARGA = 'Aurícula derecha';
+    for (const lista of ['pins', 'pairs', 'items', 'entries', 'words']) {
+      const arr = a.content?.[lista];
+      if (!Array.isArray(arr) || !arr.length) continue;
+      const campo = ['label', 'left', 'text', 'term'].find(k => typeof arr[0]?.[k] === 'string');
+      if (campo) arr[0][campo] = LARGA;
+      break;
+    }
     try { storage.save(a); out.push({ name: m.name, label: m.label || m.name, id: a.id }); }
     catch (e) { out.push({ name: m.name, label: m.label || m.name, id: a.id, seedError: e.message }); }
   }
@@ -640,6 +692,7 @@ for (const t of seeded) {
             };
           });
           if (rr) rr.tapado = await page.evaluate(`(${FN_TAPADO})()`);
+          if (rr) rr.cortado = await page.evaluate(`(${FN_CORTADO})()`);
           // EN VERTICAL TAMBIÉN: a 1280×800 la rejilla centrada no llega arriba
           // y el solape que reportó el compañero (móvil/marco alto) no existe.
           // Se estrecha la ventana, se re-mide, y se restaura.
@@ -647,11 +700,15 @@ for (const t of seeded) {
           // un apaisado BAJO (donde a un tablero le falta alto, crece hasta el
           // borde y mete sus letras bajo los chips — el caso de la Sopa).
           for (const [w, h, nombre] of [[480, 900, 'en vertical'], [1100, 430, 'en apaisado bajo']]) {
-            if (!rr || rr.tapado) break;
+            if (!rr || (rr.tapado && rr.cortado)) break;
             await page.setViewportSize({ width: w, height: h });
             await page.waitForTimeout(250);
             rr.tapado = await page.evaluate(`(${FN_TAPADO})()`);
             if (rr.tapado) rr.tapado += ` (${nombre})`;
+            if (!rr.cortado) {
+              rr.cortado = await page.evaluate(`(${FN_CORTADO})()`);
+              if (rr.cortado) rr.cortado += ` (${nombre})`;
+            }
           }
           if (rr) { await page.setViewportSize({ width: 1280, height: 800 }); await page.waitForTimeout(150); }
           const exc = ENVIO_ES_MECANICA[t.name];
@@ -682,6 +739,7 @@ for (const t of seeded) {
                 + `${rr.esquina.left}px desde la izquierda (tope ${TOPE_ESQUINA}) — su raíz no llena el hueco`);
             }
             if (rr.tapado) fallos.push(`un chip del HUD pisa texto del juego: ${rr.tapado}`);
+            if (rr.cortado) fallos.push(`texto del juego CORTADO: ${rr.cortado}`);
           }
           roles.push({ label: t.label, ...medida, exc, fallos });
           if (fallos.length) { status = 'error'; detail = `roles: ${fallos[0]}`; }
