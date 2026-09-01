@@ -447,7 +447,12 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     hudSet(document.querySelector('.cw-wrap'), 'pagina', `${solvedIds.size} / ${totalWords}`);
   }
 
+  // Dos caminos llevan aquí —resolver la última palabra o agotarse el tiempo—
+  // y el segundo no puede repetir el podio ni la celebración.
+  let terminado = false;
   function finishGame() {
+    if (terminado) return;
+    terminado = true;
     stopRo?.();
     // Puntúa con el MISMO scorer de la plantilla (una llamada por palabra
     // resuelta): sin aritmética propia en el player. El techo es, por
@@ -459,13 +464,16 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     // Crossword has its own celebration overlay → skip the generic result screen,
     // but let the shell save the result + fire onFinish and hand back timeUsed.
     const { timeUsed } = ctx.finish({ score, maxScore: max, skipResultScreen: true });
+    // El cartel dice la VERDAD: completado no es lo mismo que «se acabó el
+    // tiempo con 3 de 8» (R6: nada de celebrar un final que no ocurrió).
+    const completo = solvedIds.size >= totalWords;
     const celebEl = document.createElement('div');
     celebEl.className = 'cw-celebration';
     celebEl.innerHTML = `
       <div class="cw-celeb-box">
-        <div style="font-size:3rem">🎉</div>
-        <h3>¡Crucigrama completado!</h3>
-        <p class="text-muted">Tiempo: ${timeUsed}s · ${totalWords} palabras encontradas</p>
+        <div style="font-size:3rem">${completo ? '🎉' : '⏱'}</div>
+        <h3>${completo ? '¡Crucigrama completado!' : 'Se acabó el tiempo'}</h3>
+        <p class="text-muted">Tiempo: ${timeUsed}s · ${solvedIds.size} / ${totalWords} palabras encontradas</p>
         <button class="btn btn-primary" id="cw-celeb-close">Continuar</button>
       </div>`;
     document.querySelector('.cw-wrap')?.appendChild(celebEl);
@@ -473,6 +481,9 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
       celebEl.remove();
     });
   }
+
+  // El RELOJ no espera a nadie: al agotarse se cierra con lo resuelto.
+  ctx.alAgotarse(finishGame);
 
   // Select the first cell of the first word on load
   if (words.length) {

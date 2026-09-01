@@ -13,19 +13,19 @@ Andamio = la plantilla ya usa `styles/scaffold.css` (roles declarados, §3b).
 
 | Actividad | Proporción | Andamio | Piezas en **ancho** (1280×800) | Piezas en **alto** (520×900) |
 |---|---|---|---|---|
-| **Quiz** (`quiz`) | `16/10` | — | `ww-prow` 100%×6% → **barra**<br>`ww-opt-grid` 100%×92% → **escenario** | `ww-prow` 100%×3% → **barra**<br>`ww-opt-grid` 100%×92% → **escenario** |
+| **Quiz** (`quiz`) | `16/10` | — | `ww-prow` 100%×10% → **barra**<br>`ww-opt-grid` 100%×81% → **escenario** | `ww-prow` 100%×12% → **barra**<br>`ww-opt-grid` 100%×80% → **escenario** |
 | **Ruleta** (`wheel`) | `1/1` | — | `ww-wheel-stage` 47%×78% → **—**<br>`wh-side` 9%×15% → **—** | `ww-wheel-stage` 78%×43% → **—**<br>`wh-side` 24%×13% → **—** |
-| **Emparejar** (`match`) | `16/10` | ✅ | `ww-field` 99%×92% → **escenario**<br>`ww-bar` 99%×5% → **barra** | `ww-field` 97%×93% → **escenario**<br>`ww-bar` 97%×4% → **barra** |
+| **Emparejar** (`match`) | `16/10` | ✅ | `ww-field` 94%×83% → **escenario**<br>`ww-bar` 94%×5% → **barra** | `ww-field` 89%×89% → **escenario**<br>`ww-bar` 89%×4% → **barra** |
 | **Memoria** (`memory`) | `1/1` | — | `mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—** | `mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—** |
-| **Tildes** (`tildes`) | `16/10` | — | `tc-bar` 88%×6% → **barra**<br>`tc-passage-area` 88%×81% → **escenario**<br>`tc-done-wrap` 88%×8% → **barra** | `tc-bar` 88%×4% → **barra**<br>`tc-passage-area` 88%×86% → **escenario**<br>`tc-done-wrap` 88%×7% → **barra** |
-| **Comas** (`comas`) | `16/10` | — | `tc-bar` 88%×6% → **barra**<br>`tc-passage-area` 88%×81% → **escenario**<br>`tc-done-wrap` 88%×8% → **barra** | `tc-bar` 88%×4% → **barra**<br>`tc-passage-area` 88%×86% → **escenario**<br>`tc-done-wrap` 88%×7% → **barra** |
-| **Operaciones** (`math`) | `16/10` | — | `ww-keypad-head` 100%×9% → **barra**<br>`ww-keypad` 100%×69% → **escenario** | `ww-keypad-head` 100%×9% → **barra**<br>`ww-keypad` 100%×69% → **escenario** |
-| **Sopa de Letras** (`wordsearch`) | `4/3` | — | `ww-ws-grid-wrap` 90%×100% → **escenario**<br>`ww-ws-words` 9%×100% → **carril** | `ww-ws-grid-wrap` 100%×58% → **escenario**<br>`ww-ws-words` 100%×5% → **barra** |
+| **Tildes** (`tildes`) | `16/10` | — | `tc-bar` 88%×6% → **barra**<br>`tc-progress` 88%×0% → **barra**<br>`tc-passage-area` 88%×80% → **escenario**<br>`tc-done-wrap` 88%×8% → **barra** | `tc-bar` 88%×4% → **barra**<br>`tc-progress` 88%×0% → **barra**<br>`tc-passage-area` 88%×85% → **escenario**<br>`tc-done-wrap` 88%×7% → **barra** |
+| **Comas** (`comas`) | `16/10` | — | `tc-bar` 88%×6% → **barra**<br>`tc-progress` 88%×1% → **barra**<br>`tc-passage-area` 88%×80% → **escenario**<br>`tc-done-wrap` 88%×8% → **barra** | `tc-bar` 88%×4% → **barra**<br>`tc-progress` 88%×0% → **barra**<br>`tc-passage-area` 88%×85% → **escenario**<br>`tc-done-wrap` 88%×7% → **barra** |
+| **Operaciones** (`math`) | `16/10` | — | `ww-keypad-head` 100%×10% → **barra**<br>`ww-keypad` 100%×74% → **escenario** | `ww-keypad-head` 100%×9% → **barra**<br>`ww-keypad` 100%×72% → **escenario** |
+| **Sopa de Letras** (`wordsearch`) | `4/3` | — | `ww-ws-grid-wrap` 90%×100% → **escenario**<br>`ww-ws-words` 9%×100% → **carril** | `ww-ws-grid-wrap` 100%×93% → **escenario**<br>`ww-ws-words` 100%×5% → **barra** |
 | **Crucigrama** (`crossword`) | `4/3` | — | `cw-tools` 99%×5% → **barra**<br>`cw-body` 99%×85% → **escenario**<br>`cw-footer` 99%×6% → **barra** | `cw-tools` 97%×4% → **barra**<br>`cw-body` 97%×87% → **escenario**<br>`cw-footer` 97%×6% → **barra** |
 | **Abre Cajas** (`question-live`) | `4/3` | — | `ab-board` 37%×18% → **—**<br>`ab-hint` 24%×3% → **—** | `ab-board` 94%×16% → **barra**<br>`ab-hint` 61%×3% → **—** |
 | **Ordena las Pelotas** (`ballsort`) | `4/3` | — | `bs-toolbar` 100%×7% → **barra**<br>`tubes` 100%×41% → **—** | `bs-toolbar` 100%×6% → **barra**<br>`tubes` 100%×36% → **—** |
-| **Etiqueta el diagrama** (`diagram`) | `16/10` | ✅ | `ww-field` 99%×90% → **escenario**<br>`ww-bar` 99%×7% → **barra** | `ww-field` 97%×93% → **escenario**<br>`ww-bar` 97%×4% → **barra** |
-| **Explota Globos** (`globos`) | `16/10` | — | `ww-prow` 100%×6% → **barra**<br>`gl-field` 100%×92% → **escenario** | `ww-prow` 100%×3% → **barra**<br>`gl-field` 100%×92% → **escenario** |
+| **Etiqueta el diagrama** (`diagram`) | `16/10` | ✅ | `ww-field` 94%×82% → **escenario**<br>`ww-bar` 94%×6% → **barra** | `ww-field` 89%×89% → **escenario**<br>`ww-bar` 89%×4% → **barra** |
+| **Explota Globos** (`globos`) | `16/10` | — | `ww-prow` 100%×10% → **barra**<br>`gl-field` 100%×81% → **escenario** | `ww-prow` 100%×12% → **barra**<br>`gl-field` 100%×80% → **escenario** |
 
 ## Qué cambia al girar el hueco
 
@@ -35,8 +35,8 @@ Piezas que cambian de rol entre ancho y alto (misma pieza, otra función):
 - **Ruleta**: 0 de 2
 - **Emparejar**: 0 de 2
 - **Memoria**: 0 de 12
-- **Tildes**: 0 de 3
-- **Comas**: 0 de 3
+- **Tildes**: 0 de 4
+- **Comas**: 0 de 4
 - **Operaciones**: 0 de 2
 - **Sopa de Letras**: 1 de 2
 - **Crucigrama**: 0 de 3

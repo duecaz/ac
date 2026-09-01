@@ -178,8 +178,10 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   arena.addEventListener('pointercancel', e => endDrag(e, false));
 
   // ── Enviar → corregir y puntuar ─────────────────────────────────────────────
-  submitBtn?.addEventListener('click', () => {
-    if (state.graded || state.links.size < raw.length) return;
+  // CALIFICAR con lo que haya: el botón exige tenerlo todo, pero el reloj no
+  // espera. Al agotarse se corrige lo hecho (core/reloj.js).
+  function calificar() {
+    if (state.graded) return;
     state.graded = true;
     // Cada cuerda se puntúa con el MISMO scorer que usan VS y Equipos: el modo
     // Individual no puede tener su propia aritmética (era la doble contabilidad).
@@ -209,7 +211,12 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
       stats: ({ timeUsed }) => `${wrong} error${wrong !== 1 ? 'es' : ''} · ${timeUsed}s`,
       score, maxScore,
     }), GRADE_HOLD_MS);
+  }
+  submitBtn?.addEventListener('click', () => {
+    if (state.links.size < raw.length) return;   // el botón exige tenerlo todo
+    calificar();
   });
+  ctx.alAgotarse(calificar);
 
   // ── Maquetación: SIEMPRE dos columnas laterales (preguntas | respuestas) ─────
   // En ambas orientaciones los rieles son columnas y las cuerdas cruzan el pasillo

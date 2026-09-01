@@ -132,8 +132,12 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
   arena.addEventListener('pointerup', e => endDrag(e, true));
   arena.addEventListener('pointercancel', e => endDrag(e, false));
 
-  submitBtn?.addEventListener('click', () => {
-    if (state.graded || state.links.size < pins.length) return;
+  // CALIFICAR con lo que haya. El botón solo deja pulsar con todo enlazado,
+  // pero el RELOJ no espera a nadie: al agotarse se corrige lo hecho, que es lo
+  // honesto — ni se pierde el trabajo ni se deja al alumno mirando una pantalla
+  // que ya no responde.
+  function calificar() {
+    if (state.graded) return;
     state.graded = true;
     // Cada etiqueta enlazada se puntúa con el MISMO scorer de la plantilla:
     // el modo Individual no lleva aritmética propia (era doble contabilidad).
@@ -161,7 +165,13 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
       stats: ({ timeUsed }) => `${wrong} error${wrong !== 1 ? 'es' : ''} · ${timeUsed}s`,
       score, maxScore,
     }), GRADE_HOLD_MS);
+  }
+  submitBtn?.addEventListener('click', () => {
+    if (state.links.size < pins.length) return;   // el botón exige tenerlo todo
+    calificar();
   });
+  // Se acabó el tiempo (core/reloj.js, si la actividad tiene límite).
+  ctx.alAgotarse(calificar);
 
   // EL TAMAÑO NO LO CALCULA JS. Aquí vivía `fitImageBox()`: leía el escenario,
   // multiplicaba por la proporción natural de la foto y escribía `width`/`height`

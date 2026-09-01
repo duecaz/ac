@@ -112,7 +112,12 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
     }
   }
 
+  // TERMINAR con lo que haya. Se llega aquí por dos caminos —levantar el último
+  // par o que se acabe el tiempo— y el segundo no puede repetir el podio.
+  let terminado = false;
   function finish() {
+    if (terminado) return;
+    terminado = true;
     ctx.finish({
       title: '¡Memorizado!',
       lead: `Puntos: <b>${state.score}</b> / ${maxScore}`,
@@ -121,6 +126,10 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
       maxScore,
     });
   }
+
+  // El RELOJ no espera a nadie: si hay cuenta atrás y se agota, se cierra con
+  // los pares que se hayan levantado (el scorer ya los fue sumando).
+  ctx.alAgotarse(finish);
 
   paint();
 }

@@ -30,7 +30,7 @@ export class MathTemplate extends BaseTemplate {
     play:            { vs: 'race', teams: 'turns', live: ['rounds', 'race'], retry: true, submit: 'boton' , reloj: { unidad: 'operación' } },
     needsImageUpload: false,
     needsAudioUpload: false,
-    defaultRules: () => ({ randomize: true }),
+    defaultRules: () => ({ timer: 30, randomize: true }),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0 }),
     defaultLive: () => ({}),
     defaultContent: () => ({ items: [

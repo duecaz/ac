@@ -37,9 +37,17 @@ export function relojDe(activity) {
 }
 
 /** ¿Esta PLANTILLA admite cuenta atrás? Lo DECLARA ella (`meta.play.reloj`), y
- *  la unidad es su palabra: «pregunta», «frase», «sopa». Sin declaración no hay
- *  cuenta atrás — una mecánica libre (Memoria, Emparejar) se cronometra, no se
- *  corta a mitad. */
+ *  la unidad es su palabra: «pregunta», «frase», «sopa», «partida», «crucigrama».
+ *  Sin unidad no hay cuenta atrás — la Ruleta y Pedir la palabra no miden nada.
+ *
+ *  CUÁNTO por defecto (dueño 2026-09-01: «es 30 segundos por default»): la
+ *  unidad manda. Donde la unidad es UN ítem —pregunta, operación, frase— son
+ *  30 s, y ahí la orden se aplica literal. Donde la unidad es el TABLERO
+ *  ENTERO en una sola pantalla, 30 s dejarían el juego sin jugar, así que el
+ *  defecto es proporcional al trabajo que hay en pantalla: diagrama y
+ *  emparejar 120 s, memoria 180 s, sopa y crucigrama 300 s. Es un DEFECTO, no
+ *  un techo: el bloque «Tiempo» del editor lo cambia, y 0 sigue significando
+ *  «sin límite» (entonces sale el cronómetro). */
 export function unidadDeCuenta(T) {
   const u = T?.meta?.play?.reloj?.unidad;
   return typeof u === 'string' && u ? u : null;

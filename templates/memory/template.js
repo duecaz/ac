@@ -31,10 +31,10 @@ export class MemoryTemplate extends BaseTemplate {
     // Se DECLARA porque si no, la plataforma tiene que preguntar «¿eres
     // memory?», y eso es lo que la ley §0 prohíbe: un modo no conoce plantillas
     // concretas. Estaba preguntado por NOMBRE en siete sitios.
-    play:            { vs: 'none', teams: 'propio', live: [] , reloj: { unidad: null } },
+    play:            { vs: 'none', teams: 'propio', live: [] , reloj: { unidad: 'partida' } },
     needsImageUpload: false,
     needsAudioUpload: false,
-    defaultRules: () => ({ revealMs: 900, columns: 4 }),
+    defaultRules: () => ({ timer: 180, revealMs: 900, columns: 4 }),
     defaultScoring: () => ({ pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
     defaultLive: () => ({}),
     defaultContent: () => {

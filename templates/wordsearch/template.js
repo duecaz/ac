@@ -28,7 +28,7 @@ export class WordsearchTemplate extends BaseTemplate {
     play:            { vs: 'race', teams: 'board', live: [], submit: 'gesto' , reloj: { unidad: 'sopa' } },
     needsImageUpload: false,
     needsAudioUpload: false,
-    defaultRules:   () => ({ gridSize: 'medium', directions: 'medium', timer: 0 }),
+    defaultRules:   () => ({ gridSize: 'medium', directions: 'medium', timer: 300 }),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1 }),   // P5: escala unificada (antes 10)
     defaultContent: () => ({
       words: ['GATO', 'PERRO', 'PÁJARO', 'RATÓN', 'CONEJO',

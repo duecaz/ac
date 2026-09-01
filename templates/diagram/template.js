@@ -39,10 +39,10 @@ export class DiagramTemplate extends BaseTemplate {
     aspectRatio: '16/10',
     modes: { solo: true, live: false, async: true, practice: true },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
-    play:            { vs: 'none', teams: 'none', live: [] , reloj: { unidad: null } },
+    play:            { vs: 'none', teams: 'none', live: [] , reloj: { unidad: 'diagrama' } },
     needsImageUpload: true,
     needsAudioUpload: false,
-    defaultRules: () => ({ timer: 0, randomize: true }),
+    defaultRules: () => ({ timer: 120, randomize: true }),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
     defaultLive: () => ({}),
     defaultContent: () => ({

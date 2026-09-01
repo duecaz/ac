@@ -70,7 +70,12 @@ const TS = listTemplates().filter(T => existsSync(join(RAIZ, 'templates', String
     // shell (core/soloPlayer.js) y, si la plantilla no dice qué hacer al agotarse,
     // el shell registra el ítem sin respuesta y avanza.
     const enElShell = /runSequentialPlayer/.test(fuentes);
-    const lee = enElShell || LEE_TIMER.test(fuentes) || LEE_TIMER.test(compartido);
+    // Y quien corre sobre el shell LIBRE (un tablero entero en una pantalla:
+    // Emparejar, Diagrama, Memoria, Crucigrama) lo lee cuando DICE qué hacer al
+    // agotarse — `ctx.alAgotarse(...)`. Sin eso el límite sería decorativo: el
+    // número llegaría a cero y el juego seguiría abierto.
+    const cierraAlAgotarse = /runFreeformPlayer/.test(fuentes) && /alAgotarse\s*\(/.test(fuentes);
+    const lee = enElShell || cierraAlAgotarse || LEE_TIMER.test(fuentes) || LEE_TIMER.test(compartido);
     const declara = !!unidadDeCuenta(T);
     if (lee && !declara) mudos.push(T.meta.name);
     if (declara && !lee) sobran.push(T.meta.name);
@@ -143,8 +148,13 @@ const TS = listTemplates().filter(T => existsSync(join(RAIZ, 'templates', String
   assert.ok(/disabled/.test(html), 'y con límite puesto, el cronómetro sale mandado por la cuenta atrás');
   const memoria = TS.find(T => T.meta.name === 'memory');
   const hm = tiempoBloqueHtml({ rules: {} }, memoria);
-  assert.ok(!/f-timer/.test(hm) && /f-crono/.test(hm),
-    'Memoria no admite cuenta atrás (su mecánica es libre) pero sí cronómetro');
+  assert.ok(/Tiempo por partida/.test(hm),
+    'un TABLERO entero también lleva cuenta atrás, con SU unidad: la partida, no la pregunta');
+  // Y el caso intermedio sigue soportado aunque hoy no lo use nadie: una
+  // plantilla que admita cronómetro y NO cuenta atrás recibe solo la casilla.
+  const soloCrono = { meta: { play: { reloj: { unidad: null } } } };
+  const hc = tiempoBloqueHtml({ rules: {} }, soloCrono);
+  assert.ok(!/f-timer/.test(hc) && /f-crono/.test(hc), 'sin unidad declarada no hay campo de límite, pero sí cronómetro');
   ok('CONTRA-PRUEBA: cada plantilla recibe el reloj que declara, ni más ni menos');
 }
 

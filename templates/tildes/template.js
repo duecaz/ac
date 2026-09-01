@@ -38,7 +38,7 @@ export class TildesTemplate extends BaseTemplate {
     play:            { vs: 'points', teams: 'turns', live: ['rounds', 'race'], submit: 'boton' , reloj: { unidad: 'frase' } },
     needsImageUpload: false,
     needsAudioUpload: false,
-    defaultRules: () => ({ randomize: false, allowOverflow: true, showHints: false }),
+    defaultRules: () => ({ timer: 30, randomize: false, allowOverflow: true, showHints: false }),
     // DIEZ POR MARCA, no uno (dueño 2026-08-27, comparando con la app anterior:
     // «cada tilde es 10 puntos por defecto»). En una pizarra a tres metros, 20 y
     // 120 se leen y 2 y 12 no. Solo cambia el DEFECTO de las actividades nuevas:

@@ -34,8 +34,8 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2780 | 12 · 1415 | 0.51 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 38 · 4479 | 19 · 3093 | 0.69 |
 | **informes/tareas** | después de clase | 10 · 1116 | 4 · 512 | 0.46 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5882 | 13 · 1847 | 0.31 |
-| **infra/común** | todo lo anterior | 160 · 19100 | 67 · 8456 | 0.44 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5919 | 13 · 1847 | 0.31 |
+| **infra/común** | todo lo anterior | 160 · 19108 | 67 · 8466 | 0.44 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -109,7 +109,7 @@ graph TD
 | **adaptadores** | `adapters/pocketbase/realtimeRooms.js` (483) · `adapters/pocketbase/realtimeAnswers.js` (388) · `adapters/pocketbase/realtime.js` (361) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (255) |
 | **core** | `core/textCorrectionRound.js` (763) · `core/normsCheck.js` (474) · `core/skins.js` (421) · `core/aiContent.js` (385) · `core/auth.js` (368) |
 | **kernel** | `kernel/session/teamsMachine.js` (182) · `kernel/session/liveMachine.js` (166) · `kernel/session/vsMachine.js` (155) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) |
-| **plantillas** | `templates/crossword/player.js` (485) · `templates/wordsearch/player.js` (382) · `templates/match/player.js` (297) · `templates/diagram/player.js` (256) · `templates/quiz/editor.js` (222) |
+| **plantillas** | `templates/crossword/player.js` (496) · `templates/wordsearch/player.js` (382) · `templates/match/player.js` (304) · `templates/diagram/player.js` (266) · `templates/quiz/editor.js` (222) |
 | **contenido** | `kernel/content/qaAdapt.js` (141) · `kernel/content/switch.js` (117) · `kernel/content/convert.js` (95) · `kernel/content/models.js` (83) · `kernel/content/sessionItems.js` (25) |
 | **config** | `pocketbase.config.js` (13) |
 
@@ -140,7 +140,7 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 | `core/textCorrectionRound.js` | 763 | 5 |
 | `views/playerView.js` | 538 | 1 |
 | `views/vsView.js` | 515 | 2 |
-| `templates/crossword/player.js` | 485 | 1 |
+| `templates/crossword/player.js` | 496 | 1 |
 | `adapters/pocketbase/realtimeRooms.js` | 483 | 1 |
 | `core/normsCheck.js` | 474 | 1 |
 | `views/admin/collections.js` | 453 | 1 |

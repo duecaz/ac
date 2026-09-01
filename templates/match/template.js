@@ -27,10 +27,10 @@ export class MatchTemplate extends BaseTemplate {
     aspectRatio: '16/10',
     modes: { solo: true, live: false, async: true, practice: true },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
-    play:            { vs: 'points', teams: 'turns', live: [], submit: 'gesto' , reloj: { unidad: null } },
+    play:            { vs: 'points', teams: 'turns', live: [], submit: 'gesto' , reloj: { unidad: 'partida' } },
     needsImageUpload: true,
     needsAudioUpload: false,
-    defaultRules: () => ({ timer: 0, randomize: true, livesPerMistake: 0 }),
+    defaultRules: () => ({ timer: 120, randomize: true, livesPerMistake: 0 }),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
     defaultLive: () => ({}),
     defaultContent: () => {
