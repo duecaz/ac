@@ -336,6 +336,12 @@
   line-height: 1.35;
   white-space: nowrap;
 }
+/* `hidden` pierde contra CUALQUIER regla de display (el atributo es solo un
+   display:none de agente de usuario): con `inline-flex` puesto, un chip oculto
+   seguía OCUPANDO su sitio — 52px de hueco fantasma que empujaban al cronómetro
+   fuera de la esquina en la Ruleta (lo cazó la matriz al aparecer su primer
+   chip visible). */
+.edu-hud__chip[hidden] { display: none; }
 
 /* Carril de la animación de progreso (solo) DENTRO del marco: franja arriba.
    La animación es SECUNDARIA → ocupa como mucho el 25% del alto del marco (y el
@@ -410,7 +416,15 @@
 .ww-play-page .ww-player-frame .ww-player .ww-q {
   margin: 0;
   line-height: 1.15;
-  font-size: clamp(1rem, 5cqmin, 2.4rem);
+  /* EL ENUNCIADO ES EL PROTAGONISTA (comparado con Wordwall, dueño 2026-08-30):
+     su pregunta ocupa ~el doble que nuestras opciones y aquí era al revés — el
+     «2+2» salía pequeñísimo sobre cuatro tarjetas enormes. Era `5cqmin` con
+     TECHO FIJO de 2.4rem: el techo congelante que §3 prohíbe (en una pizarra el
+     marco crecía y la pregunta no). Proporción Wordwall y techo RELATIVO: crece
+     con el marco, siempre. `balance` reparte una pregunta larga en líneas
+     parejas en vez de dejar una palabra colgando. */
+  font-size: clamp(1.1rem, 9cqmin, 16cqh);
+  text-wrap: balance;
 }
 /* PLACA DE LEGIBILIDAD (§3 · reporte del dueño 2026-08-12). Sobre la foto del
    profe el enunciado y el contador quedaban en texto suelto: en la captura,
@@ -635,7 +649,8 @@ body.bg-plated .ww-player .ww-q {
 /* Narrow frame: compact quiz layout */
 @container (max-width: 420px) {
   .ww-play-page .ww-player-frame .ww-player { gap: .6rem; }
-  .ww-play-page .ww-player-frame .ww-player .ww-q { font-size: clamp(.85rem, 5cqmin, 1.4rem); }
+  /* En estrecho la proporción baja un punto, pero el techo sigue RELATIVO. */
+  .ww-play-page .ww-player-frame .ww-player .ww-q { font-size: clamp(.95rem, 7cqmin, 14cqh); }
   .ww-play-page .ww-player-frame .ww-player .ww-opt-grid .btn {
     font-size: clamp(.8rem, 3cqmin, 1.1rem);
     padding: clamp(.35rem, 2cqh, .9rem);

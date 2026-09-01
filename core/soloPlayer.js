@@ -13,6 +13,7 @@ import { FEEDBACK_DELAY } from './constants.js';
 import { GameEvents, emitGame } from './gameEvents.js';
 import { shuffle } from './azar.js';
 import { createCountdown } from './soloTimer.js';
+import { cronoHud } from './playerHud.js';
 import { clock } from './clock.js';
 import { defaultMaxScore } from './scoring/index.js';
 import { lsGet, lsSet, lsDel } from './ls.js';
@@ -53,6 +54,12 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
   // u otro modo NO debe repintar — el core pregunta ctx.alive() antes.
   const alive = claimStage(rootSel);
 
+  // El cronómetro del HUD (comparado con Wordwall): lo arranca el SHELL porque
+  // el shell es quien posee el tiempo — el core solo pinta su tablero. hudSet
+  // re-encuentra el chip aunque el core re-renderice. Su propio guard lo apaga
+  // al cambiar de pantalla.
+  const crono = cronoHud(rootSel, activity);
+
   // Progreso opt-in para players LIBRES (Memoria, etc.): como el shell no posee
   // el estado del tablero, el core lo aporta. loadProgress() devuelve el snapshot
   // guardado (o null) al montar y restaura el startedAt; saveProgress(snapshot)
@@ -90,6 +97,7 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
   } = {}) {
     if (finished || !alive()) return;   // un final zombi ni guarda ni repinta (§23)
     finished = true;
+    crono.stop();   // §23: el reloj se va con su pantalla (y los tests sin DOM real salen limpios)
     if (resumeOn) lsDel(pKey); // partida terminada → no reanudar
 
     const timeUsed = Math.round((clock.now() - startedAt) / 1000);
@@ -154,6 +162,10 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
   // Ficha de ocupación (§23): `setTimeout(next)` y el countdown por ítem
   // sobreviven al cambio de ruta/modo; sus repintados tardíos se descartan.
   const alive = claimStage(rootSel);
+
+  // El cronómetro del HUD (ver el freeform): con `rules.timer` no arranca —
+  // manda la cuenta atrás, y dos relojes a la vez confunden (mostrarCrono).
+  const crono = cronoHud(rootSel, activity);
 
   // Reanudar (F5): retoma el avance guardado si es de ESTA versión y va a medias.
   const resumeOn = canResumeSolo(activity, opts);
@@ -240,6 +252,7 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
   }
 
   function finish() {
+    crono.stop();
     if (finished || !alive()) return;   // un final zombi ni guarda ni repinta (§23)
     finished = true;
     stopTimer();

@@ -22,6 +22,7 @@
 // explícitamente que "los ajustes finos son opcionales y viven en el editor",
 // que es exactamente aquí, y con valores por defecto ya puestos.
 import { on } from './events.js';
+import { cronoFieldHtml, wireCronoField } from './editorPrimitives.js';
 import { readSeconds } from './timings.js';
 import { activityItemCount } from './migrate.js';
 import { defaultMaxScore } from './scoring/index.js';
@@ -57,6 +58,7 @@ export function scoringPanelHtml(a) {
          Esta línea cierra el circuito: cambias el número y ves al instante qué
          vale un acierto y cuál es el máximo de ESTA actividad — si algún día un
          cambio no la mueve, el mando desconectado se delata solo. -->
+    ${cronoFieldHtml(a)}
     <div class="col-12"><p class="text-muted small mb-0" id="f-resumen-pts">${resumenPuntosHtml(a)}</p></div>
   </div>`;
 }
@@ -80,6 +82,7 @@ export function wireScoringPanel(root, a, ctx) {
   on(root, 'change', '#f-mode', e => { a.scoring.mode = e.target.value; ctx.onChange(a); refrescar(); });
   on(root, 'input', '#f-ppc', e => { a.scoring.pointsPerCorrect = +e.target.value || 1; ctx.onChange(a); refrescar(); });
   on(root, 'input', '#f-ppw', e => { a.scoring.pointsPerWrong = +e.target.value || 0; ctx.onChange(a); refrescar(); });
+  wireCronoField(root, a, ctx);
 }
 
 // ── En vivo ────────────────────────────────────────────────────────────────

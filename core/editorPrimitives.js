@@ -211,3 +211,27 @@ export function wirePegarTexto(root, partir, alPegar) {
       resto ? 'warning' : 'success', 6000);
   });
 }
+
+/** EL CRONÓMETRO DEL JUEGO (comparado con Wordwall, 2026-08-30). Encendido por
+ *  defecto: enseña cuánto llevas cuando la actividad no tiene límite de tiempo
+ *  (con límite manda la cuenta atrás — dos relojes confunden). La casilla
+ *  existe para APAGARLO: hay clases donde ver correr el tiempo mete presión que
+ *  el profe no quiere. Lo lee `mostrarCrono` (core/playerHud.js), que es su
+ *  único lector — un ajuste sin lector rompe CI (ajusteConectado). */
+export function cronoFieldHtml(a) {
+  const activo = a.rules?.crono !== false;
+  return `<div class="col-md-4">
+    <div class="form-check mt-4">
+      <input class="form-check-input" type="checkbox" id="f-crono" ${activo ? 'checked' : ''}>
+      <label class="form-check-label" for="f-crono">Mostrar cronómetro</label>
+    </div>
+    <div class="form-text">Cuenta el tiempo que llevas (si no hay límite por ítem)</div>
+  </div>`;
+}
+export function wireCronoField(root, a, ctx) {
+  on(root, 'change', '#f-crono', e => {
+    a.rules = a.rules || {};
+    a.rules.crono = e.target.checked ? true : false;
+    ctx.onChange(a);
+  });
+}

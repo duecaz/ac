@@ -19,6 +19,9 @@ import { heatClass } from './itemStats.js';
 import { hudHtml } from './playerHud.js';
 import { corrigeAlFinal } from './constants.js';
 import { createCountdown } from './soloTimer.js';
+import { startElapsedTicker } from './deadlineTicker.js';
+import { serverNow } from './serverNow.js';
+import { mostrarCrono } from './playerHud.js';
 
 // ICONOS LUCIDE, EN LÍNEA (dueño, 2026-08-15: «usa iconos lucide»). Se pegan
 // aquí como SVG en vez de cargar la librería: la app no depende de la red —la
@@ -245,7 +248,7 @@ const relojHtml = (texto) =>
   texto == null ? '' : `<span class="tc-clock" data-reloj>${escapeHtml(String(texto))}</span>`;
 
 // pulsar "Listo" (mismas posiciones que el modo tocar → scoring intacto).
-export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSubmit, chips = {}, reloj = null } = {}) {
+export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSubmit, chips = {}, reloj = null, progreso = null } = {}) {
   const text = payload?.text || '';
   // El botón "Calibrar pizarra" NO va aquí (en el juego): vive en la pantalla de
   // inicio (views/startScreen.js), que es donde van los ajustes previos. En modo
@@ -302,7 +305,9 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
         ${relojHtml(reloj)}
         ${propio ? fullscreenButtonHtml({ inline: true }) : ''}
       </div>
-      ${reloj == null ? '' : '<div class="tc-progress" data-progreso><i></i></div>'}
+      ${/* La barra de agotamiento solo con CUENTA ATRÁS: el cronómetro
+            ascendente no agota nada y una barra quieta a cero desinforma. */''}
+      ${(progreso ?? reloj != null) ? '<div class="tc-progress" data-progreso><i></i></div>' : ''}
       <div class="edu-sec edu-sec--texto tc-passage-area"><div class="tc-passage">${passageHtml(text, kind)}</div></div>
       <div class="tc-done-wrap edu-send"><button type="button" class="btn btn-success btn-lg tc-done" data-ww-submit><i class="bi bi-check2-circle"></i> Listo</button></div>
     </div>`;
@@ -376,7 +381,7 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
       const barra = root.querySelector('[data-progreso] i');
       // `scaleX`, no `width` (ver styles/textCorrection.css): animar el ancho
       // relayoutea la página entera en cada fotograma mientras corre el reloj.
-      if (barra) barra.style.transform = `scaleX(${Math.max(0, Math.min(100, pct ?? 0)) / 100})`;
+      if (barra && pct != null) barra.style.transform = `scaleX(${Math.max(0, Math.min(100, pct)) / 100})`;
     },
   };
 }
@@ -506,6 +511,7 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
   // El conteo lo lleva `createCountdown`, el primitivo de duración de §23 —
   // nunca un setInterval a pelo — y la ronda solo PINTA lo que se le diga.
   const segundos = Math.max(0, Number(activity.rules?.timer) || 0);
+  const inicioCrono = serverNow();   // mismo reloj que mide el primitivo (§22-5)
   let reloj = null;
   const pararReloj = () => { if (reloj) { reloj.stop(); reloj = null; } };
 
@@ -520,10 +526,24 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
       // chip era un tercer sitio para el mismo número — y encima se solapaba con
       // el botón de pantalla completa, que vive en esa misma esquina.
       chips: { left: `${idx + 1} / ${passages.length}` },
-      reloj: segundos ? `⏱ ${segundos}` : null,
+      // Sin límite declarado, la barra lleva el CRONÓMETRO ascendente (paridad
+      // con el HUD de los demás players, comparado con Wordwall): mismo sitio,
+      // mismo formato, sin barra de progreso (no hay nada que agotar).
+      reloj: segundos ? `⏱ ${segundos}` : (mostrarCrono(activity) ? '⏱ 0:00' : null),
+      progreso: segundos > 0,
     });
     pararReloj();
-    if (!segundos) return;
+    if (!segundos) {
+      if (mostrarCrono(activity)) {
+        const tick = startElapsedTicker({
+          since: inicioCrono,
+          while: () => ctx.alive(),
+          onTick: ({ label }) => ronda.setReloj(`⏱ ${label}`, null),
+        });
+        reloj = { stop: tick.stop };
+      }
+      return;
+    }
     reloj = createCountdown(segundos, {
       // `alive()` ANTES de repintar (§23, ficha de ocupación del escenario): si
       // el alumno se fue a otra ruta, este reloj es un zombi y pintaría su cuenta

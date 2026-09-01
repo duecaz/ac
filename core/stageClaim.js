@@ -24,3 +24,16 @@ export function claimStage(root) {
   const epoch = (el.__wwEpoch = (el.__wwEpoch || 0) + 1);
   return () => el.isConnected !== false && el.__wwEpoch === epoch;
 }
+
+/** OBSERVAR sin reclamar. Para el que PINTA ENCIMA de un escenario que ya tiene
+ *  dueño (el cronómetro del HUD): necesita el mismo guard —¿sigue esta época y
+ *  sigue conectado?— pero NO puede subir la época, porque eso mataría el
+ *  `alive()` del dueño de verdad (el shell) y con él sus timers y su avance.
+ *  Pasó: el cronómetro reclamó, el shell quedó «muerto» para sus propios
+ *  guards, y el reloj de Tildes se congeló en 0:00 al primer tick. */
+export function observeStage(root) {
+  const el = typeof root === 'string' ? (globalThis.document?.querySelector(root) ?? null) : root;
+  if (!el) return () => false;
+  const epoch = el.__wwEpoch || 0;
+  return () => el.isConnected !== false && (el.__wwEpoch || 0) === epoch;
+}

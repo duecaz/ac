@@ -596,7 +596,16 @@ for (const t of seeded) {
                 const chip = [...hud.querySelectorAll('.edu-hud__chip')].find(c => !c.hidden && vis(c));
                 const r = (chip || hud).getBoundingClientRect();
                 const rw = w.getBoundingClientRect();
-                return { top: Math.round(r.top - rw.top), left: Math.round(r.left - rw.left) };
+                // El HUD tiene DOS esquinas (zona izquierda y zona derecha): un
+                // chip pegado al borde DERECHO también está en su sitio. Medir
+                // solo `left` daba falso rojo a la Ruleta en cuanto el cronómetro
+                // (zona derecha) pasó a ser su único chip visible al montar.
+                // Y por la derecha se DESCUENTA la reserva del botón de pantalla
+                // completa (--ww-fs-reserve): esa esquina es del botón por norma,
+                // y el chip que la respeta está EN su esquina, no lejos de ella.
+                const reserva = parseFloat(getComputedStyle(hud).paddingRight) || 0;
+                return { top: Math.round(r.top - rw.top),
+                         left: Math.round(Math.min(r.left - rw.left, rw.right - r.right - reserva)) };
               })(),
               // UN CHIP NO PISA TEXTO DEL JUEGO (ronda 2026-08-17: en la Sopa
               // las pastillas tapaban las letras). El HUD no captura toques
