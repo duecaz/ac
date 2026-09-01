@@ -366,7 +366,10 @@ for (const t of seeded) {
           const PROHIBIDO = [
             ['borrar actividad', '.act-del, .icon-btn.del'],
             ['editar contenido', '.act-edit, .icon-btn.edit'],
-            ['publicar/despublicar', '.pub-toggle'],
+            // `[data-pub]`, no una clase: el control tiene DOS formas —pastilla
+            // «Borrador» y icono de publicada— y buscar una sola dejaba la otra
+            // sin vigilar justo el día que cambió el aspecto.
+            ['publicar/despublicar', '[data-pub]'],
             ['papelera', '.bi-trash3, .bi-trash-fill'],
             ['sesión del profe', '#ww-auth-slot .ww-auth__menu:not([hidden])'],
           ];

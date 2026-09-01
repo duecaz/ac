@@ -143,7 +143,7 @@ const CORRE = (read('tools/preflight.mjs').match(/cmd:\s*'([^']+)'/g) || [])
   // Ley §28 (R2b): el escaneo de controles de profe DENTRO del marco de juego
   // sigue conectado. Si alguien lo quita, "no debería tocarlo" vuelve a ser la
   // única defensa contra un dedo curioso con la clase mirando.
-  for (const sel of ['.act-del', '.act-edit', '.pub-toggle']) {
+  for (const sel of ['.act-del', '.act-edit', '[data-pub]']) {
     assert.ok(mx.includes(sel), `matrix-smoke perdió el escaneo R2b de «${sel}»`);
   }
   ok('LEY §28-R2b: el escaneo del marco (sin controles de profe) sigue conectado');

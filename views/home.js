@@ -102,10 +102,16 @@ export function renderHome(rootSel) {
     // §4c: un JUEGO no se publica (el contenido no es del profe) — sin botón
     // Publicar/Borrador en su tarjeta. Editar/borrar sí: la actividad es suya.
     const esJuego = getTemplate(a.template)?.meta?.kind === 'juego';
+    // LO NORMAL NO SE ANUNCIA, LA EXCEPCIÓN SÍ (dueño 2026-09-01: «hay varios
+    // que dicen Pública, es innecesario, casi todas lo son»). Publicar es el
+    // caso corriente: se queda en un icono como los de editar y borrar —sigue
+    // pulsándose para despublicar—, y la pastilla con palabra la lleva solo lo
+    // que NO está publicado, que es lo que hay que ver de un vistazo en una
+    // rejilla de treinta tarjetas.
     const topRight = `<div class="acard-icons">
         ${esJuego ? '' : a.visibility === 'public'
-          ? `<button class="pub-toggle is-pub act-unpublish" data-id="${a.id}" title="Publicada — clic para pasar a borrador"><i class="bi bi-globe"></i> Pública</button>`
-          : `<button class="pub-toggle act-publish" data-id="${a.id}" title="Borrador — clic para publicar en la biblioteca"><i class="bi bi-eye-slash"></i> Borrador</button>`}
+          ? `<button class="icon-btn pub act-unpublish" data-pub data-id="${a.id}" title="Publicada — clic para pasar a borrador" aria-label="Publicada"><i class="bi bi-globe"></i></button>`
+          : `<button class="pub-toggle act-publish" data-pub data-id="${a.id}" title="Borrador — clic para publicar en la biblioteca"><i class="bi bi-eye-slash"></i> Borrador</button>`}
         <button class="icon-btn edit act-edit" data-id="${a.id}" title="Editar"><i class="bi bi-pencil-fill"></i></button>
         <button class="icon-btn del act-del" data-id="${a.id}" title="Eliminar"><i class="bi bi-trash3"></i></button>
         ${a._unsynced ? '<i class="bi bi-cloud-slash acard-unsync" title="No sincronizada"></i>' : ''}

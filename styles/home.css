@@ -650,7 +650,11 @@ body {
   color: #9aa2ad; border-radius: 999px; padding: 2px 9px; font-size: 12px; font-weight: 700; cursor: pointer;
 }
 .pub-toggle:hover { border-color: #c9c2ad; background: #faf8f2; }
-.pub-toggle.is-pub { background: #e8f6ee; border-color: #16a34a; color: #16a34a; }
+/* La publicada ya no lleva pastilla: es el caso normal y lo dice un icono
+   (views/home.js). Se queda verde al pasar por encima, como los otros iconos
+   dicen su color. */
+.icon-btn.pub { color: #16a34a; }
+.icon-btn.pub:hover { background: #e8f6ee; }
 
 /* ── Moderación (views/moderate.js) — chrome, EXCLUIDO del ratchet ──────────── */
 .mod-reports { display: flex; flex-direction: column; gap: 10px; }

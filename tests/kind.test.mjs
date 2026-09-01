@@ -110,7 +110,7 @@ const all = listTemplates().filter(T => reales.has(T.meta.name));
   const lee = (p) => readFileSync(join(raiz, p), 'utf8');
 
   // (a) No se PUBLICA en la biblioteca: la tarjeta no ofrece el control.
-  assert.match(lee('views/home.js'), /esJuego \? '' :[\s\S]{0,120}pub-toggle/,
+  assert.match(lee('views/home.js'), /esJuego \? '' :[\s\S]{0,120}data-pub/,
     'la tarjeta de un juego no puede ofrecer publicar (§4c)');
 
   // (b) No aparece en INFORMES de aprendizaje: no hay contenido del profe del
