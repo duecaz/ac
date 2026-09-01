@@ -300,6 +300,7 @@ const espejoBad = []; // el marcador del duelo deja de ser un espejo
 const bloqueBad = []; // la cabecera de un bloque se dispersa de su pieza
 const origenBad = [];   // textos que deberían medir lo mismo y salen de fórmulas distintas
 const origenVisto = []; // casos en los que la red del origen SÍ pudo medir
+const recalculo = [];    // los que aún calculan su tamaño después de pintar (declarados)
 const antesalas = [];    // LA ANTESALA ES UNA: un control de arranque y las instrucciones a la vista
 const presupuesto = [];
 const roles = [];        // LOS CUATRO ROLES de la diagramación (edu-hud · edu-topbar · edu-sec · edu-send)
@@ -337,11 +338,66 @@ for (const t of seeded) {
         if (ant.arranques !== 1) { status = 'error'; detail = `la antesala tiene ${ant.arranques} controles de arranque (debe ser 1)`; }
         else if (!ant.instrucciones) { status = 'error'; detail = 'la antesala no dice cómo se juega (sin instrucciones)'; }
         antesalas.push({ label: t.label, mode, ...ant });
+        // ESPÍA DE RECÁLCULOS, armado ANTES de arrancar. Muestrea por FOTOGRAMA
+        // (no con ResizeObserver: engancharlo cuando el elemento ya existe llega
+        // tarde y se pierde justo el primer recálculo, que dura un fotograma).
+        // Cada pieza se compara CONSIGO MISMA — el hueco y su hijo miden
+        // distinto y apuntarlos juntos hacía pasar por salto lo que no lo era.
+        await page.evaluate(() => {
+          window.__wwSaltos = {};
+          const piezas = () => {
+            const raiz = document.querySelector('#ww-player-widget .ww-stage')
+              || document.querySelector('#ww-player-widget .ww-player');
+            return raiz ? [raiz, ...raiz.children] : [];
+          };
+          const t0 = performance.now();
+          (function tick() {
+            piezas().forEach((e, i) => {
+              const r = e.getBoundingClientRect();
+              if (!r.width && !r.height) return;
+              const k = `${(e.className || e.tagName).toString().split(' ')[0]}#${i}`;
+              const t = `${Math.round(r.width)}×${Math.round(r.height)}`;
+              const l = (window.__wwSaltos[k] ||= []);
+              if (l[l.length - 1] !== t) l.push(t);
+            });
+            if (performance.now() - t0 < 1200) requestAnimationFrame(tick);
+          })();
+        });
         // 2) Empezar → el juego se monta de verdad.
         await page.click(drv.start);
       }
       await page.waitForSelector(drv.ready, { timeout: 12000 });
+      // NACE CON SU TAMAÑO (dueño 2026-09-01: «sale con un tamaño y luego se
+      // recalcula»). El tamaño de una pieza es LAYOUT y el layout lo hace el
+      // navegador ANTES de pintar; quien lo calcula en JS después de montar
+      // siempre llega tarde, y la clase ve el salto. Se mide el escenario nada
+      // más aparecer y otra vez cuando todo se ha asentado: si cambia, alguien
+      // está midiendo tarde. (El Diagrama pasaba por tres tamaños al abrir.)
       await page.waitForTimeout(350);   // deja correr timers/animaciones de entrada
+      // El espía se arma ANTES del clic (más abajo): un recálculo dura un
+      // fotograma, así que preguntar después de montar llega tarde — es el
+      // mismo error que se persigue.
+      const saltos = await page.evaluate(() => {
+        const out = [];
+        for (const [k, v] of Object.entries(window.__wwSaltos || {})) if (v.length > 1) out.push(`${k}: ${v.join(' → ')}`);
+        return out;
+      });
+      if (saltos.length) {
+        // DECLARADO, no silenciado: Emparejar sigue calculando el tamaño de sus
+        // tarjetas en JS después de montar (`fitLayout()` en su player), igual
+        // que hacía el Diagrama. Se arregla igual —la cuenta se escribe en CSS
+        // con la proporción y el número de tarjetas, que son datos de la
+        // actividad—, pero es cirugía de su geometría y se hace midiendo, no de
+        // paso. Mientras tanto la red lo NOMBRA en cada pasada en vez de
+        // callarlo: una deuda que se ve es una deuda que se paga.
+        const pendiente = { match: 'fitLayout() en JS: pendiente de pasar la cuenta a CSS' };
+        if (pendiente[t.name]) {
+          recalculo.push({ label: t.label, mode, salto: saltos[0], motivo: pendiente[t.name] });
+        } else {
+          status = 'error';
+          detail = `la actividad se RECALCULA tras aparecer: ${saltos[0]} (el tamaño se decide antes de pintar)`;
+        }
+      }
       if (bucket.length) { status = 'error'; detail = bucket[0]; }
       // AUDITORÍA DE TOQUES (VS): cuántos controles de envío tiene la ronda de
       // verdad, contra lo que la plantilla DECLARA en `meta.play.submit`. El
@@ -1188,6 +1244,10 @@ if (embed.length) {
   for (const e of embed) console.log(`  ${e.ok ? '✅' : '❌'} ${e.caso}${e.detalle && !e.ok ? ' — ' + e.detalle : ''}`);
 }
 
+if (recalculo.length) {
+  console.log('\nSE RECALCULAN TRAS APARECER (declarado — se arregla pasando la cuenta a CSS)\n');
+  for (const r of recalculo) console.log(`  ⚠️  ${r.label} · ${r.mode} — ${r.salto}`);
+}
 if (antesalas.length) {
   const mal = antesalas.filter(a => a.arranques !== 1 || !a.instrucciones);
   console.log('\nLA ANTESALA (una sola para los cuatro modos)\n');

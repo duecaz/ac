@@ -2,7 +2,13 @@
 // ella, cada uno con su etiqueta. El alumno arrastra cada etiqueta a su pin
 // (estilo Wordwall "Etiqueta el diagrama"). x/y son FRACCIONES 0..1 de la imagen
 // → responsive (la posición del pin no depende del tamaño en pantalla).
-//   content: { image: 'data:…', pins: [{ id, label, x, y }] }
+//   content: { image: 'data:…', imageW, imageH, pins: [{ id, label, x, y }] }
+//
+// `imageW/imageH` = la FORMA de la foto, apuntada al elegirla (editor). No es
+// decoración: con ella el player escribe la caja de la imagen de una sola vez
+// y la actividad nace con su tamaño, en vez de medirse después de pintar. Las
+// actividades viejas no la traen y el player la mide al cargar la imagen (una
+// sola vez, y solo ellas).
 
 import { rid } from '../ids.js';
 export function newPin(x = 0.5, y = 0.5) { return { id: rid('pin_'), label: '', x, y }; }

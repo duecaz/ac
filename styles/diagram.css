@@ -99,9 +99,29 @@
   .dg-rail[data-rail="end"]   .ww-dot { left: 50%; bottom: auto; top: calc(var(--dg-dot) / -2); transform: translateX(-50%); }
 }
 
-/* Escenario: la imagen define su caja (fitImageBox por JS) y ocupa lo máximo. */
-.dg-img-box { position: relative; line-height: 0; }
-.dg-img { display: block; width: 100%; height: 100%; border-radius: 1cqmin; -webkit-user-drag: none; user-select: none; }
+/* EL ESCENARIO ES EL CONTENEDOR DE CONSULTA de la imagen: así la caja puede
+   mirar las DOS medidas del hueco (100cqw y 100cqh) en la misma cuenta. Con una
+   sola (`max-height: 100%`) no basta: medido con una foto vertical en un hueco
+   bajo, la caja pedía 863×1294 dentro de 863×312 — se salía por abajo. */
+.dg-stage { container-type: size; }
+
+/* LA CAJA SE ENCAJA SOLA, EN UNA PASADA. Es la cuenta de «contener» escrita en
+   CSS: el ancho es el del hueco o el que permita su alto, lo que sea menor; la
+   proporción la trae la actividad (`--dg-ar`, apuntada al elegir la imagen).
+   Antes lo hacía `fitImageBox()` en JS DESPUÉS de pintar y la actividad pasaba
+   por tres tamaños al abrir (581 → 580 → 590): nacía con una medida y se
+   recalculaba a la vista. Los pines van en % de esta caja, y como la caja mide
+   exactamente lo que la foto, caen donde tienen que caer. */
+.dg-img-box {
+  position: relative; line-height: 0;
+  aspect-ratio: var(--dg-ar, 3/2);
+  width: min(100cqw, calc(100cqh * var(--dg-arn, 1.5)));
+}
+.dg-img {
+  display: block;
+  width: 100%; height: 100%;
+  border-radius: 1cqmin; -webkit-user-drag: none; user-select: none;
+}
 
 /* Pines sobre la imagen: aro blanco con centro (estilo Wordwall). */
 .dg-pin {

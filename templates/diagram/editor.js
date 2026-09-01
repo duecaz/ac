@@ -4,7 +4,7 @@
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { ruleScopeNote } from '../../core/editorPrimitives.js';
-import { uploadMedia } from '../../core/upload.js';
+import { uploadMedia, medirImagen } from '../../core/upload.js';
 import { QUOTAS } from '../../core/quotas.js';
 import { newPin } from '../../core/contentModels/diagram.js';
 import { renderEditorShell } from '../../core/editorShell.js';
@@ -67,6 +67,15 @@ function wireContent(root, a, ctx) {
   // de los dos caminos.
   const ponerImagen = (dataUrl, atribucion = null) => {
     a.content.image = dataUrl;
+    // LA FORMA DE LA FOTO ES CONTENIDO, y se apunta AQUÍ, cuando se elige. El
+    // player la necesita para escribir su caja de una vez (`aspect-ratio`): si
+    // la midiera al pintar, la actividad nacería con una medida y se
+    // recalcularía a la vista. Se guarda al ponerla —cuando ya está cargada—,
+    // así que no cuesta nada y viaja con la actividad (§24: campo declarado).
+    medirImagen(dataUrl).then(({ w, h }) => {
+      if (a.content.image !== dataUrl) return;   // ya la cambiaron otra vez
+      if (w && h) { a.content.imageW = w; a.content.imageH = h; ctx.onChange(a); }
+    });
     // El crédito viaja CON el píxel, o se va con él (§24: campo declarado del
     // contenido). Atribuir la imagen anterior sería peor que no atribuir.
     if (atribucion) a.content.imageCredit = atribucion;

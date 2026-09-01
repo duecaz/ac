@@ -9,7 +9,7 @@
 Los tokens son la INTERFAZ entre el tema y el juego (ley §3: el skin
 cambia tokens, la actividad los consume). Este es el contrato completo.
 
-**207 tokens** en 17 familias.
+**209 tokens** en 17 familias.
 
 ## `--bs-*` (23)
 
@@ -82,10 +82,12 @@ cambia tokens, la actividad los consume). Este es el contrato completo.
 | `--dash-yellow` | styles/home.css | styles/home.css |
 | `--dash-yellow-d` | styles/home.css | styles/home.css |
 
-## `--dg-*` (3)
+## `--dg-*` (5)
 
 | Token | Lo DECLARA | Lo CONSUME |
 |---|---|---|
+| `--dg-ar` | templates/diagram/player.js | styles/diagram.css |
+| `--dg-arn` | templates/diagram/player.js | styles/diagram.css |
 | `--dg-color` | templates/diagram/player.js | styles/diagram.css |
 | `--dg-dot` | styles/diagram.css | styles/diagram.css |
 | `--dg-fg` | templates/diagram/player.js | styles/diagram.css |

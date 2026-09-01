@@ -70,6 +70,21 @@ async function comprimir(bmp, maxBytes, ladoMax) {
 // `maxBytes`/`ladoMax` por defecto son los de §25 (imagen inline de actividad);
 // un caller con presupuesto propio los pasa (el avatar del VS: 150 KB y 512 px,
 // se ve en una pastilla — antes tenía SU FileReader y rebotaba sin comprimir).
+/** El TAMAÑO NATURAL de una imagen (data-URL o URL). Se pregunta UNA vez, al
+ *  elegirla, y el dato viaja con el contenido: así el player puede escribir la
+ *  caja con su forma ya sabida en vez de medirla después de pintar (que es lo
+ *  que hacía saltar a «Etiqueta el diagrama»). Resuelve {w:0,h:0} si no carga —
+ *  quien llama decide, y sin forma conocida el player mide como antes. */
+export function medirImagen(src) {
+  return new Promise(resolve => {
+    if (!src || typeof Image === 'undefined') return resolve({ w: 0, h: 0 });
+    const im = new Image();
+    im.onload = () => resolve({ w: im.naturalWidth || 0, h: im.naturalHeight || 0 });
+    im.onerror = () => resolve({ w: 0, h: 0 });
+    im.src = src;
+  });
+}
+
 export async function uploadMedia(file, { maxBytes = IMG_MAX_BYTES, ladoMax = LADO_MAX } = {}) {
   if (!file) throw new Error('no file');
   if (!ALLOWED[file.type]) throw new Error(`Tipo no permitido: ${file.type || 'desconocido'}`);

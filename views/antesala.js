@@ -157,20 +157,21 @@ export function renderAntesala(host, o = {}) {
   // (antes de que resuelva el import() del player) disparaba onStart DOS veces →
   // doble animación + doble runMode + doble requestFullscreen.
   //
-  // UN SOLO CAMINO A PANTALLA COMPLETA: se arranca y se pide sobre lo que el
-  // modo DIGA que hay que agrandar. Antes había cuatro ramas y dos pasadas
-  // porque la plataforma sabía en qué momento montaba su marco cada modo (§0);
-  // ahora `onStart` devuelve su marco si lo acaba de crear —la tarea—, y si no
-  // dice nada se usa el de la página; en último término, el propio escenario
-  // (una lista encadenada no monta marco y se quedaba sin pantalla completa).
+  // LA GEOMETRÍA SE DECIDE ANTES DE PINTAR EL JUEGO. La pantalla completa cambia
+  // el tamaño de TODO, así que si se pide después de montar, la actividad nace
+  // con una medida y se recalcula a la vista — un salto que el dueño cazó al
+  // instante. Por eso se pide PRIMERO, sobre el marco que ya está en la página;
+  // solo si no hay ninguno (la tarea monta el suyo al comenzar, la lista no
+  // monta) se arranca y se pide después, con lo que `onStart` devuelva.
   let started = false;
   const arrancar = (btn) => {
     if (started) return;
     started = true;
     if (btn) btn.disabled = true;
+    const marco = marcoActual();
+    if (marco && !isFullscreen()) toggleFullscreen(marco);   // no-op si el navegador la deniega
     const suyo = typeof onStart === 'function' ? onStart() : null;
-    const objetivo = suyo || marcoActual() || el;
-    if (!isFullscreen()) toggleFullscreen(objetivo);   // no-op si el navegador la deniega
+    if (!marco && !isFullscreen()) toggleFullscreen(suyo || marcoActual() || el);
     soltar();
   };
   sueltos.push(on(el, 'click', '[data-ww-start]', (_, btn) => arrancar(btn)));

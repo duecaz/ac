@@ -163,31 +163,37 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
     }), GRADE_HOLD_MS);
   });
 
-  // Ajusta la CAJA de la imagen a su tamaño CONTENIDO (preserva aspecto, sin
-  // letterbox) → los pines, posicionados en %, caen exactos sobre la imagen.
+  // EL TAMAÑO NO LO CALCULA JS. Aquí vivía `fitImageBox()`: leía el escenario,
+  // multiplicaba por la proporción natural de la foto y escribía `width`/`height`
+  // en píxeles sobre la caja… DESPUÉS de que la actividad ya estuviera pintada.
+  // Medido: la imagen pasaba por TRES tamaños al abrir (581 → 580 → 590) y el
+  // ojo lo ve como un salto — nace con un tamaño y se recalcula. Y no podía ser
+  // de otra forma: quien escribe medidas después de pintar siempre llega tarde,
+  // y su ResizeObserver se re-dispara a sí mismo (por eso la guarda y el rAF).
+  // El tamaño es LAYOUT, y el layout lo hace el NAVEGADOR antes de pintar: la
+  // imagen se contiene sola con `max-width/max-height` y la caja se ciñe a ella
+  // (styles/diagram.css), así que los pines en % siguen cayendo exactos.
+  // A JS le queda lo único que CSS no sabe decir: las coordenadas de las
+  // CUERDAS. Eso no cambia tamaños —solo dibuja líneas—, así que no salta.
   const imgEl = root.querySelector('.dg-img');
-  const boxEl = root.querySelector('.dg-img-box');
-  const stageEl = root.querySelector('.ww-stage');
-  function fitImageBox() {
-    if (!imgEl || !boxEl || !stageEl) return false;
-    const nw = imgEl.naturalWidth || 4, nh = imgEl.naturalHeight || 3;
-    const sw = stageEl.clientWidth, sh = stageEl.clientHeight;
-    if (!sw || !sh) return false;
-    const scale = Math.min(sw / nw, sh / nh);
-    const w = Math.max(1, Math.round(nw * scale)) + 'px', h = Math.max(1, Math.round(nh * scale)) + 'px';
-    if (boxEl.style.width === w && boxEl.style.height === h) return false;  // guarda: no re-disparar el RO
-    boxEl.style.width = w; boxEl.style.height = h;
-    return true;
-  }
-  // observeResize (rAF-debounced, core/observeResize.js) + la guarda de
-  // fitImageBox evitan el aviso "ResizeObserver loop…" del navegador.
-  const relayout = () => { fitImageBox(); updateSvg(); };
-  requestAnimationFrame(relayout);
   // Se observa el FIELD (no el stage): al cruzar el aspecto 1:1 los rieles saltan
   // de columnas a filas → las etiquetas se mueven aunque el stage no cambie de
-  // tamaño; hay que recalcular la caja de imagen Y las cuerdas.
-  stopRo = observeResize(arena, relayout);
-  if (imgEl && !imgEl.complete) imgEl.addEventListener('load', relayout);
+  // tamaño; hay que redibujar las cuerdas.
+  stopRo = observeResize(arena, updateSvg);
+  requestAnimationFrame(updateSvg);
+  // Contenido de antes de `imageW/imageH`: se le pone la forma UNA vez, cuando
+  // la imagen carga. Es un ajuste por actividad vieja, no un cálculo por
+  // fotograma — y las nuevas no pasan por aquí.
+  const boxEl = root.querySelector('.dg-img-box');
+  const ponerForma = () => {
+    if (!imgEl || !boxEl || boxEl.style.getPropertyValue('--dg-ar')) return;
+    const nw = imgEl.naturalWidth, nh = imgEl.naturalHeight;
+    if (!(nw > 0 && nh > 0)) return;
+    boxEl.style.setProperty('--dg-ar', `${nw}/${nh}`);
+    boxEl.style.setProperty('--dg-arn', String(nw / nh));
+  };
+  if (imgEl?.complete) ponerForma();
+  if (imgEl && !imgEl.complete) imgEl.addEventListener('load', () => { ponerForma(); updateSvg(); });
 
   updateProgress(); updateSubmit();
 }
@@ -209,7 +215,17 @@ function labelHtml(c) {
 function pinHtml(p) {
   return `<span class="dg-pin" data-id="${escapeHtml(p.id)}" style="left:${(p.x * 100).toFixed(2)}%;top:${(p.y * 100).toFixed(2)}%"></span>`;
 }
+// LA CAJA NACE CON LA FORMA DE LA FOTO (imageW/imageH, que el editor apunta al
+// elegirla). Con la proporción escrita en el HTML, el navegador la encaja de una
+// vez —crece hasta llenar el hueco y no lo desborda— y los pines en % caen
+// exactos sin que nadie mida nada DESPUÉS de pintar. Sin el dato (actividades de
+// antes) sale sin proporción y el player se la pone al cargar la imagen, una
+// sola vez.
 function buildLayout(leftLabels, rightLabels, pins, image, activity, total) {
+  const w = Number(activity.content?.imageW) || 0, h = Number(activity.content?.imageH) || 0;
+  // Dos formas del MISMO dato porque CSS las necesita distintas: la proporción
+  // para `aspect-ratio` y el número para multiplicar el alto del hueco.
+  const ar = w > 0 && h > 0 ? `--dg-ar:${w}/${h};--dg-arn:${(w / h).toFixed(4)}` : '';
   // Andamio de regiones (styles/scaffold.css): rieles start/end que refluyen de
   // columnas laterales (ancho) a filas arriba/abajo (alto), con el escenario en medio.
   // SIN `p-2`: las utilidades de Bootstrap llevan `!important`, así que ese
@@ -222,7 +238,7 @@ function buildLayout(leftLabels, rightLabels, pins, image, activity, total) {
   <div class="edu-sec edu-sec--campo ww-field dg-field">
     <div class="ww-rail dg-rail" data-rail="start">${leftLabels.map(labelHtml).join('')}</div>
     <div class="ww-stage dg-stage">
-      <div class="dg-img-box">
+      <div class="dg-img-box"${ar ? ` style="${ar}"` : ''}>
         <img class="dg-img" src="${escapeHtml(image)}" alt="" draggable="false">
         ${pins.map(pinHtml).join('')}
       </div>
