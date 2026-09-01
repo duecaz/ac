@@ -167,6 +167,9 @@ export function createPocketbaseRemoteStore() {
         data: row.data || {},
         language: row.language || 'es',
         tags: row.tags || [],
+        // QUIÉN la publicó: lo pide la moderación para saber a quién es lo que
+        // está borrando (una prueba de un profe no es lo mismo que su clase).
+        owner: row.owner || '',
         updated_at: row.data?.updatedAt || row.updated || '',
       }));
       rows.sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)));

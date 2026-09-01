@@ -43,6 +43,18 @@ export function createLocalRemoteStore(kv = defaultKV()) {
     async deleteActivity(id) { const m = readMap(); delete m[id]; write(KEY, m); },
     async getActivity(id) { return readMap()[id] || null; },
     async listActivities() { return Object.entries(readMap()).map(([id, data]) => ({ id, data })); },
+    // Gemelo local del listado público (mismo filtro que PocketBase: solo lo
+    // PUBLICADO). Sin esto, en dev la biblioteca —y la pantalla de moderación
+    // que la limpia— salían vacías y no se podían probar sin servidor.
+    async listPublicActivities({ limit = 120 } = {}) {
+      return Object.entries(readMap())
+        .filter(([, data]) => data?.visibility === 'public')
+        .map(([id, data]) => ({ id: data.id || id, data, language: data.language || 'es',
+                                tags: data.tags || [], owner: data.owner || '',
+                                updated_at: data.updatedAt || '' }))
+        .sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)))
+        .slice(0, Number(limit) || 120);
+    },
 
     // Results: append-only log so reports work offline / on any backend.
     // Espejo del índice único remoto: un reintento con el mismo _qid no duplica.

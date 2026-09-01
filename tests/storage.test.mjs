@@ -23,7 +23,7 @@ const LS = makeLS();
 global.localStorage = LS;
 // backendName() → 'local' en Node (sin location) → driver offline, sin red.
 
-const { save, remove, tombstoneSet, setStorageUser, currentStorageUser, list, claimGuestActivities, hasClaimed, sync } = await import('../core/storage.js');
+const { save, remove, removeMany, tombstoneSet, setStorageUser, currentStorageUser, list, claimGuestActivities, hasClaimed, sync } = await import('../core/storage.js');
 
 const act = () => ({ id: 'act_test1', template: 'quiz', title: 'T', content: { items: [] } });
 
@@ -63,6 +63,30 @@ const act = () => ({ id: 'act_test1', template: 'quiz', title: 'T', content: { i
   assert.ok(!stored, 'el registro se borró del mapa local');
   p.catch(() => {});
   ok('remove() tumba el id síncronamente antes del DELETE remoto');
+}
+
+// ── BORRAR EN LOTE CUENTA LO QUE DE VERDAD PASÓ ─────────────────────────────
+// El admin limpia la biblioteca de OTROS (moderación). Si el servidor rechaza un
+// borrado —sin rol admin, reglas sin aplicar, sin red— y la pantalla dice
+// «N borradas», la actividad sigue publicada para la clase siguiente y nadie la
+// está mirando. Por eso `removeMany` cuenta, y el borrador se inyecta: así el
+// rechazo se prueba SIN servidor.
+{
+  const caidas = new Set(['b', 'd']);
+  const falso = async (id) => (caidas.has(id) ? { ok: false, error: 'prohibido (403)' } : { ok: true });
+  const r = await removeMany(['a', 'b', 'c', 'd'], { borrar: falso });
+  assert.strictEqual(r.hechas, 2, 'cuenta SOLO las que el servidor aceptó');
+  assert.deepStrictEqual(r.fallos.map(f => f.id), ['b', 'd'], 'y nombra las que no, para poder decirlo');
+  assert.strictEqual(r.fallos[0].error, 'prohibido (403)', 'con el motivo que dio el servidor, no uno inventado');
+  ok('removeMany cuenta los borrados de verdad y nombra los rechazados');
+}
+{
+  // CONTRA-PRUEBA: cuando todo va bien no inventa fallos (una regla demasiado
+  // desconfiada haría que el camino bueno pareciera roto).
+  const r = await removeMany(['x', 'y'], { borrar: async () => ({ ok: true }) });
+  assert.strictEqual(r.hechas, 2);
+  assert.deepStrictEqual(r.fallos, [], 'CONTRA-PRUEBA: sin fallos cuando el servidor acepta');
+  ok('CONTRA-PRUEBA: el camino bueno no inventa rechazos');
 }
 
 // ── S1.2: almacén POR USUARIO — dos profes no se mezclan ────────────────────

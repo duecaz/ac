@@ -208,6 +208,15 @@ if (typeof window !== 'undefined') {
   });
 }
 
+/** Borra una actividad. Resuelve `{ ok, error }` — NUNCA rechaza (hay llamantes
+ *  que borran y siguen), pero DICE LA VERDAD sobre el servidor.
+ *
+ *  Antes resolvía siempre igual, hubiera pasado lo que hubiera pasado, así que
+ *  quien lo esperaba con un try/catch —la moderación— cantaba «Actividad
+ *  borrada» aunque PocketBase la hubiera rechazado (R6, fallo mudo). Y con el
+ *  borrado de OTRO (un admin limpiando la biblioteca) eso es peor que un aviso
+ *  feo: aquí desaparece de la pantalla y en la biblioteca de todos los demás
+ *  sigue estando. */
 export function remove(id) {
   const map = readLS();
   delete map[id];
@@ -217,13 +226,29 @@ export function remove(id) {
   // sync la resucite, y retryTombstones reintenta el borrado. Se limpia al
   // confirmar el DELETE (o si PB responde 404 = ya no existe).
   addTombstone(id);
-  const remote = remoteDelete(id)
-    .then(() => clearTombstone(id))
+  return remoteDelete(id)
+    .then(() => { clearTombstone(id); return { ok: true }; })
     .catch(err => {
-      if (err?.status === 404) { clearTombstone(id); return; } // ya no existe en remoto
+      if (err?.status === 404) { clearTombstone(id); return { ok: true }; } // ya no existe en remoto
       console.warn('[storage] remote delete failed (se reintentará):', err.message);
+      return { ok: false, error: err?.message || 'sin conexión' };
     });
-  return remote;
+}
+
+/** Borra VARIAS y cuenta lo que de verdad pasó: `{ hechas, fallos[] }`.
+ *  El borrador se INYECTA para poder probar el rechazo del servidor sin red
+ *  (misma vía que el `fetch` del buscador de imágenes). Existe porque «Listo:
+ *  N borradas» cuando el servidor las rechazó es el fallo mudo que la ley R6
+ *  persigue — y con el admin limpiando la biblioteca de OTROS, un borrado que
+ *  no ocurrió deja la actividad publicada para toda la clase siguiente. */
+export async function removeMany(ids, { borrar = remove } = {}) {
+  let hechas = 0; const fallos = [];
+  for (const id of ids || []) {
+    const r = await borrar(id);
+    if (r?.ok) hechas++;
+    else fallos.push({ id, error: r?.error || 'rechazado' });
+  }
+  return { hechas, fallos };
 }
 
 async function remoteDelete(id) {
