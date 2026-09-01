@@ -22,9 +22,6 @@
 // El HUD no captura toques (`pointer-events: none`): un globo que pase por
 // debajo se sigue pudiendo explotar.
 import { escapeHtml } from './html.js';
-import { startElapsedTicker } from './deadlineTicker.js';
-import { observeStage } from './stageClaim.js';
-import { serverNow } from './serverNow.js';
 
 const chip = (campo, texto) =>
   `<span class="edu-hud__chip" data-hud="${campo}"${texto ? '' : ' hidden'}>${escapeHtml(String(texto ?? ''))}</span>`;
@@ -63,46 +60,8 @@ export function hudSet(scope, campo, texto) {
   el.textContent = String(texto);
 }
 
-// ── EL CRONÓMETRO DEL JUEGO (comparado con Wordwall, dueño 2026-08-30) ───────
-//
-// Wordwall enseña SIEMPRE cuánto llevas («0:04» arriba a la izquierda) y aquí
-// no lo enseñaba nadie: el chip `tiempo` solo se usaba para la cuenta atrás.
-// La regla, decidida aquí y no en cada plantilla:
-//   · si la actividad tiene TEMPORIZADOR (`rules.timer`), manda la cuenta
-//     atrás — es accionable y dos relojes a la vez confunden;
-//   · si no lo tiene, el cronómetro ASCENDENTE llena ese chip.
-// Se APAGA por actividad con `rules.crono: false` (casilla del editor);
-// encendido por defecto porque es información sin coste y es lo que el dueño
-// admiró en Wordwall.
-//
-// UN dueño: quien quiera el cronómetro llama a esto — nunca un setInterval
-// propio (ley de relojes §23: el ascendente es `startElapsedTicker`). El guard
-// es la ficha del escenario: un tick tardío sobre otra pantalla no pinta.
-export function mostrarCrono(activity) {
-  return activity?.rules?.crono !== false && !(activity?.rules?.timer > 0);
-}
-
-/** Arranca el cronómetro en el chip `tiempo` del HUD dentro de `scope`.
- *  Devuelve { stop } (llamar al desmontar; el guard ya protege, pero parar el
- *  intervalo es limpieza §23, no cortesía). */
-// `desde` se estampa con serverNow(): es el reloj contra el que mide el
-// primitivo — mezclarlo con clock.now() haría nacer el cronómetro desfasado
-// exactamente el offset del servidor (§22-5, la lección del reloj).
-export function cronoHud(scope, activity, { desde = serverNow() } = {}) {
-  const nada = { stop: () => {} };
-  if (!mostrarCrono(activity)) return nada;
-  const el = typeof scope === 'string' ? (globalThis.document?.querySelector(scope) ?? null) : scope;
-  // Sin escenario DE VERDAD no hay reloj que pintar: los shells se prueban en
-  // Node con raíces falsas (objetos planos), y un intervalo real sobre una raíz
-  // que nunca «muere» dejaba la suite colgada al salir. Un elemento real
-  // siempre trae `isConnected`; el objeto de test, no.
-  if (!el || el.isConnected === undefined) return nada;
-  // OBSERVA la ficha del escenario, no la reclama: reclamar subiría la época y
-  // mataría el alive() del shell — sus timers y su avance (pasó, ver stageClaim).
-  const alive = observeStage(el);
-  return startElapsedTicker({
-    since: desde,
-    while: alive,
-    onTick: ({ label }) => hudSet(scope, 'tiempo', `⏱ ${label}`),
-  });
-}
+// EL RELOJ NO VIVE AQUÍ. Estuvo: `mostrarCrono()` + `cronoHud()` montaban el
+// cronómetro sobre el chip `tiempo`, y la cuenta atrás la montaba cada player
+// por su cuenta — dos relojes con dos dueños. Ahora hay UNO
+// (`core/reloj.js`) y este módulo solo aporta el SITIO donde se pinta: el chip
+// `tiempo` del HUD, vía `hudSet`.

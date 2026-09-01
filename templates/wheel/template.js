@@ -24,7 +24,7 @@ export class WheelTemplate extends BaseTemplate {
     aspectRatio: '1/1',
     modes: { solo: true, live: true, async: false, practice: true },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
-    play:            { vs: 'none', teams: 'none', live: ['claim'] },
+    play:            { vs: 'none', teams: 'none', live: ['claim'] , reloj: { unidad: null, crono: false } },
     needsImageUpload: true,   // wheel/editor.js: imagen opcional por entrada (data-URL, 200 KB)
     needsAudioUpload: false,
     // `selector: 'wheel'` es la DECLARACIÓN de que esta actividad usa la ruleta

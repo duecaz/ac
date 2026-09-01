@@ -35,7 +35,7 @@ export class TildesTemplate extends BaseTemplate {
     // pantalla de inicio preguntaba «¿te llamas tildes o comas?», que es la ley
     // §0 al revés (un modo no conoce plantillas concretas).
     seMarcaConLapiz: true,
-    play:            { vs: 'points', teams: 'turns', live: ['rounds', 'race'], submit: 'boton' },
+    play:            { vs: 'points', teams: 'turns', live: ['rounds', 'race'], submit: 'boton' , reloj: { unidad: 'frase' } },
     needsImageUpload: false,
     needsAudioUpload: false,
     defaultRules: () => ({ randomize: false, allowOverflow: true, showHints: false }),

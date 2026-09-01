@@ -30,7 +30,7 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
   runSequentialPlayer(rootSel, activity, opts, {
     maxScore,
     onFinish() { Streaks.reset('solo', activity.id); },
-    renderItem({ rootSel, item, idx, total, score, timerSecs, submit, startTimer }) {
+    renderItem({ rootSel, item, idx, total, score, timerSecs, submit, alAgotarse }) {
       const opts2 = (item.options || []).slice();
       if (activity.rules?.shuffleOptions) shuffle(opts2);
       const streak = Streaks.get('solo', activity.id);
@@ -39,7 +39,6 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
           ${hudHtml({
             pagina: `${idx + 1} / ${total}`,
             racha: streak >= 2 ? `🔥 ${streak}` : null,
-            tiempo: timerSecs > 0 ? `⏱ ${timerSecs}` : null,
           })}
           <div class="edu-sec edu-sec--enunciado ww-prow">
             <h3 class="ww-q">${escapeHtml(item.question)}</h3>
@@ -70,15 +69,14 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
         });
       }
 
-      startTimer({
-        onTick: (remaining) => hudSet(rootSel, 'tiempo', `⏱ ${remaining}`),
-        onTimeout: () => {
-          opts$().forEach(b => { b.disabled = true; });
-          revealCorrect();
-          Streaks.bump('solo', activity.id, false);
-          emitGame(GameEvents.ANSWER_WRONG, { idx });
-          submit({ itemId: item.id, value: null, correct: false, points: 0, msTaken: timerSecs * 1000 });
-        },
+      // El reloj lo monta y lo pinta el SHELL (core/reloj.js, uno para las 13):
+      // aquí solo se dice qué pasa cuando se acaba.
+      alAgotarse(() => {
+        opts$().forEach(b => { b.disabled = true; });
+        revealCorrect();
+        Streaks.bump('solo', activity.id, false);
+        emitGame(GameEvents.ANSWER_WRONG, { idx });
+        submit({ itemId: item.id, value: null, correct: false, points: 0, msTaken: timerSecs * 1000 });
       });
 
       on(rootSel, 'click', '.ww-opt', (_, btn) => {

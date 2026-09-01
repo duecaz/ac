@@ -30,6 +30,8 @@ export class BallsortTemplate extends BaseTemplate {
     modes:           { solo: true, live: true, async: false, practice: false },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
     play:            { vs: 'race', teams: 'board', live: ['board'], submit: 'gesto',
+                       // Su mecánica YA lleva su tiempo a la vista (el reloj del tablero).
+                       reloj: { unidad: null, crono: false },
       // OPCIÓN DE PARTIDA (core/playOptions.js): el tablero se puede ganar de
       // DOS formas y quién elige es el docente, en el momento de lanzar. Estaba
       // solo en el editor: para cambiarla había que salir del juego con la clase

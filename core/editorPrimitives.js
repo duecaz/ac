@@ -3,6 +3,7 @@
 // Pure functions: return HTML strings; attach handlers via separate helpers.
 import { escapeHtml } from './html.js';
 import { on } from './events.js';
+import { unidadDeCuenta, admiteCrono } from './reloj.js';
 import { MAX_PARRAFOS } from './contentModels/textCorrection.js';
 import { toast } from './toast.js';
 import { questionWindowMs, ITEM_SECONDS_MIN, ITEM_SECONDS_MAX } from './timings.js';
@@ -42,22 +43,68 @@ export function ruleScopeNote() {
 }
 
 
-/** EL TEMPORIZADOR DE LA ACTIVIDAD (`rules.timer`, segundos por ítem; 0 = sin
- *  límite). Escrito UNA vez, como el de «tiempo en vivo» de abajo y por el mismo
- *  motivo: lo tenían Quiz y Sopa con dos redacciones distintas, y Tildes y Comas
- *  no lo tenían en absoluto… mientras `ruleScopeNote()` —justo al lado— prometía
- *  que «el temporizador aplica en Individual y Tarea». Un aviso que anuncia un
- *  control inexistente es peor que no decir nada: el profe lo busca y no está.
+/** EL BLOQUE «TIEMPO» — uno solo, para todas las plantillas.
+ *
+ *  Había DOS campos sueltos y cada editor decidía si ponerlos: el temporizador
+ *  (lo ofrecían 4 plantillas de 13) y, desde el 30 de agosto, una casilla de
+ *  cronómetro que acabó en la pestaña de PUNTUACIÓN. El dueño abrió a editar un
+ *  Quiz y no encontró el reloj: estaba, pero enterrado en «Modos» y partido en
+ *  dos sitios (2026-09-01: «debemos unificar, no estar parchando»).
+ *
+ *  Ahora es UN bloque, lo pinta el SHELL del editor —no cada plantilla— y
+ *  enseña solo lo que la plantilla ADMITE (`meta.play.reloj`):
+ *    · cuenta atrás, si declara su unidad («pregunta», «frase», «sopa»…);
+ *    · cronómetro, salvo que lo apague (`crono: false`).
+ *  QUÉ reloj corre en el juego lo decide `core/reloj.js` — el mismo módulo para
+ *  las 13 —: con límite manda la cuenta atrás, sin límite el cronómetro, nunca
+ *  los dos. Por eso la casilla se deshabilita cuando hay límite, y lo DICE.
  *  @param {object} a  la actividad
- *  @param {string} etiqueta  cómo se llama la unidad en esta plantilla */
-export function timerFieldHtml(a, etiqueta = 'ítem') {
-  return `<div class="col-md-4">
-    <label class="form-label" for="f-timer">Tiempo por ${escapeHtml(etiqueta)} (s)</label>
-    <input id="f-timer" type="number" min="0" max="600" class="form-control"
-           value="${a.rules?.timer || 0}" placeholder="0">
-    <div class="form-text">0 = sin límite de tiempo</div>
-  </div>`;
+ *  @param {object} T  la plantilla (de ella sale qué relojes admite) */
+export function tiempoBloqueHtml(a, T) {
+  const unidad = unidadDeCuenta(T);
+  const crono = admiteCrono(T);
+  if (!unidad && !crono) return '';
+  const activo = a.rules?.crono !== false;
+  const conLimite = (Number(a.rules?.timer) || 0) > 0;
+  return `<section class="ww-mode-cfg" data-bloque="tiempo">
+    <h6 class="mb-1"><i class="bi bi-stopwatch text-primary"></i> Tiempo</h6>
+    <div class="row g-3">
+      ${unidad ? `<div class="col-md-4">
+        <label class="form-label" for="f-timer">Tiempo por ${escapeHtml(unidad)} (s)</label>
+        <input id="f-timer" type="number" min="0" max="600" class="form-control"
+               value="${a.rules?.timer || 0}" placeholder="0">
+        <div class="form-text">0 = sin límite de tiempo</div>
+      </div>` : ''}
+      ${crono ? `<div class="col-md-4">
+        <div class="form-check mt-4">
+          <input class="form-check-input" type="checkbox" id="f-crono" ${activo ? 'checked' : ''} ${conLimite ? 'disabled' : ''}>
+          <label class="form-check-label" for="f-crono">Mostrar cronómetro</label>
+        </div>
+        <div class="form-text">${conLimite
+          ? 'Con límite manda la cuenta atrás: dos relojes a la vez confunden'
+          : 'Cuenta el tiempo que llevas jugando'}</div>
+      </div>` : ''}
+      <div class="col-12">${ruleScopeNote()}</div>
+    </div>
+  </section>`;
 }
+
+/** Cablea el bloque. `repaint` porque los dos campos se hablan: al poner un
+ *  límite, el cronómetro pasa a estar mandado por él y la casilla lo refleja. */
+export function wireTiempoBloque(root, a, ctx) {
+  on(root, 'input', '#f-timer', (e) => {
+    a.rules = a.rules || {};
+    a.rules.timer = Math.max(0, +e.target.value || 0);
+    ctx.onChange(a);
+    ctx.repaint?.();
+  });
+  on(root, 'change', '#f-crono', (e) => {
+    a.rules = a.rules || {};
+    a.rules.crono = !!e.target.checked;
+    ctx.onChange(a);
+  });
+}
+
 
 /** CUÁNDO SE CORRIGE. Por defecto AL FINAL: enseñar la corrección entre frase y
  *  frase parte el trabajo del alumno —el que va bien pierde el hilo, el que va
@@ -85,12 +132,6 @@ export function wireCorregirAlFinal(root, a, ctx) {
   });
 }
 
-export function wireTimerField(root, a, ctx) {
-  on(root, 'input', '#f-timer', (e) => {
-    a.rules.timer = Math.max(0, +e.target.value || 0);
-    ctx.onChange(a);
-  });
-}
 
 // R-3 · CAMPO "tiempo en vivo" POR ÍTEM, compartido por los editores de rondas.
 // El motor ya soporta `item.seconds` (core/timings.js); esto es solo su casilla,
@@ -212,26 +253,3 @@ export function wirePegarTexto(root, partir, alPegar) {
   });
 }
 
-/** EL CRONÓMETRO DEL JUEGO (comparado con Wordwall, 2026-08-30). Encendido por
- *  defecto: enseña cuánto llevas cuando la actividad no tiene límite de tiempo
- *  (con límite manda la cuenta atrás — dos relojes confunden). La casilla
- *  existe para APAGARLO: hay clases donde ver correr el tiempo mete presión que
- *  el profe no quiere. Lo lee `mostrarCrono` (core/playerHud.js), que es su
- *  único lector — un ajuste sin lector rompe CI (ajusteConectado). */
-export function cronoFieldHtml(a) {
-  const activo = a.rules?.crono !== false;
-  return `<div class="col-md-4">
-    <div class="form-check mt-4">
-      <input class="form-check-input" type="checkbox" id="f-crono" ${activo ? 'checked' : ''}>
-      <label class="form-check-label" for="f-crono">Mostrar cronómetro</label>
-    </div>
-    <div class="form-text">Cuenta el tiempo que llevas (si no hay límite por ítem)</div>
-  </div>`;
-}
-export function wireCronoField(root, a, ctx) {
-  on(root, 'change', '#f-crono', e => {
-    a.rules = a.rules || {};
-    a.rules.crono = e.target.checked ? true : false;
-    ctx.onChange(a);
-  });
-}

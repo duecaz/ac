@@ -1,6 +1,6 @@
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { itemControlsHtml, reorderArray, ruleScopeNote, timerFieldHtml, wireTimerField, cronoFieldHtml, wireCronoField } from '../../core/editorPrimitives.js';
+import { itemControlsHtml, reorderArray, ruleScopeNote } from '../../core/editorPrimitives.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 import { generateGrid, SIZE_MAP } from './generator.js';
 
@@ -133,14 +133,12 @@ function rulesHtml(a) {
           <option value="hard"   ${r.directions === 'hard'   ? 'selected' : ''}>Difícil (todas, incl. ← ↑)</option>
         </select>
       </div>
-      ${timerFieldHtml(a, 'sopa')}
       ${ruleScopeNote()}
     </div>`;
 }
 function wireRules(root, a, ctx) {
   on(root, 'change', '#ws-size',  e => { a.rules.gridSize    = e.target.value; ctx.onChange(a); ctx.repaint(); });
   on(root, 'change', '#ws-dirs',  e => { a.rules.directions  = e.target.value; ctx.onChange(a); ctx.repaint(); });
-  wireTimerField(root, a, ctx);
 }
 
 // ── Puntuación ────────────────────────────────────────────────────────────────
@@ -158,12 +156,10 @@ function scoringHtml(a) {
         <label class="form-label">Puntos por palabra</label>
         <input type="number" min="1" class="form-control" id="ws-ppc" value="${a.scoring?.pointsPerCorrect || 1}">
       </div>
-      ${cronoFieldHtml(a)}
     </div>
     <p class="small text-muted mt-2">Las palabras largas (más de 6 letras) valen 50% más puntos automáticamente.</p>`;
 }
 function wireScoring(root, a, ctx) {
   on(root, 'change', '#ws-smode', e => { a.scoring.mode = e.target.value; ctx.onChange(a); });
   on(root, 'input',  '#ws-ppc',   e => { a.scoring.pointsPerCorrect = +e.target.value || 1; ctx.onChange(a); });
-  wireCronoField(root, a, ctx);
 }

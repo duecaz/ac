@@ -31,7 +31,7 @@ export class QuizTemplate extends BaseTemplate {
     aspectRatio: '16/10',
     modes: { solo: true, live: true, async: true, practice: false },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
-    play:            { vs: 'points', teams: 'turns', live: ['rounds', 'race'], submit: 'gesto' },
+    play:            { vs: 'points', teams: 'turns', live: ['rounds', 'race'], submit: 'gesto' , reloj: { unidad: 'pregunta' } },
     needsImageUpload: true,
     needsAudioUpload: true,
     // 30 s por pregunta desde el nacimiento (dueño 2026-09-01, como Wordwall);

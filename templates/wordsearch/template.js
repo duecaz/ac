@@ -25,7 +25,7 @@ export class WordsearchTemplate extends BaseTemplate {
     // Lo DECLARA aquí porque quien lo necesita es el diálogo de IA, y hasta hoy
     // lo averiguaba preguntando `a.template === 'wordsearch'` (§0).
     iaPalabrasComoTexto: true,
-    play:            { vs: 'race', teams: 'board', live: [], submit: 'gesto' },
+    play:            { vs: 'race', teams: 'board', live: [], submit: 'gesto' , reloj: { unidad: 'sopa' } },
     needsImageUpload: false,
     needsAudioUpload: false,
     defaultRules:   () => ({ gridSize: 'medium', directions: 'medium', timer: 0 }),

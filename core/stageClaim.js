@@ -25,15 +25,8 @@ export function claimStage(root) {
   return () => el.isConnected !== false && el.__wwEpoch === epoch;
 }
 
-/** OBSERVAR sin reclamar. Para el que PINTA ENCIMA de un escenario que ya tiene
- *  dueño (el cronómetro del HUD): necesita el mismo guard —¿sigue esta época y
- *  sigue conectado?— pero NO puede subir la época, porque eso mataría el
- *  `alive()` del dueño de verdad (el shell) y con él sus timers y su avance.
- *  Pasó: el cronómetro reclamó, el shell quedó «muerto» para sus propios
- *  guards, y el reloj de Tildes se congeló en 0:00 al primer tick. */
-export function observeStage(root) {
-  const el = typeof root === 'string' ? (globalThis.document?.querySelector(root) ?? null) : root;
-  if (!el) return () => false;
-  const epoch = el.__wwEpoch || 0;
-  return () => el.isConnected !== false && (el.__wwEpoch || 0) === epoch;
-}
+// `observeStage()` VIVIÓ AQUÍ y se fue con su único llamante (§30). Era para el
+// cronómetro del HUD, que pintaba sobre un escenario con dueño y no podía
+// reclamarlo —al hacerlo mataba el `alive()` del shell y congelaba el reloj de
+// Tildes en 0:00—. Desde que el reloj es UNO y lo monta el propio shell
+// (core/reloj.js), quien pinta ya es el dueño y le basta con su `alive()`.

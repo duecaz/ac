@@ -3,7 +3,7 @@
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { newPair } from '../../core/contentModels/pairs.js';
-import { itemControlsHtml, reorderArray, cronoFieldHtml, wireCronoField } from '../../core/editorPrimitives.js';
+import { itemControlsHtml, reorderArray } from '../../core/editorPrimitives.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 
 export function renderMemoryEditor(root, activity, onChange) {
@@ -54,11 +54,9 @@ function scoringHtml(a) {
   return `<div class="row g-3">
     <div class="col-md-4"><label class="form-label">Puntos por par</label><input id="m-ppc" type="number" min="0" class="form-control" value="${a.scoring.pointsPerCorrect ?? 1}"></div>
     <div class="col-md-4"><label class="form-label">Puntos por error</label><input id="m-ppw" type="number" class="form-control" value="${a.scoring.pointsPerWrong ?? 0}"></div>
-    ${cronoFieldHtml(a)}
   </div>`;
 }
 function wireScoring(root, a, ctx) {
   on(root, 'input', '#m-ppc', e => { a.scoring.pointsPerCorrect = +e.target.value || 0; ctx.onChange(a); });
   on(root, 'input', '#m-ppw', e => { a.scoring.pointsPerWrong = +e.target.value || 0; ctx.onChange(a); });
-  wireCronoField(root, a, ctx);
 }

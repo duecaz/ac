@@ -18,10 +18,8 @@ import { fullscreenButtonHtml, attachFullscreenButton } from './fullscreen.js';
 import { heatClass } from './itemStats.js';
 import { hudHtml } from './playerHud.js';
 import { corrigeAlFinal } from './constants.js';
-import { createCountdown } from './soloTimer.js';
-import { startElapsedTicker } from './deadlineTicker.js';
+import { montarReloj, relojDe } from './reloj.js';
 import { serverNow } from './serverNow.js';
-import { mostrarCrono } from './playerHud.js';
 
 // ICONOS LUCIDE, EN LÍNEA (dueño, 2026-08-15: «usa iconos lucide»). Se pegan
 // aquí como SVG en vez de cargar la librería: la app no depende de la red —la
@@ -374,7 +372,7 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
     /** Repinta el reloj y la barra de progreso. La ronda NO cuenta el tiempo:
      *  solo lo PINTA. Quién lo cuenta —y con qué primitivo— es del caller (§0:
      *  una plantilla no sabe en qué modo corre). En Individual lo lleva
-     *  `runTextCorrectionSolo` con `createCountdown`; en vivo, la sala. */
+     *  `runTextCorrectionSolo` con `core/reloj.js`; en vivo, la sala. */
     setReloj(texto, pct) {
       const el = root.querySelector('[data-reloj]');
       if (el) el.textContent = texto;
@@ -508,8 +506,10 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
   // habría dejado dos sitios donde poner tiempo y ninguno claramente el bueno.
   // (OJO: `item.seconds` es otra cosa, se llama «Tiempo en vivo» y solo lo lee
   // el panel del host para la ventana de la ronda.)
-  // El conteo lo lleva `createCountdown`, el primitivo de duración de §23 —
-  // nunca un setInterval a pelo — y la ronda solo PINTA lo que se le diga.
+  // El reloj lo decide y lo lleva `core/reloj.js` —el mismo que usan las otras
+  // doce— y esta ronda solo dice DÓNDE se pinta: su propia barra, no el chip del
+  // HUD. Antes tenía aquí su cuenta atrás y su cronómetro, copiados: por eso el
+  // ajuste del editor acabó existiendo en unas plantillas sí y en otras no.
   const segundos = Math.max(0, Number(activity.rules?.timer) || 0);
   const inicioCrono = serverNow();   // mismo reloj que mide el primitivo (§22-5)
   let reloj = null;
@@ -526,38 +526,20 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
       // chip era un tercer sitio para el mismo número — y encima se solapaba con
       // el botón de pantalla completa, que vive en esa misma esquina.
       chips: { left: `${idx + 1} / ${passages.length}` },
-      // Sin límite declarado, la barra lleva el CRONÓMETRO ascendente (paridad
-      // con el HUD de los demás players, comparado con Wordwall): mismo sitio,
-      // mismo formato, sin barra de progreso (no hay nada que agotar).
-      reloj: segundos ? `⏱ ${segundos}` : (mostrarCrono(activity) ? '⏱ 0:00' : null),
+      // El hueco del reloj se reserva si va a haber reloj; lo llena el módulo.
+      reloj: relojDe(activity).tipo === 'ninguno' ? null : '⏱ ',
       progreso: segundos > 0,
     });
     pararReloj();
-    if (!segundos) {
-      if (mostrarCrono(activity)) {
-        const tick = startElapsedTicker({
-          since: inicioCrono,
-          while: () => ctx.alive(),
-          onTick: ({ label }) => ronda.setReloj(`⏱ ${label}`, null),
-        });
-        reloj = { stop: tick.stop };
-      }
-      return;
-    }
-    reloj = createCountdown(segundos, {
-      // `alive()` ANTES de repintar (§23, ficha de ocupación del escenario): si
-      // el alumno se fue a otra ruta, este reloj es un zombi y pintaría su cuenta
-      // encima de la pantalla siguiente. El shell libre no tiene gancho de
-      // teardown, así que el guard es la forma declarada de soltarlo.
-      onTick: (quedan) => {
-        if (!ctx.alive()) { pararReloj(); return; }
-        ronda.setReloj(`⏱ ${Math.max(0, quedan)}`, (quedan / segundos) * 100);
-      },
+    reloj = montarReloj({
+      activity,
+      desde: inicioCrono,
+      alive: () => ctx.alive(),
+      pintar: (texto, pct) => ronda.setReloj(texto, pct),
       // Se acabó el tiempo: se entrega LO QUE HAYA. Ni se pierde el trabajo ni se
       // deja al alumno bloqueado en una hoja que ya no puede terminar.
-      onTimeout: () => { if (ctx.alive()) ronda.flush(); },
+      onFin: () => ronda.flush(),
     });
-    reloj.start();
   }
 
   // ANULAR ES DEL DOCENTE, NO DEL ALUMNO (§22). El botón solo existe en

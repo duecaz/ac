@@ -24,7 +24,7 @@ export class QuestionLiveTemplate extends BaseTemplate {
     aspectRatio: '4/3',
     modes: { solo: true, live: true, async: false, practice: false },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
-    play:            { vs: 'none', teams: 'none', live: ['claim'] },
+    play:            { vs: 'none', teams: 'none', live: ['claim'] , reloj: { unidad: null, crono: false } },
     needsImageUpload: false, // images stored inline as data-URLs (no external upload)
     needsAudioUpload: false,
     defaultRules: () => ({ selector: 'boxes' }),

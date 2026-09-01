@@ -39,7 +39,7 @@ export function wireBalloonField(root, { onPick } = {}) {
 export async function renderGlobosPlayer(rootSel, activity, opts = {}) {
   runSequentialPlayer(rootSel, activity, opts, {
     onFinish() { Streaks.reset('solo', activity.id); },
-    renderItem({ rootSel, item, idx, total, score, timerSecs, submit, startTimer }) {
+    renderItem({ rootSel, item, idx, total, score, timerSecs, submit, alAgotarse }) {
       const options = (item.options || []).slice();
       if (activity.rules?.shuffleOptions) shuffle(options);
       const streak = Streaks.get('solo', activity.id);
@@ -48,7 +48,6 @@ export async function renderGlobosPlayer(rootSel, activity, opts = {}) {
           ${hudHtml({
             pagina: `${idx + 1} / ${total}`,
             racha: streak >= 2 ? `🔥 ${streak}` : null,
-            tiempo: timerSecs > 0 ? `⏱ ${timerSecs}` : null,
           })}
           <div class="edu-sec edu-sec--enunciado ww-prow">
             <h3 class="ww-q gl-q">${escapeHtml(item.question || '')}</h3>
@@ -71,14 +70,13 @@ export async function renderGlobosPlayer(rootSel, activity, opts = {}) {
       };
       const disableAll = () => root.querySelectorAll('.gl-balloon').forEach(b => { b.disabled = true; });
 
-      startTimer({
-        onTick: (remaining) => hudSet(root, 'tiempo', `⏱ ${remaining}`),
-        onTimeout: () => {
-          disableAll(); revealCorrect();
-          Streaks.bump('solo', activity.id, false);
-          emitGame(GameEvents.ANSWER_WRONG, { idx });
-          submit({ itemId: item.id, value: null, correct: false, points: 0, msTaken: timerSecs * 1000 });
-        },
+      // El reloj lo monta y lo pinta el SHELL (core/reloj.js): aquí, solo el
+      // qué-pasa-al-acabarse.
+      alAgotarse(() => {
+        disableAll(); revealCorrect();
+        Streaks.bump('solo', activity.id, false);
+        emitGame(GameEvents.ANSWER_WRONG, { idx });
+        submit({ itemId: item.id, value: null, correct: false, points: 0, msTaken: timerSecs * 1000 });
       });
 
       wireBalloonField(root, { onPick: (value, btn) => {

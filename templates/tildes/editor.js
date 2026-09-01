@@ -5,8 +5,7 @@ import { toast } from '../../core/toast.js';
 import { on } from '../../core/events.js';
 import { newPassage, partirEnParrafos } from '../../core/contentModels/textCorrection.js';
 import { applyMarks, parseAccentedText } from '../../core/textMarks.js';
-import { itemControlsHtml, reorderArray, ruleScopeNote, itemSecondsFieldHtml, wireItemSeconds,
-  pegarTextoHtml, wirePegarTexto, timerFieldHtml, wireTimerField, corregirAlFinalHtml, wireCorregirAlFinal } from '../../core/editorPrimitives.js';
+import { itemControlsHtml, reorderArray, ruleScopeNote, itemSecondsFieldHtml, wireItemSeconds, pegarTextoHtml, wirePegarTexto, corregirAlFinalHtml, wireCorregirAlFinal } from '../../core/editorPrimitives.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 
 export function renderTildesEditor(root, activity, onChange) {
@@ -99,13 +98,11 @@ function rulesHtml(a) {
   return `<div class="row g-3">
     <div class="col-md-4 form-check pt-4 ms-3"><input id="t-rand" class="form-check-input" type="checkbox" ${a.rules.randomize ? 'checked' : ''}><label class="form-check-label" for="t-rand">Mezclar frases</label></div>
     <div class="col-12">${ruleScopeNote()}</div>
-    ${timerFieldHtml(a, 'frase')}
     ${corregirAlFinalHtml(a, 'frase')}
   </div>`;
 }
 function wireRules(root, a, ctx) {
   on(root, 'change', '#t-rand', e => { a.rules.randomize = e.target.checked; ctx.onChange(a); });
-  wireTimerField(root, a, ctx);
   wireCorregirAlFinal(root, a, ctx);
 }
 

@@ -12,8 +12,8 @@ import { trySaveResult } from './results.js';
 import { FEEDBACK_DELAY } from './constants.js';
 import { GameEvents, emitGame } from './gameEvents.js';
 import { shuffle } from './azar.js';
-import { createCountdown } from './soloTimer.js';
-import { cronoHud } from './playerHud.js';
+import { hudSet } from './playerHud.js';
+import { montarReloj, relojDe } from './reloj.js';
 import { clock } from './clock.js';
 import { defaultMaxScore } from './scoring/index.js';
 import { lsGet, lsSet, lsDel } from './ls.js';
@@ -54,11 +54,20 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
   // u otro modo NO debe repintar — el core pregunta ctx.alive() antes.
   const alive = claimStage(rootSel);
 
-  // El cronómetro del HUD (comparado con Wordwall): lo arranca el SHELL porque
-  // el shell es quien posee el tiempo — el core solo pinta su tablero. hudSet
-  // re-encuentra el chip aunque el core re-renderice. Su propio guard lo apaga
-  // al cambiar de pantalla.
-  const crono = cronoHud(rootSel, activity);
+  // EL RELOJ lo monta el SHELL, porque el shell es quien posee el tiempo — el
+  // core solo pinta su tablero. Cuál toca (cuenta atrás o cronómetro) lo decide
+  // `core/reloj.js`, que es el único que lo sabe; aquí solo se dice DÓNDE se
+  // pinta (el chip del HUD, que hudSet re-encuentra aunque el core re-renderice)
+  // y hasta cuándo vale (el guard del escenario, §23).
+  // `alAgotarse`: qué hace la plantilla cuando el reloj llega a cero (la Sopa
+  // termina la partida). El shell monta el reloj UNA vez y lo pinta; la
+  // plantilla ya no monta relojes.
+  let alAgotarseCb = null;
+  const crono = montarReloj({
+    activity, alive,
+    pintar: (texto) => hudSet(rootSel, 'tiempo', texto),
+    onFin: () => alAgotarseCb?.(),
+  });
 
   // Progreso opt-in para players LIBRES (Memoria, etc.): como el shell no posee
   // el estado del tablero, el core lo aporta. loadProgress() devuelve el snapshot
@@ -125,7 +134,7 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
     return { timeUsed, score, maxScore };
   }
 
-  return { finish, saveProgress, loadProgress, alive };
+  return { finish, saveProgress, loadProgress, alive, alAgotarse: (cb) => { alAgotarseCb = cb; } };
 }
 
 // SequentialShell: drives the item-by-item loop common to Quiz and Math.
@@ -136,10 +145,10 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
 //
 // Usage:
 //   runSequentialPlayer(rootSel, activity, opts, {
-//     renderItem(ctx) {            // ctx = { rootSel, activity, item, idx, total, score, state, timerSecs, submit, startTimer }
+//     renderItem(ctx) {            // ctx = { rootSel, activity, item, idx, total, score, state, timerSecs, submit, alAgotarse }
 //       // ...render the item-specific UI...
 //       // on answer: ctx.submit({ itemId, value, correct, points, msTaken });
-//       // optional: ctx.startTimer({ onTick, onTimeout });
+//       // optional: ctx.alAgotarse(() => …)  ← qué hacer si se acaba el tiempo
 //     },
 //     maxScore(items, activity) { return n; },  // optional override
 //   });
@@ -159,13 +168,17 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
   const items = (activity.rules?.randomize ? shuffle(source.slice()) : source).slice();
   const state = { idx: 0, score: 0, startedAt: clock.now(), answers: [] };
   const timerSecs = activity.rules?.timer ?? 0;
+  // Qué reloj toca lo decide `core/reloj.js` (uno para las 13). Aquí solo se
+  // distingue CUÁNDO se monta: el cronómetro corre toda la partida; la cuenta
+  // atrás se rearma en cada ítem, porque el límite es POR ítem.
+  const relojTipo = relojDe(activity).tipo;
   // Ficha de ocupación (§23): `setTimeout(next)` y el countdown por ítem
   // sobreviven al cambio de ruta/modo; sus repintados tardíos se descartan.
   const alive = claimStage(rootSel);
 
-  // El cronómetro del HUD (ver el freeform): con `rules.timer` no arranca —
-  // manda la cuenta atrás, y dos relojes a la vez confunden (mostrarCrono).
-  const crono = cronoHud(rootSel, activity);
+  const crono = relojTipo === 'crono'
+    ? montarReloj({ activity, alive, pintar: (t) => hudSet(rootSel, 'tiempo', t) })
+    : { stop: () => {} };
 
   // Reanudar (F5): retoma el avance guardado si es de ESTA versión y va a medias.
   const resumeOn = canResumeSolo(activity, opts);
@@ -225,14 +238,31 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
     if (auto) setTimeout(next, delay);
   }
 
-  function startTimer({ onTick, onTimeout } = {}) {
-    if (!(timerSecs > 0)) return null;
+  // LO QUE PASA AL AGOTARSE EL TIEMPO lo pone la plantilla (revelar la
+  // respuesta, registrar el fallo); PINTAR el reloj es del shell. Antes el
+  // player recibía `startTimer({onTick,onTimeout})` y cada uno pintaba su chip:
+  // tres copias de la misma línea y ninguna garantía de que el reloj existiera
+  // en las demás plantillas.
+  let alAgotarseCb = null;
+  function alAgotarse(cb) { alAgotarseCb = cb; }
+  function montarCuenta() {
     stopTimer();
-    timerHandle = createCountdown(timerSecs, {
-      onTick: (s) => { if (!alive()) { stopTimer(); return; } onTick?.(s); },
-      onTimeout: () => { timerHandle = null; if (alive()) onTimeout?.(); },
+    if (relojTipo !== 'cuenta') return null;
+    timerHandle = montarReloj({
+      activity, alive,
+      pintar: (texto) => hudSet(rootSel, 'tiempo', texto),
+      // SIN LÍMITE NO HAY MISTERIO, PERO CON LÍMITE HAY QUE HACER ALGO. Si la
+      // plantilla no dice qué (Operaciones no lo decía), el shell hace lo
+      // obvio: se acabó el tiempo de este ítem, se registra sin respuesta y se
+      // pasa al siguiente. Antes el reloj llegaba a cero y la pantalla se
+      // quedaba quieta — el alumno esperando algo que no iba a pasar.
+      onFin: () => {
+        timerHandle = null;
+        if (alAgotarseCb) return alAgotarseCb();
+        const item = items[state.idx];
+        if (item) submit({ itemId: item.id, value: null, correct: false, points: 0, msTaken: timerSecs * 1000 });
+      },
     });
-    timerHandle.start();
     return timerHandle;
   }
 
@@ -247,8 +277,11 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
       rootSel, activity, item,
       idx: state.idx, total: items.length,
       score: state.score, state, timerSecs,
-      submit, next, finish, startTimer,
+      submit, next, finish, alAgotarse,
     });
+    // El reloj se monta DESPUÉS de pintar el ítem: así el primer número aparece
+    // sobre la pregunta ya montada y no sobre la anterior.
+    montarCuenta();
   }
 
   function finish() {

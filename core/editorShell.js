@@ -25,6 +25,7 @@ import { abrirBuscadorImagenes } from './imageSearchModal.js';
 import { revisarActividad, sinEscribirNada } from './activityCheck.js';
 import { creditoTexto } from './imageSearch.js';
 import { QUOTAS } from './quotas.js';
+import { tiempoBloqueHtml, wireTiempoBloque } from './editorPrimitives.js';
 import { iaSabeEscribir, fusionarContenido, MODELOS_IA } from './aiContent.js';
 import { toast } from './toast.js';
 
@@ -173,19 +174,24 @@ export function renderEditorShell(root, a, onChange, spec) {
       // qué hacer primero sin que ninguna se acuerde de ponerlo.
       body: () => primerPasoHtml(T, a) + iaBotonHtml(T) + '<div id="ww-falta">' + faltaHtml(a) + '</div>' + spec.content.html(a) },
     spec.scoring && { id: 'tab-scoring', label: 'Puntuación', body: () => spec.scoring.html(a) },
-    showModes && { id: 'tab-modes', label: 'Modos', icon: 'bi-controller', body: () => {
+    showModes && { id: 'tab-modes', label: 'Juego', icon: 'bi-controller', body: () => {
       // UNA SOLA SECCIÓN «Individual». Aquí se pintaba el bloque de la plantilla
       // con su título y `renderModesTab` pintaba OTRO igual justo debajo: dos
       // rótulos idénticos, seguidos, sin nada que dijera en qué se diferencian.
       // Ahora el shell pone el título una vez y avisa a la pestaña de que ya está;
       // las opciones del modo en solitario caen dentro de esa misma sección.
+      // EL TIEMPO, PRIMERO Y SIEMPRE. Lo pinta el SHELL a partir de lo que la
+      // plantilla declara (`meta.play.reloj`), no cada editor: así el reloj
+      // existe en TODAS las que lo admiten y en el mismo sitio. Antes lo ponía
+      // quien se acordaba —4 de 13— y el cronómetro estaba en otra pestaña.
+      const tiempo = tiempoBloqueHtml(a, getTemplate(a.template));
       const indiv = spec.rules ? `
         <section class="ww-mode-cfg" data-mode="individual">
           <h6 class="mb-1"><i class="bi bi-person-fill text-success"></i> ${escapeHtml(spec.rules.label || 'Individual')}</h6>
           ${spec.rules.html(a)}
         </section>` : '';
       const resto = hasModes ? renderModesTab(a, { yaHayTituloIndividual: !!spec.rules }) : '';
-      return indiv + resto;
+      return tiempo + indiv + resto;
     }},
     liveOn && { id: 'tab-live', label: 'En vivo', icon: 'bi-broadcast', body: () => spec.live.html(a) },
     presOn && { id: 'tab-pres', label: 'Presentación', icon: 'bi-palette', body: () => presentationHtml(a) },
@@ -329,6 +335,7 @@ export function renderEditorShell(root, a, onChange, spec) {
     on(root, 'input', () => refrescarFalta(root, a));
     on(root, 'change', () => refrescarFalta(root, a));
     refrescarFalta(root, a);
+    wireTiempoBloque(root, a, ctx);
     spec.rules?.wire?.(root, a, ctx);
     spec.scoring?.wire?.(root, a, ctx);
     if (liveOn) spec.live.wire?.(root, a, ctx);

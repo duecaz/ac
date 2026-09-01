@@ -5,7 +5,6 @@ import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { WRONG_FLASH_MS } from '../../core/timings.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import * as Streaks from '../../core/streaks.js';
-import { createCountdown } from '../../core/soloTimer.js';
 import { generateGrid, cellLine, SIZE_MAP } from './generator.js';
 import { scoreWordsearch } from './scorer.js';
 import { basePoints } from '../../core/scoring/index.js';
@@ -71,7 +70,6 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
 
   const total      = placed.length;
   const timerSecs  = rules.timer || 0;
-  let timer        = null;
 
   const ctx = runFreeformPlayer(rootSel, activity, opts);
   const state = { score: 0, found: new Set() };
@@ -84,7 +82,6 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
       <div class="ww-ws">
         ${hudHtml({
           pagina: `0 / ${total}`,
-          tiempo: timerSecs > 0 ? `⏱ ${timerSecs}` : null,
         })}
         <div class="ww-ws-body">
           <div class="edu-sec edu-sec--tablero ww-ws-grid-wrap">
@@ -109,7 +106,7 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
     `);
 
     attachDrag();
-    if (timerSecs > 0) startTimer();
+    ctx.alAgotarse(() => finish());
   }
 
   // ── Drag interaction ────────────────────────────────────────────────────────
@@ -237,21 +234,11 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
     if (found >= total) finish();
   }
 
-  // ── Timer ────────────────────────────────────────────────────────────────────
-  function startTimer() {
-    timer = createCountdown(timerSecs, {
-      onTick: (remaining) => {
-        emitGame(GameEvents.TICK, { remainSec: remaining });
-        hudSet(rootEl(), 'tiempo', `⏱ ${remaining}`);
-      },
-      onTimeout: () => finish(),
-    });
-    timer.start();
-  }
+  // El reloj lo monta y lo pinta el SHELL (core/reloj.js, uno para las 13). Aquí
+  // solo se dice qué pasa al acabarse: la sopa se termina.
 
   // ── Finish ───────────────────────────────────────────────────────────────────
   function finish() {
-    if (timer) { timer.stop(); timer = null; }
     const max = total * basePoints(null, scoring);   // misma convención que el scorer
     Streaks.reset('solo', activity.id);
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: state.score }] });
