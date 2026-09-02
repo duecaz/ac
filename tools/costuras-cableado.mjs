@@ -47,7 +47,7 @@ function leerSinComentarios(f) {
 // puede bajar. Si un cruce supera su número, el script sale con código 1 —
 // alguien añadió cableado nuevo sin extremo y hay que decidir (basura o
 // conectar), no subir el número para callar al script.
-const BASELINE = { handlers: 3, pintados: 0, eventos: 0, claves: 0 };
+const BASELINE = { handlers: 0, pintados: 0, eventos: 0, claves: 0 };
 
 /** Camina un directorio y devuelve rutas relativas que pasen el filtro. */
 function walk(dir, filtro, acc = []) {
@@ -411,6 +411,9 @@ function cruce4_clavesWw() {
       if (/\blsSet\s*\(/.test(src)) set = true;
       if (/\blsGet(?:JsonArray)?\s*\(/.test(src)) get = true;
       if (/\blsDel\s*\(/.test(src)) del = true;
+      if (/\bssSet\s*\(/.test(src)) set = true;
+      if (/\bssGet\s*\(/.test(src)) get = true;
+      if (/\bssDel\s*\(/.test(src)) del = true;
       if (RE_SET_DIRECTO.test(src)) set = true;
       if (RE_GET_DIRECTO.test(src)) get = true;
       if (RE_DEL_DIRECTO.test(src)) del = true;
@@ -556,7 +559,7 @@ for (const r of h4malos) {
 console.log('\n── 5 · BYPASS DEL WRAPPER (informativo — fuera de core/ls.js; sin baseline, no afecta al exit code) ──');
 console.log(`   localStorage directo: ${bypass.localStorageHits.length} sitio(s)`);
 for (const x of bypass.localStorageHits) console.log(`     ${x}`);
-console.log(`   sessionStorage directo: ${bypass.sessionStorageHits.length} sitio(s) (core/ls.js no lo cubre hoy)`);
+console.log(`   sessionStorage directo: ${bypass.sessionStorageHits.length} sitio(s)`);
 for (const x of bypass.sessionStorageHits) console.log(`     ${x}`);
 
 const total = h1.length + h2.length + h3malos.length + h4malos.length;
