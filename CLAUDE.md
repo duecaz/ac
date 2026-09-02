@@ -35,7 +35,7 @@ git push origin <rama-de-trabajo>:ACTIVIDAD2         # legado, opcional (ya no s
   autenticado**: para acciones sobre sus repos fuera del alcance de la sesión (p.ej.
   `duecaz/ww-assets`), pásale los comandos `gh`/PS listos para pegar y él los ejecuta.
 
-### 4. LAS ONCE LEYES — contrastar TODO diseño contra ellas ANTES de escribir código
+### 4. LAS DOCE LEYES — contrastar TODO diseño contra ellas ANTES de escribir código
 Cada ley es un cuadro **dueño → PROHIBIDO** con su test que rompe CI. Si un cambio
 necesita violar una prohibición, el diseño está mal planteado: no se parchea, se
 replantea. Texto completo en **`docs/leyes.md`** (índice único de normas).
@@ -56,6 +56,7 @@ replantea. Texto completo en **`docs/leyes.md`** (índice único de normas).
 | **§29 · PRESUPUESTO** | el coste de conducir se MIDE: jugar sin diálogos · nadie revela solo · de la lista a jugar ≤3 toques | `matrix-smoke` (presupuesto) · `find-smoke` (toques) |
 | **§30 · ALCANZABLE** | lo que no tiene puerta de entrada se BORRA: ni módulo sin importador, ni ruta sin enlace, ni CSS que nadie cargue | `huerfanos` (escaneo + `PUERTAS` con motivo) |
 | **§30b · DECIDIDA** | toda ruta cita la sección del norte que la justifica — el sorteo tenía enlace y aun así no respondía a ninguna decisión | `rutasNorte` (escaneo + `DECIDIDA_EN`) |
+| **§31 · COSTURAS** | toda declaración tiene lector · toda regla un dueño · toda red se comprueba en rojo antes de creerla verde | los seis `tools/costuras-*.mjs` en `tools/auditoria.mjs` (ratchet: solo baja) |
 
 - **Si es norma, es test**: una regla nueva se escribe como test, no solo en un MD.
 - **Si una ley cierra una puerta, la UI lo DICE ANTES**: dirigir en vivo / crear
@@ -112,7 +113,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | Modo SOLO (Wordwall) por dentro · identidad/auth · dev local | [`docs/modo-wordwall.md`](docs/modo-wordwall.md) · [`docs/identidad.md`](docs/identidad.md) · [`docs/dev-local.md`](docs/dev-local.md) |
 | **La IA que ESCRIBE el contenido** (por modelo · módulo aparte · el hook de la Pi) | **[`docs/handoff-ia-contenido.md`](docs/handoff-ia-contenido.md)** — FUNCIONANDO desde v1.51.548; su §7b guarda las tres trampas que costaron ponerlo en pie (los 5xx que se come Cloudflare, el ámbito de los handlers, el modelo con caducidad) |
 | **Plan del EDITOR** (márgenes · «+ Añadir» · imagen↔pines · nacer en blanco · buscador) | **[`docs/handoff-editor-general.md`](docs/handoff-editor-general.md)** (decidido 2026-08-13, sin ejecutar) |
-| **DETECTAR LAS COSTURAS** (basura · duplicados · declaraciones sin lector · polimorfismo a medias · cableado sin extremo): los 7 barridos y quién los corre | **[`docs/handoff-costuras.md`](docs/handoff-costuras.md)** (plan 2026-09-02, sin ejecutar) |
+| **DETECTAR LAS COSTURAS** (basura · duplicados · declaraciones sin lector · polimorfismo a medias · cableado sin extremo): los 7 barridos, ejecutados a cero | **[`docs/handoff-costuras.md`](docs/handoff-costuras.md)** §1b — ley §31 |
 | **DECISIONES de producto pendientes** (contrastadas con Wordwall y similares: identidad del alumno, imprimible, cuotas…) | **[`docs/decisiones-pendientes.md`](docs/decisiones-pendientes.md)** |
 | **Cuántos bucles de juego en vivo hay y qué cuestan** (estudio D7, medido) | **[`docs/estudio-bucles-live.md`](docs/estudio-bucles-live.md)** + ley §26 |
 | Índice completo de docs | [`docs/README.md`](docs/README.md) (lo histórico vive en `docs/historico/`) |
@@ -346,9 +347,10 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   decía «Listo: N borradas» aunque hubieran fallado las N.
 - **Claves del almacén** (`ww.*`): cada una con UN dueño declarado en `LS_OWNERS`
   (`core/normsCheck.js`), igual que las colecciones PB. Una vista NUNCA declara su
-  propia clave: `ww.nick` acabó definida en `studentLive` y `studentTask` a la vez
-  (el apodo es de `core/identity.js`), y `ww.skin` se leía sin que nadie la escribiera.
-  Vigilado por la regla `ls-dueno`; una clave nueva sin declarar rompe CI.
+  propia clave: `ww.nick` acabó definida en `studentLive` y `studentTask` a la vez, y
+  `ww.skin` se leía sin que nadie la escribiera. Vigilado por `ls-dueno`; `core/ls.js`
+  es el ÚNICO que puede nombrar `localStorage`/`sessionStorage` a pelo (`almacen-crudo`,
+  §21) y tiene el GEMELO DE SESIÓN `ssGet`/`ssSet`/`ssDel`.
 - **Filtros PocketBase**: SIEMPRE `pbEscape`/`pbFilterParam` (`core/pbFilter.js`), nunca
   `encodeURIComponent` a pelo (no escapa la comilla simple).
 - **Qué persiste cada modo**: cuadro único en `core/persistPolicy.js` (Individual → `results`;

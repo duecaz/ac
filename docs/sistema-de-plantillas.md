@@ -42,8 +42,11 @@ Cada `templates/<name>/` tiene: `template.js` (la clase), `player.js`,
 | `scoreSubmission({value,item,...})` | Devuelve `{correct, points}` — SIEMPRE esa forma. |
 
 **Opcional** (desbloquea modos): `getRoundPayload` + `renderRound` → VS/Equipos-auto;
-`meta.modes.live` + los dos anteriores → En vivo; `migrateContent` → subir de versión;
-`adoptContent` → adaptar al convertir hacia esta plantilla.
+`meta.modes.live` + los dos anteriores → En vivo; `migrateContent` → subir de versión
+(`templates/base.js` da un default heredable no-op; el contrato solo EXIGE
+sobreescribirlo con `templateVersion > 1`); `adoptContent` → adaptar al convertir
+hacia esta plantilla. El contrato EXIGE `renderRound`/`renderRaceCell` según lo que
+`meta.play.{vs,teams,live}` declare (§0): declaración y capacidad no pueden separarse.
 
 ## 3. Quién interviene al CREAR una actividad
 
@@ -64,7 +67,12 @@ En cuanto se registra e importa:
 ```
 
 El autor toca **dos ficheros de verdad**: `player.js` y `styles/<name>.css`. El
-resto son huecos rellenos por el generador.
+resto son huecos rellenos por el generador. Helpers compartidos del EDITOR (no
+se retecléan): `wireItemList` (`core/editorPrimitives.js`, añadir/borrar/subir/
+bajar de una lista de ítems), `tiempoBloqueHtml` (el reloj, UN sitio), el tile
+de imagen (`core/imageTile.js`: subir·buscar·borrar), `renderPairsEditor`
+(`core/contentModels/pairs.js`, Emparejar y Memoria) y `core/textCorrectionEditor.js`
+(Tildes y Comas, con `kind`).
 
 **Y su player nace con los CUATRO ROLES** (`docs/estilos-de-actividad.md` §3b0):
 `hudHtml({...})` como primer hijo (los indicadores flotan, nunca crean franja),
@@ -89,10 +97,11 @@ core/activityThumb.js   la miniatura del home → llama al previewHtml de la pla
 
 **Eventos del bus** (los emite el `player.js`, y el sistema los convierte en
 sonido/efecto sin que la plantilla sepa nada): `QUESTION_SHOWN`, `ANSWER_CORRECT`,
-`ANSWER_WRONG`, `STREAK`, `REVEAL`, `TICK`, `PODIUM`. `STREAK` (`{ count }`) solo
-dispara EFECTO (confeti corto, `core/effects.js`), no sonido — al cruzar 3 o 5
-aciertos seguidos (`UMBRALES_RACHA`); el 🔥 en pantalla lo sigue pintando cada
-plantilla por su cuenta.
+`ANSWER_WRONG`, `STREAK`, `REVEAL`, `TICK`, `PODIUM`. `STREAK` (`{ count }`) tiene
+oyente en `core/effects.js` que dispara EFECTO (confeti corto), no sonido — al
+cruzar 3 o 5 aciertos seguidos (`UMBRALES_RACHA`, único sitio); el 🔥 en pantalla
+lo sigue pintando cada plantilla por su cuenta. `TICK` (`{ remainSec }`) lo emite
+el reloj único, `core/reloj.js`.
 
 ## 5. Los guardianes (el contrato es EJECUTABLE)
 

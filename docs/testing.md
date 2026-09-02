@@ -59,6 +59,8 @@ navegador y caminar el viaje.
 | `tools/live-smoke.mjs` | en vivo con dos pantallas: sala → PIN → responder → settle → podio | ~9 |
 | `tools/task-smoke.mjs` | tareas/informes: crear tarea → PIN → jugar → tope de intentos → informe del profe | ~8 |
 | `tools/edit-audit.mjs` | teclear en los 13 editores y re-preguntar al scorer: la clave correcta sobrevive | ~9 |
+| `tools/costuras-*.mjs` (6) | ley §31: declaración sin lector · contrato a medias · vista que conoce plantilla · cableado sin extremo · misma regla dos veces · ajuste en la capa equivocada — cada uno con baseline (ratchet) | ~5 |
+| `tools/perf-sonda.mjs` | la pizarra lenta del aula (4K, CPU frenada 12x): reposo fluido y ESCRIBIR no cuesta más del DOBLE del reposo de ESA MISMA máquina (techo absoluto solo daba falsos rojos en un host lento) | ~15 |
 
 Fuera del preflight a propósito: `race-e2e` (PocketBase real + credenciales),
 `stress-live` (carga contra la Pi) y `shots` (comparación visual antes/después).
@@ -131,6 +133,9 @@ testea **lógica pura** (sin DOM, sin red): motores, scorers, parsers, colas.
 | `norms` | Normas transversales de CLAUDE.md como CI (`core/normsCheck.js`): nunca `new ResizeObserver` directo, nunca `filter=` PB con `encodeURIComponent`, `kernel/` determinista (sin `Date.now()`). Recorre TODO el JS del repo. |
 | `skins` | Contrato de skin (`core/skinContract.js`): cada skin define el set COMPLETO de tokens pintables (los del skin `default`), sin apoyarse en el fallback silencioso de `theme.css :root`. Cazó 5 skins que no declaraban `--ww-success/danger/warning`. |
 | `newTemplate` | Self-test del generador (`tools/new-template.mjs`): genera en un scratch y corre los checkers reales (contrato, normas, CSS) sobre lo emitido — si el contrato crece y el esqueleto se queda viejo, falla aquí. También guardas del CLI (no pisa carpetas, `--out` no muta el repo). |
+| `sinComentarios` | El único quitador de comentarios (`core/sinComentarios.js`) recorre el fuente sabiendo en qué estado está — la regex de dos pasos se tragaba `core/selftest.js` entero (un `/*` dentro de un comentario de línea abría un bloque que no cerraba hasta 300 líneas después, invisible a TODAS las reglas). |
+| `modalFallback` | `core/modalFallback.js` devuelve el foco al disparador al cerrar un modal (Escape o `hidden.bs.modal`), tanto en el respaldo sin bootstrap como con `bootstrap.Modal` real — dueño único, tecleado dos veces antes de B5. |
+| `reloj` | El reloj es UNO (`core/reloj.js`): la segunda mitad de `ajusteConectado` — no solo que el editor escriba algo que el juego lea, también que lo que el juego LEE, el editor lo OFREZCA. Emite `GameEvents.TICK` en los últimos segundos. |
 
 > **Los tres checkers de arriba también corren en el panel `#/admin`** ("Ejecutar
 > tests", grupos *Contrato*, *Normas* y *Skins*): mismos módulos
@@ -187,6 +192,13 @@ faltaba en `views/memoryView.js`, el escáner lo señala con archivo:línea y la
 matriz pinta ❌ en *Memoria · equipos* con el mensaje `teamsScoreboardHtml is not
 defined`. Un test que no puede fallar no vale.
 
+**También mide GESTOS** (B7, ley §31): con el mismo detector `gestoCampo` mide
+foco/pestaña/scroll antes y después de teclear en tres sitios además de los
+editores — la **antesala** (un único control de arranque, instrucciones a la
+vista), la **biblioteca/inicio** (buscar no te saca de donde estabas) y los
+**modales** (buscar imagen · IA: Escape cierra y devuelve el foco). Cada red
+se comprobó en ROJO con el defecto plantado antes de creerla en verde.
+
 **El runner de dos contextos** (`tools/live-smoke.mjs`) cubre lo que la matriz
 no puede: EN VIVO de punta a punta con una página HOST y una página ALUMNO sobre
 el backend local (localStorage + BroadcastChannel = multi-pestaña real):
@@ -196,6 +208,12 @@ La aserción clave post-C6: los puntos del podio los puso el settle del host.
 ```bash
 node tools/live-smoke.mjs     # sale 1 si el flujo canónico de una clase se rompe
 ```
+
+**Cuarta pasada** (B7, ley §31): un gesto del host no destruye lo que el
+alumno tiene entre manos. El host pulsa Pausa a mitad de pregunta —la sala NO
+cambia de fase, solo `deadline`— y se comprueba que la marca que el alumno
+acababa de poner SIGUE ahí al reanudar (era el mismo patrón que la pestaña del
+editor, esta vez en el móvil del alumno).
 
 **La CARRERA contra PocketBase de verdad** (`tools/race-e2e.mjs`) cubre lo que el
 driver local NO puede reproducir: la costura entre el settle, los autodate del
@@ -250,6 +268,13 @@ node tools/edit-audit.mjs     # las 13 plantillas — sale 1 si alguna pierde su
 No se teclea en el campo que ES la respuesta (cambiarlo a mano no es perder la
 clave, es cambiarla): esos selectores viven en `ANSWER_FIELDS`, dentro del
 script. Una plantilla nueva entra sola (recorre el registro).
+
+**La red hace DOS preguntas, no una** (B7): además de si la clave sigue siendo
+correcta, si **teclear pierde el foco o cambia de pestaña** — recorre TODAS
+las pestañas del editor, no solo la primera, y en un campo numérico teclea un
+dígito de verdad (pegarle una letra no prueba nada). Nació de que un campo de
+tiempo repintaba el editor entero y la pestaña volvía a la primera a mitad de
+palabra: la clave sobrevivía, la EXPERIENCIA no.
 
 ## 3. Verificación headless (layout, táctil, visual)
 

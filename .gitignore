@@ -1,4 +1,8 @@
-.claude/
+# .claude/ es local (settings, caché)… salvo los SKILLS del proyecto, que son
+# el ritual de entrega y la auditoría: viven en el repo (estaban solo en el
+# contenedor efímero de una sesión y CLAUDE.md los citaba como si existieran).
+.claude/*
+!.claude/skills/
 .preflight-ok
 .shots/
 

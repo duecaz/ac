@@ -67,6 +67,7 @@
 - [⚖️ §29 · PRESUPUESTO — el coste de conducir la clase se MIDE](#-29--presupuesto--el-coste-de-conducir-la-clase-se-mide)
 - [⚖️ §30 · ALCANZABLE — lo que no tiene puerta de entrada, se borra](#-30--alcanzable--lo-que-no-tiene-puerta-de-entrada-se-borra)
   - [§30b · Y ADEMÁS: toda ruta tiene una DECISIÓN escrita](#30b--y-además-toda-ruta-tiene-una-decisión-escrita)
+- [⚖️ §31 · COSTURAS — toda declaración tiene lector, toda regla un dueño, toda red se comprueba en rojo](#-31--costuras--toda-declaración-tiene-lector-toda-regla-un-dueño-toda-red-se-comprueba-en-rojo)
   - [Convención de los MD (decidida el 2026-08-11)](#convención-de-los-md-decidida-el-2026-08-11)
   - [Cómo se auto-verifica todo](#cómo-se-auto-verifica-todo)
 
@@ -615,6 +616,17 @@ exactamente lo que causó los lost-updates (deuda A) y el guardado doble.
     @pio (añade `qid` + sus 2 índices). Sin eso, el reintento sigue funcionando
     pero sin la garantía del índice (la comprobación por consulta del adaptador
     cubre mientras tanto).
+- **El almacén tiene GEMELO DE SESIÓN (2026-09-02)**: `core/ls.js` era dueño
+  único de `localStorage` (`lsGet`/`lsSet`/`lsDel`, con `LS_OWNERS`) pero no
+  de `sessionStorage` — el barrido de costuras (§31) encontró 19 accesos
+  crudos a `localStorage` y 16 a `sessionStorage` FUERA de `core/ls.js`, la
+  misma anatomía que la Ruleta (una norma que solo obedece la mitad). Ahora
+  `core/ls.js` exporta también `ssGet`/`ssSet`/`ssDel` para lo que NO debe
+  sobrevivir a cerrar la pestaña (tokens OAuth/Google/Classroom, la fila del
+  jugador en la sala en curso, la racha de esta partida). Regla ejecutable
+  **`almacen-crudo`** (`core/normsCheck.js`): nombrar `localStorage.`/
+  `sessionStorage.` fuera de `core/ls.js` rompe CI, con excepciones
+  declaradas en `ALLOW_ALMACEN_CRUDO` y su motivo.
 
 ## §21b) ⚖️ UNA REGLA, UN DUEÑO — la generalización del §21
 
@@ -1327,6 +1339,42 @@ que ya no corresponde a ninguna ruta también (un permiso fantasma acabaría
 justificando a la siguiente que se llame igual) · y la contra-prueba comprueba
 que `#/sorteo` **no habría llegado a existir**.
 
+## ⚖️ §31 · COSTURAS — toda declaración tiene lector, toda regla un dueño, toda red se comprueba en rojo
+
+> **Dueño**: los seis barridos `tools/costuras-*.mjs` (`cableado` ·
+> `declaraciones` · `plantilla-en-vista` · `contrato` · `duplicados` · `capa`),
+> corridos desde `tools/auditoria.mjs` · **PROHIBIDO**: una clave de `meta`/
+> `rules`/`scoring`/`live` sin lector fuera del editor · una vista con un
+> `if (plantilla === 'x')` en vez de una declaración · un método del contrato
+> stub donde `meta.play` dice que existe · la misma regla (función, frase de
+> UI, número mágico) escrita dos veces · un ajuste de sala puesto en la capa
+> equivocada (§0) · una red nueva aceptada sin haberla visto fallar primero.
+> **Vigilada por**: cada barrido entra en `tools/auditoria.mjs` con un
+> BASELINE que solo puede bajar (ratchet); el séptimo (un gesto que destruye lo
+> que el usuario toca) no es mecánico — vive como sonda en
+> `tools/matrix-smoke.mjs`/`tools/live-smoke.mjs`.
+
+Nace del plan `docs/handoff-costuras.md` (pedido 2026-09-02, tres días seguidos
+de defectos que no eran bugs de una pieza sino **costuras** entre dos piezas
+correctas: el reloj vivía en tres sitios · cuatro plantillas no sabían qué
+hacer al llegar a cero porque el shell ofrecía el método y ellas no lo
+cableaban · teclear en el editor perdía el foco y la pestaña · la Ruleta
+declaraba «sin reloj» y salía con cronómetro). Las cinco primeras comparten
+anatomía: **algo se DECLARA en un sitio y quien debería LEERLO no lo lee, o lo
+leen dos con dos criterios distintos.** Los seis barridos son ese cruce
+escritor×lector hecho mecánico; el séptimo es lo que solo se ve CAMINANDO la
+pantalla, no leyendo código.
+
+Ejecutados el 2026-09-02: los siete bajaron a **0** en su primera pasada
+juzgada (50 · 15 · 9 · 16 · 67 · 22 · 2 hallazgos de partida). Detalle de qué
+se conectó, se borró o quedó excepción con motivo, en
+`docs/handoff-costuras.md` §1b.
+
+**La regla de instrumento, la que costó más**: una red nueva se acepta solo
+tras verla FALLAR con el defecto plantado a propósito — la primera versión de
+la sonda de «teclear pierde la pestaña» dio verde con el bug puesto, porque
+medía el síntoma equivocado. Va en el skill `/auditoria` §3b como paso
+obligatorio, con contra-prueba en cada commit de barrido.
 
 ---
 ### Convención de los MD (decidida el 2026-08-11)

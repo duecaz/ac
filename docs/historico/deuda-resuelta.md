@@ -417,3 +417,17 @@ tocar `main`. Los cortes eran los mapeados — no se re-diseñó nada:
 Deuda de higiene anotada en el camino: `tests/liveJoin.test.mjs` depende de que
 otra suite polyfillee localStorage (falla en solitario); `ia_usos` sin declarar
 en PB_OWNERS.
+
+### ✅ RESUELTO (v1.51.640-657, 2026-09-02) — Las costuras: 7 barridos escritor×lector a cero
+El reloj vivía en tres sitios (shell secuencial · HUD · Tildes/Comas) y el
+editor solo lo ofrecía en 4 de 13 → **UN reloj** (`core/reloj.js`), llega
+también al tablero y emite `GameEvents.TICK`. La antesala de VS/Equipos ya era
+una, pero el patrón se repitió: **UN cableado de lista de ítems**
+(`wireItemList`), un editor de Tildes/Comas, un tile de imagen, un modal de
+respaldo, un PRNG (`core/azar.js` sin copias). Los siete barridos del plan
+(`docs/handoff-costuras.md`, ley §31) bajaron todos a 0 en su primera pasada
+juzgada — detalle y hallazgos por barrido en `docs/handoff-costuras.md` §1b.
+De paso: el almacén ganó gemelo de sesión (`ssGet`/`ssSet`/`ssDel`, regla
+`almacen-crudo`, §21) y `core/sinComentarios.js` se volvió dueño único de
+quitar comentarios (una regex de dos pasos tragaba `core/selftest.js` entero,
+invisible a todas las reglas del proyecto).

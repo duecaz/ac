@@ -50,6 +50,7 @@ Cada barrido tiene tres partes y un coste distinto:
   replantear» llegan al dueño (o a Fable). Son pocas.
 
 ### B1 · DECLARACIÓN SIN LECTOR — `meta.*`, `rules.*`, `scoring.*`, `live.*`, `presentation.*`
+**EJECUTADO ✅** (`tools/costuras-declaraciones.mjs`, baseline 15 → 0; detalle en §1b).
 Lo que cazó la Ruleta. Hoy `ajusteConectado` mira solo lo que el EDITOR
 escribe; falta el cruce completo.
 - **(M)** Para cada clave que alguna plantilla declara en `meta` (hoy: 30
@@ -66,6 +67,7 @@ escribe; falta el cruce completo.
   tiene al menos un lector fuera del editor, salvo lista `SOLO_EDITOR` con motivo.
 
 ### B2 · CONTRATO A MEDIAS — los métodos estáticos de las 13
+**EJECUTADO ✅** (`tools/costuras-contrato.mjs`, baseline 16 → 0; detalle en §1b).
 Lo que cazó Diagrama/Emparejar. `templateContract` valida que existan; no mira
 si son **iguales**, **vacíos** o **inalcanzables**.
 - **(M)** Matriz 13 plantillas × cada `static` que la plataforma invoca (hoy 9:
@@ -85,6 +87,7 @@ si son **iguales**, **vacíos** o **inalcanzables**.
   stub» y «ningún estático sin invocador».
 
 ### B3 · LA VISTA QUE CONOCE UNA PLANTILLA (§0 al revés del polimorfismo)
+**EJECUTADO ✅** (`tools/costuras-plantilla-en-vista.mjs`, baseline 9 → 0; detalle en §1b).
 Un `if (template === 'wheel')` en una vista es un método del contrato que
 falta. Hoy quedan 3 (`core/liveLoops.js`, `views/home.js`…) y cada uno es una
 decisión: o se convierte en declaración (`meta.*`) o se documenta como
@@ -99,6 +102,7 @@ excepción.
   con lista de excepciones con motivo.
 
 ### B4 · CABLEADO SIN EXTREMO — handlers, ids, eventos, `data-*`
+**EJECUTADO ✅** (`tools/costuras-cableado.mjs`, baseline 50 → 0; detalle en §1b).
 254 handlers delegados. Ninguna red comprueba que el selector que escuchan
 exista en algún HTML que se pinte, ni al revés.
 - **(M)** Cuatro cruces — ESCRITO: `tools/costuras-cableado.mjs` (primera pasada 2026-09-02: 3 · 24 · 3 · 20 = 50 hallazgos, que son su baseline):
@@ -117,6 +121,7 @@ exista en algún HTML que se pinte, ni al revés.
   barridos con baseline.
 
 ### B5 · LA MISMA REGLA ESCRITA DOS VECES (§21b, pero medido)
+**EJECUTADO ✅** (`tools/costuras-duplicados.mjs`, baseline 67 → 0; detalle en §1b).
 No duplicado textual (eso lo ve cualquier linter) sino **semántico**: dos
 funciones que hacen lo mismo con otro nombre, y dos frases de UI que explican
 la misma regla (el «0 = sin límite» vivía en dos sitios hasta ayer).
@@ -132,6 +137,7 @@ la misma regla (el «0 = sin límite» vivía en dos sitios hasta ayer).
   y (b) quedan como barrido con baseline (el umbral se APRIETA por pasadas).
 
 ### B6 · AJUSTE EN LA CAPA EQUIVOCADA (§0)
+**EJECUTADO ✅** (`tools/costuras-capa.mjs`, baseline 22 → 0; detalle en §1b).
 `rules.crono` era una decisión de la PLANTILLA puesta como ajuste del PROFE.
 - **(M)** Cruzar cada campo de `defaultRules()` con: ¿lo lee el player de la
   plantilla (contenido/plantilla), o lo lee `core/`/`views/` (modo/plataforma)?
@@ -144,6 +150,8 @@ la misma regla (el «0 = sin límite» vivía en dos sitios hasta ayer).
   nuevo sin capa declarada rompe CI.
 
 ### B7 · UN GESTO DESTRUYE LO QUE SE TOCA (solo caminando)
+**EJECUTADO ✅** (sondas en `tools/matrix-smoke.mjs`/`tools/live-smoke.mjs`, no un
+script aparte; 2 → 0, con un bug real cazado — detalle en §1b).
 El de la pestaña. No es estático: hay que medirlo en el navegador. La sonda
 `tools/edit-audit.mjs` ya lo hace para los 13 editores; falta el resto de sitios
 donde un humano tiene algo entre manos.
@@ -175,6 +183,11 @@ Colateral: la regex que quitaba comentarios se tragaba medio `core/selftest.js`
 único. Y la sonda del lápiz medía en ms absolutos → calibrada contra el reposo.
 
 ## 2 · Cómo se corre — quién hace qué
+
+Las reglas de OPERACIÓN de los agentes (un agente edita, nunca ejecuta git; un
+barrido a la vez por sesión; retomar con `git status` + suite; cada red nueva
+se comprueba en ROJO antes de creerla) viven en el skill `/auditoria` §3b —no
+se copian aquí, se citan.
 
 El plan está pensado para que **lo caro sea poco**. Tres roles:
 
