@@ -22,11 +22,9 @@ export class WheelTemplate extends BaseTemplate {
     editor: { elemento: 'opción', primerPaso: 'Pulsa «Añadir opción» y escribe cada casilla de la ruleta.' },
     instructions: 'Gira la ruleta y responde la pregunta que toque.',
     aspectRatio: '1/1',
-    modes: { solo: true, live: true, async: false, practice: true },
+    modes: { solo: true, live: true, async: false },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
     play:            { vs: 'none', teams: 'none', live: ['claim'] , reloj: { unidad: null, crono: false } },
-    needsImageUpload: true,   // wheel/editor.js: imagen opcional por entrada (data-URL, 200 KB)
-    needsAudioUpload: false,
     // `selector: 'wheel'` es la DECLARACIÓN de que esta actividad usa la ruleta
     // para elegir turno (§0): antes la vista lo deducía del NOMBRE de la
     // plantilla. `normalize()` lo rellena también en las actividades ya

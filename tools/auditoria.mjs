@@ -178,9 +178,9 @@ if (!soloListas) {
 
 // ── LAS COSTURAS (docs/handoff-costuras.md): cada barrido escritor×lector es
 // un script aparte con su baseline, y aquí se CUENTA como una clase más de
-// basura si supera su baseline. B4 · cableado sin extremo, desde 2026-09-02.
+// basura si supera su baseline. B4 · cableado sin extremo y B1 · declaración sin lector, desde 2026-09-02.
 if (!soloListas) {
-  for (const b of ['tools/costuras-cableado.mjs']) {
+  for (const b of ['tools/costuras-cableado.mjs', 'tools/costuras-declaraciones.mjs']) {
     const r = spawnSync(process.execPath, [join(ROOT, b)], { cwd: ROOT, encoding: 'utf8' });
     const ultima = (r.stdout || '').trim().split('\n').pop() || '';
     if (r.status === 0) ok(`costuras: ${ultima} — node ${b}`);

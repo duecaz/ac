@@ -24,7 +24,7 @@ export class MemoryTemplate extends BaseTemplate {
     editor: { elemento: 'par', primerPaso: 'Pulsa «Añadir par» y escribe las dos caras que el alumno tendrá que emparejar.' },
     instructions: 'Encuentra las parejas: voltea dos cartas; si coinciden, se quedan descubiertas.',
     aspectRatio: '1/1',
-    modes: { solo: true, live: false, async: true, practice: true },
+    modes: { solo: true, live: false, async: true },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
     // teams:'propio' — Memoria NO se juega con la ronda genérica: trae su
     // mecánica (mazo compartido, turno que se conserva al acertar) y su vista.
@@ -32,8 +32,6 @@ export class MemoryTemplate extends BaseTemplate {
     // memory?», y eso es lo que la ley §0 prohíbe: un modo no conoce plantillas
     // concretas. Estaba preguntado por NOMBRE en siete sitios.
     play:            { vs: 'none', teams: 'propio', live: [] , reloj: { unidad: 'partida' } },
-    needsImageUpload: false,
-    needsAudioUpload: false,
     defaultRules: () => ({ timer: 180, revealMs: 900, columns: 4 }),
     defaultScoring: () => ({ pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
     defaultLive: () => ({}),

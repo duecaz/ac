@@ -126,7 +126,7 @@ export class ${Cls}Template extends BaseTemplate {
     },
     panelFit: 'fill',             // panel VS: 'fill' (llena y escala) | 'block' | 'center'
     aspectRatio: '16/10',         // marco del player: '16/10' | '4/3' | '1/1' | 'auto'
-    modes: { solo: true, live: ${wantLive}, async: true, practice: true },
+    modes: { solo: true, live: ${wantLive}, async: true },
     // POLÍTICA DE JUEGO (contrato): cómo se comporta en cada modo — la leen el
     // motor y las vistas, no la adivinan.
     //   vs:    'points' espera a AMBOS y gana quien más suma (defecto sensato)
@@ -136,8 +136,6 @@ export class ${Cls}Template extends BaseTemplate {
     // toque ES la respuesta, cero botones) o 'boton' (se construye y se
     // confirma con UNO marcado data-ww-submit). Lo audita matrix-smoke.
     play: { vs: '${wantVs ? 'points' : 'none'}', teams: '${wantVs ? 'turns' : 'none'}', live: '${wantLive ? 'rounds' : 'none'}'${wantVs ? ", submit: 'boton'" : ''} },
-    needsImageUpload: false,      // true si el editor sube imágenes (core/upload.js)
-    needsAudioUpload: false,
     defaultRules:   () => ({ timer: 0, randomize: true }),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
     defaultLive:    () => ({}),

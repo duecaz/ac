@@ -19,15 +19,13 @@ export class WordsearchTemplate extends BaseTemplate {
     // hay que borrar antes de empezar (R-D).
     editor: { elemento: 'palabra', primerPaso: 'Pulsa «Añadir palabra» y escribe las que el alumno tendrá que encontrar.' },
     instructions:    'Encuentra las palabras ocultas arrastrando sobre la sopa de letras.',
-    modes:           { solo: true, live: false, async: true, practice: true },
+    modes:           { solo: true, live: false, async: true },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
     // La Sopa guarda `words` como cadenas sueltas, no como fichas con pista.
     // Lo DECLARA aquí porque quien lo necesita es el diálogo de IA, y hasta hoy
     // lo averiguaba preguntando `a.template === 'wordsearch'` (§0).
     iaPalabrasComoTexto: true,
     play:            { vs: 'race', teams: 'board', live: [], submit: 'gesto' , reloj: { unidad: 'sopa' } },
-    needsImageUpload: false,
-    needsAudioUpload: false,
     defaultRules:   () => ({ gridSize: 'medium', directions: 'medium', timer: 300 }),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1 }),   // P5: escala unificada (antes 10)
     defaultContent: () => ({

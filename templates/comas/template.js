@@ -28,7 +28,7 @@ export class ComasTemplate extends BaseTemplate {
     instructions: 'Dibuja la coma (,) en el hueco donde falta. Cuando termines, pulsa “Listo” para corregir.',
     panelFit: 'fill',    // el texto llena el panel y se escala para caber
     aspectRatio: '16/10',
-    modes: { solo: true, live: true, async: true, practice: true },
+    modes: { solo: true, live: true, async: true },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
     // Se juega MARCANDO sobre un texto, así que en una pizarra interactiva
     // conviene calibrar el lápiz antes de empezar. Lo DECLARA la plantilla: la
@@ -36,9 +36,9 @@ export class ComasTemplate extends BaseTemplate {
     // §0 al revés (un modo no conoce plantillas concretas).
     seMarcaConLapiz: true,
     play:            { vs: 'points', teams: 'turns', live: ['rounds', 'race'], submit: 'boton' , reloj: { unidad: 'frase' } },
-    needsImageUpload: false,
-    needsAudioUpload: false,
-    defaultRules: () => ({ timer: 30, randomize: false, allowOverflow: true }),
+    // `allowOverflow` se quitó (barrido B1, 2026-09-02): prometido sin
+    // mecánica — el tope de marcas nunca se implementó, decisión del dueño.
+    defaultRules: () => ({ timer: 30, randomize: false }),
     // DIEZ POR MARCA, no uno (dueño 2026-08-27, comparando con la app anterior:
     // «cada tilde es 10 puntos por defecto»). En una pizarra a tres metros, 20 y
     // 120 se leen y 2 y 12 no. Solo cambia el DEFECTO de las actividades nuevas:

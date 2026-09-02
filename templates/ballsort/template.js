@@ -27,7 +27,7 @@ export class BallsortTemplate extends BaseTemplate {
     aspectRatio:     '4/3',
     // async:false — es un JUEGO (§4c): sin contenido del docente no hay nada que
     // evaluar en una Tarea, y mandarlo a casa empuja al uso sin profe (§4d).
-    modes:           { solo: true, live: true, async: false, practice: false },
+    modes:           { solo: true, live: true, async: false },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
     play:            { vs: 'race', teams: 'board', live: ['board'], submit: 'gesto',
                        // Su mecánica YA lleva su tiempo a la vista (el reloj del tablero).
@@ -58,8 +58,6 @@ export class BallsortTemplate extends BaseTemplate {
     // LIVE 'board' (declarado en play.live): tablero ÚNICO compartido — cada
     // alumno resuelve el MISMO puzle a su ritmo y el host ve cada tablero
     // avanzar movimiento a movimiento sobre la fase 'race'.
-    needsImageUpload: false,
-    needsAudioUpload: false,
     defaultRules:   () => ({}),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1000 }),
     defaultLive:    () => ({ advanceMode: 'race' }),

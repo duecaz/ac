@@ -461,19 +461,18 @@ usuario: se deja pendiente, no bloquea el resto.
   calibración de 2 recuadros; medido headless en `tools/lapiz-sonda.mjs`). Falta la
   mano de verdad: es la Parte 1 de la hoja del compañero.
 
-### 🟡 TRES FUNCIONES QUE EL PANEL PROMETÍA Y NO EXISTEN (v1.51.482)
+### 🟡 UNA FUNCIÓN QUE EL PANEL PROMETÍA Y NO EXISTE (v1.51.482)
 El escaneo de «ajustes desconectados» encontró SIETE mandos que el editor
 escribía y nadie leía. Cuatro se conectaron (filtro de apodos · leaderboard
-entre preguntas · mostrar respuesta tras cada · ayuda del crucigrama). Los otros
-tres se QUITARON del panel —un control que no controla engaña a quien prepara la
-clase— y quedan aquí como función a decidir:
+entre preguntas · mostrar respuesta tras cada · ayuda del crucigrama). De los
+otros tres, dos se RETIRARON del esquema por decisión del dueño (`rules.
+allowOverflow`/`showHints` de Tildes y Comas, `rules.livesPerMistake` de
+Match, `scoring.penaltyRatio`: prometidos sin mecánica — barrido B1,
+2026-09-02). Queda uno como función a decidir:
 - **Bonus por racha** (`live.streakBonus` + `streakBonusPerStep`): los puntos
   extra los calculaba una **Edge Function de Supabase**, y Supabase se retiró.
   Para reponerlo hay que decidir dónde se calcula (¿el settle del host?) y si la
   racha cuenta por alumno o por sala. La racha SÍ se sigue viendo (🔥).
-- **Marcas ilimitadas en la paleta** (Tildes y Comas, `rules.allowOverflow`): el
-  tope nunca se implementó — la ronda no cuenta marcas disponibles. Decidir si
-  limitar es buena mecánica antes de escribirlo.
 > Lo vigila `tests/ajusteConectado.test.mjs`: un ajuste nuevo que nadie lea
 > rompe CI. Su lista de excepciones debe quedarse en 1 (el crédito de imagen).
 

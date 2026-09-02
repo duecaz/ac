@@ -22,11 +22,9 @@ export class QuestionLiveTemplate extends BaseTemplate {
     editor: { elemento: 'pregunta', primerPaso: 'Pulsa «Añadir pregunta» y escribe lo que preguntarás en clase; los puntos los pones tú al responder.' },
     instructions: 'Espera tu turno: cuando salga tu pregunta, respóndela como indique el docente.',
     aspectRatio: '4/3',
-    modes: { solo: true, live: true, async: false, practice: false },
+    modes: { solo: true, live: true, async: false },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
     play:            { vs: 'none', teams: 'none', live: ['claim'] , reloj: { unidad: null, crono: false } },
-    needsImageUpload: false, // images stored inline as data-URLs (no external upload)
-    needsAudioUpload: false,
     defaultRules: () => ({ selector: 'boxes' }),
     defaultScoring: () => ({}),
     defaultLive: () => ({}),

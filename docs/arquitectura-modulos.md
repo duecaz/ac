@@ -32,10 +32,10 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 |---|---|---|---|---|
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1900 | 7 · 1028 | 0.54 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2780 | 12 · 1415 | 0.51 |
-| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 38 · 4479 | 19 · 3093 | 0.69 |
+| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 38 · 4477 | 19 · 3093 | 0.69 |
 | **informes/tareas** | después de clase | 10 · 1116 | 4 · 512 | 0.46 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5948 | 13 · 1847 | 0.31 |
-| **infra/común** | todo lo anterior | 160 · 19302 | 67 · 8504 | 0.44 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5930 | 13 · 1847 | 0.31 |
+| **infra/común** | todo lo anterior | 160 · 19298 | 67 · 8504 | 0.44 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -108,7 +108,7 @@ graph TD
 | **vistas** | `views/playerView.js` (538) · `views/vsView.js` (515) · `views/admin/collections.js` (453) · `views/hostLive.js` (341) · `views/live/hostRondas.js` (297) |
 | **adaptadores** | `adapters/pocketbase/realtimeRooms.js` (483) · `adapters/pocketbase/realtimeAnswers.js` (388) · `adapters/pocketbase/realtime.js` (361) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (255) |
 | **core** | `core/textCorrectionRound.js` (763) · `core/normsCheck.js` (515) · `core/skins.js` (421) · `core/aiContent.js` (385) · `core/auth.js` (369) |
-| **kernel** | `kernel/session/teamsMachine.js` (182) · `kernel/session/liveMachine.js` (166) · `kernel/session/vsMachine.js` (155) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (75) |
+| **kernel** | `kernel/session/teamsMachine.js` (182) · `kernel/session/liveMachine.js` (166) · `kernel/session/vsMachine.js` (155) · `kernel/session/memory.js` (102) · `kernel/contracts/template.js` (72) |
 | **plantillas** | `templates/crossword/player.js` (496) · `templates/wordsearch/player.js` (382) · `templates/match/player.js` (304) · `templates/diagram/player.js` (266) · `templates/quiz/editor.js` (222) |
 | **contenido** | `kernel/content/qaAdapt.js` (141) · `kernel/content/switch.js` (117) · `kernel/content/convert.js` (95) · `kernel/content/models.js` (83) · `kernel/content/sessionItems.js` (25) |
 | **config** | `pocketbase.config.js` (13) |

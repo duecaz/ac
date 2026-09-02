@@ -21,11 +21,9 @@ export class CrosswordTemplate extends BaseTemplate {
     // hay que borrar antes de empezar (R-D).
     editor: { elemento: 'palabra', primerPaso: 'Pulsa «Añadir palabra», escribe la palabra y su pista, y colócala en la rejilla.' },
     instructions:    'Completa el crucigrama: toca una pista, escribe la palabra y resuélvela.',
-    modes:           { solo: true, live: false, async: true, practice: true },
+    modes:           { solo: true, live: false, async: true },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
     play:            { vs: 'none', teams: 'none', live: [] , reloj: { unidad: 'crucigrama' } },
-    needsImageUpload: false,
-    needsAudioUpload: false,
     defaultRules:   () => ({ hintMode: 'none', timer: 300 }),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1 }),
     defaultContent: () => ({

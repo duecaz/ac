@@ -37,11 +37,9 @@ export class DiagramTemplate extends BaseTemplate {
     editor: { elemento: 'etiqueta', primerPaso: 'Sube tu dibujo y pulsa «Añadir etiqueta» (o haz clic sobre la imagen) para colocar la primera.' },
     instructions: 'Arrastra cada etiqueta al punto correcto del dibujo. Pulsa Enviar para corregir.',
     aspectRatio: '16/10',
-    modes: { solo: true, live: false, async: true, practice: true },
+    modes: { solo: true, live: false, async: true },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
     play:            { vs: 'none', teams: 'none', live: [] , reloj: { unidad: 'diagrama' } },
-    needsImageUpload: true,
-    needsAudioUpload: false,
     defaultRules: () => ({ timer: 120, randomize: true }),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
     defaultLive: () => ({}),

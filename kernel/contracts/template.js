@@ -13,7 +13,6 @@
  * @property {boolean} [solo]     Single-device, local scoring (Wordwall-style).
  * @property {boolean} [live]     Hosted room with PIN/QR + realtime (estilo concurso).
  * @property {boolean} [async]    Self-paced / homework.
- * @property {boolean} [practice] Untracked practice.
  */
 
 /**
@@ -27,8 +26,6 @@
  * @property {number} [templateVersion]    Bump when content shape changes.
  * @property {'16/10'|'4/3'|'16/9'|'1/1'|'auto'} [aspectRatio] Player frame ratio.
  * @property {TemplateModes} modes         Supported play modes. REQUIRED.
- * @property {boolean} [needsImageUpload]
- * @property {boolean} [needsAudioUpload]
  * @property {() => Object} [defaultRules]
  * @property {() => Object} [defaultScoring]
  * @property {() => Object} [defaultLive]

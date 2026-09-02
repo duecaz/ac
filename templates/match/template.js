@@ -25,12 +25,11 @@ export class MatchTemplate extends BaseTemplate {
     editor: { elemento: 'par', primerPaso: 'Pulsa «Añadir par» y escribe los dos elementos que el alumno tendrá que unir.' },
     instructions: 'Une cada elemento con su pareja arrastrando de uno al otro. Pulsa Enviar para corregir.',
     aspectRatio: '16/10',
-    modes: { solo: true, live: false, async: true, practice: true },
+    modes: { solo: true, live: false, async: true },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
     play:            { vs: 'points', teams: 'turns', live: [], submit: 'gesto' , reloj: { unidad: 'partida' } },
-    needsImageUpload: true,
-    needsAudioUpload: false,
-    defaultRules: () => ({ timer: 120, randomize: true, livesPerMistake: 0 }),
+    // `livesPerMistake` se quitó (barrido B1, 2026-09-02): sin lector — nadie lo leía.
+    defaultRules: () => ({ timer: 120, randomize: true }),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
     defaultLive: () => ({}),
     defaultContent: () => {

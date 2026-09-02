@@ -31,9 +31,10 @@ export class BaseTemplate {
     // interactive whiteboard exactly). Use '4/3', '16/9', '1/1' or 'auto'
     // (no forced ratio, height grows with content) when 16/10 doesn't fit.
     aspectRatio: '16/10',
-    modes: { solo: false, live: false, async: false, practice: false },
-    needsImageUpload: false,
-    needsAudioUpload: false,
+    // `modes.practice`, `needsImageUpload`, `needsAudioUpload` se quitaron del
+    // contrato (barrido B1 2026-09-02): las 13 los declaraban y ningún módulo
+    // los leía — nadie los leía.
+    modes: { solo: false, live: false, async: false },
     defaultRules: () => ({}),
     defaultScoring: () => ({}),
     defaultLive: () => ({}),

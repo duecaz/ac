@@ -1,6 +1,6 @@
 import { DEFAULT_POLICY, DEFAULT_FIRST_N, DEFAULT_MINUTES } from './liveEnd.js';
 
-export const VERSION = '1.51.651';
+export const VERSION = '1.51.652';
 export const SCHEMA_VERSION = 4;
 
 // PIN alphabet: no O/I/0/1 to avoid ambiguity. 6 chars => 32^6 ≈ 1.07B combos.
@@ -16,19 +16,19 @@ export const DEFAULT_RULES = {
   templateOptions: {}
 };
 
+// `penaltyRatio`: prometido sin mecánica; retirado por el dueño (barrido B1,
+// 2026-09-02) — pointsPerWrong ya resta por fallo.
 export const DEFAULT_SCORING = {
   mode: 'flat',            // 'flat' (puntos planos) | 'velocidad' (bonus por rapidez)
   pointsPerCorrect: 1,
   pointsPerWrong: 0,
-  penaltyRatio: 0,
   maxScore: 0              // 0 = sum of pointsPerCorrect * items
 };
 
+// `showCorrectAnswer`, `autoAdvanceToSummary`, `skipReview` se quitaron del
+// esquema (barrido B1 2026-09-02): sin escritor ni lector — nadie los leía.
 export const DEFAULT_REVIEW = {
   allowOverride: true,
-  showCorrectAnswer: true,
-  autoAdvanceToSummary: false,
-  skipReview: false,
   alFinal: true            // la corrección sale al terminar, no entre hojas
 };
 
@@ -41,13 +41,12 @@ export const DEFAULT_REVIEW = {
  *  qué cargarse el módulo del lienzo para responder a una pregunta de una línea. */
 export const corrigeAlFinal = (activity) => activity?.review?.alFinal !== false;
 
+// `layout`, `showScore`, `showTimer` se quitaron del esquema (barrido B1
+// 2026-09-02): sin escritor ni lector — nadie los leía.
 export const DEFAULT_PRESENTATION = {
   skin: 'default',
   background: 'none',
-  layout: 'auto',
   sound: true,
-  showTimer: true,
-  showScore: true,
   teams: false
 };
 

@@ -29,11 +29,9 @@ export class GlobosTemplate extends BaseTemplate {
     instructions: 'Lee la pregunta y toca el globo con la respuesta correcta para explotarlo.',
     panelFit: 'fill',
     aspectRatio: '16/10',
-    modes: { solo: true, live: false, async: true, practice: true },
+    modes: { solo: true, live: false, async: true },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
     play:            { vs: 'points', teams: 'turns', live: [], submit: 'gesto' , reloj: { unidad: 'pregunta' } },
-    needsImageUpload: true,       // el editor (el de Quiz) sube imagen por pregunta
-    needsAudioUpload: false,
     // 30 s por pregunta desde el nacimiento (dueño 2026-09-01, como el quiz).
     defaultRules: () => ({ timer: 30, randomize: false, shuffleOptions: true }),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),

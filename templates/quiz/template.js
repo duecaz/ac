@@ -29,16 +29,14 @@ export class QuizTemplate extends BaseTemplate {
     instructions: 'Lee cada pregunta y toca la respuesta correcta.',
     panelFit: 'fill',    // las opciones llenan el panel
     aspectRatio: '16/10',
-    modes: { solo: true, live: true, async: true, practice: false },
+    modes: { solo: true, live: true, async: true },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
     play:            { vs: 'points', teams: 'turns', live: ['rounds', 'race'], submit: 'gesto' , reloj: { unidad: 'pregunta' } },
-    needsImageUpload: true,
-    needsAudioUpload: true,
     // 30 s por pregunta desde el nacimiento (dueño 2026-09-01, como Wordwall);
     // solo actividades NUEVAS — el contenido guardado no se toca (§24).
     defaultRules: () => ({ timer: 30, randomize: false, shuffleOptions: true }),
-    defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0, penaltyRatio: 0, maxScore: 0 }),
-    defaultLive: () => ({ enabled: true, advanceMode: 'manual', questionTimer: 20, lockAnswersOn: 'allAnswered',
+    defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
+    defaultLive: () => ({ advanceMode: 'manual', questionTimer: 20, lockAnswersOn: 'allAnswered',
                           showAnswerAfterEach: true, showLeaderboardBetween: true, pointsModel: 'velocidad',
                           speedBonusMax: 1000, allowLateJoin: true, maxPlayers: 60, nicknameFilter: true }),
     defaultContent: () => {

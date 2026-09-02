@@ -85,24 +85,17 @@ Toda actividad pasa por `normalize()` (core/migrate.js). Forma canónica
     "mode": "flat",              // 'flat' | 'velocidad'
     "pointsPerCorrect": 1,
     "pointsPerWrong": 0,         // negativo = penaliza; nunca baja de 0
-    "penaltyRatio": 0,
     "maxScore": 0                // 0 = pointsPerCorrect * nº ítems
   },
 
   "review": {                    // DEFAULT_REVIEW
-    "allowOverride": true,
-    "showCorrectAnswer": true,
-    "autoAdvanceToSummary": false,
-    "skipReview": false
+    "allowOverride": true
   },
 
   "presentation": {              // DEFAULT_PRESENTATION
     "skin": "default",           // 'default' | 'space' | 'colegios' | …
     "background": "none",        // 'none' | 'greenboard' | 'corkboard' | … (ver core/backgrounds.js)
-    "layout": "auto",
     "sound": true,
-    "showTimer": true,
-    "showScore": true,
     "teams": false
   },
 
@@ -245,7 +238,6 @@ etiqueta a su pin (estilo Wordwall). `x`/`y` son fracciones 0..1 de la imagen.
 ## 4. Modos de juego (`modes` de cada plantilla)
 - **solo**: un dispositivo, autopuntuado localmente.
 - **async** (Tarea): el alumno juega solo y se registra el intento (assignments).
-- **practice**: práctica libre sin guardar.
 - **live**: sala tipo un concurso (profe hostea, alumnos en sus móviles; PIN/QR).
   - Fases: `lobby → question → reveal → leaderboard …`; variantes `race`
     (carrera libre) y `question-live` (Abre Cajas / Ruleta Live).

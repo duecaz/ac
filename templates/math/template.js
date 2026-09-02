@@ -25,11 +25,9 @@ export class MathTemplate extends BaseTemplate {
     instructions: 'Resuelve cada operación y escribe el resultado con el teclado.',
     panelFit: 'block',   // el teclado es UN bloque: no se estira en el panel VS
     aspectRatio: '16/10',
-    modes: { solo: true, live: true, async: true, practice: true },
+    modes: { solo: true, live: true, async: true },
     // POLÍTICA DE JUEGO declarada (la leen el motor y las vistas, no la adivinan).
     play:            { vs: 'race', teams: 'turns', live: ['rounds', 'race'], retry: true, submit: 'boton' , reloj: { unidad: 'operación' } },
-    needsImageUpload: false,
-    needsAudioUpload: false,
     defaultRules: () => ({ timer: 30, randomize: true }),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0 }),
     defaultLive: () => ({}),

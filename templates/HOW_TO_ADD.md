@@ -52,9 +52,7 @@ export class MyTemplate extends BaseTemplate {
     panelFit: 'fill',             // maquetación en el panel VS: 'fill' (defecto, el
                                   // contenido llena y se escala) | 'block' (bloque
                                   // único con tope, p.ej. un teclado) | 'center'
-    modes: { solo: true, live: false, async: true, practice: false },
-    needsImageUpload: true,
-    needsAudioUpload: false,
+    modes: { solo: true, live: false, async: true },
     defaultRules:    () => ({ /* específico */ }),
     defaultScoring:  () => ({ pointsPerCorrect: 1 }),
     defaultLive:     () => ({}),                  // si modes.live

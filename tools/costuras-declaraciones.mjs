@@ -74,6 +74,15 @@ function ficherosTemplates() {
 // criterio de qué es "editor" en este repo.
 const esEditor = (p) => /editor\.js$|editorPanels\.js$|editorModes\.js$|editorShell\.js$|editorPrimitives\.js$/.test(p);
 
+// SOLO_EDITOR — claves de meta.* que LEGÍTIMAMENTE solo lee un editor (capa
+// contenido↔editor, §0: el player nunca las necesita). No es una excepción
+// silenciosa: sigue apareciendo en la salida como informativo, pero no
+// cuenta como "sospechosa" ni infla el baseline. Motivo por clave, porque
+// "solo lo lee un editor" sin más invita a colar aquí lo que sí falta conectar.
+const SOLO_EDITOR = {
+  iaPalabrasComoTexto: 'formato de contenido para la IA de generación (capa contenido↔editor, §0); el player nunca lo necesita',
+};
+
 // EXCEPCIONES DECLARADAS EN tests/ajusteConectado.test.mjs (`PERMITIDOS`) — no
 // se duplica esa lista aquí: se PARSEA de su fuente y se respeta. Si algo ya
 // está justificado allí ("se guarda y se muestra en el editor; falta pintarlo
@@ -165,10 +174,11 @@ function cruce1() {
     const lectores = lectoresDeClaveMeta(clave, ficheros);
     if (PERMITIDOS_AJENOS.has(clave)) continue;
     const soloEditor = lectores.length > 0 && lectores.every(esEditor);
+    const exentoSoloEditor = soloEditor && Object.prototype.hasOwnProperty.call(SOLO_EDITOR, clave.split('.').pop());
     registros.push({
       clave, declaran: quien.size, plantillas: [...quien].sort(),
-      lectores, soloEditor,
-      sospechoso: lectores.length === 0 || soloEditor,
+      lectores, soloEditor, exentoSoloEditor,
+      sospechoso: (lectores.length === 0 || soloEditor) && !exentoSoloEditor,
     });
   }
   return registros;
@@ -360,7 +370,7 @@ const r3 = cruce3();
 // cruce supera su número, el script sale con código 1 — se añadió una
 // declaración nueva sin lector y hay que decidir (basura o conectar), no
 // subir el número para callar al script.
-const BASELINE = { meta: 4, defaults: 5, global: 6 };
+const BASELINE = { meta: 0, defaults: 0, global: 0 };
 
 const malos1 = r1.filter(r => r.sospechoso);
 const malos2 = r2.filter(r => r.sospechoso);
@@ -454,7 +464,12 @@ process.exit(0);
 //    tests/ajusteConectado.test.mjs (`PERMITIDOS`): se parsea esa lista en vez
 //    de mantener una copia aquí (§21b: una regla escrita dos veces acaba
 //    diciendo dos cosas).
-//  · `modes.practice` sale SIN lector de verdad (no es un falso positivo): el
-//    campo está en el contrato TypeScript (`kernel/contracts/template.js`,
-//    "Untracked practice") pero ningún módulo real lo consulta — es la clase
-//    de hallazgo que este barrido existe para encontrar.
+//  · `modes.practice`, `needsImageUpload`, `needsAudioUpload` (cruce 1),
+//    `live.enabled`/`rules.allowOverflow`/`rules.livesPerMistake`/
+//    `rules.showHints`/`scoring.penaltyRatio` (cruce 2) y
+//    `presentation.layout`/`showScore`/`showTimer`/`review.showCorrectAnswer`/
+//    `autoAdvanceToSummary`/`skipReview` (cruce 3) salían SIN lector de
+//    verdad (no eran falsos positivos): es la clase de hallazgo que este
+//    barrido existe para encontrar. Se retiraron del esquema (barrido B1,
+//    2026-09-02; §24: retirar del esquema no toca actividades guardadas,
+//    `migrate.js` es aditivo) y el BASELINE bajó a 0 en los tres cruces.
