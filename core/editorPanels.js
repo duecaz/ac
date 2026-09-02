@@ -43,14 +43,19 @@ function unidadDe(a) {
   return getTemplate(a?.template)?.meta?.editor?.elemento || 'acierto';
 }
 
-export function scoringPanelHtml(a) {
+// `conModo:false` — EMPAREJAR y MEMORIA no van a Live (`modes.live: false`), así
+// que el bonus por velocidad no tiene ronda que premiar: la casilla "Modo" no
+// aplicaba a ninguna de las dos, y cada una recortaba el panel a mano con la
+// MISMA forma (barrido B5, 2026-09-02) — una tenía además la etiqueta fija en
+// «acierto» en vez de leer `meta.editor.elemento` como ya hacía la otra.
+export function scoringPanelHtml(a, { conModo = true } = {}) {
   const s = a.scoring || {};
   return `<div class="row g-3">
-    <div class="col-md-4"><label class="form-label">Modo</label>
+    ${conModo ? `<div class="col-md-4"><label class="form-label">Modo</label>
       <select class="form-select" id="f-mode">
         <option value="flat" ${s.mode === 'flat' ? 'selected' : ''}>Plano</option>
         <option value="velocidad" ${s.mode === 'velocidad' ? 'selected' : ''}>Bonus por velocidad</option>
-      </select></div>
+      </select></div>` : ''}
     <div class="col-md-4"><label class="form-label">Puntos por ${escapeHtml(unidadDe(a))}</label><input type="number" class="form-control" id="f-ppc" value="${s.pointsPerCorrect ?? 1}"></div>
     <div class="col-md-4"><label class="form-label">Puntos por error</label><input type="number" class="form-control" id="f-ppw" value="${s.pointsPerWrong ?? 0}"></div>
     <!-- EL EFECTO, A LA VISTA. El bug de «puse 10 y el duelo dio 1» vivió meses

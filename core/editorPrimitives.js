@@ -31,6 +31,27 @@ export function reorderArray(arr, idx, direction) {
   return true;
 }
 
+// CABLEADO DE LISTA — borrar · subir · bajar (y, si se pide, añadir) sobre un
+// array de contenido (`content.items` / `content.pairs` / `content.words`).
+// Los botones ya son `itemControlsHtml()` (un solo HTML desde 2026); el
+// cableado de esos TRES clics seguía copiado en 6-8 editores (barrido B5,
+// 2026-09-02: `.item-del`/`.item-up`/`.item-down` idénticos letra por letra en
+// match, memory, question-live, wheel, quiz y wordsearch). `list` es la
+// referencia al array del contenido — se muta en sitio (splice/swap), así que
+// no hace falta devolverlo. `añadir` es opcional: los editores con un botón
+// «+ Añadir» de una sola forma lo pasan (selector + fábrica del elemento
+// nuevo); los que tienen más de un botón de alta (Quiz: pregunta y V/F) o un
+// efecto secundario propio al añadir (Sopa: enfocar el input nuevo) siguen
+// cableando su «add» aparte y usan esto solo para borrar/reordenar.
+export function wireItemList(root, a, ctx, { list, añadir } = {}) {
+  on(root, 'click', '.item-del', (_, b) => { list.splice(+b.dataset.i, 1); ctx.onChange(a); ctx.repaint(); });
+  on(root, 'click', '.item-up', (_, b) => { reorderArray(list, +b.dataset.i, -1); ctx.onChange(a); ctx.repaint(); });
+  on(root, 'click', '.item-down', (_, b) => { reorderArray(list, +b.dataset.i, +1); ctx.onChange(a); ctx.repaint(); });
+  if (añadir) {
+    on(root, 'click', añadir.selector, () => { list.push(añadir.fabrica()); ctx.onChange(a); ctx.repaint(); });
+  }
+}
+
 
 // R2 (ley del cuadro de modos): las reglas de juego configurables tienen ALCANCE
 // declarado y el editor lo MUESTRA — antes el docente configuraba "Timer" u

@@ -1,6 +1,6 @@
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { itemControlsHtml, reorderArray } from '../../core/editorPrimitives.js';
+import { itemControlsHtml, wireItemList } from '../../core/editorPrimitives.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 // El tile de imagen (subir · buscar · quitar) es de core/imageTile.js — este
 // editor y wheel/editor.js lo tenían copiado byte por byte (barrido B5, 2026-09-02).
@@ -43,11 +43,7 @@ function contentHtml(a) {
 
 function wireContent(root, a, ctx) {
   on(root, 'input', '.ql-q', (e, el) => { a.content.items[+el.dataset.i].question = e.target.value; ctx.onChange(a); });
-  on(root, 'click', '.item-del', (_, b) => { a.content.items.splice(+b.dataset.i, 1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '.item-up', (_, b) => { reorderArray(a.content.items, +b.dataset.i, -1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '.item-down', (_, b) => { reorderArray(a.content.items, +b.dataset.i, +1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '#ql-add', () => { a.content.items.push(newItem()); ctx.onChange(a); ctx.repaint(); });
-
+  wireItemList(root, a, ctx, { list: a.content.items, añadir: { selector: '#ql-add', fabrica: newItem } });
   wireImageTile(root, a, a.content.items, ctx, { prefix: 'ql-', queryField: 'question' });
 }
 

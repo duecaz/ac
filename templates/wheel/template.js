@@ -3,6 +3,7 @@ import { BaseTemplate } from '../base.js';
 import { renderWheelPlayer } from './player.js';
 import { renderWheelEditor } from './editor.js';
 import { wheelSvg } from '../../core/ruleta/render.js';
+import { SPIN_DUR_DEFAULT } from '../../core/ruleta/spin.js';
 import { migrateLegacyItems, itemRoundPayload } from '../../core/contentModels/items.js';
 import { escapeHtml } from '../../core/html.js';
 import { manualScoreSubmission } from '../../core/liveLoops.js';
@@ -30,7 +31,7 @@ export class WheelTemplate extends BaseTemplate {
     // para elegir turno (§0): antes la vista lo deducía del NOMBRE de la
     // plantilla. `normalize()` lo rellena también en las actividades ya
     // guardadas, así que las salas antiguas siguen girando la ruleta.
-    defaultRules: () => ({ spinDurationMs: 4000, removeAfterSpin: false, selector: 'wheel' }),
+    defaultRules: () => ({ spinDurationMs: SPIN_DUR_DEFAULT, removeAfterSpin: false, selector: 'wheel' }),
     defaultScoring: () => ({}),
     defaultLive: () => ({}),
     defaultContent: () => ({

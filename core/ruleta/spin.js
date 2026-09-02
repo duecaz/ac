@@ -8,7 +8,7 @@
 // Cajas — antes en `templates/wheel/`, importada por una vista (§0).
 export const SPIN_TURNS = 5;              // vueltas completas antes de frenar
 const SPIN_EASE  = 'cubic-bezier(.17,.67,.21,.99)';
-const SPIN_DUR_DEFAULT = 4000;     // configurable por la actividad (rules.spinDurationMs)
+export const SPIN_DUR_DEFAULT = 4000;     // configurable por la actividad (rules.spinDurationMs)
 export const SPIN_DUR_PICK    = 3500;     // "elegir pregunta" (abre-cajas / en vivo)
 export const SPIN_DUR_MAX     = 30000;    // tope de lo configurable
 

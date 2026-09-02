@@ -122,7 +122,7 @@ function wireContent(root, a, ctx) {
   // encontró. El pin nace en el CENTRO, a la vista y listo para arrastrar.
   on(root, 'click', '#dg-add', () => {
     if (!a.content.image) { toast('Primero sube el dibujo: las etiquetas se colocan encima.', 'info', TOAST_NORMAL); return; }
-    a.content.pins.push(newPin(0.5, 0.5));
+    a.content.pins.push(newPin());  // nace en el centro: el default de newPin() YA es (0.5, 0.5)
     ctx.onChange(a); ctx.repaint();
   });
 

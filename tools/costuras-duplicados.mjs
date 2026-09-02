@@ -485,7 +485,15 @@ function esFraseHumana(s) {
 // (`.message ||`) y se descarta SOLO si la frase tiene de verdad un
 // `throw new Error(...)` en OTRO fichero (si no lo tiene en ningún sitio, no
 // es un fallback de nadie: sigue contando).
-const THROW_ERROR_RE = /throw\s+new\s+Error\s*\(\s*(?:'((?:\\.|[^'\\])*)'|"((?:\\.|[^"\\])*)"|`((?:\\.|[^`\\])*)`)/g;
+// SEGUNDA PASADA (2026-09-02): `core/upload.js` lanza el suyo dentro de un
+// `new Promise((resolve, reject) => …)` — `reject(new Error('…'))`, no
+// `throw`. Es el MISMO patrón de dueño (crea el Error con la frase, la
+// propaga) con otra forma de propagar; `vsView.js` no salía como fallback
+// legítimo porque el reconocedor solo miraba `throw`. Se añade la forma
+// `reject(new Error(...))` a la MISMA lista de dueños en vez de tratarla como
+// un patrón aparte — es la misma pregunta («¿alguien más creó este Error a
+// propósito?»), no una regla nueva.
+const THROW_ERROR_RE = /(?:throw\s+new\s+Error|reject\s*\(\s*new\s+Error)\s*\(\s*(?:'((?:\\.|[^'\\])*)'|"((?:\\.|[^"\\])*)"|`((?:\\.|[^`\\])*)`)/g;
 // «HAY DUEÑO Y NO SE USA» (Cruce b, corrección) — igual que en números: si la
 // frase repetida es el VALOR de un `export const` en algún fichero, quien
 // juzga necesita saberlo: ya hay un sitio para importarla y alguien escribió
@@ -908,6 +916,19 @@ function contraPrueba() {
     console.log('  ❌ CONTRA-PRUEBA rota: sin un throw new Error real en ningún fichero, la frase repetida sí debería contar'); rotos++;
   }
 
+  // (b) positiva (segunda pasada, 2026-09-02): el dueño lanza con
+  // `reject(new Error('frase'))` dentro de una Promise — no un `throw` — y el
+  // fallback de OTRO fichero sigue siendo legítimo (caso real:
+  // core/upload.js ↔ views/vsView.js con "No se pudo leer la imagen.").
+  const fraseReject = 'No se pudo leer la imagen de prueba';
+  const resBFallbackReject = cruceFrases([
+    { file: 'zz-syn/duenio-reject.js', raw: `new Promise((resolve, reject) => { reject(new Error('${fraseReject}')); });` },
+    { file: 'zz-syn/llamador-reject.js', raw: `catch (err) { avisar(err?.message || '${fraseReject}'); }` },
+  ]);
+  if (resBFallbackReject.some(r => r.frase === fraseReject)) {
+    console.log('  ❌ CONTRA-PRUEBA rota: el fallback de un `reject(new Error(...))` con dueño en otro fichero no debería contar como copia'); rotos++;
+  }
+
   // (b) «hay dueño y no se usa»: la frase es el VALOR de un `export const`
   // en algún fichero — debe marcarse en el hallazgo.
   const fraseConst = 'Esta plantilla no admite más de veinte preguntas';
@@ -1019,29 +1040,87 @@ const DUEÑOS = mapaDueños();
 
 const hallazgosFunciones = cruceFunciones(entradasTodas);
 const hallazgosFrases = cruceFrases(entradasTodas);
-const hallazgosNumeros = cruceNumeros(entradasNumeros, DUEÑOS);
+const hallazgosNumerosCrudo = cruceNumeros(entradasNumeros, DUEÑOS);
 
-// BASELINE — números de la ÚLTIMA pasada tras las correcciones de los tres
-// cruces (2026-09-02: desazucarar plantillas + excluir wrappers de firma en
-// (a); excluir Bootstrap/CSS + reconocer el fallback del dueño + "hay dueño
-// y no se usa" en (b); exigir "status" cerca para los códigos HTTP + exigir
-// proximidad real para la atribución + el sub-cruce de import en (c)).
+// ════════════════════════════════════════════════════════════════════════
+// EXCEPCIONES DE (c), UNA A UNA CON SU MOTIVO — segunda pasada del barrido
+// (2026-09-02, encargo CRUCE c). El barrido de la primera pasada dejaba 26
+// números "sin dueño posible" en una nota de prosa al final del fichero; el
+// encargo pedía abrir cada uno de verdad (no adivinar por el nombre de la
+// variable de al lado) y decidir, caso a caso: CONECTAR (si de verdad es la
+// misma decisión — entonces no hace falta excepción, el número desaparece
+// del cruce porque ya no está repetido a mano) o EXCEPTUAR CON MOTIVO (si al
+// abrirlo resultó ser una COINCIDENCIA de dígito entre dominios distintos).
+// Aquí solo quedan las EXCEPTUADAS — las que sí eran la misma regla se
+// conectaron de verdad (import a una constante compartida): el pin del
+// diagrama, `SPIN_DUR_DEFAULT` de la ruleta y `revealMs` de Memoria.
+// ────────────────────────────────────────────────────────────────────────
+// (c1) CÓDIGOS HTTP — `esCodigoHttpShape()` ya exige la palabra "status" a
+// ≤20 caracteres para que ENTREN en el cruce (si no, ni se listan). Los que
+// quedan SON códigos de estado reales (`if (status === 404)` etc.) repartidos
+// en módulos de transporte (auth/pbHttp/classroom/imageSearch/aiContent…):
+// no tienen dueño posible en quotas/constants/timings/liveEnd porque no son
+// ESE tipo de número — son el número que define el protocolo HTTP, no un
+// límite de este sistema. Regla declarada: `codigos-http`.
+const CODIGOS_HTTP_LEGITIMOS = new Set(['403', '404', '401', '400', '204']);
+// (c2) LA PROPIA FIRMA DE LA REGLA — `core/normsCheck.js` reconoce la
+// implementación de mulberry32 copiada fuera de `core/azar.js` buscando el
+// MISMO 2**32 que `core/azar.js` usa para normalizar su salida a [0,1)
+// (`MULBERRY32_FIRMA_RE`). No es una copia: es el detector citando a su
+// propio dueño A PROPÓSITO, por diseño (así reconoce la firma aunque alguien
+// renombre las variables).
+const FIRMA_DE_REGLA = new Set(['4294967296']);
+// (c3) COINCIDENCIAS — mismo dígito, dominios sin relación. Abiertos uno a
+// uno (no se adivinó): si mañana alguno resulta ser la MISMA decisión, se
+// conecta con un import y esta entrada se borra — no se alarga el motivo.
+const COINCIDENCIAS = {
+  '0.5': 'posición central normalizada del pin del diagrama · jitter/origen del confeti · umbral del mapa de calor de ítems · corte de "bien hecho" en la pantalla de resultado · mitad del padding de un subrayado — cinco escalas [0,1] sin relación entre sí',
+  '0.6': 'offset de un fotograma de la animación de Froggy · origen Y de un confeti pequeño · proporción del padding de una marca de texto — tres animaciones sin relación',
+  '0.55': 'gravedad del confeti · padding inferior de una marca de texto · una de las CUATRO calidades JPEG de recompresión de imagen — visual y compresión, sin relación',
+  '0.7': 'opacidad y grosor de la línea del buscapalabras · origen Y de un confeti · una calidad JPEG de recompresión — visual y compresión, sin relación',
+  '0.8': 'umbral "bien" del mapa de calor de ítems (cuánto se usa una pregunta) · umbral de "excelente" en la pantalla de resultado (cuánto acertaste) — dos escalas de nota distintas que comparten el mismo corte redondo',
+  '0.65': 'origen Y de un confeti mediano · factor de radio para la etiqueta de la ruleta — geometría de dos dibujos sin relación',
+  '0.4': 'jitter de rotación del confeti · la calidad JPEG más baja de recompresión — visual y compresión, sin relación',
+  '800': 'cooldown visual de acierto/racha (efectos) · cooldown del sonido "tick" · limpieza de una partícula del DOM · umbral "notable" de latencia en el diagnóstico de red — cuatro relojes de interfaz ajustados a ojo, no un límite del sistema',
+  '600': 'tope de caracteres de un párrafo pegado · duración de una animación del duelo · debounce de la vista previa del buscapalabras · cadencia de red del tablero en vivo — ninguno es el mismo reloj',
+  '5000': 'cooldown del podio (efectos visuales) · cooldown del podio (sonido) · duración del toast "normal" — tres avisos donde "cinco segundos se leen bien" coincidió, no un valor compartido',
+  '10000': 'intervalo de vigilancia del stream en vivo · ping de mantenimiento de la sesión del host — dos latidos de red distintos con el mismo "10 s" redondo',
+  '8000': 'tope de caracteres de una traza de error · intervalo de refresco de la sesión del alumno — sin relación',
+  '6000': 'espera de la carrera E2E de prueba · duración del toast "largo" — un script de test y un componente de interfaz',
+  '2000': 'ventana anti-flood del logger de errores · retraso del autoguardado del editor — dos temporizadores sin relación',
+  '1500': 'debounce de reconexión · cooldown de los sonidos "reveal/correct/wrong" — dos relojes de interfaz distintos',
+  '1280': 'ancho máximo del lienzo del confeti · lado máximo de una imagen recomprimida al subir — dos decisiones de resolución independientes que coinciden en "una resolución razonable"',
+  '1200': 'aviso de "copiado" en la lista de tareas · margen del sondeo del anfitrión en vivo — sin relación',
+  '1024 * 1024': 'ambos formatean bytes a MB usando 1 MiB = 1024² — aritmética común, no un límite: el límite de verdad vive en core/quotas.js',
+  '4000': 'tope de caracteres del mensaje de un log de error · tope de caracteres indexados por el buscador · SPIN_DUR_DEFAULT (el dueño declarado de la duración de giro, ya conectado en wheel/editor.js, wheel/template.js y core/ruleta/render.js) — tres topes de texto/tiempo sin relación entre sí',
+};
+function esExcepcionDeclarada(h) {
+  if (CODIGOS_HTTP_LEGITIMOS.has(h.texto) && esCodigoHttpShape(h.valor)) return 'codigos-http';
+  if (FIRMA_DE_REGLA.has(h.texto)) return 'firma-de-regla (mulberry32, cita a propósito su propio dueño)';
+  if (Object.prototype.hasOwnProperty.call(COINCIDENCIAS, h.texto)) return COINCIDENCIAS[h.texto];
+  return null;
+}
+const hallazgosNumerosExceptuados = [];
+const hallazgosNumeros = hallazgosNumerosCrudo.filter(h => {
+  const motivo = esExcepcionDeclarada(h);
+  if (motivo) { hallazgosNumerosExceptuados.push({ ...h, motivo }); return false; }
+  return true;
+});
+
+// BASELINE — SEGUNDA PASADA (2026-09-02): objetivo 0·0·0. Los tres cruces se
+// CONECTARON de verdad (helper/constante compartida — ver commits del barrido:
+// `wireItemList`/`renderPairsEditor`/`scoringPanelHtml(conModo)` para (a),
+// `reject(new Error(...))` reconocido como dueño legítimo para (b),
+// `SPIN_DUR_DEFAULT`/`DEFAULT_REVEAL_MS`/`newPin()` para varios de (c)) en vez
+// de subir el número para callar al script. Lo que NO se conectó porque de
+// verdad son cosas distintas queda declarado arriba (`CODIGOS_HTTP_LEGITIMOS`
+// · `FIRMA_DE_REGLA` · `COINCIDENCIAS`, cada uno con su motivo) y NO cuenta
+// para el ratchet — así el `hallazgosNumeros` de abajo es el residuo real.
 // RATCHET: solo puede BAJAR. Si un cruce supera su número, código 1: se
 // escribió la misma regla otra vez y hay que decidir (misma regla / parecido
-// de forma / misma frase) — nunca subir el número para callar al script.
-// Los que quedan dentro del baseline, con motivo (veredicto humano
-// pendiente, no arreglado aquí — este barrido solo LISTA):
-//   a·5  — 3 parejas de EDITORES gemelos (match/memory, wheel/question-live)
-//          con la MISMA forma de armar su panel (no wrappers de una sola
-//          llamada: tienen lógica propia repetida) — candidatas a un
-//          helper compartido, veredicto pendiente del dueño.
-//   b·1  — "No se pudo leer la imagen." en core/upload.js y views/vsView.js:
-//          mismo aviso de error, sin una constante compartida.
-//   c·26 — mayoría son literales SIN dueño posible en los 4 módulos límite
-//          (duraciones de animación/confeti, tamaños de miniatura, códigos
-//          HTTP genuinamente cerca de `status`) — quien juzgue decide caso
-//          a caso si alguno merece subir a core/timings.js.
-const BASELINE = { funciones: 5, frases: 1, numeros: 26 };
+// de forma / misma frase / excepción con motivo) — nunca subir el número ni
+// meter una excepción sin abrir el fichero para callar al script.
+const BASELINE = { funciones: 0, frases: 0, numeros: 0 };
 
 const excedeFunciones = hallazgosFunciones.length > BASELINE.funciones;
 const excedeFrases = hallazgosFrases.length > BASELINE.frases;
@@ -1055,6 +1134,7 @@ if (asJson) {
     })),
     frases: hallazgosFrases,
     numeros: hallazgosNumeros,
+    numerosExceptuados: hallazgosNumerosExceptuados,
     baseline: BASELINE,
   }, null, 2));
   process.exit((excedeFunciones || excedeFrases || excedeNumeros) ? 1 : 0);
@@ -1087,6 +1167,12 @@ else ok(`${hallazgosNumeros.length} número(s) (baseline ${BASELINE.numeros})`);
 for (const h of hallazgosNumeros) {
   const dueño = h.dueño ? ` · ¡hay dueño y no se usa!: ${h.dueño}` : '';
   console.log(`     ${h.texto} · ${h.ficheros.join(', ')}${dueño}`);
+}
+if (hallazgosNumerosExceptuados.length) {
+  console.log(`\n     (${hallazgosNumerosExceptuados.length} exceptuados con motivo — no cuentan para el ratchet):`);
+  for (const h of hallazgosNumerosExceptuados) {
+    console.log(`       · ${h.texto} · ${h.ficheros.join(', ')}\n         → ${h.motivo}`);
+  }
 }
 
 const total = hallazgosFunciones.length + hallazgosFrases.length + hallazgosNumeros.length;

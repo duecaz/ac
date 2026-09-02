@@ -9,6 +9,11 @@ import { shuffle } from '../../core/azar.js';
 import { pairComplete } from '../../core/contentModels/pairs.js';
 import { hudHtml } from '../../core/playerHud.js';
 
+// TIEMPO DE REVELADO POR DEFECTO — el mismo número vivía escrito a mano tres
+// veces (`defaultRules`/editor/player, barrido B5 2026-09-02); el dueño es
+// quien lo CONSUME de verdad (el player, aquí abajo).
+export const DEFAULT_REVEAL_MS = 900;
+
 export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
   // Misma regla que el editor y que Emparejar (core/contentModels/pairs.js).
   // Esta copia además ignoraba las imágenes: una pareja dibujo↔palabra se caía
@@ -25,7 +30,7 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
   // Suma con piso 0 (un fallo penaliza solo si la actividad configura
   // pointsPerWrong negativo; el marcador nunca baja de cero).
   const addScore = (res) => { state.score = Math.max(0, state.score + res.points); };
-  const revealMs = activity.rules?.revealMs ?? 900;
+  const revealMs = activity.rules?.revealMs ?? DEFAULT_REVEAL_MS;
   const columns = Math.max(2, Math.min(8, activity.rules?.columns || 4));
 
   // Todas las cartas (2 por par), en orden canónico. El mazo se baraja al montar,

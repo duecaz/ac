@@ -1,20 +1,23 @@
-// Editor de Emparejar — aporta sus paneles; el chasis lo pone el shell.
+// Editor de Emparejar — aporta sus paneles; el chasis lo pone el shell (vía
+// renderPairsEditor, el wrapper del modelo — core/contentModels/pairs.js).
 import { escapeHtml } from '../../core/html.js';
 import { toast, TOAST_NORMAL } from '../../core/toast.js';
 import { uploadMedia } from '../../core/upload.js';
 import { abrirBuscadorImagenes } from '../../core/imageSearchModal.js';
 import { on } from '../../core/events.js';
-import { newPair } from '../../core/contentModels/pairs.js';
-import { itemControlsHtml, reorderArray, ruleScopeNote } from '../../core/editorPrimitives.js';
-import { renderEditorShell } from '../../core/editorShell.js';
+import { newPair, renderPairsEditor } from '../../core/contentModels/pairs.js';
+import { itemControlsHtml, wireItemList, ruleScopeNote } from '../../core/editorPrimitives.js';
+import { scoringPanelHtml, wireScoringPanel } from '../../core/editorPanels.js';
 
 export function renderMatchEditor(root, activity, onChange) {
-  const a = activity;
-  if (!Array.isArray(a.content?.pairs)) a.content = { pairs: [newPair(), newPair()] };
-  renderEditorShell(root, a, onChange, {
-    content: { label: 'Pares', html: contentHtml, wire: wireContent },
-    rules:   { html: rulesHtml,   wire: wireRules   },
-    scoring: { html: scoringHtml, wire: wireScoring  },
+  return renderPairsEditor(root, activity, onChange, {
+    seedCount: 2,
+    panels: {
+      content: { label: 'Pares', html: contentHtml, wire: wireContent },
+      rules:   { html: rulesHtml,   wire: wireRules   },
+      // Sin "Modo" (bonus por velocidad): Emparejar no va a Live (`modes.live: false`).
+      scoring: { html: (a) => scoringPanelHtml(a, { conModo: false }), wire: wireScoringPanel },
+    },
   });
 }
 
@@ -61,10 +64,7 @@ function pairRowHtml(p, i, total) {
 function wireContent(root, a, ctx) {
   on(root, 'input',  '.mp-l', (e, el) => { a.content.pairs[+el.dataset.i].left  = e.target.value; ctx.onChange(a); });
   on(root, 'input',  '.mp-r', (e, el) => { a.content.pairs[+el.dataset.i].right = e.target.value; ctx.onChange(a); });
-  on(root, 'click', '.item-del',  (_, b) => { a.content.pairs.splice(+b.dataset.i, 1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '.item-up',   (_, b) => { reorderArray(a.content.pairs, +b.dataset.i, -1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '.item-down', (_, b) => { reorderArray(a.content.pairs, +b.dataset.i, +1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '#mp-add',    ()     => { a.content.pairs.push(newPair()); ctx.onChange(a); ctx.repaint(); });
+  wireItemList(root, a, ctx, { list: a.content.pairs, añadir: { selector: '#mp-add', fabrica: newPair } });
 
   // Image upload
   on(root, 'click', '.mp-img-btn', (_, btn) => {
@@ -123,15 +123,4 @@ function rulesHtml(a) {
 }
 function wireRules(root, a, ctx) {
   on(root, 'change', '#m-rand',  e => { a.rules.randomize = e.target.checked; ctx.onChange(a); });
-}
-
-function scoringHtml(a) {
-  return `<div class="row g-3">
-    <div class="col-md-4"><label class="form-label">Puntos por acierto</label><input id="m-ppc" type="number" min="0" class="form-control" value="${a.scoring.pointsPerCorrect ?? 1}"></div>
-    <div class="col-md-4"><label class="form-label">Puntos por error</label><input id="m-ppw" type="number" class="form-control" value="${a.scoring.pointsPerWrong ?? 0}"></div>
-  </div>`;
-}
-function wireScoring(root, a, ctx) {
-  on(root, 'input', '#m-ppc', e => { a.scoring.pointsPerCorrect = +e.target.value || 0; ctx.onChange(a); });
-  on(root, 'input', '#m-ppw', e => { a.scoring.pointsPerWrong  = +e.target.value || 0; ctx.onChange(a); });
 }

@@ -1,12 +1,12 @@
 // Editor de Ruleta — preguntas con imagen opcional (igual que Pregunta Live).
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { itemControlsHtml, reorderArray } from '../../core/editorPrimitives.js';
+import { itemControlsHtml, wireItemList } from '../../core/editorPrimitives.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 // El tile de imagen (subir · buscar · quitar) es de core/imageTile.js — este
 // editor y question-live/editor.js lo tenían copiado byte por byte (barrido B5, 2026-09-02).
 import { imageTileHtml, wireImageTile } from '../../core/imageTile.js';
-import { SPIN_DUR_MAX } from '../../core/ruleta/spin.js';
+import { SPIN_DUR_MAX, SPIN_DUR_DEFAULT } from '../../core/ruleta/spin.js';
 import { newItem, migrateLegacyItems } from '../../core/contentModels/items.js';
 
 
@@ -45,11 +45,7 @@ function contentHtml(a) {
 
 function wireContent(root, a, ctx) {
   on(root, 'input', '.we-entry', (e, el) => { a.content.items[+el.dataset.i].question = e.target.value; ctx.onChange(a); });
-  on(root, 'click', '.item-del', (_, b) => { a.content.items.splice(+b.dataset.i, 1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '.item-up', (_, b) => { reorderArray(a.content.items, +b.dataset.i, -1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '.item-down', (_, b) => { reorderArray(a.content.items, +b.dataset.i, +1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '#we-add', () => { a.content.items.push(newItem()); ctx.onChange(a); ctx.repaint(); });
-
+  wireItemList(root, a, ctx, { list: a.content.items, añadir: { selector: '#we-add', fabrica: newItem } });
   wireImageTile(root, a, a.content.items, ctx, { prefix: 'we-', queryField: 'question' });
 }
 
@@ -57,7 +53,7 @@ function rulesHtml(a) {
   return `<div class="row g-3">
     <div class="col-md-4">
       <label class="form-label">Duración del giro (ms) <span class="text-muted small">solo modo individual</span></label>
-      <input id="we-dur" type="number" min="500" max="${SPIN_DUR_MAX}" step="500" class="form-control" value="${a.rules.spinDurationMs ?? 4000}">
+      <input id="we-dur" type="number" min="500" max="${SPIN_DUR_MAX}" step="500" class="form-control" value="${a.rules.spinDurationMs ?? SPIN_DUR_DEFAULT}">
       <div class="form-text">Máximo 30 000 ms (30 s).</div>
     </div>
     <div class="col-md-4 form-check pt-4 mt-2">
@@ -68,6 +64,6 @@ function rulesHtml(a) {
 }
 
 function wireRules(root, a, ctx) {
-  on(root, 'input', '#we-dur', e => { a.rules.spinDurationMs = Math.min(SPIN_DUR_MAX, +e.target.value || 4000); ctx.onChange(a); });
+  on(root, 'input', '#we-dur', e => { a.rules.spinDurationMs = Math.min(SPIN_DUR_MAX, +e.target.value || SPIN_DUR_DEFAULT); ctx.onChange(a); });
   on(root, 'change', '#we-rm', e => { a.rules.removeAfterSpin = e.target.checked; ctx.onChange(a); });
 }

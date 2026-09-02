@@ -11,11 +11,12 @@
 // mantiene y que un día aparece roto.)
 import { escapeHtml } from '../html.js';
 import { truncLabel } from './logic.js';
+import { SPIN_DUR_DEFAULT } from './spin.js';
 
 const PALETTE = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#a855f7', '#ec4899', '#14b8a6', '#eab308'];
 
 /** Returns the spinning <svg> (slices + hub) rotated to `rotation` degrees. */
-export function wheelSvg(entries, { rotation = 0, dur = 4000, spinning = false, size = 400 } = {}) {
+export function wheelSvg(entries, { rotation = 0, dur = SPIN_DUR_DEFAULT, spinning = false, size = 400 } = {}) {
   const r = 180, cx = 200, cy = 200;
   // Empty wheel (all options drawn): just the rim + central hub point.
   if (!entries || entries.length === 0) {

@@ -2,7 +2,7 @@
 // Reuses the 'pairs' content model. The two cards of a pair show left and right.
 import { BaseTemplate } from '../base.js';
 import { rid } from '../../core/ids.js';
-import { renderMemoryPlayer } from './player.js';
+import { renderMemoryPlayer, DEFAULT_REVEAL_MS } from './player.js';
 import { renderMemoryEditor } from './editor.js';
 import { scoreMemorySubmission } from './scorer.js';
 import { newPair } from '../../core/contentModels/pairs.js';
@@ -32,7 +32,7 @@ export class MemoryTemplate extends BaseTemplate {
     // memory?», y eso es lo que la ley §0 prohíbe: un modo no conoce plantillas
     // concretas. Estaba preguntado por NOMBRE en siete sitios.
     play:            { vs: 'none', teams: 'propio', live: [] , reloj: { unidad: 'partida' } },
-    defaultRules: () => ({ timer: 180, revealMs: 900, columns: 4 }),
+    defaultRules: () => ({ timer: 180, revealMs: DEFAULT_REVEAL_MS, columns: 4 }),
     defaultScoring: () => ({ pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
     defaultLive: () => ({}),
     defaultContent: () => {
