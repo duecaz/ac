@@ -5,7 +5,7 @@
 // captura del login con Google. Ver docs/handoff-acceso-docente.md (perfil).
 import { PB_URL } from '../pocketbase.config.js';
 import { getAuthToken } from './auth.js';
-import { lsSet } from './ls.js';
+import { lsGet, lsSet } from './ls.js';
 
 const COLL = 'profiles';
 const LKEY = (uid) => `ww.profile.${uid}`;
@@ -14,7 +14,7 @@ const EMPTY = { name: '', school: '', bio: '', avatar: '', banner: '' };
 // Cache local (pintado instantáneo + respaldo offline). No es la fuente de verdad.
 export function getLocalProfile(uid) {
   if (!uid) return { ...EMPTY };
-  try { return { ...EMPTY, ...JSON.parse(localStorage.getItem(LKEY(uid)) || '{}') }; } catch { return { ...EMPTY }; }
+  try { return { ...EMPTY, ...JSON.parse(lsGet(LKEY(uid)) || '{}') }; } catch { return { ...EMPTY }; }
 }
 function setLocalProfile(uid, prof) {
   if (!uid) return { ...EMPTY };

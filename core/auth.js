@@ -1,6 +1,7 @@
 // Auth facade. PocketBase email/password auth.
 import { PB_URL } from '../pocketbase.config.js';
 import { clock } from './clock.js';
+import { lsGet, lsSet, lsDel, ssGet, ssSet, ssDel } from './ls.js';
 
 const STORE_KEY = 'ww.pb.auth';
 let _user = null;
@@ -35,7 +36,7 @@ function tokenCaducado(token) {
 
 function loadStored() {
   try {
-    const guardado = JSON.parse(localStorage.getItem(STORE_KEY));
+    const guardado = JSON.parse(lsGet(STORE_KEY));
     if (guardado?.token && tokenCaducado(guardado.token)) {
       // Se BORRA, no solo se ignora: si se quedara, cada lectura volvería a
       // pagar el parseo y —peor— cualquier código que lea la clave a mano
@@ -48,11 +49,11 @@ function loadStored() {
 }
 
 function saveStored(token, record) {
-  localStorage.setItem(STORE_KEY, JSON.stringify({ token, record }));
+  lsSet(STORE_KEY, JSON.stringify({ token, record }));
 }
 
 function clearStored() {
-  localStorage.removeItem(STORE_KEY);
+  lsDel(STORE_KEY);
 }
 
 export async function getUser() {
@@ -234,7 +235,7 @@ async function startOAuthLogin(providerName = 'google', redirectUrl = oauthRedir
   const provs = await listOAuthProviders();
   const p = provs.find(x => x.name === providerName);
   if (!p) throw new Error(`El proveedor "${providerName}" no está habilitado en PocketBase (Settings → Auth providers).`);
-  sessionStorage.setItem(OAUTH_KEY, JSON.stringify({
+  ssSet(OAUTH_KEY, JSON.stringify({
     provider: providerName, state: p.state, codeVerifier: p.codeVerifier, redirectUrl,
     // `link`: VINCULAR Google a la cuenta ya iniciada (los que entraron por
     // correo/clave) en vez de crear/entrar. Al volver, se firma el intercambio con
@@ -255,14 +256,14 @@ export async function linkGoogle() {
 }
 
 function pendingOAuth() {
-  try { return JSON.parse(sessionStorage.getItem(OAUTH_KEY)); } catch { return null; }
+  try { return JSON.parse(ssGet(OAUTH_KEY)); } catch { return null; }
 }
 
 // Paso 2 (al volver de Google con ?code&state): valida el state y canjea el code
 // en PB. Deja la sesión iniciada y guarda el accessToken de Google si vino.
 export async function completeOAuthLogin(code, returnedState) {
   const pending = pendingOAuth();
-  sessionStorage.removeItem(OAUTH_KEY);
+  ssDel(OAUTH_KEY);
   if (!pending) throw new Error('No hay un login de Google en curso.');
   if (returnedState !== pending.state) throw new Error('Estado OAuth no coincide (posible CSRF); reintenta el login.');
   // VINCULAR (los que entraron por correo): firmamos el intercambio con el token
@@ -292,7 +293,7 @@ export async function completeOAuthLogin(code, returnedState) {
   _user = data.record;
   saveStored(data.token, data.record);
   if (data.meta?.accessToken) {
-    try { sessionStorage.setItem(GOOGLE_TOKEN_KEY, JSON.stringify({ accessToken: data.meta.accessToken, expiry: data.meta.expiry || null })); } catch {}
+    ssSet(GOOGLE_TOKEN_KEY, JSON.stringify({ accessToken: data.meta.accessToken, expiry: data.meta.expiry || null }));
   }
   // Sella nombre + foto de Google en la colección pública `profiles` (merge, no
   // pisa colegio/frase). PB devuelve la URL de la foto en meta.avatarURL/avatarUrl.
@@ -318,7 +319,7 @@ export async function completeOAuthLogin(code, returnedState) {
 // Classroom en Fase B). Null si no hay o no vino. Caduca ~1 h.
 export function getGoogleAccessToken() {
   try {
-    const t = JSON.parse(sessionStorage.getItem(GOOGLE_TOKEN_KEY));
+    const t = JSON.parse(ssGet(GOOGLE_TOKEN_KEY));
     if (!t?.accessToken) return null;
     if (t.expiry && new Date(t.expiry).getTime() < Date.now()) return null;
     return t.accessToken;
@@ -333,7 +334,7 @@ export async function signInWithGoogle() {
 export async function signOut() {
   _user = null;
   clearStored();
-  try { sessionStorage.removeItem(GOOGLE_TOKEN_KEY); } catch {}
+  ssDel(GOOGLE_TOKEN_KEY);
   notify();
 }
 

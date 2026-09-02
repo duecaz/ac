@@ -6,10 +6,12 @@
 // computed independently in the Edge Function from the answers history,
 // so this client state is purely for UX.
 
+import { ssGet, ssSet } from './ls.js';
+
 const KEY = 'ww.streaks';
 
-function load() { try { return JSON.parse(sessionStorage.getItem(KEY) || '{}'); } catch { return {}; } }
-function save(map) { sessionStorage.setItem(KEY, JSON.stringify(map)); }
+function load() { try { return JSON.parse(ssGet(KEY) || '{}'); } catch { return {}; } }
+function save(map) { ssSet(KEY, JSON.stringify(map)); }
 
 function k(sessionId, userId) { return `${sessionId || 'solo'}::${userId || 'self'}`; }
 

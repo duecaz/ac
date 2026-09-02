@@ -73,6 +73,19 @@
 //                       `rid()` de core/ids.js, nunca `Math.random().toString(36)`
 //                       a mano (estaba copiado en ~17 sitios con longitudes y
 //                       prefijos dispares).
+//   · almacen-crudo   : LEY DE DATOS (docs/leyes.md §21) aplicada al ALMACÉN,
+//                       gemela de `ls-dueno` pero por el otro lado: `ls-dueno`
+//                       vigila que cada CLAVE tenga un dueño; esta vigila que
+//                       el ACCESO en sí pase por el wrapper. Ningún fichero
+//                       fuera de `core/ls.js` nombra `localStorage.` /
+//                       `sessionStorage.` / `globalThis.localStorage` — el
+//                       barrido `tools/costuras-cableado.mjs` encontró 35
+//                       sitios saltándose el portero (informativo entonces, sin
+//                       CI detrás). Los wrappers `ls*`/`ss*` son el ÚNICO punto
+//                       que sabe tratar la ausencia de storage (modo privado,
+//                       sandbox estricto) y la cuota llena — un acceso directo
+//                       no hereda ese tratamiento y revienta donde el wrapper
+//                       no revienta. Excepciones en ALLOW_ALMACEN_CRUDO, con motivo.
 //
 // Lo consumen DOS runners (mismo patrón que core/templateContract.js):
 //   · tests/norms.test.mjs — Node, recorre el filesystem COMPLETO (autoridad).
@@ -114,6 +127,23 @@ const ALLOW = {
     'views/author.js', 'views/vsView.js', 'views/playerView.js',
   ],
 };
+
+// almacen-crudo · quién PUEDE nombrar `localStorage`/`sessionStorage` a pelo
+// fuera de `core/ls.js`, y por qué. `core/ls.js` mismo no necesita entrada
+// (está excluido explícitamente en el escáner, igual que `ls-dueno`).
+export const ALLOW_ALMACEN_CRUDO = {
+  // El KV inyectable de los drivers OFFLINE (dev sin PocketBase, sin DOM en
+  // los tests): necesitan poder sustituir el storage por un objeto falso, algo
+  // que los wrappers de core/ls.js (que hablan SIEMPRE con el storage global
+  // real) no ofrecen. No es contenido de producción con la clase delante.
+  'adapters/local/assignments.js': 'KV inyectable para tests sin DOM (dev offline)',
+  'adapters/local/realtime.js': 'KV inyectable para tests sin DOM (dev offline)',
+  'adapters/local/remoteStore.js': 'KV inyectable para tests sin DOM (dev offline)',
+  // Arnés de pruebas manual (hoja imprimible de QA), no producto: nunca corre
+  // con la clase delante y no pasa por §21.
+  'qa/hoja.js': 'arnés de pruebas, no producto',
+};
+const RE_ALMACEN_CRUDO = /\blocalStorage\s*\.|\bsessionStorage\s*\.|globalThis\.localStorage\b/;
 
 // chrome-boton · las vistas del PANEL que ya visten con la familia propia
 // (.btn-ghost / .btn-primary-solid, styles/home.css) y por tanto NO pueden
@@ -236,6 +266,10 @@ export const LS_OWNERS = {
   'ww.streaks': ['core/streaks.js'],
   'ww.player.': ['views/studentLive.js'],   // sessionStorage: la fila de jugador de ESTA sala
   'ww.vreload.': ['views/studentLive.js'],
+  // sessionStorage: calibración del PUNTERO de ESTE aparato para ESTA visita.
+  // Renombrada desde la heredada `ep-pen-thresholds` (no era `ww.*`, sin dueño
+  // declarado); §24 no aplica (no es contenido del usuario, es calibración local).
+  'ww.pen.thresholds': ['core/penDetector.js'],
 };
 const LS_PREFIXES = Object.keys(LS_OWNERS).sort((a, b) => b.length - a.length);
 
@@ -297,6 +331,13 @@ export function scanNormsSource(path, source) {
     }
     if (path.startsWith('kernel/') && /(Date\.now\s*\(|new Date\s*\(\s*\))/.test(ln)) {
       out.push({ path, line: i + 1, rule: 'kernel-puro', text: ln.trim() });
+    }
+    // almacen-crudo: SOLO core/ls.js habla directamente con el storage; el
+    // resto pasa por lsGet/lsSet/lsDel/ssGet/ssSet/ssDel.
+    if (!path.endsWith('core/ls.js')
+        && !Object.keys(ALLOW_ALMACEN_CRUDO).some(a => path.endsWith(a))
+        && RE_ALMACEN_CRUDO.test(ln)) {
+      out.push({ path, line: i + 1, rule: 'almacen-crudo', text: ln.trim() });
     }
     for (const { coll, re, allow } of PB_RES) {
       if (re.test(ln) && !allow.some(a => path.endsWith(a))) {

@@ -1,7 +1,7 @@
 import { getRemoteStore } from '../adapters/index.js';
 import { migrate, normalize } from './migrate.js';
 import { mergeRemote } from './storageMerge.js';
-import { lsGet, lsSet } from './ls.js';
+import { lsGet, lsSet, lsDel } from './ls.js';
 import { getAuthUserId, getAuthName } from './auth.js';
 
 const LEGACY_KEY = 'ww.activities';
@@ -18,7 +18,7 @@ function tombKey()    { return _userId === 'guest' ? TOMBSTONE_KEY : `${TOMBSTON
 
 // ── Tombstones (P1-1): evitan que una actividad borrada resucite vía sync ─────
 function readTombstones() {
-  try { return JSON.parse(localStorage.getItem(tombKey()) || '{}'); }
+  try { return JSON.parse(lsGet(tombKey()) || '{}'); }
   catch { return {}; }
 }
 function writeTombstones(t) { return lsSet(tombKey(), JSON.stringify(t)); }
@@ -29,7 +29,7 @@ export function tombstoneSet() { return new Set(Object.keys(readTombstones())); 
 export function setStorageUser(userId) { _userId = userId || 'guest'; }
 export function currentStorageUser() { return _userId; }
 
-export function hasClaimed() { try { return !!localStorage.getItem(CLAIM_FLAG); } catch { return false; } }
+export function hasClaimed() { return !!lsGet(CLAIM_FLAG); }
 
 // Claim al primer login (S1.3): adopta las actividades anónimas que ya viven en el
 // navegador (clave legacy) para el profe que entra — les asigna dueño al re-subir
@@ -39,9 +39,9 @@ export function hasClaimed() { try { return !!localStorage.getItem(CLAIM_FLAG); 
 export function claimGuestActivities(userId) {
   if (!userId || userId === 'guest' || hasClaimed()) return { claimed: 0 };
   let legacy = {};
-  try { legacy = JSON.parse(localStorage.getItem(LEGACY_KEY) || '{}'); } catch {}
+  try { legacy = JSON.parse(lsGet(LEGACY_KEY) || '{}'); } catch {}
   const ids = Object.keys(legacy).filter(id => legacy[id]);
-  if (!ids.length) { try { localStorage.setItem(CLAIM_FLAG, new Date().toISOString()); } catch {} return { claimed: 0 }; }
+  if (!ids.length) { lsSet(CLAIM_FLAG, new Date().toISOString()); return { claimed: 0 }; }
   const prev = _userId;
   setStorageUser(userId);
   const userMap = readLS();
@@ -53,12 +53,12 @@ export function claimGuestActivities(userId) {
   const okWrite = writeLS(userMap);
   setStorageUser(prev);
   if (!okWrite) return { claimed: 0, error: 'quota' }; // sin escribir → NO marcar reclamado (reintentará)
-  try { localStorage.setItem(LEGACY_KEY, '{}'); localStorage.setItem(CLAIM_FLAG, new Date().toISOString()); } catch {}
+  lsSet(LEGACY_KEY, '{}'); lsSet(CLAIM_FLAG, new Date().toISOString());
   return { claimed: ids.length };
 }
 
 function readLS() {
-  try { return JSON.parse(localStorage.getItem(currentKey()) || '{}'); }
+  try { return JSON.parse(lsGet(currentKey()) || '{}'); }
   catch { return {}; }
 }
 // Devuelve false si la escritura falló (cuota llena / almacenamiento bloqueado).

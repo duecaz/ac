@@ -8,6 +8,7 @@
 // consentimiento de esos permisos; luego el token se cachea en sessionStorage (~55
 // min). Ver docs/handoff-google-classroom.md.
 import { GOOGLE_CLIENT_ID } from '../pocketbase.config.js';
+import { ssGet, ssSet } from './ls.js';
 
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
 const CACHE_KEY = 'ww.classroom.token'; // { accessToken, expiry }
@@ -33,7 +34,7 @@ function loadGis() {
 
 function cached() {
   try {
-    const t = JSON.parse(sessionStorage.getItem(CACHE_KEY));
+    const t = JSON.parse(ssGet(CACHE_KEY));
     if (t?.accessToken && (!t.expiry || t.expiry > Date.now())) return t.accessToken;
   } catch {}
   return null;
@@ -56,7 +57,7 @@ export async function getClassroomToken({ forceConsent = false } = {}) {
       callback: (resp) => {
         if (resp.error) { reject(new Error(resp.error_description || resp.error)); return; }
         const expiry = Date.now() + (Number(resp.expires_in || 3300) - 300) * 1000; // margen 5 min
-        try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ accessToken: resp.access_token, expiry })); } catch {}
+        ssSet(CACHE_KEY, JSON.stringify({ accessToken: resp.access_token, expiry }));
         resolve(resp.access_token);
       },
     });

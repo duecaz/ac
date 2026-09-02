@@ -28,6 +28,7 @@ import { hasClientKey } from '../core/liveSnapshot.js';
 import { VERSION } from '../core/constants.js';
 import { getNick, setNick } from '../core/identity.js';
 import { supportsLoop } from '../core/liveLoops.js';
+import { ssGet, ssSet } from '../core/ls.js';
 import { createStudentLobby } from './live/studentLobby.js';
 import { createStudentRondas } from './live/studentRondas.js';
 import { createStudentCarrera } from './live/studentCarrera.js';
@@ -69,7 +70,7 @@ export function renderJoin(rootSel, prefilledCode = '') {
       }
       const r = await joinSession(code, nick);
       setNick(f.value);
-      sessionStorage.setItem(`ww.player.${code}`, JSON.stringify(r));
+      ssSet(`ww.player.${code}`, JSON.stringify(r));
       location.hash = `#/play/${code}`;
     } catch (e) {
       err.textContent = e.message;
@@ -80,7 +81,7 @@ export function renderJoin(rootSel, prefilledCode = '') {
 
 export async function renderPlay(rootSel, code) {
   const ctx = acquire('studentLive');
-  const cached = sessionStorage.getItem(`ww.player.${code}`);
+  const cached = ssGet(`ww.player.${code}`);
   if (!cached) return renderJoin(rootSel, code);
   const player = JSON.parse(cached);
 
@@ -108,8 +109,8 @@ export async function renderPlay(rootSel, code) {
   // mejor jugar que ciclar recargas.
   if (activity?.appVersion && activity.appVersion !== VERSION) {
     const onceKey = `ww.vreload.${code}`;
-    if (!sessionStorage.getItem(onceKey)) {
-      sessionStorage.setItem(onceKey, '1');
+    if (!ssGet(onceKey)) {
+      ssSet(onceKey, '1');
       mount(rootSel, html`<div class="text-center py-5"><div class="spinner-border"></div>
         <p class="mt-3">Actualizando a la versión del profesor…</p></div>`);
       const { refreshAppGraph } = await import('../core/appRefresh.js');

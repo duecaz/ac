@@ -20,9 +20,16 @@
 // la mitad de los aparatos.
 //
 // La frontera depende del aparato, así que se CALIBRA (core/penCalibration.js) y
-// se guarda en sessionStorage con la MISMA clave que duecaz/play.
+// se guarda en sessionStorage.
+import { ssGet, ssSet } from './ls.js';
 
-const STORAGE_KEY = 'ep-pen-thresholds';
+// v1.51.6xx: renombrada de la clave heredada `ep-pen-thresholds` (no era `ww.*`,
+// así que ni tenía dueño declarado en LS_OWNERS ni pasaba la regla `ls-dueno`).
+// No es CONTENIDO (§24 no aplica): es una calibración local del aparato, así
+// que no hace falta migración versionada — basta con leer la clave vieja UNA
+// vez si existe, para no perder la calibración de quien ya la tenía guardada.
+const STORAGE_KEY = 'ww.pen.thresholds';
+const STORAGE_KEY_LEGACY = 'ep-pen-thresholds';
 
 // SIN CALIBRAR, el tamaño NO borra (`min: 1e9`) y solo la palma por CONTEO lo
 // hace. Es el defecto seguro: sin haber medido el aparato no hay forma de saber
@@ -34,12 +41,18 @@ export const DEFAULT_THRESHOLDS = {
 
 export function loadThresholds() {
   let stored = null;
-  try { stored = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || 'null'); } catch { stored = null; }
+  try { stored = JSON.parse(ssGet(STORAGE_KEY) || 'null'); } catch { stored = null; }
+  if (!stored) {
+    // Lectura de la clave vieja, UNA vez: si estaba calibrada bajo el nombre
+    // heredado, no se pierde — se adopta y se resiembra bajo la clave nueva.
+    try { stored = JSON.parse(ssGet(STORAGE_KEY_LEGACY) || 'null'); } catch { stored = null; }
+    if (stored) ssSet(STORAGE_KEY, JSON.stringify(stored));
+  }
   return { palma: { ...DEFAULT_THRESHOLDS.palma, ...stored?.palma } };
 }
 
 export function saveThresholds(thr) {
-  try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(thr)); } catch {}
+  ssSet(STORAGE_KEY, JSON.stringify(thr));
   return thr;
 }
 

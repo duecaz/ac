@@ -85,7 +85,8 @@ assert.strictEqual(scanNormsSource('views/x.js', `try { await remove(id); } catc
 assert.strictEqual(scanNormsSource('views/x.js', `try { await saveActivity(a); } catch {}`).length, 1, 'y un guardado tragado');
 assert.strictEqual(scanNormsSource('views/x.js', `try { await remove(id); } catch {}   // best-effort: la fila ya no estaba`).length, 0, 'con el motivo escrito, pasa');
 assert.strictEqual(scanNormsSource('views/x.js', `try { el.dispose(); } catch {}`).length, 0, 'un teardown no es una operación del usuario');
-assert.strictEqual(scanNormsSource('views/x.js', `try { localStorage.removeItem(k); } catch {}`).length, 0, 'limpiar el almacén tiene su propio aviso (ww:storage-full)');
+assert.ok(!scanNormsSource('views/x.js', `try { localStorage.removeItem(k); } catch {}`).some(v => v.rule === 'fallo-mudo'),
+  'limpiar el almacén tiene su propio aviso (ww:storage-full) — no cuenta como fallo mudo');
 // confianza-alumno (ley §22): el lado alumno no nombra verbos del host; el host sí puede.
 assert.strictEqual(scanNormsSource('views/studentLive.js', `import { settleItem } from '../core/liveTransport.js';`).length, 1, 'alumno no liquida');
 assert.strictEqual(scanNormsSource('views/hostLive.js', `await settleItem(sessionId, i);`).length, 0, 'el host sí liquida');
@@ -191,6 +192,23 @@ assert.strictEqual(scanNormsSource('views/x.js',
   'const html = `<div>' + String.fromCharCode(10) + '  <!-- usa el parámetro fields para filtrar -->'
   + String.fromCharCode(10) + '</div>`;').length, 0,
   'CONTRA-PRUEBA: comentar el markup SIGUE siendo legal — lo que sobra son las comillas');
-ok('el escáner caza cada norma (pb-dueno · ls-dueno · fallo-mudo · confianza-alumno · reloj-primitivo · reloj-sala · id-rid · imagen-buscable · chrome-boton · comilla-en-comentario) y respeta comentarios + allowlist');
+// almacen-crudo (ley §21 aplicada al ALMACÉN, gemela de ls-dueno): solo
+// core/ls.js habla con localStorage/sessionStorage a pelo. Contra-prueba doble
+// (mismo principio que las demás): un fuente sintético FUERA de la lista debe
+// fallar, y core/ls.js —que ES la implementación— no.
+assert.strictEqual(scanNormsSource('views/x.js', `const v = localStorage.getItem(k);`).length, 1,
+  'caza el acceso directo a localStorage fuera de core/ls.js');
+assert.strictEqual(scanNormsSource('views/x.js', `sessionStorage.setItem(k, v);`).length, 1,
+  'y a sessionStorage');
+assert.strictEqual(scanNormsSource('views/x.js', `const s = globalThis.localStorage?.getItem(k);`).length, 1,
+  'y el acceso indirecto vía globalThis');
+assert.strictEqual(scanNormsSource('core/ls.js', `localStorage.setItem(k, v);\nsessionStorage.getItem(k);`).length, 0,
+  'core/ls.js ES la implementación');
+assert.strictEqual(scanNormsSource('adapters/local/remoteStore.js', `const kv = globalThis.localStorage;`).length, 0,
+  'CONTRA-PRUEBA: el KV inyectable de los drivers offline está declarado en ALLOW_ALMACEN_CRUDO con su motivo');
+assert.strictEqual(scanNormsSource('qa/hoja.js', `localStorage.setItem(KEY, v);`).length, 0,
+  'y el arnés de pruebas manual, que no es producto');
+
+ok('el escáner caza cada norma (pb-dueno · ls-dueno · almacen-crudo · fallo-mudo · confianza-alumno · reloj-primitivo · reloj-sala · id-rid · imagen-buscable · chrome-boton · comilla-en-comentario) y respeta comentarios + allowlist');
 
 console.log(`\nnorms.test: ${passed} checks passed`);

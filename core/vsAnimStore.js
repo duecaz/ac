@@ -2,14 +2,19 @@
 // Each entry: { id, label, description, src, jsonStr? }
 // jsonStr is set when the user uploaded a file instead of pasting a URL;
 // on load we create a blob: URL from it so lottie-web can fetch it.
+import { lsGet, lsSet } from './ls.js';
+
 const KEY = 'ww.vs.anims';
 
 export function loadCustomAnims() {
-  try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { return []; }
+  try { return JSON.parse(lsGet(KEY) || '[]'); } catch { return []; }
 }
 
 function persist(list) {
-  try { localStorage.setItem(KEY, JSON.stringify(list)); } catch (e) {
+  // lsSet ya atrapa el DOMException de cuota (y avisa por consola/evento);
+  // aquí se conserva el mensaje propio porque este caller SABE qué hacer
+  // (borrar una animación) y ese consejo no cabe en el aviso genérico de ls.js.
+  if (!lsSet(KEY, JSON.stringify(list))) {
     throw new Error('localStorage lleno — elimina alguna animación antes de añadir otra.');
   }
 }

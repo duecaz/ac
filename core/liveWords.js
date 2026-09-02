@@ -1,3 +1,5 @@
+import { lsGet, lsSet, lsDel } from './ls.js';
+
 // Diccionario de palabras de 4 letras (ASCII, mayúsculas) para los códigos de
 // sala Live. Los alumnos leen en voz alta "ve a GATO punto lanube punto uno"
 // — mucho más fácil que "GH3K9X". Las palabras se reciclan automáticamente en
@@ -65,7 +67,7 @@ const LS_KEY = 'ww.live_words';
 /** Devuelve la lista activa (personalizada o la por defecto). */
 export function getWordList() {
   try {
-    const raw = globalThis.localStorage?.getItem(LS_KEY);
+    const raw = lsGet(LS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length >= 4) return parsed;
@@ -76,12 +78,12 @@ export function getWordList() {
 
 /** Persiste una lista personalizada (array de strings en mayúsculas). */
 export function setWordList(words) {
-  try { globalThis.localStorage?.setItem(LS_KEY, JSON.stringify(words)); } catch { /* ignore */ }
+  lsSet(LS_KEY, JSON.stringify(words));
 }
 
 /** Elimina la lista personalizada y vuelve al diccionario por defecto. */
 export function resetWordList() {
-  try { globalThis.localStorage?.removeItem(LS_KEY); } catch { /* ignore */ }
+  lsDel(LS_KEY);
 }
 
 /**
