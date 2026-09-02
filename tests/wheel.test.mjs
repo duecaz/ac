@@ -1,6 +1,6 @@
 // Tests for the pure wheel logic. Run: node tests/wheel.test.mjs
 import assert from 'node:assert';
-import { normalizeEntries, pickIndex, landingRotation, removeAt, truncLabel } from '../templates/wheel/logic.js';
+import { normalizeEntries, pickIndex, landingRotation, removeAt, truncLabel } from '../core/ruleta/logic.js';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
@@ -40,7 +40,7 @@ ok('truncLabel: ellipsis only when over the limit');
 
 // ── spin.js: geometría del giro compartida por las TRES ruletas (C4) ─────────
 // (wheel solo, question-live "abre cajas" y la ruleta del alumno en vivo).
-const { spinTarget, normalizeRotation, clampSpinDur, SPIN_TURNS, SPIN_DUR_MAX } = await import('../templates/wheel/spin.js');
+const { spinTarget, normalizeRotation, clampSpinDur, SPIN_TURNS, SPIN_DUR_MAX } = await import('../core/ruleta/spin.js');
 {
   // 4 gajos, caer en el gajo 0 partiendo de 0°: base 360 + 5 vueltas + centro
   // del gajo bajo la aguja izquierda (360 − 45 − 90).

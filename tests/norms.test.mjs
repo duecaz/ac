@@ -134,9 +134,9 @@ assert.strictEqual(scanNormsSource('templates/ballsort/game/board.js', `[balls[i
 // que el defecto era el que corría siempre y `semilla()` no llegaba ni a la
 // ruleta ni al tablero. Un parámetro cuyo defecto esquiva el primitivo ES el
 // primitivo sin usar.
-assert.strictEqual(scanNormsSource('templates/wheel/logic.js', `export function pickIndex(count, rnd = Math.random) {`).length, 1,
+assert.strictEqual(scanNormsSource('core/ruleta/logic.js', `export function pickIndex(count, rnd = Math.random) {`).length, 1,
   'caza el defecto que esquiva el primitivo, aunque el parámetro parezca inyectable');
-assert.strictEqual(scanNormsSource('templates/wheel/logic.js', `export function pickIndex(count, rnd = azar.random) {`).length, 0,
+assert.strictEqual(scanNormsSource('core/ruleta/logic.js', `export function pickIndex(count, rnd = azar.random) {`).length, 0,
   'CONTRA-PRUEBA: con el primitivo de defecto, el parámetro sigue siendo inyectable y la ley pasa');
 assert.strictEqual(scanNormsSource('templates/quiz/player.js', `if (activity.rules?.shuffleOptions) shuffle(opts2);`).length, 0,
   'CONTRA-PRUEBA: el camino legítimo —barajar por el primitivo— pasa limpio');

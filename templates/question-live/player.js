@@ -4,9 +4,9 @@
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { sessionItems } from '../../kernel/content/sessionItems.js';
-import { wheelSvg } from '../wheel/render.js';
-import { pickIndex } from '../wheel/logic.js';
-import { spinTarget, normalizeRotation, animateSpin, SPIN_DUR_PICK } from '../wheel/spin.js';
+import { wheelSvg } from '../../core/ruleta/render.js';
+import { pickIndex } from '../../core/ruleta/logic.js';
+import { spinTarget, normalizeRotation, animateSpin, SPIN_DUR_PICK } from '../../core/ruleta/spin.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { QL_COLORS, qlBoxesHtml, qlCols } from '../../core/questionLive.js';
 import { hudHtml } from '../../core/playerHud.js';

@@ -1,9 +1,10 @@
 import { BaseTemplate } from '../base.js';
 import { renderQuestionLiveEditor } from './editor.js';
 import { renderQuestionLivePlayer } from './player.js';
-import { wheelSvg } from '../wheel/render.js';
-import { newItem, migrateLegacyItems } from '../../core/contentModels/items.js';
+import { wheelSvg } from '../../core/ruleta/render.js';
+import { newItem, migrateLegacyItems, itemRoundPayload } from '../../core/contentModels/items.js';
 import { escapeHtml } from '../../core/html.js';
+import { manualScoreSubmission } from '../../core/liveLoops.js';
 
 
 export class QuestionLiveTemplate extends BaseTemplate {
@@ -47,13 +48,7 @@ export class QuestionLiveTemplate extends BaseTemplate {
   // Required by the registry for live-capable templates.
   // Question Live uses manual teacher scoring, so these are not called in game,
   // but must exist to pass validation.
-  // ANSWER-SAFETY (R5): whitelist de campos de PANTALLA — nunca el ítem crudo.
-  // El modelo `items` hoy no guarda clave de respuesta, pero un passthrough
-  // filtraría cualquier campo que un contenido importado traiga de más.
-  static getRoundPayload(activity, { itemIndex }) {
-    const it = activity.content?.items?.[itemIndex];
-    return it ? { id: it.id, question: it.question, image: it.image || null } : null;
-  }
-  static scoreSubmission() { return { correct: null, points: 0, hits: 0, total: 0 }; }   // puntúa el profe (ql_points): sin mérito automático
+  static getRoundPayload(activity, { itemIndex }) { return itemRoundPayload(activity, itemIndex); }
+  static scoreSubmission = manualScoreSubmission;
 
 }

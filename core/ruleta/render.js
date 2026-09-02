@@ -1,10 +1,15 @@
-// SVG wheel drawing de la plantilla Ruleta. Pure string builder.
+// SVG wheel drawing — vive en core (barrido B3, 2026-09-02): la ruleta es una
+// pieza del BUCLE «pedir la palabra» (`rules.selector`), no de la plantilla
+// Ruleta — la usan DOS plantillas (Ruleta y Abre Cajas) y las vistas de ese
+// bucle en `views/live/*Palabra.js`. Antes vivía en `templates/wheel/` y una
+// vista importaba de una plantilla concreta, violando §0 (una vista no conoce
+// plantillas). Pure string builder.
 // (Tenía un segundo consumidor, la vista suelta `#/sorteo`: una ruleta de aula
 // que no colgaba de ninguna actividad y a la que NO se llegaba desde ningún
 // enlace del producto — solo tecleando la dirección. Se borró en v1.51.414
 // por decisión del usuario: código sin puerta de entrada es código que nadie
 // mantiene y que un día aparece roto.)
-import { escapeHtml } from '../../core/html.js';
+import { escapeHtml } from '../html.js';
 import { truncLabel } from './logic.js';
 
 const PALETTE = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#a855f7', '#ec4899', '#14b8a6', '#eab308'];

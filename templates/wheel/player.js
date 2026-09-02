@@ -1,10 +1,10 @@
 // SVG-based spinning wheel for solo/practice mode. No scoring; just lands on a random entry.
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { pickIndex } from './logic.js';
-import { wheelSvg } from './render.js';
+import { pickIndex } from '../../core/ruleta/logic.js';
+import { wheelSvg } from '../../core/ruleta/render.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
-import { spinTarget, normalizeRotation, animateSpin, clampSpinDur } from './spin.js';
+import { spinTarget, normalizeRotation, animateSpin, clampSpinDur } from '../../core/ruleta/spin.js';
 import { hudHtml } from '../../core/playerHud.js';
 
 // Support both old flat-entries format and new items format.

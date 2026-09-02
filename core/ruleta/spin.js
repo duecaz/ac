@@ -3,6 +3,9 @@
 // (duración configurable, tope 30 s), templates/question-live (3.5 s fijos) y
 // views/studentLive (3.5 s, inline). La aguja está a la IZQUIERDA (−90°) en las
 // tres; la fórmula del ángulo final es idéntica y ahora vive aquí.
+// Vive en core (barrido B3, 2026-09-02), junto a render.js/logic.js: pieza del
+// BUCLE «pedir la palabra» (`rules.selector`), compartida por Ruleta y Abre
+// Cajas — antes en `templates/wheel/`, importada por una vista (§0).
 export const SPIN_TURNS = 5;              // vueltas completas antes de frenar
 const SPIN_EASE  = 'cubic-bezier(.17,.67,.21,.99)';
 const SPIN_DUR_DEFAULT = 4000;     // configurable por la actividad (rules.spinDurationMs)

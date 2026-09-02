@@ -1,7 +1,9 @@
 // Pure wheel logic — no DOM, fully testable. Extracted from player.js so the
 // landing maths and the "remove after spin" handling can be verified in Node.
+// Vive en core (barrido B3, 2026-09-02): pieza del BUCLE «pedir la palabra»
+// (`rules.selector`), compartida por Ruleta y Abre Cajas — ver render.js.
 
-import { azar } from '../../core/azar.js';
+import { azar } from '../azar.js';
 
 const EMPTY = '(vacío)';
 

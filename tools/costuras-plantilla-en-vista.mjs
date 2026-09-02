@@ -326,7 +326,7 @@ const ajenosPorNombre = literalesAjenosANombre();
 // ════════════════════════════════════════════════════════════════════════
 // BASELINE — números de la primera pasada (2026-09-02). Ratchet: solo baja.
 // ════════════════════════════════════════════════════════════════════════
-const BASELINE = { porNombre: 0, porModelo: 0, imports: 3 };
+const BASELINE = { porNombre: 0, porModelo: 0, imports: 0 };
 
 if (asJson) {
   console.log(JSON.stringify({
@@ -423,11 +423,12 @@ process.exit(0);
 //    a mano — la lista 2 quedó en 0 (barrido B3, 2026-09-02).
 //  · `core/selftest.js` importa `scoreQuizSubmission` de
 //    `../templates/quiz/scorer.js` directamente para el mismo self-test de
-//    arriba (FIXTURE conocida, está en `LEGITIMO` y sale informativo);
-//    `views/live/studentPalabra.js` importa TRES símbolos de
+//    arriba (FIXTURE conocida, está en `LEGITIMO` y sale informativo).
+//  · `views/live/studentPalabra.js` importaba TRES símbolos de
 //    `../../templates/wheel/*` (render/lógica/animación de la ruleta) para
-//    el bucle "pedir la palabra" — decisión de diseño pendiente del dueño,
-//    NO está en `LEGITIMO` a propósito: sigue siendo un acoplamiento real a
-//    una plantilla concreta desde plataforma, y es el BASELINE completo de
-//    la lista 3 (3 líneas de import en 1 fichero).
+//    el bucle "pedir la palabra": era un acoplamiento real a una plantilla
+//    concreta desde plataforma. RESUELTO (barrido B3, 2026-09-02): la ruleta
+//    es una pieza del BUCLE, no de la plantilla Ruleta — se movió a
+//    `core/ruleta/{render,logic,spin}.js` y la vista (igual que
+//    `templates/question-live/*`) importa de core. La lista 3 quedó en 0.
 // ════════════════════════════════════════════════════════════════════════

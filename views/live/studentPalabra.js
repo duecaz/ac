@@ -9,9 +9,9 @@ import { on } from '../../core/events.js';
 import { claimQuestion } from '../../core/liveTransport.js';
 import { sessionItems } from '../../kernel/content/sessionItems.js';
 import { visibleItem } from '../../core/liveSnapshot.js';
-import { wheelSvg } from '../../templates/wheel/render.js';
-import { pickIndex } from '../../templates/wheel/logic.js';
-import { spinTarget, normalizeRotation, animateSpin, SPIN_DUR_PICK } from '../../templates/wheel/spin.js';
+import { wheelSvg } from '../../core/ruleta/render.js';
+import { pickIndex } from '../../core/ruleta/logic.js';
+import { spinTarget, normalizeRotation, animateSpin, SPIN_DUR_PICK } from '../../core/ruleta/spin.js';
 import { qlBoxesHtml } from '../../core/questionLive.js';
 
 export function createStudentPalabra(rt) {
