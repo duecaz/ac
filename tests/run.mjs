@@ -64,6 +64,7 @@ console.log('\n▶ antesala'); await import('./antesala.test.mjs');
 console.log('\n▶ reloj'); await import('./reloj.test.mjs');
 console.log('\n▶ pbQueries'); await import('./pbQueries.test.mjs');
 console.log('\n▶ pbSchema'); await import('./pbSchema.test.mjs');
+console.log('\n▶ sinComentarios'); await import('./sinComentarios.test.mjs');
 console.log('\n▶ editorPanels'); await import('./editorPanels.test.mjs');
 console.log('\n▶ realtimePort'); await import('./realtimePort.test.mjs');
 console.log('\n▶ clock'); await import('./clock.test.mjs');

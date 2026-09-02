@@ -1,3 +1,4 @@
+import { sinComentarios } from './sinComentarios.js';
 // Normas transversales EJECUTABLES — escáner puro de fuente JS que convierte
 // las reglas de CLAUDE.md ("Estándares transversales") en checks de máquina:
 //
@@ -307,11 +308,11 @@ const HOST_VERBS_RE = new RegExp(`\\b(${HOST_VERBS.join('|')})\\b`);
 // puede verificar de un vistazo. Comprobado sobre todo el repo: mismas líneas.
 const BARAJADO_A_MANO = /\[\s*(\w+)\[[^\]]+\]\s*,\s*\1\[[^\]]+\]\]\s*=\s*\[\s*\1\[/;
 
-// Comentarios fuera (mismo truco que tests/styles.test.mjs: se preservan los
-// saltos de línea para que los números de línea no se corran).
-const blank = (s) => s
-  .replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '))
-  .replace(/(^|[^:])\/\/[^\n]*/g, (m, pre) => pre + ' '.repeat(m.length - pre.length));
+// Comentarios fuera. Era una regex copiada aquí y en tres barridos, y se
+// tragaba medio core/selftest.js (un `/*` dentro de un comentario de línea):
+// ese fichero llevaba INVISIBLE a estas reglas desde que existe. Ahora hay un
+// dueño (core/sinComentarios.js), que recorre el fuente en vez de adivinarlo.
+const blank = sinComentarios;
 
 /**
  * Escanea UN fichero. `path` relativo a la raíz del repo (p.ej. "views/explore.js").

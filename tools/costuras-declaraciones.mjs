@@ -24,6 +24,7 @@
 //   node tools/costuras-declaraciones.mjs --json    # las 3 listas en JSON
 
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
+import { sinComentarios } from '../core/sinComentarios.js';
 import { fileURLToPath } from 'node:url';
 import { join, dirname } from 'node:path';
 
@@ -37,9 +38,7 @@ const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 // `meta.play.vs` en prosa (como este propio fichero, o CLAUDE.md-en-código) no
 // es un lector real. Sin esto, cada docstring que explica una clave se cuela
 // como si la leyera.
-const blank = (s) => s
-  .replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '))
-  .replace(/(^|[^:])\/\/[^\n]*/g, (m, pre) => pre + ' '.repeat(m.length - pre.length));
+const blank = sinComentarios;   // dueño único: core/sinComentarios.js (la regex copiada se tragaba medio selftest.js)
 const cache = new Map();
 function leerSinComentarios(f) {
   if (!cache.has(f)) cache.set(f, blank(leer(f)));

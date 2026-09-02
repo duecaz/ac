@@ -21,6 +21,7 @@
 //   node tools/costuras-cableado.mjs           # salida legible
 //   node tools/costuras-cableado.mjs --json    # las 4 listas en JSON (para que otro agente juzgue)
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
+import { sinComentarios } from '../core/sinComentarios.js';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -34,9 +35,7 @@ const leer = (p) => readFileSync(join(ROOT, p), 'utf8');
 // cada mención en un comentario ("ww.skin se leía sin que nadie la
 // escribiera") se cuela como si fuera una clave/evento de verdad. Conserva
 // saltos de línea para no descuadrar los números de línea.
-const blank = (s) => s
-  .replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' '))
-  .replace(/(^|[^:])\/\/[^\n]*/g, (m, pre) => pre + ' '.repeat(m.length - pre.length));
+const blank = sinComentarios;   // dueño único: core/sinComentarios.js (la regex copiada se tragaba medio selftest.js)
 const cacheSinComentarios = new Map();
 function leerSinComentarios(f) {
   if (!cacheSinComentarios.has(f)) cacheSinComentarios.set(f, blank(leer(f)));
