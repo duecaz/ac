@@ -82,42 +82,43 @@
    (en `em`, uno por línea de escritura), margen rojo, texto a la IZQUIERDA y
    letra escolar. Antes la hoja era la textura del marco: sus renglones iban a
    otro ritmo que el texto y se veían dos rayados que no coincidían. */
-/* LA COLUMNA: la tira de mandos arriba (sobre la mesa) y debajo LA HOJA. El
-   papel era `.tc-round` y contenía la barra: los botones quedaban IMPRESOS
-   sobre el papel y el papel dejaba de parecer papel (dueño 2026-09-02, con
-   maqueta: «el bar es parte de arriba de la hoja, no está dentro»).
-   `--tc-velo` es la BANDEJA de esos mandos: encima del marco hay que leerse con
-   cualquier tema y con cualquier fondo, no solo sobre el crema del papel. */
+/* LA HOJA ES UNA SOLA TARJETA, y la barra es SU BANDA DE ARRIBA (dueño
+   2026-09-02, con maqueta: «el bar es parte de arriba de la hoja»). Dos
+   lecturas equivocadas antes de acertar: primero los mandos iban IMPRESOS en
+   mitad del papel —una hoja de cuaderno no trae botones estampados— y luego,
+   corrigiendo de más, la tira salió flotando sobre la mesa, separada de la
+   hoja. Lo de la foto es lo de en medio: la misma tarjeta, con una banda
+   arriba —papel con una pizca de tinta, y una raya que la separa— y debajo el
+   área de escritura, más limpia. Como la cabecera de un cuaderno de verdad. */
 .tc-round {
-  /* OPACO a propósito, no un velo translúcido. Un mando que flota sobre el
-     marco puede caer encima de una FOTO o de un degradado, y entonces ni el
-     alumno ni el medidor saben qué hay debajo: la tortura de legibilidad
-     (tools/contrast-torture.mjs) deja de juzgar esos textos —«no se juzga lo
-     que no se puede medir»— y perdimos de vista tres mandos de una vez. Con
-     base sólida el contraste es el mismo con cualquier tema y con cualquier
-     fondo, y se puede MEDIR. Neutro (§3 permite los neutros): el color del
-     juego lo ponen los tokens, este es el papel de aluminio de la bandeja. */
-  --tc-velo: color-mix(in srgb, #000 68%, #fff);
   flex: 1 1 auto; min-height: 0;
   display: flex; flex-direction: column;
   text-align: left;
-}
-.tc-hoja {
-  flex: 1 1 auto; min-height: 0;
-  display: flex; flex-direction: column;
-  padding: max(8px, 1.4cqmin) max(14px, 3.5cqw) max(12px, 2cqmin);
   /* Hoja OPACA: neutros permitidos (§3 — es papel, no un tema); al ser opaca,
      la textura que el profe elija para el marco queda alrededor, nunca debajo
-     del texto — que es lo que producía el doble rayado. */
-  /* Por TOKEN, y desde v1.51.615 los SIETE temas lo declaran (`--ww-paper` /
-     `--ww-paper-ink` están en el set canónico de `default`, así que el contrato
-     de skins obliga a todos). Antes solo lo definía `arcade` y el papel caía al
-     crema con cualquier otro tema: el tema llegaba al marco y se paraba en el
-     borde de la hoja — «los temas solo afectan el final», dijo el dueño. */
+     del texto — que es lo que producía el doble rayado. Y como TODO lo que se
+     dibuja encima (los mandos incluidos) tiene esta base sólida, la tortura de
+     legibilidad puede juzgarlo: sobre un velo translúcido dejaba de medir tres
+     mandos de golpe (no se juzga lo que tiene una foto debajo). */
   background: var(--ww-paper, #fffdf6);
   color: var(--ww-paper-ink, #1f2937);
   border-radius: max(10px, 1.6cqmin);
   box-shadow: 0 2px 10px rgba(0,0,0,.08), inset 0 0 6cqmin rgba(120,90,40,.05);
+  overflow: hidden;   /* la banda se recorta con las esquinas de la hoja */
+}
+/* EL ÁREA DE ESCRITURA: lo que queda de la hoja bajo la banda. Sin fondo propio
+   —el papel es de la tarjeta (`.tc-round`)—, solo su aire: la banda llega de
+   borde a borde y el texto va con márgenes, como en la maqueta.
+   El papel se pinta por TOKEN, y desde v1.51.615 los SIETE temas lo declaran
+   (`--ww-paper` / `--ww-paper-ink` están en el set canónico de `default`, así
+   que el contrato de skins obliga a todos). Antes solo lo definía `arcade` y el
+   papel caía al crema con cualquier otro tema: el tema llegaba al marco y se
+   paraba en el borde de la hoja — «los temas solo afectan el final», dijo el
+   dueño. */
+.tc-hoja {
+  flex: 1 1 auto; min-height: 0;
+  display: flex; flex-direction: column;
+  padding: max(8px, 1.4cqmin) max(14px, 3.5cqw) max(12px, 2cqmin);
 }
 
 /* ── LA BARRA: SOLO herramientas (edu-topbar) ────────────────────────────────
@@ -129,23 +130,25 @@
   flex: 0 0 auto;
   position: relative;
   display: flex; align-items: center; gap: max(6px, 1cqmin);
-  /* Sin caja: la barra ya no es una pastilla gris impresa en el papel, es la
-     tira donde flotan los mandos. El velo lo lleva CADA UNO. */
-  background: none;
-  color: #fff;                     /* la tinta del velo, no la de la hoja */
-  padding: 0;
+  /* Papel con una pizca de su propia tinta: se distingue del área de escritura
+     sin ser otro color — por TOKEN, así que funciona igual con papel claro y
+     con papel oscuro. La raya de abajo es lo que la convierte en cabecera. */
+  background: color-mix(in srgb, var(--ww-paper-ink, #1f2937) 5%, var(--ww-paper, #fffdf6));
+  border-bottom: max(1px, .12cqmin) solid color-mix(in srgb, var(--ww-paper-ink, #1f2937) 14%, transparent);
+  color: inherit;                  /* la tinta de la hoja */
+  padding: max(5px, .9cqmin) max(8px, 1.6cqw);
   /* La tira TIENE que dar cabida a sus dos mandos ABSOLUTOS —el reloj centrado
      y el botón de pantalla completa—, que no la estiran por estar fuera del
      flujo: sin este alto la barra medía lo que el interruptor (27 px) y el
      botón asomaba por abajo, sobre la hoja (lo cazó la matriz, que mide la caja
      de verdad). Piso en px y crecimiento por `cqmin`, como el resto (§3). */
   min-height: max(26px, 6.4cqmin);
-  margin-bottom: max(6px, 1cqmin);
+  margin-bottom: 0;
 }
 /* El hueco del botón de pantalla completa lo reserva SOLO la barra que lo aloja
    (la ronda a pantalla entera). En el duelo se montan dos rondas sin botón: ahí
    ese hueco sería un mordisco al panel, que ya va estrecho. */
-.tc-bar--fs { padding-right: 2.8em; }
+.tc-bar--fs { padding-right: 3em; }
 
 /* ── Aire extra SOLO en modo Individual ──────────────────────────────────────
    VS/Equipos/Live renderizan `.tc-round` SIN el envoltorio `.tc-solo` (panel
@@ -186,14 +189,14 @@
 .tc-switch {
   flex: 0 0 auto; display: inline-flex; align-items: center; gap: .15em;
   border: 0; cursor: pointer; padding: .18em;
-  border-radius: 999px; background: var(--tc-velo, #525252);
+  border-radius: 999px; background: color-mix(in srgb, var(--ww-paper-ink, #1f2937) 8%, transparent);
   font-size: clamp(.8rem, 2.1cqmin, 1.3rem); line-height: 1;
   color: inherit;
 }
 .tc-switch__side {
   display: inline-flex; align-items: center; gap: .35em;
   padding: .34em .6em; border-radius: 999px;
-  font-weight: 700; color: inherit; opacity: .7;
+  font-weight: 700; color: inherit; opacity: .55;
   transition: background .22s cubic-bezier(.4, 0, .2, 1),
               color .22s ease, opacity .22s ease, padding .22s ease;
 }
@@ -247,11 +250,11 @@
   /* PISO en px y sin techo (§3): el `clamp(...)` que tenía congelaba el icono en
      1,3 rem — en la pizarra 4K el mando se quedaba de tamaño de móvil. */
   font-size: max(15px, 2.6cqmin);
-  background: var(--tc-velo, #525252); color: inherit;
+  background: color-mix(in srgb, var(--ww-paper-ink, #1f2937) 8%, transparent); color: inherit;
   transition: background .15s ease;
 }
 .tc-bar .ww-fs-btn--inline:hover,
-.tc-bar .ww-fs-btn--inline:focus-visible { background: rgba(0, 0, 0, .68); }
+.tc-bar .ww-fs-btn--inline:focus-visible { background: color-mix(in srgb, var(--ww-paper-ink, #1f2937) 20%, transparent); }
 .tc-bar .ww-fs-btn--inline .ww-ico { width: 1.15em; height: 1.15em; }
 /* El botón vive ABAJO: margin-top auto lo ancla al pie aunque el texto sea
    corto — es lo que separa «hoja con su botón» de «todo amontonado arriba». */
@@ -386,8 +389,8 @@
      referencia tiene que ser la barra, pase lo que pase a los lados. */
   position: absolute; left: 50%; transform: translateX(-50%);
   display: inline-flex; align-items: center; gap: .3em;
-  /* Pastilla, como los demás mandos de la tira: ahora vive SOBRE EL MARCO. */
-  background: var(--tc-velo, #525252);
+  /* Pastilla, como los demás mandos de la banda. */
+  background: color-mix(in srgb, var(--ww-paper-ink, #1f2937) 8%, transparent);
   border-radius: 999px; padding: .2em .6em;
   font-variant-numeric: tabular-nums;   /* que no baile al bajar de 10 a 9 */
   font-weight: 800;
@@ -412,9 +415,9 @@
    franja. */
 .tc-progress {
   height: max(3px, .5cqmin);
-  /* Sobre el MARCO (bajó con la barra, fuera de la hoja): la pista es el mismo
-     velo neutro que los mandos, así el surco se ve igual con cualquier tema. */
-  background: var(--tc-velo, #525252);
+  /* La pista es la tinta del papel muy diluida, para que el surco se vea igual
+     con papel claro y con papel oscuro. */
+  background: color-mix(in srgb, var(--ww-paper-ink, #1f2937) 15%, transparent);
   border-radius: 999px;
   overflow: hidden;
   margin: 0 0 .35rem;
@@ -556,7 +559,7 @@
   flex: 0 0 auto;
   font-size: max(10px, 2.1cqmin); font-weight: 700; line-height: 1;
   padding: .3em .6em; border-radius: 999px;
-  background: var(--tc-velo, #525252);
+  background: color-mix(in srgb, var(--ww-paper-ink, #1f2937) 10%, transparent);
   color: inherit;
   font-variant-numeric: tabular-nums;
 }

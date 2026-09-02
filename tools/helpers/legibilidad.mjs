@@ -38,10 +38,22 @@ export function medirLegibilidad(raizSel, cajaSel, opts) {
   const caja = (cajaSel && document.querySelector(cajaSel)) || raiz;
   const alto = raiz.getBoundingClientRect().height || 800;
 
+  // TERCERA FORMA DE MENTIR DE ESTE MEDIDOR, y la misma lección: `color-mix()`
+  // no computa a `rgb(...)` sino a `color(srgb 0.95 0.95 0.92)`, con los canales
+  // en 0-1 en vez de 0-255. Leídos como bytes, un crema se convertía en NEGRO y
+  // el medidor daba 1,4:1 sobre texto oscuro perfectamente legible. Lo cazó la
+  // matriz en cuanto la banda de Tildes pasó a pintarse con `color-mix` opaco
+  // (2026-09-02) — y con alfa venía pasando de largo sin que se notara, porque
+  // una capa casi transparente apenas movía el resultado.
   const rgba = (c) => {
-    const m = String(c).match(/[\d.]+/g) || [];
+    const s = String(c).trim();
+    // `color(<espacio> …)`: fuera el nombre del espacio, que puede traer dígitos
+    // («display-p3»), y los canales se escalan a bytes.
+    const esUnidad = /^color\(/i.test(s);
+    const m = (esUnidad ? s.replace(/^color\(\s*[a-z0-9-]+/i, 'color(') : s).match(/[\d.]+/g) || [];
     if (m.length < 3) return null;
-    return { r: +m[0], g: +m[1], b: +m[2], a: m.length >= 4 ? +m[3] : 1 };
+    const k = esUnidad ? 255 : 1;
+    return { r: +m[0] * k, g: +m[1] * k, b: +m[2] * k, a: m.length >= 4 ? +m[3] : 1 };
   };
   const hexRgb = (h) => ({ r: parseInt(h.slice(1, 3), 16), g: parseInt(h.slice(3, 5), 16), b: parseInt(h.slice(5, 7), 16) });
   const lum = (c) => {

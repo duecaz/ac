@@ -9,7 +9,7 @@
 Los tokens son la INTERFAZ entre el tema y el juego (ley §3: el skin
 cambia tokens, la actividad los consume). Este es el contrato completo.
 
-**210 tokens** en 18 familias.
+**209 tokens** en 17 familias.
 
 ## `--bs-*` (23)
 
@@ -236,12 +236,6 @@ cambia tokens, la actividad los consume). Este es el contrato completo.
 |---|---|---|
 | `--dx` | core/soloAnimations.js | styles/soloAnim.css |
 | `--dy` | core/soloAnimations.js | styles/soloAnim.css |
-
-## `--tc-*` (1)
-
-| Token | Lo DECLARA | Lo CONSUME |
-|---|---|---|
-| `--tc-velo` | styles/textCorrection.css | styles/textCorrection.css |
 
 ## `--vs-*` (6)
 
