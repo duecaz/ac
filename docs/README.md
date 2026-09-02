@@ -58,6 +58,7 @@ quedó aquí.
 | **`handoff-player-frame.md`** | Etapas 1 y 2 PENDIENTES: el plan para cuando se vuelva al problema del marco |
 | **`handoff-ia-contenido.md`** | La IA que ESCRIBE el contenido (por modelo, no por plantilla): plan escrito, que es la condición que puso el norte §4b. **Funcionando desde v1.51.548**; §7b, lo que costó instalarlo en la Pi |
 | **`handoff-editor-general.md`** | El editor como pieza general: márgenes del panel, «+ Añadir» en las 13, imagen↔pines, nacer en blanco y buscador de imágenes libres (decidido 2026-08-13, sin ejecutar) |
+| **`handoff-costuras.md`** | Plan para DETECTAR las costuras (declaraciones que nadie obedece · contrato a medias · vista que conoce plantillas · cableado sin extremo · la misma regla dos veces · ajuste en la capa equivocada · gesto que destruye lo que se toca): 7 barridos escritor×lector, quién los corre y con qué motor (pedido 2026-09-02) |
 
 Se le suman dos que no son handoffs sino REFERENCIA permanente:
 `infraestructura-pb.md` (cómo está la Pi de verdad) y `handoff-esquema-pb.md`
