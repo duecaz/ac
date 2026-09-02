@@ -11,7 +11,6 @@ export const GameEvents = Object.freeze({
   LOBBY_START:     'game:lobbyStart',     // { sessionId? }
   LOBBY_END:       'game:lobbyEnd',       // {}
   QUESTION_SHOWN:  'game:questionShown',  // { idx, total, item }
-  PLAYER_ANSWERED: 'game:playerAnswered', // { idx } (own answer sent)
   REVEAL:          'game:reveal',         // { idx, item, ownCorrect?, ownPoints? }
   ANSWER_CORRECT:  'game:answerCorrect',  // { idx, points, streak }
   ANSWER_WRONG:    'game:answerWrong',    // { idx }

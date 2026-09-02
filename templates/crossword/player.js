@@ -80,7 +80,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
 
         <!-- Body: clues + grid -->
         <div class="cw-body">
-          <div class="edu-sec edu-sec--pistas cw-clues" id="cw-clues">
+          <div class="edu-sec edu-sec--pistas cw-clues">
             ${clueList(hWords, 'Horizontales →')}
             ${clueList(vWords, 'Verticales ↓')}
           </div>

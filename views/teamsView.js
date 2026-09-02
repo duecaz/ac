@@ -157,10 +157,10 @@ export function mountTeams(host, a, ctx, opts = {}) {
               </span>
               <span class="text-muted ms-2">Pregunta ${idx + 1} / ${roundsTotal}</span>
             </div>
-            <div class="teams-card" id="teams-card">
+            <div class="teams-card">
               ${roundBody(item, payload, phase)}
             </div>
-            <div class="teams-controls" id="teams-controls">
+            <div class="teams-controls">
               ${controls(phase)}
             </div>
           </div>

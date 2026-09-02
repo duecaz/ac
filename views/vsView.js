@@ -266,7 +266,7 @@ export function mountVs(host, a, ctx, opts = {}) {
               <div class="vs-panel vs-left" data-side="left">
                 <div class="vs-body ww-fit-${panelFit}" id="vs-body-left"></div>
               </div>
-              <div class="vs-stage" id="vs-stage">
+              <div class="vs-stage">
                 <div class="vs-tug-label" id="vs-tug-label">¡Empate!</div>
                 <div class="vs-stage-canvas" id="vs-stage-canvas"></div>
               </div>

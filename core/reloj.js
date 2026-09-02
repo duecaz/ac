@@ -33,6 +33,7 @@ import { getTemplate } from './registry.js';
 import { createCountdown } from './soloTimer.js';
 import { startElapsedTicker } from './deadlineTicker.js';
 import { serverNow } from './serverNow.js';
+import { GameEvents, emitGame } from './gameEvents.js';
 
 /** QUÉ RELOJ LE TOCA a esta actividad, sin montar nada. Lo preguntan el editor
  *  (para ofrecer el campo correcto), las vistas y los tests.
@@ -101,8 +102,19 @@ export function montarReloj({ activity, pintar, alive = () => true, desde, onFin
 
   if (cfg.tipo === 'cuenta') {
     const total = cfg.segundos;
+    // TIC-TAC en los últimos segundos. `core/sounds.js` llevaba desde el
+    // principio un oyente de `GameEvents.TICK` (play('tick')) y NADIE lo emitía
+    // (barrido B4, 2026-09-02): el sonido existía, cargado y mudo. Lo emite el
+    // dueño del reloj, que es el único que sabe cuánto queda, y solo en la
+    // cuenta atrás: un cronómetro ascendente no apremia a nadie.
+    const TIC_DESDE = 5;
     const cuenta = createCountdown(total, {
-      onTick: (quedan) => { if (alive()) pintar(`⏱ ${Math.max(0, quedan)}`, (Math.max(0, quedan) / total) * 100); },
+      onTick: (quedan) => {
+        if (!alive()) return;
+        const q = Math.max(0, quedan);
+        pintar(`⏱ ${q}`, (q / total) * 100);
+        if (q > 0 && q <= TIC_DESDE) emitGame(GameEvents.TICK, { remainSec: q });
+      },
       onTimeout: () => { if (alive()) onFin?.(); },
     });
     cuenta.start();

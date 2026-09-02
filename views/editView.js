@@ -47,7 +47,7 @@ export function renderEditView(rootSel, { id, template }) {
       </div>
     </div>
 
-    <details class="ww-switch mb-3" id="switch-format">
+    <details class="ww-switch mb-3">
       <summary class="d-inline-flex align-items-center gap-2 small text-muted flex-wrap" style="cursor:pointer; list-style:none">
         <span class="badge bg-${curT?.meta?.color || 'secondary'}"><i class="bi ${curT?.meta?.icon || 'bi-puzzle'}"></i> ${escapeHtml(curT?.meta?.label || activity.template)}</span>
         <i class="bi bi-arrow-left-right"></i> Cambiar formato
@@ -72,7 +72,7 @@ export function renderEditView(rootSel, { id, template }) {
 
     <div id="editor-root" style="padding-bottom:90px"></div>
 
-    <div id="ww-savebar" class="position-fixed bottom-0 start-0 end-0 bg-light border-top p-2 d-flex justify-content-between align-items-center" style="z-index:1030">
+    <div class="position-fixed bottom-0 start-0 end-0 bg-light border-top p-2 d-flex justify-content-between align-items-center" style="z-index:1030">
       <div>
         <span id="save-state" class="badge bg-secondary"><i class="bi bi-check2"></i> Guardado</span>
       </div>

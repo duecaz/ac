@@ -26,6 +26,7 @@
 //   node tools/auditoria.mjs            # barridos 1+2 (fallan con basura) + 3
 //   node tools/auditoria.mjs --listas   # solo el inventario de excepciones
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, relative } from 'node:path';
 
@@ -173,6 +174,18 @@ if (!soloListas) {
   }
   const vacias = listas.filter(l => l.n === 0).length;
   if (vacias) console.log(`     …y ${vacias} ya en CERO (así se quedan).`);
+}
+
+// ── LAS COSTURAS (docs/handoff-costuras.md): cada barrido escritor×lector es
+// un script aparte con su baseline, y aquí se CUENTA como una clase más de
+// basura si supera su baseline. B4 · cableado sin extremo, desde 2026-09-02.
+if (!soloListas) {
+  for (const b of ['tools/costuras-cableado.mjs']) {
+    const r = spawnSync(process.execPath, [join(ROOT, b)], { cwd: ROOT, encoding: 'utf8' });
+    const ultima = (r.stdout || '').trim().split('\n').pop() || '';
+    if (r.status === 0) ok(`costuras: ${ultima} — node ${b}`);
+    else mal(`costuras: ${b} supera su baseline (o su contra-prueba está rota) — corre: node ${b}`);
+  }
 }
 
 if (!soloListas) {

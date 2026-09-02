@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **305 módulos · 1248 imports internos.**
+> **305 módulos · 1249 imports internos.**
 
 ### Ir a otro documento
 
@@ -32,10 +32,10 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 |---|---|---|---|---|
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1900 | 7 · 1028 | 0.54 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2780 | 12 · 1415 | 0.51 |
-| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 38 · 4479 | 19 · 3093 | 0.69 |
+| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 38 · 4478 | 19 · 3093 | 0.69 |
 | **informes/tareas** | después de clase | 10 · 1116 | 4 · 512 | 0.46 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 71 · 5948 | 13 · 1847 | 0.31 |
-| **infra/común** | todo lo anterior | 160 · 19128 | 67 · 8475 | 0.44 |
+| **infra/común** | todo lo anterior | 160 · 19139 | 67 · 8475 | 0.44 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -126,8 +126,8 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 | `core/ids.js` | 27 |
 | `core/clock.js` | 26 |
 | `core/storage.js` | 24 |
+| `core/gameEvents.js` | 24 |
 | `kernel/content/sessionItems.js` | 23 |
-| `core/gameEvents.js` | 23 |
 | `core/auth.js` | 21 |
 
 ## Los módulos más grandes (candidatos a partir)

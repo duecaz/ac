@@ -47,7 +47,7 @@ function leerSinComentarios(f) {
 // puede bajar. Si un cruce supera su número, el script sale con código 1 —
 // alguien añadió cableado nuevo sin extremo y hay que decidir (basura o
 // conectar), no subir el número para callar al script.
-const BASELINE = { handlers: 3, pintados: 24, eventos: 3, claves: 20 };
+const BASELINE = { handlers: 3, pintados: 0, eventos: 1, claves: 0 };
 
 /** Camina un directorio y devuelve rutas relativas que pasen el filtro. */
 function walk(dir, filtro, acc = []) {
@@ -209,16 +209,77 @@ function camelDeAtributo(sufijo) {
   return `ww-${sufijo}`.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase());
 }
 
+const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// El literal casi nunca es el argumento LITERAL de getElementById/`#x`: el
+// patrón real del repo es `num('ww-pegar-lineas', …)`, `v('rg-email')`, un
+// ternario `? 'au-file-avatar' : …` o un parámetro por defecto
+// `slotId = 'ww-mute-slot'` — todos "un id entre comillas", justo lo que ya
+// sabe detectar `pintado()` (mira si va precedido/seguido de comilla). Por
+// eso (a) reusa ese mismo detector sobre el corpus JS en vez de reinventar
+// otro regex: son los ~19 «legítimo» de la primera pasada.
+function idPintadoComoLiteral(id, corpusJs) {
+  return pintado(id, corpusJs);
+}
+
+// (b) concatenación/plantilla con el PREFIJO del id: `vs-body-left` se
+// construye a veces como `'vs-body-' + lado` o `` `vs-body-${lado}` ``. El
+// prefijo es el id hasta el ÚLTIMO guion — sin esto, todo id compuesto que
+// nace de una plantilla salía como huérfano.
+function idPintadoPorPrefijo(id, corpusJs) {
+  const i = id.lastIndexOf('-');
+  if (i < 0) return false;
+  const prefijo = escRe(id.slice(0, i));
+  return new RegExp(`['"\`]${prefijo}-['"]\\s*\\+`).test(corpusJs)
+    || new RegExp('`' + prefijo + '-\\$\\{').test(corpusJs);
+}
+
+// (c) gancho de estilo: `#id { … }` en una hoja de skin/tema. No es un
+// LECTOR de JS, pero es una conexión real (el id existe para que el CSS lo
+// enganche) y contarlo como huérfano es ruido.
+function idPintadoEnCss(id, corpusCss) {
+  return pintado(id, corpusCss);
+}
+
+// (d) lo nombra una SONDA (tools/*.mjs o tests/*.mjs): `data-ww-submit` lo
+// cuenta `matrix-smoke`. No es cableado de producto, pero SÍ es un lector
+// real — se marca aparte en la salida legible para no confundir "nadie lo
+// toca" con "solo lo toca un test".
+function idPintadoPorSonda(id, corpusSonda) {
+  return pintado(id, corpusSonda);
+}
+
+function ficherosCssTema() {
+  const acc = [];
+  walk('styles', (p) => p.endsWith('.css'), acc);
+  walk('themes', (p) => p.endsWith('.css'), acc);
+  return acc;
+}
+function ficherosSonda() {
+  const acc = [];
+  walk('tools', (p) => p.endsWith('.mjs'), acc);
+  walk('tests', (p) => p.endsWith('.mjs'), acc);
+  return acc;
+}
+
 function cruce2_pintadoSinTocar() {
   const ficherosPintan = ficherosPintado();
   const corpusPintado = construirCorpus(ficherosPintan); // dónde se declara id="x"/data-ww-*
   const corpusUso = construirCorpus(ficherosJs());        // dónde se BUSCA #x / [data-ww-*] / dataset.wwX
+  // (a)/(b): corpus JS AMPLIO ("cualquier .js") — incluye adapters/, no solo
+  // las 4 capas de core/views/templates/kernel.
+  const corpusJsAmplio = construirCorpus(ficherosPintan);
+  const corpusCss = ficherosCssTema().map(leer).join('\n');
+  const corpusSonda = ficherosSonda().map(leer).join('\n');
   const paraLabel = new Set();
   for (const m of corpusPintado.matchAll(RE_FOR_ATTR)) paraLabel.add(m[1]);
 
   const hallazgos = [];
+  const porSonda = []; // ids que SOLO cuentan como leídos por (d) — informativo
   const vistos = new Set();
-  const ficherosParaBarrer = [...ficherosPintan, ...HTML_RAIZ];
+  // Excluye el HTML de docs/: es prosa/documentación, no marcado que sirva
+  // la app — un `id="x"` de ejemplo en un doc no es "pintado" de verdad.
+  const ficherosParaBarrer = [...ficherosPintan, ...HTML_RAIZ].filter(f => !f.startsWith('docs/'));
   for (const f of ficherosParaBarrer) {
     // Sin comentarios: un comentario que MENCIONA `id="x"` como ejemplo no es
     // HTML real pintado (mismo motivo que en el cruce 4).
@@ -232,12 +293,15 @@ function cruce2_pintadoSinTocar() {
       const clave = `id:${id}`;
       if (vistos.has(clave)) continue;
       // ¿lo toca algún .js? getElementById('id') o '#id' en un selector.
-      const tocado = new RegExp(`getElementById\\(\\s*['"\`]${id}\\b`).test(corpusUso)
-        || pintado(id, ` #${id} `); // reusa el detector laxo sobre un mini-corpus con el propio "#id"
-      const tocadoReal = new RegExp(`getElementById\\(\\s*['"\`]${id}['"\`]`).test(corpusUso)
-        || corpusUso.includes(`#${id}`);
-      if (!tocadoReal) { vistos.add(clave); hallazgos.push({ tipo: 'id', token: id, file: f, line: lineaDe(m.index) }); }
-      else vistos.add(clave);
+      const tocadoDirecto = new RegExp(`getElementById\\(\\s*['"\`]${id}['"\`]`).test(corpusUso)
+        || corpusUso.includes(`#${id}`)
+        || idPintadoComoLiteral(id, corpusJsAmplio)
+        || idPintadoPorPrefijo(id, corpusJsAmplio);
+      if (tocadoDirecto) { vistos.add(clave); continue; }
+      if (idPintadoEnCss(id, corpusCss)) { vistos.add(clave); continue; }
+      if (idPintadoPorSonda(id, corpusSonda)) { vistos.add(clave); porSonda.push({ tipo: 'id', token: id, file: f, line: lineaDe(m.index) }); continue; }
+      vistos.add(clave);
+      hallazgos.push({ tipo: 'id', token: id, file: f, line: lineaDe(m.index) });
     }
     RE_DATA_WW.lastIndex = 0;
     for (const m of src.matchAll(RE_DATA_WW)) {
@@ -248,11 +312,14 @@ function cruce2_pintadoSinTocar() {
       const tocado = corpusUso.includes(`[data-${attr}`) || corpusUso.includes(`dataset.${camel}`)
         || corpusUso.includes(`dataset['${camel}']`) || corpusUso.includes(`dataset["${camel}"]`)
         || corpusUso.includes(`data-${attr}=`);
-      if (!tocado) { vistos.add(clave); hallazgos.push({ tipo: 'data-ww', token: `data-${attr}`, file: f, line: lineaDe(m.index) }); }
-      else vistos.add(clave);
+      if (tocado) { vistos.add(clave); continue; }
+      if (idPintadoEnCss(`data-${attr}`, corpusCss)) { vistos.add(clave); continue; }
+      if (idPintadoPorSonda(`data-${attr}`, corpusSonda)) { vistos.add(clave); porSonda.push({ tipo: 'data-ww', token: `data-${attr}`, file: f, line: lineaDe(m.index) }); continue; }
+      vistos.add(clave);
+      hallazgos.push({ tipo: 'data-ww', token: `data-${attr}`, file: f, line: lineaDe(m.index) });
     }
   }
-  return hallazgos;
+  return { hallazgos, porSonda };
 }
 
 // ════════════════════════════════════════════════════════════════════════
@@ -306,6 +373,16 @@ const RE_WW_LITERAL = /['"`](ww\.[A-Za-z0-9_.]*)/g;
 // si el/los ficheros donde aparece el literal contienen TAMBIÉN una llamada
 // lsSet/lsGet en cualquier parte (aunque sea vía variable) — menos preciso
 // que "la misma línea", pero evita los ~30 falsos positivos de indirección.
+// (extra) además del wrapper `core/ls.js` (lsSet/lsGet/lsDel), una clave
+// también queda conectada si el módulo usa el storage DIRECTO
+// (localStorage/sessionStorage/globalThis.localStorage?.…) o, en
+// adapters/local/* (el KV inyectable, motivo declarado en su cabecera:
+// dev offline sin PocketBase), su propio par read(/write(/kv.*Item —
+// mismo nivel de módulo que ya se usa para lsSet/lsGet arriba.
+const RE_SET_DIRECTO = /\b(?:localStorage|sessionStorage)\.setItem\s*\(|globalThis\.localStorage\?\.\s*setItem\s*\(/;
+const RE_GET_DIRECTO = /\b(?:localStorage|sessionStorage)\.getItem\s*\(|globalThis\.localStorage\?\.\s*getItem\s*\(/;
+const RE_DEL_DIRECTO = /\b(?:localStorage|sessionStorage)\.removeItem\s*\(|globalThis\.localStorage\?\.\s*removeItem\s*\(/;
+
 function cruce4_clavesWw() {
   const ficherosAudit = [...ficherosJs(), ...(existsSync(join(ROOT, 'adapters')) ? walk('adapters', (p) => p.endsWith('.js')) : [])];
   const porClave = new Map(); // clave → Set<fichero> donde aparece el literal
@@ -316,17 +393,67 @@ function cruce4_clavesWw() {
     }
   }
   const registros = [];
-  for (const clave of [...porClave.keys()].sort()) {
+  // Un PREFIJO de LS_OWNERS (`ww.remote.`, `ww.live.`) no se escribe nunca tal
+  // cual: lo escriben sus claves concretas (`ww.remote.activities`…). Cuenta
+  // como conectado si alguna clave que empiece por él lo está — el dueño se
+  // declara por prefijo a propósito, no es una clave muerta.
+  const todas = [...porClave.keys()];
+  for (const clave of todas.sort()) {
     let set = false, get = false, del = false;
+    if (clave.endsWith('.')) {
+      for (const hija of todas) {
+        if (hija === clave || !hija.startsWith(clave)) continue;
+        for (const f of porClave.get(hija)) porClave.get(clave).add(f);
+      }
+    }
     for (const f of porClave.get(clave)) {
       const src = leerSinComentarios(f);
       if (/\blsSet\s*\(/.test(src)) set = true;
       if (/\blsGet(?:JsonArray)?\s*\(/.test(src)) get = true;
       if (/\blsDel\s*\(/.test(src)) del = true;
+      if (RE_SET_DIRECTO.test(src)) set = true;
+      if (RE_GET_DIRECTO.test(src)) get = true;
+      if (RE_DEL_DIRECTO.test(src)) del = true;
+      if (f.startsWith('adapters/local/')) {
+        if (/\bkv\.setItem\s*\(/.test(src) || /\bwrite\s*\(/.test(src)) set = true;
+        if (/\bkv\.getItem\s*\(/.test(src) || /\bread\s*\(/.test(src)) get = true;
+        if (/\bkv\.removeItem\s*\(/.test(src)) del = true;
+      }
     }
     registros.push({ clave, set, get, del, ficheros: [...porClave.get(clave)] });
   }
   return registros;
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// 5 · BYPASS DEL WRAPPER (informativo — no cuenta para el exit code)
+// ════════════════════════════════════════════════════════════════════════
+// Todo `localStorage.`/`sessionStorage.`/`globalThis.localStorage?.` FUERA
+// de `core/ls.js` es, por definición, un sitio que NO pasa por el dueño
+// único (§21 ls-dueno). No es lo mismo que el cruce 4 (¿la clave tiene
+// set+get?): esto es "¿quién se salta al portero?", con fichero:línea para
+// que se pueda ir a mirar uno por uno. `adapters/local/*` tiene su propio KV
+// inyectable con motivo escrito en la cabecera (dev offline) — no es un
+// bypass, es OTRO dueño declarado — y `qa/` es arnés de pruebas, no producto.
+const RE_BYPASS = /\bsessionStorage\.\w+|\blocalStorage\.\w+|globalThis\.localStorage\?\.\s*\w+/g;
+
+function cruce5_bypassWrapper() {
+  const localStorageHits = [];
+  const sessionStorageHits = [];
+  for (const f of ficherosPintado()) { // core, views, templates, kernel, adapters
+    if (f === 'core/ls.js') continue;
+    if (f.startsWith('adapters/local/')) continue;
+    if (f.startsWith('qa/')) continue;
+    const src = leerSinComentarios(f);
+    const lineaDe = (idx) => src.slice(0, idx).split('\n').length;
+    RE_BYPASS.lastIndex = 0;
+    for (const m of src.matchAll(RE_BYPASS)) {
+      const linea = lineaDe(m.index);
+      if (m[0].startsWith('sessionStorage')) sessionStorageHits.push(`${f}:${linea}`);
+      else localStorageHits.push(`${f}:${linea}`);
+    }
+  }
+  return { localStorageHits, sessionStorageHits };
 }
 
 // ════════════════════════════════════════════════════════════════════════
@@ -377,15 +504,16 @@ if (rotosContraPrueba) {
 }
 
 const h1 = cruce1_handlerSinHtml();
-const h2 = cruce2_pintadoSinTocar();
+const { hallazgos: h2, porSonda: h2sonda } = cruce2_pintadoSinTocar();
 const h3 = cruce3_eventosJuego();
 const h4 = cruce4_clavesWw();
+const bypass = cruce5_bypassWrapper();
 
 const h3malos = h3.filter(r => r.emisores.length === 0 || r.oyentes.length === 0);
 const h4malos = h4.filter(r => !(r.set && r.get));
 
 if (asJson) {
-  console.log(JSON.stringify({ handlers: h1, pintados: h2, eventos: h3, claves: h4 }, null, 2));
+  console.log(JSON.stringify({ handlers: h1, pintados: h2, pintadosPorSonda: h2sonda, eventos: h3, claves: h4, bypassWrapper: bypass }, null, 2));
   process.exit(0);
 }
 
@@ -396,10 +524,14 @@ if (h1.length) mal(`${h1.length} handler(es)/consulta(s) con selector huérfano 
 else ok(`0 handlers huérfanos (baseline ${BASELINE.handlers})`);
 for (const x of h1) console.log(`     ${x.tipo}:${x.token} · evento=${x.evento} · ${x.file}:${x.line}`);
 
-console.log('\n── 2 · PINTADO QUE NADIE TOCA (id="x"/data-ww-* sin getElementById/#x/[data-ww-*]/dataset) ──');
+console.log('\n── 2 · PINTADO QUE NADIE TOCA (id="x"/data-ww-* sin getElementById/#x/[data-ww-*]/dataset/literal/prefijo/CSS/sonda) ──');
 if (h2.length) mal(`${h2.length} token(s) pintados sin lector (baseline ${BASELINE.pintados}):`);
 else ok(`0 tokens sin lector (baseline ${BASELINE.pintados})`);
 for (const x of h2) console.log(`     ${x.tipo}:${x.token} · ${x.file}:${x.line}`);
+if (h2sonda.length) {
+  console.log(`   (${h2sonda.length} más SOLO leídos por una sonda — cuentan como tocados, no suman al hallazgo, se listan por transparencia)`);
+  for (const x of h2sonda) console.log(`     ${x.tipo}:${x.token} · ${x.file}:${x.line} (lo lee una sonda)`);
+}
 
 console.log('\n── 3 · EVENTOS DE JUEGO (GameEvents.X: emisores × oyentes) ──');
 if (h3malos.length) mal(`${h3malos.length} evento(s) con 0 en algún lado (de ${h3.length} declarados, baseline ${BASELINE.eventos}):`);
@@ -420,6 +552,12 @@ for (const r of h4malos) {
   const falta = !r.set ? 'nunca se escribe (lsSet)' : !r.get ? 'nunca se lee (lsGet)' : '';
   console.log(`     ${r.clave} · ${falta}${r.del ? ' · sí se borra (lsDel)' : ''} · ${r.ficheros.join(', ')}`);
 }
+
+console.log('\n── 5 · BYPASS DEL WRAPPER (informativo — fuera de core/ls.js; sin baseline, no afecta al exit code) ──');
+console.log(`   localStorage directo: ${bypass.localStorageHits.length} sitio(s)`);
+for (const x of bypass.localStorageHits) console.log(`     ${x}`);
+console.log(`   sessionStorage directo: ${bypass.sessionStorageHits.length} sitio(s) (core/ls.js no lo cubre hoy)`);
+for (const x of bypass.sessionStorageHits) console.log(`     ${x}`);
 
 const total = h1.length + h2.length + h3malos.length + h4malos.length;
 const baseTotal = BASELINE.handlers + BASELINE.pintados + BASELINE.eventos + BASELINE.claves;

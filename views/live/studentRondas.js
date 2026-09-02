@@ -121,7 +121,6 @@ export function createStudentRondas(rt) {
         const p = queuedSubmit(rt.session.id, rt.player.playerId, idx, value, ms);
         rescuedSubmit = p;   // paintRevealOwn puede esperar este POST si hizo falta rescatar
         const r = await p;
-        emitGame(GameEvents.PLAYER_ANSWERED, { idx });
         // Solo pintar "esperando" si SEGUIMOS en la pregunta: cuando este submit
         // es el rescate de autoFlushQuestion, la fase ya cambió y paint() ya montó
         // el reveal/podio — pintarle "¡Respuesta enviada!" encima lo pisaba.
