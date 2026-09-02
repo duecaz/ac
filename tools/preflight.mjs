@@ -44,7 +44,7 @@ const PASOS = [
   { id: 'margenes', cmd: 'tools/margenes-smoke.mjs', que: 'ninguna pantalla del profe pegada al borde, en PC y en móvil' },
   { id: 'puertas', cmd: 'tools/editor-puertas.mjs', que: 'las 13 tienen puerta visible para añadir y dicen qué hacer con la actividad vacía' },
   { id: 'buscar',  cmd: 'tools/find-smoke.mjs',   que: 'el viaje buscar/crear (portada → biblioteca → elegir plantilla → EDITAR → guardar → buscarla)' },
-  { id: 'editar',  cmd: 'tools/edit-audit.mjs',   que: 'teclear en los 13 editores sin que la actividad pierda su respuesta correcta' },
+  { id: 'editar',  cmd: 'tools/edit-audit.mjs',   que: 'teclear en los 13 editores, pestaña por pestaña: ni se pierde la respuesta correcta ni el foco ni la pestaña' },
   { id: 'vivo',    cmd: 'tools/live-smoke.mjs',   que: 'el viaje en vivo con dos pantallas (sala → PIN → responder → podio)' },
   { id: 'tareas',  cmd: 'tools/task-smoke.mjs',   que: 'el viaje de tareas (crear → PIN → jugar → tope de intentos → informe)' },
   { id: 'hoja',    cmd: 'tools/hoja-smoke.mjs',   que: 'la hoja de pruebas se puede ENTREGAR sin cuenta de profe (se perdió una ronda entera por eso)' },
