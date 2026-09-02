@@ -9,13 +9,13 @@
 // es siempre hacia abajo: lo de arriba sabe de lo de abajo, nunca al revés.
 export const ALLOWED = {
   contenido:   ['core', 'kernel'],          // utilidades puras (ids, clock) + contratos
-  plantillas:  ['core', 'contenido', 'kernel'],
-  kernel:      ['core', 'contenido', 'config'],
+  plantillas:  ['core', 'contenido'],
+  kernel:      ['core', 'contenido'],
   core:        ['kernel', 'contenido', 'config'],
-  adaptadores: ['core', 'kernel', 'contenido', 'config'],
-  vistas:      ['core', 'kernel', 'contenido', 'plantillas', 'adaptadores', 'config'],
+  adaptadores: ['core', 'kernel', 'config'],
+  vistas:      ['core', 'kernel', 'contenido', 'adaptadores', 'config'],
   config:      [],                          // datos: no importa nada
-  arranque:    ['core', 'kernel', 'contenido', 'plantillas', 'adaptadores', 'vistas', 'config'],
+  arranque:    ['core', 'vistas'],
 };
 
 // EXCEPCIONES SANCIONADAS — `fichero→destino`, con su motivo. Cada una es una

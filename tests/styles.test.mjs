@@ -26,7 +26,7 @@ const STYLES = join(dirname(fileURLToPath(import.meta.url)), '..', 'styles');
 // en `player.css` (EXCLUIDO como chrome) y media en `live.css` (GAME), así que
 // este mismo ratchet la clasificaba de dos maneras a la vez.
 const GAME = ['ballsort', 'crossword', 'diagram', 'globos', 'match', 'math', 'memory', 'wheel',
-  'opcion', 'question-live', 'textCorrection', 'vs', 'teams', 'wordsearch', 'live'];
+  'opcion', 'question-live', 'textCorrection', 'vs', 'teams', 'wordsearch', 'live', 'scaffold'];
 // Chrome/paletas explícitamente EXCLUIDOS del ratchet (no son "el juego").
 // `live` SALIÓ de esta lista en v1.51.423. Estaba clasificado como chrome y
 // dentro vive el JUEGO: `.ww-opt-grid` son las opciones de respuesta que la
@@ -34,7 +34,11 @@ const GAME = ['ballsort', 'crossword', 'diagram', 'globos', 'match', 'math', 'me
 // móvil que en una pizarra 4K. El ratchet no lo veía por estar excluido; lo cazó
 // la medición de legibilidad de §29. Una lista de exclusiones es una lista de
 // sitios donde la ley no mira: cada entrada tiene que ser chrome DE VERDAD.
-const EXCLUDED = ['backgrounds', 'editor', 'home', 'player', 'scaffold', 'skins', 'soloAnim', 'theme', 'touch'];
+// `scaffold` SALIÓ de esta lista en la auditoría 2026-09-02 (misma clase de
+// error): es el andamio de REGIONES del player (.ww-scaffold/.ww-rail/.ww-stage),
+// el layout responsive del juego mismo, no chrome — y estaba 0/0/0 limpio, así
+// que entra sin BASELINE.
+const EXCLUDED = ['backgrounds', 'editor', 'home', 'player', 'skins', 'soloAnim', 'theme', 'touch'];
 
 // Colores skin-independientes POR DISEÑO: no necesitan token.
 //  · neutros (texto sobre superficies de color)
@@ -135,7 +139,6 @@ function scan(css) {
 // arreglar deuda existente, borra su entrada. ────────────────────────────────
 const BASELINE = {
   ballsort:      { fonts: ['.82rem', '.9rem'], colors: ['background:#2a3140', 'color:#ffd34d'] },
-  crossword:     { fonts: [], colors: [] },
   match:         { fonts: ['.82rem', '.9rem'], colors: ['background:#6366f1', 'background:#94a3b8'] },
   memory:        { fonts: ['1.4rem', '1rem'], colors: ['background:#d1fae5', 'color:#065f46'] },
   'question-live': { fonts: ['1.3rem', '1.8rem'], colors: [] },

@@ -101,10 +101,10 @@ import { sinComentarios } from './sinComentarios.js';
 //                            + los ficheros de plantilla derivados del registro.
 const ALLOW = {
   'resize-observer': ['core/observeResize.js'],
-  'pb-filter': ['core/pbFilter.js'],   // pbFilterParam usa encodeURIComponent legítimamente
+  'pb-filter': [],   // ya no hay ficheros excepcionados: pbFilterParam ya no matchea el patrón
   'kernel-puro': [],
   // Los primitivos de reloj y el ctx del lifecycle SON la implementación.
-  'reloj-primitivo': ['core/lifecycle.js', 'core/soloTimer.js', 'core/deadlineTicker.js',
+  'reloj-primitivo': ['core/lifecycle.js', 'core/soloTimer.js',
     // El vigía de un flujo permanente (SSE) es el CUARTO primitivo de reloj: no
     // pinta, vigila silencio y renueva la conexión. Su scheduler se inyecta.
     'core/streamWatchdog.js'],
@@ -122,9 +122,7 @@ const ALLOW = {
     'adapters/pocketbase/assignments.js', 'adapters/local/assignments.js',  // PIN de tarea
     'adapters/pocketbase/realtime.js',    // jitter
   ],
-  // `core/serverNow.js` ES la hora común (usa clock.now para calcularla) y
-  // `core/deadlineTicker.js` ya la consume; `core/clock.js` es el reloj crudo.
-  'reloj-sala': ['core/serverNow.js', 'core/clock.js', 'core/deadlineTicker.js'],
+  'reloj-sala': [],
   // imagen-buscable · quién puede pedir una imagen SIN ofrecer buscarla, y por qué.
   // Los dos primeros SON la implementación; los tres siguientes no piden imagen
   // de CONTENIDO: la foto de perfil y el avatar del duelo son de una PERSONA
