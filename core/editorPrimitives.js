@@ -89,14 +89,28 @@ export function tiempoBloqueHtml(a, T) {
   </section>`;
 }
 
-/** Cablea el bloque. `repaint` porque los dos campos se hablan: al poner un
- *  límite, el cronómetro pasa a estar mandado por él y la casilla lo refleja. */
+/** Cablea el bloque. Los dos campos SE HABLAN —al poner un límite, el
+ *  cronómetro pasa a estar mandado por la cuenta atrás— y eso se refleja EN
+ *  SITIO, tocando la casilla y su explicación. Aquí llamaba a `repaint()`, que
+ *  re-renderiza el editor entero: escribir «30» tecleaba el 3, repintaba, y el
+ *  campo perdía el foco (y el editor, la pestaña). Un repintado completo NUNCA
+ *  va colgado de un `input`: la tecla es del que escribe. */
 export function wireTiempoBloque(root, a, ctx) {
   on(root, 'input', '#f-timer', (e) => {
     a.rules = a.rules || {};
     a.rules.timer = Math.max(0, +e.target.value || 0);
     ctx.onChange(a);
-    ctx.repaint?.();
+    const casilla = root.querySelector('#f-crono');
+    if (casilla) {
+      const conLimite = a.rules.timer > 0;
+      casilla.disabled = conLimite;
+      const nota = casilla.closest('.col-md-4')?.querySelector('.form-text');
+      if (nota) {
+        nota.textContent = conLimite
+          ? 'Con límite manda la cuenta atrás: dos relojes a la vez confunden'
+          : 'Cuenta el tiempo que llevas jugando';
+      }
+    }
   });
   on(root, 'change', '#f-crono', (e) => {
     a.rules = a.rules || {};

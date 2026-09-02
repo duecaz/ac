@@ -201,6 +201,16 @@ export function renderEditorShell(root, a, onChange, spec) {
   const ctx = { onChange, repaint };
 
   function render() {
+    // LA PESTAÑA ABIERTA SOBREVIVE AL REPINTADO. `repaint()` re-renderiza el
+    // editor entero (es lo que permite dar de alta y baja ítems sin cablear
+    // parches), y marcaba SIEMPRE activa la primera: añadir una pregunta desde
+    // «Contenido» no se notaba, pero tocar cualquier cosa desde «Juego» o
+    // «Presentación» te echaba a la primera pestaña. Se recuerda cuál estaba
+    // abierta y se vuelve a ella; si esa pestaña ya no existe (una plantilla
+    // que deja de ofrecer «En vivo»), manda la primera, como antes.
+    const abierta = root.querySelector?.('.nav-link.active')?.getAttribute('data-bs-target');
+    let activo = tabs.findIndex(t => `#${t.id}` === abierta);
+    if (activo < 0) activo = 0;
     mount(root, html`
       <div class="ww-editor">
         <div class="row g-2 mb-3">
@@ -208,10 +218,10 @@ export function renderEditorShell(root, a, onChange, spec) {
           <div class="col-md-4"><label class="form-label small">Subtítulo</label><input class="form-control" id="f-subtitle" value="${escapeHtml(a.subtitle || '')}"></div>
         </div>
         <ul class="nav nav-tabs" role="tablist">
-          ${tabs.map((t, i) => `<li class="nav-item"><button class="nav-link ${i === 0 ? 'active' : ''}" data-bs-toggle="tab" data-bs-target="#${t.id}">${escapeHtml(t.label)}${t.icon ? ` <i class="bi ${t.icon}"></i>` : ''}</button></li>`).join('')}
+          ${tabs.map((t, i) => `<li class="nav-item"><button class="nav-link ${i === activo ? 'active' : ''}" data-bs-toggle="tab" data-bs-target="#${t.id}">${escapeHtml(t.label)}${t.icon ? ` <i class="bi ${t.icon}"></i>` : ''}</button></li>`).join('')}
         </ul>
         <div class="tab-content border border-top-0 p-3 rounded-bottom">
-          ${tabs.map((t, i) => `<div class="tab-pane fade ${i === 0 ? 'show active' : ''}" id="${t.id}">${t.body()}</div>`).join('')}
+          ${tabs.map((t, i) => `<div class="tab-pane fade ${i === activo ? 'show active' : ''}" id="${t.id}">${t.body()}</div>`).join('')}
         </div>
       </div>`);
 

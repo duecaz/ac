@@ -29,7 +29,7 @@ function contentHtml(a) {
       <!-- Word list -->
       <div class="col-md-5">
         <label class="form-label fw-semibold">Lista de palabras</label>
-        <p class="small text-muted mb-2">
+        <p class="small text-muted mb-2" id="ws-ed-count">
           ${words.length} palabra(s) · tablero ${size}×${size}
           ${failed?.length ? `<span class="text-danger"> · ${failed.length} no colocada(s)</span>` : ''}
         </p>
@@ -82,13 +82,42 @@ function gridPreviewHtml(grid, placed, rows, cols) {
   return `<div class="ws-ed-grid" style="--ws-cols:${cols}">${cells}</div>`;
 }
 
+/** REFRESCAR LA VISTA PREVIA SIN REPINTAR EL EDITOR. Escribir una palabra
+ *  cambia dos cosas —el tablero y el ✓/✗ de cada palabra— y nada más; aquí se
+ *  llamaba a `ctx.repaint()` con 600 ms de retraso «para no interrumpir al que
+ *  teclea», pero repintar el editor entero te quita el foco y te devuelve a la
+ *  primera pestaña, solo que medio segundo tarde (y por eso costaba entender
+ *  qué había pasado). Se toca lo que cambia y se deja en paz lo demás. */
+function refrescarPreview(root, a) {
+  const size = SIZE_MAP[a.rules?.gridSize] || 15;
+  const words = a.content?.words || [];
+  const { grid, placed, rows, cols, failed } = generateGrid(words, {
+    rows: size, cols: size, dirs: a.rules?.directions || 'medium',
+  });
+  const cabe = (w) => placed.some(p => p.word === String(w).toUpperCase().replace(/\s+/g, ''));
+  const caja = root.querySelector('.ws-ed-preview');
+  if (caja) caja.innerHTML = gridPreviewHtml(grid, placed, rows, cols);
+  root.querySelectorAll('.ws-ed-dot').forEach((dot, i) => {
+    const ok = cabe(words[i]);
+    dot.className = `ws-ed-dot ${ok ? 'text-success' : 'text-danger'}`;
+    dot.title = ok ? 'Colocada' : 'No cabe en el tablero';
+    dot.textContent = ok ? '✓' : '✗';
+  });
+  const cuenta = root.querySelector('#ws-ed-count');
+  if (cuenta) {
+    cuenta.innerHTML = `${words.length} palabra(s) · tablero ${size}×${size}`
+      + (failed?.length ? `<span class="text-danger"> · ${failed.length} no colocada(s)</span>` : '');
+  }
+}
+
 function wireContent(root, a, ctx) {
   on(root, 'input', '.ws-ed-word', (e, el) => {
     a.content.words[+el.dataset.i] = e.target.value;
     ctx.onChange(a);
-    // Defer repaint to avoid interrupting typing
+    // Recolocar las palabras en el tablero cuesta, así que se espera a que la
+    // mano pare; lo que NO se hace es repintar el editor.
     clearTimeout(root._wsRepaintTimer);
-    root._wsRepaintTimer = setTimeout(() => ctx.repaint(), 600);
+    root._wsRepaintTimer = setTimeout(() => refrescarPreview(root, a), 600);
   });
   on(root, 'click', '.item-del', (_, btn) => {
     a.content.words.splice(+btn.dataset.i, 1);

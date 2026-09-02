@@ -83,4 +83,74 @@ const all = listTemplates().filter(T => reales.has(T.meta.name));
   ok('CONTRA-PRUEBA: una plantilla que declare su propio panel sigue ganando');
 }
 
+// ── ESCRIBIR NO PUEDE REPINTAR EL EDITOR ───────────────────────────────────
+// El dueño escribió «30» en el campo de tiempo y el editor saltó de pestaña
+// (2026-09-02): el cableado llamaba a `repaint()` en cada `input`, que
+// re-renderiza el editor ENTERO — se pierde el foco, el cursor y la pestaña.
+// Un repintado completo puede colgar de un clic o de un `change` (añadir un
+// ítem, cambiar de nivel), NUNCA de una tecla. Se descubre por ESCANEO: vale
+// para los 13 editores y para el que se escriba mañana.
+{
+  const fs = await import('node:fs');
+  const RAIZ = join(TDIR, '..');
+  const culpables = [];
+  // Se acota CADA handler contando paréntesis: con una expresión regular
+  // «hasta el próximo });» el bloque se comía los handlers de al lado y
+  // señalaba a cuatro editores inocentes — una red que grita de más se acaba
+  // ignorando igual que una que calla.
+  const handlers = (src, evento) => {
+    const out = [];
+    const re = new RegExp(`on\\(\\s*root\\s*,\\s*'${evento}'`, 'g');
+    let m;
+    while ((m = re.exec(src))) {
+      let prof = 0, i = m.index;
+      for (; i < src.length; i++) {
+        const c = src[i];
+        if (c === '(') prof++;
+        else if (c === ')') { prof--; if (prof === 0) { i++; break; } }
+      }
+      out.push(src.slice(m.index, i));
+    }
+    return out;
+  };
+  const mirar = (rel) => {
+    const src = fs.readFileSync(join(RAIZ, rel), 'utf8');
+    for (const h of handlers(src, 'input')) {
+      if (/repaint\s*\??\.?\s*\(/.test(h)) culpables.push(rel);
+    }
+  };
+  mirar('core/editorPrimitives.js');
+  mirar('core/editorShell.js');
+  mirar('core/editorModes.js');
+  mirar('core/editorPanels.js');
+  for (const n of reales) {
+    const rel = `templates/${n}/editor.js`;
+    try { fs.statSync(join(RAIZ, rel)); } catch { continue; }
+    mirar(rel);
+  }
+  assert.deepStrictEqual([...new Set(culpables)], [],
+    `repintan el editor entero mientras el profe TECLEA (pierde foco y pestaña): ${[...new Set(culpables)].join(', ')}`);
+  // CONTRA-PRUEBA: el repintado legítimo sigue vivo. Sin esto, la regla se
+  // «cumpliría» borrando todos los repaint y el «+ Añadir» dejaría de pintar
+  // la fila nueva.
+  const porClic = handlers(fs.readFileSync(join(RAIZ, 'templates/match/editor.js'), 'utf8'), 'click')
+    .filter(h => /repaint\s*\(/.test(h)).length;
+  assert.ok(porClic > 0, 'CONTRA-PRUEBA: dar de alta o baja un ítem SÍ repinta (es un clic, no una tecla)');
+  ok('ningún campo repinta el editor al teclear — la tecla es del que escribe (y el clic sí repinta)');
+}
+
+// ── Y CUANDO SÍ SE REPINTA, LA PESTAÑA ABIERTA SE QUEDA ────────────────────
+// La otra mitad del mismo susto: `render()` marcaba activa SIEMPRE la primera
+// pestaña, así que cualquier repintado legítimo hecho desde «Juego» o
+// «Presentación» te devolvía a «Contenido».
+{
+  const fs = await import('node:fs');
+  const src = fs.readFileSync(join(TDIR, '..', 'core', 'editorShell.js'), 'utf8');
+  assert.match(src, /nav-link\.active/, 'render() debe LEER qué pestaña estaba abierta antes de repintar');
+  assert.ok(!/nav-link \$\{i === 0 \?/.test(src) && !/tab-pane fade \$\{i === 0 \?/.test(src),
+    'y no puede volver a cablear la primera pestaña como activa');
+  assert.match(src, /i === activo/, 'la pestaña activa sale de la que estaba abierta');
+  ok('un repintado del editor conserva la pestaña abierta');
+}
+
 console.log(`\n  ${passed} editorPanels checks passed`);
