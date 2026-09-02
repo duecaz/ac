@@ -52,6 +52,4 @@ export class MemoryTemplate extends BaseTemplate {
   // Memoria no tiene renderRound (su modo Equipos usa su propio motor), pero SÍ
   // declara scorer: es la única fuente de puntos, la use el player o una ronda.
   static scoreSubmission = scoreMemorySubmission;
-  static migrateContent(content) { return content; }
-
 }

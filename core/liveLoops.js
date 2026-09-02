@@ -84,6 +84,12 @@ export function pointsModeFor(loop) {
   return (loop === 'race' || loop === 'board') ? 'race' : 'live';
 }
 
+// `scoreSubmission` del bucle `claim` (§21b: era el mismo cuerpo tecleado dos
+// veces, question-live/template.js y wheel/template.js). Puntúa el profe
+// (`ql_points`), a mano y sin clave de respuesta — "pedir la palabra" no
+// tiene mérito automático que dar, es el único bucle que no usa el scorer.
+export const manualScoreSubmission = () => ({ correct: null, points: 0, hits: 0, total: 0 });
+
 /**
  * ¿SUPERA esta respuesta el ítem en CARRERA? La ley §26 dice que en carrera un
  * fallo VUELVE A LA COLA, y de ahí sale la premisa del podio: todo el que

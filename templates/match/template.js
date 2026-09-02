@@ -63,6 +63,4 @@ export class MatchTemplate extends BaseTemplate {
 
   // The matching round is a multiple-choice pick of the right side.
   static renderRound(root, payload, opts) { renderChoiceRound(root, payload, opts); }
-
-  static migrateContent(content) { return content; }
 }

@@ -1,124 +1,16 @@
 // Editor de Comas: pega el texto CON comas; la app las quita y guarda las
-// posiciones. Solo aporta sus paneles; el chasis lo pone el shell.
-import { escapeHtml } from '../../core/html.js';
-import { toast } from '../../core/toast.js';
-import { on } from '../../core/events.js';
-import { newPassage, partirEnParrafos } from '../../core/contentModels/textCorrection.js';
-import { applyMarks, parseTextWithCommas } from '../../core/textMarks.js';
-import { itemControlsHtml, reorderArray, ruleScopeNote, itemSecondsFieldHtml, wireItemSeconds, pegarTextoHtml, wirePegarTexto, corregirAlFinalHtml, wireCorregirAlFinal } from '../../core/editorPrimitives.js';
-import { renderEditorShell } from '../../core/editorShell.js';
+// posiciones. Wrapper de core/textCorrectionEditor.js (§21b: era el mismo
+// editor que Tildes, tecleado dos veces — solo cambia el parser y los textos).
+import { parseTextWithCommas } from '../../core/textMarks.js';
+import { renderTextCorrectionEditor } from '../../core/textCorrectionEditor.js';
 
 export function renderComasEditor(root, activity, onChange) {
-  const a = activity;
-  if (!Array.isArray(a.content?.passages)) a.content = { passages: [newPassage()] };
-  renderEditorShell(root, a, onChange, {
-    content: { label: 'Frases', html: contentHtml, wire: wireContent },
-    rules: { html: rulesHtml, wire: wireRules },
+  renderTextCorrectionEditor(root, activity, onChange, {
+    kind: 'coma',
+    parse: parseTextWithCommas,
+    textos: {
+      instrucciones: 'Escribe la frase <b>con sus comas</b>. La app las quita y guarda dónde van.',
+      placeholder: 'ej. Hola, ¿cómo estás?',
+    },
   });
-}
-
-function contentHtml(a) {
-  return `
-    ${pegarTextoHtml({ titulo: 'Pegar un texto (un poema, una lectura…)' })}
-    <p class="small text-muted">Escribe la frase <b>con sus comas</b>. La app las quita y guarda dónde van.</p>
-    ${a.content.passages.map((p, i) => renderPassage(p, i, a.content.passages.length, a)).join('')}
-    <button class="btn btn-outline-primary mt-2" id="t-add"><i class="bi bi-plus-lg"></i> Añadir frase</button>
-    ${limpiarBotonHtml(a)}`;
-}
-
-/** QUITAR DE GOLPE LAS QUE NO DAN JUEGO. Una frase sin una sola coma no
- *  tiene nada que tocar, y el panel rojo la reprocha una por una: con un poema
- *  pegado eran cuarenta reproches y cuarenta borrados a mano. El botón solo
- *  aparece cuando hay algo que quitar, y dice CUÁNTAS — borrar a ciegas trabajo
- *  del profe es justo lo que §24 no permite. */
-function limpiarBotonHtml(a) {
-  const n = a.content.passages.filter(p => String(p.text || '').trim() && !(p.marks || []).length).length;
-  if (!n) return '';
-  return `<button class="btn btn-outline-danger mt-2 ms-2" id="t-limpiar">
-    <i class="bi bi-eraser"></i> Quitar las ${n} frase${n === 1 ? '' : 's'} sin nada que corregir
-  </button>`;
-}
-function wireContent(root, a, ctx) {
-  wireItemSeconds(root, a, ctx, a.content.passages);   // R-3 · tiempo por frase
-  on(root, 'input', '.tp-accented', (e, el) => {
-    const idx = +el.dataset.i;
-    const { text, marks } = parseTextWithCommas(e.target.value);
-    const p = a.content.passages[idx];
-    p.text = text; p.marks = marks;
-    ctx.onChange(a);
-    const preview = document.querySelector(`[data-preview="${idx}"]`);
-    if (preview) preview.textContent = text || '(vacío)';
-    const expected = document.querySelector(`[data-expected="${idx}"]`);
-    if (expected) expected.textContent = applyMarks(text, marks);
-  });
-  // Pegar un texto EXISTENTE: se parte en frases y cada una pasa por el parser
-  // de esta plantilla, el mismo que usa el profe al teclear. No inventa nada —
-  // que es justo lo que se le pedía a la IA y no podía cumplir con un poema.
-  wirePegarTexto(root, partirEnParrafos, (parrafos, { tope }) => {
-    // Solo entran los que TIENEN algo que corregir —un párrafo sin una sola
-    // coma no da juego, no hay nada que tocar— y se para al llegar al tope,
-    // que se cuenta sobre los que sirven: pedir cuatro y recibir uno porque tres
-    // no tenían marcas sería cumplir el número y fallar la promesa.
-    let omitidas = 0; let anadidas = 0; let i = 0;
-    for (; i < parrafos.length && anadidas < tope; i++) {
-      const trozo = parseTextWithCommas(parrafos[i]);
-      if (!trozo.marks.length) { omitidas++; continue; }
-      a.content.passages.push({ ...newPassage(), ...trozo });
-      anadidas++;
-    }
-    // La frase vacía con la que nace la plantilla no cuenta como trabajo del
-    // profe: dejarla deja un hueco delante de lo que acaba de pegar (mismo
-    // criterio que `fusionarContenido` usa con lo que escribe la IA).
-    if (anadidas) {
-      a.content.passages = a.content.passages.filter(p => String(p.text || '').trim() !== '');
-      ctx.onChange(a); ctx.repaint();
-    }
-    return { anadidas, omitidas, sobrantes: parrafos.length - i };
-  });
-  on(root, 'click', '#t-limpiar', () => {
-    const antes = a.content.passages.length;
-    a.content.passages = a.content.passages.filter(p => !String(p.text || '').trim() || (p.marks || []).length);
-    const fuera = antes - a.content.passages.length;
-    if (!a.content.passages.length) a.content.passages.push(newPassage());
-    ctx.onChange(a); ctx.repaint();
-    toast(`Quitada${fuera === 1 ? '' : 's'} ${fuera} frase${fuera === 1 ? '' : 's'} sin nada que corregir.`, 'success', 4000);
-  });
-  on(root, 'click', '#t-add', () => { a.content.passages.push(newPassage()); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '.item-del', (_, b) => { a.content.passages.splice(+b.dataset.i, 1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '.item-up', (_, b) => { reorderArray(a.content.passages, +b.dataset.i, -1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '.item-down', (_, b) => { reorderArray(a.content.passages, +b.dataset.i, +1); ctx.onChange(a); ctx.repaint(); });
-}
-
-// NOTA: aquí vivía «Comas ilimitadas». El
-// tope NUNCA se implementó (la ronda no cuenta marcas disponibles), así que
-// desmarcarlo no hacía nada. Se quita el mando y la función queda como deuda
-// escrita en CLAUDE.md — un control que no controla engaña al que prepara la
-// clase.
-function rulesHtml(a) {
-  return `<div class="row g-3">
-    <div class="col-md-4 form-check pt-4 ms-3"><input id="t-rand" class="form-check-input" type="checkbox" ${a.rules.randomize ? 'checked' : ''}><label class="form-check-label" for="t-rand">Mezclar frases</label></div>
-    <div class="col-12">${ruleScopeNote()}</div>
-    ${corregirAlFinalHtml(a, 'frase')}
-  </div>`;
-}
-function wireRules(root, a, ctx) {
-  on(root, 'change', '#t-rand', e => { a.rules.randomize = e.target.checked; ctx.onChange(a); });
-  wireCorregirAlFinal(root, a, ctx);
-}
-
-function renderPassage(p, i, total, A) {
-  const accented = applyMarks(p.text || '', p.marks || []);
-  return `
-    <div class="card mb-3"><div class="card-body">
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <span class="badge bg-secondary">Frase ${i + 1}</span>
-        ${itemControlsHtml(i, total)}
-      </div>
-      <textarea class="form-control mb-2 tp-accented" data-i="${i}" rows="2" placeholder="ej. Hola, ¿cómo estás?">${escapeHtml(accented)}</textarea>
-      <div class="row small">
-        <div class="col-md-6"><span class="text-muted">Lo que verá el alumno:</span> <span data-preview="${i}" class="font-monospace">${escapeHtml(p.text || '(vacío)')}</span></div>
-        <div class="col-md-6"><span class="text-muted">Solución:</span> <b data-expected="${i}">${escapeHtml(accented)}</b></div>
-      </div>
-      <div class="mt-2">${itemSecondsFieldHtml(A, p, i)}</div>
-    </div></div>`;
 }

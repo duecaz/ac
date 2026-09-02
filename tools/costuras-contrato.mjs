@@ -85,6 +85,8 @@ const ficherosTools = () => walk('tools', esJs, []);
 // ════════════════════════════════════════════════════════════════════════
 await import('../core/registerTemplates.js');
 const { listTemplates } = await import('../core/registry.js');
+const { loopsOf } = await import('../core/liveLoops.js');
+const { isVsCompatible } = await import('../kernel/session/vsMachine.js');
 const TODAS = listTemplates().filter(T => existsSync(join(ROOT, 'templates', String(T.meta?.name || ''))));
 if (TODAS.length < 10) {
   console.log(`❌ CONTRA-PRUEBA rota: listTemplates() solo ve ${TODAS.length} plantillas reales (se esperaban 13) — no se confía en el resto.`);
@@ -143,6 +145,19 @@ function splitTopLevel(s, sep) {
   if (cur.trim()) out.push(cur);
   return out;
 }
+// `() => expr` (arrow de CUERPO CONCISO, con `return` implícito) toStringea
+// SIN llaves de bloque: `() => ({ correct: null, … })`. La primera versión de
+// este parser asumía que el `{` que sigue a los parámetros ES SIEMPRE el
+// bloque de la función — cierto para un método de clase y para un arrow con
+// bloque (`() => { … }`), falso aquí: ese `{` es el objeto literal del
+// RETORNO, y `src.lastIndexOf('}')` cerraba sobre el `}` del objeto, no había
+// ninguno de bloque que buscar. Se detectó al mover `wheel`/`question-live` a
+// `static scoreSubmission = manualScoreSubmission` (core/liveLoops.js,
+// §21b/conectar 5): el mismo cuerpo trivial que antes SÍ se reconocía como
+// stub (método de clase) dejó de reconocerse (arrow de cuerpo conciso) — un
+// falso negativo real, no de laboratorio. Ahora, si tras `=>` el primer token
+// no es `{`, se envuelve el resto como `return <expr>;` para que `esStub()` lo
+// trate igual que un bloque de una sola sentencia.
 function parseFn(fn) {
   const src = fn.toString();
   const pi = src.indexOf('(');
@@ -152,6 +167,16 @@ function parseFn(fn) {
     else if (src[i] === ')') { depth--; if (depth === 0) { pj = i; break; } }
   }
   const params = splitTopLevel(src.slice(pi + 1, pj), ',').map(s => s.trim().split('=')[0].trim()).filter(Boolean);
+  const tras = src.slice(pj + 1).trim();
+  const esArrow = tras.startsWith('=>');
+  const rawTrasArrow = esArrow ? tras.slice(2).trim() : tras;
+  if (esArrow && !rawTrasArrow.startsWith('{')) {
+    // Cuerpo conciso: quita un `;` final si lo hay y unos paréntesis que
+    // envuelvan el TODO (`({…})` para desambiguar un objeto de un bloque).
+    let expr = rawTrasArrow.replace(/;\s*$/, '').trim();
+    if (/^\([\s\S]*\)$/.test(expr)) expr = expr.slice(1, -1).trim();
+    return { params, body: `return ${expr};` };
+  }
   const bi = src.indexOf('{', pj);
   const body = bi >= 0 ? src.slice(bi + 1, src.lastIndexOf('}')) : '';
   return { params, body };
@@ -193,12 +218,75 @@ function normalizarCuerpo(fn) {
 }
 
 // ════════════════════════════════════════════════════════════════════════
+// WRAPPER de un identificador IMPORTADO — la otra forma legítima de
+// "cuerpo igual en ≥2 plantillas" (además de la referencia compartida de
+// arriba): un método cuyo ÚNICO statement es una llamada a un nombre que ESE
+// FICHERO importa — incluida la firma de una línea que solo REACOMODA
+// argumentos (`static x(a){ return f(a); }`, o `({value}) => f(value)`: el
+// wrapper cambia de forma, la lógica vive en el import). Si las dos
+// plantillas llaman al mismo MÓDULO (no solo al mismo nombre: un `ident`
+// local podría venir de sitios distintos), es la señal de reutilización que
+// `templates/comas/template.js`/`templates/tildes/template.js` dejaron tras
+// subir `getRoundPayload`/`itemLabel`/`valueParts` a un dueño común (§21b) —
+// sin este reconocimiento, CADA wrapper de una línea volvía a listarse como
+// "copiado" nada más nacer, aunque la lógica de verdad tuviera un solo dueño.
+// ════════════════════════════════════════════════════════════════════════
+function identificadorLlamado(fn) {
+  const cuerpo = normalizarCuerpo(fn);
+  const stmts = splitTopLevel(cuerpo, ';').map(s => s.trim()).filter(Boolean);
+  if (stmts.length !== 1) return null; // más de un statement ⇒ no es un wrapper puro
+  const m = stmts[0].match(/^(?:return\s+)?([A-Za-z_$][\w$]*)\s*\(([\s\S]*)\)$/);
+  return m ? m[1] : null;
+}
+const cacheImports = new Map();
+function importsDe(file) {
+  if (cacheImports.has(file)) return cacheImports.get(file);
+  const map = new Map();
+  if (existsSync(join(ROOT, file))) {
+    const re = /import\s*\{([^}]*)\}\s*from\s*['"]([^'"]+)['"]/g;
+    let m;
+    const src = leerSinComentarios(file);
+    while ((m = re.exec(src))) {
+      for (const spec of m[1].split(',').map(s => s.trim()).filter(Boolean)) {
+        const [orig, alias] = spec.split(/\s+as\s+/).map(s => s.trim());
+        map.set(alias || orig, m[2]);
+      }
+    }
+  }
+  cacheImports.set(file, map);
+  return map;
+}
+// Resuelve un especificador relativo (`../../core/x.js`) al mismo `file`
+// "lógico" desde CUALQUIER fichero a su misma profundidad — que es como están
+// las 13 plantillas (`templates/<nombre>/template.js`), así que dos imports
+// relativos al mismo módulo real resuelven al MISMO string aunque vivan en
+// carpetas distintas.
+function moduloAbsolutoDe(file, especificador) {
+  if (!especificador.startsWith('.')) return especificador;
+  return join(dirname(file), especificador).replace(/\\/g, '/');
+}
+/** ¿Es esta ENTRADA {plantilla, fn} un wrapper de un identificador importado
+ *  desde `ficheroDe(plantilla)`? Devuelve el módulo absoluto resuelto o
+ *  `null` (no es un wrapper, o el nombre no está importado ahí). */
+function wrapperImportadoDe(entrada, ficheroDe) {
+  const ident = identificadorLlamado(entrada.fn);
+  if (!ident) return null;
+  const file = ficheroDe(entrada.plantilla);
+  const especificador = importsDe(file).get(ident);
+  if (!especificador) return null;
+  return moduloAbsolutoDe(file, especificador);
+}
+const ficheroDeTemplate = (nombre) => `templates/${nombre}/template.js`;
+
+// ════════════════════════════════════════════════════════════════════════
 // GRUPOS "COPIADO" (cruce b) — por método, agrupa las implementaciones
 // PROPIAS (no heredadas) por cuerpo normalizado. Un grupo de ≥2 plantillas
 // con la MISMA referencia de función (p.ej. `static scoreSubmission =
 // scoreQuizSubmission` importado por Quiz Y Globos) es reutilización YA
-// resuelta — no cuenta. Solo cuenta cuando son funciones DISTINTAS que
-// alguien escribió dos veces con el mismo cuerpo (comprobado con
+// resuelta — no cuenta. Tampoco cuenta cuando TODAS las entradas son
+// wrappers de un identificador importado desde el MISMO módulo (arriba). Solo
+// cuenta cuando son funciones DISTINTAS que alguien escribió dos veces con el
+// mismo cuerpo Y ese cuerpo no delega en un import compartido (comprobado con
 // `Function !== Function`, no con el texto: dos funciones idénticas por
 // texto pero MISMA referencia no son una copia, son un import compartido).
 // ════════════════════════════════════════════════════════════════════════
@@ -219,6 +307,8 @@ function gruposCopiados() {
       if (entradas.length < 2) continue;
       const refsDistintas = new Set(entradas.map(e => e.fn)).size;
       if (refsDistintas < 2) continue; // misma referencia compartida vía import: legítimo
+      const modulos = entradas.map(e => wrapperImportadoDe(e, ficheroDeTemplate));
+      if (modulos.every(mo => mo && mo === modulos[0])) continue; // wrapper del MISMO import: legítimo
       grupos.push({ metodo, plantillas: entradas.map(e => e.plantilla).sort() });
     }
   }
@@ -361,17 +451,65 @@ function cruceC() {
 // Solo tiene sentido para METODOS_CORE (los otros —M1— siempre se llaman con
 // `?.`). Por método: ¿qué plantillas NO lo tienen (ni propio ni heredado)?
 // Si ninguna, no hay nada que mirar. Si alguna, cada SITIO de invocación de
-// plataforma se marca "guardado" si en el MISMO fichero aparece `?.` pegado
-// al método, o un `typeof …===\`function\`` o una comprobación ternaria
-// (`X.metodo ? … : …`) sobre él — heurística TEXTUAL a nivel de fichero (no
-// sigue el flujo entre funciones), documentada en la nota de falsos
-// positivos: por eso el veredicto final es de quien lea la lista, no de este
-// script.
+// plataforma se marca "guardado" por CUALQUIERA de dos vías:
+//
+//   1. TEXTUAL, a nivel de fichero: `?.` pegado al método, un
+//      `typeof …===\`function\`` o una comprobación ternaria (`X.metodo ? …
+//      : …`) sobre él — no sigue el flujo entre funciones.
+//   2. ARQUITECTURA (vista→modo/bucle): la vista SOLO se monta para
+//      plantillas que ya pasaron una puerta de otro módulo — se cruza
+//      `meta.play.{vs,live}` de cada plantilla que FALTA el método con esa
+//      puerta, reusando los módulos PUROS que la implementan (nunca
+//      reimplementada aquí):
+//        · `views/vsView.js` llama a `isVsCompatible(activity)`
+//          (kernel/session/vsMachine.js) ANTES de montar nada — y esa función
+//          ya comprueba `typeof T.renderRound/scoreSubmission === 'function'`
+//          ella misma. Se invoca la función REAL con una actividad sintética
+//          por plantilla faltante: si NINGUNA pasa, el sitio está guardado.
+//        · `views/live/student{Rondas,Carrera,Tablero}.js` solo se montan en
+//          la fase del bucle rounds/race/board — y esa fase solo se ofrece
+//          para plantillas que lo declaran en `meta.play.live`
+//          (`loopsOf(tpl)`, `views/hostLive.js` `rt.loops`). Si NINGUNA
+//          plantilla que falta el método declara ese bucle, el sitio está
+//          guardado — y si una plantilla nueva lo declarara sin implementar
+//          el método, este barrido dejaría de verlo guardado (no es una
+//          lista de excepciones congelada: vuelve a comprobarse cada vez).
+//
+// Documentado y no una lista ad-hoc: por eso el veredicto final sigue siendo
+// de quien lea la lista, no de este script — pero ahora la lista es más
+// corta porque dos rutas de guardia REALES entran en el cálculo.
 // ════════════════════════════════════════════════════════════════════════
 function faltantesDe(metodo) {
   return TODAS.filter(T => typeof T[metodo] !== 'function').map(T => T.meta.name);
 }
-function sitiosDe(metodo, ficheros) {
+// vista de estudiante → bucle que la monta (§26 · core/liveLoops.js LOOP_PHASE
+// + `views/hostLive.js` `rt.loops = loopsOf(tpl)`, la única fuente de qué
+// bucles ofrece el lobby).
+const VISTA_LOOP = {
+  'views/live/studentRondas.js': 'rounds',
+  'views/live/studentCarrera.js': 'race',
+  'views/live/studentTablero.js': 'board',
+};
+const VISTA_VS = new Set(['views/vsView.js']);
+const porNombre = (name) => TODAS.find(t => t.meta.name === name);
+// Actividad sintética mínima para invocar `isVsCompatible` DE VERDAD (no
+// reimplementarla): basta `template` + el contenido/reglas por defecto de esa
+// plantilla — es justo lo que `sessionItems`/`getTemplate` necesitan.
+function actividadSintetica(T) {
+  return { template: T.meta.name, content: T.meta.defaultContent(), rules: T.meta.defaultRules?.() ?? {} };
+}
+function guardadoAguasArriba(file, faltantes) {
+  const loop = VISTA_LOOP[file];
+  if (loop) return !faltantes.some(name => loopsOf(porNombre(name)).includes(loop));
+  if (VISTA_VS.has(file)) {
+    return !faltantes.some(name => {
+      const T = porNombre(name);
+      try { return isVsCompatible(actividadSintetica(T)); } catch { return false; }
+    });
+  }
+  return false; // sin mapa conocido: no se pronuncia, decide la heurística textual
+}
+function sitiosDe(metodo, ficheros, faltantes) {
   const re = new RegExp(`([\\w.$]+)\\??\\.${escRe(metodo)}\\s*\\(`, 'g');
   const sitios = [];
   for (const f of ficheros) {
@@ -380,6 +518,7 @@ function sitiosDe(metodo, ficheros) {
     const lineas = srcConComentarios.split('\n');
     let m;
     const reLinea = new RegExp(`([\\w.$]+)\\??\\.${escRe(metodo)}\\s*\\(`);
+    const guardArquitectura = guardadoAguasArriba(f, faltantes);
     for (let i = 0; i < lineas.length; i++) {
       if (!reLinea.test(blank(lineas[i]))) continue;
       const guardEnLinea = /\?\./.test(lineas[i].split(`.${metodo}`)[0].slice(-1));
@@ -392,7 +531,7 @@ function sitiosDe(metodo, ficheros) {
         // Sin esto core/migrate.js salía "sin guardia" pese a comprobar
         // `T?.migrateContent` justo antes (falso positivo, ver nota final).
         new RegExp(`\\w+\\?\\.${escRe(metodo)}\\b(?!\\s*\\()`).test(srcSinComentarios);
-      sitios.push({ file: f, line: i + 1, guardado: guardEnLinea || guardEnFichero });
+      sitios.push({ file: f, line: i + 1, guardado: guardEnLinea || guardEnFichero || guardArquitectura });
     }
   }
   return sitios;
@@ -403,7 +542,7 @@ function cruceD() {
   for (const metodo of METODOS_CORE) {
     const faltan = faltantesDe(metodo);
     if (!faltan.length) continue;
-    const sitios = sitiosDe(metodo, plataforma);
+    const sitios = sitiosDe(metodo, plataforma, faltan);
     if (!sitios.length) continue; // nadie lo invoca de verdad (lo verá el cruce c)
     const sinGuardia = sitios.filter(s => !s.guardado);
     hallazgos.push({ metodo, faltan, sitios, sinGuardia });
@@ -447,6 +586,63 @@ function contraPrueba() {
       console.log('  ❌ CONTRA-PRUEBA rota: "scoreSubmission" no ve un invocador real conocido'); rotos++;
     }
   }
+  // CONTRA-PRUEBA del cruce (b) mejorado — WRAPPER de un identificador
+  // importado: dos clases sintéticas con `static x(a){ return compartida(a); }`
+  // (mismo nombre, mismo módulo relativo desde ficheros a la misma
+  // profundidad) NO deben contar como copiado; dos con LÓGICA copiada de
+  // verdad (cuerpo repetido que no es una llamada a un import) SÍ. El import
+  // se sella a mano en `cacheImports` (los ficheros sintéticos no existen en
+  // disco) — se prueba la RESOLUCIÓN, la lectura de ficheros reales ya la
+  // ejercitan los wrappers de verdad de comas/tildes/question-live/wheel/
+  // globos/quiz/math/match arriba, en (b).
+  {
+    const f1 = 'templates/zz-syn-1/template.js', f2 = 'templates/zz-syn-2/template.js';
+    cacheImports.set(f1, new Map([['compartida', '../../shared/mod.js']]));
+    cacheImports.set(f2, new Map([['compartida', '../../shared/mod.js']]));
+    function xWrap1(a) { return compartida(a); }
+    function xWrap2(a) { return compartida(a); }
+    const entradasWrapper = [{ plantilla: 'zz-syn-1', fn: xWrap1 }, { plantilla: 'zz-syn-2', fn: xWrap2 }];
+    const modulosWrapper = entradasWrapper.map(e => wrapperImportadoDe(e, ficheroDeTemplate));
+    if (!(modulosWrapper[0] && modulosWrapper[0] === modulosWrapper[1])) {
+      console.log('  ❌ CONTRA-PRUEBA rota: dos wrappers `return compartida(a)` del MISMO import no resuelven al mismo módulo (se listarían como copiados)'); rotos++;
+    }
+    function yCopy1(a) { const v = a + 1; return v * 2; }
+    function yCopy2(a) { const v = a + 1; return v * 2; }
+    const entradasCopia = [{ plantilla: 'zz-syn-1', fn: yCopy1 }, { plantilla: 'zz-syn-2', fn: yCopy2 }];
+    const modulosCopia = entradasCopia.map(e => wrapperImportadoDe(e, ficheroDeTemplate));
+    if (modulosCopia[0] || modulosCopia[1]) {
+      console.log('  ❌ CONTRA-PRUEBA rota: lógica COPIADA (no una llamada a un import) se reconoce como wrapper (dejaría de contar como copiado)'); rotos++;
+    }
+  }
+  // CONTRA-PRUEBA del cruce (d) mejorado — guardia por ARQUITECTURA
+  // (vista→bucle/modo): una plantilla sintética con `play.live:['rounds']` y
+  // SIN renderRound debe salir SIN GUARDIA en `views/live/studentRondas.js`
+  // (monta la fase 'question' del bucle 'rounds', y esa plantilla lo declara)
+  // — la lógica exacta de `guardadoAguasArriba` probada directamente contra
+  // `loopsOf` (no vía `porNombre`, que solo busca en las 13 REGISTRADAS: la
+  // sintética nunca lo está, y probarla a través de esa función de producción
+  // daría "guardada" por ausencia — un falso positivo, no el caso real).
+  {
+    const loop = VISTA_LOOP['views/live/studentRondas.js'];
+    // Lo que `guardadoAguasArriba` haría (sin pasar por `porNombre`, que solo
+    // busca entre las 13 registradas): "no guardado" ⟺ la sintética declara
+    // este bucle. Debe dar "no guardado" — es justo el caso que debe salir
+    // ¡SIN GUARDIA! en la salida real.
+    const declaraElBucle = loopsOf(ZZSintetica).includes(loop);
+    if (!declaraElBucle) {
+      console.log('  ❌ CONTRA-PRUEBA rota: una plantilla con play.live=["rounds"] y sin renderRound saldría GUARDADA (falso negativo del guard de arquitectura)'); rotos++;
+    }
+  }
+  // Contra-prueba POSITIVA del guard de arquitectura: una plantilla REAL sin
+  // el bucle 'rounds' (p.ej. wheel, 'claim' puro) no debe "activar" el guard
+  // de studentRondas.js — si esto fallara, guardadoAguasArriba() blanquearía
+  // sitios de verdad sin guardia.
+  {
+    const wheel = porNombre('wheel');
+    if (wheel && loopsOf(wheel).includes('rounds')) {
+      console.log('  ❌ CONTRA-PRUEBA rota: wheel no declara el bucle "rounds" (revisa su meta.play.live)'); rotos++;
+    }
+  }
   return rotos;
 }
 
@@ -464,12 +660,22 @@ const { huerfanos: hallazgosC, soloInstrumento } = cruceC();
 const hallazgosD = cruceD();
 const totalSitiosSinGuardia = hallazgosD.reduce((n, h) => n + h.sinGuardia.length, 0);
 
-// BASELINE — números de la PRIMERA pasada (2026-09-02), tras acotar los
-// falsos positivos descritos al final del fichero. RATCHET: solo puede
-// bajar. Si un cruce supera su número, código 1 — se añadió un estático
-// nuevo con contrato a medias y hay que decidir (basura/conectar/legítimo/
-// replantear), no subir el número para callar al script.
-const BASELINE = { stubs: 0, copiados: 11, sinInvocador: 0, faltan: 5 };
+// BASELINE — los CUATRO cruces a 0 (2026-09-02, tras ejecutar los veredictos
+// `conectar` de este barrido: getRoundPayload/itemLabel comas↔tildes,
+// getRoundPayload/scoreSubmission question-live↔wheel, migrateContent
+// no-op→heredado de base.js, renderEditor comas/tildes→wrapper de
+// core/textCorrectionEditor.js — y afinar el propio instrumento: `esStub()`
+// reconoce arrows de cuerpo conciso (`() => ({…})`, que dejó de verse como
+// stub al mover scoreSubmission a `static scoreSubmission =
+// manualScoreSubmission`), (b) reconoce wrappers de un identificador
+// IMPORTADO desde el mismo módulo, y (d) cruza `meta.play.{vs,live}` con
+// `loopsOf()`/`isVsCompatible()` antes de gritar sin guardia). Los 11/5
+// números de la primera pasada quedan documentados en la NOTA al final del
+// fichero. RATCHET: solo puede bajar. Si un cruce supera su número, código 1
+// — se añadió un estático nuevo con contrato a medias y hay que decidir
+// (basura/conectar/legítimo/replantear), no subir el número para callar al
+// script.
+const BASELINE = { stubs: 0, copiados: 0, sinInvocador: 0, faltan: 0 };
 
 const excedeStubs = hallazgosA.length > BASELINE.stubs;
 const excedeCopiados = GRUPOS_COPIADOS.length > BASELINE.copiados;

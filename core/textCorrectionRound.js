@@ -39,6 +39,15 @@ const HINTS = {
   coma: 'Toca el hueco donde falta una coma.'
 };
 
+// Un pasaje = una ronda (comas/tildes, §21b: era el mismo cuerpo tecleado dos
+// veces, `getRoundPayload` de comas/template.js y tildes/template.js). La
+// clave de respuesta (marks) se QUITA del payload — es lo que viaja al
+// alumno.
+export function passageRoundPayload(activity, itemIndex) {
+  const p = (activity.content?.passages || [])[itemIndex];
+  return p ? { id: p.id, text: p.text } : null;
+}
+
 // Preview de tarjeta (miniatura del home) para Tildes/Comas. Reutiliza el MISMO
 // `passageHtml` del juego → la miniatura no puede desincronizarse del player.
 // La comparten templates/tildes/template.js y templates/comas/template.js.

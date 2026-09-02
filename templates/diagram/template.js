@@ -57,7 +57,4 @@ export class DiagramTemplate extends BaseTemplate {
   static renderPlayer = renderDiagramPlayer;
   static renderEditor = renderDiagramEditor;
   static scoreSubmission = scoreDiagramSubmission;
-
-
-  static migrateContent(content) { return content; }
 }

@@ -20,6 +20,18 @@ export function validate(content) {
 // Migra las DOS formas antiguas a la actual — idempotente (contrato):
 //   · entries planas ['a','b']            (wheel templateVersion 1)
 //   · ítems con `q` en vez de `question`  (wheel v2 / question-live v1)
+// Un ítem = una ronda (question-live/wheel, §21b: era el mismo cuerpo
+// tecleado dos veces, `getRoundPayload` de question-live/template.js y
+// wheel/template.js — los dos declaran el bucle `claim`, §26: puntúa el
+// docente a mano, sin clave de respuesta).
+// ANSWER-SAFETY (R5): whitelist de campos de PANTALLA — nunca el ítem crudo.
+// El modelo `items` hoy no guarda clave de respuesta, pero un passthrough
+// filtraría cualquier campo que un contenido importado traiga de más.
+export function itemRoundPayload(activity, itemIndex) {
+  const it = activity.content?.items?.[itemIndex];
+  return it ? { id: it.id, question: it.question, image: it.image || null } : null;
+}
+
 export function migrateLegacyItems(content) {
   if (Array.isArray(content?.entries) && !Array.isArray(content?.items)) {
     return { items: content.entries.map(e => newItem(String(e))) };

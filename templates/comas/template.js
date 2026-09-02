@@ -5,8 +5,8 @@ import { BaseTemplate } from '../base.js';
 import { renderComasPlayer } from './player.js';
 import { renderComasEditor } from './editor.js';
 import { newPassage } from '../../core/contentModels/textCorrection.js';
-import { parseTextWithCommas, markPartsFor, markValueParts } from '../../core/textMarks.js';
-import { renderTextCorrectionRound, renderTextCorrectionHost, textCorrectionPreviewHtml } from '../../core/textCorrectionRound.js';
+import { parseTextWithCommas, markPartsFor, markValueParts, passageLabel } from '../../core/textMarks.js';
+import { renderTextCorrectionRound, renderTextCorrectionHost, textCorrectionPreviewHtml, passageRoundPayload } from '../../core/textCorrectionRound.js';
 import { scoreComasSubmission } from './scorer.js';
 
 export class ComasTemplate extends BaseTemplate {
@@ -63,10 +63,7 @@ export class ComasTemplate extends BaseTemplate {
 
 
   // One passage = one round. The answer key (marks) is stripped from the payload.
-  static getRoundPayload(activity, ctx) {
-    const p = (activity.content?.passages || [])[ctx.itemIndex];
-    return p ? { id: p.id, text: p.text } : null;
-  }
+  static getRoundPayload(activity, ctx) { return passageRoundPayload(activity, ctx.itemIndex); }
 
   // One passage = one round (tap the gap where a comma is missing). Shared renderer.
   // `chips` viaja tal cual a la ronda (contrato de barra única): quedarse solo
@@ -85,7 +82,5 @@ export class ComasTemplate extends BaseTemplate {
   // label=palabra) → heatmap por el % de la clase que acertó cada coma.
   static itemParts({ item }) { return markPartsFor(item, 'coma'); }
   static valueParts({ value }) { return markValueParts(value); }
-  static itemLabel(item) { return (item?.text || '').slice(0, 40); }
-
-  static migrateContent(content) { return content; }
+  static itemLabel(item) { return passageLabel(item); }
 }

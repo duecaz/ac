@@ -140,3 +140,10 @@ export function markPartsFor(item, kind) {
 export function markValueParts(value) {
   return (Array.isArray(value) ? value : []).map(Number);
 }
+
+// Etiqueta corta de un pasaje para las listas de analítica/informe (§21b: era
+// el mismo cuerpo tecleado dos veces, `itemLabel` de comas/template.js y
+// tildes/template.js).
+export function passageLabel(item) {
+  return (item?.text || '').slice(0, 40);
+}

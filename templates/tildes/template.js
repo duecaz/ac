@@ -5,8 +5,8 @@ import { renderTildesPlayer } from './player.js';
 import { renderTildesEditor } from './editor.js';
 import { newPassage } from '../../core/contentModels/textCorrection.js';
 import { parseAccentedText, applyMarks } from '../../core/textMarks.js';
-import { renderTextCorrectionRound, renderTextCorrectionHost, textCorrectionPreviewHtml } from '../../core/textCorrectionRound.js';
-import { markPartsFor, markValueParts } from '../../core/textMarks.js';
+import { renderTextCorrectionRound, renderTextCorrectionHost, textCorrectionPreviewHtml, passageRoundPayload } from '../../core/textCorrectionRound.js';
+import { markPartsFor, markValueParts, passageLabel } from '../../core/textMarks.js';
 import { scoreTildesSubmission } from './scorer.js';
 
 export class TildesTemplate extends BaseTemplate {
@@ -63,10 +63,7 @@ export class TildesTemplate extends BaseTemplate {
 
 
   // One passage = one round. The answer key (marks) is stripped from the payload.
-  static getRoundPayload(activity, ctx) {
-    const p = (activity.content?.passages || [])[ctx.itemIndex];
-    return p ? { id: p.id, text: p.text } : null;
-  }
+  static getRoundPayload(activity, ctx) { return passageRoundPayload(activity, ctx.itemIndex); }
 
   // One passage = one round (tap the accented vowels). Shared renderer.
   // `chips` viaja tal cual a la ronda (contrato de barra única): quedarse solo
@@ -86,7 +83,7 @@ export class TildesTemplate extends BaseTemplate {
   // clase que acertó cada tilde ("jugó en rojo").
   static itemParts({ item }) { return markPartsFor(item, 'tilde'); }
   static valueParts({ value }) { return markValueParts(value); }
-  static itemLabel(item) { return (item?.text || '').slice(0, 40); }
+  static itemLabel(item) { return passageLabel(item); }
 
   // Recupera pasajes guardados ANTES del fix de normalización: si se pegó texto
   // con tildes DESCOMPUESTAS (vocal + U+0301), el parse viejo no las reconocía →

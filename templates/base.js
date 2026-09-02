@@ -64,4 +64,13 @@ export class BaseTemplate {
       : '';
     root.innerHTML = `<h2 class="text-center my-4">${escapeHtml(String(prompt))}</h2>${answer}`;
   }
+
+  // Identidad por defecto (§21b: `return content;` estaba tecleado cuatro
+  // veces — comas/diagram/match/memory, las cuatro con `templateVersion: 1`).
+  // El contrato solo EXIGE que una plantilla DEFINA `migrateContent` cuando
+  // sube su `templateVersion` por encima de 1 (core/templateContract.js): con
+  // `templateVersion===1` no hay forma legada que migrar, así que heredar este
+  // no-op es correcto — no un stub disfrazado. Una plantilla con
+  // `templateVersion>1` DEBE seguir definiendo el suyo propio.
+  static migrateContent(content) { return content; }
 }
