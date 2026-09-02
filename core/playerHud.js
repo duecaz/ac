@@ -17,19 +17,31 @@
 // Uso: el player mete `hudHtml({...})` como PRIMER hijo de su raíz — el CSS
 // (styles/player.css, `:has(> .edu-hud)`) hace de esa raíz el ámbito de
 // posicionamiento, sin pedirle clase. Para actualizar un dato sin re-render:
-// `hudSet(root, 'tiempo', '⏱ 12')` (null/'' lo esconde).
+// `hudSet(root, 'tiempo', '12')` (null/'' lo esconde; el icono lo pone el chip).
 //
 // El HUD no captura toques (`pointer-events: none`): un globo que pase por
 // debajo se sigue pudiendo explotar.
 import { escapeHtml } from './html.js';
+import { lucide } from './lucide.js';
 
-const chip = (campo, texto) =>
-  `<span class="edu-hud__chip" data-hud="${campo}"${texto ? '' : ' hidden'}>${escapeHtml(String(texto ?? ''))}</span>`;
+// El chip del TIEMPO lleva su icono; los demás son solo texto. El icono es del
+// CHIP, no del reloj: `core/reloj.js` entrega el número pelado y cada superficie
+// donde se pinta decide cómo se ve (antes el «⏱ » viajaba pegado al valor, así
+// que el dueño del tiempo mandaba sobre el aspecto de todas a la vez).
+const ICONO = { tiempo: () => lucide('timer') };
+
+const chip = (campo, texto) => {
+  const ico = ICONO[campo]?.() || '';
+  // El valor va en su propio nodo para que `hudSet` lo reescriba sin llevarse
+  // por delante el icono (`textContent` sobre el chip entero lo borraría).
+  return `<span class="edu-hud__chip${ico ? ' edu-hud__chip--ico' : ''}" data-hud="${campo}"${texto ? '' : ' hidden'}>`
+    + `${ico}<span data-hud-val>${escapeHtml(String(texto ?? ''))}</span></span>`;
+};
 
 /**
  * Los indicadores del juego, por NOMBRE (no por posición en un markup ad hoc):
  *   pagina «3 / 8» · racha «🔥 3» · extra (p.ej. «Flips: 4») → esquina izquierda
- *   tiempo «⏱ 12»                                            → CENTRO
+ *   tiempo «12», con su icono de reloj                       → CENTRO
  * Todos opcionales: lo que no se pasa se pinta oculto, listo para `hudSet`.
  * El chip `puntos` («★ 40») SE RETIRÓ (dueño 2026-09-01): el puntaje ya vive en
  * la pantalla de resultado y el HUD no debe competir con el juego — «esa
@@ -57,7 +69,10 @@ export function hudSet(scope, campo, texto) {
   if (!el) return;
   if (texto == null || texto === '') { el.hidden = true; return; }
   el.hidden = false;
-  el.textContent = String(texto);
+  // Al nodo del VALOR si el chip lo tiene (el del tiempo lleva icono delante);
+  // al chip entero si no. Una barra que aloje el indicador puede traer el suyo
+  // con la misma forma.
+  (el.querySelector('[data-hud-val]') || el).textContent = String(texto);
 }
 
 // EL RELOJ NO VIVE AQUÍ. Estuvo: `mostrarCrono()` + `cronoHud()` montaban el

@@ -23,7 +23,12 @@
 //
 // DÓNDE se pinta NO lo decide el reloj: se lo dan (`pintar`). El chip del HUD y
 // la barra de Tildes/Comas son dos sitios distintos para el mismo dato, y por
-// eso el módulo no sabe de DOM.
+// eso el módulo no sabe de DOM. Y CÓMO se ve tampoco: entrega el número pelado
+// («12», «1:03»). Llevaba pegado un «⏱ » —un emoji haciendo de icono— y con él
+// el dueño del TIEMPO decidía el aspecto de dos superficies a la vez: el chip
+// del HUD no podía cambiar de icono sin tocar aquí, y la barra de Tildes no
+// podía usar el de Lucide que pidió el dueño (2026-09-02) sin recortar el
+// prefijo a mano. El adorno es de la superficie que pinta.
 //
 // Debajo usa los primitivos de §23 —`createCountdown` para la duración y
 // `startElapsedTicker` para el ascendente—: no inventa un tercer reloj, los
@@ -112,20 +117,20 @@ export function montarReloj({ activity, pintar, alive = () => true, desde, onFin
       onTick: (quedan) => {
         if (!alive()) return;
         const q = Math.max(0, quedan);
-        pintar(`⏱ ${q}`, (q / total) * 100);
+        pintar(String(q), (q / total) * 100);
         if (q > 0 && q <= TIC_DESDE) emitGame(GameEvents.TICK, { remainSec: q });
       },
       onTimeout: () => { if (alive()) onFin?.(); },
     });
     cuenta.start();
-    pintar(`⏱ ${total}`, 100);   // el primer número se ve YA, sin esperar un tick
+    pintar(String(total), 100);   // el primer número se ve YA, sin esperar un tick
     return { tipo: 'cuenta', stop: () => cuenta.stop() };
   }
 
   const tick = startElapsedTicker({
     since: desde ?? serverNow(),
     while: alive,
-    onTick: ({ label }) => pintar(`⏱ ${label}`, null),
+    onTick: ({ label }) => pintar(label, null),
   });
   return { tipo: 'crono', stop: tick.stop };
 }

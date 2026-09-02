@@ -185,7 +185,7 @@ export async function render${fn}Player(rootSel, activity, opts = {}) {
         <div class="ww-player ${prefix}-play">
           \${hudHtml({
             pagina: \`\${idx + 1} / \${total}\`,
-            tiempo: timerSecs > 0 ? \`⏱ \${timerSecs}\` : null,
+            tiempo: timerSecs > 0 ? String(timerSecs) : null,
           })}
           <div class="edu-sec edu-sec--${prefix} ${prefix}-item">
             <p class="${prefix}-q">\${escapeHtml(item.question ?? item.q ?? item.left ?? String(item))}</p>
@@ -196,7 +196,7 @@ export async function render${fn}Player(rootSel, activity, opts = {}) {
 
       const t0 = clock.now();
       startTimer({
-        onTick: (remaining) => hudSet(rootSel, 'tiempo', \`⏱ \${remaining}\`),
+        onTick: (remaining) => hudSet(rootSel, 'tiempo', String(remaining)),
         onTimeout: () => {
           emitGame(GameEvents.ANSWER_WRONG, { idx });   // ← sonidos/efectos gratis (bus)
           submit({ itemId: item.id, value: null, correct: false, points: 0, msTaken: timerSecs * 1000 });

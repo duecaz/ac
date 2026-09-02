@@ -16,23 +16,10 @@ import { mountTcDraw } from './textCorrectionDraw.js';
 import { observeResize } from './observeResize.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from './fullscreen.js';
 import { heatClass } from './itemStats.js';
-import { hudHtml } from './playerHud.js';
+import { lucide } from './lucide.js';
 import { corrigeAlFinal } from './constants.js';
 import { montarReloj, relojDe } from './reloj.js';
 import { serverNow } from './serverNow.js';
-
-// ICONOS LUCIDE, EN LÍNEA (dueño, 2026-08-15: «usa iconos lucide»). Se pegan
-// aquí como SVG en vez de cargar la librería: la app no depende de la red —la
-// misma lección que la CDN de Bootstrap y las webfonts—, y con la clase delante
-// un icono que no llega es un mando invisible. `stroke:currentColor` deja que el
-// color lo ponga el token del skin (§3), igual que hacía el icono de fuente.
-// Fuente: lucide.dev · iconos `pencil` y `eraser` · licencia ISC.
-const svgLucide = (d) => `<svg class="tc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor"`
-  + ` stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
-const LUCIDE = {
-  pencil: svgLucide('<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>'),
-  eraser: svgLucide('<path d="M21 21H8a2 2 0 0 1-1.42-.587l-3.994-3.999a2 2 0 0 1 0-2.828l10-10a2 2 0 0 1 2.829 0l5.999 6a2 2 0 0 1 0 2.828L12.834 21"/><path d="m5.082 11.09 8.828 8.828"/>'),
-};
 
 const HINTS = {
   tilde: 'Toca las vocales que llevan tilde.',
@@ -252,7 +239,8 @@ function panelRevisionHtml(filas, anulados, { anulable }) {
  *  Sin tiempo declarado no se pinta NADA: un reloj parado enseña que el tiempo
  *  no importa aquí, y el hueco vacío desplaza el resto de la barra. */
 const relojHtml = (texto) =>
-  texto == null ? '' : `<span class="tc-clock" data-reloj>${escapeHtml(String(texto))}</span>`;
+  texto == null ? '' : `<span class="tc-clock" data-reloj>${lucide('timer', { clase: 'tc-ico' })}`
+    + `<b data-reloj-val>${escapeHtml(String(texto))}</b></span>`;
 
 // pulsar "Listo" (mismas posiciones que el modo tocar → scoring intacto).
 export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSubmit, chips = {}, reloj = null, progreso = null } = {}) {
@@ -290,6 +278,18 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
   // botón de pantalla completa por panel serían dos mandos para el mismo marco,
   // y la esquina del marco —que es UNA— sigue siendo el sitio correcto.
   const propio = !!(chips.left || chips.right);
+  // LA BARRA NO VA DENTRO DE LA HOJA (dueño, 2026-09-02, con maqueta): «el bar
+  // es parte de arriba de la hoja, no está dentro». Estaba impresa sobre el
+  // papel, así que el papel dejaba de parecer papel — una hoja de cuaderno no
+  // trae botones estampados. Ahora la tira de mandos flota SOBRE LA MESA (el
+  // marco) y debajo empieza la hoja (`.tc-hoja`), que es lo único con forma de
+  // objeto. Y por eso cada mando lleva su propio velo neutro, como los chips
+  // del HUD y el botón de la esquina: encima del marco hay que leerse con
+  // cualquier tema y con cualquier fondo, no solo sobre el crema del papel.
+  //
+  // ORDEN, el mismo de la maqueta: el interruptor lápiz/borrador manda a la
+  // izquierda (es lo que se toca), la página al lado, el reloj CENTRADO —el
+  // dato que la clase mira de reojo— y pantalla completa al final.
   root.innerHTML = `
     <div class="tc-round">
       <div class="edu-topbar tc-bar${propio ? ' tc-bar--fs' : ''}">
@@ -299,24 +299,26 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
               «1 / 2» se montaba encima del lápiz (medido: el chip acababa en 74 y
               el lápiz empezaba en 55). Dos dueños peleando por la misma tira.
               Con barra, el sitio del indicador es la barra. */''}
-        ${chips.left ? `<span class="tc-pag">${escapeHtml(String(chips.left))}</span>` : ''}
         <button type="button" class="tc-switch" data-tool="pen" aria-pressed="false"
                 title="Lápiz — toca para borrar" aria-label="Lápiz activo. Tocar para pasar al borrador">
           <span class="tc-switch__side tc-switch__side--pen" data-side="pen">
-            ${LUCIDE.pencil}<span class="tc-switch__word">Lápiz</span>
+            ${lucide('pencil', { clase: 'tc-ico' })}<span class="tc-switch__word">Lápiz</span>
           </span>
           <span class="tc-switch__side tc-switch__side--er" data-side="eraser">
-            ${LUCIDE.eraser}<span class="tc-switch__word">Borrador</span>
+            ${lucide('eraser', { clase: 'tc-ico' })}<span class="tc-switch__word">Borrador</span>
           </span>
         </button>
+        ${chips.left ? `<span class="tc-pag">${escapeHtml(String(chips.left))}</span>` : ''}
         ${relojHtml(reloj)}
         ${propio ? fullscreenButtonHtml({ inline: true }) : ''}
       </div>
       ${/* La barra de agotamiento solo con CUENTA ATRÁS: el cronómetro
             ascendente no agota nada y una barra quieta a cero desinforma. */''}
       ${(progreso ?? reloj != null) ? '<div class="tc-progress" data-progreso><i></i></div>' : ''}
-      <div class="edu-sec edu-sec--texto tc-passage-area"><div class="tc-passage">${passageHtml(text, kind)}</div></div>
-      <div class="tc-done-wrap edu-send"><button type="button" class="btn btn-success btn-lg tc-done" data-ww-submit><i class="bi bi-check2-circle"></i> Listo</button></div>
+      <div class="tc-hoja">
+        <div class="edu-sec edu-sec--texto tc-passage-area"><div class="tc-passage">${passageHtml(text, kind)}</div></div>
+        <div class="tc-done-wrap edu-send"><button type="button" class="btn btn-success btn-lg tc-done" data-ww-submit><i class="bi bi-check2-circle"></i> Listo</button></div>
+      </div>
     </div>`;
 
   const areaEl = root.querySelector('.tc-passage-area');
@@ -383,7 +385,7 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
      *  una plantilla no sabe en qué modo corre). En Individual lo lleva
      *  `runTextCorrectionSolo` con `core/reloj.js`; en vivo, la sala. */
     setReloj(texto, pct) {
-      const el = root.querySelector('[data-reloj]');
+      const el = root.querySelector('[data-reloj-val]');
       if (el) el.textContent = texto;
       const barra = root.querySelector('[data-progreso] i');
       // `scaleX`, no `width` (ver styles/textCorrection.css): animar el ancho
@@ -536,7 +538,7 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
       // el botón de pantalla completa, que vive en esa misma esquina.
       chips: { left: `${idx + 1} / ${passages.length}` },
       // El hueco del reloj se reserva si va a haber reloj; lo llena el módulo.
-      reloj: relojDe(activity).tipo === 'ninguno' ? null : '⏱ ',
+      reloj: relojDe(activity).tipo === 'ninguno' ? null : '',
       progreso: segundos > 0,
     });
     pararReloj();
@@ -622,10 +624,14 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     // Sin herramientas: aquí no se dibuja.
     shell(`
       <div class="tc-round">
-        ${hudHtml({ pagina: `${idx + 1} / ${passages.length}` })}
+        ${/* La página va EN LA BARRA, no como chip flotante del HUD: la barra
+              vive ahora en esa misma franja (fuera de la hoja) y el chip le
+              caía encima. Cuando hay barra, la barra manda. */''}
         <div class="edu-topbar tc-bar tc-bar--fs">
+          <span class="tc-pag">${idx + 1} / ${passages.length}</span>
           ${fullscreenButtonHtml({ inline: true })}
         </div>
+        <div class="tc-hoja">
         <div class="edu-sec edu-sec--texto tc-corrige">
           <div class="tc-passage-area"><div class="tc-passage">${passageHtml(p.text, kind, { got, want })}</div></div>
           <div class="tc-review-slot">${panelRevisionHtml(filas, anulados, { anulable })}</div>
@@ -638,6 +644,7 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
           <div class="mt-2"><button type="button" class="btn btn-primary btn-lg tc-next">
             ${last ? '<i class="bi bi-flag-fill"></i> Ver resultado' : 'Siguiente <i class="bi bi-arrow-right"></i>'}
           </button></div>
+        </div>
         </div>
       </div>`, { conFrase: false });
     // ANULAR: se repinta el panel y se recalcula con el MISMO scorer. El

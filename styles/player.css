@@ -274,6 +274,12 @@
    a propósito: al expandir, el botón se expande con él y sigue ahí para salir
    (en una pizarra táctil no hay tecla Esc). Colores por token: los skins
    recolorean el juego y este botón vive encima del juego. */
+/* ICONOS LUCIDE EN LÍNEA (core/lucide.js). El SVG ya trae su tamaño en `em`
+   —crece con la letra del mando que lo aloja—; aquí solo se le quita el hueco
+   de línea base que deja un elemento en línea, para que centre exacto dentro de
+   un botón redondo. */
+.ww-ico { display: block; flex: 0 0 auto; }
+
 .ww-fs-btn--corner {
   /* z-index POR ENCIMA de lo que pinte el modo. El marcador del duelo
      (`.vss-bar`, z-index 10) tapaba el botón: existía, se veía a medias y NO se

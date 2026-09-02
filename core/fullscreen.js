@@ -6,6 +6,8 @@
 // HTML lo trata como crash y REEMPLAZA la app por la pantalla roja de Error.
 // Envolvemos en Promise.resolve(...).catch() para que un fullscreen denegado sea
 // un no-op silencioso y el juego arranque igual. Devuelve la promesa (ya segura).
+import { lucide } from './lucide.js';
+
 export function toggleFullscreen(el) {
   el = el || document.documentElement;
   const p = isFullscreen()
@@ -33,7 +35,7 @@ export function fullscreenButtonHtml({ corner = false, inline = false } = {}) {
   const cls = inline ? 'ww-fs-btn ww-fs-btn--inline'
     : corner ? 'ww-fs-btn ww-fs-btn--corner' : 'btn btn-sm btn-outline-light ww-fs-btn';
   return `<button type="button" class="${cls}" title="Pantalla completa" aria-label="Pantalla completa">`
-    + `<i class="bi bi-arrows-fullscreen"></i></button>`;
+    + lucide('maximize') + `</button>`;
 }
 
 /**
@@ -61,8 +63,11 @@ export function attachFullscreenButton(rootSel, { target } = {}) {
     if (btns.every(b => b.isConnected === false)) { soltar(); return; }
     const on = isFullscreen();
     for (const b of btns) {
-      const i = b.querySelector('i');
-      if (i) i.className = on ? 'bi bi-fullscreen-exit' : 'bi bi-arrows-fullscreen';
+      // El icono se REEMPLAZA (SVG en línea, no una clase de fuente): las
+      // cuatro esquinas para entrar, las cuatro esquinas hacia dentro para
+      // salir — el mismo par que reconoce cualquiera de un reproductor.
+      const svg = b.querySelector('svg');
+      if (svg) svg.outerHTML = lucide(on ? 'minimize' : 'maximize');
       b.title = on ? 'Salir de pantalla completa' : 'Pantalla completa';
       b.setAttribute('aria-label', b.title);
       b.classList.toggle('is-on', on);

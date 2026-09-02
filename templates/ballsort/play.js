@@ -31,7 +31,7 @@ export function mountBallSort(host, { board, mode = 'moves', onProgress, onSolve
         <button type="button" data-bs="letters" class="btn btn-outline-secondary btn-sm" title="Mostrar letras (modo daltónico)">Aa</button>
         <!-- La barra ALOJA el reloj (hudSet lo prefiere sobre el chip del HUD):
              el centro flotante caía sobre «Deshacer» en apaisado bajo. -->
-        <span class="edu-hud__chip" data-hud="tiempo" ${mode === 'time' ? '' : 'hidden'}>⏱ 0:00</span>
+        <span class="edu-hud__chip" data-hud="tiempo" ${mode === 'time' ? '' : 'hidden'}><span data-hud-val>0:00</span></span>
         <button type="button" data-bs="undo" class="btn btn-secondary btn-sm">Deshacer</button>
       </div>
       <div data-bs="tubes" class="edu-sec edu-sec--tablero tubes"></div>
@@ -66,7 +66,7 @@ export function mountBallSort(host, { board, mode = 'moves', onProgress, onSolve
   const timeTicker = startElapsedTicker({
     since: clock.now(), everyMs: 250,
     while: () => !state.finished && raizBs.isConnected,
-    onTick: () => { if (mode === 'time') hudSet(raizBs, 'tiempo', `⏱ ${formatMs(state.timer.elapsedMs())}`); },
+    onTick: () => { if (mode === 'time') hudSet(raizBs, 'tiempo', formatMs(state.timer.elapsedMs())); },
   });
   state.timerHandle = timeTicker;   // se detiene en finish()/unmount() vía .stop()
 

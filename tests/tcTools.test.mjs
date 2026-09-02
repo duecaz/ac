@@ -27,6 +27,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { citaDeFuente } from './helpers/fuente.mjs';
+import { lucide, ICONOS } from '../core/lucide.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const leer = (f) => readFileSync(join(ROOT, f), 'utf8');
@@ -97,19 +98,31 @@ const css = leer('styles/textCorrection.css');
 // icono suelto no dice si escribes o borras. Y los iconos son SVG de Lucide
 // PEGADOS, no una librería de CDN: la clase no se queda sin mando porque el
 // colegio filtre un dominio (la lección de la CDN de Bootstrap).
+// Los SVG se mudaron a `core/lucide.js` (dueño único) cuando el dueño pidió un
+// reloj y un «maximizar» de Lucide (2026-09-02): el ayudante iba a quedar
+// tecleado en tres módulos, que es justo lo que caza el barrido B5 (§21b).
 {
   const bloque = css.slice(css.indexOf('.tc-switch'), css.indexOf('.tc-done-wrap'));
+  const iconos = leer('core/lucide.js');
   for (const lado of ['pen', 'er']) {
     const zona = ronda.slice(ronda.indexOf(`tc-switch__side--${lado}`), ronda.indexOf(`tc-switch__side--${lado}`) + 220);
-    assert.match(zona, /\$\{LUCIDE\.\w+\}/, `la pastilla ${lado} lleva su icono DENTRO`);
+    assert.match(zona, /\$\{lucide\('\w+'/, `la pastilla ${lado} lleva su icono DENTRO`);
     assert.match(zona, /tc-switch__word">[^<]+</, `y su palabra DENTRO`);
   }
   citaDeFuente(bloque, /\.tc-switch\.is-on\s+\.tc-switch__side--er[\s\S]{0,200}?background:\s*var\(--ww-accent/,
     'la pastilla activa va RELLENA con el token del skin (no solo un matiz)', 'textCorrection.css');
-  citaDeFuente(ronda, /<svg class="tc-ico"[\s\S]*stroke="currentColor"/,
-    'los iconos son SVG en línea y toman el color del token (no una fuente ni un CDN)', 'textCorrectionRound.js');
-  const zonaSw = ronda.slice(ronda.indexOf('class="tc-switch"'), ronda.indexOf('tc-passage-area'));
-  assert.ok(!/https?:\/\//.test(zonaSw), 'el mando no puede depender de ningún dominio externo');
+  citaDeFuente(iconos, /<svg class="ww-ico[\s\S]*stroke="currentColor"/,
+    'los iconos son SVG en línea y toman el color del token (no una fuente ni un CDN)', 'lucide.js');
+  // Los DOS que usa el mando existen DE VERDAD, y se comprueba EJECUTANDO el
+  // dueño, no leyendo su fuente: un icono que no llega es un mando invisible, y
+  // con la clase delante no hay quien lo descubra.
+  for (const n of ['pencil', 'eraser']) {
+    assert.ok(ICONOS.includes(n), `core/lucide.js define ${n}`);
+    const svg = lucide(n);
+    assert.match(svg, /^<svg [^>]*stroke="currentColor"/, `${n} sale como SVG en línea`);
+    assert.ok(!/https?:\/\//.test(svg), `${n} no depende de ningún dominio externo`);
+  }
+  assert.strictEqual(lucide('no-existe'), '', 'CONTRA-PRUEBA: un icono que no existe no pinta basura');
   ok('cada pastilla lleva icono Y palabra dentro; la activa va rellena · Lucide en línea, sin red');
 }
 

@@ -17,8 +17,8 @@ Andamio = la plantilla ya usa `styles/scaffold.css` (roles declarados, §3b).
 | **Ruleta** (`wheel`) | `1/1` | — | `ww-wheel-stage` 47%×78% → **—**<br>`wh-side` 9%×15% → **—** | `ww-wheel-stage` 78%×43% → **—**<br>`wh-side` 24%×13% → **—** |
 | **Emparejar** (`match`) | `16/10` | ✅ | `ww-field` 94%×83% → **escenario**<br>`ww-bar` 94%×5% → **barra** | `ww-field` 89%×89% → **escenario**<br>`ww-bar` 89%×4% → **barra** |
 | **Memoria** (`memory`) | `1/1` | — | `mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—** | `mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—**<br>`mc` 24%×31% → **—** |
-| **Tildes** (`tildes`) | `16/10` | — | `tc-bar` 88%×6% → **barra**<br>`tc-progress` 88%×0% → **barra**<br>`tc-passage-area` 88%×80% → **escenario**<br>`tc-done-wrap` 88%×8% → **barra** | `tc-bar` 88%×4% → **barra**<br>`tc-progress` 88%×0% → **barra**<br>`tc-passage-area` 88%×85% → **escenario**<br>`tc-done-wrap` 88%×7% → **barra** |
-| **Comas** (`comas`) | `16/10` | — | `tc-bar` 88%×6% → **barra**<br>`tc-progress` 88%×1% → **barra**<br>`tc-passage-area` 88%×80% → **escenario**<br>`tc-done-wrap` 88%×8% → **barra** | `tc-bar` 88%×4% → **barra**<br>`tc-progress` 88%×0% → **barra**<br>`tc-passage-area` 88%×85% → **escenario**<br>`tc-done-wrap` 88%×7% → **barra** |
+| **Tildes** (`tildes`) | `16/10` | — | `tc-bar` 100%×7% → **barra**<br>`tc-progress` 100%×0% → **barra**<br>`tc-hoja` 100%×91% → **escenario** | `tc-bar` 100%×4% → **barra**<br>`tc-progress` 100%×0% → **barra**<br>`tc-hoja` 100%×95% → **escenario** |
+| **Comas** (`comas`) | `16/10` | — | `tc-bar` 100%×7% → **barra**<br>`tc-progress` 100%×1% → **barra**<br>`tc-hoja` 100%×91% → **escenario** | `tc-bar` 100%×4% → **barra**<br>`tc-progress` 100%×0% → **barra**<br>`tc-hoja` 100%×95% → **escenario** |
 | **Operaciones** (`math`) | `16/10` | — | `ww-keypad-head` 100%×10% → **barra**<br>`ww-keypad` 100%×74% → **escenario** | `ww-keypad-head` 100%×9% → **barra**<br>`ww-keypad` 100%×72% → **escenario** |
 | **Sopa de Letras** (`wordsearch`) | `4/3` | — | `ww-ws-grid-wrap` 90%×100% → **escenario**<br>`ww-ws-words` 9%×100% → **carril** | `ww-ws-grid-wrap` 100%×93% → **escenario**<br>`ww-ws-words` 100%×5% → **barra** |
 | **Crucigrama** (`crossword`) | `4/3` | — | `cw-tools` 99%×5% → **barra**<br>`cw-body` 99%×85% → **escenario**<br>`cw-footer` 99%×6% → **barra** | `cw-tools` 97%×4% → **barra**<br>`cw-body` 97%×87% → **escenario**<br>`cw-footer` 97%×6% → **barra** |
@@ -35,8 +35,8 @@ Piezas que cambian de rol entre ancho y alto (misma pieza, otra función):
 - **Ruleta**: 0 de 2
 - **Emparejar**: 0 de 2
 - **Memoria**: 0 de 12
-- **Tildes**: 0 de 4
-- **Comas**: 0 de 4
+- **Tildes**: 0 de 3
+- **Comas**: 0 de 3
 - **Operaciones**: 0 de 2
 - **Sopa de Letras**: 1 de 2
 - **Crucigrama**: 0 de 3
