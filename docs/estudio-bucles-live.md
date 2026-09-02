@@ -620,8 +620,10 @@ En rondas el juego acaba solo (se terminan las preguntas). Carrera y tablero
 30 hubieran acabado hacía dos minutos — y el primero que terminaba miraba un
 "esperando…" mudo, sin saber si faltaban diez segundos o diez minutos.
 
-**Una sola política (`core/liveEnd.js`) que consumen los dos bucles**, elegida en
-el lobby:
+**Una sola política (`core/liveEnd.js`) que consumen los dos bucles**. Se
+configura en el **editor, pestaña «En vivo»** (`core/editorPanels.js`, bloque
+«Fin de la carrera»), no en el lobby — decisión 2026-09-02: el lobby ya elige
+el bucle y R2 (§28) limita a 2 opciones de partida al arrancar la sala:
 
 | | Cuándo cierra | Para qué sirve |
 |---|---|---|

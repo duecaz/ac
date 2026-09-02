@@ -42,7 +42,7 @@ const all = listTemplates().filter(T => reales.has(T.meta.name));
 {
   const a = newActivity('quiz');
   const live = livePanelHtml(a);
-  for (const campo of ['l-qtimer', 'l-read', 'l-points', 'l-bonus', 'l-max', 'l-late']) {
+  for (const campo of ['l-qtimer', 'l-read', 'l-points', 'l-bonus', 'l-max', 'l-late', 'l-end']) {
     assert.ok(live.includes(campo), `el panel En vivo no trae el control «${campo}»`);
   }
   const sc = scoringPanelHtml(a);

@@ -64,6 +64,17 @@ const canvasDe = (padre) => padre.children.filter(n => n.tagName === 'CANVAS');
   ok('en pantalla completa el confeti se cuelga del elemento a pantalla completa');
 }
 
+// ── RACHA: confeti corto SOLO al cruzar 3 o 5 (hallazgo B4: 3 emisores, 0
+// oyentes) ────────────────────────────────────────────────────────────────
+{
+  emitGame(GameEvents.STREAK, { count: 2 });
+  assert.strictEqual(canvasDe(body).length, 0, 'count=2 no cruza umbral: sin confeti');
+  emitGame(GameEvents.STREAK, { count: 3 });
+  assert.strictEqual(canvasDe(body).length, 1, 'count=3 cruza umbral: confeti de racha');
+  body.children.length = 0;
+  ok('STREAK dispara en el umbral (3) y no antes (2)');
+}
+
 // ── CONTRA-PRUEBA: apagar los efectos los apaga de verdad ────────────────────
 {
   setEffectsMuted(true);

@@ -89,7 +89,10 @@ core/activityThumb.js   la miniatura del home → llama al previewHtml de la pla
 
 **Eventos del bus** (los emite el `player.js`, y el sistema los convierte en
 sonido/efecto sin que la plantilla sepa nada): `QUESTION_SHOWN`, `ANSWER_CORRECT`,
-`ANSWER_WRONG`, `STREAK`, `REVEAL`, `TICK`, `PODIUM`.
+`ANSWER_WRONG`, `STREAK`, `REVEAL`, `TICK`, `PODIUM`. `STREAK` (`{ count }`) solo
+dispara EFECTO (confeti corto, `core/effects.js`), no sonido — al cruzar 3 o 5
+aciertos seguidos (`UMBRALES_RACHA`); el 🔥 en pantalla lo sigue pintando cada
+plantilla por su cuenta.
 
 ## 5. Los guardianes (el contrato es EJECUTABLE)
 

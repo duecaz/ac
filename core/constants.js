@@ -1,4 +1,6 @@
-export const VERSION = '1.51.647';
+import { DEFAULT_POLICY, DEFAULT_FIRST_N, DEFAULT_MINUTES } from './liveEnd.js';
+
+export const VERSION = '1.51.648';
 export const SCHEMA_VERSION = 4;
 
 // PIN alphabet: no O/I/0/1 to avoid ambiguity. 6 chars => 32^6 ≈ 1.07B combos.
@@ -62,7 +64,13 @@ export const DEFAULT_LIVE = {
   maxPlayers: 60,
   nicknameFilter: true,
   streakBonus: false,              // opt-in
-  streakBonusPerStep: 50
+  streakBonusPerStep: 50,
+  // POLÍTICA DE FIN de carrera/tablero (core/liveEnd.js, §21b UN DUEÑO): los
+  // números salen de allí, no se copian aquí — dos copias del mismo "3" acaban
+  // diciendo cosas distintas el día que uno cambia y el otro no.
+  endPolicy: DEFAULT_POLICY,       // all | firstN | time
+  endN: DEFAULT_FIRST_N,
+  endMinutes: DEFAULT_MINUTES
 };
 
 export const DEFAULT_AUTHOR = { id: null, name: null, signedAt: null };

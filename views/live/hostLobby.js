@@ -13,7 +13,7 @@ import { setSessionState, endSession, kickPlayer } from '../../core/liveTranspor
 import { fullscreenButtonHtml, attachFullscreenButton } from '../../core/fullscreen.js';
 import { supportsLoop, defaultLoop, LOOP_LABELS, hasAdvanceChoice } from '../../core/liveLoops.js';
 import { READ_SECONDS_MAX } from '../../core/timings.js';
-import { DEFAULT_POLICY, DEFAULT_FIRST_N, DEFAULT_MINUTES, MAX_MINUTES } from '../../core/liveEnd.js';
+import { DEFAULT_POLICY, DEFAULT_FIRST_N, DEFAULT_MINUTES } from '../../core/liveEnd.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 
 // Fábrica única (precedente: views/admin/matrix.js). `rt` es el estado
@@ -22,11 +22,14 @@ import { GameEvents, emitGame } from '../../core/gameEvents.js';
 export function createHostLobby(rt) {
   let loop = defaultLoop(rt.tpl) || 'rounds';    // bucle elegido en el lobby
   rt.loop = loop;   // §26 · lo lee racePassedRow en la carrera (views/live/hostCarrera.js)
-  // C-1 · POLÍTICA DE FIN de carrera/tablero (core/liveEnd.js): sin ella la
-  // partida no acaba nunca sola y la clase se queda en el limbo.
-  let endPolicy = DEFAULT_POLICY;
-  let endN = DEFAULT_FIRST_N;
-  let endMinutes = DEFAULT_MINUTES;
+  // C-1 · POLÍTICA DE FIN de carrera/tablero (core/liveEnd.js): se LEE de la
+  // actividad (editor, pestaña «En vivo»), no del lobby — decisión 2026-09-02:
+  // el lobby ya tiene su elección de bucle y R2 (§28) limita a 2 opciones de
+  // partida. El profe la deja preparada al crear la clase, no al arrancar la sala.
+  const live = rt.activity?.live || {};
+  const endPolicy = live.endPolicy || DEFAULT_POLICY;
+  const endN = live.endN || DEFAULT_FIRST_N;
+  const endMinutes = live.endMinutes || DEFAULT_MINUTES;
 
   function joinUrl() { return `${studentBase()}#/play/${rt.code}`; }
   function qrUrl() { return `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(joinUrl())}`; }
@@ -116,11 +119,6 @@ export function createHostLobby(rt) {
     attachFullscreenButton(rt.rootSel);
     on(rt.rootSel, 'click', '.loop-pick', (_, b) => { loop = b.dataset.loop; rt.loop = loop; paintLobby(false); });
     on(rt.rootSel, 'click', '.adv-pick', (_, b) => { rt.autoAdvance = b.dataset.auto === '1'; paintLobby(false); });
-    on(rt.rootSel, 'click', '.end-pick', (_, b) => { endPolicy = b.dataset.end; paintLobby(false); });
-    const nEl = document.getElementById('end-n');
-    if (nEl) nEl.onchange = (e) => { endN = Math.max(1, Math.min(60, Math.round(+e.target.value || DEFAULT_FIRST_N))); };
-    const minEl = document.getElementById('end-min');
-    if (minEl) minEl.onchange = (e) => { endMinutes = Math.max(1, Math.min(MAX_MINUTES, Math.round(+e.target.value || DEFAULT_MINUTES))); };
     const readEl = document.getElementById('read-secs');
     if (readEl) readEl.onchange = (e) => { rt.readSecs = Math.max(0, Math.min(READ_SECONDS_MAX, Math.round(+e.target.value || 0))); };
     on(rt.rootSel, 'click', '#btn-start', async () => {

@@ -47,7 +47,7 @@ function leerSinComentarios(f) {
 // puede bajar. Si un cruce supera su número, el script sale con código 1 —
 // alguien añadió cableado nuevo sin extremo y hay que decidir (basura o
 // conectar), no subir el número para callar al script.
-const BASELINE = { handlers: 3, pintados: 0, eventos: 1, claves: 0 };
+const BASELINE = { handlers: 3, pintados: 0, eventos: 0, claves: 0 };
 
 /** Camina un directorio y devuelve rutas relativas que pasen el filtro. */
 function walk(dir, filtro, acc = []) {

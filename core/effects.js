@@ -80,8 +80,16 @@ function confetti(opts = {}) {
   })();
 }
 
-let _lastPodium = 0, _lastCorrect = 0;
-const PODIUM_COOLDOWN = 5000, CORRECT_COOLDOWN = 800;
+// UMBRALES_RACHA — crónica (hallazgo B4, auditoría 2026-07): `GameEvents.STREAK`
+// lo emitían 3 plantillas (globos, quiz, wordsearch) con `{ count }` y NADIE lo
+// escuchaba — el 🔥 que se ve en pantalla lo pinta cada plantilla por su cuenta,
+// pero el bus no producía sonido/efecto pese a que la doc lo prometía. Decisión
+// del dueño (2026-09-02): conectar con una ráfaga de confeti MÁS CORTA que la
+// del podio, al cruzar 3 y 5 aciertos seguidos. Único sitio donde vive el umbral.
+const UMBRALES_RACHA = [3, 5];
+
+let _lastPodium = 0, _lastCorrect = 0, _lastStreak = 0;
+const PODIUM_COOLDOWN = 5000, CORRECT_COOLDOWN = 800, STREAK_COOLDOWN = 800;
 
 function podiumBurst() {
   if (_fxMuted) return;
@@ -99,8 +107,23 @@ function correctBurst() {
   confetti({ particleCount: 40, spread: 60, startVelocity: 32, origin: { y: 0.7 }, ticks: 80 });
 }
 
+// Ráfaga de racha: más corta que el podio (80 partículas vs 160, ticks 70 vs
+// 120), y SOLO al cruzar un umbral — no en cada acierto dentro de la racha
+// (con count 3,4,5,6… saldría un confeti por pregunta y dejaría de leerse como
+// hito). No hay sonido propio de racha en el pack (`core/sounds.js` no declara
+// uno): es efecto visual puro, el 🔥 ya lo lleva cada plantilla en su HUD.
+function streakBurst({ count } = {}) {
+  if (_fxMuted) return;
+  if (!UMBRALES_RACHA.includes(count)) return;
+  const now = clock.now();
+  if (now - _lastStreak < STREAK_COOLDOWN) return;
+  _lastStreak = now;
+  confetti({ particleCount: 80, spread: 70, startVelocity: 36, origin: { y: 0.65 }, ticks: 70 });
+}
+
 onGame(GameEvents.PODIUM, podiumBurst);
 onGame(GameEvents.ANSWER_CORRECT, correctBurst);
+onGame(GameEvents.STREAK, streakBurst);
 
 // Disparo manual para vistas que gestionan su propio feedback (p. ej. VS, que
 // se sale del burst global de ANSWER_CORRECT y lo dispara solo si el docente

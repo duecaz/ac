@@ -27,6 +27,7 @@ import { activityItemCount } from './migrate.js';
 import { defaultMaxScore } from './scoring/index.js';
 import { getTemplate } from './registry.js';
 import { escapeHtml } from './html.js';
+import { END_POLICIES, DEFAULT_FIRST_N, DEFAULT_MINUTES, MAX_MINUTES } from './liveEnd.js';
 
 // ── Puntuación ─────────────────────────────────────────────────────────────
 /** CÓMO LLAMA CADA PLANTILLA A SU UNIDAD: «Puntos por par», «por palabra», «por
@@ -113,6 +114,24 @@ export function livePanelHtml(a) {
     <div class="col-md-4 form-check pt-4"><input id="l-after" class="form-check-input" type="checkbox" ${l.showAnswerAfterEach ? 'checked' : ''}><label class="form-check-label" for="l-after">Mostrar respuesta tras cada</label></div>
     <div class="col-md-4 form-check pt-4"><input id="l-lb" class="form-check-input" type="checkbox" ${l.showLeaderboardBetween ? 'checked' : ''}><label class="form-check-label" for="l-lb">Leaderboard entre preguntas</label></div>
     <div class="col-md-4 form-check pt-4"><input id="l-nick" class="form-check-input" type="checkbox" ${l.nicknameFilter ? 'checked' : ''}><label class="form-check-label" for="l-nick">Filtro de apodos</label></div>
+    <!-- FIN DE LA CARRERA (§21b, decisión 2026-09-02): la puerta vive aquí, en
+         el editor, como ajuste de preparar la clase — NO en el lobby (ley §28
+         R2: máx. 2 opciones de partida). Solo se aplica en carrera/tablero:
+         en rondas y pedir la palabra el bucle tiene su propio final. -->
+    <div class="col-12"><hr class="my-1"></div>
+    <div class="col-md-4"><label class="form-label">Fin de la carrera</label>
+      <select class="form-select" id="l-end">
+        <option value="all" ${(l.endPolicy || 'all') === 'all' ? 'selected' : ''}>cuando terminen todos</option>
+        <option value="firstN" ${l.endPolicy === 'firstN' ? 'selected' : ''}>cuando terminen los primeros N</option>
+        <option value="time" ${l.endPolicy === 'time' ? 'selected' : ''}>por tiempo</option>
+      </select></div>
+    <div class="col-md-4" id="l-end-n-wrap" ${l.endPolicy === 'firstN' ? '' : 'hidden'}>
+      <label class="form-label">Primeros N</label>
+      <input id="l-end-n" type="number" min="1" max="60" class="form-control" value="${l.endN ?? DEFAULT_FIRST_N}"></div>
+    <div class="col-md-4" id="l-end-min-wrap" ${l.endPolicy === 'time' ? '' : 'hidden'}>
+      <label class="form-label">Minutos</label>
+      <input id="l-end-min" type="number" min="1" max="${MAX_MINUTES}" class="form-control" value="${l.endMinutes ?? DEFAULT_MINUTES}"></div>
+    <div class="col-12"><p class="text-muted small mb-0">Solo aplica en <b>carrera</b> y <b>tablero</b> (en rondas y pedir la palabra el bucle tiene su propio final).</p></div>
     <!-- BONUS POR RACHA: el mando estaba aquí y la función NO EXISTE. Su
          comentario en core/streaks.js lo dice: los puntos extra los calculaba
          una Edge Function de Supabase, y Supabase se RETIRÓ del proyecto. El
@@ -137,4 +156,18 @@ export function wireLivePanel(root, a, ctx) {
   on(root, 'change', '#l-after', e => { a.live.showAnswerAfterEach = e.target.checked; oc(a); });
   on(root, 'change', '#l-lb', e => { a.live.showLeaderboardBetween = e.target.checked; oc(a); });
   on(root, 'change', '#l-nick', e => { a.live.nicknameFilter = e.target.checked; oc(a); });
+  // Fin de la carrera: el select cambia POCO (no es tecleo), así que puede
+  // repintar sin susto — pero se hace EN SITIO (mostrar/ocultar), nunca con el
+  // repintado completo del editor, que perdería la pestaña abierta igual que
+  // haría un `input`.
+  on(root, 'change', '#l-end', e => {
+    a.live.endPolicy = END_POLICIES.includes(e.target.value) ? e.target.value : 'all';
+    oc(a);
+    const nWrap = root.querySelector('#l-end-n-wrap');
+    const minWrap = root.querySelector('#l-end-min-wrap');
+    if (nWrap) nWrap.hidden = a.live.endPolicy !== 'firstN';
+    if (minWrap) minWrap.hidden = a.live.endPolicy !== 'time';
+  });
+  on(root, 'input', '#l-end-n', e => { a.live.endN = Math.max(1, Math.min(60, Math.round(+e.target.value || DEFAULT_FIRST_N))); oc(a); });
+  on(root, 'input', '#l-end-min', e => { a.live.endMinutes = Math.max(1, Math.min(MAX_MINUTES, Math.round(+e.target.value || DEFAULT_MINUTES))); oc(a); });
 }
