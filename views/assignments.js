@@ -8,6 +8,7 @@ import { rowsFromAttempts, rowsFromAttempt } from '../core/answerRows.js';
 import { itemStatsHtml } from './itemStatsView.js';
 import { sessionTableHtml, sessionTableCsv } from './sessionTable.js';
 import { getTemplate } from '../core/registry.js';
+import { esHojaDeTexto } from '../core/contentModels/textCorrection.js';
 import { createAssignment, listAssignmentsForActivity, listAttempts, closeAssignment, rotateAssignmentCode } from '../core/assignmentsTransport.js';
 import { toast, confirmModal } from '../core/toast.js';
 
@@ -160,7 +161,7 @@ export async function renderAttempts(rootSel, assignmentId) {
   const T = activity ? getTemplate(activity.template) : null;
   const labels = items.map((it, i) => { try { return T?.itemLabel?.(it) || `Pregunta ${i + 1}`; } catch { return `Pregunta ${i + 1}`; } });
   const hasDetail = attempts.some(a => Array.isArray(a.answers) && a.answers.length);
-  const isText = T?.meta?.contentModel === 'textCorrection';
+  const isText = esHojaDeTexto(activity);
 
   // Agrupa por alumno (nombre): nº intentos, MEJOR puntaje, último intento/tiempo.
   const byName = new Map();

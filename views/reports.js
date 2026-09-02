@@ -6,6 +6,7 @@ import { on } from '../core/events.js';
 import { list as listActivities } from '../core/storage.js';
 import { activityItemCount } from '../core/migrate.js';
 import { getTemplate } from '../core/registry.js';
+import { esHojaDeTexto } from '../core/contentModels/textCorrection.js';
 import { listSessions, fetchSessionRecord } from '../core/liveTransport.js';
 import { rowsFromLiveState } from '../core/answerRows.js';
 import { sessionTableHtml, sessionTableCsv } from './sessionTable.js';
@@ -140,7 +141,7 @@ export async function renderSessionReport(rootSel, sessionId) {
 
     <div class="istats-wrap mb-4">${sessionTableHtml(rows, items.length, opts)}</div>
 
-    <h4 class="mt-4 mb-2"><i class="bi bi-bar-chart-line-fill"></i> Análisis por ${tpl?.meta?.contentModel === 'textCorrection' ? 'palabra' : 'ítem'}</h4>
+    <h4 class="mt-4 mb-2"><i class="bi bi-bar-chart-line-fill"></i> Análisis por ${esHojaDeTexto(activity) ? 'palabra' : 'ítem'}</h4>
     <div class="istats-wrap">${itemStatsHtml(activity, rows)}</div>
   `);
 

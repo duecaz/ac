@@ -15,6 +15,7 @@ import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { podiumHtml } from '../../core/podium.js';
 import { mmss } from '../../core/timings.js';
 import { destinoTrasJugar } from '../../core/afterPlay.js';
+import { esHojaDeTexto } from '../../core/contentModels/textCorrection.js';
 
 export function createHostInforme(rt) {
   // Junta TODAS las respuestas de la sesión (live_answers por ítem + respaldo del
@@ -97,7 +98,7 @@ export function createHostInforme(rt) {
     }
     if (!lb.length) { try { lb = await leaderboard(rt.sessionId, 100); } catch { lb = []; } }
     if (phaseChanged) emitGame(GameEvents.PODIUM, { top: lb.slice(0, 3).map(p => ({ name: p.name, score: p.score })) });
-    const isText = rt.tpl?.meta?.contentModel === 'textCorrection';
+    const isText = esHojaDeTexto(rt.activity);
     const salidaHost = destinoTrasJugar('live-host');
     mount(rt.rootSel, html`
       <h2 class="text-center mb-3"><i class="bi bi-trophy-fill text-warning"></i> Podio</h2>

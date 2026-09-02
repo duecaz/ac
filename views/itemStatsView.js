@@ -6,6 +6,7 @@
 import { escapeHtml } from '../core/html.js';
 import { sessionItems } from '../kernel/content/sessionItems.js';
 import { getTemplate } from '../core/registry.js';
+import { esHojaDeTexto } from '../core/contentModels/textCorrection.js';
 import { aggregate, heatClass } from '../core/itemStats.js';
 import { textHeatmapHtml } from '../core/textCorrectionRound.js';
 
@@ -20,7 +21,7 @@ export function itemStatsHtml(activity, rows) {
   const items = itemsOf(activity);
   const stats = aggregate({ items, template: T, rows, activity });
   if (!stats.nPlayers) return `<p class="text-muted text-center py-3">Sin respuestas para analizar todavía.</p>`;
-  const isText = T?.meta?.contentModel === 'textCorrection';
+  const isText = esHojaDeTexto(activity);
   // Qué se marca lo DECLARA la plantilla (`meta.markNoun`), no el nombre del
   // fichero: era la última bandera `template === 'comas'` de esta vista.
   const kind = T?.meta?.markNoun || 'marca';
