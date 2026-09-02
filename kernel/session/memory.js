@@ -11,15 +11,11 @@
 import { rid } from '../../core/ids.js';
 import { shuffle } from '../../core/azar.js';
 import { basePoints } from '../../core/scoring/index.js';
+import { seedTeams as seedTeamsShared } from './teamsSeed.js';
 export function createMemoryGame(activity, opts = {}) {
   const pairs = (activity?.content?.pairs || []).filter(p => p?.left && p?.right);
 
-  const seedTeams = () => {
-    const names = Array.isArray(opts.teams) ? opts.teams
-      : (typeof opts.teams === 'number' ? Array.from({ length: opts.teams }, (_, i) => `Equipo ${i + 1}`)
-        : ['Equipo 1', 'Equipo 2']);
-    return names.map((name, i) => ({ id: 't' + (i + 1), name, score: 0 }));
-  };
+  const seedTeams = () => seedTeamsShared(opts);
 
   const buildDeck = () => {
     const cards = [];

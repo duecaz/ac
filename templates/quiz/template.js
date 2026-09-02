@@ -1,8 +1,7 @@
 // Quiz template: classic multiple-choice. Uses contentModels/qa.
-import { stripSeededPoints } from '../../core/contentModels/qa.js';
+import { stripSeededPoints, defaultQaItems, QA_PRIMER_PASO } from '../../core/contentModels/qa.js';
 import { BaseTemplate } from '../base.js';
 import { SHAPE_ICONS } from '../../core/roundRender.js';
-import { rid } from '../../core/ids.js';
 import { renderQuizPlayer } from './player.js';
 import { renderQuizEditor } from './editor.js';
 import { scoreQuizSubmission } from './scorer.js';
@@ -25,7 +24,7 @@ export class QuizTemplate extends BaseTemplate {
     // `elemento` es lo que el profe AÑADE y `primerPaso` lo que se lee con la
     // actividad vacía — es lo que enseña, en vez de contenido de muestra que
     // hay que borrar antes de empezar (R-D).
-    editor: { elemento: 'pregunta', primerPaso: 'Pulsa «Añadir pregunta» y escribe la pregunta con sus respuestas: una correcta y las demás no.' },
+    editor: { elemento: 'pregunta', primerPaso: QA_PRIMER_PASO },
     instructions: 'Lee cada pregunta y toca la respuesta correcta.',
     panelFit: 'fill',    // las opciones llenan el panel
     aspectRatio: '16/10',
@@ -39,15 +38,7 @@ export class QuizTemplate extends BaseTemplate {
     defaultLive: () => ({ advanceMode: 'manual', questionTimer: 20, lockAnswersOn: 'allAnswered',
                           showAnswerAfterEach: true, showLeaderboardBetween: true, pointsModel: 'velocidad',
                           speedBonusMax: 1000, allowLateJoin: true, maxPlayers: 60, nicknameFilter: true }),
-    defaultContent: () => {
-      const id = () => rid('q_');
-      return { items: [
-        { id: id(), question: '¿Cuál es la capital de España?', answer: 'Madrid',
-          options: ['Madrid', 'Barcelona', 'Lisboa', 'París'], image: null, audio: null },
-        { id: id(), question: '¿Cuántos días tiene una semana?', answer: '7',
-          options: ['5', '6', '7', '8'], image: null, audio: null },
-      ]};
-    }
+    defaultContent: () => ({ items: defaultQaItems() }),
   };
 
   static renderPlayer = renderQuizPlayer;

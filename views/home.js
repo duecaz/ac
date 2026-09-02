@@ -4,7 +4,7 @@ import { list, remove, get, save } from '../core/storage.js';
 import { decidirVisibilidad } from '../core/activityCheck.js';
 import { navigate } from '../core/router.js';
 import { listTemplates, getTemplate } from '../core/registry.js';
-import { confirmModal, toast } from '../core/toast.js';
+import { confirmModal, toast, TOAST_ERROR, TOAST_NORMAL } from '../core/toast.js';
 import { activityItemCount as itemCount } from '../core/migrate.js';
 import { activityCardHtml } from '../core/activityCard.js';
 import { searchActivities } from '../core/search.js';
@@ -166,7 +166,7 @@ export function renderHome(rootSel) {
     // por aquí de un solo clic, sin pasar por el editor cuya guarda se cerró en
     // v1.51.605. La decisión la toma su dueño (§21) y aquí solo se obedece.
     const vis = decidirVisibilidad(a, visibility, 'accion');
-    if (vis.aviso) toast(vis.aviso, 'warning', 8000);
+    if (vis.aviso) toast(vis.aviso, 'warning', TOAST_ERROR);
     if (vis.rechaza) return;
     a.visibility = vis.visibility;
     const { remote } = save(a);
@@ -183,7 +183,7 @@ export function renderHome(rootSel) {
       await remove(b.dataset.id);
       toast('Eliminada.', 'success');
     } catch (e) {
-      toast('Eliminada localmente; no se pudo borrar en el servidor: ' + e.message, 'warning', 5000);
+      toast('Eliminada localmente; no se pudo borrar en el servidor: ' + e.message, 'warning', TOAST_NORMAL);
     }
     renderHome(rootSel);
   });

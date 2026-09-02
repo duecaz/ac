@@ -22,6 +22,9 @@ import { rid } from './ids.js';
 import { parseRichText } from './textMarks.js';
 import { repartirCorrecta } from './contentModels/qa.js';
 
+// Aviso del diálogo cuando el profe pulsa «Escribir» sin decir de qué va.
+export const TEMA_VACIO = 'Escribe de qué va la actividad.';
+
 // ── Qué sabe escribir, y con qué forma ───────────────────────────────────────
 // `pide` es lo que se le manda a la Pi; el TEXTO del prompt vive en el hook (no
 // aquí) para que este extremo no se pueda usar como un modelo de lenguaje

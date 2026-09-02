@@ -16,6 +16,23 @@ function container() {
 const COLORS = { success: 'success', danger: 'danger', warning: 'warning', info: 'primary' };
 const ICONS = { success: 'bi-check-circle-fill', danger: 'bi-exclamation-octagon-fill', warning: 'bi-exclamation-triangle-fill', info: 'bi-info-circle-fill' };
 
+// DURACIONES CON NOMBRE — dueño único (barrido B5, 2026-09-02). 48 sitios
+// pasaban un literal (4000/5000/6000/7000/8000/9000/10000/2000/2500…) como
+// tercer argumento de `toast(`: nueve números para lo mismo, cada uno elegido
+// a ojo en su sitio. Se leyó cada mensaje y se colapsó en CUATRO niveles reales
+// de urgencia — no hay una quinta lectura que un profe distinga de las otras
+// cuatro con la pizarra delante:
+//   CORTO   — confirmación de una acción que el propio profe acaba de hacer
+//             (ya sabe lo que dice: solo hace falta verlo un instante).
+//   NORMAL  — el mensaje más común: un error o aviso de una frase.
+//   LARGO   — explica ALGO MÁS que el qué (el porqué, o qué hacer ahora).
+//   ERROR   — algo del trabajo del profe puede perderse (cuota llena, sin
+//             conexión, datos que no llegaron) — el que más tiempo necesita.
+export const TOAST_CORTO = 2500;
+export const TOAST_NORMAL = 5000;
+export const TOAST_LARGO = 6000;
+export const TOAST_ERROR = 9000;
+
 export function toast(message, kind = 'success', timeoutMs = 3000) {
   const c = container();
   const el = document.createElement('div');

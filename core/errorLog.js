@@ -2,7 +2,7 @@
 // y no hay tabla de logs remota, así que los errores se guardan en un anillo
 // local (localStorage) y se vuelcan a la consola. Best-effort, sin red.
 import { lsGet, lsSet } from './ls.js';
-import { toast } from './toast.js';
+import { toast, TOAST_ERROR } from './toast.js';
 import { clock } from './clock.js';
 
 const RING_KEY = 'ww.errlog';
@@ -54,7 +54,7 @@ export function installErrorHandlers(page) {
     if (storageWarned) return;
     storageWarned = true;
     try {
-      toast('Almacenamiento del navegador lleno. Exporta tus actividades a JSON y borra la caché para liberar espacio.', 'warning', 8000);
+      toast('Almacenamiento del navegador lleno. Exporta tus actividades a JSON y borra la caché para liberar espacio.', 'warning', TOAST_ERROR);
     } catch { /* sin DOM aún: el aviso queda en el log */ }
   });
   // R6 — FALLAR EN SILENCIO ESTÁ PROHIBIDO. `core/results.js` emite este evento
@@ -66,7 +66,7 @@ export function installErrorHandlers(page) {
     const n = e?.detail?.dropped || 0;
     logClientError({ message: `cola de resultados llena: ${n} resultado(s) descartado(s)`, page });
     try {
-      toast(`Se han perdido ${n} resultado(s) sin enviar: el dispositivo lleva demasiado tiempo sin conexión. Conéctate para que los pendientes suban.`, 'warning', 9000);
+      toast(`Se han perdido ${n} resultado(s) sin enviar: el dispositivo lleva demasiado tiempo sin conexión. Conéctate para que los pendientes suban.`, 'warning', TOAST_ERROR);
     } catch { /* sin DOM: queda en el log */ }
   });
 }

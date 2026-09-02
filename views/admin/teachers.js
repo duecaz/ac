@@ -3,7 +3,7 @@
 // cuenta con correo+contraseña para pizarras sin cuenta de Google.
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { toast } from '../../core/toast.js';
+import { toast, TOAST_NORMAL } from '../../core/toast.js';
 import { createTeacher, getAuthUserId } from '../../core/auth.js';
 import { listTeachers, setTeacherRole, countActivitiesByOwner } from '../../core/teachers.js';
 
@@ -63,7 +63,7 @@ export function createTeachersSection() {
           toast(role === 'admin' ? 'Ahora es admin.' : 'Admin retirado.', 'success');
           await paintTeachers();
         } catch (e) {
-          toast('No se pudo cambiar el rol: ' + e.message, 'danger', 5000);
+          toast('No se pudo cambiar el rol: ' + e.message, 'danger', TOAST_NORMAL);
           b.disabled = false;
         }
       });

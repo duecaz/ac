@@ -7,7 +7,7 @@
 // Pega el texto CON la marca (comas o tildes); la app la quita y guarda las
 // posiciones. Solo pinta sus paneles; el chasis lo pone core/editorShell.js.
 import { escapeHtml } from './html.js';
-import { toast } from './toast.js';
+import { toast, TOAST_NORMAL } from './toast.js';
 import { on } from './events.js';
 import { newPassage, partirEnParrafos } from './contentModels/textCorrection.js';
 import { applyMarks } from './textMarks.js';
@@ -97,7 +97,7 @@ function wireContent(root, a, ctx, { parse, textos }) {
     const fuera = antes - a.content.passages.length;
     if (!a.content.passages.length) a.content.passages.push(newPassage());
     ctx.onChange(a); ctx.repaint();
-    toast(`Quitada${fuera === 1 ? '' : 's'} ${fuera} frase${fuera === 1 ? '' : 's'} sin nada que corregir.`, 'success', 4000);
+    toast(`Quitada${fuera === 1 ? '' : 's'} ${fuera} frase${fuera === 1 ? '' : 's'} sin nada que corregir.`, 'success', TOAST_NORMAL);
   });
   on(root, 'click', '#t-add', () => { a.content.passages.push(newPassage()); ctx.onChange(a); ctx.repaint(); });
   on(root, 'click', '.item-del', (_, b) => { a.content.passages.splice(+b.dataset.i, 1); ctx.onChange(a); ctx.repaint(); });

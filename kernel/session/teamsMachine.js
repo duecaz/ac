@@ -11,13 +11,14 @@
 //
 // v1.51.630: extraído de kernel/session/engine.js al partir el motor POR
 // MÁQUINA (docs/leyes.md §0, deuda condicionada de CLAUDE.md).
-import { planTransition, PHASES } from '../../core/livePhases.js';
+import { planTransition, PHASES, FASE_NO_ACEPTA_RESPUESTAS } from '../../core/livePhases.js';
 import { isAcceptableNickname } from '../../core/nicknameFilter.js';
 import { canAutoScoreRound } from '../../core/templateCapability.js';
 import { basePoints } from '../../core/scoring/index.js';
 import { sessionItems } from '../content/sessionItems.js';
 import { autoScore, roundPayloadOf } from './score.js';
 import { FORMATS } from './formats.js';
+import { seedTeams as seedTeamsShared } from './teamsSeed.js';
 
 function createTeamsSession(activity, T, opts) {
   const items = sessionItems(activity);
@@ -41,12 +42,7 @@ function createTeamsSession(activity, T, opts) {
     throw new Error('La plantilla no tiene scoreSubmission: usa scoring "judge"');
   }
 
-  const seedTeams = () => {
-    const names = Array.isArray(opts.teams) ? opts.teams
-      : (typeof opts.teams === 'number' ? Array.from({ length: opts.teams }, (_, i) => `Equipo ${i + 1}`)
-        : ['Equipo 1', 'Equipo 2']);
-    return names.map((name, i) => ({ id: 't' + (i + 1), name, score: 0, members: [] }));
-  };
+  const seedTeams = () => seedTeamsShared(opts, { withMembers: true });
 
   const state = opts.state ? { answers: {}, _seq: 0, ...opts.state } : {
     format: FORMATS.TEAMS,
@@ -103,7 +99,7 @@ function createTeamsSession(activity, T, opts) {
   // The team whose turn it is records one answer for the current item.
   function submit(teamId, itemIndex, value, msTaken = 0) {
     if (state.phase !== PHASES.QUESTION || itemIndex !== state.currentItem) {
-      throw new Error('No se aceptan respuestas en esta fase');
+      throw new Error(FASE_NO_ACEPTA_RESPUESTAS);
     }
     if (teamId !== activeTeam()?.id) throw new Error('No es el turno de ese equipo');
     state.answers[`${itemIndex}:${teamId}`] = { teamId, value, msTaken, correct: null, points: 0 };

@@ -5,7 +5,9 @@ const COLOR_LETTERS = {
   purple: 'V', brown: 'M', cyan: 'C'
 };
 
-function ballStyle(color) {
+// Dueño único (barrido B5, 2026-09-02): drag.js reimplementaba la misma
+// función letra por letra para pintar la bola fantasma.
+export function ballStyle(color) {
   if (color === 'white') return 'background:#fff;border:2px solid #000';
   return `background:${color}`;
 }

@@ -11,7 +11,7 @@ import { escapeHtml } from '../core/html.js';
 import { listSkins } from '../core/skins.js';
 import { listBackgrounds } from '../core/backgrounds.js';
 import { compatibleTemplates, getTemplate } from '../core/registry.js';
-import { toast } from '../core/toast.js';
+import { toast, TOAST_NORMAL } from '../core/toast.js';
 
 const SIZES = [
   { label: 'Responsive 100%', w: '100%', h: '480' },
@@ -127,7 +127,7 @@ export function openEmbedModal(activity) {
       await navigator.clipboard.writeText($(id + '-snippet').value);
       toast('Snippet copiado.', 'success');
     } catch {
-      toast('No se pudo copiar; selecciónalo manualmente.', 'warning', 5000);
+      toast('No se pudo copiar; selecciónalo manualmente.', 'warning', TOAST_NORMAL);
     }
   });
 

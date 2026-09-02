@@ -11,6 +11,7 @@ import { ROPES, OK_COL, NO_COL, mountRopeLayer, ropeHtml, ghostHtml, dotPos, svg
 import { observeResize } from '../../core/observeResize.js';
 import { pinUsable } from '../../core/contentModels/diagram.js';
 import { hudHtml, hudSet } from '../../core/playerHud.js';
+import { setExclusiveLink } from '../../core/linkState.js';
 
 export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
   const pins = (activity.content?.pins || []).filter(pinUsable);
@@ -67,9 +68,7 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
   // Un enlace por etiqueta Y por pin: al conectar, se sueltan los previos que usen
   // ese mismo labelId o ese mismo pinId (reconexión libre, como Emparejar).
   function setLink(labelId, pinId) {
-    state.links.delete(labelId);
-    for (const [l, p] of [...state.links]) if (p === pinId) state.links.delete(l);
-    state.links.set(labelId, pinId);
+    setExclusiveLink(state.links, labelId, pinId);
     refresh();
   }
   function removeByLabel(labelId) { state.links.delete(labelId); refresh(); }

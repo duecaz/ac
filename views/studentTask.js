@@ -13,7 +13,7 @@ import { montarMarcoJuego } from '../core/gameFrame.js';
 import { assignmentGate } from '../core/assignmentRules.js';
 import { defaultMaxScore } from '../core/scoring/index.js';
 import { clock } from '../core/clock.js';
-import { toast } from '../core/toast.js';
+import { toast, TOAST_ERROR } from '../core/toast.js';
 import { destinoTrasJugar } from '../core/afterPlay.js';
 import { renderAntesala } from './antesala.js';
 import { applyPlayOptions } from '../core/playOptions.js';
@@ -138,12 +138,12 @@ export async function renderTask(rootSel, code) {
         score: state.score, maxScore: max, timeUsed, answers })
         .then(r => {
           if (r.rejected) {
-            toast(r.error, 'warning', 9000);
+            toast(r.error, 'warning', TOAST_ERROR);
             const note = document.getElementById('st-record-note');
             if (note) note.textContent = r.error;
           } else if (r.queued) {
             const msg = 'Sin conexión: tu intento quedó guardado en este dispositivo y se enviará solo al volver la red. No borres el navegador.';
-            toast(msg, 'info', 9000);
+            toast(msg, 'info', TOAST_ERROR);
             const note = document.getElementById('st-record-note');
             if (note) { note.textContent = msg; note.className = 'text-info small'; }
           }

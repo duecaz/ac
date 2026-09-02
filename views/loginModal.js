@@ -6,7 +6,7 @@
 // pasa: «¿Olvidaste tu contraseña?» manda el correo de restablecimiento.
 import { html, escapeHtml } from '../core/html.js';
 import { modeAuthHint } from '../core/modes.js';
-import { toast } from '../core/toast.js';
+import { toast, TOAST_NORMAL } from '../core/toast.js';
 import { signInWithGoogle, signIn, requestPasswordReset, oauthRedirectUrl } from '../core/auth.js';
 
 let _open = false;
@@ -157,6 +157,6 @@ export function openLoginModal({ reason = '' } = {}) {
  */
 export function pedirCuentaParaModo(mode) {
   const razon = modeAuthHint(mode);
-  toast(`${razon}. Tus alumnos entran con el PIN, sin cuenta.`, 'info', 5000);
+  toast(`${razon}. Tus alumnos entran con el PIN, sin cuenta.`, 'info', TOAST_NORMAL);
   openLoginModal({ reason: razon });
 }

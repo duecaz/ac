@@ -27,7 +27,7 @@ import { creditoTexto } from './imageSearch.js';
 import { QUOTAS } from './quotas.js';
 import { tiempoBloqueHtml, wireTiempoBloque } from './editorPrimitives.js';
 import { iaSabeEscribir, fusionarContenido, MODELOS_IA } from './aiContent.js';
-import { toast } from './toast.js';
+import { toast, TOAST_LARGO } from './toast.js';
 
 function presentationHtml(a) {
   const cs = a.presentation?.skin || 'default';
@@ -329,7 +329,7 @@ export function renderEditorShell(root, a, onChange, spec) {
       } catch (e) {
         // R6: el botón no puede quedarse mudo. Si el módulo no carga (red, caché
         // a medias), se dice — no se deja al profe tocando algo que no responde.
-        toast('No se pudo abrir el asistente: ' + e.message, 'danger', 6000);
+        toast('No se pudo abrir el asistente: ' + e.message, 'danger', TOAST_LARGO);
       } finally { b.disabled = false; }
     });
     // Template-specific wiring.

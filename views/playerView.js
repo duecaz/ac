@@ -23,7 +23,7 @@ import { resetScene } from '../core/presentation.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
 import { applyPlayOptions } from '../core/playOptions.js';
 import { acquire } from '../core/lifecycle.js';
-import { toast, confirmModal } from '../core/toast.js';
+import { toast, confirmModal, TOAST_NORMAL, TOAST_ERROR, TOAST_LARGO } from '../core/toast.js';
 import { openEmbedModal } from './embedModal.js';
 import { mountSoloAnimator } from '../core/soloAnimator.js';
 import { aspectStyle, ASPECTO_POR_DEFECTO } from '../core/frameAspect.js';
@@ -428,7 +428,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
         if (tile) tile.outerHTML = baldosaMia();
         document.querySelectorAll('.bg-pick').forEach(p => p.classList.toggle('is-active', p.dataset.name === 'custom'));
       } catch (err) {
-        toast(err.message, 'warning', 5000);
+        toast(err.message, 'warning', TOAST_NORMAL);
         e.target.value = '';
       }
     });
@@ -446,7 +446,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     // le llega el mismo par: el motivo (que también entra en el modal, para que
     // no tenga que recordarlo) y qué SÍ funciona sin cuenta.
     const pedirCuenta = (razon, cola) => {
-      toast(`${razon}. ${cola}`, 'info', 5000);
+      toast(`${razon}. ${cola}`, 'info', TOAST_NORMAL);
       openLoginModal({ reason: razon });
     };
     on(rootSel, 'click', '.tpl-switch', async (_, b) => {
@@ -477,16 +477,16 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
       // motivo viene como VALOR (no como excepción, que sería un embudo por
       // donde saldría cualquier fallo técnico a la cara del profe).
       const { actividad: copia, error } = duplicateAsTemplate(a, name);
-      if (error) { toast(error, 'danger', 8000); return; }
+      if (error) { toast(error, 'danger', TOAST_ERROR); return; }
       // A DONDE HAY QUE IR: si la copia queda por completar, al EDITOR. Llevarla
       // a jugar la dejaba en la pantalla de «falta algo» que el diálogo acababa
       // de anunciar — mandar a alguien a una puerta cerrada que tú mismo le has
       // descrito es peor que no avisar.
       if (faltara.length) {
-        toast(`Copia creada: “${copia.title}”. Complétala y ya se puede jugar.`, 'info', 6000);
+        toast(`Copia creada: “${copia.title}”. Complétala y ya se puede jugar.`, 'info', TOAST_LARGO);
         navigate(`#/edit/${copia.id}`);
       } else {
-        toast(`Copia creada: “${copia.title}”. La original queda intacta.`, 'success', 5000);
+        toast(`Copia creada: “${copia.title}”. La original queda intacta.`, 'success', TOAST_NORMAL);
         navigate(`#/play/${copia.id}`);
       }
     });
@@ -515,7 +515,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     fsDisposer = attachFullscreenButton('#ww-frame', { target: document.getElementById('ww-frame') });
     on(rootSel, 'click', '#btn-share', async () => {
       try { await navigator.clipboard.writeText(location.href); toast('Link copiado.', 'success'); }
-      catch { toast('No se pudo copiar — copia manualmente: ' + location.href, 'warning', 6000); }
+      catch { toast('No se pudo copiar — copia manualmente: ' + location.href, 'warning', TOAST_LARGO); }
     });
     on(rootSel, 'click', '#btn-embed', () => openEmbedModal(a));
     on(rootSel, 'click', '#btn-fork', async () => {

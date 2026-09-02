@@ -158,6 +158,22 @@ donde un humano tiene algo entre manos.
   creerla en verde** (la primera versión de la red de la pestaña dio verde con
   el bug puesto). Eso va en `/auditoria` §4 como paso obligatorio.
 
+## 1b · ESTADO (2026-09-02, al cierre de la primera pasada)
+
+| Barrido | Script | 1ª pasada | Hoy | Qué salió |
+|---|---|---|---|---|
+| B4 cableado | `tools/costuras-cableado.mjs` | 50 | **0** | 7 basuras · TICK conectado · política de fin al editor · STREAK conectado · almacén unificado (35 sitios, regla `almacen-crudo`) |
+| B1 declaraciones | `tools/costuras-declaraciones.mjs` | 15 | **0** | 14 claves fuera del esquema (3 declaradas por las 13 sin lector; 6 viajando en el JSON de toda actividad); 4 «prometidas sin mecánica» retiradas |
+| B3 vista↔plantilla | `tools/costuras-plantilla-en-vista.mjs` | 9 | **0** | 4 conectados a `esHojaDeTexto()`; la ruleta a `core/ruleta/` (pieza del bucle) |
+| B2 contrato | `tools/costuras-contrato.mjs` | 16 | **0** | 6 cuerpos tecleados dos veces subidos a su dueño; el editor de Tildes/Comas unificado |
+| B5 duplicados | — | | | pendiente |
+| B6 capa | — | | | pendiente (nota: `isVsCompatible` decide por capacidad, no por declaración) |
+| B7 gestos | `tools/edit-audit.mjs` (parcial) | | | los 13 editores cubiertos; falta antesala · alumno en vivo · modales · biblioteca |
+
+Colateral: la regex que quitaba comentarios se tragaba medio `core/selftest.js`
+(invisible a TODAS las reglas desde que existe) → `core/sinComentarios.js`, dueño
+único. Y la sonda del lápiz medía en ms absolutos → calibrada contra el reposo.
+
 ## 2 · Cómo se corre — quién hace qué
 
 El plan está pensado para que **lo caro sea poco**. Tres roles:

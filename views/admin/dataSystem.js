@@ -7,7 +7,7 @@ import { on } from '../../core/events.js';
 import { VERSION } from '../../core/constants.js';
 import { backendName } from '../../adapters/index.js';
 import { downloadActivitiesJson, pickAndImport } from '../../core/io.js';
-import { toast } from '../../core/toast.js';
+import { toast, TOAST_LARGO } from '../../core/toast.js';
 
 export function createDataSystemSection({ caps, acts }) {
   return {
@@ -37,8 +37,8 @@ export function createDataSystemSection({ caps, acts }) {
       on(rootSel, 'click', '#admin-import', () => {
         pickAndImport({ strategy: 'duplicate' }, (r) => {
           if (r.ok) toast(`Importadas ${r.count} actividades.`, 'success');
-          else if (r.count) toast(`${r.count} importadas, ${r.errors.length} fallaron.`, 'warning', 6000);
-          else toast('Error al importar: ' + r.errors.join('; '), 'danger', 6000);
+          else if (r.count) toast(`${r.count} importadas, ${r.errors.length} fallaron.`, 'warning', TOAST_LARGO);
+          else toast('Error al importar: ' + r.errors.join('; '), 'danger', TOAST_LARGO);
         });
       });
       on(rootSel, 'click', '#admin-refresh', () => { (window.__wwRefresh || (() => location.reload()))(); });

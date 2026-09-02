@@ -10,7 +10,7 @@ import { sessionTableHtml, sessionTableCsv } from './sessionTable.js';
 import { getTemplate } from '../core/registry.js';
 import { esHojaDeTexto } from '../core/contentModels/textCorrection.js';
 import { createAssignment, listAssignmentsForActivity, listAttempts, closeAssignment, rotateAssignmentCode } from '../core/assignmentsTransport.js';
-import { toast, confirmModal } from '../core/toast.js';
+import { toast, confirmModal, TOAST_NORMAL, TOAST_LARGO } from '../core/toast.js';
 
 
 export async function renderAssignmentsForActivity(rootSel, activityId) {
@@ -96,7 +96,7 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
         await createAssignment(a, { title, dueAt: due ? new Date(due).toISOString() : null, maxAttempts: max });
         toast('Tarea creada.', 'success');
         refresh();
-      } catch (e) { toast('Error: ' + e.message, 'danger', 5000); }
+      } catch (e) { toast('Error: ' + e.message, 'danger', TOAST_NORMAL); }
     });
     on(rootSel, 'click', '.copy', (_, b) => {
       navigator.clipboard?.writeText(b.dataset.url);
@@ -109,7 +109,7 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
       b.disabled = true;
       try {
         const courses = await listCourses();
-        if (!courses.length) { toast('No tienes cursos activos en Classroom (o tu sesión no ve ninguno).', 'info', 5000); return; }
+        if (!courses.length) { toast('No tienes cursos activos en Classroom (o tu sesión no ve ninguno).', 'info', TOAST_NORMAL); return; }
         const courseId = await pickCourse(courses);
         if (!courseId) return;
         const res = await createCourseworkLink(courseId, {
@@ -118,10 +118,10 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
           link: b.dataset.url,
           dueAt: b.dataset.due || null,
         });
-        toast('Tarea publicada en Classroom ✓', 'success', 4000);
+        toast('Tarea publicada en Classroom ✓', 'success', TOAST_NORMAL);
         if (res.link) window.open(res.link, '_blank');
       } catch (e) {
-        toast('Classroom: ' + (e.message || 'no se pudo enviar'), 'danger', 7000);
+        toast('Classroom: ' + (e.message || 'no se pudo enviar'), 'danger', TOAST_LARGO);
       } finally { b.disabled = false; }
     });
     on(rootSel, 'click', '.rotate-t', async (_, b) => {
@@ -129,7 +129,7 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
       if (!ok) return;
       try {
         const code = await rotateAssignmentCode(b.dataset.id);
-        toast(`PIN nuevo: ${code}`, 'success', 4000);
+        toast(`PIN nuevo: ${code}`, 'success', TOAST_NORMAL);
         refresh();
       } catch (e) { toast('Error rotando PIN: ' + e.message, 'danger'); }
     });

@@ -2,7 +2,7 @@
 // tocas el globo correcto y explota. MISMO contenido que Quiz (modelo qa, mismo
 // scorer y mismo editor): solo cambia la mecánica — el caso "Wordwall" puro.
 import { basePoints } from '../../core/scoring/index.js';
-import { stripSeededPoints } from '../../core/contentModels/qa.js';
+import { stripSeededPoints, defaultQaItems, QA_PRIMER_PASO } from '../../core/contentModels/qa.js';
 import { adoptForQuiz } from '../../kernel/content/qaAdapt.js';
 import { BaseTemplate } from '../base.js';
 import { renderGlobosPlayer, balloonFieldHtml, wireBalloonField } from './player.js';
@@ -25,7 +25,7 @@ export class GlobosTemplate extends BaseTemplate {
     // `elemento` es lo que el profe AÑADE y `primerPaso` lo que se lee con la
     // actividad vacía — es lo que enseña, en vez de contenido de muestra que
     // hay que borrar antes de empezar (R-D).
-    editor: { elemento: 'pregunta', primerPaso: 'Pulsa «Añadir pregunta» y escribe la pregunta con sus respuestas: una correcta y las demás no.' },
+    editor: { elemento: 'pregunta', primerPaso: QA_PRIMER_PASO },
     instructions: 'Lee la pregunta y toca el globo con la respuesta correcta para explotarlo.',
     panelFit: 'fill',
     aspectRatio: '16/10',
@@ -36,11 +36,7 @@ export class GlobosTemplate extends BaseTemplate {
     defaultRules: () => ({ timer: 30, randomize: false, shuffleOptions: true }),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
     defaultLive: () => ({}),
-    defaultContent: () => ({ items: [
-      { id: 'gl1', question: '¿Cuál es la capital de España?', answer: 'Madrid', options: ['Madrid', 'Barcelona', 'Lisboa', 'París'], image: null, audio: null },
-      { id: 'gl2', question: '¿Cuánto es 6 × 7?', answer: '42', options: ['36', '42', '48'], image: null, audio: null },
-      { id: 'gl3', question: '¿De qué color es el sol?', answer: 'Amarillo', options: ['Amarillo', 'Verde', 'Azul', 'Rojo'], image: null, audio: null },
-    ] }),
+    defaultContent: () => ({ items: defaultQaItems() }),
   };
 
   static renderPlayer = renderGlobosPlayer;

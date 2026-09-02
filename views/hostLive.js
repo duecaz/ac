@@ -32,7 +32,7 @@ import { sessionItems } from '../kernel/content/sessionItems.js';
 import { acquire } from '../core/lifecycle.js';
 import { getAuthUserId } from '../core/auth.js';
 import { openLoginModal } from './loginModal.js';
-import { toast } from '../core/toast.js';
+import { toast, TOAST_ERROR } from '../core/toast.js';
 import { sceneToggle, resetScene } from '../core/presentation.js';
 import { montarMarcoJuego } from '../core/gameFrame.js';
 import { hostPaintDecision } from '../core/livePhases.js';
@@ -114,7 +114,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
   // sesión de profe caducó. Se dice AHORA, no al revelar la primera respuesta.
   if (isStudentSnapshot(activity)) {
     toast('No se pudo leer el contenido de la sala (¿sesión caducada o falta la colección live_keys?). '
-      + 'Entra de nuevo o crea las colecciones en Admin.', 'warning', 8000);
+      + 'Entra de nuevo o crea las colecciones en Admin.', 'warning', TOAST_ERROR);
   }
   // Which Live backend is really in use. If it fell back to 'local' (e.g. the
   // PocketBase live_sessions collection doesn't exist), the room only works on

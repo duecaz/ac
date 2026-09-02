@@ -5,7 +5,7 @@ import { escapeHtml } from './html.js';
 import { on } from './events.js';
 import { unidadDeCuenta } from './reloj.js';
 import { MAX_PARRAFOS } from './contentModels/textCorrection.js';
-import { toast } from './toast.js';
+import { toast, TOAST_LARGO } from './toast.js';
 import { questionWindowMs, ITEM_SECONDS_MIN, ITEM_SECONDS_MAX } from './timings.js';
 import { corrigeAlFinal } from './constants.js';
 
@@ -241,7 +241,7 @@ export function wirePegarTexto(root, partir, alPegar) {
     ].filter(Boolean).join(' y ');
     toast(`${anadidas} párrafo${anadidas === 1 ? '' : 's'} añadido${anadidas === 1 ? '' : 's'}.`
       + (resto ? ` Quedaron fuera ${resto}.` : ''),
-      resto ? 'warning' : 'success', 6000);
+      resto ? 'warning' : 'success', TOAST_LARGO);
   });
 }
 

@@ -6,7 +6,7 @@
 import { clock } from '../../core/clock.js';
 import { html, mount } from '../../core/html.js';
 import { submitProgress } from '../../core/liveTransport.js';
-import { toast } from '../../core/toast.js';
+import { toast, TOAST_NORMAL } from '../../core/toast.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { getTemplate } from '../../core/registry.js';
 import { roundPayloadOf } from '../../kernel/session/engine.js';
@@ -64,7 +64,7 @@ export function createStudentTablero(rt) {
         emitGame(GameEvents.ANSWER_CORRECT, { idx: 0, points: 0 });
         const st = document.getElementById('bs-status');
         if (st) { st.className = 'badge bg-success'; st.textContent = '🏆 ¡Resuelto!'; }
-        toast('¡Resuelto! Espera a que el profesor cierre la sala.', 'success', 4000);
+        toast('¡Resuelto! Espera a que el profesor cierre la sala.', 'success', TOAST_NORMAL);
       },
     });
   }

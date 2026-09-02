@@ -1,4 +1,20 @@
 // Question-Answer content model used by the quiz template.
+import { rid } from '../ids.js';
+
+// SEMILLA Y PRIMER PASO — dueño único (barrido B5, 2026-09-02). Quiz y Globos
+// («el caso Wordwall puro», mismo contenido `qa`) repetían el mismo texto de
+// `editor.primerPaso` y una lista de ítems de muestra con la misma forma.
+export const QA_PRIMER_PASO = 'Pulsa «Añadir pregunta» y escribe la pregunta con sus respuestas: una correcta y las demás no.';
+
+/** Ítems de muestra con los que nace una actividad `qa` nueva (Quiz, Globos…). */
+export function defaultQaItems() {
+  return [
+    { id: rid('q_'), question: '¿Cuál es la capital de España?', answer: 'Madrid', options: ['Madrid', 'Barcelona', 'Lisboa', 'París'], image: null, audio: null },
+    { id: rid('q_'), question: '¿Cuánto es 6 × 7?', answer: '42', options: ['36', '42', '48'], image: null, audio: null },
+    { id: rid('q_'), question: '¿De qué color es el sol?', answer: 'Amarillo', options: ['Amarillo', 'Verde', 'Azul', 'Rojo'], image: null, audio: null },
+  ];
+}
+
 export function isCorrect(item, value) {
   if (item.answer == null) return null;
   if (Array.isArray(item.answer)) return item.answer.map(s => norm(s)).includes(norm(value));

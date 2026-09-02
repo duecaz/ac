@@ -8,7 +8,7 @@ import { on } from '../core/events.js';
 import { navigate } from '../core/router.js';
 import { getUser, signUp, signInWithGoogle } from '../core/auth.js';
 import { saveProfile } from '../core/profile.js';
-import { toast } from '../core/toast.js';
+import { toast, TOAST_NORMAL } from '../core/toast.js';
 
 export async function renderRegistro(rootSel) {
   if (await getUser()) { navigate('#/mine'); return; }   // ya dentro: a su casa
@@ -60,7 +60,7 @@ export async function renderRegistro(rootSel) {
       // desde "Mi perfil" (R6).
       try { await saveProfile(id, { name, ...(school ? { school } : {}) }); }
       catch (e2) { console.warn('[registro] cuenta creada; el perfil no se pudo sellar aún:', e2.message); }
-      toast(`Cuenta creada. ¡Bienvenido, ${name}!`, 'success', 5000);
+      toast(`Cuenta creada. ¡Bienvenido, ${name}!`, 'success', TOAST_NORMAL);
       navigate('#/mine');
     } catch (e2) {
       err(e2.message || 'No se pudo crear la cuenta.');

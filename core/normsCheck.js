@@ -70,6 +70,13 @@ import { sinComentarios } from './sinComentarios.js';
 //                       apagar el barajado de UNA plantilla desde su `rules`.
 //                       Prohibido también el Fisher–Yates a mano: estaba copiado
 //                       en cuatro sitios y el dueño es `shuffle` de core/azar.js.
+//                       Y prohibido reescribir el GENERADOR mismo: un mulberry32
+//                       propio (templates/wordsearch/generator.js lo tenía) no
+//                       nombra `Math.random` ni una vez y por eso era invisible a
+//                       la regla — se caza por su FIRMA (la constante 4294967296
+//                       = 2**32 que normaliza a [0,1), o las constantes de mezcla
+//                       0x6D2B79F5/1831565813), fuera de core/azar.js, que ES la
+//                       implementación permitida.
 //   · id-rid          : LEY DE CONTENIDO (docs/leyes.md §24) — IDs SIEMPRE con
 //                       `rid()` de core/ids.js, nunca `Math.random().toString(36)`
 //                       a mano (estaba copiado en ~17 sitios con longitudes y
@@ -308,6 +315,12 @@ const HOST_VERBS_RE = new RegExp(`\\b(${HOST_VERBS.join('|')})\\b`);
 // puede verificar de un vistazo. Comprobado sobre todo el repo: mismas líneas.
 const BARAJADO_A_MANO = /\[\s*(\w+)\[[^\]]+\]\s*,\s*\1\[[^\]]+\]\]\s*=\s*\[\s*\1\[/;
 
+// Firma de un mulberry32 escrito a mano: el divisor que normaliza el entero
+// de 32 bits a [0,1) (4294967296 = 2**32) o las dos constantes de mezcla que
+// usa siempre ese algoritmo, en hex o en decimal — ninguna de las tres tiene
+// otro uso legítimo fuera de core/azar.js.
+const MULBERRY32_FIRMA_RE = /\b(4294967296|0x6D2B79F5|1831565813)\b/i;
+
 // Comentarios fuera. Era una regex copiada aquí y en tres barridos, y se
 // tragaba medio core/selftest.js (un `/*` dentro de un comentario de línea):
 // ese fichero llevaba INVISIBLE a estas reglas desde que existe. Ahora hay un
@@ -404,6 +417,15 @@ export function scanNormsSource(path, source) {
       if (BARAJADO_A_MANO.test(ln)) {
         out.push({ path, line: i + 1, rule: 'azar-primitivo',
                    text: `barajado a mano; el dueño es shuffle() de core/azar.js — ${ln.trim()}` });
+      }
+      // Generador de azar PROPIO (mulberry32 a mano): no nombra Math.random,
+      // así que las dos comprobaciones de arriba no lo ven. Se caza por su
+      // firma — el divisor de normalización a [0,1) (2**32) o las constantes
+      // de mezcla, en hex o en decimal. (Excluye este propio fichero: la
+      // REGLA nombra sus tres constantes en texto plano para definirse.)
+      if (!path.endsWith('core/normsCheck.js') && MULBERRY32_FIRMA_RE.test(ln)) {
+        out.push({ path, line: i + 1, rule: 'azar-primitivo',
+                   text: `generador de azar propio: usa mulberry32/semilla de core/azar.js — ${ln.trim()}` });
       }
     }
     // §22-5 · un instante de la SALA medido con el reloj de ESTE aparato.

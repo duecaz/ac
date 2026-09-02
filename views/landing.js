@@ -12,7 +12,7 @@ import { getTemplate } from '../core/registry.js';
 import { fetchLikeCounts, fetchMyLikes, toggleLike } from '../core/likes.js';
 import { getUser } from '../core/auth.js';
 import { mountAuthSlot } from '../core/authWidget.js';
-import { toast } from '../core/toast.js';
+import { toast, TOAST_NORMAL } from '../core/toast.js';
 import { canHost } from '../core/authGate.js';
 import { wireActivityCard } from './activityCardWire.js';
 
@@ -116,7 +116,7 @@ export async function renderLanding(rootSel) {
       if (n) n.textContent = String(Math.max(0, (parseInt(n.textContent, 10) || 0) + (liked ? 1 : -1)));
       if (liked) myLikes.add(b.dataset.like); else myLikes.delete(b.dataset.like);
     } catch (err) {
-      toast(err.message || 'Inicia sesión para votar.', 'info', 4000);
+      toast(err.message || 'Inicia sesión para votar.', 'info', TOAST_NORMAL);
     }
   });
 

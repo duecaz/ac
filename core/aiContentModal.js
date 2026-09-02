@@ -13,35 +13,10 @@ import { escapeHtml } from './html.js';
 import { rid } from './ids.js';
 import { PB_URL } from '../pocketbase.config.js';
 import { getAuthToken } from './auth.js';
-import { MODELOS_IA, iaSabeEscribir, pedirContenido, piezasDe } from './aiContent.js';
+import { MODELOS_IA, iaSabeEscribir, pedirContenido, piezasDe, diagnosticarFalloDeRed, TEMA_VACIO } from './aiContent.js';
+import { abrirDialogoConFallback } from './modalFallback.js';
 
 const EXTREMO = () => `${PB_URL}/api/ia/contenido`;
-
-// Mismo respaldo que el buscador de imágenes, y por el mismo motivo: Bootstrap
-// viene de una CDN, y este diálogo es de los que se abren cuando la red va mal.
-// Sin el respaldo, `new bootstrap.Modal` revienta dentro del handler y el profe
-// se queda con un botón MUERTO que no dice nada (R6).
-function abrirDialogo(el) {
-  if (typeof bootstrap !== 'undefined' && bootstrap?.Modal) return new bootstrap.Modal(el);
-  let fondo = null;
-  const cerrar = () => {
-    el.classList.remove('show');
-    el.style.display = 'none';
-    fondo?.remove();
-    el.dispatchEvent(new Event('hidden.bs.modal'));
-  };
-  el.addEventListener('click', (e) => { if (e.target.closest('[data-bs-dismiss="modal"]')) cerrar(); });
-  return {
-    show() {
-      fondo = document.createElement('div');
-      fondo.className = 'modal-backdrop fade show';
-      document.body.appendChild(fondo);
-      el.style.display = 'block';
-      el.classList.add('show');
-    },
-    hide: cerrar,
-  };
-}
 
 /** Cómo se enseña UNA pieza propuesta, según su modelo. Solo lectura. */
 function piezaHtml(modelo, x) {
@@ -175,7 +150,7 @@ export function abrirEscribirConIA(opts = {}) {
     </div>`;
   const el = wrap.firstElementChild;
   document.body.appendChild(el);
-  const m = abrirDialogo(el);
+  const m = abrirDialogoConFallback(el);
 
   let propuesto = null;
   let aceptado = null;
@@ -203,10 +178,11 @@ export function abrirEscribirConIA(opts = {}) {
 
   async function escribir() {
     const tema = $('tema').value.trim();
-    if (!tema) { aviso('Escribe de qué va la actividad.'); $('tema').focus(); return; }
+    if (!tema) { aviso(TEMA_VACIO); $('tema').focus(); return; }
     // La red se comprueba ANTES de gastar el intento: es la causa más frecuente
-    // y la única que el profe puede resolver en el momento.
-    if (navigator.onLine === false) { aviso('Sin conexión a internet. La IA necesita red.'); return; }
+    // y la única que el profe puede resolver en el momento. Misma frase que
+    // `diagnosticarFalloDeRed` da para "sin conexión" — un solo dueño del texto.
+    if (navigator.onLine === false) { aviso(await diagnosticarFalloDeRed({ enLinea: false })); return; }
 
     const boton = $('go');
     boton.disabled = true;

@@ -1,15 +1,12 @@
 // Pointer drag + tap interaction for the tubes. No deps.
+import { ballStyle } from './tubes.js';
+
 const TAP_THRESHOLD = 10;
 
 function topBallColor(board, tubeIdx) {
   const tube = board.tubes[tubeIdx];
   if (!tube || tube.length === 0) return null;
   return tube[tube.length - 1];
-}
-
-function ballStyle(color) {
-  if (color === 'white') return 'background:#fff;border:2px solid #000';
-  return `background:${color}`;
 }
 
 export function attachDrag(container, { getBoard, isInteractive, onMove, onTap }) {

@@ -3,15 +3,10 @@ import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { itemControlsHtml, reorderArray } from '../../core/editorPrimitives.js';
 import { renderEditorShell } from '../../core/editorShell.js';
-// La subida de imagen pasa por core/upload.js (uploadMedia), que es el dueño
-// único: aplica el tope de core/quotas.js (§25) Y valida el MIME contra su
-// allowlist. Este editor tenía su propio IMG_MAX_BYTES + readDataUrl copiados
-// —el mismo bloque en wheel y question-live, byte por byte— y NO miraba el
-// tipo: `accept="image/*"` es una sugerencia del navegador, no una validación,
-// así que cualquier fichero entraba como data-URL en el JSON de la actividad.
-import { uploadMedia } from '../../core/upload.js';
-import { abrirBuscadorImagenes } from '../../core/imageSearchModal.js';
-import { toast } from '../../core/toast.js';
+// El tile de imagen (subir · buscar · quitar) es de core/imageTile.js — este
+// editor y question-live/editor.js lo tenían copiado byte por byte (barrido B5, 2026-09-02).
+import { imageTileHtml, wireImageTile } from '../../core/imageTile.js';
+import { SPIN_DUR_MAX } from '../../core/ruleta/spin.js';
 import { newItem, migrateLegacyItems } from '../../core/contentModels/items.js';
 
 
@@ -30,19 +25,6 @@ export function renderWheelEditor(root, activity, onChange) {
   });
 }
 
-function imgTileHtml(url, i) {
-  return `
-    <input type="file" accept="image/*" class="d-none we-img-file">
-    ${url
-      ? `<img src="${escapeHtml(url)}" class="img-fluid rounded mb-1" style="max-height:80px;object-fit:contain">`
-      : `<div class="d-flex flex-column align-items-center justify-content-center text-muted bg-body-secondary rounded mb-1" style="height:70px"><i class="bi bi-image fs-4"></i><small>Sin imagen</small></div>`}
-    <div class="d-flex gap-1 justify-content-center flex-wrap">
-      <button type="button" class="btn btn-sm btn-outline-primary we-img-add"><i class="bi ${url ? 'bi-arrow-repeat' : 'bi-plus-lg'}"></i> ${url ? 'Cambiar' : 'Imagen'}</button>
-      <button type="button" class="btn btn-sm btn-outline-primary we-img-search" title="Buscar una imagen libre"><i class="bi bi-search"></i></button>
-      ${url ? `<button type="button" class="btn btn-sm btn-outline-danger we-img-del"><i class="bi bi-trash"></i></button>` : ''}
-    </div>`;
-}
-
 function contentHtml(a) {
   const n = a.content.items.length;
   return `
@@ -56,7 +38,7 @@ function contentHtml(a) {
             <span class="input-group-text p-0 border-0 ps-2 d-flex">${itemControlsHtml(i, a.content.items.length)}</span>
           </div>
         </div>
-        <div class="col-12 col-md-3 text-center" id="we-img-${i}">${imgTileHtml(item.image, i)}</div>
+        <div class="col-12 col-md-3 text-center" id="we-img-${i}">${imageTileHtml(item.image, { prefix: 'we-', height: 80 })}</div>
       </div>`).join('')}
     ${n < 32 ? `<button class="btn btn-outline-primary mt-2" id="we-add"><i class="bi bi-plus-lg"></i> Añadir opción</button>` : `<p class="text-muted small mt-2">Máximo 32 opciones alcanzado.</p>`}`;
 }
@@ -68,38 +50,14 @@ function wireContent(root, a, ctx) {
   on(root, 'click', '.item-down', (_, b) => { reorderArray(a.content.items, +b.dataset.i, +1); ctx.onChange(a); ctx.repaint(); });
   on(root, 'click', '#we-add', () => { a.content.items.push(newItem()); ctx.onChange(a); ctx.repaint(); });
 
-  // Inline image handling (data-URL, 200 KB cap).
-  const tileIndex = (el) => { const t = el.closest('[id^="we-img-"]'); return t ? +t.id.slice(7) : -1; };
-  on(root, 'click', '.we-img-add', (_, b) => { b.closest('[id^="we-img-"]')?.querySelector('.we-img-file')?.click(); });
-  on(root, 'click', '.we-img-del', (_, b) => { const i = tileIndex(b); if (i < 0) return; a.content.items[i].image = null; ctx.onChange(a); ctx.repaint(); });
-  on(root, 'change', '.we-img-file', async (e) => {
-    const input = e.target;
-    const i = tileIndex(input);
-    const f = input.files?.[0];
-    if (i < 0 || !f) return;
-    try {
-      a.content.items[i].image = await uploadMedia(f);
-      delete a.content.items[i].imageCredit;   // el crédito se va con su imagen
-      ctx.onChange(a); ctx.repaint();
-    } catch (err) { toast(err.message, 'danger', 4000); }
-  });
-  // Buscar una imagen libre (F6): la misma puerta que en el resto de editores.
-  on(root, 'click', '.we-img-search', async (_, b) => {
-    const i = tileIndex(b);
-    if (i < 0) return;
-    const r = await abrirBuscadorImagenes({ consulta: a.content.items[i].question || '' });
-    if (!r) return;
-    a.content.items[i].image = r.url;
-    a.content.items[i].imageCredit = r.atribucion;
-    ctx.onChange(a); ctx.repaint();
-  });
+  wireImageTile(root, a, a.content.items, ctx, { prefix: 'we-', queryField: 'question' });
 }
 
 function rulesHtml(a) {
   return `<div class="row g-3">
     <div class="col-md-4">
       <label class="form-label">Duración del giro (ms) <span class="text-muted small">solo modo individual</span></label>
-      <input id="we-dur" type="number" min="500" max="30000" step="500" class="form-control" value="${a.rules.spinDurationMs ?? 4000}">
+      <input id="we-dur" type="number" min="500" max="${SPIN_DUR_MAX}" step="500" class="form-control" value="${a.rules.spinDurationMs ?? 4000}">
       <div class="form-text">Máximo 30 000 ms (30 s).</div>
     </div>
     <div class="col-md-4 form-check pt-4 mt-2">
@@ -110,6 +68,6 @@ function rulesHtml(a) {
 }
 
 function wireRules(root, a, ctx) {
-  on(root, 'input', '#we-dur', e => { a.rules.spinDurationMs = Math.min(30000, +e.target.value || 4000); ctx.onChange(a); });
+  on(root, 'input', '#we-dur', e => { a.rules.spinDurationMs = Math.min(SPIN_DUR_MAX, +e.target.value || 4000); ctx.onChange(a); });
   on(root, 'change', '#we-rm', e => { a.rules.removeAfterSpin = e.target.checked; ctx.onChange(a); });
 }

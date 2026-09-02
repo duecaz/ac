@@ -8,7 +8,7 @@
 // banner blink and a "Conexión recuperada" toast every time even with a fine
 // connection. We hold off showing anything until the disconnected state has
 // lasted at least DEBOUNCE_MS.
-import { toast } from './toast.js';
+import { toast, TOAST_CORTO } from './toast.js';
 
 const DEBOUNCE_MS = 1500;
 
@@ -51,7 +51,7 @@ export function setConnectionState(state) {
     if (_debounceTimer) { clearTimeout(_debounceTimer); _debounceTimer = null; }
     if (_displayed) {
       hideBanner();
-      toast('Conexión recuperada.', 'success', 2000);
+      toast('Conexión recuperada.', 'success', TOAST_CORTO);
     }
     _state = 'connected';
     return;

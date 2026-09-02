@@ -8,7 +8,7 @@
 // motor original para que el driver local, los tests de Node y el espejo de
 // la Edge Function (retirada) sigan funcionando sin cambios; createLiveRoom
 // delega aquí vía kernel/live/engine.js → kernel/session/engine.js (fachada).
-import { planTransition, PHASES } from '../../core/livePhases.js';
+import { planTransition, PHASES, FASE_NO_ACEPTA_RESPUESTAS } from '../../core/livePhases.js';
 import { isAcceptableNickname } from '../../core/nicknameFilter.js';
 import { rankPlayers } from '../../core/liveRank.js';
 import { pointsModeFor } from '../../core/liveLoops.js';
@@ -81,7 +81,7 @@ function createLiveSession(activity, T, opts) {
   function submit(playerId, itemIndex, value, msTaken = 0) {
     const isRace = state.phase === 'race';
     if (!isRace && (state.phase !== PHASES.QUESTION || itemIndex !== state.currentItem)) {
-      throw new Error('No se aceptan respuestas en esta fase');
+      throw new Error(FASE_NO_ACEPTA_RESPUESTAS);
     }
     const key = answerKey(itemIndex, playerId);
     const prev = state.answers[key];

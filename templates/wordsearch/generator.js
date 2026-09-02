@@ -1,16 +1,10 @@
-// Seeded PRNG + word-search grid generator.
-// Deterministic: same words+size+dirs always produce the same grid, so
-// VS players on separate devices see an identical board.
-
-function mulberry32(seed) {
-  let s = seed >>> 0;
-  return () => {
-    s = (s + 0x6D2B79F5) >>> 0;
-    let t = Math.imul(s ^ (s >>> 15), 1 | s);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+// Word-search grid generator. Deterministic: same words+size+dirs always
+// produce the same grid, so VS players on separate devices see an identical
+// board. El generador necesita SU PROPIO PRNG sembrado por contenido —no el
+// primitivo global `azar`—, pero era una reimplementación de mulberry32
+// (regla `azar-primitivo`): ahora se importa del dueño único (barrido B5,
+// 2026-09-02).
+import { mulberry32 } from '../../core/azar.js';
 
 function strHash(str) {
   let h = 0x811c9dc5;

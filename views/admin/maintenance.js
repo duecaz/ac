@@ -6,7 +6,7 @@
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { list, remove } from '../../core/storage.js';
-import { confirmModal, toast } from '../../core/toast.js';
+import { confirmModal, toast, TOAST_ERROR } from '../../core/toast.js';
 import { diagnoseDb } from '../../core/dbDiag.js';
 
 // `rerender` = volver a pintar el panel entero (lo necesita el wipe: cambia
@@ -36,7 +36,7 @@ export function createMaintenanceSection({ rerender }) {
         }
         const hechas = ids.length - fallos.length;
         if (fallos.length) {
-          toast(`Se borraron ${hechas} de ${ids.length}. ${fallos.length} no se pudieron borrar (¿sin conexión?): ${fallos.slice(0, 2).join(' · ')}`, 'warning', 9000);
+          toast(`Se borraron ${hechas} de ${ids.length}. ${fallos.length} no se pudieron borrar (¿sin conexión?): ${fallos.slice(0, 2).join(' · ')}`, 'warning', TOAST_ERROR);
         } else {
           toast(`Listo: ${ids.length} actividades borradas.`, 'success');
         }

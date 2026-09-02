@@ -11,7 +11,7 @@
 // peor que no atribuir.
 import { uploadMedia } from './upload.js';
 import { escapeHtml } from './html.js';
-import { toast } from './toast.js';
+import { toast, TOAST_NORMAL } from './toast.js';
 import { abrirBuscadorImagenes } from './imageSearchModal.js';
 import { creditoTexto } from './imageSearch.js';
 
@@ -63,7 +63,7 @@ export function attachImagePicker(root, containerSel, currentUrl, onChange, opts
       const f = e.target.files?.[0];
       if (!f) return;
       if (opts.maxBytes && f.size > opts.maxBytes) {
-        toast(`Imagen demasiado grande (máx. ${Math.round(opts.maxBytes / 1024)} KB)`, 'danger', 5000);
+        toast(`Imagen demasiado grande (máx. ${Math.round(opts.maxBytes / 1024)} KB)`, 'danger', TOAST_NORMAL);
         e.target.value = '';
         return;
       }
@@ -71,7 +71,7 @@ export function attachImagePicker(root, containerSel, currentUrl, onChange, opts
       try {
         elegida(await uploadMedia(f), null);
       } catch (err) {
-        toast('Error subiendo imagen: ' + err.message, 'danger', 5000);
+        toast('Error subiendo imagen: ' + err.message, 'danger', TOAST_NORMAL);
         if (changeBtn) changeBtn.disabled = false;
       }
     });

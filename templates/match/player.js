@@ -11,6 +11,7 @@ import { ROPES, OK_COL, NO_COL, mountRopeLayer, ropeHtml, ghostHtml, dotPos, svg
 import { observeResize } from '../../core/observeResize.js';
 import { pairComplete } from '../../core/contentModels/pairs.js';
 import { hudHtml, hudSet } from '../../core/playerHud.js';
+import { setExclusiveLink } from '../../core/linkState.js';
 
 export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   // La regla la pone el modelo (core/contentModels/pairs.js), no esta copia:
@@ -79,9 +80,7 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   // Conecta (o reconecta) un par. Cada tarjeta participa en UNA sola cuerda:
   // se elimina cualquier enlace previo que use ese mismo left o ese mismo right.
   function setLink(leftId, rightId) {
-    state.links.delete(leftId);
-    for (const [l, r] of [...state.links]) if (r === rightId) state.links.delete(l);
-    state.links.set(leftId, rightId);
+    setExclusiveLink(state.links, leftId, rightId);
     refreshCards();
     updateSvg(); updateProgress(); updateSubmit();
   }

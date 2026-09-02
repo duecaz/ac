@@ -1,11 +1,11 @@
 import { html, mount, escapeHtml } from '../core/html.js';
 import { on } from '../core/events.js';
-import { get, save } from '../core/storage.js';
+import { get, save, ALMACEN_LLENO } from '../core/storage.js';
 import { newActivity } from '../core/migrate.js';
 import { getEditor, getTemplate } from '../core/registry.js';
 import { revisarActividad, decidirVisibilidad } from '../core/activityCheck.js';
 import { navigate } from '../core/router.js';
-import { toast, confirmModal } from '../core/toast.js';
+import { toast, confirmModal, TOAST_ERROR, TOAST_LARGO } from '../core/toast.js';
 import { acquire } from '../core/lifecycle.js';
 import { buildSwitchOptions, applyAndSave } from './switchTemplate.js';
 import { downloadActivitiesJson } from '../core/io.js';
@@ -133,7 +133,7 @@ export function renderEditView(rootSel, { id, template }) {
     // autosave (setVis null)—, y la decide `decidirVisibilidad`, que es su dueño:
     // el interruptor de la tarjeta del home entra por la MISMA puerta.
     const vis = decidirVisibilidad(activity, setVis, setVis ? 'accion' : 'guardado');
-    if (vis.aviso) toast(vis.aviso, 'warning', 8000);
+    if (vis.aviso) toast(vis.aviso, 'warning', TOAST_ERROR);
     if (vis.rechaza) {
       setState('Sin publicar: aún no se puede jugar', 'warning', 'bi-exclamation-triangle-fill');
       return;
@@ -149,10 +149,10 @@ export function renderEditView(rootSel, { id, template }) {
     if (size.level === 'over') {
       _sizeWarned = true;
       setState('Demasiado pesada para el servidor', 'danger', 'bi-exclamation-triangle-fill');
-      if (!silent) toast(size.msg, 'danger', 10000);
+      if (!silent) toast(size.msg, 'danger', TOAST_ERROR);
     } else if (size.level === 'warn' && !_sizeWarned) {
       _sizeWarned = true;
-      toast(size.msg, 'warning', 8000);
+      toast(size.msg, 'warning', TOAST_ERROR);
     }
     const { remote, persisted } = save(activity);
     // P1-2: si NI SIQUIERA se guardó en local (cuota llena), NO fingir éxito —
@@ -160,7 +160,7 @@ export function renderEditView(rootSel, { id, template }) {
     // para que el autosave reintente al liberar espacio.
     if (persisted === false) {
       setState('No se pudo guardar: almacenamiento lleno', 'danger', 'bi-exclamation-triangle-fill');
-      if (!silent) toast('Almacenamiento del navegador lleno. Exporta a JSON y libera espacio; tu cambio NO se guardó.', 'danger', 8000);
+      if (!silent) toast(ALMACEN_LLENO, 'danger', TOAST_ERROR);
       saving = false;
       return;
     }
@@ -171,7 +171,7 @@ export function renderEditView(rootSel, { id, template }) {
       if (!silent) toast(activity.visibility === 'public' ? 'Publicada en la biblioteca ✓ Ya aparece en Explorar.' : 'Guardado como borrador (solo tú la ves).', 'success');
     } catch (e) {
       setState('Error al sincronizar (queda local)', 'danger', 'bi-exclamation-triangle-fill');
-      if (!silent) toast('No se pudo sincronizar: ' + e.message, 'danger', 6000);
+      if (!silent) toast('No se pudo sincronizar: ' + e.message, 'danger', TOAST_LARGO);
     } finally {
       saving = false;
     }
@@ -197,7 +197,7 @@ export function renderEditView(rootSel, { id, template }) {
     const { actividad: next, error } = applyAndSave(activity, name);
     // Con la cuota llena el contenido ya está convertido EN MEMORIA: decir que
     // se guardó le hace perder el original. Se dice, y no se limpia `dirty`.
-    if (error) { toast(error, 'danger', 8000); return; }
+    if (error) { toast(error, 'danger', TOAST_ERROR); return; }
     dirty = false;
     toast(`Formato cambiado a “${label}”.`, 'success');
     navigate(`#/edit/${next.id}`); // same hash → re-renders the editor cleanly
@@ -214,7 +214,7 @@ export function renderEditView(rootSel, { id, template }) {
     if (!rev.listo) {
       toast(`Todavía no se puede probar: ${rev.problemas[0]}`
         + (rev.problemas.length > 1 ? ` (y ${rev.problemas.length - 1} más — mira el aviso rojo en Contenido)` : ''),
-        'danger', 6000);
+        'danger', TOAST_LARGO);
       document.querySelector('#ww-falta')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }

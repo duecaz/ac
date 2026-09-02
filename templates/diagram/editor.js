@@ -8,7 +8,7 @@ import { uploadMedia, medirImagen } from '../../core/upload.js';
 import { QUOTAS } from '../../core/quotas.js';
 import { newPin } from '../../core/contentModels/diagram.js';
 import { renderEditorShell } from '../../core/editorShell.js';
-import { toast } from '../../core/toast.js';
+import { toast, TOAST_LARGO, TOAST_NORMAL } from '../../core/toast.js';
 import { abrirBuscadorImagenes } from '../../core/imageSearchModal.js';
 import { creditoTexto } from '../../core/imageSearch.js';
 
@@ -90,7 +90,7 @@ function wireContent(root, a, ctx) {
     if (habia) {
       a.content.pins = [];
       toast(`Imagen nueva: se quitaron ${habia} etiqueta${habia === 1 ? '' : 's'} — estaban colocadas sobre la anterior. `
-        + 'Haz clic en la imagen para poner las tuyas.', 'info', 6000);
+        + 'Haz clic en la imagen para poner las tuyas.', 'info', TOAST_LARGO);
     }
     ctx.onChange(a); ctx.repaint();
   };
@@ -104,7 +104,7 @@ function wireContent(root, a, ctx) {
       // foto de enunciado salía borroso justo donde hay que señalar.
       ponerImagen(await uploadMedia(file,
         { maxBytes: QUOTAS.canvasImageBytes, ladoMax: QUOTAS.canvasImageSide }));
-    } catch (err) { toast('No se pudo cargar la imagen: ' + err.message, 'warning', 5000); }
+    } catch (err) { toast('No se pudo cargar la imagen: ' + err.message, 'warning', TOAST_NORMAL); }
   });
 
   // BUSCAR (F6): el diagrama es el caso que lo pidió — nadie tiene a mano un
@@ -121,7 +121,7 @@ function wireContent(root, a, ctx) {
   // pero no puede ser la ÚNICA puerta — vivía en una línea gris y el dueño no la
   // encontró. El pin nace en el CENTRO, a la vista y listo para arrastrar.
   on(root, 'click', '#dg-add', () => {
-    if (!a.content.image) { toast('Primero sube el dibujo: las etiquetas se colocan encima.', 'info', 4000); return; }
+    if (!a.content.image) { toast('Primero sube el dibujo: las etiquetas se colocan encima.', 'info', TOAST_NORMAL); return; }
     a.content.pins.push(newPin(0.5, 0.5));
     ctx.onChange(a); ctx.repaint();
   });

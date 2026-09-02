@@ -12,7 +12,7 @@ import { setSessionState, endSession, settleItem, listAnswers, leaderboard } fro
 import { roundPayloadOf } from '../../kernel/session/engine.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from '../../core/fullscreen.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
-import { toast, confirmModal } from '../../core/toast.js';
+import { toast, confirmModal, TOAST_NORMAL } from '../../core/toast.js';
 
 export function createHostRondas(rt) {
   let tickHandle = null;
@@ -169,7 +169,7 @@ export function createHostRondas(rt) {
     if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Calculando…'; }
     try { await settleItem(rt.sessionId, idx); }
     catch (e) {
-      toast('Error al revelar: ' + e.message, 'danger', 5000);
+      toast('Error al revelar: ' + e.message, 'danger', TOAST_NORMAL);
       if (btn) { btn.disabled = false; btn.innerHTML = 'Reintentar'; }
     } finally { settling = false; }
   }

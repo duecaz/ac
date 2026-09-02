@@ -29,14 +29,14 @@ export function stampVersion(id = 'ww-version') {
   el.style.cursor = 'pointer';
   el.addEventListener('click', async () => {
     const { buildBugReport } = await import('./bugReport.js');
-    const { toast } = await import('./toast.js');
+    const { toast, TOAST_NORMAL } = await import('./toast.js');
     const texto = buildBugReport();
     try {
       await navigator.clipboard.writeText(texto);
-      toast('Reporte copiado: pégalo en el chat del proyecto.', 'success', 4000);
+      toast('Reporte copiado: pégalo en el chat del proyecto.', 'success', TOAST_NORMAL);
     } catch {
       // Sin permiso de portapapeles (http, iframe): enséñalo para copiar a mano.
-      toast('No se pudo copiar solo — cópialo de la consola.', 'warning', 5000);
+      toast('No se pudo copiar solo — cópialo de la consola.', 'warning', TOAST_NORMAL);
       console.log(texto);
     }
   });

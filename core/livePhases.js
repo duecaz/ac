@@ -14,6 +14,11 @@ export const PHASES = Object.freeze({
   REVEAL: 'reveal', LEADERBOARD: 'leaderboard', ENDED: 'ended',
 });
 
+// Rechazo de una respuesta fuera de la fase que la acepta — dueño único
+// (liveMachine.js y teamsMachine.js lo lanzaban con el mismo texto, barrido B5,
+// 2026-09-02).
+export const FASE_NO_ACEPTA_RESPUESTAS = 'No se aceptan respuestas en esta fase';
+
 /** Last item reached? `total` is the number of items in the activity. */
 export function isLastItem(session, total) {
   return (session?.current_item ?? -1) >= total - 1;

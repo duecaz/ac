@@ -10,7 +10,7 @@ import { listPublicActivities } from '../core/storage.js';
 import { getAuthUserId, getAuthName, changePassword, linkGoogle } from '../core/auth.js';
 import { fetchProfile, getLocalProfile, saveProfile } from '../core/profile.js';
 import { uploadMedia } from '../core/upload.js';
-import { toast, confirmModal } from '../core/toast.js';
+import { toast, confirmModal, TOAST_NORMAL } from '../core/toast.js';
 
 export async function renderAuthor(rootSel, ownerId) {
   const isOwner = getAuthUserId() && getAuthUserId() === ownerId;
@@ -114,7 +114,7 @@ export async function renderAuthor(rootSel, ownerId) {
         toast(kind === 'avatar' ? 'Foto actualizada.' : 'Portada actualizada.', 'success');
         paintHead();
       } catch (e) {
-        toast('No se pudo guardar la imagen: ' + e.message, 'danger', 5000);
+        toast('No se pudo guardar la imagen: ' + e.message, 'danger', TOAST_NORMAL);
       }
     };
     inp.click();
@@ -178,7 +178,7 @@ export async function renderAuthor(rootSel, ownerId) {
       paintHead();
       paintEditForm(false);
     } catch (e) {
-      toast('No se pudo guardar el perfil: ' + e.message, 'danger', 5000);
+      toast('No se pudo guardar el perfil: ' + e.message, 'danger', TOAST_NORMAL);
       b.disabled = false;
     }
   });
@@ -191,7 +191,7 @@ export async function renderAuthor(rootSel, ownerId) {
       toast('Contraseña cambiada. Ya puedes entrar con correo y clave.', 'success');
       paintAccount(false);
     } catch (e) {
-      toast(e.message, 'danger', 5000);
+      toast(e.message, 'danger', TOAST_NORMAL);
       b.disabled = false;
     }
   });
@@ -200,7 +200,7 @@ export async function renderAuthor(rootSel, ownerId) {
     if (!ok) return;
     b.disabled = true;
     try { await linkGoogle(); }   // redirige a Google; al volver queda vinculada
-    catch (e) { toast(e.message, 'danger', 5000); b.disabled = false; }
+    catch (e) { toast(e.message, 'danger', TOAST_NORMAL); b.disabled = false; }
   });
 
   load();

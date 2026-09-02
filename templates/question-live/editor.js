@@ -2,15 +2,9 @@ import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { itemControlsHtml, reorderArray } from '../../core/editorPrimitives.js';
 import { renderEditorShell } from '../../core/editorShell.js';
-// La subida de imagen pasa por core/upload.js (uploadMedia), que es el dueño
-// único: aplica el tope de core/quotas.js (§25) Y valida el MIME contra su
-// allowlist. Este editor tenía su propio IMG_MAX_BYTES + readDataUrl copiados
-// —el mismo bloque en wheel y question-live, byte por byte— y NO miraba el
-// tipo: `accept="image/*"` es una sugerencia del navegador, no una validación,
-// así que cualquier fichero entraba como data-URL en el JSON de la actividad.
-import { uploadMedia } from '../../core/upload.js';
-import { abrirBuscadorImagenes } from '../../core/imageSearchModal.js';
-import { toast } from '../../core/toast.js';
+// El tile de imagen (subir · buscar · quitar) es de core/imageTile.js — este
+// editor y wheel/editor.js lo tenían copiado byte por byte (barrido B5, 2026-09-02).
+import { imageTileHtml, wireImageTile } from '../../core/imageTile.js';
 import { newItem } from '../../core/contentModels/items.js';
 
 // Images are stored INLINE as data-URLs inside the activity JSON (same approach
@@ -30,19 +24,6 @@ export function renderQuestionLiveEditor(root, activity, onChange) {
   });
 }
 
-function imgTileHtml(url) {
-  return `
-    <input type="file" accept="image/*" class="d-none ql-img-file">
-    ${url
-      ? `<img src="${escapeHtml(url)}" class="img-fluid rounded mb-1" style="max-height:90px;object-fit:contain">`
-      : `<div class="d-flex flex-column align-items-center justify-content-center text-muted bg-body-secondary rounded mb-1" style="height:80px"><i class="bi bi-image fs-4"></i><small>Sin imagen</small></div>`}
-    <div class="d-flex gap-1 justify-content-center flex-wrap">
-      <button type="button" class="btn btn-sm btn-outline-primary ql-img-add"><i class="bi ${url ? 'bi-arrow-repeat' : 'bi-plus-lg'}"></i> ${url ? 'Cambiar' : 'Imagen'}</button>
-      <button type="button" class="btn btn-sm btn-outline-primary ql-img-search" title="Buscar una imagen libre"><i class="bi bi-search"></i></button>
-      ${url ? `<button type="button" class="btn btn-sm btn-outline-danger ql-img-del"><i class="bi bi-trash"></i></button>` : ''}
-    </div>`;
-}
-
 function contentHtml(a) {
   return `
     <p class="small text-muted">Preguntas que se muestran en cajas numeradas. El alumno elige una caja, responde de viva voz y el profesor asigna los puntos. Puedes añadir una imagen a cada pregunta (máx. 200&nbsp;KB).</p>
@@ -55,7 +36,7 @@ function contentHtml(a) {
             <span class="input-group-text p-0 border-0 ps-2 d-flex">${itemControlsHtml(i, a.content.items.length)}</span>
           </div>
         </div>
-        <div class="col-12 col-md-3 text-center" id="img-${i}">${imgTileHtml(item.image)}</div>
+        <div class="col-12 col-md-3 text-center" id="ql-img-${i}">${imageTileHtml(item.image, { prefix: 'ql-', height: 90 })}</div>
       </div>`).join('')}
     <button class="btn btn-outline-primary mt-2" id="ql-add"><i class="bi bi-plus-lg"></i> Añadir pregunta</button>`;
 }
@@ -67,31 +48,7 @@ function wireContent(root, a, ctx) {
   on(root, 'click', '.item-down', (_, b) => { reorderArray(a.content.items, +b.dataset.i, +1); ctx.onChange(a); ctx.repaint(); });
   on(root, 'click', '#ql-add', () => { a.content.items.push(newItem()); ctx.onChange(a); ctx.repaint(); });
 
-  // Inline image handling (data-URL, 200 KB cap, no external upload).
-  const tileIndex = (el) => { const t = el.closest('[id^="img-"]'); return t ? +t.id.slice(4) : -1; };
-  on(root, 'click', '.ql-img-add', (_, b) => { b.closest('[id^="img-"]')?.querySelector('.ql-img-file')?.click(); });
-  on(root, 'click', '.ql-img-del', (_, b) => { const i = tileIndex(b); if (i < 0) return; a.content.items[i].image = null; ctx.onChange(a); ctx.repaint(); });
-  on(root, 'change', '.ql-img-file', async (e) => {
-    const input = e.target;
-    const i = tileIndex(input);
-    const f = input.files?.[0];
-    if (i < 0 || !f) return;
-    try {
-      a.content.items[i].image = await uploadMedia(f);
-      delete a.content.items[i].imageCredit;   // el crédito se va con su imagen
-      ctx.onChange(a); ctx.repaint();
-    } catch (err) { toast(err.message, 'danger', 4000); }
-  });
-  // Buscar una imagen libre (F6): la misma puerta que en el resto de editores.
-  on(root, 'click', '.ql-img-search', async (_, b) => {
-    const i = tileIndex(b);
-    if (i < 0) return;
-    const r = await abrirBuscadorImagenes({ consulta: a.content.items[i].question || '' });
-    if (!r) return;
-    a.content.items[i].image = r.url;
-    a.content.items[i].imageCredit = r.atribucion;
-    ctx.onChange(a); ctx.repaint();
-  });
+  wireImageTile(root, a, a.content.items, ctx, { prefix: 'ql-', queryField: 'question' });
 }
 
 function rulesHtml(a) {

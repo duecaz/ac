@@ -19,6 +19,7 @@ import { uploadMedia } from './upload.js';
 import { escapeHtml } from './html.js';
 import { QUOTAS } from './quotas.js';
 import { rid } from './ids.js';
+import { abrirDialogoConFallback } from './modalFallback.js';
 
 // El nombre del archivo no se usa para nada salvo darle un tipo a uploadMedia.
 function nombreDe(url, tipo) {
@@ -36,40 +37,6 @@ async function traerComoDataUrl(url, { maxBytes, ladoMax }) {
   const blob = await r.blob();
   const file = new File([blob], nombreDe(url, blob.type), { type: blob.type });
   return uploadMedia(file, { maxBytes, ladoMax });
-}
-
-/**
- * Muestra/oculta el diálogo. Usa Bootstrap si está cargado y, si NO está, lo
- * hace a mano con las mismas clases y el mismo evento `hidden.bs.modal`.
- *
- * No es un capricho: Bootstrap viene de una CDN y este diálogo es justo el que
- * se abre cuando la red va mal. Sin el respaldo, `new bootstrap.Modal` lanza un
- * ReferenceError dentro del handler del clic y el profe se queda con un botón
- * MUERTO que no dice nada (R6). De paso, así el diálogo es comprobable en las
- * sondas headless, donde la CDN no se alcanza.
- */
-function abrirDialogo(el) {
-  if (typeof bootstrap !== 'undefined' && bootstrap?.Modal) return new bootstrap.Modal(el);
-  let fondo = null;
-  const cerrar = () => {
-    el.classList.remove('show');
-    el.style.display = 'none';
-    fondo?.remove();
-    el.dispatchEvent(new Event('hidden.bs.modal'));
-  };
-  el.addEventListener('click', (e) => {
-    if (e.target.closest('[data-bs-dismiss="modal"]')) cerrar();
-  });
-  return {
-    show() {
-      fondo = document.createElement('div');
-      fondo.className = 'modal-backdrop fade show';
-      document.body.appendChild(fondo);
-      el.style.display = 'block';
-      el.classList.add('show');
-    },
-    hide: cerrar,
-  };
 }
 
 /**
@@ -118,7 +85,7 @@ export function abrirBuscadorImagenes(opts = {}) {
 
   const el = wrap.firstElementChild;
   document.body.appendChild(el);
-  const m = abrirDialogo(el);
+  const m = abrirDialogoConFallback(el);
   const $ = (suf) => el.querySelector('#' + id + suf);
 
   let resultados = [];

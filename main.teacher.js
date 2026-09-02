@@ -121,7 +121,7 @@ setBeforeResolve(() => clearListeners(APP));
     try { const _res = await completeOAuthLogin(_q.get('code'), _q.get('state')); _returnHash = _res?.returnHash || ''; }
     catch (e) {
       console.warn('[oauth]', e.message);
-      try { const { toast } = await import('./core/toast.js'); toast('Login con Google: ' + e.message, 'danger', 7000); } catch {}
+      try { const { toast, TOAST_LARGO } = await import('./core/toast.js'); toast('Login con Google: ' + e.message, 'danger', TOAST_LARGO); } catch {}
     }
     // Devuelve al profe a donde estaba (Google no preserva el #hash en el retorno).
     history.replaceState(null, '', location.pathname + (_returnHash || location.hash || '#/home'));

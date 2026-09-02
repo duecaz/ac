@@ -9,7 +9,7 @@ import { startDeadlineTicker } from '../../core/deadlineTicker.js';
 import { html, escapeHtml, mount } from '../../core/html.js';
 import { listOwnAnswers, submitRaceAttempt } from '../../core/liveTransport.js';
 import { raceResumeState } from '../../core/raceResume.js';
-import { toast } from '../../core/toast.js';
+import { toast, TOAST_CORTO } from '../../core/toast.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import * as Streaks from '../../core/streaks.js';
 import { getTemplate } from '../../core/registry.js';
@@ -199,7 +199,7 @@ export function createStudentCarrera(rt) {
           const partes = [];
           if (sinMarcar) partes.push(`${sinMarcar} sin marcar`);
           if (faltan.over) partes.push(`${faltan.over} de más`);
-          if (partes.length) toast(`Casi: ${partes.join(' · ')}. Vuelve a intentarlo.`, 'warning', 2500);
+          if (partes.length) toast(`Casi: ${partes.join(' · ')}. Vuelve a intentarlo.`, 'warning', TOAST_CORTO);
         }
 
         // Analítica opción A: el PRIMER intento de cada ítem (bien o mal) se envía

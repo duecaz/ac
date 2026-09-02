@@ -1,6 +1,6 @@
 // Editor de Emparejar — aporta sus paneles; el chasis lo pone el shell.
 import { escapeHtml } from '../../core/html.js';
-import { toast } from '../../core/toast.js';
+import { toast, TOAST_NORMAL } from '../../core/toast.js';
 import { uploadMedia } from '../../core/upload.js';
 import { abrirBuscadorImagenes } from '../../core/imageSearchModal.js';
 import { on } from '../../core/events.js';
@@ -85,7 +85,7 @@ function wireContent(root, a, ctx) {
         delete a.content.pairs[i][field + 'Credit'];   // el crédito se va con su imagen
         ctx.onChange(a);
         ctx.repaint();
-      } catch (err) { toast(err.message, 'danger', 5000); }
+      } catch (err) { toast(err.message, 'danger', TOAST_NORMAL); }
     };
     inp.click();
   });

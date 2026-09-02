@@ -1,6 +1,6 @@
 // Tests for the pure wheel logic. Run: node tests/wheel.test.mjs
 import assert from 'node:assert';
-import { normalizeEntries, pickIndex, landingRotation, removeAt, truncLabel } from '../core/ruleta/logic.js';
+import { normalizeEntries, pickIndex, removeAt, truncLabel } from '../core/ruleta/logic.js';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
@@ -17,13 +17,6 @@ assert.strictEqual(pickIndex(4, () => 0), 0);
 assert.strictEqual(pickIndex(4, () => 0.99), 3, 'stays in range at rnd→1');
 assert.strictEqual(pickIndex(5, () => 0.5), 2);
 ok('pickIndex: in [0,count) with injectable rng');
-
-// landingRotation
-assert.strictEqual(landingRotation(0, 4), 360 * 5 + 315, 'target 0 centers under pointer');
-assert.strictEqual(landingRotation(1, 4), 360 * 5 + 225);
-assert.ok(landingRotation(0, 4) > landingRotation(3, 4), 'later targets rotate less within the final turn');
-assert.strictEqual(landingRotation(0, 4, 2), 360 * 2 + 315, 'turns are configurable');
-ok('landingRotation: ≥turns full spins + centers the target slice');
 
 // removeAt — this is the bug-fix core
 const e = ['a', 'b', 'c'];

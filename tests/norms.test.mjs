@@ -153,6 +153,28 @@ assert.strictEqual(scanNormsSource('core/moduloNuevo.js', `const i = Math.floor(
   'un módulo de core NUEVO que sortea contenido salta sin que nadie amplíe una lista de rutas');
 assert.strictEqual(scanNormsSource('views/hostLive.js', `const orden = Math.random() - 0.5;`).length, 1,
   'y una vista, también: el modo de fallar de esta ley ya es ruidoso, como el de las otras diez');
+// azar-primitivo (extensión): un mulberry32 escrito a mano no nombra
+// Math.random NI UNA VEZ — templates/wordsearch/generator.js tenía su PROPIO
+// generador y la regla no lo veía. Se caza por su FIRMA: el divisor que
+// normaliza a [0,1) (2**32) o las dos constantes de mezcla, en hex o decimal.
+assert.ok(scanNormsSource('templates/x/generator.js', `return ((t ^ (t >>> 14)) >>> 0) / 4294967296;`)
+  .some(v => v.rule === 'azar-primitivo'), 'caza el generador de azar propio por su divisor de normalización');
+assert.ok(scanNormsSource('templates/x/generator.js', `s = (s + 0x6D2B79F5) >>> 0;`)
+  .some(v => v.rule === 'azar-primitivo'), 'y por la constante de mezcla en hex');
+assert.ok(scanNormsSource('templates/x/generator.js', `s = (s + 1831565813) >>> 0;`)
+  .some(v => v.rule === 'azar-primitivo'), 'y por la misma constante en decimal');
+assert.strictEqual(scanNormsSource('core/azar.js',
+  `export function mulberry32(seed) {\n`
+  + `  let s = seed >>> 0;\n`
+  + `  return () => {\n`
+  + `    s = (s + 0x6D2B79F5) >>> 0;\n`
+  + `    let t = s;\n`
+  + `    t = Math.imul(t ^ (t >>> 15), t | 1);\n`
+  + `    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);\n`
+  + `    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;\n`
+  + `  };\n`
+  + `}`).length, 0,
+  'CONTRA-PRUEBA: core/azar.js es la implementación — mulberry32 entero pasa limpio');
 // imagen-buscable (F6): pedir una imagen sin ofrecer BUSCARLA. El bug que lo
 // creó: «Etiqueta el diagrama» solo dejaba subir, y quien quería un corazón
 // humano no tenía ninguno en el móvil — la actividad no se podía ni empezar.

@@ -17,7 +17,7 @@ import { listReports, deleteReport, esRondaQa, QA_PREFIX } from '../core/reports
 import { removeMany, listPublicActivities } from '../core/storage.js';
 import { searchActivities } from '../core/search.js';
 import { getTemplate } from '../core/registry.js';
-import { toast, confirmModal } from '../core/toast.js';
+import { toast, confirmModal, TOAST_ERROR, TOAST_NORMAL } from '../core/toast.js';
 import { fechaHora, fechaCorta } from '../core/fechas.js';
 
 export async function renderModerate(rootSel) {
@@ -144,7 +144,7 @@ export async function renderModerate(rootSel) {
     const { hechas, fallos } = await removeMany(ids);
     if (fallos.length) {
       toast(`Se borraron ${hechas} de ${ids.length}. ${fallos.length} no se pudieron borrar: `
-        + fallos.slice(0, 2).map(f => `${f.id}: ${f.error}`).join(' · '), 'warning', 9000);
+        + fallos.slice(0, 2).map(f => `${f.id}: ${f.error}`).join(' · '), 'warning', TOAST_ERROR);
     } else {
       toast(hechas === 1 ? 'Actividad borrada.' : `${hechas} actividades borradas.`, 'success');
     }
@@ -167,7 +167,7 @@ export async function renderModerate(rootSel) {
   on(rootSel, 'click', '.mod-play', (_, b) => navigate(`#/play/${rowOf(b).dataset.activity}`));
   on(rootSel, 'click', '.mod-dismiss', async (_, b) => {
     try { await deleteReport(rowOf(b).dataset.report); toast('Reporte descartado.', 'success'); load(); }
-    catch (e) { toast('No se pudo: ' + e.message, 'danger', 5000); }
+    catch (e) { toast('No se pudo: ' + e.message, 'danger', TOAST_NORMAL); }
   });
   // El MISMO botón sirve a las dos listas (reporte y biblioteca): lo que cambia
   // es que un reporte, al borrarse la actividad, se descarta con ella.

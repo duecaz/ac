@@ -41,6 +41,29 @@ export function shuffle(a, fuente) {
 }
 
 /**
+ * PRNG mulberry32, puro y determinista: misma semilla → misma secuencia.
+ * Dueño único (barrido B5, 2026-09-02) — el generador de la sopa de letras
+ * (`templates/wordsearch/generator.js`) lo reimplementaba letra por letra,
+ * violando la regla `azar-primitivo` (un solo generador sembrado en el
+ * proyecto). Ojo: NO siembra el primitivo global `azar` — devuelve la
+ * función `rand()` suelta, para quien necesite su PROPIO generador
+ * determinista por contenido (p.ej. la sopa: misma actividad → mismo
+ * tablero en los dos móviles del VS) sin tocar el azar de la partida.
+ * @param {number} seed
+ * @returns {() => number} rand() en [0,1)
+ */
+export function mulberry32(seed) {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
  * Siembra `azar` con un generador determinista (mulberry32) y devuelve la
  * función que lo restaura. Pensado para tests y herramientas; no se usa en
  * producción.
@@ -49,13 +72,6 @@ export function shuffle(a, fuente) {
  */
 export function semilla(n = 1) {
   const previo = azar.random;
-  let s = n >>> 0;
-  azar.random = () => {
-    s = (s + 0x6D2B79F5) >>> 0;
-    let t = s;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+  azar.random = mulberry32(n);
   return () => { azar.random = previo; };
 }

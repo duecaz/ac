@@ -22,15 +22,6 @@ export function pickIndex(count, rnd = azar.random) {
   return Math.floor(rnd() * count);
 }
 
-/**
- * Degrees of rotation so slice `target` (of `count`) ends centered under the
- * top pointer, after at least `turns` full spins.
- */
-export function landingRotation(target, count, turns = 5) {
-  const arc = 360 / count;
-  return 360 * turns + (360 - (target * arc + arc / 2));
-}
-
 /** Immutable remove; never collapses to an empty wheel. */
 export function removeAt(entries, index) {
   const out = entries.filter((_, i) => i !== index);
