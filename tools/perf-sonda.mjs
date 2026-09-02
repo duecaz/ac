@@ -153,6 +153,15 @@ const MEDIR = (ms) => `(async () => {
   await page.waitForSelector('.tc-round', { timeout: 15000 });
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: FRENO });
   await page.waitForTimeout(400);
+  // EL TECHO SE CALIBRA CONTRA EL REPOSO DE ESTA MISMA MÁQUINA. Con un techo
+  // absoluto (25 ms) la sonda daba rojo en un contenedor lento SOBRE EL MISMO
+  // commit que había pasado verde por la mañana (2026-09-02: 25-29 ms): una
+  // red que depende del host se acaba ignorando. El defecto que se busca
+  // —repintar el lienzo entero en cada punto— multiplicaba el coste por ~5
+  // (12 fps); se exige que escribir no cueste más del DOBLE que no hacer nada
+  // en esta misma pantalla, y nunca menos que el techo absoluto.
+  const reposo = await page.evaluate(MEDIR(1200));
+  const techoEscribir = reposo.med ? Math.max(TECHO_REPOSO, +(reposo.med * 2).toFixed(1)) : TECHO_REPOSO;
   const r = await page.evaluate(async () => {
     const cv = document.querySelector('.tc-canvas');
     if (!cv) return { sinLienzo: true };
@@ -177,8 +186,8 @@ const MEDIR = (ms) => `(async () => {
   });
   if (r.sinLienzo) mal('la hoja no montó su lienzo de tinta: no se ha medido escribir');
   else if (r.pocos !== undefined) mal(`solo ${r.pocos} fotogramas mientras se escribía`);
-  else if (r.med <= TECHO_REPOSO) ok(`ESCRIBIR en la pizarra del aula (1080p, CPU frenada ${FRENO}x): ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps)`);
-  else mal(`escribir deja la pizarra a ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps, techo ${TECHO_REPOSO} ms). `
+  else if (r.med <= techoEscribir) ok(`ESCRIBIR en la pizarra del aula (1080p, CPU frenada ${FRENO}x): ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps; reposo ${reposo.med} ms, techo ${techoEscribir} ms)`);
+  else mal(`escribir deja la pizarra a ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps, techo ${techoEscribir} ms = 2× el reposo de ${reposo.med} ms en esta máquina). `
          + '¿Se está repintando el lienzo ENTERO en cada punto en vez de añadir el trozo nuevo?');
   await page.close();
 }
