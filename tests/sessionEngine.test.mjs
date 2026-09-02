@@ -13,6 +13,7 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 // A quiz-like template with the REAL pure scorer + a round payload.
 if (!getTemplate('quiz_sess')) registerTemplate({
   meta: { name: 'quiz_sess', contentModel: 'qa', modes: { live: true },
+          play: { vs: 'points' },
           defaultRules: () => ({}), defaultScoring: () => ({}), defaultLive: () => ({}) },
   renderPlayer() {}, renderEditor() {},
   scoreSubmission: scoreQuizSubmission,
@@ -275,6 +276,7 @@ const quizActivity = {
   const { scoreTildesSubmission } = await import('../templates/tildes/scorer.js');
   if (!getTemplate('tildes_sess')) registerTemplate({
     meta: { name: 'tildes_sess', contentModel: 'textCorrection', modes: { solo: true },
+            play: { vs: 'points' },
             defaultRules: () => ({}), defaultScoring: () => ({}) },
     renderPlayer() {}, renderEditor() {},
     scoreSubmission: scoreTildesSubmission,
@@ -326,6 +328,7 @@ const quizActivity = {
   const { scoreMatchSubmission } = await import('../templates/match/scorer.js');
   if (!getTemplate('match_sess')) registerTemplate({
     meta: { name: 'match_sess', contentModel: 'pairs', modes: { solo: true },
+            play: { vs: 'points' },
             defaultRules: () => ({}), defaultScoring: () => ({}) },
     renderPlayer() {}, renderEditor() {},
     scoreSubmission: scoreMatchSubmission,

@@ -12,7 +12,8 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 // (sin renderRound). El tercero se llamaba «memory» a propósito porque la
 // capacidad se preguntaba por NOMBRE; ahora se DECLARA (`play.teams:'propio'`),
 // así que el arquetipo se llama como lo que es y el nombre deja de importar.
-registerTemplate({ meta: { name: 'mm_full', label: 'Full', contentModel: 'qa', modes: { live: true, async: true } },
+registerTemplate({ meta: { name: 'mm_full', label: 'Full', contentModel: 'qa', modes: { live: true, async: true },
+  play: { vs: 'points', teams: 'turns', live: ['rounds'] } },
   renderPlayer() {}, renderEditor() {}, renderRound() {}, getRoundPayload() {}, scoreSubmission() {} });
 registerTemplate({ meta: { name: 'mm_tool', label: 'Tool', contentModel: 'entries', modes: {} },
   renderPlayer() {}, renderEditor() {} });

@@ -330,7 +330,16 @@ export function renderEditorShell(root, a, onChange, spec) {
         // R6: el botón no puede quedarse mudo. Si el módulo no carga (red, caché
         // a medias), se dice — no se deja al profe tocando algo que no responde.
         toast('No se pudo abrir el asistente: ' + e.message, 'danger', TOAST_LARGO);
-      } finally { b.disabled = false; }
+      } finally {
+        // `b` estaba DESHABILITADO mientras el diálogo estuvo abierto (para que
+        // no se pudiera hacer doble clic mientras cargaba el módulo): un botón
+        // `disabled` no puede recibir foco, así que el `hidden.bs.modal` de
+        // modalFallback.js (que se dispara ANTES de llegar aquí, dentro del
+        // mismo cierre síncrono) no pudo devolvérselo — su intento fue un no-op.
+        // Se reactiva primero y SOLO entonces se enfoca.
+        b.disabled = false;
+        b.focus();
+      }
     });
     // Template-specific wiring.
     spec.content.wire?.(root, a, ctx);

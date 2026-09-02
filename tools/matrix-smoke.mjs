@@ -288,6 +288,73 @@ const hints = await page.evaluate(async () => {
   return out;
 });
 
+// ── B7 · UN GESTO NO DESTRUYE LO QUE SE TOCA, fuera del editor ──────────────
+// (docs/handoff-costuras.md §1 B7). `tools/edit-audit.mjs` ya lo mide en los 13
+// editores; esto extiende el MISMO patrón —foco/pestaña/pantalla ANTES y
+// DESPUÉS de cada tecla, con una espera larga para el repintado diferido— a la
+// antesala (a) y, más abajo tras el bucle, a la biblioteca/inicio (b) y a los
+// modales (c). El detector es UNO SOLO (`gestoCampo`) para que los tres sitios
+// midan con la misma vara.
+async function gestoCampo(pg, sel) {
+  return pg.evaluate(async (sel) => {
+    let f = document.querySelector(sel);
+    if (!f) return null;
+    const hashAntes = location.hash;
+    const scrollAntes = window.scrollY;
+    f.focus();
+    let roba = false, salta = false;
+    // SE RE-CONSULTA EL SELECTOR EN CADA VUELTA, no se guarda la referencia
+    // vieja: `home.js` reemplaza el `<input>` entero en cada tecla (`mount()`
+    // re-hace todo `#app`) y luego RE-ENFOCA el nuevo nodo a propósito — eso
+    // NO es perder el foco, es el mismo campo con otra identidad de DOM. La
+    // primera versión de este detector comparaba contra el nodo viejo
+    // (`f.isConnected`) y marcaba «roba» en un campo que en realidad se
+    // recupera bien: medía la identidad del nodo, no si EL FOCO se perdió.
+    for (const c of ['H', 'o', 'l', 'a']) {
+      f = document.querySelector(sel) || f;
+      f.value = (f.value || '') + c;
+      f.dispatchEvent(new Event('input', { bubbles: true }));
+      await new Promise(r => setTimeout(r, 5));
+      const ahora = document.querySelector(sel);
+      if (!ahora || document.activeElement !== ahora) roba = true;
+      if (location.hash !== hashAntes) salta = true;
+    }
+    // EL REPINTADO TARDÍO (mismo defecto medio segundo después — edit-audit.mjs
+    // lo cazó así en la Sopa del editor: repintaba 600 ms "para no interrumpir").
+    await new Promise(r => setTimeout(r, 900));
+    const final = document.querySelector(sel);
+    if (!final || document.activeElement !== final) roba = true;
+    if (location.hash !== hashAntes) salta = true;
+    return { roba, salta, scrollMovio: Math.abs(window.scrollY - scrollAntes) > 4 };
+  }, sel);
+}
+
+// AUTOCOMPROBACIÓN EN ROJO (regla de instrumento, docs/handoff-costuras.md §1
+// B7): antes de creer `gestoCampo` en verde, se sabotea EN MEMORIA —un handler
+// `input` que roba el foco, tal como pide la consigna— el mismo campo de la
+// antesala del duelo, y se comprueba que lo detecta. La primera versión de la
+// red de la pestaña del editor dio verde con el defecto puesto (comentario de
+// tools/edit-audit.mjs): no se repite ese error aquí.
+{
+  // mx_quiz ya está sembrado (bucle de siembra de arriba); solo se navega.
+  await page.evaluate(() => { location.hash = '#/mine'; });
+  await page.waitForTimeout(120);
+  await page.evaluate(() => { location.hash = '#/vs/mx_quiz'; });
+  await page.waitForSelector('[data-ww-start]', { timeout: 9000 });
+  await page.evaluate((sel) => {
+    document.querySelector(sel)?.addEventListener('input', () => document.activeElement?.blur());
+  }, '#vs-name-left');
+  const rojo = await gestoCampo(page, '#vs-name-left');
+  if (!rojo?.roba) {
+    console.error('❌ INSTRUMENTO gestos: el sabotaje (handler input que roba el foco) NO salió en rojo — el detector no es de fiar, se aborta.');
+    bye(1);
+  }
+  console.log('  ✓ instrumento de gestos comprobado en ROJO (sabotaje: handler `input` que roba el foco) antes de fiarse de él en verde\n');
+  // El sabotaje vivía en el listener de esa página: recargar deja limpio el DOM.
+  await page.goto(`${BASE}/teacher.html?backend=local`, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => document.querySelector('#app')?.children.length > 0, { timeout: 20000 });
+}
+
 const results = [];
 const taps = [];
 const hits = [];   // hit-testing de los controles críticos
@@ -305,6 +372,7 @@ const antesalas = [];    // LA ANTESALA ES UNA: un control de arranque y las ins
 const presupuesto = [];
 const roles = [];        // LOS CUATRO ROLES de la diagramación (edu-hud · edu-topbar · edu-sec · edu-send)
 const legibilidad = [];   // §29 · informe de tamaño (no veredicto: ver el porqué abajo)
+const gestos = [];        // B7 · foco/pantalla al teclear, fuera del editor
 for (const t of seeded) {
   if (only.length && !only.includes(t.name)) continue;
   const cap = caps.find(c => c.name === t.name);
@@ -338,6 +406,24 @@ for (const t of seeded) {
         if (ant.arranques !== 1) { status = 'error'; detail = `la antesala tiene ${ant.arranques} controles de arranque (debe ser 1)`; }
         else if (!ant.instrucciones) { status = 'error'; detail = 'la antesala no dice cómo se juega (sin instrucciones)'; }
         antesalas.push({ label: t.label, mode, ...ant });
+        // B7-a · EL CAMPO DE APODO (duelo) / NOMBRE DE EQUIPO (equipos), en la
+        // MISMA antesala: teclear no puede perder el foco ni sacar de la
+        // pantalla (el instrumento ya se comprobó en rojo, arriba). Corre una
+        // vez por plantilla que declare el modo, donde el campo existe.
+        if (status === 'ok') {
+          const GESTO_SEL = { vs: '#vs-name-left', teams: '#teams-names input' };
+          const sel = GESTO_SEL[mode];
+          if (sel && await page.locator(sel).count()) {
+            const g = await gestoCampo(page, sel);
+            if (g) {
+              gestos.push({ label: t.label, mode, sitio: `antesala (${sel})`, ...g });
+              if (g.roba || g.salta) {
+                status = 'error';
+                detail = `gestos: la antesala ${g.roba ? 'pierde el foco' : 'cambia de pantalla'} al teclear en ${sel}`;
+              }
+            }
+          }
+        }
         // ESPÍA DE RECÁLCULOS, armado ANTES de arrancar. Muestrea por FOTOGRAMA
         // (no con ResizeObserver: engancharlo cuando el elemento ya existe llega
         // tarde y se pierde justo el primer recálculo, que dura un fotograma).
@@ -1025,6 +1111,113 @@ for (const t of seeded) {
   }
 }
 
+// ── B7-b · BIBLIOTECA / INICIO: teclear en el buscador no pierde el foco ni
+// resetea el scroll de la lista ────────────────────────────────────────────
+// Corre UNA vez (no por plantilla): es la misma caja para las 13. `home.js` y
+// `explore.js` ya re-enfocan el input a mano tras cada `paint()` (comentario
+// en views/home.js: «paint() re-monta toda la vista → hay que re-enfocar»),
+// así que esto MIDE esa promesa con el mismo instrumento ya probado en rojo,
+// no la da por hecha leyendo el código.
+try {
+  await page.evaluate(() => { location.hash = '#/mine'; });
+  await page.waitForSelector('#h-q', { timeout: 9000 });
+  await page.evaluate(() => window.scrollTo(0, 200));
+  const gHome = await gestoCampo(page, '#h-q');
+  gestos.push({ label: '(home)', mode: 'buscador', sitio: '#h-q', ...gHome });
+
+  await page.evaluate(() => { location.hash = '#/explore'; });
+  await page.waitForSelector('#exp-q', { timeout: 9000 });
+  await page.waitForTimeout(300);   // deja llegar la lista pública antes de teclear
+  await page.evaluate(() => window.scrollTo(0, 150));
+  const gExplore = await gestoCampo(page, '#exp-q');
+  gestos.push({ label: '(explorar)', mode: 'buscador', sitio: '#exp-q', ...gExplore });
+} catch (e) { gestos.push({ label: '(buscador)', mode: 'error', sitio: '?', error: String(e.message).split('\n')[0] }); }
+
+// ── B7-c · MODALES: buscar imagen (abrirBuscadorImagenes) y «Escribir con IA»
+// (#ww-ia-go) ────────────────────────────────────────────────────────────────
+// Teclear en su campo no cierra el modal ni pierde el foco; Escape lo cierra
+// y (se comprueba, no se asume) devuelve el foco al botón que lo abrió.
+// El EDITOR se monta DIRECTO (`T.renderEditor`), como hace tools/edit-audit.mjs
+// — `#/edit/:id` exige sesión de profe (S1, core/authGate.js) y este smoke
+// juega en local sin credenciales; renderEditor es la misma puerta sin el gate.
+async function abrirEditorScratch(nombre) {
+  return page.evaluate(async (name) => {
+    await import('/core/registerTemplates.js');
+    const { getTemplate } = await import('/core/registry.js');
+    const { migrate } = await import('/core/migrate.js');
+    const T = getTemplate(name);
+    const a = migrate({ id: `mx_${name}`, template: name, title: 'Gestos', schemaVersion: 4,
+      content: JSON.parse(JSON.stringify(T.meta.defaultContent())) });
+    document.getElementById('app').innerHTML = '<div id="ed-gestos"></div>';
+    T.renderEditor(document.getElementById('ed-gestos'), a, () => {});
+  }, nombre);
+}
+async function gestoModal(pg, triggerSel, fieldSel) {
+  await pg.locator(`#ed-gestos ${triggerSel}`).first().click();
+  const abrio = await pg.waitForSelector('.modal.show', { timeout: 5000 }).then(() => true).catch(() => false);
+  if (!abrio) return { error: `el modal no se abrió al pulsar ${triggerSel}` };
+  const campo = pg.locator(fieldSel).first();
+  if (!await campo.count()) return { error: `el modal no tiene el campo ${fieldSel}` };
+  await campo.click();
+  await campo.type('río', { delay: 15 });
+  await pg.waitForTimeout(900);   // repintado diferido
+  const sigueAbierto = await pg.evaluate(() => !!document.querySelector('.modal.show'));
+  const sigueFoco = await pg.evaluate((s) => document.activeElement === document.querySelector(s), fieldSel);
+  await pg.keyboard.press('Escape');
+  await pg.waitForTimeout(400);
+  const cerrado = await pg.evaluate(() => !document.querySelector('.modal.show'));
+  const focoVuelve = await pg.evaluate((s) => document.activeElement === document.querySelector(`#ed-gestos ${s}`), triggerSel);
+  const mal = !sigueAbierto || !sigueFoco || !cerrado;
+  return { sigueAbierto, sigueFoco, cerrado, focoVuelve, mal };
+}
+
+// AUTOCOMPROBACIÓN EN ROJO de `gestoModal`, ANTES de usarlo en verde: se
+// sabotea el modal de buscar imagen con un handler `input` que lo CIERRA a
+// mitad de tecla (el otro sabotaje que pide la consigna, junto al de robar el
+// foco, ya probado arriba para `gestoCampo`) y se comprueba que
+// `sigueAbierto` lo detecta.
+try {
+  await abrirEditorScratch('match');
+  await page.waitForSelector('#ed-gestos .mp-img-search', { timeout: 9000 });
+  await page.locator('#ed-gestos .mp-img-search').first().click();
+  await page.waitForSelector('.modal.show', { timeout: 5000 });
+  await page.evaluate(() => {
+    const modal = document.querySelector('.modal.show');
+    const campo = modal?.querySelector('input[id$="-q"]');
+    campo?.addEventListener('input', () => modal.querySelector('[data-bs-dismiss="modal"]')?.click());
+  });
+  const campo = page.locator('.modal.show input[id$="-q"]').first();
+  await campo.click();
+  await campo.type('x');
+  await page.waitForTimeout(300);
+  const siguePuesto = await page.evaluate(() => !!document.querySelector('.modal.show'));
+  if (siguePuesto) {
+    console.error('❌ INSTRUMENTO gestoModal: el sabotaje (cierra el modal al teclear) NO salió en rojo — el detector no es de fiar, se aborta.');
+    bye(1);
+  }
+  console.log('  ✓ instrumento de gestoModal comprobado en ROJO (sabotaje: handler `input` que cierra el modal) antes de fiarse de él en verde\n');
+} catch (e) {
+  console.error('❌ INSTRUMENTO gestoModal: no se pudo comprobar en rojo —', String(e.message).split('\n')[0]);
+  bye(1);
+}
+
+try {
+  // Buscar imagen: el editor de Emparejar la ofrece por pareja (`.mp-img-search`).
+  await abrirEditorScratch('match');
+  await page.waitForSelector('#ed-gestos .mp-img-search', { timeout: 9000 });
+  const gImg = await gestoModal(page, '.mp-img-search', 'input[id$="-q"]');
+  gestos.push({ label: '(editor match)', mode: 'modal', sitio: 'buscar imagen', ...gImg });
+
+  // Escribir con IA: el Quiz (modelo 'qa') la ofrece en el chasis del editor.
+  await abrirEditorScratch('quiz');
+  await page.waitForSelector('#ed-gestos #ww-ia-go', { timeout: 9000 });
+  const gIa = await gestoModal(page, '#ww-ia-go', 'input[id$="tema"]');
+  gestos.push({ label: '(editor quiz)', mode: 'modal', sitio: 'escribir con IA', ...gIa });
+} catch (e) { gestos.push({ label: '(modal)', mode: 'error', sitio: '?', error: String(e.message).split('\n')[0] }); }
+// Deja el DOM como estaba para lo que venga detrás (el informe no navega más).
+await page.evaluate(() => { location.hash = '#/mine'; });
+await page.waitForTimeout(150);
+
 // ── Informe ──────────────────────────────────────────────────────────────────
 const ICON = { ok: '✅', error: '⚠️ ', fail: '❌', 'n/a': '· ' };
 const modes = Object.keys(DRIVERS);
@@ -1275,9 +1468,34 @@ if (roles.length) {
 const seedBad = seeded.filter(s => s.seedError);
 if (seedBad.length) { console.log('\nSIEMBRA FALLIDA:'); seedBad.forEach(s => console.log(`  ❌ ${s.name} — ${s.seedError}`)); }
 
+// ── B7 · UN GESTO NO DESTRUYE LO QUE SE TOCA, fuera del editor ──────────────
+// antesala (a) + biblioteca/inicio (b) + modales (c). Instrumento comprobado
+// en ROJO antes de este informe (dos sabotajes: roba el foco · cierra el
+// modal). Un fallo aquí NO tumbó ya la combinación de la matriz cuando venía
+// de (a) — sí lo hizo, vía `status='error'`, más arriba —; (b) y (c) se
+// juzgan solo aquí porque corren fuera del bucle plantilla×modo.
+const gestosBad = gestos.filter(g => g.error || g.roba || g.salta || g.mal);
+if (gestos.length) {
+  console.log('\nB7 · UN GESTO NO DESTRUYE LO QUE SE TOCA (antesala · buscador · modales)\n');
+  for (const g of gestos) {
+    const mal = g.error || g.roba || g.salta || g.mal;
+    const que = g.error ? g.error
+      : g.roba ? 'pierde el foco al teclear'
+      : g.salta ? 'cambia de pantalla al teclear'
+      : g.mal ? [
+          g.sigueAbierto === false && 'el modal se cerró solo al teclear',
+          g.sigueFoco === false && 'el campo perdió el foco al teclear',
+          g.cerrado === false && 'Escape no cerró el modal',
+        ].filter(Boolean).join(' · ')
+      : (g.scrollMovio ? 'el scroll se movió al teclear (informe, no tumba la red)' : 'ok')
+      + (g.focoVuelve === false ? ' · Escape no devolvió el foco al disparador (hallazgo)' : '');
+    console.log(`  ${mal ? '❌' : '✅'} ${String(g.label).padEnd(14)} ${String(g.sitio).padEnd(28)} ${que}`);
+  }
+}
+
 console.log(`\n✅ ok: ${results.filter(r => r.status === 'ok').length}` +
   ` · ❌ fallos: ${bad.length}` +
   ` · · no aplica: ${results.filter(r => r.status === 'n/a').length}`);
 console.log('El ALUMNO en vivo lo cubre tools/live-smoke.mjs (dos contextos) y la Tarea tools/task-smoke.mjs. Sin cubrir: carrera con 2 alumnos.');
 await browser.close();
-bye(bad.length || seedBad.length || tapBad.length || hitBad.length || roundBad.length || presuBad.length || embedBad.length || marcoBad.length || formaBad.length || escalaBad.length || espejoBad.length || bloqueBad.length || origenBad.length ? 1 : 0);
+bye(bad.length || seedBad.length || tapBad.length || hitBad.length || roundBad.length || presuBad.length || embedBad.length || marcoBad.length || formaBad.length || escalaBad.length || espejoBad.length || bloqueBad.length || origenBad.length || gestosBad.length ? 1 : 0);

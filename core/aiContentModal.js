@@ -83,8 +83,14 @@ function conMarcas(p) {
  * @param {Function} [opts.fetchFn] inyectable para las sondas
  * @returns {Promise<object|null>}
  */
+// `opts.disparador`: a quién devolver el foco al cerrar. Por defecto es
+// `document.activeElement` (core/modalFallback.js), pero editorShell.js
+// deshabilita el botón «Escribir con IA» ANTES de llamar (para que no se
+// pueda hacer doble clic mientras carga el módulo) — un botón `disabled`
+// deja de ser el `activeElement` al instante, así que ese caller lo pasa
+// explícito con la referencia que capturó antes de deshabilitarlo.
 export function abrirEscribirConIA(opts = {}) {
-  const { modelo, tema = '', palabrasComoTexto = false, fetchFn = fetch } = opts;
+  const { modelo, tema = '', palabrasComoTexto = false, fetchFn = fetch, disparador } = opts;
   const def = MODELOS_IA[modelo];
   if (!iaSabeEscribir(modelo)) return Promise.resolve(null);
   const elemento = opts.elemento || def.elemento;
@@ -150,7 +156,7 @@ export function abrirEscribirConIA(opts = {}) {
     </div>`;
   const el = wrap.firstElementChild;
   document.body.appendChild(el);
-  const m = abrirDialogoConFallback(el);
+  const m = abrirDialogoConFallback(el, { disparador });
 
   let propuesto = null;
   let aceptado = null;

@@ -416,6 +416,93 @@ try {
     await host.locator('.modal [data-act=ok]').click({ timeout: 3000 }).catch(() => {});
   }
 
+  // ══ CUARTA PASADA: UN GESTO NO DESTRUYE LO QUE EL ALUMNO TIENE ENTRE MANOS
+  // (docs/handoff-costuras.md §1 B7-d) ═══════════════════════════════════════
+  // Con una marca de Tildes A MEDIAS (dibujada, sin pulsar "Listo"), el host
+  // hace algo que NO cambia de FASE —pausa el cronómetro: la sala sigue en
+  // 'question', solo cambia `deadline`— y se comprueba que la marca sigue
+  // puesta. La clave de repintado de views/studentLive.js (`paint()`, línea
+  // ~241: `status-phase-current_item-deadline-ql_open-…`) SÍ incluye
+  // `deadline`, así que una pausa fuerza un repintado real; un jugador nuevo o
+  // un latido del host no tocan esos campos y por eso nunca llegan a
+  // repintar —ese caso no puede perder nada porque nunca se repinta, así que
+  // no prueba lo que este B7 pide medir—. Aquí se elige el gesto que SÍ
+  // repinta, que es el único que puede destruir algo.
+  {
+    await host.evaluate(async () => {
+      await import('/core/registerTemplates.js');
+      const { getTemplate } = await import('/core/registry.js');
+      const s = await import('/core/storage.js');
+      const T = getTemplate('tildes');
+      s.save({ id: 'lv_tildes', template: 'tildes', title: 'Gestos en vivo',
+        content: T.meta.defaultContent(), rules: T.meta.defaultRules(),
+        scoring: T.meta.defaultScoring(), live: {}, updatedAt: 'x' });
+    });
+    await host.evaluate(() => { location.hash = '#/launch/lv_tildes'; });
+    await host.waitForSelector('.ww-pin', { timeout: 12000 });
+    const pin4 = (await host.locator('.ww-pin').textContent()).trim();
+    await student.goto(`${BASE}/student.html?backend=local#/join`, { waitUntil: 'domcontentloaded' });
+    await student.waitForSelector('#f-code', { timeout: 12000 });
+    await student.fill('#f-code', pin4);
+    await student.fill('#f-nick', 'Nora');
+    await student.click('#btn-join');
+    await host.waitForFunction(() => document.body.textContent.includes('Nora'), { timeout: 9000 });
+    await host.waitForSelector('.loop-pick[data-loop="rounds"]', { timeout: 9000 });
+    await host.click('.loop-pick[data-loop="rounds"]');
+    await host.click('#btn-start');
+    await student.waitForSelector('#s-round:not(.s-reading) .tc-target', { timeout: 15000 });
+    log(`sala de Tildes arrancada · PIN ${pin4}`);
+
+    // Un trazo corto sobre la primera vocal-objetivo — el canvas escucha
+    // eventos de puntero de verdad (core/textCorrectionDraw.js), así que hace
+    // falta mover/bajar/arrastrar/soltar, no un click sintético (mismo driver
+    // que tools/helpers/roundDrivers.mjs usa para "trazo", sin el paso final
+    // que pulsa «Listo»: aquí la marca se queda A MEDIAS a propósito).
+    const trazar = async () => {
+      const t = student.locator('#s-round .tc-target').first();
+      const b = await t.boundingBox();
+      const y = b.y + b.height / 2;
+      await student.mouse.move(b.x + b.width / 2 - 3, y);
+      await student.mouse.down();
+      await student.mouse.move(b.x + b.width / 2 + 3, y, { steps: 4 });
+      await student.mouse.up();
+      await student.waitForTimeout(200);
+    };
+    const marcada = () => student.locator('#s-round .tc-target.tc-marked').count();
+
+    await trazar();
+    if (!(await marcada())) throw new Error('B7-d: el trazo no dejó marca — revisar el driver, no el hallazgo (views/live/studentRondas.js aún no entra en juego)');
+    log('el alumno dibuja UNA tilde (sin pulsar «Listo»)');
+
+    // AUTOCOMPROBACIÓN EN ROJO del instrumento (regla de docs/handoff-costuras.md
+    // §1 B7): se sabotea EN MEMORIA —se quita `tc-marked` a mano, sin pasar por
+    // la app— y se comprueba que el conteo (`marcada()`) lo nota ANTES de
+    // fiarse de él para el caso real de abajo.
+    await student.evaluate(() => document.querySelector('#s-round .tc-target.tc-marked')?.classList.remove('tc-marked'));
+    if (await marcada()) throw new Error('B7-d INSTRUMENTO: quitar tc-marked a mano no bajó el conteo — el detector no es de fiar, se aborta');
+    log('  instrumento comprobado en ROJO (se quita `tc-marked` a mano → el conteo lo detecta)');
+    await trazar();
+    if (!(await marcada())) throw new Error('B7-d: no se pudo re-dibujar la marca tras la autocomprobación');
+
+    // El HOST pausa: NO cambia de fase (sigue 'question'), solo `deadline`.
+    await host.click('#btn-pause');
+    await host.waitForTimeout(1200);   // BroadcastChannel es casi inmediato; se da margen igual
+    const siguePuesta = await marcada();
+    if (!siguePuesta) {
+      throw new Error('B7-d HALLAZGO: el host pausa el cronómetro (la sala NO cambia de fase) y la marca de'
+        + ' Tildes del alumno DESAPARECE. views/studentLive.js:~241-244 incluye `deadline` en la clave de'
+        + ' repintado, así que la pausa SÍ dispara paint() → rondas.paintQuestion(); y'
+        + ' views/live/studentRondas.js:82-115 vuelve a `mount()` #s-round y a llamar `tpl.renderRound()'
+        + ' entero en cada llamada, sin restaurar el trazo en curso — el mismo patrón que ya rompió el'
+        + ' editor (v1.51.642), esta vez fuera de él.');
+    }
+    log('la marca de Tildes SIGUE PUESTA tras un repintado real que no cambia de fase (host pausa el cronómetro)');
+    await host.click('#btn-pause');   // reanuda, deja la sala limpia
+    await host.click('#btn-end').catch(() => {});
+    await host.locator('.modal [data-act=ok]').click({ timeout: 3000 }).catch(() => {});
+  }
+  log('La TAREA (PIN, nombre, respuesta a medias) queda FUERA de este archivo: tiene su propia sonda en tools/task-smoke.mjs.');
+
   if (errs.length) { console.error('\nERRORES DE PÁGINA:'); errs.forEach(e => console.error('  ✗', e)); }
   if (!emmaScored || errs.length) { console.log('\n❌ LIVE E2E FALLA'); await browser.close(); bye(1); }
   console.log('\n✅ LIVE E2E PASA — pregunta (sala→PIN→join→respuesta→settle→clasificación→podio),'

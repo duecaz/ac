@@ -13,7 +13,8 @@ const ok = (msg) => { passed++; console.log('  ✓', msg); };
 
 // A fully-capable, scoring + live + async template (à la Quiz).
 registerTemplate({
-  meta: { name: 'm_full', label: 'Full', contentModel: 'qa', modes: { solo: true, live: true, async: true } },
+  meta: { name: 'm_full', label: 'Full', contentModel: 'qa', modes: { solo: true, live: true, async: true },
+          play: { vs: 'points', teams: 'turns', live: ['rounds'] } },
   renderPlayer() {}, renderEditor() {},
   renderRound() {}, getRoundPayload() {}, scoreSubmission() { return { correct: true, points: 1 }; }
 });

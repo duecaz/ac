@@ -60,7 +60,11 @@ export class BallsortTemplate extends BaseTemplate {
     // avanzar movimiento a movimiento sobre la fase 'race'.
     defaultRules:   () => ({}),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1000 }),
-    defaultLive:    () => ({ advanceMode: 'race' }),
+    // B6 (2026-09-02): `advanceMode` solo lo lee el bucle 'rounds' (via
+    // `hasAdvanceChoice`, core/liveLoops.js) — Ordena las Pelotas declara SOLO
+    // 'board' arriba, así que este valor nunca llegaba a nadie: muerto desde
+    // que nació. El ajuste de la SALA no lo declara una plantilla (§0/§21b).
+    defaultLive:    () => ({}),
     defaultContent: () => {
       const board = randomBoard('classic');
       return { level: 'classic', mode: 'moves', random: true,

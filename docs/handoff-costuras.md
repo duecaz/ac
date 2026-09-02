@@ -166,9 +166,9 @@ donde un humano tiene algo entre manos.
 | B1 declaraciones | `tools/costuras-declaraciones.mjs` | 15 | **0** | 14 claves fuera del esquema (3 declaradas por las 13 sin lector; 6 viajando en el JSON de toda actividad); 4 «prometidas sin mecánica» retiradas |
 | B3 vista↔plantilla | `tools/costuras-plantilla-en-vista.mjs` | 9 | **0** | 4 conectados a `esHojaDeTexto()`; la ruleta a `core/ruleta/` (pieza del bucle) |
 | B2 contrato | `tools/costuras-contrato.mjs` | 16 | **0** | 6 cuerpos tecleados dos veces subidos a su dueño; el editor de Tildes/Comas unificado |
-| B5 duplicados | — | | | pendiente |
-| B6 capa | — | | | pendiente (nota: `isVsCompatible` decide por capacidad, no por declaración) |
-| B7 gestos | `tools/edit-audit.mjs` (parcial) | | | los 13 editores cubiertos; falta antesala · alumno en vivo · modales · biblioteca |
+| B5 duplicados | `tools/costuras-duplicados.mjs` | 67 | **32** | 13 dueños nuevos (toasts, PRNG único, tile de imagen, modal…); lo que queda son 5 editores gemelos, 1 frase, 26 números por juzgar |
+| B6 capa | `tools/costuras-capa.mjs` | 22 | **0** | los 10 ajustes de sala del Quiz eran copias de `DEFAULT_LIVE`; 4 gates pasan de capacidad a declaración y el contrato lo exige |
+| B7 gestos | `edit-audit` + `matrix-smoke` + `live-smoke` | 2 | **0** | antesala · biblioteca · modales · alumno en vivo. Cazó un bug real: «Pausa» del host borraba la marca en curso del alumno |
 
 Colateral: la regex que quitaba comentarios se tragaba medio `core/selftest.js`
 (invisible a TODAS las reglas desde que existe) → `core/sinComentarios.js`, dueño

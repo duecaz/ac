@@ -43,11 +43,13 @@ async function traerComoDataUrl(url, { maxBytes, ladoMax }) {
  * Abre el buscador. Resuelve con `{ url, atribucion }` cuando el profe elige una
  * imagen, o con `null` si cierra el diálogo sin elegir.
  *
- * @param {{maxBytes?:number, ladoMax?:number, consulta?:string}} opts
+ * @param {{maxBytes?:number, ladoMax?:number, consulta?:string, disparador?:Element}} opts
+ *   `disparador`: a quién devolver el foco al cerrar, para el caller que
+ *   deshabilita su botón antes de llamar (ver core/modalFallback.js).
  * @returns {Promise<{url:string, atribucion:object}|null>}
  */
 export function abrirBuscadorImagenes(opts = {}) {
-  const { maxBytes = QUOTAS.imageBytes, ladoMax = QUOTAS.canvasImageSide, consulta = '' } = opts;
+  const { maxBytes = QUOTAS.imageBytes, ladoMax = QUOTAS.canvasImageSide, consulta = '', disparador } = opts;
   const id = rid('ww-imgsearch-');
 
   const wrap = document.createElement('div');
@@ -85,7 +87,7 @@ export function abrirBuscadorImagenes(opts = {}) {
 
   const el = wrap.firstElementChild;
   document.body.appendChild(el);
-  const m = abrirDialogoConFallback(el);
+  const m = abrirDialogoConFallback(el, { disparador });
   const $ = (suf) => el.querySelector('#' + id + suf);
 
   let resultados = [];

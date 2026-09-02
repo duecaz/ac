@@ -35,9 +35,11 @@ export class QuizTemplate extends BaseTemplate {
     // solo actividades NUEVAS — el contenido guardado no se toca (§24).
     defaultRules: () => ({ timer: 30, randomize: false, shuffleOptions: true }),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
-    defaultLive: () => ({ advanceMode: 'manual', questionTimer: 20, lockAnswersOn: 'allAnswered',
-                          showAnswerAfterEach: true, showLeaderboardBetween: true, pointsModel: 'velocidad',
-                          speedBonusMax: 1000, allowLateJoin: true, maxPlayers: 60, nicknameFilter: true }),
+    // B6 (2026-09-02): los 9 valores que declaraba aquí eran IDÉNTICOS a los que
+    // ya siembra DEFAULT_LIVE (core/constants.js) para las 13 plantillas — el
+    // ajuste de la SALA (capa modo/plataforma) no lo declara una plantilla
+    // (§0/§21b).
+    defaultLive: () => ({}),
     defaultContent: () => ({ items: defaultQaItems() }),
   };
 

@@ -111,10 +111,24 @@ export function checkTemplateContract(T) {
     if (['turns', 'board'].includes(m.play.teams) && typeof T.renderRound !== 'function') {
       issues.push("meta.play.teams usa la ronda genérica pero no implementa renderRound (¿querías teams:'propio'?)");
     }
+    // B6 (2026-09-02): quien declara VS (play.vs!=='none') se ofrece en la
+    // vista de VS genérica (views/vsView.js) igual que 'turns'/'board' se
+    // ofrecen en la de Equipos — la declaración es la que EXIGE la capacidad,
+    // no al revés (kernel/session/vsMachine.js `isVsCompatible` lee esta misma
+    // declaración, ya no adivina por typeof).
+    if (m.play.vs !== 'none' && typeof T.renderRound !== 'function') {
+      issues.push("meta.play.vs no es 'none' pero no implementa renderRound (VS necesita pintar la ronda)");
+    }
     // `play.live` es una LISTA de bucles (§26); se tolera el string heredado.
     const liveRaw = Array.isArray(m.play.live) ? m.play.live : (m.play.live ? [m.play.live] : []);
     for (const l of liveRaw) {
       if (!LIVE_POLICIES.includes(l)) issues.push(`meta.play.live: "${l}" no es un bucle del catálogo (usa ${LIVE_LOOPS.join(' | ')} o [])`);
+    }
+    // B6: quien declara el bucle 'board' (§26) es a quien la pizarra del host
+    // le pide renderRaceCell (views/live/hostTablero.js) — misma declaración,
+    // misma exigencia que arriba con renderRound.
+    if (liveRaw.includes('board') && typeof T.renderRaceCell !== 'function') {
+      issues.push("meta.play.live incluye 'board' pero no implementa renderRaceCell (la pizarra del host no puede pintar el tablero)");
     }
     const liveLoops = liveRaw.filter(l => l !== 'none');
     if (m.modes?.live && liveLoops.length === 0) issues.push('incoherencia: modes.live=true pero play.live no declara ningún bucle (declara cómo corre en vivo)');

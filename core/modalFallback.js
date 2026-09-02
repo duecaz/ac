@@ -9,7 +9,27 @@
 //
 // Usa Bootstrap si está cargado y, si NO está, lo hace a mano con las mismas
 // clases y el mismo evento `hidden.bs.modal`.
-export function abrirDialogoConFallback(el) {
+//
+// EL FOCO VUELVE AL DISPARADOR (hallazgo de matrix-smoke, red B7): Escape ya
+// cerraba el diálogo (bootstrap.Modal lo hace solo; el respaldo, con el
+// listener de abajo), pero el foco se quedaba en ningún sitio — el profe
+// tenía que volver a buscar con el ratón el botón que abrió el modal. Se
+// guarda AL ABRIR y se devuelve en `hidden.bs.modal` — el mismo evento tanto
+// si cierra el Modal de Bootstrap de verdad como el respaldo a mano, así un
+// solo `addEventListener` cubre los dos caminos.
+// Por defecto es `document.activeElement` (válido cuando el caller hace
+// `abrirDialogoConFallback(el)` seguido de `m.show()` en el mismo gesto de
+// clic). Un caller que DESHABILITA su botón disparador antes de abrir (para
+// que no se pueda hacer doble clic mientras carga) tiene que pasarlo EXPLÍCITO
+// como segundo argumento: un botón `disabled` deja de ser el `activeElement`
+// al instante, con lo que el valor por defecto ya llegaría vacío (era el caso
+// de «Escribir con IA», editorShell.js).
+export function abrirDialogoConFallback(el, { disparador = document.activeElement } = {}) {
+  el.addEventListener('hidden.bs.modal', () => {
+    if (disparador && typeof disparador.focus === 'function' && document.body.contains(disparador)) {
+      disparador.focus();
+    }
+  });
   if (typeof bootstrap !== 'undefined' && bootstrap?.Modal) return new bootstrap.Modal(el);
   let fondo = null;
   const cerrar = () => {
@@ -20,6 +40,9 @@ export function abrirDialogoConFallback(el) {
   };
   el.addEventListener('click', (e) => {
     if (e.target.closest('[data-bs-dismiss="modal"]')) cerrar();
+  });
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') cerrar();
   });
   return {
     show() {

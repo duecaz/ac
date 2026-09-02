@@ -14,6 +14,7 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 // Plantilla quiz-like real (scorer puro + ronda/payload) para ambos modos.
 registerTemplate({
   meta: { name: 'sim_quiz', contentModel: 'qa', modes: { live: true },
+          play: { vs: 'points' },
           defaultRules: () => ({}), defaultScoring: () => ({}), defaultLive: () => ({}) },
   renderPlayer() {}, renderEditor() {}, renderRound() {},
   scoreSubmission: scoreQuizSubmission,

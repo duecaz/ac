@@ -26,7 +26,8 @@ let passed = 0;
 const ok = (msg) => { passed++; console.log('  ✓', msg); };
 
 registerTemplate({
-  meta: { name: 'ma_full', label: 'Full', contentModel: 'qa', modes: { solo: true, live: true, async: true } },
+  meta: { name: 'ma_full', label: 'Full', contentModel: 'qa', modes: { solo: true, live: true, async: true },
+          play: { vs: 'points', teams: 'turns', live: ['rounds'] } },
   renderPlayer() {}, renderEditor() {},
   renderRound() {}, getRoundPayload() {}, scoreSubmission() { return { correct: true, points: 1 }; }
 });

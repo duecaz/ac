@@ -28,9 +28,47 @@ export function createStudentRondas(rt) {
   // Tracks items we've already bumped streak for. Without this, host_seen_at
   // pings re-trigger paintRevealOwn and would replay every ~10 s.
   const revealedItems = new Set();
+  // §23 · idx de la pregunta cuya ronda está MONTADA e interactiva (ya pasó la
+  // ventana de lectura, el alumno aún no envió). Solo se marca al llegar a la
+  // rama jugable de abajo — nunca en la de lectura ni en la de espera.
+  let mountedIdx = -1;
+
+  // Único lugar que arranca/reinicia el cronómetro de pregunta: lo llaman tanto
+  // el montaje inicial como el atajo de "solo cambió el reloj" (Pausa/Reanudar
+  // del host, ~hostRondas.js). Mismo reloj, misma limpieza.
+  function startQuestionTicker(deadlineMs, total) {
+    questionTicker?.stop();
+    questionTicker = startDeadlineTicker({
+      deadline: deadlineMs, totalMs: total,
+      while: () => rt.session.phase === 'question',
+      setIntervalFn: rt.ctx.setInterval,
+      onTick: ({ remainSec, pct }) => {
+        const t = document.getElementById('s-time');
+        const b = document.getElementById('s-bar');
+        if (t) t.textContent = `${remainSec}s`;
+        if (b) b.style.width = pct + '%';
+      },
+    });
+  }
 
   async function paintQuestion() {
     const idx = rt.session.current_item;
+    // La pausa del host (botón "Pausa"/"Reanudar" de hostRondas.js) SOLO cambia
+    // `deadline` en la sala — no de fase ni de pregunta. paint() nos vuelve a
+    // llamar porque `deadline` entra en su clave de repintado (studentLive.js).
+    // Si la ronda YA está montada e interactiva para esta MISMA pregunta, no hay
+    // nada que redibujar: remontar #s-round (tpl.renderRound de nuevo) borraría
+    // el trazo en curso del alumno — mismo fallo que el editor (v1.51.642).
+    // Lo único que de verdad cambió es el reloj: se reinicia en sitio.
+    if (mountedIdx === idx && rt.session.phase === 'question' && document.getElementById('s-round')) {
+      const openAtMs = rt.session.answers_open_at ? new Date(rt.session.answers_open_at).getTime() : 0;
+      const deadlineMs = rt.session.deadline ? new Date(rt.session.deadline).getTime() : 0;
+      const total = (deadlineMs && openAtMs && deadlineMs > openAtMs)
+        ? deadlineMs - openAtMs
+        : questionWindowMs(rt.activity);
+      startQuestionTicker(deadlineMs, total);
+      return;
+    }
     const items = sessionItems(rt.activity);
     const item = items[idx];
     const own = await getOwnAnswer(rt.session.id, rt.player.playerId, idx);
@@ -147,21 +185,14 @@ export function createStudentRondas(rt) {
       handle.flush();
     };
 
+    // La ronda queda montada e interactiva para ESTE ítem: un repintado
+    // posterior que solo cambie el reloj (pausa/reanudar) usa el atajo de
+    // arriba en vez de volver a llamar a tpl.renderRound().
+    mountedIdx = idx;
     // Cronómetro compartido (core/deadlineTicker.js): mismo reloj que el host,
     // con clock.now() y auto-parada cuando la fase cambia — antes era un
     // setInterval propio con clock.now() y limpieza a mano.
-    questionTicker?.stop();
-    questionTicker = startDeadlineTicker({
-      deadline: deadlineMs, totalMs: total,
-      while: () => rt.session.phase === 'question',
-      setIntervalFn: rt.ctx.setInterval,
-      onTick: ({ remainSec, pct }) => {
-        const t = document.getElementById('s-time');
-        const b = document.getElementById('s-bar');
-        if (t) t.textContent = `${remainSec}s`;
-        if (b) b.style.width = pct + '%';
-      },
-    });
+    startQuestionTicker(deadlineMs, total);
   }
 
   async function paintRevealOwn() {

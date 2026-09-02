@@ -28,10 +28,24 @@ import { FORMATS } from './formats.js';
  *  y gana quien termina antes (raceToFinish). Ahí basta con 1 ítem. */
 export function isVsCompatible(activity) {
   const T = getTemplate(activity?.template);
+  if (!T) return false;
+  // DECLARACIÓN (§0): la plantilla dice si juega en VS con meta.play.vs, no se
+  // adivina por si tiene scoreSubmission/renderRound — eso es CAPACIDAD, y el
+  // contrato (core/templateContract.js) ya EXIGE esos dos métodos a quien
+  // declara play.vs!=='none' (líneas 111 y 177), así que aquí basta con leer
+  // la declaración.
+  const declared = !!T.meta?.play?.vs && T.meta.play.vs !== 'none';
+  if (!declared) return false;
+  // Aviso defensivo (R6), no criterio: si declaración y capacidad se
+  // desalinean, templateContract.js ya rompe CI antes de llegar aquí; esto
+  // solo evita un crash si algo se coló.
+  if (typeof T.scoreSubmission !== 'function' || typeof T.renderRound !== 'function') {
+    console.warn(`[isVsCompatible] ${activity?.template}: declara play.vs="${T.meta.play.vs}" pero le falta scoreSubmission/renderRound (contrato roto)`);
+    return false;
+  }
   const total = sessionItems(activity).length;
   const minItems = supportsLoop(T, 'board') ? 1 : 2;
-  return !!(T && typeof T.scoreSubmission === 'function'
-            && typeof T.renderRound === 'function' && total >= minItems);
+  return total >= minItems;
 }
 
 function createVsSession(activity, T, opts) {

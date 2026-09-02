@@ -42,6 +42,16 @@ export function mountTeams(host, a, ctx, opts = {}) {
   // renderRound para pintar la ronda "Automática"; exigir solo getRoundPayload
   // dejaba el botón "Revelar" deshabilitado para siempre si se llegara a habilitar.
   const canAuto = canAutoScoreRound(T);
+  // DECLARACIÓN (§0): quien pinta la ronda genérica es quien la DECLARA
+  // (meta.play.teams 'turns'/'board'), no quien resulta tener renderRound — el
+  // contrato (core/templateContract.js:111) ya EXIGE renderRound a esa
+  // declaración, así que aquí basta con leerla. `canAuto` (capacidad) sigue
+  // decidiendo si se ofrece el botón "Automática": el aviso de abajo es solo
+  // defensivo (R6), no el criterio.
+  const usesGenericRound = ['turns', 'board'].includes(T?.meta?.play?.teams);
+  if (usesGenericRound && typeof T.renderRound !== 'function') {
+    console.warn(`[teamsView] ${a.template}: declara play.teams="${T.meta.play.teams}" pero no implementa renderRound (contrato roto)`);
+  }
 
   // Defaults configured in the editor's "Modos" tab (presentation.*); still
   // changeable here before starting.
@@ -180,7 +190,7 @@ export function mountTeams(host, a, ctx, opts = {}) {
       if (phase === 'ended') return podium();
 
       // AUTO + answering → the template owns the round DOM (filled after mount).
-      if (scoring === 'auto' && phase === 'question' && payload && typeof T.renderRound === 'function') {
+      if (scoring === 'auto' && phase === 'question' && payload && usesGenericRound) {
         return `<div id="teams-round"></div>`;
       }
 

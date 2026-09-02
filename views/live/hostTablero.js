@@ -12,6 +12,7 @@ import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { confirmModal } from '../../core/toast.js';
 import { roundPayloadOf } from '../../kernel/session/engine.js';
 import { BOARD_POLL_MS } from '../../core/timings.js';
+import { supportsLoop } from '../../core/liveLoops.js';
 
 export function createHostTablero(rt) {
   // LIVE "board" dashboard (Ball Sort): a grid of every student's board updating
@@ -60,7 +61,15 @@ export function createHostTablero(rt) {
     attachFullscreenButton(rt.rootSel);
 
     const grid = document.getElementById('bs-grid');
-    if (grid && typeof rt.tpl.renderRaceCell === 'function') {
+    // DECLARACIÓN (§0): quien pinta la celda del tablero es quien DECLARA el
+    // bucle 'board' en meta.play.live (core/templateContract.js lo exige más
+    // abajo), no quien resulta tener renderRaceCell. El aviso es defensivo
+    // (R6), no el criterio.
+    const declaresBoard = supportsLoop(rt.tpl, 'board');
+    if (declaresBoard && typeof rt.tpl.renderRaceCell !== 'function') {
+      console.warn(`[hostTablero] ${rt.tpl?.meta?.name || '?'}: declara play.live con 'board' pero no implementa renderRaceCell (contrato roto)`);
+    }
+    if (grid && declaresBoard) {
       for (const c of cells) {
         const cellEl = document.createElement('div');
         cellEl.className = 'bs-grid-cell';
