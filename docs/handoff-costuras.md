@@ -101,7 +101,7 @@ excepción.
 ### B4 · CABLEADO SIN EXTREMO — handlers, ids, eventos, `data-*`
 254 handlers delegados. Ninguna red comprueba que el selector que escuchan
 exista en algún HTML que se pinte, ni al revés.
-- **(M)** Cuatro cruces:
+- **(M)** Cuatro cruces — ESCRITO: `tools/costuras-cableado.mjs` (primera pasada 2026-09-02: 3 · 24 · 3 · 20 = 50 hallazgos, que son su baseline):
   1. `on(root, 'click', '.sel')` → ¿aparece `class="…sel…"` o `id="sel"` en
      algún literal HTML del repo? (huérfano: escucha a nadie).
   2. `id="x"` / `data-ww-*` pintados → ¿alguien hace `#x`/`[data-ww-*]`?
