@@ -3,7 +3,7 @@
 // Pure functions: return HTML strings; attach handlers via separate helpers.
 import { escapeHtml } from './html.js';
 import { on } from './events.js';
-import { unidadDeCuenta, admiteCrono } from './reloj.js';
+import { unidadDeCuenta } from './reloj.js';
 import { MAX_PARRAFOS } from './contentModels/textCorrection.js';
 import { toast } from './toast.js';
 import { questionWindowMs, ITEM_SECONDS_MIN, ITEM_SECONDS_MAX } from './timings.js';
@@ -43,79 +43,57 @@ export function ruleScopeNote() {
 }
 
 
-/** EL BLOQUE «TIEMPO» — uno solo, para todas las plantillas.
+/** EL BLOQUE «TIEMPO» — un solo mando, para todas las plantillas.
  *
- *  Había DOS campos sueltos y cada editor decidía si ponerlos: el temporizador
- *  (lo ofrecían 4 plantillas de 13) y, desde el 30 de agosto, una casilla de
- *  cronómetro que acabó en la pestaña de PUNTUACIÓN. El dueño abrió a editar un
- *  Quiz y no encontró el reloj: estaba, pero enterrado en «Modos» y partido en
- *  dos sitios (2026-09-01: «debemos unificar, no estar parchando»).
+ *  Historia corta: había DOS campos sueltos y cada editor decidía si ponerlos
+ *  —el temporizador lo ofrecían 4 plantillas de 13, y el cronómetro acabó en la
+ *  pestaña de PUNTUACIÓN—. Se unificaron en un bloque (v1.51.640)… con los dos
+ *  mandos dentro, y entonces el bloque MENTÍA: el número de segundos y una
+ *  casilla «Mostrar cronómetro» marcada y en gris se leen como «hay dos relojes
+ *  a la vez» (dueño, 2026-09-02). No los había —`core/reloj.js` monta uno y solo
+ *  uno— pero el formulario decía otra cosa, y el formulario es lo que se lee.
  *
- *  Ahora es UN bloque, lo pinta el SHELL del editor —no cada plantilla— y
- *  enseña solo lo que la plantilla ADMITE (`meta.play.reloj`):
- *    · cuenta atrás, si declara su unidad («pregunta», «frase», «sopa»…);
- *    · cronómetro, salvo que lo apague (`crono: false`).
- *  QUÉ reloj corre en el juego lo decide `core/reloj.js` — el mismo módulo para
- *  las 13 —: con límite manda la cuenta atrás, sin límite el cronómetro, nunca
- *  los dos. Por eso la casilla se deshabilita cuando hay límite, y lo DICE.
+ *  Ahora el mando es UNO: los segundos.
+ *    · 0 → cronómetro ascendente (cuánto llevas);
+ *    · >0 → cuenta atrás (cuánto te queda), y al llegar a cero se corrige.
+ *  Y si la plantilla no mide nada (Ruleta, Pedir la palabra, Ordena las Pelotas)
+ *  no hay bloque, porque no hay nada que configurar.
  *  @param {object} a  la actividad
  *  @param {object} T  la plantilla (de ella sale qué relojes admite) */
 export function tiempoBloqueHtml(a, T) {
   const unidad = unidadDeCuenta(T);
-  const crono = admiteCrono(T);
-  if (!unidad && !crono) return '';
-  const activo = a.rules?.crono !== false;
+  if (!unidad) return '';
   const conLimite = (Number(a.rules?.timer) || 0) > 0;
   return `<section class="ww-mode-cfg" data-bloque="tiempo">
     <h6 class="mb-1"><i class="bi bi-stopwatch text-primary"></i> Tiempo</h6>
     <div class="row g-3">
-      ${unidad ? `<div class="col-md-4">
+      <div class="col-md-4">
         <label class="form-label" for="f-timer">Tiempo por ${escapeHtml(unidad)} (s)</label>
         <input id="f-timer" type="number" min="0" max="600" class="form-control"
                value="${a.rules?.timer || 0}" placeholder="0">
-        <div class="form-text">0 = sin límite de tiempo</div>
-      </div>` : ''}
-      ${crono ? `<div class="col-md-4">
-        <div class="form-check mt-4">
-          <input class="form-check-input" type="checkbox" id="f-crono" ${activo ? 'checked' : ''} ${conLimite ? 'disabled' : ''}>
-          <label class="form-check-label" for="f-crono">Mostrar cronómetro</label>
-        </div>
-        <div class="form-text">${conLimite
-          ? 'Con límite manda la cuenta atrás: dos relojes a la vez confunden'
-          : 'Cuenta el tiempo que llevas jugando'}</div>
-      </div>` : ''}
+        <div class="form-text" id="f-timer-nota">${conLimite
+          ? `Cuenta atrás: al llegar a 0 se corrige lo que haya.`
+          : `0 = sin cuenta atrás. Se ve un cronómetro con el tiempo que lleva.`}</div>
+      </div>
       <div class="col-12">${ruleScopeNote()}</div>
     </div>
   </section>`;
 }
 
-/** Cablea el bloque. Los dos campos SE HABLAN —al poner un límite, el
- *  cronómetro pasa a estar mandado por la cuenta atrás— y eso se refleja EN
- *  SITIO, tocando la casilla y su explicación. Aquí llamaba a `repaint()`, que
- *  re-renderiza el editor entero: escribir «30» tecleaba el 3, repintaba, y el
- *  campo perdía el foco (y el editor, la pestaña). Un repintado completo NUNCA
- *  va colgado de un `input`: la tecla es del que escribe. */
+/** Cablea el bloque. La nota de debajo cambia EN SITIO: un `repaint()` colgado
+ *  de un `input` re-renderiza el editor entero y el campo pierde el foco a
+ *  mitad de palabra (y la pestaña salta). La tecla es del que escribe. */
 export function wireTiempoBloque(root, a, ctx) {
   on(root, 'input', '#f-timer', (e) => {
     a.rules = a.rules || {};
     a.rules.timer = Math.max(0, +e.target.value || 0);
     ctx.onChange(a);
-    const casilla = root.querySelector('#f-crono');
-    if (casilla) {
-      const conLimite = a.rules.timer > 0;
-      casilla.disabled = conLimite;
-      const nota = casilla.closest('.col-md-4')?.querySelector('.form-text');
-      if (nota) {
-        nota.textContent = conLimite
-          ? 'Con límite manda la cuenta atrás: dos relojes a la vez confunden'
-          : 'Cuenta el tiempo que llevas jugando';
-      }
+    const nota = root.querySelector('#f-timer-nota');
+    if (nota) {
+      nota.textContent = a.rules.timer > 0
+        ? 'Cuenta atrás: al llegar a 0 se corrige lo que haya.'
+        : '0 = sin cuenta atrás. Se ve un cronómetro con el tiempo que lleva.';
     }
-  });
-  on(root, 'change', '#f-crono', (e) => {
-    a.rules = a.rules || {};
-    a.rules.crono = !!e.target.checked;
-    ctx.onChange(a);
   });
 }
 

@@ -12,8 +12,14 @@
 // LA REGLA, aquí y en ningún otro sitio:
 //   · con LÍMITE (`rules.timer > 0`) → CUENTA ATRÁS, y avisa al llegar a cero:
 //     es accionable (se acabó el turno);
-//   · sin límite → CRONÓMETRO ascendente, que se puede apagar (`rules.crono:false`);
-//   · nunca los dos a la vez — dos relojes en pantalla confunden.
+//   · sin límite → CRONÓMETRO ascendente;
+//   · y en las que no miden nada (Ruleta, Pedir la palabra, Ordena las Pelotas,
+//     que lleva su propio tiempo en el tablero) → NINGUNO.
+// Nunca los dos a la vez: es UN reloj, con dos formas de contar. El editor tenía
+// dos mandos —el número y una casilla «Mostrar cronómetro» marcada y en gris— y
+// eso se lee como «hay dos relojes» (dueño, 2026-09-02: «¿dos relojes a la vez?
+// no debe existir otro reloj»). Ahora es UN mando: los segundos. Con 0, el
+// cronómetro; con un número, la cuenta atrás.
 //
 // DÓNDE se pinta NO lo decide el reloj: se lo dan (`pintar`). El chip del HUD y
 // la barra de Tildes/Comas son dos sitios distintos para el mismo dato, y por
@@ -23,16 +29,22 @@
 // `startElapsedTicker` para el ascendente—: no inventa un tercer reloj, los
 // ORDENA. Y `serverNow()` para el ascendente, que es contra el reloj que mide
 // ese primitivo (§22-5).
+import { getTemplate } from './registry.js';
 import { createCountdown } from './soloTimer.js';
 import { startElapsedTicker } from './deadlineTicker.js';
 import { serverNow } from './serverNow.js';
 
 /** QUÉ RELOJ LE TOCA a esta actividad, sin montar nada. Lo preguntan el editor
- *  (para ofrecer el campo correcto), las vistas y los tests. */
-export function relojDe(activity) {
+ *  (para ofrecer el campo correcto), las vistas y los tests.
+ *  La PLANTILLA se resuelve aquí para que ningún llamante tenga que acordarse:
+ *  su declaración (`meta.play.reloj`) la obedecía SOLO el editor —pintaba o no
+ *  la casilla— y el juego ni la preguntaba, así que la Ruleta y las Pelotas
+ *  decían «yo no llevo reloj» y salían con su cronómetro igual. Una declaración
+ *  que nadie obedece es peor que no tenerla. */
+export function relojDe(activity, T = getTemplate(activity?.template)) {
   const limite = Math.max(0, Number(activity?.rules?.timer) || 0);
   if (limite > 0) return { tipo: 'cuenta', segundos: limite };
-  if (activity?.rules?.crono === false) return { tipo: 'ninguno', segundos: 0 };
+  if (!admiteCrono(T)) return { tipo: 'ninguno', segundos: 0 };
   return { tipo: 'crono', segundos: 0 };
 }
 
@@ -55,15 +67,21 @@ export function unidadDeCuenta(T) {
 
 /** ¿Y cronómetro? Por defecto sí: es información sin coste. Una plantilla puede
  *  decir que no (`reloj: { crono: false }`) si su mecánica ya lleva su tiempo a
- *  la vista, como Ordena las Pelotas. */
-export function admiteCrono(T) {
+ *  la vista (Ordena las Pelotas) o si no mide nada (Ruleta, Pedir la palabra).
+ *  Lo decide la PLANTILLA, no el que prepara la clase: no es una preferencia,
+ *  es si ese juego tiene algo que cronometrar.
+ *  INTERNA a propósito: la pregunta que se hace fuera es «¿qué reloj le toca a
+ *  esta actividad?» (`relojDe`), no «¿admite cronómetro?». Cuando la exportaba,
+ *  el editor la usaba para pintar una casilla y el juego no la miraba — así se
+ *  quedó la Ruleta declarando que no lleva reloj y saliendo con cronómetro. */
+function admiteCrono(T) {
   return T?.meta?.play?.reloj?.crono !== false;
 }
 
 /**
  * Monta el reloj que toque y devuelve `{ tipo, stop }`.
  * @param {object}   o
- * @param {object}   o.activity  de aquí sale QUÉ reloj (rules.timer / rules.crono).
+ * @param {object}   o.activity  de aquí sale QUÉ reloj (rules.timer + la plantilla).
  * @param {(texto:string, pct:number|null)=>void} o.pintar  dónde se ve. `pct` solo
  *        tiene sentido en la cuenta atrás (barra de progreso); en el cronómetro es null.
  * @param {()=>boolean} [o.alive]  guard de escenario (§23): un tick tardío no pinta.

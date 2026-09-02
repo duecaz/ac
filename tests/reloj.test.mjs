@@ -26,7 +26,7 @@ const leer = (p) => readFileSync(join(RAIZ, p), 'utf8');
 
 await import('../core/registerTemplates.js');
 const { listTemplates } = await import('../core/registry.js');
-const { relojDe, unidadDeCuenta, admiteCrono } = await import('../core/reloj.js');
+const { relojDe, unidadDeCuenta } = await import('../core/reloj.js');
 // Solo las de VERDAD: otras suites registran plantillas de mentira en el mismo
 // registro, y una regla del proyecto no se juzga con maniquíes.
 const TS = listTemplates().filter(T => existsSync(join(RAIZ, 'templates', String(T.meta?.name || ''))));
@@ -34,12 +34,19 @@ const TS = listTemplates().filter(T => existsSync(join(RAIZ, 'templates', String
 // ── 1. QUÉ RELOJ TOCA: una sola regla, sin excepciones por plantilla ─────────
 {
   assert.strictEqual(relojDe({ rules: { timer: 20 } }).tipo, 'cuenta', 'con límite manda la cuenta atrás');
-  assert.strictEqual(relojDe({ rules: { timer: 20, crono: true } }).tipo, 'cuenta',
-    'y manda AUNQUE el cronómetro esté pedido: dos relojes a la vez confunden');
+  assert.strictEqual(relojDe({ template: 'wheel', rules: { timer: 20 } }).tipo, 'cuenta',
+    'con límite manda la cuenta atrás, sea cual sea la plantilla');
   assert.strictEqual(relojDe({ rules: {} }).tipo, 'crono', 'sin límite, cronómetro');
-  assert.strictEqual(relojDe({ rules: { crono: false } }).tipo, 'ninguno', 'salvo que se apague');
+  // Y quien no mide nada no lleva reloj — lo dice la PLANTILLA, no el que
+  // prepara la clase: no es una preferencia, es si ese juego tiene algo que
+  // cronometrar. Antes esto vivía en `rules.crono` (un ajuste del profe) y la
+  // declaración de la plantilla solo la miraba el editor.
+  const ruletaT = listTemplates().find(T => T.meta.name === 'wheel');
+  assert.strictEqual(relojDe({ rules: {} }, ruletaT).tipo, 'ninguno', 'la Ruleta no mide nada: sin reloj');
+  assert.strictEqual(relojDe({ template: 'wheel', rules: {} }).tipo, 'ninguno',
+    'y se resuelve sola desde la actividad, sin que el llamante tenga que acordarse');
   assert.strictEqual(relojDe({ rules: { timer: 0 } }).tipo, 'crono', '0 = sin límite, no «cuenta atrás de 0»');
-  ok('la regla del reloj vive en un solo sitio: límite → cuenta atrás · sin límite → cronómetro · apagado → nada');
+  ok('la regla del reloj vive en un solo sitio: límite → cuenta atrás · sin límite → cronómetro · sin nada que medir → nada');
 }
 
 // ── 2. LAS TRECE DECLARAN SU RELOJ ──────────────────────────────────────────
@@ -134,28 +141,30 @@ const TS = listTemplates().filter(T => existsSync(join(RAIZ, 'templates', String
   ok('el bloque «Tiempo» se pinta en UN sitio y ningún editor tiene copia');
 }
 
-// ── 6. CONTRA-PRUEBA: el que no admite reloj no lo ofrece ───────────────────
-// Una regla demasiado entusiasta pondría un cronómetro en la Ruleta, que no
-// mide nada. Se comprueba que la declaración se RESPETA en las dos direcciones.
+// ── 6. UN SOLO MANDO, Y CONTRA-PRUEBA DE QUE NO SOBRA NI FALTA ─────────────
+// El bloque tenía DOS mandos —los segundos y una casilla «Mostrar cronómetro»
+// marcada y en gris— y eso se lee como «hay dos relojes a la vez». No los
+// había, pero el formulario decía otra cosa, y el formulario es lo que se lee.
 {
   const { tiempoBloqueHtml } = await import('../core/editorPrimitives.js');
-  const ruleta = TS.find(T => T.meta.name === 'wheel');
-  assert.strictEqual(tiempoBloqueHtml({ rules: {} }, ruleta), '',
-    'CONTRA-PRUEBA: la Ruleta declara que no lleva reloj y el editor no le pinta el bloque');
   const quiz = TS.find(T => T.meta.name === 'quiz');
   const html = tiempoBloqueHtml({ rules: { timer: 30 } }, quiz);
-  assert.ok(/Tiempo por pregunta/.test(html), 'el Quiz sí lo lleva, con SU palabra');
-  assert.ok(/disabled/.test(html), 'y con límite puesto, el cronómetro sale mandado por la cuenta atrás');
+  assert.ok(/Tiempo por pregunta/.test(html), 'el Quiz lleva su cuenta atrás, con SU palabra');
+  assert.ok(!/f-crono|checkbox/.test(html), 'y NADA de una segunda casilla: el mando es uno');
+  assert.strictEqual((html.match(/<input/g) || []).length, 1, 'literalmente un campo');
+  // Con 0 el mando sigue siendo el mismo y lo que cambia es lo que EXPLICA.
+  const sinLimite = tiempoBloqueHtml({ rules: { timer: 0 } }, quiz);
+  assert.ok(/cronómetro/.test(sinLimite), 'con 0 se dice que lo que se ve es el cronómetro');
+  assert.ok(/se corrige/.test(html), 'y con límite, que al llegar a cero se corrige');
+  // CONTRA-PRUEBA: la que no mide nada no recibe bloque — un mando que no manda
+  // es peor que ninguno.
+  const ruleta = TS.find(T => T.meta.name === 'wheel');
+  assert.strictEqual(tiempoBloqueHtml({ rules: {} }, ruleta), '',
+    'CONTRA-PRUEBA: la Ruleta no mide nada y el editor no le pinta el bloque');
   const memoria = TS.find(T => T.meta.name === 'memory');
-  const hm = tiempoBloqueHtml({ rules: {} }, memoria);
-  assert.ok(/Tiempo por partida/.test(hm),
-    'un TABLERO entero también lleva cuenta atrás, con SU unidad: la partida, no la pregunta');
-  // Y el caso intermedio sigue soportado aunque hoy no lo use nadie: una
-  // plantilla que admita cronómetro y NO cuenta atrás recibe solo la casilla.
-  const soloCrono = { meta: { play: { reloj: { unidad: null } } } };
-  const hc = tiempoBloqueHtml({ rules: {} }, soloCrono);
-  assert.ok(!/f-timer/.test(hc) && /f-crono/.test(hc), 'sin unidad declarada no hay campo de límite, pero sí cronómetro');
-  ok('CONTRA-PRUEBA: cada plantilla recibe el reloj que declara, ni más ni menos');
+  assert.ok(/Tiempo por partida/.test(tiempoBloqueHtml({ rules: {} }, memoria)),
+    'CONTRA-PRUEBA: un TABLERO entero sí lo lleva, con SU unidad');
+  ok('el bloque «Tiempo» es UN mando (los segundos) y solo aparece donde hay algo que medir');
 }
 
 console.log(`\nreloj.test: ${passed} checks passed`);
