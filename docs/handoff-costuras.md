@@ -166,6 +166,42 @@ donde un humano tiene algo entre manos.
   creerla en verde** (la primera versión de la red de la pestaña dio verde con
   el bug puesto). Eso va en `/auditoria` §4 como paso obligatorio.
 
+### B8 · DIVERGENCIA — la misma superficie, hecha de más de una manera sin motivo
+**EJECUTADO ✅** (`tools/costuras-divergencia.mjs`, baseline 0 → 0; detalle en §1b).
+Los siete barridos de arriba cazan basura MECÁNICA (declaración sin lector,
+contrato a medias, vista que conoce una plantilla…). Ninguno cazaba «lo mismo
+hecho de tres formas, cada una coherente por dentro» — así se coló la
+CABECERA (nueve plantillas con los indicadores flotando, dos con banda propia,
+dos mezclando los dos tratamientos: costó dos capturas del dueño destaparlo) y
+así estaba el FINAL DE PARTIDA: once con la pantalla estándar del shell, el
+Crucigrama con un cartel propio (`.cw-celebration`) que dejaba al alumno en el
+tablero sin puntaje ni salida, y Abre Cajas saltándosela con un
+`skipResultScreen: true` suelto sin decir por qué.
+- **(M)** Escanea `templates/*/player.js` (+ `play.js` si existe, + el runner
+  compartido `core/textCorrectionRound.js` para Tildes/Comas). Tres listas:
+  1. `skipResultScreen`/`resultScreen:` sin entrada en `core/finPropio.js`
+     (`FIN_PROPIO`, el dueño único de la declaración — lo mismo que obedece el
+     shell en runtime); y su contraria informativa: una entrada en
+     `FIN_PROPIO` que ya no se usa («motivo huérfano»).
+  2. Markup de fin construido por el propio player (clase que casa
+     `/celebr|final|resultado|victoria|ganaste|acab/i`, o un `<h3>`/`.lead`
+     con texto de cierre) fuera del shell — no cuenta si la plantilla ya está
+     en `FIN_PROPIO`.
+  3. Un `<header>` o una clase `/(-bar|-topbar|__bar)\b/` propia ADEMÁS de
+     `cabeceraHtml` (excepto la franja `edu-send`, el TERCER rol declarado del
+     player — `ww-bar-actions edu-send` en Diagrama/Emparejar no es una
+     segunda cabecera), o ninguna llamada a `cabeceraHtml` mirando la
+     plantilla ENTERA (un wrapper delgado que delega no cuenta como huérfano
+     si quien pinta de verdad sí la llama — Ball Sort vía `play.js`,
+     Tildes/Comas vía el runner compartido).
+- **(J)** Por hallazgo: ¿tiene motivo real (como Abre Cajas) → declararlo en
+  `FIN_PROPIO` con su porqué; si no, converger a la forma mayoritaria (el
+  shell / `cabeceraHtml`).
+- **Test de salida**: el propio script, con baseline-ratchet en
+  `tools/auditoria.mjs`; el shell (`core/soloPlayer.js`) obedece
+  `core/finPropio.js` en runtime, así que declaración y auditoría leen el
+  MISMO mapa y no pueden decir dos cosas.
+
 ## 1b · ESTADO (2026-09-02, al cierre de la primera pasada)
 
 | Barrido | Script | 1ª pasada | Hoy | Qué salió |
@@ -177,6 +213,7 @@ donde un humano tiene algo entre manos.
 | B5 duplicados | `tools/costuras-duplicados.mjs` | 67 | **0** | 16 dueños nuevos (toasts, PRNG único, tile de imagen, modal, cableado de lista de ítems en 6 editores…); 24 coincidencias declaradas con motivo |
 | B6 capa | `tools/costuras-capa.mjs` | 22 | **0** | los 10 ajustes de sala del Quiz eran copias de `DEFAULT_LIVE`; 4 gates pasan de capacidad a declaración y el contrato lo exige |
 | B7 gestos | `edit-audit` + `matrix-smoke` + `live-smoke` | 2 | **0** | antesala · biblioteca · modales · alumno en vivo. Cazó un bug real: «Pausa» del host borraba la marca en curso del alumno |
+| B8 divergencia | `tools/costuras-divergencia.mjs` | 0 (2026-09-04) | **0** | el Crucigrama ya llegó limpio (otro agente quitó su `skipResultScreen`/cartel propio en paralelo); Abre Cajas sigue declarada en `FIN_PROPIO` con motivo; ninguna cabecera duplicada |
 
 Colateral: la regex que quitaba comentarios se tragaba medio `core/selftest.js`
 (invisible a TODAS las reglas desde que existe) → `core/sinComentarios.js`, dueño

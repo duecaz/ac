@@ -544,15 +544,15 @@ CORES     (templates/*/player.js)  — cómo: drag, click, tipo, animación (ún
 - El core provee `renderItem(ctx)` y, opcionalmente, `maxScore`, `onFinish` (teardown), `resultScreen`.
 - `ctx`: `{ item, idx, total, score, state, timerSecs, submit, next, finish, startTimer }`.
   - `submit(record, { auto=true, delay })` — registra la respuesta UNA vez (idempotente: timeout+clic registran una). `auto:true` avanza tras `delay`; `auto:false` para pacing propio.
-  - `next()` / `finish()` — para cores con avance dirigido por animación (Froggy salta y avanza en `onfinish`, o termina al llegar a la meta).
-- Callers EN PRODUCCIÓN: Math, Quiz, Froggy.
+  - `next()` / `finish()` — para cores con avance dirigido por animación (Globos avanza al explotar, o termina al agotar los ítems).
+- Callers (medido 2026-09-04): Math, Quiz, Globos.
 
 **Shell Libre** `runFreeformPlayer(rootSel, activity, opts)` → devuelve `ctx` ✅:
 - El player llama `ctx.finish({score, maxScore, lead, stats, skipResultScreen})` al terminar.
 - Shell garantiza: `resultScreenHtml()` (salvo `skipResultScreen`), `trySaveResult()`, `onFinish()`.
-- Callers EN PRODUCCIÓN: Wheel, Question-Live. Pendientes (cosméticos): Memory, Match, Wordsearch, Crossword.
+- Callers (medido 2026-09-04): Wheel, Question-Live, Memory, Match, Wordsearch, Crossword, Diagram, Ballsort; Tildes y Comas vía `runTextCorrectionSolo` (que corre sobre este shell). **Las 13 sobre un shell** — la migración terminó; este cuadro dijo «pendientes» versiones después de estarlo.
 
 **Timer único** `core/soloTimer.js` — `createCountdown(secs, {onTick, onTimeout, setIntervalFn?, clearIntervalFn?})` ✅:
-- Cierra 3 implementaciones divergentes (Quiz, Froggy, Wordsearch). Scheduler inyectable → tests deterministas.
+- Cerró 3 implementaciones divergentes (Quiz, Globos, Wordsearch). Scheduler inyectable → tests deterministas.
 
 **Orden de migración** — COMPLETADO (los 5 pasos, en `docs/historico/deuda-resuelta.md`).

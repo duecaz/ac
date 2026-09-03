@@ -140,6 +140,17 @@ con lo que apuntan los skins. Así el vocabulario entra sin un renombrado masivo
 sin tocar los temas. La cabecera es la excepción: **no lleva nombre propio**,
 porque no es de la plantilla — es la misma pieza para las trece.
 
+**EL FINAL DE LA PARTIDA es del mismo dueño único**: lo pinta el SHELL
+(`core/resultScreen.js`, montado desde `core/soloPlayer.js`); una plantilla
+puede AÑADIR encima (`title`/`icon`/`stats`/`after` que digan la verdad de
+cómo acabó) pero no SUSTITUIRLO por un cartel propio. Medido el 2026-09-04
+montando las 13: once terminaban con la estándar, el Crucigrama pintaba su
+propio `.cw-celebration` que dejaba al alumno sin puntaje ni salida al
+cerrarse, y Abre Cajas se la saltaba con un `skipResultScreen: true` suelto
+y sin motivo. La declaración de quién puede saltársela (y por qué) vive en
+`core/finPropio.js`: sin entrada ahí, el shell pinta la estándar igual —
+fail-safe, como un modo desconocido en `core/persistPolicy.js`.
+
 ### El reflujo se quedó muerto por culpa del MARCO, no del CSS de la plantilla
 
 Historia corta y con moraleja. El reflujo por forma (`aspect-ratio < 1/1`) era

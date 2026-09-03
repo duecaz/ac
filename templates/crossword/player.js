@@ -457,24 +457,19 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     const score = words.filter(w => solvedIds.has(w.id)).reduce((s, w) => s + pts(w), 0);
     const max = words.reduce((s, w) => s + pts(w), 0);
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score }] });
-    // Crossword has its own celebration overlay → skip the generic result screen,
-    // but let the shell save the result + fire onFinish and hand back timeUsed.
-    const { timeUsed } = ctx.finish({ score, maxScore: max, skipResultScreen: true });
-    // El cartel dice la VERDAD: completado no es lo mismo que «se acabó el
-    // tiempo con 3 de 8» (R6: nada de celebrar un final que no ocurrió).
+    // El final lo pinta el SHELL (core/finPropio.js): antes había un cartel
+    // propio que celebraba con confeti aunque solo se hubieran resuelto 3 de
+    // 8 palabras, y al cerrarse dejaba al alumno parado en el tablero sin
+    // puntaje ni salida (§21b, un solo dueño del final). El confeti REAL
+    // sigue en emitGame(PODIUM); aquí solo se le entrega al shell la VERDAD
+    // de cómo acabó (R6): completado o no, y cuántas palabras.
     const completo = solvedIds.size >= totalWords;
-    const celebEl = document.createElement('div');
-    celebEl.className = 'cw-celebration';
-    celebEl.innerHTML = `
-      <div class="cw-celeb-box">
-        <div style="font-size:3rem">${completo ? '🎉' : '⏱'}</div>
-        <h3>${completo ? '¡Crucigrama completado!' : 'Se acabó el tiempo'}</h3>
-        <p class="text-muted">Tiempo: ${timeUsed}s · ${solvedIds.size} / ${totalWords} palabras encontradas</p>
-        <button class="btn btn-primary" id="cw-celeb-close">Continuar</button>
-      </div>`;
-    document.querySelector('.cw-wrap')?.appendChild(celebEl);
-    document.getElementById('cw-celeb-close')?.addEventListener('click', () => {
-      celebEl.remove();
+    ctx.finish({
+      score, maxScore: max,
+      icon: completo ? 'bi-trophy-fill' : 'bi-hourglass-split',
+      iconColor: completo ? 'text-warning' : 'text-secondary',
+      title: completo ? '¡Crucigrama completado!' : 'Se acabó el tiempo',
+      stats: `${solvedIds.size} / ${totalWords} palabras encontradas`,
     });
   }
 

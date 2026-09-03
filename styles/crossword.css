@@ -174,32 +174,6 @@
   justify-content: center;
 }
 
-/* ── Celebration overlay ───────────────────────────── */
-.cw-celebration {
-  position: absolute;
-  inset: 0;
-  background: rgba(15,23,42,.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  border-radius: inherit;
-  backdrop-filter: blur(3px);
-}
-.cw-celeb-box {
-  background: var(--ww-card-bg, #fff);
-  color: var(--ww-card-fg, var(--ww-fg, #0f172a));
-  border-radius: 1.25rem;
-  padding: 2rem 2.5rem;
-  text-align: center;
-  box-shadow: 0 12px 40px rgba(0,0,0,.3);
-  animation: cw-pop .35s cubic-bezier(.34,1.56,.64,1);
-}
-@keyframes cw-pop {
-  from { transform: scale(.6); opacity: 0; }
-  to   { transform: scale(1);  opacity: 1; }
-}
-
 /* ── Editor preview mini-cells ─────────────────────── */
 .cw-pre-cell {
   display: flex;

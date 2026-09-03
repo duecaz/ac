@@ -179,9 +179,10 @@ if (!soloListas) {
 // ── LAS COSTURAS (docs/handoff-costuras.md): cada barrido escritor×lector es
 // un script aparte con su baseline, y aquí se CUENTA como una clase más de
 // basura si supera su baseline. B4 · cableado · B1 · declaraciones · B2 · contrato ·
-// B3 · vista↔plantilla · B5 · duplicados semánticos (funciones/frases/números) (2026-09-02).
+// B3 · vista↔plantilla · B5 · duplicados semánticos (funciones/frases/números) (2026-09-02) ·
+// B8 · divergencia (misma superficie, más de una manera sin motivo) (2026-09-04).
 if (!soloListas) {
-  for (const b of ['tools/costuras-cableado.mjs', 'tools/costuras-declaraciones.mjs', 'tools/costuras-contrato.mjs', 'tools/costuras-plantilla-en-vista.mjs', 'tools/costuras-duplicados.mjs', 'tools/costuras-capa.mjs']) {
+  for (const b of ['tools/costuras-cableado.mjs', 'tools/costuras-declaraciones.mjs', 'tools/costuras-contrato.mjs', 'tools/costuras-plantilla-en-vista.mjs', 'tools/costuras-duplicados.mjs', 'tools/costuras-capa.mjs', 'tools/costuras-divergencia.mjs']) {
     const r = spawnSync(process.execPath, [join(ROOT, b)], { cwd: ROOT, encoding: 'utf8' });
     const ultima = (r.stdout || '').trim().split('\n').pop() || '';
     if (r.status === 0) ok(`costuras: ${ultima} — node ${b}`);

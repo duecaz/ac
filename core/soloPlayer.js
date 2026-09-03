@@ -18,6 +18,7 @@ import { clock } from './clock.js';
 import { defaultMaxScore } from './scoring/index.js';
 import { lsGet, lsSet, lsDel } from './ls.js';
 import { claimStage } from './stageClaim.js';
+import { finPropio } from './finPropio.js';
 
 // Reanudar al recargar (F5) SOLO en modo individual: guarda el avance (idx/score/
 // answers/startedAt) por actividad y lo retoma si el navegador se recarga a mitad.
@@ -122,7 +123,13 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
       timeUsed,
     });
 
-    if (!skipResultScreen) {
+    // EL FINAL LO PONE EL SHELL: una plantilla puede AÑADIR encima (title/icon/
+    // after que digan la verdad de cómo acabó) pero solo SUSTITUYE la pantalla
+    // si lo declaró con motivo en core/finPropio.js. Sin esa entrada, el
+    // skipResultScreen que pida se ignora (fail-safe, como un modo desconocido
+    // en persistPolicy) — el Crucigrama pedía saltársela con un cartel propio
+    // que dejaba al alumno sin puntaje ni salida.
+    if (!skipResultScreen || !finPropio(activity.template)) {
       mount(rootSel, resultScreenHtml({ icon, iconColor, title, lead: leadStr, stats: statsStr, score, maxScore, mode: opts.mode })
         + (typeof after === 'function' ? after(ctx) : after));
       cablearRepetir(rootSel, activity.id);
@@ -293,7 +300,9 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
     const timeUsed = Math.round((clock.now() - state.startedAt) / 1000);
     const max = maxScore();
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: state.score }] });
-    if (!callbacks.skipResultScreen) {
+    // Mismo fail-safe que en el shell libre: sin entrada en finPropio, la
+    // estándar se pinta igual aunque el caller pida skipResultScreen.
+    if (!callbacks.skipResultScreen || !finPropio(activity.template)) {
       const custom = callbacks.resultScreen?.({ state, items, maxScore: max, timeUsed }) || {};
       mount(rootSel, resultScreenHtml({
         lead: `Puntos: <b>${state.score}</b> / ${max}`,
