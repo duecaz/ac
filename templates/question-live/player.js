@@ -24,11 +24,24 @@ export function renderQuestionLivePlayer(rootSel, activity, opts = {}) {
   else renderBoxes(rootSel, activity, opts);
 }
 
+
+// EL FINAL LO PONE EL SHELL (sin salida, como las otras 12): Abre Cajas no
+// tiene acierto ni fallo —«6 de 6» es cuántas cajas se abrieron—, así que lo
+// que se AÑADE es la verdad de eso, y la pantalla estándar pone el «otra vez».
+// Tuvo un cierre propio («¡Todas las preguntas respondidas!») que se saltaba
+// la estándar; el dueño lo cerró: todos a rajatabla.
+const terminarCajas = (ctx, abiertas, total) => ctx.finish({
+  score: abiertas, maxScore: total,
+  title: '¡Todas las cajas abiertas!',
+  stats: `${abiertas} / ${total} cajas`,
+});
+
 function renderBoxes(rootSel, activity, opts = {}) {
   const ctx = runFreeformPlayer(rootSel, activity, opts);
   const items = getItems(activity);
   let openIdx = null;
   const done = new Set();
+  const terminar = () => terminarCajas(ctx, done.size, items.length);
 
   function paint() {
     const cols = qlCols(items.length);
@@ -70,7 +83,7 @@ function renderBoxes(rootSel, activity, opts = {}) {
     });
     on(rootSel, 'click', '#ab-done', () => {
       if (openIdx !== null) { done.add(openIdx); openIdx = null; }
-      if (done.size === items.length) ctx.finish({ score: done.size, maxScore: items.length, skipResultScreen: true });
+      if (done.size === items.length) { terminar(); return; }
       paint();
     });
     on(rootSel, 'click', '#ab-close', () => { openIdx = null; paint(); });
@@ -83,6 +96,7 @@ function renderWheel(rootSel, activity, opts = {}) {
   const ctx = runFreeformPlayer(rootSel, activity, opts);
   const items = getItems(activity);
   const done = new Set();
+  const terminar = () => terminarCajas(ctx, done.size, items.length);
   let openIdx = null;
   let rotation = 0;
   let spinning = false;
@@ -114,13 +128,7 @@ function renderWheel(rootSel, activity, opts = {}) {
 
     const available = items.map((_, i) => i).filter(i => !done.has(i));
     if (available.length === 0) {
-      ctx.finish({ score: done.size, maxScore: items.length, skipResultScreen: true });
-      mount(rootSel, html`
-        <div class="text-center py-5">
-          <i class="bi bi-check2-all display-1 text-success mt-3"></i>
-          <p class="lead mt-3">¡Todas las preguntas respondidas!</p>
-        </div>
-      `);
+      terminar();
       return;
     }
 

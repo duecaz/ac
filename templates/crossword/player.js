@@ -457,7 +457,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     const score = words.filter(w => solvedIds.has(w.id)).reduce((s, w) => s + pts(w), 0);
     const max = words.reduce((s, w) => s + pts(w), 0);
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score }] });
-    // El final lo pinta el SHELL (core/finPropio.js): antes había un cartel
+    // El final lo pinta el SHELL (sin salida, ver core/soloPlayer.js): antes había un cartel
     // propio que celebraba con confeti aunque solo se hubieran resuelto 3 de
     // 8 palabras, y al cerrarse dejaba al alumno parado en el tablero sin
     // puntaje ni salida (§21b, un solo dueño del final). El confeti REAL

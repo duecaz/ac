@@ -132,7 +132,7 @@ console.log('\n▶ deadlineTicker'); await import('./deadlineTicker.test.mjs');
 console.log('\n▶ streamWatchdog'); await import('./streamWatchdog.test.mjs');
 console.log('\n▶ answerSafety'); await import('./answerSafety.test.mjs');
 console.log('\n▶ modalFallback'); await import('./modalFallback.test.mjs');
-console.log('\n▶ finPropio'); await import('./finPropio.test.mjs');
+console.log('\n▶ finDelShell'); await import('./finDelShell.test.mjs');
 
 // GUARDARRAÍL DE DESCUBRIMIENTO (la lección de la tarjeta única, v1.51.388):
 // esta lista es ENUMERADA, y una lista enumerada vigila el pasado — una suite

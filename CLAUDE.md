@@ -461,6 +461,7 @@ usuario: se deja pendiente, no bloquea el resto.
 - **Lápiz y palma en pizarra REAL** (v1.51.610: DOS herramientas, frontera única,
   calibración de 2 recuadros; medido headless en `tools/lapiz-sonda.mjs`). Falta la
   mano de verdad: es la Parte 1 de la hoja del compañero.
+- **El FIN del Crucigrama y Abre Cajas en navegador** (v1.51.665: salen por la estándar del shell). Pasan la matriz; nadie lo ha MIRADO. Dueño: la regla primero.
 
 ### 🟡 UNA FUNCIÓN QUE EL PANEL PROMETÍA Y NO EXISTE (v1.51.482)
 El escaneo de «ajustes desconectados» encontró SIETE mandos que el editor
@@ -548,8 +549,8 @@ CORES     (templates/*/player.js)  — cómo: drag, click, tipo, animación (ún
 - Callers (medido 2026-09-04): Math, Quiz, Globos.
 
 **Shell Libre** `runFreeformPlayer(rootSel, activity, opts)` → devuelve `ctx` ✅:
-- El player llama `ctx.finish({score, maxScore, lead, stats, skipResultScreen})` al terminar.
-- Shell garantiza: `resultScreenHtml()` (salvo `skipResultScreen`), `trySaveResult()`, `onFinish()`.
+- El player llama `ctx.finish({score, maxScore, title, stats, after})` al terminar — AÑADE sobre la estándar, nunca la sustituye (`skipResultScreen` no existe: lo caza B8).
+- Shell garantiza: `resultScreenHtml()` SIEMPRE, `trySaveResult()`, `onFinish()`.
 - Callers (medido 2026-09-04): Wheel, Question-Live, Memory, Match, Wordsearch, Crossword, Diagram, Ballsort; Tildes y Comas vía `runTextCorrectionSolo` (que corre sobre este shell). **Las 13 sobre un shell** — la migración terminó; este cuadro dijo «pendientes» versiones después de estarlo.
 
 **Timer único** `core/soloTimer.js` — `createCountdown(secs, {onTick, onTimeout, setIntervalFn?, clearIntervalFn?})` ✅:

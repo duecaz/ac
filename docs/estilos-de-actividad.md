@@ -147,9 +147,10 @@ cómo acabó) pero no SUSTITUIRLO por un cartel propio. Medido el 2026-09-04
 montando las 13: once terminaban con la estándar, el Crucigrama pintaba su
 propio `.cw-celebration` que dejaba al alumno sin puntaje ni salida al
 cerrarse, y Abre Cajas se la saltaba con un `skipResultScreen: true` suelto
-y sin motivo. La declaración de quién puede saltársela (y por qué) vive en
-`core/finPropio.js`: sin entrada ahí, el shell pinta la estándar igual —
-fail-safe, como un modo desconocido en `core/persistPolicy.js`.
+y sin motivo. Se pensó un mapa de excepciones con motivo y el dueño lo cerró
+el mismo día: **sin salida** — `skipResultScreen` ya no existe en el shell,
+Abre Cajas añade «N / N cajas» sobre la estándar, y cualquier player que lo
+pida lo caza `tools/costuras-divergencia.mjs` en CI.
 
 ### El reflujo se quedó muerto por culpa del MARCO, no del CSS de la plantilla
 

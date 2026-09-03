@@ -60,11 +60,11 @@ function lineaDe(src, index) { return src.slice(0, index).split('\n').length; }
 function textoLinea(src, n) { return (src.split('\n')[n - 1] || '').trim(); }
 function fmt(h) { return `${h.fichero}:${h.linea}  ${h.codigo}`; }
 
-// ════════════════════════════════════════════════════════════════════════
-// FIN_PROPIO — el dueño único de la declaración (core/finPropio.js), el
-// mismo que obedece el shell en runtime. Se importa, no se copia.
-// ════════════════════════════════════════════════════════════════════════
-const { FIN_PROPIO } = await import('../core/finPropio.js');
+// SIN MAPA DE EXCEPCIONES. Hubo uno (`core/finPropio.js`, un día): el dueño
+// lo cerró — «todos deben seguir las reglas a rajatabla». Cualquier
+// `skipResultScreen` o `resultScreen:` que sustituya es hallazgo, sin motivo
+// que valga: la plantilla AÑADE encima (title/stats/after) o converge.
+const FIN_PROPIO = Object.freeze({});
 
 // ════════════════════════════════════════════════════════════════════════
 // FICHEROS POR PLANTILLA — cada plantilla real (carpeta de templates/) con
@@ -354,7 +354,7 @@ const mal = (m) => console.log('  ❌', m);
 
 console.log('COSTURAS · B8 — divergencia (la misma superficie, hecha de más de una manera)\n');
 
-console.log('── 1 · FIN PROPIO SIN MOTIVO (skipResultScreen / resultScreen: sin entrada en FIN_PROPIO) ──');
+console.log('── 1 · FIN PROPIO (skipResultScreen / resultScreen: que sustituye — sin excepciones) ──');
 if (cuentanFinPropio.length) mal(`${cuentanFinPropio.length} hallazgo(s) (baseline ${BASELINE.finPropio}):`);
 else ok(`0 hallazgos (baseline ${BASELINE.finPropio})`);
 for (const h of cuentanFinPropio) console.log(`     [${h.forma}] ${fmt(h)}  (plantilla: ${h.plantilla})`);

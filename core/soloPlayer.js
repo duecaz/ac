@@ -18,7 +18,6 @@ import { clock } from './clock.js';
 import { defaultMaxScore } from './scoring/index.js';
 import { lsGet, lsSet, lsDel } from './ls.js';
 import { claimStage } from './stageClaim.js';
-import { finPropio } from './finPropio.js';
 
 // Reanudar al recargar (F5) SOLO en modo individual: guarda el avance (idx/score/
 // answers/startedAt) por actividad y lo retoma si el navegador se recarga a mitad.
@@ -101,7 +100,6 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
     title = undefined,
     icon = undefined,
     iconColor = undefined,
-    skipResultScreen = false,
     after = '',        // HTML extra BAJO la pantalla estándar (p.ej. revisión de errores)
     answers = undefined, // detalle por ítem → llega a opts.onFinish (analítica de Tarea)
   } = {}) {
@@ -123,21 +121,20 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
       timeUsed,
     });
 
-    // EL FINAL LO PONE EL SHELL: una plantilla puede AÑADIR encima (title/icon/
-    // after que digan la verdad de cómo acabó) pero solo SUSTITUYE la pantalla
-    // si lo declaró con motivo en core/finPropio.js. Sin esa entrada, el
-    // skipResultScreen que pida se ignora (fail-safe, como un modo desconocido
-    // en persistPolicy) — el Crucigrama pedía saltársela con un cartel propio
-    // que dejaba al alumno sin puntaje ni salida.
-    if (!skipResultScreen || !finPropio(activity.template)) {
-      mount(rootSel, resultScreenHtml({ icon, iconColor, title, lead: leadStr, stats: statsStr, score, maxScore, mode: opts.mode })
-        + (typeof after === 'function' ? after(ctx) : after));
-      cablearRepetir(rootSel, activity.id);
-    }
+    // EL FINAL LO PONE EL SHELL, SIN SALIDA: una plantilla puede AÑADIR encima
+    // (title/icon/stats/after que digan la verdad de cómo acabó) y nunca
+    // sustituir la pantalla. Hubo un `skipResultScreen` (2026-09-04, un día):
+    // el Crucigrama lo usaba para un cartel propio que dejaba al alumno sin
+    // puntaje ni salida, y Abre Cajas sin decir por qué. Se pensó en un mapa
+    // de excepciones con motivo y el dueño lo cerró: «todos deben seguir las
+    // reglas a rajatabla». Una opción que se ignora es peor que una que no
+    // existe — si un player la pasa, `costuras-divergencia` lo caza en CI.
+    mount(rootSel, resultScreenHtml({ icon, iconColor, title, lead: leadStr, stats: statsStr, score, maxScore, mode: opts.mode })
+      + (typeof after === 'function' ? after(ctx) : after));
+    cablearRepetir(rootSel, activity.id);
 
     if (opts.onFinish) opts.onFinish({ score, maxScore, timeUsed, ...(answers !== undefined ? { answers } : {}) });
-    // Return the computed values so players with their own end UI (e.g. Crossword's
-    // celebration overlay, skipResultScreen) can show the elapsed time.
+    // Lo calculado vuelve al player por si su `after` quiere citarlo.
     return { timeUsed, score, maxScore };
   }
 
@@ -300,9 +297,9 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
     const timeUsed = Math.round((clock.now() - state.startedAt) / 1000);
     const max = maxScore();
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: state.score }] });
-    // Mismo fail-safe que en el shell libre: sin entrada en finPropio, la
-    // estándar se pinta igual aunque el caller pida skipResultScreen.
-    if (!callbacks.skipResultScreen || !finPropio(activity.template)) {
+    // Sin salida, como en el shell libre: `resultScreen` AÑADE (título, lead,
+    // stats propios) sobre la estándar; nadie la sustituye.
+    {
       const custom = callbacks.resultScreen?.({ state, items, maxScore: max, timeUsed }) || {};
       mount(rootSel, resultScreenHtml({
         lead: `Puntos: <b>${state.score}</b> / ${max}`,

@@ -179,14 +179,13 @@ tablero sin puntaje ni salida, y Abre Cajas saltándosela con un
 `skipResultScreen: true` suelto sin decir por qué.
 - **(M)** Escanea `templates/*/player.js` (+ `play.js` si existe, + el runner
   compartido `core/textCorrectionRound.js` para Tildes/Comas). Tres listas:
-  1. `skipResultScreen`/`resultScreen:` sin entrada en `core/finPropio.js`
-     (`FIN_PROPIO`, el dueño único de la declaración — lo mismo que obedece el
-     shell en runtime); y su contraria informativa: una entrada en
-     `FIN_PROPIO` que ya no se usa («motivo huérfano»).
+  1. `skipResultScreen`/`resultScreen:` que SUSTITUYE la pantalla estándar.
+     Sin excepciones: hubo un mapa con motivo (`finPropio.js`, borrado) durante
+     un día y el dueño lo cerró — «todos a rajatabla». La plantilla AÑADE
+     (`title`/`stats`/`after`) o converge.
   2. Markup de fin construido por el propio player (clase que casa
      `/celebr|final|resultado|victoria|ganaste|acab/i`, o un `<h3>`/`.lead`
-     con texto de cierre) fuera del shell — no cuenta si la plantilla ya está
-     en `FIN_PROPIO`.
+     con texto de cierre) fuera del shell.
   3. Un `<header>` o una clase `/(-bar|-topbar|__bar)\b/` propia ADEMÁS de
      `cabeceraHtml` (excepto la franja `edu-send`, el TERCER rol declarado del
      player — `ww-bar-actions edu-send` en Diagrama/Emparejar no es una
@@ -194,13 +193,11 @@ tablero sin puntaje ni salida, y Abre Cajas saltándosela con un
      plantilla ENTERA (un wrapper delgado que delega no cuenta como huérfano
      si quien pinta de verdad sí la llama — Ball Sort vía `play.js`,
      Tildes/Comas vía el runner compartido).
-- **(J)** Por hallazgo: ¿tiene motivo real (como Abre Cajas) → declararlo en
-  `FIN_PROPIO` con su porqué; si no, converger a la forma mayoritaria (el
-  shell / `cabeceraHtml`).
+- **(J)** Por hallazgo: converger a la forma mayoritaria (el shell /
+  `cabeceraHtml`). No hay lista de motivos que valga.
 - **Test de salida**: el propio script, con baseline-ratchet en
-  `tools/auditoria.mjs`; el shell (`core/soloPlayer.js`) obedece
-  `core/finPropio.js` en runtime, así que declaración y auditoría leen el
-  MISMO mapa y no pueden decir dos cosas.
+  `tools/auditoria.mjs`; y `tests/finDelShell.test.mjs` ejecuta el shell:
+  pedir saltarse la estándar no hace nada, añadir encima sigue vivo.
 
 ## 1b · ESTADO (2026-09-02, al cierre de la primera pasada)
 
@@ -213,7 +210,7 @@ tablero sin puntaje ni salida, y Abre Cajas saltándosela con un
 | B5 duplicados | `tools/costuras-duplicados.mjs` | 67 | **0** | 16 dueños nuevos (toasts, PRNG único, tile de imagen, modal, cableado de lista de ítems en 6 editores…); 24 coincidencias declaradas con motivo |
 | B6 capa | `tools/costuras-capa.mjs` | 22 | **0** | los 10 ajustes de sala del Quiz eran copias de `DEFAULT_LIVE`; 4 gates pasan de capacidad a declaración y el contrato lo exige |
 | B7 gestos | `edit-audit` + `matrix-smoke` + `live-smoke` | 2 | **0** | antesala · biblioteca · modales · alumno en vivo. Cazó un bug real: «Pausa» del host borraba la marca en curso del alumno |
-| B8 divergencia | `tools/costuras-divergencia.mjs` | 0 (2026-09-04) | **0** | el Crucigrama ya llegó limpio (otro agente quitó su `skipResultScreen`/cartel propio en paralelo); Abre Cajas sigue declarada en `FIN_PROPIO` con motivo; ninguna cabecera duplicada |
+| B8 divergencia | `tools/costuras-divergencia.mjs` | 0 (2026-09-04) | **0** | el Crucigrama ya llegó limpio (otro agente quitó su `skipResultScreen`/cartel propio en paralelo); Abre Cajas tuvo un día una excepción declarada y el dueño la cerró («a rajatabla»): también sale por la estándar; ninguna cabecera duplicada |
 
 Colateral: la regex que quitaba comentarios se tragaba medio `core/selftest.js`
 (invisible a TODAS las reglas desde que existe) → `core/sinComentarios.js`, dueño
