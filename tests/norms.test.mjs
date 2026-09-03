@@ -153,6 +153,21 @@ assert.strictEqual(scanNormsSource('core/moduloNuevo.js', `const i = Math.floor(
   'un módulo de core NUEVO que sortea contenido salta sin que nadie amplíe una lista de rutas');
 assert.strictEqual(scanNormsSource('views/hostLive.js', `const orden = Math.random() - 0.5;`).length, 1,
   'y una vista, también: el modo de fallar de esta ley ya es ruidoso, como el de las otras diez');
+// icono-primitivo (gemela de las dos anteriores, para los ICONOS): el SVG en
+// línea sale de `lucide()` (core/lucide.js). Nació porque el ayudante de SVG
+// vivía dentro de textCorrectionRound y, al pedir el dueño un reloj y un
+// «maximizar» de Lucide, iba a quedar tecleado en tres módulos (§21b).
+assert.ok(scanNormsSource('templates/x/player.js',
+  `const ico = \`<svg viewBox="0 0 24 24" stroke="currentColor"><path d="M1 1"/></svg>\`;`)
+  .some(v => v.rule === 'icono-primitivo'), 'caza un icono pegado a mano en una plantilla');
+assert.strictEqual(scanNormsSource('core/lucide.js',
+  `<svg viewBox="0 0 24 24" stroke="currentColor"></svg>`).length, 0, 'core/lucide.js ES la implementación');
+// CONTRA-PRUEBA: una ILUSTRACIÓN con geometría propia (la ruleta, las
+// animaciones del duelo, los previos de la portada) no es un glifo de mando y
+// tiene que seguir pasando — si la regla se las come, el remedio es peor.
+assert.strictEqual(scanNormsSource('core/ruleta/render.js',
+  `const svg = \`<svg viewBox="0 0 200 200"><circle r="9" fill="red"/></svg>\`;`).length, 0,
+  'CONTRA-PRUEBA: una ilustración con su propia geometría no es un icono');
 // azar-primitivo (extensión): un mulberry32 escrito a mano no nombra
 // Math.random NI UNA VEZ — templates/wordsearch/generator.js tenía su PROPIO
 // generador y la regla no lo veía. Se caza por su FIRMA: el divisor que

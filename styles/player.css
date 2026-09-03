@@ -281,6 +281,8 @@
 .ww-ico { display: block; flex: 0 0 auto; }
 
 .ww-fs-btn--corner {
+  font-size: max(14px, 1.45cqi);   /* el icono mide 1em: crece con el marco */
+  line-height: 1;
   /* z-index POR ENCIMA de lo que pinte el modo. El marcador del duelo
      (`.vss-bar`, z-index 10) tapaba el botón: existía, se veía a medias y NO se
      podía tocar en ningún VS — comprobado con hit-testing, no a ojo. La esquina
@@ -310,7 +312,11 @@
 .ww-fs-btn--corner:hover,
 .ww-fs-btn--corner:focus-visible { opacity: 1; transform: scale(1.06); }
 .ww-fs-btn--corner.is-on { opacity: .62; }   /* en pantalla completa se ve más: es la salida */
-.ww-fs-btn--corner i { font-size: max(14px, 1.45cqi); line-height: 1; }
+/* El tamaño del icono va en el BOTÓN, no en un hijo `i`: desde que el icono es
+   un SVG en línea (core/lucide.js) no hay `<i>` que dimensionar, y esta regla
+   quedó muerta — el glifo se congelaba en los 16 px heredados dentro de un
+   botón que crece con el marco (§3: nada de píxeles congelados). El SVG mide
+   `1em`, así que basta con darle letra al botón. */
 /* Táctil: no hay hover que revele el botón, así que nace visible. */
 @media (hover: none) { .ww-fs-btn--corner { opacity: .55; } }
 
@@ -342,6 +348,12 @@
   position: absolute; left: 50%; transform: translateX(-50%);
   top: max(6px, 1.2cqmin);
 }
+/* CON ICONO, el chip es una FILA. El SVG es `display:block` (así centra exacto
+   dentro de un botón redondo) y el chip no declaraba `display`: el icono se
+   ponía ENCIMA del número, el chip pasaba de 50 px de alto y se comía la
+   reserva del HUD, tapando el enunciado. Lo cazó el repaso del diff midiendo
+   las dos cajas (icono en y=28, número en y=47). */
+.edu-hud__chip--ico { display: inline-flex; align-items: center; gap: .3em; }
 .edu-hud__chip {
   background: rgba(0, 0, 0, .45); color: #fff;
   border-radius: 999px;

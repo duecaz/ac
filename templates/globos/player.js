@@ -47,7 +47,7 @@ export async function renderGlobosPlayer(rootSel, activity, opts = {}) {
         <div class="ww-player gl-play">
           ${hudHtml({
             pagina: `${idx + 1} / ${total}`,
-            racha: streak >= 2 ? `🔥 ${streak}` : null,
+            racha: streak >= 2 ? String(streak) : null,   // el 🔥 lo pone el chip (core/playerHud.js)
           })}
           <div class="edu-sec edu-sec--enunciado ww-prow">
             <h3 class="ww-q gl-q">${escapeHtml(item.question || '')}</h3>

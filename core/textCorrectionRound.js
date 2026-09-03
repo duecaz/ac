@@ -238,12 +238,12 @@ function panelRevisionHtml(filas, anulados, { anulable }) {
  *  barra ya está puesta por el lápiz/borrador, que es lo que la justifica.
  *  Sin tiempo declarado no se pinta NADA: un reloj parado enseña que el tiempo
  *  no importa aquí, y el hueco vacío desplaza el resto de la barra. */
-const relojHtml = (texto) =>
-  texto == null ? '' : `<span class="tc-clock" data-reloj>${lucide('timer', { clase: 'tc-ico' })}`
-    + `<b data-reloj-val>${escapeHtml(String(texto))}</b></span>`;
+const relojHtml = (hay) =>
+  hay ? `<span class="tc-clock" data-reloj>${lucide('timer', { clase: 'tc-ico' })}`
+    + `<b data-reloj-val></b></span>` : '';
 
 // pulsar "Listo" (mismas posiciones que el modo tocar → scoring intacto).
-export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSubmit, chips = {}, reloj = null, progreso = null } = {}) {
+export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSubmit, chips = {}, reloj = false, progreso = null } = {}) {
   const text = payload?.text || '';
   // El botón "Calibrar pizarra" NO va aquí (en el juego): vive en la pantalla de
   // inicio (views/startScreen.js), que es donde van los ajustes previos. En modo
@@ -314,7 +314,7 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
       </div>
       ${/* La barra de agotamiento solo con CUENTA ATRÁS: el cronómetro
             ascendente no agota nada y una barra quieta a cero desinforma. */''}
-      ${(progreso ?? reloj != null) ? '<div class="tc-progress" data-progreso><i></i></div>' : ''}
+      ${(progreso ?? reloj) ? '<div class="tc-progress" data-progreso><i></i></div>' : ''}
       <div class="tc-hoja">
         <div class="edu-sec edu-sec--texto tc-passage-area"><div class="tc-passage">${passageHtml(text, kind)}</div></div>
         <div class="tc-done-wrap edu-send"><button type="button" class="btn btn-success btn-lg tc-done" data-ww-submit><i class="bi bi-check2-circle"></i> Listo</button></div>
@@ -538,7 +538,7 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
       // el botón de pantalla completa, que vive en esa misma esquina.
       chips: { left: `${idx + 1} / ${passages.length}` },
       // El hueco del reloj se reserva si va a haber reloj; lo llena el módulo.
-      reloj: relojDe(activity).tipo === 'ninguno' ? null : '',
+      reloj: relojDe(activity).tipo !== 'ninguno',
       progreso: segundos > 0,
     });
     pararReloj();

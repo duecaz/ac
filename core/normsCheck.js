@@ -77,6 +77,16 @@ import { sinComentarios } from './sinComentarios.js';
 //                       = 2**32 que normaliza a [0,1), o las constantes de mezcla
 //                       0x6D2B79F5/1831565813), fuera de core/azar.js, que ES la
 //                       implementación permitida.
+//   · icono-primitivo : gemela de las dos de arriba, para los ICONOS. El SVG en
+//                       línea sale del PRIMITIVO `lucide()` (core/lucide.js);
+//                       nadie pega a mano un icono —`viewBox="0 0 24 24"` con
+//                       `stroke="currentColor"`, que es la firma de Lucide—
+//                       fuera de ese fichero. Nació el 2026-09-02: el ayudante
+//                       de SVG vivía dentro de textCorrectionRound y al pedir el
+//                       dueño un reloj y un «maximizar» iba a quedar tecleado en
+//                       tres módulos. Las ILUSTRACIONES no entran (la ruleta, las
+//                       animaciones del duelo, los previos de la portada): tienen
+//                       geometría propia, no son glifos de mando.
 //   · id-rid          : LEY DE CONTENIDO (docs/leyes.md §24) — IDs SIEMPRE con
 //                       `rid()` de core/ids.js, nunca `Math.random().toString(36)`
 //                       a mano (estaba copiado en ~17 sitios con longitudes y
@@ -112,6 +122,10 @@ const ALLOW = {
   // azar-primitivo · quién PUEDE nombrar `Math.random`, y por qué. Los dos
   // primeros SON la implementación; el resto no es contenido que nadie juegue, y
   // los PIN además tienen que ser IMPREDECIBLES: reproducirlos sería el fallo.
+  // icono-primitivo · solo el dueño del primitivo puede escribir un icono a mano.
+  // Vacía a propósito: si algún día hace falta un glifo que Lucide no tenga, se
+  // añade AQUÍ con su motivo, no se pega en una plantilla.
+  'icono-primitivo': ['core/lucide.js'],
   'azar-primitivo': [
     'core/azar.js', 'core/ids.js',
     'core/effects.js',          // confeti
@@ -425,6 +439,15 @@ export function scanNormsSource(path, source) {
         out.push({ path, line: i + 1, rule: 'azar-primitivo',
                    text: `generador de azar propio: usa mulberry32/semilla de core/azar.js — ${ln.trim()}` });
       }
+    }
+    // icono-primitivo · un icono pegado a mano. Se caza por la FIRMA de Lucide
+    // (lienzo 24×24 + trazo que toma el color del texto): una ilustración con su
+    // propia geometría no la cumple, así que la ruleta y las animaciones no
+    // entran. (Excluye este fichero: la REGLA nombra la firma para definirse.)
+    if (!allowed('icono-primitivo') && !path.endsWith('core/normsCheck.js')
+        && /viewBox="0 0 24 24"/.test(ln) && /stroke="currentColor"/.test(ln)) {
+      out.push({ path, line: i + 1, rule: 'icono-primitivo',
+                 text: `icono pegado a mano: usa lucide() de core/lucide.js — ${ln.trim()}` });
     }
     // §22-5 · un instante de la SALA medido con el reloj de ESTE aparato.
     // (el patrón lleva clase de caracteres a propósito: escrito entero, el

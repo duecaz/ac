@@ -103,7 +103,7 @@ Todo player se lee con cuatro roles — el prefijo `edu-` marca lo nuevo:
 | Rol | Qué es | Regla |
 |---|---|---|
 | **`edu-hud`** | los INDICADORES: página, ⏱, ★, 🔥 | flotan en las esquinas (`core/playerHud.js`, `hudHtml`/`hudSet`); **nunca crean franja** ni capturan toques |
-| **`edu-topbar`** | las HERRAMIENTAS que se tocan | existe **solo** si hay herramienta: lápiz/borrador (Tildes/Comas), Aa/Deshacer (Pelotas), pista/reiniciar (Crucigrama — *Verificar* es envío y vive en `edu-send`) — 3 de 13 |
+| **`edu-topbar`** | las HERRAMIENTAS que se tocan | existe **solo** si hay herramienta: lápiz/borrador (Tildes/Comas), Aa/Deshacer (Pelotas), pista/reiniciar (Crucigrama — *Verificar* es envío y vive en `edu-send`) — 3 de 13. Va **pegada al juego, como su cabecera**: en Tildes/Comas es la banda de arriba de la HOJA (papel con una pizca de su tinta y una raya debajo), no una tira suelta sobre el marco ni botones impresos en mitad del papel — las dos versiones que el dueño rechazó con maqueta (2026-09-02) |
 | **el juego** (`edu-sec`) | todo el alto restante, en subsecciones CON NOMBRE (`edu-sec--enunciado`, `--tablero`, `--texto`, `--pistas`, `--banco`, `--panel`, `--campo`) | refluyen con el contenedor (**ancho estrecho O más alto que ancho**, ver abajo); el **enunciado es la primera subsección**, no una barra |
 | **`edu-send`** | el espacio del botón de enviar | UNO como mucho, y todo control de envío dentro (marcador sobre `ww-bar-actions`/`tc-done-wrap`/`cw-footer`) |
 
@@ -111,6 +111,17 @@ Y dos prohibiciones que salieron del inventario (`docs/piezas-por-actividad.md`)
 el **título** de la actividad vive en la antesala (inicio · setup · lobby · ficha de
 la tarea), jamás dentro del juego; y una **pieza sin clase propia** (solo utilidades
 de Bootstrap) no se puede repartir — nómbrala.
+
+**LOS ICONOS SON DE LUCIDE, EN LÍNEA, Y CON UN DUEÑO**: `core/lucide.js`
+(`lucide('timer')`). SVG pegado, nunca una librería de CDN —la app no depende
+de la red, la misma lección que la CDN de Bootstrap y las webfonts— y nunca un
+EMOJI haciendo de icono: el «⏱» viajaba pegado al valor dentro de
+`core/reloj.js`, así que el dueño del tiempo mandaba sobre el aspecto de dos
+superficies a la vez (el chip del HUD y la banda de Tildes). El reloj entrega
+el número; el icono lo pone la superficie que pinta. El SVG mide `1em` y toma
+`currentColor`, así que crece con la letra de su mando y se recolorea con el
+token del skin (§3) sin CSS que acordarse de añadir. Añadir un icono = una
+entrada más en el diccionario de `core/lucide.js`; ninguna otra.
 
 **Cómo se marca**: DOBLE CLASE — `class="edu-topbar tc-bar"`. El rol es lo que se
 escanea y se verifica; el nombre propio se queda con su CSS y con lo que apuntan

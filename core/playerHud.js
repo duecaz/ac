@@ -28,15 +28,31 @@ import { lucide } from './lucide.js';
 // CHIP, no del reloj: `core/reloj.js` entrega el número pelado y cada superficie
 // donde se pinta decide cómo se ve (antes el «⏱ » viajaba pegado al valor, así
 // que el dueño del tiempo mandaba sobre el aspecto de todas a la vez).
-const ICONO = { tiempo: () => lucide('timer') };
+// UNA sola forma de poner icono a un chip: lo declara AQUÍ el chip, nunca lo
+// hornea el llamante en el valor. `tiempo` llevaba el «⏱» pegado dentro de
+// `core/reloj.js` (el dueño del tiempo mandando sobre el aspecto de dos
+// superficies) y `racha` lo horneaba cada player en su cadena — dos mecanismos
+// para lo mismo en el mismo módulo. El GLIFO de cada uno se elige aquí y se
+// razona: el reloj es de Lucide (mando, monocromo, crece con la letra); la
+// racha se queda en EMOJI a propósito —es una celebración, no un mando: el
+// naranja se ve desde el fondo del aula y un contorno gris no dice «vas
+// lanzado»—. Lo que importa es que la decisión viva en UN sitio.
+const ICONO = { tiempo: lucide('timer'), racha: '🔥' };
 
-const chip = (campo, texto) => {
-  const ico = ICONO[campo]?.() || '';
+/** UN indicador, con lo que le toque (icono incluido). Se EXPORTA porque hay
+ *  barras que ALOJAN un indicador —el reloj de Pelotas y el del Crucigrama, que
+ *  centrado flotando caería sobre sus propios botones— y hasta ahora copiaban el
+ *  markup a mano: al quitarle al reloj el «⏱» pegado, esos dos chips se
+ *  quedaron sin NINGÚN icono mientras el del HUD estrenaba el de Lucide. Dos
+ *  chips del mismo dato con dos aspectos, por copiar en vez de pedir (§21b). */
+export const chipHtml = (campo, texto) => {
+  const ico = ICONO[campo] || '';
   // El valor va en su propio nodo para que `hudSet` lo reescriba sin llevarse
   // por delante el icono (`textContent` sobre el chip entero lo borraría).
   return `<span class="edu-hud__chip${ico ? ' edu-hud__chip--ico' : ''}" data-hud="${campo}"${texto ? '' : ' hidden'}>`
     + `${ico}<span data-hud-val>${escapeHtml(String(texto ?? ''))}</span></span>`;
 };
+const chip = chipHtml;
 
 /**
  * Los indicadores del juego, por NOMBRE (no por posición en un markup ad hoc):

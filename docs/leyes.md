@@ -466,6 +466,14 @@ veredicto (verde/rojo)  >  placa/tarjeta (--ww-card-*)  >  tinta del lienzo (--w
 - **Tests que lo vigilan**: `tests/contrast.test.mjs` (con contra-prueba: un tema
   con el ámbar en letra blanca es rechazado, y el camino legítimo sigue pasando)
   · `tools/contrast-torture.mjs` en el preflight.
+- **EL MEDIDOR TAMBIÉN SE VIGILA** (`tools/helpers/legibilidad.mjs`, tres
+  mentiras y tres arreglos): un fondo semitransparente tomado por sólido · un
+  degradado que se caía al blanco · y `color-mix()`, que no computa a `rgb(…)`
+  sino a `color(srgb 0.95 0.95 0.92)` con los canales en **0-1** — leídos como
+  bytes, un crema se volvía NEGRO y daba 1,4:1 sobre texto perfectamente
+  legible (lo cazó la matriz, 2026-09-02). Un medidor que miente es peor que no
+  medir: cuando una red se pone roja, lo primero es comprobar si el defecto
+  está en el instrumento.
 - **Límite declarado**: en este entorno el CDN de Bootstrap está bloqueado, así
   que la tortura no juzga los rellenos suyos (`.badge.bg-*`) y lo DICE en cada
   pasada en vez de dar un falso ilegible. Lo que mide es el CSS del proyecto.
@@ -919,6 +927,7 @@ un handler, un observer, un modal) sigue vivo pintando encima del presente.
 | **ROUTER** (`core/router` + `setBeforeResolve`) | el ciclo de vida: `clearListeners(APP)` antes de CADA ruta | que una vista lo esquive colgando handlers "para siempre" |
 | **RELOJES** | `createCountdown` (duración) · `startDeadlineTicker` (hasta instante del servidor) · `startElapsedTicker` (ascendente) · `ctx.setInterval` (polling con limpieza) | `setInterval` a pelo (regla `reloj-primitivo`) · `Date.now()` en dominio (→ `clock.now()`) |
 | **AZAR** | `azar.random()` de `core/azar.js` (y `shuffle()`, que es su dueño) · inyectable pasando una fuente sembrada | nombrar `Math.random` en NINGÚN sitio del repo salvo lo declarado en `ALLOW` con su motivo —IDs, confeti, partículas, jitter y los PIN, que deben ser impredecibles— (regla `azar-primitivo`) · Fisher–Yates escrito a mano |
+| **ICONOS** | `lucide()` de `core/lucide.js` — SVG en línea, `1em`, `currentColor` | pegar un icono a mano (`viewBox="0 0 24 24"` + `stroke="currentColor"`) fuera de ese fichero (regla `icono-primitivo`) · un EMOJI haciendo de icono dentro del dueño del dato: el «⏱» viajaba pegado al valor en `core/reloj.js` y decidía el aspecto de dos superficies a la vez · una librería de iconos por CDN (la app no depende de la red). Las ILUSTRACIONES con geometría propia —ruleta, animaciones del duelo, previos de la portada— no son iconos |
 | **CALLBACKS DIFERIDOS** (`setTimeout` que repinta) | guard de vida: `if (!rootEl()) return` / `host.isConnected` / `ctx.setTimeout` | repintar sin comprobar que la ruta sigue viva (el patrón wheel es el ejemplar) |
 | **OVERLAYS en `<body>`** (toast, modales, banner) | cierre propio + **cierre en `hashchange`** si sobrevive a la ruta (loginModal) | quedar huérfanos encima de la vista siguiente |
 
@@ -946,7 +955,7 @@ un handler, un observer, un modal) sigue vivo pintando encima del presente.
   verdad, dos veces igual. Lo que la ley NO toca, porque no es contenido jugable:
   el confeti, las partículas, los IDs, el jitter de reconexión y —sobre todo—
   los PIN de sala y de tarea, que deben ser impredecibles.
-- **Tests que lo vigilan**: `reloj-primitivo` + `azar-primitivo` + `resize-observer` en
+- **Tests que lo vigilan**: `reloj-primitivo` + `azar-primitivo` + `icono-primitivo` + `resize-observer` en
   `core/normsCheck.js`/`tests/norms.test.mjs` · `tests/events.test.mjs`
   (delegación + clearListeners) · `tests/deadlineTicker.test.mjs` (guard
   anti-zombi).
