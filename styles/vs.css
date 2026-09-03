@@ -511,13 +511,17 @@
   position: relative; text-align: center;
   width: 100%; max-width: 560px; padding: 2rem 1rem; overflow: hidden;
 }
-/* Rayos (giran) + foco (quieto): dos capas del mismo fondo, ya no dos <div>. */
+/* Rayos (giran, ::before) y foco (QUIETO, ::after): dos capas, ya no dos
+   <div>. Separadas a propósito: juntas en la misma capa el foco giraba con los
+   rayos aunque el comentario dijera «quieto» (revisión v666). */
 .vs-celebration::before {
   content: ''; position: absolute; inset: -25% -15% 0 -15%; z-index: -2; pointer-events: none;
-  background:
-    radial-gradient(ellipse at center top, rgba(255,255,255,.16), transparent 70%),
-    repeating-conic-gradient(from 0deg at 50% 38%, rgba(255,196,0,.10) 0deg 7deg, transparent 7deg 19deg);
+  background: repeating-conic-gradient(from 0deg at 50% 38%, rgba(255,196,0,.10) 0deg 7deg, transparent 7deg 19deg);
   animation: vsc-spin 22s linear infinite;
+}
+.vs-celebration::after {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(ellipse at center top, rgba(255,255,255,.16), transparent 70%);
 }
 /* Corona: solo hay ganador que coronar cuando NO es empate. Va como ::before
    del TÍTULO (encima del trofeo), no como ::after del cierre: ahí caía al
@@ -527,7 +531,9 @@
   content: '👑'; display: block; font-size: 2.6rem; line-height: 1;
   animation: vsc-drop .7s cubic-bezier(.2,1.4,.5,1) both;
 }
-.ww-cierre__titulo { font-weight: 900; animation: vsc-fade .5s .35s both; }
+/* Con ámbito: sin `.vs-celebration` delante, esta regla animaba también el
+   título de Lista, Equipos e informe en vivo, que no lo pidieron. */
+.vs-celebration .ww-cierre__titulo { font-weight: 900; animation: vsc-fade .5s .35s both; }
 /* El icono del título (`bi-trophy-fill`, lo pone `cierreHtml`) se agranda y
    hace "pop" — es EL trofeo; ya no hace falta uno grande aparte. */
 .vs-celebration:not(.vs-celeb-tie) .ww-cierre__titulo .bi-trophy-fill {

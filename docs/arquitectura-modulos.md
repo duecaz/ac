@@ -32,10 +32,10 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 |---|---|---|---|---|
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1900 | 7 · 1028 | 0.54 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2772 | 12 · 1429 | 0.52 |
-| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 39 · 4521 | 19 · 3098 | 0.69 |
+| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 39 · 4523 | 19 · 3098 | 0.68 |
 | **informes/tareas** | después de clase | 10 · 1119 | 4 · 512 | 0.46 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 68 · 5479 | 13 · 1840 | 0.34 |
-| **infra/común** | todo lo anterior | 169 · 20082 | 71 · 8826 | 0.44 |
+| **infra/común** | todo lo anterior | 169 · 20083 | 71 · 8826 | 0.44 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30

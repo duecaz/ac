@@ -63,6 +63,7 @@ export function cierreHtml({ ranked, tie, resumen = '', extra = '', acciones = '
   const ganador = empatado || !top ? null : top;
   const titulo = ganador
     ? `<i class="bi bi-trophy-fill text-warning"></i> ¡<span class="ww-cierre__nombre">${escapeHtml(ganador.name)}</span> gana!`
+    : !top ? '<i class="bi bi-people"></i> Nadie ha jugado'   // sala sin respuestas: no es un empate
     : '<i class="bi bi-emoji-neutral"></i> ¡Empate!';
   const resto = list.length > 3 ? `
     <div class="ww-cierre__ranking">${list.slice(3).map((p, i) => `

@@ -106,7 +106,9 @@ export function createHostInforme(rt) {
         // que el podio (score y, en carrera, `tie` = hora de meta), así que el
         // cálculo por defecto de `cierreHtml` es "empate real entre 1º y 2º" sin
         // repetir la regla aquí (§21b, un solo dueño del criterio de empate).
-        ranked: lb,
+        // Solo el top 3: el ranking completo ya lo pinta la pestaña «Ranking» de
+        // abajo; con `lb` entero salían del 4º en adelante DOS veces (revisión v666).
+        ranked: lb.slice(0, 3),
         extra: `
           <div id="ll-medals" class="ll-medals"></div>
           <div class="text-center"><div class="ll-tabs">

@@ -76,7 +76,7 @@ const ok = (m) => console.log(`  ✓ ${m}`);
 // ── Borde: sin jugadores no revienta (sala en vivo sin respuestas) ──────────
 {
   const vacio = cierreHtml({ ranked: [] });
-  assert.ok(vacio.includes('¡Empate!'), 'sin jugadores no hay a quién anunciar como ganador');
+  assert.ok(!vacio.includes('¡Empate!') && vacio.includes('Nadie ha jugado'), 'sin jugadores no es un empate: la clase no debe leer «¡Empate!» sobre un podio vacío');
   ok('ranked vacío: no revienta, título neutro');
 }
 
