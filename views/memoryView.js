@@ -10,7 +10,8 @@ import { on } from '../core/events.js';
 import { createMemoryGame } from '../kernel/session/memory.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { renderAntesala } from './antesala.js';
-import { teamColor, teamNameInputsHtml, teamsScoreboardHtml, teamsPodiumHtml } from '../core/teams.js';
+import { teamColor, teamNameInputsHtml, teamsScoreboardHtml } from '../core/teams.js';
+import { cierreHtml } from '../core/podium.js';
 import { COVER_MS } from '../core/timings.js';
 
 
@@ -100,10 +101,14 @@ export function mountMemory(host, a, ctx, opts = {}) {
     }
 
     function podium() {
-      // Implementación única en core/teams.js; aquí solo los botones propios.
-      return teamsPodiumHtml(game.leaderboard(), { actionsHtml: `
+      // Cierre COMPARTIDO (`cierreHtml`, core/podium.js); aquí solo los botones propios.
+      const ranked = game.leaderboard().map(t => ({ name: t.name, score: t.score }));
+      return cierreHtml({
+        ranked, clase: 'teams-podium text-center',
+        acciones: `
           ${backHref ? `<a href="${backHref}" class="btn btn-outline-secondary mt-3">Salir</a>` : ''}
-          <button class="btn btn-primary mt-3 ms-2" id="mem-again"><i class="bi bi-arrow-repeat"></i> Otra vez</button>` });
+          <button class="btn btn-primary mt-3 ms-2" id="mem-again"><i class="bi bi-arrow-repeat"></i> Otra vez</button>`
+      });
     }
 
     function wire() {

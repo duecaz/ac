@@ -10,7 +10,7 @@
 // tanto, registrarla solo añadiría gateo y setup que no aplican.
 import { html, escapeHtml, mount } from '../core/html.js';
 import { getAnywhere } from '../core/storage.js';
-import { podiumHtml } from '../core/podium.js';
+import { cierreHtml } from '../core/podium.js';
 import { renderAntesala } from './antesala.js';
 import { mountVs } from './vsView.js';
 import { sessionItems } from '../kernel/content/sessionItems.js';
@@ -180,21 +180,16 @@ export async function renderListView(rootSel, id) {
       { name: leftName, score: scores.left },
       { name: rightName, score: scores.right }
     ].sort((a, b) => b.score - a.score);
-    const tie = scores.left === scores.right;
-    const winnerName = tie ? null : ranked[0].name;
-
     const salida = destinoTrasJugar('solo');
     mount(host, html`
       <div class="list-final text-center py-5 px-3">
-        <p class="text-muted text-uppercase small mb-1">Resultado final · ${activities.length} rondas</p>
-        <h2 class="mb-4">${tie
-          ? '<i class="bi bi-emoji-neutral text-secondary"></i> ¡Empate!'
-          : `<i class="bi bi-trophy-fill text-warning"></i> ¡${escapeHtml(winnerName)} gana la lista!`}</h2>
-        ${podiumHtml(ranked)}
-        <div class="mt-4 d-flex gap-2 justify-content-center flex-wrap">
-          <button id="list-again" class="btn btn-primary btn-lg"><i class="bi bi-arrow-repeat"></i> Jugar de nuevo</button>
-          <a href="${salida.href}" class="btn btn-outline-secondary btn-lg">Salir</a>
-        </div>
+        ${cierreHtml({
+          ranked,
+          extra: `<p class="text-muted text-uppercase small mb-1">Resultado final · ${activities.length} rondas</p>`,
+          acciones: `
+            <button id="list-again" class="btn btn-primary btn-lg"><i class="bi bi-arrow-repeat"></i> Jugar de nuevo</button>
+            <a href="${salida.href}" class="btn btn-outline-secondary btn-lg">Salir</a>`
+        })}
       </div>`);
     const btn = document.getElementById('list-again');
     if (btn) btn.onclick = () => showSetup();

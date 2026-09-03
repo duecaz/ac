@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **312 módulos · 1281 imports internos.**
+> **312 módulos · 1282 imports internos.**
 
 ### Ir a otro documento
 
@@ -31,11 +31,11 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1900 | 7 · 1028 | 0.54 |
-| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2796 | 12 · 1421 | 0.51 |
-| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 39 · 4516 | 19 · 3096 | 0.69 |
+| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2772 | 12 · 1429 | 0.52 |
+| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 39 · 4521 | 19 · 3098 | 0.69 |
 | **informes/tareas** | después de clase | 10 · 1119 | 4 · 512 | 0.46 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 68 · 5479 | 13 · 1840 | 0.34 |
-| **infra/común** | todo lo anterior | 169 · 20034 | 70 · 8742 | 0.44 |
+| **infra/común** | todo lo anterior | 169 · 20082 | 71 · 8826 | 0.44 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -63,7 +63,7 @@ graph TD
   T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>72 módulos</small>"]
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>6 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
-  V -->|412| C
+  V -->|414| C
   T -->|216| C
   AD -->|32| C
   A -->|28| C
@@ -104,7 +104,7 @@ graph TD
 | Capa | Módulos más grandes |
 |---|---|
 | **arranque** | `pb_hooks/aulareto-lib.js` (364) · `pb_hooks/aulareto.pb.js` (354) · `qa/hoja.js` (330) · `main.teacher.js` (168) · `main.embed.js` (68) |
-| **vistas** | `views/playerView.js` (538) · `views/vsView.js` (515) · `views/admin/collections.js` (453) · `views/hostLive.js` (341) · `views/teamsView.js` (305) |
+| **vistas** | `views/playerView.js` (538) · `views/vsView.js` (500) · `views/admin/collections.js` (453) · `views/hostLive.js` (341) · `views/teamsView.js` (313) |
 | **adaptadores** | `adapters/pocketbase/realtimeRooms.js` (483) · `adapters/pocketbase/realtimeAnswers.js` (388) · `adapters/pocketbase/realtime.js` (361) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (255) |
 | **core** | `core/textCorrectionRound.js` (743) · `core/normsCheck.js` (559) · `core/skins.js` (421) · `core/aiContent.js` (388) · `core/auth.js` (369) |
 | **kernel** | `kernel/session/teamsMachine.js` (178) · `kernel/session/vsMachine.js` (169) · `kernel/session/liveMachine.js` (166) · `kernel/session/memory.js` (98) · `kernel/contracts/template.js` (72) |
@@ -139,7 +139,7 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 | `core/textCorrectionRound.js` | 743 | 5 |
 | `core/normsCheck.js` | 559 | 1 |
 | `views/playerView.js` | 538 | 1 |
-| `views/vsView.js` | 515 | 2 |
+| `views/vsView.js` | 500 | 2 |
 | `templates/crossword/player.js` | 487 | 1 |
 | `adapters/pocketbase/realtimeRooms.js` | 483 | 1 |
 | `views/admin/collections.js` | 453 | 1 |

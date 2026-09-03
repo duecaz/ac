@@ -12,7 +12,7 @@ import { buildSessionTable } from '../../core/sessionModel.js';   // el modelo e
 import { origenServidor } from '../../core/serverMs.js';   // respaldo del sello en carrera (§22-1)
 import { toast } from '../../core/toast.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
-import { podiumHtml } from '../../core/podium.js';
+import { cierreHtml } from '../../core/podium.js';
 import { mmss } from '../../core/timings.js';
 import { destinoTrasJugar } from '../../core/afterPlay.js';
 import { esHojaDeTexto } from '../../core/contentModels/textCorrection.js';
@@ -101,19 +101,24 @@ export function createHostInforme(rt) {
     const isText = esHojaDeTexto(rt.activity);
     const salidaHost = destinoTrasJugar('live-host');
     mount(rt.rootSel, html`
-      <h2 class="text-center mb-3"><i class="bi bi-trophy-fill text-warning"></i> Podio</h2>
-      ${podiumHtml(lb.slice(0, 3))}
-      <div id="ll-medals" class="ll-medals"></div>
-      <div class="text-center"><div class="ll-tabs">
-        <button class="ll-tab is-active" data-tab="podio"><i class="bi bi-trophy"></i> Ranking</button>
-        <button class="ll-tab" data-tab="tabla"><i class="bi bi-table"></i> Tabla</button>
-        <button class="ll-tab" data-tab="palabra"><i class="bi bi-bar-chart-line-fill"></i> Por ${isText ? 'palabra' : 'ítem'}</button>
-      </div></div>
-      <div id="ll-tabout" class="mt-1"></div>
-      <div class="text-center mt-3 d-flex gap-2 justify-content-center flex-wrap">
-        <button id="ll-csv" class="btn btn-outline-success btn-sm"><i class="bi bi-download"></i> Exportar CSV</button>
-        <a href="${salidaHost.href}" class="btn btn-outline-secondary btn-sm"><i class="bi ${salidaHost.icon}"></i> ${salidaHost.label}</a>
-      </div>
+      ${cierreHtml({
+        // `tie` se omite a propósito: el ranking `lb` YA lleva el mismo criterio
+        // que el podio (score y, en carrera, `tie` = hora de meta), así que el
+        // cálculo por defecto de `cierreHtml` es "empate real entre 1º y 2º" sin
+        // repetir la regla aquí (§21b, un solo dueño del criterio de empate).
+        ranked: lb,
+        extra: `
+          <div id="ll-medals" class="ll-medals"></div>
+          <div class="text-center"><div class="ll-tabs">
+            <button class="ll-tab is-active" data-tab="podio"><i class="bi bi-trophy"></i> Ranking</button>
+            <button class="ll-tab" data-tab="tabla"><i class="bi bi-table"></i> Tabla</button>
+            <button class="ll-tab" data-tab="palabra"><i class="bi bi-bar-chart-line-fill"></i> Por ${isText ? 'palabra' : 'ítem'}</button>
+          </div></div>
+          <div id="ll-tabout" class="mt-1"></div>`,
+        acciones: `
+          <button id="ll-csv" class="btn btn-outline-success btn-sm"><i class="bi bi-download"></i> Exportar CSV</button>
+          <a href="${salidaHost.href}" class="btn btn-outline-secondary btn-sm"><i class="bi ${salidaHost.icon}"></i> ${salidaHost.label}</a>`
+      })}
     `);
 
     const out = document.getElementById('ll-tabout');

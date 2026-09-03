@@ -152,7 +152,11 @@ const BASELINE = {
                             'color:#5b6472', 'background:#243149', 'color:#e5edf9',
                             'background:#2d3d59', 'background:#f5c518', 'background:#ffd534'] },
   textCorrection: { fonts: ['1.1rem'], colors: ['color:#0f5132', 'color:#842029'] },
-  vs:            { fonts: ['.95rem', '1.05rem', '1.35rem', '1.7rem', '1rem', '2.6rem', '4.6rem'],
+  // «1.05rem» SALIÓ (deuda pagada, 2026-09-04): era `.vs-celeb-label`
+  // («¡GANADOR!»/«¡Empate!» suelto) — un SEGUNDO título junto al que ya pone
+  // el cierre compartido (`cierreHtml`), la costura que caza B8·4
+  // (tools/costuras-divergencia.mjs). Se borró, no se renombró.
+  vs:            { fonts: ['.95rem', '1.35rem', '1.7rem', '1rem', '2.6rem', '4.6rem'],
                    colors: ['background:#f8f9fa', 'color:#0d6efd', 'color:#2563eb', 'color:#6c757d', 'color:#f9c700'] },
   teams:         { fonts: ['1.1rem', '1.2rem', '1.4rem', '1rem'],
                    colors: ['color:#6c757d'] },

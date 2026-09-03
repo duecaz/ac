@@ -20,7 +20,7 @@ import { createLiveRoom } from '../kernel/live/engine.js';
 import { registerTemplate } from '../core/registry.js';
 import { scoreQuizSubmission } from '../templates/quiz/scorer.js';
 import { buildSessionTable } from '../core/sessionModel.js';   // dominio, no vista (§0)
-import { podiumHtml } from '../core/podium.js';
+import { cierreHtml } from '../core/podium.js';
 import { mmss } from '../core/timings.js';
 import { rowsFromLiveAnswers } from '../core/answerRows.js';
 import { readFileSync } from 'node:fs';
@@ -132,7 +132,9 @@ registerTemplate({
     'con 5/5 los tres, el orden lo pone la hora de meta');
   assert.strictEqual(players[0].finishMs, 5000, 'la meta es la última respuesta acertada');
 
-  const html = podiumHtml(players.map(p => ({ name: p.name, score: p.marks, sub: mmss(p.finishMs), tie: p.finishMs })));
+  // `podiumHtml` dejó de exportarse (2026-09-04, cierre compartido): se lee
+  // a través de `cierreHtml`, que envuelve el MISMO podio de barras.
+  const html = cierreHtml({ ranked: players.map(p => ({ name: p.name, score: p.marks, sub: mmss(p.finishMs), tie: p.finishMs })) });
   assert.match(html, /VELOZ[\s\S]*?0:05/, 'el podio dice a qué hora llegó cada uno');
   // Colocación: VELOZ 1.º, MEDIO 2.º, TARDON 3.º (antes: los tres 1.º, empatados a 5).
   const places = [...html.matchAll(/<div class="display-6">(\d)<\/div>/g)].map(m => m[1]);

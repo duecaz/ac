@@ -498,34 +498,54 @@
 .vs-result-screen .vs-result { width: 100%; max-width: 640px; }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   VS WINNER CELEBRATION — base (works on any skin; the TV-Show skin amps it).
-   Staggered entrance: rays + spotlight, crown drops, trophy pops, name scales.
+   VS WINNER CELEBRATION — viste el CIERRE COMPARTIDO (`cierreHtml`,
+   core/podium.js) que ya trae título+podio+acciones; el duelo solo cuelga
+   estas clases (`clase` en cierreHtml) y todo lo decorativo — rayos, foco,
+   corona — se resuelve en CSS PURO sobre `.vs-celebration` (::before/::after):
+   antes eran CUATRO <div aria-hidden> puestos solo para pintar (medido
+   2026-09-04). El trofeo grande y "¡GANADOR!"/puntaje son FLORITURA propia del
+   duelo (va en `resumen`, junto al resumen de la partida) — el título ya dice
+   quién gana igual que en las otras cuatro pantallas de cierre.
    ══════════════════════════════════════════════════════════════════════════ */
 .vs-celebration {
   position: relative; text-align: center;
   width: 100%; max-width: 560px; padding: 2rem 1rem; overflow: hidden;
 }
-.vs-celeb-rays {
-  position: absolute; left: 50%; top: -25%; width: 130%; height: 110%;
-  transform: translateX(-50%); z-index: -2; pointer-events: none;
-  background: repeating-conic-gradient(from 0deg at 50% 38%,
-    rgba(255,196,0,.10) 0deg 7deg, transparent 7deg 19deg);
+/* Rayos (giran) + foco (quieto): dos capas del mismo fondo, ya no dos <div>. */
+.vs-celebration::before {
+  content: ''; position: absolute; inset: -25% -15% 0 -15%; z-index: -2; pointer-events: none;
+  background:
+    radial-gradient(ellipse at center top, rgba(255,255,255,.16), transparent 70%),
+    repeating-conic-gradient(from 0deg at 50% 38%, rgba(255,196,0,.10) 0deg 7deg, transparent 7deg 19deg);
   animation: vsc-spin 22s linear infinite;
 }
-.vs-celeb-spotlight {
-  position: absolute; left: 50%; top: -12%; width: 120%; height: 64%;
-  transform: translateX(-50%); z-index: -1; pointer-events: none;
-  background: radial-gradient(ellipse at center top, rgba(255,255,255,.16), transparent 70%);
+/* Corona: solo hay ganador que coronar cuando NO es empate. Va como ::before
+   del TÍTULO (encima del trofeo), no como ::after del cierre: ahí caía al
+   final, debajo de los botones, y en 720 px de alto ni se veía (medido con la
+   sonda 2026-09-04). */
+.vs-celebration:not(.vs-celeb-tie) .ww-cierre__titulo::before {
+  content: '👑'; display: block; font-size: 2.6rem; line-height: 1;
+  animation: vsc-drop .7s cubic-bezier(.2,1.4,.5,1) both;
 }
-.vs-celeb-crown  { font-size: 2.6rem; line-height: 1; animation: vsc-drop .7s cubic-bezier(.2,1.4,.5,1) both; }
-.vs-celeb-trophy { font-size: 4.6rem; color: #f9c700; line-height: 1; margin-top: -.2rem;
-  filter: drop-shadow(0 6px 16px rgba(0,0,0,.4)); animation: vsc-pop .6s .15s cubic-bezier(.2,1.6,.5,1) both; }
-.vs-celeb-label  { font-size: 1.05rem; font-weight: 900; letter-spacing: .3em;
-  opacity: .9; margin-top: .5rem; animation: vsc-fade .5s .35s both; }
-.vs-celeb-name   { font-size: clamp(2rem, 7vw, 3.6rem); font-weight: 900; line-height: 1.05;
-  margin: .15rem 0; animation: vsc-pop .55s .3s cubic-bezier(.2,1.5,.5,1) both; }
-.vs-celeb-score  { font-size: 1.35rem; font-weight: 800; opacity: .92; animation: vsc-fade .5s .5s both; }
-.vs-celeb-podium { margin: 1.1rem auto 1.3rem; max-width: 420px; animation: vsc-fade .5s .6s both; }
+.ww-cierre__titulo { font-weight: 900; animation: vsc-fade .5s .35s both; }
+/* El icono del título (`bi-trophy-fill`, lo pone `cierreHtml`) se agranda y
+   hace "pop" — es EL trofeo; ya no hace falta uno grande aparte. */
+.vs-celebration:not(.vs-celeb-tie) .ww-cierre__titulo .bi-trophy-fill {
+  display: block; font-size: 4.6rem; color: #f9c700; margin: 0 auto .2rem;
+  filter: drop-shadow(0 6px 16px rgba(0,0,0,.4));
+  animation: vsc-pop .6s .15s cubic-bezier(.2,1.6,.5,1) both;
+}
+/* El nombre, ENORME pero en línea: como bloque partía el título en tres
+   («¡» · «Rojo» · «gana!») con la apertura huérfana arriba. */
+.vs-celebration .ww-cierre__nombre {
+  display: inline-block; vertical-align: baseline;
+  font-size: clamp(2rem, 7vw, 3.6rem); font-weight: 900; line-height: 1.05;
+  margin: .15rem .1em; animation: vsc-pop .55s .3s cubic-bezier(.2,1.5,.5,1) both;
+}
+/* Marcador del duelo (dato, no un segundo título — el título ya dice quién
+   gana; va en `resumen`, delante de `duelSummaryHtml`). */
+.vs-celeb-score { font-size: 1.35rem; font-weight: 800; opacity: .92; animation: vsc-fade .5s .5s both; }
+.vs-celebration .ww-cierre__podio { margin: 1.1rem auto 1.3rem; max-width: 420px; animation: vsc-fade .5s .6s both; }
 
 /* RESUMEN DEL DUELO — qué puso cada uno, para que "ganó Ana" tenga un porqué
    delante de la clase (core/duelSummary.js). Colores por TOKEN: los skins
@@ -548,18 +568,20 @@
 .duel-sum__list li {
   font-size: max(11px, 1.9cqmin); color: var(--vs-done-muted); line-height: 1.5;
 }
-.vs-celeb-actions{ animation: vsc-fade .5s .72s both; }
+.vs-celebration .ww-cierre__acciones{ animation: vsc-fade .5s .72s both; }
 /* Base colour cue per winning side (skins override with richer tones). */
-.vs-win-left  .vs-celeb-name { color: #2563eb; }
-.vs-win-right .vs-celeb-name { color: #dc2626; }
+.vs-win-left  .ww-cierre__nombre { color: #2563eb; }
+.vs-win-right .ww-cierre__nombre { color: #dc2626; }
 
 @keyframes vsc-drop { from { opacity: 0; transform: translateY(-44px) scale(.6) rotate(-12deg); } to { opacity: 1; transform: none; } }
 @keyframes vsc-pop  { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
 @keyframes vsc-fade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-@keyframes vsc-spin { to { transform: translateX(-50%) rotate(360deg); } }
+@keyframes vsc-spin { to { transform: rotate(360deg); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .vs-celeb-rays { animation: none; }
-  .vs-celeb-crown, .vs-celeb-trophy, .vs-celeb-label,
-  .vs-celeb-name, .vs-celeb-score, .vs-celeb-podium, .vs-celeb-actions { animation: none; }
+  .vs-celebration::before, .vs-celebration .ww-cierre__titulo::before { animation: none; }
+  .vs-celebration .ww-cierre__titulo, .vs-celeb-score,
+  .vs-celebration .ww-cierre__nombre, .vs-celebration .ww-cierre__podio,
+  .vs-celebration .ww-cierre__acciones,
+  .vs-celebration .ww-cierre__titulo .bi-trophy-fill { animation: none; }
 }

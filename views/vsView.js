@@ -23,7 +23,7 @@ import { createSession, isVsCompatible, FORMATS } from '../kernel/session/engine
 import { sessionItems } from '../kernel/content/sessionItems.js';
 import { supportsLoop } from '../core/liveLoops.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
-import { podiumHtml } from '../core/podium.js';
+import { cierreHtml } from '../core/podium.js';
 import { duelSummaryHtml } from '../core/duelSummary.js';
 import { getVsAnimation, DEFAULT_VS_ANIMATION } from '../core/vsAnimations.js';
 import { play as playSound } from '../core/sounds.js';
@@ -465,35 +465,20 @@ export function mountVs(host, a, ctx, opts = {}) {
         : [st.left, st.right].sort((a, b) => b.score - a.score))
         .map(s => ({ name: s.name, score: s.score }));
       const actions = `
-        <div class="vs-celeb-actions">
-          <button id="vs-again" class="btn btn-danger btn-lg"><i class="bi bi-arrow-repeat"></i> Otra vez</button>
-          ${backHref ? `<a href="${backHref}" class="btn btn-outline-secondary btn-lg ms-2">Salir</a>` : ''}
-        </div>`;
-      // Spectacular winner reveal: sunburst rays + spotlight, dropping crown,
-      // popping trophy, the winner's name HUGE in their panel colour. Each piece
-      // animates in on a stagger (see .vs-celeb-* in vs.css; the TV-Show skin
-      // amps it further). A tie gets a calmer screen — a draw isn't a victory.
-      const body = tie
-        ? `<div class="vs-celebration vs-celeb-tie">
-             <div class="vs-celeb-trophy"><i class="bi bi-emoji-neutral"></i></div>
-             <div class="vs-celeb-label">¡EMPATE!</div>
-             <div class="vs-celeb-score">${st.left.score} – ${st.right.score}</div>
-             <div class="vs-celeb-podium">${podiumHtml(ranked)}</div>
-             ${duelSummaryHtml(st)}
-             ${actions}
-           </div>`
-        : `<div class="vs-celebration vs-win-${winnerSide}">
-             <div class="vs-celeb-rays" aria-hidden="true"></div>
-             <div class="vs-celeb-spotlight" aria-hidden="true"></div>
-             <div class="vs-celeb-crown" aria-hidden="true">👑</div>
-             <div class="vs-celeb-trophy"><i class="bi bi-trophy-fill"></i></div>
-             <div class="vs-celeb-label">¡GANADOR!</div>
-             <h1 class="vs-celeb-name">${escapeHtml(winner.name)}</h1>
-             <div class="vs-celeb-score">${winner.score} pts</div>
-             <div class="vs-celeb-podium">${podiumHtml(ranked)}</div>
-             ${duelSummaryHtml(st)}
-             ${actions}
-           </div>`;
+        <button id="vs-again" class="btn btn-danger btn-lg"><i class="bi bi-arrow-repeat"></i> Otra vez</button>
+        ${backHref ? `<a href="${backHref}" class="btn btn-outline-secondary btn-lg ms-2">Salir</a>` : ''}`;
+      // Cierre COMPARTIDO (`cierreHtml`, core/podium.js): el duelo aporta solo su
+      // vestido — clase (rayos/foco/corona resueltos en CSS puro sobre
+      // `.vs-celebration`, ver vs.css), el marcador grande (dato, no un SEGUNDO
+      // «¡GANADOR!»/«¡Empate!»: el título ya lo dice, ver §31 costuras-divergencia
+      // B8·4) y el resumen de qué puso cada uno (`duelSummaryHtml`). El `tie` va
+      // EXPLÍCITO: el criterio del duelo es quién terminó primero
+      // (`st.leader`/`finishedBy`), no solo la puntuación.
+      const flourish = `<div class="vs-celeb-score">${tie ? `${st.left.score} – ${st.right.score}` : `${winner.score} pts`}</div>`;
+      const body = cierreHtml({
+        ranked, tie, resumen: flourish + duelSummaryHtml(st), acciones: actions,
+        clase: tie ? 'vs-celebration vs-celeb-tie' : `vs-celebration vs-win-${winnerSide}`,
+      });
       mount(host, html`<div class="vs-result-screen vs-skin-${vsTheme}">${body}</div>`);
       // Only celebrate a real winner. On a tie, no victory fanfare/confetti
       // (PODIUM triggers win.mp3 + confetti) — a draw isn't a win.

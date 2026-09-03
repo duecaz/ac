@@ -77,7 +77,9 @@
 .mem-card.is-matched { background: #d1e7dd; border-color: #198754; opacity: .85; cursor: default; }
 .mem-card .mem-face { word-break: break-word; text-align: center; }
 
-/* End */
+/* End — el cierre en sí (título/podio/ranking/acciones) es el CIERRE COMPARTIDO
+   (`cierreHtml`, core/podium.js); aquí solo el vestido propio de Equipos y
+   Memoria sobre sus clases genéricas `.ww-cierre__*`. */
 .teams-podium { margin: auto; }
-.teams-ranking { max-width: 340px; margin: 1rem auto 0; }
-.teams-rank-row { padding: .4rem .8rem; border-bottom: 1px solid #eee; font-size: 1.1rem; }
+.teams-podium .ww-cierre__ranking { max-width: 340px; margin: 1rem auto 0; }
+.teams-podium .ww-cierre__rank-row { padding: .4rem .8rem; border-bottom: 1px solid #eee; font-size: 1.1rem; }

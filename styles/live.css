@@ -23,6 +23,19 @@
 /* Hora de meta de la carrera bajo los puntos (quién terminó antes). */
 .ww-podium__sub { font-size: .85em; opacity: .85; }
 
+/* EL CIERRE COMPARTIDO (`cierreHtml`, core/podium.js) — lo medido (2026-09-04):
+   duelo, lista, equipos/memoria e informe en vivo montaban CADA UNO su propia
+   cabecera de fin de partida sobre el MISMO podio de arriba. Esta es la base
+   común a las cinco; el modo solo cuelga clases/relleno encima (ver `clase`,
+   `resumen`, `extra`, `acciones` de `cierreHtml`) — el duelo, por ejemplo,
+   viste `.vs-celebration` (styles/vs.css) sobre esta misma estructura. */
+.ww-cierre__titulo { text-align: center; font-size: max(1.3rem, 3.2vw); margin-bottom: .75rem; }
+.ww-cierre__nombre { font-weight: 900; }
+.ww-cierre__podio { margin: 0 auto 1rem; }
+.ww-cierre__ranking { max-width: 24em; margin: 1rem auto 0; }
+.ww-cierre__rank-row { display: flex; justify-content: space-between; padding: .4rem .8rem; border-bottom: 1px solid rgba(127,127,127,.3); }
+.ww-cierre__acciones { margin-top: 1rem; display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap; }
+
 /* R-1 · LECTURA (§26 ficha 1b): mientras la pizarra está en "preparados" se ve
    el enunciado pero NO las opciones — es lo que separa "leer" de "responder" y
    hace justo el bonus de velocidad. La clase la pone/quita views/hostLive.js

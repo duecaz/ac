@@ -20,7 +20,8 @@ import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { applyMarks } from '../core/textMarks.js';
 import { renderAntesala } from './antesala.js';
 import { applyPlayOptions } from '../core/playOptions.js';
-import { teamColor, teamNameInputsHtml, teamsScoreboardHtml, teamsPodiumHtml } from '../core/teams.js';
+import { teamColor, teamNameInputsHtml, teamsScoreboardHtml } from '../core/teams.js';
+import { cierreHtml } from '../core/podium.js';
 import { canAutoScoreRound } from '../core/templateCapability.js';
 
 
@@ -245,13 +246,20 @@ export function mountTeams(host, a, ctx, opts = {}) {
         return `<button class="btn btn-success btn-lg" id="teams-next">
           ${last ? '<i class="bi bi-flag-fill"></i> Ver resultado' : '<i class="bi bi-arrow-right"></i> Siguiente equipo'}</button>`;
       }
-      return `${backHref ? `<a href="${backHref}" class="btn btn-outline-secondary">Salir</a>` : ''}
-              <button class="btn btn-success" id="teams-restart"><i class="bi bi-arrow-repeat"></i> Otra vez</button>`;
+      // Fin de partida: los botones van dentro del cierre (podium()), no aquí.
+      return '';
     }
 
     function podium() {
-      // Mismo podio de barras que En vivo / VS; implementación única en core/teams.js.
-      return teamsPodiumHtml(session.leaderboard());
+      // Cierre COMPARTIDO (`cierreHtml`, core/podium.js): mismo podio de barras
+      // que En vivo / VS, aquí solo aportamos el ranking y los botones propios.
+      const ranked = session.leaderboard().map(t => ({ name: t.name, score: t.score }));
+      return cierreHtml({
+        ranked, clase: 'teams-podium text-center',
+        acciones: `
+          ${backHref ? `<a href="${backHref}" class="btn btn-outline-secondary">Salir</a>` : ''}
+          <button class="btn btn-success" id="teams-restart"><i class="bi bi-arrow-repeat"></i> Otra vez</button>`
+      });
     }
 
     function wire(item, payload, phase) {

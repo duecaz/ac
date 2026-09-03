@@ -176,9 +176,16 @@ dos mezclando los dos tratamientos: costó dos capturas del dueño destaparlo) y
 así estaba el FINAL DE PARTIDA: once con la pantalla estándar del shell, el
 Crucigrama con un cartel propio (`.cw-celebration`) que dejaba al alumno en el
 tablero sin puntaje ni salida, y Abre Cajas saltándosela con un
-`skipResultScreen: true` suelto sin decir por qué.
+`skipResultScreen: true` suelto sin decir por qué. Y así estaba el CIERRE de
+una partida COMPARTIDA (duelo, equipos, lista, informe en vivo): el podio en
+sí ya era UNO (`podiumHtml`), pero lo que lo RODEA —título «¡GANADOR!»/
+«¡Empate!», sus botones— seguía hecho de CUATRO maneras (`views/vsView.js`,
+`views/listView.js`, `core/teams.js`, `views/live/hostInforme.js`), cada una
+con su propio marcado en vez de vivir en `cierreHtml` (dueño: `core/podium.js`).
 - **(M)** Escanea `templates/*/player.js` (+ `play.js` si existe, + el runner
-  compartido `core/textCorrectionRound.js` para Tildes/Comas). Tres listas:
+  compartido `core/textCorrectionRound.js` para Tildes/Comas) para las listas
+  1-3, y `views/**/*.js` + `core/*.js` (sin `core/podium.js`, el dueño) para
+  la lista 4. Cuatro listas:
   1. `skipResultScreen`/`resultScreen:` que SUSTITUYE la pantalla estándar.
      Sin excepciones: hubo un mapa con motivo (`finPropio.js`, borrado) durante
      un día y el dueño lo cerró — «todos a rajatabla». La plantilla AÑADE
@@ -193,8 +200,18 @@ tablero sin puntaje ni salida, y Abre Cajas saltándosela con un
      plantilla ENTERA (un wrapper delgado que delega no cuenta como huérfano
      si quien pinta de verdad sí la llama — Ball Sort vía `play.js`,
      Tildes/Comas vía el runner compartido).
+  4. CIERRE PROPIO: (a) un `podiumHtml(` fuera del dueño — el podio solo se
+     monta DENTRO de `cierreHtml`; o (b) un título de cierre (`¡Empate!`,
+     `¡EMPATE!`, `gana!`, `GANADOR`, `gana la lista`, `bi-trophy-fill`) dentro
+     de un `<h1>`/`<h2>`/`<div class="…label…">`, **solo si esa etiqueta vive
+     en la misma función que un `podiumHtml(`/`cierreHtml(`** — así el
+     `vs-tug-label` del duelo (el tirón de cuerda, repintado con «¡Empate!» en
+     cada respuesta) y el «¡X gana la ronda!» de la Lista entre rondas NO
+     cuentan: son el marcador EN VIVO de la partida, no su cierre (la misma
+     distinción que ya hace esta lista con `teamsScoreboardHtml`, que ni
+     siquiera lleva esas palabras).
 - **(J)** Por hallazgo: converger a la forma mayoritaria (el shell /
-  `cabeceraHtml`). No hay lista de motivos que valga.
+  `cabeceraHtml` / `cierreHtml`). No hay lista de motivos que valga.
 - **Test de salida**: el propio script, con baseline-ratchet en
   `tools/auditoria.mjs`; y `tests/finDelShell.test.mjs` ejecuta el shell:
   pedir saltarse la estándar no hace nada, añadir encima sigue vivo.
@@ -210,7 +227,7 @@ tablero sin puntaje ni salida, y Abre Cajas saltándosela con un
 | B5 duplicados | `tools/costuras-duplicados.mjs` | 67 | **0** | 16 dueños nuevos (toasts, PRNG único, tile de imagen, modal, cableado de lista de ítems en 6 editores…); 24 coincidencias declaradas con motivo |
 | B6 capa | `tools/costuras-capa.mjs` | 22 | **0** | los 10 ajustes de sala del Quiz eran copias de `DEFAULT_LIVE`; 4 gates pasan de capacidad a declaración y el contrato lo exige |
 | B7 gestos | `edit-audit` + `matrix-smoke` + `live-smoke` | 2 | **0** | antesala · biblioteca · modales · alumno en vivo. Cazó un bug real: «Pausa» del host borraba la marca en curso del alumno |
-| B8 divergencia | `tools/costuras-divergencia.mjs` | 0 (2026-09-04) | **0** | el Crucigrama ya llegó limpio (otro agente quitó su `skipResultScreen`/cartel propio en paralelo); Abre Cajas tuvo un día una excepción declarada y el dueño la cerró («a rajatabla»): también sale por la estándar; ninguna cabecera duplicada |
+| B8 divergencia | `tools/costuras-divergencia.mjs` | 0 (2026-09-04) | **0** | el Crucigrama ya llegó limpio (otro agente quitó su `skipResultScreen`/cartel propio en paralelo); Abre Cajas tuvo un día una excepción declarada y el dueño la cerró («a rajatabla»): también sale por la estándar; ninguna cabecera duplicada. Lista 4 (cierre propio) añadida el mismo día que se unificó el podio en `cierreHtml`: nació roja de verdad (4 sitios: `vsView`, `listView`, `core/teams.js`, `hostInforme`) mientras la migración estaba en marcha EN PARALELO — para cuando se corrió el barrido tras escribirlo, el otro agente ya había migrado los cuatro y salió limpia; queda el ratchet en 0 vigilando que no vuelva a divergir |
 
 Colateral: la regex que quitaba comentarios se tragaba medio `core/selftest.js`
 (invisible a TODAS las reglas desde que existe) → `core/sinComentarios.js`, dueño

@@ -4,7 +4,7 @@
 // jsdom/Playwright sería el siguiente salto — requiere dependencias.)
 import assert from 'node:assert';
 import { resultScreenHtml } from '../core/resultScreen.js';
-import { podiumHtml } from '../core/podium.js';
+import { cierreHtml } from '../core/podium.js';
 import { teamNameInputsHtml } from '../core/teams.js';
 import { buildQuizOptions } from '../kernel/content/qaAdapt.js';
 
@@ -23,9 +23,13 @@ assert.ok(!resultScreenHtml({ mode: 'async-tracked' }).includes('data-ww-replay'
   'en Tarea (tope de intentos, §22-3) no se ofrece repetir');
 ok('resultScreenHtml: salida según el cuadro + repetir solo donde es gratis');
 
-const pod = podiumHtml([{ name: 'Ana', score: 5 }, { name: 'Beto', score: 2 }]);
+// `podiumHtml` dejó de exportarse (2026-09-04): el podio ya solo se ve a
+// través del CIERRE COMPARTIDO (`cierreHtml`), dueño único de esa envoltura
+// (título/podio/ranking/acciones) para las cinco pantallas de fin de partida
+// a más de un bando (ver tests/cierre.test.mjs para el detalle del contrato).
+const pod = cierreHtml({ ranked: [{ name: 'Ana', score: 5 }, { name: 'Beto', score: 2 }] });
 assert.ok(pod.includes('Ana') && pod.includes('Beto'), 'pinta el ranking');
-ok('podiumHtml: renderiza participantes');
+ok('cierreHtml: renderiza el podio de participantes');
 
 assert.strictEqual((teamNameInputsHtml(4).match(/<input/g) || []).length, 4, '4 inputs');
 ok('teamNameInputsHtml: N inputs');

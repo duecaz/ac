@@ -152,6 +152,25 @@ el mismo día: **sin salida** — `skipResultScreen` ya no existe en el shell,
 Abre Cajas añade «N / N cajas» sobre la estándar, y cualquier player que lo
 pida lo caza `tools/costuras-divergencia.mjs` en CI.
 
+**EL CIERRE COMPARTIDO también es de un dueño único** (`cierreHtml`,
+`core/podium.js`) — es la pantalla que ve la clase al terminar una partida a
+MÁS DE UN BANDO, distinta del final individual de arriba porque hay que decir
+quién ganó. El podio de barras (`podiumHtml`) ya era uno solo; lo medido el
+2026-09-04 es que lo que lo RODEA no lo era: Duelo, Lista, Equipos/Memoria e
+Informe en vivo montaban CADA UNO su propia cabecera («¡GANADOR!» con
+rayos/corona en el duelo, «¡X gana la lista!» en Lista, un trofeo propio en
+Equipos, un «Podio» sin ganador en el informe) — cuatro cabeceras, cuatro
+pares de botones, cuatro criterios de empate. `cierreHtml({ ranked, tie?,
+resumen, extra, acciones, clase })` fija la estructura (título único →
+podio → ranking del 4º en adelante → resumen → extra → acciones) y calcula
+el empate él mismo (mismo `score`, y si lo hay, mismo `tie` — la hora de
+meta en carrera) salvo que el modo pase el suyo ya decidido (el duelo, por
+quién terminó primero). Cada modo cuelga SOLO su vestido: el duelo viste
+`.vs-celebration` con rayos/foco/corona resueltos en CSS puro
+(`::before`/`::after`, sin `<div aria-hidden>` sueltos) — nada de un segundo
+«¡GANADOR!» junto al título del cierre, eso lo caza la misma costura B8·4 que
+vigila el final individual.
+
 ### El reflujo se quedó muerto por culpa del MARCO, no del CSS de la plantilla
 
 Historia corta y con moraleja. El reflujo por forma (`aspect-ratio < 1/1`) era
