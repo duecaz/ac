@@ -9,7 +9,7 @@ import { pickIndex } from '../../core/ruleta/logic.js';
 import { spinTarget, normalizeRotation, animateSpin, SPIN_DUR_PICK } from '../../core/ruleta/spin.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { QL_COLORS, qlBoxesHtml, qlCols } from '../../core/questionLive.js';
-import { hudHtml } from '../../core/playerHud.js';
+import { cabeceraHtml } from '../../core/playerHud.js';
 
 
 function getItems(activity) {
@@ -44,7 +44,7 @@ function renderBoxes(rootSel, activity, opts = {}) {
     const openItem = openIdx !== null ? items[openIdx] : null;
     mount(rootSel, html`
       <div class="ab-play text-center py-3 px-2">
-        ${hudHtml({ pagina: `${done.size} / ${items.length}` })}
+        ${cabeceraHtml({ pagina: `${done.size} / ${items.length}` })}
         <div class="edu-sec edu-sec--tablero ab-board" style="grid-template-columns:repeat(${cols},1fr)">${boxesHtml}</div>
         ${openItem != null ? `
           <div class="ab-open card border-2 mx-auto mt-4" style="max-width:480px;border-color:${QL_COLORS[openIdx % QL_COLORS.length]};border-width:2px">
@@ -127,7 +127,7 @@ function renderWheel(rootSel, activity, opts = {}) {
     const entries = available.map(i => String(i + 1));
     mount(rootSel, html`
       <div class="ab-play text-center py-3">
-        ${hudHtml({ pagina: `${done.size} / ${items.length}` })}
+        ${cabeceraHtml({ pagina: `${done.size} / ${items.length}` })}
         <div class="edu-sec edu-sec--tablero ww-wheel-stage">
           ${wheelSvg(entries, { rotation, dur: 0, spinning: false })}
           <div class="ww-wheel-pointer">▶</div>

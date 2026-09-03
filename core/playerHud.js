@@ -1,98 +1,126 @@
-// EL HUD DEL JUEGO — los INDICADORES flotan en las esquinas, el juego se queda
-// con todo el alto.
+// LA CABECERA DEL JUEGO — una, igual en las trece.
 //
-// Nace del inventario de piezas (docs/piezas-por-actividad.md, dueño
-// 2026-08-17): «n/total» estaba escrito de SIETE formas distintas y seis
-// players repintaban el título de la actividad que ya está en la antesala
-// (pantalla de inicio / setup / lobby / ficha de la tarea). Cada franja de
-// cabecera robaba un 4-25 % del alto — exactamente lo que le falta a la zona
-// de juego en un móvil en vertical.
+// TRES TRATAMIENTOS PARA LA MISMA FRANJA (medido el 2026-09-03, montando las 13
+// en el navegador):
+//   · 9 plantillas → los indicadores FLOTABAN sobre el juego y el botón de
+//     pantalla completa vivía en la esquina del marco;
+//   · Tildes y Comas → una BANDA con todo dentro (página · herramienta · reloj ·
+//     pantalla completa), la que pidió el dueño con maqueta;
+//   · Crucigrama y Pelotas → mezcla: la página flotando, el reloj alojado en su
+//     barra propia, el botón en la esquina.
+// Los mismos cuatro datos en tres sitios según la actividad. El dueño lo dijo
+// corto: «solo estás parchando, piensa mejor» — arreglar la franja en dos de
+// trece ES el parche.
 //
-// La regla (decidida con el dueño): un INDICADOR —página, tiempo,
-// racha— nunca crea una franja; flota en una esquina, encima del juego, como
-// el botón de pantalla completa («como en la actividad Calcular»). Solo una
-// HERRAMIENTA que se toca (lápiz/borrador, deshacer, pista) justifica una
-// barra (edu-topbar), y solo 3 de las 13 la tienen.
+// LA REGLA, aquí y en ningún otro sitio: **el juego tiene UNA cabecera**, y en
+// ella viven, siempre en el mismo orden:
+//     [herramientas de la plantilla] [página · racha · extra] … [RELOJ] … [⛶]
+// La plantilla aporta SOLO sus herramientas (3 de 13 las tienen); lo demás lo
+// pone esta cabecera. El reloj va centrado y GRANDE en las trece: si el número
+// merece leerse desde el fondo del aula en Tildes, lo merece en el Quiz.
 //
-// Uso: el player mete `hudHtml({...})` como PRIMER hijo de su raíz — el CSS
-// (styles/player.css, `:has(> .edu-hud)`) hace de esa raíz el ámbito de
-// posicionamiento, sin pedirle clase. Para actualizar un dato sin re-render:
-// `hudSet(root, 'tiempo', '12')` (null/'' lo esconde; el icono lo pone el chip).
+// POR QUÉ AHORA SÍ SE DIBUJA, si la ley §3b0 decía «los indicadores nunca crean
+// franja»: aquella decisión (2026-08-17) buscaba ganar alto, y el alto YA se
+// gastaba. `styles/player.css` reservaba `max(30px, 6.5cqmin)` arriba en cuanto
+// el reloj estaba visible, para que los chips flotantes no taparan el juego. La
+// franja estaba pagada y no se dibujaba: se veía un chip suelto encima del
+// juego en vez de una cabecera. Lo que la ley prohibía —y sigue prohibiendo— es
+// la CABECERA CON TÍTULO, que robaba entre el 4 % y el 25 % del alto.
 //
-// El HUD no captura toques (`pointer-events: none`): un globo que pase por
-// debajo se sigue pudiendo explotar.
+// EL ASPECTO LO PONE LA SUPERFICIE QUE HAY DEBAJO, por tokens: `--cab-tinta` y
+// `--cab-fondo` (por defecto los del marco). Tildes y Comas los apuntan a los
+// del PAPEL, y por eso su cabecera es la banda de arriba de la hoja sin una
+// sola regla duplicada. La lección ya nos costó dos capturas: lo que se dibuja
+// encima de una superficie se lee con la tinta de esa superficie.
+//
+// Uso: el player mete `cabeceraHtml({...})` como PRIMER hijo de su raíz. Para
+// actualizar sin re-render: `hudSet(root, 'pagina', '3 / 8')` y
+// `relojSet(root, '12', pct)`.
 import { escapeHtml } from './html.js';
 import { lucide } from './lucide.js';
+import { fullscreenButtonHtml } from './fullscreen.js';
 
-// El chip del TIEMPO lleva su icono; los demás son solo texto. El icono es del
-// CHIP, no del reloj: `core/reloj.js` entrega el número pelado y cada superficie
-// donde se pinta decide cómo se ve (antes el «⏱ » viajaba pegado al valor, así
-// que el dueño del tiempo mandaba sobre el aspecto de todas a la vez).
-// UNA sola forma de poner icono a un chip: lo declara AQUÍ el chip, nunca lo
-// hornea el llamante en el valor. `tiempo` llevaba el «⏱» pegado dentro de
-// `core/reloj.js` (el dueño del tiempo mandando sobre el aspecto de dos
-// superficies) y `racha` lo horneaba cada player en su cadena — dos mecanismos
-// para lo mismo en el mismo módulo. El GLIFO de cada uno se elige aquí y se
-// razona: el reloj es de Lucide (mando, monocromo, crece con la letra); la
-// racha se queda en EMOJI a propósito —es una celebración, no un mando: el
-// naranja se ve desde el fondo del aula y un contorno gris no dice «vas
-// lanzado»—. Lo que importa es que la decisión viva en UN sitio.
+// UNA sola forma de poner icono a un indicador: lo declara AQUÍ el chip, nunca
+// lo hornea el llamante en el valor. El «⏱» viajaba pegado dentro de
+// `core/reloj.js` (el dueño del TIEMPO mandando sobre el aspecto de dos
+// superficies) y el «🔥» lo horneaba cada player en su cadena — dos mecanismos
+// para lo mismo. El GLIFO se elige aquí y se razona: el reloj es de Lucide
+// (mando, monocromo, crece con la letra); la racha se queda en EMOJI a
+// propósito —es una celebración, no un mando: el naranja se ve desde el fondo
+// del aula y un contorno gris no dice «vas lanzado».
 const ICONO = { tiempo: lucide('timer'), racha: '🔥' };
 
-/** UN indicador, con lo que le toque (icono incluido). Se EXPORTA porque hay
- *  barras que ALOJAN un indicador —el reloj de Pelotas y el del Crucigrama, que
- *  centrado flotando caería sobre sus propios botones— y hasta ahora copiaban el
- *  markup a mano: al quitarle al reloj el «⏱» pegado, esos dos chips se
- *  quedaron sin NINGÚN icono mientras el del HUD estrenaba el de Lucide. Dos
- *  chips del mismo dato con dos aspectos, por copiar en vez de pedir (§21b). */
-export const chipHtml = (campo, texto) => {
+/** UN indicador, con lo que le toque (icono incluido). El valor va en su propio
+ *  nodo para que `hudSet` lo reescriba sin llevarse por delante el icono
+ *  (`textContent` sobre el chip entero lo borraría).
+ *  INTERNA: llegó a exportarse cuando dos barras propias —la de Pelotas y la del
+ *  Crucigrama— alojaban el reloj y lo copiaban a mano. Con UNA cabecera para las
+ *  trece ya nadie construye un chip por su cuenta; lo cazó §30 al primer intento
+ *  («nadie lo nombra fuera de su fichero»), que es la señal de que la
+ *  unificación llegó de verdad. */
+const chipHtml = (campo, texto) => {
   const ico = ICONO[campo] || '';
-  // El valor va en su propio nodo para que `hudSet` lo reescriba sin llevarse
-  // por delante el icono (`textContent` sobre el chip entero lo borraría).
-  return `<span class="edu-hud__chip${ico ? ' edu-hud__chip--ico' : ''}" data-hud="${campo}"${texto ? '' : ' hidden'}>`
+  const clase = campo === 'tiempo' ? 'edu-cab__reloj' : 'edu-cab__chip';
+  return `<span class="${clase}" data-hud="${campo}"${texto ? '' : ' hidden'}>`
     + `${ico}<span data-hud-val>${escapeHtml(String(texto ?? ''))}</span></span>`;
 };
-const chip = chipHtml;
 
 /**
- * Los indicadores del juego, por NOMBRE (no por posición en un markup ad hoc):
- *   pagina «3 / 8» · racha «🔥 3» · extra (p.ej. «Flips: 4») → esquina izquierda
- *   tiempo «12», con su icono de reloj                       → CENTRO
- * Todos opcionales: lo que no se pasa se pinta oculto, listo para `hudSet`.
- * El chip `puntos` («★ 40») SE RETIRÓ (dueño 2026-09-01): el puntaje ya vive en
- * la pantalla de resultado y el HUD no debe competir con el juego — «esa
- * estrella no aporta nada». El reloj va al CENTRO, no a la derecha: la esquina
- * derecha es del botón de pantalla completa y un dato que se mira cada segundo
- * merece el sitio donde el ojo ya está.
+ * LA CABECERA. Todos los campos son opcionales: lo que no se pasa se pinta
+ * oculto y listo para `hudSet` (así el player no tiene que re-renderizar para
+ * estrenar un indicador a mitad de partida).
+ *
+ * @param {object}  o
+ * @param {string} [o.pagina]        «3 / 8»
+ * @param {string} [o.racha]         «3» (el 🔥 lo pone el chip)
+ * @param {string} [o.extra]         «Flips: 4»
+ * @param {string} [o.tiempo]        «12» (el icono lo pone el chip)
+ * @param {string} [o.herramientas]  HTML YA ESCAPADO de la plantilla: lápiz/
+ *        borrador, Aa/Deshacer, Pista/Reiniciar. Solo lo que se TOCA — un
+ *        indicador no va aquí, va por su nombre.
+ * @param {boolean} [o.fullscreen]   ¿la cabecera aloja el botón de pantalla
+ *        completa? Sí cuando ESTA cabecera manda en el marco (Individual,
+ *        Tarea). En el duelo se montan DOS rondas en un marco: ninguna lo aloja
+ *        y el mando sigue siendo la esquina del marco, que es UNA.
+ * @param {boolean} [o.progreso]     barra de agotamiento bajo la cabecera. Solo
+ *        tiene sentido con CUENTA ATRÁS: un cronómetro ascendente no agota nada
+ *        y una barra quieta desinforma. La llena `relojSet`.
  */
-export function hudHtml({ pagina, racha, extra, tiempo } = {}) {
-  return `<div class="edu-hud" aria-hidden="true">
-    <span class="edu-hud__zona">${chip('pagina', pagina)}${chip('racha', racha)}${chip('extra', extra)}</span>
-    <span class="edu-hud__zona edu-hud__zona--centro">${chip('tiempo', tiempo)}</span>
-  </div>`;
+export function cabeceraHtml({ pagina, racha, extra, tiempo, herramientas = '',
+                               fullscreen = true, progreso = false } = {}) {
+  return `<header class="edu-cabecera">
+    ${herramientas ? `<span class="edu-cab__mandos">${herramientas}</span>` : ''}
+    <span class="edu-cab__datos">${chipHtml('pagina', pagina)}${chipHtml('racha', racha)}${chipHtml('extra', extra)}</span>
+    ${chipHtml('tiempo', tiempo)}
+    ${fullscreen ? fullscreenButtonHtml({ inline: true }) : ''}
+  </header>${progreso ? '<div class="edu-cab__barra" data-progreso><i></i></div>' : ''}`;
 }
 
-/** Actualiza UN indicador dentro de `scope` (Element o selector).
- *  Si una BARRA (edu-topbar) ALOJA el indicador —misma excepción declarada que
- *  el botón de pantalla completa: la barra es la dueña de su franja—, ese chip
- *  manda y el del HUD flotante se queda retirado: el reloj centrado del HUD
- *  caía justo sobre los mandos centrados de la barra (Crucigrama «Reiniciar»,
- *  Pelotas «Deshacer» — lo cazó la matriz al estrenar el centro). */
+/** Actualiza UN indicador dentro de `scope` (Element o selector). */
 export function hudSet(scope, campo, texto) {
   const raiz = typeof scope === 'string' ? document.querySelector(scope) : scope;
-  const el = raiz?.querySelector(`.edu-topbar [data-hud="${campo}"]`)
-          ?? raiz?.querySelector(`.edu-hud [data-hud="${campo}"]`);
+  const el = raiz?.querySelector(`[data-hud="${campo}"]`);
   if (!el) return;
   if (texto == null || texto === '') { el.hidden = true; return; }
   el.hidden = false;
-  // Al nodo del VALOR si el chip lo tiene (el del tiempo lleva icono delante);
-  // al chip entero si no. Una barra que aloje el indicador puede traer el suyo
-  // con la misma forma.
   (el.querySelector('[data-hud-val]') || el).textContent = String(texto);
 }
 
-// EL RELOJ NO VIVE AQUÍ. Estuvo: `mostrarCrono()` + `cronoHud()` montaban el
-// cronómetro sobre el chip `tiempo`, y la cuenta atrás la montaba cada player
-// por su cuenta — dos relojes con dos dueños. Ahora hay UNO
-// (`core/reloj.js`) y este módulo solo aporta el SITIO donde se pinta: el chip
-// `tiempo` del HUD, vía `hudSet`.
+/** El reloj y su barra, que son el MISMO dato: el número dice cuánto queda y la
+ *  barra dice cuánto se ha ido, que es lo que se capta sin leer. Se pintan
+ *  juntos porque `core/reloj.js` los entrega juntos (`pintar(valor, pct)`) y
+ *  separarlos fue justo lo que dejó la barra viviendo solo en Tildes.
+ *  `pct` va por `transform`, NO por `width`: animar el ancho relayoutea la
+ *  página en cada fotograma mientras corre el reloj — medido en una pizarra 4K
+ *  con la CPU frenada 12x, 19 fps EN REPOSO con `width` y 60 con `transform`. */
+export function relojSet(scope, valor, pct) {
+  hudSet(scope, 'tiempo', valor);
+  const raiz = typeof scope === 'string' ? document.querySelector(scope) : scope;
+  const barra = raiz?.querySelector('[data-progreso] i');
+  if (barra && pct != null) barra.style.transform = `scaleX(${Math.max(0, Math.min(100, pct)) / 100})`;
+}
+
+// EL RELOJ NO SE CUENTA AQUÍ. Estuvo: `mostrarCrono()` + `cronoHud()` montaban
+// el cronómetro sobre el chip `tiempo`, y la cuenta atrás la montaba cada player
+// por su cuenta — dos relojes con dos dueños. Ahora hay UNO (`core/reloj.js`) y
+// este módulo solo aporta el SITIO donde se pinta.

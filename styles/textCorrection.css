@@ -43,13 +43,6 @@
 .ww-player-frame:has(.tc-round) > .ww-student-stage {
   padding: max(8px, 2.2cqmin);
 }
-/* Y la esquina flotante de pantalla completa se retira cuando la ronda pinta su
-   barra: el botón vive DENTRO de la barra (ver `.tc-bar .ww-fs-btn--inline`).
-   Dos mandos para lo mismo, uno encima del papel, era la captura del dueño.
-   `.tc-bar--fs` = la barra que SÍ lo aloja (la ronda a pantalla entera). En el
-   duelo se montan dos rondas, ninguna aloja nada, y la esquina del marco sigue
-   siendo el único mando — por eso la condición no es «hay barra». */
-.ww-player-frame:has(.tc-bar--fs) > .ww-fs-btn--corner { display: none; }
 
 /* "Frase X/Y" en una esquina, fuera del flujo, para no robar espacio al texto.
    Escala con el marco (cqmin) para no verse minúsculo en pantalla completa. */
@@ -121,34 +114,16 @@
   padding: max(8px, 1.4cqmin) max(14px, 3.5cqw) max(12px, 2cqmin);
 }
 
-/* ── LA BARRA: SOLO herramientas (edu-topbar) ────────────────────────────────
-   Como cualquier app de dibujo, pero sin polizones: el progreso y los aciertos
-   son INDICADORES y viven en el HUD de las esquinas (core/playerHud.js) — aquí
-   queda lo que se TOCA: el interruptor lápiz/borrador, centrado, y el botón de
-   pantalla completa que la barra aloja (`tc-bar--fs`), pegado a la derecha. */
-.tc-bar {
-  flex: 0 0 auto;
-  position: relative;
-  display: flex; align-items: center; gap: max(6px, 1cqmin);
-  /* Papel con una pizca de su propia tinta: se distingue del área de escritura
-     sin ser otro color — por TOKEN, así que funciona igual con papel claro y
-     con papel oscuro. La raya de abajo es lo que la convierte en cabecera. */
-  background: color-mix(in srgb, var(--ww-paper-ink, #1f2937) 5%, var(--ww-paper, #fffdf6));
-  border-bottom: max(1px, .12cqmin) solid color-mix(in srgb, var(--ww-paper-ink, #1f2937) 14%, transparent);
-  color: inherit;                  /* la tinta de la hoja */
-  padding: max(5px, .9cqmin) max(8px, 1.6cqw);
-  /* La tira TIENE que dar cabida a sus dos mandos ABSOLUTOS —el reloj centrado
-     y el botón de pantalla completa—, que no la estiran por estar fuera del
-     flujo: sin este alto la barra medía lo que el interruptor (27 px) y el
-     botón asomaba por abajo, sobre la hoja (lo cazó la matriz, que mide la caja
-     de verdad). Piso en px y crecimiento por `cqmin`, como el resto (§3). */
-  min-height: max(26px, 6.4cqmin);
-  margin-bottom: 0;
+/* LA CABECERA ES LA DE TODOS (core/playerHud.js) — aquí solo se le dice sobre
+   QUÉ superficie está. Esta ronda tuvo su propia barra (`.tc-bar`, con página,
+   reloj, progreso y botón) y era la única de las trece que la dibujaba; hoy es
+   la misma pieza que las demás, vestida con los tokens del PAPEL en vez de con
+   los del marco. Una regla, dos superficies. */
+.tc-round > .edu-cabecera,
+.tc-round > .edu-cab__barra {
+  --cab-tinta: var(--ww-paper-ink, #1f2937);
+  --cab-fondo: var(--ww-paper, #fffdf6);
 }
-/* El hueco del botón de pantalla completa lo reserva SOLO la barra que lo aloja
-   (la ronda a pantalla entera). En el duelo se montan dos rondas sin botón: ahí
-   ese hueco sería un mordisco al panel, que ya va estrecho. */
-.tc-bar--fs { padding-right: 3em; }
 
 /* ── Aire extra SOLO en modo Individual ──────────────────────────────────────
    VS/Equipos/Live renderizan `.tc-round` SIN el envoltorio `.tc-solo` (panel
@@ -234,28 +209,6 @@
 .tc-ico { width: 1.1em; height: 1.1em; display: block; }
 .tc-switch:focus-visible { outline: 2px solid var(--ww-accent, #0d6efd); outline-offset: 2px; border-radius: 999px; }
 
-/* ── Pantalla completa DENTRO de la barra ────────────────────────────────────
-   Se pega al extremo derecho. Sin caja propia: la barra ya es la caja.
-   OJO con el `margin-left:auto`: si lo llevan A LA VEZ el chip de «restantes» y
-   este botón, el hueco libre se REPARTE entre los dos y el interruptor deja
-   de estar centrado. Absoluto sobre la barra: el centro es del interruptor y
-   la derecha, del botón. */
-.tc-bar .ww-fs-btn--inline {
-  position: absolute; right: max(6px, .8cqmin); top: 50%; transform: translateY(-50%);
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 1.9em; height: 1.9em; padding: 0;
-  /* Cuadrado de esquinas redondeadas, como en la maqueta del dueño: al lado de
-     tres pastillas ovaladas, un círculo más se leía como otra pastilla. */
-  border: 0; border-radius: 32%; cursor: pointer;
-  /* PISO en px y sin techo (§3): el `clamp(...)` que tenía congelaba el icono en
-     1,3 rem — en la pizarra 4K el mando se quedaba de tamaño de móvil. */
-  font-size: max(15px, 2.6cqmin);
-  background: color-mix(in srgb, var(--ww-paper-ink, #1f2937) 8%, transparent); color: inherit;
-  transition: background .15s ease;
-}
-.tc-bar .ww-fs-btn--inline:hover,
-.tc-bar .ww-fs-btn--inline:focus-visible { background: color-mix(in srgb, var(--ww-paper-ink, #1f2937) 20%, transparent); }
-.tc-bar .ww-fs-btn--inline .ww-ico { width: 1.15em; height: 1.15em; }
 /* El botón vive ABAJO: margin-top auto lo ancla al pie aunque el texto sea
    corto — es lo que separa «hoja con su botón» de «todo amontonado arriba». */
 .tc-done-wrap { flex: 0 0 auto; margin-top: auto; padding-top: 1.2cqh; text-align: center; }
@@ -367,75 +320,7 @@
 .pcal-val { font-size: 1.6rem; font-weight: 800; color: #2563eb; margin-top: .2rem; }
 .pcal-foot { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1rem; }
 
-/* ── EL RELOJ GRANDE Y SU BARRA DE PROGRESO (v1.51.612) ──────────────────────
-   Rescatados de la app anterior de Tildes (dueño 2026-08-27, con capturas): un
-   reloj que se lee desde el fondo del aula y una barra que dice cuánto tiempo
-   se ha consumido, sin tener que leer el número.
 
-   Van DENTRO de la barra que ya existe (`.tc-bar`, la del lápiz/borrador), no
-   en una franja nueva: la barra ya está puesta y una cabecera de más se come
-   entre el 4 % y el 25 % del alto del texto, que es lo que se midió al quitar
-   los títulos de los seis players (core/playerHud.js).
-
-   El reloj NO va como chip del HUD a propósito: el HUD son indicadores de
-   esquina, pequeños y discretos. Este número lo tiene que leer la clase entera,
-   así que es grande y va centrado. Los indicadores que SÍ son de esquina
-   —página y puntos— se quedan en el HUD. */
-.tc-clock {
-  /* CENTRADO EN LA BARRA, no en el hueco libre. Estaba con `margin-inline: auto`,
-     que en un flex reparte el sobrante entre los DOS vecinos — y como el lápiz
-     mide 145 px y el botón de pantalla completa 31, el reloj acababa 77 px a la
-     derecha del centro (medido). Centrar «en lo que sobra» no es centrar: la
-     referencia tiene que ser la barra, pase lo que pase a los lados. */
-  position: absolute; left: 50%; transform: translateX(-50%);
-  display: inline-flex; align-items: center; gap: .3em;
-  /* Pastilla, como los demás mandos de la banda. */
-  background: color-mix(in srgb, var(--ww-paper-ink, #1f2937) 8%, transparent);
-  border-radius: 999px; padding: .2em .6em;
-  font-variant-numeric: tabular-nums;   /* que no baile al bajar de 10 a 9 */
-  font-weight: 800;
-  /* Grande de verdad: es el dato que la clase mira de reojo. Piso en px para el
-     móvil, techo relativo al marco — nada que congele el crecimiento (§3). */
-  font-size: max(15px, 4.2cqmin);
-  line-height: 1;
-  /* LA TINTA ES DE LA SUPERFICIE QUE HAY DEBAJO, y esa superficie cambió: el
-     reloj se pintaba sobre el papel y llevaba `--ww-paper-ink`; ahora está en la
-     tira que flota sobre el marco, así que lleva la tinta de SU velo. La lección
-     de la v1.51.615 sigue siendo la misma —entonces llevaba `--ww-fg`, la tinta
-     del marco, sobre papel crema: 1,1:1, invisible—: manda dónde se dibuja. */
-  color: inherit;
-}
-
-/* La barra de progreso del TIEMPO, pegada bajo la barra de herramientas, como
-   en la app anterior. Es un indicador redundante a propósito: el número dice
-   cuánto queda y la barra dice cuánto se ha ido, que es lo que se capta sin
-   leer. Con PISO en px y sin techo: un `height: 3px` fijo lo cazó el ratchet de
-   §3 y tenía razón — en una pizarra 4K tres píxeles no se ven desde la tercera
-   fila. Crece con el marco, pero muy despacio: sigue siendo una línea, no una
-   franja. */
-.tc-progress {
-  height: max(3px, .5cqmin);
-  /* La pista es la tinta del papel muy diluida, para que el surco se vea igual
-     con papel claro y con papel oscuro. */
-  background: color-mix(in srgb, var(--ww-paper-ink, #1f2937) 15%, transparent);
-  border-radius: 999px;
-  overflow: hidden;
-  margin: 0 0 .35rem;
-}
-.tc-progress > i {
-  display: block; height: 100%; width: 100%;
-  background: var(--ww-accent, #2563eb);
-  /* La transición hace que el paso de segundo a segundo se lea como algo que
-     fluye y no como saltos; 1s lineal = exactamente el ritmo del tick.
-     Y va por `transform`, NO por `width`: animar el ancho obliga al navegador a
-     RECALCULAR LA MAQUETA de la página en cada fotograma, durante todo el
-     segundo, sin parar mientras corre el reloj. Medido en una pizarra 4K con la
-     CPU frenada 12x: con `width` la hoja iba a 19 fps EN REPOSO —sin que el
-     alumno tocara nada— y con `transform` va a 60. `scaleX` lo resuelve el
-     compositor: cero maqueta, cero repintado. */
-  transform-origin: left center;
-  transition: transform 1s linear;
-}
 
 /* ── LA REVISIÓN EN UN CARRIL AL LADO (v1.51.612) ────────────────────────────
    Rescatada de la app anterior. La corrección se pintaba SOLO dentro del texto,
@@ -551,15 +436,3 @@
   .tc-final__cuerpo > .tc-review-slot { max-width: none; }
 }
 
-/* La PÁGINA («1 / 3») dentro de la barra, a su izquierda. Antes flotaba como
-   chip del HUD en la esquina del marco y en un móvil de 390 se montaba sobre el
-   lápiz: el HUD y la barra se reparten la misma franja, y cuando hay barra la
-   barra manda. Mismo aire visual que el chip que sustituye. */
-.tc-pag {
-  flex: 0 0 auto;
-  font-size: max(10px, 2.1cqmin); font-weight: 700; line-height: 1;
-  padding: .3em .6em; border-radius: 999px;
-  background: color-mix(in srgb, var(--ww-paper-ink, #1f2937) 10%, transparent);
-  color: inherit;
-  font-variant-numeric: tabular-nums;
-}

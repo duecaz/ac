@@ -7,7 +7,7 @@ import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { palabraJugable } from '../../core/contentModels/words.js';
 import { buildGrid } from './generator.js';
 import { observeResize } from '../../core/observeResize.js';
-import { hudHtml, hudSet, chipHtml } from '../../core/playerHud.js';
+import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
 
 export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
   const wordsRaw = (activity.content?.words || [])
@@ -65,18 +65,14 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
 
     return html`
       <div class="cw-wrap">
-        ${hudHtml({ pagina: `0 / ${totalWords}` })}
-
-        <!-- HERRAMIENTAS (edu-topbar): lo que se toca para AYUDARSE, arriba y
+        <!-- HERRAMIENTAS: lo que se toca para AYUDARSE, en la cabecera y
              separado del envío. Antes pista y reiniciar compartían el pie con
              «Verificar», así que ayudarse y entregar se leían como lo mismo. -->
-        <div class="edu-topbar cw-tools">
-          ${hintMode === 'none' ? '' : `<button class="btn btn-outline-secondary btn-sm" id="cw-hint"><i class="bi bi-lightbulb"></i> Pista</button>`}
-          <!-- La barra ALOJA el reloj (hudSet lo prefiere sobre el chip del
-               HUD): centrado flotante aquí caería sobre estos mismos botones. -->
-          ${chipHtml('tiempo', null)}
-          <button class="btn btn-outline-danger btn-sm" id="cw-reset"><i class="bi bi-arrow-counterclockwise"></i> Reiniciar</button>
-        </div>
+        ${cabeceraHtml({
+          pagina: `0 / ${totalWords}`,
+          herramientas: `${hintMode === 'none' ? '' : `<button class="btn btn-outline-secondary btn-sm" id="cw-hint"><i class="bi bi-lightbulb"></i> Pista</button>`}
+            <button class="btn btn-outline-danger btn-sm" id="cw-reset"><i class="bi bi-arrow-counterclockwise"></i> Reiniciar</button>`,
+        })}
 
         <!-- Body: clues + grid -->
         <div class="cw-body">

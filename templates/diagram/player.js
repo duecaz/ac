@@ -10,7 +10,7 @@ import { scoreDiagramSubmission } from './scorer.js';
 import { ROPES, OK_COL, NO_COL, mountRopeLayer, ropeHtml, ghostHtml, dotPos, svgPt } from '../../core/connectRope.js';
 import { observeResize } from '../../core/observeResize.js';
 import { pinUsable } from '../../core/contentModels/diagram.js';
-import { hudHtml, hudSet } from '../../core/playerHud.js';
+import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
 import { setExclusiveLink } from '../../core/linkState.js';
 
 export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
@@ -243,7 +243,7 @@ function buildLayout(leftLabels, rightLabels, pins, image, activity, total) {
   // caer sobre «Nariz»/«Ojo» en vertical (medido). El relleno vive ahora en
   // styles/diagram.css, donde se puede razonar con él.
   return `<div class="ww-scaffold dg-play">
-  ${hudHtml({ pagina: `0 / ${total}` })}
+  ${cabeceraHtml({ pagina: `0 / ${total}` })}
   <div class="edu-sec edu-sec--campo ww-field dg-field">
     <div class="ww-rail dg-rail" data-rail="start">${leftLabels.map(labelHtml).join('')}</div>
     <div class="ww-stage dg-stage">

@@ -156,10 +156,10 @@ const FN_CORTADO = `() => {
 
 const FN_TAPADO = `() => {
   const w = document.querySelector('#ww-player-widget');
-  const hud = w?.querySelector('.edu-hud');
+  const hud = w?.querySelector('.edu-cabecera');
   if (!hud) return null;
   const vis = (e) => { const c = getComputedStyle(e); return c.display !== 'none' && c.visibility !== 'hidden'; };
-  const chips = [...hud.querySelectorAll('.edu-hud__chip')].filter(c => !c.hidden && vis(c));
+  const chips = [...hud.querySelectorAll('.edu-cab__chip, .edu-cab__reloj')].filter(c => !c.hidden && vis(c));
   const conTexto = [...w.querySelectorAll('*')].filter(e =>
     !hud.contains(e) && vis(e)
     && [...e.childNodes].some(n => n.nodeType === 3 && n.textContent.trim()));
@@ -504,11 +504,12 @@ for (const t of seeded) {
         // ninguno— es estar TAPADO, invisible o sin tamaño: eso es un fallo de
         // maquetación que el profe descubre pulsando y no pasando nada.
         const CONTROLES = [
-          // Las DOS formas del mismo control: la esquina flotante del marco y,
-          // cuando la ronda pinta su propia barra (Tildes/Comas), el botón que
-          // esa barra aloja. Buscar solo la esquina daría «ausente» —y por tanto
-          // verde— justo en las plantillas donde el dueño lo encontró mal puesto.
-          { nombre: 'pantalla completa', sel: '#ww-frame .ww-fs-btn--corner, #ww-frame .tc-bar .ww-fs-btn' },
+          // Las DOS formas del mismo control: la esquina flotante del marco (solo
+          // se dibuja si nadie la alojó) y el botón que aloja la CABECERA de
+          // verdad (`.edu-cabecera .ww-fs-btn--inline`, core/playerHud.js) — las
+          // trece, desde 2026-09-03. Buscar solo la esquina daría «ausente» —y
+          // por tanto verde— justo en las plantillas donde vive alojado.
+          { nombre: 'pantalla completa', sel: '#ww-frame .ww-fs-btn--corner, #ww-frame .edu-cabecera .ww-fs-btn--inline' },
           ...(submitKind[t.name] === 'boton' ? [{ nombre: 'envío de la ronda', sel: '#ww-frame [data-ww-submit]' }] : []),
           ...(mode === 'teams' ? [{ nombre: 'revelar (Equipos)', sel: '#teams-reveal', gateable: true }] : []),
         ];
@@ -588,9 +589,12 @@ for (const t of seeded) {
           const cs = getComputedStyle(marco);
           const esquinas = [...marco.querySelectorAll('.ww-fs-btn--corner')]
             .filter(b => getComputedStyle(b).display !== 'none').length;
-          // Solo la ronda a pantalla entera aloja el botón (`.tc-bar--fs`); en
-          // el duelo hay DOS rondas y el mando sigue siendo la esquina del marco.
-          const barra = marco.querySelector('.tc-bar--fs');
+          // Solo la ronda a pantalla entera aloja el botón: su CABECERA —la
+          // misma de las trece (core/playerHud.js)— trae el mando dentro. En el
+          // duelo hay DOS rondas, ninguna lo aloja, y sigue siendo la esquina
+          // del marco, que es UNA. (Buscaba `.tc-bar--fs`, la barra propia que
+          // esta ronda tuvo hasta que la franja se unificó.)
+          const barra = marco.querySelector('.tc-round > .edu-cabecera:has(.ww-fs-btn--inline)');
           const fs = barra?.querySelector('.ww-fs-btn') || null;
           let dentro = false;
           if (fs && barra) {
@@ -611,10 +615,10 @@ for (const t of seeded) {
           if (hoja.radio > 0) fallos.push(`el marco conserva esquinas redondas (${hoja.radio}px): sigue leyéndose como una segunda tarjeta`);
           if (hoja.aloja) {
             if (hoja.esquinas) fallos.push('la esquina flotante de pantalla completa sigue puesta (dos mandos para lo mismo)');
-            if (!hoja.hayFs) fallos.push('la barra no aloja el botón de pantalla completa');
-            else if (!hoja.dentro) fallos.push('el botón de pantalla completa se sale de la caja de la barra');
+            if (!hoja.hayFs) fallos.push('la cabecera no aloja el botón de pantalla completa');
+            else if (!hoja.dentro) fallos.push('el botón de pantalla completa se sale de la caja de la cabecera');
           } else if (!hoja.esquinas) {
-            fallos.push('sin barra que lo aloje (duelo), la esquina del marco tiene que seguir puesta');
+            fallos.push('sin cabecera que lo aloje (duelo), la esquina del marco tiene que seguir puesta');
           }
           if (hoja.switches !== hoja.rondas) fallos.push(`UN interruptor por ronda: ${hoja.rondas} ronda(s), ${hoja.switches} mando(s)`);
           if (fallos.length) { status = 'error'; detail = `hoja: ${fallos[0]}`; }
@@ -783,45 +787,35 @@ for (const t of seeded) {
             const vis = (e) => { const c = getComputedStyle(e); return c.display !== 'none' && c.visibility !== 'hidden'; };
             const envios = [...w.querySelectorAll('[data-ww-submit]')].filter(vis);
             return {
-              hud: w.querySelectorAll('.edu-hud').length,
-              // ¿La BARRA aloja los indicadores? Misma excepción declarada que ya
-              // tiene el botón de pantalla completa: cuando la ronda pinta su
-              // propia barra a todo el ancho, esa barra es el sitio de los mandos
-              // y de los indicadores, y un chip flotando encima sería un segundo
-              // dueño de la misma franja (en un móvil de 390 el «1 / 2» se montaba
-              // sobre el lápiz — medido, v1.51.616).
-              indicadoresEnBarra: !!w.querySelector('.edu-topbar .tc-pag'),
+              // LA CABECERA (core/playerHud.js, migrada 2026-09-03): ya no es un
+              // HUD que flota en las esquinas, es un `<header>` EN EL FLUJO. UNA
+              // por player — ni cero ni dos.
+              hud: w.querySelectorAll('.edu-cabecera').length,
+              // Ya no hay «la barra aloja los indicadores» como camino
+              // alternativo: la cabecera es SIEMPRE donde viven, así que esta
+              // excepción se retira con el HUD flotante que la motivaba.
+              indicadoresEnBarra: false,
               // CON NOMBRE: `edu-sec` a secas no identifica nada, y el caso que
               // originó la regla (la rejilla suelta de Memoria) volvería a pasar
               // en verde. Se exige el modificador.
               sec: w.querySelectorAll('[class*="edu-sec--"]').length,
               send: w.querySelectorAll('.edu-send').length,
               fuera: envios.filter(b => !b.closest('.edu-send')).length,
-              // DÓNDE ESTÁ, no solo si está. Contar nodos daba verde a Pelotas
-              // con el chip «Movs: 0» a 213 px del borde, en mitad del tablero:
-              // el HUD se ancla a quien lo contiene, y si esa raíz no llena su
-              // hueco, «la esquina» es la esquina de un trozo, no del marco.
-              // Se mide el chip VISIBLE más alto y a la izquierda.
+              // DÓNDE ESTÁ, no solo si está. La cabecera tiene que quedar PEGADA
+              // arriba y a TODO EL ANCHO del widget — si no, el juego arranca
+              // debajo de un hueco muerto o se solapa con ella.
               esquina: (() => {
-                const hud = w.querySelector('.edu-hud');
+                const hud = w.querySelector('.edu-cabecera');
                 if (!hud) return null;
-                // La zona CENTRO (el cronómetro) queda fuera: está centrada a
-                // propósito (dueño 2026-09-01) y su distancia a las esquinas es
-                // la mitad del marco — mediría rojo justo cuando está bien.
-                const chip = [...hud.querySelectorAll('.edu-hud__zona:not(.edu-hud__zona--centro) .edu-hud__chip')]
-                  .find(c => !c.hidden && vis(c));
-                const r = (chip || hud).getBoundingClientRect();
-                const rw = w.getBoundingClientRect();
-                // El HUD tiene DOS esquinas (zona izquierda y zona derecha): un
-                // chip pegado al borde DERECHO también está en su sitio. Medir
-                // solo `left` daba falso rojo a la Ruleta en cuanto el cronómetro
-                // (zona derecha) pasó a ser su único chip visible al montar.
-                // Y por la derecha se DESCUENTA la reserva del botón de pantalla
-                // completa (--ww-fs-reserve): esa esquina es del botón por norma,
-                // y el chip que la respeta está EN su esquina, no lejos de ella.
-                const reserva = parseFloat(getComputedStyle(hud).paddingRight) || 0;
-                return { top: Math.round(r.top - rw.top),
-                         left: Math.round(Math.min(r.left - rw.left, rw.right - r.right - reserva)) };
+                // Contra SU PROPIA raíz (el padre inmediato), no contra
+                // `#ww-player-widget`: ese widget lleva `padding:1.25rem` de
+                // CHROME de la plataforma (igual para la cabecera que para el
+                // juego), y medir ahí acusaba a las trece de un hueco que no
+                // es suyo — es del marco que las envuelve.
+                const r = hud.getBoundingClientRect();
+                const rw = hud.parentElement.getBoundingClientRect();
+                return { top: Math.round(r.top - rw.top), left: Math.round(r.left - rw.left),
+                         anchoCorto: Math.round(rw.width - r.width) };
               })(),
               // UN CHIP NO PISA TEXTO DEL JUEGO (ronda 2026-08-17: en la Sopa
               // las pastillas tapaban las letras). El HUD no captura toques
@@ -860,27 +854,29 @@ for (const t of seeded) {
           const medida = rr || { hud: 0, sec: 0, send: 0, fuera: 0, indicadoresEnBarra: false };
           const fallos = rr ? [] : ['sin #ww-player-widget: no se pudo escanear'];
           if (rr) {
-            // UNO de los dos, nunca ninguno y nunca los dos: o el HUD flota en las
-            // esquinas, o la barra los aloja. Lo que no se tolera es que el player
-            // no diga DÓNDE viven sus indicadores.
-            if (rr.indicadoresEnBarra) {
-              if (rr.hud > 0) fallos.push(`indicadores duplicados: la barra los aloja y además hay ${rr.hud} edu-hud`);
-            } else if (rr.hud !== 1) {
-              fallos.push(`edu-hud: ${rr.hud} (debe ser 1, o alojarlos en la barra)`);
+            // UNA cabecera, ni cero ni dos.
+            if (rr.hud !== 1) {
+              fallos.push(`edu-cabecera: ${rr.hud} (debe ser 1)`);
             }
             if (rr.sec < 1) fallos.push('sin sección de juego con nombre (edu-sec--*)');
             if (rr.send > 1) fallos.push(`${rr.send} regiones edu-send (como mucho 1)`);
             if (rr.fuera > 0 && !exc) fallos.push(`${rr.fuera} control(es) de envío fuera de edu-send`);
-            // El tope: el chip tiene que estar EN la esquina del marco. 48 px da
-            // aire para el relleno del propio HUD (9-25 px según la plantilla)
-            // y para el sangrado de la hoja de Tildes/Comas, y sigue estando
-            // lejísimos de los 213 px con los que Pelotas pasaba en verde.
-            const TOPE_ESQUINA = 48;
-            if (rr.esquina && (rr.esquina.top > TOPE_ESQUINA || rr.esquina.left > TOPE_ESQUINA)) {
-              fallos.push(`el HUD no está en la esquina: ${rr.esquina.top}px desde arriba, `
-                + `${rr.esquina.left}px desde la izquierda (tope ${TOPE_ESQUINA}) — su raíz no llena el hueco`);
+            // El tope: la cabecera pegada arriba y a todo el ancho. 4 px da aire
+            // para redondeos de subpíxel; nada más.
+            // 45px de aire: alguna raíz de plantilla lleva un padding PROPIO,
+            // simétrico y deliberado (Ruleta: 2cqmin · Crucigrama: .4rem ·
+            // Emparejar/Diagrama: 5vmin en pantalla completa, `:fullscreen
+            // .ww-scaffold` de styles/player.css) — nada que ver con el hueco
+            // de 30-50+ px que reservaban a mano los chips flotantes. Lo que
+            // sigue distinguiendo un padding legítimo de un defecto es que
+            // aquí top===left (simétrico) y `anchoCorto` ronda el doble: un
+            // hueco solo arriba, o mucho mayor por un lado, seguiría cayendo.
+            const TOPE_CABECERA = 45;
+            if (rr.esquina && (rr.esquina.top > TOPE_CABECERA || rr.esquina.left > TOPE_CABECERA || rr.esquina.anchoCorto > TOPE_CABECERA * 2)) {
+              fallos.push(`la cabecera no está pegada arriba a todo el ancho: ${rr.esquina.top}px desde arriba, `
+                + `${rr.esquina.left}px desde la izquierda, ${rr.esquina.anchoCorto}px de ancho de menos`);
             }
-            if (rr.tapado) fallos.push(`un chip del HUD pisa texto del juego: ${rr.tapado}`);
+            if (rr.tapado) fallos.push(`un chip de la cabecera pisa texto del juego: ${rr.tapado}`);
             if (rr.cortado) fallos.push(`texto del juego CORTADO: ${rr.cortado}`);
           }
           roles.push({ label: t.label, ...medida, exc, fallos });
@@ -1460,7 +1456,7 @@ if (roles.length) {
     const envio = r.send ? 'edu-send'
       : r.fuera ? (r.exc ? 'la mecánica (excepción)' : `${r.fuera} suelto(s)`)
       : 'gesto';
-    console.log(`  ${marca} ${r.label.padEnd(w2)}  hud:${r.hud} · secciones:${r.sec} · envío: ${envio}` +
+    console.log(`  ${marca} ${r.label.padEnd(w2)}  cabecera:${r.hud} · secciones:${r.sec} · envío: ${envio}` +
       (r.fallos.length ? `  → ${r.fallos.join(' · ')}` : ''));
   }
 }

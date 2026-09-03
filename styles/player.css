@@ -279,6 +279,15 @@
    de línea base que deja un elemento en línea, para que centre exacto dentro de
    un botón redondo. */
 .ww-ico { display: block; flex: 0 0 auto; }
+/* PANTALLA COMPLETA: los dos iconos viajan en el botón y manda el CSS, que sabe
+   el estado REAL (`:fullscreen`). Con el intercambio en JS, un player que se
+   re-renderiza nacía con el icono de ENTRAR estando ya en pantalla completa. */
+.ww-fs-ico--out { display: none; }
+:fullscreen .ww-fs-ico--in, :-webkit-full-screen .ww-fs-ico--in { display: none; }
+:fullscreen .ww-fs-ico--out, :-webkit-full-screen .ww-fs-ico--out { display: block; }
+/* Y la esquina flotante se retira cuando una CABECERA aloja el mando: dos
+   mandos para lo mismo, uno encima del juego, era la captura del dueño. */
+.ww-player-frame:has(.edu-cabecera .ww-fs-btn--inline) > .ww-fs-btn--corner { display: none; }
 
 .ww-fs-btn--corner {
   font-size: max(14px, 1.45cqi);   /* el icono mide 1em: crece con el marco */
@@ -320,55 +329,107 @@
 /* Táctil: no hay hover que revele el botón, así que nace visible. */
 @media (hover: none) { .ww-fs-btn--corner { opacity: .55; } }
 
-/* EL HUD DEL JUEGO (core/playerHud.js): los indicadores —página, tiempo,
-   racha— FLOTAN sobre el borde superior (esquinas + reloj al CENTRO), encima
-   del juego, y no crean franja (decisión del dueño, 2026-08-17: «como en la actividad
-   Calcular»). Quien tenga un `.edu-hud` como hijo directo se convierte en su
-   ámbito de posicionamiento — ninguna plantilla necesita clase extra.
-   VELO NEUTRO como el botón de la esquina (y por el mismo reporte v1.51.386):
-   son controles DE SUPERPOSICIÓN y deben leerse sobre cualquier fondo/skin.
-   No captura toques: un globo que pase debajo se sigue explotando. */
-:where(:has(> .edu-hud)) { position: relative; }
-.edu-hud {
-  position: absolute; top: 0; left: 0; right: 0; z-index: 20;
-  display: flex; justify-content: space-between; align-items: flex-start;
-  gap: 1cqmin;
-  padding: max(6px, 1.2cqmin);
-  /* La esquina derecha es del botón de pantalla completa. */
-  padding-right: var(--ww-fs-reserve, 52px);
-  pointer-events: none;
+/* LA CABECERA DEL JUEGO (core/playerHud.js) — UNA, igual en las trece.
+   Antes había TRES tratamientos de la misma franja (medido el 2026-09-03): 9
+   plantillas con los indicadores FLOTANDO y el botón de pantalla completa en la
+   esquina, Tildes/Comas con una banda propia, y Crucigrama/Pelotas con la
+   página flotando y el reloj alojado en su barra. Los mismos cuatro datos en
+   tres sitios — «solo estás parchando, piensa mejor» (dueño).
+
+   Se DIBUJA, y no cuesta alto: la franja ya estaba pagada. La regla de abajo
+   reservaba `max(30px, 6.5cqmin)` en cuanto el reloj estaba visible, para que
+   los chips flotantes no taparan el juego. Lo que la ley §3b0 prohibía —y sigue
+   prohibiendo— es la CABECERA CON TÍTULO, que robaba entre el 4 % y el 25 %.
+
+   EL ASPECTO LO PONE LA SUPERFICIE de debajo, por tokens: `--cab-tinta` y
+   `--cab-fondo` valen los del MARCO, y quien pinte su propio objeto los apunta
+   a los suyos (Tildes/Comas → el papel de la hoja). Una regla, dos superficies,
+   cero duplicación. Opaca a propósito: un velo translúcido sobre una foto no lo
+   puede juzgar la tortura de legibilidad, y perdimos de vista tres mandos así. */
+:has(> .edu-cabecera) { display: flex; flex-direction: column; min-height: 0; }
+/* `--cab-tinta`/`--cab-fondo` se PIDEN con respaldo, no se fijan aquí: fijarlas
+   en `.edu-cabecera` ganaría contra lo que declare la superficie de debajo y
+   Tildes no podría apuntarlas a su papel. Sin declarar, valen las del marco. */
+.edu-cabecera {
+  flex: 0 0 auto;
+  position: relative;
+  display: flex; align-items: center; gap: max(6px, 1cqmin);
+  /* Tiene que dar cabida a sus dos mandos ABSOLUTOS —el reloj centrado y el
+     botón—, que no la estiran por estar fuera del flujo. Piso en px, crecimiento
+     por `cqmin` (§3). El hueco de la derecha es del botón. */
+  min-height: max(26px, 6.4cqmin);
+  padding: max(5px, .9cqmin) 3em max(5px, .9cqmin) max(8px, 1.6cqw);
+  background: color-mix(in srgb, var(--cab-tinta, var(--ww-fg, #1f2937)) 5%, var(--cab-fondo, var(--ww-bg, #fff)));
+  border-bottom: max(1px, .12cqmin) solid color-mix(in srgb, var(--cab-tinta, var(--ww-fg, #1f2937)) 14%, transparent);
+  color: var(--cab-tinta, var(--ww-fg, #1f2937));
 }
-.edu-hud__zona { display: flex; gap: max(4px, .8cqmin); flex-wrap: wrap; }
-/* EL RELOJ VA AL CENTRO («relog centrado eso es obvio», dueño 2026-09-01).
-   Posicionado en absoluto sobre el 50% REAL del marco: si viviera en el flex,
-   el hueco reservado al botón de pantalla completa (padding-right) y la zona
-   izquierda de anchura variable lo dejarían «casi» centrado, que se nota más
-   que no centrarlo. */
-.edu-hud__zona--centro {
+.edu-cab__mandos, .edu-cab__datos { display: flex; align-items: center; gap: max(4px, .8cqmin); flex-wrap: wrap; }
+.edu-cab__chip {
+  flex: 0 0 auto;
+  display: inline-flex; align-items: center; gap: .3em;
+  background: color-mix(in srgb, var(--cab-tinta, var(--ww-fg, #1f2937)) 10%, transparent);
+  color: inherit;
+  border-radius: 999px; padding: .25em .7em;
+  font-size: max(10px, 2.1cqmin); font-weight: 700; line-height: 1;
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+/* EL RELOJ, CENTRADO EN LA CABECERA y grande en las trece («relog centrado eso
+   es obvio», dueño 2026-09-01; el tamaño, con la maqueta de Tildes). Centrado
+   contra la BARRA, no contra el hueco libre: en un flex el sobrante se reparte
+   entre los vecinos y con el lápiz a un lado el reloj acababa 77 px del centro
+   (medido). Es el dato que la clase mira de reojo: si merece leerse desde el
+   fondo del aula en Tildes, lo merece en el Quiz. */
+.edu-cab__reloj {
   position: absolute; left: 50%; transform: translateX(-50%);
-  top: max(6px, 1.2cqmin);
-}
-/* CON ICONO, el chip es una FILA. El SVG es `display:block` (así centra exacto
-   dentro de un botón redondo) y el chip no declaraba `display`: el icono se
-   ponía ENCIMA del número, el chip pasaba de 50 px de alto y se comía la
-   reserva del HUD, tapando el enunciado. Lo cazó el repaso del diff midiendo
-   las dos cajas (icono en y=28, número en y=47). */
-.edu-hud__chip--ico { display: inline-flex; align-items: center; gap: .3em; }
-.edu-hud__chip {
-  background: rgba(0, 0, 0, .45); color: #fff;
-  border-radius: 999px;
-  padding: .22em .7em;
-  font-size: max(12px, 2.6cqmin);
-  font-weight: 600;
-  line-height: 1.35;
-  white-space: nowrap;
+  display: inline-flex; align-items: center; gap: .3em;
+  background: color-mix(in srgb, var(--cab-tinta, var(--ww-fg, #1f2937)) 8%, transparent);
+  color: inherit;
+  border-radius: 999px; padding: .2em .6em;
+  font-size: max(15px, 4.2cqmin); font-weight: 800; line-height: 1;
+  font-variant-numeric: tabular-nums;   /* que no baile al bajar de 10 a 9 */
 }
 /* `hidden` pierde contra CUALQUIER regla de display (el atributo es solo un
    display:none de agente de usuario): con `inline-flex` puesto, un chip oculto
    seguía OCUPANDO su sitio — 52px de hueco fantasma que empujaban al cronómetro
    fuera de la esquina en la Ruleta (lo cazó la matriz al aparecer su primer
    chip visible). */
-.edu-hud__chip[hidden] { display: none; }
+.edu-cab__chip[hidden], .edu-cab__reloj[hidden] { display: none; }
+/* Pantalla completa: pegado al extremo derecho de la cabecera. Absoluto, no
+   `margin-left:auto`: con dos mandos que lo usaran, el hueco libre se REPARTE y
+   el reloj deja de estar centrado. */
+.edu-cabecera .ww-fs-btn--inline {
+  position: absolute; right: max(6px, .8cqmin); top: 50%; transform: translateY(-50%);
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.9em; height: 1.9em; padding: 0;
+  border: 0; border-radius: 32%; cursor: pointer;
+  font-size: max(15px, 2.6cqmin);
+  background: color-mix(in srgb, var(--cab-tinta, var(--ww-fg, #1f2937)) 8%, transparent); color: inherit;
+  transition: background .15s ease;
+}
+.edu-cabecera .ww-fs-btn--inline:hover,
+.edu-cabecera .ww-fs-btn--inline:focus-visible { background: color-mix(in srgb, var(--cab-tinta, var(--ww-fg, #1f2937)) 20%, transparent); }
+/* LA BARRA DE AGOTAMIENTO, pegada bajo la cabecera. Indicador redundante a
+   propósito: el número dice cuánto queda y la barra dice cuánto se ha ido, que
+   es lo que se capta sin leer. Solo con CUENTA ATRÁS (un cronómetro ascendente
+   no agota nada). Con PISO en px y sin techo: un `height: 3px` fijo lo cazó el
+   ratchet de §3 y tenía razón — en una pizarra 4K tres píxeles no se ven desde
+   la tercera fila. */
+.edu-cab__barra {
+  flex: 0 0 auto;
+  height: max(3px, .5cqmin);
+  background: color-mix(in srgb, var(--cab-tinta, var(--ww-fg, #1f2937)) 15%, transparent);
+  overflow: hidden;
+}
+.edu-cab__barra > i {
+  display: block; height: 100%; width: 100%;
+  background: var(--ww-accent, #2563eb);
+  /* Por `transform`, NO por `width`: animar el ancho obliga a RECALCULAR LA
+     MAQUETA en cada fotograma mientras corre el reloj. Medido en una pizarra 4K
+     con la CPU frenada 12x: con `width` la hoja iba a 19 fps EN REPOSO y con
+     `transform` va a 60. `scaleX` lo resuelve el compositor. */
+  transform-origin: left center;
+  transition: transform 1s linear;
+}
 
 /* Carril de la animación de progreso (solo) DENTRO del marco: franja arriba.
    La animación es SECUNDARIA → ocupa como mucho el 25% del alto del marco (y el
@@ -412,47 +473,29 @@
   height: 100%;
   gap: 1.4cqh;
 }
-/* EL ENUNCIADO: primera subsección del juego, CENTRADO (2026-08-17). Los
-   contadores que compartían esta fila viven ahora en el HUD de las esquinas
-   (`.edu-hud`), así que la fila es solo la pregunta — y respeta a AMBOS lados
-   el espacio de los chips para que un enunciado largo no se meta debajo. Va
-   sin `.ww-play-page` porque la tarea y el en vivo montan sin marco. */
+/* EL ENUNCIADO: primera subsección del juego, CENTRADO (2026-08-17). La fila es
+   solo la pregunta. Ya NO tiene que esquivar nada: los contadores y el botón de
+   pantalla completa viven en la CABECERA, que está encima y en el flujo —antes
+   flotaban sobre esta misma franja y el enunciado reservaba `--ww-fs-reserve` a
+   los dos lados para no meterse debajo. Va sin `.ww-play-page` porque la tarea y
+   el en vivo montan sin marco. */
 .ww-player .ww-prow {
   display: flex;
   align-items: center;
   justify-content: center;
   margin-top: .25em;
-  padding-inline: var(--ww-fs-reserve, 52px);
 }
-/* EN VERTICAL EL ENUNCIADO BAJA DE LA FRANJA DE CHIPS. Compartir línea con los
-   chips ahorra alto en apaisado, pero en un marco alto la pregunta ENVUELVE y
-   sus letras acaban debajo de «⏱ 12» (lo cazó la matriz en vertical con los
-   chips del Quiz). En vertical sobra alto y falta ancho:
-   el enunciado toma el ancho entero y empieza bajo los chips — misma reserva
-   que la Sopa (fuente del chip × su caja + el relleno del HUD). */
-/* Sin nombre de contenedor: el Quiz no monta el andamio (`player` es
-   .ww-scaffold), así que la consulta resuelve contra el contenedor más
-   cercano — el widget (#ww-player-widget, container-type: size). Y gateado a
-   que HAYA chips: la ronda de VS monta .ww-player sin HUD y no debe pagar la
-   franja. */
-@container (aspect-ratio < 1/1) {
-  .ww-player:has(> .edu-hud) .ww-prow { padding-inline: .5rem; margin-top: max(30px, 6.5cqmin); }
-}
-/* EL RELOJ CENTRADO POSEE SU CARRIL (dueño 2026-09-01). Con el reloj en el
-   centro ya no comparte línea con lo que también vive centrado arriba (el
-   enunciado del Quiz, la etiqueta alta del Diagrama en vertical): cuando el
-   chip del centro está VISIBLE, el ámbito del HUD reserva esa franja y el
-   juego empieza debajo. Solo entonces — con el reloj apagado no se paga nada,
-   y las barras que ALOJAN el reloj (Crucigrama, Pelotas) tampoco. El tick
-   inicial pinta antes del primer fotograma (deadlineTicker llama onTick al
-   arrancar), así que no hay salto de maquetación. */
-/* SIN `:where()`: envolverlo dejaba la regla en especificidad CERO y cualquier
-   clase de relleno de Bootstrap en la raíz del juego (el `p-2` del Diagrama) la
-   pisaba — el carril reaparecía sin reserva y el chip volvía sobre la etiqueta
-   «Cabeza». Lo cazó la matriz en vertical. */
-:has(> .edu-hud .edu-hud__zona--centro .edu-hud__chip:not([hidden])) {
-  padding-top: max(30px, 6.5cqmin);
-}
+/* SE FUERON DOS APAÑOS al dibujar la cabecera (2026-09-03), y los dos eran la
+   misma cosa: el juego esquivando algo que le flotaba encima.
+     · «en vertical el enunciado baja de la franja de chips» — un margen extra
+       bajo `@container (aspect-ratio < 1/1)`, porque la pregunta envolvía y sus
+       letras acababan debajo del reloj;
+     · «el reloj centrado posee su carril» — `:has(> .edu-hud … :not([hidden]))`
+       reservaba `max(30px, 6.5cqmin)` arriba SOLO cuando el reloj estaba
+       visible, y encima sin `:where()` para que el `p-2` de Bootstrap no la
+       pisara.
+   Con la cabecera EN EL FLUJO no hay nada que esquivar: el juego empieza donde
+   acaba la cabecera. Ese es el alto que la franja ya costaba sin dibujarse. */
 .ww-player .ww-prow .ww-q { flex: 1 1 auto; text-align: center; }
 .ww-play-page .ww-player-frame .ww-player .ww-prow { flex: 0 0 auto; }
 .ww-play-page .ww-player-frame .ww-player .ww-q {
@@ -555,11 +598,11 @@ body.bg-plated .ww-player .ww-q {
 .ww-play-page .ww-player-frame:-webkit-full-screen > #ww-player-widget {
   padding: 1rem;
 }
-/* …Y EL JUEGO RESPIRA, pero NO el HUD. El margen va sobre el andamio y sobre el
-   reparto del duelo —lo que contiene el juego—, nunca sobre el widget entero:
-   los indicadores flotan en las ESQUINAS del marco (`.edu-hud`, absoluto contra
-   el widget) y al padear el widget se despegaban de su esquina. Lo cazó la
-   matriz al primer intento: «el HUD no está en la esquina: 49px, tope 48». */
+/* …Y EL JUEGO RESPIRA, pero NO la cabecera. El margen va sobre el andamio y
+   sobre el reparto del duelo —lo que contiene el juego—, nunca sobre el widget
+   entero: la cabecera va a ras del marco, de borde a borde, y padear el widget
+   la despegaba. Cuando los indicadores flotaban, la matriz lo cazó al primer
+   intento: «el HUD no está en la esquina: 49px, tope 48». */
 .ww-play-page .ww-player-frame:fullscreen .ww-scaffold,
 .ww-play-page .ww-player-frame:-webkit-full-screen .ww-scaffold,
 .ww-play-page .ww-player-frame:fullscreen .vs-main,

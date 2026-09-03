@@ -24,7 +24,6 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   --bs-tube-w:      clamp(28px, 11cqw, 52px);
   --bs-tube-gap:    clamp(3px, 1.4cqw, 14px);
   --bs-ball-size:   calc(var(--bs-tube-w) - 12px);
@@ -37,13 +36,6 @@
 
 .bs-hidden { display: none !important; }
 
-.bs-toolbar {
-  /* Solo HERRAMIENTAS (Aa · Deshacer): los contadores viven en el HUD de las
-     esquinas (core/playerHud.js), así que la barra va centrada y compacta. */
-  display: flex; flex-wrap: wrap; gap: 12px;
-  align-items: center; justify-content: center;
-  padding: 4px 0 10px;
-}
 .bs-win { text-align: center; font-weight: 700; color: var(--bs-accent); }
 
 .ww-bs .tubes {

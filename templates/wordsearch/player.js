@@ -8,7 +8,7 @@ import * as Streaks from '../../core/streaks.js';
 import { generateGrid, cellLine, SIZE_MAP } from './generator.js';
 import { scoreWordsearch } from './scorer.js';
 import { basePoints } from '../../core/scoring/index.js';
-import { hudHtml, hudSet } from '../../core/playerHud.js';
+import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
 
 // Per-player color palette (supports up to 6 players)
 const PLAYER_COLORS = [
@@ -80,7 +80,7 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
   function render() {
     mount(rootSel, html`
       <div class="ww-ws">
-        ${hudHtml({
+        ${cabeceraHtml({
           pagina: `0 / ${total}`,
         })}
         <div class="ww-ws-body">

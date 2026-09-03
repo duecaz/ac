@@ -5,7 +5,7 @@ import { pickIndex } from '../../core/ruleta/logic.js';
 import { wheelSvg } from '../../core/ruleta/render.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { spinTarget, normalizeRotation, animateSpin, clampSpinDur } from '../../core/ruleta/spin.js';
-import { hudHtml } from '../../core/playerHud.js';
+import { cabeceraHtml } from '../../core/playerHud.js';
 
 // Support both old flat-entries format and new items format.
 function getEntries(activity) {
@@ -38,7 +38,7 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
     // fila —panel al costado— en hueco cuadrado/ancho.
     mount(rootSel, html`
       <div class="ww-wheel wh-play">
-        ${hudHtml({
+        ${cabeceraHtml({
           pagina: history.length ? `Giros: ${history.length}` : null,
           // «sin salir» solo tiene sentido si la opción se RETIRA al salir; con
           // `removeAfterSpin` apagado (el defecto) el número no bajaría nunca y

@@ -96,16 +96,27 @@ Lo mínimo que hay que saber al escribir CSS de actividad:
   2. ¿`color`/`background` con `#hex` que no sea neutro ni estado? → token `var(--ww-*)`.
   3. Corre `node tests/styles.test.mjs`. Debe pasar **sin tocar el BASELINE**.
 
-## 3b0. Los CUATRO roles del player (decisión del dueño, 2026-08-17)
+## 3b0. Los TRES roles del player (2026-08-17, revisado el 2026-09-03)
 
-Todo player se lee con cuatro roles — el prefijo `edu-` marca lo nuevo:
+Todo player se lee con tres roles — el prefijo `edu-` marca lo nuevo:
 
 | Rol | Qué es | Regla |
 |---|---|---|
-| **`edu-hud`** | los INDICADORES: página, ⏱, ★, 🔥 | flotan en las esquinas (`core/playerHud.js`, `hudHtml`/`hudSet`); **nunca crean franja** ni capturan toques |
-| **`edu-topbar`** | las HERRAMIENTAS que se tocan | existe **solo** si hay herramienta: lápiz/borrador (Tildes/Comas), Aa/Deshacer (Pelotas), pista/reiniciar (Crucigrama — *Verificar* es envío y vive en `edu-send`) — 3 de 13. Va **pegada al juego, como su cabecera**: en Tildes/Comas es la banda de arriba de la HOJA (papel con una pizca de su tinta y una raya debajo), no una tira suelta sobre el marco ni botones impresos en mitad del papel — las dos versiones que el dueño rechazó con maqueta (2026-09-02) |
+| **`edu-cabecera`** | la CABECERA: herramientas · página/racha/extra · RELOJ centrado · pantalla completa | **una sola**, la misma en las 13 (`core/playerHud.js`, `cabeceraHtml`). La plantilla aporta SOLO sus herramientas —lápiz/borrador (Tildes/Comas), Aa/Deshacer (Pelotas), pista/reiniciar (Crucigrama; *Verificar* es envío y vive en `edu-send`)—; lo demás lo pone la cabecera. El aspecto lo pone la superficie de debajo, por tokens (`--cab-tinta`/`--cab-fondo`): sobre el marco, los del tema; sobre la hoja de Tildes/Comas, los del papel |
 | **el juego** (`edu-sec`) | todo el alto restante, en subsecciones CON NOMBRE (`edu-sec--enunciado`, `--tablero`, `--texto`, `--pistas`, `--banco`, `--panel`, `--campo`) | refluyen con el contenedor (**ancho estrecho O más alto que ancho**, ver abajo); el **enunciado es la primera subsección**, no una barra |
 | **`edu-send`** | el espacio del botón de enviar | UNO como mucho, y todo control de envío dentro (marcador sobre `ww-bar-actions`/`tc-done-wrap`/`cw-footer`) |
+
+**POR QUÉ ERAN CUATRO Y AHORA SON TRES** (dueño, 2026-09-03: «solo estás
+parchando, piensa mejor»). Los roles nacieron con los indicadores FLOTANDO
+(`edu-hud`) y una barra aparte solo para quien tuviera herramientas
+(`edu-topbar`). Medido montando las 13: la misma franja tenía **tres**
+tratamientos —9 con los chips flotando y el botón en la esquina, 2 con banda
+propia, 2 repartidos entre su barra y la esquina—. Y el motivo original de no
+dibujarla (ganar alto) ya no se sostenía: `styles/player.css` RESERVABA
+`max(30px, 6.5cqmin)` arriba en cuanto el reloj estaba visible, para que los
+chips no taparan el juego. La franja estaba pagada y no se dibujaba. Lo que
+sigue prohibido —y era lo que robaba entre el 4 % y el 25 % del alto— es la
+**cabecera con TÍTULO**.
 
 Y dos prohibiciones que salieron del inventario (`docs/piezas-por-actividad.md`):
 el **título** de la actividad vive en la antesala (inicio · setup · lobby · ficha de
@@ -123,9 +134,11 @@ el número; el icono lo pone la superficie que pinta. El SVG mide `1em` y toma
 token del skin (§3) sin CSS que acordarse de añadir. Añadir un icono = una
 entrada más en el diccionario de `core/lucide.js`; ninguna otra.
 
-**Cómo se marca**: DOBLE CLASE — `class="edu-topbar tc-bar"`. El rol es lo que se
-escanea y se verifica; el nombre propio se queda con su CSS y con lo que apuntan
-los skins. Así el vocabulario entra sin un renombrado masivo y sin tocar los temas.
+**Cómo se marca**: DOBLE CLASE — `class="edu-sec edu-sec--tablero cw-grid-wrap"`.
+El rol es lo que se escanea y se verifica; el nombre propio se queda con su CSS y
+con lo que apuntan los skins. Así el vocabulario entra sin un renombrado masivo y
+sin tocar los temas. La cabecera es la excepción: **no lleva nombre propio**,
+porque no es de la plantilla — es la misma pieza para las trece.
 
 ### El reflujo se quedó muerto por culpa del MARCO, no del CSS de la plantilla
 

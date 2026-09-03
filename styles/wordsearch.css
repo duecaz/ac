@@ -9,12 +9,8 @@
   height: 100%;
   gap: .5rem;
   container-type: size;
-  /* LA FRANJA DE LOS CHIPS SE RESERVA (ronda 2026-08-17: «tapa las letras, se
-     cruza con el puntaje»). El HUD flota adrede —no crea franja—, pero esta
-     rejilla es contenido LEGIBLE de borde a borde: si crece hasta arriba, las
-     letras quedan debajo de las pastillas. El alto reservado es el de un chip
-     (fuente 2.6cqmin × 1.8 de caja + el relleno del HUD), con su piso en px. */
-  padding-top: max(30px, 6.5cqmin);
+  /* La franja ya no se reserva a mano: la cabecera de verdad (edu-cabecera,
+     core/playerHud.js) vive en el flujo y se lleva su propio alto. */
 }
 
 /* Body: grid + word list side by side */

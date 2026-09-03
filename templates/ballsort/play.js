@@ -10,7 +10,7 @@ import { createTimer, formatMs } from './timer.js';
 import { startElapsedTicker } from '../../core/deadlineTicker.js';
 import { clock } from '../../core/clock.js';
 import { lsGet, lsSet } from '../../core/ls.js';
-import { hudHtml, hudSet, chipHtml } from '../../core/playerHud.js';
+import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
 
 const LETTERS_KEY = 'yu_show_letters';   // preferencia de accesibilidad (letras en las bolas)
 
@@ -26,14 +26,12 @@ const LETTERS_KEY = 'yu_show_letters';   // preferencia de accesibilidad (letras
 export function mountBallSort(host, { board, mode = 'moves', onProgress, onSolve } = {}) {
   host.innerHTML = `
     <div class="ww-bs bs-player">
-      ${hudHtml({ pagina: 'Movs: 0' })}
-      <div class="edu-topbar bs-toolbar">
-        <button type="button" data-bs="letters" class="btn btn-outline-secondary btn-sm" title="Mostrar letras (modo daltónico)">Aa</button>
-        <!-- La barra ALOJA el reloj (hudSet lo prefiere sobre el chip del HUD):
-             el centro flotante caía sobre «Deshacer» en apaisado bajo. -->
-        ${chipHtml('tiempo', mode === 'time' ? '0:00' : null)}
-        <button type="button" data-bs="undo" class="btn btn-secondary btn-sm">Deshacer</button>
-      </div>
+      ${cabeceraHtml({
+        pagina: 'Movs: 0',
+        tiempo: mode === 'time' ? '0:00' : null,
+        herramientas: `<button type="button" data-bs="letters" class="btn btn-outline-secondary btn-sm" title="Mostrar letras (modo daltónico)">Aa</button>
+          <button type="button" data-bs="undo" class="btn btn-secondary btn-sm">Deshacer</button>`,
+      })}
       <div data-bs="tubes" class="edu-sec edu-sec--tablero tubes"></div>
       <p data-bs="winmsg" class="bs-hidden bs-win">¡Resuelto!</p>
     </div>

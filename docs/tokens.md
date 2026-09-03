@@ -9,7 +9,7 @@
 Los tokens son la INTERFAZ entre el tema y el juego (ley §3: el skin
 cambia tokens, la actividad los consume). Este es el contrato completo.
 
-**209 tokens** en 17 familias.
+**211 tokens** en 18 familias.
 
 ## `--bs-*` (23)
 
@@ -38,6 +38,13 @@ cambia tokens, la actividad los consume). Este es el contrato completo.
 | `--bs-tube-border` | styles/ballsort.css | styles/ballsort.css |
 | `--bs-tube-gap` | styles/ballsort.css | styles/ballsort.css |
 | `--bs-tube-w` | styles/ballsort.css | styles/ballsort.css |
+
+## `--cab-*` (2)
+
+| Token | Lo DECLARA | Lo CONSUME |
+|---|---|---|
+| `--cab-fondo` | styles/textCorrection.css | styles/player.css |
+| `--cab-tinta` | styles/textCorrection.css | styles/player.css |
 
 ## `--cw-*` (19)
 
@@ -278,7 +285,7 @@ cambia tokens, la actividad los consume). Este es el contrato completo.
 | `--ww-accent-soft` | — *(solo respaldo)* | styles/player.css |
 | `--ww-ar` | core/frameAspect.js | styles/player.css |
 | `--ww-ar-css` | core/frameAspect.js · core/gameFrame.js | styles/player.css |
-| `--ww-bg` | core/skins.js | core/homePreview.js · core/skins.js |
+| `--ww-bg` | core/skins.js | core/homePreview.js · core/skins.js · styles/player.css |
 | `--ww-bg-image` | core/backgrounds.js | styles/backgrounds.css |
 | `--ww-bg-ink` | core/backgrounds.js | styles/backgrounds.css |
 | `--ww-bg-soft` | core/skins.js | styles/crossword.css · styles/diagram.css · styles/wordsearch.css |

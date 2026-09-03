@@ -175,7 +175,7 @@ import { on } from '${REL}/core/events.js';
 import { runSequentialPlayer } from '${REL}/core/soloPlayer.js';
 import { GameEvents, emitGame } from '${REL}/core/gameEvents.js';
 import { clock } from '${REL}/core/clock.js';
-import { hudHtml, hudSet } from '${REL}/core/playerHud.js';
+import { cabeceraHtml, hudSet } from '${REL}/core/playerHud.js';
 import { score${fn}Submission } from './scorer.js';
 
 export async function render${fn}Player(rootSel, activity, opts = {}) {
@@ -183,7 +183,7 @@ export async function render${fn}Player(rootSel, activity, opts = {}) {
     renderItem({ rootSel, item, idx, total, score, timerSecs, submit, startTimer }) {
       mount(rootSel, html\`
         <div class="ww-player ${prefix}-play">
-          \${hudHtml({
+          \${cabeceraHtml({
             pagina: \`\${idx + 1} / \${total}\`,
             tiempo: timerSecs > 0 ? String(timerSecs) : null,
           })}

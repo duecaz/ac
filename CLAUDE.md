@@ -302,27 +302,26 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   no lleva proporción: no es un juego en una página, es un tablero con pantallas de alturas
   distintas (`caja:false`) — con 4:3 le cortaba el QR del lobby. Vigilado en `live-smoke`
   (proporción declarada = la del marco · sin scroll en cuatro ventanas).
-- **LA DIAGRAMACIÓN DEL PLAYER: CUATRO roles** (dueño 2026-08-17, detalle en
-  `docs/estilos-de-actividad.md` §3b0): **`edu-hud`** (indicadores flotando en las
-  esquinas, `core/playerHud.js`, nunca crean franja) · **`edu-topbar`** (solo si hay
-  herramienta: 3 de 13) · **el juego** (`edu-sec--*`, subsecciones con nombre que
-  refluyen por `aspect-ratio`) · **`edu-send`**. Se marcan con DOBLE CLASE
-  (`edu-topbar tc-bar`). El TÍTULO vive en la ANTESALA; el enunciado no es barra.
-  `edu-send` sale del PLAYER, no de `meta.play.submit` (que describe la ronda
-  compartida): lo vigila `matrix-smoke` montando las 13, con 3 excepciones donde
-  el control ES la mecánica (teclado · Girar · caja abierta).
-- **La esquina superior derecha del marco es DEL MARCO**: ahí va el botón de
-  pantalla completa (`.ww-fs-btn--corner`, z-index 30). Un modo que pinte una barra a
-  todo el ancho dentro del marco debe respetar `--ww-fs-reserve` (lo hace el marcador
-  del duelo). El marcador VS lo tapaba: el botón existía y NO se podía tocar. Vigilado
-  por `node tools/matrix-smoke.mjs` con hit-testing real, no con `querySelector`.
-  **Excepción DECLARADA**: una ronda que pinte su propia barra a todo el ancho puede
-  ALOJAR el botón dentro (`fullscreenButtonHtml({ inline: true })`) y marcar esa barra
-  con `tc-bar--fs`; entonces la esquina flotante se retira (CSS) para que no queden dos
-  mandos iguales. Solo cuando la ronda ES la pantalla entera: en el duelo hay DOS rondas
-  y la esquina —que es UNA— sigue mandando. Y si una pantalla de la misma plantilla se
-  queda sin barra, el botón SALTA de sitio: la corrección de Tildes/Comas también pinta
-  su barra por eso. Lo mide `matrix-smoke` con estilos computados.
+- **LA DIAGRAMACIÓN DEL PLAYER: TRES roles** (detalle en
+  `docs/estilos-de-actividad.md` §3b0): **`edu-cabecera`** (UNA, la misma en las
+  13 — `cabeceraHtml` de `core/playerHud.js`: herramientas · página/racha/extra ·
+  RELOJ centrado · pantalla completa; el aspecto lo pone la superficie de debajo,
+  por tokens `--cab-*`) · **el juego** (`edu-sec--*`, subsecciones con nombre que
+  refluyen) · **`edu-send`**. Eran cuatro (los indicadores flotaban y solo 3 de 13
+  llevaban barra: tres tratamientos de la misma franja). El TÍTULO vive en la
+  ANTESALA; el enunciado no es barra. `edu-send` sale del PLAYER, no de
+  `meta.play.submit`: lo vigila `matrix-smoke` montando las 13, con 3 excepciones
+  donde el control ES la mecánica (teclado · Girar · caja abierta).
+- **PANTALLA COMPLETA: un solo mando, y lo aloja la CABECERA** cuando esa cabecera
+  manda en el marco (Individual/Tarea); entonces la esquina flotante
+  (`.ww-fs-btn--corner`, z-index 30) se retira por CSS. En el duelo se montan DOS
+  rondas y la esquina —que es UNA— sigue mandando; un modo que pinte una barra a
+  todo el ancho debe respetar `--ww-fs-reserve` (el marcador VS lo tapaba: el
+  botón existía y NO se podía tocar). Se cablea UNA vez en el marco, por
+  DELEGACIÓN (`core/fullscreen.js`), así que un botón pintado después de un
+  re-render responde igual; y el icono lo decide el CSS (`:fullscreen`), no un
+  intercambio en JS que se desincronizaba. Lo mide `matrix-smoke` con
+  hit-testing real y estilos computados, no con `querySelector`.
 - **Buscar actividades**: SIEMPRE `searchActivities` (`core/search.js`) — uno solo para la
   home y la biblioteca (estaba copiado en las dos, con `includes` sobre título/subtítulo/tags).
   Buscar es BINARIO (norte §2b): sin tildes ni mayúsculas, por PALABRAS en cualquier orden, y

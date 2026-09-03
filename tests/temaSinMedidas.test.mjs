@@ -38,7 +38,7 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 const CONTENEDORES_COMPARTIDOS = [
   'vs-body', 'vs-panel', 'vs-main', 'vs-arena', 'vs-stage', 'vs-grid',
   'ww-player', 'ww-player-frame', 'ww-student-stage', 'ww-play-page',
-  'edu-sec', 'edu-hud', 'edu-topbar', 'edu-send',
+  'edu-sec', 'edu-cabecera', 'edu-cab', 'edu-send',
   'teams-arena', 'ww-opt-grid', 'ww-keypad',
 ];
 // Lo que MIDE. `padding` y `gap` quedan fuera a propósito: son respiración, y

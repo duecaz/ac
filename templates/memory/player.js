@@ -7,7 +7,7 @@ import { scoreMemorySubmission } from './scorer.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { shuffle } from '../../core/azar.js';
 import { pairComplete } from '../../core/contentModels/pairs.js';
-import { hudHtml } from '../../core/playerHud.js';
+import { cabeceraHtml } from '../../core/playerHud.js';
 
 // TIEMPO DE REVELADO POR DEFECTO — el mismo número vivía escrito a mano tres
 // veces (`defaultRules`/editor/player, barrido B5 2026-09-02); el dueño es
@@ -70,7 +70,7 @@ export async function renderMemoryPlayer(rootSel, activity, opts = {}) {
   function paint() {
     mount(rootSel, html`
       <div class="ww-memory">
-        ${hudHtml({
+        ${cabeceraHtml({
           pagina: `${state.matched} / ${pairs.length}`,
           extra: `Flips: ${state.flips}`,
         })}

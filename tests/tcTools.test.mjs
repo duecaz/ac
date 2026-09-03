@@ -28,6 +28,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { citaDeFuente } from './helpers/fuente.mjs';
 import { lucide, ICONOS } from '../core/lucide.js';
+import { cabeceraHtml } from '../core/playerHud.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const leer = (f) => readFileSync(join(ROOT, f), 'utf8');
@@ -126,33 +127,49 @@ const css = leer('styles/textCorrection.css');
   ok('cada pastilla lleva icono Y palabra dentro; la activa va rellena · Lucide en línea, sin red');
 }
 
-// ── 4b. El botón de pantalla completa lo ALOJA la barra ────────────────────
-// Que quede DENTRO de la caja de la barra y que la esquina flotante desaparezca
-// se mide en el navegador (matrix-smoke, «un solo marco / botón en la barra»).
-// Aquí solo el cable: un icono sin `attachFullscreenButton` es decoración.
+// ── 4b. El botón de pantalla completa lo ALOJA LA CABECERA, y es LA MISMA ──
+// Esta ronda tenía su propia barra —la única de las trece que dibujaba la
+// franja— y aquí se citaba su markup. Hoy pide la cabecera compartida
+// (`core/playerHud.js`), así que el invariante se comprueba EJECUTANDO al dueño
+// en vez de leyendo la fuente: si mañana cambia el markup, el test sigue
+// hablando de lo que importa. Que el botón quede DENTRO de la caja y que la
+// esquina flotante desaparezca se mide en el navegador (matrix-smoke).
 {
-  citaDeFuente(ronda, /fullscreenButtonHtml\(\{\s*inline:\s*true\s*\}\)/,
-    'la barra ALOJA el botón de pantalla completa (no lo deja flotando)', 'textCorrectionRound.js');
-  citaDeFuente(ronda, /attachFullscreenButton\(/,
-    'y está cableado: pulsarlo expande de verdad', 'textCorrectionRound.js');
-  // Y TAMBIÉN EN LA CORRECCIÓN: esa pantalla no pintaba barra, así que el botón
-  // se iba a la esquina flotante y volvía en la frase siguiente. Un mando que
-  // salta de sitio según la mitad del ejercicio en la que estás no es un mando.
+  const conBoton = cabeceraHtml({ fullscreen: true });
+  const sinBoton = cabeceraHtml({ fullscreen: false });
+  assert.match(conBoton, /ww-fs-btn--inline/, 'la cabecera ALOJA el botón de pantalla completa');
+  // CONTRA-PRUEBA: en el duelo se montan DOS rondas en un marco. Si cada una
+  // trajera su botón habría dos mandos para lo mismo, y el del marco —que es
+  // UNO— es el correcto.
+  assert.ok(!/ww-fs-btn/.test(sinBoton), 'CONTRA-PRUEBA: sin `fullscreen` no pinta ninguno');
+  // Y LA RONDA lo pide solo cuando ES la pantalla entera (la que trae chips).
+  citaDeFuente(ronda, /fullscreen:\s*propio/,
+    'la ronda aloja el botón solo cuando manda en el marco', 'textCorrectionRound.js');
+  // Que el botón FUNCIONE lo mide el navegador (matrix-smoke, «fullscreen
+  // tocable»): ya no se cablea aquí, lo hace el MARCO por delegación
+  // (core/fullscreen.js), así que un botón pintado después —esta ronda se
+  // repinta en cada frase— responde igual. Antes cada montaje ataba el suyo.
+  // Y TAMBIÉN EN LA CORRECCIÓN: esa pantalla no pintaba cabecera, así que el
+  // botón se iba a la esquina flotante y volvía en la frase siguiente. Un mando
+  // que salta de sitio según la mitad del ejercicio en la que estás no es un mando.
   const corr = ronda.slice(ronda.indexOf('function reveal('), ronda.indexOf('function finish('));
-  assert.match(corr, /tc-bar tc-bar--fs/, 'la pantalla de corrección también pinta su barra');
-  assert.match(corr, /fullscreenButtonHtml\(\{ inline: true \}\)/, 'con el botón dentro');
-  assert.match(corr, /soltarFs\(\)/, 'y lo suelta al avanzar (ley §23)');
-  ok('pantalla completa vive en la barra —también en la corrección— y está cableada');
+  citaDeFuente(corr, /cabeceraHtml\(/,
+    'la pantalla de corrección también pinta la cabecera', 'textCorrectionRound.js');
+  ok('pantalla completa vive en la cabecera —la misma de las trece— también en la corrección');
 }
 
 // ── 5. CONTRA-PRUEBA: no es un control destructivo (§28 R2b) ───────────────
 // Dentro del marco de juego solo puede haber controles DEL JUEGO: quien toca la
 // pantalla suele ser un alumno, sobre la cuenta del profe.
 {
-  // Se ancla al ROL (`edu-topbar`), que es lo que la norma define, no al nombre
-  // propio de la clase — que puede cambiar con el CSS de la plantilla.
-  const zona = ronda.slice(ronda.indexOf('<div class="edu-topbar'), ronda.indexOf('tc-done-wrap'));
-  assert.ok(zona.length > 40, 'la barra de herramientas se localiza por su rol edu-topbar');
+  // Se ancla al ROL, que es lo que la norma define, no al nombre propio de la
+  // clase. El rol cambió de nombre al unificar la franja (2026-09-03): la barra
+  // de herramientas ya no es un elemento aparte (`edu-topbar`) sino la ZONA DE
+  // MANDOS de la cabecera común — `edu-cab__mandos`, la primera de la fila.
+  const zona = ronda.slice(ronda.indexOf('const herramientas ='), ronda.indexOf('tc-done-wrap'));
+  assert.ok(zona.length > 40, 'las herramientas se localizan por su rol en la cabecera');
+  citaDeFuente(ronda, /herramientas,/,
+    'la ronda ENTREGA sus herramientas a la cabecera común, no pinta su propia barra', 'textCorrectionRound.js');
   for (const prohibido of ['Borrar todo', 'Eliminar', 'Editar', 'Cerrar sesión', 'href=']) {
     assert.ok(!zona.includes(prohibido), `la barra de herramientas no puede llevar «${prohibido}»`);
   }

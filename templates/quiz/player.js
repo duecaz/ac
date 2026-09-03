@@ -11,7 +11,7 @@ import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import * as Streaks from '../../core/streaks.js';
 import { shuffle } from '../../core/azar.js';
 import { runSequentialPlayer } from '../../core/soloPlayer.js';
-import { hudHtml, hudSet } from '../../core/playerHud.js';
+import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
 import { clock } from '../../core/clock.js';
 
 
@@ -36,7 +36,7 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
       const streak = Streaks.get('solo', activity.id);
       mount(rootSel, html`
         <div class="ww-player">
-          ${hudHtml({
+          ${cabeceraHtml({
             pagina: `${idx + 1} / ${total}`,
             racha: streak >= 2 ? String(streak) : null,   // el 🔥 lo pone el chip (core/playerHud.js)
           })}

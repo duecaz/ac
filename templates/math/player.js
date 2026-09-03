@@ -7,14 +7,14 @@ import { scoreMathSubmission } from './scorer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { runSequentialPlayer } from '../../core/soloPlayer.js';
 import { clock } from '../../core/clock.js';
-import { hudHtml } from '../../core/playerHud.js';
+import { cabeceraHtml } from '../../core/playerHud.js';
 
 export async function renderMathPlayer(rootSel, activity, opts = {}) {
   runSequentialPlayer(rootSel, activity, opts, {
     renderItem({ rootSel, activity, item, idx, total, score, submit }) {
       mount(rootSel, html`
         <div class="ww-player ww-math">
-          ${hudHtml({ pagina: `${idx + 1} / ${total}` })}
+          ${cabeceraHtml({ pagina: `${idx + 1} / ${total}` })}
           <div id="ww-math-round" class="ww-math-round"></div>
         </div>`);
       const roundEl = document.getElementById('ww-math-round');

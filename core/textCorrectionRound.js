@@ -14,9 +14,9 @@ import { GameEvents, emitGame } from './gameEvents.js';
 import { runFreeformPlayer } from './soloPlayer.js';
 import { mountTcDraw } from './textCorrectionDraw.js';
 import { observeResize } from './observeResize.js';
-import { fullscreenButtonHtml, attachFullscreenButton } from './fullscreen.js';
 import { heatClass } from './itemStats.js';
 import { lucide } from './lucide.js';
+import { cabeceraHtml, relojSet } from './playerHud.js';
 import { corrigeAlFinal } from './constants.js';
 import { montarReloj, relojDe } from './reloj.js';
 import { serverNow } from './serverNow.js';
@@ -262,43 +262,26 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
   // qué está y qué pasa si lo tocas. Y es un solo blanco táctil en vez de dos.
   // NO añade toques a responder (§29): arranca en LÁPIZ, que es lo que el alumno
   // va a hacer; el borrador es para el que se equivoca.
-  // MAQUETA (dueño, 2026-08-14): barra ARRIBA con el progreso y las
-  // herramientas —como cualquier app de dibujo—, el texto arranca arriba con
-  // aire a los costados, y el botón vive ABAJO. Antes las herramientas
-  // flotaban en mitad de la pantalla, pegadas al texto, y todo quedaba
-  // amontonado en la mitad superior. `chips` lo pasa el caller (HTML propio,
-  // ya escapado): la ronda no sabe si corre en solo, carrera o duelo (§0).
-  // El botón de PANTALLA COMPLETA va DENTRO de esta barra, no flotando en la
-  // esquina del marco: cuando la ronda ya pinta una barra a todo el ancho, un
-  // control suelto encima se lee como un segundo mando pegado al papel. La
-  // esquina del marco sigue siendo del marco para todo lo demás — aquí la barra
-  // la ocupa y por eso la ALOJA (CSS esconde la de la esquina si hay `.tc-bar`).
-  // …pero SOLO cuando esta ronda es la pantalla entera (la que trae chips: solo,
-  // carrera, tarea). En el duelo se montan DOS rondas, una por jugador: ahí un
-  // botón de pantalla completa por panel serían dos mandos para el mismo marco,
-  // y la esquina del marco —que es UNA— sigue siendo el sitio correcto.
+  // MAQUETA (dueño, 2026-08-14): las herramientas ARRIBA —como cualquier app de
+  // dibujo—, el texto con aire a los costados y el botón ABAJO. Antes las
+  // herramientas flotaban en mitad de la pantalla, pegadas al texto. `chips` lo
+  // pasa el caller (HTML propio, ya escapado): la ronda no sabe si corre en
+  // solo, carrera o duelo (§0).
   const propio = !!(chips.left || chips.right);
-  // LA BARRA NO VA DENTRO DE LA HOJA (dueño, 2026-09-02, con maqueta): «el bar
-  // es parte de arriba de la hoja, no está dentro». Estaba impresa sobre el
-  // papel, así que el papel dejaba de parecer papel — una hoja de cuaderno no
-  // trae botones estampados. Ahora la tira de mandos flota SOBRE LA MESA (el
-  // marco) y debajo empieza la hoja (`.tc-hoja`), que es lo único con forma de
-  // objeto. Y por eso cada mando lleva su propio velo neutro, como los chips
-  // del HUD y el botón de la esquina: encima del marco hay que leerse con
-  // cualquier tema y con cualquier fondo, no solo sobre el crema del papel.
+  // LA CABECERA ES LA DE TODOS (core/playerHud.js). Esta ronda tuvo la suya
+  // —`.tc-bar`, con su página, su reloj y su botón— y era la única de las trece
+  // que la dibujaba: las otras nueve flotaban los indicadores y dos más los
+  // repartían entre su barra y la esquina. Tres tratamientos de la misma franja
+  // («solo estás parchando, piensa mejor», dueño 2026-09-03). Aquí solo se
+  // aporta lo PROPIO: la herramienta que se toca. El aspecto de banda de la
+  // hoja se conserva apuntando `--cab-tinta`/`--cab-fondo` a los tokens del
+  // PAPEL (styles/textCorrection.css) — una regla, dos superficies.
   //
-  // ORDEN, el mismo de la maqueta: el interruptor lápiz/borrador manda a la
-  // izquierda (es lo que se toca), la página al lado, el reloj CENTRADO —el
-  // dato que la clase mira de reojo— y pantalla completa al final.
-  root.innerHTML = `
-    <div class="tc-round">
-      <div class="edu-topbar tc-bar${propio ? ' tc-bar--fs' : ''}">
-        ${/* LA PÁGINA VA DENTRO DE LA BARRA, no flotando en la esquina. El HUD
-              pinta sus chips en las esquinas del marco y esta ronda YA tiene una
-              barra a todo el ancho en esa misma franja: en un móvil de 390 el
-              «1 / 2» se montaba encima del lápiz (medido: el chip acababa en 74 y
-              el lápiz empezaba en 55). Dos dueños peleando por la misma tira.
-              Con barra, el sitio del indicador es la barra. */''}
+  // El botón de pantalla completa lo aloja la cabecera SOLO cuando esta ronda es
+  // la pantalla entera (la que trae chips: solo, carrera, tarea). En el duelo se
+  // montan DOS rondas, una por jugador: ahí serían dos mandos para el mismo
+  // marco, y la esquina —que es UNA— sigue siendo el sitio correcto.
+  const herramientas = `
         <button type="button" class="tc-switch" data-tool="pen" aria-pressed="false"
                 title="Lápiz — toca para borrar" aria-label="Lápiz activo. Tocar para pasar al borrador">
           <span class="tc-switch__side tc-switch__side--pen" data-side="pen">
@@ -307,14 +290,11 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
           <span class="tc-switch__side tc-switch__side--er" data-side="eraser">
             ${lucide('eraser', { clase: 'tc-ico' })}<span class="tc-switch__word">Borrador</span>
           </span>
-        </button>
-        ${chips.left ? `<span class="tc-pag">${escapeHtml(String(chips.left))}</span>` : ''}
-        ${relojHtml(reloj)}
-        ${propio ? fullscreenButtonHtml({ inline: true }) : ''}
-      </div>
-      ${/* La barra de agotamiento solo con CUENTA ATRÁS: el cronómetro
-            ascendente no agota nada y una barra quieta a cero desinforma. */''}
-      ${(progreso ?? reloj) ? '<div class="tc-progress" data-progreso><i></i></div>' : ''}
+        </button>`;
+  root.innerHTML = `
+    <div class="tc-round">
+      ${cabeceraHtml({ herramientas, pagina: chips.left || null, tiempo: reloj ? '' : null,
+                       fullscreen: propio, progreso: !!(progreso ?? reloj) })}
       <div class="tc-hoja">
         <div class="edu-sec edu-sec--texto tc-passage-area"><div class="tc-passage">${passageHtml(text, kind)}</div></div>
         <div class="tc-done-wrap edu-send"><button type="button" class="btn btn-success btn-lg tc-done" data-ww-submit><i class="bi bi-check2-circle"></i> Listo</button></div>
@@ -328,12 +308,11 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
   const draw = mountTcDraw(passageEl, { targets: passageEl.querySelectorAll('.tc-target') });
   const stopFit = fitPassage(areaEl, passageEl);
 
-  // El botón de pantalla completa expande el MARCO del juego (el del profe o el
-  // del alumno); si la ronda corre sin marco, la página entera.
-  const marco = root.closest('.ww-player-frame') || document.documentElement;
-  const soltarFs = propio
-    ? attachFullscreenButton(root.querySelector('.tc-bar'), { target: marco })
-    : () => {};
+  // EL BOTÓN DE PANTALLA COMPLETA NO SE CABLEA AQUÍ. Lo hace el MARCO —una vez,
+  // por delegación (`core/fullscreen.js`)—, así que un botón pintado después
+  // funciona igual: esta ronda se vuelve a pintar en cada frase. Antes cada
+  // montaje ataba el suyo y dejaba su listener por frase.
+  const soltarFs = () => {};
 
   let done = false;
   const submit = () => {
@@ -384,14 +363,7 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
      *  solo lo PINTA. Quién lo cuenta —y con qué primitivo— es del caller (§0:
      *  una plantilla no sabe en qué modo corre). En Individual lo lleva
      *  `runTextCorrectionSolo` con `core/reloj.js`; en vivo, la sala. */
-    setReloj(texto, pct) {
-      const el = root.querySelector('[data-reloj-val]');
-      if (el) el.textContent = texto;
-      const barra = root.querySelector('[data-progreso] i');
-      // `scaleX`, no `width` (ver styles/textCorrection.css): animar el ancho
-      // relayoutea la página entera en cada fotograma mientras corre el reloj.
-      if (barra && pct != null) barra.style.transform = `scaleX(${Math.max(0, Math.min(100, pct)) / 100})`;
-    },
+    setReloj(texto, pct) { relojSet(root, texto, pct); },
   };
 }
 
@@ -617,20 +589,13 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     const last = idx === passages.length - 1;
     const anulados = new Set();
     const filas = filasRevision(p, kind, got);
-    // LA BARRA SIGUE AHÍ EN LA CORRECCIÓN. Sin ella, esta pantalla no tenía
-    // `.tc-bar--fs` y el botón de pantalla completa volvía a la esquina
-    // flotante: saltaba de sitio en cada frase (barra → esquina → barra). El
-    // sitio de un mando no puede depender de en qué mitad del ejercicio estás.
-    // Sin herramientas: aquí no se dibuja.
+    // LA CABECERA SIGUE AHÍ EN LA CORRECCIÓN. Sin ella, el botón de pantalla
+    // completa volvía a la esquina flotante y saltaba de sitio en cada frase
+    // (cabecera → esquina → cabecera): el sitio de un mando no puede depender de
+    // en qué mitad del ejercicio estás. Sin herramientas: aquí no se dibuja.
     shell(`
       <div class="tc-round">
-        ${/* La página va EN LA BARRA, no como chip flotante del HUD: la barra
-              vive ahora en esa misma franja (fuera de la hoja) y el chip le
-              caía encima. Cuando hay barra, la barra manda. */''}
-        <div class="edu-topbar tc-bar tc-bar--fs">
-          <span class="tc-pag">${idx + 1} / ${passages.length}</span>
-          ${fullscreenButtonHtml({ inline: true })}
-        </div>
+        ${cabeceraHtml({ pagina: `${idx + 1} / ${passages.length}` })}
         <div class="tc-hoja">
         <div class="edu-sec edu-sec--texto tc-corrige">
           <div class="tc-passage-area"><div class="tc-passage">${passageHtml(p.text, kind, { got, want })}</div></div>
@@ -670,8 +635,7 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     const areaEl = document.querySelector('.tc-passage-area');
     const passageEl = areaEl.querySelector('.tc-passage');
     const stopFit = fitPassage(areaEl, passageEl);
-    const marco = areaEl.closest('.ww-player-frame') || document.documentElement;
-    const soltarFs = attachFullscreenButton(document.querySelector('.tc-bar'), { target: marco });
+    const soltarFs = () => {};   // el marco cablea el botón por delegación
     document.querySelector('.tc-next').addEventListener('click', () => {
       stopFit();
       soltarFs();

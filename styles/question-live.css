@@ -1,16 +1,19 @@
-/* La raíz del player LLENA su hueco: es el ámbito del HUD de esquinas
-   (core/playerHud.js) — sin esto los chips flotaban a media altura, junto al
-   tablero, en vez de en la esquina (mismo caso que Memoria, v1.51.511). */
+/* La raíz del player LLENA su hueco (core/playerHud.js). `align-items:center`
+   centra HORIZONTALMENTE el tablero/la rueda/la tarjeta abierta (su ancho es
+   intrínseco, min(100%,460px) o similar) — la cabecera es la EXCEPCIÓN: se
+   ESTIRA a todo el ancho (`align-self:stretch`) o quedaba flotando a mitad de
+   marco, centrada como una pieza más (medido: 576px de hueco a la izquierda). */
 .ab-play {
   height: 100%; min-height: 0;
   display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
+  align-items: center;
   gap: max(8px, 2cqmin);
   /* Contenedor de consulta propio, igual que `.wh-play`: sin él los `cqmin` de
      la rueda se resolvían contra un ancestro lejano y la MISMA rueda salía de
      otro tamaño en el marco del profe, en la tarea y en el panel del duelo. */
   container-type: size;
 }
+.ab-play > .edu-cabecera { align-self: stretch; }
 /* La RULETA de esta plantilla (rules.selector='wheel') usa la pieza COMPARTIDA
    `.ww-wheel-stage` / `.ww-wheel-pointer` (styles/wheel.css): es el mismo
    `wheelSvg()`. Tener aquí su copia era garantizar que el próximo ajuste de la

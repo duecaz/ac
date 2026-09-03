@@ -34,8 +34,14 @@ export function isFullscreen() {
 export function fullscreenButtonHtml({ corner = false, inline = false } = {}) {
   const cls = inline ? 'ww-fs-btn ww-fs-btn--inline'
     : corner ? 'ww-fs-btn ww-fs-btn--corner' : 'btn btn-sm btn-outline-light ww-fs-btn';
+  // LOS DOS ICONOS, y el estado lo decide el CSS (`:fullscreen`). Antes el JS
+  // reemplazaba el SVG en cada `fullscreenchange`… y un player que se re-renderiza
+  // (el Quiz, cada pregunta) volvía a nacer con el icono de ENTRAR estando ya en
+  // pantalla completa: el mando mentía justo cuando hay que salir. Declarativo
+  // no se desincroniza.
   return `<button type="button" class="${cls}" title="Pantalla completa" aria-label="Pantalla completa">`
-    + lucide('maximize') + `</button>`;
+    + lucide('maximize', { clase: 'ww-fs-ico--in' })
+    + lucide('minimize', { clase: 'ww-fs-ico--out' }) + `</button>`;
 }
 
 /**
@@ -49,33 +55,35 @@ export function fullscreenButtonHtml({ corner = false, inline = false } = {}) {
  */
 export function attachFullscreenButton(rootSel, { target } = {}) {
   const root = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
-  const btns = [...(root?.querySelectorAll('.ww-fs-btn') || [])];
-  if (!btns.length) return () => {};
-  const soltar = () => {
-    document.removeEventListener('fullscreenchange', paint);
-    document.removeEventListener('webkitfullscreenchange', paint);
+  if (!root) return () => {};
+  // POR DELEGACIÓN, no botón a botón. Antes se guardaba la lista de botones que
+  // había AL LLAMAR, así que un botón pintado después —la cabecera del Quiz se
+  // vuelve a pintar en cada pregunta— nacía muerto: existía, se podía tocar y no
+  // hacía nada (R6). Con la cabecera alojando el mando en las trece eso pasaba
+  // de ser un caso raro a ser el caso normal. El listener vive en la raíz
+  // ESTABLE (el marco), que es quien sobrevive a los re-render.
+  const click = (e) => {
+    const b = e.target?.closest?.('.ww-fs-btn');
+    if (b && root.contains(b)) toggleFullscreen(target || root);
   };
+  // El ICONO lo pone el CSS; aquí solo la palabra, que una hoja de estilo no
+  // puede escribir y un lector de pantalla sí necesita.
   const paint = () => {
-    // AUTO-SOLTARSE: si ninguno de los botones sigue en el documento, esta
-    // instancia ya no pinta nada — se quita de `document` sola. Sin esto, un
-    // botón que vive DENTRO de una vista que se re-renderiza (la barra de la
-    // ronda de Tildes/Comas, una por frase) dejaba un listener por montaje.
-    if (btns.every(b => b.isConnected === false)) { soltar(); return; }
     const on = isFullscreen();
-    for (const b of btns) {
-      // El icono se REEMPLAZA (SVG en línea, no una clase de fuente): las
-      // cuatro esquinas para entrar, las cuatro esquinas hacia dentro para
-      // salir — el mismo par que reconoce cualquiera de un reproductor.
-      const svg = b.querySelector('svg');
-      if (svg) svg.outerHTML = lucide(on ? 'minimize' : 'maximize');
+    for (const b of root.querySelectorAll('.ww-fs-btn')) {
       b.title = on ? 'Salir de pantalla completa' : 'Pantalla completa';
       b.setAttribute('aria-label', b.title);
       b.classList.toggle('is-on', on);
     }
   };
-  for (const b of btns) b.onclick = () => toggleFullscreen(target);
+  root.addEventListener('click', click);
   document.addEventListener('fullscreenchange', paint);
   document.addEventListener('webkitfullscreenchange', paint);
   paint();
-  return soltar;
+  return () => {
+    root.removeEventListener('click', click);
+    document.removeEventListener('fullscreenchange', paint);
+    document.removeEventListener('webkitfullscreenchange', paint);
+  };
 }
+

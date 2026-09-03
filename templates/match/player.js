@@ -10,7 +10,7 @@ import { scoreMatchSubmission } from './scorer.js';
 import { ROPES, OK_COL, NO_COL, mountRopeLayer, ropeHtml, ghostHtml, dotPos, svgPt } from '../../core/connectRope.js';
 import { observeResize } from '../../core/observeResize.js';
 import { pairComplete } from '../../core/contentModels/pairs.js';
-import { hudHtml, hudSet } from '../../core/playerHud.js';
+import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
 import { setExclusiveLink } from '../../core/linkState.js';
 
 export async function renderMatchPlayer(rootSel, activity, opts = {}) {
@@ -274,7 +274,7 @@ function buildLayout(lefts, rights, activity, total) {
   // sobre el hueco de las cuerdas—, pero dejarlo sería dejar la misma trampa
   // armada para la siguiente pieza que suba.
   return `<div class="ww-scaffold ww-match">
-  ${hudHtml({ pagina: `0 / ${total}` })}
+  ${cabeceraHtml({ pagina: `0 / ${total}` })}
   <div class="edu-sec edu-sec--campo ww-field ww-match-field">
     <div class="ww-rail ww-match-col" data-rail="start">${lefts.map(c => cardHtml(c, 'L')).join('')}</div>
     <div class="ww-stage ww-match-gap"></div>
