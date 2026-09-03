@@ -155,18 +155,22 @@ escribirse; si necesita violar una prohibición, está en la capa equivocada.
   archivo+valor; actividad nueva (sin entrada) nace limpia; al arreglar deuda se
   BORRA su entrada; nunca se añade una violación para callar el test.
 - **Dónde se explica**: `docs/estilos-de-actividad.md` (contrato + ejemplares
-  `math.css`/`opcion.css` con assert duro a cero; **§3b0 los CUATRO roles del
-  player** —`edu-hud` · `edu-topbar` · `edu-sec--*` · `edu-send`— y §3b andamio
+  `math.css`/`opcion.css` con assert duro a cero; **§3b0 los TRES roles del
+  player** —`edu-cabecera` · `edu-sec--*` · `edu-send`— y §3b andamio
   de regiones).
-- **La DIAGRAMACIÓN también es norma** (2026-08-17): un indicador nunca crea
-  franja, una barra existe solo si hay herramienta que tocar, el juego se queda
-  el resto y el envío tiene su región. Lo vigila `tools/matrix-smoke.mjs`
-  MONTANDO las 13 en Individual (un `edu-hud`, ≥1 sección CON NOMBRE
+- **La DIAGRAMACIÓN también es norma**: el juego tiene UNA cabecera (la misma en
+  las 13), el juego se queda el resto y el envío tiene su región. Eran CUATRO
+  roles hasta 2026-09-03: los indicadores flotaban (`edu-hud`) y solo 3 de 13
+  llevaban barra (`edu-topbar`), o sea tres tratamientos de la misma franja
+  —medidos montando las 13—. Lo vigila `tools/matrix-smoke.mjs`
+  MONTANDO las 13 en Individual (una `edu-cabecera`, ≥1 sección CON NOMBRE
   `edu-sec--*`, ≤1 `edu-send` y todo `[data-ww-submit]` dentro), con las
   excepciones declaradas en `ENVIO_ES_MECANICA` — cada una con su motivo.
-- **Y se mide DÓNDE, no solo SI**: el chip del HUD tiene que quedar a ≤48 px de
-  la esquina del marco. Contar nodos daba verde a Pelotas con el indicador a
-  213 px, en mitad del tablero — la norma existía y el fallo pasaba igual.
+- **Y se mide DÓNDE, no solo SI**: la cabecera tiene que quedar pegada arriba y
+  a todo el ancho de la raíz del player. Contar nodos daba verde a Pelotas con el
+  indicador a 213 px, en mitad del tablero — la norma existía y el fallo pasaba
+  igual. (Antes se medía la distancia del chip a la esquina: mismo defecto
+  vigilado, otra geometría, porque los indicadores ya no flotan.)
 - **La fuente de los controles la decidimos nosotros** (v1.51.595). Un
   `<button>`/`<input>` NO hereda la tipografía: el navegador le pone la suya. Eso
   lo arreglaba el reboot de Bootstrap, así que media docena de reglas del proyecto

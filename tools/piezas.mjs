@@ -84,7 +84,7 @@ const PIEZAS = `(sel) => {
   // solo lleva utilidades, la pieza no tiene nombre propio — y eso ya es un
   // dato para D8: no se puede repartir lo que no está identificado.
   const UTIL = /^(m|p)[btsexy]?-|^(text|d|justify|align|flex|row|col|w|h|g|gap|border|bg|fs|fw|rounded|position|top|start|end|bottom|small|btn|badge|card|container)(-|$)/;
-  // El ROL (edu-sec, edu-topbar, edu-send…) NO es el nombre de la pieza: desde
+  // El ROL (edu-cabecera, edu-sec, edu-send) NO es el nombre de la pieza: desde
   // que se marcan las 13 va primero en la lista de clases, así que TODAS las
   // secciones pasaron a llamarse igual — y el mapa de «qué cambia al girar»,
   // que casa las piezas por nombre, inventaba cambios de rol que no existen.

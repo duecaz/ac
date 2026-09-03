@@ -179,12 +179,12 @@ Juega las 13 en Individual y mide sus bloques de primer nivel en un hueco ANCHO
 
 ### Lo EJECUTADO desde el inventario (v1.51.511-515)
 
-El reparto ya tiene vocabulario y guardián — **los CUATRO roles**
-(`docs/estilos-de-actividad.md` §3b0): `edu-hud` (los indicadores flotan en las
-esquinas y NUNCA crean franja) · `edu-topbar` (solo si hay herramienta que
-tocar: 3 de 13) · el juego en subsecciones con nombre (`edu-sec--*`, que
-refluyen por `aspect-ratio`) · `edu-send`. Se marcan con doble clase
-(`edu-topbar tc-bar`) y lo comprueba `tools/matrix-smoke.mjs` montando las 13.
+El reparto ya tiene vocabulario y guardián — **los TRES roles**
+(`docs/estilos-de-actividad.md` §3b0): `edu-cabecera` (UNA, la misma en las 13)
+· el juego en subsecciones con nombre (`edu-sec--*`, que refluyen por
+`aspect-ratio`) · `edu-send`. Lo comprueba `tools/matrix-smoke.mjs` montando las
+13. Eran CUATRO hasta 2026-09-03, cuando se midió que la misma franja tenía tres
+tratamientos según la actividad y se unificó en una sola cabecera.
 
 Con eso cerrado, el reparto dejó de ser opinión: el título salió del juego (6
 players), Crucigrama separó ayudarse de entregar, Sopa y Crucigrama refluyen

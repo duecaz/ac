@@ -370,7 +370,7 @@ const origenVisto = []; // casos en los que la red del origen SÍ pudo medir
 const recalculo = [];    // los que aún calculan su tamaño después de pintar (declarados)
 const antesalas = [];    // LA ANTESALA ES UNA: un control de arranque y las instrucciones a la vista
 const presupuesto = [];
-const roles = [];        // LOS CUATRO ROLES de la diagramación (edu-hud · edu-topbar · edu-sec · edu-send)
+const roles = [];        // LOS TRES ROLES de la diagramación (edu-cabecera · edu-sec · edu-send)
 const legibilidad = [];   // §29 · informe de tamaño (no veredicto: ver el porqué abajo)
 const gestos = [];        // B7 · foco/pantalla al teclear, fuera del editor
 for (const t of seeded) {
@@ -523,22 +523,28 @@ for (const t of seeded) {
           hits.push({ label: t.label, mode, control: nombre, estado, mal });
         }
 
-        // EL HUD NO SE PONE ENCIMA DEL BOTÓN DE PANTALLA COMPLETA. Los chips del
-        // HUD llevan `pointer-events: none`, así que el hit-testing de arriba los
+        // NADA SE PONE ENCIMA DEL BOTÓN DE PANTALLA COMPLETA. Los indicadores
+        // llevan `pointer-events: none`, así que el hit-testing de arriba los
         // atraviesa y da verde: el botón SE PUEDE tocar. Pero se VE tapado, y eso
         // basta para que el profe no lo encuentre — el dueño lo cazó en una
         // captura (v1.51.613, un chip de puntos montado sobre el botón).
-        // La esquina superior derecha del marco es DEL MARCO: quien pinte ahí, se
-        // aparta. Se mide con cajas, no con `querySelector`.
+        // Se mide con CAJAS, no con `querySelector`, y contra el botón que de
+        // verdad se ve (la cabecera aloja el suyo y entonces la esquina se
+        // retira por CSS: preguntar por `--corner` a secas medía el escondido).
+        // OJO al riesgo NUEVO de la cabecera única: el reloj va centrado en
+        // ABSOLUTO y el botón a la derecha, así que en un marco estrecho el
+        // número puede acabar debajo del mando sin que nada lo impida. Este net
+        // se quedó ciego una versión —buscaba `.edu-hud__chip` y `.tc-bar`, dos
+        // nombres extintos— y por eso mira a los de HOY, incluida la barra del
+        // duelo, que es la otra que ocupa todo el ancho.
         const choque = await page.evaluate(() => {
-          const btn = document.querySelector('#ww-frame .ww-fs-btn--corner, #ww-frame .tc-bar .ww-fs-btn');
+          const visible = el => el && getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().width > 0;
+          const btn = [...document.querySelectorAll('#ww-frame .ww-fs-btn')].find(visible);
           if (!btn) return null;
           const b = btn.getBoundingClientRect();
-          if (!b.width) return null;
-          for (const chip of document.querySelectorAll('#ww-frame .edu-hud__chip')) {
-            if (chip.hidden || !chip.textContent.trim()) continue;
+          for (const chip of document.querySelectorAll('#ww-frame .edu-cab__chip, #ww-frame .edu-cab__reloj, #ww-frame .vss-score')) {
+            if (chip.hidden || !chip.textContent.trim() || !visible(chip)) continue;
             const c = chip.getBoundingClientRect();
-            if (!c.width) continue;
             const solapa = !(b.right <= c.left || c.right <= b.left || b.bottom <= c.top || c.bottom <= b.top);
             if (solapa) return chip.textContent.trim().slice(0, 20);
           }
@@ -546,8 +552,8 @@ for (const t of seeded) {
         });
         if (choque) {
           status = 'error';
-          detail = `el chip «${choque}» del HUD tapa el botón de pantalla completa`;
-          hits.push({ label: t.label, mode, control: 'HUD vs pantalla completa', estado: detail, mal: true });
+          detail = `el indicador «${choque}» tapa el botón de pantalla completa`;
+          hits.push({ label: t.label, mode, control: 'indicadores vs pantalla completa', estado: detail, mal: true });
         }
       }
       // R2b (norte §6b, ley §28): quien toca la pizarra es UN ALUMNO sobre la
@@ -666,11 +672,11 @@ for (const t of seeded) {
           presupuesto.push({ label: t.label, mode, regla: 'revelar solo con el docente', ok: !soloSeReveló });
         }
         presupuesto.push({ label: t.label, mode, regla: 'jugar sin diálogos', ok: !dialogos.length });
-        //  2b. LOS CUATRO ROLES DE LA DIAGRAMACIÓN (decisión del dueño,
-        //     2026-08-17 · docs/estilos-de-actividad.md §3b0). Se comprueba
+        //  2b. LOS TRES ROLES DE LA DIAGRAMACIÓN (docs/estilos-de-actividad.md
+        //     §3b0; eran cuatro hasta que la franja se unificó). Se comprueba
         //     MONTANDO, no leyendo el código: los roles son del DOM que ve el
         //     alumno. Tres reglas, todas descubiertas por escaneo:
-        //       · UN `edu-hud` (los indicadores flotan; nadie pinta su franja)
+        //       · UNA `edu-cabecera` (la misma en las 13; nadie pinta otra)
         //       · al menos UNA sección de juego con nombre (`edu-sec`) — sin
         //         nombre no hay reparto posible (fue el caso de Memoria)
         //       · como mucho UN `edu-send`, y todo control de envío vive dentro

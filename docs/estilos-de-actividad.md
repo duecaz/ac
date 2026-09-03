@@ -166,30 +166,27 @@ La moraleja, que vale para el resto del CSS de actividad: **el contenedor no es
 la ventana**. Una regla que mira la forma del contenedor hay que comprobarla
 midiendo el contenedor, no razonando sobre el móvil.
 
-### Dónde se ancla el HUD, y por qué cada player declara su alto
+### Por qué la cabecera está EN EL FLUJO (y ya no se ancla a nada)
 
-El HUD se posiciona contra **quien lo contiene** (`:where(:has(> .edu-hud))` en
-`styles/player.css`), así que la raíz del player tiene que LLENAR su hueco o
-«la esquina» acaba siendo la esquina de un trozo. Suena a requisito frágil —y
-lo era— pero las tres alternativas se midieron (2026-08-17) y esta gana:
+Hasta 2026-09-03 los indicadores FLOTABAN en la esquina, posicionados contra
+**quien los contenía** (`:has(> .edu-hud)`), así que la raíz de cada player
+tenía que LLENAR su hueco o «la esquina» acababa siendo la esquina de un trozo.
+Aquello era un requisito frágil sostenido por una medida: `matrix-smoke`
+comprobaba que el chip quedara a ≤48 px del borde, porque Pelotas lo tenía a
+213 px, en mitad del tablero, y pasaba en verde por contar nodos.
 
-| Opción | Medido |
-|---|---|
-| **Anclar siempre al marco** (borrar la regla) | En Individual perfecto… pero en el DUELO cada HUD pasa de 534 px (su panel) a **1100 px**: se escapa sobre el panel del rival. El día que el duelo muestre indicadores por jugador, se solapan. **Descartada.** |
-| **Propagar `height:100%` a los 12** | Es la enfermedad que costó tres copias de la rueda, multiplicada por cuatro. Y no basta: Pelotas tiene TRES envoltorios, así que ninguna regla genérica del marco le llega. **Descartada.** |
-| **Que cada player lo declare y la norma lo MIDA** ✅ | 12 de 13 ya lo declaraban; el 13º (Pelotas) tenía el chip a **213 px** del borde y pasaba en verde porque el escaneo contaba nodos. Ahora `matrix-smoke` mide la distancia a la esquina (tope 48 px) y el siguiente que se equivoque falla en rojo. |
+Se documentó entonces un **aplazado con motivo** —«mover el HUD al MARCO, como
+el botón de pantalla completa»— descartado porque tocaba los 13 players. La
+unificación de la franja lo resolvió por otra vía y sin ese coste: la cabecera
+**no se ancla**, es un `<header>` en el flujo, primer hijo de la raíz. Ya no hay
+«esquina» que calcular, ni depende de que el player llene su hueco, ni se
+escapa sobre el panel del rival en el duelo (era la objeción que descartaba
+anclar al marco). Lo que sí se conserva es la MEDIDA, con otra geometría: la
+cabecera tiene que quedar pegada arriba y a todo el ancho de su raíz
+(`TOPE_CABECERA` en `matrix-smoke`), y se comprueba en cuatro ventanas.
 
-La lección general: el problema no era que cada plantilla declarara su alto —era
-que **nadie comprobaba el resultado**. Con la medida puesta, doce «funcionan por
-accidente» pasan a ser doce verificados.
-
-**Aplazado con motivo**: mover el HUD al MARCO, como el botón de pantalla
-completa —que vive ahí y por eso nunca ha tenido este fallo—. Quitaría el
-requisito de raíz, pero toca los 13 players, los dos shells y los paneles del
-duelo (donde «el marco» es el panel, no la página). Con la medición puesta, su
-beneficio baja de «evita un fallo invisible» a «evita un rojo de CI de un
-minuto», y a ese precio no compensa. Se retoma si algún día el duelo necesita
-indicadores por jugador.
+La lección general se mantiene y es la que importa: el problema nunca fue que
+cada plantilla declarara su alto —era que **nadie comprobaba el resultado**.
 
 **De dónde sale `edu-send`** (decidido 2026-08-17, corrige una regla anterior):
 del **player**, no de `meta.play.submit`. Ese campo describe la **ronda
@@ -200,7 +197,7 @@ cinco pantallas — que es justo el problema que Wordwall y un concurso no tiene
 (allí plantilla = pantalla) y por eso copiarles el modelo salió mal.
 
 La garantía no se pierde, cambia de sitio: la vigila `tools/matrix-smoke.mjs`
-MONTANDO las 13 en Individual — **un `edu-hud`, al menos una sección CON NOMBRE
+MONTANDO las 13 en Individual — **una `edu-cabecera`, al menos una sección CON NOMBRE
 (`edu-sec--*`), como mucho un `edu-send`, y todo `[data-ww-submit]` dentro de
 él**. Con UNA excepción DECLARADA (`ENVIO_ES_MECANICA`):
 

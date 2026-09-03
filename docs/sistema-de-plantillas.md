@@ -74,11 +74,11 @@ de imagen (`core/imageTile.js`: subir·buscar·borrar), `renderPairsEditor`
 (`core/contentModels/pairs.js`, Emparejar y Memoria) y `core/textCorrectionEditor.js`
 (Tildes y Comas, con `kind`).
 
-**Y su player nace con los CUATRO ROLES** (`docs/estilos-de-actividad.md` §3b0):
-`hudHtml({...})` como primer hijo (los indicadores flotan, nunca crean franja),
-al menos una sección de juego con nombre (`edu-sec edu-sec--tablero`),
-`edu-topbar` SOLO si hay herramienta que tocar, y `edu-send` si el envío se
-construye y confirma. No es cosmética: `tools/matrix-smoke.mjs` lo comprueba
+**Y su player nace con los TRES ROLES** (`docs/estilos-de-actividad.md` §3b0):
+`cabeceraHtml({...})` como primer hijo (LA cabecera, la misma de las 13: sus
+herramientas si las tiene, página/racha, el reloj centrado y pantalla completa),
+al menos una sección de juego con nombre (`edu-sec edu-sec--tablero`), y
+`edu-send` si el envío se construye y confirma. No es cosmética: `tools/matrix-smoke.mjs` lo comprueba
 montando la plantilla, así que una nueva que se los salte rompe CI.
 
 ## 4. Quién interviene al JUGARLA
