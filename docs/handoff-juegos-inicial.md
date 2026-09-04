@@ -85,12 +85,12 @@ ajenos; cada test con contra-prueba; `node tools/check-template.mjs <name>` y
 
 ## 6. Lo que este plan NO decide (dueño)
 
-1. **La línea del norte para el niño que no lee** (§1): hoy `meta.instructions`
-   es texto obligatorio. Propuesta: «(c) el que toca puede no saber leer: en
-   inicial la instrucción es el gesto, y la frase es para el profe».
-2. **La habilidad de Colorear**: el cuadro del norte §4c no tiene fila para
-   «motricidad fina». Se declara `skill: 'Motricidad fina'` y se propone la fila;
-   Tangram y Rompecabezas van en **Espacial**, que ya existe.
+1. ~~La línea del norte para el niño que no lee~~ **DECIDIDO (v1.51.671)**: norte §1(c) —
+   la instrucción es el gesto, `meta.instructions` es para el docente, objetivo táctil
+   ≥ 12 % del lado corto del marco, medido por `matrix-smoke` en pantalla completa.
+2. ~~La habilidad de Colorear~~ **DECIDIDO (v1.51.671)**: fila «Motricidad fina» en el
+   cuadro del norte §4c; y §4c dice por escrito que lo de inicial entra por la
+   estantería de juegos, nunca como opción escondida en un juego.
 3. **El tangram, después** (dueño, 2026-09-04: «primero los bugs y la estructura»): (a) que el docente
    haga figuras con las 7 piezas en el EDITOR y eso se vuelva la silueta (con las piezas usadas
    marcadas) — es exactamente el mecanismo de la lámina, sin lámina; (b) y con eso, cargar

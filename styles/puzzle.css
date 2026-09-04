@@ -13,8 +13,6 @@
      la página: en pantalla completa (1515×1023) `90cqw/total` daba piezas de
      430 px que se comían el tablero (captura del dueño, v1.51.668). */
   container-type: inline-size;
-  /* `--pu-lado` lo PUBLICA el player midiendo el tablero (observeResize, patrón
-     fitLayout: aquí `cqh` no sirve porque el alto de esta raíz no es definido). */
 }
 
 /* LA CADENA (lección de `styles/ballsort.css`): cabecera (lo suyo) · tablero
@@ -30,13 +28,18 @@
    `#ww-player-widget` en `styles/player.css`), así que el `100cqh` del
    tablero mide el hueco REAL que le queda tras restar cabecera y bandeja. */
 .pu-arena {
-  flex: 1 1 auto; min-height: 0;   /* el tablero (≤ 62 % del hueco, lo decide el player) y la bandeja se reparten lo que hay */
+  flex: 1 1 auto; min-height: 0;
+  /* UN contenedor de tamaño para tablero Y bandeja: su alto lo da el flex de la
+     columna (definido), así que `cqh`/`cqw` son estables y NADA depende de lo
+     que pinte dentro — sin JS y sin repintar. El lado del tablero es
+     `min(100cqw, 62cqh)` y cada pieza suelta, 0,7 de una celda de ESE lado. */
   container-type: size;
-  display: flex; align-items: center; justify-content: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2cqmin;
 }
 .pu-board {
   position: relative;
-  width: var(--pu-lado, min(100%, 100cqh));   /* la publica el player del hueco; el respaldo es el cqh de la arena */
+  width: min(100cqw, 62cqh);
   aspect-ratio: 1 / 1;
   border-radius: max(6px, 1.5cqmin);
   overflow: hidden;
@@ -95,7 +98,7 @@
      del ancho — dos de esas ya no cabían de alto en la franja y se comían
      el tablero. Con el piso táctil, si NO caben todas en una fila (3×3 en un
      marco estrecho), `flex-wrap` abre una segunda. */
-  width: calc(var(--pu-lado) / var(--pu-columnas, 2) * .7);   /* 0,7 de una celda; al encajar toma el 100 % */
+  width: calc(min(100cqw, 62cqh) / var(--pu-columnas, 2) * .7);   /* 0,7 de una celda; al encajar toma el 100 % */
   border-radius: max(4px, 1cqmin);
   background-repeat: no-repeat;
   box-shadow: 0 max(2px, .5cqmin) max(6px, 1.4cqmin) rgba(0,0,0,.28);

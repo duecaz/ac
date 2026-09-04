@@ -95,13 +95,29 @@ export function renderTangramPlayer(rootSel, activity, opts = {}) {
   // en vez de una tira larga (medido: da la mejor fracción de alto en las
   // dos siluetas del catálogo, ver handoff).
   const anchoUnaFila = ORDEN_PIEZAS.reduce((s, n) => s + cajaPieza(n, 0).w, 0);
-  const anchoObjetivoBandeja = Math.max(wSilueta, anchoUnaFila * 0.56);
+  // LA BANDEJA VA AL LADO en un hueco apaisado y DEBAJO en uno vertical. Con la
+  // bandeja siempre debajo, en el marco 4:3 mandaba el ALTO (silueta + bandeja
+  // apiladas) y el triángulo pequeño se quedaba en el 11,8 % del lado corto:
+  // por debajo del 12 % que el norte §1(c) exige para inicial — lo cazó la
+  // matriz al nacer esa red. Al lado, la caja del contenido se parece a la
+  // del marco y las piezas salen ~1,5× más grandes. Se decide UNA vez, al
+  // montar (la antesala ya pidió pantalla completa: el hueco es el definitivo).
+  const hueco = document.querySelector(rootSel);
+  const apaisado = (hueco?.clientWidth || 4) >= (hueco?.clientHeight || 3);
+  const anchoObjetivoBandeja = apaisado ? anchoUnaFila * 0.42 : Math.max(wSilueta, anchoUnaFila * 0.56);
   const { filas, alturasFila, ancho: anchoBandeja, alto: altoBandeja } = empaquetarPiezas(gap, anchoObjetivoBandeja);
-  const contentW = Math.max(wSilueta, anchoBandeja);
-  const contentH = h + gap + altoBandeja;
+  const contentW = apaisado ? wSilueta + gap + anchoBandeja : Math.max(wSilueta, anchoBandeja);
+  const contentH = apaisado ? Math.max(h, altoBandeja) : h + gap + altoBandeja;
   const margen = MARGEN_CAJA * Math.max(contentW, contentH);
-  const centroX = (silueta.bbox.minx + silueta.bbox.maxx) / 2;
-  const vb = {
+  // Centro X de la bandeja y su Y inicial, según dónde va.
+  const centroX = apaisado ? silueta.bbox.maxx + gap + anchoBandeja / 2 : (silueta.bbox.minx + silueta.bbox.maxx) / 2;
+  const yBandeja = apaisado ? silueta.bbox.miny : silueta.bbox.maxy + gap;
+  const vb = apaisado ? {
+    x: silueta.bbox.minx - margen,
+    y: silueta.bbox.miny - margen,
+    w: contentW + margen * 2,
+    h: contentH + margen * 2,
+  } : {
     x: centroX - contentW / 2 - margen,
     y: silueta.bbox.miny - margen,
     w: contentW + margen * 2,
@@ -125,7 +141,7 @@ export function renderTangramPlayer(rootSel, activity, opts = {}) {
   const svg = root.querySelector('.ta-svg');
   const capa = root.querySelector('.ta-piezas');
 
-  const colocaciones = colocacionesIniciales(filas, alturasFila, anchoBandeja, gap, centroX, silueta.bbox.maxy + gap);
+  const colocaciones = colocacionesIniciales(filas, alturasFila, anchoBandeja, gap, centroX, yBandeja);
   let orden = [...ORDEN_PIEZAS];   // orden de pintado = quién está "encima"
   let resuelto = false;
 

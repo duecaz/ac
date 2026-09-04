@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **335 módulos · 1354 imports internos.**
+> **335 módulos · 1353 imports internos.**
 
 ### Ir a otro documento
 
@@ -34,7 +34,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2772 | 12 · 1430 | 0.52 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 39 · 4523 | 19 · 3098 | 0.68 |
 | **informes/tareas** | después de clase | 10 · 1119 | 4 · 512 | 0.46 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 89 · 7107 | 13 · 1840 | 0.26 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 89 · 7111 | 13 · 1840 | 0.26 |
 | **infra/común** | todo lo anterior | 171 · 20171 | 74 · 9509 | 0.47 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
@@ -64,7 +64,7 @@ graph TD
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>6 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
   V -->|414| C
-  T -->|256| C
+  T -->|255| C
   AD -->|32| C
   A -->|28| C
   A -->|18| V
@@ -108,7 +108,7 @@ graph TD
 | **adaptadores** | `adapters/pocketbase/realtimeRooms.js` (483) · `adapters/pocketbase/realtimeAnswers.js` (388) · `adapters/pocketbase/realtime.js` (361) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (255) |
 | **core** | `core/textCorrectionRound.js` (743) · `core/normsCheck.js` (559) · `core/skins.js` (421) · `core/aiContent.js` (388) · `core/auth.js` (369) |
 | **kernel** | `kernel/session/teamsMachine.js` (178) · `kernel/session/vsMachine.js` (169) · `kernel/session/liveMachine.js` (166) · `kernel/session/memory.js` (98) · `kernel/contracts/template.js` (72) |
-| **plantillas** | `templates/crossword/player.js` (487) · `templates/wordsearch/player.js` (382) · `templates/match/player.js` (303) · `templates/diagram/player.js` (265) · `templates/tangram/player.js` (243) |
+| **plantillas** | `templates/crossword/player.js` (487) · `templates/wordsearch/player.js` (382) · `templates/match/player.js` (303) · `templates/diagram/player.js` (265) · `templates/tangram/player.js` (259) |
 | **contenido** | `kernel/content/qaAdapt.js` (141) · `kernel/content/switch.js` (117) · `kernel/content/models.js` (114) · `kernel/content/convert.js` (95) · `kernel/content/sessionItems.js` (25) |
 | **config** | `pocketbase.config.js` (13) |
 

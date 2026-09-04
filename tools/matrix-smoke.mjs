@@ -640,6 +640,24 @@ for (const t of seeded) {
       // ninguna pisando el tablero. Selectores DECLARADOS por juego (la vista no
       // adivina): un juego nuevo con bandeja se apunta aquí.
       const BANDEJA = { puzzle: { tablero: '.pu-board', piezas: '.pu-pieces .pu-piece' } };
+      // ── EL QUE TOCA PUEDE NO SABER LEER (norte §1(c), inicial) ─────────────
+      // Objetivo táctil ≥ 12 % del lado corto del MARCO: una pieza, una zona, un
+      // color. Se mide en pantalla completa (la antesala la pide), que es como se
+      // juega en la pizarra. Selectores DECLARADOS por plantilla de inicial.
+      const TACTIL = { colorear: '.co-color', tangram: '.ta-pieza', puzzle: '.pu-pieces .pu-piece' };
+      if (mode === 'solo' && status === 'ok' && TACTIL[t.name]) {
+        const m = await page.evaluate((sel) => {
+          const marco = document.getElementById('ww-frame')?.getBoundingClientRect();
+          const cajas = [...document.querySelectorAll(sel)].map(e => e.getBoundingClientRect()).filter(r => r.width > 0);
+          if (!marco || !cajas.length) return { sin: true };
+          const corto = Math.min(marco.width, marco.height);
+          const menor = Math.min(...cajas.map(r => Math.min(r.width, r.height)));
+          return { pct: +(100 * menor / corto).toFixed(1), n: cajas.length };
+        }, TACTIL[t.name]);
+        const mal = m.sin ? 'sin objetivos táctiles montados' : (m.pct < 12 ? `el objetivo táctil más pequeño mide el ${m.pct} % del lado corto (mínimo 12 %, norte §1(c))` : '');
+        if (mal) { status = 'error'; detail = `táctil: ${mal}`; }
+        hits.push({ label: t.label, mode, control: 'objetivo táctil ≥ 12 % (inicial)', estado: mal || `ok (${m.pct} %, ${m.n} objetivos)`, mal: !!mal });
+      }
       if (mode === 'solo' && status === 'ok' && BANDEJA[t.name]) {
         const b = await page.evaluate(({ tablero, piezas }) => {
           const tb = document.querySelector(tablero)?.getBoundingClientRect();

@@ -54,7 +54,7 @@
 /* Vertical (móvil en pie, docs/estilos-de-actividad.md §3b0: se mide el
    CONTENEDOR con @container, no la ventana): DOS filas de 5, nunca 9+1 — una
    rejilla fija de 5 columnas en vez de un flex que decide solo dónde parte. */
-@container (aspect-ratio < 1/1) {
+@container (aspect-ratio < 4/3) {
   .co-play .edu-sec--paleta {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
@@ -70,8 +70,11 @@
    fila (ver arriba). `cqmin`/`cqw` son ambos del MISMO contenedor con
    `container-type:size` (.co-play), así que combinarlos no rompe nada. */
 .co-play .co-color {
-  width: max(44px, min(12cqmin, 8cqw));
-  height: max(44px, min(12cqmin, 8cqw));
+  /* SIEMPRE ≥ 12 % del lado corto (norte §1(c), lo mide la matriz): el tope
+     `8cqw` que hacía caber los 10 en una fila los dejaba en el 11,5 %. Cuando
+     no caben (hueco más cuadrado que 4:3) van en dos filas de cinco. */
+  width: max(44px, 13.5cqmin);    /* 13,5 % del contenedor (.co-play, que es el marco menos la cabecera) = ≥ 12 % del MARCO */
+  height: max(44px, 13.5cqmin);
   border-radius: 50%;
   border: max(2px, 0.6cqmin) solid var(--ww-card-fg, var(--ww-fg));
   padding: 0;
@@ -79,12 +82,6 @@
   box-shadow: 0 0.3cqmin 0.6cqmin rgba(0, 0, 0, 0.25);
   transition: transform 120ms ease, outline-color 120ms ease;
   flex: 0 0 auto;
-}
-@container (aspect-ratio < 1/1) {
-  .co-play .co-color {
-    width: max(44px, 12cqmin);
-    height: max(44px, 12cqmin);
-  }
 }
 .co-play .co-color--on {
   outline: max(3px, 1cqmin) solid var(--ww-fg);

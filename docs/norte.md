@@ -6,7 +6,7 @@
 > construye; **este dice qué construimos y para quién**. Si una ley y el norte
 > chocan, gana el norte y la ley se replantea.
 >
-> **Estado** (v1.51.377). CONFIRMADO por el usuario: §1 escena · §2b presupuesto
+> **Estado** (v1.51.377; **§1(c) inicial y la fila «motricidad fina» de §4c: v1.51.671**). CONFIRMADO por el usuario: §1 escena · §2b presupuesto
 > de tiempo · §3 restricciones · §4 "lo que no somos" · **§4c/§4d dos familias
 > (ejercicios y juegos)** · **§7c la entrada y el menú** · §5 referentes en lo
 > esencial (⏳ pendiente de un ESTUDIO: documentarse y probar a fondo los
@@ -42,6 +42,7 @@
   - [El eje de los ejercicios es la MECÁNICA](#el-eje-de-los-ejercicios-es-la-mecánica)
   - [El momento de clase de cada familia — esto es lo que manda](#el-momento-de-clase-de-cada-familia--esto-es-lo-que-manda)
   - [Lo que se DERIVA de la distinción (para no discutirlo pieza a pieza)](#lo-que-se-deriva-de-la-distinción-para-no-discutirlo-pieza-a-pieza)
+  - [Lo de INICIAL entra por la estantería de juegos, no por el catálogo de ejercicios](#lo-de-inicial-entra-por-la-estantería-de-juegos-no-por-el-catálogo-de-ejercicios)
 - [4d. Y lo que NO haremos con los juegos](#4d-y-lo-que-no-haremos-con-los-juegos)
 - [5. Los referentes: qué tomamos y qué no ✅ CERRADO](#5-los-referentes-qué-tomamos-y-qué-no--cerrado)
 - [6. El criterio de decisión](#6-el-criterio-de-decisión)
@@ -120,6 +121,14 @@ y no quedaría clase.
 > distancia** nada de editar, borrar, publicar o cerrar sesión. Es la razón por
 > la que el juego entra a pantalla completa y el chrome desaparece — y ahora está
 > escrito, no es una casualidad afortunada.
+>
+> **(c) El que toca puede NO SABER LEER** (confirmado 2026-09-04, con el primer
+> docente de inicial: 3-6 años). En inicial la instrucción es el GESTO: lo que se
+> toca hace algo visible al primer toque, sin frase que leer, sin código que
+> descifrar y sin elegir nada antes de empezar. La frase de `meta.instructions`
+> es para el docente, no para el niño. Y los objetivos táctiles miden al menos
+> un **12 % del lado corto del marco** (una pieza, una zona, un color): lo mide
+> `tools/matrix-smoke.mjs` en las plantillas de inicial, en pantalla completa.
 
 Todo lo que sigue se juzga contra esa escena.
 
@@ -380,7 +389,8 @@ tienen materia. Es lo que le sirve al profe para elegir y para justificarlo:
 | **Lógica y deducción** | pensar antes de mover | Ordena las Pelotas ✅ · sudoku · buscaminas |
 | **Planificación** | ver varios pasos por delante | torres de Hanoi · laberinto · deslizar piezas |
 | **Memoria y atención** | despertar al grupo | secuencias (Simón) · parejas rápidas |
-| **Espacial** | girar figuras en la cabeza | tangram · encajar piezas |
+| **Espacial** | girar figuras en la cabeza | tangram ✅ · rompecabezas ✅ · encajar piezas |
+| **Motricidad fina** | manos pequeñas: tocar, arrastrar, encajar (inicial) | colorear ✅ |
 | **Cálculo mental rápido** | calentar antes de mates | cadenas de operaciones contrarreloj |
 
 Un juego nuevo **declara su habilidad** y ocupa una de las ocho plazas. Si las
@@ -418,6 +428,15 @@ Estas consecuencias no son opinión: caen solas del cuadro de arriba.
 | Se **busca por tema** | sí, también dentro del contenido | por nombre y habilidad | no tiene texto que buscar |
 | Su **editor** | escribe contenido | "ajustes del juego" (dificultad) | no es lo mismo y no debe llamarse igual (§6e) |
 | Guarda **puntaje** | sí, y se lee en informes | sí, pero solo como marca personal | el récord es del juego, no del alumno |
+
+### Lo de INICIAL entra por la estantería de juegos, no por el catálogo de ejercicios
+
+Decidido 2026-09-04 (v1.51.671), con Colorear · Tangram · Rompecabezas ya en la
+estantería. No hay contenido del docente, no hay clave, no hay informe: son
+juegos, y la regla de las tres preguntas los clasifica sola. El día que un
+docente quiera poner LO SUYO (su dibujo para colorear, su figura de tangram),
+eso es un EJERCICIO nuevo con su editor y su familia — nunca una opción
+escondida dentro de un juego, que es como se ensucia un programa.
 
 ## 4d. Y lo que NO haremos con los juegos
 
@@ -490,6 +509,7 @@ cada una tiene un test que la hace cumplir. Se lee de izquierda a derecha:
 | **§2 la promesa** (un contenido, muchos modos) | [**§0 · CUATRO CAPAS**](leyes.md#0--el-modelo-de-cuatro-capas--el-norte-de-la-arquitectura) — la plantilla DECLARA sus políticas (`meta.play`), el modo las consume; una plantilla no sabe en qué modo corre | `layers` · `templateContract` · `scoringSources` · matriz jugable |
 | **§2 la promesa** (el contenido sobrevive al cambio de plantilla) | [**§24 · CONTENIDO**](leyes.md#24--ley-de-contenido--el-modelo-evoluciona-por-caminos-declarados) — modelos versionados, migración declarada, ids con `rid()` | `templateContract` · regla `id-rid` |
 | **R1 pizarra de gama baja, mirada a 3 m** | [**§3 · ESTILO**](leyes.md#3--ley-de-estilo--las-cuatro-capas-del-píxel) — el skin cambia TOKENS, la actividad los consume; nada de tamaños fijos; sin bucles de animación en reposo | `styles` (ratchet) · `skins` |
+| **§1(c) el que toca puede no saber leer** (inicial) | la instrucción es el gesto; objetivo táctil ≥ 12 % del lado corto del marco | `matrix-smoke` (objetivo táctil, en pantalla completa) |
 | **R2 el profe no configura nada** + **R2b el que toca es un ALUMNO, sobre la cuenta del profe** | [**§28 · EN CLASE**](leyes.md#28--en-clase--el-profe-no-configura-y-el-alumno-no-puede-romper) — máx. 2 opciones de partida y ya elegidas; dentro del marco de juego, ningún control destructivo ni de identidad | `templateContract` · `playOptions` · escaneo R2b de `matrix-smoke` |
 | **R3 el alumno no tiene cuenta** | [**§22 · CONFIANZA**](leyes.md#22--ley-de-confianza--el-cliente-afirma-el-veredicto-lo-pone-otro) — el cliente AFIRMA, el veredicto lo pone el host o una regla del servidor | `pbRules` · `liveRules` · `answerSafety` · `modeAuth` |
 | **R3 + R6** (nadie edita lo de otro, y el fallo se ve) | [**§21 · DATOS**](leyes.md#21--ley-de-datos--cada-colección-tiene-un-dueño) — cada colección tiene UN dueño; quien necesite datos le pide un método | regla `pb-dueno` |
