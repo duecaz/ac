@@ -244,9 +244,16 @@ function tangramPv() {
     P.map(([pts, c]) => `<polygon points="${pts}" fill="${c}" stroke="#fff" stroke-width="2"/>`).join('')
   }</svg></div>`;
 }
-// Rompecabezas: rejilla 3×3 sobre una imagen, con una pieza fuera de sitio.
+// Rompecabezas: rejilla 3×3 de piezas, una fuera de sitio. En SVG como los
+// otros dos juegos: una rejilla de <span> sobre `.pv` (absoluto, inset:0) no
+// tenía alto y la tarjeta salía en blanco (medido en #/juegos, v1.51.668).
 function puzzlePv() {
-  const celdas = Array.from({ length: 9 }, (_, i) => i === 4
-    ? '<span class="pv-pieza pv-pieza--fuera"></span>' : '<span class="pv-pieza"></span>').join('');
-  return `<div class="pv pv-juego pv-puzzle">${celdas}</div>`;
+  const celdas = [];
+  for (let f = 0; f < 3; f++) for (let c = 0; c < 3; c++) {
+    if (f === 1 && c === 1) continue;
+    celdas.push(`<rect x="${c * 33 + 1}" y="${f * 33 + 1}" width="31" height="31" rx="3" fill="${(f + c) % 2 ? '#3a86ff' : '#4cc38a'}"/>`);
+  }
+  return `<div class="pv pv-juego"><svg viewBox="0 0 100 100" aria-hidden="true">${celdas.join('')}
+    <rect x="34" y="34" width="31" height="31" rx="3" fill="#f4a261" transform="rotate(12 62 62) translate(14 9)"/>
+  </svg></div>`;
 }

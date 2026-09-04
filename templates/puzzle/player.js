@@ -8,6 +8,7 @@ import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
 import { shuffle } from '../../core/azar.js';
+import { observeResize } from '../../core/observeResize.js';
 import { celdas, encaja, barajarPosiciones } from './game/rejilla.js';
 import { svgAColor, dataUrlDeSvg } from './game/imagen.js';
 import { scorePuzzleSubmission } from './scorer.js';
@@ -53,18 +54,36 @@ export async function renderPuzzlePlayer(rootSel, activity, opts = {}) {
   const rejilla = celdas(filas, columnas);
 
   mount(rootSel, html`
-    <div class="ww-player pu-play">
+    <div class="ww-player pu-play" style="--pu-columnas:${columnas}">
       ${cabeceraHtml({ pagina: `0 / ${total}` })}
       <div class="edu-sec edu-sec--tablero pu-arena">
         <div class="pu-board" data-pu-board></div>
       </div>
-      <div class="edu-sec edu-sec--piezas pu-pieces" data-pu-pieces style="--pu-total:${total}"></div>
+      <div class="edu-sec edu-sec--piezas pu-pieces" data-pu-pieces></div>
     </div>`);
 
   const root = document.querySelector(rootSel);
   if (!root) return;
   const arena   = root.querySelector('.pu-arena');
   const boardEl = root.querySelector('[data-pu-board]');
+  // EL LADO DEL TABLERO manda sobre las piezas (0,7 de una celda en la bandeja):
+  // se mide aquí y se publica como variable porque la bandeja no puede leer el
+  // alto del tablero por CSS. En pantalla completa (1515×1023) las piezas
+  // medidas contra el ANCHO de la página salían de 430 px y se comían el
+  // tablero (captura del dueño, v1.51.668).
+  // Y se decide ANTES de pintar, de lo que mide el HUECO (raíz menos cabecera),
+  // no del tablero ya pintado: medir el tablero creaba un bucle (lado → alto de
+  // la bandeja → alto del tablero → lado…) que la matriz cazó como «se
+  // RECALCULA tras aparecer» (7 repintados). Lo único que lo cambia es que
+  // cambie el hueco (pantalla completa, girar la tablet).
+  const cabeceraEl = root.querySelector('.edu-cabecera');
+  const publicarLado = () => {
+    const alto = root.clientHeight - (cabeceraEl?.offsetHeight || 0);
+    const lado = Math.floor(Math.min(root.clientWidth * 0.88, alto * 0.62));
+    if (lado > 0) root.style.setProperty('--pu-lado', `${lado}px`);
+  };
+  publicarLado();
+  observeResize(root, publicarLado);
   const piecesEl = root.querySelector('[data-pu-pieces]');
 
   let dataUrl = null;

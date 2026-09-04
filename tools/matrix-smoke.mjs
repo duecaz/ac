@@ -631,6 +631,36 @@ for (const t of seeded) {
           hits.push({ label: t.label, mode, control: 'hoja (marco único + mando en barra)', estado: fallos.length ? fallos[0] : 'ok', mal: !!fallos.length });
         }
       }
+      // ── LAS PIEZAS SUELTAS NO SE COMEN EL TABLERO (juegos con bandeja) ───
+      // Captura del dueño (v1.51.668): en pantalla completa las piezas del
+      // Rompecabezas medían 430 px contra un tablero de 500 — se dimensionaban
+      // contra el ANCHO de la página, no contra la celda. La matriz ya monta en
+      // pantalla completa (la antesala la pide), así que aquí se mide lo que el
+      // dedo ve: pieza ≤ 35 % del lado corto de la ventana, todas dentro, y
+      // ninguna pisando el tablero. Selectores DECLARADOS por juego (la vista no
+      // adivina): un juego nuevo con bandeja se apunta aquí.
+      const BANDEJA = { puzzle: { tablero: '.pu-board', piezas: '.pu-pieces .pu-piece' } };
+      if (mode === 'solo' && status === 'ok' && BANDEJA[t.name]) {
+        const b = await page.evaluate(({ tablero, piezas }) => {
+          const tb = document.querySelector(tablero)?.getBoundingClientRect();
+          const ps = [...document.querySelectorAll(piezas)].map(p => p.getBoundingClientRect());
+          if (!tb || !ps.length) return { sin: true };
+          const corto = Math.min(innerWidth, innerHeight);
+          const pct = Math.max(...ps.map(p => 100 * Math.max(p.width, p.height) / corto));
+          const fuera = ps.filter(p => p.right > innerWidth + 1 || p.bottom > innerHeight + 1 || p.left < -1 || p.top < -1).length;
+          const pisa = ps.filter(p => !(p.top >= tb.bottom - 1 || p.bottom <= tb.top + 1 || p.left >= tb.right - 1 || p.right <= tb.left + 1)).length;
+          return { pct: +pct.toFixed(1), fuera, pisa, tablero: Math.round(tb.width) };
+        }, BANDEJA[t.name]);
+        const fallos = [];
+        if (b.sin) fallos.push('sin tablero o sin piezas montadas');
+        else {
+          if (b.pct > 35) fallos.push(`una pieza suelta mide el ${b.pct} % del lado corto (tope 35 %)`);
+          if (b.fuera) fallos.push(`${b.fuera} pieza(s) fuera de la ventana`);
+          if (b.pisa) fallos.push(`${b.pisa} pieza(s) pisando el tablero`);
+        }
+        if (fallos.length) { status = 'error'; detail = `bandeja: ${fallos[0]}`; }
+        hits.push({ label: t.label, mode, control: 'bandeja (piezas vs tablero)', estado: fallos.length ? fallos[0] : `ok (pieza ${b.pct} %, tablero ${b.tablero}px)`, mal: !!fallos.length });
+      }
       // ── LA RONDA SE JUEGA, no solo se monta (cola #3 del norte) ─────────
       // Un gesto REAL en los tres modos embebidos. La vara: que el juego
       // RESPONDA (progreso o re-render). Quien juzga es la app.

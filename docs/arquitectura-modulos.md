@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **335 módulos · 1353 imports internos.**
+> **335 módulos · 1354 imports internos.**
 
 ### Ir a otro documento
 
@@ -30,11 +30,11 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
-| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1928 | 7 · 1028 | 0.53 |
+| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1935 | 7 · 1028 | 0.53 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2772 | 12 · 1430 | 0.52 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 39 · 4523 | 19 · 3098 | 0.68 |
 | **informes/tareas** | después de clase | 10 · 1119 | 4 · 512 | 0.46 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 89 · 7088 | 13 · 1840 | 0.26 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 89 · 7107 | 13 · 1840 | 0.26 |
 | **infra/común** | todo lo anterior | 171 · 20171 | 74 · 9509 | 0.47 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
@@ -64,7 +64,7 @@ graph TD
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>6 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
   V -->|414| C
-  T -->|255| C
+  T -->|256| C
   AD -->|32| C
   A -->|28| C
   A -->|18| V

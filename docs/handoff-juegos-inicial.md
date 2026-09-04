@@ -91,7 +91,11 @@ ajenos; cada test con contra-prueba; `node tools/check-template.mjs <name>` y
 2. **La habilidad de Colorear**: el cuadro del norte §4c no tiene fila para
    «motricidad fina». Se declara `skill: 'Motricidad fina'` y se propone la fila;
    Tangram y Rompecabezas van en **Espacial**, que ya existe.
-3. **Láminas del tangram**: no hay dataset libre de figuras clásicas con coordenadas y sin lámina de referencia el agente no logró figuras reconocibles. Con una foto de un juego de cartas de tangram (el docente seguro tiene) se transcriben a mano: una tarde por figura.
-4. **Calidad del banco**: ocho dibujos hechos a mano por un agente. Si se
+3. **El tangram, después** (dueño, 2026-09-04: «primero los bugs y la estructura»): (a) que el docente
+   haga figuras con las 7 piezas en el EDITOR y eso se vuelva la silueta (con las piezas usadas
+   marcadas) — es exactamente el mecanismo de la lámina, sin lámina; (b) y con eso, cargar
+   ejemplos buscados. Deuda del tangram, no de esta entrega.
+4. **Láminas del tangram**: no hay dataset libre de figuras clásicas con coordenadas y sin lámina de referencia el agente no logró figuras reconocibles. Con una foto de un juego de cartas de tangram (el docente seguro tiene) se transcriben a mano: una tarde por figura.
+5. **Calidad del banco**: ocho dibujos hechos a mano por un agente. Si se
    quieren ilustraciones profesionales, entran por la misma puerta (zonas
    cerradas con `data-color`) sin tocar código.

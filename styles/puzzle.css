@@ -4,7 +4,18 @@
    IMAGEN es DATO (llega inline por JS como data: URL, igual que las bolas de
    Pelotas) — este CSS no nombra ni un solo color del dibujo. */
 
-.pu-play { display: flex; flex-direction: column; height: 100%; gap: 2cqmin; container-type: inline-size; }
+.pu-play {
+  display: flex; flex-direction: column; height: 100%; gap: 2cqmin;
+  /* CONTENEDOR DE TAMAÑO (alto y ancho): todo lo que mide el juego sale de UN
+     número, el LADO del tablero, y ese lado sale del hueco entero — como mucho
+     el 62 % del alto (el resto es de la bandeja) y el 88 % del ancho. Las piezas
+     de la bandeja son una FRACCIÓN DE CELDA (0,7), no una fracción del ancho de
+     la página: en pantalla completa (1515×1023) `90cqw/total` daba piezas de
+     430 px que se comían el tablero (captura del dueño, v1.51.668). */
+  container-type: inline-size;
+  /* `--pu-lado` lo PUBLICA el player midiendo el tablero (observeResize, patrón
+     fitLayout: aquí `cqh` no sirve porque el alto de esta raíz no es definido). */
+}
 
 /* LA CADENA (lección de `styles/ballsort.css`): cabecera (lo suyo) · tablero
    (`flex:1 1 auto; min-height:0`, ESTIRA) · bandeja (`flex:0 0 auto`, hug de
@@ -19,13 +30,13 @@
    `#ww-player-widget` en `styles/player.css`), así que el `100cqh` del
    tablero mide el hueco REAL que le queda tras restar cabecera y bandeja. */
 .pu-arena {
-  flex: 1 1 auto; min-height: 0;
+  flex: 1 1 auto; min-height: 0;   /* el tablero (≤ 62 % del hueco, lo decide el player) y la bandeja se reparten lo que hay */
   container-type: size;
   display: flex; align-items: center; justify-content: center;
 }
 .pu-board {
   position: relative;
-  width: min(100%, 100cqh);
+  width: var(--pu-lado, min(100%, 100cqh));   /* la publica el player del hueco; el respaldo es el cqh de la arena */
   aspect-ratio: 1 / 1;
   border-radius: max(6px, 1.5cqmin);
   overflow: hidden;
@@ -78,13 +89,13 @@
      poco más estrecho que el marco entero contra el que se mide el 12 %
      (medido: en un marco de 390 el relleno deja 358, el 91,8 %; pedir el
      12 % de eso se quedaba en el 11,0 % del marco). Por eso el piso es
-     13.5cqw, con margen. Se reparte por `--pu-total` (TODAS las piezas), no
+     13.5cqw, con margen. Hoy la pieza es 0,7 de una CELDA (`--pu-lado/--pu-columnas`), no
      por `--pu-columnas`: dividir solo por columnas asume que la bandeja cabe
      en un cuadrado por FILA del tablero, y en 2×2 eso daba piezas del 45 %
      del ancho — dos de esas ya no cabían de alto en la franja y se comían
      el tablero. Con el piso táctil, si NO caben todas en una fila (3×3 en un
      marco estrecho), `flex-wrap` abre una segunda. */
-  width: max(13.5cqw, calc(90cqw / var(--pu-total, 4)));
+  width: calc(var(--pu-lado) / var(--pu-columnas, 2) * .7);   /* 0,7 de una celda; al encajar toma el 100 % */
   border-radius: max(4px, 1cqmin);
   background-repeat: no-repeat;
   box-shadow: 0 max(2px, .5cqmin) max(6px, 1.4cqmin) rgba(0,0,0,.28);
