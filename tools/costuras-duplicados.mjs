@@ -1092,6 +1092,7 @@ const COINCIDENCIAS = {
   '1280': 'ancho máximo del lienzo del confeti · lado máximo de una imagen recomprimida al subir — dos decisiones de resolución independientes que coinciden en "una resolución razonable"',
   '1200': 'aviso de "copiado" en la lista de tareas · margen del sondeo del anfitrión en vivo — sin relación',
   '1024 * 1024': 'ambos formatean bytes a MB usando 1 MiB = 1024² — aritmética común, no un límite: el límite de verdad vive en core/quotas.js',
+  '0.88': 'fracción del ancho del hueco que puede ocupar el tablero del rompecabezas · un valor de una animación del modo Individual — maquetación y animación, sin relación',
   '0.06': 'distancia máxima de un TOQUE (no arrastre) en el tangram, fracción del lado del tablero · un paso de una animación del duelo — un gesto y un fotograma, sin relación',
   '0.05': 'margen de la caja del tangram (MARGEN_CAJA, ya con dueño en templates/tangram/game/mascara.js) · un umbral del cálculo de contraste — geometría y color, sin relación',
   '0.04': 'umbral de XOR de área para dar el tangram por RESUELTO (UMBRAL_RESUELTO) · margen del viewBox recortado del rompecabezas — un veredicto y un margen, sin relación',
