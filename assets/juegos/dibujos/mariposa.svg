@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <ellipse cx="25" cy="32" rx="18" ry="16" data-zona="alaSupIzq" data-color="#e63946"
+    fill="#ffffff" stroke="#222" stroke-width="2.5"/>
+  <ellipse cx="75" cy="32" rx="18" ry="16" data-zona="alaSupDer" data-color="#457b9d"
+    fill="#ffffff" stroke="#222" stroke-width="2.5"/>
+  <ellipse cx="27" cy="65" rx="16" ry="13" data-zona="alaInfIzq" data-color="#f4a261"
+    fill="#ffffff" stroke="#222" stroke-width="2.5"/>
+  <ellipse cx="73" cy="65" rx="16" ry="13" data-zona="alaInfDer" data-color="#2a9d8f"
+    fill="#ffffff" stroke="#222" stroke-width="2.5"/>
+  <ellipse cx="50" cy="50" rx="7" ry="32" data-zona="cuerpo" data-color="#444444"
+    fill="#ffffff" stroke="#222" stroke-width="2.5"/>
+</svg>

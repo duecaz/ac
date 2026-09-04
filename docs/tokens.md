@@ -9,7 +9,7 @@
 Los tokens son la INTERFAZ entre el tema y el juego (ley §3: el skin
 cambia tokens, la actividad los consume). Este es el contrato completo.
 
-**211 tokens** en 18 familias.
+**213 tokens** en 19 familias.
 
 ## `--bs-*` (23)
 
@@ -201,6 +201,12 @@ cambia tokens, la actividad los consume). Este es el contrato completo.
 | `--opt-transition` | themes/tv-show/skin.css | styles/opcion.css |
 | `--opt-weight` | themes/tv-show/skin.css | styles/opcion.css · styles/vs.css |
 
+## `--pu-*` (1)
+
+| Token | Lo DECLARA | Lo CONSUME |
+|---|---|---|
+| `--pu-total` | templates/puzzle/player.js | styles/puzzle.css |
+
 ## `--qh-*` (14)
 
 | Token | Lo DECLARA | Lo CONSUME |
@@ -275,25 +281,26 @@ cambia tokens, la actividad los consume). Este es el contrato completo.
 | `--ws-cols` | templates/wordsearch/editor.js · templates/wordsearch/player.js | styles/wordsearch.css |
 | `--ws-lado` | styles/wordsearch.css | styles/wordsearch.css |
 
-## `--ww-*` (32)
+## `--ww-*` (33)
 
 | Token | Lo DECLARA | Lo CONSUME |
 |---|---|---|
-| `--ww-accent` | core/skins.js · styles/theme.css | styles/diagram.css · styles/memory.css · styles/player.css · styles/textCorrection.css · styles/vs.css |
+| `--ww-accent` | core/skins.js · styles/theme.css | styles/diagram.css · styles/memory.css · styles/player.css · styles/puzzle.css · styles/textCorrection.css · styles/vs.css |
 | `--ww-accent-fg` | — *(solo respaldo)* | styles/player.css |
 | `--ww-accent-ink` | core/skins.js | styles/textCorrection.css |
 | `--ww-accent-soft` | — *(solo respaldo)* | styles/player.css |
 | `--ww-ar` | core/frameAspect.js | styles/player.css |
 | `--ww-ar-css` | core/frameAspect.js · core/gameFrame.js | styles/player.css |
-| `--ww-bg` | core/skins.js | core/homePreview.js · core/skins.js · styles/player.css |
+| `--ww-bg` | core/skins.js | core/homePreview.js · core/skins.js · styles/player.css · styles/puzzle.css · styles/tangram.css |
 | `--ww-bg-image` | core/backgrounds.js | styles/backgrounds.css |
 | `--ww-bg-ink` | core/backgrounds.js | styles/backgrounds.css |
 | `--ww-bg-soft` | core/skins.js | styles/crossword.css · styles/diagram.css · styles/wordsearch.css |
-| `--ww-card-bg` | core/skins.js | embed.html · styles/crossword.css · styles/match.css · styles/memory.css · styles/opcion.css · styles/player.css · styles/question-live.css · styles/wordsearch.css |
+| `--ww-border` | — *(solo respaldo)* | styles/puzzle.css |
+| `--ww-card-bg` | core/skins.js | embed.html · styles/crossword.css · styles/match.css · styles/memory.css · styles/opcion.css · styles/player.css · styles/puzzle.css · styles/question-live.css · styles/wordsearch.css |
 | `--ww-card-border` | core/skins.js | core/skins.js · styles/crossword.css · styles/diagram.css · styles/match.css · styles/opcion.css · styles/question-live.css · styles/wordsearch.css |
-| `--ww-card-fg` | core/skins.js | styles/backgrounds.css · styles/crossword.css · styles/globos.css · styles/match.css · styles/memory.css · styles/opcion.css · styles/player.css · styles/question-live.css · styles/wordsearch.css |
+| `--ww-card-fg` | core/skins.js | styles/backgrounds.css · styles/colorear.css · styles/crossword.css · styles/globos.css · styles/match.css · styles/memory.css · styles/opcion.css · styles/player.css · styles/question-live.css · styles/wordsearch.css |
 | `--ww-danger` | core/skins.js · styles/theme.css | styles/crossword.css · styles/math.css · styles/opcion.css · styles/wheel.css |
-| `--ww-fg` | core/skins.js | core/editorShell.js · core/skins.js · embed.html · styles/backgrounds.css · styles/crossword.css · styles/globos.css · styles/match.css · styles/memory.css · styles/opcion.css · styles/player.css · styles/question-live.css · styles/wordsearch.css · themes/tv-show/skin.css |
+| `--ww-fg` | core/skins.js | core/editorShell.js · core/skins.js · embed.html · styles/backgrounds.css · styles/colorear.css · styles/crossword.css · styles/globos.css · styles/match.css · styles/memory.css · styles/opcion.css · styles/player.css · styles/puzzle.css · styles/question-live.css · styles/tangram.css · styles/wordsearch.css · themes/tv-show/skin.css |
 | `--ww-fs-reserve` | styles/player.css | styles/live.css · styles/player.css |
 | `--ww-line` | — *(solo respaldo)* | styles/player.css |
 | `--ww-muted` | — *(solo respaldo)* | styles/player.css |

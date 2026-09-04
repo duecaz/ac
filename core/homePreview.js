@@ -77,6 +77,9 @@ function build(a) {
       case 'crossword':     return crosswordPv(c);
       case 'ballsort':      return ballsortPv(c);
       case 'question-live': return boxesPv(c);
+      case 'colorear':      return colorearPv(c);
+      case 'tangram':       return tangramPv(c);
+      case 'puzzle':        return puzzlePv(c);
       default:              return genericPv(a);
     }
   } catch { return genericPv(a); }
@@ -221,4 +224,29 @@ function genericPv(a) {
   return `<div class="pv pv-generic tag--${esc(color)}">
     <i class="bi ${icon}"></i><span>${esc(label)}</span>
   </div>`;
+}
+
+// ── Los tres juegos de inicial (docs/handoff-juegos-inicial.md) ──────────────
+// Colorear: una casita de trazo con dos zonas ya pintadas (el gesto del juego).
+function colorearPv() {
+  return `<div class="pv pv-juego"><svg viewBox="0 0 100 100" aria-hidden="true">
+    <path d="M20 55 L50 25 L80 55 Z" fill="#f4a261" stroke="#222" stroke-width="3"/>
+    <rect x="28" y="55" width="44" height="30" fill="#fff" stroke="#222" stroke-width="3"/>
+    <rect x="44" y="65" width="12" height="20" fill="#4cc38a" stroke="#222" stroke-width="3"/>
+  </svg></div>`;
+}
+// Tangram: las siete piezas clásicas en el cuadrado, cada una de un color.
+function tangramPv() {
+  const P = [['0,0 50,50 0,100', '#e63946'], ['0,0 100,0 50,50', '#457b9d'], ['100,0 100,50 75,25', '#f4a261'],
+             ['50,50 75,75 25,75', '#2a9d8f'], ['75,25 100,50 75,75 50,50', '#e9c46a'], ['0,100 25,75 75,75 50,100', '#8e44ad'],
+             ['50,100 100,50 100,100', '#3a86ff']];
+  return `<div class="pv pv-juego"><svg viewBox="-3 -3 106 106" aria-hidden="true">${
+    P.map(([pts, c]) => `<polygon points="${pts}" fill="${c}" stroke="#fff" stroke-width="2"/>`).join('')
+  }</svg></div>`;
+}
+// Rompecabezas: rejilla 3×3 sobre una imagen, con una pieza fuera de sitio.
+function puzzlePv() {
+  const celdas = Array.from({ length: 9 }, (_, i) => i === 4
+    ? '<span class="pv-pieza pv-pieza--fuera"></span>' : '<span class="pv-pieza"></span>').join('');
+  return `<div class="pv pv-juego pv-puzzle">${celdas}</div>`;
 }

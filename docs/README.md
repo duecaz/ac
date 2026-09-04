@@ -59,6 +59,7 @@ quedó aquí.
 | **`handoff-ia-contenido.md`** | La IA que ESCRIBE el contenido (por modelo, no por plantilla): plan escrito, que es la condición que puso el norte §4b. **Funcionando desde v1.51.548**; §7b, lo que costó instalarlo en la Pi |
 | **`handoff-editor-general.md`** | El editor como pieza general: márgenes del panel, «+ Añadir» en las 13, imagen↔pines, nacer en blanco y buscador de imágenes libres (decidido 2026-08-13, sin ejecutar) |
 | **`handoff-costuras.md`** | Los 7 barridos escritor×lector que DETECTAN las costuras (declaraciones que nadie obedece · contrato a medias · vista que conoce plantillas · cableado sin extremo · la misma regla dos veces · ajuste en la capa equivocada · gesto que destruye lo que se toca) — pedidos 2026-09-02, EJECUTADOS a cero (§1b); la ley que los vigila es §31 |
+| **`handoff-juegos-inicial.md`** | Los tres JUEGOS de inicial (Colorear · Tangram · Rompecabezas): leyes contrastadas, decisiones técnicas (zonas SVG, máscara XOR, piezas sin canvas), banco compartido y lo que decide el dueño. |
 
 Se le suman dos que no son handoffs sino REFERENCIA permanente:
 `infraestructura-pb.md` (cómo está la Pi de verdad) y `handoff-esquema-pb.md`

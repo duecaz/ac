@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **312 módulos · 1282 imports internos.**
+> **335 módulos · 1353 imports internos.**
 
 ### Ir a otro documento
 
@@ -30,12 +30,12 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
-| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1900 | 7 · 1028 | 0.54 |
-| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2772 | 12 · 1429 | 0.52 |
+| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1928 | 7 · 1028 | 0.53 |
+| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2772 | 12 · 1430 | 0.52 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 39 · 4523 | 19 · 3098 | 0.68 |
 | **informes/tareas** | después de clase | 10 · 1119 | 4 · 512 | 0.46 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 68 · 5479 | 13 · 1840 | 0.34 |
-| **infra/común** | todo lo anterior | 169 · 20083 | 71 · 8826 | 0.44 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 89 · 7088 | 13 · 1840 | 0.26 |
+| **infra/común** | todo lo anterior | 171 · 20171 | 74 · 9509 | 0.47 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -58,13 +58,13 @@ graph TD
   A["<b>arranque</b><br/><small>cablea cada página (main.*.js, sw.js)</small><br/><small>6 módulos</small>"]
   V["<b>vistas</b><br/><small>el chrome: navegación, setup, informes</small><br/><small>54 módulos</small>"]
   AD["<b>adaptadores</b><br/><small>el transporte: PocketBase | local</small><br/><small>11 módulos</small>"]
-  C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>150 módulos</small>"]
+  C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>152 módulos</small>"]
   K["<b>kernel</b><br/><small>el motor de sesión: cuándo se liquida</small><br/><small>12 módulos</small>"]
-  T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>72 módulos</small>"]
+  T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>93 módulos</small>"]
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>6 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
   V -->|414| C
-  T -->|216| C
+  T -->|255| C
   AD -->|32| C
   A -->|28| C
   A -->|18| V
@@ -108,8 +108,8 @@ graph TD
 | **adaptadores** | `adapters/pocketbase/realtimeRooms.js` (483) · `adapters/pocketbase/realtimeAnswers.js` (388) · `adapters/pocketbase/realtime.js` (361) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (255) |
 | **core** | `core/textCorrectionRound.js` (743) · `core/normsCheck.js` (559) · `core/skins.js` (421) · `core/aiContent.js` (388) · `core/auth.js` (369) |
 | **kernel** | `kernel/session/teamsMachine.js` (178) · `kernel/session/vsMachine.js` (169) · `kernel/session/liveMachine.js` (166) · `kernel/session/memory.js` (98) · `kernel/contracts/template.js` (72) |
-| **plantillas** | `templates/crossword/player.js` (487) · `templates/wordsearch/player.js` (382) · `templates/match/player.js` (303) · `templates/diagram/player.js` (265) · `templates/quiz/editor.js` (222) |
-| **contenido** | `kernel/content/qaAdapt.js` (141) · `kernel/content/switch.js` (117) · `kernel/content/convert.js` (95) · `kernel/content/models.js` (83) · `kernel/content/sessionItems.js` (25) |
+| **plantillas** | `templates/crossword/player.js` (487) · `templates/wordsearch/player.js` (382) · `templates/match/player.js` (303) · `templates/diagram/player.js` (265) · `templates/tangram/player.js` (243) |
+| **contenido** | `kernel/content/qaAdapt.js` (141) · `kernel/content/switch.js` (117) · `kernel/content/models.js` (114) · `kernel/content/convert.js` (95) · `kernel/content/sessionItems.js` (25) |
 | **config** | `pocketbase.config.js` (13) |
 
 ## Los módulos más importados (fan-in)
@@ -118,15 +118,15 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 
 | Módulo | Lo importan |
 |---|---|
-| `core/html.js` | 110 |
-| `core/events.js` | 62 |
-| `core/registry.js` | 55 |
+| `core/html.js` | 116 |
+| `core/events.js` | 66 |
+| `core/registry.js` | 58 |
 | `core/toast.js` | 40 |
-| `core/ids.js` | 27 |
+| `core/ids.js` | 33 |
+| `core/gameEvents.js` | 27 |
 | `core/clock.js` | 26 |
 | `core/ls.js` | 24 |
 | `core/storage.js` | 24 |
-| `core/gameEvents.js` | 24 |
 | `kernel/content/sessionItems.js` | 23 |
 
 ## Los módulos más grandes (candidatos a partir)

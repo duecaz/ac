@@ -113,6 +113,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | Modo SOLO (Wordwall) por dentro · identidad/auth · dev local | [`docs/modo-wordwall.md`](docs/modo-wordwall.md) · [`docs/identidad.md`](docs/identidad.md) · [`docs/dev-local.md`](docs/dev-local.md) |
 | **La IA que ESCRIBE el contenido** (por modelo · módulo aparte · el hook de la Pi) | **[`docs/handoff-ia-contenido.md`](docs/handoff-ia-contenido.md)** — FUNCIONANDO desde v1.51.548; su §7b guarda las tres trampas que costaron ponerlo en pie (los 5xx que se come Cloudflare, el ámbito de los handlers, el modelo con caducidad) |
 | **Plan del EDITOR** (márgenes · «+ Añadir» · imagen↔pines · nacer en blanco · buscador) | **[`docs/handoff-editor-general.md`](docs/handoff-editor-general.md)** (decidido 2026-08-13, sin ejecutar) |
+| **LOS TRES JUEGOS DE INICIAL** (Colorear · Tangram · Rompecabezas: leyes contrastadas, decisiones técnicas, banco compartido, lo que decide el dueño) | **[`docs/handoff-juegos-inicial.md`](docs/handoff-juegos-inicial.md)** |
 | **DETECTAR LAS COSTURAS** (basura · duplicados · declaraciones sin lector · polimorfismo a medias · cableado sin extremo): los 7 barridos, ejecutados a cero | **[`docs/handoff-costuras.md`](docs/handoff-costuras.md)** §1b — ley §31 |
 | **DECISIONES de producto pendientes** (contrastadas con Wordwall y similares: identidad del alumno, imprimible, cuotas…) | **[`docs/decisiones-pendientes.md`](docs/decisiones-pendientes.md)** |
 | **Cuántos bucles de juego en vivo hay y qué cuestan** (estudio D7, medido) | **[`docs/estudio-bucles-live.md`](docs/estudio-bucles-live.md)** + ley §26 |
@@ -195,7 +196,7 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
 | `board` · Tablero | `race` | cada alumno | avanzar más en el tablero | escala propia de la plantilla (Pelotas: 0-1000 por eficiencia) | igual que la carrera | Ordena las Pelotas |
 | `claim` · Pedir la palabra | `question-live` | el profe (a quien pide turno) | los puntos que da el docente | manuales (+10/+50), sin clave de respuesta | lo cierra el docente | Abre Cajas · Ruleta |
 
-> Generado de `core/liveLoops.js` + `meta.play.live` de las 13 plantillas.
+> Generado de `core/liveLoops.js` + `meta.play.live` de las 16 plantillas.
 > El modelo de puntos lo decide `pointsModeFor(loop)`: `rounds`→`live` · `race`→`race` · `board`→`race` · `claim`→`live`.
 <!-- /GENERADO:bucles -->
 
@@ -236,9 +237,8 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   un dibujo LIGERO y estático por tipo de plantilla (sin render del juego), MEMOIZADO por
   `id:updatedAt`. Cubre las **13** plantillas (0 respaldos genéricos) — lo garantiza
   `tests/homePreview.test.mjs` (si añades plantilla y olvidas su esquema en el switch
-  `build()`, falla en CI). El antiguo `activityThumb` (render real
-  escalado) se BORRÓ al quedarse sin importadores (§30) — el home dejó de usarlo por
-  rendimiento y nada más lo pedía. Pendiente: que el preview respete tema/fondo de la actividad (ver
+  `build()`, falla en CI). El antiguo `activityThumb` (render real escalado) se BORRÓ
+  al quedarse sin importadores (§30): el home dejó de usarlo por rendimiento y nada más lo pedía. Pendiente: que el preview respete tema/fondo de la actividad (ver
   `docs/historico/handoff-previews-home.md` Fase 2b).
 - En móvil (≤640px) la barra superior colapsa en un **menú hamburguesa** (`.ww-topbar__burger`
   → clase `.open`); las acciones (incl. `#ww-mute-slot`/`#ww-auth-slot`) caen en el desplegable.
@@ -260,7 +260,7 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   `tests/antesala.test.mjs` (código) y `matrix-smoke` (DOM montado, cada plantilla × modo).
   OJO: una utilidad de Bootstrap (`p-2`) en la raíz del juego lleva `!important` y pisa las
   reglas del propio juego (tapó la reserva del HUD) — el relleno va en la hoja de la plantilla.
-- **Registro de plantillas y arranque**: `core/registerTemplates.js` (las 13, punto único) +
+- **Registro de plantillas y arranque**: `core/registerTemplates.js` (las 16 —13 ejercicios + 3 juegos—, punto único) +
   `core/boot.js` (sonidos/efectos al bus, versión, mute). Las 3 `main.*.js` NO repiten ese wiring.
 - **Gama baja** (`core/perf.js`): `ww-lite` en `<html>` si ≤4 núcleos o ≤2GB → sin bucles de
   animación en reposo (cuerda Lottie estática, marquesina arcade quieta). El VS debe ser fluido en

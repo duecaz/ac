@@ -73,6 +73,37 @@ export const MODELS = {
       return { ok: errors.length === 0, errors };
     }
   },
+  // LOS TRES JUEGOS DE INICIAL (docs/handoff-juegos-inicial.md). Son JUEGOS
+  // (norte §4c): el contenido lo trae la app, así que el «contenido» de la
+  // actividad es solo QUÉ nivel se juega — un dibujo del banco compartido
+  // (`assets/juegos/dibujos`) o una silueta del catálogo del tangram.
+  colorear: {
+    name: 'colorear',   // { items: [{ id, dibujo }] } — dibujo: nombre en el banco
+    newEmpty: () => ({ items: [] }),
+    validate(content) {
+      const errors = [];
+      if (!Array.isArray(content?.items)) errors.push('items must be an array');
+      return { ok: errors.length === 0, errors };
+    }
+  },
+  tangram: {
+    name: 'tangram',    // { items: [{ id, figura }] } — figura: nombre de la silueta
+    newEmpty: () => ({ items: [] }),
+    validate(content) {
+      const errors = [];
+      if (!Array.isArray(content?.items)) errors.push('items must be an array');
+      return { ok: errors.length === 0, errors };
+    }
+  },
+  puzzle: {
+    name: 'puzzle',     // { items: [{ id, dibujo, filas, columnas }] }
+    newEmpty: () => ({ items: [] }),
+    validate(content) {
+      const errors = [];
+      if (!Array.isArray(content?.items)) errors.push('items must be an array');
+      return { ok: errors.length === 0, errors };
+    }
+  },
 };
 
 /** @param {string} name @returns {ContentModelContract|null} */

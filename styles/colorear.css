@@ -1,0 +1,103 @@
+/* Colorear — estilos del PLAYER. Contrato (docs/estilos-de-actividad.md):
+   NADA con tamaño fijo (cq*/% o piso max(); un clamp con techo bajo CONGELA) y
+   colores pintables por token var(--ww-*) para que los skins recoloreen — los
+   colores de la PALETA y del DIBUJO son DATO y van inline desde JS (como las
+   bolas de Pelotas), nunca aquí. */
+
+.co-play {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  container-type: size;      /* @container por aspect-ratio: mide ESTE marco, no la ventana (§3b0) */
+}
+
+/* edu-sec--dibujo: todo el alto que sobra a la cabecera y la paleta. El SVG
+   inyectado hereda el hueco (width/height:100% + preserveAspectRatio nativo). */
+.co-play .edu-sec--dibujo {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1cqmin;
+}
+.co-play .edu-sec--dibujo svg {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+}
+/* Cada zona es un dedo de 3-6 años, no un lápiz: engorda el objetivo táctil
+   sin mover el trazo (el SVG no tiene margen entre formas para simularlo con
+   padding). Repintar cambia `fill` desde JS; aquí solo se cuida el toque. */
+.co-play .edu-sec--dibujo [data-zona] {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* edu-sec--paleta: los 10 colores en UNA fila (horizontal) — el tamaño del
+   swatch va también en `cqw` con TOPE (`min(12cqmin, 8cqw)`), no solo en
+   `cqmin`: en un marco ancho y bajo, 12cqmin (que mide el lado CORTO, la
+   altura) se hace enorme y 10 círculos de ese tamaño no caben en el ancho →
+   la fila se partía en dos (9+1). Con el tope en `cqw` el swatch nunca supera
+   el 8% del ANCHO del marco, así que 10×8cqw+huecos siempre entra en 100cqw. */
+.co-play .edu-sec--paleta {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2cqmin;
+  padding: 1cqmin;
+}
+/* Vertical (móvil en pie, docs/estilos-de-actividad.md §3b0: se mide el
+   CONTENEDOR con @container, no la ventana): DOS filas de 5, nunca 9+1 — una
+   rejilla fija de 5 columnas en vez de un flex que decide solo dónde parte. */
+@container (aspect-ratio < 1/1) {
+  .co-play .edu-sec--paleta {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    justify-items: center;
+    gap: 1.6cqmin;
+    max-width: min(92cqmin, 96%);
+    margin: 0 auto;
+  }
+}
+
+/* Swatch grande: ≥12% del lado corto del marco EN VERTICAL (columnas de la
+   rejilla), y con tope de ancho en HORIZONTAL para que los 10 quepan en una
+   fila (ver arriba). `cqmin`/`cqw` son ambos del MISMO contenedor con
+   `container-type:size` (.co-play), así que combinarlos no rompe nada. */
+.co-play .co-color {
+  width: max(44px, min(12cqmin, 8cqw));
+  height: max(44px, min(12cqmin, 8cqw));
+  border-radius: 50%;
+  border: max(2px, 0.6cqmin) solid var(--ww-card-fg, var(--ww-fg));
+  padding: 0;
+  cursor: pointer;
+  box-shadow: 0 0.3cqmin 0.6cqmin rgba(0, 0, 0, 0.25);
+  transition: transform 120ms ease, outline-color 120ms ease;
+  flex: 0 0 auto;
+}
+@container (aspect-ratio < 1/1) {
+  .co-play .co-color {
+    width: max(44px, 12cqmin);
+    height: max(44px, 12cqmin);
+  }
+}
+.co-play .co-color--on {
+  outline: max(3px, 1cqmin) solid var(--ww-fg);
+  outline-offset: max(2px, 0.5cqmin);
+  transform: scale(1.08);
+}
+
+.co-play .edu-send {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  padding: 1.5cqmin;
+}
+.co-play .edu-send .co-listo {
+  font-size: max(1rem, 4cqmin);
+}

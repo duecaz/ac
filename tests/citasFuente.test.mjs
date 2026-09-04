@@ -60,6 +60,10 @@ const BASELINE = {
   newTemplate: 2, pbRules: 1, pbSchema: 3, persistPolicy: 6, quizAnswer: 2,
   quotas: 5, raceResume: 3, realtimePort: 1, roundsLoop: 8,
   unscorable: 8, vocabulario: 2,
+  // `colorear: 1` (v1.51.668): la suite lee los SVG del banco de dibujos con
+  // readFileSync para contrastar `zonas` del índice contra el fichero REAL — es
+  // DATO verificado, no código, pero el contador ve una lectura y la cuenta.
+  colorear: 1,
 };
 // `tcTools` salió de la lista en v1.51.488 (bajó de 4 a 0): las dos afirmaciones
 // que eran de PÍXELES —«el marco ya no es una segunda tarjeta», «el botón de

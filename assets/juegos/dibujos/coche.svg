@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <rect x="10" y="55" width="80" height="17" rx="4" data-zona="carroceria" data-color="#e74c3c"
+    fill="#ffffff" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/>
+  <polygon points="30,55 40,30 65,30 75,55" data-zona="techo" data-color="#c0392b"
+    fill="#ffffff" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/>
+  <rect x="33" y="35" width="38" height="18" data-zona="ventana" data-color="#bfe6f5"
+    fill="#ffffff" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/>
+  <circle cx="28" cy="86" r="14" data-zona="ruedaIzq" data-color="#2b2b2b"
+    fill="#ffffff" stroke="#222" stroke-width="2.5"/>
+  <circle cx="72" cy="86" r="14" data-zona="ruedaDer" data-color="#2b2b2b"
+    fill="#ffffff" stroke="#222" stroke-width="2.5"/>
+</svg>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <ellipse cx="45" cy="50" rx="30" ry="22" data-zona="cuerpo" data-color="#3aa1c9"
+    fill="#ffffff" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/>
+  <polygon points="75,50 98,25 98,75" data-zona="cola" data-color="#2d7fa0"
+    fill="#ffffff" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/>
+  <polygon points="25,28 50,2 75,28" data-zona="aletaSup" data-color="#4cc3e0"
+    fill="#ffffff" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/>
+  <polygon points="25,72 50,98 75,72" data-zona="aletaInf" data-color="#4cc3e0"
+    fill="#ffffff" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/>
+</svg>

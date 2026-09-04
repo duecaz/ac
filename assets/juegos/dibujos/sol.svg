@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <polygon points="28,28 50,0 72,28" data-zona="rayoArriba" data-color="#ffd873"
+    fill="#ffffff" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/>
+  <polygon points="28,72 50,100 72,72" data-zona="rayoAbajo" data-color="#ffd873"
+    fill="#ffffff" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/>
+  <polygon points="28,28 0,50 28,72" data-zona="rayoIzq" data-color="#ffd873"
+    fill="#ffffff" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/>
+  <polygon points="72,28 100,50 72,72" data-zona="rayoDer" data-color="#ffd873"
+    fill="#ffffff" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/>
+  <circle cx="50" cy="50" r="22" data-zona="centro" data-color="#ffcb3d"
+    fill="#ffffff" stroke="#222" stroke-width="2.5"/>
+</svg>

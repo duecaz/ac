@@ -26,7 +26,8 @@ const STYLES = join(dirname(fileURLToPath(import.meta.url)), '..', 'styles');
 // en `player.css` (EXCLUIDO como chrome) y media en `live.css` (GAME), así que
 // este mismo ratchet la clasificaba de dos maneras a la vez.
 const GAME = ['ballsort', 'crossword', 'diagram', 'globos', 'match', 'math', 'memory', 'wheel',
-  'opcion', 'question-live', 'textCorrection', 'vs', 'teams', 'wordsearch', 'live', 'scaffold'];
+  'opcion', 'question-live', 'textCorrection', 'vs', 'teams', 'wordsearch', 'live', 'scaffold',
+  'colorear', 'tangram', 'puzzle'];   // los tres juegos de inicial (2026-09-04): nacen limpios
 // Chrome/paletas explícitamente EXCLUIDOS del ratchet (no son "el juego").
 // `live` SALIÓ de esta lista en v1.51.423. Estaba clasificado como chrome y
 // dentro vive el JUEGO: `.ww-opt-grid` son las opciones de respuesta que la

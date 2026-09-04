@@ -19,3 +19,6 @@ import '../templates/question-live/index.js';
 import '../templates/ballsort/index.js';
 import '../templates/diagram/index.js';
 import '../templates/globos/index.js';
+import '../templates/colorear/index.js';
+import '../templates/tangram/index.js';
+import '../templates/puzzle/index.js';

@@ -71,6 +71,7 @@ console.log('\n▶ clock'); await import('./clock.test.mjs');
 console.log('\n▶ fechas'); await import('./fechas.test.mjs');
 console.log('\n▶ offlineQueue'); await import('./offlineQueue.test.mjs');
 console.log('\n▶ ballsort'); await import('./ballsort.test.mjs');
+console.log('\n▶ tangram'); await import('./tangram.test.mjs');
 console.log('\n▶ penDetector'); await import('./penDetector.test.mjs');
 console.log('\n▶ penVeredicto'); await import('./penVeredicto.test.mjs');
 console.log('\n▶ diagram'); await import('./diagram.test.mjs');
@@ -134,6 +135,8 @@ console.log('\n▶ answerSafety'); await import('./answerSafety.test.mjs');
 console.log('\n▶ modalFallback'); await import('./modalFallback.test.mjs');
 console.log('\n▶ finDelShell'); await import('./finDelShell.test.mjs');
 console.log('\n▶ cierre'); await import('./cierre.test.mjs');
+console.log('\n▶ puzzle'); await import('./puzzle.test.mjs');
+console.log('\n▶ colorear'); await import('./colorear.test.mjs');
 
 // GUARDARRAÍL DE DESCUBRIMIENTO (la lección de la tarjeta única, v1.51.388):
 // esta lista es ENUMERADA, y una lista enumerada vigila el pasado — una suite

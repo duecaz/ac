@@ -68,6 +68,11 @@ const DEMO = {
     { id: 'it_demo2', question: 'Entrada 2', image: null },
   ] },
   textCorrection: { passages: [{ id: 'ps_demo1', text: 'Hola como estas', marks: [{ pos: 6, kind: 'tilde' }] }] },
+  // Los tres juegos de inicial (docs/handoff-juegos-inicial.md): el «contenido»
+  // es solo qué nivel se juega; el banco lo trae la app.
+  colorear: { items: [{ id: 'it_demo1', dibujo: 'casa' }] },
+  tangram:  { items: [{ id: 'it_demo1', figura: 'gato' }] },
+  puzzle:   { items: [{ id: 'it_demo1', dibujo: 'casa', filas: 2, columnas: 2 }] },
   ballsort: { level: 'classic', mode: 'moves', random: true, items: [] },
   diagram: { image: null, pins: [] },
 };

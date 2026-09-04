@@ -11,7 +11,7 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 // Los 8: uno por cada contentModel que declara alguna plantilla (el contrato
 // tests/templateContract.test.mjs exige que TODO contentModel esté registrado).
 assert.deepStrictEqual(listModelNames().sort(),
-  ['ballsort', 'diagram', 'entries', 'items', 'pairs', 'qa', 'textCorrection', 'words']);
+  ['ballsort', 'colorear', 'diagram', 'entries', 'items', 'pairs', 'puzzle', 'qa', 'tangram', 'textCorrection', 'words']);
 ok('all eight content models registered');
 assert.strictEqual(getModel('qa').validate({ items: [{}] }).ok, true);
 assert.strictEqual(getModel('qa').validate({ items: [] }).ok, false);

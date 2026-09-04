@@ -798,3 +798,9 @@ body {
 .ll-rank__pts { font-weight: 800; color: #141c2e; }
 
 .st-fix { font-size: .7em; margin-left: 1px; opacity: .8; }
+
+/* Previews de los tres juegos de inicial (core/homePreview.js): dibujo estático. */
+.pv-juego svg { width: 70%; height: 70%; display: block; margin: auto; }
+.pv-puzzle { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; width: 64%; aspect-ratio: 1; margin: auto; }
+.pv-pieza { background: linear-gradient(135deg, #3a86ff, #4cc38a); border-radius: 3px; }
+.pv-pieza--fuera { transform: translate(38%, 26%) rotate(12deg); background: linear-gradient(135deg, #f4a261, #e63946); }

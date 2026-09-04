@@ -30,8 +30,8 @@ const all = listTemplates().filter(T => reales.has(T.meta.name));
       `${T.meta.name}: meta.kind inválido (${JSON.stringify(T.meta.kind)})`);
   }
   const juegos = all.filter(T => T.meta.kind === 'juego').map(T => T.meta.name);
-  assert.deepStrictEqual(juegos, ['ballsort'],
-    'hoy el único juego es Ordena las Pelotas; uno nuevo se añade AQUÍ a conciencia');
+  assert.deepStrictEqual(juegos, ['ballsort', 'colorear', 'tangram', 'puzzle'],
+    'los juegos se añaden AQUÍ a conciencia: Pelotas + los tres de inicial (docs/handoff-juegos-inicial.md)');
   ok(`${all.length} plantillas declaran familia · juegos: ${juegos.join(' · ')}`);
 }
 

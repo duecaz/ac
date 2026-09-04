@@ -1,0 +1,115 @@
+/* Rompecabezas — estilos del PLAYER. Contrato (docs/estilos-de-actividad.md):
+   NADA con tamaño fijo (cq*/% o piso max(); un clamp con techo bajo CONGELA) y
+   colores pintables por token var(--ww-*) para que los skins recoloreen. La
+   IMAGEN es DATO (llega inline por JS como data: URL, igual que las bolas de
+   Pelotas) — este CSS no nombra ni un solo color del dibujo. */
+
+.pu-play { display: flex; flex-direction: column; height: 100%; gap: 2cqmin; container-type: inline-size; }
+
+/* LA CADENA (lección de `styles/ballsort.css`): cabecera (lo suyo) · tablero
+   (`flex:1 1 auto; min-height:0`, ESTIRA) · bandeja (`flex:0 0 auto`, hug de
+   su contenido). Cada eslabón que no declara su parte de la cadena hace que
+   el siguiente mida mal: el tablero era un `100cqh` medido contra el MARCO
+   ENTERO (la única consulta de bloque válida más arriba era la del widget,
+   porque el propio `.pu-arena` no era contenedor de nada) — así que el
+   cuadrado salía más alto que su propio hueco, se metía bajo la cabecera por
+   arriba y pisaba la bandeja por abajo. `.pu-arena` es AHORA su propio
+   contenedor de tamaño (`container-type: size`, válido porque su alto lo da
+   el flex del padre, no su contenido — el mismo truco de
+   `#ww-player-widget` en `styles/player.css`), así que el `100cqh` del
+   tablero mide el hueco REAL que le queda tras restar cabecera y bandeja. */
+.pu-arena {
+  flex: 1 1 auto; min-height: 0;
+  container-type: size;
+  display: flex; align-items: center; justify-content: center;
+}
+.pu-board {
+  position: relative;
+  width: min(100%, 100cqh);
+  aspect-ratio: 1 / 1;
+  border-radius: max(6px, 1.5cqmin);
+  overflow: hidden;
+  background: var(--ww-card-bg, var(--ww-bg));
+  box-shadow: 0 0 0 max(1px, .25cqmin) var(--ww-border, rgba(0,0,0,.15)) inset;
+}
+.pu-ghost {
+  position: absolute; inset: 0;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  opacity: .32;                 /* la pista: se ve el dibujo entero, tenue */
+  pointer-events: none;
+}
+.pu-hueco {
+  position: absolute;
+  box-sizing: border-box;
+  border: max(1.5px, .35cqmin) dashed var(--ww-fg, rgba(0,0,0,.4));
+  opacity: .55;
+  pointer-events: none;
+}
+.pu-hueco--target { border-color: var(--ww-accent, #2563eb); opacity: 1; }
+
+/* LA BANDEJA — piezas barajadas alrededor del tablero (norte: «repartidas
+   alrededor»). `flex: 0 0 auto`: HUG de su contenido — la bandeja mide lo que
+   miden sus piezas, nunca al revés. Antes tenía un `flex-basis` fijo del 30%
+   y las piezas se apretaban a lo que cupiera en ESE hueco (55 px en 3×3 sobre
+   1000 px: 7,8% del lado corto, menos que el 12% mínimo táctil del plan). Con
+   la bandeja midiendo por CONTENIDO, la pieza pide su tamaño con un PISO
+   táctil (`12cqw`, del propio `.pu-play`) y si no caben todas en una fila,
+   `flex-wrap` abre una segunda — la bandeja crece para tenerlas, nunca al
+   revés, y el tablero (que ya no compite por ese espacio: ver `.pu-arena`)
+   se ajusta con lo que quede. */
+.pu-pieces {
+  flex: 0 0 auto;
+  /* SIN `container-type` propio: su alto es CONTENIDO (lo miden sus piezas),
+     así que no puede ser contenedor de tamaño de sí mismo (ciclo). El `cqw`
+     de las piezas cae en el `.pu-play` de fuera —ESTABLE, ver arriba—, que
+     ya declara el eje en línea. */
+  display: flex; flex-wrap: wrap; align-content: center;
+  justify-content: center;
+  gap: max(4px, 1.4cqmin);
+  padding: max(4px, 1cqmin);
+}
+.pu-piece {
+  /* PISO táctil de verdad (≥12% del lado corto del MARCO, norte del plan) y
+     «lo que quepa repartiendo el ancho entre TODAS las piezas» — el mayor de
+     los dos manda. `cqw` es del `.pu-play` de fuera (contenedor ESTABLE: su
+     alto es 100% del marco, no depende de sus hijos, así que no hay ciclo con
+     el tamaño de la pieza) — pero `.pu-play` es el RELLENO del marco, un
+     poco más estrecho que el marco entero contra el que se mide el 12 %
+     (medido: en un marco de 390 el relleno deja 358, el 91,8 %; pedir el
+     12 % de eso se quedaba en el 11,0 % del marco). Por eso el piso es
+     13.5cqw, con margen. Se reparte por `--pu-total` (TODAS las piezas), no
+     por `--pu-columnas`: dividir solo por columnas asume que la bandeja cabe
+     en un cuadrado por FILA del tablero, y en 2×2 eso daba piezas del 45 %
+     del ancho — dos de esas ya no cabían de alto en la franja y se comían
+     el tablero. Con el piso táctil, si NO caben todas en una fila (3×3 en un
+     marco estrecho), `flex-wrap` abre una segunda. */
+  width: max(13.5cqw, calc(90cqw / var(--pu-total, 4)));
+  border-radius: max(4px, 1cqmin);
+  background-repeat: no-repeat;
+  box-shadow: 0 max(2px, .5cqmin) max(6px, 1.4cqmin) rgba(0,0,0,.28);
+  cursor: grab;
+  touch-action: none; user-select: none; -webkit-user-select: none;
+  will-change: transform;
+}
+.pu-piece--arrastrando {
+  cursor: grabbing;
+  z-index: 20;
+  box-shadow: 0 max(4px, 1cqmin) max(12px, 2.4cqmin) rgba(0,0,0,.4);
+}
+.pu-piece--volviendo { transition: transform 220ms ease; }
+.pu-piece--fija {
+  cursor: default;
+  pointer-events: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.pu-error {
+  margin: auto;
+  text-align: center;
+  font-weight: 700;
+  font-size: max(1rem, 3.6cqmin);
+  color: var(--ww-fg);
+  padding: 2cqmin;
+}

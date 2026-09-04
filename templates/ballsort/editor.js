@@ -1,5 +1,5 @@
 import { on } from '../../core/events.js';
-import { renderEditorShell } from '../../core/editorShell.js';
+import { renderEditorJuego } from '../../core/editorJuego.js';
 import { createBoard, randomBoard } from './game/board.js';
 import { renderTubes } from './render/tubes.js';
 import { listLevels } from './game/levels.js';
@@ -26,12 +26,8 @@ export function ensureContent(a) {
   return a;
 }
 
-export function renderBallsortEditor(root, activity, onChange) {
-  ensureContent(activity);
-  renderEditorShell(root, activity, onChange, {
-    content: { label: 'Tablero', html: contentHtml, wire: wireContent },
-  });
-}
+export const renderBallsortEditor = (root, activity, onChange) =>
+  renderEditorJuego(root, activity, onChange, { asegurar: ensureContent, etiqueta: 'Tablero', html: contentHtml, wire: wireContent });
 
 function contentHtml(a) {
   const c = a.content;

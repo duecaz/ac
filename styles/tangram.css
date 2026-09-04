@@ -1,0 +1,69 @@
+/* Tangram — estilos del PLAYER. Contrato (docs/estilos-de-actividad.md):
+   NADA con tamaño fijo (cq*/% o piso max(); un clamp con techo bajo CONGELA) y
+   colores pintables por token var(--ww-*) para que los skins recoloreen. Las
+   piezas y la paleta del banco NO son parte de este contrato: son DATO inline
+   desde JS (game/piezas.js), como las bolas de Pelotas — la única excepción a
+   "nada de #hex" que permite §3 (color de contenido, no del chrome). Los
+   selectores `.ta-edit-*` son el FORMULARIO del editor (miniaturas de
+   siluetas): ahí sí se permite `px` — `EDITOR_SEL` de tests/styles.test.mjs
+   los reconoce por el `edit` en el nombre. */
+
+.ta-play { display: flex; flex-direction: column; height: 100%; }
+
+.ta-tablero {
+  flex: 1 1 auto; min-height: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* El SVG llena el hueco; el `viewBox` (calculado en player.js a partir de la
+   silueta) es quien decide la proporción real — aquí solo se pide que ocupe
+   TODO lo que le dan, nunca un tamaño propio. */
+.ta-svg { width: 100%; height: 100%; touch-action: none; }
+
+/* La silueta es la pista PASIVA (§29): UNA mancha sólida, sin costuras entre
+   piezas — el tangram no regala dónde va cada una. `fill` y `stroke` son EL
+   MISMO token: un `stroke:none` a secas seguía dejando ver la junta (el
+   antialias del <canvas>/SVG dibuja un borde más claro donde dos polígonos
+   solo se tocan por una arista, aunque el relleno sea idéntico) — con el
+   trazo pintado del MISMO gris y grosor de sobra (0.02 de la rejilla, más
+   ancho que el hueco de antialias) esa línea queda tapada por el propio
+   color. El grupo entero lleva la opacidad (no cada polígono) para que dos
+   piezas que se tocan no oscurezcan la costura al solaparse en el borde. */
+.ta-silueta { opacity: .22; }
+.ta-silueta polygon {
+  fill: var(--ww-fg);
+  stroke: var(--ww-fg);
+  stroke-width: .02;
+  stroke-linejoin: round;
+}
+
+/* Cada pieza es un <g> con su propio transform (translate/rotate/scale) — el
+   MISMO {x,y,rot,flip} que usa game/geometria.js, así el dibujo y el cálculo
+   de "resuelto" nunca pueden desincronizarse. El color es DATO (fill inline);
+   aquí solo el trazo y la sombra de agarre, que sí son del chrome del juego. */
+.ta-pieza polygon {
+  stroke: var(--ww-bg, #fff);
+  stroke-width: .006;
+  stroke-linejoin: round;
+  cursor: grab;
+  filter: drop-shadow(0 .006px .012px rgba(0, 0, 0, .35));
+}
+.ta-pieza:active polygon,
+.ta-pieza polygon:active { cursor: grabbing; }
+
+/* ── Editor (formulario, px permitido: EDITOR_SEL los reconoce por "edit") ── */
+.ta-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+.ta-edit-tile {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 8px; border: 2px solid #dee2e6; border-radius: 10px;
+  background: #fff; cursor: pointer;
+}
+.ta-edit-tile.is-active { border-color: #0d6efd; }
+.ta-edit-mini { width: 100%; height: 72px; }
+.ta-edit-mini polygon { fill: #888; stroke: #444; stroke-width: .006; }
+.ta-edit-tile__nombre { font-size: 12px; text-align: center; }

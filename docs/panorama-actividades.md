@@ -7,7 +7,7 @@
 > Documentos hermanos: modelo de contenido JSON → `docs/ESTRUCTURA.md` ·
 > contrato de modos → `docs/modos-de-juego.md` · cómo se prueba → `docs/testing.md`.
 
-## 1. Las 13 actividades de un vistazo
+## 1. Las 16 actividades de un vistazo (13 ejercicios + 3 juegos de inicial)
 
 | Actividad | Modelo | Qué hace | `panelFit` | Solo | Tarea | En vivo | VS | Equipos |
 |---|---|---|---|:--:|:--:|:--:|:--:|:--:|
@@ -20,6 +20,9 @@
 | **Sopa de Letras** (wordsearch) | `words` | Arrastras sobre las palabras ocultas | fill | ✅ | ✅ | ❌ | ✅ | ✅ |
 | **Crucigrama** (crossword) | `words` | Rellenas el crucigrama desde las pistas | fill | ✅ | ✅ | ❌ | ❌ | ❌ |
 | **Ordena las Pelotas** (ballsort) | `ballsort` | Mueves bolas hasta que cada tubo sea de un color | fill | ✅ | ✅ | ✅ *(tablero)* | ✅ *(carrera)* | ✅ *(carrera)* |
+| **Colorear** (colorear) · JUEGO | `colorear` | Tocas un color y luego la zona del dibujo que quieres pintar | fill | ✅ | — | ❌ | ❌ | ❌ |
+| **Tangram** (tangram) · JUEGO | `tangram` | Arrastras y giras las 7 piezas hasta cubrir la silueta | fill | ✅ | — | ❌ | ❌ | ❌ |
+| **Rompecabezas** (puzzle) · JUEGO | `puzzle` | Arrastras cada pieza a su hueco sobre la imagen fantasma | fill | ✅ | — | ❌ | ❌ | ❌ |
 | **Ruleta** (wheel) | `items` | Gira y cae en una entrada al azar | fill | ✅ | — | ✅ *(manual)* | ❌ | ❌ |
 | **Abre Cajas** (question-live) | `items` | El profe abre cajas; el alumno responde | fill | ✅ | — | ✅ *(manual)* | ❌ | ❌ |
 | **Etiqueta el diagrama** (diagram) | `diagram` | Arrastras etiquetas a pines sobre una imagen | fill | ✅ | ✅ | ❌ | ❌ | ❌ |
@@ -40,6 +43,7 @@ Reglas de compatibilidad (derivadas, no configuradas — `core/modes.js`):
 - **Memoria** — voltear/emparejar/turno (`kernel/session/memory.js`): aciertas y sigues, fallas y pasa el turno.
 - **Sopa de Letras / Crucigrama** — tableros de palabras (`words`); wordsearch busca libremente, crossword rellena desde pistas.
 - **Ordena las Pelotas** — puzzle de tubos; el progreso del tablero alimenta la cuerda del VS.
+- **Colorear / Tangram / Rompecabezas** — los tres JUEGOS de inicial (3-6 años, sin lectura; `docs/handoff-juegos-inicial.md`): el dibujo lo trae la app (banco compartido `assets/juegos/dibujos`), solo Individual, sin Tarea ni biblioteca (norte §4c).
 - **Ruleta / Abre Cajas** — herramientas de aula en vivo; el profe controla, valida verbalmente.
 - **Etiqueta el diagrama** — imagen con pines a (x,y); arrastras cada etiqueta a su pin (motor de cuerdas compartido `core/connectRope.js`, el mismo de Emparejar). Editor: clic en la imagen coloca el pin.
 - **Explota Globos** — el caso "Wordwall" puro: MISMO contenido que Quiz (modelo `qa`, mismo editor y scorer), distinta mecánica — las opciones flotan como globos y tocas el correcto. Nació con `tools/new-template.mjs`.
