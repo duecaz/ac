@@ -3,6 +3,17 @@
 // editor registration.
 //
 // @typedef {import('../kernel/contracts/template.js').TemplateContract} TemplateContract
+//
+// QUÉ VALIDA ESTE FICHERO Y QUÉ NO (decidido en la auditoría del 2026-09-10):
+// aquí va solo el MÍNIMO ESTRUCTURAL para que la app no se rompa más tarde y de
+// forma confusa — falta `meta.name`, falta un render, o `modes.live` sin lo que
+// una sala necesita. El contrato COMPLETO (meta.play, editor, kind/skill, forma
+// del scorer, migraciones, contenido jugable…) lo comprueba
+// `core/templateContract.js`, que es la autoridad y corre en CI y en `#/admin`.
+// Los requisitos CONDICIONALES los responde `core/templateCapability.js`, para
+// que registro y contrato no puedan decir cosas distintas.
+import { faltaParaLive } from './templateCapability.js';
+
 const _templates = {};
 
 // Validate a template against TemplateContract and fail loudly. Catches at boot
@@ -15,11 +26,17 @@ function validateTemplate(T) {
   if (!T.meta.contentModel) throw new Error(`${where} must declare meta.contentModel`);
   if (typeof T.renderPlayer !== 'function') throw new Error(`${where} must implement renderPlayer`);
   if (typeof T.renderEditor !== 'function') throw new Error(`${where} must implement renderEditor`);
+  // El requisito condicional de `modes.live` NO se reescribe aquí: lo responde
+  // su dueño (`core/templateCapability.js`), el mismo que consulta el contrato
+  // ejecutable. Estaban escritos por separado y decían cosas distintas — el
+  // registro exigía `scoreSubmission` siempre y el contrato aceptaba una
+  // `renderRoundHost` propia como alternativa, así que una plantilla podía pasar
+  // CI y reventar al arrancar.
   if (T.meta.modes?.live) {
-    if (typeof T.getRoundPayload !== 'function')
-      throw new Error(`${where} declares modes.live but is missing getRoundPayload — LIVE rounds need it`);
-    if (typeof T.scoreSubmission !== 'function')
-      throw new Error(`${where} declares modes.live but is missing scoreSubmission — LIVE scoring needs it`);
+    const falta = faltaParaLive(T);
+    if (falta.length) {
+      throw new Error(`${where} declares modes.live but is missing ${falta.join(' + ')} — LIVE rounds need it`);
+    }
   }
 }
 

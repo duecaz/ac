@@ -48,11 +48,26 @@ export class MyTemplate extends BaseTemplate {
     color: 'warning',             // bootstrap color
     contentModel: 'qa',           // uno de los REGISTRADOS en kernel/content/models.js (tabla abajo)
     templateVersion: 1,
-    instructions: 'Frase corta de cómo se juega.', // se muestra en la pantalla de inicio
+    instructions: 'Frase corta de cómo se juega.', // OBLIGATORIA: la muestra la antesala
+    // FAMILIA (norte §4c): 'ejercicio' (el contenido lo pone el docente) o
+    // 'juego' (lo genera la plantilla; entonces declara también `skill`).
+    kind: 'ejercicio',
+    // QUÉ SE AÑADE y qué se lee con la actividad vacía. `elemento` va en
+    // SINGULAR y minúscula (sale dentro de «+ Añadir …»); si el contenido lo
+    // genera la plantilla, `generado: true` en su lugar y sin `elemento`.
+    editor: {
+      elemento: 'pregunta',
+      primerPaso: 'Escribe la primera pregunta y marca cuál es la respuesta correcta.',
+    },
     panelFit: 'fill',             // maquetación en el panel VS: 'fill' (defecto, el
                                   // contenido llena y se escala) | 'block' (bloque
                                   // único con tope, p.ej. un teclado) | 'center'
     modes: { solo: true, live: false, async: true },
+    // POLÍTICA DE JUEGO, obligatoria: para que el motor y las vistas la LEAN en
+    // vez de adivinarla. `vs`/`teams` distintos de 'none' exigen `renderRound`;
+    // `live` es la lista de bucles del catálogo congelado (§26) y tiene que
+    // cuadrar con `modes.live`; `submit` es obligatorio si hay `renderRound`.
+    play: { vs: 'none', teams: 'none', live: [] },
     defaultRules:    () => ({ /* específico */ }),
     defaultScoring:  () => ({ pointsPerCorrect: 1 }),
     defaultLive:     () => ({}),                  // si modes.live
@@ -61,14 +76,22 @@ export class MyTemplate extends BaseTemplate {
   static renderPlayer = renderMyPlayer;
   static renderEditor = renderMyEditor;
 
-  // Solo si meta.modes.live = true:
-  static getRoundPayload(activity, ctx) { /* return what clients need (NO answer) */ }
-  static scoreSubmission({ value, item, msTaken, activity }) { /* { correct, points } */ }
+  // Solo si meta.modes.live = true (o si hay renderRound):
+  static getRoundPayload(activity, ctx) { /* lo que el cliente necesita, SIN la respuesta */ }
+  // El ÚNICO scorer de la plantilla — lo usan TODOS los modos. La forma es
+  // exacta: {correct, points, hits, total}; hits/total son el MÉRITO.
+  static scoreSubmission({ value, item, msTaken, activity }) { /* { correct, points, hits, total } */ }
 
-  // Migración interna del content si la versión sube.
+  // Migración interna del content si la versión sube (>1 la EXIGE, e idempotente).
   static migrateContent(content, fromVersion) { return content; }
 }
 ```
+
+> **No copies esto a ojo**: `node tools/new-template.mjs <nombre> --model qa` lo
+> genera cumpliendo el contrato, y `node tools/check-template.mjs <nombre>` te
+> dice qué falta. Este ejemplo llegó a estar incompleto —sin `kind`, sin
+> `editor`, sin `play`— y seguirlo al pie de la letra producía una plantilla que
+> NO pasaba el contrato (auditoría del 2026-09-10).
 
 ## 2b. `editor.js` — usa el SHELL (no armes pestañas a mano)
 

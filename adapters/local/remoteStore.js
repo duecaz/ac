@@ -63,7 +63,13 @@ export function createLocalRemoteStore(kv = defaultKV()) {
       if (r._qid && log.some(x => x._qid === r._qid)) return;
       log.push(r); write(KEY_RESULTS, log);
     },
-    async listResults() { return read(KEY_RESULTS) || []; },
+    // FILTRA por actividad igual que el de PocketBase. Antes declaraba cero
+    // argumentos y devolvía el log entero: quien pasara un id se llevaba TODO
+    // sin enterarse — la divergencia que destapó `tests/storePort.test.mjs`.
+    async listResults(activityId) {
+      const log = read(KEY_RESULTS) || [];
+      return activityId ? log.filter(r => (r.activityId || r.activity_id) === activityId) : log;
+    },
   };
 }
 

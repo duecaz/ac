@@ -10,7 +10,7 @@
 // Sin DOM, sin red: solo registry + modelos de contenido + el motor puro.
 import { sessionItems } from '../kernel/content/sessionItems.js';
 import { getModel } from '../kernel/content/models.js';
-import { canAutoScoreRound } from './templateCapability.js';
+import { canAutoScoreRound, faltaParaLive } from './templateCapability.js';
 import { LIVE_LOOPS } from './liveLoops.js';
 
 const clone = (o) => JSON.parse(JSON.stringify(o ?? null));
@@ -192,18 +192,11 @@ export function checkTemplateContract(T) {
     if (typeof T.scoreSubmission !== 'function') issues.push('tiene renderRound pero no scoreSubmission (ronda sin puntuación)');
     if (typeof T.getRoundPayload !== 'function') issues.push('tiene renderRound pero no getRoundPayload (ronda sin datos)');
   }
-  if (m.modes?.live) {
-    if (typeof T.getRoundPayload !== 'function') issues.push('modes.live sin getRoundPayload');
-    // `renderRoundHost` NO se pregunta con `typeof`: la clase base trae una
-    // versión por defecto, así que TODA plantilla la tiene y esta condición no
-    // podía darse jamás. Lo que se quiere saber es si la plantilla la HA
-    // ESCRITO —si la sobreescribe—, que es lo que distingue «proyecta lo suyo»
-    // de «hereda el enunciado genérico». Se mira como propiedad PROPIA en vez de
-    // comparar contra la base: `core/` no puede importar de `templates/` (§0).
-    const proyectaPropio = Object.getOwnPropertyNames(T).includes('renderRoundHost');
-    if (typeof T.scoreSubmission !== 'function' && !proyectaPropio) {
-      issues.push('modes.live sin scoreSubmission ni renderRoundHost propio (ni auto-puntúa ni proyecta)');
-    }
+  // Qué exige `modes.live` lo responde su DUEÑO (`core/templateCapability.js`),
+  // el mismo al que pregunta `core/registry.js` al registrar: antes cada uno
+  // llevaba su copia y no decían lo mismo.
+  for (const falta of (m.modes?.live ? faltaParaLive(T) : [])) {
+    issues.push(`modes.live sin ${falta}`);
   }
 
   // ── el contenido default debe ser JUGABLE en los modos que ofrece ─────────

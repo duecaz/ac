@@ -47,10 +47,16 @@ export const MODELS = {
   entries:        { name: 'entries',        newEmpty: entries.newEmpty,        validate: wrap(entries.validate) },
   textCorrection: { name: 'textCorrection', newEmpty: textCorrection.newEmpty, validate: wrap(textCorrection.validate) },
   diagram:        { name: 'diagram',        newEmpty: diagram.newEmpty,        validate: wrap(diagram.validate) },
-  // Los tres de abajo no tienen módulo hoja en core/contentModels/ (sus formas
-  // viven en la plantilla); el contrato mínimo se define aquí. HUECO que destapó
-  // tests/templateContract.test.mjs: estas plantillas declaraban un contentModel
-  // NO registrado, así que switchOptions()/el contrato no podían validarlas.
+  // DE AQUÍ ABAJO, los modelos SIN módulo hoja en core/contentModels/: su forma
+  // vive en la plantilla y aquí se define el contrato mínimo (`name`,
+  // `newEmpty`, `validate`). Son los de contenido GENERADO —el tablero de
+  // Pelotas, el dibujo/figura de los juegos de inicial—, donde no hay nada que
+  // el docente escriba y por tanto nada que un módulo de edición compartido
+  // pueda aportar. HUECO que destapó tests/templateContract.test.mjs: estas
+  // plantillas declaraban un contentModel NO registrado, así que
+  // switchOptions()/el contrato no podían validarlas.
+  // (`items` SÍ tiene hoja propia y va justo abajo: no entra en esta nota — el
+  //  comentario decía «los tres de abajo» y llevaba versiones señalando mal.)
   // Ruleta / Abre Cajas / futuras tarjetas: [{ id, question, image? }] — la hoja
   // (core/contentModels/items.js) también aporta migrateLegacyItems (entries y
   // el campo legado `q` → `question`).

@@ -19,3 +19,33 @@
 export function canAutoScoreRound(T) {
   return typeof T?.scoreSubmission === 'function' && typeof T?.renderRound === 'function';
 }
+
+/** ¿La plantilla PROYECTA su propia pantalla de host en vivo?
+ *
+ *  No se pregunta con `typeof`: la clase base trae una `renderRoundHost` por
+ *  defecto, así que TODA plantilla la tiene y la pregunta siempre daría «sí».
+ *  Lo que importa es si la ha ESCRITO —si la sobreescribe—, que es lo que
+ *  distingue «proyecta lo suyo» de «hereda el enunciado genérico». Se mira como
+ *  propiedad PROPIA porque `core/` no puede importar de `templates/` (§0). */
+function proyectaRondaPropia(T) {   // interna: solo la usa faltaParaLive (§30)
+  return !!T && Object.getOwnPropertyNames(T).includes('renderRoundHost');
+}
+
+/** QUÉ LE FALTA a una plantilla que declara `modes.live`, como lista de frases.
+ *  Vacía = cumple.
+ *
+ *  DUEÑO ÚNICO de este requisito condicional (§21b). Estaba escrito DOS veces y
+ *  con semántica distinta: `core/registry.js` exigía `getRoundPayload` Y
+ *  `scoreSubmission` sin excepción y LANZABA al registrar, mientras
+ *  `core/templateContract.js` aceptaba como alternativa que la plantilla
+ *  proyectara su propia pantalla de host. Es decir: había una plantilla posible
+ *  que pasaba el contrato en CI y reventaba al arrancar. Ahora los dos preguntan
+ *  aquí, cada uno con su reacción (el registro lanza, el checker acumula). */
+export function faltaParaLive(T) {
+  const falta = [];
+  if (typeof T?.getRoundPayload !== 'function') falta.push('getRoundPayload');
+  if (typeof T?.scoreSubmission !== 'function' && !proyectaRondaPropia(T)) {
+    falta.push('scoreSubmission (o una renderRoundHost propia: ni auto-puntúa ni proyecta)');
+  }
+  return falta;
+}

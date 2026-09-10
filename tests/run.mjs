@@ -67,6 +67,7 @@ console.log('\n▶ pbSchema'); await import('./pbSchema.test.mjs');
 console.log('\n▶ sinComentarios'); await import('./sinComentarios.test.mjs');
 console.log('\n▶ editorPanels'); await import('./editorPanels.test.mjs');
 console.log('\n▶ realtimePort'); await import('./realtimePort.test.mjs');
+console.log('\n▶ storePort'); await import('./storePort.test.mjs');
 console.log('\n▶ clock'); await import('./clock.test.mjs');
 console.log('\n▶ fechas'); await import('./fechas.test.mjs');
 console.log('\n▶ offlineQueue'); await import('./offlineQueue.test.mjs');

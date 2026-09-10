@@ -2,22 +2,30 @@
 // sea delgada y la lógica sea testeable (tests/modeMatrix.test.mjs). Deriva todo
 // del registro único de modos (core/modes.js) y de lo que cada plantilla
 // implementa — la misma fuente de verdad que el selector, el editor y la barra.
+import { canAutoScoreRound } from './templateCapability.js';
 import { listTemplates } from './registry.js';
 import { MODE_DEFS, modesForTemplate, availableModes } from './modes.js';
 
 // Métodos del contrato que habilitan modos (columnas del panel).
 export const CONTRACT_METHODS = ['renderPlayer', 'renderEditor', 'renderRound', 'getRoundPayload', 'scoreSubmission', 'renderRoundHost'];
 
-// Por qué un modo (no) está disponible para una plantilla — mismo criterio que
-// core/modes.js, en texto. T es la clase de plantilla.
+// Por qué un modo (no) está disponible para una plantilla — EL MISMO criterio
+// que core/modes.js, puesto en texto.
+//
+// «El mismo» de verdad, no «uno que hoy coincide»: hasta la auditoría del
+// 2026-09-10 esta función reescribía a mano el cuerpo de `canAutoScoreRound`
+// (`scoreSubmission && renderRound`) en vez de llamarla. El booleano de
+// disponibilidad ya salía bien porque lo calcula `modesForTemplate`, así que lo
+// único que podía desalinearse era ESTA EXPLICACIÓN — y una explicación que
+// miente sobre por qué falta un modo es peor que no darla.
 export function modeReason(modeId, T) {
   const has = (m) => typeof T?.[m] === 'function';
   switch (modeId) {
     case 'solo': return 'siempre (renderPlayer)';
-    case 'vs': return has('scoreSubmission') && has('renderRound')
+    case 'vs': return canAutoScoreRound(T)
       ? 'scoreSubmission + renderRound ✓ (en actividad: ≥2 ítems)'
       : 'falta ' + ['scoreSubmission', 'renderRound'].filter(m => !has(m)).join(' + ');
-    case 'teams': return has('renderRound') ? 'renderRound ✓ (auto) o juez'
+    case 'teams': return canAutoScoreRound(T) ? 'renderRound ✓ (auto) o juez'
       : (T?.meta?.play?.teams === 'propio' ? 'mecánica propia declarada' : 'sin renderRound');
     case 'live': return T?.meta?.modes?.live ? 'meta.modes.live ✓' : 'meta.modes.live = false';
     case 'task': return T?.meta?.modes?.async ? 'meta.modes.async ✓' : 'meta.modes.async = false';
