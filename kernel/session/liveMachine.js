@@ -16,13 +16,64 @@ import { sessionItems } from '../content/sessionItems.js';
 import { autoScore, roundPayloadOf } from './score.js';
 import { FORMATS } from './formats.js';
 
+/**
+ * @typedef {import('../contracts/activity.js').Activity} Activity
+ * @typedef {import('../contracts/session.js').EngineAnswer} EngineAnswer
+ * @typedef {import('../contracts/session.js').HostAction} HostAction
+ * @typedef {import('../contracts/session.js').LiveLoop} LiveLoop
+ * @typedef {import('../contracts/session.js').LivePhase} LivePhase
+ * @typedef {import('../contracts/session.js').RoomPatch} RoomPatch
+ * @typedef {import('../contracts/session.js').RoomStatus} RoomStatus
+ * @typedef {import('../contracts/session.js').SessionFormat} SessionFormat
+ * @typedef {import('./score.js').ScoringTemplate} ScoringTemplate
+ */
+
+/**
+ * Un jugador de la sala VISTO POR ESTA MÁQUINA: aquí `score` no es opcional
+ * (nace en 0 y lo acumula `settle`), a diferencia del `Player` del contrato,
+ * que también describe al jugador de una fila heredada sin puntaje.
+ * @typedef {Object} LivePlayer
+ * @property {string} id
+ * @property {string} [userId]
+ * @property {string} name
+ * @property {number} score
+ */
+
+/**
+ * EL ESTADO DE LA SALA — el mismo blob que se persiste (`RoomState`), pero con
+ * lo que esta máquina garantiza SIEMPRE: fase, estado, cursor, jugadores y
+ * respuestas. `phase` y `status` son las uniones literales, así que una fase
+ * que no esté en el catálogo (§26) no compila.
+ * @typedef {Object} LiveState
+ * @property {SessionFormat} [format]
+ * @property {string} [code]
+ * @property {RoomStatus} status
+ * @property {LivePhase} phase
+ * @property {number} currentItem
+ * @property {LivePlayer[]} players
+ * @property {Record<string, EngineAnswer>} answers   Clave `${itemIndex}:${playerId}`.
+ * @property {LiveLoop|null} [loop]
+ * @property {number} _seq
+ */
+
+/**
+ * @typedef {Object} LiveOpts
+ * @property {Partial<LiveState>} [state]   Blob de la fila: hidrata la sala.
+ * @property {string} [code]
+ */
+
+/**
+ * @param {Activity} activity
+ * @param {ScoringTemplate} T
+ * @param {LiveOpts} opts
+ */
 function createLiveSession(activity, T, opts) {
   const items = sessionItems(activity);
   const total = items.length;
   const maxPlayers = activity?.live?.maxPlayers || 60;
   const allowLateJoin = activity?.live?.allowLateJoin !== false;
 
-  const state = opts.state ? { players: [], answers: {}, _seq: 0, ...opts.state } : {
+  const state = /** @type {LiveState} */ (opts.state ? { players: [], answers: {}, _seq: 0, ...opts.state } : {
     format: FORMATS.LIVE,
     code: opts.code || 'LOCAL1',
     status: 'lobby',
@@ -31,11 +82,17 @@ function createLiveSession(activity, T, opts) {
     players: [],          // { id, userId, name, score }
     answers: {},          // `${itemIndex}:${playerId}` → { playerId, value, msTaken, correct, points }
     _seq: 0,
-  };
+  });
 
   const session = () => ({ phase: state.phase, current_item: state.currentItem, status: state.status });
+  /** @param {number} i @param {string} pid */
   const answerKey = (i, pid) => `${i}:${pid}`;
 
+  /**
+   * @param {string} userId
+   * @param {string} nickname
+   * @returns {LivePlayer}
+   */
   function join(userId, nickname) {
     const existing = state.players.find(p => p.userId === userId);
     if (existing) return existing; // reconnect — name unchanged
@@ -52,11 +109,17 @@ function createLiveSession(activity, T, opts) {
     // Apodos únicos (P2-4): dos móviles distintos con "Juan" antes creaban dos
     // jugadores indistinguibles (al expulsar, en la clasificación y en el mapa
     // nombre→respuesta del reveal). Se auto-sufija ("Juan 2") en vez de rechazar.
-    const p = { id: 'p' + (++state._seq), userId, name: uniqueNickname(f.value), score: 0 };
+    // Con el filtro APAGADO se sigue entrando con un apodo que el filtro
+    // rechaza, y entonces no hay `f.value` (el filtro solo lo devuelve cuando
+    // acepta): se normaliza aquí igual —recortado— en vez de pasar `undefined`
+    // al de-duplicador, que reventaba al llamar a `.toLowerCase()`.
+    const limpio = f.ok ? f.value : String(nickname ?? '').trim();
+    const p = { id: 'p' + (++state._seq), userId, name: uniqueNickname(limpio), score: 0 };
     state.players.push(p);
     return p;
   }
 
+  /** @param {string} base @returns {string} */
   function uniqueNickname(base) {
     const taken = new Set(state.players.map(p => (p.name || '').toLowerCase()));
     if (!taken.has(base.toLowerCase())) return base;
@@ -66,18 +129,25 @@ function createLiveSession(activity, T, opts) {
     }
   }
 
+  /** @param {HostAction} action */
   function dispatch(action) {
     const plan = planTransition(session(), action, total);
     if (plan.type === 'invalid') throw new Error(plan.reason);
     if (plan.type === 'end') { state.status = 'ended'; state.phase = PHASES.ENDED; return plan; }
     if (plan.type === 'settle') { settle(plan.itemIndex); return plan; }
-    const pa = plan.patch;
+    const pa = /** @type {RoomPatch} */ (plan.patch);
     if (pa.status) state.status = pa.status;
     if (pa.phase) state.phase = pa.phase;
-    if ('current_item' in pa) state.currentItem = pa.current_item;
+    if (pa.current_item !== undefined) state.currentItem = pa.current_item;
     return plan;
   }
 
+  /**
+   * @param {string} playerId
+   * @param {number} itemIndex
+   * @param {unknown} value
+   * @param {number} [msTaken]
+   */
   function submit(playerId, itemIndex, value, msTaken = 0) {
     const isRace = state.phase === 'race';
     if (!isRace && (state.phase !== PHASES.QUESTION || itemIndex !== state.currentItem)) {
@@ -104,6 +174,11 @@ function createLiveSession(activity, T, opts) {
   // pregunta (rescate del trazo al avanzar, reintento de la cola offline, red
   // lenta). Sin esto quedaban `scored:false` → 0 puntos para siempre; y con el
   // settle normal la fase saltaría a 'reveal' encima del podio.
+  /**
+   * @param {number} itemIndex
+   * @param {{keepPhase?: boolean}} [opts]
+   * @returns {number} respuestas liquidadas
+   */
   function settle(itemIndex, { keepPhase = false } = {}) {
     const item = items[itemIndex];
     // Out-of-range index (e.g. a hydrated/corrupt state, or a race-mode client
@@ -139,12 +214,14 @@ function createLiveSession(activity, T, opts) {
   // Barrido de cierre: liquida TODOS los ítems (settle salta lo ya puntuado, así
   // que es idempotente en puntos). Lo llaman los drivers al cerrar la sala para
   // que ninguna respuesta pendiente quede en 0; devuelve respuestas procesadas.
+  /** @param {{keepPhase?: boolean}} [opts] */
   const settleAll = (opts) => {
     let n = 0;
     for (let i = 0; i < total; i++) n += settle(i, opts);
     return n;
   };
 
+  /** @param {number} [itemIndex] */
   const roundPayload = (itemIndex = state.currentItem) =>
     roundPayloadOf(T, activity, itemIndex);
 
@@ -152,6 +229,7 @@ function createLiveSession(activity, T, opts) {
   // gana quien llegó ANTES a ellos. El puntaje sale de las respuestas (idéntico
   // a players[].score, que settle() acumula de las mismas filas) para que este
   // ranking y el derivado de PocketBase sean LA MISMA función.
+  /** @param {number} [limit] */
   const leaderboard = (limit = 50) => rankPlayers(state.players, Object.values(state.answers), limit);
 
   return {

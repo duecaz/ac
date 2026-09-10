@@ -5,6 +5,10 @@
 // a named export so the local driver and existing tests stay unchanged.
 import { createSession, FORMATS } from '../session/engine.js';
 
+/**
+ * @param {import('../contracts/activity.js').Activity} activity
+ * @param {import('../session/engine.js').SessionOpts} [opts]
+ */
 export function createLiveRoom(activity, opts = {}) {
   return createSession(activity, { ...opts, format: FORMATS.LIVE });
 }

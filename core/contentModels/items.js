@@ -6,16 +6,40 @@
 // — igual que en `qa` — para que las conversiones no paguen impuesto de nombres.
 // El campo legado `q` (v≤2 de wheel / v1 de question-live) se migra aquí.
 import { rid } from '../ids.js';
+import { erroresDeLista } from '../../kernel/content/models.js';
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').CardItem} CardItem
+ * @typedef {import('../../kernel/contracts/activity.js').ItemsContent} ItemsContent
+ */
+
+/**
+ * Una tarjeta tal y como puede venir del contenido VIEJO: sin `id`, con el
+ * texto en `q` en vez de en `question`. Es la entrada de la migración.
+ * @typedef {Object} CardItemLegado
+ * @property {string} [id]
+ * @property {string} [question]
+ * @property {string} [q]
+ * @property {string|null} [image]
+ */
+/**
+ * @typedef {Object} ItemsContentLegado
+ * @property {Array<CardItemLegado|string>} [items]
+ * @property {unknown[]} [entries]
+ */
+
+/** @returns {CardItem} */
 export function newItem(question = '') { return { id: rid('it_'), question, image: null }; }
 
+/** @returns {ItemsContent} */
 export function newEmpty() { return { items: [] }; }
 
-export function validate(content) {
-  const errs = [];
-  if (!Array.isArray(content?.items)) errs.push('items must be an array');
-  return errs;
-}
+/**
+ * FRONTERA: le llega cualquier contenido.
+ * @param {unknown} content
+ * @returns {string[]}
+ */
+export function validate(content) { return erroresDeLista(content, 'items'); }
 
 // Migra las DOS formas antiguas a la actual — idempotente (contrato):
 //   · entries planas ['a','b']            (wheel templateVersion 1)
@@ -27,18 +51,29 @@ export function validate(content) {
 // ANSWER-SAFETY (R5): whitelist de campos de PANTALLA — nunca el ítem crudo.
 // El modelo `items` hoy no guarda clave de respuesta, pero un passthrough
 // filtraría cualquier campo que un contenido importado traiga de más.
+/**
+ * @param {import('../../kernel/contracts/activity.js').Activity<ItemsContent>} activity
+ * @param {number} itemIndex
+ * @returns {import('../../kernel/contracts/session.js').RoundPayload|null}
+ */
 export function itemRoundPayload(activity, itemIndex) {
   const it = activity.content?.items?.[itemIndex];
   return it ? { id: it.id, question: it.question, image: it.image || null } : null;
 }
 
+/**
+ * @param {ItemsContentLegado|null|undefined} content
+ * @returns {ItemsContent}   Tras la migración el contenido YA tiene la forma actual.
+ */
 export function migrateLegacyItems(content) {
-  if (Array.isArray(content?.entries) && !Array.isArray(content?.items)) {
-    return { items: content.entries.map(e => newItem(String(e))) };
+  const entries = content?.entries;
+  if (Array.isArray(entries) && !Array.isArray(content?.items)) {
+    return { items: entries.map(e => newItem(String(e))) };
   }
-  if (!Array.isArray(content?.items)) return content;
+  const previos = content?.items;
+  if (!Array.isArray(previos)) return /** @type {ItemsContent} */ (content);
   let changed = false;
-  const items = content.items.map(it => {
+  const items = previos.map(it => {
     if (typeof it === 'string') { changed = true; return newItem(it); }
     if (it && it.q != null && it.question == null) {
       changed = true;
@@ -47,5 +82,5 @@ export function migrateLegacyItems(content) {
     }
     return it;
   });
-  return changed ? { ...content, items } : content;
+  return /** @type {ItemsContent} */ (changed ? { ...content, items } : content);
 }

@@ -11,8 +11,19 @@ import { escapeHtml } from './html.js';
 // se retiraron en v1.51.406).
 export const SHAPE_ICONS = ['bi-triangle-fill', 'bi-diamond-fill', 'bi-circle-fill', 'bi-square-fill'];
 
+/**
+ * @typedef {import('../kernel/contracts/session.js').RoundPayload} RoundPayload
+ * @typedef {{onSubmit?: (value: string) => void}} RoundHandlers
+ */
+
+/**
+ * @param {Element} root
+ * @param {RoundPayload|null|undefined} payload
+ * @param {RoundHandlers} [handlers]
+ * @returns {void}
+ */
 export function renderChoiceRound(root, payload, { onSubmit } = {}) {
-  const opts = payload?.options || [];
+  const opts = Array.isArray(payload?.options) ? payload.options : [];
   root.innerHTML = `
     <div class="rq-q text-center fs-4 fw-semibold mb-3">${escapeHtml(payload?.question || '')}</div>
     ${payload?.image ? `<div class="text-center mb-2"><img src="${escapeHtml(payload.image)}" style="max-height:130px" class="img-fluid"></div>` : ''}
@@ -27,14 +38,17 @@ export function renderChoiceRound(root, payload, { onSubmit } = {}) {
   // interactiva cada toque se procese por puntero e inmediatamente — dos
   // alumnos en los dos paneles VS pueden responder a la vez sin que el clic de
   // uno serialice/bloquee al otro. preventDefault evita selección/zoom.
-  root.querySelectorAll('.rq-opt').forEach(btn => btn.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    if (done) return;
-    done = true;
-    root.querySelectorAll('.rq-opt').forEach(b => { b.disabled = true; });
-    btn.classList.add('rq-picked');
-    onSubmit?.(btn.dataset.value);
-  }));
+  root.querySelectorAll('.rq-opt').forEach(el => {
+    const btn = /** @type {HTMLButtonElement} */ (el);
+    btn.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      if (done) return;
+      done = true;
+      root.querySelectorAll('.rq-opt').forEach(b => { /** @type {HTMLButtonElement} */ (b).disabled = true; });
+      btn.classList.add('rq-picked');
+      onSubmit?.(btn.dataset.value ?? '');
+    });
+  });
 }
 
 // Numeric keypad round (Operaciones): a prompt + on-screen number pad. Builds a
@@ -44,6 +58,12 @@ export function renderChoiceRound(root, payload, { onSubmit } = {}) {
 // decorativo: `tools/matrix-smoke.mjs` los cuenta en el panel VS y falla si hay
 // dos — "cuántos toques cuesta responder" es una decisión de producto, no algo
 // que cada plantilla decida por su cuenta con la clase mirando.
+/**
+ * @param {Element} root
+ * @param {RoundPayload|null|undefined} payload
+ * @param {RoundHandlers} [handlers]
+ * @returns {void}
+ */
 export function renderKeypadRound(root, payload, { onSubmit } = {}) {
   root.innerHTML = `
     <div class="ww-keypad-round">
@@ -58,25 +78,28 @@ export function renderKeypadRound(root, payload, { onSubmit } = {}) {
         <button type="button" class="btn ww-key ww-key-ok" data-k="ok" data-ww-submit aria-label="Aceptar"><i class="bi bi-check-lg"></i></button>
       </div>
     </div>`;
-  const disp = root.querySelector('[data-display]');
+  const disp = /** @type {HTMLElement|null} */ (root.querySelector('[data-display]'));
   let val = '';
   let done = false;
-  const draw = () => { disp.textContent = val === '' ? '0' : val; };
+  const draw = () => { if (disp) disp.textContent = val === '' ? '0' : val; };
   // pointerdown (no click) → respuesta táctil inmediata y por puntero (multitáctil).
-  root.querySelectorAll('.ww-key').forEach(btn => btn.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    if (done) return;
-    const k = btn.dataset.k;
-    if (k === 'back') { val = val.slice(0, -1); draw(); return; }
-    if (k === 'ok') {
-      if (val === '') return;            // ignore empty submit
-      done = true;
-      root.querySelectorAll('.ww-key').forEach(b => { b.disabled = true; });
-      onSubmit?.(val);
-      return;
-    }
-    if (val.length < 9) { val += k; draw(); }
-  }));
+  root.querySelectorAll('.ww-key').forEach(el => {
+    const btn = /** @type {HTMLButtonElement} */ (el);
+    btn.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      if (done) return;
+      const k = btn.dataset.k ?? '';
+      if (k === 'back') { val = val.slice(0, -1); draw(); return; }
+      if (k === 'ok') {
+        if (val === '') return;            // ignore empty submit
+        done = true;
+        root.querySelectorAll('.ww-key').forEach(b => { /** @type {HTMLButtonElement} */ (b).disabled = true; });
+        onSubmit?.(val);
+        return;
+      }
+      if (val.length < 9) { val += k; draw(); }
+    });
+  });
   draw();
 }
 

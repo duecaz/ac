@@ -9,11 +9,24 @@ import { toast, TOAST_LARGO } from './toast.js';
 import { questionWindowMs, ITEM_SECONDS_MIN, ITEM_SECONDS_MAX } from './timings.js';
 import { corrigeAlFinal } from './constants.js';
 
+/**
+ * @typedef {import('../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('./registry.js').PlantillaRegistrada} PlantillaRegistrada
+ * @typedef {import('./editorShell.js').EditorCtx} EditorCtx
+ */
+
+/**
+ * Un ítem con TIEMPO PROPIO en vivo (R-3): lo declaran `QaItem` y `Passage`, y
+ * el campo se cablea igual para los dos.
+ * @typedef {{seconds?: number}} ItemConTiempo
+ */
+
 
 
 
 // Item-row control buttons: reorder up/down + delete. Use with .item-up,
 // .item-down, .item-del classes; index in data-i.
+/** @param {number} idx @param {number} total */
 export function itemControlsHtml(idx, total) {
   return `
     <div class="btn-group btn-group-sm">
@@ -24,6 +37,13 @@ export function itemControlsHtml(idx, total) {
 }
 
 // Mutate an array in place to reorder by direction (-1 up, +1 down).
+/**
+ * @template T
+ * @param {T[]} arr
+ * @param {number} idx
+ * @param {number} direction  -1 arriba, +1 abajo.
+ * @returns {boolean}
+ */
 export function reorderArray(arr, idx, direction) {
   const j = idx + direction;
   if (j < 0 || j >= arr.length) return false;
@@ -43,10 +63,17 @@ export function reorderArray(arr, idx, direction) {
 // nuevo); los que tienen más de un botón de alta (Quiz: pregunta y V/F) o un
 // efecto secundario propio al añadir (Sopa: enfocar el input nuevo) siguen
 // cableando su «add» aparte y usan esto solo para borrar/reordenar.
-export function wireItemList(root, a, ctx, { list, añadir } = {}) {
-  on(root, 'click', '.item-del', (_, b) => { list.splice(+b.dataset.i, 1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '.item-up', (_, b) => { reorderArray(list, +b.dataset.i, -1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '.item-down', (_, b) => { reorderArray(list, +b.dataset.i, +1); ctx.onChange(a); ctx.repaint(); });
+/**
+ * @template T
+ * @param {Element} root
+ * @param {Activity} a
+ * @param {EditorCtx} ctx
+ * @param {{list: T[], añadir?: {selector: string, fabrica: () => T}}} opts
+ */
+export function wireItemList(root, a, ctx, { list, añadir }) {
+  on(root, 'click', '.item-del', (_, b) => { list.splice(+(b.dataset.i ?? 0), 1); ctx.onChange(a); ctx.repaint(); });
+  on(root, 'click', '.item-up', (_, b) => { reorderArray(list, +(b.dataset.i ?? 0), -1); ctx.onChange(a); ctx.repaint(); });
+  on(root, 'click', '.item-down', (_, b) => { reorderArray(list, +(b.dataset.i ?? 0), +1); ctx.onChange(a); ctx.repaint(); });
   if (añadir) {
     on(root, 'click', añadir.selector, () => { list.push(añadir.fabrica()); ctx.onChange(a); ctx.repaint(); });
   }
@@ -79,8 +106,8 @@ export function ruleScopeNote() {
  *    · >0 → cuenta atrás (cuánto te queda), y al llegar a cero se corrige.
  *  Y si la plantilla no mide nada (Ruleta, Pedir la palabra, Ordena las Pelotas)
  *  no hay bloque, porque no hay nada que configurar.
- *  @param {object} a  la actividad
- *  @param {object} T  la plantilla (de ella sale qué relojes admite) */
+ *  @param {Activity} a  la actividad
+ *  @param {PlantillaRegistrada|null|undefined} T  la plantilla (de ella sale qué relojes admite) */
 export function tiempoBloqueHtml(a, T) {
   const unidad = unidadDeCuenta(T);
   if (!unidad) return '';
@@ -104,10 +131,11 @@ export function tiempoBloqueHtml(a, T) {
 /** Cablea el bloque. La nota de debajo cambia EN SITIO: un `repaint()` colgado
  *  de un `input` re-renderiza el editor entero y el campo pierde el foco a
  *  mitad de palabra (y la pestaña salta). La tecla es del que escribe. */
+/** @param {Element} root @param {Activity} a @param {EditorCtx} ctx */
 export function wireTiempoBloque(root, a, ctx) {
-  on(root, 'input', '#f-timer', (e) => {
+  on(root, 'input', '#f-timer', (_, el) => {
     a.rules = a.rules || {};
-    a.rules.timer = Math.max(0, +e.target.value || 0);
+    a.rules.timer = Math.max(0, +(/** @type {HTMLInputElement} */ (el).value) || 0);
     ctx.onChange(a);
     const nota = root.querySelector('#f-timer-nota');
     if (nota) {
@@ -127,6 +155,7 @@ export function wireTiempoBloque(root, a, ctx) {
  *  Vive en `a.review`, que es el bloque que YA existía para esto y que llevaba
  *  versiones viajando en el JSON de todas las actividades sin que nadie lo
  *  leyera. */
+/** @param {Activity} a @param {string} [unidad] */
 export function corregirAlFinalHtml(a, unidad = 'frase') {
   const alFinal = corrigeAlFinal(a);
   return `<div class="col-12 form-check">
@@ -137,10 +166,11 @@ export function corregirAlFinalHtml(a, unidad = 'frase') {
   </div>`;
 }
 
+/** @param {Element} root @param {Activity} a @param {EditorCtx} ctx */
 export function wireCorregirAlFinal(root, a, ctx) {
-  on(root, 'change', '#f-alfinal', (e) => {
+  on(root, 'change', '#f-alfinal', (_, el) => {
     a.review = a.review || {};
-    a.review.alFinal = e.target.checked;
+    a.review.alFinal = /** @type {HTMLInputElement} */ (el).checked;
     ctx.onChange(a);
   });
 }
@@ -150,6 +180,7 @@ export function wireCorregirAlFinal(root, a, ctx) {
 // El motor ya soporta `item.seconds` (core/timings.js); esto es solo su casilla,
 // escrita UNA vez para que las cuatro plantillas de rondas no lleven cuatro
 // copias que se desincronicen. Vacío = heredar el tiempo de la actividad.
+/** @param {Activity} a @param {ItemConTiempo|null|undefined} it @param {number} i */
 export function itemSecondsFieldHtml(a, it, i) {
   return `<div class="d-flex align-items-center gap-2">
     <label class="form-label small text-muted mb-0" for="secs-${i}">Tiempo en vivo (s)</label>
@@ -162,11 +193,18 @@ export function itemSecondsFieldHtml(a, it, i) {
 
 /** Cablea el campo anterior sobre `list` (items o passages). Guarda solo si hay
  *  valor: así el contenido antiguo no engorda con campos vacíos. */
+/**
+ * @param {Element} root
+ * @param {Activity} a
+ * @param {EditorCtx} ctx
+ * @param {ItemConTiempo[]} [list]
+ */
 export function wireItemSeconds(root, a, ctx, list) {
-  on(root, 'input', '.it-secs', (e, el) => {
-    const item = (list || a.content?.items || [])[+el.dataset.i];
+  on(root, 'input', '.it-secs', (_, el) => {
+    const propios = /** @type {{items?: ItemConTiempo[]}} */ (a.content)?.items;
+    const item = (list || propios || [])[+(el.dataset.i ?? 0)];
     if (!item) return;
-    const v = Math.round(+e.target.value || 0);
+    const v = Math.round(+(/** @type {HTMLInputElement} */ (el).value) || 0);
     if (v > 0) item.seconds = Math.min(ITEM_SECONDS_MAX, Math.max(ITEM_SECONDS_MIN, v));
     else delete item.seconds;
     ctx.onChange(a);
@@ -189,6 +227,7 @@ export function wireItemSeconds(root, a, ctx, list) {
  * es lo mismo para un poema que para una lectura de sociales, y adivinarlo por
  * el profe se equivoca la mitad de las veces.
  */
+/** @param {{titulo?: string, lineas?: number, tope?: number}} [o] */
 export function pegarTextoHtml(o = {}) {
   const titulo = escapeHtml(o.titulo || 'Pegar un texto');
   const lineas = Number(o.lineas) || 3;
@@ -228,13 +267,21 @@ export function pegarTextoHtml(o = {}) {
  * y el panel de «lo que falta» se llenaba de reproches por líneas que el profe
  * no había escrito.
  */
+/**
+ * @param {Element} root
+ * @param {(texto: string, opts: {lineas: number}) => string[]} partir
+ * @param {(parrafos: string[], opts: {tope: number}) => ({anadidas?: number, omitidas?: number, sobrantes?: number}|null|void)} alPegar
+ */
 export function wirePegarTexto(root, partir, alPegar) {
   on(root, 'click', '#ww-pegar-go', () => {
-    const caja = document.getElementById('ww-pegar-txt');
+    const caja = /** @type {HTMLTextAreaElement|null} */ (document.getElementById('ww-pegar-txt'));
     const err = document.getElementById('ww-pegar-err');
+    /** @param {string} t */
     const decir = (t) => { if (err) { err.textContent = t; err.hidden = false; } };
+    /** @param {string} id @param {number} def @param {number} min @param {number} max */
     const num = (id, def, min, max) => {
-      const v = Math.round(Number(document.getElementById(id)?.value));
+      const campo = /** @type {HTMLInputElement|null} */ (document.getElementById(id));
+      const v = Math.round(Number(campo?.value));
       return Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : def;
     };
     const lineas = num('ww-pegar-lineas', 3, 1, 12);

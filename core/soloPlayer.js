@@ -19,15 +19,145 @@ import { defaultMaxScore } from './scoring/index.js';
 import { lsGet, lsSet, lsDel } from './ls.js';
 import { claimStage } from './stageClaim.js';
 
+/**
+ * @typedef {import('../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../kernel/contracts/template.js').PlayerOpts} PlayerOpts
+ */
+
+/**
+ * Lo que el SHELL ya ha calculado cuando la partida termina. Se lo pasa a los
+ * textos de la pantalla de fin para que una plantilla pueda citar el tiempo sin
+ * llevar su propio reloj (el reloj es del shell, §23).
+ * @typedef {Object} FinishCtx
+ * @property {number} timeUsed   Segundos.
+ * @property {number} score
+ * @property {number} maxScore
+ */
+
+/**
+ * Un texto de la pantalla de fin: ya escrito, o calculado con lo que el shell
+ * sabe al terminar.
+ * @typedef {string | ((ctx: FinishCtx) => string)} TextoDeFin
+ */
+
+/**
+ * Lo que una plantilla puede AÑADIR sobre la pantalla estándar de fin — nunca
+ * sustituirla (`skipResultScreen` no existe: lo caza `costuras-divergencia`).
+ * @typedef {Object} PantallaFinExtra
+ * @property {string} [icon]
+ * @property {string} [iconColor]
+ * @property {string} [title]
+ * @property {string} [lead]
+ * @property {string} [stats]
+ */
+
+/**
+ * UNA RESPUESTA REGISTRADA por el shell secuencial. Los cuatro campos comunes
+ * los lee el shell (los puntos van al marcador); el resto lo pone cada
+ * plantilla para su propia revisión, y por eso el saco queda abierto.
+ * @typedef {{ itemId?: string, value?: unknown, correct?: boolean|null,
+ *   points?: number, msTaken?: number, i?: number } & Record<string, unknown>} AnswerRecord
+ */
+
+/**
+ * EL ESTADO DEL SHELL SECUENCIAL — quién va por dónde y cuánto lleva. Es lo que
+ * viaja en `ctx.state` y lo que recibe `callbacks.onFinish`.
+ * @typedef {Object} SequentialState
+ * @property {number} idx
+ * @property {number} score
+ * @property {number} startedAt      `clock.now()`.
+ * @property {AnswerRecord[]} answers
+ */
+
+/**
+ * LO QUE EL SHELL SECUENCIAL LE ENTREGA A LA PLANTILLA en cada ítem. Es el
+ * contrato que consumen los cores de Quiz, Operaciones y Globos.
+ *
+ * `submit(record, {auto, delay})` registra la respuesta UNA vez (idempotente
+ * dentro del ítem: un timeout y un clic registran una sola) y, con `auto`,
+ * avanza tras `delay`. Un core con ritmo propio pasa `{auto:false}` y conduce
+ * con `next()` / `finish()`.
+ *
+ * @template [I=unknown]   la forma del ítem, que solo conoce la plantilla
+ * @typedef {Object} SequentialCtx
+ * @property {string|Element} rootSel
+ * @property {Activity} activity
+ * @property {I} item
+ * @property {number} idx
+ * @property {number} total
+ * @property {number} score
+ * @property {SequentialState} state
+ * @property {number} timerSecs      Segundos por ítem; 0 = sin cuenta atrás.
+ * @property {(rec?: AnswerRecord|null, opts?: {auto?: boolean, delay?: number}) => void} submit
+ * @property {() => void} next
+ * @property {() => void} finish
+ * @property {(cb: () => void) => void} alAgotarse  Qué hacer al llegar el reloj a cero.
+ */
+
+/**
+ * LO QUE LA PLANTILLA APORTA al shell secuencial: cómo se pinta un ítem y, si
+ * hace falta, su techo, su ritmo y lo que añade a la pantalla de fin.
+ * @template [I=unknown]
+ * @typedef {Object} SequentialCallbacks
+ * @property {(ctx: SequentialCtx<I>) => void} renderItem
+ * @property {(items: I[], activity: Activity) => number} [maxScore]
+ * @property {number} [feedbackDelay]
+ * @property {(o: {state: SequentialState, items: I[], maxScore: number, timeUsed: number}) => (PantallaFinExtra|null|undefined)} [resultScreen]
+ * @property {(state: SequentialState) => void} [onFinish]  Teardown de la plantilla.
+ */
+
+/**
+ * Lo que se le pide al shell LIBRE para terminar.
+ * @typedef {Object} FreeformFinishOpts
+ * @property {number} [score]
+ * @property {number} [maxScore]
+ * @property {TextoDeFin} [lead]
+ * @property {TextoDeFin} [stats]
+ * @property {string} [title]
+ * @property {string} [icon]
+ * @property {string} [iconColor]
+ * @property {TextoDeFin} [after]   HTML extra BAJO la pantalla estándar.
+ * @property {unknown[]} [answers]  Detalle por ítem para la analítica de Tarea.
+ */
+
+/**
+ * LO QUE DEVUELVE EL SHELL LIBRE. `loadProgress` lee del ALMACÉN, que es
+ * frontera: llega como `unknown` y lo estrecha quien sabe qué guardó.
+ * @typedef {Object} FreeformCtx
+ * @property {(o?: FreeformFinishOpts) => ({timeUsed: number, score: number, maxScore: number}|undefined)} finish
+ * @property {(snapshot: unknown) => void} saveProgress
+ * @property {() => unknown} loadProgress
+ * @property {() => boolean} alive
+ * @property {(cb: () => void) => void} alAgotarse
+ */
+
+/**
+ * Lee el progreso guardado. Es FRONTERA (`localStorage` + `JSON.parse`): sale
+ * como un saco de campos y lo interpreta quien lo guardó.
+ * @param {string} key
+ * @returns {Record<string, unknown>|null}
+ */
+function leerProgreso(key) {
+  /** @type {unknown} */
+  let saved = null;
+  try { saved = JSON.parse(lsGet(key, '') || 'null'); } catch { saved = null; }
+  return saved && typeof saved === 'object' && !Array.isArray(saved)
+    ? /** @type {Record<string, unknown>} */ (saved)
+    : null;
+}
+
 // Reanudar al recargar (F5) SOLO en modo individual: guarda el avance (idx/score/
 // answers/startedAt) por actividad y lo retoma si el navegador se recarga a mitad.
 // NO aplica a Live (el ritmo lo marca el servidor) ni Tarea (registra su propio
 // intento), ni a actividades con orden aleatorio (el barajado cambiaría). Se
 // invalida si la actividad se editó (updatedAt) y se limpia al terminar/reiniciar.
+/** @param {string} id */
 const progressKey = (id) => `ww.solo.progress.${id}`;
+/** @param {Activity} activity @param {PlayerOpts} opts */
 function canResumeSolo(activity, opts) {
   return (!opts.mode || opts.mode === 'solo') && !activity?.rules?.randomize;
 }
+/** @param {string|null|undefined} activityId */
 export function clearSoloProgress(activityId) { if (activityId) lsDel(progressKey(activityId)); }
 
 // «Jugar otra vez» (core/resultScreen.js) → volver a montar la actividad desde
@@ -36,6 +166,7 @@ export function clearSoloProgress(activityId) { if (activityId) lsDel(progressKe
 // que la recarga es la única forma que no depende de en qué shell/modo estamos
 // ni deja a medias los relojes, listeners y progresos del intento anterior.
 // El progreso guardado se borra ANTES (si no, «otra vez» reanudaría el final).
+/** @param {string|Element} rootSel @param {string} activityId */
 function cablearRepetir(rootSel, activityId) {
   const raiz = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
   const btn = raiz?.querySelector('[data-ww-replay]');
@@ -46,6 +177,12 @@ function cablearRepetir(rootSel, activityId) {
   }, { once: true });
 }
 
+/**
+ * @param {string|Element} rootSel
+ * @param {Activity} activity
+ * @param {PlayerOpts} [opts]
+ * @returns {FreeformCtx}
+ */
 export function runFreeformPlayer(rootSel, activity, opts = {}) {
   let startedAt = clock.now();
   let finished = false;
@@ -62,6 +199,7 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
   // `alAgotarse`: qué hace la plantilla cuando el reloj llega a cero (la Sopa
   // termina la partida). El shell monta el reloj UNA vez y lo pinta; la
   // plantilla ya no monta relojes.
+  /** @type {(() => void)|null} */
   let alAgotarseCb = null;
   const crono = montarReloj({
     activity, alive,
@@ -76,14 +214,15 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
   // individual, invalidado por updatedAt, limpiado al terminar.
   const resumeOn = canResumeSolo(activity, opts);
   const pKey = progressKey(activity.id);
+  /** @returns {unknown} */
   function loadProgress() {
     if (!resumeOn) return null;
-    let saved = null;
-    try { saved = JSON.parse(lsGet(pKey, '') || 'null'); } catch { saved = null; }
+    const saved = leerProgreso(pKey);
     if (!saved || saved.updatedAt !== (activity.updatedAt || '')) return null;
-    if (saved.startedAt) startedAt = saved.startedAt;
+    if (typeof saved.startedAt === 'number') startedAt = saved.startedAt;
     return saved.snapshot ?? null;
   }
+  /** @param {unknown} snapshot */
   function saveProgress(snapshot) {
     if (!resumeOn || finished) return;
     lsSet(pKey, JSON.stringify({ v: 1, updatedAt: activity.updatedAt || '', startedAt, snapshot }));
@@ -92,6 +231,7 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
   // `lead` and `stats` may be strings OR functions of { timeUsed, score,
   // maxScore } — the latter lets a player show the elapsed time without
   // tracking its own clock (the shell owns startedAt).
+  /** @param {FreeformFinishOpts} [o] */
   function finish({
     score = 0,
     maxScore = 0,
@@ -138,7 +278,7 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
     return { timeUsed, score, maxScore };
   }
 
-  return { finish, saveProgress, loadProgress, alive, alAgotarse: (cb) => { alAgotarseCb = cb; } };
+  return { finish, saveProgress, loadProgress, alive, alAgotarse: (/** @type {() => void} */ cb) => { alAgotarseCb = cb; } };
 }
 
 // SequentialShell: drives the item-by-item loop common to Quiz and Math.
@@ -167,9 +307,21 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
 // ctx.finish() — end the run now (e.g. reached the finish line before the last item).
 // callbacks.resultScreen({ state, items, maxScore, timeUsed }) — optional; return
 //   resultScreenHtml options to override the default "Puntos: X / max · Tiempo".
-export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}) {
-  const source = activity.content?.items || [];
+/**
+ * @template [I=unknown]
+ * @param {string|Element} rootSel
+ * @param {Activity} activity
+ * @param {PlayerOpts} opts
+ * @param {SequentialCallbacks<I>} callbacks
+ * @returns {{state: SequentialState}}
+ */
+export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks) {
+  // `content` es de cada modelo (§0): el shell secuencial solo sabe que hay una
+  // lista `items`, y la lee por su forma en vez de exigir un contenido concreto.
+  const contenido = /** @type {Record<string, unknown>} */ (activity.content || {});
+  const source = /** @type {I[]} */ (Array.isArray(contenido.items) ? contenido.items : []);
   const items = (activity.rules?.randomize ? shuffle(source.slice()) : source).slice();
+  /** @type {SequentialState} */
   const state = { idx: 0, score: 0, startedAt: clock.now(), answers: [] };
   const timerSecs = activity.rules?.timer ?? 0;
   // Qué reloj toca lo decide `core/reloj.js` (uno para todas). Aquí solo se
@@ -188,14 +340,13 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
   const resumeOn = canResumeSolo(activity, opts);
   const pKey = progressKey(activity.id);
   if (resumeOn) {
-    let saved = null;
-    try { saved = JSON.parse(lsGet(pKey, '') || 'null'); } catch { saved = null; }
+    const saved = leerProgreso(pKey);
     if (saved && saved.updatedAt === (activity.updatedAt || '') && Array.isArray(saved.answers)
-        && Number.isInteger(saved.idx) && saved.idx > 0 && saved.idx < items.length) {
-      state.idx = saved.idx;
-      state.score = saved.score || 0;
+        && Number.isInteger(saved.idx) && Number(saved.idx) > 0 && Number(saved.idx) < items.length) {
+      state.idx = Number(saved.idx);
+      state.score = Number(saved.score) || 0;
       state.answers = saved.answers;
-      state.startedAt = saved.startedAt || state.startedAt;
+      if (typeof saved.startedAt === 'number') state.startedAt = saved.startedAt;
     }
   }
   function persistProgress() {
@@ -208,12 +359,14 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
     ? callbacks.maxScore(items, activity)
     : defaultMaxScore(activity, items.length));
 
+  /** @type {{stop: () => void}|null} */
   let timerHandle = null;
   let recorded = false;   // per-item: answer already taken?
   let stepped = false;    // per-item: already advanced past this item?
   let finished = false;   // run already ended?
   function stopTimer() { if (timerHandle) { timerHandle.stop(); timerHandle = null; } }
 
+  /** @param {AnswerRecord|null|undefined} rec */
   function record(rec) {
     if (recorded) return false;
     recorded = true;
@@ -237,6 +390,7 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
     renderItem();
   }
 
+  /** @param {AnswerRecord|null} [rec] @param {{auto?: boolean, delay?: number}} [o] */
   function submit(rec, { auto = true, delay = callbacks.feedbackDelay ?? FEEDBACK_DELAY } = {}) {
     if (!record(rec)) return;
     if (auto) setTimeout(next, delay);
@@ -247,7 +401,9 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
   // player recibía `startTimer({onTick,onTimeout})` y cada uno pintaba su chip:
   // tres copias de la misma línea y ninguna garantía de que el reloj existiera
   // en las demás plantillas.
+  /** @type {(() => void)|null} */
   let alAgotarseCb = null;
+  /** @param {() => void} cb */
   function alAgotarse(cb) { alAgotarseCb = cb; }
   function montarCuenta() {
     stopTimer();
@@ -263,7 +419,7 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
       onFin: () => {
         timerHandle = null;
         if (alAgotarseCb) return alAgotarseCb();
-        const item = items[state.idx];
+        const item = /** @type {{id?: string}|undefined} */ (items[state.idx]);
         if (item) submit({ itemId: item.id, value: null, correct: false, points: 0, msTaken: timerSecs * 1000 });
       },
     });

@@ -22,6 +22,7 @@ import { QUOTAS } from './quotas.js';
 // imagen base64 (sin comillas ni `<`/`>` posibles en el cuerpo), así que
 // neutraliza la inyección de raíz. Rechaza SVG en texto (data:image/svg+xml,…)
 // a propósito: su cuerpo es XML con comillas/`<` y rompería el atributo.
+/** @param {unknown} url */
 export function isSafeBgImage(url) {
   return typeof url === 'string'
     && /^data:image\/(?:png|jpe?g|webp|gif|avif);base64,[A-Za-z0-9+/=\s]+$/i.test(url);
@@ -51,6 +52,15 @@ export function isSafeBgImage(url) {
 //
 // Un fondo nuevo que no declare (ink + colorBase) o plate rompe CI: la
 // legibilidad se DECIDE al añadirlo, no se descubre con la clase delante.
+/**
+ * @typedef {Object} BackgroundDef
+ * @property {string} label
+ * @property {string} description
+ * @property {string} [ink]        Tinta legible sobre la textura.
+ * @property {string} [colorBase]  Sólido representativo, para MEDIR el contraste.
+ * @property {boolean} [plate]     El texto va sobre placa (lienzo no medible).
+ */
+/** @type {Record<string, BackgroundDef>} */
 export const BACKGROUNDS = {
   none:       { label: 'Ninguno',      description: 'Sin fondo.' },   // el lienzo es el del TEMA
   greenboard: { label: 'Pizarra verde',description: 'Pizarra escolar verde.',
@@ -76,10 +86,15 @@ const ALL_CLS = Object.keys(BACKGROUNDS).map(k => `bg-${k}`);
 // imageUrl is only consulted for the 'custom' background: it's a data-URL (or
 // any URL) painted via the --ww-bg-image inline var so each activity can carry
 // its own photo without a dedicated CSS class.
+/**
+ * @param {string|null|undefined} name
+ * @param {Element|null} [target]
+ * @param {string|null} [imageUrl]
+ */
 export function applyBackground(name, target = null, imageUrl = null) {
-  const valid = name in BACKGROUNDS ? name : 'none';
+  const valid = (name && name in BACKGROUNDS) ? name : 'none';
   const def = BACKGROUNDS[valid];
-  const el = target || document.body;
+  const el = /** @type {HTMLElement} */ (target || document.body);
   el.classList.remove(...ALL_CLS, 'bg-inked', 'bg-plated', 'bg-set');
   el.classList.add(`bg-${valid}`);
   // EL FONDO ELEGIDO GANA AL TEMA. Un tema puede pintar el lienzo (el estudio de
@@ -115,6 +130,7 @@ export const BG_IMAGE_MAX_BYTES = QUOTAS.canvasImageBytes;
 // Read a File into a data-URL. Va por core/upload.js (COMPRIME antes de
 // rebotar): una foto de móvil entra reescalada; el fondo cubre el marco,
 // así que su lado máximo es mayor que el de una imagen inline.
+/** @param {File|Blob|null|undefined} file */
 export async function readBackgroundImage(file) {
   if (!file) throw new Error('No se eligió ninguna imagen.');
   return uploadMedia(file, { maxBytes: BG_IMAGE_MAX_BYTES, ladoMax: QUOTAS.canvasImageSide });
@@ -126,6 +142,10 @@ export function listBackgrounds() {
 
 // Tiny preview tile (used in the editor picker). For 'custom' it shows the
 // uploaded image when present, otherwise an "upload" affordance.
+/**
+ * @param {string} name
+ * @param {string} [imageUrl]
+ */
 export function backgroundPreviewHtml(name, imageUrl = '') {
   const b = BACKGROUNDS[name] || BACKGROUNDS.none;
   // El ALTO no va aquí: en línea gana a todo y dejaba el preview incrusteable

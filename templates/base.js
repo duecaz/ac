@@ -19,7 +19,14 @@
 //       (applySwitch). Reglas concretas en kernel/content/qaAdapt.js.
 import { escapeHtml } from '../core/html.js';
 
+/**
+ * @typedef {import('../kernel/contracts/template.js').BaseTemplateMeta} BaseTemplateMeta
+ * @typedef {import('../kernel/contracts/template.js').TemplateContract} TemplateContract
+ * @typedef {import('../kernel/contracts/template.js').HostRoundContext} HostRoundContext
+ */
+
 export class BaseTemplate {
+  /** @type {BaseTemplateMeta} */
   static meta = {
     name: 'base',
     label: 'Base',
@@ -48,7 +55,9 @@ export class BaseTemplate {
   // partida» fallaba justo a mitad de partida, cuando un niño abría la
   // actividad y saltaba «renderPlayer not implemented». Comprobado registrando
   // una plantilla sin ninguna de las dos: entraba en el registro tan tranquila.
+  /** @type {TemplateContract['renderPlayer']|null} */
   static renderPlayer = null;
+  /** @type {TemplateContract['renderEditor']|null} */
   static renderEditor = null;
 
   // Projector (host) view for LIVE. The host owns the chrome (timer, answered
@@ -57,10 +66,17 @@ export class BaseTemplate {
   // `item` is the FULL item (the host holds the key); `payload` is sanitized.
   // Default: prompt big + the answer on reveal. Live templates override for a
   // richer, branded projector display (quiz: colour grid + bars; text: passage).
+  /**
+   * @param {Element} root
+   * @param {HostRoundContext} [ctx]
+   */
   static renderRoundHost(root, { phase, item, payload } = {}) {
-    const prompt = payload?.question ?? payload?.text ?? item?.question ?? item?.text ?? '';
-    const answer = (phase === 'reveal' && item?.answer != null)
-      ? `<p class="text-center text-success fw-bold fs-4"><i class="bi bi-check-circle-fill"></i> ${escapeHtml(String(item.answer))}</p>`
+    // `item` es el ítem de la plantilla (`unknown` en el contrato: cada una
+    // tiene el suyo); aquí solo se leen dos campos comunes, así que se estrecha.
+    const it = /** @type {Record<string, unknown>} */ (item && typeof item === 'object' ? item : {});
+    const prompt = payload?.question ?? payload?.text ?? it.question ?? it.text ?? '';
+    const answer = (phase === 'reveal' && it.answer != null)
+      ? `<p class="text-center text-success fw-bold fs-4"><i class="bi bi-check-circle-fill"></i> ${escapeHtml(String(it.answer))}</p>`
       : '';
     root.innerHTML = `<h2 class="text-center my-4">${escapeHtml(String(prompt))}</h2>${answer}`;
   }
@@ -72,5 +88,10 @@ export class BaseTemplate {
   // `templateVersion===1` no hay forma legada que migrar, así que heredar este
   // no-op es correcto — no un stub disfrazado. Una plantilla con
   // `templateVersion>1` DEBE seguir definiendo el suyo propio.
+  /**
+   * @template C
+   * @param {C} content
+   * @returns {C}
+   */
   static migrateContent(content) { return content; }
 }

@@ -52,7 +52,10 @@ export const QUOTAS = {
   liveRetentionDays: 120,
 };
 
-/** Bytes reales (UTF-8) de una actividad serializada. */
+/** Bytes reales (UTF-8) de una actividad serializada.
+ *  Entra la actividad o su JSON ya serializado, así que lo que se pide es lo
+ *  único que se usa: algo que se pueda serializar.
+ * @param {unknown} a */
 export function activityBytes(a) {
   const s = typeof a === 'string' ? a : JSON.stringify(a ?? null);
   try { return new TextEncoder().encode(s).length; } catch { return s.length; }
@@ -62,12 +65,14 @@ export function activityBytes(a) {
  * ¿Cabe esta actividad? `level`: 'ok' | 'warn' (se acerca) | 'over' (el
  * servidor la rechazará). `msg` es la frase para el profe — una sola redacción
  * para el editor y el panel.
+ * @param {unknown} a
  */
 export function checkActivitySize(a) {
   const bytes = activityBytes(a);
   const limit = QUOTAS.activityBytes;
   const ratio = limit > 0 ? bytes / limit : 0;
   const level = bytes > limit ? 'over' : (ratio >= QUOTAS.activityWarnRatio ? 'warn' : 'ok');
+  /** @param {number} n */
   const mb = (n) => (n / (1024 * 1024)).toFixed(1).replace('.', ',');
   const msg = level === 'over'
     ? `Esta actividad pesa ${mb(bytes)} MB y el máximo es ${mb(limit)} MB: el servidor NO la va a guardar. Quita o reduce imágenes.`
@@ -77,7 +82,8 @@ export function checkActivitySize(a) {
   return { level, ok: level !== 'over', bytes, limit, ratio, msg };
 }
 
-/** ¿Cuántas actividades le quedan a este profe? Aviso, no veredicto. */
+/** ¿Cuántas actividades le quedan a este profe? Aviso, no veredicto.
+ * @param {number|null|undefined} n */
 export function checkActivityCount(n) {
   const limit = QUOTAS.activitiesPerTeacher;
   const count = Number(n) || 0;
@@ -94,6 +100,7 @@ export function checkActivityCount(n) {
 /**
  * Instante a partir del cual una sala en vivo se considera basura.
  * @param {number} nowMs `clock.now()` — se INYECTA para que sea testeable.
+ * @param {number} [days]
  * @returns {string} ISO
  */
 export function liveRetentionCutoff(nowMs, days = QUOTAS.liveRetentionDays) {
@@ -104,9 +111,14 @@ export function liveRetentionCutoff(nowMs, days = QUOTAS.liveRetentionDays) {
  * Reparte filas en las que se quedan y las que se purgan, por su `created`.
  * Puro para que la decisión de "qué es viejo" se pueda probar sin servidor —
  * el adaptador solo ejecuta el borrado.
+ * @template {{created?: unknown, createdAt?: unknown}} R
+ * @param {R[]|null|undefined} rows
+ * @param {string} cutoffIso
+ * @returns {{keep: R[], purge: R[]}}
  */
 export function partitionByAge(rows, cutoffIso) {
-  const keep = [], purge = [];
+  /** @type {R[]} */ const keep = [];
+  /** @type {R[]} */ const purge = [];
   for (const r of rows || []) {
     const c = r?.created ?? r?.createdAt ?? null;
     // Sin fecha NO se purga: ante la duda, se conserva el dato del usuario (§24).

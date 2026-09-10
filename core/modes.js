@@ -36,6 +36,51 @@ import { canAutoScoreRound } from './templateCapability.js';
 import { HOST_ONLY_WRITES, LIVE_SESSIONS, ASSIGNMENTS } from './pbRules.js';
 import { claimStage } from './stageClaim.js';
 
+/**
+ * @typedef {import('../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../kernel/contracts/session.js').ModeId} ModeId
+ * @typedef {import('./registry.js').PlantillaRegistrada} PlantillaRegistrada
+ * @typedef {ReturnType<import('./lifecycle.js').acquire>} LifeCtx
+ */
+
+/**
+ * A QUIÉN se le pide la ruta: basta el id (y, para «Equipos», el nombre de la
+ * plantilla). Las tiras de tarjetas resuelven la ruta desde un `dataset`, no
+ * desde la actividad entera cargada — por eso el mínimo es esto y no `Activity`.
+ * @typedef {{id?: string, template?: string}} ModeTarget
+ */
+
+/**
+ * UN MODO, tal y como lo declara `MODE_DEFS`.
+ * @typedef {Object} ModeDef
+ * @property {ModeId} id
+ * @property {string} label
+ * @property {string} short
+ * @property {string} icon
+ * @property {string} color
+ * @property {boolean} embed
+ * @property {(a: ModeTarget) => string} [href]
+ * @property {string} [title]
+ * @property {(T: PlantillaRegistrada|null|undefined) => boolean} supportsTemplate
+ * @property {(a: Activity|null|undefined) => boolean} isAvailable
+ * @property {string} [disabledHint]
+ * @property {string} [writes]      Colección en la que ESCRIBE al abrirse (§22).
+ * @property {string} [hostAction]  El acto de profe, en la frase que ve el docente.
+ * @property {boolean} [hideWhenUnavailable]
+ */
+
+/**
+ * Los PARES de una actividad de Memoria. El contenido es una UNIÓN (§24): solo
+ * el modelo `pairs` los trae, así que se pregunta por la forma antes de leerlos.
+ * @param {Activity|null|undefined} a
+ * @returns {import('../kernel/contracts/activity.js').Pair[]}
+ */
+const paresDe = (a) => {
+  const c = a?.content;
+  return c && typeof c === 'object' && 'pairs' in c && Array.isArray(c.pairs) ? c.pairs : [];
+};
+
+/** @type {ModeDef[]} */
 export const MODE_DEFS = [
   {
     id: 'solo', label: 'Individual', short: 'individual', icon: 'bi-person-fill', color: 'success',
@@ -59,7 +104,7 @@ export const MODE_DEFS = [
     // CAPACIDAD (¿puede esta plantilla?): sabe puntuar un ítem y pintarlo.
     supportsTemplate: (T) => canAutoScoreRound(T),
     // DISPONIBLE (¿esta actividad concreta?): además, ≥2 ítems para una carrera justa.
-    isAvailable: (a) => isVsCompatible(a),
+    isAvailable: (a) => !!a && isVsCompatible(a),
     disabledHint: 'Necesita autocorrección y 2+ preguntas'
   },
   {
@@ -72,8 +117,8 @@ export const MODE_DEFS = [
     // Disponible: Memoria necesita ≥2 pares; el resto, ≥1 ronda. Coincide con lo
     // que cada vista exige (no ofrecer un modo que luego no arranca).
     isAvailable: (a) => traeMecanicaPropia(a)
-      ? (a?.content?.pairs || []).filter(p => p?.left && p?.right).length >= 2
-      : sessionItems(a).length >= 1,
+      ? paresDe(a).filter(p => p?.left && p?.right).length >= 2
+      : sessionItems(a ?? null).length >= 1,
     disabledHint: 'Esta actividad no tiene preguntas suficientes'
   },
   {
@@ -110,6 +155,7 @@ export const MODE_DEFS = [
  *  concreta (con contenido) usa availableModes(). T es la clase de plantilla. */
 /** ¿Esta actividad trae su PROPIA mecánica de Equipos? Lo DECLARA la plantilla
  *  (`meta.play.teams === 'propio'`), no lo adivina la plataforma por el nombre. */
+/** @param {Activity|ModeTarget|null|undefined} a */
 const traeMecanicaPropia = (a) =>
   getTemplate(a?.template)?.meta?.play?.teams === 'propio';
 
@@ -126,6 +172,11 @@ const traeMecanicaPropia = (a) =>
  * cinco sitios, y el sexto que se olvidara mandaría al profe a la vista que no
  * es. Aquí se decide una vez, a partir de lo que la plantilla DECLARA.
  */
+/**
+ * @param {string|null|undefined} modeId
+ * @param {ModeTarget} activity
+ * @returns {string}
+ */
 export function rutaDeModo(modeId, activity) {
   const def = getMode(modeId);
   if (def?.href) return def.href(activity);
@@ -133,6 +184,7 @@ export function rutaDeModo(modeId, activity) {
   return `#/${modeId}/${activity.id}`;
 }
 
+/** @param {PlantillaRegistrada|null|undefined} T */
 export function modesForTemplate(T) {
   return MODE_DEFS.filter(m => m.supportsTemplate(T));
 }
@@ -140,18 +192,25 @@ export function modesForTemplate(T) {
 /** Modes to render in the bar: all of them, minus those flagged to hide when
  *  unavailable (today only Tarea). Disabled-but-visible state is decided by the
  *  caller from `isAvailable`. */
+/** @param {Activity|null|undefined} activity */
 export function availableModes(activity) {
   return MODE_DEFS.filter(m => !(m.hideWhenUnavailable && !m.isAvailable(activity)));
 }
 
+/** @param {string|null|undefined} modeId */
 export function getMode(modeId) { return MODE_DEFS.find(m => m.id === modeId); }
 
 /** Normaliza `'live'` | MODE_DEF → MODE_DEF. */
+/**
+ * @param {string|ModeDef|null|undefined} m
+ * @returns {ModeDef|null|undefined}
+ */
 const asMode = (m) => (typeof m === 'string' ? getMode(m) : m);
 
 /** ¿Abrir este modo exige sesión de profe? Se DERIVA de las reglas del servidor
  *  (`HOST_ONLY_WRITES`), no de una lista repetida aquí: si mañana una colección
  *  deja de ser host-only, el aviso desaparece solo. */
+/** @param {string|ModeDef|null|undefined} mode */
 export function modeNeedsAuth(mode) {
   const m = asMode(mode);
   return !!(m?.writes && HOST_ONLY_WRITES.includes(m.writes));
@@ -160,18 +219,24 @@ export function modeNeedsAuth(mode) {
 /** Frase EXACTA que ve el profe cuando le falta la sesión ("Inicia sesión para
  *  crear una sala en vivo"). Una sola redacción para el botón, el tooltip, el
  *  modal y el gate del router — no cuatro variantes que se separan. */
+/** @param {string|ModeDef|null|undefined} mode */
 export function modeAuthHint(mode) {
   const m = asMode(mode);
-  if (!modeNeedsAuth(m)) return '';
+  if (!m || !modeNeedsAuth(m)) return '';
   return `Inicia sesión para ${m.hostAction || `usar ${m.label}`}`;
 }
 
 /** Modos host-only que hoy están BLOQUEADOS por no haber entrado. `authed` lo
  *  aporta la vista (este módulo es puro y no conoce la sesión). */
+/** @param {boolean} authed */
 export function lockedModes(authed) {
   return authed ? [] : MODE_DEFS.filter(m => modeNeedsAuth(m));
 }
 
+/**
+ * @param {string|null|undefined} modeId
+ * @param {Activity|null|undefined} activity
+ */
 export function isModeAvailable(modeId, activity) {
   const m = getMode(modeId);
   return !!(m && m.isAvailable(activity));
@@ -184,6 +249,13 @@ export function isModeAvailable(modeId, activity) {
  *
  *  Views are pulled with DYNAMIC import so this module (and its tests) stay
  *  free of DOM/browser dependencies at import time. */
+/**
+ * @param {string} modeId
+ * @param {string|Element} host
+ * @param {Activity} activity
+ * @param {LifeCtx} [ctx]
+ * @returns {Promise<{dispose: () => void}>}
+ */
 export async function runMode(modeId, host, activity, ctx) {
   // Ficha de ocupación (§23): montar un modo RECLAMA el escenario, así los
   // relojes pendientes del modo anterior (el spin de la Ruleta, el avance del

@@ -32,7 +32,10 @@ import { getTemplate } from './registry.js';
 /** Proporción por defecto cuando la plantilla no declara ninguna. */
 export const ASPECTO_POR_DEFECTO = '4/3';
 
-/** La proporción DECLARADA por la plantilla de esta actividad. */
+/** La proporción DECLARADA por la plantilla de esta actividad.
+ * @param {{template?: string}|null|undefined} activity
+ * @returns {string}
+ */
 export function aspectoDe(activity) {
   return getTemplate(activity?.template)?.meta?.aspectRatio || ASPECTO_POR_DEFECTO;
 }
@@ -53,6 +56,8 @@ export function aspectoDe(activity) {
  * que la plataforma puede obedecer con criterio en vez de a rajatabla.
  * `auto` = la plantilla dice que no tiene forma fija; entonces manda un mínimo
  * para que no colapse a nada.
+ * @param {string|null|undefined} aspect
+ * @returns {string}
  */
 export function aspectStyle(aspect) {
   if (!aspect || aspect === 'auto') return '--ww-ar-css: auto; min-height: 50vh;';

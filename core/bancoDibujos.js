@@ -26,6 +26,7 @@ export const DIBUJOS = [
 /** Ruta del SVG de un dibujo del banco, relativa a la RAÍZ del sitio (para
  *  `fetch` desde el player, igual que otros assets estáticos). `null` si el
  *  nombre no está en el banco — quien llama decide el respaldo (el primero). */
+/** @param {string|null|undefined} nombre @returns {string|null} */
 export function rutaDibujo(nombre) {
   const d = DIBUJOS.find(x => x.nombre === nombre);
   return d ? `assets/juegos/dibujos/${d.archivo}` : null;

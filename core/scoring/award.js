@@ -5,9 +5,31 @@
 
 import { itemWindowMs } from '../timings.js';
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/activity.js').ScoringRules} ScoringRules
+ * @typedef {import('../../kernel/contracts/activity.js').LiveSettings} LiveSettings
+ * @typedef {import('../../kernel/contracts/session.js').PointsMode} PointsMode
+ */
+
+/** Puntos declarados por el propio ítem, si los trae (frontera: el ítem es de cada plantilla).
+ * @param {unknown} item
+ * @returns {number}
+ */
+function itemPoints(item) {
+  if (!item || typeof item !== 'object' || !('points' in item)) return 0;
+  const p = /** @type {{points?: unknown}} */ (item).points;
+  return typeof p === 'number' ? p : 0;
+}
+
 // Puntos base de un acierto: los del ítem, si no los de la config, si no 1.
+/**
+ * @param {unknown} item
+ * @param {ScoringRules|null|undefined} scoring
+ * @returns {number}
+ */
 export function basePoints(item, scoring) {
-  return item?.points || scoring?.pointsPerCorrect || 1;
+  return itemPoints(item) || scoring?.pointsPerCorrect || 1;
 }
 
 // Techo POR DEFECTO de una actividad cuando la plantilla no deriva uno propio
@@ -15,11 +37,17 @@ export function basePoints(item, scoring) {
 // numerador y denominador del "X / max" salgan del mismo sitio — antes esta
 // misma fórmula estaba copiada en el shell solo y en la vista de Tarea, y podían
 // dar denominadores distintos para el mismo intento.
+/**
+ * @param {Activity|null|undefined} activity
+ * @param {number|null|undefined} itemCount
+ * @returns {number}
+ */
 export function defaultMaxScore(activity, itemCount) {
   return activity?.scoring?.maxScore || ((activity?.scoring?.pointsPerCorrect || 1) * (itemCount || 0));
 }
 
 // Puntos de un fallo: 0 salvo que se configure una penalización (negativa).
+/** @param {ScoringRules|null|undefined} scoring @returns {number} */
 export function wrongPoints(scoring) {
   const ppw = scoring?.pointsPerWrong ?? 0;
   return ppw < 0 ? ppw : 0;
@@ -27,6 +55,12 @@ export function wrongPoints(scoring) {
 
 // ¿Puntuación estilo concurso (con bonus por velocidad)? En vivo manda
 // live.pointsModel; en solo, el modo avanzado scoring.mode.
+/**
+ * @param {PointsMode|null|undefined} mode
+ * @param {ScoringRules|null|undefined} scoring
+ * @param {LiveSettings|null|undefined} [live]
+ * @returns {boolean}
+ */
 export function usaBonusVelocidad(mode, scoring, live) {
   return (mode === 'live' && live?.pointsModel === 'velocidad')
       || (mode === 'solo' && scoring?.mode === 'velocidad');
@@ -36,6 +70,15 @@ export function usaBonusVelocidad(mode, scoring, live) {
 // bonus por velocidad restante). Es LA implementación oficial — ninguna
 // plantilla debe re-escribir su propio bonus de velocidad (deuda D del handoff:
 // wordsearch aún tiene uno propio; migrarlo es la fase P5, cambia puntajes).
+/**
+ * @param {Object} entrada
+ * @param {boolean|null} entrada.correct
+ * @param {unknown} [entrada.item]
+ * @param {number} [entrada.msTaken]
+ * @param {Activity|null|undefined} entrada.activity
+ * @param {PointsMode} [entrada.mode]
+ * @returns {number}
+ */
 export function awardPoints({ correct, item, msTaken, activity, mode = 'solo' }) {
   const scoring = activity?.scoring || {};
   if (correct === null) return 0;
@@ -46,7 +89,7 @@ export function awardPoints({ correct, item, msTaken, activity, mode = 'solo' })
     // La ventana es la DEL ÍTEM (R-3): con tiempo por pregunta, dividir por la
     // ventana de la actividad daría un bonus mal calculado en silencio — de más
     // en las preguntas largas y de menos en las cortas.
-    const remain = Math.max(0, 1 - (msTaken || 0) / itemWindowMs(activity, item));
+    const remain = Math.max(0, 1 - (msTaken || 0) / itemWindowMs(activity ?? null, item));
     return Math.round(base * 500 + (live.speedBonusMax ?? 1000) * remain);
   }
   return base;

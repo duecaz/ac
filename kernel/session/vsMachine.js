@@ -20,12 +20,78 @@ import { sessionItems } from '../content/sessionItems.js';
 import { autoScore } from './score.js';
 import { FORMATS } from './formats.js';
 
+/**
+ * @typedef {import('../contracts/activity.js').Activity} Activity
+ * @typedef {import('../contracts/session.js').RoomStatus} RoomStatus
+ * @typedef {import('../contracts/session.js').RoundPayload} RoundPayload
+ * @typedef {import('../contracts/session.js').SessionFormat} SessionFormat
+ * @typedef {import('./score.js').ScoreDetail} ScoreDetail
+ * @typedef {import('./score.js').ScoringTemplate} ScoringTemplate
+ */
+
+/**
+ * UNA RESPUESTA de un lado, en el orden en que la mandó. `detail` solo lo traen
+ * los scorers por marca (Tildes/Comas) y es lo que explica al final por qué
+ * ganó uno (`core/duelSummary.js`).
+ * @typedef {Object} VsAnswer
+ * @property {number} index
+ * @property {unknown} value
+ * @property {number} msTaken
+ * @property {boolean|null} correct
+ * @property {number} points
+ * @property {ScoreDetail} [detail]
+ */
+
+/**
+ * LA SUMA DEL DETALLE por marcas de un lado. `marca` distingue a las plantillas
+ * que cuentan MARCAS (Tildes/Comas) de las de todo-o-nada.
+ * @typedef {Object} VsMarks
+ * @property {number} hits
+ * @property {number} over
+ * @property {number} total
+ * @property {boolean} marca
+ */
+
+/**
+ * UN LADO del duelo. `cursor` es SU avance por la MISMA secuencia de ítems: los
+ * dos lados juegan en paralelo, cada uno a su ritmo.
+ * @typedef {Object} VsSide
+ * @property {string} id
+ * @property {string} name
+ * @property {number} score
+ * @property {number} cursor
+ * @property {number} correct
+ * @property {VsAnswer[]} answers
+ */
+
+/**
+ * EL ESTADO DEL DUELO. No tiene fase: no hay anfitrión que la mueva — el duelo
+ * está en el lobby, en curso o terminado, y lo que avanza es el cursor de cada
+ * lado. `finishedBy` es el PRIMERO que completó todos los ítems (desempata).
+ * @typedef {Object} VsState
+ * @property {SessionFormat} [format]
+ * @property {string} [code]
+ * @property {RoomStatus} status
+ * @property {string|null} finishedBy
+ * @property {Record<string, VsSide>} sides   Claves `left` y `right`.
+ */
+
+/**
+ * @typedef {Object} VsOpts
+ * @property {Partial<VsState>} [state]
+ * @property {string} [code]
+ * @property {string} [left]
+ * @property {string} [right]
+ * @property {boolean} [raceToFinish]   Fuerza la política de carrera desde el caller.
+ */
+
 /** VS pits two sides head-to-head with no host to judge, so it only works on
  *  templates that can both render a single round (renderRound) and self-score
  *  it (scoreSubmission), with enough items for a real race.
  *  EXCEPCIÓN: las plantillas "de tablero" (meta.play.live 'board', p.ej. Ordena las
  *  Pelotas) son UN solo reto compartido — ambos lados resuelven el MISMO tablero
  *  y gana quien termina antes (raceToFinish). Ahí basta con 1 ítem. */
+/** @param {Activity} activity */
 export function isVsCompatible(activity) {
   const T = getTemplate(activity?.template);
   if (!T) return false;
@@ -34,13 +100,14 @@ export function isVsCompatible(activity) {
   // contrato (core/templateContract.js) ya EXIGE esos dos métodos a quien
   // declara play.vs!=='none' (líneas 111 y 177), así que aquí basta con leer
   // la declaración.
-  const declared = !!T.meta?.play?.vs && T.meta.play.vs !== 'none';
+  const politica = T.meta?.play?.vs;
+  const declared = !!politica && politica !== 'none';
   if (!declared) return false;
   // Aviso defensivo (R6), no criterio: si declaración y capacidad se
   // desalinean, templateContract.js ya rompe CI antes de llegar aquí; esto
   // solo evita un crash si algo se coló.
   if (typeof T.scoreSubmission !== 'function' || typeof T.renderRound !== 'function') {
-    console.warn(`[isVsCompatible] ${activity?.template}: declara play.vs="${T.meta.play.vs}" pero le falta scoreSubmission/renderRound (contrato roto)`);
+    console.warn(`[isVsCompatible] ${activity?.template}: declara play.vs="${politica}" pero le falta scoreSubmission/renderRound (contrato roto)`);
     return false;
   }
   const total = sessionItems(activity).length;
@@ -48,6 +115,11 @@ export function isVsCompatible(activity) {
   return total >= minItems;
 }
 
+/**
+ * @param {Activity} activity
+ * @param {ScoringTemplate} T
+ * @param {VsOpts} opts
+ */
 function createVsSession(activity, T, opts) {
   const items = sessionItems(activity);
   const total = items.length;
@@ -55,6 +127,7 @@ function createVsSession(activity, T, opts) {
     throw new Error('VS requiere una plantilla con scoreSubmission y ≥2 ítems');
   }
 
+  /** @param {string} id @param {string} name @returns {VsSide} */
   const side = (id, name) => ({ id, name, score: 0, cursor: 0, correct: 0, answers: [] });
   // Cómo termina el duelo — POLÍTICA DECLARADA por la plantilla en `meta.play.vs`:
   //   'race'   → carrera: el primero que completa todos los ítems gana y cierra
@@ -64,7 +137,7 @@ function createVsSession(activity, T, opts) {
   //              llevaba hecho — el bug que reportó QA).
   // `opts.raceToFinish` sigue disponible para forzarlo desde un caller concreto.
   const raceToFinish = opts.raceToFinish ?? (T?.meta?.play?.vs === 'race');
-  const state = opts.state ? { ...opts.state } : {
+  const state = /** @type {VsState} */ (opts.state ? { ...opts.state } : {
     format: FORMATS.VS,
     code: opts.code || 'VS1',
     status: 'lobby',
@@ -73,8 +146,9 @@ function createVsSession(activity, T, opts) {
       left: side('left', opts.left || 'Alumno 1'),
       right: side('right', opts.right || 'Alumno 2'),
     },
-  };
+  });
 
+  /** @param {string} id @returns {VsSide|null} */
   const getSide = (id) => state.sides[id] || null;
 
   function start() {
@@ -84,6 +158,11 @@ function createVsSession(activity, T, opts) {
   }
 
   // Submit one answer for a side. Scored immediately; advances that side only.
+  /**
+   * @param {string} sideId
+   * @param {unknown} value
+   * @param {number} [msTaken]
+   */
   function answer(sideId, value, msTaken = 0) {
     if (state.status !== 'running') throw new Error('El duelo no está en curso');
     const s = getSide(sideId);
@@ -119,17 +198,22 @@ function createVsSession(activity, T, opts) {
   // tie-break on items completed so an early lead still reads as "ahead".
   // Suma del detalle por marcas de un lado (Tildes/Comas). `null` cuando el
   // scorer de esta plantilla no lo declara: mejor no decir nada que inventar.
+  /**
+   * @param {VsSide} s
+   * @returns {VsMarks|null}
+   */
   function marksOf(s) {
-    const con = (s.answers || []).filter(a => a.detail);
+    const con = (s.answers || []).flatMap(a => (a.detail ? [a.detail] : []));
     if (!con.length) return null;
-    const out = con.reduce((acc, a) => ({
-      hits: acc.hits + (a.detail.hits || 0),
-      over: acc.over + (a.detail.over || 0),
-      total: acc.total + (a.detail.total || 0),
+    /** @type {(acc: VsMarks, d: ScoreDetail) => VsMarks} */
+    const suma = (acc, d) => ({
+      hits: acc.hits + (d.hits || 0),
+      over: acc.over + (d.over || 0),
+      total: acc.total + (d.total || 0),
       // `marca`: esta plantilla cuenta MARCAS (Tildes/Comas), no respuestas.
-      marca: acc.marca || Number.isFinite(a.detail.over),
-    }), { hits: 0, over: 0, total: 0, marca: false });
-    return out;
+      marca: acc.marca || Number.isFinite(d.over),
+    });
+    return con.reduce(suma, { hits: 0, over: 0, total: 0, marca: false });
   }
 
   function standings() {
@@ -147,6 +231,7 @@ function createVsSession(activity, T, opts) {
     };
   }
 
+  /** @param {string} sideId @returns {RoundPayload|null} */
   const roundPayloadFor = (sideId) => {
     const s = getSide(sideId);
     if (!s || s.cursor >= total) return null;

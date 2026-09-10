@@ -11,6 +11,12 @@
 import { VERSION } from '../core/constants.js';
 import { lsGet, lsSet } from '../core/ls.js';
 
+/**
+ * @typedef {import('../kernel/contracts/dataPort.js').RemoteStore} RemoteStore
+ * @typedef {import('../kernel/contracts/dataPort.js').RealtimePort} RealtimePort
+ * @typedef {import('../kernel/contracts/dataPort.js').AssignmentsPort} AssignmentsPort
+ */
+
 const VALID = ['local', 'pocketbase'];
 
 // Cache-buster por versión para los imports dinámicos de los drivers. Los
@@ -41,6 +47,7 @@ export function backendName() {
 // reachable, false if PocketBase returns "Missing collection context" (not yet
 // created). Other errors (network, auth) are re-thrown so they surface normally.
 import { PB_URL } from '../pocketbase.config.js';
+/** @param {string} name */
 async function pbCollectionExists(name) {
   try {
     const r = await fetch(`${PB_URL}/api/collections/${name}/records?perPage=1`);
@@ -51,10 +58,12 @@ async function pbCollectionExists(name) {
   } catch { return false; /* network unreachable */ }
 }
 
+/** @type {Promise<RemoteStore>|null} */
 let _store = null;
+/** @type {Promise<RealtimePort>|null} */
 let _realtime = null;
 
-/** @returns {Promise<any>} the selected RemoteStore (activity/result persistence). */
+/** @returns {Promise<RemoteStore>} the selected RemoteStore (activity/result persistence). */
 export function getRemoteStore() {
   if (_store) return _store;
   const name = backendName();
@@ -66,7 +75,7 @@ export function getRemoteStore() {
   return _store;
 }
 
-/** @returns {Promise<any>} the selected RealtimePort (LIVE sessions). */
+/** @returns {Promise<RealtimePort>} the selected RealtimePort (LIVE sessions). */
 export function getRealtime() {
   if (_realtime) return _realtime;
   const name = backendName();
@@ -89,9 +98,10 @@ export function getRealtime() {
   return _realtime;
 }
 
+/** @type {Promise<AssignmentsPort>|null} */
 let _assignments = null;
 
-/** @returns {Promise<any>} the selected assignments (tareas) driver. */
+/** @returns {Promise<AssignmentsPort>} the selected assignments (tareas) driver. */
 export function getAssignments() {
   if (_assignments) return _assignments;
   const name = backendName();
@@ -112,7 +122,7 @@ export function getAssignments() {
     })();
     const identidades = {
       userId: () => cuenta() || anonId,
-      identities: () => [cuenta(), anonId].filter(Boolean),
+      identities: () => /** @type {string[]} */ ([cuenta(), anonId].filter(Boolean)),
     };
     if (name === 'local') {
       return (await import('./local/assignments.js' + v)).createLocalAssignments(identidades);
@@ -132,8 +142,9 @@ export function getAssignments() {
 
 // Allow flipping backend at runtime in dev: ww.setBackend('local').
 try {
-  globalThis.ww = globalThis.ww || {};
-  globalThis.ww.setBackend = (name) => {
+  const g = /** @type {{ ww?: Record<string, unknown> }} */ (globalThis);
+  g.ww = g.ww || {};
+  g.ww.setBackend = (/** @type {string} */ name) => {
     if (!VALID.includes(name)) throw new Error(`backend must be one of ${VALID.join(', ')}`);
     lsSet('ww.backend', name);
     _store = null; _realtime = null; _assignments = null;

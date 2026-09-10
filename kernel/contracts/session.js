@@ -39,7 +39,10 @@
 /**
  * El modelo de PUNTOS que recibe un scorer como `mode` (`core/scoring/award.js`
  * `usaBonusVelocidad`, `core/liveLoops.js` `pointsModeFor`). 'race' = planos.
- * @typedef {'solo'|'live'|'race'} PointsMode
+ * `pointsModeFor` solo devuelve los tres primeros; 'vs' y 'teams' los pasan las
+ * máquinas de duelo y de equipos (`kernel/session/`) y son PLANOS por omisión:
+ * `usaBonusVelocidad` solo enciende con 'live' o 'solo'.
+ * @typedef {'solo'|'live'|'race'|'vs'|'teams'} PointsMode
  */
 
 /**
@@ -100,6 +103,11 @@
 /**
  * @typedef {Object} RoundContext
  * @property {number} itemIndex   Índice del ítem/ronda que se sirve.
+ * @property {string} [side]      Lado del duelo ('left'/'right'): una plantilla
+ *   de tablero puede repartir uno DISTINTO por lado (la Sopa). Lo pasa
+ *   `kernel/session/vsMachine.js`.
+ * @property {unknown[]} [found]  Lo ya respondido en turnos anteriores, para
+ *   que un tablero libre lo traiga pre-marcado (VS y Equipos lo mandan igual).
  */
 
 /**
@@ -110,6 +118,15 @@
  * deja el resto abierto: nadie puede leerlo como si supiera lo que hay.
  * @typedef {{ id?: string, question?: string, image?: string|null,
  *   audio?: string|null, points?: number } & Record<string, unknown>} RoundPayload
+ */
+
+/**
+ * LA ACTIVIDAD TAL Y COMO VIAJA A LA SALA (`core/liveSnapshot.js`): la misma
+ * actividad, SANEADA (sin claves de respuesta, §22-2) y con los payloads de
+ * cada ronda YA calculados por el host. Quien juega no recalcula sobre un
+ * `content` que ya no tiene la clave: se sirve de `payloads`.
+ * Una `Activity` normal es asignable a este tipo (el campo es opcional).
+ * @typedef {Activity & { payloads?: Array<RoundPayload|null> }} SnapshotActivity
  */
 
 /**
@@ -217,6 +234,11 @@
  * @property {boolean|null} correct
  * @property {number} points
  * @property {boolean} [hint]       Avance afirmado por el cliente en carrera; NO otorga puntos.
+ * @property {unknown} [v0]         PRIMER intento de la carrera (analítica); inmutable.
+ * @property {boolean} [c0]         Veredicto de ese primer intento.
+ * @property {string} [created]     Espejo del autodate de PocketBase: el driver local
+ *   los sella a mano, o no habría hora de meta que derivar (§22-1).
+ * @property {string} [updated]
  */
 
 // ─── LA SALA ─────────────────────────────────────────────────────────────────
@@ -237,11 +259,18 @@
  * @property {string|null} [answersOpenAt]   Instante en que se pueden TOCAR las respuestas (R-1).
  * @property {number|null} [readSecs]        Ventana de lectura.
  * @property {string|null} [startedAt]
- * @property {'all'|'firstN'|'time'} [endPolicy]
+ * @property {'all'|'firstN'|'time'|null} [endPolicy]
  * @property {number|null} [endN]
  * @property {Record<string, string>} [itemOpenedAt]  Sello SERVIDOR de apertura por ítem (§22-1).
  * @property {Record<string, number>} [qlPoints]      Puntos que da el docente en «pedir la palabra».
  * @property {Record<string, string>} [qlTaken]       Quién se llevó cada caja (CL-1).
+ * @property {number|null} [qlOpen]        LEGADO: «pedir la palabra» vivía en el blob;
+ *   hoy es el campo `ql` de la fila (§22). Los dos adaptadores lo leen como respaldo
+ *   para las salas creadas antes del cambio.
+ * @property {string|null} [qlQuestion]
+ * @property {string|null} [qlImage]
+ * @property {string|null} [qlBy]
+ * @property {string|null} [qlByName]
  * @property {number} [_seq]
  */
 
@@ -262,7 +291,7 @@
  * @property {string|null} [started_at]
  * @property {Record<string, number>} [ql_points]
  * @property {Record<string, string>} [ql_taken]
- * @property {string|null} [ql_open]
+ * @property {number|null} [ql_open]   Índice de la caja/casilla abierta (la pide un alumno).
  * @property {string|null} [ql_question]
  * @property {string|null} [ql_image]
  * @property {string|null} [ql_by]
@@ -289,7 +318,7 @@
  * @property {number|null} end_n
  * @property {string|null} [started_at]
  * @property {Activity|null} [activity_snap]
- * @property {boolean|null} ql_open
+ * @property {number|null} ql_open    Índice de la caja abierta; null = ninguna.
  * @property {string|null} ql_question
  * @property {string|null} ql_image
  * @property {string|null} ql_by
@@ -309,6 +338,16 @@
  * @property {Object} [ql]
  * @property {string} [created]
  * @property {string} [updated]
+ */
+
+/**
+ * EL MOTOR DE UNA SALA EN VIVO — lo que `createLiveRoom` (`kernel/live/engine.js`)
+ * entrega a quien conduce la partida: `state`, `join`, `submit`, `settle`,
+ * `settleAll`, `leaderboard`… Su forma la POSEE quien lo construye
+ * (`kernel/session/liveMachine.js`), igual que `RoomChange` la posee
+ * `core/liveTransport.js`; aquí solo se le pone la puerta, porque los DOS
+ * adaptadores en vivo (local y PocketBase) lo cargan, lo mutan y lo persisten.
+ * @typedef {ReturnType<typeof import('../session/liveMachine.js').createLiveSession>} LiveEngine
  */
 
 /**

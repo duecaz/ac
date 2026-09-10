@@ -18,8 +18,20 @@
 //
 // Acepta selector o elemento (los tests de los shells pasan un objeto plano sin
 // document): en un fake sin `isConnected` la época sola decide.
+/**
+ * El nodo sellado: un elemento del DOM o, en los tests de los shells, un objeto
+ * plano que solo lleva la época.
+ * @typedef {{__wwEpoch?: number, isConnected?: boolean}} StageNode
+ */
+
+/**
+ * @param {string|StageNode|null} root
+ * @returns {() => boolean} alive()
+ */
 export function claimStage(root) {
-  const el = typeof root === 'string' ? (globalThis.document?.querySelector(root) ?? null) : root;
+  const el = typeof root === 'string'
+    ? /** @type {StageNode|null} */ (globalThis.document?.querySelector(root) ?? null)
+    : root;
   if (!el) return () => false;
   const epoch = (el.__wwEpoch = (el.__wwEpoch || 0) + 1);
   return () => el.isConnected !== false && el.__wwEpoch === epoch;

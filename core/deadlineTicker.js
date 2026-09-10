@@ -14,8 +14,8 @@ import { serverNow } from './serverNow.js';
 import { mmss } from './timings.js';
 
 /**
- * @param {object}   o
- * @param {number|string|Date} o.deadline  instante final (ms, ISO o Date).
+ * @param {object}   [o]
+ * @param {number|string|Date|null} [o.deadline]  instante final (ms, ISO o Date).
  * @param {number}  [o.totalMs]   ventana completa, para el porcentaje del tick.
  * @param {number}  [o.everyMs=250]  cada cuánto avisa.
  * @param {(t:{remainMs:number,remainSec:number,pct:number})=>void} [o.onTick]
@@ -23,7 +23,8 @@ import { mmss } from './timings.js';
  * @param {()=>boolean} [o.while]  si devuelve false, el ticker se detiene solo
  *        (p.ej. "mientras la fase siga siendo 'question'"): evita que un reloj
  *        zombi repinte encima de la pantalla siguiente.
- * @param {Function} [o.setIntervalFn] @param {Function} [o.clearIntervalFn]
+ * @param {(fn:()=>void, ms:number)=>number} [o.setIntervalFn]
+ * @param {(id:number)=>void} [o.clearIntervalFn]
  *        scheduler inyectable → tests deterministas (y ctx.setInterval de las
  *        vistas, que ya limpia al cambiar de ruta).
  * @returns {{ stop: () => void }}
@@ -38,7 +39,9 @@ export function startDeadlineTicker({
     : deadline ? new Date(deadline).getTime() : NaN;
   if (!Number.isFinite(endMs)) return { stop() {} };   // sin deadline → no hay reloj
 
-  let handle = null, expired = false;
+  /** @type {number|null} */
+  let handle = null;
+  let expired = false;
   const stop = () => { if (handle != null) { clearIntervalFn(handle); handle = null; } };
 
   const tick = () => {
@@ -59,6 +62,13 @@ export function startDeadlineTicker({
  * del tablero compartido, donde no hay límite sino tiempo transcurrido).
  * Tercera forma de reloj del proyecto, junto a `createCountdown` (duración) y
  * `startDeadlineTicker` (hasta un instante).
+ * @param {object} [o]
+ * @param {number|string|Date|null} [o.since]  instante de inicio (ms, ISO o Date).
+ * @param {number} [o.everyMs=1000]
+ * @param {(t:{elapsedSec:number,label:string})=>void} [o.onTick]
+ * @param {()=>boolean} [o.while]
+ * @param {(fn:()=>void, ms:number)=>number} [o.setIntervalFn]
+ * @param {(id:number)=>void} [o.clearIntervalFn]
  * @returns {{ stop: () => void }}
  */
 export function startElapsedTicker({
@@ -68,6 +78,7 @@ export function startElapsedTicker({
   const startMs = since instanceof Date ? since.getTime()
     : typeof since === 'number' ? since
     : since ? new Date(since).getTime() : NaN;
+  /** @type {number|null} */
   let handle = null;
   const stop = () => { if (handle != null) { clearIntervalFn(handle); handle = null; } };
   const tick = () => {

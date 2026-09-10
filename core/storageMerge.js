@@ -18,18 +18,23 @@
  * resurrección; sin ello, borrar offline / con blip / cerrando la pestaña dejaba
  * la fila viva en PB y el siguiente sync la re-añadía.
  *
- * @param {Record<string, Object>} localMap   id → activity (the local cache)
- * @param {{id:string, data:Object}[]} remoteRows  backend rows
- * @param {(data:Object)=>Object} migrate      normaliser applied to remote data
- * @param {Set<string>} [tombstones]           ids borrados pendientes de confirmar
- * @returns {Record<string, Object>} a NEW merged map (inputs untouched)
+ * LO ÚNICO que este merge MIRA de una fila: el sello del LWW y la marca de
+ * «aún sin subir». La firma entra ANCHA (`object`) porque el normalizador lo
+ * pone el llamador (`core/storage.js`), y aquí se estrecha a lo que se lee.
+ * @typedef {{_unsynced?: boolean, updatedAt?: string}} FilaFusionable
+ *
+ * @param {Record<string, object>} localMap   id → activity (the local cache)
+ * @param {{id:string, data:object}[]} remoteRows  backend rows
+ * @param {(data:object)=>object} migrate      normaliser applied to remote data
+ * @param {Set<string>|null} [tombstones]      ids borrados pendientes de confirmar
+ * @returns {Record<string, object>} a NEW merged map (inputs untouched)
  */
 export function mergeRemote(localMap, remoteRows, migrate, tombstones = null) {
   const map = { ...(localMap || {}) };
   for (const row of remoteRows || []) {
     if (tombstones && tombstones.has(row.id)) continue; // borrado pendiente: no resucitar
-    const remote = migrate(row.data || {});
-    const local = map[row.id];
+    const remote = /** @type {FilaFusionable} */ (migrate(row.data || {}));
+    const local = /** @type {FilaFusionable|undefined} */ (map[row.id]);
     if (local?._unsynced) continue; // no pisar una edición local pendiente de subir
     if (!local || (remote.updatedAt || '') >= (local.updatedAt || '')) {
       map[row.id] = remote;

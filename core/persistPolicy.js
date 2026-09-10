@@ -9,6 +9,9 @@
 // `results`  → fila en la colección `results` (historial del jugador).
 // `attempts` → fila en `assignment_attempts` (la escribe el contenedor de Tarea).
 // `live`     → filas en `live_answers` + el blob de la sala (lo escribe el host).
+/** @typedef {{results: boolean, attempts: boolean, live: boolean}} PersistFlags */
+
+/** @type {Record<string, PersistFlags>} */
 export const PERSIST = {
   // Individual: el shell guarda el resultado al terminar.
   solo:             { results: true,  attempts: false, live: false },
@@ -33,7 +36,9 @@ export const PERSIST = {
 export const DEFAULT_MODE = 'solo';
 
 /** ¿Este modo guarda una fila en `results`? Un modo desconocido no guarda
- *  (fail-safe: mejor no escribir que escribir basura atribuida a nadie). */
+ *  (fail-safe: mejor no escribir que escribir basura atribuida a nadie).
+ * @param {import('../kernel/contracts/session.js').PersistMode|string|null} [mode]
+ * @returns {boolean} */
 export function savesResult(mode) {
   const key = mode || DEFAULT_MODE;
   return PERSIST[key]?.results === true;

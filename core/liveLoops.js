@@ -15,14 +15,47 @@
 //
 // Módulo PURO: entra una plantilla, sale su lista de bucles.
 
+/**
+ * @typedef {import('../kernel/contracts/session.js').LiveLoop} LiveLoop
+ * @typedef {import('../kernel/contracts/session.js').LivePhase} LivePhase
+ * @typedef {import('../kernel/contracts/session.js').PointsMode} PointsMode
+ * @typedef {import('../kernel/contracts/session.js').ScoreInput} ScoreInput
+ * @typedef {import('../kernel/contracts/session.js').ScoreResult} ScoreResult
+ * @typedef {import('../kernel/contracts/activity.js').Activity} Activity
+ */
+
+/**
+ * LO MÍNIMO que hace falta de una plantilla para saber sus bucles: su
+ * declaración. Se pide la FORMA y no el contrato entero porque aquí llegan
+ * también plantillas a medio escribir (el checker) y `null` (actividad de una
+ * plantilla desconocida).
+ * @typedef {{meta?: {play?: {live?: unknown}}}|null|undefined} PlantillaConBucles
+ */
+
+/** Lo que se dice de un bucle en los cuadros generados. */
+/**
+ * @typedef {Object} LoopLabel
+ * @property {string} label
+ * @property {string} hint
+ * @property {string} win
+ * @property {string} advance
+ * @property {string} ends
+ */
+
 /** Los bucles que existen. Añadir uno es una DECISIÓN (docs/leyes.md §26 +
  *  su ficha en docs/estudio-bucles-live.md), no un `if` en una vista. */
+/** @type {LiveLoop[]} */
 export const LIVE_LOOPS = ['rounds', 'race', 'board', 'claim'];
+
+/** @param {unknown} x @returns {x is LiveLoop} */
+const esBucle = (x) => typeof x === 'string'
+  && /** @type {string[]} */ (LIVE_LOOPS).includes(x);
 
 /** Cómo se llama cada uno para el docente, qué hace en una frase, y CÓMO SE GANA.
  *  `win` es la regla del juego en una línea: vive aquí (no en tres MD copiados,
  *  que ya divergieron una vez) y de aquí la saca `tools/docgen.mjs` para escribir
  *  los cuadros de CLAUDE.md, docs/leyes.md §26 y docs/modos-de-juego.md §9.4. */
+/** @type {Record<LiveLoop, LoopLabel>} */
 export const LOOP_LABELS = {
   rounds: { label: 'Rondas juntas', hint: 'Toda la clase en la misma pregunta, tú marcas el ritmo.',
             win: 'más puntos', advance: 'el profe o el reloj', ends: 'al agotar las preguntas' },
@@ -39,6 +72,7 @@ export const LOOP_LABELS = {
 /** Cómo se calculan los puntos de cada bucle, en una frase (para los cuadros).
  *  La REGLA ejecutable es `pointsModeFor` + el scorer de la plantilla; esto es
  *  su traducción a castellano, en el mismo sitio para que no diverja. */
+/** @type {Record<LiveLoop, string>} */
 export const LOOP_POINTS = {
   rounds: 'bonus: base×500 + bonus por velocidad',
   race:   '**planos**: el puntaje ES el nº de aciertos',
@@ -47,28 +81,40 @@ export const LOOP_POINTS = {
 };
 
 /** La fase de sala en la que corre cada bucle (congelada, §26). */
+/** @type {Record<LiveLoop, LivePhase>} */
 export const LOOP_PHASE = { rounds: 'question', race: 'race', board: 'race', claim: 'question-live' };
 
 /**
  * Bucles que soporta una plantilla, desde su `meta.play.live`.
  * Acepta la forma NUEVA (lista) y la heredada (string) para que una plantilla
  * sin migrar siga funcionando: 'rounds' | 'board' | 'none'.
- * @returns {string[]} vacío = no se puede jugar en vivo
+ * @param {PlantillaConBucles} T
+ * @returns {LiveLoop[]} vacío = no se puede jugar en vivo
  */
 export function loopsOf(T) {
   const v = T?.meta?.play?.live;
+  /** @type {unknown[]} */
   const raw = Array.isArray(v) ? v : (v ? [v] : []);
-  return raw.filter(x => LIVE_LOOPS.includes(x));
+  return raw.filter(esBucle);
 }
 
 /** ¿Soporta este bucle? (lo que sustituye a mirar el nombre de la plantilla) */
+/**
+ * @param {PlantillaConBucles} T
+ * @param {LiveLoop} loop
+ */
 export function supportsLoop(T, loop) { return loopsOf(T).includes(loop); }
 
 /** El bucle con el que arranca el lobby: el primero que declara la plantilla. */
+/**
+ * @param {PlantillaConBucles} T
+ * @returns {LiveLoop|null}
+ */
 export function defaultLoop(T) { return loopsOf(T)[0] || null; }
 
 /** ¿Este bucle deja al profe elegir quién avanza? Solo las rondas: en carrera y
  *  tablero avanza cada alumno, y en "pedir la palabra" manda el docente siempre. */
+/** @param {string|null|undefined} loop */
 export function hasAdvanceChoice(loop) { return loop === 'rounds'; }
 
 /** MODELO DE PUNTOS de un bucle — la regla "carrera ⇒ plano" vive AQUÍ y solo
@@ -80,6 +126,10 @@ export function hasAdvanceChoice(loop) { return loop === 'rounds'; }
  *    instante, así que comparar velocidades es justo (bonus por velocidad).
  *  - `race`/`board`  → 'race': cada alumno va a su ritmo; la velocidad ya se
  *    mide por cuándo terminas, y medirla dos veces premiaba al que madruga. */
+/**
+ * @param {string|null|undefined} loop
+ * @returns {PointsMode}
+ */
 export function pointsModeFor(loop) {
   return (loop === 'race' || loop === 'board') ? 'race' : 'live';
 }
@@ -106,6 +156,7 @@ export const manualScoreSubmission = () => ({ correct: null, points: 0, hits: 0,
  * su propio `correct`. En los demás bucles no aplica: ahí la pregunta se abre
  * una vez y no se re-encola nada.
  */
+/** @param {ScoreResult|null|undefined} result */
 export function racePassed(result) {
   if (!result) return false;
   return result.perfect ?? !!result.correct;
@@ -123,6 +174,13 @@ export function racePassed(result) {
  *
  * Si no se puede puntuar (fila vieja sin ítem, scorer que lanza), se cae al
  * veredicto guardado en la fila — mejor un dato viejo que inventar uno.
+ */
+/**
+ * @param {{scoreSubmission: (input: ScoreInput) => ScoreResult}} tpl
+ * @param {{value?: unknown, correct?: boolean|null}} row
+ * @param {unknown} item
+ * @param {Activity} activity
+ * @param {string|null|undefined} loop
  */
 export function racePassedRow(tpl, row, item, activity, loop) {
   // Sin ítem no hay qué re-puntuar (fila de una sesión vieja, índice fuera de

@@ -2,7 +2,6 @@
 // reads meta + renderPlayer + renderEditor from the class. No more separate
 // editor registration.
 //
-// @typedef {import('../kernel/contracts/template.js').TemplateContract} TemplateContract
 //
 // QUÉ VALIDA ESTE FICHERO Y QUÉ NO (decidido en la auditoría del 2026-09-10):
 // aquí va solo el MÍNIMO ESTRUCTURAL para que la app no se rompa más tarde y de
@@ -14,12 +13,33 @@
 // que registro y contrato no puedan decir cosas distintas.
 import { faltaParaLive } from './templateCapability.js';
 
+/**
+ * @typedef {import('../kernel/contracts/template.js').TemplateStatic} TemplateStatic
+ * @typedef {import('../kernel/contracts/template.js').BaseTemplateMeta} BaseTemplateMeta
+ *
+ * LO QUE EL REGISTRO GUARDA, y por qué no es `TemplateStatic` a secas:
+ *   · la META entra ANCHA (`BaseTemplateMeta`): los `static meta` de las 16 son
+ *     literales sin anotar y TypeScript los ensancha (`kind: 'juego'` → string).
+ *     Quien quiera el tipo exacto lo pide en su plantilla, no aquí.
+ *   · lo OBLIGATORIO son las dos bocas que valida `validateTemplate`; el resto
+ *     del contrato es OPCIONAL y se pregunta con `typeof` antes de llamarlo,
+ *     que es como lo consume la plataforma entera.
+ * @typedef {{meta: BaseTemplateMeta,
+ *   renderPlayer: TemplateStatic['renderPlayer'],
+ *   renderEditor: TemplateStatic['renderEditor']}
+ *   & Partial<Omit<TemplateStatic, 'meta'|'renderPlayer'|'renderEditor'>>} PlantillaRegistrada
+ * @typedef {import('../kernel/contracts/activity.js').Activity} Activity
+ */
+
+/** @type {Record<string, PlantillaRegistrada>} */
 const _templates = {};
 
 // Validate a template against TemplateContract and fail loudly. Catches at boot
 // the mistakes that used to fail silently mid-game (e.g. a live-capable template
 // missing getRoundPayload, which would break a hosted room only once played).
-/** @param {any} T */
+// Entra lo que sea: la guarda existe justamente para lo MAL FORMADO (una
+// plantilla a medio escribir), así que la firma no puede exigir el contrato.
+/** @param {Partial<PlantillaRegistrada>} T */
 function validateTemplate(T) {
   const where = T?.meta?.name ? `Template "${T.meta.name}"` : 'Template';
   if (!T?.meta?.name) throw new Error('Template must declare static meta.name');
@@ -40,23 +60,40 @@ function validateTemplate(T) {
   }
 }
 
-/** @param {TemplateContract} T */
+/** @param {PlantillaRegistrada} T */
 export function registerTemplate(T) {
   validateTemplate(T);
   _templates[T.meta.name] = T;
 }
-export function getTemplate(name) { return _templates[name]; }
+// Se llama con `a?.template` por todas partes: el nombre puede no llegar, y la
+// respuesta a «no hay plantilla» es la misma que a «no la conozco».
+/**
+ * @param {string|null|undefined} name
+ * @returns {PlantillaRegistrada|null}
+ */
+export function getTemplate(name) { return (name && _templates[name]) || null; }
+/** @param {string|null|undefined} name */
 export function getEditor(name) {
-  const T = _templates[name];
-  return T ? { render: (root, a, oc) => T.renderEditor(root, a, oc) } : null;
+  const T = getTemplate(name);
+  return T ? {
+    /**
+     * @param {Element} root
+     * @param {Activity} a
+     * @param {(activity: Activity) => void} oc
+     */
+    render: (root, a, oc) => T.renderEditor(root, a, oc)
+  } : null;
 }
 export function listTemplates() { return Object.values(_templates); }
 
 // Templates that accept the same content as `name` (same contentModel).
 // Excludes `name` itself. Returns Template classes ordered by label.
+/**
+ * @param {string|null|undefined} name
+ * @returns {PlantillaRegistrada[]}
+ */
 export function compatibleTemplates(name) {
-  const T = _templates[name];
-  const cm = T?.meta?.contentModel;
+  const cm = getTemplate(name)?.meta?.contentModel;
   if (!cm) return [];
   return Object.values(_templates)
     .filter(t => t.meta.name !== name && t.meta.contentModel === cm)

@@ -9,6 +9,11 @@
 //
 // Este helper difiere el callback a un requestAnimationFrame (frame siguiente,
 // coalescando ráfagas) → el observer nunca ve mutaciones en su mismo ciclo.
+/**
+ * @param {Element} el
+ * @param {() => void} cb
+ * @returns {() => void} desuscriptor
+ */
 export function observeResize(el, cb) {
   let raf = 0;
   const ro = new ResizeObserver(() => {

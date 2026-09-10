@@ -32,6 +32,7 @@
 import { clock } from './clock.js';
 
 const MAX_MUESTRAS = 5;
+/** @type {number[]} */
 let muestras = [];
 let offsetMs = 0;
 
@@ -56,8 +57,8 @@ export function noteServerDate(fecha, { enviadoMs, recibidoMs } = {}) {
     : typeof fecha === 'number' ? fecha
     : fecha ? Date.parse(fecha) : NaN;
   if (!Number.isFinite(servidorMs)) return;          // sin cabecera o ilegible
-  const t1 = Number.isFinite(recibidoMs) ? recibidoMs : clock.now();
-  const t0 = Number.isFinite(enviadoMs) ? enviadoMs : t1;
+  const t1 = typeof recibidoMs === 'number' && Number.isFinite(recibidoMs) ? recibidoMs : clock.now();
+  const t0 = typeof enviadoMs === 'number' && Number.isFinite(enviadoMs) ? enviadoMs : t1;
   // La cabecera se selló en algún punto entre t0 y t1: el mejor estimador es el
   // centro, que descuenta medio viaje de red.
   const local = t0 + (t1 - t0) / 2;

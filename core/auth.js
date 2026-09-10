@@ -3,8 +3,73 @@ import { PB_URL } from '../pocketbase.config.js';
 import { clock } from './clock.js';
 import { lsGet, lsSet, lsDel, ssGet, ssSet, ssDel } from './ls.js';
 
+/**
+ * EL USUARIO tal y como lo devuelve PocketBase (`record` de la colección
+ * `users`). No vive en `kernel/contracts/`: la sesión del PROFE es de la
+ * plataforma, no del dominio de jugar, y este módulo es su dueño (§21).
+ * `Role` con mayúscula es la tolerancia histórica del campo en la Pi.
+ * @typedef {Object} AuthUser
+ * @property {string} id
+ * @property {string} [email]
+ * @property {string} [name]
+ * @property {string} [avatar]
+ * @property {string} [role]
+ * @property {string} [Role]
+ * @property {boolean} [verified]
+ * @property {string} [created]
+ * @property {string} [updated]
+ */
+
+/**
+ * Lo que se guarda en el almacén bajo `ww.pb.auth`. FRONTERA: sale de un
+ * `JSON.parse`, así que se lee con `?.` en todos sus lectores.
+ * @typedef {{token?: string, record?: AuthUser}} StoredAuth
+ */
+
+/**
+ * Lo que Google devuelve a través de PocketBase (`meta` de auth-with-oauth2).
+ * @typedef {Object} OAuthMeta
+ * @property {string} [accessToken]
+ * @property {string|null} [expiry]
+ * @property {string} [avatarURL]
+ * @property {string} [avatarUrl]
+ * @property {string} [avatar]
+ * @property {string} [picture]
+ * @property {{picture?: string}} [rawUser]
+ */
+
+/**
+ * La respuesta de los endpoints de auth de PocketBase.
+ * @typedef {{token: string, record: AuthUser, meta?: OAuthMeta}} AuthResponse
+ */
+
+/**
+ * Un proveedor OAuth habilitado en PB (`auth-methods`).
+ * @typedef {Object} OAuthProvider
+ * @property {string} name
+ * @property {string} state
+ * @property {string} codeVerifier
+ * @property {string} authURL
+ */
+
+/**
+ * El login de Google a medias, guardado en la sesión del navegador mientras se
+ * va y se vuelve del consentimiento.
+ * @typedef {Object} PendingOAuth
+ * @property {string} provider
+ * @property {string} state
+ * @property {string} codeVerifier
+ * @property {string} redirectUrl
+ * @property {boolean} [link]
+ * @property {string} [returnHash]
+ */
+
+/** @typedef {{user: AuthUser|null, profile: null}} AuthChange */
+
 const STORE_KEY = 'ww.pb.auth';
+/** @type {AuthUser|null} */
 let _user = null;
+/** @type {Set<(e: AuthChange) => void>} */
 const listeners = new Set();
 
 /** ¿ESTE TOKEN YA CADUCÓ? El token lleva la fecha DENTRO (es un JWT: su carga
@@ -22,21 +87,25 @@ const listeners = new Set();
  *  Prudente a propósito: si el token no es un JWT o su carga no se puede leer,
  *  NO se juzga (decide `authRefresh` cuando haya red). Solo se descarta lo que
  *  dice de sí mismo que está muerto. */
+/** @param {string|null|undefined} token */
 function tokenCaducado(token) {
   try {
     const carga = String(token || '').split('.')[1];
     if (!carga) return false;
-    const json = JSON.parse(atob(carga.replace(/-/g, '+').replace(/_/g, '/')));
-    if (!Number.isFinite(json?.exp)) return false;
+    const json = /** @type {{exp?: unknown}} */ (
+      JSON.parse(atob(carga.replace(/-/g, '+').replace(/_/g, '/'))));
+    const exp = json?.exp;
+    if (typeof exp !== 'number' || !Number.isFinite(exp)) return false;
     // Margen de un minuto: un reloj local un poco adelantado no debe echar a
     // nadie de su sesión a mitad de clase.
-    return json.exp * 1000 + 60000 <= clock.now();
+    return exp * 1000 + 60000 <= clock.now();
   } catch { return false; }
 }
 
+/** @returns {StoredAuth|null} */
 function loadStored() {
   try {
-    const guardado = JSON.parse(lsGet(STORE_KEY));
+    const guardado = /** @type {StoredAuth|null} */ (JSON.parse(lsGet(STORE_KEY) || 'null'));
     if (guardado?.token && tokenCaducado(guardado.token)) {
       // Se BORRA, no solo se ignora: si se quedara, cada lectura volvería a
       // pagar el parseo y —peor— cualquier código que lea la clave a mano
@@ -48,6 +117,10 @@ function loadStored() {
   } catch { return null; }
 }
 
+/**
+ * @param {string} token
+ * @param {AuthUser} record
+ */
 function saveStored(token, record) {
   lsSet(STORE_KEY, JSON.stringify({ token, record }));
 }
@@ -56,6 +129,7 @@ function clearStored() {
   lsDel(STORE_KEY);
 }
 
+/** @returns {Promise<AuthUser|null>} */
 export async function getUser() {
   if (_user !== null) return _user;
   const stored = loadStored();
@@ -74,8 +148,8 @@ export function getAuthUserId() {
 }
 // Nombre visible del profe (para sellar el autor de las actividades y mostrarlo).
 export function getAuthName() {
-  const rec = loadStored()?.record || {};
-  return rec.name || (rec.email ? rec.email.split('@')[0] : null);
+  const rec = loadStored()?.record;
+  return rec?.name || (rec?.email ? rec.email.split('@')[0] : null);
 }
 // Rol del profe (campo `role` del record de usuario en PB). 'admin' → puede
 // moderar/editar/borrar cualquier actividad y ver los reportes (S3).
@@ -84,8 +158,8 @@ export function getAuthRole() {
   // cualquiera. OJO: las REGLAS de PocketBase usan `@request.auth.role` (minúscula),
   // así que para que el servidor también te reconozca como admin el campo en PB
   // debe llamarse `role` en minúscula.
-  const rec = loadStored()?.record || {};
-  return rec.role || rec.Role || null;
+  const rec = loadStored()?.record;
+  return rec?.role || rec?.Role || null;
 }
 export function isAdmin() {
   return getAuthRole() === 'admin';
@@ -103,23 +177,29 @@ export async function authRefresh() {
       headers: { 'Content-Type': 'application/json', Authorization: stored.token },
     });
     if (r.status === 401 || r.status === 403) { clearStored(); _user = null; notify(); return null; }
-    if (!r.ok) return stored.record; // error transitorio (red/5xx): conserva la sesión
-    const data = await r.json();
+    if (!r.ok) return stored.record ?? null; // error transitorio (red/5xx): conserva la sesión
+    const data = /** @type {AuthResponse} */ (await r.json());
     _user = data.record;
     saveStored(data.token, data.record);
     notify();
     return data.record;
-  } catch { return stored.record; /* sin red: conserva lo guardado */ }
+  } catch { return stored.record ?? null; /* sin red: conserva lo guardado */ }
 }
 
 
+/**
+ * @param {string} path
+ * @param {Record<string, unknown>} body
+ * @returns {Promise<AuthResponse>}
+ */
 async function pbPost(path, body) {
   const r = await fetch(`${PB_URL}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  const data = await r.json().catch(() => ({}));
+  const data = /** @type {AuthResponse & {message?: string}} */ (
+    await r.json().catch(() => ({})));
   if (!r.ok) throw new Error(data?.message || `Error ${r.status}`);
   return data;
 }
@@ -130,6 +210,11 @@ async function pbPost(path, body) {
 // prohíbe traer `role` en el cuerpo (nadie se registra como admin) — la regla
 // vive en tools/setup-pocketbase.ps1 (Apply-Users) y hay que re-aplicarla.
 // Crea la cuenta e INICIA sesión con ella (a diferencia de createTeacher).
+/**
+ * @param {string} email
+ * @param {string} password
+ * @param {string} [name]
+ */
 export async function signUp(email, password, name) {
   if (!password || password.length < 8) throw new Error('La contraseña debe tener al menos 8 caracteres.');
   const r = await fetch(`${PB_URL}/api/collections/users/records`, {
@@ -137,7 +222,8 @@ export async function signUp(email, password, name) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password, passwordConfirm: password, name: name || email.split('@')[0] }),
   });
-  const data = await r.json().catch(() => ({}));
+  const data = /** @type {{id?: string, message?: string, data?: Record<string, {message?: string}>}} */ (
+    await r.json().catch(() => ({})));
   if (!r.ok) {
     // Los 400 de PB traen el detalle por campo; el del email repetido es el
     // que más va a salir y merece frase propia.
@@ -153,6 +239,7 @@ export async function signUp(email, password, name) {
 // «Olvidé mi contraseña»: PB envía el correo de restablecimiento… si el servidor
 // tiene SMTP configurado. Responde 204 igual (no filtra si el correo existe),
 // así que el mensaje al usuario debe ser honesto sobre la espera.
+/** @param {string} email */
 export async function requestPasswordReset(email) {
   const r = await fetch(`${PB_URL}/api/collections/users/request-password-reset`, {
     method: 'POST',
@@ -167,6 +254,11 @@ export async function requestPasswordReset(email) {
 // provisionar accesos de pizarra: correo + contraseña sencilla). No toca la sesión
 // actual del admin. Como el createRule de `users` ahora es admin-only (U1), la
 // petición se FIRMA con el token del admin logueado.
+/**
+ * @param {string} email
+ * @param {string} password
+ * @param {string} [name]
+ */
 export async function createTeacher(email, password, name) {
   const token = getAuthToken();
   const r = await fetch(`${PB_URL}/api/collections/users/records`, {
@@ -177,11 +269,16 @@ export async function createTeacher(email, password, name) {
       name: name || email.split('@')[0],
     }),
   });
-  const data = await r.json().catch(() => ({}));
+  const data = /** @type {{id?: string, message?: string}} */ (
+    await r.json().catch(() => ({})));
   if (!r.ok) throw new Error(data?.message || `Error ${r.status}`);
   return { ok: true, id: data.id };
 }
 
+/**
+ * @param {string} email
+ * @param {string} password
+ */
 export async function signIn(email, password) {
   const data = await pbPost('/api/collections/users/auth-with-password', {
     identity: email, password,
@@ -201,11 +298,13 @@ const GOOGLE_TOKEN_KEY = 'ww.google.token'; // { accessToken, expiry } (para Cla
 
 // Lista los proveedores OAuth habilitados en PB. Tolera el cambio de forma entre
 // PB <0.23 (`authProviders`) y ≥0.23 (`oauth2.providers`).
+/** @returns {Promise<OAuthProvider[]>} */
 export async function listOAuthProviders() {
   try {
     const r = await fetch(`${PB_URL}/api/collections/users/auth-methods`);
     if (!r.ok) return [];
-    const data = await r.json();
+    const data = /** @type {{oauth2?: {providers?: OAuthProvider[]}, authProviders?: OAuthProvider[]}} */ (
+      await r.json());
     return data?.oauth2?.providers || data?.authProviders || [];
   } catch { return []; }
 }
@@ -231,6 +330,11 @@ export function oauthRedirectUrl() {
 
 // Paso 1: pide a PB los datos del proveedor (authURL/state/codeVerifier), guarda
 // lo necesario para el retorno y redirige al consentimiento de Google.
+/**
+ * @param {string} [providerName]
+ * @param {string} [redirectUrl]
+ * @param {{link?: boolean}} [opts]
+ */
 async function startOAuthLogin(providerName = 'google', redirectUrl = oauthRedirectUrl(), { link = false } = {}) {
   const provs = await listOAuthProviders();
   const p = provs.find(x => x.name === providerName);
@@ -255,12 +359,17 @@ export async function linkGoogle() {
   return startOAuthLogin('google', oauthRedirectUrl(), { link: true });
 }
 
+/** @returns {PendingOAuth|null} */
 function pendingOAuth() {
-  try { return JSON.parse(ssGet(OAUTH_KEY)); } catch { return null; }
+  try { return /** @type {PendingOAuth|null} */ (JSON.parse(ssGet(OAUTH_KEY) || 'null')); } catch { return null; }
 }
 
 // Paso 2 (al volver de Google con ?code&state): valida el state y canjea el code
 // en PB. Deja la sesión iniciada y guarda el accessToken de Google si vino.
+/**
+ * @param {string} code
+ * @param {string|null|undefined} returnedState
+ */
 export async function completeOAuthLogin(code, returnedState) {
   const pending = pendingOAuth();
   ssDel(OAUTH_KEY);
@@ -269,10 +378,13 @@ export async function completeOAuthLogin(code, returnedState) {
   // VINCULAR (los que entraron por correo): firmamos el intercambio con el token
   // actual → PB asocia Google a ESE usuario en vez de crear otro. Sin `link`, es
   // un login normal (sin Authorization).
-  const authHeader = (pending.link && getAuthToken()) ? { Authorization: getAuthToken() } : {};
+  const linkToken = pending.link ? getAuthToken() : null;
+  /** @type {Record<string, string>} */
+  const headers = { 'Content-Type': 'application/json' };
+  if (linkToken) headers.Authorization = linkToken;
   const r = await fetch(`${PB_URL}/api/collections/users/auth-with-oauth2`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...authHeader },
+    headers,
     body: JSON.stringify({
       provider: pending.provider,
       code,
@@ -280,7 +392,8 @@ export async function completeOAuthLogin(code, returnedState) {
       redirectURL: pending.redirectUrl,
     }),
   });
-  const data = await r.json().catch(() => ({}));
+  const data = /** @type {AuthResponse & {message?: string, data?: Record<string, unknown>}} */ (
+    await r.json().catch(() => ({})));
   if (!r.ok) {
     // "Failed to fetch OAuth2 token" = PB no pudo canjear el code con Google
     // (client_secret cambiado, redirect_uri no registrada, etc.). Volcamos TODO
@@ -303,13 +416,15 @@ export async function completeOAuthLogin(code, returnedState) {
     if (data.record?.id && (avatar || name)) {
       const { saveProfile } = await import('./profile.js');
       saveProfile(data.record.id, { ...(name ? { name } : {}), ...(avatar ? { avatar } : {}) })
-        .catch(e => console.warn('[auth] no se pudo sellar el perfil público:', e.message));
+        .catch(e => console.warn('[auth] no se pudo sellar el perfil público:',
+          e instanceof Error ? e.message : String(e)));
     }
   } catch (e) {
     // Best-effort DECLARADO (R6): que falle el sello del perfil NO puede tumbar
     // un login que ya está hecho — pero se dice, o el profe se pregunta por qué
     // sale sin foto y no hay ni rastro de por qué.
-    console.warn('[auth] perfil público no sellado tras el login de Google:', e.message);
+    console.warn('[auth] perfil público no sellado tras el login de Google:',
+      e instanceof Error ? e.message : String(e));
   }
   notify();
   return { ...data, returnHash: pending.returnHash || '' };
@@ -319,7 +434,8 @@ export async function completeOAuthLogin(code, returnedState) {
 // Classroom en Fase B). Null si no hay o no vino. Caduca ~1 h.
 export function getGoogleAccessToken() {
   try {
-    const t = JSON.parse(ssGet(GOOGLE_TOKEN_KEY));
+    const t = /** @type {{accessToken?: string, expiry?: string|null}|null} */ (
+      JSON.parse(ssGet(GOOGLE_TOKEN_KEY) || 'null'));
     if (!t?.accessToken) return null;
     if (t.expiry && new Date(t.expiry).getTime() < Date.now()) return null;
     return t.accessToken;
@@ -341,6 +457,10 @@ export async function signOut() {
 
 // Cambia la contraseña del profe. PB exige la actual (`oldPassword`). Al cambiarla
 // PB revoca el token, así que re-autenticamos con la nueva para no cerrar sesión.
+/**
+ * @param {string} oldPassword
+ * @param {string} newPassword
+ */
 export async function changePassword(oldPassword, newPassword) {
   const u = await getUser();
   if (!u) throw new Error('Inicia sesión primero.');
@@ -352,7 +472,7 @@ export async function changePassword(oldPassword, newPassword) {
     headers: { 'Content-Type': 'application/json', ...(stored?.token ? { Authorization: stored.token } : {}) },
     body: JSON.stringify({ oldPassword, password: newPassword, passwordConfirm: newPassword }),
   });
-  const data = await r.json().catch(() => ({}));
+  const data = /** @type {{message?: string}} */ (await r.json().catch(() => ({})));
   if (!r.ok) throw new Error(data?.message || (r.status === 400 ? 'La contraseña actual no es correcta.' : `Error ${r.status}`));
   // Re-autentica con la nueva clave → token fresco (PB revocó el anterior).
   await signIn(u.email, newPassword);
@@ -360,6 +480,7 @@ export async function changePassword(oldPassword, newPassword) {
 }
 
 
+/** @param {(e: AuthChange) => void} fn */
 export function onAuthChange(fn) {
   listeners.add(fn);
   return () => listeners.delete(fn);

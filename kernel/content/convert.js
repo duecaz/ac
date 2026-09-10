@@ -21,13 +21,43 @@
 // path, not a bug.
 import { rid } from '../../core/ids.js';
 
+/**
+ * @typedef {import('../contracts/activity.js').ActivityContent} ActivityContent
+ * @typedef {import('../contracts/activity.js').QaItem} QaItem
+ * @typedef {import('../contracts/activity.js').Pair} Pair
+ */
+
+/** @param {unknown} s */
 const nonEmpty = (s) => String(s ?? '').trim() !== '';
 
-/** @type {Record<string, (content: Object) => (Object|null)>} */
+/**
+ * Los ítems con PREGUNTA del contenido de entrada (`qa` y, con la misma forma de
+ * texto, `items`). El contenido llega como la unión de los modelos: se estrecha
+ * por forma, que es lo único que un conversor sabe de verdad.
+ * @param {ActivityContent} content
+ * @returns {QaItem[]}
+ */
+function itemsConPregunta(content) {
+  const crudos = 'items' in content && Array.isArray(content.items) ? content.items : [];
+  /** @type {QaItem[]} */
+  const out = [];
+  for (const it of crudos) if (it && typeof it === 'object' && 'question' in it) out.push(/** @type {QaItem} */ (it));
+  return out;
+}
+
+/**
+ * Las parejas del contenido de entrada.
+ * @param {ActivityContent} content
+ * @returns {Pair[]}
+ */
+function parejas(content) {
+  return 'pairs' in content && Array.isArray(content.pairs) ? content.pairs : [];
+}
+
+/** @type {Record<string, (content: ActivityContent) => (ActivityContent|null)>} */
 const CONVERTERS = {
   'qa->pairs'(content) {
-    const items = Array.isArray(content?.items) ? content.items : [];
-    const out = items
+    const out = itemsConPregunta(content)
       .filter(it => nonEmpty(it.question) && nonEmpty(it.answer))
       .map(it => ({ id: rid('p_'), left: String(it.question), right: String(it.answer) }));
     return out.length ? { pairs: out } : null;
@@ -35,16 +65,14 @@ const CONVERTERS = {
 
   // Ruleta / Abre Cajas: ítems {id, q, image}. Se conserva la imagen del qa.
   'qa->items'(content) {
-    const items = Array.isArray(content?.items) ? content.items : [];
-    const out = items
+    const out = itemsConPregunta(content)
       .filter(it => nonEmpty(it.question))
       .map(it => ({ id: rid('it_'), question: String(it.question), image: it.image ?? null }));
     return out.length ? { items: out } : null;
   },
 
   'pairs->qa'(content) {
-    const ps = Array.isArray(content?.pairs) ? content.pairs : [];
-    const valid = ps.filter(p => nonEmpty(p.left) && nonEmpty(p.right));
+    const valid = parejas(content).filter(p => nonEmpty(p.left) && nonEmpty(p.right));
     if (!valid.length) return null;
     const allRights = valid.map(p => String(p.right));
     const items = valid.map(p => {
@@ -58,11 +86,10 @@ const CONVERTERS = {
 
   // Cada lado del par se vuelve una entrada de la ruleta (conserva su imagen).
   'pairs->items'(content) {
-    const ps = Array.isArray(content?.pairs) ? content.pairs : [];
-    const out = ps.flatMap(p => [
-      nonEmpty(p.left) ? { id: rid('it_'), question: String(p.left), image: p.leftImage ?? p.image ?? null } : null,
-      nonEmpty(p.right) ? { id: rid('it_'), question: String(p.right), image: p.rightImage ?? null } : null,
-    ]).filter(Boolean);
+    const out = parejas(content).flatMap(p => [
+      ...(nonEmpty(p.left) ? [{ id: rid('it_'), question: String(p.left), image: p.leftImage ?? p.image ?? null }] : []),
+      ...(nonEmpty(p.right) ? [{ id: rid('it_'), question: String(p.right), image: p.rightImage ?? null }] : []),
+    ]);
     return out.length ? { items: out } : null;
   },
 };
@@ -70,7 +97,7 @@ const CONVERTERS = {
 /** Claves 'from->to' del grafo — para el check de "modelos vivos" del test. */
 export function converterKeys() { return Object.keys(CONVERTERS); }
 
-/** @returns {boolean} */
+/** @param {string} fromModel @param {string} toModel @returns {boolean} */
 export function canConvert(fromModel, toModel) {
   if (fromModel === toModel) return true;
   return (`${fromModel}->${toModel}`) in CONVERTERS;
@@ -78,7 +105,8 @@ export function canConvert(fromModel, toModel) {
 
 /**
  * Convert content from one model to another. Identity when models match.
- * @returns {Object|null} converted content, or null if not possible.
+ * @param {string} fromModel @param {string} toModel @param {ActivityContent} content
+ * @returns {ActivityContent|null} converted content, or null if not possible.
  */
 export function convert(fromModel, toModel, content) {
   if (fromModel === toModel) return content;
@@ -86,7 +114,7 @@ export function convert(fromModel, toModel, content) {
   return fn ? fn(content) : null;
 }
 
-/** @returns {string[]} target model names reachable from `fromModel` (excludes self). */
+/** @param {string} fromModel @returns {string[]} target model names reachable from `fromModel` (excludes self). */
 export function convertibleTargets(fromModel) {
   return Object.keys(CONVERTERS)
     .filter(k => k.startsWith(fromModel + '->'))

@@ -48,6 +48,7 @@ import { fullscreenButtonHtml } from './fullscreen.js';
 // (mando, monocromo, crece con la letra); la racha se queda en EMOJI a
 // propósito —es una celebración, no un mando: el naranja se ve desde el fondo
 // del aula y un contorno gris no dice «vas lanzado».
+/** @type {Record<string, string>} */
 const ICONO = { tiempo: lucide('timer'), racha: '🔥' };
 
 /** UN indicador, con lo que le toque (icono incluido). El valor va en su propio
@@ -57,7 +58,10 @@ const ICONO = { tiempo: lucide('timer'), racha: '🔥' };
  *  Crucigrama— alojaban el reloj y lo copiaban a mano. Con UNA cabecera para las
  *  trece ya nadie construye un chip por su cuenta; lo cazó §30 al primer intento
  *  («nadie lo nombra fuera de su fichero»), que es la señal de que la
- *  unificación llegó de verdad. */
+ *  unificación llegó de verdad.
+ * @param {string} campo
+ * @param {string|null|undefined} texto
+ * @returns {string} */
 const chipHtml = (campo, texto) => {
   const ico = ICONO[campo] || '';
   const clase = campo === 'tiempo' ? 'edu-cab__reloj' : 'edu-cab__chip';
@@ -70,21 +74,22 @@ const chipHtml = (campo, texto) => {
  * oculto y listo para `hudSet` (así el player no tiene que re-renderizar para
  * estrenar un indicador a mitad de partida).
  *
- * @param {object}  o
- * @param {string} [o.pagina]        «3 / 8»
- * @param {string} [o.racha]         «3» (el 🔥 lo pone el chip)
- * @param {string} [o.extra]         «Flips: 4»
- * @param {string} [o.tiempo]        «12» (el icono lo pone el chip)
+ * @param {object}  [o]
+ * @param {string} [o.pagina]        el "3 / 8"
+ * @param {string} [o.racha]         el "3" (el 🔥 lo pone el chip)
+ * @param {string} [o.extra]         el "Flips: 4"
+ * @param {string} [o.tiempo]        el "12" (el icono lo pone el chip)
  * @param {string} [o.herramientas]  HTML YA ESCAPADO de la plantilla: lápiz/
  *        borrador, Aa/Deshacer, Pista/Reiniciar. Solo lo que se TOCA — un
  *        indicador no va aquí, va por su nombre.
- * @param {boolean} [o.fullscreen]   ¿la cabecera aloja el botón de pantalla
- *        completa? Sí cuando ESTA cabecera manda en el marco (Individual,
- *        Tarea). En el duelo se montan DOS rondas en un marco: ninguna lo aloja
- *        y el mando sigue siendo la esquina del marco, que es UNA.
+ * @param {boolean} [o.fullscreen]   true si la cabecera aloja el botón de
+ *        pantalla completa. Sí cuando ESTA cabecera manda en el marco
+ *        (Individual, Tarea). En el duelo se montan DOS rondas en un marco:
+ *        ninguna lo aloja y el mando sigue siendo la esquina del marco, que es UNA.
  * @param {boolean} [o.progreso]     barra de agotamiento bajo la cabecera. Solo
  *        tiene sentido con CUENTA ATRÁS: un cronómetro ascendente no agota nada
  *        y una barra quieta desinforma. La llena `relojSet`.
+ * @returns {string}
  */
 export function cabeceraHtml({ pagina, racha, extra, tiempo, herramientas = '',
                                fullscreen = true, progreso = false } = {}) {
@@ -96,10 +101,14 @@ export function cabeceraHtml({ pagina, racha, extra, tiempo, herramientas = '',
   </header>${progreso ? '<div class="edu-cab__barra" data-progreso><i></i></div>' : ''}`;
 }
 
-/** Actualiza UN indicador dentro de `scope` (Element o selector). */
+/** Actualiza UN indicador dentro de `scope` (Element o selector).
+ * @param {Element|string|null|undefined} scope
+ * @param {string} campo
+ * @param {string|number|null|undefined} texto
+ * @returns {void} */
 export function hudSet(scope, campo, texto) {
   const raiz = typeof scope === 'string' ? document.querySelector(scope) : scope;
-  const el = raiz?.querySelector(`[data-hud="${campo}"]`);
+  const el = /** @type {HTMLElement|null} */ (raiz?.querySelector(`[data-hud="${campo}"]`) ?? null);
   if (!el) return;
   if (texto == null || texto === '') { el.hidden = true; return; }
   el.hidden = false;
@@ -112,11 +121,15 @@ export function hudSet(scope, campo, texto) {
  *  separarlos fue justo lo que dejó la barra viviendo solo en Tildes.
  *  `pct` va por `transform`, NO por `width`: animar el ancho relayoutea la
  *  página en cada fotograma mientras corre el reloj — medido en una pizarra 4K
- *  con la CPU frenada 12x, 19 fps EN REPOSO con `width` y 60 con `transform`. */
+ *  con la CPU frenada 12x, 19 fps EN REPOSO con `width` y 60 con `transform`.
+ * @param {Element|string|null|undefined} scope
+ * @param {string|number|null|undefined} valor
+ * @param {number|null} [pct]
+ * @returns {void} */
 export function relojSet(scope, valor, pct) {
   hudSet(scope, 'tiempo', valor);
   const raiz = typeof scope === 'string' ? document.querySelector(scope) : scope;
-  const barra = raiz?.querySelector('[data-progreso] i');
+  const barra = /** @type {HTMLElement|null} */ (raiz?.querySelector('[data-progreso] i') ?? null);
   if (barra && pct != null) barra.style.transform = `scaleX(${Math.max(0, Math.min(100, pct)) / 100})`;
 }
 

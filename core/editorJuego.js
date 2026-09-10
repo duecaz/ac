@@ -9,10 +9,21 @@
 import { renderEditorShell } from './editorShell.js';
 
 /**
- * @param {Function} asegurar   `ensureContent` del juego: deja `content` jugable
- * @param {string}   etiqueta   nombre de la pestaña única («Tablero», «Dibujo»…)
- * @param {Function} html       `(activity) => html` de esa pestaña
- * @param {Function} wire       `(root, activity, onChange) => void`
+ * @typedef {import('../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('./editorShell.js').EditorPanel} EditorPanel
+ * @typedef {import('./editorShell.js').EditorCtx} EditorCtx
+ */
+
+/**
+ * @param {Element} root
+ * @param {Activity} activity
+ * @param {(activity: Activity) => void} onChange
+ * @param {Object} spec
+ * @param {(activity: Activity) => void} spec.asegurar   `ensureContent` del juego: deja `content` jugable
+ * @param {string} spec.etiqueta   nombre de la pestaña única («Tablero», «Dibujo»…)
+ * @param {EditorPanel['html']} spec.html       `(activity) => html` de esa pestaña
+ * @param {EditorPanel['wire']} [spec.wire]     `(root, activity, ctx) => void`
+ * @returns {void}
  */
 export function renderEditorJuego(root, activity, onChange, { asegurar, etiqueta, html, wire }) {
   asegurar(activity);

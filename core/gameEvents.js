@@ -19,5 +19,7 @@ export const GameEvents = Object.freeze({
   TICK:            'game:tick'            // { remainSec }
 });
 
-export const emitGame = (name, detail) => emit(name, detail || {});
+/** @type {import('../kernel/contracts/events.js').EmitGame} */
+export const emitGame = (name, detail) => { emit(name, detail || {}); };
+/** @type {import('../kernel/contracts/events.js').OnGame} */
 export const onGame = (name, fn) => listen(name, fn);

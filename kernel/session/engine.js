@@ -37,15 +37,39 @@ export { isVsCompatible };
 // solo que implementada en score.js junto a autoScore (su gemela de puntuación).
 export { roundPayloadOf } from './score.js';
 
-/** Single entry point. `opts.format` selects the flow; `opts.state` hydrates. */
+/**
+ * @typedef {import('../contracts/activity.js').Activity} Activity
+ * @typedef {import('../contracts/session.js').SessionFormat} SessionFormat
+ * @typedef {import('./liveMachine.js').LiveOpts} LiveOpts
+ * @typedef {import('./teamsMachine.js').TeamsOpts} TeamsOpts
+ * @typedef {import('./vsMachine.js').VsOpts} VsOpts
+ */
+
+/**
+ * Las opciones de las TRES máquinas juntas: cada campo es opcional y `format`
+ * decide cuál las lee. Es intersección y no unión a propósito — así el
+ * despachador puede pasar el MISMO objeto a la máquina que toque.
+ * @typedef {LiveOpts & TeamsOpts & VsOpts & { format?: SessionFormat }} SessionOpts
+ */
+
+/**
+ * Single entry point. `opts.format` selects the flow; `opts.state` hydrates.
+ * @param {Activity} activity
+ * @param {SessionOpts} [opts]
+ */
 export function createSession(activity, opts = {}) {
   const format = opts.format || FORMATS.LIVE;
   const T = getTemplate(activity?.template);
   if (!T) throw new Error(`Plantilla desconocida: ${activity?.template}`);
+  // La sala en vivo y el duelo solo corren con una plantilla que PUNTÚA: el
+  // contrato se lo EXIGE a quien declara `modes.live` o `play.vs`, y `createVsSession`
+  // vuelve a comprobarlo con `isVsCompatible` antes de montar nada. Equipos NO
+  // lo exige (existe el modo juez), así que ahí va la plantilla tal cual.
+  const conScorer = () => /** @type {import('./score.js').ScoringTemplate} */ (T);
   switch (format) {
-    case FORMATS.LIVE:  return createLiveSession(activity, T, opts);
+    case FORMATS.LIVE:  return createLiveSession(activity, conScorer(), opts);
     case FORMATS.TEAMS: return createTeamsSession(activity, T, opts);
-    case FORMATS.VS:    return createVsSession(activity, T, opts);
+    case FORMATS.VS:    return createVsSession(activity, conScorer(), opts);
     // SOLO no tiene sesión de kernel A PROPÓSITO (C3): el modo Individual vive
     // en los shells (core/soloPlayer.js), que son su único dueño — estado,
     // reanudación F5, techo y guardado. Hubo un createSoloSession aquí que

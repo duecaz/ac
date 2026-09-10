@@ -16,6 +16,71 @@
 import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
 import { rankPlayers } from '../../core/liveRank.js';
 import { deriveAnswerMs, openedAtFor, origenServidor } from '../../core/serverMs.js';
+import { blobDeSala, estadoPb, filas, numero, texto } from '../frontera.js';
+
+/**
+ * @typedef {import('../frontera.js').PbFetch} PbFetch
+ * @typedef {import('../../kernel/contracts/dataPort.js').AnswerView} AnswerView
+ * @typedef {import('../../kernel/contracts/session.js').EngineAnswer} EngineAnswer
+ * @typedef {import('../../kernel/contracts/session.js').LiveEngine} LiveEngine
+ * @typedef {import('../../kernel/contracts/session.js').Player} Player
+ * @typedef {import('../../kernel/contracts/session.js').RankedPlayer} RankedPlayer
+ * @typedef {import('./realtimeRooms.js').CargaSala} CargaSala
+ * @typedef {import('./realtimeRooms.js').GuardaEstado} GuardaEstado
+ */
+
+/**
+ * UNA FILA de `live_answers` tal y como llega de PocketBase. Es FRONTERA: el
+ * servidor puede no mandar una columna (las consultas pidan `fields=`
+ * explícitos) y por eso todo lo que no es la identidad de la fila es opcional.
+ * @typedef {Object} FilaRespuesta
+ * @property {string} id
+ * @property {string} [session]
+ * @property {string} player
+ * @property {number} [item]
+ * @property {unknown} [value]
+ * @property {number} [ms]
+ * @property {boolean} [scored]
+ * @property {boolean} [correct]
+ * @property {boolean} [unscorable]
+ * @property {number} [points]
+ * @property {unknown} [v0]
+ * @property {boolean} [c0]
+ * @property {string} [created]
+ * @property {string} [updated]
+ */
+
+/** LO QUE SE ESCRIBE en `live_answers` (POST). El veredicto lo pone el host. */
+/**
+ * @typedef {Object} NuevaRespuesta
+ * @property {string} session
+ * @property {string} player
+ * @property {number} item
+ * @property {unknown} value
+ * @property {number} ms
+ * @property {boolean} scored
+ * @property {boolean} correct
+ * @property {number} points
+ * @property {boolean} [unscorable]
+ * @property {unknown} [v0]
+ * @property {boolean} [c0]
+ */
+
+/** UN VEREDICTO ya calculado, listo para volver a su fila.
+ * @typedef {Object} ParcheRespuesta
+ * @property {string} id
+ * @property {boolean} correct
+ * @property {boolean} unscorable
+ * @property {number} points
+ * @property {number} ms
+ */
+
+/** Las filas de respuesta de una respuesta `{items:[...]}` de PocketBase.
+ *  @param {unknown} res @returns {FilaRespuesta[]} */
+const filasRespuesta = (res) =>
+  filas(res)
+    .filter((f) => typeof f.id === 'string' && typeof f.player === 'string')
+    .map((f) => /** @type {FilaRespuesta} */ (f));
 
 /**
  * Fábrica de la sección de respuestas. `deps`:
@@ -27,10 +92,16 @@ import { deriveAnswerMs, openedAtFor, origenServidor } from '../../core/serverMs
  *   - fetchPlayers(sessionId): jugadores de `live_players` (sección rooms).
  *   - playersReady(): ¿existe la colección `live_players`? (sección rooms).
  *   - answersReady(): ¿existe la colección `live_answers`?
+ * @param {{ pbFetch: PbFetch, ANS: string,
+ *   claimHeaders: (sessionId: string) => Record<string, string>|undefined,
+ *   load: CargaSala, saveState: GuardaEstado,
+ *   fetchPlayers: (sessionId: string) => Promise<Player[]>,
+ *   playersReady: () => Promise<boolean>, answersReady: () => Promise<boolean> }} deps
  */
 export function createAnswersSection({ pbFetch, ANS, claimHeaders, load, saveState, fetchPlayers, playersReady, answersReady }) {
   // PB ids (session/player) are alphanumeric, but escape single quotes anyway so
   // a stray quote can't break (or inject into) the filter. (pbEscape: shared.)
+  /** @param {string} sessionId @param {number} itemIndex @param {string} [playerId] */
   const ansFilter = (sessionId, itemIndex, playerId) => {
     const parts = [`session='${pbEscape(sessionId)}'`, `item=${Number(itemIndex)}`];
     if (playerId != null) parts.push(`player='${pbEscape(playerId)}'`);
@@ -42,7 +113,9 @@ export function createAnswersSection({ pbFetch, ANS, claimHeaders, load, saveSta
   // respuesta/velocidad. ÚNICO sitio donde vive este criterio (lo usan
   // fetchAnswerRows y settlePending); si la deuda F cambia el desempate a
   // "más reciente", se cambia solo aquí.
+  /** @param {FilaRespuesta[]} rows @returns {FilaRespuesta[]} */
   function dedupeByPlayer(rows) {
+    /** @type {Map<string, FilaRespuesta>} */
     const byPlayer = new Map();
     for (const r of rows || []) {
       const prev = byPlayer.get(r.player);
@@ -55,6 +128,8 @@ export function createAnswersSection({ pbFetch, ANS, claimHeaders, load, saveSta
   // fila YA puntuada es lo que impide el doble conteo: settle() solo suma puntos
   // a players[] cuando la respuesta estaba sin puntuar (wasUnscored). Compartido
   // por settleItem y settlePending — el invariante anti-doble-conteo vive aquí.
+  /** @param {LiveEngine} engine @param {number} itemIndex @param {FilaRespuesta} r
+   *  @param {string|null} [origenRespaldo] */
   function hydrateAnswerRow(engine, itemIndex, r, origenRespaldo = null) {
     // §22-1 — el tiempo que PUNTÚA lo mide el SERVIDOR, no el móvil: se deriva de
     // los autodate de la fila contra el sello de apertura del ítem (host-only).
@@ -63,16 +138,17 @@ export function createAnswersSection({ pbFetch, ANS, claimHeaders, load, saveSta
     // Sin sello (ese PATCH aparte puede no haber entrado) se usa el instante
     // más temprano del SERVIDOR entre las filas: el orden sigue siendo suyo,
     // no del móvil (core/serverMs.js · origenServidor).
+    const s = blobDeSala(engine);
     const { ms, source } = deriveAnswerMs({
-      createdAt: r.created, updatedAt: r.updated,
-      openedAt: openedAtFor(engine.state.itemOpenedAt, itemIndex, engine.state.phase) || origenRespaldo,
-      claimedMs: r.ms, phase: engine.state.phase,
+      createdAt: texto(r.created), updatedAt: texto(r.updated),
+      openedAt: openedAtFor(s.itemOpenedAt, itemIndex, s.phase) || origenRespaldo,
+      claimedMs: numero(r.ms), phase: texto(s.phase),
     });
     engine.state.answers[`${itemIndex}:${r.player}`] = {
       playerId: r.player, value: r.value, msTaken: ms, msClaimed: r.ms ?? 0, msSource: source,
       // `unscorable` = liquidada pero SIN clave de respuesta (deuda C): se hidrata
       // como null (no puntuable), no como false (incorrecta).
-      correct: r.scored ? (r.unscorable ? null : r.correct) : null,
+      correct: r.scored ? (r.unscorable ? null : !!r.correct) : null,
       points: r.scored ? (r.points ?? 0) : 0,
     };
   }
@@ -83,15 +159,18 @@ export function createAnswersSection({ pbFetch, ANS, claimHeaders, load, saveSta
   // ancho de banda contra la Pi en el peor momento. Si alguien necesita un campo
   // nuevo de live_answers, se añade AQUÍ (y en listAnswers, que es quien mapea).
   const ANS_FIELDS = 'id,item,player,value,ms,correct,unscorable,points,scored,v0,c0,created,updated';
+  /** @param {string} sessionId @param {number} itemIndex @returns {Promise<FilaRespuesta[]>} */
   async function fetchAnswerRows(sessionId, itemIndex) {
     const res = await pbFetch(`/api/collections/${ANS}/records?filter=${ansFilter(sessionId, itemIndex)}&perPage=500&fields=${ANS_FIELDS}`);
-    return dedupeByPlayer(res?.items);
+    return dedupeByPlayer(filasRespuesta(res));
   }
 
   // La fila de UN (jugador, ítem), o null.
+  /** @param {string} sessionId @param {number} itemIndex @param {string} playerId
+   *  @returns {Promise<FilaRespuesta|null>} */
   async function getAnswerRow(sessionId, itemIndex, playerId) {
     const res = await pbFetch(`/api/collections/${ANS}/records?filter=${ansFilter(sessionId, itemIndex, playerId)}&perPage=1`);
-    return res?.items?.[0] || null;
+    return filasRespuesta(res)[0] || null;
   }
 
   // Crea la fila de una respuesta. Con el índice ÚNICO (session,player,item)
@@ -100,10 +179,11 @@ export function createAnswersSection({ pbFetch, ANS, claimHeaders, load, saveSta
   // upsert es ATÓMICO por la BD, sin el read-then-write que duplicaba filas (el
   // tablero de Ordena las Pelotas mostraba/puntuaba un estado viejo). Sin el
   // índice (pre-migración), el 400 no ocurre y todo sigue como antes.
+  /** @param {NuevaRespuesta} body @returns {Promise<{created?: boolean, conflict?: boolean}>} */
   async function postAnswer(body) {
     const headers = claimHeaders(body.session);
     try { await pbFetch(`/api/collections/${ANS}/records`, { method: 'POST', body: JSON.stringify(body), headers }); return { created: true }; }
-    catch (e) { if (e?.status === 400) return { conflict: true }; throw e; }
+    catch (e) { if (estadoPb(e) === 400) return { conflict: true }; throw e; }
   }
 
   // Liquida las respuestas que quedaron SIN puntuar en CUALQUIER ítem, sin tocar
@@ -111,25 +191,26 @@ export function createAnswersSection({ pbFetch, ANS, claimHeaders, load, saveSta
   // hace UNA carga y UN guardado en total). Recoge las REZAGADAS: las que llegaron
   // después del settle de su pregunta (rescate del trazo, cola offline, red lenta).
   // Camino común (nada pendiente): un probe de 1 fila y fuera.
+  /** @param {LiveEngine} engine @param {string} sessionId */
   async function settlePendingInto(engine, sessionId) {
     // ¿Hay algo sin puntuar? Probe mínimo server-side antes de bajar nada.
     const probe = await pbFetch(`/api/collections/${ANS}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}' && scored=false`)}&perPage=1&fields=id`);
-    if (!probe?.items?.length) return 0;
-    const res = await pbFetch(`/api/collections/${ANS}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}'`)}&perPage=500`);
+    if (!filas(probe)[0]) return 0;
+    const todas = filasRespuesta(await pbFetch(`/api/collections/${ANS}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}'`)}&perPage=500`));
     // Origen de respaldo por si falta el sello. En CARRERA todos los ítems se
     // abren a la vez → el bueno es el de TODA la sala. En RONDAS cada pregunta
     // abre a su hora: el de toda la sala le daría al ítem 5 un ms de minutos y
     // le mataría el bonus de velocidad SOLO a los liquidados en el barrido de
     // cierre (revisión de v1.51.444) → allí se usa el del PROPIO ítem.
     const esCarrera = engine.state.loop === 'race' || engine.state.phase === 'race';
-    const origenSala = esCarrera ? origenServidor(res?.items || []) : null;
-    const byItem = new Map();
-    for (const r of res?.items || []) {
+    const origenSala = esCarrera ? origenServidor(todas) : null;
+    const byItem = /** @type {Map<number, FilaRespuesta[]>} */ (new Map());
+    for (const r of todas) {
       const it = Number(r.item);
-      if (!byItem.has(it)) byItem.set(it, []);
-      byItem.get(it).push(r);
+      const lista = byItem.get(it) ?? [];
+      byItem.set(it, lista); lista.push(r);
     }
-    const toPatch = [];
+    const toPatch = /** @type {ParcheRespuesta[]} */ ([]);
     for (const [itemIndex, itemRows] of byItem) {
       const rows = dedupeByPlayer(itemRows);
       if (!rows.some(r => !r.scored)) continue;       // ese ítem ya está liquidado
@@ -152,6 +233,7 @@ export function createAnswersSection({ pbFetch, ANS, claimHeaders, load, saveSta
   }
 
   return {
+    /** @param {string} sessionId @param {number} itemIndex */
     async settleItem(sessionId, itemIndex) {
       if (await answersReady()) {
         const { engine } = await load(sessionId);
@@ -190,6 +272,8 @@ export function createAnswersSection({ pbFetch, ANS, claimHeaders, load, saveSta
       return { ok: true, settled };
     },
 
+    /** @param {string} sessionId @param {string} playerId @param {number} itemIndex
+     *  @param {unknown} value @param {number} [msTaken] */
     async submitAnswer(sessionId, playerId, itemIndex, value, msTaken) {
       if (await answersReady()) {
         // Candado de primera respuesta (como en un concurso): si ya hay fila para este ítem, se
@@ -221,6 +305,8 @@ export function createAnswersSection({ pbFetch, ANS, claimHeaders, load, saveSta
     // real. Mentir en `correct` solo mueve `value` a una respuesta mala → el
     // settle la puntúa MAL: mentir resta. (c0 queda como veredicto del primer
     // intento para la analítica de clase — no otorga puntos.)
+    /** @param {string} sessionId @param {string} playerId @param {number} itemIndex
+     *  @param {unknown} value @param {boolean} correct @param {number} points @param {number} [msTaken] */
     async submitRaceAttempt(sessionId, playerId, itemIndex, value, correct, points, msTaken) {
       if (await answersReady()) {
         let row = await getAnswerRow(sessionId, itemIndex, playerId);
@@ -263,6 +349,8 @@ export function createAnswersSection({ pbFetch, ANS, claimHeaders, load, saveSta
     // row (no first-answer lock): PATCH if it exists, else POST. The host reads
     // these via listAnswers and renders each board live; settleItem() later
     // scores the latest value. itemIndex defaults to 0 (single shared board).
+    /** @param {string} sessionId @param {string} playerId @param {unknown} value
+     *  @param {number} [msTaken] @param {number} [itemIndex] */
     async submitProgress(sessionId, playerId, value, msTaken, itemIndex = 0) {
       if (await answersReady()) {
         // Upsert ATÓMICO (deuda F): si no hay fila, POST; si dos progresos
@@ -292,11 +380,13 @@ export function createAnswersSection({ pbFetch, ANS, claimHeaders, load, saveSta
       await saveState(sessionId, engine);
     },
 
+    /** @param {string} sessionId @param {string} playerId @param {number} itemIndex
+     *  @returns {Promise<AnswerView|EngineAnswer|null>} */
     async getOwnAnswer(sessionId, playerId, itemIndex) {
       if (await answersReady()) {
         const res = await pbFetch(`/api/collections/${ANS}/records?filter=${ansFilter(sessionId, itemIndex, playerId)}&perPage=1`);
-        const r = res?.items?.[0];
-        return r ? { playerId: r.player, value: r.value, msTaken: r.ms, correct: r.scored ? r.correct : null, points: r.points } : null;
+        const r = filasRespuesta(res)[0];
+        return r ? { playerId: r.player, value: r.value, msTaken: r.ms, correct: r.scored ? !!r.correct : null, points: r.points } : null;
       }
       const { engine } = await load(sessionId);
       return engine.state.answers[`${itemIndex}:${playerId}`] || null;
@@ -307,12 +397,14 @@ export function createAnswersSection({ pbFetch, ANS, claimHeaders, load, saveSta
     // dispositivo ya lo acertó": veredicto del settle O el hint de avance de la
     // carrera (submitRaceAttempt escribe correct=true al acertar, §22-C6) — un
     // fallo sin puntuar queda en null, no en false.
+    /** @param {string} sessionId @param {string} playerId
+     *  @returns {Promise<import('../../kernel/contracts/dataPort.js').OwnAnswerRow[]>} */
     async listOwnAnswers(sessionId, playerId) {
       if (await answersReady()) {
         const filter = pbFilterParam(`session='${pbEscape(sessionId)}' && player='${pbEscape(playerId)}'`);
         const res = await pbFetch(`/api/collections/${ANS}/records?filter=${filter}&perPage=500`);
-        return (res?.items || []).map(r => ({
-          itemIndex: r.item, value: r.value,
+        return filasRespuesta(res).map(r => ({
+          itemIndex: Number(r.item), value: r.value,
           correct: (r.scored ? !!r.correct : (r.correct === true ? true : null)),
           points: r.points,
           ms: r.ms,   // ms de SERVIDOR desde la salida: reanudar recupera la hora de meta
@@ -328,6 +420,8 @@ export function createAnswersSection({ pbFetch, ANS, claimHeaders, load, saveSta
         }));
     },
 
+    /** @param {string} sessionId @param {number} itemIndex
+     *  @returns {Promise<AnswerView[]|EngineAnswer[]>} */
     async listAnswers(sessionId, itemIndex) {
       if (await answersReady()) {
         const rows = await fetchAnswerRows(sessionId, itemIndex);
@@ -337,7 +431,7 @@ export function createAnswersSection({ pbFetch, ANS, claimHeaders, load, saveSta
         // afirma el móvil — que en carrera es el tiempo EN ESA PREGUNTA, no desde
         // la salida. Como la carrera la decide la HORA DE META, ese respaldo
         // ordenaba el podio con un dato del cliente y con la semántica equivocada.
-        return rows.map(r => ({ playerId: r.player, value: r.value, msTaken: r.ms, correct: r.scored ? r.correct : null, points: r.points, v0: r.v0, c0: r.c0, created: r.created, updated: r.updated, scored: r.scored }));
+        return rows.map(r => ({ playerId: r.player, value: r.value, msTaken: r.ms, correct: r.scored ? !!r.correct : null, points: r.points, v0: r.v0, c0: r.c0, created: r.created, updated: r.updated, scored: r.scored }));
       }
       const { engine } = await load(sessionId);
       const a = engine.state.answers;
@@ -352,9 +446,11 @@ export function createAnswersSection({ pbFetch, ANS, claimHeaders, load, saveSta
     // settle). Sumamos points por jugador y le pegamos el nombre de live_players
     // → misma fuente que el podio (buildSessionTable) ⇒ marcador entre preguntas
     // y podio final SIEMPRE coinciden. Incluye a quien aún no puntúa (0).
+    /** @param {string} sessionId @param {number} [limit] @returns {Promise<RankedPlayer[]>} */
     async leaderboard(sessionId, limit = 50) {
       if (await playersReady() && await answersReady()) {
         const players = await fetchPlayers(sessionId);
+        /** @type {Record<string, unknown>[]} */
         let rows = [];
         try {
           // DESEMPATE por hora de meta (core/liveRank.js): a igualdad de puntos
@@ -370,7 +466,7 @@ export function createAnswersSection({ pbFetch, ANS, claimHeaders, load, saveSta
           // clase, y entonces el desempate de la carrera se vuelve aleatorio
           // (medido: el rápido salía 2.º).
           const res = await pbFetch(`/api/collections/${ANS}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}' && scored=true`)}&perPage=500&fields=player,points,ms,correct`);
-          rows = res?.items || [];   // core/liveRank.js acepta la fila tal cual
+          rows = filas(res);   // core/liveRank.js acepta la fila tal cual
         } catch { /* sin respuestas todavía → todos a 0 */ }
         return rankPlayers(players, rows, limit);
       }

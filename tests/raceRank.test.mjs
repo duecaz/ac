@@ -208,9 +208,10 @@ registerTemplate({
   // ese ítem pierde su hora de meta en cuanto el PATCH pisa `updated`.
   // Ventana generosa a propósito: es una CITA DE FUENTE (tests/helpers/fuente.mjs)
   // y un corte justo da trabajo cada vez que se añade una línea correcta arriba
-  // — pasó al añadir el origen de respaldo del sello (v1.51.436).
-  assert.match(cut('async settleItem(', 2200), /ms: scored\.msTaken/, 'settleItem debe persistir el ms del servidor');
-  assert.match(cut('async function settlePendingInto(', 2200), /ms: s\.msTaken/, 'settlePending debe persistir el ms del servidor');
+  // — pasó al añadir el origen de respaldo del sello (v1.51.436) y otra vez con
+  // el JSDoc de tipos (v1.51.674): 4000 caracteres cubren la función entera.
+  assert.match(cut('async settleItem(', 4000), /ms: scored\.msTaken/, 'settleItem debe persistir el ms del servidor');
+  assert.match(cut('async function settlePendingInto(', 4000), /ms: s\.msTaken/, 'settlePending debe persistir el ms del servidor');
   ok('el adaptador conserva y persiste el tiempo del servidor');
 }
 

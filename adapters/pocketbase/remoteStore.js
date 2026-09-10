@@ -11,15 +11,33 @@ import { lsGet, lsSet } from '../../core/ls.js';
 import { getAuthUserId } from '../../core/auth.js';
 import { signedFetch, pbJson } from '../../core/pbHttp.js';
 import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
+import { esFila, fila, filas, estadoPb, numero, texto } from '../frontera.js';
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/activity.js').ActivityRow} ActivityRow
+ * @typedef {import('../../kernel/contracts/dataPort.js').RemoteStore} RemoteStore
+ * @typedef {import('../../kernel/contracts/session.js').ResultRow} ResultRow
+ */
+
+// Una fila de `activities` / `results` ya estrechada a objeto. La FORMA de sus
+// campos es el esquema de la colección, que se verifica aparte
+// (`tools/check-pb.sh` + `tests/pbSchema.test.mjs`).
+/** @param {Record<string, unknown>} row @returns {ResultRow} */
+const comoResultado = (row) => /** @type {ResultRow} */ (row);
+/** @param {unknown} x @returns {Activity|null} */
+const comoActividad = (x) => (esFila(x) ? /** @type {Activity} */ (x) : null);
+
+/** @param {string} id */
 function toId(id) {
   const s = (id || '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
   return s.length > 15 ? s.slice(0, 15) : s.padEnd(15, '0');
 }
 
+/** @param {string} pbId @param {unknown} [originalId] */
 function fromId(pbId, originalId) {
   // Prefer the original id stored inside the data blob; this is the fallback.
-  if (originalId) return originalId;
+  if (typeof originalId === 'string' && originalId) return originalId;
   // act_XXXXXXXXXX → stored as actXXXXXXXXXX (10 alphanum chars after 'act')
   if (/^act[a-zA-Z0-9]{10}$/.test(pbId)) return `act_${pbId.slice(3)}`;
   // UUID without dashes (32 hex) → restore standard format
@@ -30,6 +48,7 @@ function fromId(pbId, originalId) {
 
 // El wrapper JSON (firma + parseo seguro + error { status, pb }) vive UNA vez
 // en core/pbHttp.js. Alias local para no tocar los ~20 llamadores.
+/** @param {string} path @param {RequestInit} [opts] @returns {Promise<unknown>} */
 const pbFetch = (path, opts) => pbJson(path, opts);
 
 // Track which PocketBase IDs are known to exist so we can skip the
@@ -46,24 +65,29 @@ function getSynced() {
   try { return new Set(JSON.parse(lsGet(SYNCED_KEY) || '[]')); }
   catch { return new Set(); }
 }
+/** @param {Set<string>} s */
 function saveSynced(s) {
   lsSet(SYNCED_KEY, JSON.stringify([...s].slice(-SYNCED_MAX)));
 }
+/** @param {string} pbId */
 function markSynced(pbId) {
   const s = getSynced(); s.delete(pbId); s.add(pbId);
   saveSynced(s);
 }
+/** @param {string} pbId */
 function unmarkSynced(pbId) {
   const s = getSynced(); s.delete(pbId);
   saveSynced(s);
 }
 
+/** @returns {RemoteStore} */
 export function createPocketbaseRemoteStore() {
   return {
     async saveActivity(a) {
       const pbId = toId(a.id);
       // Strip the internal sync flag; everything else is the activity content.
       const { _unsynced, ...cleanData } = a;
+      /** @type {{ id: string, data: Omit<Activity, '_unsynced'>, visibility: string, tags: string[], language: string, owner?: string }} */
       const payload = {
         id: pbId,
         data: cleanData,
@@ -84,7 +108,7 @@ export function createPocketbaseRemoteStore() {
             method: 'PATCH', body: JSON.stringify(payload),
           });
         } catch (e) {
-          if (e.status !== 404) throw e;
+          if (estadoPb(e) !== 404) throw e;
           // Was deleted from PB externally — recreate.
           unmarkSynced(pbId);
           await pbFetch('/api/collections/activities/records', {
@@ -99,7 +123,7 @@ export function createPocketbaseRemoteStore() {
             method: 'PATCH', body: JSON.stringify(payload),
           });
         } catch (e) {
-          if (e.status !== 404) throw e;
+          if (estadoPb(e) !== 404) throw e;
           await pbFetch('/api/collections/activities/records', {
             method: 'POST', body: JSON.stringify(payload),
           });
@@ -113,7 +137,7 @@ export function createPocketbaseRemoteStore() {
       try {
         await pbFetch(`/api/collections/activities/records/${pbId}`, { method: 'DELETE' });
       } catch (e) {
-        if (e.status !== 404) throw e;
+        if (estadoPb(e) !== 404) throw e;
       }
       unmarkSynced(pbId);
     },
@@ -124,9 +148,9 @@ export function createPocketbaseRemoteStore() {
         const rec = await pbFetch(`/api/collections/activities/records/${pbId}`);
         if (!rec) return null;
         markSynced(pbId);
-        return rec.data ?? null;
+        return comoActividad(fila(rec).data);
       } catch (e) {
-        if (e.status === 404) return null;
+        if (estadoPb(e) === 404) return null;
         throw e;
       }
     },
@@ -136,9 +160,11 @@ export function createPocketbaseRemoteStore() {
     async listActivities(ownerId = null) {
       const filter = ownerId ? `&filter=${pbFilterParam(`owner='${pbEscape(ownerId)}'`)}` : '';
       const rec = await pbFetch(`/api/collections/activities/records?perPage=200${filter}`);
-      return (rec?.items || []).map(row => {
-        markSynced(row.id);
-        return { id: fromId(row.id, row.data?.id), data: row.data };
+      return filas(rec).map(row => {
+        const id = texto(row.id);
+        markSynced(id);
+        const data = comoActividad(row.data);
+        return { id: fromId(id, data?.id), data: data ?? /** @type {Activity} */ (fila(row.data)) };
       });
     },
 
@@ -162,15 +188,15 @@ export function createPocketbaseRemoteStore() {
       if (owner) parts.push(`owner='${pbEscape(owner)}'`);
       const rec = await pbFetch(`/api/collections/activities/records`
         + `?filter=${pbFilterParam(parts.join(' && '))}&perPage=${Number(limit) || 120}`);
-      const rows = (rec?.items || []).map(row => ({
-        id: row.data?.id || row.id,
-        data: row.data || {},
-        language: row.language || 'es',
-        tags: row.tags || [],
+      const rows = filas(rec).map(row => ({
+        id: texto(comoActividad(row.data)?.id) || texto(row.id),
+        data: comoActividad(row.data) ?? /** @type {Activity} */ (fila(row.data)),
+        language: texto(row.language) || 'es',
+        tags: Array.isArray(row.tags) ? row.tags.map(t => texto(t)) : [],
         // QUIÉN la publicó: lo pide la moderación para saber a quién es lo que
         // está borrando (una prueba de un profe no es lo mismo que su clase).
-        owner: row.owner || '',
-        updated_at: row.data?.updatedAt || row.updated || '',
+        owner: texto(row.owner),
+        updated_at: texto(comoActividad(row.data)?.updatedAt) || texto(row.updated),
       }));
       rows.sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)));
       return rows;
@@ -180,9 +206,10 @@ export function createPocketbaseRemoteStore() {
      *  campo `owner`: ni contenido ni títulos salen del servidor para esto. */
     async countActivitiesByOwner() {
       const rec = await pbFetch('/api/collections/activities/records?perPage=500&fields=owner');
+      /** @type {Map<string, number>} */
       const out = new Map();
-      for (const row of rec?.items || []) {
-        const o = row.owner || '';
+      for (const row of filas(rec)) {
+        const o = texto(row.owner);
         if (o) out.set(o, (out.get(o) || 0) + 1);
       }
       return out;
@@ -196,8 +223,9 @@ export function createPocketbaseRemoteStore() {
       const r = await signedFetch(`${PB_URL}/api/collections/activities/records?perPage=500&fields=${encodeURIComponent(fields)}`);
       const txt = await r.text();
       if (!r.ok) throw new Error('HTTP ' + r.status);
+      /** @type {unknown[]} */
       let items = [];
-      try { items = JSON.parse(txt).items || []; } catch { items = []; }
+      try { items = filas(JSON.parse(txt)); } catch { items = []; }
       return { items, bytes: txt.length };
     },
 
@@ -209,13 +237,14 @@ export function createPocketbaseRemoteStore() {
       try {
         await postResult(r);
       } catch (e) {
-        if (e?.status === 400 && r._qid) {
+        if (estadoPb(e) === 400 && r._qid) {
           const dup = await pbFetch(`/api/collections/results/records?filter=${pbFilterParam(`qid='${pbEscape(r._qid)}'`)}&perPage=1&fields=id`).catch(() => null);
-          if (dup?.items?.length) return;   // el primer envío SÍ llegó
+          if (filas(dup).length) return;   // el primer envío SÍ llegó
         }
         throw e;
       }
 
+      /** @param {import('../../kernel/contracts/session.js').ResultRecord} r */
       function postResult(r) {
         return pbFetch('/api/collections/results/records', {
         method: 'POST',
@@ -242,10 +271,10 @@ export function createPocketbaseRemoteStore() {
       // reintentamos sin orden para no romper la lectura.
       try {
         const rec = await pbFetch(`/api/collections/results/records?${where}sort=-created&perPage=200`);
-        return rec?.items || [];
-      } catch (e) {
+        return filas(rec).map(comoResultado);
+      } catch {
         const rec = await pbFetch(`/api/collections/results/records?${where}perPage=200`);
-        return rec?.items || [];
+        return filas(rec).map(comoResultado);
       }
     },
   };

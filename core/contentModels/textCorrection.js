@@ -21,7 +21,13 @@
 // so editor preview and player share the logic.
 
 import { rid } from '../ids.js';
+import { erroresDeLista } from '../../kernel/content/models.js';
 import { getTemplate } from '../registry.js';
+
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Passage} Passage
+ * @typedef {import('../../kernel/contracts/activity.js').TextCorrectionContent} TextCorrectionContent
+ */
 
 /** ¿Esta actividad es una HOJA DE TEXTO (Tildes/Comas)? Lo pregunta quien tiene
  *  que dejarle el ancho: el duelo apaga su animación central en ellas —el
@@ -30,23 +36,27 @@ import { getTemplate } from '../registry.js';
  *  con su `meta.contentModel === 'textCorrection'` a mano (estaba escrito en dos
  *  sitios y ya discrepaban: el editor decía «Animación: sí» donde la clase la
  *  veía apagada). */
+/** @param {{template?: string}|null|undefined} activity */
 export function esHojaDeTexto(activity) {
   return getTemplate(activity?.template)?.meta?.contentModel === 'textCorrection';
 }
 
+/** @returns {TextCorrectionContent} */
 export function newEmpty() {
   return { passages: [{ id: rid('ps_'), text: '', marks: [] }] };
 }
 
+/** @returns {Passage} */
 export function newPassage() {
   return { id: rid('ps_'), text: '', marks: [] };
 }
 
-export function validate(content) {
-  const errs = [];
-  if (!Array.isArray(content?.passages)) errs.push('passages must be an array');
-  return errs;
-}
+/**
+ * FRONTERA: le llega cualquier contenido.
+ * @param {unknown} content
+ * @returns {string[]}
+ */
+export function validate(content) { return erroresDeLista(content, 'passages'); }
 
 /** Cuántas líneas seguidas forman un párrafo, y cuántos párrafos entran de una
  *  pegada. Decisión del dueño (2026-08-21) después de pegar un poema entero: le

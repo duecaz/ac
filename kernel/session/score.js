@@ -7,6 +7,41 @@
 // externas: ambas funciones reciben todo lo que necesitan por parámetro (T,
 // activity…), así que las tres máquinas las importan sin arrastrar nada más.
 
+/**
+ * La plantilla TAL Y COMO LA ENTREGA EL REGISTRO (`core/registry.js`): meta
+ * ancha y el resto del contrato opcional, porque la plataforma lo pregunta con
+ * `typeof` antes de llamarlo. Es lo que reciben las tres máquinas.
+ * @typedef {import('../../core/registry.js').PlantillaRegistrada} PlantillaRegistrada
+ * @typedef {import('../contracts/session.js').ScoreInput} ScoreInput
+ * @typedef {import('../contracts/session.js').RoundContext} RoundContext
+ * @typedef {import('../contracts/session.js').RoundPayload} RoundPayload
+ * @typedef {import('../contracts/session.js').SnapshotActivity} SnapshotActivity
+ */
+
+/**
+ * Una plantilla que SÍ puntúa. `scoreSubmission` es opcional en el contrato
+ * (las plantillas que solo se editan no lo traen), pero las tres máquinas
+ * multi-actor solo llegan aquí con una que lo declara: el contrato lo EXIGE a
+ * quien juega en vivo o en VS, y Equipos lo comprueba con `canAutoScoreRound`
+ * antes de elegir `scoring: 'auto'`.
+ * @typedef {PlantillaRegistrada & { scoreSubmission: NonNullable<PlantillaRegistrada['scoreSubmission']> }} ScoringTemplate
+ */
+
+/**
+ * El DETALLE por marcas que conserva `autoScore` cuando el scorer lo declara.
+ * @typedef {Object} ScoreDetail
+ * @property {number} hits
+ * @property {number} total
+ * @property {number} [over]   Marcas de MÁS (solo los scorers por marca).
+ */
+
+/**
+ * @typedef {Object} AutoScoreResult
+ * @property {boolean|null} correct   `null` = NO puntuable (sin clave).
+ * @property {number} points
+ * @property {ScoreDetail} [detail]
+ */
+
 // Shared scorer call — identical contract across formats so the brain is one.
 //
 // `correct: null` NO es "incorrecto": es NO PUNTUABLE — el ítem no tiene clave de
@@ -14,6 +49,11 @@
 // Antes esto hacía `!!r.correct`, así que un ítem sin clave marcaba a TODA la
 // clase como incorrecta en la tabla y en la analítica. Se preserva el null y cada
 // consumidor decide cómo pintarlo (la tabla ya tenía su estado "—").
+/**
+ * @param {ScoringTemplate} T
+ * @param {ScoreInput} input
+ * @returns {AutoScoreResult}
+ */
 export function autoScore(T, { value, item, msTaken, activity, mode }) {
   const r = T.scoreSubmission({ value, item, msTaken, activity, mode });
   // El DETALLE por marcas (aciertos · de más · total) se conserva cuando el
@@ -40,6 +80,14 @@ export function autoScore(T, { value, item, msTaken, activity, mode }) {
 // en vistas y kernel (una versión con try/catch, otras sin → asimetría: una
 // plantilla con getRoundPayload que lanzara caía con gracia en el proyector del
 // host pero crasheaba al alumno). El try/catch degrada igual en todos.
+/**
+ * @param {PlantillaRegistrada|null|undefined} T
+ * @param {SnapshotActivity} activity
+ * @param {number} itemIndex
+ * @param {RoundPayload|null} [fallback]
+ * @param {Partial<RoundContext> & Record<string, unknown>} [ctx]
+ * @returns {RoundPayload|null}
+ */
 export function roundPayloadOf(T, activity, itemIndex, fallback = null, ctx = {}) {
   // Snapshot de sala SANEADO (§22-2): el alumno no tiene `content`, tiene los
   // payloads ya calculados por el host. Se sirven de ahí en vez de recalcular

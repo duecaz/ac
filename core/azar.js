@@ -31,6 +31,12 @@ export const azar = {
 // para que los dos jugadores del duelo reciban el MISMO reparto (si no, no es
 // justo). Ese azar no es el de la partida en curso, así que no puede salir del
 // primitivo global — se pasa.
+/**
+ * @template T
+ * @param {T[]} a
+ * @param {(() => number)} [fuente]
+ * @returns {T[]}
+ */
 export function shuffle(a, fuente) {
   const dado = fuente || (() => azar.random());
   for (let i = a.length - 1; i > 0; i--) {

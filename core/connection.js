@@ -14,16 +14,18 @@ const DEBOUNCE_MS = 1500;
 
 let _state = 'connected';
 let _displayed = false;        // is the banner currently visible?
+/** @type {HTMLElement|null} */
 let _bannerEl = null;
 let _debounceTimer = null;
 
+/** @returns {HTMLElement} */
 function ensureBanner() {
-  if (_bannerEl) return _bannerEl;
-  _bannerEl = document.createElement('div');
-  _bannerEl.id = 'ww-conn-banner';
-  _bannerEl.className = 'd-none position-fixed start-50 translate-middle-x';
-  _bannerEl.style.cssText = 'top:60px;z-index:1040;border-radius:999px;padding:.4rem 1rem;font-size:.875rem;box-shadow:0 4px 12px rgba(0,0,0,.2)';
-  document.body.appendChild(_bannerEl);
+  if (!_bannerEl) {
+    document.body.insertAdjacentHTML('beforeend',
+      '<div id="ww-conn-banner" class="d-none position-fixed start-50 translate-middle-x" '
+      + 'style="top:60px;z-index:1040;border-radius:999px;padding:.4rem 1rem;font-size:.875rem;box-shadow:0 4px 12px rgba(0,0,0,.2)"></div>');
+    _bannerEl = /** @type {HTMLElement} */ (document.getElementById('ww-conn-banner'));
+  }
   return _bannerEl;
 }
 

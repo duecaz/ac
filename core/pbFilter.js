@@ -10,6 +10,8 @@
 //
 // Uso: `?filter=${pbFilterParam(`code='${pbEscape(code)}'`)}`
 
+/** @type {(v: unknown) => string} */
 export const pbEscape = (v) => String(v ?? '').replace(/'/g, "\\'");
 
+/** @type {(expr: unknown) => string} */
 export const pbFilterParam = (expr) => encodeURIComponent(String(expr ?? ''));

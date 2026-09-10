@@ -5,36 +5,62 @@
 import { rid } from '../../core/ids.js';
 import { LETTERS, PIN_LENGTH } from '../../core/constants.js';
 import { normalizeCode, esMiTarea } from '../../core/assignmentRules.js';
+// FRONTERA (JSON del almacén): `unknown` estrechado, nunca creído.
+import { esFila } from '../frontera.js';
 
 const K_ASSIGN = 'ww.assignments';
 const K_ATTEMPTS = 'ww.assignment_attempts';
+
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/dataPort.js').AssignmentsPort} AssignmentsPort
+ * @typedef {import('../../kernel/contracts/session.js').AssignmentAttempt} AssignmentAttempt
+ * @typedef {import('../../kernel/contracts/session.js').AssignmentRecord} AssignmentRecord
+ * @typedef {{ getItem: (k: string) => string|null, setItem: (k: string, v: string) => void }} KV
+ * @typedef {string|(() => string|null)} Identidad
+ */
 
 function defaultKV() { try { return globalThis.localStorage || null; } catch { return null; } }
 function genCode() { let s = ''; for (let i = 0; i < PIN_LENGTH; i++) s += LETTERS[Math.floor(Math.random() * LETTERS.length)]; return s; }
 function genId() { return rid('asg_'); }
 
+/**
+ * @param {{ kv?: KV|null, userId?: Identidad, identities?: string[]|(() => string[]) }} [deps]
+ * @returns {AssignmentsPort}
+ */
 export function createLocalAssignments({ kv = defaultKV(), userId, identities } = {}) {
+  /** @type {Map<string, unknown>} */
   const mem = new Map();
-  const read = (key, fallback) => {
-    if (kv) { try { return JSON.parse(kv.getItem(key) || 'null') ?? fallback; } catch { return fallback; } }
-    return mem.has(key) ? mem.get(key) : fallback;
+  /** @param {string} key @returns {unknown} */
+  const read = (key) => {
+    if (kv) { try { return JSON.parse(kv.getItem(key) || 'null'); } catch { return null; } }
+    return mem.has(key) ? mem.get(key) : null;
   };
+  /** @param {string} key @param {unknown} val */
   const write = (key, val) => { if (kv) kv.setItem(key, JSON.stringify(val)); else mem.set(key, val); };
   // La identidad puede venir como VALOR (tests) o como FUNCIÓN (la app): el
   // driver se memoiza por carga de página y el profe entra después, así que
   // preguntarla en cada llamada es lo que hace que sus tareas queden selladas
   // con su cuenta y no con el id anónimo del navegador.
-  const val = (x, def) => (typeof x === 'function' ? x() : x) || def;
-  const uid = () => val(userId, 'local-anon');
-  const mios = () => val(identities, null) || [uid()];
+  const uid = () => (typeof userId === 'function' ? userId() : userId) || 'local-anon';
+  const mios = () => (typeof identities === 'function' ? identities() : identities) || [uid()];
 
-  const assignments = () => read(K_ASSIGN, {});
-  const attempts = () => read(K_ATTEMPTS, []);
+  /** @returns {Record<string, AssignmentRecord>} */
+  const assignments = () => {
+    const m = read(K_ASSIGN);
+    return esFila(m) ? /** @type {Record<string, AssignmentRecord>} */ (m) : {};
+  };
+  /** @returns {AssignmentAttempt[]} */
+  const attempts = () => {
+    const l = read(K_ATTEMPTS);
+    return Array.isArray(l) ? /** @type {AssignmentAttempt[]} */ (l) : [];
+  };
 
   return {
     async createAssignment(activity, { title, dueAt, maxAttempts } = {}) {
       const map = assignments();
       const id = genId();
+      /** @type {AssignmentRecord} */
       const row = {
         id, code: genCode(),
         activity_id: activity.id, activity_snap: activity,

@@ -5,6 +5,14 @@ const BLOCK = [
   'fuck','shit','bitch','asshole','dick','cunt','nigger','nigga','retard','slut','whore','bastard','faggot'
 ];
 
+/**
+ * @typedef {{ok: false, reason: string}|{ok: true, value: string}} NicknameVerdict
+ */
+
+/**
+ * @param {unknown} raw
+ * @returns {NicknameVerdict}
+ */
 export function isAcceptableNickname(raw) {
   if (typeof raw !== 'string') return { ok: false, reason: 'inválido' };
   const trimmed = raw.trim();

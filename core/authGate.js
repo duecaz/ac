@@ -6,7 +6,16 @@ import { html, mount } from './html.js';
 import { mountAuthSlot } from './authWidget.js';
 import { backendName } from '../adapters/index.js';
 
+/**
+ * Lo que la vista gateada puede personalizar del cartel.
+ * @typedef {{title?: string, subtitle?: string}} GateOpts
+ */
+
 // Pantalla amable de "entra para gestionar". Reusa el botón del authWidget.
+/**
+ * @param {string} rootSel
+ * @param {GateOpts} [opts]
+ */
 function gateScreen(rootSel, { title, subtitle } = {}) {
   mount(rootSel, html`
     <div class="auth-gate">
@@ -24,6 +33,11 @@ function gateScreen(rootSel, { title, subtitle } = {}) {
 
 // Si hay sesión → ejecuta renderFn(); si no → pinta el gate. Async porque getUser
 // puede consultar el almacenamiento/estado.
+/**
+ * @param {string} rootSel
+ * @param {() => unknown} renderFn
+ * @param {GateOpts} [opts]
+ */
 export async function requireTeacher(rootSel, renderFn, opts = {}) {
   const user = await getUser();
   if (user) return renderFn();
@@ -43,6 +57,11 @@ export function canHost() {
   return !!getAuthUserId() || backendName() === 'local';
 }
 
+/**
+ * @param {string} rootSel
+ * @param {() => unknown} renderFn
+ * @param {GateOpts} [opts]
+ */
 export async function requireHost(rootSel, renderFn, opts = {}) {
   if (backendName() === 'local') return renderFn();
   return requireTeacher(rootSel, renderFn, opts);

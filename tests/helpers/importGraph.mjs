@@ -53,7 +53,13 @@ export function layerOf(file) {
 
 /** Especificadores relativos de un fichero, resueltos a ruta de repo. */
 export function importsOf(file, root = ROOT) {
-  const src = readFileSync(join(root, file), 'utf8');
+  // Sin los bloques JSDoc (`/** … */` al inicio de línea): un `import('…')`
+  // dentro de uno es un TIPO (`@typedef {import('../kernel/contracts/x.js').Y}`),
+  // no una dependencia en runtime — el navegador nunca lo carga. Las capas (§0)
+  // son de RUNTIME; el vocabulario de tipos de `kernel/contracts/` lo lee
+  // cualquiera. Solo `/**` a inicio de línea: un `/*` dentro de un comentario
+  // de línea («core/transport/*») se tragaba los imports de verdad.
+  const src = readFileSync(join(root, file), 'utf8').replace(/^[ \t]*\/\*\*[\s\S]*?\*\//gm, '');
   const out = [];
   // `from '…'` cubre import y re-export; `import('…')` cubre el dinámico (que en
   // este repo es como se cargan las vistas y las plantillas: si no se mirara, el

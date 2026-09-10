@@ -27,6 +27,15 @@ import { LETTERS, PIN_LENGTH } from '../../core/constants.js';
 import { normalizeCode, esMiTarea } from '../../core/assignmentRules.js';
 import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
 import { pbJson } from '../../core/pbHttp.js';
+import { esFila, fila, filas, estadoPb, numero, texto } from '../frontera.js';
+
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/dataPort.js').AssignmentsPort} AssignmentsPort
+ * @typedef {import('../../kernel/contracts/session.js').AssignmentAttempt} AssignmentAttempt
+ * @typedef {import('../../kernel/contracts/session.js').AssignmentRecord} AssignmentRecord
+ * @typedef {string|(() => string|null)} Identidad
+ */
 
 function genCode() {
   let s = '';
@@ -36,16 +45,30 @@ function genCode() {
 
 // El wrapper JSON vive UNA vez en core/pbHttp.js (el profe firma; el alumno va
 // anónimo, exactamente como antes). Alias local para los llamadores.
+// Lo que devuelve es JSON de FUERA: `unknown` hasta que se estrecha.
+/** @param {string} path @param {RequestInit} [opts] @returns {Promise<unknown>} */
 const pbFetch = (path, opts) => pbJson(path, opts);
 
+// Una fila de `assignments` / `assignment_attempts` ya estrechada a objeto. La
+// FORMA de sus campos es el esquema de la colección, que se verifica aparte
+// (`tools/check-pb.sh` + `tests/pbSchema.test.mjs`); reconstruir la fila campo a
+// campo aquí perdería en silencio lo que el esquema añada mañana.
+/** @param {Record<string, unknown>} row @returns {AssignmentRecord} */
+const comoTarea = (row) => /** @type {AssignmentRecord} */ (row);
+/** @param {Record<string, unknown>} row @returns {AssignmentAttempt} */
+const comoIntento = (row) => /** @type {AssignmentAttempt} */ (row);
+
+/**
+ * @param {{ userId?: Identidad, identities?: string[]|(() => string[]) }} [deps]
+ * @returns {AssignmentsPort}
+ */
 export function createPocketbaseAssignments({ userId = 'local-anon', identities } = {}) {
   // La identidad puede venir como VALOR (tests) o como FUNCIÓN (la app): el
   // driver se memoiza por carga de página y el profe entra después, así que
   // preguntarla en cada llamada es lo que hace que sus tareas queden selladas
   // con su cuenta y no con el id anónimo del navegador.
-  const val = (x, def) => (typeof x === 'function' ? x() : x) || def;
-  const uid = () => val(userId, 'local-anon');
-  const mios = () => val(identities, null) || [uid()];
+  const uid = () => (typeof userId === 'function' ? userId() : userId) || 'local-anon';
+  const mios = () => (typeof identities === 'function' ? identities() : identities) || [uid()];
 
   return {
     async createAssignment(activity, { title, dueAt, maxAttempts } = {}) {
@@ -65,7 +88,8 @@ export function createPocketbaseAssignments({ userId = 'local-anon', identities 
           created_at: now,
         }),
       });
-      return { id: rec.id, code: rec.code };
+      const row = esFila(rec) ? rec : {};
+      return { id: texto(row.id), code: texto(row.code, code) };
     },
 
     // MIS tareas de esta actividad, no las de todo el mundo. El filtro era solo
@@ -85,7 +109,7 @@ export function createPocketbaseAssignments({ userId = 'local-anon', identities 
       const res = await pbFetch(
         `/api/collections/assignments/records?filter=${pbFilterParam(filtro)}&sort=-created_at&perPage=200`
       );
-      return (res?.items || []).filter(r => esMiTarea(r, mios()));
+      return filas(res).map(comoTarea).filter(r => esMiTarea(r, mios()));
     },
 
     async findAssignmentByCode(code) {
@@ -93,7 +117,8 @@ export function createPocketbaseAssignments({ userId = 'local-anon', identities 
       const res = await pbFetch(
         `/api/collections/assignments/records?filter=${pbFilterParam(`code='${pbEscape(target)}'`)}`
       );
-      return res?.items?.[0] || null;
+      const row = filas(res)[0];
+      return row ? comoTarea(row) : null;
     },
 
     async closeAssignment(id) {
@@ -116,7 +141,7 @@ export function createPocketbaseAssignments({ userId = 'local-anon', identities 
       const res = await pbFetch(
         `/api/collections/assignment_attempts/records?filter=${pbFilterParam(`assignment_id='${pbEscape(assignmentId)}'`)}&sort=-created_at&perPage=200`
       );
-      return res?.items || [];
+      return filas(res).map(comoIntento);
     },
 
     async countOwnAttempts(assignmentId) {
@@ -124,7 +149,7 @@ export function createPocketbaseAssignments({ userId = 'local-anon', identities 
       const res = await pbFetch(
         `/api/collections/assignment_attempts/records?filter=${pbFilterParam(`assignment_id='${pbEscape(assignmentId)}' && user_id='${pbEscape(me)}'`)}&perPage=1`
       );
-      return res?.totalItems ?? 0;
+      return numero(fila(res).totalItems, 0);
     },
 
     // §22-3 — el intento declara su NÚMERO y el servidor lo acota contra el
@@ -143,22 +168,27 @@ export function createPocketbaseAssignments({ userId = 'local-anon', identities 
     async recordAttempt(assignmentId, activityId, playerName, scoreAuto, maxScore, timeUsed, answers = [], qid = '') {
       const mine = () => pbFetch(
         `/api/collections/assignment_attempts/records?filter=${pbFilterParam(`assignment_id='${pbEscape(assignmentId)}' && user_id='${pbEscape(uid())}'`)}&perPage=50&fields=qid`
-      ).then(r => r?.items || []).catch(() => []);
+      ).then(filas).catch(() => []);
       let taken = await this.countOwnAttempts(assignmentId).catch(() => 0);
       for (let tries = 0; tries < 4; tries++) {
         try {
-          return await postAttempt(taken + 1);
+          // Sin devolver la fila: el puerto declara `Promise<void>` y el local
+          // tampoco devuelve nada — nadie lee el valor (core/attemptQueue.js).
+          await postAttempt(taken + 1);
+          return;
         } catch (e) {
-          if (e?.status === 403) {
+          const estado = estadoPb(e);
+          if (estado === 403) {
             throw Object.assign(new Error('El servidor no aceptó el intento: la tarea está cerrada o ya has agotado los intentos.'), { status: 403 });
           }
-          if (e?.status !== 400 || tries === 3) throw e;
+          if (estado !== 400 || tries === 3) throw e;
           if (qid && (await mine()).some(r => r.qid === qid)) return;   // ya entregado
           const fresh = await this.countOwnAttempts(assignmentId).catch(() => taken + 1);
           taken = Math.max(taken + 1, fresh);
         }
       }
 
+      /** @param {number} attemptNo */
       async function postAttempt(attemptNo) {
         return pbFetch('/api/collections/assignment_attempts/records', {
         method: 'POST',

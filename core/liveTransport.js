@@ -22,11 +22,22 @@ import { getRealtime } from '../adapters/index.js';
  * @property {Object} [old]
  */
 
-const call = (method) => async (...args) => {
-  const rt = await getRealtime();
-  if (typeof rt[method] !== 'function') throw new Error(`realtime backend no soporta "${method}"`);
-  return rt[method](...args);
-};
+/** @typedef {import('../kernel/contracts/dataPort.js').RealtimePort} RealtimePort */
+
+/**
+ * Reenvía UNA llamada al driver activo conservando su firma del contrato: lo
+ * que se exporta abajo tiene los tipos de `RealtimePort`, no una firma anónima.
+ * @template {keyof RealtimePort} K
+ * @param {K} method
+ * @returns {RealtimePort[K]}
+ */
+const call = (method) => /** @type {RealtimePort[K]} */ (
+  async (/** @type {unknown[]} */ ...args) => {
+    const rt = await getRealtime();
+    const fn = rt?.[method];
+    if (typeof fn !== 'function') throw new Error(`realtime backend no soporta "${method}"`);
+    return /** @type {(...a: unknown[]) => unknown} */ (fn).apply(rt, args);
+  });
 
 // Rooms
 export const createRoom = call('createRoom');

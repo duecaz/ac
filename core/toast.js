@@ -2,18 +2,22 @@
 // Auto-creates a fixed container at top-right.
 import { rid } from './ids.js';
 
+/** @type {HTMLDivElement|null} */
 let _container = null;
 
 function container() {
   if (_container) return _container;
   _container = document.createElement('div');
   _container.className = 'toast-container position-fixed top-0 end-0 p-3';
-  _container.style.zIndex = 9999;
+  _container.style.zIndex = '9999';
   document.body.appendChild(_container);
   return _container;
 }
 
+/** @typedef {'success'|'danger'|'warning'|'info'} ToastKind */
+/** @type {Record<string, string>} */
 const COLORS = { success: 'success', danger: 'danger', warning: 'warning', info: 'primary' };
+/** @type {Record<string, string>} */
 const ICONS = { success: 'bi-check-circle-fill', danger: 'bi-exclamation-octagon-fill', warning: 'bi-exclamation-triangle-fill', info: 'bi-info-circle-fill' };
 
 // DURACIONES CON NOMBRE — dueño único (barrido B5, 2026-09-02). 48 sitios
@@ -33,6 +37,12 @@ export const TOAST_NORMAL = 5000;
 export const TOAST_LARGO = 6000;
 export const TOAST_ERROR = 9000;
 
+/**
+ * @param {string} message
+ * @param {ToastKind} [kind]
+ * @param {number} [timeoutMs]
+ * @returns {() => void}
+ */
 export function toast(message, kind = 'success', timeoutMs = 3000) {
   const c = container();
   const el = document.createElement('div');
@@ -45,12 +55,18 @@ export function toast(message, kind = 'success', timeoutMs = 3000) {
     </div>`;
   c.appendChild(el);
   const dismiss = () => { el.classList.remove('show'); setTimeout(() => el.remove(), 200); };
-  el.querySelector('.btn-close').onclick = dismiss;
+  const cerrar = /** @type {HTMLElement|null} */ (el.querySelector('.btn-close'));
+  if (cerrar) cerrar.onclick = dismiss;
   if (timeoutMs > 0) setTimeout(dismiss, timeoutMs);
   return dismiss;
 }
 
-// Promise-based confirm. Resolves true on accept, false on cancel.
+/**
+ * Promise-based confirm. Resolves true on accept, false on cancel.
+ * @param {string} message
+ * @param {{title?: string, okText?: string, cancelText?: string, danger?: boolean}} [opts]
+ * @returns {Promise<boolean>}
+ */
 export function confirmModal(message, { title = 'Confirmar', okText = 'Aceptar', cancelText = 'Cancelar', danger = false } = {}) {
   return new Promise(resolve => {
     const id = rid('ww-cm-');
@@ -74,23 +90,48 @@ export function confirmModal(message, { title = 'Confirmar', okText = 'Aceptar',
         </div>
       </div>`;
     const el = wrap.firstElementChild;
+    // Rama imposible: el markup de arriba es un literal con un único hijo.
+    if (!el) { resolve(false); return; }
     document.body.appendChild(el);
-    const m = new bootstrap.Modal(el);
+    const m = new (bootstrapNS().Modal)(el);
     // Move focus out of the modal BEFORE hiding. Bootstrap sets aria-hidden on
     // the modal while a button inside still holds focus, which the browser flags
     // (hiding a focused element from assistive tech). Blurring first avoids it.
+    /** @param {boolean} val */
     const close = (val) => {
       if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
       resolve(val);
       m.hide();
     };
-    el.querySelector('[data-act=ok]').onclick = () => close(true);
-    el.querySelector('[data-act=cancel]').onclick = () => close(false);
+    const ok = /** @type {HTMLElement|null} */ (el.querySelector('[data-act=ok]'));
+    const cancel = /** @type {HTMLElement|null} */ (el.querySelector('[data-act=cancel]'));
+    if (ok) ok.onclick = () => close(true);
+    if (cancel) cancel.onclick = () => close(false);
     el.addEventListener('hidden.bs.modal', () => el.remove());
     m.show();
   });
 }
 
+/** @type {Record<string, string>} */
+const ESCAPES = { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' };
+
+/**
+ * @param {unknown} s
+ * @returns {string}
+ */
 function escapeHtml(s) {
-  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  return String(s ?? '').replace(/[&<>"']/g, c => ESCAPES[c]);
+}
+
+/**
+ * El espacio de nombres de Bootstrap, que llega por `<script>` del vendor y no
+ * por import: se lee del global cuando hace falta (al abrir el diálogo), no al
+ * cargar el módulo.
+ * @typedef {{ show(): void, hide(): void }} BsModal
+ * @returns {{ Modal: new (el: Element, opts?: Record<string, unknown>) => BsModal }}
+ */
+function bootstrapNS() {
+  return /** @type {{ bootstrap: { Modal: new (el: Element, opts?: Record<string, unknown>) => BsModal } }} */ (
+    /** @type {object} */ (globalThis)
+  ).bootstrap;
 }

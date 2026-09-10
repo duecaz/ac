@@ -18,12 +18,19 @@ import { PB_URL } from '../pocketbase.config.js';
 import { clock } from './clock.js';
 import { noteServerDate } from './serverNow.js';
 
+/**
+ * @param {string} url
+ * @param {RequestInit} [opts]
+ * @returns {Promise<Response>}
+ */
 export async function signedFetch(url, opts = {}) {
   const { headers: extra, ...rest } = opts;
+  /** @type {Record<string, string>} */
   const base = {};
   // Content-Type solo con cuerpo JSON (POST/PATCH); en GET/DELETE, PocketBase da 400.
   if (rest.body != null && typeof rest.body === 'string') base['Content-Type'] = 'application/json';
   if (extra) Object.assign(base, extra);
+  /** @param {boolean} withAuth */
   const run = (withAuth) => {
     const headers = { ...base };
     const token = withAuth ? getAuthToken() : null;
@@ -53,6 +60,10 @@ export async function signedFetch(url, opts = {}) {
 // Un cuerpo no-JSON (proxy, portal cautivo, política de red) también sale como
 // error PocketBase con `pb.raw`, nunca como SyntaxError opaco de r.json().
 // `opts` pasa entero a signedFetch → `signal` (timeout del caller) funciona.
+/**
+ * @param {string} path
+ * @param {RequestInit} [opts]
+ */
 export async function pbJson(path, opts = {}) {
   const r = await signedFetch(`${PB_URL}${path}`, opts);
   if (r.status === 204) return null;

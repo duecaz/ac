@@ -11,9 +11,23 @@ import { SCHEMA_VERSION, DEFAULT_RULES, DEFAULT_SCORING, DEFAULT_REVIEW, DEFAULT
 import { getModel } from '../kernel/content/models.js';
 import { getTemplate } from './registry.js';
 
+/**
+ * @typedef {import('../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../kernel/contracts/activity.js').ActivityContent} ActivityContent
+ */
+
+/**
+ * UNA ACTIVIDAD TAL Y COMO LLEGA: del almacén, de una fila del backend o del
+ * editor a medio construir. Todo lo del contrato es opcional aquí (lo rellena
+ * `normalize`) menos el id, y el índice abierto deja pasar los campos LEGADOS
+ * que ya no están en el contrato (`items` de v1).
+ * @typedef {{id: string} & Partial<Activity> & Record<string, unknown>} ActivityLike
+ */
+
+/** @type {Record<number, (a: ActivityLike) => ActivityLike>} */
 const STEPS = {
   1: (a) => {
-    a = { ...a, content: { items: a.items || [] }, rules: { ...DEFAULT_RULES }, scoring: { ...DEFAULT_SCORING }, review: { ...DEFAULT_REVIEW }, presentation: { ...DEFAULT_PRESENTATION } };
+    a = { ...a, content: /** @type {ActivityContent} */ ({ items: a.items || [] }), rules: { ...DEFAULT_RULES }, scoring: { ...DEFAULT_SCORING }, review: { ...DEFAULT_REVIEW }, presentation: { ...DEFAULT_PRESENTATION } };
     delete a.items;
     a.schemaVersion = 2;
     return a;
@@ -40,32 +54,41 @@ const STEPS = {
 // erradicarlo: corre en cada lectura, así que cada actividad que se abre y se
 // guarda queda limpia. Cuando no queden actividades viejas, se borra esto y el
 // nombre no estará en ningún sitio, ni en el código ni en los datos.
+/** @type {Record<string, {skin: string, puntos: 'velocidad'|'flat'}>} */
 const NOMBRES_RETIRADOS = { 'kahoot': { skin: 'vibrante', puntos: 'velocidad' } };
 
+/**
+ * @param {ActivityLike} a
+ * @returns {ActivityLike}
+ */
 function renombrar(a) {
-  const skin = NOMBRES_RETIRADOS[a.presentation?.skin];
+  const skin = NOMBRES_RETIRADOS[a.presentation?.skin || ''];
   if (skin) a = { ...a, presentation: { ...a.presentation, skin: skin.skin } };
-  const solo = NOMBRES_RETIRADOS[a.scoring?.mode];
+  const solo = NOMBRES_RETIRADOS[a.scoring?.mode || ''];
   if (solo) a = { ...a, scoring: { ...a.scoring, mode: solo.puntos } };
-  const vivo = NOMBRES_RETIRADOS[a.live?.pointsModel];
+  const vivo = NOMBRES_RETIRADOS[a.live?.pointsModel || ''];
   if (vivo) a = { ...a, live: { ...a.live, pointsModel: vivo.puntos } };
   return a;
 }
 
+/**
+ * @param {ActivityLike} a
+ * @returns {Activity}
+ */
 export function migrate(a) {
   if (!a || typeof a !== 'object') throw new Error('migrate: not an object');
   a = renombrar(a);
   let v = a.schemaVersion || (a.live ? 3 : a.rules ? 2 : 1);
   while (v < SCHEMA_VERSION) {
     a = STEPS[v](a);
-    v = a.schemaVersion;
+    v = a.schemaVersion ?? SCHEMA_VERSION;   // un paso siempre lo sella; sin sello se sale del bucle igual
   }
   // Per-template content migration if the template knows how.
   const T = getTemplate(a.template);
   if (T?.migrateContent) {
     // `?? a.content`: una migración que devuelva undefined NO puede borrar el
     // contenido del usuario (ley de contenido §24 — fail-safe).
-    a.content = T.migrateContent(a.content, a.templateVersion || 1) ?? a.content;
+    a.content = T.migrateContent(/** @type {ActivityContent} */ (a.content), a.templateVersion || 1) ?? a.content;
     a.templateVersion = T.meta?.templateVersion || a.templateVersion || 1;
   }
   return normalize(a);
@@ -73,6 +96,10 @@ export function migrate(a) {
 
 // Fills missing defaults using the template's factories when available, falling
 // back to generic constants. This way each template controls its own defaults.
+/**
+ * @param {ActivityLike} a
+ * @returns {Activity}
+ */
 export function normalize(a) {
   const T = getTemplate(a.template);
   const ruleDefs = T?.meta?.defaultRules?.() || { ...DEFAULT_RULES };
@@ -91,7 +118,9 @@ export function normalize(a) {
     template: a.template || 'quiz',
     templateVersion: a.templateVersion || T?.meta?.templateVersion || 1,
     schemaVersion: SCHEMA_VERSION,
-    content: { ...contentDefs, ...(a.content || {}) },
+    // El contenido lo decide el MODELO de la plantilla: aquí se mezcla el
+    // defecto con lo guardado y solo la plantilla sabe qué forma de la unión es.
+    content: /** @type {ActivityContent} */ ({ ...contentDefs, ...(a.content || {}) }),
     rules: { ...ruleDefs, ...(a.rules || {}) },
     scoring: { ...scoreDefs, ...(a.scoring || {}) },
     review: { ...DEFAULT_REVIEW, ...(a.review || {}) },
@@ -126,9 +155,18 @@ export function newActivityId() {
 // de esta lista que había antes de unificarla.)
 export const ITEM_KEYS = ['items', 'entries', 'pairs', 'words', 'passages', 'pins'];
 
+/**
+ * @param {{content?: unknown}|null} [a]
+ * @returns {number}
+ */
 export function activityItemCount(a) {
-  const c = a?.content || {};
-  for (const k of ITEM_KEYS) if (c[k]) return c[k].length;
+  const c = a?.content;
+  if (!c || typeof c !== 'object') return 0;
+  const rec = /** @type {Record<string, unknown>} */ (c);
+  for (const k of ITEM_KEYS) {
+    const v = rec[k];
+    if (Array.isArray(v)) return v.length;
+  }
   return 0;
 }
 
@@ -137,11 +175,19 @@ export function activityItemCount(a) {
 // ítems. El resto muestran TODO el ejercicio en UNA sola pantalla → 1 página
 // (Emparejar con 4 pares = 1 hoja; Etiqueta-el-diagrama = 1 hoja). El dato lo declara
 // cada plantilla en `meta.paginated` (co-locado con ella, no en una lista central).
+/**
+ * @param {{template?: string, content?: unknown}|null} [a]
+ * @returns {number}
+ */
 export function activityPageCount(a) {
   if (!getTemplate(a?.template)?.meta?.paginated) return 1;
   return activityItemCount(a) || 1;
 }
 
+/**
+ * @param {string} [template]
+ * @returns {Activity}
+ */
 export function newActivity(template = 'quiz') {
   const T = getTemplate(template);
   // NACE VACÍA (R-D · plan del editor, decisión del dueño 2026-08-13). Antes
@@ -170,7 +216,7 @@ export function newActivity(template = 'quiz') {
     title: 'Nueva actividad',
     template,
     templateVersion: T?.meta?.templateVersion || 1,
-    content,
+    content: /** @type {ActivityContent} */ (content),
     presentation,
     visibility: 'unlisted'   // nace como BORRADOR (S2): no aparece en la biblioteca hasta "Publicar"
   });

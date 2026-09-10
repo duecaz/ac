@@ -197,7 +197,7 @@
  * @property {(playerId?: string) => Promise<void>} pingPresence
  * @property {(sessionId: string, playerId: string, value: unknown, msTaken?: number, itemIndex?: number) => Promise<void>} submitProgress
  *   UPSERT de la fila PROPIA (tablero): el host ve el avance movimiento a movimiento.
- * @property {(sessionId: string, claim: {open?: boolean|null, question?: string|null,
+ * @property {(sessionId: string, claim: {open?: number|null, question?: string|null,
  *   image?: string|null, by?: string|null, byName?: string|null}) => Promise<void>} claimQuestion
  *   La ÚNICA afirmación de un alumno sobre la sala: escribe el campo `ql`, jamás el blob (§22).
  * @property {(sessionId: string, onChange: (change: RoomChange) => void) => (() => void)} subscribeRoom

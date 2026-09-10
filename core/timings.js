@@ -23,6 +23,14 @@ export const BOARD_POLL_MS = 2000;  // tablero compartido: se mueve más, refres
 // la usan el deadline del host, la barra de cuenta atrás del alumno y el
 // denominador del bonus de velocidad (core/scoring/award.js). Antes iban
 // por separado y award.js OMITÍA el piso de 5 → el bonus mentía con timers < 5s.
+/**
+ * @typedef {import('../kernel/contracts/activity.js').Activity} Activity
+ */
+
+/**
+ * @param {Activity|null} [activity]
+ * @returns {number}
+ */
 export function questionWindowMs(activity) {
   return Math.max(5, activity?.live?.questionTimer || 20) * 1000;
 }
@@ -33,12 +41,20 @@ export function questionWindowMs(activity) {
 // antes de leer. 0 = comportamiento anterior (retrocompatible).
 export const READ_SECONDS_DEFAULT = 3;
 export const READ_SECONDS_MAX = 30;
+/**
+ * @param {Activity|null} [activity]
+ * @returns {number}
+ */
 export function readSeconds(activity) {
   const v = activity?.live?.readSeconds;
   const n = (v === undefined || v === null) ? READ_SECONDS_DEFAULT : Number(v);
   if (!Number.isFinite(n) || n < 0) return 0;
   return Math.min(READ_SECONDS_MAX, Math.round(n));
 }
+/**
+ * @param {Activity|null} [activity]
+ * @returns {number}
+ */
 export function readWindowMs(activity) { return readSeconds(activity) * 1000; }
 
 // R-3 · TIEMPO POR PREGUNTA (docs/estudio-bucles-live.md ficha 1). Había UNA
@@ -54,13 +70,23 @@ export function readWindowMs(activity) { return readSeconds(activity) * 1000; }
 // INSTANTES de la sala, así que la ventana no viaja en el snapshot.
 export const ITEM_SECONDS_MIN = 5;
 export const ITEM_SECONDS_MAX = 300;
+/**
+ * @param {Activity|null} activity
+ * @param {unknown} [item]   El ítem de la plantilla: cada una tiene el suyo y aquí solo se mira `seconds`.
+ * @returns {number}
+ */
 export function itemSeconds(activity, item) {
-  const raw = Number(item?.seconds);
+  const raw = (item && typeof item === 'object' && 'seconds' in item) ? Number(item.seconds) : NaN;
   if (Number.isFinite(raw) && raw > 0) {
     return Math.min(ITEM_SECONDS_MAX, Math.max(ITEM_SECONDS_MIN, Math.round(raw)));
   }
   return questionWindowMs(activity) / 1000;   // el de la actividad (defecto 20)
 }
+/**
+ * @param {Activity|null} activity
+ * @param {unknown} [item]
+ * @returns {number}
+ */
 export function itemWindowMs(activity, item) { return itemSeconds(activity, item) * 1000; }
 
 // Tiempo de reloj en «m:ss» — ÚNICO formateador del repo (antes esta misma
@@ -68,6 +94,11 @@ export function itemWindowMs(activity, item) { return itemSeconds(activity, item
 // cronómetro de Ordena las Pelotas). `round` se elige por caso: una CUENTA ATRÁS
 // usa `Math.ceil` (mostrar 0:00 con un segundo aún por correr miente), y el
 // tiempo TRANSCURRIDO usa `Math.floor`/`Math.round`.
+/**
+ * @param {number} ms
+ * @param {(n: number) => number} [round]
+ * @returns {string}
+ */
 export function mmss(ms, round = Math.round) {
   const s = Math.max(0, round((ms || 0) / 1000));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;

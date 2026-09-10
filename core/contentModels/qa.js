@@ -1,12 +1,18 @@
 // Question-Answer content model used by the quiz template.
 import { rid } from '../ids.js';
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').QaItem} QaItem
+ * @typedef {import('../../kernel/contracts/activity.js').QaContent} QaContent
+ */
+
 // SEMILLA Y PRIMER PASO — dueño único (barrido B5, 2026-09-02). Quiz y Globos
 // («el caso Wordwall puro», mismo contenido `qa`) repetían el mismo texto de
 // `editor.primerPaso` y una lista de ítems de muestra con la misma forma.
 export const QA_PRIMER_PASO = 'Pulsa «Añadir pregunta» y escribe la pregunta con sus respuestas: una correcta y las demás no.';
 
-/** Ítems de muestra con los que nace una actividad `qa` nueva (Quiz, Globos…). */
+/** Ítems de muestra con los que nace una actividad `qa` nueva (Quiz, Globos…).
+ *  @returns {QaItem[]} */
 export function defaultQaItems() {
   return [
     { id: rid('q_'), question: '¿Cuál es la capital de España?', answer: 'Madrid', options: ['Madrid', 'Barcelona', 'Lisboa', 'París'], image: null, audio: null },
@@ -15,11 +21,17 @@ export function defaultQaItems() {
   ];
 }
 
+/**
+ * @param {QaItem} item
+ * @param {unknown} value   FRONTERA: lo que el jugador afirma.
+ * @returns {boolean|null}  `null` = sin clave, no puntuable.
+ */
 export function isCorrect(item, value) {
   if (item.answer == null) return null;
   if (Array.isArray(item.answer)) return item.answer.map(s => norm(s)).includes(norm(value));
   return norm(item.answer) === norm(value);
 }
+/** @param {unknown} s */
 function norm(s) {
   return String(s ?? '').trim().toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'');
 }
@@ -35,11 +47,13 @@ function norm(s) {
  *  La regla, una: vale si hay TEXTO en lo marcado. Si hay `answerIdx` manda él
  *  (resiste opciones repetidas o vacías); si no, se mira `answer`.
  */
+/** @param {QaItem|null|undefined} item */
 export function hasCorrectAnswer(item) {
+  /** @param {unknown} v */
   const lleno = (v) => String(v ?? '').trim() !== '';
   const idx = item?.answerIdx;
   if (Array.isArray(idx) && idx.length) {
-    return idx.some(k => lleno((item.options || [])[k]));
+    return idx.some(k => lleno((item?.options || [])[k]));
   }
   const ans = item?.answer;
   return Array.isArray(ans) ? ans.some(lleno) : lleno(ans);
@@ -70,10 +84,12 @@ export function repartirCorrecta(options, i = 0) {
   const lista = [...options];
   if (lista.length < 2) return { options: lista, answerIdx: lista.length ? [0] : [] };
   const donde = ((i % lista.length) + lista.length) % lista.length;
-  lista.splice(donde, 0, lista.shift());
+  // `lista.length >= 2` aquí, así que `shift()` siempre devuelve algo.
+  lista.splice(donde, 0, lista.shift() ?? '');
   return { options: lista, answerIdx: [donde] };
 }
 
+/** @param {QaItem|null|undefined} item @returns {number[]} */
 export function answerIndices(item) {
   const idx = item?.answerIdx;
   if (Array.isArray(idx) && idx.length) return idx;
@@ -104,6 +120,11 @@ export function answerIndices(item) {
  * él «puesto a propósito» y «nunca tocado» son indistinguibles. Sin `points`,
  * el ítem sigue al panel — que es lo que espera quien acaba de cambiarlo.
  * Idempotente.
+ */
+/**
+ * @template {{items?: unknown}} C
+ * @param {C} content
+ * @returns {C}
  */
 export function stripSeededPoints(content) {
   if (!content || !Array.isArray(content.items)) return content;

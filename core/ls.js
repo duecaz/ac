@@ -14,12 +14,22 @@
 // vuelo, la fila de jugador de ESTA sala en vivo, la racha de ESTA partida, el
 // flag de "ya recargué una vez" de esta sala. Cerrar la pestaña y volver a
 // abrir la sala es, con razón, entrar de cero.
+/**
+ * @param {string} key
+ * @param {string|null} [fallback]
+ * @returns {string|null}
+ */
 export function lsGet(key, fallback = null) {
   try {
     const v = localStorage.getItem(key);
     return v === null ? fallback : v;
   } catch { return fallback; }
 }
+/**
+ * @param {string} key
+ * @param {string} val
+ * @returns {boolean} false si el navegador rechazó la escritura.
+ */
 export function lsSet(key, val) {
   try {
     localStorage.setItem(key, val);
@@ -29,20 +39,31 @@ export function lsSet(key, val) {
       console.warn('[ls] localStorage quota exceeded — data not saved for key:', key);
       try { window.dispatchEvent(new CustomEvent('ww:storage-full', { detail: { key } })); } catch {}
     } else {
-      console.warn('[ls] localStorage write failed:', e.message);
+      console.warn('[ls] localStorage write failed:', e instanceof Error ? e.message : String(e));
     }
     return false;
   }
 }
+/** @param {string} key */
 export function lsDel(key) {
   try { localStorage.removeItem(key); } catch { }
 }
+/**
+ * @param {string} key
+ * @param {string|null} [fallback]
+ * @returns {string|null}
+ */
 export function ssGet(key, fallback = null) {
   try {
     const v = sessionStorage.getItem(key);
     return v === null ? fallback : v;
   } catch { return fallback; }
 }
+/**
+ * @param {string} key
+ * @param {string} val
+ * @returns {boolean} false si el navegador rechazó la escritura.
+ */
 export function ssSet(key, val) {
   try {
     sessionStorage.setItem(key, val);
@@ -52,18 +73,36 @@ export function ssSet(key, val) {
       console.warn('[ls] sessionStorage quota exceeded — data not saved for key:', key);
       try { window.dispatchEvent(new CustomEvent('ww:storage-full', { detail: { key } })); } catch {}
     } else {
-      console.warn('[ls] sessionStorage write failed:', e.message);
+      console.warn('[ls] sessionStorage write failed:', e instanceof Error ? e.message : String(e));
     }
     return false;
   }
 }
+/** @param {string} key */
 export function ssDel(key) {
   try { sessionStorage.removeItem(key); } catch { }
 }
+/** El gemelo para un OBJETO plano: lo que no lo sea (array, null, texto roto)
+ *  no existe. Frontera igual: cada valor es `unknown`.
+ * @param {string|null|undefined} raw texto JSON tal como sale del almacén
+ * @returns {Record<string, unknown>} */
+export function objetoDe(raw) {
+  try {
+    const v = /** @type {unknown} */ (JSON.parse(raw || '{}'));
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return {};
+    return /** @type {Record<string, unknown>} */ (v);
+  } catch { return {}; }
+}
+
 /** Lee una LISTA JSON con guard completo (parse roto o no-array ⇒ []). Era el
  *  mismo bloque try/parse/Array.isArray copiado en las TRES colas offline
  *  (respuestas en vivo · resultados · intentos de tarea) — el load-guard vive
- *  aquí una vez, junto a sus hermanos lsGet/lsSet. */
+ *  aquí una vez, junto a sus hermanos lsGet/lsSet.
+ *
+ *  Lo que sale de aquí es FRONTERA: cada elemento es `unknown` y lo estrecha
+ *  quien sabe qué guardó.
+ * @param {string} key
+ * @returns {unknown[]} */
 export function lsGetJsonArray(key) {
   try {
     const v = JSON.parse(lsGet(key) || '[]');

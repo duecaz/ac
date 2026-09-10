@@ -6,6 +6,12 @@
 // Re-export de compatibilidad para los llamadores existentes:
 export { scoreMarks, scoreMarksPerHit } from './scoring/marks.js';
 
+/**
+ * @typedef {import('../kernel/contracts/activity.js').TextMark} TextMark
+ * @typedef {import('../kernel/contracts/activity.js').Passage} Passage
+ */
+
+/** @type {Record<string, string>} */
 const TILDE_MAP = {
   a: 'á', e: 'é', i: 'í', o: 'ó', u: 'ú',
   A: 'Á', E: 'É', I: 'Í', O: 'Ó', U: 'Ú',
@@ -16,6 +22,7 @@ const TILDE_MAP = {
 
 // Reverse map: accented vowel -> base. Only acute accents on a/e/i/o/u.
 // ñ and ü are NOT considered a tilde for this exercise.
+/** @type {Record<string, string>} */
 const STRIP_MAP = {
   'á':'a','é':'e','í':'i','ó':'o','ú':'u',
   'Á':'A','É':'E','Í':'I','Ó':'O','Ú':'U'
@@ -23,11 +30,14 @@ const STRIP_MAP = {
 
 const TILDABLE = /[aeiouáéíóúAEIOUÁÉÍÓÚ]/;
 
+/** @param {string} ch @returns {boolean} */
 export function isVowel(ch) { return TILDABLE.test(ch); }
 
+/** @param {string} ch @returns {string} */
 export function applyTilde(ch) { return TILDE_MAP[ch] ?? ch; }
 
 // Returns the corrected text after applying marks. Used for preview.
+/** @param {string} text @param {TextMark[]|null|undefined} marks @returns {string} */
 export function applyMarks(text, marks) {
   const chars = [...text];
   // Apply tildes (in-place) first, then commas/periods (insertions) in
@@ -47,6 +57,7 @@ export function applyMarks(text, marks) {
 }
 
 // True if the passage has at least one mark.
+/** @param {{marks?: TextMark[]}|null|undefined} passage @returns {boolean} */
 export function hasMarks(passage) {
   return Array.isArray(passage?.marks) && passage.marks.length > 0;
 }
@@ -56,6 +67,7 @@ export function hasMarks(passage) {
 // Positions match positions in the stripped text (lengths are equal because
 // we replace 1 char with 1 char). The student sees `text` (no accents);
 // `marks` is the answer key.
+/** @param {string|null|undefined} accented @returns {{text:string, marks:TextMark[]}} */
 export function parseAccentedText(accented) {
   // Normaliza ANTES de calcular posiciones: (1) NFC para que las tildes DESCOMPUESTAS
   // (vocal + U+0301 combinante, típico al pegar de Word/webs) se compongan a la forma
@@ -66,6 +78,7 @@ export function parseAccentedText(accented) {
   // quedan alineados.
   const chars = [...String(accented || '').normalize('NFC').replace(/\s+/g, ' ').trim()];
   const text = chars.map(c => STRIP_MAP[c] ?? c).join('');
+  /** @type {TextMark[]} */
   const marks = [];
   chars.forEach((c, i) => {
     if (STRIP_MAP[c]) marks.push({ pos: i, kind: 'tilde' });
@@ -74,6 +87,7 @@ export function parseAccentedText(accented) {
 }
 
 // Strip only the accents (no marks). Useful for previews.
+/** @param {string|null|undefined} s @returns {string} */
 export function stripAccents(s) {
   return [...String(s || '').normalize('NFC')].map(c => STRIP_MAP[c] ?? c).join('');
 }
@@ -85,8 +99,10 @@ export function stripAccents(s) {
 //
 // Combined with parseAccentedText this lets a single textarea capture
 // both tildes and commas — useful for combined exercises.
+/** @param {string|null|undefined} input @returns {{text:string, marks:TextMark[]}} */
 export function parseTextWithCommas(input) {
   let stripped = '';
+  /** @type {TextMark[]} */
   const marks = [];
   for (const c of [...String(input || '').normalize('NFC')]) {
     if (c === ',') {
@@ -99,8 +115,10 @@ export function parseTextWithCommas(input) {
 }
 
 // Combined rich parse: tildes AND commas (and periods) in one pass.
+/** @param {string|null|undefined} input @returns {{text:string, marks:TextMark[]}} */
 export function parseRichText(input) {
   let stripped = '';
+  /** @type {TextMark[]} */
   const marks = [];
   for (const c of [...String(input || '').normalize('NFC')]) {
     if (c === ',') {
@@ -119,6 +137,7 @@ export function parseRichText(input) {
 // Palabra que contiene la posición `pos` del texto (para etiquetar la marca en el
 // heatmap: "la clase falla en jugó"). Devuelve la palabra "cruda" del texto sin
 // tildes; para la coma, la palabra ANTES de la cual iría (pos = char previo).
+/** @param {string|null|undefined} text @param {number} pos @returns {string} */
 export function wordAtPos(text, pos) {
   const s = String(text || '');
   if (pos < 0 || pos >= s.length) return '';
@@ -130,13 +149,19 @@ export function wordAtPos(text, pos) {
 
 // Partes de un pasaje = cada marca requerida de ese `kind` (una por tilde/coma a
 // colocar). key = posición; label = palabra; ok = true (todas son requeridas).
+/**
+ * @param {{text?: string, marks?: TextMark[]}|null|undefined} item
+ * @param {TextMark['kind']} kind
+ * @returns {Array<{key:number, label:string, ok:boolean}>}
+ */
 export function markPartsFor(item, kind) {
   return (item?.marks || [])
     .filter(m => m.kind === kind)
-    .map(m => ({ key: m.pos, label: wordAtPos(item.text, m.pos), ok: true }));
+    .map(m => ({ key: m.pos, label: wordAtPos(item?.text, m.pos), ok: true }));
 }
 
 // Partes que marcó una respuesta = las posiciones que tocó el alumno.
+/** @param {unknown} value @returns {number[]} */
 export function markValueParts(value) {
   return (Array.isArray(value) ? value : []).map(Number);
 }
@@ -144,6 +169,7 @@ export function markValueParts(value) {
 // Etiqueta corta de un pasaje para las listas de analítica/informe (§21b: era
 // el mismo cuerpo tecleado dos veces, `itemLabel` de comas/template.js y
 // tildes/template.js).
+/** @param {{text?: string}|null|undefined} item @returns {string} */
 export function passageLabel(item) {
   return (item?.text || '').slice(0, 40);
 }

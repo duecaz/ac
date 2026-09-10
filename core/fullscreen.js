@@ -8,11 +8,24 @@
 // un no-op silencioso y el juego arranque igual. Devuelve la promesa (ya segura).
 import { lucide } from './lucide.js';
 
+/**
+ * Los prefijos de WebKit no están en la librería del DOM y solo se nombran aquí.
+ * @typedef {Document & {webkitExitFullscreen?: () => Promise<void>|void,
+ *   webkitFullscreenElement?: Element|null}} DocumentoFs
+ * @typedef {Element & {webkitRequestFullscreen?: () => Promise<void>|void}} ElementoFs
+ */
+
+/**
+ * @param {Element|null} [el]
+ * @returns {Promise<void>}
+ */
 export function toggleFullscreen(el) {
-  el = el || document.documentElement;
+  /** @type {ElementoFs} */
+  const destino = el || document.documentElement;
+  const doc = /** @type {DocumentoFs} */ (document);
   const p = isFullscreen()
-    ? (document.exitFullscreen || document.webkitExitFullscreen)?.call(document)
-    : (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el);
+    ? (doc.exitFullscreen || doc.webkitExitFullscreen)?.call(doc)
+    : (destino.requestFullscreen || destino.webkitRequestFullscreen)?.call(destino);
   return Promise.resolve(p).catch(() => {});
 }
 
@@ -20,7 +33,8 @@ export function toggleFullscreen(el) {
  *  saberlo nadie más: la antesala lo había vuelto a escribir a mano y así el
  *  guard y este módulo podían discrepar el día que uno de los dos cambiara. */
 export function isFullscreen() {
-  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const doc = /** @type {DocumentoFs} */ (document);
+  return !!(doc.fullscreenElement || doc.webkitFullscreenElement);
 }
 
 /**
@@ -62,15 +76,17 @@ export function attachFullscreenButton(rootSel, { target } = {}) {
   // hacía nada (R6). Con la cabecera alojando el mando en las trece eso pasaba
   // de ser un caso raro a ser el caso normal. El listener vive en la raíz
   // ESTABLE (el marco), que es quien sobrevive a los re-render.
+  /** @type {EventListener} */
   const click = (e) => {
-    const b = e.target?.closest?.('.ww-fs-btn');
+    const t = e.target;
+    const b = t instanceof Element ? t.closest('.ww-fs-btn') : null;
     if (b && root.contains(b)) toggleFullscreen(target || root);
   };
   // El ICONO lo pone el CSS; aquí solo la palabra, que una hoja de estilo no
   // puede escribir y un lector de pantalla sí necesita.
   const paint = () => {
     const on = isFullscreen();
-    for (const b of root.querySelectorAll('.ww-fs-btn')) {
+    for (const b of /** @type {NodeListOf<HTMLElement>} */ (root.querySelectorAll('.ww-fs-btn'))) {
       b.title = on ? 'Salir de pantalla completa' : 'Pantalla completa';
       b.setAttribute('aria-label', b.title);
       b.classList.toggle('is-on', on);

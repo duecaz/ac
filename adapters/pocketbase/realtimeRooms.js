@@ -11,6 +11,44 @@ import { pickWord } from '../../core/liveWords.js';
 import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
 import { openedKey } from '../../core/serverMs.js';
 import { studentSnapshot, needsClientKey } from '../../core/liveSnapshot.js';
+import { blobDeSala, esFila, estadoDeSala, estadoPb, fila, filas, mapaNumeros, mapaTextos, numero, numeroOnulo, paraHidratar, texto, textoOnulo } from '../frontera.js';
+
+/**
+ * @typedef {import('../frontera.js').PbFetch} PbFetch
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/session.js').LiveEngine} LiveEngine
+ * @typedef {import('../../kernel/contracts/session.js').LiveRoom} LiveRoom
+ * @typedef {import('../../kernel/contracts/session.js').Player} Player
+ * @typedef {import('../../kernel/contracts/session.js').RoomPatch} RoomPatch
+ * @typedef {import('../../kernel/contracts/session.js').RoomRecord} RoomRecord
+ * @typedef {import('./realtimeAnswers.js').FilaRespuesta} FilaRespuesta
+ * @typedef {import('./realtimeAnswers.js').NuevaRespuesta} NuevaRespuesta
+ * @typedef {import('../frontera.js').BlobSala} BlobSala
+ */
+
+/**
+ * CARGAR UNA SALA: la fila cruda más el motor ya hidratado sobre su blob. Lo
+ * comparten las otras tres secciones (§21b: el dueño de `live_sessions` es
+ * esta), por eso el tipo vive aquí y no en cada consumidor.
+ * @typedef {(sessionId: string) => Promise<{rec: Record<string, unknown>, engine: LiveEngine}>} CargaSala
+ */
+
+/**
+ * GUARDAR el blob del motor en la fila de la sala.
+ * @typedef {(sessionId: string, engine: LiveEngine) => Promise<void>} GuardaEstado
+ */
+
+/** Lo que las vistas leen de la sala, sin la parte de «pedir la palabra». */
+/**
+ * @typedef {Object} Palabra
+ * @property {number|null} ql_open
+ * @property {string|null} ql_question
+ * @property {string|null} ql_image
+ * @property {string|null} ql_by
+ * @property {string|null} ql_by_name
+ * @property {Record<string, number>} ql_points
+ * @property {Record<string, string>} ql_taken
+ */
 
 // §22-1 — ¿este PATCH del host ABRIÓ un ítem a respuestas? Si sí, sella el
 // instante SERVIDOR de la apertura (`rec.updated`, autodate de PocketBase) en el
@@ -18,13 +56,15 @@ import { studentSnapshot, needsClientKey } from '../../core/liveSnapshot.js';
 // reloj del servidor y no con el del móvil. Devuelve true si el sello es nuevo
 // (y por tanto hay que persistirlo). En CARRERA todos los ítems se abren a la
 // vez → un solo sello 'race'.
+/** @param {LiveEngine} engine @param {RoomPatch} patch @param {unknown} rec @returns {boolean} */
 function noteItemOpened(engine, patch, rec) {
-  const iso = rec?.updated;
+  const iso = textoOnulo(fila(rec).updated);
   const phase = patch?.phase;
   if (!iso || (phase !== 'question' && phase !== 'race')) return false;
-  const idx = ('current_item' in patch) ? Number(patch.current_item) : engine.state.currentItem;
+  const s = blobDeSala(engine);
+  const idx = ('current_item' in patch) ? Number(patch.current_item) : s.currentItem;
   const key = openedKey(phase, idx);
-  const map = engine.state.itemOpenedAt || (engine.state.itemOpenedAt = {});
+  const map = s.itemOpenedAt || (s.itemOpenedAt = {});
   if (map[key] === iso) return false;
   map[key] = iso;
   return true;
@@ -36,26 +76,52 @@ function noteItemOpened(engine, patch, rec) {
 // alumno solo escribe este campo. Los PUNTOS otorgados (`qlPoints`) siguen en
 // el blob porque los da el docente. Se lee con respaldo al blob para que una
 // sala creada ANTES de esta versión siga funcionando.
+/** @param {unknown} rec @returns {Palabra} */
 function qlOf(rec) {
-  const q = rec?.ql || {};
-  const s = rec?.state || {};
+  const q = fila(fila(rec).ql);
+  const s = fila(fila(rec).state);
   return {
-    ql_open: q.open ?? s.qlOpen ?? null,
-    ql_question: q.question ?? s.qlQuestion ?? null,
-    ql_image: q.image ?? s.qlImage ?? null,
-    ql_by: q.by ?? s.qlBy ?? null,
-    ql_by_name: q.byName ?? s.qlByName ?? null,
-    ql_points: s.qlPoints ?? {},
-    ql_taken: s.qlTaken ?? {},
+    ql_open: numeroOnulo(q.open) ?? numeroOnulo(s.qlOpen),
+    ql_question: textoOnulo(q.question) ?? textoOnulo(s.qlQuestion),
+    ql_image: textoOnulo(q.image) ?? textoOnulo(s.qlImage),
+    ql_by: textoOnulo(q.by) ?? textoOnulo(s.qlBy),
+    ql_by_name: textoOnulo(q.byName) ?? textoOnulo(s.qlByName),
+    ql_points: mapaNumeros(s.qlPoints),
+    ql_taken: mapaTextos(s.qlTaken),
   };
 }
 // Claves `ql_*` de un patch → forma del campo `ql`. Devuelve null si el patch
 // no toca nada de Pregunta en Vivo (para no escribir el campo en vano).
+/** La actividad que viene en una fila. No se valida campo a campo: la migración
+ *  y el contrato son de `core/storage.js`, no del transporte.
+ *  @param {unknown} x @returns {Activity|null} */
+const actividadDe = (x) => (esFila(x) ? /** @type {Activity} */ (x) : null);
+
+/** LA FILA DE LA SALA con su blob YA estrechado: es lo que leen las dos
+ *  lecturas de sala (`findRoomByCode` y `fetchSession`).
+ *  @param {Record<string, unknown>} f
+ *  @returns {{id: string, code: string, activity: Activity|null, state: Partial<BlobSala>}} */
+const conBlob = (f) => ({
+  id: texto(f.id), code: texto(f.code),
+  activity: actividadDe(f.activity), state: estadoDeSala(f.state),
+});
+
+/** La fila CRUDA de la sala para los informes: se entrega tal cual (el parseo
+ *  es de quien la pide), solo con su forma declarada.
+ *  @param {Record<string, unknown>} rec @returns {RoomRecord} */
+const filaDeSala = (rec) => /** @type {RoomRecord} */ (rec);
+
+/** @param {RoomPatch} patch
+ *  @returns {{open?: number|null, question?: string|null, image?: string|null, by?: string|null, byName?: string|null}|null} */
 function qlPatch(patch) {
-  const MAP = { ql_open: 'open', ql_question: 'question', ql_image: 'image', ql_by: 'by', ql_by_name: 'byName' };
+  /** @type {{open?: number|null, question?: string|null, image?: string|null, by?: string|null, byName?: string|null}} */
   const out = {};
   let touched = false;
-  for (const [k, v] of Object.entries(MAP)) if (k in patch) { out[v] = patch[k] ?? null; touched = true; }
+  if ('ql_open' in patch) { out.open = patch.ql_open ?? null; touched = true; }
+  if ('ql_question' in patch) { out.question = patch.ql_question ?? null; touched = true; }
+  if ('ql_image' in patch) { out.image = patch.ql_image ?? null; touched = true; }
+  if ('ql_by' in patch) { out.by = patch.ql_by ?? null; touched = true; }
+  if ('ql_by_name' in patch) { out.byName = patch.ql_by_name ?? null; touched = true; }
   return touched ? out : null;
 }
 
@@ -70,6 +136,13 @@ function qlPatch(patch) {
  *   - registerClaim/claimSecret: credencial del dispositivo (sección claims).
  *   - postAnswer/getAnswerRow/settlePendingInto: escritura/lectura de `live_answers`
  *     (sección answers) — las necesita `setSessionState` (ql_award) y `endSession`.
+ * @param {{ pbFetch: PbFetch, COLL: string, KEY: string, PLR: string, ANS: string, userId: string,
+ *   answersReady: () => Promise<boolean>, playersReady: () => Promise<boolean>,
+ *   registerClaim: (sessionId: string, playerId: string) => Promise<string|null>,
+ *   claimSecret: (sessionId: string) => string|null,
+ *   postAnswer: (body: NuevaRespuesta) => Promise<{created?: boolean, conflict?: boolean}>,
+ *   getAnswerRow: (sessionId: string, itemIndex: number, playerId: string) => Promise<FilaRespuesta|null>,
+ *   settlePendingInto: (engine: LiveEngine, sessionId: string) => Promise<number> }} deps
  */
 export function createRoomsSection({ pbFetch, COLL, KEY, PLR, ANS, userId, answersReady, playersReady, registerClaim, claimSecret, postAnswer, getAnswerRow, settlePendingInto }) {
   // Load a session record and rebuild the engine over its persisted state.
@@ -79,26 +152,39 @@ export function createRoomsSection({ pbFetch, COLL, KEY, PLR, ANS, userId, answe
   // así un settle no paga una lectura extra por ítem. Respaldo a `rec.activity`
   // para las salas creadas ANTES de esta versión (y para el alumno, que no puede
   // leer live_keys: ahí el motor no puntúa, solo hidrata).
+  /** @type {Map<string, Activity|null>} */
   const keyCache = new Map();
+  /** La actividad de una sala: la COMPLETA de `live_keys` o, si no se puede, la
+   *  de la propia fila. @param {string} sessionId @param {unknown} rec @returns {Promise<Activity|null>} */
   async function fullActivity(sessionId, rec) {
-    if (keyCache.has(sessionId)) return keyCache.get(sessionId);
+    const enCache = keyCache.get(sessionId);
+    if (enCache !== undefined) return enCache;
+    /** @type {Activity|null} */
     let full = null;
     try {
       const res = await pbFetch(`/api/collections/${KEY}/records?filter=${pbFilterParam(`session='${pbEscape(sessionId)}'`)}&perPage=1`);
-      full = res?.items?.[0]?.activity || null;
+      full = actividadDe(filas(res)[0]?.activity);
     } catch { /* sin sesión de profe, o colección no creada aún */ }
-    const act = full || rec?.activity || null;
+    const act = full || actividadDe(fila(rec).activity);
     keyCache.set(sessionId, act);
     return act;
   }
 
+  /** @type {CargaSala} */
   async function load(sessionId) {
-    const rec = await pbFetch(`/api/collections/${COLL}/records/${sessionId}`);
-    if (!rec) throw new Error('Sala no encontrada');
-    const engine = createLiveRoom(await fullActivity(sessionId, rec), { state: rec.state, code: rec.code });
+    const res = await pbFetch(`/api/collections/${COLL}/records/${sessionId}`);
+    if (!esFila(res)) throw new Error('Sala no encontrada');
+    const rec = res;
+    // Una fila sin actividad es una sala rota: quien lo dice es el motor
+    // («Plantilla desconocida»), aquí solo se le entrega lo que trajo la fila.
+    const act = /** @type {Activity} */ (await fullActivity(sessionId, rec));
+    const engine = /** @type {LiveEngine} */ (
+      createLiveRoom(act, { state: paraHidratar(estadoDeSala(rec.state)), code: texto(rec.code) })
+    );
     return { rec, engine };
   }
 
+  /** @type {GuardaEstado} */
   async function saveState(sessionId, engine) {
     await pbFetch(`/api/collections/${COLL}/records/${sessionId}`, {
       method: 'PATCH',
@@ -106,58 +192,63 @@ export function createRoomsSection({ pbFetch, COLL, KEY, PLR, ANS, userId, answe
     });
   }
 
+  /** @param {string} sessionId @param {string} [extra] */
   const plrFilter = (sessionId, extra) =>
     pbFilterParam([`session='${pbEscape(sessionId)}'`, ...(extra ? [extra] : [])].join(' && '));
 
   // Jugadores de una sala desde live_players (deuda A). Standalone (no método)
   // para que lo compartan listPlayers y el leaderboard derivado sin depender del
   // binding de `this`.
+  /** @param {string} sessionId @returns {Promise<Player[]>} */
   async function fetchPlayers(sessionId) {
     const res = await pbFetch(`/api/collections/${PLR}/records?filter=${plrFilter(sessionId)}&perPage=200`);
-    return (res?.items || []).map(r => ({ id: r.id, name: r.name, userId: r.user_id, score: 0 }));
+    return filas(res).map(r => ({ id: texto(r.id), name: texto(r.name), userId: texto(r.user_id), score: 0 }));
   }
 
   return {
+    /** @param {Activity} activity @returns {Promise<{id: string, code: string}>} */
     async createRoom(activity) {
       // Fetch currently active codes so pickWord avoids duplicates. On any
       // network failure or uniqueness collision we retry once with another word.
-      let usedCodes = new Set();
+      /** @type {Set<string>} */
+      const usedCodes = new Set();
       try {
         const res = await pbFetch(`/api/collections/${COLL}/records?fields=code&perPage=200`);
-        for (const rec of res?.items || []) usedCodes.add(rec.code);
+        for (const rec of filas(res)) usedCodes.add(texto(rec.code));
       } catch { /* proceed with empty set — collision handled by retry below */ }
 
       for (let attempt = 0; attempt < 5; attempt++) {
         // P2-2: SIEMPRE evitar los códigos conocidos (antes los reintentos usaban
         // un Set VACÍO, así que tras una colisión podían re-elegir un PIN en uso).
         const code = pickWord(usedCodes);
-        const engine = createLiveRoom(activity, { code });
+        const engine = /** @type {LiveEngine} */ (createLiveRoom(activity, { code }));
         try {
           // §22-2 — en la SALA (lectura abierta: el alumno entra por PIN) va el
           // snapshot SANEADO: payloads de ronda ya sin solución + metadatos. La
           // actividad completa se guarda aparte, en `live_keys` (host-only).
-          const rec = await pbFetch(`/api/collections/${COLL}/records`, {
+          const rec = fila(await pbFetch(`/api/collections/${COLL}/records`, {
             method: 'POST',
             body: JSON.stringify({ code, activity: studentSnapshot(activity), state: engine.state }),
-          });
+          }));
+          const salaId = texto(rec.id);
           // La clave. Si esta escritura falla, la sala se queda SIN clave para el
           // host → mejor decirlo aquí que descubrirlo al revelar la primera
           // respuesta, así que se propaga el error (la sala se reintenta).
           try {
             await pbFetch(`/api/collections/${KEY}/records`, {
-              method: 'POST', body: JSON.stringify({ session: rec.id, activity }),
+              method: 'POST', body: JSON.stringify({ session: salaId, activity }),
             });
           } catch (ke) {
-            if (ke?.status === 404) {
+            if (estadoPb(ke) === 404) {
               throw new Error('La colección "live_keys" no existe en el servidor. '
                 + 'Créala una sola vez en Admin → "Crear colecciones" (guarda el contenido de la sala sin exponerlo a los alumnos).');
             }
             throw ke;
           }
-          keyCache.set(rec.id, activity);
-          return { id: rec.id, code };
+          keyCache.set(salaId, activity);
+          return { id: salaId, code };
         } catch (e) {
-          if (e.status === 404) {
+          if (estadoPb(e) === 404) {
             throw new Error('La colección "live_sessions" no existe en el servidor. '
               + 'Créala una sola vez en Admin → "Crear colecciones".');
           }
@@ -167,7 +258,8 @@ export function createRoomsSection({ pbFetch, COLL, KEY, PLR, ANS, userId, answe
           // Retry on PIN collision (400/409) AND on transient failures (network
           // error → no status, 5xx, timeout) — a momentary blip shouldn't kill
           // room creation outright.
-          const retryable = !e.status || e.status === 400 || e.status === 409 || e.status >= 500;
+          const estado = estadoPb(e);
+          const retryable = !estado || estado === 400 || estado === 409 || estado >= 500;
           if (attempt < 4 && retryable) continue;
           throw e;
         }
@@ -177,12 +269,14 @@ export function createRoomsSection({ pbFetch, COLL, KEY, PLR, ANS, userId, answe
       throw new Error('No se pudo crear la sala tras varios intentos. Revisa la conexión e inténtalo de nuevo.');
     },
 
+    /** @param {string} code @returns {Promise<LiveRoom|null>} */
     async findRoomByCode(code) {
       const res = await pbFetch(
         `/api/collections/${COLL}/records?filter=${pbFilterParam(`code='${pbEscape(code.toUpperCase())}'`)}`
       );
-      const rec = res?.items?.[0];
-      if (!rec) return null;
+      const bruta = filas(res)[0];
+      if (!bruta) return null;
+      const rec = conBlob(bruta);
       return {
         id: rec.id,
         code: rec.code,
@@ -195,14 +289,20 @@ export function createRoomsSection({ pbFetch, COLL, KEY, PLR, ANS, userId, answe
         loop: rec.state?.loop ?? null,
         end_policy: rec.state?.endPolicy ?? null,
         end_n: rec.state?.endN ?? null,
+        // `started_at` FALTABA aquí y sí estaba en fetchSession: el alumno que
+        // entraba por PIN a una carrera se quedaba sin hora de salida, así que
+        // su cronómetro arrancaba en 0 hasta el primer refresco de la sala.
+        started_at: rec.state?.startedAt ?? null,
         activity_snap: rec.activity,
-        ...qlOf(rec),
+        ...qlOf(bruta),
       };
     },
 
+    /** @param {string} sessionId @returns {Promise<LiveRoom>} */
     async fetchSession(sessionId) {
-      const rec = await pbFetch(`/api/collections/${COLL}/records/${sessionId}`);
-      if (!rec) throw new Error('Sala no encontrada');
+      const bruta = await pbFetch(`/api/collections/${COLL}/records/${sessionId}`);
+      if (!esFila(bruta)) throw new Error('Sala no encontrada');
+      const rec = conBlob(bruta);
       return {
         id: rec.id,
         code: rec.code,
@@ -217,13 +317,14 @@ export function createRoomsSection({ pbFetch, COLL, KEY, PLR, ANS, userId, answe
         end_n: rec.state?.endN ?? null,
         started_at: rec.state?.startedAt ?? null,
         activity_snap: rec.activity,
-        ...qlOf(rec),
+        ...qlOf(bruta),
       };
     },
 
     // La actividad COMPLETA (con la clave) para el HOST: vive en `live_keys`, que
     // solo lee una sesión de profe (§22-2). Respaldo a la sala para las creadas
     // antes de esta versión.
+    /** @param {string} sessionId @returns {Promise<Activity|null>} */
     async fetchSessionKey(sessionId) {
       const rec = await pbFetch(`/api/collections/${COLL}/records/${sessionId}`).catch(() => null);
       return await fullActivity(sessionId, rec);
@@ -234,42 +335,52 @@ export function createRoomsSection({ pbFetch, COLL, KEY, PLR, ANS, userId, answe
     // el seam local|pb: en dev sin PocketBase no había informes). Ahora se lo
     // PIDE al dueño. Devuelve las filas crudas (id, code, activity, state) y el
     // informe se queda con el parseo, que es cosa suya.
+    /** @param {{limit?: number}} [opts] @returns {Promise<RoomRecord[]>} */
     async listSessions({ limit = 500 } = {}) {
       // `sort=-created` puede no existir según cómo se creara la colección: si
       // falla, se reintenta sin orden en vez de dejar la vista vacía.
       try {
         const res = await pbFetch(`/api/collections/${COLL}/records?perPage=${Number(limit) || 500}&sort=-created`);
-        return res?.items || [];
+        return filas(res).map(filaDeSala);
       } catch {
         const res = await pbFetch(`/api/collections/${COLL}/records?perPage=${Number(limit) || 500}`);
-        return res?.items || [];
+        return filas(res).map(filaDeSala);
       }
     },
 
-    /** Fila cruda de UNA sala (informe de sesión). null si no existe. */
+    /** Fila cruda de UNA sala (informe de sesión). null si no existe.
+     *  @param {string} sessionId @returns {Promise<RoomRecord|null>} */
     async fetchSessionRecord(sessionId) {
-      try { return await pbFetch(`/api/collections/${COLL}/records/${sessionId}`); }
-      catch (e) { if (e?.status === 404) return null; throw e; }
+      try {
+        const rec = await pbFetch(`/api/collections/${COLL}/records/${sessionId}`);
+        return esFila(rec) ? filaDeSala(rec) : null;
+      }
+      catch (e) { if (estadoPb(e) === 404) return null; throw e; }
     },
 
     // Respaldo del informe post-partida (A1): el blob `state` entero, para
     // rescatar respuestas legadas que no llegaron a live_answers. Solo lo
     // consume el HOST (rowsFromLiveState); existe para que ninguna vista tenga
     // que tocar la colección directamente (ley de datos).
+    /** @param {string} sessionId */
     async fetchSessionBlob(sessionId) {
       const rec = await pbFetch(`/api/collections/${COLL}/records/${sessionId}`);
-      return rec?.state || {};
+      return estadoDeSala(fila(rec).state);
     },
 
+    /** @param {string} code @param {string} nickname
+     *  @returns {Promise<{sessionId: string, playerId: string, name: string}>} */
     async joinSession(code, nickname) {
       const res = await pbFetch(
         `/api/collections/${COLL}/records?filter=${pbFilterParam(`code='${pbEscape(code.toUpperCase())}'`)}`
       );
-      const rec = res?.items?.[0];
+      const rec = filas(res)[0];
       if (!rec) throw new Error('Sala no encontrada');
-      if (rec.state?.status === 'ended') throw new Error('La sala ha terminado');
-      const live = rec.activity?.live || {};
-      if (rec.state?.status !== 'lobby' && live.allowLateJoin === false) throw new Error('La partida ya empezó');
+      const salaId = texto(rec.id);
+      const estadoSala = estadoDeSala(rec.state);
+      if (estadoSala.status === 'ended') throw new Error('La sala ha terminado');
+      const live = actividadDe(rec.activity)?.live || {};
+      if (estadoSala.status !== 'lobby' && live.allowLateJoin === false) throw new Error('La partida ya empezó');
 
       // Ruta live_players (deuda A): el jugador es su PROPIA fila → dos entradas
       // simultáneas ya no se pisan en el blob. La validación del apodo y el gateo
@@ -282,39 +393,42 @@ export function createRoomsSection({ pbFetch, COLL, KEY, PLR, ANS, userId, answe
         // pero SOLO si además conserva su credencial (§22-4); sin ella no podría
         // escribir respuestas, así que es mejor entrar como jugador nuevo (el
         // índice único de apodos le pondrá sufijo) que quedarse mudo.
-        const mine = await pbFetch(`/api/collections/${PLR}/records?filter=${plrFilter(rec.id, `user_id='${pbEscape(userId)}'`)}&perPage=1`);
-        if (mine?.items?.length && claimSecret(rec.id)) {
-          const row = mine.items[0];
-          return { sessionId: rec.id, playerId: row.id, name: row.name };
+        const mine = await pbFetch(`/api/collections/${PLR}/records?filter=${plrFilter(salaId, `user_id='${pbEscape(userId)}'`)}&perPage=1`);
+        const mia = filas(mine)[0];
+        if (mia && claimSecret(salaId)) {
+          return { sessionId: salaId, playerId: texto(mia.id), name: texto(mia.name) };
         }
         const maxPlayers = live.maxPlayers || 60;
-        const cnt = await pbFetch(`/api/collections/${PLR}/records?filter=${plrFilter(rec.id)}&perPage=1`);
-        if ((cnt?.totalItems || 0) >= maxPlayers) throw new Error('La sala está llena');
+        const cnt = await pbFetch(`/api/collections/${PLR}/records?filter=${plrFilter(salaId)}&perPage=1`);
+        if (numero(fila(cnt).totalItems) >= maxPlayers) throw new Error('La sala está llena');
         let name = f.value;
         for (let n = 2; ; n++) {
           try {
-            const row = await pbFetch(`/api/collections/${PLR}/records`, {
-              method: 'POST', body: JSON.stringify({ session: rec.id, name, user_id: userId }),
-            });
+            const row = fila(await pbFetch(`/api/collections/${PLR}/records`, {
+              method: 'POST', body: JSON.stringify({ session: salaId, name, user_id: userId }),
+            }));
             // Credencial de ESTE dispositivo para ESTE jugador, antes de devolver:
             // sin ella las respuestas rebotarían (§22-4).
-            await registerClaim(rec.id, row.id);
-            return { sessionId: rec.id, playerId: row.id, name: row.name };
+            await registerClaim(salaId, texto(row.id));
+            return { sessionId: salaId, playerId: texto(row.id), name: texto(row.name) };
           } catch (e) {
             // 400 del índice único (session,name) = apodo ocupado → sufija y reintenta.
-            if (e?.status === 400 && n <= 40) { name = `${f.value} ${n}`; continue; }
+            if (estadoPb(e) === 400 && n <= 40) { name = `${f.value} ${n}`; continue; }
             throw e;
           }
         }
       }
 
       // Ruta blob heredada (sin la colección): comportamiento anterior.
-      const engine = createLiveRoom(rec.activity, { state: rec.state, code: rec.code });
+      const engine = /** @type {LiveEngine} */ (
+        createLiveRoom(/** @type {Activity} */ (actividadDe(rec.activity)), { state: paraHidratar(estadoSala), code: texto(rec.code) })
+      );
       const p = engine.join(userId, nickname);
-      await saveState(rec.id, engine);
-      return { sessionId: rec.id, playerId: p.id, name: p.name };
+      await saveState(salaId, engine);
+      return { sessionId: salaId, playerId: p.id, name: p.name };
     },
 
+    /** @param {string} sessionId */
     async startSession(sessionId) {
       const { engine } = await load(sessionId);
       engine.state.status = 'running';
@@ -328,6 +442,7 @@ export function createRoomsSection({ pbFetch, COLL, KEY, PLR, ANS, userId, answe
     // cola offline, red lenta) se queda sin puntuar: llegue cuando llegue, si
     // está en la colección antes del cierre cuenta. Un fallo al liquidar NO
     // impide cerrar (la sala debe poder cerrarse siempre).
+    /** @param {string} sessionId */
     async endSession(sessionId) {
       const { engine } = await load(sessionId);
       try {
@@ -348,18 +463,20 @@ export function createRoomsSection({ pbFetch, COLL, KEY, PLR, ANS, userId, answe
       } catch { /* best-effort: la sala ya está cerrada */ }
     },
 
+    /** @param {string} sessionId @param {RoomPatch} patch */
     async setSessionState(sessionId, patch) {
       const { engine } = await load(sessionId);
-      if (patch.status !== undefined) engine.state.status = patch.status;
-      if (patch.phase !== undefined) engine.state.phase = patch.phase;
-      if ('current_item' in patch) engine.state.currentItem = patch.current_item;
-      if ('deadline' in patch) engine.state.deadline = patch.deadline ?? null;
+      const s = blobDeSala(engine);
+      if (patch.status !== undefined) s.status = patch.status;
+      if (patch.phase !== undefined) s.phase = patch.phase;
+      if (patch.current_item !== undefined) s.currentItem = patch.current_item;
+      if ('deadline' in patch) s.deadline = patch.deadline ?? null;
       // R-1 · instante en que se pueden TOCAR las respuestas (§26 ficha 1b): el
       // ritmo del juego se escribe como INSTANTE en la sala, nunca como un
       // temporizador local — así todos los móviles leen lo mismo y quien entra
       // tarde o recarga ve el tiempo que queda de verdad.
-      if ('answers_open_at' in patch) engine.state.answersOpenAt = patch.answers_open_at ?? null;
-      if ('read_secs' in patch) engine.state.readSecs = patch.read_secs ?? null;
+      if ('answers_open_at' in patch) s.answersOpenAt = patch.answers_open_at ?? null;
+      if ('read_secs' in patch) s.readSecs = patch.read_secs ?? null;
       // POLÍTICA DE FIN de carrera/tablero (core/liveEnd.js): vive en la sala
       // porque el ALUMNO también la necesita — es lo que le dice si espera un
       // reloj o a sus compañeros, en vez de un "esperando…" mudo.
@@ -367,18 +484,18 @@ export function createRoomsSection({ pbFetch, COLL, KEY, PLR, ANS, userId, answe
       // la partida, no un detalle de una vista: lo leen el settle (modelo de
       // puntos), el podio y la tabla. Antes cada uno lo re-adivinaba de la fase
       // o del sello de apertura, y el lobby lo perdía al recargar.
-      if ('loop' in patch) engine.state.loop = patch.loop ?? null;
-      if ('end_policy' in patch) engine.state.endPolicy = patch.end_policy ?? null;
-      if ('end_n' in patch) engine.state.endN = patch.end_n ?? null;
-      if ('started_at' in patch) engine.state.startedAt = patch.started_at ?? null;
-      if ('ql_points' in patch) engine.state.qlPoints = patch.ql_points ?? {};
+      if ('loop' in patch) s.loop = patch.loop ?? null;
+      if ('end_policy' in patch) s.endPolicy = patch.end_policy ?? null;
+      if ('end_n' in patch) s.endN = patch.end_n ?? null;
+      if ('started_at' in patch) s.startedAt = patch.started_at ?? null;
+      if ('ql_points' in patch) s.qlPoints = patch.ql_points ?? {};
       // CL-1 · quién se llevó cada caja. Se guardaba CUÁNTO valió, no QUIÉN
       // respondió, así que el docente no tenía forma de ver a quién le faltaba
       // participar (y los rápidos acaparaban sin que se notara).
-      if ('ql_taken' in patch) engine.state.qlTaken = patch.ql_taken ?? {};
+      if ('ql_taken' in patch) s.qlTaken = patch.ql_taken ?? {};
       if (patch.ql_award) {
         const { playerId, points } = patch.ql_award;
-        const p = engine.state.players.find(pl => pl.id === playerId);
+        const p = (s.players || []).find(pl => pl.id === playerId);
         if (p) p.score += points;
       }
       // §21 · PEDIR LA PALABRA: los puntos que da el DOCENTE también son una
@@ -391,11 +508,13 @@ export function createRoomsSection({ pbFetch, COLL, KEY, PLR, ANS, userId, answe
       // sus puntos, sin fingir un acierto automático.
       if (patch.ql_award && Number.isInteger(patch.ql_award.item) && await answersReady()) {
         const { playerId, points, item } = patch.ql_award;
+        /** @type {NuevaRespuesta} */
         const row = {
           session: sessionId, player: playerId, item: Number(item),
           value: null, ms: 0, scored: true, correct: false, unscorable: true,
           points: Number(points) || 0,
         };
+        /** @type {{created?: boolean, conflict?: boolean}} */
         const r = await postAnswer(row).catch(() => ({}));
         if (r?.conflict) {
           // Misma caja reabierta y re-otorgada: se actualiza la fila existente.
@@ -454,6 +573,9 @@ export function createRoomsSection({ pbFetch, COLL, KEY, PLR, ANS, userId, answe
     // El ALUMNO pide la palabra (Pregunta en Vivo): escribe SOLO el campo `ql`,
     // nunca el blob. Es la única afirmación que un alumno hace sobre la sala
     // (ley de confianza §22) y la regla de PB lo permite justo por eso.
+    /** @param {string} sessionId
+     *  @param {{open?: number|null, question?: string|null, image?: string|null,
+     *    by?: string|null, byName?: string|null}} claim */
     async claimQuestion(sessionId, claim) {
       await pbFetch(`/api/collections/${COLL}/records/${sessionId}`, {
         method: 'PATCH',
@@ -467,6 +589,7 @@ export function createRoomsSection({ pbFetch, COLL, KEY, PLR, ANS, userId, answe
       });
     },
 
+    /** @param {string} sessionId @returns {Promise<Player[]>} */
     async listPlayers(sessionId) {
       if (await playersReady()) return fetchPlayers(sessionId);
       const { engine } = await load(sessionId);

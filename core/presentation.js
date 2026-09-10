@@ -21,10 +21,16 @@
 import { applySkin } from './skins.js';
 import { applyBackground } from './backgrounds.js';
 
+/**
+ * @typedef {import('../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../kernel/contracts/activity.js').VsFeedback} VsFeedback
+ */
+
 const NEUTRAL_SKIN = 'default';
 const NEUTRAL_BG = 'none';
 
 // Restore neutral chrome. target=null → the page; an Element → just that element.
+/** @param {HTMLElement|null} [target] @returns {void} */
 export function resetScene(target = null) {
   applySkin(NEUTRAL_SKIN, target);
   applyBackground(NEUTRAL_BG, target);
@@ -32,14 +38,14 @@ export function resetScene(target = null) {
 
 /**
  * Apply `activity`'s skin + background to a scene.
- * @param {object|null} activity         the activity (reads .presentation.skin/.background)
- * @param {{add:Function}|null} ctx       lifecycle handle; if given, neutral chrome
+ * @param {Activity|null} activity        the activity (reads .presentation.skin/.background)
+ * @param {{add:(fn:()=>void)=>void}|null} [ctx]  lifecycle handle; if given, neutral chrome
  *                                        is restored automatically on teardown.
  * @param {object} [opts]
  * @param {string} [opts.defaultSkin]     fallback when the activity has no skin
  * @param {string} [opts.defaultBg]       fallback when the activity has no background
- * @param {Element|null} [opts.target]    scope to this element instead of the page
- * @returns {Function} a manual reset for this same scope
+ * @param {HTMLElement|null} [opts.target]  scope to this element instead of the page
+ * @returns {() => void} a manual reset for this same scope
  */
 export function applyScene(activity, ctx = null, { defaultSkin = NEUTRAL_SKIN, defaultBg = NEUTRAL_BG, target = null } = {}) {
   applySkin(activity?.presentation?.skin || defaultSkin, target);
@@ -55,8 +61,12 @@ export function applyScene(activity, ctx = null, { defaultSkin = NEUTRAL_SKIN, d
  * short-circuit para no re-aplicar en cada repaint. Compartido por hostLive y
  * studentLive (antes cada vista llevaba su copia).
  * El teardown NO va aquí: cada vista registra `ctx.add(() => resetScene())`.
+ * @param {Activity|null} activity
+ * @param {{defaultSkin?: string, target?: HTMLElement|null}} [opts]
+ * @returns {(game: boolean) => void}
  */
 export function sceneToggle(activity, { defaultSkin = 'vibrante', target = null } = {}) {
+  /** @type {boolean|null} */
   let on = null;
   return (game) => {
     if (game === on) return;
@@ -82,14 +92,23 @@ export function sceneToggle(activity, { defaultSkin = 'vibrante', target = null 
 // Interno a propósito: quien necesite los valores llama a `vsFeedback(a)` —
 // exportar la constante invitaría a volver a mezclarla a mano en otro módulo,
 // que es de donde venía la divergencia.
+/** @type {Required<VsFeedback>} */
 const VS_FX_DEFAULTS = { flash: true, confetti: false };
 
-/** Los interruptores de feedback del duelo, con sus defectos. */
+/** Los interruptores de feedback del duelo, con sus defectos.
+ * @param {Activity|null|undefined} activity
+ * @returns {Required<VsFeedback>}
+ */
 export function vsFeedback(activity) {
   return { ...VS_FX_DEFAULTS, ...(activity?.presentation?.vsFeedback || {}) };
 }
 
-/** Enciende/apaga UNO. Muta la actividad (quien llama decide si la guarda). */
+/** Enciende/apaga UNO. Muta la actividad (quien llama decide si la guarda).
+ * @param {Activity} activity
+ * @param {keyof VsFeedback} key
+ * @param {boolean} on
+ * @returns {Activity}
+ */
 export function setVsFeedback(activity, key, on) {
   if (!activity.presentation) activity.presentation = {};
   activity.presentation.vsFeedback = { ...vsFeedback(activity), [key]: !!on };
@@ -97,11 +116,16 @@ export function setVsFeedback(activity, key, on) {
 }
 
 /** ¿Se ve la animación central del duelo? El defecto lo pide la PLANTILLA: una
- *  hoja de texto la apaga sola porque necesita el ancho. */
+ *  hoja de texto la apaga sola porque necesita el ancho.
+ * @param {Activity|null|undefined} activity
+ * @param {{textTight?: boolean}} [opts]
+ * @returns {boolean}
+ */
 export function vsAnimacionOn(activity, { textTight = false } = {}) {
   return !(activity?.presentation?.vsAnimationOff ?? textTight);
 }
 
+/** @param {Activity} activity @param {boolean} on @returns {Activity} */
 export function setVsAnimacion(activity, on) {
   if (!activity.presentation) activity.presentation = {};
   activity.presentation.vsAnimationOff = !on;

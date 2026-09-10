@@ -14,17 +14,24 @@
 //
 // Capa CONTENIDO: lo puede importar el core, el kernel y cualquier plantilla.
 
-/** ¿Es una ficha de crucigrama (con pista) o una palabra suelta de la sopa? */
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').CrosswordWord} CrosswordWord
+ */
+
+/** ¿Es una ficha de crucigrama (con pista) o una palabra suelta de la sopa?
+ *  @param {string|CrosswordWord|null|undefined} w */
 export function esFicha(w) {
   return !!w && typeof w === 'object' && 'clue' in w;
 }
 
-/** ¿Tiene sitio en la rejilla? Es la vara que usa el juego para dejarla entrar. */
+/** ¿Tiene sitio en la rejilla? Es la vara que usa el juego para dejarla entrar.
+ *  @param {string|CrosswordWord|null|undefined} w */
 export function palabraColocada(w) {
   return !!w && typeof w === 'object' && w.row != null && w.col != null && !!w.dir;
 }
 
-/** Lo que el crucigrama puede jugar: ficha con palabra Y con sitio. */
+/** Lo que el crucigrama puede jugar: ficha con palabra Y con sitio.
+ *  @param {string|CrosswordWord|null|undefined} w */
 export function palabraJugable(w) {
-  return palabraColocada(w) && !!w.word;
+  return palabraColocada(w) && w != null && typeof w === 'object' && !!w.word;
 }

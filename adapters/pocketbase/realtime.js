@@ -39,6 +39,13 @@ import { createClaimsSection } from './realtimeClaims.js';
 import { createAnswersSection } from './realtimeAnswers.js';
 import { createRoomsSection } from './realtimeRooms.js';
 import { createMantenimientoSection } from './realtimeMantenimiento.js';
+import { fila, numeroOnulo, texto } from '../frontera.js';
+
+/**
+ * @typedef {import('../../kernel/contracts/dataPort.js').RealtimePort} RealtimePort
+ * @typedef {import('../../kernel/contracts/session.js').RoomChange} RoomChange
+ * @typedef {ReturnType<typeof createAnswersSection>} SeccionRespuestas
+ */
 
 const COLL = 'live_sessions';
 const ANS = 'live_answers';   // one record per student answer (lost-update fix)
@@ -48,6 +55,7 @@ const CLM = 'live_claims';    // credencial del dispositivo del alumno (§22-4)
 
 function genUserId() { return rid('u_'); }
 
+/** @param {string} path @param {RequestInit & {timeoutMs?: number}} [opts] @returns {Promise<unknown>} */
 async function pbFetchOnce(path, opts = {}) {
   const { body: reqBody, method, headers: extra, timeoutMs = 12000 } = opts;
   // Abort a stalled socket instead of hanging forever: on flaky mobile a TCP
@@ -61,7 +69,7 @@ async function pbFetchOnce(path, opts = {}) {
   try {
     return await pbJson(path, { method, body: reqBody, headers: extra, signal: ctrl.signal });
   } catch (e) {
-    if (e?.name === 'AbortError') throw Object.assign(new Error(`PocketBase: tiempo de espera agotado (${timeoutMs}ms)`), { status: 0, timeout: true });
+    if (texto(fila(e).name) === 'AbortError') throw Object.assign(new Error(`PocketBase: tiempo de espera agotado (${timeoutMs}ms)`), { status: 0, timeout: true });
     throw e;
   } finally {
     clearTimeout(timer);
@@ -73,12 +81,14 @@ async function pbFetchOnce(path, opts = {}) {
 // no entra y hay que refrescar"). Solo GET: es idempotente, reintentarlo no duplica
 // nada. Las ESCRITURAS (POST/PATCH) NO se reintentan aquí (podrían pisar el blob
 // `state` — deuda A); su resiliencia vive en la cola offline. Backoff 300/700ms.
+/** @param {string} path @param {RequestInit & {timeoutMs?: number}} [opts] @returns {Promise<unknown>} */
 async function pbFetch(path, opts = {}) {
   const attempts = (!opts.method || opts.method === 'GET') ? 3 : 1;
   for (let i = 0; ; i++) {
     try { return await pbFetchOnce(path, opts); }
     catch (e) {
-      const transient = e?.timeout || e?.status === 0 || e?.status >= 500;
+      const estado = numeroOnulo(fila(e).status);
+      const transient = fila(e).timeout === true || estado === 0 || (estado ?? 0) >= 500;
       if (!transient || i >= attempts - 1) throw e;
       await new Promise(res => setTimeout(res, i === 0 ? 300 : 700));
     }
@@ -89,7 +99,9 @@ async function pbFetch(path, opts = {}) {
 // que la usan caen al blob heredado (cero cambio pre-migración). Una sola
 // implementación para live_answers (lost-update de respuestas) y live_players
 // (deuda A, lost-update del join).
+/** @param {string} coll @returns {() => Promise<boolean>} */
 function collectionProbe(coll) {
+  /** @type {boolean|undefined} */
   let cached;   // undefined = desconocido, luego true/false
   return async () => {
     if (cached !== undefined) return cached;
@@ -97,13 +109,17 @@ function collectionProbe(coll) {
       const r = await fetch(`${PB_URL}/api/collections/${coll}/records?perPage=1`);
       if (r.status === 200) return (cached = true);
       const body = await r.json().catch(() => ({}));
-      if (body?.message?.includes('Missing collection')) return (cached = false);
+      if (texto(fila(body).message).includes('Missing collection')) return (cached = false);
       cached = r.ok;
     } catch { cached = false; }
     return cached;
   };
 }
 
+/**
+ * @param {{userId?: string}} [opts]
+ * @returns {RealtimePort}
+ */
 export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
   const answersReady = collectionProbe(ANS);
   const playersReady = collectionProbe(PLR);
@@ -114,14 +130,15 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
   // crea primero y recibe puentes hacia `answersSection`, rellenada justo
   // después. Los puentes solo se INVOCAN al ejecutar un método (ql_award,
   // endSession), nunca durante esta construcción.
+  /** @type {SeccionRespuestas} */
   let answersSection;
   const rooms = createRoomsSection({
     pbFetch, COLL, KEY, PLR, ANS, userId, answersReady, playersReady,
     registerClaim: claims.registerClaim,
     claimSecret: claims.claimSecret,
-    postAnswer: (...args) => answersSection.postAnswer(...args),
-    getAnswerRow: (...args) => answersSection.getAnswerRow(...args),
-    settlePendingInto: (...args) => answersSection.settlePendingInto(...args),
+    postAnswer: (body) => answersSection.postAnswer(body),
+    getAnswerRow: (sessionId, itemIndex, playerId) => answersSection.getAnswerRow(sessionId, itemIndex, playerId),
+    settlePendingInto: (engine, sessionId) => answersSection.settlePendingInto(engine, sessionId),
   });
 
   answersSection = createAnswersSection({
@@ -175,12 +192,16 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
     // PocketBase SSE realtime. Subscribes to the specific live_sessions record.
     // On any update, notifies the view with all three table types so it re-fetches
     // players, answers, and session state (all live in the same PB record).
+    /** @param {string} sessionId @param {(change: RoomChange) => void} onChange @returns {() => void} */
     subscribeRoom(sessionId, onChange) {
       const topic = `${COLL}/${sessionId}`;
       let active = true;
+      /** @type {EventSource|null} */
       let es = null;
       let retries = 0;          // consecutive failed connection attempts
+      /** @type {ReturnType<typeof setTimeout>|null} */
       let retryTimer = null;
+      /** @type {ReturnType<typeof startStreamWatchdog>|null} */
       let vigia = null;         // renovación preventiva (core/streamWatchdog.js)
 
       // Exponential backoff with jitter, capped at 30s. The native EventSource
@@ -208,6 +229,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       // host changed while we were disconnected was never delivered; firing this
       // on every (re)connect makes a reconnecting student catch up instead of
       // staying stuck on a stale question.
+      /** @param {string} reason */
       function resync(reason) {
         onChange({ table: 'sessions', eventType: reason });
         onChange({ table: 'players', eventType: reason });
@@ -217,6 +239,7 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
       // Tear down an EventSource so a superseded source can't keep firing its
       // onerror and spawn a second reconnect stream (orphaned ES hammering a
       // downed server). Detaching onerror BEFORE close is the key step.
+      /** @param {EventSource|null} src */
       function teardown(src) {
         if (!src) return;
         src.onerror = null;
@@ -279,13 +302,13 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
         const self = new EventSource(`${PB_URL}/api/realtime`);
         es = self;
 
-        self.addEventListener('PB_CONNECT', async (e) => {
+        self.addEventListener('PB_CONNECT', async (/** @type {MessageEvent} */ e) => {
           if (!active || es !== self) return;
           retries = 0; // a successful handshake resets the backoff
           armarVigia();
           try { setConnectionState('connected'); } catch {}
           try {
-            const { clientId } = JSON.parse(e.data);
+            const clientId = texto(fila(JSON.parse(e.data)).clientId);
             // Suscribe también a live_players (deuda A) para que el lobby del
             // profe vea entrar gente al instante: los joins ya NO PATCHean el blob
             // (dejarían de disparar el topic de la sesión). Solo si la colección
@@ -310,28 +333,28 @@ export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
           }
         });
 
-        self.addEventListener(topic, (e) => {
+        self.addEventListener(topic, (/** @type {MessageEvent} */ e) => {
           if (!active || es !== self) return;
           vigia?.touch();
           try {
-            const { action } = JSON.parse(e.data);
+            const action = texto(fila(JSON.parse(e.data)).action);
             // All state is in one record: fire all three virtual tables so views
             // that listen for 'sessions', 'players', or 'answers' all re-fetch.
             onChange({ table: 'sessions', eventType: action });
             onChange({ table: 'players', eventType: action });
             onChange({ table: 'answers', eventType: action });
-          } catch (err) { console.warn('[realtime] malformed SSE payload — skipping event:', err, e?.data?.slice?.(0, 120)); }
+          } catch (err) { console.warn('[realtime] malformed SSE payload — skipping event:', err, texto(e?.data).slice(0, 120)); }
         });
 
         // live_players (deuda A): un alumno entró/salió → el profe re-lee la
         // lista. El topic es la colección ENTERA (filtramos por sesión al
         // re-fetch en listPlayers); a escala colegio el ruido entre salas es
         // despreciable. Payload ignorado a propósito: forzamos un re-fetch.
-        self.addEventListener(PLR, (e) => {
+        self.addEventListener(PLR, (/** @type {MessageEvent} */ e) => {
           if (!active || es !== self) return;
           vigia?.touch();
-          try { onChange({ table: 'players', eventType: JSON.parse(e.data).action }); }
-          catch { onChange({ table: 'players' }); }
+          try { onChange({ table: 'players', eventType: texto(fila(JSON.parse(e.data)).action) }); }
+          catch { onChange({ table: 'players', eventType: '*' }); }
         });
 
         self.onerror = (err) => {

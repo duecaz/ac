@@ -10,7 +10,17 @@ import { getModel } from './models.js';
 import { canConvert, convert } from './convert.js';
 import { clock } from '../../core/clock.js';
 
-/** Find a template's declared contentModel from a list. */
+/**
+ * @typedef {import('../contracts/activity.js').Activity} Activity
+ * @typedef {import('../contracts/activity.js').ActivityContent} ActivityContent
+ * @typedef {import('../contracts/template.js').TemplateStatic} TemplateStatic
+ */
+
+/**
+ * Find a template's declared contentModel from a list.
+ * @param {string} templateName @param {TemplateStatic[]} templates
+ * @returns {string|null}
+ */
 function modelOf(templateName, templates) {
   const t = templates.find(t => t.meta?.name === templateName);
   return t?.meta?.contentModel || null;
@@ -18,7 +28,7 @@ function modelOf(templateName, templates) {
 
 /**
  * @typedef {Object} SwitchOption
- * @property {Object} template  The target template class.
+ * @property {TemplateStatic} template  The target template class.
  * @property {'direct'|'convert'} kind
  * @property {string} from      Source content model.
  * @property {string} to        Target content model.
@@ -27,13 +37,14 @@ function modelOf(templateName, templates) {
 
 /**
  * List the templates an activity can switch to.
- * @param {Object} activity   { template, content }
- * @param {Object[]} templates Registered template classes.
+ * @param {Activity} activity
+ * @param {TemplateStatic[]} templates Registered template classes.
  * @returns {SwitchOption[]} ordered: direct first, then convertible; by label.
  */
 export function switchOptions(activity, templates) {
   const fromModel = modelOf(activity.template, templates);
   if (!fromModel) return [];
+  /** @type {SwitchOption[]} */
   const out = [];
   for (const t of templates) {
     if (!t.meta?.name || t.meta.name === activity.template) continue;
@@ -55,7 +66,11 @@ export function switchOptions(activity, templates) {
  * Produce a new activity switched to `targetName`, converting content if the
  * target uses a different model. Returns null if the switch isn't possible.
  * Does not mutate the input.
- * @returns {Object|null}
+ * @param {Activity} activity
+ * @param {string} targetName
+ * @param {TemplateStatic[]} templates
+ * @param {Record<string, unknown>} [opts]
+ * @returns {Activity|null}
  */
 export function applySwitch(activity, targetName, templates, opts = {}) {
   const fromModel = modelOf(activity.template, templates);
@@ -92,8 +107,11 @@ export function applySwitch(activity, targetName, templates, opts = {}) {
  * destino no usa se pierde— y eso no vale para la página de jugar, donde se
  * toca por curiosidad. Es la opción (b) de D2 (docs/decisiones-pendientes.md).
  *
- * @param {{id:string, now:string}} sellos  id nuevo e instante ISO.
- * @returns {Object|null}
+ * @param {Activity} activity
+ * @param {string} targetName
+ * @param {TemplateStatic[]} templates
+ * @param {{id: string, now: string}} sellos  id nuevo e instante ISO.
+ * @returns {Activity|null}
  */
 export function duplicateSwitch(activity, targetName, templates, { id, now }) {
   const next = applySwitch(activity, targetName, templates);

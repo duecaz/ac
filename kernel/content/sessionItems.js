@@ -11,14 +11,26 @@
 // excepción ya no hace falta.
 import { ITEM_KEYS } from '../../core/migrate.js';
 
+/**
+ * @typedef {import('../contracts/activity.js').Activity} Activity
+ * @typedef {import('../contracts/activity.js').SessionItem} SessionItem
+ */
+
+/**
+ * @param {Activity|null} [activity]
+ * @returns {SessionItem[]}
+ */
 export function sessionItems(activity) {
-  const c = activity?.content || {};
+  const c = /** @type {Record<string, unknown>} */ (activity?.content || {});
   // Las claves salen de ITEM_KEYS (core/migrate.js), que es la MISMA lista que
   // usa activityItemCount. Estaban escritas a mano en los dos sitios y ya
   // habían divergido: `pins` (Etiqueta el Diagrama) se añadió solo a una, así
   // que para esa plantilla el contador decía N y esta función devolvía [] —
   // `core/editorModes.js` y el contrato la trataban como si no tuviera
   // contenido (auditoría v1.51.405).
-  for (const k of ITEM_KEYS) if (c[k] != null) return c[k];
+  for (const k of ITEM_KEYS) {
+    const v = c[k];
+    if (v != null) return Array.isArray(v) ? v : [];
+  }
   return [];
 }

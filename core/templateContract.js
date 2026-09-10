@@ -13,15 +13,26 @@ import { getModel } from '../kernel/content/models.js';
 import { canAutoScoreRound, faltaParaLive } from './templateCapability.js';
 import { LIVE_LOOPS } from './liveLoops.js';
 
+/** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
+
+/**
+ * @template T
+ * @param {T} o
+ * @returns {T}
+ */
 const clone = (o) => JSON.parse(JSON.stringify(o ?? null));
 
 /**
  * Verifica UNA plantilla contra el contrato completo.
- * @param {any} T Template class (como sale de listTemplates()).
+ * Lo que entra es lo que se DIAGNOSTICA: una plantilla que puede estar a medio
+ * escribir. Por eso `Partial` — exigir el contrato en la firma haría imposible
+ * comprobarlo.
+ * @param {Partial<import('../kernel/contracts/template.js').TemplateStatic>} T
  * @returns {string[]} problemas encontrados (vacío = cumple).
  */
 // El catálogo de bucles vive en core/liveLoops.js (§26): aquí solo se valida.
 export function checkTemplateContract(T) {
+  /** @type {string[]} */
   const issues = [];
   const m = T?.meta;
   if (!m?.name) return ['sin meta.name — no es una plantilla registrable'];
@@ -120,7 +131,7 @@ export function checkTemplateContract(T) {
       issues.push("meta.play.vs no es 'none' pero no implementa renderRound (VS necesita pintar la ronda)");
     }
     // `play.live` es una LISTA de bucles (§26); se tolera el string heredado.
-    const liveRaw = Array.isArray(m.play.live) ? m.play.live : (m.play.live ? [m.play.live] : []);
+    const liveRaw = /** @type {string[]} */ (Array.isArray(m.play.live) ? m.play.live : (m.play.live ? [m.play.live] : []));
     for (const l of liveRaw) {
       if (!LIVE_POLICIES.includes(l)) issues.push(`meta.play.live: "${l}" no es un bucle del catálogo (usa ${LIVE_LOOPS.join(' | ')} o [])`);
     }
@@ -157,7 +168,7 @@ export function checkTemplateContract(T) {
     // Solo se exige a quien tiene ronda: una plantilla que no corre en
     // VS/Equipos/Live no manda respuestas por ahí y no tiene nada que declarar.
     const SUBMIT_KINDS = ['gesto', 'boton'];
-    if (typeof T.renderRound === 'function' && !SUBMIT_KINDS.includes(m.play.submit)) {
+    if (typeof T.renderRound === 'function' && !(m.play.submit && SUBMIT_KINDS.includes(m.play.submit))) {
       issues.push(`meta.play.submit inválido: ${JSON.stringify(m.play.submit)} — con renderRound hay que declarar cómo se envía (${SUBMIT_KINDS.join(' | ')})`);
     }
   }
@@ -175,13 +186,13 @@ export function checkTemplateContract(T) {
   if (typeof m.defaultContent !== 'function') {
     issues.push('meta.defaultContent no es función');
   } else {
-    try { dc = m.defaultContent(); } catch (e) { issues.push(`defaultContent() lanza: ${e.message}`); }
+    try { dc = m.defaultContent(); } catch (e) { issues.push(`defaultContent() lanza: ${e instanceof Error ? e.message : String(e)}`); }
     if (dc && model) {
       const v = model.validate(dc);   // ContentModelContract: {ok, errors}
       if (v && v.ok === false) issues.push(`defaultContent no pasa validate() de "${m.contentModel}": ${(v.errors || []).join(', ')}`);
     }
   }
-  for (const fn of ['defaultRules', 'defaultScoring']) {
+  for (const fn of /** @type {Array<'defaultRules'|'defaultScoring'>} */ (['defaultRules', 'defaultScoring'])) {
     if (typeof m[fn] !== 'function') issues.push(`meta.${fn} no es función`);
   }
 
@@ -200,7 +211,9 @@ export function checkTemplateContract(T) {
   }
 
   // ── el contenido default debe ser JUGABLE en los modos que ofrece ─────────
-  const act = { id: '_contract', template: m.name, content: dc || {}, scoring: safeCall(m.defaultScoring) || {} };
+  // Actividad SINTÉTICA mínima: lo que el contrato necesita para pedir ítems de
+  // sesión y una puntuación de muestra.
+  const act = /** @type {Activity} */ ({ id: '_contract', template: m.name, content: dc || {}, scoring: safeCall(m.defaultScoring) || {} });
   if (dc && (canAutoScoreRound(T) || m.modes?.live)) {
     if (sessionItems(act).length < 1) {
       issues.push('defaultContent no produce ítems de sesión (sessionItems=0) pese a ofrecer rondas (VS/Equipos/Live)');
@@ -214,7 +227,10 @@ export function checkTemplateContract(T) {
   if (typeof T.scoreSubmission === 'function' && dc) {
     const item = sessionItems(act)[0] ?? null;
     let r;
-    try { r = T.scoreSubmission({ value: null, item, msTaken: 0, activity: act, mode: 'contract' }); }
+    // Sin `mode`: aquí solo se mira la FORMA del resultado, y el modo es
+    // opcional en ScoreInput. Antes se mandaba `mode: 'contract'`, un valor
+    // fuera de la unión declarada (`PointsMode`) que no leía nadie.
+    try { r = T.scoreSubmission({ value: null, item, msTaken: 0, activity: act }); }
     catch { r = undefined; /* un scorer puede exigir un value con forma; no lo penalizamos */ }
     if (r !== undefined && r !== null) {
       if (typeof r !== 'object' || !('correct' in r) || typeof r.points !== 'number') {
@@ -240,17 +256,18 @@ export function checkTemplateContract(T) {
       if (JSON.stringify(once) !== JSON.stringify(twice)) {
         issues.push('migrateContent NO es idempotente sobre defaultContent (migrar dos veces cambia el contenido)');
       }
-    } catch (e) { issues.push(`migrateContent lanza sobre defaultContent: ${e.message}`); }
+    } catch (e) { issues.push(`migrateContent lanza sobre defaultContent: ${e instanceof Error ? e.message : String(e)}`); }
   }
 
   return issues;
 }
 
+/** @param {(() => unknown)|undefined} fn */
 function safeCall(fn) { try { return typeof fn === 'function' ? fn() : null; } catch { return null; } }
 
 /**
  * Corre el contrato sobre TODAS las plantillas dadas.
- * @param {any[]} templates listTemplates()
+ * @param {Partial<import('../kernel/contracts/template.js').TemplateStatic>[]} templates listTemplates()
  * @returns {{name:string, issues:string[]}[]} solo las que fallan.
  */
 export function checkAllTemplates(templates) {

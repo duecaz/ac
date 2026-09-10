@@ -33,15 +33,31 @@
 
 import { escapeHtml } from './html.js';
 
-/** Las opciones de partida que declara una plantilla (lista, nunca null). */
+/**
+ * @typedef {import('../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../kernel/contracts/template.js').PlayOption} PlayOption
+ * @typedef {import('./registry.js').PlantillaRegistrada} PlantillaRegistrada
+ * @typedef {Record<string, string|undefined>} PlayChoices
+ */
+
+/** Las opciones de partida que declara una plantilla (lista, nunca null).
+ * @param {PlantillaRegistrada|null|undefined} T
+ * @returns {PlayOption[]}
+ */
 export function playOptionsOf(T) {
   const raw = T?.meta?.play?.options;
   return Array.isArray(raw) ? raw : [];
 }
 
 /** El valor vigente de cada opción: lo elegido para esta partida o, si no se
- *  ha tocado, lo que traiga la actividad. */
+ *  ha tocado, lo que traiga la actividad.
+ * @param {PlantillaRegistrada|null|undefined} T
+ * @param {Activity} activity
+ * @param {PlayChoices} [chosen]
+ * @returns {PlayChoices}
+ */
 export function currentChoices(T, activity, chosen = {}) {
+  /** @type {PlayChoices} */
   const out = {};
   for (const o of playOptionsOf(T)) {
     const suyo = chosen[o.id];
@@ -51,6 +67,7 @@ export function currentChoices(T, activity, chosen = {}) {
   return out;
 }
 
+/** @param {PlayOption} o @param {Activity} activity @returns {string|undefined} */
 function safeGet(o, activity) {
   try { return o.get?.(activity); } catch { return undefined; }
 }
@@ -58,6 +75,10 @@ function safeGet(o, activity) {
 /**
  * Aplica las elecciones a una COPIA de la actividad. Nunca muta la original: lo
  * que se juega es una copia (`playActivity()`), y lo guardado no se toca.
+ * @param {PlantillaRegistrada|null|undefined} T
+ * @param {Activity} activity
+ * @param {PlayChoices} [chosen]
+ * @returns {Activity}
  */
 export function applyPlayOptions(T, activity, chosen = {}) {
   let out = activity;
@@ -75,6 +96,10 @@ export function applyPlayOptions(T, activity, chosen = {}) {
  * y setup de VS/Equipos). Segmentado y con la elección vigente ya marcada: no es
  * un formulario que rellenar, es un interruptor que casi nunca se toca.
  * Devuelve '' si la plantilla no declara opciones — la mayoría.
+ * @param {PlantillaRegistrada|null|undefined} T
+ * @param {Activity} activity
+ * @param {PlayChoices} [chosen]
+ * @returns {string}
  */
 export function playOptionsHtml(T, activity, chosen = {}) {
   const opts = playOptionsOf(T);
@@ -94,9 +119,16 @@ export function playOptionsHtml(T, activity, chosen = {}) {
 
 /** Cablea los botones del control. `onChange(id, value)` recibe la elección; el
  *  repintado es local (no re-monta la pantalla, que perdería el foco). */
+/**
+ * @param {Element|string|null|undefined} rootEl
+ * @param {(id: string|undefined, value: string|undefined) => void} [onChange]
+ * @returns {void}
+ */
 export function wirePlayOptions(rootEl, onChange) {
   const root = typeof rootEl === 'string' ? document.querySelector(rootEl) : rootEl;
-  for (const btn of root?.querySelectorAll('.ww-playopt-btn') || []) {
+  if (!root) return;
+  for (const el of root.querySelectorAll('.ww-playopt-btn')) {
+    const btn = /** @type {HTMLElement} */ (el);
     btn.addEventListener('click', () => {
       const { opt, value } = btn.dataset;
       for (const b of root.querySelectorAll(`.ww-playopt-btn[data-opt="${opt}"]`)) {

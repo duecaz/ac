@@ -10,8 +10,10 @@
 // Replaces the brittle `window.addEventListener('hashchange', () => unsub(),
 // {once:true})` pattern that left tickers/subs orphaned across re-renders.
 
+/** @type {Map<string, Array<() => void>>} */
 const _bag = new Map(); // viewKey -> Array<dispose>
 
+/** @param {string} key */
 function disposeAll(key) {
   const arr = _bag.get(key) || [];
   while (arr.length) {
@@ -25,22 +27,40 @@ function disposeAll(key) {
  *  embebidas (VS/Equipos dentro del stage) cuyo ciclo lo maneja un padre
  *  (playerView llama dispose() al cambiar de modo): el padre suelta aquí lo que
  *  la vista registró con acquire(). En navegación normal no hace falta — el
- *  hashchange ya drena todo. */
+ *  hashchange ya drena todo.
+ * @param {string} key */
 export function release(key) { disposeAll(key); }
 
+/**
+ * @param {string} key
+ */
 export function acquire(key) {
   // Tear down anything from the previous mount of this view.
   disposeAll(key);
+  /** @type {Array<() => void>} */
   const arr = [];
   _bag.set(key, arr);
   return {
     key,
+    /**
+     * @template {(() => void)|null|undefined} T
+     * @param {T} disposer
+     * @returns {T}
+     */
     add(disposer) { if (typeof disposer === 'function') arr.push(disposer); return disposer; },
+    /**
+     * @param {() => void} fn
+     * @param {number} ms
+     */
     setInterval(fn, ms) {
       const h = setInterval(fn, ms);
       arr.push(() => clearInterval(h));
       return h;
     },
+    /**
+     * @param {() => void} fn
+     * @param {number} ms
+     */
     setTimeout(fn, ms) {
       const h = setTimeout(fn, ms);
       arr.push(() => clearTimeout(h));

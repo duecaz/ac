@@ -1,8 +1,18 @@
 import { getRemoteStore } from '../adapters/index.js';
 import { migrate, normalize } from './migrate.js';
 import { mergeRemote } from './storageMerge.js';
-import { lsGet, lsSet, lsDel } from './ls.js';
+import { lsGet, lsSet, lsDel, objetoDe } from './ls.js';
 import { getAuthUserId, getAuthName } from './auth.js';
+
+/**
+ * @typedef {import('../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../kernel/contracts/activity.js').ActivityRow} ActivityRow
+ * @typedef {import('./migrate.js').ActivityLike} ActivityLike
+ * @typedef {import('../kernel/contracts/dataPort.js').SaveResult} SaveResult
+ */
+
+/** El mapa `id → actividad` tal y como vive en el almacén del navegador. */
+/** @typedef {Record<string, ActivityLike>} ActivityMap */
 
 const LEGACY_KEY = 'ww.activities';
 const TOMBSTONE_KEY = 'ww.tombstones';   // { [id]: ISOString } — borrados pendientes de confirmar en remoto
@@ -17,15 +27,41 @@ function currentKey() { return _userId === 'guest' ? LEGACY_KEY : `${LEGACY_KEY}
 function tombKey()    { return _userId === 'guest' ? TOMBSTONE_KEY : `${TOMBSTONE_KEY}.${_userId}`; }
 
 // ── Tombstones (P1-1): evitan que una actividad borrada resucite vía sync ─────
+/** @returns {Record<string, string>} */
 function readTombstones() {
-  try { return JSON.parse(lsGet(tombKey()) || '{}'); }
-  catch { return {}; }
+  const t = objetoDe(lsGet(tombKey()));
+  /** @type {Record<string, string>} */
+  const out = {};
+  for (const [k, v] of Object.entries(t)) if (typeof v === 'string') out[k] = v;
+  return out;
 }
+/** @param {Record<string, string>} t */
 function writeTombstones(t) { return lsSet(tombKey(), JSON.stringify(t)); }
+/** @param {string} id */
 function addTombstone(id) { const t = readTombstones(); t[id] = new Date().toISOString(); writeTombstones(t); }
+/** @param {string} id */
 function clearTombstone(id) { const t = readTombstones(); if (t[id]) { delete t[id]; writeTombstones(t); } }
+
+
+/** El estado HTTP de un error de backend, si lo trae.
+ * @param {unknown} e
+ * @returns {number|null}
+ */
+function httpStatus(e) {
+  if (e && typeof e === 'object' && 'status' in e) {
+    const s = /** @type {{status?: unknown}} */ (e).status;
+    if (typeof s === 'number') return s;
+  }
+  return null;
+}
+
+/** @param {unknown} e @returns {string} */
+function mensajeDe(e) {
+  return e instanceof Error ? e.message : String(e);
+}
 export function tombstoneSet() { return new Set(Object.keys(readTombstones())); }
 
+/** @param {string|null|undefined} userId */
 export function setStorageUser(userId) { _userId = userId || 'guest'; }
 export function currentStorageUser() { return _userId; }
 
@@ -36,10 +72,13 @@ export function hasClaimed() { return !!lsGet(CLAIM_FLAG); }
 // (marca _unsynced → retryUnsynced las sube y remoteStore firma owner=googleId).
 // Es GLOBAL y una sola vez: el PRIMER profe del navegador se queda las anónimas;
 // después la clave legacy queda vacía. Requiere que _userId ya sea el del profe.
+/**
+ * @param {string|null|undefined} userId
+ * @returns {{claimed: number, error?: string}}
+ */
 export function claimGuestActivities(userId) {
   if (!userId || userId === 'guest' || hasClaimed()) return { claimed: 0 };
-  let legacy = {};
-  try { legacy = JSON.parse(lsGet(LEGACY_KEY) || '{}'); } catch {}
+  const legacy = /** @type {ActivityMap} */ (objetoDe(lsGet(LEGACY_KEY)));
   const ids = Object.keys(legacy).filter(id => legacy[id]);
   if (!ids.length) { lsSet(CLAIM_FLAG, new Date().toISOString()); return { claimed: 0 }; }
   const prev = _userId;
@@ -57,25 +96,35 @@ export function claimGuestActivities(userId) {
   return { claimed: ids.length };
 }
 
+/** @returns {ActivityMap} */
 function readLS() {
-  try { return JSON.parse(lsGet(currentKey()) || '{}'); }
-  catch { return {}; }
+  return /** @type {ActivityMap} */ (objetoDe(lsGet(currentKey())));
 }
 // Devuelve false si la escritura falló (cuota llena / almacenamiento bloqueado).
 // lsSet ya emite `ww:storage-full` para el aviso global; el booleano deja que el
 // caller NO finja éxito (P1-2).
+/** @param {ActivityMap} map */
 function writeLS(map) { return lsSet(currentKey(), JSON.stringify(map)); }
 
+/** @returns {Activity[]} */
 export function list() {
   const map = readLS();
   return Object.values(map).filter(Boolean).map(migrate).sort((a,b) => (b.updatedAt||'').localeCompare(a.updatedAt||''));
 }
 
+/**
+ * @param {string} id
+ * @returns {Activity|null}
+ */
 export function get(id) {
   const map = readLS();
   return map[id] ? migrate(map[id]) : null;
 }
 
+/**
+ * @param {string} id
+ * @returns {Promise<Activity|null>}
+ */
 export async function getRemote(id) {
   const rs = await getRemoteStore();
   const data = await rs.getActivity(id);
@@ -93,6 +142,11 @@ export async function getRemote(id) {
  *  una lista que se va a jugar entera). El reproductor NO cachea a propósito —
  *  jugar algo público no debe ensuciar «Mis actividades».
  */
+/**
+ * @param {string} id
+ * @param {{cache?: boolean}} [opts]
+ * @returns {Promise<Activity|null>}
+ */
 export async function getAnywhere(id, { cache = false } = {}) {
   const local = get(id);
   if (local) return local;
@@ -107,19 +161,30 @@ export async function getAnywhere(id, { cache = false } = {}) {
 // (el remoteStore) a través de esta fachada, que además MIGRA el contenido: una
 // tarjeta pública de una actividad vieja se pinta con el modelo de hoy, que es
 // justo lo que las copias sueltas no hacían.
+/**
+ * @param {{language?: string, owner?: string, limit?: number}} [opts]
+ * @returns {Promise<ActivityRow[]>}
+ */
 export async function listPublic(opts = {}) {
   const rs = await getRemoteStore();
   if (typeof rs.listPublicActivities !== 'function') return [];
   const rows = await rs.listPublicActivities(opts);
-  return rows.map(r => ({ ...r, data: r.data ? migrate(r.data) : {} }));
+  // Una fila SIN `data` es un dato corrupto: se deja el hueco vacío y la
+  // tarjeta se pinta con el id de la fila, en vez de tirar la lista entera.
+  return rows.map(r => ({ ...r, data: r.data ? migrate(r.data) : /** @type {Activity} */ ({}) }));
 }
 
 /** Actividades públicas ya como ACTIVIDAD (portada / perfil de autor). */
+/**
+ * @param {{language?: string, owner?: string, limit?: number}} [opts]
+ * @returns {Promise<Activity[]>}
+ */
 export async function listPublicActivities(opts = {}) {
   return (await listPublic(opts)).map(r => ({ ...r.data, id: r.data.id || r.id }));
 }
 
 /** Cuántas actividades tiene cada dueño (panel de Profesores). */
+/** @returns {Promise<Map<string, number>>} */
 export async function countActivitiesByOwner() {
   const rs = await getRemoteStore();
   return typeof rs.countActivitiesByOwner === 'function' ? rs.countActivitiesByOwner() : new Map();
@@ -127,6 +192,10 @@ export async function countActivitiesByOwner() {
 
 /** Diagnóstico de `#/admin`: lista + tamaño del payload medido. `{items, bytes}`.
  *  Si el backend activo no sabe medir (driver local), devuelve bytes 0. */
+/**
+ * @param {string} [fields]
+ * @returns {Promise<{items: unknown[], bytes: number}>}
+ */
 export async function probeActivitiesPayload(fields) {
   const rs = await getRemoteStore();
   if (typeof rs.probeActivitiesPayload === 'function') return rs.probeActivitiesPayload(fields);
@@ -145,6 +214,11 @@ export async function probeActivitiesPayload(fields) {
 export const ALMACEN_LLENO =
   'Almacenamiento del navegador lleno. Exporta a JSON y libera espacio; tu cambio NO se guardó.';
 
+/**
+ * @param {Activity} activity
+ * @param {{keepUpdatedAt?: boolean}} [opts]
+ * @returns {SaveResult}
+ */
 export function save(activity, { keepUpdatedAt = false } = {}) {
   const stamp = keepUpdatedAt && activity.updatedAt ? activity.updatedAt : new Date().toISOString();
   const a = normalize({ ...activity, updatedAt: stamp });
@@ -179,23 +253,26 @@ export function save(activity, { keepUpdatedAt = false } = {}) {
     const m = readLS();
     if (m[a.id]?._unsynced) { delete m[a.id]._unsynced; writeLS(m); }
   }).catch(err => {
-    console.warn('[storage] remote save failed:', err.message);
+    console.warn('[storage] remote save failed:', mensajeDe(err));
     // El flag _unsynced ya está puesto; retryUnsynced / el evento 'online' lo tomarán.
   });
   return { activity: a, remote, persisted };
 }
 
+/** @param {Activity} a */
 async function remoteSave(a) {
   const rs = await getRemoteStore();
   await rs.saveActivity(a);
 }
 
+/** @returns {Promise<{tried: number, ok: number}>} */
 export async function retryUnsynced() {
   const map = readLS();
   const pending = Object.values(map).filter(a => a._unsynced);
   let ok = 0;
   for (const a of pending) {
-    try { await remoteSave(a); delete a._unsynced; ok++; }
+    // Lo pendiente lo escribió `save()` ya normalizado: es una Activity entera.
+    try { await remoteSave(/** @type {Activity} */ (a)); delete a._unsynced; ok++; }
     catch { /* keep flag */ }
   }
   writeLS(map);
@@ -217,6 +294,10 @@ if (typeof window !== 'undefined') {
  *  borrado de OTRO (un admin limpiando la biblioteca) eso es peor que un aviso
  *  feo: aquí desaparece de la pantalla y en la biblioteca de todos los demás
  *  sigue estando. */
+/**
+ * @param {string} id
+ * @returns {Promise<{ok: boolean, error?: string}>}
+ */
 export function remove(id) {
   const map = readLS();
   delete map[id];
@@ -229,9 +310,9 @@ export function remove(id) {
   return remoteDelete(id)
     .then(() => { clearTombstone(id); return { ok: true }; })
     .catch(err => {
-      if (err?.status === 404) { clearTombstone(id); return { ok: true }; } // ya no existe en remoto
-      console.warn('[storage] remote delete failed (se reintentará):', err.message);
-      return { ok: false, error: err?.message || 'sin conexión' };
+      if (httpStatus(err) === 404) { clearTombstone(id); return { ok: true }; } // ya no existe en remoto
+      console.warn('[storage] remote delete failed (se reintentará):', mensajeDe(err));
+      return { ok: false, error: mensajeDe(err) || 'sin conexión' };
     });
 }
 
@@ -241,8 +322,13 @@ export function remove(id) {
  *  N borradas» cuando el servidor las rechazó es el fallo mudo que la ley R6
  *  persigue — y con el admin limpiando la biblioteca de OTROS, un borrado que
  *  no ocurrió deja la actividad publicada para toda la clase siguiente. */
+/**
+ * @param {string[]} ids
+ * @param {{borrar?: (id: string) => Promise<{ok: boolean, error?: string}>}} [opts]
+ * @returns {Promise<{hechas: number, fallos: Array<{id: string, error: string}>}>}
+ */
 export async function removeMany(ids, { borrar = remove } = {}) {
-  let hechas = 0; const fallos = [];
+  let hechas = 0; /** @type {Array<{id: string, error: string}>} */ const fallos = [];
   for (const id of ids || []) {
     const r = await borrar(id);
     if (r?.ok) hechas++;
@@ -251,6 +337,7 @@ export async function removeMany(ids, { borrar = remove } = {}) {
   return { hechas, fallos };
 }
 
+/** @param {string} id */
 async function remoteDelete(id) {
   const rs = await getRemoteStore();
   await rs.deleteActivity(id);
@@ -262,11 +349,17 @@ async function retryTombstones() {
   const ids = Object.keys(readTombstones());
   for (const id of ids) {
     try { await remoteDelete(id); clearTombstone(id); }
-    catch (err) { if (err?.status === 404) clearTombstone(id); /* si no, se deja para el próximo intento */ }
+    catch (err) { if (httpStatus(err) === 404) clearTombstone(id); /* si no, se deja para el próximo intento */ }
   }
   return { pending: ids.length };
 }
 
+/** `mergeRemote` recibe el normalizador con una firma ANCHA (`Object`): esta es
+ *  la boca por la que entra el nuestro sin que el mapa pierda su tipo.
+ * @type {(data: object) => object} */
+const migrarFila = (data) => migrate(/** @type {ActivityLike} */ (data));
+
+/** @returns {Promise<Activity[]>} */
 export async function sync() {
   // Guest (sin login): SOLO local, sin remoto (S1.4). En el modelo de biblioteca
   // pública, "Mis actividades" es del profe logueado; la portada/explore consultan
@@ -278,6 +371,11 @@ export async function sync() {
   // Solo las del profe (filtra por owner) → "Mis actividades" no se llena con las
   // de todo el mundo cuando la biblioteca es pública.
   const rows = await rs.listActivities(_userId);
-  writeLS(mergeRemote(readLS(), rows, migrate, tombstoneSet()));
+  const merged = mergeRemote(
+    /** @type {Parameters<typeof mergeRemote>[0]} */ (readLS()),
+    rows,
+    migrarFila,
+    tombstoneSet());
+  writeLS(/** @type {ActivityMap} */ (merged));
   return list();
 }

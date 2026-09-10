@@ -77,6 +77,8 @@
  * @property {ImageCredit} [imageCredit]
  * @property {string|null} [audio]
  * @property {number} [points]                Puntos de ESTE ítem; si falta manda `scoring.pointsPerCorrect`.
+ * @property {number} [seconds]               Tiempo EN VIVO de este ítem (R-3, `core/timings.js`);
+ *   ausente = hereda el de la actividad.
  */
 /**
  * @typedef {Object} QaContent
@@ -119,6 +121,7 @@
  * @property {string} id       `rid('ps_')`.
  * @property {string} text     El texto SIN corregir (sin tildes / sin comas).
  * @property {TextMark[]} marks
+ * @property {number} [seconds]  Tiempo EN VIVO de esta frase (R-3, `core/timings.js`).
  */
 /**
  * @typedef {Object} TextCorrectionContent
@@ -257,6 +260,18 @@
  *   |TangramContent|PuzzleContent} ActivityContent
  */
 
+/**
+ * UNA RONDA de la sesión, sea cual sea el modelo: lo que devuelve
+ * `sessionItems(activity)` (kernel/content/sessionItems.js) leyendo la primera
+ * clave de `ITEM_KEYS` que traiga el contenido. Cada modelo llama a su lista de
+ * otra manera (`items` · `entries` · `pairs` · `words` · `passages` · `pins`) y
+ * una sesión las trata a todas como la secuencia de rondas, así que el tipo es
+ * la unión de sus elementos — incluida la `string` suelta de `entries` y de las
+ * palabras de la Sopa.
+ * @typedef {QaItem|CardItem|Pair|Passage|DiagramPin|CrosswordWord|BallsortItem
+ *   |ColorearItem|TangramItem|PuzzleItem|string} SessionItem
+ */
+
 // ─── LOS BLOQUES COMUNES ─────────────────────────────────────────────────────
 // Los rellena `normalize()` con los DEFAULT_* de core/constants.js MEZCLADOS
 // con los `defaultRules/defaultScoring/defaultLive` de la plantilla, así que
@@ -302,6 +317,17 @@
  * @property {ImageCredit} [backgroundImageCredit]
  * @property {boolean} [sound]
  * @property {boolean} [teams]
+ * @property {VsFeedback} [vsFeedback]      Ambiente del DUELO; dueño único `core/presentation.js`.
+ * @property {boolean} [vsAnimationOff]     El duelo sin animación central (las hojas de texto la apagan solas).
+ */
+
+/**
+ * Los interruptores de feedback del duelo. Su dueño es `core/presentation.js`
+ * (`vsFeedback`/`setVsFeedback`), que pone los defectos: antes la forma vivía
+ * escrita dos veces y el editor enseñaba lo contrario de lo que veía la clase.
+ * @typedef {Object} VsFeedback
+ * @property {boolean} [flash]
+ * @property {boolean} [confetti]
  */
 
 /**
@@ -313,6 +339,7 @@
  * @property {'manual'|'autoOnAllAnswered'|'autoOnTimer'} [advanceMode]
  * @property {number} [questionTimer]       Segundos por pregunta.
  * @property {'firstOf'|'timer'|'allAnswered'} [lockAnswersOn]
+ * @property {number} [readSeconds]        R-1: segundos en que la pregunta se ve pero no se responde (`core/timings.js`).
  * @property {boolean} [showAnswerAfterEach]
  * @property {boolean} [showLeaderboardBetween]
  * @property {'velocidad'|'flat'} [pointsModel]
@@ -358,7 +385,10 @@
  * @property {ActivityReview} review
  * @property {ActivityPresentation} presentation
  * @property {LiveSettings} live
- * @property {ActivityAuthor} author
+ * @property {ActivityAuthor|null} author   `null` en la recién NACIDA de un
+ *   duplicado (`kernel/content/switch.js` · `views/playerView.js`): el autor lo
+ *   pone la capa de guardado con la sesión en curso, y `normalize()` lo rellena
+ *   con `DEFAULT_AUTHOR`. Todos sus lectores ya preguntan con `author?.`.
  * @property {'private'|'unlisted'|'public'} visibility  Nace 'unlisted' (borrador).
  * @property {string|null} forkOf           Id de la actividad de la que se duplicó.
  * @property {string[]} tags

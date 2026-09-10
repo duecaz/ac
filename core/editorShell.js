@@ -29,6 +29,50 @@ import { tiempoBloqueHtml, wireTiempoBloque } from './editorPrimitives.js';
 import { iaSabeEscribir, fusionarContenido, MODELOS_IA } from './aiContent.js';
 import { toast, TOAST_LARGO } from './toast.js';
 
+/**
+ * @typedef {import('../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../kernel/contracts/activity.js').ImageCredit} ImageCredit
+ * @typedef {import('./registry.js').PlantillaRegistrada} PlantillaRegistrada
+ */
+
+/**
+ * Lo que el chasis le presta a cada panel de plantilla: avisar del cambio y
+ * repintar el editor entero (alta/baja de ítems).
+ * @typedef {Object} EditorCtx
+ * @property {(activity: Activity) => void} onChange
+ * @property {() => void} repaint
+ */
+
+/**
+ * UN PANEL de plantilla dentro del chasis: su rótulo, su HTML y su cableado.
+ * @typedef {Object} EditorPanel
+ * @property {string} [label]
+ * @property {(activity: Activity) => string} html
+ * @property {(root: Element, activity: Activity, ctx: EditorCtx) => void} [wire]
+ */
+
+/**
+ * LO QUE APORTA UNA PLANTILLA al chasis compartido. `content` es lo único
+ * obligatorio; `scoring` y `live` los pone el chasis si la plantilla no los
+ * declara, y `presentation: false` quita la pestaña de skin/fondo.
+ * @typedef {Object} EditorSpec
+ * @property {EditorPanel} content
+ * @property {EditorPanel|null} [rules]
+ * @property {EditorPanel|null} [scoring]
+ * @property {EditorPanel|null} [live]
+ * @property {boolean} [presentation]
+ */
+
+/**
+ * Una pestaña del chasis, ya resuelta.
+ * @typedef {Object} EditorTab
+ * @property {string} id
+ * @property {string} label
+ * @property {string} [icon]
+ * @property {() => string} body
+ */
+
+/** @param {Activity} a */
 function presentationHtml(a) {
   const cs = a.presentation?.skin || 'default';
   const cb = a.presentation?.background || 'none';
@@ -80,15 +124,18 @@ function presentationHtml(a) {
  *  Ordena las Pelotas genera sus tableros sola y Etiqueta el diagrama necesita
  *  una imagen: en esas dos no sale el botón, que es lo correcto — una opción que
  *  no puede funcionar no se ofrece. Plan: docs/handoff-ia-contenido.md */
+/** @param {PlantillaRegistrada|null|undefined} T */
 function iaBotonHtml(T) {
   const modelo = T?.meta?.contentModel;
   if (!iaSabeEscribir(modelo)) return '';
+  // `iaSabeEscribir` ya ha comprobado que la clave existe en MODELOS_IA.
+  const ficha = MODELOS_IA[/** @type {keyof typeof MODELOS_IA} */ (modelo)];
   return `<div class="ww-ia-puerta mb-3">
     <button type="button" class="btn btn-primary" id="ww-ia-go"
-            title="La IA propone ${escapeHtml(MODELOS_IA[modelo].etiqueta)}; tú decides si entran">
+            title="La IA propone ${escapeHtml(ficha.etiqueta)}; tú decides si entran">
       <i class="bi bi-stars"></i> Escribir con IA
     </button>
-    <span class="text-muted small">Escribe ${escapeHtml(MODELOS_IA[modelo].etiqueta)} sobre el tema que le digas.
+    <span class="text-muted small">Escribe ${escapeHtml(ficha.etiqueta)} sobre el tema que le digas.
       Lo verás antes de añadirlo y podrás quitar las que no quieras. Lo que ya has escrito no se toca.</span>
   </div>`;
 }
@@ -97,13 +144,14 @@ function iaBotonHtml(T) {
  *  la actividad vacía; en cuanto hay un elemento, desaparece sin dejar hueco.
  *  Qué cuenta como «nada escrito» lo decide core/activityCheck.js: el editor y
  *  el jugador tenían cada uno su criterio y discrepaban. */
+/** @param {PlantillaRegistrada|null|undefined} T @param {Activity} a */
 function primerPasoHtml(T, a) {
   const paso = T?.meta?.editor?.primerPaso;
   if (!paso) return '';
   // Con contenido GENERADO (Ordena las Pelotas) no hay «estado vacío» que
   // detectar: la plantilla siempre trae un tablero, así que la pista no marca
   // un principio sino que ORIENTA — qué se puede tocar aquí. Se queda puesta.
-  if (!T.meta.editor.generado && !sinEscribirNada(a)) return '';
+  if (!T?.meta?.editor?.generado && !sinEscribirNada(a)) return '';
   return `<div class="alert alert-info d-flex align-items-start gap-2 py-2">
     <i class="bi bi-lightbulb mt-1"></i><div>${escapeHtml(paso)}</div></div>`;
 }
@@ -112,6 +160,7 @@ function primerPasoHtml(T, a) {
  *  actividad no esté lista se ve AQUÍ, no al llegar a la clase y descubrir que
  *  no hay nada que arrastrar. Con el primer paso ya puesto (actividad recién
  *  empezada) no se repite el sermón: ahí la pista azul basta. */
+/** @param {Activity} a */
 function faltaHtml(a) {
   const rev = revisarActividad(a);
   if (rev.vacia) return '';            // la pista azul del primer paso ya lo dice
@@ -130,8 +179,9 @@ function faltaHtml(a) {
  *  Se llama en cada tecla: la revisión es pura y barata (recorre el contenido
  *  en memoria), y un aviso que solo se actualiza al repintar miente justo
  *  mientras el profe escribe, que es cuando lo está mirando. */
+/** @param {Element} root @param {Activity} a */
 function refrescarFalta(root, a) {
-  const caja = root.querySelector('#ww-falta');
+  const caja = /** @type {HTMLElement|null} */ (root.querySelector('#ww-falta'));
   const nuevo = faltaHtml(a);
   // Solo se escribe si CAMBIA. Tecleando la palabra número 30 de la pregunta 12
   // el panel dice exactamente lo mismo, y reescribirlo reparsea su HTML y
@@ -143,6 +193,12 @@ function refrescarFalta(root, a) {
   if (titulo) titulo.classList.toggle('is-invalid', revisarActividad(a).faltaTitulo);
 }
 
+/**
+ * @param {Element} root
+ * @param {Activity} a
+ * @param {(activity: Activity) => void} onChange
+ * @param {EditorSpec} spec
+ */
 export function renderEditorShell(root, a, onChange, spec) {
   const T = getTemplate(a.template);
   // PANELES POR DEFECTO (core/editorPanels.js). "Puntuación" existía en 5 de 13
@@ -150,30 +206,32 @@ export function renderEditorShell(root, a, onChange, spec) {
   // sus datos (`a.scoring.mode`, `a.live.*`) los leen el motor y el marcador en
   // todas por igual: era funcionalidad ausente, no un adorno. Ahora el chasis
   // los pone y la plantilla solo los DECLARA si necesita otra cosa.
+  /** @type {EditorSpec & {scoring: EditorPanel, live: EditorPanel}} */
   const paneles = {
     ...spec,
     scoring: spec.scoring || { html: scoringPanelHtml, wire: wireScoringPanel },
     live: spec.live || { html: livePanelHtml, wire: wireLivePanel },
   };
-  spec = paneles;
-  const liveOn = !!T?.meta?.modes?.live && !!spec.live;
+  // De aquí abajo manda `paneles`: el spec de la plantilla ya está completado.
+  const liveOn = !!T?.meta?.modes?.live && !!paneles.live;
   // "Modos" aparece si la plantilla soporta VS/Equipos/Tarea (En vivo va aparte)
-  // O si hay un bloque Individual (spec.rules). Individual es la primera sección.
+  // O si hay un bloque Individual (paneles.rules). Individual es la primera sección.
   const hasModes = modesForTemplate(T).some(m => ['vs', 'teams', 'task'].includes(m.id));
-  const showModes = hasModes || !!spec.rules;
-  const presOn = spec.presentation !== false;
+  const showModes = hasModes || !!paneles.rules;
+  const presOn = paneles.presentation !== false;
 
   // Pestañas en orden fijo. id = el data-bs-target; cada una se incluye solo si
   // su contenido existe (Contenido y Presentación según spec).
-  const tabs = [
-    { id: 'tab-content', label: spec.content.label || 'Contenido',
+  /** @type {EditorTab[]} */
+  const tabs = /** @type {EditorTab[]} */ ([
+    { id: 'tab-content', label: paneles.content.label || 'Contenido',
       // EL ESTADO VACÍO ENSEÑA (R-D · plan del editor). Las actividades dejan de
       // nacer con contenido de muestra —había que borrarlo antes de empezar— y
       // lo que ocupa su sitio es la frase que la plantilla DECLARA en
       // `meta.editor.primerPaso`. Va aquí y no en cada editor: así todas dicen
       // qué hacer primero sin que ninguna se acuerde de ponerlo.
-      body: () => primerPasoHtml(T, a) + iaBotonHtml(T) + '<div id="ww-falta">' + faltaHtml(a) + '</div>' + spec.content.html(a) },
-    spec.scoring && { id: 'tab-scoring', label: 'Puntuación', body: () => spec.scoring.html(a) },
+      body: () => primerPasoHtml(T, a) + iaBotonHtml(T) + '<div id="ww-falta">' + faltaHtml(a) + '</div>' + paneles.content.html(a) },
+    paneles.scoring && { id: 'tab-scoring', label: 'Puntuación', body: () => paneles.scoring.html(a) },
     showModes && { id: 'tab-modes', label: 'Juego', icon: 'bi-controller', body: () => {
       // UNA SOLA SECCIÓN «Individual». Aquí se pintaba el bloque de la plantilla
       // con su título y `renderModesTab` pintaba OTRO igual justo debajo: dos
@@ -185,17 +243,17 @@ export function renderEditorShell(root, a, onChange, spec) {
       // existe en TODAS las que lo admiten y en el mismo sitio. Antes lo ponía
       // quien se acordaba —4 de 13— y el cronómetro estaba en otra pestaña.
       const tiempo = tiempoBloqueHtml(a, getTemplate(a.template));
-      const indiv = spec.rules ? `
+      const indiv = paneles.rules ? `
         <section class="ww-mode-cfg" data-mode="individual">
-          <h6 class="mb-1"><i class="bi bi-person-fill text-success"></i> ${escapeHtml(spec.rules.label || 'Individual')}</h6>
-          ${spec.rules.html(a)}
+          <h6 class="mb-1"><i class="bi bi-person-fill text-success"></i> ${escapeHtml(paneles.rules.label || 'Individual')}</h6>
+          ${paneles.rules.html(a)}
         </section>` : '';
-      const resto = hasModes ? renderModesTab(a, { yaHayTituloIndividual: !!spec.rules }) : '';
+      const resto = hasModes ? renderModesTab(a, { yaHayTituloIndividual: !!paneles.rules }) : '';
       return tiempo + indiv + resto;
     }},
-    liveOn && { id: 'tab-live', label: 'En vivo', icon: 'bi-broadcast', body: () => spec.live.html(a) },
+    liveOn && { id: 'tab-live', label: 'En vivo', icon: 'bi-broadcast', body: () => paneles.live.html(a) },
     presOn && { id: 'tab-pres', label: 'Presentación', icon: 'bi-palette', body: () => presentationHtml(a) },
-  ].filter(Boolean);
+  ].filter(Boolean));
 
   function repaint() { render(); }
   const ctx = { onChange, repaint };
@@ -226,14 +284,14 @@ export function renderEditorShell(root, a, onChange, spec) {
       </div>`);
 
     // Common wiring (título/subtítulo, Modos, Presentación).
-    on(root, 'input', '#f-title', e => { a.title = e.target.value; onChange(a); });
-    on(root, 'input', '#f-subtitle', e => { a.subtitle = e.target.value; onChange(a); });
+    on(root, 'input', '#f-title', (_, el) => { a.title = /** @type {HTMLInputElement} */ (el).value; onChange(a); });
+    on(root, 'input', '#f-subtitle', (_, el) => { a.subtitle = /** @type {HTMLInputElement} */ (el).value; onChange(a); });
     if (showModes) wireModesTab(root, a, onChange);
     if (presOn) {
       // Initialize the mini preview scoped to its own element — never touches the page.
-      const prev = root.querySelector('#pres-preview');
+      const prev = /** @type {HTMLElement|null} */ (root.querySelector('#pres-preview'));
       const applyPrevBg = () => {
-        const p = root.querySelector('#pres-preview');
+        const p = /** @type {HTMLElement|null} */ (root.querySelector('#pres-preview'));
         if (p) applyBackground(a.presentation?.background || 'none', p, a.presentation?.backgroundImage);
       };
       if (prev) {
@@ -241,22 +299,25 @@ export function renderEditorShell(root, a, onChange, spec) {
         applyPrevBg();
       }
       on(root, 'click', '.skin-pick', (_, b) => {
-        (a.presentation = a.presentation || {}).skin = b.dataset.name; onChange(a);
+        a.presentation = a.presentation || {};
+        a.presentation.skin = b.dataset.name; onChange(a);
         root.querySelectorAll('.skin-pick').forEach(x => x.classList.toggle('is-active', x === b));
-        const p = root.querySelector('#pres-preview');
+        const p = /** @type {HTMLElement|null} */ (root.querySelector('#pres-preview'));
         if (p) applySkin(b.dataset.name, p);
       });
       on(root, 'click', '.bg-pick', (_, b) => {
         // The custom tile selects only once an image exists; otherwise its
         // "Subir" button (below) opens the file dialog and selects on success.
         if (b.dataset.name === 'custom' && !a.presentation?.backgroundImage) return;
-        (a.presentation = a.presentation || {}).background = b.dataset.name; onChange(a);
+        a.presentation = a.presentation || {};
+        a.presentation.background = b.dataset.name; onChange(a);
         root.querySelectorAll('.bg-pick').forEach(x => x.classList.toggle('is-active', x === b));
         applyPrevBg();
       });
       // Custom background upload — read → validate size → store in the activity.
       // SUBIR y BUSCAR terminan en el mismo sitio: la única diferencia es de
       // dónde sale el data-URL (y que la búsqueda trae además su crédito).
+      /** @param {string} dataUrl @param {ImageCredit|null} [atribucion] */
       const ponerFondo = (dataUrl, atribucion = null) => {
         a.presentation = a.presentation || {};
         a.presentation.backgroundImage = dataUrl;
@@ -270,25 +331,26 @@ export function renderEditorShell(root, a, onChange, spec) {
         // Update the custom tile in place (avoid a full repaint that would
         // bounce the user off the Presentación tab).
         const tile = root.querySelector('.bg-pick[data-name="custom"]');
-        const pv = tile?.querySelector('.ww-bg-preview');
+        const pv = /** @type {HTMLElement|null} */ (tile?.querySelector('.ww-bg-preview') ?? null);
         if (pv) { pv.style.background = `center/cover no-repeat url("${dataUrl}")`; pv.innerHTML = ''; }
         root.querySelectorAll('.bg-pick').forEach(x => x.classList.toggle('is-active', x === tile));
         applyPrevBg();
-        const errEl = root.querySelector('#bg-custom-err');
+        const errEl = /** @type {HTMLElement|null} */ (root.querySelector('#bg-custom-err'));
         if (errEl) {
           errEl.hidden = !atribucion;
           errEl.className = atribucion ? 'text-muted small mt-2' : 'text-danger small mt-2';
           errEl.textContent = atribucion ? `Imagen de ${creditoTexto(atribucion)}` : '';
         }
       };
-      const bgFile = root.querySelector('#bg-custom-file');
-      if (bgFile) bgFile.addEventListener('change', async (e) => {
-        const errEl = root.querySelector('#bg-custom-err');
+      const bgFile = /** @type {HTMLInputElement|null} */ (root.querySelector('#bg-custom-file'));
+      if (bgFile) bgFile.addEventListener('change', async () => {
+        const errEl = /** @type {HTMLElement|null} */ (root.querySelector('#bg-custom-err'));
         try {
-          ponerFondo(await readBackgroundImage(e.target.files[0]));
+          ponerFondo(await readBackgroundImage(bgFile.files?.[0]));
         } catch (err) {
-          if (errEl) { errEl.className = 'text-danger small mt-2'; errEl.textContent = err.message; errEl.hidden = false; }
-          e.target.value = '';
+          const msg = err instanceof Error ? err.message : String(err);
+          if (errEl) { errEl.className = 'text-danger small mt-2'; errEl.textContent = msg; errEl.hidden = false; }
+          bgFile.value = '';
         }
       });
       root.querySelector('#bg-custom-search')?.addEventListener('click', async () => {
@@ -296,19 +358,25 @@ export function renderEditorShell(root, a, onChange, spec) {
           maxBytes: BG_IMAGE_MAX_BYTES, ladoMax: QUOTAS.canvasImageSide,
           consulta: a.title && a.title !== 'Sin título' ? a.title : '',
         });
-        if (elegido) ponerFondo(elegido.url, elegido.atribucion);
+        // `atribucionDe()` (core/imageSearch.js) produce siempre un ImageCredit.
+        if (elegido) ponerFondo(elegido.url, /** @type {ImageCredit} */ (elegido.atribucion));
       });
     }
     // «Escribir con IA» — misma mecánica que cualquier «+ Añadir»: se mete en
     // `a.content`, se avisa y se repinta. El diálogo se carga SOLO al tocarlo
     // (import dinámico): quien no lo use no paga su descarga, y el editor sigue
     // abriendo aunque ese módulo falle.
-    on(root, 'click', '#ww-ia-go', async (_, b) => {
+    on(root, 'click', '#ww-ia-go', async (_, el) => {
+      const b = /** @type {HTMLButtonElement} */ (el);
       b.disabled = true;
       try {
+        // El botón solo se pinta si la plantilla declara un modelo que la IA
+        // sabe escribir (`iaBotonHtml`), así que aquí siempre lo hay.
+        const modelo = T?.meta?.contentModel;
+        if (!modelo) return;
         const { abrirEscribirConIA } = await import('./aiContentModal.js');
         const nuevo = await abrirEscribirConIA({
-          modelo: T?.meta?.contentModel,
+          modelo,
           elemento: T?.meta?.editor?.elemento,
           tema: a.title || '',
           // Sopa de Letras guarda cadenas sueltas y Crucigrama fichas con pista:
@@ -323,13 +391,13 @@ export function renderEditorShell(root, a, onChange, spec) {
         // el crucigrama decía «No hay palabras configuradas» con la lista llena.
         // El shell sigue sin conocer plantillas (§0): pregunta, no decide.
         const fusionado = fusionarContenido(a.content, nuevo);
-        a.content = T?.adoptContent ? T.adoptContent(fusionado, T?.meta?.contentModel) : fusionado;
+        a.content = T?.adoptContent ? T.adoptContent(fusionado, modelo) : fusionado;
         onChange(a);
         repaint();
       } catch (e) {
         // R6: el botón no puede quedarse mudo. Si el módulo no carga (red, caché
         // a medias), se dice — no se deja al profe tocando algo que no responde.
-        toast('No se pudo abrir el asistente: ' + e.message, 'danger', TOAST_LARGO);
+        toast('No se pudo abrir el asistente: ' + (e instanceof Error ? e.message : String(e)), 'danger', TOAST_LARGO);
       } finally {
         // `b` estaba DESHABILITADO mientras el diálogo estuvo abierto (para que
         // no se pudiera hacer doble clic mientras cargaba el módulo): un botón
@@ -342,7 +410,7 @@ export function renderEditorShell(root, a, onChange, spec) {
       }
     });
     // Template-specific wiring.
-    spec.content.wire?.(root, a, ctx);
+    paneles.content.wire?.(root, a, ctx);
     // «Lo que falta» se recalcula con CADA tecla y cada cambio del editor. Los
     // handlers de las plantillas llaman a onChange pero NO repintan (repintar
     // en cada letra movería el cursor), así que sin esto el panel rojo se
@@ -355,9 +423,9 @@ export function renderEditorShell(root, a, onChange, spec) {
     on(root, 'change', () => refrescarFalta(root, a));
     refrescarFalta(root, a);
     wireTiempoBloque(root, a, ctx);
-    spec.rules?.wire?.(root, a, ctx);
-    spec.scoring?.wire?.(root, a, ctx);
-    if (liveOn) spec.live.wire?.(root, a, ctx);
+    paneles.rules?.wire?.(root, a, ctx);
+    paneles.scoring?.wire?.(root, a, ctx);
+    if (liveOn) paneles.live.wire?.(root, a, ctx);
   }
 
   render();

@@ -6,12 +6,30 @@
 // vivo (barrido B5, 2026-09-02).
 
 /**
+ * UN MIEMBRO del roster de Equipos en vivo (solo para mostrarlo).
+ * @typedef {Object} TeamMember
+ * @property {string} id
+ * @property {string} [userId]
+ * @property {string} name
+ */
+
+/**
+ * UN EQUIPO. `members` solo existe cuando se pide el roster (`withMembers`).
+ * @typedef {Object} Team
+ * @property {string} id
+ * @property {string} name
+ * @property {number} score
+ * @property {TeamMember[]} [members]
+ */
+
+/**
  * Construye el array inicial de equipos a partir de `opts.teams`:
  * - array de nombres → un equipo por nombre
  * - número → esa cantidad de equipos, nombrados «Equipo N»
  * - nada → dos equipos por defecto
  * @param {{teams?: string[]|number}} opts
  * @param {{withMembers?: boolean}} [flags]  `withMembers`: añade `members: []` (roster de Equipos en vivo).
+ * @returns {Team[]}
  */
 export function seedTeams(opts, { withMembers = false } = {}) {
   const names = Array.isArray(opts.teams) ? opts.teams

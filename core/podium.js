@@ -5,10 +5,22 @@
 // tras la migración del cierre compartido (2026-09-04, ver `cierreHtml`).
 import { escapeHtml } from './html.js';
 
+/**
+ * Una fila del podio/cierre: nombre, puntos, el desempate (`tie`, menor = mejor)
+ * y la línea pequeña de debajo.
+ * @typedef {Object} PodiumEntry
+ * @property {string} name
+ * @property {number} score
+ * @property {number|null} [tie]
+ * @property {string} [sub]
+ */
+
 /** `list`: entries sorted by score desc, shape { name, score, sub? }. `sub` es
  *  una línea pequeña bajo los puntos — en la CARRERA, la hora de meta ("3:12"):
  *  ahí todos los que acaban lo hacen con todas bien, así que el podio se vería
- *  como un triple empate si no dijera quién llegó antes. Muestra el top 3. */
+ *  como un triple empate si no dijera quién llegó antes. Muestra el top 3.
+ * @param {PodiumEntry[]|null|undefined} list
+ * @returns {string} */
 function podiumHtml(list) {
   const top = (list || []).slice(0, 3);
   if (!top.length) return '<div class="ww-podium mb-4"></div>';
@@ -16,8 +28,10 @@ function podiumHtml(list) {
   // `tie` (menor = mejor; en carrera, la hora de meta) rompe la igualdad de
   // puntos: sin él, una carrera —donde todos acaban con TODAS bien— pintaba a
   // los tres en el primer puesto y a la misma altura.
+  /** @param {PodiumEntry} p @param {PodiumEntry} q @returns {boolean} */
   const better = (p, q) => p.score > q.score
     || (p.score === q.score && p.tie != null && q.tie != null && p.tie < q.tie);
+  /** @param {number} i @returns {number} */
   const placeOf = (i) => top.filter(p => better(p, top[i])).length + 1;
   // Classic arrangement: 2nd · 1st · 3rd (winner centered) when we have 3;
   // for 2 players show them side by side; for 1, just the one.
@@ -50,7 +64,15 @@ function podiumHtml(list) {
  *  paneles a la misma puntuación pero uno terminó antes no es un empate).
  *  `resumen`/`extra`/`acciones`: HTML propio del modo, en ese orden fijo.
  *  `clase`: clases extra en el nodo raíz — el duelo cuelga ahí su celebración
- *  (rayos/foco/corona), toda resuelta en CSS puro sobre esta misma estructura. */
+ *  (rayos/foco/corona), toda resuelta en CSS puro sobre esta misma estructura.
+ * @param {Object} [o]
+ * @param {PodiumEntry[]|null} [o.ranked]
+ * @param {boolean|null} [o.tie]
+ * @param {string} [o.resumen]
+ * @param {string} [o.extra]
+ * @param {string} [o.acciones]
+ * @param {string} [o.clase]
+ * @returns {string} */
 export function cierreHtml({ ranked, tie, resumen = '', extra = '', acciones = '', clase = '' } = {}) {
   const list = ranked || [];
   const top = list[0], second = list[1];

@@ -11,20 +11,32 @@
 // sola vez, y solo ellas).
 
 import { rid } from '../ids.js';
+import { erroresDeLista } from '../../kernel/content/models.js';
+
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').DiagramPin} DiagramPin
+ * @typedef {import('../../kernel/contracts/activity.js').DiagramContent} DiagramContent
+ */
+
+/** @returns {DiagramPin} */
 export function newPin(x = 0.5, y = 0.5) { return { id: rid('pin_'), label: '', x, y }; }
 
+/** @returns {DiagramContent} */
 export function newEmpty() {
   return { image: null, pins: [] };
 }
 
 /** ¿ESTE PIN SE PUEDE JUGAR? El player descarta los que no tienen etiqueta; el
- *  revisor los reclama. Tienen que ser LA MISMA regla o el aviso miente. */
+ *  revisor los reclama. Tienen que ser LA MISMA regla o el aviso miente.
+ * @param {DiagramPin|null|undefined} p
+ */
 export function pinUsable(p) {
   return !!p && !!p.id && String(p.label ?? '').trim() !== '';
 }
 
-export function validate(content) {
-  const errs = [];
-  if (!Array.isArray(content?.pins)) errs.push('pins must be an array');
-  return errs;
-}
+/**
+ * FRONTERA: le llega cualquier contenido (JSON importado, otra plantilla).
+ * @param {unknown} content
+ * @returns {string[]}
+ */
+export function validate(content) { return erroresDeLista(content, 'pins'); }

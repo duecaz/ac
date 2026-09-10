@@ -15,10 +15,32 @@
 
 import { rid } from '../../core/ids.js';
 import { answerIndices, repartirCorrecta } from '../../core/contentModels/qa.js';
+
+/**
+ * @typedef {import('../contracts/activity.js').ActivityContent} ActivityContent
+ * @typedef {import('../contracts/activity.js').QaContent} QaContent
+ * @typedef {import('../contracts/activity.js').QaItem} QaItem
+ */
+
+/** @param {unknown} v @returns {string} */
 const str = (v) => (v == null ? '' : String(v));
+/** @param {string|string[]|null} [a] @returns {string|null|undefined} */
 const firstAnswer = (a) => (Array.isArray(a) ? a[0] : a);
 
+/**
+ * Los ítems `qa` del contenido de entrada, TAL CUAL (nada se descarta: estas dos
+ * funciones COMPLETAN el ítem, no lo filtran).
+ * @param {ActivityContent} content
+ * @returns {QaItem[]}
+ */
+function itemsQa(content) {
+  return 'items' in content && Array.isArray(content.items)
+    ? /** @type {QaItem[]} */ (content.items)
+    : [];
+}
+
 // Extrae { a, op, b } de una pregunta tipo "2 × 6" (acepta × x * + - − ÷ /).
+/** @param {unknown} question @returns {{a: number, op: string, b: number}|null} */
 function parseOperation(question) {
   const m = str(question).match(/(-?\d+)\s*([×x*+\-−÷/])\s*(-?\d+)/i);
   if (!m) return null;
@@ -30,8 +52,10 @@ function parseOperation(question) {
 }
 
 // Candidatos de "error típico" (los más plausibles primero).
+/** @param {unknown} question @param {number} n @returns {number[]} */
 function typicalWrongs(question, n) {
   const p = parseOperation(question);
+  /** @type {number[]} */
   const out = [];
   if (p) {
     const { a, op, b } = p;
@@ -45,7 +69,8 @@ function typicalWrongs(question, n) {
   return out;
 }
 
-/** Opciones para Quiz a partir de la respuesta (y la pregunta, si la hay). */
+/** Opciones para Quiz a partir de la respuesta (y la pregunta, si la hay).
+ * @param {unknown} answer @param {unknown} [question] @returns {string[]} */
 export function buildQuizOptions(answer, question) {
   const a = str(answer).trim();
   const n = Number(a);
@@ -63,9 +88,10 @@ export function buildQuizOptions(answer, question) {
   return out;
 }
 
-/** Normaliza items `qa` para QUIZ: garantiza options[] (≥2 reales) y answerIdx. */
+/** Normaliza items `qa` para QUIZ: garantiza options[] (≥2 reales) y answerIdx.
+ * @param {ActivityContent} content @returns {QaContent} */
 export function adoptForQuiz(content) {
-  const items = Array.isArray(content?.items) ? content.items : [];
+  const items = itemsQa(content);
   return {
     items: items.map((it, idx) => {
       // COMPLETAR, NO REESCRIBIR. Esta función existe para una sola cosa: que el
@@ -86,6 +112,7 @@ export function adoptForQuiz(content) {
       // sigue siendo válida, así que nadie lo nota hasta que un alumno acierta y
       // la app le dice que no. Por eso al construirlas se decide aquí dónde va la
       // correcta, en vez de preguntárselo a `answerIndices`.
+      /** @type {number[]} */
       let answerIdx;
       if (options.filter((o) => o.trim() !== '').length < 2) {
         // `buildQuizOptions` deja la respuesta en la posición 0; repartirla es
@@ -123,9 +150,10 @@ export function adoptForQuiz(content) {
  *  hermana `adoptForQuiz`: se COMPLETA lo que falta, no se reconstruye el ítem
  *  —y no se siembra `points`, que es justo lo que `stripSeededPoints` existe
  *  para deshacer (con `points` en el ítem, «Puntos por acierto» no se aplica).
+ * @param {ActivityContent} content @returns {QaContent}
  */
 export function adoptForMath(content) {
-  const items = Array.isArray(content?.items) ? content.items : [];
+  const items = itemsQa(content);
   return {
     items: items.map((it) => {
       const { options, answerIdx, ...resto } = it || {};

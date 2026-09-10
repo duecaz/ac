@@ -3,10 +3,34 @@
 // esto es puntuación, no manipulación de texto. Ver docs/historico/handoff-puntuacion.md.
 import { basePoints } from './award.js';
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/activity.js').TextMark} TextMark
+ * @typedef {import('../../kernel/contracts/session.js').ScoreResult} ScoreResult
+ * @typedef {{text?: string, marks?: TextMark[]}} MarkedItem
+ */
+
 // Puntuación TODO-O-NADA por pasaje (la usa el modo VS clásico de sesión):
 // correcto ssi las posiciones marcadas coinciden EXACTAMENTE con la clave.
+/** Las marcas del ítem, que llega como FRONTERA (cada plantilla trae la suya).
+ * @param {unknown} item
+ * @returns {TextMark[]}
+ */
+function marksOf(item) {
+  if (!item || typeof item !== 'object' || !('marks' in item)) return [];
+  const m = /** @type {{marks?: unknown}} */ (item).marks;
+  return Array.isArray(m) ? /** @type {TextMark[]} */ (m) : [];
+}
+
+/**
+ * @param {unknown} value
+ * @param {unknown} item
+ * @param {string[]} kinds
+ * @param {Activity|null|undefined} activity
+ * @returns {ScoreResult}
+ */
 export function scoreMarks(value, item, kinds, activity) {
-  const want = new Set((item?.marks || []).filter(m => kinds.includes(m.kind)).map(m => m.pos));
+  const want = new Set(marksOf(item).filter(m => kinds.includes(m.kind)).map(m => m.pos));
   const got = new Set(Array.isArray(value) ? value.map(Number) : []);
   const correct = want.size === got.size && [...want].every(p => got.has(p));
   const scoring = activity?.scoring || {};
@@ -21,8 +45,15 @@ export function scoreMarks(value, item, kinds, activity) {
 // más"); `net` es el neto puntuable y `perfect` = todas y 0 de más. ÚNICA fuente
 // de la regla: solo/tarea/VS/equipos/live la comparten vía
 // scoreTildesSubmission/scoreComasSubmission y runTextCorrectionSolo.
+/**
+ * @param {unknown} value
+ * @param {unknown} item
+ * @param {string[]} kinds
+ * @param {Activity|null|undefined} activity
+ * @returns {ScoreResult}
+ */
 export function scoreMarksPerHit(value, item, kinds, activity) {
-  const want = new Set((item?.marks || []).filter(m => kinds.includes(m.kind)).map(m => m.pos));
+  const want = new Set(marksOf(item).filter(m => kinds.includes(m.kind)).map(m => m.pos));
   const got = Array.isArray(value) ? value.map(Number) : [];
   let hits = 0, over = 0;
   for (const p of new Set(got)) (want.has(p) ? hits++ : over++);

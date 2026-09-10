@@ -97,37 +97,60 @@
 
 import { VERSION } from './constants.js';
 
+/**
+ * UN SKIN, tal y como lo registra su manifiesto. `cssVars` es la INTERFAZ con
+ * el juego (§3): el skin cambia tokens, la actividad los consume.
+ * @typedef {Object} Skin
+ * @property {string} name
+ * @property {string} label
+ * @property {Record<string, string>} cssVars
+ * @property {string} [description]
+ * @property {string|null} [bgImage]
+ * @property {string|null} [fontFamily]
+ * @property {string|null} [vsLayout]
+ * @property {string|null} [stylesheet]
+ */
+
+/** @type {Map<string, Skin>} */
 const _registry = new Map();
 
 /** Register a skin. Can be called from any module — no core file needs editing.
  *  def must have: name (string), label (string), cssVars (object).
  *  Optional: description, bgImage, fontFamily, vsLayout, stylesheet, cssVars.
  */
+/** @param {Skin} def */
 export function registerSkin(def) {
   if (!def?.name) throw new Error('registerSkin: missing name');
   _registry.set(def.name, def);
 }
 
-/** Return a skin by name, falling back to 'default'. */
+/** Return a skin by name, falling back to 'default'.
+ * @param {string|null|undefined} name
+ * @returns {Skin|undefined} */
 export function getSkin(name) {
-  return _registry.get(name) || _registry.get('default');
+  return (name ? _registry.get(name) : undefined) || _registry.get('default');
 }
 
 export function listSkins() { return [..._registry.values()]; }
 
 // Apply skin globally (page-wide) when target=null, or scoped to a single
 // element (e.g. the player frame) when target is an Element.
+/**
+ * @param {string|null|undefined} name
+ * @param {Element|null} [target]
+ */
 export function applySkin(name, target = null) {
   const skin = getSkin(name);
-  const validName = _registry.has(name) ? name : 'default';
+  if (!skin) return;   // no hay ni `default`: nada que aplicar
+  const validName = name && _registry.has(name) ? name : 'default';
   const cls = `skin-${validName}`;
   const allCls = [..._registry.keys()].map(k => `skin-${k}`);
-  const el = target || document.documentElement;
+  const el = /** @type {HTMLElement} */ (target || document.documentElement);
   for (const [k, v] of Object.entries(skin.cssVars || {})) el.style.setProperty(k, v);
   if (target) {
-    target.classList.remove(...allCls);
-    target.classList.add(cls);
-    target.style.fontFamily = skin.fontFamily || '';
+    el.classList.remove(...allCls);
+    el.classList.add(cls);
+    el.style.fontFamily = skin.fontFamily || '';
   } else {
     document.body.classList.remove(...allCls);
     document.body.classList.add(cls);
@@ -153,8 +176,10 @@ export function applySkin(name, target = null) {
 }
 
 // Render a tiny preview tile for a skin (used by the editor).
+/** @param {string|null|undefined} name */
 export function skinPreviewHtml(name) {
   const s = getSkin(name);
+  if (!s) return '';
   const v = s.cssVars;
   return `<div class="ww-skin-preview" style="background:${s.bgImage || v['--ww-bg']};color:${v['--ww-fg']};border:2px solid ${v['--ww-card-border']}">
     <div class="d-flex gap-1">

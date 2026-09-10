@@ -12,12 +12,54 @@ import { rid } from '../../core/ids.js';
 import { shuffle } from '../../core/azar.js';
 import { basePoints } from '../../core/scoring/index.js';
 import { seedTeams as seedTeamsShared } from './teamsSeed.js';
+/**
+ * @typedef {import('../contracts/activity.js').Pair} Pair
+ * @typedef {import('./teamsSeed.js').Team} Team
+ */
+
+/**
+ * UNA CARTA del mazo: cada pareja da DOS, con el mismo `pairId` (así una
+ * combinación son dos cartas boca arriba que lo comparten).
+ * @typedef {Object} MemoryCard
+ * @property {string} id
+ * @property {string} pairId
+ * @property {string} text
+ * @property {boolean} matched
+ * @property {boolean} flipped
+ */
+
+/**
+ * EL ESTADO DEL JUEGO DE MEMORIA. `status` es su propia unión (no es una sala:
+ * no hay lobby ni fases de anfitrión) — se juega hasta que no queda pareja.
+ * @typedef {Object} MemoryState
+ * @property {'memory'} format
+ * @property {'playing'|'ended'} status
+ * @property {Team[]} teams
+ * @property {number} turn        Índice en `teams[]`.
+ * @property {MemoryCard[]} cards
+ * @property {string[]} flipped   Ids de las (≤2) cartas boca arriba sin resolver.
+ * @property {number} moves
+ */
+
+/**
+ * @typedef {Object} MemoryOpts
+ * @property {Partial<MemoryState>} [state]
+ * @property {string[]|number} [teams]
+ * @property {number[]} [order]   Reparto FIJO (lo pasan los tests) en vez de barajar.
+ */
+
+/**
+ * @param {import('../contracts/activity.js').Activity<import('../contracts/activity.js').PairsContent>} activity
+ * @param {MemoryOpts} [opts]
+ */
 export function createMemoryGame(activity, opts = {}) {
   const pairs = (activity?.content?.pairs || []).filter(p => p?.left && p?.right);
 
   const seedTeams = () => seedTeamsShared(opts);
 
+  /** @returns {MemoryCard[]} */
   const buildDeck = () => {
+    /** @type {MemoryCard[]} */
     const cards = [];
     for (const p of pairs) {
       cards.push({ id: rid('c_'), pairId: p.id, text: String(p.left), matched: false, flipped: false });
@@ -28,7 +70,7 @@ export function createMemoryGame(activity, opts = {}) {
     return shuffle(cards);
   };
 
-  const state = opts.state ? { ...opts.state } : {
+  const state = /** @type {MemoryState} */ (opts.state ? { ...opts.state } : {
     format: 'memory',
     status: pairs.length ? 'playing' : 'ended',
     teams: seedTeams(),
@@ -36,15 +78,17 @@ export function createMemoryGame(activity, opts = {}) {
     cards: buildDeck(),
     flipped: [],        // ids of the (≤2) currently face-up, unresolved cards
     moves: 0,
-  };
+  });
 
   const activeTeam = () => state.teams[state.turn] || null;
+  /** @param {string} id @returns {MemoryCard|null} */
   const card = (id) => state.cards.find(c => c.id === id) || null;
   const remaining = () => state.cards.filter(c => !c.matched).length;
 
   // Flip one card. Returns what happened so the view can animate + time the
   // cover step. A second flip that forms a pair resolves the match immediately;
   // a miss leaves both face-up until cover() is called.
+  /** @param {string} cardId */
   function flip(cardId) {
     if (state.status !== 'playing') return { ok: false, reason: 'no en juego' };
     if (state.flipped.length >= 2) return { ok: false, reason: 'resuelve el par primero' };
@@ -56,7 +100,10 @@ export function createMemoryGame(activity, opts = {}) {
 
     state.moves++;
     const [a, b] = state.flipped.map(card);
-    if (a.pairId === b.pairId) {
+    // `a`/`b` existen siempre (los ids salen del propio mazo); si un estado
+    // hidratado trajera un id que ya no está, cuenta como fallo en vez de
+    // reventar al leer `pairId` — la partida sigue y `cover()` pasa el turno.
+    if (a && b && a.pairId === b.pairId) {
       a.matched = b.matched = true;
       const t = activeTeam();
       // Cada pareja vale lo de la FÓRMULA común (C5): pair.points, si no el

@@ -5,9 +5,11 @@
 //
 // Leaf modules stay where they are (templates already import them); this layer
 // adapts without moving. Pure — safe to import in Node.
-//
-// @typedef {import('../contracts/contentModel.js').ContentModelContract} ContentModelContract
-// @typedef {import('../contracts/contentModel.js').ValidationResult} ValidationResult
+
+/**
+ * @typedef {import('../contracts/contentModel.js').ContentModelContract} ContentModelContract
+ * @typedef {import('../contracts/contentModel.js').ValidationResult} ValidationResult
+ */
 
 import * as pairs from '../../core/contentModels/pairs.js';
 import * as entries from '../../core/contentModels/entries.js';
@@ -16,13 +18,39 @@ import * as diagram from '../../core/contentModels/diagram.js';
 import * as itemsModel from '../../core/contentModels/items.js';
 import { rid } from '../../core/ids.js';
 
-/** Wrap a leaf validate (returns string[]) into a ValidationResult. */
+/**
+ * Wrap a leaf validate (returns string[]) into a ValidationResult.
+ * @param {(content: unknown) => (string[]|undefined)} leafValidate
+ * @returns {(content: unknown) => ValidationResult}
+ */
 function wrap(leafValidate) {
-  /** @param {Object} content @returns {ValidationResult} */
   return (content) => {
     const errors = leafValidate(content) || [];
     return { ok: errors.length === 0, errors };
   };
+}
+
+/**
+ * FRONTERA: a `validate` le puede llegar cualquier cosa (un JSON importado, una
+ * fila del backend, contenido de otra plantilla), así que la lista se lee
+ * estrechando, no accediendo a ciegas.
+ * @param {unknown} content
+ * @param {string} key
+ * @returns {unknown[]|null} el array, o `null` si esa clave no lo es.
+ */
+function listaDe(content, key) {
+  if (!content || typeof content !== 'object') return null;
+  const v = /** @type {Record<string, unknown>} */ (content)[key];
+  return Array.isArray(v) ? v : null;
+}
+
+/** Los errores de «la clave K tiene que ser una lista»: UNA redacción para los
+ *  validadores de `core/contentModels/*` (eran cinco copias del mismo cuerpo).
+ * @param {unknown} content
+ * @param {string} key
+ * @returns {string[]} */
+export function erroresDeLista(content, key) {
+  return listaDe(content, key) ? [] : [`${key} must be an array`];
 }
 
 
@@ -37,9 +65,11 @@ export const MODELS = {
     // solo si el profe pone otra cosa.
     newEmpty: () => ({ items: [{ id: rid('q_'), question: '', answer: '', options: ['', '', '', ''], image: null, audio: null }] }),
     validate(content) {
+      /** @type {string[]} */
       const errors = [];
-      if (!Array.isArray(content?.items)) errors.push('items must be an array');
-      else if (content.items.length === 0) errors.push('needs at least one item');
+      const items = listaDe(content, 'items');
+      if (!items) errors.push('items must be an array');
+      else if (items.length === 0) errors.push('needs at least one item');
       return { ok: errors.length === 0, errors };
     }
   },
@@ -65,17 +95,19 @@ export const MODELS = {
     name: 'words',   // Sopa de Letras: ['GATO', …] · Crucigrama: [{ word, clue, row, col, dir }]
     newEmpty: () => ({ words: [] }),
     validate(content) {
+      /** @type {string[]} */
       const errors = [];
-      if (!Array.isArray(content?.words)) errors.push('words must be an array');
+      if (!listaDe(content, 'words')) errors.push('words must be an array');
       return { ok: errors.length === 0, errors };
     }
   },
   ballsort: {
     name: 'ballsort',   // { level, mode, random, items: [{ id, board, mode }] }
-    newEmpty: () => ({ level: 'classic', mode: 'moves', random: true, items: [] }),
+    newEmpty: () => ({ level: 'classic', mode: /** @type {'moves'} */ ('moves'), random: true, items: [] }),
     validate(content) {
+      /** @type {string[]} */
       const errors = [];
-      if (!Array.isArray(content?.items)) errors.push('items must be an array');
+      if (!listaDe(content, 'items')) errors.push('items must be an array');
       return { ok: errors.length === 0, errors };
     }
   },
@@ -87,8 +119,9 @@ export const MODELS = {
     name: 'colorear',   // { items: [{ id, dibujo }] } — dibujo: nombre en el banco
     newEmpty: () => ({ items: [] }),
     validate(content) {
+      /** @type {string[]} */
       const errors = [];
-      if (!Array.isArray(content?.items)) errors.push('items must be an array');
+      if (!listaDe(content, 'items')) errors.push('items must be an array');
       return { ok: errors.length === 0, errors };
     }
   },
@@ -96,8 +129,9 @@ export const MODELS = {
     name: 'tangram',    // { items: [{ id, figura }] } — figura: nombre de la silueta
     newEmpty: () => ({ items: [] }),
     validate(content) {
+      /** @type {string[]} */
       const errors = [];
-      if (!Array.isArray(content?.items)) errors.push('items must be an array');
+      if (!listaDe(content, 'items')) errors.push('items must be an array');
       return { ok: errors.length === 0, errors };
     }
   },
@@ -105,8 +139,9 @@ export const MODELS = {
     name: 'puzzle',     // { items: [{ id, dibujo, filas, columnas }] }
     newEmpty: () => ({ items: [] }),
     validate(content) {
+      /** @type {string[]} */
       const errors = [];
-      if (!Array.isArray(content?.items)) errors.push('items must be an array');
+      if (!listaDe(content, 'items')) errors.push('items must be an array');
       return { ok: errors.length === 0, errors };
     }
   },

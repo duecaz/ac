@@ -17,6 +17,15 @@
 // Contrato de ticks: con N segundos emite onTick(N-1), onTick(N-2), …, onTick(0)
 // y en ese último tick (remaining<=0) llama onTimeout() UNA vez y se detiene.
 // Con seconds<=0 no hace nada (no hay límite de tiempo).
+/**
+ * @param {number} seconds
+ * @param {Object} [opciones]
+ * @param {(remaining:number)=>void} [opciones.onTick]
+ * @param {()=>void} [opciones.onTimeout]
+ * @param {(fn:()=>void, ms:number)=>number} [opciones.setIntervalFn]
+ * @param {(id:number)=>void} [opciones.clearIntervalFn]
+ * @returns {{start:()=>void, stop:()=>void, readonly remaining:number, readonly running:boolean}}
+ */
 export function createCountdown(seconds, {
   onTick,
   onTimeout,
@@ -24,6 +33,7 @@ export function createCountdown(seconds, {
   clearIntervalFn = clearInterval,
 } = {}) {
   let remaining = seconds;
+  /** @type {number|null} */
   let handle = null;
   let done = false;
 

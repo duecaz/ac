@@ -7,11 +7,16 @@ import { getLocalProfile } from './profile.js';
 import { escapeHtml } from './html.js';
 
 let _wired = false;
+/** @type {Set<HTMLElement>} */
 const _slots = new Set();   // todos los slots montados (el cierre-al-clic-fuera los recorre)
 
+/** @param {string|HTMLElement|null} [selector] */
 export async function mountAuthSlot(selector = '#ww-auth-slot') {
-  const slot = typeof selector === 'string' ? document.querySelector(selector) : selector;
-  if (!slot) return;
+  const encontrado = typeof selector === 'string'
+    ? /** @type {HTMLElement|null} */ (document.querySelector(selector))
+    : selector;
+  if (!encontrado) return;
+  const slot = encontrado;
 
   async function paint() {
     const user = await getUser();
@@ -51,17 +56,19 @@ export async function mountAuthSlot(selector = '#ww-auth-slot') {
     slot.dataset.wwAuthWired = '1';
     _slots.add(slot);
     slot.addEventListener('click', async (e) => {
-      const menu = slot.querySelector('.ww-auth__menu');
-      if (e.target.closest('.ww-auth__btn')) {
+      const menu = /** @type {HTMLElement|null} */ (slot.querySelector('.ww-auth__menu'));
+      const t = /** @type {HTMLElement|null} */ (e.target);
+      if (!t || typeof t.closest !== 'function') return;
+      if (t.closest('.ww-auth__btn')) {
         if (menu) menu.hidden = !menu.hidden;
         return;
       }
-      if (e.target.closest('.ww-auth__in')) {
+      if (t.closest('.ww-auth__in')) {
         const { openLoginModal } = await import('../views/loginModal.js');
         openLoginModal();
-      } else if (e.target.closest('.ww-auth__out')) {
+      } else if (t.closest('.ww-auth__out')) {
         await signOut();
-      } else if (e.target.closest('.ww-auth__profile')) {
+      } else if (t.closest('.ww-auth__profile')) {
         if (menu) menu.hidden = true;   // navega por el href; solo cerramos el menú
       }
     });
@@ -71,9 +78,10 @@ export async function mountAuthSlot(selector = '#ww-auth-slot') {
     _wired = true;
     // Cerrar los menús al hacer clic fuera — UNO global para todos los slots.
     document.addEventListener('click', (e) => {
+      const t = /** @type {Node|null} */ (e.target);
       for (const s of _slots) {
-        if (s.contains(e.target)) continue;
-        const menu = s.querySelector('.ww-auth__menu');
+        if (t && s.contains(t)) continue;
+        const menu = /** @type {HTMLElement|null} */ (s.querySelector('.ww-auth__menu'));
         if (menu) menu.hidden = true;
       }
     });

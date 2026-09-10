@@ -9,6 +9,7 @@ import { QUOTAS, activityBytes, checkActivitySize } from './quotas.js';
 
 const IMG_MAX_BYTES = QUOTAS.imageBytes;
 
+/** @type {Record<string, string>} */
 const ALLOWED = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
@@ -24,6 +25,7 @@ const ALLOWED = {
 // El aviso salta ANTES del tope (QUOTAS.activityWarnRatio), no al rebotar.
 export const ACTIVITY_SIZE_WARN_BYTES = QUOTAS.activityBytes * QUOTAS.activityWarnRatio;
 
+/** @param {unknown} a */
 export function activityTooLarge(a) { return checkActivitySize(a).level !== 'ok'; }
 
 // ── COMPRESIÓN AUTOMÁTICA (v1.51.426, decisión del usuario) ──────────────────
@@ -44,11 +46,21 @@ const CALIDADES = [0.85, 0.7, 0.55, 0.4];
  *  test en Node) — ahí se cae al comportamiento clásico (aceptar si cabe en
  *  bytes). UNA sola decodificación para medir Y comprimir: decodificar dos
  *  veces una foto de 6000×4000 es caro justo en la gama baja (R1). */
+/**
+ * @param {Blob} file
+ * @returns {Promise<ImageBitmap|null>}
+ */
 async function bitmapDe(file) {
   if (typeof createImageBitmap !== 'function') return null;
   try { return await createImageBitmap(file); } catch { return null; }
 }
 
+/**
+ * @param {ImageBitmap} bmp
+ * @param {number} maxBytes
+ * @param {number} ladoMax
+ * @returns {Promise<string|null>}
+ */
 async function comprimir(bmp, maxBytes, ladoMax) {
   if (typeof document === 'undefined') return null;
   try {
@@ -57,7 +69,9 @@ async function comprimir(bmp, maxBytes, ladoMax) {
     const h = Math.max(1, Math.round(bmp.height * escala));
     const canvas = document.createElement('canvas');
     canvas.width = w; canvas.height = h;
-    canvas.getContext('2d').drawImage(bmp, 0, 0, w, h);   // el bitmap lo cierra el CALLER
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;                                 // sin 2D no hay compresión posible
+    ctx.drawImage(bmp, 0, 0, w, h);                         // el bitmap lo cierra el CALLER
     for (const q of CALIDADES) {
       const url = canvas.toDataURL('image/webp', q);
       // data-URL ≈ bytes·4/3: comparar en su propia unidad, no contra file.size.
@@ -74,7 +88,9 @@ async function comprimir(bmp, maxBytes, ladoMax) {
  *  elegirla, y el dato viaja con el contenido: así el player puede escribir la
  *  caja con su forma ya sabida en vez de medirla después de pintar (que es lo
  *  que hacía saltar a «Etiqueta el diagrama»). Resuelve {w:0,h:0} si no carga —
- *  quien llama decide, y sin forma conocida el player mide como antes. */
+ *  quien llama decide, y sin forma conocida el player mide como antes.
+ * @param {string|null|undefined} src
+ * @returns {Promise<{w: number, h: number}>} */
 export function medirImagen(src) {
   return new Promise(resolve => {
     if (!src || typeof Image === 'undefined') return resolve({ w: 0, h: 0 });
@@ -85,6 +101,11 @@ export function medirImagen(src) {
   });
 }
 
+/**
+ * @param {File|Blob|null|undefined} file
+ * @param {{maxBytes?: number, ladoMax?: number}} [opts]
+ * @returns {Promise<string>} data-URL
+ */
 export async function uploadMedia(file, { maxBytes = IMG_MAX_BYTES, ladoMax = LADO_MAX } = {}) {
   if (!file) throw new Error('no file');
   if (!ALLOWED[file.type]) throw new Error(`Tipo no permitido: ${file.type || 'desconocido'}`);
@@ -116,7 +137,11 @@ export async function uploadMedia(file, { maxBytes = IMG_MAX_BYTES, ladoMax = LA
   // Lee como data-URL (base64 inline). No hay subida a ningún bucket.
   return await new Promise((resolve, reject) => {
     const r = new FileReader();
-    r.onload = (e) => resolve(e.target.result);
+    // `readAsDataURL` siempre da una cadena; si no la diera, se DICE (R6: nada
+    // de resolver con algo que no es una data-URL).
+    r.onload = () => (typeof r.result === 'string'
+      ? resolve(r.result)
+      : reject(new Error('No se pudo leer la imagen.')));
     r.onerror = () => reject(new Error('No se pudo leer la imagen.'));
     r.readAsDataURL(file);
   });
