@@ -4,7 +4,7 @@
 // queda»): la cuenta atrás por ítem dentro del shell secuencial, el cronómetro
 // del HUD (`cronoHud`, pegado por encima) y el reloj propio del runner de
 // Tildes/Comas. Tres piezas ⇒ tres sitios donde configurarlo ⇒ el campo del
-// editor existía en 4 plantillas de 13 y el cronómetro acabó siendo una casilla
+// editor existía en 4 plantillas y el cronómetro acabó siendo una casilla
 // perdida en la pestaña de Puntuación. El dueño lo dijo así (2026-09-01): «solo
 // le pusiste un cronómetro y listo… debe ser general para toda actividad tipo
 // pregunta que sea compatible, debemos unificar, no estar parchando».

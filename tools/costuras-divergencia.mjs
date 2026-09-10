@@ -186,7 +186,7 @@ function cartelPropio() {
 // final» de Tildes/Comas (`tc-final*`) NO es el cartel de fin de partida —
 // es una pantalla INTERMEDIA (repaso palabra por palabra) que se muestra
 // ANTES de llamar a `finish()`; quien cierra la partida de verdad sigue
-// siendo `ctx.finish()` → `resultScreenHtml()` del shell, como las 13.
+// siendo `ctx.finish()` → `resultScreenHtml()` del shell, como las demás.
 const LEGITIMO_CARTEL = {
   'core/textCorrectionRound.js':
     'las clases `tc-final*` son la pantalla de CORRECCIÓN (repaso palabra por '
@@ -617,6 +617,6 @@ process.exit(0);
 //    `templates/tildes/player.js` no llaman a `cabeceraHtml` ELLOS
 //    mismos — son wrappers delgados. La pintan de verdad `play.js`
 //    (Ball Sort) y `core/textCorrectionRound.js` (Tildes/Comas), así que
-//    agregando por PLANTILLA (no por fichero suelto) las 13 la llaman: la
+//    agregando por PLANTILLA (no por fichero suelto) todas la llaman: la
 //    lista de «sin cabeceraHtml» sale en 0 hoy.
 // ════════════════════════════════════════════════════════════════════════

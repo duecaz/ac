@@ -52,7 +52,7 @@ const shell = flags.shell || 'sequential';
 if (!['sequential', 'freeform'].includes(shell)) fail(`--shell debe ser sequential|freeform`);
 const wantVs = !!flags.vs, wantLive = !!flags.live;
 
-// Contenido demo JUGABLE por modelo (como las 12 reales: nunca nacen vacías).
+// Contenido demo JUGABLE por modelo (como las reales: nunca nacen vacías).
 const DEMO = {
   qa: { items: [
     { id: 'q_demo1', question: '2 + 2', answer: '4', options: ['3', '4', '5'], points: 1, image: null, audio: null },
@@ -144,7 +144,7 @@ export class ${Cls}Template extends BaseTemplate {
     defaultRules:   () => ({ timer: 0, randomize: true }),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
     defaultLive:    () => ({}),
-    // Contenido DEMO jugable (nunca nace vacía — igual que las 12 reales).
+    // Contenido DEMO jugable (nunca nace vacía — igual que el resto).
     defaultContent: () => (${demoJson}),
   };
 

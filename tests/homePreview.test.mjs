@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import '../core/registerTemplates.js';
 import { getTemplate } from '../core/registry.js';
+import { comprobarParidad } from './helpers/plantillasReales.mjs';
 import { homePreviewHtml } from '../core/homePreview.js';
 
 let passed = 0;
@@ -19,7 +20,7 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 // registran plantillas sintéticas en el registro compartido). Igual que templateContract.
 const TDIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'templates');
 const names = readdirSync(TDIR).filter(n => statSync(join(TDIR, n)).isDirectory());
-assert.ok(names.length >= 13, `esperaba ≥13 carpetas de plantilla, hay ${names.length}`);
+comprobarParidad(assert);   // carpeta ↔ core/registerTemplates.js, dueño único
 
 for (const n of names) {
   const T = getTemplate(n);

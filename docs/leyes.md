@@ -107,7 +107,7 @@ violar una prohibición, el diseño está mal planteado.
   `docs/modos-de-juego.md` §9): quién puntúa · quién decide el fin · qué
   persiste · qué reloj · hay identidad de alumno.
 - **LA DIRECCIÓN DE LAS DEPENDENCIAS ES LEY, y ahora es TEST** (`tests/layers.test.mjs`):
-  cada capa declara a quién puede importar y el escáner recorre los **874 imports**
+  cada capa declara a quién puede importar y el escáner recorre **todos los imports** del árbol (el recuento vivo está en `docs/arquitectura-modulos.md`, generado)
   del repo. Lo de arriba sabe de lo de abajo, **nunca al revés**. Las excepciones
   están listadas UNA A UNA con su motivo, y son ratchet: una nueva rompe CI.
   Hoy son 12 — el `import()` dinámico con el que un modo monta su vista, la
@@ -144,7 +144,7 @@ escribirse; si necesita violar una prohibición, está en la capa equivocada.
 | Capa | Vive en | Dueña de | PROHIBIDO |
 |---|---|---|---|
 | **TOKENS** | `core/skins.js` (`cssVars` de `default`) + `styles/theme.css :root` | el VOCABULARIO: los 14 `--ww-*` (bg/bg-soft/fg · card-* · accent · shape-1..4 · success/danger/warning) | que un token viva solo en `:root` (es red de seguridad, no fuente); añadir un token a `default` obliga a TODOS los skins |
-| **SKIN** | `core/skins.js` (`registerSkin`) + `themes/<name>/skin.css` | dar VALOR a los 14 tokens (+ layout VS opcional) | tocar reglas de una actividad · pintar fuera de su scope `.skin-<name>`/`.vs-skin-<name>` · declarar `stylesheet:` sin archivo |
+| **SKIN** | `core/skins.js` (`registerSkin`) + `themes/<name>/skin.css` | dar VALOR a los tokens (+ layout VS opcional) | tocar reglas de una actividad · pintar fuera de su scope `.skin-<name>`/`.vs-skin-<name>` · declarar `stylesheet:` sin archivo |
 | **CSS DE PLANTILLA** (el juego) | `styles/<actividad>.css` (lista `GAME`) | la maquetación del ejercicio: RELATIVA (`cq*`, `%`, `fitLayout`/`fitPassage`) y pintada SOLO con `var(--ww-*)` | `px`/`rem` que congelen (`max(12px, Xcqmin)` vale como PISO, nunca techo) · `#hex` a pelo salvo neutros y acierto/error |
 | **CHROME** | `styles/` en `EXCLUDED` (player, scaffold, editor, home, live, touch…) | el marco: `#ww-player-widget{container-type:size}`, el andamio `ww-scaffold/rail/stage/bar`, formularios | decidir el aspecto del EJERCICIO (el editor sí puede usar px: es formulario) |
 
@@ -523,7 +523,7 @@ veredicto (verde/rojo)  >  placa/tarjeta (--ww-card-*)  >  tinta del lienzo (--w
   → fullscreen). El ejercicio queda oculto hasta Iniciar.
 
 ## 12) Registro único + arranque
-- Las 13 plantillas se registran solo en `core/registerTemplates.js`; sonidos/efectos/
+- Las plantillas se registran solo en `core/registerTemplates.js`; sonidos/efectos/
   versión/mute se cablean solo en `core/boot.js`. Los `main.*.js` no repiten ese wiring.
 
 ## 13) Gama baja `ww-lite` (`core/perf.js`)
@@ -774,7 +774,7 @@ servidor.** Una feature nueva que confíe en el móvil está mal diseñada.
   pide un **validador en el servidor** (hook de PocketBase en la Pi): sin él,
   cualquier alternativa de cliente es cosmética — con 4 opciones visibles, un
   hash de la correcta se rompe probando las 4.
-  Test: `tests/liveSnapshot.test.mjs` (las 13 plantillas: del contenido solo
+  Test: `tests/liveSnapshot.test.mjs` (todas las plantillas: del contenido solo
   viaja el payload; fugas comprobables como cadena cerradas; contra-prueba de
   que con el snapshot aún se juega; `live_keys` cerrada).
   **PASO DEL USUARIO**: `#/admin` → "Crear colecciones" (añade `live_keys`).
@@ -893,8 +893,8 @@ clase — que hasta hoy no ha aparecido.
 
 ### §0 en la práctica — la identidad no habilita nada (v1.51.598)
 
-Una revisión del POLIMORFISMO midió el árbol entero. Lo sano: las 13 plantillas
-pasan por un shell de player, las 13 bocas del contrato tienen consumidor real,
+Una revisión del POLIMORFISMO midió el árbol entero. Lo sano: todas las plantillas
+pasan por un shell de player, cada boca del contrato tiene consumidor real,
 el puerto de adaptadores es simétrico (salvo tres métodos opcionales guardados)
 y las 27 bocas de `realtime` tienen dos consumidores o más. Lo que no lo era:
 
@@ -1148,7 +1148,7 @@ De ahí las tres reglas:
 **1 · Cada tramo del norte (§1) tiene UN recorrido automático.** Los tramos están
 declarados en `tests/helpers/journeyTracks.mjs` y son los mismos que mide la
 radiografía. Hoy: buscar/crear → `find-smoke` · pizarra → `matrix-smoke` · en
-vivo → `live-smoke` · tareas/informes → `task-smoke` · los 13 editores → `edit-audit` (crear → PIN → jugar → tope
+vivo → `live-smoke` · tareas/informes → `task-smoke` · los editores → `edit-audit` (crear → PIN → jugar → tope
 de intentos → informe) · carrera contra PocketBase real → `race-e2e` (manual,
 pide credenciales). Un tramo sin recorrido es un tramo donde el primero en
 enterarse es el profesor — y en TAREAS ni siquiera eso: el fallo es silencioso

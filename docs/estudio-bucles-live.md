@@ -72,7 +72,7 @@ código, no de memoria (v1.51.340).
 LIVE_POLICIES = ['rounds', 'board', 'none']
 ```
 
-y así están declaradas las 13 plantillas: 6 en `rounds`, 1 en `board`
+y así están declaradas las plantillas jugables en vivo: 6 en `rounds`, 1 en `board`
 (Ordena las Pelotas), 6 en `none`.
 
 Pero el sistema ejecuta **cuatro** bucles distintos:

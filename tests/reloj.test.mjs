@@ -2,7 +2,7 @@
 //
 // El dueño abrió a editar un Quiz y no encontró el reloj (2026-09-01): estaba,
 // pero enterrado en la pestaña «Modos» y partido en dos —el temporizador por un
-// lado y el cronómetro por otro, en «Puntuación»—, y solo 4 plantillas de 13
+// lado y el cronómetro por otro, en «Puntuación»—, y solo 4 plantillas
 // ofrecían el temporizador. La causa no era el sitio: era que NADIE era el dueño
 // del reloj. Había tres implementaciones (la cuenta atrás del shell secuencial,
 // el cronómetro del HUD y el reloj propio de Tildes/Comas) y cada editor decidía

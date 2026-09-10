@@ -1,6 +1,6 @@
 // LA CABECERA DEL JUEGO — una, igual en las trece.
 //
-// TRES TRATAMIENTOS PARA LA MISMA FRANJA (medido el 2026-09-03, montando las 13
+// TRES TRATAMIENTOS PARA LA MISMA FRANJA (medido el 2026-09-03, montando todas
 // en el navegador):
 //   · 9 plantillas → los indicadores FLOTABAN sobre el juego y el botón de
 //     pantalla completa vivía en la esquina del marco;

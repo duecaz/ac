@@ -30,12 +30,12 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
-| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1935 | 7 · 1028 | 0.53 |
+| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1935 | 7 · 1029 | 0.53 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 2772 | 12 · 1430 | 0.52 |
-| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 39 · 4523 | 19 · 3098 | 0.68 |
+| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 39 · 4523 | 19 · 3102 | 0.69 |
 | **informes/tareas** | después de clase | 10 · 1119 | 4 · 512 | 0.46 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 89 · 7111 | 13 · 1840 | 0.26 |
-| **infra/común** | todo lo anterior | 171 · 20171 | 74 · 9509 | 0.47 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 89 · 7111 | 13 · 1841 | 0.26 |
+| **infra/común** | todo lo anterior | 171 · 20171 | 74 · 9518 | 0.47 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30

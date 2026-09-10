@@ -89,7 +89,7 @@ const all = listTemplates().filter(T => reales.has(T.meta.name));
 // re-renderiza el editor ENTERO — se pierde el foco, el cursor y la pestaña.
 // Un repintado completo puede colgar de un clic o de un `change` (añadir un
 // ítem, cambiar de nivel), NUNCA de una tecla. Se descubre por ESCANEO: vale
-// para los 13 editores y para el que se escriba mañana.
+// para todos los editores y para el que se escriba mañana.
 {
   const fs = await import('node:fs');
   const RAIZ = join(TDIR, '..');

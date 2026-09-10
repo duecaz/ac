@@ -21,6 +21,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import '../core/registerTemplates.js';
 import { getTemplate } from '../core/registry.js';
+import { cuantas } from './helpers/plantillasReales.mjs';
 import { revisarActividad, decidirVisibilidad } from '../core/activityCheck.js';
 
 // LAS PLANTILLAS DE VERDAD, leídas del disco. `listTemplates()` no vale aquí: el
@@ -67,7 +68,8 @@ const act = (template, content, title = 'Prueba') =>
     .map(T => T.meta.name);
   assert.deepStrictEqual(bloqueadas, [],
     `CONTRA-PRUEBA: con su propio contenido de ejemplo deberían poder publicarse, y no: ${bloqueadas.join(', ')}`);
-  assert.ok(REALES.length >= 13, `el escaneo tiene que ver las plantillas reales, y vio ${REALES.length}`);
+  assert.strictEqual(REALES.length, cuantas(),
+    `el escaneo vio ${REALES.length} plantillas y las reales son ${cuantas()}`);
   ok(`CONTRA-PRUEBA: con contenido de verdad, las ${REALES.length} se publican sin estorbo`);
 }
 

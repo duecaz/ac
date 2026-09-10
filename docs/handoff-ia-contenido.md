@@ -28,7 +28,7 @@ está editando. Ni más ni menos que eso.
 
 Es la misma lección que ya está escrita en [`conversiones.md`](conversiones.md)
 y en D3 (el imprimible): **el contenido no pertenece a la plantilla, pertenece a
-un modelo**. Hay 13 plantillas pero solo 5 modelos con contenido escribible:
+un modelo**. Hay más plantillas que modelos: solo 5 tienen contenido escribible:
 
 | Modelo | Qué es una pieza | Plantillas que lo usan | ¿La IA puede escribirlo? |
 |---|---|---|---|
@@ -64,7 +64,7 @@ core/aiContentModal.js   EL DIÁLOGO. Tema · nº de piezas · curso → «Escri
 ```
 
 **El único punto de contacto con lo existente** es un botón en
-`core/editorShell.js` (la pestaña Contenido de las 13) que llama al diálogo y,
+`core/editorShell.js` (la pestaña Contenido de todas) que llama al diálogo y,
 si devuelve algo, hace lo que ya hace cualquier «+ Añadir»: mutar `a.content`,
 `ctx.onChange(a)` y `ctx.repaint()`. Ese camino ya lo recorren el «Generar
 ×1–10» de Operaciones y el pegado masivo de la Sopa: no se inventa nada.

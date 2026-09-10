@@ -52,7 +52,7 @@
 - [6e. UNA COSA, UN NOMBRE (vocabulario)](#6e-una-cosa-un-nombre-vocabulario)
 - [7. El viaje del profesor — dónde estamos](#7-el-viaje-del-profesor--dónde-estamos)
 - [7b. INVENTARIO: lo que YA tenemos, y dónde encaja](#7b-inventario-lo-que-ya-tenemos-y-dónde-encaja)
-  - [Las 13 plantillas — 12 ejercicios y 1 juego](#las-13-plantillas--12-ejercicios-y-1-juego)
+  - [El catálogo — ejercicios y juegos](#el-catálogo--ejercicios-y-juegos)
   - [Los cinco modos](#los-cinco-modos)
   - [Lo que sostiene todo eso](#lo-que-sostiene-todo-eso)
 - [7c. LA ENTRADA Y EL MENÚ ✅ CONFIRMADO](#7c-la-entrada-y-el-menú--confirmado)
@@ -668,11 +668,12 @@ Ordenar antes que añadir. Esto es todo lo construido, contrastado con la escena
 (§1). La columna "encaje" es **juicio**, no dato: el resto sale del código
 (`meta.play` y el registro de plantillas).
 
-### Las 13 plantillas — 12 ejercicios y 1 juego
+### El catálogo — ejercicios y juegos
 
 La columna **Familia** es la de §4c: **E** = ejercicio (el contenido lo pone el
-profe) · **J** = juego (lo genera la plantilla). Hoy hay **1 de 8** plazas de
-juego ocupadas.
+profe) · **J** = juego (lo genera la plantilla). Cuántas plazas de juego quedan
+libres del techo de 8 lo cuenta `tests/kind.test.mjs` al correr — aquí no se
+escribe a mano (una cifra a mano no falla: envejece; ver el barrido B9).
 
 | Plantilla | Familia | Modelo de contenido | VS | Equipos | En vivo | Encaje con la escena (un alumno en la pizarra) |
 |---|---|---|---|---|---|---|
@@ -684,6 +685,9 @@ juego ocupadas.
 | **Emparejar** | E | parejas | puntos | turnos | — | ✅ arrastrar en la pizarra es su fuerte |
 | **Memoria** | E | parejas | — | turnos | — | ✅ pensado para turnos de equipo |
 | **Ordena las Pelotas** | J | tablero propio | carrera | tablero | tablero | ✅ un alumno resolviendo, la clase mirando |
+| **Colorear** | J | dibujo del banco | — | — | — | ✅ **inicial** (3-6 años, §1c): tocar un color y una zona es todo — cero lectura. Sale un niño y pinta delante de la clase |
+| **Tangram** | J | figura del banco | — | — | — | ✅ **inicial**: arrastrar y girar con un dedo; la silueta es la pista. ⚠️ hoy solo **2 figuras** (cuadrado · casa): faltan láminas |
+| **Rompecabezas** | J | dibujo del banco | — | — | — | ✅ **inicial**: arrastrar cada pieza a su hueco sobre la imagen fantasma |
 | **Etiqueta el diagrama** | E | diagrama | — | — | — | ✅ **valor alto en clase**: enlazar las partes del cuerpo con sus etiquetas es exactamente "sale un alumno y arrastra". ⚠️ hoy es **solo Individual**: darle VS/equipos sería aprovecharlo mejor |
 | **Sopa de Letras** (pupiletras) | E | palabras | carrera | tablero | — | ⚠️ **poco valor en clase**: buscar letras es lento y la clase no participa mientras tanto. Encaja mejor como tarea |
 | **Crucigrama** | E | palabras | — | — | — | ⚠️ **poco valor en clase**: escribir mucho en la pizarra es lento. Encaja mejor como tarea |
@@ -691,7 +695,7 @@ juego ocupadas.
 | **Abre Cajas** | E | ítems | — | — | pedir la palabra | ✅ ídem |
 
 **Lo que el inventario dice** (juicio del usuario, agosto de 2026):
-- **9 de 13** sirven al caso central: sale un alumno, resuelve delante de todos.
+- **La mayoría** sirve al caso central: sale un alumno, resuelve delante de todos.
 - **Etiqueta el diagrama tiene valor alto** —enlazar las partes del cuerpo con
   sus etiquetas es justo lo que se hace en una pizarra— pero **hoy es solo
   Individual**. Darle VS/equipos es la mejora más clara del catálogo. *(No se

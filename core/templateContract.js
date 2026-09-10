@@ -164,7 +164,7 @@ export function checkTemplateContract(T) {
   // (Aquí se exigía `static previewHtml(act)`. Se retiró en v1.51.406: su ÚNICO
   // consumidor era core/activityThumb.js, que NADIE importaba desde que
   // core/homePreview.js pasó a pintar las tarjetas. Eran 285 líneas repartidas
-  // en las 13 plantillas y, peor, una obligación FALSA para cada plantilla
+  // en todas las plantillas y, peor, una obligación FALSA para cada plantilla
   // nueva: el contrato pedía un preview que no se veía en ninguna pantalla,
   // mientras tests/homePreview.test.mjs exigía el otro, el que sí se ve.)
 
@@ -217,7 +217,7 @@ export function checkTemplateContract(T) {
   // ── forma del scorer: {correct, points, hits, total} — nunca otra ──────────
   // hits/total = MÉRITO (docs/historico/handoff-puntuacion.md §3): binarias 1/1 ó 0/1;
   // por partes (tildes) 3/8; total=0 = ítem no auto-puntuable (puntúa el profe).
-  // Con el mérito obligatorio, tabla/heatmap/CSV leen igual las 13 plantillas.
+  // Con el mérito obligatorio, tabla/heatmap/CSV leen igual todas las plantillas.
   if (typeof T.scoreSubmission === 'function' && dc) {
     const item = sessionItems(act)[0] ?? null;
     let r;

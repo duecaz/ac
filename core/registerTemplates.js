@@ -5,7 +5,7 @@
 // Punto ÚNICO para que main.teacher/student/embed no repitan la lista — y para
 // que no se olvide ninguna: el embed antes registraba solo 6 de 11, así que
 // incrustar una actividad de math/crossword/wordsearch/ballsort/question-live
-// fallaba (getTemplate → undefined). Centralizado aquí se registran las 13.
+// fallaba (getTemplate → undefined). Centralizado aquí se registran TODAS.
 import '../templates/quiz/index.js';
 import '../templates/wheel/index.js';
 import '../templates/match/index.js';

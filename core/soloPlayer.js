@@ -172,7 +172,7 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks = {}
   const items = (activity.rules?.randomize ? shuffle(source.slice()) : source).slice();
   const state = { idx: 0, score: 0, startedAt: clock.now(), answers: [] };
   const timerSecs = activity.rules?.timer ?? 0;
-  // Qué reloj toca lo decide `core/reloj.js` (uno para las 13). Aquí solo se
+  // Qué reloj toca lo decide `core/reloj.js` (uno para todas). Aquí solo se
   // distingue CUÁNDO se monta: el cronómetro corre toda la partida; la cuenta
   // atrás se rearma en cada ítem, porque el límite es POR ítem.
   const relojTipo = relojDe(activity).tipo;

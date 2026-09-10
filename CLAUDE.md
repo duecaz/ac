@@ -108,7 +108,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | **EN VIVO e2e** (host+alumno en dos páginas: sala→PIN→respuesta→settle→podio) | `node tools/live-smoke.mjs` |
 | **TAREAS e2e** (crear tarea → PIN → el alumno juega → tope de intentos → informe) | `node tools/task-smoke.mjs` |
 | **CARRERA e2e contra PocketBase REAL** (puntos planos · gana quien acabó antes · meta del servidor · la trampa rebota) | `node tools/race-e2e.mjs [PB_URL]` (credenciales por entorno `WW_EMAIL`/`WW_PASS`) |
-| **¿Editar el contenido pierde la respuesta correcta?** (teclea en los 13 editores y re-pregunta al scorer) | `node tools/edit-audit.mjs` |
+| **¿Editar el contenido pierde la respuesta correcta?** (teclea en todos los editores y re-pregunta al scorer) | `node tools/edit-audit.mjs` |
 | **Prueba de CARGA** (N alumnos concurrentes live+tareas contra PB real) | `core/stressTest.js` · botón `#/admin` "Simular carga" · `node tools/stress-live.mjs [N]` |
 | Modo SOLO (Wordwall) por dentro · identidad/auth · dev local | [`docs/modo-wordwall.md`](docs/modo-wordwall.md) · [`docs/identidad.md`](docs/identidad.md) · [`docs/dev-local.md`](docs/dev-local.md) |
 | **La IA que ESCRIBE el contenido** (por modelo · módulo aparte · el hook de la Pi) | **[`docs/handoff-ia-contenido.md`](docs/handoff-ia-contenido.md)** — FUNCIONANDO desde v1.51.548; su §7b guarda las tres trampas que costaron ponerlo en pie (los 5xx que se come Cloudflare, el ámbito de los handlers, el modelo con caducidad) |
@@ -310,7 +310,7 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   refluyen) · **`edu-send`**. Eran cuatro (los indicadores flotaban y solo 3 de 13
   llevaban barra: tres tratamientos de la misma franja). El TÍTULO vive en la
   ANTESALA; el enunciado no es barra. `edu-send` sale del PLAYER, no de
-  `meta.play.submit`: lo vigila `matrix-smoke` montando las 13, con 3 excepciones
+  `meta.play.submit`: lo vigila `matrix-smoke` montando todas, con 3 excepciones
   donde el control ES la mecánica (teclado · Girar · caja abierta).
 - **PANTALLA COMPLETA: un solo mando, y lo aloja la CABECERA** cuando esa cabecera
   manda en el marco (Individual/Tarea); entonces la esquina flotante

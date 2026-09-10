@@ -7,7 +7,7 @@
 // local desde ese snapshot.
 //
 // Aquí se fija que el snapshot de sala no contiene la solución de NINGUNA de las
-// 13 plantillas, que aun así se puede JUGAR con él (contra-prueba: una sanitización
+// las plantillas, que aun así se puede JUGAR con él (contra-prueba: una sanitización
 // demasiado agresiva rompe al alumno real) y que la excepción de la carrera libre
 // está declarada, no escondida.
 //
@@ -15,6 +15,7 @@
 import assert from 'node:assert';
 import '../core/registerTemplates.js';
 import { listTemplates, getTemplate } from '../core/registry.js';
+import { carpetas, cuantas, reales } from './helpers/plantillasReales.mjs';
 import { studentSnapshot, visibleItem, isStudentSnapshot, needsClientKey } from '../core/liveSnapshot.js';
 import { roundPayloadOf } from '../kernel/session/engine.js';
 import { sessionItems } from '../kernel/content/sessionItems.js';
@@ -74,11 +75,12 @@ function stable(v) {
 // múltiple la solución ES uno de los textos visibles, y en Emparejar las dos
 // columnas se ven — el secreto es la ASOCIACIÓN, no un string. Lo que sí se puede
 // fijar sin ambigüedad es que del contenido no viaja NADA salvo el payload de
-// ronda, y que ese payload ya está probado libre de solución para las 13
+// ronda, y que ese payload ya está probado libre de solución para todas
 // plantillas en tests/answerSafety.test.mjs. Esa es la cadena de garantía.
 {
   const names = [];
-  for (const T of listTemplates()) {
+  // Solo las REALES: el registro es global y otras suites dejan sintéticas.
+  for (const T of reales(listTemplates)) {
     const name = T.meta.name;
     const act = seed(name);
     // OJO: se cuenta ANTES de pedir el snapshot. Ordena las Pelotas NORMALIZA su
@@ -103,7 +105,8 @@ function stable(v) {
     }
     names.push(name);
   }
-  assert.ok(names.length >= 12, `deberían auditarse las 13 plantillas, se auditaron ${names.length}`);
+  assert.deepStrictEqual(names.slice().sort(), carpetas(),
+    `se auditaron ${names.length} plantillas y las reales son ${cuantas()}`);
   ok(`${names.length} plantillas: del contenido solo viaja el payload de ronda (+ whitelist)`);
 }
 

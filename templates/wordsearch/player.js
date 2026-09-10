@@ -234,7 +234,7 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
     if (found >= total) finish();
   }
 
-  // El reloj lo monta y lo pinta el SHELL (core/reloj.js, uno para las 13). Aquí
+  // El reloj lo monta y lo pinta el SHELL (core/reloj.js, uno para todas). Aquí
   // solo se dice qué pasa al acabarse: la sopa se termina.
 
   // ── Finish ───────────────────────────────────────────────────────────────────

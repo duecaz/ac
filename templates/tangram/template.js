@@ -50,7 +50,7 @@ export class TangramTemplate extends BaseTemplate {
     // vive en scorer.js (PUNTOS_RESOLVER), un solo dueño (§21b).
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 100, pointsPerWrong: 0, maxScore: 100 }),
     defaultLive:    () => ({}),
-    // Contenido DEMO jugable (nunca nace vacía — igual que las 12 reales).
+    // Contenido DEMO jugable (nunca nace vacía — igual que el resto).
     defaultContent: () => ({
       items: [{ id: rid('it_'), figura: ORDEN_SILUETAS[0] }],
     }),

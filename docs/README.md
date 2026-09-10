@@ -39,7 +39,7 @@ Qué leer según lo que necesites. La **fuente de verdad del estado actual** es
 | **Añadir una plantilla nueva** | `../templates/HOW_TO_ADD.md` (o `node tools/new-template.mjs`) |
 | **Probar** (suites Node + self-tests + headless) | `testing.md` |
 
-## Los SEIS documentos vivos (todo lo demás es referencia o histórico)
+## Los documentos vivos (todo lo demás es referencia o histórico)
 
 Consolidado en v1.51.424: `docs/` tenía 35 archivos, 15 de ellos handoffs, y la
 mayoría describían trabajo TERMINADO. Un índice que ofrece quince sitios donde
@@ -57,8 +57,8 @@ quedó aquí.
 | **`handoff-seguridad-pb.md`** | Las fases de seguridad de PB; su Fase 3 (validador en el servidor) es hoy un límite declarado en §22 |
 | **`handoff-player-frame.md`** | Etapas 1 y 2 PENDIENTES: el plan para cuando se vuelva al problema del marco |
 | **`handoff-ia-contenido.md`** | La IA que ESCRIBE el contenido (por modelo, no por plantilla): plan escrito, que es la condición que puso el norte §4b. **Funcionando desde v1.51.548**; §7b, lo que costó instalarlo en la Pi |
-| **`handoff-editor-general.md`** | El editor como pieza general: márgenes del panel, «+ Añadir» en las 13, imagen↔pines, nacer en blanco y buscador de imágenes libres (decidido 2026-08-13, sin ejecutar) |
-| **`handoff-costuras.md`** | Los 7 barridos escritor×lector que DETECTAN las costuras (declaraciones que nadie obedece · contrato a medias · vista que conoce plantillas · cableado sin extremo · la misma regla dos veces · ajuste en la capa equivocada · gesto que destruye lo que se toca) — pedidos 2026-09-02, EJECUTADOS a cero (§1b); la ley que los vigila es §31 |
+| **`handoff-editor-general.md`** | El editor como pieza general: márgenes del panel, «+ Añadir» en todas, imagen↔pines, nacer en blanco y buscador de imágenes libres (decidido 2026-08-13, sin ejecutar) |
+| **`handoff-costuras.md`** | Los barridos escritor×lector que DETECTAN las costuras (declaraciones que nadie obedece · contrato a medias · vista que conoce plantillas · cableado sin extremo · la misma regla dos veces · ajuste en la capa equivocada · gesto que destruye lo que se toca) — pedidos 2026-09-02, EJECUTADOS a cero (§1b); la ley que los vigila es §31 |
 | **`handoff-juegos-inicial.md`** | Los tres JUEGOS de inicial (Colorear · Tangram · Rompecabezas): leyes contrastadas, decisiones técnicas (zonas SVG, máscara XOR, piezas sin canvas), banco compartido y lo que decide el dueño. |
 
 Se le suman dos que no son handoffs sino REFERENCIA permanente:

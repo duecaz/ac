@@ -67,7 +67,7 @@ export function ruleScopeNote() {
 /** EL BLOQUE «TIEMPO» — un solo mando, para todas las plantillas.
  *
  *  Historia corta: había DOS campos sueltos y cada editor decidía si ponerlos
- *  —el temporizador lo ofrecían 4 plantillas de 13, y el cronómetro acabó en la
+ *  —el temporizador lo ofrecían 4 plantillas, y el cronómetro acabó en la
  *  pestaña de PUNTUACIÓN—. Se unificaron en un bloque (v1.51.640)… con los dos
  *  mandos dentro, y entonces el bloque MENTÍA: el número de segundos y una
  *  casilla «Mostrar cronómetro» marcada y en gris se leen como «hay dos relojes

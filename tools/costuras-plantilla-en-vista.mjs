@@ -71,7 +71,7 @@ function ficherosPlataforma() {
 // `legítimo` sin motivo no vale).
 const LEGITIMO = {
   'core/homePreview.js': 'dibuja un preview estático POR TIPO de plantilla; es su cometido (CLAUDE.md, "Chrome del panel del docente")',
-  'core/registerTemplates.js': 'el punto único de registro — es donde las 13 SE DECLARAN, no donde alguien las conoce de más',
+  'core/registerTemplates.js': 'el punto único de registro — es donde SE DECLARAN, no donde alguien las conoce de más',
   'core/contentModels/textCorrection.js': '`esHojaDeTexto()` es el dueño único de "¿esta actividad es textCorrection?" (comentario propio del fichero): responde la pregunta UNA vez para que el resto llame en vez de repetir el literal — es la declaración, no una vista que se salta el contrato',
   'core/selftest.js': 'la autoprueba del panel #/admin usa "quiz" como FIXTURE conocida para probar el scorer de punta a punta (línea 219 `c.name === \'quiz\'` + import de `templates/quiz/scorer.js`) — no es una vista decidiendo por plantilla, es el propio self-test escogiendo con qué plantilla probarse',
 };
@@ -270,7 +270,7 @@ function contraPrueba() {
   const noPlantilla = blank(`if (a.template === 'list') return 1;`);
   const falsoPositivo = [...noPlantilla.matchAll(RE_CMP)].filter(m => NOMBRES_PLANTILLA.has(m[4]));
   if (falsoPositivo.length !== 0) {
-    console.log(`  ❌ CONTRA-PRUEBA rota: "'list'" (no es una de las 13) se contó como plantilla real`);
+    console.log(`  ❌ CONTRA-PRUEBA rota: "'list'" (no es una plantilla real) se contó como tal`);
     rotos++;
   }
   return rotos;
@@ -300,7 +300,7 @@ const infoModelo = listaModelo.filter(h => h.legitimo);
 const cuentanImports = listaImports.filter(h => !h.legitimo);
 const infoImports = listaImports.filter(h => h.legitimo);
 
-// Literales que aparecen en las comparaciones pero NO son una de las 13
+// Literales que aparecen en las comparaciones pero NO son plantillas reales
 // (p.ej. 'list' en views/home.js / views/editList.js) — informativo, el
 // encargo pide señalarlo aparte si aparece. Se detecta buscando el mismo
 // patrón SIN el filtro de nombre real, y restando lo que ya se contó.
@@ -356,7 +356,7 @@ if (infoNombre.length) {
   for (const h of infoNombre) console.log(`     ${fmt(h)}  — ${h.legitimo}`);
 }
 if (ajenosPorNombre.length) {
-  console.log(`   (${ajenosPorNombre.length} comparación(es) con .template contra un literal que NO es una de las 13 — informativo, p.ej. 'list' no es plantilla)`);
+  console.log(`   (${ajenosPorNombre.length} comparación(es) con .template contra un literal que NO es una plantilla real — informativo, p.ej. 'list' no es plantilla)`);
   for (const h of ajenosPorNombre) console.log(`     ${fmt(h)}  (literal: '${h.literal}')`);
 }
 
@@ -395,7 +395,7 @@ process.exit(0);
 //  · Filtrar solo por `.template === '…'` sin exigir que el literal sea uno
 //    de los 13 nombres reales daba ruido inmediato: `views/home.js` y
 //    `views/editList.js` comparan `a.template !== 'list'`/`=== 'list'`, pero
-//    "list" (la actividad "Lista de vocabulario") NO es una de las 13
+//    "list" (la actividad "Lista de vocabulario") NO es una plantilla
 //    plantillas registradas — es un valor legado de `activity.template` sin
 //    plantilla propia. Se deja fuera de la lista 1 y se apunta aparte
 //    (informativo `ajenosPorNombre`) tal como pide el encargo.

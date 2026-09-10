@@ -103,7 +103,7 @@ sale de aquí.
   en papel.
 - **Nosotros hoy**: nada.
 - **Recomendación: sí, y por MODELO de contenido, no por plantilla**. Cinco hojas
-  genéricas (`qa`, `pairs`, `words`, `items`, `textCorrection`) cubren las 13
+  genéricas (`qa`, `pairs`, `words`, `items`, `textCorrection`) cubren las
   plantillas; una plantilla nueva hereda la hoja de su modelo sin escribir nada.
   Coste bajo (CSS de impresión + una vista), valor alto en aulas con pocos
   dispositivos.
@@ -159,7 +159,7 @@ justo el patrón que costó cuatro maquetas en un día.
 
 **La condición ya está CUMPLIDA** (v1.51.510): la lista existe y es GENERADA —
 `node tools/piezas.mjs` → **[`docs/piezas-por-actividad.md`](piezas-por-actividad.md)**.
-Juega las 13 en Individual y mide sus bloques de primer nivel en un hueco ANCHO
+Juega todas en Individual y mide sus bloques de primer nivel en un hueco ANCHO
 (1280×800) y en uno ALTO (520×900). Lo que dice el primer inventario:
 
 - **Las 13 caben en el mismo esquema de tres franjas**: barra · masa · barra.
@@ -180,7 +180,7 @@ Juega las 13 en Individual y mide sus bloques de primer nivel en un hueco ANCHO
 ### Lo EJECUTADO desde el inventario (v1.51.511-515)
 
 El reparto ya tiene vocabulario y guardián — **los TRES roles**
-(`docs/estilos-de-actividad.md` §3b0): `edu-cabecera` (UNA, la misma en las 13)
+(`docs/estilos-de-actividad.md` §3b0): `edu-cabecera` (UNA, la misma en todas)
 · el juego en subsecciones con nombre (`edu-sec--*`, que refluyen por
 `aspect-ratio`) · `edu-send`. Lo comprueba `tools/matrix-smoke.mjs` montando las
 13. Eran CUATRO hasta 2026-09-03, cuando se midió que la misma franja tenía tres

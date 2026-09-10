@@ -60,7 +60,7 @@ const BIBLIOTECA = [
 
 // ── 3b. Genérico, sin `switch` por plantilla ───────────────────────────────
 // Una plantilla nueva queda buscable sin tocar `core/search.js`. Se comprueba
-// con las OTRAS colecciones que usan las 13 (pairs, words, passages…).
+// con las OTRAS colecciones que usan las plantillas (pairs, words, passages…).
 {
   const pares = act('p1', 'Sin título útil', { template: 'match', content: { pairs: [{ left: 'Corazón', right: 'Bombea la sangre' }] } });
   const sopa = act('w1', 'Sopa', { template: 'wordsearch', content: { words: ['esdrújula', 'aguda'] } });

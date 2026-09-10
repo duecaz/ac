@@ -28,7 +28,9 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 const POISON = 'S3CR3T_ANSWER_TOKEN';
 
 const templates = listTemplates().filter(T => typeof T.getRoundPayload === 'function');
-assert.ok(templates.length >= 8, `se esperaban ≥8 plantillas con getRoundPayload, hay ${templates.length}`);
+// No un número congelado: TODA plantilla que declare `getRoundPayload` entra en
+// la auditoría, y tiene que haber alguna (si no, el escaneo no está mirando).
+assert.ok(templates.length > 0, 'ninguna plantilla declara getRoundPayload: el escaneo no está viendo el registro');
 
 const leaks = [];
 for (const T of templates) {

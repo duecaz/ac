@@ -52,7 +52,7 @@ export class ColorearTemplate extends BaseTemplate {
     defaultRules:   () => ({}),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: PUNTOS_TERMINAR }),   // el mismo número que usa el scorer (§21b)
     defaultLive:    () => ({}),
-    // Contenido DEMO jugable (nunca nace vacía — igual que las 12 reales).
+    // Contenido DEMO jugable (nunca nace vacía — igual que el resto).
     defaultContent: () => ({
       items: [{ id: rid('it_'), dibujo: 'casa' }],
     }),

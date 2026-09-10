@@ -23,7 +23,7 @@ export function renderQuizEditor(root, activity, onChange) {
     content: { label: 'Contenido', html: contentHtml, wire: wireContent },
     rules: { html: rulesHtml, wire: wireRules },
     // Puntuación y En vivo ya NO los declara la plantilla: son los paneles por
-    // defecto del chasis (core/editorPanels.js) y ahora los tienen las 13, no
+    // defecto del chasis (core/editorPanels.js) y ahora los tienen todas, no
     // solo Quiz. Salieron literalmente de aquí.
   });
 }

@@ -28,6 +28,7 @@ const { LIVE_LOOPS, LOOP_LABELS, LOOP_POINTS, LOOP_PHASE, loopsOf, pointsModeFor
   await import(join(ROOT, 'core/liveLoops.js'));
 const { MODE_DEFS } = await import(join(ROOT, 'core/modes.js'));
 const { PERSIST } = await import(join(ROOT, 'core/persistPolicy.js'));
+const { getModel } = await import(join(ROOT, 'kernel/content/models.js'));
 const { docTable, anchorOf } = await import(join(ROOT, 'tools/docmap.mjs'));
 
 const templates = listTemplates();
@@ -106,9 +107,37 @@ function nav(file, src) {
   ].join('\n');
 }
 
-const BLOCKS = { bucles: bucles(), modos: modos() };
+// ── Bloque `catalogo`: plantilla → familia → modelo → clave de `content` ───
+// Nació el 2026-09-10: `docs/ESTRUCTURA.md` decía «12 plantillas» y su tabla
+// llevaba versiones sin las nuevas. Es un dato MECÁNICO (sale del registro y de
+// `newEmpty()` de cada modelo), así que no se escribe a mano — lo vigila
+// `tests/docs.test.mjs` como los demás cuadros, y B9 caza la cifra suelta.
+function catalogo() {
+  const KIND = { ejercicio: 'E', juego: 'J' };
+  const rows = templates.map(T => {
+    const m = T.meta || {};
+    // La clave de `content` es la que el propio modelo crea al nacer vacío:
+    // preguntársela a `newEmpty()` evita una segunda lista que se desincronice.
+    const modelo = getModel(m.contentModel);
+    const claves = Object.keys(modelo?.newEmpty?.() || {});
+    const clave = claves.length ? claves.map(k => `\`${k}\``).join(' · ') : '—';
+    return `| \`${m.name}\` | ${nameOf(T)} | ${KIND[m.kind] || '?'} | \`${m.contentModel}\` | ${clave} |`;
+  });
+  return [
+    '| `template` | label | Familia | `contentModel` | clave(s) en `content` |',
+    '|---|---|---|---|---|',
+    ...rows,
+    '',
+    `> ${templates.length} plantillas · ${templates.filter(t => t.meta?.kind === 'ejercicio').length} ejercicios · `
+      + `${templates.filter(t => t.meta?.kind === 'juego').length} juegos. **E** = el contenido lo pone el docente · `
+      + '**J** = lo trae la plantilla (norte §4c).',
+  ].join('\n');
+}
+
+const BLOCKS = { bucles: bucles(), modos: modos(), catalogo: catalogo() };
 const TARGETS = ['CLAUDE.md', 'docs/leyes.md', 'docs/modos-de-juego.md', 'docs/norte.md',
-  'docs/decisiones-pendientes.md', 'docs/testing.md', 'docs/estudio-bucles-live.md'];
+  'docs/decisiones-pendientes.md', 'docs/testing.md', 'docs/estudio-bucles-live.md',
+  'docs/ESTRUCTURA.md'];
 
 let stale = [];
 for (const rel of TARGETS) {

@@ -11,7 +11,7 @@
 ## 1. Estructura de carpetas
 
 ```
-/                         raíz servida estáticamente (GitHub Pages, rama ACTIVIDAD2)
+/                         raíz servida estáticamente (GitHub Pages, rama `main`)
 ├── index.html            landing / selector
 ├── teacher.html          app del PROFESOR  → main.teacher.js
 ├── student.html          app del ALUMNO    → main.student.js
@@ -42,9 +42,9 @@
 │   ├── session/engine.js MÁQUINA DE ESTADOS única: solo | vs | teams | live
 │   ├── live/engine.js    alias de session (format 'live')
 │   ├── content/          conversión / modelos de contenido (qaAdapt, models…)
-│   └── contracts/        interfaces: template, dataPort, realtimePort, contentModel
+│   └── contracts/        interfaces: template, dataPort, contentModel
 │
-├── templates/            UNA carpeta por plantilla (12). Ver §3.
+├── templates/            UNA carpeta por plantilla. Ver §3.
 │   └── <tpl>/
 │       ├── template.js   meta (contentModel, modes, defaults) + scorer/round
 │       ├── editor.js     UI de edición
@@ -128,23 +128,33 @@ Toda actividad pasa por `normalize()` (core/migrate.js). Forma canónica
 
 ## 3. Plantillas y su MODELO DE CONTENIDO (`content`)
 
-12 plantillas. La clave es `template` (name). `contentModel` decide la forma de
-`content`. `modes` indica dónde se puede jugar.
+La clave es `template` (name). `contentModel` decide la forma de `content`;
+`modes` indica dónde se puede jugar. **La tabla es GENERADA** del registro real
+(`node tools/docgen.mjs`): antes se mantenía a mano y llegó a decir «12
+plantillas» con varias sin listar.
 
-| template        | label             | contentModel    | clave en `content` |
-|-----------------|-------------------|-----------------|--------------------|
-| `quiz`          | Quiz              | `qa`            | `items[]`          |
-| `math`          | Operaciones       | `qa`            | `items[]`          |
-| `memory`        | Memoria           | `pairs`         | `pairs[]`          |
-| `match`         | Emparejar         | `pairs`         | `pairs[]`          |
-| `wordsearch`    | Sopa de Letras    | `words`         | `words[]` (strings)|
-| `crossword`     | Crucigrama        | `words`         | `words[]` (objetos)|
-| `tildes`        | Tildes            | `textCorrection`| `passages[]`       |
-| `comas`         | Comas             | `textCorrection`| `passages[]`       |
-| `wheel`         | Ruleta            | `items`         | `items[]`          |
-| `question-live` | Abre Cajas        | `items`         | `items[]`          |
-| `ballsort`      | Ordena las Pelotas| `ballsort`      | `items[]` (tablero)|
-| `diagram`       | Etiqueta el diagrama| `diagram`     | `image` + `pins[]`  |
+<!-- GENERADO:catalogo -->
+| `template` | label | Familia | `contentModel` | clave(s) en `content` |
+|---|---|---|---|---|
+| `quiz` | Quiz | E | `qa` | `items` |
+| `wheel` | Ruleta | E | `items` | `items` |
+| `match` | Emparejar | E | `pairs` | `pairs` |
+| `memory` | Memoria | E | `pairs` | `pairs` |
+| `tildes` | Tildes | E | `textCorrection` | `passages` |
+| `comas` | Comas | E | `textCorrection` | `passages` |
+| `math` | Operaciones | E | `qa` | `items` |
+| `wordsearch` | Sopa de Letras | E | `words` | `words` |
+| `crossword` | Crucigrama | E | `words` | `words` |
+| `question-live` | Abre Cajas | E | `items` | `items` |
+| `ballsort` | Ordena las Pelotas | J | `ballsort` | `level` · `mode` · `random` · `items` |
+| `diagram` | Etiqueta el diagrama | E | `diagram` | `image` · `pins` |
+| `globos` | Explota Globos | E | `qa` | `items` |
+| `colorear` | Colorear | J | `colorear` | `items` |
+| `tangram` | Tangram | J | `tangram` | `items` |
+| `puzzle` | Rompecabezas | J | `puzzle` | `items` |
+
+> 16 plantillas · 12 ejercicios · 4 juegos. **E** = el contenido lo pone el docente · **J** = lo trae la plantilla (norte §4c).
+<!-- /GENERADO:catalogo -->
 
 > (Froggy Jumps fue **eliminado**; su animación de progreso vive ahora en
 > `core/soloAnimations.js` como carril opcional del modo Individual.)

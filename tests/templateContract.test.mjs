@@ -1,5 +1,5 @@
 // Contrato de plantilla — corre core/templateContract.js (el MISMO checker que
-// usa el self-test del panel #/admin) sobre las 12 plantillas registradas.
+// usa el self-test del panel #/admin) sobre las plantillas registradas.
 // Una plantilla nueva queda cubierta automáticamente al registrarse: si le
 // falta `instructions`, su scorer no devuelve {correct,points}, su
 // defaultContent no valida o su migrateContent no es idempotente, esto falla.
@@ -8,8 +8,9 @@ import assert from 'node:assert';
 import { readdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import '../core/registerTemplates.js';   // side-effect: registra las 12
+import '../core/registerTemplates.js';   // side-effect: las registra todas
 import { getTemplate, listTemplates } from '../core/registry.js';
+import { comprobarParidad } from './helpers/plantillasReales.mjs';
 import { newActivity } from '../core/migrate.js';
 import { checkTemplateContract, checkAllTemplates } from '../core/templateContract.js';
 import { switchOptions, applySwitch } from '../kernel/content/switch.js';
@@ -23,7 +24,7 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 // core/registerTemplates.js falla aquí ("creaste la carpeta y olvidaste registrarla").
 const TDIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'templates');
 const names = readdirSync(TDIR).filter(n => statSync(join(TDIR, n)).isDirectory());
-assert.ok(names.length >= 12, `esperaba ≥12 carpetas de plantilla, hay ${names.length}`);
+comprobarParidad(assert);   // carpeta ↔ core/registerTemplates.js, dueño único
 const templates = names.map(n => {
   const T = getTemplate(n);
   assert.ok(T, `templates/${n}/ existe pero NO está registrada en core/registerTemplates.js`);

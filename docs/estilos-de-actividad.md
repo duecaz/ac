@@ -102,7 +102,7 @@ Todo player se lee con tres roles — el prefijo `edu-` marca lo nuevo:
 
 | Rol | Qué es | Regla |
 |---|---|---|
-| **`edu-cabecera`** | la CABECERA: herramientas · página/racha/extra · RELOJ centrado · pantalla completa | **una sola**, la misma en las 13 (`core/playerHud.js`, `cabeceraHtml`). La plantilla aporta SOLO sus herramientas —lápiz/borrador (Tildes/Comas), Aa/Deshacer (Pelotas), pista/reiniciar (Crucigrama; *Verificar* es envío y vive en `edu-send`)—; lo demás lo pone la cabecera. El aspecto lo pone la superficie de debajo, por tokens (`--cab-tinta`/`--cab-fondo`): sobre el marco, los del tema; sobre la hoja de Tildes/Comas, los del papel |
+| **`edu-cabecera`** | la CABECERA: herramientas · página/racha/extra · RELOJ centrado · pantalla completa | **una sola**, la misma en todas (`core/playerHud.js`, `cabeceraHtml`). La plantilla aporta SOLO sus herramientas —lápiz/borrador (Tildes/Comas), Aa/Deshacer (Pelotas), pista/reiniciar (Crucigrama; *Verificar* es envío y vive en `edu-send`)—; lo demás lo pone la cabecera. El aspecto lo pone la superficie de debajo, por tokens (`--cab-tinta`/`--cab-fondo`): sobre el marco, los del tema; sobre la hoja de Tildes/Comas, los del papel |
 | **el juego** (`edu-sec`) | todo el alto restante, en subsecciones CON NOMBRE (`edu-sec--enunciado`, `--tablero`, `--texto`, `--pistas`, `--banco`, `--panel`, `--campo`) | refluyen con el contenedor (**ancho estrecho O más alto que ancho**, ver abajo); el **enunciado es la primera subsección**, no una barra |
 | **`edu-send`** | el espacio del botón de enviar | UNO como mucho, y todo control de envío dentro (marcador sobre `ww-bar-actions`/`tc-done-wrap`/`cw-footer`) |
 
@@ -174,7 +174,7 @@ vigila el final individual.
 ### El reflujo se quedó muerto por culpa del MARCO, no del CSS de la plantilla
 
 Historia corta y con moraleja. El reflujo por forma (`aspect-ratio < 1/1`) era
-**inalcanzable en las 13**: el marco aplicaba la proporción declarada como
+**inalcanzable en todas**: el marco aplicaba la proporción declarada como
 estilo EN LÍNEA, que gana a todo, así que fuera de pantalla completa el
 contenedor nunca era vertical. En un móvil de 390×844 el marco medía 358×269
 —el **29 % de la pantalla**, con 445 px de alto muerto— y el crucigrama seguía
@@ -207,7 +207,7 @@ comprobaba que el chip quedara a ≤48 px del borde, porque Pelotas lo tenía a
 213 px, en mitad del tablero, y pasaba en verde por contar nodos.
 
 Se documentó entonces un **aplazado con motivo** —«mover el HUD al MARCO, como
-el botón de pantalla completa»— descartado porque tocaba los 13 players. La
+el botón de pantalla completa»— descartado porque tocaba todos los players. La
 unificación de la franja lo resolvió por otra vía y sin ese coste: la cabecera
 **no se ancla**, es un `<header>` en el flujo, primer hijo de la raíz. Ya no hay
 «esquina» que calcular, ni depende de que el player llene su hueco, ni se
@@ -228,7 +228,7 @@ cinco pantallas — que es justo el problema que Wordwall y un concurso no tiene
 (allí plantilla = pantalla) y por eso copiarles el modelo salió mal.
 
 La garantía no se pierde, cambia de sitio: la vigila `tools/matrix-smoke.mjs`
-MONTANDO las 13 en Individual — **una `edu-cabecera`, al menos una sección CON NOMBRE
+MONTANDO todas en Individual — **una `edu-cabecera`, al menos una sección CON NOMBRE
 (`edu-sec--*`), como mucho un `edu-send`, y todo `[data-ww-submit]` dentro de
 él**. Con UNA excepción DECLARADA (`ENVIO_ES_MECANICA`):
 

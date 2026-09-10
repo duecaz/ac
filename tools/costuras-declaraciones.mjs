@@ -1,6 +1,6 @@
 // COSTURAS · B1 — DECLARACIÓN SIN LECTOR (docs/handoff-costuras.md §1 B1).
 //
-// Tres cruces escritor×lector sobre lo que las 13 plantillas DECLARAN y sobre
+// Tres cruces escritor×lector sobre lo que las plantillas DECLARAN y sobre
 // el esquema global de presentación/revisión. Ninguno arregla nada: cada uno
 // produce una LISTA para que otro agente (o el dueño) diga `basura` /
 // `conectar` / `legítimo` por entrada (plantilla de veredicto en
@@ -163,7 +163,7 @@ function lectoresDeClaveMeta(path, ficheros) {
 }
 
 // ════════════════════════════════════════════════════════════════════════
-// CRUCE 1 · meta.* de las 13
+// CRUCE 1 · meta.* de las plantillas
 // ════════════════════════════════════════════════════════════════════════
 function cruce1() {
   const porClave = clavesMeta(TODAS);
@@ -186,7 +186,7 @@ function cruce1() {
 // ════════════════════════════════════════════════════════════════════════
 // CRUCE 2 · defaultRules() / defaultScoring() / defaultLive()
 // ════════════════════════════════════════════════════════════════════════
-// campo agregado por (grupo.campo) a través de las 13 — el mismo `timer` de
+// campo agregado por (grupo.campo) a través de todas — el mismo `timer` de
 // Quiz y el de Comas son "el mismo mando", así que se juzgan juntos.
 const GRUPOS_DEFAULT = { defaultRules: 'rules', defaultScoring: 'scoring', defaultLive: 'live' };
 

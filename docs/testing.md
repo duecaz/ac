@@ -58,7 +58,7 @@ navegador y caminar el viaje.
 | `tools/find-smoke.mjs` | buscar/crear: portada → biblioteca → mis actividades → crear → volver a buscar | ~8 |
 | `tools/live-smoke.mjs` | en vivo con dos pantallas: sala → PIN → responder → settle → podio | ~9 |
 | `tools/task-smoke.mjs` | tareas/informes: crear tarea → PIN → jugar → tope de intentos → informe del profe | ~8 |
-| `tools/edit-audit.mjs` | teclear en los 13 editores y re-preguntar al scorer: la clave correcta sobrevive | ~9 |
+| `tools/edit-audit.mjs` | teclear en todos los editores y re-preguntar al scorer: la clave correcta sobrevive | ~9 |
 | `tools/costuras-*.mjs` (6) | ley §31: declaración sin lector · contrato a medias · vista que conoce plantilla · cableado sin extremo · misma regla dos veces · ajuste en la capa equivocada — cada uno con baseline (ratchet) | ~5 |
 | `tools/perf-sonda.mjs` | la pizarra lenta del aula (4K, CPU frenada 12x): reposo fluido y ESCRIBIR no cuesta más del DOBLE del reposo de ESA MISMA máquina (techo absoluto solo daba falsos rojos en un host lento) | ~15 |
 
@@ -129,7 +129,7 @@ testea **lógica pura** (sin DOM, sin red): motores, scorers, parsers, colas.
 | `assignments` | Reglas puras de Tareas + flujo del driver local. |
 | `penDetector` | Clasificación lápiz/dedo/borrador/palma por tamaño de contacto + derivación de umbrales de calibración. |
 | `styles` | Ratchet anti-regresión del CSS de juego: sin `font-size` congelada ni color pintable a pelo (regla → `docs/estilos-de-actividad.md`). `math`/`quiz` limpios; deuda actual en un BASELINE que no puede crecer. |
-| `templateContract` | El contrato de plantilla EJECUTABLE (`core/templateContract.js`): las 12 con meta completa (`instructions` obligatorio), `contentModel` registrado, `defaultContent` válido y jugable, scorer con forma `{correct, points}`, `migrateContent` idempotente, `previewHtml` (miniatura del home) y carpeta ↔ registro consistentes. Una plantilla NUEVA queda cubierta sola al registrarse. |
+| `templateContract` | El contrato de plantilla EJECUTABLE (`core/templateContract.js`): todas con meta completa (`instructions` obligatorio), `contentModel` registrado, `defaultContent` válido y jugable, scorer con forma `{correct, points}`, `migrateContent` idempotente, `previewHtml` (miniatura del home) y carpeta ↔ registro consistentes. Una plantilla NUEVA queda cubierta sola al registrarse. |
 | `norms` | Normas transversales de CLAUDE.md como CI (`core/normsCheck.js`): nunca `new ResizeObserver` directo, nunca `filter=` PB con `encodeURIComponent`, `kernel/` determinista (sin `Date.now()`). Recorre TODO el JS del repo. |
 | `skins` | Contrato de skin (`core/skinContract.js`): cada skin define el set COMPLETO de tokens pintables (los del skin `default`), sin apoyarse en el fallback silencioso de `theme.css :root`. Cazó 5 skins que no declaraban `--ww-success/danger/warning`. |
 | `newTemplate` | Self-test del generador (`tools/new-template.mjs`): genera en un scratch y corre los checkers reales (contrato, normas, CSS) sobre lo emitido — si el contrato crece y el esqueleto se queda viejo, falla aquí. También guardas del CLI (no pisa carpetas, `--out` no muta el repo). |
@@ -183,7 +183,7 @@ Las dos redes que impiden que un crash de primera pantalla llegue a la pizarra
 | **`tools/matrix-smoke.mjs`** | Monta CADA plantilla en CADA modo que declara soportar, pulsa Empezar y comprueba que el juego arranca sin errores de consola. Siembra con el `defaultContent()` **de la propia plantilla** → sin fixtures que mantener. | A mano / antes de publicar |
 
 ```bash
-node tools/matrix-smoke.mjs              # las 13 × (solo · VS · equipos) — sale 1 si algo falla
+node tools/matrix-smoke.mjs              # cada plantilla × (solo · VS · equipos) — sale 1 si algo falla
 node tools/matrix-smoke.mjs memory quiz  # solo esas plantillas
 ```
 
@@ -262,7 +262,7 @@ teniendo respuesta correcta. Si "puntuables antes → después" baja, editar rom
 la clave.
 
 ```bash
-node tools/edit-audit.mjs     # las 13 plantillas — sale 1 si alguna pierde su clave
+node tools/edit-audit.mjs     # todas las plantillas — sale 1 si alguna pierde su clave
 ```
 
 No se teclea en el campo que ES la respuesta (cambiarlo a mano no es perder la

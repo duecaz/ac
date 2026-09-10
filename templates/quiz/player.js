@@ -69,7 +69,7 @@ export async function renderQuizPlayer(rootSel, activity, opts = {}) {
         });
       }
 
-      // El reloj lo monta y lo pinta el SHELL (core/reloj.js, uno para las 13):
+      // El reloj lo monta y lo pinta el SHELL (core/reloj.js, uno para todas):
       // aquí solo se dice qué pasa cuando se acaba.
       alAgotarse(() => {
         opts$().forEach(b => { b.disabled = true; });

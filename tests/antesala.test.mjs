@@ -13,7 +13,7 @@
 //   2. la antesala pinta EXACTAMENTE UNO y siempre pide pantalla completa;
 //   3. toda antesala de una ACTIVIDAD cuenta cómo se juega;
 //   4. un ajuste, una casilla: el sonido tiene un solo dueño (§21b).
-// Lo que se ve con el dedo (que el botón exista y se pueda tocar en las 13 ×
+// Lo que se ve con el dedo (que el botón exista y se pueda tocar en todas ×
 // modos) lo mide `tools/matrix-smoke.mjs`: aquí se vigila el CÓDIGO.
 //
 // Run: node tests/antesala.test.mjs
@@ -59,7 +59,7 @@ const ANTESALA = 'views/antesala.js';
 // No se comprueba con regex sobre la implementación —eso ata el test a CÓMO
 // está escrito y rompe CI al reordenar una línea—: se comprueba que NADIE MÁS
 // pide pantalla completa al arrancar. Que el botón exista, sea uno solo y se
-// pueda tocar lo mide `tools/matrix-smoke.mjs` sobre el DOM montado, en las 13
+// pueda tocar lo mide `tools/matrix-smoke.mjs` sobre el DOM montado, en todas
 // plantillas × modos, que es donde eso se puede saber de verdad.
 {
   const src = leer(ANTESALA);

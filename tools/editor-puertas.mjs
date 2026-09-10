@@ -79,7 +79,7 @@ const r = await p.evaluate(async () => {
   return out;
 });
 await b.close(); web.kill();
-console.log('\n🚪 PUERTAS DEL EDITOR — las 13 con el contenido vacío\n');
+console.log('\n🚪 PUERTAS DEL EDITOR — todas con el contenido vacío\n');
 console.log('  plantilla        elemento        enseña  puerta');
 for (const x of r) console.log(`  ${x.name.padEnd(16)} ${String(x.elemento).padEnd(14)} ${x.enseña?'  ✅  ':'  ❌  '}  ${x.puerta?'✅':'❌'}${x.err?' · ERROR: '+x.err:''}`);
 const dobles = r.filter(x => x.duplicados?.length);

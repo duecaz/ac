@@ -17,6 +17,7 @@ import assert from 'node:assert';
 import { readFileSync, readdirSync } from 'node:fs';
 import '../core/registerTemplates.js';
 import { listTemplates } from '../core/registry.js';
+import { registradas, comprobarParidad } from './helpers/plantillasReales.mjs';
 import { LIVE_LOOPS, loopsOf } from '../core/liveLoops.js';
 import { ficheros, leer } from './helpers/inventario.mjs';
 
@@ -33,14 +34,14 @@ const LOOPS = {
   claim:  { phase: 'question-live', chosenBy: 'plantilla' },
 };
 
-// ── 1. Las 13 plantillas solo declaran políticas del catálogo ──────────────
+// ── 1. Las plantillas solo declaran políticas del catálogo ────────────────
 {
   const DECLARABLE = LIVE_LOOPS;   // el catálogo completo (core/liveLoops.js)
   // Solo las plantillas REALES: el registro es global y otras suites del runner
   // dejan plantillas de prueba registradas (t_solo, qlocal…). El punto único de
   // registro es core/registerTemplates.js, así que la lista sale de ahí.
-  const registered = new Set([...read('core/registerTemplates.js').matchAll(/templates\/([\w-]+)\/index\.js/g)].map(m => m[1]));
-  assert.ok(registered.size >= 12, `se esperaban ≥12 plantillas registradas, se leyeron ${registered.size}`);
+  const registered = new Set(registradas());
+  comprobarParidad(assert);   // carpeta y registro dicen lo mismo (dueño único del criterio)
   const seen = {};
   for (const T of listTemplates().filter(t => registered.has(t.meta?.name))) {
     const declared = T.meta?.play?.live;

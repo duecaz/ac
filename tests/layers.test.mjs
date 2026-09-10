@@ -56,7 +56,7 @@ const g = buildGraph();
 // ── 3. El contenido del usuario no sabe de mecánicas ni de modos ────────────
 // La prohibición literal de §0 para la capa CONTENIDO. Se comprueba aparte
 // porque es la frontera que más caro sale cruzar: si el modelo de contenido
-// supiera de plantillas, una migración tocaría las 13.
+// supiera de plantillas, una migración las tocaría todas.
 {
   const leaks = g.edges.filter(e => e.fromLayer === 'contenido'
     && ['plantillas', 'vistas', 'adaptadores'].includes(e.toLayer));
@@ -74,7 +74,7 @@ const g = buildGraph();
     && ['vistas', 'adaptadores'].includes(e.toLayer));
   assert.deepStrictEqual(leaks.map(e => `${e.from} → ${e.to}`), [],
     'una plantilla NO puede importar una vista ni el transporte (§0)');
-  ok('las 13 plantillas no conocen vistas ni adaptadores');
+  ok('las plantillas no conocen vistas ni adaptadores');
 }
 
 // ── 5. El motor no conoce el transporte ni la pantalla ──────────────────────

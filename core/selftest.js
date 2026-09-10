@@ -276,7 +276,7 @@ const TESTS = [
   // ── Contrato de plantilla (mismo checker que tests/templateContract.test.mjs) ─
   { group: 'Contrato', name: 'las plantillas registradas cumplen el contrato completo', fn: () => {
     const templates = listTemplates();
-    assert(templates.length >= 12, `esperaba ≥12 plantillas, hay ${templates.length}`);
+    assert(templates.length > 0, `el registro está vacío: no hay plantillas que auditar`);
     const failing = checkAllTemplates(templates);
     assert(failing.length === 0, failing.map(f => `${f.name}: ${f.issues.join(' · ')}`).join(' | '));
   } },

@@ -8,7 +8,7 @@ let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
 
 // --- models ---
-// Los 8: uno por cada contentModel que declara alguna plantilla (el contrato
+// Uno por cada contentModel que declara alguna plantilla (el contrato
 // tests/templateContract.test.mjs exige que TODO contentModel esté registrado).
 assert.deepStrictEqual(listModelNames().sort(),
   ['ballsort', 'colorear', 'diagram', 'entries', 'items', 'pairs', 'puzzle', 'qa', 'tangram', 'textCorrection', 'words']);
@@ -73,7 +73,7 @@ assert.deepStrictEqual(convertibleTargets('qa').sort(), ['items', 'pairs']);
 ok('convertibleTargets lists reachable models');
 
 // NOTA: el check "todo conversor une modelos con plantilla viva" vive en
-// tests/templateContract.test.mjs — necesita registrar las 12 plantillas, y
+// tests/templateContract.test.mjs — necesita registrar las plantillas, y
 // hacerlo AQUÍ contaminaba las suites que corren después en run.mjs (migrate()
 // empieza a aplicar el migrateContent real de cada plantilla registrada).
 

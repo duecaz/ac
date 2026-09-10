@@ -724,7 +724,7 @@ for (const t of seeded) {
         //     §3b0; eran cuatro hasta que la franja se unificó). Se comprueba
         //     MONTANDO, no leyendo el código: los roles son del DOM que ve el
         //     alumno. Tres reglas, todas descubiertas por escaneo:
-        //       · UNA `edu-cabecera` (la misma en las 13; nadie pinta otra)
+        //       · UNA `edu-cabecera` (la misma en todas; nadie pinta otra)
         //       · al menos UNA sección de juego con nombre (`edu-sec`) — sin
         //         nombre no hay reparto posible (fue el caso de Memoria)
         //       · como mucho UN `edu-send`, y todo control de envío vive dentro
@@ -740,7 +740,7 @@ for (const t of seeded) {
         // esta red comprueba el resultado RENDERIZADO en los tres modos, que es
         // lo que el dueño ve. Un modo que vuelva a escribir su propia fórmula lo
         // rompe aquí.
-        // Solo se pregunta a quien TIENE calculadora: preguntárselo a las 13 son
+        // Solo se pregunta a quien TIENE calculadora: preguntárselo a todas son
         // 30 viajes al navegador para que 27 devuelvan null.
         if (status === 'ok' && t.name === 'math') {
           const tipo = await page.evaluate(() => {
@@ -968,7 +968,7 @@ for (const t of seeded) {
             // ese ruido, un veredicto rojo se apaga a la semana. Para juzgarlo de
             // verdad hace falta que la PLANTILLA declare cuál es su texto de
             // lectura (un `data-ww-read`, §0: la plantilla declara, el motor
-            // consume) — decisión de contrato sobre las 13, registrada como
+            // consume) — decisión de contrato sobre todas, registrada como
             // pendiente en docs/leyes.md §29. Mientras tanto se PUBLICA el
             // número: se ve, se compara entre versiones, y no miente.
             legibilidad.push({ label: t.label, mode, pct: leg.minPct, texto: leg.peorTexto });
@@ -1163,7 +1163,7 @@ for (const t of seeded) {
 
 // ── B7-b · BIBLIOTECA / INICIO: teclear en el buscador no pierde el foco ni
 // resetea el scroll de la lista ────────────────────────────────────────────
-// Corre UNA vez (no por plantilla): es la misma caja para las 13. `home.js` y
+// Corre UNA vez (no por plantilla): es la misma caja para todas. `home.js` y
 // `explore.js` ya re-enfocan el input a mano tras cada `paint()` (comentario
 // en views/home.js: «paint() re-monta toda la vista → hay que re-enfocar»),
 // así que esto MIDE esa promesa con el mismo instrumento ya probado en rojo,

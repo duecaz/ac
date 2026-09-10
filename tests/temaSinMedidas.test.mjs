@@ -51,7 +51,7 @@ const MIDEN = ['width', 'min-width', 'max-width', 'height', 'min-height', 'max-h
   // convirtió en una tira de 30 px — dos lápices en la captura del dueño.
   'align-items', 'justify-content', 'align-self', 'justify-self', 'place-items', 'place-content',
   // Y `container-type`, que parece técnico y es la madre de todas las medidas:
-  // decide contra QUÉ CAJA se resuelven las unidades que usan las 13 plantillas.
+  // decide contra QUÉ CAJA se resuelven las unidades que usan las plantillas.
   // Los dos temas lo bajaban a `inline-size`, así que la actividad se
   // dimensionaba contra la arena entera en vez de contra su panel.
   'container-type',

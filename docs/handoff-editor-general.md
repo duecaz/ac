@@ -13,7 +13,7 @@
 |---|---|---|
 | «está ahogado, no hay padding a los costados» | `views/editView.js` monta directo en `#app`, y `#app` perdió su `container py-3` cuando la home pasó a poner su propio `.home-wrap`. La home quedó bien; el editor, los reportes y el admin se quedaron a ras del borde | **SÍ** — 13 editores + reportes + admin |
 | «no hay cómo colocar más etiquetas» | 11 de 13 editores tienen su botón «+ Añadir…». `diagram` y `ballsort` NO: en el diagrama los pines se añaden CLICANDO la imagen, está escrito en una línea gris y se pierde | **SÍ** — es una gramática que debe ser una |
-| «viene ya escrito el contenido» | toda plantilla nace con `defaultContent()` de muestra. En el diagrama son 4 pines *Cabeza/Ojo/Nariz/Boca* sobre una cara de ejemplo | **SÍ** — decisión de producto, las 13 |
+| «viene ya escrito el contenido» | toda plantilla nace con `defaultContent()` de muestra. En el diagrama son 4 pines *Cabeza/Ojo/Nariz/Boca* sobre una cara de ejemplo | **SÍ** — decisión de producto, todas |
 | (lo peor, y no lo dijo porque se ve solo) | al **cambiar la imagen** los pines del ejemplo **se quedan clavados** en las coordenadas de la cara anterior: «Nariz» aparece en medio de tu mapa. `templates/diagram/editor.js:58` cambia `content.image` y no toca `content.pins` | diagram (revisar el mismo patrón en crossword/wordsearch) |
 | «que se busquen imágenes en un modal» | hoy solo se puede SUBIR un archivo | **SÍ** — lo piden el diagrama, el fondo y la imagen de pregunta |
 
@@ -42,7 +42,7 @@ Un envoltorio único `.ww-page` (max-width + padding, la medida ya existe en
 el primer control de cada ruta del profe no toca el borde. Sin la sonda esto
 vuelve: es justo lo que pasó al rediseñar la home.
 
-### F2 · «+ Añadir» en las 13 + estado vacío que enseña
+### F2 · «+ Añadir» en todas + estado vacío que enseña
 - `diagram`: «+ Añadir etiqueta» pone un pin en el centro, listo para arrastrar;
   el clic sobre la imagen sigue siendo un atajo.
 - `ballsort`: su equivalente, a decidir al abrirlo.
@@ -62,7 +62,7 @@ crucigrama y sopa (cambiar la rejilla con palabras ya colocadas).
 
 ### F4 · Nacer en blanco (R-D)
 `defaultContent()` deja de precargar muestras: devuelve la forma vacía. Hay que
-revisar que las 13 aguanten contenido vacío en el EDITOR y en el jugador (varias
+revisar que todas aguanten contenido vacío en el EDITOR y en el jugador (varias
 redes siembran con `defaultContent`, así que la matriz y el edit-audit pasarán a
 sembrar contenido de prueba explícito — es el trabajo real de esta fase, no el
 borrado).

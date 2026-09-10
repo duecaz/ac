@@ -36,7 +36,7 @@ export class QuizTemplate extends BaseTemplate {
     defaultRules: () => ({ timer: 30, randomize: false, shuffleOptions: true }),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
     // B6 (2026-09-02): los 9 valores que declaraba aquí eran IDÉNTICOS a los que
-    // ya siembra DEFAULT_LIVE (core/constants.js) para las 13 plantillas — el
+    // ya siembra DEFAULT_LIVE (core/constants.js) para todas las plantillas — el
     // ajuste de la SALA (capa modo/plataforma) no lo declara una plantilla
     // (§0/§21b).
     defaultLive: () => ({}),

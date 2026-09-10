@@ -70,9 +70,34 @@ es para desarrollo offline. (Supabase fue **retirado**; ya no se usa en ninguna 
 
 > Versión actual: ver `core/constants.js` (`VERSION`).
 
-## Modelo de datos — banco compartido
-Las actividades son un **banco común sin dueño** (`author_id = null`, lectura
-pública): cualquiera las ve/abre por URL sin login y NO dependen de la identidad
-del navegador → limpiar la caché no las pierde (`sync()` las repuebla desde la
-nube). Sin privacidad por cuenta (el login queda para actividades privadas, si en
-el futuro se necesitan).
+## Modelo de datos — cada actividad tiene DUEÑO
+> Fuente de verdad: `core/pbRules.js` (las reglas que se aplican en PocketBase) y
+> `adapters/pocketbase/remoteStore.js`. Si esto y el código discrepan, manda el
+> código — y corrige este párrafo.
+
+Cada actividad lleva un **`owner`** (el id del profe que la creó) y una
+**`visibility`**:
+
+| Quién | Qué puede |
+|---|---|
+| cualquiera, sin cuenta | **ver y jugar** una actividad `public` (por URL, sin login) |
+| el dueño | ver las suyas sean o no públicas, editarlas y borrarlas |
+| admin | lo mismo que el dueño, sobre cualquiera |
+| cualquiera, sin cuenta | **crear: no.** Crear exige sesión, y el `owner` que se
+  envía tiene que ser el tuyo (no se crea a nombre de otro) |
+
+Es decir: **la privacidad por cuenta YA existe** — una actividad que no es
+`public` solo la ve su dueño. «Publicar» es una acción aparte y con condición: la
+actividad tiene que estar jugable (`decidirVisibilidad`, `core/activityCheck.js`).
+
+Ojo con un nombre parecido: **`author_id` no es el dueño de una actividad**. Vive
+en las **tareas** (`assignments`) y guarda el id ANÓNIMO del navegador que la
+creó, para que un profe sin cuenta pueda gestionar la tarea que acaba de repartir
+(ver `core/assignmentRules.js`).
+
+Lo que **sí** sigue siendo cierto del texto viejo: jugar no depende de la
+identidad del navegador, así que limpiar la caché no pierde nada — `sync()`
+repuebla desde la nube lo que tu cuenta puede ver.
+
+Estado de las reglas: escritas y probadas en código (`tests/pbRules.test.mjs`);
+aplicarlas en la Pi es un paso manual pendiente — ver `docs/handoff-seguridad-pb.md`.

@@ -62,7 +62,7 @@ escribe; falta el cruce completo.
   plantilla declara algo que ninguna otra declara (¿mecanismo privado
   disfrazado de contrato?).
 - **(J)** Por sospechoso: ¿quién DEBERÍA leerla? Si nadie → borrar la clave de
-  las 13. Si el juego → conectar (y decir en qué módulo).
+  todas. Si el juego → conectar (y decir en qué módulo).
 - **Test de salida**: tests/declaracionLeida.test.mjs (nuevo) — toda clave de `meta`
   tiene al menos un lector fuera del editor, salvo lista `SOLO_EDITOR` con motivo.
 
@@ -70,7 +70,7 @@ escribe; falta el cruce completo.
 **EJECUTADO ✅** (`tools/costuras-contrato.mjs`, baseline 16 → 0; detalle en §1b).
 Lo que cazó Diagrama/Emparejar. `templateContract` valida que existan; no mira
 si son **iguales**, **vacíos** o **inalcanzables**.
-- **(M)** Matriz 13 plantillas × cada `static` que la plataforma invoca (hoy 9:
+- **(M)** Matriz plantillas × cada `static` que la plataforma invoca (hoy 9:
   `renderPlayer · renderEditor · scoreSubmission · getRoundPayload ·
   renderRound · renderRoundHost · renderRaceCell · migrateContent ·
   adoptContent`). Por celda: `propio` / `heredado de base` / `stub` (cuerpo
@@ -153,7 +153,7 @@ la misma regla (el «0 = sin límite» vivía en dos sitios hasta ayer).
 **EJECUTADO ✅** (sondas en `tools/matrix-smoke.mjs`/`tools/live-smoke.mjs`, no un
 script aparte; 2 → 0, con un bug real cazado — detalle en §1b).
 El de la pestaña. No es estático: hay que medirlo en el navegador. La sonda
-`tools/edit-audit.mjs` ya lo hace para los 13 editores; falta el resto de sitios
+`tools/edit-audit.mjs` ya lo hace para todos los editores; falta el resto de sitios
 donde un humano tiene algo entre manos.
 - **(M)** Extender el patrón (foco · pestaña · scroll · selección ANTES y
   DESPUÉS de cada gesto) a: la antesala (apodo, nº de equipos), el alumno en
@@ -227,6 +227,7 @@ con su propio marcado en vez de vivir en `cierreHtml` (dueño: `core/podium.js`)
 | B5 duplicados | `tools/costuras-duplicados.mjs` | 67 | **0** | 16 dueños nuevos (toasts, PRNG único, tile de imagen, modal, cableado de lista de ítems en 6 editores…); 24 coincidencias declaradas con motivo |
 | B6 capa | `tools/costuras-capa.mjs` | 22 | **0** | los 10 ajustes de sala del Quiz eran copias de `DEFAULT_LIVE`; 4 gates pasan de capacidad a declaración y el contrato lo exige |
 | B7 gestos | `edit-audit` + `matrix-smoke` + `live-smoke` | 2 | **0** | antesala · biblioteca · modales · alumno en vivo. Cazó un bug real: «Pausa» del host borraba la marca en curso del alumno |
+| B9 cifras | `tools/costuras-cifras.mjs` | 47 | **0** | 96 cifras quitadas (docs · comentarios · herramientas) · 9 umbrales de test que habían dejado de vigilar · un dueño único para «cuáles son las plantillas de verdad» (`tests/helpers/plantillasReales.mjs`) · la tabla del catálogo de `ESTRUCTURA.md`, ahora GENERADA |
 | B8 divergencia | `tools/costuras-divergencia.mjs` | 0 (2026-09-04) | **0** | el Crucigrama ya llegó limpio (otro agente quitó su `skipResultScreen`/cartel propio en paralelo); Abre Cajas tuvo un día una excepción declarada y el dueño la cerró («a rajatabla»): también sale por la estándar; ninguna cabecera duplicada. Lista 4 (cierre propio) añadida el mismo día que se unificó el podio en `cierreHtml`: nació roja de verdad (4 sitios: `vsView`, `listView`, `core/teams.js`, `hostInforme`) mientras la migración estaba en marcha EN PARALELO — para cuando se corrió el barrido tras escribirlo, el otro agente ya había migrado los cuatro y salió limpia; queda el ratchet en 0 vigilando que no vuelva a divergir |
 
 Colateral: la regex que quitaba comentarios se tragaba medio `core/selftest.js`

@@ -1,6 +1,6 @@
 // COSTURAS · B2 — CONTRATO A MEDIAS (docs/handoff-costuras.md §1 B2).
 //
-// `core/templateContract.js` valida que los estáticos de las 13 EXISTAN (con
+// `core/templateContract.js` valida que los estáticos EXISTAN (con
 // `typeof === 'function'`); no mira si son IGUALES entre plantillas, VACÍOS
 // (stubs sin lógica) o INALCANZABLES (nadie los invoca, o alguien los invoca
 // sin que la plantilla los tenga). Ese es el hueco que llena este barrido.
@@ -18,12 +18,12 @@
 //      porque ni la plataforma ni otra plantilla lo llaman (solo un test/tool
 //      no cuenta como huérfano: se lista aparte, informativo).
 //   d. INVOCADO QUE ALGUNA NO DEFINE NI HEREDA — la plataforma llama a
-//      `T.metodo(` y alguna de las 13 no lo tiene: o el sitio se guarda
+//      `T.metodo(` y alguna no lo tiene: o el sitio se guarda
 //      (`?.`/`typeof…==='function'`, en cuyo caso se dice) o es un crash
 //      latente.
 //
 // Además, INFORMATIVO (no cuenta al baseline): la matriz completa
-// 13 plantillas × cada estático que ALGUNA define (P=propio · H=heredado de
+// plantillas × cada estático que ALGUNA define (P=propio · H=heredado de
 // base.js · S=stub · C=copiado · -=no lo tiene).
 //
 // Estilo: como tools/costuras-declaraciones.mjs / tools/costuras-cableado.mjs
@@ -95,7 +95,7 @@ if (TODAS.length < 10) {
 const BaseTemplate = Object.getPrototypeOf(TODAS[0]);
 
 // ════════════════════════════════════════════════════════════════════════
-// UNIVERSO DE MÉTODOS — cada `static` función que ALGUNA de las 13 define
+// UNIVERSO DE MÉTODOS — cada `static` función que ALGUNA define
 // (propia) o que trae la base (heredada). `meta` se EXCLUYE (es propiedad, la
 // mira B1 — docs/handoff-costuras.md §1 B1); `length`/`name`/`prototype` son
 // propiedades de función que `getOwnPropertyNames` siempre trae y no son del
@@ -258,7 +258,7 @@ function importsDe(file) {
 }
 // Resuelve un especificador relativo (`../../core/x.js`) al mismo `file`
 // "lógico" desde CUALQUIER fichero a su misma profundidad — que es como están
-// las 13 plantillas (`templates/<nombre>/template.js`), así que dos imports
+// las plantillas (`templates/<nombre>/template.js`), así que dos imports
 // relativos al mismo módulo real resuelven al MISMO string aunque vivan en
 // carpetas distintas.
 function moduloAbsolutoDe(file, especificador) {
@@ -619,13 +619,13 @@ function contraPrueba() {
   // SIN renderRound debe salir SIN GUARDIA en `views/live/studentRondas.js`
   // (monta la fase 'question' del bucle 'rounds', y esa plantilla lo declara)
   // — la lógica exacta de `guardadoAguasArriba` probada directamente contra
-  // `loopsOf` (no vía `porNombre`, que solo busca en las 13 REGISTRADAS: la
+  // `loopsOf` (no vía `porNombre`, que solo busca en las REGISTRADAS: la
   // sintética nunca lo está, y probarla a través de esa función de producción
   // daría "guardada" por ausencia — un falso positivo, no el caso real).
   {
     const loop = VISTA_LOOP['views/live/studentRondas.js'];
     // Lo que `guardadoAguasArriba` haría (sin pasar por `porNombre`, que solo
-    // busca entre las 13 registradas): "no guardado" ⟺ la sintética declara
+    // busca entre las registradas): "no guardado" ⟺ la sintética declara
     // este bucle. Debe dar "no guardado" — es justo el caso que debe salir
     // ¡SIN GUARDIA! en la salida real.
     const declaraElBucle = loopsOf(ZZSintetica).includes(loop);
@@ -703,7 +703,7 @@ const ok = (m) => console.log('  ✅', m);
 const mal = (m) => console.log('  ❌', m);
 const LETRA = { propio: 'P', heredado: 'H', stub: 'S', copiado: 'C', '-': '-' };
 
-console.log('COSTURAS · B2 — contrato a medias (los estáticos de las 13)\n');
+console.log('COSTURAS · B2 — contrato a medias (los estáticos de las plantillas)\n');
 
 console.log('── a · STUB donde el modo está encendido ──');
 if (hallazgosA.length > BASELINE.stubs) mal(`${hallazgosA.length} caso(s) (baseline ${BASELINE.stubs}):`);
@@ -734,7 +734,7 @@ for (const h of hallazgosD) {
   }
 }
 
-console.log('\n── INFORMATIVO · matriz 13 plantillas × cada estático que alguna define ──');
+console.log('\n── INFORMATIVO · matriz plantillas × cada estático que alguna define ──');
 console.log('   P=propio · H=heredado de base.js · S=stub · C=copiado · -=no lo tiene\n');
 const nombres = TODAS.map(T => T.meta.name).sort();
 const anchoMetodo = Math.max(...UNIVERSO.map(m => m.length));
@@ -822,8 +822,8 @@ process.exit(0);
 //    plataforma vía `core/itemStats.js` (no es un test ni un tool), así que
 //    no caen en la lista informativa "solo test/tool". BASELINE.sinInvocador = 0.
 //  · Cruce (d): de los 9 métodos CORE, `renderPlayer`/`renderEditor` los
-//    tienen las 13 (los exige `registry.js` al registrar) y
-//    `scoreSubmission` también (todas las 13 lo definen hoy, aunque en
+//    las tienen todas (los exige `registry.js` al registrar) y
+//    `scoreSubmission` también (hoy lo definen todas, aunque en
 //    wheel/question-live sea el stub declarado de 'claim') — ninguno de los
 //    tres entra en este cruce (`faltantesDe` da lista vacía). De los que sí
 //    faltan en alguna plantilla, la mayoría de sitios de invocación

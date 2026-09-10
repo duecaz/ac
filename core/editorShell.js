@@ -170,7 +170,7 @@ export function renderEditorShell(root, a, onChange, spec) {
       // EL ESTADO VACÍO ENSEÑA (R-D · plan del editor). Las actividades dejan de
       // nacer con contenido de muestra —había que borrarlo antes de empezar— y
       // lo que ocupa su sitio es la frase que la plantilla DECLARA en
-      // `meta.editor.primerPaso`. Va aquí y no en cada editor: así las 13 dicen
+      // `meta.editor.primerPaso`. Va aquí y no en cada editor: así todas dicen
       // qué hacer primero sin que ninguna se acuerde de ponerlo.
       body: () => primerPasoHtml(T, a) + iaBotonHtml(T) + '<div id="ww-falta">' + faltaHtml(a) + '</div>' + spec.content.html(a) },
     spec.scoring && { id: 'tab-scoring', label: 'Puntuación', body: () => spec.scoring.html(a) },

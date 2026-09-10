@@ -75,7 +75,7 @@ de imagen (`core/imageTile.js`: subir·buscar·borrar), `renderPairsEditor`
 (Tildes y Comas, con `kind`).
 
 **Y su player nace con los TRES ROLES** (`docs/estilos-de-actividad.md` §3b0):
-`cabeceraHtml({...})` como primer hijo (LA cabecera, la misma de las 13: sus
+`cabeceraHtml({...})` como primer hijo (LA cabecera, la misma para todas: sus
 herramientas si las tiene, página/racha, el reloj centrado y pantalla completa),
 al menos una sección de juego con nombre (`edu-sec edu-sec--tablero`), y
 `edu-send` si el envío se construye y confirma. No es cosmética: `tools/matrix-smoke.mjs` lo comprueba
@@ -120,7 +120,7 @@ Diagnóstico manual de una plantilla existente: `node tools/check-template.mjs [
 
 ## 6. Estado (importante — leer)
 
-**Las 13 actividades PASAN el contrato ejecutable** (`node tools/check-template.mjs`
+**TODAS las actividades PASAN el contrato ejecutable** (`node tools/check-template.mjs`
 → todas ✓). Eso significa que **ninguna puede romper el contrato en silencio** y
 que una nueva nace conforme.
 

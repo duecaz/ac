@@ -49,7 +49,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   //     etiquetas sin escribir y la app le dejó JUGAR: en el juego no había nada
   //     que arrastrar. Lo que falta va EN ROJO y señalando el elemento, como en
   //     cualquier aplicación a la que le faltan datos.
-  // La lista la pone core/activityCheck.js: una sola para las 13.
+  // La lista la pone core/activityCheck.js: una sola para todas.
   {
     const rev = revisarActividad(a);
     // El TÍTULO no entra en esta puerta (`jugable`, no `listo`): `migrate` pone

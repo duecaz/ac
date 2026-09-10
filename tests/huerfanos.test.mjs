@@ -74,7 +74,7 @@ const TEXTO_HTML = HTML.map(f => FUENTES.get(f)).join('\n');
 
 // ── 1. Ningún módulo sin puerta de entrada ────────────────────────────────
 // Cuenta a la vez los imports ESTÁTICOS (`from '…'`), los de EFECTO SECUNDARIO
-// (`import './x.js'` — así se registran las 13 plantillas) y los DINÁMICOS
+// (`import './x.js'` — así se registran las plantillas) y los DINÁMICOS
 // (`import('./main.teacher.js' + bust)`, que es como los HTML arrancan).
 {
   const importadores = new Map(JS.map(f => [f, new Set()]));

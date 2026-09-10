@@ -13,6 +13,7 @@
 import assert from 'node:assert';
 import '../core/registerTemplates.js';
 import { getTemplate, listTemplates } from '../core/registry.js';
+import { reales, cuantas } from './helpers/plantillasReales.mjs';
 import { playOptionsOf, currentChoices, applyPlayOptions, playOptionsHtml } from '../core/playOptions.js';
 
 let passed = 0;
@@ -83,13 +84,17 @@ const ballsort = () => {
 // R2 del norte: el profe no configura nada. Esto es la excepción declarada, no
 // una puerta abierta a llenar de mandos la pantalla de inicio.
 {
-  const sinOpciones = listTemplates().filter(T => !playOptionsOf(T).length);
-  assert.ok(sinOpciones.length >= 12, `${sinOpciones.length} plantillas sin opciones: sigue siendo la excepción`);
+  const sinOpciones = reales(listTemplates).filter(T => !playOptionsOf(T).length);
+  // La vara NO es un número congelado (envejece con cada plantilla nueva): es
+  // que las que SÍ declaran opciones sigan siendo minoría clara del registro.
+  const conOpciones = cuantas() - sinOpciones.length;
+  assert.ok(conOpciones <= Math.floor(cuantas() / 4),
+    `${conOpciones} de ${cuantas()} plantillas declaran opciones: deja de ser la excepción de R2`);
   for (const T of sinOpciones) {
     assert.strictEqual(playOptionsHtml(T, { template: T.meta.name }), '',
       `${T.meta.name} no debe pintar control alguno`);
   }
-  ok(`${sinOpciones.length} de 13 plantillas no muestran ningún mando: la excepción sigue siendo excepción`);
+  ok(`${sinOpciones.length} de ${cuantas()} plantillas no muestran ningún mando: la excepción sigue siendo excepción`);
 }
 
 // ── 6. El control marca lo vigente y escapa lo que pinta ───────────────────

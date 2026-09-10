@@ -1,6 +1,6 @@
 // RED DE SEGURIDAD Nº5 — TECLEAR EN EL EDITOR: ¿ROMPE ALGO?
 //
-// Dos preguntas, las dos medidas tecleando de verdad en los 13 editores y en
+// Dos preguntas, las dos medidas tecleando de verdad en todos los editores y en
 // TODAS sus pestañas:
 //   1. ¿editar el contenido pierde la clave de respuesta? (el bug de 2026-07)
 //   2. ¿teclear destruye lo que el profe está tocando? (el de 2026-09-02: el
@@ -74,7 +74,7 @@ const rows = await page.evaluate(async () => {
   // la plantilla (nunca a una fórmula paralela): un ítem cuenta si existe algún
   // valor que dé correct=true, o si declara correct=null — no puntuable POR
   // DISEÑO (Ruleta / Pregunta en Vivo: los puntos los pone el docente).
-  // Los candidatos cubren las formas de valor de los 6 modelos de contenido.
+  // Los candidatos cubren las formas de valor de los modelos con contenido escribible.
   function scorable(T, act) {
     const items = sessionItems(act);
     let ok = 0, unscorable = 0, blind = 0;

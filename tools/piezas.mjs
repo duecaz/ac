@@ -12,7 +12,7 @@
 // elementos concretos por actividad para saber qué distribuir». Esa condición
 // —«todos los elementos concretos»— era hasta hoy un trabajo de leer trece
 // players a mano, y por eso la decisión llevaba semanas sin poderse tomar.
-// Aquí la máquina la cumple: siembra las 13 con su propio defaultContent(),
+// Aquí la máquina la cumple: siembra todas con su propio defaultContent(),
 // las JUEGA en Individual y enumera los bloques de primer nivel del marco con
 // su caja real y su porcentaje del área.
 //
@@ -25,7 +25,7 @@
 // player en un hueco ancho (proyector) y en uno alto (móvil en vertical). Una
 // pieza que en ancho es un carril lateral y en alto sigue siendo una columna
 // del 25 % es exactamente lo que el andamio de regiones viene a arreglar
-// (styles/scaffold.css, §3b) — y hoy solo lo usan 2 de las 13.
+// (styles/scaffold.css, §3b) — y hoy solo lo usan 2.
 //
 // Requiere: python3 (servidor estático) y el Chromium preinstalado.
 import { createRequire } from 'node:module';
@@ -85,7 +85,7 @@ const PIEZAS = `(sel) => {
   // dato para D8: no se puede repartir lo que no está identificado.
   const UTIL = /^(m|p)[btsexy]?-|^(text|d|justify|align|flex|row|col|w|h|g|gap|border|bg|fs|fw|rounded|position|top|start|end|bottom|small|btn|badge|card|container)(-|$)/;
   // El ROL (edu-cabecera, edu-sec, edu-send) NO es el nombre de la pieza: desde
-  // que se marcan las 13 va primero en la lista de clases, así que TODAS las
+  // que se marcan todas va primero en la lista de clases, así que TODAS las
   // secciones pasaron a llamarse igual — y el mapa de «qué cambia al girar»,
   // que casa las piezas por nombre, inventaba cambios de rol que no existen.
   const ROL = /^edu-/;
@@ -231,7 +231,7 @@ md += `pelado: no se les puede asignar un rol porque no están identificados. Po
 md += `clase propia es el primer paso de cualquier reparto.\n\n`;
 md += anonimas.length
   ? anonimas.map(a => `- **${a.label}** → \`${a.pieza}\`\n`).join('')
-  : `_Ninguna: las 13 tienen todas sus piezas nombradas._\n`;
+  : `_Ninguna: todas tienen sus piezas nombradas._\n`;
 
 if (!only.length) {
   if (check) {

@@ -215,7 +215,7 @@ function boxesPv() {
   return `<div class="pv pv-boxes"><div class="pv-boxes__grid">${cells}</div></div>`;
 }
 
-// ── Respaldo (último recurso; el test garantiza que no se usa con las 13) ─────
+// ── Respaldo (último recurso; el test garantiza que no se usa con ninguna) ────
 function genericPv(a) {
   const T = getTemplate(a?.template);
   const color = T?.meta?.color || 'secondary';

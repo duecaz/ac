@@ -6,7 +6,7 @@
 // una LISTA para que el dueño responda (plantilla de veredicto en
 // docs/handoff-costuras.md §3):
 //
-//   1. CAMPOS de defaultRules()/defaultScoring()/defaultLive() de las 13,
+//   1. CAMPOS de defaultRules()/defaultScoring()/defaultLive() de todas,
 //      clasificando cada LECTOR por capa (plantilla · contenido · plataforma ·
 //      editor-propio · editor-genérico). Tres sospechas:
 //        (a) solo lo lee la plataforma, ninguna plantilla — ¿es un ajuste de
@@ -525,7 +525,7 @@ process.exit(0);
 //    `live.*` (advanceMode/allowLateJoin/lockAnswersOn/maxPlayers/
 //    nicknameFilter/pointsModel/questionTimer/showAnswerAfterEach/
 //    showLeaderboardBetween) están declarados SOLO en `defaultLive()` de
-//    Quiz (`templates/quiz/template.js`) — las otras 12 plantillas
+//    Quiz (`templates/quiz/template.js`) — las demás plantillas
 //    devuelven `{}` — y los únicos lectores son `core/editorPanels.js`
 //    (control GENÉRICO de "Live", que se pinta para CUALQUIER plantilla con
 //    `modes.live`, no solo Quiz) y módulos de sesión

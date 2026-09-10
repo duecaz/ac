@@ -23,7 +23,7 @@ let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
 
 const templates = readdirSync(TPL).filter(d => existsSync(join(TPL, d, 'template.js')));
-assert.ok(templates.length >= 13, `se esperaban ≥13 plantillas, hay ${templates.length}`);
+assert.ok(templates.length > 0, `el registro está vacío: no hay scorers que auditar`);
 
 // Quita comentarios (una regla sobre CÓDIGO no debe dispararse por una nota).
 const code = (p) => readFileSync(p, 'utf8')
