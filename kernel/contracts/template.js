@@ -135,6 +135,9 @@
  *   CADENAS sueltas (Sopa de Letras), no fichas con pista, así que lo que escribe
  *   la IA se aplana antes de entrar (`core/aiContent.js`). Lo lee el chasis del
  *   editor (`core/editorShell.js`).
+ * @property {boolean} [seMarcaConLapiz]  Se juega MARCANDO sobre un texto
+ *   (Tildes/Comas), así que la antesala ofrece calibrar el lápiz antes de
+ *   empezar. Lo DECLARA la plantilla; la lee `views/antesala.js` (§0).
  * @property {() => ActivityRules} defaultRules      OBLIGATORIA (función).
  * @property {() => ScoringRules} defaultScoring     OBLIGATORIA (función).
  * @property {() => C} defaultContent                OBLIGATORIA (función). Lo que
@@ -160,8 +163,38 @@
  * dejaba a la vista pintando su barra ENCIMA de la de la hoja.
  * @typedef {Object} RoundCallbacks
  * @property {(value: unknown) => void} [onSubmit]
- * @property {string} [chips]
+ * @property {(snap: {progress?: number} & Record<string, unknown>) => void} [onProgress]
+ *   Solo las plantillas de TABLERO (`play.live` con `'board'`): emiten su estado
+ *   en cada movimiento, para que el duelo mueva la cuerda y el docente vea
+ *   avanzar cada tablero. Lo único que lee la plataforma es `progress` (0..1);
+ *   el resto del estado viaja tal cual hasta el scorer de la plantilla.
+ * @property {{left?: string, right?: string}} [chips]  Los indicadores que la
+ *   VISTA querría pintar (progreso · puntos). Viajan a la plantilla para que los
+ *   aloje en SU barra: decía `string`, pero el único que los produce
+ *   (`views/live/studentCarrera.js`) y el único que los consume
+ *   (`core/textCorrectionRound.js`) llevan siempre los dos lados.
  * @property {boolean} [disabled]
+ */
+
+/**
+ * EL ASA de una ronda ya montada: lo que `renderRound` devuelve para que la
+ * vista le hable SIN tocar el DOM de la plantilla. Todo es OPCIONAL —la mayoría
+ * de plantillas no devuelve nada— y quien lo usa pregunta antes
+ * (`handle?.flush`), que es justo lo que evita el `querySelector` a clases
+ * internas de otra capa (§23).
+ * @typedef {Object} RoundHandle
+ * @property {() => void} [flush]          Entrega lo que el alumno lleva hecho
+ *   sin esperar su «Listo» (el profe avanzó: rescate del trazo en curso).
+ * @property {boolean} [chromePropio]      La ronda YA pinta su barra (progreso
+ *   y herramientas), así que la vista no monta otra encima.
+ * @property {(texto: string, pct: number) => void} [setReloj]  Repintar SOLO el
+ *   reloj, sin volver a montar la ronda.
+ * @property {() => void} [dispose]        Soltar timers y listeners propios.
+ * @property {() => void} [unmount]        Lo mismo que `dispose` y además vaciar
+ *   el hueco: la ronda de TABLERO (Ordena las Pelotas) se monta entera dentro de
+ *   su nodo y lo devuelve limpio.
+ * @property {() => Record<string, unknown>} [getState]  El estado de la ronda de
+ *   tablero ahora mismo (la misma instantánea que viaja por `onProgress`).
  */
 
 /**
@@ -172,6 +205,9 @@
  * @property {unknown} [item]
  * @property {RoundPayload|null} [payload]
  * @property {unknown[]} [answers]
+ * @property {Record<string, string[]>} [playerMap]  Quién eligió cada opción,
+ *   agrupado por el valor de la respuesta. Lo arma el host
+ *   (`views/live/hostRondas.js`) al revelar; la plantilla lo pinta si lo trae.
  */
 
 /**
@@ -185,7 +221,7 @@
  *   OBLIGATORIO (lo exige el registro al arrancar). El modo Individual/Tarea.
  * @property {(root: Element, activity: import('./activity.js').Activity<C>, onChange: (activity: import('./activity.js').Activity<C>) => void) => void} renderEditor
  *   OBLIGATORIO (lo exige el registro).
- * @property {(root: Element, payload: RoundPayload, cbs?: RoundCallbacks) => ({dispose?: () => void}|null|void)} [renderRound]
+ * @property {(root: Element, payload: RoundPayload, cbs?: RoundCallbacks) => (RoundHandle|null|void)} [renderRound]
  *   La ronda COMPARTIDA (VS · Equipos · alumno en vivo). Si existe, exige
  *   `scoreSubmission`, `getRoundPayload` y `meta.play.submit`.
  * @property {(root: Element, ctx: HostRoundContext) => void} [renderRoundHost]
@@ -202,6 +238,14 @@
  *   reimplementa el conteo.
  * @property {(content: C, fromVersion: number) => C} [migrateContent]
  *   OBLIGATORIA si `templateVersion > 1`, y tiene que ser IDEMPOTENTE.
+ * @property {(input: {item: unknown, activity?: Activity}) => Array<{key: string|number, label?: string, ok?: boolean}>} [itemParts]
+ *   ANALÍTICA POR PARTE (M1, `core/itemStats.js`): en qué se descompone un ítem
+ *   (cada tilde requerida, cada hueco). Sin ella, el informe cae al genérico
+ *   «1 parte por ítem».
+ * @property {(input: {value: unknown, item?: unknown, activity?: Activity}) => Array<string|number>} [valueParts]
+ *   Qué partes marcó UNA respuesta. Solo se consulta si hay `itemParts`.
+ * @property {(item: unknown) => string} [itemLabel]
+ *   Etiqueta corta del ítem para las tablas e informes.
  * @property {(content: ActivityContent, fromModel: string, opts?: Record<string, unknown>) => (C|null)} [adoptContent]
  *   Adapta el contenido al CONVERTIR desde otra plantilla del MISMO
  *   `contentModel` pero distinta forma de ítem (Operaciones→Quiz genera
@@ -254,6 +298,7 @@
  * @property {string} [aspectRatio]
  * @property {string} [panelFit]
  * @property {boolean} [iaPalabrasComoTexto]
+ * @property {boolean} [seMarcaConLapiz]
  * @property {() => Record<string, unknown>} defaultRules
  * @property {() => Record<string, unknown>} defaultScoring
  * @property {() => Record<string, unknown>} defaultContent

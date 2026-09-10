@@ -9,7 +9,9 @@ import { GameEvents, onGame } from './gameEvents.js';
 import { lsGet, lsSet } from './ls.js';
 import { clock } from './clock.js';
 
+/** @type {Record<string, string|null>} */
 let _pack = {};
+/** @type {Map<string, HTMLAudioElement>} */
 const _cache = new Map();           // name -> HTMLAudioElement
 let _muted = lsGet('ww.muted') === '1';
 
@@ -20,6 +22,7 @@ let _muted = lsGet('ww.muted') === '1';
 // avisan). Norma: los assets del juego van dentro del sistema, nunca en un CDN
 // externo. Ruta relativa a la PÁGINA (teacher/student/embed.html viven en la raíz).
 const ASSET_BASE = 'sounds';
+/** @type {Record<string, string|null>} */
 const DEFAULT_PACK = {
   lobby:   null,                          // intentionally silent
   tick:    `${ASSET_BASE}/click.mp3`,     // soft click for ticks/UI
@@ -29,12 +32,14 @@ const DEFAULT_PACK = {
   podium:  `${ASSET_BASE}/win.mp3`
 };
 
+/** @param {Record<string, string|null>|null} [pack] */
 function setSoundPack(pack) {
   _pack = { ...DEFAULT_PACK, ...(pack || {}) };
   _cache.clear();
 }
 setSoundPack(null); // initialize default
 
+/** @param {boolean} m */
 export function setMuted(m) {
   _muted = !!m;
   lsSet('ww.muted', _muted ? '1' : '0');
@@ -42,8 +47,12 @@ export function setMuted(m) {
 }
 export function isMuted() { return _muted; }
 
+/**
+ * @param {string} name
+ * @returns {HTMLAudioElement|null}
+ */
 function get(name) {
-  if (_cache.has(name)) return _cache.get(name);
+  if (_cache.has(name)) return _cache.get(name) || null;
   const url = _pack[name];
   if (!url) return null;
   // Sin `Audio` no hay sonido que dar: pasa en Node (este módulo entró en la
@@ -60,7 +69,9 @@ function get(name) {
 // Per-sound cooldown (ms). Prevents duplicate fires when the same event
 // gets emitted multiple times in quick succession (e.g. realtime UPDATE
 // coalescing or any stray re-render). Lobby has no cooldown — it loops.
+/** @type {Record<string, number>} */
 const COOLDOWN_MS = { tick: 800, reveal: 1500, correct: 1500, wrong: 1500, podium: 5000, lobby: 0 };
+/** @type {Map<string, number>} */
 const _lastPlayed = new Map();
 
 // POR QUÉ FALLÓ EL SONIDO, ANOTADO. El `catch` vacío que había aquí estaba
@@ -71,9 +82,14 @@ const _lastPlayed = new Map();
 // dueño lo reportó desde una pizarra a la que no tenemos acceso. No se le grita
 // al profe con un toast por un sonido: se GUARDA, y el chip de versión ya se
 // lleva el contexto al portapapeles (core/bugReport.js).
+/** @type {string|null} */
 let _ultimoFalloSonido = null;
-const anotarFallo = (name) => (e) => {
-  _ultimoFalloSonido = `${name}: ${e?.name || 'Error'}${e?.message ? ' · ' + String(e.message).slice(0, 80) : ''}`;
+/** @param {string} name */
+const anotarFallo = (name) => /** @param {unknown} e */ (e) => {
+  const err = e instanceof Error ? e : null;
+  const nombre = err?.name || 'Error';
+  const detalle = err?.message ? ' · ' + err.message.slice(0, 80) : '';
+  _ultimoFalloSonido = `${name}: ${nombre}${detalle}`;
 };
 
 /** Lo que hace falta para diagnosticar «no se escucha»: silenciado, si llegó a
@@ -82,6 +98,7 @@ export function estadoSonido() {
   return { silenciado: _muted, sonidosCargados: _cache.size, ultimoFallo: _ultimoFalloSonido };
 }
 
+/** @param {string} name */
 export function play(name) {
   if (_muted) return;
   const a = get(name);
@@ -96,6 +113,7 @@ export function play(name) {
   try { a.currentTime = 0; a.loop = false; a.play().catch(anotarFallo(name)); } catch (e) { anotarFallo(name)(e); }
 }
 
+/** @param {string} name */
 export function loop(name) {
   if (_muted) return;
   const a = get(name);
@@ -103,6 +121,7 @@ export function loop(name) {
   try { a.loop = true; a.play().catch(anotarFallo(name)); } catch (e) { anotarFallo(name)(e); }
 }
 
+/** @param {string} name */
 export function stop(name) {
   const a = _cache.get(name);
   if (!a) return;

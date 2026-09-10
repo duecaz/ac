@@ -35,11 +35,24 @@ const STORAGE_KEY_LEGACY = 'ep-pen-thresholds';
 // hace. Es el defecto seguro: sin haber medido el aparato no hay forma de saber
 // qué es «grande» ahí, y equivocarse por ese lado destruye lo que el alumno
 // llevaba escrito. Al calibrar, `deriveThresholds` pone la frontera de verdad.
+/**
+ * Un punto del gesto, en coordenadas del lienzo que lo guarda.
+ * @typedef {{x: number, y: number}} PuntoGesto
+ */
+
+/**
+ * La frontera del aparato, medida o por defecto.
+ * @typedef {{palma: {min: number, minPuntos: number}}} Umbrales
+ */
+
+/** @type {Umbrales} */
 export const DEFAULT_THRESHOLDS = {
   palma: { min: 1e9, minPuntos: 3 },
 };
 
+/** @returns {Umbrales} */
 export function loadThresholds() {
+  /** @type {unknown} */
   let stored = null;
   try { stored = JSON.parse(ssGet(STORAGE_KEY) || 'null'); } catch { stored = null; }
   if (!stored) {
@@ -48,9 +61,13 @@ export function loadThresholds() {
     try { stored = JSON.parse(ssGet(STORAGE_KEY_LEGACY) || 'null'); } catch { stored = null; }
     if (stored) ssSet(STORAGE_KEY, JSON.stringify(stored));
   }
-  return { palma: { ...DEFAULT_THRESHOLDS.palma, ...stored?.palma } };
+  const guardado = (stored && typeof stored === 'object')
+    ? /** @type {{palma?: Partial<Umbrales['palma']>}} */ (stored).palma
+    : null;
+  return { palma: { ...DEFAULT_THRESHOLDS.palma, ...guardado } };
 }
 
+/** @param {Umbrales} thr */
 export function saveThresholds(thr) {
   ssSet(STORAGE_KEY, JSON.stringify(thr));
   return thr;
@@ -59,6 +76,7 @@ export function saveThresholds(thr) {
 
 // Radio medio del contacto de un PointerEvent. `width`/`height` son el DIÁMETRO
 // del área de contacto en px CSS (el ratón suele reportar ~1 → métrica ~0.5).
+/** @param {{width?: number, height?: number}} e */
 export function pointerMetric(e) {
   const w = e.width || 0, h = e.height || 0;
   return (w + h) / 4;   // (diámetro medio) / 2 = radio medio
@@ -66,6 +84,12 @@ export function pointerMetric(e) {
 
 /** Palma o dedo, y ya está. Por CONTEO de contactos o por TAMAÑO; cualquiera de
  *  las dos señales basta, porque cada aparato reporta la palma de una forma. */
+/**
+ * @param {number} metric
+ * @param {number} pointCount
+ * @param {Umbrales} [thr]
+ * @returns {'palma'|'dedo'}
+ */
 export function classifyTool(metric, pointCount, thr = DEFAULT_THRESHOLDS) {
   if (pointCount >= thr.palma.minPuntos) return 'palma';
   if (metric >= thr.palma.min)           return 'palma';
@@ -75,6 +99,10 @@ export function classifyTool(metric, pointCount, thr = DEFAULT_THRESHOLDS) {
 /** El dedo (y todo lo más pequeño: la punta del lápiz, el ratón) DIBUJA; solo la
  *  palma BORRA. Cualquier nombre que no sea `palma` dibuja, a propósito: si algún
  *  día se añade una herramienta y se olvida aquí, el defecto es no destruir nada. */
+/**
+ * @param {string} tool
+ * @returns {'draw'|'erase'}
+ */
 export function toolAction(tool) {
   return tool === 'palma' ? 'erase' : 'draw';
 }
@@ -86,7 +114,7 @@ export function toolAction(tool) {
  *  —`trasera - 1`—: una frontera inventada a partir de un único punto no describe
  *  ningún aparato, y el error se paga borrando lo que el alumno había escrito.
  *  Es mejor quedarse en el defecto seguro y que el profe toque los dos recuadros.
- *  @param {{dedo?: number, palma?: number}} measured */
+ *  @param {{dedo?: number|null, palma?: number|null}} [measured] */
 export function deriveThresholds(measured = {}) {
   const thr = loadThresholds();
   const dedo = num(measured.dedo), palma = num(measured.palma);
@@ -96,11 +124,13 @@ export function deriveThresholds(measured = {}) {
   return thr;
 }
 
+/** @param {unknown} v @returns {number|null} */
 function num(v) { return (typeof v === 'number' && Number.isFinite(v)) ? v : null; }
 
 /** LA MEDIANA, con un dueño. La tenía copiada `penCalibration.js`: si la
  *  calibración resume el toque con un estadístico y el dibujo lo resume con
  *  otro, los umbrales calibrados no describen lo que el dibujo mide. */
+/** @param {number[]} a */
 export function mediana(a) {
   if (!a.length) return 0;
   const s = [...a].sort((x, y) => x - y);
@@ -168,6 +198,20 @@ export function mediana(a) {
  *  por si un aparato real lo pide, medido. */
 export const VENTANA = { ignoraEventos: 1, ignoraMs: 0, ventanaMs: 90, minMuestras: 2 };
 
+/**
+ * El dictamen de un gesto, congelado.
+ * @typedef {Object} Veredicto
+ * @property {'palma'|'dedo'} tool
+ * @property {'draw'|'erase'} accion
+ * @property {number} metrica
+ * @property {number} muestras
+ * @property {'alta'|'baja'} confianza
+ */
+
+/**
+ * @param {{thr?: Umbrales, ignoraEventos?: number, ignoraMs?: number,
+ *   ventanaMs?: number, minMuestras?: number, ahora?: () => number}} [o]
+ */
 export function crearVeredicto({
   thr = DEFAULT_THRESHOLDS,
   ignoraEventos = VENTANA.ignoraEventos, ignoraMs = VENTANA.ignoraMs,
@@ -175,12 +219,16 @@ export function crearVeredicto({
   ahora = () => performance.now(),
 } = {}) {
   const t0 = ahora();
+  /** @type {number[]} */
   const limpias = [];      // muestras que ya no son basura
+  /** @type {number[]} */
   const todas = [];        // TODAS, incluida la basura (para el toque corto)
   let vistos = 0;          // eventos recibidos (el primero es el pointerdown)
   let puntosMax = 0;
+  /** @type {Veredicto|null} */
   let cerrado = null;
 
+  /** @returns {Veredicto} */
   const decidir = () => {
     const hayLimpias = limpias.length > 0;
     const metrica = hayLimpias ? mediana(limpias) : mediana(todas);
@@ -212,7 +260,9 @@ export function crearVeredicto({
   };
 
   return {
-    /** Una muestra por evento. `puntos` = punteros activos simultáneos. */
+    /** Una muestra por evento. `puntos` = punteros activos simultáneos.
+     *  @param {{width?: number, height?: number}} e
+     *  @param {number} [puntos] */
     muestra(e, puntos = 1) {
       if (cerrado) return;
       const m = pointerMetric(e);
@@ -245,6 +295,7 @@ export function crearVeredicto({
     /** Los puntos del gesto que aún no se han pintado. El lienzo los guarda aquí
      *  mientras no hay veredicto y los suelta de golpe al dictarse — así no hay
      *  rastro que retirar. */
+    /** @type {PuntoGesto[]} */
     pendientes: [],
   };
 }

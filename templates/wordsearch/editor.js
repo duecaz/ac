@@ -3,7 +3,34 @@ import { on } from '../../core/events.js';
 import { itemControlsHtml, reorderArray, ruleScopeNote } from '../../core/editorPrimitives.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 import { generateGrid, SIZE_MAP } from './generator.js';
+import { wordsearchRules } from './template.js';
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/activity.js').WordsearchContent} WordsearchContent
+ * @typedef {import('../../core/editorShell.js').EditorCtx} EditorCtx
+ * @typedef {import('./generator.js').WsPlaced} WsPlaced
+ */
+
+/** La lista de palabras de ESTA actividad, lista para mutar: el modelo es
+ *  `words` y la Sopa guarda CADENAS (el Crucigrama, fichas).
+ * @param {Activity} a @returns {string[]} */
+function palabras(a) {
+  const c = /** @type {WordsearchContent} */ (a.content);
+  if (!Array.isArray(c.words)) c.words = [];
+  return c.words;
+}
+
+/** El temporizador de la vista previa. Vivía como expando en el nodo raíz
+ *  (`root._wsRepaintTimer`), que no es sitio para el estado de un módulo.
+ * @type {ReturnType<typeof setTimeout>|null} */
+let temporizadorPreview = null;
+
+/**
+ * @param {Element} root
+ * @param {Activity} activity
+ * @param {(activity: Activity) => void} onChange
+ */
 export function renderWordsearchEditor(root, activity, onChange) {
   renderEditorShell(root, activity, onChange, {
     content: { label: 'Palabras', html: contentHtml, wire: wireContent },
@@ -13,14 +40,15 @@ export function renderWordsearchEditor(root, activity, onChange) {
 }
 
 // ── Contenido ────────────────────────────────────────────────────────────────
+/** @param {Activity} a */
 function contentHtml(a) {
-  const words = a.content?.words || [];
-  const size  = SIZE_MAP[a.rules?.gridSize] || 15;
+  const words = palabras(a);
+  const size  = SIZE_MAP[wordsearchRules(a).gridSize ?? ''] || 15;
   const max   = size * size;   // theoretical max, but much fewer fit in practice
 
   // Live preview: generate grid thumbnail
   const { grid, placed, failed, rows, cols } = generateGrid(words, {
-    rows: size, cols: size, dirs: a.rules?.directions || 'medium',
+    rows: size, cols: size, dirs: wordsearchRules(a).directions || 'medium',
   });
   const previewHtml = gridPreviewHtml(grid, placed, rows, cols);
 
@@ -63,8 +91,10 @@ function contentHtml(a) {
     </div>`;
 }
 
+/** @param {string[][]} grid @param {WsPlaced[]} placed @param {number} rows @param {number} cols */
 function gridPreviewHtml(grid, placed, rows, cols) {
   // Build set of highlighted cells
+  /** @type {Set<string>} */
   const foundCells = new Set();
   placed.forEach((p, idx) => {
     p.cells.forEach(({ r, c }) => foundCells.add(`${r},${c}|${idx % 8}`));
@@ -88,16 +118,20 @@ function gridPreviewHtml(grid, placed, rows, cols) {
  *  teclea», pero repintar el editor entero te quita el foco y te devuelve a la
  *  primera pestaña, solo que medio segundo tarde (y por eso costaba entender
  *  qué había pasado). Se toca lo que cambia y se deja en paz lo demás. */
+/** @param {Element} root @param {Activity} a */
 function refrescarPreview(root, a) {
-  const size = SIZE_MAP[a.rules?.gridSize] || 15;
-  const words = a.content?.words || [];
+  const rules = wordsearchRules(a);
+  const size = SIZE_MAP[rules.gridSize ?? ''] || 15;
+  const words = palabras(a);
   const { grid, placed, rows, cols, failed } = generateGrid(words, {
-    rows: size, cols: size, dirs: a.rules?.directions || 'medium',
+    rows: size, cols: size, dirs: rules.directions || 'medium',
   });
+  /** @param {string} w */
   const cabe = (w) => placed.some(p => p.word === String(w).toUpperCase().replace(/\s+/g, ''));
   const caja = root.querySelector('.ws-ed-preview');
   if (caja) caja.innerHTML = gridPreviewHtml(grid, placed, rows, cols);
-  root.querySelectorAll('.ws-ed-dot').forEach((dot, i) => {
+  /** @type {NodeListOf<HTMLElement>} */
+  (root.querySelectorAll('.ws-ed-dot')).forEach((dot, i) => {
     const ok = cabe(words[i]);
     dot.className = `ws-ed-dot ${ok ? 'text-success' : 'text-danger'}`;
     dot.title = ok ? 'Colocada' : 'No cabe en el tablero';
@@ -110,40 +144,43 @@ function refrescarPreview(root, a) {
   }
 }
 
+/** @param {Element} root @param {Activity} a @param {EditorCtx} ctx */
 function wireContent(root, a, ctx) {
   on(root, 'input', '.ws-ed-word', (e, el) => {
-    a.content.words[+el.dataset.i] = e.target.value;
+    palabras(a)[Number(el.dataset.i)] = /** @type {HTMLInputElement} */ (el).value;
     ctx.onChange(a);
     // Recolocar las palabras en el tablero cuesta, así que se espera a que la
     // mano pare; lo que NO se hace es repintar el editor.
-    clearTimeout(root._wsRepaintTimer);
-    root._wsRepaintTimer = setTimeout(() => refrescarPreview(root, a), 600);
+    if (temporizadorPreview) clearTimeout(temporizadorPreview);
+    temporizadorPreview = setTimeout(() => refrescarPreview(root, a), 600);
   });
   on(root, 'click', '.item-del', (_, btn) => {
-    a.content.words.splice(+btn.dataset.i, 1);
+    palabras(a).splice(Number(btn.dataset.i), 1);
     ctx.onChange(a); ctx.repaint();
   });
-  on(root, 'click', '.item-up',   (_, btn) => { reorderArray(a.content.words, +btn.dataset.i, -1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '.item-down', (_, btn) => { reorderArray(a.content.words, +btn.dataset.i, +1); ctx.onChange(a); ctx.repaint(); });
+  on(root, 'click', '.item-up',   (_, btn) => { reorderArray(palabras(a), Number(btn.dataset.i), -1); ctx.onChange(a); ctx.repaint(); });
+  on(root, 'click', '.item-down', (_, btn) => { reorderArray(palabras(a), Number(btn.dataset.i), +1); ctx.onChange(a); ctx.repaint(); });
   on(root, 'click', '#ws-add', () => {
-    a.content.words.push('');
+    palabras(a).push('');
     ctx.onChange(a); ctx.repaint();
     // Focus new input
     setTimeout(() => {
+      /** @type {NodeListOf<HTMLElement>} */
       const inputs = root.querySelectorAll('.ws-ed-word');
       inputs[inputs.length - 1]?.focus();
     }, 50);
   });
   on(root, 'click', '#ws-bulk-ok', () => {
-    const txt = root.querySelector('#ws-bulk-txt')?.value || '';
+    const txt = /** @type {HTMLTextAreaElement|null} */ (root.querySelector('#ws-bulk-txt'))?.value || '';
     const newWords = txt.split('\n').map(s => s.trim().toUpperCase()).filter(Boolean);
-    if (newWords.length) { a.content.words.push(...newWords); ctx.onChange(a); ctx.repaint(); }
+    if (newWords.length) { palabras(a).push(...newWords); ctx.onChange(a); ctx.repaint(); }
   });
 }
 
 // ── Reglas ────────────────────────────────────────────────────────────────────
+/** @param {Activity} a */
 function rulesHtml(a) {
-  const r = a.rules || {};
+  const r = wordsearchRules(a);
   return `
     <div class="row g-3">
       <div class="col-md-4">
@@ -165,12 +202,14 @@ function rulesHtml(a) {
       ${ruleScopeNote()}
     </div>`;
 }
+/** @param {Element} root @param {Activity} a @param {EditorCtx} ctx */
 function wireRules(root, a, ctx) {
-  on(root, 'change', '#ws-size',  e => { a.rules.gridSize    = e.target.value; ctx.onChange(a); ctx.repaint(); });
-  on(root, 'change', '#ws-dirs',  e => { a.rules.directions  = e.target.value; ctx.onChange(a); ctx.repaint(); });
+  on(root, 'change', '#ws-size', (e, el) => { a.rules.gridSize   = /** @type {HTMLSelectElement} */ (el).value; ctx.onChange(a); ctx.repaint(); });
+  on(root, 'change', '#ws-dirs', (e, el) => { a.rules.directions = /** @type {HTMLSelectElement} */ (el).value; ctx.onChange(a); ctx.repaint(); });
 }
 
 // ── Puntuación ────────────────────────────────────────────────────────────────
+/** @param {Activity} a */
 function scoringHtml(a) {
   return `
     <div class="row g-3">
@@ -188,7 +227,12 @@ function scoringHtml(a) {
     </div>
     <p class="small text-muted mt-2">Las palabras largas (más de 6 letras) valen 50% más puntos automáticamente.</p>`;
 }
+/** @param {Element} root @param {Activity} a @param {EditorCtx} ctx */
 function wireScoring(root, a, ctx) {
-  on(root, 'change', '#ws-smode', e => { a.scoring.mode = e.target.value; ctx.onChange(a); });
-  on(root, 'input',  '#ws-ppc',   e => { a.scoring.pointsPerCorrect = +e.target.value || 1; ctx.onChange(a); });
+  on(root, 'change', '#ws-smode', (e, el) => {
+    // Las dos únicas opciones del select, estrechadas al tipo del ajuste.
+    a.scoring.mode = /** @type {HTMLSelectElement} */ (el).value === 'velocidad' ? 'velocidad' : 'flat';
+    ctx.onChange(a);
+  });
+  on(root, 'input',  '#ws-ppc',   (e, el) => { a.scoring.pointsPerCorrect = +(/** @type {HTMLInputElement} */ (el).value) || 1; ctx.onChange(a); });
 }

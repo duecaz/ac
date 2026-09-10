@@ -7,13 +7,35 @@
 export const ENCAJA_MIN = 0.5;
 
 /**
+ * Una celda del tablero: su índice, su sitio en la rejilla y el
+ * `background-position` que le toca a su pieza.
+ * @typedef {Object} Celda
+ * @property {number} i
+ * @property {number} fila
+ * @property {number} col
+ * @property {string} bgPos
+ */
+
+/**
+ * Un rectángulo en el sistema del tablero (% del cuadro).
+ * @typedef {Object} Rect
+ * @property {number} x
+ * @property {number} y
+ * @property {number} w
+ * @property {number} h
+ */
+
+/**
  * Las `filas × columnas` celdas del tablero.
- * @returns {{i:number, fila:number, col:number, bgPos:string}[]}
+ * @param {number} filas
+ * @param {number} columnas
+ * @returns {Celda[]}
  *   `bgPos` es el `background-position` (en %) que le toca a la pieza de esa
  *   celda sobre la imagen ya escalada a `(columnas*100)% (filas*100)%`: en la
  *   esquina superior-izquierda es "0% 0%" y en la inferior-derecha "100% 100%".
  */
 export function celdas(filas, columnas) {
+  /** @type {Celda[]} */
   const out = [];
   for (let fila = 0; fila < filas; fila++) {
     for (let col = 0; col < columnas; col++) {
@@ -27,6 +49,7 @@ export function celdas(filas, columnas) {
 
 /**
  * ¿Bajo qué celda cae el punto `(x, y)` (en % del tablero)?
+ * @param {number} x @param {number} y @param {number} filas @param {number} columnas
  * @returns {number} índice de celda, o -1 si el punto cae fuera del tablero.
  */
 export function celdaBajo(x, y, filas, columnas) {
@@ -40,6 +63,7 @@ export function celdaBajo(x, y, filas, columnas) {
  * Fracción del ÁREA de `rectPieza` que cae dentro de `rectCelda`. Rects en el
  * mismo sistema (`{x, y, w, h}`, unidades cualesquiera pero consistentes entre
  * los dos — el tablero las da en %). 1.0 = la pieza cabe entera en la celda.
+ * @param {Rect} rectPieza @param {Rect} rectCelda @returns {number}
  */
 export function solape(rectPieza, rectCelda) {
   const x1 = Math.max(rectPieza.x, rectCelda.x);
@@ -51,7 +75,8 @@ export function solape(rectPieza, rectCelda) {
   return piezaArea > 0 ? interArea / piezaArea : 0;
 }
 
-/** ¿Encaja? — el umbral en UN sitio, para que nadie compare a mano contra 0.5. */
+/** ¿Encaja? — el umbral en UN sitio, para que nadie compare a mano contra 0.5.
+ *  @param {Rect} rectPieza @param {Rect} rectCelda @param {number} [min] @returns {boolean} */
 export function encaja(rectPieza, rectCelda, min = ENCAJA_MIN) {
   return solape(rectPieza, rectCelda) >= min;
 }
@@ -60,6 +85,9 @@ export function encaja(rectPieza, rectCelda, min = ENCAJA_MIN) {
  * Las posiciones 0..n-1 barajadas (para repartir las piezas alrededor del
  * tablero, no en su celda). `shuffle` se INYECTA (`core/azar.js`): esta
  * función no nombra `Math.random` ni el primitivo global (regla `azar-primitivo`).
+ * @param {number} n
+ * @param {(xs: number[]) => number[]} shuffle
+ * @returns {number[]}
  */
 export function barajarPosiciones(n, shuffle) {
   return shuffle(Array.from({ length: n }, (_, i) => i));

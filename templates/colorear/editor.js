@@ -9,20 +9,40 @@ import { renderEditorJuego } from '../../core/editorJuego.js';
 import { rid } from '../../core/ids.js';
 import { DIBUJOS } from '../../core/bancoDibujos.js';
 
-/** Garantiza un ítem con dibujo válido (nunca la actividad nace sin uno). */
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/activity.js').ColorearContent} ColorearContent
+ */
+
+/** La actividad vista como la de ESTA plantilla — `ensureContent` es quien la
+ *  deja en esta forma, así que antes de él el contenido puede ser otro.
+ *  @param {Activity} a @returns {ColorearContent} */
+function contenido(a) {
+  return /** @type {ColorearContent} */ (a.content);
+}
+
+/** Garantiza un ítem con dibujo válido (nunca la actividad nace sin uno).
+ *  @param {Activity} a @returns {Activity} */
 export function ensureContent(a) {
-  const c = a.content || (a.content = {});
+  const c = /** @type {Partial<ColorearContent>} */ (a.content || (a.content = { items: [] }));
   if (!Array.isArray(c.items) || !c.items[0]?.dibujo) {
     c.items = [{ id: rid('it_'), dibujo: DIBUJOS[0].nombre }];
   }
   return a;
 }
 
+/**
+ * @param {Element} root
+ * @param {Activity} activity
+ * @param {(activity: Activity) => void} onChange
+ * @returns {void}
+ */
 export const renderColorearEditor = (root, activity, onChange) =>
   renderEditorJuego(root, activity, onChange, { asegurar: ensureContent, etiqueta: 'Dibujo', html: contentHtml, wire: wireContent });
 
+/** @param {Activity} a @returns {string} */
 function contentHtml(a) {
-  const elegido = a.content.items[0].dibujo;
+  const elegido = contenido(a).items[0].dibujo;
   return `
     <p class="text-muted small">Elige el dibujo que va a colorear la clase.</p>
     <div class="co-ed-grid">
@@ -35,11 +55,17 @@ function contentHtml(a) {
     </div>`;
 }
 
+/**
+ * @param {Element} root
+ * @param {Activity} a
+ * @param {import('../../core/editorShell.js').EditorCtx} ctx
+ * @returns {void}
+ */
 function wireContent(root, a, ctx) {
   on(root, 'click', '.co-ed-pick', (_e, el) => {
     const nombre = el.dataset.dibujo;
-    if (!nombre || nombre === a.content.items[0].dibujo) return;
-    a.content.items[0].dibujo = nombre;
+    if (!nombre || nombre === contenido(a).items[0].dibujo) return;
+    contenido(a).items[0].dibujo = nombre;
     ctx.onChange(a);
     ctx.repaint();
   });

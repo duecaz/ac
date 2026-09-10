@@ -14,30 +14,51 @@ import { applyMarks } from './textMarks.js';
 import { itemControlsHtml, reorderArray, ruleScopeNote, itemSecondsFieldHtml, wireItemSeconds, pegarTextoHtml, wirePegarTexto, corregirAlFinalHtml, wireCorregirAlFinal } from './editorPrimitives.js';
 import { renderEditorShell } from './editorShell.js';
 
+/** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
+/** @typedef {import('../kernel/contracts/activity.js').TextCorrectionContent} TextCorrectionContent */
+/** @typedef {import('../kernel/contracts/activity.js').Passage} Passage */
+/** @typedef {import('../kernel/contracts/activity.js').TextMark} TextMark */
+/** @typedef {import('./editorShell.js').EditorCtx} EditorCtx */
+/** @typedef {(s: string) => {text: string, marks: TextMark[]}} Parser */
+/** Los textos que ve el profe: lo ÚNICO que distingue a Comas de Tildes aquí.
+ *  @typedef {Object} TextosEditor
+ *  @property {string} instrucciones     sobre la lista de frases
+ *  @property {string} [labelTextarea]   encima de cada textarea (comas no lo usa)
+ *  @property {string} placeholder       placeholder de cada textarea */
+
+/** El contenido de una hoja de texto. La plantilla es la que sabe qué forma
+ *  tiene el suyo (§0), así que aquí se nombra una vez y no en cada línea.
+ *  @param {Activity} a @returns {TextCorrectionContent} */
+const hoja = (a) => /** @type {TextCorrectionContent} */ (a.content);
+
+// El delegador entrega el elemento que casó (`core/events.js`): se lee de ahí.
+/** @param {HTMLElement} el @returns {string} */
+const valor = (el) => /** @type {HTMLInputElement} */ (el).value;
+/** @param {HTMLElement} el @returns {boolean} */
+const marcado = (el) => /** @type {HTMLInputElement} */ (el).checked;
+
 /**
  * @param {Element} root
- * @param {object} activity
- * @param {(a: object) => void} onChange
- * @param {{ kind: 'coma'|'tilde', parse: (s: string) => {text, marks}, textos: {
- *   instrucciones: string,        // sobre la lista de frases
- *   labelTextarea?: string,       // encima de cada textarea (opcional — comas no lo usa)
- *   placeholder: string,          // placeholder de cada textarea
- * } }} opts
+ * @param {Activity} activity
+ * @param {(a: Activity) => void} onChange
+ * @param {{kind: 'coma'|'tilde', parse: Parser, textos: TextosEditor}} opts
  */
 export function renderTextCorrectionEditor(root, activity, onChange, { kind, parse, textos }) {
   const a = activity;
-  if (!Array.isArray(a.content?.passages)) a.content = { passages: [newPassage()] };
+  if (!Array.isArray(hoja(a)?.passages)) a.content = { passages: [newPassage()] };
   renderEditorShell(root, a, onChange, {
     content: { label: 'Frases', html: (act) => contentHtml(act, textos), wire: (r, act, ctx) => wireContent(r, act, ctx, { parse, textos }) },
     rules: { html: rulesHtml, wire: wireRules },
   });
 }
 
+/** @param {Activity} a @param {TextosEditor} textos @returns {string} */
 function contentHtml(a, textos) {
+  const passages = hoja(a).passages;
   return `
     ${pegarTextoHtml({ titulo: 'Pegar un texto (un poema, una lectura…)' })}
     <p class="small text-muted">${textos.instrucciones}</p>
-    ${a.content.passages.map((p, i) => renderPassage(p, i, a.content.passages.length, a, textos)).join('')}
+    ${passages.map((p, i) => renderPassage(p, i, passages.length, a, textos)).join('')}
     <button class="btn btn-outline-primary mt-2" id="t-add"><i class="bi bi-plus-lg"></i> Añadir frase</button>
     ${limpiarBotonHtml(a, textos)}`;
 }
@@ -47,19 +68,27 @@ function contentHtml(a, textos) {
  *  pegado eran cuarenta reproches y cuarenta borrados a mano. El botón solo
  *  aparece cuando hay algo que quitar, y dice CUÁNTAS — borrar a ciegas trabajo
  *  del profe es justo lo que §24 no permite. */
+/** @param {Activity} a @param {TextosEditor} textos @returns {string} */
 function limpiarBotonHtml(a, textos) {
-  const n = a.content.passages.filter(p => String(p.text || '').trim() && !(p.marks || []).length).length;
+  const n = hoja(a).passages.filter(p => String(p.text || '').trim() && !(p.marks || []).length).length;
   if (!n) return '';
   return `<button class="btn btn-outline-danger mt-2 ms-2" id="t-limpiar">
     <i class="bi bi-eraser"></i> Quitar las ${n} frase${n === 1 ? '' : 's'} sin nada que corregir
   </button>`;
 }
+/**
+ * @param {Element} root
+ * @param {Activity} a
+ * @param {EditorCtx} ctx
+ * @param {{parse: Parser, textos: TextosEditor}} opts
+ */
 function wireContent(root, a, ctx, { parse, textos }) {
-  wireItemSeconds(root, a, ctx, a.content.passages);   // R-3 · tiempo por frase
-  on(root, 'input', '.tp-accented', (e, el) => {
-    const idx = +el.dataset.i;
-    const { text, marks } = parse(e.target.value);
-    const p = a.content.passages[idx];
+  wireItemSeconds(root, a, ctx, hoja(a).passages);   // R-3 · tiempo por frase
+  on(root, 'input', '.tp-accented', (_, el) => {
+    const idx = Number(el.dataset.i);
+    const { text, marks } = parse(valor(el));
+    const p = hoja(a).passages[idx];
+    if (!p) return;
     p.text = text; p.marks = marks;
     ctx.onChange(a);
     const preview = document.querySelector(`[data-preview="${idx}"]`);
@@ -79,36 +108,37 @@ function wireContent(root, a, ctx, { parse, textos }) {
     for (; i < parrafos.length && anadidas < tope; i++) {
       const trozo = parse(parrafos[i]);
       if (!trozo.marks.length) { omitidas++; continue; }
-      a.content.passages.push({ ...newPassage(), ...trozo });
+      hoja(a).passages.push({ ...newPassage(), ...trozo });
       anadidas++;
     }
     // La frase vacía con la que nace la plantilla no cuenta como trabajo del
     // profe: dejarla deja un hueco delante de lo que acaba de pegar (mismo
     // criterio que `fusionarContenido` usa con lo que escribe la IA).
     if (anadidas) {
-      a.content.passages = a.content.passages.filter(p => String(p.text || '').trim() !== '');
+      hoja(a).passages = hoja(a).passages.filter(p => String(p.text || '').trim() !== '');
       ctx.onChange(a); ctx.repaint();
     }
     return { anadidas, omitidas, sobrantes: parrafos.length - i };
   });
   on(root, 'click', '#t-limpiar', () => {
-    const antes = a.content.passages.length;
-    a.content.passages = a.content.passages.filter(p => !String(p.text || '').trim() || (p.marks || []).length);
-    const fuera = antes - a.content.passages.length;
-    if (!a.content.passages.length) a.content.passages.push(newPassage());
+    const antes = hoja(a).passages.length;
+    hoja(a).passages = hoja(a).passages.filter(p => !String(p.text || '').trim() || (p.marks || []).length);
+    const fuera = antes - hoja(a).passages.length;
+    if (!hoja(a).passages.length) hoja(a).passages.push(newPassage());
     ctx.onChange(a); ctx.repaint();
     toast(`Quitada${fuera === 1 ? '' : 's'} ${fuera} frase${fuera === 1 ? '' : 's'} sin nada que corregir.`, 'success', TOAST_NORMAL);
   });
-  on(root, 'click', '#t-add', () => { a.content.passages.push(newPassage()); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '.item-del', (_, b) => { a.content.passages.splice(+b.dataset.i, 1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '.item-up', (_, b) => { reorderArray(a.content.passages, +b.dataset.i, -1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '.item-down', (_, b) => { reorderArray(a.content.passages, +b.dataset.i, +1); ctx.onChange(a); ctx.repaint(); });
+  on(root, 'click', '#t-add', () => { hoja(a).passages.push(newPassage()); ctx.onChange(a); ctx.repaint(); });
+  on(root, 'click', '.item-del', (_, b) => { hoja(a).passages.splice(Number(b.dataset.i), 1); ctx.onChange(a); ctx.repaint(); });
+  on(root, 'click', '.item-up', (_, b) => { reorderArray(hoja(a).passages, Number(b.dataset.i), -1); ctx.onChange(a); ctx.repaint(); });
+  on(root, 'click', '.item-down', (_, b) => { reorderArray(hoja(a).passages, Number(b.dataset.i), +1); ctx.onChange(a); ctx.repaint(); });
 }
 
 // NOTA: aquí vivía «Comas/Tildes ilimitadas». El tope NUNCA se implementó (la
 // ronda no cuenta marcas disponibles), así que desmarcarlo no hacía nada. Se
 // quita el mando y la función queda como deuda escrita en CLAUDE.md — un
 // control que no controla engaña al que prepara la clase.
+/** @param {Activity} a @returns {string} */
 function rulesHtml(a) {
   return `<div class="row g-3">
     <div class="col-md-4 form-check pt-4 ms-3"><input id="t-rand" class="form-check-input" type="checkbox" ${a.rules.randomize ? 'checked' : ''}><label class="form-check-label" for="t-rand">Mezclar frases</label></div>
@@ -116,11 +146,20 @@ function rulesHtml(a) {
     ${corregirAlFinalHtml(a, 'frase')}
   </div>`;
 }
+/** @param {Element} root @param {Activity} a @param {EditorCtx} ctx */
 function wireRules(root, a, ctx) {
-  on(root, 'change', '#t-rand', e => { a.rules.randomize = e.target.checked; ctx.onChange(a); });
+  on(root, 'change', '#t-rand', (_, el) => { a.rules.randomize = marcado(el); ctx.onChange(a); });
   wireCorregirAlFinal(root, a, ctx);
 }
 
+/**
+ * @param {Passage} p
+ * @param {number} i
+ * @param {number} total
+ * @param {Activity} A
+ * @param {TextosEditor} textos
+ * @returns {string}
+ */
 function renderPassage(p, i, total, A, textos) {
   const accented = applyMarks(p.text || '', p.marks || []);
   const label = textos.labelTextarea

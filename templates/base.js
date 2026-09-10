@@ -89,9 +89,12 @@ export class BaseTemplate {
   // no-op es correcto — no un stub disfrazado. Una plantilla con
   // `templateVersion>1` DEBE seguir definiendo el suyo propio.
   /**
-   * @template C
-   * @param {C} content
-   * @returns {C}
+   * Firma ANCHA a propósito (no genérica): una sobrescritura concreta
+   * (`(c: ItemsContent) => ItemsContent`) no es asignable a `<C>(c: C) => C`,
+   * y todas las plantillas con `templateVersion > 1` sobrescriben.
+   * @param {import('../kernel/contracts/activity.js').ActivityContent} content
+   * @param {number} [fromVersion]
+   * @returns {import('../kernel/contracts/activity.js').ActivityContent}
    */
-  static migrateContent(content) { return content; }
+  static migrateContent(content, fromVersion) { return content; }
 }

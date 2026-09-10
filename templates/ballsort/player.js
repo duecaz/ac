@@ -14,16 +14,22 @@ import { mountBallSort } from './play.js';
 import { scoreBallsort } from './scorer.js';
 import { createBoard, randomBoard } from './game/board.js';
 import { formatMs } from './timer.js';
-import { ensureContent } from './editor.js';
+import { ensureContent, bsContent } from './editor.js';
 
+/**
+ * @param {string|Element} rootSel
+ * @param {import('../../kernel/contracts/activity.js').Activity} activity
+ * @param {import('../../kernel/contracts/template.js').PlayerOpts} [opts]
+ */
 export function renderBallsortPlayer(rootSel, activity, opts = {}) {
   ensureContent(activity);
-  const item = activity.content.items[0];
-  const mode = item.mode || activity.content.mode || 'moves';
+  const c = bsContent(activity);
+  const item = c.items[0];
+  const mode = item.mode || c.mode || 'moves';
   // Tablero fresco en cada intento si "random"; si no, el congelado.
-  const board = activity.content.random
-    ? randomBoard(activity.content.level || 'classic')
-    : (item.board || createBoard(activity.content.level || 'classic'));
+  const board = c.random
+    ? randomBoard(c.level || 'classic')
+    : (item.board || createBoard(c.level || 'classic'));
 
   const ctx = runFreeformPlayer(rootSel, activity, opts);
   // Techo = lo que da el PROPIO scorer por la resolución perfecta (0 movimientos /
@@ -32,7 +38,9 @@ export function renderBallsortPlayer(rootSel, activity, opts = {}) {
     || scoreBallsort({ value: { solved: true, moveCount: 0, elapsedMs: 0 }, item, activity }).points;
 
   mount(rootSel, html`<div class="ww-bs-solo"><div id="bs-solo-host"></div></div>`);
-  const host = document.querySelector(`${rootSel} #bs-solo-host`);
+  const raiz = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
+  const host = /** @type {HTMLElement|null} */ (raiz?.querySelector('#bs-solo-host') ?? null);
+  if (!host) return;   // la ruta cambió mientras se montaba (§23)
   emitGame(GameEvents.QUESTION_SHOWN, { idx: 0, total: 1, item });
 
   mountBallSort(host, {

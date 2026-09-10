@@ -2,6 +2,10 @@
 // elegido o null si se cancela. Sin dependencias — mismo patrón que loginModal.
 import { escapeHtml } from './html.js';
 
+/**
+ * @param {{id: string, name: string, section?: string}[]} courses
+ * @returns {Promise<string|null>}
+ */
 export function pickCourse(courses) {
   return new Promise((resolve) => {
     const host = document.createElement('div');
@@ -18,8 +22,10 @@ export function pickCourse(courses) {
         <button class="login-modal__submit mt-2" id="cp-ok">Publicar tarea</button>
       </div>`;
     document.body.appendChild(host);
+    /** @param {string|null} v */
     const done = (v) => { host.remove(); resolve(v); };
     host.querySelectorAll('[data-cancel]').forEach(el => el.addEventListener('click', () => done(null)));
-    host.querySelector('#cp-ok').addEventListener('click', () => done(host.querySelector('#cp-sel').value || null));
+    const sel = /** @type {HTMLSelectElement|null} */ (host.querySelector('#cp-sel'));
+    host.querySelector('#cp-ok')?.addEventListener('click', () => done(sel?.value || null));
   });
 }

@@ -36,10 +36,13 @@ const PARES = [
 
 /**
  * Verifica el contraste de UN tema.
+ * @param {import('./skins.js').Skin|null|undefined} skin
  * @returns {string[]} problemas (vacío = cumple).
  */
 export function checkSkinContrast(skin) {
+  /** @type {Record<string, string>} */
   const v = skin?.cssVars || {};
+  /** @type {string[]} */
   const issues = [];
   for (const p of PARES) {
     const r = ratio(v[p.tinta], v[p.relleno]);
@@ -60,9 +63,12 @@ export function checkSkinContrast(skin) {
 /**
  * Verifica el contrato de UN fondo: o declara placa, o declara tinta + lienzo
  * medibles y con contraste suficiente.
+ * @param {string} name
+ * @param {import('./backgrounds.js').BackgroundDef|null|undefined} def
  * @returns {string[]} problemas (vacío = cumple).
  */
 export function checkBackgroundContrast(name, def) {
+  /** @type {string[]} */
   const issues = [];
   if (!def) return [`fondo ${name} sin manifest`];
   if (def.plate) {

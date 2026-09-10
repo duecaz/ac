@@ -15,7 +15,10 @@ import { SPIN_DUR_DEFAULT } from './spin.js';
 
 const PALETTE = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#a855f7', '#ec4899', '#14b8a6', '#eab308'];
 
-/** Returns the spinning <svg> (slices + hub) rotated to `rotation` degrees. */
+/** Returns the spinning <svg> (slices + hub) rotated to `rotation` degrees.
+ *  @param {string[]|null|undefined} entries
+ *  @param {{rotation?: number, dur?: number, spinning?: boolean, size?: number}} [o]
+ *  @returns {string} */
 export function wheelSvg(entries, { rotation = 0, dur = SPIN_DUR_DEFAULT, spinning = false, size = 400 } = {}) {
   const r = 180, cx = 200, cy = 200;
   // Empty wheel (all options drawn): just the rim + central hub point.

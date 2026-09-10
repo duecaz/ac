@@ -7,15 +7,34 @@ import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { GRADE_HOLD_MS } from '../../core/timings.js';
 import { shuffle } from '../../core/azar.js';
 import { scoreDiagramSubmission } from './scorer.js';
-import { ROPES, OK_COL, NO_COL, mountRopeLayer, ropeHtml, ghostHtml, dotPos, svgPt } from '../../core/connectRope.js';
+import { ROPES, OK_COL, NO_COL, mountRopeLayer, ropeHtml, ghostHtml, dotPos, svgPt, puntuarEnlaces } from '../../core/connectRope.js';
 import { observeResize } from '../../core/observeResize.js';
 import { pinUsable } from '../../core/contentModels/diagram.js';
 import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
 import { setExclusiveLink } from '../../core/linkState.js';
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/activity.js').DiagramContent} DiagramContent
+ * @typedef {import('../../kernel/contracts/activity.js').DiagramPin} DiagramPin
+ * @typedef {{id: string, text: string, i: number}} Etiqueta
+ * @typedef {{pointerId: number, kind: 'label'|'pin', fromId: string,
+ *   x1: number, y1: number, cx: number, cy: number}} Arrastre
+ */
+
+/** El id que la etiqueta o el pin llevan en `data-id`.
+ * @param {Element} el @returns {string} */
+const idDe = (el) => /** @type {HTMLElement} */ (el).dataset.id ?? '';
+
+/**
+ * @param {string|Element} rootSel
+ * @param {Activity} activity
+ * @param {import('../../kernel/contracts/template.js').PlayerOpts} [opts]
+ */
 export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
-  const pins = (activity.content?.pins || []).filter(pinUsable);
-  const image = activity.content?.image || null;
+  const contenido = /** @type {DiagramContent} */ (activity.content);
+  const pins = (contenido?.pins || []).filter(pinUsable);
+  const image = contenido?.image || null;
   if (!image || !pins.length) {
     mount(rootSel, html`<div class="alert alert-warning m-4">Esta actividad no tiene imagen o pines.</div>`);
     return;
@@ -34,18 +53,28 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
   const leftLabels = labels.slice(0, half), rightLabels = labels.slice(half);
 
   const ctx = runFreeformPlayer(rootSel, activity, opts);
+  /** @type {(() => void)|null} */
   let stopRo = null;   // disposer del observeResize del field (se suelta al terminar, §23)
 
+  /** @type {{links: Map<string, string>, dragging: Arrastre|null, graded: boolean}} */
   const state = { links: new Map(), dragging: null, graded: false };  // links: labelId → pinId
 
   mount(rootSel, buildLayout(leftLabels, rightLabels, pins, image, activity, pins.length));
 
-  const root       = document.querySelector(rootSel);
-  const arena      = root.querySelector('.ww-field');
-  const svg        = root.querySelector('.ww-lines-svg');
+  // El marco puede no estar (la ruta cambió mientras se montaba, §23): se
+  // comprueba UNA vez y desde aquí abajo las piezas ya no son nulas.
+  const raiz = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
+  const campo = raiz?.querySelector('.ww-field');
+  const lienzo = raiz?.querySelector('.ww-lines-svg');
+  if (!raiz || !campo || !lienzo) return;
+  const root  = /** @type {HTMLElement} */ (raiz);
+  const arena = /** @type {HTMLElement} */ (campo);
+  const svg   = /** @type {SVGSVGElement} */ (lienzo);
 
-  const submitBtn  = root.querySelector('.dg-submit');
-  const { layer } = mountRopeLayer(svg);
+  const submitBtn  = /** @type {HTMLButtonElement|null} */ (root.querySelector('.dg-submit'));
+  const cuerdas = mountRopeLayer(svg);
+  if (!cuerdas.layer) return;
+  const layer = /** @type {Element} */ (cuerdas.layer);
 
   const updateProgress = () => hudSet(root, 'pagina', `${state.links.size} / ${pins.length}`);
   const updateSubmit   = () => { if (submitBtn) submitBtn.disabled = state.graded || state.links.size < pins.length; };
@@ -67,24 +96,36 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
 
   // Un enlace por etiqueta Y por pin: al conectar, se sueltan los previos que usen
   // ese mismo labelId o ese mismo pinId (reconexión libre, como Emparejar).
+  /** @param {string} labelId @param {string} pinId */
   function setLink(labelId, pinId) {
     setExclusiveLink(state.links, labelId, pinId);
     refresh();
   }
+  /** @param {string} labelId */
   function removeByLabel(labelId) { state.links.delete(labelId); refresh(); }
+  /** @param {string} pinId */
   function removeByPin(pinId) { for (const [l, p] of [...state.links]) if (p === pinId) state.links.delete(l); refresh(); }
   function refresh() {
     const linkedLabels = new Set(state.links.keys());
     const linkedPins = new Set(state.links.values());
-    root.querySelectorAll('.dg-label').forEach(c => c.classList.toggle('dg-linked', linkedLabels.has(c.dataset.id)));
-    root.querySelectorAll('.dg-pin').forEach(c => c.classList.toggle('dg-linked', linkedPins.has(c.dataset.id)));
+    root.querySelectorAll('.dg-label').forEach(c => c.classList.toggle('dg-linked', linkedLabels.has(idDe(c))));
+    root.querySelectorAll('.dg-pin').forEach(c => c.classList.toggle('dg-linked', linkedPins.has(idDe(c))));
     updateSvg(); updateProgress(); updateSubmit();
   }
 
   // Destino al soltar: el elemento del TIPO OPUESTO más cercano en 2D, dentro de
   // un radio máximo (soltar lejos = desconectar). Robusto y directo.
+  /**
+   * @param {string} sel
+   * @param {number} clientX
+   * @param {number} clientY
+   * @param {number} maxDist
+   * @returns {Element|null}
+   */
   function nearest(sel, clientX, clientY, maxDist) {
-    let best = null, bestD = Infinity;
+    /** @type {Element|null} */
+    let best = null;
+    let bestD = Infinity;
     root.querySelectorAll(sel).forEach(el => {
       const r = el.getBoundingClientRect();
       const dx = (r.left + r.right) / 2 - clientX, dy = (r.top + r.bottom) / 2 - clientY;
@@ -96,14 +137,16 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
 
   arena.addEventListener('pointerdown', e => {
     if (state.graded || state.dragging) return;
-    const label = e.target.closest('.dg-label');
-    const pin   = e.target.closest('.dg-pin');
+    const destino = /** @type {HTMLElement|null} */ (e.target);
+    const label = destino?.closest?.('.dg-label') ?? null;
+    const pin   = destino?.closest?.('.dg-pin') ?? null;
     const from  = label || pin;
     if (!from) return;
     e.preventDefault();
     const dotEl = label ? label.querySelector('.ww-dot') : pin;
+    if (!dotEl) return;
     const pos = dotPos(dotEl, svg);
-    state.dragging = { pointerId: e.pointerId, kind: label ? 'label' : 'pin', fromId: from.dataset.id, x1: pos.x, y1: pos.y, cx: pos.x, cy: pos.y };
+    state.dragging = { pointerId: e.pointerId, kind: label ? 'label' : 'pin', fromId: idDe(from), x1: pos.x, y1: pos.y, cx: pos.x, cy: pos.y };
     try { arena.setPointerCapture(e.pointerId); } catch {}
     updateSvg();
   });
@@ -113,6 +156,7 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
     const p = svgPt(svg, e.clientX, e.clientY);
     drag.cx = p.x; drag.cy = p.y; updateSvg();
   });
+  /** @param {PointerEvent} e @param {boolean} connect */
   function endDrag(e, connect) {
     const drag = state.dragging;
     if (!drag || e.pointerId !== drag.pointerId) return;
@@ -122,10 +166,10 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
     const radius = Math.max(48, arena.getBoundingClientRect().width * 0.12);
     if (drag.kind === 'label') {
       const hit = nearest('.dg-pin', e.clientX, e.clientY, radius);
-      if (hit) setLink(drag.fromId, hit.dataset.id); else removeByLabel(drag.fromId);
+      if (hit) setLink(drag.fromId, idDe(hit)); else removeByLabel(drag.fromId);
     } else {
       const hit = nearest('.dg-label', e.clientX, e.clientY, radius);
-      if (hit) setLink(hit.dataset.id, drag.fromId); else removeByPin(drag.fromId);
+      if (hit) setLink(idDe(hit), drag.fromId); else removeByPin(drag.fromId);
     }
   }
   arena.addEventListener('pointerup', e => endDrag(e, true));
@@ -140,23 +184,18 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
     state.graded = true;
     // Cada etiqueta enlazada se puntúa con el MISMO scorer de la plantilla:
     // el modo Individual no lleva aritmética propia (era doble contabilidad).
-    let correct = 0, score = 0;
-    for (const [l, p] of state.links) {
-      const res = scoreDiagramSubmission({ value: p, item: pinById.get(l), activity });
-      score += res.points;
-      if (res.correct) correct++;
-    }
-    score = Math.max(0, score);
-    const wrong = state.links.size - correct;
+    const { correct, score, wrong } = puntuarEnlaces(state.links,
+      (l, p) => scoreDiagramSubmission({ value: p, item: pinById.get(l), activity }));
     root.querySelectorAll('.dg-label, .dg-pin').forEach(c => {
+      const id = idDe(c);
       const ok = c.classList.contains('dg-label')
-        ? state.links.get(c.dataset.id) === c.dataset.id
-        : [...state.links].some(([l, p]) => p === c.dataset.id && l === c.dataset.id);
+        ? state.links.get(id) === id
+        : [...state.links].some(([l, p]) => p === id && l === id);
       c.classList.remove('dg-linked');
       c.classList.add(ok ? 'dg-correct' : 'dg-wrong');
     });
     updateSvg();
-    submitBtn.disabled = true;
+    if (submitBtn) submitBtn.disabled = true;
     stopRo?.();   // la pantalla de resultado desmonta el field: suelta el observer
     setTimeout(() => ctx.finish({
       title: correct === pins.length ? '¡Perfecto!' : 'Resultado',
@@ -184,7 +223,7 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
   // (styles/diagram.css), así que los pines en % siguen cayendo exactos.
   // A JS le queda lo único que CSS no sabe decir: las coordenadas de las
   // CUERDAS. Eso no cambia tamaños —solo dibuja líneas—, así que no salta.
-  const imgEl = root.querySelector('.dg-img');
+  const imgEl = /** @type {HTMLImageElement|null} */ (root.querySelector('.dg-img'));
   // Se observa el FIELD (no el stage): al cruzar el aspecto 1:1 los rieles saltan
   // de columnas a filas → las etiquetas se mueven aunque el stage no cambie de
   // tamaño; hay que redibujar las cuerdas.
@@ -193,7 +232,7 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
   // Contenido de antes de `imageW/imageH`: se le pone la forma UNA vez, cuando
   // la imagen carga. Es un ajuste por actividad vieja, no un cálculo por
   // fotograma — y las nuevas no pasan por aquí.
-  const boxEl = root.querySelector('.dg-img-box');
+  const boxEl = /** @type {HTMLElement|null} */ (root.querySelector('.dg-img-box'));
   const ponerForma = () => {
     if (!imgEl || !boxEl || boxEl.style.getPropertyValue('--dg-ar')) return;
     const nw = imgEl.naturalWidth, nh = imgEl.naturalHeight;
@@ -208,6 +247,7 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
 }
 
 // ── HTML ──────────────────────────────────────────────────────────────────────
+/** @param {Etiqueta} c */
 function labelHtml(c) {
   // Color cíclico por índice global (--ww-shape-*): variedad vistosa tipo
   // Wordwall, y el skin lo recolorea. El .ww-dot (conector compartido con
@@ -221,6 +261,7 @@ function labelHtml(c) {
     <span class="ww-dot" data-id="${escapeHtml(c.id)}"></span>
   </div>`;
 }
+/** @param {DiagramPin} p */
 function pinHtml(p) {
   return `<span class="dg-pin" data-id="${escapeHtml(p.id)}" style="left:${(p.x * 100).toFixed(2)}%;top:${(p.y * 100).toFixed(2)}%"></span>`;
 }
@@ -230,8 +271,17 @@ function pinHtml(p) {
 // exactos sin que nadie mida nada DESPUÉS de pintar. Sin el dato (actividades de
 // antes) sale sin proporción y el player se la pone al cargar la imagen, una
 // sola vez.
+/**
+ * @param {Etiqueta[]} leftLabels
+ * @param {Etiqueta[]} rightLabels
+ * @param {DiagramPin[]} pins
+ * @param {string} image
+ * @param {Activity} activity
+ * @param {number} total
+ */
 function buildLayout(leftLabels, rightLabels, pins, image, activity, total) {
-  const w = Number(activity.content?.imageW) || 0, h = Number(activity.content?.imageH) || 0;
+  const c = /** @type {DiagramContent} */ (activity.content);
+  const w = Number(c?.imageW) || 0, h = Number(c?.imageH) || 0;
   // Dos formas del MISMO dato porque CSS las necesita distintas: la proporción
   // para `aspect-ratio` y el número para multiplicar el alto del hueco.
   const ar = w > 0 && h > 0 ? `--dg-ar:${w}/${h};--dg-arn:${(w / h).toFixed(4)}` : '';

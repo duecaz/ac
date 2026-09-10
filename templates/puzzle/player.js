@@ -21,6 +21,7 @@ async function cargarBanco() {
   catch { return null; }
 }
 
+/** @param {string} nombre @returns {Promise<string|null>} */
 async function imagenDe(nombre) {
   const banco = await cargarBanco();
   const ruta = banco?.rutaDibujo?.(nombre);
@@ -30,6 +31,14 @@ async function imagenDe(nombre) {
   return dataUrlDeSvg(svgAColor(await res.text()));
 }
 
+/**
+ * @typedef {import('./game/rejilla.js').Celda} Celda
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/activity.js').PuzzleContent} PuzzleContent
+ * @typedef {import('../../kernel/contracts/activity.js').PuzzleItem} PuzzleItem
+ */
+
+/** @param {Celda} c @param {number} filas @param {number} columnas @returns {string} */
 function estiloHueco(c, filas, columnas) {
   return `left:${(c.col * 100) / columnas}%;top:${(c.fila * 100) / filas}%;`
     + `width:${100 / columnas}%;height:${100 / filas}%;`;
@@ -39,15 +48,24 @@ function estiloHueco(c, filas, columnas) {
 // atributo `style="..."` delimitado con comillas DOBLES — una comilla doble
 // literal ahí cortaría el atributo a mitad de camino. `encodeURIComponent`
 // (game/imagen.js) ya escapa cualquier comilla simple que traiga la imagen.
+/** @param {string} dataUrl @param {Celda} c @param {number} filas @param {number} columnas @returns {string} */
 function fondoPieza(dataUrl, c, filas, columnas) {
   return `background-image:url('${dataUrl}');`
     + `background-size:${columnas * 100}% ${filas * 100}%;`
     + `background-position:${c.bgPos};`;
 }
 
+/**
+ * @param {string|Element} rootSel
+ * @param {Activity} activity
+ * @param {import('../../kernel/contracts/template.js').PlayerOpts} [opts]
+ * @returns {Promise<void>}
+ */
 export async function renderPuzzlePlayer(rootSel, activity, opts = {}) {
   const ctx = runFreeformPlayer(rootSel, activity, opts);
-  const item = activity.content?.items?.[0] || { dibujo: 'casa', filas: 2, columnas: 2 };
+  const contenido = /** @type {Partial<PuzzleContent>} */ (activity.content ?? {});
+  /** @type {PuzzleItem} */
+  const item = contenido.items?.[0] || { id: '', dibujo: 'casa', filas: 2, columnas: 2 };
   const filas = item.filas || 2, columnas = item.columnas || 2;
   const total = filas * columnas;
   const rejilla = celdas(filas, columnas);
@@ -61,10 +79,10 @@ export async function renderPuzzlePlayer(rootSel, activity, opts = {}) {
       </div>
     </div>`);
 
-  const root = document.querySelector(rootSel);
+  const root = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
   if (!root) return;
-  const arena   = root.querySelector('.pu-arena');
-  const boardEl = root.querySelector('[data-pu-board]');
+  const arenaOpt   = /** @type {HTMLElement|null} */ (root.querySelector('.pu-arena'));
+  const boardOpt   = /** @type {HTMLElement|null} */ (root.querySelector('[data-pu-board]'));
   // EL TAMAÑO LO DECIDE EL CSS, ANTES DE PINTAR (styles/puzzle.css): tablero y
   // bandeja viven dentro del MISMO contenedor de tamaño (`.pu-arena`) y las
   // piezas derivan del lado del tablero por unidades de contenedor. Hubo dos
@@ -72,8 +90,11 @@ export async function renderPuzzlePlayer(rootSel, activity, opts = {}) {
   // al menos una vez tras aparecer — la matriz lo caza («se RECALCULA»), y en
   // pantalla completa (1515×1023) la primera, con las piezas medidas contra el
   // ANCHO de la página, daba piezas de 430 px (captura del dueño, v1.51.668).
-  const piecesEl = root.querySelector('[data-pu-pieces]');
+  const piecesOpt  = /** @type {HTMLElement|null} */ (root.querySelector('[data-pu-pieces]'));
+  if (!arenaOpt || !boardOpt || !piecesOpt) return;   // el marco no llegó a montarse
+  const arena = arenaOpt, boardEl = boardOpt, piecesEl = piecesOpt;
 
+  /** @type {string|null} */
   let dataUrl = null;
   try { dataUrl = await imagenDe(item.dibujo); } catch { dataUrl = null; }
   if (!ctx.alive()) return;   // el escenario ya es de otro modo/ruta (§23)
@@ -113,16 +134,20 @@ export async function renderPuzzlePlayer(rootSel, activity, opts = {}) {
     });
   }
 
+  /** @param {number} i @returns {import('./game/rejilla.js').Rect} */
   function cellRectPct(i) {
     const c = rejilla[i];
     return { x: (c.col * 100) / columnas, y: (c.fila * 100) / filas, w: 100 / columnas, h: 100 / filas };
   }
 
   // Estado de arrastre — pointer events + captura, delegado sobre la bandeja.
+  /** @type {{id: number|null, el: HTMLElement|null, startX: number, startY: number}} */
   const drag = { id: null, el: null, startX: 0, startY: 0 };
 
+  /** @param {PointerEvent} e @returns {void} */
   function onDown(e) {
-    const pieza = e.target.closest('.pu-piece');
+    const destino = /** @type {Element|null} */ (e.target);
+    const pieza = /** @type {HTMLElement|null} */ (destino?.closest('.pu-piece') ?? null);
     if (!pieza || pieza.classList.contains('pu-piece--fija')) return;
     if (drag.id != null) return;
     drag.id = e.pointerId; drag.el = pieza;
@@ -131,6 +156,7 @@ export async function renderPuzzlePlayer(rootSel, activity, opts = {}) {
     try { pieza.setPointerCapture?.(e.pointerId); } catch {}
   }
 
+  /** @param {PointerEvent} e @returns {void} */
   function onMove(e) {
     if (drag.id !== e.pointerId || !drag.el) return;
     const dx = e.clientX - drag.startX, dy = e.clientY - drag.startY;
@@ -138,6 +164,7 @@ export async function renderPuzzlePlayer(rootSel, activity, opts = {}) {
     if (e.cancelable) e.preventDefault();
   }
 
+  /** @param {PointerEvent} e @returns {void} */
   function onUp(e) {
     if (drag.id !== e.pointerId || !drag.el) return;
     const pieza = drag.el;
@@ -180,6 +207,7 @@ export async function renderPuzzlePlayer(rootSel, activity, opts = {}) {
     }
   }
 
+  /** @param {PointerEvent} e @returns {void} */
   function onCancel(e) {
     if (drag.id !== e.pointerId || !drag.el) return;
     const pieza = drag.el;

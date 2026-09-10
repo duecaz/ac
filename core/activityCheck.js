@@ -27,18 +27,37 @@ import { pinUsable } from './contentModels/diagram.js';
 import { hasCorrectAnswer } from './contentModels/qa.js';
 import { esFicha, palabraColocada } from './contentModels/words.js';
 
+/** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
+/** @typedef {import('../kernel/contracts/activity.js').ActivityContent} ActivityContent */
+/**
+ * LA REVISIÓN que devuelve `revisarActividad`, y que leen el editor, las puertas
+ * del juego y las dos pantallas de «todavía no».
+ * @typedef {Object} RevisionActividad
+ * @property {boolean} listo
+ * @property {boolean} jugable
+ * @property {string[]} problemas
+ * @property {string[]} problemasDeJuego
+ * @property {boolean} faltaTitulo
+ * @property {boolean} vacia
+ * @property {string} primerPaso
+ */
+/** Lo que sabe mirar un revisor de modelo: el contenido, y frases de humano.
+ *  @typedef {(c: ActivityContent) => string[]} Revisor */
+
+/** @param {unknown} s */
 const vacio = (s) => !String(s ?? '').trim();
 
 /** ¿Este elemento está entero en blanco? Varios editores SIEMBRAN filas vacías
  *  al abrir (Emparejar pone 4) y los players ya las ignoran al jugar: son sitio
  *  libre para escribir, no un error que reprochar. Solo se reclama lo empezado
- *  A MEDIAS, que es lo que rompe la partida sin avisar. `id` no cuenta. */
+ *  A MEDIAS, que es lo que rompe la partida sin avisar. `id` no cuenta.
+ *  @param {unknown} el @returns {boolean} */
 function enBlanco(el) {
   if (el == null) return true;
   if (typeof el === 'string') return vacio(el);
   if (Array.isArray(el)) return el.every(enBlanco);
   if (typeof el === 'object') {
-    return Object.entries(el).every(([k, v]) => k === 'id' || enBlanco(v));
+    return Object.entries(/** @type {Record<string, unknown>} */ (el)).every(([k, v]) => k === 'id' || enBlanco(v));
   }
   // Números y booleanos NO son contenido: son ajustes sembrados por la
   // plantilla (`points: 1`, `random: true`). Contarlos hacía que un Quiz recién
@@ -46,16 +65,23 @@ function enBlanco(el) {
   // roja de reproches en vez de la pista azul de por dónde empezar.
   return true;
 }
-/** Los elementos que el profe ha EMPEZADO (los del todo en blanco no cuentan). */
-const empezados = (lista) => (lista || []).map((el, i) => ({ el, i })).filter(({ el }) => !enBlanco(el));
+/** Los elementos que el profe ha EMPEZADO (los del todo en blanco no cuentan).
+ *  @param {unknown} lista @returns {{el: unknown, i: number}[]} */
+const empezados = (lista) => (Array.isArray(lista) ? lista : [])
+  .map((/** @type {unknown} */ el, /** @type {number} */ i) => ({ el, i }))
+  .filter(({ el }) => !enBlanco(el));
 
 // Qué le falta al CONTENIDO, por modelo. Cada uno devuelve frases de humano.
 // El índice se dice SIEMPRE (1-based): «la etiqueta 3» se encuentra; «hay una
 // etiqueta vacía» obliga a buscarla a ojo, que es la mitad del problema.
+/** @type {Record<string, Revisor>} */
 const POR_MODELO = {
-  qa: (c) => {
+  qa: (contenido) => {
+    const c = /** @type {import('../kernel/contracts/activity.js').QaContent} */ (contenido);
+    /** @type {string[]} */
     const out = [];
-    empezados(c.items).forEach(({ el: it, i }) => {
+    empezados(c.items).forEach(({ el, i }) => {
+      const it = /** @type {import('../kernel/contracts/activity.js').QaItem} */ (el);
       if (vacio(it.question)) out.push(`La pregunta ${i + 1} está sin escribir.`);
       // La marca NO basta: si el profe borra el TEXTO de la opción marcada,
       // `answerIdx` sigue apuntando a ella y `answer` queda en blanco — el
@@ -78,21 +104,29 @@ const POR_MODELO = {
     });
     return out;
   },
-  pairs: (c) => {
+  pairs: (contenido) => {
+    const c = /** @type {import('../kernel/contracts/activity.js').PairsContent} */ (contenido);
+    /** @type {string[]} */
     const out = [];
-    empezados(c.pairs).forEach(({ el: p, i }) => {
+    empezados(c.pairs).forEach(({ el, i }) => {
+      const p = /** @type {import('../kernel/contracts/activity.js').Pair} */ (el);
       if (!pairComplete(p)) out.push(`La pareja ${i + 1} está a medias: necesita sus dos lados.`);
     });
     return out;
   },
-  items: (c) => {
+  items: (contenido) => {
+    const c = /** @type {import('../kernel/contracts/activity.js').ItemsContent} */ (contenido);
+    /** @type {string[]} */
     const out = [];
-    empezados(c.items).forEach(({ el: it, i }) => {
+    empezados(c.items).forEach(({ el, i }) => {
+      const it = /** @type {import('../kernel/contracts/activity.js').CardItem} */ (el);
       if (vacio(it.question) && !it.image) out.push(`El elemento ${i + 1} está sin escribir.`);
     });
     return out;
   },
-  words: (c) => {
+  words: (contenido) => {
+    const c = /** @type {{words?: unknown[]}} */ (contenido);
+    /** @type {string[]} */
     const out = [];
     // SIN SITIO EN LA REJILLA, LA PALABRA NO EXISTE. El player del crucigrama
     // filtra las que no tienen `row`/`col`/`dir`, así que una lista llena de
@@ -104,30 +138,37 @@ const POR_MODELO = {
     // cadenas sueltas y las coloca ella al generar la rejilla. Esa distinción es
     // del MODELO, no de una plantilla concreta — por eso `esFicha` vive con él.
     const ws = empezados(c.words);
-    const fichas = ws.filter(({ el: w }) => esFicha(w));
-    const sueltas = fichas.filter(({ el: w }) => !palabraColocada(w)).length;
+    const palabras = ws.map(({ el, i }) => (
+      { w: /** @type {string|import('../kernel/contracts/activity.js').CrosswordWord} */ (el), i }));
+    const fichas = palabras.filter(({ w }) => esFicha(w));
+    const sueltas = fichas.filter(({ w }) => !palabraColocada(w)).length;
     if (sueltas) {
       out.push(sueltas === fichas.length
         ? 'Ninguna palabra está colocada en la rejilla: pulsa «Auto-colocar».'
         : `${sueltas} palabra(s) están fuera de la rejilla: pulsa «Auto-colocar».`);
     }
-    ws.forEach(({ el: w, i }) => {
+    palabras.forEach(({ w, i }) => {
       const palabra = typeof w === 'string' ? w : w?.word;
       if (vacio(palabra)) out.push(`La palabra ${i + 1} está vacía.`);
-      else if (esFicha(w) && vacio(w.clue)) out.push(`La palabra «${palabra}» no tiene pista.`);
+      else if (esFicha(w) && typeof w !== 'string' && vacio(w.clue)) out.push(`La palabra «${palabra}» no tiene pista.`);
     });
     return out;
   },
-  textCorrection: (c) => {
+  textCorrection: (contenido) => {
+    const c = /** @type {import('../kernel/contracts/activity.js').TextCorrectionContent} */ (contenido);
+    /** @type {string[]} */
     const out = [];
-    empezados(c.passages).forEach(({ el: p, i }) => {
+    empezados(c.passages).forEach(({ el, i }) => {
+      const p = /** @type {import('../kernel/contracts/activity.js').Passage} */ (el);
       if (vacio(p.text)) out.push(`El texto ${i + 1} está vacío.`);
       // Sin marcas no hay nada que encontrar: se juega y se gana sin hacer nada.
       else if (!(p.marks || []).length) out.push(`El texto ${i + 1} no tiene ninguna marca señalada: no habría nada que buscar.`);
     });
     return out;
   },
-  diagram: (c) => {
+  diagram: (contenido) => {
+    const c = /** @type {import('../kernel/contracts/activity.js').DiagramContent} */ (contenido);
+    /** @type {string[]} */
     const out = [];
     if (!c.image) out.push('Falta el dibujo de fondo.');
     (c.pins || []).forEach((p, i) => {
@@ -135,10 +176,13 @@ const POR_MODELO = {
     });
     return out;
   },
-  entries: (c) => {
+  entries: (contenido) => {
+    const c = /** @type {{entries?: unknown[]}} */ (contenido);
+    /** @type {string[]} */
     const out = [];
-    empezados(c.entries).forEach(({ el: e, i }) => {
-      if (vacio(e?.text ?? e)) out.push(`El elemento ${i + 1} está vacío.`);
+    empezados(c.entries).forEach(({ el, i }) => {
+      const e = /** @type {{text?: string}|string} */ (el);
+      if (vacio(typeof e === 'string' ? e : e?.text)) out.push(`El elemento ${i + 1} está vacío.`);
     });
     return out;
   },
@@ -152,7 +196,8 @@ const POR_MODELO = {
 /** ¿No hay NADA escrito todavía? Es el estado que ve quien acaba de crear la
  *  actividad, y pide una pista (el primer paso), no una lista de reproches.
  *  Vive aquí, con `enBlanco`, para que el editor y el jugador no discrepen —
- *  discrepaban: uno contaba elementos y el otro miraba si había texto. */
+ *  discrepaban: uno contaba elementos y el otro miraba si había texto.
+ *  @param {Activity|null|undefined} a @returns {boolean} */
 export function sinEscribirNada(a) {
   return enBlanco(a?.content);
 }
@@ -161,7 +206,9 @@ export function sinEscribirNada(a) {
  *  La pintaban el jugador, el lanzador de salas y el de tareas, cada uno con su
  *  redacción; la del profe llegaba a decir «La actividad no tiene preguntas» en
  *  una pantalla sin salida. Devuelve HTML ya escapado.
- *  @param {object} a  la actividad  @param {object} rev  su revisión */
+ *  @param {Activity|null|undefined} a  la actividad
+ *  @param {RevisionActividad} rev  su revisión
+ *  @returns {string} */
 export function pantallaNoListaHtml(a, rev) {
   const titulo = escapeHtml(a?.title || 'Sin título');
   return `
@@ -182,6 +229,7 @@ export function pantallaNoListaHtml(a, rev) {
 /** La lista de problemas en HTML, ya escapada. Vive junto a quien la produce
  *  porque el editor y el jugador la pintaban por su cuenta: dos copias del
  *  mismo `<ul>` y dos sitios donde acordarse de escapar. */
+/** @param {string[]|null|undefined} problemas @returns {string} */
 function problemasListaHtml(problemas) {
   return `<ul class="mb-0 mt-1 ps-3">${(problemas || []).map(p => `<li>${escapeHtml(p)}</li>`).join('')}</ul>`;
 }
@@ -191,9 +239,8 @@ export function modelosRevisados() { return Object.keys(POR_MODELO); }
 
 /**
  * ¿Qué le falta a esta actividad para poder jugarse?
- * @returns {{listo:boolean, jugable:boolean, problemas:string[],
- *            problemasDeJuego:string[], faltaTitulo:boolean, vacia:boolean,
- *            primerPaso:string}}
+ * @param {Activity|null|undefined} a
+ * @returns {RevisionActividad}
  *   listo     todo en orden, título incluido → lo mira el EDITOR
  *   jugable   nada que rompa la partida (el título no cuenta) → lo miran las
  *             puertas del juego, y la diferencia está explicada abajo
@@ -201,6 +248,7 @@ export function modelosRevisados() { return Object.keys(POR_MODELO); }
  */
 export function revisarActividad(a) {
   const T = getTemplate(a?.template);
+  /** @type {string[]} */
   const problemas = [];
 
   // 1 · EL TÍTULO, que es el primer dato (decisión del dueño). Sin él, la
@@ -211,7 +259,7 @@ export function revisarActividad(a) {
   // por defecto, así que atarlo a la puerta del juego dejaría INJUGABLE una
   // actividad completa traída del banco compartido sin título. Se reclama donde
   // se arregla —el editor— y se separa de lo que sí rompe la partida.
-  const faltaTitulo = vacio(a?.title) || String(a.title).trim() === 'Sin título';
+  const faltaTitulo = vacio(a?.title) || String(a?.title ?? '').trim() === 'Sin título';
 
   // 2 · SIN NADA ESCRITO. La frase NO intenta declinar el nombre del elemento
   // («ninguna par», «ninguna elemento»): quien sabe decirlo bien es la propia
@@ -223,8 +271,8 @@ export function revisarActividad(a) {
   } else if (sinEscribirNada(a)) {
     problemas.push('Todavía no tiene contenido.');
   } else {
-    const revisor = POR_MODELO[T?.meta?.contentModel];
-    if (revisor) problemas.push(...revisor(a?.content || {}));
+    const revisor = POR_MODELO[T?.meta?.contentModel ?? ''];
+    if (revisor && a?.content) problemas.push(...revisor(a.content));
   }
 
   // Las dos listas se construyen POR SEPARADO. Antes la de juego salía de
@@ -246,7 +294,8 @@ export function revisarActividad(a) {
  *  otra forma en `home` (solo el primer problema), y `pantallaNoListaHtml` la
  *  arma en HTML: tres redacciones de «qué te falta» para el mismo profe. Aquí
  *  vive el texto plano, junto a quien produce los problemas.
- *  @param {object} rev  una revisión de `revisarActividad` */
+ *  @param {RevisionActividad} rev  una revisión de `revisarActividad`
+ *  @returns {string} */
 function faltaTexto(rev) {
   return rev.problemasDeJuego.join(' · ') + (rev.vacia ? ` ${rev.primerPaso}` : '');
 }
@@ -268,7 +317,7 @@ function faltaTexto(rev) {
  *     pero baja a borrador para que la biblioteca no sirva algo injugable.
  *  Las dos ramas AVISAN: fallar en silencio está prohibido (R6).
  *
- *  @param {object} activity   la actividad tal y como va a guardarse
+ *  @param {Activity|null|undefined} activity   la actividad tal y como va a guardarse
  *  @param {string|null} pedida  la visibilidad que pide el botón, o null (autosave)
  *  @param {'accion'|'guardado'} origen
  *  @returns {{visibility: string, aviso: string, rechaza: boolean}}

@@ -8,7 +8,26 @@ import { migrateLegacyItems, itemRoundPayload } from '../../core/contentModels/i
 import { escapeHtml } from '../../core/html.js';
 import { manualScoreSubmission } from '../../core/liveLoops.js';
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').ItemsContent} ItemsContent
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/session.js').RoundContext} RoundContext
+ */
+
+/**
+ * Los `rules` que declara ESTA plantilla (`defaultRules`), y de los que es
+ * dueña: `ActivityRules` solo describe los cuatro comunes.
+ * @typedef {Object} WheelRules
+ * @property {number} [spinDurationMs]
+ * @property {boolean} [removeAfterSpin]
+ * @property {string} [selector]
+ */
+
+/** @param {Activity} activity @returns {WheelRules} */
+export const wheelRules = (activity) => /** @type {WheelRules} */ (activity.rules || {});
+
 export class WheelTemplate extends BaseTemplate {
+  /** @type {import('../../kernel/contracts/template.js').TemplateMeta<ItemsContent>} */
   static meta = {
     name: 'wheel',
     label: 'Ruleta',
@@ -46,11 +65,23 @@ export class WheelTemplate extends BaseTemplate {
   static renderPlayer = renderWheelPlayer;
   static renderEditor = renderWheelEditor;
   // v1 entries planas y v2 `q` → forma actual {id, question, image} (hoja compartida).
-  static migrateContent(content) { return migrateLegacyItems(content); }
+  /**
+   * @param {import('../../kernel/contracts/activity.js').ActivityContent} content
+   * @returns {ItemsContent}
+   */
+  static migrateContent(content) {
+    return migrateLegacyItems(/** @type {import('../../core/contentModels/items.js').ItemsContentLegado} */ (content));
+  }
   // Required by the registry for live-capable templates.
   // Wheel Live uses manual teacher scoring, so these are not called in game,
   // but must exist to pass validation.
-  static getRoundPayload(activity, { itemIndex }) { return itemRoundPayload(activity, itemIndex); }
+  /**
+   * @param {Activity} activity
+   * @param {RoundContext} ctx
+   */
+  static getRoundPayload(activity, { itemIndex }) {
+    return itemRoundPayload(/** @type {import('../../kernel/contracts/activity.js').Activity<ItemsContent>} */ (activity), itemIndex);
+  }
   static scoreSubmission = manualScoreSubmission;
 
 }

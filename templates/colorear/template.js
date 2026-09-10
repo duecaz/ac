@@ -10,6 +10,7 @@ import { scoreColorearSubmission, PUNTOS_TERMINAR } from './scorer.js';
 import { rid } from '../../core/ids.js';
 
 export class ColorearTemplate extends BaseTemplate {
+  /** @type {import('../../kernel/contracts/template.js').TemplateMeta<import('../../kernel/contracts/activity.js').ColorearContent>} */
   static meta = {
     name: 'colorear',
     label: 'Colorear',

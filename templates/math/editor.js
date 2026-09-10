@@ -6,12 +6,29 @@ import { ruleScopeNote, itemSecondsFieldHtml, wireItemSeconds } from '../../core
 import { rid } from '../../core/ids.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/activity.js').QaItem} QaItem
+ * @typedef {import('../../core/editorShell.js').EditorCtx} EditorCtx
+ */
+
+/** Las operaciones de ESTA actividad: el modelo es `qa` y el editor lo sabe.
+ *  @param {Activity} a @returns {QaItem[]} */
+const operaciones = (a) => /** @type {{items?: QaItem[]}} */ (a.content ?? {}).items ?? [];
+
+/**
+ * @param {Element} root
+ * @param {Activity} activity
+ * @param {(activity: Activity) => void} onChange
+ * @returns {void}
+ */
 export function renderMathEditor(root, activity, onChange) {
   const a = activity;
   // Mismo blindaje que el resto: con el contenido vacío o a medias, el editor
   // pinta su estado vacío en vez de lanzar antes de dibujar nada.
-  if (!a.content || typeof a.content !== 'object') a.content = {};
-  if (!Array.isArray(a.content.items)) a.content.items = [];
+  if (!a.content || typeof a.content !== 'object') a.content = { items: [] };
+  const contenido = /** @type {{items?: QaItem[]}} */ (a.content);
+  if (!Array.isArray(contenido.items)) contenido.items = [];
   if (!a.scoring) a.scoring = { mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0 };
   if (!a.rules) a.rules = { randomize: true };
   renderEditorShell(root, a, onChange, {
@@ -20,6 +37,7 @@ export function renderMathEditor(root, activity, onChange) {
   });
 }
 
+/** @param {Activity} a @returns {string} */
 function contentHtml(a) {
   return `
     <div class="d-flex flex-wrap gap-2 mb-3">
@@ -33,24 +51,34 @@ function contentHtml(a) {
     <div class="form-text mb-2">Escribe la operación (ej. <code>2 &times; 6</code>) y su resultado. El alumno responde con el teclado numérico.</div>
     ${renderItems(a)}`;
 }
+/** @param {Element} root @param {Activity} a @param {EditorCtx} ctx @returns {void} */
 function wireContent(root, a, ctx) {
+  const items = operaciones(a);
   on(root, 'click', '#add-op', () => {
     // SIN `points`: Operaciones no tiene campo de puntos por ítem, así que
     // sembrarlo dejaba mudo el «Puntos por acierto» del panel.
-    a.content.items.push({ id: rid('m_'), question: '', answer: '' });
+    items.push({ id: rid('m_'), question: '', answer: '' });
     ctx.onChange(a); ctx.repaint();
   });
   on(root, 'click', '#gen-table', () => {
-    const n = Math.max(1, Math.min(12, +(root.querySelector('#gen-n')?.value) || 2));
-    for (let i = 1; i <= 10; i++) a.content.items.push({ id: rid('m_'), question: `${n} × ${i}`, answer: String(n * i) });
+    const campo = /** @type {HTMLInputElement|null} */ (root.querySelector('#gen-n'));
+    const n = Math.max(1, Math.min(12, +(campo?.value ?? '') || 2));
+    for (let i = 1; i <= 10; i++) items.push({ id: rid('m_'), question: `${n} × ${i}`, answer: String(n * i) });
     ctx.onChange(a); ctx.repaint();
   });
-  on(root, 'input', '.it-q', (e, el) => { a.content.items[+el.dataset.i].question = e.target.value; ctx.onChange(a); });
-  on(root, 'input', '.it-a', (e, el) => { a.content.items[+el.dataset.i].answer = e.target.value.trim(); ctx.onChange(a); });
-  wireItemSeconds(root, a, ctx, a.content.items);   // R-3 · tiempo por pregunta
-  on(root, 'click', '.it-del', (_, b) => { a.content.items.splice(+b.dataset.i, 1); ctx.onChange(a); ctx.repaint(); });
+  on(root, 'input', '.it-q', (e, el) => { items[+(el.dataset.i ?? 0)].question = valorDe(e); ctx.onChange(a); });
+  on(root, 'input', '.it-a', (e, el) => { items[+(el.dataset.i ?? 0)].answer = valorDe(e).trim(); ctx.onChange(a); });
+  wireItemSeconds(root, a, ctx, items);   // R-3 · tiempo por pregunta
+  on(root, 'click', '.it-del', (_, b) => { items.splice(+(b.dataset.i ?? 0), 1); ctx.onChange(a); ctx.repaint(); });
 }
 
+/** Lo tecleado en el campo que disparó el evento. @param {Event} e @returns {string} */
+function valorDe(e) {
+  const el = /** @type {HTMLInputElement|null} */ (e.target);
+  return el ? el.value : '';
+}
+
+/** @param {Activity} a @returns {string} */
 function rulesHtml(a) {
   return `<div class="form-check">
     <input class="form-check-input" type="checkbox" id="f-rand" ${a.rules.randomize !== false ? 'checked' : ''}>
@@ -58,13 +86,20 @@ function rulesHtml(a) {
   </div>
     ${ruleScopeNote()}`;
 }
+/** @param {Element} root @param {Activity} a @param {EditorCtx} ctx @returns {void} */
 function wireRules(root, a, ctx) {
-  on(root, 'change', '#f-rand', e => { a.rules.randomize = e.target.checked; ctx.onChange(a); });
+  on(root, 'change', '#f-rand', (e) => {
+    const el = /** @type {HTMLInputElement|null} */ (e.target);
+    a.rules.randomize = !!el?.checked;
+    ctx.onChange(a);
+  });
 }
 
+/** @param {Activity} a @returns {string} */
 function renderItems(a) {
-  if (!a.content.items.length) return `<p class="text-muted">Sin operaciones. Usa "Generar" o "Añadir operación".</p>`;
-  return a.content.items.map((it, i) => `
+  const items = operaciones(a);
+  if (!items.length) return `<p class="text-muted">Sin operaciones. Usa "Generar" o "Añadir operación".</p>`;
+  return items.map((it, i) => `
     <div class="input-group mb-2">
       <span class="input-group-text">#${i + 1}</span>
       <input class="form-control it-q" data-i="${i}" placeholder="Operación (ej. 2 × 6)" value="${escapeHtml(it.question || '')}">

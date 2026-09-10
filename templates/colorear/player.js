@@ -28,9 +28,21 @@ const PALETA = [
   { nombre: 'blanco',   hex: '#ffffff' },
 ];
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/activity.js').ColorearContent} ColorearContent
+ * @typedef {import('../../kernel/contracts/template.js').PlayerOpts} PlayerOpts
+ */
+
+/**
+ * @param {string|Element} rootSel
+ * @param {Activity} activity
+ * @param {PlayerOpts} [opts]
+ * @returns {Promise<void>}
+ */
 export async function renderColorearPlayer(rootSel, activity, opts = {}) {
   ensureContent(activity);
-  const item = activity.content.items[0];
+  const item = /** @type {ColorearContent} */ (activity.content).items[0];
   // El shell (§23) da el reloj (ninguno, declarado en meta.play.reloj), la
   // ficha de ocupación del escenario y el guardado/pantalla de fin estándar.
   const ctx = runFreeformPlayer(rootSel, activity, opts);
@@ -50,7 +62,7 @@ export async function renderColorearPlayer(rootSel, activity, opts = {}) {
       </div>
     </div>`);
 
-  const raiz = document.querySelector(rootSel);
+  const raiz = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
   const lienzo = raiz?.querySelector('#co-lienzo');
 
   // El primer color nace ELEGIDO (co-color--on ya pintado arriba): el niño
@@ -60,8 +72,10 @@ export async function renderColorearPlayer(rootSel, activity, opts = {}) {
   const pintadas = new Set();   // zonas DISTINTAS tocadas (repintar no infla)
 
   on(rootSel, 'click', '.co-color', (_e, el) => {
-    colorElegido = el.dataset.hex;
-    raiz.querySelectorAll('.co-color').forEach(b => b.classList.toggle('co-color--on', b === el));
+    const hex = el.dataset.hex;
+    if (!hex) return;
+    colorElegido = hex;
+    raiz?.querySelectorAll('.co-color').forEach(b => b.classList.toggle('co-color--on', b === el));
   });
 
   // Tocar otra zona con el mismo color la pinta; volver con otro color la

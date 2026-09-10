@@ -20,11 +20,16 @@ const TOPE_LIENZO = 1280;
 // Vía ls.js (no wrappers locales): así un fallo de cuota emite `ww:storage-full`
 // en vez de perderse en silencio.
 let _fxMuted = lsGet('ww.fxMuted') === '1';
+/** @param {boolean} m */
 export function setEffectsMuted(m) { _fxMuted = !!m; lsSet('ww.fxMuted', _fxMuted ? '1' : '0'); }
 export function isEffectsMuted() { return _fxMuted; }
 
 // Confeti minimalista en canvas. opts: { particleCount, spread (grados),
 // startVelocity, origin:{x,y} en 0..1, ticks (vida) }.
+/**
+ * @param {{particleCount?: number, spread?: number, startVelocity?: number,
+ *   origin?: {x?: number, y?: number}, ticks?: number}} [opts]
+ */
 function confetti(opts = {}) {
   if (typeof document === 'undefined') return;
   const { particleCount = 30, spread = 50, startVelocity = 30, origin = { x: 0.5, y: 0.7 }, ticks = 90 } = opts;
@@ -52,9 +57,14 @@ function confetti(opts = {}) {
   // no se veía NUNCA — el efecto existía, se ejecutaba entero y no llegaba a
   // ningún píxel. Por eso «antes funcionaba»: dejó de verse el día que Iniciar
   // pasó a poner el juego a pantalla completa, sin tocar los efectos.
-  const escena = document.fullscreenElement || document.webkitFullscreenElement || document.body;
+  const doc = /** @type {Document & {webkitFullscreenElement?: Element|null}} */ (document);
+  const escena = doc.fullscreenElement || doc.webkitFullscreenElement || document.body;
   escena.appendChild(cv);
   const ctx = cv.getContext('2d');
+  // Sin contexto 2D no hay nada que pintar (un entorno sin canvas de verdad).
+  // Best-effort DECLARADO: el confeti es adorno, no algo que el usuario pidió,
+  // así que se retira el lienzo y se sigue sin molestar a nadie (R6).
+  if (!ctx) { cv.remove(); return; }
   const cx = (origin.x ?? 0.5) * cv.width, cy = (origin.y ?? 0.7) * cv.height;
   const parts = Array.from({ length: cuantas }, () => {
     const ang = (-90 + (Math.random() - 0.5) * spread) * Math.PI / 180;
@@ -112,9 +122,10 @@ function correctBurst() {
 // (con count 3,4,5,6… saldría un confeti por pregunta y dejaría de leerse como
 // hito). No hay sonido propio de racha en el pack (`core/sounds.js` no declara
 // uno): es efecto visual puro, el 🔥 ya lo lleva cada plantilla en su HUD.
+/** @param {{count?: number}} [o] */
 function streakBurst({ count } = {}) {
   if (_fxMuted) return;
-  if (!UMBRALES_RACHA.includes(count)) return;
+  if (typeof count !== 'number' || !UMBRALES_RACHA.includes(count)) return;
   const now = clock.now();
   if (now - _lastStreak < STREAK_COOLDOWN) return;
   _lastStreak = now;

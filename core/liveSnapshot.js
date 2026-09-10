@@ -26,27 +26,33 @@ import { roundPayloadOf } from '../kernel/session/engine.js';
 import { sessionItems } from '../kernel/content/sessionItems.js';
 import { VERSION } from './constants.js';
 
+/** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
+/** @typedef {import('../kernel/contracts/session.js').SnapshotActivity} SnapshotActivity */
+
 /** Campos de la actividad que el alumno SÍ necesita (whitelist: un campo nuevo
  *  del modelo no se cuela solo). `content` NO está, a propósito. */
 const KEEP = ['id', 'title', 'template', 'presentation', 'live', 'rules', 'scoring', 'schemaVersion'];
 
 /** ¿Este modo de juego exige que el móvil pueda juzgar en local? Hoy solo la
- *  carrera libre (ver la excepción declarada arriba). */
+ *  carrera libre (ver la excepción declarada arriba).
+ *  @param {string|null|undefined} phase @returns {boolean} */
 export function needsClientKey(phase) {
   return phase === 'race';
 }
 
 /**
  * Snapshot que se guarda en la sala (lo lee cualquiera con el PIN).
- * @param {object} activity actividad completa (la del profe)
- * @returns {object} snapshot sin clave de respuesta
+ * @param {Activity} activity actividad completa (la del profe)
+ * @returns {SnapshotActivity} snapshot sin clave de respuesta
  */
 export function studentSnapshot(activity) {
   if (!activity || typeof activity !== 'object') return activity;
   const T = getTemplate(activity.template);
   const items = sessionItems(activity);
+  /** @type {Record<string, unknown>} */
   const out = {};
-  for (const k of KEEP) if (activity[k] !== undefined) out[k] = activity[k];
+  const origen = /** @type {Record<string, unknown>} */ (activity);
+  for (const k of KEEP) if (origen[k] !== undefined) out[k] = origen[k];
   // Payloads de ronda YA saneados por la plantilla (R5). El alumno pinta con
   // estos y nunca con `content`.
   out.payloads = items.map((item, i) => roundPayloadOf(T, activity, i, null) ?? null);
@@ -77,19 +83,21 @@ export function studentSnapshot(activity) {
   // entró. Preferimos una marca EXPLÍCITA a adivinar "¿tendrá clave?" mirando el
   // contenido: cada plantilla guarda la suya de otra forma.
   out.sanitized = true;
-  return out;
+  return /** @type {SnapshotActivity} */ (out);
 }
 
 /** ¿Puede este dispositivo dar un veredicto por su cuenta? Solo si la actividad
  *  que tiene en la mano lleva la clave (es decir, NO es el snapshot saneado).
- *  Quien no pueda juzgar debe ESPERAR, nunca dar por fallada una respuesta. */
+ *  Quien no pueda juzgar debe ESPERAR, nunca dar por fallada una respuesta.
+ *  @param {SnapshotActivity|null|undefined} activity @returns {boolean} */
 export function hasClientKey(activity) {
-  return !!activity && !activity.sanitized;
+  return !!activity && !(/** @type {{sanitized?: boolean}} */ (activity).sanitized);
 }
 
 /** Lo que el alumno puede LEER de un ítem: su payload de ronda. Las vistas que
  *  antes tiraban de `sessionItems(activity)[i]` (pedir la palabra) pasan por aquí
- *  y así funcionan igual con snapshot saneado o con actividad completa. */
+ *  y así funcionan igual con snapshot saneado o con actividad completa.
+ *  @param {SnapshotActivity|null|undefined} activity @param {number} itemIndex */
 export function visibleItem(activity, itemIndex) {
   const pre = activity?.payloads;
   if (Array.isArray(pre)) return pre[itemIndex] || null;
@@ -98,7 +106,8 @@ export function visibleItem(activity, itemIndex) {
 }
 
 /** ¿Este snapshot es el saneado (sin clave)? Lo usan las vistas/tests para no
- *  suponer. */
+ *  suponer.
+ *  @param {SnapshotActivity|null|undefined} a @returns {boolean} */
 export function isStudentSnapshot(a) {
   return !!(a && Array.isArray(a.payloads));
 }

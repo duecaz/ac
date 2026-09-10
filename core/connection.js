@@ -16,7 +16,11 @@ let _state = 'connected';
 let _displayed = false;        // is the banner currently visible?
 /** @type {HTMLElement|null} */
 let _bannerEl = null;
+/** @type {ReturnType<typeof setTimeout>|null} */
 let _debounceTimer = null;
+
+/** Los estados que pintan aviso; cualquier otro cae al genérico.
+ *  @typedef {'connected'|'reconnecting'|'offline'|'error'} EstadoConexion */
 
 /** @returns {HTMLElement} */
 function ensureBanner() {
@@ -29,15 +33,18 @@ function ensureBanner() {
   return _bannerEl;
 }
 
+/** @param {string} state */
 function showBanner(state) {
   const b = ensureBanner();
-  const cfg = {
+  /** @type {Record<string, {cls: string, html: string}>} */
+  const CFG = {
     reconnecting: { cls: 'bg-warning text-dark', html: '<span class="spinner-border spinner-border-sm me-1"></span> Reconectando…' },
     offline:      { cls: 'bg-danger text-white',  html: '<i class="bi bi-wifi-off"></i> Sin conexión' },
     error:        { cls: 'bg-danger text-white',  html: '<i class="bi bi-exclamation-triangle-fill"></i> Conexión perdida' }
-  }[state] || { cls: 'bg-secondary text-white', html: state };
+  };
+  const cfg = CFG[state] || { cls: 'bg-secondary text-white', html: state };
   b.className = `position-fixed start-50 translate-middle-x ${cfg.cls}`;
-  b.style.top = '60px'; b.style.zIndex = 1040; b.style.borderRadius = '999px'; b.style.padding = '.4rem 1rem';
+  b.style.top = '60px'; b.style.zIndex = '1040'; b.style.borderRadius = '999px'; b.style.padding = '.4rem 1rem';
   b.innerHTML = cfg.html;
   _displayed = true;
 }
@@ -48,6 +55,7 @@ function hideBanner() {
   _displayed = false;
 }
 
+/** @param {EstadoConexion|string} state */
 export function setConnectionState(state) {
   if (state === 'connected') {
     if (_debounceTimer) { clearTimeout(_debounceTimer); _debounceTimer = null; }

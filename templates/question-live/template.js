@@ -7,7 +7,16 @@ import { escapeHtml } from '../../core/html.js';
 import { manualScoreSubmission } from '../../core/liveLoops.js';
 
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/activity.js').ActivityContent} ActivityContent
+ * @typedef {import('../../kernel/contracts/activity.js').ItemsContent} ItemsContent
+ * @typedef {import('../../kernel/contracts/session.js').RoundContext} RoundContext
+ * @typedef {import('../../kernel/contracts/session.js').RoundPayload} RoundPayload
+ */
+
 export class QuestionLiveTemplate extends BaseTemplate {
+  /** @type {import('../../kernel/contracts/template.js').TemplateMeta<ItemsContent>} */
   static meta = {
     name: 'question-live',
     label: 'Abre Cajas',
@@ -43,12 +52,25 @@ export class QuestionLiveTemplate extends BaseTemplate {
   static renderPlayer = renderQuestionLivePlayer;
   static renderEditor = renderQuestionLiveEditor;
   // v1 usaba `q`; la hoja compartida lo migra a `question` (idempotente).
-  static migrateContent(content) { return migrateLegacyItems(content); }
+  /**
+   * @param {ActivityContent} content
+   * @returns {ActivityContent}
+   */
+  static migrateContent(content) {
+    return migrateLegacyItems(/** @type {ItemsContent} */ (content));
+  }
 
   // Required by the registry for live-capable templates.
   // Question Live uses manual teacher scoring, so these are not called in game,
   // but must exist to pass validation.
-  static getRoundPayload(activity, { itemIndex }) { return itemRoundPayload(activity, itemIndex); }
+  /**
+   * @param {Activity} activity
+   * @param {RoundContext} ctx
+   * @returns {RoundPayload|null}
+   */
+  static getRoundPayload(activity, { itemIndex }) {
+    return itemRoundPayload(/** @type {import('../../kernel/contracts/activity.js').Activity<ItemsContent>} */ (activity), itemIndex);
+  }
   static scoreSubmission = manualScoreSubmission;
 
 }

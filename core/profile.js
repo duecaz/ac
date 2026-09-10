@@ -8,14 +8,20 @@ import { getAuthToken } from './auth.js';
 import { lsGet, lsSet } from './ls.js';
 
 const COLL = 'profiles';
+/** Lo que un perfil guarda; todos los campos son texto (lo que se pinta).
+ *  @typedef {{name: string, school: string, bio: string, avatar: string, banner: string}} Perfil */
+
+/** @param {string} uid */
 const LKEY = (uid) => `ww.profile.${uid}`;
 const EMPTY = { name: '', school: '', bio: '', avatar: '', banner: '' };
 
 // Cache local (pintado instantáneo + respaldo offline). No es la fuente de verdad.
+/** @param {string|null|undefined} uid @returns {Perfil} */
 export function getLocalProfile(uid) {
   if (!uid) return { ...EMPTY };
   try { return { ...EMPTY, ...JSON.parse(lsGet(LKEY(uid)) || '{}') }; } catch { return { ...EMPTY }; }
 }
+/** @param {string|null|undefined} uid @param {Partial<Perfil>} prof @returns {Perfil} */
 function setLocalProfile(uid, prof) {
   if (!uid) return { ...EMPTY };
   const next = { ...getLocalProfile(uid), ...prof };
@@ -25,6 +31,7 @@ function setLocalProfile(uid, prof) {
 
 // Lee el perfil público de un profe (cualquiera). {} si no tiene o la colección no
 // existe todavía (degrada sin romper). La fila tiene id = ownerId.
+/** @param {string|null|undefined} ownerId @returns {Promise<Perfil>} */
 export async function fetchProfile(ownerId) {
   if (!ownerId) return { ...EMPTY };
   try {
@@ -38,6 +45,8 @@ export async function fetchProfile(ownerId) {
 // Crea/actualiza mi perfil. Hace MERGE con lo que ya haya en el servidor para no
 // pisar campos que este `patch` no trae (p.ej. el login solo aporta nombre+avatar
 // y no debe borrar el colegio/frase). Firma con el token del profe.
+/** @param {string|null|undefined} uid @param {Partial<Perfil>|null|undefined} patch
+ *  @returns {Promise<Perfil>} */
 export async function saveProfile(uid, patch) {
   if (!uid) return { ...EMPTY };
   const clean = Object.fromEntries(Object.entries(patch || {}).filter(([, v]) => v !== undefined));

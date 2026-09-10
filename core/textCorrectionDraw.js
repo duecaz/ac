@@ -35,6 +35,27 @@
 import { crearVeredicto, loadThresholds } from './penDetector.js';
 import { observeResize } from './observeResize.js';
 
+/** @typedef {import('./penDetector.js').PuntoGesto} Punto */
+/** Una zona sensible: la vocal (tilde) o el hueco (coma) que se marca.
+ *  @typedef {{pos: number, el: HTMLElement, x: number, y: number, w: number,
+ *    h: number, hit: boolean}} Zona */
+/** @typedef {{pts: Punto[]}} Trazo */
+/** @typedef {ReturnType<typeof crearVeredicto>} Veredicto */
+
+/** El contexto 2D, o se dice que este navegador no lo da (nunca se sigue
+ *  pintando al vacío, R6).
+ *  @param {HTMLCanvasElement} cv
+ *  @returns {CanvasRenderingContext2D} */
+function contexto2d(cv) {
+  const c = cv.getContext('2d');
+  if (!c) throw new Error('tc-draw: este navegador no da contexto 2D');
+  return c;
+}
+
+/**
+ * @param {HTMLElement} passageEl
+ * @param {{targets?: Iterable<Element>, onChange?: (marcadas: number[]) => void}} [opts]
+ */
 export function mountTcDraw(passageEl, { targets, onChange } = {}) {
   passageEl.style.position = 'relative';
   passageEl.style.touchAction = 'none';
@@ -42,15 +63,22 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
   const canvas = document.createElement('canvas');
   canvas.className = 'tc-canvas';
   passageEl.appendChild(canvas);
-  const ctx = canvas.getContext('2d');
+  const ctx = contexto2d(canvas);
 
-  const tg = [...(targets || [])];
+  const tg = /** @type {HTMLElement[]} */ ([...(targets || [])]);
+  /** @type {Zona[]} */
   let zones = [];               // { pos, el, x, y, w, h, hit }
+  /** @type {Trazo[]} */
   let strokes = [];             // [{ pts:[{x,y}] }]
+  /** @type {Set<number>} */
   const active = new Set();     // pointerIds activos (para detectar palma)
+  /** @type {Map<number, 'draw'|'erase'>} */
   const pointerAction = new Map(); // pointerId → 'draw' | 'erase' (YA dictaminado)
+  /** @type {Map<number, Veredicto>} */
   const votos = new Map();         // pointerId → veredicto en curso (aún sin dictaminar)
-  let drawing = false, palmErase = false, eraserMode = false, frozen = false, cur = null, dpr = 1;
+  let drawing = false, palmErase = false, eraserMode = false, frozen = false, dpr = 1;
+  /** @type {Trazo|null} */
+  let cur = null;
 
   function resize() {
     const r = passageEl.getBoundingClientRect();
@@ -79,16 +107,17 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
       const padBottom = isGap ? fontPx * 0.55 : 0;
       const baseH = isGap ? 0 : r.height;
       return {
-        pos: +el.dataset.pos, el,
+        pos: Number(el.dataset.pos), el,
         x: (r.left - pr.left - padX) * dpr,
         y: (r.top  - pr.top  - padTop) * dpr,
         w: (r.width  + padX * 2) * dpr,
         h: (baseH + padTop + padBottom) * dpr,
-        hit: prevHit.get(+el.dataset.pos) || false,
+        hit: prevHit.get(Number(el.dataset.pos)) || false,
       };
     });
   }
 
+  /** @param {PointerEvent} e @returns {Punto} */
   function toCanvas(e) {
     const r = canvas.getBoundingClientRect();
     return { x: (e.clientX - r.left) * (canvas.width / r.width),
@@ -96,8 +125,11 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
   }
   // Zona que contiene el punto; si varias se solapan (vocales contiguas í/ó),
   // gana aquella cuyo CENTRO está más cerca → marca la vocal correcta.
+  /** @param {Punto} p @returns {Zona|null} */
   function zoneAt(p) {
-    let best = null, bestD = Infinity;
+    /** @type {Zona|null} */
+    let best = null;
+    let bestD = Infinity;
     for (const z of zones) {
       if (p.x >= z.x && p.x <= z.x + z.w && p.y >= z.y && p.y <= z.y + z.h) {
         const dx = p.x - (z.x + z.w / 2), dy = p.y - (z.y + z.h / 2);
@@ -110,11 +142,12 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
 
   function recalcHits() {
     zones.forEach(z => { z.hit = false; });
-    for (const s of strokes) { const z = zoneAt(s.pts[0]); if (z) z.hit = true; }
+    for (const s of strokes) { const p0 = s.pts[0]; const z = p0 ? zoneAt(p0) : null; if (z) z.hit = true; }
     zones.forEach(z => z.el.classList.toggle('tc-marked', z.hit));
     onChange?.(getMarked());
   }
 
+  /** @param {Punto} p */
   function eraseAt(p) {
     const rad = 26 * dpr, r2 = rad * rad;
     const before = strokes.length;
@@ -137,7 +170,10 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
   // ritmo de la pantalla. Se acumula la petición y se pinta una vez por
   // fotograma; el indicador del borrador guarda su última posición, que es la
   // única que importa.
-  let rafPendiente = 0, borradorPt = null, borradorR = 0;
+  let rafPendiente = 0, borradorR = 0;
+  /** @type {Punto|null} */
+  let borradorPt = null;
+  /** @param {Punto|null} [eraserPt] @param {number} [eraserR] */
   function redraw(eraserPt, eraserR) {
     borradorPt = eraserPt || null; borradorR = eraserR || 0;
     if (rafPendiente) return;
@@ -159,30 +195,37 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
    *  (rAF) y NO sirvió de nada —80 ms seguían siendo 78—: el problema no era
    *  cuántas veces se repintaba, era repintarlo ENTERO aunque fuera una vez.
    *  Se apunta porque la hipótesis equivocada costó una medición. */
+  /** @param {Trazo} s */
   function trazarUltimo(s) {
     const n = s.pts.length;
-    if (n < 2) return;
+    const a = s.pts[n - 2], b = s.pts[n - 1];
+    if (n < 2 || !a || !b) return;
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     ctx.strokeStyle = '#1d4ed8'; ctx.lineWidth = 3.2 * dpr;
     ctx.beginPath();
-    ctx.moveTo(s.pts[n - 2].x, s.pts[n - 2].y);
-    ctx.lineTo(s.pts[n - 1].x, s.pts[n - 1].y);
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
     ctx.stroke();
   }
 
   // El repintado COMPLETO sigue existiendo para lo que de verdad lo necesita:
   // borrar, cambiar de tamaño, limpiar y cerrar un trazo. Son gestos sueltos, no
   // el chorro continuo del dedo moviéndose.
+  /** @param {Punto|null} eraserPt @param {number} eraserR */
   function pintar(eraserPt, eraserR) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     ctx.strokeStyle = '#1d4ed8'; ctx.lineWidth = 3.2 * dpr;
     for (const s of strokes) {
-      if (!s.pts.length) continue;
+      const p0 = s.pts[0];
+      if (!p0) continue;
       ctx.beginPath();
-      ctx.moveTo(s.pts[0].x, s.pts[0].y);
-      for (let i = 1; i < s.pts.length; i++) ctx.lineTo(s.pts[i].x, s.pts[i].y);
-      if (s.pts.length === 1) ctx.lineTo(s.pts[0].x + 0.1, s.pts[0].y);
+      ctx.moveTo(p0.x, p0.y);
+      for (let i = 1; i < s.pts.length; i++) {
+        const pt = s.pts[i];
+        if (pt) ctx.lineTo(pt.x, pt.y);
+      }
+      if (s.pts.length === 1) ctx.lineTo(p0.x + 0.1, p0.y);
       ctx.stroke();
     }
     if (eraserPt) {              // indicador del borrador
@@ -195,6 +238,7 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
   const getMarked = () => zones.filter(z => z.hit).map(z => z.pos).sort((a, b) => a - b);
 
   // ── Pointer handlers (Fase 2: dibuja/borra según el tamaño del contacto) ──────
+  /** @param {PointerEvent} e */
   const onDown = (e) => {
     if (frozen) return;
     // Las pizarras táctiles a veces PIERDEN el pointerup/pointercancel → quedan
@@ -230,6 +274,7 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
 
   /** Dicta el veredicto de un puntero y suelta de golpe los puntos guardados:
    *  como TINTA si escribe, como BORRADO si borra. */
+  /** @param {number} id @returns {'draw'|'erase'|null} */
   function resolver(id) {
     const voto = votos.get(id);
     if (!voto) return pointerAction.get(id) || null;
@@ -248,6 +293,7 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
     redraw();
     return 'draw';
   }
+  /** @param {PointerEvent} e */
   const onMove = (e) => {
     if (frozen) return;
     if (palmErase) { e.preventDefault(); eraseAt(toCanvas(e)); return; }
@@ -267,12 +313,13 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
     e.preventDefault();
     cur.pts.push(p); trazarUltimo(cur);
   };
+  /** @param {PointerEvent} e */
   const onUp = (e) => {
     active.delete(e.pointerId);
     // Un gesto que se levanta sin veredicto (más corto que la ventana: marcar una
     // tilde ES un toque) se cierra con lo que haya. `crearVeredicto` nunca borra
     // sin muestras limpias, así que un toque corto siempre DIBUJA.
-    const action = votos.has(e.pointerId) ? resolver(e.pointerId) : pointerAction.get(e.pointerId);
+    const action = votos.has(e.pointerId) ? resolver(e.pointerId) : (pointerAction.get(e.pointerId) || null);
     pointerAction.delete(e.pointerId);
     if (palmErase) { if (active.size < 3) { palmErase = false; redraw(); } return; }
     if (action === 'erase') { redraw(); return; }     // limpiar el indicador del borrador
@@ -293,6 +340,7 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
 
   return {
     getMarked,
+    /** @param {boolean} on */
     setEraser(on) { eraserMode = !!on; canvas.style.cursor = on ? 'cell' : 'crosshair'; },
     clear() { strokes = []; recalcHits(); redraw(); },
     freeze() { frozen = true; canvas.style.pointerEvents = 'none'; },

@@ -23,6 +23,8 @@ export function requiredSkinTokens() {
 
 /**
  * Verifica UN skin contra el contrato.
+ * @param {import('./skins.js').Skin|null|undefined} skin
+ * @param {string[]} [required]
  * @returns {string[]} problemas (vacío = cumple).
  */
 export function checkSkin(skin, required = requiredSkinTokens()) {

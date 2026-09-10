@@ -9,7 +9,26 @@ import { renderTextCorrectionRound, renderTextCorrectionHost, textCorrectionPrev
 import { markPartsFor, markValueParts, passageLabel } from '../../core/textMarks.js';
 import { scoreTildesSubmission } from './scorer.js';
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').TextCorrectionContent} TextCorrectionContent
+ * @typedef {import('../../kernel/contracts/activity.js').Passage} Passage
+ * @typedef {import('../../kernel/contracts/session.js').RoundContext} RoundContext
+ * @typedef {import('../../kernel/contracts/session.js').RoundPayload} RoundPayload
+ * @typedef {import('../../kernel/contracts/template.js').RoundCallbacks} RoundCallbacks
+ * @typedef {import('../../kernel/contracts/template.js').HostRoundContext} HostRoundContext
+ */
+
+/** @param {unknown} v @returns {v is object} */
+const esObjeto = (v) => !!v && typeof v === 'object';
+
+/** Este contenido es el de Tildes/Comas (una lista de frases con sus marcas).
+ * Se pregunta por FORMA porque `migrateContent` lo recibe como el contenido de
+ * cualquier modelo (la base no sabe de quién es).
+ * @param {unknown} c @returns {c is TextCorrectionContent} */
+const esTextCorrection = (c) => esObjeto(c) && Array.isArray(/** @type {{passages?: unknown}} */ (c).passages);
+
 export class TildesTemplate extends BaseTemplate {
+  /** @type {import('../../kernel/contracts/template.js').TemplateMeta<TextCorrectionContent>} */
   static meta = {
     name: 'tildes',
     label: 'Tildes',
@@ -63,27 +82,56 @@ export class TildesTemplate extends BaseTemplate {
 
 
   // One passage = one round. The answer key (marks) is stripped from the payload.
+  /**
+   * @param {import('../../kernel/contracts/activity.js').Activity} activity
+   * @param {RoundContext} ctx
+   * @returns {RoundPayload|null}
+   */
   static getRoundPayload(activity, ctx) { return passageRoundPayload(activity, ctx.itemIndex); }
 
   // One passage = one round (tap the accented vowels). Shared renderer.
   // `chips` viaja tal cual a la ronda (contrato de barra única): quedarse solo
   // con onSubmit era lo que dejaba a la vista pintando su fila ENCIMA de la
   // barra de la hoja — las dos barras de la captura del dueño.
+  /**
+   * @param {Element} root
+   * @param {RoundPayload} payload
+   * @param {RoundCallbacks} [cbs]
+   */
   static renderRound(root, payload, { onSubmit, chips } = {}) {
     return renderTextCorrectionRound(root, payload, { kind: 'tilde', onSubmit, chips });   // devuelve { flush }
   }
 
   // Projector view for LIVE (passage big; solution on reveal).
-  static renderRoundHost(root, ctx) {
-    renderTextCorrectionHost(root, { ...ctx, kind: 'tilde' });
+  /**
+   * @param {Element} root
+   * @param {HostRoundContext} [ctx]
+   */
+  static renderRoundHost(root, ctx = {}) {
+    // Solo la fase y el pasaje: lo demás del contexto del host (payload,
+    // respuestas) no lo mira la vista de proyector de texto.
+    renderTextCorrectionHost(root, {
+      phase: ctx.phase,
+      item: esObjeto(ctx.item) ? /** @type {Passage} */ (ctx.item) : null,
+      kind: 'tilde',
+    });
   }
 
   // Analítica por parte (M1): cada parte = una tilde requerida (key=posición,
   // label=palabra) → el informe pinta un heatmap sobre el texto con el % de la
   // clase que acertó cada tilde ("jugó en rojo").
-  static itemParts({ item }) { return markPartsFor(item, 'tilde'); }
+  // `item` llega como `unknown` (el contrato no sabe de qué plantilla es): se
+  // estrecha por FORMA antes de dárselo al primitivo de marcas.
+  /** @param {{item: unknown}} input */
+  static itemParts({ item }) {
+    return markPartsFor(esObjeto(item) ? /** @type {Passage} */ (item) : null, 'tilde');
+  }
+  /** @param {{value: unknown}} input */
   static valueParts({ value }) { return markValueParts(value); }
-  static itemLabel(item) { return passageLabel(item); }
+  /** @param {unknown} item */
+  static itemLabel(item) {
+    return passageLabel(esObjeto(item) ? /** @type {Passage} */ (item) : null);
+  }
 
   // Recupera pasajes guardados ANTES del fix de normalización: si se pegó texto
   // con tildes DESCOMPUESTAS (vocal + U+0301), el parse viejo no las reconocía →
@@ -93,10 +141,14 @@ export class TildesTemplate extends BaseTemplate {
   // NFC → recupera TODAS las tildes. Idempotente en pasajes ya limpios (las comas
   // literales del texto se conservan; parseAccentedText solo toca acentos). Ver
   // docs/historico/handoff-emparejar-vertical.md (histórico) y core/textMarks.js.
+  /**
+   * @template C
+   * @param {C} content
+   * @returns {C}
+   */
   static migrateContent(content) {
-    const passages = content?.passages;
-    if (!Array.isArray(passages)) return content;
-    for (const p of passages) {
+    if (!esTextCorrection(content)) return content;
+    for (const p of content.passages) {
       if (!p || typeof p.text !== 'string') continue;
       // Solo re-parsear si el texto muestra la FIRMA de la corrupción (acentos
       // combinantes U+0300-036F sueltos). migrate() corre en CADA carga/sync de

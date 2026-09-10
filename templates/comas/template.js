@@ -9,7 +9,20 @@ import { parseTextWithCommas, markPartsFor, markValueParts, passageLabel } from 
 import { renderTextCorrectionRound, renderTextCorrectionHost, textCorrectionPreviewHtml, passageRoundPayload } from '../../core/textCorrectionRound.js';
 import { scoreComasSubmission } from './scorer.js';
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').TextCorrectionContent} TextCorrectionContent
+ * @typedef {import('../../kernel/contracts/activity.js').Passage} Passage
+ * @typedef {import('../../kernel/contracts/session.js').RoundContext} RoundContext
+ * @typedef {import('../../kernel/contracts/session.js').RoundPayload} RoundPayload
+ * @typedef {import('../../kernel/contracts/template.js').RoundCallbacks} RoundCallbacks
+ * @typedef {import('../../kernel/contracts/template.js').HostRoundContext} HostRoundContext
+ */
+
+/** @param {unknown} v @returns {v is object} */
+const esObjeto = (v) => !!v && typeof v === 'object';
+
 export class ComasTemplate extends BaseTemplate {
+  /** @type {import('../../kernel/contracts/template.js').TemplateMeta<TextCorrectionContent>} */
   static meta = {
     name: 'comas',
     label: 'Comas',
@@ -63,24 +76,53 @@ export class ComasTemplate extends BaseTemplate {
 
 
   // One passage = one round. The answer key (marks) is stripped from the payload.
+  /**
+   * @param {import('../../kernel/contracts/activity.js').Activity} activity
+   * @param {RoundContext} ctx
+   * @returns {RoundPayload|null}
+   */
   static getRoundPayload(activity, ctx) { return passageRoundPayload(activity, ctx.itemIndex); }
 
   // One passage = one round (tap the gap where a comma is missing). Shared renderer.
   // `chips` viaja tal cual a la ronda (contrato de barra única): quedarse solo
   // con onSubmit era lo que dejaba a la vista pintando su fila ENCIMA de la
   // barra de la hoja — las dos barras de la captura del dueño.
+  /**
+   * @param {Element} root
+   * @param {RoundPayload} payload
+   * @param {RoundCallbacks} [cbs]
+   */
   static renderRound(root, payload, { onSubmit, chips } = {}) {
     return renderTextCorrectionRound(root, payload, { kind: 'coma', onSubmit, chips });   // devuelve { flush }
   }
 
   // Projector view for LIVE (passage big; solution on reveal).
-  static renderRoundHost(root, ctx) {
-    renderTextCorrectionHost(root, { ...ctx, kind: 'coma' });
+  /**
+   * @param {Element} root
+   * @param {HostRoundContext} [ctx]
+   */
+  static renderRoundHost(root, ctx = {}) {
+    // Solo la fase y el pasaje: lo demás del contexto del host (payload,
+    // respuestas) no lo mira la vista de proyector de texto.
+    renderTextCorrectionHost(root, {
+      phase: ctx.phase,
+      item: esObjeto(ctx.item) ? /** @type {Passage} */ (ctx.item) : null,
+      kind: 'coma',
+    });
   }
 
   // Analítica por parte (M1): cada parte = una coma requerida (key=posición,
   // label=palabra) → heatmap por el % de la clase que acertó cada coma.
-  static itemParts({ item }) { return markPartsFor(item, 'coma'); }
+  // `item` llega como `unknown` (el contrato no sabe de qué plantilla es): se
+  // estrecha por FORMA antes de dárselo al primitivo de marcas.
+  /** @param {{item: unknown}} input */
+  static itemParts({ item }) {
+    return markPartsFor(esObjeto(item) ? /** @type {Passage} */ (item) : null, 'coma');
+  }
+  /** @param {{value: unknown}} input */
   static valueParts({ value }) { return markValueParts(value); }
-  static itemLabel(item) { return passageLabel(item); }
+  /** @param {unknown} item */
+  static itemLabel(item) {
+    return passageLabel(esObjeto(item) ? /** @type {Passage} */ (item) : null);
+  }
 }

@@ -6,11 +6,28 @@
 // incomparables en la misma sesión de clase).
 import { awardPoints } from '../../core/scoring/index.js';
 
+/** @param {unknown} s @returns {string} */
 function normNum(s) { return String(s ?? '').trim().replace(',', '.'); }
 
+/**
+ * La clave del ítem, leída sin suponer su forma (`ScoreInput.item` es `unknown`:
+ * solo quien puntúa tiene el ítem completo).
+ * @param {unknown} item
+ * @returns {unknown}
+ */
+function claveDe(item) {
+  if (!item || typeof item !== 'object' || !('answer' in item)) return null;
+  return item.answer;
+}
+
+/**
+ * @param {import('../../kernel/contracts/session.js').ScoreInput} input
+ * @returns {import('../../kernel/contracts/session.js').ScoreResult}
+ */
 export function scoreMathSubmission({ value, item, msTaken, activity, mode = 'solo' }) {
-  if (item.answer == null || item.answer === '') return { correct: null, points: 0, hits: 0, total: 0 };
-  const v = normNum(value), a = normNum(item.answer);
+  const answer = claveDe(item);
+  if (answer == null || answer === '') return { correct: null, points: 0, hits: 0, total: 0 };
+  const v = normNum(value), a = normNum(answer);
   const ok = v !== '' && !Number.isNaN(Number(v)) && Number(v) === Number(a);
   const points = awardPoints({ correct: ok, item, msTaken, activity, mode });
   return { correct: ok, points, hits: ok ? 1 : 0, total: 1 };

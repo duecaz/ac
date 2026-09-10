@@ -1,4 +1,13 @@
 // Ball Sort rules — pure move legality + win check. No DOM, no deps.
+
+/**
+ * @typedef {import('../../../kernel/contracts/activity.js').BallsortBoard} BallsortBoard
+ * El tablero mínimo que basta para juzgar: `progress` lo llama también con el
+ * recorte que viaja en la instantánea (tubos + capacidad, sin nivel ni colores).
+ * @typedef {{tubes: string[][], tubeCapacity: number}} TableroParcial
+ */
+
+/** @param {TableroParcial} board @param {number} from @param {number} to */
 export function canMove(board, from, to) {
   if (from === to) return false;
   const src = board.tubes[from];
@@ -9,14 +18,16 @@ export function canMove(board, from, to) {
   return true;
 }
 
+/** @param {BallsortBoard} board @param {number} from @param {number} to @returns {BallsortBoard|null} */
 export function applyMove(board, from, to) {
   if (!canMove(board, from, to)) return null;
   const tubes = board.tubes.map(tube => [...tube]);
   const ball = tubes[from].pop();
-  tubes[to].push(ball);
+  if (ball != null) tubes[to].push(ball);
   return { ...board, tubes };
 }
 
+/** @param {TableroParcial} board */
 export function isWin(board) {
   const cap = board.tubeCapacity;
   return board.tubes.every(tube => {
@@ -29,6 +40,7 @@ export function isWin(board) {
 
 // Fraction [0..1] of the board that is "sorted": tubes that are empty or full of
 // a single colour count as done. Used for partial-credit scoring + progress UI.
+/** @param {TableroParcial} board @returns {number} */
 export function progress(board) {
   const total = board.tubes.length;
   if (!total) return 0;

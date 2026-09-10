@@ -46,7 +46,10 @@ import { GameEvents, emitGame } from './gameEvents.js';
  *  su declaración (`meta.play.reloj`) la obedecía SOLO el editor —pintaba o no
  *  la casilla— y el juego ni la preguntaba, así que la Ruleta y las Pelotas
  *  decían «yo no llevo reloj» y salían con su cronómetro igual. Una declaración
- *  que nadie obedece es peor que no tenerla. */
+ *  que nadie obedece es peor que no tenerla.
+ *  @param {import('../kernel/contracts/activity.js').Activity|null|undefined} activity
+ *  @param {import('./registry.js').PlantillaRegistrada|null} [T]
+ *  @returns {{tipo: 'cuenta'|'crono'|'ninguno', segundos: number}} */
 export function relojDe(activity, T = getTemplate(activity?.template)) {
   const limite = Math.max(0, Number(activity?.rules?.timer) || 0);
   if (limite > 0) return { tipo: 'cuenta', segundos: limite };
@@ -65,7 +68,9 @@ export function relojDe(activity, T = getTemplate(activity?.template)) {
  *  defecto es proporcional al trabajo que hay en pantalla: diagrama y
  *  emparejar 120 s, memoria 180 s, sopa y crucigrama 300 s. Es un DEFECTO, no
  *  un techo: el bloque «Tiempo» del editor lo cambia, y 0 sigue significando
- *  «sin límite» (entonces sale el cronómetro). */
+ *  «sin límite» (entonces sale el cronómetro).
+ *  @param {import('./registry.js').PlantillaRegistrada|null|undefined} T
+ *  @returns {string|null} */
 export function unidadDeCuenta(T) {
   const u = T?.meta?.play?.reloj?.unidad;
   return typeof u === 'string' && u ? u : null;
@@ -79,20 +84,23 @@ export function unidadDeCuenta(T) {
  *  INTERNA a propósito: la pregunta que se hace fuera es «¿qué reloj le toca a
  *  esta actividad?» (`relojDe`), no «¿admite cronómetro?». Cuando la exportaba,
  *  el editor la usaba para pintar una casilla y el juego no la miraba — así se
- *  quedó la Ruleta declarando que no lleva reloj y saliendo con cronómetro. */
+ *  quedó la Ruleta declarando que no lleva reloj y saliendo con cronómetro.
+ *  @param {import('./registry.js').PlantillaRegistrada|null|undefined} T */
 function admiteCrono(T) {
   return T?.meta?.play?.reloj?.crono !== false;
 }
 
 /**
  * Monta el reloj que toque y devuelve `{ tipo, stop }`.
- * @param {object}   o
- * @param {object}   o.activity  de aquí sale QUÉ reloj (rules.timer + la plantilla).
- * @param {(texto:string, pct:number|null)=>void} o.pintar  dónde se ve. `pct` solo
- *        tiene sentido en la cuenta atrás (barra de progreso); en el cronómetro es null.
- * @param {()=>boolean} [o.alive]  guard de escenario (§23): un tick tardío no pinta.
- * @param {number}   [o.desde]  instante de inicio del ascendente (serverNow()).
- * @param {()=>void} [o.onFin]  se acabó el tiempo (solo cuenta atrás).
+ * `activity` dice QUÉ reloj toca (rules.timer + la plantilla); `pintar` es dónde
+ * se ve (el `pct` solo tiene sentido en la cuenta atrás, y en el cronómetro es
+ * null); `alive` es el guard de escenario (§23: un tick tardío no pinta); `desde`
+ * el instante de inicio del ascendente (serverNow()); `onFin`, que se acabó el
+ * tiempo (solo cuenta atrás).
+ * @param {{activity?: import('../kernel/contracts/activity.js').Activity|null,
+ *   pintar?: (texto: string, pct: number|null) => void,
+ *   alive?: () => boolean, desde?: number, onFin?: () => void}} [o]
+ * @returns {{tipo: string, stop: () => void}}
  */
 export function montarReloj({ activity, pintar, alive = () => true, desde, onFin } = {}) {
   const nada = { tipo: 'ninguno', stop: () => {} };

@@ -69,7 +69,7 @@ export function contarSilencios(src) {
 }
 
 // TRINQUETE: lo que hay hoy. Solo baja. Cuando llegue a 0 se queda en 0.
-const TOPE = { 'ts-ignore': 0, 'ts-nocheck': 0, 'eslint-disable': 0, 'any': 3, 'unknown-as': 0, 'expect-error-sin-motivo': 0 };
+const TOPE = { 'ts-ignore': 0, 'ts-nocheck': 0, 'eslint-disable': 0, 'any': 0, 'unknown-as': 0, 'expect-error-sin-motivo': 0 };
 
 {
   const total = /** @type {Record<string, string[]>} */ ({});

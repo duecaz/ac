@@ -16,11 +16,11 @@
 //     Lo cazó el botón «Probar carrera» del panel.
 
 /**
- * @param {object} o
- * @param {Array<{name:string}>} o.actuales  campos que HOY tiene la colección
- * @param {Array<{name:string}>} o.deseados  campos que el DEFS declara
- * @param {boolean} o.isV23  ¿PocketBase ≥0.23? (allí created/updated son campos)
- * @returns {Array<object>} los que faltan, en el orden del DEFS (nunca `id`)
+ * `actuales` son los campos que HOY tiene la colección; `deseados` los que el
+ * DEFS declara; `isV23`, si PocketBase es 0.23 o mayor (allí created/updated son
+ * campos y no se tocan).
+ * @param {{actuales?: {name?: string}[], deseados?: {name?: string}[], isV23?: boolean}} [o]
+ * @returns {{name?: string}[]} los que faltan, en el orden del DEFS (nunca `id`)
  */
 export function camposQueFaltan({ actuales = [], deseados = [], isV23 = false } = {}) {
   const hay = new Set((actuales || []).map(f => f?.name));

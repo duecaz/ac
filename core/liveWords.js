@@ -76,7 +76,8 @@ export function getWordList() {
   return DEFAULT_WORDS;
 }
 
-/** Persiste una lista personalizada (array de strings en mayúsculas). */
+/** Persiste una lista personalizada (array de strings en mayúsculas).
+ *  @param {string[]} words */
 export function setWordList(words) {
   lsSet(LS_KEY, JSON.stringify(words));
 }

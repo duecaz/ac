@@ -10,6 +10,9 @@ const COLL = 'activity_likes';
 
 // El wrapper JSON vive UNA vez en core/pbHttp.js (pbJson): firma con el token
 // si lo hay y da a los errores la forma común { status, pb }.
+/** La respuesta de una lista de PocketBase: frontera.
+ *  @typedef {{items?: Record<string, unknown>[]}} ListaPb */
+/** @param {string} path @param {RequestInit} [opts] @returns {Promise<ListaPb>} */
 const pb = (path, opts) => pbJson(path, opts);
 
 // Conteo de likes por actividad (para el ranking). Devuelve {} si la colección no
@@ -27,12 +30,13 @@ export async function fetchMyLikes() {
   if (!uid) return new Set();
   try {
     const data = await pb(`/api/collections/${COLL}/records?perPage=500&filter=${pbFilterParam(`user='${pbEscape(uid)}'`)}`);
-    return new Set((data?.items || []).map(r => r.activity));
+    return new Set((data?.items || []).map(r => String(r.activity ?? '')));
   } catch { return new Set(); }
 }
 
 // Alterna el like del profe actual sobre una actividad. Devuelve {liked} nuevo.
 // Lanza si no hay sesión (el caller debe invitar a entrar).
+/** @param {string} activityId @returns {Promise<{liked: boolean}>} */
 export async function toggleLike(activityId) {
   const uid = getAuthUserId();
   if (!uid) throw new Error('Inicia sesión para votar.');

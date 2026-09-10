@@ -3,6 +3,11 @@
 // "Listo" reveals, advance. Same mechanic and scoring as VS/Equipos/LIVE.
 import { runTextCorrectionSolo } from '../../core/textCorrectionRound.js';
 
+/**
+ * @param {string|Element} rootSel
+ * @param {import('../../kernel/contracts/activity.js').Activity} activity
+ * @param {import('../../kernel/contracts/template.js').PlayerOpts} [opts]
+ */
 export function renderComasPlayer(rootSel, activity, opts = {}) {
   return runTextCorrectionSolo(rootSel, activity, opts, { kind: 'coma', title: activity.title || 'Comas' });
 }

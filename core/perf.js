@@ -10,7 +10,10 @@
 export function isLowEndDevice() {
   if (typeof navigator === 'undefined') return false;   // Node/SSR: no degradar
   const cores = navigator.hardwareConcurrency || 8;
-  const mem = navigator.deviceMemory || 8;   // GB (solo en Chromium); 8 si no se reporta
+  // `deviceMemory` solo existe en Chromium: no está en el tipo estándar de
+  // Navigator, así que se pregunta por el nombre y se estrecha.
+  const memRaw = Reflect.get(navigator, 'deviceMemory');
+  const mem = typeof memRaw === 'number' ? memRaw : 8;   // GB; 8 si no se reporta
   return cores <= 4 || mem <= 2;
 }
 

@@ -12,12 +12,29 @@ import { QL_COLORS, qlBoxesHtml, qlCols } from '../../core/questionLive.js';
 import { cabeceraHtml } from '../../core/playerHud.js';
 
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../core/contentModels/items.js').CardItemLegado} CardItemLegado
+ * @typedef {import('../../core/soloPlayer.js').FreeformCtx} FreeformCtx
+ * @typedef {{question: string, image: string|null}} Caja
+ */
+
+// `sessionItems` devuelve el ítem de CUALQUIER modelo (la unión): aquí solo se
+// leen los dos campos de una tarjeta, así que se estrecha por forma.
+/** @param {Activity} activity @returns {Caja[]} */
 function getItems(activity) {
-  return sessionItems(activity).map(i =>
-    typeof i === 'string' ? { question: i, image: null } : { question: i?.question ?? i?.q ?? '', image: i?.image || null }
-  );
+  return sessionItems(activity).map(i => {
+    if (typeof i === 'string') return { question: i, image: null };
+    const it = /** @type {CardItemLegado} */ (i);
+    return { question: it.question ?? it.q ?? '', image: it.image || null };
+  });
 }
 
+/**
+ * @param {string|Element} rootSel
+ * @param {Activity} activity
+ * @param {import('../../kernel/contracts/template.js').PlayerOpts} [opts]
+ */
 export function renderQuestionLivePlayer(rootSel, activity, opts = {}) {
   const selector = activity.rules?.selector || 'boxes';
   if (selector === 'wheel') renderWheel(rootSel, activity, opts);
@@ -30,15 +47,22 @@ export function renderQuestionLivePlayer(rootSel, activity, opts = {}) {
 // que se AÑADE es la verdad de eso, y la pantalla estándar pone el «otra vez».
 // Tuvo un cierre propio («¡Todas las preguntas respondidas!») que se saltaba
 // la estándar; el dueño lo cerró: todos a rajatabla.
+/** @param {FreeformCtx} ctx @param {number} abiertas @param {number} total */
 const terminarCajas = (ctx, abiertas, total) => ctx.finish({
   score: abiertas, maxScore: total,
   title: '¡Todas las cajas abiertas!',
   stats: `${abiertas} / ${total} cajas`,
 });
 
+/**
+ * @param {string|Element} rootSel
+ * @param {Activity} activity
+ * @param {import('../../kernel/contracts/template.js').PlayerOpts} [opts]
+ */
 function renderBoxes(rootSel, activity, opts = {}) {
   const ctx = runFreeformPlayer(rootSel, activity, opts);
   const items = getItems(activity);
+  /** @type {number|null} */
   let openIdx = null;
   const done = new Set();
   const terminar = () => terminarCajas(ctx, done.size, items.length);
@@ -49,22 +73,24 @@ function renderBoxes(rootSel, activity, opts = {}) {
     // (no hay sala: el que juega abre la que quiera) y una caja hecha muestra
     // un ✓, porque en Individual no hay puntos que dar.
     const boxesHtml = qlBoxesHtml(items.length, {
-      done, openIdx, open: openIdx, cls: 'ab-box',
+      done, open: openIdx, cls: 'ab-box',
       pickable: () => true,
       extraStyle: 'border-radius:8px;min-height:64px;font-size:1.4rem;font-weight:700',
     });
 
-    const openItem = openIdx !== null ? items[openIdx] : null;
+    // La caja abierta, en UN dato: `openIdx` suelto obliga a re-comprobar el
+    // nulo en cada interpolación de la plantilla.
+    const abierta = openIdx !== null && items[openIdx] ? { i: openIdx, item: items[openIdx] } : null;
     mount(rootSel, html`
       <div class="ab-play text-center py-3 px-2">
         ${cabeceraHtml({ pagina: `${done.size} / ${items.length}` })}
         <div class="edu-sec edu-sec--tablero ab-board" style="grid-template-columns:repeat(${cols},1fr)">${boxesHtml}</div>
-        ${openItem != null ? `
-          <div class="ab-open card border-2 mx-auto mt-4" style="max-width:480px;border-color:${QL_COLORS[openIdx % QL_COLORS.length]};border-width:2px">
+        ${abierta != null ? `
+          <div class="ab-open card border-2 mx-auto mt-4" style="max-width:480px;border-color:${QL_COLORS[abierta.i % QL_COLORS.length]};border-width:2px">
             <div class="card-body">
-              <small class="text-muted d-block mb-2">Caja ${openIdx + 1}</small>
-              ${openItem.image ? `<img src="${escapeHtml(openItem.image)}" class="img-fluid rounded mb-3 d-block mx-auto" style="max-height:200px">` : ''}
-              <h4 class="card-title text-center">${escapeHtml(openItem.question || '')}</h4>
+              <small class="text-muted d-block mb-2">Caja ${abierta.i + 1}</small>
+              ${abierta.item.image ? `<img src="${escapeHtml(abierta.item.image)}" class="img-fluid rounded mb-3 d-block mx-auto" style="max-height:200px">` : ''}
+              <h4 class="card-title text-center">${escapeHtml(abierta.item.question || '')}</h4>
               <div class="d-flex gap-2 justify-content-center mt-3">
                 <button class="btn btn-success" id="ab-done"><i class="bi bi-check2-circle"></i> Listo</button>
                 <button class="btn btn-outline-secondary" id="ab-close"><i class="bi bi-x-lg"></i> Cerrar</button>
@@ -77,7 +103,7 @@ function renderBoxes(rootSel, activity, opts = {}) {
     `);
 
     on(rootSel, 'click', '.ab-box:not(.ab-done)', (_, b) => {
-      const i = +b.dataset.i;
+      const i = Number(b.dataset.i);
       openIdx = openIdx === i ? null : i;
       paint();
     });
@@ -92,11 +118,18 @@ function renderBoxes(rootSel, activity, opts = {}) {
   paint();
 }
 
+/**
+ * @param {string|Element} rootSel
+ * @param {Activity} activity
+ * @param {import('../../kernel/contracts/template.js').PlayerOpts} [opts]
+ */
 function renderWheel(rootSel, activity, opts = {}) {
   const ctx = runFreeformPlayer(rootSel, activity, opts);
   const items = getItems(activity);
+  /** @type {Set<number>} */
   const done = new Set();
   const terminar = () => terminarCajas(ctx, done.size, items.length);
+  /** @type {number|null} */
   let openIdx = null;
   let rotation = 0;
   let spinning = false;
@@ -105,12 +138,13 @@ function renderWheel(rootSel, activity, opts = {}) {
 
   function paint() {
     if (openIdx !== null) {
-      const item = items[openIdx];
+      const idx = openIdx;
+      const item = items[idx];
       mount(rootSel, html`
         <div class="ab-play text-center py-3 px-2">
             <div class="ab-open card border-warning mx-auto" style="max-width:480px;border-width:2px">
             <div class="card-body">
-              <small class="text-muted d-block mb-2">Pregunta ${openIdx + 1}</small>
+              <small class="text-muted d-block mb-2">Pregunta ${idx + 1}</small>
               ${item.image ? `<img src="${escapeHtml(item.image)}" class="img-fluid rounded mb-3 d-block mx-auto" style="max-height:200px">` : ''}
               <h4 class="card-title text-center">${escapeHtml(item.question || '')}</h4>
               <div class="d-flex gap-2 justify-content-center mt-3">
@@ -121,7 +155,7 @@ function renderWheel(rootSel, activity, opts = {}) {
           </div>
         </div>
       `);
-      on(rootSel, 'click', '#ab-done', () => { done.add(openIdx); openIdx = null; paint(); });
+      on(rootSel, 'click', '#ab-done', () => { done.add(idx); openIdx = null; paint(); });
       on(rootSel, 'click', '#ab-back', () => { openIdx = null; paint(); });
       return;
     }
@@ -156,7 +190,7 @@ function renderWheel(rootSel, activity, opts = {}) {
       const realIdx = available[target];
       rotation = spinTarget(rotation, count, target);
 
-      const btn = rootEl()?.querySelector('#ab-spin');
+      const btn = /** @type {HTMLButtonElement|null} */ (rootEl()?.querySelector('#ab-spin') ?? null);
       if (btn) btn.disabled = true;
       animateSpin(rootEl()?.querySelector('svg'), rotation, SPIN_DUR_PICK);
       setTimeout(() => {

@@ -25,6 +25,7 @@ const TOOLS = [
 ];
 
 export function openPenCalibration() {
+  /** @type {Record<string, number|null>} */
   const measured = { dedo: null, palma: null };
 
   const overlay = document.createElement('div');
@@ -57,17 +58,23 @@ export function openPenCalibration() {
   document.body.appendChild(overlay);
 
   overlay.querySelectorAll('.pcal-field').forEach((field) => {
-    const key = field.dataset.tool;
-    const pad = field.querySelector('[data-pad]');
-    const valEl = field.querySelector('[data-val]');
-    let capturing = false, t0 = 0, samples = [];
+    const campo = /** @type {HTMLElement} */ (field);
+    const key = campo.dataset.tool || '';
+    const pad = /** @type {HTMLElement|null} */ (campo.querySelector('[data-pad]'));
+    const valEl = /** @type {HTMLElement|null} */ (campo.querySelector('[data-val]'));
+    if (!pad || !valEl) return;
+    let capturing = false, t0 = 0;
+    /** @type {number[]} */
+    let samples = [];
 
+    /** @param {PointerEvent} e */
     const sample = (e) => {
       if (!capturing) return;
       if (performance.now() - t0 < IGNORE_MS) return;   // descarta el primer toque
       samples.push(pointerMetric(e));
       valEl.textContent = mediana(samples).toFixed(1);
     };
+    /** @param {PointerEvent} e */
     const start = (e) => {
       e.preventDefault();
       capturing = true; t0 = performance.now(); samples = [];
@@ -82,7 +89,7 @@ export function openPenCalibration() {
         const m = mediana(samples);
         measured[key] = m;
         valEl.textContent = m.toFixed(1);
-        field.classList.add('is-set');
+        campo.classList.add('is-set');
       }
     };
     pad.addEventListener('pointerdown', start);
@@ -95,8 +102,8 @@ export function openPenCalibration() {
   const close = () => overlay.remove();
   overlay.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', close));
   overlay.addEventListener('pointerdown', (e) => { if (e.target === overlay) close(); });
-  overlay.querySelector('[data-save]').addEventListener('click', () => {
-    saveThresholds(deriveThresholds(measured));
+  overlay.querySelector('[data-save]')?.addEventListener('click', () => {
+    saveThresholds(deriveThresholds({ dedo: measured.dedo, palma: measured.palma }));
     close();
   });
 

@@ -15,6 +15,12 @@ import { toast, TOAST_NORMAL } from './toast.js';
 import { abrirBuscadorImagenes } from './imageSearchModal.js';
 import { creditoTexto } from './imageSearch.js';
 
+/** @typedef {import('../kernel/contracts/activity.js').ImageCredit} ImageCredit */
+
+/**
+ * @param {string|null|undefined} currentUrl
+ * @param {ImageCredit|null} [credito]
+ */
 export function renderImagePicker(currentUrl, credito = null) {
   return `
     <div class="ww-img-picker text-center">
@@ -41,37 +47,52 @@ export function renderImagePicker(currentUrl, credito = null) {
 // over the limit are rejected before upload with a friendly toast.
 // opts.credito — atribución ya guardada, para pintarla bajo la imagen.
 // opts.consulta — qué proponer en el buscador (el título de la pregunta).
+/**
+ * @param {string|Element|null} root
+ * @param {string} containerSel
+ * @param {string|null|undefined} currentUrl
+ * @param {(url: string|null, atribucion: ImageCredit|null) => void} onChange
+ * @param {{maxBytes?: number, credito?: ImageCredit|null, consulta?: string}} [opts]
+ */
 export function attachImagePicker(root, containerSel, currentUrl, onChange, opts = {}) {
   const el = typeof root === 'string' ? document.querySelector(root) : root;
   if (!el) return;
   const container = el.querySelector(containerSel);
   if (!container) return;
-  const fileInput = container.querySelector('.ww-img-file');
-  const changeBtn = container.querySelector('.ww-img-change');
+  const fileInput = /** @type {HTMLInputElement|null} */ (container.querySelector('.ww-img-file'));
+  const changeBtn = /** @type {HTMLButtonElement|null} */ (container.querySelector('.ww-img-change'));
   const searchBtn = container.querySelector('.ww-img-search');
   const clearBtn = container.querySelector('.ww-img-clear');
 
+  /**
+   * @param {string|null} url
+   * @param {ImageCredit|null} credito
+   */
   const rerender = (url, credito) => {
     container.innerHTML = renderImagePicker(url, credito);
     attachImagePicker(root, containerSel, url, onChange, { ...opts, credito });
   };
+  /**
+   * @param {string|null} url
+   * @param {ImageCredit|null} atribucion
+   */
   const elegida = (url, atribucion) => { onChange(url, atribucion); rerender(url, atribucion); };
 
   if (changeBtn && fileInput) changeBtn.addEventListener('click', () => fileInput.click());
   if (fileInput) {
-    fileInput.addEventListener('change', async (e) => {
-      const f = e.target.files?.[0];
+    fileInput.addEventListener('change', async () => {
+      const f = fileInput.files?.[0];
       if (!f) return;
       if (opts.maxBytes && f.size > opts.maxBytes) {
         toast(`Imagen demasiado grande (máx. ${Math.round(opts.maxBytes / 1024)} KB)`, 'danger', TOAST_NORMAL);
-        e.target.value = '';
+        fileInput.value = '';
         return;
       }
       if (changeBtn) changeBtn.disabled = true;
       try {
         elegida(await uploadMedia(f), null);
       } catch (err) {
-        toast('Error subiendo imagen: ' + err.message, 'danger', TOAST_NORMAL);
+        toast('Error subiendo imagen: ' + (err instanceof Error ? err.message : String(err)), 'danger', TOAST_NORMAL);
         if (changeBtn) changeBtn.disabled = false;
       }
     });

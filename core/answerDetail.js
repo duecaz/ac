@@ -7,17 +7,27 @@
 // CORRECTOS (para el heatmap importan los fallos), luego el resto de `v`.
 // Ver docs/historico/handoff-analitica-items.md.
 
+/** UNA respuesta en el formato común del detalle.
+ *  @typedef {{i: number, v: unknown, c: boolean|null, p: number}} RespuestaDetalle */
+
+/** @param {Record<string, unknown>} a @param {number} idx @returns {RespuestaDetalle} */
 function normOne(a, idx) {
   return {
     i: Number(a.i ?? a.itemIndex ?? idx),
     v: a.v ?? a.value ?? null,
-    c: (a.c ?? a.correct) ?? null,
-    p: a.p ?? a.points ?? 0,
+    c: /** @type {boolean|null} */ ((a.c ?? a.correct) ?? null),
+    p: Number(a.p ?? a.points ?? 0),
   };
 }
 
+/**
+ * @param {Record<string, unknown>[]|null|undefined} list
+ * @param {{maxBytes?: number}} [o]
+ * @returns {RespuestaDetalle[]}
+ */
 export function packAnswers(list, { maxBytes = 100_000 } = {}) {
   let out = (list || []).map(normOne);
+  /** @param {unknown} x @returns {number} */
   const size = (x) => JSON.stringify(x).length;
   if (size(out) <= maxBytes) return out;
   // 1) fuera `v` de los correctos (el heatmap necesita sobre todo los fallos)

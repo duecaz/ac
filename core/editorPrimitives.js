@@ -80,6 +80,25 @@ export function wireItemList(root, a, ctx, { list, añadir }) {
 }
 
 
+/** «Escribir en la casilla i cambia el campo X del ítem i»: el cableado de
+ *  texto más repetido de los editores (Memoria y Ruleta lo tenían calcado),
+ *  con UN dueño. La lista se pide por función porque el contenido puede
+ *  reemplazarse entero al migrar.
+ * @template {Record<string, unknown>} T
+ * @param {Element} root
+ * @param {Activity} a
+ * @param {EditorCtx} ctx
+ * @param {{selector: string, lista: () => T[], campo: string}} o
+ */
+export function wireCampoTexto(root, a, ctx, { selector, lista, campo }) {
+  on(root, 'input', selector, (_, el) => {
+    const it = lista()[Number(el.dataset.i)];
+    if (!it) return;
+    /** @type {Record<string, unknown>} */ (it)[campo] = /** @type {HTMLInputElement} */ (el).value;
+    ctx.onChange(a);
+  });
+}
+
 // R2 (ley del cuadro de modos): las reglas de juego configurables tienen ALCANCE
 // declarado y el editor lo MUESTRA — antes el docente configuraba "Timer" u
 // "Orden aleatorio" creyendo que aplicaban a todos los modos, pero solo las

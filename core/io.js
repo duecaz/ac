@@ -10,6 +10,20 @@ import { isSafeBgImage } from './backgrounds.js';
 const FORMAT = 'ww-activities';
 const FORMAT_VERSION = 1;
 
+/** @typedef {import('./migrate.js').ActivityLike} ActivityLike */
+
+/**
+ * Cualquier objeto: es exactamente lo que `migrate()` acepta (él mismo rechaza
+ * lo que no lo sea), así que el JSON de fuera se estrecha con la misma vara.
+ * @param {unknown} v
+ * @returns {v is ActivityLike}
+ */
+const esActividadCruda = (v) => !!v && typeof v === 'object';
+
+/** @param {unknown} v @returns {v is Record<string, unknown>} */
+const esObjeto = (v) => !!v && typeof v === 'object';
+
+/** @param {string[]|null} [ids] */
 function exportActivities(ids = null) {
   const all = ids ? ids.map(id => get(id)).filter(Boolean) : list();
   return {
@@ -20,6 +34,10 @@ function exportActivities(ids = null) {
   };
 }
 
+/**
+ * @param {string[]|null} [ids]
+ * @param {string|null} [filename]
+ */
 export function downloadActivitiesJson(ids = null, filename = null) {
   const payload = exportActivities(ids);
   const fname = filename || (ids?.length === 1
@@ -31,27 +49,37 @@ export function downloadActivitiesJson(ids = null, filename = null) {
 
 // Reads a File or string, returns { ok, count, errors }.
 // strategy: 'duplicate' (always new id), 'preserve' (keep id, may overwrite local).
+/**
+ * @param {File|string} input
+ * @param {{strategy?: 'duplicate'|'preserve'}} [opts]
+ * @returns {Promise<{ok: boolean, count: number, skipped?: number, errors: string[]}>}
+ */
 async function importActivitiesJson(input, { strategy = 'duplicate' } = {}) {
   const text = typeof input === 'string' ? input : await input.text();
+  /** @type {unknown} */
   let parsed;
-  try { parsed = JSON.parse(text); } catch (e) { return { ok: false, errors: ['JSON inválido: ' + e.message], count: 0 }; }
+  try { parsed = JSON.parse(text); } catch (e) { return { ok: false, errors: ['JSON inválido: ' + (e instanceof Error ? e.message : String(e))], count: 0 }; }
+  const sobre = esObjeto(parsed) ? parsed : null;
 
   // Rechaza un wrapper de una versión de formato FUTURA: su contenido podría
   // tener un esquema que `migrate` (forward-only) normalizaría mal en silencio.
-  if (parsed?.format === FORMAT && Number(parsed.version) > FORMAT_VERSION) {
-    return { ok: false, count: 0, errors: [`Formato v${parsed.version} más nuevo que el soportado (v${FORMAT_VERSION}). Actualiza la app.`] };
+  if (sobre?.format === FORMAT && Number(sobre.version) > FORMAT_VERSION) {
+    return { ok: false, count: 0, errors: [`Formato v${sobre.version} más nuevo que el soportado (v${FORMAT_VERSION}). Actualiza la app.`] };
   }
 
+  /** @type {unknown[]} */
   let activities = [];
-  if (parsed?.format === FORMAT && Array.isArray(parsed.activities)) activities = parsed.activities;
+  if (sobre?.format === FORMAT && Array.isArray(sobre.activities)) activities = sobre.activities;
   else if (Array.isArray(parsed)) activities = parsed;
-  else if (parsed?.id && parsed?.template) activities = [parsed]; // single
+  else if (sobre?.id && sobre?.template) activities = [sobre]; // single
   else return { ok: false, errors: ['Formato no reconocido.'], count: 0 };
 
+  /** @type {string[]} */
   const errors = [];
   let count = 0, skipped = 0;
   for (const raw of activities) {
     try {
+      if (!esActividadCruda(raw)) throw new Error('migrate: not an object');
       const a = migrate(raw);
       if (strategy === 'duplicate') {
         a.id = newActivityId();
@@ -74,12 +102,14 @@ async function importActivitiesJson(input, { strategy = 'duplicate' } = {}) {
       remote.catch(() => {}); // surfacing handled at caller level
       count++;
     } catch (e) {
-      errors.push(`"${raw?.title || raw?.id || '?'}": ${e.message}`);
+      const nombre = esObjeto(raw) ? String(raw.title || raw.id || '?') : '?';
+      errors.push(`"${nombre}": ${e instanceof Error ? e.message : String(e)}`);
     }
   }
   return { ok: errors.length === 0, count, skipped, errors };
 }
 
+/** @param {unknown} s */
 function slug(s) {
   return String(s).toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'actividad';
 }
@@ -90,10 +120,20 @@ function dateTag() {
 /** Descarga un texto como fichero. El trío blob→<a>→click()→revokeObjectURL
  *  estaba copiado en cuatro sitios (io, hostLive, reports, assignments), cada
  *  uno con su propio retardo de revoke. Aquí una vez. */
+/**
+ * @param {string} filename
+ * @param {string} mime
+ * @param {string} text
+ * @param {{bom?: boolean}} [opts]
+ */
 export function downloadText(filename, mime, text, { bom = true } = {}) {
   triggerDownload(new Blob([(bom ? '\ufeff' : '') + text], { type: `${mime};charset=utf-8` }), filename);
 }
 
+/**
+ * @param {Blob} blob
+ * @param {string} filename
+ */
 function triggerDownload(blob, filename) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -103,6 +143,10 @@ function triggerDownload(blob, filename) {
 }
 
 // Convenience: trigger a hidden file input and call onLoaded with parsed result.
+/**
+ * @param {{strategy?: 'duplicate'|'preserve'}} [opts]
+ * @param {(r: {ok: boolean, count: number, skipped?: number, errors: string[]}) => void} [onResult]
+ */
 export function pickAndImport({ strategy = 'duplicate' } = {}, onResult) {
   const input = document.createElement('input');
   input.type = 'file';

@@ -109,7 +109,9 @@ const score = (item, value) => scoreQuizSubmission({ value, item, activity: { sc
   const { readFileSync } = await import('node:fs');
   const src = readFileSync(new URL('../templates/quiz/editor.js', import.meta.url), 'utf8');
   assert.match(src, /answerWarningHtml\(a\)\s*\+/, 'el banner de "sin respuesta" se pinta en la lista de preguntas');
-  assert.match(src, /setOptionText\(item, k, e\.target\.value\)/, 'el handler de texto pasa por setOptionText');
+  // `valorDe(e)` es lo tecleado en el campo del evento (el editor lo lee así
+  // desde que `e.target` se estrecha en vez de darse por hecho).
+  assert.match(src, /setOptionText\(item, k, (?:e\.target\.value|valorDe\(e\))\)/, 'el handler de texto pasa por setOptionText');
   assert.ok(!/item\.options\[k\] = e\.target\.value/.test(src),
     'ya no se muta el texto antes de fijar el índice correcto (era el bug)');
   ok('el editor usa el camino seguro y muestra el aviso');

@@ -26,7 +26,8 @@ export function getNick() {
 }
 
 /** Guarda el apodo YA saneado (el filtro lo aplica quien lo pide, que es quien
- *  puede explicarle al alumno por qué no vale). Devuelve false si no se pudo. */
+ *  puede explicarle al alumno por qué no vale). Devuelve false si no se pudo.
+ *  @param {unknown} value @returns {boolean} */
 export function setNick(value) {
   return lsSet(NICK_KEY, String(value ?? ''));
 }

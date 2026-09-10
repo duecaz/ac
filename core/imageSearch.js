@@ -30,35 +30,64 @@
 
 import { PIXABAY_KEY } from './imageKeys.js';
 
+/**
+ * UNA FUENTE del buscador. O trae su propio recorrido (`buscar`, cuando hacen
+ * falta dos peticiones) o declara `url` + `parse`.
+ * @typedef {Object} Fuente
+ * @property {string} etiqueta
+ * @property {string} [nota]
+ * @property {boolean} [necesitaClave]
+ * @property {() => boolean} [clavePuesta]
+ * @property {(q: string, o: {fetchFn: typeof fetch, limite?: number}) => Promise<Imagen[]>} [buscar]
+ * @property {(q: string, o?: {limite?: number}) => string} [url]
+ * @property {(json: unknown) => Imagen[]} [parse]
+ */
+
+// JSON DE FUERA: se lee sin prometer forma y se estrecha campo a campo. Un
+// catálogo ajeno puede cambiar de esquema cualquier martes, y lo que no venga
+// como se espera se queda en cadena vacía (la imagen se filtra más abajo).
+/** @param {unknown} v @returns {Record<string, unknown>} */
+const saco = (v) => (v && typeof v === 'object') ? /** @type {Record<string, unknown>} */ (v) : {};
+/** @param {unknown} v @returns {unknown[]} */
+const lista = (v) => (Array.isArray(v) ? v : []);
+/** @param {unknown} v @returns {string} */
+const cadena = (v) => (typeof v === 'string' ? v : (typeof v === 'number' ? String(v) : ''));
+
+/** @param {unknown} s */
 const LIMPIA = (s) => String(s ?? '').replace(/<[^>]*>/g, '').trim();
 
 /** Lee la respuesta de imageinfo de Commons — la MISMA para buscar por texto y
- *  para pedir archivos por nombre, que es lo que hace la fuente «Wikipedia». */
+ *  para pedir archivos por nombre, que es lo que hace la fuente «Wikipedia».
+ *  @param {unknown} json
+ *  @returns {Imagen[]} */
 function parseCommons(json) {
-  const pages = json?.query?.pages;
+  const pages = saco(saco(json).query).pages;
   if (!pages) return [];
-  return Object.values(pages).map((p) => {
-    const info = p.imageinfo?.[0] || {};
-    const meta = info.extmetadata || {};
+  return Object.values(saco(pages)).map((cruda) => {
+    const p = saco(cruda);
+    const info = saco(lista(p.imageinfo)[0]);
+    const meta = saco(info.extmetadata);
     return {
-      id: `wm_${p.pageid || p.title}`,
-      miniatura: info.thumburl || info.url || '',
-      imagen: info.url || '',
+      id: `wm_${cadena(p.pageid) || cadena(p.title)}`,
+      miniatura: cadena(info.thumburl) || cadena(info.url),
+      imagen: cadena(info.url),
       titulo: LIMPIA(p.title).replace(/^File:/, ''),
-      autor: LIMPIA(meta.Artist?.value) || 'Wikimedia Commons',
-      licencia: LIMPIA(meta.LicenseShortName?.value) || 'ver en Commons',
-      pagina: info.descriptionurl || '',
+      autor: LIMPIA(saco(meta.Artist).value) || 'Wikimedia Commons',
+      licencia: LIMPIA(saco(meta.LicenseShortName).value) || 'ver en Commons',
+      pagina: cadena(info.descriptionurl),
       fuente: 'Wikimedia Commons',
     };
   }).filter(r => r.miniatura && r.imagen);
 }
 
-/** Pide a Commons UNOS ARCHIVOS CONCRETOS por nombre (con su licencia). */
+/** Pide a Commons UNOS ARCHIVOS CONCRETOS por nombre (con su licencia).
+ *  @param {string[]} files */
 const urlCommonsPorTitulos = (files) =>
   'https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*'
   + '&titles=' + files.map(f => encodeURIComponent('File:' + f)).join('%7C')
   + '&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=320';
 
+/** @type {Record<string, Fuente>} */
 export const FUENTES = {
   // ── Wikipedia en español ───────────────────────────────────────────────────
   // LA FUENTE POR DEFECTO, y la que arregla el hallazgo del dueño: buscar
@@ -82,13 +111,13 @@ export const FUENTES = {
         + '&prop=pageimages&piprop=name&pilimit=' + limite;
       const r1 = await fetchFn(u1);
       if (!r1.ok) throw new Error(`Wikipedia no respondió (error ${r1.status}).`);
-      const paginas = Object.values((await r1.json())?.query?.pages || {});
+      const paginas = Object.values(saco(saco(saco(await r1.json()).query).pages)).map(saco);
       // Orden de RELEVANCIA: la API numera los resultados en `index`; el objeto
       // de páginas no conserva ese orden y sin esto el mejor artículo caía a
       // media rejilla.
       const files = [...new Set(paginas
-        .sort((x, y) => (x.index ?? 99) - (y.index ?? 99))
-        .map(p => p.pageimage).filter(Boolean))];
+        .sort((x, y) => (typeof x.index === 'number' ? x.index : 99) - (typeof y.index === 'number' ? y.index : 99))
+        .map(p => cadena(p.pageimage)).filter(Boolean))];
       if (!files.length) return [];
       const r2 = await fetchFn(urlCommonsPorTitulos(files.slice(0, limite)));
       if (!r2.ok) throw new Error(`Wikimedia Commons no respondió (error ${r2.status}).`);
@@ -132,17 +161,17 @@ export const FUENTES = {
       'https://pixabay.com/api/?key=' + encodeURIComponent(PIXABAY_KEY)
       + '&q=' + encodeURIComponent(q)
       + '&lang=es&image_type=all&safesearch=true&per_page=' + Math.max(3, limite),
-    parse: (json) => (json?.hits || []).map((h) => ({
-      id: `px_${h.id}`,
-      miniatura: h.webformatURL || h.previewURL || '',
+    parse: (json) => lista(saco(json).hits).map(saco).map((h) => ({
+      id: `px_${cadena(h.id)}`,
+      miniatura: cadena(h.webformatURL) || cadena(h.previewURL),
       // `webformatURL` (≤640 px) y no `largeImageURL`: es el tamaño que se usa
       // de verdad —el tope de §25 la reescalaría igual— y baja una imagen de
       // 200 KB en vez de una de 3 MB con la clase esperando.
-      imagen: h.webformatURL || h.largeImageURL || '',
+      imagen: cadena(h.webformatURL) || cadena(h.largeImageURL),
       titulo: LIMPIA(h.tags) || 'Sin título',
       autor: LIMPIA(h.user) || 'Pixabay',
       licencia: 'Uso libre (Pixabay)',
-      pagina: h.pageURL || '',
+      pagina: cadena(h.pageURL),
       fuente: 'Pixabay',
     })).filter(r => r.miniatura && r.imagen),
   },
@@ -159,14 +188,14 @@ export const FUENTES = {
     url: (q, { limite = 24 } = {}) =>
       'https://api.openverse.org/v1/images/?page_size=' + limite
       + '&q=' + encodeURIComponent(q),
-    parse: (json) => (json?.results || []).map((r) => ({
-      id: `ov_${r.id}`,
-      miniatura: r.thumbnail || r.url || '',
-      imagen: r.url || '',
+    parse: (json) => lista(saco(json).results).map(saco).map((r) => ({
+      id: `ov_${cadena(r.id)}`,
+      miniatura: cadena(r.thumbnail) || cadena(r.url),
+      imagen: cadena(r.url),
       titulo: LIMPIA(r.title) || 'Sin título',
       autor: LIMPIA(r.creator) || 'Autor desconocido',
-      licencia: [r.license, r.license_version].filter(Boolean).join(' ').toUpperCase() || 'CC',
-      pagina: r.foreign_landing_url || '',
+      licencia: [cadena(r.license), cadena(r.license_version)].filter(Boolean).join(' ').toUpperCase() || 'CC',
+      pagina: cadena(r.foreign_landing_url),
       fuente: 'Openverse',
     })).filter(r => r.miniatura && r.imagen),
   },
@@ -177,7 +206,7 @@ export const FUENTES = {
  * se ofrece: un desplegable con una opción que falla al tocarla es peor que un
  * desplegable con una opción menos — el profe no puede saber que le faltaba una
  * clave, solo ve que la app no encuentra nada.
- * @returns {[string, object][]} pares [nombre, fuente], en orden de menú
+ * @returns {[string, Fuente][]} pares [nombre, fuente], en orden de menú
  */
 export function fuentesDisponibles() {
   return Object.entries(FUENTES).filter(([, f]) => !f.necesitaClave || f.clavePuesta?.());
@@ -190,6 +219,8 @@ export const FUENTE_POR_DEFECTO = 'wikipedia';
 
 /**
  * Busca en una fuente. No conoce la red: se le PASA el `fetch`.
+ * @param {string} consulta
+ * @param {{fuente?: string, limite?: number, fetchFn?: typeof fetch}} [opts]
  * @returns {Promise<Imagen[]>}
  * @throws si la fuente no responde — quien llama lo DICE (R6), nunca en silencio.
  */
@@ -201,6 +232,7 @@ export async function buscarImagenes(consulta, { fuente = FUENTE_POR_DEFECTO, li
   // Una fuente puede traer su propio recorrido (Wikipedia son dos peticiones:
   // el tema y luego la licencia). Las de una sola petición declaran url+parse.
   if (f.buscar) return f.buscar(q, { fetchFn, limite });
+  if (!f.url || !f.parse) throw new Error(`Fuente de imágenes incompleta: ${fuente}`);
   const r = await fetchFn(f.url(q, { limite }));
   if (!r.ok) throw new Error(fallo(f, r.status));
   return f.parse(await r.json());
@@ -209,6 +241,10 @@ export async function buscarImagenes(consulta, { fuente = FUENTE_POR_DEFECTO, li
 /** El motivo, con la salida al lado. Un 401/403 no es «no hay internet»: la
  *  fuente pide credenciales que esta app no tiene, y decirle al profe que
  *  compruebe su conexión lo manda a mirar donde no es. */
+/**
+ * @param {Fuente} f
+ * @param {number} status
+ */
 function fallo(f, status) {
   return (status === 401 || status === 403)
     ? `${f.etiqueta} ya no permite buscar sin cuenta (error ${status}). Cambia de fuente arriba.`
@@ -218,6 +254,8 @@ function fallo(f, status) {
 /**
  * La ATRIBUCIÓN que se guarda junto a la imagen. Se queda con lo mínimo — no es
  * telemetría, es el crédito que la licencia exige (R7: dato mínimo).
+ * @param {Imagen|null|undefined} img
+ * @returns {import('../kernel/contracts/activity.js').ImageCredit|null}
  */
 export function atribucionDe(img) {
   if (!img) return null;
@@ -229,7 +267,8 @@ export function atribucionDe(img) {
   };
 }
 
-/** Una línea legible para pintarla debajo de la imagen. */
+/** Una línea legible para pintarla debajo de la imagen.
+ *  @param {import('../kernel/contracts/activity.js').ImageCredit|null|undefined} atrib */
 export function creditoTexto(atrib) {
   if (!atrib) return '';
   return [atrib.autor, atrib.licencia, atrib.fuente].filter(Boolean).join(' · ');

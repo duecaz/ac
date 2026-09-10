@@ -13,9 +13,13 @@
 // `mode` es el mismo de `core/persistPolicy.js`.
 import { destinoTrasJugar, puedeRepetir } from './afterPlay.js';
 
+/**
+ * @param {{icon?: string, iconColor?: string, title?: string, lead?: string, stats?: string, mode?: string, score?: number, maxScore?: number}} [o]
+ * @returns {string}
+ */
 export function resultScreenHtml({ icon, iconColor, title, lead = '', stats = '', mode = 'solo', score, maxScore } = {}) {
-  if (icon === undefined && maxScore > 0) {
-    const ratio = score / maxScore;
+  if (icon === undefined && (maxScore ?? 0) > 0) {
+    const ratio = (score ?? 0) / (maxScore ?? 1);
     if (ratio >= 0.8)      { icon = 'bi-trophy-fill';  iconColor = 'text-warning';  title = title ?? '¡Excelente!'; }
     else if (ratio >= 0.5) { icon = 'bi-star-fill';    iconColor = 'text-primary';  title = title ?? '¡Bien hecho!'; }
     else                   { icon = 'bi-emoji-frown';  iconColor = 'text-secondary'; title = title ?? '¡Sigue practicando!'; }

@@ -11,10 +11,26 @@
 // exacta (lo comprueba tests/tangram.test.mjs).
 const T = Math.SQRT2 / 4;
 
+/**
+ * Un punto del CUADRADO UNIDAD del juego — el par `[x, y]` con el que viajan
+ * piezas, siluetas y máscaras.
+ * @typedef {[number, number]} Punto
+ */
+/**
+ * Una de las siete piezas: su polígono LOCAL (ángulo recto/esquina en el
+ * origen) y el color con que la pinta el player (§3: el color es DATO).
+ * @typedef {Object} Pieza
+ * @property {string} nombre
+ * @property {string} color
+ * @property {Punto[]} puntos
+ */
+
 // Triángulo rectángulo isósceles: catetos `c` sobre los ejes, ángulo recto en
 // el origen (que es el punto que se rota/traslada).
+/** @param {number} c @returns {Punto[]} */
 const triangulo = (c) => [[0, 0], [c, 0], [0, c]];
 
+/** @type {Record<string, Pieza>} */
 export const PIEZAS = {
   // 2 triángulos GRANDES — cateto 2t (=√2/2), área 1/4 cada uno.
   grande1: { nombre: 'Triángulo grande 1', color: '#e74c3c', puntos: triangulo(2 * T) },
@@ -38,7 +54,8 @@ export const PIEZAS = {
 export const ORDEN_PIEZAS = ['grande1', 'grande2', 'mediano', 'pequeno1', 'pequeno2', 'cuadrado', 'paralelogramo'];
 
 /** Área (shoelace) de un polígono simple — usada por el test de proporciones
- *  y por quien quiera validar una pieza nueva sin rasterizar nada. */
+ *  y por quien quiera validar una pieza nueva sin rasterizar nada.
+ *  @param {Punto[]} pts @returns {number} */
 export function areaPoligono(pts) {
   let s = 0;
   for (let i = 0; i < pts.length; i++) {

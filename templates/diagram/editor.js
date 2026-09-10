@@ -12,10 +12,28 @@ import { toast, TOAST_LARGO, TOAST_NORMAL } from '../../core/toast.js';
 import { abrirBuscadorImagenes } from '../../core/imageSearchModal.js';
 import { creditoTexto } from '../../core/imageSearch.js';
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/activity.js').DiagramContent} DiagramContent
+ * @typedef {import('../../kernel/contracts/activity.js').DiagramPin} DiagramPin
+ * @typedef {import('../../kernel/contracts/activity.js').ImageCredit} ImageCredit
+ * @typedef {import('../../core/editorShell.js').EditorCtx} EditorCtx
+ */
+
+// El contenido de ESTA actividad es el modelo `diagram` (imagen + pines): el
+// chasis la entrega como la actividad de cualquier plantilla.
+/** @param {Activity} a @returns {DiagramContent} */
+const cont = (a) => /** @type {DiagramContent} */ (a.content);
+
+/**
+ * @param {Element} root
+ * @param {Activity} activity
+ * @param {(activity: Activity) => void} onChange
+ */
 export function renderDiagramEditor(root, activity, onChange) {
   const a = activity;
   if (!a.content || typeof a.content !== 'object') a.content = { image: null, pins: [] };
-  if (!Array.isArray(a.content.pins)) a.content.pins = [];
+  if (!Array.isArray(cont(a).pins)) cont(a).pins = [];
   renderEditorShell(root, a, onChange, {
     content: { label: 'Imagen y pines', html: contentHtml, wire: wireContent },
     rules:   { html: rulesHtml,   wire: wireRules },
@@ -23,9 +41,10 @@ export function renderDiagramEditor(root, activity, onChange) {
   });
 }
 
+/** @param {Activity} a */
 function contentHtml(a) {
-  const pins = a.content.pins;
-  const img = a.content.image;
+  const pins = cont(a).pins;
+  const img = cont(a).image;
   return `
     <div class="mb-3 d-flex align-items-center gap-2 flex-wrap">
       <label class="btn btn-outline-primary mb-0">
@@ -37,7 +56,7 @@ function contentHtml(a) {
       </button>
       <span class="text-muted small">Se guarda dentro de la actividad (se comprime sola; hasta 800 KB).</span>
     </div>
-    ${a.content.imageCredit ? `<p class="text-muted small mb-2"><i class="bi bi-c-circle"></i> Imagen de ${escapeHtml(creditoTexto(a.content.imageCredit))}</p>` : ''}
+    ${cont(a).imageCredit ? `<p class="text-muted small mb-2"><i class="bi bi-c-circle"></i> Imagen de ${escapeHtml(creditoTexto(cont(a).imageCredit))}</p>` : ''}
     ${img ? `
       <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
         <button type="button" class="btn btn-outline-success btn-sm" id="dg-add">
@@ -61,42 +80,49 @@ function contentHtml(a) {
     ` : ''}`;
 }
 
+/**
+ * @param {Element} root
+ * @param {Activity} a
+ * @param {EditorCtx} ctx
+ */
 function wireContent(root, a, ctx) {
+  const c = cont(a);
   // SUBIR y BUSCAR acaban aquí: una sola función pone la imagen, con lo que la
   // regla dura (cambiar el soporte invalida los pines) no puede quedarse en uno
   // de los dos caminos.
+  /** @param {string} dataUrl @param {ImageCredit|null} [atribucion] */
   const ponerImagen = (dataUrl, atribucion = null) => {
-    a.content.image = dataUrl;
+    c.image = dataUrl;
     // LA FORMA DE LA FOTO ES CONTENIDO, y se apunta AQUÍ, cuando se elige. El
     // player la necesita para escribir su caja de una vez (`aspect-ratio`): si
     // la midiera al pintar, la actividad nacería con una medida y se
     // recalcularía a la vista. Se guarda al ponerla —cuando ya está cargada—,
     // así que no cuesta nada y viaja con la actividad (§24: campo declarado).
     medirImagen(dataUrl).then(({ w, h }) => {
-      if (a.content.image !== dataUrl) return;   // ya la cambiaron otra vez
-      if (w && h) { a.content.imageW = w; a.content.imageH = h; ctx.onChange(a); }
+      if (c.image !== dataUrl) return;   // ya la cambiaron otra vez
+      if (w && h) { c.imageW = w; c.imageH = h; ctx.onChange(a); }
     });
     // El crédito viaja CON el píxel, o se va con él (§24: campo declarado del
     // contenido). Atribuir la imagen anterior sería peor que no atribuir.
-    if (atribucion) a.content.imageCredit = atribucion;
-    else delete a.content.imageCredit;
+    if (atribucion) c.imageCredit = atribucion;
+    else delete c.imageCredit;
     // CAMBIAR EL SOPORTE INVALIDA LO ANCLADO A ÉL (R-C · plan del editor).
     // Los pines guardan x/y como FRACCIÓN de ESTA imagen: al cambiarla se
     // quedaban clavados donde estaban y «Nariz» aparecía en medio de tu mapa
     // — que es lo que veía cualquiera que subiera su propio diagrama sobre el
     // ejemplo. Se quitan y se DICE cuántos: dejarlo mudo es lo que hacía que
     // pareciera que el editor estaba roto.
-    const habia = a.content.pins.length;
+    const habia = c.pins.length;
     if (habia) {
-      a.content.pins = [];
+      c.pins = [];
       toast(`Imagen nueva: se quitaron ${habia} etiqueta${habia === 1 ? '' : 's'} — estaban colocadas sobre la anterior. `
         + 'Haz clic en la imagen para poner las tuyas.', 'info', TOAST_LARGO);
     }
     ctx.onChange(a); ctx.repaint();
   };
 
-  on(root, 'change', '#dg-img-file', async (e) => {
-    const file = e.target.files[0];
+  on(root, 'change', '#dg-img-file', async (_e, el) => {
+    const file = /** @type {HTMLInputElement} */ (el).files?.[0];
     if (!file) return;
     try {
       // Presupuesto de LIENZO, no de imagen de pregunta (§25): un diagrama se
@@ -104,7 +130,7 @@ function wireContent(root, a, ctx) {
       // foto de enunciado salía borroso justo donde hay que señalar.
       ponerImagen(await uploadMedia(file,
         { maxBytes: QUOTAS.canvasImageBytes, ladoMax: QUOTAS.canvasImageSide }));
-    } catch (err) { toast('No se pudo cargar la imagen: ' + err.message, 'warning', TOAST_NORMAL); }
+    } catch (err) { toast('No se pudo cargar la imagen: ' + (err instanceof Error ? err.message : String(err)), 'warning', TOAST_NORMAL); }
   });
 
   // BUSCAR (F6): el diagrama es el caso que lo pidió — nadie tiene a mano un
@@ -121,35 +147,44 @@ function wireContent(root, a, ctx) {
   // pero no puede ser la ÚNICA puerta — vivía en una línea gris y el dueño no la
   // encontró. El pin nace en el CENTRO, a la vista y listo para arrastrar.
   on(root, 'click', '#dg-add', () => {
-    if (!a.content.image) { toast('Primero sube el dibujo: las etiquetas se colocan encima.', 'info', TOAST_NORMAL); return; }
-    a.content.pins.push(newPin());  // nace en el centro: el default de newPin() YA es (0.5, 0.5)
+    if (!c.image) { toast('Primero sube el dibujo: las etiquetas se colocan encima.', 'info', TOAST_NORMAL); return; }
+    c.pins.push(newPin());  // nace en el centro: el default de newPin() YA es (0.5, 0.5)
     ctx.onChange(a); ctx.repaint();
   });
 
-  on(root, 'input', '.dg-label-input', (e, el) => { a.content.pins[+el.dataset.i].label = el.value; ctx.onChange(a); });
-  on(root, 'click', '.dg-pin-del', (_, b) => { a.content.pins.splice(+b.dataset.i, 1); ctx.onChange(a); ctx.repaint(); });
+  on(root, 'input', '.dg-label-input', (_e, el) => {
+    const campo = /** @type {HTMLInputElement} */ (el);
+    c.pins[Number(el.dataset.i)].label = campo.value;
+    ctx.onChange(a);
+  });
+  on(root, 'click', '.dg-pin-del', (_, b) => { c.pins.splice(Number(b.dataset.i), 1); ctx.onChange(a); ctx.repaint(); });
 
-  const box = root.querySelector('#dg-edit-box');
+  // `_suppressClick` es la marca de «acabo de arrastrar»: vive en la caja para
+  // que el click que sigue al pointerup no añada un pin encima del movido.
+  const box = /** @type {(HTMLElement & {_suppressClick?: boolean})|null} */ (root.querySelector('#dg-edit-box'));
   if (!box) return;
+  /** @type {{i: number, moved: boolean, pointerId: number}|null} */
   let drag = null;
+  /** @param {{clientX: number, clientY: number}} e */
   const frac = (e) => {
     const r = box.getBoundingClientRect();
     return { x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)),
              y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)) };
   };
   box.addEventListener('pointerdown', (e) => {
-    const pin = e.target.closest('.dg-edit-pin');
+    const destino = /** @type {HTMLElement|null} */ (e.target);
+    const pin = /** @type {HTMLElement|null} */ (destino?.closest?.('.dg-edit-pin') ?? null);
     if (!pin) return;                          // clic en vacío → lo maneja el 'click'
     e.preventDefault();
-    drag = { i: +pin.dataset.i, moved: false, pointerId: e.pointerId };
+    drag = { i: Number(pin.dataset.i), moved: false, pointerId: e.pointerId };
     try { box.setPointerCapture(e.pointerId); } catch {}
   });
   box.addEventListener('pointermove', (e) => {
     if (!drag || e.pointerId !== drag.pointerId) return;
     drag.moved = true;
     const { x, y } = frac(e);
-    a.content.pins[drag.i].x = x; a.content.pins[drag.i].y = y;
-    const el = box.querySelector(`.dg-edit-pin[data-i="${drag.i}"]`);
+    c.pins[drag.i].x = x; c.pins[drag.i].y = y;
+    const el = /** @type {HTMLElement|null} */ (box.querySelector(`.dg-edit-pin[data-i="${drag.i}"]`));
     if (el) { el.style.left = (x * 100) + '%'; el.style.top = (y * 100) + '%'; }
   });
   box.addEventListener('pointerup', (e) => {
@@ -161,13 +196,14 @@ function wireContent(root, a, ctx) {
   // Clic sobre la imagen (no sobre un pin, no tras arrastrar) → añade un pin.
   box.querySelector('.dg-img')?.addEventListener('click', (e) => {
     if (box._suppressClick) return;
-    const { x, y } = frac(e);
-    a.content.pins.push({ ...newPin(x, y), label: '' });
+    const { x, y } = frac(/** @type {MouseEvent} */ (e));
+    c.pins.push({ ...newPin(x, y), label: '' });
     ctx.onChange(a); ctx.repaint();
   });
 }
 
 // ── Rules + scoring (mínimos: barajar + puntos por acierto) ─────────────────────
+/** @param {Activity} a */
 function rulesHtml(a) {
   return `<div class="form-check">
     <input class="form-check-input" type="checkbox" id="dg-rand" ${a.rules?.randomize !== false ? 'checked' : ''}>
@@ -175,15 +211,34 @@ function rulesHtml(a) {
   </div>
     ${ruleScopeNote()}`;
 }
+/**
+ * @param {Element} root
+ * @param {Activity} a
+ * @param {EditorCtx} ctx
+ */
 function wireRules(root, a, ctx) {
-  on(root, 'change', '#dg-rand', (e) => { (a.rules = a.rules || {}).randomize = e.target.checked; ctx.onChange(a); });
+  on(root, 'change', '#dg-rand', (_e, el) => {
+    a.rules = a.rules || {};
+    a.rules.randomize = /** @type {HTMLInputElement} */ (el).checked;
+    ctx.onChange(a);
+  });
 }
+/** @param {Activity} a */
 function scoringHtml(a) {
   return `<div class="input-group" style="max-width:280px">
     <span class="input-group-text">Puntos por acierto</span>
     <input type="number" min="1" class="form-control" id="dg-ppc" value="${a.scoring?.pointsPerCorrect ?? 1}">
   </div>`;
 }
+/**
+ * @param {Element} root
+ * @param {Activity} a
+ * @param {EditorCtx} ctx
+ */
 function wireScoring(root, a, ctx) {
-  on(root, 'input', '#dg-ppc', (e) => { (a.scoring = a.scoring || {}).pointsPerCorrect = Math.max(1, +e.target.value || 1); ctx.onChange(a); });
+  on(root, 'input', '#dg-ppc', (_e, el) => {
+    a.scoring = a.scoring || {};
+    a.scoring.pointsPerCorrect = Math.max(1, +(/** @type {HTMLInputElement} */ (el).value) || 1);
+    ctx.onChange(a);
+  });
 }

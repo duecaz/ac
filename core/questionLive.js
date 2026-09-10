@@ -16,21 +16,24 @@ export const QL_COLORS = ['#e74c3c','#e67e22','#d4ac0d','#27ae60','#16a085','#29
 const VERDE = '#198754';
 
 /** Columnas del tablero: cuadrado-ish, acotado. `max` lo decide la pantalla
- *  (el proyector del host cabe más ancho que el móvil del alumno). */
+ *  (el proyector del host cabe más ancho que el móvil del alumno).
+ *  @param {number} n @param {number} [max] @returns {number} */
 export function qlCols(n, max = 4) {
   return Math.min(max, Math.max(2, Math.ceil(n / 2)));
 }
 
 /**
  * @param {number} total   cuántas cajas
- * @param {object} o
- *   done   Set|objeto: caja → puntos (o true). Una caja "hecha" ya no se toca.
- *   open   índice de la caja abierta (o null)
- *   cls    clase base de la caja en esta pantalla
- *   pickable(idx) → ¿esta pantalla deja tocar esta caja?
- *   label(idx, puntos) → qué se pinta dentro cuando está hecha
+ * @param {{done?: Set<number>|Record<number, number|true>, open?: number|null,
+ *   cls?: string, pickable?: (idx: number) => boolean, extraStyle?: string}} [o]
+ *   done     caja → puntos (o true). Una caja "hecha" ya no se toca.
+ *   open     índice de la caja abierta (o null)
+ *   cls      clase base de la caja en esta pantalla
+ *   pickable si esta pantalla deja tocar esa caja
+ * @returns {string}
  */
 export function qlBoxesHtml(total, { done = {}, open = null, cls = 'ql-box', pickable = () => false, extraStyle = '' } = {}) {
+  /** @param {number} i @returns {number|true|null} */
   const puntosDe = (i) => (done instanceof Set ? (done.has(i) ? true : null) : done[i] ?? null);
   return Array.from({ length: total }, (_, idx) => {
     const hecha = puntosDe(idx) != null;
@@ -63,7 +66,9 @@ export function qlClosePatch() {
   return { ql_open: null, ql_question: null, ql_image: null, ql_by: null, ql_by_name: null };
 }
 
-/** El docente premia al que pidió la palabra: cierra la caja Y la sella. */
+/** El docente premia al que pidió la palabra: cierra la caja Y la sella.
+ *  @param {{playerId: string, points: number, item: number,
+ *    points0?: Record<string, number>, taken0?: Record<string, string>}} o */
 export function qlAwardPatch({ playerId, points, item, points0 = {}, taken0 = {} }) {
   return {
     // `item` es imprescindible: con él el adaptador escribe la fila de

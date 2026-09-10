@@ -2,13 +2,22 @@ import { BaseTemplate } from '../base.js';
 import { escapeHtml } from '../../core/html.js';
 import { mountBallSort } from './play.js';
 import { renderMini } from './render/mini.js';
-import { renderBallsortEditor, ensureContent } from './editor.js';
+import { renderBallsortEditor, ensureContent, bsContent } from './editor.js';
 import { renderBallsortPlayer } from './player.js';
 import { scoreBallsort } from './scorer.js';
 import { randomBoard } from './game/board.js';
 import { formatMs } from './timer.js';
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/activity.js').BallsortContent} BallsortContent
+ * @typedef {import('../../kernel/contracts/session.js').RoundContext} RoundContext
+ * @typedef {import('../../kernel/contracts/session.js').RoundPayload} RoundPayload
+ * @typedef {import('./play.js').BallsortSnapshot} BallsortSnapshot
+ */
+
 export class BallsortTemplate extends BaseTemplate {
+  /** @type {import('../../kernel/contracts/template.js').TemplateMeta<BallsortContent>} */
   static meta = {
     name:            'ballsort',
     label:           'Ordena las Pelotas',
@@ -42,15 +51,15 @@ export class BallsortTemplate extends BaseTemplate {
           { value: 'moves', label: 'Menos movimientos', icon: 'bi-arrow-left-right' },
           { value: 'time',  label: 'Menos tiempo',      icon: 'bi-stopwatch' },
         ],
-        get: (a) => a?.content?.mode || 'moves',
+        get: (a) => bsContent(a)?.mode || 'moves',
         // El modo vive en DOS sitios (el contenido y el ítem del tablero, que es
         // lo que lee el scorer): se cambian los dos o la partida diría una cosa
         // y puntuaría otra. Copia, sin mutar la actividad guardada.
         set: (a, v) => ({
           ...a,
           content: {
-            ...a.content, mode: v,
-            items: (a.content?.items || []).map(it => ({ ...it, mode: v })),
+            ...bsContent(a), mode: /** @type {'moves'|'time'} */ (v),
+            items: (bsContent(a)?.items || []).map(it => ({ ...it, mode: /** @type {'moves'|'time'} */ (v) })),
           },
         }),
       }],
@@ -77,20 +86,32 @@ export class BallsortTemplate extends BaseTemplate {
 
   // The board carries no secret (it's fully public), so the "sanitized" payload
   // is just the board + mode for the round. itemIndex defaults to 0 (one board).
-  static getRoundPayload(activity, ctx = {}) {
+  /**
+   * @param {Activity} activity
+   * @param {RoundContext} [ctx]
+   * @returns {RoundPayload}
+   */
+  static getRoundPayload(activity, ctx) {
     ensureContent(activity);
-    const i = ctx.itemIndex || 0;
-    const item = activity.content.items[i] || activity.content.items[0];
-    return { board: item.board, mode: item.mode || activity.content.mode || 'moves' };
+    const c = bsContent(activity);
+    const i = ctx?.itemIndex || 0;
+    const item = c.items[i] || c.items[0];
+    return { board: item.board, mode: item.mode || c.mode || 'moves' };
   }
 
   // Interactive student round (LIVE/race). `onProgress` broadcasts the board on
   // every move; `onSubmit` fires once with the final result when solved.
+  /**
+   * @param {Element} root
+   * @param {RoundPayload} payload
+   * @param {import('../../kernel/contracts/template.js').RoundCallbacks} [cbs]
+   */
   static renderRound(root, payload, { onSubmit, onProgress } = {}) {
-    if (!payload?.board) return null;
-    return mountBallSort(root, {
-      board: payload.board,
-      mode: payload.mode || 'moves',
+    const board = /** @type {import('../../kernel/contracts/activity.js').BallsortBoard|undefined} */ (payload?.board);
+    if (!board) return null;
+    return mountBallSort(/** @type {HTMLElement} */ (root), {
+      board,
+      mode: payload.mode === 'time' ? 'time' : 'moves',
       onProgress: (snap) => onProgress?.(snap),
       onSolve: (res) => onSubmit?.(res),
     });
@@ -98,8 +119,13 @@ export class BallsortTemplate extends BaseTemplate {
 
   // Host projector view (standard question phase). For the liveBoard race the
   // host renders its own grid of mini-boards; this is the fallback/standard view.
+  /**
+   * @param {Element} root
+   * @param {import('../../kernel/contracts/template.js').HostRoundContext} [ctx]
+   */
   static renderRoundHost(root, { payload, item } = {}) {
-    const board = payload?.board || item?.board;
+    const puzle = /** @type {{board?: import('../../kernel/contracts/activity.js').BallsortBoard}} */ (item && typeof item === 'object' ? item : {});
+    const board = /** @type {import('../../kernel/contracts/activity.js').BallsortBoard|undefined} */ (payload?.board) || puzle.board;
     root.innerHTML = `<div class="ww-bs text-center"><div id="bs-host-mini" class="d-inline-block"></div></div>`;
     const host = root.querySelector('#bs-host-mini');
     if (host && board) renderMini(host, board);
@@ -107,8 +133,12 @@ export class BallsortTemplate extends BaseTemplate {
 
   // One cell of the host's LIVE dashboard: a player's mini-board + stats.
   // `value` is the latest broadcast snapshot { tubes, tubeCapacity, moveCount, elapsedMs, solved }.
+  /**
+   * @param {Element} cellEl
+   * @param {Record<string, unknown>} ctx
+   */
   static renderRaceCell(cellEl, { value, name, mode = 'moves' } = {}) {
-    const v = value || {};
+    const v = /** @type {Partial<BallsortSnapshot>} */ (value && typeof value === 'object' ? value : {});
     const solved = !!v.solved;
     const stat = mode === 'time'
       ? formatMs(v.elapsedMs || 0)
@@ -116,7 +146,7 @@ export class BallsortTemplate extends BaseTemplate {
     cellEl.innerHTML = `
       <div class="bs-cell ${solved ? 'bs-cell-solved' : ''}">
         <div class="bs-cell-head">
-          <span class="bs-cell-name">${escapeHtml(name || '—')}</span>
+          <span class="bs-cell-name">${escapeHtml(typeof name === 'string' && name ? name : '—')}</span>
           <span class="bs-cell-stat">${solved ? '🏆 ' : ''}${escapeHtml(stat)}</span>
         </div>
         <div class="bs-cell-board"></div>

@@ -12,7 +12,8 @@ export const SPIN_DUR_DEFAULT = 4000;     // configurable por la actividad (rule
 export const SPIN_DUR_PICK    = 3500;     // "elegir pregunta" (abre-cajas / en vivo)
 export const SPIN_DUR_MAX     = 30000;    // tope de lo configurable
 
-/** Duración configurada por la actividad, acotada y con default sano. */
+/** Duración configurada por la actividad, acotada y con default sano.
+ *  @param {unknown} ms @returns {number} */
 export function clampSpinDur(ms) {
   const n = Number(ms);
   if (!Number.isFinite(n) || n <= 0) return SPIN_DUR_DEFAULT;
@@ -21,21 +22,26 @@ export function clampSpinDur(ms) {
 
 /** Ángulo final para caer en `target` (0-based) de `count` gajos, girando SIEMPRE
  *  hacia delante desde `rotation` y dejando la aguja izquierda sobre el centro
- *  del gajo. Puro — el mismo número en las tres ruletas. */
+ *  del gajo. Puro — el mismo número en las tres ruletas.
+ *  @param {number} rotation @param {number} count @param {number} target
+ *  @returns {number} */
 export function spinTarget(rotation, count, target) {
   const arc = 360 / count;
   const base = Math.ceil((rotation + 1) / 360) * 360;
   return base + 360 * SPIN_TURNS + (360 - (target * arc + arc / 2)) - 90;
 }
 
-/** Ángulo equivalente en [0,360) para "congelar" la rueda tras el giro. */
+/** Ángulo equivalente en [0,360) para "congelar" la rueda tras el giro.
+ *  @param {number} rotation @returns {number} */
 export function normalizeRotation(rotation) {
   return ((rotation % 360) + 360) % 360;
 }
 
 /** Lanza la transición CSS del giro sobre el <svg> (forzando reflow para que
  *  dispare). El CALLER pone su propio timeout para el final — cada vista tiene
- *  su scheduler (ctx.setTimeout en live, setTimeout en solo). */
+ *  su scheduler (ctx.setTimeout en live, setTimeout en solo).
+ *  @param {SVGElement|HTMLElement|null|undefined} svg
+ *  @param {number} rotation @param {number} durMs */
 export function animateSpin(svg, rotation, durMs) {
   if (!svg) return;
   svg.style.transition = `transform ${durMs}ms ${SPIN_EASE}`;

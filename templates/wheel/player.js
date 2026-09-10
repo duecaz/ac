@@ -6,27 +6,42 @@ import { wheelSvg } from '../../core/ruleta/render.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { spinTarget, normalizeRotation, animateSpin, clampSpinDur } from '../../core/ruleta/spin.js';
 import { cabeceraHtml } from '../../core/playerHud.js';
+import { wheelRules } from './template.js';
+
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../core/contentModels/items.js').ItemsContentLegado} ItemsContentLegado
+ */
 
 // Support both old flat-entries format and new items format.
+/** @param {Activity} activity @returns {string[]} */
 function getEntries(activity) {
-  const c = activity.content || {};
+  const c = /** @type {ItemsContentLegado} */ (activity.content || {});
   if (Array.isArray(c.items)) return c.items.map(i => (typeof i === 'string' ? i : (i.question ?? i.q)) || '(vacío)');
   if (Array.isArray(c.entries)) return c.entries.map(e => String(e)).filter(e => e.trim()) || ['(vacío)'];
   return ['(vacío)'];
 }
 
+/**
+ * @param {string|Element} rootSel
+ * @param {Activity} activity
+ * @param {import('../../kernel/contracts/template.js').PlayerOpts} [opts]
+ */
 export async function renderWheelPlayer(rootSel, activity, opts = {}) {
   const ctx = runFreeformPlayer(rootSel, activity, opts);
   let entries = getEntries(activity);
   if (!entries.length) entries = ['(vacío)'];
-  const dur = clampSpinDur(activity.rules?.spinDurationMs);
-  const remove = !!activity.rules?.removeAfterSpin;
+  const rules = wheelRules(activity);
+  const dur = clampSpinDur(rules.spinDurationMs);
+  const remove = !!rules.removeAfterSpin;
+  /** @type {string[]} */
   let history = [];
   let rotation = 0;
   let spinning = false;
 
   const rootEl = () => (typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel);
 
+  /** @param {string|null} [winner] */
   function paint(winner = null) {
     // ctx.alive() y no "¿existe el selector?": el selector es GENÉRICO y existe
     // también en la página del SIGUIENTE juego — con solo rootEl(), el giro
@@ -39,11 +54,11 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
     mount(rootSel, html`
       <div class="ww-wheel wh-play">
         ${cabeceraHtml({
-          pagina: history.length ? `Giros: ${history.length}` : null,
+          pagina: history.length ? `Giros: ${history.length}` : undefined,
           // «sin salir» solo tiene sentido si la opción se RETIRA al salir; con
           // `removeAfterSpin` apagado (el defecto) el número no bajaría nunca y
           // diría «8 sin salir» junto a un historial de 5.
-          extra: remove ? `${entries.length} sin salir` : null,
+          extra: remove ? `${entries.length} sin salir` : undefined,
         })}
         <div class="wh-flow">
           <div class="edu-sec edu-sec--tablero ww-wheel-stage">
@@ -79,8 +94,8 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
     const winner = entries[target];
     rotation = spinTarget(rotation, count, target);
 
-    const btnSpin = rootEl()?.querySelector('#btn-spin');
-    const btnEnd = rootEl()?.querySelector('#btn-end');
+    const btnSpin = /** @type {HTMLButtonElement|null|undefined} */ (rootEl()?.querySelector('#btn-spin'));
+    const btnEnd = /** @type {HTMLButtonElement|null|undefined} */ (rootEl()?.querySelector('#btn-end'));
     if (btnSpin) btnSpin.disabled = true;
     if (btnEnd) btnEnd.disabled = true;
     animateSpin(rootEl()?.querySelector('svg'), rotation, dur);

@@ -23,11 +23,19 @@ import { LIVE_LOOPS } from './liveLoops.js';
 const clone = (o) => JSON.parse(JSON.stringify(o ?? null));
 
 /**
+ * Lo que se puede AUDITAR: el contrato entero en opcional, con la meta ANCHA
+ * (`BaseTemplateMeta`) que es la que guarda el registro — `listTemplates()` es
+ * el llamante principal.
+ * @typedef {Partial<Omit<import('../kernel/contracts/template.js').TemplateStatic, 'meta'>>
+ *   & {meta?: import('../kernel/contracts/template.js').BaseTemplateMeta}} PlantillaAuditada
+ */
+
+/**
  * Verifica UNA plantilla contra el contrato completo.
  * Lo que entra es lo que se DIAGNOSTICA: una plantilla que puede estar a medio
  * escribir. Por eso `Partial` — exigir el contrato en la firma haría imposible
  * comprobarlo.
- * @param {Partial<import('../kernel/contracts/template.js').TemplateStatic>} T
+ * @param {PlantillaAuditada} T
  * @returns {string[]} problemas encontrados (vacío = cumple).
  */
 // El catálogo de bucles vive en core/liveLoops.js (§26): aquí solo se valida.
@@ -74,7 +82,7 @@ export function checkTemplateContract(T) {
   // manda como Tarea (no hay nada que evaluar y empuja al uso sin profe, §4d),
   // declara la HABILIDAD que entrena (es su eje de catálogo), y vive en la
   // estantería "Juegos", no en crear-actividad.
-  if (!['ejercicio', 'juego'].includes(m.kind)) {
+  if (!['ejercicio', 'juego'].includes(m.kind ?? '')) {
     issues.push(`meta.kind inválido: ${JSON.stringify(m.kind)} — declara 'ejercicio' o 'juego' (norte §4c)`);
   }
   if (m.kind === 'juego') {
@@ -180,13 +188,14 @@ export function checkTemplateContract(T) {
   // mientras tests/homePreview.test.mjs exigía el otro, el que sí se ve.)
 
   // ── modelo de contenido registrado + defaultContent válido ────────────────
-  const model = getModel(m.contentModel);
+  const model = getModel(m.contentModel ?? '');
   if (!model) issues.push(`meta.contentModel "${m.contentModel}" no está registrado en kernel/content/models.js`);
+  /** @type {import('../kernel/contracts/activity.js').ActivityContent|null} */
   let dc = null;
   if (typeof m.defaultContent !== 'function') {
     issues.push('meta.defaultContent no es función');
   } else {
-    try { dc = m.defaultContent(); } catch (e) { issues.push(`defaultContent() lanza: ${e instanceof Error ? e.message : String(e)}`); }
+    try { dc = /** @type {import('../kernel/contracts/activity.js').ActivityContent} */ (m.defaultContent()); } catch (e) { issues.push(`defaultContent() lanza: ${e instanceof Error ? e.message : String(e)}`); }
     if (dc && model) {
       const v = model.validate(dc);   // ContentModelContract: {ok, errors}
       if (v && v.ok === false) issues.push(`defaultContent no pasa validate() de "${m.contentModel}": ${(v.errors || []).join(', ')}`);
@@ -267,7 +276,7 @@ function safeCall(fn) { try { return typeof fn === 'function' ? fn() : null; } c
 
 /**
  * Corre el contrato sobre TODAS las plantillas dadas.
- * @param {Partial<import('../kernel/contracts/template.js').TemplateStatic>[]} templates listTemplates()
+ * @param {PlantillaAuditada[]} templates listTemplates()
  * @returns {{name:string, issues:string[]}[]} solo las que fallan.
  */
 export function checkAllTemplates(templates) {

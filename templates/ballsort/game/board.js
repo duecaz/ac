@@ -2,6 +2,11 @@
 import { getLevel } from './levels.js';
 import { shuffle, azar } from '../../../core/azar.js';
 
+/**
+ * @typedef {import('../../../kernel/contracts/activity.js').BallsortBoard} BallsortBoard
+ */
+
+/** @param {string} [levelId] @returns {BallsortBoard} */
 export function createBoard(levelId = 'classic') {
   const level = getLevel(levelId);
   return {
@@ -12,6 +17,7 @@ export function createBoard(levelId = 'classic') {
   };
 }
 
+/** @param {BallsortBoard} board @returns {BallsortBoard} */
 export function cloneBoard(board) {
   return {
     levelId: board.levelId,
@@ -25,6 +31,7 @@ export function cloneBoard(board) {
 // boards shared across devices). Por defecto va por el PRIMITIVO (core/azar.js):
 // con `Math.random` de defecto nadie inyectaba nunca —ni la plantilla ni el
 // editor— y sembrar el azar no llegaba al tablero.
+/** @param {string} [levelId] @param {() => number} [rand] @returns {BallsortBoard} */
 export function randomBoard(levelId = 'classic', rand = azar.random) {
   const level = getLevel(levelId);
   const numFilled = level.colors.length;
@@ -32,6 +39,7 @@ export function randomBoard(levelId = 'classic', rand = azar.random) {
   const cap = level.tubeCapacity;
 
   // Build the full ball pool: cap copies of each color
+  /** @type {string[]} */
   const balls = [];
   for (const color of level.colors) {
     for (let i = 0; i < cap; i++) balls.push(color);
@@ -40,6 +48,7 @@ export function randomBoard(levelId = 'classic', rand = azar.random) {
   shuffle(balls, rand);
 
   // Distribute into filled tubes; remaining tubes stay empty
+  /** @type {string[][]} */
   const tubes = [];
   for (let t = 0; t < numFilled; t++) {
     tubes.push(balls.slice(t * cap, (t + 1) * cap));

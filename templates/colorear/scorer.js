@@ -13,8 +13,17 @@ export const PUNTOS_TERMINAR = 100;
 // `value = { pintadas, total }`: `pintadas` es el Nº de zonas distintas
 // tocadas con algún color (el player las cuenta con un Set, así que repintar la
 // misma zona no infla el número); `total` las zonas que trae el SVG del banco.
+/**
+ * @typedef {Object} ValorColorear
+ * @property {number} [pintadas]
+ * @property {number} [total]
+ */
+/**
+ * @param {Partial<import('../../kernel/contracts/session.js').ScoreInput>} [o]
+ * @returns {import('../../kernel/contracts/session.js').ScoreResult}
+ */
 export function scoreColorearSubmission({ value, item, activity } = {}) {
-  const v = value || {};
+  const v = /** @type {ValorColorear} */ (value && typeof value === 'object' ? value : {});
   const techo = basePoints(item, activity?.scoring ?? { pointsPerCorrect: PUNTOS_TERMINAR });
   const pintadas = Math.max(0, Number(v.pintadas) || 0);
   const total = Math.max(0, Number(v.total) || 0);

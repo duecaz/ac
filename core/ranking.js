@@ -9,7 +9,7 @@
  * @param {Record<string, number>} [likesById]  id → nº de likes
  * @param {Record<string, number>} [playsById]  id → nº de partidas
  * @param {number} [limit]  cuántas devolver (0 = todas)
- * @returns {Array} las actividades ordenadas por score, recortadas a `limit`
+ * @returns {{id: string, updatedAt?: string}[]} las actividades ordenadas por score, recortadas a `limit`
  */
 export function computeFeatured(activities, likesById = {}, playsById = {}, limit = 8) {
   const scored = (activities || []).map(a => ({
@@ -25,8 +25,11 @@ export function computeFeatured(activities, likesById = {}, playsById = {}, limi
   return limit > 0 ? out.slice(0, limit) : out;
 }
 
-// Cuenta likes por actividad a partir de las filas {activity, user} de PB.
+/** Cuenta likes por actividad a partir de las filas {activity, user} de PB.
+ *  @param {{activity?: string}[]|null|undefined} rows
+ *  @returns {Record<string, number>} */
 export function tallyLikes(rows) {
+  /** @type {Record<string, number>} */
   const by = {};
   for (const r of rows || []) { const id = r.activity; if (id) by[id] = (by[id] || 0) + 1; }
   return by;

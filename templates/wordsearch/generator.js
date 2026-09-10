@@ -6,13 +6,27 @@
 // 2026-09-02).
 import { mulberry32 } from '../../core/azar.js';
 
+/** @param {string} str */
 function strHash(str) {
   let h = 0x811c9dc5;
   for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 0x01000193);
   return h >>> 0;
 }
 
+/** UNA CELDA de la rejilla.
+ * @typedef {{r: number, c: number}} WsCell */
+/** UNA PALABRA ya colocada, con las celdas que ocupa.
+ * @typedef {{word: string, cells: WsCell[]}} WsPlaced */
+/** LO QUE DEVUELVE el generador: la rejilla, lo colocado y lo que no cupo.
+ * @typedef {Object} WsBoard
+ * @property {string[][]} grid
+ * @property {WsPlaced[]} placed
+ * @property {number} rows
+ * @property {number} cols
+ * @property {string[]} failed */
+
 // Direction vectors [dr, dc]
+/** @type {Record<string, [number, number]>} */
 export const DIRS = {
   right:     [0,  1],
   left:      [0, -1],
@@ -25,32 +39,38 @@ export const DIRS = {
 };
 
 // Difficulty presets for allowed directions
+/** @type {Record<string, string[]>} */
 const DIR_PRESETS = {
   easy:   ['right', 'down'],
   medium: ['right', 'down', 'downRight', 'downLeft'],
   hard:   Object.keys(DIRS),
 };
 
+/** @type {Record<string, number>} */
 export const SIZE_MAP = { easy: 10, medium: 15, hard: 20 };
 
 /**
  * Generate a word-search grid.
  * @param {string[]} words
- * @param {{ rows?, cols?, dirs? }} opts
- * @returns {{ grid: string[][], placed: {word,cells}[], rows, cols }}
+ * @param {{rows?: number, cols?: number, dirs?: string|string[], seedSalt?: string}} [opts]
+ * @returns {WsBoard}
  */
 export function generateGrid(words, { rows = 15, cols = 15, dirs = 'medium', seedSalt = '' } = {}) {
   // seedSalt → tablero DISTINTO con las MISMAS palabras (p.ej. un lado del VS),
   // para que dos jugadores no puedan copiarse las posiciones.
   const seed = strHash(words.join('|') + rows + cols + String(dirs) + String(seedSalt));
   const rand = mulberry32(seed);
+  /** @param {number} n */
   const ri = (n) => Math.floor(rand() * n);
 
   const dirVecs = (Array.isArray(dirs) ? dirs : (DIR_PRESETS[dirs] || DIR_PRESETS.medium))
     .map(k => DIRS[k]).filter(Boolean);
 
+  /** @type {string[][]} */
   const grid = Array.from({ length: rows }, () => Array(cols).fill(''));
+  /** @type {WsPlaced[]} */
   const placed = [];
+  /** @type {string[]} */
   const failed = [];
 
   // Normalise: uppercase, no spaces, deduplicate
@@ -66,6 +86,7 @@ export function generateGrid(words, { rows = 15, cols = 15, dirs = 'medium', see
     for (let t = 0; t < 400 && !ok; t++) {
       const [dr, dc] = dirVecs[ri(dirVecs.length)];
       const r0 = ri(rows), c0 = ri(cols);
+      /** @type {WsCell[]} */
       const cells = [];
       let fits = true;
       for (let i = 0; i < word.length; i++) {
@@ -97,13 +118,17 @@ export function generateGrid(words, { rows = 15, cols = 15, dirs = 'medium', see
  * VS sides get a board with the SAME full set of words (fair), even though the
  * layouts differ (via seedSalt). Returns the first all-placed grid, else the
  * best attempt.
+ * @param {string[]} words
+ * @param {{rows?: number, cols?: number, dirs?: string|string[], seedSalt?: string}} [opts]
+ * @returns {WsBoard}   Siempre un tablero: el primer intento ya es el mejor mientras no haya otro.
  */
 export function generateGridAllWords(words, opts = {}) {
-  let best = null;
-  for (let i = 0; i < 16; i++) {
+  let best = generateGrid(words, { ...opts, seedSalt: `${opts.seedSalt || ''}#0` });
+  if (!best.failed.length) return best;
+  for (let i = 1; i < 16; i++) {
     const g = generateGrid(words, { ...opts, seedSalt: `${opts.seedSalt || ''}#${i}` });
     if (!g.failed.length) return g;
-    if (!best || g.placed.length > best.placed.length) best = g;
+    if (g.placed.length > best.placed.length) best = g;
   }
   return best;
 }
@@ -111,6 +136,8 @@ export function generateGridAllWords(words, opts = {}) {
 /**
  * Return the straight-line cells from (r0,c0) to (r1,c1).
  * Returns null if the path isn't a valid H/V/diagonal line.
+ * @param {number} r0 @param {number} c0 @param {number} r1 @param {number} c1
+ * @returns {WsCell[]|null}
  */
 export function cellLine(r0, c0, r1, c1) {
   const dr = r1 - r0, dc = c1 - c0;

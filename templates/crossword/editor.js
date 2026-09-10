@@ -7,7 +7,37 @@ import { rid } from '../../core/ids.js';
 
 const uid = () => rid('cw_');
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/activity.js').CrosswordWord} CrosswordWord
+ * @typedef {import('../../core/editorShell.js').EditorCtx} EditorCtx
+ */
+
+/** Las fichas de ESTA actividad: el modelo es `words` y el editor lo sabe.
+ *  @param {Activity} a @returns {CrosswordWord[]} */
+const palabras = (a) => /** @type {{words?: CrosswordWord[]}} */ (a.content ?? {}).words ?? [];
+
+/** Lo tecleado (o elegido) en el campo que disparó el evento.
+ * @param {Event} e
+ * @returns {string}
+ */
+function valorDe(e) {
+  const el = /** @type {HTMLInputElement|HTMLSelectElement|null} */ (e.target);
+  return el ? el.value : '';
+}
+
+/**
+ * @param {Element} root
+ * @param {Activity} activity
+ * @param {(activity: Activity) => void} onChange
+ * @returns {void}
+ */
 export function renderCrosswordEditor(root, activity, onChange) {
+  // Mismo blindaje que el resto de editores: con el contenido vacío o a medias
+  // se pinta el estado vacío en vez de lanzar antes de dibujar nada.
+  if (!activity.content || typeof activity.content !== 'object') activity.content = { words: [] };
+  const contenido = /** @type {{words?: CrosswordWord[]}} */ (activity.content);
+  if (!Array.isArray(contenido.words)) contenido.words = [];
   renderEditorShell(root, activity, onChange, {
     content: { label: 'Palabras', html: contentHtml, wire: wireContent },
     rules:   { html: rulesHtml,   wire: wireRules   },
@@ -15,8 +45,9 @@ export function renderCrosswordEditor(root, activity, onChange) {
 }
 
 // ── Content tab ───────────────────────────────────────────────────────────────
+/** @param {Activity} a @returns {string} */
 function contentHtml(a) {
-  const words = a.content?.words || [];
+  const words = palabras(a);
   const previewHtml = buildPreviewHtml(words);
 
   return `
@@ -70,13 +101,14 @@ function contentHtml(a) {
     </div>`;
 }
 
+/** @param {CrosswordWord[]} words @returns {string} */
 function buildPreviewHtml(words) {
   if (!words.length) return `<div class="text-muted text-center py-4">Sin palabras</div>`;
   const filtered = words.filter(palabraJugable);
   if (!filtered.length) return `<div class="text-muted text-center py-4">Configura posiciones</div>`;
 
   try {
-    const { grid, rows, cols, wordNums, words: placed } = buildGrid(filtered);
+    const { grid, rows, cols } = buildGrid(filtered);
     if (!rows || !cols) return `<div class="text-danger small">Error al generar el tablero</div>`;
 
     const maxCells = 25; // limit preview size
@@ -96,15 +128,17 @@ function buildPreviewHtml(words) {
   }
 }
 
+/** @param {Element} root @param {Activity} a @param {EditorCtx} ctx @returns {void} */
 function wireContent(root, a, ctx) {
-  const words = () => a.content.words;
+  const words = () => palabras(a);
 
   on(root, 'click', '#cw-add', () => {
     words().push({ id: uid(), word: '', clue: '', row: 0, col: words().length, dir: 'H' });
     ctx.onChange(a); ctx.repaint();
     setTimeout(() => {
       const rows = root.querySelectorAll('.cw-word');
-      rows[rows.length - 1]?.focus();
+      const ultima = /** @type {HTMLElement|undefined} */ (rows[rows.length - 1]);
+      ultima?.focus();
     }, 50);
   });
 
@@ -114,7 +148,7 @@ function wireContent(root, a, ctx) {
     const laid = autoLayout(defs);
     // Preserve IDs and clues from existing words
     const existing = words().slice();
-    a.content.words = laid.map((l, i) => ({
+    (/** @type {{words: CrosswordWord[]}} */ (a.content)).words = laid.map((l, i) => ({
       ...(existing[i] || {}),
       id: existing[i]?.id || uid(),
       word: l.word, clue: l.clue,
@@ -124,11 +158,12 @@ function wireContent(root, a, ctx) {
   });
 
   on(root, 'click', '.cw-del', (_, btn) => {
-    words().splice(+btn.dataset.i, 1);
+    words().splice(+(btn.dataset.i ?? 0), 1);
     ctx.onChange(a); ctx.repaint();
   });
 
   // Debounced preview refresh on any field change
+  /** @type {ReturnType<typeof setTimeout>|undefined} */
   let previewTimer;
   const refreshPreview = () => {
     clearTimeout(previewTimer);
@@ -139,17 +174,21 @@ function wireContent(root, a, ctx) {
   };
 
   on(root, 'input', '.cw-word', (e, el) => {
-    words()[+el.dataset.i].word = e.target.value.toUpperCase().replace(/\s+/g, '');
-    e.target.value = words()[+el.dataset.i].word;
+    const campo = /** @type {HTMLInputElement|null} */ (e.target);
+    const w = words()[+(el.dataset.i ?? 0)];
+    w.word = valorDe(e).toUpperCase().replace(/\s+/g, '');
+    if (campo) campo.value = w.word;
     ctx.onChange(a); refreshPreview();
   });
-  on(root, 'input', '.cw-clue',  (e, el) => { words()[+el.dataset.i].clue = e.target.value; ctx.onChange(a); });
-  on(root, 'input', '.cw-row',   (e, el) => { words()[+el.dataset.i].row  = Math.max(0, +e.target.value || 0); ctx.onChange(a); refreshPreview(); });
-  on(root, 'input', '.cw-col',   (e, el) => { words()[+el.dataset.i].col  = Math.max(0, +e.target.value || 0); ctx.onChange(a); refreshPreview(); });
-  on(root, 'change', '.cw-dir',  (e, el) => { words()[+el.dataset.i].dir  = e.target.value; ctx.onChange(a); refreshPreview(); });
+  on(root, 'input', '.cw-clue',  (e, el) => { words()[+(el.dataset.i ?? 0)].clue = valorDe(e); ctx.onChange(a); });
+  on(root, 'input', '.cw-row',   (e, el) => { words()[+(el.dataset.i ?? 0)].row  = Math.max(0, +valorDe(e) || 0); ctx.onChange(a); refreshPreview(); });
+  on(root, 'input', '.cw-col',   (e, el) => { words()[+(el.dataset.i ?? 0)].col  = Math.max(0, +valorDe(e) || 0); ctx.onChange(a); refreshPreview(); });
+  // El desplegable solo ofrece H y V: se lee como lo que es, no como texto libre.
+  on(root, 'change', '.cw-dir',  (e, el) => { words()[+(el.dataset.i ?? 0)].dir = valorDe(e) === 'V' ? 'V' : 'H'; ctx.onChange(a); refreshPreview(); });
 }
 
 // ── Rules tab ─────────────────────────────────────────────────────────────────
+/** @param {Activity} a @returns {string} */
 function rulesHtml(a) {
   return `<div class="row g-3">
     <div class="col-md-6">
@@ -165,6 +204,7 @@ function rulesHtml(a) {
     coloque automáticamente las palabras formando cruces. Después ajusta manualmente si lo necesitas.
   </div>`;
 }
+/** @param {Element} root @param {Activity} a @param {EditorCtx} ctx @returns {void} */
 function wireRules(root, a, ctx) {
-  on(root, 'change', '#cw-hint-mode', e => { a.rules.hintMode = e.target.value; ctx.onChange(a); });
+  on(root, 'change', '#cw-hint-mode', e => { a.rules.hintMode = valorDe(e); ctx.onChange(a); });
 }

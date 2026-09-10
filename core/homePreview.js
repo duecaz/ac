@@ -8,11 +8,20 @@ import { escapeHtml } from './html.js';
 import { getTemplate } from './registry.js';
 import { getSkin } from './skins.js';
 
+/** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
+/** @typedef {import('../kernel/contracts/activity.js').ActivityPresentation} ActivityPresentation */
+/** @typedef {import('../kernel/contracts/activity.js').PairsContent} PairsContent */
+/** @typedef {import('../kernel/contracts/activity.js').QaContent} QaContent */
+/** @typedef {import('../kernel/contracts/activity.js').DiagramContent} DiagramContent */
+/** @typedef {import('../kernel/contracts/activity.js').TextCorrectionContent} TextCorrectionContent */
+/** @typedef {import('../kernel/contracts/activity.js').WordsContent} WordsContent */
+
 // Fondo REPRESENTATIVO por textura (backgrounds.css vive en clases body/frame que no
 // alcanzan a .acard-preview; a tamaño miniatura basta el color/gradiente dominante).
 // Solo los fondos VIVOS: una actividad guardada con uno retirado cae al skin,
 // exactamente igual que hace el juego (`applyBackground` cae a 'none'), para que
 // la tarjeta no prometa una textura que ya no se va a ver.
+/** @type {Record<string, string>} */
 const BG_REPR = {
   greenboard: '#1f5c43',
   grid:       'repeating-linear-gradient(#ffffff,#ffffff 12px,#e3e9f2 13px),repeating-linear-gradient(90deg,#ffffff,#ffffff 12px,#e3e9f2 13px)',
@@ -24,6 +33,10 @@ const BG_REPR = {
 // Fondo del preview según la presentación de la actividad: fondo elegido > skin >
 // (nada → el neutro por defecto de .acard-preview). 'custom' (imagen propia) se omite
 // a propósito por rendimiento (data-URL por tarjeta). Devuelve un valor CSS o ''.
+/**
+ * @param {ActivityPresentation|null|undefined} presentation
+ * @returns {string}
+ */
 export function previewBgStyle(presentation) {
   const bg = presentation?.background;
   if (bg && BG_REPR[bg]) return BG_REPR[bg];
@@ -36,56 +49,73 @@ export function previewBgStyle(presentation) {
 }
 
 const esc = escapeHtml;                                     // ya coacciona null → ''
-const trunc = (s, n) => { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+/** @param {unknown} s @param {number} n */
+const trunc = (s, n) => { const t = String(s || ''); return t.length > n ? t.slice(0, n - 1) + '…' : t; };
+/** @param {unknown} s @param {number} n */
 const et = (s, n) => esc(trunc(s, n));                      // truncar + escapar (uso común)
 
 // Memo: el esquema es un string puro que solo depende de (template, content).
 // Clave id:updatedAt → al guardar/editar cambia updatedAt y se invalida sola.
 // Tope LRU para no crecer sin límite con bancos grandes.
+/** @type {Map<string, string>} */
 const _cache = new Map();
 const CACHE_CAP = 300;
 
+/**
+ * @param {Partial<Activity>|null|undefined} a
+ * @returns {string}
+ */
 export function homePreviewHtml(a) {
   const key = a?.id ? `${a.id}:${a.updatedAt || ''}` : null;
   if (key && _cache.has(key)) {
-    const v = _cache.get(key);
+    const v = _cache.get(key) ?? '';
     _cache.delete(key); _cache.set(key, v);   // refresca orden LRU
     return v;
   }
   const html = build(a);
   if (key) {
     _cache.set(key, html);
-    if (_cache.size > CACHE_CAP) _cache.delete(_cache.keys().next().value);
+    if (_cache.size > CACHE_CAP) {
+      const masVieja = _cache.keys().next().value;
+      if (masVieja !== undefined) _cache.delete(masVieja);
+    }
   }
   return html;
 }
 
+/**
+ * LA PLANTILLA DICE QUÉ FORMA TIENE SU CONTENIDO (§0), así que cada rama lo
+ * nombra: es el único sitio del módulo que sabe la correspondencia.
+ * @param {Partial<Activity>|null|undefined} a
+ * @returns {string}
+ */
 function build(a) {
   const c = a?.content || {};
   try {
     switch (a?.template) {
-      case 'match':         return matchPv(c);
-      case 'diagram':       return diagramPv(c);
-      case 'math':          return calcPv(c);
-      case 'quiz':          return quizPv(c);
-      case 'globos':        return globosPv(c);
+      case 'match':         return matchPv(/** @type {PairsContent} */ (c));
+      case 'diagram':       return diagramPv(/** @type {DiagramContent} */ (c));
+      case 'math':          return calcPv(/** @type {QaContent} */ (c));
+      case 'quiz':          return quizPv(/** @type {QaContent} */ (c));
+      case 'globos':        return globosPv();
       case 'comas':
-      case 'tildes':        return textPv(c);
-      case 'memory':        return memoryPv(c);
-      case 'wheel':         return wheelPv(c);
-      case 'wordsearch':    return wordsearchPv(c);
-      case 'crossword':     return crosswordPv(c);
-      case 'ballsort':      return ballsortPv(c);
-      case 'question-live': return boxesPv(c);
-      case 'colorear':      return colorearPv(c);
-      case 'tangram':       return tangramPv(c);
-      case 'puzzle':        return puzzlePv(c);
+      case 'tildes':        return textPv(/** @type {TextCorrectionContent} */ (c));
+      case 'memory':        return memoryPv(/** @type {PairsContent} */ (c));
+      case 'wheel':         return wheelPv();
+      case 'wordsearch':    return wordsearchPv(/** @type {WordsContent} */ (c));
+      case 'crossword':     return crosswordPv();
+      case 'ballsort':      return ballsortPv();
+      case 'question-live': return boxesPv();
+      case 'colorear':      return colorearPv();
+      case 'tangram':       return tangramPv();
+      case 'puzzle':        return puzzlePv();
       default:              return genericPv(a);
     }
   } catch { return genericPv(a); }
 }
 
 // ── Emparejar: dos columnas de fichas + cuerdas cruzando el pasillo ──────────
+/** @param {PairsContent} c */
 function matchPv(c) {
   const pairs = (c.pairs || []).slice(0, 4);
   if (!pairs.length) return genericPv({ template: 'match' });
@@ -99,6 +129,7 @@ function matchPv(c) {
 }
 
 // ── Etiqueta el diagrama: la imagen real (barata como <img>) + fichas ────────
+/** @param {DiagramContent} c */
 function diagramPv(c) {
   const labels = (c.pins || []).slice(0, 3).map(p => `<span class="pv-tag">${et(p.label, 10)}</span>`).join('');
   const src = c.image ? (String(c.image).startsWith('data:') ? c.image : esc(c.image)) : '';
@@ -108,6 +139,7 @@ function diagramPv(c) {
 }
 
 // ── Operaciones: panel tipo calculadora con una operación de muestra ─────────
+/** @param {QaContent} c */
 function calcPv(c) {
   const first = (c.items || [])[0];
   const op = first?.question ? trunc(first.question, 10) : '20 × 5';
@@ -119,6 +151,7 @@ function calcPv(c) {
 }
 
 // ── Quiz: pregunta + rejilla 2×2 de opciones de color ────────────────────────
+/** @param {QaContent} c */
 function quizPv(c) {
   const it = (c.items || [])[0];
   const q = it?.question ? trunc(it.question, 40) : 'Pregunta';
@@ -141,6 +174,7 @@ function globosPv() {
 }
 
 // ── Correcciones de texto (comas/tildes): frase + subrayado + "Listo" ────────
+/** @param {TextCorrectionContent} c */
 function textPv(c) {
   const p = (c.passages || [])[0];
   const t = p?.text ? trunc(p.text, 34) : 'Escribe aquí…';
@@ -152,6 +186,7 @@ function textPv(c) {
 }
 
 // ── Memoria: rejilla de cartas boca abajo (nº según pares, tope 8) ───────────
+/** @param {PairsContent} c */
 function memoryPv(c) {
   const pairs = (c.pairs || []).length || 4;
   const n = Math.min(Math.max(pairs, 3) * 2, 8);
@@ -164,8 +199,13 @@ function wheelPv() {
 }
 
 // ── Sopa de letras: rejilla 5×5, la primera palabra resaltada en diagonal ────
+/** @param {WordsContent} c */
 function wordsearchPv(c) {
-  const raw = (c.words || []).map(w => typeof w === 'string' ? w : (w?.text || w?.word || '')).find(Boolean) || 'GATO';
+  const raw = (c.words || []).map(w => {
+    if (typeof w === 'string') return w;
+    const o = /** @type {{text?: string, word?: string}} */ (w);
+    return o?.text || o?.word || '';
+  }).find(Boolean) || 'GATO';
   const w = String(raw).toUpperCase().replace(/[^A-ZÑ]/g, '').slice(0, 5) || 'GATO';
   const fill = 'RPLOMESANDTVCUIBFHKZ';
   let cells = '';
@@ -216,6 +256,7 @@ function boxesPv() {
 }
 
 // ── Respaldo (último recurso; el test garantiza que no se usa con ninguna) ────
+/** @param {{template?: string}|null|undefined} a */
 function genericPv(a) {
   const T = getTemplate(a?.template);
   const color = T?.meta?.color || 'secondary';

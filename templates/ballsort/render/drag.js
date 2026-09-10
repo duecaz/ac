@@ -3,13 +3,26 @@ import { ballStyle } from './tubes.js';
 
 const TAP_THRESHOLD = 10;
 
+/**
+ * @typedef {import('../../../kernel/contracts/activity.js').BallsortBoard} BallsortBoard
+ */
+
+/** @param {BallsortBoard} board @param {number} tubeIdx @returns {string|null} */
 function topBallColor(board, tubeIdx) {
   const tube = board.tubes[tubeIdx];
   if (!tube || tube.length === 0) return null;
   return tube[tube.length - 1];
 }
 
+/**
+ * @param {HTMLElement} container
+ * @param {{getBoard: () => BallsortBoard, isInteractive: () => boolean,
+ *   onMove?: (from: number, to: number) => void, onTap?: (index: number) => void}} opts
+ * @returns {() => void} desenganchar
+ */
 export function attachDrag(container, { getBoard, isInteractive, onMove, onTap }) {
+  /** @type {{pointerId: number|null, sourceIndex: number|null, startX: number,
+   *   startY: number, moved: boolean, ghost: HTMLElement|null, overIndex: number|null}} */
   const state = {
     pointerId: null,
     sourceIndex: null,
@@ -20,17 +33,19 @@ export function attachDrag(container, { getBoard, isInteractive, onMove, onTap }
     overIndex: null
   };
 
+  /** @param {number} x @param {number} y @returns {number} */
   function findTubeAt(x, y) {
     if (state.ghost) state.ghost.style.display = 'none';
     const el = document.elementFromPoint(x, y);
     if (state.ghost) state.ghost.style.display = '';
     if (!el) return -1;
-    const tube = el.closest('.tube');
+    const tube = /** @type {HTMLElement|null} */ (el.closest('.tube'));
     if (!tube || !container.contains(tube)) return -1;
-    const idx = parseInt(tube.dataset.index, 10);
+    const idx = parseInt(tube.dataset.index ?? '', 10);
     return Number.isNaN(idx) ? -1 : idx;
   }
 
+  /** @param {string} color @returns {HTMLElement} */
   function createGhost(color) {
     const el = document.createElement('div');
     el.className = 'ball ball--ghost';
@@ -39,6 +54,7 @@ export function attachDrag(container, { getBoard, isInteractive, onMove, onTap }
     return el;
   }
 
+  /** @param {number} x @param {number} y */
   function moveGhost(x, y) {
     if (!state.ghost) return;
     state.ghost.style.left = `${x}px`;
@@ -50,6 +66,7 @@ export function attachDrag(container, { getBoard, isInteractive, onMove, onTap }
       .forEach(t => t.classList.remove('tube--target-ok', 'tube--target-bad'));
   }
 
+  /** @param {number|null} idx */
   function highlightTarget(idx) {
     if (state.overIndex === idx) return;
     clearTargetHighlight();
@@ -72,12 +89,14 @@ export function attachDrag(container, { getBoard, isInteractive, onMove, onTap }
     state.overIndex = null;
   }
 
+  /** @param {PointerEvent} e */
   function onDown(e) {
     if (!isInteractive()) return;
     if (state.pointerId != null) return;
-    const tube = e.target.closest('.tube');
+    const destino = /** @type {HTMLElement|null} */ (e.target);
+    const tube = /** @type {HTMLElement|null} */ (destino?.closest?.('.tube') ?? null);
     if (!tube || !container.contains(tube)) return;
-    const idx = parseInt(tube.dataset.index, 10);
+    const idx = parseInt(tube.dataset.index ?? '', 10);
     if (Number.isNaN(idx)) return;
     state.pointerId = e.pointerId;
     state.sourceIndex = idx;
@@ -87,6 +106,7 @@ export function attachDrag(container, { getBoard, isInteractive, onMove, onTap }
     try { container.setPointerCapture?.(e.pointerId); } catch {}
   }
 
+  /** @param {PointerEvent} e */
   function onMoveEv(e) {
     if (state.pointerId !== e.pointerId) return;
     const dx = e.clientX - state.startX;
@@ -94,7 +114,7 @@ export function attachDrag(container, { getBoard, isInteractive, onMove, onTap }
     if (!state.moved) {
       if (Math.hypot(dx, dy) < TAP_THRESHOLD) return;
       const board = getBoard();
-      const color = topBallColor(board, state.sourceIndex);
+      const color = state.sourceIndex == null ? null : topBallColor(board, state.sourceIndex);
       if (!color) {
         state.pointerId = null;
         state.sourceIndex = null;
@@ -109,13 +129,14 @@ export function attachDrag(container, { getBoard, isInteractive, onMove, onTap }
     if (e.cancelable) e.preventDefault();
   }
 
+  /** @param {PointerEvent} e */
   function onUp(e) {
     if (state.pointerId !== e.pointerId) return;
     if (state.moved) {
       const overIdx = findTubeAt(e.clientX, e.clientY);
       const src = state.sourceIndex;
       reset();
-      if (overIdx >= 0 && overIdx !== src) onMove?.(src, overIdx);
+      if (src != null && overIdx >= 0 && overIdx !== src) onMove?.(src, overIdx);
     } else {
       const idx = state.sourceIndex;
       reset();
@@ -123,6 +144,7 @@ export function attachDrag(container, { getBoard, isInteractive, onMove, onTap }
     }
   }
 
+  /** @param {PointerEvent} e */
   function onCancel(e) {
     if (state.pointerId !== e.pointerId) return;
     reset();

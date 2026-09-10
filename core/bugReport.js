@@ -27,6 +27,7 @@ import { recentErrors } from './errorLog.js';
 export function medidasPantalla(doc = (typeof document !== 'undefined' ? document : null),
                                 win = (typeof window !== 'undefined' ? window : null)) {
   if (!doc || !win) return null;
+  /** @param {string} sel @returns {number|null} */
   const alto = (sel) => {
     const el = doc.querySelector(sel);
     return el ? Math.round(el.getBoundingClientRect().height) : null;
@@ -62,7 +63,8 @@ export function buildBugReport({
   now = new Date(),
 } = {}) {
   const ult = (errors || []).slice(-5)
-    .map(e => `  - [${e?.at || '?'}] ${String(e?.message || '').slice(0, 200)}${e?.page ? ` (${e.page})` : ''}`)
+    .map((/** @type {{at?: string, message?: string, page?: string}} */ e) =>
+      `  - [${e?.at || '?'}] ${String(e?.message || '').slice(0, 200)}${e?.page ? ` (${e.page})` : ''}`)
     .join('\n');
   return [
     `REPORTE AulaReto v${version}`,

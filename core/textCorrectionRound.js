@@ -21,6 +21,39 @@ import { corrigeAlFinal } from './constants.js';
 import { montarReloj, relojDe } from './reloj.js';
 import { serverNow } from './serverNow.js';
 
+/** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
+/** @typedef {import('../kernel/contracts/activity.js').TextCorrectionContent} TextCorrectionContent */
+/** @typedef {import('../kernel/contracts/activity.js').Passage} Passage */
+/** @typedef {import('../kernel/contracts/activity.js').TextMark} TextMark */
+/** La marca que se corrige en esta hoja: `TextMark.kind`. @typedef {TextMark['kind']} Marca */
+/** Una fila de la revisión palabra por palabra.
+ *  @typedef {{pos: number, palabra: string, estado: 'ok'|'falta'|'demas'}} FilaRevision */
+/** Lo que el alumno marcó y lo que la frase pedía (para pintar la corrección).
+ *  @typedef {{got: Set<number>, want: Set<number>}} Reparto */
+
+/**
+ * SUBIR DESDE LO TOCADO, con `dataset` a la vista. `Element.closest` devuelve
+ * `Element` —que no tiene `dataset`—, y estrechar con `instanceof HTMLElement`
+ * está prohibido: las suites corren con un DOM de mentira donde esa clase no
+ * existe. Se estrecha por FORMA, en un solo sitio.
+ * @param {EventTarget|null} t
+ * @returns {{closest: (sel: string) => HTMLElement|null}}
+ */
+const desde = (t) => {
+  const el = /** @type {HTMLElement|null} */ (t);
+  return { closest: (sel) => (typeof el?.closest === 'function'
+    ? /** @type {HTMLElement|null} */ (el.closest(sel))
+    : null) };
+};
+
+/** Las frases de la hoja. La plantilla sabe la forma de su contenido (§0).
+ *  @param {Activity|null|undefined} a @returns {Passage[]} */
+const frasesDe = (a) => {
+  const c = /** @type {TextCorrectionContent|undefined} */ (a?.content);
+  return Array.isArray(c?.passages) ? c.passages : [];
+};
+
+/** @type {Record<string, string>} */
 const HINTS = {
   tilde: 'Toca las vocales que llevan tilde.',
   coma: 'Toca el hueco donde falta una coma.'
@@ -30,16 +63,26 @@ const HINTS = {
 // veces, `getRoundPayload` de comas/template.js y tildes/template.js). La
 // clave de respuesta (marks) se QUITA del payload — es lo que viaja al
 // alumno.
+/**
+ * @param {Activity} activity
+ * @param {number} itemIndex
+ * @returns {{id: string, text: string}|null}
+ */
 export function passageRoundPayload(activity, itemIndex) {
-  const p = (activity.content?.passages || [])[itemIndex];
+  const p = frasesDe(activity)[itemIndex];
   return p ? { id: p.id, text: p.text } : null;
 }
 
 // Preview de tarjeta (miniatura del home) para Tildes/Comas. Reutiliza el MISMO
 // `passageHtml` del juego → la miniatura no puede desincronizarse del player.
 // La comparten templates/tildes/template.js y templates/comas/template.js.
+/**
+ * @param {Activity} act
+ * @param {Marca} kind
+ * @returns {string}
+ */
 export function textCorrectionPreviewHtml(act, kind) {
-  const passages = (act.content?.passages || []).filter(p => p && p.text);
+  const passages = frasesDe(act).filter(p => p && p.text);
   if (!passages.length) {
     return `<div class="ww-player" style="display:flex;align-items:center;justify-content:center">
       <h2 class="text-center">${escapeHtml(act.title || 'Actividad')}</h2></div>`;
@@ -49,7 +92,7 @@ export function textCorrectionPreviewHtml(act, kind) {
       <span class="badge bg-secondary">Frase 1 / ${passages.length}</span></div>
     <h4 class="text-center mb-1">${escapeHtml(act.title || '')}</h4>
     <div class="tc-round">
-      <div class="tc-passage">${passageHtml(passages[0].text, kind)}</div>
+      <div class="tc-passage">${passageHtml(passages[0]?.text || '', kind)}</div>
       <div class="text-center mt-3"><button type="button" class="btn btn-success btn-lg">
         <i class="bi bi-check2-circle"></i> Listo</button></div>
       <p class="tc-hint text-muted text-center mt-2">${HINTS[kind]}</p>
@@ -61,12 +104,20 @@ export function textCorrectionPreviewHtml(act, kind) {
 // Exportada: el preview de tarjeta (core/homePreview.js) reutiliza ESTE mismo
 // markup para que la miniatura sea fiel al juego y no se desfase (los targets
 // son spans limpios; solo el canvas los vuelve interactivos).
+/**
+ * @param {string} text
+ * @param {Marca} kind
+ * @param {Reparto} [reveal]
+ * @returns {string}
+ */
 function passageHtml(text, kind, reveal) {
   const chars = [...text];
   // ESPACIOS como texto crudo y rompible (antes era \u00a0 = no-rompible, por eso
   // no cortaba la linea): las palabras quedan enteras y el texto envuelve al marco.
+  /** @param {string} c */
   const ch = (c) => c === ' ' ? ' ' : `<span class="tc-ch">${escapeHtml(c)}</span>`;
-  const stateCls = (pos, isTargetMarkable) => {
+  /** @param {number} pos */
+  const stateCls = (pos) => {
     if (!reveal) return '';
     const got = reveal.got.has(pos), want = reveal.want.has(pos);
     if (got && want) return ' ok';
@@ -90,6 +141,7 @@ function passageHtml(text, kind, reveal) {
   }
   // coma: el hueco existe SOLO en el límite fin-de-palabra (un carácter que no es
   // espacio y va seguido de un espacio), nunca entre letras de una palabra.
+  /** @param {number} i */
   const isGap = (i) => i < chars.length - 1 && chars[i] !== ' ' && chars[i + 1] === ' ';
   return chars.map((c, i) => {
     // CORRECCIÓN: el texto tal cual (espacios normales) + la coma solo donde
@@ -115,6 +167,12 @@ function passageHtml(text, kind, reveal) {
  *  no «America»): es lo que el alumno tiene que aprender a ver. `wordAtPos` da
  *  la palabra cruda del texto sin tildes; aquí se le aplica la marca en su sitio.
  *  Para la coma se muestra la palabra con la coma detrás. */
+/**
+ * @param {string} text
+ * @param {number} pos
+ * @param {Marca} kind
+ * @returns {string}
+ */
 function palabraMarcada(text, pos, kind) {
   const cruda = wordAtPos(text, pos);
   if (!cruda) return '';
@@ -140,9 +198,13 @@ function palabraMarcada(text, pos, kind) {
  *  correctas» junto a un 0 de puntos sería un número imposible de explicar con
  *  la clase delante.
  *
- *  @returns {Array<{pos:number, palabra:string, estado:'ok'|'falta'|'demas'}>} */
+ *  @param {Passage} p
+ *  @param {Marca} kind
+ *  @param {Set<number>} got
+ *  @returns {FilaRevision[]} */
 export function filasRevision(p, kind, got) {
   const want = (p.marks || []).filter(m => m.kind === kind).map(m => m.pos);
+  /** @type {FilaRevision[]} */
   const filas = want.map(pos => ({
     pos, palabra: palabraMarcada(p.text, pos, kind),
     estado: got.has(pos) ? 'ok' : 'falta',
@@ -154,7 +216,9 @@ export function filasRevision(p, kind, got) {
   return filas.sort((a, b) => a.pos - b.pos);
 }
 
+/** @type {Record<string, string>} */
 const ICONO = { ok: '✓', falta: '✗', demas: '+', perdon: '–' };
+/** @type {Record<string, string>} */
 const TITULO = { ok: 'Bien puesta', falta: 'Faltaba', demas: 'Marca de más', perdon: 'Marca de más, perdonada' };
 
 /** El veredicto EFECTIVO de una fila tras las anulaciones del docente.
@@ -164,6 +228,11 @@ const TITULO = { ok: 'Bien puesta', falta: 'Faltaba', demas: 'Marca de más', pe
  *  de al lado seguía en «0/8 aciertos». Dos números que no cuadran, en la pantalla
  *  cuyo trabajo es que cuadren. Perdonar significa «esto ya no resta», que es
  *  exactamente lo que hace el scorer al quitar esa posición. */
+/**
+ * @param {FilaRevision} fila
+ * @param {boolean} anulada
+ * @returns {'ok'|'falta'|'demas'|'perdon'}
+ */
 export const efectivoDe = (fila, anulada) => {
   if (!anulada) return fila.estado;
   if (fila.estado === 'demas') return 'perdon';
@@ -175,6 +244,11 @@ export const efectivoDe = (fila, anulada) => {
  *  ven). Vive fuera del panel para que `tests/tcRevision.test.mjs` pueda fijar el
  *  invariante que de verdad importa: este «N / M» y los aciertos que reporta el
  *  scorer son SIEMPRE el mismo número, con y sin anulaciones. */
+/**
+ * @param {FilaRevision[]} filas
+ * @param {Set<number>} [anulados]
+ * @returns {{buenas: number, total: number}}
+ */
 export function resumenRevision(filas, anulados = new Set()) {
   const pedidas = filas.filter(f => f.estado !== 'demas');
   return {
@@ -191,6 +265,13 @@ export function resumenRevision(filas, anulados = new Set()) {
  *    · dar por mala una acertada, o perdonar una de más → se quita.
  *  Recalcular a mano «hits+1, points+ppc» habría sido más corto y habría dejado
  *  el puntaje del docente y el del scorer pudiendo divergir. */
+/**
+ * @param {Array<number|string>|null|undefined} value
+ * @param {Iterable<number>} anulados
+ * @param {Passage} p
+ * @param {Marca} kind
+ * @returns {number[]}
+ */
 export function valorAnulado(value, anulados, p, kind) {
   const want = new Set((p.marks || []).filter(m => m.kind === kind).map(m => m.pos));
   const v = new Set((value || []).map(Number));
@@ -203,6 +284,12 @@ export function valorAnulado(value, anulados, p, kind) {
 
 /** El panel. `anulable` lo decide el CALLER (§0): anular es cosa del docente con
  *  el aparato en la mano, no del alumno haciendo una tarea desde casa. */
+/**
+ * @param {FilaRevision[]} filas
+ * @param {Set<number>} anulados
+ * @param {{anulable?: boolean}} o
+ * @returns {string}
+ */
 function panelRevisionHtml(filas, anulados, { anulable }) {
   // El pie cuenta SOLO las marcas que la frase pedía: las de más no suman ni
   // restan aquí (restan en el puntaje, que es donde se ven). Así este «N / M» y
@@ -238,11 +325,21 @@ function panelRevisionHtml(filas, anulados, { anulable }) {
  *  barra ya está puesta por el lápiz/borrador, que es lo que la justifica.
  *  Sin tiempo declarado no se pinta NADA: un reloj parado enseña que el tiempo
  *  no importa aquí, y el hueco vacío desplaza el resto de la barra. */
+/** @param {boolean} hay */
 const relojHtml = (hay) =>
   hay ? `<span class="tc-clock" data-reloj>${lucide('timer', { clase: 'tc-ico' })}`
     + `<b data-reloj-val></b></span>` : '';
 
 // pulsar "Listo" (mismas posiciones que el modo tocar → scoring intacto).
+/**
+ * @param {Element} root
+ * @param {{id?: string, text?: string}|null} payload
+ * @param {{kind?: Marca, onSubmit?: (value: number[]) => void,
+ *   chips?: {left?: string, right?: string}, reloj?: boolean,
+ *   progreso?: boolean|null}} [opts]
+ * @returns {{flush: () => void, chromePropio: boolean,
+ *   setReloj: (texto: string, pct: number|null) => void}}
+ */
 export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSubmit, chips = {}, reloj = false, progreso = null } = {}) {
   const text = payload?.text || '';
   // El botón "Calibrar pizarra" NO va aquí (en el juego): vive en la pantalla de
@@ -293,7 +390,7 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
         </button>`;
   root.innerHTML = `
     <div class="tc-round">
-      ${cabeceraHtml({ herramientas, pagina: chips.left || null, tiempo: reloj ? '' : null,
+      ${cabeceraHtml({ herramientas, pagina: chips.left || undefined, tiempo: reloj ? '' : undefined,
                        fullscreen: propio, progreso: !!(progreso ?? reloj) })}
       <div class="tc-hoja">
         <div class="edu-sec edu-sec--texto tc-passage-area"><div class="tc-passage">${passageHtml(text, kind)}</div></div>
@@ -301,8 +398,8 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
       </div>
     </div>`;
 
-  const areaEl = root.querySelector('.tc-passage-area');
-  const passageEl = root.querySelector('.tc-passage');
+  const areaEl = /** @type {HTMLElement} */ (root.querySelector('.tc-passage-area'));
+  const passageEl = /** @type {HTMLElement} */ (root.querySelector('.tc-passage'));
   // El texto LLENA el área disponible (grande en pantalla completa). Se monta el
   // canvas, se ajusta el tamaño de letra al hueco, y se recalculan las zonas.
   const draw = mountTcDraw(passageEl, { targets: passageEl.querySelectorAll('.tc-target') });
@@ -323,7 +420,7 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
     draw.freeze();
     onSubmit?.(draw.getMarked());
   };
-  root.querySelector('.tc-done').addEventListener('click', submit);
+  root.querySelector('.tc-done')?.addEventListener('click', submit);
   // EL MANDO: apagado = lápiz, encendido = borrador. Lo que diga se lo lleva el
   // canvas (`setEraser`).
   //
@@ -334,10 +431,10 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
   // su siguiente trazo BORRABA una marca: en Tildes/Comas el puntaje es neto, así
   // que eso cuesta puntos sin decir nada. Manda el lado tocado; solo el hueco
   // entre pastillas conmuta.
-  const sw = root.querySelector('.tc-switch');
-  sw.addEventListener('click', (e) => {
+  const sw = /** @type {HTMLElement|null} */ (root.querySelector('.tc-switch'));
+  sw?.addEventListener('click', (e) => {
     if (done) return;
-    const lado = e.target.closest('.tc-switch__side')?.dataset.side;
+    const lado = desde(e.target).closest('.tc-switch__side')?.dataset.side;
     const borrar = lado ? lado === 'eraser' : !sw.classList.contains('is-on');
     if (borrar === sw.classList.contains('is-on')) return;   // ya estaba en ese
     sw.classList.toggle('is-on', borrar);
@@ -371,6 +468,11 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
 // texto se ve grande en pantalla completa y se reajusta al cambiar de tamaño
 // (fullscreen, rotación). Búsqueda binaria del font-size que cabe en ancho y alto.
 // Devuelve una función para detener el observador (al congelar / cambiar de frase).
+/**
+ * @param {HTMLElement} areaEl
+ * @param {HTMLElement} passageEl
+ * @returns {() => void}
+ */
 function fitPassage(areaEl, passageEl) {
   const fit = () => {
     const availW = areaEl.clientWidth, availH = areaEl.clientHeight;
@@ -401,7 +503,9 @@ function fitPassage(areaEl, passageEl) {
   // a que el tamaño se ASIENTE (dos medidas iguales con 150 ms entre ellas) y
   // reflowea UNA vez. El primer ajuste sigue siendo inmediato: al abrir la
   // ronda no hay transición que esperar.
-  let esperando = null, ultimo = '';
+  /** @type {ReturnType<typeof setTimeout>|null} */
+  let esperando = null;
+  let ultimo = '';
   const asentado = () => {
     esperando = null;
     const ahora = areaEl.clientWidth + 'x' + areaEl.clientHeight;
@@ -419,6 +523,10 @@ function fitPassage(areaEl, passageEl) {
 
 // Projector (host) view for LIVE: the passage big and read-only. In the reveal
 // phase, show the solution with the correct marks highlighted (green).
+/**
+ * @param {Element} root
+ * @param {{phase?: string, item?: Passage|null, kind?: Marca}} [o]
+ */
 export function renderTextCorrectionHost(root, { phase, item, kind = 'tilde' } = {}) {
   const text = item?.text || '';
   if (phase === 'reveal') {
@@ -441,8 +549,14 @@ export function renderTextCorrectionHost(root, { phase, item, kind = 'tilde' } =
 // shell pone timeUsed, la pantalla estándar (+ apéndice de revisión), el guardado
 // (trySaveResult según persistPolicy) y la REANUDACIÓN F5, que este runner no
 // tenía cuando era el "3er shell" con su copia manual de todo eso.
-export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, title } = {}) {
-  const passages = (activity.content?.passages || []).filter(p => p.text);
+/**
+ * @param {string|Element} rootSel
+ * @param {Activity} activity
+ * @param {import('../kernel/contracts/template.js').PlayerOpts} [opts]
+ * @param {{kind: Marca, title?: string}} o
+ */
+export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, title } = { kind: 'tilde' }) {
+  const passages = frasesDe(activity).filter(p => p.text);
   if (!passages.length) {
     mount(rootSel, html`<div class="alert alert-warning m-4">Esta actividad no tiene texto.</div>`);
     return;
@@ -454,20 +568,34 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
 
   const ctx = runFreeformPlayer(rootSel, activity, opts);
   let idx = 0, score = 0, hits = 0, misses = 0, over = 0;
+  /** Lo cerrado de cada frase: lo marcado, lo que pedía y su puntaje.
+   *  @typedef {{p: Passage, got: Set<number>, want: Set<number>, hits: number,
+   *    misses: number, over: number, total: number, correct: boolean,
+   *    points: number, anuladas?: number[]}} ResultadoFrase */
+  /** @type {ResultadoFrase[]} */
   const passageResults = [];
 
   // Reanudar (F5): el snapshot guarda contadores + el detalle por frase en forma
   // serializable; `got`/`want` (Sets para la corrección visual) se reconstruyen.
+  /** @param {Passage} p @returns {Set<number>} */
   const wantOf = (p) => new Set((p.marks || []).filter(m => m.kind === kind).map(m => m.pos));
-  const saved = ctx.loadProgress();
-  if (saved && Number.isInteger(saved.idx) && saved.idx > 0 && saved.idx < passages.length
-      && Array.isArray(saved.results)) {
-    idx = saved.idx; score = saved.score || 0;
-    hits = saved.hits || 0; misses = saved.misses || 0; over = saved.over || 0;
-    for (const r of saved.results) {
-      const p = passages[r.i];
+  // FRONTERA: el progreso viene de `localStorage` (lo guardó `snapshot()`), así
+  // que se lee como un saco de campos y se estrecha antes de creerlo.
+  const guardado = /** @type {{idx?: unknown, score?: unknown, hits?: unknown,
+   *   misses?: unknown, over?: unknown, results?: unknown}|null} */ (ctx.loadProgress());
+  const num = (/** @type {unknown} */ v) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
+  if (guardado && Number.isInteger(guardado.idx) && num(guardado.idx) > 0
+      && num(guardado.idx) < passages.length && Array.isArray(guardado.results)) {
+    idx = num(guardado.idx); score = num(guardado.score);
+    hits = num(guardado.hits); misses = num(guardado.misses); over = num(guardado.over);
+    for (const cruda of guardado.results) {
+      const r = /** @type {{i?: number, got?: number[], hits?: number, misses?: number,
+       *   over?: number, total?: number, correct?: boolean, points?: number}} */ (cruda);
+      const p = passages[num(r?.i)];
       if (!p) continue;
-      passageResults.push({ p, got: new Set(r.got), want: wantOf(p), hits: r.hits, misses: r.misses, over: r.over, total: r.total, correct: r.correct, points: r.points });
+      passageResults.push({ p, got: new Set(r.got || []), want: wantOf(p), hits: num(r.hits),
+        misses: num(r.misses), over: num(r.over), total: num(r.total),
+        correct: !!r.correct, points: num(r.points) });
     }
   }
   const snapshot = () => ({
@@ -477,6 +605,7 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
 
   // `conFrase`: el chip «N / M» absoluto solo en las pantallas SIN barra (la
   // corrección); en la ronda el progreso viaja en la barra y duplicarlo estorba.
+  /** @param {string} bodyHtml @param {{conFrase?: boolean}} [o] */
   const shell = (bodyHtml, { conFrase = true } = {}) => mount(rootSel, html`
     <div class="tc-solo">
       ${conFrase ? `<span class="tc-frase">${idx + 1} / ${passages.length}</span>` : ''}
@@ -495,13 +624,15 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
   // ajuste del editor acabó existiendo en unas plantillas sí y en otras no.
   const segundos = Math.max(0, Number(activity.rules?.timer) || 0);
   const inicioCrono = serverNow();   // mismo reloj que mide el primitivo (§22-5)
+  /** @type {{stop: () => void}|null} */
   let reloj = null;
   const pararReloj = () => { if (reloj) { reloj.stop(); reloj = null; } };
 
   function ask() {
     shell('', { conFrase: false });
     const body = document.getElementById('tc-body');
-    const ronda = renderTextCorrectionRound(body, passages[idx], {
+    if (!body) return;
+    const ronda = renderTextCorrectionRound(body, passages[idx] || null, {
       kind, onSubmit: grade,
       // SIN CHIP DE PUNTOS. Lo puse en v1.51.612 «para que el puntaje viaje de
       // hoja en hoja» y el dueño lo quitó a la primera, con razón: el puntaje ya
@@ -544,12 +675,14 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
    *  totales. Puntúa el MISMO scorer (nunca una suma a mano) y vive en un solo
    *  sitio porque lo usan los dos caminos: la corrección entre frases y la del
    *  final. Tenerlo dos veces era pedir que divergieran. */
+  /** @param {number} i @param {Set<number>} anulados */
   function recalcular(i, anulados) {
     const prev = passageResults[i];
+    if (!prev) return null;
     const rr = scoreMarksPerHit(valorAnulado([...prev.got], anulados, prev.p, kind), prev.p, [kind], activity);
     score += rr.points - prev.points;
     hits += rr.hits - prev.hits;
-    over += rr.over - prev.over;
+    over += (rr.over ?? 0) - prev.over;
     misses += (rr.total - rr.hits) - prev.misses;
     Object.assign(prev, { hits: rr.hits, over: rr.over, misses: rr.total - rr.hits,
                           correct: rr.perfect, points: rr.points, anuladas: [...anulados] });
@@ -562,31 +695,39 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     idx++; ctx.saveProgress(snapshot()); ask();
   }
 
+  /** @param {number[]} value */
   function grade(value) {
     pararReloj();
     const p = passages[idx];
+    if (!p) return;
     // MISMO scorer que VS/Equipos/Live/Tarea (fuente única): no reimplementamos
     // el conteo aquí. `want/got` solo alimentan la corrección visual y la analítica.
     const want = wantOf(p);
     const got = new Set((value || []).map(Number));
     const r = scoreMarksPerHit(value, p, [kind], activity);
     const miss = r.total - r.hits;
-    score += r.points; hits += r.hits; misses += miss; over += r.over;
+    score += r.points; hits += r.hits; misses += miss; over += (r.over ?? 0);
     // Guarda el detalle por frase (aciertos/fallos/de-más + posiciones + puntos) —
     // materia prima de la analítica por palabra del docente (F3).
-    passageResults.push({ p, got, want, hits: r.hits, misses: miss, over: r.over, total: r.total, correct: r.perfect, points: r.points });
+    passageResults.push({ p, got, want, hits: r.hits, misses: miss, over: (r.over ?? 0), total: r.total, correct: !!r.perfect, points: r.points });
     if (r.perfect) emitGame(GameEvents.ANSWER_CORRECT, { points: r.points });
     else emitGame(GameEvents.ANSWER_WRONG, {});
     if (alFinal) { siguiente(); return; }
-    reveal(value, { hits: r.hits, over: r.over, misses: miss, total: r.total, correct: r.perfect });
+    reveal(value, { hits: r.hits, over: (r.over ?? 0), misses: miss, total: r.total, correct: !!r.perfect });
   }
 
 
+  /**
+   * @param {number[]} value
+   * @param {{hits: number, over: number, misses: number, total: number, correct: boolean}} r
+   */
   function reveal(value, r) {
     const p = passages[idx];
+    if (!p) return;
     const want = new Set((p.marks || []).filter(m => m.kind === kind).map(m => m.pos));
     const got = new Set(value.map(Number));
     const last = idx === passages.length - 1;
+    /** @type {Set<number>} */
     const anulados = new Set();
     const filas = filasRevision(p, kind, got);
     // LA CABECERA SIGUE AHÍ EN LA CORRECCIÓN. Sin ella, el botón de pantalla
@@ -617,7 +758,7 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     // docente está mirando la revisión, todavía puede cambiar de idea.
     const slot = document.querySelector('.tc-review-slot');
     slot?.addEventListener('click', (e) => {
-      const b = e.target.closest('[data-anular]');
+      const b = desde(e.target).closest('[data-anular]');
       if (!b) return;
       const pos = Number(b.dataset.anular);
       if (anulados.has(pos)) anulados.delete(pos); else anulados.add(pos);
@@ -632,11 +773,11 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     });
 
     // El texto de la corrección también LLENA el área (mismo tamaño grande).
-    const areaEl = document.querySelector('.tc-passage-area');
-    const passageEl = areaEl.querySelector('.tc-passage');
+    const areaEl = /** @type {HTMLElement} */ (document.querySelector('.tc-passage-area'));
+    const passageEl = /** @type {HTMLElement} */ (areaEl.querySelector('.tc-passage'));
     const stopFit = fitPassage(areaEl, passageEl);
     const soltarFs = () => {};   // el marco cablea el botón por delegación
-    document.querySelector('.tc-next').addEventListener('click', () => {
+    document.querySelector('.tc-next')?.addEventListener('click', () => {
       stopFit();
       soltarFs();
       // AQUÍ se cierra la frase, con las anulaciones ya aplicadas. `grade` dejó
@@ -656,6 +797,7 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
    *  puede cambiar de idea, y un puntaje que se cierra a mitad de la revisión no
    *  es el que el profe acabó dando. */
   function corregirTodo() {
+    /** @type {Map<number, Set<number>>} */
     const anuladosDe = new Map(passageResults.map((_, i) => [i, new Set()]));
     const pinta = () => {
       shell(`
@@ -671,24 +813,26 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
               <div class="tc-final__cuerpo">
                 <div class="tc-passage tc-review-passage">${passageHtml(r.p.text, kind, { got: r.got, want: r.want })}</div>
                 <div class="tc-review-slot" data-hoja="${i}">
-                  ${panelRevisionHtml(filasRevision(r.p, kind, r.got), anuladosDe.get(i), { anulable })}
+                  ${panelRevisionHtml(filasRevision(r.p, kind, r.got), anuladosDe.get(i) || new Set(), { anulable })}
                 </div>
               </div>
             </section>`).join('')}
         </div>`, { conFrase: false });
 
       document.querySelector('.tc-final')?.addEventListener('click', (e) => {
-        const b = e.target.closest('[data-anular]');
+        const b = desde(e.target).closest('[data-anular]');
         if (b) {
-          const i = Number(b.closest('[data-hoja]').dataset.hoja);
+          const hoja = /** @type {HTMLElement|null} */ (b.closest('[data-hoja]'));
+          const i = Number(hoja?.dataset.hoja);
           const pos = Number(b.dataset.anular);
           const set = anuladosDe.get(i);
+          if (!set) return;
           if (set.has(pos)) set.delete(pos); else set.add(pos);
           recalcular(i, set);
           pinta();                       // re-pinta con los totales ya ajustados
           return;
         }
-        if (e.target.closest('.tc-fin')) finish();
+        if (desde(e.target).closest('.tc-fin')) finish();
       });
     };
     pinta();
@@ -726,6 +870,12 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
 // por el % de la clase que la acertó (verde ≥80 · ámbar 50-79 · rojo <50), con el
 // % en pequeño. `parts` = itemStat.parts de esa frase ({key:pos, pctMarked}).
 // Reutiliza applyTilde para mostrar la vocal acentuada / la coma en su sitio.
+/**
+ * @param {string} text
+ * @param {Marca} kind
+ * @param {Array<{key: string|number, pctMarked?: number}>|null|undefined} parts
+ * @returns {string}
+ */
 export function textHeatmapHtml(text, kind, parts) {
   const byPos = new Map((parts || []).map(p => [Number(p.key), p]));
   const s = String(text || '');
@@ -733,8 +883,8 @@ export function textHeatmapHtml(text, kind, parts) {
   for (let i = 0; i < s.length; i++) {
     const p = byPos.get(i);
     if (!p) { out += escapeHtml(s[i]); continue; }
-    const cls = heatClass(p.pctMarked);
-    const pct = Math.round(p.pctMarked * 100);
+    const cls = heatClass(p.pctMarked ?? 0);
+    const pct = Math.round((p.pctMarked ?? 0) * 100);
     const glyph = kind === 'tilde' ? escapeHtml(applyTilde(s[i])) : escapeHtml(s[i]) + '<b class="tc-heat__coma">,</b>';
     out += `<span class="tc-heat tc-heat--${cls}" title="${pct}% de la clase acertó">${glyph}<sup class="tc-heat__pct">${pct}%</sup></span>`;
   }

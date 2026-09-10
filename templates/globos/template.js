@@ -11,7 +11,12 @@ import { scoreQuizSubmission } from '../quiz/scorer.js';
 import { shuffle } from '../../core/azar.js';
 import { escapeHtml } from '../../core/html.js';
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').QaContent} QaContent
+ */
+
 export class GlobosTemplate extends BaseTemplate {
+  /** @type {import('../../kernel/contracts/template.js').TemplateMeta<QaContent>} */
   static meta = {
     name: 'globos',
     label: 'Explota Globos',
@@ -50,11 +55,20 @@ export class GlobosTemplate extends BaseTemplate {
   // la pantalla salía vacía, sin un globo que tocar. `adoptForQuiz` construye
   // las opciones que faltan. Reutilizar el editor y el scorer de otra plantilla
   // y NO reutilizar su adopción es la costura por donde se coló.
+  /**
+   * @param {import('../../kernel/contracts/activity.js').ActivityContent} content
+   * @returns {QaContent}
+   */
   static adoptContent(content) { return adoptForQuiz(content); }
 
   // Payload de ronda (VS/Equipos): igual que Quiz — pregunta + opciones, SIN answer.
+  /**
+   * @param {import('../../kernel/contracts/activity.js').Activity} activity
+   * @param {import('../../kernel/contracts/session.js').RoundContext} ctx
+   * @returns {import('../../kernel/contracts/session.js').RoundPayload|null}
+   */
   static getRoundPayload(activity, ctx) {
-    const item = activity.content.items[ctx.itemIndex];
+    const item = (/** @type {QaContent} */ (activity.content)).items[ctx.itemIndex];
     if (!item) return null;
     const opts = (item.options || []).slice();
     if (activity.rules?.shuffleOptions) shuffle(opts);
@@ -66,13 +80,19 @@ export class GlobosTemplate extends BaseTemplate {
   }
 
   // Ronda VS/Equipos-auto: el mismo campo de globos; tocar = responder.
+  /**
+   * @param {Element} root
+   * @param {import('../../kernel/contracts/session.js').RoundPayload} payload
+   * @param {import('../../kernel/contracts/template.js').RoundCallbacks} [cbs]
+   * @returns {void}
+   */
   static renderRound(root, payload, { onSubmit } = {}) {
     root.innerHTML = `<div class="gl-round">
       <p class="gl-round-q">${escapeHtml(payload?.question || '')}</p>
-      ${balloonFieldHtml(payload?.options || [])}
+      ${balloonFieldHtml(Array.isArray(payload?.options) ? payload.options : [])}
     </div>`;
     wireBalloonField(root, { onPick: (value, btn) => {
-      root.querySelectorAll('.gl-balloon').forEach(b => { b.disabled = true; });
+      root.querySelectorAll('.gl-balloon').forEach(b => { /** @type {HTMLButtonElement} */ (b).disabled = true; });
       btn.classList.add('gl-pop');
       onSubmit?.(value);
     } });
@@ -81,5 +101,13 @@ export class GlobosTemplate extends BaseTemplate {
 
   // v1→v2: fuera el `points: 1` sembrado, que anulaba «Puntos por acierto»
   // del panel (el profe ponía 10 y el duelo seguía dando 1).
-  static migrateContent(content) { return stripSeededPoints(content); }
+  // La firma es la IDENTIDAD sobre la forma, como la de `templates/base.js`: el
+  // contenido entra tal y como lo tenga la actividad, y quien sabe qué mirar
+  // dentro es su dueño, `stripSeededPoints`.
+  /**
+   * @template C
+   * @param {C} content
+   * @returns {C}
+   */
+  static migrateContent(content) { return stripSeededPoints(/** @type {C & {items?: unknown}} */ (content)); }
 }

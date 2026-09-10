@@ -9,6 +9,10 @@
 //                                       (current_item+1, or → ended if last)
 // `end` from anywhere → ended.
 
+/** @typedef {import('../kernel/contracts/session.js').LiveRoom} LiveRoom */
+/** @typedef {import('../kernel/contracts/session.js').RoomPatch} RoomPatch */
+
+/** @type {{IDLE:'idle', LOBBY:'lobby', QUESTION:'question', REVEAL:'reveal', LEADERBOARD:'leaderboard', ENDED:'ended'}} */
 export const PHASES = Object.freeze({
   IDLE: 'idle', LOBBY: 'lobby', QUESTION: 'question',
   REVEAL: 'reveal', LEADERBOARD: 'leaderboard', ENDED: 'ended',
@@ -19,17 +23,22 @@ export const PHASES = Object.freeze({
 // 2026-09-02).
 export const FASE_NO_ACEPTA_RESPUESTAS = 'No se aceptan respuestas en esta fase';
 
-/** Last item reached? `total` is the number of items in the activity. */
+/**
+ * Last item reached? `total` is the number of items in the activity.
+ * @param {Partial<LiveRoom>|null|undefined} session
+ * @param {number} total
+ * @returns {boolean}
+ */
 export function isLastItem(session, total) {
   return (session?.current_item ?? -1) >= total - 1;
 }
 
 /**
  * Plan the next step for a host action against the current session.
- * @param {{phase:string, current_item:number, status?:string}} session
+ * @param {Partial<LiveRoom>|null|undefined} session
  * @param {'start'|'reveal'|'leaderboard'|'next'|'end'} action
  * @param {number} total  number of items
- * @returns {{type:'patch', patch:Object}
+ * @returns {{type:'patch', patch:RoomPatch}
  *         | {type:'settle', itemIndex:number}
  *         | {type:'end'}
  *         | {type:'invalid', reason:string}}
@@ -66,9 +75,17 @@ export function planTransition(session, action, total) {
   }
 }
 
+/**
+ * @param {string} reason
+ * @returns {{type:'invalid', reason:string}}
+ */
 function invalid(reason) { return { type: 'invalid', reason }; }
 
-/** Stable key for a session's visible phase (used to dedupe host effects). */
+/**
+ * Stable key for a session's visible phase (used to dedupe host effects).
+ * @param {Partial<LiveRoom>|null|undefined} session
+ * @returns {string}
+ */
 export function sessionPhaseKey(session) {
   return `${session?.status}-${session?.phase}-${session?.current_item}-${session?.deadline || ''}`;
 }
@@ -80,7 +97,7 @@ export function sessionPhaseKey(session) {
  *   a question is live, so heartbeats/answers don't reset the timer. Lobby player
  *   joins (session key unchanged) are NOT skipped → the roster refreshes live.
  * @param {string} prevKey  the last applied phase key
- * @param {{status:string, phase:string, current_item:number, deadline?:any}} session
+ * @param {Partial<LiveRoom>|null|undefined} session
  * @returns {{ key:string, phaseChanged:boolean, skip:boolean }}
  */
 export function hostPaintDecision(prevKey, session) {

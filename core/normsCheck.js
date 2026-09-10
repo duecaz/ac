@@ -109,6 +109,8 @@ import { sinComentarios } from './sinComentarios.js';
 //   · tests/norms.test.mjs — Node, recorre el filesystem COMPLETO (autoridad).
 //   · core/selftest.js     — panel #/admin: humo del deploy sobre BROWSER_SCAN_FILES
 //                            + los ficheros de plantilla derivados del registro.
+/** Excepciones DECLARADAS por regla: ficheros donde el patrón es legítimo.
+ *  @type {Record<string, string[]>} */
 const ALLOW = {
   'resize-observer': ['core/observeResize.js'],
   'pb-filter': [],   // ya no hay ficheros excepcionados: pbFilterParam ya no matchea el patrón
@@ -214,6 +216,7 @@ const PB_SCHEMA_OWNERS = ['views/admin/collections.js', 'views/admin/ai.js', 'co
 
 /** Dueño de cada colección (§21). Exportado para que `tools/module-map.mjs`
  *  dibuje el mapa de datos de la misma fuente que lo vigila. */
+/** @type {Record<string, string[]>} */
 export const PB_OWNERS = {
   // Ya NO hay lectores directos: portada, Explorar, perfil de autor, el panel de
   // Profesores y el diagnóstico piden métodos al dueño (M6). El ratchet solo
@@ -256,6 +259,7 @@ export const PB_OWNERS = {
 //
 // Se casa por PREFIJO (gana el más largo declarado) porque muchas claves llevan
 // sufijo dinámico: `ww.activities.<uid>`, `ww.solo.progress.<id>`, `ww.live.<code>`…
+/** @type {Record<string, string[]>} */
 export const LS_OWNERS = {
   'ww.activities': ['core/storage.js', 'core/io.js'],  // io.js: export/import del dueño
   'ww.tombstones': ['core/storage.js'],
@@ -341,13 +345,16 @@ const blank = sinComentarios;
 
 /**
  * Escanea UN fichero. `path` relativo a la raíz del repo (p.ej. "views/explore.js").
+ * @param {string} path
+ * @param {string} source
  * @returns {{path:string, line:number, rule:string, text:string}[]}
  */
 export function scanNormsSource(path, source) {
+  /** @type {{path:string, line:number, rule:string, text:string}[]} */
   const out = [];
   const crudas = String(source || '').split('\n');   // CON comentarios: el motivo se lee ahí
   const lines = blank(String(source || '')).split('\n');
-  const allowed = (rule) => ALLOW[rule].some(a => path.endsWith(a));
+  const allowed = (/** @type {string} */ rule) => (ALLOW[rule] || []).some(a => path.endsWith(a));
   lines.forEach((ln, i) => {
     if (/new\s+ResizeObserver\s*\(/.test(ln) && !allowed('resize-observer')) {
       out.push({ path, line: i + 1, rule: 'resize-observer', text: ln.trim() });

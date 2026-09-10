@@ -18,8 +18,13 @@ const QUEUE_MAX = 200;
 let _qseq = 0;
 const qid = () => `${clock.now().toString(36)}-${(_qseq = (_qseq + 1) % 1e6).toString(36)}`;
 
+/** @typedef {import('../kernel/contracts/session.js').ResultRecord} ResultRecord */
+/** Un resultado ya en la cola: lleva su clave de idempotencia.
+ *  @typedef {ResultRecord & {_qid: string, _queuedAt?: number}} ResultadoEnCola */
+
 // Quota-aware write. Solo recorta si de verdad se supera el tope, y entonces
 // emite `ww:results-dropped` para que la UI avise en vez de tragarse la pérdida.
+/** @param {ResultadoEnCola[]} q */
 function qSave(q) {
   if (q.length > QUEUE_MAX) {
     const dropped = q.length - QUEUE_MAX;
@@ -32,10 +37,19 @@ function qSave(q) {
 
 // Loads the queue, backfilling a stable _qid on any legacy items (queued before
 // _qid existed) and persisting it, so removal-by-id is reliable across flushes.
+/** @returns {ResultadoEnCola[]} */
 function qLoad() {
-  let arr = lsGetJsonArray(QUEUE_KEY);
   let changed = false;
-  arr = arr.map(it => (it._qid ? it : (changed = true, { ...it, _qid: qid() })));
+  // Lo guardado es FRONTERA (pudo escribirlo otra versión): se queda con lo que
+  // tenga forma de resultado y se le repone la clave si viene sin ella.
+  const arr = lsGetJsonArray(QUEUE_KEY)
+    .filter((it) => !!it && typeof it === 'object')
+    .map((it) => {
+      const r = /** @type {ResultRecord & {_qid?: string}} */ (it);
+      if (r._qid) return /** @type {ResultadoEnCola} */ (r);
+      changed = true;
+      return { ...r, _qid: qid() };
+    });
   if (changed) qSave(arr);
   return arr;
 }
@@ -50,7 +64,11 @@ const queue = createOfflineQueue({
 /** Puntuación incremental compartida para mecánicas acierto/fallo (Emparejar y
  *  Memoria en SOLO): suma pointsPerCorrect al acertar; al fallar resta
  *  pointsPerWrong (si es negativo) pero NUNCA baja de 0. El piso vive aquí, en un
- *  único sitio (antes estaba duplicado y causó marcadores negativos). */
+ *  único sitio (antes estaba duplicado y causó marcadores negativos).
+ *  @param {number} score
+ *  @param {{pointsPerCorrect?: number, pointsPerWrong?: number}|null|undefined} scoring
+ *  @param {boolean} correct
+ *  @returns {number} */
 export function applyPoints(score, scoring, correct) {
   const ppc = scoring?.pointsPerCorrect ?? 1;
   const ppw = scoring?.pointsPerWrong ?? 0;
@@ -59,11 +77,14 @@ export function applyPoints(score, scoring, correct) {
 
 /** Guarda el resultado SI la política del modo lo dice (core/persistPolicy.js:
  *  el cuadro único de qué persiste cada modo). Evita repetir el gateo en cada
- *  player y que un modo nuevo herede "guarda" sin haberlo decidido. */
+ *  player y que un modo nuevo herede "guarda" sin haberlo decidido.
+ *  @param {{mode?: string}|null|undefined} opts
+ *  @param {ResultRecord} payload */
 export function trySaveResult(opts, payload) {
   if (savesResult(opts?.mode)) saveResult(payload);
 }
 
+/** @param {ResultRecord & {_qid?: string}} r */
 export async function saveResult(r) {
   // Try to flush any pending queued results first (piggyback on active connection).
   queue.flush().catch(() => {});
@@ -77,7 +98,7 @@ export async function saveResult(r) {
     const rs = await getRemoteStore();
     await rs.saveResult(item);
   } catch (e) {
-    console.warn('[results] save failed — queuing for retry:', e.message);
+    console.warn('[results] save failed — queuing for retry:', e instanceof Error ? e.message : String(e));
     queue.enqueue({ ...item, _queuedAt: clock.now() });
   }
 }

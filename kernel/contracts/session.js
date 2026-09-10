@@ -42,7 +42,9 @@
  * `pointsModeFor` solo devuelve los tres primeros; 'vs' y 'teams' los pasan las
  * máquinas de duelo y de equipos (`kernel/session/`) y son PLANOS por omisión:
  * `usaBonusVelocidad` solo enciende con 'live' o 'solo'.
- * @typedef {'solo'|'live'|'race'|'vs'|'teams'} PointsMode
+ * 'report' es el de LEER lo ya jugado (`core/sessionModel.js` re-pregunta al
+ * scorer por el mérito de una celda del informe): nunca da bonus.
+ * @typedef {'solo'|'live'|'race'|'vs'|'teams'|'report'} PointsMode
  */
 
 /**

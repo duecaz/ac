@@ -9,8 +9,24 @@ import { newPair, renderPairsEditor } from '../../core/contentModels/pairs.js';
 import { itemControlsHtml, wireItemList, ruleScopeNote } from '../../core/editorPrimitives.js';
 import { scoringPanelHtml, wireScoringPanel } from '../../core/editorPanels.js';
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/activity.js').Pair} Pair
+ * @typedef {import('../../kernel/contracts/activity.js').PairsContent} PairsContent
+ * @typedef {import('../../core/editorShell.js').EditorCtx} EditorCtx
+ */
+
+/** Los pares de ESTA actividad: el modelo es `pairs` y el editor lo sabe.
+ *  @param {Activity} a @returns {Pair[]} */
+const pares = (a) => /** @type {PairsContent} */ (a.content).pairs;
+
+/**
+ * @param {Element} root
+ * @param {Activity} activity
+ * @param {(activity: Activity) => void} onChange
+ */
 export function renderMatchEditor(root, activity, onChange) {
-  return renderPairsEditor(root, activity, onChange, {
+  return renderPairsEditor(root, /** @type {import('../../kernel/contracts/activity.js').Activity<PairsContent>} */ (activity), onChange, {
     seedCount: 2,
     panels: {
       content: { label: 'Pares', html: contentHtml, wire: wireContent },
@@ -21,15 +37,18 @@ export function renderMatchEditor(root, activity, onChange) {
   });
 }
 
+/** @param {Activity} a */
 function contentHtml(a) {
+  const lista = pares(a);
   return `
     <div class="row g-2 mb-2 fw-bold small text-muted">
       <div class="col-5">Izquierda</div><div class="col-5">Derecha</div><div class="col-2"></div>
     </div>
-    ${a.content.pairs.map((p, i) => pairRowHtml(p, i, a.content.pairs.length)).join('')}
+    ${lista.map((p, i) => pairRowHtml(p, i, lista.length)).join('')}
     <button class="btn btn-outline-primary mt-2" id="mp-add"><i class="bi bi-plus-lg"></i> Añadir par</button>`;
 }
 
+/** @param {Pair} p @param {number} i @param {number} total */
 function pairRowHtml(p, i, total) {
   const limg = p.leftImage || p.image || null;
   const rimg = p.rightImage || null;
@@ -61,15 +80,27 @@ function pairRowHtml(p, i, total) {
     </div>`;
 }
 
+/** @param {Element} root @param {Activity} a @param {EditorCtx} ctx */
 function wireContent(root, a, ctx) {
-  on(root, 'input',  '.mp-l', (e, el) => { a.content.pairs[+el.dataset.i].left  = e.target.value; ctx.onChange(a); });
-  on(root, 'input',  '.mp-r', (e, el) => { a.content.pairs[+el.dataset.i].right = e.target.value; ctx.onChange(a); });
-  wireItemList(root, a, ctx, { list: a.content.pairs, añadir: { selector: '#mp-add', fabrica: newPair } });
+  on(root, 'input',  '.mp-l', (e, el) => {
+    const p = pares(a)[Number(el.dataset.i)];
+    if (!p) return;
+    p.left = /** @type {HTMLInputElement} */ (el).value;
+    ctx.onChange(a);
+  });
+  on(root, 'input',  '.mp-r', (e, el) => {
+    const p = pares(a)[Number(el.dataset.i)];
+    if (!p) return;
+    p.right = /** @type {HTMLInputElement} */ (el).value;
+    ctx.onChange(a);
+  });
+  wireItemList(root, a, ctx, { list: pares(a), añadir: { selector: '#mp-add', fabrica: newPair } });
 
   // Image upload
   on(root, 'click', '.mp-img-btn', (_, btn) => {
-    const i    = +btn.dataset.i;
+    const par = /** @type {Record<string, unknown>|undefined} */ (pares(a)[Number(btn.dataset.i)]);
     const side = btn.dataset.side;
+    if (!par) return;
     const inp  = document.createElement('input');
     inp.type   = 'file';
     inp.accept = 'image/*';
@@ -77,50 +108,56 @@ function wireContent(root, a, ctx) {
     // bloque leía el fichero a mano con un 200 KB escrito aquí, sin mirar el
     // tipo, y avisaba con `alert()` en vez del toast de la app.
     inp.onchange = async () => {
-      const file = inp.files[0];
+      const file = inp.files?.[0];
       if (!file) return;
       try {
         const field = side === 'L' ? 'leftImage' : 'rightImage';
-        a.content.pairs[i][field] = await uploadMedia(file);
-        delete a.content.pairs[i][field + 'Credit'];   // el crédito se va con su imagen
+        par[field] = await uploadMedia(file);
+        delete par[field + 'Credit'];   // el crédito se va con su imagen
         ctx.onChange(a);
         ctx.repaint();
-      } catch (err) { toast(err.message, 'danger', TOAST_NORMAL); }
+      } catch (err) { toast(err instanceof Error ? err.message : String(err), 'danger', TOAST_NORMAL); }
     };
     inp.click();
   });
 
   // Buscar una imagen libre (F6): la misma puerta que en el resto de editores.
   on(root, 'click', '.mp-img-search', async (_, btn) => {
-    const i = +btn.dataset.i;
     const side = btn.dataset.side;
     const field = side === 'L' ? 'leftImage' : 'rightImage';
-    const par = a.content.pairs[i];
+    const par = pares(a)[Number(btn.dataset.i)];
+    if (!par) return;
     const r = await abrirBuscadorImagenes({ consulta: (side === 'L' ? par.left : par.right) || '' });
     if (!r) return;
-    par[field] = r.url;
-    par[field + 'Credit'] = r.atribucion;
+    // Escritura por campo CALCULADO (el lado decide la clave): el par se mira
+    // como saco solo para eso, no para leerlo.
+    const saco = /** @type {Record<string, unknown>} */ (par);
+    saco[field] = r.url;
+    saco[field + 'Credit'] = r.atribucion;
     ctx.onChange(a); ctx.repaint();
   });
 
   // Image remove
   on(root, 'click', '.mp-img-del', (_, btn) => {
-    const i    = +btn.dataset.i;
     const side = btn.dataset.side;
     const field = side === 'L' ? 'leftImage' : 'rightImage';
-    delete a.content.pairs[i][field];
-    if (side === 'L') delete a.content.pairs[i].image; // clear legacy field too
+    const par = pares(a)[Number(btn.dataset.i)];
+    if (!par) return;
+    delete (/** @type {Record<string, unknown>} */ (par))[field];
+    if (side === 'L') delete par.image; // clear legacy field too
     ctx.onChange(a);
     ctx.repaint();
   });
 }
 
+/** @param {Activity} a */
 function rulesHtml(a) {
   return `<div class="row g-3">
     <div class="col-md-4 form-check pt-4 ms-3"><input class="form-check-input" type="checkbox" id="m-rand" ${a.rules.randomize ? 'checked' : ''}><label class="form-check-label" for="m-rand">Mezclar columnas</label></div>
     <div class="col-12">${ruleScopeNote()}</div>
       </div>`;
 }
+/** @param {Element} root @param {Activity} a @param {EditorCtx} ctx */
 function wireRules(root, a, ctx) {
-  on(root, 'change', '#m-rand',  e => { a.rules.randomize = e.target.checked; ctx.onChange(a); });
+  on(root, 'change', '#m-rand', (e, el) => { a.rules.randomize = /** @type {HTMLInputElement} */ (el).checked; ctx.onChange(a); });
 }

@@ -7,16 +7,52 @@ import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { GRADE_HOLD_MS } from '../../core/timings.js';
 import { shuffle } from '../../core/azar.js';
 import { scoreMatchSubmission } from './scorer.js';
-import { ROPES, OK_COL, NO_COL, mountRopeLayer, ropeHtml, ghostHtml, dotPos, svgPt } from '../../core/connectRope.js';
+import { ROPES, OK_COL, NO_COL, mountRopeLayer, ropeHtml, ghostHtml, dotPos, svgPt, puntuarEnlaces } from '../../core/connectRope.js';
 import { observeResize } from '../../core/observeResize.js';
 import { pairComplete } from '../../core/contentModels/pairs.js';
 import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
 import { setExclusiveLink } from '../../core/linkState.js';
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/activity.js').PairsContent} PairsContent
+ */
+
+/** UNA TARJETA del riel: lo que se pinta de un lado del par.
+ * @typedef {Object} MatchCard
+ * @property {string} id
+ * @property {string} text
+ * @property {string|null} image
+ */
+
+/** EL ARRASTRE en curso (una cuerda a medio tender).
+ * @typedef {Object} MatchDrag
+ * @property {number} pointerId
+ * @property {string} fromSide
+ * @property {string} fromId
+ * @property {number} x1
+ * @property {number} y1
+ * @property {number} cx
+ * @property {number} cy
+ */
+
+/** La tarjeta que hay bajo el dedo, estrechada por FORMA (`closest`): bajo Node
+ *  —las suites— no existe la clase Element y el arnés entrega objetos de mentira.
+ * @param {Event} e @param {string} sel @returns {HTMLElement|null} */
+function bajoElDedo(e, sel) {
+  const t = /** @type {{closest?: (s: string) => Element|null}|null} */ (e.target);
+  return t && typeof t.closest === 'function' ? /** @type {HTMLElement|null} */ (t.closest(sel)) : null;
+}
+
+/**
+ * @param {string|Element} rootSel
+ * @param {Activity} activity
+ * @param {import('../../kernel/contracts/template.js').PlayerOpts} [opts]
+ */
 export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   // La regla la pone el modelo (core/contentModels/pairs.js), no esta copia:
   // es la misma con la que el editor decide si la actividad está lista.
-  const raw = (activity.content?.pairs || []).filter(pairComplete);
+  const raw = (/** @type {PairsContent} */ (activity.content)?.pairs || []).filter(pairComplete);
   if (!raw.length) {
     mount(rootSel, html`<div class="alert alert-warning m-4">Esta actividad no tiene pares.</div>`);
     return;
@@ -28,28 +64,44 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   const maxScore = activity.scoring?.maxScore
     || raw.reduce((s, p) => s + scoreMatchSubmission({ value: p.right, item: p, activity }).points, 0);
   const doShuffle = activity.rules?.randomize !== false;
+  /** @template T @param {T[]} a @returns {T[]} */
+  const quizaBarajar = (a) => (doShuffle ? shuffle(a) : a);
 
-  const lefts  = (doShuffle ? shuffle : v => v)(raw.map(p => ({ id: p.id, text: p.left  || '', image: p.leftImage  || p.image || null })));
-  const rights = (doShuffle ? shuffle : v => v)(raw.map(p => ({ id: p.id, text: p.right || '', image: p.rightImage || null })));
+  const lefts  = quizaBarajar(raw.map(p => ({ id: p.id, text: p.left  || '', image: p.leftImage  || p.image || null })));
+  const rights = quizaBarajar(raw.map(p => ({ id: p.id, text: p.right || '', image: p.rightImage || null })));
 
   const ctx = runFreeformPlayer(rootSel, activity, opts);
 
+  /** @type {(() => void)|null} */
   let stopRo = null;   // disposer del observeResize del field (se suelta al terminar)
   const state = {
+    /** @type {Map<string, string>} */
     links:    new Map(),  // leftId → rightId (emparejados por el alumno; cambiables)
+    /** @type {MatchDrag|null} */
     dragging: null,       // { fromSide, fromId, x1, y1, cx, cy }
     graded:   false,      // true tras pulsar Enviar
   };
 
   mount(rootSel, buildLayout(lefts, rights, activity, raw.length));
 
-  const root       = document.querySelector(rootSel);
-  const arena      = root.querySelector('.ww-field');
-  const svg        = root.querySelector('.ww-lines-svg');
-  const submitBtn  = root.querySelector('.ww-match-submit');
+  // `rootSel` puede llegar como Element (así lo declara el contrato): con
+  // `document.querySelector(rootSel)` a secas, ese caso se quedaba sin raíz.
+  const raiz = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
+  const campo = /** @type {HTMLElement|null} */ (raiz?.querySelector('.ww-field'));
+  const lienzo = /** @type {SVGElement|null} */ (raiz?.querySelector('.ww-lines-svg'));
+  const submitBtn = /** @type {HTMLButtonElement|null} */ (raiz?.querySelector('.ww-match-submit'));
 
+  // Lo que acaba de montar este mismo player: si no está, el marco no es el que
+  // se montó (ruta cambiada a mitad) y no hay nada que cablear.
+  if (!raiz || !campo || !lienzo) return;
   // Capa de cuerdas — motor compartido core/connectRope.js.
-  const { layer } = mountRopeLayer(svg);
+  const capa = mountRopeLayer(lienzo).layer;
+  if (!capa) return;
+  // Re-atados ya estrechados: las funciones de abajo se crean aquí y corren
+  // DESPUÉS, así que no heredan el `if` de arriba.
+  const root = raiz, arena = campo, svg = lienzo, layer = capa;
+  /** @param {string} sel @returns {NodeListOf<HTMLElement>} */
+  const todas = (sel) => /** @type {NodeListOf<HTMLElement>} */ (root.querySelectorAll(sel));
 
   function updateProgress() {
     hudSet(root, 'pagina', `${state.links.size} / ${raw.length}`);
@@ -79,11 +131,13 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
 
   // Conecta (o reconecta) un par. Cada tarjeta participa en UNA sola cuerda:
   // se elimina cualquier enlace previo que use ese mismo left o ese mismo right.
+  /** @param {string} leftId @param {string} rightId */
   function setLink(leftId, rightId) {
     setExclusiveLink(state.links, leftId, rightId);
     refreshCards();
     updateSvg(); updateProgress(); updateSubmit();
   }
+  /** @param {string} side @param {string} id */
   function removeByCard(side, id) {
     if (side === 'L') state.links.delete(id);
     else for (const [l, r] of [...state.links]) if (r === id) state.links.delete(l);
@@ -94,8 +148,9 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   function refreshCards() {
     const linkedL = new Set(state.links.keys());
     const linkedR = new Set(state.links.values());
-    root.querySelectorAll('.ww-card').forEach(c => {
-      const on = c.dataset.side === 'L' ? linkedL.has(c.dataset.id) : linkedR.has(c.dataset.id);
+    todas('.ww-card').forEach(c => {
+      const id = c.dataset.id ?? '';
+      const on = c.dataset.side === 'L' ? linkedL.has(id) : linkedR.has(id);
       c.classList.toggle('ww-card-linked', on);
     });
   }
@@ -111,9 +166,12 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   //  3) en cualquier otro sitio (hueco/corredor), la tarjeta opuesta MÁS cercana por
   //     centro — hay pocas y son grandes, así que "la más cercana" es siempre la
   //     intención. Un arrastre hacia el otro grupo NUNCA se queda sin conectar.
+  /** @param {number} x @param {number} y @param {string} fromSide @param {string} fromId
+   *  @returns {HTMLElement|null} */
   function targetCard(x, y, fromSide, fromId) {
     const side = fromSide === 'L' ? 'R' : 'L';
-    const cards = [...root.querySelectorAll(`.ww-card[data-side="${side}"]`)];
+    const cards = [...todas(`.ww-card[data-side="${side}"]`)];
+    /** @param {DOMRect} r @param {number} m */
     const inRect = (r, m) => x >= r.left - m && x <= r.right + m && y >= r.top - m && y <= r.bottom + m;
     // 1a) ¿soltó sobre el PUNTO conector de una tarjeta opuesta? → esa tarjeta.
     for (const c of cards) {
@@ -126,8 +184,11 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
     const origin = root.querySelector(`.ww-card[data-side="${fromSide}"][data-id="${fromId}"]`);
     if (origin && inRect(origin.getBoundingClientRect(), 8)) return null;
     // 3) hueco/corredor: la tarjeta opuesta más cercana por centro (siempre hay una).
+    /** @param {Element} el @returns {[number, number]} */
     const cen = el => { const r = el.getBoundingClientRect(); return [(r.left + r.right) / 2, (r.top + r.bottom) / 2]; };
-    let best = null, bestD = Infinity;
+    /** @type {HTMLElement|null} */
+    let best = null;
+    let bestD = Infinity;
     for (const c of cards) { const [cx, cy] = cen(c); const d = (cx - x) ** 2 + (cy - y) ** 2; if (d < bestD) { bestD = d; best = c; } }
     return best;
   }
@@ -138,13 +199,15 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   // scroll (clave en tablets/pizarra). touch-action:none lo refuerza desde CSS.
   arena.addEventListener('pointerdown', e => {
     if (state.graded || state.dragging) return;
-    if (e.target.closest('.ww-match-submit')) return;
-    const card = e.target.closest('.ww-card');
+    if (bajoElDedo(e, '.ww-match-submit')) return;
+    const card = bajoElDedo(e, '.ww-card');
     if (!card) return;
     e.preventDefault();
     const dot = card.querySelector('.ww-dot');
+    const fromSide = card.dataset.side, fromId = card.dataset.id;
+    if (!dot || !fromSide || !fromId) return;
     const pos = dotPos(dot, svg);
-    state.dragging = { pointerId: e.pointerId, fromSide: card.dataset.side, fromId: card.dataset.id,
+    state.dragging = { pointerId: e.pointerId, fromSide, fromId,
                        x1: pos.x, y1: pos.y, cx: pos.x, cy: pos.y };
     try { arena.setPointerCapture(e.pointerId); } catch {}
     updateSvg();
@@ -158,6 +221,7 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
     updateSvg();
   });
 
+  /** @param {PointerEvent} e @param {boolean} connect */
   function endDrag(e, connect) {
     const drag = state.dragging;
     if (!drag || e.pointerId !== drag.pointerId) return;
@@ -165,7 +229,7 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
     try { arena.releasePointerCapture(e.pointerId); } catch {}
     if (!connect) { updateSvg(); return; }
     const hit = targetCard(e.clientX, e.clientY, drag.fromSide, drag.fromId);
-    if (hit) {
+    if (hit?.dataset.id) {
       const leftId  = drag.fromSide === 'L' ? drag.fromId : hit.dataset.id;
       const rightId = drag.fromSide === 'L' ? hit.dataset.id : drag.fromId;
       setLink(leftId, rightId);
@@ -184,17 +248,11 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
     state.graded = true;
     // Cada cuerda se puntúa con el MISMO scorer que usan VS y Equipos: el modo
     // Individual no puede tener su propia aritmética (era la doble contabilidad).
-    let correct = 0, score = 0;
-    for (const [l, r] of state.links) {
-      const res = scoreMatchSubmission({ value: byId.get(r)?.right ?? '', item: byId.get(l), activity });
-      score += res.points;
-      if (res.correct) correct++;
-    }
-    score = Math.max(0, score);
-    const wrong = state.links.size - correct;
+    const { correct, score, wrong } = puntuarEnlaces(state.links,
+      (l, r) => scoreMatchSubmission({ value: byId.get(r)?.right ?? '', item: byId.get(l), activity }));
     // Pintar cuerdas + tarjetas según corrección.
-    root.querySelectorAll('.ww-card').forEach(c => {
-      const id = c.dataset.id, side = c.dataset.side;
+    todas('.ww-card').forEach(c => {
+      const id = c.dataset.id ?? '', side = c.dataset.side;
       const linkOk = side === 'L'
         ? state.links.get(id) === id
         : [...state.links].some(([l, r]) => r === id && l === id);
@@ -202,7 +260,7 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
       c.classList.add(linkOk ? 'ww-card-correct' : 'ww-card-wrong');
     });
     updateSvg();
-    submitBtn.disabled = true;
+    if (submitBtn) submitBtn.disabled = true;
     stopRo?.();   // la pantalla de resultado desmonta el field: suelta el observer
     setTimeout(() => ctx.finish({
       title: correct === raw.length ? '¡Perfecto!' : 'Resultado',
@@ -244,7 +302,7 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
       // Alto: que las N quepan apiladas, pero sin pasar de ~0.92·ancho (legible).
       cardH = Math.max(64, Math.floor(Math.min((fh - (N - 1) * GAP) / N, cardW * 0.92)));
     }
-    root.querySelectorAll('.ww-card').forEach(c => {
+    todas('.ww-card').forEach(c => {
       c.style.flex = '0 0 auto'; c.style.width = cardW + 'px'; c.style.height = cardH + 'px';
     });
     updateSvg();                                       // recolocar cuerdas
@@ -263,6 +321,12 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
 
 // ── HTML builders ─────────────────────────────────────────────────────────────
 
+/**
+ * @param {MatchCard[]} lefts
+ * @param {MatchCard[]} rights
+ * @param {Activity} activity
+ * @param {number} total
+ */
 function buildLayout(lefts, rights, activity, total) {
   // Andamio de regiones (styles/scaffold.css): dos rieles (start/end) con un
   // corredor central (ww-stage vacío) que las cuerdas cruzan. Emparejar mantiene los
@@ -289,6 +353,7 @@ function buildLayout(lefts, rights, activity, total) {
 </div>`;
 }
 
+/** @param {MatchCard} c @param {'L'|'R'} side */
 function cardHtml(c, side) {
   const hasImg = !!c.image;
   const img = hasImg ? `<img src="${c.image}" alt="" loading="lazy">` : '';

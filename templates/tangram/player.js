@@ -26,6 +26,24 @@ const TOQUE_MAX_MS = 300;      // por debajo de esto, sin desplazamiento, es un 
 const TOQUE_MAX_DIST = 0.06;   // en fracción del lado del tablero — no del cuadrado unidad fijo
 const DOBLE_TOQUE_MS = 400;    // ventana entre dos toques de la MISMA pieza
 
+/**
+ * @typedef {import('./game/geometria.js').Colocacion} Colocacion
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/activity.js').TangramContent} TangramContent
+ */
+/**
+ * La caja que ocupa una pieza a su tamaño real, con el desfase de su polígono
+ * local respecto al origen (`minx`/`miny`): es lo que hace falta para
+ * repartirlas en la bandeja sin que se monten.
+ * @typedef {Object} CajaPieza
+ * @property {number} w
+ * @property {number} h
+ * @property {number} minx
+ * @property {number} miny
+ */
+/** La misma caja, sabiendo de qué pieza es. @typedef {CajaPieza & {n: string}} CajaConNombre */
+
+/** @param {string} nombre @param {number} rot @returns {CajaPieza} */
 function cajaPieza(nombre, rot) {
   const poly = transformarPieza(PIEZAS[nombre].puntos, { x: 0, y: 0, rot, flip: false });
   const xs = poly.map(p => p[0]), ys = poly.map(p => p[1]);
@@ -36,17 +54,20 @@ function cajaPieza(nombre, rot) {
  *  hasta `anchoObjetivo` de ancho, para que la bandeja no quede tan ancha
  *  que hunda la silueta a una franja del marco (una sola fila de las 7
  *  piezas mide ~3.7 unidades; casi ninguna silueta es tan ancha). Devuelve
- *  las filas (arrays de cajas) y las medidas totales del bloque. */
+ *  las filas (arrays de cajas) y las medidas totales del bloque.
+ *  @param {number} gap @param {number} anchoObjetivo
+ *  @returns {{filas: CajaConNombre[][], alturasFila: number[], ancho: number, alto: number}} */
 function empaquetarPiezas(gap, anchoObjetivo) {
   const cajas = ORDEN_PIEZAS.map(n => ({ n, ...cajaPieza(n, 0) }));
+  /** @type {CajaConNombre[][]} */
   const filas = [[]];
   let anchoFilaActual = -gap;
   for (const c of cajas) {
-    if (anchoFilaActual + gap + c.w > anchoObjetivo && filas.at(-1).length > 0) {
+    if (anchoFilaActual + gap + c.w > anchoObjetivo && filas[filas.length - 1].length > 0) {
       filas.push([]);
       anchoFilaActual = -gap;
     }
-    filas.at(-1).push(c);
+    filas[filas.length - 1].push(c);
     anchoFilaActual += gap + c.w;
   }
   const ancho = Math.max(...filas.map(f => f.reduce((s, c) => s + c.w + gap, -gap)));
@@ -56,8 +77,13 @@ function empaquetarPiezas(gap, anchoObjetivo) {
 }
 
 /** Posiciones iniciales: las piezas repartidas en la bandeja ya empaquetada
- *  en filas, centradas en `centroX`, empezando en `y`. */
+ *  en filas, centradas en `centroX`, empezando en `y`.
+ *  @param {CajaConNombre[][]} filas
+ *  @param {number[]} alturasFila
+ *  @param {number} ancho @param {number} gap @param {number} centroX @param {number} y
+ *  @returns {Record<string, Colocacion>} */
 function colocacionesIniciales(filas, alturasFila, ancho, gap, centroX, y) {
+  /** @type {Record<string, Colocacion>} */
   const out = {};
   let yFila = y;
   filas.forEach((fila, i) => {
@@ -72,9 +98,15 @@ function colocacionesIniciales(filas, alturasFila, ancho, gap, centroX, y) {
   return out;
 }
 
+/**
+ * @param {string|Element} rootSel
+ * @param {Activity} activity
+ * @param {import('../../kernel/contracts/template.js').PlayerOpts} [opts]
+ * @returns {void}
+ */
 export function renderTangramPlayer(rootSel, activity, opts = {}) {
   ensureContent(activity);
-  const item = activity.content.items[0];
+  const item = /** @type {TangramContent} */ (activity.content).items[0];
   const figura = SILUETAS[item.figura] ? item.figura : ORDEN_SILUETAS[0];
   const silueta = SILUETAS[figura];
 
@@ -102,7 +134,7 @@ export function renderTangramPlayer(rootSel, activity, opts = {}) {
   // matriz al nacer esa red. Al lado, la caja del contenido se parece a la
   // del marco y las piezas salen ~1,5× más grandes. Se decide UNA vez, al
   // montar (la antesala ya pidió pantalla completa: el hueco es el definitivo).
-  const hueco = document.querySelector(rootSel);
+  const hueco = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
   const apaisado = (hueco?.clientWidth || 4) >= (hueco?.clientHeight || 3);
   const anchoObjetivoBandeja = apaisado ? anchoUnaFila * 0.42 : Math.max(wSilueta, anchoUnaFila * 0.56);
   const { filas, alturasFila, ancho: anchoBandeja, alto: altoBandeja } = empaquetarPiezas(gap, anchoObjetivoBandeja);
@@ -137,14 +169,17 @@ export function renderTangramPlayer(rootSel, activity, opts = {}) {
       </div>
     </div>`);
 
-  const root = document.querySelector(rootSel);
-  const svg = root.querySelector('.ta-svg');
-  const capa = root.querySelector('.ta-piezas');
+  const root = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
+  const svgOpt = /** @type {SVGSVGElement|null} */ (root?.querySelector('.ta-svg') ?? null);
+  const capaOpt = root?.querySelector('.ta-piezas') ?? null;
+  if (!svgOpt || !capaOpt) return;   // el marco no llegó a montarse: no hay tablero que cablear
+  const svg = svgOpt, capa = capaOpt;
 
   const colocaciones = colocacionesIniciales(filas, alturasFila, anchoBandeja, gap, centroX, yBandeja);
   let orden = [...ORDEN_PIEZAS];   // orden de pintado = quién está "encima"
   let resuelto = false;
 
+  /** @param {number} clientX @param {number} clientY @returns {{x: number, y: number}} */
   function puntoSvg(clientX, clientY) {
     const p = svg.createSVGPoint();
     p.x = clientX; p.y = clientY;
@@ -167,6 +202,7 @@ export function renderTangramPlayer(rootSel, activity, opts = {}) {
   }
   pintar();
 
+  /** @param {string} n @returns {void} */
   function traerAlFrente(n) {
     orden = orden.filter(x => x !== n);
     orden.push(n);
@@ -174,7 +210,7 @@ export function renderTangramPlayer(rootSel, activity, opts = {}) {
 
   function comprobarFin() {
     if (resuelto) return;
-    const lista = ORDEN_PIEZAS.map(n => ({ pieza: n, ...colocaciones[n] }));
+    const lista = ORDEN_PIEZAS.map(n => ({ ...colocaciones[n], pieza: n }));
     const ok = estaResuelto(silueta.poligonos, lista, PIEZAS);
     if (!ok) return;
     resuelto = true;
@@ -189,13 +225,19 @@ export function renderTangramPlayer(rootSel, activity, opts = {}) {
   }
 
   // --- Gestos: un puntero activo a la vez (pizarra/tablet, un dedo). ---
+  /** @type {{activo: number|null, piezaId: string|null, inicioX: number, inicioY: number,
+   *           origX: number, origY: number, t0: number, movido: boolean}} */
   const gesto = { activo: null, piezaId: null, inicioX: 0, inicioY: 0, origX: 0, origY: 0, t0: 0, movido: false };
+  /** @type {{piezaId: string|null, t: number}} */
   let ultimoToque = { piezaId: null, t: 0 };
 
+  /** @param {PointerEvent} e @returns {void} */
   function onDown(e) {
-    const g = e.target.closest('.ta-pieza');
+    const destino = /** @type {Element|null} */ (e.target);
+    const g = /** @type {SVGElement|null} */ (destino?.closest('.ta-pieza') ?? null);
     if (!g || gesto.activo != null) return;
     const n = g.dataset.pieza;
+    if (!n) return;
     const p = puntoSvg(e.clientX, e.clientY);
     gesto.activo = e.pointerId;
     gesto.piezaId = n;
@@ -208,6 +250,7 @@ export function renderTangramPlayer(rootSel, activity, opts = {}) {
     try { svg.setPointerCapture(e.pointerId); } catch {}
   }
 
+  /** @param {PointerEvent} e @returns {void} */
   function onMove(e) {
     if (gesto.activo !== e.pointerId || !gesto.piezaId) return;
     const p = puntoSvg(e.clientX, e.clientY);
@@ -222,6 +265,7 @@ export function renderTangramPlayer(rootSel, activity, opts = {}) {
     if (e.cancelable) e.preventDefault();
   }
 
+  /** @param {PointerEvent} e @returns {void} */
   function onUp(e) {
     if (gesto.activo !== e.pointerId || !gesto.piezaId) { gesto.activo = null; return; }
     const n = gesto.piezaId;

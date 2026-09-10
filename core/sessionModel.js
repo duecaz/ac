@@ -20,9 +20,24 @@ import { finishMsOf, byFinish } from './liveRank.js';
 // Para ítems BINARIOS manda el veredicto GUARDADO (`row.correct`, del settle
 // autoritativo), no un re-scoring: solo el mérito multi-parte (tildes "3/8") se
 // recalcula del value, porque no viaja en la fila.
+/** @typedef {import('./answerRows.js').AnswerRow} AnswerRow */
+/** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
+/** @typedef {import('../kernel/contracts/activity.js').SessionItem} SessionItem */
+/** UNA celda de la matriz: lo que el alumno puso en ese ítem y cuánto valió.
+ *  @typedef {{correct: boolean|null, points: number, value: unknown, hits: number,
+ *    over: number, total: number, binary: boolean, ms: number|null}} Celda */
+
+/**
+ * @param {import('../kernel/contracts/template.js').TemplateStatic|import('./registry.js').PlantillaRegistrada|null} template
+ * @param {SessionItem|undefined} item
+ * @param {{value: unknown, correct: boolean|null}} row
+ * @param {Activity|null} activity
+ * @returns {{hits: number, over: number, total: number, binary: boolean}}
+ */
 function cellScore(template, item, row, activity) {
   try {
-    const r = template?.scoreSubmission?.({ value: row.value, item, activity, mode: 'report' });
+    const r = template?.scoreSubmission?.(
+      { value: row.value, item, activity: /** @type {Activity} */ (activity), mode: 'report' });
     if (r && Number.isFinite(r.total) && r.total > 1) {
       return { hits: r.hits || 0, over: r.over || 0, total: r.total, binary: false };
     }
@@ -34,9 +49,18 @@ function cellScore(template, item, row, activity) {
   return { hits: row.correct === true ? 1 : 0, over: 0, total: 1, binary: true };
 }
 
-// Modelo puro (sin DOM) → testeable.
+/**
+ * Modelo puro (sin DOM) → testeable.
+ * @param {AnswerRow[]|null|undefined} rows
+ * @param {number} nItems
+ * @param {{labels?: string[], items?: SessionItem[],
+ *   template?: import('./registry.js').PlantillaRegistrada|null,
+ *   activity?: Activity|null,
+ *   players?: {id?: string, name?: string}[]}} [o]
+ */
 export function buildSessionTable(rows, nItems, { labels = [], items = [], template = null, activity = null, players: joined = [] } = {}) {
   const deduped = dedupeRows(rows || []);
+  /** @type {Map<string, {name: string, cells: (Celda|null)[]}>} */
   const byPlayer = new Map();
   // Decisión del dueño (2026-08-09): quien ENTRÓ a la sala sale en la lista
   // aunque no respondiera nada — ocultar a un alumno del podio con la clase
@@ -52,6 +76,7 @@ export function buildSessionTable(rows, nItems, { labels = [], items = [], templ
   for (const r of deduped) {
     if (!byPlayer.has(r.player)) byPlayer.set(r.player, { name: r.name || r.player, cells: Array(nItems).fill(null) });
     const p = byPlayer.get(r.player);
+    if (!p) continue;
     if (r.name && (!p.name || p.name === r.player)) p.name = r.name;
     if (r.itemIndex >= 0 && r.itemIndex < nItems) {
       // La tabla cuenta el intento FINAL (lo que el alumno acabó respondiendo), no

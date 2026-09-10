@@ -15,6 +15,10 @@
 // Módulo PURO (sin fetch): entra el nº de ítems + las filas propias, sale el
 // estado de la carrera. La vista pide las filas por `listOwnAnswers` y el
 // adaptador decide qué significa "correct" en su almacén (hint incluido).
+/**
+ * @param {number} itemCount
+ * @param {{itemIndex?: number, correct?: boolean|null, ms?: number|null}[]|null|undefined} rows
+ */
 export function raceResumeState(itemCount, rows) {
   const done = new Set();   // ítems ya acertados → NO vuelven a la cola
   const sent = new Set();   // ítems con PRIMER intento ya enviado (analítica v0/c0)
@@ -25,7 +29,8 @@ export function raceResumeState(itemCount, rows) {
     sent.add(i);
     if (r.correct === true) {
       done.add(i);
-      if (Number.isFinite(r.ms) && (finishMs == null || r.ms > finishMs)) finishMs = r.ms;
+      const ms = Number(r.ms);
+      if (Number.isFinite(ms) && (finishMs == null || ms > finishMs)) finishMs = ms;
     }
   }
   const queue = [];

@@ -24,13 +24,37 @@
 // como segundo argumento: un botón `disabled` deja de ser el `activeElement`
 // al instante, con lo que el valor por defecto ya llegaría vacío (era el caso
 // de «Escribir con IA», editorShell.js).
-export function abrirDialogoConFallback(el, { disparador = document.activeElement } = {}) {
+/**
+ * Lo que hace falta del Bootstrap de la CDN: su `Modal`. Se pregunta por el
+ * global porque puede NO haber llegado (es justo el caso que este módulo cubre).
+ * @typedef {{Modal: new (el: Element, opts?: object) => DialogoModal}} BootstrapGlobal
+ */
+/** La boca que devuelve esta función, sea el Modal de Bootstrap o el respaldo.
+ *  @typedef {{show: () => void, hide: () => void}} DialogoModal */
+
+/** @returns {BootstrapGlobal|null} */
+function bootstrapCargado() {
+  const bs = /** @type {BootstrapGlobal|undefined} */ (Reflect.get(globalThis, 'bootstrap'));
+  return bs?.Modal ? bs : null;
+}
+
+/** @returns {HTMLElement|null} */
+const elementoActivo = () => /** @type {HTMLElement|null} */ (document.activeElement);
+
+/**
+ * @param {HTMLElement} el
+ * @param {{disparador?: HTMLElement|null}} [o]
+ * @returns {DialogoModal}
+ */
+export function abrirDialogoConFallback(el, { disparador = elementoActivo() } = {}) {
   el.addEventListener('hidden.bs.modal', () => {
     if (disparador && typeof disparador.focus === 'function' && document.body.contains(disparador)) {
       disparador.focus();
     }
   });
-  if (typeof bootstrap !== 'undefined' && bootstrap?.Modal) return new bootstrap.Modal(el);
+  const bs = bootstrapCargado();
+  if (bs) return new bs.Modal(el);
+  /** @type {HTMLElement|null} */
   let fondo = null;
   const cerrar = () => {
     el.classList.remove('show');
@@ -39,7 +63,8 @@ export function abrirDialogoConFallback(el, { disparador = document.activeElemen
     el.dispatchEvent(new Event('hidden.bs.modal'));
   };
   el.addEventListener('click', (e) => {
-    if (e.target.closest('[data-bs-dismiss="modal"]')) cerrar();
+    const t = /** @type {Element|null} */ (e.target);
+    if (t && typeof t.closest === 'function' && t.closest('[data-bs-dismiss="modal"]')) cerrar();
   });
   el.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') cerrar();

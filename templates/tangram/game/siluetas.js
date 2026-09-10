@@ -24,6 +24,22 @@
 // Entran por esta misma estructura (`solucion` con aristas/medias aristas +
 // `poligonos` derivados) en cuanto alguien aporte esas coordenadas.
 
+/**
+ * @typedef {import('./piezas.js').Punto} Punto
+ * @typedef {import('./geometria.js').Colocacion} Colocacion
+ */
+/**
+ * Una figura del catálogo: su caja (la que usan el viewBox del player y la
+ * miniatura del editor), la SOLUCIÓN con la que se construyó y los polígonos
+ * que de ella se derivan (lo que se pinta y lo que compara la máscara).
+ * @typedef {Object} Silueta
+ * @property {string} nombre
+ * @property {{minx: number, maxx: number, miny: number, maxy: number}} bbox
+ * @property {Colocacion[]} solucion
+ * @property {Punto[][]} poligonos
+ */
+
+/** @type {Record<string, Silueta>} */
 export const SILUETAS = {
   cuadrado: {
     nombre: 'Cuadrado',

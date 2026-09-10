@@ -215,7 +215,7 @@ function createTeamsSession(activity, T, opts) {
     // Puntos del juez por la FÓRMULA común (C5): item.points, si no el
     // pointsPerCorrect de la actividad, si no 1. Antes era `item.points || 1`,
     // que ignoraba la configuración de puntos — la única fuga en el kernel.
-    const pts = Number.isFinite(points) ? points : (correct ? basePoints(item, activity?.scoring) : 0);
+    const pts = Number.isFinite(points) ? Number(points) : (correct ? basePoints(item, activity?.scoring) : 0);
     const key = `${state.currentItem}:${team.id}`;
     const prev = state.answers[key];
     if (prev) team.score -= (prev.points || 0); // undo a previous ruling

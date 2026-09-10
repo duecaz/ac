@@ -25,21 +25,21 @@
 //
 // Módulo PURO (sin fetch ni reloj propio): todo entra por parámetro.
 
+/** @param {string|number|null|undefined} v @returns {number} */
 const parse = (v) => {
   if (!v) return NaN;
   // PocketBase serializa "2026-07-30 05:50:42.123Z" (espacio, no T).
-  const t = Date.parse(typeof v === 'string' ? v.replace(' ', 'T') : v);
+  const t = typeof v === 'string' ? Date.parse(v.replace(' ', 'T')) : Number(v);
   return Number.isFinite(t) ? t : NaN;
 };
 
 /**
- * Tiempo de respuesta a usar para PUNTUAR.
- * @param {object} o
- * @param {string} o.createdAt  autodate `created` de la fila (fase pregunta)
- * @param {string} o.updatedAt  autodate `updated` de la fila (fase carrera)
- * @param {string} o.openedAt   instante servidor en que el host abrió el ítem
- * @param {number} o.claimedMs  el `ms` que afirmó el cliente (solo fallback)
- * @param {string} o.phase      'race' usa `updated`; cualquier otra, `created`
+ * Tiempo de respuesta a usar para PUNTUAR. `createdAt`/`updatedAt` son los
+ * autodate de la fila (la carrera mira `updated`); `openedAt`, el instante en que
+ * el host abrió el ítem; `claimedMs`, el `ms` que afirmó el cliente (solo
+ * respaldo); `phase`, la fase de la sala.
+ * @param {{createdAt?: string|null, updatedAt?: string|null, openedAt?: string|null,
+ *   claimedMs?: number, phase?: string|null}} [o]
  * @returns {{ms:number, source:'server'|'claimed'}}
  */
 export function deriveAnswerMs({ createdAt, updatedAt, openedAt, claimedMs = 0, phase } = {}) {
@@ -81,13 +81,17 @@ export function origenServidor(rows) {
 }
 
 /** Clave del sello de apertura dentro del blob: en carrera todos los ítems se
- *  abren a la vez (un solo sello); en fase pregunta, uno por ítem. */
+ *  abren a la vez (un solo sello); en fase pregunta, uno por ítem.
+ *  @param {string|null|undefined} phase @param {number} itemIndex @returns {string} */
 export function openedKey(phase, itemIndex) {
   return phase === 'race' ? 'race' : String(itemIndex);
 }
 
 /** Sello de apertura para un ítem, con respaldo al de carrera. `map` es
- *  `state.itemOpenedAt` (host-only). */
+ *  `state.itemOpenedAt` (host-only).
+ *  @param {Record<string, string>|null|undefined} map
+ *  @param {number} itemIndex @param {string|null|undefined} phase
+ *  @returns {string|null} */
 export function openedAtFor(map, itemIndex, phase) {
   if (!map) return null;
   return map[openedKey(phase, itemIndex)] ?? map[String(itemIndex)] ?? map.race ?? null;

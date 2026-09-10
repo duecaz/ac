@@ -7,6 +7,7 @@ import { rid } from '../../core/ids.js';
 import { ORDEN_SILUETAS } from './game/siluetas.js';
 
 export class TangramTemplate extends BaseTemplate {
+  /** @type {import('../../kernel/contracts/template.js').TemplateMeta<import('../../kernel/contracts/activity.js').TangramContent>} */
   static meta = {
     name: 'tangram',
     label: 'Tangram',

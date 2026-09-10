@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **339 módulos · 1372 imports internos.**
+> **339 módulos · 1373 imports internos.**
 
 ### Ir a otro documento
 
@@ -30,12 +30,12 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
-| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 1935 | 7 · 1029 | 0.53 |
-| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 3010 | 12 · 1430 | 0.48 |
-| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 39 · 4981 | 19 · 3103 | 0.62 |
-| **informes/tareas** | después de clase | 10 · 1175 | 5 · 619 | 0.53 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 89 · 7132 | 13 · 1841 | 0.26 |
-| **infra/común** | todo lo anterior | 175 · 23629 | 75 · 9657 | 0.41 |
+| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 2006 | 7 · 1029 | 0.51 |
+| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 3097 | 12 · 1430 | 0.46 |
+| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 39 · 5134 | 19 · 3103 | 0.60 |
+| **informes/tareas** | después de clase | 10 · 1296 | 5 · 619 | 0.48 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 89 · 8947 | 13 · 1843 | 0.21 |
+| **infra/común** | todo lo anterior | 175 · 25025 | 75 · 9657 | 0.39 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -105,9 +105,9 @@ graph TD
 | **arranque** | `pb_hooks/aulareto-lib.js` (364) · `pb_hooks/aulareto.pb.js` (354) · `qa/hoja.js` (330) · `main.teacher.js` (168) · `main.embed.js` (68) |
 | **vistas** | `views/playerView.js` (538) · `views/vsView.js` (500) · `views/admin/collections.js` (453) · `views/hostLive.js` (341) · `views/teamsView.js` (313) |
 | **adaptadores** | `adapters/pocketbase/realtimeRooms.js` (606) · `adapters/pocketbase/realtimeAnswers.js` (484) · `adapters/local/realtime.js` (431) · `adapters/pocketbase/realtime.js` (384) · `adapters/pocketbase/remoteStore.js` (284) |
-| **core** | `core/textCorrectionRound.js` (743) · `core/normsCheck.js` (559) · `core/auth.js` (490) · `core/soloPlayer.js` (480) · `core/skins.js` (446) |
-| **kernel** | `kernel/contracts/session.js` (455) · `kernel/contracts/activity.js` (417) · `kernel/contracts/template.js` (304) · `kernel/session/teamsMachine.js` (263) · `kernel/session/vsMachine.js` (254) |
-| **plantillas** | `templates/crossword/player.js` (487) · `templates/wordsearch/player.js` (382) · `templates/match/player.js` (303) · `templates/diagram/player.js` (265) · `templates/tangram/player.js` (259) |
+| **core** | `core/textCorrectionRound.js` (893) · `core/normsCheck.js` (566) · `core/auth.js` (490) · `core/soloPlayer.js` (480) · `core/skins.js` (446) |
+| **kernel** | `kernel/contracts/session.js` (457) · `kernel/contracts/activity.js` (430) · `kernel/contracts/template.js` (349) · `kernel/session/teamsMachine.js` (263) · `kernel/session/vsMachine.js` (254) |
+| **plantillas** | `templates/crossword/player.js` (524) · `templates/wordsearch/player.js` (436) · `templates/match/player.js` (368) · `templates/diagram/player.js` (315) · `templates/tangram/player.js` (303) |
 | **contenido** | `kernel/content/qaAdapt.js` (169) · `kernel/content/models.js` (155) · `kernel/content/switch.js` (135) · `kernel/content/convert.js` (123) · `kernel/content/sessionItems.js` (37) |
 | **config** | `pocketbase.config.js` (13) |
 
@@ -135,13 +135,13 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 
 | Módulo | Líneas | Lo importan |
 |---|---|---|
-| `core/textCorrectionRound.js` | 743 | 5 |
+| `core/textCorrectionRound.js` | 893 | 5 |
 | `adapters/pocketbase/realtimeRooms.js` | 606 | 1 |
-| `core/normsCheck.js` | 559 | 1 |
+| `core/normsCheck.js` | 566 | 1 |
 | `views/playerView.js` | 538 | 1 |
+| `templates/crossword/player.js` | 524 | 1 |
 | `views/vsView.js` | 500 | 2 |
 | `core/auth.js` | 490 | 21 |
-| `templates/crossword/player.js` | 487 | 1 |
 | `adapters/pocketbase/realtimeAnswers.js` | 484 | 1 |
 
 ## El mapa de DATOS: quién escribe cada colección

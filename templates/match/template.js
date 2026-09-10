@@ -9,7 +9,14 @@ import { shuffle } from '../../core/azar.js';
 import { scoreMatchSubmission } from './scorer.js';
 import { escapeHtml } from '../../core/html.js';
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/activity.js').Pair} Pair
+ * @typedef {import('../../kernel/contracts/activity.js').PairsContent} PairsContent
+ */
+
 export class MatchTemplate extends BaseTemplate {
+  /** @type {import('../../kernel/contracts/template.js').TemplateMeta<PairsContent>} */
   static meta = {
     name: 'match',
     label: 'Emparejar',
@@ -50,8 +57,13 @@ export class MatchTemplate extends BaseTemplate {
   // One pair = one matching round: prompt is the left side, options are the
   // right sides (the correct one + up to 3 distractors), shuffled. Answer-safe:
   // the payload never says which option is right.
+  /**
+   * @param {Activity} activity
+   * @param {import('../../kernel/contracts/session.js').RoundContext} ctx
+   * @returns {import('../../kernel/contracts/session.js').RoundPayload|null}
+   */
   static getRoundPayload(activity, ctx) {
-    const pairs = activity.content?.pairs || [];
+    const pairs = /** @type {PairsContent} */ (activity.content)?.pairs || [];
     const item = pairs[ctx.itemIndex];
     if (!item || !item.right) return null;
     const answer = String(item.right);
@@ -62,5 +74,10 @@ export class MatchTemplate extends BaseTemplate {
   }
 
   // The matching round is a multiple-choice pick of the right side.
+  /**
+   * @param {Element} root
+   * @param {import('../../kernel/contracts/session.js').RoundPayload} payload
+   * @param {import('../../kernel/contracts/template.js').RoundCallbacks} [opts]
+   */
   static renderRound(root, payload, opts) { renderChoiceRound(root, payload, opts); }
 }

@@ -15,20 +15,48 @@ import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
 const LETTERS_KEY = 'yu_show_letters';   // preferencia de accesibilidad (letras en las bolas)
 
 /**
+ * @typedef {import('../../kernel/contracts/activity.js').BallsortBoard} BallsortBoard
+ */
+
+/**
+ * LA INSTANTÁNEA del tablero: lo que viaja al host en vivo y lo que puntúa el
+ * scorer. Es el recorte del tablero más las dos métricas de la partida.
+ * @typedef {Object} BallsortSnapshot
+ * @property {string[][]} tubes
+ * @property {number} tubeCapacity
+ * @property {string[]} colors
+ * @property {number} moveCount
+ * @property {number} elapsedMs
+ * @property {number} [progress]   Fracción 0..1 ya ordenada.
+ * @property {boolean} solved
+ */
+
+/**
+ * LO QUE SE ENTREGA AL RESOLVER (el `onSolve` del caller).
+ * @typedef {Object} BallsortSolve
+ * @property {boolean} finished
+ * @property {number} moveCount
+ * @property {number} elapsedMs
+ * @property {string[][]} tubes
+ */
+
+/**
  * @param {HTMLElement} host
- * @param {object} opts
+ * @param {{board: BallsortBoard, mode?: 'moves'|'time',
+ *   onProgress?: (snap: BallsortSnapshot) => void,
+ *   onSolve?: (res: BallsortSolve) => void}} opts
  *   board       initial board {levelId, colors, tubeCapacity, tubes}
  *   mode        'moves' | 'time'  (which metric the toolbar emphasises)
  *   onProgress  (snap) => void    called after every move/undo (throttle outside)
  *   onSolve     (result) => void  called once when the board is solved
- * @returns {{ unmount(): void, getState(): object }}
+ * @returns {{ unmount(): void, getState(): BallsortSnapshot }}
  */
-export function mountBallSort(host, { board, mode = 'moves', onProgress, onSolve } = {}) {
+export function mountBallSort(host, { board, mode = 'moves', onProgress, onSolve }) {
   host.innerHTML = `
     <div class="ww-bs bs-player">
       ${cabeceraHtml({
         pagina: 'Movs: 0',
-        tiempo: mode === 'time' ? '0:00' : null,
+        tiempo: mode === 'time' ? '0:00' : undefined,
         herramientas: `<button type="button" data-bs="letters" class="btn btn-outline-secondary btn-sm" title="Mostrar letras (modo daltónico)">Aa</button>
           <button type="button" data-bs="undo" class="btn btn-secondary btn-sm">Deshacer</button>`,
       })}
@@ -37,12 +65,16 @@ export function mountBallSort(host, { board, mode = 'moves', onProgress, onSolve
     </div>
   `;
 
-  const tubesEl   = host.querySelector('[data-bs="tubes"]');
-  const raizBs    = host.querySelector('.ww-bs');
-  const undoBtn   = host.querySelector('[data-bs="undo"]');
-  const lettersBtn = host.querySelector('[data-bs="letters"]');
+  const tubesEl   = /** @type {HTMLElement} */ (host.querySelector('[data-bs="tubes"]'));
+  const raizBs    = /** @type {HTMLElement} */ (host.querySelector('.ww-bs'));
+  const undoBtn   = /** @type {HTMLButtonElement|null} */ (host.querySelector('[data-bs="undo"]'));
+  const lettersBtn = /** @type {HTMLElement|null} */ (host.querySelector('[data-bs="letters"]'));
   const winMsg    = host.querySelector('[data-bs="winmsg"]');
 
+  /** @type {{board: BallsortBoard, moveCount: number, history: Array<{from: number, to: number}>,
+   *   selected: number|null, finished: boolean, lastMove: {from: number, to: number}|null,
+   *   showLetters: boolean, timer: ReturnType<typeof createTimer>,
+   *   timerHandle: {stop: () => void}|null}} */
   const state = {
     board: cloneBoard(board),
     moveCount: 0,
@@ -68,6 +100,7 @@ export function mountBallSort(host, { board, mode = 'moves', onProgress, onSolve
   });
   state.timerHandle = timeTicker;   // se detiene en finish()/unmount() vía .stop()
 
+  /** @param {boolean} [solved] @returns {BallsortSnapshot} */
   function snapshot(solved = false) {
     return {
       tubes: state.board.tubes.map(t => [...t]),
@@ -96,8 +129,10 @@ export function mountBallSort(host, { board, mode = 'moves', onProgress, onSolve
     }
   }
 
+  /** @param {boolean} [solved] */
   function report(solved = false) { try { onProgress?.(snapshot(solved)); } catch {} }
 
+  /** @param {number} from @param {number} to @returns {boolean} */
   function tryMove(from, to) {
     if (state.finished) return false;
     if (!canMove(state.board, from, to)) return false;
@@ -114,6 +149,7 @@ export function mountBallSort(host, { board, mode = 'moves', onProgress, onSolve
     return true;
   }
 
+  /** @param {number} index */
   function tap(index) {
     if (state.finished) return;
     if (state.selected === null) {
@@ -128,9 +164,10 @@ export function mountBallSort(host, { board, mode = 'moves', onProgress, onSolve
   function undo() {
     if (state.history.length === 0 || state.finished) return;
     const last = state.history.pop();
+    if (!last) return;
     const next = cloneBoard(state.board);
     const ball = next.tubes[last.to].pop();
-    next.tubes[last.from].push(ball);
+    if (ball != null) next.tubes[last.from].push(ball);
     state.board = next;
     state.moveCount--;
     state.selected = null;

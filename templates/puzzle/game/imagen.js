@@ -8,6 +8,33 @@
 // pinta blanca; aquí se pinta con su color real). `svgAColor` aplica ese color
 // como `fill` de la zona, respetando un `fill` previo si lo hubiera.
 
+/**
+ * La caja envolvente de una zona, en coordenadas del lienzo del SVG.
+ * @typedef {Object} Bbox
+ * @property {number} minX
+ * @property {number} minY
+ * @property {number} maxX
+ * @property {number} maxY
+ */
+/**
+ * Una zona reconocida del SVG. Solo `tipo` y `bbox` los usa el recorte; los
+ * demás campos son los del propio primitivo (los lee quien quiera repetir la
+ * geometría exacta, como la auditoría de celdas vacías de `tests/puzzle.test.mjs`).
+ * @typedef {Object} Zona
+ * @property {'rect'|'circle'|'ellipse'|'polygon'|'path'} tipo
+ * @property {Bbox} bbox
+ * @property {number} [x]
+ * @property {number} [y]
+ * @property {number} [w]
+ * @property {number} [h]
+ * @property {number} [cx]
+ * @property {number} [cy]
+ * @property {number} [r]
+ * @property {number} [rx]
+ * @property {number} [ry]
+ * @property {number[]} [puntos]
+ */
+
 // Atributos con `data-color="…"` en una etiqueta abierta o autocerrada.
 const ZONA_RE = /<([a-zA-Z][\w:-]*)((?:\s+[^<>]*?)?\s+data-color="([^"]*)"[^<>]*?)(\/?)>/g;
 
@@ -16,6 +43,8 @@ const ZONA_RE = /<([a-zA-Z][\w:-]*)((?:\s+[^<>]*?)?\s+data-color="([^"]*)"[^<>]*
  * `viewBox` recortado a lo que de verdad dibujan las zonas (`viewBoxAjustado`,
  * abajo) — así ninguna pieza del rompecabezas cae en aire vacío del margen
  * del lienzo. Puro: no toca el DOM, no muta el argumento.
+ * @param {string} texto
+ * @returns {string}
  */
 export function svgAColor(texto) {
   const ajustado = viewBoxAjustado(texto);
@@ -27,7 +56,8 @@ export function svgAColor(texto) {
   });
 }
 
-/** El SVG (ya coloreado) como `data:` URL lista para `background-image`. */
+/** El SVG (ya coloreado) como `data:` URL lista para `background-image`.
+ *  @param {string} texto @returns {string} */
 export function dataUrlDeSvg(texto) {
   return `data:image/svg+xml,${encodeURIComponent(texto)}`;
 }
@@ -44,9 +74,14 @@ export function dataUrlDeSvg(texto) {
 // (para que el tablero 1:1 no deforme el dibujo), y sustituye el `viewBox`.
 
 const NUMERO_RE = /-?\d*\.?\d+(?:e-?\d+)?/g;
+/** @param {unknown} s @returns {number[]} */
 const numeros = (s) => (String(s ?? '').match(NUMERO_RE) || []).map(Number);
 
+/** Los atributos de una etiqueta, tal como vienen escritos (frontera: es texto
+ *  suelto de un fichero, no un DOM).
+ *  @param {unknown} tagAttrs @returns {Record<string, string>} */
 function atributos(tagAttrs) {
+  /** @type {Record<string, string>} */
   const out = {};
   for (const m of String(tagAttrs ?? '').matchAll(/([\w:-]+)\s*=\s*"([^"]*)"/g)) out[m[1]] = m[2];
   return out;
@@ -58,10 +93,14 @@ function atributos(tagAttrs) {
  * una con su caja envolvente `{minX,minY,maxX,maxY}`. Un `path` con curvas
  * (C/A/Q…) o comandos relativos no se reconoce y se ignora para el recorte
  * (no rompe: simplemente no aporta al cálculo de la caja).
+ * @param {unknown} svgTexto
+ * @returns {Zona[]}
  */
 export function zonasSvg(svgTexto) {
   const texto = String(svgTexto ?? '');
+  /** @type {Zona[]} */
   const zonas = [];
+  /** @param {number[]} pts @returns {Bbox} */
   const bboxDePuntos = (pts) => {
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (let i = 0; i + 1 < pts.length; i += 2) {
@@ -109,7 +148,8 @@ export function zonasSvg(svgTexto) {
 }
 
 /** La caja envolvente de una lista de zonas (`zonasSvg`), o `null` si no hay
- *  ninguna reconocible. */
+ *  ninguna reconocible.
+ *  @param {Zona[]} zonas @returns {Bbox|null} */
 function bboxDeZonas(zonas) {   // interna: nadie la nombra fuera (§30)
   if (!zonas.length) return null;
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -122,6 +162,7 @@ function bboxDeZonas(zonas) {   // interna: nadie la nombra fuera (§30)
   return { minX, minY, maxX, maxY };
 }
 
+/** @param {number} n @returns {number} */
 const num = (n) => Math.round(n * 1000) / 1000;
 
 /**
@@ -130,6 +171,9 @@ const num = (n) => Math.round(n * 1000) / 1000;
  * CUADRADA centrada (el tablero es 1:1; una caja rectangular deformaría el
  * dibujo al forzarla a cuadrado). Sin zonas reconocibles, o con una caja de
  * área nula, devuelve el texto TAL CUAL (nada que recortar). Puro.
+ * @param {unknown} svgTexto
+ * @param {number} [margen]
+ * @returns {string}
  */
 export function viewBoxAjustado(svgTexto, margen = 0.04) {
   const texto = String(svgTexto ?? '');

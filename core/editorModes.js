@@ -18,6 +18,9 @@ import { isVsCompatible } from '../kernel/session/engine.js';
 import { sessionItems } from '../kernel/content/sessionItems.js';
 import { listVsAnimations, startPreviewAnims, DEFAULT_VS_ANIMATION } from './vsAnimations.js';
 
+/** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
+/** @typedef {import('../kernel/contracts/activity.js').ActivityPresentation} ActivityPresentation */
+/** @type {import('./vsAnimations.js').LottieAnim[]} */
 let _editorPreviewAnims = [];
 let _editorPreviewGen = 0;
 import { getTemplate } from './registry.js';
@@ -29,6 +32,18 @@ import { canAutoScoreRound } from './templateCapability.js';
 import { vsFeedback, setVsFeedback, vsAnimacionOn, setVsAnimacion } from './presentation.js';
 import { esHojaDeTexto } from './contentModels/textCorrection.js';
 
+// El delegador entrega el elemento que casó (`core/events.js`): se lee de ahí.
+/** @param {HTMLElement} el @returns {string} */
+const valor = (el) => /** @type {HTMLInputElement} */ (el).value;
+/** @param {HTMLElement} el @returns {boolean} */
+const marcado = (el) => /** @type {HTMLInputElement} */ (el).checked;
+
+/**
+ * @param {string} key
+ * @param {string} label
+ * @param {string} hint
+ * @param {boolean|undefined} on
+ */
 const fxRow = (key, label, hint, on) => `
   <label class="vs-fx-row" title="${escapeHtml(hint)}">
     <span class="form-check form-switch m-0">
@@ -37,6 +52,7 @@ const fxRow = (key, label, hint, on) => `
     <span class="vs-fx-label">${escapeHtml(label)}<small class="d-block text-muted">${escapeHtml(hint)}</small></span>
   </label>`;
 
+/** @param {Activity} a @returns {string} */
 function vsBlock(a) {
   const cur = a.presentation?.vsAnimation || DEFAULT_VS_ANIMATION;
   const animOn = vsAnimacionOn(a, { textTight: esHojaDeTexto(a) });   // lo mismo que verá el duelo
@@ -91,6 +107,7 @@ function vsBlock(a) {
     </section>`;
 }
 
+/** @param {Activity} a @returns {string} */
 function teamsBlock(a) {
   const count = a.presentation?.teamsCount || 2;
   const scoring = a.presentation?.teamsScoring || 'auto';
@@ -119,6 +136,7 @@ function teamsBlock(a) {
     </section>`;
 }
 
+/** @param {Activity} a @returns {string} */
 function taskBlock(a) {
   const max = a.presentation?.taskMaxAttempts ?? 1;
   return `
@@ -142,6 +160,11 @@ function taskBlock(a) {
 // dos veces el mismo rótulo y no puede saber por qué hay dos ni cuál manda.
 // Son el mismo modo, así que son UNA sección: el shell dice si ya puso el título
 // (captura del dueño, v1.51.616).
+/**
+ * @param {Activity} a
+ * @param {{conTitulo?: boolean}} [o]
+ * @returns {string}
+ */
 function soloBlock(a, { conTitulo = true } = {}) {
   const on = !!a.presentation?.soloAnimation && a.presentation.soloAnimation !== 'none';
   return `
@@ -158,6 +181,11 @@ function soloBlock(a, { conTitulo = true } = {}) {
 }
 
 /** HTML for the "Modos" tab. Empty-ish note if the activity has no extra modes. */
+/**
+ * @param {Activity} a
+ * @param {{yaHayTituloIndividual?: boolean}} [o]
+ * @returns {string}
+ */
 export function renderModesTab(a, { yaHayTituloIndividual = false } = {}) {
   const blocks = [soloBlock(a, { conTitulo: !yaHayTituloIndividual })];
   if (isVsCompatible(a)) blocks.push(vsBlock(a));
@@ -171,14 +199,20 @@ export function renderModesTab(a, { yaHayTituloIndividual = false } = {}) {
 
 /** Wire the tab's controls. Mutates a.presentation and calls onChange. Updates
  *  selections IN PLACE (no repaint) so the active editor tab doesn't reset. */
+/**
+ * @param {Element} root
+ * @param {Activity} a
+ * @param {(a: Activity) => void} onChange
+ */
 export function wireModesTab(root, a, onChange) {
+  /** @returns {ActivityPresentation} */
   const pres = () => (a.presentation = a.presentation || {});
 
   // Destroy stale previews from previous render, start fresh static thumbnails.
   _editorPreviewAnims.forEach(p => { try { p.destroy(); } catch {} });
   _editorPreviewAnims = [];
   const myGen = ++_editorPreviewGen;
-  const previewEls = [...root.querySelectorAll('.vsanim-preview[data-src]')];
+  const previewEls = /** @type {HTMLElement[]} */ ([...root.querySelectorAll('.vsanim-preview[data-src]')]);
   if (previewEls.length) {
     startPreviewAnims(previewEls).then(anims => {
       if (myGen !== _editorPreviewGen) { anims.forEach(p => { try { p.destroy(); } catch {} }); return; }
@@ -188,32 +222,35 @@ export function wireModesTab(root, a, onChange) {
 
   // SOLO — animación de progreso on/off (hoy solo la rana).
   on(root, 'change', '.solo-anim-toggle', (_, el) => {
-    pres().soloAnimation = el.checked ? 'frog' : null;
+    pres().soloAnimation = marcado(el) ? 'frog' : null;
     onChange(a);
   });
   // VS — central animation on/off (default on = "cuerda").
   on(root, 'change', '.vsanim-toggle', (_, el) => {
-    setVsAnimacion(a, el.checked);
+    const encendida = marcado(el);
+    setVsAnimacion(a, encendida);
     onChange(a);
-    root.querySelector('.vsanim-list')?.classList.toggle('vsanim-list-off', !el.checked);
+    root.querySelector('.vsanim-list')?.classList.toggle('vsanim-list-off', !encendida);
     // Sin animación no hay nada que compactar: el control se esconde con ella.
-    root.querySelector('#vsanim-compact-row')?.classList.toggle('d-none', !el.checked);
+    root.querySelector('#vsanim-compact-row')?.classList.toggle('d-none', !encendida);
   });
   on(root, 'change', '.vsanim-compact-toggle', (_, el) => {
-    pres().vsAnimCompact = el.checked;
+    pres().vsAnimCompact = marcado(el);
     onChange(a);
   });
   // VS — animation tiles.
   on(root, 'click', '.vsanim-pick', (_, b) => {
-    pres().vsAnimation = b.dataset.id;
+    pres().vsAnimation = b.dataset.id || '';
     onChange(a);
     root.querySelectorAll('.vsanim-pick').forEach(p => p.classList.toggle('is-active', p === b));
     root.querySelector('#vsanim-src-row')?.classList.toggle('d-none', !b.dataset.needssrc);
   });
-  on(root, 'input', '#vsanim-src', (e) => { pres().vsAnimationSrc = e.target.value.trim(); onChange(a); });
+  on(root, 'input', '#vsanim-src', (_, el) => { pres().vsAnimationSrc = valor(el).trim(); onChange(a); });
   // VS — feedback toggles.
   on(root, 'change', '.vs-fx', (_, el) => {
-    setVsFeedback(a, el.dataset.fx, el.checked);
+    const fx = el.dataset.fx;
+    if (fx !== 'flash' && fx !== 'confetti') return;   // los dos que declara VsFeedback
+    setVsFeedback(a, fx, marcado(el));
     onChange(a);
   });
 
@@ -224,14 +261,14 @@ export function wireModesTab(root, a, onChange) {
     root.querySelectorAll('#tm-count button').forEach(x => x.classList.toggle('active', x === b));
   });
   on(root, 'click', '#tm-scoring button', (_, b) => {
-    pres().teamsScoring = b.dataset.mode;
+    pres().teamsScoring = b.dataset.mode || 'auto';
     onChange(a);
     root.querySelectorAll('#tm-scoring button').forEach(x => x.classList.toggle('active', x === b));
   });
 
   // Tarea — default attempts.
-  on(root, 'input', '#tk-attempts', (e) => {
-    pres().taskMaxAttempts = Math.max(1, Number(e.target.value) || 1);
+  on(root, 'input', '#tk-attempts', (_, el) => {
+    pres().taskMaxAttempts = Math.max(1, Number(valor(el)) || 1);
     onChange(a);
   });
 }

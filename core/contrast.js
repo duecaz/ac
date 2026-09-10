@@ -21,6 +21,7 @@ export const AA_GRANDE = 3;
 
 /**
  * Hex (#rgb o #rrggbb) → [r, g, b] en 0-255.
+ * @param {unknown} hex
  * @returns {number[]|null} null si no es un hex sólido (gradiente, rgba, token…).
  */
 function rgbDe(hex) {
@@ -30,7 +31,8 @@ function rgbDe(hex) {
   return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16));
 }
 
-/** Luminancia relativa WCAG de un color hex. */
+/** Luminancia relativa WCAG de un color hex.
+ *  @param {unknown} hex @returns {number|null} */
 export function luminancia(hex) {
   const rgb = rgbDe(hex);
   if (!rgb) return null;
@@ -43,6 +45,7 @@ export function luminancia(hex) {
 
 /**
  * Ratio de contraste entre dos colores hex (1 = idénticos, 21 = negro/blanco).
+ * @param {unknown} hexA @param {unknown} hexB
  * @returns {number|null} null si alguno no es un hex sólido comparable.
  */
 export function ratio(hexA, hexB) {
@@ -52,7 +55,8 @@ export function ratio(hexA, hexB) {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-/** Redondeo a 2 decimales para mensajes de error legibles («2.43:1»). */
+/** Redondeo a 2 decimales para mensajes de error legibles («2.43:1»).
+ *  @param {unknown} hexA @param {unknown} hexB @returns {string} */
 export function ratioLegible(hexA, hexB) {
   const r = ratio(hexA, hexB);
   return r == null ? '?' : `${Math.round(r * 100) / 100}:1`;

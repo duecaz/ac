@@ -18,48 +18,74 @@ import { createRoom, setSessionState, endSession, leaderboard, listAnswers, list
 import { rowsFromLiveAnswers } from './answerRows.js';
 import { buildSessionTable } from './sessionModel.js';
 
+/** Lo que un aviso de consola deja por escrito: mensaje de Error, cuerpo `pb`, o
+ *  el propio valor. Es frontera (llega lo que otro módulo decida avisar). */
+/** @param {unknown} x @returns {string} */
+function textoDeAviso(x) {
+  if (x instanceof Error) return x.message;
+  if (x && typeof x === 'object' && 'pb' in x) return JSON.stringify(x.pb);
+  return String(x);
+}
+
 const N_ITEMS = 5;
 // Ventaja del rápido sobre el lento. El settle deriva la hora de meta del
 // `created` del servidor, así que la diferencia REAL debe reaparecer en el
 // podio — con margen (mitad), que la Pi también tarda lo suyo en escribir.
 const GAP_MS = 6000;
 
+/**
+ * UNA comprobación de la carrera, tal y como la pinta el panel.
+ * @typedef {{ok: boolean, warn: boolean, msg: string, detail: string}} ChequeoCarrera
+ */
+
+/**
+ * @param {{pbUrl?: string, onLog?: (msg: string) => void}} [o]
+ * @returns {Promise<{ok: boolean, checks: ChequeoCarrera[], notes: string[], ms: number, avisos?: number}>}
+ */
 export async function runRaceE2e({ pbUrl, onLog = () => {} } = {}) {
   const PB = String(pbUrl || '').replace(/\/$/, '');
   const t0 = Date.now();
+  /** @type {ChequeoCarrera[]} */
   const checks = [];
   // `warn: true` = AVISO, no veredicto: algo va peor de lo ideal pero la
   // propiedad que decide la carrera se mantiene. Pintarlo en rojo entrenaría a
   // ignorar la luz (que es como se pierden los avisos que sí importan).
+  /** @param {unknown} cond @param {string} msg @param {unknown} [detail] @param {{warn?: boolean}} [o] */
   const check = (cond, msg, detail = '', { warn = false } = {}) => {
     checks.push({ ok: !!cond, warn: warn && !cond, msg, detail: String(detail) });
   };
+  /** @type {{ok: boolean, checks: ChequeoCarrera[], notes: string[], ms: number, avisos?: number}} */
   const report = { ok: false, checks, notes: [], ms: 0 };
+  /** @param {string} coll @param {unknown} body @param {Record<string, string>} [extra] */
   const jpost = (coll, body, extra) => fetch(`${PB}/api/collections/${coll}/records`, {
     method: 'POST', headers: { 'Content-Type': 'application/json', ...(extra || {}) }, body: JSON.stringify(body),
   });
 
+  /** @type {{id: string, code: string}|null} */
   let room = null;
   // El adaptador AVISA por consola cuando el sello no entra (R6). Se recogen
   // esos avisos durante la prueba para poder DECIR el motivo — si no, habría
   // que pedirle al profe que abra la consola en mitad de una clase.
+  /** @type {string[]} */
   const avisos = [];
   const warnOriginal = console.warn;
-  console.warn = (...a) => {
-    try { avisos.push(a.map(x => (x && x.message) || (x && x.pb && JSON.stringify(x.pb)) || String(x)).join(' ')); } catch { /* nada */ }
+  console.warn = (/** @type {unknown[]} */ ...a) => {
+    try { avisos.push(a.map(x => textoDeAviso(x)).join(' ')); } catch { /* nada */ }
     warnOriginal.apply(console, a);
   };
+  /** @type {string|null} */
   let selloTrasAbrir = null;
   try {
     onLog('Creando sala de carrera desechable…');
     const items = Array.from({ length: N_ITEMS }, (_, i) => ({
       id: 'q' + i, question: `${i}+1`, answer: String(i + 1), options: [String(i + 1), 'x'], points: 1,
     }));
-    room = await createRoom({
+    const sala = await createRoom(/** @type {import('../kernel/contracts/activity.js').Activity} */ ({
       id: `stress_race_${rid()}`, template: 'quiz', title: 'Carrera e2e', rules: {},
       live: { pointsModel: 'velocidad', questionTimer: 20, speedBonusMax: 1000 },
       scoring: { pointsPerCorrect: 1 }, content: { items },
-    });
+    }));
+    room = sala;
     await setSessionState(room.id, {
       status: 'running', phase: 'race', current_item: 0,
       started_at: new Date().toISOString(), deadline: null, end_policy: 'all', loop: 'race',
@@ -72,12 +98,13 @@ export async function runRaceE2e({ pbUrl, onLog = () => {} } = {}) {
     // Dos alumnos SIMULADOS: fila propia + credencial de dispositivo (§22-4),
     // el mismo camino que sus móviles. No se usa joinSession: en UN navegador
     // los dos reconectarían como el MISMO jugador (anon id compartido).
+    /** @param {string} name @returns {Promise<{id: string, name: string, secret: string|null}>} */
     const mkPlayer = async (name) => {
-      const r = await jpost('live_players', { session: room.id, name, user_id: `stress_${name}_${room.code}` });
+      const r = await jpost('live_players', { session: sala.id, name, user_id: `stress_${name}_${sala.code}` });
       if (!r.ok) throw new Error(`no se pudo unir ${name} (HTTP ${r.status})`);
       const id = (await r.json()).id;
       const secret = `cl_stress_${name}_${rid()}`;
-      const c = await jpost('live_claims', { session: room.id, player: id, secret });
+      const c = await jpost('live_claims', { session: sala.id, player: id, secret });
       return { id, name, secret: c.ok ? secret : null };
     };
     const veloz = await mkPlayer('VELOZ');
@@ -91,15 +118,19 @@ export async function runRaceE2e({ pbUrl, onLog = () => {} } = {}) {
     // servidor, §22-1, y la regla rechaza la fila entera si el alumno lo manda.
     // Copiar ese detalle importa: mandarlo hacía que la corrección del TARDÓN
     // rebotara y el podio saliera 5/0 (cazado en la Pi, v1.51.433).
+    /**
+     * @param {{id: string, secret: string|null}} p
+     * @param {number} item @param {string} value @param {boolean} correct
+     */
     const answerRow = async (p, item, value, correct) => {
       const hdr = p.secret ? { 'X-WW-Claim': p.secret } : undefined;
       const r = await jpost('live_answers', {
-        session: room.id, player: p.id, item, value, ms: 300,
+        session: sala.id, player: p.id, item, value, ms: 300,
         scored: false, correct: !!correct, points: 0, v0: value, c0: !!correct,
       }, hdr);
       if (r.ok) return true;
       if (r.status !== 400) return false;                 // rechazo de regla: se ve en el check
-      const q = await fetch(`${PB}/api/collections/live_answers/records?filter=${pbFilterParam(`session='${pbEscape(room.id)}' && player='${pbEscape(p.id)}' && item=${item}`)}&perPage=1`);
+      const q = await fetch(`${PB}/api/collections/live_answers/records?filter=${pbFilterParam(`session='${pbEscape(sala.id)}' && player='${pbEscape(p.id)}' && item=${item}`)}&perPage=1`);
       const row = (await q.json())?.items?.[0];
       if (!row || !correct || row.correct === true || row.scored) return false;
       const pr = await fetch(`${PB}/api/collections/live_answers/records/${row.id}`, {
@@ -111,7 +142,7 @@ export async function runRaceE2e({ pbUrl, onLog = () => {} } = {}) {
 
     onLog('VELOZ corre limpio…');
     let escrituras = 0, rechazos = 0;
-    const anota = (ok) => { escrituras++; if (!ok) rechazos++; };
+    const anota = (/** @type {boolean} */ ok) => { escrituras++; if (!ok) rechazos++; };
     for (let i = 0; i < N_ITEMS; i++) anota(await answerRow(veloz, i, String(i + 1), true));
     onLog(`…${GAP_MS / 1000} s de carrera…`);
     await new Promise(r => setTimeout(r, GAP_MS));
@@ -129,6 +160,7 @@ export async function runRaceE2e({ pbUrl, onLog = () => {} } = {}) {
     await endSession(room.id);
 
     const blob = await fetchSessionBlob(room.id).catch(() => null);
+    /** @type {import('./answerRows.js').AnswerRow[]} */
     let rows = [];
     for (let i = 0; i < N_ITEMS; i++) {
       rows.push(...rowsFromLiveAnswers(await listAnswers(room.id, i), i,
@@ -157,6 +189,7 @@ export async function runRaceE2e({ pbUrl, onLog = () => {} } = {}) {
     // que los declaráramos, NO están, la respuesta del PATCH no trae `updated`
     // y el sello ni se intenta (silencio total). Se mira sobre la fila real de
     // la sala — sin superadmin y sin mandar a nadie al panel de PocketBase.
+    /** @type {boolean|null} */
     let faltaCampo = null;
     try {
       const rec = await (await fetch(`${PB}/api/collections/live_sessions/records/${room.id}`)).json();
@@ -188,6 +221,7 @@ export async function runRaceE2e({ pbUrl, onLog = () => {} } = {}) {
     onLog('Probando la trampa…');
     const q = await fetch(`${PB}/api/collections/live_answers/records?filter=${pbFilterParam(`session='${pbEscape(room.id)}' && player='${pbEscape(veloz.id)}'`)}&perPage=1`);
     const row = (await q.json())?.items?.[0];
+    /** @type {number|string} */
     let st = 'sin fila';
     if (row) {
       st = (await fetch(`${PB}/api/collections/live_answers/records/${row.id}`, {
@@ -198,17 +232,19 @@ export async function runRaceE2e({ pbUrl, onLog = () => {} } = {}) {
     check(st === 403 || st === 404, 'falsear la hora de meta REBOTA (§22-1)',
       st === 200 ? 'dio 200 — reglas SIN aplicar: corre "Crear colecciones" arriba' : `HTTP ${st}`);
   } catch (e) {
-    report.notes.push(`Prueba interrumpida: ${e?.message || e}`);
+    report.notes.push(`Prueba interrumpida: ${e instanceof Error ? e.message : String(e)}`);
   } finally {
     console.warn = warnOriginal;   // la consola vuelve a ser de quien era
     // Limpieza SIEMPRE (best-effort con motivo: lo que quede lo purga la
     // retención de §25; las live_claims quedan huérfanas A PROPÓSITO — la
     // regla §22-4 impide borrarlas para que nadie robe el puesto de un vivo).
-    if (room?.id) {
+    const salaId = room?.id;
+    if (salaId) {
       onLog('Borrando la sala de prueba…');
+      /** @param {string} coll */
       const wipe = async (coll) => {
         try {
-          const r = await fetch(`${PB}/api/collections/${coll}/records?filter=${pbFilterParam(`session='${pbEscape(room.id)}'`)}&perPage=500`);
+          const r = await fetch(`${PB}/api/collections/${coll}/records?filter=${pbFilterParam(`session='${pbEscape(salaId)}'`)}&perPage=500`);
           for (const row of (await r.json())?.items || []) {
             await signedFetch(`${PB}/api/collections/${coll}/records/${row.id}`, { method: 'DELETE' }).catch(() => {});
           }
@@ -216,7 +252,7 @@ export async function runRaceE2e({ pbUrl, onLog = () => {} } = {}) {
       };
       await wipe('live_answers');
       await wipe('live_players');
-      await signedFetch(`${PB}/api/collections/live_sessions/records/${room.id}`, { method: 'DELETE' }).catch(() => {});
+      await signedFetch(`${PB}/api/collections/live_sessions/records/${salaId}`, { method: 'DELETE' }).catch(() => {});
     }
   }
   report.ms = Date.now() - t0;

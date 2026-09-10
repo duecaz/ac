@@ -24,6 +24,43 @@ import { VERSION } from './constants.js';
 // createLottie) para no robar CPU al teclado del VS.
 const LITE = isLowEndDevice();
 
+/**
+ * LA INSTANCIA que el duelo conduce. Contrato mínimo y estable: la animación no
+ * sabe nada del juego.
+ * @typedef {Object} AnimacionVs
+ * @property {(lead: number) => void} setProgress
+ * @property {(side: 'left'|'right') => void} yank
+ * @property {(side: 'left'|'right') => void} win
+ * @property {() => void} destroy
+ */
+
+/**
+ * EL PROVEEDOR registrado (lo que se ofrece en Presentación).
+ * @typedef {Object} ProveedorVs
+ * @property {string} id
+ * @property {string} label
+ * @property {string} description
+ * @property {string} kind
+ * @property {string} [src]
+ * @property {boolean} [needsSrc]
+ * @property {(container: HTMLElement, opts?: {src?: string}) => AnimacionVs} create
+ */
+
+/**
+ * Lo que este módulo usa de `lottie-web` (librería externa, cargada por
+ * `<script>`): se declara la superficie que se toca, no la librería entera.
+ * @typedef {Object} LottieAnim
+ * @property {number} totalFrames
+ * @property {(frame: number, isFrame?: boolean) => void} goToAndStop
+ * @property {(ev: string, fn: () => void) => void} addEventListener
+ * @property {() => void} destroy
+ */
+/**
+ * @typedef {{loadAnimation: (o: {container: Element, renderer: string,
+ *   loop: boolean, autoplay: boolean, path?: string}) => LottieAnim}} LottieLib
+ */
+
+/** @type {Map<string, ProveedorVs>} */
 const _providers = new Map();
 
 // Animación por defecto en TODOS los VS: "Cuerda (personajes)" (Lottie). Si el id
@@ -31,9 +68,12 @@ const _providers = new Map();
 // red de seguridad.
 export const DEFAULT_VS_ANIMATION = 'lottie-cuerda';
 
+/** @param {ProveedorVs} provider */
 function registerVsAnimation(provider) { _providers.set(provider.id, provider); }
+/** @returns {ProveedorVs[]} */
 export function listVsAnimations() { return [..._providers.values()]; }
-export function getVsAnimation(id) { return _providers.get(id) || _providers.get('svg-tug'); }
+/** @param {string|null|undefined} id @returns {ProveedorVs|undefined} */
+export function getVsAnimation(id) { return _providers.get(id || '') || _providers.get('svg-tug'); }
 
 // ── Built-in SVG tug-of-war ──────────────────────────────────────────────
 const TUG = { LHX: 260, LHY: 155, RHX: 740, RHY: 155, KY: 155, SAG: 24, CX: 500, MAXOFF: 155 };
@@ -49,6 +89,7 @@ const FIGURE = `
   <circle class="tug-eye" cx="-39" cy="-132" r="2.6"/>
   <circle class="tug-hand" cx="110" cy="-95" r="9"/>`;
 
+/** @param {number} kx */
 function ropeD(kx) {
   const { LHX, LHY, RHX, RHY, KY, SAG } = TUG;
   return `M${LHX},${LHY} Q${(LHX + kx) / 2},${KY + SAG} ${kx},${KY} Q${(kx + RHX) / 2},${KY + SAG} ${RHX},${RHY}`;
@@ -79,6 +120,10 @@ function sceneSvg() {
     </svg>`;
 }
 
+/**
+ * @param {HTMLElement} container
+ * @returns {AnimacionVs}
+ */
 function createSvgTug(container) {
   const scene = document.createElement('div');
   scene.className = 'vs-tug-scene';
@@ -88,13 +133,18 @@ function createSvgTug(container) {
   const knot = scene.querySelector('.tug-knot');
   let knotX = TUG.CX, raf = 0, pullTimer = 0;
 
+  /** @param {number} kx */
   const draw = kx => {
     if (rope) rope.setAttribute('d', ropeD(kx));
     if (knot) knot.setAttribute('transform', `translate(${kx},${TUG.KY})`);
   };
+  /** @param {number} target */
   const tweenTo = target => {
     cancelAnimationFrame(raf);
-    const from = knotX, t0 = performance.now(), dur = 600, ease = t => 1 - Math.pow(1 - t, 3);
+    const from = knotX, t0 = performance.now(), dur = 600;
+    /** @param {number} t */
+    const ease = t => 1 - Math.pow(1 - t, 3);
+    /** @param {number} now */
     const step = now => {
       const k = Math.min(1, (now - t0) / dur);
       knotX = from + (target - from) * ease(k);
@@ -105,12 +155,14 @@ function createSvgTug(container) {
   };
 
   return {
+    /** @param {number} lead */
     setProgress(lead) {
       const p = Math.max(-1, Math.min(1, lead));
       tweenTo(TUG.CX - p * TUG.MAXOFF);          // left ahead (p>0) → knot pulled left
       scene.classList.toggle('lead-left', p > 0.03);
       scene.classList.toggle('lead-right', p < -0.03);
     },
+    /** @param {'left'|'right'} side */
     yank(side) {
       const cls = side === 'left' ? 'pull-left' : 'pull-right';
       scene.classList.remove('pull-left', 'pull-right');
@@ -119,6 +171,7 @@ function createSvgTug(container) {
       clearTimeout(pullTimer);
       pullTimer = setTimeout(() => scene.classList.remove(cls), 550);
     },
+    /** @param {'left'|'right'} side */
     win(side) { this.setProgress(side === 'left' ? 1 : -1); },
     destroy() { cancelAnimationFrame(raf); clearTimeout(pullTimer); scene.remove(); }
   };
@@ -136,29 +189,42 @@ registerVsAnimation({
 // lottie_light.min.js is bundled locally so the animation works without
 // internet access and is not blocked by CDN restrictions.
 const LOTTIE_LOCAL = './assets/js/lottie_light.min.js';
+/** @type {Promise<LottieLib>|null} */
 let _lottiePromise = null;
 
+/** @returns {Promise<LottieLib>} */
 function loadLottie() {
-  if (window.lottie) return Promise.resolve(window.lottie);
+  const w = /** @type {Window & {lottie?: LottieLib}} */ (window);
+  if (w.lottie) return Promise.resolve(w.lottie);
   if (_lottiePromise) return _lottiePromise;
   _lottiePromise = new Promise((resolve, reject) => {
     const s = document.createElement('script');
     s.src = LOTTIE_LOCAL;
-    s.onload = () => resolve(window.lottie);
+    s.onload = () => { if (w.lottie) resolve(w.lottie); else reject(new Error('lottie-web cargó sin publicarse')); };
     s.onerror = () => reject(new Error('No se pudo cargar lottie-web'));
     document.head.appendChild(s);
   });
   return _lottiePromise;
 }
 
+/**
+ * @param {HTMLElement} container
+ * @param {string|null|undefined} src
+ * @returns {AnimacionVs}
+ */
 function createLottie(container, src) {
-  let anim = null, total = 0, lead = 0, destroyed = false, restore = 0;
+  /** @type {LottieAnim|null} */
+  let anim = null;
+  let total = 0, lead = 0, destroyed = false;
+  /** @type {ReturnType<typeof setTimeout>|0} */
+  let restore = 0;
   let idleRaf = 0, idlePhase = 0;
   if (!src) {
     container.innerHTML = '<div class="vs-anim-fallback">Pega la URL de tu animación Lottie (.json) en Presentación.</div>';
     return { setProgress() {}, yank() {}, win() {}, destroy() {} };
   }
   // frame 0 = left winning, frame total-1 = right winning → invert lead.
+  /** @param {number} l */
   const frameFor = l => (1 - Math.max(-1, Math.min(1, l))) / 2 * Math.max(0, total - 1);
 
   // Sinusoidal idle: oscillate ±swing frames around the current lead frame so
@@ -181,13 +247,14 @@ function createLottie(container, src) {
     const swing = total / 3;   // ±30 frames for 90-frame anim (2/6 of total)
     const speed = 0.036 * (IDLE_MS / 16.67);   // radians per RENDERED frame → mantiene la cadencia del ciclo
     let last = 0;
+    /** @param {number} now */
     const step = (now) => {
       if (destroyed) return;
       if (document.hidden) { idleRaf = requestAnimationFrame(step); return; } // pause when tab invisible
       if (now - last >= IDLE_MS) {
         last = now;
         idlePhase += speed;
-        anim.goToAndStop(Math.max(0, Math.min(total - 1, center + Math.sin(idlePhase) * swing)), true);
+        anim?.goToAndStop(Math.max(0, Math.min(total - 1, center + Math.sin(idlePhase) * swing)), true);
       }
       idleRaf = requestAnimationFrame(step);
     };
@@ -196,13 +263,16 @@ function createLottie(container, src) {
 
   loadLottie().then(lottie => {
     if (destroyed) return;
-    anim = lottie.loadAnimation({ container, renderer: 'svg', loop: false, autoplay: false, path: src });
-    anim.addEventListener('DOMLoaded', () => { total = anim.totalFrames; idle(); });
-    anim.addEventListener('data_failed', () => { container.innerHTML = '<div class="vs-anim-fallback">No se pudo cargar la animación Lottie.</div>'; });
+    const a = lottie.loadAnimation({ container, renderer: 'svg', loop: false, autoplay: false, path: src });
+    anim = a;
+    a.addEventListener('DOMLoaded', () => { total = a.totalFrames; idle(); });
+    a.addEventListener('data_failed', () => { container.innerHTML = '<div class="vs-anim-fallback">No se pudo cargar la animación Lottie.</div>'; });
   }).catch(() => { container.innerHTML = '<div class="vs-anim-fallback">No se pudo cargar lottie-web (¿sin conexión?).</div>'; });
 
   return {
+    /** @param {number} l */
     setProgress(l) { lead = l; idle(); },
+    /** @param {'left'|'right'} side */
     yank(side) {
       if (!anim || !total) return;
       cancelAnimationFrame(idleRaf);
@@ -212,6 +282,7 @@ function createLottie(container, src) {
       anim.goToAndStop(over, true);
       restore = setTimeout(() => { if (!destroyed) idle(); }, 160);
     },
+    /** @param {'left'|'right'} side */
     win(side) { lead = side === 'left' ? 1 : -1; idle(); },
     destroy() { destroyed = true; cancelAnimationFrame(idleRaf); clearTimeout(restore); if (anim) anim.destroy(); container.innerHTML = ''; }
   };
@@ -222,7 +293,12 @@ function createLottie(container, src) {
 // Returns the created anim instances so the caller can destroy them later.
 // Generation-safe: caller checks whether its gen is still current before using
 // the returned array (see playerView.initAnimPreviews / editorModes.wireModesTab).
+/**
+ * @param {HTMLElement[]} containerEls
+ * @returns {Promise<LottieAnim[]>}
+ */
 export async function startPreviewAnims(containerEls) {
+  /** @type {LottieAnim[]} */
   const anims = [];
   if (!containerEls.length) return anims;
   const lottie = await loadLottie();
@@ -235,6 +311,10 @@ export async function startPreviewAnims(containerEls) {
 }
 
 // Factory for a bundled/known Lottie file (fixed src).
+/**
+ * @param {{id: string, label: string, description: string, src: string}} o
+ * @returns {ProveedorVs}
+ */
 function lottieProvider({ id, label, description, src }) {
   return { id, label, description, kind: 'lottie', src, create(container) { return createLottie(container, src); } };
 }
@@ -272,6 +352,6 @@ import { loadCustomAnims, blobSrc } from './vsAnimStore.js';
 export function initCustomAnims() {
   for (const entry of loadCustomAnims()) {
     if (_providers.has(entry.id)) continue; // already registered (hot reload guard)
-    registerVsAnimation(lottieProvider({ id: entry.id, label: entry.label, description: entry.description, src: blobSrc(entry) }));
+    registerVsAnimation(lottieProvider({ id: entry.id, label: entry.label, description: entry.description || '', src: blobSrc(entry) }));
   }
 }

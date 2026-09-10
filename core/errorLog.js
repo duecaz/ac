@@ -10,7 +10,11 @@ const RING_MAX = 30; // conserva los últimos N errores
 let lastSent = 0;
 let storageWarned = false;
 
-/** Lee el anillo de errores recientes (más nuevo al final). Para el panel admin. */
+/** UNA entrada del anillo de errores.
+ *  @typedef {{message: string, stack: string|null, page: string, url: string, at: string}} ErrorRegistrado */
+
+/** Lee el anillo de errores recientes (más nuevo al final). Para el panel admin.
+ *  @returns {ErrorRegistrado[]} */
 export function recentErrors() {
   try { return JSON.parse(lsGet(RING_KEY) || '[]'); } catch { return []; }
 }
@@ -18,6 +22,7 @@ export function recentErrors() {
 /** Vacía el anillo de errores. */
 export function clearErrors() { lsSet(RING_KEY, '[]'); }
 
+/** @param {{message?: unknown, stack?: unknown, page?: string}} o */
 function logClientError({ message, stack, page }) {
   // Throttle: como mucho uno cada 2 s para evitar bucles.
   const now = clock.now();
@@ -39,6 +44,7 @@ function logClientError({ message, stack, page }) {
   } catch { /* localStorage lleno / no disponible: ignora */ }
 }
 
+/** @param {string} [page] */
 export function installErrorHandlers(page) {
   window.addEventListener('error', (e) => {
     logClientError({ message: e.message, stack: e.error?.stack, page });
@@ -63,7 +69,8 @@ export function installErrorHandlers(page) {
   // alumno perdía resultados exactamente en silencio — lo que el evento existía
   // para evitar. Ahora se dice, y queda en el registro para el reporte.
   window.addEventListener('ww:results-dropped', (e) => {
-    const n = e?.detail?.dropped || 0;
+    const detalle = /** @type {CustomEvent<{dropped?: number}>} */ (e).detail;
+    const n = detalle?.dropped || 0;
     logClientError({ message: `cola de resultados llena: ${n} resultado(s) descartado(s)`, page });
     try {
       toast(`Se han perdido ${n} resultado(s) sin enviar: el dispositivo lleva demasiado tiempo sin conexión. Conéctate para que los pendientes suban.`, 'warning', TOAST_ERROR);

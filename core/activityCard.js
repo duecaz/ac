@@ -15,6 +15,8 @@ import { isVsCompatible } from '../kernel/session/engine.js';
 import { homePreviewHtml, previewBgStyle } from './homePreview.js';
 import { activityPageCount } from './migrate.js';
 
+/** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
+
 // Tira de modos. `includeManage` añade Live/Tarea, que crean sesión/asignación.
 // Estuvieron RESERVADOS a "Mis actividades" con el motivo «en la biblioteca
 // romperían sobre una ajena», y era falso: `#/launch` y `#/tasks` resuelven la
@@ -23,11 +25,16 @@ import { activityPageCount } from './migrate.js';
 // Esconderlos hacía lo contrario de lo que la app quiere: quien llega sin cuenta
 // no llega a enterarse de que existe el modo en vivo. Ahora salen SIEMPRE y, sin
 // sesión, con CANDADO y su frase (§22: avisar ANTES, nunca dejar que falle).
+/**
+ * @param {Activity} a
+ * @param {{includeManage?: boolean, authed?: boolean}} [opts]
+ * @returns {string}
+ */
 export function modeStripHtml(a, { includeManage = false, authed = false } = {}) {
   const T = getTemplate(a.template);
   const m = T?.meta?.modes || { solo: true };
   const teamsMode = getMode('teams');
-  const canTeams = teamsMode.supportsTemplate(T) && teamsMode.isAvailable(a);
+  const canTeams = !!(teamsMode?.supportsTemplate(T) && teamsMode.isAvailable(a));
   const id = escapeHtml(a.id);
   // CADA BOTÓN DICE QUÉ MODO ES (`data-mode`), y de ahí sale su ruta.
   // Estuvieron identificados por CLASE (`act-play`/`act-vs`/`act-pin`…) y cada
@@ -35,6 +42,12 @@ export function modeStripHtml(a, { includeManage = false, authed = false } = {})
   // ellas con nombre heredado —`act-pin` para «En vivo»— que había que traducir
   // mentalmente. Con el modo declarado, el dueño de los clics llama a
   // `rutaDeModo()` y un modo nuevo no obliga a tocar ninguna vista.
+  /**
+   * @param {string} modeId
+   * @param {string} icon
+   * @param {string} label
+   * @param {{locked?: boolean, tpl?: boolean}} [o]
+   */
   const btn = (modeId, icon, label, { locked = false, tpl = false } = {}) =>
     `<button class="act-mode mode-${modeId}${locked ? ' is-locked' : ''}" data-mode="${modeId}"`
     + ` data-id="${id}"${tpl ? ` data-tpl="${escapeHtml(a.template)}"` : ''}${locked ? ' data-locked="1"' : ''}`
@@ -42,6 +55,11 @@ export function modeStripHtml(a, { includeManage = false, authed = false } = {})
   // Modo host-only sin sesión: se muestra con CANDADO y su frase, no se esconde
   // ni se deja fallar al pulsar. `authed` lo aporta la vista (este módulo es
   // puro). Los modos jugables (Individual/VS/Equipos) nunca se bloquean.
+  /**
+   * @param {string} modeId
+   * @param {string} icon
+   * @param {string} label
+   */
   const hostBtn = (modeId, icon, label) => {
     const locked = !authed && modeNeedsAuth(modeId);
     return btn(modeId, icon, locked ? modeAuthHint(modeId) : label, { locked });
@@ -80,6 +98,7 @@ export function modeStripHtml(a, { includeManage = false, authed = false } = {})
 // `modes` era un TRI-ESTADO ('all' · 'play' · 'none') y desde que la biblioteca
 // ofrece los cinco, 'play' se quedó sin un solo llamante: dos booleanos disfrazados
 // de tabla que había que leer para descubrir que ya daban igual.
+/** @type {Record<string, {strip?: boolean, pages?: boolean, playablePreview?: boolean}>} */
 const VARIANTS = {
   mine:    { strip: true,  playablePreview: false },
   library: { strip: true,  playablePreview: true  },
@@ -105,8 +124,27 @@ const VARIANTS = {
 // Ya no hay `extraClass`/`previewClass`: eran dos vías para decorar la tarjeta
 // DESDE FUERA (la portada se pintaba distinta con ellas) y quedaron sin llamante
 // al unificar el diseño. Dejarlas en la firma es invitar a rehacerlo.
+/**
+ * @typedef {Object} OpcionesTarjeta
+ * @property {'mine'|'library'|'plain'|'list'} [variant]
+ * @property {boolean} [authed]
+ * @property {string} [topRight]
+ * @property {string} [footer]
+ * @property {boolean} [strip]
+ * @property {boolean} [pages]
+ * @property {boolean} [playablePreview]
+ * @property {boolean} [subtitle]
+ * @property {boolean} [author]
+ * @property {boolean} [tags]
+ */
+
+/**
+ * @param {Activity} a
+ * @param {OpcionesTarjeta} [opts]
+ * @returns {string}
+ */
 export function activityCardHtml(a, opts = {}) {
-  const preset = VARIANTS[opts.variant] || {};
+  const preset = VARIANTS[opts.variant || ''] || {};
   const {
     strip: conModos = false, pages = true, playablePreview = false, authed = false,
     subtitle = true, author = true, tags = true, topRight = '', footer = '',
@@ -165,7 +203,7 @@ export function activityCardHtml(a, opts = {}) {
         ${esLista ? '' : `<h3 class="acard-title">${escapeHtml(a.title || 'Sin título')}</h3>`}
         ${!esLista && subtitle && a.subtitle ? `<p class="acard-sub">${escapeHtml(a.subtitle)}</p>` : ''}
         ${author && a.author?.id ? `<a class="lp-author" href="#/autor/${escapeHtml(a.author.id)}">por ${escapeHtml(a.author.name || 'Profesor')}</a>` : ''}
-        ${tags && (a.tags || []).length ? `<div class="acard-tags">${a.tags.slice(0, 3).map(t => `<span class="t">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+        ${tags && (a.tags || []).length ? `<div class="acard-tags">${a.tags.slice(0, 3).map((/** @type {string} */ t) => `<span class="t">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
         ${footer}
       </div>
     </article>`;

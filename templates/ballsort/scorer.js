@@ -12,13 +12,23 @@
 // still meaningful when nobody finishes (same spirit as race progress).
 import { progress } from './game/rules.js';
 
+/** @typedef {import('./play.js').BallsortSnapshot} BallsortSnapshot */
+
 const PARTIAL_MAX = 300;   // max points for an unsolved-but-progressed board
 const SOLVE_BASE  = 1000;  // points for an instant/zero-cost solve (clamped)
 const SOLVE_FLOOR = 200;   // minimum for any solve (so finishing always wins)
 
-export function scoreBallsort({ value, item, activity } = {}) {
-  const v = value || {};
-  const mode = item?.mode || activity?.content?.mode || activity?.rules?.mode || 'moves';
+/**
+ * @param {import('../../kernel/contracts/session.js').ScoreInput} input
+ * @returns {import('../../kernel/contracts/session.js').ScoreResult}
+ */
+export function scoreBallsort({ value, item, activity }) {
+  // `value` es FRONTERA (llega del móvil de un alumno en vivo) e `item` es el
+  // puzle congelado: los dos se estrechan por forma antes de puntuar.
+  const v = /** @type {Partial<BallsortSnapshot>} */ (value && typeof value === 'object' ? value : {});
+  const puzle = /** @type {{mode?: string}} */ (item && typeof item === 'object' ? item : {});
+  const contenido = /** @type {{mode?: string}} */ (activity?.content ?? {});
+  const mode = puzle.mode || contenido.mode || activity?.rules?.mode || 'moves';
 
   if (!v.solved) {
     // Partial credit from board completeness (0..1). MÉRITO fraccional (P5):

@@ -35,6 +35,7 @@ export const OWN = `owner = @request.auth.id || ${ADMIN}`;
 // bien). Reproducido con el evaluador de reglas del repo. El CREATE sigue
 // aceptando `ms` (es el respaldo honesto cuando no hay sello de apertura).
 const VERDICT_FIELDS = ['scored', 'points', 'ms'];
+/** @param {string} f */
 const notSet = (f) => `@request.body.${f}:isset = false`;
 // §22-4 — LA RESPUESTA VA ATADA AL DISPOSITIVO. El `playerId` es público (la
 // lista de jugadores de la sala se lee sin cuenta, y el host la necesita), así que
@@ -96,6 +97,9 @@ export const USERS_RULES = {
 /**
  * Reglas por colección. Cambiar algo aquí exige re-aplicarlas desde
  * `#/admin` → "Crear colecciones" (y verificar con `bash tools/check-pb.sh`).
+ * @typedef {{listRule: string|null, viewRule: string|null, createRule: string|null,
+ *   updateRule: string|null, deleteRule: string|null}} ReglasColeccion
+ * @type {Record<string, ReglasColeccion>}
  */
 export const RULES = {
   // ── Contenido del profe ────────────────────────────────────────────────────
@@ -231,7 +235,8 @@ export const RULES = {
   },
 };
 
-/** Reglas de una colección (o `null` si no está declarada). */
+/** Reglas de una colección (o `null` si no está declarada).
+ *  @param {string} name @returns {ReglasColeccion|null} */
 export function rulesFor(name) {
   return RULES[name] || null;
 }

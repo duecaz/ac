@@ -11,14 +11,25 @@
 //   destroy()
 //
 // Espejo de core/vsAnimations.js, pero para solo. Hoy hay una sola animación: la rana saltarina.
+/** LA BOCA de una animación ya montada (el contrato de arriba).
+ *  @typedef {{hop: (o?: {streak?: number}) => void, slip: () => void, finish: () => void,
+ *    setProgress: (frac: number) => void, destroy: () => void}} InstanciaAnimacion */
+/** Quien sabe montar una: lo que se registra.
+ *  @typedef {{id: string, label: string, description?: string,
+ *    create: (container: HTMLElement, o?: {total?: number, scene?: string}) => InstanciaAnimacion}} ProveedorAnimacion */
+
+/** @type {Map<string, ProveedorAnimacion>} */
 const _providers = new Map();
 
+/** @param {ProveedorAnimacion} provider */
 function registerSoloAnimation(provider) { _providers.set(provider.id, provider); }
+/** @param {string} id @returns {ProveedorAnimacion|null} */
 export function getSoloAnimation(id) { return _providers.get(id) || null; }
 
 // Por defecto: ninguna (no altera las actividades existentes).
 
 // ── Rana saltarina ───────────────────────────────────────────────────────────
+/** @type {Record<string, {pad: string, css: string}>} */
 const SCENES = {
   swamp:  { pad: '🪷', css: 'frog-swamp'   },
   jungle: { pad: '🌿', css: 'frog-jungle'  },
@@ -26,6 +37,7 @@ const SCENES = {
   winter: { pad: '❄️',  css: 'frog-winter'  },
   volcano:{ pad: '🌋', css: 'frog-volcano' },
 };
+/** @param {number} s @returns {string} */
 const streakLabel = (s) => s >= 15 ? '🔥🔥' : s >= 10 ? '🔥' : s >= 5 ? '⚡' : s >= 3 ? '✨' : '';
 
 // Posiciones en PORCENTAJE: la pista ocupa TODO el ancho del box (sin scroll).
@@ -33,10 +45,16 @@ const streakLabel = (s) => s >= 15 ? '🔥🔥' : s >= 10 ? '🔥' : s >= 5 ? '�
 // charcos repartidos uniformemente entre medias.
 const START_PCT = 9, END_PCT = 91;
 
+/**
+ * @param {HTMLElement} container
+ * @param {{total?: number, scene?: string}} [o]
+ * @returns {InstanciaAnimacion}
+ */
 function createFrog(container, { total = 1, scene = 'swamp' } = {}) {
   const sc = SCENES[scene] || SCENES.swamp;
   const pads = Math.max(1, total);           // un charco por pregunta; meta = total
   const step = (END_PCT - START_PCT) / pads; // % entre paradas
+  /** @param {number} k @returns {number} */
   const pct  = (k) => START_PCT + k * step;  // % de la parada k (0..pads)
   // OJO: NO tocar container.className — el contenedor es el carril (.ww-solo-anim)
   // cuyo alto lo fija styles/player.css. La animación va en un hijo .frog-anim.
@@ -57,12 +75,13 @@ function createFrog(container, { total = 1, scene = 'swamp' } = {}) {
       </div>
     </div>`;
 
-  const track  = container.querySelector('.frog-track');
-  const mascot = container.querySelector('.frog-mascot');
-  const char   = container.querySelector('.frog-char');
-  const badge  = container.querySelector('.frog-badge');
+  const track  = /** @type {HTMLElement|null} */ (container.querySelector('.frog-track'));
+  const mascot = /** @type {HTMLElement|null} */ (container.querySelector('.frog-mascot'));
+  const char   = /** @type {HTMLElement|null} */ (container.querySelector('.frog-char'));
+  const badge  = /** @type {HTMLElement|null} */ (container.querySelector('.frog-badge'));
   let pos = 0;
 
+  /** @param {number} toPad @param {number} streak */
   function jumpTo(toPad, streak) {
     // Arco escalado al alto REAL del carril, para que el salto no se recorte
     // contra el borde del marco (el carril es discreto, ≤25%).
@@ -115,6 +134,7 @@ function createFrog(container, { total = 1, scene = 'swamp' } = {}) {
       char?.classList.add('frog-golden');
       jumpTo(pos, 12);
     },
+    /** @param {number} frac */
     setProgress(frac) {
       pos = Math.max(0, Math.min(pads, Math.round((frac || 0) * pads)));
       if (mascot) { mascot.style.transition = 'left .4s ease'; mascot.style.left = `${pct(pos)}%`; }

@@ -8,9 +8,12 @@ const COLL = 'reports';
 
 // El wrapper JSON vive UNA vez en core/pbHttp.js (pbJson): firma con el token
 // si lo hay y da a los errores la forma común { status, pb }.
+/** @typedef {{items?: Record<string, unknown>[]}} ListaPb */
+/** @param {string} path @param {RequestInit} [opts] @returns {Promise<ListaPb>} */
 const pb = (path, opts) => pbJson(path, opts);
 
 // Crea un reporte (requiere sesión). `activity` = id de la actividad reportada.
+/** @param {string} activity @param {string} [reason] */
 export async function submitReport(activity, reason = '') {
   const by = getAuthUserId();
   if (!by) throw new Error('Inicia sesión para reportar.');
@@ -29,8 +32,10 @@ export async function submitReport(activity, reason = '') {
 // admin lo lea (o lo pegue) tal cual. Crear exige sesión (regla AUTH de
 // `reports`); test.html lo dice ANTES de dejar pulsar Enviar.
 export const QA_PREFIX = 'qa:';
+/** @param {{activity?: unknown}|null|undefined} r @returns {boolean} */
 export const esRondaQa = (r) => String(r?.activity || '').startsWith(QA_PREFIX);
 
+/** @param {string} rondaId @param {string} texto */
 export async function submitQaRound(rondaId, texto) {
   const by = getAuthUserId();
   if (!by) throw new Error('Inicia sesión para enviar.');
@@ -53,6 +58,7 @@ export async function listReports() {
   } catch { return []; }
 }
 
+/** @param {string} id */
 export async function deleteReport(id) {
   await pb(`/api/collections/${COLL}/records/${id}`, { method: 'DELETE' });
   return { ok: true };

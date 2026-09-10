@@ -4,6 +4,25 @@
 // Se llama UNA vez por soltar pieza, nunca por fotograma (lo dice el enunciado).
 import { transformarPieza } from './geometria.js';
 
+/**
+ * @typedef {import('./piezas.js').Punto} Punto
+ * @typedef {import('./piezas.js').Pieza} Pieza
+ * @typedef {import('./geometria.js').Colocacion} Colocacion
+ */
+/**
+ * Lo que se puede rasterizar: un polígono ya en coordenadas del tablero, o una
+ * colocación que hay que transformar antes.
+ * @typedef {Punto[]|Colocacion} Figura
+ */
+/**
+ * El rectángulo del mundo que cubre la rejilla oculta.
+ * @typedef {Object} Caja
+ * @property {number} ox
+ * @property {number} oy
+ * @property {number} w
+ * @property {number} h
+ */
+
 /** Rasteriza un polígono sobre una rejilla n×n que cubre el rectángulo
  *  [ox,ox+w) × [oy,oy+h) — usando even-odd (ray casting) por el CENTRO de
  *  cada celda. Marca en `bits` (Uint8Array de tamaño n*n) con OR (para poder
@@ -15,7 +34,13 @@ import { transformarPieza } from './geometria.js';
  *  RECORTABA esas siluetas sin avisar: la mitad de una pieza podía caer
  *  fuera de la rejilla y el XOR/la conexidad mentían. Por eso `ox,oy,w,h`
  *  son parámetros, nunca una constante — los calcula quien llama, a partir
- *  del propio contenido (ver `bboxDeTodo`). */
+ *  del propio contenido (ver `bboxDeTodo`).
+ *
+ *  @param {Uint8Array} bits
+ *  @param {number} n
+ *  @param {Punto[]|null} pts
+ *  @param {number} ox @param {number} oy @param {number} w @param {number} h
+ *  @returns {void} */
 function pintarPoligono(bits, n, pts, ox, oy, w, h) {
   if (!pts || pts.length < 3) return;
   for (let row = 0; row < n; row++) {
@@ -27,6 +52,7 @@ function pintarPoligono(bits, n, pts, ox, oy, w, h) {
   }
 }
 
+/** @param {Punto[]} pts @param {number} x @param {number} y @returns {boolean} */
 function dentroPoligono(pts, x, y) {
   let dentro = false;
   for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
@@ -42,7 +68,10 @@ function dentroPoligono(pts, x, y) {
 }
 
 /** Colocación → su polígono ya transformado, resolviendo el nombre de pieza
- *  contra el diccionario `piezas` (id → {puntos}). */
+ *  contra el diccionario `piezas` (id → {puntos}).
+ *  @param {Colocacion} colocacion
+ *  @param {Record<string, Pieza>} piezas
+ *  @returns {Punto[]|null} */
 function poligonoDeColocacion(colocacion, piezas) {
   const pieza = piezas[colocacion.pieza];
   if (!pieza) return null;
@@ -50,13 +79,24 @@ function poligonoDeColocacion(colocacion, piezas) {
 }
 
 /** Un polígono suelto ([[x,y],...]) o una colocación ({pieza,x,y,rot,flip})
- *  → siempre su polígono de puntos. */
+ *  → siempre su polígono de puntos. Un array que NO trae pares de números no
+ *  es ninguna de las dos cosas: `null`, igual que una colocación de una pieza
+ *  que no está en el diccionario.
+ *  @param {Figura} f
+ *  @param {Record<string, Pieza>} piezas
+ *  @returns {Punto[]|null} */
 function puntosDe(f, piezas) {
-  return Array.isArray(f) && Array.isArray(f[0]) ? f : poligonoDeColocacion(f, piezas);
+  if (Array.isArray(f)) return Array.isArray(f[0]) ? f : null;
+  return poligonoDeColocacion(f, piezas);
 }
 
 /** Rasteriza uno o varios polígonos/colocaciones dentro del rectángulo
- *  {ox,oy,w,h} y devuelve el Uint8Array. */
+ *  {ox,oy,w,h} y devuelve el Uint8Array.
+ *  @param {Figura[]} figuras
+ *  @param {number} n
+ *  @param {Record<string, Pieza>} piezas
+ *  @param {Caja} caja
+ *  @returns {Uint8Array} */
 function rasterizar(figuras, n, piezas, { ox, oy, w, h }) {
   const bits = new Uint8Array(n * n);
   for (const f of figuras) pintarPoligono(bits, n, puntosDe(f, piezas), ox, oy, w, h);
@@ -66,7 +106,11 @@ function rasterizar(figuras, n, piezas, { ox, oy, w, h }) {
 /** Caja que cubre TODOS los puntos de una o varias listas de figuras, con un
  *  margen (fracción del lado mayor) — así una pieza mal soltada FUERA de la
  *  silueta sigue entrando en la rejilla y cuenta como «de más» en el XOR, en
- *  vez de recortarse en silencio. */
+ *  vez de recortarse en silencio.
+ *  @param {Figura[][]} listasDeFiguras
+ *  @param {Record<string, Pieza>} piezas
+ *  @param {number} [margen]
+ *  @returns {Caja} */
 function bboxDeTodo(listasDeFiguras, piezas, margen = 0.15) {
   let minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
   for (const figuras of listasDeFiguras) {
@@ -89,9 +133,9 @@ function bboxDeTodo(listasDeFiguras, piezas, margen = 0.15) {
  * en [0, 1]. `n` es la resolución de la rejilla oculta (≈240 en el player;
  * un valor menor basta y es más rápido en los tests).
  *
- * @param {Array<Array<[number,number]>>} silueta  polígono(s) de la figura
- * @param {Array<{pieza,x,y,rot,flip}>} colocaciones  dónde dejó el jugador cada pieza
- * @param {object} piezas   diccionario id→{puntos} (PIEZAS de piezas.js)
+ * @param {Punto[][]} silueta  polígono(s) de la figura
+ * @param {Colocacion[]} colocaciones  dónde dejó el jugador cada pieza
+ * @param {Record<string, Pieza>} piezas   diccionario id→{puntos} (PIEZAS de piezas.js)
  * @param {number} [n]      resolución de la rejilla (por defecto 240)
  * @returns {number} fracción del área de la silueta que NO coincide (0 = perfecto)
  */
@@ -116,6 +160,13 @@ export const UMBRAL_RESUELTO = 0.04;
  *  del editor: estaba repetido a ojo (0.05/0.06) en tres sitios. */
 export const MARGEN_CAJA = 0.05;
 
+/**
+ * @param {Punto[][]} silueta
+ * @param {Colocacion[]} colocaciones
+ * @param {Record<string, Pieza>} piezas
+ * @param {number} [n]
+ * @returns {boolean}
+ */
 export function estaResuelto(silueta, colocaciones, piezas, n = 240) {
   return xorArea(silueta, colocaciones, piezas, n) < UMBRAL_RESUELTO;
 }
@@ -128,8 +179,8 @@ export function estaResuelto(silueta, colocaciones, piezas, n = 240) {
  * dos piezas separadas dan 2 o más. Es el mismo raster que `xorArea`, así que
  * comparten la MISMA vara: lo que aquí cuenta como «tocado» es lo que allí
  * cuenta como «dentro».
- * @param {Array<Array<[number,number]>>|Array<{pieza,x,y,rot,flip}>} figuras
- * @param {object} piezas
+ * @param {Figura[]} figuras
+ * @param {Record<string, Pieza>} piezas
  * @param {number} [n]
  * @returns {number} número de componentes (0 si no hay nada pintado)
  */
@@ -138,6 +189,7 @@ export function componentesConexas(figuras, piezas, n = 200) {
   const bits = rasterizar(figuras, n, piezas, caja);
   const visto = new Uint8Array(n * n);
   let comps = 0;
+  /** @type {number[]} */
   const pila = [];
   for (let inicio = 0; inicio < n * n; inicio++) {
     if (!bits[inicio] || visto[inicio]) continue;
@@ -146,6 +198,7 @@ export function componentesConexas(figuras, piezas, n = 200) {
     pila.push(inicio);
     while (pila.length) {
       const p = pila.pop();
+      if (p === undefined) break;   // la pila se vació entre la guarda y el pop
       const fila = Math.floor(p / n), col = p % n;
       // 8-conectado: dos piezas que solo se tocan por una ESQUINA (vértice
       // compartido, no arista) siguen siendo UNA figura tangram legítima —

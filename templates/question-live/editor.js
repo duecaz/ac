@@ -7,13 +7,30 @@ import { renderEditorShell } from '../../core/editorShell.js';
 import { imageTileHtml, wireImageTile } from '../../core/imageTile.js';
 import { newItem } from '../../core/contentModels/items.js';
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/activity.js').CardItem} CardItem
+ * @typedef {import('../../kernel/contracts/activity.js').ItemsContent} ItemsContent
+ * @typedef {import('../../core/contentModels/items.js').CardItemLegado} CardItemLegado
+ * @typedef {import('../../core/editorShell.js').EditorCtx} EditorCtx
+ */
+
+/** Las tarjetas de ESTA actividad: el contenido es el modelo `items`.
+ * @param {Activity} a @returns {CardItem[]} */
+const itemsDe = (a) => /** @type {ItemsContent} */ (a.content).items;
+
 // Images are stored INLINE as data-URLs inside the activity JSON (same approach
 // as the custom background). No external upload — works on PocketBase with no
 // Supabase storage. Kept small so the activity/live record stays light.
 
+/**
+ * @param {Element} root
+ * @param {Activity} activity
+ * @param {(activity: Activity) => void} onChange
+ */
 export function renderQuestionLiveEditor(root, activity, onChange) {
   const a = activity;
-  if (!Array.isArray(a.content?.items)) {
+  if (!Array.isArray(/** @type {ItemsContent} */ (a.content)?.items)) {
     a.content = { items: [newItem(), newItem(), newItem()] };
   }
   if (!a.rules) a.rules = {};
@@ -24,29 +41,42 @@ export function renderQuestionLiveEditor(root, activity, onChange) {
   });
 }
 
+/** @param {Activity} a */
 function contentHtml(a) {
+  const items = itemsDe(a);
   return `
     <p class="small text-muted">Preguntas que se muestran en cajas numeradas. El alumno elige una caja, responde de viva voz y el profesor asigna los puntos. Puedes añadir una imagen a cada pregunta (máx. 200&nbsp;KB).</p>
-    ${a.content.items.map((item, i) => `
+    ${items.map((item, i) => `
       <div class="row g-2 mb-3 align-items-start border-bottom pb-3">
         <div class="col-12 col-md-9">
           <div class="input-group">
             <span class="input-group-text fw-bold">${i + 1}</span>
-            <input class="form-control ql-q" data-i="${i}" placeholder="Escribe la pregunta aquí…" value="${escapeHtml(item.question ?? item.q ?? '')}">
-            <span class="input-group-text p-0 border-0 ps-2 d-flex">${itemControlsHtml(i, a.content.items.length)}</span>
+            <input class="form-control ql-q" data-i="${i}" placeholder="Escribe la pregunta aquí…" value="${escapeHtml(item.question ?? /** @type {CardItemLegado} */ (item).q ?? '')}">
+            <span class="input-group-text p-0 border-0 ps-2 d-flex">${itemControlsHtml(i, items.length)}</span>
           </div>
         </div>
-        <div class="col-12 col-md-3 text-center" id="ql-img-${i}">${imageTileHtml(item.image, { prefix: 'ql-', height: 90 })}</div>
+        <div class="col-12 col-md-3 text-center" id="ql-img-${i}">${imageTileHtml(item.image || '', { prefix: 'ql-', height: 90 })}</div>
       </div>`).join('')}
     <button class="btn btn-outline-primary mt-2" id="ql-add"><i class="bi bi-plus-lg"></i> Añadir pregunta</button>`;
 }
 
+/**
+ * @param {Element} root
+ * @param {Activity} a
+ * @param {EditorCtx} ctx
+ */
 function wireContent(root, a, ctx) {
-  on(root, 'input', '.ql-q', (e, el) => { a.content.items[+el.dataset.i].question = e.target.value; ctx.onChange(a); });
-  wireItemList(root, a, ctx, { list: a.content.items, añadir: { selector: '#ql-add', fabrica: newItem } });
-  wireImageTile(root, a, a.content.items, ctx, { prefix: 'ql-', queryField: 'question' });
+  const items = itemsDe(a);
+  on(root, 'input', '.ql-q', (e, el) => {
+    const campo = /** @type {HTMLInputElement} */ (el);
+    items[+(el.dataset.i ?? -1)].question = campo.value;
+    ctx.onChange(a);
+  });
+  wireItemList(root, a, ctx, { list: items, añadir: { selector: '#ql-add', fabrica: newItem } });
+  wireImageTile(root, a, items, ctx, { prefix: 'ql-', queryField: 'question' });
 }
 
+/** @param {Activity} a */
 function rulesHtml(a) {
   const sel = a.rules?.selector || 'boxes';
   return `
@@ -73,6 +103,14 @@ function rulesHtml(a) {
     </div>`;
 }
 
+/**
+ * @param {Element} root
+ * @param {Activity} a
+ * @param {EditorCtx} ctx
+ */
 function wireRules(root, a, ctx) {
-  on(root, 'change', '.ql-sel', (e) => { a.rules.selector = e.target.value; ctx.onChange(a); ctx.repaint(); });
+  on(root, 'change', '.ql-sel', (_e, el) => {
+    a.rules.selector = /** @type {HTMLInputElement} */ (el).value;
+    ctx.onChange(a); ctx.repaint();
+  });
 }

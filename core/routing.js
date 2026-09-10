@@ -4,11 +4,13 @@
 
 /**
  * Compile a route pattern (e.g. '#/edit/:id') into a matcher.
+ * @param {string} pattern
  * @returns {{ rx: RegExp, keys: string[] }}
  */
 export function compileRoute(pattern) {
+  /** @type {string[]} */
   const keys = [];
-  const rx = new RegExp('^#?' + pattern.replace(/:([\w]+)/g, (_, k) => { keys.push(k); return '([^/]+)'; }) + '/?$');
+  const rx = new RegExp('^#?' + pattern.replace(/:([\w]+)/g, (/** @type {string} */ _, /** @type {string} */ k) => { keys.push(k); return '([^/]+)'; }) + '/?$');
   return { rx, keys };
 }
 
@@ -16,10 +18,13 @@ export function compileRoute(pattern) {
  * Los parámetros de consulta de un hash: `#/explore?q=comas&lang=es` → `{q, lang}`.
  * Devuelve siempre un objeto (vacío si no hay `?`), para que quien lo lea no
  * tenga que comprobar nada.
+ * @param {string} hash
+ * @returns {Record<string, string>}
  */
 export function parseQuery(hash) {
   const i = String(hash || '').indexOf('?');
   if (i < 0) return {};
+  /** @type {Record<string, string>} */
   const out = {};
   for (const par of String(hash).slice(i + 1).split('&')) {
     if (!par) continue;
@@ -43,7 +48,7 @@ export function parseQuery(hash) {
  *
  * @param {string} hash e.g. location.hash
  * @param {{rx:RegExp, keys:string[], handler:Function}[]} routes
- * @returns {{ handler: Function, params: Object, query: Object }|null}
+ * @returns {{ handler: Function, params: Record<string, string>, query: Record<string, string> }|null}
  */
 export function matchRoute(hash, routes) {
   const raw = hash || '#/';
@@ -53,6 +58,7 @@ export function matchRoute(hash, routes) {
   for (const r of routes) {
     const m = path.match(r.rx);
     if (m) {
+      /** @type {Record<string, string>} */
       const params = {};
       r.keys.forEach((k, i) => { params[k] = decodeURIComponent(m[i + 1]); });
       return { handler: r.handler, params, query };

@@ -32,22 +32,34 @@
 import { clock } from './clock.js';
 
 /**
- * @param {object} opts
- * @param {number} opts.silencioMs   cuánto silencio se tolera antes de renovar.
- * @param {Function} opts.onRenew    qué hacer cuando se agota (cerrar y reconectar).
- * @param {number} [opts.chequeoMs]  cada cuánto se mira el reloj (def. 10 s).
- * @param {boolean} [opts.pausarOculto] con la pestaña oculta no se renueva, y al
- *        volver a primer plano se renueva SOLO si de verdad hubo silencio.
- * @param {number} [opts.jitterMs]   retraso aleatorio antes de renovar. Con 30
- *        móviles que se desbloquean a la vez («sacad el teléfono»), sin esto
- *        salen 30 reconexiones en el mismo segundo contra la misma Pi.
- * @param {Function} [opts.now]      reloj (def. `clock.now`) — inyectable para test.
- * @param {Function} [opts.setIntervalFn] scheduler inyectable.
- * @param {Function} [opts.clearIntervalFn]
- * @param {Function} [opts.setTimeoutFn]  scheduler del jitter, inyectable.
- * @param {Function} [opts.aleatorio] fuente del jitter (def. Math.random).
- * @param {object} [opts.doc]        `document` inyectable (null = sin pantalla).
+ * Lo MÍNIMO que el vigía necesita de una pantalla: si está oculta y poder
+ * escuchar el cambio. Es un tipo propio —y no `Document`— porque el test inyecta
+ * un documento de mentira, que es lo que hace comprobable el caso del móvil
+ * bloqueado.
+ * @typedef {{visibilityState?: string,
+ *   addEventListener?: (tipo: string, h: () => void) => void,
+ *   removeEventListener?: (tipo: string, h: () => void) => void}} PantallaMinima
  */
+
+/**
+ * @typedef {Object} OpcionesVigia
+ * @property {number} silencioMs   cuánto silencio se tolera antes de renovar.
+ * @property {Function} onRenew    qué hacer cuando se agota (cerrar y reconectar).
+ * @property {number} [chequeoMs]  cada cuánto se mira el reloj (def. 10 s).
+ * @property {boolean} [pausarOculto] con la pestaña oculta no se renueva, y al
+ *   volver a primer plano se renueva SOLO si de verdad hubo silencio.
+ * @property {number} [jitterMs]   retraso aleatorio antes de renovar. Con 30
+ *   móviles que se desbloquean a la vez («sacad el teléfono»), sin esto salen 30
+ *   reconexiones en el mismo segundo contra la misma Pi.
+ * @property {() => number} [now]  reloj (def. `clock.now`) — inyectable para test.
+ * @property {typeof setInterval} [setIntervalFn] scheduler inyectable.
+ * @property {typeof clearInterval} [clearIntervalFn]
+ * @property {typeof setTimeout} [setTimeoutFn]  scheduler del jitter, inyectable.
+ * @property {() => number} [aleatorio] fuente del jitter (def. Math.random).
+ * @property {PantallaMinima|null} [doc]  `document` inyectable (null = sin pantalla).
+ */
+
+/** @param {OpcionesVigia} opts */
 export function startStreamWatchdog({
   silencioMs,
   onRenew,
@@ -60,7 +72,7 @@ export function startStreamWatchdog({
   setTimeoutFn = setTimeout,
   aleatorio = Math.random,
   doc = (typeof document !== 'undefined' ? document : null),
-} = {}) {
+} = /** @type {OpcionesVigia} */ ({})) {
   let ultimo = now();
   let vivo = true;
 
@@ -93,7 +105,7 @@ export function startStreamWatchdog({
     if (silencio() < silencioMs / 2) return;
     renovar();
   };
-  if (pausarOculto && doc) doc.addEventListener('visibilitychange', alVolver);
+  if (pausarOculto && doc) doc.addEventListener?.('visibilitychange', alVolver);
 
   return {
     touch() { ultimo = now(); },
@@ -102,7 +114,7 @@ export function startStreamWatchdog({
     stop() {
       vivo = false;
       clearIntervalFn(id);
-      if (pausarOculto && doc) doc.removeEventListener('visibilitychange', alVolver);
+      if (pausarOculto && doc) doc.removeEventListener?.('visibilitychange', alVolver);
     },
   };
 }

@@ -21,7 +21,12 @@ const SAMPLE_SVG =
   "</svg>";
 const SAMPLE_IMAGE = 'data:image/svg+xml,' + encodeURIComponent(SAMPLE_SVG);
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').DiagramContent} DiagramContent
+ */
+
 export class DiagramTemplate extends BaseTemplate {
+  /** @type {import('../../kernel/contracts/template.js').TemplateMeta<DiagramContent>} */
   static meta = {
     name: 'diagram',
     label: 'Etiqueta el diagrama',

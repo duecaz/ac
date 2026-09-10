@@ -57,9 +57,11 @@ export function importsOf(file, root = ROOT) {
   // dentro de uno es un TIPO (`@typedef {import('../kernel/contracts/x.js').Y}`),
   // no una dependencia en runtime — el navegador nunca lo carga. Las capas (§0)
   // son de RUNTIME; el vocabulario de tipos de `kernel/contracts/` lo lee
-  // cualquiera. Solo `/**` a inicio de línea: un `/*` dentro de un comentario
-  // de línea («core/transport/*») se tragaba los imports de verdad.
-  const src = readFileSync(join(root, file), 'utf8').replace(/^[ \t]*\/\*\*[\s\S]*?\*\//gm, '');
+  // cualquiera. Se quitan los bloques `/** … */` (dos asteriscos, en cualquier
+  // posición: también el cast en línea `/** @type {import('…').X} */ (v)`); un
+  // `/*` a secas dentro de un comentario de línea («core/transport/*») se
+  // tragaba los imports de verdad, por eso no se quita todo comentario.
+  const src = readFileSync(join(root, file), 'utf8').replace(/\/\*\*[\s\S]*?\*\//g, '');
   const out = [];
   // `from '…'` cubre import y re-export; `import('…')` cubre el dinámico (que en
   // este repo es como se cargan las vistas y las plantillas: si no se mirara, el

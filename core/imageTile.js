@@ -33,18 +33,23 @@ export function imageTileHtml(url, { prefix = 'it-', height = 90 } = {}) {
  * Cablea los handlers de un tile de imagen por ítem. Cada tile va envuelto por
  * quien pinta el HTML en un contenedor `id="${prefix}img-${i}"`.
  * @param {Element} root
- * @param {object} a  la actividad (se pasa tal cual a `ctx.onChange`).
- * @param {Array} items  `a.content.items` (mutado in-place: cada uno con `.image`/`.imageCredit`).
+ * @param {import('../kernel/contracts/activity.js').Activity} a  la actividad (se pasa tal cual a `ctx.onChange`).
+ * @param {Record<string, unknown>[]} items  `a.content.items` (mutado in-place: cada uno con `.image`/`.imageCredit`).
  * @param {{onChange:Function, repaint:Function}} ctx
  * @param {{prefix?: string, queryField?: string}} [opts]  `queryField` = campo del ítem que sugiere la búsqueda.
  */
 export function wireImageTile(root, a, items, ctx, { prefix = 'it-', queryField = 'question' } = {}) {
   const tileSel = `[id^="${prefix}img-"]`;
+  /** @param {Element} el @returns {number} */
   const tileIndex = (el) => {
     const t = el.closest(tileSel);
     return t ? +t.id.slice(prefix.length + 3) : -1; // '<prefix>img-'.length
   };
-  on(root, 'click', `.${prefix}img-add`, (_, b) => { b.closest(tileSel)?.querySelector(`.${prefix}img-file`)?.click(); });
+  on(root, 'click', `.${prefix}img-add`, (_, b) => {
+    /** @type {HTMLInputElement|null} */
+    const file = b.closest(tileSel)?.querySelector(`.${prefix}img-file`) ?? null;
+    file?.click();
+  });
   on(root, 'click', `.${prefix}img-del`, (_, b) => {
     const i = tileIndex(b);
     if (i < 0) return;
@@ -52,7 +57,8 @@ export function wireImageTile(root, a, items, ctx, { prefix = 'it-', queryField 
     ctx.onChange(a); ctx.repaint();
   });
   on(root, 'change', `.${prefix}img-file`, async (e) => {
-    const input = e.target;
+    const input = /** @type {HTMLInputElement|null} */ (e.target);
+    if (!input) return;
     const i = tileIndex(input);
     const f = input.files?.[0];
     if (i < 0 || !f) return;
@@ -60,13 +66,13 @@ export function wireImageTile(root, a, items, ctx, { prefix = 'it-', queryField 
       items[i].image = await uploadMedia(f);
       delete items[i].imageCredit;   // el crédito se va con su imagen
       ctx.onChange(a); ctx.repaint();
-    } catch (err) { toast(err.message, 'danger', TOAST_NORMAL); }
+    } catch (err) { toast(err instanceof Error ? err.message : String(err), 'danger', TOAST_NORMAL); }
   });
   // Buscar una imagen libre (F6): la misma puerta que en el resto de editores.
   on(root, 'click', `.${prefix}img-search`, async (_, b) => {
     const i = tileIndex(b);
     if (i < 0) return;
-    const r = await abrirBuscadorImagenes({ consulta: items[i][queryField] || '' });
+    const r = await abrirBuscadorImagenes({ consulta: String(items[i][queryField] ?? '') });
     if (!r) return;
     items[i].image = r.url;
     items[i].imageCredit = r.atribucion;

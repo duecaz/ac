@@ -25,6 +25,8 @@ import { getAuthUserId } from './auth.js';
 // modo → { conSesion, sinSesion, repetir }
 // Los modos son los mismos de `core/persistPolicy.js` (el cuadro de qué guarda
 // cada uno): si aparece un modo nuevo, se declara en los dos.
+/** @typedef {{href: string, label: string, icon: string}} Salida */
+/** @type {Record<string, {conSesion: Salida, sinSesion: Salida, repetir: boolean}>} */
 export const TRAS_JUGAR = {
   // Individual en la app del profe: es SU material o el escaparate público.
   solo: {
@@ -72,6 +74,9 @@ export const DESTINO_DESCONOCIDO = { href: '#/', label: 'Inicio', icon: 'bi-hous
  * A dónde lleva el botón de salir de la pantalla de fin.
  * `haySesion` se inyecta para poder probar los dos casos sin tocar el almacén;
  * por defecto lo pregunta a `core/auth.js` (síncrono: lee el token guardado).
+ * @param {string|null|undefined} mode
+ * @param {boolean} [haySesion]
+ * @returns {{href: string, label: string, icon: string}}
  */
 export function destinoTrasJugar(mode, haySesion = !!getAuthUserId()) {
   const def = TRAS_JUGAR[mode || 'solo'];
@@ -79,7 +84,8 @@ export function destinoTrasJugar(mode, haySesion = !!getAuthUserId()) {
   return haySesion ? def.conSesion : def.sinSesion;
 }
 
-/** ¿Esta pantalla de fin puede ofrecer «Jugar otra vez»? */
+/** ¿Esta pantalla de fin puede ofrecer «Jugar otra vez»?
+ *  @param {string|null|undefined} mode @returns {boolean} */
 export function puedeRepetir(mode) {
   return TRAS_JUGAR[mode || 'solo']?.repetir === true;
 }

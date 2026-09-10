@@ -7,7 +7,7 @@ import { sessionItems } from '../kernel/content/sessionItems.js';
 
 /**
  * @param {HTMLElement} container  el carril donde vive la animación
- * @param {object} activity        la actividad (lee presentation.soloAnimation)
+ * @param {import('../kernel/contracts/activity.js').Activity} activity  la actividad (lee presentation.soloAnimation)
  * @returns {{ dispose(): void } | null}
  */
 export function mountSoloAnimator(container, activity) {

@@ -19,13 +19,19 @@
 // "meta" y su propio comparador, y podían discrepar en la misma partida.
 // Vigilado por tests/raceRank.test.mjs.
 
+/** UNA respuesta, en las dos formas que circulan por el repo: la fila de
+ *  `live_answers` y la respuesta del motor.
+ *  @typedef {{player?: string, playerId?: string, points?: number, ms?: number|null,
+ *   msTaken?: number|null, correct?: boolean|null}} FilaRespuesta */
+
 /** ¿Esta respuesta cuenta para la meta? La que ACERTÓ. Se acepta también
  *  "sumó puntos" para el camino que no guarda el veredicto (marcador derivado)
- *  — una fallada no debe empujar tu meta hacia el final de la partida. */
+ *  — una fallada no debe empujar tu meta hacia el final de la partida.
+ *  @param {FilaRespuesta|null|undefined} r */
 const isHit = (r) => r?.correct === true || (r?.points || 0) > 0;
 
-/** El `ms` de una respuesta, en las dos formas que circulan por el repo: la fila
- *  de `live_answers` (`ms`) y la respuesta del motor (`msTaken`). */
+/** El `ms` de una respuesta: `ms` (fila de `live_answers`) o `msTaken` (motor).
+ *  @param {FilaRespuesta|null|undefined} r */
 const msOf = (r) => {
   const v = r?.ms ?? r?.msTaken;
   // Sin tiempo NO se es el primero: coalescer a 0 ponía por delante justamente a
@@ -34,7 +40,8 @@ const msOf = (r) => {
 };
 
 /** HORA DE META de un conjunto de respuestas: el instante de la última que
- *  acertó. `-1` = no acertó ninguna (o no hay reloj) → va al final. */
+ *  acertó. `-1` = no acertó ninguna (o no hay reloj) → va al final.
+ *  @param {(FilaRespuesta|null)[]|null|undefined} entries @returns {number} */
 export function finishMsOf(entries) {
   let mx = -1;
   for (const r of entries || []) if (r && isHit(r)) mx = Math.max(mx, msOf(r));
@@ -42,7 +49,10 @@ export function finishMsOf(entries) {
 }
 
 /** Comparador de DESEMPATE por meta: antes = mejor, sin meta = al final. Se
- *  encadena tras el criterio principal (puntos o aciertos) con `||`. */
+ *  encadena tras el criterio principal (puntos o aciertos) con `||`.
+ *  @param {{finishMs?: number|null}|null|undefined} a
+ *  @param {{finishMs?: number|null}|null|undefined} b
+ *  @returns {number} */
 export function byFinish(a, b) {
   const x = a?.finishMs ?? -1, y = b?.finishMs ?? -1;
   if (x < 0 && y < 0) return 0;
@@ -52,8 +62,11 @@ export function byFinish(a, b) {
 /** Puntos y hora de meta por jugador. `rows`: filas de respuesta (`player`/
  *  `playerId`, `points`, `ms`/`msTaken`, `correct`) — se aceptan tal cual salen
  *  de PocketBase y del motor, sin normalizar antes (evita un recorrido de más
- *  sobre las 500 filas de una sala). */
+ *  sobre las 500 filas de una sala).
+ *  @param {FilaRespuesta[]|null|undefined} rows
+ *  @returns {Map<string, {score: number, finishMs: number}>} */
 export function tallyRows(rows) {
+  /** @type {Map<string, {score: number, finishMs: number}>} */
   const tally = new Map();
   for (const r of rows || []) {
     const id = r.player ?? r.playerId;
@@ -72,11 +85,15 @@ export function tallyRows(rows) {
  * preguntas y el podio no pueden divergir. Devuelve `{ rank, id, name, score }`
  * — la meta ordena pero NO sale: el marcador es un contrato que ya leen tres
  * vistas (y `tests/liveEngine.test.mjs` lo compara entero).
+ * @param {import('../kernel/contracts/session.js').Player[]|null|undefined} players
+ * @param {FilaRespuesta[]|null|undefined} rows
+ * @param {number} [limit]
+ * @returns {import('../kernel/contracts/session.js').RankedPlayer[]}
  */
 export function rankPlayers(players, rows, limit = 50) {
   const tally = tallyRows(rows);
   return (players || [])
-    .map(p => ({ id: p.id, name: p.name, ...(tally.get(p.id) || { score: 0, finishMs: -1 }) }))
+    .map(p => ({ id: p.id, name: p.name || p.id, ...(tally.get(p.id) || { score: 0, finishMs: -1 }) }))
     .sort((a, b) => (b.score - a.score) || byFinish(a, b)
       || String(a.name ?? '').localeCompare(String(b.name ?? '')))
     .slice(0, limit)
@@ -94,7 +111,8 @@ export function rankPlayers(players, rows, limit = 50) {
  *
  * @param {Array<{id:string,name:string,score:number}>} lb  marcador ya ordenado
  * @param {string} playerId
- * @returns {null|{rank:number,total:number,score:number,gap:number,aboveName:string|null}}
+ * @returns {null|{rank:number, total:number, score:number, gap:number,
+ *   aboveName:string|null, tied:number, tiedName:string|null}}
  *   `null` si el jugador no está en el marcador (la pantalla se pinta igual sin
  *   esta línea: es adorno útil, no información crítica).
  */

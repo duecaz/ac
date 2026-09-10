@@ -20,8 +20,21 @@ async function cargarBanco() {
   }
 }
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/activity.js').PuzzleContent} PuzzleContent
+ */
+
+/** La actividad vista como la de ESTA plantilla — `ensureContent` es quien la
+ *  deja en esta forma, así que antes de él el contenido puede ser otro.
+ *  @param {Activity} a @returns {PuzzleContent} */
+function contenido(a) {
+  return /** @type {PuzzleContent} */ (a.content);
+}
+
+/** @param {Activity} a @returns {Activity} */
 export function ensureContent(a) {
-  const c = a.content || (a.content = {});
+  const c = /** @type {Partial<PuzzleContent>} */ (a.content || (a.content = { items: [] }));
   if (!Array.isArray(c.items) || !c.items[0]) {
     c.items = [{ id: rid('it_'), dibujo: 'casa', filas: 2, columnas: 2 }];
   }
@@ -32,11 +45,18 @@ export function ensureContent(a) {
   return a;
 }
 
+/**
+ * @param {Element} root
+ * @param {Activity} activity
+ * @param {(activity: Activity) => void} onChange
+ * @returns {void}
+ */
 export const renderPuzzleEditor = (root, activity, onChange) =>
   renderEditorJuego(root, activity, onChange, { asegurar: ensureContent, etiqueta: 'Dibujo y piezas', html: contentHtml, wire: wireContent });
 
+/** @param {Activity} a @returns {string} */
 function contentHtml(a) {
-  const it = a.content.items[0];
+  const it = contenido(a).items[0];
   return `
     <p class="text-muted small">Elige el dibujo y el tamaño de la rejilla. El niño arrastra cada pieza hasta su sitio en la imagen; no hace falta leer nada.</p>
     <div class="mb-3">
@@ -53,6 +73,13 @@ function contentHtml(a) {
     </div>`;
 }
 
+/**
+ * @param {string} nombre
+ * @param {string} label
+ * @param {string} svgColor
+ * @param {boolean} activo
+ * @returns {string}
+ */
 function tileHtml(nombre, label, svgColor, activo) {
   return `
     <button type="button" class="pu-tile btn p-1 ${activo ? 'btn-primary' : 'btn-outline-secondary'}"
@@ -62,37 +89,52 @@ function tileHtml(nombre, label, svgColor, activo) {
     </button>`;
 }
 
+/** @param {Element} root @param {Activity} a @returns {Promise<void>} */
 async function pintarBanco(root, a) {
   const cont = root.querySelector('.pu-banco');
   if (!cont) return;
   const banco = await cargarBanco();
   const dibujos = banco?.DIBUJOS;
-  if (!Array.isArray(dibujos) || !dibujos.length) {
+  if (!banco || !Array.isArray(dibujos) || !dibujos.length) {
     cont.innerHTML = '<p class="small text-danger">El banco de dibujos no está disponible todavía. Vuelve a intentarlo en un momento.</p>';
     return;
   }
-  const actual = a.content.items[0].dibujo;
+  const actual = contenido(a).items[0].dibujo;
   const piezas = await Promise.all(dibujos.map(async (d) => {
     let svg = '';
     try {
-      const res = await fetch(banco.rutaDibujo(d.nombre));
-      svg = svgAColor(await res.text());
+      const ruta = banco.rutaDibujo(d.nombre);
+      // `rutaDibujo` devuelve null para un nombre que no está en el banco: sin
+      // ruta no hay miniatura que pintar (el botón sale vacío, no roto).
+      if (ruta) {
+        const res = await fetch(ruta);
+        svg = svgAColor(await res.text());
+      }
     } catch { svg = ''; }
     return tileHtml(d.nombre, d.label, svg, d.nombre === actual);
   }));
   cont.innerHTML = piezas.join('') || '<p class="small text-danger">El banco de dibujos no está disponible todavía.</p>';
 }
 
+/**
+ * @param {Element} root
+ * @param {Activity} a
+ * @param {import('../../core/editorShell.js').EditorCtx} ctx
+ * @returns {void}
+ */
 function wireContent(root, a, ctx) {
   pintarBanco(root, a);
-  on(root, 'change', '.pu-tamano', (e) => {
-    const [f, c] = e.target.value.split('x').map(Number);
-    a.content.items[0].filas = f;
-    a.content.items[0].columnas = c;
+  on(root, 'change', '.pu-tamano', (_e, el) => {
+    const [f, c] = ('value' in el ? String(el.value) : '').split('x').map(Number);
+    if (!f || !c) return;
+    contenido(a).items[0].filas = f;
+    contenido(a).items[0].columnas = c;
     ctx.onChange(a);
   });
   on(root, 'click', '.pu-tile', (e, el) => {
-    a.content.items[0].dibujo = el.dataset.nombre;
+    const nombre = el.dataset.nombre;
+    if (!nombre) return;
+    contenido(a).items[0].dibujo = nombre;
     ctx.onChange(a);
     for (const b of root.querySelectorAll('.pu-tile')) {
       const on_ = b === el;

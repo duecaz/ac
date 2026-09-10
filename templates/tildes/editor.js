@@ -4,8 +4,15 @@
 import { parseAccentedText } from '../../core/textMarks.js';
 import { renderTextCorrectionEditor } from '../../core/textCorrectionEditor.js';
 
+/**
+ * @param {Element} root
+ * @param {import('../../kernel/contracts/activity.js').Activity} activity
+ * @param {(activity: import('../../kernel/contracts/activity.js').Activity) => void} onChange
+ */
 export function renderTildesEditor(root, activity, onChange) {
-  renderTextCorrectionEditor(root, activity, onChange, {
+  renderTextCorrectionEditor(root, activity, (a) => onChange(
+    /** @type {import('../../kernel/contracts/activity.js').Activity} */ (a)
+  ), {
     kind: 'tilde',
     parse: parseAccentedText,
     textos: {

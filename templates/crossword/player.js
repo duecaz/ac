@@ -9,9 +9,29 @@ import { buildGrid } from './generator.js';
 import { observeResize } from '../../core/observeResize.js';
 import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').CrosswordWord} CrosswordWord
+ * @typedef {import('./generator.js').CrosswordGrid} CrosswordGrid
+ */
+
+/**
+ * @param {string|Element} rootSel
+ * @param {import('../../kernel/contracts/activity.js').Activity} activity
+ * @param {import('../../kernel/contracts/template.js').PlayerOpts} [opts]
+ * @returns {Promise<void>}
+ */
 export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
-  const wordsRaw = (activity.content?.words || [])
+  const contenido = /** @type {{words?: CrosswordWord[]}|null|undefined} */ (activity.content);
+  const wordsRaw = (contenido?.words || [])
     .filter(w => palabraJugable(w) && w.clue);
+
+  // `rootSel` puede llegar como ELEMENTO (lo declara el shell): interpolarlo en
+  // un selector daba «[object HTMLElement] .cw-grid-wrap», que no casa con nada.
+  const raiz = () => (typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel);
+  /** @param {string} sel @returns {HTMLElement|null} */
+  const dentro = (sel) => /** @type {HTMLElement|null} */ (raiz()?.querySelector(sel) ?? null);
+  /** @param {string} sel @returns {HTMLElement[]} */
+  const todos = (sel) => [...(raiz()?.querySelectorAll(sel) ?? [])].map(el => /** @type {HTMLElement} */ (el));
 
   if (!wordsRaw.length) {
     mount(rootSel, html`<div class="alert alert-warning m-3">No hay palabras configuradas.</div>`);
@@ -33,12 +53,16 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
   const hintMode = activity.rules?.hintMode || 'none';
 
   // User state: 2D array of typed letters, set of solved word IDs
+  /** @type {string[][]} */
   const userGrid  = Array.from({ length: rows }, () => Array(cols).fill(''));
+  /** @type {Set<string>} */
   const solvedIds = new Set();
 
   // Interaction state
   let activeR = -1, activeC = -1;
+  /** @type {'H'|'V'} */
   let activeDir = 'H';    // 'H' | 'V'
+  /** @type {string|null} */
   let activeWordId = null;
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -55,6 +79,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
       </div>`;
     })).join('');
 
+    /** @param {CrosswordWord[]} list @param {string} label @returns {string} */
     const clueList = (list, label) => `
       <div class="cw-clue-section">
         <div class="cw-clue-heading">${label}</div>
@@ -106,8 +131,8 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
   // ── Fit grid to available space ──────────────────────────────────────────
 
   function fitGrid() {
-    const wrap = document.querySelector(`${rootSel} .cw-grid-wrap`);
-    const grid = document.querySelector(`${rootSel} #cw-grid`);
+    const wrap = dentro('.cw-grid-wrap');
+    const grid = dentro('#cw-grid');
     if (!wrap || !grid) return;
     const availW = wrap.clientWidth  - 4;  // 4px = border*2
     const availH = wrap.clientHeight - 4;
@@ -118,22 +143,22 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
 
   // Recalculate if container resizes; disconnect when game finishes.
   // rAF-debounced (observeResize): fitGrid muta --cw-cell dentro del observado.
+  /** @type {(() => void)|null} */
   let stopRo = null;
   if (typeof ResizeObserver !== 'undefined') {
-    const wrap = document.querySelector(`${rootSel} .cw-grid-wrap`);
+    const wrap = dentro('.cw-grid-wrap');
     if (wrap) stopRo = observeResize(wrap, fitGrid);
   }
 
   // ── Interaction ──────────────────────────────────────────────────────────
 
   function attachInteraction() {
-    const ki = document.getElementById('cw-ki'); // keyboard input (mobile)
-    const gridEl = document.getElementById('cw-grid');
+    const ki = /** @type {HTMLInputElement|null} */ (document.getElementById('cw-ki')); // keyboard input (mobile)
 
     // Click on a cell
     on(rootSel, 'pointerdown', '.cw-white', (e, el) => {
       e.preventDefault();
-      const r = +el.dataset.r, c = +el.dataset.c;
+      const r = +(el.dataset.r ?? -1), c = +(el.dataset.c ?? -1);
       if (r === activeR && c === activeC) {
         // Toggle direction
         activeDir = activeDir === 'H' ? 'V' : 'H';
@@ -155,10 +180,10 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
       if (e.key === 'Tab') { e.preventDefault(); activeDir === 'H' ? nextWord('H') : nextWord('V'); return; }
     });
 
-    ki?.addEventListener('input', (e) => {
+    ki?.addEventListener('input', () => {
       if (activeR < 0) return;
-      const raw = e.target.value.replace(/\s/g, '');
-      e.target.value = '';
+      const raw = ki.value.replace(/\s/g, '');
+      ki.value = '';
       if (!raw) return;
       const char = raw.slice(-1).toUpperCase();
       if (/[A-ZÁÉÍÓÚÜÑ]/.test(char)) setLetter(char);
@@ -186,9 +211,11 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
 
   // ── Cell helpers ──────────────────────────────────────────────────────────
 
+  /** @param {number} r @param {number} c @returns {HTMLElement|null} */
   function cellEl(r, c) {
-    return document.querySelector(`#cw-grid [data-r="${r}"][data-c="${c}"]`);
+    return /** @type {HTMLElement|null} */ (document.querySelector(`#cw-grid [data-r="${r}"][data-c="${c}"]`));
   }
+  /** @param {number} r @param {number} c @returns {HTMLElement|null} */
   function letterEl(r, c) { return document.getElementById(`cwl-${r}-${c}`); }
 
   /** Regala la PRIMERA letra de cada palabra (modo «first»). Se pinta como una
@@ -203,12 +230,15 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     }
     updateProgress();
   }
+  /** @param {string} wid @returns {HTMLElement|null} */
   function clueEl(wid)    { return document.getElementById(`cwc-${wid}`); }
 
+  /** @param {number} r @param {number} c @returns {boolean} */
   function isWhite(r, c) {
     return r >= 0 && r < rows && c >= 0 && c < cols && !grid[r][c].blocked;
   }
 
+  /** @param {number} r @param {number} c @param {'H'|'V'} dir @returns {string|null} */
   function wordAtCell(r, c, dir) {
     const cell = grid[r]?.[c];
     if (!cell || cell.blocked) return null;
@@ -218,6 +248,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     }) ?? cell.wordIds[0] ?? null;
   }
 
+  /** @param {number} r @param {number} c @returns {void} */
   function selectCell(r, c) {
     if (!isWhite(r, c)) return;
     activeR = r; activeC = c;
@@ -232,8 +263,8 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
 
   function highlightActive() {
     // Clear all highlights
-    document.querySelectorAll(`${rootSel} .cw-white`).forEach(el => el.classList.remove('cw-active-word', 'cw-active-cell'));
-    document.querySelectorAll(`${rootSel} .cw-clue`).forEach(el => el.classList.remove('cw-clue-active'));
+    todos('.cw-white').forEach(el => el.classList.remove('cw-active-word', 'cw-active-cell'));
+    todos('.cw-clue').forEach(el => el.classList.remove('cw-clue-active'));
     if (activeR < 0) return;
 
     // Highlight all cells of active word
@@ -255,6 +286,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     cellEl(activeR, activeC)?.classList.add('cw-active-cell');
   }
 
+  /** @param {string} char @returns {void} */
   function setLetter(char) {
     if (!isWhite(activeR, activeC)) return;
     userGrid[activeR][activeC] = char;
@@ -330,6 +362,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     }
   }
 
+  /** @param {number} dr @param {number} dc @returns {void} */
   function move(dr, dc) {
     let r = activeR + dr, c = activeC + dc;
     while (r >= 0 && r < rows && c >= 0 && c < cols) {
@@ -338,6 +371,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     }
   }
 
+  /** @param {'H'|'V'} dir @returns {void} */
   function nextWord(dir) {
     const sorted = words.filter(w => w.dir === dir).sort((a,b) => wordNums[a.id] - wordNums[b.id]);
     const cur = sorted.findIndex(w => w.id === activeWordId);
@@ -347,6 +381,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
 
   // ── Word validation ──────────────────────────────────────────────────────
 
+  /** @param {string} wid @returns {boolean} */
   function checkWord(wid) {
     const w = words.find(x => x.id === wid);
     if (!w) return false;
@@ -363,6 +398,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     return true;
   }
 
+  /** @param {string} wid @param {'correct'|'wrong'|'none'} state @returns {void} */
   function markWord(wid, state) {
     const w = words.find(x => x.id === wid);
     if (!w) return;
@@ -433,7 +469,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
         cellEl(r, c)?.classList.remove('cw-correct-word', 'cw-wrong-word');
       }
     solvedIds.clear();
-    document.querySelectorAll(`${rootSel} .cw-clue`).forEach(el => el.classList.remove('cw-clue-solved','cw-clue-wrong'));
+    todos('.cw-clue').forEach(el => el.classList.remove('cw-clue-solved','cw-clue-wrong'));
     updateProgress();
   }
 
@@ -453,6 +489,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     // Puntúa con el MISMO scorer de la plantilla (una llamada por palabra
     // resuelta): sin aritmética propia en el player. El techo es, por
     // definición, lo que da ese scorer si se resuelven todas.
+    /** @param {CrosswordWord} w @returns {number} */
     const pts = (w) => scoreCrosswordSubmission({ value: w.word, item: w, activity }).points;
     const score = words.filter(w => solvedIds.has(w.id)).reduce((s, w) => s + pts(w), 0);
     const max = words.reduce((s, w) => s + pts(w), 0);

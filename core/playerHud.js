@@ -75,10 +75,10 @@ const chipHtml = (campo, texto) => {
  * estrenar un indicador a mitad de partida).
  *
  * @param {object}  [o]
- * @param {string} [o.pagina]        el "3 / 8"
- * @param {string} [o.racha]         el "3" (el 🔥 lo pone el chip)
- * @param {string} [o.extra]         el "Flips: 4"
- * @param {string} [o.tiempo]        el "12" (el icono lo pone el chip)
+ * @param {string|null} [o.pagina]        el "3 / 8"
+ * @param {string|null} [o.racha]         el "3" (el 🔥 lo pone el chip)
+ * @param {string|null} [o.extra]         el "Flips: 4"
+ * @param {string|null} [o.tiempo]        el "12" (el icono lo pone el chip)
  * @param {string} [o.herramientas]  HTML YA ESCAPADO de la plantilla: lápiz/
  *        borrador, Aa/Deshacer, Pista/Reiniciar. Solo lo que se TOCA — un
  *        indicador no va aquí, va por su nombre.

@@ -24,19 +24,27 @@ import { scanNormsSource, BROWSER_SCAN_FILES } from './normsCheck.js';
 import { checkAllSkins } from './skinContract.js';
 import { checkAllSkinContrast, checkAllBackgroundContrast } from './contrastCheck.js';
 
+/** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
+/** @typedef {import('../kernel/contracts/activity.js').QaItem} QaItem */
+/** @typedef {import('../kernel/contracts/activity.js').QaContent} QaContent */
+
 // ─── helpers ─────────────────────────────────────────────────────────────────
+/** @param {unknown} cond @param {string} msg */
 function assert(cond, msg) { if (!cond) throw new Error(msg); }
+/** @param {unknown} a @param {unknown} b @param {string} msg */
 function eq(a, b, msg) {
   if (a !== b) throw new Error(`${msg}: ${JSON.stringify(a)} ≠ ${JSON.stringify(b)}`);
 }
+/** @param {unknown} a @param {unknown} b @param {string} msg */
 function deepEq(a, b, msg) {
   if (JSON.stringify(a) !== JSON.stringify(b))
     throw new Error(`${msg}: ${JSON.stringify(a)} ≠ ${JSON.stringify(b)}`);
 }
 
 // Actividad quiz sintética (no toca storage) para las simulaciones.
+/** @returns {import('../kernel/contracts/activity.js').Activity<QaContent>} */
 function quizActivity() {
-  return {
+  return /** @type {import('../kernel/contracts/activity.js').Activity<QaContent>} */ ({
     id: 'selftest', template: 'quiz',
     scoring: { mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0 },
     live: { maxPlayers: 10, allowLateJoin: true, pointsModel: 'flat' },
@@ -45,9 +53,18 @@ function quizActivity() {
       { id: 'q2', question: '3×3',  answer: '9', options: ['6', '9', '12'],   points: 2 },
       { id: 'q3', question: '10-4', answer: '6', options: ['5', '6', '7'],    points: 1 },
     ] },
-  };
+  });
 }
-const wrongFor = (it) => it.options.find(o => o !== it.answer);
+/** @param {QaItem} it @returns {string|undefined} */
+const wrongFor = (it) => (it.options || []).find(o => o !== it.answer);
+
+// `mergeRemote` devuelve el mapa ancho (`object`): aquí se lee el título.
+/**
+ * @param {Record<string, object>} local
+ * @param {{id:string, data:object}[]} remote
+ * @returns {Record<string, {title?: string}>}
+ */
+const fusionar = (local, remote) => mergeRemote(local, remote, x => x);
 
 // ─── test cases ──────────────────────────────────────────────────────────────
 const TESTS = [
@@ -101,7 +118,7 @@ const TESTS = [
     const old = { id: 'v1act', template: 'quiz', items: [{ answer: 'x' }] };
     const a = migrate(old);
     eq(a.schemaVersion, 4, 'sube hasta v4');
-    assert(Array.isArray(a.content.items), 'content.items migrado');
+    assert(Array.isArray(/** @type {QaContent} */ (a.content).items), 'content.items migrado');
     assert(typeof a.live === 'object', 'live añadido');
   } },
 
@@ -116,7 +133,7 @@ const TESTS = [
   } },
   { group: 'TextMarks', name: 'scoreMarks: exacto / falta / extra', fn: () => {
     const p = { text: 'cancion', marks: [{ pos: 4, kind: 'tilde' }] };
-    const act = { scoring: { pointsPerCorrect: 1 } };
+    const act = /** @type {Activity} */ ({ scoring: { pointsPerCorrect: 1 } });
     const ok = scoreMarks([4], p, ['tilde'], act);
     assert(ok.correct && ok.points === 1, 'marca exacta → acierto');
     assert(!scoreMarks([], p, ['tilde'], act).correct, 'sin marcar → fallo');
@@ -127,46 +144,51 @@ const TESTS = [
   { group: 'StorageMerge', name: 'remote más nuevo gana', fn: () => {
     const local  = { a1: { id: 'a1', updatedAt: '2025-01-01' } };
     const remote = [{ id: 'a1', data: { id: 'a1', updatedAt: '2025-06-01', title: 'remoto' } }];
-    const m = mergeRemote(local, remote, x => x);
+    const m = fusionar(local, remote);
     eq(m.a1.title, 'remoto', 'remote más nuevo sobrescribe');
   } },
   { group: 'StorageMerge', name: 'local más nuevo gana', fn: () => {
     const local  = { a1: { id: 'a1', updatedAt: '2026-01-01', title: 'local' } };
     const remote = [{ id: 'a1', data: { id: 'a1', updatedAt: '2025-01-01' } }];
-    const m = mergeRemote(local, remote, x => x);
+    const m = fusionar(local, remote);
     eq(m.a1.title, 'local', 'local más nuevo no es sobreescrito');
   } },
   { group: 'StorageMerge', name: 'row remoto nuevo se añade', fn: () => {
+    /** @type {Record<string, object>} */
     const local  = {};
     const remote = [{ id: 'b1', data: { id: 'b1', title: 'nuevo' } }];
-    const m = mergeRemote(local, remote, x => x);
+    const m = fusionar(local, remote);
     eq(m.b1.title, 'nuevo', 'fila nueva de remote se incorpora');
   } },
 
   // ── routing.js ─────────────────────────────────────────────────────────────
   { group: 'Routing', name: 'compileRoute + matchRoute extraen params', fn: () => {
-    const toRoute = (p) => { const c = compileRoute(p); return { ...c, handler: () => p }; };
+    const toRoute = (/** @type {string} */ p) => { const c = compileRoute(p); return { ...c, handler: () => p }; };
     const routes = ['#/home', '#/edit/:id', '#/play/:id'].map(toRoute);
     const hit = matchRoute('#/edit/act_abc', routes);
     assert(hit !== null, 'encuentra la ruta');
-    eq(hit.params.id, 'act_abc', 'extrae :id correctamente');
+    eq(hit?.params.id, 'act_abc', 'extrae :id correctamente');
     assert(matchRoute('#/nope', routes) === null, 'ruta desconocida → null');
     assert(matchRoute('#/home', routes) !== null, 'ruta estática #/home');
   } },
 
   // ── events.js ──────────────────────────────────────────────────────────────
   { group: 'Events', name: 'emit/listen y unsubscribe limpio', fn: () => {
+    /** @type {number|null} */
     let received = null;
-    const off = listen('_selftest_bus', d => { received = d; });
+    const off = listen('_selftest_bus', d => {
+      received = (d && typeof d === 'object' && 'v' in d) ? Number(d.v) : null;
+    });
     emit('_selftest_bus', { v: 42 });
-    eq(received?.v, 42, 'listener recibe el detail');
+    eq(received, 42, 'listener recibe el detail');
     off();
     emit('_selftest_bus', { v: 99 });
-    eq(received?.v, 42, 'tras unsubscribe no recibe más');
+    eq(received, 42, 'tras unsubscribe no recibe más');
   } },
 
   // ── lifecycle.js ───────────────────────────────────────────────────────────
   { group: 'Lifecycle', name: 're-acquire dispone el batch anterior', fn: () => {
+    /** @type {string[]} */
     const log = [];
     const ctx = acquire('_selftest_lc1');
     ctx.add(() => log.push('disposed'));
@@ -174,6 +196,7 @@ const TESTS = [
     assert(log.includes('disposed'), 'disposer ejecutado al re-adquirir');
   } },
   { group: 'Lifecycle', name: 'un disposer que lanza no bloquea los demás', fn: () => {
+    /** @type {string[]} */
     const log = [];
     const ctx = acquire('_selftest_lc2');
     ctx.add(() => log.push('after'));
@@ -208,7 +231,7 @@ const TESTS = [
     const T = getTemplate('quiz');
     assert(T, 'quiz no registrado');
     const ids = modesForTemplate(T).map(m => m.id);
-    for (const need of ['solo', 'vs', 'teams', 'live', 'task'])
+    for (const need of /** @type {import('./modes.js').ModeId[]} */ (['solo', 'vs', 'teams', 'live', 'task']))
       assert(ids.includes(need), `quiz no ofrece ${need}`);
   } },
 
@@ -216,15 +239,17 @@ const TESTS = [
   { group: 'Panel', name: 'la matriz de capacidad es coherente', fn: () => {
     const caps = templateCapabilities();
     assert(caps.length > 0, 'matriz vacía');
-    const q = caps.find(c => c.name === 'quiz');
+    const T = getTemplate('quiz');
+    const q = caps.find(c => c.name === T?.meta?.name);
     assert(q?.modes.find(m => m.id === 'vs')?.supported, 'quiz debería soportar VS en la matriz');
   } },
 
   // ── Scorer ─────────────────────────────────────────────────────────────────
   { group: 'Scorer', name: 'quiz puntúa acierto y fallo correctamente', fn: () => {
     const it = { answer: '4', options: ['3', '4'], points: 1 };
-    const ok = scoreQuizSubmission({ value: '4', item: it, activity: { scoring: {} } });
-    const ko = scoreQuizSubmission({ value: '3', item: it, activity: { scoring: {} } });
+    const act = /** @type {Activity} */ ({ scoring: {} });
+    const ok = scoreQuizSubmission({ value: '4', item: it, activity: act });
+    const ko = scoreQuizSubmission({ value: '3', item: it, activity: act });
     assert(ok.correct === true && ok.points >= 1, 'acierto mal puntuado');
     assert(ko.correct === false, 'fallo mal puntuado');
   } },
@@ -233,8 +258,9 @@ const TESTS = [
   { group: 'VS', name: 'ambos lados completan; gana más puntos', fn: () => {
     const a = quizActivity();
     assert(isVsCompatible(a), 'quiz debe ser VS-compatible');
-    const items = sessionItems(a);
-    const s = createSession(a, { format: FORMATS.VS, left: 'Ana', right: 'Beto' });
+    const items = /** @type {QaItem[]} */ (sessionItems(a));
+    const s = /** @type {ReturnType<typeof import('../kernel/session/vsMachine.js').createVsSession>} */ (
+      createSession(a, { format: FORMATS.VS, left: 'Ana', right: 'Beto' }));
     s.start();
     let guard = 0;
     while (!s.standings().finished && guard++ < 50) {
@@ -253,11 +279,12 @@ const TESTS = [
   // ── En vivo ────────────────────────────────────────────────────────────────
   { group: 'En vivo', name: '3 alumnos virtuales — ranking final correcto', fn: () => {
     const a = quizActivity();
-    const items = sessionItems(a);
-    const room = createLiveRoom(a, { code: 'SELFT1' });
+    const items = /** @type {QaItem[]} */ (sessionItems(a));
+    const room = /** @type {ReturnType<typeof import('../kernel/session/liveMachine.js').createLiveSession>} */ (
+      createLiveRoom(a, { code: 'SELFT1' }));
     const studs = [
       { p: room.join('u-a', 'Ana'),  skill: () => true },
-      { p: room.join('u-b', 'Bea'),  skill: (i) => i === 0 },
+      { p: room.join('u-b', 'Bea'),  skill: (/** @type {number} */ i) => i === 0 },
       { p: room.join('u-c', 'Caro'), skill: () => false },
     ];
     room.dispatch('start');
@@ -289,6 +316,7 @@ const TESTS = [
     const templateFiles = listTemplates().flatMap(T =>
       ['template.js', 'player.js', 'editor.js'].map(f => `templates/${T.meta.name}/${f}`));
     const files = [...BROWSER_SCAN_FILES, ...templateFiles];
+    /** @type {{rule:string, path:string, line:number}[]} */
     const violations = [];
     await Promise.all(files.map(async (path) => {
       try {
@@ -324,17 +352,21 @@ const TESTS = [
 /**
  * Ejecuta los tests uno a uno. Por cada resultado llama a onResult si se
  * proporcionó (para streaming en vivo en la UI). Devuelve el array completo.
- * @param {(r:{group,name,pass,error?})=>void} [onResult]
+ * @typedef {{group:string, name:string, pass:boolean, error?:string}} SelfTestResult
+ * @param {(r:SelfTestResult, hechos:number, total:number)=>void} [onResult]
+ * @returns {Promise<SelfTestResult[]>}
  */
 export async function runSelfTests(onResult) {
+  /** @type {SelfTestResult[]} */
   const out = [];
   for (const t of TESTS) {
+    /** @type {SelfTestResult} */
     let r;
     try {
       await t.fn();
       r = { group: t.group, name: t.name, pass: true };
     } catch (e) {
-      r = { group: t.group, name: t.name, pass: false, error: e.message };
+      r = { group: t.group, name: t.name, pass: false, error: e instanceof Error ? e.message : String(e) };
     }
     out.push(r);
     onResult?.(r, out.length, TESTS.length);

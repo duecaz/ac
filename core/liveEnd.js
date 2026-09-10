@@ -27,9 +27,12 @@ export const DEFAULT_FIRST_N = 3;
 export const DEFAULT_MINUTES = 10;
 export const MAX_MINUTES = 90;
 
-/** Lee la política de la fila de la sala, con valores por defecto sanos. */
+/** Lee la política de la fila de la sala, con valores por defecto sanos.
+ *  @param {{end_policy?: string|null, end_n?: number|null, deadline?: string|null}|null|undefined} session
+ *  @returns {{policy: 'all'|'firstN'|'time', n: number, deadlineMs: number|null}} */
 export function endPolicyOf(session) {
-  const policy = END_POLICIES.includes(session?.end_policy) ? session.end_policy : DEFAULT_POLICY;
+  const pedida = String(session?.end_policy ?? '');
+  const policy = END_POLICIES.includes(pedida) ? /** @type {'all'|'firstN'|'time'} */ (pedida) : DEFAULT_POLICY;
   const nRaw = Number(session?.end_n);
   const n = Number.isFinite(nRaw) && nRaw >= 1 ? Math.round(nRaw) : DEFAULT_FIRST_N;
   const deadlineMs = session?.deadline ? Date.parse(String(session.deadline).replace(' ', 'T')) : NaN;
@@ -44,7 +47,9 @@ export function endPolicyOf(session) {
  * @param {number|null} o.deadlineMs para 'time'
  * @param {number} o.now        `clock.now()` — inyectado, nada de reloj propio
  * @param {number} o.players    jugadores en la sala
- * @param {number} o.finished   cuántos han terminado ya
+ * @param {number} [o.players]  jugadores en la sala
+ * @param {number} [o.finished] cuántos han terminado ya
+ * @returns {boolean}
  */
 export function shouldEnd({ policy, n, deadlineMs, now, players = 0, finished = 0 }) {
   if (policy === 'time') return !!deadlineMs && now >= deadlineMs;
@@ -59,6 +64,8 @@ export function shouldEnd({ policy, n, deadlineMs, now, players = 0, finished = 
  * Qué se le dice al alumno que YA terminó, en vez de un "esperando…" mudo.
  * Devuelve `{ text, showClock }`: si `showClock`, la vista pinta la cuenta
  * atrás con el instante de la sala (no con un contador propio).
+ * @param {{policy: 'all'|'firstN'|'time', n?: number, players?: number, finished?: number}} o
+ * @returns {{text: string, showClock: boolean}}
  */
 export function waitingInfo({ policy, n, players = 0, finished = 0 }) {
   if (policy === 'time') {
@@ -69,7 +76,7 @@ export function waitingInfo({ policy, n, players = 0, finished = 0 }) {
   const known = players > 0;
   if (policy === 'firstN') {
     if (!known) return { text: `Termina cuando acaben los ${n} primeros.`, showClock: false };
-    const left = Math.max(0, Math.min(n, players) - finished);
+    const left = Math.max(0, Math.min(n ?? DEFAULT_FIRST_N, players) - finished);
     return {
       text: left > 0
         ? `Termina cuando acaben ${left} ${left === 1 ? 'compañero más' : 'compañeros más'}.`

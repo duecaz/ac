@@ -15,27 +15,40 @@
 // donde corra CI; en la app nunca se pasa, que es lo que hace que cada uno vea
 // su hora.
 
-/** Convierte el sello de PB (o cualquier ISO) en Date; null si no se entiende. */
+/** Convierte el sello de PB (o cualquier ISO) en Date; null si no se entiende.
+ *  @param {string|Date|null|undefined} sello @returns {Date|null} */
 function aFecha(sello) {
   if (!sello) return null;
-  if (sello instanceof Date) return isNaN(sello) ? null : sello;
+  if (sello instanceof Date) return isNaN(sello.getTime()) ? null : sello;
   // El espacio de PB no es ISO válido en todos los navegadores: se normaliza.
   const d = new Date(String(sello).trim().replace(' ', 'T'));
-  return isNaN(d) ? null : d;
+  return isNaN(d.getTime()) ? null : d;
 }
 
+/**
+ * @param {Date} d
+ * @param {string} [timeZone]
+ * @param {Intl.DateTimeFormatOptions} [extra]
+ * @returns {string}
+ */
 const partes = (d, timeZone, extra) => new Intl.DateTimeFormat('es-ES', {
   day: '2-digit', month: '2-digit', year: 'numeric', ...(timeZone ? { timeZone } : {}), ...extra,
 }).format(d);
 
-/** `21/08/2026 18:50` en la zona de quien mira. Vacío si el sello no vale. */
+/** `21/08/2026 18:50` en la zona de quien mira. Vacío si el sello no vale.
+ *  @param {string|Date|null|undefined} sello
+ *  @param {{timeZone?: string}} [o]
+ *  @returns {string} */
 export function fechaHora(sello, { timeZone } = {}) {
   const d = aFecha(sello);
   if (!d) return '';
   return partes(d, timeZone, { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
-/** `21/08/2026` en la zona de quien mira. Vacío si el sello no vale. */
+/** `21/08/2026` en la zona de quien mira. Vacío si el sello no vale.
+ *  @param {string|Date|null|undefined} sello
+ *  @param {{timeZone?: string}} [o]
+ *  @returns {string} */
 export function fechaCorta(sello, { timeZone } = {}) {
   const d = aFecha(sello);
   if (!d) return '';

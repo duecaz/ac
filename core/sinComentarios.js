@@ -28,11 +28,15 @@
  *  @returns {string}    el mismo fuente con los comentarios en blanco */
 export function sinComentarios(src) {
   const s = String(src || '');
+  /** @type {string[]} */
   const out = [];
   const n = s.length;
   let i = 0;
+  /** @param {number} hasta */
   const copiar = (hasta) => { out.push(s.slice(i, hasta)); i = hasta; };
+  /** @param {number} hasta */
   const blanquear = (hasta) => { out.push(s.slice(i, hasta).replace(/[^\n]/g, ' ')); i = hasta; };
+  /** @param {string} q @returns {number} */
   const cerrarCadena = (q) => {
     // desde i (en la comilla de apertura) hasta la de cierre, respetando `\`
     let j = i + 1;

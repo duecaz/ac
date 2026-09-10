@@ -82,11 +82,11 @@ export function autoScore(T, { value, item, msTaken, activity, mode }) {
 // host pero crasheaba al alumno). El try/catch degrada igual en todos.
 /**
  * @param {PlantillaRegistrada|null|undefined} T
- * @param {SnapshotActivity} activity
+ * @param {SnapshotActivity|null|undefined} activity
  * @param {number} itemIndex
- * @param {RoundPayload|null} [fallback]
+ * @param {RoundPayload|import('../contracts/activity.js').SessionItem|null} [fallback]
  * @param {Partial<RoundContext> & Record<string, unknown>} [ctx]
- * @returns {RoundPayload|null}
+ * @returns {RoundPayload|import('../contracts/activity.js').SessionItem|null}
  */
 export function roundPayloadOf(T, activity, itemIndex, fallback = null, ctx = {}) {
   // Snapshot de sala SANEADO (§22-2): el alumno no tiene `content`, tiene los
@@ -94,6 +94,8 @@ export function roundPayloadOf(T, activity, itemIndex, fallback = null, ctx = {}
   // sobre una clave que ya no está (core/liveSnapshot.js).
   const pre = activity?.payloads;
   if (Array.isArray(pre)) return pre[itemIndex] ?? fallback;
-  try { return T?.getRoundPayload ? T.getRoundPayload(activity, { itemIndex, ...ctx }) : fallback; }
+  // Sin actividad no hay ronda que construir: se entrega el fallback en vez de
+  // llamar al payload con nada (lo que antes acababa en el catch de abajo).
+  try { return (T?.getRoundPayload && activity) ? T.getRoundPayload(activity, { itemIndex, ...ctx }) : fallback; }
   catch { return fallback; }
 }

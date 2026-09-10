@@ -16,12 +16,24 @@ const SAG = 16;   // px que "cuelga" la cuerda: se ve más natural (una leve ca�
 // frente a frente → mismos x) tiene bbox de ANCHO 0 → el filtro colapsaba a cero y
 // la cuerda ENTERA (halo + color) desaparecía. La sombra ahora es un trazo
 // desplazado (ver ropeHtml), que se pinta siempre, sea cual sea la orientación.
+/**
+ * @typedef {{x: number, y: number}} Punto
+ */
+
+/**
+ * @param {SVGElement} svg
+ * @returns {{layer: Element|null, filterId: null}}
+ */
 export function mountRopeLayer(svg) {
   svg.innerHTML = `<g class="ww-rope-layer"></g>`;
   return { layer: svg.querySelector('.ww-rope-layer'), filterId: null };
 }
 
 // Curva bezier entre dos puntos, con una leve caída ("sag") para un aire natural.
+/**
+ * @param {Punto} p1
+ * @param {Punto} p2
+ */
 function ropeCurve(p1, p2) {
   const mx = (p1.x + p2.x) / 2;
   return `M${p1.x},${p1.y} C${mx},${p1.y + SAG} ${mx},${p2.y + SAG} ${p2.x},${p2.y}`;
@@ -30,6 +42,11 @@ function ropeCurve(p1, p2) {
 // Una cuerda con su sombra + su color y sus dos remaches redondos. La SOMBRA es el
 // mismo trazo desplazado un pelín hacia abajo (NO un filtro): así se ve en CUALQUIER
 // orientación, incluida la vertical (frente a frente), donde el filtro colapsaba.
+/**
+ * @param {Punto} p1
+ * @param {Punto} p2
+ * @param {string} col
+ */
 export function ropeHtml(p1, p2, col) {
   const curve  = ropeCurve(p1, p2);
   const shadow = ropeCurve({ x: p1.x, y: p1.y + 2.5 }, { x: p2.x, y: p2.y + 2.5 });
@@ -40,6 +57,12 @@ export function ropeHtml(p1, p2, col) {
 }
 
 // Línea fantasma (punteada) mientras el dedo arrastra, del ancla al puntero.
+/**
+ * @param {number} x1
+ * @param {number} y1
+ * @param {number} cx
+ * @param {number} cy
+ */
 export function ghostHtml(x1, y1, cx, cy) {
   const mx = (x1 + cx) / 2;
   return `<circle cx="${x1}" cy="${y1}" r="10" fill="#6366f1" opacity=".6"/>`
@@ -47,12 +70,42 @@ export function ghostHtml(x1, y1, cx, cy) {
 }
 
 // Centro de un elemento en coordenadas del SVG.
+/**
+ * @param {Element} el
+ * @param {Element} svg
+ * @returns {Punto}
+ */
 export function dotPos(el, svg) {
   const er = el.getBoundingClientRect(), sr = svg.getBoundingClientRect();
   return { x: (er.left + er.right) / 2 - sr.left, y: (er.top + er.bottom) / 2 - sr.top };
 }
 // Punto de cliente (clientX/Y) en coordenadas del SVG.
+/**
+ * @param {Element} svg
+ * @param {number} cx
+ * @param {number} cy
+ * @returns {Punto}
+ */
 export function svgPt(svg, cx, cy) {
   const sr = svg.getBoundingClientRect();
   return { x: cx - sr.left, y: cy - sr.top };
+}
+
+/** PUNTUAR LOS ENLACES con el scorer de la plantilla — un solo dueño del conteo
+ *  (Diagrama y Emparejar lo tenían calcado). El modo Individual no lleva
+ *  aritmética propia: cada enlace pasa por `puntuar`, que es `scoreSubmission`
+ *  envuelto; aquí solo se suma y se acota.
+ * @template L, R
+ * @param {Map<L, R>} links
+ * @param {(l: L, r: R) => import('../kernel/contracts/session.js').ScoreResult} puntuar
+ * @returns {{correct: number, score: number, wrong: number}}
+ */
+export function puntuarEnlaces(links, puntuar) {
+  let correct = 0, score = 0;
+  for (const [l, r] of links) {
+    const res = puntuar(l, r);
+    score += res.points;
+    if (res.correct) correct++;
+  }
+  return { correct, score: Math.max(0, score), wrong: links.size - correct };
 }

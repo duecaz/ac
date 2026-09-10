@@ -6,7 +6,13 @@ import { buildGrid, autoLayout } from './generator.js';
 import { palabraColocada, palabraJugable } from '../../core/contentModels/words.js';
 import { escapeHtml } from '../../core/html.js';
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').CrosswordContent} CrosswordContent
+ * @typedef {import('../../kernel/contracts/activity.js').WordsContent} WordsContent
+ */
+
 export class CrosswordTemplate extends BaseTemplate {
+  /** @type {import('../../kernel/contracts/template.js').TemplateMeta<CrosswordContent>} */
   static meta = {
     name:            'crossword',
     label:           'Crucigrama',
@@ -57,12 +63,19 @@ export class CrosswordTemplate extends BaseTemplate {
   // escrito por la IA, que trae `{word, clue}` pero no puede saber dónde va cada
   // una — y la versión anterior se daba por satisfecha en cuanto veía objetos.
   // Ahora la vara es la que usa el juego: si ALGUNA no está colocada, se coloca.
+  /**
+   * @param {import('../../kernel/contracts/activity.js').ActivityContent} content
+   * @param {string} [_desde]
+   * @param {Record<string, unknown>} [opts]
+   * @returns {WordsContent}
+   */
   static adoptContent(content, _desde, opts = {}) {
-    const ws = content?.words || [];
+    const c = /** @type {WordsContent} */ (content);
+    const ws = c?.words || [];
     // Se comprueba ANTES de construir nada: esto se llama una vez por cada
     // destino convertible al pintar la página de jugar, y ahí ya se midió un
     // parón de un segundo. El caso corriente —todo colocado— sale sin asignar.
-    if (!ws.length || ws.every(palabraColocada)) return content;
+    if (!ws.length || ws.every(palabraColocada)) return c;
     // Y NO SE REHACE UN TABLERO YA COLOCADO. `autoLayout` recoloca TODO y
     // renumera: si el profe puso sus palabras a mano y luego añade una, rehacer
     // la rejilla le cambia lo suyo sin pedirle permiso (§24 · el contenido es
@@ -71,16 +84,26 @@ export class CrosswordTemplate extends BaseTemplate {
     const defs = ws.map(w => (w && typeof w === 'object'
       ? { ...w, word: String(w.word || ''), clue: String(w.clue || '') }
       : { word: String(w), clue: '' }));
-    if (opts.soloForma || ws.some(palabraColocada)) return { ...content, words: defs };
-    return { ...content, words: autoLayout(defs) };
+    // Las fichas SIN colocar (las que llegan de la Sopa o de la IA) son palabras
+    // legítimas del modelo `words` —es justo lo que `palabraColocada` existe para
+    // distinguir— pero `CrosswordWord` declara el sitio como obligatorio, así que
+    // aquí se dice que son fichas del crucigrama; colocarlas es el paso siguiente.
+    const fichas = /** @type {Array<string|import('../../kernel/contracts/activity.js').CrosswordWord>} */ (defs);
+    if (opts.soloForma || ws.some(palabraColocada)) return { ...c, words: fichas };
+    return { ...c, words: autoLayout(defs) };
   }
 
   // ANSWER-SAFETY (R5): el payload de ronda lleva la FORMA del crucigrama
   // (posición, dirección, longitud, pista) pero NUNCA las letras — `word` ES la
   // respuesta. Hoy es solo-only y nadie lo consume en vivo, pero el contrato de
   // getRoundPayload es "apto para enviarse a un alumno" SIEMPRE.
+  /**
+   * @param {import('../../kernel/contracts/activity.js').Activity} activity
+   * @returns {import('../../kernel/contracts/session.js').RoundPayload}
+   */
   static getRoundPayload(activity) {
-    const words = (activity.content?.words || [])
+    const contenido = /** @type {CrosswordContent} */ (activity.content);
+    const words = (contenido?.words || [])
       .filter(palabraJugable)
       .map(w => ({ id: w.id, clue: w.clue, row: w.row, col: w.col, dir: w.dir, len: String(w.word).length }));
     return { words };
@@ -89,6 +112,7 @@ export class CrosswordTemplate extends BaseTemplate {
 }
 
 // Cruz decorativa fija para un crucigrama vacío/nuevo.
+/** @param {import('../../kernel/contracts/activity.js').Activity} act @returns {string} */
 function crosswordPlaceholderHtml(act) {
   const B = null;
   const pattern = [

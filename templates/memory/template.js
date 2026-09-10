@@ -8,7 +8,25 @@ import { scoreMemorySubmission } from './scorer.js';
 import { newPair } from '../../core/contentModels/pairs.js';
 import { escapeHtml } from '../../core/html.js';
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/activity.js').PairsContent} PairsContent
+ */
+
+/**
+ * Los `rules` que declara ESTA plantilla (`defaultRules`), y de los que es
+ * dueña: `ActivityRules` solo describe los cuatro comunes.
+ * @typedef {Object} MemoryRules
+ * @property {number} [timer]
+ * @property {number} [revealMs]
+ * @property {number} [columns]
+ */
+
+/** @param {Activity} activity @returns {MemoryRules} */
+export const memoryRules = (activity) => /** @type {MemoryRules} */ (activity.rules || {});
+
 export class MemoryTemplate extends BaseTemplate {
+  /** @type {import('../../kernel/contracts/template.js').TemplateMeta<PairsContent>} */
   static meta = {
     name: 'memory',
     label: 'Memoria',

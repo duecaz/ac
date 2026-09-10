@@ -29,6 +29,16 @@ import { getTemplate } from './registry.js';
 import { escapeHtml } from './html.js';
 import { END_POLICIES, DEFAULT_FIRST_N, DEFAULT_MINUTES, MAX_MINUTES } from './liveEnd.js';
 
+/** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
+/** @typedef {{onChange: (a: Activity) => void}} CtxEditor */
+
+// El delegador (`core/events.js`) entrega el elemento que casó: se lee de AHÍ,
+// no de `e.target` (que puede ser un hijo del control).
+/** @param {HTMLElement} el @returns {string} */
+const valor = (el) => /** @type {HTMLInputElement} */ (el).value;
+/** @param {HTMLElement} el @returns {boolean} */
+const marcado = (el) => /** @type {HTMLInputElement} */ (el).checked;
+
 // ── Puntuación ─────────────────────────────────────────────────────────────
 /** CÓMO LLAMA CADA PLANTILLA A SU UNIDAD: «Puntos por par», «por palabra», «por
  *  frase». Lo declara la plantilla (`meta.editor.elemento`) y ya lo usaban las
@@ -39,6 +49,7 @@ import { END_POLICIES, DEFAULT_FIRST_N, DEFAULT_MINUTES, MAX_MINUTES } from './l
  *  «por par» y «por palabra». Duplicar la casilla para cambiarle el rótulo salía
  *  caro —dos mandos para el mismo dato, y solo uno recalculaba el máximo de la
  *  actividad—; pedirle la palabra a la plantilla no cuesta nada. */
+/** @param {Activity|null|undefined} a */
 function unidadDe(a) {
   return getTemplate(a?.template)?.meta?.editor?.elemento || 'acierto';
 }
@@ -48,6 +59,11 @@ function unidadDe(a) {
 // aplicaba a ninguna de las dos, y cada una recortaba el panel a mano con la
 // MISMA forma (barrido B5, 2026-09-02) — una tenía además la etiqueta fija en
 // «acierto» en vez de leer `meta.editor.elemento` como ya hacía la otra.
+/**
+ * @param {Activity} a
+ * @param {{conModo?: boolean}} [opts]
+ * @returns {string}
+ */
 export function scoringPanelHtml(a, { conModo = true } = {}) {
   const s = a.scoring || {};
   return `<div class="row g-3">
@@ -67,6 +83,7 @@ export function scoringPanelHtml(a, { conModo = true } = {}) {
   </div>`;
 }
 
+/** @param {Activity} a @returns {string} */
 function resumenPuntosHtml(a) {
   const n = activityItemCount(a);
   const max = defaultMaxScore(a, n);
@@ -78,17 +95,26 @@ function resumenPuntosHtml(a) {
     + (porVelocidad ? ' <i>(además se suma un bonus por responder rápido)</i>.' : '.');
 }
 
+/**
+ * @param {Element} root
+ * @param {Activity} a
+ * @param {CtxEditor} ctx
+ */
 export function wireScoringPanel(root, a, ctx) {
   const refrescar = () => {
     const el = root.querySelector('#f-resumen-pts');
     if (el) el.innerHTML = resumenPuntosHtml(a);
   };
-  on(root, 'change', '#f-mode', e => { a.scoring.mode = e.target.value; ctx.onChange(a); refrescar(); });
-  on(root, 'input', '#f-ppc', e => { a.scoring.pointsPerCorrect = +e.target.value || 1; ctx.onChange(a); refrescar(); });
-  on(root, 'input', '#f-ppw', e => { a.scoring.pointsPerWrong = +e.target.value || 0; ctx.onChange(a); refrescar(); });
+  on(root, 'change', '#f-mode', (_, el) => {
+    a.scoring.mode = valor(el) === 'velocidad' ? 'velocidad' : 'flat';
+    ctx.onChange(a); refrescar();
+  });
+  on(root, 'input', '#f-ppc', (_, el) => { a.scoring.pointsPerCorrect = +valor(el) || 1; ctx.onChange(a); refrescar(); });
+  on(root, 'input', '#f-ppw', (_, el) => { a.scoring.pointsPerWrong = +valor(el) || 0; ctx.onChange(a); refrescar(); });
 }
 
 // ── En vivo ────────────────────────────────────────────────────────────────
+/** @param {Activity} a @returns {string} */
 export function livePanelHtml(a) {
   const l = a.live || {};
   return `<div class="row g-3">
@@ -148,31 +174,50 @@ export function livePanelHtml(a) {
   </div>`;
 }
 
+/**
+ * @param {Element} root
+ * @param {Activity} a
+ * @param {CtxEditor} ctx
+ */
 export function wireLivePanel(root, a, ctx) {
   const oc = ctx.onChange;
-  on(root, 'change', '#l-advance', e => { a.live.advanceMode = e.target.value; oc(a); });
-  on(root, 'input', '#l-qtimer', e => { a.live.questionTimer = +e.target.value || 20; oc(a); });
-  on(root, 'input', '#l-read', e => { a.live.readSeconds = Math.max(0, Math.min(30, Math.round(+e.target.value || 0))); oc(a); });
-  on(root, 'change', '#l-lock', e => { a.live.lockAnswersOn = e.target.value; oc(a); });
-  on(root, 'change', '#l-points', e => { a.live.pointsModel = e.target.value; oc(a); });
-  on(root, 'input', '#l-bonus', e => { a.live.speedBonusMax = +e.target.value || 0; oc(a); });
-  on(root, 'input', '#l-max', e => { a.live.maxPlayers = +e.target.value || 60; oc(a); });
-  on(root, 'change', '#l-late', e => { a.live.allowLateJoin = e.target.checked; oc(a); });
-  on(root, 'change', '#l-after', e => { a.live.showAnswerAfterEach = e.target.checked; oc(a); });
-  on(root, 'change', '#l-lb', e => { a.live.showLeaderboardBetween = e.target.checked; oc(a); });
-  on(root, 'change', '#l-nick', e => { a.live.nicknameFilter = e.target.checked; oc(a); });
+  on(root, 'change', '#l-advance', (_, el) => {
+    const v = valor(el);
+    a.live.advanceMode = (v === 'autoOnAllAnswered' || v === 'autoOnTimer') ? v : 'manual';
+    oc(a);
+  });
+  on(root, 'input', '#l-qtimer', (_, el) => { a.live.questionTimer = +valor(el) || 20; oc(a); });
+  on(root, 'input', '#l-read', (_, el) => { a.live.readSeconds = Math.max(0, Math.min(30, Math.round(+valor(el) || 0))); oc(a); });
+  on(root, 'change', '#l-lock', (_, el) => {
+    const v = valor(el);
+    a.live.lockAnswersOn = (v === 'timer' || v === 'allAnswered') ? v : 'firstOf';
+    oc(a);
+  });
+  on(root, 'change', '#l-points', (_, el) => {
+    a.live.pointsModel = valor(el) === 'flat' ? 'flat' : 'velocidad';
+    oc(a);
+  });
+  on(root, 'input', '#l-bonus', (_, el) => { a.live.speedBonusMax = +valor(el) || 0; oc(a); });
+  on(root, 'input', '#l-max', (_, el) => { a.live.maxPlayers = +valor(el) || 60; oc(a); });
+  on(root, 'change', '#l-late', (_, el) => { a.live.allowLateJoin = marcado(el); oc(a); });
+  on(root, 'change', '#l-after', (_, el) => { a.live.showAnswerAfterEach = marcado(el); oc(a); });
+  on(root, 'change', '#l-lb', (_, el) => { a.live.showLeaderboardBetween = marcado(el); oc(a); });
+  on(root, 'change', '#l-nick', (_, el) => { a.live.nicknameFilter = marcado(el); oc(a); });
   // Fin de la carrera: el select cambia POCO (no es tecleo), así que puede
   // repintar sin susto — pero se hace EN SITIO (mostrar/ocultar), nunca con el
   // repintado completo del editor, que perdería la pestaña abierta igual que
   // haría un `input`.
-  on(root, 'change', '#l-end', e => {
-    a.live.endPolicy = END_POLICIES.includes(e.target.value) ? e.target.value : 'all';
+  on(root, 'change', '#l-end', (_, el) => {
+    const v = valor(el);
+    // La lista de políticas la declara su dueño (`core/liveEnd.js`): aquí se
+    // comprueba contra ella, no contra una copia.
+    a.live.endPolicy = END_POLICIES.includes(v) ? /** @type {'all'|'firstN'|'time'} */ (v) : 'all';
     oc(a);
-    const nWrap = root.querySelector('#l-end-n-wrap');
-    const minWrap = root.querySelector('#l-end-min-wrap');
+    const nWrap = /** @type {HTMLElement|null} */ (root.querySelector('#l-end-n-wrap'));
+    const minWrap = /** @type {HTMLElement|null} */ (root.querySelector('#l-end-min-wrap'));
     if (nWrap) nWrap.hidden = a.live.endPolicy !== 'firstN';
     if (minWrap) minWrap.hidden = a.live.endPolicy !== 'time';
   });
-  on(root, 'input', '#l-end-n', e => { a.live.endN = Math.max(1, Math.min(60, Math.round(+e.target.value || DEFAULT_FIRST_N))); oc(a); });
-  on(root, 'input', '#l-end-min', e => { a.live.endMinutes = Math.max(1, Math.min(MAX_MINUTES, Math.round(+e.target.value || DEFAULT_MINUTES))); oc(a); });
+  on(root, 'input', '#l-end-n', (_, el) => { a.live.endN = Math.max(1, Math.min(60, Math.round(+valor(el) || DEFAULT_FIRST_N))); oc(a); });
+  on(root, 'input', '#l-end-min', (_, el) => { a.live.endMinutes = Math.max(1, Math.min(MAX_MINUTES, Math.round(+valor(el) || DEFAULT_MINUTES))); oc(a); });
 }

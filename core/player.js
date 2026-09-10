@@ -9,6 +9,11 @@ import { getTemplate } from './registry.js';
 import { applyScene } from './presentation.js';
 import { acquire } from './lifecycle.js';
 
+/**
+ * @param {string|Element} rootSel
+ * @param {import('../kernel/contracts/activity.js').Activity} activity
+ * @param {import('../kernel/contracts/template.js').PlayerOpts & {skipChrome?: boolean}} [opts]
+ */
 export async function runPlayer(rootSel, activity, opts = {}) {
   const T = getTemplate(activity.template);
   if (!T) throw new Error(`Plantilla desconocida: ${activity.template}`);

@@ -8,6 +8,16 @@ import { getClassroomToken } from './classroomAuth.js';
 
 const API = 'https://classroom.googleapis.com/v1';
 
+/** La respuesta de la API de Google es FRONTERA: se lee estrechando lo que hace
+ *  falta, nunca se declara entera.
+ *  @typedef {Record<string, unknown>} RespuestaGoogle */
+
+/**
+ * @param {string} path
+ * @param {RequestInit} [opts]
+ * @param {{retryConsent?: boolean}} [o]
+ * @returns {Promise<RespuestaGoogle>}
+ */
 async function gapi(path, opts = {}, { retryConsent = true } = {}) {
   const token = await getClassroomToken();
   const r = await fetch(`${API}${path}`, {
@@ -18,9 +28,12 @@ async function gapi(path, opts = {}, { retryConsent = true } = {}) {
       ...(opts.headers || {}),
     },
   });
+  /** @type {RespuestaGoogle} */
   const data = await r.json().catch(() => ({}));
   if (!r.ok) {
-    const msg = data?.error?.message || `Error ${r.status}`;
+    const err = data?.error;
+    const msg = (err && typeof err === 'object' && 'message' in err ? String(err.message) : '')
+      || `Error ${r.status}`;
     // 401/403 por scopes: el token cacheado no vale (permisos revocados o cambió el
     // set de scopes). Se fuerza el consentimiento UNA vez y se reintenta.
     if ((r.status === 401 || r.status === 403) && retryConsent) {
@@ -36,11 +49,19 @@ async function gapi(path, opts = {}, { retryConsent = true } = {}) {
 // filtra por lo que el token puede ver; pedimos solo ACTIVE.
 export async function listCourses() {
   const data = await gapi('/courses?courseStates=ACTIVE&pageSize=100&teacherId=me');
-  return (data.courses || []).map(c => ({ id: c.id, name: c.name, section: c.section || '' }));
+  const cursos = Array.isArray(data.courses) ? data.courses : [];
+  return cursos.map((/** @type {{id?: unknown, name?: unknown, section?: unknown}} */ c) =>
+    ({ id: String(c.id ?? ''), name: String(c.name ?? ''), section: String(c.section ?? '') }));
 }
 
 // Crea una tarea (courseWork) con un enlace a la actividad. dueAt opcional (ISO).
+/**
+ * @param {string} courseId
+ * @param {{title?: string, description?: string, link?: string, dueAt?: string|null}} [o]
+ * @returns {Promise<{id: string, link: string|null}>}
+ */
 export async function createCourseworkLink(courseId, { title, description, link, dueAt } = {}) {
+  /** @type {Record<string, unknown>} */
   const body = {
     title: title || 'Actividad de AulaReto',
     description: description || 'Abre el enlace para hacer la actividad.',
@@ -51,11 +72,11 @@ export async function createCourseworkLink(courseId, { title, description, link,
   // Classroom quiere la fecha partida en dueDate (UTC) + dueTime.
   if (dueAt) {
     const d = new Date(dueAt);
-    if (!isNaN(d)) {
+    if (!isNaN(d.getTime())) {
       body.dueDate = { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() };
       body.dueTime = { hours: d.getUTCHours(), minutes: d.getUTCMinutes() };
     }
   }
   const data = await gapi(`/courses/${courseId}/courseWork`, { method: 'POST', body: JSON.stringify(body) });
-  return { id: data.id, link: data.alternateLink || null };
+  return { id: String(data.id ?? ''), link: data.alternateLink ? String(data.alternateLink) : null };
 }

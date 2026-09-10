@@ -9,12 +9,25 @@ import { listLevels } from './game/levels.js';
 // The board is FROZEN here in the editor so every student in a live room sees
 // the identical layout (fair). "Generar nuevo tablero" reshuffles it.
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../../kernel/contracts/activity.js').BallsortContent} BallsortContent
+ * @typedef {import('../../kernel/contracts/activity.js').BallsortBoard} BallsortBoard
+ * @typedef {import('../../core/editorShell.js').EditorCtx} EditorCtx
+ */
+
+/** El contenido de ESTA actividad es el tablero generado (modelo `ballsort`).
+ * @param {Activity} a @returns {BallsortContent} */
+export const bsContent = (a) => /** @type {BallsortContent} */ (a.content);
+
+/** @param {string} level @param {boolean} random @returns {BallsortBoard} */
 function freshBoard(level, random) {
   return random ? randomBoard(level) : createBoard(level);
 }
 
+/** @param {Activity} a @returns {Activity} */
 export function ensureContent(a) {
-  const c = a.content || (a.content = {});
+  const c = /** @type {BallsortContent} */ (a.content || (a.content = /** @type {BallsortContent} */ ({})));
   if (!c.level) c.level = 'classic';
   if (!c.mode) c.mode = 'moves';
   if (c.random == null) c.random = true;
@@ -26,11 +39,17 @@ export function ensureContent(a) {
   return a;
 }
 
+/**
+ * @param {Element} root
+ * @param {Activity} activity
+ * @param {(activity: Activity) => void} onChange
+ */
 export const renderBallsortEditor = (root, activity, onChange) =>
   renderEditorJuego(root, activity, onChange, { asegurar: ensureContent, etiqueta: 'Tablero', html: contentHtml, wire: wireContent });
 
+/** @param {Activity} a */
 function contentHtml(a) {
-  const c = a.content;
+  const c = bsContent(a);
   const levels = listLevels();
   return `
     <p class="small text-muted">Ordena las pelotas: mueve la de arriba de un tubo a otro hasta que cada tubo tenga un solo color. En vivo (modo <b>Carrera libre</b>) cada alumno resuelve el <b>mismo</b> tablero y el profesor ve los tableros en directo; gana quien resuelve con menos ${c.mode === 'time' ? 'tiempo' : 'movimientos'}.</p>
@@ -59,20 +78,35 @@ function contentHtml(a) {
     <div class="ww-bs"><div id="bs-preview" class="tubes"></div></div>`;
 }
 
+/** @param {Element} root @param {Activity} a */
 function paintPreview(root, a) {
-  const el = root.querySelector('#bs-preview');
-  if (el) renderTubes(el, a.content.items[0].board, { interactive: false });
+  const el = /** @type {HTMLElement|null} */ (root.querySelector('#bs-preview'));
+  if (el) renderTubes(el, bsContent(a).items[0].board, { interactive: false });
 }
 
+/** @param {Activity} a */
 function regen(a) {
-  const c = a.content;
+  const c = bsContent(a);
   c.items = [{ id: 'bs1', board: freshBoard(c.level, c.random), mode: c.mode }];
 }
 
+/** @param {HTMLElement} el @returns {string} */
+const valorDe = (el) => /** @type {HTMLSelectElement} */ (el).value;
+
+/** @param {Element} root @param {Activity} a @param {EditorCtx} ctx */
 function wireContent(root, a, ctx) {
+  const c = bsContent(a);
   paintPreview(root, a);
-  on(root, 'change', '.bs-level', (e) => { a.content.level = e.target.value; regen(a); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'change', '.bs-mode', (e) => { a.content.mode = e.target.value; a.content.items[0].mode = e.target.value; ctx.onChange(a); ctx.repaint(); });
-  on(root, 'change', '.bs-random', (e) => { a.content.random = e.target.checked; regen(a); ctx.onChange(a); ctx.repaint(); });
+  on(root, 'change', '.bs-level', (_e, el) => { c.level = valorDe(el); regen(a); ctx.onChange(a); ctx.repaint(); });
+  on(root, 'change', '.bs-mode', (_e, el) => {
+    const v = /** @type {'moves'|'time'} */ (valorDe(el));
+    c.mode = v; c.items[0].mode = v;
+    ctx.onChange(a); ctx.repaint();
+  });
+  on(root, 'change', '.bs-random', (_e, el) => {
+    c.random = /** @type {HTMLInputElement} */ (el).checked;
+    regen(a); ctx.onChange(a); ctx.repaint();
+  });
   on(root, 'click', '.bs-shuffle', () => { regen(a); ctx.onChange(a); ctx.repaint(); });
 }
+

@@ -4,6 +4,10 @@
 // `value` es el array de posiciones de carácter que marcó el alumno.
 import { scoreMarksPerHit } from '../../core/textMarks.js';
 
+/**
+ * @param {import('../../kernel/contracts/session.js').ScoreInput} input
+ * @returns {import('../../kernel/contracts/session.js').ScoreResult}
+ */
 export function scoreTildesSubmission({ value, item, activity }) {
   return scoreMarksPerHit(value, item, ['tilde'], activity);
 }

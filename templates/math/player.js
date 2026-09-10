@@ -9,15 +9,27 @@ import { runSequentialPlayer } from '../../core/soloPlayer.js';
 import { clock } from '../../core/clock.js';
 import { cabeceraHtml } from '../../core/playerHud.js';
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').QaItem} QaItem
+ */
+
+/**
+ * @param {string|Element} rootSel
+ * @param {import('../../kernel/contracts/activity.js').Activity} activity
+ * @param {import('../../kernel/contracts/template.js').PlayerOpts} [opts]
+ * @returns {Promise<void>}
+ */
 export async function renderMathPlayer(rootSel, activity, opts = {}) {
-  runSequentialPlayer(rootSel, activity, opts, {
-    renderItem({ rootSel, activity, item, idx, total, score, submit }) {
+  /** @type {import('../../core/soloPlayer.js').SequentialCallbacks<QaItem>} */
+  const callbacks = {
+    renderItem({ rootSel, activity, item, idx, total, submit }) {
       mount(rootSel, html`
         <div class="ww-player ww-math">
           ${cabeceraHtml({ pagina: `${idx + 1} / ${total}` })}
           <div id="ww-math-round" class="ww-math-round"></div>
         </div>`);
       const roundEl = document.getElementById('ww-math-round');
+      if (!roundEl) return;
       const t0 = clock.now();
       renderKeypadRound(roundEl, { question: item.question }, { onSubmit: (value) => {
         const r = scoreMathSubmission({ value, item, activity });
@@ -31,5 +43,6 @@ export async function renderMathPlayer(rootSel, activity, opts = {}) {
         submit({ itemId: item.id, value, correct: r.correct, points: r.points, msTaken: clock.now() - t0 });
       } });
     },
-  });
+  };
+  runSequentialPlayer(rootSel, activity, opts, callbacks);
 }

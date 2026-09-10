@@ -22,13 +22,33 @@ import { rid } from './ids.js';
 
 const KEY = 'ww.attemptQueue';
 
+/**
+ * UN intento pendiente de entregar. Lo guardado es FRONTERA: se relee
+ * estrechando (`esIntento`), y sin `qid` no hay idempotencia posible, así que una
+ * entrada sin él no se reintenta.
+ * @typedef {Object} IntentoPendiente
+ * @property {string} assignmentId
+ * @property {string} activityId
+ * @property {string} playerName
+ * @property {number} score
+ * @property {number} maxScore
+ * @property {number} timeUsed
+ * @property {unknown[]} answers
+ * @property {string} qid
+ * @property {number} [ts]
+ */
+
+/** @param {unknown} x @returns {x is IntentoPendiente} */
+const esIntento = (x) => !!x && typeof x === 'object' && 'qid' in x && 'assignmentId' in x;
+
+/** @param {IntentoPendiente} it */
 const send = (it) => transportRecord(
   it.assignmentId, it.activityId, it.playerName,
   it.score, it.maxScore, it.timeUsed, it.answers, it.qid
 );
 
 const queue = createOfflineQueue({
-  load: () => lsGetJsonArray(KEY),
+  load: () => lsGetJsonArray(KEY).filter(esIntento),
   save: (q) => lsSet(KEY, JSON.stringify(q)),
   send,
   idOf: (it) => it.qid,
@@ -36,7 +56,9 @@ const queue = createOfflineQueue({
 
 /**
  * Entrega un intento de tarea, con cola offline y reintento idempotente.
- * @returns {{queued:boolean, rejected?:boolean, error?:string}}
+ * @param {{assignmentId: string, activityId: string, playerName: string, score: number,
+ *   maxScore: number, timeUsed: number, answers?: unknown[]}} intento
+ * @returns {Promise<{queued:boolean, rejected?:boolean, error?:string}>}
  *   queued=false → entregado · queued=true → guardado sin red, se reenviará ·
  *   rejected=true → el SERVIDOR lo rechazó (tope/cerrada): no se reintenta.
  */
@@ -48,11 +70,17 @@ export async function submitAttempt({ assignmentId, activityId, playerName, scor
     await send(item);
     return { queued: false };
   } catch (e) {
-    if (e?.status === 403) return { queued: false, rejected: true, error: e.message };
+    if (estadoDe(e) === 403) return { queued: false, rejected: true, error: motivo(e) };
     queue.enqueue(item);
-    return { queued: true, error: e.message };
+    return { queued: true, error: motivo(e) };
   }
 }
+
+/** El código HTTP del fallo, si el transporte lo trae (frontera: es de la red).
+ *  @param {unknown} e @returns {number|null} */
+const estadoDe = (e) => (e && typeof e === 'object' && 'status' in e ? Number(e.status) : null);
+/** @param {unknown} e @returns {string} */
+const motivo = (e) => (e instanceof Error ? e.message : String(e));
 
 export const flushAttempts = () => queue.flush();
 

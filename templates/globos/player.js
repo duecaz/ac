@@ -15,6 +15,11 @@ import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
 // los skins recolorean). El bamboleo va por CSS y se apaga bajo ww-lite.
 // Offsets de altura por índice (pseudo-aleatorio ESTABLE, sin Math.random:
 // mismo layout en cada repintado del mismo ítem).
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').QaItem} QaItem
+ */
+
+/** @param {unknown[]} options @returns {string} */
 export function balloonFieldHtml(options) {
   return `<div class="edu-sec edu-sec--tablero gl-field">
     ${options.map((o, i) => `
@@ -26,20 +31,39 @@ export function balloonFieldHtml(options) {
 }
 
 // Cablea el campo: un toque = una elección (idempotente). onPick(value, btn).
+/**
+ * @typedef {Object} BalloonHandlers
+ * @property {(value: string|undefined, btn: HTMLButtonElement) => void} [onPick]
+ */
+
+/**
+ * @param {Element} root
+ * @param {BalloonHandlers} [handlers]
+ * @returns {void}
+ */
 export function wireBalloonField(root, { onPick } = {}) {
   let picked = false;
   root.querySelector('.gl-field')?.addEventListener('click', (e) => {
-    const btn = e.target.closest('.gl-balloon');
+    // `target` es FRONTERA (el DOM): se estrecha por forma, no con `instanceof`.
+    const t = /** @type {{closest?: (sel: string) => Element|null}|null} */ (e.target);
+    const btn = /** @type {HTMLButtonElement|null} */ (typeof t?.closest === 'function' ? t.closest('.gl-balloon') : null);
     if (!btn || picked || btn.disabled) return;
     picked = true;
     onPick?.(btn.dataset.value, btn);
   });
 }
 
+/**
+ * @param {string|Element} rootSel
+ * @param {import('../../kernel/contracts/activity.js').Activity} activity
+ * @param {import('../../kernel/contracts/template.js').PlayerOpts} [opts]
+ * @returns {Promise<void>}
+ */
 export async function renderGlobosPlayer(rootSel, activity, opts = {}) {
-  runSequentialPlayer(rootSel, activity, opts, {
+  /** @type {import('../../core/soloPlayer.js').SequentialCallbacks<QaItem>} */
+  const callbacks = {
     onFinish() { Streaks.reset('solo', activity.id); },
-    renderItem({ rootSel, item, idx, total, score, timerSecs, submit, alAgotarse }) {
+    renderItem({ rootSel, item, idx, total, timerSecs, submit, alAgotarse }) {
       const options = (item.options || []).slice();
       if (activity.rules?.shuffleOptions) shuffle(options);
       const streak = Streaks.get('solo', activity.id);
@@ -47,7 +71,7 @@ export async function renderGlobosPlayer(rootSel, activity, opts = {}) {
         <div class="ww-player gl-play">
           ${cabeceraHtml({
             pagina: `${idx + 1} / ${total}`,
-            racha: streak >= 2 ? String(streak) : null,   // el 🔥 lo pone el chip (core/playerHud.js)
+            racha: streak >= 2 ? String(streak) : undefined,   // el 🔥 lo pone el chip (core/playerHud.js)
           })}
           <div class="edu-sec edu-sec--enunciado ww-prow">
             <h3 class="ww-q gl-q">${escapeHtml(item.question || '')}</h3>
@@ -57,18 +81,24 @@ export async function renderGlobosPlayer(rootSel, activity, opts = {}) {
         </div>
       `);
 
-      const root = document.querySelector(rootSel);
+      // `rootSel` puede llegar como selector o como elemento (lo declara el
+      // shell): antes solo se atendía la forma de cadena.
+      const root = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
+      if (!root) return;
       const t0 = clock.now();
+
+      /** @returns {HTMLButtonElement[]} */
+      const globos = () => [...root.querySelectorAll('.gl-balloon')].map(b => /** @type {HTMLButtonElement} */ (b));
 
       // Revela el globo correcto (verde) tras un fallo o timeout.
       const revealCorrect = () => {
         if (item.answer == null) return;
         const good = (Array.isArray(item.answer) ? item.answer : [item.answer]).map(String);
-        root.querySelectorAll('.gl-balloon').forEach(b => {
-          if (good.includes(b.dataset.value)) b.classList.add('gl-good');
+        globos().forEach(b => {
+          if (b.dataset.value !== undefined && good.includes(b.dataset.value)) b.classList.add('gl-good');
         });
       };
-      const disableAll = () => root.querySelectorAll('.gl-balloon').forEach(b => { b.disabled = true; });
+      const disableAll = () => globos().forEach(b => { b.disabled = true; });
 
       // El reloj lo monta y lo pinta el SHELL (core/reloj.js): aquí, solo el
       // qué-pasa-al-acabarse.
@@ -95,5 +125,6 @@ export async function renderGlobosPlayer(rootSel, activity, opts = {}) {
         submit({ itemId: item.id, value, correct: r.correct, points: r.points, msTaken: ms });
       } });
     },
-  });
+  };
+  runSequentialPlayer(rootSel, activity, opts, callbacks);
 }

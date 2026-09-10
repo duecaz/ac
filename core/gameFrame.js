@@ -56,6 +56,12 @@ export function marcoActual() {
   return typeof document === 'undefined' ? null : document.getElementById('ww-frame');
 }
 
+/**
+ * @param {string|Element} rootSel
+ * @param {import('../kernel/contracts/activity.js').Activity|null|undefined} activity
+ * @param {{escena?: boolean, caja?: boolean}} [o]
+ * @returns {{stageSel: string, frame: HTMLElement|null, dispose: () => void}}
+ */
 export function montarMarcoJuego(rootSel, activity, { escena = true, caja = true } = {}) {
   // UNA PROPORCIÓN, Y EL RESTO LO HACE PANTALLA COMPLETA (dueño, 2026-08-16).
   // Esto NO es una medida más: es dejar de tener las mías. La pantalla del
@@ -95,6 +101,6 @@ export function montarMarcoJuego(rootSel, activity, { escena = true, caja = true
     applyBackground(activity?.presentation?.background || 'none', frame,
       activity?.presentation?.backgroundImage || null);
   }
-  const soltar = attachFullscreenButton(frame, { target: frame });
+  const soltar = frame ? attachFullscreenButton(frame, { target: frame }) : () => {};
   return { stageSel: '#s-stage', frame, dispose: soltar };
 }

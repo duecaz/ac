@@ -1,4 +1,15 @@
 // Ball Sort levels. Copied from the standalone game (yu) — pure data, no deps.
+
+/**
+ * @typedef {Object} BallsortLevel
+ * @property {string} id
+ * @property {string} name
+ * @property {string[]} colors
+ * @property {number} tubeCapacity
+ * @property {string[][]} tubes
+ */
+
+/** @type {Record<string, BallsortLevel>} */
 const LEVELS = {
   easy: {
     id: 'easy',
@@ -46,12 +57,14 @@ const LEVELS = {
   }
 };
 
+/** @param {string} [id] @returns {BallsortLevel} */
 export function getLevel(id = 'classic') {
   const level = LEVELS[id];
   if (!level) throw new Error(`Nivel desconocido: ${id}`);
   return level;
 }
 
+/** @returns {Array<{id: string, name: string}>} */
 export function listLevels() {
   return Object.values(LEVELS).map(({ id, name }) => ({ id, name }));
 }

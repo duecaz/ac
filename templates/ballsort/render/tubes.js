@@ -1,4 +1,11 @@
 // Interactive tube/ball renderer with a FLIP move animation. No deps.
+
+/**
+ * @typedef {import('../../../kernel/contracts/activity.js').BallsortBoard} BallsortBoard
+ * @typedef {{from: number, to: number}} Movimiento
+ */
+
+/** @type {Record<string, string>} */
 const COLOR_LETTERS = {
   red: 'R', blue: 'B', green: 'G', orange: 'O',
   pink: 'P', white: 'W', yellow: 'Y',
@@ -7,16 +14,24 @@ const COLOR_LETTERS = {
 
 // Dueño único (barrido B5, 2026-09-02): drag.js reimplementaba la misma
 // función letra por letra para pintar la bola fantasma.
+/** @param {string} color */
 export function ballStyle(color) {
   if (color === 'white') return 'background:#fff;border:2px solid #000';
   return `background:${color}`;
 }
 
+/** @param {Element} tubeEl @returns {HTMLElement|null} */
 function topNonEmptyBall(tubeEl) {
   const balls = tubeEl.querySelectorAll('.ball:not(.ball--empty)');
-  return balls.length ? balls[balls.length - 1] : null;
+  return balls.length ? /** @type {HTMLElement} */ (balls[balls.length - 1]) : null;
 }
 
+/**
+ * @param {HTMLElement} container
+ * @param {BallsortBoard} board
+ * @param {{interactive?: boolean, selectedTube?: number|null,
+ *   lastMove?: Movimiento|null, showLetters?: boolean}} [opts]
+ */
 export function renderTubes(container, board, {
   interactive = false,
   selectedTube = null,
@@ -24,6 +39,7 @@ export function renderTubes(container, board, {
   showLetters = false
 } = {}) {
   // FLIP step 1: capture old position of source's top ball BEFORE we tear down
+  /** @type {DOMRect|null} */
   let fromRect = null;
   if (lastMove) {
     const oldFromTube = container.querySelector(`.tube[data-index="${lastMove.from}"]`);

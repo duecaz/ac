@@ -127,7 +127,7 @@ function presentationHtml(a) {
 /** @param {PlantillaRegistrada|null|undefined} T */
 function iaBotonHtml(T) {
   const modelo = T?.meta?.contentModel;
-  if (!iaSabeEscribir(modelo)) return '';
+  if (!iaSabeEscribir(modelo ?? '')) return '';
   // `iaSabeEscribir` ya ha comprobado que la clave existe en MODELOS_IA.
   const ficha = MODELOS_IA[/** @type {keyof typeof MODELOS_IA} */ (modelo)];
   return `<div class="ww-ia-puerta mb-3">
@@ -390,8 +390,11 @@ export function renderEditorShell(root, a, onChange, spec) {
         // no dónde va cada palabra en la rejilla del crucigrama. Sin este paso
         // el crucigrama decía «No hay palabras configuradas» con la lista llena.
         // El shell sigue sin conocer plantillas (§0): pregunta, no decide.
-        const fusionado = fusionarContenido(a.content, nuevo);
-        a.content = T?.adoptContent ? T.adoptContent(fusionado, modelo) : fusionado;
+        const fusionado = /** @type {import('../kernel/contracts/activity.js').ActivityContent} */ (
+          fusionarContenido(a.content, nuevo) ?? a.content);
+        // `adoptContent` puede decir «no tengo nada que rematar» (null): entonces
+        // manda lo fusionado. Asignarlo tal cual dejaba el contenido en NULL.
+        a.content = (T?.adoptContent ? T.adoptContent(fusionado, modelo) : null) ?? fusionado;
         onChange(a);
         repaint();
       } catch (e) {

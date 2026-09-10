@@ -15,13 +15,21 @@
 // devuelva `hits/over/total` entra en el resumen sin tocar este archivo.
 import { escapeHtml } from './html.js';
 
+/** @typedef {import('../kernel/session/vsMachine.js').VsMarks} VsMarks */
+/** UN lado del duelo, tal y como lo entrega `standings()`.
+ *  @typedef {{name?: string, score?: number, cursor?: number, correct?: number,
+ *    done?: boolean, marks?: VsMarks|null}} LadoDuelo */
+/** El marcador del duelo (lo que hace falta de `standings()` aquí).
+ *  @typedef {{left?: LadoDuelo, right?: LadoDuelo, total?: number}} MarcadorDuelo */
+
 /**
  * Desglose de UN lado, en palabras de profe.
- * @param {object} side  `standings().left|right` (name, score, correct, marks)
- * @param {number} total nº de ítems del duelo
+ * @param {LadoDuelo|null|undefined} side  `standings().left|right`
+ * @param {number} [total] nº de ítems del duelo
  * @returns {string[]} trozos listos para pintar, en orden de importancia
  */
 export function sideBreakdown(side, total) {
+  /** @type {string[]} */
   const out = [];
   const m = side?.marks;
   if (m && m.total > 0 && m.marca) {
@@ -37,9 +45,9 @@ export function sideBreakdown(side, total) {
     // una opción múltiple), así que no se inventa una tercera cifra. El
     // denominador es el del DUELO, no el de lo que le dio tiempo a contestar:
     // "1 de 1 aciertos" ocultaba que ese lado se quedó a mitad de carrera.
-    const denom = (Number.isFinite(total) && total > 0) ? total : m.total;
+    const denom = (Number.isFinite(total) && (total ?? 0) > 0) ? total : m.total;
     out.push(`${m.hits} de ${denom} aciertos`);
-  } else if (Number.isFinite(total) && total > 0) {
+  } else if (Number.isFinite(total) && (total ?? 0) > 0) {
     out.push(`${side?.correct ?? 0} de ${total} aciertos`);
   }
   // En carrera el duelo lo cierra el primero que acaba: decir que el otro no
@@ -51,10 +59,12 @@ export function sideBreakdown(side, total) {
 /**
  * El cuadro comparativo de las dos columnas. Se pinta en la celebración final
  * del duelo, debajo del podio.
- * @param {object} st `standings()` del duelo ya terminado
+ * @param {MarcadorDuelo|null|undefined} st `standings()` del duelo ya terminado
+ * @returns {string}
  */
 export function duelSummaryHtml(st) {
   if (!st?.left || !st?.right) return '';
+  /** @param {LadoDuelo} s @param {'left'|'right'} sideId @returns {string} */
   const col = (s, sideId) => {
     const partes = sideBreakdown(s, st.total);
     if (!partes.length) return '';

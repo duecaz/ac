@@ -3,6 +3,11 @@
 // reveals, advance. Same mechanic and scoring as VS/Equipos/LIVE.
 import { runTextCorrectionSolo } from '../../core/textCorrectionRound.js';
 
+/**
+ * @param {string|Element} rootSel
+ * @param {import('../../kernel/contracts/activity.js').Activity} activity
+ * @param {import('../../kernel/contracts/template.js').PlayerOpts} [opts]
+ */
 export function renderTildesPlayer(rootSel, activity, opts = {}) {
   return runTextCorrectionSolo(rootSel, activity, opts, { kind: 'tilde', title: activity.title || 'Tildes' });
 }

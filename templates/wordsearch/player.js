@@ -9,6 +9,23 @@ import { generateGrid, cellLine, SIZE_MAP } from './generator.js';
 import { scoreWordsearch } from './scorer.js';
 import { basePoints } from '../../core/scoring/index.js';
 import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
+import { wordsearchRules, wordsearchWords } from './template.js';
+
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('./generator.js').WsCell} WsCell
+ * @typedef {import('./generator.js').WsPlaced} WsPlaced
+ */
+
+/** EL PAYLOAD de la ronda compartida, tal y como lo arma `getRoundPayload` de
+ *  esta misma plantilla (§0: la ronda no adivina, lee su propia forma).
+ * @typedef {Object} WsRoundPayload
+ * @property {string[][]} grid
+ * @property {number} cols
+ * @property {WsPlaced[]} [placed]
+ * @property {string[]} [found]
+ * @property {string} [side]
+ */
 
 // Per-player color palette (supports up to 6 players)
 const PLAYER_COLORS = [
@@ -20,6 +37,7 @@ const PLAYER_COLORS = [
   { stroke: '#ec4899', bg: 'rgba(236,72,153,.30)',  label: 'Rosa'    },
 ];
 
+/** @param {unknown} s */
 const wsNorm = (s) => String(s || '').toUpperCase().replace(/\s+/g, '');
 
 // Draw an SVG <line> between the CENTRES of cells a and b in REAL pixel coords.
@@ -27,6 +45,13 @@ const wsNorm = (s) => String(s || '').toUpperCase().replace(/\s+/g, '');
 // a border and is centred inside a wider wrap, so the line drifted badly. Pixel
 // coords from getBoundingClientRect are robust to all of that. The SVG must have
 // NO viewBox (its user units are then CSS pixels).
+/**
+ * @param {SVGElement|null} svg
+ * @param {Element|null} gridEl
+ * @param {WsCell} a
+ * @param {WsCell} b
+ * @param {{color?: string, opacity?: number, id?: string}} [o]
+ */
 function wsDrawLine(svg, gridEl, a, b, { color = '#3b82f6', opacity = 0.7, id } = {}) {
   if (!svg || !gridEl) return null;
   const cA = gridEl.querySelector(`.ws-cell[data-r="${a.r}"][data-c="${a.c}"]`);
@@ -36,32 +61,36 @@ function wsDrawLine(svg, gridEl, a, b, { color = '#3b82f6', opacity = 0.7, id } 
   const ra = cA.getBoundingClientRect(), rb = cB.getBoundingClientRect();
   const ln = document.createElementNS('http://www.w3.org/2000/svg', 'line');
   if (id) ln.id = id;
-  ln.setAttribute('x1', ra.left + ra.width / 2 - sr.left);
-  ln.setAttribute('y1', ra.top  + ra.height / 2 - sr.top);
-  ln.setAttribute('x2', rb.left + rb.width / 2 - sr.left);
-  ln.setAttribute('y2', rb.top  + rb.height / 2 - sr.top);
+  ln.setAttribute('x1', String(ra.left + ra.width / 2 - sr.left));
+  ln.setAttribute('y1', String(ra.top  + ra.height / 2 - sr.top));
+  ln.setAttribute('x2', String(rb.left + rb.width / 2 - sr.left));
+  ln.setAttribute('y2', String(rb.top  + rb.height / 2 - sr.top));
   ln.setAttribute('stroke', color);
-  ln.setAttribute('stroke-width', Math.max(5, ra.width * 0.7));
+  ln.setAttribute('stroke-width', String(Math.max(5, ra.width * 0.7)));
   ln.setAttribute('stroke-linecap', 'round');
-  ln.setAttribute('opacity', opacity);
+  ln.setAttribute('opacity', String(opacity));
   svg.appendChild(ln);
   return ln;
 }
 
 // ── Solo player ──────────────────────────────────────────────────────────────
 
+/**
+ * @param {string|Element} rootSel
+ * @param {Activity} activity
+ * @param {import('../../kernel/contracts/template.js').PlayerOpts & {playerIndex?: number}} [opts]
+ */
 export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
-  const rawWords = (activity.content?.words || [])
-    .map(w => typeof w === 'string' ? w : (w?.word || '')).filter(Boolean);
+  const rawWords = wordsearchWords(activity);
 
   if (!rawWords.length) {
     mount(rootSel, html`<div class="alert alert-warning m-3">No hay palabras configuradas.</div>`);
     return;
   }
 
-  const rules    = activity.rules  || {};
+  const rules    = wordsearchRules(activity);
   const scoring  = activity.scoring || {};
-  const gridN    = SIZE_MAP[rules.gridSize] || 15;
+  const gridN    = SIZE_MAP[rules.gridSize ?? ''] || 15;
   const color    = PLAYER_COLORS[opts.playerIndex || 0];
 
   const { grid, placed, rows, cols } = generateGrid(rawWords, {
@@ -111,23 +140,29 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
 
   // ── Drag interaction ────────────────────────────────────────────────────────
   let dragging = false, startR = 0, startC = 0;
+  /** @type {Set<string>} */
   let selSet = new Set();
-  let cellMap;
+  /** @type {Map<string, HTMLElement>} */
+  let cellMap = new Map();
 
   function buildCellMap() {
     const g = document.getElementById('ws-grid');
     cellMap = new Map();
-    g?.querySelectorAll('.ws-cell').forEach(el => cellMap.set(`${el.dataset.r},${el.dataset.c}`, el));
+    /** @type {NodeListOf<HTMLElement>|undefined} */
+    (g?.querySelectorAll('.ws-cell'))?.forEach(el => cellMap.set(`${el.dataset.r},${el.dataset.c}`, el));
   }
 
-  function getCell(r, c) { return cellMap?.get(`${r},${c}`) ?? null; }
+  /** @param {string|number} r @param {string|number} c */
+  function getCell(r, c) { return cellMap.get(`${r},${c}`) ?? null; }
 
+  /** @param {number} x @param {number} y @returns {WsCell|null} */
   function cellFromPoint(x, y) {
-    const el = document.elementFromPoint(x, y);
+    const el = /** @type {HTMLElement|null} */ (document.elementFromPoint(x, y));
     if (!el?.dataset?.r) return null;
-    return { r: +el.dataset.r, c: +el.dataset.c };
+    return { r: +el.dataset.r, c: +(el.dataset.c ?? 0) };
   }
 
+  /** @param {WsCell[]|null} line */
   function setSel(line) {
     // Clear previous
     for (const k of selSet) {
@@ -203,6 +238,7 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
   }
 
   // ── Word found ──────────────────────────────────────────────────────────────
+  /** @param {WsPlaced} p */
   function wordFound(p) {
     state.found.add(p.word);
     // Un solo scorer por plantilla (ley en CLAUDE.md): el player NO reimplementa
@@ -219,13 +255,17 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
     for (const { r, c } of p.cells) getCell(r, c)?.classList.add(`ws-found-${colorIdx}`);
 
     // Permanent SVG line — pixel-based so it lands exactly on the word.
-    const svg = document.getElementById('ws-svg');
+    const svg = /** @type {SVGElement|null} */ (document.getElementById('ws-svg'));
     const gridEl = document.getElementById('ws-grid');
     wsDrawLine(svg, gridEl, p.cells[0], p.cells[p.cells.length - 1], { color: color.stroke, opacity: 0.72 });
 
     // Update word list
     const wEl = rootEl()?.querySelector(`[data-word="${p.word}"]`);
-    if (wEl) { wEl.classList.add('ws-word-found'); wEl.querySelector('.ws-word-dot').textContent = '✓'; }
+    if (wEl) {
+      wEl.classList.add('ws-word-found');
+      const dot = wEl.querySelector('.ws-word-dot');
+      if (dot) dot.textContent = '✓';
+    }
 
     // Update counters
     const found = state.found.size;
@@ -259,16 +299,26 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
 // (carried in payload.found across re-renders) are pre-marked with a permanent
 // line so progress survives a re-render. Each VS side gets a DIFFERENT board
 // (seeded by side in getRoundPayload) so opponents can't copy positions.
+/**
+ * @param {Element} root
+ * @param {import('../../kernel/contracts/session.js').RoundPayload} payload
+ * @param {import('../../kernel/contracts/template.js').RoundCallbacks} [cbs]
+ */
 export function renderWordsearchRound(root, payload, { onSubmit } = {}) {
   if (!payload) return;
-  const { grid, cols, placed = [], found = [], side = 'left' } = payload;
+  // El payload lo arma `getRoundPayload` de esta plantilla: se lee con SU forma.
+  const { grid, cols, placed = [], found = [], side = 'left' } = /** @type {WsRoundPayload} */ (payload);
+  if (!Array.isArray(grid)) return;
   const color = PLAYER_COLORS[side === 'right' ? 1 : 0];
   const colorIdx = side === 'right' ? 1 : 0;
   const foundSet = new Set(found.map(wsNorm));
   const total = placed.length;
 
   let dragging = false, startR = 0, startC = 0;
-  let selSet = new Set(), cellMap;
+  /** @type {Set<string>} */
+  const selSet = new Set();
+  /** @type {Map<string, HTMLElement>} */
+  const cellMap = new Map();
 
   root.innerHTML = `
     <div class="ww-ws ww-ws-round">
@@ -292,17 +342,20 @@ export function renderWordsearchRound(root, payload, { onSubmit } = {}) {
       </div>
     </div>`;
 
-  cellMap = new Map();
-  root.querySelectorAll('.ws-cell').forEach(el => cellMap.set(`${el.dataset.r},${el.dataset.c}`, el));
+  /** @type {NodeListOf<HTMLElement>} */
+  (root.querySelectorAll('.ws-cell')).forEach(el => cellMap.set(`${el.dataset.r},${el.dataset.c}`, el));
+  /** @param {string|number} r @param {string|number} c */
   const getCell = (r, c) => cellMap.get(`${r},${c}`) ?? null;
+  /** @param {number} x @param {number} y @returns {WsCell|null} */
   const cellFromPoint = (x, y) => {
-    const el = document.elementFromPoint(x, y);
-    return el?.dataset?.r ? { r: +el.dataset.r, c: +el.dataset.c } : null;
+    const el = /** @type {HTMLElement|null} */ (document.elementFromPoint(x, y));
+    return el?.dataset?.r ? { r: +el.dataset.r, c: +(el.dataset.c ?? 0) } : null;
   };
 
-  const svg = root.querySelector('.ww-ws-svg');
-  const gridEl = root.querySelector('#ws-grid-r');
+  const svg = /** @type {SVGElement|null} */ (root.querySelector('.ww-ws-svg'));
+  const gridEl = /** @type {HTMLElement|null} */ (root.querySelector('#ws-grid-r'));
 
+  /** @param {WsPlaced} p */
   function markFound(p) {
     const w = wsNorm(p.word);
     foundSet.add(w);
@@ -322,6 +375,7 @@ export function renderWordsearchRound(root, payload, { onSubmit } = {}) {
   }
   requestAnimationFrame(paintFound);
 
+  /** @param {WsCell[]|null} line */
   function setSel(line) {
     for (const k of selSet) { const [r, c] = k.split(','); getCell(r, c)?.classList.remove('ws-sel'); }
     selSet.clear();

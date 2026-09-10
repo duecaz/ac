@@ -7,7 +7,8 @@ import { azar } from '../azar.js';
 
 const EMPTY = '(vacío)';
 
-/** Clean entries to non-empty strings; never return an empty wheel. */
+/** Clean entries to non-empty strings; never return an empty wheel.
+ *  @param {unknown[]|null|undefined} entries @returns {string[]} */
 export function normalizeEntries(entries) {
   const out = (entries || []).map(e => String(e)).filter(e => e.trim());
   return out.length ? out : [EMPTY];
@@ -17,18 +18,21 @@ export function normalizeEntries(entries) {
  *  Por defecto va por el PRIMITIVO (core/azar.js), no por `Math.random`: con el
  *  defecto anterior nadie inyectaba nunca (ni la ruleta ni Pregunta en vivo), así
  *  que sembrar el azar no llegaba aquí y la ruleta seguía siendo irreproducible
- *  para el arnés — un hueco legal en la ley, que es la peor clase de hueco. */
+ *  para el arnés — un hueco legal en la ley, que es la peor clase de hueco.
+ *  @param {number} count @param {() => number} [rnd] @returns {number} */
 export function pickIndex(count, rnd = azar.random) {
   return Math.floor(rnd() * count);
 }
 
-/** Immutable remove; never collapses to an empty wheel. */
+/** Immutable remove; never collapses to an empty wheel.
+ *  @param {string[]} entries @param {number} index @returns {string[]} */
 export function removeAt(entries, index) {
   const out = entries.filter((_, i) => i !== index);
   return out.length ? out : [EMPTY];
 }
 
-/** Slice label for the wheel face: truncate long text with an ellipsis. */
+/** Slice label for the wheel face: truncate long text with an ellipsis.
+ *  @param {unknown} s @param {number} [max] @returns {string} */
 export function truncLabel(s, max = 16) {
   const str = String(s ?? '');
   return str.length > max ? str.slice(0, max - 1) + '…' : str;

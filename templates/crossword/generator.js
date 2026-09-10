@@ -5,8 +5,42 @@ import { rid } from '../../core/ids.js';
 const uid = () => rid('cw_');
 
 /**
+ * @typedef {import('../../kernel/contracts/activity.js').CrosswordWord} CrosswordWord
+ */
+
+/**
+ * UNA CASILLA de la rejilla construida. `blocked` = casilla negra (ninguna
+ * palabra la pisa); `number` = el numerito de la pista que empieza ahí.
+ * @typedef {Object} CrosswordCell
+ * @property {string} letter
+ * @property {boolean} blocked
+ * @property {number|null} number
+ * @property {string[]} wordIds
+ * @property {number} r
+ * @property {number} c
+ */
+
+/**
+ * La rejilla YA construida: lo que consumen el player y el preview.
+ * @typedef {Object} CrosswordGrid
+ * @property {CrosswordCell[][]} grid
+ * @property {number} rows
+ * @property {number} cols
+ * @property {Record<string, number>} wordNums   Numerito de pista por id de palabra.
+ * @property {CrosswordWord[]} words             Solo las que de verdad caben (2+ letras).
+ */
+
+/**
+ * Lo que hace falta para COLOCAR una palabra: el texto y su pista. La posición
+ * la decide `autoLayout`.
+ * @typedef {{word?: string, clue?: string}} CrosswordDef
+ */
+
+/**
  * Build a 2-D cell grid from a list of placed words.
  * Returns { grid, rows, cols, wordNums, words }
+ * @param {CrosswordWord[]|null|undefined} words
+ * @returns {CrosswordGrid}
  */
 export function buildGrid(words) {
   if (!words?.length) return { grid: [], rows: 0, cols: 0, wordNums: {}, words: [] };
@@ -22,7 +56,8 @@ export function buildGrid(words) {
 
   const rows = maxR + 1, cols = maxC + 1;
   const grid = Array.from({ length: rows }, (_, r) =>
-    Array.from({ length: cols }, (_, c) => ({ letter: '', blocked: true, number: null, wordIds: [], r, c }))
+    Array.from({ length: cols }, (_, c) => /** @type {CrosswordCell} */
+      ({ letter: '', blocked: true, number: null, wordIds: [], r, c }))
   );
 
   for (const w of placed) {
@@ -38,14 +73,17 @@ export function buildGrid(words) {
   // Auto-number: one number per unique starting (row, col) position,
   // sorted top→bottom, left→right — same as standard crossword convention.
   const sortedByStart = [...placed].sort((a, b) => a.row !== b.row ? a.row - b.row : a.col - b.col);
+  /** @type {Map<string, number>} */
   const posNum = new Map();
+  /** @type {Record<string, number>} */
   const wordNums = {};
   let n = 1;
   for (const w of sortedByStart) {
     const key = `${w.row},${w.col}`;
     if (!posNum.has(key)) posNum.set(key, n++);
-    wordNums[w.id] = posNum.get(key);
-    grid[w.row][w.col].number = posNum.get(key);
+    const num = posNum.get(key) ?? n;
+    wordNums[w.id] = num;
+    grid[w.row][w.col].number = num;
   }
 
   return { grid, rows, cols, wordNums, words: placed };
@@ -55,6 +93,8 @@ export function buildGrid(words) {
  * Auto-place a list of word definitions, trying to form a connected crossword.
  * defs = [{word, clue}]
  * Returns [{id, word, clue, row, col, dir}]
+ * @param {CrosswordDef[]|null|undefined} defs
+ * @returns {CrosswordWord[]}
  */
 export function autoLayout(defs) {
   if (!defs?.length) return [];
@@ -69,6 +109,7 @@ export function autoLayout(defs) {
   // Sort longest-first so long words anchor the board
   words.sort((a, b) => b.word.length - a.word.length);
 
+  /** @type {CrosswordWord[]} */
   const placed = [];
 
   // Place first word horizontally at origin
@@ -76,6 +117,7 @@ export function autoLayout(defs) {
 
   for (let i = 1; i < words.length; i++) {
     const w = words[i];
+    /** @type {CrosswordWord|null} */
     let best = null;
 
     // Try to intersect with every placed word
@@ -87,7 +129,7 @@ export function autoLayout(defs) {
           if (p.word[pi] !== w.word[wi]) continue;
 
           // Compute starting position of new word
-          let r, c;
+          let r = 0, c = 0;
           if (newDir === 'V') {
             c = p.dir === 'H' ? p.col + pi : p.col;
             r = p.dir === 'H' ? p.row - wi : p.row + pi - wi;
@@ -122,8 +164,17 @@ export function autoLayout(defs) {
   return placed.map(p => ({ ...p, row: p.row - minR, col: p.col - minC }));
 }
 
+/**
+ * @param {CrosswordWord[]} placed
+ * @param {string} word
+ * @param {number} row
+ * @param {number} col
+ * @param {'H'|'V'} dir
+ * @returns {boolean}
+ */
 function isValid(placed, word, row, col, dir) {
   // Build occupied cell map
+  /** @type {Map<string, {letter: string, dirs: Set<string>}>} */
   const occ = new Map();
   for (const p of placed) {
     for (let i = 0; i < p.word.length; i++) {
@@ -131,7 +182,7 @@ function isValid(placed, word, row, col, dir) {
       const c = p.dir === 'H' ? p.col + i : p.col;
       const k = `${r},${c}`;
       if (!occ.has(k)) occ.set(k, { letter: p.word[i], dirs: new Set() });
-      occ.get(k).dirs.add(p.dir);
+      occ.get(k)?.dirs.add(p.dir);
     }
   }
 
@@ -140,8 +191,8 @@ function isValid(placed, word, row, col, dir) {
     const c = dir === 'H' ? col + i : col;
     const k = `${r},${c}`;
 
-    if (occ.has(k)) {
-      const cell = occ.get(k);
+    const cell = occ.get(k);
+    if (cell) {
       if (cell.letter !== word[i]) return false; // letter conflict
       if (cell.dirs.has(dir)) return false;       // parallel overlap
     }

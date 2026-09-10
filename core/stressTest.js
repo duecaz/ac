@@ -10,11 +10,32 @@ import { rid } from './ids.js';
 import { pbEscape, pbFilterParam } from './pbFilter.js';
 import { signedFetch } from './pbHttp.js';
 
+/**
+ * LO QUE MIDE LA PRUEBA, y lo que pinta el panel de #/admin. `live`/`tasks` son
+ * `null` mientras su tramo no ha corrido (faltan colecciones, o la sala no se
+ * pudo crear).
+ * @typedef {Object} InformeCarga
+ * @property {number} n
+ * @property {boolean} ok
+ * @property {{joinsOk:number, joinsFail:number, joinMs:number, playerRows:number,
+ *   uniqueNames:number, answersOk:number, answerRows:number, ansMs:number,
+ *   answerErrors:Record<string, number>, pass:boolean, claimsOk:number}|null} live
+ * @property {{attemptsOk?:number, attemptRows?:number, attMs?:number, pass:boolean}|null} tasks
+ * @property {number} ms
+ * @property {string[]} notes
+ */
+
+/** LA RESPUESTA CRUDA de una lista de PocketBase: frontera, se lee estrechando. */
+/** @typedef {{items?: Record<string, unknown>[]}} ListaPb */
+
+/** @param {string[]} parts */
 const filt = (parts) => pbFilterParam(parts.join(' && '));
+/** @param {string} id */
 const sessFilter = (id) => `filter=${filt([`session='${pbEscape(id)}'`])}`;
 const rnd = () => rid();
 
 // Actividad mínima (quiz de 2 ítems) para la sala/tarea de prueba.
+/** @param {string} code */
 function miniActivity(code) {
   return {
     id: `stress_${code}`, template: 'quiz', title: 'Prueba de carga',
@@ -28,18 +49,26 @@ function miniActivity(code) {
 
 // Nombres realistas: mitad únicos, mitad repetidos (fuerzan el índice único).
 const FIRST = ['Ana', 'Beto', 'Caro', 'Dani', 'Eva', 'Fito', 'Gaby', 'Hugo', 'Ivo', 'Jime', 'Karla', 'Leo', 'Mica', 'Nico', 'Ori', 'Pau', 'Rai', 'Sofi', 'Tavo', 'Uma'];
+/** @param {number} i */
 const playerName = (i) => i % 2 === 0 ? `${FIRST[i % FIRST.length]}${i}` : 'Alumno';   // los "Alumno" chocan a propósito
 
+/**
+ * @param {{pbUrl?: string, n?: number, onLog?: (msg: string) => void}} [o]
+ * @returns {Promise<InformeCarga>}
+ */
 export async function runStressTest({ pbUrl, n = 30, onLog = () => {} } = {}) {
   const PB = String(pbUrl || '').replace(/\/$/, '');
+  /** @param {string} path @returns {Promise<ListaPb>} */
   const jget = async (path) => (await fetch(`${PB}${path}`)).json();
   // fetch CRUDO a propósito (sin token): replica lo que puede hacer un ALUMNO
   // anónimo — ese es el punto de la prueba de carga en live_*.
+  /** @param {string} coll @param {unknown} body @param {Record<string, string>} [extraHeaders] */
   const jpost = (coll, body, extraHeaders) => fetch(`${PB}/api/collections/${coll}/records`, {
     method: 'POST', headers: { 'Content-Type': 'application/json', ...(extraHeaders || {}) }, body: JSON.stringify(body),
   });
   // FIRMADO: crear/borrar la TAREA es acto del profe (ley de confianza §22 —
   // assignments exige sesión). El intento del alumno sigue yendo por jpost crudo.
+  /** @param {string} coll @param {unknown} body */
   const jpostAuth = (coll, body) => signedFetch(`${PB}/api/collections/${coll}/records`, {
     method: 'POST', body: JSON.stringify(body),
   });
@@ -47,12 +76,16 @@ export async function runStressTest({ pbUrl, n = 30, onLog = () => {} } = {}) {
   // desde la fase de reglas live (§22). Por eso va FIRMADO (el botón de #/admin
   // corre con el profe dentro). Las escrituras que simulan al ALUMNO siguen
   // crudas a propósito — son justo lo que hay que probar.
+  /** @param {string} coll @param {string} id */
   const del = (coll, id) => signedFetch(`${PB}/api/collections/${coll}/records/${id}`, { method: 'DELETE' }).catch(() => {});
   // Borra en tandas de 15 para no reventar la Pi con 50 DELETE de golpe.
+  /** @param {string} coll @param {string[]} ids */
   const delMany = async (coll, ids) => { for (let i = 0; i < ids.length; i += 15) await Promise.all(ids.slice(i, i + 15).map(id => del(coll, id))); };
+  /** @param {string} coll */
   const exists = async (coll) => { try { return (await fetch(`${PB}/api/collections/${coll}/records?perPage=1`)).status === 200; } catch { return false; } };
 
   const t0 = Date.now();
+  /** @type {InformeCarga} */
   const report = { n, ok: false, live: null, tasks: null, ms: 0, notes: [] };
 
   // ── Comprobar que las colecciones de la deuda A existen ────────────────────
@@ -78,6 +111,7 @@ export async function runStressTest({ pbUrl, n = 30, onLog = () => {} } = {}) {
   // que la regla de `live_answers` exige el secreto (`x_ww_claim`), un POST de
   // respuesta sin credencial es un 403 — la prueba de carga simulaba un alumno
   // que ya no existe y contaba 0 filas, culpando a la Pi de una regla.
+  /** @param {number} i @returns {Promise<{id: string, secret: string|null}>} */
   async function join(i) {
     const base = playerName(i);
     for (let s = 2; s <= 60; s++) {
@@ -98,11 +132,12 @@ export async function runStressTest({ pbUrl, n = 30, onLog = () => {} } = {}) {
   onLog(`Lanzando ${n} entradas simultáneas…`);
   const tJoin = Date.now();
   const joins = await Promise.allSettled(Array.from({ length: n }, (_, i) => join(i)));
-  const players = joins.filter(j => j.status === 'fulfilled').map(j => j.value);
+  const players = joins.flatMap(j => j.status === 'fulfilled' ? [j.value] : []);
   const joinMs = Date.now() - tJoin;
 
   onLog(`Lanzando ${players.length * 2} respuestas simultáneas…`);
   const tAns = Date.now();
+  /** @type {Promise<true|number>[]} */
   const answerCalls = [];
   players.forEach((p, i) => {
     for (const item of [0, 1]) {
@@ -118,17 +153,18 @@ export async function runStressTest({ pbUrl, n = 30, onLog = () => {} } = {}) {
   // POR QUÉ falló, no solo cuántas: un 403 en todas es "la regla te rechaza"
   // (bug de la prueba o de las reglas) y no tiene NADA que ver con la carga; un
   // 0 filas mudo mandaba a mirar la Pi. Se cuenta cada estado por separado.
+  /** @type {Record<string, number>} */
   const ansStatus = {};
   for (const r of ansResults) {
     const v = r.status === 'fulfilled' ? r.value : 'red';
-    if (v !== true) ansStatus[v] = (ansStatus[v] || 0) + 1;
+    if (v !== true) ansStatus[String(v)] = (ansStatus[String(v)] || 0) + 1;
   }
 
   // Verificación server-side (cuenta real de filas).
   const lpRows = (await jget(`/api/collections/live_players/records?${sessFilter(sessId)}&perPage=500`))?.items || [];
   const laRows = (await jget(`/api/collections/live_answers/records?${sessFilter(sessId)}&perPage=1000`))?.items || [];
   const uniqNames = new Set(lpRows.map(r => r.name));
-  report.live = {
+  const live = {
     joinsOk: players.length, joinsFail: n - players.length, joinMs,
     playerRows: lpRows.length, uniqueNames: uniqNames.size,
     answersOk: ansResults.filter(r => r.status === 'fulfilled' && r.value === true).length, answerRows: laRows.length, ansMs,
@@ -139,14 +175,15 @@ export async function runStressTest({ pbUrl, n = 30, onLog = () => {} } = {}) {
     // registrar, las respuestas iban a ser rechazadas y hay que DECIRLO.
     claimsOk: players.filter(p => p.secret).length,
   };
+  report.live = live;
 
   // Rechazo masivo por REGLA: no es carga, es que el cliente simulado no cumple
   // lo que el servidor exige. Se dice con nombre y apellido en vez de dejar un
   // "0 filas" que manda a mirar el hardware.
-  const rejected = Object.entries(report.live.answerErrors || {});
-  if (rejected.length && report.live.answerRows === 0) {
+  const rejected = Object.entries(live.answerErrors || {});
+  if (rejected.length && live.answerRows === 0) {
     report.notes.push(`Las ${players.length * 2} respuestas fueron RECHAZADAS por el servidor (${rejected.map(([k, v]) => `${v}×HTTP ${k}`).join(', ')}), no perdidas por carga.`
-      + (report.live.claimsOk < players.length
+      + (live.claimsOk < players.length
         ? ' No se pudo registrar la credencial del dispositivo (live_claims): crea las colecciones desde este panel.'
         : ' Revisa las reglas de live_answers (§22-4 exige la cabecera X-WW-Claim).'));
   }
@@ -156,8 +193,8 @@ export async function runStressTest({ pbUrl, n = 30, onLog = () => {} } = {}) {
   // se pudiera, se robaría el puesto de un jugador vivo). Las filas de la prueba
   // quedan huérfanas hasta la purga por retención (§25) — son inservibles sin su
   // sala, que sí se borra aquí.
-  await delMany('live_answers', laRows.map(r => r.id));
-  await delMany('live_players', lpRows.map(r => r.id));
+  await delMany('live_answers', laRows.map(r => String(r.id)));
+  await delMany('live_players', lpRows.map(r => String(r.id)));
   await del('live_sessions', sessId);
 
   // ── TAREAS: crear tarea → N intentos concurrentes → verificar → limpiar ────
@@ -176,7 +213,7 @@ export async function runStressTest({ pbUrl, n = 30, onLog = () => {} } = {}) {
       pass: aaRows.length === n,
     };
     onLog(`Limpiando tarea de prueba…`);
-    await delMany('assignment_attempts', aaRows.map(r => r.id));
+    await delMany('assignment_attempts', aaRows.map(r => String(r.id)));
     await del('assignments', asgId);
   } else {
     report.tasks = { pass: false };

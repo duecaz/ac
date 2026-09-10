@@ -3,19 +3,25 @@
 // and identical across drivers.
 import { clock } from './clock.js';
 
-/** Public codes are matched upper-cased and trimmed. */
+/** Public codes are matched upper-cased and trimmed.
+ *  @param {unknown} code @returns {string} */
 export function normalizeCode(code) {
   return String(code ?? '').trim().toUpperCase();
 }
 
-/** Has the due date passed? `now` may be ms or a Date/ISO. No due date → never. */
+/** Has the due date passed? `now` may be ms or a Date/ISO. No due date → never.
+ *  @param {string|Date|null|undefined} dueAt
+ *  @param {number|string|Date} [now]
+ *  @returns {boolean} */
 export function isPastDue(dueAt, now = clock.now()) {
   if (!dueAt) return false;
   const nowMs = typeof now === 'number' ? now : new Date(now).getTime();
   return new Date(dueAt).getTime() < nowMs;
 }
 
-/** Attempts still available (maxAttempts defaults to 1). Never negative. */
+/** Attempts still available (maxAttempts defaults to 1). Never negative.
+ *  @param {number|null|undefined} maxAttempts @param {number|null|undefined} taken
+ *  @returns {number} */
 export function attemptsRemaining(maxAttempts, taken) {
   const max = maxAttempts ?? 1;
   return Math.max(0, max - (taken || 0));
@@ -24,6 +30,9 @@ export function attemptsRemaining(maxAttempts, taken) {
 /**
  * Can this student start an attempt? Mirrors views/studentTask.js order:
  * not found → closed → past due → no attempts left.
+ * @param {{status?: string, due_at?: string|null, max_attempts?: number|null}|null|undefined} assignment
+ * @param {number|null|undefined} taken
+ * @param {number|string|Date} [now]
  * @returns {{ allowed: boolean, reason: 'notFound'|'closed'|'pastDue'|'noAttemptsLeft'|null }}
  */
 export function assignmentGate(assignment, taken, now = clock.now()) {
@@ -49,8 +58,9 @@ export function assignmentGate(assignment, taken, now = clock.now()) {
  *  obligatoria para llegar a `#/tasks`), y el id anónimo se sigue aceptando para
  *  no dejar huérfanas las tareas creadas antes ni las del backend local.
  *
- *  @param {object} row      fila de `assignments`
- *  @param {string[]} mios   identidades de este profe (cuenta y/o navegador)
+ *  @param {{author_id?: string}|null|undefined} row  fila de `assignments`
+ *  @param {(string|null|undefined)[]} mios   identidades de este profe (cuenta y/o navegador)
+ *  @returns {boolean}
  */
 export function esMiTarea(row, mios) {
   const ids = (mios || []).filter(Boolean);

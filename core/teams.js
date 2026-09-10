@@ -4,13 +4,18 @@
 import { escapeHtml } from './html.js';
 export const TEAM_COLORS = ['danger', 'primary', 'success', 'warning'];
 
-/** Color Bootstrap del equipo según su posición en la lista. */
+/** UN equipo, tal y como lo lleva la máquina de equipos.
+ *  @typedef {{id: string, name: string, score: number}} Equipo */
+
+/** Color Bootstrap del equipo según su posición en la lista.
+ *  @param {string} teamId @param {Equipo[]|null|undefined} teams @returns {string} */
 export function teamColor(teamId, teams) {
   const i = (teams || []).findIndex(t => t.id === teamId);
   return TEAM_COLORS[(i < 0 ? 0 : i) % TEAM_COLORS.length];
 }
 
-/** HTML de los inputs de nombres de equipo por defecto ("Equipo 1..N"). */
+/** HTML de los inputs de nombres de equipo por defecto ("Equipo 1..N").
+ *  @param {number} count @returns {string} */
 export function teamNameInputsHtml(count) {
   return Array.from({ length: count }, (_, i) => `
       <div class="col-6 col-md-3">
@@ -19,7 +24,9 @@ export function teamNameInputsHtml(count) {
 }
 
 /** Fila de chips del marcador (nombre + puntos, resaltando el turno activo).
- *  Era HTML duplicado entre teamsView y memoryView. */
+ *  Era HTML duplicado entre teamsView y memoryView.
+ *  @param {Equipo[]} teams @param {string|null} activeId @param {boolean} [ended]
+ *  @returns {string} */
 export function teamsScoreboardHtml(teams, activeId, ended) {
   return `
     <div class="teams-scoreboard">

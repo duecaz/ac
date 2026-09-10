@@ -42,6 +42,15 @@ export function stampVersion(id = 'ww-version') {
   });
 }
 
+/** ¿El toque cayó DENTRO de algo que case con el selector? El objetivo de un
+ *  evento delegado es frontera del DOM: puede ser el documento o un nodo de
+ *  texto, que no tienen `closest`.
+ *  @param {EventTarget|null} t @param {string} sel @returns {boolean} */
+function dentroDe(t, sel) {
+  const el = /** @type {Element|null} */ (t);
+  return !!(el && typeof el.closest === 'function' && el.closest(sel));
+}
+
 // EL MENÚ HAMBURGUESA (móvil) — abrir, y sobre todo CERRAR.
 //
 // Estaba resuelto con `onclick` en el HTML: toggle al pulsar y quitar la clase
@@ -52,19 +61,22 @@ export function stampVersion(id = 'ww-version') {
 // HTML: dos copias de un mismo comportamiento derivan (esa es la lección de la
 // semana). Cierra por las CUATRO vías que un usuario espera: el propio botón,
 // una acción del menú, un toque fuera, y Escape.
+/** @param {string} [sel] @returns {() => void} */
 export function wireTopbarMenu(sel = '.ww-topbar') {
-  const bar = document.querySelector(sel);
+  const bar = /** @type {HTMLElement|null} */ (document.querySelector(sel));
   if (!bar || bar.dataset.wwMenuWired) return () => {};
   bar.dataset.wwMenuWired = '1';
   const boton = bar.querySelector('.ww-topbar__burger');
   const sello = () => boton?.setAttribute('aria-expanded', String(bar.classList.contains('open')));
   const cerrar = () => { bar.classList.remove('open'); sello(); };
   bar.addEventListener('click', (e) => {
-    if (e.target.closest('.ww-topbar__burger')) { bar.classList.toggle('open'); sello(); return; }
-    if (e.target.closest('.ww-topbar__actions')) cerrar();
+    if (dentroDe(e.target, '.ww-topbar__burger')) { bar.classList.toggle('open'); sello(); return; }
+    if (dentroDe(e.target, '.ww-topbar__actions')) cerrar();
   });
-  const fuera = (e) => { if (!bar.contains(e.target)) cerrar(); };
-  const esc = (e) => { if (e.key === 'Escape') cerrar(); };
+  const fuera = (/** @type {Event} */ e) => {
+    if (!bar.contains(/** @type {Node|null} */ (e.target))) cerrar();
+  };
+  const esc = (/** @type {KeyboardEvent} */ e) => { if (e.key === 'Escape') cerrar(); };
   document.addEventListener('click', fuera);
   document.addEventListener('keydown', esc);
   // Navegar también cierra: con el menú abierto encima de la vista nueva, el
@@ -95,6 +107,7 @@ export function wireTopbarMenu(sel = '.ww-topbar') {
 // alto de la pantalla del alumno se calculaba restando a `100dvh`. Ese cálculo
 // se BORRÓ al pasar el marco a 4:3 — ahora es un elemento normal en una página
 // normal— así que la variable se quedó sin un solo lector y se fue con él.)
+/** @param {HTMLElement} bar @returns {() => void} */
 function medirChrome(bar) {
   const raiz = document.documentElement;
   const anota = () => {
@@ -123,6 +136,6 @@ export function attachMuteButton(slotId = 'ww-mute-slot') {
   };
   paint();
   slot.addEventListener('click', (e) => {
-    if (e.target.closest('#ww-mute-btn')) { setMuted(!isMuted()); paint(); }
+    if (dentroDe(e.target, '#ww-mute-btn')) { setMuted(!isMuted()); paint(); }
   });
 }

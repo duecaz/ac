@@ -7,7 +7,12 @@ import { scoreMathSubmission } from './scorer.js';
 import { adoptForMath } from '../../kernel/content/qaAdapt.js';
 import { escapeHtml } from '../../core/html.js';
 
+/**
+ * @typedef {import('../../kernel/contracts/activity.js').QaContent} QaContent
+ */
+
 export class MathTemplate extends BaseTemplate {
+  /** @type {import('../../kernel/contracts/template.js').TemplateMeta<QaContent>} */
   static meta = {
     name: 'math',
     label: 'Operaciones',
@@ -42,11 +47,39 @@ export class MathTemplate extends BaseTemplate {
   static renderEditor = renderMathEditor;
   static scoreSubmission = scoreMathSubmission;
 
-  static getRoundPayload(activity, ctx) { const it = activity.content.items[ctx.itemIndex]; return it ? { question: it.question } : null; }
+  /**
+   * @param {import('../../kernel/contracts/activity.js').Activity} activity
+   * @param {import('../../kernel/contracts/session.js').RoundContext} ctx
+   * @returns {import('../../kernel/contracts/session.js').RoundPayload|null}
+   */
+  static getRoundPayload(activity, ctx) {
+    const content = /** @type {QaContent} */ (activity.content);
+    const it = content.items[ctx.itemIndex];
+    return it ? { question: it.question } : null;
+  }
+
+  /**
+   * @param {Element} root
+   * @param {import('../../kernel/contracts/session.js').RoundPayload} payload
+   * @param {import('../../kernel/contracts/template.js').RoundCallbacks} [opts]
+   * @returns {void}
+   */
   static renderRound(root, payload, opts) { return renderKeypadRound(root, payload, opts); }
   // v1→v2: fuera el `points: 1` sembrado, que anulaba «Puntos por acierto»
   // del panel (el profe ponía 10 y el duelo seguía dando 1).
-  static migrateContent(content) { return stripSeededPoints(content); }
+  // La firma es la IDENTIDAD sobre la forma, como la de `templates/base.js`: el
+  // contenido entra tal y como lo tenga la actividad, y quien sabe qué mirar
+  // dentro es su dueño, `stripSeededPoints`.
+  /**
+   * @template C
+   * @param {C} content
+   * @returns {C}
+   */
+  static migrateContent(content) { return stripSeededPoints(/** @type {C & {items?: unknown}} */ (content)); }
   // Adapta el contenido al cambiar de formato HACIA Matemáticas (quita opciones).
+  /**
+   * @param {import('../../kernel/contracts/activity.js').ActivityContent} content
+   * @returns {QaContent}
+   */
   static adoptContent(content) { return adoptForMath(content); }
 }

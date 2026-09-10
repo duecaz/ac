@@ -18,23 +18,33 @@ import { abrirDialogoConFallback } from './modalFallback.js';
 
 const EXTREMO = () => `${PB_URL}/api/ia/contenido`;
 
-/** Cómo se enseña UNA pieza propuesta, según su modelo. Solo lectura. */
-function piezaHtml(modelo, x) {
+/** Lo propuesto viene de un modelo de lenguaje: se lee sin prometer forma.
+ *  @param {unknown} v @returns {Record<string, unknown>} */
+const saco = (v) => (v && typeof v === 'object') ? /** @type {Record<string, unknown>} */ (v) : {};
+
+/** Cómo se enseña UNA pieza propuesta, según su modelo. Solo lectura.
+ *  @param {string} modelo
+ *  @param {unknown} cruda
+ *  @returns {string} */
+function piezaHtml(modelo, cruda) {
+  const x = saco(cruda);
+  /** @param {unknown} izq @param {unknown} [der] */
   const cuerpo = (izq, der = '') =>
     `<span class="ia-pieza__a">${escapeHtml(izq)}</span>`
     + (der ? `<span class="ia-pieza__b">${escapeHtml(der)}</span>` : '');
   if (modelo === 'qa') {
     return `<span class="ia-pieza__a">${escapeHtml(x.question)}</span>
-      <span class="ia-pieza__b">${(x.options || []).map(o =>
+      <span class="ia-pieza__b">${(Array.isArray(x.options) ? x.options : []).map(o =>
         `<span class="ia-opt${o === x.answer ? ' is-ok' : ''}">${escapeHtml(o)}</span>`).join('')}</span>`;
   }
   if (modelo === 'pairs') return cuerpo(x.left, `↔ ${x.right}`);
   if (modelo === 'items') return cuerpo(x.question);
-  if (modelo === 'words') return typeof x === 'string' ? cuerpo(x) : cuerpo(x.word, x.clue);
+  if (modelo === 'words') return typeof cruda === 'string' ? cuerpo(cruda) : cuerpo(x.word, x.clue);
   // Se enseña la frase YA CORREGIDA (que es lo que el profe reconoce), no el
   // texto pelado que se guarda: leer «El pajaro canto» y creer que la IA escribe
   // sin tildes sería el malentendido garantizado.
   if (modelo === 'textCorrection') return cuerpo(conMarcas(x));
+
   return '';
 }
 
@@ -44,6 +54,11 @@ function piezaHtml(modelo, x) {
  * Aceptar en bloque obligaba a lo de siempre: añadir las ocho y borrar a mano
  * las dos que no valen, ya dentro de la actividad. Quitarlas aquí es un toque, y
  * mantiene la promesa del diálogo — se ve ANTES de que entre nada (§24).
+ */
+/**
+ * @param {string} modelo
+ * @param {Record<string, unknown>|null} content
+ * @returns {string}
  */
 function vistaPrevia(modelo, content) {
   const donde = piezasDe(content);
@@ -59,11 +74,18 @@ function vistaPrevia(modelo, content) {
 }
 
 // Reconstruye la frase con sus tildes y comas, solo para enseñarla.
+/**
+ * @param {Record<string, unknown>} p
+ * @returns {string}
+ */
 function conMarcas(p) {
-  const marcas = new Map((p.marks || []).map(m => [m.pos, m.kind]));
+  const marks = /** @type {import('../kernel/contracts/activity.js').TextMark[]} */ (
+    Array.isArray(p.marks) ? p.marks : []);
+  const marcas = new Map(marks.map(m => [m.pos, m.kind]));
+  /** @type {Record<string, string>} */
   const TILDE = { a: 'á', e: 'é', i: 'í', o: 'ó', u: 'ú', A: 'Á', E: 'É', I: 'Í', O: 'Ó', U: 'Ú' };
   let out = '';
-  [...(p.text || '')].forEach((c, i) => {
+  [...(typeof p.text === 'string' ? p.text : '')].forEach((c, i) => {
     const k = marcas.get(i);
     out += k === 'tilde' ? (TILDE[c] ?? c) : c;
     if (k === 'coma') out += ',';
@@ -75,13 +97,14 @@ function conMarcas(p) {
  * Abre el diálogo. Resuelve con el CONTENIDO propuesto (con la forma del modelo)
  * cuando el profe lo acepta, o con `null` si cierra sin aceptar.
  *
- * @param {object} opts
- * @param {string} opts.modelo      modelo de contenido de la actividad
+ * @param {object} [opts]
+ * @param {string} [opts.modelo]      modelo de contenido de la actividad
  * @param {string} [opts.elemento]  cómo se llama una pieza aquí («pregunta», «par»…)
  * @param {string} [opts.tema]      sugerencia inicial (el título de la actividad)
  * @param {boolean} [opts.palabrasComoTexto]  Sopa de Letras (ver core/aiContent.js)
- * @param {Function} [opts.fetchFn] inyectable para las sondas
- * @returns {Promise<object|null>}
+ * @param {typeof fetch} [opts.fetchFn] inyectable para las sondas
+ * @param {HTMLElement|null} [opts.disparador] a quién devolver el foco al cerrar
+ * @returns {Promise<Record<string, unknown>|null>}
  */
 // `opts.disparador`: a quién devolver el foco al cerrar. Por defecto es
 // `document.activeElement` (core/modalFallback.js), pero editorShell.js
@@ -90,13 +113,26 @@ function conMarcas(p) {
 // deja de ser el `activeElement` al instante, así que ese caller lo pasa
 // explícito con la referencia que capturó antes de deshabilitarlo.
 export function abrirEscribirConIA(opts = {}) {
-  const { modelo, tema = '', palabrasComoTexto = false, fetchFn = fetch, disparador } = opts;
+  const { modelo = '', tema = '', palabrasComoTexto = false, fetchFn = fetch, disparador } = opts;
   const def = MODELOS_IA[modelo];
-  if (!iaSabeEscribir(modelo)) return Promise.resolve(null);
+  if (!iaSabeEscribir(modelo) || !def) return Promise.resolve(null);
   const elemento = opts.elemento || def.elemento;
 
   const suf = rid('ww-ia-');
-  const $ = (s) => document.getElementById(`${suf}${s}`);
+  // El diálogo lo escribe esta misma función: un nodo suyo que falte es un
+  // fallo de programación, y se dice en vez de disimularse.
+  /** @param {string} s @returns {HTMLElement} */
+  const $ = (s) => {
+    const n = document.getElementById(`${suf}${s}`);
+    if (!n) throw new Error(`Escribir con IA: falta #${suf}${s}`);
+    return n;
+  };
+  /** @param {string} s @returns {HTMLInputElement} */
+  const $in = (s) => /** @type {HTMLInputElement} */ ($(s));
+  /** @param {string} s @returns {HTMLSelectElement} */
+  const $sel = (s) => /** @type {HTMLSelectElement} */ ($(s));
+  /** @param {string} s @returns {HTMLButtonElement} */
+  const $btn = (s) => /** @type {HTMLButtonElement} */ ($(s));
   const wrap = document.createElement('div');
   wrap.innerHTML = `
     <div class="modal fade" id="${suf}" tabindex="-1">
@@ -154,14 +190,17 @@ export function abrirEscribirConIA(opts = {}) {
         </div>
       </div>
     </div>`;
-  const el = wrap.firstElementChild;
+  const el = /** @type {HTMLElement} */ (wrap.firstElementChild);
   document.body.appendChild(el);
   const m = abrirDialogoConFallback(el, { disparador });
 
+  /** @type {Record<string, unknown>|null} */
   let propuesto = null;
+  /** @type {Record<string, unknown>|null} */
   let aceptado = null;
   let sobrante = '';        // lo que la revisión descartó, para no repetirlo al repintar
 
+  /** @param {string} texto @param {string} [tipo] */
   const aviso = (texto, tipo = 'warning') => {
     $('estado').innerHTML = `<div class="alert alert-${tipo} py-2 mb-0 small">${escapeHtml(texto)}</div>`;
   };
@@ -173,7 +212,7 @@ export function abrirEscribirConIA(opts = {}) {
     const n = donde ? donde.lista.length : 0;
     $('lista').innerHTML = n ? vistaPrevia(modelo, propuesto) : '';
     $('lista').hidden = !n;
-    $('ok').disabled = !n;
+    $btn('ok').disabled = !n;
     if (!n) {
       aviso(`No queda ninguna ${elemento}. Escribe otra vez o cambia el tema.`, 'warning');
       return;
@@ -183,23 +222,23 @@ export function abrirEscribirConIA(opts = {}) {
   }
 
   async function escribir() {
-    const tema = $('tema').value.trim();
-    if (!tema) { aviso(TEMA_VACIO); $('tema').focus(); return; }
+    const tema = $in('tema').value.trim();
+    if (!tema) { aviso(TEMA_VACIO); $in('tema').focus(); return; }
     // La red se comprueba ANTES de gastar el intento: es la causa más frecuente
     // y la única que el profe puede resolver en el momento. Misma frase que
     // `diagnosticarFalloDeRed` da para "sin conexión" — un solo dueño del texto.
     if (navigator.onLine === false) { aviso(await diagnosticarFalloDeRed({ enLinea: false })); return; }
 
-    const boton = $('go');
+    const boton = $btn('go');
     boton.disabled = true;
     boton.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Escribiendo…';
     $('lista').hidden = true;
-    $('ok').disabled = true;
+    $btn('ok').disabled = true;
     aviso('Pensando… suele tardar unos segundos.', 'info');
     try {
       const r = await pedirContenido({
-        modelo, tema, curso: $('curso').value, cantidad: $('n').value,
-        url: EXTREMO(), token: getAuthToken(), fetchFn, palabrasComoTexto,
+        modelo, tema, curso: $sel('curso').value, cantidad: Number($in('n').value),
+        url: EXTREMO(), token: getAuthToken() || '', fetchFn, palabrasComoTexto,
       });
       if (r.error) { aviso(r.error); propuesto = null; return; }
       propuesto = r.content;
@@ -211,7 +250,7 @@ export function abrirEscribirConIA(opts = {}) {
       pintarPropuesta();
     } catch (e) {
       propuesto = null;
-      aviso(e.message);
+      aviso(e instanceof Error ? e.message : String(e));
     } finally {
       boton.disabled = false;
       boton.innerHTML = '<i class="bi bi-stars"></i> Escribir';
@@ -225,7 +264,8 @@ export function abrirEscribirConIA(opts = {}) {
     // Quitar una propuesta. Delegado en la lista: se repinta entera, así que un
     // handler por fila sobreviviría a su fila.
     $('lista').addEventListener('click', (ev) => {
-      const b = ev.target.closest('.ia-quitar');
+      const t = /** @type {HTMLElement|null} */ (ev.target);
+      const b = /** @type {HTMLElement|null} */ (t?.closest?.('.ia-quitar') ?? null);
       if (!b) return;
       const donde = piezasDe(propuesto);
       if (!donde) return;
@@ -234,6 +274,10 @@ export function abrirEscribirConIA(opts = {}) {
     });
     el.addEventListener('hidden.bs.modal', () => { el.remove(); resolve(aceptado); });
     m.show();
-    setTimeout(() => $('tema')?.focus(), 150);
+    // Tolerante a propósito: si el diálogo ya se cerró, no hay a quién enfocar.
+    setTimeout(() => {
+      const campo = /** @type {HTMLInputElement|null} */ (document.getElementById(`${suf}tema`));
+      campo?.focus();
+    }, 150);
   });
 }

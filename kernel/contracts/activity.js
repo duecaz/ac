@@ -79,6 +79,9 @@
  * @property {number} [points]                Puntos de ESTE ítem; si falta manda `scoring.pointsPerCorrect`.
  * @property {number} [seconds]               Tiempo EN VIVO de este ítem (R-3, `core/timings.js`);
  *   ausente = hereda el de la actividad.
+ * @property {string} [kind]                  Variante de la pregunta: `'truefalse'`
+ *   la siembra el editor de Quiz con sus dos opciones fijas, y solo él la lee
+ *   (la insignia «V/F» de la ficha). El scorer no la mira: se puntúa igual.
  */
 /**
  * @typedef {Object} QaContent
@@ -282,11 +285,13 @@
  * Reglas de la partida. Los cuatro primeros son los de `DEFAULT_RULES`; cada
  * plantilla añade los suyos (`hintMode`, `gridSize`, `selector`, `directions`,
  * `spinDurationMs`, `removeAfterSpin`…), por eso el índice abierto.
- * @typedef {Object} ActivityRules
- * @property {number} [timer]              Segundos por ítem. 0 = sin reloj.
- * @property {boolean} [randomize]         Barajar el orden de los ítems.
- * @property {boolean} [shuffleOptions]    Barajar las opciones de cada ítem.
- * @property {Record<string, unknown>} [templateOptions]
+ * El índice abierto NO es un saco: es lo que hace que `defaultRules()` de una
+ * plantilla (`{spinDurationMs, removeAfterSpin, selector}`) siga siendo
+ * `ActivityRules`. Quien conoce sus reglas concretas las lee por un typedef
+ * PROPIO de la plantilla (p. ej. `wheelRules()` en `templates/wheel/template.js`),
+ * que es quien las declara; quien no, las ve como `unknown` y las estrecha.
+ * @typedef {{timer?: number, randomize?: boolean, shuffleOptions?: boolean,
+ *   templateOptions?: Record<string, unknown>} & Record<string, unknown>} ActivityRules
  */
 
 /**
@@ -319,6 +324,14 @@
  * @property {boolean} [teams]
  * @property {VsFeedback} [vsFeedback]      Ambiente del DUELO; dueño único `core/presentation.js`.
  * @property {boolean} [vsAnimationOff]     El duelo sin animación central (las hojas de texto la apagan solas).
+ * @property {string|null} [soloAnimation]  Animación de progreso en Individual ('frog' hoy; `core/soloAnimator.js`).
+ * @property {string} [frogScene]           Escenario de esa animación ('swamp' por defecto; lo lee `core/soloAnimator.js`).
+ * @property {string} [vsAnimation]         Id del proveedor de animación central (`core/vsAnimations.js`).
+ * @property {string} [vsAnimationSrc]      URL del .json Lottie cuando el proveedor la pide.
+ * @property {boolean} [vsAnimCompact]      La animación del duelo, encogida a la franja de arriba.
+ * @property {number} [teamsCount]          Equipos por defecto al montar el modo (2-4).
+ * @property {string} [teamsScoring]        'auto' | 'judge': quién pone los puntos en Equipos.
+ * @property {number} [taskMaxAttempts]     Intentos por alumno que propone el diálogo de Tarea.
  */
 
 /**

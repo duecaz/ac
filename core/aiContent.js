@@ -30,6 +30,7 @@ export const TEMA_VACIO = 'Escribe de qué va la actividad.';
 // aquí) para que este extremo no se pueda usar como un modelo de lenguaje
 // gratis: se mandan datos, no instrucciones. Lo que sí vive aquí —y es lo que
 // hay que poder probar— es cómo se lee y se depura la respuesta.
+/** @type {Record<string, {etiqueta: string, elemento: string, describe: string}>} */
 export const MODELOS_IA = {
   qa: {
     etiqueta: 'preguntas con respuesta',
@@ -60,33 +61,41 @@ export const MODELOS_IA = {
 };
 
 /** ¿Sabe la IA escribir contenido de este modelo? */
+/** @param {string} modelo */
 export function iaSabeEscribir(modelo) {
   return Object.prototype.hasOwnProperty.call(MODELOS_IA, modelo);
 }
 
 // ── Utilidades de revisión ───────────────────────────────────────────────────
+/** @param {unknown} v */
 const txt = (v) => String(v ?? '').replace(/\s+/g, ' ').trim();
+// LO QUE DEVUELVE EL MODELO VIENE DE FUERA: se lee sin prometer forma y se
+// estrecha campo a campo (es justo lo que revisa este fichero).
+/** @param {unknown} v @returns {Record<string, unknown>} */
+const saco = (v) => (v && typeof v === 'object') ? /** @type {Record<string, unknown>} */ (v) : {};
 // Compara como compara el juego: sin tildes ni mayúsculas (mismo criterio que
 // `isCorrect` en core/contentModels/qa.js — si se comparara distinto, un
 // distractor «Mexico» pasaría por bueno frente a la respuesta «México»).
+/** @param {unknown} s */
 const norm = (s) => txt(s).toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
 
 /**
  * LEE LA RESPUESTA DEL MODELO Y LA DEJA LISTA (o la descarta).
  *
  * @param {string} modelo   uno de MODELOS_IA
- * @param {string|object} bruto  el JSON que devolvió el modelo (texto o ya parseado)
+ * @param {unknown} bruto  el JSON que devolvió el modelo (texto o ya parseado)
  * @param {object} [opts]
  * @param {boolean} [opts.palabrasComoTexto]  `words`: Sopa de Letras guarda
  *        cadenas sueltas y Crucigrama fichas con pista. Se pide siempre la ficha
  *        (la pista es lo que el Crucigrama no puede inventar) y aquí se aplana
  *        para la Sopa, en vez de generar dos veces.
- * @returns {{content: object|null, piezas: number, descartadas: string[], error: string|null}}
+ * @returns {{content: Record<string, unknown>|null, piezas: number, descartadas: string[], error: string|null}}
  */
 export function interpretarRespuesta(modelo, bruto, opts = {}) {
   const vacio = { content: null, piezas: 0, descartadas: [], error: null };
   if (!iaSabeEscribir(modelo)) return { ...vacio, error: `No sé escribir contenido de tipo «${modelo}».` };
 
+  /** @type {unknown} */
   let datos = bruto;
   if (typeof bruto === 'string') {
     // Los modelos suelen envolver el JSON en ```json … ```. Se limpia antes de
@@ -95,22 +104,29 @@ export function interpretarRespuesta(modelo, bruto, opts = {}) {
     try { datos = JSON.parse(limpio); }
     catch { return { ...vacio, error: 'La respuesta no vino en el formato esperado. Prueba otra vez.' }; }
   }
-  const lista = Array.isArray(datos) ? datos : (Array.isArray(datos?.items) ? datos.items : null);
+  const sueltas = saco(datos).items;
+  /** @type {unknown[]|null} */
+  const lista = Array.isArray(datos) ? datos : (Array.isArray(sueltas) ? sueltas : null);
   if (!lista) return { ...vacio, error: 'La respuesta no traía una lista de elementos.' };
 
+  /** @type {string[]} */
   const descartadas = [];
+  /** @param {number} i @param {string} motivo @returns {null} */
   const rechaza = (i, motivo) => { descartadas.push(`${i + 1}: ${motivo}`); return null; };
 
   if (modelo === 'qa') {
-    const items = lista.map((it, i) => {
-      const question = txt(it?.pregunta ?? it?.question);
-      const answer = txt(it?.respuesta ?? it?.answer);
+    const items = lista.map((cruda, i) => {
+      const it = saco(cruda);
+      const question = txt(it.pregunta ?? it.question);
+      const answer = txt(it.respuesta ?? it.answer);
       if (!question) return rechaza(i, 'sin enunciado');
       if (!answer) return rechaza(i, 'sin respuesta correcta');
-      const brutas = Array.isArray(it?.opciones ?? it?.options) ? (it.opciones ?? it.options) : [];
+      const posibles = it.opciones ?? it.options;
+      const brutas = Array.isArray(posibles) ? posibles : [];
       // El distractor que TAMBIÉN es correcto es la trampa de este modelo: el
       // alumno acierta y la app le dice que no. No se puede detectar por la
       // forma, así que se quita todo lo que coincida con la respuesta.
+      /** @type {string[]} */
       const distractores = [];
       for (const o of brutas) {
         const s = txt(o);
@@ -134,10 +150,12 @@ export function interpretarRespuesta(modelo, bruto, opts = {}) {
   }
 
   if (modelo === 'pairs') {
+    /** @type {{izq: Set<string>, der: Set<string>}} */
     const vistos = { izq: new Set(), der: new Set() };
-    const pairs = lista.map((p, i) => {
-      const left = txt(p?.izquierda ?? p?.left);
-      const right = txt(p?.derecha ?? p?.right);
+    const pairs = lista.map((cruda, i) => {
+      const p = saco(cruda);
+      const left = txt(p.izquierda ?? p.left);
+      const right = txt(p.derecha ?? p.right);
       if (!left || !right) return rechaza(i, 'le falta un lado');
       // UNO A UNO. Si «perro» empareja con «dog» y también con «can», el juego
       // marca error a quien acierta — y por la forma no se ve.
@@ -151,8 +169,9 @@ export function interpretarRespuesta(modelo, bruto, opts = {}) {
   }
 
   if (modelo === 'items') {
-    const items = lista.map((it, i) => {
-      const question = txt(it?.pregunta ?? it?.question ?? it);
+    const items = lista.map((cruda, i) => {
+      const it = saco(cruda);
+      const question = txt(it.pregunta ?? it.question ?? cruda);
       if (!question) return rechaza(i, 'vacía');
       return { id: rid('it_'), question, image: null };
     }).filter(Boolean);
@@ -161,10 +180,12 @@ export function interpretarRespuesta(modelo, bruto, opts = {}) {
   }
 
   if (modelo === 'words') {
+    /** @type {Set<string>} */
     const vistas = new Set();
-    const fichas = lista.map((w, i) => {
-      const palabra = txt(w?.palabra ?? w?.word ?? w).toUpperCase();
-      const pista = txt(w?.pista ?? w?.clue);
+    const fichas = lista.map((cruda, i) => {
+      const w = saco(cruda);
+      const palabra = txt(w.palabra ?? w.word ?? cruda).toUpperCase();
+      const pista = txt(w.pista ?? w.clue);
       if (!palabra) return rechaza(i, 'vacía');
       // Una sola palabra, solo letras: la rejilla no admite espacios ni signos.
       if (!/^[A-ZÑÁÉÍÓÚÜ]{2,}$/.test(palabra)) return rechaza(i, `«${palabra}» no es una palabra suelta de letras`);
@@ -175,15 +196,16 @@ export function interpretarRespuesta(modelo, bruto, opts = {}) {
       const limpia = pista && !norm(pista).includes(norm(palabra)) ? pista : '';
       if (pista && !limpia) descartadas.push(`${i + 1}: la pista de «${palabra}» contenía la palabra`);
       return { id: rid('w_'), word: palabra, clue: limpia };
-    }).filter(Boolean);
+    }).filter((f) => f !== null);
     if (!fichas.length) return { ...vacio, descartadas, error: 'Ninguna palabra era utilizable.' };
     const words = opts.palabrasComoTexto ? fichas.map(f => f.word) : fichas;
     return { content: { words }, piezas: fichas.length, descartadas, error: null };
   }
 
   if (modelo === 'textCorrection') {
-    const passages = lista.map((p, i) => {
-      const frase = txt(p?.frase ?? p?.text ?? p);
+    const passages = lista.map((cruda, i) => {
+      const p = saco(cruda);
+      const frase = txt(p.frase ?? p.text ?? cruda);
       if (!frase) return rechaza(i, 'vacía');
       // LAS POSICIONES NO LAS CALCULA LA IA. Se le pide la frase BIEN ESCRITA y
       // `parseRichText` (core/textMarks.js) deriva texto+marcas exactos — el
@@ -213,30 +235,41 @@ export function interpretarRespuesta(modelo, bruto, opts = {}) {
  * las guarda con su nombre (`items`, `pairs`, `words`, `passages`) y quien
  * trabaja con lo propuesto —fusionarlo, o quitar una que no gusta— no tiene por
  * qué saber cuál: pregunta.
- * @returns {{clave: string, lista: any[]}|null}
+ * @param {Record<string, unknown>|null|undefined} content
+ * @returns {{clave: string, lista: unknown[]}|null}
  */
 export function piezasDe(content) {
-  const clave = ['items', 'pairs', 'words', 'passages'].find(k => Array.isArray(content?.[k]));
-  return clave ? { clave, lista: content[clave] } : null;
+  const c = saco(content);
+  const clave = ['items', 'pairs', 'words', 'passages'].find(k => Array.isArray(c[k]));
+  const lista = clave ? c[clave] : null;
+  return (clave && Array.isArray(lista)) ? { clave, lista } : null;
 }
 
+/**
+ * @param {Record<string, unknown>|null|undefined} actual
+ * @param {Record<string, unknown>|null|undefined} nuevo
+ * @returns {Record<string, unknown>|null|undefined}
+ */
 export function fusionarContenido(actual, nuevo) {
   if (!nuevo) return actual;
   const donde = piezasDe(nuevo);
   if (!donde) return actual;
   const clave = donde.clave;
-  const previas = Array.isArray(actual?.[clave]) ? actual[clave] : [];
+  const antes = saco(actual)[clave];
+  const previas = Array.isArray(antes) ? antes : [];
   // Lo que estaba EN BLANCO no cuenta como trabajo del profe: las plantillas
   // nacen con una pieza vacía (R-D) y conservarla dejaría un hueco delante de
   // lo que acaba de escribir la IA.
   const utiles = previas.filter(p => !enBlanco(p));
-  return { ...actual, [clave]: [...utiles, ...nuevo[clave]] };
+  return { ...actual, [clave]: [...utiles, ...donde.lista] };
 }
 
+/** @param {unknown} p */
 function enBlanco(p) {
   if (typeof p === 'string') return txt(p) === '';
   if (!p || typeof p !== 'object') return true;
-  return !['question', 'left', 'right', 'word', 'text', 'answer'].some(k => txt(p[k]) !== '');
+  const o = saco(p);
+  return !['question', 'left', 'right', 'word', 'text', 'answer'].some(k => txt(o[k]) !== '');
 }
 
 /**
@@ -271,8 +304,11 @@ function enBlanco(p) {
  *   4. Modo opaco — última comprobación de si la petición llega a salir.
  *
  * Devuelve la frase para el profe: qué pasa y dónde mirarlo (R6).
+ *
+ * @param {{url?: string, estadoUrl?: string, fetchFn?: typeof fetch, enLinea?: boolean}} [o]
+ * @returns {Promise<string>}
  */
-export async function diagnosticarFalloDeRed({ url, estadoUrl = '', fetchFn = fetch, enLinea = true } = {}) {
+export async function diagnosticarFalloDeRed({ url = '', estadoUrl = '', fetchFn = fetch, enLinea = true } = {}) {
   if (enLinea === false) return 'Sin conexión a internet. La IA necesita red.';
   const estado = estadoUrl || String(url || '').replace(/\/contenido$/, '/estado');
 
@@ -330,18 +366,19 @@ export async function diagnosticarFalloDeRed({ url, estadoUrl = '', fetchFn = fe
  * PIDE el contenido a NUESTRO extremo (la Pi). No conoce a Gemini ni a Grok:
  * quien elige el proveedor y guarda la clave es el hook.
  *
- * @param {object} p
- * @param {string} p.modelo    modelo de contenido a escribir
- * @param {string} p.tema      de qué va (lo escribe el profe)
- * @param {number} p.cantidad  cuántas piezas
+ * @param {object} [p]
+ * @param {string} [p.modelo]    modelo de contenido a escribir
+ * @param {string} [p.tema]      de qué va (lo escribe el profe)
+ * @param {number} [p.cantidad]  cuántas piezas
  * @param {string} [p.curso]   a quién va dirigido («5.º de primaria»)
- * @param {string} p.url       extremo (lo compone quien llama, con PB_URL)
+ * @param {string} [p.url]       extremo (lo compone quien llama, con PB_URL)
  * @param {string} [p.token]   sesión del profe — sin ella el hook no responde
- * @param {Function} [p.fetchFn]
+ * @param {typeof fetch} [p.fetchFn]
  * @param {boolean} [p.palabrasComoTexto]
+ * @param {AbortSignal} [p.signal]
  */
 export async function pedirContenido({
-  modelo, tema, cantidad = 8, curso = '', url, token = '',
+  modelo = '', tema = '', cantidad = 8, curso = '', url = '', token = '',
   fetchFn = fetch, palabrasComoTexto = false, signal,
 } = {}) {
   if (!iaSabeEscribir(modelo)) throw new Error(`No sé escribir contenido de tipo «${modelo}».`);
@@ -366,9 +403,9 @@ export async function pedirContenido({
   }
 
   if (!r.ok) {
-    const cuerpo = await r.json().catch(() => ({}));
+    const cuerpo = saco(await r.json().catch(() => null));
     if (r.status === 401 || r.status === 403) throw new Error('Necesitas entrar con tu cuenta para usar la IA.');
-    if (r.status === 429) throw new Error(cuerpo?.message || 'Has llegado al límite de generaciones por hoy. Mañana se renueva.');
+    if (r.status === 429) throw new Error(txt(cuerpo.message) || 'Has llegado al límite de generaciones por hoy. Mañana se renueva.');
     if (r.status === 501 || r.status === 503) throw new Error('La IA todavía no está configurada en el servidor.');
     // 404 = la RUTA no existe, que es distinto de «falta la clave»: significa
     // que el hook no está instalado en la Pi. PocketBase contesta con su
@@ -378,10 +415,11 @@ export async function pedirContenido({
       throw new Error('El servidor no tiene instalado el asistente de IA '
         + '(falta pb_hooks/aulareto.pb.js en la Pi). Pasos en docs/handoff-ia-contenido.md §7.');
     }
-    throw new Error(cuerpo?.message || `El servidor respondió ${r.status}.`);
+    throw new Error(txt(cuerpo.message) || `El servidor respondió ${r.status}.`);
   }
 
+  /** @type {unknown} */
   const cuerpo = await r.json().catch(() => null);
   if (!cuerpo) throw new Error('La respuesta del servidor no se pudo leer.');
-  return interpretarRespuesta(modelo, cuerpo.contenido ?? cuerpo, { palabrasComoTexto });
+  return interpretarRespuesta(modelo, saco(cuerpo).contenido ?? cuerpo, { palabrasComoTexto });
 }

@@ -16,9 +16,17 @@
 //  save(arr)     -> persist the array (may cap/evict; quota-aware)
 //  send(item)    -> Promise; resolve = delivered, throw = keep for next flush
 //  idOf(item)    -> stable string identity for de-dupe and removal
+/**
+ * @template T
+ * @param {{load: () => T[], save: (q: T[]) => void, send: (it: T) => Promise<unknown>,
+ *   idOf: (it: T) => string, flushOnOnline?: boolean}} o
+ * @returns {{enqueue: (item: T) => void, flush: () => Promise<number>, pending: () => number}}
+ */
 export function createOfflineQueue({ load, save, send, idOf, flushOnOnline = true }) {
+  /** @type {Promise<number>|null} */
   let flushing = null;
 
+  /** @param {T} item */
   function enqueue(item) {
     const id = idOf(item);
     const q = load().filter(x => idOf(x) !== id);

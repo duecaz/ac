@@ -3,8 +3,13 @@
 // proyecto → el tiempo de juego es congelable en tests como el resto.
 import { clock } from '../../core/clock.js';
 
+/**
+ * @returns {{start: () => void, stop: () => number, reset: () => void, elapsedMs: () => number}}
+ */
 export function createTimer() {
+  /** @type {number|null} */
   let startedAt = null;
+  /** @type {number|null} */
   let stoppedAt = null;
   return {
     start() { startedAt = clock.now(); stoppedAt = null; },
