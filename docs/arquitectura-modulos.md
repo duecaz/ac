@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **335 módulos · 1355 imports internos.**
+> **338 módulos · 1368 imports internos.**
 
 ### Ir a otro documento
 
@@ -35,7 +35,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 39 · 4523 | 19 · 3102 | 0.69 |
 | **informes/tareas** | después de clase | 10 · 1119 | 5 · 619 | 0.55 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 89 · 7111 | 13 · 1841 | 0.26 |
-| **infra/común** | todo lo anterior | 171 · 20323 | 74 · 9518 | 0.47 |
+| **infra/común** | todo lo anterior | 174 · 21526 | 75 · 9657 | 0.45 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -59,7 +59,7 @@ graph TD
   V["<b>vistas</b><br/><small>el chrome: navegación, setup, informes</small><br/><small>54 módulos</small>"]
   AD["<b>adaptadores</b><br/><small>el transporte: PocketBase | local</small><br/><small>11 módulos</small>"]
   C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>152 módulos</small>"]
-  K["<b>kernel</b><br/><small>el motor de sesión: cuándo se liquida</small><br/><small>12 módulos</small>"]
+  K["<b>kernel</b><br/><small>el motor de sesión: cuándo se liquida</small><br/><small>15 módulos</small>"]
   T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>93 módulos</small>"]
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>6 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
@@ -68,7 +68,7 @@ graph TD
   AD -->|32| C
   A -->|28| C
   A -->|18| V
-  K -->|14| C
+  K -->|15| C
   V -->|14| CO
   CO -->|11| C
   V -->|10| K
@@ -107,7 +107,7 @@ graph TD
 | **vistas** | `views/playerView.js` (538) · `views/vsView.js` (500) · `views/admin/collections.js` (453) · `views/hostLive.js` (341) · `views/teamsView.js` (313) |
 | **adaptadores** | `adapters/pocketbase/realtimeRooms.js` (483) · `adapters/pocketbase/realtimeAnswers.js` (388) · `adapters/pocketbase/realtime.js` (361) · `adapters/local/realtime.js` (324) · `adapters/pocketbase/remoteStore.js` (255) |
 | **core** | `core/textCorrectionRound.js` (743) · `core/normsCheck.js` (559) · `core/skins.js` (421) · `core/aiContent.js` (388) · `core/auth.js` (369) |
-| **kernel** | `kernel/session/teamsMachine.js` (178) · `kernel/session/vsMachine.js` (169) · `kernel/session/liveMachine.js` (166) · `kernel/contracts/template.js` (164) · `kernel/session/memory.js` (98) |
+| **kernel** | `kernel/contracts/session.js` (416) · `kernel/contracts/activity.js` (387) · `kernel/contracts/template.js` (295) · `kernel/contracts/dataPort.js` (208) · `kernel/session/teamsMachine.js` (178) |
 | **plantillas** | `templates/crossword/player.js` (487) · `templates/wordsearch/player.js` (382) · `templates/match/player.js` (303) · `templates/diagram/player.js` (265) · `templates/tangram/player.js` (259) |
 | **contenido** | `kernel/content/qaAdapt.js` (141) · `kernel/content/models.js` (120) · `kernel/content/switch.js` (117) · `kernel/content/convert.js` (95) · `kernel/content/sessionItems.js` (25) |
 | **config** | `pocketbase.config.js` (13) |

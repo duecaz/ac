@@ -21,6 +21,32 @@
 //   · `templates/HOW_TO_ADD.md` — la explicación humana, derivada de lo mismo.
 //
 // Nada de esto valida por su cuenta: la validación vive en UN sitio.
+//
+// El VOCABULARIO que usa (Activity, RoundPayload, ScoreInput…) vive en los
+// contratos vecinos: `activity.js` (el dato) y `session.js` (jugar). Aquí no se
+// vuelve a definir ninguno — un concepto, un dueño (§21b).
+//
+// OJO con el signo de interrogación de apertura dentro de un bloque JSDoc: en
+// una línea `@property` rompe el parser de TypeScript (TS1127). En comentarios
+// de línea como este no pasa nada.
+
+/**
+ * @typedef {import('./activity.js').Activity} Activity
+ * @typedef {import('./activity.js').ActivityContent} ActivityContent
+ * @typedef {import('./activity.js').ActivityPresentation} ActivityPresentation
+ * @typedef {import('./activity.js').ActivityRules} ActivityRules
+ * @typedef {import('./activity.js').LiveSettings} LiveSettings
+ * @typedef {import('./activity.js').ScoringRules} ScoringRules
+ * @typedef {import('./session.js').LiveLoop} LiveLoop
+ * @typedef {import('./session.js').LivePhase} LivePhase
+ * @typedef {import('./session.js').RoundContext} RoundContext
+ * @typedef {import('./session.js').RoundPayload} RoundPayload
+ * @typedef {import('./session.js').ScoreInput} ScoreInput
+ * @typedef {import('./session.js').ScoreResult} ScoreResult
+ * @typedef {import('./session.js').SubmitKind} SubmitKind
+ * @typedef {import('./session.js').TeamsPolicy} TeamsPolicy
+ * @typedef {import('./session.js').VsPolicy} VsPolicy
+ */
 
 /**
  * @typedef {Object} TemplateModes
@@ -30,30 +56,42 @@
  */
 
 /**
+ * Una OPCIÓN DE PARTIDA (§28 R2, `core/playOptions.js`): lo que cambia el juego
+ * para ESTA vez, no el contenido guardado. Como mucho 2 por plantilla, de 2 a 4
+ * valores cada una, y la opción llega SIEMPRE ya elegida.
+ *
+ * `set` es PURO: devuelve una COPIA de la actividad; la guardada no se toca (§24).
+ *
+ * @typedef {Object} PlayOption
+ * @property {string} id
+ * @property {string} label
+ * @property {Array<{value: string, label: string, icon?: string}>} values
+ * @property {(activity: Activity) => string} get
+ * @property {(activity: Activity, value: string) => Activity} set
+ */
+
+/**
  * POLÍTICA DE JUEGO declarada — obligatoria, y el bloque más grande del
  * contrato. Existe para que el motor y las vistas LEAN cómo se comporta la
  * plantilla en cada modo en vez de adivinarlo (`views/vsView.js` forzaba
  * carrera a todas y en Quiz el primero en acabar le robaba lo hecho al otro).
  *
  * @typedef {Object} TemplatePlay
- * @property {'race'|'points'|'none'} vs     Duelo: gana quien acaba antes, o
- *   quien más suma (espera a los dos). `'none'` = sin VS. Distinto de `'none'`
- *   EXIGE `renderRound`.
- * @property {'turns'|'board'|'none'} teams  Equipos: por turnos, tablero
- *   compartido, o ninguno. `'turns'`/`'board'` EXIGEN `renderRound`.
- * @property {string[]} live   Bucles del catálogo CONGELADO (§26, `core/liveLoops.js`:
- *   `rounds` · `race` · `board` · `claim`). Lista vacía = no se juega en vivo.
- *   Tiene que ser coherente con `modes.live`, y `'board'` EXIGE `renderRaceCell`.
- * @property {'gesto'|'boton'} [submit]  Cómo se envía una respuesta en la ronda
+ * @property {VsPolicy} vs     Duelo: gana quien acaba antes, o quien más suma
+ *   (espera a los dos). `'none'` = sin VS. Distinto de `'none'` EXIGE `renderRound`.
+ * @property {TeamsPolicy} teams  Equipos: por turnos, tablero compartido,
+ *   mecánica propia, o ninguno. `'turns'`/`'board'` EXIGEN `renderRound`.
+ * @property {LiveLoop[]} live   Bucles del catálogo CONGELADO (§26,
+ *   `core/liveLoops.js`). Lista vacía = no se juega en vivo. Tiene que ser
+ *   coherente con `modes.live`, y `'board'` EXIGE `renderRaceCell`. (`loopsOf()`
+ *   tolera además la forma heredada de un solo string.)
+ * @property {SubmitKind} [submit]  Cómo se envía una respuesta en la ronda
  *   compartida: el toque ES la respuesta (cero botones) o se construye y se
  *   confirma (EXACTAMENTE uno, marcado `data-ww-submit`). OBLIGATORIO si hay
  *   `renderRound`.
- * @property {boolean} [retry]   ¿Un fallo vuelve a la cola?
- * @property {Array<{id:string,label:string,values:Array<{value:string,label:string}>,
- *   get:Function,set:Function}>} [options]  Opciones de PARTIDA (§28 R2): como
- *   mucho 2, de 2 a 4 valores cada una, `get`/`set` obligatorios y `set` PURO
- *   (no toca la actividad guardada). La opción llega SIEMPRE ya elegida.
- * @property {{unidad:string|null, crono:boolean}} [reloj]  Qué reloj ofrece.
+ * @property {boolean} [retry]   Un fallo vuelve a la cola, o no.
+ * @property {PlayOption[]} [options]  Opciones de PARTIDA.
+ * @property {{unidad: string|null, crono?: boolean}} [reloj]  Qué reloj ofrece.
  */
 
 /**
@@ -69,6 +107,7 @@
  */
 
 /**
+ * @template [C=ActivityContent]
  * @typedef {Object} TemplateMeta
  * @property {string} name            Id único, p. ej. 'quiz'. OBLIGATORIO.
  * @property {string} label           Nombre humano. OBLIGATORIO (no vacío).
@@ -87,77 +126,169 @@
  * @property {TemplateModes} modes    Dónde se puede jugar. OBLIGATORIO.
  * @property {TemplatePlay} play      Política de juego. OBLIGATORIA.
  * @property {TemplateEditor} editor  Qué se añade y qué enseña el vacío. OBLIGATORIO.
+ * @property {boolean} [paginated]    Una pantalla por ítem (de ahí sale el nº de páginas).
+ * @property {string} [markNoun]      Lo que el alumno MARCA, en singular (Tildes/Comas).
  * @property {'16/10'|'4/3'|'16/9'|'1/1'|'auto'} [aspectRatio]  Proporción del
  *   marco (por defecto 4/3). La plataforma OBEDECE lo que declare la plantilla.
  * @property {'fill'|'block'|'center'} [panelFit]  Maquetación del panel de VS.
- * @property {() => Object} defaultRules    OBLIGATORIA (función).
- * @property {() => Object} defaultScoring  OBLIGATORIA (función).
- * @property {() => Object} defaultContent  OBLIGATORIA (función). Lo que
+ * @property {() => ActivityRules} defaultRules      OBLIGATORIA (función).
+ * @property {() => ScoringRules} defaultScoring     OBLIGATORIA (función).
+ * @property {() => C} defaultContent                OBLIGATORIA (función). Lo que
  *   devuelve tiene que pasar el `validate()` de su modelo Y, si la plantilla
  *   ofrece rondas, producir al menos un ítem de sesión.
- * @property {() => Object} [defaultLive]   Ajustes de sala por defecto.
+ * @property {() => LiveSettings} [defaultLive]      Ajustes de sala por defecto.
+ * @property {() => ActivityPresentation} [defaultPresentation]  Tema/fondo sugeridos.
  */
 
 /**
- * @typedef {Object} RoundContext
- * @property {number} itemIndex  Índice del ítem/ronda que se sirve.
+ * Lo que el marco le pasa a `renderPlayer`. `mode` es lo que decide qué se
+ * persiste (`core/persistPolicy.js`); `onFinish` recibe el resultado ya con su
+ * TECHO, derivado del scorer y no de una fórmula paralela.
+ * @typedef {Object} PlayerOpts
+ * @property {import('./session.js').PersistMode} [mode]
+ * @property {boolean} [skipChrome]
+ * @property {(result: {score: number, maxScore?: number, timeUsed?: number} & Record<string, unknown>) => void} [onFinish]
  */
 
 /**
- * @typedef {Object} ScoreInput
- * @property {*} value          Lo que envió quien juega.
- * @property {Object} [item]    El ítem que se puntúa.
- * @property {number} [msTaken] Milisegundos que tardó (bonus de velocidad).
- * @property {Object} activity  La actividad completa.
- * @property {string} [mode]    El modo, cuando cambia el modelo de puntos
- *   (en carrera son PLANOS: sin bonus de velocidad).
+ * Los callbacks de una ronda compartida (VS · Equipos · alumno en vivo).
+ * `chips` viaja tal cual a la plantilla: quedarse solo con `onSubmit` era lo que
+ * dejaba a la vista pintando su barra ENCIMA de la de la hoja.
+ * @typedef {Object} RoundCallbacks
+ * @property {(value: unknown) => void} [onSubmit]
+ * @property {string} [chips]
+ * @property {boolean} [disabled]
  */
 
 /**
- * LA FORMA DEL SCORER, y no otra: `{correct, points, hits, total}`.
- * `hits`/`total` son el MÉRITO (binarias 1/1 ó 0/1; por partes, 3/8;
- * `total: 0` = no lo puntúa la máquina, lo pone el docente). Con el mérito
- * obligatorio, la tabla, el mapa de calor y el CSV leen igual todas.
- *
- * @typedef {Object} ScoreResult
- * @property {boolean} correct
- * @property {number} points
- * @property {number} hits
- * @property {number} total
+ * Lo que se PROYECTA en vivo. `item` es el ítem COMPLETO (el host tiene la
+ * clave); `payload` es el saneado que ve el alumno.
+ * @typedef {Object} HostRoundContext
+ * @property {LivePhase} [phase]
+ * @property {unknown} [item]
+ * @property {RoundPayload|null} [payload]
+ * @property {unknown[]} [answers]
  */
 
 /**
  * La superficie ESTÁTICA de una plantilla: son clases con miembros `static`,
  * no instancias (igual que `templates/base.js`).
  *
+ * @template [C=ActivityContent]
  * @typedef {Object} TemplateContract
- * @property {TemplateMeta} meta
- * @property {(rootSel: string|Element, activity: Object, opts?: Object) => void} renderPlayer
+ * @property {TemplateMeta<C>} meta
+ * @property {(rootSel: string|Element, activity: import('./activity.js').Activity<C>, opts?: PlayerOpts) => void} renderPlayer
  *   OBLIGATORIO (lo exige el registro al arrancar). El modo Individual/Tarea.
- * @property {(root: Element, activity: Object, onChange: Function) => void} renderEditor
+ * @property {(root: Element, activity: import('./activity.js').Activity<C>, onChange: (activity: import('./activity.js').Activity<C>) => void) => void} renderEditor
  *   OBLIGATORIO (lo exige el registro).
- * @property {(root: Element, payload: Object, cbs?: Object) => (Object|null)} [renderRound]
+ * @property {(root: Element, payload: RoundPayload, cbs?: RoundCallbacks) => ({dispose?: () => void}|null|void)} [renderRound]
  *   La ronda COMPARTIDA (VS · Equipos · alumno en vivo). Si existe, exige
  *   `scoreSubmission`, `getRoundPayload` y `meta.play.submit`.
- * @property {(root: Element, ctx: Object) => void} [renderRoundHost]
+ * @property {(root: Element, ctx: HostRoundContext) => void} [renderRoundHost]
  *   Lo que se PROYECTA en vivo. `templates/base.js` trae una por defecto; si la
  *   plantilla escribe la suya, cuenta como alternativa a `scoreSubmission`
  *   cuando `modes.live` (proyecta aunque no auto-puntúe).
- * @property {(cellEl: Element, ctx: Object) => void} [renderRaceCell]
+ * @property {(cellEl: Element, ctx: Record<string, unknown>) => void} [renderRaceCell]
  *   Una celda del tablero del docente en vivo. OBLIGATORIA si `play.live`
  *   incluye `'board'`.
- * @property {(activity: Object, ctx: RoundContext) => (Object|null)} [getRoundPayload]
+ * @property {(activity: import('./activity.js').Activity<C>, ctx: RoundContext) => (RoundPayload|null)} [getRoundPayload]
  *   El payload SIN la solución (§22). Obligatorio con `modes.live` o `renderRound`.
  * @property {(input: ScoreInput) => ScoreResult} [scoreSubmission]
  *   El ÚNICO scorer de la plantilla: lo usan todos los modos, y ninguna vista
  *   reimplementa el conteo.
- * @property {(content: Object, fromVersion: number) => Object} [migrateContent]
+ * @property {(content: C, fromVersion: number) => C} [migrateContent]
  *   OBLIGATORIA si `templateVersion > 1`, y tiene que ser IDEMPOTENTE.
- * @property {(content: Object, fromTemplate: string) => Object} [adoptContent]
+ * @property {(content: ActivityContent, fromTemplate: string) => C} [adoptContent]
  *   Adapta el contenido al CONVERTIR desde otra plantilla del MISMO
  *   `contentModel` pero distinta forma de ítem (Operaciones→Quiz genera
  *   `options[]`). La invoca `kernel/content/switch.js`; reglas en
  *   `kernel/content/qaAdapt.js`. Opcional y no se valida.
  */
+
+/**
+ * LA MISMA META, VISTA DESDE LA BASE — la que hay que poner en
+ * `templates/base.js`, y solo ahí.
+ *
+ * Por qué existe y no vale `TemplateMeta`: los 16 `static meta = { … }` de las
+ * plantillas son literales SIN anotar, así que TypeScript ENSANCHA sus valores
+ * (`kind: 'juego'` se infiere `string`, `play.vs: 'race'` se infiere `string`,
+ * el `mode: 'moves'` de Pelotas también). Un literal ensanchado no es asignable
+ * a una unión estrecha, y eso es TODO el TS2417: no hay nada mal en la
+ * plantilla, solo falta decirle a TypeScript qué valores acepta.
+ *
+ * Así que la BASE declara la forma ANCHA —las uniones como `string`, los
+ * `default*` como objeto— y cada plantilla que quiera el tipado exacto lo pide
+ * ella misma, con una línea y sin arrastrar a las otras quince:
+ *
+ *     una anotación `type` con `TemplateMeta<QaContent>` sobre su `static meta`
+ *
+ * `TemplateMeta` sigue siendo el contrato de verdad: es lo que se documenta, lo
+ * que comprueba `core/templateContract.js` y lo que se pide cuando alguien
+ * RECIBE una meta. Esto es solo la boca ancha por la que entra.
+ *
+ * @typedef {Object} BaseTemplateMeta
+ * @property {string} name
+ * @property {string} label
+ * @property {string} icon
+ * @property {string} [color]
+ * @property {string} [instructions]
+ * @property {string} [kind]
+ * @property {string} [skill]
+ * @property {string|null} contentModel
+ * @property {number} templateVersion
+ * @property {TemplateModes} modes
+ * @property {{vs: string, teams: string, live: string[], submit?: string,
+ *   retry?: boolean, options?: PlayOption[],
+ *   reloj?: {unidad: string|null, crono?: boolean}}} [play]
+ * @property {TemplateEditor} [editor]
+ * @property {boolean} [paginated]
+ * @property {string} [markNoun]
+ * @property {string} [aspectRatio]
+ * @property {string} [panelFit]
+ * @property {() => Record<string, unknown>} defaultRules
+ * @property {() => Record<string, unknown>} defaultScoring
+ * @property {() => Record<string, unknown>} defaultContent
+ * @property {() => Record<string, unknown>} [defaultLive]
+ * @property {() => Record<string, unknown>} [defaultPresentation]
+ */
+
+/**
+ * LO MISMO, pero como lo ve el registro: una CLASE cuyos miembros son estáticos,
+ * no un objeto. Es el tipo de `getTemplate()` y el que hay que pedir cuando se
+ * recibe «la plantilla» (`T`) por parámetro.
+ *
+ * En JavaScript, el lado estático de una clase ES un objeto con esos miembros,
+ * así que `TemplateStatic` no añade nada al contrato: solo le pone nombre al
+ * hecho de que se pasa la CLASE, sin instanciar.
+ *
+ * @template [C=ActivityContent]
+ * @typedef {TemplateContract<C>} TemplateStatic
+ */
+
+// CÓMO SE HACE QUE `class X extends BaseTemplate` COMPILE (hoy son 16 TS2417,
+// «Class static side incorrectly extends base class static side»).
+//
+// La causa NO es el patrón de clases estáticas —no hay que cambiarlo— sino que
+// `templates/base.js` declara sus estáticos SIN tipo: TypeScript los infiere lo
+// más estrechos posible y entonces ninguna subclase encaja.
+//   · `static meta = { … contentModel: null, defaultRules: () => ({}) … }` se
+//     infiere con `contentModel: null`, así que una subclase con
+//     `contentModel: 'qa'` deja de ser asignable.
+//   · `static renderPlayer = null` se infiere de tipo `null`, así que una
+//     subclase que le asigne una función, tampoco.
+//
+// El arreglo son TRES anotaciones en la base, y ni una línea en las 16 hijas
+// (verificado: con ellas los 16 TS2417 desaparecen):
+//
+//     @type {TemplateMeta}                    sobre  static meta = { … }
+//     @type {TemplateContract['renderPlayer']|null}  sobre  static renderPlayer = null
+//     @type {TemplateContract['renderEditor']|null}  sobre  static renderEditor = null
+//
+// (Los dos últimos siguen valiendo `null` en ejecución: son ABSTRACTOS a
+// propósito — con un stub que lanza, el guard de arranque de `core/registry.js`
+// no podía fallar nunca, porque la subclase lo heredaba.)
+//
+// No se ha hecho aquí porque esta fase solo toca `kernel/contracts/`: queda
+// anotado para la fase que abra `templates/`.
 
 export {};
