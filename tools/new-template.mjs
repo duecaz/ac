@@ -96,6 +96,12 @@ if (existsSync(outBase)) fail(`ya existe ${outBase} — el generador nunca pisa 
 // Prefijo de import relativo desde la carpeta de la plantilla hasta la raíz del repo.
 const REL = relative(outBase, ROOT).replaceAll('\\', '/') || '.';
 
+// El TIPO del contenido (kernel/contracts/activity.js): el esqueleto nace tipado,
+// porque el verificador (tools/typecheck.mjs) corre en el preflight y una
+// plantilla nueva sin JSDoc lo pondría en rojo en su primer commit.
+const CONTENT_TYPE = { qa: 'QaContent', pairs: 'PairsContent', words: 'WordsContent', items: 'ItemsContent',
+  textCorrection: 'TextCorrectionContent', ballsort: 'BallsortContent', diagram: 'DiagramContent' };
+const ctype = CONTENT_TYPE[model] || 'ActivityContent';
 const demoJson = JSON.stringify(DEMO[model], null, 2).split('\n').map((l, i) => i === 0 ? l : '      ' + l).join('\n');
 
 // ── ficheros ─────────────────────────────────────────────────────────────────
@@ -108,7 +114,11 @@ import { render${fn}Editor } from './editor.js';
 import { score${fn}Submission } from './scorer.js';
 import { escapeHtml } from '${REL}/core/html.js';
 
+/** @typedef {import('${REL}/kernel/contracts/activity.js').${ctype}} ${ctype} */
+/** @typedef {import('${REL}/kernel/contracts/activity.js').Activity} Activity */
+
 export class ${Cls}Template extends BaseTemplate {
+  /** @type {import('${REL}/kernel/contracts/template.js').TemplateMeta<${ctype}>} */
   static meta = {
     name: '${name}',
     label: '${label}',
@@ -140,7 +150,7 @@ export class ${Cls}Template extends BaseTemplate {
     // play.submit declara CÓMO se manda una respuesta en la ronda: 'gesto' (el
     // toque ES la respuesta, cero botones) o 'boton' (se construye y se
     // confirma con UNO marcado data-ww-submit). Lo audita matrix-smoke.
-    play: { vs: '${wantVs ? 'points' : 'none'}', teams: '${wantVs ? 'turns' : 'none'}', live: '${wantLive ? 'rounds' : 'none'}'${wantVs ? ", submit: 'boton'" : ''} },
+    play: { vs: '${wantVs ? 'points' : 'none'}', teams: '${wantVs ? 'turns' : 'none'}', live: ${wantLive ? "['rounds']" : '[]'}${wantVs ? ", submit: 'boton'" : ''} },
     defaultRules:   () => ({ timer: 0, randomize: true }),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1, pointsPerWrong: 0, maxScore: 0 }),
     defaultLive:    () => ({}),
@@ -153,21 +163,36 @@ export class ${Cls}Template extends BaseTemplate {
   static scoreSubmission = score${fn}Submission;
 ${wantVs || wantLive ? `
   // Payload de UNA ronda para VS/Equipos/Live — SIN la clave de respuesta.
+  /**
+   * @param {Activity} activity
+   * @param {import('${REL}/kernel/contracts/session.js').RoundContext} ctx
+   * @returns {import('${REL}/kernel/contracts/session.js').RoundPayload|null}
+   */
   static getRoundPayload(activity, ctx) {
-    const it = (activity.content?.${collectionKey} || [])[ctx.itemIndex];
+    const content = /** @type {${ctype}} */ (activity.content);
+    const it = (content.${collectionKey} || [])[ctx.itemIndex];
     return it ? { ...it, answer: undefined } : null;
   }
 ` : ''}${wantVs ? `
   // Ronda interactiva (VS / Equipos-auto): pinta el ítem y llama onSubmit(value).
+  /**
+   * @param {Element} root
+   * @param {import('${REL}/kernel/contracts/session.js').RoundPayload} payload
+   * @param {import('${REL}/kernel/contracts/template.js').RoundCallbacks} [cbs]
+   */
   static renderRound(root, payload, { onSubmit } = {}) {
-    root.innerHTML = \`<div class="${prefix}-round"><p>\${escapeHtml(payload?.question ?? payload?.q ?? '')}</p>
+    root.innerHTML = \`<div class="${prefix}-round"><p>\${escapeHtml(String(payload.question ?? ''))}</p>
       <button type="button" class="btn btn-primary ${prefix}-send" data-ww-submit>Responder</button></div>\`;
-    root.querySelector('.${prefix}-send').addEventListener('click', () => onSubmit?.('TODO-valor'));
+    root.querySelector('.${prefix}-send')?.addEventListener('click', () => onSubmit?.('TODO-valor'));
   }
 ` : ''}
   // Preview de tarjeta (miniatura del home) — OBLIGATORIO (contrato). Markup
   // estático de la primera pantalla; reusa los builders del player cuando puedas.
 
+  /**
+   * @param {import('${REL}/kernel/contracts/activity.js').ActivityContent} content
+   * @returns {import('${REL}/kernel/contracts/activity.js').ActivityContent}
+   */
   static migrateContent(content) { return content; }
 }
 `;
@@ -180,32 +205,38 @@ import { on } from '${REL}/core/events.js';
 import { runSequentialPlayer } from '${REL}/core/soloPlayer.js';
 import { GameEvents, emitGame } from '${REL}/core/gameEvents.js';
 import { clock } from '${REL}/core/clock.js';
-import { cabeceraHtml, hudSet } from '${REL}/core/playerHud.js';
+import { cabeceraHtml } from '${REL}/core/playerHud.js';
 import { score${fn}Submission } from './scorer.js';
 
+/** @typedef {import('${REL}/kernel/contracts/activity.js').Activity} Activity */
+
+/**
+ * @param {string|Element} rootSel
+ * @param {Activity} activity
+ * @param {import('${REL}/kernel/contracts/template.js').PlayerOpts} [opts]
+ * @returns {Promise<void>}
+ */
 export async function render${fn}Player(rootSel, activity, opts = {}) {
   runSequentialPlayer(rootSel, activity, opts, {
-    renderItem({ rootSel, item, idx, total, score, timerSecs, submit, startTimer }) {
+    renderItem({ rootSel, item, idx, total, timerSecs, submit, alAgotarse }) {
+      // El ítem llega como lo que el modelo guarda; se lee por FORMA (§24).
+      const it = /** @type {Record<string, unknown>} */ (typeof item === 'object' && item ? item : {});
+      // El RELOJ lo pinta el shell (cabecera → chip «tiempo»); aquí solo se
+      // declara qué pasa al agotarse.
       mount(rootSel, html\`
         <div class="ww-player ${prefix}-play">
-          \${cabeceraHtml({
-            pagina: \`\${idx + 1} / \${total}\`,
-            tiempo: timerSecs > 0 ? String(timerSecs) : null,
-          })}
+          \${cabeceraHtml({ pagina: \`\${idx + 1} / \${total}\` })}
           <div class="edu-sec edu-sec--${prefix} ${prefix}-item">
-            <p class="${prefix}-q">\${escapeHtml(item.question ?? item.q ?? item.left ?? String(item))}</p>
+            <p class="${prefix}-q">\${escapeHtml(String(it.question ?? it.q ?? it.left ?? ''))}</p>
             <!-- TODO: tu mecanica. El boton de ejemplo registra un acierto. -->
             <button type="button" class="btn btn-success ${prefix}-ok">¡Lo tengo!</button>
           </div>
         </div>\`);
 
       const t0 = clock.now();
-      startTimer({
-        onTick: (remaining) => hudSet(rootSel, 'tiempo', String(remaining)),
-        onTimeout: () => {
-          emitGame(GameEvents.ANSWER_WRONG, { idx });   // ← sonidos/efectos gratis (bus)
-          submit({ itemId: item.id, value: null, correct: false, points: 0, msTaken: timerSecs * 1000 });
-        },
+      alAgotarse(() => {
+        emitGame(GameEvents.ANSWER_WRONG, { idx });   // ← sonidos/efectos gratis (bus)
+        submit({ itemId: String(it.id ?? idx), value: null, correct: false, points: 0, msTaken: timerSecs * 1000 });
       });
 
       on(rootSel, 'click', '.${prefix}-ok', () => {
@@ -213,7 +244,7 @@ export async function render${fn}Player(rootSel, activity, opts = {}) {
         const r = score${fn}Submission({ value: 'TODO-valor', item, msTaken: ms, activity });
         if (r.correct) emitGame(GameEvents.ANSWER_CORRECT, { idx, points: r.points });
         else emitGame(GameEvents.ANSWER_WRONG, { idx });
-        submit({ itemId: item.id, value: 'TODO-valor', correct: r.correct, points: r.points, msTaken: ms });
+        submit({ itemId: String(it.id ?? idx), value: 'TODO-valor', correct: !!r.correct, points: r.points, msTaken: ms });
       });
     },
   });
@@ -227,9 +258,18 @@ import { html, mount } from '${REL}/core/html.js';
 import { runFreeformPlayer } from '${REL}/core/soloPlayer.js';
 import { GameEvents, emitGame } from '${REL}/core/gameEvents.js';
 
+/** @typedef {import('${REL}/kernel/contracts/activity.js').Activity} Activity */
+
+/**
+ * @param {string|Element} rootSel
+ * @param {Activity} activity
+ * @param {import('${REL}/kernel/contracts/template.js').PlayerOpts} [opts]
+ * @returns {Promise<void>}
+ */
 export async function render${fn}Player(rootSel, activity, opts = {}) {
   const ctx = runFreeformPlayer(rootSel, activity, opts);
-  const total = (activity.content?.${collectionKey} || []).length || 1;
+  const content = /** @type {import('${REL}/kernel/contracts/activity.js').${ctype}} */ (activity.content);
+  const total = (content.${collectionKey} || []).length || 1;
 
   mount(rootSel, html\`
     <div class="ww-player ${prefix}-play">
@@ -255,9 +295,14 @@ files['scorer.js'] = `// Scorer PURO de ${label} — contrato: SIEMPRE {correct,
 // sin clave. Convención de puntos en core/scoring/ (ítem → config → 1).
 import { basePoints, wrongPoints } from '${REL}/core/scoring/index.js';
 
-export function score${fn}Submission({ value, item, msTaken, activity, mode = 'solo' }) {
-  const ok = value != null;   // TODO: compara value contra la clave real del ítem
-  if (ok === null) return { correct: null, points: 0, hits: 0, total: 0 };
+/**
+ * @param {import('${REL}/kernel/contracts/session.js').ScoreInput} input
+ * @returns {import('${REL}/kernel/contracts/session.js').ScoreResult}
+ */
+export function score${fn}Submission({ value, item, activity }) {
+  // TODO: compara «value» (unknown: lo AFIRMA el cliente, §22) contra la clave
+  // real del ítem. Sin clave, devuelve { correct: null, points: 0, hits: 0, total: 0 }.
+  const ok = value != null;
   const scoring = activity?.scoring || {};
   return ok
     ? { correct: true, points: basePoints(item, scoring), hits: 1, total: 1 }
@@ -273,6 +318,13 @@ import { on } from '${REL}/core/events.js';
 import { renderEditorShell } from '${REL}/core/editorShell.js';
 import { rid } from '${REL}/core/ids.js';
 
+/** @typedef {import('${REL}/kernel/contracts/activity.js').Activity} Activity */
+
+/**
+ * @param {Element} root
+ * @param {Activity} a
+ * @param {(a: Activity) => void} onChange
+ */
 export function render${fn}Editor(root, a, onChange) {
   renderEditorShell(root, a, onChange, {
     content: {

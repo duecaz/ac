@@ -89,7 +89,15 @@ propósito (el repo no es una app de npm).
 - **Fronteras** (JSON parseado, filas PocketBase, localStorage, postMessage, `catch (e)`):
   `unknown` y se ESTRECHA por forma (`adapters/frontera.js`, `objetoDe` en `core/ls.js`).
   Nunca `instanceof Element` en runtime: las suites corren bajo Node sin DOM.
-- Nació en v1.51.674 con 4690 errores en 299 ficheros; a cero en v1.51.676.
+- **Cómo se anota sin pelear con el checker** (tres reglas): (1) se tipa la
+  FUENTE —la función exportada— y las llamadas heredan; (2) en la frontera,
+  `unknown` y se estrecha por forma, nunca se fuerza; (3) el DOM se coge con
+  `$`/`$$` de `core/html.js` (genéricos) y un guard, nunca `instanceof Element`.
+  Una plantilla nueva nace tipada (`tools/new-template.mjs`; lo comprueba
+  `tests/newTemplate.test.mjs` pasando tsc sobre el esqueleto).
+- Nació en v1.51.674 con 4690 errores en 299 ficheros; a cero en v1.51.676. La
+  revisión humana del diff de runtime (por nivel de riesgo, con la lista de
+  coerciones nuevas) está en `docs/historico/revision-tipos-2026-09-10.md`.
 
 ## 1. Suite Node (la de CI)
 

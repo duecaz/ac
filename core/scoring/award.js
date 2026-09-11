@@ -19,7 +19,12 @@ import { itemWindowMs } from '../timings.js';
 function itemPoints(item) {
   if (!item || typeof item !== 'object' || !('points' in item)) return 0;
   const p = /** @type {{points?: unknown}} */ (item).points;
-  return typeof p === 'number' ? p : 0;
+  // Un `points` que llega como TEXTO ("5", contenido importado o viejo) valía
+  // 5 antes de tipar (JS lo coercionaba al multiplicar) y sigue valiendo 5: la
+  // revisión humana de la pasada de tipos lo cazó como cambio de valor.
+  if (typeof p === 'number') return Number.isFinite(p) ? p : 0;
+  if (typeof p === 'string' && p.trim() !== '' && Number.isFinite(Number(p))) return Number(p);
+  return 0;
 }
 
 // Puntos base de un acierto: los del ítem, si no los de la config, si no 1.

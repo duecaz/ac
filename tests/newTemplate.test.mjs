@@ -6,7 +6,7 @@
 // Run: node tests/newTemplate.test.mjs
 import assert from 'node:assert';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, readFileSync, readdirSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
@@ -27,7 +27,28 @@ function generate(name, args) {
   return out;
 }
 
+// El esqueleto nace TIPADO: se pasa tsc (el mismo modo que jsconfig.json) sobre
+// los ficheros generados. Sin `tsc` en el PATH se avisa y se sigue: la red de
+// verdad es el preflight, que sí lo exige.
+function localizarTsc() {
+  for (const c of [process.env.WW_TSC, join(ROOT, 'node_modules', '.bin', 'tsc'), '/opt/node22/bin/tsc', '/usr/local/bin/tsc', '/usr/bin/tsc']) {
+    if (c && existsSync(c)) return c;
+  }
+  const w = spawnSync(process.platform === 'win32' ? 'where' : 'which', ['tsc'], { encoding: 'utf8' });
+  return (w.stdout || '').split(/\r?\n/).find(Boolean) || null;
+}
+const TSC = localizarTsc();
+function tipos(name, dir) {
+  if (!TSC) { console.log('  · (sin tsc en el PATH: el tipado del esqueleto lo verifica el preflight)'); return; }
+  const files = readdirSync(dir).filter(f => f.endsWith('.js')).map(f => join(dir, f));
+  const r = spawnSync(TSC, ['--noEmit', '--allowJs', '--checkJs', '--strict', '--target', 'es2022', '--module', 'esnext',
+    '--moduleResolution', 'bundler', '--lib', 'es2022,dom,dom.iterable', '--pretty', 'false', ...files], { encoding: 'utf8' });
+  const propios = (r.stdout || '').split(/\r?\n/).filter(l => l.includes(dir) && /error TS/.test(l));
+  assert.deepStrictEqual(propios, [], `${name}: el esqueleto generado no pasa el verificador de tipos:\n  ${propios.join('\n  ')}`);
+}
+
 async function verify(name, dir, { expectRound }) {
+  tipos(name, dir);
   for (const f of ['template.js', 'player.js', 'editor.js', 'scorer.js', 'index.js', `${name}.css`]) {
     assert.ok(existsSync(join(dir, f)), `${name}: falta ${f}`);
   }
@@ -55,6 +76,16 @@ try {
   const d1 = generate('demo-solo', ['--model', 'qa']);
   await verify('demo-solo', d1, { expectRound: false });
   ok('esqueleto default (solo-Individual): contrato + normas + CSS en verde, sin renderRound');
+
+  // 1b) CONTRA-PRUEBA del verificador sobre el esqueleto: un fichero con un
+  // error de tipos plantado tiene que ponerlo en rojo (si hay tsc).
+  if (TSC) {
+    const malo = join(scratch, 'malo');
+    mkdirSync(malo, { recursive: true });
+    writeFileSync(join(malo, 'x.js'), 'export const x = /** @type {{y: number}} */ ({}).z;\n');
+    assert.throws(() => tipos('malo', malo), /no pasa el verificador/, 'la red de tipos del esqueleto tiene que ver un error plantado');
+    ok('CONTRA-PRUEBA: el tipado del esqueleto se comprueba de verdad (un error plantado lo pone en rojo)');
+  }
 
   // 2) Variante completa: --vs --live --shell freeform sobre pairs.
   const d2 = generate('demo-full', ['--model', 'pairs', '--shell', 'freeform', '--vs', '--live']);
