@@ -58,6 +58,7 @@ quedó aquí.
 | **`handoff-player-frame.md`** | Etapas 1 y 2 PENDIENTES: el plan para cuando se vuelva al problema del marco |
 | **`handoff-ia-contenido.md`** | La IA que ESCRIBE el contenido (por modelo, no por plantilla): plan escrito, que es la condición que puso el norte §4b. **Funcionando desde v1.51.548**; §7b, lo que costó instalarlo en la Pi |
 | **`handoff-editor-general.md`** | El editor como pieza general: márgenes del panel, «+ Añadir» en todas, imagen↔pines, nacer en blanco y buscador de imágenes libres (decidido 2026-08-13, sin ejecutar) |
+| **`handoff-simplificar.md`** | El plan de SIMPLIFICAR tras la pasada de tipos (2026-09-11): cinco lecturas del código servido, los 9 temas que coincidieron (un dueño para estrechar · el DOM tiene dueño · primitivas del editor sin usar · los dos shells · copias que ya divergieron · módulos con varias cosas · basura · arranque · decisiones del dueño) y las 8 fases en orden de riesgo |
 | **`handoff-costuras.md`** | Los barridos escritor×lector que DETECTAN las costuras (declaraciones que nadie obedece · contrato a medias · vista que conoce plantillas · cableado sin extremo · la misma regla dos veces · ajuste en la capa equivocada · gesto que destruye lo que se toca) — pedidos 2026-09-02, EJECUTADOS a cero (§1b); la ley que los vigila es §31 |
 | **`handoff-juegos-inicial.md`** | Los tres JUEGOS de inicial (Colorear · Tangram · Rompecabezas): leyes contrastadas, decisiones técnicas (zonas SVG, máscara XOR, piezas sin canvas), banco compartido y lo que decide el dueño. |
 
