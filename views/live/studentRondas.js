@@ -137,7 +137,10 @@ export function createStudentRondas(rt) {
     }
     // El payload de la ronda lo sirve el snapshot o la plantilla; su forma exacta
     // la decide cada plantilla (§0), y es la que `renderRound` sabe leer.
-    const payload = /** @type {RoundPayload} */ (roundPayloadOf(tpl, rt.activity, idx, item));
+    const payload = roundPayloadOf(tpl, rt.activity, idx, item);
+    // Sin payload no hay ronda (índice fuera del snapshot): antes llegaba `null`
+    // a `renderRound` de la plantilla, que no lo espera.
+    if (!payload) return;
     mount(rt.rootSel, html`
       <div class="d-flex justify-content-between align-items-center mb-2">
         <span class="badge bg-info text-dark">Pregunta ${idx+1} / ${items.length}</span>

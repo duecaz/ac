@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **339 módulos · 1374 imports internos.**
+> **339 módulos · 1375 imports internos.**
 
 ### Ir a otro documento
 
@@ -32,10 +32,10 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 |---|---|---|---|---|
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 2130 | 7 · 1029 | 0.48 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 12 · 3352 | 12 · 1430 | 0.43 |
-| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 39 · 5513 | 19 · 3103 | 0.56 |
+| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 39 · 5524 | 19 · 3103 | 0.56 |
 | **informes/tareas** | después de clase | 10 · 1396 | 5 · 619 | 0.44 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 89 · 8947 | 13 · 1843 | 0.21 |
-| **infra/común** | todo lo anterior | 175 · 25311 | 75 · 9657 | 0.38 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 89 · 8945 | 13 · 1843 | 0.21 |
+| **infra/común** | todo lo anterior | 175 · 25331 | 75 · 9657 | 0.38 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -106,8 +106,8 @@ graph TD
 | **vistas** | `views/vsView.js` (572) · `views/playerView.js` (569) · `views/admin/collections.js` (518) · `views/hostLive.js` (409) · `views/teamsView.js` (383) |
 | **adaptadores** | `adapters/pocketbase/realtimeRooms.js` (606) · `adapters/pocketbase/realtimeAnswers.js` (484) · `adapters/local/realtime.js` (431) · `adapters/pocketbase/realtime.js` (384) · `adapters/pocketbase/remoteStore.js` (284) |
 | **core** | `core/textCorrectionRound.js` (893) · `core/normsCheck.js` (566) · `core/auth.js` (490) · `core/soloPlayer.js` (480) · `core/skins.js` (446) |
-| **kernel** | `kernel/contracts/session.js` (467) · `kernel/contracts/activity.js` (444) · `kernel/contracts/template.js` (349) · `kernel/session/teamsMachine.js` (263) · `kernel/session/vsMachine.js` (259) |
-| **plantillas** | `templates/crossword/player.js` (524) · `templates/wordsearch/player.js` (436) · `templates/match/player.js` (368) · `templates/diagram/player.js` (315) · `templates/tangram/player.js` (303) |
+| **kernel** | `kernel/contracts/session.js` (467) · `kernel/contracts/activity.js` (447) · `kernel/contracts/template.js` (349) · `kernel/session/teamsMachine.js` (263) · `kernel/session/vsMachine.js` (259) |
+| **plantillas** | `templates/crossword/player.js` (524) · `templates/wordsearch/player.js` (434) · `templates/match/player.js` (368) · `templates/diagram/player.js` (315) · `templates/tangram/player.js` (303) |
 | **contenido** | `kernel/content/qaAdapt.js` (169) · `kernel/content/models.js` (155) · `kernel/content/switch.js` (135) · `kernel/content/convert.js` (123) · `kernel/content/sessionItems.js` (37) |
 | **config** | `pocketbase.config.js` (13) |
 

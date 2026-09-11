@@ -13,6 +13,7 @@
 // Which blocks appear is gated by the SAME rules as the mode bar (core/modes.js):
 // VS only when isVsCompatible; Tarea only when the template declares modes.async.
 import { escapeHtml } from './html.js';
+import { FROG_SCENES } from './soloAnimations.js';
 import { on } from './events.js';
 import { isVsCompatible } from '../kernel/session/engine.js';
 import { sessionItems } from '../kernel/content/sessionItems.js';
@@ -177,6 +178,12 @@ function soloBlock(a, { conTitulo = true } = {}) {
         </span>
         <span class="vs-fx-label">Animación de progreso<small class="d-block text-muted">Una rana cruza saltando charcos a medida que el alumno acierta. Solo en modo Individual.</small></span>
       </label>
+      <label class="vs-fx-row solo-scene-row ${on ? '' : 'd-none'}" title="Qué cruza la rana.">
+        <span class="vs-fx-label">Escenario</span>
+        <select class="form-select form-select-sm solo-scene" style="max-width:12rem">
+          ${FROG_SCENES.map(sc => `<option value="${sc.id}" ${(a.presentation?.frogScene || 'swamp') === sc.id ? 'selected' : ''}>${sc.pad} ${sc.label}</option>`).join('')}
+        </select>
+      </label>
     </section>`;
 }
 
@@ -223,6 +230,13 @@ export function wireModesTab(root, a, onChange) {
   // SOLO — animación de progreso on/off (hoy solo la rana).
   on(root, 'change', '.solo-anim-toggle', (_, el) => {
     pres().soloAnimation = marcado(el) ? 'frog' : null;
+    onChange(a);
+    root.querySelector('.solo-scene-row')?.classList.toggle('d-none', !marcado(el));
+  });
+  // SOLO — el escenario de la rana (`frogScene`): lo leía core/soloAnimator.js y
+  // ningún editor lo escribía (§31: declaración sin escritor).
+  on(root, 'change', '.solo-scene', (_, el) => {
+    pres().frogScene = /** @type {HTMLSelectElement} */ (el).value;
     onChange(a);
   });
   // VS — central animation on/off (default on = "cuerda").

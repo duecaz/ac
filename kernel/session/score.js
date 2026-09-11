@@ -85,17 +85,24 @@ export function autoScore(T, { value, item, msTaken, activity, mode }) {
  * @param {SnapshotActivity|null|undefined} activity
  * @param {number} itemIndex
  * @param {RoundPayload|import('../contracts/activity.js').SessionItem|null} [fallback]
+ *   Lo que la pantalla YA TIENE si no se puede construir el payload: el
+ *   precalculado del snapshot, o el ítem local. Ese ítem vale como payload
+ *   porque solo llega aquí donde no hay nada que proteger (§22: el móvil en
+ *   vivo recibe `payloads` saneados por `pre`; el ítem con clave solo lo tiene
+ *   quien ya lo tenía en su propia pantalla). Por eso se declara AQUÍ, una vez,
+ *   y no en cada vista.
  * @param {Partial<RoundContext> & Record<string, unknown>} [ctx]
- * @returns {RoundPayload|import('../contracts/activity.js').SessionItem|null}
+ * @returns {RoundPayload|null}
  */
 export function roundPayloadOf(T, activity, itemIndex, fallback = null, ctx = {}) {
+  const respaldo = /** @type {RoundPayload|null} */ (fallback);
   // Snapshot de sala SANEADO (§22-2): el alumno no tiene `content`, tiene los
   // payloads ya calculados por el host. Se sirven de ahí en vez de recalcular
   // sobre una clave que ya no está (core/liveSnapshot.js).
   const pre = activity?.payloads;
-  if (Array.isArray(pre)) return pre[itemIndex] ?? fallback;
+  if (Array.isArray(pre)) return pre[itemIndex] ?? respaldo;
   // Sin actividad no hay ronda que construir: se entrega el fallback en vez de
   // llamar al payload con nada (lo que antes acababa en el catch de abajo).
-  try { return (T?.getRoundPayload && activity) ? T.getRoundPayload(activity, { itemIndex, ...ctx }) : fallback; }
-  catch { return fallback; }
+  try { return (T?.getRoundPayload && activity) ? T.getRoundPayload(activity, { itemIndex, ...ctx }) : respaldo; }
+  catch { return respaldo; }
 }

@@ -25,7 +25,7 @@
 // compartida ESCRIBE en una colección host-only (ley §22: el veredicto es del
 // host, y el servidor solo distingue host de alumno por el token). Esos modos
 // declaran en qué colección escriben (`writes`) y qué acto de profe hacen
-// (`hostAction`); `modeNeedsAuth()` lo DERIVA de las reglas reales
+// (`hostActionLabel`); `modeNeedsAuth()` lo DERIVA de las reglas reales
 // (`HOST_ONLY_WRITES` de core/pbRules.js) en vez de repetir la lista. Así la UI
 // puede avisar ANTES —"inicia sesión para crear la sala"— en vez de dejar que
 // el 403 aparezca con la clase delante.
@@ -65,7 +65,7 @@ import { claimStage } from './stageClaim.js';
  * @property {(a: Activity|null|undefined) => boolean} isAvailable
  * @property {string} [disabledHint]
  * @property {string} [writes]      Colección en la que ESCRIBE al abrirse (§22).
- * @property {string} [hostAction]  El acto de profe, en la frase que ve el docente.
+ * @property {string} [hostActionLabel]  El acto de profe, en la frase que ve el docente.
  * @property {boolean} [hideWhenUnavailable]
  */
 
@@ -128,7 +128,7 @@ export const MODE_DEFS = [
     // Abrir sala = escribir en live_sessions (host-only). El ALUMNO no necesita
     // cuenta: entra con el PIN.
     writes: LIVE_SESSIONS,
-    hostAction: 'crear una sala en vivo',
+    hostActionLabel: 'crear una sala en vivo',
     supportsTemplate: (T) => !!T?.meta?.modes?.live,
     isAvailable: (a) => !!getTemplate(a?.template)?.meta?.modes?.live,
     disabledHint: 'Esta plantilla no admite En vivo'
@@ -140,7 +140,7 @@ export const MODE_DEFS = [
     // Crear/cerrar tarea = escribir en assignments (host-only). El alumno la
     // hace con su código, sin cuenta.
     writes: ASSIGNMENTS,
-    hostAction: 'crear una tarea',
+    hostActionLabel: 'crear una tarea',
     supportsTemplate: (T) => !!T?.meta?.modes?.async,
     isAvailable: (a) => !!getTemplate(a?.template)?.meta?.modes?.async,
     // Tarea no tiene sentido si la plantilla no la soporta: se OCULTA en vez de
@@ -223,7 +223,7 @@ export function modeNeedsAuth(mode) {
 export function modeAuthHint(mode) {
   const m = asMode(mode);
   if (!m || !modeNeedsAuth(m)) return '';
-  return `Inicia sesión para ${m.hostAction || `usar ${m.label}`}`;
+  return `Inicia sesión para ${m.hostActionLabel || `usar ${m.label}`}`;
 }
 
 /** Modos host-only que hoy están BLOQUEADOS por no haber entrado. `authed` lo

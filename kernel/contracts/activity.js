@@ -97,6 +97,9 @@
  * @property {string} right
  * @property {string|null} [leftImage]
  * @property {string|null} [rightImage]
+ * @property {ImageCredit} [leftImageCredit]   El crédito viaja con su imagen (§24); lo
+ *   escribe el editor de Emparejar y pintarlo en el player es la deuda F6.
+ * @property {ImageCredit} [rightImageCredit]
  * @property {string|null} [image]  Alias legado del lado izquierdo.
  * @property {number} [points]
  */

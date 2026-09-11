@@ -78,7 +78,7 @@ function wsDrawLine(svg, gridEl, a, b, { color = '#3b82f6', opacity = 0.7, id } 
 /**
  * @param {string|Element} rootSel
  * @param {Activity} activity
- * @param {import('../../kernel/contracts/template.js').PlayerOpts & {playerIndex?: number}} [opts]
+ * @param {import('../../kernel/contracts/template.js').PlayerOpts} [opts]
  */
 export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
   const rawWords = wordsearchWords(activity);
@@ -91,7 +91,7 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
   const rules    = wordsearchRules(activity);
   const scoring  = activity.scoring || {};
   const gridN    = SIZE_MAP[rules.gridSize ?? ''] || 15;
-  const color    = PLAYER_COLORS[opts.playerIndex || 0];
+  const color    = PLAYER_COLORS[0];   // Individual: un solo jugador (el duelo pinta por lado, abajo)
 
   const { grid, placed, rows, cols } = generateGrid(rawWords, {
     rows: gridN, cols: gridN, dirs: rules.directions || 'medium',
@@ -250,9 +250,7 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
     emitGame(GameEvents.ANSWER_CORRECT, { idx: state.found.size - 1, points: pts, streak });
     if (streak >= 3) emitGame(GameEvents.STREAK, { count: streak });
 
-    // Mark cells with player color
-    const colorIdx = opts.playerIndex || 0;
-    for (const { r, c } of p.cells) getCell(r, c)?.classList.add(`ws-found-${colorIdx}`);
+    for (const { r, c } of p.cells) getCell(r, c)?.classList.add('ws-found-0');
 
     // Permanent SVG line — pixel-based so it lands exactly on the word.
     const svg = /** @type {SVGElement|null} */ (document.getElementById('ws-svg'));

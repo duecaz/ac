@@ -36,7 +36,7 @@ export function createHostTablero(rt) {
     // aquí se LEE y se reenvía, no se interpreta (§0).
     const contenido = /** @type {Record<string, unknown>} */ (rt.activity.content || {});
     const mode = typeof contenido.mode === 'string' ? contenido.mode : 'moves';
-    const payload = /** @type {RoundPayload|null} */ (roundPayloadOf(rt.tpl, rt.activity, 0));
+    const payload = roundPayloadOf(rt.tpl, rt.activity, 0);
     const board = payload?.board;
     const initialBoard = board && typeof board === 'object'
       ? /** @type {Record<string, unknown>} */ (board) : null;

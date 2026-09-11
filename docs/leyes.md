@@ -733,7 +733,7 @@ servidor.** Una feature nueva que confíe en el móvil está mal diseñada.
     profe (el servidor solo distingue host de alumno por el token). **Jugar,
     explorar, entrar con PIN y hacer una tarea siguen SIN cuenta.** Esa
     autoridad no se re-escribe en cada vista: el modo declara en qué colección
-    escribe (`MODE_DEFS[].writes`) y qué acto docente hace (`hostAction`), y
+    escribe (`MODE_DEFS[].writes`) y qué acto docente hace (`hostActionLabel`), y
     `modeNeedsAuth()`/`modeAuthHint()` (`core/modes.js`) lo **derivan** de
     `HOST_ONLY_WRITES` (`core/pbRules.js`) → una sola redacción
     ("Inicia sesión para crear una sala en vivo") para el **botón** (candado en

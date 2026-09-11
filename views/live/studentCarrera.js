@@ -137,7 +137,8 @@ export function createStudentCarrera(rt) {
     const idx = cola[0];
     // El payload de la ronda lo sirve el snapshot o la plantilla; su forma exacta
     // la decide cada plantilla (§0), y es la que `renderRound` sabe leer.
-    const payload = /** @type {RoundPayload} */ (roundPayloadOf(tpl, rt.activity, idx, allItems[idx]));
+    const payload = roundPayloadOf(tpl, rt.activity, idx, allItems[idx]);
+    if (!payload) return;   // índice fuera del snapshot: no hay ronda que pintar
     const streak = Streaks.get(rt.session.id, rt.player.playerId);
     rt.lastQuestionShownAt = serverNow();
     const total = allItems.length;

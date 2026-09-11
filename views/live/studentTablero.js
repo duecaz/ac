@@ -36,7 +36,7 @@ export function createStudentTablero(rt) {
     if (typeof tpl?.renderRound !== 'function') {
       throw new Error(`[studentTablero] ${rt.activity.template}: no implementa renderRound`);
     }
-    const payload = /** @type {RoundPayload} */ (roundPayloadOf(tpl, rt.activity, 0));
+    const payload = roundPayloadOf(tpl, rt.activity, 0);
     // El TABLERO es de la plantilla: la vista no lo interpreta, solo reenvía sus
     // medidas al host junto al movimiento (§0).
     const board = payload?.board;

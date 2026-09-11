@@ -72,7 +72,7 @@ function modos() {
     const k = KEY[m.id] || m.id;
     const p = PERSIST[k] || {};
     return `| **${m.label}** | ${m.embed ? 'esta pantalla (embebido)' : 'página propia'} `
-      + `| ${PERSIST_TXT[k] || '—'} | ${m.writes ? `sí — ${m.hostAction}` : 'no'} |`;
+      + `| ${PERSIST_TXT[k] || '—'} | ${m.writes ? `sí — ${m.hostActionLabel}` : 'no'} |`;
   });
   return [
     '| Modo | Pantalla | Persiste | ¿Necesita sesión de profe? |',

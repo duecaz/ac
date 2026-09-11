@@ -29,14 +29,17 @@ export function getSoloAnimation(id) { return _providers.get(id) || null; }
 // Por defecto: ninguna (no altera las actividades existentes).
 
 // ── Rana saltarina ───────────────────────────────────────────────────────────
-/** @type {Record<string, {pad: string, css: string}>} */
+/** @type {Record<string, {pad: string, css: string, label: string}>} */
 const SCENES = {
-  swamp:  { pad: '🪷', css: 'frog-swamp'   },
-  jungle: { pad: '🌿', css: 'frog-jungle'  },
-  space:  { pad: '🪐', css: 'frog-space'   },
-  winter: { pad: '❄️',  css: 'frog-winter'  },
-  volcano:{ pad: '🌋', css: 'frog-volcano' },
+  swamp:  { pad: '🪷', css: 'frog-swamp',   label: 'Charca'   },
+  jungle: { pad: '🌿', css: 'frog-jungle',  label: 'Selva'    },
+  space:  { pad: '🪐', css: 'frog-space',   label: 'Espacio'  },
+  winter: { pad: '❄️',  css: 'frog-winter',  label: 'Invierno' },
+  volcano:{ pad: '🌋', css: 'frog-volcano', label: 'Volcán'   },
 };
+/** Los escenarios que el EDITOR ofrece (`presentation.frogScene`): salen de la
+ *  misma tabla que los pinta, así no hay una lista copiada en el formulario. */
+export const FROG_SCENES = Object.entries(SCENES).map(([id, sc]) => ({ id, pad: sc.pad, label: sc.label }));
 /** @param {number} s @returns {string} */
 const streakLabel = (s) => s >= 15 ? '🔥🔥' : s >= 10 ? '🔥' : s >= 5 ? '⚡' : s >= 3 ? '✨' : '';
 

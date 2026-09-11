@@ -62,7 +62,7 @@ replantea. Texto completo en **`docs/leyes.md`** (índice único de normas).
 - **Si una ley cierra una puerta, la UI lo DICE ANTES**: dirigir en vivo / crear
   tareas exige sesión (§22) → el botón lleva candado con su frase y el router
   gatea; jugar/PIN/tarea siguen sin cuenta. La política vive en `MODE_DEFS`
-  (`writes` + `hostAction`) y la frase sale de `modeAuthHint()` — una sola
+  (`writes` + `hostActionLabel`) y la frase sale de `modeAuthHint()` — una sola
   redacción para botón, modal y gate (`tests/modeAuth.test.mjs`). Nunca esconder
   el modo, nunca dejar que falle para explicarlo después.
 - **La contra-prueba importa igual que la prueba**: al endurecer algo, el test debe
