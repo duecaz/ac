@@ -50,10 +50,8 @@ export function createHostCarrera(rt) {
       // supera con la hoja COMPLETA. Aquí el host contaba `correct` a secas
       // —para Tildes, net>0— y una hoja 3/4 le contaba como terminada: cerraba
       // la sala por "terminan todos" mientras el móvil re-encolaba la hoja.
-      // `racePassedRow` tolera una plantilla sin scorer (su catch cae al veredicto
-      // guardado), pero su firma lo pide: el bucle carrera solo lo declaran
-      // plantillas con `scoreSubmission` (lo exige el registro).
-      if (racePassedRow(/** @type {{scoreSubmission: (input: import('../../kernel/contracts/session.js').ScoreInput) => import('../../kernel/contracts/session.js').ScoreResult}} */ (rt.tpl), a, rt.items[a.itemIndex], rt.activity, rt.loop)) {
+      // `racePassedRow` tolera una plantilla sin scorer (cae al veredicto guardado).
+      if (racePassedRow(rt.tpl, a, rt.items[a.itemIndex], rt.activity, rt.loop)) {
         avance.items.add(a.itemIndex);
       }
     }

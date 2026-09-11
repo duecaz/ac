@@ -10,7 +10,9 @@
 import { dedupeRows } from './answerRows.js';
 
 /** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
-/** @typedef {import('../kernel/contracts/template.js').TemplateContract} Plantilla */
+/** La plantilla, del contrato o tal como la sirve el registro (`itemParts` es
+ *  opcional en las dos): así ninguna vista tiene que castear una por la otra.
+ *  @typedef {import('../kernel/contracts/template.js').TemplateContract|import('./registry.js').PlantillaRegistrada} Plantilla */
 /** @typedef {import('./answerRows.js').AnswerRow} AnswerRow */
 /** @typedef {{key: string, label: string, ok: boolean}} Parte */
 

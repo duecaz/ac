@@ -18,8 +18,9 @@ import { getRealtime } from '../adapters/index.js';
  * @typedef {Object} RoomChange
  * @property {'sessions'|'players'|'answers'} table
  * @property {string} eventType  'INSERT' | 'UPDATE' | 'DELETE'
- * @property {Object} [new]
- * @property {Object} [old]
+ * @property {Record<string, unknown>} [new]  La fila tal como llega (sala, jugador o
+ *   respuesta según `table`): FRONTERA, quien la lee la estrecha.
+ * @property {Record<string, unknown>} [old]
  */
 
 /** @typedef {import('../kernel/contracts/dataPort.js').RealtimePort} RealtimePort */

@@ -49,10 +49,10 @@ const AVATAR_LADO_MAX = 512;         // px del lado mayor: se ve en una pastilla
  *  @typedef {ReturnType<typeof import('../kernel/session/vsMachine.js').createVsSession>} SesionVs */
 /** El marcador tal y como lo entrega el motor.
  *  @typedef {ReturnType<SesionVs['standings']>} MarcadorCrudo */
-/** El marcador que sale de aquí (a `opts.onFinish`, p.ej. views/listView.js) con
- *  `leader`/`finishedBy` nombrados como lo que son: un lado, o ninguno.
- *  @typedef {Omit<MarcadorCrudo, 'leader'|'finishedBy'>
- *    & {leader: Lado|'tie', finishedBy: Lado|null}} Marcador */
+/** El marcador que sale de aquí (a `opts.onFinish`, p.ej. views/listView.js):
+ *  el del motor tal cual, que ya declara `leader`/`finishedBy` como un lado o
+ *  ninguno (`VsSideId` en kernel/session/vsMachine.js).
+ *  @typedef {MarcadorCrudo} Marcador */
 /** LA PLANTILLA DEL DUELO: la registrada, con las dos bocas que `isVsCompatible`
  *  —y el contrato antes que él— EXIGEN a quien declara `play.vs`, así que aquí ya
  *  no son opcionales.
@@ -520,7 +520,7 @@ export function mountVs(host, a, ctx, opts = {}) {
       finished = true;
       if (currentAnim) { currentAnim.destroy(); currentAnim = null; }
       // List-orchestrator mode: delegate result handling to the caller.
-      if (opts.onFinish) { opts.onFinish(/** @type {Marcador} */ (st)); return; }
+      if (opts.onFinish) { opts.onFinish(st); return; }
       // Quién gana, según la política declarada por la plantilla:
       //   carrera → quien terminó primero (con los puntos como respaldo).
       //   puntos  → quien más sumó; si empatan, desempata quien acabó antes

@@ -207,7 +207,7 @@ export async function renderAttempts(rootSel, assignmentId) {
       const { aggregate } = await import('../core/itemStats.js');
       // El registro guarda la meta ANCHA; `aggregate` pide el contrato exacto
       // (mismo paso que views/itemStatsView.js).
-      const st = aggregate({ items, template: /** @type {import('../kernel/contracts/template.js').TemplateContract|null} */ (T), rows: rowsFromAttempts(attempts), activity });
+      const st = aggregate({ items, template: T, rows: rowsFromAttempts(attempts), activity });
       worst = st.items.filter(i => i.n).sort((a, b) => a.pctCorrect - b.pctCorrect)[0] || null;
     } catch {}
   }

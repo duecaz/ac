@@ -176,7 +176,9 @@ export function racePassed(result) {
  * veredicto guardado en la fila — mejor un dato viejo que inventar uno.
  */
 /**
- * @param {{scoreSubmission: (input: ScoreInput) => ScoreResult}} tpl
+ * @param {{scoreSubmission?: (input: ScoreInput) => ScoreResult}|null|undefined} tpl
+ *   La plantilla registrada; sin scorer (no debería: el bucle carrera lo exige)
+ *   vale el veredicto guardado, igual que si el scorer lanza.
  * @param {{value?: unknown, correct?: boolean|null}} row
  * @param {unknown} item
  * @param {Activity} activity
@@ -187,8 +189,10 @@ export function racePassedRow(tpl, row, item, activity, loop) {
   // rango): vale el veredicto guardado. OJO: no basta confiar en el catch —
   // los scorers de marcas no lanzan con ítem ausente, devuelven "todo mal".
   if (item == null) return row.correct === true;
+  const puntuar = tpl?.scoreSubmission;
+  if (typeof puntuar !== 'function') return row.correct === true;
   try {
-    return racePassed(tpl.scoreSubmission({
+    return racePassed(puntuar({
       value: row.value, item, activity, mode: pointsModeFor(loop),
     }));
   } catch {

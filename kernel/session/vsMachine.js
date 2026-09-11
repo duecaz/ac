@@ -64,6 +64,10 @@ import { FORMATS } from './formats.js';
  * @property {VsAnswer[]} answers
  */
 
+/** Los dos lados del duelo: son las claves de `sides`, y `leader`/`finishedBy`
+ *  se declaran con ellos para que la vista no tenga que re-adivinar el texto.
+ *  @typedef {'left'|'right'} VsSideId */
+
 /**
  * EL ESTADO DEL DUELO. No tiene fase: no hay anfitrión que la mueva — el duelo
  * está en el lobby, en curso o terminado, y lo que avanza es el cursor de cada
@@ -72,7 +76,7 @@ import { FORMATS } from './formats.js';
  * @property {SessionFormat} [format]
  * @property {string} [code]
  * @property {RoomStatus} status
- * @property {string|null} finishedBy
+ * @property {VsSideId|null} finishedBy
  * @property {Record<string, VsSide>} sides   Claves `left` y `right`.
  */
 
@@ -183,7 +187,8 @@ function createVsSession(activity, T, opts) {
     // score tie: Operaciones (math) with unlimited retries advances only on a
     // correct answer, so BOTH sides finish at 100% — a draw on points. The
     // faster finisher should win, not show "empate".
-    if (s.cursor >= total && !state.finishedBy) state.finishedBy = sideId;
+    // `getSide` ya validó que `sideId` es una de las dos claves.
+    if (s.cursor >= total && !state.finishedBy) state.finishedBy = sideId === 'right' ? 'right' : 'left';
     if (raceToFinish) {
       // Carrera: el primero que completa todos los ítems gana y cierra el duelo.
       if (s.cursor >= total) state.status = 'ended';
@@ -219,7 +224,7 @@ function createVsSession(activity, T, opts) {
   function standings() {
     const L = state.sides.left, R = state.sides.right;
     const diff = L.score - R.score;
-    let leader = 'tie';
+    let leader = /** @type {VsSideId|'tie'} */ ('tie');
     if (diff > 0) leader = 'left';
     else if (diff < 0) leader = 'right';
     return {
