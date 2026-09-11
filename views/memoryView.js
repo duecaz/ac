@@ -15,11 +15,37 @@ import { cierreHtml } from '../core/podium.js';
 import { COVER_MS } from '../core/timings.js';
 
 
+/** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
+/** @typedef {import('../kernel/contracts/activity.js').PairsContent} PairsContent */
+/** @typedef {import('../kernel/contracts/activity.js').Pair} Pair */
+/** @typedef {import('../kernel/session/memory.js').MemoryCard} MemoryCard */
+/** @typedef {import('../core/teams.js').Equipo} Equipo */
+
 // Standalone route wrapper (#/memory/:id).
-// Embedded entry point. `host` is a DOM element. Returns { dispose }.
+// Embedded entry point. `host` is the stage: el elemento o su SELECTOR (así lo
+// declara core/modes.js y así lo pasa views/playerView.js, con
+// '#ww-player-widget'). Returns { dispose }.
+/**
+ * @param {string|Element} host
+ * @param {Activity} a
+ * @param {ReturnType<import('../core/lifecycle.js').acquire>} [ctx]
+ * @param {{backHref?: string}} [opts]
+ * @returns {{dispose: () => void}}
+ */
 export function mountMemory(host, a, ctx, opts = {}) {
   const backHref = opts.backHref;
-  const pairs = (a.content?.pairs || []).filter(p => p?.left && p?.right);
+  // EL ESCENARIO, RESUELTO. `host` llega como SELECTOR desde playerView
+  // ('#ww-player-widget'), y un string no tiene `isConnected`: el guard de vida
+  // del destape leía `undefined` y SIEMPRE salía antes de destapar, así que tras
+  // un fallo las dos cartas se quedaban boca arriba y el tablero bloqueado
+  // (`busy` nunca volvía a false). Se pregunta al elemento, no al parámetro.
+  const vivo = () => (typeof host === 'string' ? document.querySelector(host) : host);
+  // El contenido es una UNIÓN (§24): solo el modelo `pairs` trae pares, así que
+  // se pregunta por la FORMA antes de leerlos.
+  const c = a.content;
+  const crudos = /** @type {Pair[]} */ (
+    c && typeof c === 'object' && 'pairs' in c && Array.isArray(c.pairs) ? c.pairs : []);
+  const pairs = crudos.filter(p => p?.left && p?.right);
   if (pairs.length < 2) {
     mount(host, html`<div class="alert alert-info m-3">La memoria necesita al menos 2 pares. <a href="#/edit/${a.id}">Editar</a></div>`);
     return { dispose() {} };
@@ -48,12 +74,13 @@ export function mountMemory(host, a, ctx, opts = {}) {
         renderNames();
         on(host, 'click', '#mem-count button', (_, b) => {
           teamCount = Number(b.dataset.n);
-          $('#mem-count').querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+          $$('#mem-count button').forEach(x => x.classList.toggle('active', x === b));
           renderNames();
         });
       },
       onStart: () => {
-        const names = $$('#mem-names input').map((el, i) => (el.value || '').trim() || `Equipo ${i + 1}`);
+        const campos = /** @type {HTMLInputElement[]} */ ($$('#mem-names input'));
+        const names = campos.map((el, i) => (el.value || '').trim() || `Equipo ${i + 1}`);
         startGame(names);
       }
     });
@@ -65,8 +92,11 @@ export function mountMemory(host, a, ctx, opts = {}) {
     box.innerHTML = teamNameInputsHtml(teamCount);
   }
 
+  /** @param {string[]} names */
   function startGame(names) {
-    const game = createMemoryGame(a, { teams: names });
+    const game = createMemoryGame(
+      /** @type {import('../kernel/contracts/activity.js').Activity<PairsContent>} */ (a),
+      { teams: names });
     let busy = false; // true while two cards are up after a miss (input locked)
 
     paint();
@@ -92,6 +122,7 @@ export function mountMemory(host, a, ctx, opts = {}) {
       return `grid-template-columns: repeat(${cols}, 1fr);`;
     }
 
+    /** @param {MemoryCard} c */
     function cardHtml(c) {
       const face = c.matched || c.flipped;
       const cls = c.matched ? 'is-matched' : c.flipped ? 'is-flipped' : '';
@@ -112,9 +143,10 @@ export function mountMemory(host, a, ctx, opts = {}) {
     }
 
     function wire() {
-      on(host, 'click', '.mem-card', (_, btn) => {
+      on(host, 'click', '.mem-card', (_, el) => {
+        const btn = /** @type {HTMLButtonElement} */ (el);
         if (busy || btn.disabled) return;
-        const r = game.flip(btn.dataset.id);
+        const r = game.flip(btn.dataset.id || '');
         if (!r.ok) return;
         if (r.matched) emitGame(GameEvents.ANSWER_CORRECT, {});
         if (r.pair && !r.matched) {
@@ -124,7 +156,7 @@ export function mountMemory(host, a, ctx, opts = {}) {
           paint(); // reflect the 2nd card face-up (all disabled)
           // Guard de vida: si la ruta cambió durante la pausa, no repintar
           // sobre la vista siguiente (ley de vista §23).
-          setTimeout(() => { if (!host.isConnected) return; game.cover(); busy = false; paint(); }, COVER_MS);
+          setTimeout(() => { if (!vivo()?.isConnected) return; game.cover(); busy = false; paint(); }, COVER_MS);
           return;
         }
         if (r.ended) emitGame(GameEvents.PODIUM, { top: game.leaderboard().slice(0, 1).map(t => ({ name: t.name, score: t.score })) });
@@ -133,6 +165,7 @@ export function mountMemory(host, a, ctx, opts = {}) {
       on(host, 'click', '#mem-again', () => renderSetup());
     }
 
+    /** @param {Equipo} team */
     function colorOf(team) {
       return teamColor(team.id, game.state.teams);
     }

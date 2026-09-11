@@ -6,7 +6,7 @@
 // el informe final (views/live/studentFin.js) también los lee.
 import { serverNow } from '../../core/serverNow.js';
 import { startDeadlineTicker } from '../../core/deadlineTicker.js';
-import { html, escapeHtml, mount } from '../../core/html.js';
+import { html, escapeHtml, mount, $$ } from '../../core/html.js';
 import { listOwnAnswers, submitRaceAttempt } from '../../core/liveTransport.js';
 import { raceResumeState } from '../../core/raceResume.js';
 import { toast, TOAST_CORTO } from '../../core/toast.js';
@@ -20,13 +20,28 @@ import { RACE_FLASH_MS, mmss } from '../../core/timings.js';
 import { pointsModeFor, racePassed } from '../../core/liveLoops.js';
 import { endPolicyOf, waitingInfo } from '../../core/liveEnd.js';
 
+/**
+ * @typedef {import('../studentLive.js').StudentRt} StudentRt
+ * @typedef {import('../../kernel/contracts/session.js').RoundPayload} RoundPayload
+ */
+
+/** @param {StudentRt} rt */
 export function createStudentCarrera(rt) {
+  /** @type {Set<number>} */
   let raceFirstSent = new Set();  // ítems cuyo PRIMER intento ya se envió (análisis)
+  /** @type {Promise<void>|null} */
   let raceSeed = null;            // promesa de la siembra de la cola (una sola vez)
 
   function paintRace() {
     const allItems = sessionItems(rt.activity);
     const tpl = getTemplate(rt.activity.template);
+    // `renderRound`/`scoreSubmission` son OPCIONALES en el contrato
+    // (kernel/contracts/template.js): sin ellas no hay carrera que jugar ni con
+    // qué juzgarla. Llamar a `undefined` ya lanzaba; se lanza con el nombre de la
+    // plantilla para que el aviso no sea mudo (R6).
+    if (typeof tpl?.renderRound !== 'function' || typeof tpl.scoreSubmission !== 'function') {
+      throw new Error(`[studentCarrera] ${rt.activity.template}: no implementa renderRound + scoreSubmission`);
+    }
 
     // SIN CLAVE NO SE JUZGA (§22). En carrera el veredicto lo da este móvil, así
     // que necesita la actividad completa; la sala la sube al arrancar, pero
@@ -103,21 +118,26 @@ export function createStudentCarrera(rt) {
         // Primitivo compartido (§23): reloj hasta un instante del servidor, con
         // guard de fase para que no repinte encima del podio.
         startDeadlineTicker({
-          deadline: deadlineMs, ctx: rt.ctx,
+          deadline: deadlineMs, setIntervalFn: rt.ctx.setInterval,
           while: () => rt.session.phase === 'race' && !!document.getElementById('race-left'),
-          onTick: (leftMs) => {
+          onTick: ({ remainMs }) => {
             const el = document.getElementById('race-left');
             // `Math.ceil`: en una cuenta atrás, mostrar 0:00 con un segundo aún
             // por correr le dice al alumno que se acabó cuando no se ha acabado.
-            if (el) el.textContent = mmss(leftMs, Math.ceil);
+            if (el) el.textContent = mmss(remainMs, Math.ceil);
           },
         });
       }
       return;
     }
 
-    const idx = rt.raceQueue[0];
-    const payload = roundPayloadOf(tpl, rt.activity, idx, allItems[idx]);
+    // La COLA de esta pantalla: el guard de arriba ya descartó `null`, y es el
+    // MISMO array que vive en `rt` (shift/push siguen moviendo la cola de la sala).
+    const cola = rt.raceQueue;
+    const idx = cola[0];
+    // El payload de la ronda lo sirve el snapshot o la plantilla; su forma exacta
+    // la decide cada plantilla (§0), y es la que `renderRound` sabe leer.
+    const payload = /** @type {RoundPayload} */ (roundPayloadOf(tpl, rt.activity, idx, allItems[idx]));
     const streak = Streaks.get(rt.session.id, rt.player.playerId);
     rt.lastQuestionShownAt = serverNow();
     const total = allItems.length;
@@ -136,13 +156,17 @@ export function createStudentCarrera(rt) {
     // propia) construye sus badges aparte.
     const chips = {
       left: `✓ ${rt.raceCorrectCount}/${total}` + (streak >= 2 ? ` · 🔥 ${streak}` : ''),
-      right: `${rt.raceQueue.length} restantes`,
+      right: `${cola.length} restantes`,
     };
     mount(rt.rootSel, html`<div id="s-race-extra"></div><div id="s-round"></div>`);
 
     let sent = false;
-    const ronda = tpl.renderRound(document.getElementById('s-round'), payload, {
-      mode: 'live',
+    const hueco = document.getElementById('s-round');
+    if (!hueco) return;
+    // El scorer se toma AQUÍ (con su `this`): dentro del callback es la plantilla
+    // quien puntúa, nunca la vista (un solo scorer por plantilla).
+    const puntuar = tpl.scoreSubmission.bind(tpl);
+    const ronda = tpl.renderRound(hueco, payload, {
       chips,
       onSubmit: (value) => {
         if (sent) return;
@@ -157,7 +181,7 @@ export function createStudentCarrera(rt) {
           // El modelo de puntos lo decide el BUCLE (core/liveLoops.js), igual que
           // el settle del servidor — si aquí se estimara distinto, el alumno
           // vería un puntaje que el podio luego desmiente.
-          const r = tpl.scoreSubmission({ value, item: allItems[idx], msTaken: ms, activity: rt.activity, mode: pointsModeFor(rt.session.loop || 'race') });
+          const r = puntuar({ value, item: allItems[idx], msTaken: ms, activity: rt.activity, mode: pointsModeFor(rt.session.loop || 'race') });
           // En CARRERA la vara es COMPLETA (§26 · `racePassed`): una hoja de
           // Tildes a medias VUELVE A LA COLA en vez de darse por superada — si
           // no, el podio ordena por hora de meta a gente que no hizo lo mismo.
@@ -175,14 +199,14 @@ export function createStudentCarrera(rt) {
         // Color the selected button in-place — no DOM replacement, same as solo player.
         const roundEl = document.getElementById('s-round');
         if (roundEl) {
-          const picked = [...roundEl.querySelectorAll('.rq-opt')].find(b => b.dataset.value === value)
+          const picked = $$('.rq-opt', roundEl).find(b => b.dataset.value === value)
                         || roundEl.querySelector('.rq-picked');
           if (picked) picked.classList.add(ok ? 'btn-success' : 'btn-danger');
         }
 
         // Advance queue and score.
-        rt.raceQueue.shift();
-        if (!ok) rt.raceQueue.push(idx);
+        cola.shift();
+        if (!ok) cola.push(idx);
         else { rt.raceCorrectCount++; rt.myScore += pts; }
         const newStreak = Streaks.bump(rt.session.id, rt.player.playerId, ok);
 

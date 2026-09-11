@@ -5,6 +5,12 @@ import { escapeHtml } from '../../core/html.js';
 import { fechaCorta } from '../../core/fechas.js';
 import { on } from '../../core/events.js';
 
+/** @param {unknown} e @returns {string} */
+const msgDe = (e) => (e instanceof Error && e.message ? e.message : String(e));
+/** @param {string} id @returns {HTMLInputElement|HTMLSelectElement|null} */
+const campo = (id) => /** @type {HTMLInputElement|HTMLSelectElement|null} */ (document.getElementById(id));
+
+/** @returns {{html: () => string, wire: (rootSel: string) => void}} */
 export function createAiSection() {
   return {
     html: () => `
@@ -64,6 +70,7 @@ export function createAiSection() {
             return;
           }
           if (!r.ok) throw new Error(`estado ${r.status}`);
+          /** @type {{configurado?: unknown, proveedor?: unknown, origen?: unknown, via?: unknown, topeDiario?: unknown, motivo?: unknown}} */
           const e = await r.json();
           box.innerHTML = e.configurado
             ? `<div class="alert alert-success py-1 px-2 small mb-0">Hook instalado y con clave de <b>${escapeHtml(e.proveedor || '?')}</b> (en ${escapeHtml(e.origen)}${e.via ? ', vía ' + escapeHtml(e.via) : ''}). Tope ${e.topeDiario}/día por profe.</div>`
@@ -73,7 +80,7 @@ export function createAiSection() {
         } catch (err) {
           // best-effort: es un informe, no una función. Si la Pi no contesta, el
           // resto del panel no se bloquea — pero se dice, no se calla (R6).
-          box.innerHTML = `<div class="alert alert-secondary py-1 px-2 small mb-0">No se pudo consultar el estado de la IA: ${escapeHtml(err.message)}</div>`;
+          box.innerHTML = `<div class="alert alert-secondary py-1 px-2 small mb-0">No se pudo consultar el estado de la IA: ${escapeHtml(msgDe(err))}</div>`;
         }
       })();
 
@@ -82,28 +89,36 @@ export function createAiSection() {
       // que puede escribir en `ia_config`, y eso es justo lo que hace segura la
       // colección. El navegador toca la clave UNA vez —al escribirla— y nunca la
       // vuelve a leer: para eso están las reglas a null.
+      /** @returns {Promise<{token: string, PB_URL: string}>} */
       async function tokenSuperadmin() {
-        const email = document.getElementById('pb-email')?.value?.trim();
-        const pass  = document.getElementById('pb-pass')?.value;
+        const email = campo('pb-email')?.value?.trim();
+        const pass  = campo('pb-pass')?.value;
         if (!email || !pass) throw new Error('Pon el email y la contraseña de superadmin de PocketBase (sección de arriba).');
         const { PB_URL } = await import('../../pocketbase.config.js');
         for (const url of [`${PB_URL}/api/collections/_superusers/auth-with-password`, `${PB_URL}/api/admins/auth-with-password`]) {
           const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ identity: email, password: pass }) });
-          if (r.ok) return { token: (await r.json()).token, PB_URL };
+          if (r.ok) {
+            /** @type {{token?: unknown}} */
+            const d = await r.json();
+            return { token: String(d?.token ?? ''), PB_URL };
+          }
           if (r.status !== 404) {
+            /** @type {{message?: unknown}} */
             const b = await r.json().catch(() => ({}));
-            throw new Error(b.message || `Error de autenticación (${r.status})`);
+            throw new Error(String(b.message || `Error de autenticación (${r.status})`));
           }
         }
         throw new Error('No se pudo autenticar como superadmin.');
       }
+      /** @param {string} html */
       const iaOut = (html) => { const o = document.getElementById('ia-out'); if (o) o.innerHTML = html; };
 
       // ── LA LISTA DE CLAVES ────────────────────────────────────────────────────
       // `fields=` filtra EN EL SERVIDOR: la clave no viaja al navegador ni siquiera
       // con el token de superadmin. La versión anterior traía el registro entero
       // para sacarle el id — el secreto acababa en la pestaña sin ninguna razón.
+      /** @param {string} html */
       const iaLista = (html) => { const o = document.getElementById('ia-lista'); if (o) o.innerHTML = html; };
 
       async function pintarClaves(msg = '') {
@@ -131,16 +146,19 @@ export function createAiSection() {
             </td></tr>`).join('')}</tbody></table>`);
       }
 
-      const iaListaError = (e) => iaLista(`<div class="alert alert-danger py-1 px-2 small mb-0">${escapeHtml(e.message)}</div>`);
+      /** @param {unknown} e */
+      const iaListaError = (e) => iaLista(`<div class="alert alert-danger py-1 px-2 small mb-0">${escapeHtml(msgDe(e))}</div>`);
 
-      on(rootSel, 'click', '#ia-refresh', async (_, btn) => {
+      on(rootSel, 'click', '#ia-refresh', async (_, el) => {
+        const btn = /** @type {HTMLButtonElement} */ (el);
         btn.disabled = true;
         iaLista('<span class="spinner-border spinner-border-sm me-1"></span>Leyendo…');
         try { await pintarClaves(); } catch (e) { iaListaError(e); } finally { btn.disabled = false; }
       });
 
-      on(rootSel, 'click', '.ia-probar', async (_, btn) => {
-        const id = btn.dataset.id;
+      on(rootSel, 'click', '.ia-probar', async (_, el) => {
+        const btn = /** @type {HTMLButtonElement} */ (el);
+        const id = btn.dataset.id ?? '';
         const celda = btn.closest('tr')?.querySelector('.ia-veredicto');
         btn.disabled = true;
         if (celda) celda.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
@@ -158,36 +176,39 @@ export function createAiSection() {
           if (!d.ok && d.motivo) iaOut(`<div class="alert alert-warning py-1 px-2 small">${escapeHtml(d.motivo)}</div>`);
         } catch (e) {
           if (celda) celda.innerHTML = '<span class="badge bg-danger-subtle text-danger">?</span>';
-          iaOut(`<div class="alert alert-danger py-1 px-2 small">${escapeHtml(e.message)}</div>`);
+          iaOut(`<div class="alert alert-danger py-1 px-2 small">${escapeHtml(msgDe(e))}</div>`);
         } finally { btn.disabled = false; }
       });
 
-      on(rootSel, 'click', '.ia-toggle', async (_, btn) => {
+      on(rootSel, 'click', '.ia-toggle', async (_, el) => {
+        const btn = /** @type {HTMLButtonElement} */ (el);
         btn.disabled = true;
         try {
           const { token } = await tokenSuperadmin();
           const { cambiarEstado } = await import('../../core/iaKeys.js');
-          await cambiarEstado(token, btn.dataset.id, btn.dataset.activa === '0');
+          await cambiarEstado(token, btn.dataset.id ?? '', btn.dataset.activa === '0');
           await pintarClaves();
         } catch (e) { iaListaError(e); } finally { btn.disabled = false; }
       });
 
-      on(rootSel, 'click', '.ia-borrar', async (_, btn) => {
+      on(rootSel, 'click', '.ia-borrar', async (_, el) => {
+        const btn = /** @type {HTMLButtonElement} */ (el);
         // Borrar una clave no se deshace, y la de al lado se parece: se pregunta.
         if (!confirm('¿Eliminar esta clave de la Pi? No se puede deshacer.')) return;
         btn.disabled = true;
         try {
           const { token } = await tokenSuperadmin();
           const { eliminarClave } = await import('../../core/iaKeys.js');
-          await eliminarClave(token, btn.dataset.id);
+          await eliminarClave(token, btn.dataset.id ?? '');
           await pintarClaves('<div class="alert alert-success py-1 px-2 small">Clave eliminada.</div>');
         } catch (e) { iaListaError(e); } finally { btn.disabled = false; }
       });
 
-      on(rootSel, 'click', '#ia-save', async (_, btn) => {
-        const clave = document.getElementById('ia-key')?.value?.trim();
-        const proveedor = document.getElementById('ia-prov')?.value || 'gemini';
-        const etiqueta = document.getElementById('ia-label')?.value?.trim() || '';
+      on(rootSel, 'click', '#ia-save', async (_, el) => {
+        const btn = /** @type {HTMLButtonElement} */ (el);
+        const clave = campo('ia-key')?.value?.trim();
+        const proveedor = campo('ia-prov')?.value || 'gemini';
+        const etiqueta = campo('ia-label')?.value?.trim() || '';
         if (!clave) { iaOut('<div class="alert alert-warning py-1 px-2 small">Pega la clave.</div>'); return; }
         btn.disabled = true;
         iaOut('<div class="text-muted small"><span class="spinner-border spinner-border-sm me-1"></span>Guardando en la Pi…</div>');
@@ -198,19 +219,20 @@ export function createAiSection() {
           // Tras el `await`, el panel puede haberse ido (el admin cambió de
           // pantalla mientras guardaba): se comprueba, como en las lecturas de
           // arriba. Es el mismo defecto que tiró la biblioteca en un aula.
-          const campoClave = document.getElementById('ia-key');
-          const campoEtiqueta = document.getElementById('ia-label');
+          const campoClave = campo('ia-key');
+          const campoEtiqueta = campo('ia-label');
           if (campoClave) campoClave.value = '';
           if (campoEtiqueta) campoEtiqueta.value = '';
           iaOut(`<div class="alert alert-success py-1 px-2 small">Clave de ${proveedor} guardada en la Pi. Pulsa «Probar» en su fila para comprobarla.</div>`);
           await pintarClaves();
         } catch (e) {
           // R6: el motivo, no un «algo falló» — cada uno se arregla distinto.
-          iaOut(`<div class="alert alert-danger py-1 px-2 small">${escapeHtml(e.message)}</div>`);
+          iaOut(`<div class="alert alert-danger py-1 px-2 small">${escapeHtml(msgDe(e))}</div>`);
         } finally { btn.disabled = false; }
       });
 
-      on(rootSel, 'click', '#ia-test', async (_, btn) => {
+      on(rootSel, 'click', '#ia-test', async (_, el) => {
+        const btn = /** @type {HTMLButtonElement} */ (el);
         btn.disabled = true;
         iaOut('<div class="text-muted small"><span class="spinner-border spinner-border-sm me-1"></span>Pidiéndole 2 preguntas de prueba…</div>');
         try {
@@ -226,6 +248,7 @@ export function createAiSection() {
             throw new Error('El hook NO está instalado en la Pi: falta pb_hooks/aulareto.pb.js '
               + '(y montar ./pb_hooks:/pb_hooks si es Docker). Pasos en docs/handoff-ia-contenido.md §7.');
           }
+          /** @type {{configurado?: unknown, motivo?: unknown, proveedor?: unknown, origen?: unknown, topeDiario?: unknown}} */
           const estado = await est.json().catch(() => ({}));
           if (!estado.configurado) {
             // El MOTIVO viene del hook: «sin clave» a secas dejaba mirando la clave
@@ -236,11 +259,17 @@ export function createAiSection() {
           }
           // 2) Ahora sí, una generación de verdad.
           const r = await pedirContenido({ modelo: 'qa', tema: 'los planetas del sistema solar',
-            curso: '5.º de primaria', cantidad: 2, url: `${PB_URL}/api/ia/contenido`, token: getAuthToken() });
+            curso: '5.º de primaria', cantidad: 2, url: `${PB_URL}/api/ia/contenido`, token: getAuthToken() || '' });
           if (r.error) throw new Error(r.error);
+          /** @type {unknown} */
+          const brutos = r.content ? r.content.items : null;
+          const items = Array.isArray(brutos) ? /** @type {unknown[]} */ (brutos) : [];
           iaOut(`<div class="alert alert-success py-1 px-2 small">Funciona con <b>${escapeHtml(estado.proveedor || '?')}</b>`
             + ` (clave en ${escapeHtml(estado.origen)}, tope ${estado.topeDiario}/día). ${r.piezas} pregunta(s):<ul class="mb-0 mt-1">`
-            + r.content.items.map(i => `<li>${escapeHtml(i.question)} → <b>${escapeHtml(i.answer)}</b></li>`).join('')
+            + items.map(i => {
+                const p = /** @type {{question?: unknown, answer?: unknown}} */ (i && typeof i === 'object' ? i : {});
+                return `<li>${escapeHtml(p.question)} → <b>${escapeHtml(p.answer)}</b></li>`;
+              }).join('')
             + '</ul></div>');
         } catch (e) {
           // AL FALLAR, ENSEÑAR EL CATÁLOGO. Un «(404)» a secas deja adivinando qué
@@ -250,9 +279,11 @@ export function createAiSection() {
           try {
             const { PB_URL } = await import('../../pocketbase.config.js');
             const est = await fetch(`${PB_URL}/api/ia/estado?modelos=1`);
+            /** @type {{modelos?: unknown, modelosError?: unknown}|null} */
             const d = est.ok ? await est.json() : null;
-            if (d?.modelos?.length) {
-              extra = `<div class="mt-1">Modelos de esta clave: <code>${d.modelos.slice(0, 10).map(escapeHtml).join('</code>, <code>')}</code></div>`;
+            const modelos = (d && Array.isArray(d.modelos)) ? /** @type {unknown[]} */ (d.modelos) : [];
+            if (modelos.length) {
+              extra = `<div class="mt-1">Modelos de esta clave: <code>${modelos.slice(0, 10).map(m => escapeHtml(m)).join('</code>, <code>')}</code></div>`;
             } else if (d?.modelosError) {
               extra = `<div class="mt-1">Y la lista de modelos tampoco se pudo leer: ${escapeHtml(d.modelosError)}</div>`;
             }
@@ -261,7 +292,7 @@ export function createAiSection() {
             // principal ya está escrito y es el que importa.
             console.warn('IA: no se pudo pedir el catálogo de modelos', err2);
           }
-          iaOut(`<div class="alert alert-danger py-1 px-2 small">${escapeHtml(e.message)}${extra}</div>`);
+          iaOut(`<div class="alert alert-danger py-1 px-2 small">${escapeHtml(msgDe(e))}${extra}</div>`);
         } finally { btn.disabled = false; }
       });
     },

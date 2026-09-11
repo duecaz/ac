@@ -25,7 +25,7 @@ Si el cambio tocó piezas o conversiones: `node tools/piezas.mjs` y
 
 ## 3. Preflight — la puerta
 ```
-node tools/preflight.mjs        # 12 redes, ~350 s
+node tools/preflight.mjs        # suite · typecheck · auditoría · los recorridos, ~520 s
 ```
 La red `basura` (`tools/auditoria.mjs`) incluye los seis barridos de costuras
 (§31/`docs/handoff-costuras.md`), cada uno con su baseline: si tocas una

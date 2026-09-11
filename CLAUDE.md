@@ -138,7 +138,7 @@ Y lo que de verdad no se puede olvidar está ATADO, no confiado a la memoria:
   (también en Windows): `git config core.hooksPath .githooks`. Salida de
   emergencia con la clase delante: `git push --no-verify`.
 
-Verificar SIEMPRE antes de commitear: **`node tools/preflight.mjs`** — suite + auditoría
+Verificar SIEMPRE antes de commitear: **`node tools/preflight.mjs`** — suite + **typecheck** (`docs/testing.md` §0b) + auditoría
 de basura (`tools/auditoria.mjs`) + los ONCE recorridos (matriz jugable · cq sin contenedor · lápiz y borrador · la PIZARRA LENTA del aula · tema×fondo legible · márgenes del panel · puertas del editor · buscar/crear+EDITAR · editores · en vivo · tareas · entregar la hoja de pruebas) en ~350 s, ley §27. `node
 tests/run.mjs` solo verifica PIEZAS: los cinco fallos que la clase encontró en una
 semana vivían en la COSTURA entre piezas correctas y ninguna suite podía verlos. Si el
@@ -146,7 +146,7 @@ cambio toca vistas, CSS o el router, el preflight NO es opcional. El contrato,
 las normas, los skins y el CSS se auto-verifican ahí Y en `#/admin` → "Ejecutar tests".
 
 ## Arquitectura (resumen)
-- Vanilla JS, ES modules, sin framework. Routing por hash.
+- Vanilla JS, ES modules, sin framework, **sin build**: TypeScript solo VERIFICA (`checkJs`+`strict`; tipos en `kernel/contracts/*.js`, cero `any`). Routing por hash.
 - Backend: **PocketBase** en `pb.lanube.uno` (Pi 5, Docker). **Solo PocketBase** — Supabase RETIRADO.
   - En PB: activities, results, live sessions, tareas (assignments), reportes, explorar, auth
     (email/password en `core/auth.js`), imágenes (inline), logs (local).

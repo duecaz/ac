@@ -11,6 +11,18 @@ import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { getTemplate } from '../../core/registry.js';
 import { roundPayloadOf } from '../../kernel/session/engine.js';
 
+/**
+ * @typedef {import('../studentLive.js').StudentRt} StudentRt
+ * @typedef {import('../../kernel/contracts/session.js').RoundPayload} RoundPayload
+ */
+
+/**
+ * Lo que viaja al host en cada movimiento y al resolver: esta vista lo RELAYA tal
+ * cual (la forma la decide la plantilla de tablero, §0), así que aquí es un saco.
+ * @typedef {{progress?: number} & Record<string, unknown>} SnapTablero
+ */
+
+/** @param {StudentRt} rt */
 export function createStudentTablero(rt) {
   // LIVE "board" templates (Ball Sort): ONE shared board the student solves at
   // their own pace. Every move is broadcast (throttled) so the host sees the
@@ -19,8 +31,17 @@ export function createStudentTablero(rt) {
   // (paint() dedups identical phase keys, so host pings don't remount it).
   function paintLiveBoard() {
     const tpl = getTemplate(rt.activity.template);
-    const payload = roundPayloadOf(tpl, rt.activity, 0);
-    if (!payload?.board) return rt.paintWaiting('Esperando…');
+    // `renderRound` es OPCIONAL en el contrato (kernel/contracts/template.js): sin
+    // ella no hay tablero que montar (llamar a `undefined` ya lanzaba, R6).
+    if (typeof tpl?.renderRound !== 'function') {
+      throw new Error(`[studentTablero] ${rt.activity.template}: no implementa renderRound`);
+    }
+    const payload = /** @type {RoundPayload} */ (roundPayloadOf(tpl, rt.activity, 0));
+    // El TABLERO es de la plantilla: la vista no lo interpreta, solo reenvía sus
+    // medidas al host junto al movimiento (§0).
+    const board = payload?.board;
+    if (!board || typeof board !== 'object') return rt.paintWaiting('Esperando…');
+    const medidas = /** @type {Record<string, unknown>} */ (board);
     emitGame(GameEvents.QUESTION_SHOWN, { idx: 0, total: 1, item: payload });
 
     mount(rt.rootSel, html`
@@ -31,13 +52,19 @@ export function createStudentTablero(rt) {
       <div id="s-round"></div>
     `);
 
-    let lastSent = 0, pendingSnap = null, flushHandle = null, solved = false;
+    let lastSent = 0, solved = false;
+    /** @type {SnapTablero|null} */
+    let pendingSnap = null;
+    /** @type {number|null} */
+    let flushHandle = null;
     const SEND_EVERY = 600;   // ms — cap network writes to ~1.7/s per student
+    /** @param {SnapTablero} snap */
     const sendNow = (snap) => {
       lastSent = clock.now();
       pendingSnap = null;
       submitProgress(rt.session.id, rt.player.playerId, snap).catch(() => {});
     };
+    /** @param {SnapTablero} snap */
     const onProgress = (snap) => {
       if (solved) return;
       const now = clock.now();
@@ -49,16 +76,20 @@ export function createStudentTablero(rt) {
       }
     };
 
-    tpl.renderRound(document.getElementById('s-round'), payload, {
-      mode: 'live',
+    const hueco = document.getElementById('s-round');
+    if (!hueco) return;
+    tpl.renderRound(hueco, payload, {
       onProgress,
       onSubmit: (res) => {
         solved = true;
+        // Lo que entrega la plantilla al resolver: saco sin forma declarada para
+        // la plataforma (la plantilla la conoce), se reenvía tal cual.
+        const hecho = /** @type {Record<string, unknown>} */ (res && typeof res === 'object' ? res : {});
         const finalSnap = {
-          tubes: res.tubes,
-          tubeCapacity: payload.board.tubeCapacity,
-          colors: payload.board.colors,
-          moveCount: res.moveCount, elapsedMs: res.elapsedMs, solved: true,
+          tubes: hecho.tubes,
+          tubeCapacity: medidas.tubeCapacity,
+          colors: medidas.colors,
+          moveCount: hecho.moveCount, elapsedMs: hecho.elapsedMs, solved: true,
         };
         sendNow(finalSnap);
         emitGame(GameEvents.ANSWER_CORRECT, { idx: 0, points: 0 });

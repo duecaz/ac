@@ -14,15 +14,35 @@ import { fullscreenButtonHtml, attachFullscreenButton } from '../../core/fullscr
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { toast, confirmModal, TOAST_NORMAL } from '../../core/toast.js';
 
+/** @typedef {import('../hostLive.js').HostRt} HostRt */
+
+/** @param {HostRt} rt */
 export function createHostRondas(rt) {
+  /** @type {number|null} */
   let tickHandle = null;
   let settling = false;
   let paused = false;
   let pauseRemainMs = 0;
+  /** @type {Map<string, number>|null} */
   let prevRanks = null;   // puestos de la ronda anterior (R-4)
 
+  // LO QUE SE PROYECTA, en un solo sitio: `renderRoundHost` es OPCIONAL en el
+  // contrato (templates/base.js trae una por defecto), así que se pregunta antes
+  // de llamarla — y si falta de verdad, se lanza como hasta ahora (llamar a
+  // `undefined` lanzaba) para que el aviso no sea mudo (R6).
+  /** @param {import('../../kernel/contracts/template.js').HostRoundContext} ctx */
+  function pintarEnProyector(ctx) {
+    const hueco = document.getElementById('host-round');
+    if (!hueco) throw new Error('[hostRondas] falta el hueco #host-round');
+    if (typeof rt.tpl?.renderRoundHost !== 'function') {
+      throw new Error(`[hostRondas] ${rt.activity.template}: no implementa renderRoundHost`);
+    }
+    rt.tpl.renderRoundHost(hueco, ctx);
+  }
+
+  /** @param {boolean} [phaseChanged] */
   async function paintQuestion(phaseChanged = true) {
-    const idx = rt.session.current_item;
+    const idx = rt.session.current_item ?? 0;
     const item = rt.items[idx];
     if (phaseChanged) {
       emitGame(GameEvents.LOBBY_END);
@@ -32,6 +52,7 @@ export function createHostRondas(rt) {
     const total = rt.players.length;
     const answered = rt.answers.length;
     const deadline = rt.session.deadline ? new Date(rt.session.deadline).getTime() : serverNow() + rt.timerSec * 1000;
+    /** @type {import('../../kernel/contracts/session.js').RoundPayload|import('../../kernel/contracts/activity.js').SessionItem|null} */
     let payload;
     try {
       payload = roundPayloadOf(rt.tpl, rt.activity, idx, item);
@@ -60,7 +81,9 @@ export function createHostRondas(rt) {
     // los móviles, así nadie responde antes de que se vea la pregunta.
     const openAtMs = rt.session.answers_open_at ? new Date(rt.session.answers_open_at).getTime() : 0;
     try {
-      rt.tpl.renderRoundHost(document.getElementById('host-round'), { phase: 'question', item, payload });
+      // El respaldo del catch es el ÍTEM crudo: la plantilla recibe lo que haya
+      // (su `renderRoundHost` es la que sabe leer lo suyo, §0).
+      pintarEnProyector({ phase: 'question', item, payload: /** @type {import('../../kernel/contracts/session.js').RoundPayload|null} */ (payload) });
       const hr = document.getElementById('host-round');
       if (hr && openAtMs > serverNow()) {
         hr.classList.add('hl-reading');
@@ -97,10 +120,10 @@ export function createHostRondas(rt) {
       else await rt.openQuestion(idx + 1);
     });
 
-    if (tickHandle) clearInterval(tickHandle);
+    if (tickHandle != null) clearInterval(tickHandle);
     let pollBusy = false, lastPoll = 0;
     tickHandle = rt.ctx.setInterval(() => {
-      if (rt.session.phase !== 'question') { clearInterval(tickHandle); tickHandle = null; return; }
+      if (rt.session.phase !== 'question') { if (tickHandle != null) clearInterval(tickHandle); tickHandle = null; return; }
       // Poll the answer count (~every 1.2s). With answers in their own collection,
       // a student's submit no longer touches the session record, so the SSE that
       // drives `answers` doesn't fire — without this the count would freeze and
@@ -161,31 +184,36 @@ export function createHostRondas(rt) {
     }, 250);
   }
 
+  /** @param {number} idx */
   async function doSettle(idx) {
     if (settling || rt.session.phase !== 'question') return;
     settling = true;
-    if (tickHandle) { clearInterval(tickHandle); tickHandle = null; }
-    const btn = document.getElementById('btn-reveal');
+    if (tickHandle != null) { clearInterval(tickHandle); tickHandle = null; }
+    const btn = /** @type {HTMLButtonElement|null} */ (document.getElementById('btn-reveal'));
     if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Calculando…'; }
     try { await settleItem(rt.sessionId, idx); }
     catch (e) {
-      toast('Error al revelar: ' + e.message, 'danger', TOAST_NORMAL);
+      toast('Error al revelar: ' + (e instanceof Error ? e.message : String(e)), 'danger', TOAST_NORMAL);
       if (btn) { btn.disabled = false; btn.innerHTML = 'Reintentar'; }
     } finally { settling = false; }
   }
 
+  /** @param {boolean} [phaseChanged] */
   async function paintReveal(phaseChanged = true) {
-    const idx = rt.session.current_item;
+    const idx = rt.session.current_item ?? 0;
     const item = rt.items[idx];
     if (phaseChanged) emitGame(GameEvents.REVEAL, { idx, item });
     rt.answers = await listAnswers(rt.sessionId, idx);
 
     // Build name map: answer value → [playerName, …] for each option.
+    /** @type {Record<string, string>} */
     const playerById = Object.fromEntries(rt.players.map(p => [p.id, p.name]));
+    /** @type {Record<string, string[]>} */
     const playerMap = {};
     rt.answers.forEach(a => {
-      const pid = a.playerId || a.player_id;
-      const name = playerById[pid];
+      // `player_id` era el nombre de la columna en Supabase (retirado): los dos
+      // adaptadores de hoy entregan `playerId`.
+      const name = playerById[a.playerId];
       if (name) {
         const val = String(a.value);
         (playerMap[val] = playerMap[val] || []).push(name);
@@ -218,7 +246,7 @@ export function createHostRondas(rt) {
         </button>
       </div>
     `);
-    rt.tpl.renderRoundHost(document.getElementById('host-round'), { phase: 'reveal', item, answers: rt.answers, playerMap });
+    pintarEnProyector({ phase: 'reveal', item, answers: rt.answers, playerMap });
     // Sin clasificación intermedia se va DIRECTO a la siguiente pregunta, que
     // es lo que el profe pidió al apagar el interruptor. La última siempre pasa
     // por la clasificación: ahí es el podio.
@@ -242,21 +270,23 @@ export function createHostRondas(rt) {
     }
   }
 
+  /** @param {boolean} [phaseChanged] */
   async function paintLeaderboard(phaseChanged = true) {
     const lb = await leaderboard(rt.sessionId, 10);
     // R-4 · MOVIMIENTO: la tabla estática no cuenta nada; una flecha sí ("subió
     // dos"). Se compara con el orden de la ronda anterior, que se guarda aquí
     // mismo (nada que persistir: si el host recarga, simplemente no hay flechas
     // en la primera tabla que pinte).
+    /** @param {string} id */
     const move = (id) => {
-      if (!prevRanks || !prevRanks.has(id)) return '';
-      const before = prevRanks.get(id);
+      const before = prevRanks?.get(id);
+      if (before == null) return '';
       const now = lb.findIndex(p => p.id === id) + 1;
       if (now < before) return `<span class="text-success" title="subió ${before - now}"><i class="bi bi-caret-up-fill"></i></span>`;
       if (now > before) return `<span class="text-danger" title="bajó ${now - before}"><i class="bi bi-caret-down-fill"></i></span>`;
       return '<span class="text-muted">·</span>';
     };
-    const idx = rt.session.current_item;
+    const idx = rt.session.current_item ?? 0;
     const isLast = idx + 1 >= rt.items.length;
     mount(rt.rootSel, html`
       <h2 class="text-center mb-4"><i class="bi bi-bar-chart-fill"></i> Clasificación</h2>

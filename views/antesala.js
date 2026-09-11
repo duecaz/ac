@@ -41,13 +41,59 @@ import { isEffectsMuted, setEffectsMuted } from '../core/effects.js';
 import { openPenCalibration } from '../core/penCalibration.js';
 import { playOptionsHtml, wirePlayOptions } from '../core/playOptions.js';
 
-/** Cómo se juega: lo que diga la actividad, si no su plantilla, si no lo genérico. */
+/** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
+
+/**
+ * UNA pastilla de ambiente (sonido, efectos y las que añada el modo).
+ * @typedef {Object} PastillaAmbiente
+ * @property {string} id
+ * @property {string} icon
+ * @property {string} label
+ * @property {boolean} on
+ * @property {string} [hint]
+ */
+
+/**
+ * Las OPCIONES DE PARTIDA tal y como las recibe la antesala.
+ * @typedef {Object} AntesalaPlayOpts
+ * @property {import('../core/registry.js').PlantillaRegistrada|null|undefined} T
+ * @property {Activity} activity
+ * @property {import('../core/playOptions.js').PlayChoices} [choices]
+ * @property {(id: string|undefined, value: string|undefined) => void} [onChange]
+ */
+
+/**
+ * @typedef {Object} AntesalaOpts
+ * @property {Activity|null} [activity]
+ * @property {string} [icon]
+ * @property {string} [color]
+ * @property {string} [title]
+ * @property {string} [subtitle]
+ * @property {string} [badgesHtml]
+ * @property {string} [instructions]
+ * @property {AntesalaPlayOpts|null} [playOpts]
+ * @property {PastillaAmbiente[]} [ambienteExtra]
+ * @property {(id: string|undefined, encendido: boolean) => void} [onAmbiente]
+ * @property {string} [bodyHtml]
+ * @property {string} [startLabel]
+ * @property {string} [note]
+ * @property {string} [backHref]
+ * @property {(el: Element) => void} [onMount]
+ * @property {() => unknown} [onStart]  Puede DEVOLVER el marco al que pedir la pantalla completa.
+ */
+
+/**
+ * Cómo se juega: lo que diga la actividad, si no su plantilla, si no lo genérico.
+ * @param {(Activity & {instructions?: string})|null|undefined} activity
+ * @returns {string}
+ */
 export function instruccionesDe(activity) {
   const T = getTemplate(activity?.template);
   return activity?.instructions || T?.meta?.instructions ||
     'Lee con atención y resuelve cada parte. Pulsa “Iniciar” cuando estés listo.';
 }
 
+/** @param {PastillaAmbiente} p */
 const pastilla = ({ id, icon, label, on: encendido, hint = '' }) => `
   <button type="button" class="ww-set-toggle ${encendido ? 'is-on' : ''}" data-toggle="${escapeHtml(id)}"
           aria-pressed="${encendido}"${hint ? ` title="${escapeHtml(hint)}"` : ''}>
@@ -55,6 +101,19 @@ const pastilla = ({ id, icon, label, on: encendido, hint = '' }) => `
     <span class="ww-set-state">${encendido ? 'Sí' : 'No'}</span>
   </button>`;
 
+// Lo que `onStart` devuelva es de quien lo escribió: se acepta como marco solo
+// si de verdad es un nodo (frontera, se ESTRECHA — nunca se fuerza).
+/**
+ * @param {unknown} v
+ * @returns {Element|null}
+ */
+const comoElemento = (v) =>
+  (v && typeof v === 'object' && 'nodeType' in v) ? /** @type {Element} */ (v) : null;
+
+/**
+ * @param {Element} t
+ * @param {boolean} encendido
+ */
 function pintarPastilla(t, encendido) {
   t.setAttribute('aria-pressed', encendido ? 'true' : 'false');
   t.classList.toggle('is-on', encendido);
@@ -63,8 +122,7 @@ function pintarPastilla(t, encendido) {
 }
 
 /**
- * @param {Element|string} host  dónde se pinta (escenario del juego o página).
- * @param {object} o
+ * Dónde se pinta (`host`): escenario del juego o página. Y en `o`:
  *   activity      la actividad (de ahí salen instrucciones, icono y título por defecto).
  *   icon·color·title·subtitle   identidad del modo («Duelo VS», bi-fire, danger).
  *   instructions  texto explícito; '' lo oculta (una LISTA no tiene uno).
@@ -84,6 +142,10 @@ function pintarPastilla(t, encendido) {
  * de un vistazo en qué mitad está cada campo. Cuando se llamaban `body` y
  * `badges` a secas, la lista escapaba su título y la antesala lo escapaba otra
  * vez: «Repaso & Ampliación» salía como «Repaso &amp; Ampliación».
+ *
+ * @param {Element|string} host
+ * @param {AntesalaOpts} [o]
+ * @returns {{dispose: () => void}}
  */
 export function renderAntesala(host, o = {}) {
   const {
@@ -164,6 +226,7 @@ export function renderAntesala(host, o = {}) {
   // solo si no hay ninguno (la tarea monta el suyo al comenzar, la lista no
   // monta) se arranca y se pide después, con lo que `onStart` devuelva.
   let started = false;
+  /** @param {HTMLButtonElement|null} btn */
   const arrancar = (btn) => {
     if (started) return;
     started = true;
@@ -171,10 +234,10 @@ export function renderAntesala(host, o = {}) {
     const marco = marcoActual();
     if (marco && !isFullscreen()) toggleFullscreen(marco);   // no-op si el navegador la deniega
     const suyo = typeof onStart === 'function' ? onStart() : null;
-    if (!marco && !isFullscreen()) toggleFullscreen(suyo || marcoActual() || el);
+    if (!marco && !isFullscreen()) toggleFullscreen(comoElemento(suyo) || marcoActual() || el);
     soltar();
   };
-  sueltos.push(on(el, 'click', '[data-ww-start]', (_, btn) => arrancar(btn)));
+  sueltos.push(on(el, 'click', '[data-ww-start]', (_, btn) => arrancar(/** @type {HTMLButtonElement} */ (btn))));
 
   // `dispose` de verdad: la vista que monta la antesala y se va antes de que
   // nadie pulse (cambiar de modo, salir de la ruta) suelta sus oyentes con esto.

@@ -14,25 +14,49 @@ import { roundPayloadOf } from '../../kernel/session/engine.js';
 import { BOARD_POLL_MS } from '../../core/timings.js';
 import { supportsLoop } from '../../core/liveLoops.js';
 
+/**
+ * @typedef {import('../hostLive.js').HostRt} HostRt
+ * @typedef {import('../../kernel/contracts/session.js').RoundPayload} RoundPayload
+ */
+
+/** El tablero tal y como viaja (del alumno o de la propia plantilla): la vista
+ *  no lo interpreta, se lo entrega a la celda de la plantilla (§0).
+ * @typedef {{solved?: boolean} & Record<string, unknown>} SnapTablero */
+
+/** @param {HostRt} rt */
 export function createHostTablero(rt) {
   // LIVE "board" dashboard (Ball Sort): a grid of every student's board updating
   // move-by-move. Reads progress rows from live_answers (item 0); each student
   // upserts their own row via submitProgress, so there's no clobber. Rides the
   // 'race' phase, so the lobby/start/podium are the standard ones.
+  /** @param {boolean} [phaseChanged] */
   async function paintLiveBoardHost(phaseChanged = true) {
     if (phaseChanged) emitGame(GameEvents.LOBBY_END);
-    const mode = rt.activity.content?.mode || 'moves';
-    const initialBoard = roundPayloadOf(rt.tpl, rt.activity, 0)?.board || null;
+    // El modo ('moves'/'time') lo declara el contenido de la plantilla de tablero:
+    // aquí se LEE y se reenvía, no se interpreta (§0).
+    const contenido = /** @type {Record<string, unknown>} */ (rt.activity.content || {});
+    const mode = typeof contenido.mode === 'string' ? contenido.mode : 'moves';
+    const payload = /** @type {RoundPayload|null} */ (roundPayloadOf(rt.tpl, rt.activity, 0));
+    const board = payload?.board;
+    const initialBoard = board && typeof board === 'object'
+      ? /** @type {Record<string, unknown>} */ (board) : null;
 
+    /** @type {Array<import('../../kernel/contracts/dataPort.js').AnswerView|import('../../kernel/contracts/session.js').EngineAnswer>} */
     let rows = [];
     try { rows = await listAnswers(rt.sessionId, 0); } catch { rows = []; }
+    /** @type {Record<string, SnapTablero>} */
     const byPlayer = {};
-    for (const r of rows) byPlayer[r.playerId || r.player_id] = r.value;
+    // FRONTERA: el valor de la fila es la instantánea que RELAYÓ el móvil (§22);
+    // solo se acepta si es un objeto. (`player_id` era la columna de Supabase,
+    // retirado: los dos adaptadores de hoy entregan `playerId`.)
+    for (const r of rows) {
+      if (r.value && typeof r.value === 'object') byPlayer[r.playerId] = /** @type {SnapTablero} */ (r.value);
+    }
 
     // One cell per player; players with no move yet show the starting board.
     const cells = rt.players.map(p => ({
       id: p.id, name: p.name,
-      value: byPlayer[p.id] || (initialBoard ? { tubes: initialBoard.tubes, tubeCapacity: initialBoard.tubeCapacity, colors: initialBoard.colors, moveCount: 0, elapsedMs: 0, solved: false } : null),
+      value: byPlayer[p.id] || (initialBoard ? /** @type {SnapTablero} */ ({ tubes: initialBoard.tubes, tubeCapacity: initialBoard.tubeCapacity, colors: initialBoard.colors, moveCount: 0, elapsedMs: 0, solved: false }) : null),
     }));
     // MISMA política de exposición que la carrera (ficha 3 B-1): durante el
     // juego la rejilla NO se reordena por quién va ganando — cada tablero se
@@ -66,7 +90,7 @@ export function createHostTablero(rt) {
     // abajo), no quien resulta tener renderRaceCell. El aviso es defensivo
     // (R6), no el criterio.
     const declaresBoard = supportsLoop(rt.tpl, 'board');
-    if (declaresBoard && typeof rt.tpl.renderRaceCell !== 'function') {
+    if (declaresBoard && typeof rt.tpl?.renderRaceCell !== 'function') {
       console.warn(`[hostTablero] ${rt.tpl?.meta?.name || '?'}: declara play.live con 'board' pero no implementa renderRaceCell (contrato roto)`);
     }
     if (grid && declaresBoard) {
@@ -76,7 +100,10 @@ export function createHostTablero(rt) {
         grid.appendChild(cellEl);
         // Aísla el fallo de UNA celda para no romper la rejilla, pero lo registra
         // (un bug de renderRaceCell de la plantilla era invisible; antes: catch {}).
-        try { rt.tpl.renderRaceCell(cellEl, { value: c.value, name: c.name, mode }); }
+        try {
+          if (typeof rt.tpl?.renderRaceCell !== 'function') throw new Error('no implementa renderRaceCell');
+          rt.tpl.renderRaceCell(cellEl, { value: c.value, name: c.name, mode });
+        }
         catch (e) { console.warn('[hostLive] renderRaceCell falló:', e); }
       }
     }
@@ -86,7 +113,7 @@ export function createHostTablero(rt) {
     on(rt.rootSel, 'click', '#btn-end-race', async () => {
       const ok = await confirmModal('¿Terminar la sala? Se calculará la clasificación final.', { okText: 'Terminar' });
       if (!ok) return;
-      const btn = document.getElementById('btn-end-race');
+      const btn = /** @type {HTMLButtonElement|null} */ (document.getElementById('btn-end-race'));
       if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Finalizando…'; }
       // endSession liquida el tablero pendiente (settlePending) antes de cerrar.
       await endSession(rt.sessionId);

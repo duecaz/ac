@@ -31,11 +31,13 @@ import { createVsAnimationsSection } from './admin/vsAnimations.js';
 // Admin UNIFICADO (auth v2): el acceso es por ROL de Google (isAdmin), no por
 // contraseña local. Solo un profe con role='admin' entra. La contraseña 'fernando'
 // se retiró — había un candado paralelo que confundía (dos "admin" distintos).
+/** @param {string} rootSel */
 export function renderAdmin(rootSel) {
   if (!isAdmin()) return renderGate(rootSel);
   renderPanel(rootSel);
 }
 
+/** @param {string} rootSel */
 function renderGate(rootSel) {
   mount(rootSel, html`
     <div class="auth-gate"><div class="auth-gate__card">
@@ -48,6 +50,7 @@ function renderGate(rootSel) {
   import('../core/authWidget.js').then(m => m.mountAuthSlot('#admin-gate-slot').catch(() => {}));
 }
 
+/** @param {string} rootSel */
 function renderPanel(rootSel) {
   // Tablas de diagnóstico (capacidad/actividades/conversiones) → views/admin/matrix.js
   const { caps, acts, capRows, actRows, convRows } = buildAdminMatrix();

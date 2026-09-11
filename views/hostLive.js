@@ -47,7 +47,55 @@ import { createHostTablero } from './live/hostTablero.js';
 import { createHostPalabra } from './live/hostPalabra.js';
 import { createHostInforme } from './live/hostInforme.js';
 
+/**
+ * @typedef {import('../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../kernel/contracts/activity.js').LiveSettings} LiveSettings
+ * @typedef {import('../kernel/contracts/activity.js').SessionItem} SessionItem
+ * @typedef {import('../kernel/contracts/dataPort.js').AnswerView} AnswerView
+ * @typedef {import('../kernel/contracts/session.js').EngineAnswer} EngineAnswer
+ * @typedef {import('../kernel/contracts/session.js').LiveLoop} LiveLoop
+ * @typedef {import('../kernel/contracts/session.js').LiveRoom} LiveRoom
+ * @typedef {import('../kernel/contracts/session.js').Player} Player
+ * @typedef {import('../core/registry.js').PlantillaRegistrada} PlantillaRegistrada
+ */
 
+/**
+ * EL ESTADO COMPARTIDO DE LA SALA que el ensamblador inyecta en cada fábrica de
+ * `views/live/host*.js` (§26: un módulo por bucle, una sola `rt`). Lo que solo
+ * lee UN bucle vive dentro de su módulo; aquí está lo que cruza bucles.
+ * @typedef {Object} HostRt
+ * @property {ReturnType<typeof acquire>} ctx
+ * @property {string} rootSel
+ * @property {string} code
+ * @property {string} sessionId
+ * @property {Activity} activity
+ * @property {PlantillaRegistrada|null} tpl
+ * @property {SessionItem[]} items
+ * @property {LiveSettings} live
+ * @property {number} timerSec
+ * @property {string} advanceMode
+ * @property {LiveLoop[]} loops
+ * @property {boolean} isBoard
+ * @property {string} driverKind
+ * @property {(game: boolean) => void} scene
+ * @property {LiveRoom} session
+ * @property {Player[]} players
+ * @property {Array<AnswerView|EngineAnswer>} answers
+ * @property {boolean} disposed
+ * @property {LiveLoop} loop
+ * @property {boolean} autoAdvance
+ * @property {number} readSecs
+ * @property {(finished: number) => Promise<boolean>} maybeAutoEnd
+ * @property {(idx: number) => Promise<void>} openQuestion
+ * @property {(repaint: (phaseChanged?: boolean) => void, everyMs: number) => void} startRaceLoop
+ * @property {() => string} raceClock
+ * @property {() => string} endBadge
+ */
+
+/**
+ * @param {string} rootSel
+ * @param {string} activityId
+ */
 export async function renderHostLaunch(rootSel, activityId) {
   // Igual que el modo solo (playerView): primero local, y si no está, se trae de
   // la nube. Antes solo miraba local → una actividad que vive en PB pero no en el
@@ -71,18 +119,21 @@ export async function renderHostLaunch(rootSel, activityId) {
     // Just navigate. The router will pick #/host/:code and call renderHostByCode.
     location.hash = `#/host/${room.code}`;
   } catch (e) {
-    const needsSetup = /live_sessions/.test(e.message || '');
+    // FRONTERA: lo que lanza un `fetch`/adaptador es `unknown`; el status lo
+    // sella core/pbHttp.js sobre el Error (§22 — el 403 de "sala anónima").
+    const err = /** @type {{message?: string, status?: number}} */ (e instanceof Error ? e : {});
+    const needsSetup = /live_sessions/.test(err.message || '');
     // Con la fase de reglas live (§22) DIRIGIR una sala exige sesión de profe.
     // Si el 403 llega por eso, dilo con nombre y apellido: descubrirlo con la
     // clase delante es el peor momento posible.
-    const needsLogin = !getAuthUserId() && (e?.status === 403 || e?.status === 400);
+    const needsLogin = !getAuthUserId() && (err.status === 403 || err.status === 400);
     mount(rootSel, html`
       <div class="container py-4" style="max-width:560px">
         <div class="alert alert-danger">
           <h5 class="alert-heading"><i class="bi bi-exclamation-octagon"></i> No se pudo crear la sala</h5>
           <p class="mb-2">${needsLogin
             ? 'Para dirigir una sala en vivo tienes que entrar con tu cuenta de profesor (el servidor ya no acepta salas anónimas).'
-            : escapeHtml(e.message)}</p>
+            : escapeHtml(err.message)}</p>
           ${needsLogin ? html`<button class="btn btn-primary btn-sm" id="hl-login"><i class="bi bi-box-arrow-in-right"></i> Entrar</button>` : ''}
           ${needsSetup ? html`
             <hr>
@@ -96,12 +147,24 @@ export async function renderHostLaunch(rootSel, activityId) {
   }
 }
 
+/**
+ * @param {string} rootSel
+ * @param {string} code
+ */
 export async function renderHostByCode(rootSel, code) {
   const sess = await findRoomByCode(code);
-  if (!sess) { mount(rootSel, html`<div class="alert alert-warning">Sala no encontrada.</div>`); return; }
+  // Sin snapshot no hay nada que dirigir (y `getTemplate(activity.template)`
+  // reventaría dos líneas después): para el profe es el mismo "no encontrada".
+  if (!sess?.activity_snap) { mount(rootSel, html`<div class="alert alert-warning">Sala no encontrada.</div>`); return; }
   renderHost(rootSel, sess.code, sess.id, sess.activity_snap);
 }
 
+/**
+ * @param {string} rootSel
+ * @param {string} code
+ * @param {string} sessionId
+ * @param {Activity} activity
+ */
 async function renderHost(rootSel, code, sessionId, activity) {
   const ctx = acquire('hostLive');
   // sessions.activity_snap is sanitized (no answers) so students can't read the
@@ -168,6 +231,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
   // bucle viven DENTRO de su módulo (p.ej. `loop`/`endPolicy` en hostLobby.js);
   // los que cruzan bucles (autoAdvance/readSecs: los fija el lobby y los lee
   // rondas + openQuestion) viven aquí.
+  /** @type {HostRt} */
   const rt = {
     ctx, rootSel, code, sessionId, activity, tpl, items, live, timerSec, advanceMode, loops, isBoard, driverKind,
     scene,
@@ -178,6 +242,9 @@ async function renderHost(rootSel, code, sessionId, activity) {
     loop: 'rounds',                                // hostLobby.js lo fija al crearse
     autoAdvance: advanceMode !== 'manual',          // "avanzar solo" (dentro de rondas)
     readSecs: readSeconds(activity),                // ventana de LECTURA (R-1)
+    // Los helpers que USAN VARIOS bucles, declarados abajo (hoisted): entran en
+    // `rt` al construirlo, no pegados después uno a uno.
+    maybeAutoEnd, openQuestion, startRaceLoop, raceClock, endBadge,
   };
   ctx.add(() => { rt.disposed = true; });
 
@@ -189,6 +256,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
   // para carrera y tablero: cambia solo qué cuenta como "terminado". Dispara una
   // vez (`autoEnding`) y el profe conserva su botón de cortar antes.
   let autoEnding = false;                        // el cierre automático dispara UNA vez
+  /** @param {number} finished @returns {Promise<boolean>} */
   async function maybeAutoEnd(finished) {
     if (autoEnding || rt.session.status === 'ended') return false;
     const { policy, n, deadlineMs } = endPolicyOf(rt.session);
@@ -197,12 +265,12 @@ async function renderHost(rootSel, code, sessionId, activity) {
     try { await endSession(sessionId); } catch (e) { autoEnding = false; console.warn('[hostLive] cierre automático:', e); }
     return true;
   }
-  rt.maybeAutoEnd = maybeAutoEnd;
 
   // R-1 · ABRIR UNA PREGUNTA = un solo PATCH con los DOS instantes: cuándo se
   // pueden tocar las respuestas y cuándo cierra. El ritmo se escribe en la SALA
   // (§26 ficha 1b): un temporizador local se desincroniza entre móviles, no
   // sobrevive a recargar ni a entrar tarde, y no es verificable en el servidor.
+  /** @param {number} idx @returns {Promise<void>} */
   function openQuestion(idx) {
     const now = serverNow();
     const openAt = now + rt.readSecs * 1000;
@@ -222,13 +290,13 @@ async function renderHost(rootSel, code, sessionId, activity) {
       read_secs: rt.readSecs,
     });
   }
-  rt.openQuestion = openQuestion;
 
   // CARRERA: reloj + red de seguridad de refresco. Las DOS pantallas de carrera
   // (lista de progreso y tablero compartido) necesitan exactamente lo mismo —
   // cronómetro ascendente compartido (core/deadlineTicker.js, con clock.now() y
   // auto-parada al cambiar de fase) más un repintado de respaldo por si se pierde
   // un evento de realtime. Estaba copiado en las dos, con su literal cada una.
+  /** @param {(phaseChanged?: boolean) => void} repaint @param {number} everyMs */
   function startRaceLoop(repaint, everyMs) {
     startElapsedTicker({
       since: rt.session.started_at, setIntervalFn: ctx.setInterval,
@@ -240,7 +308,6 @@ async function renderHost(rootSel, code, sessionId, activity) {
       repaint(false);
     }, everyMs);
   }
-  rt.startRaceLoop = startRaceLoop;
 
   // Cómo va a terminar esto, en la pizarra: con tiempo límite el cronómetro es
   // DESCENDENTE (queda X) — el mismo instante que ve el alumno; sin él, se dice
@@ -248,9 +315,13 @@ async function renderHost(rootSel, code, sessionId, activity) {
   // Valor INICIAL del cronómetro de carrera/tablero: el mismo instante y el mismo
   // formato que luego repinta startElapsedTicker (core/deadlineTicker.js), para
   // que el primer pintado no sea una tercera copia de la aritmética.
-  rt.raceClock = () => mmss(rt.session.started_at ? serverNow() - Date.parse(rt.session.started_at) : 0, Math.floor);
+  /** @returns {string} */
+  function raceClock() {
+    return mmss(rt.session.started_at ? serverNow() - Date.parse(rt.session.started_at) : 0, Math.floor);
+  }
 
-  rt.endBadge = function endBadge() {
+  /** @returns {string} */
+  function endBadge() {
     const { policy, n, deadlineMs } = endPolicyOf(rt.session);
     if (policy === 'time' && deadlineMs) {
       return `queda ${mmss(Math.max(0, deadlineMs - serverNow()), Math.floor)}`;
@@ -271,21 +342,20 @@ async function renderHost(rootSel, code, sessionId, activity) {
 
   let lastPhaseKey = '';
 
+  /** @param {import('../core/liveTransport.js').RoomChange} ev */
   async function onChange(ev) {
     if (rt.disposed) return;
-    // Some backends deliver a full row diff (Supabase postgres_changes); the
-    // local driver sends only { table } as a "something changed" ping. When the
-    // payload is missing, re-fetch the affected list so both backends work.
-    const hasPayload = ev.new || ev.old;
+    // Los DOS adaptadores avisan con `{ table }` — "algo cambió ahí" — y la
+    // lista se vuelve a pedir a su dueño. El parche por FILA (`ev.new`/`ev.old`)
+    // era de los `postgres_changes` de Supabase, retirado: ningún driver lo
+    // manda hoy, así que aquellas ramas no podían ejecutarse (y la de UPDATE
+    // comparaba un `id` que `listAnswers` ni devuelve).
     if (ev.table === 'sessions') {
-      rt.session = ev.new ? { ...rt.session, ...ev.new } : { ...rt.session, ...(await fetchSession(sessionId)) };
+      rt.session = { ...rt.session, ...(await fetchSession(sessionId)) };
       paint();
     }
     else if (ev.table === 'players') {
-      if (!hasPayload) rt.players = await listPlayers(sessionId);
-      else if (ev.eventType === 'DELETE') rt.players = rt.players.filter(p => p.id !== ev.old.id);
-      else if (ev.eventType === 'INSERT') rt.players = [...rt.players, ev.new];
-      else rt.players = rt.players.map(p => p.id === ev.new.id ? ev.new : p);
+      rt.players = await listPlayers(sessionId);
       paint();
     }
     else if (ev.table === 'answers') {
@@ -293,9 +363,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
         if (isBoard) tablero.paintLiveBoardHost(false); // grid of live mini-boards
         else carrera.paintRace(false); // race view loads its own answer data
       } else {
-        if (!hasPayload) rt.answers = await listAnswers(sessionId, rt.session.current_item);
-        else if (ev.eventType === 'INSERT') rt.answers = [...rt.answers, ev.new];
-        else if (ev.eventType === 'UPDATE') rt.answers = rt.answers.map(a => a.id === ev.new.id ? ev.new : a);
+        rt.answers = await listAnswers(sessionId, rt.session.current_item ?? 0);
         if (rt.session.phase !== 'question') paint();
       }
     }

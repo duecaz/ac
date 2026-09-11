@@ -1,5 +1,5 @@
 import { revisarActividad, pantallaNoListaHtml } from '../core/activityCheck.js';
-import { html, escapeHtml, mount } from '../core/html.js';
+import { html, escapeHtml, mount, $$ } from '../core/html.js';
 import { sessionItems } from '../kernel/content/sessionItems.js';
 import { studentBase } from '../core/routing.js';
 import { on } from '../core/events.js';
@@ -13,14 +13,22 @@ import { createAssignment, listAssignmentsForActivity, listAttempts, closeAssign
 import { toast, confirmModal, TOAST_NORMAL, TOAST_LARGO } from '../core/toast.js';
 
 
+/** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
+/** @typedef {import('../kernel/contracts/session.js').AssignmentRecord} AssignmentRecord */
+/** @typedef {import('../kernel/contracts/session.js').AssignmentAttempt} AssignmentAttempt */
+
+/** @param {string} rootSel @param {string} activityId */
 export async function renderAssignmentsForActivity(rootSel, activityId) {
   // Local y, si no está, de la nube — igual que `#/play` y `#/launch`. Con la
   // tarjeta ofreciendo Tarea en TODA la biblioteca (v1.51.621), mandar de
   // deberes una actividad publicada por otro profe es un camino normal; mirar
   // solo este navegador lo convertía en «Actividad no encontrada».
   if (!get(activityId)) mount(rootSel, html`<div class="text-center py-5"><div class="spinner-border"></div><p class="mt-2">Cargando actividad…</p></div>`);
-  const a = await getAnywhere(activityId);
-  if (!a) { mount(rootSel, html`<div class="alert alert-warning">Actividad no encontrada.</div>`); return; }
+  const leida = await getAnywhere(activityId);
+  if (!leida) { mount(rootSel, html`<div class="alert alert-warning">Actividad no encontrada.</div>`); return; }
+  // Existe: `paint()` y `refresh()` se declaran antes de este guard (hoisting),
+  // así que la actividad se fija aquí en una constante sin nulo.
+  const a = leida;
   // Una tarea se manda a casa: enterarse allí de que faltaban datos es peor que
   // en clase. La puerta va en la RUTA (`#/tasks/:id` tiene enlace propio), no en
   // el botón de la portada.
@@ -31,6 +39,7 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
     paint(await listAssignmentsForActivity(activityId));
   }
 
+  /** @param {AssignmentRecord[]} items */
   function paint(items) {
     mount(rootSel, html`
       <a href="#/mine" class="btn btn-link"><i class="bi bi-arrow-left"></i> Inicio</a>
@@ -89,24 +98,27 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
     `);
 
     on(rootSel, 'click', '#t-create', async () => {
-      const title = document.getElementById('t-title').value.trim();
-      const due = document.getElementById('t-due').value;
-      const max = +document.getElementById('t-max').value || 1;
+      /** @param {string} id */
+      const campo = (id) => /** @type {HTMLInputElement|null} */ (document.getElementById(id));
+      const title = (campo('t-title')?.value || '').trim();
+      const due = campo('t-due')?.value || '';
+      const max = +(campo('t-max')?.value || '') || 1;
       try {
         await createAssignment(a, { title, dueAt: due ? new Date(due).toISOString() : null, maxAttempts: max });
         toast('Tarea creada.', 'success');
         refresh();
-      } catch (e) { toast('Error: ' + e.message, 'danger', TOAST_NORMAL); }
+      } catch (e) { toast('Error: ' + (e instanceof Error ? e.message : String(e)), 'danger', TOAST_NORMAL); }
     });
     on(rootSel, 'click', '.copy', (_, b) => {
-      navigator.clipboard?.writeText(b.dataset.url);
+      navigator.clipboard?.writeText(b.dataset.url || '');
       b.innerHTML = '<i class="bi bi-check"></i>';
       setTimeout(() => b.innerHTML = '<i class="bi bi-clipboard"></i>', 1200);
     });
     on(rootSel, 'click', '.gclass', async (_, b) => {
       const { listCourses, createCourseworkLink } = await import('../core/classroom.js');
       const { pickCourse } = await import('../core/coursePicker.js');
-      b.disabled = true;
+      const btn = /** @type {HTMLButtonElement} */ (b);
+      btn.disabled = true;
       try {
         const courses = await listCourses();
         if (!courses.length) { toast('No tienes cursos activos en Classroom (o tu sesión no ve ninguno).', 'info', TOAST_NORMAL); return; }
@@ -121,22 +133,26 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
         toast('Tarea publicada en Classroom ✓', 'success', TOAST_NORMAL);
         if (res.link) window.open(res.link, '_blank');
       } catch (e) {
-        toast('Classroom: ' + (e.message || 'no se pudo enviar'), 'danger', TOAST_LARGO);
-      } finally { b.disabled = false; }
+        toast('Classroom: ' + ((e instanceof Error && e.message) || 'no se pudo enviar'), 'danger', TOAST_LARGO);
+      } finally { btn.disabled = false; }
     });
     on(rootSel, 'click', '.rotate-t', async (_, b) => {
       const ok = await confirmModal('¿Rotar el PIN? El antiguo dejará de funcionar.', { okText: 'Rotar', danger: false });
       if (!ok) return;
       try {
-        const code = await rotateAssignmentCode(b.dataset.id);
+        const rotId = b.dataset.id;
+        if (!rotId) return;
+        const code = await rotateAssignmentCode(rotId);
         toast(`PIN nuevo: ${code}`, 'success', TOAST_NORMAL);
         refresh();
-      } catch (e) { toast('Error rotando PIN: ' + e.message, 'danger'); }
+      } catch (e) { toast('Error rotando PIN: ' + (e instanceof Error ? e.message : String(e)), 'danger'); }
     });
     on(rootSel, 'click', '.close-t', async (_, b) => {
       const ok = await confirmModal('¿Cerrar esta tarea?', { okText: 'Cerrar tarea', danger: true });
       if (!ok) return;
-      await closeAssignment(b.dataset.id);
+      const closeId = b.dataset.id;
+      if (!closeId) return;
+      await closeAssignment(closeId);
       toast('Tarea cerrada.', 'info');
       refresh();
     });
@@ -147,8 +163,10 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
 
 // La lista de claves de contenido vive UNA vez (sessionItems): estaba copiada
 // aquí, en reports.js y en itemStatsView.js — y ya había divergido (`pins`).
+/** @param {Activity} a */
 const itemsOf = (a) => sessionItems(a);
 
+/** @param {string} rootSel @param {string} assignmentId */
 export async function renderAttempts(rootSel, assignmentId) {
   const attempts = await listAttempts(assignmentId);
   const activityId = attempts.find(a => a.activity_id)?.activity_id;
@@ -164,8 +182,14 @@ export async function renderAttempts(rootSel, assignmentId) {
   const isText = esHojaDeTexto(activity);
 
   // Agrupa por alumno (nombre): nº intentos, MEJOR puntaje, último intento/tiempo.
+  /** @type {Map<string, AssignmentAttempt[]>} */
   const byName = new Map();
-  for (const a of attempts) { const k = a.player_name || '—'; (byName.get(k) || byName.set(k, []).get(k)).push(a); }
+  for (const a of attempts) {
+    const k = a.player_name || '—';
+    const suyos = byName.get(k) ?? [];
+    byName.set(k, suyos);
+    suyos.push(a);
+  }
   const students = [...byName.entries()].map(([name, atts]) => {
     const sorted = atts.slice().sort((x, y) => (y.created_at || '').localeCompare(x.created_at || ''));
     const best = Math.max(...atts.map(a => a.score_auto ?? 0));
@@ -181,7 +205,9 @@ export async function renderAttempts(rootSel, assignmentId) {
   if (hasDetail && activity) {
     try {
       const { aggregate } = await import('../core/itemStats.js');
-      const st = aggregate({ items, template: T, rows: rowsFromAttempts(attempts), activity });
+      // El registro guarda la meta ANCHA; `aggregate` pide el contrato exacto
+      // (mismo paso que views/itemStatsView.js).
+      const st = aggregate({ items, template: /** @type {import('../kernel/contracts/template.js').TemplateContract|null} */ (T), rows: rowsFromAttempts(attempts), activity });
       worst = st.items.filter(i => i.n).sort((a, b) => a.pctCorrect - b.pctCorrect)[0] || null;
     } catch {}
   }
@@ -219,14 +245,16 @@ export async function renderAttempts(rootSel, assignmentId) {
 
   if (!attempts.length) return;
   const out = document.getElementById('at-tabout');
+  if (!out) return;   // la vista ya no está montada
   const rows = rowsFromAttempts(attempts);
-  function showTab(tab) {
-    document.querySelectorAll('.ll-tab').forEach(b => b.classList.toggle('is-active', b.dataset.tab === tab));
+  /** @param {string|undefined} tab */
+  const showTab = (tab) => {
+    $$('.ll-tab').forEach(b => b.classList.toggle('is-active', b.dataset.tab === tab));
     if (tab === 'alumnos') out.innerHTML = studentsTable;
     else if (tab === 'tabla') out.innerHTML = activity ? sessionTableHtml(rows, items.length, { labels, items, template: T, activity }) : '<p class="text-muted">Sin actividad local para la tabla.</p>';
     else out.innerHTML = (activity && hasDetail) ? itemStatsHtml(activity, rows) : '<p class="text-muted small">Sin detalle por ítem (crea el campo <code>answers</code> en #/admin).</p>';
-  }
-  document.querySelectorAll('.ll-tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+  };
+  $$('.ll-tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
   // B2 — ficha por alumno: su heatmap individual.
   on(rootSel, 'click', '.st-who', (_, b) => {
     const name = b.dataset.name;
@@ -235,7 +263,7 @@ export async function renderAttempts(rootSel, assignmentId) {
     out.innerHTML = `<div class="mb-2"><button class="btn btn-sm btn-link" id="at-back"><i class="bi bi-arrow-left"></i> Volver</button> <b>${escapeHtml(name)}</b></div>`
       + ((activity && myRows.length) ? itemStatsHtml(activity, myRows) : '<p class="text-muted">Sin detalle de este alumno.</p>');
     document.getElementById('at-back')?.addEventListener('click', () => showTab('alumnos'));
-    document.querySelectorAll('.ll-tab').forEach(x => x.classList.remove('is-active'));
+    $$('.ll-tab').forEach(x => x.classList.remove('is-active'));
   });
   document.getElementById('at-csv')?.addEventListener('click', () => {
     const csv = activity ? sessionTableCsv(rows, items.length, { labels, items, template: T, activity }) : '';

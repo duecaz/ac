@@ -20,17 +20,40 @@ import { itemStatsHtml } from './itemStatsView.js';
 // dev, sin PocketBase, no había informes).
 const fetchAllSessions = () => listSessions({ limit: 500 });
 
+/**
+ * @typedef {import('../kernel/contracts/activity.js').Activity} Activity
+ * @typedef {import('../kernel/contracts/session.js').RoomRecord} RoomRecord
+ */
+
+/**
+ * UNA sala, ya leída del blob, tal y como la muestran los tres paneles. Lleva lo
+ * de `RoomState` (por eso `rowsFromLiveState` la acepta) más la identidad de la
+ * fila y su actividad.
+ * @typedef {Object} SalaInforme
+ * @property {string} id
+ * @property {string} code
+ * @property {string|null} activityId
+ * @property {Activity|null} activitySnap
+ * @property {import('../kernel/contracts/session.js').RoomStatus} status
+ * @property {import('../kernel/contracts/session.js').LivePhase} [phase]
+ * @property {number} currentItem
+ * @property {string|null} startedAt
+ * @property {import('../kernel/contracts/session.js').Player[]} players
+ * @property {Record<string, import('../kernel/contracts/session.js').EngineAnswer>} answers
+ */
+
 // Parse players and answers from a live_sessions state blob.
+/** @param {RoomRecord} rec @returns {SalaInforme} */
 function parseState(rec) {
   const state = rec.state || {};
-  const activity = rec.activity || {};
+  const activity = rec.activity || null;
   return {
     id: rec.id,
     code: rec.code,
-    activityId: activity.id || null,
+    activityId: activity?.id || null,
     activitySnap: activity,
     status: state.status || 'lobby',
-    phase: state.phase || null,
+    phase: state.phase || undefined,   // misma forma que `RoomState` (lo lee rowsFromLiveState)
     currentItem: state.currentItem ?? -1,
     startedAt: state.startedAt || null,
     players: state.players || [],
@@ -38,15 +61,18 @@ function parseState(rec) {
   };
 }
 
+/** @param {string} rootSel */
 export async function renderReports(rootSel) {
   // Los JUEGOS no entran en los informes de aprendizaje (§4c): no llevan
   // contenido del profe, así que no hay nada de lo que informar — un ranking de
   // sudokus no dice nada de nadie. La derivación estaba escrita en el norte y
   // sin aplicar: "Ordena las Pelotas" aparecía en la lista (auditoría v1.51.400).
   const acts = listActivities().filter(a => getTemplate(a.template)?.meta?.kind !== 'juego');
+  /** @type {SalaInforme[]} */
   let sessions = [];
   try { sessions = (await fetchAllSessions()).map(parseState); } catch { /* offline */ }
 
+  /** @type {Record<string, number>} */
   const counts = {};
   for (const s of sessions) {
     if (s.activityId) counts[s.activityId] = (counts[s.activityId] || 0) + 1;
@@ -69,11 +95,13 @@ export async function renderReports(rootSel) {
   `);
 }
 
+/** @param {string} rootSel @param {string} activityId */
 export async function renderActivityReport(rootSel, activityId) {
   const acts = listActivities();
   const a = acts.find(x => x.id === activityId);
   if (!a) { mount(rootSel, html`<div class="alert alert-warning">Actividad no encontrada.</div>`); return; }
 
+  /** @type {SalaInforme[]} */
   let allSessions = [];
   try { allSessions = (await fetchAllSessions()).map(parseState); } catch { /* offline */ }
   const sessions = allSessions.filter(s => s.activityId === activityId);
@@ -100,7 +128,9 @@ export async function renderActivityReport(rootSel, activityId) {
   `);
 }
 
+/** @param {string} rootSel @param {string} sessionId */
 export async function renderSessionReport(rootSel, sessionId) {
+  /** @type {SalaInforme} */
   let sess;
   try {
     const rec = await fetchSessionRecord(sessionId);
@@ -111,7 +141,9 @@ export async function renderSessionReport(rootSel, sessionId) {
     return;
   }
 
-  const activity = sess.activitySnap || {};
+  // Una sala LEGADA puede no traer snapshot: el informe se pinta vacío (como
+  // hasta ahora) en vez de romperse — la tabla y el análisis leen lo que haya.
+  const activity = /** @type {Activity} */ (sess.activitySnap || {});
   const tpl = getTemplate(activity.template);
   const items = sessionItems(activity);
   // LAS MISMAS matemáticas que el informe del host y que el de tareas
@@ -152,6 +184,7 @@ export async function renderSessionReport(rootSel, sessionId) {
     downloadText(`sesion-${sess.code}.csv`, 'text/csv', sessionTableCsv(rows, items.length, opts)));
 }
 
+/** @param {string} s */
 function badgeFor(s) {
   return s === 'ended' ? 'secondary' : s === 'running' ? 'success' : s === 'review' ? 'warning' : 'info';
 }

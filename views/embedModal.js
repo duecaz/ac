@@ -7,7 +7,8 @@
 // PocketBase desde otro origen). Se reabre solo si Google Classroom lo pide.
 // Por eso el diálogo avisa: la puerta entornada se dice ANTES.
 import { rid } from '../core/ids.js';
-import { escapeHtml } from '../core/html.js';
+import { escapeHtml, $ as qs } from '../core/html.js';
+import { abrirDialogoConFallback } from '../core/modalFallback.js';
 import { listSkins } from '../core/skins.js';
 import { listBackgrounds } from '../core/backgrounds.js';
 import { compatibleTemplates, getTemplate } from '../core/registry.js';
@@ -20,11 +21,12 @@ const SIZES = [
   { label: '1280 × 800', w: '1280', h: '800' }
 ];
 
+/** @param {import('../kernel/contracts/activity.js').Activity} activity */
 export function openEmbedModal(activity) {
   const id = rid('ww-embed-modal-');
   const skins = listSkins();
   const bgs = listBackgrounds();
-  const compat = [getTemplate(activity.template), ...compatibleTemplates(activity.template)].filter(Boolean);
+  const compat = [getTemplate(activity.template), ...compatibleTemplates(activity.template)].flatMap(t => t ? [t] : []);
 
   const isPublic = activity.visibility === 'public' || activity.visibility === 'unlisted';
 
@@ -96,17 +98,25 @@ export function openEmbedModal(activity) {
       </div>
     </div>`;
 
-  const el = wrap.firstElementChild;
+  const el = /** @type {HTMLElement|null} */ (wrap.firstElementChild);
+  if (!el) return;
   document.body.appendChild(el);
-  const m = new bootstrap.Modal(el);
+  // Bootstrap llega de una CDN: el respaldo de core/modalFallback.js abre el
+  // diálogo igual cuando no ha llegado (dueño único del global).
+  const m = abrirDialogoConFallback(el);
   el.addEventListener('hidden.bs.modal', () => el.remove());
 
-  const $ = (id2) => el.querySelector('#' + id2);
+  /** @param {string} id2 @returns {HTMLElement|null} */
+  const $ = (id2) => qs('#' + id2, el);
+  /** @param {string} id2 @returns {HTMLSelectElement|null} */
+  const $sel = (id2) => /** @type {HTMLSelectElement|null} */ ($(id2));
+  /** @returns {HTMLTextAreaElement|null} */
+  const $snippet = () => /** @type {HTMLTextAreaElement|null} */ ($(id + '-snippet'));
   function buildUrl() {
-    const sIdx = +$(id + '-size').value;
-    const skin = $(id + '-skin').value;
-    const bg = $(id + '-bg').value;
-    const tpl = $(id + '-tpl')?.value || '';
+    const sIdx = +($sel(id + '-size')?.value || 0);
+    const skin = $sel(id + '-skin')?.value || '';
+    const bg = $sel(id + '-bg')?.value || '';
+    const tpl = $sel(id + '-tpl')?.value || '';
     const base = location.origin + location.pathname.replace(/[^/]*$/, '') + 'embed.html';
     const q = new URLSearchParams({ id: activity.id });
     if (skin) q.set('skin', skin);
@@ -117,14 +127,17 @@ export function openEmbedModal(activity) {
   function refresh() {
     const { url, size } = buildUrl();
     const iframe = `<iframe src="${url}" width="${size.w}" height="${size.h}" frameborder="0" allowfullscreen style="max-width:100%;border:0"></iframe>`;
-    $(id + '-snippet').value = iframe;
-    $(id + '-preview').src = url;
-    $(id + '-open').href = url;
+    const snippet = $snippet();
+    const preview = /** @type {HTMLIFrameElement|null} */ ($(id + '-preview'));
+    const open = /** @type {HTMLAnchorElement|null} */ ($(id + '-open'));
+    if (snippet) snippet.value = iframe;
+    if (preview) preview.src = url;
+    if (open) open.href = url;
   }
   ['-size','-skin','-bg','-tpl'].forEach(suf => $(id + suf)?.addEventListener('change', refresh));
-  $(id + '-copy').addEventListener('click', async () => {
+  $(id + '-copy')?.addEventListener('click', async () => {
     try {
-      await navigator.clipboard.writeText($(id + '-snippet').value);
+      await navigator.clipboard.writeText($snippet()?.value || '');
       toast('Snippet copiado.', 'success');
     } catch {
       toast('No se pudo copiar; selecciónalo manualmente.', 'warning', TOAST_NORMAL);

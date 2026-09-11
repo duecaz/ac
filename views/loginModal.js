@@ -4,7 +4,7 @@
 //    Google puesta; el admin puede crear estas cuentas (ver panel de Profesores).
 // …y la salida cuando la contraseña se pierde, que en una pizarra compartida
 // pasa: «¿Olvidaste tu contraseña?» manda el correo de restablecimiento.
-import { html, escapeHtml } from '../core/html.js';
+import { html, escapeHtml, $ as qs } from '../core/html.js';
 import { modeAuthHint } from '../core/modes.js';
 import { toast, TOAST_NORMAL } from '../core/toast.js';
 import { signInWithGoogle, signIn, requestPasswordReset, oauthRedirectUrl } from '../core/auth.js';
@@ -14,6 +14,7 @@ let _open = false;
 /** `reason`: por qué se le pide entrar AHORA ("Inicia sesión para crear una sala
  *  en vivo"). La frase la fija core/modes.js y viaja hasta aquí para que el modal
  *  no diga algo distinto del botón que lo abrió. */
+/** @param {{reason?: string}} [o] */
 export function openLoginModal({ reason = '' } = {}) {
   if (_open) return;
   _open = true;
@@ -73,7 +74,10 @@ export function openLoginModal({ reason = '' } = {}) {
   // Inicio de sesión + enlace al ALTA (#/registro, reabierta por decisión del
   // dueño 2026-08-11; U1 la había cerrado). El admin sigue pudiendo crear
   // accesos de pizarra desde el panel Profesores (#/admin).
-  const $ = (id) => host.querySelector(id);
+  /** @param {string} sel @returns {HTMLElement|null} */
+  const $ = (sel) => qs(sel, host);
+  /** @param {string} sel @returns {HTMLInputElement|null} */
+  const $inp = (sel) => /** @type {HTMLInputElement|null} */ ($(sel));
   const close = () => { _open = false; host.remove(); window.removeEventListener('hashchange', close); };
   // El modal vive en <body> (fuera de #app), así que el router no lo desmonta:
   // si se navega con él abierto quedaba huérfano encima de la vista nueva y
@@ -82,37 +86,40 @@ export function openLoginModal({ reason = '' } = {}) {
 
   host.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', close));
   $('#lm-copiar')?.addEventListener('click', async () => {
-    const uri = $('#lm-uri').textContent;
+    const code = $('#lm-uri');
+    const btn = $('#lm-copiar');
+    const uri = code?.textContent || '';
     try {
       await navigator.clipboard.writeText(uri);
-      $('#lm-copiar').textContent = 'Copiada';
+      if (btn) btn.textContent = 'Copiada';
     } catch {
       // Sin portapapeles (pizarra vieja, contexto no seguro): se selecciona
       // para que se pueda copiar a mano. Fallar en silencio dejaría al dueño
       // creyendo que ya la tiene copiada (R6).
       const r = document.createRange();
-      r.selectNodeContents($('#lm-uri'));
+      if (code) r.selectNodeContents(code);
       const sel = window.getSelection();
-      sel.removeAllRanges(); sel.addRange(r);
-      $('#lm-copiar').textContent = 'Selecciónala y copia';
+      sel?.removeAllRanges(); sel?.addRange(r);
+      if (btn) btn.textContent = 'Selecciónala y copia';
     }
   });
-  $('#lm-google').addEventListener('click', async () => {
+  $('#lm-google')?.addEventListener('click', async () => {
     try { await signInWithGoogle(); } // redirige
-    catch (err) { showErr(err.message); }
+    catch (err) { showErr(err instanceof Error ? err.message : String(err)); }
   });
-  $('#lm-form').addEventListener('submit', async (e) => {
+  $('#lm-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const email = $('#lm-email').value.trim();
-    const pass = $('#lm-pass').value;
+    const email = $inp('#lm-email')?.value.trim() || '';
+    const pass = $inp('#lm-pass')?.value || '';
     if (!email || !pass) return showErr('Completa correo y contraseña.');
-    $('#lm-submit').disabled = true;
+    const btn = /** @type {HTMLButtonElement|null} */ ($('#lm-submit'));
+    if (btn) btn.disabled = true;
     try {
       await signIn(email, pass);
       close(); // auth.js ya hizo notify() → la barra se repinta
     } catch (err) {
-      showErr(err.message || 'No se pudo iniciar sesión.');
-      $('#lm-submit').disabled = false;
+      showErr((err instanceof Error && err.message) || 'No se pudo iniciar sesión.');
+      if (btn) btn.disabled = false;
     }
   });
 
@@ -121,28 +128,30 @@ export function openLoginModal({ reason = '' } = {}) {
   // podía existir: PocketBase habría aceptado la petición y no habría salido
   // ningún correo — un botón que promete algo que no ocurre es peor que no
   // tenerlo.
-  $('#lm-forgot').addEventListener('click', async (e) => {
+  $('#lm-forgot')?.addEventListener('click', async (e) => {
     e.preventDefault();
-    const email = $('#lm-email').value.trim();
+    const campo = $inp('#lm-email');
+    const email = campo?.value.trim() || '';
     // Se reutiliza el campo de arriba en vez de abrir otra pantalla: si ya lo
     // escribió, un toque; si no, se le pide ahí mismo y el foco lo lleva.
-    if (!email) { $('#lm-email').focus(); return showErr('Escribe tu correo arriba y vuelve a pulsar.'); }
+    if (!email) { campo?.focus(); return showErr('Escribe tu correo arriba y vuelve a pulsar.'); }
     const enlace = $('#lm-forgot');
-    enlace.textContent = 'Enviando…';
+    if (enlace) enlace.textContent = 'Enviando…';
     try {
       await requestPasswordReset(email);
       // MISMA respuesta exista o no la cuenta: decir «ese correo no está
       // registrado» convierte este formulario en un comprobador de quién tiene
       // cuenta. PocketBase responde igual a propósito; aquí no se deshace.
       showErr('');
-      enlace.outerHTML = `<span class="text-success">Si <b>${escapeHtml(email)}</b> tiene cuenta, `
+      if (enlace) enlace.outerHTML = `<span class="text-success">Si <b>${escapeHtml(email)}</b> tiene cuenta, `
         + 'le llega un correo con el enlace para cambiar la contraseña. Mira también la carpeta de spam.</span>';
     } catch (err) {
-      enlace.textContent = '¿Olvidaste tu contraseña?';
-      showErr(err.message || 'No se pudo enviar el correo. Inténtalo en un minuto.');
+      if (enlace) enlace.textContent = '¿Olvidaste tu contraseña?';
+      showErr((err instanceof Error && err.message) || 'No se pudo enviar el correo. Inténtalo en un minuto.');
     }
   });
 
+  /** @param {string} [m] */
   function showErr(m) { const el = $('#lm-err'); if (el) el.textContent = m || ''; }
 }
 
@@ -155,6 +164,7 @@ export function openLoginModal({ reason = '' } = {}) {
  *  El motivo sale de `modeAuthHint()` y la cola —qué SÍ funciona sin cuenta— vive
  *  aquí al lado, porque es la misma respuesta para los dos modos de profe.
  */
+/** @param {string} mode */
 export function pedirCuentaParaModo(mode) {
   const razon = modeAuthHint(mode);
   toast(`${razon}. Tus alumnos entran con el PIN, sin cuenta.`, 'info', TOAST_NORMAL);

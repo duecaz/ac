@@ -31,7 +31,7 @@ const templateOverride = params.get('template');
 (async function boot() {
   if (!id) {
     document.body.innerHTML = '<div class="alert alert-warning m-4">Falta <code>?id=</code> en la URL.</div>';
-    window.__APP_READY__ = true;
+    Reflect.set(window, '__APP_READY__', true);
     return;
   }
   try {
@@ -39,14 +39,14 @@ const templateOverride = params.get('template');
     const a = await getRemote(id);
     if (!a) {
       document.body.innerHTML = '<div class="alert alert-warning m-4">Actividad no disponible. Tal vez sea privada.</div>';
-      window.__APP_READY__ = true;
+      Reflect.set(window, '__APP_READY__', true);
       return;
     }
     // If the override template is incompatible (different contentModel),
     // ignore it and fall back to the activity's own.
     const T = templateOverride ? getTemplate(templateOverride) : null;
     const original = getTemplate(a.template);
-    const useTemplate = (T && T.meta?.contentModel === original?.meta?.contentModel) ? templateOverride : a.template;
+    const useTemplate = (templateOverride && T && T.meta?.contentModel === original?.meta?.contentModel) ? templateOverride : a.template;
 
     const skin = skinOverride || a.presentation?.skin || 'default';
     const bg = bgOverride || a.presentation?.background || 'none';
@@ -58,10 +58,11 @@ const templateOverride = params.get('template');
     document.title = `${a.title} · WW`;
 
     runPlayer('#ww-player-widget', { ...a, template: useTemplate }, { skipChrome: true });
-    window.__APP_READY__ = true;
+    Reflect.set(window, '__APP_READY__', true);
   } catch (e) {
     console.error(e);
-    document.body.innerHTML = `<div class="alert alert-danger m-4"><pre>${e.stack || e.message}</pre></div>`;
-    window.__APP_READY__ = true;
+    const detalle = e instanceof Error ? (e.stack || e.message) : String(e);
+    document.body.innerHTML = `<div class="alert alert-danger m-4"><pre>${detalle}</pre></div>`;
+    Reflect.set(window, '__APP_READY__', true);
   }
 })();

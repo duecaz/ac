@@ -3,7 +3,7 @@
 // template). Around it: header, skin tiles, background tiles, "switch
 // template" row, share/edit actions. Responsive: collapses to a tall
 // auto-height frame on mobile portrait.
-import { html, escapeHtml, mount } from '../core/html.js';
+import { html, escapeHtml, mount, $$ } from '../core/html.js';
 import { on } from '../core/events.js';
 import { save, getAnywhere, remove as removeActivity } from '../core/storage.js';
 import { activityItemCount, newActivityId } from '../core/migrate.js';
@@ -31,16 +31,26 @@ import { destinoTrasJugar } from '../core/afterPlay.js';
 import { navigate } from '../core/router.js';
 import { buildSwitchOptions, duplicateAsTemplate, switchWillNeed } from './switchTemplate.js';
 
+/** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
+
+/**
+ * @param {string|Element} rootSel
+ * @param {string} id
+ * @param {string} [initialMode]
+ */
 export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   // Banco compartido: si no está en local, se trae de la nube (acceso por URL
   // desde cualquier dispositivo/profe). SIN cachear: jugar una actividad pública
   // NO debe ensuciar "Mis actividades" (modelo biblioteca, S2). Se juega en
   // memoria; para tenerla propia se usa "Duplicar".
-  const a = await getAnywhere(id);
-  if (!a) {
+  const cargada = await getAnywhere(id);
+  if (!cargada) {
     mount(rootSel, html`<div class="alert alert-warning">Actividad no encontrada. <a href="${destinoTrasJugar('solo').href}">Volver</a></div>`);
     return;
   }
+  // De aquí abajo la actividad EXISTE (arriba se vuelve si no): se nombra una vez
+  // para que las funciones de la página no tengan que volver a preguntarlo.
+  const a = cargada;
   // NI VACÍA NI A MEDIAS. Dos caminos que la app trataba como si nada:
   //   · vacía — desde F4 las actividades nacen en blanco, así que darle a Jugar
   //     antes de escribir nada es NORMAL; cada plantilla lo contaba a su manera
@@ -58,7 +68,9 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     if (!rev.jugable) { mount(rootSel, pantallaNoListaHtml(a, rev)); return; }
   }
   const ctx = acquire('playerPage');
+  /** @type {string|undefined} */
   let currentSkin = a.presentation?.skin || 'default';
+  /** @type {string|undefined} */
   let currentBg = a.presentation?.background || 'none';
   let currentBgImage = a.presentation?.backgroundImage || '';
   // «MI IMAGEN» ES UNA TARJETA COMO LAS DEMÁS. Llevaba dentro un botón «Subir» de
@@ -90,6 +102,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   // Lo elegido para ESTA partida (core/playOptions.js). Vive aquí, no en la
   // actividad: mañana con otro grupo el profe elige otra cosa y lo guardado no
   // se toca. Al vivir en playActivity() sirve a TODOS los modos embebidos.
+  /** @type {import('../core/playOptions.js').PlayChoices} */
   let playChoices = {};
 
   const vsCapable = isVsCompatible(a);
@@ -97,8 +110,11 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   // stage hosts ONE mode at a time (Individual by default); switching modes
   // disposes the previous one (stops VS animations, etc.). See core/modes.js.
   let currentMode = initialMode;
+  /** @type {{dispose: () => void}|null} */
   let currentDisposer = null;
+  /** @type {{dispose: () => void}|null} */
   let currentAnim = null;   // animación de progreso del modo solo (carril)
+  /** @type {(() => void)|null} */
   let fsDisposer = null;    // enganche del botón de pantalla completa (uno vivo)
   // Ficha de generación: cada selectMode() la incrementa. runMode()/mountSoloStart
   // son ASÍNCRONOS (dynamic import + montaje); si el usuario cambia de modo otra
@@ -138,6 +154,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   // The "Modos de juego" bar, built entirely from the mode registry so gating
   // lives in ONE place (core/modes.js). Embedded modes are buttons that mount
   // into the stage; embed:false modes (En vivo, Tarea) are links to their page.
+  /** @param {Activity} act */
   function modeBarHtml(act) {
     // Solo se ofrecen los modos que la PLANTILLA soporta (capacidad) — sin esto,
     // "Equipos" aparecía en Ruleta/Pregunta Live (que no tienen renderRound) y
@@ -162,8 +179,12 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
           return `<button class="btn btn-outline-${m.color} ww-mode-locked" data-lock="${m.id}" title="${escapeHtml(modeAuthHint(m))}">`
             + `<i class="bi bi-lock-fill"></i> ${escapeHtml(m.label)}</button>`;
         }
-        return ok
-          ? `<a href="${m.href(a)}" class="btn btn-outline-${m.color}"><i class="bi ${m.icon}"></i> ${escapeHtml(m.label)}</a>`
+        // La RUTA la declara el modo (`href` en MODE_DEFS). Un modo de página
+        // propia sin ruta no se puede enlazar: cae en el mismo botón gris que
+        // el no disponible, nunca en un enlace vacío.
+        const enlace = m.href?.(a);
+        return ok && enlace
+          ? `<a href="${enlace}" class="btn btn-outline-${m.color}"><i class="bi ${m.icon}"></i> ${escapeHtml(m.label)}</a>`
           : `<button class="btn btn-outline-secondary" disabled title="${escapeHtml(m.disabledHint || '')}"><i class="bi ${m.icon}"></i> ${escapeHtml(m.label)}</button>`;
       }
       if (!ok) {
@@ -177,9 +198,13 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   // Swap the stage to a different embedded mode: tear down the previous one,
   // expand the frame for shared-screen modes (VS/Equipos need room), highlight
   // the active button, and mount. Solo keeps the template's fixed aspect ratio.
+  /** @param {string|undefined} id */
   async function selectMode(id) {
     const m = getMode(id);
     if (!m || !m.embed) return; // embed:false modes navigate via their link
+    // Pasado el guard el modo EXISTE, así que su id es el que llegó: se nombra
+    // desde el registro para no arrastrar el `undefined` del parámetro.
+    const modeId = m.id;
     const myToken = ++modeToken;   // invalida cualquier callback async en vuelo de una selección previa
     if (currentDisposer) { try { currentDisposer.dispose(); } catch {} currentDisposer = null; }
     // Animación de progreso: SOLO en modo Individual. Se monta ANTES del player
@@ -190,22 +215,22 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     // la pantalla de inicio; hasta entonces el carril queda oculto.
     const lane = document.getElementById('ww-solo-anim');
     if (lane) { lane.innerHTML = ''; lane.hidden = true; }
-    currentMode = id;
-    document.querySelectorAll('.ww-mode').forEach(btn => {
-      const on = btn.dataset.mode === id;
+    currentMode = modeId;
+    $$('.ww-mode').forEach(btn => {
+      const on = btn.dataset.mode === modeId;
       btn.classList.toggle('is-active', on);
       const color = getMode(btn.dataset.mode)?.color || 'secondary';
       btn.classList.toggle('btn-' + color, on);
       btn.classList.toggle('btn-outline-' + color, !on);
     });
-    document.getElementById('ww-frame')?.classList.toggle('is-expanded', id !== 'solo');
+    document.getElementById('ww-frame')?.classList.toggle('is-expanded', modeId !== 'solo');
     // ESTÁNDAR: toda actividad pasa por una pantalla de inicio (título +
     // instrucciones + ajustes) antes de mostrar el ejercicio. El modo Individual
     // la pinta aquí; VS/Equipos ya tienen su propia pantalla previa (modeSetup).
-    if (id === 'solo') {
+    if (modeId === 'solo') {
       currentDisposer = mountSoloStart(myToken);
     } else {
-      const disposer = await runMode(id, '#ww-player-widget', playActivity(), ctx);
+      const disposer = await runMode(modeId, '#ww-player-widget', playActivity(), ctx);
       // Si otra selección de modo ganó la carrera mientras este runMode montaba,
       // este resultado llega TARDE: no pisar currentDisposer (huérfano) — se
       // descarta el montaje recién hecho en vez de dejarlo sin dispose().
@@ -217,19 +242,21 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   // Pantalla de inicio del modo Individual: muestra título/instrucciones/ajustes
   // y, al pulsar "Iniciar", entra en pantalla completa, monta la animación de
   // progreso (si está activa) y arranca el player real en el mismo escenario.
+  /** @param {number} myToken */
   function mountSoloStart(myToken) {
     const widget = document.getElementById('ww-player-widget');
+    if (!widget) return null;
     return renderStartScreen(widget, playActivity(), {
-      frame: document.getElementById('ww-frame'),
       choices: playChoices,
-      onOption: (id, value) => { playChoices = { ...playChoices, [id]: value }; },
+      onOption: (id, value) => { if (id) playChoices = { ...playChoices, [id]: value }; },
       onStart: async () => {
         if (currentAnim) { try { currentAnim.dispose(); } catch {} currentAnim = null; }
-        const anim = mountSoloAnimator(document.getElementById('ww-solo-anim'), playActivity());
+        const lane = document.getElementById('ww-solo-anim');
+        const anim = lane ? mountSoloAnimator(lane, playActivity()) : null;
         const disposer = await runMode('solo', '#ww-player-widget', playActivity(), ctx);
         // Mismo guardia: si el alumno cambió de modo mientras "Iniciar" montaba
         // el player real, no pisar el modo YA activo con el solo tardío.
-        if (myToken !== modeToken) { try { anim.dispose(); } catch {} try { disposer.dispose(); } catch {} return; }
+        if (myToken !== modeToken) { try { anim?.dispose(); } catch {} try { disposer.dispose(); } catch {} return; }
         currentAnim = anim;
         currentDisposer = disposer;
       }
@@ -401,7 +428,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     on(rootSel, 'click', '.skin-pick', (_, b) => {
       currentSkin = b.dataset.name;
       applySkin(currentSkin, document.getElementById('ww-frame'));
-      document.querySelectorAll('.skin-pick').forEach(p => p.classList.toggle('is-active', p.dataset.name === currentSkin));
+      $$('.skin-pick').forEach(p => p.classList.toggle('is-active', p.dataset.name === currentSkin));
       // VS/Equipos SÍ necesitan re-montar: su layout depende de la clase
       // vs-skin-<layout> del skin. Pero en Individual re-montar reinicia el juego
       // a la pantalla de inicio (el alumno tocaba un tema por curiosidad y perdía
@@ -414,11 +441,12 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
       if (b.dataset.name === 'custom' && !currentBgImage) return;
       currentBg = b.dataset.name;
       applyBackground(currentBg, document.getElementById('ww-frame'), currentBgImage);
-      document.querySelectorAll('.bg-pick').forEach(p => p.classList.toggle('is-active', p.dataset.name === currentBg));
+      $$('.bg-pick').forEach(p => p.classList.toggle('is-active', p.dataset.name === currentBg));
     });
     on(rootSel, 'change', '#bg-custom-file', async (e) => {
+      const input = /** @type {HTMLInputElement|null} */ (e.target);
       try {
-        currentBgImage = await readBackgroundImage(e.target.files[0]);
+        currentBgImage = await readBackgroundImage(input?.files?.[0]);
         currentBg = 'custom';
         applyBackground(currentBg, document.getElementById('ww-frame'), currentBgImage);
         // Se REPINTA la baldosa entera, no solo su preview: ahora hay imagen, así
@@ -426,10 +454,10 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
         // raíz, así que sobreviven al reemplazo.
         const tile = document.querySelector('.bg-pick[data-name="custom"]');
         if (tile) tile.outerHTML = baldosaMia();
-        document.querySelectorAll('.bg-pick').forEach(p => p.classList.toggle('is-active', p.dataset.name === 'custom'));
+        $$('.bg-pick').forEach(p => p.classList.toggle('is-active', p.dataset.name === 'custom'));
       } catch (err) {
-        toast(err.message, 'warning', TOAST_NORMAL);
-        e.target.value = '';
+        toast(err instanceof Error ? err.message : String(err), 'warning', TOAST_NORMAL);
+        if (input) input.value = '';
       }
     });
     // OTRA PLANTILLA = DUPLICAR, no convertir en el sitio (dueño 2026-08-18;
@@ -445,6 +473,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     // exige sesión y crear una copia— pero el usuario ve la misma pared, así que
     // le llega el mismo par: el motivo (que también entra en el modal, para que
     // no tenga que recordarlo) y qué SÍ funciona sin cuenta.
+    /** @param {string} razon @param {string} cola */
     const pedirCuenta = (razon, cola) => {
       toast(`${razon}. ${cola}`, 'info', TOAST_NORMAL);
       openLoginModal({ reason: razon });
@@ -459,8 +488,8 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
         pedirCuenta('Inicia sesión para crear actividades', 'Jugar y entrar con PIN no necesitan cuenta.');
         return;
       }
-      const name = b.dataset.name;
-      const label = b.textContent.trim();
+      const name = b.dataset.name || '';
+      const label = (b.textContent || '').trim();
       const faltara = (b.dataset.faltara || '').split(' · ').filter(Boolean);
       const ok = await confirmModal(
         `Se creará una copia de "${a.title || 'esta actividad'}" con la plantilla “${label}”.`
@@ -477,7 +506,9 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
       // motivo viene como VALOR (no como excepción, que sería un embudo por
       // donde saldría cualquier fallo técnico a la cara del profe).
       const { actividad: copia, error } = duplicateAsTemplate(a, name);
-      if (error) { toast(error, 'danger', TOAST_ERROR); return; }
+      // `copia` y `error` son las dos caras de la MISMA respuesta (una u otra):
+      // se mira la copia, que es lo que se va a usar, con el motivo que venga.
+      if (!copia) { toast(error ?? '', 'danger', TOAST_ERROR); return; }
       // A DONDE HAY QUE IR: si la copia queda por completar, al EDITOR. Llevarla
       // a jugar la dejaba en la pantalla de «falta algo» que el diálogo acababa
       // de anunciar — mandar a alguien a una puerta cerrada que tú mismo le has
@@ -494,7 +525,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     // plain links and navigate on their own).
     // La misma pared que en la tarjeta, con las mismas palabras: la redacción
     // vive en `pedirCuentaParaModo` (views/loginModal.js), no aquí.
-    on(rootSel, 'click', '.ww-mode-locked', (_, b) => pedirCuentaParaModo(b.dataset.lock));
+    on(rootSel, 'click', '.ww-mode-locked', (_, b) => pedirCuentaParaModo(b.dataset.lock || ''));
     on(rootSel, 'click', '.ww-mode', (_, b) => {
       selectMode(b.dataset.mode);
       document.getElementById('ww-frame')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -512,14 +543,14 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     // dos oyentes de `fullscreenchange` en `document`. Colgarlos solo del ctx de
     // la vista los acumulaba hasta salir de la ruta (2 por cada cambio).
     if (fsDisposer) { try { fsDisposer(); } catch { /* ya suelto */ } }
-    fsDisposer = attachFullscreenButton('#ww-frame', { target: document.getElementById('ww-frame') });
+    fsDisposer = attachFullscreenButton('#ww-frame', { target: document.getElementById('ww-frame') || undefined });
     on(rootSel, 'click', '#btn-share', async () => {
       try { await navigator.clipboard.writeText(location.href); toast('Link copiado.', 'success'); }
       catch { toast('No se pudo copiar — copia manualmente: ' + location.href, 'warning', TOAST_LARGO); }
     });
     on(rootSel, 'click', '#btn-embed', () => openEmbedModal(a));
     on(rootSel, 'click', '#btn-fork', async () => {
-      const fork = {
+      const fork = /** @type {Activity} */ ({
         ...a,
         id: newActivityId(),
         title: a.title + ' (copia)',
@@ -528,7 +559,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
         author: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
-      };
+      });
       save(fork);
       location.hash = `#/edit/${fork.id}`;
     });

@@ -1,5 +1,5 @@
 // Async assignment: student plays SOLO at their own pace.
-import { html, escapeHtml, mount } from '../core/html.js';
+import { html, escapeHtml, mount, $ } from '../core/html.js';
 import { on } from '../core/events.js';
 import { findAssignmentByCode, countOwnAttempts } from '../core/assignmentsTransport.js';
 import { submitAttempt, flushAttempts } from '../core/attemptQueue.js';
@@ -19,6 +19,10 @@ import { renderAntesala } from './antesala.js';
 import { applyPlayOptions } from '../core/playOptions.js';
 
 
+/**
+ * @param {string} rootSel
+ * @param {string} code
+ */
 export async function renderTask(rootSel, code) {
   await ensureIdentity();
   // Si quedó un intento pendiente de otra sesión (red caída al entregar), esta
@@ -33,11 +37,13 @@ export async function renderTask(rootSel, code) {
   const taken = await countOwnAttempts(t.id);
   const gate = assignmentGate(t, taken);
   if (!gate.allowed) {
-    const msg = {
+    /** @type {Record<string, [string, string]>} */
+    const motivos = {
       closed:          ['secondary', 'Esta tarea está cerrada.'],
-      pastDue:         ['danger',    `Esta tarea venció el ${escapeHtml(new Date(t.due_at).toLocaleString())}.`],
+      pastDue:         ['danger',    `Esta tarea venció el ${escapeHtml(new Date(t.due_at ?? '').toLocaleString())}.`],
       noAttemptsLeft:  ['info',      `Ya usaste tus ${t.max_attempts ?? 1} intento(s) en esta tarea.`],
-    }[gate.reason] || ['warning', 'Esta tarea no está disponible.'];
+    };
+    const msg = motivos[gate.reason ?? ''] || ['warning', 'Esta tarea no está disponible.'];
     mount(rootSel, html`<div class="alert alert-${msg[0]} m-3">${msg[1]}</div>`);
     return;
   }
@@ -58,9 +64,12 @@ export async function renderTask(rootSel, code) {
       </div>
     `);
     on(rootSel, 'click', '#btn-go', () => {
-      const v = document.getElementById('f-nick').value.trim();
+      const campo = /** @type {HTMLInputElement|null} */ ($('#f-nick'));
+      const err = $('#err');
+      if (!campo || !err) return;
+      const v = campo.value.trim();
       const f = isAcceptableNickname(v);
-      if (!f.ok) { document.getElementById('err').textContent = 'Apodo: ' + f.reason; return; }
+      if (!f.ok) { err.textContent = 'Apodo: ' + f.reason; return; }
       setNick(f.value);
       renderTask(rootSel, code);
     });
@@ -91,26 +100,28 @@ export async function renderTask(rootSel, code) {
   // sin pantalla completa, así que la hacía en el móvil dentro de un marco
   // pequeño. Lo suyo (de quién es, qué intento va, hasta cuándo hay plazo) se
   // pasa como distintivos; lo demás lo pone la antesala.
-  let marcoTarea = null;
   // Las opciones de PARTIDA que declara la plantilla también aquí: si se
   // ofrecen en clase y no en la tarea, el alumno juega otra cosa que su
   // compañero (core/playOptions.js; se aplican a una COPIA, §24).
+  /** @type {import('../core/playOptions.js').PlayChoices} */
   let elecciones = {};
-  await new Promise(resolve => {
+  /** @type {Promise<ReturnType<typeof montarMarcoJuego>>} */
+  const arranque = new Promise(resolve => {
     renderAntesala(rootSel, {
       activity, title: t.title || activity?.title,
       subtitle: `Hola, ${nick}`,
       badgesHtml: `${badgeHtml}${dueHtml}`,
-      playOpts: { T: tpl, activity, choices: elecciones, onChange: (id, v) => { elecciones = { ...elecciones, [id]: v }; } },
+      playOpts: { T: tpl, activity, choices: elecciones, onChange: (id, v) => { if (id) elecciones = { ...elecciones, [id]: v }; } },
       // EL MARCO DEL ALUMNO (core/gameFrame.js): mismo marco, misma esquina de
       // pantalla completa y mismo tema que vería en clase. Se monta al COMENZAR
       // (las pantallas de puerta —PIN, apodo, intentos— son formularios, no
       // juego) y el player y la pantalla de entrega pintan dentro. Se DEVUELVE
       // para que la antesala le pida la pantalla completa a él, sin salirse del
       // gesto que lo pidió.
-      onStart: () => { marcoTarea = montarMarcoJuego(rootSel, activity); resolve(); return marcoTarea.frame; },
+      onStart: () => { const marco = montarMarcoJuego(rootSel, activity); resolve(marco); return marco.frame; },
     });
   });
+  const marcoTarea = await arranque;
   rootSel = marcoTarea.stageSel;
   activity = applyPlayOptions(tpl, activity, elecciones);
 
@@ -126,10 +137,11 @@ export async function renderTask(rootSel, code) {
       // "X / max" que ve el alumno y el que se registra son el mismo número.
       // El respaldo usa la fórmula común (nunca una copia local).
       const max = state.maxScore ?? defaultMaxScore(activity, activityItemCount(activity));
-      const timeUsed = state.timeUsed ?? Math.round((clock.now() - (state.startedAt ?? clock.now())) / 1000);
+      const inicio = typeof state.startedAt === 'number' ? state.startedAt : clock.now();
+      const timeUsed = state.timeUsed ?? Math.round((clock.now() - inicio) / 1000);
       // Detalle por ítem para la analítica del docente (F3). Degrada a [] si el
       // player no lo expone (freeform sin detalle) → el informe usa agregados.
-      const answers = packAnswers(state.answers || []);
+      const answers = packAnswers(Array.isArray(state.answers) ? state.answers : []);
       // La entrega va por la COLA de intentos (core/attemptQueue.js): con la red
       // caída se guarda y se reenvía sola (idempotente por qid), y si el SERVIDOR
       // la rechaza (§22-3: tope agotado / tarea cerrada) se le dice al alumno con
@@ -138,9 +150,10 @@ export async function renderTask(rootSel, code) {
         score: state.score, maxScore: max, timeUsed, answers })
         .then(r => {
           if (r.rejected) {
-            toast(r.error, 'warning', TOAST_ERROR);
+            const fallo = r.error || 'No se pudo entregar el intento.';
+            toast(fallo, 'warning', TOAST_ERROR);
             const note = document.getElementById('st-record-note');
-            if (note) note.textContent = r.error;
+            if (note) note.textContent = fallo;
           } else if (r.queued) {
             const msg = 'Sin conexión: tu intento quedó guardado en este dispositivo y se enviará solo al volver la red. No borres el navegador.';
             toast(msg, 'info', TOAST_ERROR);
@@ -148,7 +161,7 @@ export async function renderTask(rootSel, code) {
             if (note) { note.textContent = msg; note.className = 'text-info small'; }
           }
         })
-        .catch(e => console.warn('record failed', e.message));
+        .catch(e => console.warn('record failed', e instanceof Error ? e.message : String(e)));
       // Pantalla de fin PROPIA (el mensaje es otro: aquí se ENTREGA, no se
       // puntúa para uno mismo). El destino NO se escribe aquí: sale del cuadro
       // único `core/afterPlay.js`, el mismo que usa la pantalla estándar — y

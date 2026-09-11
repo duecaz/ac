@@ -8,6 +8,10 @@ import { confirmModal, toast } from '../../core/toast.js';
 import { listVsAnimations } from '../../core/vsAnimations.js';
 import { loadCustomAnims, addCustomAnim, removeCustomAnim } from '../../core/vsAnimStore.js';
 
+/** @param {string} id @returns {HTMLInputElement|null} */
+const campo = (id) => /** @type {HTMLInputElement|null} */ (document.getElementById(id));
+
+/** @returns {{html: () => string, wire: (rootSel: string) => void}} */
 export function createVsAnimationsSection() {
   return {
     html: () => `
@@ -62,16 +66,16 @@ export function createVsAnimationsSection() {
       on(rootSel, 'click', '.va-del', async (_, b) => {
         const ok = await confirmModal(`¿Eliminar la animación "${b.dataset.id}"?`, { okText: 'Eliminar', danger: true });
         if (!ok) return;
-        removeCustomAnim(b.dataset.id);
+        removeCustomAnim(b.dataset.id ?? '');
         toast('Animación eliminada. Recarga para que desaparezca del selector.', 'success');
         paintVaList();
       });
 
       on(rootSel, 'click', '#va-add', async () => {
-        const label = document.getElementById('va-label')?.value.trim();
-        const desc  = document.getElementById('va-desc')?.value.trim();
-        const url   = document.getElementById('va-url')?.value.trim();
-        const file  = document.getElementById('va-file')?.files?.[0];
+        const label = campo('va-label')?.value.trim();
+        const desc  = campo('va-desc')?.value.trim();
+        const url   = campo('va-url')?.value.trim();
+        const file  = campo('va-file')?.files?.[0];
         const errEl = document.getElementById('va-err');
         if (errEl) errEl.textContent = '';
         if (!label) { if (errEl) errEl.textContent = 'El nombre es obligatorio.'; return; }
@@ -87,11 +91,11 @@ export function createVsAnimationsSection() {
           }
           toast(`Animación "${label}" añadida. Recarga la página para usarla en VS.`, 'success');
           // Clear form
-          ['va-label','va-desc','va-url'].forEach(i => { const el = document.getElementById(i); if (el) el.value = ''; });
-          const fi = document.getElementById('va-file'); if (fi) fi.value = '';
+          ['va-label','va-desc','va-url'].forEach(i => { const el = campo(i); if (el) el.value = ''; });
+          const fi = campo('va-file'); if (fi) fi.value = '';
           paintVaList();
         } catch (e) {
-          if (errEl) errEl.textContent = e.message;
+          if (errEl) errEl.textContent = e instanceof Error ? e.message : String(e);
         }
       });
     },

@@ -25,8 +25,42 @@ import { cierreHtml } from '../core/podium.js';
 import { canAutoScoreRound } from '../core/templateCapability.js';
 
 
+/** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
+/** @typedef {import('../kernel/contracts/session.js').LivePhase} LivePhase */
+/** @typedef {import('../kernel/session/teamsMachine.js').RosterTeam} RosterTeam */
+/** @typedef {import('../kernel/contracts/template.js').RoundPayload} RoundPayload */
+/** Lo que `roundPayload()` devuelve: la ronda que expone la plantilla o, si no
+ *  la declara, el ítem crudo (kernel/session/score.js).
+ *  @typedef {RoundPayload|SessionItem|null} Payload */
+/** @typedef {import('../core/playOptions.js').PlayChoices} PlayChoices */
+/** @typedef {import('../kernel/contracts/activity.js').SessionItem} SessionItem */
+/** @typedef {import('../kernel/contracts/activity.js').TextMark} TextMark */
+
+/** Los campos que esta vista mira de un ítem, sea del modelo que sea.
+ *  @typedef {{question?: string, text?: string, prompt?: string, left?: string,
+ *    right?: string, image?: string|null, marks?: TextMark[],
+ *    answer?: string|string[]|null}} CamposItem */
+
+/** @param {unknown} item @returns {CamposItem} */
+const campos = (item) =>
+  /** @type {CamposItem} */ ((item && typeof item === 'object') ? item : {});
+/** LA SESIÓN DE EQUIPOS. `createSession` despacha a las tres máquinas y devuelve
+ *  la unión; el formato lo fija esta vista (`FORMATS.TEAMS`), así que aquí se
+ *  nombra la que es.
+ *  @typedef {ReturnType<typeof import('../kernel/session/teamsMachine.js').createTeamsSession>} SesionEquipos */
+
 // Standalone route wrapper (#/teams/:id).
-// Embedded entry point. `host` is a DOM element. Returns { dispose }.
+// Embedded entry point. `host` is the stage: el elemento o su SELECTOR (así lo
+// declara core/modes.js y así lo pasa views/playerView.js, con
+// '#ww-player-widget'). Solo viaja a `mount`/`on`/`renderAntesala`, que aceptan
+// las dos formas. Returns { dispose }.
+/**
+ * @param {string|Element} host
+ * @param {Activity} a
+ * @param {ReturnType<import('../core/lifecycle.js').acquire>} [ctx]
+ * @param {{backHref?: string}} [opts]
+ * @returns {{dispose: () => void}}
+ */
 export function mountTeams(host, a, ctx, opts = {}) {
   const backHref = opts.backHref;
   const total = sessionItems(a).length;
@@ -37,6 +71,7 @@ export function mountTeams(host, a, ctx, opts = {}) {
   const T = getTemplate(a.template);
   // Opciones de partida elegidas en el setup (core/playOptions.js): se aplican
   // a una COPIA al arrancar, nunca a la actividad guardada.
+  /** @type {PlayChoices} */
   let playChoices = {};
   // MISMO criterio que core/modes.js y createTeamsSession (core/templateCapability.js):
   // hace falta scoreSubmission Y renderRound — roundBody()/wire() más abajo exigen
@@ -49,9 +84,9 @@ export function mountTeams(host, a, ctx, opts = {}) {
   // declaración, así que aquí basta con leerla. `canAuto` (capacidad) sigue
   // decidiendo si se ofrece el botón "Automática": el aviso de abajo es solo
   // defensivo (R6), no el criterio.
-  const usesGenericRound = ['turns', 'board'].includes(T?.meta?.play?.teams);
-  if (usesGenericRound && typeof T.renderRound !== 'function') {
-    console.warn(`[teamsView] ${a.template}: declara play.teams="${T.meta.play.teams}" pero no implementa renderRound (contrato roto)`);
+  const usesGenericRound = ['turns', 'board'].includes(T?.meta?.play?.teams ?? '');
+  if (usesGenericRound && typeof T?.renderRound !== 'function') {
+    console.warn(`[teamsView] ${a.template}: declara play.teams="${T?.meta?.play?.teams}" pero no implementa renderRound (contrato roto)`);
   }
 
   // Defaults configured in the editor's "Modos" tab (presentation.*); still
@@ -90,24 +125,26 @@ export function mountTeams(host, a, ctx, opts = {}) {
       icon: 'bi-people-fill', color: 'success', title: 'Modo Equipos',
       subtitle: `${a.title} · ${total} preguntas · por turnos`,
       bodyHtml: body, backHref,
-      playOpts: { T, activity: a, choices: playChoices, onChange: (id, v) => { playChoices = { ...playChoices, [id]: v }; } },
+      playOpts: { T, activity: a, choices: playChoices, onChange: (id, v) => { if (id) playChoices = { ...playChoices, [id]: v }; } },
       onMount: () => {
         renderNameInputs();
         updateTeamsHint();
         on(host, 'click', '#teams-count button', (_, b) => {
           teamCount = Number(b.dataset.n);
-          $('#teams-count').querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+          $$('#teams-count button').forEach(x => x.classList.toggle('active', x === b));
           renderNameInputs();
           updateTeamsHint();
         });
-        on(host, 'click', '#teams-scoring button', (_, b) => {
-          if (b.disabled) return;
-          $('#teams-scoring').querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+        on(host, 'click', '#teams-scoring button', (_, el) => {
+          if (/** @type {HTMLButtonElement} */ (el).disabled) return;
+          $$('#teams-scoring button').forEach(x => x.classList.toggle('active', x === el));
         });
       },
       onStart: () => {
-        const names = $$('#teams-names input').map((el, i) => (el.value || '').trim() || `Equipo ${i + 1}`);
-        const scoring = $('#teams-scoring .active')?.dataset.mode || (canAuto ? 'auto' : 'judge');
+        const entradas = /** @type {HTMLInputElement[]} */ ($$('#teams-names input'));
+        const names = entradas.map((el, i) => (el.value || '').trim() || `Equipo ${i + 1}`);
+        const elegido = $('#teams-scoring .active')?.dataset.mode;
+        const scoring = elegido === 'auto' || elegido === 'judge' ? elegido : (canAuto ? 'auto' : 'judge');
         startGame(names, scoring);
       }
     });
@@ -138,14 +175,19 @@ export function mountTeams(host, a, ctx, opts = {}) {
     box.innerHTML = teamNameInputsHtml(teamCount);
   }
 
+  /**
+   * @param {string[]} names
+   * @param {'auto'|'judge'} scoring
+   */
   function startGame(names, scoring) {
-    const session = createSession(applyPlayOptions(T, a, playChoices),
-      { format: FORMATS.TEAMS, teams: names, scoring });
+    const session = /** @type {SesionEquipos} */ (createSession(applyPlayOptions(T, a, playChoices),
+      { format: FORMATS.TEAMS, teams: names, scoring }));
     // El TOTAL de la partida es el del MOTOR, no el nº bruto de ítems: el motor
     // recorta a múltiplo del nº de equipos (todos responden lo mismo). Usar el
     // bruto aquí desincronizaba el rótulo "Pregunta X / N" y el botón final.
     const roundsTotal = session.totalItems;
     session.dispatch('start');
+    /** @type {unknown} */
     let selected = null; // auto-mode: the active team's tapped value (pre-reveal)
 
     paint();
@@ -180,6 +222,11 @@ export function mountTeams(host, a, ctx, opts = {}) {
       wire(item, payload, phase);
     }
 
+    /**
+     * @param {RosterTeam[]} teams
+     * @param {RosterTeam} active
+     * @param {LivePhase} phase
+     */
     function scoreboard(teams, active, phase) {
       return teamsScoreboardHtml(teams, active.id, phase === 'ended');
     }
@@ -187,6 +234,12 @@ export function mountTeams(host, a, ctx, opts = {}) {
     // Question body. In AUTO mode the template paints the interactive round
     // itself (renderRound) while answering; in JUDGE mode — and on reveal — we
     // render a generic prompt plus the answer (model-aware).
+    /**
+     * @param {SessionItem|undefined} item
+     * @param {Payload} payload
+     * @param {LivePhase} phase
+     * @returns {string}
+     */
     function roundBody(item, payload, phase) {
       if (phase === 'ended') return podium();
 
@@ -195,9 +248,10 @@ export function mountTeams(host, a, ctx, opts = {}) {
         return `<div id="teams-round"></div>`;
       }
 
-      const prompt = payload?.question || promptOf(item);
+      const prompt = campos(payload).question || promptOf(item);
       let media = '';
-      if (payload?.image || item?.image) media = `<div class="text-center mb-2"><img src="${escapeHtml(payload?.image || item.image)}" style="max-height:150px" class="img-fluid"></div>`;
+      const imagen = campos(payload).image || campos(item).image;
+      if (imagen) media = `<div class="text-center mb-2"><img src="${escapeHtml(imagen)}" style="max-height:150px" class="img-fluid"></div>`;
 
       // On reveal, surface the right answer so the class sees it; in judge mode
       // offer it as a discreet teacher-only hint beforehand.
@@ -217,19 +271,26 @@ export function mountTeams(host, a, ctx, opts = {}) {
     // Prompt/answer adapt to the content model so judge mode works everywhere:
     // quiz→question/answer, tildes/comas→passage text / corrected text,
     // match/memory→left / right, ruleta→the entry string.
+    // El ítem es la UNIÓN de todos los modelos (SessionItem): cada modelo nombra
+    // a su manera lo que se lee y lo que se responde, así que se miran por forma.
+    /** @param {SessionItem|undefined} item @returns {string} */
     function promptOf(item) {
       if (item == null) return '';
       if (typeof item === 'string') return item;
-      return item.question || item.text || item.prompt || item.left || '';
+      const it = campos(item);
+      return it.question || it.text || it.prompt || it.left || '';
     }
+    /** @param {SessionItem|undefined} item @returns {string} */
     function answerOf(item) {
       if (item == null || typeof item === 'string') return '';
-      if (Array.isArray(item.marks)) return applyMarks(item.text || '', item.marks); // textCorrection
-      if (item.answer != null) return Array.isArray(item.answer) ? item.answer.join(' / ') : String(item.answer);
-      if (item.right != null) return String(item.right); // pairs
+      const it = campos(item);
+      if (Array.isArray(it.marks)) return applyMarks(it.text || '', it.marks); // textCorrection
+      if (it.answer != null) return Array.isArray(it.answer) ? it.answer.join(' / ') : String(it.answer);
+      if (it.right != null) return String(it.right); // pairs
       return '';
     }
 
+    /** @param {LivePhase} phase @returns {string} */
     function controls(phase) {
       const last = session.currentItem >= roundsTotal - 1;
       if (phase === 'question') {
@@ -262,15 +323,23 @@ export function mountTeams(host, a, ctx, opts = {}) {
       });
     }
 
+    /**
+     * @param {SessionItem|undefined} item
+     * @param {Payload} payload
+     * @param {LivePhase} phase
+     */
     function wire(item, payload, phase) {
       // Auto mode: the template renders the round; on submit we store the active
       // team's answer (scored later at reveal) and enable the Revelar button.
       const roundEl = $('#teams-round');
-      if (roundEl && scoring === 'auto' && phase === 'question' && payload) {
-        T.renderRound(roundEl, payload, { onSubmit: (value) => {
+      if (roundEl && scoring === 'auto' && phase === 'question' && payload
+          && typeof T?.renderRound === 'function') {
+        // La ronda genérica la pide la plantilla que DECLARA `play.teams`, y esa
+        // trae `getRoundPayload` por contrato: aquí el payload es el suyo.
+        T.renderRound(roundEl, /** @type {RoundPayload} */ (payload), { onSubmit: (value) => {
           selected = value;
           session.submit(session.activeTeam().id, session.currentItem, value);
-          const rev = $('#teams-reveal');
+          const rev = /** @type {HTMLButtonElement|null} */ ($('#teams-reveal'));
           if (rev) rev.disabled = false;
         } });
       }
@@ -303,6 +372,7 @@ export function mountTeams(host, a, ctx, opts = {}) {
       on(host, 'click', '#teams-restart', () => renderSetup());
     }
 
+    /** @param {RosterTeam} team */
     function colorOf(team) {
       return teamColor(team.id, session.state.teams);
     }

@@ -12,6 +12,12 @@ import { toast, confirmModal } from '../../core/toast.js';
 import { racePassedRow } from '../../core/liveLoops.js';
 import { RACE_POLL_MS } from '../../core/timings.js';
 
+/** @typedef {import('../hostLive.js').HostRt} HostRt */
+
+/** El avance de UN jugador en la carrera: su nombre y los ítems ya superados
+ *  (con la vara COMPLETA de §26). @typedef {{name: string, items: Set<number>}} Avance */
+
+/** @param {HostRt} rt */
 export function createHostCarrera(rt) {
   async function loadRaceAnswers() {
     const all = await Promise.all(
@@ -20,8 +26,10 @@ export function createHostCarrera(rt) {
     return all.flat();
   }
 
+  /** @param {boolean} [phaseChanged] */
   async function paintRace(phaseChanged = true) {
     if (phaseChanged) emitGame(GameEvents.LOBBY_END);
+    /** @type {Array<(import('../../kernel/contracts/dataPort.js').AnswerView|import('../../kernel/contracts/session.js').EngineAnswer) & {itemIndex: number}>} */
     let allAnswers;
     try { allAnswers = await loadRaceAnswers(); } catch { allAnswers = []; }
 
@@ -30,17 +38,23 @@ export function createHostCarrera(rt) {
     // ("responde más → lo cuenta como buena"). Race answers are unsettled
     // (correct=null) during play, so score each here on the host (we hold the
     // answer key) — a settled row's verdict is trusted as-is.
+    /** @type {Record<string, Avance>} */
     const prog = {};
     for (const p of rt.players) prog[p.id] = { name: p.name, items: new Set() };
     for (const a of allAnswers) {
-      const pid = a.playerId || a.player_id;
-      if (!prog[pid]) continue;
+      // `player_id` era el nombre de la columna en Supabase (retirado): los dos
+      // adaptadores de hoy entregan `playerId`.
+      const avance = prog[a.playerId];
+      if (!avance) continue;
       // LA MISMA VARA que el móvil (§26, la regla de hoja completa): un ítem se
       // supera con la hoja COMPLETA. Aquí el host contaba `correct` a secas
       // —para Tildes, net>0— y una hoja 3/4 le contaba como terminada: cerraba
       // la sala por "terminan todos" mientras el móvil re-encolaba la hoja.
-      if (racePassedRow(rt.tpl, a, rt.items[a.itemIndex], rt.activity, rt.loop)) {
-        prog[pid].items.add(a.itemIndex);
+      // `racePassedRow` tolera una plantilla sin scorer (su catch cae al veredicto
+      // guardado), pero su firma lo pide: el bucle carrera solo lo declaran
+      // plantillas con `scoreSubmission` (lo exige el registro).
+      if (racePassedRow(/** @type {{scoreSubmission: (input: import('../../kernel/contracts/session.js').ScoreInput) => import('../../kernel/contracts/session.js').ScoreResult}} */ (rt.tpl), a, rt.items[a.itemIndex], rt.activity, rt.loop)) {
+        avance.items.add(a.itemIndex);
       }
     }
     // POLÍTICA DE EXPOSICIÓN (decisión, docs/estudio-bucles-live.md ficha 2 C-2):
@@ -90,7 +104,7 @@ export function createHostCarrera(rt) {
     on(rt.rootSel, 'click', '#btn-end-race', async () => {
       const ok = await confirmModal('¿Terminar la carrera? Se calculará la clasificación final.', { okText: 'Terminar carrera' });
       if (!ok) return;
-      const btn = document.getElementById('btn-end-race');
+      const btn = /** @type {HTMLButtonElement|null} */ (document.getElementById('btn-end-race'));
       if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Finalizando…'; }
       // endSession liquida TODO lo pendiente en una pasada (settlePending del
       // adaptador) antes de marcar 'ended' — ya no hace falta el bucle de

@@ -5,6 +5,7 @@ import { navigate } from '../core/router.js';
 import { listTemplates } from '../core/registry.js';
 import { modesForTemplate } from '../core/modes.js';
 
+/** @param {string|Element} rootSel */
 export function renderTemplateSelector(rootSel) {
   const templates = listTemplates();
   // Stub "coming soon" tiles for inspiration.

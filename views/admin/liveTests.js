@@ -5,6 +5,7 @@ import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { runSelfTests, TOTAL_TESTS } from '../../core/selftest.js';
 
+/** @returns {{html: () => string, wire: (rootSel: string) => void}} */
 export function createLiveTestsSection() {
   return {
     html: () => `
@@ -14,7 +15,8 @@ export function createLiveTestsSection() {
     wire: (rootSel) => {
       on(rootSel, 'click', '#admin-run', async () => {
         const box = document.getElementById('admin-tests');
-        const btn = document.getElementById('admin-run');
+        const btn = /** @type {HTMLButtonElement|null} */ (document.getElementById('admin-run'));
+        if (!box || !btn) return;
         btn.disabled = true;
 
         // Build streaming UI: progress bar + live list.
@@ -31,7 +33,7 @@ export function createLiveTestsSection() {
           </div>
           <ul id="at-list" class="list-group list-group-flush" style="font-size:.875rem"></ul>`;
 
-        const bar   = document.getElementById('at-bar');
+        const bar   = /** @type {HTMLElement|null} */ (document.getElementById('at-bar'));
         const count = document.getElementById('at-count');
         const statusEl = document.getElementById('at-status');
         const ul    = document.getElementById('at-list');

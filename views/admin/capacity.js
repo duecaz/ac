@@ -9,6 +9,12 @@ import { purgeOldLive } from '../../core/liveTransport.js';
 import { clock } from '../../core/clock.js';
 import { confirmModal } from '../../core/toast.js';
 
+/** @typedef {import('../../kernel/contracts/dataPort.js').PurgeReport} PurgeReport */
+
+/** @param {unknown} e @returns {string} */
+const msgDe = (e) => (e instanceof Error && e.message ? e.message : String(e));
+
+/** @returns {{html: () => string, wire: (rootSel: string) => void}} */
 export function createCapacitySection() {
   return {
     html: () => `
@@ -32,7 +38,9 @@ export function createCapacitySection() {
         const sized = acts.map(a => ({ a, s: checkActivitySize(a) })).sort((x, y) => y.s.bytes - x.s.bytes);
         const heavy = sized.filter(x => x.s.level !== 'ok').slice(0, 5);
         const total = sized.reduce((n, x) => n + x.s.bytes, 0);
+        /** @param {number} n */
         const mb = (n) => (n / (1024 * 1024)).toFixed(1).replace('.', ',');
+        /** @type {Record<string, string>} */
         const cls = { ok: 'secondary', warn: 'warning', over: 'danger' };
         box.innerHTML = `
           <div class="d-flex gap-3 flex-wrap align-items-center">
@@ -48,13 +56,15 @@ export function createCapacitySection() {
       })();
       on(rootSel, 'click', '#admin-purge-scan', async () => {
         const box = document.getElementById('admin-purge-out');
-        const btn = document.getElementById('admin-purge-scan');
+        const btn = /** @type {HTMLButtonElement|null} */ (document.getElementById('admin-purge-scan'));
+        if (!box || !btn) return;
         btn.disabled = true;
         box.innerHTML = '<div class="spinner-border spinner-border-sm"></div> Contando…';
         const cutoff = liveRetentionCutoff(clock.now());
+        /** @type {PurgeReport} */
         let r;
         try { r = await purgeOldLive(cutoff, { dryRun: true }); }
-        catch (e) { box.innerHTML = `<div class="alert alert-danger py-2 mb-0">No se pudo consultar: ${escapeHtml(e.message)}</div>`; btn.disabled = false; return; }
+        catch (e) { box.innerHTML = `<div class="alert alert-danger py-2 mb-0">No se pudo consultar: ${escapeHtml(msgDe(e))}</div>`; btn.disabled = false; return; }
         btn.disabled = false;
         if (!r.sessions) {
           box.innerHTML = `<div class="alert alert-success py-2 mb-0">Nada que limpiar: no hay salas anteriores al ${escapeHtml(cutoff.slice(0, 10))}.</div>`;
@@ -70,9 +80,11 @@ export function createCapacitySection() {
         on(rootSel, 'click', '#admin-purge-go', async () => {
           const ok = await confirmModal(`¿Borrar ${r.sessions} salas caducadas y todo lo que cuelga de ellas?`, { okText: 'Borrar', danger: true });
           if (!ok) return;
-          const go = document.getElementById('admin-purge-go');
+          const go = /** @type {HTMLButtonElement|null} */ (document.getElementById('admin-purge-go'));
           if (go) { go.disabled = true; go.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Borrando…'; }
-          const done = await purgeOldLive(cutoff, { dryRun: false }).catch(e => ({ errors: [e.message] }));
+          const done = await purgeOldLive(cutoff, { dryRun: false }).catch(e => /** @type {PurgeReport} */ ({
+            cutoff, dryRun: false, sessions: 0, answers: 0, players: 0, claims: 0, errors: [msgDe(e)],
+          }));
           box.innerHTML = done.errors?.length
             ? `<div class="alert alert-warning py-2 mb-0">Se borró lo que se pudo (${done.sessions || 0} salas). Errores: ${escapeHtml(done.errors.slice(0, 3).join(' · '))}</div>`
             : `<div class="alert alert-success py-2 mb-0">Limpiado: ${done.sessions} salas, ${done.answers} respuestas, ${done.players} jugadores, ${done.claims} credenciales.</div>`;

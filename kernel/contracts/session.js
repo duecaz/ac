@@ -128,7 +128,13 @@
  * cada ronda YA calculados por el host. Quien juega no recalcula sobre un
  * `content` que ya no tiene la clave: se sirve de `payloads`.
  * Una `Activity` normal es asignable a este tipo (el campo es opcional).
- * @typedef {Activity & { payloads?: Array<RoundPayload|null> }} SnapshotActivity
+ *
+ * Los tres campos SELLADOS por `studentSnapshot` además de los payloads:
+ * `sanitized` (la marca que lee `hasClientKey`), `appVersion` (la versión de la
+ * app del PROFE: el móvil desfasado se recarga una vez, `views/studentLive.js`)
+ * y `itemCount` (cuántas rondas hay, sin contenido que contar).
+ * @typedef {Activity & { payloads?: Array<RoundPayload|null>, sanitized?: boolean,
+ *   appVersion?: string, itemCount?: number }} SnapshotActivity
  */
 
 /**
@@ -168,6 +174,10 @@
  * @property {string} [userId]
  * @property {string} name
  * @property {number} [score]
+ * @property {string} [last_seen]  Instante de presencia de la fila `live_players`
+ *   (§22-5: lo estampa un aparato y lo lee otro, así que se compara con
+ *   `serverNow()`). DEUDA: hoy ningún adaptador lo devuelve y `pingPresence` es
+ *   un no-op en los dos, así que el punto verde del lobby nunca se enciende.
  */
 
 /**

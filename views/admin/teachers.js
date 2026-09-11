@@ -7,6 +7,12 @@ import { toast, TOAST_NORMAL } from '../../core/toast.js';
 import { createTeacher, getAuthUserId } from '../../core/auth.js';
 import { listTeachers, setTeacherRole, countActivitiesByOwner } from '../../core/teachers.js';
 
+/** @param {unknown} e @returns {string} */
+const msgDe = (e) => (e instanceof Error && e.message ? e.message : String(e));
+/** @param {string} id @returns {HTMLInputElement|null} */
+const campo = (id) => /** @type {HTMLInputElement|null} */ (document.getElementById(id));
+
+/** @returns {{html: () => string, wire: (rootSel: string) => void}} */
 export function createTeachersSection() {
   return {
     html: () => `
@@ -55,32 +61,33 @@ export function createTeachersSection() {
       }
       paintTeachers().catch(() => {});
 
-      on(rootSel, 'click', '.teach-role', async (_, b) => {
-        const id = b.dataset.id, role = b.dataset.role;
+      on(rootSel, 'click', '.teach-role', async (_, el) => {
+        const b = /** @type {HTMLButtonElement} */ (el);
+        const id = b.dataset.id ?? '', role = b.dataset.role ?? '';
         b.disabled = true;
         try {
           await setTeacherRole(id, role);
           toast(role === 'admin' ? 'Ahora es admin.' : 'Admin retirado.', 'success');
           await paintTeachers();
         } catch (e) {
-          toast('No se pudo cambiar el rol: ' + e.message, 'danger', TOAST_NORMAL);
+          toast('No se pudo cambiar el rol: ' + msgDe(e), 'danger', TOAST_NORMAL);
           b.disabled = false;
         }
       });
 
       on(rootSel, 'click', '#teach-create', async () => {
-        const name = document.getElementById('teach-name')?.value.trim();
-        const email = document.getElementById('teach-email')?.value.trim();
-        const pass = document.getElementById('teach-pass')?.value || '';
+        const name = campo('teach-name')?.value.trim();
+        const email = campo('teach-email')?.value.trim();
+        const pass = campo('teach-pass')?.value || '';
         const msg = document.getElementById('teach-msg');
         if (!email || pass.length < 8) { if (msg) { msg.className = 'small mb-2 text-danger'; msg.textContent = 'Correo válido y contraseña de al menos 8 caracteres.'; } return; }
         try {
           await createTeacher(email, pass, name);
           if (msg) { msg.className = 'small mb-2 text-success'; msg.textContent = `Profesor creado: ${email} (contraseña: ${pass}). Apúntala.`; }
-          ['teach-name','teach-email','teach-pass'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+          ['teach-name','teach-email','teach-pass'].forEach(id => { const el = campo(id); if (el) el.value = ''; });
           await paintTeachers();
         } catch (e) {
-          if (msg) { msg.className = 'small mb-2 text-danger'; msg.textContent = 'No se pudo crear: ' + e.message; }
+          if (msg) { msg.className = 'small mb-2 text-danger'; msg.textContent = 'No se pudo crear: ' + msgDe(e); }
         }
       });
     },

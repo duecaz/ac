@@ -7,9 +7,21 @@ import { save, ALMACEN_LLENO } from '../core/storage.js';
 import { revisarActividad } from '../core/activityCheck.js';
 import { newActivityId } from '../core/migrate.js';
 
-/** Options this activity can switch to (direct + convertible), against the live registry. */
+/** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
+/** @typedef {import('../kernel/contracts/template.js').TemplateStatic} TemplateStatic */
+
+// El REGISTRO guarda la meta ANCHA (`BaseTemplateMeta`, porque los `static meta`
+// de las 16 entran sin anotar) y el motor de conversión pide el contrato exacto.
+// La lectura del registro es una, y aquí se dice una sola vez de qué forma entra.
+/** @returns {TemplateStatic[]} */
+const plantillas = () => /** @type {TemplateStatic[]} */ (listTemplates());
+
+/**
+ * Options this activity can switch to (direct + convertible), against the live registry.
+ * @param {Activity} activity
+ */
 export function buildSwitchOptions(activity) {
-  return switchOptions(activity, listTemplates());
+  return switchOptions(activity, plantillas());
 }
 
 /**
@@ -17,9 +29,12 @@ export function buildSwitchOptions(activity) {
  * activity. Returns null if the switch isn't possible. Title, presentation, tags
  * and visibility are preserved; only the content (converted) and template-specific
  * knobs (rules/scoring/live → target defaults) change.
+ * @param {Activity} activity
+ * @param {string} targetName
+ * @returns {{actividad: Activity|null, error: string|null}}
  */
 export function applyAndSave(activity, targetName) {
-  const next = applySwitch(activity, targetName, listTemplates());
+  const next = applySwitch(activity, targetName, plantillas());
   if (!next) return { actividad: null, error: 'No se pudo cambiar a ese formato.' };
   // Mira `persisted` igual que el duplicado: aquí es MÁS grave, porque esta vía
   // es la destructiva — con la cuota llena, el contenido ya está convertido en
@@ -45,10 +60,14 @@ export function applyAndSave(activity, targetName) {
  * para que las dos se distingan en "Mis actividades" — que es donde van a
  * aparecer juntas.
  *
- * @returns {{actividad: Object|null, error: string|null}}
+ * @param {Activity} activity
+ * @param {string} targetName
+ * @returns {{actividad: Activity, error: null}|{actividad: null, error: string}}
+ *   Unión discriminada: sin copia SIEMPRE hay motivo, así que la vista no
+ *   necesita una frase de respaldo (la tenía copiada, y B5 lo cazó).
  */
 export function duplicateAsTemplate(activity, targetName) {
-  const copia = duplicateSwitch(activity, targetName, listTemplates(),
+  const copia = duplicateSwitch(activity, targetName, plantillas(),
     { id: newActivityId(), now: new Date().toISOString() });
   if (!copia) return { actividad: null, error: 'No se pudo crear la copia con esa plantilla.' };
   // R6 · fallar en silencio está prohibido. `save` devuelve `persisted:false`
@@ -76,6 +95,8 @@ export function duplicateAsTemplate(activity, targetName) {
  * Se convierte en memoria (no se guarda nada) y se le pregunta al revisor de
  * siempre, el mismo que gatea el juego: una sola definición de "qué le falta".
  *
+ * @param {Activity} activity
+ * @param {string} targetName
  * @returns {string[]} lo que faltará (vacío si queda lista para jugar).
  */
 export function switchWillNeed(activity, targetName) {
@@ -83,7 +104,7 @@ export function switchWillNeed(activity, targetName) {
   // faltará, no se construye el resultado. Sin esto, pintar la página de jugar
   // de una Sopa de 60 palabras colocaba el crucigrama entero para acabar
   // diciendo «faltan las pistas», que se sabe sin colocar nada (~1 s medido).
-  const next = applySwitch(activity, targetName, listTemplates(), { soloForma: true });
+  const next = applySwitch(activity, targetName, plantillas(), { soloForma: true });
   if (!next) return [];
   const rev = revisarActividad(next);
   return rev.jugable ? [] : (rev.problemas || []);

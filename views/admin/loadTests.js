@@ -9,6 +9,10 @@ import { confirmModal } from '../../core/toast.js';
 import { runStressTest } from '../../core/stressTest.js';
 import { PB_URL } from '../../pocketbase.config.js';
 
+/** @param {unknown} e @returns {string} */
+const msgDe = (e) => (e instanceof Error && e.message ? e.message : String(e));
+
+/** @returns {{html: () => string, wire: (rootSel: string) => void}} */
 export function createLoadTestsSection() {
   return {
     html: () => `
@@ -35,10 +39,12 @@ export function createLoadTestsSection() {
     wire: (rootSel) => {
       on(rootSel, 'click', '#admin-race', async () => {
         const box = document.getElementById('admin-race-out');
-        const btn = document.getElementById('admin-race');
+        const btn = /** @type {HTMLButtonElement|null} */ (document.getElementById('admin-race'));
+        if (!box || !btn) return;
         const ok = await confirmModal('Se va a jugar una carrera completa con 2 alumnos simulados contra el servidor (crea y borra una sala de prueba, ~15 s). ¿Continuar?', { okText: 'Probar carrera' });
         if (!ok) return;
         btn.disabled = true;
+        /** @type {string[]} */
         const log = [];
         const paint = () => {
           box.innerHTML = `<div class="d-flex align-items-center gap-2 mb-1 text-muted"><span class="spinner-border spinner-border-sm"></span><small>${escapeHtml(log[log.length - 1] || 'Preparando…')}</small></div>`;
@@ -47,7 +53,7 @@ export function createLoadTestsSection() {
         try {
           const { runRaceE2e } = await import('../../core/raceE2e.js');
           const r = await runRaceE2e({ pbUrl: PB_URL, onLog: (m) => { log.push(m); paint(); } });
-          const notes = r.notes.length ? `<div class="alert alert-warning py-1 px-2 small mb-2">${r.notes.map(escapeHtml).join('<br>')}</div>` : '';
+          const notes = r.notes.length ? `<div class="alert alert-warning py-1 px-2 small mb-2">${r.notes.map(n => escapeHtml(n)).join('<br>')}</div>` : '';
           box.innerHTML = `
             ${notes}
             <div class="alert ${r.ok ? 'alert-success' : 'alert-danger'} py-1 px-2 mb-2 small">
@@ -60,7 +66,7 @@ export function createLoadTestsSection() {
                       : '<span class="text-danger fw-semibold me-1">✗</span>'}${escapeHtml(c.msg)}</span>
                 <small class="text-muted">${escapeHtml(c.detail)}</small></li>`).join('')}</ul>`;
         } catch (e) {
-          box.innerHTML = `<div class="alert alert-danger py-1 px-2 small">Error: ${escapeHtml(e.message)}</div>`;
+          box.innerHTML = `<div class="alert alert-danger py-1 px-2 small">Error: ${escapeHtml(msgDe(e))}</div>`;
         } finally {
           btn.disabled = false;
         }
@@ -68,29 +74,35 @@ export function createLoadTestsSection() {
 
       on(rootSel, 'click', '#admin-stress', async () => {
         const box = document.getElementById('admin-stress-out');
-        const btn = document.getElementById('admin-stress');
-        const n = Number(document.getElementById('admin-stress-n').value) || 30;
+        const btn = /** @type {HTMLButtonElement|null} */ (document.getElementById('admin-stress'));
+        const sel = /** @type {HTMLSelectElement|null} */ (document.getElementById('admin-stress-n'));
+        if (!box || !btn) return;
+        const n = Number(sel?.value) || 30;
         const ok = await confirmModal(`Se van a simular ${n} alumnos golpeando el servidor A LA VEZ (live + tareas). Crea y borra datos de prueba. ¿Continuar?`, { okText: 'Simular carga' });
         if (!ok) return;
         btn.disabled = true;
+        /** @type {string[]} */
         const log = [];
+        /** @param {string} [extra] */
         const paint = (extra = '') => {
           box.innerHTML = `<div class="d-flex align-items-center gap-2 mb-1 text-muted"><span class="spinner-border spinner-border-sm"></span><small>${escapeHtml(log[log.length - 1] || 'Preparando…')}</small></div>${extra}`;
         };
         paint();
         try {
           const r = await runStressTest({ pbUrl: PB_URL, n, onLog: (m) => { log.push(m); paint(); } });
+          /** @param {string} label @param {boolean} pass @param {string} detail */
           const row = (label, pass, detail) =>
             `<li class="list-group-item d-flex justify-content-between align-items-center py-1 px-2">
                <span>${pass ? '<span class="text-success fw-semibold me-1">✓</span>' : '<span class="text-danger fw-semibold me-1">✗</span>'}${escapeHtml(label)}</span>
                <small class="text-muted">${escapeHtml(detail)}</small></li>`;
           const L = r.live, T = r.tasks;
           const notRun = !L && !T;   // abortó antes de correr (faltan colecciones) ≠ se cayó
-          const notes = r.notes.length ? `<div class="alert alert-warning py-1 px-2 small mb-2">${r.notes.map(escapeHtml).join('<br>')}</div>` : '';
+          const notes = r.notes.length ? `<div class="alert alert-warning py-1 px-2 small mb-2">${r.notes.map(n2 => escapeHtml(n2)).join('<br>')}</div>` : '';
           if (notRun) {
             box.innerHTML = `${notes}<div class="alert alert-secondary py-1 px-2 mb-0 small"><b>No ejecutado</b> — falta preparar el servidor (arriba: <i class="bi bi-database-add"></i> Crear colecciones). No es un fallo de carga.</div>`;
             return;
           }
+          /** @type {string[]} */
           const items = [];
           if (L) {
             items.push(row(`Live · entradas simultáneas`, L.playerRows === n, `${L.playerRows}/${n} filas · ${L.uniqueNames} apodos únicos · ${L.joinMs} ms`));
@@ -108,7 +120,7 @@ export function createLoadTestsSection() {
             </div>
             <ul class="list-group list-group-flush" style="font-size:.875rem">${items.join('')}</ul>`;
         } catch (e) {
-          box.innerHTML = `<div class="alert alert-danger py-1 px-2 small">Error: ${escapeHtml(e.message)}</div>`;
+          box.innerHTML = `<div class="alert alert-danger py-1 px-2 small">Error: ${escapeHtml(msgDe(e))}</div>`;
         } finally {
           btn.disabled = false;
         }

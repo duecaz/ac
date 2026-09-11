@@ -14,6 +14,7 @@
 ### Índice de este documento
 
 - [0. El PREFLIGHT — la orden que hay que teclear (ley §27)](#0-el-preflight--la-orden-que-hay-que-teclear-ley-27)
+- [0b. TypeScript como verificador — sigue siendo JavaScript](#0b-typescript-como-verificador--sigue-siendo-javascript)
 - [1. Suite Node (la de CI)](#1-suite-node-la-de-ci)
   - [Mapa de suites (qué protege cada una)](#mapa-de-suites-qué-protege-cada-una)
   - [Añadir una suite](#añadir-una-suite)
@@ -54,6 +55,7 @@ navegador y caminar el viaje.
 | Red | Qué camina | Segundos |
 |---|---|---|
 | `tests/run.mjs` | lógica pura: contrato · normas · leyes · scorers | ~3 |
+| `tools/typecheck.mjs` | **TypeScript como VERIFICADOR** del JS (`jsconfig.json`: `checkJs` + `strict` + `noEmit`, sin `.ts`, sin bundler, sin build): propiedades inexistentes · `null` sin comprobar · firmas distintas entre los dos adaptadores · contratos JSDoc que mentían. Cero errores, y `tests/tipos.test.mjs` impide silenciarlo (`any` · `@ts-ignore` · `@ts-nocheck` · `unknown as` · relajar `jsconfig`) | ~10 |
 | `tools/matrix-smoke.mjs` | cada plantilla × cada modo + la ronda JUGADA con gesto real (30/30, 11 mecánicas) + controles tocables + **los 4 roles de la diagramación** (13/13) | ~85 |
 | `tools/find-smoke.mjs` | buscar/crear: portada → biblioteca → mis actividades → crear → volver a buscar | ~8 |
 | `tools/live-smoke.mjs` | en vivo con dos pantallas: sala → PIN → responder → settle → podio | ~9 |
@@ -64,6 +66,30 @@ navegador y caminar el viaje.
 
 Fuera del preflight a propósito: `race-e2e` (PocketBase real + credenciales),
 `stress-live` (carga contra la Pi) y `shots` (comparación visual antes/después).
+
+## 0b. TypeScript como verificador — sigue siendo JavaScript
+
+```bash
+node tools/typecheck.mjs          # 0 errores o sale con código 1
+node tools/typecheck.mjs --foto   # desglose por capa · por código TSxxxx · top 20 ficheros
+```
+
+No hay `.ts`, ni bundler, ni paso de compilación: GitHub Pages sirve los mismos
+ficheros del repo. `tsc` LEE los JSDoc (`@param`, `@returns`, `@typedef`) y avisa
+de lo que no cuadra; no produce nada (`noEmit`). Necesita `tsc` en el PATH
+(`npm i -g typescript`, una vez) o `WW_TSC=/ruta/a/tsc`; no hay `package.json` a
+propósito (el repo no es una app de npm).
+
+- El **vocabulario de tipos** vive en `kernel/contracts/*.js` (un dueño por
+  concepto: `Activity<C>` y los 11 contenidos en `activity.js`; formatos, bucles,
+  fases, sala, respuesta y ranking en `session.js`; los tres puertos en
+  `dataPort.js`; el bus en `events.js`; la plantilla en `template.js`). Se
+  consume con `/** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */`.
+  Un `import()` dentro de un JSDoc es un TIPO: el grafo de capas (§0) no lo cuenta.
+- **Fronteras** (JSON parseado, filas PocketBase, localStorage, postMessage, `catch (e)`):
+  `unknown` y se ESTRECHA por forma (`adapters/frontera.js`, `objetoDe` en `core/ls.js`).
+  Nunca `instanceof Element` en runtime: las suites corren bajo Node sin DOM.
+- Nació en v1.51.674 con 4690 errores en 299 ficheros; a cero en v1.51.676.
 
 ## 1. Suite Node (la de CI)
 

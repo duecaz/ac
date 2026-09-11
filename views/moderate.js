@@ -9,7 +9,7 @@
 // cualquier actividad (`deleteRule` de core/pbRules.js incluye el rol), pero la
 // única forma de llegar a una era que alguien la hubiera REPORTADO antes —
 // para lo demás había que entrar a PocketBase en la Pi.
-import { html, escapeHtml, mount } from '../core/html.js';
+import { html, escapeHtml, mount, $, $$ } from '../core/html.js';
 import { on } from '../core/events.js';
 import { navigate } from '../core/router.js';
 import { isAdmin } from '../core/auth.js';
@@ -20,6 +20,12 @@ import { getTemplate } from '../core/registry.js';
 import { toast, confirmModal, TOAST_ERROR, TOAST_NORMAL } from '../core/toast.js';
 import { fechaHora, fechaCorta } from '../core/fechas.js';
 
+/** Un campo de TEXTO de una fila cruda de `reports` (frontera PocketBase: lo que
+ *  llega es un saco de `unknown`, core/reports.js).
+ *  @param {unknown} v @returns {string} */
+const txt = (v) => (typeof v === 'string' ? v : '');
+
+/** @param {string} rootSel */
 export async function renderModerate(rootSel) {
   if (!isAdmin()) {
     mount(rootSel, html`
@@ -63,7 +69,7 @@ export async function renderModerate(rootSel) {
         <details class="mod-report d-block mb-2" data-report="${escapeHtml(r.id)}">
           <summary style="cursor:pointer">
             <b>${escapeHtml(String(r.activity).slice(QA_PREFIX.length))}</b>
-            · ${escapeHtml(fechaHora(r.created))} · por ${escapeHtml(r.by || '—')}
+            · ${escapeHtml(fechaHora(txt(r.created)))} · por ${escapeHtml(r.by || '—')}
             <button class="btn btn-sm btn-outline-secondary ms-2 mod-dismiss"><i class="bi bi-check2"></i> Descartar</button>
           </summary>
           <pre class="mt-2 mb-0 p-2" style="white-space:pre-wrap;font-size:.8rem;background:var(--bs-tertiary-bg,#f6f4ec);border-radius:6px">${escapeHtml(r.reason || '(vacío)')}</pre>
@@ -75,7 +81,7 @@ export async function renderModerate(rootSel) {
         <div class="mod-report__main">
           <div class="mod-report__act"><i class="bi bi-puzzle"></i> ${escapeHtml(r.activity)}</div>
           ${r.reason ? `<div class="mod-report__reason">${escapeHtml(r.reason)}</div>` : ''}
-          <div class="mod-report__meta">Por: ${escapeHtml(r.by || '—')} · ${escapeHtml(fechaCorta(r.created))}</div>
+          <div class="mod-report__meta">Por: ${escapeHtml(r.by || '—')} · ${escapeHtml(fechaCorta(txt(r.created)))}</div>
         </div>
         <div class="mod-report__actions">
           <button class="btn btn-sm btn-outline-primary mod-play"><i class="bi bi-play-fill"></i> Ver</button>
@@ -88,6 +94,7 @@ export async function renderModerate(rootSel) {
   // ── LA BIBLIOTECA ENTERA ───────────────────────────────────────────────────
   // Se listan las PÚBLICAS: son las que ve todo el mundo y las que ensucian.
   // Lo privado de cada profe es suyo y no se toca desde aquí.
+  /** @type {import('../kernel/contracts/activity.js').Activity[]} */
   let biblio = [];
   async function cargarBiblio() {
     biblio = await listPublicActivities({ limit: 200 });
@@ -96,7 +103,8 @@ export async function renderModerate(rootSel) {
   function pintarBiblio() {
     const el = document.getElementById('mod-biblio');
     if (!el) return;
-    const q = document.getElementById('mod-buscar')?.value || '';
+    const campo = /** @type {HTMLInputElement|null} */ ($('#mod-buscar'));
+    const q = campo?.value || '';
     // El MISMO buscador que usa el profe (core/search.js): sin tildes, por
     // palabras y también dentro del contenido — un «test» suelto en una
     // pregunta encuentra la actividad de prueba aunque el título no lo diga.
@@ -126,11 +134,14 @@ export async function renderModerate(rootSel) {
       }).join('')}</div>`;
     contarSel();
   }
-  const seleccionadas = () => [...document.querySelectorAll('#mod-biblio .mod-sel:checked')]
-    .map(c => c.closest('.mod-report')?.dataset.activity).filter(Boolean);
+  const seleccionadas = () => $$('#mod-biblio .mod-sel:checked')
+    .flatMap(c => {
+      const id = /** @type {HTMLElement|null} */ (c.closest('.mod-report'))?.dataset.activity;
+      return id ? [id] : [];
+    });
   function contarSel() {
     const n = seleccionadas().length;
-    const btn = document.getElementById('mod-borrar-sel');
+    const btn = /** @type {HTMLButtonElement|null} */ (document.getElementById('mod-borrar-sel'));
     const span = document.getElementById('mod-n');
     if (span) span.textContent = String(n);
     if (btn) btn.disabled = n === 0;
@@ -140,6 +151,7 @@ export async function renderModerate(rootSel) {
    *  (core/storage.js, con su test); aquí solo se redacta el aviso. Un
    *  «N borradas» cuando el servidor las rechazó dejaría la actividad publicada
    *  para la clase siguiente y a nadie mirándola. */
+  /** @param {string[]} ids */
   async function borrar(ids) {
     const { hechas, fallos } = await removeMany(ids);
     if (fallos.length) {
@@ -163,17 +175,25 @@ export async function renderModerate(rootSel) {
     await cargarBiblio();
   });
 
-  const rowOf = (b) => b.closest('.mod-report');
-  on(rootSel, 'click', '.mod-play', (_, b) => navigate(`#/play/${rowOf(b).dataset.activity}`));
+  /** @param {HTMLElement} b @returns {HTMLElement|null} */
+  const rowOf = (b) => /** @type {HTMLElement|null} */ (b.closest('.mod-report'));
+  on(rootSel, 'click', '.mod-play', (_, b) => {
+    const row = rowOf(b);
+    if (row?.dataset.activity) navigate(`#/play/${row.dataset.activity}`);
+  });
   on(rootSel, 'click', '.mod-dismiss', async (_, b) => {
-    try { await deleteReport(rowOf(b).dataset.report); toast('Reporte descartado.', 'success'); load(); }
-    catch (e) { toast('No se pudo: ' + e.message, 'danger', TOAST_NORMAL); }
+    const id = rowOf(b)?.dataset.report;
+    if (!id) return;
+    try { await deleteReport(id); toast('Reporte descartado.', 'success'); load(); }
+    catch (e) { toast('No se pudo: ' + (e instanceof Error ? e.message : String(e)), 'danger', TOAST_NORMAL); }
   });
   // El MISMO botón sirve a las dos listas (reporte y biblioteca): lo que cambia
   // es que un reporte, al borrarse la actividad, se descarta con ella.
   on(rootSel, 'click', '.mod-delact', async (_, b) => {
     const row = rowOf(b);
-    const esReporte = !!row.dataset.report;
+    if (!row?.dataset.activity) return;
+    const reporte = row.dataset.report;
+    const esReporte = !!reporte;
     const ok = await confirmModal(esReporte
       ? '¿Borrar la actividad reportada? (no se puede deshacer)'
       : '¿Borrar esta actividad de la biblioteca? No se puede deshacer.', { okText: 'Borrar', danger: true });
@@ -181,7 +201,7 @@ export async function renderModerate(rootSel) {
     const { hechas } = await borrar([row.dataset.activity]);
     // El reporte solo se descarta si la actividad SE BORRÓ de verdad: si no,
     // se quedaría un reporte huérfano de algo que sigue publicado.
-    if (hechas && esReporte) await deleteReport(row.dataset.report).catch(() => {});
+    if (hechas && reporte) await deleteReport(reporte).catch(() => {});
     if (esReporte) load();
     await cargarBiblio();
   });

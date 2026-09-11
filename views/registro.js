@@ -10,6 +10,7 @@ import { getUser, signUp, signInWithGoogle } from '../core/auth.js';
 import { saveProfile } from '../core/profile.js';
 import { toast, TOAST_NORMAL } from '../core/toast.js';
 
+/** @param {string} rootSel */
 export async function renderRegistro(rootSel) {
   if (await getUser()) { navigate('#/mine'); return; }   // ya dentro: a su casa
   mount(rootSel, html`
@@ -34,10 +35,11 @@ export async function renderRegistro(rootSel) {
         <a href="#/" id="rg-entrar">Entra aquí</a>. Después podrás vincular tu Google desde tu perfil.</p>
     </div>`);
 
+  /** @param {string} [m] */
   const err = (m) => { const el = document.getElementById('rg-err'); if (el) el.textContent = m || ''; };
 
   on(rootSel, 'click', '#rg-google', async () => {
-    try { await signInWithGoogle(); } catch (e) { err(e.message); }
+    try { await signInWithGoogle(); } catch (e) { err(e instanceof Error ? e.message : String(e)); }
   });
   on(rootSel, 'click', '#rg-entrar', async (e) => {
     e.preventDefault();
@@ -47,24 +49,26 @@ export async function renderRegistro(rootSel) {
   });
   on(rootSel, 'submit', '#rg-form', async (e) => {
     e.preventDefault();
-    const v = (id) => document.getElementById(id)?.value ?? '';
+    /** @param {string} id @returns {string} */
+    const v = (id) => /** @type {HTMLInputElement|null} */ (document.getElementById(id))?.value ?? '';
     const email = v('rg-email').trim(), name = v('rg-name').trim(), school = v('rg-school').trim();
     const pass = v('rg-pass'), pass2 = v('rg-pass2');
     if (pass !== pass2) return err('Las contraseñas no coinciden.');
-    const btn = document.getElementById('rg-submit');
-    btn.disabled = true; err('');
+    const btn = /** @type {HTMLButtonElement|null} */ (document.getElementById('rg-submit'));
+    if (btn) btn.disabled = true;
+    err('');
     try {
       const { id } = await signUp(email, pass, name);
       // El colegio y el nombre van al perfil PÚBLICO (profiles, su dueño). Que
       // falle el perfil no tumba un alta ya hecha — se dice y se puede reintentar
       // desde "Mi perfil" (R6).
       try { await saveProfile(id, { name, ...(school ? { school } : {}) }); }
-      catch (e2) { console.warn('[registro] cuenta creada; el perfil no se pudo sellar aún:', e2.message); }
+      catch (e2) { console.warn('[registro] cuenta creada; el perfil no se pudo sellar aún:', e2 instanceof Error ? e2.message : String(e2)); }
       toast(`Cuenta creada. ¡Bienvenido, ${name}!`, 'success', TOAST_NORMAL);
       navigate('#/mine');
     } catch (e2) {
-      err(e2.message || 'No se pudo crear la cuenta.');
-      btn.disabled = false;
+      err((e2 instanceof Error && e2.message) || 'No se pudo crear la cuenta.');
+      if (btn) btn.disabled = false;
     }
   });
 }

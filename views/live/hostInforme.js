@@ -2,7 +2,7 @@
 // views/hostLive.js en el corte POR BUCLE (v1.51.628, deuda condicionada #2 de
 // CLAUDE.md). No es un bucle de juego (§26): es la pantalla de cierre común a
 // los cuatro, por eso vive aparte en vez de dentro de uno de ellos.
-import { html, escapeHtml, mount } from '../../core/html.js';
+import { html, escapeHtml, mount, $$ } from '../../core/html.js';
 import { fetchSessionBlob, listAnswers, listPlayers, leaderboard } from '../../core/liveTransport.js';
 import { rowsFromLiveAnswers, rowsFromLiveState } from '../../core/answerRows.js';
 import { itemStatsHtml } from '../itemStatsView.js';
@@ -17,10 +17,23 @@ import { mmss } from '../../core/timings.js';
 import { destinoTrasJugar } from '../../core/afterPlay.js';
 import { esHojaDeTexto } from '../../core/contentModels/textCorrection.js';
 
+/**
+ * @typedef {import('../hostLive.js').HostRt} HostRt
+ * @typedef {import('../../core/answerRows.js').AnswerRow} AnswerRow
+ */
+
+/** UNA fila del ranking del informe: sale de la tabla de la sesión o, de
+ *  respaldo, del marcador del servidor. `tie`/`sub` solo en CARRERA (hora de
+ *  meta: ordena y se explica).
+ * @typedef {{name: string, score: number, marks?: number, nCorrect?: number,
+ *   tie?: number, sub?: string}} EntradaRanking */
+
+/** @param {HostRt} rt */
 export function createHostInforme(rt) {
   // Junta TODAS las respuestas de la sesión (live_answers por ítem + respaldo del
   // blob state.answers), con el nombre del alumno resuelto. Fuente única para las
   // 3 pestañas del informe post-partida (A1) — se calcula una sola vez (cache).
+  /** @type {{rows: AnswerRow[], race: boolean}|null} */
   let _rowsCache = null;
   async function gatherSessionRows() {
     if (_rowsCache) return _rowsCache;
@@ -41,6 +54,7 @@ export function createHostInforme(rt) {
     // carrera lo que cuenta es el instante del ACIERTO (`updated`): quien falló
     // y corrigió tarde saldría con una meta más temprana que la real — y la meta
     // es lo que decide la carrera.
+    /** @type {import('../../core/answerRows.js').OpcionesFila} */
     const msOpts = { itemOpenedAt: blob?.itemOpenedAt, phase: wasRace ? 'race' : blob?.phase };
     // Se baja TODO crudo primero: en CARRERA el origen de respaldo (sin sello,
     // §22-1) es el `created` más temprano de TODA la sala — todos los ítems
@@ -68,6 +82,7 @@ export function createHostInforme(rt) {
 
   const itemLabels = () => rt.items.map((it, i) => { try { return rt.tpl?.itemLabel?.(it) || `Pregunta ${i + 1}`; } catch { return `Pregunta ${i + 1}`; } });
 
+  /** @param {boolean} [phaseChanged] */
   async function paintPodium(phaseChanged = true) {
     rt.scene(false); // el podio es chrome → fondo neutro (Etapa 1)
     // Ya montado y sin cambio de fase → no re-montar: con la sala 'ended' cada
@@ -83,6 +98,7 @@ export function createHostInforme(rt) {
     // respaldo y un hipo de PB pintaba un podio con todos a 0).
     let gathered = null;
     try { gathered = await gatherSessionRows(); } catch { /* respaldo abajo */ }
+    /** @type {EntradaRanking[]} */
     let lb = [];
     if (gathered) {
       const { rows, race } = gathered;
@@ -124,12 +140,14 @@ export function createHostInforme(rt) {
     `);
 
     const out = document.getElementById('ll-tabout');
+    if (!out) return;   // el hueco acaba de montarse: sin él no hay informe que cablear
     const spin = () => { out.innerHTML = '<div class="text-center py-4"><div class="spinner-border"></div></div>'; };
     const rankingHtml = () => `<div class="ll-rank">${lb.map((p, i) =>
       `<div class="ll-rank__row"><span class="ll-rank__pos">${i < 3 ? ['🥇','🥈','🥉'][i] : (i + 1) + '.'}</span><span class="ll-rank__name">${escapeHtml(p.name)}</span><span class="ll-rank__pts">${p.score ?? 0}${p.sub ? ` <small class="text-muted">· ${escapeHtml(p.sub)}</small>` : ''}</span></div>`).join('')}</div>`;
 
-    async function showTab(tab) {
-      document.querySelectorAll('.ll-tab').forEach(b => b.classList.toggle('is-active', b.dataset.tab === tab));
+    /** @param {string|undefined} tab */
+    const showTab = async (tab) => {
+      $$('.ll-tab').forEach(b => b.classList.toggle('is-active', b.dataset.tab === tab));
       if (tab === 'podio') { out.innerHTML = rankingHtml(); return; }
       spin();
       try {
@@ -137,9 +155,9 @@ export function createHostInforme(rt) {
         out.innerHTML = tab === 'tabla'
           ? sessionTableHtml(rows, rt.items.length, { labels: itemLabels(), items: rt.items, template: rt.tpl, activity: rt.activity, race, players: rt.players })
           : itemStatsHtml(rt.activity, rows);
-      } catch (e) { out.innerHTML = `<div class="alert alert-warning">No se pudo cargar: ${escapeHtml(e.message)}</div>`; }
-    }
-    document.querySelectorAll('.ll-tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+      } catch (e) { out.innerHTML = `<div class="alert alert-warning">No se pudo cargar: ${escapeHtml(e instanceof Error ? e.message : String(e))}</div>`; }
+    };
+    $$('.ll-tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
     document.getElementById('ll-csv')?.addEventListener('click', async () => {
       try {
         const { rows, race } = await gatherSessionRows();

@@ -16,6 +16,9 @@ import { toast, TOAST_NORMAL } from '../core/toast.js';
 import { canHost } from '../core/authGate.js';
 import { wireActivityCard } from './activityCardWire.js';
 
+/** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
+
+/** @param {string} rootSel */
 export async function renderLanding(rootSel) {
   const user = await getUser();
   mount(rootSel, html`
@@ -56,13 +59,16 @@ export async function renderLanding(rootSel) {
   `);
   if (!user) mountAuthSlot('#lp-auth').catch(() => {});
 
+  /** @type {Set<string>} */
   let myLikes = new Set();
 
   // Guarda contra la carrera "navegué fuera antes de que resolviera el fetch":
   // si #lp-grid ya no está en el DOM, no toca nada (evita el null → red screen).
+  /** @param {string} htmlStr */
   const setGrid = (htmlStr) => { const g = document.getElementById('lp-grid'); if (g) g.innerHTML = htmlStr; };
 
   async function load() {
+    /** @type {Activity[]} */
     let rows = [];
     try {
       // Al dueño de la colección (ley §21). computeFeatured ordena después por
@@ -75,8 +81,11 @@ export async function renderLanding(rootSel) {
     const [likeCounts, mine] = await Promise.all([fetchLikeCounts(), fetchMyLikes()]);
     myLikes = mine;
     // §4c: los juegos no compiten en las destacadas — su sitio es #/juegos.
-    const soloEjercicios = rows.filter(r => getTemplate((r.data || r).template)?.meta?.kind !== 'juego');
-    const featured = computeFeatured(soloEjercicios, likeCounts, {}, 8);
+    const soloEjercicios = rows.filter(r => getTemplate(r.template)?.meta?.kind !== 'juego');
+    // computeFeatured devuelve los MISMOS objetos que recibe (ordenados y
+    // recortados), así que siguen siendo actividades enteras aunque su firma
+    // solo prometa `{id, updatedAt}`.
+    const featured = /** @type {Activity[]} */ (computeFeatured(soloEjercicios, likeCounts, {}, 8));
     if (!document.getElementById('lp-grid')) return; // navegó fuera
     if (!featured.length) { setGrid(`<p class="text-muted text-center py-4 w-100">Aún no hay actividades publicadas.</p>`); return; }
     const authed = canHost();
@@ -85,6 +94,7 @@ export async function renderLanding(rootSel) {
 
   // canHost() una vez por pintada (ver explore.js): el valor es el mismo para
   // todas las tarjetas de esta rejilla.
+  /** @param {Activity} a @param {number} likes @param {boolean} authed */
   function card(a, likes, authed) {
     const liked = myLikes.has(a.id);
     const topRight = `<button class="lp-like ${liked ? 'is-liked' : ''}" data-like="${escapeHtml(a.id)}" title="Me gusta">
@@ -98,25 +108,27 @@ export async function renderLanding(rootSel) {
   }
 
   function goSearch() {
-    const q = (document.getElementById('lp-q')?.value || '').trim();
+    const q = (/** @type {HTMLInputElement|null} */ (document.getElementById('lp-q'))?.value || '').trim();
     navigate(q ? `#/explore?q=${encodeURIComponent(q)}` : '#/explore');
   }
 
   on(rootSel, 'click', '#lp-go', goSearch);
-  on(rootSel, 'keydown', '#lp-q', (e) => { if (e.key === 'Enter') goSearch(); });
+  on(rootSel, 'keydown', '#lp-q', (e) => { if (/** @type {KeyboardEvent} */ (e).key === 'Enter') goSearch(); });
   wireActivityCard(rootSel);
   on(rootSel, 'click', '[data-like]', async (e, b) => {
     e.stopPropagation();
     try {
-      const { liked } = await toggleLike(b.dataset.like);
+      const likeId = b.dataset.like;
+      if (!likeId) return;
+      const { liked } = await toggleLike(likeId);
       const icon = b.querySelector('i');
       const n = b.querySelector('.lp-like__n');
       b.classList.toggle('is-liked', liked);
       if (icon) icon.className = `bi ${liked ? 'bi-heart-fill' : 'bi-heart'}`;
       if (n) n.textContent = String(Math.max(0, (parseInt(n.textContent, 10) || 0) + (liked ? 1 : -1)));
-      if (liked) myLikes.add(b.dataset.like); else myLikes.delete(b.dataset.like);
+      if (liked) myLikes.add(likeId); else myLikes.delete(likeId);
     } catch (err) {
-      toast(err.message || 'Inicia sesión para votar.', 'info', TOAST_NORMAL);
+      toast(err instanceof Error ? err.message : String(err), 'info', TOAST_NORMAL);
     }
   });
 

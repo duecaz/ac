@@ -8,6 +8,12 @@ import { escapeHtml } from '../../core/html.js';
 import { MODE_DEFS } from '../../core/modes.js';
 import { CONTRACT_METHODS } from '../../core/modeMatrix.js';
 
+/**
+ * Las filas llegan ya construidas por `buildAdminMatrix()`; de `acts` solo se
+ * mira si hay alguna.
+ * @param {{acts: unknown[], capRows: string, actRows: string, convRows: string}} o
+ * @returns {{html: () => string, wire: (rootSel: string) => void}}
+ */
 export function createTemplateCapacitySection({ acts, capRows, actRows, convRows }) {
   return {
     html: () => `

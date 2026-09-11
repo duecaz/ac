@@ -7,7 +7,13 @@ import { navigate } from '../core/router.js';
 import { toast } from '../core/toast.js';
 import { isVsCompatible } from '../kernel/session/engine.js';
 import { sessionItems } from '../kernel/content/sessionItems.js';
+import { $$ } from '../core/html.js';
 
+/** @typedef {import('../kernel/contracts/activity.js').ListContent} ListContent */
+/** Una actividad cuyo contenido es la SECUENCIA de rondas (`template: 'list'`).
+ *  @typedef {import('../kernel/contracts/activity.js').Activity<ListContent>} ActividadLista */
+
+/** @returns {ActividadLista} */
 function newListActivity() {
   return {
     id: newActivityId(),
@@ -33,15 +39,19 @@ function newListActivity() {
   };
 }
 
+/** @param {string|Element} rootSel @param {{id?: string}} [o] */
 export function renderEditList(rootSel, { id } = {}) {
-  const host = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
-  if (!host) return;
+  const raiz = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
+  if (!raiz) return;
+  // Ya comprobado: las funciones de abajo se declaran antes del guard (hoisting),
+  // así que el marco se fija aquí en una constante sin nulo.
+  const host = /** @type {Element} */ (raiz);
 
-  let lista = id ? get(id) : null;
-  if (!lista) {
-    lista = newListActivity();
-    save(lista);
-  }
+  // `get()` entrega la actividad con el contenido GENÉRICO; esta vista solo
+  // monta listas, y su contenido es la secuencia de rondas.
+  const existente = id ? /** @type {ActividadLista|null} */ (get(id)) : null;
+  const lista = existente || newListActivity();
+  if (!existente) save(lista);
 
   // Only offer VS-compatible activities (need ≥2 items + auto-scoring).
   // Exclude other list activities and itself to avoid circular references.
@@ -53,7 +63,10 @@ export function renderEditList(rootSel, { id } = {}) {
 
   function paint() {
     const selectedIds = (lista.content?.items || []).map(i => i.activityId);
-    const selected = selectedIds.map(sid => candidates.find(a => a.id === sid)).filter(Boolean);
+    const selected = selectedIds.flatMap(sid => {
+      const a = candidates.find(x => x.id === sid);
+      return a ? [a] : [];
+    });
     const available = candidates.filter(a => !selectedIds.includes(a.id));
 
     mount(host, html`
@@ -113,9 +126,10 @@ export function renderEditList(rootSel, { id } = {}) {
 
     document.getElementById('list-save')?.addEventListener('click', doSave);
 
-    document.querySelectorAll('.list-remove').forEach(btn => {
+    $$('.list-remove').forEach(btn => {
       btn.addEventListener('click', () => {
         const rmId = btn.dataset.id;
+        if (!rmId) return;
         recogerCampos();   // lo tecleado sobrevive al repintado
         lista.content.items = (lista.content.items || []).filter(i => i.activityId !== rmId);
         lista.updatedAt = new Date().toISOString();
@@ -124,9 +138,10 @@ export function renderEditList(rootSel, { id } = {}) {
       });
     });
 
-    document.querySelectorAll('.list-add').forEach(btn => {
+    $$('.list-add').forEach(btn => {
       btn.addEventListener('click', () => {
         const addId = btn.dataset.id;
+        if (!addId) return;
         recogerCampos();   // lo tecleado sobrevive al repintado
         if (!(lista.content.items || []).some(i => i.activityId === addId)) {
           lista.content.items = [...(lista.content.items || []), { activityId: addId }];
@@ -144,8 +159,8 @@ export function renderEditList(rootSel, { id } = {}) {
   // actividad y el título volvía a "Nueva lista" (§24: el contenido es del
   // usuario, no se pierde por un repintado). Se recoge ANTES de cada repintado.
   function recogerCampos() {
-    const title = document.getElementById('list-title')?.value?.trim();
-    const subtitle = document.getElementById('list-subtitle')?.value?.trim();
+    const title = /** @type {HTMLInputElement|null} */ (document.getElementById('list-title'))?.value?.trim();
+    const subtitle = /** @type {HTMLInputElement|null} */ (document.getElementById('list-subtitle'))?.value?.trim();
     if (title) lista.title = title;
     if (subtitle !== undefined) lista.subtitle = subtitle;
   }

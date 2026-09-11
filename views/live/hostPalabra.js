@@ -8,6 +8,9 @@ import { fullscreenButtonHtml, attachFullscreenButton } from '../../core/fullscr
 import { confirmModal } from '../../core/toast.js';
 import { qlBoxesHtml, qlCols, qlAwardPatch, qlClosePatch } from '../../core/questionLive.js';
 
+/** @typedef {import('../hostLive.js').HostRt} HostRt */
+
+/** @param {HostRt} rt */
 export function createHostPalabra(rt) {
   // CL-1 · QUIÉN HA PARTICIPADO YA (aviso, no regla). El problema real de este
   // bucle es de reparto: el primero que toca se queda la caja, así que los
@@ -18,6 +21,7 @@ export function createHostPalabra(rt) {
   function participationHtml() {
     if (!rt.players.length) return '';
     const taken = rt.session.ql_taken || {};
+    /** @type {Record<string, number>} */
     const count = {};
     for (const pid of Object.values(taken)) if (pid) count[pid] = (count[pid] || 0) + 1;
     const pending = rt.players.filter(p => !count[p.id]);
@@ -40,7 +44,11 @@ export function createHostPalabra(rt) {
     const qlOpen     = rt.session.ql_open ?? null;
     const qlQuestion = rt.session.ql_question ?? null;
     // Image stored inline in the activity — read locally by index (not in session state).
-    const qlImage    = qlOpen !== null ? (rt.items[qlOpen]?.image || null) : null;
+    // La forma de un ítem la decide el contenido de cada plantilla (§0): la imagen
+    // se lee por FORMA, no suponiendo que todos los modelos la tengan.
+    const itemAbierto = qlOpen !== null ? rt.items[qlOpen] : null;
+    const campos     = /** @type {Record<string, unknown>} */ (itemAbierto && typeof itemAbierto === 'object' ? itemAbierto : {});
+    const qlImage    = typeof campos.image === 'string' && campos.image ? campos.image : null;
     const qlPoints   = rt.session.ql_points || {};
     const qlBy       = rt.session.ql_by ?? null;
     const qlByName   = rt.session.ql_by_name ?? null;
@@ -88,7 +96,7 @@ export function createHostPalabra(rt) {
 
     on(rt.rootSel, 'click', '.ql-award', async (_, btn) => {
       if (!qlBy || qlOpen === null) return;
-      const points    = +btn.dataset.pts;
+      const points    = Number(btn.dataset.pts);
       await setSessionState(rt.sessionId, qlAwardPatch({
         playerId: qlBy, points, item: qlOpen,
         points0: qlPoints, taken0: rt.session.ql_taken || {},

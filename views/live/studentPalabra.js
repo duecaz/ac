@@ -14,18 +14,34 @@ import { pickIndex } from '../../core/ruleta/logic.js';
 import { spinTarget, normalizeRotation, animateSpin, SPIN_DUR_PICK } from '../../core/ruleta/spin.js';
 import { qlBoxesHtml } from '../../core/questionLive.js';
 
+/** @typedef {import('../studentLive.js').StudentRt} StudentRt */
+
+/** @param {StudentRt} rt */
 export function createStudentPalabra(rt) {
   let qlRotation = 0;   // persisted wheel angle across spins
 
+  // LO QUE EL ALUMNO PUEDE LEER de un ítem (§22-2): su payload, ya sin solución.
+  // La forma la decide la plantilla, así que se lee por FORMA — el formato nuevo
+  // trae `{question, image}` y quedan sesiones en vuelo con entradas planas.
+  /** @param {number} idx @returns {{label: string, image: string|null}} */
+  function visible(idx) {
+    const raw = visibleItem(rt.activity, idx);
+    if (typeof raw === 'string') return { label: raw, image: null };
+    const o = /** @type {Record<string, unknown>} */ (raw && typeof raw === 'object' ? raw : {});
+    const label = typeof o.question === 'string' ? o.question
+      : typeof o.q === 'string' ? o.q : '';   // q: sesión en vuelo pre-migración
+    return { label, image: typeof o.image === 'string' ? o.image : null };
+  }
+
   const rootEl = () => (typeof rt.rootSel === 'string' ? document.querySelector(rt.rootSel) : rt.rootSel);
 
+  /** @param {number} idx */
   async function qlOpenQuestion(idx) {
     if (rt.session.ql_open !== null) return; // race — someone beat us
     // §22-2 — lo que el alumno puede leer de un ítem sale de su PAYLOAD (ya sin
     // solución), no del contenido: el snapshot de la sala ya no lo lleva.
-    const raw = visibleItem(rt.activity, idx);
     // Support both new {q, image} format and old flat-string entries format.
-    const label = typeof raw === 'string' ? raw : (raw?.question ?? raw?.q ?? '');   // ?? q: sesión en vuelo pre-migración
+    const { label } = visible(idx);
     // Image is NOT put in session state (data-URLs are heavy) — both host and
     // student already hold the full activity and read it locally by index.
     // Pedir la palabra escribe SOLO el campo `ql` de la sala: el alumno no
@@ -39,6 +55,7 @@ export function createStudentPalabra(rt) {
   }
 
   // Card shown to everyone once a question is open (the picker sees "¡Tu pregunta!").
+  /** @param {string|null} qlQuestion @param {string|null} qlImage @param {boolean} iMine */
   function qlOpenCardHtml(qlQuestion, qlImage, iMine) {
     return `<div class="card bg-dark text-light p-4 mx-auto mt-2" style="max-width:500px">
        <p class="text-muted small mb-1">${iMine ? '<i class="bi bi-hand-index-fill text-warning"></i> ¡Tu pregunta!' : '<i class="bi bi-hand-index-fill"></i> Pregunta en curso'}</p>
@@ -59,7 +76,7 @@ export function createStudentPalabra(rt) {
   function paintQuestionLiveBoxes() {
     const qlOpen     = rt.session.ql_open ?? null;
     const qlQuestion = rt.session.ql_question ?? null;
-    const qlImage    = qlOpen !== null ? (visibleItem(rt.activity, qlOpen)?.image ?? null) : null;
+    const qlImage    = qlOpen !== null ? visible(qlOpen).image : null;
     const qlPoints   = rt.session.ql_points || {};
     const qlBy       = rt.session.ql_by ?? null;
     const allItems   = sessionItems(rt.activity);
@@ -83,7 +100,7 @@ export function createStudentPalabra(rt) {
       </div>
     `);
 
-    on(rt.rootSel, 'click', '.ql-sbox:not([disabled])', (_, btn) => qlOpenQuestion(+btn.dataset.idx));
+    on(rt.rootSel, 'click', '.ql-sbox:not([disabled])', (_, btn) => qlOpenQuestion(Number(btn.dataset.idx)));
   }
 
   function paintQuestionLiveWheel() {
@@ -92,7 +109,7 @@ export function createStudentPalabra(rt) {
     const qlPoints   = rt.session.ql_points || {};
     const qlBy       = rt.session.ql_by ?? null;
     const allItems   = sessionItems(rt.activity);
-    const qlImage    = qlOpen !== null ? (visibleItem(rt.activity, qlOpen)?.image ?? null) : null;
+    const qlImage    = qlOpen !== null ? visible(qlOpen).image : null;
     const iMine      = qlBy === rt.player.playerId;
 
     // A question is open → show the question card, no wheel.
@@ -130,6 +147,7 @@ export function createStudentPalabra(rt) {
     on(rt.rootSel, 'click', '#ql-spin', () => qlSpin(available, entries.length));
   }
 
+  /** @param {number[]} available @param {number} count */
   function qlSpin(available, count) {
     if (rt.qlSpinning || count === 0) return;
     rt.qlSpinning = true;
@@ -138,7 +156,7 @@ export function createStudentPalabra(rt) {
     const realIdx = available[target];
     qlRotation = spinTarget(qlRotation, count, target);
 
-    const btn = rootEl()?.querySelector('#ql-spin');
+    const btn = /** @type {HTMLButtonElement|null} */ (rootEl()?.querySelector('#ql-spin') ?? null);
     if (btn) btn.disabled = true;
     animateSpin(rootEl()?.querySelector('.ql-wheel svg'), qlRotation, dur);
 

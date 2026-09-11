@@ -10,6 +10,34 @@ import { QUOTAS } from '../../core/quotas.js';
 import { rulesFor as pbRulesFor } from '../../core/pbRules.js';
 import { camposQueFaltan } from '../../core/pbSchema.js';   // qué reparar de una colección que ya existe
 
+/**
+ * Un campo tal como lo DECLARA el DEFS de aquí abajo (lo que queremos).
+ * @typedef {{name: string, type: string, required?: boolean, maxSize?: number, onCreate?: boolean, onUpdate?: boolean}} CampoDef
+ */
+/**
+ * Un campo tal como viaja a PocketBase: plano en ≥0.23, dentro de `options` en
+ * <0.23, más la marca interna `__declara` (que nunca sale de aquí).
+ * @typedef {{name: string, type: string, __declara?: string[], options?: Record<string, unknown>} & Record<string, unknown>} CampoPB
+ */
+/**
+ * El cuerpo de una colección para la API de PocketBase. La clave del esquema es
+ * `fields` (≥0.23) o `schema` (<0.23) — por eso las dos son opcionales.
+ * @typedef {{name: string, type: string, fields?: CampoPB[], schema?: CampoPB[], indexes?: string[],
+ *   listRule?: string|null, viewRule?: string|null, createRule?: string|null,
+ *   updateRule?: string|null, deleteRule?: string|null}} ColPB
+ */
+/**
+ * Lo que se PATCHea a una colección que ya existe: reglas y, si falta algo, el
+ * esquema y los índices. Nunca `name`/`type` (no se renombra nada).
+ * @typedef {{fields?: CampoPB[], schema?: CampoPB[], indexes?: string[],
+ *   listRule?: string|null, viewRule?: string|null, createRule?: string|null,
+ *   updateRule?: string|null, deleteRule?: string|null}} CuerpoPatch
+ */
+
+/** @param {unknown} e @returns {string} */
+const msgDe = (e) => (e instanceof Error && e.message ? e.message : String(e));
+
+/** @returns {{html: () => string, wire: (rootSel: string) => void}} */
 export function createCollectionsSection() {
   return {
     html: () => `
@@ -29,14 +57,15 @@ export function createCollectionsSection() {
       <div id="pb-setup-out" class="mt-2"></div>`,
     wire: (rootSel) => {
       on(rootSel, 'click', '#pb-setup', async () => {
-        const email = document.getElementById('pb-email')?.value?.trim();
-        const pass  = document.getElementById('pb-pass')?.value;
+        const email = /** @type {HTMLInputElement|null} */ (document.getElementById('pb-email'))?.value?.trim();
+        const pass  = /** @type {HTMLInputElement|null} */ (document.getElementById('pb-pass'))?.value;
         const out   = document.getElementById('pb-setup-out');
+        if (!out) return;
         if (!email || !pass) { out.innerHTML = '<div class="alert alert-warning py-1 px-2 small">Introduce email y contraseña de admin de PocketBase.</div>'; return; }
 
         out.innerHTML = '<div class="text-muted small"><span class="spinner-border spinner-border-sm me-1"></span>Autenticando…</div>';
-        const btn = document.getElementById('pb-setup');
-        btn.disabled = true;
+        const btn = /** @type {HTMLButtonElement|null} */ (document.getElementById('pb-setup'));
+        if (btn) btn.disabled = true;
 
         try {
           // 1. Authenticate as PocketBase admin. La API cambió en PB 0.23:
@@ -44,16 +73,22 @@ export function createCollectionsSection() {
           //    <0.23 → /api/admins/auth-with-password
           //    Probamos la nueva primero; si da 404 caemos a la antigua.
           const { PB_URL } = await import('../../pocketbase.config.js');
+          /** @param {string} url @returns {Promise<string|null>} */
           const tryAuth = async (url) => {
             const r = await fetch(url, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ identity: email, password: pass }),
             });
-            if (r.ok) return (await r.json()).token;
+            if (r.ok) {
+              /** @type {{token?: unknown}} */
+              const d = await r.json();
+              return String(d?.token ?? '');
+            }
             if (r.status === 404) return null; // endpoint inexistente en esta versión
+            /** @type {{message?: unknown}} */
             const b = await r.json().catch(() => ({}));
-            throw new Error(b.message || `Error de autenticación (${r.status})`);
+            throw new Error(String(b.message || `Error de autenticación (${r.status})`));
           };
           let isV23 = true;
           let token = await tryAuth(`${PB_URL}/api/collections/_superusers/auth-with-password`);
@@ -62,6 +97,7 @@ export function createCollectionsSection() {
           const headers = { 'Content-Type': 'application/json', 'Authorization': token };
 
           // 2. Definición de campos por colección (neutra respecto a la versión).
+          /** @type {{name: string, fields: CampoDef[], indexes?: string[]}[]} */
           const DEFS = [
             { name: 'activities', fields: [
               // El tope REAL de una actividad (§25) — lo aplica PocketBase.
@@ -213,6 +249,7 @@ export function createCollectionsSection() {
           // En PB ≥0.23 la clave del esquema es `fields`; en <0.23 es `schema`. Los
           // campos json necesitan maxSize explícito en 0.23 vía API.
           const schemaKey = isV23 ? 'fields' : 'schema';
+          /** @param {CampoDef} f @returns {CampoPB} */
           const buildField = (f) => {
             // `__declara` = los atributos que el DEFS pone EXPLÍCITAMENTE. Los que
             // se rellenan aquí por defecto (required:false, el maxSize holgado de
@@ -222,6 +259,7 @@ export function createCollectionsSection() {
             // maxSize 0, que en PocketBase significa «sin tope explícito») junto a
             // la única de verdad. Un aviso que grita en falso entrena a ignorar los
             // de verdad — la misma lección del bloque de deuda del CLAUDE.md.
+            /** @type {CampoPB} */
             const base = { name: f.name, type: f.type, required: !!f.required, __declara: Object.keys(f) };
             if (f.type === 'json') {
               // §25 CAPACIDAD: el tope de UNA actividad lo aplica el SERVIDOR aquí
@@ -239,10 +277,12 @@ export function createCollectionsSection() {
           // vivían escritas a mano aquí Y en tools/setup-pocketbase.ps1, y
           // divergieron; ahora las dos las leen del módulo y tests/pbRules.test.mjs
           // falla si se vuelven a separar.
+          /** @param {string} name */
           const rulesFor = (name) => pbRulesFor(name) || { listRule: '', viewRule: '', createRule: '', updateRule: '', deleteRule: '' };
           // En PB ≥0.23 los campos created/updated NO se añaden solos al crear por API,
           // y el store ordena resultados por `sort=-created` → hay que crearlos como
           // autodate. En <0.23 se añaden automáticamente, así que no los duplicamos.
+          /** @type {CampoPB[]} */
           const sysFields = isV23 ? [
             { name: 'created', type: 'autodate', onCreate: true, onUpdate: false },
             { name: 'updated', type: 'autodate', onCreate: true, onUpdate: true },
@@ -251,17 +291,23 @@ export function createCollectionsSection() {
           // el detalle por campo en `data` (p.ej. createRule: "unknown collection...").
           // Aplanarlo al mensaje fue lo que faltó para diagnosticar el fallo de orden
           // live_answers→live_claims en la Pi.
+          /** @param {{message?: unknown, data?: unknown}} b @param {number} status @returns {string} */
           const pbErrDetail = (b, status) => {
+            /** @type {string[]} */
             const parts = [];
-            for (const [field, err] of Object.entries(b?.data || {})) {
-              parts.push(`${field}: ${err?.message || JSON.stringify(err)}`);
+            const datos = (b?.data && typeof b.data === 'object') ? /** @type {Record<string, unknown>} */ (b.data) : {};
+            for (const [field, err] of Object.entries(datos)) {
+              const detalle = (err && typeof err === 'object' && 'message' in err) ? err.message : null;
+              parts.push(`${field}: ${detalle || JSON.stringify(err)}`);
             }
             return [b?.message || `error ${status}`, ...parts].join(' · ');
           };
           // `__declara` es marca INTERNA (qué atributos declara el DEFS, para no
           // reportar desvíos de lo que rellenamos por defecto). Nunca viaja a
           // PocketBase: el cuerpo de la petición se limpia aquí.
+          /** @param {Record<string, unknown>} f @returns {Record<string, unknown>} */
           const sinMarca = (f) => { const { __declara, ...limpio } = f; return limpio; };
+          /** @type {ColPB[]} */
           const COLLECTIONS = DEFS.map(d => ({
             name: d.name, type: 'base',
             [schemaKey]: [...d.fields.map(buildField), ...sysFields],
@@ -270,16 +316,22 @@ export function createCollectionsSection() {
           }));
 
           // Función auxiliar: busca la colección por nombre y devuelve su id o null.
+          /** @param {string} name @returns {Promise<string|null>} */
           async function findCollection(name) {
             try {
               const r = await fetch(`${PB_URL}/api/collections/${name}`, { headers });
-              if (r.ok) return (await r.json()).id;
+              if (r.ok) {
+                /** @type {{id?: unknown}} */
+                const d = await r.json();
+                return d?.id == null ? null : String(d.id);
+              }
               return null;
             } catch { return null; }
           }
 
           // 3. Para cada colección: si no existe → crear; si ya existe → solo
           //    actualizar las reglas de acceso (sin tocar campos ni datos).
+          /** @type {{name: string, ok: boolean, msg: string}[]} */
           const results = [];
           for (const col of COLLECTIONS) {
             out.innerHTML = `<div class="text-muted small"><span class="spinner-border spinner-border-sm me-1"></span>Configurando <code>${col.name}</code>…</div>`;
@@ -291,16 +343,22 @@ export function createCollectionsSection() {
                 // `activities.owner`; ahora cubre cualquier campo nuevo del DEF (p.ej.
                 // `assignment_attempts.answers`, `live_answers.v0/c0`) → un update de la
                 // app no exige recrear colecciones a mano.
+                /** @type {CuerpoPatch} */
                 const patchBody = { ...rulesFor(col.name) };
-                let addedFields = [], addedIdx = [], fixedAttrs = [];
+                /** @type {(string|undefined)[]} */
+                let addedFields = [];
+                /** @type {string[]} */
+                let addedIdx = [];
+                /** @type {string[]} */
+                const fixedAttrs = [];
                 try {
                   const cur = await (await fetch(`${PB_URL}/api/collections/${existingId}`, { headers })).json();
-                  const curFields = cur[schemaKey] || cur.fields || cur.schema || [];
+                  const curFields = /** @type {CampoPB[]} */ (cur[schemaKey] || cur.fields || cur.schema || []);
                   // Qué falta = core/pbSchema.js (puro y testeado): ahí vive el
                   // porqué de que `created`/`updated` sí se reparen en PB ≥0.23.
                   const missing = camposQueFaltan({ actuales: curFields, deseados: col[schemaKey] || [], isV23 });
                   if (missing.length) {
-                    patchBody[schemaKey] = [...curFields, ...missing.map(sinMarca)];
+                    patchBody[schemaKey] = /** @type {CampoPB[]} */ ([...curFields, ...missing.map(sinMarca)]);
                     addedFields = missing.map(f => f.name);
                   }
                   // Índices que FALTAN (append-only). Sin esto, un índice nuevo (p.ej.
@@ -341,8 +399,9 @@ export function createCollectionsSection() {
                     }
                     if (cambió) patchBody[schemaKey] = base;
                   }
+                  /** @param {string} sql @returns {string} */
                   const idxName = (sql) => (String(sql).match(/INDEX\s+[`"']?(\w+)[`"']?/i) || [])[1] || sql;
-                  const curIdx = cur.indexes || [];
+                  const curIdx = /** @type {string[]} */ (cur.indexes || []);
                   const curIdxNames = new Set(curIdx.map(idxName));
                   const missingIdx = (col.indexes || []).filter(sql => !curIdxNames.has(idxName(sql)));
                   if (missingIdx.length) {
@@ -353,7 +412,7 @@ export function createCollectionsSection() {
                   // ANTES este catch callaba y "reglas actualizadas" mentía por
                   // omisión (así se aplicó un esquema sin `qid` en producción sin que
                   // nadie lo viera). Si no se pudo leer el esquema actual, se DICE.
-                  results.push({ name: col.name, ok: false, msg: `no se pudo LEER el esquema para el diff de campos (${readErr?.message || readErr}) — solo se aplicarían reglas; reintenta` });
+                  results.push({ name: col.name, ok: false, msg: `no se pudo LEER el esquema para el diff de campos (${msgDe(readErr)}) — solo se aplicarían reglas; reintenta` });
                   continue;
                 }
                 const pr = await fetch(`${PB_URL}/api/collections/${existingId}`, {
@@ -370,11 +429,13 @@ export function createCollectionsSection() {
                   let verify = '';
                   try {
                     const post = await (await fetch(`${PB_URL}/api/collections/${existingId}`, { headers })).json();
-                    const haveF = new Set((post[schemaKey] || post.fields || []).map(f => f.name));
+                    const postFields = /** @type {CampoPB[]} */ (post[schemaKey] || post.fields || []);
+                    const haveF = new Set(postFields.map(f => f.name));
                     const wantF = (col[schemaKey] || []).map(f => f.name).filter(n => !['id','created','updated'].includes(n));
                     const lackF = wantF.filter(n => !haveF.has(n));
+                    /** @param {string} sql @returns {string} */
                     const idxName = (sql) => (String(sql).match(/INDEX\s+[\`"']?(\w+)[\`"']?/i) || [])[1] || sql;
-                    const haveI = new Set((post.indexes || []).map(idxName));
+                    const haveI = new Set(/** @type {string[]} */ (post.indexes || []).map(idxName));
                     const lackI = (col.indexes || []).map(idxName).filter(n => !haveI.has(n));
                     if (lackF.length || lackI.length) {
                       results.push({ name: col.name, ok: false, msg: `reglas OK pero el servidor QUEDÓ SIN: ${[...lackF.map(f => 'campo ' + f), ...lackI.map(i => 'índice ' + i)].join(', ')}` });
@@ -391,9 +452,10 @@ export function createCollectionsSection() {
                     // un campo con datos dentro, en una Pi COMPARTIDA con otros
                     // proyectos, es una decisión del dueño. Se DICE, con el valor
                     // exacto que hay que poner.
+                    /** @type {string[]} */
                     const desvíos = [];
                     for (const want of (col[schemaKey] || [])) {
-                      const have = (post[schemaKey] || post.fields || []).find(f => f.name === want.name);
+                      const have = postFields.find(f => f.name === want.name);
                       if (!have) continue;
                       const declarados = want.__declara || [];
                       for (const [k, v] of Object.entries(want)) {
@@ -412,6 +474,7 @@ export function createCollectionsSection() {
                   } catch { verify = ' · (sin verificar: relectura falló)'; }
                   results.push({ name: col.name, ok: true, msg: (extras.length ? `reglas + ${extras.join(', ')} (ya existía)` : 'reglas actualizadas (ya existía)') + verify });
                 } else {
+                  /** @type {{message?: unknown, data?: unknown}} */
                   const b = await pr.json().catch(() => ({}));
                   results.push({ name: col.name, ok: false, msg: pbErrDetail(b, pr.status) });
                 }
@@ -424,12 +487,13 @@ export function createCollectionsSection() {
                 if (cr.ok) {
                   results.push({ name: col.name, ok: true, msg: 'creada' });
                 } else {
+                  /** @type {{message?: unknown, data?: unknown}} */
                   const b = await cr.json().catch(() => ({}));
                   results.push({ name: col.name, ok: false, msg: pbErrDetail(b, cr.status) });
                 }
               }
             } catch (e) {
-              results.push({ name: col.name, ok: false, msg: e.message });
+              results.push({ name: col.name, ok: false, msg: msgDe(e) });
             }
           }
 
@@ -441,10 +505,11 @@ export function createCollectionsSection() {
               ${allOk ? '<div class="mt-1 fw-semibold">Listo. Recarga la página para activar Live, actividades en nube y tareas.</div>' : ''}
             </div>`;
         } catch (e) {
-          out.innerHTML = `<div class="alert alert-danger py-1 px-2 small">Error: ${escapeHtml(e.message)}</div>`;
+          out.innerHTML = `<div class="alert alert-danger py-1 px-2 small">Error: ${escapeHtml(msgDe(e))}</div>`;
         } finally {
-          btn.disabled = false;
-          document.getElementById('pb-pass').value = '';
+          if (btn) btn.disabled = false;
+          const campoPass = /** @type {HTMLInputElement|null} */ (document.getElementById('pb-pass'));
+          if (campoPass) campoPass.value = '';
         }
       });
     },

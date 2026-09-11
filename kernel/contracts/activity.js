@@ -255,12 +255,26 @@
  */
 
 /**
+ * LISTA ENCADENADA (`template: 'list'`): no es un modelo de contenido de
+ * plantilla —no hay plantilla 'list'— sino la SECUENCIA de actividades que se
+ * juegan en orden. La escribe `views/editList.js` y la recorre
+ * `views/listView.js`; `items` guarda solo a QUÉ actividad apunta cada ronda.
+ * @typedef {Object} ListRound
+ * @property {string} activityId
+ */
+/**
+ * @typedef {Object} ListContent
+ * @property {ListRound[]} items
+ * @property {string} [mode]   Cómo se juega cada ronda; hoy siempre 'vs'.
+ */
+
+/**
  * CUALQUIER contenido de actividad: la unión de los once modelos registrados.
  * Es el defecto del genérico `Activity`, y lo que ve quien no sabe (ni
  * necesita saber) qué plantilla tiene delante.
  * @typedef {QaContent|PairsContent|EntriesContent|TextCorrectionContent
  *   |DiagramContent|ItemsContent|WordsContent|BallsortContent|ColorearContent
- *   |TangramContent|PuzzleContent} ActivityContent
+ *   |TangramContent|PuzzleContent|ListContent} ActivityContent
  */
 
 /**

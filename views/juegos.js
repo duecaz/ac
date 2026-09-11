@@ -27,6 +27,10 @@ export function gameTemplates() {
 // Cada juego vive sobre UNA actividad local fija (`game_<name>`): se crea la
 // primera vez con el contenido por defecto y se reutiliza — el juego es UNO
 // (§4c), no algo que el profe colecciona.
+/**
+ * @param {import('../core/registry.js').PlantillaRegistrada} T
+ * @returns {import('../kernel/contracts/activity.js').Activity}
+ */
 function ensureGameActivity(T) {
   const id = `game_${T.meta.name}`;
   const existente = get(id);
@@ -38,6 +42,7 @@ function ensureGameActivity(T) {
   return a;
 }
 
+/** @param {string|Element} rootSel */
 export function renderJuegos(rootSel) {
   const juegos = gameTemplates();
   // Una vez por pintada, no por tarjeta (ver explore.js).

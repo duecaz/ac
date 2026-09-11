@@ -16,17 +16,40 @@ import { mountVs } from './vsView.js';
 import { sessionItems } from '../kernel/content/sessionItems.js';
 import { destinoTrasJugar } from '../core/afterPlay.js';
 
-export async function renderListView(rootSel, id) {
-  const host = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
-  if (!host) return;
+/** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
+/** @typedef {import('../kernel/contracts/activity.js').ListContent} ListContent */
+/** UN LADO del duelo, tal como lo entrega `standings()` (kernel/session/vsMachine.js)
+ *  por `opts.onFinish` de mountVs. Aquí se declara lo que esta vista LEE.
+ * @typedef {Object} LadoDuelo
+ * @property {string} name
+ * @property {number} score
+ */
+/**
+ * @typedef {Object} MarcadorDuelo
+ * @property {LadoDuelo} left
+ * @property {LadoDuelo} right
+ * @property {'left'|'right'|'tie'} leader
+ * @property {'left'|'right'|null} finishedBy
+ */
+/** @typedef {{left: number, right: number}} Acumulado */
 
-  const lista = await getAnywhere(id, { cache: true });
-  if (!lista) {
+/** @param {string|Element} rootSel @param {string} id */
+export async function renderListView(rootSel, id) {
+  const raiz = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
+  if (!raiz) return;
+  // Ya comprobado: las funciones de abajo se declaran antes del guard (hoisting),
+  // así que el marco se fija aquí en una constante sin nulo.
+  const host = /** @type {Element} */ (raiz);
+
+  const leida = await getAnywhere(id, { cache: true });
+  if (!leida) {
     mount(host, html`<div class="alert alert-warning m-3">Lista no encontrada. <a href="${destinoTrasJugar('solo').href}">Volver</a></div>`);
     return;
   }
 
-  const roundDefs = lista.content?.items || [];
+  const lista = leida;
+  const contenido = /** @type {ListContent} */ (lista.content);
+  const roundDefs = contenido?.items || [];
   if (roundDefs.length === 0) {
     mount(host, html`
       <div class="alert alert-info m-3">
@@ -37,6 +60,7 @@ export async function renderListView(rootSel, id) {
   }
 
   // Pre-load all round activities (local cache first, then remote fallback).
+  /** @type {Activity[]} */
   const activities = [];
   for (const def of roundDefs) {
     const a = await getAnywhere(def.activityId, { cache: true });
@@ -89,8 +113,8 @@ export async function renderListView(rootSel, id) {
       note: 'Las puntuaciones de cada ronda se acumulan en el marcador final.',
       backHref: '#/home',
       onStart: () => {
-        leftName = (document.getElementById('list-name-left')?.value || '').trim() || 'Alumno 1';
-        rightName = (document.getElementById('list-name-right')?.value || '').trim() || 'Alumno 2';
+        leftName = (/** @type {HTMLInputElement|null} */ (document.getElementById('list-name-left'))?.value || '').trim() || 'Alumno 1';
+        rightName = (/** @type {HTMLInputElement|null} */ (document.getElementById('list-name-right'))?.value || '').trim() || 'Alumno 2';
         runRounds();
       }
     });
@@ -114,6 +138,7 @@ export async function renderListView(rootSel, id) {
         mountVs(host, a, null, {
           leftName,
           rightName,
+          /** @param {MarcadorDuelo} st */
           onFinish: (st) => {
             scores.left += st.left.score;
             scores.right += st.right.score;
@@ -130,6 +155,7 @@ export async function renderListView(rootSel, id) {
     nextRound();
   }
 
+  /** @param {number} roundNum @param {number} total @param {Activity} a @param {() => void} onGo */
   function showRoundIntro(roundNum, total, a, onGo) {
     const salida = destinoTrasJugar('solo');
     mount(host, html`
@@ -145,6 +171,8 @@ export async function renderListView(rootSel, id) {
     if (btn) btn.onclick = () => onGo();
   }
 
+  /** @param {number} roundNum @param {number} total @param {MarcadorDuelo} st
+   *  @param {Acumulado} scores @param {() => void} onNext */
   function showRoundResult(roundNum, total, st, scores, onNext) {
     const winnerSide = st.finishedBy || (st.leader !== 'tie' ? st.leader : null);
     const winnerName = winnerSide ? st[winnerSide].name : null;
@@ -175,6 +203,7 @@ export async function renderListView(rootSel, id) {
     if (btn) btn.onclick = () => onNext();
   }
 
+  /** @param {Acumulado} scores */
   function showFinalPodium(scores) {
     const ranked = [
       { name: leftName, score: scores.left },

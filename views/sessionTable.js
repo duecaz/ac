@@ -6,6 +6,19 @@ import { heatClass } from '../core/itemStats.js';
 import { mmss } from '../core/timings.js';
 import { buildSessionTable } from '../core/sessionModel.js';
 
+/** @typedef {import('../core/sessionModel.js').Celda} Celda */
+/** @typedef {import('../core/answerRows.js').AnswerRow} AnswerRow */
+
+/**
+ * Lo que pide el MODELO más la columna META, que es cosa de la vista.
+ * @typedef {{labels?: string[], items?: import('../kernel/contracts/activity.js').SessionItem[],
+ *   template?: import('../core/registry.js').PlantillaRegistrada|null,
+ *   activity?: import('../kernel/contracts/activity.js').Activity|null,
+ *   players?: {id?: string, name?: string}[],
+ *   race?: boolean}} TablaOpts
+ */
+
+/** @param {Celda|null|undefined} c */
 function cellHtml(c) {
   if (!c) return `<td class="st-cell st-cell--none">—</td>`;
   if (!c.binary) {   // ítem con varias partes (Tildes/Comas): "4/5" coloreado
@@ -23,6 +36,12 @@ function cellHtml(c) {
 // `opts.race` = la partida fue una CARRERA → se añade la columna META. Ahí el
 // orden lo decide el tiempo (todos acaban con todas bien), así que una tabla sin
 // esa columna no permite entender —ni reconstruir— la clasificación.
+/**
+ * @param {AnswerRow[]|null|undefined} rows
+ * @param {number} nItems
+ * @param {TablaOpts} [opts]
+ * @returns {string}
+ */
 export function sessionTableHtml(rows, nItems, opts = {}) {
   const { players, perItem } = buildSessionTable(rows, nItems, opts);
   if (!players.length) return `<p class="text-muted text-center py-3">Sin respuestas todavía.</p>`;
@@ -42,8 +61,15 @@ export function sessionTableHtml(rows, nItems, opts = {}) {
   </table></div>`;
 }
 
+/**
+ * @param {AnswerRow[]|null|undefined} rows
+ * @param {number} nItems
+ * @param {TablaOpts} [opts]
+ * @returns {string}
+ */
 export function sessionTableCsv(rows, nItems, opts = {}) {
   const { players, perItem } = buildSessionTable(rows, nItems, opts);
+  /** @param {unknown} s */
   const esc = (s) => `"${String(s ?? '').replace(/"/g, '""')}"`;
   const race = !!opts.race;
   const head = ['alumno', ...perItem.map((_, i) => `P${i + 1}`), 'aciertos', 'puntos', ...(race ? ['meta'] : [])];

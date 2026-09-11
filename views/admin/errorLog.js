@@ -8,6 +8,10 @@ import { recentErrors, clearErrors } from '../../core/errorLog.js';
 
 // `rerender` = volver a pintar el panel entero (limpiar el registro cambia lo
 // que esta MISMA sección muestra, y solo el ensamblador sabe repintarse).
+/**
+ * @param {{rerender: () => void}} o
+ * @returns {{html: () => string, wire: (rootSel: string) => void}}
+ */
 export function createErrorLogSection({ rerender }) {
   const errLog = recentErrors();
   return {

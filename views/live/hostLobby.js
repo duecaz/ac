@@ -11,14 +11,25 @@ import { serverNow } from '../../core/serverNow.js';
 import { confirmModal } from '../../core/toast.js';
 import { setSessionState, endSession, kickPlayer } from '../../core/liveTransport.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from '../../core/fullscreen.js';
-import { supportsLoop, defaultLoop, LOOP_LABELS, hasAdvanceChoice } from '../../core/liveLoops.js';
+import { supportsLoop, defaultLoop, LOOP_LABELS, hasAdvanceChoice, LIVE_LOOPS } from '../../core/liveLoops.js';
 import { READ_SECONDS_MAX } from '../../core/timings.js';
 import { DEFAULT_POLICY, DEFAULT_FIRST_N, DEFAULT_MINUTES } from '../../core/liveEnd.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 
+/**
+ * @typedef {import('../hostLive.js').HostRt} HostRt
+ * @typedef {import('../../kernel/contracts/session.js').LiveLoop} LiveLoop
+ */
+
+/** ¿Es uno de los CUATRO bucles del catálogo congelado (§26)? Un `data-loop`
+ *  del DOM es texto de fuera: se estrecha antes de indexar LOOP_LABELS.
+ *  @param {string|undefined} x @returns {x is LiveLoop} */
+const esBucle = (x) => !!x && /** @type {string[]} */ (LIVE_LOOPS).includes(x);
+
 // Fábrica única (precedente: views/admin/matrix.js). `rt` es el estado
 // compartido de la sala (core/liveLoops.js §26, core/livePhases.js) inyectado
 // por el ensamblador `views/hostLive.js`.
+/** @param {HostRt} rt */
 export function createHostLobby(rt) {
   let loop = defaultLoop(rt.tpl) || 'rounds';    // bucle elegido en el lobby
   rt.loop = loop;   // §26 · lo lee racePassedRow en la carrera (views/live/hostCarrera.js)
@@ -117,10 +128,14 @@ export function createHostLobby(rt) {
       </div>
     `);
     attachFullscreenButton(rt.rootSel);
-    on(rt.rootSel, 'click', '.loop-pick', (_, b) => { loop = b.dataset.loop; rt.loop = loop; paintLobby(false); });
+    on(rt.rootSel, 'click', '.loop-pick', (_, b) => {
+      // El bucle viene del DOM: si no es del catálogo (§26) no se toca nada.
+      if (!esBucle(b.dataset.loop)) return;
+      loop = b.dataset.loop; rt.loop = loop; paintLobby(false);
+    });
     on(rt.rootSel, 'click', '.adv-pick', (_, b) => { rt.autoAdvance = b.dataset.auto === '1'; paintLobby(false); });
-    const readEl = document.getElementById('read-secs');
-    if (readEl) readEl.onchange = (e) => { rt.readSecs = Math.max(0, Math.min(READ_SECONDS_MAX, Math.round(+e.target.value || 0))); };
+    const readEl = /** @type {HTMLInputElement|null} */ (document.getElementById('read-secs'));
+    if (readEl) readEl.onchange = () => { rt.readSecs = Math.max(0, Math.min(READ_SECONDS_MAX, Math.round(+readEl.value || 0))); };
     on(rt.rootSel, 'click', '#btn-start', async () => {
       const startedAt = new Date(serverNow()).toISOString();
       if (loop === 'claim') {
@@ -148,7 +163,7 @@ export function createHostLobby(rt) {
       try { await endSession(rt.sessionId); } catch (e) { console.warn('[hostLive] endSession al cancelar:', e); }
       location.hash = '#/home';
     });
-    on(rt.rootSel, 'click', '.kick', (_, b) => kickPlayer(rt.sessionId, b.dataset.id));
+    on(rt.rootSel, 'click', '.kick', (_, b) => kickPlayer(rt.sessionId, b.dataset.id || ''));
   }
 
   return { paintLobby };

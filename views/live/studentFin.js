@@ -9,6 +9,9 @@ import { leaderboard } from '../../core/liveTransport.js';
 import { sessionItems } from '../../kernel/content/sessionItems.js';
 import { mmss } from '../../core/timings.js';
 
+/** @typedef {import('../studentLive.js').StudentRt} StudentRt */
+
+/** @param {StudentRt} rt */
 export function createStudentFin(rt) {
   let endedFired = false;
   let endingInProgress = false;

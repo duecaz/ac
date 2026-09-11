@@ -9,6 +9,18 @@ import { backendName } from '../../adapters/index.js';
 import { downloadActivitiesJson, pickAndImport } from '../../core/io.js';
 import { toast, TOAST_LARGO } from '../../core/toast.js';
 
+/** @param {string} nombre @returns {(() => void)|null} */
+const fnGlobal = (nombre) => {
+  /** @type {unknown} */
+  const fn = Reflect.get(window, nombre);
+  return typeof fn === 'function' ? /** @type {() => void} */ (fn) : null;
+};
+
+/**
+ * `caps` y `acts` solo se CUENTAN aquí (los pinta templateCapacity).
+ * @param {{caps: unknown[], acts: unknown[]}} o
+ * @returns {{html: () => string, wire: (rootSel: string) => void}}
+ */
 export function createDataSystemSection({ caps, acts }) {
   return {
     html: () => `
@@ -41,8 +53,10 @@ export function createDataSystemSection({ caps, acts }) {
           else toast('Error al importar: ' + r.errors.join('; '), 'danger', TOAST_LARGO);
         });
       });
-      on(rootSel, 'click', '#admin-refresh', () => { (window.__wwRefresh || (() => location.reload()))(); });
-      on(rootSel, 'click', '#admin-nuke-sw', () => { (window.__wwNukeSW || (() => location.reload()))(); });
+      // Los dos mandos de caché los define el HTML de la página (teacher.html),
+      // no un módulo: se leen del global y se comprueba que sean funciones.
+      on(rootSel, 'click', '#admin-refresh', () => { (fnGlobal('__wwRefresh') || (() => location.reload()))(); });
+      on(rootSel, 'click', '#admin-nuke-sw', () => { (fnGlobal('__wwNukeSW') || (() => location.reload()))(); });
     },
   };
 }

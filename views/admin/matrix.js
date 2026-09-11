@@ -11,6 +11,7 @@ import { canConvert } from '../../kernel/content/convert.js';
 
 const yes = '<span class="text-success fw-bold">✓</span>';
 const no  = '<span class="text-muted">·</span>';
+/** @param {unknown} b */
 const mark = (b) => (b ? yes : no);
 
 // Devuelve los conteos y las filas HTML ya construidas para el panel.
@@ -22,7 +23,7 @@ export function buildAdminMatrix() {
 
   const conv = caps.map(src => ({
     label: src.label, color: src.color, icon: src.icon,
-    targets: caps.filter(dst => dst.name !== src.name && canConvert(src.contentModel, dst.contentModel))
+    targets: caps.filter(dst => dst.name !== src.name && canConvert(src.contentModel || '', dst.contentModel || ''))
       .map(dst => ({ label: dst.label, kind: dst.contentModel === src.contentModel ? 'directo' : 'conversión' })),
   }));
   const convRows = conv.map(c => `<tr>

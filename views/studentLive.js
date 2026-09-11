@@ -14,7 +14,7 @@
 //   views/live/studentPalabra.js — paintQuestionLive (pedir la palabra)
 //   views/live/studentFin.js     — paintEnded
 import { clock } from '../core/clock.js';
-import { html, escapeHtml, mount } from '../core/html.js';
+import { html, escapeHtml, mount, $ } from '../core/html.js';
 import { on } from '../core/events.js';
 import { joinSession, subscribeRoom, pingPresence, findRoomByCode, fetchSession } from '../core/liveTransport.js';
 import { findAssignmentByCode } from '../core/assignmentsTransport.js';
@@ -36,7 +36,45 @@ import { createStudentTablero } from './live/studentTablero.js';
 import { createStudentPalabra } from './live/studentPalabra.js';
 import { createStudentFin } from './live/studentFin.js';
 
+/**
+ * @typedef {import('../kernel/contracts/session.js').LiveRoom} LiveRoom
+ * @typedef {import('../kernel/contracts/session.js').SnapshotActivity} SnapshotActivity
+ */
 
+/**
+ * Lo que `joinSession` devolvió y quedó guardado en sessionStorage: la
+ * credencial de ESTE dispositivo en la sala (§22-4).
+ * @typedef {{ sessionId: string, playerId: string, name: string }} LivePlayer
+ */
+
+/**
+ * EL ESTADO COMPARTIDO DE LA SALA que el ensamblador inyecta en cada fábrica de
+ * `views/live/student*.js` (§26: un módulo por bucle, una sola `rt`). Lo que
+ * solo lee UN bucle vive dentro de su módulo; aquí está lo que cruza bucles.
+ * @typedef {Object} StudentRt
+ * @property {ReturnType<typeof acquire>} ctx
+ * @property {string} rootSel
+ * @property {string} code
+ * @property {LivePlayer} player
+ * @property {LiveRoom} session
+ * @property {SnapshotActivity} activity
+ * @property {number} lastQuestionShownAt
+ * @property {string|null} lastPhaseKey
+ * @property {(() => void)|null} autoFlushQuestion
+ * @property {number} myScore
+ * @property {number[]|null} raceQueue
+ * @property {number} raceCorrectCount
+ * @property {number|null} raceFinishMs
+ * @property {boolean} qlSpinning
+ * @property {() => Promise<void>} refreshSession
+ * @property {(msg: string) => void} paintWaiting
+ * @property {() => void} paint
+ */
+
+/**
+ * @param {string} rootSel
+ * @param {string} [prefilledCode]
+ */
 export function renderJoin(rootSel, prefilledCode = '') {
   mount(rootSel, html`
     <div class="text-center py-4" style="max-width:420px;margin:0 auto">
@@ -49,14 +87,18 @@ export function renderJoin(rootSel, prefilledCode = '') {
   `);
 
   on(rootSel, 'click', '#btn-join', async () => {
-    const code = document.getElementById('f-code').value.trim().toUpperCase();
-    const nick = document.getElementById('f-nick').value.trim();
-    const err = document.getElementById('err');
+    const inCode = /** @type {HTMLInputElement|null} */ ($('#f-code'));
+    const inNick = /** @type {HTMLInputElement|null} */ ($('#f-nick'));
+    const err = $('#err');
+    const btn = /** @type {HTMLButtonElement|null} */ ($('#btn-join'));
+    if (!inCode || !inNick || !err || !btn) return;
+    const code = inCode.value.trim().toUpperCase();
+    const nick = inNick.value.trim();
     err.textContent = '';
     if (code.length < 3) { err.textContent = 'Código inválido'; return; }
     const f = isAcceptableNickname(nick);
     if (!f.ok) { err.textContent = 'Apodo: ' + f.reason; return; }
-    document.getElementById('btn-join').disabled = true;
+    btn.disabled = true;
     try {
       // Try assignment first; if the check itself fails (transient network /
       // Supabase-client-not-ready), treat the code as a live session so the
@@ -73,28 +115,37 @@ export function renderJoin(rootSel, prefilledCode = '') {
       ssSet(`ww.player.${code}`, JSON.stringify(r));
       location.hash = `#/play/${code}`;
     } catch (e) {
-      err.textContent = e.message;
-      document.getElementById('btn-join').disabled = false;
+      err.textContent = e instanceof Error ? e.message : String(e);
+      btn.disabled = false;
     }
   });
 }
 
+/**
+ * @param {string} rootSel
+ * @param {string} code
+ */
 export async function renderPlay(rootSel, code) {
   const ctx = acquire('studentLive');
   const cached = ssGet(`ww.player.${code}`);
   if (!cached) return renderJoin(rootSel, code);
-  const player = JSON.parse(cached);
+  // FRONTERA: lo que guardó `joinSession` en sessionStorage (core/ls.js).
+  const player = /** @type {LivePlayer} */ (JSON.parse(cached));
 
-  let session = null;
-  let activity = null;
+  /** @type {LiveRoom} */
+  let session;
+  /** @type {SnapshotActivity} */
+  let activity;
 
   try {
     const sess = await findRoomByCode(code);
-    if (!sess) { mount(rootSel, html`<div class="alert alert-warning m-3">Sala no encontrada.</div>`); return; }
+    // Sin snapshot no hay nada que jugar (y `getTemplate(activity.template)`
+    // reventaría más abajo): para el alumno es el mismo "no encontrada".
+    if (!sess?.activity_snap) { mount(rootSel, html`<div class="alert alert-warning m-3">Sala no encontrada.</div>`); return; }
     session = sess;
     activity = sess.activity_snap;
   } catch (e) {
-    mount(rootSel, html`<div class="alert alert-danger m-3">${escapeHtml(e.message)}</div>`); return;
+    mount(rootSel, html`<div class="alert alert-danger m-3">${escapeHtml(e instanceof Error ? e.message : String(e))}</div>`); return;
   }
 
   // ── VERSIÓN DESFASADA → recarga DURA del grafo (una vez) ───────────────────
@@ -107,7 +158,7 @@ export async function renderPlay(rootSel, code) {
   // LUEGO recargar. Una vez por sala (flag en sessionStorage): si tras eso el
   // CDN aún sirve la versión anterior, el grafo al menos queda COHERENTE y es
   // mejor jugar que ciclar recargas.
-  if (activity?.appVersion && activity.appVersion !== VERSION) {
+  if (activity.appVersion && activity.appVersion !== VERSION) {
     const onceKey = `ww.vreload.${code}`;
     if (!ssGet(onceKey)) {
       ssSet(onceKey, '1');
@@ -147,6 +198,7 @@ export async function renderPlay(rootSel, code) {
   // bucle viven DENTRO de su módulo (p.ej. `qlRotation` en studentPalabra.js);
   // los que cruzan bucles (p.ej. `myScore`: lo suman rondas y carrera, lo lee el
   // fin) viven aquí.
+  /** @type {StudentRt} */
   const rt = {
     ctx, rootSel, code, player,
     session, activity,
@@ -158,6 +210,9 @@ export async function renderPlay(rootSel, code) {
     raceCorrectCount: 0,
     raceFinishMs: null,    // mi hora de meta (aprox., reloj común) — se congela al vaciar la cola
     qlSpinning: false,      // guards the question-live wheel mid-spin
+    // Los helpers que USAN VARIOS bucles, declarados abajo (hoisted): entran en
+    // `rt` al construirlo, no pegados después uno a uno.
+    refreshSession, paintWaiting, paint,
   };
 
   // Re-lectura de la sesión COALESCIDA: el evento realtime y el poll de 8 s piden
@@ -166,6 +221,7 @@ export async function renderPlay(rootSel, code) {
   // reintentos concurrentes contra el servidor caído. Fail-soft: un fallo
   // transitorio se ignora (el siguiente tick recupera) — sin try/catch, esa
   // promesa rechazaba sin capturar y dejaba al alumno con un error en el lobby.
+  /** @type {Promise<LiveRoom>|null} */
   let refetching = null;
 
   // La ACTIVIDAD también cambia a mitad de partida, no solo el estado. Al
@@ -173,6 +229,7 @@ export async function renderPlay(rootSel, code) {
   // COMPLETA (§22-2), y el móvil se quedaba con la del lobby para siempre:
   // jugaba sin clave y daba por fallada hasta una hoja perfecta. Toda entrada de
   // sesión pasa por aquí para que `activity` y `session` no puedan desfasarse.
+  /** @param {Partial<LiveRoom>|null|undefined} next */
   function adoptSession(next) {
     if (!next) return;
     const snap = next.activity_snap;
@@ -193,11 +250,11 @@ export async function renderPlay(rootSel, code) {
     try { adoptSession(await refetching); }
     catch { /* transitorio: el próximo evento/poll recupera */ }
   }
-  rt.refreshSession = refreshSession;
   ctx.add(await subscribeRoom(rt.session.id, async (ev) => {
     if (ev.table === 'sessions') {
       // Full diff (Supabase) or re-fetch on a bare ping (local driver).
-      if (ev.new) adoptSession(ev.new);
+      // FRONTERA: el diff del realtime llega sin forma declarada (RoomChange).
+      if (ev.new) adoptSession(/** @type {Partial<LiveRoom>} */ (ev.new));
       else await refreshSession();
     }
   }));
@@ -210,6 +267,7 @@ export async function renderPlay(rootSel, code) {
   // Try to flush any pending submissions (in case we just regained network).
   flushQueue().catch(() => {});
 
+  /** @param {string} msg */
   function paintWaiting(msg) {
     mount(rt.rootSel, html`
       <div class="text-center py-5">
@@ -218,7 +276,6 @@ export async function renderPlay(rootSel, code) {
       </div>
     `);
   }
-  rt.paintWaiting = paintWaiting;
 
   function isLiveBoard() {
     try { return supportsLoop(getTemplate(rt.activity.template), 'board'); } catch { return false; }
@@ -261,7 +318,7 @@ export async function renderPlay(rootSel, code) {
     if (rt.session.phase === 'leaderboard') { return paintWaiting('Mira la pizarra del profesor.'); }
     paintWaiting('Esperando…');
   }
-  rt.paint = paint;   // studentPalabra.js lo llama al cerrarse un giro de ruleta
+  // `rt.paint`: studentPalabra.js lo llama al cerrarse un giro de ruleta.
 
   paint();
 }

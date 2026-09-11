@@ -14,14 +14,19 @@ import { checkActivitySize } from '../core/quotas.js';
 const AUTOSAVE_DELAY_MS = 2000;
 let _sizeWarned = false; // aviso de tamaño una vez por sesión
 
+/** @param {string} rootSel @param {{id?: string, template?: string}} o */
 export function renderEditView(rootSel, { id, template }) {
   const ctx = acquire('editView');
-  let activity = id ? get(id) : null;
-  if (!activity && template) activity = newActivity(template);
-  if (!activity) { mount(rootSel, html`<div class="alert alert-danger">No se pudo cargar.</div>`); return; }
+  const leida = id ? get(id) : null;
+  const inicial = leida || (template ? newActivity(template) : null);
+  if (!inicial) { mount(rootSel, html`<div class="alert alert-danger">No se pudo cargar.</div>`); return; }
 
+  // La actividad EXISTE de aquí abajo; el editor la reemplaza entera en cada
+  // cambio (`onChange`), por eso sigue siendo `let`.
+  let activity = inicial;
   let dirty = false;
   let saving = false;
+  /** @type {ReturnType<typeof setTimeout>|null} */
   let autosaveTimer = null;
 
   const Editor = getEditor(activity.template);
@@ -85,11 +90,15 @@ export function renderEditView(rootSel, { id, template }) {
     </div>
   `);
 
-  Editor.render(document.getElementById('editor-root'), activity, (a) => {
-    activity = a;
-    markDirty();
-  });
+  const editorRoot = document.getElementById('editor-root');
+  if (editorRoot) {
+    Editor.render(editorRoot, activity, (a) => {
+      activity = a;
+      markDirty();
+    });
+  }
 
+  /** @param {string} label @param {string} [kind] @param {string} [icon] */
   function setState(label, kind = 'secondary', icon = 'bi-check2') {
     const el = document.getElementById('save-state');
     if (!el) return;
@@ -118,6 +127,7 @@ export function renderEditView(rootSel, { id, template }) {
 
   // setVis: 'public' | 'unlisted' | null. Los botones fijan la visibilidad de forma
   // EXPLÍCITA (Guardar borrador vs Publicar); el autosave (silent) la respeta (null).
+  /** @param {boolean} [silent] @param {'private'|'unlisted'|'public'|null} [setVis] */
   async function doSave(silent = false, setVis = null) {
     if (saving) return;
     // PUBLICAR ES OTRA COSA QUE GUARDAR. Un borrador a medias es legítimo —se
@@ -138,7 +148,12 @@ export function renderEditView(rootSel, { id, template }) {
       setState('Sin publicar: aún no se puede jugar', 'warning', 'bi-exclamation-triangle-fill');
       return;
     }
-    if (vis.visibility !== activity.visibility) { activity.visibility = vis.visibility; paintVis(); }
+    if (vis.visibility !== activity.visibility) {
+      // `decidirVisibilidad` la devuelve como `string` (ver informe): aquí vuelve
+      // a la unión que guarda la actividad.
+      activity.visibility = /** @type {'private'|'unlisted'|'public'} */ (vis.visibility);
+      paintVis();
+    }
     saving = true;
     setState('Guardando…', 'info', 'bi-cloud-arrow-up');
     // §25 CAPACIDAD (antes P1-6): una actividad con muchas imágenes inline deja
@@ -171,22 +186,23 @@ export function renderEditView(rootSel, { id, template }) {
       if (!silent) toast(activity.visibility === 'public' ? 'Publicada en la biblioteca ✓ Ya aparece en Explorar.' : 'Guardado como borrador (solo tú la ves).', 'success');
     } catch (e) {
       setState('Error al sincronizar (queda local)', 'danger', 'bi-exclamation-triangle-fill');
-      if (!silent) toast('No se pudo sincronizar: ' + e.message, 'danger', TOAST_LARGO);
+      if (!silent) toast('No se pudo sincronizar: ' + (e instanceof Error ? e.message : String(e)), 'danger', TOAST_LARGO);
     } finally {
       saving = false;
     }
   }
 
   // Edit-meta handlers.
-  on(rootSel, 'input', '#meta-tags', e => { activity.tags = e.target.value.split(',').map(s=>s.trim()).filter(Boolean); markDirty(); });
-  on(rootSel, 'change', '#meta-lang', e => { activity.language = e.target.value; markDirty(); });
+  on(rootSel, 'input', '#meta-tags', (_, el) => { activity.tags = /** @type {HTMLInputElement} */ (el).value.split(',').map(s=>s.trim()).filter(Boolean); markDirty(); });
+  on(rootSel, 'change', '#meta-lang', (_, el) => { activity.language = /** @type {HTMLSelectElement} */ (el).value; markDirty(); });
 
   // Switch format (Wordwall-style). 'direct' keeps content as-is; 'convert'
   // transforms it to the target model, so confirm first (it may drop fields).
   on(rootSel, 'click', '.tpl-switch-opt', async (_, btn) => {
     const name = btn.dataset.name;
     const kind = btn.dataset.kind;
-    const label = btn.textContent.trim();
+    const label = (btn.textContent || '').trim();
+    if (!name) return;
     if (kind === 'convert') {
       const ok = await confirmModal(
         `Convertir "${activity.title || 'esta actividad'}" al formato “${label}”. El contenido se adaptará y algunos datos podrían no trasladarse. ¿Continuar?`,
@@ -197,7 +213,7 @@ export function renderEditView(rootSel, { id, template }) {
     const { actividad: next, error } = applyAndSave(activity, name);
     // Con la cuota llena el contenido ya está convertido EN MEMORIA: decir que
     // se guardó le hace perder el original. Se dice, y no se limpia `dirty`.
-    if (error) { toast(error, 'danger', TOAST_ERROR); return; }
+    if (error || !next) { toast(error || 'No se pudo cambiar el formato.', 'danger', TOAST_ERROR); return; }
     dirty = false;
     toast(`Formato cambiado a “${label}”.`, 'success');
     navigate(`#/edit/${next.id}`); // same hash → re-renders the editor cleanly
@@ -233,6 +249,7 @@ export function renderEditView(rootSel, { id, template }) {
     if (autosaveTimer) clearTimeout(autosaveTimer);
     if (dirty) { try { save(activity); } catch { /* best-effort */ } }
   });
+  /** @param {BeforeUnloadEvent} e */
   const beforeUnload = (e) => {
     if (dirty) { e.preventDefault(); e.returnValue = ''; }
   };

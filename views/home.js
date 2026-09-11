@@ -12,8 +12,11 @@ import { buildSwitchOptions } from './switchTemplate.js';
 import { canHost } from '../core/authGate.js';
 import { wireActivityCard } from './activityCardWire.js';
 
+/** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
+
 let _filter = { q: '', template: '' };
 
+/** @param {string} rootSel */
 export function renderHome(rootSel) {
   const all = list();
   const templates = listTemplates();
@@ -64,19 +67,19 @@ export function renderHome(rootSel) {
       </div>
     `);
 
-    const qEl = document.getElementById('h-q');
+    const qEl = /** @type {HTMLInputElement|null} */ (document.getElementById('h-q'));
     // paint() re-monta toda la vista → el <input> se reemplaza. Hay que re-enfocar
     // el input NUEVO (no el viejo, ya desprendido) y restaurar el cursor, o el
     // buscador pierde el foco a la primera tecla.
-    if (qEl) qEl.oninput = e => {
-      _filter.q = e.target.value;
-      const caret = e.target.selectionStart;
+    if (qEl) qEl.oninput = () => {
+      _filter.q = qEl.value;
+      const caret = qEl.selectionStart;
       paint();
-      const q = document.getElementById('h-q');
-      if (q) { q.focus(); try { q.setSelectionRange(caret, caret); } catch {} }
+      const q = /** @type {HTMLInputElement|null} */ (document.getElementById('h-q'));
+      if (q) { q.focus(); if (caret != null) { try { q.setSelectionRange(caret, caret); } catch {} } }
     };
-    const tEl = document.getElementById('h-tpl');
-    if (tEl) tEl.onchange = e => { _filter.template = e.target.value; paint(); };
+    const tEl = /** @type {HTMLSelectElement|null} */ (document.getElementById('h-tpl'));
+    if (tEl) tEl.onchange = () => { _filter.template = tEl.value; paint(); };
   }
 
   // "No aparece" es un RESULTADO, no un callejón: buscar es binario (norte §2b)
@@ -95,6 +98,9 @@ export function renderHome(rootSel) {
     </div>`;
   }
 
+  /** `likes` no es del contrato: la tarjeta lo pinta si algún día llega (hoy
+   *  «próximamente»), por eso se lee como opcional y no como campo de Activity.
+   *  @param {Activity & {likes?: number}} a */
   function card(a) {
     if (a.template === 'list') return listCard(a);
     const n = itemCount(a);
@@ -137,8 +143,9 @@ export function renderHome(rootSel) {
   // era la última tarjeta escrita a mano y el escáner de
   // tests/activityCard.test.mjs la tenía como excepción declarada. La vista
   // solo aporta lo SUYO: los iconos de dueño y el pie con el nº de rondas.
+  /** @param {Activity} a */
   function listCard(a) {
-    const rounds = (a.content?.items || []).length;
+    const rounds = (/** @type {{items?: unknown[]}} */ (a.content)?.items || []).length;
     const topRight = `<div class="acard-icons">
         <button class="icon-btn edit act-edit-list" data-id="${escapeHtml(a.id)}" title="Editar lista"><i class="bi bi-pencil-fill"></i></button>
         <button class="icon-btn del act-del" data-id="${escapeHtml(a.id)}" title="Eliminar"><i class="bi bi-trash3"></i></button>
@@ -158,7 +165,9 @@ export function renderHome(rootSel) {
   on(rootSel, 'click', '.act-edit', (_, b) => navigate(`#/edit/${b.dataset.id}`));
   // Publicar / despublicar (S2): alterna visibility unlisted↔public. Publicar la
   // mete en la biblioteca pública; borrador la saca. Guarda y re-pinta.
+  /** @param {string|undefined} id @param {'private'|'unlisted'|'public'} visibility @param {string} msg */
   const setVisibility = async (id, visibility, msg) => {
+    if (!id) return;
     const a = get(id);
     if (!a) return;
     // MISMA PUERTA QUE EL EDITOR. Este interruptor publicaba sin preguntar nada:
@@ -168,7 +177,9 @@ export function renderHome(rootSel) {
     const vis = decidirVisibilidad(a, visibility, 'accion');
     if (vis.aviso) toast(vis.aviso, 'warning', TOAST_ERROR);
     if (vis.rechaza) return;
-    a.visibility = vis.visibility;
+    // `decidirVisibilidad` devuelve la visibilidad como `string` (ver informe):
+    // aquí vuelve a su unión, que es lo que guarda la actividad.
+    a.visibility = /** @type {'private'|'unlisted'|'public'} */ (vis.visibility);
     const { remote } = save(a);
     remote.catch(() => {});
     toast(msg, 'success');
@@ -180,10 +191,12 @@ export function renderHome(rootSel) {
     const ok = await confirmModal('¿Eliminar esta actividad?', { okText: 'Eliminar', danger: true });
     if (!ok) return;
     try {
-      await remove(b.dataset.id);
+      const delId = b.dataset.id;
+      if (!delId) return;
+      await remove(delId);
       toast('Eliminada.', 'success');
     } catch (e) {
-      toast('Eliminada localmente; no se pudo borrar en el servidor: ' + e.message, 'warning', TOAST_NORMAL);
+      toast('Eliminada localmente; no se pudo borrar en el servidor: ' + (e instanceof Error ? e.message : String(e)), 'warning', TOAST_NORMAL);
     }
     renderHome(rootSel);
   });

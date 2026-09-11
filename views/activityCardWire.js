@@ -23,6 +23,7 @@ import { pedirCuentaParaModo } from './loginModal.js';
 /**
  * Cablea los modos de la tarjeta en `rootSel` (delegado, se limpia al cambiar
  * de ruta como todo lo demás — §23).
+ * @param {string|Element} rootSel
  */
 export function wireActivityCard(rootSel) {
   // El preview clicable es un atajo al modo Individual, no un modo aparte.
@@ -34,7 +35,7 @@ export function wireActivityCard(rootSel) {
     // no navega a una pantalla que va a rebotar — dice por qué y ofrece entrar
     // ahí mismo, con la MISMA frase que usan el botón, el router y la barra de
     // modos del reproductor.
-    if (b.dataset.locked) { pedirCuentaParaModo(b.dataset.mode); return; }
+    if (b.dataset.locked) { pedirCuentaParaModo(b.dataset.mode || ''); return; }
     navigate(rutaDeModo(b.dataset.mode, { id: b.dataset.id, template: b.dataset.tpl }));
   });
 }

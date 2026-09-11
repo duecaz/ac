@@ -20,6 +20,13 @@
 import { getTemplate } from '../core/registry.js';
 import { renderAntesala } from './antesala.js';
 
+/**
+ * @param {Element|string} host
+ * @param {import('../kernel/contracts/activity.js').Activity} activity
+ * @param {{onStart?: () => unknown,
+ *          onOption?: (id: string|undefined, v: string|undefined) => void,
+ *          choices?: import('../core/playOptions.js').PlayChoices}} [opts]
+ */
 export function renderStartScreen(host, activity, opts = {}) {
   const { onStart, onOption, choices } = opts;
   const T = getTemplate(activity?.template);

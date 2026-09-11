@@ -5,6 +5,9 @@
 // en views/studentLive.js.
 import { html, escapeHtml, mount } from '../../core/html.js';
 
+/** @typedef {import('../studentLive.js').StudentRt} StudentRt */
+
+/** @param {StudentRt} rt */
 export function createStudentLobby(rt) {
   function paintLobby() {
     mount(rt.rootSel, html`

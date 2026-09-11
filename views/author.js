@@ -12,6 +12,10 @@ import { fetchProfile, getLocalProfile, saveProfile } from '../core/profile.js';
 import { uploadMedia } from '../core/upload.js';
 import { toast, confirmModal, TOAST_NORMAL } from '../core/toast.js';
 
+/** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
+/** @typedef {import('../core/profile.js').Perfil} Perfil */
+
+/** @param {string} rootSel @param {string} ownerId */
 export async function renderAuthor(rootSel, ownerId) {
   const isOwner = getAuthUserId() && getAuthUserId() === ownerId;
 
@@ -24,6 +28,7 @@ export async function renderAuthor(rootSel, ownerId) {
 
   // Perfil mostrado: para el dueño, su propio perfil local (fuente de verdad);
   // para un visitante, lo denormalizado dentro de las actividades del autor.
+  /** @type {Perfil} */
   let profile = { name: 'Profesor', school: '', bio: '', avatar: '', banner: '' };
 
   function paintHead() {
@@ -57,6 +62,7 @@ export async function renderAuthor(rootSel, ownerId) {
       <div id="au-editform"></div>`;
   }
 
+  /** @param {boolean} open */
   function paintEditForm(open) {
     const box = document.getElementById('au-editform');
     if (!box) return;
@@ -78,6 +84,7 @@ export async function renderAuthor(rootSel, ownerId) {
   }
 
   // Cuenta (solo el dueño): cambiar contraseña + vincular Google.
+  /** @param {boolean} open */
   function paintAccount(open) {
     const box = document.getElementById('au-editform');
     if (!box) return;
@@ -100,8 +107,9 @@ export async function renderAuthor(rootSel, ownerId) {
   }
 
   // Sube una imagen (avatar o banner), la guarda en el perfil y repinta.
+  /** @param {'avatar'|'banner'} kind */
   async function pickImage(kind) {
-    const inp = document.getElementById(kind === 'avatar' ? 'au-file-avatar' : 'au-file-banner');
+    const inp = /** @type {HTMLInputElement|null} */ (document.getElementById(kind === 'avatar' ? 'au-file-avatar' : 'au-file-banner'));
     if (!inp) return;
     inp.value = '';
     inp.onchange = async () => {
@@ -114,13 +122,14 @@ export async function renderAuthor(rootSel, ownerId) {
         toast(kind === 'avatar' ? 'Foto actualizada.' : 'Portada actualizada.', 'success');
         paintHead();
       } catch (e) {
-        toast('No se pudo guardar la imagen: ' + e.message, 'danger', TOAST_NORMAL);
+        toast('No se pudo guardar la imagen: ' + (e instanceof Error ? e.message : String(e)), 'danger', TOAST_NORMAL);
       }
     };
     inp.click();
   }
 
   async function load() {
+    /** @type {Activity[]} */
     let rows = [];
     try {
       rows = await listPublicActivities({ owner: ownerId, limit: 100 });
@@ -134,7 +143,7 @@ export async function renderAuthor(rootSel, ownerId) {
     // Perfil desde la colección pública `profiles` (fuente de verdad). Respaldo: el
     // nombre etiquetado en las actividades, o el local (para el dueño, pintado ya).
     const nameFromRows = rows.find(a => a.author?.name)?.author?.name || '';
-    const local = isOwner ? getLocalProfile(ownerId) : {};
+    const local = getLocalProfile(isOwner ? ownerId : null);
     const remote = await fetchProfile(ownerId);
     profile = {
       name: remote.name || nameFromRows || (isOwner ? getAuthName() : '') || 'Profesor',
@@ -157,6 +166,7 @@ export async function renderAuthor(rootSel, ownerId) {
 
   // Sin decoración propia: la MISMA tarjeta de la portada, Explorar y Juegos.
   // `authed` se calcula una vez por pintada (ver explore.js).
+  /** @param {Activity} a @param {boolean} authed */
   const card = (a, authed) => activityCardHtml(a, { variant: 'library', authed });
 
   wireActivityCard(rootSel);
@@ -166,10 +176,13 @@ export async function renderAuthor(rootSel, ownerId) {
   on(rootSel, 'click', '#au-cam-avatar', () => pickImage('avatar'));
   on(rootSel, 'click', '#au-cam-banner', () => pickImage('banner'));
   on(rootSel, 'click', '#au-save', async (_, b) => {
-    const name = (document.getElementById('au-name')?.value || '').trim();
-    const school = (document.getElementById('au-school')?.value || '').trim();
-    const bio = (document.getElementById('au-bio')?.value || '').trim();
-    b.disabled = true;
+    const btn = /** @type {HTMLButtonElement} */ (b);
+    /** @param {string} id */
+    const val = (id) => (/** @type {HTMLInputElement|HTMLTextAreaElement|null} */ (document.getElementById(id))?.value || '').trim();
+    const name = val('au-name');
+    const school = val('au-school');
+    const bio = val('au-bio');
+    btn.disabled = true;
     try {
       // Un solo sitio que actualizar: la fila `profiles` (no cada actividad).
       const merged = await saveProfile(ownerId, { name: name || getAuthName() || profile.name, school, bio });
@@ -178,29 +191,31 @@ export async function renderAuthor(rootSel, ownerId) {
       paintHead();
       paintEditForm(false);
     } catch (e) {
-      toast('No se pudo guardar el perfil: ' + e.message, 'danger', TOAST_NORMAL);
-      b.disabled = false;
+      toast('No se pudo guardar el perfil: ' + (e instanceof Error ? e.message : String(e)), 'danger', TOAST_NORMAL);
+      btn.disabled = false;
     }
   });
   on(rootSel, 'click', '#au-pw-save', async (_, b) => {
-    const oldP = document.getElementById('au-pw-old')?.value || '';
-    const newP = document.getElementById('au-pw-new')?.value || '';
-    b.disabled = true;
+    const btn = /** @type {HTMLButtonElement} */ (b);
+    const oldP = /** @type {HTMLInputElement|null} */ (document.getElementById('au-pw-old'))?.value || '';
+    const newP = /** @type {HTMLInputElement|null} */ (document.getElementById('au-pw-new'))?.value || '';
+    btn.disabled = true;
     try {
       await changePassword(oldP, newP);
       toast('Contraseña cambiada. Ya puedes entrar con correo y clave.', 'success');
       paintAccount(false);
     } catch (e) {
-      toast(e.message, 'danger', TOAST_NORMAL);
-      b.disabled = false;
+      toast(e instanceof Error ? e.message : String(e), 'danger', TOAST_NORMAL);
+      btn.disabled = false;
     }
   });
   on(rootSel, 'click', '#au-link-google', async (_, b) => {
     const ok = await confirmModal('Se abrirá Google para vincular tu cuenta. ¿Continuar?', { okText: 'Vincular' });
     if (!ok) return;
-    b.disabled = true;
+    const btn = /** @type {HTMLButtonElement} */ (b);
+    btn.disabled = true;
     try { await linkGoogle(); }   // redirige a Google; al volver queda vinculada
-    catch (e) { toast(e.message, 'danger', TOAST_NORMAL); b.disabled = false; }
+    catch (e) { toast(e instanceof Error ? e.message : String(e), 'danger', TOAST_NORMAL); btn.disabled = false; }
   });
 
   load();

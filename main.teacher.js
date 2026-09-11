@@ -116,12 +116,15 @@ setBeforeResolve(() => clearListeners(APP));
   // el code ANTES de arrancar el router y se limpia la query (deja el #hash para
   // que el router enrute normal). Si falla, se avisa pero la app sigue.
   const _q = new URLSearchParams(location.search);
-  if (_q.get('code') && _q.get('state')) {
+  const _code = _q.get('code');
+  const _state = _q.get('state');
+  if (_code && _state) {
     let _returnHash = '';
-    try { const _res = await completeOAuthLogin(_q.get('code'), _q.get('state')); _returnHash = _res?.returnHash || ''; }
+    try { const _res = await completeOAuthLogin(_code, _state); _returnHash = _res?.returnHash || ''; }
     catch (e) {
-      console.warn('[oauth]', e.message);
-      try { const { toast, TOAST_LARGO } = await import('./core/toast.js'); toast('Login con Google: ' + e.message, 'danger', TOAST_LARGO); } catch {}
+      const _msg = e instanceof Error ? e.message : String(e);
+      console.warn('[oauth]', _msg);
+      try { const { toast, TOAST_LARGO } = await import('./core/toast.js'); toast('Login con Google: ' + _msg, 'danger', TOAST_LARGO); } catch {}
     }
     // Devuelve al profe a donde estaba (Google no preserva el #hash en el retorno).
     history.replaceState(null, '', location.pathname + (_returnHash || location.hash || '#/home'));
@@ -132,6 +135,7 @@ setBeforeResolve(() => clearListeners(APP));
   // sesión). getAuthUserId() lee la sesión guardada de forma síncrona → no bloquea.
   // (S1) Antes se usaba el id ANÓNIMO de ensureIdentity como storage user; ya no:
   // guest usa la clave legacy y un profe usa la suya propia.
+  /** @param {string|null|undefined} id */
   function applyStorageUser(id) {
     setStorageUser(id || undefined);
     if (id) {
@@ -148,7 +152,7 @@ setBeforeResolve(() => clearListeners(APP));
 
   // Start the router immediately so la home pinta desde localStorage sin esperar red.
   start();
-  window.__APP_READY__ = true;
+  Reflect.set(window, '__APP_READY__', true);
 
   // Identidad anónima para subsistemas de alumno/resultados (NO es el storage user).
   ensureIdentity().catch(err => console.warn('[boot] identity:', err.message));

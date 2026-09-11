@@ -5,6 +5,7 @@ import { on } from '../../core/events.js';
 import { confirmModal } from '../../core/toast.js';
 import { DEFAULT_WORDS, getWordList, setWordList, resetWordList } from '../../core/liveWords.js';
 
+/** @returns {{html: () => string, wire: (rootSel: string) => void}} */
 export function createLiveWordsSection() {
   return {
     html: () => `
@@ -30,7 +31,7 @@ export function createLiveWordsSection() {
       // Live Words — populate textarea and wire buttons
       function paintLwEditor() {
         const list = getWordList();
-        const ta = document.getElementById('lw-words');
+        const ta = /** @type {HTMLTextAreaElement|null} */ (document.getElementById('lw-words'));
         const cnt = document.getElementById('lw-count');
         if (ta) ta.value = list.join(', ');
         if (cnt) cnt.textContent = `(${list.length} palabras)`;
@@ -47,7 +48,7 @@ export function createLiveWordsSection() {
       });
 
       on(rootSel, 'click', '#lw-save', () => {
-        const raw = document.getElementById('lw-words')?.value || '';
+        const raw = /** @type {HTMLTextAreaElement|null} */ (document.getElementById('lw-words'))?.value || '';
         const words = raw.split(/[\s,;]+/).map(w => w.trim().toUpperCase()).filter(w => /^[A-Z]{3,6}$/.test(w));
         const fb = document.getElementById('lw-feedback');
         if (words.length < 4) {

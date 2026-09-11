@@ -11,6 +11,10 @@ import { diagnoseDb } from '../../core/dbDiag.js';
 
 // `rerender` = volver a pintar el panel entero (lo necesita el wipe: cambia
 // el nº de actividades que muestran OTRAS secciones). La llama el ensamblador.
+/**
+ * @param {{rerender: () => void}} o
+ * @returns {{html: () => string, wire: (rootSel: string) => void}}
+ */
 export function createMaintenanceSection({ rerender }) {
   return {
     html: () => `
@@ -29,10 +33,11 @@ export function createMaintenanceSection({ rerender }) {
         // R6 · fallar en silencio está prohibido: antes se tragaba cada error y
         // decía "Listo: N borradas" aunque hubieran fallado TODAS — el profe se
         // quedaba creyendo que su nube estaba limpia. Se cuentan y se dicen.
+        /** @type {string[]} */
         const fallos = [];
         for (const id of ids) {
           try { await remove(id); }
-          catch (e) { fallos.push(`${id}: ${e.message}`); console.warn('[admin] no se pudo borrar', id, e); }
+          catch (e) { fallos.push(`${id}: ${e instanceof Error ? e.message : String(e)}`); console.warn('[admin] no se pudo borrar', id, e); }
         }
         const hechas = ids.length - fallos.length;
         if (fallos.length) {
@@ -44,7 +49,8 @@ export function createMaintenanceSection({ rerender }) {
       });
       on(rootSel, 'click', '#admin-db', async () => {
         const box = document.getElementById('admin-db-out');
-        const btn = document.getElementById('admin-db');
+        const btn = /** @type {HTMLButtonElement|null} */ (document.getElementById('admin-db'));
+        if (!box || !btn) return;
         btn.disabled = true;
         box.innerHTML = `
           <div class="d-flex align-items-center gap-2 mb-2 text-muted">
@@ -54,6 +60,7 @@ export function createMaintenanceSection({ rerender }) {
         const ul = document.getElementById('db-list');
         let failed = 0;
 
+        /** @param {number|null|undefined} ms */
         const fmtMs = (ms) => ms == null ? '' :
           `<span class="badge ${ms < 300 ? 'bg-success' : ms < 1000 ? 'bg-warning text-dark' : 'bg-danger'}">${ms} ms</span>`;
 
@@ -68,7 +75,7 @@ export function createMaintenanceSection({ rerender }) {
               ${r.info ? `<small class="text-muted ms-1">${escapeHtml(r.info)}</small>` : ''}
             </span>
             <span class="ms-2 text-nowrap">${fmtMs(r.ms)}</span>`;
-          ul.appendChild(li);
+          ul?.appendChild(li);
         });
 
         const okCount = results.filter(r => r.pass).length;

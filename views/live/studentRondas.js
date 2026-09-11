@@ -20,13 +20,22 @@ import { submit as queuedSubmit } from '../../core/submitQueue.js';
 import { questionWindowMs, readWindowMs } from '../../core/timings.js';
 import { standingOf } from '../../core/liveRank.js';
 
+/**
+ * @typedef {import('../studentLive.js').StudentRt} StudentRt
+ * @typedef {import('../../kernel/contracts/session.js').RoundPayload} RoundPayload
+ */
+
+/** @param {StudentRt} rt */
 export function createStudentRondas(rt) {
+  /** @type {ReturnType<typeof startDeadlineTicker>|null} */
   let questionTicker = null;   // cronómetro de pregunta (core/deadlineTicker.js)
   let lecturaHechaEn = -1;     // §22-5 · índice del ítem cuya ventana de lectura ya cumplió ESTE móvil
   let rescuedIdx = -1;         // ítem cuyo trazo se rescató (su POST puede ir en vuelo)
+  /** @type {ReturnType<typeof queuedSubmit>|null} */
   let rescuedSubmit = null;    // promesa de ese POST — paintRevealOwn lo espera
   // Tracks items we've already bumped streak for. Without this, host_seen_at
   // pings re-trigger paintRevealOwn and would replay every ~10 s.
+  /** @type {Set<number>} */
   const revealedItems = new Set();
   // §23 · idx de la pregunta cuya ronda está MONTADA e interactiva (ya pasó la
   // ventana de lectura, el alumno aún no envió). Solo se marca al llegar a la
@@ -36,6 +45,7 @@ export function createStudentRondas(rt) {
   // Único lugar que arranca/reinicia el cronómetro de pregunta: lo llaman tanto
   // el montaje inicial como el atajo de "solo cambió el reloj" (Pausa/Reanudar
   // del host, ~hostRondas.js). Mismo reloj, misma limpieza.
+  /** @param {number} deadlineMs @param {number} total */
   function startQuestionTicker(deadlineMs, total) {
     questionTicker?.stop();
     questionTicker = startDeadlineTicker({
@@ -52,7 +62,9 @@ export function createStudentRondas(rt) {
   }
 
   async function paintQuestion() {
-    const idx = rt.session.current_item;
+    // `current_item` es opcional en el tipo de la fila pero la sala SIEMPRE lo
+    // estampa (defecto 0 en la colección): 0 es el mismo ítem que ya se servía.
+    const idx = rt.session.current_item ?? 0;
     // La pausa del host (botón "Pausa"/"Reanudar" de hostRondas.js) SOLO cambia
     // `deadline` en la sala — no de fase ni de pregunta. paint() nos vuelve a
     // llamar porque `deadline` entra en su clave de repintado (studentLive.js).
@@ -94,8 +106,9 @@ export function createStudentRondas(rt) {
     // arreglar, disfrazado de cuentas atrás cortas.
     // El tope sale de LA SALA (`read_secs`, lo escribe openQuestion con el dial
     // del lobby): la actividad solo es respaldo para salas de antes del campo.
+    const readSecs = rt.session.read_secs;
     const readMs = lecturaHechaEn === idx ? 0
-      : (Number.isFinite(rt.session.read_secs) ? rt.session.read_secs * 1000 : readWindowMs(rt.activity));
+      : (typeof readSecs === 'number' && Number.isFinite(readSecs) ? readSecs * 1000 : readWindowMs(rt.activity));
     const { reading, waitMs } = questionGate({
       openAtMs, deadlineMs, now: serverNow(), readMs,
     });
@@ -116,7 +129,15 @@ export function createStudentRondas(rt) {
     // so every template — quiz, tildes, comas, math… — works without a
     // per-template branch here. The host's projector shows the prompt.
     const tpl = getTemplate(rt.activity.template);
-    const payload = roundPayloadOf(tpl, rt.activity, idx, item);
+    // `renderRound` es OPCIONAL en el contrato (kernel/contracts/template.js):
+    // sin ella no hay ronda que jugar. Llamar a `undefined` ya lanzaba aquí; se
+    // lanza con el nombre de la plantilla para que el aviso no sea mudo (R6).
+    if (typeof tpl?.renderRound !== 'function') {
+      throw new Error(`[studentRondas] ${rt.activity.template}: no implementa renderRound`);
+    }
+    // El payload de la ronda lo sirve el snapshot o la plantilla; su forma exacta
+    // la decide cada plantilla (§0), y es la que `renderRound` sabe leer.
+    const payload = /** @type {RoundPayload} */ (roundPayloadOf(tpl, rt.activity, idx, item));
     mount(rt.rootSel, html`
       <div class="d-flex justify-content-between align-items-center mb-2">
         <span class="badge bg-info text-dark">Pregunta ${idx+1} / ${items.length}</span>
@@ -131,8 +152,10 @@ export function createStudentRondas(rt) {
       // cuenta atrás; al llegar el instante se repinta ya jugable (guard de
       // fase: si el profe avanzó mientras tanto, no se pisa la pantalla nueva).
       const el = document.getElementById('s-round');
-      el.classList.add('s-reading');
-      try { tpl.renderRound(el, payload, { mode: 'live', onSubmit: () => {} }); } catch { /* payload raro: la cuenta atrás sigue */ }
+      if (el) {
+        el.classList.add('s-reading');
+        try { tpl.renderRound(el, payload, { onSubmit: () => {} }); } catch { /* payload raro: la cuenta atrás sigue */ }
+      }
       const badge = document.getElementById('s-time');
       // El objetivo se fija UNA vez con el reloj de este móvil a partir de la
       // espera ya acotada: así la cuenta atrás siempre llega a 0, aunque el
@@ -150,8 +173,9 @@ export function createStudentRondas(rt) {
       return;
     }
     let sent = false;
-    const handle = tpl.renderRound(document.getElementById('s-round'), payload, {
-      mode: 'live',
+    const hueco = document.getElementById('s-round');
+    if (!hueco) return;
+    const handle = tpl.renderRound(hueco, payload, {
       onSubmit: async (value) => {
         if (sent) return;
         sent = true;
@@ -196,7 +220,9 @@ export function createStudentRondas(rt) {
   }
 
   async function paintRevealOwn() {
-    const idx = rt.session.current_item;
+    // `current_item` es opcional en el tipo de la fila pero la sala SIEMPRE lo
+    // estampa (defecto 0 en la colección): 0 es el mismo ítem que ya se servía.
+    const idx = rt.session.current_item ?? 0;
     let own = await getOwnAnswer(rt.session.id, rt.player.playerId, idx);
     // Si acabamos de RESCATAR el trazo de este ítem (autoFlushQuestion), su POST
     // puede seguir en vuelo mientras este GET ya respondió null → saldría "Sin

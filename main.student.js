@@ -40,10 +40,10 @@ setBeforeResolve(() => clearListeners(APP));
     const user = await ensureIdentity();
     const { setStorageUser } = await import('./core/storage.js');
     setStorageUser(user.id);
-  } catch (err) { console.warn('[boot] auth failed:', err.message); }
+  } catch (err) { console.warn('[boot] auth failed:', err instanceof Error ? err.message : String(err)); }
   stampVersion();
   attachMuteButton();
   wireTopbarMenu();
   start();
-  window.__APP_READY__ = true;
+  Reflect.set(window, '__APP_READY__', true);
 })();

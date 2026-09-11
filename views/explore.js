@@ -14,6 +14,9 @@ import { getTemplate } from '../core/registry.js';
 // profe desde el buscador de la portada: si la vista no lo leyera, llegaría a la
 // biblioteca con la caja vacía y tendría que teclearlo otra vez — dos toques
 // tirados justo en el tramo por el que pasa toda clase (norte §2b).
+/** @typedef {import('../kernel/contracts/activity.js').ActivityRow} ActivityRow */
+
+/** @param {string} rootSel @param {string} [q0] */
 export async function renderExplore(rootSel, q0 = '') {
   mount(rootSel, html`
     <div class="home-wrap">
@@ -45,9 +48,10 @@ export async function renderExplore(rootSel, q0 = '') {
   // esto mismo: quien monta RECLAMA, quien pinta tarde PREGUNTA.
   const sigoEnPantalla = claimStage(rootSel);
 
+  /** @type {ActivityRow[]} */
   let cache = [];
   async function load() {
-    const selLang = document.getElementById('exp-lang');
+    const selLang = /** @type {HTMLSelectElement|null} */ (document.getElementById('exp-lang'));
     if (!selLang) return;                       // la vista ya no está montada
     const lang = selLang.value;
     // La colección `activities` tiene UN dueño (ley §21): se le PIDE la lista, no
@@ -62,7 +66,7 @@ export async function renderExplore(rootSel, q0 = '') {
     } catch (e) {
       // El aviso de error también pinta: si la vista se fue, no hay dónde.
       const lista = sigoEnPantalla() && document.getElementById('exp-list');
-      if (lista) lista.innerHTML = `<div class="alert alert-danger">${escapeHtml(e.message)}</div>`;
+      if (lista) lista.innerHTML = `<div class="alert alert-danger">${escapeHtml(e instanceof Error ? e.message : String(e))}</div>`;
       return;
     }
     if (!sigoEnPantalla()) return;              // llegó tarde: el profe ya está en otra
@@ -70,14 +74,14 @@ export async function renderExplore(rootSel, q0 = '') {
   }
 
   function paint() {
-    const caja = document.getElementById('exp-q');
+    const caja = /** @type {HTMLInputElement|null} */ (document.getElementById('exp-q'));
     const list = document.getElementById('exp-list');
     if (!caja || !list) return;                 // la pantalla cambió bajo los pies
     const term = caja.value.trim();
     // Mismo buscador que "Mis actividades" (`core/search.js`): sin tildes, por
     // palabras y también dentro del contenido. Los tags reales viven en la FILA
     // (r.tags), fuera del blob → se los damos a la actividad al mirarla.
-    const filtered = searchActivities(cache, { q: term }, r => ({ ...(r.data || {}), tags: r.tags || [] }));
+    const filtered = searchActivities(cache, { q: term }, r => ({ ...r.data, tags: r.tags || [] }));
     // Buscar es binario (norte §2b): si no está, la salida es CREARLA, no un
     // "sin resultados" que deja al profe parado delante de la clase.
     if (!filtered.length) {
@@ -97,10 +101,11 @@ export async function renderExplore(rootSel, q0 = '') {
   // canHost() una vez por PINTADA, no por tarjeta: lee el token y `location`, y
   // `paint()` corre en CADA tecla del buscador (×N tarjetas). El valor no puede
   // cambiar a mitad de una pintada síncrona.
+  /** @param {ActivityRow} r @param {boolean} authed */
   function card(r, authed) {
     // Los tags e id "reales" viven en la fila PB (r.tags / r.id), fuera del blob
     // data → los normalizamos DENTRO de la actividad para la tarjeta compartida.
-    const a = { ...(r.data || {}), id: r.data?.id || r.id, tags: r.tags || [] };
+    const a = { ...r.data, id: r.data?.id || r.id, tags: r.tags || [] };
     const topRight = `<small class="text-muted">${escapeHtml(r.language || 'es')}</small>`;
     // Sin pie de acciones: jugar se hace por la tira de modos (Individual/VS/
     // Equipos) o clic en el preview. Editar/borrar viven SOLO en "Mis
