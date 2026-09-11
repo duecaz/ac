@@ -543,7 +543,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     // dos oyentes de `fullscreenchange` en `document`. Colgarlos solo del ctx de
     // la vista los acumulaba hasta salir de la ruta (2 por cada cambio).
     if (fsDisposer) { try { fsDisposer(); } catch { /* ya suelto */ } }
-    fsDisposer = attachFullscreenButton('#ww-frame', { target: document.getElementById('ww-frame') || undefined });
+    fsDisposer = attachFullscreenButton('#ww-frame', { target: document.getElementById('ww-frame') || undefined, contenido: '#ww-player-widget' });
     on(rootSel, 'click', '#btn-share', async () => {
       try { await navigator.clipboard.writeText(location.href); toast('Link copiado.', 'success'); }
       catch { toast('No se pudo copiar — copia manualmente: ' + location.href, 'warning', TOAST_LARGO); }

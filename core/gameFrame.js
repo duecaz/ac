@@ -101,6 +101,6 @@ export function montarMarcoJuego(rootSel, activity, { escena = true, caja = true
     applyBackground(activity?.presentation?.background || 'none', frame,
       activity?.presentation?.backgroundImage || null);
   }
-  const soltar = frame ? attachFullscreenButton(frame, { target: frame }) : () => {};
+  const soltar = frame ? attachFullscreenButton(frame, { target: frame, contenido: '#s-stage' }) : () => {};
   return { stageSel: '#s-stage', frame, dispose: soltar };
 }
