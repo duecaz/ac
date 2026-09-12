@@ -3,7 +3,7 @@
 // propia (no modal): más campos, y sitio para explicar qué obtiene el profe.
 // El servidor prohíbe traer `role` en el alta (nadie se registra como admin) —
 // regla en tools/setup-pocketbase.ps1 (Apply-Users).
-import { html, escapeHtml, mount } from '../core/html.js';
+import { html, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { navigate } from '../core/router.js';
 import { getUser, signUp, signInWithGoogle } from '../core/auth.js';

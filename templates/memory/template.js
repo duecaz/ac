@@ -5,8 +5,6 @@ import { rid } from '../../core/ids.js';
 import { renderMemoryPlayer, DEFAULT_REVEAL_MS } from './player.js';
 import { renderMemoryEditor } from './editor.js';
 import { scoreMemorySubmission } from './scorer.js';
-import { newPair } from '../../core/contentModels/pairs.js';
-import { escapeHtml } from '../../core/html.js';
 
 /**
  * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity

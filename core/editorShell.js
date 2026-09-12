@@ -15,7 +15,7 @@
 // ctx = { onChange, repaint }  — repaint() re-renderiza todo (para alta/baja de ítems).
 import { html, escapeHtml, mount } from './html.js';
 import { on } from './events.js';
-import { getTemplate, listTemplates } from './registry.js';
+import { getTemplate } from './registry.js';
 import { modesForTemplate } from './modes.js';
 import { renderModesTab, wireModesTab } from './editorModes.js';
 import { listSkins, skinPreviewHtml, applySkin } from './skins.js';

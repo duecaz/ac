@@ -19,6 +19,7 @@
 
 import { isLowEndDevice } from './perf.js';
 import { VERSION } from './constants.js';
+import { observeResize } from './observeResize.js';
 
 // En gama baja, la animación central NO corre en reposo (ver idle() en
 // createLottie) para no robar CPU al teclado del VS.
@@ -53,11 +54,20 @@ const LITE = isLowEndDevice();
  * @property {number} totalFrames
  * @property {(frame: number, isFrame?: boolean) => void} goToAndStop
  * @property {(ev: string, fn: () => void) => void} addEventListener
+ * @property {(width?: number, height?: number) => void} resize
  * @property {() => void} destroy
  */
 /**
- * @typedef {{loadAnimation: (o: {container: Element, renderer: string,
- *   loop: boolean, autoplay: boolean, path?: string}) => LottieAnim}} LottieLib
+ * Ajustes del renderer `canvas`: el lienzo es NUESTRO (se pasa su contexto), y
+ * con él el tope de tamaño. Sin `container`, lottie usa ese contexto en vez de
+ * crearse un lienzo del tamaño de la pantalla (ver `configAnimation`).
+ * @typedef {{context?: CanvasRenderingContext2D, clearCanvas?: boolean,
+ *   preserveAspectRatio?: string}} LottieRendererSettings
+ */
+/**
+ * @typedef {{loadAnimation: (o: {container?: Element, renderer: string,
+ *   loop: boolean, autoplay: boolean, path?: string,
+ *   rendererSettings?: LottieRendererSettings}) => LottieAnim}} LottieLib
  */
 
 /** @type {Map<string, ProveedorVs>} */
@@ -186,9 +196,17 @@ registerVsAnimation({
 });
 
 // ── Lottie provider (.json made in another tool) ─────────────────────────
-// lottie_light.min.js is bundled locally so the animation works without
-// internet access and is not blocked by CDN restrictions.
-const LOTTIE_LOCAL = './assets/js/lottie_light.min.js';
+// El build va COPIADO en el repo (nunca un CDN): el aula puede estar sin
+// internet y el arnés mediría otra pantalla (ver vendor/README.md). La versión
+// va en el NOMBRE del fichero, como en `vendor/`, para que ningún navegador ni
+// Cloudflare pueda servir el anterior desde caché.
+//
+// Es el build **canvas**: `lottie_light.min.js` solo traía el renderer SVG, y
+// con él cada cuadro del reposo reescribía 153 trazados en el DOM y el
+// navegador los rasterizaba al tamaño REAL de la pizarra (3840×2160 a DPR 3).
+// El canvas pinta los mismos trazados en un lienzo con TOPE (ver `medirLienzo`)
+// y el estirado lo hace el compositor, gratis.
+const LOTTIE_LOCAL = './assets/js/lottie_light_canvas-5.13.0.min.js';
 /** @type {Promise<LottieLib>|null} */
 let _lottiePromise = null;
 
@@ -207,6 +225,32 @@ function loadLottie() {
   return _lottiePromise;
 }
 
+// EL LIENZO TIENE TOPE — el mismo principio que el confeti (`TOPE_LIENZO` de
+// core/effects.js, medido: 128 ms/cuadro a 4K nativo → 31 ms con tope). Lo que
+// cuesta pintar deja de depender del tamaño de la pizarra: se pinta a lo sumo
+// 1280 px de ancho y el CSS lo estira al 100 % (el compositor no repinta).
+// Y nunca por encima de 1,5× el tamaño CSS: a DPR 3 la cuerda se ve igual y
+// cuesta cuatro veces menos.
+const TOPE_LIENZO = 1280;
+const TOPE_DPR = 1.5;
+
+/**
+ * Ajusta el tamaño de DIBUJO del lienzo al hueco actual. Devuelve true si
+ * cambió (para no pedirle a lottie un `resize()` que no hace falta).
+ * @param {HTMLElement} container
+ * @param {HTMLCanvasElement} cv
+ * @returns {boolean}
+ */
+function medirLienzo(container, cv) {
+  const r = container.getBoundingClientRect();
+  const anchoCss = Math.max(1, Math.round(r.width)), altoCss = Math.max(1, Math.round(r.height));
+  const escala = Math.min(Math.min(window.devicePixelRatio || 1, TOPE_DPR), TOPE_LIENZO / anchoCss);
+  const w = Math.max(1, Math.round(anchoCss * escala)), h = Math.max(1, Math.round(altoCss * escala));
+  if (cv.width === w && cv.height === h) return false;
+  cv.width = w; cv.height = h;
+  return true;
+}
+
 /**
  * @param {HTMLElement} container
  * @param {string|null|undefined} src
@@ -219,6 +263,10 @@ function createLottie(container, src) {
   /** @type {ReturnType<typeof setTimeout>|0} */
   let restore = 0;
   let idleRaf = 0, idlePhase = 0;
+  /** @type {(() => void)|null} */
+  let unobserve = null;
+  // El .json llega por `fetch`: hasta DOMLoaded el renderer no tiene contexto.
+  let cargada = false;
   if (!src) {
     container.innerHTML = '<div class="vs-anim-fallback">Pega la URL de tu animación Lottie (.json) en Presentación.</div>';
     return { setProgress() {}, yank() {}, win() {}, destroy() {} };
@@ -231,43 +279,69 @@ function createLottie(container, src) {
   // the characters are always gently swaying, even when the score hasn't changed.
   // setProgress/win re-call idle() to re-center; yank cancels it briefly.
   //
-  // RENDIMIENTO: cada cuadro hace goToAndStop() = re-render del SVG en el HILO
-  // PRINCIPAL. A 60fps eso satura una pizarra A55 y el teclado del VS se traba.
+  // RENDIMIENTO: cada cuadro hace goToAndStop() = recalcular los 153 trazados y
+  // pintarlos. Con el renderer `canvas` eso ya no toca el DOM ni rasteriza a la
+  // resolución de la pizarra (el lienzo tiene tope), pero sigue siendo trabajo
+  // del HILO PRINCIPAL, que es el que teclea en el duelo. Por eso el reposo va
+  // limitado:
   //   · gama baja (ww-lite): SIN bucle de reposo → cuadro estático centrado; la
   //     cuerda solo se mueve al responder (yank/setProgress). El hilo queda libre.
-  //   · normal: bucle limitado a ~25fps (vaire imperceptible en un balanceo lento)
-  //     en vez de 60 → ~⅓ del coste de pintado.
-  const IDLE_MS = 40;   // ~25 fps
+  //     (Esta bifurcación la retira la Fase 5 del plan de rendimiento.)
+  //   · normal: ~15 fps en vez de 60 → ¼ del coste. Un balanceo lento a 15 fps
+  //     no lo nota nadie; lo que sí se nota es el teclado trabado.
+  // EL REPOSO ES ESTÁTICO, EN TODAS LAS PANTALLAS. Medido (2026-09-12, 1280×720 a
+  // DPR 3 con la CPU frenada 12×): el balanceo de reposo re-pintaba 135 trazados
+  // por cuadro y era la única carga CONTINUA del duelo — en lienzo sin GPU salía
+  // aún peor que en SVG (30 ms frente a 16 ms por cuadro). La decisión del dueño
+  // es una sola animación igual en todas las pantallas, sin «modo ligero»: la
+  // cuerda se queda quieta en el cuadro que marca el líder y solo se mueve al
+  // responder (`setProgress`/`yank`), que son tirones cortos. Lo que se pierde
+  // es un vaivén decorativo; lo que se gana es un hilo principal libre mientras
+  // la clase teclea.
   function idle() {
     cancelAnimationFrame(idleRaf);
-    idlePhase = 0;                              // reset so resume always starts from center
+    idlePhase = 0;
     if (!anim || !total || destroyed) return;
-    const center = frameFor(lead);
-    if (LITE) { anim.goToAndStop(center, true); return; }   // estático en gama baja
-    const swing = total / 3;   // ±30 frames for 90-frame anim (2/6 of total)
-    const speed = 0.036 * (IDLE_MS / 16.67);   // radians per RENDERED frame → mantiene la cadencia del ciclo
-    let last = 0;
-    /** @param {number} now */
-    const step = (now) => {
-      if (destroyed) return;
-      if (document.hidden) { idleRaf = requestAnimationFrame(step); return; } // pause when tab invisible
-      if (now - last >= IDLE_MS) {
-        last = now;
-        idlePhase += speed;
-        anim?.goToAndStop(Math.max(0, Math.min(total - 1, center + Math.sin(idlePhase) * swing)), true);
-      }
-      idleRaf = requestAnimationFrame(step);
-    };
-    idleRaf = requestAnimationFrame(step);
+    anim.goToAndStop(frameFor(lead), true);
+  }
+
+  // EL LIENZO ES NUESTRO: se crea aquí y se le pasa el CONTEXTO a lottie (sin
+  // `container`, que es lo que hace que lottie se cree uno propio del tamaño de
+  // la pantalla × devicePixelRatio). Así el tope de `medirLienzo` manda.
+  const cv = document.createElement('canvas');
+  cv.className = 'vs-lottie-canvas';
+  cv.setAttribute('aria-hidden', 'true');
+  cv.style.width = '100%'; cv.style.height = '100%'; cv.style.display = 'block';
+  container.appendChild(cv);
+  medirLienzo(container, cv);
+  const ctx = cv.getContext('2d');
+  // Un entorno sin canvas de verdad: la animación es adorno del duelo, así que
+  // se dice y se sigue jugando (R6: el motivo, escrito).
+  if (!ctx) {
+    container.innerHTML = '<div class="vs-anim-fallback">Este navegador no puede dibujar la animación.</div>';
+    return { setProgress() {}, yank() {}, win() {}, destroy() {} };
   }
 
   loadLottie().then(lottie => {
     if (destroyed) return;
-    const a = lottie.loadAnimation({ container, renderer: 'svg', loop: false, autoplay: false, path: src });
+    const a = lottie.loadAnimation({
+      renderer: 'canvas', loop: false, autoplay: false, path: src,
+      rendererSettings: { context: ctx, clearCanvas: true, preserveAspectRatio: 'xMidYMid meet' },
+    });
     anim = a;
-    a.addEventListener('DOMLoaded', () => { total = a.totalFrames; idle(); });
+    // `resize()` solo vale DESPUÉS de DOMLoaded: hasta que el .json no llega,
+    // el renderer no tiene contexto y pedirle un resize revienta.
+    a.addEventListener('DOMLoaded', () => { total = a.totalFrames; cargada = true; if (medirLienzo(container, cv)) a.resize(); idle(); });
     a.addEventListener('data_failed', () => { container.innerHTML = '<div class="vs-anim-fallback">No se pudo cargar la animación Lottie.</div>'; });
   }).catch(() => { container.innerHTML = '<div class="vs-anim-fallback">No se pudo cargar lottie-web (¿sin conexión?).</div>'; });
+
+  // AL CAMBIAR EL HUECO se re-mide el lienzo y se le dice a lottie que rehaga su
+  // transformación (si no, la cuerda se estira). Vía `observeResize` (rAF), que
+  // es la única forma permitida en los players.
+  unobserve = observeResize(container, () => {
+    if (destroyed || !cv.isConnected) return;
+    if (medirLienzo(container, cv) && cargada) anim?.resize();
+  });
 
   return {
     /** @param {number} l */
@@ -284,7 +358,7 @@ function createLottie(container, src) {
     },
     /** @param {'left'|'right'} side */
     win(side) { lead = side === 'left' ? 1 : -1; idle(); },
-    destroy() { destroyed = true; cancelAnimationFrame(idleRaf); clearTimeout(restore); if (anim) anim.destroy(); container.innerHTML = ''; }
+    destroy() { destroyed = true; cancelAnimationFrame(idleRaf); clearTimeout(restore); unobserve?.(); unobserve = null; if (anim) anim.destroy(); container.innerHTML = ''; }
   };
 }
 
@@ -292,7 +366,7 @@ function createLottie(container, src) {
 // seeks each to its center (tie) frame — a static thumbnail, no animation.
 // Returns the created anim instances so the caller can destroy them later.
 // Generation-safe: caller checks whether its gen is still current before using
-// the returned array (see playerView.initAnimPreviews / editorModes.wireModesTab).
+// the returned array (see editorModes.wireModesTab).
 /**
  * @param {HTMLElement[]} containerEls
  * @returns {Promise<LottieAnim[]>}
@@ -303,7 +377,9 @@ export async function startPreviewAnims(containerEls) {
   if (!containerEls.length) return anims;
   const lottie = await loadLottie();
   for (const el of containerEls) {
-    const anim = lottie.loadAnimation({ container: el, renderer: 'svg', loop: false, autoplay: false, path: el.dataset.src });
+    // La miniatura sí pasa `container`: es un cuadro ESTÁTICO (no hay bucle que
+    // pagar) y así lottie se encarga del lienzo y de estirarlo al hueco.
+    const anim = lottie.loadAnimation({ container: el, renderer: 'canvas', loop: false, autoplay: false, path: el.dataset.src });
     anim.addEventListener('DOMLoaded', () => anim.goToAndStop(Math.round(anim.totalFrames / 2), true));
     anims.push(anim);
   }

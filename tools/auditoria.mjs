@@ -181,9 +181,12 @@ if (!soloListas) {
 // basura si supera su baseline. B4 · cableado · B1 · declaraciones · B2 · contrato ·
 // B3 · vista↔plantilla · B5 · duplicados semánticos (funciones/frases/números) (2026-09-02) ·
 // B8 · divergencia (misma superficie, más de una manera sin motivo) (2026-09-04) ·
-// B9 · cifras escritas a mano que envejecen (2026-09-10).
+// B9 · cifras escritas a mano que envejecen (2026-09-10) ·
+// B10 · imports sin uso: el otro extremo del cable que mira el barrido 2 —
+// allí un export que nadie nombra, aquí un binding que su propio fichero no
+// nombra (2026-09-12, T7 de docs/handoff-simplificar.md).
 if (!soloListas) {
-  for (const b of ['tools/costuras-cableado.mjs', 'tools/costuras-declaraciones.mjs', 'tools/costuras-contrato.mjs', 'tools/costuras-plantilla-en-vista.mjs', 'tools/costuras-duplicados.mjs', 'tools/costuras-capa.mjs', 'tools/costuras-divergencia.mjs', 'tools/costuras-cifras.mjs']) {
+  for (const b of ['tools/costuras-cableado.mjs', 'tools/costuras-declaraciones.mjs', 'tools/costuras-contrato.mjs', 'tools/costuras-plantilla-en-vista.mjs', 'tools/costuras-duplicados.mjs', 'tools/costuras-capa.mjs', 'tools/costuras-divergencia.mjs', 'tools/costuras-cifras.mjs', 'tools/costuras-imports.mjs']) {
     const r = spawnSync(process.execPath, [join(ROOT, b)], { cwd: ROOT, encoding: 'utf8' });
     const ultima = (r.stdout || '').trim().split('\n').pop() || '';
     if (r.status === 0) ok(`costuras: ${ultima} — node ${b}`);

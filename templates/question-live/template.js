@@ -1,9 +1,7 @@
 import { BaseTemplate } from '../base.js';
 import { renderQuestionLiveEditor } from './editor.js';
 import { renderQuestionLivePlayer } from './player.js';
-import { wheelSvg } from '../../core/ruleta/render.js';
 import { newItem, migrateLegacyItems, itemRoundPayload } from '../../core/contentModels/items.js';
-import { escapeHtml } from '../../core/html.js';
 import { manualScoreSubmission } from '../../core/liveLoops.js';
 
 

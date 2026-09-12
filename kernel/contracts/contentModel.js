@@ -52,12 +52,4 @@
  * @typedef {Record<string, ContentModelContract>} ContentModelRegistry
  */
 
-/**
- * La puerta única al registro: `getModel(name)` devuelve el contrato o `null`
- * si ese nombre no está REGISTRADO (una plantilla que declare un modelo no
- * registrado no puede validarse ni convertirse — lo caza
- * `tests/templateContract.test.mjs`).
- * @typedef {(name: string) => (ContentModelContract|null)} GetModel
- */
-
 export {};

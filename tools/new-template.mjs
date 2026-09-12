@@ -275,7 +275,7 @@ export async function render${fn}Player(rootSel, activity, opts = {}) {
     <div class="ww-player ${prefix}-play">
       <div class="edu-sec edu-sec--${prefix}">
         <!-- TODO: tu tablero. El boton de ejemplo termina con todo correcto.
-             El TITULO no va aqui: vive en la antesala (views/startScreen.js). -->
+             El TITULO no va aqui: vive en la antesala (views/antesala.js). -->
         <div class="text-center"><button type="button" class="btn btn-success ${prefix}-done">Terminar</button></div>
       </div>
     </div>\`);

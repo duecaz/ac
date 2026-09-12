@@ -2,10 +2,8 @@
 import { BaseTemplate } from '../base.js';
 import { renderWheelPlayer } from './player.js';
 import { renderWheelEditor } from './editor.js';
-import { wheelSvg } from '../../core/ruleta/render.js';
 import { SPIN_DUR_DEFAULT } from '../../core/ruleta/spin.js';
 import { migrateLegacyItems, itemRoundPayload } from '../../core/contentModels/items.js';
-import { escapeHtml } from '../../core/html.js';
 import { manualScoreSubmission } from '../../core/liveLoops.js';
 
 /**

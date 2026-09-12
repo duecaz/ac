@@ -21,11 +21,7 @@ import { startElapsedTicker } from '../core/deadlineTicker.js';
 import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { get, getAnywhere } from '../core/storage.js';
-import { createRoom, findRoomByCode, fetchSession,
-         setSessionState, endSession,
-         listPlayers, listAnswers, kickPlayer, subscribeRoom, pingHost, fetchSessionKey,
-         realtimeKind }
-       from '../core/liveTransport.js';
+import { createRoom, findRoomByCode, fetchSession, setSessionState, endSession, listPlayers, listAnswers, subscribeRoom, pingHost, fetchSessionKey, realtimeKind } from '../core/liveTransport.js';
 import { getTemplate } from '../core/registry.js';
 import { revisarActividad, pantallaNoListaHtml } from '../core/activityCheck.js';
 import { sessionItems } from '../kernel/content/sessionItems.js';

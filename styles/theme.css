@@ -66,3 +66,29 @@ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-
 /* Tarjetas de chrome: sin borde duro, sombra suave y esquinas redondeadas.
    El juego usa .ww-*/skins (scoped), así que esto no lo altera. */
 .card { border: 0; border-radius: .85rem; box-shadow: 0 1px 3px rgba(20, 28, 46, .06); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PASTILLA DE FLUIDEZ (`?perf=1`, core/fluidezHud.js) — CHROME de diagnóstico,
+   no juego: por eso vive aquí (hoja EXCLUIDA del ratchet de estilo §3) y en
+   píxeles fijos. Tiene que medir lo mismo en un portátil y en la pizarra 4K, así
+   que NO puede crecer con la pantalla ni heredar tokens del skin que se está
+   midiendo. Va en `theme.css` porque es la única hoja que cargan las TRES
+   páginas (teacher/student/embed) y el medidor se abre en cualquiera.
+   Abajo a la izquierda: la esquina superior derecha del marco es del botón de
+   pantalla completa, y el pie derecho suele llevar el botón de enviar.
+   ══════════════════════════════════════════════════════════════════════════ */
+.ww-fluidez {
+  position: fixed; left: 8px; bottom: 8px; z-index: 99998;
+  pointer-events: none;            /* no roba un solo toque a lo que se mide */
+  padding: 4px 9px; border-radius: 999px;
+  font: 600 12px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  color: #f8fafc; background: rgba(15, 23, 42, .82);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .35);
+  white-space: nowrap;
+  /* Capa propia: la pastilla se repinta 4 veces por segundo y no debe arrastrar
+     a la escena medida en cada repintado (falsearía su propia medida). */
+  will-change: contents; contain: content;
+}
+.ww-fluidez[data-estado="ok"]    { color: #86efac; }
+.ww-fluidez[data-estado="justo"] { color: #fde047; }
+.ww-fluidez[data-estado="mal"]   { color: #fca5a5; }

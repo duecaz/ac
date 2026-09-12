@@ -56,7 +56,7 @@ replantea. Texto completo en **`docs/leyes.md`** (índice único de normas).
 | **§29 · PRESUPUESTO** | el coste de conducir se MIDE: jugar sin diálogos · nadie revela solo · de la lista a jugar ≤3 toques | `matrix-smoke` (presupuesto) · `find-smoke` (toques) |
 | **§30 · ALCANZABLE** | lo que no tiene puerta de entrada se BORRA: ni módulo sin importador, ni ruta sin enlace, ni CSS que nadie cargue | `huerfanos` (escaneo + `PUERTAS` con motivo) |
 | **§30b · DECIDIDA** | toda ruta cita la sección del norte que la justifica — el sorteo tenía enlace y aun así no respondía a ninguna decisión | `rutasNorte` (escaneo + `DECIDIDA_EN`) |
-| **§31 · COSTURAS** | toda declaración tiene lector · toda regla un dueño · toda red se comprueba en rojo antes de creerla verde | los seis `tools/costuras-*.mjs` en `tools/auditoria.mjs` (ratchet: solo baja) |
+| **§31 · COSTURAS** | toda declaración tiene lector · toda regla un dueño · toda red se comprueba en rojo antes de creerla verde | los `tools/costuras-*.mjs` en `tools/auditoria.mjs` (ratchet: solo baja) |
 
 - **Si es norma, es test**: una regla nueva se escribe como test, no solo en un MD.
 - **Si una ley cierra una puerta, la UI lo DICE ANTES**: dirigir en vivo / crear

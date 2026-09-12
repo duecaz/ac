@@ -204,37 +204,6 @@
  */
 
 /**
- * Lo que un alumno AFIRMA al responder (§22: es una afirmación, no un
- * veredicto). Es lo que viaja en `submitAnswer`/`submitRaceAttempt`.
- * @typedef {Object} Submission
- * @property {string} playerId
- * @property {number} itemIndex
- * @property {unknown} value
- * @property {number} [msTaken]   Lo que dice el móvil. En carrera lo PISA el servidor al liquidar.
- */
-
-/**
- * LA FILA DE `live_answers` — una por (sala, jugador, ítem), con índice único.
- * El alumno escribe `value`/`ms`; el VEREDICTO (`scored`, `correct`,
- * `unscorable`, `points`) lo pone el host al liquidar.
- * @typedef {Object} LiveAnswer
- * @property {string} [id]
- * @property {string} session
- * @property {string} player
- * @property {number} item
- * @property {unknown} value
- * @property {number} ms            Tras el settle es el tiempo del SERVIDOR, no el del móvil (§22-1).
- * @property {boolean} scored       false = respondió, sin puntuar (PocketBase no admite null en bool).
- * @property {boolean} correct
- * @property {boolean} [unscorable] Liquidada SIN clave de respuesta: el mérito es del docente.
- * @property {number} points
- * @property {unknown} [v0]         PRIMER intento de la carrera (analítica); inmutable.
- * @property {boolean} [c0]
- * @property {string} [created]     Autodate de PocketBase.
- * @property {string} [updated]
- */
-
-/**
  * La respuesta tal y como vive DENTRO del motor (`state.answers['idx:playerId']`),
  * que no es la fila: aquí `correct: null` significa «sin liquidar».
  * @typedef {Object} EngineAnswer

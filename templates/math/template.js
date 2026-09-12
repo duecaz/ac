@@ -5,7 +5,6 @@ import { renderMathEditor } from './editor.js';
 import { renderKeypadRound } from '../../core/roundRender.js';
 import { scoreMathSubmission } from './scorer.js';
 import { adoptForMath } from '../../kernel/content/qaAdapt.js';
-import { escapeHtml } from '../../core/html.js';
 
 /**
  * @typedef {import('../../kernel/contracts/activity.js').QaContent} QaContent

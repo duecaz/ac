@@ -33,6 +33,28 @@ costes, y ninguno era teórico:
 | `bootstrap-icons-1.11.3/` | 1.11.3 | `npm pack bootstrap-icons@1.11.3` → `font/bootstrap-icons.min.css` + `font/fonts/*` |
 | `press-start-2p-5.3.0/` | 5.3.0 | `npm pack @fontsource/press-start-2p` → los dos ficheros `latin-400-normal` (woff2/woff). El `@font-face` NO se copia: vive en `themes/arcade/skin.css`, porque esa hoja ya se inyecta en tiempo de ejecución y un `@import` añadía un tercer viaje en fila antes de que entrara la fuente. |
 
+### El tercero que NO vive aquí: `lottie-web`
+
+| Fichero | Versión | Licencia | Origen |
+|---|---|---|---|
+| `assets/js/lottie_light_canvas-5.13.0.min.js` (+ `assets/js/lottie-web-5.13.0.LICENSE.txt`) | 5.13.0 | MIT (Bodymovin) | `npm pack lottie-web@5.13.0` → `build/player/lottie_light_canvas.min.js` |
+
+Está en `assets/js/` y no en `vendor/` porque **no entra por un `<link>`/`<script>`
+de una página**: lo inyecta `core/vsAnimations.js` con un `<script>` creado en
+tiempo de ejecución, solo cuando alguien abre un duelo. Las tres comprobaciones
+de `tests/vendor.test.mjs` miran `href`/`src` de páginas y hojas, así que una
+carpeta aquí quedaría «sin usar» y rompería la regla 3. Se registra en esta
+tabla para que el inventario de terceros siga siendo UNO.
+
+Se trae el build **`light_canvas`**: renderer `canvas` (el SVG re-dibujaba 153
+trazados por cuadro y los rasterizaba al tamaño de la pizarra 4K) y sin motor de
+expresiones, exactamente el mismo recorte que tenía el `lottie_light` que
+sustituye — `assets/animations/cuerda.json` no usa expresiones, ni efectos, ni
+máscaras, ni mattes. 203 KB frente a los 266 KB del `lottie_canvas` completo.
+La versión va en el nombre del FICHERO (aquí va en el de la carpeta) por el mismo
+motivo: ese `<script>` no pasa por `tools/stamp-assets.mjs`, así que sin versión
+en la URL el navegador y Cloudflare servirían el anterior para siempre.
+
 La fuente de píxeles del tema Arcade venía de `fonts.googleapis.com` y se coló
 por donde la primera versión de la red no miraba: un `@import` DENTRO de una
 hoja, no un `<link>` en el HTML. La ley decía «cero recursos externos» mientras

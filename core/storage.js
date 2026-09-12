@@ -1,7 +1,7 @@
 import { getRemoteStore } from '../adapters/index.js';
 import { migrate, normalize } from './migrate.js';
 import { mergeRemote } from './storageMerge.js';
-import { lsGet, lsSet, lsDel, objetoDe } from './ls.js';
+import { lsGet, lsSet, objetoDe } from './ls.js';
 import { getAuthUserId, getAuthName } from './auth.js';
 
 /**
@@ -63,7 +63,6 @@ export function tombstoneSet() { return new Set(Object.keys(readTombstones())); 
 
 /** @param {string|null|undefined} userId */
 export function setStorageUser(userId) { _userId = userId || 'guest'; }
-export function currentStorageUser() { return _userId; }
 
 export function hasClaimed() { return !!lsGet(CLAIM_FLAG); }
 

@@ -68,7 +68,7 @@ qa ⇄ pairs        qa ──▶ items        pairs ──▶ items
 
 | Feature | Dónde vive | Qué hace |
 |---|---|---|
-| **Pantalla de inicio** | `views/startScreen.js` | Todo modo Individual pasa por título + instrucciones + ajustes + **Iniciar → pantalla completa**. Oculta el ejercicio hasta empezar. |
+| **Pantalla de inicio** | `views/antesala.js` (variante que monta `views/playerView.js`) | Todo modo Individual pasa por título + instrucciones + ajustes + **Iniciar → pantalla completa**. Oculta el ejercicio hasta empezar. |
 | **`meta.panelFit`** | `views/vsView.js` + `styles/vs.css` | Cada actividad declara cómo se maqueta en el panel VS: `fill` (llena y escala) · `block` (bloque con tope, la calculadora) · `center`. |
 | **Skins / temas** | `core/skins.js` + `themes/*/skin.css` | Paletas y layouts VS: default, aula, espacio, velocidad, retro, jungla, **colegios**, **tv-show**, **arcade** (recreativa de neón). Los skins definen **tokens**, no repiten reglas. |
 | **Fondos** | `core/backgrounds.js` | Pizarra, cuaderno (rayado alineado al texto en Tildes), etc. |

@@ -2,7 +2,7 @@ import { BaseTemplate } from '../base.js';
 import { renderCrosswordPlayer } from './player.js';
 import { renderCrosswordEditor } from './editor.js';
 import { scoreCrosswordSubmission } from './scorer.js';
-import { buildGrid, autoLayout } from './generator.js';
+import { autoLayout } from './generator.js';
 import { palabraColocada, palabraJugable } from '../../core/contentModels/words.js';
 import { escapeHtml } from '../../core/html.js';
 

@@ -27,6 +27,7 @@ import { createErrorLogSection } from './admin/errorLog.js';
 import { createTemplateCapacitySection } from './admin/templateCapacity.js';
 import { createLiveWordsSection } from './admin/liveWords.js';
 import { createVsAnimationsSection } from './admin/vsAnimations.js';
+import { createFluidezSection } from './admin/fluidez.js';
 
 // Admin UNIFICADO (auth v2): el acceso es por ROL de Google (isAdmin), no por
 // contraseña local. Solo un profe con role='admin' entra. La contraseña 'fernando'
@@ -62,7 +63,7 @@ function renderPanel(rootSel) {
 
   // Fábricas → { html(), wire(rootSel) }. El ORDEN de la lista es el orden en
   // pantalla: Profesores · Datos+Sistema · PocketBase colecciones · IA ·
-  // Capacidad §25 · Mantenimiento+BD · Pruebas contra servidor real ·
+  // Capacidad §25 · Fluidez (medidor `?perf=1`) · Mantenimiento+BD · Pruebas contra servidor real ·
   // Tests en vivo · Errores recientes · Capacidad por plantilla+Tus
   // actividades+Conversiones · Palabras Live · Animaciones VS.
   const sections = [
@@ -71,6 +72,7 @@ function renderPanel(rootSel) {
     createCollectionsSection(),
     createAiSection(),
     createCapacitySection(),
+    createFluidezSection(),
     createMaintenanceSection({ rerender }),
     createLoadTestsSection(),
     createLiveTestsSection(),

@@ -85,7 +85,7 @@ montando la plantilla, así que una nueva que se los salte rompe CI.
 
 ```
 views/playerView.js     monta el modo elegido; ficha modeToken anti-carrera
-views/startScreen.js    título + meta.instructions + ajustes + Iniciar→fullscreen
+views/antesala.js       título + meta.instructions + ajustes + Iniciar→fullscreen
 core/soloPlayer.js      SHELLS: runSequentialPlayer (ítem a ítem) / runFreeformPlayer (tablero)
                         → bucle, idx, finish, trySaveResult, emite QUESTION_SHOWN/PODIUM
 core/soloTimer.js       createCountdown (scheduler inyectable)

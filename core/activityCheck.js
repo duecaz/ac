@@ -24,7 +24,6 @@ import { escapeHtml } from './html.js';
 // el guardián aprueba lo que el player luego encoge en silencio.
 import { pairComplete } from './contentModels/pairs.js';
 import { pinUsable } from './contentModels/diagram.js';
-import { hasCorrectAnswer } from './contentModels/qa.js';
 import { esFicha, palabraColocada } from './contentModels/words.js';
 
 /** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */

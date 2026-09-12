@@ -3,11 +3,9 @@ import { BaseTemplate } from '../base.js';
 import { rid } from '../../core/ids.js';
 import { renderMatchPlayer } from './player.js';
 import { renderMatchEditor } from './editor.js';
-import { newPair } from '../../core/contentModels/pairs.js';
 import { renderChoiceRound } from '../../core/roundRender.js';
 import { shuffle } from '../../core/azar.js';
 import { scoreMatchSubmission } from './scorer.js';
-import { escapeHtml } from '../../core/html.js';
 
 /**
  * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity

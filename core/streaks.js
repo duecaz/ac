@@ -2,9 +2,11 @@
 // scoped per session and cleared when the session ends. Exposed as a tiny
 // imperative helper that any renderer can call.
 //
-// Display only. The server-side bonus (when live.streakBonus = true) is
-// computed independently in the Edge Function from the answers history,
-// so this client state is purely for UX.
+// Display only (el 🔥 que ve el alumno): este contador NO puntúa. El bonus por
+// racha (`live.streakBonus`) lo calculaba una Edge Function de Supabase, y
+// Supabase se retiró — hoy es deuda abierta en CLAUDE.md («Bonus por racha»):
+// falta decidir dónde se calcula. Si vuelve, el veredicto será del host (§22),
+// nunca de este estado de cliente.
 
 import { ssGet, ssSet, objetoDe } from './ls.js';
 

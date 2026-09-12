@@ -11,7 +11,7 @@ import { lsGet, lsSet } from '../../core/ls.js';
 import { getAuthUserId } from '../../core/auth.js';
 import { signedFetch, pbJson } from '../../core/pbHttp.js';
 import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
-import { esFila, fila, filas, estadoPb, numero, texto } from '../frontera.js';
+import { esFila, fila, filas, estadoPb, texto } from '../frontera.js';
 
 /**
  * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity

@@ -111,8 +111,7 @@ export function rankPlayers(players, rows, limit = 50) {
  *
  * @param {Array<{id:string,name:string,score:number}>} lb  marcador ya ordenado
  * @param {string} playerId
- * @returns {null|{rank:number, total:number, score:number, gap:number,
- *   aboveName:string|null, tied:number, tiedName:string|null}}
+ * @returns {import('../kernel/contracts/session.js').Standing|null}
  *   `null` si el jugador no está en el marcador (la pantalla se pinta igual sin
  *   esta línea: es adorno útil, no información crítica).
  */

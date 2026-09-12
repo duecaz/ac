@@ -2,7 +2,7 @@ import { BaseTemplate } from '../base.js';
 import { renderWordsearchPlayer, renderWordsearchRound } from './player.js';
 import { renderWordsearchEditor } from './editor.js';
 import { scoreWordsearch } from './scorer.js';
-import { generateGridAllWords, generateGrid, SIZE_MAP } from './generator.js';
+import { generateGridAllWords, SIZE_MAP } from './generator.js';
 
 /**
  * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity

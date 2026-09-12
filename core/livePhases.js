@@ -11,6 +11,8 @@
 
 /** @typedef {import('../kernel/contracts/session.js').LiveRoom} LiveRoom */
 /** @typedef {import('../kernel/contracts/session.js').RoomPatch} RoomPatch */
+/** @typedef {import('../kernel/contracts/session.js').HostAction} HostAction */
+/** @typedef {import('../kernel/contracts/session.js').TransitionPlan} TransitionPlan */
 
 /** @type {{IDLE:'idle', LOBBY:'lobby', QUESTION:'question', REVEAL:'reveal', LEADERBOARD:'leaderboard', ENDED:'ended'}} */
 export const PHASES = Object.freeze({
@@ -36,12 +38,9 @@ export function isLastItem(session, total) {
 /**
  * Plan the next step for a host action against the current session.
  * @param {Partial<LiveRoom>|null|undefined} session
- * @param {'start'|'reveal'|'leaderboard'|'next'|'end'} action
+ * @param {HostAction} action
  * @param {number} total  number of items
- * @returns {{type:'patch', patch:RoomPatch}
- *         | {type:'settle', itemIndex:number}
- *         | {type:'end'}
- *         | {type:'invalid', reason:string}}
+ * @returns {TransitionPlan}
  */
 export function planTransition(session, action, total) {
   const phase = session?.phase;
@@ -77,7 +76,7 @@ export function planTransition(session, action, total) {
 
 /**
  * @param {string} reason
- * @returns {{type:'invalid', reason:string}}
+ * @returns {TransitionPlan}
  */
 function invalid(reason) { return { type: 'invalid', reason }; }
 

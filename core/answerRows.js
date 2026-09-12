@@ -195,6 +195,6 @@ export function rowsFromAttempts(attempts) {
 export function dedupeRows(rows) {
   /** @type {Map<string, AnswerRow>} */
   const seen = new Map();
-  for (const r of rows) seen.set(`${r.player} ${r.itemIndex}`, r);
+  for (const r of rows) seen.set(`${r.player} ${r.itemIndex}`, r);
   return [...seen.values()];
 }

@@ -61,7 +61,7 @@ navegador y caminar el viaje.
 | `tools/live-smoke.mjs` | en vivo con dos pantallas: sala → PIN → responder → settle → podio | ~9 |
 | `tools/task-smoke.mjs` | tareas/informes: crear tarea → PIN → jugar → tope de intentos → informe del profe | ~8 |
 | `tools/edit-audit.mjs` | teclear en todos los editores y re-preguntar al scorer: la clave correcta sobrevive | ~9 |
-| `tools/costuras-*.mjs` (6) | ley §31: declaración sin lector · contrato a medias · vista que conoce plantilla · cableado sin extremo · misma regla dos veces · ajuste en la capa equivocada — cada uno con baseline (ratchet) | ~5 |
+| `tools/costuras-*.mjs` | ley §31: declaración sin lector · contrato a medias · vista que conoce plantilla · cableado sin extremo · misma regla dos veces · ajuste en la capa equivocada — cada uno con baseline (ratchet) | ~5 |
 | `tools/perf-sonda.mjs` | la pizarra lenta del aula (4K, CPU frenada 12x): reposo fluido y ESCRIBIR no cuesta más del DOBLE del reposo de ESA MISMA máquina (techo absoluto solo daba falsos rojos en un host lento) | ~15 |
 
 Fuera del preflight a propósito: `race-e2e` (PocketBase real + credenciales),

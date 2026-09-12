@@ -54,7 +54,7 @@ export function erroresDeLista(content, key) {
 }
 
 
-/** @type {Record<string, ContentModelContract>} */
+/** @type {import('../contracts/contentModel.js').ContentModelRegistry} */
 export const MODELS = {
   // qa's leaf module only exposes isCorrect; define the contract surface here.
   qa: {

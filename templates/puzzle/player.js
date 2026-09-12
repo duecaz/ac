@@ -11,20 +11,16 @@ import { shuffle } from '../../core/azar.js';
 import { celdas, encaja, barajarPosiciones } from './game/rejilla.js';
 import { svgAColor, dataUrlDeSvg } from './game/imagen.js';
 import { scorePuzzleSubmission } from './scorer.js';
-
-// El banco (assets/juegos/dibujos) lo escribe otro agente en paralelo:
-// import DINÁMICO para que registrar la plantilla nunca dependa de que el
-// fichero exista ya, y para poder avisar CON MENSAJE si aún no está — nunca
-// fallar en silencio (R6).
-async function cargarBanco() {
-  try { return await import('../../core/bancoDibujos.js'); }
-  catch { return null; }
-}
+// El banco es el MISMO que el de Colorear (§21b: un banco, un dueño) y se
+// importa estático, igual que allí. Nació dinámico («lo escribe otro agente en
+// paralelo») y ese andamio sobrevivió al fichero que esperaba.
+import { rutaDibujo } from '../../core/bancoDibujos.js';
 
 /** @param {string} nombre @returns {Promise<string|null>} */
 async function imagenDe(nombre) {
-  const banco = await cargarBanco();
-  const ruta = banco?.rutaDibujo?.(nombre);
+  // `rutaDibujo` da null si el nombre no está en el banco (contenido viejo):
+  // sin ruta no hay imagen, y el player ya pinta su aviso.
+  const ruta = rutaDibujo(nombre);
   if (!ruta) return null;
   const res = await fetch(ruta);
   if (!res.ok) return null;

@@ -12,9 +12,33 @@ import { isMuted, setMuted } from './sounds.js';
 import { applyPerfClass } from './perf.js';
 import { observeResize } from './observeResize.js';
 
+/** ¿La URL pide el medidor de fluidez? `?perf=1`, en cualquiera de las tres
+ *  páginas. Se lee AQUÍ y no dentro del medidor para que el módulo del medidor
+ *  no tenga que cargarse solo para descubrir que no hace falta.
+ *  @returns {boolean} */
+function pidenMedidorDeFluidez() {
+  if (typeof location === 'undefined') return false;
+  try { return new URLSearchParams(location.search).get('perf') === '1'; }
+  // URL rara (un `about:blank` de una sonda): sin medidor y sin ruido — es una
+  // lupa de diagnóstico, no algo que el usuario haya pedido (R6).
+  catch { return false; }
+}
+
 // Marca el dispositivo como lite (gama baja) lo antes posible → el CSS y la
 // animación central degradan para que el VS responda fluido en pizarras lentas.
 applyPerfClass();
+
+// EL MEDIDOR DE FLUIDEZ, solo si la URL lo pide (`?perf=1`). Va aquí y no en
+// cada `main.*` por la misma razón que el resto de este fichero: tres copias de
+// un mismo arranque derivan. Se carga por import DINÁMICO para que ni un byte
+// del medidor viaje a la pizarra cuando nadie está midiendo, y es el único bucle
+// `requestAnimationFrame` en reposo que la app se permite (Fase 0 del plan de
+// rendimiento, `docs/handoff-rendimiento-animaciones.md`).
+if (pidenMedidorDeFluidez()) {
+  import('./fluidezHud.js').then(m => m.montarMedidorFluidez()).catch(e => {
+    console.warn('[perf] no se pudo montar el medidor de fluidez:', e);
+  });
+}
 
 // Escribe `v<VERSION>` en el slot de versión del navbar, si existe.
 // Y lo convierte en el REPORTE DE UN TOQUE (core/bugReport.js): tocarlo copia

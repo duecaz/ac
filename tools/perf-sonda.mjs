@@ -33,11 +33,22 @@ const { chromium } = require(process.env.PW || '/opt/node22/lib/node_modules/pla
 
 // Pizarra grande + CPU frenada: el aparato del aula, no el de quien programa.
 const PANTALLA = { width: 3840, height: 2160 };
+// LA PIZARRA DEL AULA, TAL CUAL (Fase 6 de docs/handoff-rendimiento-animaciones.md):
+// 1280×720 CSS a DPR 3 = 3840×2160 píxeles REALES. No es lo mismo que medir a
+// 3840 CSS con DPR 1: a DPR 3 cada sombra, cada desenfoque y cada gradiente que
+// gira cuesta NUEVE veces más por píxel de maqueta, y ese multiplicador es justo
+// el que no estaba modelado cuando el dueño dijo «la app va lenta en las
+// animaciones» y todas las sondas daban verde.
+const PIZARRA = { width: 1280, height: 720 };
+const DPR_AULA = 3;
 const FRENO = 12;
 // Techos de mediana por fotograma. 33 ms = 30 fps: por debajo de eso la clase ve
 // tirones. El reposo se exige MÁS (25 ms) porque ahí no debería pasar NADA.
 const TECHO_REPOSO = 25;
 const TECHO_CONFETI = 60;
+// Celebrar SÍ cuesta (confeti + foco + rayos), pero tiene que seguir siendo
+// jugable: 30 fps es el suelo de «no se ve a tirones».
+const TECHO_JUGABLE = 33;
 
 const { base: BASE, cerrar } = await abrirServidor();
 const bye = (code) => { cerrar(); process.exit(code); };
@@ -57,6 +68,44 @@ async function abrirPizarra() {
   await page.waitForFunction(() => document.querySelector('#app')?.children.length > 0, { timeout: 20000 });
   return { page, frenar: () => cdp.send('Emulation.setCPUThrottlingRate', { rate: FRENO }) };
 }
+
+/** La MISMA app en la pizarra del aula: 1280×720 CSS a DPR 3. El freno se aplica
+ *  después de cargar (se mide jugar, no arrancar). */
+async function abrirAula() {
+  const page = await browser.newPage({ viewport: PIZARRA, deviceScaleFactor: DPR_AULA });
+  const cdp = await page.context().newCDPSession(page);
+  // EL APARATO DEL AULA TAMBIÉN TIENE SU HARDWARE. La pizarra del colegio lleva
+  // un RK3588: OCHO núcleos y 8 GB, o sea que para `isLowEndDevice()` (core/perf.js)
+  // es un equipo POTENTE y corre todas las animaciones a pleno — eso es justo lo
+  // que hay que medir. El runner de CI puede tener 4 núcleos o menos: sin fijarlo,
+  // el arranque le pone `ww-lite` a <html>, el CSS apaga la marquesina y el latido
+  // y la cuerda deja de respirar → la sonda mediría una PANTALLA QUIETA y daría
+  // verde gratis, que es exactamente el agujero por el que se coló «la app va
+  // lenta en las animaciones». Se fija ANTES de cargar porque `applyPerfClass()`
+  // corre en el boot y la clase ya no se quita.
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8, configurable: true });
+    Object.defineProperty(navigator, 'deviceMemory', { get: () => 8, configurable: true });
+  });
+  await page.goto(`${BASE}/teacher.html?backend=local`, { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => document.querySelector('#app')?.children.length > 0, { timeout: 20000 });
+  // Contra-prueba de la mentira anterior: si `ww-lite` está puesto, lo medido no
+  // es la pizarra del aula sino una versión degradada de la app.
+  const lite = await page.evaluate(() => document.documentElement.classList.contains('ww-lite'));
+  if (lite) mal('la pizarra del aula arrancó en modo `ww-lite`: las animaciones están apagadas y lo medido NO vale');
+  return { page, frenar: () => cdp.send('Emulation.setCPUThrottlingRate', { rate: FRENO }) };
+}
+
+/** Siembra una actividad con el contenido por defecto de su plantilla. */
+const sembrar = (page, plantilla, id) => page.evaluate(async ({ plantilla, id }) => {
+  const { getTemplate } = await import('/core/registry.js');
+  const { save } = await import('/core/storage.js');
+  const T = getTemplate(plantilla);
+  save({ id, template: plantilla, title: 'Sonda de rendimiento',
+    content: T.meta.defaultContent(), rules: T.meta.defaultRules?.() || {},
+    scoring: T.meta.defaultScoring?.() || {},
+    presentation: { skin: 'default', background: 'none' }, updatedAt: new Date().toISOString() });
+}, { plantilla, id });
 
 /** Mide fotogramas durante `ms` y devuelve la mediana y el p95. Se descartan los
  *  tres primeros: el primero siempre trae el coste de arrancar el bucle. */
@@ -189,6 +238,70 @@ const MEDIR = (ms) => `(async () => {
   else if (r.med <= techoEscribir) ok(`ESCRIBIR en la pizarra del aula (1080p, CPU frenada ${FRENO}x): ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps; reposo ${reposo.med} ms, techo ${techoEscribir} ms)`);
   else mal(`escribir deja la pizarra a ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps, techo ${techoEscribir} ms = 2× el reposo de ${reposo.med} ms en esta máquina). `
          + '¿Se está repintando el lienzo ENTERO en cada punto en vez de añadir el trozo nuevo?');
+  await page.close();
+}
+
+// ── 4. EL DUELO EN REPOSO, CON LA CUERDA (pizarra del aula: DPR 3) ──────────
+// Nadie toca nada: los dos paneles pintados y la animación central en el medio.
+// Si ESTO no va fluido, el teclado del duelo se traba al teclear — que es
+// exactamente lo que el dueño describió. La cuerda es un SVG/lienzo que se
+// re-dibuja por cuadro, así que su coste depende del DPR: a DPR 1 no se ve.
+{
+  const { page, frenar } = await abrirAula();
+  await sembrar(page, 'quiz', 'perf-duelo');
+  await page.evaluate(() => { location.hash = '#/vs/perf-duelo'; });
+  await page.waitForSelector('[data-ww-start]', { timeout: 15000 });
+  await page.click('[data-ww-start]');
+  await page.waitForSelector('.vs-arena', { timeout: 15000 });
+  // LA CUERDA TIENE QUE ESTAR PUESTA o esto mediría una pantalla quieta y daría
+  // verde gratis (la misma trampa que la barra de progreso de Tildes).
+  const cuerda = await page.waitForSelector('#vs-stage-canvas canvas, #vs-stage-canvas svg', { timeout: 15000 }).catch(() => null);
+  if (!cuerda) mal('el duelo no montó su animación central: la medida de reposo no vale');
+  await frenar();
+  await page.waitForTimeout(400);
+  const r = await page.evaluate(MEDIR(3000));
+  if (r.pocos !== undefined) mal(`solo ${r.pocos} fotogramas medidos en el duelo en reposo`);
+  else if (r.med <= TECHO_REPOSO) ok(`DUELO EN REPOSO con la cuerda, pizarra del aula (${PIZARRA.width}×${PIZARRA.height} a DPR ${DPR_AULA}, CPU frenada ${FRENO}x): ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps)`);
+  else mal(`el duelo EN REPOSO va a ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps, techo ${TECHO_REPOSO} ms) en la pizarra del aula. `
+         + 'Nadie está tocando nada: mira qué se re-dibuja solo (la cuerda en bucle, un filtro girando, una sombra en movimiento).');
+  await page.close();
+}
+
+// ── 5. EL PODIO DEL DUELO (la celebración, en la pizarra del aula) ──────────
+// El cierre junta confeti, el foco giratorio y los rayos sobre la MISMA región.
+// Cada pieza por separado parecía barata; el dueño la vio sumada. Se monta el
+// cierre real (`cierreHtml` con el vestido del duelo, lo mismo que pinta
+// `views/vsView.js` al terminar) y se mide MIENTRAS celebra.
+{
+  const { page, frenar } = await abrirAula();
+  await sembrar(page, 'quiz', 'perf-podio');
+  await page.evaluate(() => { location.hash = '#/vs/perf-podio'; });
+  await page.waitForSelector('[data-ww-start]', { timeout: 15000 });
+  await page.click('[data-ww-start]');
+  await page.waitForSelector('.vs-arena', { timeout: 15000 });
+  await frenar();
+  const r = await page.evaluate(async (medir) => {
+    const { cierreHtml } = await import('/core/podium.js');
+    const { GameEvents, emitGame } = await import('/core/gameEvents.js');
+    await import('/core/effects.js');
+    const host = document.querySelector('#app');
+    host.innerHTML = `<div class="vs-result-screen vs-skin-classic">${cierreHtml({
+      ranked: [{ name: 'Equipo A', score: 90 }, { name: 'Equipo B', score: 70 }],
+      tie: false, clase: 'vs-celebration vs-win-left',
+      resumen: '<div class="vs-celeb-score">90 pts</div>', acciones: '',
+    })}</div>`;
+    const medida = eval(medir);
+    emitGame(GameEvents.PODIUM, { top: [{ name: 'Equipo A', score: 90 }] });
+    const out = await medida;
+    const cv = document.querySelector('canvas[style*="99999"]');
+    return { ...out, foco: !!document.querySelector('.vs-celebration'), confeti: !!cv };
+  }, MEDIR(2500));
+  if (!r.foco) mal('el cierre del duelo no se montó: no se ha medido ninguna celebración');
+  else if (!r.confeti) mal('la celebración no soltó confeti: se estaría midiendo un podio quieto (verde gratis)');
+  else if (r.pocos !== undefined) mal(`solo ${r.pocos} fotogramas medidos durante la celebración del duelo`);
+  else if (r.med <= TECHO_JUGABLE) ok(`PODIO DEL DUELO en la pizarra del aula (DPR ${DPR_AULA}, CPU frenada ${FRENO}x): ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps)`);
+  else mal(`la celebración del duelo deja la pizarra a ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps, techo ${TECHO_JUGABLE} ms). `
+         + 'Suman confeti + foco giratorio + rayos sobre la misma región: lo que se mueva ahí solo puede ser `transform`/`opacity`.');
   await page.close();
 }
 

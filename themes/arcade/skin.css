@@ -55,22 +55,42 @@
 }
 
 /* ── Marquesina superior (texto en marcha) ────────────────────────────────────
-   ::before es el PRIMER hijo flex de la columna → fila superior. El texto corre
-   con text-indent (mueve solo el texto; el marco/borde quedan fijos). */
+   DOS CAPAS, y sin tocar el DOM: el ::before del arena es el MARCO (primer hijo
+   flex de la columna → fila superior, reserva su alto y no se mueve) y el
+   ::before de `.vs-main` es el TEXTO, colocado en esa misma franja y desplazado
+   con `transform: translateX` — el arena recorta.
+   Antes el texto corría con `text-indent`, que recalcula la MAQUETA en cada
+   cuadro: a DPR 3 (la pizarra del aula, 3840×2160 reales) eso robaba hilo al
+   teclado del duelo. Con `transform` lo mueve el compositor y cuesta lo mismo
+   en un portátil que en la pizarra (ley de animaciones, tests/animaciones).
+   El marco pasa a ser de ancho completo —sin margen lateral ni esquinas
+   redondeadas— porque el recorte del texto lo hace el arena: así el texto entra
+   y sale justo por los bordes de la franja, que es lo que hace una recreativa.
+   Las MEDIDAS van por token para que marco y texto no puedan desincronizarse. */
+.vs-skin-arcade {
+  --arc-marq-h: clamp(26px, 5.5cqh, 46px);
+  --arc-marq-fs: clamp(.5rem, 1.7cqw, .9rem);
+}
+.vs-arena.vs-skin-arcade { overflow: hidden; }
 .vs-arena.vs-skin-arcade::before {
-  content: "★ MATH FIGHTER ★ ¡BATALLA DE COLEGIOS! ★ INSERT COIN TO PLAY ★ READY PLAYER ONE ★ MATH FIGHTER ★ ¡BATALLA DE COLEGIOS! ★ INSERT COIN TO PLAY ★ READY PLAYER ONE ★ ";
+  content: "";
   order: -1; flex: 0 0 auto;
-  margin: .5rem .6rem .25rem; box-sizing: border-box;
-  display: block; height: clamp(26px, 5.5cqh, 46px); line-height: clamp(20px, 5.5cqh, 40px);
-  white-space: nowrap; overflow: hidden;
-  font-size: clamp(.5rem, 1.7cqw, .9rem); font-weight: 400;
-  color: #ffd400; text-shadow: 0 0 6px #ffae00, 0 0 12px rgba(255,106,0,.7);
+  margin: .5rem 0 .25rem; box-sizing: border-box;
+  display: block; height: var(--arc-marq-h);
   background: linear-gradient(180deg, #1a0a3a, #0a0820);
-  border: 3px solid #ffd400; border-radius: .6rem;
+  border-top: 3px solid #ffd400; border-bottom: 3px solid #ffd400;
   box-shadow: inset 0 0 18px rgba(255,212,0,.2), 0 0 16px rgba(255,170,0,.35);
+}
+.vs-skin-arcade .vs-main::before {
+  content: "★ MATH FIGHTER ★ ¡BATALLA DE COLEGIOS! ★ INSERT COIN TO PLAY ★ READY PLAYER ONE ★ MATH FIGHTER ★ ¡BATALLA DE COLEGIOS! ★ INSERT COIN TO PLAY ★ READY PLAYER ONE ★ ";
+  position: absolute; left: 0; right: 0; top: calc(.5rem + 3px); z-index: 1;
+  pointer-events: none; white-space: nowrap;
+  height: calc(var(--arc-marq-h) - 6px); line-height: calc(var(--arc-marq-h) - 6px);
+  font-size: var(--arc-marq-fs); font-weight: 400;
+  color: #ffd400; text-shadow: 0 0 6px #ffae00, 0 0 12px rgba(255,106,0,.7);
   animation: arc-marquee 16s linear infinite;
 }
-@keyframes arc-marquee { from { text-indent: 100%; } to { text-indent: -240%; } }
+@keyframes arc-marquee { from { transform: translateX(100%); } to { transform: translateX(-240%); } }
 
 /* ── Pie "INSERT COIN" (parpadea) ─────────────────────────────────────────── */
 .vs-arena.vs-skin-arcade::after {
@@ -293,7 +313,7 @@
 
 /* ── Vertical / estrecho ──────────────────────────────────────────────────── */
 @container vs (max-aspect-ratio: 5/4) {
-  .vs-arena.vs-skin-arcade::before { height: 20px; line-height: 20px; font-size: .5rem; }
+  .vs-skin-arcade { --arc-marq-h: 20px; --arc-marq-fs: .5rem; }
   .vs-arena.vs-skin-arcade::after  { height: 18px; line-height: 18px; font-size: .45rem; }
   /* El token compartido de `vs.css` ya comprime la barra en vertical; aquí solo
      lo que es de arcade. */
@@ -303,15 +323,17 @@
 }
 
 /* Sin animaciones continuas si el usuario las reduce O en dispositivos lite
-   (gama baja): la marquesina anima `text-indent` = REFLOW por cuadro (muy caro)
-   y el badge/scanlines repintan; apagarlas libera el hilo para el teclado. */
+   (gama baja): el parpadeo del pie y el latido del badge repintan, y apagarlos
+   libera el hilo para el teclado. La marquesina ya va por el compositor, pero
+   «reducir movimiento» es una petición del usuario, no una medida de coste. */
 @media (prefers-reduced-motion: reduce) {
-  .vs-arena.vs-skin-arcade::before,
+  .vs-skin-arcade .vs-main::before,
   .vs-arena.vs-skin-arcade::after,
   .vs-skin-arcade .vss-badge { animation: none !important; }
 }
-.ww-lite .vs-arena.vs-skin-arcade::before,
+.ww-lite .vs-skin-arcade .vs-main::before,
 .ww-lite .vs-arena.vs-skin-arcade::after,
 .ww-lite .vs-skin-arcade .vss-badge { animation: none !important; }
-/* En lite, la marquesina muestra el texto desde el inicio (sin desplazarse). */
-.ww-lite .vs-arena.vs-skin-arcade::before { text-indent: 0; }
+/* Quieta, la marquesina se lee desde el principio sin ninguna regla extra: sin
+   animación el texto se queda en `translateX(0)`, o sea a la izquierda de la
+   franja. Antes hacía falta devolver el `text-indent` a 0 a mano. */

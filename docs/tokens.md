@@ -9,7 +9,14 @@
 Los tokens son la INTERFAZ entre el tema y el juego (ley §3: el skin
 cambia tokens, la actividad los consume). Este es el contrato completo.
 
-**213 tokens** en 19 familias.
+**215 tokens** en 20 familias.
+
+## `--arc-*` (2)
+
+| Token | Lo DECLARA | Lo CONSUME |
+|---|---|---|
+| `--arc-marq-fs` | themes/arcade/skin.css | themes/arcade/skin.css |
+| `--arc-marq-h` | themes/arcade/skin.css | themes/arcade/skin.css |
 
 ## `--bs-*` (23)
 

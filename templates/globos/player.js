@@ -9,7 +9,7 @@ import { clock } from '../../core/clock.js';
 import { shuffle } from '../../core/azar.js';
 import { scoreQuizSubmission } from '../quiz/scorer.js';
 import * as Streaks from '../../core/streaks.js';
-import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
+import { cabeceraHtml } from '../../core/playerHud.js';
 
 // Campo de globos: cada opción es un globo de color (tokens --ww-shape-1..4 →
 // los skins recolorean). El bamboleo va por CSS y se apaga bajo ww-lite.

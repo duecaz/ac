@@ -87,6 +87,34 @@ Lo mínimo que hay que saber al escribir CSS de actividad:
 - un fondo nuevo se AÑADE en `core/backgrounds.js` declarando `ink` +
   `colorBase` (o `plate: true`), y CI le mide el contraste.
 
+### Regla D — Animar: solo `transform` y `opacity` (y los lienzos, con tope)
+**Por qué.** La pizarra del aula es 1280×720 CSS a **DPR 3** (3840×2160 píxeles
+reales) con una GPU modesta. Lo que se mueve por el **compositor**
+(`transform`, `opacity`) cuesta lo mismo a 1080p que a 4K: el navegador no
+repinta píxeles, mueve capas. Todo lo demás cuesta **nueve veces más** en la
+pizarra que en el portátil donde se programa — por eso el defecto nunca se ve al
+escribirlo, se ve con la clase delante.
+
+- **Prohibido animar** (en `@keyframes` o en `transition`): `width`/`height`,
+  `top`/`left`/`right`/`bottom`, `margin`, `text-indent`,
+  `background-position` — recalculan la **maqueta** en cada cuadro — y
+  `filter`, `box-shadow`, `text-shadow` — repintan una **región 4K** en cada
+  cuadro. `transition: all` tampoco: es el comodín de todo lo anterior.
+- **Una animación infinita no lleva `filter`** en la misma regla. El desenfoque
+  se pinta **una vez** (en el SVG/imagen, en el propio gradiente o en un
+  pseudo-elemento quieto) y lo que gira es solo `transform`.
+- **Lienzos con tope**: un `<canvas>` se crea pequeño (el confeti: 1280 de
+  ancho) y se estira por CSS. Se pinta lo mismo en todas las pantallas y el
+  estirado es gratis.
+- Ejemplar: la marquesina del tema Arcade. Corría con `text-indent` (maqueta por
+  cuadro); ahora el marco es un pseudo-elemento quieto y el texto se desplaza
+  con `transform: translateX` sobre él.
+
+Lo vigila **`tests/animaciones.test.mjs`**, con el mismo trato de ratchet que el
+de estilos: la deuda de hoy está congelada con su motivo y solo puede encoger; y
+en la pizarra lo mide `tools/perf-sonda.mjs` (escena «pizarra», DPR 3 con la CPU
+frenada). Plan completo: [`handoff-rendimiento-animaciones.md`](handoff-rendimiento-animaciones.md).
+
 ## 3. Ejemplares y checklist
 
 - **Ejemplares**: `styles/math.css` y `styles/opcion.css` — 0 fija, 0 color a pelo, 0 techo. Cópialos
@@ -94,7 +122,9 @@ Lo mínimo que hay que saber al escribir CSS de actividad:
 - **Checklist al crear una actividad**:
   1. ¿Alguna `font-size` en `px/rem/em` sin `cq/%` ni piso `max()`/`clamp()`? → relativízala.
   2. ¿`color`/`background` con `#hex` que no sea neutro ni estado? → token `var(--ww-*)`.
-  3. Corre `node tests/styles.test.mjs`. Debe pasar **sin tocar el BASELINE**.
+  3. ¿Alguna animación toca algo que no sea `transform`/`opacity`? → rehazla (Regla D).
+  4. Corre `node tests/styles.test.mjs` y `node tests/animaciones.test.mjs`. Deben
+     pasar **sin tocar el BASELINE**.
 
 ## 3b0. Los TRES roles del player (2026-08-17, revisado el 2026-09-03)
 

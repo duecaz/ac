@@ -7,7 +7,6 @@ import { renderDiagramPlayer } from './player.js';
 import { renderDiagramEditor } from './editor.js';
 import { newPin } from '../../core/contentModels/diagram.js';
 import { scoreDiagramSubmission } from './scorer.js';
-import { escapeHtml } from '../../core/html.js';
 
 // Imagen de ejemplo (una cara simple) como SVG inline → funciona sin subir nada.
 const SAMPLE_SVG =

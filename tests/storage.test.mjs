@@ -23,7 +23,7 @@ const LS = makeLS();
 global.localStorage = LS;
 // backendName() → 'local' en Node (sin location) → driver offline, sin red.
 
-const { save, remove, removeMany, tombstoneSet, setStorageUser, currentStorageUser, list, claimGuestActivities, hasClaimed, sync } = await import('../core/storage.js');
+const { save, remove, removeMany, tombstoneSet, setStorageUser, list, claimGuestActivities, hasClaimed, sync } = await import('../core/storage.js');
 
 const act = () => ({ id: 'act_test1', template: 'quiz', title: 'T', content: { items: [] } });
 

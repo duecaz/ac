@@ -518,6 +518,14 @@
   content: ''; position: absolute; inset: -25% -15% 0 -15%; z-index: -2; pointer-events: none;
   background: repeating-conic-gradient(from 0deg at 50% 38%, rgba(255,196,0,.10) 0deg 7deg, transparent 7deg 19deg);
   animation: vsc-spin 22s linear infinite;
+  /* CAPA PROPIA. Sin ella, cada cuadro de esos 22 segundos vuelve a RASTERIZAR
+     el gradiente cónico en el hueco del cierre — y en la pizarra del aula ese
+     hueco son píxeles reales a DPR 3, o sea nueve veces más que en el portátil
+     donde se programó. Con `will-change: transform` el navegador lo pinta UNA
+     vez y luego solo gira la capa en el compositor, que es lo que cuesta igual
+     en todas las pantallas. Y encima del podio cae el confeti: esa suma es la
+     que la clase nota (plan de rendimiento, Fase 2). */
+  will-change: transform;
 }
 .vs-celebration::after {
   content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;

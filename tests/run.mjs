@@ -79,6 +79,7 @@ console.log('\n▶ penDetector'); await import('./penDetector.test.mjs');
 console.log('\n▶ penVeredicto'); await import('./penVeredicto.test.mjs');
 console.log('\n▶ diagram'); await import('./diagram.test.mjs');
 console.log('\n▶ styles'); await import('./styles.test.mjs');
+console.log('\n▶ animaciones'); await import('./animaciones.test.mjs');
 console.log('\n▶ templateContract'); await import('./templateContract.test.mjs');
 // Tras templateContract: el registro real ya está cargado (homePreview lo necesita
 // y algunas suites previas —p.ej. solo— asumen que NO lo está; ver su registerTemplate).
@@ -105,6 +106,7 @@ console.log('\n▶ vendor'); await import('./vendor.test.mjs');
 console.log('\n▶ inventario'); await import('./inventario.test.mjs');
 console.log('\n▶ puntosPorAcierto'); await import('./puntosPorAcierto.test.mjs');
 console.log('\n▶ effects'); await import('./effects.test.mjs');
+console.log('\n▶ fluidez'); await import('./fluidez.test.mjs');
 console.log('\n▶ activityCheck'); await import('./activityCheck.test.mjs');
 console.log('\n▶ publicarListo'); await import('./publicarListo.test.mjs');
 console.log('\n▶ imageSearch'); await import('./imageSearch.test.mjs');

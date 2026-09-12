@@ -519,8 +519,8 @@ veredicto (verde/rojo)  >  placa/tarjeta (--ww-card-*)  >  tinta del lienzo (--w
 - **Dónde**: `CLAUDE.md` estándares · **Test**: `tests/events.test.mjs`.
 
 ## 11) Pantalla de inicio obligatoria
-- Todo modo Individual pasa por `views/startScreen.js` (título + instrucciones + Iniciar
-  → fullscreen). El ejercicio queda oculto hasta Iniciar.
+- Todo modo Individual pasa por la antesala única `views/antesala.js` (título +
+  instrucciones + Iniciar → fullscreen). El ejercicio queda oculto hasta Iniciar.
 
 ## 12) Registro único + arranque
 - Las plantillas se registran solo en `core/registerTemplates.js`; sonidos/efectos/
@@ -1354,7 +1354,7 @@ que `#/sorteo` **no habría llegado a existir**.
 
 ## ⚖️ §31 · COSTURAS — toda declaración tiene lector, toda regla un dueño, toda red se comprueba en rojo
 
-> **Dueño**: los seis barridos `tools/costuras-*.mjs` (`cableado` ·
+> **Dueño**: los barridos `tools/costuras-*.mjs` (`cableado` ·
 > `declaraciones` · `plantilla-en-vista` · `contrato` · `duplicados` · `capa`),
 > corridos desde `tools/auditoria.mjs` · **PROHIBIDO**: una clave de `meta`/
 > `rules`/`scoring`/`live` sin lector fuera del editor · una vista con un

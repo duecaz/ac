@@ -34,7 +34,7 @@ Gherkin + decisiones de diseño abiertas). Verificado contra `core/modes.js`,
   - [El editor es un SHELL compartido (anti-deriva)](#el-editor-es-un-shell-compartido-anti-deriva)
 - [4. Contrato de una vista de modo embebido](#4-contrato-de-una-vista-de-modo-embebido)
 - [5. LA ANTESALA, una sola (`views/antesala.js`)](#5-la-antesala-una-sola-viewsantesalajs)
-  - [5b. La antesala del modo Individual (`views/startScreen.js`)](#5b-la-antesala-del-modo-individual-viewsstartscreenjs)
+  - [5b. La antesala del modo Individual (`views/playerView.js`)](#5b-la-antesala-del-modo-individual-viewsplayerviewjs)
   - [5c. Política de maquetación del panel VS (`meta.panelFit`)](#5c-política-de-maquetación-del-panel-vs-metapanelfit)
 - [6. Cómo se monta en la página (resumen de `playerView.js`)](#6-cómo-se-monta-en-la-página-resumen-de-playerviewjs)
 - [7. Receta: añadir un MODO nuevo](#7-receta-añadir-un-modo-nuevo)
@@ -257,11 +257,10 @@ renderModeSetup(host, {
 No reescribas este chrome en tu vista. Si necesitas un control nuevo común a
 varios modos, añádelo a la antesala, no a una vista suelta.
 
-### 5b. La antesala del modo Individual (`views/startScreen.js`)
+### 5b. La antesala del modo Individual (`views/playerView.js`)
 
-El modo `solo` NO salta directo al primer ítem: `playerView` monta primero
-`renderStartScreen(widget, activity, { frame, onStart })` — hoy una llamada
-delgada a la antesala con la variante de este modo: **Título + Instrucciones +
+El modo `solo` NO salta directo al primer ítem: `playerView.mountSoloStart()`
+llama a `renderAntesala` con la variante de este modo: **Título + Instrucciones +
 Ajustes** (Sonido, Efectos y, en Tildes/Comas, "Calibrar pizarra") + botón
 **Iniciar**, que SIEMPRE entra en pantalla completa antes de arrancar. Así el
 alumno no ve el ejercicio antes de empezar.

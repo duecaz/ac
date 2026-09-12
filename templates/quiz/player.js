@@ -11,7 +11,7 @@ import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import * as Streaks from '../../core/streaks.js';
 import { shuffle } from '../../core/azar.js';
 import { runSequentialPlayer } from '../../core/soloPlayer.js';
-import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
+import { cabeceraHtml } from '../../core/playerHud.js';
 import { clock } from '../../core/clock.js';
 
 

@@ -8,7 +8,7 @@ import { on } from '../../core/events.js';
 import { listAnswers, endSession } from '../../core/liveTransport.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from '../../core/fullscreen.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
-import { toast, confirmModal } from '../../core/toast.js';
+import { confirmModal } from '../../core/toast.js';
 import { racePassedRow } from '../../core/liveLoops.js';
 import { RACE_POLL_MS } from '../../core/timings.js';
 

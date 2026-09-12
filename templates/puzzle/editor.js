@@ -7,18 +7,10 @@ import { on } from '../../core/events.js';
 import { renderEditorJuego } from '../../core/editorJuego.js';
 import { rid } from '../../core/ids.js';
 import { svgAColor } from './game/imagen.js';
-
-// El banco (assets/juegos/dibujos) lo escribe otro agente en paralelo: se
-// carga por IMPORT DINÁMICO para que el editor arranque aunque el fichero aún
-// no exista (el registro de plantillas no debe caerse por un módulo hermano
-// que llega después). Si no está, se avisa CON MENSAJE, no en silencio.
-async function cargarBanco() {
-  try {
-    return await import('../../core/bancoDibujos.js');
-  } catch {
-    return null;
-  }
-}
+// El banco es el MISMO que el de Colorear (§21b: un banco, un dueño) y se
+// importa estático, igual que allí. Nació dinámico («lo escribe otro agente en
+// paralelo») y ese andamio sobrevivió al fichero que esperaba.
+import { DIBUJOS, rutaDibujo } from '../../core/bancoDibujos.js';
 
 /**
  * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
@@ -93,17 +85,11 @@ function tileHtml(nombre, label, svgColor, activo) {
 async function pintarBanco(root, a) {
   const cont = root.querySelector('.pu-banco');
   if (!cont) return;
-  const banco = await cargarBanco();
-  const dibujos = banco?.DIBUJOS;
-  if (!banco || !Array.isArray(dibujos) || !dibujos.length) {
-    cont.innerHTML = '<p class="small text-danger">El banco de dibujos no está disponible todavía. Vuelve a intentarlo en un momento.</p>';
-    return;
-  }
   const actual = contenido(a).items[0].dibujo;
-  const piezas = await Promise.all(dibujos.map(async (d) => {
+  const piezas = await Promise.all(DIBUJOS.map(async (d) => {
     let svg = '';
     try {
-      const ruta = banco.rutaDibujo(d.nombre);
+      const ruta = rutaDibujo(d.nombre);
       // `rutaDibujo` devuelve null para un nombre que no está en el banco: sin
       // ruta no hay miniatura que pintar (el botón sale vacío, no roto).
       if (ruta) {
@@ -113,7 +99,7 @@ async function pintarBanco(root, a) {
     } catch { svg = ''; }
     return tileHtml(d.nombre, d.label, svg, d.nombre === actual);
   }));
-  cont.innerHTML = piezas.join('') || '<p class="small text-danger">El banco de dibujos no está disponible todavía.</p>';
+  cont.innerHTML = piezas.join('');
 }
 
 /**

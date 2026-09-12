@@ -5,7 +5,7 @@
 // auto-height frame on mobile portrait.
 import { html, escapeHtml, mount, $$ } from '../core/html.js';
 import { on } from '../core/events.js';
-import { save, getAnywhere, remove as removeActivity } from '../core/storage.js';
+import { save, getAnywhere } from '../core/storage.js';
 import { activityItemCount, newActivityId } from '../core/migrate.js';
 import { revisarActividad, pantallaNoListaHtml } from '../core/activityCheck.js';
 import { getTemplate } from '../core/registry.js';
@@ -15,7 +15,7 @@ import { canHost } from '../core/authGate.js';
 import { getAuthUserId } from '../core/auth.js';
 import { openLoginModal, pedirCuentaParaModo } from './loginModal.js';
 import { clearSoloProgress } from '../core/soloPlayer.js';
-import { renderStartScreen } from './startScreen.js';
+import { renderAntesala } from './antesala.js';
 import { listSkins, applySkin, skinPreviewHtml } from '../core/skins.js';
 
 import { listBackgrounds, applyBackground, backgroundPreviewHtml, readBackgroundImage, BACKGROUNDS } from '../core/backgrounds.js';
@@ -246,9 +246,19 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   function mountSoloStart(myToken) {
     const widget = document.getElementById('ww-player-widget');
     if (!widget) return null;
-    return renderStartScreen(widget, playActivity(), {
-      choices: playChoices,
-      onOption: (id, value) => { if (id) playChoices = { ...playChoices, [id]: value }; },
+    const act = playActivity();
+    const T = getTemplate(act?.template);
+    // LA ANTESALA ES UNA (`views/antesala.js`): aquí solo se aporta la variante
+    // del modo Individual. Las reglas —un botón, siempre pantalla completa,
+    // instrucciones a la vista— viven allí y no se deciden aquí. Esto vivió en
+    // una vista propia de diez líneas (`startScreen`) con este único caller.
+    //
+    // Las opciones de PARTIDA de la plantilla se deciden AQUÍ, al lanzar, no en
+    // el editor (`core/playOptions.js`), y por UN solo canal.
+    return renderAntesala(widget, {
+      activity: act,
+      playOpts: T ? { T, activity: act, choices: playChoices,
+        onChange: (id, value) => { if (id) playChoices = { ...playChoices, [id]: value }; } } : null,
       onStart: async () => {
         if (currentAnim) { try { currentAnim.dispose(); } catch {} currentAnim = null; }
         const lane = document.getElementById('ww-solo-anim');

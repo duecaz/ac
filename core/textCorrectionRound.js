@@ -73,37 +73,9 @@ export function passageRoundPayload(activity, itemIndex) {
   return p ? { id: p.id, text: p.text } : null;
 }
 
-// Preview de tarjeta (miniatura del home) para Tildes/Comas. Reutiliza el MISMO
-// `passageHtml` del juego → la miniatura no puede desincronizarse del player.
-// La comparten templates/tildes/template.js y templates/comas/template.js.
-/**
- * @param {Activity} act
- * @param {Marca} kind
- * @returns {string}
- */
-export function textCorrectionPreviewHtml(act, kind) {
-  const passages = frasesDe(act).filter(p => p && p.text);
-  if (!passages.length) {
-    return `<div class="ww-player" style="display:flex;align-items:center;justify-content:center">
-      <h2 class="text-center">${escapeHtml(act.title || 'Actividad')}</h2></div>`;
-  }
-  return `<div class="tc-solo">
-    <div class="d-flex align-items-center mb-2">
-      <span class="badge bg-secondary">Frase 1 / ${passages.length}</span></div>
-    <h4 class="text-center mb-1">${escapeHtml(act.title || '')}</h4>
-    <div class="tc-round">
-      <div class="tc-passage">${passageHtml(passages[0]?.text || '', kind)}</div>
-      <div class="text-center mt-3"><button type="button" class="btn btn-success btn-lg">
-        <i class="bi bi-check2-circle"></i> Listo</button></div>
-      <p class="tc-hint text-muted text-center mt-2">${HINTS[kind]}</p>
-    </div>
-  </div>`;
-}
 // Build the inline passage. `reveal` (optional) bakes correct/wrong/missed
 // classes for a read-only answer review; otherwise targets are interactive.
-// Exportada: el preview de tarjeta (core/homePreview.js) reutiliza ESTE mismo
-// markup para que la miniatura sea fiel al juego y no se desfase (los targets
-// son spans limpios; solo el canvas los vuelve interactivos).
+// Los targets son spans limpios: solo el canvas los vuelve interactivos.
 /**
  * @param {string} text
  * @param {Marca} kind
@@ -343,7 +315,7 @@ const relojHtml = (hay) =>
 export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSubmit, chips = {}, reloj = false, progreso = null } = {}) {
   const text = payload?.text || '';
   // El botón "Calibrar pizarra" NO va aquí (en el juego): vive en la pantalla de
-  // inicio (views/startScreen.js), que es donde van los ajustes previos. En modo
+  // inicio (views/antesala.js), que es donde van los ajustes previos. En modo
   // tarea (alumno) no hay pizarra que calibrar, así que no debe aparecer nunca
   // durante el ejercicio.
   // LÁPIZ / BORRADOR: UN interruptor, no dos botones. La detección por tamaño de
@@ -409,14 +381,12 @@ export function renderTextCorrectionRound(root, payload, { kind = 'tilde', onSub
   // por delegación (`core/fullscreen.js`)—, así que un botón pintado después
   // funciona igual: esta ronda se vuelve a pintar en cada frase. Antes cada
   // montaje ataba el suyo y dejaba su listener por frase.
-  const soltarFs = () => {};
 
   let done = false;
   const submit = () => {
     if (done) return;
     done = true;
     stopFit();
-    soltarFs();
     draw.freeze();
     onSubmit?.(draw.getMarked());
   };
@@ -776,10 +746,9 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
     const areaEl = /** @type {HTMLElement} */ (document.querySelector('.tc-passage-area'));
     const passageEl = /** @type {HTMLElement} */ (areaEl.querySelector('.tc-passage'));
     const stopFit = fitPassage(areaEl, passageEl);
-    const soltarFs = () => {};   // el marco cablea el botón por delegación
+    // (el botón de pantalla completa lo cablea el marco, por delegación)
     document.querySelector('.tc-next')?.addEventListener('click', () => {
       stopFit();
-      soltarFs();
       // AQUÍ se cierra la frase, con las anulaciones ya aplicadas. `grade` dejó
       // un resultado provisional; si el docente tocó algo, se sustituye por el
       // que sale del scorer con las posiciones ajustadas — nunca por una suma
