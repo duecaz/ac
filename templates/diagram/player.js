@@ -2,7 +2,7 @@
 // "Etiqueta el diagrama"). Emparejado libre (no califica hasta pulsar Enviar);
 // las etiquetas se reparten izq/der alrededor de la imagen; los pines viven a
 // (x,y) sobre ella. Reutiliza el motor de cuerdas core/connectRope.js.
-import { html, mount, escapeHtml } from '../../core/html.js';
+import { html, mount, escapeHtml, raizDe } from '../../core/html.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { GRADE_HOLD_MS } from '../../core/timings.js';
 import { shuffle } from '../../core/azar.js';
@@ -63,7 +63,7 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
 
   // El marco puede no estar (la ruta cambió mientras se montaba, §23): se
   // comprueba UNA vez y desde aquí abajo las piezas ya no son nulas.
-  const raiz = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
+  const raiz = raizDe(rootSel);
   const campo = raiz?.querySelector('.ww-field');
   const lienzo = raiz?.querySelector('.ww-lines-svg');
   if (!raiz || !campo || !lienzo) return;

@@ -13,7 +13,7 @@
 //   presentation: bool (def. true)                            // skin + fondo
 // }
 // ctx = { onChange, repaint }  — repaint() re-renderiza todo (para alta/baja de ítems).
-import { html, escapeHtml, mount } from './html.js';
+import { html, escapeHtml, mount, $input } from './html.js';
 import { on } from './events.js';
 import { getTemplate } from './registry.js';
 import { modesForTemplate } from './modes.js';
@@ -28,7 +28,7 @@ import { QUOTAS } from './quotas.js';
 import { tiempoBloqueHtml, wireTiempoBloque } from './editorPrimitives.js';
 import { iaSabeEscribir, fusionarContenido, MODELOS_IA } from './aiContent.js';
 import { toast, TOAST_LARGO } from './toast.js';
-
+import { mensajeDe } from './frontera.js';
 /**
  * @typedef {import('../kernel/contracts/activity.js').Activity} Activity
  * @typedef {import('../kernel/contracts/activity.js').ImageCredit} ImageCredit
@@ -342,13 +342,13 @@ export function renderEditorShell(root, a, onChange, spec) {
           errEl.textContent = atribucion ? `Imagen de ${creditoTexto(atribucion)}` : '';
         }
       };
-      const bgFile = /** @type {HTMLInputElement|null} */ (root.querySelector('#bg-custom-file'));
+      const bgFile = $input('#bg-custom-file', root);
       if (bgFile) bgFile.addEventListener('change', async () => {
         const errEl = /** @type {HTMLElement|null} */ (root.querySelector('#bg-custom-err'));
         try {
           ponerFondo(await readBackgroundImage(bgFile.files?.[0]));
         } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
+          const msg = mensajeDe(err);
           if (errEl) { errEl.className = 'text-danger small mt-2'; errEl.textContent = msg; errEl.hidden = false; }
           bgFile.value = '';
         }
@@ -400,7 +400,7 @@ export function renderEditorShell(root, a, onChange, spec) {
       } catch (e) {
         // R6: el botón no puede quedarse mudo. Si el módulo no carga (red, caché
         // a medias), se dice — no se deja al profe tocando algo que no responde.
-        toast('No se pudo abrir el asistente: ' + (e instanceof Error ? e.message : String(e)), 'danger', TOAST_LARGO);
+        toast('No se pudo abrir el asistente: ' + (mensajeDe(e)), 'danger', TOAST_LARGO);
       } finally {
         // `b` estaba DESHABILITADO mientras el diálogo estuvo abierto (para que
         // no se pudiera hacer doble clic mientras cargaba el módulo): un botón

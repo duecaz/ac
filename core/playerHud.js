@@ -36,7 +36,7 @@
 // Uso: el player mete `cabeceraHtml({...})` como PRIMER hijo de su raíz. Para
 // actualizar sin re-render: `hudSet(root, 'pagina', '3 / 8')` y
 // `relojSet(root, '12', pct)`.
-import { escapeHtml } from './html.js';
+import { escapeHtml, raizDe } from './html.js';
 import { lucide } from './lucide.js';
 import { fullscreenButtonHtml } from './fullscreen.js';
 
@@ -107,7 +107,7 @@ export function cabeceraHtml({ pagina, racha, extra, tiempo, herramientas = '',
  * @param {string|number|null|undefined} texto
  * @returns {void} */
 export function hudSet(scope, campo, texto) {
-  const raiz = typeof scope === 'string' ? document.querySelector(scope) : scope;
+  const raiz = raizDe(scope);
   const el = /** @type {HTMLElement|null} */ (raiz?.querySelector(`[data-hud="${campo}"]`) ?? null);
   if (!el) return;
   if (texto == null || texto === '') { el.hidden = true; return; }
@@ -128,7 +128,7 @@ export function hudSet(scope, campo, texto) {
  * @returns {void} */
 export function relojSet(scope, valor, pct) {
   hudSet(scope, 'tiempo', valor);
-  const raiz = typeof scope === 'string' ? document.querySelector(scope) : scope;
+  const raiz = raizDe(scope);
   const barra = /** @type {HTMLElement|null} */ (raiz?.querySelector('[data-progreso] i') ?? null);
   if (barra && pct != null) barra.style.transform = `scaleX(${Math.max(0, Math.min(100, pct)) / 100})`;
 }

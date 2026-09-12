@@ -8,7 +8,7 @@ import { on } from './events.js';
 import { uploadMedia } from './upload.js';
 import { abrirBuscadorImagenes } from './imageSearchModal.js';
 import { toast, TOAST_NORMAL } from './toast.js';
-
+import { mensajeDe } from './frontera.js';
 /**
  * Markup de un tile de imagen (subir · buscar · quitar).
  * @param {string} url  data-URL actual, o falsy si no hay imagen.
@@ -66,7 +66,7 @@ export function wireImageTile(root, a, items, ctx, { prefix = 'it-', queryField 
       items[i].image = await uploadMedia(f);
       delete items[i].imageCredit;   // el crédito se va con su imagen
       ctx.onChange(a); ctx.repaint();
-    } catch (err) { toast(err instanceof Error ? err.message : String(err), 'danger', TOAST_NORMAL); }
+    } catch (err) { toast(mensajeDe(err), 'danger', TOAST_NORMAL); }
   });
   // Buscar una imagen libre (F6): la misma puerta que en el resto de editores.
   on(root, 'click', `.${prefix}img-search`, async (_, b) => {

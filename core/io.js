@@ -6,7 +6,7 @@
 import { list, save, get } from './storage.js';
 import { migrate, newActivityId } from './migrate.js';
 import { isSafeBgImage } from './backgrounds.js';
-
+import { mensajeDe, esObjeto } from './frontera.js';
 const FORMAT = 'ww-activities';
 const FORMAT_VERSION = 1;
 
@@ -20,8 +20,6 @@ const FORMAT_VERSION = 1;
  */
 const esActividadCruda = (v) => !!v && typeof v === 'object';
 
-/** @param {unknown} v @returns {v is Record<string, unknown>} */
-const esObjeto = (v) => !!v && typeof v === 'object';
 
 /** @param {string[]|null} [ids] */
 function exportActivities(ids = null) {
@@ -58,7 +56,7 @@ async function importActivitiesJson(input, { strategy = 'duplicate' } = {}) {
   const text = typeof input === 'string' ? input : await input.text();
   /** @type {unknown} */
   let parsed;
-  try { parsed = JSON.parse(text); } catch (e) { return { ok: false, errors: ['JSON inválido: ' + (e instanceof Error ? e.message : String(e))], count: 0 }; }
+  try { parsed = JSON.parse(text); } catch (e) { return { ok: false, errors: ['JSON inválido: ' + (mensajeDe(e))], count: 0 }; }
   const sobre = esObjeto(parsed) ? parsed : null;
 
   // Rechaza un wrapper de una versión de formato FUTURA: su contenido podría
@@ -103,7 +101,7 @@ async function importActivitiesJson(input, { strategy = 'duplicate' } = {}) {
       count++;
     } catch (e) {
       const nombre = esObjeto(raw) ? String(raw.title || raw.id || '?') : '?';
-      errors.push(`"${nombre}": ${e instanceof Error ? e.message : String(e)}`);
+      errors.push(`"${nombre}": ${mensajeDe(e)}`);
     }
   }
   return { ok: errors.length === 0, count, skipped, errors };

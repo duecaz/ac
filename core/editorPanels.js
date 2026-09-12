@@ -26,18 +26,12 @@ import { readSeconds } from './timings.js';
 import { activityItemCount } from './migrate.js';
 import { defaultMaxScore } from './scoring/index.js';
 import { getTemplate } from './registry.js';
-import { escapeHtml } from './html.js';
+import { escapeHtml, valorDe, marcado } from './html.js';
 import { END_POLICIES, DEFAULT_FIRST_N, DEFAULT_MINUTES, MAX_MINUTES } from './liveEnd.js';
 
 /** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
 /** @typedef {{onChange: (a: Activity) => void}} CtxEditor */
 
-// El delegador (`core/events.js`) entrega el elemento que casó: se lee de AHÍ,
-// no de `e.target` (que puede ser un hijo del control).
-/** @param {HTMLElement} el @returns {string} */
-const valor = (el) => /** @type {HTMLInputElement} */ (el).value;
-/** @param {HTMLElement} el @returns {boolean} */
-const marcado = (el) => /** @type {HTMLInputElement} */ (el).checked;
 
 // ── Puntuación ─────────────────────────────────────────────────────────────
 /** CÓMO LLAMA CADA PLANTILLA A SU UNIDAD: «Puntos por par», «por palabra», «por
@@ -106,11 +100,11 @@ export function wireScoringPanel(root, a, ctx) {
     if (el) el.innerHTML = resumenPuntosHtml(a);
   };
   on(root, 'change', '#f-mode', (_, el) => {
-    a.scoring.mode = valor(el) === 'velocidad' ? 'velocidad' : 'flat';
+    a.scoring.mode = valorDe(el) === 'velocidad' ? 'velocidad' : 'flat';
     ctx.onChange(a); refrescar();
   });
-  on(root, 'input', '#f-ppc', (_, el) => { a.scoring.pointsPerCorrect = +valor(el) || 1; ctx.onChange(a); refrescar(); });
-  on(root, 'input', '#f-ppw', (_, el) => { a.scoring.pointsPerWrong = +valor(el) || 0; ctx.onChange(a); refrescar(); });
+  on(root, 'input', '#f-ppc', (_, el) => { a.scoring.pointsPerCorrect = +valorDe(el) || 1; ctx.onChange(a); refrescar(); });
+  on(root, 'input', '#f-ppw', (_, el) => { a.scoring.pointsPerWrong = +valorDe(el) || 0; ctx.onChange(a); refrescar(); });
 }
 
 // ── En vivo ────────────────────────────────────────────────────────────────
@@ -182,23 +176,23 @@ export function livePanelHtml(a) {
 export function wireLivePanel(root, a, ctx) {
   const oc = ctx.onChange;
   on(root, 'change', '#l-advance', (_, el) => {
-    const v = valor(el);
+    const v = valorDe(el);
     a.live.advanceMode = (v === 'autoOnAllAnswered' || v === 'autoOnTimer') ? v : 'manual';
     oc(a);
   });
-  on(root, 'input', '#l-qtimer', (_, el) => { a.live.questionTimer = +valor(el) || 20; oc(a); });
-  on(root, 'input', '#l-read', (_, el) => { a.live.readSeconds = Math.max(0, Math.min(30, Math.round(+valor(el) || 0))); oc(a); });
+  on(root, 'input', '#l-qtimer', (_, el) => { a.live.questionTimer = +valorDe(el) || 20; oc(a); });
+  on(root, 'input', '#l-read', (_, el) => { a.live.readSeconds = Math.max(0, Math.min(30, Math.round(+valorDe(el) || 0))); oc(a); });
   on(root, 'change', '#l-lock', (_, el) => {
-    const v = valor(el);
+    const v = valorDe(el);
     a.live.lockAnswersOn = (v === 'timer' || v === 'allAnswered') ? v : 'firstOf';
     oc(a);
   });
   on(root, 'change', '#l-points', (_, el) => {
-    a.live.pointsModel = valor(el) === 'flat' ? 'flat' : 'velocidad';
+    a.live.pointsModel = valorDe(el) === 'flat' ? 'flat' : 'velocidad';
     oc(a);
   });
-  on(root, 'input', '#l-bonus', (_, el) => { a.live.speedBonusMax = +valor(el) || 0; oc(a); });
-  on(root, 'input', '#l-max', (_, el) => { a.live.maxPlayers = +valor(el) || 60; oc(a); });
+  on(root, 'input', '#l-bonus', (_, el) => { a.live.speedBonusMax = +valorDe(el) || 0; oc(a); });
+  on(root, 'input', '#l-max', (_, el) => { a.live.maxPlayers = +valorDe(el) || 60; oc(a); });
   on(root, 'change', '#l-late', (_, el) => { a.live.allowLateJoin = marcado(el); oc(a); });
   on(root, 'change', '#l-after', (_, el) => { a.live.showAnswerAfterEach = marcado(el); oc(a); });
   on(root, 'change', '#l-lb', (_, el) => { a.live.showLeaderboardBetween = marcado(el); oc(a); });
@@ -208,7 +202,7 @@ export function wireLivePanel(root, a, ctx) {
   // repintado completo del editor, que perdería la pestaña abierta igual que
   // haría un `input`.
   on(root, 'change', '#l-end', (_, el) => {
-    const v = valor(el);
+    const v = valorDe(el);
     // La lista de políticas la declara su dueño (`core/liveEnd.js`): aquí se
     // comprueba contra ella, no contra una copia.
     a.live.endPolicy = END_POLICIES.includes(v) ? /** @type {'all'|'firstN'|'time'} */ (v) : 'all';
@@ -218,6 +212,6 @@ export function wireLivePanel(root, a, ctx) {
     if (nWrap) nWrap.hidden = a.live.endPolicy !== 'firstN';
     if (minWrap) minWrap.hidden = a.live.endPolicy !== 'time';
   });
-  on(root, 'input', '#l-end-n', (_, el) => { a.live.endN = Math.max(1, Math.min(60, Math.round(+valor(el) || DEFAULT_FIRST_N))); oc(a); });
-  on(root, 'input', '#l-end-min', (_, el) => { a.live.endMinutes = Math.max(1, Math.min(MAX_MINUTES, Math.round(+valor(el) || DEFAULT_MINUTES))); oc(a); });
+  on(root, 'input', '#l-end-n', (_, el) => { a.live.endN = Math.max(1, Math.min(60, Math.round(+valorDe(el) || DEFAULT_FIRST_N))); oc(a); });
+  on(root, 'input', '#l-end-min', (_, el) => { a.live.endMinutes = Math.max(1, Math.min(MAX_MINUTES, Math.round(+valorDe(el) || DEFAULT_MINUTES))); oc(a); });
 }

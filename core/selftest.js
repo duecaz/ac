@@ -23,7 +23,7 @@ import { checkAllTemplates } from './templateContract.js';
 import { scanNormsSource, BROWSER_SCAN_FILES } from './normsCheck.js';
 import { checkAllSkins } from './skinContract.js';
 import { checkAllSkinContrast, checkAllBackgroundContrast } from './contrastCheck.js';
-
+import { mensajeDe } from './frontera.js';
 /** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
 /** @typedef {import('../kernel/contracts/activity.js').QaItem} QaItem */
 /** @typedef {import('../kernel/contracts/activity.js').QaContent} QaContent */
@@ -366,7 +366,7 @@ export async function runSelfTests(onResult) {
       await t.fn();
       r = { group: t.group, name: t.name, pass: true };
     } catch (e) {
-      r = { group: t.group, name: t.name, pass: false, error: e instanceof Error ? e.message : String(e) };
+      r = { group: t.group, name: t.name, pass: false, error: mensajeDe(e) };
     }
     out.push(r);
     onResult?.(r, out.length, TESTS.length);

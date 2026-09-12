@@ -2,7 +2,7 @@
 // (mejor puntuadas) y puede jugarlas o explorar la biblioteca. Los profes
 // logueados ven además accesos a "Mis actividades" y "Nueva". Crear/editar exige
 // login (gate en las rutas de autoría).
-import { html, escapeHtml, mount } from '../core/html.js';
+import { html, escapeHtml, mount, $input } from '../core/html.js';
 import { on } from '../core/events.js';
 import { navigate } from '../core/router.js';
 import { activityCardHtml } from '../core/activityCard.js';
@@ -15,7 +15,7 @@ import { mountAuthSlot } from '../core/authWidget.js';
 import { toast, TOAST_NORMAL } from '../core/toast.js';
 import { canHost } from '../core/authGate.js';
 import { wireActivityCard } from './activityCardWire.js';
-
+import { mensajeDe } from '../core/frontera.js';
 /** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
 
 /** @param {string} rootSel */
@@ -108,7 +108,7 @@ export async function renderLanding(rootSel) {
   }
 
   function goSearch() {
-    const q = (/** @type {HTMLInputElement|null} */ (document.getElementById('lp-q'))?.value || '').trim();
+    const q = ($input('#lp-q')?.value || '').trim();
     navigate(q ? `#/explore?q=${encodeURIComponent(q)}` : '#/explore');
   }
 
@@ -128,7 +128,7 @@ export async function renderLanding(rootSel) {
       if (n) n.textContent = String(Math.max(0, (parseInt(n.textContent, 10) || 0) + (liked ? 1 : -1)));
       if (liked) myLikes.add(likeId); else myLikes.delete(likeId);
     } catch (err) {
-      toast(err instanceof Error ? err.message : String(err), 'info', TOAST_NORMAL);
+      toast(mensajeDe(err), 'info', TOAST_NORMAL);
     }
   });
 

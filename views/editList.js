@@ -1,6 +1,6 @@
 // Editor for 'list' activities — a sequence of existing VS-compatible activities
 // played in order with accumulated scores and a final combined podium.
-import { html, escapeHtml, mount } from '../core/html.js';
+import { html, escapeHtml, mount, raizDe, $input } from '../core/html.js';
 import { get, save, list } from '../core/storage.js';
 import { newActivityId } from '../core/migrate.js';
 import { navigate } from '../core/router.js';
@@ -41,7 +41,7 @@ function newListActivity() {
 
 /** @param {string|Element} rootSel @param {{id?: string}} [o] */
 export function renderEditList(rootSel, { id } = {}) {
-  const raiz = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
+  const raiz = raizDe(rootSel);
   if (!raiz) return;
   // Ya comprobado: las funciones de abajo se declaran antes del guard (hoisting),
   // así que el marco se fija aquí en una constante sin nulo.
@@ -159,8 +159,8 @@ export function renderEditList(rootSel, { id } = {}) {
   // actividad y el título volvía a "Nueva lista" (§24: el contenido es del
   // usuario, no se pierde por un repintado). Se recoge ANTES de cada repintado.
   function recogerCampos() {
-    const title = /** @type {HTMLInputElement|null} */ (document.getElementById('list-title'))?.value?.trim();
-    const subtitle = /** @type {HTMLInputElement|null} */ (document.getElementById('list-subtitle'))?.value?.trim();
+    const title = $input('#list-title')?.value?.trim();
+    const subtitle = $input('#list-subtitle')?.value?.trim();
     if (title) lista.title = title;
     if (subtitle !== undefined) lista.subtitle = subtitle;
   }

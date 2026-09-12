@@ -31,7 +31,7 @@
 // cambiarla es un toque opcional. Una plantilla que declarase seis opciones sí
 // la rompería; por eso hay un tope y lo vigila el contrato.
 
-import { escapeHtml } from './html.js';
+import { escapeHtml, raizDe } from './html.js';
 
 /**
  * @typedef {import('../kernel/contracts/activity.js').Activity} Activity
@@ -125,7 +125,7 @@ export function playOptionsHtml(T, activity, chosen = {}) {
  * @returns {void}
  */
 export function wirePlayOptions(rootEl, onChange) {
-  const root = typeof rootEl === 'string' ? document.querySelector(rootEl) : rootEl;
+  const root = raizDe(rootEl);
   if (!root) return;
   for (const el of root.querySelectorAll('.ww-playopt-btn')) {
     const btn = /** @type {HTMLElement} */ (el);

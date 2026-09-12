@@ -322,18 +322,14 @@
   .vs-skin-arcade .vs-body    { border-radius: .55rem; }
 }
 
-/* Sin animaciones continuas si el usuario las reduce O en dispositivos lite
-   (gama baja): el parpadeo del pie y el latido del badge repintan, y apagarlos
-   libera el hilo para el teclado. La marquesina ya va por el compositor, pero
-   «reducir movimiento» es una petición del usuario, no una medida de coste. */
+/* Sin animaciones continuas si el usuario las reduce. Es una PETICIÓN del
+   usuario, no una medida de coste: por aparato ya no se distingue nada (una
+   animación por sitio, igual en todas las pantallas). */
 @media (prefers-reduced-motion: reduce) {
   .vs-skin-arcade .vs-main::before,
   .vs-arena.vs-skin-arcade::after,
   .vs-skin-arcade .vss-badge { animation: none !important; }
 }
-.ww-lite .vs-skin-arcade .vs-main::before,
-.ww-lite .vs-arena.vs-skin-arcade::after,
-.ww-lite .vs-skin-arcade .vss-badge { animation: none !important; }
 /* Quieta, la marquesina se lee desde el principio sin ninguna regla extra: sin
    animación el texto se queda en `translateX(0)`, o sea a la izquierda de la
    franja. Antes hacía falta devolver el `text-indent` a 0 a mano. */

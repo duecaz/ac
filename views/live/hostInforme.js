@@ -16,7 +16,7 @@ import { cierreHtml } from '../../core/podium.js';
 import { mmss } from '../../core/timings.js';
 import { destinoTrasJugar } from '../../core/afterPlay.js';
 import { esHojaDeTexto } from '../../core/contentModels/textCorrection.js';
-
+import { mensajeDe } from '../../core/frontera.js';
 /**
  * @typedef {import('../hostLive.js').HostRt} HostRt
  * @typedef {import('../../core/answerRows.js').AnswerRow} AnswerRow
@@ -155,7 +155,7 @@ export function createHostInforme(rt) {
         out.innerHTML = tab === 'tabla'
           ? sessionTableHtml(rows, rt.items.length, { labels: itemLabels(), items: rt.items, template: rt.tpl, activity: rt.activity, race, players: rt.players })
           : itemStatsHtml(rt.activity, rows);
-      } catch (e) { out.innerHTML = `<div class="alert alert-warning">No se pudo cargar: ${escapeHtml(e instanceof Error ? e.message : String(e))}</div>`; }
+      } catch (e) { out.innerHTML = `<div class="alert alert-warning">No se pudo cargar: ${escapeHtml(mensajeDe(e))}</div>`; }
     };
     $$('.ll-tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
     document.getElementById('ll-csv')?.addEventListener('click', async () => {

@@ -2,7 +2,7 @@
 // EMPAREJADO LIBRE: conectar NO califica — el alumno une todos los pares (puede
 // cambiar o quitar conexiones) y pulsa "Enviar"; recién ahí se corrige y puntúa.
 // La zona de arrastre es TODA la tarjeta (no solo el punto), en cualquier lado.
-import { html, mount, escapeHtml } from '../../core/html.js';
+import { html, mount, escapeHtml, raizDe } from '../../core/html.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { GRADE_HOLD_MS } from '../../core/timings.js';
 import { shuffle } from '../../core/azar.js';
@@ -86,7 +86,7 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
 
   // `rootSel` puede llegar como Element (así lo declara el contrato): con
   // `document.querySelector(rootSel)` a secas, ese caso se quedaba sin raíz.
-  const raiz = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
+  const raiz = raizDe(rootSel);
   const campo = /** @type {HTMLElement|null} */ (raiz?.querySelector('.ww-field'));
   const lienzo = /** @type {SVGElement|null} */ (raiz?.querySelector('.ww-lines-svg'));
   const submitBtn = /** @type {HTMLButtonElement|null} */ (raiz?.querySelector('.ww-match-submit'));

@@ -8,7 +8,7 @@ import { on } from '../../core/events.js';
 import { list, remove } from '../../core/storage.js';
 import { confirmModal, toast, TOAST_ERROR } from '../../core/toast.js';
 import { diagnoseDb } from '../../core/dbDiag.js';
-
+import { mensajeDe } from '../../core/frontera.js';
 // `rerender` = volver a pintar el panel entero (lo necesita el wipe: cambia
 // el nº de actividades que muestran OTRAS secciones). La llama el ensamblador.
 /**
@@ -37,7 +37,7 @@ export function createMaintenanceSection({ rerender }) {
         const fallos = [];
         for (const id of ids) {
           try { await remove(id); }
-          catch (e) { fallos.push(`${id}: ${e instanceof Error ? e.message : String(e)}`); console.warn('[admin] no se pudo borrar', id, e); }
+          catch (e) { fallos.push(`${id}: ${mensajeDe(e)}`); console.warn('[admin] no se pudo borrar', id, e); }
         }
         const hechas = ids.length - fallos.length;
         if (fallos.length) {

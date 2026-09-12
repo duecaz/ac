@@ -1,3 +1,4 @@
+import { raizDe } from './html.js';
 // Simple event delegation + tiny pub/sub.
 //
 // on() is idempotent per (root, event, selector). If a handler already
@@ -25,7 +26,7 @@ const _listeners = new WeakMap();
  */
 export function on(target, ev, sel, handler) {
   if (typeof sel === 'function') { handler = sel; sel = null; }
-  const root = typeof target === 'string' ? document.querySelector(target) : target;
+  const root = raizDe(target);
   if (!root || !handler) return () => {};
   const cb = handler;
   const key = `${ev}|${sel || ''}`;
@@ -61,7 +62,7 @@ export function on(target, ev, sel, handler) {
 // on navigation kills the whole class of cross-view handler leaks at the source.
 /** @param {string|Element} target */
 export function clearListeners(target) {
-  const root = typeof target === 'string' ? document.querySelector(target) : target;
+  const root = raizDe(target);
   if (!root) return;
   const bag = _listeners.get(root);
   if (!bag) return;

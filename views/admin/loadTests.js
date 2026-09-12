@@ -9,9 +9,8 @@ import { confirmModal } from '../../core/toast.js';
 import { runStressTest } from '../../core/stressTest.js';
 import { PB_URL } from '../../pocketbase.config.js';
 
-/** @param {unknown} e @returns {string} */
-const msgDe = (e) => (e instanceof Error && e.message ? e.message : String(e));
 
+import { mensajeDe } from '../../core/frontera.js';
 /** @returns {{html: () => string, wire: (rootSel: string) => void}} */
 export function createLoadTestsSection() {
   return {
@@ -66,7 +65,7 @@ export function createLoadTestsSection() {
                       : '<span class="text-danger fw-semibold me-1">✗</span>'}${escapeHtml(c.msg)}</span>
                 <small class="text-muted">${escapeHtml(c.detail)}</small></li>`).join('')}</ul>`;
         } catch (e) {
-          box.innerHTML = `<div class="alert alert-danger py-1 px-2 small">Error: ${escapeHtml(msgDe(e))}</div>`;
+          box.innerHTML = `<div class="alert alert-danger py-1 px-2 small">Error: ${escapeHtml(mensajeDe(e))}</div>`;
         } finally {
           btn.disabled = false;
         }
@@ -120,7 +119,7 @@ export function createLoadTestsSection() {
             </div>
             <ul class="list-group list-group-flush" style="font-size:.875rem">${items.join('')}</ul>`;
         } catch (e) {
-          box.innerHTML = `<div class="alert alert-danger py-1 px-2 small">Error: ${escapeHtml(msgDe(e))}</div>`;
+          box.innerHTML = `<div class="alert alert-danger py-1 px-2 small">Error: ${escapeHtml(mensajeDe(e))}</div>`;
         } finally {
           btn.disabled = false;
         }

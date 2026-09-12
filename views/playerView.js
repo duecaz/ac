@@ -30,7 +30,7 @@ import { aspectStyle, ASPECTO_POR_DEFECTO } from '../core/frameAspect.js';
 import { destinoTrasJugar } from '../core/afterPlay.js';
 import { navigate } from '../core/router.js';
 import { buildSwitchOptions, duplicateAsTemplate, switchWillNeed } from './switchTemplate.js';
-
+import { mensajeDe } from '../core/frontera.js';
 /** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
 
 /**
@@ -466,7 +466,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
         if (tile) tile.outerHTML = baldosaMia();
         $$('.bg-pick').forEach(p => p.classList.toggle('is-active', p.dataset.name === 'custom'));
       } catch (err) {
-        toast(err instanceof Error ? err.message : String(err), 'warning', TOAST_NORMAL);
+        toast(mensajeDe(err), 'warning', TOAST_NORMAL);
         if (input) input.value = '';
       }
     });

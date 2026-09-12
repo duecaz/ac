@@ -1,5 +1,5 @@
 // Async assignment: student plays SOLO at their own pace.
-import { html, escapeHtml, mount, $ } from '../core/html.js';
+import { html, escapeHtml, mount, $, $input } from '../core/html.js';
 import { on } from '../core/events.js';
 import { findAssignmentByCode, countOwnAttempts } from '../core/assignmentsTransport.js';
 import { submitAttempt, flushAttempts } from '../core/attemptQueue.js';
@@ -19,6 +19,7 @@ import { renderAntesala } from './antesala.js';
 import { applyPlayOptions } from '../core/playOptions.js';
 
 
+import { mensajeDe } from '../core/frontera.js';
 /**
  * @param {string} rootSel
  * @param {string} code
@@ -64,7 +65,7 @@ export async function renderTask(rootSel, code) {
       </div>
     `);
     on(rootSel, 'click', '#btn-go', () => {
-      const campo = /** @type {HTMLInputElement|null} */ ($('#f-nick'));
+      const campo = $input('#f-nick');
       const err = $('#err');
       if (!campo || !err) return;
       const v = campo.value.trim();
@@ -161,7 +162,7 @@ export async function renderTask(rootSel, code) {
             if (note) { note.textContent = msg; note.className = 'text-info small'; }
           }
         })
-        .catch(e => console.warn('record failed', e instanceof Error ? e.message : String(e)));
+        .catch(e => console.warn('record failed', mensajeDe(e)));
       // Pantalla de fin PROPIA (el mensaje es otro: aquí se ENTREGA, no se
       // puntúa para uno mismo). El destino NO se escribe aquí: sale del cuadro
       // único `core/afterPlay.js`, el mismo que usa la pantalla estándar — y

@@ -1,4 +1,4 @@
-import { escapeHtml } from '../../core/html.js';
+import { escapeHtml, valorDe } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 import { palabraJugable } from '../../core/contentModels/words.js';
@@ -16,15 +16,6 @@ const uid = () => rid('cw_');
 /** Las fichas de ESTA actividad: el modelo es `words` y el editor lo sabe.
  *  @param {Activity} a @returns {CrosswordWord[]} */
 const palabras = (a) => /** @type {{words?: CrosswordWord[]}} */ (a.content ?? {}).words ?? [];
-
-/** Lo tecleado (o elegido) en el campo que disparó el evento.
- * @param {Event} e
- * @returns {string}
- */
-function valorDe(e) {
-  const el = /** @type {HTMLInputElement|HTMLSelectElement|null} */ (e.target);
-  return el ? el.value : '';
-}
 
 /**
  * @param {Element} root

@@ -1,7 +1,7 @@
 // Solo player for "Abre Cajas". No scoring — teacher grades verbally outside the app.
 // selector=boxes: tap a box → reveals the question. Tap "Listo" to mark done (turns green).
 // selector=wheel: spin a wheel of question numbers → reveals the question card.
-import { html, escapeHtml, mount } from '../../core/html.js';
+import { html, escapeHtml, mount, raizDe } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { sessionItems } from '../../kernel/content/sessionItems.js';
 import { wheelSvg } from '../../core/ruleta/render.js';
@@ -134,7 +134,7 @@ function renderWheel(rootSel, activity, opts = {}) {
   let rotation = 0;
   let spinning = false;
 
-  const rootEl = () => typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
+  const rootEl = () => raizDe(rootSel);
 
   function paint() {
     if (openIdx !== null) {

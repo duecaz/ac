@@ -19,7 +19,7 @@ import { createOfflineQueue } from './offlineQueue.js';
 import { lsSet, lsGetJsonArray } from './ls.js';
 import { clock } from './clock.js';
 import { rid } from './ids.js';
-
+import { mensajeDe, estadoDe } from './frontera.js';
 const KEY = 'ww.attemptQueue';
 
 /**
@@ -70,17 +70,12 @@ export async function submitAttempt({ assignmentId, activityId, playerName, scor
     await send(item);
     return { queued: false };
   } catch (e) {
-    if (estadoDe(e) === 403) return { queued: false, rejected: true, error: motivo(e) };
+    if (estadoDe(e) === 403) return { queued: false, rejected: true, error: mensajeDe(e) };
     queue.enqueue(item);
-    return { queued: true, error: motivo(e) };
+    return { queued: true, error: mensajeDe(e) };
   }
 }
 
-/** El código HTTP del fallo, si el transporte lo trae (frontera: es de la red).
- *  @param {unknown} e @returns {number|null} */
-const estadoDe = (e) => (e && typeof e === 'object' && 'status' in e ? Number(e.status) : null);
-/** @param {unknown} e @returns {string} */
-const motivo = (e) => (e instanceof Error ? e.message : String(e));
 
 export const flushAttempts = () => queue.flush();
 

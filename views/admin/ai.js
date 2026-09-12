@@ -1,14 +1,10 @@
 // v1.51.629: adminView se partió POR PANEL. Esta sección es «IA que escribe
 // contenido»: estado del hook, guardar/probar/apagar/borrar claves (viven en
 // la Pi, nunca en el navegador — colección ia_config, dueño core/iaKeys.js).
-import { escapeHtml } from '../../core/html.js';
+import { escapeHtml, $input, $val } from '../../core/html.js';
 import { fechaCorta } from '../../core/fechas.js';
 import { on } from '../../core/events.js';
-
-/** @param {unknown} e @returns {string} */
-const msgDe = (e) => (e instanceof Error && e.message ? e.message : String(e));
-/** @param {string} id @returns {HTMLInputElement|HTMLSelectElement|null} */
-const campo = (id) => /** @type {HTMLInputElement|HTMLSelectElement|null} */ (document.getElementById(id));
+import { mensajeDe } from '../../core/frontera.js';
 
 /** @returns {{html: () => string, wire: (rootSel: string) => void}} */
 export function createAiSection() {
@@ -80,7 +76,7 @@ export function createAiSection() {
         } catch (err) {
           // best-effort: es un informe, no una función. Si la Pi no contesta, el
           // resto del panel no se bloquea — pero se dice, no se calla (R6).
-          box.innerHTML = `<div class="alert alert-secondary py-1 px-2 small mb-0">No se pudo consultar el estado de la IA: ${escapeHtml(msgDe(err))}</div>`;
+          box.innerHTML = `<div class="alert alert-secondary py-1 px-2 small mb-0">No se pudo consultar el estado de la IA: ${escapeHtml(mensajeDe(err))}</div>`;
         }
       })();
 
@@ -91,8 +87,8 @@ export function createAiSection() {
       // vuelve a leer: para eso están las reglas a null.
       /** @returns {Promise<{token: string, PB_URL: string}>} */
       async function tokenSuperadmin() {
-        const email = campo('pb-email')?.value?.trim();
-        const pass  = campo('pb-pass')?.value;
+        const email = $val('#pb-email').trim();
+        const pass  = $val('#pb-pass');
         if (!email || !pass) throw new Error('Pon el email y la contraseña de superadmin de PocketBase (sección de arriba).');
         const { PB_URL } = await import('../../pocketbase.config.js');
         for (const url of [`${PB_URL}/api/collections/_superusers/auth-with-password`, `${PB_URL}/api/admins/auth-with-password`]) {
@@ -147,7 +143,7 @@ export function createAiSection() {
       }
 
       /** @param {unknown} e */
-      const iaListaError = (e) => iaLista(`<div class="alert alert-danger py-1 px-2 small mb-0">${escapeHtml(msgDe(e))}</div>`);
+      const iaListaError = (e) => iaLista(`<div class="alert alert-danger py-1 px-2 small mb-0">${escapeHtml(mensajeDe(e))}</div>`);
 
       on(rootSel, 'click', '#ia-refresh', async (_, el) => {
         const btn = /** @type {HTMLButtonElement} */ (el);
@@ -176,7 +172,7 @@ export function createAiSection() {
           if (!d.ok && d.motivo) iaOut(`<div class="alert alert-warning py-1 px-2 small">${escapeHtml(d.motivo)}</div>`);
         } catch (e) {
           if (celda) celda.innerHTML = '<span class="badge bg-danger-subtle text-danger">?</span>';
-          iaOut(`<div class="alert alert-danger py-1 px-2 small">${escapeHtml(msgDe(e))}</div>`);
+          iaOut(`<div class="alert alert-danger py-1 px-2 small">${escapeHtml(mensajeDe(e))}</div>`);
         } finally { btn.disabled = false; }
       });
 
@@ -206,9 +202,9 @@ export function createAiSection() {
 
       on(rootSel, 'click', '#ia-save', async (_, el) => {
         const btn = /** @type {HTMLButtonElement} */ (el);
-        const clave = campo('ia-key')?.value?.trim();
-        const proveedor = campo('ia-prov')?.value || 'gemini';
-        const etiqueta = campo('ia-label')?.value?.trim() || '';
+        const clave = $val('#ia-key').trim();
+        const proveedor = $val('#ia-prov') || 'gemini';
+        const etiqueta = $val('#ia-label').trim();
         if (!clave) { iaOut('<div class="alert alert-warning py-1 px-2 small">Pega la clave.</div>'); return; }
         btn.disabled = true;
         iaOut('<div class="text-muted small"><span class="spinner-border spinner-border-sm me-1"></span>Guardando en la Pi…</div>');
@@ -219,15 +215,15 @@ export function createAiSection() {
           // Tras el `await`, el panel puede haberse ido (el admin cambió de
           // pantalla mientras guardaba): se comprueba, como en las lecturas de
           // arriba. Es el mismo defecto que tiró la biblioteca en un aula.
-          const campoClave = campo('ia-key');
-          const campoEtiqueta = campo('ia-label');
+          const campoClave = $input('#ia-key');
+          const campoEtiqueta = $input('#ia-label');
           if (campoClave) campoClave.value = '';
           if (campoEtiqueta) campoEtiqueta.value = '';
           iaOut(`<div class="alert alert-success py-1 px-2 small">Clave de ${proveedor} guardada en la Pi. Pulsa «Probar» en su fila para comprobarla.</div>`);
           await pintarClaves();
         } catch (e) {
           // R6: el motivo, no un «algo falló» — cada uno se arregla distinto.
-          iaOut(`<div class="alert alert-danger py-1 px-2 small">${escapeHtml(msgDe(e))}</div>`);
+          iaOut(`<div class="alert alert-danger py-1 px-2 small">${escapeHtml(mensajeDe(e))}</div>`);
         } finally { btn.disabled = false; }
       });
 
@@ -292,7 +288,7 @@ export function createAiSection() {
             // principal ya está escrito y es el que importa.
             console.warn('IA: no se pudo pedir el catálogo de modelos', err2);
           }
-          iaOut(`<div class="alert alert-danger py-1 px-2 small">${escapeHtml(msgDe(e))}${extra}</div>`);
+          iaOut(`<div class="alert alert-danger py-1 px-2 small">${escapeHtml(mensajeDe(e))}${extra}</div>`);
         } finally { btn.disabled = false; }
       });
     },

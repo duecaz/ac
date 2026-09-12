@@ -7,7 +7,7 @@
 // SIN reanudación F5 a propósito: los puntos premian pocos movimientos, y
 // reanudar reinicia el contador de mountBallSort → recargar a mitad daría
 // mejor puntaje (exploit). Recargar = tablero nuevo, como siempre.
-import { html, mount } from '../../core/html.js';
+import { html, mount, raizDe } from '../../core/html.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { mountBallSort } from './play.js';
@@ -38,7 +38,7 @@ export function renderBallsortPlayer(rootSel, activity, opts = {}) {
     || scoreBallsort({ value: { solved: true, moveCount: 0, elapsedMs: 0 }, item, activity }).points;
 
   mount(rootSel, html`<div class="ww-bs-solo"><div id="bs-solo-host"></div></div>`);
-  const raiz = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
+  const raiz = raizDe(rootSel);
   const host = /** @type {HTMLElement|null} */ (raiz?.querySelector('#bs-solo-host') ?? null);
   if (!host) return;   // la ruta cambió mientras se montaba (§23)
   emitGame(GameEvents.QUESTION_SHOWN, { idx: 0, total: 1, item });

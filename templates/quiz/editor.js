@@ -1,7 +1,7 @@
 // Editor del quiz. Solo aporta sus paneles (Contenido/Individual/Puntuación/En
 // vivo); el chasis (título, pestañas, Modos, Presentación) lo pone el shell
 // compartido (core/editorShell.js).
-import { html, escapeHtml } from '../../core/html.js';
+import { html, escapeHtml, valorDe, marcado } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { renderImagePicker, attachImagePicker } from '../../core/imagePicker.js';
 import { itemControlsHtml, reorderArray, itemSecondsFieldHtml, wireItemSeconds } from '../../core/editorPrimitives.js';
@@ -20,17 +20,6 @@ import { renderEditorShell } from '../../core/editorShell.js';
  *  @param {Activity|null|undefined} a @returns {QaItem[]} */
 const preguntas = (a) => /** @type {{items?: QaItem[]}} */ (a?.content ?? {}).items ?? [];
 
-/** Lo tecleado en el campo que disparó el evento. @param {Event} e @returns {string} */
-function valorDe(e) {
-  const el = /** @type {HTMLInputElement|null} */ (e.target);
-  return el ? el.value : '';
-}
-
-/** Si el interruptor que disparó el evento queda marcado. @param {Event} e @returns {boolean} */
-function marcado(e) {
-  const el = /** @type {HTMLInputElement|null} */ (e.target);
-  return !!el?.checked;
-}
 
 /**
  * @param {Element} root

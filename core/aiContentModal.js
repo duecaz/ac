@@ -9,18 +9,15 @@
 // LA PREVISUALIZACIÓN NO ES UN ADORNO. §24 dice que el contenido es del usuario,
 // y una IA que escribe en la actividad del profe es exactamente lo que esa ley
 // vigila: se propone, se enseña, él acepta. Sin esto, esta función no se hace.
-import { escapeHtml } from './html.js';
+import { escapeHtml, $input } from './html.js';
 import { rid } from './ids.js';
 import { PB_URL } from '../pocketbase.config.js';
 import { getAuthToken } from './auth.js';
 import { MODELOS_IA, iaSabeEscribir, pedirContenido, piezasDe, diagnosticarFalloDeRed, TEMA_VACIO } from './aiContent.js';
 import { abrirDialogoConFallback } from './modalFallback.js';
-
+// Lo propuesto viene de un modelo de lenguaje: se lee sin prometer forma.
+import { mensajeDe, saco } from './frontera.js';
 const EXTREMO = () => `${PB_URL}/api/ia/contenido`;
-
-/** Lo propuesto viene de un modelo de lenguaje: se lee sin prometer forma.
- *  @param {unknown} v @returns {Record<string, unknown>} */
-const saco = (v) => (v && typeof v === 'object') ? /** @type {Record<string, unknown>} */ (v) : {};
 
 /** Cómo se enseña UNA pieza propuesta, según su modelo. Solo lectura.
  *  @param {string} modelo
@@ -250,7 +247,7 @@ export function abrirEscribirConIA(opts = {}) {
       pintarPropuesta();
     } catch (e) {
       propuesto = null;
-      aviso(e instanceof Error ? e.message : String(e));
+      aviso(mensajeDe(e));
     } finally {
       boton.disabled = false;
       boton.innerHTML = '<i class="bi bi-stars"></i> Escribir';
@@ -276,7 +273,7 @@ export function abrirEscribirConIA(opts = {}) {
     m.show();
     // Tolerante a propósito: si el diálogo ya se cerró, no hay a quién enfocar.
     setTimeout(() => {
-      const campo = /** @type {HTMLInputElement|null} */ (document.getElementById(`${suf}tema`));
+      const campo = $input(`#${suf}tema`);
       campo?.focus();
     }, 150);
   });

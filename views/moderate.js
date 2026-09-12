@@ -9,7 +9,7 @@
 // cualquier actividad (`deleteRule` de core/pbRules.js incluye el rol), pero la
 // única forma de llegar a una era que alguien la hubiera REPORTADO antes —
 // para lo demás había que entrar a PocketBase en la Pi.
-import { html, escapeHtml, mount, $, $$ } from '../core/html.js';
+import { html, escapeHtml, mount, $, $$, $input } from '../core/html.js';
 import { on } from '../core/events.js';
 import { navigate } from '../core/router.js';
 import { isAdmin } from '../core/auth.js';
@@ -19,7 +19,7 @@ import { searchActivities } from '../core/search.js';
 import { getTemplate } from '../core/registry.js';
 import { toast, confirmModal, TOAST_ERROR, TOAST_NORMAL } from '../core/toast.js';
 import { fechaHora, fechaCorta } from '../core/fechas.js';
-
+import { mensajeDe } from '../core/frontera.js';
 /** Un campo de TEXTO de una fila cruda de `reports` (frontera PocketBase: lo que
  *  llega es un saco de `unknown`, core/reports.js).
  *  @param {unknown} v @returns {string} */
@@ -103,7 +103,7 @@ export async function renderModerate(rootSel) {
   function pintarBiblio() {
     const el = document.getElementById('mod-biblio');
     if (!el) return;
-    const campo = /** @type {HTMLInputElement|null} */ ($('#mod-buscar'));
+    const campo = $input('#mod-buscar');
     const q = campo?.value || '';
     // El MISMO buscador que usa el profe (core/search.js): sin tildes, por
     // palabras y también dentro del contenido — un «test» suelto en una
@@ -185,7 +185,7 @@ export async function renderModerate(rootSel) {
     const id = rowOf(b)?.dataset.report;
     if (!id) return;
     try { await deleteReport(id); toast('Reporte descartado.', 'success'); load(); }
-    catch (e) { toast('No se pudo: ' + (e instanceof Error ? e.message : String(e)), 'danger', TOAST_NORMAL); }
+    catch (e) { toast('No se pudo: ' + (mensajeDe(e)), 'danger', TOAST_NORMAL); }
   });
   // El MISMO botón sirve a las dos listas (reporte y biblioteca): lo que cambia
   // es que un reporte, al borrarse la actividad, se descarta con ella.

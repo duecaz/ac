@@ -90,7 +90,7 @@ const PIEZAS = `(sel) => {
   // que casa las piezas por nombre, inventaba cambios de rol que no existen.
   const ROL = /^edu-/;
   const nombre = (e) => {
-    const cls = [...e.classList].filter(c => !/^(is-|ww-lite)/.test(c));
+    const cls = [...e.classList].filter(c => !/^is-/.test(c));
     const propia = cls.find(c => !UTIL.test(c) && !ROL.test(c));
     if (propia) return propia;
     if (e.id) return '#' + e.id;

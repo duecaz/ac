@@ -43,7 +43,7 @@
 - [10) Handlers delegados + `clearListeners(APP)`](#10-handlers-delegados--clearlistenersapp)
 - [11) Pantalla de inicio obligatoria](#11-pantalla-de-inicio-obligatoria)
 - [12) Registro único + arranque](#12-registro-único--arranque)
-- [13) Gama baja `ww-lite` (`core/perf.js`)](#13-gama-baja-ww-lite-coreperfjs)
+- [13) Animaciones iguales en todas las pantallas](#13-animaciones-iguales-en-todas-las-pantallas)
 - [14) Puntos (`core/scoring/`)](#14-puntos-corescoring)
 - [── LEYES DE DATOS / SEGURIDAD (biblioteca pública) ──────────────────────────](#-leyes-de-datos--seguridad-biblioteca-pública-)
 - [15) Solo PocketBase (Supabase RETIRADO)](#15-solo-pocketbase-supabase-retirado)
@@ -526,9 +526,15 @@ veredicto (verde/rojo)  >  placa/tarjeta (--ww-card-*)  >  tinta del lienzo (--w
 - Las plantillas se registran solo en `core/registerTemplates.js`; sonidos/efectos/
   versión/mute se cablean solo en `core/boot.js`. Los `main.*.js` no repiten ese wiring.
 
-## 13) Gama baja `ww-lite` (`core/perf.js`)
-- ≤4 núcleos o ≤2GB → `ww-lite` en `<html>`; sin bucles rAF continuos en reposo. El VS
-  debe ir fluido en pizarras A55.
+## 13) Animaciones iguales en todas las pantallas
+- Una animación por sitio: **no se distingue por aparato** (`ww-lite` e `isLowEndDevice()`
+  se retiraron — la puerta ni siquiera se abría en la pizarra del aula, que lleva 8 núcleos).
+- Solo se anima lo que va por el compositor (`transform`/`opacity`) y los lienzos llevan
+  **tope** (1280 px de ancho · DPR ≤ 1,5): así cuesta lo mismo a 1080p que en la pizarra
+  4K. Nada que repinte píxeles por cuadro (SVG re-dibujado, `filter`, sombras en
+  movimiento). Sin bucles rAF continuos en reposo.
+- Lo vigilan `tests/animaciones.test.mjs` (ratchet sobre el CSS del juego y los temas) y
+  la escena «pizarra» de `tools/perf-sonda.mjs` (1280×720 a DPR 3, CPU frenada 12×).
 
 ## 14) Puntos (`core/scoring/`)
 - `basePoints`/`wrongPoints`/`usaBonusVelocidad`. Tildes VS: 1 punto fijo por tilde buena

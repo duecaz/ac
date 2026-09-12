@@ -5,7 +5,6 @@
 import { GameEvents, onGame } from './gameEvents.js';
 import { clock } from './clock.js';
 import { lsGet, lsSet } from './ls.js';
-import { isLowEndDevice } from './perf.js';
 
 const COLORS = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#a855f7', '#ec4899', '#eab308'];
 
@@ -135,17 +134,19 @@ function bucle() {
 function confetti(opts = {}) {
   if (typeof document === 'undefined') return;
   const { particleCount = 30, spread = 50, startVelocity = 30, origin = { x: 0.5, y: 0.7 }, ticks = 90 } = opts;
-  // GAMA BAJA: la mitad de papelitos. La celebración es producto (el podio
-  // celebra), así que se REDUCE en vez de apagarse — un podio sin fiesta en la
-  // pizarra del aula es peor que uno con menos confeti.
-  const cuantas = isLowEndDevice() ? Math.ceil(particleCount / 2) : particleCount;
+  // LOS MISMOS PAPELITOS EN TODAS LAS PANTALLAS. Antes se soltaba la MITAD si
+  // el aparato parecía de gama baja (`isLowEndDevice()`): dos celebraciones
+  // distintas según quién mirase, y encima la puerta no se abría justo donde
+  // hacía falta (la pizarra del aula lleva 8 núcleos y 8 GB). La decisión del
+  // dueño es una sola animación por sitio; lo que hace barato el confeti es el
+  // TOPE del lienzo, no contar papelitos.
   const l = lienzo();
   if (!l) return;
   const { cv } = l;
   const escala = _escala;
   const cx = (origin.x ?? 0.5) * cv.width, cy = (origin.y ?? 0.7) * cv.height;
   const gravedad = 0.55 * escala;
-  for (let i = 0; i < cuantas; i++) {
+  for (let i = 0; i < particleCount; i++) {
     const ang = (-90 + (Math.random() - 0.5) * spread) * Math.PI / 180;
     const v = startVelocity * (0.5 + Math.random()) * escala;
     _papeles.push({ x: cx, y: cy, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v,

@@ -8,11 +8,9 @@ import { QUOTAS, checkActivityCount, checkActivitySize, liveRetentionCutoff } fr
 import { purgeOldLive } from '../../core/liveTransport.js';
 import { clock } from '../../core/clock.js';
 import { confirmModal } from '../../core/toast.js';
-
+import { mensajeDe } from '../../core/frontera.js';
 /** @typedef {import('../../kernel/contracts/dataPort.js').PurgeReport} PurgeReport */
 
-/** @param {unknown} e @returns {string} */
-const msgDe = (e) => (e instanceof Error && e.message ? e.message : String(e));
 
 /** @returns {{html: () => string, wire: (rootSel: string) => void}} */
 export function createCapacitySection() {
@@ -64,7 +62,7 @@ export function createCapacitySection() {
         /** @type {PurgeReport} */
         let r;
         try { r = await purgeOldLive(cutoff, { dryRun: true }); }
-        catch (e) { box.innerHTML = `<div class="alert alert-danger py-2 mb-0">No se pudo consultar: ${escapeHtml(msgDe(e))}</div>`; btn.disabled = false; return; }
+        catch (e) { box.innerHTML = `<div class="alert alert-danger py-2 mb-0">No se pudo consultar: ${escapeHtml(mensajeDe(e))}</div>`; btn.disabled = false; return; }
         btn.disabled = false;
         if (!r.sessions) {
           box.innerHTML = `<div class="alert alert-success py-2 mb-0">Nada que limpiar: no hay salas anteriores al ${escapeHtml(cutoff.slice(0, 10))}.</div>`;
@@ -83,7 +81,7 @@ export function createCapacitySection() {
           const go = /** @type {HTMLButtonElement|null} */ (document.getElementById('admin-purge-go'));
           if (go) { go.disabled = true; go.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Borrando…'; }
           const done = await purgeOldLive(cutoff, { dryRun: false }).catch(e => /** @type {PurgeReport} */ ({
-            cutoff, dryRun: false, sessions: 0, answers: 0, players: 0, claims: 0, errors: [msgDe(e)],
+            cutoff, dryRun: false, sessions: 0, answers: 0, players: 0, claims: 0, errors: [mensajeDe(e)],
           }));
           box.innerHTML = done.errors?.length
             ? `<div class="alert alert-warning py-2 mb-0">Se borró lo que se pudo (${done.sessions || 0} salas). Errores: ${escapeHtml(done.errors.slice(0, 3).join(' · '))}</div>`

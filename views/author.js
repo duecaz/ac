@@ -1,7 +1,7 @@
 // Perfil público de un autor (#/autor/:id). Muestra su avatar (de Google si lo
 // tiene), nombre, colegio, una frase y sus actividades PUBLICADAS. Si el que mira
 // es el propio profe, puede editar colegio y frase. Estilo Wordwall.
-import { html, escapeHtml, mount } from '../core/html.js';
+import { html, escapeHtml, mount, $input, $val } from '../core/html.js';
 import { on } from '../core/events.js';
 import { activityCardHtml } from '../core/activityCard.js';
 import { canHost } from '../core/authGate.js';
@@ -11,7 +11,7 @@ import { getAuthUserId, getAuthName, changePassword, linkGoogle } from '../core/
 import { fetchProfile, getLocalProfile, saveProfile } from '../core/profile.js';
 import { uploadMedia } from '../core/upload.js';
 import { toast, confirmModal, TOAST_NORMAL } from '../core/toast.js';
-
+import { mensajeDe } from '../core/frontera.js';
 /** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
 /** @typedef {import('../core/profile.js').Perfil} Perfil */
 
@@ -109,7 +109,7 @@ export async function renderAuthor(rootSel, ownerId) {
   // Sube una imagen (avatar o banner), la guarda en el perfil y repinta.
   /** @param {'avatar'|'banner'} kind */
   async function pickImage(kind) {
-    const inp = /** @type {HTMLInputElement|null} */ (document.getElementById(kind === 'avatar' ? 'au-file-avatar' : 'au-file-banner'));
+    const inp = $input(kind === 'avatar' ? '#au-file-avatar' : '#au-file-banner');
     if (!inp) return;
     inp.value = '';
     inp.onchange = async () => {
@@ -122,7 +122,7 @@ export async function renderAuthor(rootSel, ownerId) {
         toast(kind === 'avatar' ? 'Foto actualizada.' : 'Portada actualizada.', 'success');
         paintHead();
       } catch (e) {
-        toast('No se pudo guardar la imagen: ' + (e instanceof Error ? e.message : String(e)), 'danger', TOAST_NORMAL);
+        toast('No se pudo guardar la imagen: ' + (mensajeDe(e)), 'danger', TOAST_NORMAL);
       }
     };
     inp.click();
@@ -178,7 +178,7 @@ export async function renderAuthor(rootSel, ownerId) {
   on(rootSel, 'click', '#au-save', async (_, b) => {
     const btn = /** @type {HTMLButtonElement} */ (b);
     /** @param {string} id */
-    const val = (id) => (/** @type {HTMLInputElement|HTMLTextAreaElement|null} */ (document.getElementById(id))?.value || '').trim();
+    const val = (id) => $val('#' + id).trim();
     const name = val('au-name');
     const school = val('au-school');
     const bio = val('au-bio');
@@ -191,21 +191,21 @@ export async function renderAuthor(rootSel, ownerId) {
       paintHead();
       paintEditForm(false);
     } catch (e) {
-      toast('No se pudo guardar el perfil: ' + (e instanceof Error ? e.message : String(e)), 'danger', TOAST_NORMAL);
+      toast('No se pudo guardar el perfil: ' + (mensajeDe(e)), 'danger', TOAST_NORMAL);
       btn.disabled = false;
     }
   });
   on(rootSel, 'click', '#au-pw-save', async (_, b) => {
     const btn = /** @type {HTMLButtonElement} */ (b);
-    const oldP = /** @type {HTMLInputElement|null} */ (document.getElementById('au-pw-old'))?.value || '';
-    const newP = /** @type {HTMLInputElement|null} */ (document.getElementById('au-pw-new'))?.value || '';
+    const oldP = $val('#au-pw-old');
+    const newP = $val('#au-pw-new');
     btn.disabled = true;
     try {
       await changePassword(oldP, newP);
       toast('Contraseña cambiada. Ya puedes entrar con correo y clave.', 'success');
       paintAccount(false);
     } catch (e) {
-      toast(e instanceof Error ? e.message : String(e), 'danger', TOAST_NORMAL);
+      toast(mensajeDe(e), 'danger', TOAST_NORMAL);
       btn.disabled = false;
     }
   });
@@ -215,7 +215,7 @@ export async function renderAuthor(rootSel, ownerId) {
     const btn = /** @type {HTMLButtonElement} */ (b);
     btn.disabled = true;
     try { await linkGoogle(); }   // redirige a Google; al volver queda vinculada
-    catch (e) { toast(e instanceof Error ? e.message : String(e), 'danger', TOAST_NORMAL); btn.disabled = false; }
+    catch (e) { toast(mensajeDe(e), 'danger', TOAST_NORMAL); btn.disabled = false; }
   });
 
   load();

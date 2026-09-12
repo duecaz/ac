@@ -17,13 +17,8 @@
 //   frame total-1  = RIGHT player has won (right side dominating)
 // The engine scrubs to the frame matching the live score lead automatically.
 
-import { isLowEndDevice } from './perf.js';
 import { VERSION } from './constants.js';
 import { observeResize } from './observeResize.js';
-
-// En gama baja, la animación central NO corre en reposo (ver idle() en
-// createLottie) para no robar CPU al teclado del VS.
-const LITE = isLowEndDevice();
 
 /**
  * LA INSTANCIA que el duelo conduce. Contrato mínimo y estable: la animación no
@@ -282,13 +277,8 @@ function createLottie(container, src) {
   // RENDIMIENTO: cada cuadro hace goToAndStop() = recalcular los 153 trazados y
   // pintarlos. Con el renderer `canvas` eso ya no toca el DOM ni rasteriza a la
   // resolución de la pizarra (el lienzo tiene tope), pero sigue siendo trabajo
-  // del HILO PRINCIPAL, que es el que teclea en el duelo. Por eso el reposo va
-  // limitado:
-  //   · gama baja (ww-lite): SIN bucle de reposo → cuadro estático centrado; la
-  //     cuerda solo se mueve al responder (yank/setProgress). El hilo queda libre.
-  //     (Esta bifurcación la retira la Fase 5 del plan de rendimiento.)
-  //   · normal: ~15 fps en vez de 60 → ¼ del coste. Un balanceo lento a 15 fps
-  //     no lo nota nadie; lo que sí se nota es el teclado trabado.
+  // del HILO PRINCIPAL, que es el que teclea en el duelo.
+  //
   // EL REPOSO ES ESTÁTICO, EN TODAS LAS PANTALLAS. Medido (2026-09-12, 1280×720 a
   // DPR 3 con la CPU frenada 12×): el balanceo de reposo re-pintaba 135 trazados
   // por cuadro y era la única carga CONTINUA del duelo — en lienzo sin GPU salía

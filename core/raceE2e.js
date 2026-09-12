@@ -17,7 +17,7 @@ import { signedFetch } from './pbHttp.js';
 import { createRoom, setSessionState, endSession, leaderboard, listAnswers, listPlayers, fetchSessionBlob } from './liveTransport.js';
 import { rowsFromLiveAnswers } from './answerRows.js';
 import { buildSessionTable } from './sessionModel.js';
-
+import { mensajeDe } from './frontera.js';
 /** Lo que un aviso de consola deja por escrito: mensaje de Error, cuerpo `pb`, o
  *  el propio valor. Es frontera (llega lo que otro módulo decida avisar). */
 /** @param {unknown} x @returns {string} */
@@ -232,7 +232,7 @@ export async function runRaceE2e({ pbUrl, onLog = () => {} } = {}) {
     check(st === 403 || st === 404, 'falsear la hora de meta REBOTA (§22-1)',
       st === 200 ? 'dio 200 — reglas SIN aplicar: corre "Crear colecciones" arriba' : `HTTP ${st}`);
   } catch (e) {
-    report.notes.push(`Prueba interrumpida: ${e instanceof Error ? e.message : String(e)}`);
+    report.notes.push(`Prueba interrumpida: ${mensajeDe(e)}`);
   } finally {
     console.warn = warnOriginal;   // la consola vuelve a ser de quien era
     // Limpieza SIEMPRE (best-effort con motivo: lo que quede lo purga la

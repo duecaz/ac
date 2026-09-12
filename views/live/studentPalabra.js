@@ -4,7 +4,7 @@
 // de CLAUDE.md). `qlRotation` es estado PROPIO de este bucle; `rt.qlSpinning`
 // viaja en `rt` porque paint() (ensamblador) lo consulta para no repintar
 // encima de un giro en curso.
-import { html, escapeHtml, mount } from '../../core/html.js';
+import { html, escapeHtml, mount, raizDe } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { claimQuestion } from '../../core/liveTransport.js';
 import { sessionItems } from '../../kernel/content/sessionItems.js';
@@ -33,7 +33,7 @@ export function createStudentPalabra(rt) {
     return { label, image: typeof o.image === 'string' ? o.image : null };
   }
 
-  const rootEl = () => (typeof rt.rootSel === 'string' ? document.querySelector(rt.rootSel) : rt.rootSel);
+  const rootEl = () => raizDe(rt.rootSel);
 
   /** @param {number} idx */
   async function qlOpenQuestion(idx) {

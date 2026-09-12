@@ -254,7 +254,7 @@ planteada, aunque funcione en el portátil del que la programa.
 
 | # | Restricción | Qué implica |
 |---|---|---|
-| **R1** | **La pantalla principal es una pizarra táctil de gama baja**, a 2-3 metros, mirada por 30 personas a la vez | Nada de texto pequeño ni de tamaños fijos; los objetivos táctiles son grandes; sin bucles de animación en reposo (`ww-lite`); contraste alto |
+| **R1** | **La pantalla principal es una pizarra táctil de gama baja**, a 2-3 metros, mirada por 30 personas a la vez | Nada de texto pequeño ni de tamaños fijos; los objetivos táctiles son grandes; sin bucles de animación en reposo y las MISMAS animaciones en toda pantalla (solo `transform`/`opacity`, lienzos con tope); contraste alto |
 | **R2** | **El profe no configura nada.** Abre y juega | Cero pantallas de ajustes obligatorias; lo que se pueda derivar, se deriva; los ajustes finos son opcionales y viven en el editor |
 | **R2b** | **Quien toca la pantalla suele ser un ALUMNO, sobre la cuenta del profe** | La pantalla de juego se entiende sin explicación (instrucciones a la vista) y **no expone nada destructivo**: ni editar, ni borrar, ni publicar, ni cerrar sesión mientras se juega |
 | **R3** | **El alumno no tiene cuenta.** Entra con un PIN | La identidad del alumno es del aula, no del sistema; la seguridad va por reglas de servidor, no por login (§22) |

@@ -3,11 +3,12 @@
 // configuración de colecciones»: crea/actualiza TODAS las colecciones y sus
 // reglas de acceso (botón «Crear colecciones»). Fábrica: la html() se monta
 // dentro del contenedor de #/admin y wire(rootSel) cablea el botón.
-import { escapeHtml } from '../../core/html.js';
+import { escapeHtml, $input } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { VERSION } from '../../core/constants.js';
 import { QUOTAS } from '../../core/quotas.js';
 import { rulesFor as pbRulesFor } from '../../core/pbRules.js';
+import { mensajeDe } from '../../core/frontera.js';
 import { camposQueFaltan } from '../../core/pbSchema.js';   // qué reparar de una colección que ya existe
 
 /**
@@ -34,8 +35,6 @@ import { camposQueFaltan } from '../../core/pbSchema.js';   // qué reparar de u
  *   updateRule?: string|null, deleteRule?: string|null}} CuerpoPatch
  */
 
-/** @param {unknown} e @returns {string} */
-const msgDe = (e) => (e instanceof Error && e.message ? e.message : String(e));
 
 /** @returns {{html: () => string, wire: (rootSel: string) => void}} */
 export function createCollectionsSection() {
@@ -57,8 +56,8 @@ export function createCollectionsSection() {
       <div id="pb-setup-out" class="mt-2"></div>`,
     wire: (rootSel) => {
       on(rootSel, 'click', '#pb-setup', async () => {
-        const email = /** @type {HTMLInputElement|null} */ (document.getElementById('pb-email'))?.value?.trim();
-        const pass  = /** @type {HTMLInputElement|null} */ (document.getElementById('pb-pass'))?.value;
+        const email = $input('#pb-email')?.value?.trim();
+        const pass  = $input('#pb-pass')?.value;
         const out   = document.getElementById('pb-setup-out');
         if (!out) return;
         if (!email || !pass) { out.innerHTML = '<div class="alert alert-warning py-1 px-2 small">Introduce email y contraseña de admin de PocketBase.</div>'; return; }
@@ -412,7 +411,7 @@ export function createCollectionsSection() {
                   // ANTES este catch callaba y "reglas actualizadas" mentía por
                   // omisión (así se aplicó un esquema sin `qid` en producción sin que
                   // nadie lo viera). Si no se pudo leer el esquema actual, se DICE.
-                  results.push({ name: col.name, ok: false, msg: `no se pudo LEER el esquema para el diff de campos (${msgDe(readErr)}) — solo se aplicarían reglas; reintenta` });
+                  results.push({ name: col.name, ok: false, msg: `no se pudo LEER el esquema para el diff de campos (${mensajeDe(readErr)}) — solo se aplicarían reglas; reintenta` });
                   continue;
                 }
                 const pr = await fetch(`${PB_URL}/api/collections/${existingId}`, {
@@ -493,7 +492,7 @@ export function createCollectionsSection() {
                 }
               }
             } catch (e) {
-              results.push({ name: col.name, ok: false, msg: msgDe(e) });
+              results.push({ name: col.name, ok: false, msg: mensajeDe(e) });
             }
           }
 
@@ -505,10 +504,10 @@ export function createCollectionsSection() {
               ${allOk ? '<div class="mt-1 fw-semibold">Listo. Recarga la página para activar Live, actividades en nube y tareas.</div>' : ''}
             </div>`;
         } catch (e) {
-          out.innerHTML = `<div class="alert alert-danger py-1 px-2 small">Error: ${escapeHtml(msgDe(e))}</div>`;
+          out.innerHTML = `<div class="alert alert-danger py-1 px-2 small">Error: ${escapeHtml(mensajeDe(e))}</div>`;
         } finally {
           if (btn) btn.disabled = false;
-          const campoPass = /** @type {HTMLInputElement|null} */ (document.getElementById('pb-pass'));
+          const campoPass = $input('#pb-pass');
           if (campoPass) campoPass.value = '';
         }
       });

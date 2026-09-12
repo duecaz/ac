@@ -1,6 +1,6 @@
 // Editor de Emparejar — aporta sus paneles; el chasis lo pone el shell (vía
 // renderPairsEditor, el wrapper del modelo — core/contentModels/pairs.js).
-import { escapeHtml } from '../../core/html.js';
+import { escapeHtml, marcado } from '../../core/html.js';
 import { toast, TOAST_NORMAL } from '../../core/toast.js';
 import { uploadMedia } from '../../core/upload.js';
 import { abrirBuscadorImagenes } from '../../core/imageSearchModal.js';
@@ -8,7 +8,7 @@ import { on } from '../../core/events.js';
 import { newPair, renderPairsEditor } from '../../core/contentModels/pairs.js';
 import { itemControlsHtml, wireItemList, ruleScopeNote } from '../../core/editorPrimitives.js';
 import { scoringPanelHtml, wireScoringPanel } from '../../core/editorPanels.js';
-
+import { mensajeDe } from '../../core/frontera.js';
 /**
  * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
  * @typedef {import('../../kernel/contracts/activity.js').Pair} Pair
@@ -116,7 +116,7 @@ function wireContent(root, a, ctx) {
         delete par[field + 'Credit'];   // el crédito se va con su imagen
         ctx.onChange(a);
         ctx.repaint();
-      } catch (err) { toast(err instanceof Error ? err.message : String(err), 'danger', TOAST_NORMAL); }
+      } catch (err) { toast(mensajeDe(err), 'danger', TOAST_NORMAL); }
     };
     inp.click();
   });
@@ -159,5 +159,5 @@ function rulesHtml(a) {
 }
 /** @param {Element} root @param {Activity} a @param {EditorCtx} ctx */
 function wireRules(root, a, ctx) {
-  on(root, 'change', '#m-rand', (e, el) => { a.rules.randomize = /** @type {HTMLInputElement} */ (el).checked; ctx.onChange(a); });
+  on(root, 'change', '#m-rand', (e, el) => { a.rules.randomize = marcado(el); ctx.onChange(a); });
 }

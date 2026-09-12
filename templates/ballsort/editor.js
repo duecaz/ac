@@ -3,7 +3,7 @@ import { renderEditorJuego } from '../../core/editorJuego.js';
 import { createBoard, randomBoard } from './game/board.js';
 import { renderTubes } from './render/tubes.js';
 import { listLevels } from './game/levels.js';
-
+import { marcado } from '../../core/html.js';
 // content shape (single board per activity):
 //   { level, mode, random, items: [ { id, board, mode } ] }
 // The board is FROZEN here in the editor so every student in a live room sees
@@ -104,7 +104,7 @@ function wireContent(root, a, ctx) {
     ctx.onChange(a); ctx.repaint();
   });
   on(root, 'change', '.bs-random', (_e, el) => {
-    c.random = /** @type {HTMLInputElement} */ (el).checked;
+    c.random = marcado(el);
     regen(a); ctx.onChange(a); ctx.repaint();
   });
   on(root, 'click', '.bs-shuffle', () => { regen(a); ctx.onChange(a); ctx.repaint(); });

@@ -8,7 +8,7 @@ import { parseAccentedText, applyMarks } from '../../core/textMarks.js';
 import { renderTextCorrectionRound, renderTextCorrectionHost, passageRoundPayload } from '../../core/textCorrectionRound.js';
 import { markPartsFor, markValueParts, passageLabel } from '../../core/textMarks.js';
 import { scoreTildesSubmission } from './scorer.js';
-
+import { esObjeto } from '../../core/frontera.js';
 /**
  * @typedef {import('../../kernel/contracts/activity.js').TextCorrectionContent} TextCorrectionContent
  * @typedef {import('../../kernel/contracts/activity.js').Passage} Passage
@@ -18,8 +18,6 @@ import { scoreTildesSubmission } from './scorer.js';
  * @typedef {import('../../kernel/contracts/template.js').HostRoundContext} HostRoundContext
  */
 
-/** @param {unknown} v @returns {v is object} */
-const esObjeto = (v) => !!v && typeof v === 'object';
 
 /** Este contenido es el de Tildes/Comas (una lista de frases con sus marcas).
  * Se pregunta por FORMA porque `migrateContent` lo recibe como el contenido de

@@ -11,7 +11,7 @@
 // esto), así que aquí no aplica ningún primitivo de core/reloj — se anota
 // para que quede claro que no es un `setInterval` a pelo (§23 no lo prohíbe:
 // prohíbe temporizadores RECURRENTES sin guard, esto es una resta puntual).
-import { html, mount } from '../../core/html.js';
+import { html, mount, raizDe } from '../../core/html.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { cabeceraHtml } from '../../core/playerHud.js';
@@ -134,7 +134,7 @@ export function renderTangramPlayer(rootSel, activity, opts = {}) {
   // matriz al nacer esa red. Al lado, la caja del contenido se parece a la
   // del marco y las piezas salen ~1,5× más grandes. Se decide UNA vez, al
   // montar (la antesala ya pidió pantalla completa: el hueco es el definitivo).
-  const hueco = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
+  const hueco = raizDe(rootSel);
   const apaisado = (hueco?.clientWidth || 4) >= (hueco?.clientHeight || 3);
   const anchoObjetivoBandeja = apaisado ? anchoUnaFila * 0.42 : Math.max(wSilueta, anchoUnaFila * 0.56);
   const { filas, alturasFila, ancho: anchoBandeja, alto: altoBandeja } = empaquetarPiezas(gap, anchoObjetivoBandeja);
@@ -169,7 +169,7 @@ export function renderTangramPlayer(rootSel, activity, opts = {}) {
       </div>
     </div>`);
 
-  const root = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
+  const root = raizDe(rootSel);
   const svgOpt = /** @type {SVGSVGElement|null} */ (root?.querySelector('.ta-svg') ?? null);
   const capaOpt = root?.querySelector('.ta-piezas') ?? null;
   if (!svgOpt || !capaOpt) return;   // el marco no llegó a montarse: no hay tablero que cablear

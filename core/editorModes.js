@@ -12,7 +12,7 @@
 //
 // Which blocks appear is gated by the SAME rules as the mode bar (core/modes.js):
 // VS only when isVsCompatible; Tarea only when the template declares modes.async.
-import { escapeHtml } from './html.js';
+import { escapeHtml, valorDe, marcado } from './html.js';
 import { FROG_SCENES } from './soloAnimations.js';
 import { on } from './events.js';
 import { isVsCompatible } from '../kernel/session/engine.js';
@@ -33,11 +33,6 @@ import { canAutoScoreRound } from './templateCapability.js';
 import { vsFeedback, setVsFeedback, vsAnimacionOn, setVsAnimacion } from './presentation.js';
 import { esHojaDeTexto } from './contentModels/textCorrection.js';
 
-// El delegador entrega el elemento que casó (`core/events.js`): se lee de ahí.
-/** @param {HTMLElement} el @returns {string} */
-const valor = (el) => /** @type {HTMLInputElement} */ (el).value;
-/** @param {HTMLElement} el @returns {boolean} */
-const marcado = (el) => /** @type {HTMLInputElement} */ (el).checked;
 
 /**
  * @param {string} key
@@ -259,7 +254,7 @@ export function wireModesTab(root, a, onChange) {
     root.querySelectorAll('.vsanim-pick').forEach(p => p.classList.toggle('is-active', p === b));
     root.querySelector('#vsanim-src-row')?.classList.toggle('d-none', !b.dataset.needssrc);
   });
-  on(root, 'input', '#vsanim-src', (_, el) => { pres().vsAnimationSrc = valor(el).trim(); onChange(a); });
+  on(root, 'input', '#vsanim-src', (_, el) => { pres().vsAnimationSrc = valorDe(el).trim(); onChange(a); });
   // VS — feedback toggles.
   on(root, 'change', '.vs-fx', (_, el) => {
     const fx = el.dataset.fx;
@@ -282,7 +277,7 @@ export function wireModesTab(root, a, onChange) {
 
   // Tarea — default attempts.
   on(root, 'input', '#tk-attempts', (_, el) => {
-    pres().taskMaxAttempts = Math.max(1, Number(valor(el)) || 1);
+    pres().taskMaxAttempts = Math.max(1, Number(valorDe(el)) || 1);
     onChange(a);
   });
 }

@@ -4,7 +4,7 @@
 // CLAUDE.md) — `loop`/`endPolicy`/`endN`/`endMinutes` viven aquí porque solo
 // este bucle los toca; `autoAdvance`/`readSecs` viajan en `rt` porque rondas y
 // `openQuestion` (en el ensamblador) también los leen.
-import { html, escapeHtml, mount } from '../../core/html.js';
+import { html, escapeHtml, mount, $input } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { studentBase } from '../../core/routing.js';
 import { serverNow } from '../../core/serverNow.js';
@@ -134,7 +134,7 @@ export function createHostLobby(rt) {
       loop = b.dataset.loop; rt.loop = loop; paintLobby(false);
     });
     on(rt.rootSel, 'click', '.adv-pick', (_, b) => { rt.autoAdvance = b.dataset.auto === '1'; paintLobby(false); });
-    const readEl = /** @type {HTMLInputElement|null} */ (document.getElementById('read-secs'));
+    const readEl = $input('#read-secs');
     if (readEl) readEl.onchange = () => { rt.readSecs = Math.max(0, Math.min(READ_SECONDS_MAX, Math.round(+readEl.value || 0))); };
     on(rt.rootSel, 'click', '#btn-start', async () => {
       const startedAt = new Date(serverNow()).toISOString();

@@ -262,9 +262,9 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   reglas del propio juego (tapó la reserva del HUD) — el relleno va en la hoja de la plantilla.
 - **Registro de plantillas y arranque**: `core/registerTemplates.js` (las 16 —13 ejercicios + 3 juegos—, punto único) +
   `core/boot.js` (sonidos/efectos al bus, versión, mute). Las 3 `main.*.js` NO repiten ese wiring.
-- **Gama baja** (`core/perf.js`): `ww-lite` en `<html>` si ≤4 núcleos o ≤2GB → sin bucles de
-  animación en reposo (cuerda Lottie estática, marquesina arcade quieta). El VS debe ser fluido en
-  pizarras A55; nunca añadir bucles rAF continuos en el hilo principal sin gate `ww-lite`.
+- **Animaciones IGUALES en todas las pantallas** (no se distingue por aparato: `ww-lite` y su
+  detector se retiraron): solo `transform`/`opacity` y lienzos con tope (1280 · DPR ≤ 1,5);
+  nada que repinte píxeles por cuadro. Lo vigilan `tests/animaciones.test.mjs` y `tools/perf-sonda.mjs`.
 - **Envío de una respuesta en la ronda**: la plantilla lo DECLARA en `meta.play.submit` —
   `'gesto'` (el toque ES la respuesta: opción, globo, tablero → CERO botones) o `'boton'`
   (se construye y se confirma → EXACTAMENTE UNO, marcado `data-ww-submit`). Ninguna vista

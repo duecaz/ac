@@ -1,7 +1,7 @@
 // Shared editor primitives. Templates compose these instead of redefining
 // title/subtitle inputs, tab strips, or list-item controls each time.
 // Pure functions: return HTML strings; attach handlers via separate helpers.
-import { escapeHtml } from './html.js';
+import { escapeHtml, $input, marcado } from './html.js';
 import { on } from './events.js';
 import { unidadDeCuenta } from './reloj.js';
 import { MAX_PARRAFOS } from './contentModels/textCorrection.js';
@@ -189,7 +189,7 @@ export function corregirAlFinalHtml(a, unidad = 'frase') {
 export function wireCorregirAlFinal(root, a, ctx) {
   on(root, 'change', '#f-alfinal', (_, el) => {
     a.review = a.review || {};
-    a.review.alFinal = /** @type {HTMLInputElement} */ (el).checked;
+    a.review.alFinal = marcado(el);
     ctx.onChange(a);
   });
 }
@@ -299,7 +299,7 @@ export function wirePegarTexto(root, partir, alPegar) {
     const decir = (t) => { if (err) { err.textContent = t; err.hidden = false; } };
     /** @param {string} id @param {number} def @param {number} min @param {number} max */
     const num = (id, def, min, max) => {
-      const campo = /** @type {HTMLInputElement|null} */ (document.getElementById(id));
+      const campo = $input('#' + id);
       const v = Math.round(Number(campo?.value));
       return Number.isFinite(v) ? Math.min(max, Math.max(min, v)) : def;
     };

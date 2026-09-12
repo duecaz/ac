@@ -12,7 +12,7 @@
 // animation when switching modes. (El wrapper de ruta suelta se eliminó: las
 // rutas #/vs/:id montan vía renderPlayerView → runMode, no había otro caller.)
 import { acquire, release } from '../core/lifecycle.js';
-import { html, escapeHtml, mount, $ } from '../core/html.js';
+import { html, escapeHtml, mount, $, $val } from '../core/html.js';
 import { on } from '../core/events.js';
 import { save } from '../core/storage.js';
 import { lsGet, lsSet } from '../core/ls.js';
@@ -33,7 +33,7 @@ import { applyPlayOptions } from '../core/playOptions.js';
 import { FLASH_MS, WIN_HOLD_MS, CONFETTI_ENCORE_MS } from '../core/timings.js';
 import { getSkin } from '../core/skins.js';
 import { uploadMedia } from '../core/upload.js';
-
+import { mensajeDe } from '../core/frontera.js';
 const AVATAR_MAX_BYTES = 150 * 1024; // tope del avatar (lo aplica uploadMedia, comprimiendo antes)
 const AVATAR_LADO_MAX = 512;         // px del lado mayor: se ve en una pastilla, no a pantalla
 
@@ -249,7 +249,7 @@ export function mountVs(host, a, ctx, opts = {}) {
             if (preview) preview.innerHTML = `<img src="${escapeHtml(data)}" class="vs-av-thumb" alt="">`;
           } catch (err) {
             if (errEl) {
-              errEl.textContent = err instanceof Error ? err.message : String(err);
+              errEl.textContent = mensajeDe(err);
               errEl.hidden = false;
             }
             campo.value = '';
@@ -267,9 +267,8 @@ export function mountVs(host, a, ctx, opts = {}) {
       },
       onStart: () => {
         /** @param {string} sel */
-        const campo = (sel) => /** @type {HTMLInputElement|null} */ ($(sel));
-        const left  = (campo('#vs-name-left')?.value  || '').trim() || 'Alumno 1';
-        const right = (campo('#vs-name-right')?.value || '').trim() || 'Alumno 2';
+        const left  = $val('#vs-name-left').trim() || 'Alumno 1';
+        const right = $val('#vs-name-right').trim() || 'Alumno 2';
         startMatch(left, right);
       }
     });

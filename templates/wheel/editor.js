@@ -1,5 +1,5 @@
 // Editor de Ruleta — preguntas con imagen opcional (igual que Pregunta Live).
-import { escapeHtml } from '../../core/html.js';
+import { escapeHtml, marcado } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { itemControlsHtml, wireItemList, wireCampoTexto } from '../../core/editorPrimitives.js';
 import { renderEditorShell } from '../../core/editorShell.js';
@@ -94,7 +94,7 @@ function wireRules(root, a, ctx) {
     ctx.onChange(a);
   });
   on(root, 'change', '#we-rm', (e, el) => {
-    a.rules.removeAfterSpin = /** @type {HTMLInputElement} */ (el).checked;
+    a.rules.removeAfterSpin = marcado(el);
     ctx.onChange(a);
   });
 }

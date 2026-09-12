@@ -3,7 +3,7 @@
 // banco compartido (assets/juegos/dibujos/) y se inyecta INLINE —un <img> no
 // deja engancharse a sus zonas— para que tocar un <path>/forma con
 // data-zona sea la mecánica entera.
-import { html, mount } from '../../core/html.js';
+import { html, mount, raizDe } from '../../core/html.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { on } from '../../core/events.js';
@@ -62,7 +62,7 @@ export async function renderColorearPlayer(rootSel, activity, opts = {}) {
       </div>
     </div>`);
 
-  const raiz = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
+  const raiz = raizDe(rootSel);
   const lienzo = raiz?.querySelector('#co-lienzo');
 
   // El primer color nace ELEGIDO (co-color--on ya pintado arriba): el niño

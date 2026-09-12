@@ -74,25 +74,13 @@ async function abrirPizarra() {
 async function abrirAula() {
   const page = await browser.newPage({ viewport: PIZARRA, deviceScaleFactor: DPR_AULA });
   const cdp = await page.context().newCDPSession(page);
-  // EL APARATO DEL AULA TAMBIÉN TIENE SU HARDWARE. La pizarra del colegio lleva
-  // un RK3588: OCHO núcleos y 8 GB, o sea que para `isLowEndDevice()` (core/perf.js)
-  // es un equipo POTENTE y corre todas las animaciones a pleno — eso es justo lo
-  // que hay que medir. El runner de CI puede tener 4 núcleos o menos: sin fijarlo,
-  // el arranque le pone `ww-lite` a <html>, el CSS apaga la marquesina y el latido
-  // y la cuerda deja de respirar → la sonda mediría una PANTALLA QUIETA y daría
-  // verde gratis, que es exactamente el agujero por el que se coló «la app va
-  // lenta en las animaciones». Se fija ANTES de cargar porque `applyPerfClass()`
-  // corre en el boot y la clase ya no se quita.
-  await page.addInitScript(() => {
-    Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8, configurable: true });
-    Object.defineProperty(navigator, 'deviceMemory', { get: () => 8, configurable: true });
-  });
+  // YA NO HACE FALTA FINGIR EL HARDWARE. Antes se fijaban 8 núcleos y 8 GB para
+  // que el runner de CI no arrancara en `ww-lite` (que apagaba la marquesina, el
+  // latido y el reposo de la cuerda) y la sonda no midiera una pantalla quieta.
+  // Esa puerta ya no existe: la app tiene UNA animación por sitio, igual en
+  // todas las pantallas, así que lo que aquí se mide es lo que ve el aula.
   await page.goto(`${BASE}/teacher.html?backend=local`, { waitUntil: 'domcontentloaded' });
   await page.waitForFunction(() => document.querySelector('#app')?.children.length > 0, { timeout: 20000 });
-  // Contra-prueba de la mentira anterior: si `ww-lite` está puesto, lo medido no
-  // es la pizarra del aula sino una versión degradada de la app.
-  const lite = await page.evaluate(() => document.documentElement.classList.contains('ww-lite'));
-  if (lite) mal('la pizarra del aula arrancó en modo `ww-lite`: las animaciones están apagadas y lo medido NO vale');
   return { page, frenar: () => cdp.send('Emulation.setCPUThrottlingRate', { rate: FRENO }) };
 }
 
@@ -292,9 +280,13 @@ const MEDIR = (ms) => `(async () => {
     })}</div>`;
     const medida = eval(medir);
     emitGame(GameEvents.PODIUM, { top: [{ name: 'Equipo A', score: 90 }] });
+    // EL CONFETI SE COMPRUEBA AL SOLTARLO, NO AL FINAL. La ráfaga del podio dura
+    // 120 ticks (~2 s) y el lienzo se RETIRA en cuanto no queda un papelito vivo,
+    // así que preguntar por él después de medir 2,5 s daba «no soltó confeti»
+    // sobre una celebración que sí había ocurrido entera dentro de la medida.
+    const confeti = !!document.querySelector('canvas[style*="99999"]');
     const out = await medida;
-    const cv = document.querySelector('canvas[style*="99999"]');
-    return { ...out, foco: !!document.querySelector('.vs-celebration'), confeti: !!cv };
+    return { ...out, foco: !!document.querySelector('.vs-celebration'), confeti };
   }, MEDIR(2500));
   if (!r.foco) mal('el cierre del duelo no se montó: no se ha medido ninguna celebración');
   else if (!r.confeti) mal('la celebración no soltó confeti: se estaría midiendo un podio quieto (verde gratis)');

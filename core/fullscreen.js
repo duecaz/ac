@@ -7,7 +7,7 @@
 // Envolvemos en Promise.resolve(...).catch() para que un fullscreen denegado sea
 // un no-op silencioso y el juego arranque igual. Devuelve la promesa (ya segura).
 import { lucide } from './lucide.js';
-
+import { raizDe } from './html.js';
 /**
  * Los prefijos de WebKit no están en la librería del DOM y solo se nombran aquí.
  * @typedef {Document & {webkitExitFullscreen?: () => Promise<void>|void,
@@ -239,7 +239,7 @@ export function vigilarColapsoFullscreen(ambito, contenido, opts = {}) {
  *   Quien no tiene juego (las pantallas en vivo del docente) no lo pasa.
  */
 export function attachFullscreenButton(rootSel, { target, contenido } = {}) {
-  const root = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
+  const root = raizDe(rootSel);
   if (!root) return () => {};
   // POR DELEGACIÓN, no botón a botón. Antes se guardaba la lista de botones que
   // había AL LLAMAR, así que un botón pintado después —la cabecera del Quiz se

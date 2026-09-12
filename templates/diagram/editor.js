@@ -1,7 +1,7 @@
 // Editor de "Etiqueta el diagrama": sube una imagen de fondo, HAZ CLIC sobre ella
 // para poner un pin (guarda x,y como fracción), arrástralo para moverlo, y escribe
 // la etiqueta de cada pin. El chasis (título, ajustes, tabs) lo pone el shell.
-import { escapeHtml } from '../../core/html.js';
+import { escapeHtml, marcado } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { ruleScopeNote } from '../../core/editorPrimitives.js';
 import { uploadMedia, medirImagen } from '../../core/upload.js';
@@ -11,7 +11,7 @@ import { renderEditorShell } from '../../core/editorShell.js';
 import { toast, TOAST_LARGO, TOAST_NORMAL } from '../../core/toast.js';
 import { abrirBuscadorImagenes } from '../../core/imageSearchModal.js';
 import { creditoTexto } from '../../core/imageSearch.js';
-
+import { mensajeDe } from '../../core/frontera.js';
 /**
  * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
  * @typedef {import('../../kernel/contracts/activity.js').DiagramContent} DiagramContent
@@ -130,7 +130,7 @@ function wireContent(root, a, ctx) {
       // foto de enunciado salía borroso justo donde hay que señalar.
       ponerImagen(await uploadMedia(file,
         { maxBytes: QUOTAS.canvasImageBytes, ladoMax: QUOTAS.canvasImageSide }));
-    } catch (err) { toast('No se pudo cargar la imagen: ' + (err instanceof Error ? err.message : String(err)), 'warning', TOAST_NORMAL); }
+    } catch (err) { toast('No se pudo cargar la imagen: ' + (mensajeDe(err)), 'warning', TOAST_NORMAL); }
   });
 
   // BUSCAR (F6): el diagrama es el caso que lo pidió — nadie tiene a mano un
@@ -219,7 +219,7 @@ function rulesHtml(a) {
 function wireRules(root, a, ctx) {
   on(root, 'change', '#dg-rand', (_e, el) => {
     a.rules = a.rules || {};
-    a.rules.randomize = /** @type {HTMLInputElement} */ (el).checked;
+    a.rules.randomize = marcado(el);
     ctx.onChange(a);
   });
 }

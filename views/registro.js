@@ -3,13 +3,13 @@
 // propia (no modal): más campos, y sitio para explicar qué obtiene el profe.
 // El servidor prohíbe traer `role` en el alta (nadie se registra como admin) —
 // regla en tools/setup-pocketbase.ps1 (Apply-Users).
-import { html, mount } from '../core/html.js';
+import { html, mount, $val } from '../core/html.js';
 import { on } from '../core/events.js';
 import { navigate } from '../core/router.js';
 import { getUser, signUp, signInWithGoogle } from '../core/auth.js';
 import { saveProfile } from '../core/profile.js';
 import { toast, TOAST_NORMAL } from '../core/toast.js';
-
+import { mensajeDe } from '../core/frontera.js';
 /** @param {string} rootSel */
 export async function renderRegistro(rootSel) {
   if (await getUser()) { navigate('#/mine'); return; }   // ya dentro: a su casa
@@ -39,7 +39,7 @@ export async function renderRegistro(rootSel) {
   const err = (m) => { const el = document.getElementById('rg-err'); if (el) el.textContent = m || ''; };
 
   on(rootSel, 'click', '#rg-google', async () => {
-    try { await signInWithGoogle(); } catch (e) { err(e instanceof Error ? e.message : String(e)); }
+    try { await signInWithGoogle(); } catch (e) { err(mensajeDe(e)); }
   });
   on(rootSel, 'click', '#rg-entrar', async (e) => {
     e.preventDefault();
@@ -50,7 +50,7 @@ export async function renderRegistro(rootSel) {
   on(rootSel, 'submit', '#rg-form', async (e) => {
     e.preventDefault();
     /** @param {string} id @returns {string} */
-    const v = (id) => /** @type {HTMLInputElement|null} */ (document.getElementById(id))?.value ?? '';
+    const v = (id) => $val('#' + id);
     const email = v('rg-email').trim(), name = v('rg-name').trim(), school = v('rg-school').trim();
     const pass = v('rg-pass'), pass2 = v('rg-pass2');
     if (pass !== pass2) return err('Las contraseñas no coinciden.');
@@ -63,7 +63,7 @@ export async function renderRegistro(rootSel) {
       // falle el perfil no tumba un alta ya hecha — se dice y se puede reintentar
       // desde "Mi perfil" (R6).
       try { await saveProfile(id, { name, ...(school ? { school } : {}) }); }
-      catch (e2) { console.warn('[registro] cuenta creada; el perfil no se pudo sellar aún:', e2 instanceof Error ? e2.message : String(e2)); }
+      catch (e2) { console.warn('[registro] cuenta creada; el perfil no se pudo sellar aún:', mensajeDe(e2)); }
       toast(`Cuenta creada. ¡Bienvenido, ${name}!`, 'success', TOAST_NORMAL);
       navigate('#/mine');
     } catch (e2) {

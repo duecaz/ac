@@ -137,10 +137,11 @@ const all = listTemplates().filter(T => reales.has(T.meta.name));
 {
   const { readFileSync, readdirSync, statSync } = await import('node:fs');
   const raiz = join(TDIR, '..');
-  // `core/perf.js` es la excepción LEGÍTIMA y declarada: mide el aparato para
-  // encender `ww-lite` (R1, pizarras de gama baja). Nadie más lo necesita, y
-  // sobre todo: ese dato no viaja ni se enseña.
-  const EXCEPCIONES_APARATO = { 'core/perf.js': 'mide el dispositivo para el modo lite (R1); no lo guarda ni lo enseña' };
+  // SIN EXCEPCIONES. La única que hubo —`core/perf.js`, que medía el aparato
+  // para encender `ww-lite`— se borró al retirarse el modo lite: hoy no hay
+  // ningún módulo que necesite saber en qué aparato corre.
+  /** @type {Record<string, string>} */
+  const EXCEPCIONES_APARATO = {};
   const HUELLA = /navigator\.(userAgent|platform|vendor|userAgentData)/;
   const fuera = [];
   const walk = (dir, base) => {
@@ -157,7 +158,7 @@ const all = listTemplates().filter(T => reales.has(T.meta.name));
     `R7: estos módulos leen la huella del aparato sin ser la excepción declarada: ${fuera.join(' · ')}`);
   // CONTRA-PRUEBA: el escaneo tiene dientes (si no, pasaría mirando a nada).
   assert.ok(HUELLA.test('const ua = navigator.userAgent;'), 'el escáner detecta la huella del aparato');
-  ok('R7: nadie lee la huella del aparato salvo core/perf.js (modo lite), y se comprueba escaneando');
+  ok('R7: NADIE lee la huella del aparato (ni para degradar animaciones), y se comprueba escaneando');
 }
 
 console.log(`\n  ${passed} kind checks passed`);

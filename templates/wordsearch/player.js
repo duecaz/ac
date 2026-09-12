@@ -1,5 +1,5 @@
 // Word search player: solo + VS-round variant.
-import { html, escapeHtml, mount } from '../../core/html.js';
+import { html, escapeHtml, mount, raizDe } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { WRONG_FLASH_MS } from '../../core/timings.js';
@@ -103,7 +103,7 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
   const ctx = runFreeformPlayer(rootSel, activity, opts);
   const state = { score: 0, found: new Set() };
 
-  function rootEl() { return typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel; }
+  function rootEl() { return raizDe(rootSel); }
 
   // ── Build the initial DOM (render once; then mutate for performance) ────────
   function render() {

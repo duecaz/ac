@@ -8,7 +8,7 @@
 // opts.onFinish de mountVs). Si algún día una "lista" debe poder jugarse en
 // otros modos (equipos/live), ahí sí tocará registrarla como modo; mientras
 // tanto, registrarla solo añadiría gateo y setup que no aplican.
-import { html, escapeHtml, mount } from '../core/html.js';
+import { html, escapeHtml, mount, raizDe, $input } from '../core/html.js';
 import { getAnywhere } from '../core/storage.js';
 import { cierreHtml } from '../core/podium.js';
 import { renderAntesala } from './antesala.js';
@@ -35,7 +35,7 @@ import { destinoTrasJugar } from '../core/afterPlay.js';
 
 /** @param {string|Element} rootSel @param {string} id */
 export async function renderListView(rootSel, id) {
-  const raiz = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
+  const raiz = raizDe(rootSel);
   if (!raiz) return;
   // Ya comprobado: las funciones de abajo se declaran antes del guard (hoisting),
   // así que el marco se fija aquí en una constante sin nulo.
@@ -113,8 +113,8 @@ export async function renderListView(rootSel, id) {
       note: 'Las puntuaciones de cada ronda se acumulan en el marcador final.',
       backHref: '#/home',
       onStart: () => {
-        leftName = (/** @type {HTMLInputElement|null} */ (document.getElementById('list-name-left'))?.value || '').trim() || 'Alumno 1';
-        rightName = (/** @type {HTMLInputElement|null} */ (document.getElementById('list-name-right'))?.value || '').trim() || 'Alumno 2';
+        leftName = ($input('#list-name-left')?.value || '').trim() || 'Alumno 1';
+        rightName = ($input('#list-name-right')?.value || '').trim() || 'Alumno 2';
         runRounds();
       }
     });

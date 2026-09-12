@@ -21,7 +21,9 @@
 import { rid } from './ids.js';
 import { parseRichText } from './textMarks.js';
 import { repartirCorrecta } from './contentModels/qa.js';
-
+// LO QUE DEVUELVE EL MODELO VIENE DE FUERA: se lee sin prometer forma y se
+// estrecha campo a campo — `saco` es el estrechador de la frontera.
+import { saco } from './frontera.js';
 // Aviso del diálogo cuando el profe pulsa «Escribir» sin decir de qué va.
 export const TEMA_VACIO = 'Escribe de qué va la actividad.';
 
@@ -69,10 +71,6 @@ export function iaSabeEscribir(modelo) {
 // ── Utilidades de revisión ───────────────────────────────────────────────────
 /** @param {unknown} v */
 const txt = (v) => String(v ?? '').replace(/\s+/g, ' ').trim();
-// LO QUE DEVUELVE EL MODELO VIENE DE FUERA: se lee sin prometer forma y se
-// estrecha campo a campo (es justo lo que revisa este fichero).
-/** @param {unknown} v @returns {Record<string, unknown>} */
-const saco = (v) => (v && typeof v === 'object') ? /** @type {Record<string, unknown>} */ (v) : {};
 // Compara como compara el juego: sin tildes ni mayúsculas (mismo criterio que
 // `isCorrect` en core/contentModels/qa.js — si se comparara distinto, un
 // distractor «Mexico» pasaría por bueno frente a la respuesta «México»).

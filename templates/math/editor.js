@@ -1,6 +1,6 @@
 // Editor de Operaciones — solo aporta sus paneles; el chasis (incluida la
 // pestaña "Modos") lo pone el shell compartido.
-import { escapeHtml } from '../../core/html.js';
+import { escapeHtml, valorDe, $input, marcado } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { ruleScopeNote, itemSecondsFieldHtml, wireItemSeconds } from '../../core/editorPrimitives.js';
 import { rid } from '../../core/ids.js';
@@ -61,7 +61,7 @@ function wireContent(root, a, ctx) {
     ctx.onChange(a); ctx.repaint();
   });
   on(root, 'click', '#gen-table', () => {
-    const campo = /** @type {HTMLInputElement|null} */ (root.querySelector('#gen-n'));
+    const campo = $input('#gen-n', root);
     const n = Math.max(1, Math.min(12, +(campo?.value ?? '') || 2));
     for (let i = 1; i <= 10; i++) items.push({ id: rid('m_'), question: `${n} × ${i}`, answer: String(n * i) });
     ctx.onChange(a); ctx.repaint();
@@ -70,12 +70,6 @@ function wireContent(root, a, ctx) {
   on(root, 'input', '.it-a', (e, el) => { items[+(el.dataset.i ?? 0)].answer = valorDe(e).trim(); ctx.onChange(a); });
   wireItemSeconds(root, a, ctx, items);   // R-3 · tiempo por pregunta
   on(root, 'click', '.it-del', (_, b) => { items.splice(+(b.dataset.i ?? 0), 1); ctx.onChange(a); ctx.repaint(); });
-}
-
-/** Lo tecleado en el campo que disparó el evento. @param {Event} e @returns {string} */
-function valorDe(e) {
-  const el = /** @type {HTMLInputElement|null} */ (e.target);
-  return el ? el.value : '';
 }
 
 /** @param {Activity} a @returns {string} */
@@ -90,7 +84,7 @@ function rulesHtml(a) {
 function wireRules(root, a, ctx) {
   on(root, 'change', '#f-rand', (e) => {
     const el = /** @type {HTMLInputElement|null} */ (e.target);
-    a.rules.randomize = !!el?.checked;
+    a.rules.randomize = marcado(el);
     ctx.onChange(a);
   });
 }

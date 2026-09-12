@@ -19,7 +19,8 @@ una GPU modesta (RK3588/Mali) y Chrome 123. Tres cosas se juntan:
    tick recalcula los 153 trazados, reescribe el DOM del SVG y el navegador lo
    rasteriza a 3840×2160. Eso es trabajo del HILO PRINCIPAL, no de la GPU: por
    eso el teclado del duelo se traba.
-2. **La puerta «gama baja» no se abre en la pizarra.** `core/perf.js` decide
+2. **La puerta «gama baja» no se abre en la pizarra.** El detector de aparato
+   (`isLowEndDevice()`, en un módulo `core/perf` ya retirado en la Fase 5) decidía
    `ww-lite` por hardware (≤4 núcleos o ≤2 GB). Un RK3588 tiene 8 núcleos y
    4-8 GB: para el detector es un equipo potente y la cuerda corre a pleno.
    Y `ww-lite` hoy solo apaga 3 cosas (los globos, el reposo de la cuerda, el
@@ -102,12 +103,14 @@ o `background-position` (la marquesina arcade anima `text-indent`: es layout
 por cuadro, se rehace con `transform`). Añade la regla a
 `docs/estilos-de-actividad.md` con su porqué (DPR 3).
 
-**Fase 4 · lienzos con tope, todos.** El del confeti ya lo tiene (1280). El
+**Fase 4 · lienzos con tope, todos.** ✅ HECHA (2026-09-12). El del confeti ya lo tiene (1280). El
 lienzo de dibujo de Tildes/Comas (`core/textCorrectionDraw.js`) y cualquier
 canvas del juego se crean a `min(devicePixelRatio, 1,5)`: a esa escala el
 trazo del lápiz se ve igual y cuesta la mitad o menos.
 
-**Fase 5 · retirar `ww-lite`.** Cuando la soga, el podio y las hojas cumplan
+**Fase 5 · retirar `ww-lite`.** ✅ HECHA (2026-09-12): borrados el detector, la
+clase y sus tres bifurcaciones (globos, reposo de la cuerda, arcade) y la mitad
+de papelitos del confeti; el `ww-lite` que fingía la sonda tampoco hace falta. Cuando la soga, el podio y las hojas cumplan
 el presupuesto, la clase `ww-lite`, `isLowEndDevice()` y las tres bifurcaciones
 que hoy dependen de ella (globos, reposo de la cuerda, arcade) se BORRAN: una
 sola animación por sitio, la misma en todas las pantallas. Si algún día hace

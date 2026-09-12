@@ -6,7 +6,7 @@
 //
 // Pega el texto CON la marca (comas o tildes); la app la quita y guarda las
 // posiciones. Solo pinta sus paneles; el chasis lo pone core/editorShell.js.
-import { escapeHtml } from './html.js';
+import { escapeHtml, valorDe, marcado } from './html.js';
 import { toast, TOAST_NORMAL } from './toast.js';
 import { on } from './events.js';
 import { newPassage, partirEnParrafos } from './contentModels/textCorrection.js';
@@ -31,11 +31,6 @@ import { renderEditorShell } from './editorShell.js';
  *  @param {Activity} a @returns {TextCorrectionContent} */
 const hoja = (a) => /** @type {TextCorrectionContent} */ (a.content);
 
-// El delegador entrega el elemento que casó (`core/events.js`): se lee de ahí.
-/** @param {HTMLElement} el @returns {string} */
-const valor = (el) => /** @type {HTMLInputElement} */ (el).value;
-/** @param {HTMLElement} el @returns {boolean} */
-const marcado = (el) => /** @type {HTMLInputElement} */ (el).checked;
 
 /**
  * @param {Element} root
@@ -86,7 +81,7 @@ function wireContent(root, a, ctx, { parse, textos }) {
   wireItemSeconds(root, a, ctx, hoja(a).passages);   // R-3 · tiempo por frase
   on(root, 'input', '.tp-accented', (_, el) => {
     const idx = Number(el.dataset.i);
-    const { text, marks } = parse(valor(el));
+    const { text, marks } = parse(valorDe(el));
     const p = hoja(a).passages[idx];
     if (!p) return;
     p.text = text; p.marks = marks;

@@ -9,7 +9,6 @@ import './sounds.js';   // efecto: suscribe sonidos a GameEvents
 import './effects.js';  // efecto: suscribe confeti/efectos a GameEvents
 import { VERSION } from './constants.js';
 import { isMuted, setMuted } from './sounds.js';
-import { applyPerfClass } from './perf.js';
 import { observeResize } from './observeResize.js';
 
 /** ¿La URL pide el medidor de fluidez? `?perf=1`, en cualquiera de las tres
@@ -23,10 +22,6 @@ function pidenMedidorDeFluidez() {
   // lupa de diagnóstico, no algo que el usuario haya pedido (R6).
   catch { return false; }
 }
-
-// Marca el dispositivo como lite (gama baja) lo antes posible → el CSS y la
-// animación central degradan para que el VS responda fluido en pizarras lentas.
-applyPerfClass();
 
 // EL MEDIDOR DE FLUIDEZ, solo si la URL lo pide (`?perf=1`). Va aquí y no en
 // cada `main.*` por la misma razón que el resto de este fichero: tres copias de

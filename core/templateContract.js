@@ -12,7 +12,7 @@ import { sessionItems } from '../kernel/content/sessionItems.js';
 import { getModel } from '../kernel/content/models.js';
 import { canAutoScoreRound, faltaParaLive } from './templateCapability.js';
 import { LIVE_LOOPS } from './liveLoops.js';
-
+import { mensajeDe } from './frontera.js';
 /** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
 
 /**
@@ -195,7 +195,7 @@ export function checkTemplateContract(T) {
   if (typeof m.defaultContent !== 'function') {
     issues.push('meta.defaultContent no es función');
   } else {
-    try { dc = /** @type {import('../kernel/contracts/activity.js').ActivityContent} */ (m.defaultContent()); } catch (e) { issues.push(`defaultContent() lanza: ${e instanceof Error ? e.message : String(e)}`); }
+    try { dc = /** @type {import('../kernel/contracts/activity.js').ActivityContent} */ (m.defaultContent()); } catch (e) { issues.push(`defaultContent() lanza: ${mensajeDe(e)}`); }
     if (dc && model) {
       const v = model.validate(dc);   // ContentModelContract: {ok, errors}
       if (v && v.ok === false) issues.push(`defaultContent no pasa validate() de "${m.contentModel}": ${(v.errors || []).join(', ')}`);
@@ -265,7 +265,7 @@ export function checkTemplateContract(T) {
       if (JSON.stringify(once) !== JSON.stringify(twice)) {
         issues.push('migrateContent NO es idempotente sobre defaultContent (migrar dos veces cambia el contenido)');
       }
-    } catch (e) { issues.push(`migrateContent lanza sobre defaultContent: ${e instanceof Error ? e.message : String(e)}`); }
+    } catch (e) { issues.push(`migrateContent lanza sobre defaultContent: ${mensajeDe(e)}`); }
   }
 
   return issues;

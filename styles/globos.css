@@ -27,8 +27,11 @@
   cursor: pointer; touch-action: manipulation;
   box-shadow: inset calc(max(72px, 17cqmin) / -12) calc(max(72px, 17cqmin) / -10) 0 rgba(0,0,0,.12);
   transition: transform .12s;
+  /* Cada globo cuelga con su propia inclinación (`--gl-sway`, puesto inline por
+     índice): la variedad que antes daba el bamboleo, pero QUIETA. */
+  transform: rotate(calc(var(--gl-sway, 0) * 2deg));
 }
-.gl-balloon:hover { transform: scale(1.06); }
+.gl-balloon:hover { transform: rotate(calc(var(--gl-sway, 0) * 2deg)) scale(1.06); }
 .gl-text { overflow: hidden; max-height: 100%; overflow-wrap: break-word; }
 /* Cuerda del globo. */
 .gl-balloon::after {
@@ -53,15 +56,18 @@
 .gl-c3 { background: var(--ww-shape-3); color: var(--ww-shape-3-fg, #1f2937); }
 .gl-c4 { background: var(--ww-shape-4); color: var(--ww-shape-4-fg, #fff); }
 
-/* Bamboleo en reposo — transform puro (compositor). APAGADO en gama baja. */
-@keyframes gl-bob {
-  0%, 100% { transform: translateY(0) rotate(calc(var(--gl-sway, 0) * 1.5deg)); }
-  50%      { transform: translateY(-1.8cqmin) rotate(calc(var(--gl-sway, 0) * -1.5deg)); }
-}
-.gl-balloon { animation: gl-bob 3.2s ease-in-out infinite; }
-.gl-balloon:nth-child(2n) { animation-duration: 3.9s; }
-.gl-balloon:nth-child(3n) { animation-delay: -1.3s; }
-html.ww-lite .gl-balloon { animation: none; }
+/* EL GLOBO SE QUEDA QUIETO — y NO por ser caro, sino porque es el BOTÓN.
+   Había un bamboleo en reposo (`gl-bob`: translateY + rotate infinitos) que
+   `ww-lite` apagaba justo en las pizarras de gama baja. Al retirarse el modo
+   lite (una animación por sitio, igual en todas las pantallas) el vaivén pasó a
+   correr SIEMPRE… y entonces se vio lo que la puerta tapaba: un globo que no
+   para de moverse es un OBJETIVO TÁCTIL en movimiento (norte R1: pizarra táctil,
+   a 2-3 metros, y quien toca suele ser un alumno). La matriz lo cazó en las tres
+   modalidades —`scrollIntoViewIfNeeded` agota 30 s esperando a que el globo se
+   esté quieto para poder tocarlo—, o sea que lo que un arnés no consigue tocar,
+   una mano tampoco lo tiene fácil. La variedad que daba el vaivén se conserva
+   como INCLINACIÓN fija (arriba, `--gl-sway`), y el movimiento sigue donde el
+   juego lo pide: el `:hover` crece y el pinchazo explota (`gl-burst`). */
 
 /* Explosión: escala + desvanecimiento; el color del veredicto por semántica. */
 @keyframes gl-burst {

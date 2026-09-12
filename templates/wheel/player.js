@@ -1,5 +1,5 @@
 // SVG-based spinning wheel for solo/practice mode. No scoring; just lands on a random entry.
-import { html, escapeHtml, mount } from '../../core/html.js';
+import { html, escapeHtml, mount, raizDe } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { pickIndex } from '../../core/ruleta/logic.js';
 import { wheelSvg } from '../../core/ruleta/render.js';
@@ -39,7 +39,7 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
   let rotation = 0;
   let spinning = false;
 
-  const rootEl = () => (typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel);
+  const rootEl = () => raizDe(rootSel);
 
   /** @param {string|null} [winner] */
   function paint(winner = null) {

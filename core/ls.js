@@ -1,3 +1,4 @@
+import { mensajeDe } from './frontera.js';
 // Safe localStorage/sessionStorage wrappers — ÚNICO punto de contacto con el
 // almacén del navegador (§21 aplicada al almacén: cada clave `ww.*` tiene un
 // dueño en LS_OWNERS, core/normsCheck.js, y se accede SOLO por aquí; la regla
@@ -39,7 +40,7 @@ export function lsSet(key, val) {
       console.warn('[ls] localStorage quota exceeded — data not saved for key:', key);
       try { window.dispatchEvent(new CustomEvent('ww:storage-full', { detail: { key } })); } catch {}
     } else {
-      console.warn('[ls] localStorage write failed:', e instanceof Error ? e.message : String(e));
+      console.warn('[ls] localStorage write failed:', mensajeDe(e));
     }
     return false;
   }
@@ -73,7 +74,7 @@ export function ssSet(key, val) {
       console.warn('[ls] sessionStorage quota exceeded — data not saved for key:', key);
       try { window.dispatchEvent(new CustomEvent('ww:storage-full', { detail: { key } })); } catch {}
     } else {
-      console.warn('[ls] sessionStorage write failed:', e instanceof Error ? e.message : String(e));
+      console.warn('[ls] sessionStorage write failed:', mensajeDe(e));
     }
     return false;
   }

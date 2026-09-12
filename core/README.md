@@ -7,8 +7,7 @@ simples), y esta es la guía mental por ROL:
 ## Plumbing (infra básica)
 `html` · `events` · `router` · `routing` · `lifecycle` · `state` · `constants`
 · `ls` (localStorage seguro/cuota) · `clock` (reloj inyectable → tests
-deterministas) · `boot` (arranque común de las 3 entradas) · `perf` (detección
-de gama baja → clase `ww-lite`)
+deterministas) · `boot` (arranque común de las 3 entradas)
 
 ## Datos / persistencia
 `storage` · `storageMerge` · `migrate` · `registry` · `registerTemplates`

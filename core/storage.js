@@ -3,7 +3,7 @@ import { migrate, normalize } from './migrate.js';
 import { mergeRemote } from './storageMerge.js';
 import { lsGet, lsSet, objetoDe } from './ls.js';
 import { getAuthUserId, getAuthName } from './auth.js';
-
+import { mensajeDe, estadoDe } from './frontera.js';
 /**
  * @typedef {import('../kernel/contracts/activity.js').Activity} Activity
  * @typedef {import('../kernel/contracts/activity.js').ActivityRow} ActivityRow
@@ -43,22 +43,6 @@ function addTombstone(id) { const t = readTombstones(); t[id] = new Date().toISO
 function clearTombstone(id) { const t = readTombstones(); if (t[id]) { delete t[id]; writeTombstones(t); } }
 
 
-/** El estado HTTP de un error de backend, si lo trae.
- * @param {unknown} e
- * @returns {number|null}
- */
-function httpStatus(e) {
-  if (e && typeof e === 'object' && 'status' in e) {
-    const s = /** @type {{status?: unknown}} */ (e).status;
-    if (typeof s === 'number') return s;
-  }
-  return null;
-}
-
-/** @param {unknown} e @returns {string} */
-function mensajeDe(e) {
-  return e instanceof Error ? e.message : String(e);
-}
 export function tombstoneSet() { return new Set(Object.keys(readTombstones())); }
 
 /** @param {string|null|undefined} userId */
@@ -309,7 +293,7 @@ export function remove(id) {
   return remoteDelete(id)
     .then(() => { clearTombstone(id); return { ok: true }; })
     .catch(err => {
-      if (httpStatus(err) === 404) { clearTombstone(id); return { ok: true }; } // ya no existe en remoto
+      if (estadoDe(err) === 404) { clearTombstone(id); return { ok: true }; } // ya no existe en remoto
       console.warn('[storage] remote delete failed (se reintentará):', mensajeDe(err));
       return { ok: false, error: mensajeDe(err) || 'sin conexión' };
     });
@@ -348,7 +332,7 @@ async function retryTombstones() {
   const ids = Object.keys(readTombstones());
   for (const id of ids) {
     try { await remoteDelete(id); clearTombstone(id); }
-    catch (err) { if (httpStatus(err) === 404) clearTombstone(id); /* si no, se deja para el próximo intento */ }
+    catch (err) { if (estadoDe(err) === 404) clearTombstone(id); /* si no, se deja para el próximo intento */ }
   }
   return { pending: ids.length };
 }

@@ -75,7 +75,6 @@ qa ⇄ pairs        qa ──▶ items        pairs ──▶ items
 | **Calibrar pizarra** | `core/penCalibration.js` | En Tildes/Comas: mide el tamaño de contacto de lápiz punta/dedo/trasero/palma para distinguir dibujar vs borrar. |
 | **Animación de progreso (Solo)** | `core/soloAnimator.js` | Carril opcional sobre el ejercicio (la rana que salta), gated a modo Individual. |
 | **Animación central (VS)** | `core/vsAnimations.js` | La "cuerda" tira según el marcador; **apagada por defecto en Tildes/Comas** (el texto necesita el ancho). |
-| **Gama baja (`ww-lite`)** | `core/perf.js` | En pizarras A55 (≤4 núcleos / ≤2GB) apaga los bucles de animación en reposo → el teclado VS responde fluido. |
 | **Sonidos / efectos** | `core/sounds.js` · `core/effects.js` | Enganchados al bus `GameEvents`; toggles en la pantalla de inicio. |
 | **Ritmo de juego** | `core/timings.js` | Las pausas con nombre (destellos, celebración, confeti). |
 

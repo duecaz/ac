@@ -10,7 +10,7 @@ import { acquire } from '../core/lifecycle.js';
 import { buildSwitchOptions, applyAndSave } from './switchTemplate.js';
 import { downloadActivitiesJson } from '../core/io.js';
 import { checkActivitySize } from '../core/quotas.js';
-
+import { mensajeDe } from '../core/frontera.js';
 const AUTOSAVE_DELAY_MS = 2000;
 let _sizeWarned = false; // aviso de tamaño una vez por sesión
 
@@ -186,7 +186,7 @@ export function renderEditView(rootSel, { id, template }) {
       if (!silent) toast(activity.visibility === 'public' ? 'Publicada en la biblioteca ✓ Ya aparece en Explorar.' : 'Guardado como borrador (solo tú la ves).', 'success');
     } catch (e) {
       setState('Error al sincronizar (queda local)', 'danger', 'bi-exclamation-triangle-fill');
-      if (!silent) toast('No se pudo sincronizar: ' + (e instanceof Error ? e.message : String(e)), 'danger', TOAST_LARGO);
+      if (!silent) toast('No se pudo sincronizar: ' + (mensajeDe(e)), 'danger', TOAST_LARGO);
     } finally {
       saving = false;
     }

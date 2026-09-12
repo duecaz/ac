@@ -29,7 +29,10 @@
  *             autor:string, licencia:string, pagina:string, fuente:string}} Imagen */
 
 import { PIXABAY_KEY } from './imageKeys.js';
-
+// JSON DE FUERA: se lee sin prometer forma y se estrecha campo a campo con
+// `saco`. Un catálogo ajeno puede cambiar de esquema cualquier martes, y lo que
+// no venga como se espera se queda en cadena vacía (la imagen se filtra abajo).
+import { saco } from './frontera.js';
 /**
  * UNA FUENTE del buscador. O trae su propio recorrido (`buscar`, cuando hacen
  * falta dos peticiones) o declara `url` + `parse`.
@@ -43,11 +46,6 @@ import { PIXABAY_KEY } from './imageKeys.js';
  * @property {(json: unknown) => Imagen[]} [parse]
  */
 
-// JSON DE FUERA: se lee sin prometer forma y se estrecha campo a campo. Un
-// catálogo ajeno puede cambiar de esquema cualquier martes, y lo que no venga
-// como se espera se queda en cadena vacía (la imagen se filtra más abajo).
-/** @param {unknown} v @returns {Record<string, unknown>} */
-const saco = (v) => (v && typeof v === 'object') ? /** @type {Record<string, unknown>} */ (v) : {};
 /** @param {unknown} v @returns {unknown[]} */
 const lista = (v) => (Array.isArray(v) ? v : []);
 /** @param {unknown} v @returns {string} */

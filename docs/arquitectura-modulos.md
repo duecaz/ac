@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **341 módulos · 1367 imports internos.**
+> **341 módulos · 1412 imports internos.**
 
 ### Ir a otro documento
 
@@ -31,11 +31,11 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 2130 | 7 · 1029 | 0.48 |
-| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 11 · 3397 | 13 · 1644 | 0.48 |
+| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 11 · 3386 | 13 · 1644 | 0.49 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 39 · 5516 | 19 · 3103 | 0.56 |
-| **informes/tareas** | después de clase | 10 · 1395 | 5 · 619 | 0.44 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 89 · 8919 | 13 · 1896 | 0.21 |
-| **infra/común** | todo lo anterior | 178 · 25807 | 77 · 10034 | 0.39 |
+| **informes/tareas** | después de clase | 10 · 1389 | 5 · 619 | 0.45 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 89 · 8889 | 13 · 1896 | 0.21 |
+| **infra/común** | todo lo anterior | 178 · 25806 | 77 · 10035 | 0.39 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -63,9 +63,9 @@ graph TD
   T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>93 módulos</small>"]
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>6 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
-  V -->|416| C
-  T -->|245| C
-  AD -->|32| C
+  V -->|438| C
+  T -->|250| C
+  AD -->|33| C
   A -->|28| C
   A -->|18| V
   K -->|14| C
@@ -103,7 +103,7 @@ graph TD
 | Capa | Módulos más grandes |
 |---|---|
 | **arranque** | `pb_hooks/aulareto-lib.js` (364) · `pb_hooks/aulareto.pb.js` (354) · `qa/hoja.js` (330) · `main.teacher.js` (172) · `main.embed.js` (69) |
-| **vistas** | `views/playerView.js` (579) · `views/vsView.js` (572) · `views/admin/collections.js` (518) · `views/hostLive.js` (405) · `views/teamsView.js` (383) |
+| **vistas** | `views/playerView.js` (579) · `views/vsView.js` (571) · `views/admin/collections.js` (517) · `views/hostLive.js` (405) · `views/teamsView.js` (383) |
 | **adaptadores** | `adapters/pocketbase/realtimeRooms.js` (606) · `adapters/pocketbase/realtimeAnswers.js` (484) · `adapters/local/realtime.js` (431) · `adapters/pocketbase/realtime.js` (384) · `adapters/pocketbase/remoteStore.js` (284) |
 | **core** | `core/textCorrectionRound.js` (862) · `core/normsCheck.js` (566) · `core/auth.js` (490) · `core/soloPlayer.js` (480) · `core/skins.js` (446) |
 | **kernel** | `kernel/contracts/activity.js` (447) · `kernel/contracts/session.js` (436) · `kernel/contracts/template.js` (349) · `kernel/session/teamsMachine.js` (263) · `kernel/session/vsMachine.js` (259) |
@@ -117,16 +117,16 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 
 | Módulo | Lo importan |
 |---|---|
-| `core/html.js` | 110 |
+| `core/html.js` | 113 |
 | `core/events.js` | 67 |
 | `core/registry.js` | 57 |
+| `core/frontera.js` | 45 |
 | `core/toast.js` | 40 |
 | `core/ids.js` | 33 |
 | `core/gameEvents.js` | 27 |
 | `core/clock.js` | 26 |
 | `core/ls.js` | 24 |
 | `core/storage.js` | 24 |
-| `kernel/content/sessionItems.js` | 22 |
 
 ## Los módulos más grandes (candidatos a partir)
 
@@ -138,10 +138,10 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 | `core/textCorrectionRound.js` | 862 | 5 |
 | `adapters/pocketbase/realtimeRooms.js` | 606 | 1 |
 | `views/playerView.js` | 579 | 1 |
-| `views/vsView.js` | 572 | 2 |
+| `views/vsView.js` | 571 | 2 |
 | `core/normsCheck.js` | 566 | 1 |
 | `templates/crossword/player.js` | 524 | 1 |
-| `views/admin/collections.js` | 518 | 1 |
+| `views/admin/collections.js` | 517 | 1 |
 | `core/auth.js` | 490 | 21 |
 
 ## El mapa de DATOS: quién escribe cada colección

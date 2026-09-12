@@ -6,7 +6,7 @@
 //   const ctx = runFreeformPlayer(rootSel, activity, opts);
 //   // ... player-specific logic ...
 //   ctx.finish({ score, maxScore, lead, stats });  // call once when done
-import { mount } from './html.js';
+import { mount, raizDe } from './html.js';
 import { resultScreenHtml } from './resultScreen.js';
 import { trySaveResult } from './results.js';
 import { FEEDBACK_DELAY } from './constants.js';
@@ -168,7 +168,7 @@ export function clearSoloProgress(activityId) { if (activityId) lsDel(progressKe
 // El progreso guardado se borra ANTES (si no, «otra vez» reanudaría el final).
 /** @param {string|Element} rootSel @param {string} activityId */
 function cablearRepetir(rootSel, activityId) {
-  const raiz = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
+  const raiz = raizDe(rootSel);
   const btn = raiz?.querySelector('[data-ww-replay]');
   if (!btn) return;
   btn.addEventListener('click', () => {

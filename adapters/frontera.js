@@ -1,14 +1,23 @@
-// LA FRONTERA DE LOS ADAPTADORES — lo que entra de FUERA no tiene forma.
+// LA FRONTERA DE LOS ADAPTADORES — lo de PocketBase y el blob de la sala.
 //
-// Todo lo que cruza esta capa (una fila de PocketBase, el JSON del almacén
-// local, el error de un `fetch`) llega como dato sin tipo: es `unknown` y hay
-// que ESTRECHARLO antes de leerlo. Estos son los estrechadores, en un solo
-// sitio, porque la alternativa —creerle la forma a cada llamador— es
-// exactamente cómo `listOwnAnswers` se pasó versiones devolviendo un `ms` que
-// no existía en el objeto que leía.
-//
-// No valida NADA de dominio (eso es del motor y de los scorers): solo responde
-// «¿esto es un objeto?», «¿esto es un texto?», «¿qué status trae el error?».
+// Los estrechadores GENÉRICOS («¿esto es un objeto?», «¿esto es un texto?»,
+// «¿qué dijo el error?») ya no viven aquí: su dueño es `core/frontera.js`,
+// porque `core/` también mira hacia fuera y NO puede importar de `adapters/`
+// (las capas van hacia abajo) — así que se los re-tecleaba. Este módulo los
+// RE-EXPORTA con los nombres que usan los adaptadores (una fila es un objeto) y
+// se queda con lo que de verdad es suyo: la respuesta `{items}` de PocketBase,
+// el status de sus errores y el blob de estado de la sala en vivo.
+import { esObjeto, saco, numero } from '../core/frontera.js';
+
+export {
+  esObjeto as esFila,
+  saco as fila,
+  texto,
+  numero,
+  textoOnulo,
+  numeroOnulo,
+  mensajeDe,
+} from '../core/frontera.js';
 
 /**
  * EL CLIENTE HTTP de PocketBase tal y como lo reciben las secciones del
@@ -17,51 +26,25 @@
  * @typedef {(path: string, opts?: RequestInit) => Promise<unknown>} PbFetch
  */
 
-/** ¿Es un objeto plano (una fila, un blob) y no un array ni null? */
-/** @param {unknown} x @returns {x is Record<string, unknown>} */
-export const esFila = (x) => !!x && typeof x === 'object' && !Array.isArray(x);
-
-/** La fila que hay dentro de `x`, o una vacía: para encadenar lecturas. */
-/** @param {unknown} x @returns {Record<string, unknown>} */
-export const fila = (x) => (esFila(x) ? x : {});
-
 /** Las filas de una respuesta `{ items: [...] }` de PocketBase. */
 /** @param {unknown} res @returns {Record<string, unknown>[]} */
 export function filas(res) {
-  const items = fila(res).items;
-  return Array.isArray(items) ? items.filter(esFila) : [];
+  const items = saco(res).items;
+  return Array.isArray(items) ? items.filter(esObjeto) : [];
 }
-
-/** @param {unknown} x @param {string} [def] @returns {string} */
-export const texto = (x, def = '') => (typeof x === 'string' ? x : def);
-
-/** @param {unknown} x @param {number} [def] @returns {number} */
-export const numero = (x, def = 0) => (typeof x === 'number' && Number.isFinite(x) ? x : def);
-
-/** Igual que `texto`, pero para los campos que VIAJAN vacíos como `null` (una
- *  fila de PocketBase, el campo `ql` de la sala): ausente y vacío son lo mismo. */
-/** @param {unknown} x @returns {string|null} */
-export const textoOnulo = (x) => (typeof x === 'string' ? x : null);
-
-/** @param {unknown} x @returns {number|null} */
-export const numeroOnulo = (x) => (typeof x === 'number' && Number.isFinite(x) ? x : null);
 
 /** Un mapa `clave → número` de FUERA (los puntos de «pedir la palabra»). Las
  *  claves no se validan una a una: quien lo lee ya trata un hueco como cero. */
 /** @param {unknown} x @returns {Record<string, number>} */
-export const mapaNumeros = (x) => (esFila(x) ? /** @type {Record<string, number>} */ (x) : {});
+export const mapaNumeros = (x) => (esObjeto(x) ? /** @type {Record<string, number>} */ (x) : {});
 
 /** @param {unknown} x @returns {Record<string, string>} */
-export const mapaTextos = (x) => (esFila(x) ? /** @type {Record<string, string>} */ (x) : {});
+export const mapaTextos = (x) => (esObjeto(x) ? /** @type {Record<string, string>} */ (x) : {});
 
 /** EL STATUS DE UN ERROR de PocketBase (`core/pbHttp.js` los sella como
  *  `{ status, pb }` sobre un `Error`). 0 = sin status (red caída, abort). */
 /** @param {unknown} e @returns {number} */
-export const estadoPb = (e) => numero(fila(e).status, 0);
-
-/** El texto de un `catch (e)`, sea Error o cualquier otra cosa. */
-/** @param {unknown} e @returns {string} */
-export const mensajeDe = (e) => (e instanceof Error ? e.message : String(e));
+export const estadoPb = (e) => numero(saco(e).status, 0);
 
 // ─── EL BLOB DE LA SALA EN VIVO ──────────────────────────────────────────────
 // El estado de una sala hace DOS viajes y por eso vive aquí, en la frontera:
@@ -89,7 +72,7 @@ export const mensajeDe = (e) => (e instanceof Error ? e.message : String(e));
  * falte y el propio motor es quien sabe qué es un estado válido.
  * @param {unknown} x @returns {Partial<BlobSala>}
  */
-export const estadoDeSala = (x) => (esFila(x) ? /** @type {Partial<BlobSala>} */ (x) : {});
+export const estadoDeSala = (x) => (esObjeto(x) ? /** @type {Partial<BlobSala>} */ (x) : {});
 
 /**
  * EL MISMO BLOB, VISTO POR EL DESPACHADOR DE SESIONES. `createLiveRoom` declara

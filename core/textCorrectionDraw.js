@@ -83,7 +83,17 @@ export function mountTcDraw(passageEl, { targets, onChange } = {}) {
   function resize() {
     const r = passageEl.getBoundingClientRect();
     if (!r.width || !r.height) return;
-    dpr = Math.min(2, window.devicePixelRatio || 1);
+    // EL LIENZO TIENE TOPE DE DPR — 1,5, el mismo que la cuerda del duelo
+    // (`TOPE_DPR` en core/vsAnimations.js) y el mismo principio que el tope de
+    // ancho del confeti: lo que cuesta pintar no puede crecer con la pantalla.
+    // La pizarra del aula es 1280×720 CSS a DPR 3, así que con el tope anterior
+    // (2) el lienzo del pasaje se dibujaba a CUATRO veces el área de la maqueta.
+    // A 1,5 el trazo se ve igual (la línea es de 3,2 px CSS, redonda y azul: no
+    // hay detalle que perder) y cada borrado/repintado completo cuesta menos de
+    // la mitad. Todo lo demás está en unidades de LIENZO y se escala con `dpr`
+    // —zonas, grosor, radio del borrador—, así que la marca cae donde el dedo
+    // tocó sin tocar una línea más.
+    dpr = Math.min(1.5, window.devicePixelRatio || 1);
     canvas.width  = Math.max(1, Math.round(r.width  * dpr));
     canvas.height = Math.max(1, Math.round(r.height * dpr));
     recalcZones();

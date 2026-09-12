@@ -5,7 +5,7 @@
 //
 // EMBEDDING: mountMemory(host, activity, ctx, opts) renders setup + game INTO
 // `host` (the activity stage). (Wrapper de ruta suelta eliminado: sin callers.)
-import { html, escapeHtml, mount, $, $$ } from '../core/html.js';
+import { html, escapeHtml, mount, $, $$, raizDe } from '../core/html.js';
 import { on } from '../core/events.js';
 import { createMemoryGame } from '../kernel/session/memory.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
@@ -39,7 +39,7 @@ export function mountMemory(host, a, ctx, opts = {}) {
   // del destape leía `undefined` y SIEMPRE salía antes de destapar, así que tras
   // un fallo las dos cartas se quedaban boca arriba y el tablero bloqueado
   // (`busy` nunca volvía a false). Se pregunta al elemento, no al parámetro.
-  const vivo = () => (typeof host === 'string' ? document.querySelector(host) : host);
+  const vivo = () => raizDe(host);
   // El contenido es una UNIÓN (§24): solo el modelo `pairs` trae pares, así que
   // se pregunta por la FORMA antes de leerlos.
   const c = a.content;

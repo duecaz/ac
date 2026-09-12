@@ -1,5 +1,5 @@
 import { revisarActividad, pantallaNoListaHtml } from '../core/activityCheck.js';
-import { html, escapeHtml, mount, $$ } from '../core/html.js';
+import { html, escapeHtml, mount, $$, $val } from '../core/html.js';
 import { sessionItems } from '../kernel/content/sessionItems.js';
 import { studentBase } from '../core/routing.js';
 import { on } from '../core/events.js';
@@ -13,6 +13,7 @@ import { createAssignment, listAssignmentsForActivity, listAttempts, closeAssign
 import { toast, confirmModal, TOAST_NORMAL, TOAST_LARGO } from '../core/toast.js';
 
 
+import { mensajeDe } from '../core/frontera.js';
 /** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
 /** @typedef {import('../kernel/contracts/session.js').AssignmentRecord} AssignmentRecord */
 /** @typedef {import('../kernel/contracts/session.js').AssignmentAttempt} AssignmentAttempt */
@@ -98,16 +99,14 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
     `);
 
     on(rootSel, 'click', '#t-create', async () => {
-      /** @param {string} id */
-      const campo = (id) => /** @type {HTMLInputElement|null} */ (document.getElementById(id));
-      const title = (campo('t-title')?.value || '').trim();
-      const due = campo('t-due')?.value || '';
-      const max = +(campo('t-max')?.value || '') || 1;
+      const title = $val('#t-title').trim();
+      const due = $val('#t-due');
+      const max = +$val('#t-max') || 1;
       try {
         await createAssignment(a, { title, dueAt: due ? new Date(due).toISOString() : null, maxAttempts: max });
         toast('Tarea creada.', 'success');
         refresh();
-      } catch (e) { toast('Error: ' + (e instanceof Error ? e.message : String(e)), 'danger', TOAST_NORMAL); }
+      } catch (e) { toast('Error: ' + (mensajeDe(e)), 'danger', TOAST_NORMAL); }
     });
     on(rootSel, 'click', '.copy', (_, b) => {
       navigator.clipboard?.writeText(b.dataset.url || '');
@@ -145,7 +144,7 @@ export async function renderAssignmentsForActivity(rootSel, activityId) {
         const code = await rotateAssignmentCode(rotId);
         toast(`PIN nuevo: ${code}`, 'success', TOAST_NORMAL);
         refresh();
-      } catch (e) { toast('Error rotando PIN: ' + (e instanceof Error ? e.message : String(e)), 'danger'); }
+      } catch (e) { toast('Error rotando PIN: ' + (mensajeDe(e)), 'danger'); }
     });
     on(rootSel, 'click', '.close-t', async (_, b) => {
       const ok = await confirmModal('¿Cerrar esta tarea?', { okText: 'Cerrar tarea', danger: true });

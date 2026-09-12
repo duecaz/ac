@@ -10,11 +10,11 @@
 // el caller borra el crédito anterior — atribuir la imagen que ya no está sería
 // peor que no atribuir.
 import { uploadMedia } from './upload.js';
-import { escapeHtml } from './html.js';
+import { escapeHtml, raizDe } from './html.js';
 import { toast, TOAST_NORMAL } from './toast.js';
 import { abrirBuscadorImagenes } from './imageSearchModal.js';
 import { creditoTexto } from './imageSearch.js';
-
+import { mensajeDe } from './frontera.js';
 /** @typedef {import('../kernel/contracts/activity.js').ImageCredit} ImageCredit */
 
 /**
@@ -55,7 +55,7 @@ export function renderImagePicker(currentUrl, credito = null) {
  * @param {{maxBytes?: number, credito?: ImageCredit|null, consulta?: string}} [opts]
  */
 export function attachImagePicker(root, containerSel, currentUrl, onChange, opts = {}) {
-  const el = typeof root === 'string' ? document.querySelector(root) : root;
+  const el = raizDe(root);
   if (!el) return;
   const container = el.querySelector(containerSel);
   if (!container) return;
@@ -92,7 +92,7 @@ export function attachImagePicker(root, containerSel, currentUrl, onChange, opts
       try {
         elegida(await uploadMedia(f), null);
       } catch (err) {
-        toast('Error subiendo imagen: ' + (err instanceof Error ? err.message : String(err)), 'danger', TOAST_NORMAL);
+        toast('Error subiendo imagen: ' + (mensajeDe(err)), 'danger', TOAST_NORMAL);
         if (changeBtn) changeBtn.disabled = false;
       }
     });

@@ -8,7 +8,7 @@ import { html, escapeHtml, $ as qs } from '../core/html.js';
 import { modeAuthHint } from '../core/modes.js';
 import { toast, TOAST_NORMAL } from '../core/toast.js';
 import { signInWithGoogle, signIn, requestPasswordReset, oauthRedirectUrl } from '../core/auth.js';
-
+import { mensajeDe } from '../core/frontera.js';
 let _open = false;
 
 /** `reason`: por qué se le pide entrar AHORA ("Inicia sesión para crear una sala
@@ -105,7 +105,7 @@ export function openLoginModal({ reason = '' } = {}) {
   });
   $('#lm-google')?.addEventListener('click', async () => {
     try { await signInWithGoogle(); } // redirige
-    catch (err) { showErr(err instanceof Error ? err.message : String(err)); }
+    catch (err) { showErr(mensajeDe(err)); }
   });
   $('#lm-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();

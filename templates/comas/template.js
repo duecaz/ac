@@ -8,7 +8,7 @@ import { newPassage } from '../../core/contentModels/textCorrection.js';
 import { parseTextWithCommas, markPartsFor, markValueParts, passageLabel } from '../../core/textMarks.js';
 import { renderTextCorrectionRound, renderTextCorrectionHost, passageRoundPayload } from '../../core/textCorrectionRound.js';
 import { scoreComasSubmission } from './scorer.js';
-
+import { esObjeto } from '../../core/frontera.js';
 /**
  * @typedef {import('../../kernel/contracts/activity.js').TextCorrectionContent} TextCorrectionContent
  * @typedef {import('../../kernel/contracts/activity.js').Passage} Passage
@@ -18,8 +18,6 @@ import { scoreComasSubmission } from './scorer.js';
  * @typedef {import('../../kernel/contracts/template.js').HostRoundContext} HostRoundContext
  */
 
-/** @param {unknown} v @returns {v is object} */
-const esObjeto = (v) => !!v && typeof v === 'object';
 
 export class ComasTemplate extends BaseTemplate {
   /** @type {import('../../kernel/contracts/template.js').TemplateMeta<TextCorrectionContent>} */

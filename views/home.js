@@ -1,4 +1,4 @@
-import { html, escapeHtml, mount } from '../core/html.js';
+import { html, escapeHtml, mount, $input } from '../core/html.js';
 import { on } from '../core/events.js';
 import { list, remove, get, save } from '../core/storage.js';
 import { decidirVisibilidad } from '../core/activityCheck.js';
@@ -11,7 +11,7 @@ import { searchActivities } from '../core/search.js';
 import { buildSwitchOptions } from './switchTemplate.js';
 import { canHost } from '../core/authGate.js';
 import { wireActivityCard } from './activityCardWire.js';
-
+import { mensajeDe } from '../core/frontera.js';
 /** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
 
 let _filter = { q: '', template: '' };
@@ -67,7 +67,7 @@ export function renderHome(rootSel) {
       </div>
     `);
 
-    const qEl = /** @type {HTMLInputElement|null} */ (document.getElementById('h-q'));
+    const qEl = $input('#h-q');
     // paint() re-monta toda la vista → el <input> se reemplaza. Hay que re-enfocar
     // el input NUEVO (no el viejo, ya desprendido) y restaurar el cursor, o el
     // buscador pierde el foco a la primera tecla.
@@ -75,7 +75,7 @@ export function renderHome(rootSel) {
       _filter.q = qEl.value;
       const caret = qEl.selectionStart;
       paint();
-      const q = /** @type {HTMLInputElement|null} */ (document.getElementById('h-q'));
+      const q = $input('#h-q');
       if (q) { q.focus(); if (caret != null) { try { q.setSelectionRange(caret, caret); } catch {} } }
     };
     const tEl = /** @type {HTMLSelectElement|null} */ (document.getElementById('h-tpl'));
@@ -196,7 +196,7 @@ export function renderHome(rootSel) {
       await remove(delId);
       toast('Eliminada.', 'success');
     } catch (e) {
-      toast('Eliminada localmente; no se pudo borrar en el servidor: ' + (e instanceof Error ? e.message : String(e)), 'warning', TOAST_NORMAL);
+      toast('Eliminada localmente; no se pudo borrar en el servidor: ' + (mensajeDe(e)), 'warning', TOAST_NORMAL);
     }
     renderHome(rootSel);
   });

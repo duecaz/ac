@@ -10,7 +10,7 @@ import { submitAnswer as transportSubmit } from './liveTransport.js';
 import { clock } from './clock.js';
 import { lsSet, lsGetJsonArray } from './ls.js';
 import { createOfflineQueue } from './offlineQueue.js';
-
+import { mensajeDe, estadoDe } from './frontera.js';
 const KEY = 'ww.submitQueue';
 
 /**
@@ -53,18 +53,12 @@ export async function submit(sessionId, playerId, itemIndex, value, msTaken) {
     // fuera de fase). Eso no lo arregla reintentar: encolarlo dejaría al alumno
     // con un "se enviará al reconectar" que nunca ocurre. Se devuelve RECHAZADA
     // para que la vista lo diga y el alumno pueda volver a entrar.
-    if (estadoDe(e) === 403) return { queued: false, rejected: true, error: motivo(e) };
-    queue.enqueue({ sessionId, playerId, itemIndex, value, msTaken, ts: clock.now(), err: motivo(e) });
-    return { queued: true, error: motivo(e) };
+    if (estadoDe(e) === 403) return { queued: false, rejected: true, error: mensajeDe(e) };
+    queue.enqueue({ sessionId, playerId, itemIndex, value, msTaken, ts: clock.now(), err: mensajeDe(e) });
+    return { queued: true, error: mensajeDe(e) };
   }
 }
 
-/** El código HTTP que traiga el fallo del transporte, si lo trae. La forma del
- *  error es frontera: viene de `fetch`/PocketBase, no de aquí.
- *  @param {unknown} e @returns {number|null} */
-const estadoDe = (e) => (e && typeof e === 'object' && 'status' in e ? Number(e.status) : null);
-/** @param {unknown} e @returns {string} */
-const motivo = (e) => (e instanceof Error ? e.message : String(e));
 
 export const flush = () => queue.flush();
 

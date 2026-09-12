@@ -1,16 +1,12 @@
 // v1.51.629: adminView se partió POR PANEL. Esta sección es «Profesores»
 // (U5): lista users + nº de actividades + dar/quitar admin, y crear una
 // cuenta con correo+contraseña para pizarras sin cuenta de Google.
-import { escapeHtml } from '../../core/html.js';
+import { escapeHtml, $input, $val } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { toast, TOAST_NORMAL } from '../../core/toast.js';
 import { createTeacher, getAuthUserId } from '../../core/auth.js';
 import { listTeachers, setTeacherRole, countActivitiesByOwner } from '../../core/teachers.js';
-
-/** @param {unknown} e @returns {string} */
-const msgDe = (e) => (e instanceof Error && e.message ? e.message : String(e));
-/** @param {string} id @returns {HTMLInputElement|null} */
-const campo = (id) => /** @type {HTMLInputElement|null} */ (document.getElementById(id));
+import { mensajeDe } from '../../core/frontera.js';
 
 /** @returns {{html: () => string, wire: (rootSel: string) => void}} */
 export function createTeachersSection() {
@@ -70,24 +66,24 @@ export function createTeachersSection() {
           toast(role === 'admin' ? 'Ahora es admin.' : 'Admin retirado.', 'success');
           await paintTeachers();
         } catch (e) {
-          toast('No se pudo cambiar el rol: ' + msgDe(e), 'danger', TOAST_NORMAL);
+          toast('No se pudo cambiar el rol: ' + mensajeDe(e), 'danger', TOAST_NORMAL);
           b.disabled = false;
         }
       });
 
       on(rootSel, 'click', '#teach-create', async () => {
-        const name = campo('teach-name')?.value.trim();
-        const email = campo('teach-email')?.value.trim();
-        const pass = campo('teach-pass')?.value || '';
+        const name = $val('#teach-name').trim();
+        const email = $val('#teach-email').trim();
+        const pass = $val('#teach-pass');
         const msg = document.getElementById('teach-msg');
         if (!email || pass.length < 8) { if (msg) { msg.className = 'small mb-2 text-danger'; msg.textContent = 'Correo válido y contraseña de al menos 8 caracteres.'; } return; }
         try {
           await createTeacher(email, pass, name);
           if (msg) { msg.className = 'small mb-2 text-success'; msg.textContent = `Profesor creado: ${email} (contraseña: ${pass}). Apúntala.`; }
-          ['teach-name','teach-email','teach-pass'].forEach(id => { const el = campo(id); if (el) el.value = ''; });
+          ['teach-name','teach-email','teach-pass'].forEach(id => { const el = $input('#' + id); if (el) el.value = ''; });
           await paintTeachers();
         } catch (e) {
-          if (msg) { msg.className = 'small mb-2 text-danger'; msg.textContent = 'No se pudo crear: ' + msgDe(e); }
+          if (msg) { msg.className = 'small mb-2 text-danger'; msg.textContent = 'No se pudo crear: ' + mensajeDe(e); }
         }
       });
     },

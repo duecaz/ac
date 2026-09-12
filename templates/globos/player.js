@@ -2,7 +2,7 @@
 // El core pinta la pregunta + el campo de globos y registra la respuesta; el
 // shell maneja bucle, timer, finish y trySaveResult. El campo de globos
 // (balloonFieldHtml/wireBalloonField) lo REUTILIZA la ronda VS (template.js).
-import { html, escapeHtml, mount } from '../../core/html.js';
+import { html, escapeHtml, mount, raizDe } from '../../core/html.js';
 import { runSequentialPlayer } from '../../core/soloPlayer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { clock } from '../../core/clock.js';
@@ -12,7 +12,7 @@ import * as Streaks from '../../core/streaks.js';
 import { cabeceraHtml } from '../../core/playerHud.js';
 
 // Campo de globos: cada opción es un globo de color (tokens --ww-shape-1..4 →
-// los skins recolorean). El bamboleo va por CSS y se apaga bajo ww-lite.
+// los skins recolorean). La inclinación fija de cada globo la pone el CSS (`--gl-sway`).
 // Offsets de altura por índice (pseudo-aleatorio ESTABLE, sin Math.random:
 // mismo layout en cada repintado del mismo ítem).
 /**
@@ -83,7 +83,7 @@ export async function renderGlobosPlayer(rootSel, activity, opts = {}) {
 
       // `rootSel` puede llegar como selector o como elemento (lo declara el
       // shell): antes solo se atendía la forma de cadena.
-      const root = typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel;
+      const root = raizDe(rootSel);
       if (!root) return;
       const t0 = clock.now();
 

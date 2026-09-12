@@ -1,5 +1,5 @@
 // Crucigrama — solo player.
-import { html, escapeHtml, mount } from '../../core/html.js';
+import { html, escapeHtml, mount, raizDe, $, $$ } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { scoreCrosswordSubmission } from './scorer.js';
@@ -27,11 +27,11 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
 
   // `rootSel` puede llegar como ELEMENTO (lo declara el shell): interpolarlo en
   // un selector daba «[object HTMLElement] .cw-grid-wrap», que no casa con nada.
-  const raiz = () => (typeof rootSel === 'string' ? document.querySelector(rootSel) : rootSel);
+  const raiz = () => raizDe(rootSel);
   /** @param {string} sel @returns {HTMLElement|null} */
-  const dentro = (sel) => /** @type {HTMLElement|null} */ (raiz()?.querySelector(sel) ?? null);
+  const dentro = (sel) => $(sel, raiz());
   /** @param {string} sel @returns {HTMLElement[]} */
-  const todos = (sel) => [...(raiz()?.querySelectorAll(sel) ?? [])].map(el => /** @type {HTMLElement} */ (el));
+  const todos = (sel) => $$(sel, raiz());
 
   if (!wordsRaw.length) {
     mount(rootSel, html`<div class="alert alert-warning m-3">No hay palabras configuradas.</div>`);

@@ -14,7 +14,7 @@
 //   views/live/studentPalabra.js — paintQuestionLive (pedir la palabra)
 //   views/live/studentFin.js     — paintEnded
 import { clock } from '../core/clock.js';
-import { html, escapeHtml, mount, $ } from '../core/html.js';
+import { html, escapeHtml, mount, $, $input } from '../core/html.js';
 import { on } from '../core/events.js';
 import { joinSession, subscribeRoom, pingPresence, findRoomByCode, fetchSession } from '../core/liveTransport.js';
 import { findAssignmentByCode } from '../core/assignmentsTransport.js';
@@ -35,7 +35,7 @@ import { createStudentCarrera } from './live/studentCarrera.js';
 import { createStudentTablero } from './live/studentTablero.js';
 import { createStudentPalabra } from './live/studentPalabra.js';
 import { createStudentFin } from './live/studentFin.js';
-
+import { mensajeDe } from '../core/frontera.js';
 /**
  * @typedef {import('../kernel/contracts/session.js').LiveRoom} LiveRoom
  * @typedef {import('../kernel/contracts/session.js').SnapshotActivity} SnapshotActivity
@@ -87,8 +87,8 @@ export function renderJoin(rootSel, prefilledCode = '') {
   `);
 
   on(rootSel, 'click', '#btn-join', async () => {
-    const inCode = /** @type {HTMLInputElement|null} */ ($('#f-code'));
-    const inNick = /** @type {HTMLInputElement|null} */ ($('#f-nick'));
+    const inCode = $input('#f-code');
+    const inNick = $input('#f-nick');
     const err = $('#err');
     const btn = /** @type {HTMLButtonElement|null} */ ($('#btn-join'));
     if (!inCode || !inNick || !err || !btn) return;
@@ -115,7 +115,7 @@ export function renderJoin(rootSel, prefilledCode = '') {
       ssSet(`ww.player.${code}`, JSON.stringify(r));
       location.hash = `#/play/${code}`;
     } catch (e) {
-      err.textContent = e instanceof Error ? e.message : String(e);
+      err.textContent = mensajeDe(e);
       btn.disabled = false;
     }
   });
@@ -145,7 +145,7 @@ export async function renderPlay(rootSel, code) {
     session = sess;
     activity = sess.activity_snap;
   } catch (e) {
-    mount(rootSel, html`<div class="alert alert-danger m-3">${escapeHtml(e instanceof Error ? e.message : String(e))}</div>`); return;
+    mount(rootSel, html`<div class="alert alert-danger m-3">${escapeHtml(mensajeDe(e))}</div>`); return;
   }
 
   // ── VERSIÓN DESFASADA → recarga DURA del grafo (una vez) ───────────────────

@@ -13,7 +13,7 @@ import { roundPayloadOf } from '../../kernel/session/engine.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from '../../core/fullscreen.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { toast, confirmModal, TOAST_NORMAL } from '../../core/toast.js';
-
+import { mensajeDe } from '../../core/frontera.js';
 /** @typedef {import('../hostLive.js').HostRt} HostRt */
 
 /** @param {HostRt} rt */
@@ -193,7 +193,7 @@ export function createHostRondas(rt) {
     if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Calculando…'; }
     try { await settleItem(rt.sessionId, idx); }
     catch (e) {
-      toast('Error al revelar: ' + (e instanceof Error ? e.message : String(e)), 'danger', TOAST_NORMAL);
+      toast('Error al revelar: ' + (mensajeDe(e)), 'danger', TOAST_NORMAL);
       if (btn) { btn.disabled = false; btn.innerHTML = 'Reintentar'; }
     } finally { settling = false; }
   }

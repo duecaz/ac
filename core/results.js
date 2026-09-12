@@ -7,7 +7,7 @@ import { getRemoteStore } from '../adapters/index.js';
 import { clock } from './clock.js';
 import { lsSet, lsGetJsonArray } from './ls.js';
 import { createOfflineQueue } from './offlineQueue.js';
-
+import { mensajeDe } from './frontera.js';
 const QUEUE_KEY = 'ww.resultQueue';
 // Tope de la cola offline de resultados. Subido de 60 → 200 (P1-7): en un
 // dispositivo de aula compartido usado sin red, varios alumnos jugando en
@@ -98,7 +98,7 @@ export async function saveResult(r) {
     const rs = await getRemoteStore();
     await rs.saveResult(item);
   } catch (e) {
-    console.warn('[results] save failed — queuing for retry:', e instanceof Error ? e.message : String(e));
+    console.warn('[results] save failed — queuing for retry:', mensajeDe(e));
     queue.enqueue({ ...item, _queuedAt: clock.now() });
   }
 }

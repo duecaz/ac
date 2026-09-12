@@ -7,7 +7,7 @@ import { getRemoteStore, backendName } from '../adapters/index.js';
 import { PB_URL } from '../pocketbase.config.js';
 import { VERSION } from './constants.js';
 import { probeActivitiesPayload } from './storage.js';
-
+import { mensajeDe } from './frontera.js';
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
 
 /** El cuerpo de error de PocketBase, si el fallo lo traía (frontera: llega lo
@@ -25,8 +25,6 @@ function pbDetail(e) {
   return ' · PB: ' + JSON.stringify(pb).slice(0, 400);
 }
 
-/** Mensaje de un error; si no lo es, su texto. @param {unknown} e @returns {string} */
-const motivo = (e) => (e instanceof Error ? e.message : String(e));
 
 /** Un campo del cuerpo de error de PB: `{message}`, `{code}` o lo que venga.
  *  @param {unknown} v @returns {string} */
@@ -128,7 +126,7 @@ export async function diagnoseDb(onStep) {
       });
       step({ name: 'Salud del servidor (/api/health)', pass: true, ms, info: String(value?.message || 'OK') });
     } catch (e) {
-      step({ name: 'Salud del servidor (/api/health)', pass: false, info: motivo(e) });
+      step({ name: 'Salud del servidor (/api/health)', pass: false, info: mensajeDe(e) });
     }
   }
 
@@ -137,7 +135,7 @@ export async function diagnoseDb(onStep) {
   try {
     store = await getRemoteStore();
   } catch (e) {
-    step({ name: 'Cargar adaptador', pass: false, info: motivo(e) });
+    step({ name: 'Cargar adaptador', pass: false, info: mensajeDe(e) });
     return out;
   }
 
@@ -163,7 +161,7 @@ export async function diagnoseDb(onStep) {
       : '';
     step({ name: 'Lectura (listActivities)', pass: true, ms, info: `${listCount} registros${throughput}${serverMs}` });
   } catch (e) {
-    step({ name: 'Lectura (listActivities)', pass: false, info: motivo(e) });
+    step({ name: 'Lectura (listActivities)', pass: false, info: mensajeDe(e) });
   }
 
   // ── 3. Ciclo CRUD completo ────────────────────────────────────────────────
@@ -182,7 +180,7 @@ export async function diagnoseDb(onStep) {
     const hint = ms > 500 ? ' ⚠ escritura lenta — revisar modo WAL en PocketBase' : '';
     step({ name: 'Escritura (saveActivity)', pass: true, ms, info: `registro temporal creado${hint}` });
   } catch (e) {
-    step({ name: 'Escritura (saveActivity)', pass: false, info: motivo(e) + pbDetail(e) });
+    step({ name: 'Escritura (saveActivity)', pass: false, info: mensajeDe(e) + pbDetail(e) });
   }
 
   if (wrote) {
@@ -191,13 +189,13 @@ export async function diagnoseDb(onStep) {
       const ok = !!(value && value.id === tempId);
       step({ name: 'Lectura del registro (getActivity)', pass: ok, ms, info: ok ? 'round-trip OK' : 'no devolvió el registro' });
     } catch (e) {
-      step({ name: 'Lectura del registro (getActivity)', pass: false, info: motivo(e) });
+      step({ name: 'Lectura del registro (getActivity)', pass: false, info: mensajeDe(e) });
     }
     try {
       const { ms } = await timed(() => store.deleteActivity(tempId));
       step({ name: 'Borrado (deleteActivity)', pass: true, ms, info: 'limpieza OK' });
     } catch (e) {
-      step({ name: 'Borrado (deleteActivity)', pass: false, info: `no se pudo limpiar el registro temporal: ${motivo(e)}` });
+      step({ name: 'Borrado (deleteActivity)', pass: false, info: `no se pudo limpiar el registro temporal: ${mensajeDe(e)}` });
     }
   }
 
@@ -206,7 +204,7 @@ export async function diagnoseDb(onStep) {
     const { ms, value } = await timed(() => store.listResults());
     step({ name: 'Lectura de resultados (listResults)', pass: true, ms, info: `${value.length} resultados` });
   } catch (e) {
-    step({ name: 'Lectura de resultados (listResults)', pass: false, info: motivo(e) + pbDetail(e) });
+    step({ name: 'Lectura de resultados (listResults)', pass: false, info: mensajeDe(e) + pbDetail(e) });
   }
 
   // ── 5. Resumen de latencia acumulada (simula carga real de la app) ─────────

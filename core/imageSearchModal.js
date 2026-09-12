@@ -20,7 +20,7 @@ import { escapeHtml } from './html.js';
 import { QUOTAS } from './quotas.js';
 import { rid } from './ids.js';
 import { abrirDialogoConFallback } from './modalFallback.js';
-
+import { mensajeDe } from './frontera.js';
 /** @typedef {import('../kernel/contracts/activity.js').ImageCredit} ImageCredit */
 /** @typedef {import('./imageSearch.js').Imagen} Imagen */
 
@@ -154,7 +154,7 @@ export function abrirBuscadorImagenes(opts = {}) {
     } catch (e) {
       // El motivo REAL, no un «no hay resultados» que mandaría a buscar otra cosa.
       resultados = []; $('-res').innerHTML = '';
-      aviso(`<i class="bi bi-exclamation-triangle"></i> ${escapeHtml(e instanceof Error ? e.message : String(e))} Comprueba tu conexión o sube la imagen desde el dispositivo.`, 'danger');
+      aviso(`<i class="bi bi-exclamation-triangle"></i> ${escapeHtml(mensajeDe(e))} Comprueba tu conexión o sube la imagen desde el dispositivo.`, 'danger');
     } finally {
       $btn('-go').disabled = false;
     }
@@ -181,7 +181,7 @@ export function abrirBuscadorImagenes(opts = {}) {
       m.hide();
     } catch (err) {
       el.querySelectorAll('.ww-is-pick').forEach(b => { /** @type {HTMLButtonElement} */ (b).disabled = false; });
-      aviso(`<i class="bi bi-exclamation-triangle"></i> ${escapeHtml(err instanceof Error ? err.message : String(err))}`, 'danger');
+      aviso(`<i class="bi bi-exclamation-triangle"></i> ${escapeHtml(mensajeDe(err))}`, 'danger');
     }
   });
 

@@ -2,14 +2,12 @@
 // VS»: catálogo (bundled + custom) que alimenta el selector de
 // Presentación → Animación, con alta/baja de animaciones subidas por el
 // profe (guardadas en localStorage, core/vsAnimStore.js).
-import { escapeHtml } from '../../core/html.js';
+import { escapeHtml, $input, $val } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { confirmModal, toast } from '../../core/toast.js';
 import { listVsAnimations } from '../../core/vsAnimations.js';
 import { loadCustomAnims, addCustomAnim, removeCustomAnim } from '../../core/vsAnimStore.js';
-
-/** @param {string} id @returns {HTMLInputElement|null} */
-const campo = (id) => /** @type {HTMLInputElement|null} */ (document.getElementById(id));
+import { mensajeDe } from '../../core/frontera.js';
 
 /** @returns {{html: () => string, wire: (rootSel: string) => void}} */
 export function createVsAnimationsSection() {
@@ -72,10 +70,10 @@ export function createVsAnimationsSection() {
       });
 
       on(rootSel, 'click', '#va-add', async () => {
-        const label = campo('va-label')?.value.trim();
-        const desc  = campo('va-desc')?.value.trim();
-        const url   = campo('va-url')?.value.trim();
-        const file  = campo('va-file')?.files?.[0];
+        const label = $val('#va-label').trim();
+        const desc  = $val('#va-desc').trim();
+        const url   = $val('#va-url').trim();
+        const file  = $input('#va-file')?.files?.[0];
         const errEl = document.getElementById('va-err');
         if (errEl) errEl.textContent = '';
         if (!label) { if (errEl) errEl.textContent = 'El nombre es obligatorio.'; return; }
@@ -91,11 +89,11 @@ export function createVsAnimationsSection() {
           }
           toast(`Animación "${label}" añadida. Recarga la página para usarla en VS.`, 'success');
           // Clear form
-          ['va-label','va-desc','va-url'].forEach(i => { const el = campo(i); if (el) el.value = ''; });
-          const fi = campo('va-file'); if (fi) fi.value = '';
+          ['va-label','va-desc','va-url'].forEach(i => { const el = $input('#' + i); if (el) el.value = ''; });
+          const fi = $input('#va-file'); if (fi) fi.value = '';
           paintVaList();
         } catch (e) {
-          if (errEl) errEl.textContent = e instanceof Error ? e.message : String(e);
+          if (errEl) errEl.textContent = mensajeDe(e);
         }
       });
     },
