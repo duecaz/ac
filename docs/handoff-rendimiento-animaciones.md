@@ -4,7 +4,8 @@
 
 > Pedido por el dueño el 2026-09-12: «la app es muy lenta en las animaciones —el
 > confeti, la soga del VS— y en Wordwall no se ralentizan en pantallas
-> interactivas básicas 4K».
+> interactivas básicas 4K». Y la decisión: «no vamos a distinguir: las
+> animaciones deben ser las mismas en todas las pantallas, como Wordwall».
 
 ## Diagnóstico (medido en el código, no adivinado)
 
@@ -42,70 +43,92 @@ pequeño. No mantiene un SVG vivo de 153 trazados en reposo.
 la CPU frenada 12×, pero a **DPR 1** y sin la escena del duelo en reposo. El
 coste de DPR 3 (sombras, blur, gradientes) no está modelado.
 
+## La decisión (dueño, 2026-09-12): las MISMAS animaciones en todas las pantallas
+
+No hay «modo ligero». No se distingue por aparato. Cada animación se construye
+para que cueste lo mismo en un portátil y en la pizarra 4K — que es lo que
+hace Wordwall — y eso solo se consigue con dos materiales:
+
+- **Lo que hace la GPU**: `transform` y `opacity`. Mover, girar, escalar,
+  desvanecer. Cuesta igual a 1080p que a 4K porque el compositor no repinta
+  píxeles, mueve capas.
+- **Lienzos pequeños y con tope**: un `<canvas>` de 1280 de ancho estirado por
+  CSS (lo que ya hace el confeti). Se pinta lo mismo en todas las pantallas;
+  el estirado es gratis.
+
+Y con una prohibición: **nada que repinte píxeles cada cuadro** — ni SVG
+re-dibujado, ni `filter`/`blur`, ni sombras sobre lo que se mueve, ni
+gradientes que giran sin capa propia. Ese es el presupuesto; se mide en la
+peor pantalla (DPR 3) y lo que no lo cumple no entra.
+
 ## Las fases
 
 **Fase 0 · medir en el aparato real, antes de tocar.** Un medidor de fluidez
 en `#/admin` (y por `?perf=1` en cualquier ruta): p50/p95 del tiempo entre
-cuadros durante 5 s, y cuadros >50 ms, pintado en pantalla, por escena: VS en
-reposo con cuerda · VS respondiendo · podio con confeti · Quiz · Colorear.
-Es la única prueba que vale: Playwright no tiene ni la GPU ni el DPR de la
-pizarra. Entregable: una tabla con los números de la pizarra del aula.
+cuadros durante 5 s y cuadros >50 ms, por escena: VS en reposo con cuerda ·
+VS respondiendo · podio con confeti · Quiz · Colorear. Playwright no tiene ni
+la GPU ni el DPR de la pizarra; los números de verdad salen de ahí.
+Entregable: la tabla «antes».
 
-**Fase 1 · `ww-lite` por SÍNTOMA, no por hardware (`core/perf.js`).** Igual
-que el arreglo del fullscreen: se detecta el problema, no el modelo. Al
-montar un juego se miden los primeros 3 s de cuadros; si el p50 pasa de 25 ms
-o más del 20 % supera 50 ms, se enciende `ww-lite` y se recuerda para ese
-aparato (`ww.lite = 'auto'`, con dueño en `LS_OWNERS`, §21). Más un mando
-explícito en el panel del profe («Pizarra: modo ligero» on/off/auto): la
-pizarra se configura UNA vez y no se vuelve a medir. `applyPerfClass` lee
-primero el mando y luego la memoria.
+**Fase 1 · la soga, una sola y barata.** Tres caminos, en orden de
+preferencia, y se elige con los números de la Fase 0 delante:
+1. **`lottie-web` con renderer `canvas`** sobre un lienzo con tope de 1280
+   (el mismo truco del confeti). Se conserva la animación tal cual (misma
+   cuerda, mismos personajes); el coste pasa de «re-dibujar 153 trazados en el
+   DOM y rasterizar a 4K» a «calcular 153 trazados y pintarlos en un lienzo
+   pequeño». Cuesta el build completo de lottie (280 KB, local, ya sin CDN) en
+   vez del `light` (168 KB). El reposo baja de 25 a 15 fps: un balanceo lento
+   no lo nota nadie.
+2. **Hoja de sprites**: pre-rasterizar N cuadros una vez y hacer `drawImage`
+   por tick. Es lo más barato por cuadro, pero 90 cuadros a tamaño de arena
+   son decenas de MB de memoria, y a menos cuadros o menos tamaño la cuerda se
+   ve a saltos o borrosa en la 4K. Solo si el camino 1 no llega.
+3. **`svg-tug`** (ya en el repo): personajes por `transform` CSS, coste cero.
+   Cambia el aspecto; es decisión del dueño verlo en la pizarra.
 
-**Fase 2 · la soga sin re-dibujar SVG.** Pre-rasterizar los 90 cuadros UNA
-vez (al montar, repartido en cuadros de reposo para no bloquear) en una hoja
-de sprites en un lienzo del tamaño CSS de la arena × min(DPR, 1,5); el reposo
-y el tirón pasan a ser un `drawImage` por tick (≈0,2 ms) en vez de 153
-trazados. Bajo `ww-lite`, cuadro estático (ya existe). Y el reposo baja de 25 a
-15 fps: un balanceo lento no lo nota nadie. Alternativa si el sprite no
-convence al ojo: hacer del `svg-tug` (transformaciones CSS por compositor,
-ya en el repo) el proveedor por defecto en pizarras.
+**Fase 2 · el podio.** Un solo lienzo de confeti reutilizado (hoy uno por
+ráfaga, tres en el cierre), `setTransform` en vez de `save/translate/rotate/
+restore` por papelito, alfa solo en los últimos 30 ticks. El foco giratorio
+del cierre (`vs.css` `.vs-celebration::before`, un gradiente cónico rotando
+22 s) recibe capa propia (`will-change: transform`) o se sustituye por una
+imagen que gira; el `blur(3px)` girando del tema TV se rehace sin `filter`
+(el desenfoque se pinta UNA vez en el SVG, no por cuadro).
 
-**Fase 3 · el podio.** Un solo lienzo de confeti reutilizado (hoy se crea
-uno por ráfaga y hay tres en el cierre), `setTransform` en vez de
-`save/translate/rotate/restore` por papelito, alfa solo en los últimos 30
-ticks, tope de papelitos por área y la mitad en `ww-lite`. El foco giratorio
-del cierre (`vs.css` `.vs-celebration::before`) recibe capa propia
-(`will-change: transform`) y en `ww-lite` no gira; el `blur` girando del tema
-TV se apaga en `ww-lite`.
-
-**Fase 4 · la regla, como test.** una suite nueva de animaciones en `tests/` (verificada en
+**Fase 3 · la regla, como test.** Una suite nueva en `tests/` (verificada en
 rojo con una animación plantada): dentro del marco de juego solo se animan
 `transform` y `opacity`; nada de `filter`/`box-shadow`/`text-shadow` animados;
-**toda animación `infinite` tiene su contraparte `.ww-lite … { animation:
-none }`** (hoy 8 infinitas y solo 3 la tienen). Añade la regla a `docs/
-estilos-de-actividad.md` con su porqué (DPR 3).
+ningún `@keyframes` que toque `width`, `height`, `top`, `left`, `text-indent`
+o `background-position` (la marquesina arcade anima `text-indent`: es layout
+por cuadro, se rehace con `transform`). Añade la regla a
+`docs/estilos-de-actividad.md` con su porqué (DPR 3).
 
-**Fase 5 · lienzos a DPR acotado.** El lienzo de dibujo de Tildes/Comas
-(`core/textCorrectionDraw.js`) y cualquier canvas del juego se crean con
-`min(devicePixelRatio, 1,5)` bajo `ww-lite` (y 2 en normal). El DOM no se
-puede escalar; los lienzos sí.
+**Fase 4 · lienzos con tope, todos.** El del confeti ya lo tiene (1280). El
+lienzo de dibujo de Tildes/Comas (`core/textCorrectionDraw.js`) y cualquier
+canvas del juego se crean a `min(devicePixelRatio, 1,5)`: a esa escala el
+trazo del lápiz se ve igual y cuesta la mitad o menos.
 
-**Fase 6 · la sonda aprende DPR.** `tools/perf-sonda.mjs` gana la escena
+**Fase 5 · retirar `ww-lite`.** Cuando la soga, el podio y las hojas cumplan
+el presupuesto, la clase `ww-lite`, `isLowEndDevice()` y las tres bifurcaciones
+que hoy dependen de ella (globos, reposo de la cuerda, arcade) se BORRAN: una
+sola animación por sitio, la misma en todas las pantallas. Si algún día hace
+falta una salida de emergencia, será un mando del profe, no una detección.
+
+**Fase 6 · la sonda es la puerta.** `tools/perf-sonda.mjs` gana la escena
 «pizarra»: viewport 1280×720 con `deviceScaleFactor: 3` (el aparato del aula
-tal cual), y las escenas «VS en reposo con cuerda» y «podio del duelo». Los
-techos siguen siendo generosos (30 fps); lo que se persigue es el orden de
-magnitud.
+tal cual), y las escenas «VS en reposo con cuerda» y «podio del duelo». Con
+la CPU frenada 12×. Una animación nueva que no pase ahí no entra en `main`.
 
 ## Qué NO se hace
 
 - No se quitan las celebraciones: el podio celebra (es producto). Se hacen
-  baratas o se reducen en `ww-lite`, nunca desaparecen.
+  baratas, no se reducen ni se apagan según el aparato.
 - No se cambia el DPR ni la resolución del aparato: eso es del sistema.
 - No se mete otra librería de animación: lo que hay (`transform`/`opacity`
   por compositor, un lienzo pequeño) es lo que Wordwall hace.
 
 ## Orden recomendado y coste
 
-Fase 0 (una tarde con la pizarra) → 1 (medio día) → 2 (un día) → 3 (medio
-día) → 4 (medio día) → 5 y 6 (medio día). Las fases 1 y 4 son las que
-protegen el futuro: sin ellas, la próxima animación bonita volverá a
+Fase 0 (una tarde con la pizarra) → 1 (un día) → 2 (medio día) → 3 (medio
+día) → 4 (medio día) → 5 (medio día) → 6 (medio día). Las fases 3 y 6 son las
+que protegen el futuro: sin ellas, la próxima animación bonita volverá a
 ralentizar el aula y nadie lo verá hasta la clase.
