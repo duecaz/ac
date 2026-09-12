@@ -110,11 +110,16 @@ const QUIZ = { id: 'a2', template: 'uns_quiz', live: {}, content: { items: [{ id
 // acertar; el mérito es del docente, §22-5).
 {
   const { readFileSync } = await import('node:fs');
-  // v1.51.627: el adaptador se partió POR COLECCIÓN — la cita apunta al fichero que recibió el código.
+  // v1.51.627: el adaptador se partió POR COLECCIÓN — la cita apunta al fichero que
+  // recibió el código. Fase 6: dentro de ese fichero, el premio tiene función con
+  // NOMBRE (`registrarPuntoDocente`), así que la cita es su cuerpo y no un tramo
+  // del handler que se movía con cada edición de al lado.
   const pb = readFileSync(new URL('../adapters/pocketbase/realtimeRooms.js', import.meta.url), 'utf8');
   assert.match(pb, /patch\.ql_award && Number\.isInteger\(patch\.ql_award\.item\)/,
     'el adaptador escribe la fila del premio (y necesita saber QUÉ caja se premió)');
-  const block = pb.slice(pb.indexOf('patch.ql_award && Number.isInteger'), pb.indexOf('El host puede tocar AMBOS'));
+  const desde = pb.indexOf('async function registrarPuntoDocente');
+  assert.ok(desde > 0, 'el premio del docente debe vivir en una función con nombre');
+  const block = pb.slice(desde, pb.indexOf('\n}', desde));
   assert.match(block, /scored: true/, 'la fila va puntuada: el veredicto ya lo dio el docente');
   assert.match(block, /unscorable: true/,
     'y NO puntuable: sin clave que acertar, la tabla la pinta "—" en vez de fingir un acierto');

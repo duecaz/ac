@@ -75,19 +75,6 @@ export const estadoPb = (e) => numero(saco(e).status, 0);
 export const estadoDeSala = (x) => (esObjeto(x) ? /** @type {Partial<BlobSala>} */ (x) : {});
 
 /**
- * EL MISMO BLOB, VISTO POR EL DESPACHADOR DE SESIONES. `createLiveRoom` declara
- * su `opts` con el tipo de las TRES máquinas a la vez (`SessionOpts` es una
- * intersección), así que un estado de sala EN VIVO no encaja aunque sea el
- * único que esa función va a usar. Mientras `kernel/live/engine.js` no declare
- * `LiveOpts` —que es lo suyo—, la conversión vive aquí, en un solo sitio y con
- * su motivo escrito.
- * @param {Partial<BlobSala>} s
- * @returns {import('../kernel/session/engine.js').SessionOpts['state']}
- */
-export const paraHidratar = (s) =>
-  /** @type {import('../kernel/session/engine.js').SessionOpts['state']} */ (s);
-
-/**
  * @param {LiveEngine} engine @returns {BlobSala}
  */
 export const blobDeSala = (engine) => /** @type {BlobSala} */ (engine.state);

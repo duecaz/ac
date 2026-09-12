@@ -57,8 +57,8 @@ function citasPorSuite() {
 const BASELINE = {
   activityCard: 1, citasFuente: 2, docs: 1, idempotency: 2, journeys: 9,
   liveEnd: 6, liveLoops: 2, liveSnapshot: 6, menu: 3, modeAuth: 7,
-  newTemplate: 2, pbRules: 1, pbSchema: 3, persistPolicy: 6, quizAnswer: 2,
-  quotas: 5, raceResume: 3, realtimePort: 1, roundsLoop: 8,
+  newTemplate: 2, pbRules: 1, pbSchema: 2, persistPolicy: 6, quizAnswer: 2,
+  quotas: 4, raceResume: 3, realtimePort: 1, roundsLoop: 8,
   unscorable: 8, vocabulario: 2,
   // `colorear: 1` (v1.51.668): la suite lee los SVG del banco de dibujos con
   // readFileSync para contrastar `zonas` del índice contra el fichero REAL — es
@@ -73,6 +73,12 @@ const BASELINE = {
 // `citaDeFuente()`. Motivo para preferir el navegador: la regla que aquieta el
 // marco usa `:has()` y ya perdió una vez por especificidad — un escaneo del CSS
 // la habría dado por buena.
+// `pbSchema` (3→2) y `quotas` (5→4) BAJAN en la Fase 6: el esquema de PocketBase
+// dejó de ser un literal enterrado en la vista y es DATO en `core/pbSchema.js`,
+// así que las dos suites lo IMPORTAN en vez de rasparlo con `indexOf` (y
+// `pbSchema` gana además un caso que EJECUTA el aplicador con el `fetch`
+// inyectado: la R6 de la deriva de atributos ya no se comprueba citando la
+// palabra «desvíos»).
 // `menu` (2→3) y `quotas` (4→5) SUBEN en v1.51.623 sin que nadie haya escrito
 // una cita nueva: el contador aprendió a ver la fuente leída EN LÍNEA
 // —la lectura metida dentro del propio assert—, que llevaba ahí desde siempre y

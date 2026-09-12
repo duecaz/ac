@@ -15,8 +15,8 @@ import { toast, confirmModal, TOAST_NORMAL, TOAST_LARGO } from '../core/toast.js
 
 import { mensajeDe } from '../core/frontera.js';
 /** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
-/** @typedef {import('../kernel/contracts/session.js').AssignmentRecord} AssignmentRecord */
-/** @typedef {import('../kernel/contracts/session.js').AssignmentAttempt} AssignmentAttempt */
+/** @typedef {import('../kernel/contracts/persistencia.js').AssignmentRecord} AssignmentRecord */
+/** @typedef {import('../kernel/contracts/persistencia.js').AssignmentAttempt} AssignmentAttempt */
 
 /** @param {string} rootSel @param {string} activityId */
 export async function renderAssignmentsForActivity(rootSel, activityId) {

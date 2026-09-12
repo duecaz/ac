@@ -112,13 +112,13 @@ const ANTESALA = 'views/antesala.js';
 // había tocado. El dueño del sonido es `core/sounds.js`, cuyo `play()` ya
 // respeta el silencio.
 {
-  for (const f of ['views/vsView.js', 'core/editorModes.js']) {
+  for (const f of ['views/vsView.js', 'views/vs/arena.js', 'core/editorModes.js']) {
     const src = leer(f);
     assert.ok(!/\bsound: true\b/.test(src), `${f}: reaparece un interruptor de sonido propio del duelo`);
     assert.ok(!/fx\.sound/.test(src), `${f}: vuelve a decidir por su cuenta si suena`);
   }
   // CONTRA-PRUEBA: el duelo sigue sonando — se quitó la casilla, no el sonido.
-  assert.ok(/playSound\(r\.correct \? 'correct' : 'wrong'\)/.test(leer('views/vsView.js')),
+  assert.ok(/playSound\(r\.correct \? 'correct' : 'wrong'\)/.test(leer('views/vs/arena.js')),
     'CONTRA-PRUEBA: el duelo sigue sonando al acertar y al fallar (lo gatea el silencio global)');
   ok('el sonido tiene UN dueño (core/sounds.js) y el duelo sigue sonando');
 }

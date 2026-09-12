@@ -8,7 +8,7 @@ import assert from 'node:assert';
 import { createLocalRealtime } from '../adapters/local/realtime.js';
 import { registerTemplate } from '../core/registry.js';
 import { scoreMarks } from '../core/textMarks.js';
-import { renderTextCorrectionHost } from '../core/textCorrectionRound.js';
+import { renderTextCorrectionHost } from '../core/textCorrectionRonda.js';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };

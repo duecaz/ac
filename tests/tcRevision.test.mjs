@@ -14,7 +14,7 @@
 //
 // Run: node tests/tcRevision.test.mjs
 import assert from 'node:assert';
-import { filasRevision, resumenRevision, valorAnulado, efectivoDe } from '../core/textCorrectionRound.js';
+import { filasRevision, resumenRevision, valorAnulado, efectivoDe } from '../core/textCorrectionRevision.js';
 import { scoreMarksPerHit } from '../core/textMarks.js';
 import { corrigeAlFinal, DEFAULT_REVIEW } from '../core/constants.js';
 

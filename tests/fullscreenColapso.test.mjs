@@ -17,13 +17,13 @@ import assert from 'node:assert';
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
 
-// `core/fullscreen.js` nombra `document` al cargarse (listeners del botón).
+// `core/fullscreenRepair.js` nombra `document` al cargarse (el vigilante).
 // Se guarda lo que hubiera para devolverlo al final: el runner comparte proceso
 // y los mocks de addEventListener no deben llegar a la suite siguiente.
 const documentoAnterior = global.document;
 global.document = { fullscreenElement: null, webkitFullscreenElement: null, documentElement: {} };
 const { repararColapso, vigilarColapsoFullscreen } =
-  await import('../core/fullscreen.js');
+  await import('../core/fullscreenRepair.js');
 
 // ── DOM de mentira: lo justo que toca el reparador ───────────────────────────
 let idSeq = 0;

@@ -64,9 +64,11 @@ const LOOPS = {
 
 // ── 2. El contrato no ha ampliado el catálogo por su cuenta ────────────────
 {
-  const src = read('core/templateContract.js');
+  // El contrato se partió en seis revisores (v1.51.688): la política de vivo la
+  // valida `revisarPolitica`, en core/templateRevisores.js.
+  const src = read('core/templateRevisores.js');
   const m = src.match(/LIVE_POLICIES\s*=\s*\[([^\]]*)\]/);
-  assert.ok(m, 'core/templateContract.js debe declarar LIVE_POLICIES');
+  assert.ok(m, 'core/templateRevisores.js debe declarar LIVE_POLICIES');
   assert.match(src, /LIVE_POLICIES\s*=\s*\[\.\.\.LIVE_LOOPS/,
     'el contrato debe VALIDAR contra core/liveLoops.js, no llevar su propia lista');
   assert.deepStrictEqual([...LIVE_LOOPS].sort(), ['board', 'claim', 'race', 'rounds'],

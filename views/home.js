@@ -8,7 +8,7 @@ import { confirmModal, toast, TOAST_ERROR, TOAST_NORMAL } from '../core/toast.js
 import { activityItemCount as itemCount } from '../core/migrate.js';
 import { activityCardHtml } from '../core/activityCard.js';
 import { searchActivities } from '../core/search.js';
-import { buildSwitchOptions } from './switchTemplate.js';
+import { buildSwitchOptions } from '../core/switchTemplate.js';
 import { canHost } from '../core/authGate.js';
 import { wireActivityCard } from './activityCardWire.js';
 import { mensajeDe } from '../core/frontera.js';

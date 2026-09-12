@@ -1,6 +1,8 @@
 // LA FILA DE `live_sessions` — load/save del estado, los mapeos de Pregunta en
 // Vivo (`qlOf`), el sello de apertura de ítem (`noteItemOpened`), los
-// patches de sala (`setSessionState`) y el par `fullActivity`/`keyCache` que
+// patches de sala (`setSessionState`, que hace CUATRO cosas con nombre:
+// `aplicarParcheDeSala` del kernel · `registrarPuntoDocente` ·
+// `subirClaveSiCarrera` · escribir la fila) y el par `fullActivity`/`keyCache` que
 // trae la actividad COMPLETA desde `live_keys` (host-only, §22-2). También el
 // roster de `live_players` (deuda A) y la entrada a la sala (`joinSession`):
 // viven aquí porque su colección gira alrededor de la fila de la sala, igual
@@ -128,6 +130,72 @@ function salaDesde(bruta) {
  *  es de quien la pide), solo con su forma declarada.
  *  @param {Record<string, unknown>} rec @returns {RoomRecord} */
 const filaDeSala = (rec) => /** @type {RoomRecord} */ (rec);
+
+// §21 · PEDIR LA PALABRA: los puntos que da el DOCENTE también son una FILA de
+// live_answers. Sin esto se quedaban SOLO en el blob y el podio —que se DERIVA
+// de live_answers desde la deuda A— mostraba 0 a todos: el docente repartía
+// puntos toda la clase y al final no los veía nadie (verificado contra
+// PocketBase real antes de arreglarlo). La fila va `scored` (el veredicto ya
+// está dado) y `unscorable` (no hubo clave que acertar: el mérito es del
+// docente, §22-5) → la tabla la pinta "—" con sus puntos, sin fingir un acierto
+// automático. La colección sigue siendo de la sección answers: se escribe por
+// sus puentes (`postAnswer`/`getAnswerRow`), nunca con una consulta propia.
+/**
+ * @param {object} deps
+ * @param {PbFetch} deps.pbFetch
+ * @param {string} deps.ANS
+ * @param {(body: NuevaRespuesta) => Promise<{created?: boolean, conflict?: boolean}>} deps.postAnswer
+ * @param {(sessionId: string, itemIndex: number, playerId: string) => Promise<FilaRespuesta|null>} deps.getAnswerRow
+ * @param {string} sessionId
+ * @param {{playerId: string, points: number, item?: number}} award el `item` ya
+ *   viene comprobado entero por el llamante (si no, no hay fila que anotar)
+ * @returns {Promise<void>}
+ */
+async function registrarPuntoDocente({ pbFetch, ANS, postAnswer, getAnswerRow }, sessionId, award) {
+  const { playerId, points, item } = award;
+  /** @type {NuevaRespuesta} */
+  const row = {
+    session: sessionId, player: playerId, item: Number(item),
+    value: null, ms: 0, scored: true, correct: false, unscorable: true,
+    points: Number(points) || 0,
+  };
+  /** @type {{created?: boolean, conflict?: boolean}} */
+  const r = await postAnswer(row).catch(() => ({}));
+  if (!r?.conflict) return;
+  // Misma caja reabierta y re-otorgada: se actualiza la fila existente.
+  const prev = await getAnswerRow(sessionId, Number(item), playerId).catch(() => null);
+  if (prev) await pbFetch(`/api/collections/${ANS}/records/${prev.id}`, {
+    method: 'PATCH', body: JSON.stringify({ scored: true, correct: false, unscorable: true, points: row.points }),
+  }).catch(() => {});
+}
+
+// §22-2 — EXCEPCIÓN DECLARADA de la carrera libre: en ese modo el móvil juzga
+// cada intento en local (colorea al instante y re-encola los fallos), así que
+// necesita el contenido completo. Solo entonces, y solo al arrancar, se sube la
+// actividad entera a la sala; al cerrar se vuelve al snapshot saneado. Cerrarlo
+// del todo pide un validador en el servidor (ver core/liveSnapshot.js).
+//
+// ANTES DE ABRIR LA FASE, no después: este PATCH iba DESPUÉS del de `state`, así
+// que el móvil recibía "empieza la carrera" y se ponía a jugar con el snapshot
+// SIN clave — daba por fallada hasta una hoja perfecta. Primero la clave, luego
+// la salida.
+/**
+ * @param {object} deps
+ * @param {PbFetch} deps.pbFetch
+ * @param {string} deps.COLL
+ * @param {(sessionId: string, rec: unknown) => Promise<Activity|null>} deps.fullActivity
+ * @param {string} sessionId
+ * @param {string|undefined} fase la fase que ABRE este parche
+ * @returns {Promise<void>}
+ */
+async function subirClaveSiCarrera({ pbFetch, COLL, fullActivity }, sessionId, fase) {
+  if (!needsClientKey(fase)) return;
+  const full = await fullActivity(sessionId, null);
+  if (!full) return;
+  await pbFetch(`/api/collections/${COLL}/records/${sessionId}`, {
+    method: 'PATCH', body: JSON.stringify({ activity: full }),
+  }).catch(() => { /* si falla, el móvil ESPERA (no juzga a ciegas) */ });
+}
 
 /**
  * Fábrica de la sección de salas. `deps`:
@@ -425,6 +493,9 @@ export function createRoomsSection({ pbFetch, COLL, KEY, PLR, ANS, userId, answe
       } catch { /* best-effort: la sala ya está cerrada */ }
     },
 
+    // EL PARCHE DE LA SALA, en cuatro pasos con nombre: volcar el parche en el
+    // blob (kernel), anotar los puntos del docente, subir la clave si arranca una
+    // carrera y, por fin, escribir la fila (con su sello de apertura §22-1).
     /** @param {string} sessionId @param {RoomPatch} patch */
     async setSessionState(sessionId, patch) {
       const { engine } = await load(sessionId);
@@ -434,49 +505,11 @@ export function createRoomsSection({ pbFetch, COLL, KEY, PLR, ANS, userId, answe
       // dos veces, y lo que se olvidaba una copia se le perdía al alumno. Aquí el
       // RITMO de la partida va DENTRO del blob (en local, en la propia sala).
       aplicarParcheDeSala(s, patch);
-      // §21 · PEDIR LA PALABRA: los puntos que da el DOCENTE también son una
-      // FILA de live_answers. Sin esto se quedaban SOLO en el blob y el podio
-      // —que se DERIVA de live_answers desde la deuda A— mostraba 0 a todos:
-      // el docente repartía puntos toda la clase y al final no los veía nadie
-      // (verificado contra PocketBase real antes de arreglarlo). La fila va
-      // `scored` (el veredicto ya está dado) y `unscorable` (no hubo clave que
-      // acertar: el mérito es del docente, §22-5) → la tabla la pinta "—" con
-      // sus puntos, sin fingir un acierto automático.
+
       if (patch.ql_award && Number.isInteger(patch.ql_award.item) && await answersReady()) {
-        const { playerId, points, item } = patch.ql_award;
-        /** @type {NuevaRespuesta} */
-        const row = {
-          session: sessionId, player: playerId, item: Number(item),
-          value: null, ms: 0, scored: true, correct: false, unscorable: true,
-          points: Number(points) || 0,
-        };
-        /** @type {{created?: boolean, conflict?: boolean}} */
-        const r = await postAnswer(row).catch(() => ({}));
-        if (r?.conflict) {
-          // Misma caja reabierta y re-otorgada: se actualiza la fila existente.
-          const prev = await getAnswerRow(sessionId, Number(item), playerId).catch(() => null);
-          if (prev) await pbFetch(`/api/collections/${ANS}/records/${prev.id}`, {
-            method: 'PATCH', body: JSON.stringify({ scored: true, correct: false, unscorable: true, points: row.points }),
-          }).catch(() => {});
-        }
+        await registrarPuntoDocente({ pbFetch, ANS, postAnswer, getAnswerRow }, sessionId, patch.ql_award);
       }
-      // §22-2 — EXCEPCIÓN DECLARADA de la carrera libre: en ese modo el móvil
-      // juzga cada intento en local (colorea al instante y re-encola los fallos),
-      // así que necesita el contenido completo. Solo entonces, y solo al arrancar,
-      // se sube la actividad entera a la sala; al cerrar se vuelve al snapshot
-      // saneado. Cerrarlo del todo pide un validador en el servidor (ver
-      // core/liveSnapshot.js).
-      //
-      // ANTES DE ABRIR LA FASE, no después: este PATCH iba DESPUÉS del de
-      // `state`, así que el móvil recibía "empieza la carrera" y se ponía a
-      // jugar con el snapshot SIN clave — daba por fallada hasta una hoja
-      // perfecta. Primero la clave, luego la salida.
-      if (needsClientKey(patch.phase)) {
-        const full = await fullActivity(sessionId, null);
-        if (full) await pbFetch(`/api/collections/${COLL}/records/${sessionId}`, {
-          method: 'PATCH', body: JSON.stringify({ activity: full }),
-        }).catch(() => { /* si falla, el móvil ESPERA (no juzga a ciegas) */ });
-      }
+      await subirClaveSiCarrera({ pbFetch, COLL, fullActivity }, sessionId, patch.phase);
 
       // El host puede tocar AMBOS: el blob y el campo `ql` (p.ej. al cerrar la
       // caja abierta tras dar puntos) — un solo PATCH.

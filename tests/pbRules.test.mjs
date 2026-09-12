@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { RULES, AUTH } from '../core/pbRules.js';
 import { evalRule } from './helpers/pbRuleEval.mjs';
+import { DEFS, nombresDeColecciones } from '../core/pbSchema.js';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
@@ -200,14 +201,17 @@ ok('assignments: crear exige sesión; cerrar/rotar/borrar exige ser EL AUTOR (co
   ok(`setup-pocketbase.ps1 NO diverge del módulo (${compared} reglas comparadas)`);
 }
 
-// ── 8. El panel #/admin las LEE del módulo (no lleva copia) ─────────────────
-// v1.51.629: adminView se partió POR PANEL — el DEFS de «Crear colecciones»
-// vive ahora en views/admin/collections.js.
+// ── 8. Quien APLICA el esquema las LEE del módulo (no lleva copia) ──────────
+// Fase 6: el aplicador salió de la vista a `core/pbProvision.js` (la vista se
+// quedó con la pantalla), así que es ahí donde se comprueba que no hay copia.
 {
+  const prov = readFileSync(join(ROOT, 'core/pbProvision.js'), 'utf8');
+  assert.match(prov, /from '\.\/pbRules\.js'/, 'core/pbProvision.js debe importar las reglas del módulo');
+  assert.ok(!/const\s+activityRules\s*=/.test(prov), 'core/pbProvision.js no debe volver a declarar reglas a mano');
+  // Y la vista no puede recuperar una copia por la puerta de atrás.
   const admin = readFileSync(join(ROOT, 'views/admin/collections.js'), 'utf8');
-  assert.match(admin, /from '\.\.\/\.\.\/core\/pbRules\.js'/, 'views/admin/collections.js debe importar las reglas del módulo');
-  assert.ok(!/const\s+activityRules\s*=/.test(admin), 'views/admin/collections.js no debe volver a declarar reglas a mano');
-  ok('el panel #/admin aplica las reglas del módulo (sin copia propia)');
+  assert.ok(!/listRule|createRule/.test(admin), 'la vista no declara reglas: solo pinta el parte');
+  ok('el aplicador del panel #/admin usa las reglas del módulo (sin copia propia)');
 }
 
 // ── 9. ORDEN de aplicación: una colección va DESPUÉS de las que sus reglas
@@ -232,9 +236,9 @@ ok('assignments: crear exige sesión; cerrar/rotar/borrar exige ser EL AUTOR (co
     if (joins.size) deps[coll] = [...joins];
   }
   assert.ok(Object.keys(deps).length >= 2, 'premisa: hay reglas con join (live_answers, assignment_attempts)');
-  // v1.51.629: adminView se partió POR PANEL — el DEFS vive ahora en views/admin/collections.js.
+  // Fase 6: el DEFS es DATO en core/pbSchema.js → el orden se LEE, no se raspa.
   for (const [label, order] of [
-    ['views/admin/collections.js', orderOf(readFileSync(join(ROOT, 'views/admin/collections.js'), 'utf8'), String.raw`\{ name: '([\w_]+)', fields:`)],
+    ['core/pbSchema.js', nombresDeColecciones()],
     ['tools/setup-pocketbase.ps1', orderOf(readFileSync(join(ROOT, 'tools/setup-pocketbase.ps1'), 'utf8'), String.raw`@\{ name = "([\w_]+)";`)],
   ]) {
     for (const [coll, needs] of Object.entries(deps)) {
@@ -253,16 +257,13 @@ ok('assignments: crear exige sesión; cerrar/rotar/borrar exige ser EL AUTOR (co
 // del panel falló a medias — el panel aplicó en la Pi sin el campo y NADIE lo vio
 // hasta consultar el servidor a mano. Un campo declarado en una vía tiene que
 // estar en la otra.
-// v1.51.629: adminView se partió POR PANEL — el DEFS vive ahora en views/admin/collections.js.
+// Fase 6: el DEFS del panel es DATO (core/pbSchema.js) → se LEE; el .ps1 sigue
+// siendo un script de PowerShell y ese sí hay que rasparlo.
 {
-  const admin = readFileSync(join(ROOT, 'views/admin/collections.js'), 'utf8');
   const ps1   = readFileSync(join(ROOT, 'tools/setup-pocketbase.ps1'), 'utf8');
 
-  // DEFS del panel: { name: 'coll', fields: [ { name: 'x', ... }, ... ] }
   const adminFields = {};
-  for (const m of admin.matchAll(/\{ name: '([\w_]+)', fields: \[([\s\S]*?)\]/g)) {
-    adminFields[m[1]] = new Set([...m[2].matchAll(/\{ name: '([\w_]+)'/g)].map(x => x[1]));
-  }
+  for (const d of DEFS) adminFields[d.name] = new Set(d.fields.map(f => f.name));
   // DEFS del script: @{ name = "coll"; fields = @( @{ name="x"; ... } ... )
   const ps1Fields = {};
   for (const m of ps1.matchAll(/@\{ name = "([\w_]+)";\s*\n\s*fields = @\(([\s\S]*?)\);/g)) {

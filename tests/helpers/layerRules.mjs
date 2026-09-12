@@ -37,6 +37,10 @@ export const EXCEPTIONS = new Map(Object.entries({
   'core/liveTransport.js→adapters/index.js': 'fachada de transporte',
   'core/results.js→adapters/index.js': 'fachada de transporte',
   'core/storage.js→adapters/index.js': 'fachada de transporte',
+  // Los SIETE skins de fábrica son DATOS (tokens de color), y viven junto al CSS
+  // de los temas que tienen hoja propia: `themes/` no es una capa de código —el
+  // grafo ni la escanea—, así que el motor los importa para registrarlos.
+  'core/skins.js→themes/builtin/index.js': 'los skins de fábrica son datos, no una capa',
   // El auto-test del panel usa un scorer real como banco de pruebas.
   'core/selftest.js→templates/quiz/scorer.js': 'banco de pruebas del panel #/admin',
 }));

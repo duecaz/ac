@@ -1,14 +1,15 @@
 // Quiz template: classic multiple-choice. Uses contentModels/qa.
-import { stripSeededPoints, defaultQaItems, QA_PRIMER_PASO, answerIndices } from '../../core/contentModels/qa.js';
+import { defaultQaItems, QA_PRIMER_PASO } from '../../core/contentModels/qa.js';
 import { BaseTemplate } from '../base.js';
-import { SHAPE_ICONS } from '../../core/roundRender.js';
 import { renderQuizPlayer } from './player.js';
 import { renderQuizEditor } from './editor.js';
 import { scoreQuizSubmission } from './scorer.js';
 import { renderChoiceRound } from '../../core/roundRender.js';
 import { shuffle } from '../../core/azar.js';
-import { escapeHtml } from '../../core/html.js';
 import { adoptForQuiz } from '../../kernel/content/qaAdapt.js';
+import { renderQuizRoundHost } from './hostView.js';
+import { migrateQuizContent } from './migrate.js';
+import { comoQaItem } from './item.js';
 
 /**
  * @typedef {import('../../kernel/contracts/activity.js').QaContent} QaContent
@@ -103,117 +104,9 @@ export class QuizTemplate extends BaseTemplate {
    */
   static renderRound(root, payload, opts) { renderChoiceRound(root, payload, opts); }
 
-  // Projector view for LIVE: the rejilla de opciones de colores (question phase) and
-  // the per-option answer distribution + correct option (reveal phase).
-  // playerMap: optional { [optionValue]: ['Ana', 'Beto', …] } built by the host.
-  /**
-   * @param {Element} root
-   * @param {import('../../kernel/contracts/template.js').HostRoundContext} [ctx]
-   * @returns {void}
-   */
-  static renderRoundHost(root, { phase, item, answers = [], playerMap = {} } = {}) {
-    const it = comoQaItem(item);
-    const opts = it?.options || [];
-    if (phase === 'reveal') {
-      const counts = opts.map(o => answers.filter(a => String(valorRespondido(a)) === String(o)).length);
-      const max = Math.max(1, ...counts);
-      root.innerHTML = `
-        <h3 class="text-center mb-3">${escapeHtml(it?.question || '')}</h3>
-        <p class="text-center text-success fw-bold fs-4"><i class="bi bi-check-circle-fill"></i> ${escapeHtml(String(it?.answer ?? ''))}</p>
-        <div class="mb-4">
-          ${opts.map((o, i) => {
-            const isOk = String(o) === String(it?.answer);
-            const w = Math.round(100 * counts[i] / max);
-            const names = playerMap[String(o)] || [];
-            return `<div class="mb-2">
-              <div class="d-flex justify-content-between"><span>${'ABCD'[i] || ''}. ${escapeHtml(o)} ${isOk ? '<i class="bi bi-check-circle-fill text-success"></i>' : ''}</span><b>${counts[i]}</b></div>
-              <div class="progress" style="height:24px"><div class="progress-bar ${isOk ? 'bg-success' : 'bg-secondary'}" style="width:${w}%"></div></div>
-              ${names.length ? `<div class="text-muted small mt-1 ps-1">${names.map(n => `<span class="badge bg-light text-dark border me-1">${escapeHtml(n)}</span>`).join('')}</div>` : ''}
-            </div>`;
-          }).join('')}
-        </div>`;
-      return;
-    }
-    root.innerHTML = `
-      <h2 class="text-center my-4">${escapeHtml(it?.question || '')}</h2>
-      ${it?.image ? `<div class="text-center mb-3"><img src="${escapeHtml(it.image)}" class="img-fluid" style="max-height:240px"></div>` : ''}
-      <div class="ww-opt-grid mb-4">
-        ${opts.map((o, i) => `<button class="btn btn-lg ww-shape-${(i % 4) + 1}" disabled><i class="bi ${SHAPE_ICONS[i % 4]} me-2"></i>${escapeHtml(o)}</button>`).join('')}
-      </div>`;
-  }
+  // La pantalla del PROYECTOR en vivo vive en su vista (hostView.js).
+  static renderRoundHost = renderQuizRoundHost;
 
-  // Migrate this template's content from older templateVersion if needed.
-  // La firma es la IDENTIDAD sobre la forma (la de `templates/base.js`): el
-  // contenido entra tal cual lo tenga la actividad y se estrecha por FORMA.
-  /**
-   * @template C
-   * @param {C} content
-   * @returns {C}
-   */
-  static migrateContent(content /*, fromVersion */) {
-    if (!content || typeof content !== 'object' || !('items' in content)) return content;
-    // v1→v2: fuera el `points: 1` sembrado. Aquí el campo SÍ es visible
-    // («Avanzado → puntos»), pero seguía naciendo escrito, así que cambiar
-    // «Puntos por acierto» tampoco hacía nada hasta tocar pregunta por pregunta.
-    stripSeededPoints(content);
-    // Ensure each item carries answerIdx (the correct option INDICES) so the
-    // editor never re-derives correctness from option TEXT — which mismarks
-    // options that share text. Idempotent: only fills it when missing.
-    if (Array.isArray(content.items)) {
-      rellenarAnswerIdx(content.items);
-    }
-    return content;
-  }
-}
-
-/** Lo que el contrato entrega como `unknown`, leído como el ítem `qa` que esta
- *  plantilla sí conoce. Sin ítem no hay nada que pintar ni que contar.
- * @param {unknown} item
- * @returns {QaItem|null}
- */
-function comoQaItem(item) {
-  if (!item || typeof item !== 'object') return null;
-  return /** @type {QaItem} */ (item);
-}
-
-/** v1→v2 · cada ítem lleva `answerIdx` (las POSICIONES correctas) para que el
- *  editor no vuelva a derivar la corrección del TEXTO de la opción.
- * @param {QaItem[]} items
- * @returns {void}
- */
-function rellenarAnswerIdx(items) {
-  for (const it of items) {
-    if (!it) continue;
-    const opciones = it.options || [];
-    // RESCATE de las preguntas que perdieron su `answer` al editar el texto
-    // de la opción correcta (el bug de "todas malas": el editor mutaba el
-    // texto antes de fijar el índice). Si la MARCA por índice sobrevivió, la
-    // respuesta se re-deriva de ella; si no sobrevivió, no hay nada que
-    // adivinar y el editor lo señala en rojo. Idempotente.
-    if (Array.isArray(it.answerIdx) && it.answerIdx.length) {
-      const texts = it.answerIdx
-        .filter(k => k >= 0 && k < opciones.length)
-        .map(k => String(opciones[k] ?? ''))
-        .filter(t => t.trim() !== '');
-      const lost = Array.isArray(it.answer)
-        ? it.answer.filter(s => String(s ?? '').trim() !== '').length === 0
-        : String(it.answer ?? '').trim() === '';
-      if (lost && texts.length) it.answer = texts.length === 1 ? texts[0] : texts;
-    }
-    // «Cuál es la correcta» tiene UN dueño (`answerIndices`, core/contentModels/qa.js):
-    // compara con el MISMO `norm` que el scorer. Aquí se derivaba con `===`
-    // crudo, así que una opción «madrid» con respuesta «Madrid» —que el juego
-    // da por buena— se guardaba como `answerIdx: []`, y desde ese momento el
-    // editor la pintaba SIN marcar.
-    if (!Array.isArray(it.answerIdx)) it.answerIdx = answerIndices(it);
-  }
-}
-
-/** El valor que afirmó una respuesta de la sala. `answers` viaja como
- *  `unknown[]` en el contrato: cada plantilla sabe qué guarda dentro.
- * @param {unknown} a
- * @returns {unknown}
- */
-function valorRespondido(a) {
-  return (a && typeof a === 'object' && 'value' in a) ? a.value : undefined;
+  // El contenido guardado sube de versión en su módulo (migrate.js, §24).
+  static migrateContent = migrateQuizContent;
 }

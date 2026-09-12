@@ -462,7 +462,8 @@ function cruceC() {
 //      puerta, reusando los módulos PUROS que la implementan (nunca
 //      reimplementada aquí):
 //        · `views/vsView.js` llama a `isVsCompatible(activity)`
-//          (kernel/session/vsMachine.js) ANTES de montar nada — y esa función
+//          (kernel/session/vsMachine.js) ANTES de montar nada — ni la antesala
+//          ni `views/vs/arena.js`, donde vive el encuentro — y esa función
 //          ya comprueba `typeof T.renderRound/scoreSubmission === 'function'`
 //          ella misma. Se invoca la función REAL con una actividad sintética
 //          por plantilla faltante: si NINGUNA pasa, el sitio está guardado.
@@ -490,7 +491,7 @@ const VISTA_LOOP = {
   'views/live/studentCarrera.js': 'race',
   'views/live/studentTablero.js': 'board',
 };
-const VISTA_VS = new Set(['views/vsView.js']);
+const VISTA_VS = new Set(['views/vsView.js', 'views/vs/arena.js']);
 const porNombre = (name) => TODAS.find(t => t.meta.name === name);
 // Actividad sintética mínima para invocar `isVsCompatible` DE VERDAD (no
 // reimplementarla): basta `template` + el contenido/reglas por defecto de esa

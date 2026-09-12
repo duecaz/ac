@@ -1,11 +1,16 @@
-// UI glue for the Wordwall-style "switch format" feature. Thin layer over the
-// pure engine in kernel/content (switchOptions/applySwitch); keeps registry +
-// storage wiring out of the engine so the engine stays Node-testable.
-import { listTemplates } from '../core/registry.js';
+// CAMBIAR DE PLANTILLA (estilo Wordwall) llevando el contenido: capa fina sobre
+// el motor puro de kernel/content (switchOptions/applySwitch/duplicateSwitch),
+// que le pone el registro de plantillas y el almacén — así el motor se sigue
+// probando en Node.
+//
+// Vivía en `views/` y NO es una vista: no pinta nada. Estando allí, la capa de
+// CONTENIDO y la de core no podían llamarlo (§0: nadie importa hacia arriba), y
+// sus tres consumidores eran vistas por casualidad, no por naturaleza.
+import { listTemplates } from './registry.js';
 import { switchOptions, applySwitch, duplicateSwitch } from '../kernel/content/index.js';
-import { save, ALMACEN_LLENO } from '../core/storage.js';
-import { revisarActividad } from '../core/activityCheck.js';
-import { newActivityId } from '../core/migrate.js';
+import { save, ALMACEN_LLENO } from './storage.js';
+import { revisarActividad } from './activityCheck.js';
+import { newActivityId } from './migrate.js';
 
 /** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
 /** @typedef {import('../kernel/contracts/template.js').TemplateStatic} TemplateStatic */

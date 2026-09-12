@@ -18,7 +18,7 @@ import { pbListar } from './listar.js';
  * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
  * @typedef {import('../../kernel/contracts/activity.js').ActivityRow} ActivityRow
  * @typedef {import('../../kernel/contracts/dataPort.js').RemoteStore} RemoteStore
- * @typedef {import('../../kernel/contracts/session.js').ResultRow} ResultRow
+ * @typedef {import('../../kernel/contracts/persistencia.js').ResultRow} ResultRow
  */
 
 // Una fila de `activities` / `results` ya estrechada a objeto. La FORMA de sus
@@ -244,7 +244,7 @@ export function createPocketbaseRemoteStore() {
         throw e;
       }
 
-      /** @param {import('../../kernel/contracts/session.js').ResultRecord} r */
+      /** @param {import('../../kernel/contracts/persistencia.js').ResultRecord} r */
       function postResult(r) {
         return pbFetch('/api/collections/results/records', {
         method: 'POST',

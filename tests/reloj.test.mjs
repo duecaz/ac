@@ -72,7 +72,7 @@ const TS = listTemplates().filter(T => existsSync(join(RAIZ, 'templates', String
     const fuentes = readdirSync(dir).filter(f => f.endsWith('.js') && !f.includes('editor'))
       .map(f => leer(`templates/${T.meta.name}/${f}`)).join('\n');
     // Tildes y Comas leen el tiempo en la ronda compartida, no en su carpeta.
-    const compartido = T.meta.contentModel === 'textCorrection' ? leer('core/textCorrectionRound.js') : '';
+    const compartido = T.meta.contentModel === 'textCorrection' ? leer('core/textCorrectionSolo.js') : '';
     // Quien corre sobre el shell SECUENCIAL hereda la cuenta atrás: la monta el
     // shell (core/soloPlayer.js) y, si la plantilla no dice qué hacer al agotarse,
     // el shell registra el ítem sin respuesta y avanza.

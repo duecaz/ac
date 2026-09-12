@@ -64,11 +64,12 @@ const read = (p) => readFileSync(new URL(p, ROOT), 'utf8');
 
 // ── 3. El tope de TAMAÑO sí lo aplica el servidor, y sin copias ────────────
 {
-  // v1.51.629: adminView se partió POR PANEL — el DEFS de «Crear colecciones»
-  // vive ahora en views/admin/collections.js.
-  const panel = read('views/admin/collections.js');
-  assert.match(panel, /maxSize:\s*QUOTAS\.activityBytes/,
-    'el panel #/admin toma el maxSize del campo `data` de core/quotas.js, no de un número escrito a mano');
+  // Fase 6: el DEFS de «Crear colecciones» es DATO en core/pbSchema.js → el tope
+  // se COMPRUEBA leyéndolo, no citando la línea que lo escribe.
+  const { DEFS } = await import('../core/pbSchema.js');
+  const campoData = DEFS.find(d => d.name === 'activities')?.fields.find(f => f.name === 'data');
+  assert.strictEqual(campoData?.maxSize, QUOTAS.activityBytes,
+    'el esquema del panel #/admin toma el maxSize del campo `data` de core/quotas.js, no de un número escrito a mano');
   const ps1 = read('tools/setup-pocketbase.ps1');
   const m = ps1.match(/name="data";\s*type="json";\s*maxSize=(\d+)/);
   assert.ok(m, 'el script PowerShell declara el maxSize del campo data');

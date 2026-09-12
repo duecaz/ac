@@ -85,15 +85,21 @@ const deferred = () => { let resolve, reject; const p = new Promise((res, rej) =
   ok("el flush en 'online' está en la factory; las tres colas ya no lo copian");
 }
 
-// vsView (§23): sus setTimeout de ritmo van por ctx (no repintan sobre la vista siguiente).
+// El duelo (§23): sus setTimeout de ritmo van por ctx (no repintan sobre la
+// vista siguiente). Se miran LOS DOS ficheros del duelo — la antesala
+// (`views/vsView.js`) y el encuentro (`views/vs/arena.js`, donde vive hoy el
+// ritmo): comprobar solo uno dejaría la mitad del duelo fuera de la norma.
 {
   const { readFileSync } = await import('node:fs');
-  const src = readFileSync(new URL('../views/vsView.js', import.meta.url), 'utf8')
-    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
-  const bare = (src.match(/(?<!life\.)setTimeout\(/g) || []).length;
-  if (bare) throw new Error(`views/vsView.js tiene ${bare} setTimeout sin lifecycle — repintan tras cambiar de modo/ruta`);
-  if (!/release\('vsView'\)/.test(src)) throw new Error('vsView.dispose debe drenar su ctx (release)');
-  ok('vsView: timeouts de ritmo por lifecycle y drenados en dispose');
+  for (const f of ['views/vsView.js', 'views/vs/arena.js']) {
+    const src = readFileSync(new URL('../' + f, import.meta.url), 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+    const bare = (src.match(/(?<!life\.)setTimeout\(/g) || []).length;
+    if (bare) throw new Error(`${f} tiene ${bare} setTimeout sin lifecycle — repintan tras cambiar de modo/ruta`);
+  }
+  const vs = readFileSync(new URL('../views/vsView.js', import.meta.url), 'utf8');
+  if (!/release\('vsView'\)/.test(vs)) throw new Error('vsView.dispose debe drenar su ctx (release)');
+  ok('el duelo (antesala + arena): timeouts de ritmo por lifecycle y drenados en dispose');
 }
 
 console.log(`\nofflineQueue.test: ${passed} checks passed`);

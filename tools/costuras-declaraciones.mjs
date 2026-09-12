@@ -71,7 +71,7 @@ function ficherosTemplates() {
 // Un fichero de EDITOR (el formulario del profe, no el juego): mismo patrón
 // que tests/ajusteConectado.test.mjs (`esEditor`) para no inventar un segundo
 // criterio de qué es "editor" en este repo.
-const esEditor = (p) => /editor\.js$|editorPanels\.js$|editorModes\.js$|editorShell\.js$|editorPrimitives\.js$/.test(p);
+const esEditor = (p) => /editor\.js$|editorPanels\.js$|editorModes\.js$|editorShell\.js$|editorPrimitives\.js$|editorPresentacion\.js$|editorIA\.js$/.test(p);
 
 // SOLO_EDITOR — claves de meta.* que LEGÍTIMAMENTE solo lee un editor (capa
 // contenido↔editor, §0: el player nunca las necesita). No es una excepción
@@ -340,12 +340,13 @@ function contraPrueba() {
     if (lectores.length !== 0) { console.log('  ❌ CONTRA-PRUEBA rota: el campo fantasma de rules "aparece leído" (imposible)'); rotos++; }
   }
   // Y la contra-prueba POSITIVA: un caso real conocido (meta.instructions,
-  // leído por core/templateContract.js) tiene que salir CON lector — si esto
+  // leído por core/templateRevisores.js, el revisor de la ficha) tiene que salir
+  // CON lector — si esto
   // fallara, el detector sería tan estricto que no vale para nada.
   {
     const re = regexClave('instructions');
-    if (!re.test(leerSinComentarios('core/templateContract.js'))) {
-      console.log('  ❌ CONTRA-PRUEBA rota: "instructions" no ve un lector real conocido (templateContract.js)'); rotos++;
+    if (!re.test(leerSinComentarios('core/templateRevisores.js'))) {
+      console.log('  ❌ CONTRA-PRUEBA rota: "instructions" no ve un lector real conocido (templateRevisores.js)'); rotos++;
     }
   }
   return rotos;

@@ -18,7 +18,7 @@ const QUEUE_MAX = 200;
 let _qseq = 0;
 const qid = () => `${clock.now().toString(36)}-${(_qseq = (_qseq + 1) % 1e6).toString(36)}`;
 
-/** @typedef {import('../kernel/contracts/session.js').ResultRecord} ResultRecord */
+/** @typedef {import('../kernel/contracts/persistencia.js').ResultRecord} ResultRecord */
 /** Un resultado ya en la cola: lleva su clave de idempotencia.
  *  @typedef {ResultRecord & {_qid: string, _queuedAt?: number}} ResultadoEnCola */
 

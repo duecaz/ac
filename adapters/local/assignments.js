@@ -15,8 +15,8 @@ const K_ATTEMPTS = 'ww.assignment_attempts';
 /**
  * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
  * @typedef {import('../../kernel/contracts/dataPort.js').AssignmentsPort} AssignmentsPort
- * @typedef {import('../../kernel/contracts/session.js').AssignmentAttempt} AssignmentAttempt
- * @typedef {import('../../kernel/contracts/session.js').AssignmentRecord} AssignmentRecord
+ * @typedef {import('../../kernel/contracts/persistencia.js').AssignmentAttempt} AssignmentAttempt
+ * @typedef {import('../../kernel/contracts/persistencia.js').AssignmentRecord} AssignmentRecord
  * @typedef {import('./kv.js').KV} KV
  * @typedef {import('../../core/assignmentRules.js').Identidad} Identidad
  */

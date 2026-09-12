@@ -18,14 +18,14 @@
 /**
  * @typedef {import('./activity.js').Activity} Activity
  * @typedef {import('./activity.js').ActivityRow} ActivityRow
- * @typedef {import('./session.js').AssignmentAttempt} AssignmentAttempt
- * @typedef {import('./session.js').AssignmentRecord} AssignmentRecord
+ * @typedef {import('./persistencia.js').AssignmentAttempt} AssignmentAttempt
+ * @typedef {import('./persistencia.js').AssignmentRecord} AssignmentRecord
  * @typedef {import('./session.js').EngineAnswer} EngineAnswer
  * @typedef {import('./session.js').LiveRoom} LiveRoom
  * @typedef {import('./session.js').Player} Player
  * @typedef {import('./session.js').RankedPlayer} RankedPlayer
- * @typedef {import('./session.js').ResultRecord} ResultRecord
- * @typedef {import('./session.js').ResultRow} ResultRow
+ * @typedef {import('./persistencia.js').ResultRecord} ResultRecord
+ * @typedef {import('./persistencia.js').ResultRow} ResultRow
  * @typedef {import('./session.js').RoomChange} RoomChange
  * @typedef {import('./session.js').RoomPatch} RoomPatch
  * @typedef {import('./session.js').RoomRecord} RoomRecord

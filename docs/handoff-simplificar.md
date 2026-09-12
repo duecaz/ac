@@ -64,7 +64,7 @@ fuera de los editores de los tres juegos.
 colas de entrega en una factoría sobre `offlineQueue` (medio: camino del alumno);
 tablero de Sopa y arrastre de cuerdas (medio: gesto táctil, lo cubre la matriz).
 
-**Fase 6 · responsabilidades (T6), un módulo por commit.**
+**Fase 6 · responsabilidades (T6), un módulo por commit.** ✅ HECHA (v1.51.688).
 - `core/textCorrectionRound.js` (892) → passage · round · review · solo.
 - `core/editorShell.js` (436) → chasis + `editorPresentacion.js` + `editorIA.js`.
 - `views/playerView.js` (568, 8 cosas) → orquestador + `player/apariencia.js` + `player/otraPlantilla.js` + `player/cabecera.js`.
@@ -73,7 +73,7 @@ tablero de Sopa y arrastre de cuerdas (medio: gesto táctil, lo cubre la matriz)
 - `realtimeRooms.setSessionState` (105 líneas, cinco cosas) → `aplicarParche` (en kernel, compartido con el local) + `registrarPuntoDocente` + `subirClaveSiCarrera`.
 - `core/templateContract.js` → seis revisores puros; `core/normsCheck.js` → dueños (dato) + escáner.
 - `kernel/contracts/session.js` (466) → `session.js` + `persistencia.js`; `createLiveRoom` tipado con `LiveOpts`/`LiveEngine` (borra `paraHidratar` y 5 casts).
-- `core/skins.js` → los 7 skins a `themes/builtin/`; `core/fullscreen.js` → `fullscreenRepair.js`; `state.js` → `identity.js`; `views/switchTemplate.js` → `core/`.
+- `core/skins.js` → los 7 skins a `themes/builtin/`; `core/fullscreen.js` → `fullscreenRepair.js`; `state.js` → `identity.js`; `switchTemplate.js` de `views/` a `core/switchTemplate.js` ✅.
 - `crossword/player.js` (523) → view · cursor · check (130 líneas de lógica pasan a ser comprobables desde Node); `quiz/template.js` → hostView + migrate; `vsView.startMatch` (286) → `vs/arena.js`.
 
 **Fase 7 · arranque (T8).** ✅ HECHA (v1.51.686). `#/admin` por `import()` dinámico; `views/admin/diagnostico/`.

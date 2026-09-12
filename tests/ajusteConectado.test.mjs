@@ -44,7 +44,7 @@ const ficheros = [];
 })(ROOT);
 
 const rel = (p) => relative(ROOT, p);
-const esEditor = (p) => /editor\.js$|editorPanels\.js$|editorModes\.js$|editorShell\.js$|editorPrimitives\.js$/.test(p);
+const esEditor = (p) => /editor\.js$|editorPanels\.js$|editorModes\.js$|editorShell\.js$|editorPrimitives\.js$|editorPresentacion\.js$|editorIA\.js$/.test(p);
 // Los tests y las herramientas no cuentan como lectores: un ajuste que solo lee
 // su propia prueba sigue sin llegar al juego.
 // OJO con el ancla: `\/tests\//` NO encaja con «tests/x.js» (la ruta relativa

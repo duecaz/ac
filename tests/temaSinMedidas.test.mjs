@@ -24,7 +24,7 @@
 //
 // Run: node tests/temaSinMedidas.test.mjs
 import assert from 'node:assert';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { reglas, sujetoDe, selectoresDe } from './helpers/css.mjs';
@@ -73,8 +73,12 @@ const TEXTO_DEL_JUEGO = ['ww-key', 'ww-keypad-q', 'ww-keypad-display', 'ww-keypa
  *  saltaba lo que hay dentro de `@media`/`@container` y la otra no. */
 const bloques = (css) => reglas(css).map(r => ({ sel: r.selector, cuerpo: r.cuerpo }));
 
+// Los temas CON HOJA PROPIA. `themes/builtin/` no lo es: son los manifiestos de
+// los skins de fábrica (tokens en JS, sin CSS), y sin este filtro el barrido
+// intentaba leer una hoja que no existe — y contaba un tema de más.
 const temas = readdirSync(join(ROOT, 'themes'), { withFileTypes: true })
-  .filter(d => d.isDirectory()).map(d => d.name);
+  .filter(d => d.isDirectory()).map(d => d.name)
+  .filter(t => statSync(join(ROOT, 'themes', t, 'skin.css'), { throwIfNoEntry: false }));
 assert.ok(temas.length >= 2, 'el barrido tiene que encontrar los temas con hoja propia');
 
 const infracciones = [];

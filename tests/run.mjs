@@ -74,6 +74,7 @@ console.log('\n▶ clock'); await import('./clock.test.mjs');
 console.log('\n▶ fechas'); await import('./fechas.test.mjs');
 console.log('\n▶ offlineQueue'); await import('./offlineQueue.test.mjs');
 console.log('\n▶ ballsort'); await import('./ballsort.test.mjs');
+console.log('\n▶ crossword'); await import('./crossword.test.mjs');
 console.log('\n▶ tangram'); await import('./tangram.test.mjs');
 console.log('\n▶ penDetector'); await import('./penDetector.test.mjs');
 console.log('\n▶ penVeredicto'); await import('./penVeredicto.test.mjs');

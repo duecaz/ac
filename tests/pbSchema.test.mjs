@@ -24,14 +24,12 @@ const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
 
-// Las colecciones declaradas en DEFS (el dueño del esquema). Se leen del BLOQUE
-// DEFS y no de todo el fichero, para no confundir menciones sueltas.
-// v1.51.629: adminView se partió POR PANEL — el DEFS de «Crear colecciones»
-// vive ahora en views/admin/collections.js.
-const admin = read('views/admin/collections.js');
-const { camposQueFaltan } = await import('../core/pbSchema.js');   // el cálculo, para probarlo de verdad
-const bloque = admin.slice(admin.indexOf('const DEFS = ['), admin.indexOf('const COLLECTIONS'));
-const declaradas = [...bloque.matchAll(/\{\s*name:\s*'([a-z_]+)',\s*fields:/g)].map(m => m[1]);
+// Las colecciones declaradas en DEFS (el dueño del esquema). Ya NO se raspan del
+// fichero de la vista con `indexOf`: desde la Fase 6 el esquema es DATO en
+// `core/pbSchema.js`, así que se IMPORTA. Un raspado se queda mudo el día que
+// alguien reordena el fichero; una importación falla en rojo.
+const { camposQueFaltan, DEFS, nombresDeColecciones } = await import('../core/pbSchema.js');
+const declaradas = nombresDeColecciones();
 const script = read('tools/check-pb.sh');
 
 // ── 1. El verificador conoce TODAS las colecciones del esquema ─────────────
@@ -72,9 +70,7 @@ const script = read('tools/check-pb.sh');
   const { QUOTAS } = await import('../core/quotas.js');
   assert.ok(script.includes(String(QUOTAS.activityBytes)),
     `check-pb.sh debe comprobar el maxSize real de activities.data (${QUOTAS.activityBytes})`);
-  assert.match(admin, /desvíos|AJUSTAR A MANO/,
-    'el panel debe DECIR cuándo un atributo del servidor no coincide con el declarado (R6)');
-  ok(`el tope de §25 (${QUOTAS.activityBytes} B) se verifica en el servidor y el panel avisa de la deriva`);
+  ok(`el tope de §25 (${QUOTAS.activityBytes} B) se verifica en el servidor`);
 }
 
 // ── 4. CONTRA-PRUEBA: el cruce detecta de verdad ───────────────────────────
@@ -106,6 +102,81 @@ const script = read('tools/check-pb.sh');
     camposQueFaltan({ actuales, deseados: [{ name: 'id' }, { name: 'code' }], isV23: true }), [],
     'ni `id` ni los campos que ya existen');
   ok('§22-1: el panel REPARA created/updated en colecciones que se crearon sin ellos');
+}
+
+// ── APLICAR EL ESQUEMA: se EJECUTA, con el servidor fingido ─────────────────
+// `core/pbProvision.js` recibe el `fetch`, así que la R6 («un atributo del
+// servidor que no coincide con el declarado se DICE») se comprueba corriéndola,
+// no citando la palabra «desvíos» en un fichero. Antes era una regex sobre la
+// vista: sobrevivía a que el aviso dejara de funcionar.
+{
+  const { aplicarEsquemaPb } = await import('../core/pbProvision.js');
+  const { QUOTAS } = await import('../core/quotas.js');
+
+  /** Un PocketBase 0.23 de mentira con UNA colección, `activities`, cuyo
+   *  `data.maxSize` es el que se le diga (y que NO cambia al PATCHear: es el
+   *  caso real de la Pi, donde el atributo se quedó en 5 MB). */
+  const servidor = (maxSizeEnPi) => {
+    /** @type {string[]} */
+    const vistas = [];
+    const col = {
+      id: 'c1', name: 'activities',
+      fields: [
+        { name: 'data', type: 'json', maxSize: maxSizeEnPi },
+        { name: 'visibility', type: 'text' }, { name: 'tags', type: 'json' },
+        { name: 'language', type: 'text' }, { name: 'owner', type: 'text' },
+        { name: 'created', type: 'autodate' }, { name: 'updated', type: 'autodate' },
+      ],
+      indexes: [],
+    };
+    const json = (body, ok = true, status = 200) => ({ ok, status, json: async () => body });
+    /** @type {typeof fetch} */
+    const falso = async (url, opts = {}) => {
+      const u = String(url);
+      if (u.includes('_superusers/auth-with-password')) return json({ token: 'T' });
+      if (u.endsWith('/api/collections/activities')) { vistas.push('find'); return json(col); }
+      if (u.endsWith('/api/collections/c1')) return json(col);   // lectura y relectura
+      if (u.endsWith('/api/collections')) return json({}, false, 400);
+      return json({}, false, 404);
+    };
+    return { falso, vistas };
+  };
+
+  const { falso } = servidor(5242880);
+  const res = await aplicarEsquemaPb({
+    pbUrl: 'http://x', email: 'a@b.c', pass: 'x', fetchFn: falso,
+    defs: DEFS.filter(d => d.name === 'activities'),
+  });
+  assert.strictEqual(res.length, 1);
+  assert.ok(res[0].ok, `debería aplicar: ${res[0].msg}`);
+  assert.match(res[0].msg, /AJUSTAR A MANO/, 'R6: un maxSize que el servidor NO cambió debe DECIRSE');
+  assert.ok(res[0].msg.includes(String(QUOTAS.activityBytes)),
+    'el aviso debe llevar el valor que hay que poner (§25)');
+
+  // CONTRA-PRUEBA: con el servidor YA en el tope correcto, ni un aviso.
+  const bien = await aplicarEsquemaPb({
+    pbUrl: 'http://x', email: 'a@b.c', pass: 'x', fetchFn: servidor(QUOTAS.activityBytes).falso,
+    defs: DEFS.filter(d => d.name === 'activities'),
+  });
+  assert.ok(bien[0].ok && !/AJUSTAR A MANO/.test(bien[0].msg),
+    'el camino legítimo no debe gritar: ' + bien[0].msg);
+  assert.match(bien[0].msg, /verificado: 5 campos/, 'la relectura cuenta los campos que HAY');
+  ok('R6 ejecutado: la deriva de un atributo declarado se dice, y sin falsos avisos');
+}
+
+// ── El esquema es DATO, y cada colección declara algo ───────────────────────
+{
+  for (const d of DEFS) {
+    assert.ok(Array.isArray(d.fields) && d.fields.length, `${d.name} sin campos`);
+    for (const f of d.fields) assert.ok(f.name && f.type, `${d.name}: campo sin nombre/tipo`);
+  }
+  const dup = declaradas.filter((n, i) => declaradas.indexOf(n) !== i);
+  assert.deepStrictEqual(dup, [], 'colección declarada dos veces');
+  // El ORDEN importa: la regla de live_answers hace join a live_claims y
+  // PocketBase valida las reglas AL GUARDARLAS (fallo real en la Pi).
+  assert.ok(declaradas.indexOf('live_claims') < declaradas.indexOf('live_answers'),
+    'live_claims debe declararse ANTES que live_answers');
+  ok(`las ${DEFS.length} colecciones del DEFS están bien formadas y en orden aplicable`);
 }
 
 console.log(`\n  ${passed} pbSchema checks passed`);

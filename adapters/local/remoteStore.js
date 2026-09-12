@@ -26,7 +26,7 @@ const KEY_RESULTS = 'ww.remote.results';
  * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
  * @typedef {import('../../kernel/contracts/activity.js').ActivityRow} ActivityRow
  * @typedef {import('../../kernel/contracts/dataPort.js').RemoteStore} RemoteStore
- * @typedef {import('../../kernel/contracts/session.js').ResultRecord} ResultRecord
+ * @typedef {import('../../kernel/contracts/persistencia.js').ResultRecord} ResultRecord
  */
 
 /** El almacén inyectable: lo mínimo de `Storage` que este driver usa.

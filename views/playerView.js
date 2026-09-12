@@ -1,36 +1,32 @@
-// Activity page (Wordwall-style). The activity itself runs inside a
-// constrained "embed" frame (max-width 960, fixed aspect-ratio per
-// template). Around it: header, skin tiles, background tiles, "switch
-// template" row, share/edit actions. Responsive: collapses to a tall
-// auto-height frame on mobile portrait.
+// LA PÁGINA DE JUGAR (estilo Wordwall): monta el MODO elegido dentro del marco
+// y reúne a su alrededor las tres piezas que la visten — cabecera, «otra
+// plantilla» y apariencia. Cada una tiene su módulo en `views/player/`; aquí
+// queda solo lo que es de la página: cargar la actividad, gatear que sea
+// jugable, el marco y el ciclo de vida del modo activo.
+//
+// El marco es un "embed" acotado (proporción por plantilla, core/frameAspect.js);
+// en móvil vertical se suelta y crece a lo alto.
 import { html, escapeHtml, mount, $$ } from '../core/html.js';
 import { on } from '../core/events.js';
-import { save, getAnywhere } from '../core/storage.js';
-import { activityItemCount, newActivityId } from '../core/migrate.js';
+import { getAnywhere } from '../core/storage.js';
 import { revisarActividad, pantallaNoListaHtml } from '../core/activityCheck.js';
 import { getTemplate } from '../core/registry.js';
-import { isVsCompatible } from '../kernel/session/engine.js';
 import { availableModes, getMode, runMode, modeNeedsAuth, modeAuthHint } from '../core/modes.js';
 import { canHost } from '../core/authGate.js';
 import { getAuthUserId } from '../core/auth.js';
-import { openLoginModal, pedirCuentaParaModo } from './loginModal.js';
-import { clearSoloProgress } from '../core/soloPlayer.js';
+import { pedirCuentaParaModo } from './loginModal.js';
 import { renderAntesala } from './antesala.js';
-import { listSkins, applySkin, skinPreviewHtml } from '../core/skins.js';
-
-import { listBackgrounds, applyBackground, backgroundPreviewHtml, readBackgroundImage, BACKGROUNDS } from '../core/backgrounds.js';
-import { resetScene } from '../core/presentation.js';
 import { fullscreenButtonHtml, attachFullscreenButton } from '../core/fullscreen.js';
 import { applyPlayOptions } from '../core/playOptions.js';
 import { acquire } from '../core/lifecycle.js';
-import { toast, confirmModal, TOAST_NORMAL, TOAST_ERROR, TOAST_LARGO } from '../core/toast.js';
-import { openEmbedModal } from './embedModal.js';
+import { toast } from '../core/toast.js';
 import { mountSoloAnimator } from '../core/soloAnimator.js';
 import { aspectStyle, ASPECTO_POR_DEFECTO } from '../core/frameAspect.js';
 import { destinoTrasJugar } from '../core/afterPlay.js';
-import { navigate } from '../core/router.js';
-import { buildSwitchOptions, duplicateAsTemplate, switchWillNeed } from './switchTemplate.js';
-import { mensajeDe } from '../core/frontera.js';
+import { resetScene } from '../core/presentation.js';
+import { crearApariencia } from './player/apariencia.js';
+import { otraPlantillaHtml, wireOtraPlantilla } from './player/otraPlantilla.js';
+import { cabeceraPaginaHtml, wireCabeceraPagina } from './player/cabecera.js';
 /** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
 
 /**
@@ -68,44 +64,21 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     if (!rev.jugable) { mount(rootSel, pantallaNoListaHtml(a, rev)); return; }
   }
   const ctx = acquire('playerPage');
-  /** @type {string|undefined} */
-  let currentSkin = a.presentation?.skin || 'default';
-  /** @type {string|undefined} */
-  let currentBg = a.presentation?.background || 'none';
-  let currentBgImage = a.presentation?.backgroundImage || '';
-  // «MI IMAGEN» ES UNA TARJETA COMO LAS DEMÁS. Llevaba dentro un botón «Subir» de
-  // ancho completo, y eso la dejaba 42 px MÁS ALTA que sus vecinas (medido a cinco
-  // anchos): rompía la fila de la rejilla. El parche había sido encoger la letra
-  // del botón —hasta 9,92 px reales, ilegible— con un comentario en player.css que
-  // ya confesaba el problema. No cabe porque no tiene que estar: la tarjeta YA es
-  // pulsable.
-  //   · sin imagen  → la tarjeta ENTERA abre el selector;
-  //   · con imagen  → la tarjeta selecciona ese fondo (como las otras) y para
-  //     cambiarla hay un lápiz en su esquina.
-  // Mira `currentBgImage` (lo VIVO), nunca `a.presentation` (lo guardado): con lo
-  // guardado, la baldosa recién subida se quedaba en la variante «sin imagen».
-  // La pintan DOS sitios con esta misma función —el render de abajo y el handler
-  // de `#bg-custom-file`—; estaban escritos por separado y divergieron, que es de
-  // donde salía el bug.
-  const baldosaMia = () => currentBgImage
-    ? `<div class="ww-pick-tile bg-pick bg-pick--mia ${currentBg==='custom'?'is-active':''}" data-name="custom" role="button" title="${escapeHtml(BACKGROUNDS.custom?.description||'')}">
-         ${backgroundPreviewHtml('custom', currentBgImage)}
-         <label class="bg-pick__cambiar" title="Cambiar mi imagen (máx 800 KB)" aria-label="Cambiar mi imagen">
-           <i class="bi bi-pencil-fill"></i>
-           <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" id="bg-custom-file" hidden>
-         </label>
-       </div>`
-    : `<label class="ww-pick-tile bg-pick bg-pick--mia" data-name="custom" title="${escapeHtml(BACKGROUNDS.custom?.description||'')} (máx 800 KB)">
-         ${backgroundPreviewHtml('custom', '')}
-         <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" id="bg-custom-file" hidden>
-       </label>`;
-  // Lo elegido para ESTA partida (core/playOptions.js). Vive aquí, no en la
+  // El TEMA Y EL FONDO de esta vez (views/player/apariencia.js): viven aquí, no
+  // en la actividad guardada. Al cambiar el TEMA, VS/Equipos necesitan
+  // re-montarse (su layout depende de la clase vs-skin-<layout>); Individual no,
+  // o el alumno perdería el crucigrama a medias por tocar una baldosa.
+  const apariencia = crearApariencia({
+    presentation: a.presentation,
+    marco: () => document.getElementById('ww-frame'),
+    onSkinChange: () => { if (currentMode !== 'solo') selectMode(currentMode); },
+  });
+  // Lo elegido para ESTA vez (core/playOptions.js). Vive aquí, no en la
   // actividad: mañana con otro grupo el profe elige otra cosa y lo guardado no
   // se toca. Al vivir en playActivity() sirve a TODOS los modos embebidos.
   /** @type {import('../core/playOptions.js').PlayChoices} */
   let playChoices = {};
 
-  const vsCapable = isVsCompatible(a);
   // The currently selected embedded mode and its teardown handle. The activity
   // stage hosts ONE mode at a time (Individual by default); switching modes
   // disposes the previous one (stops VS animations, etc.). See core/modes.js.
@@ -147,7 +120,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   // the theme chosen in the picker — not just the originally saved one.
   function playActivity() {
     const base = { ...a,
-      presentation: { ...a.presentation, skin: currentSkin, background: currentBg, backgroundImage: currentBgImage } };
+      presentation: { ...a.presentation, skin: apariencia.skin, background: apariencia.background, backgroundImage: apariencia.backgroundImage } };
     return applyPlayOptions(getTemplate(a.template), base, playChoices);
   }
 
@@ -276,16 +249,6 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   function paint() {
     const T = getTemplate(a.template);
     const aspect = T?.meta?.aspectRatio || ASPECTO_POR_DEFECTO;
-    // La lista COMPLETA, la misma que el editor: las del mismo modelo (juegan
-    // el contenido tal cual) y las CONVERTIBLES (la máquina de
-    // kernel/content/convert.js rellena lo que falta). Antes salían solo las
-    // del mismo modelo, así que desde aquí no se podía llegar a media docena
-    // de plantillas que sí admiten este contenido.
-    const compat = buildSwitchOptions(a).filter(o => o.valid)
-      // Lo que quedará por completar en cada destino, calculado ANTES de
-      // ofrecerlo: Sopa de Letras → Crucigrama traslada las palabras pero no
-      // puede inventar las pistas, y eso se dice, no se descubre al llegar.
-      .map(o => ({ ...o, faltara: switchWillNeed(a, o.template.meta.name) }));
 
     mount(rootSel, html`
       <div class="ww-play-page">
@@ -300,43 +263,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
              Ver styles/player.css. -->
         <div class="pp-layout">
 
-          <div class="pp-header">
-            <!-- Como en la foto: título · etiqueta de plantilla · «N elementos ·
-                 por fulano», todo en UNA línea de base (envuelve si no cabe). -->
-            <div class="pp-header-info">
-              <h1 class="pp-title">${escapeHtml(a.title)}</h1>
-              <span class="badge bg-${T?.meta?.color || 'info'}"><i class="bi ${T?.meta?.icon || 'bi-puzzle'}"></i> ${escapeHtml(T?.meta?.label || a.template)}</span>
-              <span class="text-muted small pp-meta">${activityItemCount(a)} elementos
-                · por ${a.author?.id ? `<a href="#/autor/${escapeHtml(a.author.id)}">${escapeHtml(a.author.name || 'Profesor')}</a>` : 'anónimo'}
-                ${a.subtitle ? `· ${escapeHtml(a.subtitle)}` : ''}</span>
-              ${(a.tags||[]).length ? `<span class="pp-tags">${(a.tags||[]).map(t => `<span class="badge bg-light text-dark border me-1">${escapeHtml(t)}</span>`).join('')}</span>` : ''}
-            </div>
-            <!-- Reiniciar y pantalla completa YA VIVEN dentro del marco (corner
-                 button + "jugar otra vez" de cada modo, core/afterPlay.js) — no se
-                 repiten aquí. Editar sale arriba junto a Crear SOLO si es tuya
-                 (canEdit real, ya no un valor fijo). Lo que sobra — reiniciar
-                 desde fuera, Embed, Duplicar — va al menú de puntos.
-                 Con la MISMA gramática de botón que «Mis actividades»
-                 (.btn-ghost / .btn-primary-solid), no la de Bootstrap. -->
-            <div class="pp-header-actions">
-              ${canEdit ? `<a href="#/edit/${a.id}" class="btn-ghost"><i class="bi bi-pencil"></i> Editar actividad</a>` : ''}
-              <a href="#/new" class="btn-primary-solid"><i class="bi bi-plus-lg"></i> Crear actividad</a>
-              <button class="btn-ghost" id="btn-share"><i class="bi bi-share"></i> Compartir</button>
-              <div class="dropdown">
-                <button class="btn-ghost btn-ghost--icon" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Más acciones" aria-label="Más acciones">
-                  <i class="bi bi-three-dots"></i>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                  <li><button class="dropdown-item" id="btn-restart"><i class="bi bi-arrow-clockwise"></i> Reiniciar</button></li>
-                  <!-- «beta» a propósito: embeber está FUERA DE LA ESCENA por ahora
-                       (norte §7c) — pinta, pero nadie lo ha validado dentro de un
-                       blog o un LMS. La puerta entornada se DICE ANTES. -->
-                  <li><button class="dropdown-item" id="btn-embed"><i class="bi bi-code-square"></i> Embed <span class="badge bg-secondary">beta</span></button></li>
-                  <li><button class="dropdown-item" id="btn-fork"><i class="bi bi-files"></i> Duplicar</button></li>
-                </ul>
-              </div>
-            </div>
-          </div>
+          ${cabeceraPaginaHtml(a, { T, canEdit })}
 
           <div class="pp-stage">
             <!-- El botón de pantalla completa va DENTRO del marco, discreto y en
@@ -362,67 +289,15 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
                Apariencia. Cambiar de plantilla cambia el JUEGO; el tema y el
                fondo solo lo visten — la decisión gorda va primero. -->
           <div class="pp-appearance">
-            ${compat.length ? `
-              <div class="pp-card mb-3">
-                <h6 class="text-muted text-uppercase small mb-2">Otra plantilla</h6>
-                <div class="d-flex flex-wrap gap-2">
-                  ${compat.map(o => `
-                    <button class="btn btn-outline-${o.template.meta.color || 'secondary'} btn-sm tpl-switch"
-                            data-name="${o.template.meta.name}" data-kind="${o.kind}"
-                            data-faltara="${escapeHtml((o.faltara || []).join(' · '))}"
-                            title="${o.faltara.length ? escapeHtml('Habrá que completarla: ' + o.faltara[0])
-                                     : (o.kind === 'direct' ? 'Mismo contenido, tal cual' : 'Adapta el contenido a esta plantilla')}">
-                      <i class="bi ${o.template.meta.icon}"></i> ${escapeHtml(o.template.meta.label)}
-                      ${o.faltara.length ? '<i class="bi bi-pencil-fill ms-1 opacity-75"></i>'
-                        : (o.kind === 'convert' ? '<i class="bi bi-shuffle ms-1 opacity-50"></i>' : '')}
-                    </button>
-                  `).join('')}
-                </div>
-                <p class="text-muted small mb-0 mt-2">Se crea una copia; esta actividad no se toca.</p>
-              </div>` : ''}
-
-            <!-- ACORDEÓN (pedido): se puede plegar cuando el tema ya está
-                 elegido. Nace ABIERTO — plegado por defecto escondería los
-                 temas a quien entra por primera vez y no sabe que están ahí. -->
-            <details class="pp-card pp-acc" open>
-              <summary class="pp-acc-summary">
-                <span class="pp-appearance-title">Apariencia</span>
-                <i class="bi bi-chevron-down pp-acc-chev"></i>
-              </summary>
-              <div class="pp-appearance-sections">
-                <div>
-                  <h6 class="text-muted text-uppercase small mb-2">Tema</h6>
-                  <div class="pp-pick-grid">
-                    ${listSkins().map(s => `
-                      <div class="ww-pick-tile skin-pick ${currentSkin===s.name?'is-active':''}" data-name="${s.name}" role="button" title="${escapeHtml(s.description||'')}">
-                        ${skinPreviewHtml(s.name)}
-                      </div>
-                    `).join('')}
-                  </div>
-                </div>
-                <div>
-                  <h6 class="text-muted text-uppercase small mb-2">Fondo</h6>
-                  <div class="pp-pick-grid">
-                    ${listBackgrounds().map(b => b.name === 'custom'
-                      ? baldosaMia()
-                      : `<div class="ww-pick-tile bg-pick ${currentBg===b.name?'is-active':''}" data-name="${b.name}" role="button" title="${escapeHtml(b.description||'')}">
-                           ${backgroundPreviewHtml(b.name)}
-                         </div>`).join('')}
-                  </div>
-                </div>
-              </div>
-            </details>
+            ${otraPlantillaHtml(a)}
+            ${apariencia.html()}
           </div>
 
         </div>
       </div>
     `);
 
-    // Scope skin + bg to the freshly-rendered frame so the page chrome
-    // around the embed doesn't change when the user picks a theme.
-    const frame = document.getElementById('ww-frame');
-    applySkin(currentSkin, frame);
-    applyBackground(currentBg, frame, currentBgImage);
+    apariencia.aplicar();
     // Re-mount the active mode (default Individual). If a template switch made
     // the active mode incompatible (e.g. VS off after switching), fall back.
     const act = playActivity();
@@ -435,102 +310,12 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   }
 
   function wireHandlers() {
-    on(rootSel, 'click', '.skin-pick', (_, b) => {
-      currentSkin = b.dataset.name;
-      applySkin(currentSkin, document.getElementById('ww-frame'));
-      $$('.skin-pick').forEach(p => p.classList.toggle('is-active', p.dataset.name === currentSkin));
-      // VS/Equipos SÍ necesitan re-montar: su layout depende de la clase
-      // vs-skin-<layout> del skin. Pero en Individual re-montar reinicia el juego
-      // a la pantalla de inicio (el alumno tocaba un tema por curiosidad y perdía
-      // el crucigrama/emparejar a medias). En solo basta el applySkin de arriba.
-      if (currentMode !== 'solo') selectMode(currentMode);
-    });
-    on(rootSel, 'click', '.bg-pick', (_, b) => {
-      // Custom selects only when an image exists; otherwise its upload button
-      // (the label inside) opens the file dialog and selects on success.
-      if (b.dataset.name === 'custom' && !currentBgImage) return;
-      currentBg = b.dataset.name;
-      applyBackground(currentBg, document.getElementById('ww-frame'), currentBgImage);
-      $$('.bg-pick').forEach(p => p.classList.toggle('is-active', p.dataset.name === currentBg));
-    });
-    on(rootSel, 'change', '#bg-custom-file', async (e) => {
-      const input = /** @type {HTMLInputElement|null} */ (e.target);
-      try {
-        currentBgImage = await readBackgroundImage(input?.files?.[0]);
-        currentBg = 'custom';
-        applyBackground(currentBg, document.getElementById('ww-frame'), currentBgImage);
-        // Se REPINTA la baldosa entera, no solo su preview: ahora hay imagen, así
-        // que le toca la variante con lápiz. Los handlers están delegados en la
-        // raíz, así que sobreviven al reemplazo.
-        const tile = document.querySelector('.bg-pick[data-name="custom"]');
-        if (tile) tile.outerHTML = baldosaMia();
-        $$('.bg-pick').forEach(p => p.classList.toggle('is-active', p.dataset.name === 'custom'));
-      } catch (err) {
-        toast(mensajeDe(err), 'warning', TOAST_NORMAL);
-        if (input) input.value = '';
-      }
-    });
-    // OTRA PLANTILLA = DUPLICAR, no convertir en el sitio (dueño 2026-08-18;
-    // opción (b) de D2, docs/decisiones-pendientes.md). Antes esto solo
-    // PREVISUALIZABA —cambiaba la plantilla en pantalla y no guardaba nada—, así
-    // que el dueño hacía clic, veía el juego nuevo, salía de la página y volvía
-    // a encontrarse Operaciones: «ya no los convierte». Ahora convierte de
-    // verdad, pero sobre una COPIA: convertir en el sitio pierde lo que la
-    // plantilla destino no usa, y desde la página de jugar se toca por
-    // curiosidad. El editor conserva su «Cambiar formato» destructivo, que es
-    // donde uno va a propósito.
-    // UNA SOLA FORMA DE PEDIR LA CUENTA. Son dos puertas distintas —el modo que
-    // exige sesión y crear una copia— pero el usuario ve la misma pared, así que
-    // le llega el mismo par: el motivo (que también entra en el modal, para que
-    // no tenga que recordarlo) y qué SÍ funciona sin cuenta.
-    /** @param {string} razon @param {string} cola */
-    const pedirCuenta = (razon, cola) => {
-      toast(`${razon}. ${cola}`, 'info', TOAST_NORMAL);
-      openLoginModal({ reason: razon });
-    };
-    on(rootSel, 'click', '.tpl-switch', async (_, b) => {
-      // LA PUERTA SE AVISA ANTES DE CRUZARLA, y «antes» es ANTES del diálogo: la
-      // copia acaba en `#/edit/:id`, que exige sesión (`requireTeacher`),
-      // mientras que esta página es pública. Sin cuenta se prometía el editor,
-      // se preguntaba si crear la copia, se creaba… y lo que salía era el muro
-      // de acceso. Preguntar primero y cerrar después es peor que no preguntar.
-      if (!getAuthUserId()) {
-        pedirCuenta('Inicia sesión para crear actividades', 'Jugar y entrar con PIN no necesitan cuenta.');
-        return;
-      }
-      const name = b.dataset.name || '';
-      const label = (b.textContent || '').trim();
-      const faltara = (b.dataset.faltara || '').split(' · ').filter(Boolean);
-      const ok = await confirmModal(
-        `Se creará una copia de "${a.title || 'esta actividad'}" con la plantilla “${label}”.`
-        + (b.dataset.kind === 'convert' ? ' El contenido se adapta al formato nuevo y algunos datos podrían no trasladarse.' : '')
-        + ' La actividad actual no se modifica.'
-        // Lo que la conversión NO puede traer se dice AQUÍ, no al llegar a una
-        // pantalla que avisa de que falta algo: Crucigrama necesita pistas y una
-        // palabra suelta no las trae — inventarlas revelaría la respuesta.
-        + (faltara.length ? `\n\nDespués tendrás que completarla en el editor: ${faltara[0]}`
-            + (faltara.length > 1 ? ` (y ${faltara.length - 1} cosa${faltara.length > 2 ? 's' : ''} más).` : '') : ''),
-        { title: 'Duplicar como otra plantilla', okText: 'Crear la copia', cancelText: 'Cancelar' });
-      if (!ok) return;
-      // R6 · fallar en silencio está prohibido: si no se pudo, se dice, y el
-      // motivo viene como VALOR (no como excepción, que sería un embudo por
-      // donde saldría cualquier fallo técnico a la cara del profe).
-      const { actividad: copia, error } = duplicateAsTemplate(a, name);
-      // `copia` y `error` son las dos caras de la MISMA respuesta (una u otra):
-      // se mira la copia, que es lo que se va a usar, con el motivo que venga.
-      if (!copia) { toast(error ?? '', 'danger', TOAST_ERROR); return; }
-      // A DONDE HAY QUE IR: si la copia queda por completar, al EDITOR. Llevarla
-      // a jugar la dejaba en la pantalla de «falta algo» que el diálogo acababa
-      // de anunciar — mandar a alguien a una puerta cerrada que tú mismo le has
-      // descrito es peor que no avisar.
-      if (faltara.length) {
-        toast(`Copia creada: “${copia.title}”. Complétala y ya se puede jugar.`, 'info', TOAST_LARGO);
-        navigate(`#/edit/${copia.id}`);
-      } else {
-        toast(`Copia creada: “${copia.title}”. La original queda intacta.`, 'success', TOAST_NORMAL);
-        navigate(`#/play/${copia.id}`);
-      }
-    });
+    // Cada pieza cablea LO SUYO (§23): el vestido, la fila de «otra plantilla» y
+    // la cabecera. Aquí se queda lo que es de la página — la barra de modos y el
+    // botón de pantalla completa del marco.
+    apariencia.wire(rootSel);
+    wireOtraPlantilla(rootSel, a);
+    wireCabeceraPagina(rootSel, a, { id, onRestart: () => selectMode(currentMode) });
     // Mode bar: embedded modes mount into the stage (embed:false modes are
     // plain links and navigate on their own).
     // La misma pared que en la tarjeta, con las mismas palabras: la redacción
@@ -540,11 +325,6 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
       selectMode(b.dataset.mode);
       document.getElementById('ww-frame')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
-    // Restart re-mounts whatever mode is active (new game / fresh setup).
-    // Borra el progreso guardado para que REINICIE de verdad (no reanude).
-    // Vive en el menú de puntos ahora: el corner button del marco ya cubre
-    // pantalla completa, así que ese botón suelto se quitó sin reemplazo.
-    on(rootSel, 'click', '#btn-restart', () => { clearSoloProgress(id); selectMode(currentMode); });
     // El de la esquina expande el MISMO marco, y su disposer se cuelga del ctx
     // de la vista (§23): sin él, el listener de `fullscreenchange` sobreviviría
     // al cambio de ruta y repintaría botones de una pantalla que ya no existe.
@@ -554,25 +334,5 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
     // la vista los acumulaba hasta salir de la ruta (2 por cada cambio).
     if (fsDisposer) { try { fsDisposer(); } catch { /* ya suelto */ } }
     fsDisposer = attachFullscreenButton('#ww-frame', { target: document.getElementById('ww-frame') || undefined, contenido: '#ww-player-widget' });
-    on(rootSel, 'click', '#btn-share', async () => {
-      try { await navigator.clipboard.writeText(location.href); toast('Link copiado.', 'success'); }
-      catch { toast('No se pudo copiar — copia manualmente: ' + location.href, 'warning', TOAST_LARGO); }
-    });
-    on(rootSel, 'click', '#btn-embed', () => openEmbedModal(a));
-    on(rootSel, 'click', '#btn-fork', async () => {
-      const fork = /** @type {Activity} */ ({
-        ...a,
-        id: newActivityId(),
-        title: a.title + ' (copia)',
-        forkOf: a.id,
-        visibility: 'unlisted',
-        author: null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
-      save(fork);
-      location.hash = `#/edit/${fork.id}`;
-    });
   }
 }
-

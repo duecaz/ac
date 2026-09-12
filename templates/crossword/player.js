@@ -1,16 +1,23 @@
-// Crucigrama — solo player.
-import { html, escapeHtml, mount, raizDe, $, $$ } from '../../core/html.js';
+// Crucigrama — solo player. Aquí queda lo que TOCA EL DOM: montar, teclear,
+// pintar el veredicto y cerrar. Lo demás vive en tres módulos propios, que se
+// prueban desde Node (tests/crossword.test.mjs):
+//   · view.js   — el markup de la rejilla y las pistas
+//   · cursor.js — moverse por el crucigrama (celda activa, dirección, saltos)
+//   · check.js  — qué está bien, qué letra regala la pista y cuánto vale
+import { html, mount, raizDe, $, $$ } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { scoreCrosswordSubmission } from './scorer.js';
 import { palabraJugable } from '../../core/contentModels/words.js';
 import { buildGrid } from './generator.js';
 import { observeResize } from '../../core/observeResize.js';
-import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
+import { hudSet } from '../../core/playerHud.js';
+import { celdaPx, crosswordHtml } from './view.js';
+import { celdasDe, crearCursor } from './cursor.js';
+import { palabraParaPista, palabraResuelta, primeraVacia, puntuarCrucigrama, revisarTodo } from './check.js';
 
 /**
  * @typedef {import('../../kernel/contracts/activity.js').CrosswordWord} CrosswordWord
- * @typedef {import('./generator.js').CrosswordGrid} CrosswordGrid
  */
 
 /**
@@ -49,81 +56,18 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
   // palabra»). El ajuste existía y no lo leía nadie: el botón «Pista» salía
   // siempre, también con «Sin ayuda» elegido, y la primera letra no se
   // regalaba nunca. Un mando que no manda es peor que no tenerlo.
-  const hintMode = activity.rules?.hintMode || 'none';
+  const hintMode = String(activity.rules?.hintMode || 'none');
 
-  // User state: 2D array of typed letters, set of solved word IDs
+  // Lo que ha escrito el alumno + las palabras que ya se dan por buenas.
   /** @type {string[][]} */
   const userGrid  = Array.from({ length: rows }, () => Array(cols).fill(''));
   /** @type {Set<string>} */
   const solvedIds = new Set();
 
-  // Interaction state
-  let activeR = -1, activeC = -1;
-  /** @type {'H'|'V'} */
-  let activeDir = 'H';    // 'H' | 'V'
-  /** @type {string|null} */
-  let activeWordId = null;
+  const cursor = crearCursor({ grid, words, wordNums, rows, cols });
+  const cur = cursor.estado;
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
-  function buildHtml() {
-    const hWords = words.filter(w => w.dir === 'H').sort((a,b) => wordNums[a.id] - wordNums[b.id]);
-    const vWords = words.filter(w => w.dir === 'V').sort((a,b) => wordNums[a.id] - wordNums[b.id]);
-
-    const gridCells = grid.flatMap(row => row.map(cell => {
-      if (cell.blocked) return `<div class="cw-cell cw-blocked"></div>`;
-      const numHtml = cell.number != null ? `<span class="cw-num">${cell.number}</span>` : '';
-      return `<div class="cw-cell cw-white" data-r="${cell.r}" data-c="${cell.c}" tabindex="0">
-        ${numHtml}<span class="cw-letter" data-cwl="${cell.r}-${cell.c}"></span>
-      </div>`;
-    })).join('');
-
-    /** @param {CrosswordWord[]} list @param {string} label @returns {string} */
-    const clueList = (list, label) => `
-      <div class="cw-clue-section">
-        <div class="cw-clue-heading">${label}</div>
-        ${list.map(w => `<div class="cw-clue" data-wid="${w.id}">
-          <b>${wordNums[w.id]}.</b> ${escapeHtml(w.clue)}
-        </div>`).join('')}
-      </div>`;
-
-    return html`
-      <div class="cw-wrap">
-        <!-- HERRAMIENTAS: lo que se toca para AYUDARSE, en la cabecera y
-             separado del envío. Antes pista y reiniciar compartían el pie con
-             «Verificar», así que ayudarse y entregar se leían como lo mismo. -->
-        ${cabeceraHtml({
-          pagina: `0 / ${totalWords}`,
-          herramientas: `${hintMode === 'none' ? '' : `<button class="btn btn-outline-secondary btn-sm" id="cw-hint"><i class="bi bi-lightbulb"></i> Pista</button>`}
-            <button class="btn btn-outline-danger btn-sm" id="cw-reset"><i class="bi bi-arrow-counterclockwise"></i> Reiniciar</button>`,
-        })}
-
-        <!-- Body: clues + grid -->
-        <div class="cw-body">
-          <div class="edu-sec edu-sec--pistas cw-clues">
-            ${clueList(hWords, 'Horizontales →')}
-            ${clueList(vWords, 'Verticales ↓')}
-          </div>
-          <div class="edu-sec edu-sec--tablero cw-grid-wrap">
-            <div class="cw-grid" style="--cw-cols:${cols};--cw-rows:${rows}">
-              ${gridCells}
-            </div>
-          </div>
-        </div>
-
-        <!-- ENVÍO (edu-send): UN control, el que entrega. -->
-        <div class="edu-send cw-footer">
-          <button class="btn btn-success btn-lg" id="cw-check" data-ww-submit><i class="bi bi-check2-circle"></i> Verificar</button>
-        </div>
-
-        <!-- Hidden input for mobile keyboard -->
-        <input data-cw="ki" type="text" inputmode="text" autocomplete="off" autocorrect="off"
-               autocapitalize="characters" spellcheck="false"
-               style="position:fixed;opacity:0;pointer-events:none;left:0;top:0;width:1px;height:1px">
-      </div>`;
-  }
-
-  mount(rootSel, buildHtml());
+  mount(rootSel, crosswordHtml({ grid, words, wordNums, rows, cols, hintMode }));
   requestAnimationFrame(fitGrid);
   attachInteraction();
 
@@ -136,8 +80,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     const availW = wrap.clientWidth  - 4;  // 4px = border*2
     const availH = wrap.clientHeight - 4;
     if (!availW || !availH) return;
-    const cellPx = Math.max(18, Math.floor(Math.min(availW / cols, availH / rows)));
-    grid.style.setProperty('--cw-cell', `${cellPx}px`);
+    grid.style.setProperty('--cw-cell', `${celdaPx(availW, availH, rows, cols)}px`);
   }
 
   // Recalculate if container resizes; disconnect when game finishes.
@@ -160,29 +103,25 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     on(rootSel, 'pointerdown', '.cw-white', (e, el) => {
       e.preventDefault();
       const r = +(el.dataset.r ?? -1), c = +(el.dataset.c ?? -1);
-      if (r === activeR && c === activeC) {
-        // Toggle direction
-        activeDir = activeDir === 'H' ? 'V' : 'H';
-      } else {
-        selectCell(r, c);
-      }
+      if (r === cur.r && c === cur.c) cursor.alternarDireccion();
+      else cursor.seleccionar(r, c);
       highlightActive();
       ki?.focus();
     });
 
     // Mobile / desktop keyboard input
     ki?.addEventListener('keydown', (e) => {
-      if (activeR < 0) return;
+      if (cur.r < 0) return;
       if (e.key === 'Backspace') { e.preventDefault(); eraseLetter(); return; }
-      if (e.key === 'ArrowRight') { e.preventDefault(); move(0, 1); return; }
-      if (e.key === 'ArrowLeft')  { e.preventDefault(); move(0,-1); return; }
-      if (e.key === 'ArrowDown')  { e.preventDefault(); move(1, 0); return; }
-      if (e.key === 'ArrowUp')    { e.preventDefault(); move(-1,0); return; }
-      if (e.key === 'Tab') { e.preventDefault(); activeDir === 'H' ? nextWord('H') : nextWord('V'); return; }
+      if (e.key === 'ArrowRight') { e.preventDefault(); cursor.mover(0, 1); highlightActive(); return; }
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); cursor.mover(0,-1); highlightActive(); return; }
+      if (e.key === 'ArrowDown')  { e.preventDefault(); cursor.mover(1, 0); highlightActive(); return; }
+      if (e.key === 'ArrowUp')    { e.preventDefault(); cursor.mover(-1,0); highlightActive(); return; }
+      if (e.key === 'Tab') { e.preventDefault(); cursor.siguientePalabra(cur.dir); highlightActive(); return; }
     });
 
     ki?.addEventListener('input', () => {
-      if (activeR < 0) return;
+      if (cur.r < 0) return;
       const raw = ki.value.replace(/\s/g, '');
       ki.value = '';
       if (!raw) return;
@@ -193,10 +132,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     // Clue click → go to word start
     on(rootSel, 'click', '.cw-clue', (_, el) => {
       const wid = el.dataset.wid;
-      const w = words.find(x => x.id === wid);
-      if (!w) return;
-      activeDir = w.dir;
-      selectCell(w.row, w.col);
+      if (!wid || !cursor.irAPalabra(wid)) return;
       highlightActive();
       ki?.focus();
     });
@@ -218,194 +154,106 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
   }
   /** @param {number} r @param {number} c @returns {HTMLElement|null} */
   function letterEl(r, c) { return dentro(`[data-cwl="${r}-${c}"]`); }
+  /** @param {string} wid @returns {HTMLElement|null} */
+  function clueEl(wid)    { return dentro(`.cw-clue[data-wid="${wid}"]`); }
+
+  /** Escribe una letra REGALADA (pista): en el modelo y en la casilla.
+   * @param {number} r @param {number} c @param {string} char @returns {void} */
+  function regalarLetra(r, c, char) {
+    userGrid[r][c] = char;
+    const el = letterEl(r, c);
+    if (el) { el.textContent = char; el.classList.add('cw-hint-letter'); }
+  }
 
   /** Regala la PRIMERA letra de cada palabra (modo «first»). Se pinta como una
    *  pista porque lo es, y se hace tras montar la rejilla. */
   function regalarPrimerasLetras() {
     for (const w of words) {
-      const r = w.row, c = w.col;
-      if (userGrid[r][c]) continue;
-      userGrid[r][c] = w.word[0];
-      const el = letterEl(r, c);
-      if (el) { el.textContent = w.word[0]; el.classList.add('cw-hint-letter'); }
+      if (userGrid[w.row][w.col]) continue;
+      regalarLetra(w.row, w.col, w.word[0]);
     }
     updateProgress();
-  }
-  /** @param {string} wid @returns {HTMLElement|null} */
-  function clueEl(wid)    { return dentro(`.cw-clue[data-wid="${wid}"]`); }
-
-  /** @param {number} r @param {number} c @returns {boolean} */
-  function isWhite(r, c) {
-    return r >= 0 && r < rows && c >= 0 && c < cols && !grid[r][c].blocked;
-  }
-
-  /** @param {number} r @param {number} c @param {'H'|'V'} dir @returns {string|null} */
-  function wordAtCell(r, c, dir) {
-    const cell = grid[r]?.[c];
-    if (!cell || cell.blocked) return null;
-    return cell.wordIds.find(id => {
-      const w = words.find(x => x.id === id);
-      return w && w.dir === dir;
-    }) ?? cell.wordIds[0] ?? null;
-  }
-
-  /** @param {number} r @param {number} c @returns {void} */
-  function selectCell(r, c) {
-    if (!isWhite(r, c)) return;
-    activeR = r; activeC = c;
-    // Prefer the word matching activeDir; fall back to the other direction
-    const wid = wordAtCell(r, c, activeDir) ?? wordAtCell(r, c, activeDir === 'H' ? 'V' : 'H');
-    if (wid) {
-      const w = words.find(x => x.id === wid);
-      if (w) activeDir = w.dir;
-    }
-    activeWordId = wordAtCell(r, c, activeDir);
   }
 
   function highlightActive() {
     // Clear all highlights
     todos('.cw-white').forEach(el => el.classList.remove('cw-active-word', 'cw-active-cell'));
     todos('.cw-clue').forEach(el => el.classList.remove('cw-clue-active'));
-    if (activeR < 0) return;
+    if (cur.r < 0) return;
 
     // Highlight all cells of active word
-    if (activeWordId) {
-      const w = words.find(x => x.id === activeWordId);
-      if (w) {
-        for (let i = 0; i < w.word.length; i++) {
-          const r = w.dir === 'H' ? w.row       : w.row + i;
-          const c = w.dir === 'H' ? w.col + i   : w.col;
-          cellEl(r, c)?.classList.add('cw-active-word');
-        }
-        clueEl(w.id)?.classList.add('cw-clue-active');
-        // Scroll clue into view
-        clueEl(w.id)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-      }
+    const w = cursor.palabra(cur.wordId);
+    if (w) {
+      for (const { r, c } of celdasDe(w)) cellEl(r, c)?.classList.add('cw-active-word');
+      clueEl(w.id)?.classList.add('cw-clue-active');
+      // Scroll clue into view
+      clueEl(w.id)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     }
 
     // Highlight active cell itself
-    cellEl(activeR, activeC)?.classList.add('cw-active-cell');
+    cellEl(cur.r, cur.c)?.classList.add('cw-active-cell');
   }
 
   /** @param {string} char @returns {void} */
   function setLetter(char) {
-    if (!isWhite(activeR, activeC)) return;
-    userGrid[activeR][activeC] = char;
-    const el = letterEl(activeR, activeC);
+    if (!cursor.esBlanca(cur.r, cur.c)) return;
+    const r = cur.r, c = cur.c;
+    userGrid[r][c] = char;
+    const el = letterEl(r, c);
     if (el) { el.textContent = char; el.classList.remove('cw-wrong-letter'); }
     // Remove wrong state from cell
-    cellEl(activeR, activeC)?.classList.remove('cw-wrong-word');
+    cellEl(r, c)?.classList.remove('cw-wrong-word');
 
     // Check if the words through this cell are now solved
-    const cell = grid[activeR]?.[activeC];
-    if (cell) {
-      cell.wordIds.forEach(wid => {
-        if (!solvedIds.has(wid)) checkWord(wid);
-      });
-    }
+    comprobarPalabrasDe(r, c);
+    cursor.avanzar(userGrid);
+    highlightActive();
+  }
 
-    advanceCursor();
+  /** Las palabras que pasan por una casilla que acaba de cambiar.
+   * @param {number} r @param {number} c @returns {void} */
+  function comprobarPalabrasDe(r, c) {
+    for (const wid of grid[r]?.[c]?.wordIds || []) {
+      if (solvedIds.has(wid)) continue;
+      const w = cursor.palabra(wid);
+      if (!w || !palabraResuelta(w, userGrid)) continue;
+      solvedIds.add(wid);
+      markWord(wid, 'correct');
+      updateProgress();
+      if (solvedIds.size === totalWords) finishGame();
+    }
   }
 
   function eraseLetter() {
-    const el = letterEl(activeR, activeC);
-    if (el && userGrid[activeR]?.[activeC]) {
-      userGrid[activeR][activeC] = '';
+    const el = letterEl(cur.r, cur.c);
+    if (el && userGrid[cur.r]?.[cur.c]) {
+      const r = cur.r, c = cur.c;
+      userGrid[r][c] = '';
       el.textContent = '';
       el.classList.remove('cw-wrong-letter');
-      cellEl(activeR, activeC)?.classList.remove('cw-correct-word', 'cw-wrong-word');
+      cellEl(r, c)?.classList.remove('cw-correct-word', 'cw-wrong-word');
       // Un-solve if word was solved
-      const cell = grid[activeR]?.[activeC];
-      if (cell) {
-        cell.wordIds.forEach(wid => {
-          if (solvedIds.has(wid)) {
-            solvedIds.delete(wid);
-            markWord(wid, 'none');
-          }
-        });
+      for (const wid of grid[r]?.[c]?.wordIds || []) {
+        if (!solvedIds.has(wid)) continue;
+        solvedIds.delete(wid);
+        markWord(wid, 'none');
       }
     } else {
       // Move back and erase
-      movePrev();
-      const el2 = letterEl(activeR, activeC);
-      if (el2) { userGrid[activeR][activeC] = ''; el2.textContent = ''; }
-    }
-    updateProgress();
-  }
-
-  function advanceCursor() {
-    // Move to next empty cell in the current word, else next cell overall
-    const w = words.find(x => x.id === activeWordId);
-    if (!w) { move(activeDir === 'H' ? 0 : 1, activeDir === 'H' ? 1 : 0); return; }
-
-    // Find current index in word using the word's own direction, not activeDir
-    const idx = w.dir === 'H' ? activeC - w.col : activeR - w.row;
-    // Try next cells in word
-    for (let i = idx + 1; i < w.word.length; i++) {
-      const r = w.dir === 'H' ? w.row       : w.row + i;
-      const c = w.dir === 'H' ? w.col + i   : w.col;
-      if (!userGrid[r][c]) {
-        selectCell(r, c); highlightActive(); return;
+      if (cursor.retroceder()) {
+        const el2 = letterEl(cur.r, cur.c);
+        if (el2) { userGrid[cur.r][cur.c] = ''; el2.textContent = ''; }
       }
+      highlightActive();
     }
-    // Word full — just advance one step
-    move(activeDir === 'H' ? 0 : 1, activeDir === 'H' ? 1 : 0);
-  }
-
-  function movePrev() {
-    const w = words.find(x => x.id === activeWordId);
-    if (!w) return;
-    const idx = w.dir === 'H' ? activeC - w.col : activeR - w.row;
-    if (idx > 0) {
-      const r = w.dir === 'H' ? w.row       : w.row + idx - 1;
-      const c = w.dir === 'H' ? w.col + idx - 1 : w.col;
-      selectCell(r, c); highlightActive();
-    }
-  }
-
-  /** @param {number} dr @param {number} dc @returns {void} */
-  function move(dr, dc) {
-    let r = activeR + dr, c = activeC + dc;
-    while (r >= 0 && r < rows && c >= 0 && c < cols) {
-      if (isWhite(r, c)) { selectCell(r, c); highlightActive(); return; }
-      r += dr; c += dc;
-    }
-  }
-
-  /** @param {'H'|'V'} dir @returns {void} */
-  function nextWord(dir) {
-    const sorted = words.filter(w => w.dir === dir).sort((a,b) => wordNums[a.id] - wordNums[b.id]);
-    const cur = sorted.findIndex(w => w.id === activeWordId);
-    const nxt = sorted[(cur + 1) % sorted.length];
-    if (nxt) { activeDir = nxt.dir; selectCell(nxt.row, nxt.col); highlightActive(); }
-  }
-
-  // ── Word validation ──────────────────────────────────────────────────────
-
-  /** @param {string} wid @returns {boolean} */
-  function checkWord(wid) {
-    const w = words.find(x => x.id === wid);
-    if (!w) return false;
-    for (let i = 0; i < w.word.length; i++) {
-      const r = w.dir === 'H' ? w.row : w.row + i;
-      const c = w.dir === 'H' ? w.col + i : w.col;
-      if ((userGrid[r]?.[c] || '') !== w.word[i]) return false;
-    }
-    // Correct!
-    solvedIds.add(wid);
-    markWord(wid, 'correct');
     updateProgress();
-    if (solvedIds.size === totalWords) finishGame();
-    return true;
   }
 
   /** @param {string} wid @param {'correct'|'wrong'|'none'} state @returns {void} */
   function markWord(wid, state) {
-    const w = words.find(x => x.id === wid);
+    const w = cursor.palabra(wid);
     if (!w) return;
-    for (let i = 0; i < w.word.length; i++) {
-      const r = w.dir === 'H' ? w.row : w.row + i;
-      const c = w.dir === 'H' ? w.col + i : w.col;
+    for (const { r, c } of celdasDe(w)) {
       const el = cellEl(r, c);
       el?.classList.remove('cw-correct-word', 'cw-wrong-word');
       if (state === 'correct') el?.classList.add('cw-correct-word');
@@ -418,47 +266,24 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
   }
 
   function checkAll() {
-    let allCorrect = true;
-    for (const w of words) {
-      if (solvedIds.has(w.id)) { markWord(w.id, 'correct'); continue; }
-      // Check letter by letter
-      let wordOk = true;
-      for (let i = 0; i < w.word.length; i++) {
-        const r = w.dir === 'H' ? w.row : w.row + i;
-        const c = w.dir === 'H' ? w.col + i : w.col;
-        const typed = userGrid[r]?.[c] || '';
-        const correct = typed === w.word[i];
-        if (!correct) wordOk = false;
-        if (typed && !correct) letterEl(r, c)?.classList.add('cw-wrong-letter');
-        else letterEl(r, c)?.classList.remove('cw-wrong-letter');
-      }
-      if (wordOk) {
-        solvedIds.add(w.id); markWord(w.id, 'correct');
-      } else {
-        allCorrect = false; markWord(w.id, 'wrong');
-      }
-    }
+    const veredicto = revisarTodo(words, userGrid, solvedIds);
+    for (const { r, c } of veredicto.letrasBien) letterEl(r, c)?.classList.remove('cw-wrong-letter');
+    for (const { r, c } of veredicto.letrasMal)  letterEl(r, c)?.classList.add('cw-wrong-letter');
+    for (const id of veredicto.resueltas) solvedIds.add(id);
+    for (const { id, estado } of veredicto.palabras) markWord(id, estado);
     updateProgress();
-    if (solvedIds.size === totalWords) finishGame();
+    if (veredicto.todas) finishGame();
   }
 
   function giveHint() {
-    // Reveal one random unsolved letter in the active word (or any word)
-    const unsolved = words.filter(w => !solvedIds.has(w.id));
-    if (!unsolved.length) return;
-    const w = words.find(x => x.id === activeWordId && !solvedIds.has(x.id)) || unsolved[0];
-    for (let i = 0; i < w.word.length; i++) {
-      const r = w.dir === 'H' ? w.row : w.row + i;
-      const c = w.dir === 'H' ? w.col + i : w.col;
-      if (!userGrid[r][c]) {
-        userGrid[r][c] = w.word[i];
-        const el = letterEl(r, c);
-        if (el) { el.textContent = w.word[i]; el.classList.add('cw-hint-letter'); }
-        checkWord(w.id);
-        updateProgress();
-        return;
-      }
-    }
+    // Reveal one unsolved letter in the active word (or any word)
+    const w = palabraParaPista(words, solvedIds, cur.wordId);
+    if (!w) return;
+    const hueco = primeraVacia(w, userGrid);
+    if (!hueco) return;
+    regalarLetra(hueco.r, hueco.c, hueco.letra);
+    comprobarPalabrasDe(hueco.r, hueco.c);
+    updateProgress();
   }
 
   function resetGrid() {
@@ -490,10 +315,8 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     // Puntúa con el MISMO scorer de la plantilla (una llamada por palabra
     // resuelta): sin aritmética propia en el player. El techo es, por
     // definición, lo que da ese scorer si se resuelven todas.
-    /** @param {CrosswordWord} w @returns {number} */
-    const pts = (w) => scoreCrosswordSubmission({ value: w.word, item: w, activity }).points;
-    const score = words.filter(w => solvedIds.has(w.id)).reduce((s, w) => s + pts(w), 0);
-    const max = words.reduce((s, w) => s + pts(w), 0);
+    const { score, maxScore } = puntuarCrucigrama(words, solvedIds,
+      (w) => scoreCrosswordSubmission({ value: w.word, item: w, activity }).points);
     // El final lo pinta el SHELL (sin salida, ver core/soloPlayer.js): antes había un cartel
     // propio que celebraba con confeti aunque solo se hubieran resuelto 3 de
     // 8 palabras, y al cerrarse dejaba al alumno parado en el tablero sin
@@ -502,7 +325,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     // la VERDAD de cómo acabó (R6): completado o no, y cuántas palabras.
     const completo = solvedIds.size >= totalWords;
     ctx.finish({
-      score, maxScore: max,
+      score, maxScore,
       icon: completo ? 'bi-trophy-fill' : 'bi-hourglass-split',
       iconColor: completo ? 'text-warning' : 'text-secondary',
       title: completo ? '¡Crucigrama completado!' : 'Se acabó el tiempo',
@@ -514,10 +337,9 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
   ctx.alAgotarse(finishGame);
 
   // Select the first cell of the first word on load
-  if (words.length) {
-    const first = words.sort((a,b) => (wordNums[a.id]||0) - (wordNums[b.id]||0))[0];
-    activeDir = first.dir;
-    selectCell(first.row, first.col);
+  const primera = [...words].sort((a, b) => (wordNums[a.id] || 0) - (wordNums[b.id] || 0))[0];
+  if (primera) {
+    cursor.irAPalabra(primera.id);
     highlightActive();
   }
 }

@@ -253,7 +253,11 @@ const THEME_BASELINE = {
 {
   const themesDir = join(STYLES, '..', 'themes');
   for (const d of readdirSync(themesDir, { withFileTypes: true }).filter(x => x.isDirectory())) {
-    const css = blank(readFileSync(join(themesDir, d.name, 'skin.css'), 'utf8'));
+    // Una carpeta de themes/ puede no tener hoja: `themes/builtin/` son los
+    // MANIFIESTOS de los skins de fábrica (tokens en JS), sin CSS propio.
+    const hoja = join(themesDir, d.name, 'skin.css');
+    if (!statSync(hoja, { throwIfNoEntry: false })) continue;
+    const css = blank(readFileSync(hoja, 'utf8'));
     const fonts = new Set();
     const re = /([^{}]+)\{([^{}]*)\}/g; let m;
     while ((m = re.exec(css))) {
@@ -294,10 +298,18 @@ const THEME_BASELINE = {
 // huérfano en disco es deuda declarada, no un archivo fantasma sin dueño.
 {
   const ROOT = join(STYLES, '..');
-  const skinsSrc = readFileSync(join(ROOT, 'core/skins.js'), 'utf8');
+  // Los manifiestos de los skins de fábrica viven en themes/builtin/ (uno por
+  // fichero) desde v1.51.688; `core/skins.js` es solo el motor y ya no nombra
+  // ninguna hoja. Se leen los dos, que es lo que hay que leer: quien registre un
+  // skin desde otro sitio también declara ahí su `stylesheet:`.
+  const skinsSrc = [
+    readFileSync(join(ROOT, 'core/skins.js'), 'utf8'),
+    ...readdirSync(join(ROOT, 'themes/builtin')).filter(f => f.endsWith('.js'))
+      .map(f => readFileSync(join(ROOT, 'themes/builtin', f), 'utf8')),
+  ].join('\n');
   const declared = [...skinsSrc.matchAll(/stylesheet:\s*'([^']+)'/g)].map(m => m[1]);
   for (const p of declared) {
-    assert.ok(statSync(join(ROOT, p), { throwIfNoEntry: false }), `core/skins.js declara stylesheet inexistente: ${p}`);
+    assert.ok(statSync(join(ROOT, p), { throwIfNoEntry: false }), `un skin declara stylesheet inexistente: ${p}`);
   }
   // Huérfanos CONOCIDOS: vacío desde v1.51.415 — `themes/colegios/skin.css`
   // llevaba en disco sin ningún `registerSkin` que lo cargara (135 líneas que

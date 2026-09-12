@@ -35,15 +35,19 @@ const leer = (f) => readFileSync(join(ROOT, f), 'utf8');
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
 
-const ronda = leer('core/textCorrectionRound.js');
+// La mecánica está partida por responsabilidad (Fase 6): la PANTALLA donde se
+// marca es `core/textCorrectionRonda.js` y el runner que pagina y corrige es
+// `core/textCorrectionSolo.js` — cada comprobación cita el módulo que le toca.
+const ronda = leer('core/textCorrectionRonda.js');
+const solo = leer('core/textCorrectionSolo.js');
 const canvas = leer('core/textCorrectionDraw.js');
 const css = leer('styles/textCorrection.css');
 
 // ── 1. UN interruptor con los dos lados a la vista ──────────────────────────
 {
-  citaDeFuente(ronda, /class="tc-switch"/, 'el mando lápiz/borrador existe', 'textCorrectionRound.js');
-  citaDeFuente(ronda, /data-side="pen"/, 'con su lado LÁPIZ', 'textCorrectionRound.js');
-  citaDeFuente(ronda, /data-side="eraser"/, 'y su lado BORRADOR', 'textCorrectionRound.js');
+  citaDeFuente(ronda, /class="tc-switch"/, 'el mando lápiz/borrador existe', 'textCorrectionRonda.js');
+  citaDeFuente(ronda, /data-side="pen"/, 'con su lado LÁPIZ', 'textCorrectionRonda.js');
+  citaDeFuente(ronda, /data-side="eraser"/, 'y su lado BORRADOR', 'textCorrectionRonda.js');
   assert.strictEqual((ronda.match(/class="tc-switch"/g) || []).length, 1,
     'es UN mando, no dos controles sueltos');
   ok('la ronda trae UN mando con los dos lados siempre a la vista');
@@ -57,9 +61,9 @@ const css = leer('styles/textCorrection.css');
 // es NETO, así que ese gesto costaba puntos sin decir nada.
 {
   citaDeFuente(ronda, /closest\('\.tc-switch__side'\)\?\.dataset\.side/,
-    'manda el LADO tocado, no un toggle a ciegas', 'textCorrectionRound.js');
+    'manda el LADO tocado, no un toggle a ciegas', 'textCorrectionRonda.js');
   citaDeFuente(ronda, /if \(borrar === sw\.classList\.contains\('is-on'\)\) return;/,
-    'y tocar el que ya estaba activo no cambia nada', 'textCorrectionRound.js');
+    'y tocar el que ya estaba activo no cambia nada', 'textCorrectionRonda.js');
   ok('tocar la pastilla activa NO cambia de herramienta (no se borra una marca por error)');
 }
 
@@ -67,7 +71,7 @@ const css = leer('styles/textCorrection.css');
 // Lo que falló antes: `setEraser` existía y no lo llamaba nadie.
 {
   citaDeFuente(canvas, /setEraser\s*\(/, 'el canvas sigue exponiendo setEraser', 'textCorrectionDraw.js');
-  citaDeFuente(ronda, /draw\.setEraser\(/, 'y el interruptor SE LO DICE al canvas', 'textCorrectionRound.js');
+  citaDeFuente(ronda, /draw\.setEraser\(/, 'y el interruptor SE LO DICE al canvas', 'textCorrectionRonda.js');
   ok('el borrador está cableado: pulsarlo cambia el modo del canvas (antes era una API muerta)');
 }
 
@@ -144,7 +148,7 @@ const css = leer('styles/textCorrection.css');
   assert.ok(!/ww-fs-btn/.test(sinBoton), 'CONTRA-PRUEBA: sin `fullscreen` no pinta ninguno');
   // Y LA RONDA lo pide solo cuando ES la pantalla entera (la que trae chips).
   citaDeFuente(ronda, /fullscreen:\s*propio/,
-    'la ronda aloja el botón solo cuando manda en el marco', 'textCorrectionRound.js');
+    'la ronda aloja el botón solo cuando manda en el marco', 'textCorrectionRonda.js');
   // Que el botón FUNCIONE lo mide el navegador (matrix-smoke, «fullscreen
   // tocable»): ya no se cablea aquí, lo hace el MARCO por delegación
   // (core/fullscreen.js), así que un botón pintado después —esta ronda se
@@ -152,9 +156,9 @@ const css = leer('styles/textCorrection.css');
   // Y TAMBIÉN EN LA CORRECCIÓN: esa pantalla no pintaba cabecera, así que el
   // botón se iba a la esquina flotante y volvía en la frase siguiente. Un mando
   // que salta de sitio según la mitad del ejercicio en la que estás no es un mando.
-  const corr = ronda.slice(ronda.indexOf('function reveal('), ronda.indexOf('function finish('));
+  const corr = solo.slice(solo.indexOf('function reveal('), solo.indexOf('function finish('));
   citaDeFuente(corr, /cabeceraHtml\(/,
-    'la pantalla de corrección también pinta la cabecera', 'textCorrectionRound.js');
+    'la pantalla de corrección también pinta la cabecera', 'textCorrectionSolo.js');
   ok('pantalla completa vive en la cabecera —la misma de las trece— también en la corrección');
 }
 
@@ -169,7 +173,7 @@ const css = leer('styles/textCorrection.css');
   const zona = ronda.slice(ronda.indexOf('const herramientas ='), ronda.indexOf('tc-done-wrap'));
   assert.ok(zona.length > 40, 'las herramientas se localizan por su rol en la cabecera');
   citaDeFuente(ronda, /herramientas,/,
-    'la ronda ENTREGA sus herramientas a la cabecera común, no pinta su propia barra', 'textCorrectionRound.js');
+    'la ronda ENTREGA sus herramientas a la cabecera común, no pinta su propia barra', 'textCorrectionRonda.js');
   for (const prohibido of ['Borrar todo', 'Eliminar', 'Editar', 'Cerrar sesión', 'href=']) {
     assert.ok(!zona.includes(prohibido), `la barra de herramientas no puede llevar «${prohibido}»`);
   }

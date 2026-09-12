@@ -13,25 +13,23 @@
 //   presentation: bool (def. true)                            // skin + fondo
 // }
 // ctx = { onChange, repaint }  — repaint() re-renderiza todo (para alta/baja de ítems).
-import { html, escapeHtml, mount, $input } from './html.js';
+//
+// El CHASIS y nada más: título/subtítulo, qué pestañas hay, qué panel va en cada
+// una y el repintado. Los dos paneles que no son un formulario más viven aparte
+// (core/editorPresentacion.js · core/editorIA.js), igual que Puntuación y En vivo
+// (core/editorPanels.js) o el bloque de tiempo (core/editorPrimitives.js).
+import { html, escapeHtml, mount } from './html.js';
 import { on } from './events.js';
 import { getTemplate } from './registry.js';
 import { modesForTemplate } from './modes.js';
 import { renderModesTab, wireModesTab } from './editorModes.js';
-import { listSkins, skinPreviewHtml, applySkin } from './skins.js';
 import { scoringPanelHtml, wireScoringPanel, livePanelHtml, wireLivePanel } from './editorPanels.js';
-import { listBackgrounds, backgroundPreviewHtml, applyBackground, readBackgroundImage, BG_IMAGE_MAX_BYTES } from './backgrounds.js';
-import { abrirBuscadorImagenes } from './imageSearchModal.js';
+import { presentationHtml, wirePresentacion } from './editorPresentacion.js';
+import { iaBotonHtml, wireIA } from './editorIA.js';
 import { revisarActividad, sinEscribirNada } from './activityCheck.js';
-import { creditoTexto } from './imageSearch.js';
-import { QUOTAS } from './quotas.js';
 import { tiempoBloqueHtml, wireTiempoBloque } from './editorPrimitives.js';
-import { iaSabeEscribir, fusionarContenido, MODELOS_IA } from './aiContent.js';
-import { toast, TOAST_LARGO } from './toast.js';
-import { mensajeDe } from './frontera.js';
 /**
  * @typedef {import('../kernel/contracts/activity.js').Activity} Activity
- * @typedef {import('../kernel/contracts/activity.js').ImageCredit} ImageCredit
  * @typedef {import('./registry.js').PlantillaRegistrada} PlantillaRegistrada
  */
 
@@ -71,74 +69,6 @@ import { mensajeDe } from './frontera.js';
  * @property {string} [icon]
  * @property {() => string} body
  */
-
-/** @param {Activity} a */
-function presentationHtml(a) {
-  const cs = a.presentation?.skin || 'default';
-  const cb = a.presentation?.background || 'none';
-  return `
-    <div class="mb-4">
-      <div id="pres-preview" class="ww-player-frame rounded-3 p-3 d-flex align-items-center gap-2" style="height:72px;max-width:260px;">
-        <div class="d-flex gap-1">
-          <span style="width:14px;height:14px;border-radius:3px;background:var(--ww-shape-1)"></span>
-          <span style="width:14px;height:14px;border-radius:3px;background:var(--ww-shape-2)"></span>
-          <span style="width:14px;height:14px;border-radius:3px;background:var(--ww-shape-3)"></span>
-          <span style="width:14px;height:14px;border-radius:3px;background:var(--ww-shape-4)"></span>
-        </div>
-        <span class="small fw-semibold" style="color:var(--ww-fg)">Vista previa</span>
-      </div>
-    </div>
-    <h6 class="mb-2">Skin (colores y sonidos)</h6>
-    <div class="d-flex flex-wrap gap-3 mb-4">
-      ${listSkins().map(s => `
-        <div class="ww-skin-tile skin-pick ${cs === s.name ? 'is-active' : ''}" data-name="${s.name}" role="button">
-          ${skinPreviewHtml(s.name)}
-          <div class="text-center small mt-1">${escapeHtml(s.description || '')}</div>
-        </div>`).join('')}
-    </div>
-    <h6 class="mb-2">Fondo</h6>
-    <div class="d-flex flex-wrap gap-3">
-      ${listBackgrounds().map(b => b.name === 'custom'
-        ? `<div class="ww-skin-tile bg-pick ${cb === 'custom' ? 'is-active' : ''}" data-name="custom" role="button" style="width:120px">
-             ${backgroundPreviewHtml('custom', a.presentation?.backgroundImage || '')}
-             <label class="btn btn-sm btn-outline-secondary w-100 mt-1" style="cursor:pointer" title="Máx 800 KB">
-               <i class="bi bi-upload"></i> ${a.presentation?.backgroundImage ? 'Cambiar' : 'Subir'}
-               <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" id="bg-custom-file" hidden>
-             </label>
-             <button type="button" class="btn btn-sm btn-outline-secondary w-100 mt-1" id="bg-custom-search">
-               <i class="bi bi-search"></i> Buscar
-             </button>
-           </div>`
-        : `<div class="ww-skin-tile bg-pick ${cb === b.name ? 'is-active' : ''}" data-name="${b.name}" role="button" style="width:120px">
-             ${backgroundPreviewHtml(b.name)}
-             <div class="text-center small text-muted">${escapeHtml(b.description || '')}</div>
-           </div>`).join('')}
-    </div>
-    <div class="text-danger small mt-2" id="bg-custom-err" hidden></div>`;
-}
-
-/** «ESCRIBIR CON IA» — una puerta más para llenar la actividad, junto al
- *  «+ Añadir» de siempre. Vive AQUÍ, en el chasis, y no en cada editor: la IA
- *  escribe por MODELO DE CONTENIDO, así que las once plantillas cuyo modelo sabe
- *  escribir lo heredan sin tocar ninguna (§0 · la plantilla DECLARA su modelo).
- *  Ordena las Pelotas genera sus tableros sola y Etiqueta el diagrama necesita
- *  una imagen: en esas dos no sale el botón, que es lo correcto — una opción que
- *  no puede funcionar no se ofrece. Plan: docs/handoff-ia-contenido.md */
-/** @param {PlantillaRegistrada|null|undefined} T */
-function iaBotonHtml(T) {
-  const modelo = T?.meta?.contentModel;
-  if (!iaSabeEscribir(modelo ?? '')) return '';
-  // `iaSabeEscribir` ya ha comprobado que la clave existe en MODELOS_IA.
-  const ficha = MODELOS_IA[/** @type {keyof typeof MODELOS_IA} */ (modelo)];
-  return `<div class="ww-ia-puerta mb-3">
-    <button type="button" class="btn btn-primary" id="ww-ia-go"
-            title="La IA propone ${escapeHtml(ficha.etiqueta)}; tú decides si entran">
-      <i class="bi bi-stars"></i> Escribir con IA
-    </button>
-    <span class="text-muted small">Escribe ${escapeHtml(ficha.etiqueta)} sobre el tema que le digas.
-      Lo verás antes de añadirlo y podrás quitar las que no quieras. Lo que ya has escrito no se toca.</span>
-  </div>`;
-}
 
 /** El aviso de «aquí no hay nada todavía, empieza por esto». Se pinta SOLO con
  *  la actividad vacía; en cuanto hay un elemento, desaparece sin dejar hueco.
@@ -287,131 +217,9 @@ export function renderEditorShell(root, a, onChange, spec) {
     on(root, 'input', '#f-title', (_, el) => { a.title = /** @type {HTMLInputElement} */ (el).value; onChange(a); });
     on(root, 'input', '#f-subtitle', (_, el) => { a.subtitle = /** @type {HTMLInputElement} */ (el).value; onChange(a); });
     if (showModes) wireModesTab(root, a, onChange);
-    if (presOn) {
-      // Initialize the mini preview scoped to its own element — never touches the page.
-      const prev = /** @type {HTMLElement|null} */ (root.querySelector('#pres-preview'));
-      const applyPrevBg = () => {
-        const p = /** @type {HTMLElement|null} */ (root.querySelector('#pres-preview'));
-        if (p) applyBackground(a.presentation?.background || 'none', p, a.presentation?.backgroundImage);
-      };
-      if (prev) {
-        applySkin(a.presentation?.skin || 'default', prev);
-        applyPrevBg();
-      }
-      on(root, 'click', '.skin-pick', (_, b) => {
-        a.presentation = a.presentation || {};
-        a.presentation.skin = b.dataset.name; onChange(a);
-        root.querySelectorAll('.skin-pick').forEach(x => x.classList.toggle('is-active', x === b));
-        const p = /** @type {HTMLElement|null} */ (root.querySelector('#pres-preview'));
-        if (p) applySkin(b.dataset.name, p);
-      });
-      on(root, 'click', '.bg-pick', (_, b) => {
-        // The custom tile selects only once an image exists; otherwise its
-        // "Subir" button (below) opens the file dialog and selects on success.
-        if (b.dataset.name === 'custom' && !a.presentation?.backgroundImage) return;
-        a.presentation = a.presentation || {};
-        a.presentation.background = b.dataset.name; onChange(a);
-        root.querySelectorAll('.bg-pick').forEach(x => x.classList.toggle('is-active', x === b));
-        applyPrevBg();
-      });
-      // Custom background upload — read → validate size → store in the activity.
-      // SUBIR y BUSCAR terminan en el mismo sitio: la única diferencia es de
-      // dónde sale el data-URL (y que la búsqueda trae además su crédito).
-      /** @param {string} dataUrl @param {ImageCredit|null} [atribucion] */
-      const ponerFondo = (dataUrl, atribucion = null) => {
-        a.presentation = a.presentation || {};
-        a.presentation.backgroundImage = dataUrl;
-        a.presentation.background = 'custom';
-        // El crédito viaja CON el píxel (§24: campo declarado del contenido) o
-        // se borra al cambiar de imagen — atribuir la foto anterior es peor que
-        // no atribuir.
-        if (atribucion) a.presentation.backgroundImageCredit = atribucion;
-        else delete a.presentation.backgroundImageCredit;
-        onChange(a);
-        // Update the custom tile in place (avoid a full repaint that would
-        // bounce the user off the Presentación tab).
-        const tile = root.querySelector('.bg-pick[data-name="custom"]');
-        const pv = /** @type {HTMLElement|null} */ (tile?.querySelector('.ww-bg-preview') ?? null);
-        if (pv) { pv.style.background = `center/cover no-repeat url("${dataUrl}")`; pv.innerHTML = ''; }
-        root.querySelectorAll('.bg-pick').forEach(x => x.classList.toggle('is-active', x === tile));
-        applyPrevBg();
-        const errEl = /** @type {HTMLElement|null} */ (root.querySelector('#bg-custom-err'));
-        if (errEl) {
-          errEl.hidden = !atribucion;
-          errEl.className = atribucion ? 'text-muted small mt-2' : 'text-danger small mt-2';
-          errEl.textContent = atribucion ? `Imagen de ${creditoTexto(atribucion)}` : '';
-        }
-      };
-      const bgFile = $input('#bg-custom-file', root);
-      if (bgFile) bgFile.addEventListener('change', async () => {
-        const errEl = /** @type {HTMLElement|null} */ (root.querySelector('#bg-custom-err'));
-        try {
-          ponerFondo(await readBackgroundImage(bgFile.files?.[0]));
-        } catch (err) {
-          const msg = mensajeDe(err);
-          if (errEl) { errEl.className = 'text-danger small mt-2'; errEl.textContent = msg; errEl.hidden = false; }
-          bgFile.value = '';
-        }
-      });
-      root.querySelector('#bg-custom-search')?.addEventListener('click', async () => {
-        const elegido = await abrirBuscadorImagenes({
-          maxBytes: BG_IMAGE_MAX_BYTES, ladoMax: QUOTAS.canvasImageSide,
-          consulta: a.title && a.title !== 'Sin título' ? a.title : '',
-        });
-        // `atribucionDe()` (core/imageSearch.js) produce siempre un ImageCredit.
-        if (elegido) ponerFondo(elegido.url, /** @type {ImageCredit} */ (elegido.atribucion));
-      });
-    }
-    // «Escribir con IA» — misma mecánica que cualquier «+ Añadir»: se mete en
-    // `a.content`, se avisa y se repinta. El diálogo se carga SOLO al tocarlo
-    // (import dinámico): quien no lo use no paga su descarga, y el editor sigue
-    // abriendo aunque ese módulo falle.
-    on(root, 'click', '#ww-ia-go', async (_, el) => {
-      const b = /** @type {HTMLButtonElement} */ (el);
-      b.disabled = true;
-      try {
-        // El botón solo se pinta si la plantilla declara un modelo que la IA
-        // sabe escribir (`iaBotonHtml`), así que aquí siempre lo hay.
-        const modelo = T?.meta?.contentModel;
-        if (!modelo) return;
-        const { abrirEscribirConIA } = await import('./aiContentModal.js');
-        const nuevo = await abrirEscribirConIA({
-          modelo,
-          elemento: T?.meta?.editor?.elemento,
-          tema: a.title || '',
-          // Sopa de Letras guarda cadenas sueltas y Crucigrama fichas con pista:
-          // se pide una vez (con pista) y se aplana aquí. Ver core/aiContent.js.
-          palabrasComoTexto: getTemplate(a.template)?.meta?.iaPalabrasComoTexto === true,
-        });
-        if (!nuevo) return;                       // cerró sin aceptar
-        // LA PLANTILLA REMATA LO QUE LA IA NO PUEDE SABER. `adoptContent` es el
-        // mismo gancho que usa la conversión entre plantillas, y aquí hace falta
-        // por lo mismo: el modelo escribe el CONTENIDO (`{palabra, pista}`) pero
-        // no dónde va cada palabra en la rejilla del crucigrama. Sin este paso
-        // el crucigrama decía «No hay palabras configuradas» con la lista llena.
-        // El shell sigue sin conocer plantillas (§0): pregunta, no decide.
-        const fusionado = /** @type {import('../kernel/contracts/activity.js').ActivityContent} */ (
-          fusionarContenido(a.content, nuevo) ?? a.content);
-        // `adoptContent` puede decir «no tengo nada que rematar» (null): entonces
-        // manda lo fusionado. Asignarlo tal cual dejaba el contenido en NULL.
-        a.content = (T?.adoptContent ? T.adoptContent(fusionado, modelo) : null) ?? fusionado;
-        onChange(a);
-        repaint();
-      } catch (e) {
-        // R6: el botón no puede quedarse mudo. Si el módulo no carga (red, caché
-        // a medias), se dice — no se deja al profe tocando algo que no responde.
-        toast('No se pudo abrir el asistente: ' + (mensajeDe(e)), 'danger', TOAST_LARGO);
-      } finally {
-        // `b` estaba DESHABILITADO mientras el diálogo estuvo abierto (para que
-        // no se pudiera hacer doble clic mientras cargaba el módulo): un botón
-        // `disabled` no puede recibir foco, así que el `hidden.bs.modal` de
-        // modalFallback.js (que se dispara ANTES de llegar aquí, dentro del
-        // mismo cierre síncrono) no pudo devolvérselo — su intento fue un no-op.
-        // Se reactiva primero y SOLO entonces se enfoca.
-        b.disabled = false;
-        b.focus();
-      }
-    });
+    if (presOn) wirePresentacion(root, a, onChange);
+    // «Escribir con IA»: el chasis solo le da sitio; la puerta es de core/editorIA.js.
+    wireIA(root, a, T, ctx);
     // Template-specific wiring.
     paneles.content.wire?.(root, a, ctx);
     // «Lo que falta» se recalcula con CADA tecla y cada cambio del editor. Los

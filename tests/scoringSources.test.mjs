@@ -67,7 +67,7 @@ const NO_PLAYER_SCORING = new Set(['wheel', 'question-live']);
     // runner compartido de texto (tildes/comas) que ya envuelve el scorer central.
     const usesScorer = /from\s+'\.\/scorer\.js'/.test(src)
       || /from\s+'\.\.\/[\w-]+\/scorer\.js'/.test(src)
-      || /textCorrectionRound\.js'/.test(src);
+      || /textCorrectionSolo\.js'/.test(src);
     if (!usesScorer) offenders.push(`templates/${t}/player.js`);
   }
   assert.deepStrictEqual(offenders, [],

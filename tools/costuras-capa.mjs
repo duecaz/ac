@@ -72,7 +72,7 @@ function ficherosPlataforma() {
 function ficherosTemplates() {
   return walk('templates', []);
 }
-const esEditor = (p) => /editor\.js$|editorPanels\.js$|editorModes\.js$|editorShell\.js$|editorPrimitives\.js$/.test(p);
+const esEditor = (p) => /editor\.js$|editorPanels\.js$|editorModes\.js$|editorShell\.js$|editorPrimitives\.js$|editorPresentacion\.js$|editorIA\.js$/.test(p);
 const esContenido = (p) => p.startsWith('core/contentModels/') || p.startsWith('kernel/content/');
 const esEditorGenerico = (p) => esEditor(p) && !p.startsWith('templates/');
 
@@ -89,7 +89,7 @@ function permitidosAjenos() {
 const PERMITIDOS_AJENOS = permitidosAjenos();
 
 // MÉRITO COMPARTIDO — `core/scoring/*`, `core/results.js` (applyPoints) y
-// `core/textCorrectionRound.js` NO son "la plataforma decidiendo una regla":
+// `core/textCorrectionSolo.js` NO son "la plataforma decidiendo una regla":
 // son el helper PARAMETRIZADO que la propia plantilla invoca desde su
 // `scorer.js` (`awardPoints({ …, activity, mode })`), documentado tal cual en
 // CLAUDE.md §"Puntos" ("Los PARÁMETROS los lee el SCORER … la LÓGICA vive en
@@ -100,7 +100,7 @@ const PERMITIDOS_AJENOS = permitidosAjenos();
 // no por estar en la capa equivocada. Ver nota de falsos positivos al final.
 const FICHEROS_MERITO_COMPARTIDO = new Set([
   'core/scoring/award.js', 'core/scoring/marks.js', 'core/scoring/index.js',
-  'core/results.js', 'core/textCorrectionRound.js',
+  'core/results.js', 'core/textCorrectionSolo.js',
 ]);
 
 // EL RELOJ ES DE LA PLATAFORMA — `rules.timer` lo lee SOLO la plataforma
@@ -239,6 +239,11 @@ function reGateTernario() {
 // Y una guardia legítima en `getRoundPayload` línea 142; una excepción por
 // fichero entero se habría comido las dos).
 const GATES_LEGITIMOS = {
+  // v1.51.688: el contrato se partió en seis revisores puros; los `typeof` que
+  // AUDITAN la capacidad viven ahora en core/templateRevisores.js (mismo motivo).
+  'core/templateRevisores.js:renderRound': 'es el validador del contrato (B2): su función ES comparar lo declarado (modes/play) contra la capacidad real — no decide un camino, lo AUDITA',
+  'core/templateRevisores.js:scoreSubmission': 'es el validador del contrato (B2): compara declaración contra capacidad, no decide un camino',
+  'core/templateRevisores.js:migrateContent': 'es el validador del contrato (B2): compara declaración (`templateVersion>1`) contra capacidad, no decide un camino',
   'core/templateContract.js:renderRound': 'es el validador del contrato (B2): su función ES comparar lo declarado (modes/play) contra la capacidad real — no decide un camino, lo AUDITA',
   'core/templateContract.js:scoreSubmission': 'es el validador del contrato (B2): compara declaración contra capacidad, no decide un camino',
   'core/templateContract.js:migrateContent': 'es el validador del contrato (B2): compara declaración (`templateVersion>1`) contra capacidad, no decide un camino',
@@ -247,10 +252,10 @@ const GATES_LEGITIMOS = {
   'core/registry.js:getRoundPayload': 'valida al registrar (throw si falta) — mismo motivo que templateContract.js',
   'core/registry.js:scoreSubmission': 'valida al registrar (throw si falta) — mismo motivo que templateContract.js',
   'kernel/content/switch.js:adoptContent': 'hook OPCIONAL de afinado con fallback (`?? content`) — llama con guardia, no decide si la conversión existe (ya decidida por `canConvert`)',
-  'core/editorShell.js:adoptContent': 'mismo gancho y mismo motivo que kernel/content/switch.js: afina el contenido que trae la IA, con fallback (`: fusionado`) si la plantilla no lo implementa',
+  'core/editorIA.js:adoptContent': 'mismo gancho y mismo motivo que kernel/content/switch.js: afina el contenido que trae la IA, con fallback (`: fusionado`) si la plantilla no lo implementa',
   'kernel/session/score.js:getRoundPayload': 'con fallback (`T?.getRoundPayload ? … : fallback`) — progresiva mejora, siempre devuelve algo jugable',
   'kernel/session/vsMachine.js:getRoundPayload': 'con fallback (`: null`), DENTRO de un VS ya confirmado compatible por `isVsCompatible` más arriba — no decide si VS existe, decide si hay tablero propio o nada',
-  'views/vsView.js:scoreSubmission': 'el `typeof T.scoreSubmission === "function"` va DETRÁS de `T.meta?.play?.retry` — la decisión real ya la tomó la declaración; el typeof es guardia defensiva antes de llamar',
+  'views/vs/arena.js:scoreSubmission': 'el `typeof T.scoreSubmission === "function"` va DETRÁS de `T.meta?.play?.retry` — la decisión real ya la tomó la declaración; el typeof es guardia defensiva antes de llamar',
 };
 
 // Declaración conocida que YA dice lo mismo que el gate por capacidad —
@@ -514,7 +519,7 @@ process.exit(0);
 //    capacidad real y avisar si difieren — no es la costura, es la red que
 //    la vigilaría. Contarlos como sospechosos habría hecho ruido eterno (se
 //    tocan en cada plantilla nueva) sin señalar nada nuevo.
-//  · `kernel/content/switch.js:adoptContent` y `core/editorShell.js:
+//  · `kernel/content/switch.js:adoptContent` y `core/editorIA.js:
 //    adoptContent` (mismo gancho, dos llamantes: la conversión entre
 //    plantillas y el afinado tras generar con IA) y `kernel/session/
 //    score.js:getRoundPayload` / `kernel/session/vsMachine.js:
@@ -528,7 +533,7 @@ process.exit(0);
 //    (`isVsCompatible`, líneas 33-34) — por eso `GATES_LEGITIMOS` está
 //    indexado por `fichero:método`, no por fichero entero (una excepción
 //    de fichero completo se habría comido las dos a la vez).
-//  · `views/vsView.js:scoreSubmission` (`T.meta?.play?.retry && typeof
+//  · `views/vs/arena.js:scoreSubmission` (`T.meta?.play?.retry && typeof
 //    T.scoreSubmission === 'function'`): la decisión real (¿hay reintento?)
 //    ya la tomó `meta.play.retry`; el `typeof` que sigue es una guardia
 //    defensiva antes de invocar, no la que decide si el camino existe.

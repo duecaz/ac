@@ -95,7 +95,7 @@ Motor puro en `kernel/content/`:
   (directos + por conversión) y `applySwitch(...)` produce la nueva actividad sin mutar
   la original.
 
-UI: panel **"Cambiar formato"** en el editor (`views/editView.js` + `views/switchTemplate.js`).
+UI: panel **"Cambiar formato"** en el editor (`views/editView.js` + `core/switchTemplate.js`).
 Las conversiones piden confirmación porque pueden transformar el contenido.
 
 ## 7. Presentación (estética desacoplada)

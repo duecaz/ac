@@ -7,7 +7,7 @@ import { revisarActividad, decidirVisibilidad } from '../core/activityCheck.js';
 import { navigate } from '../core/router.js';
 import { toast, confirmModal, TOAST_ERROR, TOAST_LARGO } from '../core/toast.js';
 import { acquire } from '../core/lifecycle.js';
-import { buildSwitchOptions, applyAndSave } from './switchTemplate.js';
+import { buildSwitchOptions, applyAndSave } from '../core/switchTemplate.js';
 import { downloadActivitiesJson } from '../core/io.js';
 import { checkActivitySize } from '../core/quotas.js';
 import { mensajeDe } from '../core/frontera.js';

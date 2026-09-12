@@ -63,7 +63,7 @@ export function attemptsRemaining(maxAttempts, taken) {
  * @param {{status?: string, due_at?: string|null, max_attempts?: number|null}|null|undefined} assignment
  * @param {number|null|undefined} taken
  * @param {number|string|Date} [now]
- * @returns {import('../kernel/contracts/session.js').AssignmentGate}
+ * @returns {import('../kernel/contracts/persistencia.js').AssignmentGate}
  */
 export function assignmentGate(assignment, taken, now = clock.now()) {
   if (!assignment) return { allowed: false, reason: 'notFound' };

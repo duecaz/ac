@@ -123,6 +123,10 @@ const all = listTemplates().filter(T => reales.has(T.meta.name));
   mirar('core/editorShell.js');
   mirar('core/editorModes.js');
   mirar('core/editorPanels.js');
+  // Los dos paneles que salieron del chasis (Fase 6) entran en el mismo barrido:
+  // el fondo y la puerta de la IA también se cablean sobre la raíz del editor.
+  mirar('core/editorPresentacion.js');
+  mirar('core/editorIA.js');
   for (const n of reales) {
     const rel = `templates/${n}/editor.js`;
     try { fs.statSync(join(RAIZ, rel)); } catch { continue; }

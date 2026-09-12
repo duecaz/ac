@@ -77,12 +77,12 @@ const FIN_PROPIO = Object.freeze({});
 // FICHEROS POR PLANTILLA — cada plantilla real (carpeta de templates/) con
 // TODO lo que la pinta: `player.js` si existe, `play.js` si existe, y para
 // Tildes/Comas el runner compartido que hace el trabajo de verdad
-// (`core/textCorrectionRound.js`, dueño único de esa mecánica: es un
+// (`core/textCorrectionSolo.js`, dueño único de esa mecánica: es un
 // wrapper de 8 líneas el que vive en su carpeta). Es la MISMA excepción que
 // documenta el propio runner (línea 1: «shared … for Tildes and Comas»); no
 // se adivina de nuevas aquí.
 // ════════════════════════════════════════════════════════════════════════
-const RUNNER_COMPARTIDO = { comas: 'core/textCorrectionRound.js', tildes: 'core/textCorrectionRound.js' };
+const RUNNER_COMPARTIDO = { comas: 'core/textCorrectionSolo.js', tildes: 'core/textCorrectionSolo.js' };
 
 function plantillasReales() {
   const dir = join(ROOT, 'templates');
@@ -91,7 +91,10 @@ function plantillasReales() {
 
 function ficherosDe(plantilla) {
   const acc = [];
-  for (const nombre of ['player.js', 'play.js']) {
+  // `view.js` cuenta como pintura de la plantilla: desde v1.51.688 un player
+  // puede tener su markup en un módulo propio (el crucigrama lo hizo), y mirar
+  // solo `player.js` daría «sin cabeceraHtml» por una partición, no por un bug.
+  for (const nombre of ['player.js', 'play.js', 'view.js']) {
     const rel = `templates/${plantilla}/${nombre}`;
     if (existsSync(join(ROOT, rel))) acc.push(rel);
   }
@@ -188,7 +191,7 @@ function cartelPropio() {
 // ANTES de llamar a `finish()`; quien cierra la partida de verdad sigue
 // siendo `ctx.finish()` → `resultScreenHtml()` del shell, como las demás.
 const LEGITIMO_CARTEL = {
-  'core/textCorrectionRound.js':
+  'core/textCorrectionSolo.js':
     'las clases `tc-final*` son la pantalla de CORRECCIÓN (repaso palabra por '
     + 'palabra) que se pinta antes de `finish()`, no un cartel que sustituya al '
     + 'shell — el botón «Finalizar» de esa pantalla llama a `finish()` → '
