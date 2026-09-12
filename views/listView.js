@@ -13,24 +13,18 @@ import { getAnywhere } from '../core/storage.js';
 import { cierreHtml } from '../core/podium.js';
 import { renderAntesala } from './antesala.js';
 import { mountVs } from './vsView.js';
+import { on } from '../core/events.js';
+import { ganador } from '../kernel/session/engine.js';
 import { sessionItems } from '../kernel/content/sessionItems.js';
 import { destinoTrasJugar } from '../core/afterPlay.js';
 
 /** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
 /** @typedef {import('../kernel/contracts/activity.js').ListContent} ListContent */
-/** UN LADO del duelo, tal como lo entrega `standings()` (kernel/session/vsMachine.js)
- *  por `opts.onFinish` de mountVs. Aquí se declara lo que esta vista LEE.
- * @typedef {Object} LadoDuelo
- * @property {string} name
- * @property {number} score
- */
-/**
- * @typedef {Object} MarcadorDuelo
- * @property {LadoDuelo} left
- * @property {LadoDuelo} right
- * @property {'left'|'right'|'tie'} leader
- * @property {'left'|'right'|null} finishedBy
- */
+/** EL MARCADOR DEL DUELO, tal y como lo entrega `mountVs` por `opts.onFinish`.
+ *  Se IMPORTA del duelo en vez de re-declararlo: la copia de aquí se había
+ *  quedado sin `race` —la política declarada por la plantilla—, que es justo el
+ *  campo que decide quién gana la ronda.
+ *  @typedef {import('./vsView.js').Marcador} MarcadorDuelo */
 /** @typedef {{left: number, right: number}} Acumulado */
 
 /** @param {string|Element} rootSel @param {string} id */
@@ -167,14 +161,16 @@ export async function renderListView(rootSel, id) {
         <button id="list-go" class="btn btn-primary btn-lg px-5"><i class="bi bi-play-fill"></i> ¡A jugar!</button>
         <a href="${salida.href}" class="btn btn-link ms-3">Salir</a>
       </div>`);
-    const btn = document.getElementById('list-go');
-    if (btn) btn.onclick = () => onGo();
+    on(host, 'click', '#list-go', () => onGo());
   }
 
   /** @param {number} roundNum @param {number} total @param {MarcadorDuelo} st
    *  @param {Acumulado} scores @param {() => void} onNext */
   function showRoundResult(roundNum, total, st, scores, onNext) {
-    const winnerSide = st.finishedBy || (st.leader !== 'tie' ? st.leader : null);
+    // Quién gana la ronda lo dice la máquina (`ganador`): aquí se coronaba
+    // SIEMPRE al primero en terminar, y en un duelo de PUNTOS (Quiz, Tildes) eso
+    // anunciaba a uno mientras el marcador acumulado sumaba a favor del otro.
+    const winnerSide = ganador(st);
     const winnerName = winnerSide ? st[winnerSide].name : null;
     mount(host, html`
       <div class="list-round-result text-center py-5 px-3">
@@ -199,8 +195,7 @@ export async function renderListView(rootSel, id) {
           <i class="bi bi-arrow-right"></i> Ronda ${roundNum + 1}
         </button>
       </div>`);
-    const btn = document.getElementById('list-next');
-    if (btn) btn.onclick = () => onNext();
+    on(host, 'click', '#list-next', () => onNext());
   }
 
   /** @param {Acumulado} scores */
@@ -220,7 +215,6 @@ export async function renderListView(rootSel, id) {
             <a href="${salida.href}" class="btn btn-outline-secondary btn-lg">Salir</a>`
         })}
       </div>`);
-    const btn = document.getElementById('list-again');
-    if (btn) btn.onclick = () => showSetup();
+    on(host, 'click', '#list-again', () => showSetup());
   }
 }

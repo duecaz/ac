@@ -1,7 +1,7 @@
 // SOLO / async player for Operaciones: iterate items with a numeric keypad.
 // Loop/score/finish are handled by the SequentialShell (core/soloPlayer.js);
 // this core only renders each keypad round and scores the submission.
-import { html, escapeHtml, mount } from '../../core/html.js';
+import { html, escapeHtml, mount, raizDe, $ } from '../../core/html.js';
 import { renderKeypadRound } from '../../core/roundRender.js';
 import { scoreMathSubmission } from './scorer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
@@ -26,9 +26,11 @@ export async function renderMathPlayer(rootSel, activity, opts = {}) {
       mount(rootSel, html`
         <div class="ww-player ww-math">
           ${cabeceraHtml({ pagina: `${idx + 1} / ${total}` })}
-          <div id="ww-math-round" class="ww-math-round"></div>
+          <div data-math="round" class="ww-math-round"></div>
         </div>`);
-      const roundEl = document.getElementById('ww-math-round');
+      // Acotado a la raíz que ACABA de montar este player: un id global vale
+      // para todo el documento, y en el duelo hay dos rondas montadas a la vez.
+      const roundEl = $('[data-math="round"]', raizDe(rootSel));
       if (!roundEl) return;
       const t0 = clock.now();
       renderKeypadRound(roundEl, { question: item.question }, { onSubmit: (value) => {

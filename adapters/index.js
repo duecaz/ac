@@ -43,20 +43,10 @@ export function backendName() {
   return 'pocketbase';
 }
 
-// Probe a PocketBase collection. Returns true if the collection exists and is
-// reachable, false if PocketBase returns "Missing collection context" (not yet
-// created). Other errors (network, auth) are re-thrown so they surface normally.
-import { PB_URL } from '../pocketbase.config.js';
-/** @param {string} name */
-async function pbCollectionExists(name) {
-  try {
-    const r = await fetch(`${PB_URL}/api/collections/${name}/records?perPage=1`);
-    if (r.status === 200) return true;
-    const body = await r.json().catch(() => ({}));
-    if (body?.message?.includes('Missing collection')) return false;
-    return r.ok;
-  } catch { return false; /* network unreachable */ }
-}
+// ¿Existe la colección en PocketBase? La sonda (memoizada, con el
+// reconocimiento del «Missing collection») vive en adapters/pocketbase/colecciones.js:
+// la misma que usan las rutas de live para caer al camino heredado.
+import { coleccionExiste } from './pocketbase/colecciones.js';
 
 /** @type {Promise<RemoteStore>|null} */
 let _store = null;
@@ -129,7 +119,7 @@ export function getAssignments() {
     }
     if (name === 'pocketbase') {
       const ids = identidades;
-      if (await pbCollectionExists('assignments')) {
+      if (await coleccionExiste('assignments')) {
         return (await import('./pocketbase/assignments.js' + v)).createPocketbaseAssignments(ids);
       }
       console.warn('[assignments] Colección assignments no existe en PocketBase → modo local');

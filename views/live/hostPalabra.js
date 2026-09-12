@@ -8,7 +8,7 @@ import { fullscreenButtonHtml, attachFullscreenButton } from '../../core/fullscr
 import { confirmModal } from '../../core/toast.js';
 import { qlBoxesHtml, qlCols, qlAwardPatch, qlClosePatch } from '../../core/questionLive.js';
 
-/** @typedef {import('../hostLive.js').HostRt} HostRt */
+/** @typedef {import('../../kernel/contracts/liveRt.js').HostRt} HostRt */
 
 /** @param {HostRt} rt */
 export function createHostPalabra(rt) {

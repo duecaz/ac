@@ -7,7 +7,7 @@ import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { GRADE_HOLD_MS } from '../../core/timings.js';
 import { shuffle } from '../../core/azar.js';
 import { scoreDiagramSubmission } from './scorer.js';
-import { ROPES, OK_COL, NO_COL, mountRopeLayer, ropeHtml, ghostHtml, dotPos, svgPt, puntuarEnlaces } from '../../core/connectRope.js';
+import { ROPES, OK_COL, NO_COL, mountRopeLayer, ropeHtml, ghostHtml, dotPos, puntuarEnlaces, crearArrastreDeCuerdas } from '../../core/connectRope.js';
 import { observeResize } from '../../core/observeResize.js';
 import { pinUsable } from '../../core/contentModels/diagram.js';
 import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
@@ -18,8 +18,9 @@ import { setExclusiveLink } from '../../core/linkState.js';
  * @typedef {import('../../kernel/contracts/activity.js').DiagramContent} DiagramContent
  * @typedef {import('../../kernel/contracts/activity.js').DiagramPin} DiagramPin
  * @typedef {{id: string, text: string, i: number}} Etiqueta
- * @typedef {{pointerId: number, kind: 'label'|'pin', fromId: string,
- *   x1: number, y1: number, cx: number, cy: number}} Arrastre
+ * LA FICHA del arrastre: de dónde salió la cuerda. Las coordenadas las lleva la
+ * máquina compartida (core/connectRope.js).
+ * @typedef {{kind: 'label'|'pin', fromId: string}} Arrastre
  */
 
 /** El id que la etiqueta o el pin llevan en `data-id`.
@@ -56,8 +57,10 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
   /** @type {(() => void)|null} */
   let stopRo = null;   // disposer del observeResize del field (se suelta al terminar, §23)
 
-  /** @type {{links: Map<string, string>, dragging: Arrastre|null, graded: boolean}} */
-  const state = { links: new Map(), dragging: null, graded: false };  // links: labelId → pinId
+  /** @type {{links: Map<string, string>, graded: boolean}} */
+  const state = { links: new Map(), graded: false };  // links: labelId → pinId
+  /** @type {{actual: () => import('../../core/connectRope.js').Arrastre<Arrastre>|null}|null} */
+  let arrastre = null;
 
   mount(rootSel, buildLayout(leftLabels, rightLabels, pins, image, activity, pins.length));
 
@@ -90,7 +93,8 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
       }
       i++;
     }
-    if (state.dragging) { const { x1, y1, cx, cy } = state.dragging; d += ghostHtml(x1, y1, cx, cy); }
+    const tendiendo = arrastre?.actual();
+    if (tendiendo) { const { x1, y1, cx, cy } = tendiendo; d += ghostHtml(x1, y1, cx, cy); }
     layer.innerHTML = d;
   }
 
@@ -135,45 +139,32 @@ export async function renderDiagramPlayer(rootSel, activity, opts = {}) {
     return (best && Math.sqrt(bestD) <= maxDist) ? best : null;
   }
 
-  arena.addEventListener('pointerdown', e => {
-    if (state.graded || state.dragging) return;
-    const destino = /** @type {HTMLElement|null} */ (e.target);
-    const label = destino?.closest?.('.dg-label') ?? null;
-    const pin   = destino?.closest?.('.dg-pin') ?? null;
-    const from  = label || pin;
-    if (!from) return;
-    e.preventDefault();
-    const dotEl = label ? label.querySelector('.ww-dot') : pin;
-    if (!dotEl) return;
-    const pos = dotPos(dotEl, svg);
-    state.dragging = { pointerId: e.pointerId, kind: label ? 'label' : 'pin', fromId: idDe(from), x1: pos.x, y1: pos.y, cx: pos.x, cy: pos.y };
-    try { arena.setPointerCapture(e.pointerId); } catch {}
-    updateSvg();
+  // La máquina del gesto es la compartida (core/connectRope.js, la misma que
+  // Emparejar): ancla, fantasma y captura del puntero. Aquí queda solo lo del
+  // Diagrama: se agarra una ETIQUETA o un PIN, y el destino es el más cercano
+  // del tipo contrario dentro de un radio (soltar lejos = desconectar).
+  arrastre = crearArrastreDeCuerdas({
+    arena, svg,
+    activo: () => !state.graded,
+    origen: (e) => {
+      const tocado = /** @type {HTMLElement|null} */ (e.target);
+      const label = tocado?.closest?.('.dg-label') ?? null;
+      const pin   = tocado?.closest?.('.dg-pin') ?? null;
+      const from  = label || pin;
+      const dotEl = label ? label.querySelector('.ww-dot') : pin;
+      if (!from || !dotEl) return null;
+      return { ancla: dotEl, datos: { kind: label ? 'label' : 'pin', fromId: idDe(from) } };
+    },
+    elegirDestino: (x, y, d) => {
+      const radius = Math.max(48, arena.getBoundingClientRect().width * 0.12);
+      return nearest(d.kind === 'label' ? '.dg-pin' : '.dg-label', x, y, radius);
+    },
+    alSoltar: (hit, d) => {
+      if (d.kind === 'label') { if (hit) setLink(d.fromId, idDe(hit)); else removeByLabel(d.fromId); }
+      else                    { if (hit) setLink(idDe(hit), d.fromId); else removeByPin(d.fromId); }
+    },
+    alPintar: updateSvg,
   });
-  arena.addEventListener('pointermove', e => {
-    const drag = state.dragging;
-    if (!drag || e.pointerId !== drag.pointerId) return;
-    const p = svgPt(svg, e.clientX, e.clientY);
-    drag.cx = p.x; drag.cy = p.y; updateSvg();
-  });
-  /** @param {PointerEvent} e @param {boolean} connect */
-  function endDrag(e, connect) {
-    const drag = state.dragging;
-    if (!drag || e.pointerId !== drag.pointerId) return;
-    state.dragging = null;
-    try { arena.releasePointerCapture(e.pointerId); } catch {}
-    if (!connect) return updateSvg();
-    const radius = Math.max(48, arena.getBoundingClientRect().width * 0.12);
-    if (drag.kind === 'label') {
-      const hit = nearest('.dg-pin', e.clientX, e.clientY, radius);
-      if (hit) setLink(drag.fromId, idDe(hit)); else removeByLabel(drag.fromId);
-    } else {
-      const hit = nearest('.dg-label', e.clientX, e.clientY, radius);
-      if (hit) setLink(idDe(hit), drag.fromId); else removeByPin(drag.fromId);
-    }
-  }
-  arena.addEventListener('pointerup', e => endDrag(e, true));
-  arena.addEventListener('pointercancel', e => endDrag(e, false));
 
   // CALIFICAR con lo que haya. El botón solo deja pulsar con todo enlazado,
   // pero el RELOJ no espera a nadie: al agotarse se corrige lo hecho, que es lo

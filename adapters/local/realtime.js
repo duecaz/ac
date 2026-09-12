@@ -12,8 +12,9 @@ import { rid } from '../../core/ids.js';
 import { createLiveRoom } from '../../kernel/live/engine.js';
 import { pickWord } from '../../core/liveWords.js';
 import { clock } from '../../core/clock.js';
-import { openedKey } from '../../core/serverMs.js';
-import { blobDeSala, esFila, fila, mensajeDe, paraHidratar } from '../frontera.js';
+import { aplicarParcheDeSala, itemDelParche, parcheDePalabra, sellarApertura } from '../../kernel/session/roomPatch.js';
+import { blobDeSala, esFila, fila, mensajeDe } from '../frontera.js';
+import { crearKV } from './kv.js';
 
 /**
  * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
@@ -55,15 +56,10 @@ import { blobDeSala, esFila, fila, mensajeDe, paraHidratar } from '../frontera.j
  */
 
 /**
- * EL ALMACÉN COMPARTIDO entre pestañas. `localStorage` lo cumple entero; los
- * tests inyectan un doble con solo lo que usan, así que lo que no es
- * imprescindible se declara opcional y se pregunta antes de usarlo.
- * @typedef {Object} AlmacenSalas
- * @property {(k: string) => string|null} getItem
- * @property {(k: string, v: string) => void} setItem
- * @property {(k: string) => void} [removeItem]
- * @property {number} [length]
- * @property {(i: number) => string|null} [key]
+ * EL ALMACÉN COMPARTIDO entre pestañas: `localStorage` lo cumple entero y los
+ * tests inyectan un doble. Su dueño —con el respaldo a memoria y el recorrido de
+ * claves— es `adapters/local/kv.js`, compartido con los otros dos drivers locales.
+ * @typedef {import('./kv.js').KV} AlmacenSalas
  */
 
 /**
@@ -77,8 +73,6 @@ import { blobDeSala, esFila, fila, mensajeDe, paraHidratar } from '../frontera.j
 
 const PREFIX = 'ww.live.';
 
-/** @returns {AlmacenSalas|null} */
-function defaultKV() { try { return globalThis.localStorage || null; } catch { return null; } }
 /** @param {string} name @returns {CanalSalas|null} */
 function defaultMakeChannel(name) { try { return new BroadcastChannel(name); } catch { return null; } }
 function genUserId() { return rid('u_'); }
@@ -100,17 +94,14 @@ function tablaDe(x) {
  * @param {{kv?: AlmacenSalas|null, makeChannel?: (name: string) => CanalSalas|null, userId?: string}} [opts]
  * @returns {RealtimePort}
  */
-export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMakeChannel, userId = genUserId() } = {}) {
-  /** @type {Map<string, SalaLocal>} */
-  const mem = new Map();
+export function createLocalRealtime({ kv, makeChannel = defaultMakeChannel, userId = genUserId() } = {}) {
+  // El almacén (con su respaldo a memoria y el recorrido de claves) es el
+  // compartido por los tres drivers locales: `adapters/local/kv.js`.
+  const almacen = crearKV(PREFIX, kv);
   /** @param {string} code @returns {SalaLocal|null} */
-  const read = (code) => {
-    const k = PREFIX + code;
-    if (kv) { try { return salaLocal(JSON.parse(kv.getItem(k) || 'null')); } catch { return null; } }
-    return salaLocal(mem.get(k));
-  };
+  const read = (code) => salaLocal(almacen.read(code));
   /** @param {string} code @param {SalaLocal} room */
-  const write = (code, room) => { const k = PREFIX + code; if (kv) kv.setItem(k, JSON.stringify(room)); else mem.set(k, room); };
+  const write = (code, room) => almacen.write(code, room);
 
   /** @type {Map<string, CanalSalas|null>} */
   const channels = new Map();
@@ -132,7 +123,7 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
   function load(code) {
     const room = read(code);
     if (!room) throw new Error('Sala no encontrada');
-    return { room, engine: /** @type {LiveEngine} */ (createLiveRoom(room.activity, { state: paraHidratar(room.state), code })) };
+    return { room, engine: createLiveRoom(room.activity, { state: room.state, code }) };
   }
   /** @param {string} code @param {SalaLocal} room @param {LiveEngine} engine */
   function save(code, room, engine) { room.state = blobDeSala(engine); write(code, room); }
@@ -147,18 +138,10 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
       // pickWord can avoid handing out a word that's already in use.
       /** @type {Set<string>} */
       let usedCodes = new Set();
-      try {
-        if (kv) {
-          for (let i = 0; i < (kv.length ?? 0); i++) {
-            const k = kv.key?.(i);
-            if (k?.startsWith(PREFIX)) usedCodes.add(k.slice(PREFIX.length));
-          }
-        } else {
-          usedCodes = new Set([...mem.keys()].map(k => k.slice(PREFIX.length)));
-        }
-      } catch { /* ignore — worst case two rooms share a word (recycling) */ }
+      try { usedCodes = new Set(almacen.claves()); }
+      catch { /* ignore — worst case two rooms share a word (recycling) */ }
       const code = pickWord(usedCodes);
-      const engine = /** @type {LiveEngine} */ (createLiveRoom(activity, { code }));
+      const engine = createLiveRoom(activity, { code });
       // `created`: espejo del campo autodate de PocketBase. Sin él, la retención
       // (§25) no tendría por dónde decidir qué sala es vieja en modo local.
       write(code, { activity, state: blobDeSala(engine), created: new Date(clock.now()).toISOString() });
@@ -175,42 +158,23 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
     async setSessionState(code, patch) {
       const { room, engine } = load(code);
       const s = blobDeSala(engine);
-      if (patch.status) s.status = patch.status;
-      if (patch.phase) s.phase = patch.phase;
       // Espejo del driver PB: sello de apertura del ítem (en carrera, uno solo,
       // clave 'race'). Aquí no hay autodate, así que el `ms` sigue siendo el
-      // afirmado (fallback honesto de core/serverMs.js); el sello vale porque
-      // DECLARA que la partida fue una carrera — el podio lee eso para mostrar
-      // la hora de meta cuando la sala ya está 'ended'.
-      if (patch.phase === 'question' || patch.phase === 'race') {
-        const idx = ('current_item' in patch) ? Number(patch.current_item) : s.currentItem;
-        ((s.itemOpenedAt ||= {}))[openedKey(patch.phase, idx)] ??= new Date(clock.now()).toISOString();
-      }
-      if (patch.current_item !== undefined) s.currentItem = patch.current_item;
-      if ('deadline' in patch) room.deadline = patch.deadline ?? null;
-      // R-1 · espejo del driver PB: el instante de apertura de respuestas.
-      if ('answers_open_at' in patch) room.answersOpenAt = patch.answers_open_at ?? null;
-      if ('read_secs' in patch) room.readSecs = patch.read_secs ?? null;
-      // Espejo: la política de fin de carrera/tablero (core/liveEnd.js).
-      if ('loop' in patch) s.loop = patch.loop ?? null;   // el BUCLE de la sala (§26)
-      if ('end_policy' in patch) room.endPolicy = patch.end_policy ?? null;
-      if ('end_n' in patch) room.endN = patch.end_n ?? null;
-      if ('started_at' in patch) room.startedAt = patch.started_at ?? null;
-      if ('ql_points' in patch) s.qlPoints = patch.ql_points ?? {};
-      if ('ql_taken' in patch) s.qlTaken = patch.ql_taken ?? {};   // CL-1: quién se llevó cada caja
+      // afirmado (fallback honesto de core/serverMs.js) y el sello NO se pisa;
+      // vale porque DECLARA que la partida fue una carrera — el podio lee eso
+      // para mostrar la hora de meta cuando la sala ya está 'ended'.
+      // Se sella ANTES de volcar el parche, para que el ítem que se lee sea el
+      // que este parche abre (igual que antes de compartir el volcado).
+      sellarApertura(s, patch.phase, itemDelParche(patch, s), new Date(clock.now()).toISOString());
+      // EL VOLCADO es el MISMO que el del driver PocketBase (kernel/session/
+      // roomPatch.js). La única divergencia, declarada ahí y aquí: el RITMO de
+      // la partida (deadline, apertura, política de fin, salida) vive en la
+      // propia sala local, no dentro del blob.
+      aplicarParcheDeSala(s, patch, room);
       // Espejo del driver PB: el "pedir la palabra" vive en room.ql, fuera del
       // blob de estado (ley de confianza §22).
-      const ql = () => (room.ql ||= {});
-      if ('ql_open' in patch) ql().open = patch.ql_open ?? null;
-      if ('ql_question' in patch) ql().question = patch.ql_question ?? null;
-      if ('ql_image' in patch) ql().image = patch.ql_image ?? null;
-      if ('ql_by' in patch) ql().by = patch.ql_by ?? null;
-      if ('ql_by_name' in patch) ql().byName = patch.ql_by_name ?? null;
-      if (patch.ql_award) {
-        const { playerId, points } = patch.ql_award;
-        const p = (s.players || []).find(pl => pl.id === playerId);
-        if (p) p.score += points;
-      }
+      const ql = parcheDePalabra(patch);
+      if (ql) room.ql = { ...room.ql, ...ql };
       save(code, room, engine); notify(code, 'sessions');
     },
 
@@ -324,11 +288,9 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
       /** @type {PurgeReport} */
       const out = { cutoff: cutoffIso, dryRun, sessions: 0, answers: 0, players: 0, claims: 0, errors: [] };
       /** @type {string[]} */
-      const codes = [];
-      try {
-        if (kv) { for (let i = 0; i < (kv.length ?? 0); i++) { const k = kv.key?.(i); if (k?.startsWith(PREFIX)) codes.push(k.slice(PREFIX.length)); } }
-        else for (const k of mem.keys()) codes.push(k.slice(PREFIX.length));
-      } catch (e) { out.errors.push(mensajeDe(e)); return out; }
+      let codes = [];
+      try { codes = almacen.claves(); }
+      catch (e) { out.errors.push(mensajeDe(e)); return out; }
       for (const code of codes) {
         const room = read(code);
         // Sin fecha NO se purga (§24: ante la duda, se conserva).
@@ -337,11 +299,9 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
         out.answers += Object.keys(room.state?.answers || {}).length;
         out.players += (room.state?.players || []).length;
         if (!dryRun) {
-          try {
-            if (!kv) mem.delete(PREFIX + code);
-            else if (kv.removeItem) kv.removeItem(PREFIX + code);
-            else throw new Error('el almacén no sabe borrar');   // R6: no en silencio
-          } catch (e) { out.errors.push(`${code}: ${mensajeDe(e)}`); }
+          // R6 · no en silencio: si el almacén no sabe borrar, `borrar` lo dice.
+          try { almacen.borrar(code); }
+          catch (e) { out.errors.push(`${code}: ${mensajeDe(e)}`); }
         }
       }
       return out;
@@ -398,9 +358,7 @@ export function createLocalRealtime({ kv = defaultKV(), makeChannel = defaultMak
     async listSessions({ limit = 500 } = {}) {
       /** @type {import('../../kernel/contracts/session.js').RoomRecord[]} */
       const out = [];
-      const keys = kv ? Object.keys(kv).filter(k => k.startsWith(PREFIX)) : [...mem.keys()];
-      for (const k of keys) {
-        const code = k.slice(PREFIX.length);
+      for (const code of almacen.claves()) {
         const room = read(code);
         if (room) out.push({ id: code, code, activity: room.activity, state: room.state });
       }

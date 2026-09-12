@@ -51,4 +51,33 @@ const { spinTarget, normalizeRotation, clampSpinDur, SPIN_TURNS, SPIN_DUR_MAX } 
   ok('spin: geometría del giro única (ángulo, avance, normalización, duración)');
 }
 
+// ── girar(): el GUARD §23 va DENTRO del giro, no en cada copia ───────────────
+// La segunda ruleta (templates/question-live) se dejó medio guard y podía
+// revelar su pregunta sobre el juego montado DESPUÉS. Con `vivo` inyectado el
+// guard no se puede olvidar: aquí se comprueba que un escenario MUERTO no
+// recibe el aviso, y (contra-prueba) que el vivo lo recibe entero.
+{
+  const { girar } = await import('../core/ruleta/spin.js');
+  const svg = { style: {}, getBoundingClientRect: () => {} };
+  /** @type {(() => void)[]} */
+  const cola = [];
+  const programar = (/** @type {() => void} */ cb) => { cola.push(cb); return 0; };
+
+  let avisos = 0;
+  girar({ svg, rotation: 0, count: 4, dur: 10, vivo: () => false,
+    alParar: () => { avisos++; }, elegir: () => 2, programar });
+  cola.splice(0).forEach(cb => cb());
+  assert.strictEqual(avisos, 0, 'un escenario MUERTO no recibe el final del giro (§23)');
+
+  /** @type {[number, number]|null} */
+  let parada = null;
+  const fin = girar({ svg, rotation: 0, count: 4, dur: 10, vivo: () => true,
+    alParar: (t, n) => { parada = [t, n]; }, elegir: () => 2, programar });
+  cola.splice(0).forEach(cb => cb());
+  assert.deepStrictEqual(parada, [2, normalizeRotation(fin)], 'el escenario VIVO sí recibe gajo + rotación congelada');
+  assert.strictEqual(fin, spinTarget(0, 4, 2), 'la rotación pintada es la de la geometría común');
+  assert.strictEqual(svg.style.transform, `rotate(${fin}deg)`, 'y la transición se lanzó sobre el svg');
+  ok('girar: guard de vida inyectado (muerto no repinta · vivo termina igual)');
+}
+
 console.log(`\nwheel.test: ${passed} checks passed`);

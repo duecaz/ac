@@ -7,14 +7,13 @@
 import { html, escapeHtml, mount, raizDe } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { claimQuestion } from '../../core/liveTransport.js';
-import { sessionItems } from '../../kernel/content/sessionItems.js';
 import { visibleItem } from '../../core/liveSnapshot.js';
 import { wheelSvg } from '../../core/ruleta/render.js';
 import { pickIndex } from '../../core/ruleta/logic.js';
 import { spinTarget, normalizeRotation, animateSpin, SPIN_DUR_PICK } from '../../core/ruleta/spin.js';
 import { qlBoxesHtml } from '../../core/questionLive.js';
 
-/** @typedef {import('../studentLive.js').StudentRt} StudentRt */
+/** @typedef {import('../../kernel/contracts/liveRt.js').StudentRt} StudentRt */
 
 /** @param {StudentRt} rt */
 export function createStudentPalabra(rt) {
@@ -79,7 +78,7 @@ export function createStudentPalabra(rt) {
     const qlImage    = qlOpen !== null ? visible(qlOpen).image : null;
     const qlPoints   = rt.session.ql_points || {};
     const qlBy       = rt.session.ql_by ?? null;
-    const allItems   = sessionItems(rt.activity);
+    const allItems   = rt.items;
     const cols       = Math.min(4, Math.max(2, Math.ceil(allItems.length / 2)));
     const iMine      = qlBy === rt.player.playerId;
     const canPick    = qlOpen === null; // only 1 box open at a time
@@ -108,7 +107,7 @@ export function createStudentPalabra(rt) {
     const qlQuestion = rt.session.ql_question ?? null;
     const qlPoints   = rt.session.ql_points || {};
     const qlBy       = rt.session.ql_by ?? null;
-    const allItems   = sessionItems(rt.activity);
+    const allItems   = rt.items;
     const qlImage    = qlOpen !== null ? visible(qlOpen).image : null;
     const iMine      = qlBy === rt.player.playerId;
 

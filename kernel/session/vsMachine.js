@@ -89,6 +89,33 @@ import { FORMATS } from './formats.js';
  * @property {boolean} [raceToFinish]   Fuerza la política de carrera desde el caller.
  */
 
+/** EL MARCADOR DE UN DUELO, visto por quien decide el ganador: `standings()` lo
+ *  entrega entero, pero para el veredicto solo cuentan estos tres campos.
+ *  @typedef {{leader: VsSideId|'tie', finishedBy: VsSideId|null, race?: boolean}} MarcadorVs */
+
+/** QUIÉN GANA UN DUELO — la regla, en UN sitio (§21b).
+ *
+ *  Estaba escrita en tres vistas y ya había divergido: `views/listView.js`
+ *  coronaba SIEMPRE al primero en terminar, así que en un duelo de PUNTOS
+ *  (Quiz, Tildes: se espera a los dos y gana quien más suma) la ronda de una
+ *  lista anunciaba ganador a quien había acabado antes con menos puntos, y el
+ *  podio final —que suma— decía lo contrario.
+ *
+ *  La política la DECLARA la plantilla (`meta.play.vs`, §0) y viaja en el
+ *  marcador como `race`:
+ *    · carrera → gana quien terminó primero (los puntos, de respaldo);
+ *    · puntos  → gana quien más sumó y, si empatan, desempata quien acabó antes
+ *                (Operaciones con ambos al 100 % no debe leerse «empate»).
+ *  `null` = empate de verdad: nadie terminó y nadie va por delante.
+ *  @param {MarcadorVs} st @returns {VsSideId|null} */
+export function ganador(st) {
+  /** @param {string|null|undefined} v @returns {VsSideId|null} */
+  const lado = (v) => (v === 'left' || v === 'right' ? v : null);
+  const porPuntos = lado(st?.leader);
+  const primero = lado(st?.finishedBy);
+  return st?.race ? (primero || porPuntos) : (porPuntos || primero);
+}
+
 /** VS pits two sides head-to-head with no host to judge, so it only works on
  *  templates that can both render a single round (renderRound) and self-score
  *  it (scoreSubmission), with enough items for a real race.

@@ -11,10 +11,10 @@
 import { rid } from '../../core/ids.js';
 import { shuffle } from '../../core/azar.js';
 import { basePoints } from '../../core/scoring/index.js';
-import { seedTeams as seedTeamsShared } from './teamsSeed.js';
+import { seedTeams as seedTeamsShared, equipoActivo, pasarTurno, clasificacion } from './teams.js';
 /**
  * @typedef {import('../contracts/activity.js').Pair} Pair
- * @typedef {import('./teamsSeed.js').Team} Team
+ * @typedef {import('./teams.js').Team} Team
  */
 
 /**
@@ -80,7 +80,7 @@ export function createMemoryGame(activity, opts = {}) {
     moves: 0,
   });
 
-  const activeTeam = () => state.teams[state.turn] || null;
+  const activeTeam = () => equipoActivo(state);
   /** @param {string} id @returns {MemoryCard|null} */
   const card = (id) => state.cards.find(c => c.id === id) || null;
   const remaining = () => state.cards.filter(c => !c.matched).length;
@@ -127,14 +127,11 @@ export function createMemoryGame(activity, opts = {}) {
     if (state.flipped.length !== 2) return { ok: false };
     for (const id of state.flipped) { const c = card(id); if (c && !c.matched) c.flipped = false; }
     state.flipped = [];
-    state.turn = (state.turn + 1) % state.teams.length;
+    pasarTurno(state);
     return { ok: true };
   }
 
-  function leaderboard() {
-    return [...state.teams].sort((x, y) => y.score - x.score)
-      .map((t, i) => ({ rank: i + 1, name: t.name, score: t.score, id: t.id }));
-  }
+  const leaderboard = () => clasificacion(state.teams);
 
   return {
     state, flip, cover, leaderboard, activeTeam,

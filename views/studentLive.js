@@ -24,6 +24,7 @@ import { flush as flushQueue } from '../core/submitQueue.js';
 import { resetScene } from '../core/presentation.js';
 import { montarMarcoJuego } from '../core/gameFrame.js';
 import { getTemplate } from '../core/registry.js';
+import { sessionItems } from '../kernel/content/sessionItems.js';
 import { hasClientKey } from '../core/liveSnapshot.js';
 import { VERSION } from '../core/constants.js';
 import { getNick, setNick } from '../core/identity.js';
@@ -41,35 +42,12 @@ import { mensajeDe } from '../core/frontera.js';
  * @typedef {import('../kernel/contracts/session.js').SnapshotActivity} SnapshotActivity
  */
 
-/**
- * Lo que `joinSession` devolvió y quedó guardado en sessionStorage: la
- * credencial de ESTE dispositivo en la sala (§22-4).
- * @typedef {{ sessionId: string, playerId: string, name: string }} LivePlayer
- */
-
-/**
- * EL ESTADO COMPARTIDO DE LA SALA que el ensamblador inyecta en cada fábrica de
- * `views/live/student*.js` (§26: un módulo por bucle, una sola `rt`). Lo que
- * solo lee UN bucle vive dentro de su módulo; aquí está lo que cruza bucles.
- * @typedef {Object} StudentRt
- * @property {ReturnType<typeof acquire>} ctx
- * @property {string} rootSel
- * @property {string} code
- * @property {LivePlayer} player
- * @property {LiveRoom} session
- * @property {SnapshotActivity} activity
- * @property {number} lastQuestionShownAt
- * @property {string|null} lastPhaseKey
- * @property {(() => void)|null} autoFlushQuestion
- * @property {number} myScore
- * @property {number[]|null} raceQueue
- * @property {number} raceCorrectCount
- * @property {number|null} raceFinishMs
- * @property {boolean} qlSpinning
- * @property {() => Promise<void>} refreshSession
- * @property {(msg: string) => void} paintWaiting
- * @property {() => void} paint
- */
+/** LA FORMA DE `rt` —y la credencial del alumno en la sala— viven en el
+ *  CONTRATO (kernel/contracts/liveRt.js), no aquí: las leen los seis módulos de
+ *  bucle, y que cada uno las importara del ensamblador que los monta ataba el
+ *  bucle al ensamblador entero (§0).
+ *  @typedef {import('../kernel/contracts/liveRt.js').StudentRt} StudentRt
+ *  @typedef {import('../kernel/contracts/liveRt.js').LivePlayer} LivePlayer */
 
 /**
  * @param {string} rootSel
@@ -210,6 +188,13 @@ export async function renderPlay(rootSel, code) {
     raceCorrectCount: 0,
     raceFinishMs: null,    // mi hora de meta (aprox., reloj común) — se congela al vaciar la cola
     qlSpinning: false,      // guards the question-live wheel mid-spin
+    // LOS ÍTEMS Y LA PLANTILLA, como GETTERS y no como copia: la actividad del
+    // alumno CAMBIA a mitad de partida (al arrancar la carrera la sala sube la
+    // completa, §22-2), así que un `sessionItems(activity)` guardado al montar
+    // se quedaría con el snapshot del lobby. Los seis bucles lo tecleaban cada
+    // uno por su cuenta (`sessionItems(rt.activity)`, `getTemplate(...)`).
+    get items() { return sessionItems(rt.activity); },
+    get tpl() { return getTemplate(rt.activity.template); },
     // Los helpers que USAN VARIOS bucles, declarados abajo (hoisted): entran en
     // `rt` al construirlo, no pegados después uno a uno.
     refreshSession, paintWaiting, paint,
@@ -278,7 +263,7 @@ export async function renderPlay(rootSel, code) {
   }
 
   function isLiveBoard() {
-    try { return supportsLoop(getTemplate(rt.activity.template), 'board'); } catch { return false; }
+    try { return supportsLoop(rt.tpl, 'board'); } catch { return false; }
   }
 
   // Un módulo por bucle (§26), con la MISMA `rt`: precedente de carpeta

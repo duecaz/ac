@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **346 módulos · 1425 imports internos.**
+> **353 módulos · 1441 imports internos.**
 
 ### Ir a otro documento
 
@@ -30,12 +30,12 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
-| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 2130 | 7 · 1029 | 0.48 |
-| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 11 · 3448 | 13 · 1713 | 0.50 |
-| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 39 · 5508 | 19 · 3103 | 0.56 |
-| **informes/tareas** | después de clase | 10 · 1389 | 5 · 619 | 0.45 |
-| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 93 · 8841 | 13 · 1923 | 0.22 |
-| **infra/común** | todo lo anterior | 179 · 25974 | 77 · 10035 | 0.39 |
+| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 2134 | 7 · 1029 | 0.48 |
+| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 11 · 3450 | 13 · 1713 | 0.50 |
+| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 42 · 5796 | 19 · 3174 | 0.55 |
+| **informes/tareas** | después de clase | 10 · 1388 | 5 · 619 | 0.45 |
+| **plantillas (mecánicas)** | siempre (es el contenido jugado) | 94 · 8692 | 13 · 1952 | 0.22 |
+| **infra/común** | todo lo anterior | 182 · 26281 | 77 · 10038 | 0.38 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -57,31 +57,31 @@ abajo, nunca al revés** (ley §0). Lo vigila `tests/layers.test.mjs`.
 graph TD
   A["<b>arranque</b><br/><small>cablea cada página (main.*.js, sw.js)</small><br/><small>6 módulos</small>"]
   V["<b>vistas</b><br/><small>el chrome: navegación, setup, informes</small><br/><small>54 módulos</small>"]
-  AD["<b>adaptadores</b><br/><small>el transporte: PocketBase | local</small><br/><small>12 módulos</small>"]
+  AD["<b>adaptadores</b><br/><small>el transporte: PocketBase | local</small><br/><small>15 módulos</small>"]
   C["<b>core</b><br/><small>el arreglo social (modos, shells) + utilidades</small><br/><small>155 módulos</small>"]
-  K["<b>kernel</b><br/><small>el motor de sesión: cuándo se liquida</small><br/><small>15 módulos</small>"]
-  T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>97 módulos</small>"]
+  K["<b>kernel</b><br/><small>el motor de sesión: cuándo se liquida</small><br/><small>18 módulos</small>"]
+  T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>98 módulos</small>"]
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>6 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
-  V -->|438| C
-  T -->|254| C
-  AD -->|33| C
+  V -->|439| C
+  T -->|255| C
+  AD -->|29| C
   A -->|24| C
   A -->|18| V
-  K -->|14| C
+  K -->|16| C
   C -->|13| CO
-  V -->|13| CO
   CO -->|11| C
-  V -->|10| K
+  V -->|11| K
+  V -->|10| CO
   C -->|7| CF
   C -->|6| K
   C -.->|6 · excepción| AD
+  AD -->|4| K
   C -.->|4 · excepción| V
   T -->|4| CO
   AD -->|3| CF
   K -->|3| CO
   V -->|3| CF
-  AD -->|2| K
   C -.->|1 · excepción| T
   V -->|1| AD
 ```
@@ -103,11 +103,11 @@ graph TD
 | Capa | Módulos más grandes |
 |---|---|
 | **arranque** | `pb_hooks/aulareto-lib.js` (364) · `pb_hooks/aulareto.pb.js` (354) · `qa/hoja.js` (330) · `main.teacher.js` (166) · `main.embed.js` (69) |
-| **vistas** | `views/playerView.js` (579) · `views/vsView.js` (571) · `views/admin/collections.js` (517) · `views/hostLive.js` (405) · `views/teamsView.js` (383) |
-| **adaptadores** | `adapters/pocketbase/realtimeRooms.js` (606) · `adapters/pocketbase/realtimeAnswers.js` (484) · `adapters/local/realtime.js` (431) · `adapters/pocketbase/realtime.js` (384) · `adapters/pocketbase/remoteStore.js` (284) |
-| **core** | `core/textCorrectionRound.js` (857) · `core/normsCheck.js` (572) · `core/soloPlayer.js` (542) · `core/auth.js` (490) · `core/skins.js` (446) |
-| **kernel** | `kernel/contracts/activity.js` (447) · `kernel/contracts/session.js` (436) · `kernel/contracts/template.js` (349) · `kernel/session/teamsMachine.js` (263) · `kernel/session/vsMachine.js` (259) |
-| **plantillas** | `templates/crossword/player.js` (522) · `templates/wordsearch/player.js` (433) · `templates/match/player.js` (368) · `templates/diagram/player.js` (315) · `templates/tangram/player.js` (302) |
+| **vistas** | `views/playerView.js` (579) · `views/vsView.js` (563) · `views/admin/collections.js` (517) · `views/hostLive.js` (377) · `views/teamsView.js` (361) |
+| **adaptadores** | `adapters/pocketbase/realtimeRooms.js` (542) · `adapters/pocketbase/realtimeAnswers.js` (484) · `adapters/local/realtime.js` (389) · `adapters/pocketbase/realtime.js` (367) · `adapters/pocketbase/remoteStore.js` (279) |
+| **core** | `core/textCorrectionRound.js` (921) · `core/normsCheck.js` (574) · `core/soloPlayer.js` (542) · `core/auth.js` (490) · `core/skins.js` (446) |
+| **kernel** | `kernel/contracts/activity.js` (447) · `kernel/contracts/session.js` (436) · `kernel/contracts/template.js` (349) · `kernel/session/vsMachine.js` (286) · `kernel/session/teamsMachine.js` (251) |
+| **plantillas** | `templates/crossword/player.js` (524) · `templates/match/player.js` (351) · `templates/diagram/player.js` (306) · `templates/tangram/player.js` (303) · `templates/diagram/editor.js` (241) |
 | **contenido** | `kernel/content/qaAdapt.js` (169) · `kernel/content/models.js` (155) · `kernel/content/switch.js` (135) · `kernel/content/convert.js` (123) · `kernel/content/sessionItems.js` (37) |
 | **config** | `pocketbase.config.js` (13) |
 
@@ -117,16 +117,16 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 
 | Módulo | Lo importan |
 |---|---|
-| `core/html.js` | 113 |
-| `core/events.js` | 66 |
-| `core/registry.js` | 57 |
-| `core/frontera.js` | 45 |
+| `core/html.js` | 114 |
+| `core/events.js` | 72 |
+| `core/registry.js` | 54 |
+| `core/frontera.js` | 44 |
 | `core/toast.js` | 40 |
 | `core/ids.js` | 32 |
 | `core/clock.js` | 26 |
 | `core/gameEvents.js` | 26 |
-| `core/ls.js` | 24 |
 | `core/storage.js` | 24 |
+| `core/ls.js` | 23 |
 
 ## Los módulos más grandes (candidatos a partir)
 
@@ -135,13 +135,13 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 
 | Módulo | Líneas | Lo importan |
 |---|---|---|
-| `core/textCorrectionRound.js` | 857 | 5 |
-| `adapters/pocketbase/realtimeRooms.js` | 606 | 1 |
+| `core/textCorrectionRound.js` | 921 | 5 |
 | `views/playerView.js` | 579 | 1 |
-| `core/normsCheck.js` | 572 | 1 |
-| `views/vsView.js` | 571 | 2 |
+| `core/normsCheck.js` | 574 | 1 |
+| `views/vsView.js` | 563 | 2 |
+| `adapters/pocketbase/realtimeRooms.js` | 542 | 1 |
 | `core/soloPlayer.js` | 542 | 16 |
-| `templates/crossword/player.js` | 522 | 1 |
+| `templates/crossword/player.js` | 524 | 1 |
 | `views/admin/collections.js` | 517 | 1 |
 
 ## El mapa de DATOS: quién escribe cada colección

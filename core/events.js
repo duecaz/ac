@@ -70,6 +70,32 @@ export function clearListeners(target) {
   bag.clear();
 }
 
+// ─── LA CAPTURA DEL PUNTERO, con su motivo escrito UNA vez ───────────────────
+// Capturar el puntero es lo que hace que TODOS los `pointermove`/`pointerup` del
+// gesto sigan llegando al elemento aunque el dedo se salga de él, y que el
+// navegador no se lleve el gesto como scroll (clave en tabletas y pizarra).
+//
+// Puede fallar sin consecuencias, y por eso no se avisa (R6: fallar en silencio
+// está prohibido SALVO con el motivo escrito — aquí está, en vez de los nueve
+// `try { … } catch {}` mudos que había repartidos por las plantillas):
+//  · el puntero ya no existe (se levantó entre el evento y esta llamada) →
+//    `NotFoundError`;
+//  · el elemento acaba de salir del DOM (la ruta cambió a mitad del gesto);
+//  · el arnés de pruebas entrega un DOM de mentira sin esta API.
+// En los tres casos el gesto sigue funcionando, solo que sin captura: no hay
+// nada que contarle al usuario ni nada que reintentar.
+/** @param {Element|null|undefined} el @param {number} pointerId */
+export function capturarPuntero(el, pointerId) {
+  try { el?.setPointerCapture?.(pointerId); } catch { /* ver arriba: sin captura el gesto sigue */ }
+}
+
+/** Soltar la captura al terminar el gesto. Falla por los mismos motivos (el
+ *  puntero ya se fue, el nodo ya no está) y con la misma consecuencia: ninguna. */
+/** @param {Element|null|undefined} el @param {number} pointerId */
+export function soltarPuntero(el, pointerId) {
+  try { el?.releasePointerCapture?.(pointerId); } catch { /* ver arriba */ }
+}
+
 /**
  * @param {string} name
  * @param {unknown} [detail]

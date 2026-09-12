@@ -18,7 +18,7 @@ import { destinoTrasJugar } from '../../core/afterPlay.js';
 import { esHojaDeTexto } from '../../core/contentModels/textCorrection.js';
 import { mensajeDe } from '../../core/frontera.js';
 /**
- * @typedef {import('../hostLive.js').HostRt} HostRt
+ * @typedef {import('../../kernel/contracts/liveRt.js').HostRt} HostRt
  * @typedef {import('../../core/answerRows.js').AnswerRow} AnswerRow
  */
 

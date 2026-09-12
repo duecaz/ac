@@ -5,13 +5,12 @@
 //
 // EMBEDDING: mountMemory(host, activity, ctx, opts) renders setup + game INTO
 // `host` (the activity stage). (Wrapper de ruta suelta eliminado: sin callers.)
-import { html, escapeHtml, mount, $, $$, raizDe } from '../core/html.js';
+import { html, escapeHtml, mount, raizDe } from '../core/html.js';
 import { on } from '../core/events.js';
 import { createMemoryGame } from '../kernel/session/memory.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { renderAntesala } from './antesala.js';
-import { teamColor, teamNameInputsHtml, teamsScoreboardHtml } from '../core/teams.js';
-import { cierreHtml } from '../core/podium.js';
+import { teamColor, teamsScoreboardHtml, teamsSetupBody, wireTeamsSetup, readTeamNames, teamsPodiumHtml } from '../core/teams.js';
 import { COVER_MS } from '../core/timings.js';
 
 
@@ -55,14 +54,10 @@ export function mountMemory(host, a, ctx, opts = {}) {
   renderSetup();
 
   function renderSetup() {
-    const body = `
-      <div class="my-3">
-        <label class="form-label small text-muted d-block">¿Cuántos equipos?</label>
-        <div class="btn-group" id="mem-count">
-          ${[2, 3, 4].map(n => `<button class="btn btn-outline-primary ${n === 2 ? 'active' : ''}" data-n="${n}">${n}</button>`).join('')}
-        </div>
-      </div>
-      <div id="mem-names" class="row justify-content-center g-2 my-3" style="max-width:560px;margin:auto"></div>`;
+    // La antesala de Equipos es UNA (core/teams.js): la botonera y los nombres
+    // estaban copiados aquí, y la copia marcaba siempre el «2» como activo
+    // aunque se hubiera elegido 3 o 4.
+    const body = teamsSetupBody({ count: teamCount, color: 'primary' });
 
     renderAntesala(host, {
       activity: a,
@@ -71,25 +66,10 @@ export function mountMemory(host, a, ctx, opts = {}) {
       bodyHtml: body, backHref,
       note: 'Acierto: sumas y sigues. Fallo: pasa el turno.',
       onMount: () => {
-        renderNames();
-        on(host, 'click', '#mem-count button', (_, b) => {
-          teamCount = Number(b.dataset.n);
-          $$('#mem-count button').forEach(x => x.classList.toggle('active', x === b));
-          renderNames();
-        });
+        wireTeamsSetup(host, teamCount, (n) => { teamCount = n; });
       },
-      onStart: () => {
-        const campos = /** @type {HTMLInputElement[]} */ ($$('#mem-names input'));
-        const names = campos.map((el, i) => (el.value || '').trim() || `Equipo ${i + 1}`);
-        startGame(names);
-      }
+      onStart: () => startGame(readTeamNames()),
     });
-  }
-
-  function renderNames() {
-    const box = $('#mem-names');
-    if (!box) return;
-    box.innerHTML = teamNameInputsHtml(teamCount);
   }
 
   /** @param {string[]} names */
@@ -107,9 +87,9 @@ export function mountMemory(host, a, ctx, opts = {}) {
       const ended = game.status === 'ended';
       mount(host, html`
         <div class="teams-arena">
-          ${teamsScoreboardHtml(teams, active?.id, ended)}
+          ${teamsScoreboardHtml(teams, active?.id ?? null, ended)}
           <div class="teams-stage">
-            ${ended ? '' : `<div class="teams-turn"><span class="badge text-bg-${colorOf(active)} fs-6">
+            ${ended || !active ? '' : `<div class="teams-turn"><span class="badge text-bg-${colorOf(active)} fs-6">
               <i class="bi bi-arrow-right-circle"></i> Turno: ${escapeHtml(active.name)}</span></div>`}
             ${ended ? podium() : `<div class="mem-grid" style="${gridStyle()}">${game.state.cards.map(cardHtml).join('')}</div>`}
           </div>
@@ -132,14 +112,10 @@ export function mountMemory(host, a, ctx, opts = {}) {
     }
 
     function podium() {
-      // Cierre COMPARTIDO (`cierreHtml`, core/podium.js); aquí solo los botones propios.
+      // Cierre COMPARTIDO del modo (core/teams.js): mismo podio y mismos botones
+      // que Equipos por turnos.
       const ranked = game.leaderboard().map(t => ({ name: t.name, score: t.score }));
-      return cierreHtml({
-        ranked, clase: 'teams-podium text-center',
-        acciones: `
-          ${backHref ? `<a href="${backHref}" class="btn btn-outline-secondary mt-3">Salir</a>` : ''}
-          <button class="btn btn-primary mt-3 ms-2" id="mem-again"><i class="bi bi-arrow-repeat"></i> Otra vez</button>`
-      });
+      return teamsPodiumHtml({ ranked, backHref, color: 'primary' });
     }
 
     function wire() {
@@ -162,7 +138,7 @@ export function mountMemory(host, a, ctx, opts = {}) {
         if (r.ended) emitGame(GameEvents.PODIUM, { top: game.leaderboard().slice(0, 1).map(t => ({ name: t.name, score: t.score })) });
         paint();
       });
-      on(host, 'click', '#mem-again', () => renderSetup());
+      on(host, 'click', '#teams-again', () => renderSetup());
     }
 
     /** @param {Equipo} team */

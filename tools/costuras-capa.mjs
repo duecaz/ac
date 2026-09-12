@@ -103,6 +103,19 @@ const FICHEROS_MERITO_COMPARTIDO = new Set([
   'core/results.js', 'core/textCorrectionRound.js',
 ]);
 
+// EL RELOJ ES DE LA PLATAFORMA — `rules.timer` lo lee SOLO la plataforma
+// (`core/reloj.js`, el shell `core/soloPlayer.js`, el editor genérico y la
+// ronda de corrección) y eso NO es una capa equivocada: es exactamente el
+// reparto que manda CLAUDE.md §"Relojes" — hay TRES formas de contar el
+// tiempo y cada una tiene su primitivo, nunca un `setInterval` dentro de una
+// plantilla. La plantilla solo DECLARA su valor por defecto
+// (`meta.defaultRules().timer`); quien cuenta, avisa y repinta es el
+// primitivo. Un lector dentro de una plantilla sería la infracción, no su
+// ausencia. (Salió a la luz al borrar un `const timerSecs = rules.timer || 0`
+// muerto en `wordsearch/player.js`: el campo llevaba años siendo de la
+// plataforma y lo tapaba una variable que nadie usaba.)
+const CAMPOS_DE_LA_PLATAFORMA = new Set(['rules.timer']);
+
 await import('../core/registerTemplates.js');
 const { listTemplates } = await import('../core/registry.js');
 const TODAS = listTemplates().filter(T => existsSync(join(ROOT, 'templates', String(T.meta?.name || ''))));
@@ -180,7 +193,8 @@ function cruce1() {
     const capas = clasificarLectores(lectores, declarantes);
 
     const plataformaNoMerito = capas.plataforma.filter(f => !FICHEROS_MERITO_COMPARTIDO.has(f));
-    const soloA = plataformaNoMerito.length > 0
+    const deLaPlataforma = CAMPOS_DE_LA_PLATAFORMA.has(clave);
+    const soloA = !deLaPlataforma && plataformaNoMerito.length > 0
       && capas.plantilla.length === 0 && capas['plantilla-ajena'].length === 0;
     const soloMerito = capas.plataforma.length > 0 && plataformaNoMerito.length === 0;
     const soloB = declarantes.size === 1 && capas['editor-generico'].length > 0;
@@ -191,7 +205,7 @@ function cruce1() {
     filas.push({
       clave, declaran: declarantes.size, plantillas: [...declarantes].sort(),
       capas, soloPlataforma: soloA, privadoConEditorGenerico: soloB, booleanoMecanicaEditable: esBooleanoMecanica,
-      soloMeritoCompartido: soloMerito,
+      soloMeritoCompartido: soloMerito, deLaPlataforma,
     });
   }
   return filas;
@@ -313,6 +327,26 @@ function contraPrueba() {
     const capas = clasificarLectores(['views/zzVistaSintetica.js'], declarantes);
     const soloA = capas.plataforma.length > 0 && capas.plantilla.length === 0 && capas['plantilla-ajena'].length === 0;
     if (!soloA) { console.log('  ❌ CONTRA-PRUEBA rota: el caso sintético de rules.zzMecanica no sale como (1a) soloPlataforma'); rotos++; }
+    // …y la exención del reloj NO es un colador: `rules.zzMecanica` no está en
+    // la lista, así que sigue saliendo. Si alguien la ensanchara a "todo
+    // rules.*", este caso dejaría de salir y la pasada entera diría verde.
+    if (CAMPOS_DE_LA_PLATAFORMA.has('rules.zzMecanica')) {
+      console.log('  ❌ CONTRA-PRUEBA rota: CAMPOS_DE_LA_PLATAFORMA exime un campo sintético — la lista dejó de ser nominal');
+      rotos++;
+    }
+  }
+
+  // 1b — la exención del reloj no puede quedarse de adorno: cada campo eximido
+  // tiene que EXISTIR hoy (alguna plantilla lo declara). Una excepción muerta
+  // es peor que ninguna: dice que se pensó en algo que ya no está.
+  {
+    const declarados = new Set(camposDefault(TODAS).keys());
+    for (const clave of CAMPOS_DE_LA_PLATAFORMA) {
+      if (!declarados.has(clave)) {
+        console.log(`  ❌ CONTRA-PRUEBA rota: CAMPOS_DE_LA_PLATAFORMA exime '${clave}' y ninguna plantilla lo declara ya — quítalo`);
+        rotos++;
+      }
+    }
   }
 
   // 2 — sintético: un cuerpo de fuente con el patrón "capacidad decide un
@@ -351,6 +385,7 @@ function tablaCapaDe(filas1) {
     sospecha: r.soloPlataforma ? 'A: solo lee la plataforma'
       : r.privadoConEditorGenerico ? 'B: privado con editor genérico'
       : r.booleanoMecanicaEditable ? 'C: mecánica de plantilla, editable por el profe'
+      : r.deLaPlataforma ? '(exento: el reloj es de la plataforma, core/reloj.js)'
       : r.soloMeritoCompartido ? '(exento: mérito compartido, core/scoring)'
       : '',
   }));

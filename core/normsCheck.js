@@ -135,7 +135,8 @@ const ALLOW = {
     'core/migrate.js',          // PIN de sala
     'core/liveWords.js',        // palabra-código de la sala (misma familia que el PIN)
     'core/streamWatchdog.js',   // jitter de reconexión (y su scheduler ya se inyecta)
-    'adapters/pocketbase/assignments.js', 'adapters/local/assignments.js',  // PIN de tarea
+    'core/assignmentRules.js',  // PIN de tarea (dueño único; lo llaman los dos drivers)
+    'adapters/pocketbase/assignments.js', 'adapters/local/assignments.js',  // PIN de tarea (legado: ya lo piden al dueño)
     'adapters/pocketbase/realtime.js',    // jitter
   ],
   'reloj-sala': [],
@@ -158,6 +159,7 @@ export const ALLOW_ALMACEN_CRUDO = {
   // los tests): necesitan poder sustituir el storage por un objeto falso, algo
   // que los wrappers de core/ls.js (que hablan SIEMPRE con el storage global
   // real) no ofrecen. No es contenido de producción con la clase delante.
+  'adapters/local/kv.js': 'KV inyectable para tests sin DOM (dev offline) — dueño único de los tres drivers',
   'adapters/local/assignments.js': 'KV inyectable para tests sin DOM (dev offline)',
   'adapters/local/realtime.js': 'KV inyectable para tests sin DOM (dev offline)',
   'adapters/local/remoteStore.js': 'KV inyectable para tests sin DOM (dev offline)',

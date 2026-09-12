@@ -12,25 +12,25 @@
 // v1.51.630: extraído de kernel/session/engine.js al partir el motor POR
 // MÁQUINA (docs/leyes.md §0, deuda condicionada de CLAUDE.md).
 import { planTransition, PHASES, FASE_NO_ACEPTA_RESPUESTAS } from '../../core/livePhases.js';
-import { isAcceptableNickname } from '../../core/nicknameFilter.js';
+import { apodoLimpio } from '../../core/nicknameFilter.js';
 import { canAutoScoreRound } from '../../core/templateCapability.js';
 import { basePoints } from '../../core/scoring/index.js';
 import { sessionItems } from '../content/sessionItems.js';
 import { autoScore, roundPayloadOf } from './score.js';
 import { FORMATS } from './formats.js';
-import { seedTeams as seedTeamsShared } from './teamsSeed.js';
+import { seedTeams as seedTeamsShared, equipoActivo, pasarTurno, clasificacion } from './teams.js';
+import { aplicarPlan } from './plan.js';
 
 /**
  * @typedef {import('../contracts/activity.js').Activity} Activity
  * @typedef {import('./score.js').PlantillaRegistrada} PlantillaRegistrada
  * @typedef {import('../contracts/session.js').HostAction} HostAction
  * @typedef {import('../contracts/session.js').LivePhase} LivePhase
- * @typedef {import('../contracts/session.js').RoomPatch} RoomPatch
  * @typedef {import('../contracts/session.js').RoomStatus} RoomStatus
  * @typedef {import('../contracts/session.js').SessionFormat} SessionFormat
  * @typedef {import('./score.js').ScoringTemplate} ScoringTemplate
- * @typedef {import('./teamsSeed.js').Team} Team
- * @typedef {import('./teamsSeed.js').TeamMember} TeamMember
+ * @typedef {import('./teams.js').Team} Team
+ * @typedef {import('./teams.js').TeamMember} TeamMember
  */
 
 /**
@@ -120,7 +120,7 @@ function createTeamsSession(activity, T, opts) {
   });
 
   const session = () => ({ phase: state.phase, current_item: state.currentItem, status: state.status });
-  const activeTeam = () => state.teams[state.turn] || null;
+  const activeTeam = () => equipoActivo(state);
   /** @param {string} [id] */
   const teamById = (id) => state.teams.find(t => t.id === id) || null;
 
@@ -133,17 +133,9 @@ function createTeamsSession(activity, T, opts) {
   function join(userId, nickname, teamId) {
     const team = teamById(teamId) || activeTeam();
     if (!team) throw new Error('Equipo desconocido');
-    // El interruptor del panel MANDA. Estaba escrito por el editor («Filtro de
-    // apodos») y no lo leía nadie: se rechazaba siempre, así que apagarlo no
-    // hacía nada. Ojo: lo que el interruptor decide es si se RECHAZA, no si se
-    // normaliza — `f.value` (el apodo limpio, recortado) se sigue usando abajo,
-    // y saltárselo dejaba entrar nombres sin normalizar.
-    const f = isAcceptableNickname(nickname);
-    if (!f.ok && activity?.live?.nicknameFilter !== false) throw new Error('Apodo: ' + f.reason);
-    // Igual que en la sala en vivo: con el filtro APAGADO entra un apodo que el
-    // filtro rechaza, y ahí `f.value` no existe — se normaliza aquí (recortado)
-    // en vez de dejar al miembro con `name: undefined` en el roster.
-    const member = { id: 'p' + (++state._seq), userId, name: f.ok ? f.value : String(nickname ?? '').trim() };
+    // Filtro de apodos: la política (rechazar o no) y la normalización viven en
+    // su dueño, `core/nicknameFilter.js` — misma frase que la sala en vivo.
+    const member = { id: 'p' + (++state._seq), userId, name: apodoLimpio(activity, nickname) };
     team.members.push(member);
     return { ...member, teamId: team.id };
   }
@@ -151,20 +143,18 @@ function createTeamsSession(activity, T, opts) {
   /** @param {HostAction} action */
   function dispatch(action) {
     const plan = planTransition(session(), action, total);
-    if (plan.type === 'invalid') throw new Error(plan.reason);
-    if (plan.type === 'end') { state.status = 'ended'; state.phase = PHASES.ENDED; return plan; }
     if (plan.type === 'settle') {
-      // In judge mode the teacher has already awarded; reveal just flips phase.
+      // LA RAMA PROPIA: in judge mode the teacher has already awarded; reveal
+      // just flips phase. Lo común (invalid · end · patch) lo aplica `aplicarPlan`.
       if (state.scoring === 'auto') settle(plan.itemIndex);
       else state.phase = PHASES.REVEAL;
       return plan;
     }
-    const pa = /** @type {RoomPatch} */ (plan.patch);
-    if (pa.status) state.status = pa.status;
-    if (pa.phase) state.phase = pa.phase;
-    if (pa.current_item !== undefined) state.currentItem = pa.current_item;
-    // Advancing to the next item hands the turn to the next team.
-    if (action === 'next') state.turn = (state.turn + 1) % state.teams.length;
+    aplicarPlan(state, plan);
+    // Advancing to the next item hands the turn to the next team. Solo en un
+    // `patch`: el último `next` termina la partida (plan `end`) y ahí el turno
+    // ya no rota — como antes, cuando esa rama volvía sin llegar aquí.
+    if (plan.type === 'patch' && action === 'next') pasarTurno(state);
     return plan;
   }
 
@@ -245,9 +235,7 @@ function createTeamsSession(activity, T, opts) {
     roundPayloadOf(T, activity, itemIndex, null,
       { found: Object.values(state.answers).map(a => a?.value).filter(Boolean) });
 
-  const leaderboard = () =>
-    [...state.teams].sort((a, b) => b.score - a.score)
-      .map((t, i) => ({ rank: i + 1, name: t.name, score: t.score, id: t.id }));
+  const leaderboard = () => clasificacion(state.teams);
 
   return {
     state, join, dispatch, submit, settle, judge, award, roundPayload, leaderboard,

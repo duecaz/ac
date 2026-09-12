@@ -12,16 +12,15 @@ import { raceResumeState } from '../../core/raceResume.js';
 import { toast, TOAST_CORTO } from '../../core/toast.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import * as Streaks from '../../core/streaks.js';
-import { getTemplate } from '../../core/registry.js';
+import { exigeMetodos } from '../../core/templateCapability.js';
 import { roundPayloadOf } from '../../kernel/session/engine.js';
-import { sessionItems } from '../../kernel/content/sessionItems.js';
 import { hasClientKey } from '../../core/liveSnapshot.js';
 import { RACE_FLASH_MS, mmss } from '../../core/timings.js';
 import { pointsModeFor, racePassed } from '../../core/liveLoops.js';
 import { endPolicyOf, waitingInfo } from '../../core/liveEnd.js';
 
 /**
- * @typedef {import('../studentLive.js').StudentRt} StudentRt
+ * @typedef {import('../../kernel/contracts/liveRt.js').StudentRt} StudentRt
  * @typedef {import('../../kernel/contracts/session.js').RoundPayload} RoundPayload
  */
 
@@ -33,15 +32,11 @@ export function createStudentCarrera(rt) {
   let raceSeed = null;            // promesa de la siembra de la cola (una sola vez)
 
   function paintRace() {
-    const allItems = sessionItems(rt.activity);
-    const tpl = getTemplate(rt.activity.template);
-    // `renderRound`/`scoreSubmission` son OPCIONALES en el contrato
-    // (kernel/contracts/template.js): sin ellas no hay carrera que jugar ni con
-    // qué juzgarla. Llamar a `undefined` ya lanzaba; se lanza con el nombre de la
-    // plantilla para que el aviso no sea mudo (R6).
-    if (typeof tpl?.renderRound !== 'function' || typeof tpl.scoreSubmission !== 'function') {
-      throw new Error(`[studentCarrera] ${rt.activity.template}: no implementa renderRound + scoreSubmission`);
-    }
+    const allItems = rt.items;
+    // Sin `renderRound`/`scoreSubmission` no hay carrera que jugar ni con qué
+    // juzgarla (las dos son OPCIONALES en el contrato): se exigen por el dueño
+    // del requisito, que además pone el nombre de la plantilla en el aviso (R6).
+    const tpl = exigeMetodos(rt.tpl, ['renderRound', 'scoreSubmission'], 'studentCarrera');
 
     // SIN CLAVE NO SE JUZGA (§22). En carrera el veredicto lo da este móvil, así
     // que necesita la actividad completa; la sala la sube al arrancar, pero
@@ -70,7 +65,7 @@ export function createStudentCarrera(rt) {
         raceSeed = listOwnAnswers(rt.session.id, rt.player.playerId)
           .catch(() => [])
           .then((rows) => {
-            const s = raceResumeState(sessionItems(rt.activity).length, rows);
+            const s = raceResumeState(rt.items.length, rows);
             rt.raceQueue = s.queue;
             rt.raceCorrectCount = s.correctCount;
             raceFirstSent = s.firstSent;

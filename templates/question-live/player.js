@@ -5,8 +5,7 @@ import { html, escapeHtml, mount, raizDe } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { sessionItems } from '../../kernel/content/sessionItems.js';
 import { wheelSvg } from '../../core/ruleta/render.js';
-import { pickIndex } from '../../core/ruleta/logic.js';
-import { spinTarget, normalizeRotation, animateSpin, SPIN_DUR_PICK } from '../../core/ruleta/spin.js';
+import { girar, SPIN_DUR_PICK } from '../../core/ruleta/spin.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { QL_COLORS, qlBoxesHtml, qlCols } from '../../core/questionLive.js';
 import { cabeceraHtml } from '../../core/playerHud.js';
@@ -175,31 +174,34 @@ function renderWheel(rootSel, activity, opts = {}) {
           <div class="ww-wheel-pointer">▶</div>
         </div>
         <div class="mt-3">
-          <button class="btn btn-warning btn-lg px-5" id="ab-spin" ${spinning ? 'disabled' : ''}>
+          <button class="btn btn-warning btn-lg px-5" data-ab="spin" ${spinning ? 'disabled' : ''}>
             <i class="bi bi-arrow-repeat"></i> Girar
           </button>
         </div>
       </div>
     `);
 
-    on(rootSel, 'click', '#ab-spin', () => {
+    on(rootSel, 'click', '[data-ab="spin"]', () => {
       if (spinning || available.length === 0) return;
       spinning = true;
-      const count = available.length;
-      const target = pickIndex(count);
-      const realIdx = available[target];
-      rotation = spinTarget(rotation, count, target);
 
-      const btn = /** @type {HTMLButtonElement|null} */ (rootEl()?.querySelector('#ab-spin') ?? null);
+      const btn = /** @type {HTMLButtonElement|null} */ (rootEl()?.querySelector('[data-ab="spin"]') ?? null);
       if (btn) btn.disabled = true;
-      animateSpin(rootEl()?.querySelector('svg'), rotation, SPIN_DUR_PICK);
-      setTimeout(() => {
-        if (!rootEl()) return;   // la ruta cambió a mitad del giro (ley de vista §23)
-        spinning = false;
-        rotation = normalizeRotation(rotation);
-        openIdx = realIdx;
-        paint();
-      }, SPIN_DUR_PICK);
+      // El giro entero es de core/ruleta/spin.js. Aquí vivía una COPIA a la que
+      // le faltaba medio guard (solo `rootEl()`, sin `ctx.alive()`): el selector
+      // del escenario es genérico, así que la ruleta pendiente podía revelar su
+      // pregunta encima del juego montado DESPUÉS (§23).
+      rotation = girar({
+        svg: rootEl()?.querySelector('svg'), rotation, count: available.length,
+        dur: SPIN_DUR_PICK,
+        vivo: () => ctx.alive() && !!rootEl(),
+        alParar: (target, normalizada) => {
+          spinning = false;
+          rotation = normalizada;
+          openIdx = available[target];
+          paint();
+        },
+      });
     });
   }
 

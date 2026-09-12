@@ -100,6 +100,51 @@ const LOOPS = {
   ok('las fases de sala usadas por host y alumno están dentro del catálogo');
 }
 
+// ── 3b. «La plantilla no implementa X» se exige en UN sitio ───────────────
+// Casi todo el contrato es OPCIONAL, así que cada pantalla de En vivo se había
+// escrito su propio `if (typeof tpl?.X !== 'function') throw` —cinco copias, y
+// el aviso repitiendo a mano el nombre de la plantilla para no ser mudo (R6)—.
+// Hoy lo pide `exigeMetodos` (core/templateCapability.js).
+{
+  const { exigeMetodos } = await import('../core/templateCapability.js');
+  const completa = { meta: { name: 'quiz' }, renderRound() {}, scoreSubmission() {} };
+
+  // Contra-prueba PRIMERO: el camino legítimo pasa y devuelve la misma plantilla.
+  assert.strictEqual(exigeMetodos(completa, ['renderRound', 'scoreSubmission'], 'studentCarrera'), completa,
+    'una plantilla que cumple sigue pasando (y vuelve tal cual)');
+
+  // LA FORMA REAL, no una maqueta: una plantilla es una CLASE con métodos
+  // ESTÁTICOS, y una clase es `typeof 'function'`. Este caso faltaba y por eso
+  // la maqueta de arriba —un objeto normal— daba verde mientras en la pizarra
+  // el alumno se quedaba en «(sin plantilla): no implementa renderRound» en la
+  // primera ronda (lo cazó `live-smoke`, no la suite).
+  {
+    await import('../core/registerTemplates.js');
+    const { getTemplate } = await import('../core/registry.js');
+    const quiz = getTemplate('quiz');
+    assert.ok(typeof quiz === 'function', 'una plantilla registrada es una clase (si deja de serlo, este caso ya no prueba lo que dice)');
+    assert.strictEqual(exigeMetodos(quiz, ['renderRound'], 'studentRondas'), quiz,
+      'la plantilla REAL (clase con estáticos) pasa el requisito');
+  }
+
+  // Y el aviso NO es mudo: dice quién lo exige, qué plantilla era y qué falta.
+  assert.throws(() => exigeMetodos({ meta: { name: 'wheel' }, renderRound() {} }, ['renderRound', 'scoreSubmission'], 'studentCarrera'),
+    /studentCarrera.*wheel.*scoreSubmission/, 'falta un método → quién · cuál plantilla · qué falta');
+  assert.throws(() => exigeMetodos(null, ['renderRound'], 'hostRondas'),
+    /hostRondas.*renderRound/, 'sin plantilla también avisa (no revienta con un TypeError mudo)');
+
+  // Y las pantallas de En vivo no se vuelven a escribir el guard a mano.
+  const dirLive = new URL('../views/live/', import.meta.url);
+  const vistas = readdirSync(dirLive).map(n => `views/live/${n}`);
+  // Se busca el GUARD QUE LANZA (el que se copiaba), no el aviso defensivo de
+  // R6: `hostTablero` avisa por consola de un contrato roto y sigue pintando.
+  const GUARD = /typeof\s+\w*[Tt]pl\??\.\w+\s*!==\s*'function'[\s\S]{0,200}?throw|throw new Error\([^;]*no implementa/;
+  const copias = vistas.filter(f => GUARD.test(read(f)));
+  assert.deepStrictEqual(copias, [],
+    `estas vistas de En vivo se re-escriben el guard de capacidad en vez de usar exigeMetodos: ${copias.join(' · ')}`);
+  ok('exigeMetodos: el requisito de capacidad se pide una vez (con su contra-prueba)');
+}
+
 // ── 4. §0 MEDIDA: cuántos sitios eligen por NOMBRE de plantilla ───────────
 // Esto miraba DOS ficheros (`hostLive`, `studentLive`) y UNA forma sintáctica
 // (`activity.template === '…'`), y anunciaba «0 elecciones por nombre de

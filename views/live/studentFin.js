@@ -6,10 +6,9 @@ import { html, mount } from '../../core/html.js';
 import * as Streaks from '../../core/streaks.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { leaderboard } from '../../core/liveTransport.js';
-import { sessionItems } from '../../kernel/content/sessionItems.js';
 import { mmss } from '../../core/timings.js';
 
-/** @typedef {import('../studentLive.js').StudentRt} StudentRt */
+/** @typedef {import('../../kernel/contracts/liveRt.js').StudentRt} StudentRt */
 
 /** @param {StudentRt} rt */
 export function createStudentFin(rt) {
@@ -51,7 +50,7 @@ export function createStudentFin(rt) {
         ${rt.raceQueue !== null
           // CARRERA: los puntos planos SON los aciertos — repetir el número como
           // "puntos" no dice nada; aciertos y tiempo sí (lo que pide la guía).
-          ? `<p class="lead">${rt.raceCorrectCount} / ${sessionItems(rt.activity).length} correctas${rt.raceFinishMs != null ? ` · <b title="Tu tiempo (aprox.). La clasificación usa el reloj del servidor.">${mmss(rt.raceFinishMs, Math.floor)}</b>` : ''}</p>`
+          ? `<p class="lead">${rt.raceCorrectCount} / ${rt.items.length} correctas${rt.raceFinishMs != null ? ` · <b title="Tu tiempo (aprox.). La clasificación usa el reloj del servidor.">${mmss(rt.raceFinishMs, Math.floor)}</b>` : ''}</p>`
           : `<p class="lead">Tu puntuación: <b class="fs-2">${finalScore}</b> puntos</p>`}
         ${rank > 1 ? `<p class="text-muted">Posición ${rank} en el ranking</p>` : ''}
         <p class="text-muted small">Mira el ranking completo en la pantalla del profesor.</p>

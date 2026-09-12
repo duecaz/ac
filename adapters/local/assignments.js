@@ -3,11 +3,12 @@
 // injectable for tests). Mirrors the snake_case shape that views read from the
 // Supabase rows (due_at, max_attempts, activity_snap, status, …).
 import { rid } from '../../core/ids.js';
-import { LETTERS, PIN_LENGTH } from '../../core/constants.js';
-import { normalizeCode, esMiTarea } from '../../core/assignmentRules.js';
+import { normalizeCode, esMiTarea, genCode, identidadDeTareas } from '../../core/assignmentRules.js';
 // FRONTERA (JSON del almacén): `unknown` estrechado, nunca creído.
 import { esFila } from '../frontera.js';
+import { crearKV } from './kv.js';
 
+// Sin prefijo común: son las dos claves `ww.*` que declara `LS_OWNERS` (§21).
 const K_ASSIGN = 'ww.assignments';
 const K_ATTEMPTS = 'ww.assignment_attempts';
 
@@ -16,34 +17,22 @@ const K_ATTEMPTS = 'ww.assignment_attempts';
  * @typedef {import('../../kernel/contracts/dataPort.js').AssignmentsPort} AssignmentsPort
  * @typedef {import('../../kernel/contracts/session.js').AssignmentAttempt} AssignmentAttempt
  * @typedef {import('../../kernel/contracts/session.js').AssignmentRecord} AssignmentRecord
- * @typedef {{ getItem: (k: string) => string|null, setItem: (k: string, v: string) => void }} KV
- * @typedef {string|(() => string|null)} Identidad
+ * @typedef {import('./kv.js').KV} KV
+ * @typedef {import('../../core/assignmentRules.js').Identidad} Identidad
  */
 
-function defaultKV() { try { return globalThis.localStorage || null; } catch { return null; } }
-function genCode() { let s = ''; for (let i = 0; i < PIN_LENGTH; i++) s += LETTERS[Math.floor(Math.random() * LETTERS.length)]; return s; }
 function genId() { return rid('asg_'); }
 
 /**
  * @param {{ kv?: KV|null, userId?: Identidad, identities?: string[]|(() => string[]) }} [deps]
  * @returns {AssignmentsPort}
  */
-export function createLocalAssignments({ kv = defaultKV(), userId, identities } = {}) {
-  /** @type {Map<string, unknown>} */
-  const mem = new Map();
-  /** @param {string} key @returns {unknown} */
-  const read = (key) => {
-    if (kv) { try { return JSON.parse(kv.getItem(key) || 'null'); } catch { return null; } }
-    return mem.has(key) ? mem.get(key) : null;
-  };
-  /** @param {string} key @param {unknown} val */
-  const write = (key, val) => { if (kv) kv.setItem(key, JSON.stringify(val)); else mem.set(key, val); };
-  // La identidad puede venir como VALOR (tests) o como FUNCIÓN (la app): el
-  // driver se memoiza por carga de página y el profe entra después, así que
-  // preguntarla en cada llamada es lo que hace que sus tareas queden selladas
-  // con su cuenta y no con el id anónimo del navegador.
-  const uid = () => (typeof userId === 'function' ? userId() : userId) || 'local-anon';
-  const mios = () => (typeof identities === 'function' ? identities() : identities) || [uid()];
+export function createLocalAssignments({ kv, userId, identities } = {}) {
+  // Almacén compartido con los otros dos drivers locales (`adapters/local/kv.js`).
+  const { read, write } = crearKV('', kv);
+  // La identidad (quién sella y quién filtra) es la MISMA de los dos drivers:
+  // vive en core/assignmentRules.js.
+  const { uid, mios } = identidadDeTareas({ userId, identities });
 
   /** @returns {Record<string, AssignmentRecord>} */
   const assignments = () => {

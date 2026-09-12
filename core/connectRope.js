@@ -5,6 +5,8 @@
 // cada player; esto es solo el dibujo, que es idéntico y traía los bugs sutiles
 // (bbox de alto 0 → sombra invisible), así que vive en un solo sitio.
 
+import { capturarPuntero, soltarPuntero } from './events.js';
+
 export const ROPES = ['#6366f1','#0891b2','#a855f7','#f59e0b','#0ea5e9','#ec4899','#14b8a6','#8b5cf6'];
 export const OK_COL = '#16a34a', NO_COL = '#ef4444';
 const SAG = 16;   // px que "cuelga" la cuerda: se ve más natural (una leve caída).
@@ -79,16 +81,86 @@ export function dotPos(el, svg) {
   const er = el.getBoundingClientRect(), sr = svg.getBoundingClientRect();
   return { x: (er.left + er.right) / 2 - sr.left, y: (er.top + er.bottom) / 2 - sr.top };
 }
-// Punto de cliente (clientX/Y) en coordenadas del SVG.
+// Punto de cliente (clientX/Y) en coordenadas del SVG. Lo usa la máquina de
+// arrastre de aquí abajo; los players ya no lo necesitan (§30: sin lector fuera,
+// no se exporta).
 /**
  * @param {Element} svg
  * @param {number} cx
  * @param {number} cy
  * @returns {Punto}
  */
-export function svgPt(svg, cx, cy) {
+function svgPt(svg, cx, cy) {
   const sr = svg.getBoundingClientRect();
   return { x: cx - sr.left, y: cy - sr.top };
+}
+
+/** EL ARRASTRE en curso: el ancla (x1,y1) y dónde está el dedo (cx,cy), más la
+ *  ficha que puso el player al agarrar (qué tarjeta / qué etiqueta).
+ * @template D
+ * @typedef {{pointerId: number, datos: D, x1: number, y1: number, cx: number, cy: number}} Arrastre
+ */
+
+/** LA MÁQUINA DE ARRASTRAR UNA CUERDA, una sola vez para Emparejar y para
+ *  Etiqueta-el-diagrama. Las dos la tenían tecleada entera —`pointerdown` →
+ *  `state.dragging` → capturar el puntero → `pointermove` con `svgPt` →
+ *  `endDrag(connect)`— y lo único que de verdad cambiaba entre ellas era QUÉ se
+ *  agarra y QUÉ hay donde se suelta. Eso se inyecta:
+ *   · `origen(e)`        → qué se agarró: el elemento cuyo centro ancla la cuerda
+ *                          y la ficha que el player quiera llevarse consigo;
+ *   · `elegirDestino()`  → qué hay donde se soltó (Emparejar: rectángulos, con
+ *                          la propia tarjeta = desconectar; Diagrama: el pin o
+ *                          la etiqueta más cercana dentro de un radio);
+ *   · `alSoltar()`       → conectar con ese destino, o desconectar si es null.
+ *  El fantasma no lo dibuja esta máquina: lo pinta el player en su `alPintar`
+ *  leyendo `actual()`, porque la cuerda a medio tender va en la MISMA capa SVG
+ *  que las ya tendidas (un solo `innerHTML`).
+ * @template D
+ * @param {Object} o
+ * @param {HTMLElement} o.arena
+ * @param {SVGElement} o.svg
+ * @param {(e: PointerEvent) => {ancla: Element, datos: D}|null} o.origen
+ * @param {(x: number, y: number, datos: D) => Element|null} o.elegirDestino
+ * @param {(destino: Element|null, datos: D) => void} o.alSoltar
+ * @param {() => void} o.alPintar
+ * @param {() => boolean} [o.activo]
+ * @returns {{actual: () => Arrastre<D>|null}}
+ */
+export function crearArrastreDeCuerdas({ arena, svg, origen, elegirDestino, alSoltar, alPintar, activo }) {
+  /** @type {Arrastre<D>|null} */
+  let drag = null;
+
+  arena.addEventListener('pointerdown', e => {
+    if (drag || (activo && !activo())) return;
+    const desde = origen(e);
+    if (!desde) return;
+    e.preventDefault();
+    const pos = dotPos(desde.ancla, svg);
+    drag = { pointerId: e.pointerId, datos: desde.datos, x1: pos.x, y1: pos.y, cx: pos.x, cy: pos.y };
+    capturarPuntero(arena, e.pointerId);
+    alPintar();
+  });
+
+  arena.addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    const p = svgPt(svg, e.clientX, e.clientY);
+    drag.cx = p.x; drag.cy = p.y;
+    alPintar();
+  });
+
+  /** @param {PointerEvent} e @param {boolean} conectar */
+  function terminar(e, conectar) {
+    const d = drag;
+    if (!d || e.pointerId !== d.pointerId) return;
+    drag = null;
+    soltarPuntero(arena, e.pointerId);
+    if (!conectar) { alPintar(); return; }   // pointercancel: el gesto se fue, nada que enlazar
+    alSoltar(elegirDestino(e.clientX, e.clientY, d.datos), d.datos);
+  }
+  arena.addEventListener('pointerup', e => terminar(e, true));
+  arena.addEventListener('pointercancel', e => terminar(e, false));
+
+  return { actual: () => drag };
 }
 
 /** PUNTUAR LOS ENLACES con el scorer de la plantilla — un solo dueño del conteo

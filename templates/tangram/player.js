@@ -12,6 +12,7 @@
 // para que quede claro que no es un `setInterval` a pelo (§23 no lo prohíbe:
 // prohíbe temporizadores RECURRENTES sin guard, esto es una resta puntual).
 import { html, mount, raizDe } from '../../core/html.js';
+import { capturarPuntero } from '../../core/events.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { cabeceraHtml } from '../../core/playerHud.js';
@@ -246,7 +247,7 @@ export function renderTangramPlayer(rootSel, activity, opts = {}) {
     gesto.movido = false;
     traerAlFrente(n);
     pintar();
-    try { svg.setPointerCapture(e.pointerId); } catch {}
+    capturarPuntero(svg, e.pointerId);
   }
 
   /** @param {PointerEvent} e @returns {void} */

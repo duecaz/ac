@@ -46,9 +46,10 @@ const FRENO = 12;
 // tirones. El reposo se exige MÁS (25 ms) porque ahí no debería pasar NADA.
 const TECHO_REPOSO = 25;
 const TECHO_CONFETI = 60;
-// Celebrar SÍ cuesta (confeti + foco + rayos), pero tiene que seguir siendo
-// jugable: 30 fps es el suelo de «no se ve a tirones».
-const TECHO_JUGABLE = 33;
+// Celebrar SÍ cuesta (confeti + foco + rayos). Su techo NO es absoluto: se
+// calibra contra el confeti de esa misma página y esa misma máquina (escena 5),
+// porque celebrar es «confeti + el cierre» y exigirle menos que al confeti solo
+// era pedir un imposible con forma de número.
 
 const { base: BASE, cerrar } = await abrirServidor();
 const bye = (code) => { cerrar(); process.exit(code); };
@@ -268,6 +269,35 @@ const MEDIR = (ms) => `(async () => {
   await page.click('[data-ww-start]');
   await page.waitForSelector('.vs-arena', { timeout: 15000 });
   await frenar();
+  // PRIMERO, EL CONFETI A SECAS EN ESTA MISMA PÁGINA Y ESTA MISMA MÁQUINA. El
+  // techo de esta escena era ABSOLUTO (33 ms) y pedía que celebrar costara casi
+  // la MITAD que el confeti solo, al que la escena 2 le permite 60 ms: la misma
+  // ráfaga era verde medida sola y roja medida dentro del cierre. Una red así
+  // da rojo por el humor del contenedor sobre un commit que pasó verde por la
+  // mañana, y una red que depende del host se acaba ignorando (la lección ya
+  // escrita en la escena «escribir», que por eso se calibra contra su reposo).
+  // Lo que esta escena tiene que cazar es lo que el plan de rendimiento llamó
+  // la SUMA: que el cierre (foco giratorio + rayos) añada coste ENCIMA del
+  // confeti que ya hay. Así que el confeti de esta página es la vara.
+  // Y lo que esta escena NO puede prometer, lo promete otra red: en un
+  // contenedor compartido la misma ráfaga midió 37 ms y 52 ms en dos pasadas
+  // seguidas, así que una medida sola nunca va a distinguir «alguien animó un
+  // blur» del humor de la máquina. Quien lo distingue sin ruido es
+  // `tests/animaciones.test.mjs`, que LEE las hojas: dentro del juego solo se
+  // animan `transform` y `opacity`. Esta escena mide el bulto; aquella prohíbe
+  // la causa.
+  const solo = await page.evaluate(async (medir) => {
+    const { GameEvents, emitGame } = await import('/core/gameEvents.js');
+    await import('/core/effects.js');
+    const medida = eval(medir);
+    emitGame(GameEvents.PODIUM, { top: [{ name: 'Equipo A', score: 90 }] });
+    return await medida;
+  }, MEDIR(2500));
+  // El podio tiene enfriamiento (`PODIUM_COOLDOWN`, 5 s en `core/effects.js`):
+  // sin esta espera la segunda ráfaga se la traga el propio guard y la escena
+  // mediría un cierre QUIETO — que es justo lo que la comprobación de «no soltó
+  // confeti» está ahí para no dejar pasar.
+  await page.waitForTimeout(2800);
   const r = await page.evaluate(async (medir) => {
     const { cierreHtml } = await import('/core/podium.js');
     const { GameEvents, emitGame } = await import('/core/gameEvents.js');
@@ -288,12 +318,16 @@ const MEDIR = (ms) => `(async () => {
     const out = await medida;
     return { ...out, foco: !!document.querySelector('.vs-celebration'), confeti };
   }, MEDIR(2500));
+  // El techo: el confeti de esta máquina más un cuarto (el cierre pinta algo,
+  // no puede ser gratis), y nunca por debajo del techo absoluto del confeti —
+  // que es el peor caso ya aceptado en la escena 2.
+  const techoCierre = solo.med ? Math.max(TECHO_CONFETI, +(solo.med * 1.25).toFixed(1)) : TECHO_CONFETI;
   if (!r.foco) mal('el cierre del duelo no se montó: no se ha medido ninguna celebración');
   else if (!r.confeti) mal('la celebración no soltó confeti: se estaría midiendo un podio quieto (verde gratis)');
   else if (r.pocos !== undefined) mal(`solo ${r.pocos} fotogramas medidos durante la celebración del duelo`);
-  else if (r.med <= TECHO_JUGABLE) ok(`PODIO DEL DUELO en la pizarra del aula (DPR ${DPR_AULA}, CPU frenada ${FRENO}x): ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps)`);
-  else mal(`la celebración del duelo deja la pizarra a ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps, techo ${TECHO_JUGABLE} ms). `
-         + 'Suman confeti + foco giratorio + rayos sobre la misma región: lo que se mueva ahí solo puede ser `transform`/`opacity`.');
+  else if (r.med <= techoCierre) ok(`PODIO DEL DUELO en la pizarra del aula (DPR ${DPR_AULA}, CPU frenada ${FRENO}x): ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps; el confeti solo, aquí, ${solo.med} ms; techo ${techoCierre} ms)`);
+  else mal(`la celebración del duelo deja la pizarra a ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps), y el confeti SOLO en esta misma página cuesta ${solo.med} ms (techo ${techoCierre} ms). `
+         + 'El cierre está AÑADIENDO coste encima del confeti: foco giratorio y rayos sobre la misma región. Lo que se mueva ahí solo puede ser `transform`/`opacity`.');
   await page.close();
 }
 

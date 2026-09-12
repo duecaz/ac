@@ -14,7 +14,8 @@ import { fullscreenButtonHtml, attachFullscreenButton } from '../../core/fullscr
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { toast, confirmModal, TOAST_NORMAL } from '../../core/toast.js';
 import { mensajeDe } from '../../core/frontera.js';
-/** @typedef {import('../hostLive.js').HostRt} HostRt */
+import { exigeMetodos } from '../../core/templateCapability.js';
+/** @typedef {import('../../kernel/contracts/liveRt.js').HostRt} HostRt */
 
 /** @param {HostRt} rt */
 export function createHostRondas(rt) {
@@ -27,17 +28,14 @@ export function createHostRondas(rt) {
   let prevRanks = null;   // puestos de la ronda anterior (R-4)
 
   // LO QUE SE PROYECTA, en un solo sitio: `renderRoundHost` es OPCIONAL en el
-  // contrato (templates/base.js trae una por defecto), así que se pregunta antes
-  // de llamarla — y si falta de verdad, se lanza como hasta ahora (llamar a
-  // `undefined` lanzaba) para que el aviso no sea mudo (R6).
+  // contrato (templates/base.js trae una por defecto), así que se EXIGE antes de
+  // llamarla, por el dueño del requisito (core/templateCapability.js): si falta
+  // de verdad, el aviso lleva quién la pedía y qué plantilla era (R6).
   /** @param {import('../../kernel/contracts/template.js').HostRoundContext} ctx */
   function pintarEnProyector(ctx) {
     const hueco = document.getElementById('host-round');
     if (!hueco) throw new Error('[hostRondas] falta el hueco #host-round');
-    if (typeof rt.tpl?.renderRoundHost !== 'function') {
-      throw new Error(`[hostRondas] ${rt.activity.template}: no implementa renderRoundHost`);
-    }
-    rt.tpl.renderRoundHost(hueco, ctx);
+    exigeMetodos(rt.tpl, ['renderRoundHost'], 'hostRondas').renderRoundHost(hueco, ctx);
   }
 
   /** @param {boolean} [phaseChanged] */

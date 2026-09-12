@@ -171,10 +171,14 @@ const QUIZ = { id: 'a2', template: 'uns_quiz', live: {}, content: { items: [{ id
     'el móvil NO usa ql_taken para bloquear: sería una regla que el cliente no puede garantizar (CL-1 opción 1)');
   // Y el dato viaja por los dos adaptadores.
   // v1.51.627: en PB el patch de sala vive en realtimeRooms (partición por colección).
-  for (const drv of ['../adapters/pocketbase/realtimeRooms.js', '../adapters/local/realtime.js']) {
-    const src = readFileSync(new URL(drv, import.meta.url), 'utf8');
-    assert.match(src, /'ql_taken' in patch/, `${drv}: transporta ql_taken`);
-  }
+  // v1.51.6xx (T5): el VOLCADO del parche es uno solo para los dos drivers, en el
+  // kernel; lo que se comprueba en cada adaptador es que lo USE (sin copia propia).
+  const drivers = ['../adapters/pocketbase/realtimeRooms.js', '../adapters/local/realtime.js']
+    .map(f => readFileSync(new URL(f, import.meta.url), 'utf8')).join('\n');
+  assert.strictEqual((drivers.match(/aplicarParcheDeSala\(/g) || []).length, 2,
+    'los DOS drivers vuelcan el parche por su dueño (ninguno se guarda una copia)');
+  assert.match(readFileSync(new URL('../kernel/session/roomPatch.js', import.meta.url), 'utf8'),
+    /'ql_taken' in patch/, 'y ese volcado transporta ql_taken');
   ok('CL-1: la pizarra dice quién ha participado; nadie queda bloqueado en el móvil');
 }
 

@@ -5,17 +5,13 @@ import { BaseTemplate } from '../base.js';
 import { renderComasPlayer } from './player.js';
 import { renderComasEditor } from './editor.js';
 import { newPassage } from '../../core/contentModels/textCorrection.js';
-import { parseTextWithCommas, markPartsFor, markValueParts, passageLabel } from '../../core/textMarks.js';
-import { renderTextCorrectionRound, renderTextCorrectionHost, passageRoundPayload } from '../../core/textCorrectionRound.js';
+import { parseTextWithCommas } from '../../core/textMarks.js';
+import { rondaDeCorreccion, proyectorDeCorreccion, partesDeCorreccion, valorDeCorreccion, etiquetaDeCorreccion, passageRoundPayload } from '../../core/textCorrectionRound.js';
 import { scoreComasSubmission } from './scorer.js';
-import { esObjeto } from '../../core/frontera.js';
 /**
  * @typedef {import('../../kernel/contracts/activity.js').TextCorrectionContent} TextCorrectionContent
- * @typedef {import('../../kernel/contracts/activity.js').Passage} Passage
  * @typedef {import('../../kernel/contracts/session.js').RoundContext} RoundContext
  * @typedef {import('../../kernel/contracts/session.js').RoundPayload} RoundPayload
- * @typedef {import('../../kernel/contracts/template.js').RoundCallbacks} RoundCallbacks
- * @typedef {import('../../kernel/contracts/template.js').HostRoundContext} HostRoundContext
  */
 
 
@@ -81,46 +77,24 @@ export class ComasTemplate extends BaseTemplate {
    */
   static getRoundPayload(activity, ctx) { return passageRoundPayload(activity, ctx.itemIndex); }
 
-  // One passage = one round (tap the gap where a comma is missing). Shared renderer.
-  // `chips` viaja tal cual a la ronda (contrato de barra única): quedarse solo
-  // con onSubmit era lo que dejaba a la vista pintando su fila ENCIMA de la
-  // barra de la hoja — las dos barras de la captura del dueño.
+  // La MARCA es lo único que distingue a Tildes de Comas: la lógica de estos
+  // cinco estáticos vive en core/textCorrectionRound.js (su dueño) y aquí se
+  // dice cuál se corrige. `valueParts` e `itemLabel` no dependen de la marca:
+  // las dos plantillas comparten la MISMA función.
   /**
    * @param {Element} root
    * @param {RoundPayload} payload
-   * @param {RoundCallbacks} [cbs]
+   * @param {import('../../kernel/contracts/template.js').RoundCallbacks} [cbs]
    */
-  static renderRound(root, payload, { onSubmit, chips } = {}) {
-    return renderTextCorrectionRound(root, payload, { kind: 'coma', onSubmit, chips });   // devuelve { flush }
-  }
-
-  // Projector view for LIVE (passage big; solution on reveal).
+  static renderRound(root, payload, cbs) { return rondaDeCorreccion('coma', root, payload, cbs); }
   /**
    * @param {Element} root
-   * @param {HostRoundContext} [ctx]
+   * @param {import('../../kernel/contracts/template.js').HostRoundContext} [ctx]
    */
-  static renderRoundHost(root, ctx = {}) {
-    // Solo la fase y el pasaje: lo demás del contexto del host (payload,
-    // respuestas) no lo mira la vista de proyector de texto.
-    renderTextCorrectionHost(root, {
-      phase: ctx.phase,
-      item: esObjeto(ctx.item) ? /** @type {Passage} */ (ctx.item) : null,
-      kind: 'coma',
-    });
-  }
-
-  // Analítica por parte (M1): cada parte = una coma requerida (key=posición,
-  // label=palabra) → heatmap por el % de la clase que acertó cada coma.
-  // `item` llega como `unknown` (el contrato no sabe de qué plantilla es): se
-  // estrecha por FORMA antes de dárselo al primitivo de marcas.
+  static renderRoundHost(root, ctx) { return proyectorDeCorreccion('coma', root, ctx); }
   /** @param {{item: unknown}} input */
-  static itemParts({ item }) {
-    return markPartsFor(esObjeto(item) ? /** @type {Passage} */ (item) : null, 'coma');
-  }
-  /** @param {{value: unknown}} input */
-  static valueParts({ value }) { return markValueParts(value); }
-  /** @param {unknown} item */
-  static itemLabel(item) {
-    return passageLabel(esObjeto(item) ? /** @type {Passage} */ (item) : null);
-  }
+  static itemParts(input) { return partesDeCorreccion('coma', input); }
+  static valueParts = valorDeCorreccion;
+  static itemLabel  = etiquetaDeCorreccion;
+
 }

@@ -13,15 +13,14 @@ import { html, escapeHtml, mount } from '../../core/html.js';
 import { getOwnAnswer, leaderboard } from '../../core/liveTransport.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import * as Streaks from '../../core/streaks.js';
-import { getTemplate } from '../../core/registry.js';
+import { exigeMetodos } from '../../core/templateCapability.js';
 import { roundPayloadOf } from '../../kernel/session/engine.js';
-import { sessionItems } from '../../kernel/content/sessionItems.js';
 import { submit as queuedSubmit } from '../../core/submitQueue.js';
 import { questionWindowMs, readWindowMs } from '../../core/timings.js';
 import { standingOf } from '../../core/liveRank.js';
 
 /**
- * @typedef {import('../studentLive.js').StudentRt} StudentRt
+ * @typedef {import('../../kernel/contracts/liveRt.js').StudentRt} StudentRt
  * @typedef {import('../../kernel/contracts/session.js').RoundPayload} RoundPayload
  */
 
@@ -81,7 +80,7 @@ export function createStudentRondas(rt) {
       startQuestionTicker(deadlineMs, total);
       return;
     }
-    const items = sessionItems(rt.activity);
+    const items = rt.items;
     const item = items[idx];
     const own = await getOwnAnswer(rt.session.id, rt.player.playerId, idx);
     if (own) return rt.paintWaiting('Respuesta enviada. Espera al resto.');
@@ -128,13 +127,10 @@ export function createStudentRondas(rt) {
     // The DEVICE renders the round via the template contract (same as VS),
     // so every template — quiz, tildes, comas, math… — works without a
     // per-template branch here. The host's projector shows the prompt.
-    const tpl = getTemplate(rt.activity.template);
     // `renderRound` es OPCIONAL en el contrato (kernel/contracts/template.js):
-    // sin ella no hay ronda que jugar. Llamar a `undefined` ya lanzaba aquí; se
-    // lanza con el nombre de la plantilla para que el aviso no sea mudo (R6).
-    if (typeof tpl?.renderRound !== 'function') {
-      throw new Error(`[studentRondas] ${rt.activity.template}: no implementa renderRound`);
-    }
+    // sin ella no hay ronda que jugar. Lo exige el dueño del requisito
+    // (core/templateCapability.js), que pone el nombre en el aviso (R6).
+    const tpl = exigeMetodos(rt.tpl, ['renderRound'], 'studentRondas');
     // El payload de la ronda lo sirve el snapshot o la plantilla; su forma exacta
     // la decide cada plantilla (§0), y es la que `renderRound` sabe leer.
     const payload = roundPayloadOf(tpl, rt.activity, idx, item);

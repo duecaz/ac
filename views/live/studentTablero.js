@@ -8,11 +8,11 @@ import { html, mount } from '../../core/html.js';
 import { submitProgress } from '../../core/liveTransport.js';
 import { toast, TOAST_NORMAL } from '../../core/toast.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
-import { getTemplate } from '../../core/registry.js';
+import { exigeMetodos } from '../../core/templateCapability.js';
 import { roundPayloadOf } from '../../kernel/session/engine.js';
 
 /**
- * @typedef {import('../studentLive.js').StudentRt} StudentRt
+ * @typedef {import('../../kernel/contracts/liveRt.js').StudentRt} StudentRt
  * @typedef {import('../../kernel/contracts/session.js').RoundPayload} RoundPayload
  */
 
@@ -30,12 +30,9 @@ export function createStudentTablero(rt) {
   // phase — lobby/podium are unchanged. The board is mounted once and kept
   // (paint() dedups identical phase keys, so host pings don't remount it).
   function paintLiveBoard() {
-    const tpl = getTemplate(rt.activity.template);
-    // `renderRound` es OPCIONAL en el contrato (kernel/contracts/template.js): sin
-    // ella no hay tablero que montar (llamar a `undefined` ya lanzaba, R6).
-    if (typeof tpl?.renderRound !== 'function') {
-      throw new Error(`[studentTablero] ${rt.activity.template}: no implementa renderRound`);
-    }
+    // `renderRound` es OPCIONAL en el contrato (kernel/contracts/template.js):
+    // sin ella no hay tablero que montar. Lo exige el dueño del requisito (R6).
+    const tpl = exigeMetodos(rt.tpl, ['renderRound'], 'studentTablero');
     const payload = roundPayloadOf(tpl, rt.activity, 0);
     // El TABLERO es de la plantilla: la vista no lo interpreta, solo reenvía sus
     // medidas al host junto al movimiento (§0).

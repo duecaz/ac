@@ -35,28 +35,28 @@ trinidad `registry`/`templateContract`/`templateCapability`, `podium`/
 
 ## Las fases, en orden
 
-**Fase 1 · cero riesgo (T7).** NUL → ` `; 16 imports muertos (+ el barrido en
+**Fase 1 · cero riesgo (T7).** ✅ HECHA (v1.51.684). NUL → ` `; 16 imports muertos (+ el barrido en
 `auditoria`); `soltarFs`; comentarios caducos; `cargarBanco` estático; typedefs
 sin lector (o usados por su productor); `startScreen` dentro de `playerView`.
 
-**Fase 2 · un dueño para estrechar y para el DOM (T1 + T2).** Un `frontera` NUEVO en
+**Fase 2 · un dueño para estrechar y para el DOM (T1 + T2).** ✅ HECHA (v1.51.685). Un `frontera` NUEVO en
 `core/` (`esObjeto`·`saco`·`texto`·`numero`·`estadoDe`·`mensajeDe`) del que
 `adapters/frontera.js` re-exporta quedándose solo con el blob de sala;
 `core/html.js` gana `raizDe(rootSel)`, `$input/$val/$checked`, `valorDe/marcado`.
 Reemplazo mecánico en ~60 ficheros; el verificador de tipos y la suite lo vigilan.
 
-**Fase 3 · shells y podio (T4).** `cerrarPartida` + `crearProgreso` compartidos
+**Fase 3 · shells y podio (T4).** ✅ HECHA (v1.51.686). `cerrarPartida` + `crearProgreso` compartidos
 por los dos shells; `PODIUM` en `runFreeformPlayer.finish()` y fuera las 6 copias
 (las 6 a la vez, o suena dos veces). Es el que más producto arregla por menos
 líneas.
 
-**Fase 4 · editores y modelos (T3).** `answerIndices()` única (con la contra-prueba
+**Fase 4 · editores y modelos (T3).** ✅ HECHA (v1.51.686). `answerIndices()` única (con la contra-prueba
 de la tilde); accesores por modelo en `core/contentModels/*`; `wireCampoTexto` en
 los 6 que faltan; `wireItemList` en los 2; `renderPairsEditor` fuera de
 `contentModels/pairs.js` (el kernel deja de arrastrar el editor); `ensureContent`
 fuera de los editores de los tres juegos.
 
-**Fase 5 · copias con divergencia (T5).** Por orden de riesgo: `girar()` en
+**Fase 5 · copias con divergencia (T5).** ✅ HECHA (v1.51.687). Por orden de riesgo: `girar()` en
 `core/ruleta/spin.js` (arregla el guard); `apodoLimpio`, `aplicarPlan`,
 `leaderboard` en el kernel; `salaDesde` en `realtimeRooms`; `kv.js` local;
 `genCode`/`uid` en `assignmentRules`; upsert y `pbListar` en PB; `ganador(st)` en
@@ -76,7 +76,7 @@ tablero de Sopa y arrastre de cuerdas (medio: gesto táctil, lo cubre la matriz)
 - `core/skins.js` → los 7 skins a `themes/builtin/`; `core/fullscreen.js` → `fullscreenRepair.js`; `state.js` → `identity.js`; `views/switchTemplate.js` → `core/`.
 - `crossword/player.js` (523) → view · cursor · check (130 líneas de lógica pasan a ser comprobables desde Node); `quiz/template.js` → hostView + migrate; `vsView.startMatch` (286) → `vs/arena.js`.
 
-**Fase 7 · arranque (T8).** `#/admin` por `import()` dinámico; `views/admin/diagnostico/`.
+**Fase 7 · arranque (T8).** ✅ HECHA (v1.51.686). `#/admin` por `import()` dinámico; `views/admin/diagnostico/`.
 
 **Fase 8 · lo que decide el dueño (T9).** Medir en la Pi si queda algún despliegue
 sin `live_answers`; una ruleta; un picker de imagen; escribir la excepción de `qaAdapt`.

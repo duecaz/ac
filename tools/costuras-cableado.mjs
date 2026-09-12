@@ -416,6 +416,12 @@ function cruce4_clavesWw() {
       if (RE_SET_DIRECTO.test(src)) set = true;
       if (RE_GET_DIRECTO.test(src)) get = true;
       if (RE_DEL_DIRECTO.test(src)) del = true;
+      // La COLA DE ENTREGA del alumno (core/offlineQueue.js) recibe la clave y
+      // hace las DOS cosas con ella (lee al reintentar, escribe al encolar):
+      // `colaDeEntrega({ clave: KEY, … })`. Sus dos dueños —respuestas en vivo y
+      // intentos de tarea— ya no nombran `lsSet`/`lsGet`, igual que nadie nombra
+      // `localStorage` fuera de core/ls.js.
+      if (/\bcolaDeEntrega\s*\(/.test(src)) { set = true; get = true; }
       if (f.startsWith('adapters/local/')) {
         if (/\bkv\.setItem\s*\(/.test(src) || /\bwrite\s*\(/.test(src)) set = true;
         if (/\bkv\.getItem\s*\(/.test(src) || /\bread\s*\(/.test(src)) get = true;

@@ -2,7 +2,7 @@
 // played in order with accumulated scores and a final combined podium.
 import { html, escapeHtml, mount, raizDe, $input } from '../core/html.js';
 import { get, save, list } from '../core/storage.js';
-import { newActivityId } from '../core/migrate.js';
+import { newActivity } from '../core/migrate.js';
 import { navigate } from '../core/router.js';
 import { toast } from '../core/toast.js';
 import { isVsCompatible } from '../kernel/session/engine.js';
@@ -13,30 +13,18 @@ import { $$ } from '../core/html.js';
 /** Una actividad cuyo contenido es la SECUENCIA de rondas (`template: 'list'`).
  *  @typedef {import('../kernel/contracts/activity.js').Activity<ListContent>} ActividadLista */
 
-/** @returns {ActividadLista} */
+/** Una lista NUEVA. La forma de una actividad la da su dueño (`newActivity` →
+ *  `normalize`, core/migrate.js): aquí se tecleaba a mano el objeto entero, y
+ *  esa copia ya nacía con los bloques vacíos (`rules:{}`, `scoring:{}`…) que la
+ *  normalización rellena — una lista creada aquí y otra migrada no eran iguales.
+ *  Lo PROPIO de una lista son solo el título y su secuencia de rondas.
+ *  @returns {ActividadLista} */
 function newListActivity() {
-  return {
-    id: newActivityId(),
-    template: 'list',
+  return /** @type {ActividadLista} */ ({
+    ...newActivity('list'),
     title: 'Nueva lista',
-    subtitle: '',
     content: { items: [], mode: 'vs' },
-    tags: [],
-    language: 'es',
-    visibility: 'unlisted',
-    schemaVersion: 4,
-    templateVersion: 1,
-    rules: {},
-    scoring: {},
-    review: {},
-    presentation: {},
-    live: {},
-    author: { id: null, name: null, signedAt: null },
-    media: {},
-    forkOf: null,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
+  });
 }
 
 /** @param {string|Element} rootSel @param {{id?: string}} [o] */

@@ -23,8 +23,7 @@
 //   created_at    text
 //
 // API rules: allow all (or restrict by author_id for mutations).
-import { LETTERS, PIN_LENGTH } from '../../core/constants.js';
-import { normalizeCode, esMiTarea } from '../../core/assignmentRules.js';
+import { normalizeCode, esMiTarea, genCode, identidadDeTareas } from '../../core/assignmentRules.js';
 import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
 import { pbJson } from '../../core/pbHttp.js';
 import { esFila, fila, filas, estadoPb, numero, texto } from '../frontera.js';
@@ -34,14 +33,8 @@ import { esFila, fila, filas, estadoPb, numero, texto } from '../frontera.js';
  * @typedef {import('../../kernel/contracts/dataPort.js').AssignmentsPort} AssignmentsPort
  * @typedef {import('../../kernel/contracts/session.js').AssignmentAttempt} AssignmentAttempt
  * @typedef {import('../../kernel/contracts/session.js').AssignmentRecord} AssignmentRecord
- * @typedef {string|(() => string|null)} Identidad
+ * @typedef {import('../../core/assignmentRules.js').Identidad} Identidad
  */
-
-function genCode() {
-  let s = '';
-  for (let i = 0; i < PIN_LENGTH; i++) s += LETTERS[Math.floor(Math.random() * LETTERS.length)];
-  return s;
-}
 
 // El wrapper JSON vive UNA vez en core/pbHttp.js (el profe firma; el alumno va
 // anónimo, exactamente como antes). Alias local para los llamadores.
@@ -63,12 +56,9 @@ const comoIntento = (row) => /** @type {AssignmentAttempt} */ (row);
  * @returns {AssignmentsPort}
  */
 export function createPocketbaseAssignments({ userId = 'local-anon', identities } = {}) {
-  // La identidad puede venir como VALOR (tests) o como FUNCIÓN (la app): el
-  // driver se memoiza por carga de página y el profe entra después, así que
-  // preguntarla en cada llamada es lo que hace que sus tareas queden selladas
-  // con su cuenta y no con el id anónimo del navegador.
-  const uid = () => (typeof userId === 'function' ? userId() : userId) || 'local-anon';
-  const mios = () => (typeof identities === 'function' ? identities() : identities) || [uid()];
+  // La identidad (quién sella y quién filtra) es la MISMA del driver local:
+  // vive en core/assignmentRules.js, resuelta en CADA llamada.
+  const { uid, mios } = identidadDeTareas({ userId, identities });
 
   return {
     async createAssignment(activity, { title, dueAt, maxAttempts } = {}) {

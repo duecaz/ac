@@ -55,38 +55,10 @@ import { createHostInforme } from './live/hostInforme.js';
  * @typedef {import('../core/registry.js').PlantillaRegistrada} PlantillaRegistrada
  */
 
-/**
- * EL ESTADO COMPARTIDO DE LA SALA que el ensamblador inyecta en cada fábrica de
- * `views/live/host*.js` (§26: un módulo por bucle, una sola `rt`). Lo que solo
- * lee UN bucle vive dentro de su módulo; aquí está lo que cruza bucles.
- * @typedef {Object} HostRt
- * @property {ReturnType<typeof acquire>} ctx
- * @property {string} rootSel
- * @property {string} code
- * @property {string} sessionId
- * @property {Activity} activity
- * @property {PlantillaRegistrada|null} tpl
- * @property {SessionItem[]} items
- * @property {LiveSettings} live
- * @property {number} timerSec
- * @property {string} advanceMode
- * @property {LiveLoop[]} loops
- * @property {boolean} isBoard
- * @property {string} driverKind
- * @property {(game: boolean) => void} scene
- * @property {LiveRoom} session
- * @property {Player[]} players
- * @property {Array<AnswerView|EngineAnswer>} answers
- * @property {boolean} disposed
- * @property {LiveLoop} loop
- * @property {boolean} autoAdvance
- * @property {number} readSecs
- * @property {(finished: number) => Promise<boolean>} maybeAutoEnd
- * @property {(idx: number) => Promise<void>} openQuestion
- * @property {(repaint: (phaseChanged?: boolean) => void, everyMs: number) => void} startRaceLoop
- * @property {() => string} raceClock
- * @property {() => string} endBadge
- */
+/** LA FORMA DE `rt` vive en el CONTRATO (kernel/contracts/liveRt.js), no aquí:
+ *  la leen los seis módulos de bucle, y que cada uno la importara del
+ *  ensamblador que los monta ataba el bucle al ensamblador entero (§0).
+ *  @typedef {import('../kernel/contracts/liveRt.js').HostRt} HostRt */
 
 /**
  * @param {string} rootSel

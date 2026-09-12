@@ -2,7 +2,7 @@
 // para poner un pin (guarda x,y como fracción), arrástralo para moverlo, y escribe
 // la etiqueta de cada pin. El chasis (título, ajustes, tabs) lo pone el shell.
 import { escapeHtml, marcado } from '../../core/html.js';
-import { on } from '../../core/events.js';
+import { on, capturarPuntero, soltarPuntero } from '../../core/events.js';
 import { ruleScopeNote, wireCampoTexto } from '../../core/editorPrimitives.js';
 import { uploadMedia, medirImagen } from '../../core/upload.js';
 import { QUOTAS } from '../../core/quotas.js';
@@ -173,7 +173,7 @@ function wireContent(root, a, ctx) {
     if (!pin) return;                          // clic en vacío → lo maneja el 'click'
     e.preventDefault();
     drag = { i: Number(pin.dataset.i), moved: false, pointerId: e.pointerId };
-    try { box.setPointerCapture(e.pointerId); } catch {}
+    capturarPuntero(box, e.pointerId);
   });
   box.addEventListener('pointermove', (e) => {
     if (!drag || e.pointerId !== drag.pointerId) return;
@@ -185,7 +185,7 @@ function wireContent(root, a, ctx) {
   });
   box.addEventListener('pointerup', (e) => {
     if (!drag || e.pointerId !== drag.pointerId) return;
-    try { box.releasePointerCapture(e.pointerId); } catch {}
+    soltarPuntero(box, e.pointerId);
     if (drag.moved) { ctx.onChange(a); box._suppressClick = true; setTimeout(() => { box._suppressClick = false; }, 0); }
     drag = null;
   });

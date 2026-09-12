@@ -129,8 +129,15 @@ export function mountBallSort(host, { board, mode = 'moves', onProgress, onSolve
     }
   }
 
+  // AVISAR DEL AVANCE es cosa del modo que monta el juego (el duelo mueve su
+  // cuerda con esto). Si ESE oyente revienta, el tablero no tiene por qué caerse
+  // con él —el alumno está a mitad de partida—, pero tampoco se traga el fallo
+  // en silencio (R6): se deja escrito en la consola con su origen.
   /** @param {boolean} [solved] */
-  function report(solved = false) { try { onProgress?.(snapshot(solved)); } catch {} }
+  function report(solved = false) {
+    try { onProgress?.(snapshot(solved)); }
+    catch (e) { console.error('[ballsort] onProgress falló', e); }
+  }
 
   /** @param {number} from @param {number} to @returns {boolean} */
   function tryMove(from, to) {
@@ -190,9 +197,11 @@ export function mountBallSort(host, { board, mode = 'moves', onProgress, onSolve
     if (winMsg) winMsg.classList.remove('bs-hidden');
     paint();
     report(true);
+    // Ídem que `report`: quien escucha el final (el duelo, la ronda) puede
+    // fallar, y el juego ya ha terminado bien — pero el fallo se DICE.
     try {
       onSolve?.({ finished: true, moveCount: state.moveCount, elapsedMs: state.timer.elapsedMs(), tubes: state.board.tubes });
-    } catch {}
+    } catch (e) { console.error('[ballsort] onSolve falló', e); }
   }
 
   paint();

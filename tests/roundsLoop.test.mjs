@@ -117,11 +117,14 @@ const read = (p) => readFileSync(new URL(p, new URL('..', import.meta.url)), 'ut
 // ── 3b. El adaptador de PocketBase lo mapea igual (mismo contrato) ─────────
 {
   // v1.51.627: el adaptador se partió POR COLECCIÓN — la cita apunta al fichero que recibió el código.
+  // v1.51.6xx (T5): el VOLCADO del parche es uno solo para los dos drivers
+  // (kernel/session/roomPatch.js) y la lectura fila→sala también (`salaDesde`).
+  assert.match(read('kernel/session/roomPatch.js'), /'answers_open_at' in patch/,
+    'el volcado del parche (el de los DOS drivers) acepta answers_open_at');
   const pb = read('adapters/pocketbase/realtimeRooms.js');
-  assert.match(pb, /'answers_open_at' in patch/, 'setSessionState de PB acepta answers_open_at');
   assert.match(pb, /answers_open_at: rec\.state\?\.answersOpenAt/, 'y lo devuelve al leer la sala');
-  assert.strictEqual((pb.match(/answers_open_at: rec\.state\?\.answersOpenAt/g) || []).length, 2,
-    'lo devuelven LAS DOS lecturas (findRoomByCode y fetchSession): si falta en una, el alumno que entra por PIN no ve la lectura');
+  assert.strictEqual((pb.match(/salaDesde\(/g) || []).length, 3,
+    'una sola traducción fila→sala, usada por LAS DOS lecturas (findRoomByCode y fetchSession): si una se la salta, el alumno que entra por PIN no ve la lectura');
   ok('el adaptador PocketBase mapea el instante igual que el local');
 }
 

@@ -6,6 +6,8 @@
 // Vive en core (barrido B3, 2026-09-02), junto a render.js/logic.js: pieza del
 // BUCLE «pedir la palabra» (`rules.selector`), compartida por Ruleta y Abre
 // Cajas — antes en `templates/wheel/`, importada por una vista (§0).
+import { pickIndex } from './logic.js';
+
 export const SPIN_TURNS = 5;              // vueltas completas antes de frenar
 const SPIN_EASE  = 'cubic-bezier(.17,.67,.21,.99)';
 export const SPIN_DUR_DEFAULT = 4000;     // configurable por la actividad (rules.spinDurationMs)
@@ -47,4 +49,31 @@ export function animateSpin(svg, rotation, durMs) {
   svg.style.transition = `transform ${durMs}ms ${SPIN_EASE}`;
   svg.getBoundingClientRect?.();   // reflow → la transición arranca
   svg.style.transform = `rotate(${rotation}deg)`;
+}
+
+/** EL GIRO ENTERO, una vez: elegir gajo → animar → esperar → avisar CON EL
+ *  GUARD DE VIDA puesto (§23).
+ *
+ *  Estaba tecleado dos veces (templates/wheel y templates/question-live) y la
+ *  segunda copia se dejó medio guard: preguntaba «¿existe la raíz?», y el
+ *  selector del escenario es GENÉRICO —existe también en la página del juego
+ *  siguiente—, así que una ruleta girando podía pintar su ganador encima de lo
+ *  que ya se había montado después. Aquí el guard es un PARÁMETRO (`vivo`) y no
+ *  se puede olvidar: quien llama declara qué significa «sigo en pantalla».
+ *
+ *  @param {{svg: SVGElement|HTMLElement|null|undefined, rotation: number,
+ *    count: number, dur: number, vivo: () => boolean,
+ *    alParar: (target: number, rotacionNormalizada: number) => void,
+ *    elegir?: (count: number) => number,
+ *    programar?: (cb: () => void, ms: number) => unknown}} o
+ *  @returns {number} la rotación (acumulada, sin normalizar) que queda pintada */
+export function girar({ svg, rotation, count, dur, vivo, alParar, elegir = pickIndex, programar = setTimeout }) {
+  const target = elegir(count);
+  const fin = spinTarget(rotation, count, target);
+  animateSpin(svg, fin, dur);
+  programar(() => {
+    if (!vivo()) return;   // la ruta/el modo cambiaron a mitad del giro (§23)
+    alParar(target, normalizeRotation(fin));
+  }, dur);
+  return fin;
 }

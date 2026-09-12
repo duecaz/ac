@@ -1,4 +1,4 @@
-import { html, escapeHtml, mount, $input } from '../core/html.js';
+import { html, escapeHtml, mount } from '../core/html.js';
 import { on } from '../core/events.js';
 import { list, remove, get, save } from '../core/storage.js';
 import { decidirVisibilidad } from '../core/activityCheck.js';
@@ -14,19 +14,21 @@ import { wireActivityCard } from './activityCardWire.js';
 import { mensajeDe } from '../core/frontera.js';
 /** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
 
-let _filter = { q: '', template: '' };
-
 /** @param {string} rootSel */
 export function renderHome(rootSel) {
-  const all = list();
+  // EL FILTRO ES DE ESTA PANTALLA, no del módulo: como variable de módulo
+  // sobrevivía a salir de la vista y volver, y el profe se encontraba su
+  // biblioteca recortada por una búsqueda que ya no veía escrita en ningún sitio.
+  const filtro = { q: '', template: '' };
+  let all = list();
   const templates = listTemplates();
 
-  function paint() {
-    // El filtro NO se escribe aquí: es el mismo buscador que la biblioteca
-    // (`core/search.js`), con sus reglas — sin tildes, por palabras y también
-    // dentro del contenido. Estaba copiado en las dos vistas.
-    const acts = searchActivities(all, _filter);
-
+  // EL MARCO SE MONTA UNA VEZ y luego solo se repinta la REJILLA, como hace la
+  // biblioteca (views/explore.js). Antes cada tecla re-montaba la vista entera:
+  // el <input> se reemplazaba a media escritura y había que devolverle el foco y
+  // recolocarle el cursor a mano (`setSelectionRange`) para que buscar «comas»
+  // no se quedara en «c».
+  function pintarMarco() {
     mount(rootSel, html`
       <div class="home-wrap">
         <div class="home-head">
@@ -42,44 +44,42 @@ export function renderHome(rootSel) {
           <div class="home-tools">
             <div class="home-search">
               <i class="bi bi-search"></i>
-              <input id="h-q" placeholder="Buscar por tema, título o tag…" value="${escapeHtml(_filter.q)}">
+              <input id="h-q" placeholder="Buscar por tema, título o tag…" value="${escapeHtml(filtro.q)}">
             </div>
-            <details class="home-filter${_filter.template ? ' is-set' : ''}">
+            <details class="home-filter${filtro.template ? ' is-set' : ''}">
               <summary class="home-config" title="Filtrar por plantilla" aria-label="Filtrar por plantilla"><i class="bi bi-sliders2"></i></summary>
               <div class="home-filter-pop">
                 <div class="home-filter-label">Filtrar por plantilla</div>
                 <select id="h-tpl">
                   <option value="">Todas las plantillas</option>
-                  ${templates.map(T => `<option value="${T.meta.name}" ${_filter.template===T.meta.name?'selected':''}>${escapeHtml(T.meta.label)}</option>`).join('')}
+                  ${templates.map(T => `<option value="${T.meta.name}" ${filtro.template===T.meta.name?'selected':''}>${escapeHtml(T.meta.label)}</option>`).join('')}
                 </select>
               </div>
             </details>
           </div>
         `}
-        ${acts.length === 0 ? (all.length === 0 ? `
-          <div class="home-empty">
-            <i class="bi bi-collection"></i>
-            <p>Aún no hay actividades. Crea la primera.</p>
-          </div>` : emptySearch()) : `
-          <div class="home-grid">
-            ${acts.map(card).join('')}
-          </div>`}
+        <div id="home-list"></div>
       </div>
     `);
+    pintarRejilla();
+  }
 
-    const qEl = $input('#h-q');
-    // paint() re-monta toda la vista → el <input> se reemplaza. Hay que re-enfocar
-    // el input NUEVO (no el viejo, ya desprendido) y restaurar el cursor, o el
-    // buscador pierde el foco a la primera tecla.
-    if (qEl) qEl.oninput = () => {
-      _filter.q = qEl.value;
-      const caret = qEl.selectionStart;
-      paint();
-      const q = $input('#h-q');
-      if (q) { q.focus(); if (caret != null) { try { q.setSelectionRange(caret, caret); } catch {} } }
-    };
-    const tEl = /** @type {HTMLSelectElement|null} */ (document.getElementById('h-tpl'));
-    if (tEl) tEl.onchange = () => { _filter.template = tEl.value; paint(); };
+  // Solo la REJILLA: lo que cambia al teclear o al filtrar.
+  function pintarRejilla() {
+    const caja = document.getElementById('home-list');
+    if (!caja) return;                       // la pantalla cambió bajo los pies
+    // El filtro NO se escribe aquí: es el mismo buscador que la biblioteca
+    // (`core/search.js`), con sus reglas — sin tildes, por palabras y también
+    // dentro del contenido. Estaba copiado en las dos vistas.
+    const acts = searchActivities(all, filtro);
+    caja.innerHTML = acts.length === 0 ? (all.length === 0 ? `
+      <div class="home-empty">
+        <i class="bi bi-collection"></i>
+        <p>Aún no hay actividades. Crea la primera.</p>
+      </div>` : emptySearch()) : `
+      <div class="home-grid">
+        ${acts.map(card).join('')}
+      </div>`;
   }
 
   // "No aparece" es un RESULTADO, no un callejón: buscar es binario (norte §2b)
@@ -87,7 +87,7 @@ export function renderHome(rootSel) {
   // salidas reales (crear · mirar en la biblioteca) en vez de dejarle mirando
   // "Sin resultados" con la clase esperando.
   function emptySearch() {
-    const q = _filter.q.trim();
+    const q = filtro.q.trim();
     return `<div class="home-empty">
       <i class="bi bi-search"></i>
       <p>${q ? `No tienes ninguna actividad sobre <b>${escapeHtml(q)}</b>.` : 'Ninguna actividad con ese filtro.'}</p>
@@ -161,6 +161,16 @@ export function renderHome(rootSel) {
   // escritos aquí y copiados en portada, biblioteca, juegos y perfil, y por eso
   // Live/Tarea no podían salir fuera de esta vista.
   wireActivityCard(rootSel);
+  // Buscador y filtro por DELEGACIÓN (core/events.js): viven en el marco, que ya
+  // no se re-monta, así que el campo conserva foco y cursor solo.
+  on(rootSel, 'input', '#h-q', (_, el) => {
+    filtro.q = /** @type {HTMLInputElement} */ (el).value;
+    pintarRejilla();
+  });
+  on(rootSel, 'change', '#h-tpl', (_, el) => {
+    filtro.template = /** @type {HTMLSelectElement} */ (el).value;
+    pintarRejilla();
+  });
   on(rootSel, 'click', '.act-edit-list', (_, b) => navigate(`#/edit-list/${b.dataset.id}`));
   on(rootSel, 'click', '.act-edit', (_, b) => navigate(`#/edit/${b.dataset.id}`));
   // Publicar / despublicar (S2): alterna visibility unlisted↔public. Publicar la
@@ -183,7 +193,10 @@ export function renderHome(rootSel) {
     const { remote } = save(a);
     remote.catch(() => {});
     toast(msg, 'success');
-    renderHome(rootSel);
+    // Repintar la REJILLA (no re-montar la vista): lo que el profe estaba
+    // buscando sigue escrito en la caja y el cursor donde estaba.
+    all = list();
+    pintarRejilla();
   };
   on(rootSel, 'click', '.act-publish', (_, b) => setVisibility(b.dataset.id, 'public', 'Publicada en la biblioteca.'));
   on(rootSel, 'click', '.act-unpublish', (_, b) => setVisibility(b.dataset.id, 'unlisted', 'Pasada a borrador (fuera de la biblioteca).'));
@@ -198,8 +211,11 @@ export function renderHome(rootSel) {
     } catch (e) {
       toast('Eliminada localmente; no se pudo borrar en el servidor: ' + (mensajeDe(e)), 'warning', TOAST_NORMAL);
     }
-    renderHome(rootSel);
+    // Borrar SÍ puede cambiar el marco (si era la última, desaparecen las
+    // herramientas de búsqueda), así que aquí se repinta entero.
+    all = list();
+    pintarMarco();
   });
 
-  paint();
+  pintarMarco();
 }

@@ -1,19 +1,21 @@
 // Word search player: solo + VS-round variant.
-import { html, escapeHtml, mount, raizDe } from '../../core/html.js';
-import { on } from '../../core/events.js';
+// EL TABLERO —rejilla, banco de palabras, arrastre, marcado y líneas— es UNO
+// solo (./board.js): aquí queda lo que de verdad cambia entre el modo Individual
+// (cabecera, puntos, reloj, fin de partida) y la ronda de VS/Equipos (color por
+// lado, palabras ya encontradas, aviso al motor).
+import { html, mount, raizDe, $ } from '../../core/html.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
-import { WRONG_FLASH_MS } from '../../core/timings.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import * as Streaks from '../../core/streaks.js';
-import { generateGrid, cellLine, SIZE_MAP } from './generator.js';
+import { generateGrid, SIZE_MAP } from './generator.js';
 import { scoreWordsearch } from './scorer.js';
 import { basePoints } from '../../core/scoring/index.js';
 import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
 import { wordsearchRules, wordsearchWords } from './template.js';
+import { crearTableroSopa } from './board.js';
 
 /**
  * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
- * @typedef {import('./generator.js').WsCell} WsCell
  * @typedef {import('./generator.js').WsPlaced} WsPlaced
  */
 
@@ -26,52 +28,6 @@ import { wordsearchRules, wordsearchWords } from './template.js';
  * @property {string[]} [found]
  * @property {string} [side]
  */
-
-// Per-player color palette (supports up to 6 players)
-const PLAYER_COLORS = [
-  { stroke: '#3b82f6', bg: 'rgba(59,130,246,.30)', label: 'Azul'    },
-  { stroke: '#ef4444', bg: 'rgba(239,68,68,.30)',   label: 'Rojo'    },
-  { stroke: '#10b981', bg: 'rgba(16,185,129,.30)',  label: 'Verde'   },
-  { stroke: '#f59e0b', bg: 'rgba(245,158,11,.30)',  label: 'Ámbar'   },
-  { stroke: '#a855f7', bg: 'rgba(168,85,247,.30)',  label: 'Morado'  },
-  { stroke: '#ec4899', bg: 'rgba(236,72,153,.30)',  label: 'Rosa'    },
-];
-
-/** @param {unknown} s */
-const wsNorm = (s) => String(s || '').toUpperCase().replace(/\s+/g, '');
-
-// Draw an SVG <line> between the CENTRES of cells a and b in REAL pixel coords.
-// The old approach used viewBox grid-units (x = c+0.5), but the grid has gaps +
-// a border and is centred inside a wider wrap, so the line drifted badly. Pixel
-// coords from getBoundingClientRect are robust to all of that. The SVG must have
-// NO viewBox (its user units are then CSS pixels).
-/**
- * @param {SVGElement|null} svg
- * @param {Element|null} gridEl
- * @param {WsCell} a
- * @param {WsCell} b
- * @param {{color?: string, opacity?: number, id?: string}} [o]
- */
-function wsDrawLine(svg, gridEl, a, b, { color = '#3b82f6', opacity = 0.7, id } = {}) {
-  if (!svg || !gridEl) return null;
-  const cA = gridEl.querySelector(`.ws-cell[data-r="${a.r}"][data-c="${a.c}"]`);
-  const cB = gridEl.querySelector(`.ws-cell[data-r="${b.r}"][data-c="${b.c}"]`);
-  if (!cA || !cB) return null;
-  const sr = svg.getBoundingClientRect();
-  const ra = cA.getBoundingClientRect(), rb = cB.getBoundingClientRect();
-  const ln = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-  if (id) ln.id = id;
-  ln.setAttribute('x1', String(ra.left + ra.width / 2 - sr.left));
-  ln.setAttribute('y1', String(ra.top  + ra.height / 2 - sr.top));
-  ln.setAttribute('x2', String(rb.left + rb.width / 2 - sr.left));
-  ln.setAttribute('y2', String(rb.top  + rb.height / 2 - sr.top));
-  ln.setAttribute('stroke', color);
-  ln.setAttribute('stroke-width', String(Math.max(5, ra.width * 0.7)));
-  ln.setAttribute('stroke-linecap', 'round');
-  ln.setAttribute('opacity', String(opacity));
-  svg.appendChild(ln);
-  return ln;
-}
 
 // ── Solo player ──────────────────────────────────────────────────────────────
 
@@ -91,202 +47,51 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
   const rules    = wordsearchRules(activity);
   const scoring  = activity.scoring || {};
   const gridN    = SIZE_MAP[rules.gridSize ?? ''] || 15;
-  const color    = PLAYER_COLORS[0];   // Individual: un solo jugador (el duelo pinta por lado, abajo)
 
-  const { grid, placed, rows, cols } = generateGrid(rawWords, {
+  const { grid, placed, cols } = generateGrid(rawWords, {
     rows: gridN, cols: gridN, dirs: rules.directions || 'medium',
   });
 
-  const total      = placed.length;
-  const timerSecs  = rules.timer || 0;
-
+  const total = placed.length;
   const ctx = runFreeformPlayer(rootSel, activity, opts);
-  const state = { score: 0, found: new Set() };
+  let score = 0;
+  /** @type {{encontradas: () => number, total: number}|null} */
+  let tablero = null;
 
   function rootEl() { return raizDe(rootSel); }
 
-  // ── Build the initial DOM (render once; then mutate for performance) ────────
-  function render() {
-    mount(rootSel, html`
-      <div class="ww-ws">
-        ${cabeceraHtml({
-          pagina: `0 / ${total}`,
-        })}
-        <div class="ww-ws-body">
-          <div class="edu-sec edu-sec--tablero ww-ws-grid-wrap">
-            <div class="ww-ws-grid" id="ws-grid" style="--ws-cols:${cols}">
-              ${grid.flatMap((row, r) => row.map((l, c) =>
-                `<span class="ws-cell" data-r="${r}" data-c="${c}">${l}</span>`
-              )).join('')}
-            </div>
-            <svg id="ws-svg" class="ww-ws-svg" aria-hidden="true"></svg>
-          </div>
-
-          <div class="edu-sec edu-sec--banco ww-ws-words">
-            <div class="ww-ws-words-title">Palabras</div>
-            ${placed.map(p => `
-              <div class="ws-word" data-word="${escapeHtml(p.word)}">
-                <span class="ws-word-dot">○</span>
-                <span class="ws-word-lbl">${escapeHtml(p.word)}</span>
-              </div>`).join('')}
-          </div>
-        </div>
-      </div>
-    `);
-
-    attachDrag();
-    ctx.alAgotarse(() => finish());
-  }
-
-  // ── Drag interaction ────────────────────────────────────────────────────────
-  let dragging = false, startR = 0, startC = 0;
-  /** @type {Set<string>} */
-  let selSet = new Set();
-  /** @type {Map<string, HTMLElement>} */
-  let cellMap = new Map();
-
-  function buildCellMap() {
-    const g = document.getElementById('ws-grid');
-    cellMap = new Map();
-    /** @type {NodeListOf<HTMLElement>|undefined} */
-    (g?.querySelectorAll('.ws-cell'))?.forEach(el => cellMap.set(`${el.dataset.r},${el.dataset.c}`, el));
-  }
-
-  /** @param {string|number} r @param {string|number} c */
-  function getCell(r, c) { return cellMap.get(`${r},${c}`) ?? null; }
-
-  /** @param {number} x @param {number} y @returns {WsCell|null} */
-  function cellFromPoint(x, y) {
-    const el = /** @type {HTMLElement|null} */ (document.elementFromPoint(x, y));
-    if (!el?.dataset?.r) return null;
-    return { r: +el.dataset.r, c: +(el.dataset.c ?? 0) };
-  }
-
-  /** @param {WsCell[]|null} line */
-  function setSel(line) {
-    // Clear previous
-    for (const k of selSet) {
-      const [r, c] = k.split(',');
-      getCell(r, c)?.classList.remove('ws-sel');
-    }
-    selSet.clear();
-    if (!line) return;
-    // Highlight the cells under the drag (NO line — the line is drawn only when a
-    // word is found correctly, so a wrong drag never leaves a misleading line).
-    for (const { r, c } of line) {
-      getCell(r, c)?.classList.add('ws-sel');
-      selSet.add(`${r},${c}`);
-    }
-  }
-
-  function clearSel() { setSel(null); }
-
-  function attachDrag() {
-    buildCellMap();
-    const gridEl = document.getElementById('ws-grid');
-    if (!gridEl) return;
-
-    gridEl.addEventListener('pointerdown', (e) => {
-      const cell = cellFromPoint(e.clientX, e.clientY);
-      if (!cell) return;
-      e.preventDefault();
-      dragging = true;
-      startR = cell.r; startC = cell.c;
-      setSel([cell]);
-      gridEl.setPointerCapture(e.pointerId);
-    }, { passive: false });
-
-    gridEl.addEventListener('pointermove', (e) => {
-      if (!dragging) return;
-      const cell = cellFromPoint(e.clientX, e.clientY);
-      if (!cell) return;
-      const line = cellLine(startR, startC, cell.r, cell.c);
-      setSel(line || [{ r: startR, c: startC }]);
-    }, { passive: false });
-
-    gridEl.addEventListener('pointerup', () => {
-      if (!dragging) return;
-      dragging = false;
-      checkSelection();
-      clearSel();
-    });
-
-    gridEl.addEventListener('pointercancel', () => { dragging = false; clearSel(); });
-  }
-
-  // ── Selection checking ──────────────────────────────────────────────────────
-  function checkSelection() {
-    if (!selSet.size) return;
-    const cells = [...selSet].map(k => k.split(',').map(Number)).map(([r, c]) => ({ r, c }));
-    const letters   = cells.map(({ r, c }) => grid[r]?.[c] || '').join('');
-    const reversed  = letters.split('').reverse().join('');
-
-    for (const p of placed) {
-      if (state.found.has(p.word)) continue;
-      if (letters === p.word || reversed === p.word) {
-        wordFound(p);
-        return;
-      }
-    }
-    // No match — flash cells red
-    for (const { r, c } of cells) {
-      const el = getCell(r, c);
-      if (!el) continue;
-      el.classList.add('ws-wrong');
-      setTimeout(() => el.classList.remove('ws-wrong'), WRONG_FLASH_MS);
-    }
-  }
-
-  // ── Word found ──────────────────────────────────────────────────────────────
-  /** @param {WsPlaced} p */
-  function wordFound(p) {
-    state.found.add(p.word);
-    // Un solo scorer por plantilla (ley en CLAUDE.md): el player NO reimplementa
-    // el conteo — mismo scoreWordsearch que VS/sesión.
-    const pts = scoreWordsearch({ value: p.word, activity, mode: 'solo' }).points;
-    state.score += pts;
-
-    const streak = Streaks.bump('solo', activity.id, true);
-    emitGame(GameEvents.ANSWER_CORRECT, { idx: state.found.size - 1, points: pts, streak });
-    if (streak >= 3) emitGame(GameEvents.STREAK, { count: streak });
-
-    for (const { r, c } of p.cells) getCell(r, c)?.classList.add('ws-found-0');
-
-    // Permanent SVG line — pixel-based so it lands exactly on the word.
-    const svg = /** @type {SVGElement|null} */ (document.getElementById('ws-svg'));
-    const gridEl = document.getElementById('ws-grid');
-    wsDrawLine(svg, gridEl, p.cells[0], p.cells[p.cells.length - 1], { color: color.stroke, opacity: 0.72 });
-
-    // Update word list
-    const wEl = rootEl()?.querySelector(`[data-word="${p.word}"]`);
-    if (wEl) {
-      wEl.classList.add('ws-word-found');
-      const dot = wEl.querySelector('.ws-word-dot');
-      if (dot) dot.textContent = '✓';
-    }
-
-    // Update counters
-    const found = state.found.size;
-    hudSet(rootEl(), 'pagina', `${found} / ${total}`);
-
-    if (found >= total) finish();
-  }
-
-  // El reloj lo monta y lo pinta el SHELL (core/reloj.js, uno para todas). Aquí
-  // solo se dice qué pasa al acabarse: la sopa se termina.
-
-  // ── Finish ───────────────────────────────────────────────────────────────────
   function finish() {
     const max = total * basePoints(null, scoring);   // misma convención que el scorer
     Streaks.reset('solo', activity.id);
     ctx.finish({
-      lead: `Palabras: <b>${state.found.size}/${total}</b> · Puntos: <b>${state.score}</b>`,
+      lead: `Palabras: <b>${tablero?.encontradas() ?? 0}/${total}</b> · Puntos: <b>${score}</b>`,
       stats: ({ timeUsed }) => `Tiempo: ${timeUsed}s`,
-      score: state.score, maxScore: max,
+      score, maxScore: max,
     });
   }
 
-  render();
+  mount(rootSel, html`<div class="ww-ws" data-ws="marco">${cabeceraHtml({ pagina: `0 / ${total}` })}</div>`);
+  const marco = $('[data-ws="marco"]', rootEl());
+  if (!marco) return;   // la ruta cambió mientras se montaba (§23)
+
+  tablero = crearTableroSopa(marco, {
+    grid, cols, placed, colorIdx: 0,   // Individual: un solo jugador (el duelo pinta por lado, abajo)
+    alEncontrar: (p, { encontradas }) => {
+      // Un solo scorer por plantilla (ley en CLAUDE.md): el player NO reimplementa
+      // el conteo — mismo scoreWordsearch que VS/sesión.
+      const pts = scoreWordsearch({ value: p.word, activity, mode: 'solo' }).points;
+      score += pts;
+      const streak = Streaks.bump('solo', activity.id, true);
+      emitGame(GameEvents.ANSWER_CORRECT, { idx: encontradas - 1, points: pts, streak });
+      if (streak >= 3) emitGame(GameEvents.STREAK, { count: streak });
+      hudSet(rootEl(), 'pagina', `${encontradas} / ${total}`);
+      if (encontradas >= total) finish();
+    },
+  });
+
+  // El reloj lo monta y lo pinta el SHELL (core/reloj.js, uno para todas). Aquí
+  // solo se dice qué pasa al acabarse: la sopa se termina.
+  ctx.alAgotarse(() => finish());
 }
 
 // ── VS / Equipos round renderer ──────────────────────────────────────────────
@@ -306,127 +111,16 @@ export function renderWordsearchRound(root, payload, { onSubmit } = {}) {
   // El payload lo arma `getRoundPayload` de esta plantilla: se lee con SU forma.
   const { grid, cols, placed = [], found = [], side = 'left' } = /** @type {WsRoundPayload} */ (payload);
   if (!Array.isArray(grid)) return;
-  const color = PLAYER_COLORS[side === 'right' ? 1 : 0];
-  const colorIdx = side === 'right' ? 1 : 0;
-  const foundSet = new Set(found.map(wsNorm));
-  const total = placed.length;
 
-  let dragging = false, startR = 0, startC = 0;
-  /** @type {Set<string>} */
-  const selSet = new Set();
-  /** @type {Map<string, HTMLElement>} */
-  const cellMap = new Map();
+  root.innerHTML = `<div class="ww-ws ww-ws-round" data-ws="marco"></div>`;
+  const marco = $('[data-ws="marco"]', root);
+  if (!marco) return;
 
-  root.innerHTML = `
-    <div class="ww-ws ww-ws-round">
-      <div class="ww-ws-body">
-        <div class="ww-ws-grid-wrap">
-          <div class="ww-ws-grid" id="ws-grid-r" style="--ws-cols:${cols}">
-            ${grid.flatMap((row, r) => row.map((l, c) =>
-              `<span class="ws-cell" data-r="${r}" data-c="${c}">${l}</span>`
-            )).join('')}
-          </div>
-          <svg class="ww-ws-svg" aria-hidden="true"></svg>
-        </div>
-        <div class="ww-ws-words">
-          <div class="ww-ws-words-title">Palabras <span class="ws-words-count">0/${total}</span></div>
-          ${placed.map(p => `
-            <div class="ws-word" data-word="${escapeHtml(wsNorm(p.word))}">
-              <span class="ws-word-dot">○</span>
-              <span class="ws-word-lbl">${escapeHtml(p.word)}</span>
-            </div>`).join('')}
-        </div>
-      </div>
-    </div>`;
-
-  /** @type {NodeListOf<HTMLElement>} */
-  (root.querySelectorAll('.ws-cell')).forEach(el => cellMap.set(`${el.dataset.r},${el.dataset.c}`, el));
-  /** @param {string|number} r @param {string|number} c */
-  const getCell = (r, c) => cellMap.get(`${r},${c}`) ?? null;
-  /** @param {number} x @param {number} y @returns {WsCell|null} */
-  const cellFromPoint = (x, y) => {
-    const el = /** @type {HTMLElement|null} */ (document.elementFromPoint(x, y));
-    return el?.dataset?.r ? { r: +el.dataset.r, c: +(el.dataset.c ?? 0) } : null;
-  };
-
-  const svg = /** @type {SVGElement|null} */ (root.querySelector('.ww-ws-svg'));
-  const gridEl = /** @type {HTMLElement|null} */ (root.querySelector('#ws-grid-r'));
-
-  /** @param {WsPlaced} p */
-  function markFound(p) {
-    const w = wsNorm(p.word);
-    foundSet.add(w);
-    for (const { r, c } of p.cells) getCell(r, c)?.classList.add(`ws-found-${colorIdx}`);
-    wsDrawLine(svg, gridEl, p.cells[0], p.cells[p.cells.length - 1], { color: color.stroke, opacity: 0.72 });
-    const wEl = root.querySelector(`.ws-word[data-word="${w}"]`);
-    if (wEl) { wEl.classList.add('ws-word-found'); const d = wEl.querySelector('.ws-word-dot'); if (d) d.textContent = '✓'; }
-    const cEl = root.querySelector('.ws-words-count');
-    if (cEl) cEl.textContent = `${foundSet.size}/${total}`;
-  }
-
-  // Pre-mark words already found (draw after layout so pixel coords are valid).
-  function paintFound() {
-    for (const p of placed) if (foundSet.has(wsNorm(p.word))) markFound(p);
-    const cEl = root.querySelector('.ws-words-count');
-    if (cEl) cEl.textContent = `${foundSet.size}/${total}`;
-  }
-  requestAnimationFrame(paintFound);
-
-  /** @param {WsCell[]|null} line */
-  function setSel(line) {
-    for (const k of selSet) { const [r, c] = k.split(','); getCell(r, c)?.classList.remove('ws-sel'); }
-    selSet.clear();
-    if (!line) return;
-    // Highlight cells only — NO preview line. The line is drawn solely when the
-    // word is correct, so a wrong drag never leaves a misleading line.
-    for (const { r, c } of line) { getCell(r, c)?.classList.add('ws-sel'); selSet.add(`${r},${c}`); }
-  }
-
-  function checkSel() {
-    if (!selSet.size) return;
-    const cells = [...selSet].map(k => k.split(',').map(Number)).map(([r, c]) => ({ r, c }));
-    const letters  = cells.map(({ r, c }) => grid[r]?.[c] || '').join('');
-    const reversed = letters.split('').reverse().join('');
-    for (const p of placed) {
-      const w = wsNorm(p.word);
-      if (foundSet.has(w)) continue;
-      if (letters === w || reversed === w) {
-        markFound(p);
-        onSubmit?.(p.word);
-        return;
-      }
-    }
-    for (const { r, c } of cells) {
-      const el = getCell(r, c);
-      if (!el) continue;
-      el.classList.add('ws-wrong');
-      setTimeout(() => el.classList.remove('ws-wrong'), WRONG_FLASH_MS);
-    }
-  }
-
-  if (gridEl) {
-    gridEl.addEventListener('pointerdown', (e) => {
-      const cell = cellFromPoint(e.clientX, e.clientY);
-      if (!cell) return;
-      e.preventDefault();
-      dragging = true;
-      startR = cell.r; startC = cell.c;
-      setSel([cell]);
-      gridEl.setPointerCapture(e.pointerId);
-    }, { passive: false });
-    gridEl.addEventListener('pointermove', (e) => {
-      if (!dragging) return;
-      const cell = cellFromPoint(e.clientX, e.clientY);
-      if (!cell) return;
-      const line = cellLine(startR, startC, cell.r, cell.c);
-      setSel(line || [{ r: startR, c: startC }]);
-    }, { passive: false });
-    gridEl.addEventListener('pointerup', () => {
-      if (!dragging) return;
-      dragging = false;
-      checkSel();
-      setSel(null);
-    });
-    gridEl.addEventListener('pointercancel', () => { dragging = false; setSel(null); });
-  }
+  crearTableroSopa(marco, {
+    grid, cols, placed,
+    colorIdx: side === 'right' ? 1 : 0,
+    yaEncontradas: found,
+    contador: true,
+    alEncontrar: (p) => onSubmit?.(p.word),
+  });
 }

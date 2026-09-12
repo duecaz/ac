@@ -12,6 +12,7 @@ import { getAuthUserId } from '../../core/auth.js';
 import { signedFetch, pbJson } from '../../core/pbHttp.js';
 import { pbEscape, pbFilterParam } from '../../core/pbFilter.js';
 import { esFila, fila, filas, estadoPb, texto } from '../frontera.js';
+import { pbListar } from './listar.js';
 
 /**
  * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
@@ -101,35 +102,34 @@ export function createPocketbaseRemoteStore() {
       const owner = getAuthUserId();
       if (owner) payload.owner = owner;
 
+      // PATCH → 404 → POST, en UNA función: los dos caminos (fila conocida y
+      // fila desconocida) escribían el mismo baile con su propio try/catch, y
+      // solo se diferencian en que el conocido tiene que OLVIDAR la marca si la
+      // fila resultó borrada del servidor.
+      /** @param {() => void} [alCrear] */
+      async function upsert(alCrear) {
+        try {
+          await pbFetch(`/api/collections/activities/records/${pbId}`, {
+            method: 'PATCH', body: JSON.stringify(payload),
+          });
+        } catch (e) {
+          if (estadoPb(e) !== 404) throw e;
+          alCrear?.();
+          await pbFetch('/api/collections/activities/records', {
+            method: 'POST', body: JSON.stringify(payload),
+          });
+        }
+      }
+
       if (getSynced().has(pbId)) {
         // Record is known to exist in PB → PATCH directly, no 404 in console.
-        try {
-          await pbFetch(`/api/collections/activities/records/${pbId}`, {
-            method: 'PATCH', body: JSON.stringify(payload),
-          });
-        } catch (e) {
-          if (estadoPb(e) !== 404) throw e;
-          // Was deleted from PB externally — recreate.
-          unmarkSynced(pbId);
-          await pbFetch('/api/collections/activities/records', {
-            method: 'POST', body: JSON.stringify(payload),
-          });
-          markSynced(pbId);
-        }
+        // Si aun así da 404, fue BORRADA fuera: se olvida la marca y se recrea.
+        await upsert(() => unmarkSynced(pbId));
       } else {
         // Unknown state: try PATCH first; 404 means it doesn't exist yet → POST.
-        try {
-          await pbFetch(`/api/collections/activities/records/${pbId}`, {
-            method: 'PATCH', body: JSON.stringify(payload),
-          });
-        } catch (e) {
-          if (estadoPb(e) !== 404) throw e;
-          await pbFetch('/api/collections/activities/records', {
-            method: 'POST', body: JSON.stringify(payload),
-          });
-        }
-        markSynced(pbId);
+        await upsert();
       }
+      markSynced(pbId);
     },
 
     async deleteActivity(id) {
@@ -267,15 +267,10 @@ export function createPocketbaseRemoteStore() {
     async listResults(activityId) {
       const where = activityId ? `filter=${pbFilterParam(`activity_id='${pbEscape(toId(activityId))}'`)}&` : '';
       // Orden por `created` (autodate de PocketBase). Si la colección se creó por
-      // API en PB ≥0.23 puede no tener ese campo → el sort da error; en ese caso
-      // reintentamos sin orden para no romper la lectura.
-      try {
-        const rec = await pbFetch(`/api/collections/results/records?${where}sort=-created&perPage=200`);
-        return filas(rec).map(comoResultado);
-      } catch {
-        const rec = await pbFetch(`/api/collections/results/records?${where}perPage=200`);
-        return filas(rec).map(comoResultado);
-      }
+      // API en PB ≥0.23 puede no tener ese campo → el sort da error; entonces se
+      // lee sin orden para no romper la lectura (`pbListar`, compartido con las salas).
+      const rows = await pbListar(pbFetch, `/api/collections/results/records?${where}perPage=200`, { sort: '-created' });
+      return rows.map(comoResultado);
     },
   };
 }

@@ -39,6 +39,7 @@ import { createClaimsSection } from './realtimeClaims.js';
 import { createAnswersSection } from './realtimeAnswers.js';
 import { createRoomsSection } from './realtimeRooms.js';
 import { createMantenimientoSection } from './realtimeMantenimiento.js';
+import { sondaDeColeccion } from './colecciones.js';
 import { fila, numeroOnulo, texto } from '../frontera.js';
 
 /**
@@ -95,34 +96,16 @@ async function pbFetch(path, opts = {}) {
   }
 }
 
-// "¿Existe esta colección?" — probe cacheado por adaptador. Si falta, las rutas
-// que la usan caen al blob heredado (cero cambio pre-migración). Una sola
-// implementación para live_answers (lost-update de respuestas) y live_players
-// (deuda A, lost-update del join).
-/** @param {string} coll @returns {() => Promise<boolean>} */
-function collectionProbe(coll) {
-  /** @type {boolean|undefined} */
-  let cached;   // undefined = desconocido, luego true/false
-  return async () => {
-    if (cached !== undefined) return cached;
-    try {
-      const r = await fetch(`${PB_URL}/api/collections/${coll}/records?perPage=1`);
-      if (r.status === 200) return (cached = true);
-      const body = await r.json().catch(() => ({}));
-      if (texto(fila(body).message).includes('Missing collection')) return (cached = false);
-      cached = r.ok;
-    } catch { cached = false; }
-    return cached;
-  };
-}
-
 /**
  * @param {{userId?: string}} [opts]
  * @returns {RealtimePort}
  */
 export function createPocketbaseRealtime({ userId = genUserId() } = {}) {
-  const answersReady = collectionProbe(ANS);
-  const playersReady = collectionProbe(PLR);
+  // "¿Existe esta colección?" — la sonda memoizada vive en ./colecciones.js (la
+  // misma que decide si las tareas van a PocketBase). Si falta, las rutas que la
+  // usan caen al blob heredado (cero cambio pre-migración).
+  const answersReady = sondaDeColeccion(ANS);
+  const playersReady = sondaDeColeccion(PLR);
 
   const claims = createClaimsSection({ pbFetch, CLM });
 

@@ -17,7 +17,7 @@ import { DEFAULT_POLICY, DEFAULT_FIRST_N, DEFAULT_MINUTES } from '../../core/liv
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 
 /**
- * @typedef {import('../hostLive.js').HostRt} HostRt
+ * @typedef {import('../../kernel/contracts/liveRt.js').HostRt} HostRt
  * @typedef {import('../../kernel/contracts/session.js').LiveLoop} LiveLoop
  */
 

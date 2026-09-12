@@ -285,7 +285,7 @@ cambia tokens, la actividad los consume). Este es el contrato completo.
 
 | Token | Lo DECLARA | Lo CONSUME |
 |---|---|---|
-| `--ws-cols` | templates/wordsearch/editor.js · templates/wordsearch/player.js | styles/wordsearch.css |
+| `--ws-cols` | templates/wordsearch/board.js · templates/wordsearch/editor.js | styles/wordsearch.css |
 | `--ws-lado` | styles/wordsearch.css | styles/wordsearch.css |
 
 ## `--ww-*` (33)

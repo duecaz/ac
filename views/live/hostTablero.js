@@ -13,9 +13,10 @@ import { confirmModal } from '../../core/toast.js';
 import { roundPayloadOf } from '../../kernel/session/engine.js';
 import { BOARD_POLL_MS } from '../../core/timings.js';
 import { supportsLoop } from '../../core/liveLoops.js';
+import { exigeMetodos } from '../../core/templateCapability.js';
 
 /**
- * @typedef {import('../hostLive.js').HostRt} HostRt
+ * @typedef {import('../../kernel/contracts/liveRt.js').HostRt} HostRt
  * @typedef {import('../../kernel/contracts/session.js').RoundPayload} RoundPayload
  */
 
@@ -101,8 +102,8 @@ export function createHostTablero(rt) {
         // Aísla el fallo de UNA celda para no romper la rejilla, pero lo registra
         // (un bug de renderRaceCell de la plantilla era invisible; antes: catch {}).
         try {
-          if (typeof rt.tpl?.renderRaceCell !== 'function') throw new Error('no implementa renderRaceCell');
-          rt.tpl.renderRaceCell(cellEl, { value: c.value, name: c.name, mode });
+          exigeMetodos(rt.tpl, ['renderRaceCell'], 'hostTablero')
+            .renderRaceCell(cellEl, { value: c.value, name: c.name, mode });
         }
         catch (e) { console.warn('[hostLive] renderRaceCell falló:', e); }
       }

@@ -20,8 +20,7 @@ import { GameEvents, emitGame } from '../core/gameEvents.js';
 import { applyMarks } from '../core/textMarks.js';
 import { renderAntesala } from './antesala.js';
 import { applyPlayOptions } from '../core/playOptions.js';
-import { teamColor, teamNameInputsHtml, teamsScoreboardHtml } from '../core/teams.js';
-import { cierreHtml } from '../core/podium.js';
+import { teamColor, teamsScoreboardHtml, teamsSetupBody, wireTeamsSetup, readTeamNames, teamsPodiumHtml } from '../core/teams.js';
 import { canAutoScoreRound } from '../core/templateCapability.js';
 
 
@@ -96,14 +95,10 @@ export function mountTeams(host, a, ctx, opts = {}) {
   renderSetup();
 
   function renderSetup() {
-    const body = `
-      <div class="my-3">
-        <label class="form-label small text-muted d-block">¿Cuántos equipos?</label>
-        <div class="btn-group" role="group" id="teams-count">
-          ${[2, 3, 4].map(n => `<button class="btn btn-outline-success ${n === teamCount ? 'active' : ''}" data-n="${n}">${n}</button>`).join('')}
-        </div>
-      </div>
-      <div id="teams-names" class="row justify-content-center g-2 my-3" style="max-width:560px;margin:auto"></div>
+    // El cuerpo común (cuántos equipos + nombres) es del dueño del modo
+    // (core/teams.js); aquí solo lo PROPIO de Equipos por turnos: la
+    // puntuación y el aviso de cuántas preguntas tocan a cada uno.
+    const body = teamsSetupBody({ count: teamCount, color: 'success', extra: `
       <div class="my-3">
         <label class="form-label small text-muted d-block">Puntuación</label>
         <div class="btn-group" role="group" id="teams-scoring">
@@ -118,7 +113,7 @@ export function mountTeams(host, a, ctx, opts = {}) {
           ? 'Automática: el equipo toca la opción. Juez: tú marcas ✓/✗.'
           : 'Esta plantilla no se autocorrige: el docente marca ✓/✗.'}</div>
       </div>
-      <div id="teams-hint" class="mt-2"></div>`;
+      <div id="teams-hint" class="mt-2"></div>` });
 
     renderAntesala(host, {
       activity: a,
@@ -127,22 +122,15 @@ export function mountTeams(host, a, ctx, opts = {}) {
       bodyHtml: body, backHref,
       playOpts: { T, activity: a, choices: playChoices, onChange: (id, v) => { if (id) playChoices = { ...playChoices, [id]: v }; } },
       onMount: () => {
-        renderNameInputs();
+        wireTeamsSetup(host, teamCount, (n) => { teamCount = n; updateTeamsHint(); });
         updateTeamsHint();
-        on(host, 'click', '#teams-count button', (_, b) => {
-          teamCount = Number(b.dataset.n);
-          $$('#teams-count button').forEach(x => x.classList.toggle('active', x === b));
-          renderNameInputs();
-          updateTeamsHint();
-        });
         on(host, 'click', '#teams-scoring button', (_, el) => {
           if (/** @type {HTMLButtonElement} */ (el).disabled) return;
           $$('#teams-scoring button').forEach(x => x.classList.toggle('active', x === el));
         });
       },
       onStart: () => {
-        const entradas = /** @type {HTMLInputElement[]} */ ($$('#teams-names input'));
-        const names = entradas.map((el, i) => (el.value || '').trim() || `Equipo ${i + 1}`);
+        const names = readTeamNames();
         const elegido = $('#teams-scoring .active')?.dataset.mode;
         const scoring = elegido === 'auto' || elegido === 'judge' ? elegido : (canAuto ? 'auto' : 'judge');
         startGame(names, scoring);
@@ -167,12 +155,6 @@ export function mountTeams(host, a, ctx, opts = {}) {
         Con ${total} preguntas y ${teamCount} equipos, cada equipo responde ~${turns} vez${turns !== 1 ? 'es' : ''}.
       </div>`;
     }
-  }
-
-  function renderNameInputs() {
-    const box = $('#teams-names');
-    if (!box) return;
-    box.innerHTML = teamNameInputsHtml(teamCount);
   }
 
   /**
@@ -205,9 +187,9 @@ export function mountTeams(host, a, ctx, opts = {}) {
           ${scoreboard(teams, active, phase)}
           <div class="teams-stage">
             <div class="teams-turn">
-              <span class="badge text-bg-${colorOf(active)} fs-6">
+              ${active ? `<span class="badge text-bg-${colorOf(active)} fs-6">
                 <i class="bi bi-arrow-right-circle"></i> Turno: ${escapeHtml(active.name)}
-              </span>
+              </span>` : ''}
               <span class="text-muted ms-2">Pregunta ${idx + 1} / ${roundsTotal}</span>
             </div>
             <div class="teams-card">
@@ -222,13 +204,14 @@ export function mountTeams(host, a, ctx, opts = {}) {
       wire(item, payload, phase);
     }
 
-    /**
+    /** `active` puede ser nulo (roster vacío): el marcador se pinta igual, solo
+     *  que sin resaltar turno.
      * @param {RosterTeam[]} teams
-     * @param {RosterTeam} active
+     * @param {RosterTeam|null} active
      * @param {LivePhase} phase
      */
     function scoreboard(teams, active, phase) {
-      return teamsScoreboardHtml(teams, active.id, phase === 'ended');
+      return teamsScoreboardHtml(teams, active?.id ?? null, phase === 'ended');
     }
 
     // Question body. In AUTO mode the template paints the interactive round
@@ -312,15 +295,10 @@ export function mountTeams(host, a, ctx, opts = {}) {
     }
 
     function podium() {
-      // Cierre COMPARTIDO (`cierreHtml`, core/podium.js): mismo podio de barras
-      // que En vivo / VS, aquí solo aportamos el ranking y los botones propios.
+      // Cierre COMPARTIDO del modo (core/teams.js → core/podium.js): mismo podio
+      // de barras que En vivo / VS y los mismos dos botones que Memoria.
       const ranked = session.leaderboard().map(t => ({ name: t.name, score: t.score }));
-      return cierreHtml({
-        ranked, clase: 'teams-podium text-center',
-        acciones: `
-          ${backHref ? `<a href="${backHref}" class="btn btn-outline-secondary">Salir</a>` : ''}
-          <button class="btn btn-success" id="teams-restart"><i class="bi bi-arrow-repeat"></i> Otra vez</button>`
-      });
+      return teamsPodiumHtml({ ranked, backHref, color: 'success' });
     }
 
     /**
@@ -338,7 +316,7 @@ export function mountTeams(host, a, ctx, opts = {}) {
         // trae `getRoundPayload` por contrato: aquí el payload es el suyo.
         T.renderRound(roundEl, /** @type {RoundPayload} */ (payload), { onSubmit: (value) => {
           selected = value;
-          session.submit(session.activeTeam().id, session.currentItem, value);
+          session.submit(session.activeTeam()?.id ?? '', session.currentItem, value);
           const rev = /** @type {HTMLButtonElement|null} */ ($('#teams-reveal'));
           if (rev) rev.disabled = false;
         } });
@@ -346,7 +324,7 @@ export function mountTeams(host, a, ctx, opts = {}) {
 
       on(host, 'click', '#teams-reveal', () => {
         session.dispatch('reveal'); // auto → settle scores
-        const ans = session.state.answers[`${session.currentItem}:${session.activeTeam().id}`];
+        const ans = session.state.answers[`${session.currentItem}:${session.activeTeam()?.id ?? ''}`];
         emitGame(ans?.correct ? GameEvents.ANSWER_CORRECT : GameEvents.ANSWER_WRONG, {});
         selected = null;
         paint();
@@ -369,7 +347,7 @@ export function mountTeams(host, a, ctx, opts = {}) {
         paint();
       });
 
-      on(host, 'click', '#teams-restart', () => renderSetup());
+      on(host, 'click', '#teams-again', () => renderSetup());
     }
 
     /** @param {RosterTeam} team */

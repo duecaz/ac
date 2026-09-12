@@ -1,5 +1,6 @@
 // Pointer drag + tap interaction for the tubes. No deps.
 import { ballStyle } from './tubes.js';
+import { capturarPuntero } from '../../../core/events.js';
 
 const TAP_THRESHOLD = 10;
 
@@ -103,7 +104,7 @@ export function attachDrag(container, { getBoard, isInteractive, onMove, onTap }
     state.startX = e.clientX;
     state.startY = e.clientY;
     state.moved = false;
-    try { container.setPointerCapture?.(e.pointerId); } catch {}
+    capturarPuntero(container, e.pointerId);
   }
 
   /** @param {PointerEvent} e */

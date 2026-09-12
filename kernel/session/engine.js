@@ -28,10 +28,12 @@ import { getTemplate } from '../../core/registry.js';
 import { FORMATS } from './formats.js';
 import { createLiveSession } from './liveMachine.js';
 import { createTeamsSession } from './teamsMachine.js';
-import { createVsSession, isVsCompatible } from './vsMachine.js';
+import { createVsSession, isVsCompatible, ganador } from './vsMachine.js';
 
 export { FORMATS };
-export { isVsCompatible };
+// `ganador`: quién gana un duelo, la regla en un solo sitio (§21b) — la usan el
+// podio del duelo (views/vsView.js) y el orquestador de listas (views/listView.js).
+export { isVsCompatible, ganador };
 // `roundPayloadOf`: las vistas de live (rondas, tablero, carrera) y
 // core/liveSnapshot.js lo importaban de aquí; sigue siendo LA misma función,
 // solo que implementada en score.js junto a autoScore (su gemela de puntuación).

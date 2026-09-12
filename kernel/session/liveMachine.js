@@ -9,11 +9,12 @@
 // la Edge Function (retirada) sigan funcionando sin cambios; createLiveRoom
 // delega aquí vía kernel/live/engine.js → kernel/session/engine.js (fachada).
 import { planTransition, PHASES, FASE_NO_ACEPTA_RESPUESTAS } from '../../core/livePhases.js';
-import { isAcceptableNickname } from '../../core/nicknameFilter.js';
+import { apodoLimpio } from '../../core/nicknameFilter.js';
 import { rankPlayers } from '../../core/liveRank.js';
 import { pointsModeFor } from '../../core/liveLoops.js';
 import { sessionItems } from '../content/sessionItems.js';
 import { autoScore, roundPayloadOf } from './score.js';
+import { aplicarPlan } from './plan.js';
 import { FORMATS } from './formats.js';
 
 /**
@@ -22,7 +23,6 @@ import { FORMATS } from './formats.js';
  * @typedef {import('../contracts/session.js').HostAction} HostAction
  * @typedef {import('../contracts/session.js').LiveLoop} LiveLoop
  * @typedef {import('../contracts/session.js').LivePhase} LivePhase
- * @typedef {import('../contracts/session.js').RoomPatch} RoomPatch
  * @typedef {import('../contracts/session.js').RoomStatus} RoomStatus
  * @typedef {import('../contracts/session.js').SessionFormat} SessionFormat
  * @typedef {import('./score.js').ScoringTemplate} ScoringTemplate
@@ -96,24 +96,17 @@ function createLiveSession(activity, T, opts) {
   function join(userId, nickname) {
     const existing = state.players.find(p => p.userId === userId);
     if (existing) return existing; // reconnect — name unchanged
-    // El interruptor del panel MANDA. Estaba escrito por el editor («Filtro de
-    // apodos») y no lo leía nadie: se rechazaba siempre, así que apagarlo no
-    // hacía nada. Ojo: lo que el interruptor decide es si se RECHAZA, no si se
-    // normaliza — `f.value` (el apodo limpio, recortado) se sigue usando abajo,
-    // y saltárselo dejaba entrar nombres sin normalizar.
-    const f = isAcceptableNickname(nickname);
-    if (!f.ok && activity?.live?.nicknameFilter !== false) throw new Error('Apodo: ' + f.reason);
+    // Filtro de apodos: la política (rechazar o no, según el interruptor del
+    // panel) y la normalización viven en su dueño, `core/nicknameFilter.js`.
+    // Se pregunta ANTES que el aforo y la fase, como siempre: el orden de los
+    // mensajes de error es lo que ve el alumno.
+    const limpio = apodoLimpio(activity, nickname);
     if (state.status === 'ended') throw new Error('La sala ha terminado');
     if (state.status !== 'lobby' && !allowLateJoin) throw new Error('La partida ya empezó');
     if (state.players.length >= maxPlayers) throw new Error('La sala está llena');
     // Apodos únicos (P2-4): dos móviles distintos con "Juan" antes creaban dos
     // jugadores indistinguibles (al expulsar, en la clasificación y en el mapa
     // nombre→respuesta del reveal). Se auto-sufija ("Juan 2") en vez de rechazar.
-    // Con el filtro APAGADO se sigue entrando con un apodo que el filtro
-    // rechaza, y entonces no hay `f.value` (el filtro solo lo devuelve cuando
-    // acepta): se normaliza aquí igual —recortado— en vez de pasar `undefined`
-    // al de-duplicador, que reventaba al llamar a `.toLowerCase()`.
-    const limpio = f.ok ? f.value : String(nickname ?? '').trim();
     const p = { id: 'p' + (++state._seq), userId, name: uniqueNickname(limpio), score: 0 };
     state.players.push(p);
     return p;
@@ -132,13 +125,10 @@ function createLiveSession(activity, T, opts) {
   /** @param {HostAction} action */
   function dispatch(action) {
     const plan = planTransition(session(), action, total);
-    if (plan.type === 'invalid') throw new Error(plan.reason);
-    if (plan.type === 'end') { state.status = 'ended'; state.phase = PHASES.ENDED; return plan; }
+    // LA RAMA PROPIA de esta máquina: liquidar el ítem (puntúa y revela). Lo
+    // común (invalid · end · patch) lo aplica `aplicarPlan`.
     if (plan.type === 'settle') { settle(plan.itemIndex); return plan; }
-    const pa = /** @type {RoomPatch} */ (plan.patch);
-    if (pa.status) state.status = pa.status;
-    if (pa.phase) state.phase = pa.phase;
-    if (pa.current_item !== undefined) state.currentItem = pa.current_item;
+    aplicarPlan(state, plan);
     return plan;
   }
 

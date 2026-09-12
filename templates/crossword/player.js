@@ -74,7 +74,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
       if (cell.blocked) return `<div class="cw-cell cw-blocked"></div>`;
       const numHtml = cell.number != null ? `<span class="cw-num">${cell.number}</span>` : '';
       return `<div class="cw-cell cw-white" data-r="${cell.r}" data-c="${cell.c}" tabindex="0">
-        ${numHtml}<span class="cw-letter" id="cwl-${cell.r}-${cell.c}"></span>
+        ${numHtml}<span class="cw-letter" data-cwl="${cell.r}-${cell.c}"></span>
       </div>`;
     })).join('');
 
@@ -82,7 +82,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     const clueList = (list, label) => `
       <div class="cw-clue-section">
         <div class="cw-clue-heading">${label}</div>
-        ${list.map(w => `<div class="cw-clue" data-wid="${w.id}" id="cwc-${w.id}">
+        ${list.map(w => `<div class="cw-clue" data-wid="${w.id}">
           <b>${wordNums[w.id]}.</b> ${escapeHtml(w.clue)}
         </div>`).join('')}
       </div>`;
@@ -105,7 +105,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
             ${clueList(vWords, 'Verticales ↓')}
           </div>
           <div class="edu-sec edu-sec--tablero cw-grid-wrap">
-            <div class="cw-grid" id="cw-grid" style="--cw-cols:${cols};--cw-rows:${rows}">
+            <div class="cw-grid" style="--cw-cols:${cols};--cw-rows:${rows}">
               ${gridCells}
             </div>
           </div>
@@ -117,7 +117,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
         </div>
 
         <!-- Hidden input for mobile keyboard -->
-        <input id="cw-ki" type="text" inputmode="text" autocomplete="off" autocorrect="off"
+        <input data-cw="ki" type="text" inputmode="text" autocomplete="off" autocorrect="off"
                autocapitalize="characters" spellcheck="false"
                style="position:fixed;opacity:0;pointer-events:none;left:0;top:0;width:1px;height:1px">
       </div>`;
@@ -131,7 +131,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
 
   function fitGrid() {
     const wrap = dentro('.cw-grid-wrap');
-    const grid = dentro('#cw-grid');
+    const grid = dentro('.cw-grid');
     if (!wrap || !grid) return;
     const availW = wrap.clientWidth  - 4;  // 4px = border*2
     const availH = wrap.clientHeight - 4;
@@ -152,7 +152,9 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
   // ── Interaction ──────────────────────────────────────────────────────────
 
   function attachInteraction() {
-    const ki = /** @type {HTMLInputElement|null} */ (document.getElementById('cw-ki')); // keyboard input (mobile)
+    // Teclado invisible del móvil. Acotado a la raíz de ESTE crucigrama: un id
+    // global lo comparten todas las copias montadas en la página.
+    const ki = /** @type {HTMLInputElement|null} */ (dentro('[data-cw="ki"]'));
 
     // Click on a cell
     on(rootSel, 'pointerdown', '.cw-white', (e, el) => {
@@ -212,10 +214,10 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
 
   /** @param {number} r @param {number} c @returns {HTMLElement|null} */
   function cellEl(r, c) {
-    return /** @type {HTMLElement|null} */ (document.querySelector(`#cw-grid [data-r="${r}"][data-c="${c}"]`));
+    return dentro(`.cw-grid [data-r="${r}"][data-c="${c}"]`);
   }
   /** @param {number} r @param {number} c @returns {HTMLElement|null} */
-  function letterEl(r, c) { return document.getElementById(`cwl-${r}-${c}`); }
+  function letterEl(r, c) { return dentro(`[data-cwl="${r}-${c}"]`); }
 
   /** Regala la PRIMERA letra de cada palabra (modo «first»). Se pinta como una
    *  pista porque lo es, y se hace tras montar la rejilla. */
@@ -230,7 +232,7 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     updateProgress();
   }
   /** @param {string} wid @returns {HTMLElement|null} */
-  function clueEl(wid)    { return document.getElementById(`cwc-${wid}`); }
+  function clueEl(wid)    { return dentro(`.cw-clue[data-wid="${wid}"]`); }
 
   /** @param {number} r @param {number} c @returns {boolean} */
   function isWhite(r, c) {

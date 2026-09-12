@@ -414,6 +414,24 @@ const quizActivity = {
   assert.strictEqual(st2.finishedBy, 'left', 'finishedBy = quien terminó primero → desempata');
   ok('vs (puntos): empate a puntos lo gana quien terminó primero');
 
+  // QUIÉN GANA UN DUELO, en un solo sitio (`ganador`, kernel/session/vsMachine.js).
+  // La regla estaba tecleada en tres vistas y `views/listView.js` la tenía MAL:
+  // coronaba al primero en terminar también en los duelos de PUNTOS, así que la
+  // ronda de una lista anunciaba a uno y el podio acumulado al otro.
+  {
+    const { ganador } = await import('../kernel/session/vsMachine.js');
+    assert.strictEqual(ganador(st2), 'left', 'puntos: empate a puntos → desempata quien acabó antes');
+    assert.strictEqual(ganador({ leader: 'right', finishedBy: 'left', race: false }), 'right',
+      'puntos: gana quien MÁS SUMÓ, aunque el otro terminara antes (el fallo de listView)');
+    assert.strictEqual(ganador({ leader: 'right', finishedBy: 'left', race: true }), 'left',
+      'carrera: gana quien terminó primero, aunque el otro sume más');
+    assert.strictEqual(ganador({ leader: 'tie', finishedBy: null, race: true }), null,
+      'nadie terminó y nadie va delante → empate de verdad');
+    assert.strictEqual(ganador({ leader: 'tie', finishedBy: 'right', race: false }), 'right',
+      'contra-prueba: el camino legítimo (desempate por meta) sigue dando ganador');
+    ok('vs: `ganador(st)` es la única regla de quién gana (carrera vs puntos)');
+  }
+
   // LIVE answers-collection settle (lost-update fix): mirror the adapter's
   // hydrate→settle→re-settle so a second settle of the same item does NOT
   // double-count points already added to players[].

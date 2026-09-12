@@ -17,6 +17,7 @@
 // FRONTERA (JSON del almacén): lo que sale de `JSON.parse` es `unknown` y se
 // estrecha con los estrechadores de `adapters/frontera.js`, no a ojo.
 import { esFila } from '../frontera.js';
+import { crearKV } from './kv.js';
 
 const KEY = 'ww.remote.activities';
 const KEY_RESULTS = 'ww.remote.results';
@@ -28,12 +29,8 @@ const KEY_RESULTS = 'ww.remote.results';
  * @typedef {import('../../kernel/contracts/session.js').ResultRecord} ResultRecord
  */
 
-/** El almacén inyectable: lo mínimo de `Storage` que este driver usa. */
-/** @typedef {{ getItem: (k: string) => string|null, setItem: (k: string, v: string) => void }} KV */
-
-function defaultKV() {
-  try { return globalThis.localStorage || null; } catch { return null; }
-}
+/** El almacén inyectable: lo mínimo de `Storage` que este driver usa.
+ *  @typedef {import('./kv.js').KV} KV */
 
 // La actividad de un resultado del log. El respaldo `activity_id` es para las
 // filas legadas que se guardaron con la clave en snake_case.
@@ -45,23 +42,14 @@ function actividadDe(r) {
 }
 
 /**
- * @param {KV|null} [kv] Injectable key-value store.
+ * @param {KV|null} [kv] Injectable key-value store (`undefined` = localStorage, `null` = memoria).
  * @returns {RemoteStore}
  */
-export function createLocalRemoteStore(kv = defaultKV()) {
-  /** @type {Map<string, unknown>} */
-  const mem = new Map(); // fallback when no KV (e.g. Node without a shim)
+export function createLocalRemoteStore(kv) {
+  // Almacén compartido con los otros dos drivers locales (`adapters/local/kv.js`):
+  // localStorage si lo hay, un Map si no (Node sin shim).
+  const { read, write } = crearKV('', kv);
 
-  /** @param {string} key @returns {unknown} */
-  const read = (key) => {
-    if (kv) { try { return JSON.parse(kv.getItem(key) || 'null'); } catch { return null; } }
-    return mem.has(key) ? mem.get(key) : null;
-  };
-  /** @param {string} key @param {unknown} val */
-  const write = (key, val) => {
-    if (kv) kv.setItem(key, JSON.stringify(val));
-    else mem.set(key, val);
-  };
   /** @returns {Record<string, Activity>} */
   const readMap = () => {
     const m = read(KEY);

@@ -7,7 +7,7 @@ import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { GRADE_HOLD_MS } from '../../core/timings.js';
 import { shuffle } from '../../core/azar.js';
 import { scoreMatchSubmission } from './scorer.js';
-import { ROPES, OK_COL, NO_COL, mountRopeLayer, ropeHtml, ghostHtml, dotPos, svgPt, puntuarEnlaces } from '../../core/connectRope.js';
+import { ROPES, OK_COL, NO_COL, mountRopeLayer, ropeHtml, ghostHtml, dotPos, puntuarEnlaces, crearArrastreDeCuerdas } from '../../core/connectRope.js';
 import { observeResize } from '../../core/observeResize.js';
 import { pairComplete } from '../../core/contentModels/pairs.js';
 import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
@@ -25,15 +25,11 @@ import { setExclusiveLink } from '../../core/linkState.js';
  * @property {string|null} image
  */
 
-/** EL ARRASTRE en curso (una cuerda a medio tender).
+/** LA FICHA del arrastre en curso: de qué tarjeta salió la cuerda. Las
+ *  coordenadas las lleva la máquina compartida (core/connectRope.js).
  * @typedef {Object} MatchDrag
- * @property {number} pointerId
  * @property {string} fromSide
  * @property {string} fromId
- * @property {number} x1
- * @property {number} y1
- * @property {number} cx
- * @property {number} cy
  */
 
 /** La tarjeta que hay bajo el dedo, estrechada por FORMA (`closest`): bajo Node
@@ -74,11 +70,12 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
 
   /** @type {(() => void)|null} */
   let stopRo = null;   // disposer del observeResize del field (se suelta al terminar)
+  /** La cuerda a medio tender la lleva la máquina compartida (se crea abajo).
+   * @type {{actual: () => import('../../core/connectRope.js').Arrastre<MatchDrag>|null}|null} */
+  let arrastre = null;
   const state = {
     /** @type {Map<string, string>} */
     links:    new Map(),  // leftId → rightId (emparejados por el alumno; cambiables)
-    /** @type {MatchDrag|null} */
-    dragging: null,       // { fromSide, fromId, x1, y1, cx, cy }
     graded:   false,      // true tras pulsar Enviar
   };
 
@@ -122,8 +119,9 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
       d += ropeHtml(p1, p2, col);
       i++;
     }
-    if (state.dragging) {
-      const { x1, y1, cx, cy } = state.dragging;
+    const tendiendo = arrastre?.actual();
+    if (tendiendo) {
+      const { x1, y1, cx, cy } = tendiendo;
       d += ghostHtml(x1, y1, cx, cy);
     }
     layer.innerHTML = d;
@@ -194,51 +192,36 @@ export async function renderMatchPlayer(rootSel, activity, opts = {}) {
   }
 
   // ── Arrastre desde TODA la tarjeta (cualquier lado → el opuesto) ────────────
-  // Con setPointerCapture: todos los pointermove/up van a la arena aunque el dedo
-  // cruce el corredor o salga de la tarjeta, y el navegador NO roba el gesto como
-  // scroll (clave en tablets/pizarra). touch-action:none lo refuerza desde CSS.
-  arena.addEventListener('pointerdown', e => {
-    if (state.graded || state.dragging) return;
-    if (bajoElDedo(e, '.ww-match-submit')) return;
-    const card = bajoElDedo(e, '.ww-card');
-    if (!card) return;
-    e.preventDefault();
-    const dot = card.querySelector('.ww-dot');
-    const fromSide = card.dataset.side, fromId = card.dataset.id;
-    if (!dot || !fromSide || !fromId) return;
-    const pos = dotPos(dot, svg);
-    state.dragging = { pointerId: e.pointerId, fromSide, fromId,
-                       x1: pos.x, y1: pos.y, cx: pos.x, cy: pos.y };
-    try { arena.setPointerCapture(e.pointerId); } catch {}
-    updateSvg();
+  // La máquina del gesto es la compartida (core/connectRope.js, la misma que el
+  // Diagrama): captura del puntero incluida, así que todos los pointermove/up van
+  // a la arena aunque el dedo cruce el corredor o salga de la tarjeta y el
+  // navegador NO roba el gesto como scroll (clave en tablets/pizarra);
+  // touch-action:none lo refuerza desde CSS. Aquí solo queda lo de Emparejar:
+  // se agarra una TARJETA y se suelta sobre la tarjeta del lado opuesto.
+  arrastre = crearArrastreDeCuerdas({
+    arena, svg,
+    activo: () => !state.graded,
+    origen: (e) => {
+      if (bajoElDedo(e, '.ww-match-submit')) return null;
+      const card = bajoElDedo(e, '.ww-card');
+      const dot = card?.querySelector('.ww-dot');
+      const fromSide = card?.dataset.side, fromId = card?.dataset.id;
+      if (!dot || !fromSide || !fromId) return null;
+      return { ancla: dot, datos: { fromSide, fromId } };
+    },
+    elegirDestino: (x, y, d) => targetCard(x, y, d.fromSide, d.fromId),
+    alSoltar: (hit, d) => {
+      const hitId = /** @type {HTMLElement|null} */ (hit)?.dataset.id;
+      if (hitId) {
+        const leftId  = d.fromSide === 'L' ? d.fromId : hitId;
+        const rightId = d.fromSide === 'L' ? hitId : d.fromId;
+        setLink(leftId, rightId);
+      } else {
+        removeByCard(d.fromSide, d.fromId);   // soltar en su propia tarjeta: desconectar
+      }
+    },
+    alPintar: updateSvg,
   });
-
-  arena.addEventListener('pointermove', e => {
-    const drag = state.dragging;
-    if (!drag || e.pointerId !== drag.pointerId) return;
-    const p = svgPt(svg, e.clientX, e.clientY);
-    drag.cx = p.x; drag.cy = p.y;
-    updateSvg();
-  });
-
-  /** @param {PointerEvent} e @param {boolean} connect */
-  function endDrag(e, connect) {
-    const drag = state.dragging;
-    if (!drag || e.pointerId !== drag.pointerId) return;
-    state.dragging = null;
-    try { arena.releasePointerCapture(e.pointerId); } catch {}
-    if (!connect) { updateSvg(); return; }
-    const hit = targetCard(e.clientX, e.clientY, drag.fromSide, drag.fromId);
-    if (hit?.dataset.id) {
-      const leftId  = drag.fromSide === 'L' ? drag.fromId : hit.dataset.id;
-      const rightId = drag.fromSide === 'L' ? hit.dataset.id : drag.fromId;
-      setLink(leftId, rightId);
-    } else {
-      removeByCard(drag.fromSide, drag.fromId);   // soltar en su propia tarjeta: desconectar
-    }
-  }
-  arena.addEventListener('pointerup', e => endDrag(e, true));
-  arena.addEventListener('pointercancel', e => endDrag(e, false));
 
   // ── Enviar → corregir y puntuar ─────────────────────────────────────────────
   // CALIFICAR con lo que haya: el botón exige tenerlo todo, pero el reloj no

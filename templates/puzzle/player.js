@@ -4,6 +4,7 @@
 // URL (game/imagen.js) y cada pieza es un `<div>` con `background-image` de
 // esa misma URL — solo cambian `background-position`/`background-size`.
 import { html, mount, escapeHtml, raizDe } from '../../core/html.js';
+import { capturarPuntero } from '../../core/events.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
@@ -149,7 +150,7 @@ export async function renderPuzzlePlayer(rootSel, activity, opts = {}) {
     drag.id = e.pointerId; drag.el = pieza;
     drag.startX = e.clientX; drag.startY = e.clientY;
     pieza.classList.add('pu-piece--arrastrando');
-    try { pieza.setPointerCapture?.(e.pointerId); } catch {}
+    capturarPuntero(pieza, e.pointerId);
   }
 
   /** @param {PointerEvent} e @returns {void} */

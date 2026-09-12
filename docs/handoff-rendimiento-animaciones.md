@@ -64,14 +64,14 @@ peor pantalla (DPR 3) y lo que no lo cumple no entra.
 
 ## Las fases
 
-**Fase 0 · medir en el aparato real, antes de tocar.** Un medidor de fluidez
+**Fase 0 · medir en el aparato real, antes de tocar.** ✅ HECHA (v1.51.684). Un medidor de fluidez
 en `#/admin` (y por `?perf=1` en cualquier ruta): p50/p95 del tiempo entre
 cuadros durante 5 s y cuadros >50 ms, por escena: VS en reposo con cuerda ·
 VS respondiendo · podio con confeti · Quiz · Colorear. Playwright no tiene ni
 la GPU ni el DPR de la pizarra; los números de verdad salen de ahí.
 Entregable: la tabla «antes».
 
-**Fase 1 · la soga, una sola y barata.** Tres caminos, en orden de
+**Fase 1 · la soga, una sola y barata.** ✅ HECHA (v1.51.684-685): camino 1 (lienzo con tope) y el reposo QUIETO. Tres caminos, en orden de
 preferencia, y se elige con los números de la Fase 0 delante:
 1. **`lottie-web` con renderer `canvas`** sobre un lienzo con tope de 1280
    (el mismo truco del confeti). Se conserva la animación tal cual (misma
@@ -87,7 +87,7 @@ preferencia, y se elige con los números de la Fase 0 delante:
 3. **`svg-tug`** (ya en el repo): personajes por `transform` CSS, coste cero.
    Cambia el aspecto; es decisión del dueño verlo en la pizarra.
 
-**Fase 2 · el podio.** Un solo lienzo de confeti reutilizado (hoy uno por
+**Fase 2 · el podio.** ✅ HECHA (v1.51.684). Un solo lienzo de confeti reutilizado (hoy uno por
 ráfaga, tres en el cierre), `setTransform` en vez de `save/translate/rotate/
 restore` por papelito, alfa solo en los últimos 30 ticks. El foco giratorio
 del cierre (`vs.css` `.vs-celebration::before`, un gradiente cónico rotando
@@ -95,7 +95,7 @@ del cierre (`vs.css` `.vs-celebration::before`, un gradiente cónico rotando
 imagen que gira; el `blur(3px)` girando del tema TV se rehace sin `filter`
 (el desenfoque se pinta UNA vez en el SVG, no por cuadro).
 
-**Fase 3 · la regla, como test.** Una suite nueva en `tests/` (verificada en
+**Fase 3 · la regla, como test.** ✅ HECHA (v1.51.684). Una suite nueva en `tests/` (verificada en
 rojo con una animación plantada): dentro del marco de juego solo se animan
 `transform` y `opacity`; nada de `filter`/`box-shadow`/`text-shadow` animados;
 ningún `@keyframes` que toque `width`, `height`, `top`, `left`, `text-indent`
@@ -116,7 +116,7 @@ que hoy dependen de ella (globos, reposo de la cuerda, arcade) se BORRAN: una
 sola animación por sitio, la misma en todas las pantallas. Si algún día hace
 falta una salida de emergencia, será un mando del profe, no una detección.
 
-**Fase 6 · la sonda es la puerta.** `tools/perf-sonda.mjs` gana la escena
+**Fase 6 · la sonda es la puerta.** ✅ HECHA (v1.51.684). `tools/perf-sonda.mjs` gana la escena
 «pizarra»: viewport 1280×720 con `deviceScaleFactor: 3` (el aparato del aula
 tal cual), y las escenas «VS en reposo con cuerda» y «podio del duelo». Con
 la CPU frenada 12×. Una animación nueva que no pase ahí no entra en `main`.

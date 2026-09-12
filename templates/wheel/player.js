@@ -1,10 +1,9 @@
 // SVG-based spinning wheel for solo/practice mode. No scoring; just lands on a random entry.
 import { html, escapeHtml, mount, raizDe } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { pickIndex } from '../../core/ruleta/logic.js';
 import { wheelSvg } from '../../core/ruleta/render.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
-import { spinTarget, normalizeRotation, animateSpin, clampSpinDur } from '../../core/ruleta/spin.js';
+import { girar, clampSpinDur } from '../../core/ruleta/spin.js';
 import { cabeceraHtml } from '../../core/playerHud.js';
 import { wheelRules } from './template.js';
 
@@ -89,27 +88,29 @@ export async function renderWheelPlayer(rootSel, activity, opts = {}) {
   function spin() {
     if (spinning || entries.length === 0) return;
     spinning = true;
-    const count = entries.length;
-    const target = pickIndex(count);
-    const winner = entries[target];
-    rotation = spinTarget(rotation, count, target);
 
     const btnSpin = /** @type {HTMLButtonElement|null|undefined} */ (rootEl()?.querySelector('#btn-spin'));
     const btnEnd = /** @type {HTMLButtonElement|null|undefined} */ (rootEl()?.querySelector('#btn-end'));
     if (btnSpin) btnSpin.disabled = true;
     if (btnEnd) btnEnd.disabled = true;
-    animateSpin(rootEl()?.querySelector('svg'), rotation, dur);
 
-    setTimeout(() => {
-      spinning = false;
-      if (!ctx.alive() || !rootEl()) return;
-      history.push(winner);
-      if (remove) {
-        entries = entries.filter((_, i) => i !== target);
-        rotation = normalizeRotation(rotation);
-      }
-      paint(winner);
-    }, dur);
+    // El giro entero (elegir · animar · esperar · guard de vida) es de
+    // core/ruleta/spin.js: aquí solo lo que es de ESTA ruleta (historial y
+    // «se retira al salir»).
+    rotation = girar({
+      svg: rootEl()?.querySelector('svg'), rotation, count: entries.length, dur,
+      vivo: () => ctx.alive() && !!rootEl(),
+      alParar: (target, normalizada) => {
+        spinning = false;
+        const winner = entries[target];
+        history.push(winner);
+        if (remove) {
+          entries = entries.filter((_, i) => i !== target);
+          rotation = normalizada;
+        }
+        paint(winner);
+      },
+    });
   }
 
   paint();

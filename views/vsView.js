@@ -19,7 +19,7 @@ import { lsGet, lsSet } from '../core/ls.js';
 import { getTemplate } from '../core/registry.js';
 import { vsFeedback, setVsFeedback, vsAnimacionOn, setVsAnimacion } from '../core/presentation.js';
 import { esHojaDeTexto } from '../core/contentModels/textCorrection.js';
-import { createSession, isVsCompatible, FORMATS } from '../kernel/session/engine.js';
+import { createSession, isVsCompatible, FORMATS, ganador } from '../kernel/session/engine.js';
 import { sessionItems } from '../kernel/content/sessionItems.js';
 import { supportsLoop } from '../core/liveLoops.js';
 import { GameEvents, emitGame } from '../core/gameEvents.js';
@@ -83,11 +83,6 @@ function avatarKey(actId, side) { return `ww.vsavatar.${actId}.${side}`; }
 function loadAvatar(actId, side) { return lsGet(avatarKey(actId, side), '') || ''; }
 /** @param {string} actId @param {Lado} side @param {string} dataUrl */
 function saveAvatar(actId, side, dataUrl) { lsSet(avatarKey(actId, side), dataUrl); }
-
-/** UN LADO, o NINGUNO: el motor entrega `leader`/`finishedBy` como texto
- *  ('left' · 'right' · 'tie' · null) y el duelo lo lee como el lado que es.
- * @param {string|null|undefined} v @returns {Lado|null} */
-const ladoDe = (v) => (v === 'left' || v === 'right' ? v : null);
 
 /** @param {string} dataUrl @param {Lado} side */
 function avatarPreviewHtml(dataUrl, side) {
@@ -488,9 +483,9 @@ export function mountVs(host, a, ctx, opts = {}) {
           // que el resto de la vista (getElementById/querySelector).
           const arena = document.querySelector('.vs-arena');
           if (arena) arena.classList.add('vs-race-finished');
-          // Carrera: gana quien terminó primero (finishedBy). Solo si no hubiera
-          // finisher (estado heredado) cae al criterio de puntos.
-          const ws = ladoDe(st.finishedBy) || ladoDe(st.leader);
+          // Misma regla que el podio (`ganador`): la animación central no puede
+          // celebrar a uno y el cierre coronar al otro.
+          const ws = ganador(st);
           if (ws && currentAnim) currentAnim.setProgress(ws === 'left' ? 1 : -1);
           life.setTimeout(() => finish(st), WIN_HOLD_MS);
         } else {
@@ -520,13 +515,10 @@ export function mountVs(host, a, ctx, opts = {}) {
       if (currentAnim) { currentAnim.destroy(); currentAnim = null; }
       // List-orchestrator mode: delegate result handling to the caller.
       if (opts.onFinish) { opts.onFinish(st); return; }
-      // Quién gana, según la política declarada por la plantilla:
-      //   carrera → quien terminó primero (con los puntos como respaldo).
-      //   puntos  → quien más sumó; si empatan, desempata quien acabó antes
-      //             (Operaciones: ambos al 100% no debe leerse "empate").
-      const byPoints = ladoDe(st.leader);
-      const primero = ladoDe(st.finishedBy);
-      const winnerSide = st.race ? (primero || byPoints) : (byPoints || primero);
+      // Quién gana lo decide la MÁQUINA (`ganador`, kernel/session/vsMachine.js),
+      // que conoce la política declarada por la plantilla (carrera vs puntos).
+      // La regla estaba tecleada aquí, en listView y en el remate de la carrera.
+      const winnerSide = ganador(st);
       const tie = !winnerSide;
       const winner = winnerSide ? st[winnerSide] : null;
       // El ganador (quien terminó primero) encabeza el podio; el otro lado después.

@@ -13,6 +13,7 @@
  * `typeof` antes de llamarlo. Es lo que reciben las tres máquinas.
  * @typedef {import('../../core/registry.js').PlantillaRegistrada} PlantillaRegistrada
  * @typedef {import('../contracts/session.js').ScoreInput} ScoreInput
+ * @typedef {import('../contracts/session.js').ScoreResult} ScoreResult
  * @typedef {import('../contracts/session.js').RoundContext} RoundContext
  * @typedef {import('../contracts/session.js').RoundPayload} RoundPayload
  * @typedef {import('../contracts/session.js').SnapshotActivity} SnapshotActivity
@@ -28,11 +29,11 @@
  */
 
 /**
- * El DETALLE por marcas que conserva `autoScore` cuando el scorer lo declara.
- * @typedef {Object} ScoreDetail
- * @property {number} hits
- * @property {number} total
- * @property {number} [over]   Marcas de MÁS (solo los scorers por marca).
+ * El DETALLE por marcas que conserva `autoScore` cuando el scorer lo declara:
+ * los tres campos del RESULTADO del scorer que explican el puntaje (aciertos ·
+ * total · marcas de MÁS). Se DERIVA de `ScoreResult` en vez de re-escribirlo —
+ * si mañana `over` deja de ser opcional, este detalle se entera.
+ * @typedef {Pick<ScoreResult, 'hits'|'total'|'over'>} ScoreDetail
  */
 
 /**

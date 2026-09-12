@@ -31,6 +31,38 @@ export function canAutoScoreRound(T) {
   return typeof T?.scoreSubmission === 'function' && typeof T?.renderRound === 'function';
 }
 
+/** LO QUE ESTA PANTALLA NECESITA DE LA PLANTILLA, exigido en un solo sitio.
+ *
+ *  Casi todo el contrato es OPCIONAL (`renderRound`, `renderRoundHost`,
+ *  `scoreSubmission`, `renderRaceCell`), así que cada vista de En vivo se
+ *  escribió su propio `if (typeof tpl?.X !== 'function') throw` —cinco copias,
+ *  y el aviso tenía que repetir a mano el nombre de la plantilla para no ser
+ *  mudo (R6)—. Aquí se pide UNA vez y, de paso, el tipo vuelve con esos métodos
+ *  ya no opcionales, así que quien llama no necesita re-comprobarlos.
+ *
+ *  @template {object} T
+ *  @template {keyof T & string} K
+ *  @param {T|null|undefined} tpl
+ *  @param {K[]} metodos  Lo que esta pantalla va a llamar.
+ *  @param {string} quien  Quién lo exige (sale en el aviso).
+ *  @returns {T & Required<Pick<T, K>>} */
+export function exigeMetodos(tpl, metodos, quien) {
+  // UNA PLANTILLA ES UNA CLASE, y una clase es `typeof 'function'`, no
+  // 'object': sus métodos del contrato son ESTÁTICOS (`static renderRound`).
+  // Con la comprobación mirando solo a 'object', toda plantilla real caía al
+  // saco vacío y el alumno se quedaba en «(sin plantilla): no implementa
+  // renderRound» en la primera ronda en vivo (lo cazó `live-smoke`).
+  const obj = /** @type {Record<string, unknown>} */ (
+    /** @type {unknown} */ (tpl && (typeof tpl === 'object' || typeof tpl === 'function') ? tpl : {}));
+  const faltan = metodos.filter(m => typeof obj[m] !== 'function');
+  if (faltan.length) {
+    const meta = /** @type {{id?: string, name?: string}|undefined} */ (
+      /** @type {unknown} */ (obj.meta));
+    throw new Error(`[${quien}] ${meta?.name ?? meta?.id ?? '(sin plantilla)'}: no implementa ${faltan.join(' + ')}`);
+  }
+  return /** @type {T & Required<Pick<T, K>>} */ (/** @type {unknown} */ (tpl));
+}
+
 /** ¿La plantilla PROYECTA su propia pantalla de host en vivo?
  *
  *  No se pregunta con `typeof`: la clase base trae una `renderRoundHost` por

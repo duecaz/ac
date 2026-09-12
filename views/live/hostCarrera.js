@@ -12,7 +12,7 @@ import { confirmModal } from '../../core/toast.js';
 import { racePassedRow } from '../../core/liveLoops.js';
 import { RACE_POLL_MS } from '../../core/timings.js';
 
-/** @typedef {import('../hostLive.js').HostRt} HostRt */
+/** @typedef {import('../../kernel/contracts/liveRt.js').HostRt} HostRt */
 
 /** El avance de UN jugador en la carrera: su nombre y los ítems ya superados
  *  (con la vara COMPLETA de §26). @typedef {{name: string, items: Set<number>}} Avance */

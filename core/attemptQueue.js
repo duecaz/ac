@@ -15,11 +15,9 @@
 // 403 = veredicto del servidor (tope agotado / tarea cerrada, §22-3): NO se
 // encola — reintentar no lo arregla y "se enviará al reconectar" sería mentira.
 import { recordAttempt as transportRecord } from './assignmentsTransport.js';
-import { createOfflineQueue } from './offlineQueue.js';
-import { lsSet, lsGetJsonArray } from './ls.js';
+import { colaDeEntrega } from './offlineQueue.js';
 import { clock } from './clock.js';
 import { rid } from './ids.js';
-import { mensajeDe, estadoDe } from './frontera.js';
 const KEY = 'ww.attemptQueue';
 
 /**
@@ -41,39 +39,31 @@ const KEY = 'ww.attemptQueue';
 /** @param {unknown} x @returns {x is IntentoPendiente} */
 const esIntento = (x) => !!x && typeof x === 'object' && 'qid' in x && 'assignmentId' in x;
 
-/** @param {IntentoPendiente} it */
-const send = (it) => transportRecord(
-  it.assignmentId, it.activityId, it.playerName,
-  it.score, it.maxScore, it.timeUsed, it.answers, it.qid
-);
-
-const queue = createOfflineQueue({
-  load: () => lsGetJsonArray(KEY).filter(esIntento),
-  save: (q) => lsSet(KEY, JSON.stringify(q)),
-  send,
+const queue = colaDeEntrega({
+  clave: KEY,
+  send: (/** @type {IntentoPendiente} */ it) => transportRecord(
+    it.assignmentId, it.activityId, it.playerName,
+    it.score, it.maxScore, it.timeUsed, it.answers, it.qid
+  ),
   idOf: (it) => it.qid,
+  esItem: esIntento,
 });
 
 /**
  * Entrega un intento de tarea, con cola offline y reintento idempotente.
  * @param {{assignmentId: string, activityId: string, playerName: string, score: number,
  *   maxScore: number, timeUsed: number, answers?: unknown[]}} intento
- * @returns {Promise<{queued:boolean, rejected?:boolean, error?:string}>}
+ * @returns {Promise<import('./offlineQueue.js').Entrega>}
  *   queued=false → entregado · queued=true → guardado sin red, se reenviará ·
  *   rejected=true → el SERVIDOR lo rechazó (tope/cerrada): no se reintenta.
  */
-export async function submitAttempt({ assignmentId, activityId, playerName, score, maxScore, timeUsed, answers = [] }) {
+export function submitAttempt({ assignmentId, activityId, playerName, score, maxScore, timeUsed, answers = [] }) {
   queue.flush().catch(() => {});   // piggyback: si hay pendientes y ya hay red, van ahora
-  const item = { assignmentId, activityId, playerName, score, maxScore, timeUsed, answers,
-    qid: rid('at_'), ts: clock.now() };
-  try {
-    await send(item);
-    return { queued: false };
-  } catch (e) {
-    if (estadoDe(e) === 403) return { queued: false, rejected: true, error: mensajeDe(e) };
-    queue.enqueue(item);
-    return { queued: true, error: mensajeDe(e) };
-  }
+  // El intento directo, la cola sin red y el 403 que NO se reintenta los pone
+  // `colaDeEntrega` (core/offlineQueue.js): la misma cola que las respuestas en
+  // vivo, con la regla del 403 escrita una sola vez.
+  return queue.entregar({ assignmentId, activityId, playerName, score, maxScore, timeUsed, answers,
+    qid: rid('at_'), ts: clock.now() });
 }
 
 

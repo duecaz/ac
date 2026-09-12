@@ -2,6 +2,36 @@
 // views/studentTask.js so the gating (closed / past-due / attempts) is testable
 // and identical across drivers.
 import { clock } from './clock.js';
+import { LETTERS, PIN_LENGTH } from './constants.js';
+
+/** La identidad de quien crea tareas: un VALOR (los tests) o una FUNCIÓN (la app).
+ *  @typedef {string|(() => string|null)} Identidad */
+
+/** EL PIN PÚBLICO de una tarea. Estaba tecleado igual en los dos drivers.
+ *  `Math.random` a propósito y declarado en ALLOW (§23 azar-primitivo): un PIN
+ *  tiene que ser IMPREDECIBLE — reproducirlo sería el fallo, así que no sale del
+ *  primitivo sembrable.
+ *  @returns {string} */
+export function genCode() {
+  let s = '';
+  for (let i = 0; i < PIN_LENGTH; i++) s += LETTERS[Math.floor(Math.random() * LETTERS.length)];
+  return s;
+}
+
+/**
+ * QUIÉN SELLA Y QUIÉN FILTRA — las dos identidades de un driver de tareas,
+ * resueltas EN CADA LLAMADA y no al construirlo: el driver se memoiza por carga
+ * de página y el profe suele entrar DESPUÉS, así que con la identidad congelada
+ * sus tareas se sellarían como anónimas toda la sesión (y él perdería de vista
+ * sus PIN). Los dos adaptadores tenían estas dos líneas copiadas.
+ * @param {{userId?: Identidad, identities?: string[]|(() => string[])}} deps
+ * @returns {{uid: () => string, mios: () => (string|null|undefined)[]}}
+ */
+export function identidadDeTareas({ userId, identities }) {
+  const uid = () => (typeof userId === 'function' ? userId() : userId) || 'local-anon';
+  const mios = () => (typeof identities === 'function' ? identities() : identities) || [uid()];
+  return { uid, mios };
+}
 
 /** Public codes are matched upper-cased and trimmed.
  *  @param {unknown} code @returns {string} */
