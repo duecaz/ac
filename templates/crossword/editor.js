@@ -1,7 +1,8 @@
 import { escapeHtml, valorDe } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { renderEditorShell } from '../../core/editorShell.js';
-import { palabraJugable } from '../../core/contentModels/words.js';
+import { wireCampoTexto } from '../../core/editorPrimitives.js';
+import { palabraJugable, palabrasDe } from '../../core/contentModels/words.js';
 import { autoLayout, buildGrid } from './generator.js';
 import { rid } from '../../core/ids.js';
 
@@ -13,9 +14,11 @@ const uid = () => rid('cw_');
  * @typedef {import('../../core/editorShell.js').EditorCtx} EditorCtx
  */
 
-/** Las fichas de ESTA actividad: el modelo es `words` y el editor lo sabe.
+/** Las fichas de ESTA actividad. La LISTA la da el modelo (`palabrasDe`); lo
+ *  único que pone aquí el Crucigrama es de qué forma son SUS elementos —fichas
+ *  con pista, no cadenas sueltas como en la Sopa—.
  *  @param {Activity} a @returns {CrosswordWord[]} */
-const palabras = (a) => /** @type {{words?: CrosswordWord[]}} */ (a.content ?? {}).words ?? [];
+const palabras = (a) => /** @type {CrosswordWord[]} */ (palabrasDe(a));
 
 /**
  * @param {Element} root
@@ -164,6 +167,7 @@ function wireContent(root, a, ctx) {
     }, 500);
   };
 
+  wireCampoTexto(root, a, ctx, { selector: '.cw-clue', lista: words, campo: 'clue' });
   on(root, 'input', '.cw-word', (e, el) => {
     const campo = /** @type {HTMLInputElement|null} */ (e.target);
     const w = words()[+(el.dataset.i ?? 0)];
@@ -171,7 +175,6 @@ function wireContent(root, a, ctx) {
     if (campo) campo.value = w.word;
     ctx.onChange(a); refreshPreview();
   });
-  on(root, 'input', '.cw-clue',  (e, el) => { words()[+(el.dataset.i ?? 0)].clue = valorDe(e); ctx.onChange(a); });
   on(root, 'input', '.cw-row',   (e, el) => { words()[+(el.dataset.i ?? 0)].row  = Math.max(0, +valorDe(e) || 0); ctx.onChange(a); refreshPreview(); });
   on(root, 'input', '.cw-col',   (e, el) => { words()[+(el.dataset.i ?? 0)].col  = Math.max(0, +valorDe(e) || 0); ctx.onChange(a); refreshPreview(); });
   // El desplegable solo ofrece H y V: se lee como lo que es, no como texto libre.

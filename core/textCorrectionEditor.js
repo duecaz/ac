@@ -9,9 +9,9 @@
 import { escapeHtml, valorDe, marcado } from './html.js';
 import { toast, TOAST_NORMAL } from './toast.js';
 import { on } from './events.js';
-import { newPassage, partirEnParrafos } from './contentModels/textCorrection.js';
+import { newPassage, partirEnParrafos, frasesDe, ponerFrases } from './contentModels/textCorrection.js';
 import { applyMarks } from './textMarks.js';
-import { itemControlsHtml, reorderArray, ruleScopeNote, itemSecondsFieldHtml, wireItemSeconds, pegarTextoHtml, wirePegarTexto, corregirAlFinalHtml, wireCorregirAlFinal } from './editorPrimitives.js';
+import { itemControlsHtml, wireItemList, ruleScopeNote, itemSecondsFieldHtml, wireItemSeconds, pegarTextoHtml, wirePegarTexto, corregirAlFinalHtml, wireCorregirAlFinal } from './editorPrimitives.js';
 import { renderEditorShell } from './editorShell.js';
 
 /** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
@@ -26,12 +26,6 @@ import { renderEditorShell } from './editorShell.js';
  *  @property {string} [labelTextarea]   encima de cada textarea (comas no lo usa)
  *  @property {string} placeholder       placeholder de cada textarea */
 
-/** El contenido de una hoja de texto. La plantilla es la que sabe qué forma
- *  tiene el suyo (§0), así que aquí se nombra una vez y no en cada línea.
- *  @param {Activity} a @returns {TextCorrectionContent} */
-const hoja = (a) => /** @type {TextCorrectionContent} */ (a.content);
-
-
 /**
  * @param {Element} root
  * @param {Activity} activity
@@ -40,7 +34,9 @@ const hoja = (a) => /** @type {TextCorrectionContent} */ (a.content);
  */
 export function renderTextCorrectionEditor(root, activity, onChange, { kind, parse, textos }) {
   const a = activity;
-  if (!Array.isArray(hoja(a)?.passages)) a.content = { passages: [newPassage()] };
+  // La hoja SIEMPRE tiene al menos una frase en blanco — es la misma invariante
+  // que ya aplicaba «Quitar las N sin nada que corregir» al vaciar la lista.
+  if (!frasesDe(a).length) a.content = { passages: [newPassage()] };
   renderEditorShell(root, a, onChange, {
     content: { label: 'Frases', html: (act) => contentHtml(act, textos), wire: (r, act, ctx) => wireContent(r, act, ctx, { parse, textos }) },
     rules: { html: rulesHtml, wire: wireRules },
@@ -49,7 +45,7 @@ export function renderTextCorrectionEditor(root, activity, onChange, { kind, par
 
 /** @param {Activity} a @param {TextosEditor} textos @returns {string} */
 function contentHtml(a, textos) {
-  const passages = hoja(a).passages;
+  const passages = frasesDe(a);
   return `
     ${pegarTextoHtml({ titulo: 'Pegar un texto (un poema, una lectura…)' })}
     <p class="small text-muted">${textos.instrucciones}</p>
@@ -65,7 +61,7 @@ function contentHtml(a, textos) {
  *  del profe es justo lo que §24 no permite. */
 /** @param {Activity} a @param {TextosEditor} textos @returns {string} */
 function limpiarBotonHtml(a, textos) {
-  const n = hoja(a).passages.filter(p => String(p.text || '').trim() && !(p.marks || []).length).length;
+  const n = frasesDe(a).filter(p => String(p.text || '').trim() && !(p.marks || []).length).length;
   if (!n) return '';
   return `<button class="btn btn-outline-danger mt-2 ms-2" id="t-limpiar">
     <i class="bi bi-eraser"></i> Quitar las ${n} frase${n === 1 ? '' : 's'} sin nada que corregir
@@ -78,11 +74,11 @@ function limpiarBotonHtml(a, textos) {
  * @param {{parse: Parser, textos: TextosEditor}} opts
  */
 function wireContent(root, a, ctx, { parse, textos }) {
-  wireItemSeconds(root, a, ctx, hoja(a).passages);   // R-3 · tiempo por frase
+  wireItemSeconds(root, a, ctx, frasesDe(a));   // R-3 · tiempo por frase
   on(root, 'input', '.tp-accented', (_, el) => {
     const idx = Number(el.dataset.i);
     const { text, marks } = parse(valorDe(el));
-    const p = hoja(a).passages[idx];
+    const p = frasesDe(a)[idx];
     if (!p) return;
     p.text = text; p.marks = marks;
     ctx.onChange(a);
@@ -103,30 +99,28 @@ function wireContent(root, a, ctx, { parse, textos }) {
     for (; i < parrafos.length && anadidas < tope; i++) {
       const trozo = parse(parrafos[i]);
       if (!trozo.marks.length) { omitidas++; continue; }
-      hoja(a).passages.push({ ...newPassage(), ...trozo });
+      frasesDe(a).push({ ...newPassage(), ...trozo });
       anadidas++;
     }
     // La frase vacía con la que nace la plantilla no cuenta como trabajo del
     // profe: dejarla deja un hueco delante de lo que acaba de pegar (mismo
     // criterio que `fusionarContenido` usa con lo que escribe la IA).
     if (anadidas) {
-      hoja(a).passages = hoja(a).passages.filter(p => String(p.text || '').trim() !== '');
+      ponerFrases(a, frasesDe(a).filter(p => String(p.text || '').trim() !== ''));
       ctx.onChange(a); ctx.repaint();
     }
     return { anadidas, omitidas, sobrantes: parrafos.length - i };
   });
   on(root, 'click', '#t-limpiar', () => {
-    const antes = hoja(a).passages.length;
-    hoja(a).passages = hoja(a).passages.filter(p => !String(p.text || '').trim() || (p.marks || []).length);
-    const fuera = antes - hoja(a).passages.length;
-    if (!hoja(a).passages.length) hoja(a).passages.push(newPassage());
+    const antes = frasesDe(a).length;
+    ponerFrases(a, frasesDe(a).filter(p => !String(p.text || '').trim() || (p.marks || []).length));
+    const fuera = antes - frasesDe(a).length;
+    if (!frasesDe(a).length) frasesDe(a).push(newPassage());
     ctx.onChange(a); ctx.repaint();
     toast(`Quitada${fuera === 1 ? '' : 's'} ${fuera} frase${fuera === 1 ? '' : 's'} sin nada que corregir.`, 'success', TOAST_NORMAL);
   });
-  on(root, 'click', '#t-add', () => { hoja(a).passages.push(newPassage()); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '.item-del', (_, b) => { hoja(a).passages.splice(Number(b.dataset.i), 1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '.item-up', (_, b) => { reorderArray(hoja(a).passages, Number(b.dataset.i), -1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '.item-down', (_, b) => { reorderArray(hoja(a).passages, Number(b.dataset.i), +1); ctx.onChange(a); ctx.repaint(); });
+  // Añadir · borrar · subir · bajar: el primitivo, no su copia manual.
+  wireItemList(root, a, ctx, { list: frasesDe(a), añadir: { selector: '#t-add', fabrica: newPassage } });
 }
 
 // NOTA: aquí vivía «Comas/Tildes ilimitadas». El tope NUNCA se implementó (la

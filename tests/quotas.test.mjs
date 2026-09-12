@@ -111,8 +111,8 @@ const read = (p) => readFileSync(new URL(p, ROOT), 'utf8');
       `la purga NUNCA debe tocar ${forbidden}: es el registro del profe sobre sus alumnos`);
   }
   // Y la vista no borra por su cuenta: se lo pide al transporte (ley de datos).
-  // v1.51.629: adminView se partió POR PANEL — esta sección vive en views/admin/capacity.js.
-  const admin = read('views/admin/capacity.js');
+  // v1.51.629: adminView se partió POR PANEL — esta sección vive en views/admin/diagnostico/capacity.js.
+  const admin = read('views/admin/diagnostico/capacity.js');
   assert.match(admin, /purgeOldLive\(cutoff/, 'el panel PIDE la purga al dueño');
   assert.ok(!/method:\s*'DELETE'/.test(admin), 'el panel no borra filas de PB por su cuenta');
   ok('la purga vive en el dueño de las colecciones y respeta results/intentos');

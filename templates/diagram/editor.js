@@ -3,7 +3,7 @@
 // la etiqueta de cada pin. El chasis (título, ajustes, tabs) lo pone el shell.
 import { escapeHtml, marcado } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { ruleScopeNote } from '../../core/editorPrimitives.js';
+import { ruleScopeNote, wireCampoTexto } from '../../core/editorPrimitives.js';
 import { uploadMedia, medirImagen } from '../../core/upload.js';
 import { QUOTAS } from '../../core/quotas.js';
 import { newPin } from '../../core/contentModels/diagram.js';
@@ -152,11 +152,7 @@ function wireContent(root, a, ctx) {
     ctx.onChange(a); ctx.repaint();
   });
 
-  on(root, 'input', '.dg-label-input', (_e, el) => {
-    const campo = /** @type {HTMLInputElement} */ (el);
-    c.pins[Number(el.dataset.i)].label = campo.value;
-    ctx.onChange(a);
-  });
+  wireCampoTexto(root, a, ctx, { selector: '.dg-label-input', lista: () => cont(a).pins, campo: 'label' });
   on(root, 'click', '.dg-pin-del', (_, b) => { c.pins.splice(Number(b.dataset.i), 1); ctx.onChange(a); ctx.repaint(); });
 
   // `_suppressClick` es la marca de «acabo de arrastrar»: vive en la caja para

@@ -279,7 +279,6 @@ export async function renderWordsearchPlayer(rootSel, activity, opts = {}) {
   function finish() {
     const max = total * basePoints(null, scoring);   // misma convención que el scorer
     Streaks.reset('solo', activity.id);
-    emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: state.score }] });
     ctx.finish({
       lead: `Palabras: <b>${state.found.size}/${total}</b> · Puntos: <b>${state.score}</b>`,
       stats: ({ timeUsed }) => `Tiempo: ${timeUsed}s`,

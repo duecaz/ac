@@ -51,6 +51,24 @@ export function newPassage() {
   return { id: rid('ps_'), text: '', marks: [] };
 }
 
+/** LAS FRASES DE LA HOJA. Dueño único del «dónde está la lista» del modelo
+ *  `textCorrection`: la ronda y el editor lo tenían escrito cada uno por su
+ *  cuenta (uno como `frasesDe`, el otro como `hoja(a).passages`).
+ * @param {{content?: unknown}|null|undefined} a @returns {Passage[]} */
+export function frasesDe(a) {
+  const c = /** @type {TextCorrectionContent|null|undefined} */ (a?.content);
+  return Array.isArray(c?.passages) ? c.passages : [];
+}
+
+/** Reemplaza la lista entera (quitar las que no dan juego, pegar un texto). El
+ *  editor lo hacía nombrando el contenido a mano; el dueño de la forma es el
+ *  modelo, también para escribir.
+ * @param {{content?: unknown}} a @param {Passage[]} passages @returns {void} */
+export function ponerFrases(a, passages) {
+  const c = /** @type {TextCorrectionContent|undefined} */ (a.content);
+  if (c) c.passages = passages; else a.content = { passages };
+}
+
 /**
  * FRONTERA: le llega cualquier contenido.
  * @param {unknown} content

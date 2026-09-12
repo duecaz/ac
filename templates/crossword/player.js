@@ -3,7 +3,6 @@ import { html, escapeHtml, mount, raizDe, $, $$ } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { scoreCrosswordSubmission } from './scorer.js';
-import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { palabraJugable } from '../../core/contentModels/words.js';
 import { buildGrid } from './generator.js';
 import { observeResize } from '../../core/observeResize.js';
@@ -493,13 +492,12 @@ export async function renderCrosswordPlayer(rootSel, activity, opts = {}) {
     const pts = (w) => scoreCrosswordSubmission({ value: w.word, item: w, activity }).points;
     const score = words.filter(w => solvedIds.has(w.id)).reduce((s, w) => s + pts(w), 0);
     const max = words.reduce((s, w) => s + pts(w), 0);
-    emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score }] });
     // El final lo pinta el SHELL (sin salida, ver core/soloPlayer.js): antes había un cartel
     // propio que celebraba con confeti aunque solo se hubieran resuelto 3 de
     // 8 palabras, y al cerrarse dejaba al alumno parado en el tablero sin
     // puntaje ni salida (§21b, un solo dueño del final). El confeti REAL
-    // sigue en emitGame(PODIUM); aquí solo se le entrega al shell la VERDAD
-    // de cómo acabó (R6): completado o no, y cuántas palabras.
+    // sigue en el PODIUM que emite el shell al cerrar; aquí solo se le entrega
+    // la VERDAD de cómo acabó (R6): completado o no, y cuántas palabras.
     const completo = solvedIds.size >= totalWords;
     ctx.finish({
       score, maxScore: max,

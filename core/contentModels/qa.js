@@ -47,8 +47,10 @@ function norm(s) {
  *  La regla, una: vale si hay TEXTO en lo marcado. Si hay `answerIdx` manda él
  *  (resiste opciones repetidas o vacías); si no, se mira `answer`.
  */
+// Interna: la puerta pública de esta regla es `itemHasNoAnswer` (y era su
+// ÚNICO lector desde que el editor dejó de tener copia propia).
 /** @param {QaItem|null|undefined} item */
-export function hasCorrectAnswer(item) {
+function hasCorrectAnswer(item) {
   /** @param {unknown} v */
   const lleno = (v) => String(v ?? '').trim() !== '';
   const idx = item?.answerIdx;
@@ -100,6 +102,75 @@ export function answerIndices(item) {
   return (item?.options || [])
     .map((o, i) => (respuestas.includes(norm(o)) ? i : -1))
     .filter(i => i >= 0);
+}
+
+/** Lo mismo, como conjunto y ACOTADO a las opciones que existen: es la forma
+ *  que pide el editor (marcar/desmarcar por posición). El editor lo derivaba
+ *  por su cuenta con `===` crudo, así que una opción «madrid» con la respuesta
+ *  «Madrid» —que el juego da por buena, porque `isCorrect` compara con `norm`—
+ *  salía SIN marcar, y al tocar cualquier otra cosa se perdía.
+ * @param {QaItem|null|undefined} item @returns {Set<number>} */
+export function correctIdxSet(item) {
+  const n = (item?.options || []).length;
+  return new Set(answerIndices(item).filter(k => k >= 0 && k < n));
+}
+
+/** Re-deriva `answer` (TEXTO) de `answerIdx` (POSICIÓN). La marca vive en la
+ *  posición; el texto es su reflejo, nunca al revés.
+ * @param {QaItem} it @returns {void} */
+export function syncAnswerFromIdx(it) {
+  const idxs = [...correctIdxSet(it)].sort((a, b) => a - b);
+  it.answerIdx = idxs;
+  const opciones = it.options || [];
+  const texts = idxs.map(k => opciones[k]);
+  it.answer = texts.length === 0 ? '' : (texts.length === 1 ? texts[0] : texts);
+}
+
+/** Reescribe el TEXTO de una opción SIN perder cuál era la correcta.
+ *
+ *  El bug (VS/Live: "clico la correcta y me la da mala"): en un ítem heredado
+ *  —sin `answerIdx`, que es como quedaron las actividades creadas antes de que
+ *  existiera— la correcta se deducía comparando `answer` con el TEXTO de las
+ *  opciones. Al corregir una errata en la opción correcta, el handler mutaba el
+ *  texto PRIMERO y luego re-deducía: ya no coincidía con nada, así que la
+ *  pregunta se quedaba con `answer: ''` — todas las respuestas malas para
+ *  siempre, sin decir nada (el editor seguía pintando el verde hasta repintar).
+ *
+ *  Ahora se FIJA el índice correcto ANTES de tocar el texto: la marca vive en
+ *  `answerIdx` (posición, no texto) y `answer` se re-deriva de ahí, así que
+ *  editar el texto de la correcta la SIGUE.
+ *
+ *  Vive en el MODELO, no en el formulario: es la regla de qué es una respuesta
+ *  correcta, y el editor solo la invoca.
+ * @param {QaItem} item @param {number} k @param {string} text @returns {QaItem}
+ */
+export function setOptionText(item, k, text) {
+  const idxs = [...correctIdxSet(item)].sort((a, b) => a - b);  // ANTES de mutar
+  item.answerIdx = idxs;
+  if (!Array.isArray(item.options)) item.options = [];
+  item.options[k] = text;
+  syncAnswerFromIdx(item);
+  return item;
+}
+
+/** ¿Esta pregunta puede puntuarse? Sin correcta marcada, TODA respuesta cuenta
+ *  como fallo — el modo de fallar silencioso que nadie ve hasta jugar.
+ * @param {QaItem|null|undefined} it @returns {boolean} */
+export function itemHasNoAnswer(it) { return !hasCorrectAnswer(it); }
+
+/** @param {{content?: unknown}|null|undefined} a @returns {boolean} */
+export function someItemHasNoAnswer(a) {
+  return preguntasDe(a).some(itemHasNoAnswer);
+}
+
+/** LAS PREGUNTAS DE ESTA ACTIVIDAD. Dueño único del «dónde está la lista» del
+ *  modelo `qa`: lo tenían escrito por su cuenta el editor de Quiz, el de
+ *  Operaciones y la migración, y cuatro de las siete copias del proyecto se
+ *  dejaban el `?? []` (con el contenido a medias reventaban antes de pintar).
+ * @param {{content?: unknown}|null|undefined} a @returns {QaItem[]} */
+export function preguntasDe(a) {
+  const c = /** @type {{items?: QaItem[]}|null|undefined} */ (a?.content);
+  return Array.isArray(c?.items) ? c.items : [];
 }
 
 /**

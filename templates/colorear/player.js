@@ -10,7 +10,7 @@ import { on } from '../../core/events.js';
 import { cabeceraHtml } from '../../core/playerHud.js';
 import { rutaDibujo } from '../../core/bancoDibujos.js';
 import { scoreColorearSubmission } from './scorer.js';
-import { ensureContent } from './editor.js';
+import { ensureContent } from './content.js';
 
 // LA PALETA ES DATO, no CSS (§3, como las bolas de Pelotas): los colores que
 // el niño toca viajan como valores JS y se pintan INLINE, así el trinquete de
@@ -106,7 +106,6 @@ export async function renderColorearPlayer(rootSel, activity, opts = {}) {
   on(rootSel, 'click', '.co-listo', () => {
     const r = scoreColorearSubmission({ value: { pintadas: pintadas.size, total }, item, activity });
     if (r.correct) emitGame(GameEvents.ANSWER_CORRECT, { idx: 0, points: r.points });
-    emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: r.points }] });
     ctx.finish({
       title: '¡Bien hecho!',
       icon: 'bi-palette-fill', iconColor: 'text-warning',

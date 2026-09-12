@@ -1,12 +1,12 @@
 // v1.51.629: adminView se partió POR PANEL. Esta sección agrupa los TRES
-// cuadros de diagnóstico que consumen `buildAdminMatrix()` (views/admin/matrix.js,
+// cuadros de diagnóstico que consumen `buildAdminMatrix()` (views/admin/diagnostico/matrix.js,
 // construcción PURA de HTML): «Capacidad por plantilla» (qué modos puede
 // ofrecer cada una) + «Tus actividades» (modos disponibles ahora) +
 // «Conversiones de formato» (qué puede convertirse a qué). Las tres son
 // SOLO LECTURA — nada que cablear, la vista es toda la sección.
-import { escapeHtml } from '../../core/html.js';
-import { MODE_DEFS } from '../../core/modes.js';
-import { CONTRACT_METHODS } from '../../core/modeMatrix.js';
+import { escapeHtml } from '../../../core/html.js';
+import { MODE_DEFS } from '../../../core/modes.js';
+import { CONTRACT_METHODS } from '../../../core/modeMatrix.js';
 
 /**
  * Las filas llegan ya construidas por `buildAdminMatrix()`; de `acts` solo se

@@ -11,7 +11,7 @@
 //
 // Run: node tests/quizAnswer.test.mjs
 import assert from 'node:assert';
-import { setOptionText, itemHasNoAnswer, someItemHasNoAnswer } from '../templates/quiz/editor.js';
+import { setOptionText, itemHasNoAnswer, someItemHasNoAnswer, correctIdxSet } from '../core/contentModels/qa.js';
 import { scoreQuizSubmission } from '../templates/quiz/scorer.js';
 
 let passed = 0;
@@ -102,6 +102,33 @@ const score = (item, value) => scoreQuizSubmission({ value, item, activity: { sc
   const sana = QuizTemplate.migrateContent({ items: [{ answer: 'b', answerIdx: [1], options: ['a', 'b'] }] }, 1);
   assert.strictEqual(sana.items[0].answer, 'b', 'una pregunta sana se queda igual');
   ok('rescate al cargar: la respuesta perdida vuelve si la marca por índice sobrevivió');
+}
+
+// ── 2c. «CUÁL ES LA CORRECTA» tiene UN dueño: compara SIN tildes ni mayúsculas ──
+// Contra-prueba del hallazgo T3: el editor derivaba la marca con `===` crudo y
+// el juego la compara con `norm` (core/contentModels/qa.js). Una opción escrita
+// «madrid» con la respuesta «Madrid» PUNTÚA, pero el editor la pintaba sin
+// marcar — y la migración le escribía `answerIdx: []`, o sea "ninguna correcta".
+{
+  const { QuizTemplate } = await import('../templates/quiz/template.js');
+  const conTilde = { id: 'q_6', question: 'Capital', answer: 'Madrid',
+                     options: ['madrid', 'Lisboa'], points: 1 };
+  assert.strictEqual(score(conTilde, 'madrid').correct, true, 'el juego YA la daba por buena');
+  assert.deepStrictEqual([...correctIdxSet(conTilde)], [0],
+    'y el editor la marca en verde (antes salía sin marcar)');
+  assert.strictEqual(itemHasNoAnswer(conTilde), false, 'no se avisa de "sin correcta"');
+
+  const acentuada = { id: 'q_7', question: 'Ciudad', answer: 'PARÍS',
+                      options: ['paris', 'Roma'], points: 1 };
+  assert.deepStrictEqual([...correctIdxSet(acentuada)], [0], 'ni tildes ni mayúsculas separan');
+
+  const migrada = QuizTemplate.migrateContent({ items: [{ ...conTilde }, { ...acentuada }] }, 1);
+  assert.deepStrictEqual(migrada.items[0].answerIdx, [0], 'la migración NO escribe answerIdx: []');
+  assert.deepStrictEqual(migrada.items[1].answerIdx, [0], 'tampoco con tilde');
+  // Contra-prueba: lo que NO es la respuesta sigue sin marcarse.
+  const ajena = { answer: 'Madrid', options: ['Lisboa', 'Roma'] };
+  assert.deepStrictEqual([...correctIdxSet(ajena)], [], 'una opción que no es la respuesta no se marca');
+  ok('la correcta se decide con el mismo `norm` que el scorer (tildes y mayúsculas)');
 }
 
 // ── 3. El aviso está CABLEADO en el editor (no solo definido) ──────────────

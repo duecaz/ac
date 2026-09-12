@@ -1,6 +1,5 @@
 import { installErrorHandlers } from './core/errorLog.js';
-import { route, start, setNotFound, setBeforeResolve } from './core/router.js';
-import { clearListeners } from './core/events.js';
+import { route, setNotFound } from './core/router.js';
 
 installErrorHandlers('student');
 
@@ -9,10 +8,9 @@ import './core/registerTemplates.js';
 
 import { html, mount } from './core/html.js';
 import { ensureIdentity } from './core/identity.js';
-import { applySkin } from './core/skins.js';
 // Side-effect: boot.js wires sounds + effects to the GameEvents bus and exposes
-// the navbar helpers (version stamp + mute button).
-import { stampVersion, attachMuteButton, wireTopbarMenu } from './core/boot.js';
+// the shared page boot (skin baseline, navbar chrome, router start).
+import { bootApp } from './core/boot.js';
 import { renderJoin, renderPlay } from './views/studentLive.js';
 import { renderTask } from './views/studentTask.js';
 
@@ -26,24 +24,18 @@ route('#/task/:code', ({ code }) => renderTask(APP, code));
 
 setNotFound(() => mount(APP, html`<div class="alert alert-warning m-4">Ruta no encontrada.</div>`));
 
-// Suelta los handlers delegados de la vista anterior en la raíz compartida antes
-// de renderizar la siguiente (ver core/events.js clearListeners).
-setBeforeResolve(() => clearListeners(APP));
-
-(async function boot() {
-  // Baseline NEUTRO del chrome. Antes leía `ww.skin` de localStorage — una
-  // clave que NADIE escribía en todo el repo (el skin es de la ACTIVIDAD,
-  // `presentation.skin`, y se aplica al marco, no a la página). Se quitó la
-  // lectura muerta, no el baseline: una clave fantasma es una promesa falsa.
-  applySkin('default');
-  try {
-    const user = await ensureIdentity();
-    const { setStorageUser } = await import('./core/storage.js');
-    setStorageUser(user.id);
-  } catch (err) { console.warn('[boot] auth failed:', err instanceof Error ? err.message : String(err)); }
-  stampVersion();
-  attachMuteButton();
-  wireTopbarMenu();
-  start();
-  Reflect.set(window, '__APP_READY__', true);
-})();
+// El arranque compartido (baseline de skin, sello de versión, menú de la barra,
+// soltar handlers delegados entre vistas, start + __APP_READY__) vive en
+// core/boot.js: aquí solo lo PROPIO del alumno — su identidad anónima, que es
+// quien firma los resultados.
+bootApp({
+  app: APP,
+  mute: true,
+  antesDeArrancar: async () => {
+    try {
+      const user = await ensureIdentity();
+      const { setStorageUser } = await import('./core/storage.js');
+      setStorageUser(user.id);
+    } catch (err) { console.warn('[boot] auth failed:', err instanceof Error ? err.message : String(err)); }
+  },
+});

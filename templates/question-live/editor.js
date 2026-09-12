@@ -1,11 +1,11 @@
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { itemControlsHtml, wireItemList } from '../../core/editorPrimitives.js';
+import { itemControlsHtml, wireItemList, wireCampoTexto } from '../../core/editorPrimitives.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 // El tile de imagen (subir · buscar · quitar) es de core/imageTile.js — este
 // editor y wheel/editor.js lo tenían copiado byte por byte (barrido B5, 2026-09-02).
 import { imageTileHtml, wireImageTile } from '../../core/imageTile.js';
-import { newItem } from '../../core/contentModels/items.js';
+import { newItem, itemsDe } from '../../core/contentModels/items.js';
 
 /**
  * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
@@ -14,10 +14,6 @@ import { newItem } from '../../core/contentModels/items.js';
  * @typedef {import('../../core/contentModels/items.js').CardItemLegado} CardItemLegado
  * @typedef {import('../../core/editorShell.js').EditorCtx} EditorCtx
  */
-
-/** Las tarjetas de ESTA actividad: el contenido es el modelo `items`.
- * @param {Activity} a @returns {CardItem[]} */
-const itemsDe = (a) => /** @type {ItemsContent} */ (a.content).items;
 
 // Images are stored INLINE as data-URLs inside the activity JSON (same approach
 // as the custom background). No external upload — works on PocketBase with no
@@ -67,11 +63,7 @@ function contentHtml(a) {
  */
 function wireContent(root, a, ctx) {
   const items = itemsDe(a);
-  on(root, 'input', '.ql-q', (e, el) => {
-    const campo = /** @type {HTMLInputElement} */ (el);
-    items[+(el.dataset.i ?? -1)].question = campo.value;
-    ctx.onChange(a);
-  });
+  wireCampoTexto(root, a, ctx, { selector: '.ql-q', lista: () => itemsDe(a), campo: 'question' });
   wireItemList(root, a, ctx, { list: items, añadir: { selector: '#ql-add', fabrica: newItem } });
   wireImageTile(root, a, items, ctx, { prefix: 'ql-', queryField: 'question' });
 }

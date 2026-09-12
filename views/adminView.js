@@ -14,20 +14,20 @@
 // panel) no cambia un pixel.
 import { html, mount } from '../core/html.js';
 import { isAdmin } from '../core/auth.js';
-import { buildAdminMatrix } from './admin/matrix.js';
+import { buildAdminMatrix } from './admin/diagnostico/matrix.js';
 import { createTeachersSection } from './admin/teachers.js';
 import { createDataSystemSection } from './admin/dataSystem.js';
 import { createCollectionsSection } from './admin/collections.js';
 import { createAiSection } from './admin/ai.js';
-import { createCapacitySection } from './admin/capacity.js';
+import { createCapacitySection } from './admin/diagnostico/capacity.js';
 import { createMaintenanceSection } from './admin/maintenance.js';
-import { createLoadTestsSection } from './admin/loadTests.js';
-import { createLiveTestsSection } from './admin/liveTests.js';
-import { createErrorLogSection } from './admin/errorLog.js';
-import { createTemplateCapacitySection } from './admin/templateCapacity.js';
+import { createLoadTestsSection } from './admin/diagnostico/loadTests.js';
+import { createLiveTestsSection } from './admin/diagnostico/liveTests.js';
+import { createErrorLogSection } from './admin/diagnostico/errorLog.js';
+import { createTemplateCapacitySection } from './admin/diagnostico/templateCapacity.js';
 import { createLiveWordsSection } from './admin/liveWords.js';
 import { createVsAnimationsSection } from './admin/vsAnimations.js';
-import { createFluidezSection } from './admin/fluidez.js';
+import { createFluidezSection } from './admin/diagnostico/fluidez.js';
 
 // Admin UNIFICADO (auth v2): el acceso es por ROL de Google (isAdmin), no por
 // contraseña local. Solo un profe con role='admin' entra. La contraseña 'fernando'
@@ -53,7 +53,7 @@ function renderGate(rootSel) {
 
 /** @param {string} rootSel */
 function renderPanel(rootSel) {
-  // Tablas de diagnóstico (capacidad/actividades/conversiones) → views/admin/matrix.js
+  // Tablas de diagnóstico (capacidad/actividades/conversiones) → views/admin/diagnostico/matrix.js
   const { caps, acts, capRows, actRows, convRows } = buildAdminMatrix();
   // Dos secciones necesitan repintar el panel ENTERO tras su acción (borrar
   // todas las actividades cambia lo que muestran OTRAS secciones; limpiar el

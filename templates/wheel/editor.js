@@ -7,7 +7,7 @@ import { renderEditorShell } from '../../core/editorShell.js';
 // editor y question-live/editor.js lo tenían copiado byte por byte (barrido B5, 2026-09-02).
 import { imageTileHtml, wireImageTile } from '../../core/imageTile.js';
 import { SPIN_DUR_MAX, SPIN_DUR_DEFAULT } from '../../core/ruleta/spin.js';
-import { newItem, migrateLegacyItems } from '../../core/contentModels/items.js';
+import { newItem, migrateLegacyItems, itemsDe } from '../../core/contentModels/items.js';
 import { wheelRules } from './template.js';
 
 /**
@@ -18,10 +18,6 @@ import { wheelRules } from './template.js';
  * @typedef {import('../../core/contentModels/items.js').ItemsContentLegado} ItemsContentLegado
  * @typedef {import('../../core/editorShell.js').EditorCtx} EditorCtx
  */
-
-/** Las casillas de ESTA actividad: el modelo es `items` y el editor lo sabe.
- *  @param {Activity} a @returns {CardItem[]} */
-const casillas = (a) => /** @type {ItemsContent} */ (a.content).items;
 
 /**
  * @param {Element} root
@@ -46,7 +42,7 @@ export function renderWheelEditor(root, activity, onChange) {
 
 /** @param {Activity} a */
 function contentHtml(a) {
-  const items = casillas(a);
+  const items = itemsDe(a);
   const n = items.length;
   return `
     <p class="text-muted small mb-3">${n} opción${n !== 1 ? 'es' : ''} · la ruleta acepta hasta 32. Añade una imagen opcional a cada entrada (máx. 200&nbsp;KB).</p>
@@ -66,9 +62,9 @@ function contentHtml(a) {
 
 /** @param {Element} root @param {Activity} a @param {EditorCtx} ctx */
 function wireContent(root, a, ctx) {
-  wireCampoTexto(root, a, ctx, { selector: '.we-entry', lista: () => casillas(a), campo: 'question' });
-  wireItemList(root, a, ctx, { list: casillas(a), añadir: { selector: '#we-add', fabrica: newItem } });
-  wireImageTile(root, a, casillas(a), ctx, { prefix: 'we-', queryField: 'question' });
+  wireCampoTexto(root, a, ctx, { selector: '.we-entry', lista: () => itemsDe(a), campo: 'question' });
+  wireItemList(root, a, ctx, { list: itemsDe(a), añadir: { selector: '#we-add', fabrica: newItem } });
+  wireImageTile(root, a, itemsDe(a), ctx, { prefix: 'we-', queryField: 'question' });
 }
 
 /** @param {Activity} a */

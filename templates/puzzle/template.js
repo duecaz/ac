@@ -4,8 +4,8 @@
 import { BaseTemplate } from '../../templates/base.js';
 import { renderPuzzlePlayer } from './player.js';
 import { renderPuzzleEditor } from './editor.js';
+import { PUZZLE_POR_DEFECTO } from './content.js';
 import { scorePuzzleSubmission } from './scorer.js';
-import { rid } from '../../core/ids.js';
 
 // El tamaño de la rejilla es UNA opción de partida (§28 R2: ya elegida, se
 // puede tocar sin salir del juego) Y el valor con el que nace el ítem — el
@@ -88,9 +88,7 @@ export class PuzzleTemplate extends BaseTemplate {
     defaultRules:   () => ({}),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 100 }),
     defaultLive:    () => ({}),
-    defaultContent: () => ({
-      items: [{ id: rid('it_'), dibujo: 'casa', filas: 2, columnas: 2 }],
-    }),
+    defaultContent: () => ({ items: [PUZZLE_POR_DEFECTO()] }),
   };
 
   static renderPlayer = renderPuzzlePlayer;

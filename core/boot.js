@@ -10,6 +10,9 @@ import './effects.js';  // efecto: suscribe confeti/efectos a GameEvents
 import { VERSION } from './constants.js';
 import { isMuted, setMuted } from './sounds.js';
 import { observeResize } from './observeResize.js';
+import { applySkin } from './skins.js';
+import { start, setBeforeResolve } from './router.js';
+import { clearListeners } from './events.js';
 
 /** ¿La URL pide el medidor de fluidez? `?perf=1`, en cualquiera de las tres
  *  páginas. Se lee AQUÍ y no dentro del medidor para que el módulo del medidor
@@ -40,7 +43,7 @@ if (pidenMedidorDeFluidez()) {
 // versión + pantalla + últimos errores al portapapeles — el compañero que
 // testea ya usa este chip para citar la versión; ahora el mismo gesto se lleva
 // el contexto entero. Sin dato de alumno ni de aparato (R7).
-export function stampVersion(id = 'ww-version') {
+function stampVersion(id = 'ww-version') {
   const el = document.getElementById(id);
   if (!el) return;
   el.textContent = 'v' + VERSION;
@@ -147,7 +150,7 @@ function medirChrome(bar) {
 
 // Monta el botón de silencio en su slot del navbar (idempotente, se redibuja
 // al alternar). No hace nada si el slot no existe (p.ej. en el embed).
-export function attachMuteButton(slotId = 'ww-mute-slot') {
+function attachMuteButton(slotId = 'ww-mute-slot') {
   const slot = document.getElementById(slotId);
   if (!slot) return;
   const paint = () => {
@@ -157,4 +160,47 @@ export function attachMuteButton(slotId = 'ww-mute-slot') {
   slot.addEventListener('click', (e) => {
     if (dentroDe(e.target, '#ww-mute-btn')) { setMuted(!isMuted()); paint(); }
   });
+}
+
+// EL ARRANQUE DE UNA PÁGINA CON BARRA, UNA SOLA VEZ.
+//
+// `main.teacher.js` y `main.student.js` repetían el mismo bloque —baseline
+// neutro del chrome, sello de versión, menú hamburguesa, soltar los handlers
+// delegados antes de cada vista, `start()` y la bandera `__APP_READY__`— con el
+// mismo comentario copiado encima. Dos copias de un arranque derivan igual que
+// dos copias de cualquier otra cosa: el día que una gane un paso, la otra
+// página se queda sin él y nadie lo nota hasta que falla en el aula.
+//
+// Lo que NO es compartido viaja en `antesDeArrancar`: el canje de OAuth y el
+// usuario del almacén (profe) o la identidad anónima (alumno). Se espera ANTES
+// de `start()` porque las dos páginas lo hacían así.
+//
+// `main.embed.js` NO lo usa: no tiene barra, ni router, ni rutas — monta un
+// único player en un marco a pantalla completa. Forzarlo aquí sería inventarle
+// un ciclo de vida que no tiene.
+/**
+ * @param {object} [opts]
+ * @param {string} [opts.app] raíz compartida de las vistas (delegación §23)
+ * @param {boolean} [opts.mute] montar el botón de silencio (solo donde hay slot)
+ * @param {() => void|Promise<void>} [opts.antesDeArrancar] lo propio de la página
+ * @returns {Promise<void>}
+ */
+export async function bootApp({ app = '#app', mute = false, antesDeArrancar } = {}) {
+  // Baseline NEUTRO del chrome. Antes cada main leía `ww.skin` de localStorage —
+  // una clave que NADIE escribía en todo el repo (el skin es de la ACTIVIDAD,
+  // `presentation.skin`, y se aplica al marco, no a la página). Se quitó la
+  // lectura muerta, no el baseline: una clave fantasma es una promesa falsa.
+  applySkin('default');
+  stampVersion();
+  if (mute) attachMuteButton();
+  wireTopbarMenu();
+  // Antes de renderizar cada vista, suelta los handlers delegados que la vista
+  // anterior dejó en #app (raíz compartida y estable). Sin esto, p.ej. los
+  // handlers .skin-pick/.bg-pick del player seguían vivos al entrar al editor
+  // (mismas clases) → "mount: root not found" + el tema saltaba a <body>.
+  setBeforeResolve(() => clearListeners(app));
+  if (antesDeArrancar) await antesDeArrancar();
+  // El router arranca YA: la home pinta desde localStorage sin esperar a la red.
+  start();
+  Reflect.set(window, '__APP_READY__', true);
 }

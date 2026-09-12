@@ -10,6 +10,7 @@
 // index of the char AFTER which the comma goes (matches the answer-key `pos`).
 import { html, escapeHtml, mount } from './html.js';
 import { isVowel, applyTilde, scoreMarksPerHit, wordAtPos } from './textMarks.js';
+import { frasesDe } from './contentModels/textCorrection.js';
 import { GameEvents, emitGame } from './gameEvents.js';
 import { runFreeformPlayer } from './soloPlayer.js';
 import { mountTcDraw } from './textCorrectionDraw.js';
@@ -44,13 +45,6 @@ const desde = (t) => {
   return { closest: (sel) => (typeof el?.closest === 'function'
     ? /** @type {HTMLElement|null} */ (el.closest(sel))
     : null) };
-};
-
-/** Las frases de la hoja. La plantilla sabe la forma de su contenido (§0).
- *  @param {Activity|null|undefined} a @returns {Passage[]} */
-const frasesDe = (a) => {
-  const c = /** @type {TextCorrectionContent|undefined} */ (a?.content);
-  return Array.isArray(c?.passages) ? c.passages : [];
 };
 
 /** @type {Record<string, string>} */
@@ -549,21 +543,23 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
   // serializable; `got`/`want` (Sets para la corrección visual) se reconstruyen.
   /** @param {Passage} p @returns {Set<number>} */
   const wantOf = (p) => new Set((p.marks || []).filter(m => m.kind === kind).map(m => m.pos));
-  // FRONTERA: el progreso viene de `localStorage` (lo guardó `snapshot()`), así
-  // que se lee como un saco de campos y se estrecha antes de creerlo.
-  const guardado = /** @type {{idx?: unknown, score?: unknown, hits?: unknown,
-   *   misses?: unknown, over?: unknown, results?: unknown}|null} */ (ctx.loadProgress());
+  // El progreso llega YA ESTRECHADO por el shell (`crearProgreso`, que es quien
+  // posee la frontera del almacén): aquí solo se comprueba lo que esta ronda
+  // sabe —que el índice va a medias— y se leen sus propios campos.
+  const guardado = ctx.loadProgress();
   const num = (/** @type {unknown} */ v) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
+  const fila = (/** @type {unknown} */ v) => (v && typeof v === 'object'
+    ? /** @type {Record<string, unknown>} */ (v) : {});
   if (guardado && Number.isInteger(guardado.idx) && num(guardado.idx) > 0
       && num(guardado.idx) < passages.length && Array.isArray(guardado.results)) {
     idx = num(guardado.idx); score = num(guardado.score);
     hits = num(guardado.hits); misses = num(guardado.misses); over = num(guardado.over);
     for (const cruda of guardado.results) {
-      const r = /** @type {{i?: number, got?: number[], hits?: number, misses?: number,
-       *   over?: number, total?: number, correct?: boolean, points?: number}} */ (cruda);
-      const p = passages[num(r?.i)];
+      const r = fila(cruda);
+      const p = passages[num(r.i)];
       if (!p) continue;
-      passageResults.push({ p, got: new Set(r.got || []), want: wantOf(p), hits: num(r.hits),
+      passageResults.push({ p, got: new Set((Array.isArray(r.got) ? r.got : []).map(num)),
+        want: wantOf(p), hits: num(r.hits),
         misses: num(r.misses), over: num(r.over), total: num(r.total),
         correct: !!r.correct, points: num(r.points) });
     }
@@ -808,7 +804,6 @@ export function runTextCorrectionSolo(rootSel, activity, opts = {}, { kind, titl
   }
 
   function finish() {
-    emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score }] });
     // Con la corrección al final ya se han visto TODAS las hojas una por una:
     // repetir aquí las falladas es enseñar dos veces lo mismo en dos pantallas
     // seguidas.

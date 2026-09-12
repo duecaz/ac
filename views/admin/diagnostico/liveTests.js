@@ -1,9 +1,9 @@
 // v1.51.629: adminView se partió POR PANEL. Esta sección es «Tests en vivo»:
 // el runner del panel (core/selftest.js) con barra de progreso y lista
 // streaming — la misma suite que corre por CLI en `node tests/run.mjs`.
-import { escapeHtml } from '../../core/html.js';
-import { on } from '../../core/events.js';
-import { runSelfTests, TOTAL_TESTS } from '../../core/selftest.js';
+import { escapeHtml } from '../../../core/html.js';
+import { on } from '../../../core/events.js';
+import { runSelfTests, TOTAL_TESTS } from '../../../core/selftest.js';
 
 /** @returns {{html: () => string, wire: (rootSel: string) => void}} */
 export function createLiveTestsSection() {

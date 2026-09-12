@@ -5,8 +5,9 @@ import { toast, TOAST_NORMAL } from '../../core/toast.js';
 import { uploadMedia } from '../../core/upload.js';
 import { abrirBuscadorImagenes } from '../../core/imageSearchModal.js';
 import { on } from '../../core/events.js';
-import { newPair, renderPairsEditor } from '../../core/contentModels/pairs.js';
-import { itemControlsHtml, wireItemList, ruleScopeNote } from '../../core/editorPrimitives.js';
+import { newPair, paresDe } from '../../core/contentModels/pairs.js';
+import { renderPairsEditor } from '../../core/editorPares.js';
+import { itemControlsHtml, wireItemList, wireCampoTexto, ruleScopeNote } from '../../core/editorPrimitives.js';
 import { scoringPanelHtml, wireScoringPanel } from '../../core/editorPanels.js';
 import { mensajeDe } from '../../core/frontera.js';
 /**
@@ -15,10 +16,6 @@ import { mensajeDe } from '../../core/frontera.js';
  * @typedef {import('../../kernel/contracts/activity.js').PairsContent} PairsContent
  * @typedef {import('../../core/editorShell.js').EditorCtx} EditorCtx
  */
-
-/** Los pares de ESTA actividad: el modelo es `pairs` y el editor lo sabe.
- *  @param {Activity} a @returns {Pair[]} */
-const pares = (a) => /** @type {PairsContent} */ (a.content).pairs;
 
 /**
  * @param {Element} root
@@ -39,7 +36,7 @@ export function renderMatchEditor(root, activity, onChange) {
 
 /** @param {Activity} a */
 function contentHtml(a) {
-  const lista = pares(a);
+  const lista = paresDe(a);
   return `
     <div class="row g-2 mb-2 fw-bold small text-muted">
       <div class="col-5">Izquierda</div><div class="col-5">Derecha</div><div class="col-2"></div>
@@ -82,23 +79,13 @@ function pairRowHtml(p, i, total) {
 
 /** @param {Element} root @param {Activity} a @param {EditorCtx} ctx */
 function wireContent(root, a, ctx) {
-  on(root, 'input',  '.mp-l', (e, el) => {
-    const p = pares(a)[Number(el.dataset.i)];
-    if (!p) return;
-    p.left = /** @type {HTMLInputElement} */ (el).value;
-    ctx.onChange(a);
-  });
-  on(root, 'input',  '.mp-r', (e, el) => {
-    const p = pares(a)[Number(el.dataset.i)];
-    if (!p) return;
-    p.right = /** @type {HTMLInputElement} */ (el).value;
-    ctx.onChange(a);
-  });
-  wireItemList(root, a, ctx, { list: pares(a), añadir: { selector: '#mp-add', fabrica: newPair } });
+  wireCampoTexto(root, a, ctx, { selector: '.mp-l', lista: () => paresDe(a), campo: 'left' });
+  wireCampoTexto(root, a, ctx, { selector: '.mp-r', lista: () => paresDe(a), campo: 'right' });
+  wireItemList(root, a, ctx, { list: paresDe(a), añadir: { selector: '#mp-add', fabrica: newPair } });
 
   // Image upload
   on(root, 'click', '.mp-img-btn', (_, btn) => {
-    const par = /** @type {Record<string, unknown>|undefined} */ (pares(a)[Number(btn.dataset.i)]);
+    const par = /** @type {Record<string, unknown>|undefined} */ (paresDe(a)[Number(btn.dataset.i)]);
     const side = btn.dataset.side;
     if (!par) return;
     const inp  = document.createElement('input');
@@ -125,7 +112,7 @@ function wireContent(root, a, ctx) {
   on(root, 'click', '.mp-img-search', async (_, btn) => {
     const side = btn.dataset.side;
     const field = side === 'L' ? 'leftImage' : 'rightImage';
-    const par = pares(a)[Number(btn.dataset.i)];
+    const par = paresDe(a)[Number(btn.dataset.i)];
     if (!par) return;
     const r = await abrirBuscadorImagenes({ consulta: (side === 'L' ? par.left : par.right) || '' });
     if (!r) return;
@@ -141,7 +128,7 @@ function wireContent(root, a, ctx) {
   on(root, 'click', '.mp-img-del', (_, btn) => {
     const side = btn.dataset.side;
     const field = side === 'L' ? 'leftImage' : 'rightImage';
-    const par = pares(a)[Number(btn.dataset.i)];
+    const par = paresDe(a)[Number(btn.dataset.i)];
     if (!par) return;
     delete (/** @type {Record<string, unknown>} */ (par))[field];
     if (side === 'L') delete par.image; // clear legacy field too

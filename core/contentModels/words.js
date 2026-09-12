@@ -18,6 +18,20 @@
  * @typedef {import('../../kernel/contracts/activity.js').CrosswordWord} CrosswordWord
  */
 
+/** LAS PALABRAS DE ESTA ACTIVIDAD, lista para mutar (se siembra `words: []` si
+ *  el contenido viene a medias). Dueño único del «dónde está la lista» del
+ *  modelo `words`, que las dos plantillas tenían tecleado por su cuenta.
+ *
+ *  El ELEMENTO lo tipa cada plantilla al llamar, porque no comparten forma: la
+ *  Sopa guarda CADENAS y el Crucigrama FICHAS (ver la cabecera de este módulo).
+ * @param {{content?: unknown}|null|undefined} a @returns {Array<string|CrosswordWord>} */
+export function palabrasDe(a) {
+  const c = /** @type {{words?: Array<string|CrosswordWord>}|null|undefined} */ (a?.content);
+  if (!c) return [];
+  if (!Array.isArray(c.words)) c.words = [];
+  return c.words;
+}
+
 /** ¿Es una ficha de crucigrama (con pista) o una palabra suelta de la sopa?
  *  @param {string|CrosswordWord|null|undefined} w */
 export function esFicha(w) {

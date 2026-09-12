@@ -4,9 +4,9 @@
 import { html, escapeHtml, valorDe, marcado } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { renderImagePicker, attachImagePicker } from '../../core/imagePicker.js';
-import { itemControlsHtml, reorderArray, itemSecondsFieldHtml, wireItemSeconds } from '../../core/editorPrimitives.js';
+import { itemControlsHtml, itemSecondsFieldHtml, wireItemSeconds, wireItemList, wireCampoTexto } from '../../core/editorPrimitives.js';
 import { rid } from '../../core/ids.js';
-import { hasCorrectAnswer } from '../../core/contentModels/qa.js';
+import { preguntasDe, correctIdxSet, setOptionText, syncAnswerFromIdx, itemHasNoAnswer, someItemHasNoAnswer } from '../../core/contentModels/qa.js';
 import { renderEditorShell } from '../../core/editorShell.js';
 
 /**
@@ -14,11 +14,6 @@ import { renderEditorShell } from '../../core/editorShell.js';
  * @typedef {import('../../kernel/contracts/activity.js').QaItem} QaItem
  * @typedef {import('../../core/editorShell.js').EditorCtx} EditorCtx
  */
-
-/** Las preguntas de ESTA actividad: el modelo es `qa` y los dos editores que
- *  montan este panel (Quiz y Globos) lo saben.
- *  @param {Activity|null|undefined} a @returns {QaItem[]} */
-const preguntas = (a) => /** @type {{items?: QaItem[]}} */ (a?.content ?? {}).items ?? [];
 
 
 /**
@@ -60,7 +55,7 @@ function contentHtml(a) {
 
 /** @param {Element} root @param {Activity} a @param {EditorCtx} ctx @returns {void} */
 function wireContent(root, a, ctx) {
-  const items = preguntas(a);
+  const items = preguntasDe(a);
   on(root, 'click', '#add-item', () => {
     // SIN `points`: sembrarlo hacía que la pregunta ignorara «Puntos por
     // acierto» del panel. El campo de Avanzado lo escribe si el profe quiere
@@ -72,10 +67,10 @@ function wireContent(root, a, ctx) {
     items.push({ id: rid('q_'), question: '', answer: 'Verdadero', options: ['Verdadero', 'Falso'], image: null, audio: null, kind: 'truefalse' });
     ctx.onChange(a); ctx.repaint();
   });
-  on(root, 'click', '.item-del', (_, btn) => { items.splice(+(btn.dataset.i ?? 0), 1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '.item-up', (_, btn) => { reorderArray(items, +(btn.dataset.i ?? 0), -1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '.item-down', (_, btn) => { reorderArray(items, +(btn.dataset.i ?? 0), +1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'input', '.it-q', (e, el) => { items[+(el.dataset.i ?? 0)].question = valorDe(e); ctx.onChange(a); });
+  // Borrar · subir · bajar: el primitivo. El «+ Añadir» sigue aparte porque
+  // aquí hay DOS botones de alta (pregunta y V/F).
+  wireItemList(root, a, ctx, { list: items });
+  wireCampoTexto(root, a, ctx, { selector: '.it-q', lista: () => preguntasDe(a), campo: 'question' });
   on(root, 'input', '.it-opt', (e, el) => {
     const i = +(el.dataset.i ?? 0), k = +(el.dataset.k ?? 0), item = items[i];
     setOptionText(item, k, valorDe(e));
@@ -128,7 +123,7 @@ function wireRules(root, a, ctx) {
 // ── helpers (sin cambios de lógica) ──
 /** @param {Activity} a @returns {boolean} */
 function pointsAreUneven(a) {
-  return new Set(preguntas(a).map(it => it.points || 1)).size > 1;
+  return new Set(preguntasDe(a).map(it => it.points || 1)).size > 1;
 }
 /** @param {Activity} a @returns {string} */
 function pointsWarningHtml(a) {
@@ -140,69 +135,6 @@ function pointsWarningHtml(a) {
     Usa los mismos puntos en todas salvo que sea intencional.</div>
   </div>`;
 }
-/** @param {QaItem} it @returns {Set<number>} */
-function correctIdxSet(it) {
-  if (Array.isArray(it.answerIdx)) {
-    return new Set(it.answerIdx.filter(k => k >= 0 && k < (it.options || []).length));
-  }
-  const ans = it.answer;
-  /** @type {Set<number>} */
-  const set = new Set();
-  (it.options || []).forEach((o, k) => {
-    const match = Array.isArray(ans) ? ans.includes(o) : (ans != null && ans !== '' && ans === o);
-    if (match) set.add(k);
-  });
-  return set;
-}
-/** @param {QaItem} it @returns {void} */
-function syncAnswerFromIdx(it) {
-  const idxs = [...correctIdxSet(it)].sort((a, b) => a - b);
-  it.answerIdx = idxs;
-  const opciones = it.options || [];
-  const texts = idxs.map(k => opciones[k]);
-  it.answer = texts.length === 0 ? '' : (texts.length === 1 ? texts[0] : texts);
-}
-
-/** Reescribe el TEXTO de una opción SIN perder cuál era la correcta.
- *
- *  El bug (VS/Live: "clico la correcta y me la da mala"): en un ítem heredado
- *  —sin `answerIdx`, que es como quedaron las actividades creadas antes de que
- *  existiera— la correcta se deducía comparando `answer` con el TEXTO de las
- *  opciones. Al corregir una errata en la opción correcta, el handler mutaba el
- *  texto PRIMERO y luego re-deducía: ya no coincidía con nada, así que la
- *  pregunta se quedaba con `answer: ''` — todas las respuestas malas para
- *  siempre, sin decir nada (el editor seguía pintando el verde hasta repintar).
- *
- *  Ahora se FIJA el índice correcto ANTES de tocar el texto: la marca vive en
- *  `answerIdx` (posición, no texto) y `answer` se re-deriva de ahí, así que
- *  editar el texto de la correcta la SIGUE. */
-/**
- * @param {QaItem} item
- * @param {number} k
- * @param {string} text
- * @returns {QaItem}
- */
-export function setOptionText(item, k, text) {
-  const idxs = [...correctIdxSet(item)].sort((a, b) => a - b);  // ANTES de mutar
-  item.answerIdx = idxs;
-  if (!Array.isArray(item.options)) item.options = [];
-  item.options[k] = text;
-  syncAnswerFromIdx(item);
-  return item;
-}
-
-/** ¿Esta pregunta puede puntuarse? Sin correcta marcada, TODA respuesta cuenta
- *  como fallo — el modo de fallar silencioso que nadie ve hasta jugar. */
-// La regla vive en el modelo (core/contentModels/qa.js). Esta copia miraba solo
-// `answer`, así que daba por buena una pregunta cuya opción marcada se había
-// quedado sin texto — y ahí el scorer falla TODAS las respuestas.
-/** @param {QaItem|null|undefined} it @returns {boolean} */
-export function itemHasNoAnswer(it) { return !hasCorrectAnswer(it); }
-/** @param {Activity|null|undefined} a @returns {boolean} */
-export function someItemHasNoAnswer(a) {
-  return preguntas(a).some(itemHasNoAnswer);
-}
-
 /** @param {Activity} a @returns {string} */
 function answerWarningHtml(a) {
   return `<div id="ans-warn" class="alert alert-danger d-flex align-items-start gap-2 py-2 mb-2 ${someItemHasNoAnswer(a) ? '' : 'd-none'}" role="alert">
@@ -214,7 +146,7 @@ function answerWarningHtml(a) {
 }
 /** @param {Activity} a @returns {string} */
 function renderItems(a) {
-  const items = preguntas(a);
+  const items = preguntasDe(a);
   if (!items.length) return `<p class="text-muted">No hay preguntas todavía.</p>`;
   const total = items.length;
   return answerWarningHtml(a) + pointsWarningHtml(a) + items.map((it, i) => `

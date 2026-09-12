@@ -551,11 +551,17 @@ export const BROWSER_SCAN_FILES = [
   'views/live/studentTablero.js', 'views/live/studentPalabra.js', 'views/live/studentFin.js',
   // El panel #/admin se partió POR PANEL desde v1.51.629 (mismo patrón que
   // views/live/* arriba: un módulo por sección <h5>, ensamblados en adminView.js).
-  'views/admin/ai.js', 'views/admin/capacity.js', 'views/admin/collections.js',
-  'views/admin/dataSystem.js', 'views/admin/errorLog.js', 'views/admin/liveTests.js',
-  'views/admin/liveWords.js', 'views/admin/loadTests.js', 'views/admin/maintenance.js',
-  'views/admin/matrix.js', 'views/admin/teachers.js', 'views/admin/templateCapacity.js',
-  'views/admin/vsAnimations.js',
+  'views/admin/ai.js', 'views/admin/collections.js',
+  'views/admin/dataSystem.js', 'views/admin/liveWords.js', 'views/admin/maintenance.js',
+  'views/admin/teachers.js', 'views/admin/vsAnimations.js',
+  // Y el DIAGNÓSTICO PURO (lo que solo mira: pruebas, matrices, capacidad,
+  // errores, fluidez) vive aparte desde v1.51.9xx (T8): esas secciones no
+  // gestionan nada del profe, y agruparlas deja ver de un vistazo qué del panel
+  // es administración y qué es lupa.
+  'views/admin/diagnostico/capacity.js', 'views/admin/diagnostico/errorLog.js',
+  'views/admin/diagnostico/fluidez.js', 'views/admin/diagnostico/liveTests.js',
+  'views/admin/diagnostico/loadTests.js', 'views/admin/diagnostico/matrix.js',
+  'views/admin/diagnostico/templateCapacity.js',
   'views/listView.js', 'views/memoryView.js', 'views/antesala.js', 'views/playerView.js',
   'views/reports.js', 'views/studentLive.js',
   'views/studentTask.js', 'views/switchTemplate.js', 'views/teamsView.js',

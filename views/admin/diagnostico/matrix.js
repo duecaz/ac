@@ -3,11 +3,11 @@
 //   · capacidad por plantilla (qué modos puede ofrecer + métodos del contrato),
 //   · modos disponibles ahora por cada actividad guardada,
 //   · conversiones de formato posibles entre plantillas.
-import { escapeHtml } from '../../core/html.js';
-import { templateCapabilities, activityAvailability, CONTRACT_METHODS } from '../../core/modeMatrix.js';
-import { list } from '../../core/storage.js';
-import { activityItemCount } from '../../core/migrate.js';
-import { canConvert } from '../../kernel/content/convert.js';
+import { escapeHtml } from '../../../core/html.js';
+import { templateCapabilities, activityAvailability, CONTRACT_METHODS } from '../../../core/modeMatrix.js';
+import { list } from '../../../core/storage.js';
+import { activityItemCount } from '../../../core/migrate.js';
+import { canConvert } from '../../../kernel/content/convert.js';
 
 const yes = '<span class="text-success fw-bold">✓</span>';
 const no  = '<span class="text-muted">·</span>';

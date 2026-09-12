@@ -1,7 +1,8 @@
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { itemControlsHtml, reorderArray, ruleScopeNote } from '../../core/editorPrimitives.js';
+import { itemControlsHtml, wireItemList, ruleScopeNote } from '../../core/editorPrimitives.js';
 import { renderEditorShell } from '../../core/editorShell.js';
+import { palabrasDe } from '../../core/contentModels/words.js';
 import { generateGrid, SIZE_MAP } from './generator.js';
 import { wordsearchRules } from './template.js';
 
@@ -12,14 +13,11 @@ import { wordsearchRules } from './template.js';
  * @typedef {import('./generator.js').WsPlaced} WsPlaced
  */
 
-/** La lista de palabras de ESTA actividad, lista para mutar: el modelo es
- *  `words` y la Sopa guarda CADENAS (el Crucigrama, fichas).
+/** La lista de palabras de ESTA actividad, lista para mutar. La LISTA la da el
+ *  modelo (`palabrasDe`); lo único que pone aquí la Sopa es que SUS elementos
+ *  son CADENAS (en el Crucigrama son fichas).
  * @param {Activity} a @returns {string[]} */
-function palabras(a) {
-  const c = /** @type {WordsearchContent} */ (a.content);
-  if (!Array.isArray(c.words)) c.words = [];
-  return c.words;
-}
+const palabras = (a) => /** @type {string[]} */ (palabrasDe(a));
 
 /** El temporizador de la vista previa. Vivía como expando en el nodo raíz
  *  (`root._wsRepaintTimer`), que no es sitio para el estado de un módulo.
@@ -154,12 +152,9 @@ function wireContent(root, a, ctx) {
     if (temporizadorPreview) clearTimeout(temporizadorPreview);
     temporizadorPreview = setTimeout(() => refrescarPreview(root, a), 600);
   });
-  on(root, 'click', '.item-del', (_, btn) => {
-    palabras(a).splice(Number(btn.dataset.i), 1);
-    ctx.onChange(a); ctx.repaint();
-  });
-  on(root, 'click', '.item-up',   (_, btn) => { reorderArray(palabras(a), Number(btn.dataset.i), -1); ctx.onChange(a); ctx.repaint(); });
-  on(root, 'click', '.item-down', (_, btn) => { reorderArray(palabras(a), Number(btn.dataset.i), +1); ctx.onChange(a); ctx.repaint(); });
+  // Borrar · subir · bajar: el primitivo. El «+ Añadir» sigue aparte porque
+  // aquí lleva efecto propio (enfocar el campo recién creado).
+  wireItemList(root, a, ctx, { list: palabras(a) });
   on(root, 'click', '#ws-add', () => {
     palabras(a).push('');
     ctx.onChange(a); ctx.repaint();

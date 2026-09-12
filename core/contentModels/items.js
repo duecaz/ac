@@ -31,6 +31,15 @@ import { erroresDeLista } from '../../kernel/content/models.js';
 /** @returns {CardItem} */
 export function newItem(question = '') { return { id: rid('it_'), question, image: null }; }
 
+/** LAS TARJETAS DE ESTA ACTIVIDAD. Dueño único del «dónde está la lista» del
+ *  modelo `items`: Ruleta y Abre Cajas lo tenían tecleado cada uno por su
+ *  cuenta y sin `?? []`.
+ * @param {{content?: unknown}|null|undefined} a @returns {CardItem[]} */
+export function itemsDe(a) {
+  const c = /** @type {ItemsContent|null|undefined} */ (a?.content);
+  return Array.isArray(c?.items) ? c.items : [];
+}
+
 /** @returns {ItemsContent} */
 export function newEmpty() { return { items: [] }; }
 

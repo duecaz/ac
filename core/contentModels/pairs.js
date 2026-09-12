@@ -2,12 +2,10 @@
 // Used by Match Up, Find the Match, Memory, Flip Tiles, Pair/No Pair.
 import { rid } from '../ids.js';
 import { erroresDeLista } from '../../kernel/content/models.js';
-import { renderEditorShell } from '../editorShell.js';
 
 /**
  * @typedef {import('../../kernel/contracts/activity.js').Pair} Pair
  * @typedef {import('../../kernel/contracts/activity.js').PairsContent} PairsContent
- * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
  */
 
 /** @returns {PairsContent} */
@@ -44,20 +42,12 @@ export function pairComplete(p) {
     && (lleno(p.right) || !!p.rightImage);
 }
 
-/** WRAPPER GENÉRICO DEL EDITOR — Emparejar y Memoria comparten el modelo
- *  `pairs` y con él la MISMA regla de arranque: si el contenido no es un
- *  array de pares, sembrarlo en blanco antes de montar el chasis (barrido B5,
- *  2026-09-02: los dos `renderXEditor` tenían la línea copiada, con solo el
- *  número de pares de partida distinto). El dueño de esa regla es el MODELO,
- *  no cada plantilla; cada una aporta solo sus paneles y su `seedCount`. */
-/**
- * @param {Element} root
- * @param {import('../../kernel/contracts/activity.js').Activity<PairsContent>} activity
- * @param {(activity: Activity) => void} onChange
- * @param {{seedCount: number, panels: import('../editorShell.js').EditorSpec}} opts
- */
-export function renderPairsEditor(root, activity, onChange, { seedCount, panels }) {
-  const a = activity;
-  if (!Array.isArray(a.content?.pairs)) a.content = { pairs: Array.from({ length: seedCount }, newPair) };
-  renderEditorShell(root, /** @type {Activity} */ (a), onChange, panels);
+/** LOS PARES DE ESTA ACTIVIDAD. Dueño único del «dónde está la lista» del
+ *  modelo `pairs`: Emparejar y Memoria lo tenían tecleado cada uno por su
+ *  cuenta, y sin `?? []` —con el contenido a medias, el editor reventaba antes
+ *  de pintar nada.
+ * @param {{content?: unknown}|null|undefined} a @returns {Pair[]} */
+export function paresDe(a) {
+  const c = /** @type {PairsContent|null|undefined} */ (a?.content);
+  return Array.isArray(c?.pairs) ? c.pairs : [];
 }

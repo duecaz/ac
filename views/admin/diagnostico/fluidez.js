@@ -10,8 +10,8 @@
 //
 // No mide nada por su cuenta: quien mide es la pastilla (`core/fluidezHud.js`)
 // sobre la aritmética de `core/fluidez.js`. Aquí solo se explica y se enciende.
-import { on } from '../../core/events.js';
-import { UMBRAL_LARGO } from '../../core/fluidez.js';
+import { on } from '../../../core/events.js';
+import { UMBRAL_LARGO } from '../../../core/fluidez.js';
 
 /** La URL de esta misma página con (o sin) el medidor encendido.
  *  @param {boolean} encendido @returns {string} */

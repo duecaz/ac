@@ -5,8 +5,8 @@
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { renderEditorJuego } from '../../core/editorJuego.js';
-import { rid } from '../../core/ids.js';
 import { svgAColor } from './game/imagen.js';
+import { ensureContent, contenidoPuzzle as contenido } from './content.js';
 // El banco es el MISMO que el de Colorear (§21b: un banco, un dueño) y se
 // importa estático, igual que allí. Nació dinámico («lo escribe otro agente en
 // paralelo») y ese andamio sobrevivió al fichero que esperaba.
@@ -14,28 +14,7 @@ import { DIBUJOS, rutaDibujo } from '../../core/bancoDibujos.js';
 
 /**
  * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
- * @typedef {import('../../kernel/contracts/activity.js').PuzzleContent} PuzzleContent
  */
-
-/** La actividad vista como la de ESTA plantilla — `ensureContent` es quien la
- *  deja en esta forma, así que antes de él el contenido puede ser otro.
- *  @param {Activity} a @returns {PuzzleContent} */
-function contenido(a) {
-  return /** @type {PuzzleContent} */ (a.content);
-}
-
-/** @param {Activity} a @returns {Activity} */
-export function ensureContent(a) {
-  const c = /** @type {Partial<PuzzleContent>} */ (a.content || (a.content = { items: [] }));
-  if (!Array.isArray(c.items) || !c.items[0]) {
-    c.items = [{ id: rid('it_'), dibujo: 'casa', filas: 2, columnas: 2 }];
-  }
-  const it = c.items[0];
-  if (!it.filas) it.filas = 2;
-  if (!it.columnas) it.columnas = 2;
-  if (!it.dibujo) it.dibujo = 'casa';
-  return a;
-}
 
 /**
  * @param {Element} root

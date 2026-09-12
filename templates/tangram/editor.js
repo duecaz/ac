@@ -6,34 +6,12 @@ import { MARGEN_CAJA } from './game/mascara.js';
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { renderEditorJuego } from '../../core/editorJuego.js';
-import { rid } from '../../core/ids.js';
 import { SILUETAS, ORDEN_SILUETAS } from './game/siluetas.js';
+import { ensureContent, contenidoTangram as contenido } from './content.js';
 
 /**
  * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
- * @typedef {import('../../kernel/contracts/activity.js').TangramContent} TangramContent
  */
-
-/** La actividad vista como la de ESTA plantilla: `ensureContent` es justamente
- *  quien la deja en esa forma, así que antes de él el contenido puede ser otro
- *  (o no estar).
- *  @param {Activity} a @returns {TangramContent} */
-function contenido(a) {
-  return /** @type {TangramContent} */ (a.content);
-}
-
-/** La actividad SIEMPRE tiene un ítem con figura (nace así, y una figura
- *  desconocida en un JSON tocado a mano cae a la primera del catálogo).
- *  @param {Activity} a @returns {Activity} */
-export function ensureContent(a) {
-  const c = /** @type {Partial<TangramContent>|null|undefined} */ (a.content);
-  if (!c || !Array.isArray(c.items) || !c.items.length) {
-    a.content = { items: [{ id: rid('it_'), figura: ORDEN_SILUETAS[0] }] };
-  }
-  const item = contenido(a).items[0];
-  if (!SILUETAS[item.figura]) item.figura = ORDEN_SILUETAS[0];
-  return a;
-}
 
 /** Miniatura SVG de una silueta: solo el contorno de sus piezas, en gris —
  *  el mismo dibujo que verá el alumno como pista pasiva, en pequeño.

@@ -1,10 +1,10 @@
 // v1.51.629: adminView se partió POR PANEL. Esta sección es «Errores
 // recientes»: el anillo local (core/errorLog.js, sin red) — últimos N en
 // este dispositivo, con botón para limpiarlo.
-import { escapeHtml } from '../../core/html.js';
-import { on } from '../../core/events.js';
-import { toast } from '../../core/toast.js';
-import { recentErrors, clearErrors } from '../../core/errorLog.js';
+import { escapeHtml } from '../../../core/html.js';
+import { on } from '../../../core/events.js';
+import { toast } from '../../../core/toast.js';
+import { recentErrors, clearErrors } from '../../../core/errorLog.js';
 
 // `rerender` = volver a pintar el panel entero (limpiar el registro cambia lo
 // que esta MISMA sección muestra, y solo el ensamblador sabe repintarse).

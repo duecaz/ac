@@ -20,7 +20,7 @@ import { SILUETAS, ORDEN_SILUETAS } from './game/siluetas.js';
 import { transformarPieza, imantar } from './game/geometria.js';
 import { estaResuelto, MARGEN_CAJA } from './game/mascara.js';
 import { scoreTangramSubmission, PIEZAS_TOTAL } from './scorer.js';
-import { ensureContent } from './editor.js';
+import { ensureContent } from './content.js';
 
 const TOQUE_MAX_MS = 300;      // por debajo de esto, sin desplazamiento, es un TOQUE
 const TOQUE_MAX_DIST = 0.06;   // en fracción del lado del tablero — no del cuadrado unidad fijo
@@ -216,7 +216,6 @@ export function renderTangramPlayer(rootSel, activity, opts = {}) {
     resuelto = true;
     const r = scoreTangramSubmission({ value: { resuelto: true, colocadas: PIEZAS_TOTAL } });
     emitGame(GameEvents.ANSWER_CORRECT, { idx: 0, points: r.points });
-    emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: r.points }] });
     ctx.finish({
       title: '¡Resuelto!', icon: 'bi-stars', iconColor: 'text-warning',
       lead: `Figura: <b>${silueta.nombre}</b>`,

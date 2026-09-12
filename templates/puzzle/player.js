@@ -15,6 +15,7 @@ import { scorePuzzleSubmission } from './scorer.js';
 // importa estático, igual que allí. Nació dinámico («lo escribe otro agente en
 // paralelo») y ese andamio sobrevivió al fichero que esperaba.
 import { rutaDibujo } from '../../core/bancoDibujos.js';
+import { PUZZLE_POR_DEFECTO } from './content.js';
 
 /** @param {string} nombre @returns {Promise<string|null>} */
 async function imagenDe(nombre) {
@@ -61,7 +62,7 @@ export async function renderPuzzlePlayer(rootSel, activity, opts = {}) {
   const ctx = runFreeformPlayer(rootSel, activity, opts);
   const contenido = /** @type {Partial<PuzzleContent>} */ (activity.content ?? {});
   /** @type {PuzzleItem} */
-  const item = contenido.items?.[0] || { id: '', dibujo: 'casa', filas: 2, columnas: 2 };
+  const item = contenido.items?.[0] || PUZZLE_POR_DEFECTO();
   const filas = item.filas || 2, columnas = item.columnas || 2;
   const total = filas * columnas;
   const rejilla = celdas(filas, columnas);
@@ -122,7 +123,6 @@ export async function renderPuzzlePlayer(rootSel, activity, opts = {}) {
 
   function terminar() {
     const r = scorePuzzleSubmission({ value: { encajadas, total }, item, activity });
-    emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: r.points }] });
     ctx.finish({
       title: '¡Completado!', icon: 'bi-trophy-fill', iconColor: 'text-warning',
       lead: `${total} de ${total} piezas`,

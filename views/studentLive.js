@@ -1,7 +1,7 @@
 // Student-side live view. Routes: #/join, #/play/:code.
 //
 // v1.51.628: partido POR BUCLE (§26, deuda condicionada #2 de CLAUDE.md;
-// precedente: views/admin/matrix.js). Este fichero queda de ENSAMBLADOR (§23:
+// precedente: views/admin/diagnostico/matrix.js). Este fichero queda de ENSAMBLADOR (§23:
 // router/ciclo de vida, suscripción realtime, `paint()`, disposers) + lo que
 // usan VARIOS bucles a la vez (`paintWaiting`, `isLiveBoard`, `refreshSession`/
 // `adoptSession`). Cada bucle vive en su propio módulo bajo views/live/, con
@@ -282,7 +282,7 @@ export async function renderPlay(rootSel, code) {
   }
 
   // Un módulo por bucle (§26), con la MISMA `rt`: precedente de carpeta
-  // views/admin/matrix.js. paint() (abajo) solo conoce las funciones de pintado
+  // views/admin/diagnostico/matrix.js. paint() (abajo) solo conoce las funciones de pintado
   // que cada fábrica devuelve — nunca reimplementa un bucle.
   const lobby = createStudentLobby(rt);
   const rondas = createStudentRondas(rt);

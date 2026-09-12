@@ -37,6 +37,8 @@ export function itemControlsHtml(idx, total) {
 }
 
 // Mutate an array in place to reorder by direction (-1 up, +1 down).
+// Interna: su único lector es `wireItemList`, que es la puerta de los editores
+// (los seis que la llamaban a pelo ya pasan por el primitivo).
 /**
  * @template T
  * @param {T[]} arr
@@ -44,7 +46,7 @@ export function itemControlsHtml(idx, total) {
  * @param {number} direction  -1 arriba, +1 abajo.
  * @returns {boolean}
  */
-export function reorderArray(arr, idx, direction) {
+function reorderArray(arr, idx, direction) {
   const j = idx + direction;
   if (j < 0 || j >= arr.length) return false;
   const tmp = arr[idx]; arr[idx] = arr[j]; arr[j] = tmp;
@@ -88,13 +90,18 @@ export function wireItemList(root, a, ctx, { list, añadir }) {
  * @param {Element} root
  * @param {Activity} a
  * @param {EditorCtx} ctx
- * @param {{selector: string, lista: () => T[], campo: string}} o
+ * @param {{selector: string, lista: () => T[], campo: string, recorta?: boolean}} o
+ *   `recorta`: guarda el valor sin espacios a los lados. Lo pide el campo que
+ *   luego se COMPARA con lo que teclea el alumno (el resultado de una
+ *   operación): un espacio al final no se ve y hace fallar la respuesta buena.
+ *   No se aplica por defecto — en un enunciado el espacio es del que escribe.
  */
-export function wireCampoTexto(root, a, ctx, { selector, lista, campo }) {
+export function wireCampoTexto(root, a, ctx, { selector, lista, campo, recorta }) {
   on(root, 'input', selector, (_, el) => {
     const it = lista()[Number(el.dataset.i)];
     if (!it) return;
-    /** @type {Record<string, unknown>} */ (it)[campo] = /** @type {HTMLInputElement} */ (el).value;
+    const v = /** @type {HTMLInputElement} */ (el).value;
+    /** @type {Record<string, unknown>} */ (it)[campo] = recorta ? v.trim() : v;
     ctx.onChange(a);
   });
 }

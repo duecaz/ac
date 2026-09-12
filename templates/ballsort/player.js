@@ -14,7 +14,7 @@ import { mountBallSort } from './play.js';
 import { scoreBallsort } from './scorer.js';
 import { createBoard, randomBoard } from './game/board.js';
 import { formatMs } from './timer.js';
-import { ensureContent, bsContent } from './editor.js';
+import { ensureContent, bsContent } from './content.js';
 
 /**
  * @param {string|Element} rootSel

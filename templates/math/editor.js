@@ -1,20 +1,17 @@
 // Editor de Operaciones — solo aporta sus paneles; el chasis (incluida la
 // pestaña "Modos") lo pone el shell compartido.
-import { escapeHtml, valorDe, $input, marcado } from '../../core/html.js';
+import { escapeHtml, $input, marcado } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { ruleScopeNote, itemSecondsFieldHtml, wireItemSeconds } from '../../core/editorPrimitives.js';
+import { ruleScopeNote, itemSecondsFieldHtml, wireItemSeconds, wireCampoTexto } from '../../core/editorPrimitives.js';
 import { rid } from '../../core/ids.js';
 import { renderEditorShell } from '../../core/editorShell.js';
+import { preguntasDe } from '../../core/contentModels/qa.js';
 
 /**
  * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
  * @typedef {import('../../kernel/contracts/activity.js').QaItem} QaItem
  * @typedef {import('../../core/editorShell.js').EditorCtx} EditorCtx
  */
-
-/** Las operaciones de ESTA actividad: el modelo es `qa` y el editor lo sabe.
- *  @param {Activity} a @returns {QaItem[]} */
-const operaciones = (a) => /** @type {{items?: QaItem[]}} */ (a.content ?? {}).items ?? [];
 
 /**
  * @param {Element} root
@@ -53,7 +50,7 @@ function contentHtml(a) {
 }
 /** @param {Element} root @param {Activity} a @param {EditorCtx} ctx @returns {void} */
 function wireContent(root, a, ctx) {
-  const items = operaciones(a);
+  const items = preguntasDe(a);
   on(root, 'click', '#add-op', () => {
     // SIN `points`: Operaciones no tiene campo de puntos por ítem, así que
     // sembrarlo dejaba mudo el «Puntos por acierto» del panel.
@@ -66,8 +63,9 @@ function wireContent(root, a, ctx) {
     for (let i = 1; i <= 10; i++) items.push({ id: rid('m_'), question: `${n} × ${i}`, answer: String(n * i) });
     ctx.onChange(a); ctx.repaint();
   });
-  on(root, 'input', '.it-q', (e, el) => { items[+(el.dataset.i ?? 0)].question = valorDe(e); ctx.onChange(a); });
-  on(root, 'input', '.it-a', (e, el) => { items[+(el.dataset.i ?? 0)].answer = valorDe(e).trim(); ctx.onChange(a); });
+  wireCampoTexto(root, a, ctx, { selector: '.it-q', lista: () => preguntasDe(a), campo: 'question' });
+  // `recorta`: el resultado se COMPARA con lo que teclea el alumno.
+  wireCampoTexto(root, a, ctx, { selector: '.it-a', lista: () => preguntasDe(a), campo: 'answer', recorta: true });
   wireItemSeconds(root, a, ctx, items);   // R-3 · tiempo por pregunta
   on(root, 'click', '.it-del', (_, b) => { items.splice(+(b.dataset.i ?? 0), 1); ctx.onChange(a); ctx.repaint(); });
 }
@@ -91,7 +89,7 @@ function wireRules(root, a, ctx) {
 
 /** @param {Activity} a @returns {string} */
 function renderItems(a) {
-  const items = operaciones(a);
+  const items = preguntasDe(a);
   if (!items.length) return `<p class="text-muted">Sin operaciones. Usa "Generar" o "Añadir operación".</p>`;
   return items.map((it, i) => `
     <div class="input-group mb-2">

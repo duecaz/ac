@@ -1,7 +1,7 @@
 // Host view for live mode. Drives the phase machine over sessions.phase.
 //
 // v1.51.628: partido POR BUCLE (§26, deuda condicionada #2 de CLAUDE.md;
-// precedente: views/admin/matrix.js). Este fichero queda de ENSAMBLADOR
+// precedente: views/admin/diagnostico/matrix.js). Este fichero queda de ENSAMBLADOR
 // (§23: router/ciclo de vida, suscripción realtime, `scene()`, el switch de
 // fases, stageClaim, disposers) + los helpers que USAN VARIOS bucles a la vez
 // (`openQuestion`, `maybeAutoEnd`, `startRaceLoop`, `raceClock`, `endBadge`).
@@ -327,7 +327,7 @@ async function renderHost(rootSel, code, sessionId, activity) {
   };
 
   // Un módulo por bucle (§26), con la MISMA `rt`: precedente de carpeta
-  // views/admin/matrix.js. onChange/paint (abajo) solo conocen las funciones de
+  // views/admin/diagnostico/matrix.js. onChange/paint (abajo) solo conocen las funciones de
   // pintado que cada fábrica devuelve — nunca reimplementan un bucle.
   const lobby = createHostLobby(rt);
   const rondas = createHostRondas(rt);

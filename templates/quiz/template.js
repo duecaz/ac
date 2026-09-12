@@ -1,5 +1,5 @@
 // Quiz template: classic multiple-choice. Uses contentModels/qa.
-import { stripSeededPoints, defaultQaItems, QA_PRIMER_PASO } from '../../core/contentModels/qa.js';
+import { stripSeededPoints, defaultQaItems, QA_PRIMER_PASO, answerIndices } from '../../core/contentModels/qa.js';
 import { BaseTemplate } from '../base.js';
 import { SHAPE_ICONS } from '../../core/roundRender.js';
 import { renderQuizPlayer } from './player.js';
@@ -200,14 +200,12 @@ function rellenarAnswerIdx(items) {
         : String(it.answer ?? '').trim() === '';
       if (lost && texts.length) it.answer = texts.length === 1 ? texts[0] : texts;
     }
-    if (!Array.isArray(it.answerIdx)) {
-      const ans = it.answer;
-      it.answerIdx = opciones.reduce((acc, o, k) => {
-        const hit = Array.isArray(ans) ? ans.includes(o) : (ans != null && ans !== '' && ans === o);
-        if (hit) acc.push(k);
-        return acc;
-      }, /** @type {number[]} */ ([]));
-    }
+    // «Cuál es la correcta» tiene UN dueño (`answerIndices`, core/contentModels/qa.js):
+    // compara con el MISMO `norm` que el scorer. Aquí se derivaba con `===`
+    // crudo, así que una opción «madrid» con respuesta «Madrid» —que el juego
+    // da por buena— se guardaba como `answerIdx: []`, y desde ese momento el
+    // editor la pintaba SIN marcar.
+    if (!Array.isArray(it.answerIdx)) it.answerIdx = answerIndices(it);
   }
 }
 

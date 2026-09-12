@@ -5,6 +5,7 @@
 // Run: node tests/soloPlayer.test.mjs
 import assert from 'node:assert';
 import { runSequentialPlayer, runFreeformPlayer } from '../core/soloPlayer.js';
+import { GameEvents, onGame } from '../core/gameEvents.js';
 
 let passed = 0;
 const ok = (m) => { passed++; console.log('  ✓', m); };
@@ -194,6 +195,74 @@ try {
     ok('runFreeformPlayer: saveProgress/loadProgress reanuda en solo; limpia al terminar; invalida por updatedAt; Live no');
     delete global.localStorage;
   }
+
+  // Los dos bloques que siguen cierran partidas → el shell guarda el resultado
+  // (cola offline en el almacén): sin un `localStorage` de mentira, la consola
+  // se llena de avisos ajenos a lo que se comprueba.
+  const memFin = new Map();
+  global.localStorage = {
+    getItem: (k) => (memFin.has(k) ? memFin.get(k) : null),
+    setItem: (k, v) => { memFin.set(k, String(v)); },
+    removeItem: (k) => { memFin.delete(k); },
+  };
+
+  // ── EL PODIO LO EMITE EL SHELL, Y UNA SOLA VEZ ─────────────────────────────
+  // El podio enciende el sonido, el confeti y la meta de la rana (core/sounds,
+  // core/effects, core/soloAnimator). Lo emitían SEIS players a mano y otros
+  // seis se quedaban sin él; ahora lo pone el shell al cerrar. Si alguno vuelve
+  // a copiarlo, se oye DOS veces — por eso la cuenta es exacta, no «≥1».
+  {
+    /** @param {() => void} jugar */
+    const podiosDe = (jugar) => {
+      const vistos = [];
+      const off = onGame(GameEvents.PODIUM, (detalle) => vistos.push(detalle));
+      try { jugar(); drain(); } finally { off(); }
+      return vistos;
+    };
+
+    const libre = podiosDe(() => {
+      const ctx = runFreeformPlayer(makeRoot(), { id: 'pod1', rules: {}, scoring: {} }, { mode: 'solo' });
+      ctx.finish({ score: 7, maxScore: 10 });
+      ctx.finish({ score: 7, maxScore: 10 });   // un segundo final no suena otra vez
+    });
+    assert.strictEqual(libre.length, 1, 'el shell LIBRE emite PODIUM exactamente una vez');
+    assert.strictEqual(libre[0].top[0].score, 7, 'el podio lleva el puntaje final');
+
+    const sec = podiosDe(() => {
+      runSequentialPlayer(makeRoot(), baseActivity, { mode: 'solo' }, {
+        renderItem({ item, submit }) { submit({ itemId: item.id, correct: true, points: 1 }); },
+      });
+    });
+    assert.strictEqual(sec.length, 1, 'el shell SECUENCIAL emite PODIUM exactamente una vez');
+    assert.strictEqual(sec[0].top[0].score, 3, 'el podio lleva el puntaje final');
+    ok('PODIUM: lo emite el shell (libre y secuencial), exactamente una vez por partida');
+  }
+
+  // ── los dos shells cierran IGUAL (un solo `cerrarPartida`) ────────────────
+  // El cierre estaba escrito dos veces y en distinto orden. Ahora lo pone
+  // `cerrarPartida`: guardar → pintar → avisar al caller. Lo observable desde
+  // Node es que pintar precede al `onFinish` del caller en AMBOS shells (el
+  // guardado es asíncrono y no deja huella síncrona).
+  {
+    const orden = [];
+    const root = { querySelector: () => null, querySelectorAll: () => [],
+      set innerHTML(_v) { orden.push('pintar'); }, get innerHTML() { return ''; } };
+    const ctx = runFreeformPlayer(root, { id: 'ord1', rules: {}, scoring: {} },
+      { mode: 'async-tracked', onFinish: () => { orden.push('onFinish'); } });
+    ctx.finish({ score: 1, maxScore: 1 });
+    assert.deepStrictEqual(orden, ['pintar', 'onFinish'], 'pinta y luego avisa al caller');
+
+    const orden2 = [];
+    const root2 = { querySelector: () => null, querySelectorAll: () => [],
+      set innerHTML(_v) { orden2.push('pintar'); }, get innerHTML() { return ''; } };
+    runSequentialPlayer(root2, { id: 'ord2', rules: {}, scoring: {}, content: { items: [] } },
+      { mode: 'async-tracked', onFinish: () => { orden2.push('onFinish'); } },
+      { renderItem() {} });
+    drain();
+    assert.deepStrictEqual(orden2, ['pintar', 'onFinish'], 'el secuencial cierra en el mismo orden que el libre');
+    ok('cerrarPartida: los dos shells cierran con el mismo orden');
+  }
+  delete global.localStorage;
 } finally {
   global.setTimeout = realSetTimeout;
 }

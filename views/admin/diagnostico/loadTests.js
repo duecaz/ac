@@ -3,14 +3,14 @@
 // (N a la vez, live+tareas) y «Carrera e2e» (2 alumnos corren una carrera
 // completa) — comparten el mismo tono (datos desechables `stress_*` que se
 // borran solos) aunque no comparten estado.
-import { escapeHtml } from '../../core/html.js';
-import { on } from '../../core/events.js';
-import { confirmModal } from '../../core/toast.js';
-import { runStressTest } from '../../core/stressTest.js';
-import { PB_URL } from '../../pocketbase.config.js';
+import { escapeHtml } from '../../../core/html.js';
+import { on } from '../../../core/events.js';
+import { confirmModal } from '../../../core/toast.js';
+import { runStressTest } from '../../../core/stressTest.js';
+import { PB_URL } from '../../../pocketbase.config.js';
 
 
-import { mensajeDe } from '../../core/frontera.js';
+import { mensajeDe } from '../../../core/frontera.js';
 /** @returns {{html: () => string, wire: (rootSel: string) => void}} */
 export function createLoadTestsSection() {
   return {
@@ -50,7 +50,7 @@ export function createLoadTestsSection() {
         };
         paint();
         try {
-          const { runRaceE2e } = await import('../../core/raceE2e.js');
+          const { runRaceE2e } = await import('../../../core/raceE2e.js');
           const r = await runRaceE2e({ pbUrl: PB_URL, onLog: (m) => { log.push(m); paint(); } });
           const notes = r.notes.length ? `<div class="alert alert-warning py-1 px-2 small mb-2">${r.notes.map(n => escapeHtml(n)).join('<br>')}</div>` : '';
           box.innerHTML = `

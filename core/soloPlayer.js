@@ -1,4 +1,4 @@
-// FreeformShell: guarantees resultScreenHtml + trySaveResult + onFinish for
+// FreeformShell: guarantees resultScreenHtml + trySaveResult + PODIUM + onFinish for
 // players whose finish moment is not a sequential item-by-item loop
 // (Wheel, Question-Live, Memory, Match, Wordsearch, Crossword).
 //
@@ -122,29 +122,15 @@ import { claimStage } from './stageClaim.js';
 
 /**
  * LO QUE DEVUELVE EL SHELL LIBRE. `loadProgress` lee del ALMACÉN, que es
- * frontera: llega como `unknown` y lo estrecha quien sabe qué guardó.
+ * frontera: el shell la estrecha UNA vez (`crearProgreso`) y la entrega como
+ * saco de campos; qué significa cada campo lo sabe quien lo guardó.
  * @typedef {Object} FreeformCtx
  * @property {(o?: FreeformFinishOpts) => ({timeUsed: number, score: number, maxScore: number}|undefined)} finish
  * @property {(snapshot: unknown) => void} saveProgress
- * @property {() => unknown} loadProgress
+ * @property {() => Record<string, unknown>|null} loadProgress
  * @property {() => boolean} alive
  * @property {(cb: () => void) => void} alAgotarse
  */
-
-/**
- * Lee el progreso guardado. Es FRONTERA (`localStorage` + `JSON.parse`): sale
- * como un saco de campos y lo interpreta quien lo guardó.
- * @param {string} key
- * @returns {Record<string, unknown>|null}
- */
-function leerProgreso(key) {
-  /** @type {unknown} */
-  let saved = null;
-  try { saved = JSON.parse(lsGet(key, '') || 'null'); } catch { saved = null; }
-  return saved && typeof saved === 'object' && !Array.isArray(saved)
-    ? /** @type {Record<string, unknown>} */ (saved)
-    : null;
-}
 
 // Reanudar al recargar (F5) SOLO en modo individual: guarda el avance (idx/score/
 // answers/startedAt) por actividad y lo retoma si el navegador se recarga a mitad.
@@ -153,12 +139,100 @@ function leerProgreso(key) {
 // invalida si la actividad se editó (updatedAt) y se limpia al terminar/reiniciar.
 /** @param {string} id */
 const progressKey = (id) => `ww.solo.progress.${id}`;
-/** @param {Activity} activity @param {PlayerOpts} opts */
-function canResumeSolo(activity, opts) {
-  return (!opts.mode || opts.mode === 'solo') && !activity?.rules?.randomize;
-}
 /** @param {string|null|undefined} activityId */
 export function clearSoloProgress(activityId) { if (activityId) lsDel(progressKey(activityId)); }
+
+/**
+ * EL PROGRESO GUARDADO, YA ESTRECHADO. El almacén es frontera (`localStorage` +
+ * `JSON.parse`): lo que vuelve de ahí es `unknown`, y se convierte en estos
+ * campos UNA sola vez, aquí. Quien reanuda (los dos shells, y la ronda de
+ * Tildes/Comas a través del shell libre) ya recibe números y listas, no un saco
+ * que cada uno tenga que volver a estrechar con sus propios casts.
+ * @typedef {Object} ProgresoGuardado
+ * @property {number|null} startedAt   Cuándo empezó la partida original.
+ * @property {number|null} idx         Shell secuencial: por qué ítem iba.
+ * @property {number} score
+ * @property {AnswerRecord[]} answers
+ * @property {Record<string, unknown>|null} snapshot  Shell libre: lo que guardó el core.
+ */
+
+/**
+ * Lo que se le pide GUARDAR. Cada shell escribe lo suyo: el secuencial su
+ * avance por ítems, el libre el snapshot que le da el core.
+ * @typedef {{startedAt?: number, idx?: number, score?: number,
+ *   answers?: AnswerRecord[], snapshot?: unknown}} ProgresoAGuardar
+ */
+
+/**
+ * LA REANUDACIÓN, UNA VEZ PARA LOS DOS SHELLS (§21b). Estaba escrita dos veces
+ * —misma clave, mismo `v:1`, misma invalidación por `updatedAt`— y con dos
+ * lecturas distintas del mismo JSON.
+ * @param {Activity} activity
+ * @param {PlayerOpts} opts
+ * @returns {{activo: boolean, cargar: () => ProgresoGuardado|null,
+ *   guardar: (datos: ProgresoAGuardar) => void, limpiar: () => void}}
+ */
+function crearProgreso(activity, opts) {
+  const activo = (!opts.mode || opts.mode === 'solo') && !activity?.rules?.randomize;
+  const key = progressKey(activity.id);
+  const num = (/** @type {unknown} */ v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
+  return {
+    activo,
+    cargar() {
+      if (!activo) return null;
+      /** @type {unknown} */
+      let crudo = null;
+      try { crudo = JSON.parse(lsGet(key, '') || 'null'); } catch { crudo = null; }
+      if (!crudo || typeof crudo !== 'object' || Array.isArray(crudo)) return null;
+      const saco = /** @type {Record<string, unknown>} */ (crudo);
+      if (saco.updatedAt !== (activity.updatedAt || '')) return null;   // la actividad se editó
+      const snap = saco.snapshot;
+      return {
+        startedAt: num(saco.startedAt),
+        idx: num(saco.idx),
+        score: num(saco.score) ?? 0,
+        answers: Array.isArray(saco.answers) ? /** @type {AnswerRecord[]} */ (saco.answers) : [],
+        snapshot: snap && typeof snap === 'object' && !Array.isArray(snap)
+          ? /** @type {Record<string, unknown>} */ (snap)
+          : null,
+      };
+    },
+    /** @param {ProgresoAGuardar} datos */
+    guardar(datos) {
+      if (!activo) return;
+      lsSet(key, JSON.stringify({ v: 1, updatedAt: activity.updatedAt || '', ...datos }));
+    },
+    limpiar() { if (activo) lsDel(key); },
+  };
+}
+
+/**
+ * EL CIERRE DE UNA PARTIDA, UNA VEZ PARA LOS DOS SHELLS (§21b). Los dos hacían
+ * lo mismo en distinto orden: el libre guardaba y luego pintaba, el secuencial
+ * pintaba y luego guardaba. Se unifica al orden del LIBRE —guardar antes de
+ * pintar— porque el registro del resultado no puede quedar a merced de que el
+ * pintado salga bien: `mount` toca el DOM (y las plantillas le añaden HTML
+ * propio), y si algo de eso lanza, el alumno ya habría terminado sin que su
+ * puntaje llegase a `results`. Pintar, en cambio, no depende de guardar.
+ * El PODIO se emite aquí (sonido · confeti · la rana que llega a la meta): es
+ * del shell, no de cada plantilla — seis lo copiaban a mano y otros seis se
+ * quedaban sin él.
+ * @param {{rootSel: string|Element, activity: Activity, opts: PlayerOpts,
+ *   score: number, maxScore: number, timeUsed: number,
+ *   pantalla: Parameters<typeof resultScreenHtml>[0], after?: string}} o
+ */
+function cerrarPartida({ rootSel, activity, opts, score, maxScore, timeUsed, pantalla, after = '' }) {
+  emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score }] });
+  trySaveResult(opts, {
+    activityId: activity.id,
+    scoreAuto: score,
+    scoreFinal: score,
+    maxScore,
+    timeUsed,
+  });
+  mount(rootSel, resultScreenHtml({ ...pantalla, score, maxScore, mode: opts.mode }) + after);
+  cablearRepetir(rootSel, activity.id);
+}
 
 // «Jugar otra vez» (core/resultScreen.js) → volver a montar la actividad desde
 // cero. Se hace RECARGANDO la página en vez de re-ejecutando el player: la
@@ -212,20 +286,18 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
   // guardado (o null) al montar y restaura el startedAt; saveProgress(snapshot)
   // lo guarda tras cada jugada. Mismas garantías que el secuencial: solo modo
   // individual, invalidado por updatedAt, limpiado al terminar.
-  const resumeOn = canResumeSolo(activity, opts);
-  const pKey = progressKey(activity.id);
-  /** @returns {unknown} */
+  const progreso = crearProgreso(activity, opts);
+  /** @returns {Record<string, unknown>|null} */
   function loadProgress() {
-    if (!resumeOn) return null;
-    const saved = leerProgreso(pKey);
-    if (!saved || saved.updatedAt !== (activity.updatedAt || '')) return null;
-    if (typeof saved.startedAt === 'number') startedAt = saved.startedAt;
-    return saved.snapshot ?? null;
+    const saved = progreso.cargar();
+    if (!saved) return null;
+    if (saved.startedAt !== null) startedAt = saved.startedAt;
+    return saved.snapshot;
   }
   /** @param {unknown} snapshot */
   function saveProgress(snapshot) {
-    if (!resumeOn || finished) return;
-    lsSet(pKey, JSON.stringify({ v: 1, updatedAt: activity.updatedAt || '', startedAt, snapshot }));
+    if (finished) return;
+    progreso.guardar({ startedAt, snapshot });
   }
 
   // `lead` and `stats` may be strings OR functions of { timeUsed, score,
@@ -246,20 +318,12 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
     if (finished || !alive()) return;   // un final zombi ni guarda ni repinta (§23)
     finished = true;
     crono.stop();   // §23: el reloj se va con su pantalla (y los tests sin DOM real salen limpios)
-    if (resumeOn) lsDel(pKey); // partida terminada → no reanudar
+    progreso.limpiar(); // partida terminada → no reanudar
 
     const timeUsed = Math.round((clock.now() - startedAt) / 1000);
     const ctx = { timeUsed, score, maxScore };
     const leadStr = typeof lead === 'function' ? lead(ctx) : lead;
     const statsStr = typeof stats === 'function' ? stats(ctx) : stats;
-
-    trySaveResult(opts, {
-      activityId: activity.id,
-      scoreAuto: score,
-      scoreFinal: score,
-      maxScore,
-      timeUsed,
-    });
 
     // EL FINAL LO PONE EL SHELL, SIN SALIDA: una plantilla puede AÑADIR encima
     // (title/icon/stats/after que digan la verdad de cómo acabó) y nunca
@@ -269,9 +333,11 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
     // de excepciones con motivo y el dueño lo cerró: «todos deben seguir las
     // reglas a rajatabla». Una opción que se ignora es peor que una que no
     // existe — si un player la pasa, `costuras-divergencia` lo caza en CI.
-    mount(rootSel, resultScreenHtml({ icon, iconColor, title, lead: leadStr, stats: statsStr, score, maxScore, mode: opts.mode })
-      + (typeof after === 'function' ? after(ctx) : after));
-    cablearRepetir(rootSel, activity.id);
+    cerrarPartida({
+      rootSel, activity, opts, score, maxScore, timeUsed,
+      pantalla: { icon, iconColor, title, lead: leadStr, stats: statsStr },
+      after: typeof after === 'function' ? after(ctx) : after,
+    });
 
     if (opts.onFinish) opts.onFinish({ score, maxScore, timeUsed, ...(answers !== undefined ? { answers } : {}) });
     // Lo calculado vuelve al player por si su `after` quiere citarlo.
@@ -337,22 +403,21 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks) {
     : { stop: () => {} };
 
   // Reanudar (F5): retoma el avance guardado si es de ESTA versión y va a medias.
-  const resumeOn = canResumeSolo(activity, opts);
-  const pKey = progressKey(activity.id);
-  if (resumeOn) {
-    const saved = leerProgreso(pKey);
-    if (saved && saved.updatedAt === (activity.updatedAt || '') && Array.isArray(saved.answers)
-        && Number.isInteger(saved.idx) && Number(saved.idx) > 0 && Number(saved.idx) < items.length) {
-      state.idx = Number(saved.idx);
-      state.score = Number(saved.score) || 0;
+  const progreso = crearProgreso(activity, opts);
+  {
+    const saved = progreso.cargar();
+    if (saved && saved.idx !== null && Number.isInteger(saved.idx)
+        && saved.idx > 0 && saved.idx < items.length) {
+      state.idx = saved.idx;
+      state.score = saved.score;
       state.answers = saved.answers;
-      if (typeof saved.startedAt === 'number') state.startedAt = saved.startedAt;
+      if (saved.startedAt !== null) state.startedAt = saved.startedAt;
     }
   }
   function persistProgress() {
-    if (!resumeOn || finished) return;
+    if (finished) return;
     if (state.idx <= 0 || state.idx >= items.length) return; // nada útil al inicio/final
-    lsSet(pKey, JSON.stringify({ v: 1, updatedAt: activity.updatedAt || '', idx: state.idx, score: state.score, answers: state.answers, startedAt: state.startedAt }));
+    progreso.guardar({ idx: state.idx, score: state.score, answers: state.answers, startedAt: state.startedAt });
   }
 
   const maxScore = () => (callbacks.maxScore
@@ -449,23 +514,20 @@ export function runSequentialPlayer(rootSel, activity, opts = {}, callbacks) {
     if (finished || !alive()) return;   // un final zombi ni guarda ni repinta (§23)
     finished = true;
     stopTimer();
-    if (resumeOn) lsDel(pKey); // partida terminada → no reanudar
+    progreso.limpiar(); // partida terminada → no reanudar
     const timeUsed = Math.round((clock.now() - state.startedAt) / 1000);
     const max = maxScore();
-    emitGame(GameEvents.PODIUM, { top: [{ name: 'Tú', score: state.score }] });
     // Sin salida, como en el shell libre: `resultScreen` AÑADE (título, lead,
     // stats propios) sobre la estándar; nadie la sustituye.
-    {
-      const custom = callbacks.resultScreen?.({ state, items, maxScore: max, timeUsed }) || {};
-      mount(rootSel, resultScreenHtml({
+    const custom = callbacks.resultScreen?.({ state, items, maxScore: max, timeUsed }) || {};
+    cerrarPartida({
+      rootSel, activity, opts, score: state.score, maxScore: max, timeUsed,
+      pantalla: {
         lead: `Puntos: <b>${state.score}</b> / ${max}`,
         stats: `Tiempo: ${timeUsed}s`,
-        score: state.score, maxScore: max, mode: opts.mode,
         ...custom,
-      }));
-      cablearRepetir(rootSel, activity.id);
-    }
-    trySaveResult(opts, { activityId: activity.id, scoreAuto: state.score, scoreFinal: state.score, maxScore: max, timeUsed });
+      },
+    });
     // Template-level teardown (e.g. reset streaks) runs before the caller's hook.
     callbacks.onFinish?.(state);
     // El caller recibe TAMBIÉN el techo y el tiempo que el shell ya calculó (igual

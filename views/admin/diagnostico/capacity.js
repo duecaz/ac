@@ -1,15 +1,15 @@
 // v1.51.629: adminView se partió POR PANEL. Esta sección es «Capacidad»
 // (§25 — el servidor es una Pi COMPARTIDA con otros proyectos): cuánto ocupo
 // de actividades y qué salas en vivo caducaron (con su borrado bajo confirmación).
-import { escapeHtml } from '../../core/html.js';
-import { on } from '../../core/events.js';
-import { list } from '../../core/storage.js';
-import { QUOTAS, checkActivityCount, checkActivitySize, liveRetentionCutoff } from '../../core/quotas.js';
-import { purgeOldLive } from '../../core/liveTransport.js';
-import { clock } from '../../core/clock.js';
-import { confirmModal } from '../../core/toast.js';
-import { mensajeDe } from '../../core/frontera.js';
-/** @typedef {import('../../kernel/contracts/dataPort.js').PurgeReport} PurgeReport */
+import { escapeHtml } from '../../../core/html.js';
+import { on } from '../../../core/events.js';
+import { list } from '../../../core/storage.js';
+import { QUOTAS, checkActivityCount, checkActivitySize, liveRetentionCutoff } from '../../../core/quotas.js';
+import { purgeOldLive } from '../../../core/liveTransport.js';
+import { clock } from '../../../core/clock.js';
+import { confirmModal } from '../../../core/toast.js';
+import { mensajeDe } from '../../../core/frontera.js';
+/** @typedef {import('../../../kernel/contracts/dataPort.js').PurgeReport} PurgeReport */
 
 
 /** @returns {{html: () => string, wire: (rootSel: string) => void}} */

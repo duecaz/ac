@@ -3,7 +3,8 @@
 // wrapper del modelo — core/contentModels/pairs.js).
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
-import { newPair, renderPairsEditor } from '../../core/contentModels/pairs.js';
+import { newPair, paresDe } from '../../core/contentModels/pairs.js';
+import { renderPairsEditor } from '../../core/editorPares.js';
 import { itemControlsHtml, wireItemList, wireCampoTexto } from '../../core/editorPrimitives.js';
 import { scoringPanelHtml, wireScoringPanel } from '../../core/editorPanels.js';
 import { DEFAULT_REVEAL_MS } from './player.js';
@@ -15,10 +16,6 @@ import { memoryRules } from './template.js';
  * @typedef {import('../../kernel/contracts/activity.js').PairsContent} PairsContent
  * @typedef {import('../../core/editorShell.js').EditorCtx} EditorCtx
  */
-
-/** Los pares de ESTA actividad: el modelo es `pairs` y el editor lo sabe.
- *  @param {Activity} a @returns {Pair[]} */
-const pares = (a) => /** @type {PairsContent} */ (a.content).pairs;
 
 /**
  * @param {Element} root
@@ -40,7 +37,7 @@ export function renderMemoryEditor(root, activity, onChange) {
 
 /** @param {Activity} a */
 function contentHtml(a) {
-  const lista = pares(a);
+  const lista = paresDe(a);
   return `
     <p class="small text-muted">Cada par genera dos cartas (texto izquierdo y derecho).</p>
     ${lista.map((p, i) => `
@@ -53,9 +50,9 @@ function contentHtml(a) {
 }
 /** @param {Element} root @param {Activity} a @param {EditorCtx} ctx */
 function wireContent(root, a, ctx) {
-  wireCampoTexto(root, a, ctx, { selector: '.mp-l', lista: () => pares(a), campo: 'left' });
-  wireCampoTexto(root, a, ctx, { selector: '.mp-r', lista: () => pares(a), campo: 'right' });
-  wireItemList(root, a, ctx, { list: pares(a), añadir: { selector: '#mp-add', fabrica: newPair } });
+  wireCampoTexto(root, a, ctx, { selector: '.mp-l', lista: () => paresDe(a), campo: 'left' });
+  wireCampoTexto(root, a, ctx, { selector: '.mp-r', lista: () => paresDe(a), campo: 'right' });
+  wireItemList(root, a, ctx, { list: paresDe(a), añadir: { selector: '#mp-add', fabrica: newPair } });
 }
 
 /** @param {Activity} a */

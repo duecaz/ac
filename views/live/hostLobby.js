@@ -26,7 +26,7 @@ import { GameEvents, emitGame } from '../../core/gameEvents.js';
  *  @param {string|undefined} x @returns {x is LiveLoop} */
 const esBucle = (x) => !!x && /** @type {string[]} */ (LIVE_LOOPS).includes(x);
 
-// Fábrica única (precedente: views/admin/matrix.js). `rt` es el estado
+// Fábrica única (precedente: views/admin/diagnostico/matrix.js). `rt` es el estado
 // compartido de la sala (core/liveLoops.js §26, core/livePhases.js) inyectado
 // por el ensamblador `views/hostLive.js`.
 /** @param {HostRt} rt */

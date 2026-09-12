@@ -1,6 +1,5 @@
 import { installErrorHandlers } from './core/errorLog.js';
-import { route, start, navigate, setNotFound, setBeforeResolve, resolve } from './core/router.js';
-import { clearListeners } from './core/events.js';
+import { route, navigate, setNotFound, resolve } from './core/router.js';
 
 installErrorHandlers('teacher');
 
@@ -22,17 +21,15 @@ import { renderJuegos } from './views/juegos.js';
 import { renderModerate } from './views/moderate.js';
 import { renderRegistro } from './views/registro.js';
 import { renderAuthor } from './views/author.js';
-import { renderAdmin } from './views/adminView.js';
 import { sync, setStorageUser, claimGuestActivities, retryUnsynced } from './core/storage.js';
 import { ensureIdentity } from './core/identity.js';
 import { authRefresh, completeOAuthLogin, getAuthUserId, onAuthChange } from './core/auth.js';
 import { mountAuthSlot } from './core/authWidget.js';
 import { requireTeacher, requireHost } from './core/authGate.js';
 import { modeAuthHint } from './core/modes.js';
-import { applySkin } from './core/skins.js';
 // Side-effect: boot.js wires sounds + visual effects to the GameEvents bus and
-// exposes the navbar helpers (version stamp + mute button).
-import { stampVersion, wireTopbarMenu } from './core/boot.js';
+// exposes the shared page boot (skin baseline, navbar chrome, router start).
+import { bootApp } from './core/boot.js';
 import { initCustomAnims } from './core/vsAnimations.js';
 import { html, mount } from './core/html.js';
 
@@ -92,67 +89,64 @@ route('#/juegos', () => renderJuegos(APP));   // la estantería (§4c/§7c): sin
 route('#/autor/:id', ({ id }) => renderAuthor(APP, id));
 route('#/registro', () => renderRegistro(APP));   // alta de profe por correo (decisión 2026-08-11)
 route('#/moderar', () => renderModerate(APP));
-route('#/admin', () => renderAdmin(APP));
+// EL PANEL DE ADMIN NO VIAJA EN EL ARRANQUE (T8 del plan de simplificar). Es
+// diagnóstico: lo abre un administrador de vez en cuando, y hasta hoy sus ~15 000
+// líneas (colecciones PB, pruebas de carga, matriz, medidor de fluidez…) se
+// descargaban y parseaban en CADA carga del profe — también en la pizarra lenta
+// del aula. Import DINÁMICO: se pide al entrar en la ruta, no antes.
+route('#/admin', () => import('./views/adminView.js').then(m => m.renderAdmin(APP)));
 
 setNotFound(() => mount(APP, html`<div class="alert alert-warning">Ruta no encontrada. <a href="#/home">Inicio</a></div>`));
 
-// Antes de renderizar cada vista, suelta los handlers delegados que la vista
-// anterior dejó en #app (raíz compartida y estable). Sin esto, p.ej. los
-// handlers .skin-pick/.bg-pick del player seguían vivos al entrar al editor
-// (mismas clases) → "mount: root not found" + el tema saltaba a <body>.
-setBeforeResolve(() => clearListeners(APP));
+// Almacén de actividades = el profe logueado con Google (o 'guest' si no hay
+// sesión). getAuthUserId() lee la sesión guardada de forma síncrona → no bloquea.
+// (S1) Antes se usaba el id ANÓNIMO de ensureIdentity como storage user; ya no:
+// guest usa la clave legacy y un profe usa la suya propia.
+/** @param {string|null|undefined} id */
+function applyStorageUser(id) {
+  setStorageUser(id || undefined);
+  if (id) {
+    // Primer login en este navegador: adopta las actividades anónimas locales.
+    claimGuestActivities(id);
+    // Sube las reclamadas (firma owner) y trae SOLO las del profe.
+    retryUnsynced().catch(() => {});
+    sync()
+      .then(() => { const h = location.hash; if (!h || h === '#/' || h === '#/home' || h === '#/mine') resolve(); })
+      .catch(err => console.warn('[sync]', err.message));
+  }
+}
 
 (async function boot() {
-  // Baseline NEUTRO del chrome. Antes leía `ww.skin` de localStorage — una
-  // clave que NADIE escribía en todo el repo (el skin es de la ACTIVIDAD,
-  // `presentation.skin`, y se aplica al marco, no a la página). Se quitó la
-  // lectura muerta, no el baseline: una clave fantasma es una promesa falsa.
-  applySkin('default');
-  stampVersion();
-  wireTopbarMenu();
-  initCustomAnims(); // register any animations added from the Admin panel
+  // El arranque compartido con el alumno (baseline de skin, sello de versión,
+  // menú de la barra, soltar los handlers delegados entre vistas, start +
+  // __APP_READY__) vive en core/boot.js. Aquí, solo lo PROPIO del profe.
+  await bootApp({
+    app: APP,
+    antesDeArrancar: async () => {
+      initCustomAnims(); // register any animations added from the Admin panel
 
-  // Retorno de Google OAuth: aterriza en teacher.html?code=…&state=… . Se canjea
-  // el code ANTES de arrancar el router y se limpia la query (deja el #hash para
-  // que el router enrute normal). Si falla, se avisa pero la app sigue.
-  const _q = new URLSearchParams(location.search);
-  const _code = _q.get('code');
-  const _state = _q.get('state');
-  if (_code && _state) {
-    let _returnHash = '';
-    try { const _res = await completeOAuthLogin(_code, _state); _returnHash = _res?.returnHash || ''; }
-    catch (e) {
-      const _msg = e instanceof Error ? e.message : String(e);
-      console.warn('[oauth]', _msg);
-      try { const { toast, TOAST_LARGO } = await import('./core/toast.js'); toast('Login con Google: ' + _msg, 'danger', TOAST_LARGO); } catch {}
-    }
-    // Devuelve al profe a donde estaba (Google no preserva el #hash en el retorno).
-    history.replaceState(null, '', location.pathname + (_returnHash || location.hash || '#/home'));
-  }
-  mountAuthSlot('#ww-auth-slot').catch(() => {});
+      // Retorno de Google OAuth: aterriza en teacher.html?code=…&state=… . Se canjea
+      // el code ANTES de arrancar el router y se limpia la query (deja el #hash para
+      // que el router enrute normal). Si falla, se avisa pero la app sigue.
+      const _q = new URLSearchParams(location.search);
+      const _code = _q.get('code');
+      const _state = _q.get('state');
+      if (_code && _state) {
+        let _returnHash = '';
+        try { const _res = await completeOAuthLogin(_code, _state); _returnHash = _res?.returnHash || ''; }
+        catch (e) {
+          const _msg = e instanceof Error ? e.message : String(e);
+          console.warn('[oauth]', _msg);
+          try { const { toast, TOAST_LARGO } = await import('./core/toast.js'); toast('Login con Google: ' + _msg, 'danger', TOAST_LARGO); } catch {}
+        }
+        // Devuelve al profe a donde estaba (Google no preserva el #hash en el retorno).
+        history.replaceState(null, '', location.pathname + (_returnHash || location.hash || '#/home'));
+      }
+      mountAuthSlot('#ww-auth-slot').catch(() => {});
 
-  // Almacén de actividades = el profe logueado con Google (o 'guest' si no hay
-  // sesión). getAuthUserId() lee la sesión guardada de forma síncrona → no bloquea.
-  // (S1) Antes se usaba el id ANÓNIMO de ensureIdentity como storage user; ya no:
-  // guest usa la clave legacy y un profe usa la suya propia.
-  /** @param {string|null|undefined} id */
-  function applyStorageUser(id) {
-    setStorageUser(id || undefined);
-    if (id) {
-      // Primer login en este navegador: adopta las actividades anónimas locales.
-      claimGuestActivities(id);
-      // Sube las reclamadas (firma owner) y trae SOLO las del profe.
-      retryUnsynced().catch(() => {});
-      sync()
-        .then(() => { const h = location.hash; if (!h || h === '#/' || h === '#/home' || h === '#/mine') resolve(); })
-        .catch(err => console.warn('[sync]', err.message));
-    }
-  }
-  applyStorageUser(getAuthUserId());
-
-  // Start the router immediately so la home pinta desde localStorage sin esperar red.
-  start();
-  Reflect.set(window, '__APP_READY__', true);
+      applyStorageUser(getAuthUserId());
+    },
+  });
 
   // Identidad anónima para subsistemas de alumno/resultados (NO es el storage user).
   ensureIdentity().catch(err => console.warn('[boot] identity:', err.message));
