@@ -14,7 +14,7 @@
 | «está ahogado, no hay padding a los costados» | `views/editView.js` monta directo en `#app`, y `#app` perdió su `container py-3` cuando la home pasó a poner su propio `.home-wrap`. La home quedó bien; el editor, los reportes y el admin se quedaron a ras del borde | **SÍ** — 13 editores + reportes + admin |
 | «no hay cómo colocar más etiquetas» | 11 de 13 editores tienen su botón «+ Añadir…». `diagram` y `ballsort` NO: en el diagrama los pines se añaden CLICANDO la imagen, está escrito en una línea gris y se pierde | **SÍ** — es una gramática que debe ser una |
 | «viene ya escrito el contenido» | toda plantilla nace con `defaultContent()` de muestra. En el diagrama son 4 pines *Cabeza/Ojo/Nariz/Boca* sobre una cara de ejemplo | **SÍ** — decisión de producto, todas |
-| (lo peor, y no lo dijo porque se ve solo) | al **cambiar la imagen** los pines del ejemplo **se quedan clavados** en las coordenadas de la cara anterior: «Nariz» aparece en medio de tu mapa. `templates/diagram/editor.js:58` cambia `content.image` y no toca `content.pins` | diagram (revisar el mismo patrón en crossword/wordsearch) |
+| (lo peor, y no lo dijo porque se ve solo) | al **cambiar la imagen** los pines del ejemplo **se quedan clavados** en las coordenadas de la cara anterior: «Nariz» aparece en medio de tu mapa. `templates/diagram/editor.js:58` cambia `content.image` y no toca `content.pins` | diagram (revisar el mismo patrón en wordsearch) |
 | «que se busquen imágenes en un modal» | hoy solo se puede SUBIR un archivo | **SÍ** — lo piden el diagrama, el fondo y la imagen de pregunta |
 
 ## 1 · Las reglas que se fijan
@@ -57,8 +57,8 @@ vuelve: es justo lo que pasó al rediseñar la home.
 ### F3 · Imagen y pines coherentes (el bug feo)
 Al cambiar la imagen del diagrama: si hay pines, preguntar UNA vez —«¿mantener
 las etiquetas donde están o empezar de cero?»— con **vaciar por defecto**, que
-es lo que espera quien sube su propio diagrama. Revisar el mismo patrón en
-crucigrama y sopa (cambiar la rejilla con palabras ya colocadas).
+es lo que espera quien sube su propio diagrama. Revisar el mismo patrón en la
+sopa (cambiar la rejilla con palabras ya colocadas).
 
 ### F4 · Nacer en blanco (R-D)
 `defaultContent()` deja de precargar muestras: devuelve la forma vacía. Hay que

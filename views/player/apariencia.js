@@ -123,7 +123,7 @@ export function crearApariencia({ presentation, marco, onSkinChange }) {
         // VS/Equipos SÍ necesitan re-montar: su layout depende de la clase
         // vs-skin-<layout> del skin. Pero en Individual re-montar reinicia el juego
         // a la pantalla de inicio (el alumno tocaba un tema por curiosidad y perdía
-        // el crucigrama/emparejar a medias). En solo basta el applySkin de arriba.
+        // el emparejar a medias). En solo basta el applySkin de arriba.
         onSkinChange?.();
       });
       on(rootSel, 'click', '.bg-pick', (_, b) => {

@@ -25,27 +25,24 @@ Desde la página de jugar, convertir **duplica**: nace una actividad nueva y la
 original no se toca (D2 · opción b). El editor conserva su «Cambiar formato»,
 que sí convierte en el sitio.
 
-## Las tres cosas que la conversión NO puede inventar
+## Las dos cosas que la conversión NO puede inventar
 
-1. **Pistas** (Crucigrama). Una palabra suelta no trae pista, e inventarla
-   revelaría la respuesta: «pista: CABALLO». Se traslada la palabra y el profe
-   escribe la pista — y la app **lo avisa antes** de crear la copia.
-2. **Distractores buenos**. Al pasar a una plantilla de elegir, las opciones se
+1. **Distractores buenos**. Al pasar a una plantilla de elegir, las opciones se
    construyen con las respuestas de los otros ítems (`adoptForQuiz`). Funcionan,
    pero un distractor pensado enseña más que uno tomado de otra pregunta.
-3. **Lo que el destino no usa**. Al convertir se pierde lo que el modelo nuevo
+2. **Lo que el destino no usa**. Al convertir se pierde lo que el modelo nuevo
    no contempla. Por eso desde la página de jugar se duplica en vez de pisar.
 
 ## El cuadro
 
 | De | A | Tipo | Modelo | Piezas | Al terminar |
 |---|---|---|---|---|---|
-| Quiz | Explota Globos | directa | `qa` | 2→2 | lista para jugar |
-| Quiz | Operaciones | directa | `qa` | 2→2 | lista para jugar |
-| Quiz | Abre Cajas | conversión | `qa→items` | 2→2 | lista para jugar |
-| Quiz | Emparejar | conversión | `qa→pairs` | 2→2 | lista para jugar |
-| Quiz | Memoria | conversión | `qa→pairs` | 2→2 | lista para jugar |
-| Quiz | Ruleta | conversión | `qa→items` | 2→2 | lista para jugar |
+| Quiz | Explota Globos | directa | `qa` | 3→3 | lista para jugar |
+| Quiz | Operaciones | directa | `qa` | 3→3 | lista para jugar |
+| Quiz | Abre Cajas | conversión | `qa→items` | 3→3 | lista para jugar |
+| Quiz | Emparejar | conversión | `qa→pairs` | 3→3 | lista para jugar |
+| Quiz | Memoria | conversión | `qa→pairs` | 3→3 | lista para jugar |
+| Quiz | Ruleta | conversión | `qa→items` | 3→3 | lista para jugar |
 | Ruleta | Abre Cajas | directa | `items` | 4→4 | lista para jugar |
 | Emparejar | Memoria | directa | `pairs` | 4→4 | lista para jugar |
 | Emparejar | Abre Cajas | conversión | `pairs→items` | 4→8 | lista para jugar |
@@ -67,8 +64,6 @@ que sí convierte en el sitio.
 | Operaciones | Emparejar | conversión | `qa→pairs` | 4→4 | lista para jugar |
 | Operaciones | Memoria | conversión | `qa→pairs` | 4→4 | lista para jugar |
 | Operaciones | Ruleta | conversión | `qa→items` | 4→4 | lista para jugar |
-| Sopa de Letras | Crucigrama | directa | `words` | 10→10 | hay que completar: La palabra «CABALLO» no tiene pista. |
-| Crucigrama | Sopa de Letras | directa | `words` | 4→4 | lista para jugar |
 | Abre Cajas | Ruleta | directa | `items` | 6→6 | lista para jugar |
 | Explota Globos | Operaciones | directa | `qa` | 3→3 | lista para jugar |
 | Explota Globos | Quiz | directa | `qa` | 3→3 | lista para jugar |
@@ -77,20 +72,6 @@ que sí convierte en el sitio.
 | Explota Globos | Memoria | conversión | `qa→pairs` | 3→3 | lista para jugar |
 | Explota Globos | Ruleta | conversión | `qa→items` | 3→3 | lista para jugar |
 
-> 36 conversiones · 35 salen listas · 1 piden completar algo (la app lo avisa ANTES de crear la copia).
+> 34 conversiones · 34 salen listas · 0 piden completar algo (la app lo avisa ANTES de crear la copia).
 >
-> Sin ninguna salida: Ordena las Pelotas · Etiqueta el diagrama.
-
-## Sin ninguna salida, y por qué
-
-**Ordena las Pelotas** (`ballsort`) y **Etiqueta el diagrama** (`diagram`) no
-convierten a nada. No es un olvido: su contenido no es contenido de pregunta.
-El de Pelotas son tubos con bolas de colores y el del diagrama son coordenadas
-sobre una imagen — llevarlos a otra plantilla no daría una actividad, daría un
-texto sin sentido. Un conversor hacia un modelo que nadie puede jugar es código
-muerto, y el contrato ya prohíbe declararlos (`tests/templateContract.test.mjs`:
-«todos los conversores unen modelos con plantilla viva»).
-
-**Tildes y Comas** solo se intercambian entre ellas: comparten
-`textCorrection`, que es texto con marcas, y no hay conversor hacia `qa` —
-convertir un texto marcado en preguntas exigiría decidir qué se pregunta.
+> Sin ninguna salida: Sopa de Letras · Ordena las Pelotas · Etiqueta el diagrama · Colorear · Tangram · Rompecabezas.

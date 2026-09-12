@@ -1,6 +1,6 @@
 // FreeformShell: guarantees resultScreenHtml + trySaveResult + PODIUM + onFinish for
 // players whose finish moment is not a sequential item-by-item loop
-// (Wheel, Question-Live, Memory, Match, Wordsearch, Crossword).
+// (Wheel, Question-Live, Memory, Match, Wordsearch).
 //
 // Usage:
 //   const ctx = runFreeformPlayer(rootSel, activity, opts);
@@ -328,7 +328,7 @@ export function runFreeformPlayer(rootSel, activity, opts = {}) {
     // EL FINAL LO PONE EL SHELL, SIN SALIDA: una plantilla puede AÑADIR encima
     // (title/icon/stats/after que digan la verdad de cómo acabó) y nunca
     // sustituir la pantalla. Hubo un `skipResultScreen` (2026-09-04, un día):
-    // el Crucigrama lo usaba para un cartel propio que dejaba al alumno sin
+    // una plantilla lo usaba para un cartel propio que dejaba al alumno sin
     // puntaje ni salida, y Abre Cajas sin decir por qué. Se pensó en un mapa
     // de excepciones con motivo y el dueño lo cerró: «todos deben seguir las
     // reglas a rajatabla». Una opción que se ignora es peor que una que no

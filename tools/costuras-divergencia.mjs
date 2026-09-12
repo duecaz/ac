@@ -7,9 +7,8 @@
 // con los indicadores flotando, dos con banda propia (Tildes/Comas) y dos
 // mezclando los dos tratamientos (dueño, con dos capturas, 2026-09-03: «solo
 // estás parchando, piensa mejor»). Y así estaba ayer el FINAL DE PARTIDA: once
-// con la pantalla estándar del shell (`core/resultScreen.js`), el Crucigrado
-// con un cartel propio (`.cw-celebration`, `templates/crossword/player.js`)
-// que al cerrarse dejaba al alumno en el tablero sin puntaje ni salida, y
+// con la pantalla estándar del shell (`core/resultScreen.js`), una plantilla
+// con un cartel propio que al cerrarse dejaba al alumno sin puntaje ni salida, y
 // Abre Cajas saltándosela con un `skipResultScreen: true` suelto sin decir
 // por qué.
 //
@@ -92,8 +91,8 @@ function plantillasReales() {
 function ficherosDe(plantilla) {
   const acc = [];
   // `view.js` cuenta como pintura de la plantilla: desde v1.51.688 un player
-  // puede tener su markup en un módulo propio (el crucigrama lo hizo), y mirar
-  // solo `player.js` daría «sin cabeceraHtml» por una partición, no por un bug.
+  // puede tener su markup en un módulo propio, y mirar solo `player.js` daría
+  // «sin cabeceraHtml» por una partición, no por un bug.
   for (const nombre of ['player.js', 'play.js', 'view.js']) {
     const rel = `templates/${plantilla}/${nombre}`;
     if (existsSync(join(ROOT, rel))) acc.push(rel);
@@ -503,8 +502,8 @@ const faltaCabecera = sinCabecera();
 const listaCierre = cierrePropio();
 
 // ════════════════════════════════════════════════════════════════════════
-// BASELINE — 0/0/0 desde la primera pasada (2026-09-04): el Crucigrama y Abre
-// Cajas se arreglaron/declararon el mismo día en que nació el barrido.
+// BASELINE — 0/0/0 desde la primera pasada (2026-09-04): los dos casos que lo
+// motivaron se arreglaron/declararon el mismo día en que nació el barrido.
 // Ratchet: solo baja. Y NÚMEROS ESCRITOS, nunca «lo que haya hoy»: la primera
 // versión de este fichero ponía `BASELINE = { finPropio: cuentanFinPropio.length,
 // … }` — el baseline igual al conteo — y con un defecto plantado en disco

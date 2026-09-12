@@ -199,7 +199,7 @@ Los REGISTRADOS viven en `kernel/content/models.js` (fuente única — el
 | `qa`     | `items[{question, options[], answer, points, image, audio}]` | quiz, math |
 | `pairs`  | `pairs[{left, right, leftImage?, rightImage?}]` | match, memory |
 | `textCorrection` | `passages[{id, text, marks[{pos, kind}]}]` | tildes, comas |
-| `words`  | sopa: `words['GATO', …]` · crucigrama: `words[{word, clue, row, col, dir}]` | wordsearch, crossword |
+| `words`  | sopa: `words['GATO', …]` | wordsearch |
 | `items`  | `items[{id, question, image?}]` | wheel, question-live |
 | `ballsort` | `{level, mode, random, items[{id, board, mode}]}` | ballsort |
 | `diagram`| `{image, pins[{id, label, x, y}]}` (x,y en 0..1) | diagram |

@@ -115,8 +115,8 @@
 /**
  * EL PAYLOAD DE UNA RONDA: lo que la plantilla expone al que juega, ya SIN la
  * clave de respuesta (§22, answer-safety R5). Su forma exacta la decide cada
- * plantilla (Quiz manda `options`, Operaciones solo `question`, Crucigrama la
- * rejilla con `len` en vez de la palabra), así que el tipo declara lo COMÚN y
+ * plantilla (Quiz manda `options`, Operaciones solo `question`, la Sopa la
+ * rejilla entera sin marcar nada), así que el tipo declara lo COMÚN y
  * deja el resto abierto: nadie puede leerlo como si supiera lo que hay.
  * @typedef {{ id?: string, question?: string, image?: string|null,
  *   audio?: string|null, points?: number } & Record<string, unknown>} RoundPayload

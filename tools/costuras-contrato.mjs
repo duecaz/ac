@@ -846,7 +846,7 @@ process.exit(0);
 //    (`views/live/studentRondas.js:97,115`, `studentCarrera.js:144`,
 //    `studentTablero.js:52`: cada uno solo se monta para el BUCLE que
 //    `core/liveLoops.js` ya emparejó con plantillas que declaran
-//    `renderRound`, nunca para wheel/memory/question-live/crossword/diagram
+//    `renderRound`, nunca para wheel/memory/question-live/diagram
 //    — que son precisamente las que no lo tienen). No se le pidió a la
 //    heurística que siguiera el flujo entre módulos (repetiría, con más
 //    código, el mismo problema que este barrido persigue: una regla escrita

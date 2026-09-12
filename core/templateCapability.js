@@ -5,7 +5,7 @@
 // renderRound, el motor de sesión (createTeamsSession, hoy en
 // kernel/session/teamsMachine.js) exigía solo scoreSubmission, y
 // views/teamsView.js exigía scoreSubmission+getRoundPayload
-// (no renderRound). Con eso, una plantilla como Crucigrama/Ruleta/Abre-Cajas
+// (no renderRound). Con eso, una plantilla como Ruleta/Abre-Cajas
 // (scoreSubmission+getRoundPayload, SIN renderRound) pasaba el check de
 // teamsView pero luego `roundBody()` no podía pintar la ronda (exige
 // renderRound) → el botón "Revelar" se quedaba deshabilitado para siempre.

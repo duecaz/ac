@@ -25,7 +25,7 @@ const STYLES = join(dirname(fileURLToPath(import.meta.url)), '..', 'styles');
 // deshace la incoherencia que bloqueaba la TANDA 4 de temas — media pieza vivía
 // en `player.css` (EXCLUIDO como chrome) y media en `live.css` (GAME), así que
 // este mismo ratchet la clasificaba de dos maneras a la vez.
-const GAME = ['ballsort', 'crossword', 'diagram', 'globos', 'match', 'math', 'memory', 'wheel',
+const GAME = ['ballsort', 'diagram', 'globos', 'match', 'math', 'memory', 'wheel',
   'opcion', 'question-live', 'textCorrection', 'vs', 'teams', 'wordsearch', 'live', 'scaffold',
   'colorear', 'tangram', 'puzzle'];   // los tres juegos de inicial (2026-09-04): nacen limpios
 // Chrome/paletas explícitamente EXCLUIDOS del ratchet (no son "el juego").
@@ -185,7 +185,6 @@ const BASELINE = {
 // congelan igual que los otros.
 const TECHOS = {
   ballsort: { ceilings: ['height:12px', 'height:40px', 'height:var(--bs-ball-size, 36px)', 'max-width:1100px', 'width:12px', 'width:16px', 'width:40px', 'width:var(--bs-ball-size, 36px)', 'width:var(--bs-tube-w, 48px)'] },
-  crossword: { clamps: ['clamp(.63rem, 1.5cqw, .78rem)', 'clamp(.68rem, 1.7cqw, .9rem)'], ceilings: ['height:var(--cw-cell, 36px)', 'width:clamp(130px, 24cqw, 240px)', 'width:var(--cw-cell, 36px)'] },
   diagram: { ceilings: ['height:20px', 'width:20px'] },
   match: { ceilings: ['height:20px', 'height:54px', 'width:20px'] },
   memory: { ceilings: ['height:90px', 'max-width:720px'] },

@@ -8,16 +8,14 @@ import { wordsearchRules } from './template.js';
 
 /**
  * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
- * @typedef {import('../../kernel/contracts/activity.js').WordsearchContent} WordsearchContent
  * @typedef {import('../../core/editorShell.js').EditorCtx} EditorCtx
  * @typedef {import('./generator.js').WsPlaced} WsPlaced
  */
 
-/** La lista de palabras de ESTA actividad, lista para mutar. La LISTA la da el
- *  modelo (`palabrasDe`); lo único que pone aquí la Sopa es que SUS elementos
- *  son CADENAS (en el Crucigrama son fichas).
+/** La lista de palabras de ESTA actividad, lista para mutar: la da el modelo
+ *  (`palabrasDe`), dueño único del «dónde está la lista».
  * @param {Activity} a @returns {string[]} */
-const palabras = (a) => /** @type {string[]} */ (palabrasDe(a));
+const palabras = (a) => palabrasDe(a);
 
 /** El temporizador de la vista previa. Vivía como expando en el nodo raíz
  *  (`root._wsRepaintTimer`), que no es sitio para el estado de un módulo.

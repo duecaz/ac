@@ -30,8 +30,8 @@ const ESQUEMAS = {
   pairs: 'Cada elemento: {"izquierda": string, "derecha": string}. Cada lado aparece UNA sola vez en toda '
     + 'la lista: ningún término puede emparejar con dos cosas.',
   items: 'Cada elemento: {"pregunta": string}. Son preguntas abiertas para responder en voz alta, sin clave.',
-  words: 'Cada elemento: {"palabra": string, "pista": string}. La palabra es UNA sola, solo letras, sin '
-    + 'espacios ni signos ni números. La pista la define SIN nombrarla ni contenerla.',
+  words: 'Cada elemento: {"palabra": string}. Es UNA sola palabra, solo letras, sin '
+    + 'espacios ni signos ni números (tiene que caber en la rejilla de la sopa).',
   textCorrection: 'Cada elemento: {"frase": string}. La frase va escrita CORRECTAMENTE, con todas sus '
     + 'tildes y sus comas. No incluyas posiciones ni marcas: solo la frase bien escrita. '
     + 'Cada frase debe llevar al menos una tilde o una coma. '

@@ -34,7 +34,6 @@
 | `question-live.svg` (Abre Cajas) | 6 cajas 3×2 cerradas, UNA abierta con destello/estrella |
 | `wheel.svg` (Ruleta) | rueda de 8 sectores de color + aguja arriba |
 | `wordsearch.svg` (Sopa) | rejilla 5×5 de letras, una palabra resaltada en cápsula |
-| `crossword.svg` (Crucigrama) | cuadrícula blanca/negra con 2-3 letras |
 | `ballsort.svg` (Ordena las Pelotas) | 3 tubos con bolas de color, uno a medio ordenar |
 | `globos.svg` (Explota Globos) | 4-5 globos con cuerda, uno explotando (estrellitas) |
 | (opcionales) `match/quiz/math/diagram/comas/tildes/memory.svg` | ya tienen esquema; rediseña solo si quieres superarlo |

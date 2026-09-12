@@ -1,8 +1,8 @@
 // EL FINAL DE LA PARTIDA LO PONE EL SHELL — sin salida.
 //
 // Medido el 2026-09-04 montando las 13: once terminaban con la pantalla
-// estándar, el Crucigrama con un cartel propio que dejaba al alumno sin
-// puntaje ni «otra vez», y Abre Cajas con un `skipResultScreen: true` suelto.
+// estándar, una con un cartel propio que dejaba al alumno sin puntaje ni
+// «otra vez», y Abre Cajas con un `skipResultScreen: true` suelto.
 // Hubo un mapa de excepciones con motivo durante un día; el dueño lo cerró
 // («todos deben seguir las reglas a rajatabla»). Esta suite fija las dos
 // mitades de la regla EJECUTANDO el shell real:
@@ -18,7 +18,7 @@ const makeRoot = () => ({ innerHTML: '', querySelector: () => null, querySelecto
 // ── 1. Pedir saltársela no sirve de nada: la estándar se pinta igual ────────
 {
   const root = makeRoot();
-  const ctx = runFreeformPlayer(root, { id: 'cw1', template: 'crossword', scoring: {} }, { mode: 'solo' });
+  const ctx = runFreeformPlayer(root, { id: 'ws1', template: 'wordsearch', scoring: {} }, { mode: 'solo' });
   const r = ctx.finish({ score: 3, maxScore: 8, skipResultScreen: true });
   assert.notEqual(root.innerHTML, '', 'aunque el player pida saltársela, el shell pinta la pantalla estándar');
   assert.ok(root.innerHTML.includes('data-ww-replay'), 'es la estándar (trae «Jugar otra vez»), no un vacío casual');

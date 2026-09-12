@@ -166,15 +166,6 @@ const DRIVERS = [
   // Girar la ruleta: el botón arranca la animación (la ronda responde girando).
   ['girar', async (page, root) => tap(page, root, '#btn-spin:not([disabled])')],
 
-  // Escribir una letra (Crucigrama): tocar una casilla y teclear. La letra puede
-  // no ser la correcta — la app la pinta igual y juzga al comprobar.
-  ['letra', async (page, root) => {
-    if (!await tap(page, root, '.cw-cell.cw-white')) return false;
-    await page.waitForTimeout(120);
-    await page.keyboard.type('A');
-    return true;
-  }],
-
   // Teclear el resultado y ✓ (Operaciones). La respuesta viene de la semilla.
   ['teclado', async (page, root, hints) => {
     if (!await page.locator(`${root} .ww-key[data-k]`).count()) return false;

@@ -332,8 +332,8 @@
 /* LA CABECERA DEL JUEGO (core/playerHud.js) — UNA, igual en las trece.
    Antes había TRES tratamientos de la misma franja (medido el 2026-09-03): 9
    plantillas con los indicadores FLOTANDO y el botón de pantalla completa en la
-   esquina, Tildes/Comas con una banda propia, y Crucigrama/Pelotas con la
-   página flotando y el reloj alojado en su barra. Los mismos cuatro datos en
+   esquina, Tildes/Comas con una banda propia, y Pelotas con la página
+   flotando y el reloj alojado en su barra. Los mismos cuatro datos en
    tres sitios — «solo estás parchando, piensa mejor» (dueño).
 
    Se DIBUJA, y no cuesta alto: la franja ya estaba pagada. La regla de abajo
@@ -794,9 +794,9 @@ body.bg-plated .ww-player .ww-q {
    alumno.
    Y tiene un segundo efecto que importa igual: con el marco apaisado a la
    fuerza, el reflujo por forma del andamio (`aspect-ratio < 1/1`) era
-   INALCANZABLE en las 13 — el contenedor nunca era vertical. Al soltar la
-   proporción aquí, los rieles del andamio, las pistas del crucigrama y el banco
-   de la sopa vuelven a poder bajar, sin un solo breakpoint de píxeles.
+   INALCANZABLE — el contenedor nunca era vertical. Al soltar la proporción
+   aquí, los rieles del andamio y el banco de la sopa vuelven a poder bajar,
+   sin un solo breakpoint de píxeles.
    El corte es 3/4: más vertical que eso ya no es «una pantalla apaisada de
    lado», es un teléfono en la mano. */
 @media (max-aspect-ratio: 3/4) {

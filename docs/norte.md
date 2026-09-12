@@ -366,8 +366,8 @@ decide quien la programa a ojo: la plantilla lo **declara** (`meta.kind`) y el
 contrato lo exige, igual que `play` o `submit`. Casos que la regla resuelve sola
 y que no son obvios:
 
-- **Sopa de Letras y Crucigrama son EJERCICIOS**, aunque "parezcan juego": las
-  palabras las pone el profe y son las de su tema.
+- **La Sopa de Letras es un EJERCICIO**, aunque "parezca juego": las palabras
+  las pone el profe y son las de su tema.
 - **Memoria es EJERCICIO**: los pares son suyos.
 - **Un sudoku con las tablas de multiplicar seguiría siendo JUEGO**: el tablero
   lo genera la plantilla; que el adorno sean números no lo convierte en
@@ -690,7 +690,6 @@ escribe a mano (una cifra a mano no falla: envejece; ver el barrido B9).
 | **Rompecabezas** | J | dibujo del banco | — | — | — | ✅ **inicial**: arrastrar cada pieza a su hueco sobre la imagen fantasma |
 | **Etiqueta el diagrama** | E | diagrama | — | — | — | ✅ **valor alto en clase**: enlazar las partes del cuerpo con sus etiquetas es exactamente "sale un alumno y arrastra". ⚠️ hoy es **solo Individual**: darle VS/equipos sería aprovecharlo mejor |
 | **Sopa de Letras** (pupiletras) | E | palabras | carrera | tablero | — | ⚠️ **poco valor en clase**: buscar letras es lento y la clase no participa mientras tanto. Encaja mejor como tarea |
-| **Crucigrama** | E | palabras | — | — | — | ⚠️ **poco valor en clase**: escribir mucho en la pizarra es lento. Encaja mejor como tarea |
 | **Ruleta** | E | ítems | — | — | pedir la palabra | ✅ es una herramienta de conducción, no un ejercicio |
 | **Abre Cajas** | E | ítems | — | — | pedir la palabra | ✅ ídem |
 
@@ -700,17 +699,22 @@ escribe a mano (una cifra a mano no falla: envejece; ver el barrido B9).
   sus etiquetas es justo lo que se hace en una pizarra— pero **hoy es solo
   Individual**. Darle VS/equipos es la mejora más clara del catálogo. *(No se
   hace ahora: primero ordenar.)*
-- **Sopa de Letras y Crucigrama tienen poco valor EN CLASE**: buscar letras o
-  escribir palabras largas es lento y, mientras, la clase no participa — que es
-  para lo que existe la actividad (§1). No se retiran: **encajan como tarea**.
+- **La Sopa de Letras tiene poco valor EN CLASE**: buscar letras es lento y,
+  mientras, la clase no participa — que es para lo que existe la actividad (§1).
+  No se retira: **encaja como tarea**.
+- **El CRUCIGRAMA se BORRÓ** (dueño, 2026-09-12: «no tiene valor pedagógico»).
+  Era el caso extremo de lo de arriba —escribir palabras largas en la pizarra es
+  lento y la clase mira— y además el único que pedía al profe colocar la rejilla.
+  Las actividades ya guardadas con esa plantilla quedan huérfanas: la página de
+  jugar lo dice en claro, no revienta. El modelo `words` sigue vivo (la Sopa).
 - **2** (Ruleta, Abre Cajas) no son ejercicios sino **herramientas de
   conducción**: dar la palabra y repartir turnos. Encajan con §1 mejor de lo que
   su nombre sugiere.
 - **Ninguna plantilla sobra**, y ninguna contradice el norte.
 - **Ordena las Pelotas es el único JUEGO** (§4c) y por eso nunca encajó del todo
   en las columnas de arriba: no tiene contenido del profe, no informa de nada y su
-  "encaje" es otro — el cambio de ritmo, no el refuerzo del tema. Sopa de Letras y
-  Crucigrama **no** son juegos aunque lo parezcan: las palabras son las del profe.
+  "encaje" es otro — el cambio de ritmo, no el refuerzo del tema. La Sopa de
+  Letras **no** es un juego aunque lo parezca: las palabras son las del profe.
 
 ### Los cinco modos
 
@@ -822,10 +826,10 @@ en "ideas".
 | # | Qué | Se desprende de | Por qué ahí |
 |---|---|---|---|
 | **1** | **Cubrir "buscar/crear"**: la home, la biblioteca y el editor | §1 (por ahí pasa TODA clase) + la medición 0,29 | Es el tramo más usado y el menos protegido. Si el editor rompe la clave de una actividad, el profe lo descubre con 33 críos delante. **En marcha** (v1.51.375): el BUSCADOR ya es uno solo y testeado (`core/search.js` · `tests/search.test.mjs`, ratio del tramo 0,29 → 0,39). Queda el EDITOR |
-| **1b** | ✅ **HECHO (v1.51.381)** — `meta.kind` en las 13 (contrato + techo de 8), Pelotas fuera de Tarea, estantería `#/juegos`, menú de cuatro, portada hablando al profe y `#/` → Mis actividades con sesión | §4c · §7c | Vigilado por `tests/kind.test.mjs` (con contra-prueba: Sopa/Crucigrama siguen siendo ejercicios) |
+| **1b** | ✅ **HECHO (v1.51.381)** — `meta.kind` en las 13 (contrato + techo de 8), Pelotas fuera de Tarea, estantería `#/juegos`, menú de cuatro, portada hablando al profe y `#/` → Mis actividades con sesión | §4c · §7c | Vigilado por `tests/kind.test.mjs` (con contra-prueba: la Sopa sigue siendo ejercicio) |
 | **1c** | ✅ **HECHO (v1.51.380)** — ley §27 · VIAJES: cada tramo del norte con su recorrido + `tools/preflight.mjs` | los 5 fallos de la semana, todos en la costura | Era el hueco que dejaba al profesor de red de seguridad |
 | **2** | ✅ **HECHO (v1.51.382)** — ley §28 · EN CLASE: R2 acotada (máx. 2 opciones de partida, el techo lo exige el contrato) y R2b ejecutable (matrix-smoke escanea el marco: ningún control destructivo/de identidad dentro del juego) | §6b, huecos declarados | Con contra-pruebas: 3 opciones rompen CI, y quitar el escaneo también |
-| **3** | ✅ **HECHO (v1.51.384 → v1.51.390)** — la matriz JUEGA la ronda con gesto real: **30/30**, las 11 mecánicas con driver (`tools/helpers/roundDrivers.mjs`, ya incluye cuerda · voltear · abrir · girar · letra). Jugar cazó DOS bugs reales: el render zombi de la Ruleta (→ `core/stageClaim.js`, §23) y la rejilla colapsada de Equipos+Sopa (arreglada por causa raíz, CONOCIDOS vacío) | §1 ("lo habitual") + medición 0,47 y 0,17 | Es donde se juega de verdad — y quedó demostrado: dos fallos que ninguna suite veía salieron al JUGAR |
+| **3** | ✅ **HECHO (v1.51.384 → v1.51.390)** — la matriz JUEGA la ronda con gesto real: **30/30**, las 11 mecánicas con driver (`tools/helpers/roundDrivers.mjs`, ya incluye cuerda · voltear · abrir · girar). Jugar cazó DOS bugs reales: el render zombi de la Ruleta (→ `core/stageClaim.js`, §23) y la rejilla colapsada de Equipos+Sopa (arreglada por causa raíz, CONOCIDOS vacío) | §1 ("lo habitual") + medición 0,47 y 0,17 | Es donde se juega de verdad — y quedó demostrado: dos fallos que ninguna suite veía salieron al JUGAR |
 | **3b** | ✅ **HECHO (v1.51.391)** — el tramo **tareas/informes** tiene su recorrido (`tools/task-smoke.mjs`: crear → PIN → jugar → tope de intentos → informe), 5ª red del preflight. §27 queda 4/4 | §27 (era el único tramo sin recorrido) + medición 0,34 | El tramo del fallo SILENCIOSO: no se rompe delante del profe, se descubre semanas después |
 | **4** | Terminar la ficha 2b de live (ventana de lectura en carrera · dial del lobby) | §26 + estudio D7 | Sigue siendo correcto, pero sirve al modo minoritario: va DESPUÉS de lo de arriba |
 | **5** | ~~Partir los 4 módulos grandes~~ — **EJECUTADO** (v1.51.627-630, 2026-08-28; el dueño levantó la condición de esperar la ronda del compañero). Los 4 cortes mapeados se aplicaron tal cual; detalle en `docs/historico/deuda-resuelta.md` | §23 + "candidatos a partir" del mapa | Hecho con preflight completo por corte; los guardianes de capas siguieron verdes sin tocar sus listas |

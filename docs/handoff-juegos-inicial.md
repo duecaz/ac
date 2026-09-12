@@ -79,7 +79,7 @@ ajenos; cada test con contra-prueba; `node tools/check-template.mjs <name>` y
 
 ## 5. Verificación de salida
 
-`node tools/check-template.mjs` × 3 · suite · `matrix-smoke` (las 16 plantillas
+`node tools/check-template.mjs` × 3 · suite · `matrix-smoke` (las plantillas
 × modos; los juegos solo en Individual) · `costuras-divergencia` en 0 · preflight
 14/14 · sonda visual de los tres montados (captura) · `#/juegos` muestra 4.
 

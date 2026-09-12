@@ -17,7 +17,7 @@ import { runPlayer } from './core/player.js';
 import { getTemplate } from './core/registry.js';
 
 // Todas las plantillas (antes el embed registraba solo 6 → incrustar math,
-// crossword, wordsearch, ballsort o question-live fallaba).
+// wordsearch, ballsort o question-live fallaba).
 import './core/registerTemplates.js';
 // Side-effect: cablea sonidos + efectos al bus de GameEvents.
 import './core/boot.js';

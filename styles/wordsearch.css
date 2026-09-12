@@ -199,8 +199,8 @@
    «rejilla» (cuadrada, manda) y «banco de palabras». El banco es carril lateral
    solo si sobra ANCHO; si el hueco es estrecho O más alto que ancho, baja a
    filas envueltas y le devuelve la anchura a la rejilla.
-   Igual que en el crucigrama: la forma SOLA no llegaba, porque el marco está
-   fijado a la proporción de la plantilla y fuera de pantalla completa nunca es
+   La forma SOLA no llegaba, porque el marco está fijado
+   a la proporción de la plantilla y fuera de pantalla completa nunca es
    vertical (medido en un móvil de 390). */
 @container (aspect-ratio < 1/1) {
   .ww-ws-body { flex-direction: column; justify-content: center; }

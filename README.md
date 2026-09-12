@@ -26,7 +26,7 @@ Imágenes inline como data-URL en el JSON (sin storage externo). Sin bundler. Gi
 
 ## Plantillas
 quiz · match (emparejar) · memory · tildes · comas · math · wheel (ruleta) ·
-crossword · wordsearch · ballsort · question-live · diagram (etiqueta el diagrama) ·
+wordsearch · ballsort · question-live · diagram (etiqueta el diagrama) ·
 globos (explota globos — mismo contenido que Quiz, mecánica de globos) ·
 colorear · tangram · puzzle (rompecabezas) — los tres JUEGOS de inicial, `docs/handoff-juegos-inicial.md`.
 Cada una es autocontenida en `templates/<name>/`. Añadir una: **`templates/HOW_TO_ADD.md`**
@@ -52,7 +52,7 @@ Lo no automatizable aquí (render DOM / táctil) se verifica en navegador.
 ```
 core/        router, storage, migrate, registry, modes, skins, sounds, auth, identity…
 kernel/      session/ (motor vs·teams·solo·live), content/ (modelos + conversores)
-templates/   quiz, match, memory, tildes, comas, math, wheel, crossword, wordsearch,
+templates/   quiz, match, memory, tildes, comas, math, wheel, wordsearch,
              ballsort, question-live, diagram, globos, colorear, tangram, puzzle  (+ HOW_TO_ADD.md)
 views/       home, editView, playerView, antesala, vsView, teamsView, hostLive…
 adapters/    backend intercambiable: local (offline) · pocketbase (prod)

@@ -12,7 +12,6 @@ export function renderTemplateSelector(rootSel) {
   const COMING = [
     { name: 'wordsearch', label: 'Sopa de letras', icon: 'bi-grid-3x3-gap' },
     { name: 'flashcards', label: 'Tarjetas', icon: 'bi-card-text' },
-    { name: 'crossword', label: 'Crucigrama', icon: 'bi-grid-3x3' },
     { name: 'groupsort', label: 'Agrupar', icon: 'bi-collection' }
   ];
 

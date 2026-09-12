@@ -191,10 +191,10 @@ const act = (template, content, title = 'Mi actividad') =>
 // que lo tecleado, así que se le exige lo mismo: que la actividad quede jugable.
 //
 // Y hay un paso que es fácil olvidar: la IA escribe el CONTENIDO, pero no puede
-// saber lo que la plantilla necesita ADEMÁS. El Crucigrama es el caso: recibía
-// `{palabra, pista}` correctísimas y sin `row`/`col`/`dir` —que las coloca la
-// plantilla— el player las filtraba todas y decía «No hay palabras
-// configuradas» con la lista llena. Por eso el editor le pasa lo escrito por
+// saber lo que la plantilla necesita ADEMÁS. El caso real: recibía el
+// contenido correctísimo y sin el remate que pone la plantilla el player lo
+// filtraba todo y decía «No hay nada configurado» con la lista llena.
+// Por eso el editor le pasa lo escrito por
 // `adoptContent`, y por eso esto barre TODAS las plantillas escribibles: una
 // nueva que olvide ese remate rompe CI sin tocar ninguna lista.
 {
@@ -216,8 +216,7 @@ const act = (template, content, title = 'Mi actividad') =>
     if (!MODELOS_IA[modelo]) continue;            // la IA no escribe este modelo
     const bruto = RESPUESTAS[modelo];
     assert.ok(bruto, `falta una respuesta grabada para el modelo ${modelo}`);
-    const r = interpretarRespuesta(modelo, JSON.stringify(bruto),
-      { palabrasComoTexto: T.meta.name === 'wordsearch' });
+    const r = interpretarRespuesta(modelo, JSON.stringify(bruto));
     assert.strictEqual(r.error, null, `${T.meta.name}: la respuesta grabada tiene que ser utilizable`);
     cubiertas++;
     // El mismo remate que hace el editor tras aceptar lo propuesto.
@@ -229,6 +228,28 @@ const act = (template, content, title = 'Mi actividad') =>
   assert.deepStrictEqual(rotas, [],
     `plantillas que quedan INJUGABLES con contenido de la IA: ${rotas.join(' | ')}`);
   ok(`lo que escribe la IA queda jugable en las ${cubiertas} plantillas que sabe escribir`);
+}
+
+// ── UNA PLANTILLA RETIRADA NO REVIENTA LA APP ──────────────────────────────
+// Al borrar el Crucigrama (2026-09-12) las actividades que los profes ya tenían
+// guardadas con esa plantilla se quedaron huérfanas. No se inventa migración
+// —convertirlas sería decidir por el profe—, pero fallar en silencio está
+// prohibido (R6): la puerta del juego tiene que DECIRLO. Sin esto, «Jugar»
+// montaba un player inexistente y saltaba el guardia de arranque.
+{
+  const rev = revisarActividad({ id: 'x', title: 'Mi crucigrama', template: 'crossword',
+    content: { words: [{ id: 'w_1', word: 'GATO', clue: 'Maúlla', row: 0, col: 0, dir: 'H' }] } });
+  assert.strictEqual(rev.jugable, false, 'una plantilla que ya no existe NO se puede jugar');
+  assert.strictEqual(rev.vacia, false, 'y no es «vacía»: no es que falte escribir, es que no está la plantilla');
+  assert.ok(rev.problemasDeJuego.some(p => /ya no existe/.test(String(p)) && /crossword/.test(String(p))),
+    'el motivo se dice en claro, con el nombre de la plantilla');
+
+  // CONTRA-PRUEBA: el camino legítimo sigue igual — una plantilla viva con su
+  // contenido no se ve afectada por este guardia.
+  const viva = listTemplates().find(T => T.meta?.name === 'wordsearch');
+  const okRev = revisarActividad(act('wordsearch', viva.meta.defaultContent(), 'Viva'));
+  assert.strictEqual(okRev.jugable, true, 'la Sopa con su contenido de muestra sigue jugándose');
+  ok('una plantilla RETIRADA se dice en claro (y la viva sigue jugable)');
 }
 
 console.log(`\n  ${passed} activityCheck checks passed`);

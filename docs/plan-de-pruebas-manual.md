@@ -74,12 +74,11 @@ en PC y otra en el móvil **en vertical**. Fíjate en:
 | 5 | **Tildes** | marcar letras; marcar DE MÁS a propósito | marcar todo NO debe dar puntos (neto: aciertos − de más) |
 | 6 | **Comas** | igual que Tildes con comas | ídem |
 | 7 | **Sopa de Letras** | seleccionar palabras en todas las direcciones | selección con el dedo (no solo ratón); palabra fallida destella |
-| 8 | **Crucigrama** | teclear; moverse entre casillas; terminar | teclado en pantalla del móvil no debe tapar la casilla activa |
-| 9 | **Explota Globos** | tocar los globos correctos | ritmo jugable en un móvil modesto |
-| 10 | **Ordena las Pelotas** | resolver el tablero; deshacer | que no se pueda "romper" el tablero con toques rápidos |
-| 11 | **Etiqueta el diagrama** | arrastrar etiquetas a los pines de la imagen | precisión táctil; imagen que escala sin deformarse |
-| 12 | **Ruleta** | girar; que salga cada entrada | es herramienta del profe (sin puntos automáticos) |
-| 13 | **Abre Cajas** | abrir cajas / ruleta de números | ídem: lo puntúa el profe |
+| 8 | **Explota Globos** | tocar los globos correctos | ritmo jugable en un móvil modesto |
+| 9 | **Ordena las Pelotas** | resolver el tablero; deshacer | que no se pueda "romper" el tablero con toques rápidos |
+| 10 | **Etiqueta el diagrama** | arrastrar etiquetas a los pines de la imagen | precisión táctil; imagen que escala sin deformarse |
+| 11 | **Ruleta** | girar; que salga cada entrada | es herramienta del profe (sin puntos automáticos) |
+| 12 | **Abre Cajas** | abrir cajas / ruleta de números | ídem: lo puntúa el profe |
 
 **Extra por juego (5 min al final)**: cambia el **tema/skin** (Espacio, Arcade, TV-show…)
 y el **fondo** desde la página de la actividad → nada debe quedar ilegible (texto claro
@@ -266,7 +265,6 @@ Modos REALES de cada juego (lo que no tiene columna, no existe para ese juego �
 | Emparejar | ☐ | ☐ puntos | ☐ | — | ☐ |
 | Memoria | ☐ | — | ☐ tablero | — | ☐ |
 | Sopa de Letras | ☐ | ☐ carrera | ☐ tablero | — | ☐ |
-| Crucigrama | ☐ | — | — | — | ☐ |
 | Explota Globos | ☐ | ☐ puntos | ☐ | — | ☐ |
 | Ordena las Pelotas | ☐ | ☐ carrera | ☐ tablero | ☐ tablero | ☐ |
 | Etiqueta el diagrama | ☐ | — | — | — | ☐ |

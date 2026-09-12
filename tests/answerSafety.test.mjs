@@ -4,7 +4,7 @@
 // marcó "las respuestas correctas viajan al alumno" y el anti-trampa de C6 dejó
 // los PUNTOS en manos del host — esta es la otra mitad: que tampoco viajen las
 // CLAVES. El contrato es: un payload es apto para enviarse a un alumno SIEMPRE,
-// aunque hoy la plantilla sea solo-only (crossword lo era y filtraba `word`).
+// aunque hoy la plantilla sea solo-only.
 //
 // Método del veneno: se inyecta un token S3CR3T en los campos-respuesta del ítem
 // (answer/marks/solution/word/right) y se exige que el payload NO lo contenga.
@@ -52,7 +52,7 @@ for (const T of templates) {
     it.answer = POISON;
     it.solution = POISON;
     it.right = POISON;                      // pairs: la pareja correcta
-    if ('word' in it) it.word = POISON;     // crossword: la palabra ES la clave
+    if ('word' in it) it.word = POISON;     // la palabra, cuando ES la clave
     if (Array.isArray(it.marks)) it.marks = [{ pos: 1, kind: 'tilde', token: POISON }];
     else it.marks = [{ pos: 1, kind: 'tilde', token: POISON }];
   }
@@ -72,16 +72,7 @@ assert.deepStrictEqual(leaks, [],
   'estos payloads FILTRAN la clave de respuesta al alumno:\n      ' + leaks.join('\n      '));
 ok(`${templates.length} payloads envenenados: ninguno filtra la clave (ni por nombre ni por passthrough)`);
 
-// ── Casos con nombre (los tres arreglos de R5 quedan fijados) ────────────────
-{
-  const cw = listTemplates().find(T => T.meta.name === 'crossword');
-  const act = { content: cw.meta.defaultContent() };
-  const p = cw.getRoundPayload(act, { itemIndex: 0 });
-  assert.ok(p.words.length >= 1, 'el payload del crucigrama trae la forma');
-  assert.ok(p.words.every(w => !('word' in w) && Number.isInteger(w.len)),
-    'cada palabra viaja como forma (len/pos/pista), NUNCA las letras');
-  ok('crossword: el payload lleva la FORMA del crucigrama, no las letras');
-}
+// ── Casos con nombre (los arreglos de R5 quedan fijados) ────────────────────
 {
   for (const name of ['wheel', 'question-live']) {
     const T = listTemplates().find(t => t.meta.name === name);

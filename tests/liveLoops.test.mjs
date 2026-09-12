@@ -160,8 +160,7 @@ const LOOPS = {
 // Ahora se escanea TODO el código de la app y se aceptan las tres formas de
 // preguntar (`activity.template`, `a?.template`, `T?.meta?.name`). El tope es 0 y
 // se llegó a 0 declarando lo que antes se adivinaba: `play.teams:'propio'`
-// (Memoria trae su mecánica), `seMarcaConLapiz` (Tildes/Comas) y
-// `iaPalabrasComoTexto` (Sopa).
+// (Memoria trae su mecánica) y `seMarcaConLapiz` (Tildes/Comas).
 {
   const NOMBRES = listTemplates().map(T => T.meta.name);
   const RE = new RegExp(

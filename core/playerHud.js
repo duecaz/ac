@@ -6,8 +6,8 @@
 //     pantalla completa vivía en la esquina del marco;
 //   · Tildes y Comas → una BANDA con todo dentro (página · herramienta · reloj ·
 //     pantalla completa), la que pidió el dueño con maqueta;
-//   · Crucigrama y Pelotas → mezcla: la página flotando, el reloj alojado en su
-//     barra propia, el botón en la esquina.
+//   · Pelotas → mezcla: la página flotando, el reloj alojado en su barra
+//     propia, el botón en la esquina.
 // Los mismos cuatro datos en tres sitios según la actividad. El dueño lo dijo
 // corto: «solo estás parchando, piensa mejor» — arreglar la franja en dos de
 // trece ES el parche.
@@ -54,9 +54,9 @@ const ICONO = { tiempo: lucide('timer'), racha: '🔥' };
 /** UN indicador, con lo que le toque (icono incluido). El valor va en su propio
  *  nodo para que `hudSet` lo reescriba sin llevarse por delante el icono
  *  (`textContent` sobre el chip entero lo borraría).
- *  INTERNA: llegó a exportarse cuando dos barras propias —la de Pelotas y la del
- *  Crucigrama— alojaban el reloj y lo copiaban a mano. Con UNA cabecera para las
- *  trece ya nadie construye un chip por su cuenta; lo cazó §30 al primer intento
+ *  INTERNA: llegó a exportarse cuando había barras propias —la de Pelotas, por
+ *  ejemplo— que alojaban el reloj y lo copiaban a mano. Con UNA cabecera para
+ *  todas ya nadie construye un chip por su cuenta; lo cazó §30 al primer intento
  *  («nadie lo nombra fuera de su fichero»), que es la señal de que la
  *  unificación llegó de verdad.
  * @param {string} campo

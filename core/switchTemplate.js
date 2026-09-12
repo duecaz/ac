@@ -91,11 +91,10 @@ export function duplicateAsTemplate(activity, targetName) {
  * no después (norma del proyecto: si una puerta se cierra a medias, la UI lo
  * avisa; nunca se deja fallar para explicarlo luego).
  *
- * Hay conversiones legítimas que NO pueden salir jugables por sí solas: Sopa de
- * Letras → Crucigrama traslada las palabras, pero una palabra suelta no trae
- * pista y sin pista no hay crucigrama. Eso no es un fallo del conversor —
- * inventar la pista sería peor, porque «pista: CABALLO» revela la respuesta—,
- * es trabajo del profe. Lo que sí era un fallo es no avisarlo.
+ * Hay conversiones legítimas que NO pueden salir jugables por sí solas: lo que
+ * la plantilla destino necesita y el origen no guarda (una opción, una pista)
+ * no lo puede inventar el conversor —inventarlo sería peor, porque revelaría la
+ * respuesta—, es trabajo del profe. Lo que sí era un fallo es no avisarlo.
  *
  * Se convierte en memoria (no se guarda nada) y se le pregunta al revisor de
  * siempre, el mismo que gatea el juego: una sola definición de "qué le falta".
@@ -105,11 +104,7 @@ export function duplicateAsTemplate(activity, targetName) {
  * @returns {string[]} lo que faltará (vacío si queda lista para jugar).
  */
 export function switchWillNeed(activity, targetName) {
-  // `soloForma`: es un SONDEO, no la conversión de verdad — se pregunta qué
-  // faltará, no se construye el resultado. Sin esto, pintar la página de jugar
-  // de una Sopa de 60 palabras colocaba el crucigrama entero para acabar
-  // diciendo «faltan las pistas», que se sabe sin colocar nada (~1 s medido).
-  const next = applySwitch(activity, targetName, plantillas(), { soloForma: true });
+  const next = applySwitch(activity, targetName, plantillas());
   if (!next) return [];
   const rev = revisarActividad(next);
   return rev.jugable ? [] : (rev.problemas || []);

@@ -415,7 +415,7 @@ escribirse; si necesita violar una prohibición, está en la capa equivocada.
   (v1.51.415): se retiró — estaba en disco sin `registerSkin`, así que ningún
   profe podía elegirlo, y su copia del teclado era código muerto. `KNOWN_ORPHANS`
   queda VACÍO · deuda de ratchet en vs/teams/wordsearch (la mayor) +
-  match/memory/ballsort/crossword/textCorrection/question-live ·
+  match/memory/ballsort/textCorrection/question-live ·
   `themes/*/skin.css` aún fuera del escáner de px (font-size fijos entre
   arcade/tv-show) · el escape por selector `.mem-`/`-ed\b` exime más de
   lo que debería (todo memory) · `rgba()` de superficie sin vigilar.
@@ -917,8 +917,9 @@ y las 27 bocas de `realtime` tienen dos consumidores o más. Lo que no lo era:
   peor estaba copiada en CINCO vistas: la plataforma preguntándole a un botón si
   la plantilla se llama «memory» para elegir a qué pantalla mandar al profe.
   Se saldó DECLARANDO lo que se adivinaba — `play.teams: 'propio'` (mecánica
-  propia de Equipos) · `seMarcaConLapiz` (Tildes/Comas) · `iaPalabrasComoTexto`
-  (Sopa) — y con un dueño único de la ruta, `rutaDeModo()` en `core/modes.js`.
+  propia de Equipos) · `seMarcaConLapiz` (Tildes/Comas) · y, mientras hubo dos
+  formas del modelo `words`, `iaPalabrasComoTexto` (retirado al borrarse el
+  Crucigrama) — y con un dueño único de la ruta, `rutaDeModo()` en `core/modes.js`.
   La red escanea ahora TODO el código de la app y las tres formas de preguntar,
   con contra-prueba de cada una. Tope 0, de verdad.
 
@@ -1006,8 +1007,8 @@ módulo que lo "arregle" al vuelo.
 | Camino | Único mecanismo | PROHIBIDO |
 |---|---|---|
 | **Evolución de forma** | `migrateContent` + subir `meta.templateVersion` (idempotente; `core/migrate.js` lo aplica fail-safe con `?? content`) | cambiar la forma sin migración (contrato: versión >1 EXIGE migrate) · una migración que devuelva `undefined` ya no puede borrar contenido |
-| **Cambio de formato** (gesto Wordwall) | `kernel/content/convert.js` (entre modelos) + `adoptContent` de la plantilla destino (afinado de FORMA intra-modelo) | convertir a mano en una vista/editor · un switch "directo" que produzca contenido inservible (era el caso Sopa↔Crucigrama) |
-| **IDs** | `rid()` de `core/ids.js` (prefijos `q_ p_ it_ w_ ps_ pin_ m_ cw_`) | `Math.random().toString(36)` a mano (regla `id-rid`) |
+| **Cambio de formato** (gesto Wordwall) | `kernel/content/convert.js` (entre modelos) + `adoptContent` de la plantilla destino (afinado de FORMA intra-modelo) | convertir a mano en una vista/editor · un switch "directo" que produzca contenido inservible |
+| **IDs** | `rid()` de `core/ids.js` (prefijos `q_ p_ it_ w_ ps_ pin_`) | `Math.random().toString(36)` a mano (regla `id-rid`) |
 | **Edición** | el editor hace CRUD del contenido; los PARÁMETROS los lee el scorer | lógica de juego en el editor (el caso patrón: el Timer muerto de Emparejar) · campos que ningún player/scorer lee |
 | **En caliente** | el player LEE; normalizar es de `migrate`/`adoptContent` | mutar `activity.content` durante el juego |
 
@@ -1016,15 +1017,14 @@ módulo que lo "arregle" al vuelo.
   `tests/templateContract.test.mjs` + `tests/content.test.mjs` (conversores —
   la antigua suite `switchTemplate` se fusionó ahí).
 - **Arreglado en L4**: los 9 generadores de id a mano migrados a `rid()`
-  (quiz/math/match/memory/crossword + toast/embedModal/adaptadores/stressTest —
+  (quiz/math/match/memory + toast/embedModal/adaptadores/stressTest —
   el allowlist de la regla es SOLO `core/ids.js`) · `migrate` fail-safe ·
-  contrato versión>1⇒migrate · **Sopa↔Crucigrama por fin convierte de verdad**:
-  `adoptContent` en ambas (Crucigrama→Sopa se queda las palabras; Sopa→Crucigrama
-  las CRUZA con el auto-layout del generador, pistas vacías para el editor).
+  contrato versión>1⇒migrate. *(Sopa↔Crucigrama, la conversión que motivó
+  `adoptContent`, murió con el Crucigrama; el gancho sigue vivo en `qa`.)*
 - **Deuda registrada**: `ensureContent` de ballsort vive en su editor y lo
   importan player/getRoundPayload (el editor como dependencia del runtime —
   moverlo a template) · campos muertos que aún se escriben (`rules.allowOverflow`
-  en tildes/comas, `hintMode` de crossword, `answerIdx`/`kind`/`audio` de quiz,
+  en tildes/comas, `answerIdx`/`kind`/`audio` de quiz,
   `rules.timer`/`livesPerMistake` residuales de match/diagram) · el editor de
   quiz lleva la 3ª copia de la regla de respuesta correcta (las otras:
   template.migrate y qaAdapt) · modelo `entries` huérfano en models.js ·
@@ -1105,7 +1105,7 @@ nueva, o una elección de bucle más por NOMBRE de plantilla rompen CI.
 | `board` · Tablero | `race` | cada alumno | avanzar más en el tablero | escala propia de la plantilla (Pelotas: 0-1000 por eficiencia) | igual que la carrera | Ordena las Pelotas |
 | `claim` · Pedir la palabra | `question-live` | el profe (a quien pide turno) | los puntos que da el docente | manuales (+10/+50), sin clave de respuesta | lo cierra el docente | Abre Cajas · Ruleta |
 
-> Generado de `core/liveLoops.js` + `meta.play.live` de las 16 plantillas.
+> Generado de `core/liveLoops.js` + `meta.play.live` de las 15 plantillas.
 > El modelo de puntos lo decide `pointsModeFor(loop)`: `rounds`→`live` · `race`→`race` · `board`→`race` · `claim`→`live`.
 <!-- /GENERADO:bucles -->
 

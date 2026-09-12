@@ -37,7 +37,7 @@ pantalla. Abre un **Quiz** con temporizador en Individual:
 1. Ponte donde la última fila: ¿se **leen** los números de las dos esquinas?
 2. Cambia el tema y pon un fondo con dibujo (en la pantalla de inicio, antes de
    Iniciar): ¿se siguen leyendo?
-3. En **Globos**, **Sopa**, **Crucigrama** y **Pelotas**: ¿alguna pastilla
+3. En **Globos**, **Sopa** y **Pelotas**: ¿alguna pastilla
    **tapa** algo que tengas que tocar? ¿El botón redondo de pantalla completa
    se pulsa a la primera?
 4. Jugando: el «1 / 8» sube, el reloj baja, los ★ suben. Ninguno se queda
@@ -45,18 +45,17 @@ pantalla. Abre un **Quiz** con temporizador en Individual:
 
 **2 · GIRAR EL MÓVIL (4 min) — lo nuevo.**
 Con el giro de pantalla desbloqueado, en el teléfono:
-1. **Crucigrama**: en vertical las pistas van **debajo** del tablero; en
+1. **Sopa**: en vertical la lista de palabras va **debajo** del tablero; en
    horizontal, **al lado**.
-2. **Sopa**: igual con la lista de palabras.
-3. **Ruleta**: en el PC el botón «Girar» va **al lado** de la rueda; en el móvil
+2. **Ruleta**: en el PC el botón «Girar» va **al lado** de la rueda; en el móvil
    en vertical, **debajo**. La rueda se ve grande en los dos casos.
-4. **Quiz sin fotos**: los cuatro botones de colores llenan la pantalla (como
+3. **Quiz sin fotos**: los cuatro botones de colores llenan la pantalla (como
    un concurso), sin franja blanca en medio.
 
 **3 · EL TÍTULO YA NO ESTÁ DENTRO DEL JUEGO (2 min).**
 Solo aparece **antes** de jugar (pantalla de Iniciar, lobby del en vivo, ficha
-de la tarea). Comprueba en **Memoria**, **Ruleta**, **Abre Cajas** y
-**Crucigrama** que nunca entras a jugar sin haber visto antes el nombre.
+de la tarea). Comprueba en **Memoria**, **Ruleta** y **Abre Cajas** que nunca
+entras a jugar sin haber visto antes el nombre.
 
 **4 · LO QUE SIGUE ABIERTO (8 min) — si te queda tiempo.**
 - **Lápiz / borrador en la pizarra de verdad**: tocar «Lápiz» estando ya en
@@ -311,7 +310,7 @@ pantallas en blanco o rojas.
 | 3 | **Bloquea la pantalla** del móvil un minuto y vuelve | Sigue la partida, no se queda colgado |
 | 4 | Entra con un **tercer** móvil **a mitad** de la carrera | Debe poder entrar y empezar |
 | 5 | En el ordenador, **recarga** durante la partida | La sala sigue viva, con los mismos alumnos |
-| 6 | Gira los móviles (vertical ↔ horizontal) | Todo se recoloca, nada se corta. En Crucigrama y Sopa las pistas/palabras deben CAMBIAR de sitio (al lado en horizontal, debajo en vertical) |
+| 6 | Gira los móviles (vertical ↔ horizontal) | Todo se recoloca, nada se corta. En la Sopa la lista de palabras debe CAMBIAR de sitio (al lado en horizontal, debajo en vertical) |
 | 7 | Escribe un nombre de alumno con **emojis o símbolos raros** | O lo acepta o lo rechaza con un mensaje claro; nunca se rompe |
 | 8 | Pulsa **Terminar carrera** cuando solo uno ha acabado | Se cierra bien y el podio sale con los dos |
 

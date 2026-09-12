@@ -70,7 +70,7 @@ const broken = {
 const found = checkTemplateContract(broken);
 assert.ok(found.some(i => i.includes('instructions')), 'detecta instructions vacío');
 assert.ok(found.some(i => i.includes('renderRound')), 'detecta renderRound sin scorer/payload');
-// Y la forma del scorer: {score,maxScore} (el bug real del Crucigrama) debe cazarse.
+// Y la forma del scorer: {score,maxScore} (un bug real) debe cazarse.
 const badScorer = { ...broken, meta: { ...broken.meta, instructions: 'x' }, renderRound: undefined,
   scoreSubmission: () => ({ score: 1, maxScore: 2 }) };
 assert.ok(checkTemplateContract(badScorer).some(i => i.includes('{correct, points, hits, total}')),

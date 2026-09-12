@@ -397,14 +397,6 @@ body {
   font-size: 11px; font-weight: 700; color: #475569; background: #f1f5f9; border-radius: 4px;
 }
 .pv-word__grid .pv-word__hit { background: #2563eb; color: #fff; }
-/* Crucigrama — rejilla blanca/negra con letras */
-.pv-cross__grid { display: grid; grid-template-columns: repeat(5, 20px); gap: 2px; }
-.pv-cross__grid span {
-  height: 20px; border-radius: 3px; background: #fff; border: 1px solid #dbe2ea;
-  display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #334155;
-}
-.pv-cross__grid .pv-cross__b { background: #141c2e; border-color: #141c2e; }
-.pv-cross__grid .pv-cross__l { background: #e7f0fe; color: #2563eb; border-color: #bfd3f5; }
 /* Ordena las Pelotas — 3 tubos con bolas */
 .pv-balls { gap: 12px; }
 .pv-tube {

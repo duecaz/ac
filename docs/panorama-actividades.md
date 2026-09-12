@@ -18,7 +18,6 @@
 | **Emparejar** (match) | `pairs` | Unes cada elemento con su pareja | fill | ✅ | ✅ | ❌ | ✅ | ✅ |
 | **Memoria** (memory) | `pairs` | Volteas cartas y encuentras parejas | fill | ✅ | ✅ | ❌ | ❌ | ✅ *(turnos nativos)* |
 | **Sopa de Letras** (wordsearch) | `words` | Arrastras sobre las palabras ocultas | fill | ✅ | ✅ | ❌ | ✅ | ✅ |
-| **Crucigrama** (crossword) | `words` | Rellenas el crucigrama desde las pistas | fill | ✅ | ✅ | ❌ | ❌ | ❌ |
 | **Ordena las Pelotas** (ballsort) | `ballsort` | Mueves bolas hasta que cada tubo sea de un color | fill | ✅ | ✅ | ✅ *(tablero)* | ✅ *(carrera)* | ✅ *(carrera)* |
 | **Colorear** (colorear) · JUEGO | `colorear` | Tocas un color y luego la zona del dibujo que quieres pintar | fill | ✅ | — | ❌ | ❌ | ❌ |
 | **Tangram** (tangram) · JUEGO | `tangram` | Arrastras y giras las 7 piezas hasta cubrir la silueta | fill | ✅ | — | ❌ | ❌ | ❌ |
@@ -41,7 +40,7 @@ Reglas de compatibilidad (derivadas, no configuradas — `core/modes.js`):
 - **Tildes / Comas** — el alumno **dibuja** la marca con lápiz/táctil sobre el texto (`core/textCorrectionDraw.js`), no la toca; el inicio del trazo dentro de la zona de una vocal/hueco la marca. Tildes en VS puntúa **1 punto por tilde buena** (las de más restan). Fase 2: calibración lápiz/borrador por tamaño de contacto (`core/penDetector.js`).
 - **Emparejar** — emparejado libre; se corrige al pulsar Enviar. En sesión, cada par es una "pregunta de emparejado".
 - **Memoria** — voltear/emparejar/turno (`kernel/session/memory.js`): aciertas y sigues, fallas y pasa el turno.
-- **Sopa de Letras / Crucigrama** — tableros de palabras (`words`); wordsearch busca libremente, crossword rellena desde pistas.
+- **Sopa de Letras** — tablero de palabras (`words`): el alumno arrastra sobre las que encuentra; la rejilla la genera la plantilla.
 - **Ordena las Pelotas** — puzzle de tubos; el progreso del tablero alimenta la cuerda del VS.
 - **Colorear / Tangram / Rompecabezas** — los tres JUEGOS de inicial (3-6 años, sin lectura; `docs/handoff-juegos-inicial.md`): el dibujo lo trae la app (banco compartido `assets/juegos/dibujos`), solo Individual, sin Tarea ni biblioteca (norte §4c).
 - **Ruleta / Abre Cajas** — herramientas de aula en vivo; el profe controla, valida verbalmente.
@@ -60,7 +59,7 @@ qa ⇄ pairs        qa ──▶ items        pairs ──▶ items
 |---|---|
 | **qa** (quiz/math) | Quiz, Operaciones, Emparejar/Memoria (qa→pairs), Ruleta/Abre Cajas (qa→items) |
 | **pairs** (match/memory) | Emparejar, Memoria, Quiz (pairs→qa) |
-| **words** (wordsearch/crossword) | Sopa de Letras, Crucigrama *(sin conversor entre sí aún — deuda)* |
+| **words** (wordsearch) | Sopa de Letras *(única plantilla del modelo: sin destino al que convertir)* |
 | **textCorrection** (tildes/comas) | Tildes, Comas *(sin conversor entre sí aún — deuda)* |
 | **items** (wheel/question-live) | Ruleta, Abre Cajas |
 

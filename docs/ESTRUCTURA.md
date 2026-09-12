@@ -144,7 +144,6 @@ plantillas» con varias sin listar.
 | `comas` | Comas | E | `textCorrection` | `passages` |
 | `math` | Operaciones | E | `qa` | `items` |
 | `wordsearch` | Sopa de Letras | E | `words` | `words` |
-| `crossword` | Crucigrama | E | `words` | `words` |
 | `question-live` | Abre Cajas | E | `items` | `items` |
 | `ballsort` | Ordena las Pelotas | J | `ballsort` | `level` · `mode` · `random` · `items` |
 | `diagram` | Etiqueta el diagrama | E | `diagram` | `image` · `pins` |
@@ -153,7 +152,7 @@ plantillas» con varias sin listar.
 | `tangram` | Tangram | J | `tangram` | `items` |
 | `puzzle` | Rompecabezas | J | `puzzle` | `items` |
 
-> 16 plantillas · 12 ejercicios · 4 juegos. **E** = el contenido lo pone el docente · **J** = lo trae la plantilla (norte §4c).
+> 15 plantillas · 11 ejercicios · 4 juegos. **E** = el contenido lo pone el docente · **J** = lo trae la plantilla (norte §4c).
 <!-- /GENERADO:catalogo -->
 
 > (Froggy Jumps fue **eliminado**; su animación de progreso vive ahora en
@@ -189,17 +188,12 @@ Parejas izquierda↔derecha.
 ```
 - `match` admite imágenes: `leftImage`, `rightImage`, `image` (data-URL).
 
-### words — wordsearch (strings) / crossword (objetos)
+### words — wordsearch
 ```jsonc
 // wordsearch: lista de palabras a buscar
 "content": { "words": ["GATO","PERRO","PÁJARO","RATÓN"] }
-
-// crossword: palabra + pista + posición + dirección
-"content": { "words": [
-  { "id": "cw1", "word": "GATO", "clue": "Animal felino", "row": 0, "col": 0, "dir": "H" }
-]}
 ```
-- crossword `dir`: `'H'` (horizontal) | `'V'` (vertical). `row`/`col` base 0.
+- Son CADENAS sueltas: la rejilla la coloca la propia Sopa al generar.
 
 ### textCorrection — tildes / comas
 Un pasaje por ronda; `marks` es la clave de respuesta (posiciones).
@@ -263,8 +257,8 @@ etiqueta a su pin (estilo Wordwall). `x`/`y` son fracciones 0..1 de la imagen.
 1. Elige `template` según el objetivo y usa SU `content` (tabla §3).
 2. Da `id` único a cada ítem/pareja/palabra (string corto).
 3. `title` claro; `language` `"es"` salvo indicación.
-4. Para autopuntuables (quiz/math/froggy/match/wordsearch/crossword) incluye
-   siempre `answer`/`right`/`word`+posición correctos.
+4. Para autopuntuables (quiz/math/froggy/match/wordsearch) incluye
+   siempre `answer`/`right`/las palabras correctas.
 5. wheel/question-live NO llevan respuesta correcta.
 6. Deja `rules`/`scoring`/`live`/`presentation` por defecto salvo que se pida
    cambiarlos; `normalize()` rellena lo que falte.

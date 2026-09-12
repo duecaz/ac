@@ -27,8 +27,8 @@ function destinos(a) {
   // de plantillas que sí admiten este contenido.
   return buildSwitchOptions(a).filter(o => o.valid)
     // Lo que quedará por completar en cada destino, calculado ANTES de
-    // ofrecerlo: Sopa de Letras → Crucigrama traslada las palabras pero no
-    // puede inventar las pistas, y eso se dice, no se descubre al llegar.
+    // ofrecerlo: lo que el destino necesita y el origen no guarda no se
+    // inventa, y eso se dice, no se descubre al llegar.
     .map(o => ({ ...o, faltara: switchWillNeed(a, o.template.meta.name) }));
 }
 
@@ -95,8 +95,8 @@ export function wireOtraPlantilla(rootSel, a) {
       + (b.dataset.kind === 'convert' ? ' El contenido se adapta al formato nuevo y algunos datos podrían no trasladarse.' : '')
       + ' La actividad actual no se modifica.'
       // Lo que la conversión NO puede traer se dice AQUÍ, no al llegar a una
-      // pantalla que avisa de que falta algo: Crucigrama necesita pistas y una
-      // palabra suelta no las trae — inventarlas revelaría la respuesta.
+      // pantalla que avisa de que falta algo: lo que el destino necesita y el
+      // origen no guarda no se inventa — inventarlo revelaría la respuesta.
       + (faltara.length ? `\n\nDespués tendrás que completarla en el editor: ${faltara[0]}`
           + (faltara.length > 1 ? ` (y ${faltara.length - 1} cosa${faltara.length > 2 ? 's' : ''} más).` : '') : ''),
       { title: 'Duplicar como otra plantilla', okText: 'Crear la copia', cancelText: 'Cancelar' });

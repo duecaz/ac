@@ -132,9 +132,9 @@ Todo player se lee con tres roles — el prefijo `edu-` marca lo nuevo:
 
 | Rol | Qué es | Regla |
 |---|---|---|
-| **`edu-cabecera`** | la CABECERA: herramientas · página/racha/extra · RELOJ centrado · pantalla completa | **una sola**, la misma en todas (`core/playerHud.js`, `cabeceraHtml`). La plantilla aporta SOLO sus herramientas —lápiz/borrador (Tildes/Comas), Aa/Deshacer (Pelotas), pista/reiniciar (Crucigrama; *Verificar* es envío y vive en `edu-send`)—; lo demás lo pone la cabecera. El aspecto lo pone la superficie de debajo, por tokens (`--cab-tinta`/`--cab-fondo`): sobre el marco, los del tema; sobre la hoja de Tildes/Comas, los del papel |
+| **`edu-cabecera`** | la CABECERA: herramientas · página/racha/extra · RELOJ centrado · pantalla completa | **una sola**, la misma en todas (`core/playerHud.js`, `cabeceraHtml`). La plantilla aporta SOLO sus herramientas —lápiz/borrador (Tildes/Comas), Aa/Deshacer (Pelotas)—; lo demás lo pone la cabecera. El aspecto lo pone la superficie de debajo, por tokens (`--cab-tinta`/`--cab-fondo`): sobre el marco, los del tema; sobre la hoja de Tildes/Comas, los del papel |
 | **el juego** (`edu-sec`) | todo el alto restante, en subsecciones CON NOMBRE (`edu-sec--enunciado`, `--tablero`, `--texto`, `--pistas`, `--banco`, `--panel`, `--campo`) | refluyen con el contenedor (**ancho estrecho O más alto que ancho**, ver abajo); el **enunciado es la primera subsección**, no una barra |
-| **`edu-send`** | el espacio del botón de enviar | UNO como mucho, y todo control de envío dentro (marcador sobre `ww-bar-actions`/`tc-done-wrap`/`cw-footer`) |
+| **`edu-send`** | el espacio del botón de enviar | UNO como mucho, y todo control de envío dentro (marcador sobre `ww-bar-actions`/`tc-done-wrap`) |
 
 **POR QUÉ ERAN CUATRO Y AHORA SON TRES** (dueño, 2026-09-03: «solo estás
 parchando, piensa mejor»). Los roles nacieron con los indicadores FLOTANDO
@@ -174,9 +174,9 @@ porque no es de la plantilla — es la misma pieza para las trece.
 (`core/resultScreen.js`, montado desde `core/soloPlayer.js`); una plantilla
 puede AÑADIR encima (`title`/`icon`/`stats`/`after` que digan la verdad de
 cómo acabó) pero no SUSTITUIRLO por un cartel propio. Medido el 2026-09-04
-montando las 13: once terminaban con la estándar, el Crucigrama pintaba su
-propio `.cw-celebration` que dejaba al alumno sin puntaje ni salida al
-cerrarse, y Abre Cajas se la saltaba con un `skipResultScreen: true` suelto
+montando las 13: once terminaban con la estándar, una pintaba un cartel
+propio que dejaba al alumno sin puntaje ni salida al cerrarse, y Abre Cajas
+se la saltaba con un `skipResultScreen: true` suelto
 y sin motivo. Se pensó un mapa de excepciones con motivo y el dueño lo cerró
 el mismo día: **sin salida** — `skipResultScreen` ya no existe en el shell,
 Abre Cajas añade «N / N cajas» sobre la estándar, y cualquier player que lo
@@ -207,11 +207,11 @@ Historia corta y con moraleja. El reflujo por forma (`aspect-ratio < 1/1`) era
 **inalcanzable en todas**: el marco aplicaba la proporción declarada como
 estilo EN LÍNEA, que gana a todo, así que fuera de pantalla completa el
 contenedor nunca era vertical. En un móvil de 390×844 el marco medía 358×269
-—el **29 % de la pantalla**, con 445 px de alto muerto— y el crucigrama seguía
-con las pistas al lado y el tablero a 318 px.
+—el **29 % de la pantalla**, con 445 px de alto muerto— y los tableros seguían
+con su carril al lado y el juego a 318 px.
 
-El primer arreglo fue añadir un `max-width: 520px` a la condición, en Crucigrama
-y Sopa. Funcionaba… y era el parche equivocado: no devolvía la pantalla al
+El primer arreglo fue añadir un `max-width: 520px` a la condición, en los
+tableros de palabras. Funcionaba… y era el parche equivocado: no devolvía la pantalla al
 alumno, reintroducía el breakpoint de píxeles que §3b prohíbe, y dejaba con el
 mismo branch muerto a `scaffold.css`, `diagram.css` y `match.css`.
 
@@ -219,9 +219,9 @@ mismo branch muerto a `scaffold.css`, `diagram.css` y `match.css`.
 `styles/player.css`): la proporción viaja como VARIABLE (`--ww-ar-css`), no como
 estilo en línea, y con la ventana claramente vertical (`max-aspect-ratio: 3/4`)
 el marco la SUELTA y toma el alto disponible — el tercer caso, junto a pantalla
-completa y VS/Equipos. Medido después: el marco pasa a 358×714 y refluyen el
-crucigrama, la sopa **y el andamio compartido** (Diagrama vuelve a mover sus
-rieles); los dos `max-width` en píxeles se borraron.
+completa y VS/Equipos. Medido después: el marco pasa a 358×714 y refluyen la
+sopa **y el andamio compartido** (Diagrama vuelve a mover sus rieles); los dos
+`max-width` en píxeles se borraron.
 
 La moraleja, que vale para el resto del CSS de actividad: **el contenedor no es
 la ventana**. Una regla que mira la forma del contenedor hay que comprobarla
@@ -332,5 +332,5 @@ congelada en un `BASELINE` por archivo/valor y **no puede crecer**:
 
 La deuda de estilos registrada hoy (para ir saldándola): `vs.css`/`teams.css` (chrome del
 marcador con rem fijos), `wordsearch.css`/`match.css`/`memory.css`/`ballsort.css` (fuentes
-de lista/tarjeta en rem y algún gris a pelo), `crossword.css`, `textCorrection.css`
+de lista/tarjeta en rem y algún gris a pelo), `textCorrection.css`
 (veredicto y notebook). Ver el `BASELINE` del test para el detalle exacto.

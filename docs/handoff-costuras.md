@@ -17,7 +17,7 @@ uno era una **costura** entre dos piezas correctas:
 | Defecto (versión) | Forma de la costura |
 |---|---|
 | El reloj vivía en tres sitios y el editor lo ofrecía en 4 de 13 (v1.51.640) | **la misma regla escrita varias veces** (§21b) |
-| Diagrama, Emparejar, Memoria y Crucigrama declaraban «sin cuenta atrás» porque no sabían qué hacer al llegar a cero (v1.51.641) | **contrato a medias**: el shell ofrecía `alAgotarse` y 4 de 13 no lo cableaban |
+| Diagrama, Emparejar, Memoria y Crucigrama (ya retirado) declaraban «sin cuenta atrás» porque no sabían qué hacer al llegar a cero (v1.51.641) | **contrato a medias**: el shell ofrecía `alAgotarse` y 4 de 13 no lo cableaban |
 | Teclear repintaba el editor; la pestaña volvía a la primera (v1.51.642) | **un gesto destruye lo que el usuario toca** (solo se ve caminando) |
 | La Ruleta declaraba «no llevo reloj» y salía con cronómetro (v1.51.644) | **declaración que solo un lado obedece**: la miraba el editor, no el juego |
 | `rules.crono`: un ajuste del profe para una decisión que es de la plantilla (v1.51.644) | **ajuste en la capa equivocada** (§0) |
@@ -173,9 +173,9 @@ contrato a medias, vista que conoce una plantilla…). Ninguno cazaba «lo mismo
 hecho de tres formas, cada una coherente por dentro» — así se coló la
 CABECERA (nueve plantillas con los indicadores flotando, dos con banda propia,
 dos mezclando los dos tratamientos: costó dos capturas del dueño destaparlo) y
-así estaba el FINAL DE PARTIDA: once con la pantalla estándar del shell, el
-Crucigrama con un cartel propio (`.cw-celebration`) que dejaba al alumno en el
-tablero sin puntaje ni salida, y Abre Cajas saltándosela con un
+así estaba el FINAL DE PARTIDA: once con la pantalla estándar del shell, una
+con un cartel propio que dejaba al alumno en el tablero sin puntaje ni salida
+(el Crucigrama, ya retirado), y Abre Cajas saltándosela con un
 `skipResultScreen: true` suelto sin decir por qué. Y así estaba el CIERRE de
 una partida COMPARTIDA (duelo, equipos, lista, informe en vivo): el podio en
 sí ya era UNO (`podiumHtml`), pero lo que lo RODEA —título «¡GANADOR!»/
@@ -228,7 +228,7 @@ con su propio marcado en vez de vivir en `cierreHtml` (dueño: `core/podium.js`)
 | B6 capa | `tools/costuras-capa.mjs` | 22 | **0** | los 10 ajustes de sala del Quiz eran copias de `DEFAULT_LIVE`; 4 gates pasan de capacidad a declaración y el contrato lo exige |
 | B7 gestos | `edit-audit` + `matrix-smoke` + `live-smoke` | 2 | **0** | antesala · biblioteca · modales · alumno en vivo. Cazó un bug real: «Pausa» del host borraba la marca en curso del alumno |
 | B9 cifras | `tools/costuras-cifras.mjs` | 47 | **0** | 96 cifras quitadas (docs · comentarios · herramientas) · 9 umbrales de test que habían dejado de vigilar · un dueño único para «cuáles son las plantillas de verdad» (`tests/helpers/plantillasReales.mjs`) · la tabla del catálogo de `ESTRUCTURA.md`, ahora GENERADA |
-| B8 divergencia | `tools/costuras-divergencia.mjs` | 0 (2026-09-04) | **0** | el Crucigrama ya llegó limpio (otro agente quitó su `skipResultScreen`/cartel propio en paralelo); Abre Cajas tuvo un día una excepción declarada y el dueño la cerró («a rajatabla»): también sale por la estándar; ninguna cabecera duplicada. Lista 4 (cierre propio) añadida el mismo día que se unificó el podio en `cierreHtml`: nació roja de verdad (4 sitios: `vsView`, `listView`, `core/teams.js`, `hostInforme`) mientras la migración estaba en marcha EN PARALELO — para cuando se corrió el barrido tras escribirlo, el otro agente ya había migrado los cuatro y salió limpia; queda el ratchet en 0 vigilando que no vuelva a divergir |
+| B8 divergencia | `tools/costuras-divergencia.mjs` | 0 (2026-09-04) | **0** | el Crucigrama —ya retirado— llegó limpio (otro agente quitó su `skipResultScreen`/cartel propio en paralelo); Abre Cajas tuvo un día una excepción declarada y el dueño la cerró («a rajatabla»): también sale por la estándar; ninguna cabecera duplicada. Lista 4 (cierre propio) añadida el mismo día que se unificó el podio en `cierreHtml`: nació roja de verdad (4 sitios: `vsView`, `listView`, `core/teams.js`, `hostInforme`) mientras la migración estaba en marcha EN PARALELO — para cuando se corrió el barrido tras escribirlo, el otro agente ya había migrado los cuatro y salió limpia; queda el ratchet en 0 vigilando que no vuelva a divergir |
 
 Colateral: la regex que quitaba comentarios se tragaba medio `core/selftest.js`
 (invisible a TODAS las reglas desde que existe) → `core/sinComentarios.js`, dueño

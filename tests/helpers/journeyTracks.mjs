@@ -44,7 +44,7 @@ export const TEST_TRACKS = [
   ['jugar en vivo', /live|race|session|unscorable|deadline|clock/i],
   ['buscar/crear', /home|activityCard|explore|author|edit|likes|storage|search/i],
   ['informes/tareas', /report|assignment|itemStat|sessionTable|attempt|idempot/i],
-  ['plantillas (mecánicas)', /template|content|qaAdapt|scoring|textMarks|wheel|ballsort|diagram|crossword|quizAnswer|memory/i],
+  ['plantillas (mecánicas)', /template|content|qaAdapt|scoring|textMarks|wheel|ballsort|diagram|quizAnswer|memory/i],
   ['jugar en pizarra', /solo|mode|team|render|presentation|fullscreen|styles|skins/i],
 ];
 

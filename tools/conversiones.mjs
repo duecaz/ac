@@ -77,8 +77,8 @@ for (const origen of todas) {
     };
     filas.push(fila);
     // ROTO ≠ PIDE TRABAJO. Una ronda vacía o que revienta es un fallo del
-    // conversor. Que falte una PISTA no lo es: Crucigrama la necesita y una
-    // palabra suelta no la trae — inventarla revelaría la respuesta. Eso es
+    // conversor. Que falte un dato que el destino necesita y el origen no
+    // guarda no lo es — inventarlo revelaría la respuesta. Eso es
     // trabajo del profe, y lo que la app debe hacer es AVISARLO antes (lo hace
     // `switchWillNeed`, views/switchTemplate.js). Mezclarlos escondería un
     // fallo de verdad detrás de un aviso que ya está resuelto.

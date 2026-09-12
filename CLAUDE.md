@@ -103,7 +103,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | **QUÉ PIEZAS tiene cada actividad y cuánto ocupan** (en hueco ancho y en hueco alto) | **[`docs/piezas-por-actividad.md`](docs/piezas-por-actividad.md)** — GENERADO: `node tools/piezas.mjs` (es el dato de D8) |
 | **QUÉ TOKEN declara cada tema y quién lo consume** (la interfaz tema↔juego, §3) | **[`docs/tokens.md`](docs/tokens.md)** — GENERADO: `node tools/tokens.mjs` (lo vigila `tests/tokenConectado.test.mjs`) |
 | **Por qué Bootstrap está COPIADO en el repo** (nada de CDN: aula sin internet + el arnés medía otra pantalla) | **[`vendor/README.md`](vendor/README.md)** — lo vigila `tests/vendor.test.mjs` |
-| **QUÉ PRODUCE CONVERTIR de una plantilla a otra** (las 36, con lo que la conversión no puede inventar) | **[`docs/conversiones.md`](docs/conversiones.md)** — GENERADO: `node tools/conversiones.mjs --md` |
+| **QUÉ PRODUCE CONVERTIR de una plantilla a otra** (todas, con lo que la conversión no puede inventar) | **[`docs/conversiones.md`](docs/conversiones.md)** — GENERADO: `node tools/conversiones.mjs --md` |
 | **Matriz JUGABLE** (cada plantilla × cada modo arranca sin crash) | `node tools/matrix-smoke.mjs` + `tests/moduleRefs.test.mjs` (imports olvidados) |
 | **EN VIVO e2e** (host+alumno en dos páginas: sala→PIN→respuesta→settle→podio) | `node tools/live-smoke.mjs` |
 | **TAREAS e2e** (crear tarea → PIN → el alumno juega → tope de intentos → informe) | `node tools/task-smoke.mjs` |
@@ -196,7 +196,7 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
 | `board` · Tablero | `race` | cada alumno | avanzar más en el tablero | escala propia de la plantilla (Pelotas: 0-1000 por eficiencia) | igual que la carrera | Ordena las Pelotas |
 | `claim` · Pedir la palabra | `question-live` | el profe (a quien pide turno) | los puntos que da el docente | manuales (+10/+50), sin clave de respuesta | lo cierra el docente | Abre Cajas · Ruleta |
 
-> Generado de `core/liveLoops.js` + `meta.play.live` de las 16 plantillas.
+> Generado de `core/liveLoops.js` + `meta.play.live` de las 15 plantillas.
 > El modelo de puntos lo decide `pointsModeFor(loop)`: `rounds`→`live` · `race`→`race` · `board`→`race` · `claim`→`live`.
 <!-- /GENERADO:bucles -->
 
@@ -260,7 +260,7 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   `tests/antesala.test.mjs` (código) y `matrix-smoke` (DOM montado, cada plantilla × modo).
   OJO: una utilidad de Bootstrap (`p-2`) en la raíz del juego lleva `!important` y pisa las
   reglas del propio juego (tapó la reserva del HUD) — el relleno va en la hoja de la plantilla.
-- **Registro de plantillas y arranque**: `core/registerTemplates.js` (las 16 —13 ejercicios + 3 juegos—, punto único) +
+- **Registro de plantillas y arranque**: `core/registerTemplates.js` (todas, punto único) +
   `core/boot.js` (sonidos/efectos al bus, versión, mute). Las 3 `main.*.js` NO repiten ese wiring.
 - **Animaciones IGUALES en todas las pantallas** (no se distingue por aparato: `ww-lite` y su
   detector se retiraron): solo `transform`/`opacity` y lienzos con tope (1280 · DPR ≤ 1,5);
@@ -372,7 +372,7 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   PARÁMETROS (`scoring.pointsPerCorrect`) los lee el SCORER, nunca el player; la LÓGICA vive en la
   plantilla → imposible que un modo desincronice. El **techo** (`maxScore`) se DERIVA del propio
   scorer ("lo que daría acertarlo todo"), no de una fórmula paralela. Lo vigila
-  `tests/scoringSources.test.mjs` (4 reglas ejecutables) — antes match/diagram/crossword/memory
+  `tests/scoringSources.test.mjs` (4 reglas ejecutables) — antes match/diagram/memory
   llevaban aritmética propia en Individual.
   El runner Solo (`runTextCorrectionSolo`) también llama a `scoreMarksPerHit` (no tiene copia propia).
   **En CARRERA los puntos son PLANOS** (`mode:'race'` en el settle → `usaBonusVelocidad()` no enciende el
@@ -461,12 +461,12 @@ usuario: se deja pendiente, no bloquea el resto.
 - **Lápiz y palma en pizarra REAL** (v1.51.610: DOS herramientas, frontera única,
   calibración de 2 recuadros; medido headless en `tools/lapiz-sonda.mjs`). Falta la
   mano de verdad: es la Parte 1 de la hoja del compañero.
-- **El FIN del Crucigrama y Abre Cajas en navegador** (v1.51.665: salen por la estándar del shell). Pasan la matriz; nadie lo ha MIRADO. Dueño: la regla primero.
+- **El FIN de Abre Cajas en navegador** (v1.51.665: sale por la estándar del shell). Pasa la matriz; nadie lo ha MIRADO. Dueño: la regla primero.
 
 ### 🟡 UNA FUNCIÓN QUE EL PANEL PROMETÍA Y NO EXISTE (v1.51.482)
 El escaneo de «ajustes desconectados» encontró SIETE mandos que el editor
 escribía y nadie leía. Cuatro se conectaron (filtro de apodos · leaderboard
-entre preguntas · mostrar respuesta tras cada · ayuda del crucigrama). De los
+entre preguntas · mostrar respuesta tras cada · ayuda del crucigrama, ya retirado). De los
 otros tres, dos se RETIRARON del esquema por decisión del dueño (`rules.
 allowOverflow`/`showHints` de Tildes y Comas, `rules.livesPerMistake` de
 Match, `scoring.penaltyRatio`: prometidos sin mecánica — barrido B1,
@@ -551,7 +551,7 @@ CORES     (templates/*/player.js)  — cómo: drag, click, tipo, animación (ún
 **Shell Libre** `runFreeformPlayer(rootSel, activity, opts)` → devuelve `ctx` ✅:
 - El player llama `ctx.finish({score, maxScore, title, stats, after})` al terminar — AÑADE sobre la estándar, nunca la sustituye (`skipResultScreen` no existe: lo caza B8).
 - Shell garantiza: `resultScreenHtml()` SIEMPRE, `trySaveResult()`, `onFinish()`.
-- Callers (medido 2026-09-04): Wheel, Question-Live, Memory, Match, Wordsearch, Crossword, Diagram, Ballsort; Tildes y Comas vía `runTextCorrectionSolo` (que corre sobre este shell). **Las 13 sobre un shell** — la migración terminó; este cuadro dijo «pendientes» versiones después de estarlo.
+- Callers (medido 2026-09-04): Wheel, Question-Live, Memory, Match, Wordsearch, Diagram, Ballsort; Tildes y Comas vía `runTextCorrectionSolo` (que corre sobre este shell). **Las 13 sobre un shell** — la migración terminó; este cuadro dijo «pendientes» versiones después de estarlo.
 
 **Timer único** `core/soloTimer.js` — `createCountdown(secs, {onTick, onTimeout, setIntervalFn?, clearIntervalFn?})` ✅:
 - Cerró 3 implementaciones divergentes (Quiz, Globos, Wordsearch). Scheduler inyectable → tests deterministas.

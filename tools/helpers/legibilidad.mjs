@@ -66,8 +66,8 @@ export function medirLegibilidad(raizSel, cajaSel, opts) {
   //    la palabra encontrada de la Sopa daba 1,0:1 cuando son 2,4:1. Ahora se
   //    COMPONE el alfa sobre lo que hay debajo.
   //  · un degradado o una imagen no tienen color computado: se caía al blanco y
-  //    el título del Crucigrama —letra blanca sobre degradado OSCURO— salía como
-  //    1,0:1. Ahora eso NO se juzga… salvo que el lienzo esté DECLARADO.
+  //    un título de letra blanca sobre un degradado OSCURO salía como 1,0:1.
+  //    Ahora eso NO se juzga… salvo que el lienzo esté DECLARADO.
   const lienzoDe = (el) => {
     const capas = [];
     let base = null;

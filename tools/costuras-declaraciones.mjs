@@ -79,7 +79,8 @@ const esEditor = (p) => /editor\.js$|editorPanels\.js$|editorModes\.js$|editorSh
 // cuenta como "sospechosa" ni infla el baseline. Motivo por clave, porque
 // "solo lo lee un editor" sin más invita a colar aquí lo que sí falta conectar.
 const SOLO_EDITOR = {
-  iaPalabrasComoTexto: 'formato de contenido para la IA de generación (capa contenido↔editor, §0); el player nunca lo necesita',
+  // (vacío: `iaPalabrasComoTexto` se retiró con el Crucigrama — el modelo
+  //  `words` ya solo tiene una forma, cadenas sueltas.)
 };
 
 // EXCEPCIONES DECLARADAS EN tests/ajusteConectado.test.mjs (`PERMITIDOS`) — no

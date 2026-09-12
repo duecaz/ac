@@ -3,7 +3,7 @@
 // La norma llevaba tiempo escrita en CLAUDE.md y se cumplía en los MODOS (todos
 // puntúan vía T.scoreSubmission), pero el PLAYER SOLO de cuatro plantillas
 // llevaba su propia aritmética en paralelo: match (ppc·aciertos − ppw·fallos),
-// diagram (copia de match), crossword (solvedIds × ppc, con el scorer real como
+// diagram (copia de match), crucigrama (solvedIds × ppc, con el scorer real como
 // stub jamás invocado) y memory (sin scorer, sumando con applyPoints). Dos
 // verdades para la misma pregunta: el día que una cambie, Individual y VS/Equipos
 // dan números distintos — exactamente el bug que QA reportó en Tildes/Comas.

@@ -8,7 +8,6 @@
 // plantilla—, no una fila más del formulario. Plan: docs/handoff-ia-contenido.md
 import { escapeHtml } from './html.js';
 import { on } from './events.js';
-import { getTemplate } from './registry.js';
 import { iaSabeEscribir, fusionarContenido, MODELOS_IA } from './aiContent.js';
 import { toast, TOAST_LARGO } from './toast.js';
 import { mensajeDe } from './frontera.js';
@@ -61,16 +60,13 @@ export function wireIA(root, a, T, ctx) {
         modelo,
         elemento: T?.meta?.editor?.elemento,
         tema: a.title || '',
-        // Sopa de Letras guarda cadenas sueltas y Crucigrama fichas con pista:
-        // se pide una vez (con pista) y se aplana aquí. Ver core/aiContent.js.
-        palabrasComoTexto: getTemplate(a.template)?.meta?.iaPalabrasComoTexto === true,
       });
       if (!nuevo) return;                       // cerró sin aceptar
       // LA PLANTILLA REMATA LO QUE LA IA NO PUEDE SABER. `adoptContent` es el
       // mismo gancho que usa la conversión entre plantillas, y aquí hace falta
-      // por lo mismo: el modelo escribe el CONTENIDO (`{palabra, pista}`) pero
-      // no dónde va cada palabra en la rejilla del crucigrama. Sin este paso
-      // el crucigrama decía «No hay palabras configuradas» con la lista llena.
+      // por lo mismo: el modelo escribe el CONTENIDO pero no la FORMA que pide
+      // la plantilla (Operaciones→Quiz necesita opciones).
+      // Sin este paso el contenido llegaba lleno y el juego lo descartaba.
       // El shell sigue sin conocer plantillas (§0): pregunta, no decide.
       const fusionado = /** @type {import('../kernel/contracts/activity.js').ActivityContent} */ (
         fusionarContenido(a.content, nuevo) ?? a.content);

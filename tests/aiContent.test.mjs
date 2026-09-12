@@ -90,28 +90,22 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   ok('pairs: exige uno a uno — «perro» no puede emparejar con dos cosas');
 }
 
-// ── words · palabra suelta, y la pista que regala la respuesta ───────────────
+// ── words · palabra suelta de letras, sin repetir ───────────────────────────
 {
   const r = interpretarRespuesta('words', JSON.stringify([
-    { palabra: 'caballo', pista: 'Animal que se monta' },
-    // Trampa: la pista contiene la palabra. Se conserva la palabra y se tira la
-    // pista, que es lo que sirve; tirar la palabra sería peor.
-    { palabra: 'perro', pista: 'El perro es el mejor amigo del hombre' },
-    { palabra: 'oso hormiguero', pista: 'Come hormigas' },
-    { palabra: 'CABALLO', pista: 'Repetida' },
-    { palabra: 'a', pista: 'Muy corta' },
+    { palabra: 'caballo' },
+    { palabra: 'perro' },
+    { palabra: 'oso hormiguero' },
+    { palabra: 'CABALLO' },
+    { palabra: 'a' },
   ]));
-  assert.deepStrictEqual(r.content.words.map(w => w.word), ['CABALLO', 'PERRO']);
-  assert.strictEqual(r.content.words[0].clue, 'Animal que se monta');
-  assert.strictEqual(r.content.words[1].clue, '', 'la pista que contenía la palabra se descarta');
+  assert.deepStrictEqual(r.content.words, ['CABALLO', 'PERRO']);
   assert.ok(r.descartadas.some(d => /oso hormiguero/i.test(d)), 'dos palabras no caben en la rejilla');
-
-  // Sopa de Letras guarda cadenas sueltas; Crucigrama, fichas con pista. Se pide
-  // una vez y se aplana, en vez de generar dos veces.
-  const sopa = interpretarRespuesta('words', JSON.stringify([{ palabra: 'gato', pista: 'Maúlla' }]),
-    { palabrasComoTexto: true });
-  assert.deepStrictEqual(sopa.content.words, ['GATO']);
-  ok('words: una sola palabra de letras, sin repetir, y la pista no puede contener la palabra');
+  // El modelo puede mandar la palabra suelta o dentro de una ficha: se guarda
+  // siempre la CADENA, que es lo único que el modelo `words` sabe hoy.
+  const suelta = interpretarRespuesta('words', JSON.stringify(['gato']));
+  assert.deepStrictEqual(suelta.content.words, ['GATO']);
+  ok('words: una sola palabra de letras, en mayúsculas y sin repetir');
 }
 
 // ── textCorrection · las posiciones NO las calcula la IA ─────────────────────
@@ -556,10 +550,9 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
     const bruta = GRABADAS[modelo];
     assert.ok(bruta, `falta respuesta grabada para el modelo «${modelo}» (plantilla ${T.meta.name})`);
     // Los MISMOS pasos que el editor (core/editorShell.js), no una copia
-    // aproximada: el flag real (`meta.iaPalabrasComoTexto`) y el remate de la
-    // plantilla (`adoptContent`), que es quien coloca la rejilla del crucigrama
-    // — sin él, este test acusaba a la IA de un paso que nunca fue suyo.
-    const r = interpretarRespuesta(modelo, bruta, { palabrasComoTexto: T.meta.iaPalabrasComoTexto === true });
+    // aproximada: el remate de la plantilla (`adoptContent`) — sin él, este
+    // test acusaba a la IA de un paso que nunca fue suyo.
+    const r = interpretarRespuesta(modelo, bruta);
     assert.strictEqual(r.error, null, `${T.meta.name}: la respuesta grabada no se interpretó — ${r.error}`);
     const a = newActivity(T.meta.name);
     a.title = 'Escrita por la IA';

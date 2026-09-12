@@ -21,8 +21,6 @@ const norm = (s) => String(s || '').toUpperCase().replace(/\s+/g, '');
 export function scoreWordsearch({ value, msTaken, activity, mode = 'solo' }) {
   if (!value) return { correct: false, points: 0, hits: 0, total: 1 };
   const found = norm(value);
-  // El modelo `words` lo comparten Sopa (cadenas) y Crucigrama (fichas): aquí
-  // se compara el texto, que es lo que el alumno marca en la rejilla.
   const c = /** @type {import('../../kernel/contracts/activity.js').WordsContent} */ (activity.content);
   const words = (c?.words || []).map(norm);
   const ok = words.includes(found);

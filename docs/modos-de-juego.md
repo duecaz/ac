@@ -421,7 +421,7 @@ también el orden barajado, como ya hace Memoria con su mazo. ¿Merece la pena?
 |---|---|---|---|
 | `'race'` | El primero que completa TODO cierra el duelo | Quien terminó primero | Operaciones, Sopa, Ordena las Pelotas |
 | `'points'` | Cuando **ambos** terminan | Quien más suma (desempata quien acabó antes) | Quiz, Globos, Emparejar, Tildes, Comas |
-| `'none'` | No se juega en VS | — | Memoria, Ruleta, Crucigrama, Diagrama, Pregunta en vivo |
+| `'none'` | No se juega en VS | — | Memoria, Ruleta, Diagrama, Pregunta en vivo |
 
 ```gherkin
 Escenario: 'points' — acabar primero NO corta al rival
@@ -543,7 +543,7 @@ escrita, no un `if` en una vista.
 | `board` · Tablero | `race` | cada alumno | avanzar más en el tablero | escala propia de la plantilla (Pelotas: 0-1000 por eficiencia) | igual que la carrera | Ordena las Pelotas |
 | `claim` · Pedir la palabra | `question-live` | el profe (a quien pide turno) | los puntos que da el docente | manuales (+10/+50), sin clave de respuesta | lo cierra el docente | Abre Cajas · Ruleta |
 
-> Generado de `core/liveLoops.js` + `meta.play.live` de las 16 plantillas.
+> Generado de `core/liveLoops.js` + `meta.play.live` de las 15 plantillas.
 > El modelo de puntos lo decide `pointsModeFor(loop)`: `rounds`→`live` · `race`→`race` · `board`→`race` · `claim`→`live`.
 <!-- /GENERADO:bucles -->
 

@@ -103,7 +103,6 @@ function build(a) {
       case 'memory':        return memoryPv(/** @type {PairsContent} */ (c));
       case 'wheel':         return wheelPv();
       case 'wordsearch':    return wordsearchPv(/** @type {WordsContent} */ (c));
-      case 'crossword':     return crosswordPv();
       case 'ballsort':      return ballsortPv();
       case 'question-live': return boxesPv();
       case 'colorear':      return colorearPv();
@@ -216,19 +215,6 @@ function wordsearchPv(c) {
     cells += `<span class="${hit ? 'pv-word__hit' : ''}">${esc(ch)}</span>`;
   }
   return `<div class="pv pv-word"><div class="pv-word__grid">${cells}</div></div>`;
-}
-
-// ── Crucigrama: rejilla 5×5 con celdas negras/blancas y unas letras ──────────
-function crosswordPv() {
-  const pat = [0,1,1,1,0, 1,1,2,1,1, 1,2,1,2,1, 1,1,2,1,1, 0,1,1,1,0]; // 0 negra · 1 blanca · 2 letra
-  const letters = ['S', 'O', 'L', 'A', 'Z'];
-  let li = 0, cells = '';
-  for (const v of pat) {
-    if (v === 0) cells += `<span class="pv-cross__b"></span>`;
-    else if (v === 2) cells += `<span class="pv-cross__l">${letters[li++ % letters.length]}</span>`;
-    else cells += `<span></span>`;
-  }
-  return `<div class="pv pv-cross"><div class="pv-cross__grid">${cells}</div></div>`;
 }
 
 // ── Ordena las Pelotas: 3 tubos con bolas de color, uno a medio ordenar ──────

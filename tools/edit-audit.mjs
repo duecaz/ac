@@ -82,7 +82,6 @@ const rows = await page.evaluate(async () => {
       const cands = [];
       if (it?.answer != null) cands.push(...(Array.isArray(it.answer) ? it.answer : [it.answer]));
       if (it?.right != null) cands.push(it.right);          // parejas
-      if (it?.word != null) cands.push(it.word);            // crucigrama
       if (it?.label != null) cands.push(it.label);
       if (typeof it === 'string') cands.push(it);           // sopa de letras
       if (Array.isArray(it?.marks)) cands.push(it.marks.map(m => m.pos));  // tildes/comas
@@ -119,7 +118,7 @@ const rows = await page.evaluate(async () => {
       // que abrió esta segunda mitad vivía justo ahí: el campo «Tiempo por
       // pregunta» es `type="number"`. Una red que no mira donde pasó no es red.
       const SEL = '#ed input[type="text"], #ed input[type="number"], #ed input:not([type]), #ed textarea';
-      const ANSWER_FIELDS = ['.it-a', '.ws-ed-word', '.cw-word'];
+      const ANSWER_FIELDS = ['.it-a', '.ws-ed-word'];
       // Teclear en un numérico es teclear un DÍGITO: pegarle una «X» lo deja en
       // blanco (el navegador rechaza el valor) y la sonda mediría otra cosa.
       const teclear = (f) => { f.value = f.type === 'number' ? String((+f.value || 0) * 10 % 1000 || 3) : f.value + 'X'; };

@@ -74,7 +74,7 @@ tablero de Sopa y arrastre de cuerdas (medio: gesto táctil, lo cubre la matriz)
 - `core/templateContract.js` → seis revisores puros; `core/normsCheck.js` → dueños (dato) + escáner.
 - `kernel/contracts/session.js` (466) → `session.js` + `persistencia.js`; `createLiveRoom` tipado con `LiveOpts`/`LiveEngine` (borra `paraHidratar` y 5 casts).
 - `core/skins.js` → los 7 skins a `themes/builtin/`; `core/fullscreen.js` → `fullscreenRepair.js`; `state.js` → `identity.js`; `switchTemplate.js` de `views/` a `core/switchTemplate.js` ✅.
-- `crossword/player.js` (523) → view · cursor · check (130 líneas de lógica pasan a ser comprobables desde Node); `quiz/template.js` → hostView + migrate; `vsView.startMatch` (286) → `vs/arena.js`.
+- `quiz/template.js` → hostView + migrate; `vsView.startMatch` (286) → `vs/arena.js`. *(La partición de `crossword/player.js` se hizo y murió con la plantilla, borrada el 2026-09-12.)*
 
 **Fase 7 · arranque (T8).** ✅ HECHA (v1.51.686). `#/admin` por `import()` dinámico; `views/admin/diagnostico/`.
 

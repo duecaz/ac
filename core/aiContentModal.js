@@ -98,7 +98,6 @@ function conMarcas(p) {
  * @param {string} [opts.modelo]      modelo de contenido de la actividad
  * @param {string} [opts.elemento]  cómo se llama una pieza aquí («pregunta», «par»…)
  * @param {string} [opts.tema]      sugerencia inicial (el título de la actividad)
- * @param {boolean} [opts.palabrasComoTexto]  Sopa de Letras (ver core/aiContent.js)
  * @param {typeof fetch} [opts.fetchFn] inyectable para las sondas
  * @param {HTMLElement|null} [opts.disparador] a quién devolver el foco al cerrar
  * @returns {Promise<Record<string, unknown>|null>}
@@ -110,7 +109,7 @@ function conMarcas(p) {
 // deja de ser el `activeElement` al instante, así que ese caller lo pasa
 // explícito con la referencia que capturó antes de deshabilitarlo.
 export function abrirEscribirConIA(opts = {}) {
-  const { modelo = '', tema = '', palabrasComoTexto = false, fetchFn = fetch, disparador } = opts;
+  const { modelo = '', tema = '', fetchFn = fetch, disparador } = opts;
   const def = MODELOS_IA[modelo];
   if (!iaSabeEscribir(modelo) || !def) return Promise.resolve(null);
   const elemento = opts.elemento || def.elemento;
@@ -235,7 +234,7 @@ export function abrirEscribirConIA(opts = {}) {
     try {
       const r = await pedirContenido({
         modelo, tema, curso: $sel('curso').value, cantidad: Number($in('n').value),
-        url: EXTREMO(), token: getAuthToken() || '', fetchFn, palabrasComoTexto,
+        url: EXTREMO(), token: getAuthToken() || '', fetchFn,
       });
       if (r.error) { aviso(r.error); propuesto = null; return; }
       propuesto = r.content;

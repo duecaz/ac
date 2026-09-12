@@ -6,7 +6,6 @@ import { generateGridAllWords, SIZE_MAP } from './generator.js';
 
 /**
  * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
- * @typedef {import('../../kernel/contracts/activity.js').WordsearchContent} WordsearchContent
  * @typedef {import('../../kernel/contracts/activity.js').WordsContent} WordsContent
  */
 
@@ -22,16 +21,15 @@ import { generateGridAllWords, SIZE_MAP } from './generator.js';
 /** @param {Activity} activity @returns {WordsearchRules} */
 export const wordsearchRules = (activity) => /** @type {WordsearchRules} */ (activity.rules || {});
 
-/** Las palabras de ESTA actividad. El modelo `words` lo comparten Sopa
- *  (cadenas) y Crucigrama (fichas colocadas): aquí se aplanan a texto.
+/** Las palabras de ESTA actividad (el modelo `words` guarda cadenas).
  * @param {Activity} activity @returns {string[]} */
 export function wordsearchWords(activity) {
   const c = /** @type {WordsContent} */ (activity.content);
-  return (c?.words || []).map(w => (typeof w === 'string' ? w : (w?.word || ''))).filter(Boolean);
+  return (c?.words || []).map(w => String(w || '')).filter(Boolean);
 }
 
 export class WordsearchTemplate extends BaseTemplate {
-  /** @type {import('../../kernel/contracts/template.js').TemplateMeta<WordsearchContent>} */
+  /** @type {import('../../kernel/contracts/template.js').TemplateMeta<WordsContent>} */
   static meta = {
     name:            'wordsearch',
     label:           'Sopa de Letras',
@@ -51,7 +49,6 @@ export class WordsearchTemplate extends BaseTemplate {
     // La Sopa guarda `words` como cadenas sueltas, no como fichas con pista.
     // Lo DECLARA aquí porque quien lo necesita es el diálogo de IA, y hasta hoy
     // lo averiguaba preguntando `a.template === 'wordsearch'` (§0).
-    iaPalabrasComoTexto: true,
     play:            { vs: 'race', teams: 'board', live: [], submit: 'gesto' , reloj: { unidad: 'sopa' } },
     defaultRules:   () => ({ gridSize: 'medium', directions: 'medium', timer: 300 }),
     defaultScoring: () => ({ mode: 'flat', pointsPerCorrect: 1 }),   // P5: escala unificada (antes 10)
@@ -64,21 +61,6 @@ export class WordsearchTemplate extends BaseTemplate {
   static renderPlayer = renderWordsearchPlayer;
   static renderEditor = renderWordsearchEditor;
   static scoreSubmission = scoreWordsearch;
-
-  // Cambio de formato (ley de contenido §24): Crucigrama comparte el modelo
-  // `words` pero con FORMA distinta (palabras colocadas {word,clue,row,col,dir}
-  // vs strings). Al adoptar, quedarse solo con la palabra — antes el switch
-  // "directo" pasaba los objetos tal cual y la sopa quedaba inservible.
-  /**
-   * @param {import('../../kernel/contracts/activity.js').ActivityContent} content
-   * @returns {WordsearchContent|null}
-   */
-  static adoptContent(content) {
-    const c = /** @type {WordsContent} */ (content);
-    const ws = c?.words || [];
-    if (!ws.length || typeof ws[0] === 'string') return /** @type {WordsearchContent} */ (content);
-    return { ...c, words: ws.map(w => String((typeof w === 'string' ? w : w?.word) || '')).filter(Boolean) };
-  }
 
 
   // VS: each side gets a DIFFERENT board with the SAME words (seeded by side, so

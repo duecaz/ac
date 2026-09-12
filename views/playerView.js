@@ -67,7 +67,7 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   // El TEMA Y EL FONDO de esta vez (views/player/apariencia.js): viven aquí, no
   // en la actividad guardada. Al cambiar el TEMA, VS/Equipos necesitan
   // re-montarse (su layout depende de la clase vs-skin-<layout>); Individual no,
-  // o el alumno perdería el crucigrama a medias por tocar una baldosa.
+  // o el alumno perdería la partida a medias por tocar una baldosa.
   const apariencia = crearApariencia({
     presentation: a.presentation,
     marco: () => document.getElementById('ww-frame'),

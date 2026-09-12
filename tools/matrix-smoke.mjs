@@ -918,7 +918,7 @@ for (const t of seeded) {
             // El tope: la cabecera pegada arriba y a todo el ancho. 4 px da aire
             // para redondeos de subpíxel; nada más.
             // 45px de aire: alguna raíz de plantilla lleva un padding PROPIO,
-            // simétrico y deliberado (Ruleta: 2cqmin · Crucigrama: .4rem ·
+            // simétrico y deliberado (Ruleta: 2cqmin ·
             // Emparejar/Diagrama: 5vmin en pantalla completa, `:fullscreen
             // .ww-scaffold` de styles/player.css) — nada que ver con el hueco
             // de 30-50+ px que reservaban a mano los chips flotantes. Lo que

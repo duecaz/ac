@@ -1,51 +1,19 @@
-// MODELO `words` — palabras, y qué hace falta para que una palabra JUEGUE.
+// MODELO `words` — la lista de palabras de una actividad.
 //
-// Dos plantillas comparten este modelo y no piden lo mismo:
-//   · Sopa de Letras guarda CADENAS sueltas y coloca ella al generar la rejilla.
-//   · Crucigrama guarda FICHAS `{word, clue, row, col, dir}`: sin sitio en la
-//     rejilla, la palabra no existe para el juego.
-//
-// Este fichero existe porque ese «sin sitio no existe» estaba escrito CUATRO
-// veces —el player, el preview del editor, el payload de ronda y el revisor— y
-// las copias ya habían empezado a divergir (unas exigían `word`, otras no). Es
-// justo el fallo que el revisor advierte de sí mismo: si el guardián y el player
-// no comparten la regla, el guardián aprueba lo que el player luego descarta en
-// silencio, y el profe ve «No hay palabras configuradas» con la lista llena.
+// Lo consume la Sopa de Letras, que guarda CADENAS sueltas y coloca ella la
+// rejilla al generar. Este fichero es el dueño único del «dónde está la lista»
+// del modelo: antes cada sitio que tocaba `content.words` lo tecleaba por su
+// cuenta (el player, el preview del editor, el payload de ronda y el revisor) y
+// las copias ya habían empezado a divergir.
 //
 // Capa CONTENIDO: lo puede importar el core, el kernel y cualquier plantilla.
 
-/**
- * @typedef {import('../../kernel/contracts/activity.js').CrosswordWord} CrosswordWord
- */
-
 /** LAS PALABRAS DE ESTA ACTIVIDAD, lista para mutar (se siembra `words: []` si
- *  el contenido viene a medias). Dueño único del «dónde está la lista» del
- *  modelo `words`, que las dos plantillas tenían tecleado por su cuenta.
- *
- *  El ELEMENTO lo tipa cada plantilla al llamar, porque no comparten forma: la
- *  Sopa guarda CADENAS y el Crucigrama FICHAS (ver la cabecera de este módulo).
- * @param {{content?: unknown}|null|undefined} a @returns {Array<string|CrosswordWord>} */
+ *  el contenido viene a medias).
+ * @param {{content?: unknown}|null|undefined} a @returns {string[]} */
 export function palabrasDe(a) {
-  const c = /** @type {{words?: Array<string|CrosswordWord>}|null|undefined} */ (a?.content);
+  const c = /** @type {{words?: string[]}|null|undefined} */ (a?.content);
   if (!c) return [];
   if (!Array.isArray(c.words)) c.words = [];
   return c.words;
-}
-
-/** ¿Es una ficha de crucigrama (con pista) o una palabra suelta de la sopa?
- *  @param {string|CrosswordWord|null|undefined} w */
-export function esFicha(w) {
-  return !!w && typeof w === 'object' && 'clue' in w;
-}
-
-/** ¿Tiene sitio en la rejilla? Es la vara que usa el juego para dejarla entrar.
- *  @param {string|CrosswordWord|null|undefined} w */
-export function palabraColocada(w) {
-  return !!w && typeof w === 'object' && w.row != null && w.col != null && !!w.dir;
-}
-
-/** Lo que el crucigrama puede jugar: ficha con palabra Y con sitio.
- *  @param {string|CrosswordWord|null|undefined} w */
-export function palabraJugable(w) {
-  return palabraColocada(w) && w != null && typeof w === 'object' && !!w.word;
 }

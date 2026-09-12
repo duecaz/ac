@@ -102,8 +102,6 @@ const OTRO_DOMINIO = [
   ['200 actividades', 'la cuota de §25 (core/quotas.js), no el catálogo'],
   ['12 recorridos', 'los recorridos del preflight'],
   ['13 documentos', 'documentos, no plantillas'],
-  ['las 36, con lo que la conversión no puede inventar', 'las 36 CONVERSIONES (docs/conversiones.md, generado), no plantillas'],
-  ['las 36 conversiones', 'idem: conversiones, y la cifra la genera tools/conversiones.mjs'],
 ];
 
 const declarada = (linea) => {

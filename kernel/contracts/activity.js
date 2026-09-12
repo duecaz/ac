@@ -46,7 +46,7 @@
 // La forma REAL sale de `core/migrate.js` (`normalize()` — todo campo que
 // aparece ahí es obligatorio tras leer del almacén y opcional al construirla),
 // de `core/constants.js` (los DEFAULT_*) y de los `defaultContent/defaultRules/
-// defaultScoring` de las 16 plantillas.
+// defaultScoring` de cada plantilla.
 
 /**
  * ATRIBUCIÓN de una imagen (§24: el crédito viaja con el píxel porque con
@@ -170,32 +170,10 @@
  */
 
 /**
- * Palabra colocada en la rejilla del Crucigrama.
- * @typedef {Object} CrosswordWord
- * @property {string} id
- * @property {string} word
- * @property {string} clue
- * @property {number} row
- * @property {number} col
- * @property {'H'|'V'} dir
- */
-/**
- * Sopa de Letras: solo las palabras a buscar.
- * @typedef {Object} WordsearchContent
- * @property {string[]} words
- */
-/**
- * Crucigrama: palabra + pista + posición.
- * @typedef {Object} CrosswordContent
- * @property {CrosswordWord[]} words
- */
-/**
- * El modelo `words` tal y como está REGISTRADO: su `validate` solo exige que
- * `words` sea un array, y las dos plantillas que lo consumen guardan formas
- * distintas (Sopa: `string[]`; Crucigrama: `CrosswordWord[]`). Quien no sepa
- * cuál de las dos tiene, usa este; quien lo sepa, el concreto.
+ * El modelo `words`: las palabras a buscar, cadenas sueltas. Hoy solo lo
+ * consume la Sopa de Letras, que coloca ella la rejilla al generar.
  * @typedef {Object} WordsContent
- * @property {Array<string|CrosswordWord>} words
+ * @property {string[]} words
  */
 
 /**
@@ -288,7 +266,7 @@
  * una sesión las trata a todas como la secuencia de rondas, así que el tipo es
  * la unión de sus elementos — incluida la `string` suelta de `entries` y de las
  * palabras de la Sopa.
- * @typedef {QaItem|CardItem|Pair|Passage|DiagramPin|CrosswordWord|BallsortItem
+ * @typedef {QaItem|CardItem|Pair|Passage|DiagramPin|BallsortItem
  *   |ColorearItem|TangramItem|PuzzleItem|string} SessionItem
  */
 
@@ -300,7 +278,7 @@
 
 /**
  * Reglas de la partida. Los cuatro primeros son los de `DEFAULT_RULES`; cada
- * plantilla añade los suyos (`hintMode`, `gridSize`, `selector`, `directions`,
+ * plantilla añade los suyos (`gridSize`, `selector`, `directions`,
  * `spinDurationMs`, `removeAfterSpin`…), por eso el índice abierto.
  * El índice abierto NO es un saco: es lo que hace que `defaultRules()` de una
  * plantilla (`{spinDurationMs, removeAfterSpin, selector}`) siga siendo

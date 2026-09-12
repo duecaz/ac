@@ -131,10 +131,6 @@
  * @property {'16/10'|'4/3'|'16/9'|'1/1'|'auto'} [aspectRatio]  Proporción del
  *   marco (por defecto 4/3). La plataforma OBEDECE lo que declare la plantilla.
  * @property {'fill'|'block'|'center'} [panelFit]  Maquetación del panel de VS.
- * @property {boolean} [iaPalabrasComoTexto]  Modelo `words`: la plantilla guarda
- *   CADENAS sueltas (Sopa de Letras), no fichas con pista, así que lo que escribe
- *   la IA se aplana antes de entrar (`core/aiContent.js`). Lo lee el chasis del
- *   editor (`core/editorShell.js`).
  * @property {boolean} [seMarcaConLapiz]  Se juega MARCANDO sobre un texto
  *   (Tildes/Comas), así que la antesala ofrece calibrar el lápiz antes de
  *   empezar. Lo DECLARA la plantilla; la lee `views/antesala.js` (§0).
@@ -246,22 +242,20 @@
  *   Qué partes marcó UNA respuesta. Solo se consulta si hay `itemParts`.
  * @property {(item: unknown) => string} [itemLabel]
  *   Etiqueta corta del ítem para las tablas e informes.
- * @property {(content: ActivityContent, fromModel: string, opts?: Record<string, unknown>) => (C|null)} [adoptContent]
+ * @property {(content: ActivityContent, fromModel: string) => (C|null)} [adoptContent]
  *   Adapta el contenido al CONVERTIR desde otra plantilla del MISMO
  *   `contentModel` pero distinta forma de ítem (Operaciones→Quiz genera
  *   `options[]`). La invoca `kernel/content/switch.js`; reglas en
  *   `kernel/content/qaAdapt.js`. Opcional y no se valida.
  *   El segundo argumento es el MODELO de origen (es lo que pasan los dos
- *   llamantes, `switch.js` y `core/editorShell.js`), y el tercero, opcional,
- *   son las opciones del cambio: hoy solo lo mira el Crucigrama (`soloForma`,
- *   sondear qué faltará sin pagar la colocación de la rejilla).
+ *   llamantes, `switch.js` y `core/editorShell.js`).
  */
 
 /**
  * LA MISMA META, VISTA DESDE LA BASE — la que hay que poner en
  * `templates/base.js`, y solo ahí.
  *
- * Por qué existe y no vale `TemplateMeta`: los 16 `static meta = { … }` de las
+ * Por qué existe y no vale `TemplateMeta`: los `static meta = { … }` de las
  * plantillas son literales SIN anotar, así que TypeScript ENSANCHA sus valores
  * (`kind: 'juego'` se infiere `string`, `play.vs: 'race'` se infiere `string`,
  * el `mode: 'moves'` de Pelotas también). Un literal ensanchado no es asignable
@@ -297,7 +291,6 @@
  * @property {string} [markNoun]
  * @property {string} [aspectRatio]
  * @property {string} [panelFit]
- * @property {boolean} [iaPalabrasComoTexto]
  * @property {boolean} [seMarcaConLapiz]
  * @property {() => Record<string, unknown>} defaultRules
  * @property {() => Record<string, unknown>} defaultScoring

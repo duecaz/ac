@@ -329,7 +329,7 @@
    palabras, con su veredicto, de un vistazo.
 
    Carril lateral si sobra ANCHO; si no, debajo. Misma regla de reflujo que la
-   Sopa y el crucigrama: la forma sola no basta, porque el marco lleva la
+   Sopa: la forma sola no basta, porque el marco lleva la
    proporción de la plantilla y casi nunca es vertical. */
 .tc-corrige {
   display: flex;

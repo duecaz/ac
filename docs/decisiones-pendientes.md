@@ -187,8 +187,7 @@ El reparto ya tiene vocabulario y guardián — **los TRES roles**
 tratamientos según la actividad y se unificó en una sola cabecera.
 
 Con eso cerrado, el reparto dejó de ser opinión: el título salió del juego (6
-players), Crucigrama separó ayudarse de entregar, Sopa y Crucigrama refluyen
-por forma en vez de por píxeles, el Quiz sin foto llena como un concurso y la Ruleta
+players), la Sopa refluye por forma en vez de por píxeles, el Quiz sin foto llena como un concurso y la Ruleta
 usa el hueco que hay.
 
 **Sigue abierto** lo que el inventario no puede contestar: cuál de las dos

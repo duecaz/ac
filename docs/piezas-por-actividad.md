@@ -21,7 +21,6 @@ Andamio = la plantilla ya usa `styles/scaffold.css` (roles declarados, §3b).
 | **Comas** (`comas`) | `16/10` | — | `header «Lápiz» (sin nombre)` 100%×7% → **barra**<br>`div (sin nombre)` 100%×1% → **barra**<br>`tc-hoja` 100%×93% → **escenario** | `header «Lápiz» (sin nombre)` 100%×5% → **barra**<br>`div (sin nombre)` 100%×0% → **barra**<br>`tc-hoja` 100%×95% → **escenario** |
 | **Operaciones** (`math`) | `16/10` | — | `header «1 / 4» (sin nombre)` 100%×6% → **barra**<br>`ww-math-round` 100%×92% → **escenario** | `header «1 / 4» (sin nombre)` 100%×4% → **barra**<br>`ww-math-round` 100%×95% → **escenario** |
 | **Sopa de Letras** (`wordsearch`) | `4/3` | — | `header «0 / 10» (sin nombre)` 100%×6% → **barra**<br>`ww-ws-body` 100%×93% → **escenario** | `header «0 / 10» (sin nombre)` 100%×4% → **barra**<br>`ww-ws-body` 100%×95% → **escenario** |
-| **Crucigrama** (`crossword`) | `4/3` | — | `header «Reiniciar» (sin nombre)` 99%×7% → **barra**<br>`cw-body` 99%×83% → **escenario**<br>`cw-footer` 99%×6% → **barra** | `header «Reiniciar» (sin nombre)` 97%×6% → **barra**<br>`cw-body` 97%×86% → **escenario**<br>`cw-footer` 97%×6% → **barra** |
 | **Abre Cajas** (`question-live`) | `4/3` | — | `header «0 / 6» (sin nombre)` 99%×6% → **barra**<br>`ab-board` 37%×18% → **—**<br>`ab-hint` 24%×3% → **—** | `header «0 / 6» (sin nombre)` 97%×3% → **barra**<br>`ab-board` 94%×16% → **barra**<br>`ab-hint` 61%×3% → **—** |
 | **Ordena las Pelotas** (`ballsort`) | `4/3` | — | `header «Aa» (sin nombre)` 100%×7% → **barra**<br>`tubes` 100%×41% → **—** | `header «Aa» (sin nombre)` 100%×6% → **barra**<br>`tubes` 100%×36% → **—** |
 | **Etiqueta el diagrama** (`diagram`) | `16/10` | ✅ | `header «0 / 4» (sin nombre)` 94%×6% → **barra**<br>`ww-field` 94%×75% → **escenario**<br>`ww-bar` 94%×6% → **barra** | `header «0 / 4» (sin nombre)` 89%×3% → **barra**<br>`ww-field` 89%×85% → **escenario**<br>`ww-bar` 89%×4% → **barra** |
@@ -42,7 +41,6 @@ Piezas que cambian de rol entre ancho y alto (misma pieza, otra función):
 - **Comas**: 0 de 3
 - **Operaciones**: 0 de 2
 - **Sopa de Letras**: 0 de 2
-- **Crucigrama**: 0 de 3
 - **Abre Cajas**: 1 de 3
 - **Ordena las Pelotas**: 0 de 2
 - **Etiqueta el diagrama**: 0 de 3
@@ -67,7 +65,6 @@ clase propia es el primer paso de cualquier reparto.
 - **Comas** → `div (sin nombre)`
 - **Operaciones** → `header «1 / 4» (sin nombre)`
 - **Sopa de Letras** → `header «0 / 10» (sin nombre)`
-- **Crucigrama** → `header «Reiniciar» (sin nombre)`
 - **Abre Cajas** → `header «0 / 6» (sin nombre)`
 - **Ordena las Pelotas** → `header «Aa» (sin nombre)`
 - **Etiqueta el diagrama** → `header «0 / 4» (sin nombre)`

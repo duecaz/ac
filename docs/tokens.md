@@ -9,7 +9,7 @@
 Los tokens son la INTERFAZ entre el tema y el juego (ley §3: el skin
 cambia tokens, la actividad los consume). Este es el contrato completo.
 
-**215 tokens** en 20 familias.
+**196 tokens** en 19 familias.
 
 ## `--arc-*` (2)
 
@@ -52,30 +52,6 @@ cambia tokens, la actividad los consume). Este es el contrato completo.
 |---|---|---|
 | `--cab-fondo` | styles/textCorrection.css | styles/player.css |
 | `--cab-tinta` | styles/textCorrection.css | styles/player.css |
-
-## `--cw-*` (19)
-
-| Token | Lo DECLARA | Lo CONSUME |
-|---|---|---|
-| `--cw-active-cell` | styles/crossword.css | styles/crossword.css |
-| `--cw-active-word` | styles/crossword.css | styles/crossword.css |
-| `--cw-cell` | templates/crossword/player.js | styles/crossword.css |
-| `--cw-clue-active-bg` | styles/crossword.css | styles/crossword.css |
-| `--cw-clue-active-border` | styles/crossword.css | styles/crossword.css |
-| `--cw-clue-hover` | styles/crossword.css | styles/crossword.css |
-| `--cw-clue-solved` | styles/crossword.css | styles/crossword.css |
-| `--cw-clue-wrong` | styles/crossword.css | styles/crossword.css |
-| `--cw-cols` | templates/crossword/view.js | styles/crossword.css |
-| `--cw-correct-bg` | styles/crossword.css | styles/crossword.css |
-| `--cw-correct-fg` | styles/crossword.css | styles/crossword.css |
-| `--cw-focus` | styles/crossword.css | styles/crossword.css |
-| `--cw-frame` | styles/crossword.css | styles/crossword.css |
-| `--cw-heading` | styles/crossword.css | styles/crossword.css |
-| `--cw-heading-border` | styles/crossword.css | styles/crossword.css |
-| `--cw-hint-fg` | styles/crossword.css | styles/crossword.css |
-| `--cw-rows` | templates/crossword/view.js | styles/crossword.css |
-| `--cw-wrong-bg` | styles/crossword.css | styles/crossword.css |
-| `--cw-wrong-fg` | styles/crossword.css | styles/crossword.css |
 
 ## `--dash-*` (14)
 
@@ -301,13 +277,13 @@ cambia tokens, la actividad los consume). Este es el contrato completo.
 | `--ww-bg` | themes/builtin/arcade.js · themes/builtin/classroom.js · themes/builtin/default.js · themes/builtin/jungle.js · themes/builtin/retro.js · themes/builtin/tv-show.js · themes/builtin/vibrante.js | core/homePreview.js · core/skins.js · styles/player.css · styles/puzzle.css · styles/tangram.css |
 | `--ww-bg-image` | core/backgrounds.js | styles/backgrounds.css |
 | `--ww-bg-ink` | core/backgrounds.js | styles/backgrounds.css |
-| `--ww-bg-soft` | themes/builtin/arcade.js · themes/builtin/classroom.js · themes/builtin/default.js · themes/builtin/jungle.js · themes/builtin/retro.js · themes/builtin/tv-show.js · themes/builtin/vibrante.js | styles/crossword.css · styles/diagram.css · styles/wordsearch.css |
+| `--ww-bg-soft` | themes/builtin/arcade.js · themes/builtin/classroom.js · themes/builtin/default.js · themes/builtin/jungle.js · themes/builtin/retro.js · themes/builtin/tv-show.js · themes/builtin/vibrante.js | styles/diagram.css · styles/wordsearch.css |
 | `--ww-border` | — *(solo respaldo)* | styles/puzzle.css |
-| `--ww-card-bg` | themes/builtin/arcade.js · themes/builtin/classroom.js · themes/builtin/default.js · themes/builtin/jungle.js · themes/builtin/retro.js · themes/builtin/tv-show.js · themes/builtin/vibrante.js | embed.html · styles/crossword.css · styles/match.css · styles/memory.css · styles/opcion.css · styles/player.css · styles/puzzle.css · styles/question-live.css · styles/wordsearch.css |
-| `--ww-card-border` | themes/builtin/arcade.js · themes/builtin/classroom.js · themes/builtin/default.js · themes/builtin/jungle.js · themes/builtin/retro.js · themes/builtin/tv-show.js · themes/builtin/vibrante.js | core/skins.js · styles/crossword.css · styles/diagram.css · styles/match.css · styles/opcion.css · styles/question-live.css · styles/wordsearch.css |
-| `--ww-card-fg` | themes/builtin/arcade.js · themes/builtin/classroom.js · themes/builtin/default.js · themes/builtin/jungle.js · themes/builtin/retro.js · themes/builtin/tv-show.js · themes/builtin/vibrante.js | styles/backgrounds.css · styles/colorear.css · styles/crossword.css · styles/globos.css · styles/match.css · styles/memory.css · styles/opcion.css · styles/player.css · styles/question-live.css · styles/wordsearch.css |
-| `--ww-danger` | styles/theme.css · themes/builtin/arcade.js · themes/builtin/classroom.js · themes/builtin/default.js · themes/builtin/jungle.js · themes/builtin/retro.js · themes/builtin/tv-show.js · themes/builtin/vibrante.js | styles/crossword.css · styles/math.css · styles/opcion.css · styles/wheel.css |
-| `--ww-fg` | themes/builtin/arcade.js · themes/builtin/classroom.js · themes/builtin/default.js · themes/builtin/jungle.js · themes/builtin/retro.js · themes/builtin/tv-show.js · themes/builtin/vibrante.js | core/editorPresentacion.js · core/skins.js · embed.html · styles/backgrounds.css · styles/colorear.css · styles/crossword.css · styles/globos.css · styles/match.css · styles/memory.css · styles/opcion.css · styles/player.css · styles/puzzle.css · styles/question-live.css · styles/tangram.css · styles/wordsearch.css · themes/tv-show/skin.css |
+| `--ww-card-bg` | themes/builtin/arcade.js · themes/builtin/classroom.js · themes/builtin/default.js · themes/builtin/jungle.js · themes/builtin/retro.js · themes/builtin/tv-show.js · themes/builtin/vibrante.js | embed.html · styles/match.css · styles/memory.css · styles/opcion.css · styles/player.css · styles/puzzle.css · styles/question-live.css · styles/wordsearch.css |
+| `--ww-card-border` | themes/builtin/arcade.js · themes/builtin/classroom.js · themes/builtin/default.js · themes/builtin/jungle.js · themes/builtin/retro.js · themes/builtin/tv-show.js · themes/builtin/vibrante.js | core/skins.js · styles/diagram.css · styles/match.css · styles/opcion.css · styles/question-live.css · styles/wordsearch.css |
+| `--ww-card-fg` | themes/builtin/arcade.js · themes/builtin/classroom.js · themes/builtin/default.js · themes/builtin/jungle.js · themes/builtin/retro.js · themes/builtin/tv-show.js · themes/builtin/vibrante.js | styles/backgrounds.css · styles/colorear.css · styles/globos.css · styles/match.css · styles/memory.css · styles/opcion.css · styles/player.css · styles/question-live.css · styles/wordsearch.css |
+| `--ww-danger` | styles/theme.css · themes/builtin/arcade.js · themes/builtin/classroom.js · themes/builtin/default.js · themes/builtin/jungle.js · themes/builtin/retro.js · themes/builtin/tv-show.js · themes/builtin/vibrante.js | styles/math.css · styles/opcion.css · styles/wheel.css |
+| `--ww-fg` | themes/builtin/arcade.js · themes/builtin/classroom.js · themes/builtin/default.js · themes/builtin/jungle.js · themes/builtin/retro.js · themes/builtin/tv-show.js · themes/builtin/vibrante.js | core/editorPresentacion.js · core/skins.js · embed.html · styles/backgrounds.css · styles/colorear.css · styles/globos.css · styles/match.css · styles/memory.css · styles/opcion.css · styles/player.css · styles/puzzle.css · styles/question-live.css · styles/tangram.css · styles/wordsearch.css · themes/tv-show/skin.css |
 | `--ww-fs-reserve` | styles/player.css | styles/live.css · styles/player.css |
 | `--ww-line` | — *(solo respaldo)* | styles/player.css |
 | `--ww-muted` | — *(solo respaldo)* | styles/player.css |
@@ -321,7 +297,7 @@ cambia tokens, la actividad los consume). Este es el contrato completo.
 | `--ww-shape-3-fg` | themes/builtin/arcade.js · themes/builtin/classroom.js · themes/builtin/default.js · themes/builtin/jungle.js · themes/builtin/retro.js · themes/builtin/tv-show.js · themes/builtin/vibrante.js | styles/globos.css · styles/opcion.css |
 | `--ww-shape-4` | themes/builtin/arcade.js · themes/builtin/classroom.js · themes/builtin/default.js · themes/builtin/jungle.js · themes/builtin/retro.js · themes/builtin/tv-show.js · themes/builtin/vibrante.js | core/editorPresentacion.js · core/skins.js · styles/globos.css · styles/opcion.css |
 | `--ww-shape-4-fg` | themes/builtin/arcade.js · themes/builtin/classroom.js · themes/builtin/default.js · themes/builtin/jungle.js · themes/builtin/retro.js · themes/builtin/tv-show.js · themes/builtin/vibrante.js | styles/globos.css · styles/opcion.css |
-| `--ww-success` | styles/theme.css · themes/builtin/arcade.js · themes/builtin/classroom.js · themes/builtin/default.js · themes/builtin/jungle.js · themes/builtin/retro.js · themes/builtin/tv-show.js · themes/builtin/vibrante.js | styles/crossword.css · styles/math.css · styles/opcion.css |
+| `--ww-success` | styles/theme.css · themes/builtin/arcade.js · themes/builtin/classroom.js · themes/builtin/default.js · themes/builtin/jungle.js · themes/builtin/retro.js · themes/builtin/tv-show.js · themes/builtin/vibrante.js | styles/math.css · styles/opcion.css |
 | `--ww-success-ink` | — *(solo respaldo)* | styles/wordsearch.css |
 | `--ww-topbar-h` | core/boot.js · styles/home.css | styles/home.css · styles/player.css |
 | `--ww-warning` | styles/theme.css · themes/builtin/arcade.js · themes/builtin/classroom.js · themes/builtin/default.js · themes/builtin/jungle.js · themes/builtin/retro.js · themes/builtin/tv-show.js · themes/builtin/vibrante.js | styles/memory.css · styles/textCorrection.css |

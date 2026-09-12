@@ -5,7 +5,7 @@
 // "ResizeObserver loop completed with undelivered notifications". Es benigno,
 // pero llega como evento `error` de window y el boot-guard de los HTML lo
 // trataba como crash (pantalla roja "Reintentar") — pasaba al salir de
-// pantalla completa (el resize gordo) en Emparejar/Crucigrama.
+// pantalla completa (el resize gordo) en Emparejar.
 //
 // Este helper difiere el callback a un requestAnimationFrame (frame siguiente,
 // coalescando ráfagas) → el observer nunca ve mutaciones en su mismo ciclo.

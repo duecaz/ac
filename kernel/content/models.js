@@ -92,7 +92,7 @@ export const MODELS = {
   // el campo legado `q` → `question`).
   items: { name: 'items', newEmpty: itemsModel.newEmpty, validate: wrap(itemsModel.validate) },
   words: {
-    name: 'words',   // Sopa de Letras: ['GATO', …] · Crucigrama: [{ word, clue, row, col, dir }]
+    name: 'words',   // Sopa de Letras: ['GATO', …]
     newEmpty: () => ({ words: [] }),
     validate(content) {
       /** @type {string[]} */

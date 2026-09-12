@@ -78,7 +78,7 @@ const TS = listTemplates().filter(T => existsSync(join(RAIZ, 'templates', String
     // el shell registra el ítem sin respuesta y avanza.
     const enElShell = /runSequentialPlayer/.test(fuentes);
     // Y quien corre sobre el shell LIBRE (un tablero entero en una pantalla:
-    // Emparejar, Diagrama, Memoria, Crucigrama) lo lee cuando DICE qué hacer al
+    // Emparejar, Diagrama, Memoria) lo lee cuando DICE qué hacer al
     // agotarse — `ctx.alAgotarse(...)`. Sin eso el límite sería decorativo: el
     // número llegaría a cero y el juego seguiría abierto.
     const cierraAlAgotarse = /runFreeformPlayer/.test(fuentes) && /alAgotarse\s*\(/.test(fuentes);

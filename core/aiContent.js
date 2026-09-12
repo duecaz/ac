@@ -53,7 +53,7 @@ export const MODELOS_IA = {
   words: {
     etiqueta: 'palabras',
     elemento: 'palabra',
-    describe: 'palabras sueltas del tema, cada una con una pista que la define sin nombrarla',
+    describe: 'palabras sueltas del tema, de una sola palabra y sin signos',
   },
   textCorrection: {
     etiqueta: 'frases para corregir',
@@ -83,10 +83,6 @@ const norm = (s) => txt(s).toLowerCase().normalize('NFD').replace(/\p{Diacritic}
  * @param {string} modelo   uno de MODELOS_IA
  * @param {unknown} bruto  el JSON que devolvió el modelo (texto o ya parseado)
  * @param {object} [opts]
- * @param {boolean} [opts.palabrasComoTexto]  `words`: Sopa de Letras guarda
- *        cadenas sueltas y Crucigrama fichas con pista. Se pide siempre la ficha
- *        (la pista es lo que el Crucigrama no puede inventar) y aquí se aplana
- *        para la Sopa, en vez de generar dos veces.
  * @returns {{content: Record<string, unknown>|null, piezas: number, descartadas: string[], error: string|null}}
  */
 export function interpretarRespuesta(modelo, bruto, opts = {}) {
@@ -180,24 +176,18 @@ export function interpretarRespuesta(modelo, bruto, opts = {}) {
   if (modelo === 'words') {
     /** @type {Set<string>} */
     const vistas = new Set();
-    const fichas = lista.map((cruda, i) => {
+    const words = lista.map((cruda, i) => {
       const w = saco(cruda);
       const palabra = txt(w.palabra ?? w.word ?? cruda).toUpperCase();
-      const pista = txt(w.pista ?? w.clue);
       if (!palabra) return rechaza(i, 'vacía');
       // Una sola palabra, solo letras: la rejilla no admite espacios ni signos.
       if (!/^[A-ZÑÁÉÍÓÚÜ]{2,}$/.test(palabra)) return rechaza(i, `«${palabra}» no es una palabra suelta de letras`);
       if (vistas.has(palabra)) return rechaza(i, `«${palabra}» repetida`);
       vistas.add(palabra);
-      // La pista que CONTIENE la palabra regala la respuesta. Se descarta la
-      // pista, no la palabra: la palabra sigue sirviendo (y en la Sopa no hay pista).
-      const limpia = pista && !norm(pista).includes(norm(palabra)) ? pista : '';
-      if (pista && !limpia) descartadas.push(`${i + 1}: la pista de «${palabra}» contenía la palabra`);
-      return { id: rid('w_'), word: palabra, clue: limpia };
-    }).filter((f) => f !== null);
-    if (!fichas.length) return { ...vacio, descartadas, error: 'Ninguna palabra era utilizable.' };
-    const words = opts.palabrasComoTexto ? fichas.map(f => f.word) : fichas;
-    return { content: { words }, piezas: fichas.length, descartadas, error: null };
+      return palabra;
+    }).filter((w) => w !== null);
+    if (!words.length) return { ...vacio, descartadas, error: 'Ninguna palabra era utilizable.' };
+    return { content: { words }, piezas: words.length, descartadas, error: null };
   }
 
   if (modelo === 'textCorrection') {
@@ -372,12 +362,11 @@ export async function diagnosticarFalloDeRed({ url = '', estadoUrl = '', fetchFn
  * @param {string} [p.url]       extremo (lo compone quien llama, con PB_URL)
  * @param {string} [p.token]   sesión del profe — sin ella el hook no responde
  * @param {typeof fetch} [p.fetchFn]
- * @param {boolean} [p.palabrasComoTexto]
  * @param {AbortSignal} [p.signal]
  */
 export async function pedirContenido({
   modelo = '', tema = '', cantidad = 8, curso = '', url = '', token = '',
-  fetchFn = fetch, palabrasComoTexto = false, signal,
+  fetchFn = fetch, signal,
 } = {}) {
   if (!iaSabeEscribir(modelo)) throw new Error(`No sé escribir contenido de tipo «${modelo}».`);
   if (!txt(tema)) throw new Error('Escribe de qué va la actividad.');
@@ -419,5 +408,5 @@ export async function pedirContenido({
   /** @type {unknown} */
   const cuerpo = await r.json().catch(() => null);
   if (!cuerpo) throw new Error('La respuesta del servidor no se pudo leer.');
-  return interpretarRespuesta(modelo, saco(cuerpo).contenido ?? cuerpo, { palabrasComoTexto });
+  return interpretarRespuesta(modelo, saco(cuerpo).contenido ?? cuerpo);
 }

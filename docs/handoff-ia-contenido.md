@@ -35,7 +35,7 @@ un modelo**. Hay más plantillas que modelos: solo 5 tienen contenido escribible
 | `qa` | pregunta + respuesta (+ opciones) | Quiz · Operaciones · Explota Globos | **sí** |
 | `pairs` | izquierda ↔ derecha | Emparejar · Memoria | **sí** |
 | `items` | una pregunta suelta, sin clave | Ruleta · Abre Cajas | **sí** |
-| `words` | palabra (+ pista en Crucigrama) | Sopa de Letras · Crucigrama | **sí** |
+| `words` | palabra suelta de letras | Sopa de Letras | **sí** |
 | `textCorrection` | frase + dónde van las marcas | Tildes · Comas | **sí, y es el más delicado** (§5) |
 | `ballsort` | tablero de bolas | Ordena las Pelotas | **no** — ya se genera solo |
 | `diagram` | imagen + coordenadas | Etiqueta el diagrama | **no** — necesita una imagen y saber dónde está cada cosa |
@@ -98,8 +98,8 @@ Un generador por modelo no es «escribe preguntas». Cada modelo tiene su trampa
   el alumno, y eso no lo caza ningún validador de forma.
 - **`pairs`** — las parejas deben ser 1-a-1. Si «perro» empareja con «dog» y
   también con «can», el juego marca error a quien acierta.
-- **`words`** — para la Sopa, palabras sin espacios ni signos; para el
-  Crucigrama, además una pista que **no contenga la palabra**.
+- **`words`** — palabras sin espacios ni signos, que es lo único que cabe en
+  la rejilla de la Sopa.
 - **`textCorrection`** — el más delicado, y el que más valor tiene: hay que
   devolver la frase **y las posiciones exactas** de cada tilde o coma. Un
   desplazamiento de un carácter hace que el juego marque mal al alumno que
@@ -179,11 +179,12 @@ en la interfaz antes de que se agote (misma norma que §25).
 - (ii) además al crear («¿de qué va tu actividad?»), que es lo que hace Wordwall
   y ahorra la pantalla en blanco;
 - (iii) también en la conversión, para rellenar lo que la conversión no puede
-  inventar — **Sopa → Crucigrama pide pistas y hoy se las deja al profe**
-  (`conversiones.md`): es el caso donde la IA encaja sin discusión.
+  inventar (`conversiones.md`). *El caso que lo motivaba —Sopa → Crucigrama pide
+  pistas— desapareció con el Crucigrama (2026-09-12); hoy toda conversión
+  ofrecida sale ya jugable, así que (iii) se queda SIN hueco que resolver.*
 
-**Recomendación: (i) primero, (iii) después** — (iii) resuelve un hueco REAL y
-ya identificado, y (ii) es el que más superficie nueva añade.
+**Recomendación: (i) primero** — (ii) es el que más superficie nueva añade, y
+(iii) ya no resuelve nada mientras ninguna conversión pida trabajo.
 
 ## 7 · INSTALAR EL HOOK EN LA PI — HECHO (2026-08-20), y cómo repetirlo
 
@@ -286,9 +287,6 @@ Una fila antigua no tiene el campo `activa`, y el hook la cuenta como encendida
 
 ## 8 · Lo que queda para otro día
 
-- **(iii) las pistas del Crucigrama.** `conversiones.md` documenta que
-  Sopa → Crucigrama traslada las palabras pero no puede inventar las pistas, y
-  hoy se le dejan al profe. Es el hueco donde la IA encaja sin discusión.
 - **(ii) el botón al CREAR** («¿de qué va tu actividad?»), que es lo que hace
   Wordwall y ahorra la pantalla en blanco. Se dejó fuera a propósito: es lo que
   más superficie nueva añade y conviene verlo funcionando en el editor primero.

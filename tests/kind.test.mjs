@@ -70,15 +70,13 @@ const all = listTemplates().filter(T => reales.has(T.meta.name));
 
 // ── 5. CONTRA-PRUEBA: un ejercicio no pierde nada por serlo ────────────────
 // La familia no puede convertirse en una excusa para recortar ejercicios:
-// Sopa de Letras y Crucigrama PARECEN juego y siguen siendo ejercicios con
-// todos sus modos (las palabras las pone el profe — regla de las 3 preguntas).
+// la Sopa de Letras PARECE juego y sigue siendo un ejercicio con todos sus
+// modos (las palabras las pone el profe — regla de las 3 preguntas).
 {
   const sopa = all.find(T => T.meta.name === 'wordsearch');
-  const cruci = all.find(T => T.meta.name === 'crossword');
   assert.strictEqual(sopa.meta.kind, 'ejercicio', 'la Sopa es EJERCICIO aunque parezca juego');
-  assert.strictEqual(cruci.meta.kind, 'ejercicio', 'el Crucigrama también');
   assert.ok(sopa.meta.modes.async, 'y conserva la Tarea (encaja mejor como tarea, dice el inventario)');
-  ok('CONTRA-PRUEBA: Sopa y Crucigrama siguen siendo ejercicios con Tarea');
+  ok('CONTRA-PRUEBA: la Sopa sigue siendo un ejercicio con Tarea');
 }
 
 // ── 6. La tarjeta de un juego la pinta EL COMPONENTE, con su habilidad ─────

@@ -24,7 +24,6 @@ import { escapeHtml } from './html.js';
 // el guardián aprueba lo que el player luego encoge en silencio.
 import { pairComplete } from './contentModels/pairs.js';
 import { pinUsable } from './contentModels/diagram.js';
-import { esFicha, palabraColocada } from './contentModels/words.js';
 
 /** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
 /** @typedef {import('../kernel/contracts/activity.js').ActivityContent} ActivityContent */
@@ -127,29 +126,8 @@ const POR_MODELO = {
     const c = /** @type {{words?: unknown[]}} */ (contenido);
     /** @type {string[]} */
     const out = [];
-    // SIN SITIO EN LA REJILLA, LA PALABRA NO EXISTE. El player del crucigrama
-    // filtra las que no tienen `row`/`col`/`dir`, así que una lista llena de
-    // palabras perfectas puede dar «No hay palabras configuradas» — y el profe
-    // mira las palabras, que están bien, sin entender nada. Le pasó al contenido
-    // escrito por la IA, que no puede saber dónde va cada una.
-    //
-    // Solo se le pide sitio a las FICHAS (palabra + pista): la Sopa guarda
-    // cadenas sueltas y las coloca ella al generar la rejilla. Esa distinción es
-    // del MODELO, no de una plantilla concreta — por eso `esFicha` vive con él.
-    const ws = empezados(c.words);
-    const palabras = ws.map(({ el, i }) => (
-      { w: /** @type {string|import('../kernel/contracts/activity.js').CrosswordWord} */ (el), i }));
-    const fichas = palabras.filter(({ w }) => esFicha(w));
-    const sueltas = fichas.filter(({ w }) => !palabraColocada(w)).length;
-    if (sueltas) {
-      out.push(sueltas === fichas.length
-        ? 'Ninguna palabra está colocada en la rejilla: pulsa «Auto-colocar».'
-        : `${sueltas} palabra(s) están fuera de la rejilla: pulsa «Auto-colocar».`);
-    }
-    palabras.forEach(({ w, i }) => {
-      const palabra = typeof w === 'string' ? w : w?.word;
-      if (vacio(palabra)) out.push(`La palabra ${i + 1} está vacía.`);
-      else if (esFicha(w) && typeof w !== 'string' && vacio(w.clue)) out.push(`La palabra «${palabra}» no tiene pista.`);
+    empezados(c.words).forEach(({ el, i }) => {
+      if (vacio(/** @type {string} */ (el))) out.push(`La palabra ${i + 1} está vacía.`);
     });
     return out;
   },
@@ -249,6 +227,25 @@ export function revisarActividad(a) {
   const T = getTemplate(a?.template);
   /** @type {string[]} */
   const problemas = [];
+
+  // 0 · LA PLANTILLA YA NO EXISTE. Pasa cuando se RETIRA una del catálogo (el
+  // Crucigrama, 2026-09-12): las actividades que los profes ya habían guardado
+  // con ella siguen en el almacén y en la biblioteca. No se inventa una
+  // migración —convertirlas a otra cosa sería decidir por el profe—, pero
+  // fallar en silencio está prohibido (R6): sin esto, «Jugar» montaba un player
+  // inexistente y el guardia de arranque pintaba la pantalla roja de crash.
+  // Aquí, que es la ÚNICA puerta del juego, se dice en claro.
+  if (a?.template && !T) {
+    return {
+      listo: false,
+      jugable: false,
+      problemas: [`Esta actividad usa una plantilla que ya no existe («${a.template}»).`],
+      problemasDeJuego: [`Esta actividad usa una plantilla que ya no existe («${a.template}»).`],
+      faltaTitulo: false,
+      vacia: false,
+      primerPaso: '',
+    };
+  }
 
   // 1 · EL TÍTULO, que es el primer dato (decisión del dueño). Sin él, la
   // tarjeta de la portada y el podio dicen «Sin título», y con quince
