@@ -283,15 +283,35 @@ const MEDIR = (ms) => `(async () => {
     // vaivén lo pone el compositor con `transform`; antes lo ponía un
     // repintado del lienzo) y no premia ninguno de los dos.
     const donde = () => { const r = el.getBoundingClientRect(); return `${r.top.toFixed(2)}|${r.left.toFixed(2)}|${r.width.toFixed(2)}`; };
-    const vistas = new Set();
-    for (let i = 0; i < 6; i++) { vistas.add(donde()); await new Promise(r => setTimeout(r, 240)); }
-    return { sinEscena: false, distintas: vistas.size };
+    // DOS COSAS DISTINTAS, y el dueño echó en falta la SEGUNDA:
+    //  · que la escena se mueva en pantalla (hoy, el vaivén del compositor);
+    //  · que el DIBUJO cambie, es decir que la animación de Lottie se esté
+    //    deformando de verdad y no sea una foto que se tambalea.
+    const cv = /** @type {HTMLCanvasElement|null} */ (document.querySelector('#vs-stage-canvas canvas'));
+    const cctx = cv && cv.getContext('2d');
+    const firma = () => {
+      if (!cv || !cctx) return '';
+      const d = cctx.getImageData(0, 0, cv.width, cv.height).data;
+      let s = 0;
+      for (let i = 0; i < d.length; i += 997) s += d[i] * (i % 31 + 1);
+      return String(s);
+    };
+    const sitios = new Set(), dibujos = new Set();
+    for (let i = 0; i < 8; i++) { sitios.add(donde()); dibujos.add(firma()); await new Promise(r => setTimeout(r, 240)); }
+    return { sinEscena: false, distintas: sitios.size, dibujos: dibujos.size, hayLienzo: !!(cv && cctx) };
   });
   if (vivo.sinEscena) mal('no se encontró la escena del duelo: no se puede comprobar si se mueve');
-  else if (vivo.distintas > 1) ok(`   …y la escena del duelo SE MUEVE en reposo: ${vivo.distintas} posiciones distintas en 1,4 s`);
-  else mal('la soga del duelo está QUIETA en reposo: la escena no se mueve un píxel en 1,4 s. '
-         + 'Un duelo parado parece colgado y la clase deja de mirar (lo dijo el dueño al verlo en el aula). '
-         + 'Si hay que bajar el coste, se cambia el MECANISMO —mecer el lienzo por `transform`, que va por el compositor— no se quita el movimiento.');
+  else if (vivo.distintas <= 1) {
+    mal('la escena del duelo está QUIETA en reposo: no se mueve un píxel en 1,9 s. '
+      + 'Un duelo parado parece colgado y la clase deja de mirar (lo dijo el dueño al verlo en el aula). '
+      + 'Si hay que bajar el coste se cambia el MECANISMO, no se quita el movimiento.');
+  } else if (vivo.hayLienzo && vivo.dibujos <= 1) {
+    mal(`la escena se mece pero el DIBUJO no cambia (${vivo.distintas} posiciones, 1 sola imagen en 1,9 s): `
+      + 'la animación de Lottie no se está deformando, es una foto tambaleándose. Es exactamente lo que el dueño '
+      + 'notó en el aula. El reposo debe recorrer cuadros de la animación (caché de cuadros en core/vsAnimations.js).');
+  } else {
+    ok(`   …y el duelo VIVE en reposo: ${vivo.distintas} posiciones y ${vivo.dibujos} cuadros distintos de la animación en 1,9 s`);
+  }
   await page.close();
 }
 

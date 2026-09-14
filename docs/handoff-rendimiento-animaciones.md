@@ -121,6 +121,54 @@ falta una salida de emergencia, será un mando del profe, no una detección.
 tal cual), y las escenas «VS en reposo con cuerda» y «podio del duelo». Con
 la CPU frenada 12×. Una animación nueva que no pase ahí no entra en `main`.
 
+## Cómo EXPORTAR una animación Lottie que quepa en la pizarra
+
+Pedido por el dueño el 2026-09-14 («¿cómo exporto las animaciones de Lottie?
+¿cómo minimizamos lo que consume?»). Lo que sigue sale de medir el fichero que
+ya está en producción, `assets/animations/cuerda.json`:
+
+| Qué tiene | Cuánto |
+|---|---|
+| Trazados | 153 |
+| Rellenos sólidos | 131 |
+| Rellenos con DEGRADADO | 4 |
+| Grupos (cada uno con su transformación) | 158 |
+| Vértices en los trazados | 1.702 |
+| **Propiedades realmente animadas** | **31** |
+| Máscaras · mattes · expresiones | 0 · 0 · 0 |
+| Lienzo nativo · cuadros · fps declarado | 620×360 · 90 · 30 |
+
+**El dato que manda es el último de los primeros**: de 158 grupos, solo 31
+propiedades se mueven. Cada vez que se pide un cuadro se vuelve a rasterizar el
+dibujo ENTERO —los 153 trazados, los 1.702 vértices— para mover 31 cosas. Por
+eso el coste no baja pidiendo menos cuadros por segundo: baja no repitiendo el
+trabajo (de ahí el caché de cuadros en `core/vsAnimations.js`).
+
+Lo que sí se puede hacer al EXPORTAR, por orden de lo que más ahorra:
+
+1. **Menos trazados.** 153 para dos personajes y una cuerda es mucho: suele
+   venir de no unir formas del mismo color, de grupos duplicados y de detalles
+   invisibles a tamaño real. Unir y borrar ahí es lo que más se nota.
+2. **Nada de degradados** si se puede evitar. Un relleno con degradado cuesta
+   varias veces más que uno sólido al pintar en lienzo; aquí hay 4.
+3. **Ni máscaras ni capas de recorte (mattes).** Son lo más caro de Lottie en
+   lienzo. Este fichero no tiene, y así debe seguir.
+4. **Ni expresiones.** Se evalúan en JavaScript en cada cuadro. Si la animación
+   las usa, se hornean a fotogramas clave antes de exportar. Este fichero
+   tampoco tiene.
+5. **Sin imágenes incrustadas**: que sea vectorial de punta a punta, o el
+   `.json` engorda y el aula sin internet lo paga al cargar.
+6. **El tamaño del lienzo, pequeño.** 620×360 está bien: la plataforma estira
+   por CSS y el estirado es gratis. Exportar a 1920 no mejora nada y multiplica
+   lo que cuesta cada píxel pintado.
+7. **Los fps y el número de cuadros casi no importan** en nuestro uso: el duelo
+   no reproduce la animación, la RECORRE (el cuadro lo elige el marcador). Menos
+   cuadros solo aligeran el fichero.
+
+Y la regla de oro del formato, que ya está escrita en `core/vsAnimations.js`:
+la animación se autora en UNA línea de tiempo donde el cuadro 0 es «gana el de
+la izquierda», el del medio es empate y el último «gana el de la derecha».
+
 ## Qué NO se hace
 
 - No se quitan las celebraciones: el podio celebra (es producto). Se hacen

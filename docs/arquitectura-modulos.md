@@ -31,7 +31,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 2119 | 7 · 1033 | 0.49 |
-| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 15 · 3661 | 13 · 1724 | 0.47 |
+| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 15 · 3724 | 13 · 1724 | 0.46 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 42 · 5796 | 19 · 3180 | 0.55 |
 | **informes/tareas** | después de clase | 10 · 1388 | 5 · 619 | 0.45 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 91 · 7576 | 13 · 1945 | 0.26 |
@@ -106,7 +106,7 @@ graph TD
 | **arranque** | `pb_hooks/aulareto-lib.js` (364) · `pb_hooks/aulareto.pb.js` (354) · `qa/hoja.js` (330) · `main.teacher.js` (166) · `main.embed.js` (69) |
 | **vistas** | `views/hostLive.js` (377) · `views/teamsView.js` (361) · `views/vs/arena.js` (343) · `views/playerView.js` (339) · `views/live/hostRondas.js` (325) |
 | **adaptadores** | `adapters/pocketbase/realtimeRooms.js` (575) · `adapters/pocketbase/realtimeAnswers.js` (484) · `adapters/local/realtime.js` (389) · `adapters/pocketbase/remoteStore.js` (279) · `adapters/pocketbase/realtimeStream.js` (218) |
-| **core** | `core/soloPlayer.js` (542) · `core/auth.js` (490) · `core/vsAnimations.js` (427) · `core/aiContent.js` (413) · `core/selftest.js` (378) |
+| **core** | `core/soloPlayer.js` (542) · `core/auth.js` (490) · `core/vsAnimations.js` (490) · `core/aiContent.js` (413) · `core/selftest.js` (378) |
 | **kernel** | `kernel/contracts/activity.js` (425) · `kernel/contracts/session.js` (354) · `kernel/contracts/template.js` (342) · `kernel/session/vsMachine.js` (286) · `kernel/session/teamsMachine.js` (251) |
 | **plantillas** | `templates/match/player.js` (351) · `templates/diagram/player.js` (306) · `templates/tangram/player.js` (303) · `templates/diagram/editor.js` (241) · `templates/wordsearch/editor.js` (232) |
 | **contenido** | `kernel/content/qaAdapt.js` (169) · `kernel/content/models.js` (155) · `kernel/content/switch.js` (131) · `kernel/content/convert.js` (123) · `kernel/content/sessionItems.js` (37) |
@@ -139,8 +139,8 @@ El tamaño no es un defecto por sí solo, pero es donde han caído las regresion
 | `adapters/pocketbase/realtimeRooms.js` | 575 | 1 |
 | `core/soloPlayer.js` | 542 | 15 |
 | `core/auth.js` | 490 | 22 |
+| `core/vsAnimations.js` | 490 | 4 |
 | `adapters/pocketbase/realtimeAnswers.js` | 484 | 1 |
-| `core/vsAnimations.js` | 427 | 4 |
 | `kernel/contracts/activity.js` | 425 | 0 |
 | `core/aiContent.js` | 413 | 3 |
 | `adapters/local/realtime.js` | 389 | 0 |

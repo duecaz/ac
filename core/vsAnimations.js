@@ -229,27 +229,36 @@ function loadLottie() {
 const TOPE_LIENZO = 1280;
 const TOPE_DPR = 1.5;
 
-// EL VAIVÉN DE REPOSO LO MUEVE EL COMPOSITOR, NO EL HILO PRINCIPAL.
+// EL VAIVÉN DE REPOSO: LA CUERDA SE DEFORMA DE VERDAD, PERO CADA CUADRO SE
+// DIBUJA UNA SOLA VEZ EN TODA LA PARTIDA.
 //
-// La soga quieta NO vale: el duelo sin movimiento parece colgado y la clase
-// deja de mirar la pantalla (lo dijo el dueño al verlo en el aula). Pero el
-// vaivén como estaba hecho —mecer la cuerda re-dibujándola— es caro por una
-// razón que no se arregla bajando el ritmo: cada repintado recalcula y pinta
-// los 153 trazados, y con la CPU del aula eso es un TIRÓN largo. Medido a 12
-// repintados por segundo, el duelo en reposo pasaba de 17 a 31 ms por cuadro:
-// no son muchos repintados baratos, son pocos repintados que se comen varios
-// cuadros cada uno.
+// La soga quieta no vale: el duelo sin movimiento parece colgado y la clase
+// deja de mirar la pantalla. Pero mecerla pidiéndole a lottie que la re-dibuje
+// es caro, y bajar el ritmo NO lo arregla: medido a 12 repintados por segundo,
+// el duelo en reposo pasaba de 17 a 31 ms por cuadro en la pizarra del aula
+// (1280×720 a DPR 3, CPU frenada 12×). No son muchos repintados baratos: son
+// pocos repintados CAROS, y cada uno se come varios cuadros.
 //
-// Así que el reposo se mueve de la otra manera, la única que cuesta lo mismo en
-// un portátil y en la pizarra 4K: **el lienzo se pinta UNA vez** en el cuadro
-// que marca el marcador, y lo que se mece es el propio lienzo, con una
-// animación CSS de `transform` (`vs-soga-vaiven`, en styles/vs.css). Eso lo
-// lleva el compositor, que no repinta píxeles: se ve continuo a 60 por segundo
-// y no le quita un milisegundo al hilo donde los dos niños teclean.
+// Por qué es caro, mirando el fichero (`assets/animations/cuerda.json`): 153
+// trazados, 131 rellenos, 4 degradados y 158 grupos con su transformación…
+// y solo **31 propiedades animadas**. O sea que en cada repintado se vuelve a
+// rasterizar el dibujo ENTERO para mover 31 cosas. Eso no se arregla animando
+// menos: se arregla no repitiendo el trabajo.
 //
-// Lo que se pierde es que la cuerda se DEFORME sola en reposo; lo que se gana
-// es que la escena respire siempre y gratis. La cuerda sí se deforma cuando
-// pasa algo —`setProgress` y `yank`—, que es cuando importa.
+// Así que el reposo se mece sobre un CACHÉ DE CUADROS: la primera vez que hace
+// falta un cuadro se le pide a lottie y se guarda el mapa de bits; a partir de
+// ahí el vaivén es copiar ese mapa de bits (`drawImage`), que es una operación
+// de la tarjeta gráfica y cuesta prácticamente cero. Como el vaivén recorre
+// siempre los mismos pocos cuadros, el caché se llena en el primer ciclo y el
+// resto de la partida no vuelve a rasterizarse nada.
+//
+// El tamaño del vaivén es producto: ±`VAIVEN_CUADROS` alrededor del cuadro que
+// marca el marcador. Cuantos más, más se nota la cuerda y más memoria ocupa el
+// caché (un mapa de bits por cuadro, del tamaño del lienzo — que ya tiene
+// tope). Con ±3 son 7 cuadros: en la pizarra del aula, unos 14 MB.
+const VAIVEN_CUADROS = 3;
+const VAIVEN_PERIODO_MS = 3200;   // lo que tarda un vaivén completo
+const TOPE_CACHE = 12;            // cuadros guardados como mucho (memoria acotada)
 
 /**
  * Ajusta el tamaño de DIBUJO del lienzo al hueco actual. Devuelve true si
@@ -279,6 +288,7 @@ function createLottie(container, src) {
   let total = 0, lead = 0, destroyed = false;
   /** @type {ReturnType<typeof setTimeout>|0} */
   let restore = 0;
+  let idleRaf = 0;
   /** @type {(() => void)|null} */
   let unobserve = null;
   // El .json llega por `fetch`: hasta DOMLoaded el renderer no tiene contexto.
@@ -291,12 +301,63 @@ function createLottie(container, src) {
   /** @param {number} l */
   const frameFor = l => (1 - Math.max(-1, Math.min(1, l))) / 2 * Math.max(0, total - 1);
 
-  // Deja el lienzo en el cuadro que marca el marcador. El movimiento CONTINUO
-  // del reposo no sale de aquí: lo pone el compositor meciendo el lienzo entero
-  // (ver el porqué arriba, y `vs-soga-vaiven` en styles/vs.css).
+  // EL CACHÉ DE CUADROS (ver el porqué arriba). Clave: el número de cuadro
+  // redondeado. Valor: el mapa de bits ya rasterizado, del tamaño del lienzo.
+  /** @type {Map<number, HTMLCanvasElement>} */
+  const cache = new Map();
+  let ultimoCuadro = -1;   // qué cuadro está AHORA en el lienzo
+
+  /** Pinta un cuadro en el lienzo. La PRIMERA vez se lo pide a lottie y se
+   *  guarda; las siguientes es una copia de mapa de bits.
+   *  @param {number} f */
+  function pintarCuadro(f) {
+    // Sin contexto no hay lienzo que pintar; quien avisa de eso es el bloque de
+    // creación de más abajo, que pone el cartel y devuelve una instancia muda.
+    if (!anim || !total || !ctx) return;
+    const n = Math.max(0, Math.min(Math.max(0, total - 1), Math.round(f)));
+    // NO SE REPINTA LO QUE YA ESTÁ EN PANTALLA. El vaivén va por `rAF` (60
+    // veces por segundo) pero solo recorre 7 cuadros distintos en cada ciclo:
+    // sin esta línea se copiaba el mismo mapa de bits 60 veces por segundo para
+    // enseñar exactamente la misma imagen. Con ella, el reposo hace unas 4
+    // copias por segundo.
+    if (n === ultimoCuadro) return;
+    ultimoCuadro = n;
+    const guardado = cache.get(n);
+    if (guardado && guardado.width === cv.width && guardado.height === cv.height) {
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      ctx.drawImage(guardado, 0, 0);
+      return;
+    }
+    anim.goToAndStop(n, true);
+    // Copiar el resultado cuesta una vez por cuadro y ahorra todas las demás.
+    // Si el navegador no deja crear el lienzo de repuesto, se sigue jugando sin
+    // caché: se nota en fluidez, no en funcionamiento (R6, motivo escrito).
+    const copia = document.createElement('canvas');
+    copia.width = cv.width; copia.height = cv.height;
+    const cctx = copia.getContext('2d');
+    if (!cctx) return;
+    cctx.drawImage(cv, 0, 0);
+    if (cache.size >= TOPE_CACHE) { const viejo = cache.keys().next().value; if (viejo !== undefined) cache.delete(viejo); }
+    cache.set(n, copia);
+  }
+
+  /** El vaivén de reposo: mece el cuadro alrededor del que marca el marcador.
+   *  Va por `requestAnimationFrame` —que se duerme solo cuando la pestaña no se
+   *  ve, cosa que un `setInterval` no hace— y la fase sale del reloj del propio
+   *  rAF, no de un contador por cuadro: así tarda lo mismo en ir y volver en una
+   *  pizarra a 30 fps que en un portátil a 60. */
   function idle() {
+    cancelAnimationFrame(idleRaf);
     if (!anim || !total || destroyed) return;
-    anim.goToAndStop(frameFor(lead), true);
+    const base = frameFor(lead);
+    /** @param {number} ahora */
+    const paso = (ahora) => {
+      if (destroyed || !anim || !total) return;
+      const fase = (ahora % VAIVEN_PERIODO_MS) / VAIVEN_PERIODO_MS * Math.PI * 2;
+      pintarCuadro(base + Math.sin(fase) * VAIVEN_CUADROS);
+      idleRaf = requestAnimationFrame(paso);
+    };
+    idleRaf = requestAnimationFrame(paso);
   }
 
   // EL LIENZO ES NUESTRO: se crea aquí y se le pasa el CONTEXTO a lottie (sin
@@ -334,15 +395,17 @@ function createLottie(container, src) {
   // es la única forma permitida en los players.
   unobserve = observeResize(container, () => {
     if (destroyed || !cv.isConnected) return;
-    if (medirLienzo(container, cv) && cargada) anim?.resize();
+    // Otro tamaño de lienzo invalida TODOS los mapas de bits guardados.
+    if (medirLienzo(container, cv)) { cache.clear(); ultimoCuadro = -1; if (cargada) anim?.resize(); }
   });
 
   return {
     /** @param {number} l */
-    setProgress(l) { lead = l; idle(); },
+    setProgress(l) { lead = l; cache.clear(); ultimoCuadro = -1; idle(); },   // otro marcador = otros cuadros
     /** @param {'left'|'right'} side */
     yank(side) {
       if (!anim || !total) return;
+      cancelAnimationFrame(idleRaf);
       clearTimeout(restore);
       const dir = side === 'left' ? -1 : 1;
       const over = Math.max(0, Math.min(total - 1, frameFor(lead) + dir * total * 0.06));
@@ -350,8 +413,8 @@ function createLottie(container, src) {
       restore = setTimeout(() => { if (!destroyed) idle(); }, 160);
     },
     /** @param {'left'|'right'} side */
-    win(side) { lead = side === 'left' ? 1 : -1; idle(); },
-    destroy() { destroyed = true; clearTimeout(restore); unobserve?.(); unobserve = null; if (anim) anim.destroy(); container.innerHTML = ''; }
+    win(side) { lead = side === 'left' ? 1 : -1; cache.clear(); ultimoCuadro = -1; idle(); },
+    destroy() { destroyed = true; cancelAnimationFrame(idleRaf); clearTimeout(restore); cache.clear(); unobserve?.(); unobserve = null; if (anim) anim.destroy(); container.innerHTML = ''; }
   };
 }
 
