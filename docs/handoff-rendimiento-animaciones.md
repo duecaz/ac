@@ -284,6 +284,68 @@ Lo que decide el dueño antes de ejecutar: si el arte de la cuerda se puede
 rehacer separando fondo y movimiento (toca al ilustrador, no al código), y si
 acepta perder el recoloreado por tema en esa escena a cambio de los sprites.
 
+## Lo medido el 2026-09-14, y qué hacer con ello (conversación, sin ejecutar)
+
+El dueño: «¿separamos lógica y vista? ¿cuál sería el coste?». Las medidas
+contestaron otra cosa, así que queda escrito antes de retomarlo.
+
+**Separar lógica y vista NO es la palanca, y además ya la tenemos.** En Wordwall
+eso es una decisión de reutilización entre plantillas; aquí ya está (la plantilla
+declara, la plataforma pinta, el scorer vive aparte del player, todo sobre dos
+armazones). Lo que abarata sus animaciones es otro MATERIAL: mueven mapas de
+bits. Mezclar las dos cosas lleva a gastar en arquitectura esperando fluidez.
+
+**Las tres medidas que mandan** (CPU frenada 12×):
+
+| | |
+|---|---|
+| Un repintado de la cuerda, lienzo de 2 Mpx | 11,3 ms |
+| El mismo, lienzo 32 veces menor (0,06 Mpx) | 6,6 ms |
+| Copiar un mapa de bits ya rasterizado | 0,0 ms |
+| Pre-rasterizar los 90 cuadros en el navegador | 15 s |
+
+De ahí sale todo: **bajar la resolución no salva** (el coste es el vector, no el
+píxel), **el atlas sí** (copiar es gratis), y **el atlas hay que fabricarlo
+antes**, porque en el navegador tarda quince segundos.
+
+**El precio del atlas, medido:** 30 cuadros a 460×267 en WebP son 332 KB y 14 MB
+de memoria; pero a esa resolución, estirado a la pizarra, la cuerda pierde
+textura (comparado con capturas). Hay que rasterizar al tamaño de destino, ~920
+de ancho, y entonces son **~1 MB servido y ~20 MB de memoria**, frente a los
+83 KB de hoy. Ese es el intercambio real.
+
+**Herramienta**: las hechas están MUERTAS (`puppeteer-lottie` archivado en 2023
+y además exige binarios del sistema; `rlottie` de Samsung, archivado y sin
+soporte de seguridad). Lo que hacen es abrir la animación en un Chromium y
+capturar cuadros — y ese Chromium ya está en `tools/`. Serían ~60 líneas
+propias, con la ventaja de rasterizar con el MISMO motor que pinta hoy. Para
+empaquetar los cuadros sí hay una pieza viva y con licencia permisiva
+(`free-tex-packer-core`), que además emite el formato de atlas de facto.
+
+**Si algún día son muchas**: la práctica general es generar en CI y no versionar
+lo generado, pero aquí NO aplica igual porque Pages sirve el repositorio: lo
+generado ES lo que se sirve. El patrón correcto es el que ya usamos con los docs
+generados — generar, commitear, y **un test de frescura** que guarde el hash del
+original dentro del atlas y rompa CI si alguien toca uno sin regenerar el otro.
+Pasadas ~20 animaciones, mudarlas a `ww-assets`.
+
+**Lo que dice la documentación coincide con lo medido**: la guía de optimización
+de lienzo de Mozilla recomienda pre-dibujar fuera de pantalla lo repetido, no
+escalar dentro de `drawImage` sino cachear tamaños, y preferir lienzo pequeño
+ampliado a lienzo grande reducido.
+
+**Corrección sobre Wordwall**: no hay NINGUNA fuente que diga que produzcan sus
+sprites con Adobe Animate. Se insinuó en conversación y no se sostiene. Lo que sí
+está documentado es sprites sobre canvas, temas en XML y C# compilado a
+JavaScript; y sus volcados sugieren un atlas POR JUEGO y variantes por tema, no
+uno global.
+
+**EL PASO 1 NO ES CÓDIGO: es medir en la pizarra de verdad.** Todos estos
+números salen de un contenedor headless SIN tarjeta gráfica, que castiga el
+dibujo en lienzo mucho más que el aparato del aula. El medidor de fluidez ya
+existe desde la Fase 0 (`?perf=1` en cualquier ruta). Si el duelo va fluido allí,
+no se toca nada y nos ahorramos un mega en el repositorio y dos días de trabajo.
+
 ## Qué NO se hace
 
 - No se quitan las celebraciones: el podio celebra (es producto). Se hacen
