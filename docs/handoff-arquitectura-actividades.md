@@ -212,9 +212,13 @@ usan el lápiz en la pizarra —lo único que ninguna sonda puede verificar sola
 La fase 5 toca contenido del profe, y ahí la ley §24 manda: se migra con versión
 o no se toca.
 
-**Lo que el dueño decide antes de empezar**: si las familias se mueven todas en
-una fase o una por commit (más lento, más seguro), y si la fase 5 se ejecuta
-ahora o se aplaza hasta que haya una razón de producto que la pida.
+**Decidido por el dueño (2026-09-14)**: las familias se mueven **todas de una
+vez**, no una por commit. Y la ejecución **no es ahora**: se hace de noche o
+cuando el dueño lo indique, con este plan revisado antes de empezar.
+
+Sigue abierto: si la fase 5 («un modelo, una forma») entra en esa misma tanda o
+espera a que una razón de producto la pida. Es la única que toca contenido ya
+guardado por profes.
 
 ## 6 · Fuentes
 

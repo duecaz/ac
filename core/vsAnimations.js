@@ -229,6 +229,28 @@ function loadLottie() {
 const TOPE_LIENZO = 1280;
 const TOPE_DPR = 1.5;
 
+// EL VAIVÉN DE REPOSO LO MUEVE EL COMPOSITOR, NO EL HILO PRINCIPAL.
+//
+// La soga quieta NO vale: el duelo sin movimiento parece colgado y la clase
+// deja de mirar la pantalla (lo dijo el dueño al verlo en el aula). Pero el
+// vaivén como estaba hecho —mecer la cuerda re-dibujándola— es caro por una
+// razón que no se arregla bajando el ritmo: cada repintado recalcula y pinta
+// los 153 trazados, y con la CPU del aula eso es un TIRÓN largo. Medido a 12
+// repintados por segundo, el duelo en reposo pasaba de 17 a 31 ms por cuadro:
+// no son muchos repintados baratos, son pocos repintados que se comen varios
+// cuadros cada uno.
+//
+// Así que el reposo se mueve de la otra manera, la única que cuesta lo mismo en
+// un portátil y en la pizarra 4K: **el lienzo se pinta UNA vez** en el cuadro
+// que marca el marcador, y lo que se mece es el propio lienzo, con una
+// animación CSS de `transform` (`vs-soga-vaiven`, en styles/vs.css). Eso lo
+// lleva el compositor, que no repinta píxeles: se ve continuo a 60 por segundo
+// y no le quita un milisegundo al hilo donde los dos niños teclean.
+//
+// Lo que se pierde es que la cuerda se DEFORME sola en reposo; lo que se gana
+// es que la escena respire siempre y gratis. La cuerda sí se deforma cuando
+// pasa algo —`setProgress` y `yank`—, que es cuando importa.
+
 /**
  * Ajusta el tamaño de DIBUJO del lienzo al hueco actual. Devuelve true si
  * cambió (para no pedirle a lottie un `resize()` que no hace falta).
@@ -257,7 +279,6 @@ function createLottie(container, src) {
   let total = 0, lead = 0, destroyed = false;
   /** @type {ReturnType<typeof setTimeout>|0} */
   let restore = 0;
-  let idleRaf = 0, idlePhase = 0;
   /** @type {(() => void)|null} */
   let unobserve = null;
   // El .json llega por `fetch`: hasta DOMLoaded el renderer no tiene contexto.
@@ -270,27 +291,10 @@ function createLottie(container, src) {
   /** @param {number} l */
   const frameFor = l => (1 - Math.max(-1, Math.min(1, l))) / 2 * Math.max(0, total - 1);
 
-  // Sinusoidal idle: oscillate ±swing frames around the current lead frame so
-  // the characters are always gently swaying, even when the score hasn't changed.
-  // setProgress/win re-call idle() to re-center; yank cancels it briefly.
-  //
-  // RENDIMIENTO: cada cuadro hace goToAndStop() = recalcular los 153 trazados y
-  // pintarlos. Con el renderer `canvas` eso ya no toca el DOM ni rasteriza a la
-  // resolución de la pizarra (el lienzo tiene tope), pero sigue siendo trabajo
-  // del HILO PRINCIPAL, que es el que teclea en el duelo.
-  //
-  // EL REPOSO ES ESTÁTICO, EN TODAS LAS PANTALLAS. Medido (2026-09-12, 1280×720 a
-  // DPR 3 con la CPU frenada 12×): el balanceo de reposo re-pintaba 135 trazados
-  // por cuadro y era la única carga CONTINUA del duelo — en lienzo sin GPU salía
-  // aún peor que en SVG (30 ms frente a 16 ms por cuadro). La decisión del dueño
-  // es una sola animación igual en todas las pantallas, sin «modo ligero»: la
-  // cuerda se queda quieta en el cuadro que marca el líder y solo se mueve al
-  // responder (`setProgress`/`yank`), que son tirones cortos. Lo que se pierde
-  // es un vaivén decorativo; lo que se gana es un hilo principal libre mientras
-  // la clase teclea.
+  // Deja el lienzo en el cuadro que marca el marcador. El movimiento CONTINUO
+  // del reposo no sale de aquí: lo pone el compositor meciendo el lienzo entero
+  // (ver el porqué arriba, y `vs-soga-vaiven` en styles/vs.css).
   function idle() {
-    cancelAnimationFrame(idleRaf);
-    idlePhase = 0;
     if (!anim || !total || destroyed) return;
     anim.goToAndStop(frameFor(lead), true);
   }
@@ -339,7 +343,6 @@ function createLottie(container, src) {
     /** @param {'left'|'right'} side */
     yank(side) {
       if (!anim || !total) return;
-      cancelAnimationFrame(idleRaf);
       clearTimeout(restore);
       const dir = side === 'left' ? -1 : 1;
       const over = Math.max(0, Math.min(total - 1, frameFor(lead) + dir * total * 0.06));
@@ -348,7 +351,7 @@ function createLottie(container, src) {
     },
     /** @param {'left'|'right'} side */
     win(side) { lead = side === 'left' ? 1 : -1; idle(); },
-    destroy() { destroyed = true; cancelAnimationFrame(idleRaf); clearTimeout(restore); unobserve?.(); unobserve = null; if (anim) anim.destroy(); container.innerHTML = ''; }
+    destroy() { destroyed = true; clearTimeout(restore); unobserve?.(); unobserve = null; if (anim) anim.destroy(); container.innerHTML = ''; }
   };
 }
 

@@ -240,19 +240,58 @@ const MEDIR = (ms) => `(async () => {
   await sembrar(page, 'quiz', 'perf-duelo');
   await page.evaluate(() => { location.hash = '#/vs/perf-duelo'; });
   await page.waitForSelector('[data-ww-start]', { timeout: 15000 });
+  await frenar();
+  await page.waitForTimeout(400);
+  // EL SUELO DE ESTA MÁQUINA, EN ESTA MISMA PÁGINA: la antesala, antes de que
+  // exista el duelo. El techo de esta escena era ABSOLUTO y su premisa —«en
+  // reposo no pasa NADA»— dejó de ser cierta el día que la soga volvió a
+  // mecerse a propósito (el duelo quieto parece colgado). Medido con la máquina
+  // tranquila, el vaivén cuesta 0,8 ms por cuadro; medido dentro del preflight,
+  // con el contenedor cargado, la MISMA página pasa de 17 a 40 ms sin tocar una
+  // línea. Un número absoluto ahí no mide la soga, mide el humor del contenedor
+  // — la lección ya escrita en la escena «escribir», que por eso se calibra
+  // contra su propio reposo.
+  const suelo = await page.evaluate(MEDIR(1200));
   await page.click('[data-ww-start]');
   await page.waitForSelector('.vs-arena', { timeout: 15000 });
   // LA CUERDA TIENE QUE ESTAR PUESTA o esto mediría una pantalla quieta y daría
   // verde gratis (la misma trampa que la barra de progreso de Tildes).
   const cuerda = await page.waitForSelector('#vs-stage-canvas canvas, #vs-stage-canvas svg', { timeout: 15000 }).catch(() => null);
   if (!cuerda) mal('el duelo no montó su animación central: la medida de reposo no vale');
-  await frenar();
   await page.waitForTimeout(400);
   const r = await page.evaluate(MEDIR(3000));
+  // Montar el duelo sobre la antesala puede costar el doble que no tener nada,
+  // y nunca menos que el techo absoluto de reposo.
+  const techoDuelo = suelo.med ? Math.max(TECHO_REPOSO, +(suelo.med * 2).toFixed(1)) : TECHO_REPOSO;
   if (r.pocos !== undefined) mal(`solo ${r.pocos} fotogramas medidos en el duelo en reposo`);
-  else if (r.med <= TECHO_REPOSO) ok(`DUELO EN REPOSO con la cuerda, pizarra del aula (${PIZARRA.width}×${PIZARRA.height} a DPR ${DPR_AULA}, CPU frenada ${FRENO}x): ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps)`);
-  else mal(`el duelo EN REPOSO va a ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps, techo ${TECHO_REPOSO} ms) en la pizarra del aula. `
-         + 'Nadie está tocando nada: mira qué se re-dibuja solo (la cuerda en bucle, un filtro girando, una sombra en movimiento).');
+  else if (r.med <= techoDuelo) ok(`DUELO EN REPOSO con la cuerda, pizarra del aula (${PIZARRA.width}×${PIZARRA.height} a DPR ${DPR_AULA}, CPU frenada ${FRENO}x): ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps; la antesala quieta, aquí, ${suelo.med} ms; techo ${techoDuelo} ms)`);
+  else mal(`el duelo EN REPOSO va a ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps) y la antesala QUIETA de esta misma página cuesta ${suelo.med} ms (techo ${techoDuelo} ms). `
+         + 'Nadie está tocando nada: mira qué se re-dibuja solo (la soga a más ritmo del declarado, un filtro girando, una sombra en movimiento).');
+
+  // …Y LA CUERDA SE MUEVE DE VERDAD. Sin esto, la medida de arriba premia
+  // justo lo que no se quiere: una soga QUIETA da el mejor número posible y la
+  // escena entera se vuelve un verde gratis. Ya pasó — el vaivén se quitó por
+  // rendimiento y ninguna red se quejó; el dueño lo vio en la pizarra y dijo
+  // «ya no hay movimiento, es vital». Se comprueba mirando los PÍXELES del
+  // lienzo en varios instantes, que es lo que ve la clase, no la existencia de
+  // un bucle en el código.
+  const vivo = await page.evaluate(async () => {
+    const el = document.querySelector('#vs-stage-canvas canvas, #vs-stage-canvas svg, #vs-stage-canvas .vs-tug-scene');
+    if (!el) return { sinEscena: true, distintas: 0 };
+    // SE MIDE LO QUE VE LA CLASE: dónde está la escena en la PANTALLA, no cómo
+    // se consigue. Así la comprobación sobrevive a cambiar el mecanismo (hoy el
+    // vaivén lo pone el compositor con `transform`; antes lo ponía un
+    // repintado del lienzo) y no premia ninguno de los dos.
+    const donde = () => { const r = el.getBoundingClientRect(); return `${r.top.toFixed(2)}|${r.left.toFixed(2)}|${r.width.toFixed(2)}`; };
+    const vistas = new Set();
+    for (let i = 0; i < 6; i++) { vistas.add(donde()); await new Promise(r => setTimeout(r, 240)); }
+    return { sinEscena: false, distintas: vistas.size };
+  });
+  if (vivo.sinEscena) mal('no se encontró la escena del duelo: no se puede comprobar si se mueve');
+  else if (vivo.distintas > 1) ok(`   …y la escena del duelo SE MUEVE en reposo: ${vivo.distintas} posiciones distintas en 1,4 s`);
+  else mal('la soga del duelo está QUIETA en reposo: la escena no se mueve un píxel en 1,4 s. '
+         + 'Un duelo parado parece colgado y la clase deja de mirar (lo dijo el dueño al verlo en el aula). '
+         + 'Si hay que bajar el coste, se cambia el MECANISMO —mecer el lienzo por `transform`, que va por el compositor— no se quita el movimiento.');
   await page.close();
 }
 
