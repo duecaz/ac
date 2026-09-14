@@ -324,8 +324,21 @@ function createLottie(container, src) {
     ultimoCuadro = n;
     const guardado = cache.get(n);
     if (guardado && guardado.width === cv.width && guardado.height === cv.height) {
+      // EN COORDENADAS DEL LIENZO, NO EN LAS DE LOTTIE. Lottie deja SU
+      // transformación puesta en el contexto después de pintar (medido: escala
+      // 0,94 y un desplazamiento de 101 px en un hueco de 583×541), porque la
+      // usa para encajar el dibujo en el lienzo. Un `drawImage` a pelo después
+      // de eso hereda esa escala y ese desplazamiento, así que el mapa de bits
+      // —que YA está a tamaño de lienzo— se vuelve a encajar por segunda vez y
+      // la escena aparece descuadrada en cuanto entra el primer cuadro del
+      // caché. Lo vio el dueño en el aula: «inició bien y luego se
+      // redimensionó». Por eso se fija la identidad antes de copiar y se
+      // devuelve el contexto como estaba, que es de quien lo usa después.
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, cv.width, cv.height);
       ctx.drawImage(guardado, 0, 0);
+      ctx.restore();
       return;
     }
     anim.goToAndStop(n, true);

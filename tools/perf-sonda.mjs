@@ -46,6 +46,12 @@ const FRENO = 12;
 // tirones. El reposo se exige MÁS (25 ms) porque ahí no debería pasar NADA.
 const TECHO_REPOSO = 25;
 const TECHO_CONFETI = 60;
+// Cuánto puede DESCENTRARSE el dibujo del duelo dentro de su lienzo, como
+// fracción del alto. La escena se encaja centrada, así que el hueco de arriba y
+// el de abajo deben parecerse; el vaivén inclina a los personajes y mueve un
+// poco esos huecos. Medido sano: 1 px de 541. El defecto que esto caza —encajar
+// el dibujo dos veces— lo descentraba unos 200 px, o sea más de un tercio.
+const TOPE_DESCENTRADO = 0.12;
 // Celebrar SÍ cuesta (confeti + foco + rayos). Su techo NO es absoluto: se
 // calibra contra el confeti de esa misma página y esa misma máquina (escena 5),
 // porque celebrar es «confeti + el cierre» y exigirle menos que al confeti solo
@@ -296,9 +302,33 @@ const MEDIR = (ms) => `(async () => {
       for (let i = 0; i < d.length; i += 997) s += d[i] * (i % 31 + 1);
       return String(s);
     };
+    // Y DÓNDE CAE EL DIBUJO DENTRO DEL LIENZO, al principio y al final. El
+    // vaivén lo mueve un poco (los personajes se inclinan); lo que no puede es
+    // SALTAR. Un salto grande significa que algo está encajando el dibujo dos
+    // veces — que es lo que pasó al cachear cuadros sin reponer la
+    // transformación del contexto: la escena se iba 101 px abajo y salía
+    // cortada en cuanto entraba el primer cuadro del caché.
+    const caja = () => {
+      if (!cv || !cctx) return null;
+      const d = cctx.getImageData(0, 0, cv.width, cv.height).data;
+      let x0 = 1e9, x1 = -1, y0 = 1e9, y1 = -1;
+      for (let y = 0; y < cv.height; y += 2) for (let x = 0; x < cv.width; x += 2) {
+        if (d[(y * cv.width + x) * 4 + 3] > 12) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      }
+      return x1 < 0 ? null : { x0, x1, y0, y1 };
+    };
     const sitios = new Set(), dibujos = new Set();
     for (let i = 0; i < 8; i++) { sitios.add(donde()); dibujos.add(firma()); await new Promise(r => setTimeout(r, 240)); }
-    return { sinEscena: false, distintas: sitios.size, dibujos: dibujos.size, hayLienzo: !!(cv && cctx) };
+    // LA ESCENA ESTÁ CENTRADA EN SU LIENZO (`preserveAspectRatio: xMidYMid`), así
+    // que el hueco de arriba y el de abajo tienen que PARECERSE. Ese es el
+    // invariante que rompe encajar el dibujo dos veces, y se mide sin saber nada
+    // de cómo se pinta. Comparar dos instantes NO sirve: cuando esta escena mide,
+    // el descuadre ya lleva segundos puesto y los dos instantes están igual de
+    // torcidos (probado: daba 0 px de salto con el defecto delante).
+    const c = caja();
+    const desvio = c && cv ? Math.abs(c.y0 - (cv.height - c.y1)) : -1;
+    return { sinEscena: false, distintas: sitios.size, dibujos: dibujos.size, hayLienzo: !!(cv && cctx),
+             desvio, alto: cv ? cv.height : 0 };
   });
   if (vivo.sinEscena) mal('no se encontró la escena del duelo: no se puede comprobar si se mueve');
   else if (vivo.distintas <= 1) {
@@ -309,8 +339,12 @@ const MEDIR = (ms) => `(async () => {
     mal(`la escena se mece pero el DIBUJO no cambia (${vivo.distintas} posiciones, 1 sola imagen en 1,9 s): `
       + 'la animación de Lottie no se está deformando, es una foto tambaleándose. Es exactamente lo que el dueño '
       + 'notó en el aula. El reposo debe recorrer cuadros de la animación (caché de cuadros en core/vsAnimations.js).');
+  } else if (vivo.alto && vivo.desvio > vivo.alto * TOPE_DESCENTRADO) {
+    mal(`el dibujo del duelo está DESCENTRADO ${vivo.desvio} px en un lienzo de ${vivo.alto} (tope ${Math.round(vivo.alto * TOPE_DESCENTRADO)}). `
+      + 'Algo lo está encajando dos veces: la escena sale corrida y cortada a los pocos segundos, que es lo que el '
+      + 'dueño vio («inició bien y luego se redimensionó»). Mira la transformación que queda en el contexto 2D.');
   } else {
-    ok(`   …y el duelo VIVE en reposo: ${vivo.distintas} posiciones y ${vivo.dibujos} cuadros distintos de la animación en 1,9 s`);
+    ok(`   …y el duelo VIVE en reposo: ${vivo.distintas} posiciones y ${vivo.dibujos} cuadros distintos, centrado (${vivo.desvio} px de ${vivo.alto})`);
   }
   await page.close();
 }
