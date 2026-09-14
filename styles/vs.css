@@ -51,25 +51,12 @@
 }
 .vs-stage-canvas { flex: 1; min-height: 0; position: relative; display: flex; align-items: center; justify-content: center; }
 .vs-stage-canvas > * { width: 100%; height: 100%; }
-/* EL VAIVÉN DE LA SOGA EN REPOSO — el duelo tiene que estar VIVO aunque nadie
-   responda: sin movimiento parece colgado y la clase deja de mirar la pantalla
-   (dueño, 2026-09-14). Y mecerlo re-dibujando la cuerda es justo lo que no cabe
-   en la pizarra del aula: cada repintado recalcula 153 trazados y, con esa CPU,
-   es un tirón que se come varios cuadros (medido: el duelo en reposo pasaba de
-   17 a 31 ms por cuadro con solo 12 repintados por segundo).
-   Así que el lienzo se pinta UNA vez y lo que se mece es el lienzo entero, por
-   `transform`: eso va por el compositor, se ve continuo y cuesta lo mismo en un
-   portátil que en una pizarra 4K — que es la ley de animaciones del proyecto.
-   El giro es mínimo y el origen va abajo, para que lea como la escena
-   respirando y no como la imagen resbalando. */
-@keyframes vs-soga-vaiven {
-  from { transform: rotate(-.45deg) translateY(-.35%); }
-  to   { transform: rotate(.45deg)  translateY(.35%); }
-}
-.vs-lottie-canvas, .vs-tug-scene {
-  transform-origin: 50% 92%;
-  animation: vs-soga-vaiven 3.2s ease-in-out infinite alternate;
-}
+/* NADA DE MECER LA ESCENA ENTERA. Se probó (v1.51.691) y el dueño lo rechazó al
+   verlo en la pizarra: «aún se balancean en conjunto y no se ve la animación de
+   Lottie». Tenía razón — tambalear la imagen no es que los personajes tiren, y
+   encima disimulaba que el vaivén de verdad se había quedado en un 3 % del
+   recorrido. El movimiento del reposo lo hace la propia animación, meciéndose
+   ±un tercio de su línea de tiempo (`idle()` en core/vsAnimations.js). */
 .vs-anim-fallback { margin: auto; max-width: 18rem; padding: 1rem; color: #6c757d; font-size: .95rem; border: 2px dashed #ced4da; border-radius: .6rem; }
 .vs-tug-label { font-weight: 800; font-size: clamp(1rem, 2cqw, 1.6rem); margin: 0 0 .1rem; transition: color .2s; }
 

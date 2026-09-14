@@ -266,9 +266,26 @@ const MEDIR = (ms) => `(async () => {
   if (!cuerda) mal('el duelo no montó su animación central: la medida de reposo no vale');
   await page.waitForTimeout(400);
   const r = await page.evaluate(MEDIR(3000));
-  // Montar el duelo sobre la antesala puede costar el doble que no tener nada,
-  // y nunca menos que el techo absoluto de reposo.
-  const techoDuelo = suelo.med ? Math.max(TECHO_REPOSO, +(suelo.med * 2).toFixed(1)) : TECHO_REPOSO;
+  // EL TECHO DE ESTA ESCENA YA NO ES UN PRESUPUESTO, ES UN GUARDARRAÍL.
+  //
+  // Se escribió cuando en el duelo en reposo no pasaba nada, y pedía el doble de
+  // la página quieta. Esa premisa la revocó el dueño el 2026-09-14, viéndolo en
+  // la pizarra: la soga DEBE mecerse recorriendo un tercio de su animación, y
+  // eso son ~25 repintados por segundo de un dibujo de 153 trazados. Medido
+  // aquí: 58 ms por cuadro contra los 17 de la página quieta.
+  //
+  // Es una decisión de producto tomada con el coste delante, no un descuido: un
+  // duelo parado parece colgado y la clase deja de mirar la pantalla. Y esta
+  // sonda corre SIN tarjeta gráfica, así que castiga el dibujo en lienzo más de
+  // lo que lo hace la pizarra real.
+  //
+  // Lo que esta red sigue cazando es una REGRESIÓN de orden de magnitud —que fue
+  // siempre su propósito declarado arriba—, no si el duelo cabe en 30 fps: con
+  // ×5 sobre la página quieta, el defecto del confeti (128 ms) habría saltado
+  // igual. Si algún día hay que bajar de verdad el coste, se baja cambiando el
+  // DIBUJO (menos trazados al exportar, ver docs/handoff-rendimiento-animaciones.md),
+  // no quitando el movimiento.
+  const techoDuelo = suelo.med ? Math.max(TECHO_REPOSO, +(suelo.med * 5).toFixed(1)) : TECHO_REPOSO;
   if (r.pocos !== undefined) mal(`solo ${r.pocos} fotogramas medidos en el duelo en reposo`);
   else if (r.med <= techoDuelo) ok(`DUELO EN REPOSO con la cuerda, pizarra del aula (${PIZARRA.width}×${PIZARRA.height} a DPR ${DPR_AULA}, CPU frenada ${FRENO}x): ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps; la antesala quieta, aquí, ${suelo.med} ms; techo ${techoDuelo} ms)`);
   else mal(`el duelo EN REPOSO va a ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps) y la antesala QUIETA de esta misma página cuesta ${suelo.med} ms (techo ${techoDuelo} ms). `
@@ -330,21 +347,22 @@ const MEDIR = (ms) => `(async () => {
     return { sinEscena: false, distintas: sitios.size, dibujos: dibujos.size, hayLienzo: !!(cv && cctx),
              desvio, alto: cv ? cv.height : 0 };
   });
+  // LO QUE SE EXIGE ES QUE LA ANIMACIÓN CORRA, no que la caja se mueva. Hubo una
+  // versión que mecía la escena entera por CSS y el dueño la rechazó al verla:
+  // «aún se balancean en conjunto y no se ve la animación de Lottie». Tambalear
+  // una foto NO es que los personajes tiren, así que lo que esta red mira es el
+  // DIBUJO. Si alguien vuelve a quitar el vaivén de la animación, aquí se ve.
   if (vivo.sinEscena) mal('no se encontró la escena del duelo: no se puede comprobar si se mueve');
-  else if (vivo.distintas <= 1) {
-    mal('la escena del duelo está QUIETA en reposo: no se mueve un píxel en 1,9 s. '
-      + 'Un duelo parado parece colgado y la clase deja de mirar (lo dijo el dueño al verlo en el aula). '
-      + 'Si hay que bajar el coste se cambia el MECANISMO, no se quita el movimiento.');
-  } else if (vivo.hayLienzo && vivo.dibujos <= 1) {
-    mal(`la escena se mece pero el DIBUJO no cambia (${vivo.distintas} posiciones, 1 sola imagen en 1,9 s): `
-      + 'la animación de Lottie no se está deformando, es una foto tambaleándose. Es exactamente lo que el dueño '
-      + 'notó en el aula. El reposo debe recorrer cuadros de la animación (caché de cuadros en core/vsAnimations.js).');
+  else if (vivo.hayLienzo && vivo.dibujos <= 1) {
+    mal('la animación del duelo está CONGELADA en reposo: el dibujo no cambia en 1,9 s. '
+      + 'Un duelo parado parece colgado y la clase deja de mirar. El reposo mece la animación '
+      + '±un tercio de su línea de tiempo (`idle()` en core/vsAnimations.js): eso es lo que no puede desaparecer.');
   } else if (vivo.alto && vivo.desvio > vivo.alto * TOPE_DESCENTRADO) {
     mal(`el dibujo del duelo está DESCENTRADO ${vivo.desvio} px en un lienzo de ${vivo.alto} (tope ${Math.round(vivo.alto * TOPE_DESCENTRADO)}). `
-      + 'Algo lo está encajando dos veces: la escena sale corrida y cortada a los pocos segundos, que es lo que el '
+      + 'Algo lo está encajando dos veces: la escena sale corrida y cortada, que es lo que el '
       + 'dueño vio («inició bien y luego se redimensionó»). Mira la transformación que queda en el contexto 2D.');
   } else {
-    ok(`   …y el duelo VIVE en reposo: ${vivo.distintas} posiciones y ${vivo.dibujos} cuadros distintos, centrado (${vivo.desvio} px de ${vivo.alto})`);
+    ok(`   …y la animación del duelo CORRE en reposo: ${vivo.dibujos} cuadros distintos en 1,9 s, centrada (${vivo.desvio} px de ${vivo.alto})`);
   }
   await page.close();
 }

@@ -265,7 +265,7 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   `core/boot.js` (sonidos/efectos al bus, versión, mute). Las 3 `main.*.js` NO repiten ese wiring.
 - **Animaciones IGUALES en todas las pantallas** (no se distingue por aparato: `ww-lite` y su
   detector se retiraron): solo `transform`/`opacity` y lienzos con tope (1280 · DPR ≤ 1,5); nada que repinte píxeles por cuadro.
-  Y el duelo **debe MOVERSE en reposo** y con su Lottie DEFORMÁNDOSE (parado parece colgado; tambaleando una foto, también): el vaivén recorre pocos cuadros y cada uno se rasteriza UNA vez (caché de `core/vsAnimations.js`) más el mecido del COMPOSITOR. Lo vigilan `tests/animaciones.test.mjs` y `tools/perf-sonda.mjs` (coste + que se mueva + que el DIBUJO cambie: sin eso, quitar la animación daba el mejor número). Exportar Lottie barato: `docs/handoff-rendimiento-animaciones.md`.
+  **EXCEPCIÓN DECIDIDA**: la soga del duelo se mece recorriendo ±⅓ de su animación a ~25 repintados/s (`idle()`, core/vsAnimations.js) — cuesta 58 ms/cuadro en la sonda y el dueño lo aceptó con el dato delante (2026-09-14): parado parece colgado. Ni caché de cuadros ni mecer la escena por CSS: probados y rechazados (descuadraban / «se balancean en conjunto»). Si hay que abaratar, se exporta con menos trazados (`docs/handoff-rendimiento-animaciones.md`), no se quita el movimiento. Lo vigilan `tests/animaciones.test.mjs` y `tools/perf-sonda.mjs` (que el DIBUJO cambie · que esté centrado · regresión de orden de magnitud).
 - **Envío de una respuesta en la ronda**: la plantilla lo DECLARA en `meta.play.submit` —
   `'gesto'` (el toque ES la respuesta: opción, globo, tablero → CERO botones) o `'boton'`
   (se construye y se confirma → EXACTAMENTE UNO, marcado `data-ww-submit`). Ninguna vista
