@@ -113,6 +113,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | Modo SOLO (Wordwall) por dentro · identidad/auth · dev local | [`docs/modo-wordwall.md`](docs/modo-wordwall.md) · [`docs/identidad.md`](docs/identidad.md) · [`docs/dev-local.md`](docs/dev-local.md) |
 | **La IA que ESCRIBE el contenido** (por modelo · módulo aparte · el hook de la Pi) | **[`docs/handoff-ia-contenido.md`](docs/handoff-ia-contenido.md)** — FUNCIONANDO desde v1.51.548; su §7b guarda las tres trampas que costaron ponerlo en pie (los 5xx que se come Cloudflare, el ámbito de los handlers, el modelo con caducidad) |
 | **Plan del EDITOR** (márgenes · «+ Añadir» · imagen↔pines · nacer en blanco · buscador) | **[`docs/handoff-editor-general.md`](docs/handoff-editor-general.md)** (decidido 2026-08-13, sin ejecutar) |
+| **LA FRONTERA actividad↔plataforma** (46 puertas a `core/` · 2.100 líneas de «familia» disfrazadas de núcleo · 4 listas por actividad en el anfitrión; cómo lo hacen H5P·Moodle·VS Code·Obsidian) | **[`docs/handoff-arquitectura-actividades.md`](docs/handoff-arquitectura-actividades.md)** (pedido 2026-09-13, sin ejecutar) |
 | **LOS TRES JUEGOS DE INICIAL** (Colorear · Tangram · Rompecabezas: leyes contrastadas, decisiones técnicas, banco compartido, lo que decide el dueño) | **[`docs/handoff-juegos-inicial.md`](docs/handoff-juegos-inicial.md)** |
 | **DETECTAR LAS COSTURAS** (basura · duplicados · declaraciones sin lector · polimorfismo a medias · cableado sin extremo): los 7 barridos, ejecutados a cero | **[`docs/handoff-costuras.md`](docs/handoff-costuras.md)** §1b — ley §31 |
 | **DECISIONES de producto pendientes** (contrastadas con Wordwall y similares: identidad del alumno, imprimible, cuotas…) | **[`docs/decisiones-pendientes.md`](docs/decisiones-pendientes.md)** |
@@ -459,18 +460,17 @@ usuario: se deja pendiente, no bloquea el resto.
   REALES la cuenta de «Preparados…» marque el MISMO número. **No es una prueba
   táctil**: el paso 5 es el de la ventana de lectura y el cronómetro.
 - **Lápiz y palma en pizarra REAL** (v1.51.610: DOS herramientas, frontera única,
-  calibración de 2 recuadros; medido headless en `tools/lapiz-sonda.mjs`). Falta la
-  mano de verdad: es la Parte 1 de la hoja del compañero.
+  calibración de 2 recuadros; medido en `tools/lapiz-sonda.mjs`). Falta la mano de verdad: Parte 1 de la hoja del compañero.
 - **El FIN de Abre Cajas en navegador** (v1.51.665: sale por la estándar del shell). Pasa la matriz; nadie lo ha MIRADO. Dueño: la regla primero.
 
 ### 🟡 UNA FUNCIÓN QUE EL PANEL PROMETÍA Y NO EXISTE (v1.51.482)
 El escaneo de «ajustes desconectados» encontró SIETE mandos que el editor
 escribía y nadie leía. Cuatro se conectaron (filtro de apodos · leaderboard
-entre preguntas · mostrar respuesta tras cada · ayuda del crucigrama, ya retirado). De los
-otros tres, dos se RETIRARON del esquema por decisión del dueño (`rules.
-allowOverflow`/`showHints` de Tildes y Comas, `rules.livesPerMistake` de
-Match, `scoring.penaltyRatio`: prometidos sin mecánica — barrido B1,
-2026-09-02). Queda uno como función a decidir:
+entre preguntas · mostrar respuesta tras cada · la ayuda de una plantilla ya
+retirada). De los otros tres, dos se RETIRARON del esquema por decisión del
+dueño (`rules.allowOverflow`/`showHints` de Tildes y Comas,
+`rules.livesPerMistake` de Match, `scoring.penaltyRatio`: prometidos sin
+mecánica — barrido B1, 2026-09-02). Queda uno como función a decidir:
 - **Bonus por racha** (`live.streakBonus` + `streakBonusPerStep`): los puntos
   extra los calculaba una **Edge Function de Supabase**, y Supabase se retiró.
   Para reponerlo hay que decidir dónde se calcula (¿el settle del host?) y si la
