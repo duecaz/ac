@@ -169,6 +169,121 @@ Y la regla de oro del formato, que ya está escrita en `core/vsAnimations.js`:
 la animación se autora en UNA línea de tiempo donde el cuadro 0 es «gana el de
 la izquierda», el del medio es empate y el último «gana el de la derecha».
 
+## LA FLUIDEZ DE LOS JUEGOS, MEDIDA — y por qué Wordwall se ve mejor
+
+Pedido por el dueño el 2026-09-14: «las animaciones en Wordwall son mejores;
+¿cómo construimos mejor las nuestras, o usamos otra tecnología? Ya no Lottie
+sino JSON directo u otras librerías».
+
+### Primero el dato, porque cambia el planteamiento
+
+Medidos TODOS los juegos del catálogo en reposo, en la pizarra del aula
+(1280×720 a DPR 3, CPU frenada 12×), mediana de milisegundos por fotograma:
+
+| Qué | ms/cuadro | Lectura |
+|---|---|---|
+| Cualquier juego del catálogo, en reposo | 16,5 – 17,0 | 60 fps, todos sin excepción |
+| Confeti del podio | ~44 | 23 fps mientras dura la ráfaga |
+| **Soga del duelo meciéndose** | **~58** | **17 fps, y es lo único continuo** |
+
+**La falta de fluidez no está repartida por los juegos: está en dos sitios.**
+Ningún jugador baja de 60 fps con nadie tocando nada. Así que «mejorar la
+fluidez de los players» no es un trabajo de quince frentes — son dos piezas, y
+una de ellas (la soga) es la que el dueño ve todo el rato.
+
+Y hay un detalle que explica por qué se NOTA tanto: el reposo pide un cuadro
+cada 40 ms y tarda 58. No es que vaya lento de media, es que **llega tarde a
+cada cita**, y eso es justo lo que el ojo lee como tirón. Un movimiento a 25
+cuadros REGULARES se ve mejor que uno a 30 irregulares.
+
+### Qué hace Wordwall de verdad (y no es una librería mejor)
+
+Su propia página «about» describe la arquitectura sin ambigüedad: separan la
+LÓGICA del juego de la VISTA, y **la vista dibuja SPRITES sobre un fondo de
+parallax por capas usando las APIs de Canvas y de Audio**. Los temas son
+**marcado XML** que describe conjuntos de gráficos, sonidos y secuencias de
+animación — cambiar el tema cambia el aspecto del mismo juego. Todo escrito en
+C# y compilado cruzado a JavaScript. Hay incluso volcados públicos de sus
+atlas de sprites, que confirman que el arte viaja ya rasterizado.
+
+O sea: **no tienen mejor tecnología de animación, tienen otro MATERIAL**. Mueven
+mapas de bits por traslación, que es la operación más barata que existe en una
+pantalla. Nosotros re-teselamos 153 trazados vectoriales 25 veces por segundo
+para mecer una cuerda. La sensación de calidad que el dueño admira sale del
+arte, del sonido y de que el movimiento no cuesta nada — no del runtime.
+
+### Las alternativas, con los pesos medidos
+
+Punto de partida real: `lottie_light_canvas-5.13.0.min.js` son 55 KB
+comprimidos y el JSON de la cuerda, 28 KB. Total 83 KB.
+
+| Opción | Runtime (gzip) | Coste por cuadro | ¿Sirve sin build ni internet? |
+|---|---|---|---|
+| **Lottie canvas (hoy)** | 55 KB + 28 KB de datos | re-teselar 153 trazados | sí, ya está |
+| **Rive** (`canvas-lite` / completo) | **443 KB** / **887 KB** | teselado en WASM / WebGL2 | sí (UMD + wasm propio), pero ver abajo |
+| **dotLottie** (`.lottie` + ThorVG) | **530 KB** | WASM | sí, pero ver abajo |
+| **Sprites en atlas** (PNG/WebP) | **0 KB** | un `drawImage` = copia de textura | sí, trivial |
+| **Vídeo con alfa** (WebM VP9) | 0 KB | decodificación | NO fiable en Android |
+| **CSS / Web Animations** | 0 KB | compositor | sí, trivial |
+| **WebGL · PixiJS · Spine** | cientos de KB | — | desproporcionado |
+
+**Lo que NO merece la pena, y por qué:**
+
+- **Rive** cuesta entre 443 y 887 KB comprimidos de runtime. El WASM solo se
+  amortiza con MUCHAS animaciones; nosotros tenemos una, decorativa. Y añade un
+  editor propietario de pago por suscripción a un proyecto cuyo norte es «sin
+  build, sin internet en el aula».
+- **dotLottie** no aporta compresión: el `.lottie` es un ZIP del mismo JSON, y
+  GitHub Pages ya lo sirve comprimido. Lo que aportaría es su reproductor nuevo,
+  y cuesta 530 KB.
+- **Vídeo con transparencia**: Chrome en Android se equivoca con el canal alfa
+  de forma documentada e inconsistente entre aparatos (fondo negro en unos,
+  transparente en otros). En una pizarra es apostar.
+- **SMIL** sigue vivo pero está desaconsejado para código nuevo.
+
+**Y «JSON directo», que es lo que pidió el dueño, tiene una lectura buena y una
+mala.** La mala es escribir un intérprete propio de animación vectorial: eso es
+reescribir Lottie peor. La buena es un JSON propio y minúsculo que no describa
+vectores sino **una coreografía de piezas** —`{pieza, x, y, giro, escala,
+opacidad}` por fotograma clave— aplicada con `transform` a imágenes. Treinta
+líneas de intérprete, cero librería, todo por compositor. **Eso es exactamente
+el modelo de Wordwall**, y es la lectura que hay que darle.
+
+### Por qué cuesta lo que cuesta, en una línea
+
+620×360 a DPR 3 son **2 millones de píxeles** re-teselados y rellenados en cada
+repintado. El coste es `área × DPR²`, y por eso topar el lienzo fue la palanca
+más grande de todo este plan. En la cuerda se puede bajar más: a tres metros de
+distancia, un DPR de 1 en esa escena no se distingue.
+
+Dos apuntes más, con fuente:
+
+- **`will-change` mal usado empeora**: cada capa promovida come memoria de GPU.
+  Se promueve la capa que se MUEVE, y solo esa.
+- **`content-visibility: auto`** se salta estilo, maqueta y pintado de lo que
+  está fuera de pantalla. Sirve para paneles largos, no para la cuerda visible.
+
+### Lo que haría, por orden de (coste × riesgo) frente a ganancia
+
+1. **Partir la escena en fondo QUIETO y capa que se mueve, y bajar el DPR de la
+   cuerda.** De los 158 grupos del fichero, solo 31 propiedades se animan: hoy
+   se re-rasteriza el dibujo entero para mover 31 cosas. El fondo se pinta UNA
+   vez. Es la ganancia mayor de la lista y no cambia ni de librería ni de
+   herramienta de autoría.
+2. **La coreografía en JSON propio** (el «JSON directo» del dueño, leído como
+   Wordwall): las figuras como imágenes movidas por `transform`, y solo la
+   cuerda sigue siendo vector. Cero librería, se autora dibujando piezas.
+3. **Atlas de sprites** si hace falta más: es literalmente la tecnología de
+   Wordwall, cuesta 0 KB de runtime y convierte cada cuadro en una copia de
+   textura. Se PIERDE el recoloreado por tokens (§3 de las leyes): eso hay que
+   decidirlo por escrito antes, no descubrirlo después.
+4. **`OffscreenCanvas` en un worker** para lo que quede de Lottie. Solo si lo
+   anterior no basta.
+
+Lo que decide el dueño antes de ejecutar: si el arte de la cuerda se puede
+rehacer separando fondo y movimiento (toca al ilustrador, no al código), y si
+acepta perder el recoloreado por tema en esa escena a cambio de los sprites.
+
 ## Qué NO se hace
 
 - No se quitan las celebraciones: el podio celebra (es producto). Se hacen

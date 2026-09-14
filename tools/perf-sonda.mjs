@@ -46,6 +46,10 @@ const FRENO = 12;
 // tirones. El reposo se exige MÁS (25 ms) porque ahí no debería pasar NADA.
 const TECHO_REPOSO = 25;
 const TECHO_CONFETI = 60;
+// El duelo en reposo es caro POR DECISIÓN del dueño (la soga se mece; ver el
+// bloque largo en su escena). 120 ms cubre la variación del contenedor y sigue
+// cazando un defecto de orden de magnitud.
+const TECHO_DUELO = 120;
 // Cuánto puede DESCENTRARSE el dibujo del duelo dentro de su lienzo, como
 // fracción del alto. La escena se encaja centrada, así que el hueco de arriba y
 // el de abajo deben parecerse; el vaivén inclina a los personajes y mueve un
@@ -246,49 +250,41 @@ const MEDIR = (ms) => `(async () => {
   await sembrar(page, 'quiz', 'perf-duelo');
   await page.evaluate(() => { location.hash = '#/vs/perf-duelo'; });
   await page.waitForSelector('[data-ww-start]', { timeout: 15000 });
-  await frenar();
-  await page.waitForTimeout(400);
-  // EL SUELO DE ESTA MÁQUINA, EN ESTA MISMA PÁGINA: la antesala, antes de que
-  // exista el duelo. El techo de esta escena era ABSOLUTO y su premisa —«en
-  // reposo no pasa NADA»— dejó de ser cierta el día que la soga volvió a
-  // mecerse a propósito (el duelo quieto parece colgado). Medido con la máquina
-  // tranquila, el vaivén cuesta 0,8 ms por cuadro; medido dentro del preflight,
-  // con el contenedor cargado, la MISMA página pasa de 17 a 40 ms sin tocar una
-  // línea. Un número absoluto ahí no mide la soga, mide el humor del contenedor
-  // — la lección ya escrita en la escena «escribir», que por eso se calibra
-  // contra su propio reposo.
-  const suelo = await page.evaluate(MEDIR(1200));
   await page.click('[data-ww-start]');
   await page.waitForSelector('.vs-arena', { timeout: 15000 });
   // LA CUERDA TIENE QUE ESTAR PUESTA o esto mediría una pantalla quieta y daría
   // verde gratis (la misma trampa que la barra de progreso de Tildes).
   const cuerda = await page.waitForSelector('#vs-stage-canvas canvas, #vs-stage-canvas svg', { timeout: 15000 }).catch(() => null);
   if (!cuerda) mal('el duelo no montó su animación central: la medida de reposo no vale');
+  await frenar();
   await page.waitForTimeout(400);
   const r = await page.evaluate(MEDIR(3000));
-  // EL TECHO DE ESTA ESCENA YA NO ES UN PRESUPUESTO, ES UN GUARDARRAÍL.
+  // EL TECHO DE ESTA ESCENA ES ABSOLUTO Y GENEROSO, Y ESO ES UNA DECISIÓN.
   //
-  // Se escribió cuando en el duelo en reposo no pasaba nada, y pedía el doble de
-  // la página quieta. Esa premisa la revocó el dueño el 2026-09-14, viéndolo en
-  // la pizarra: la soga DEBE mecerse recorriendo un tercio de su animación, y
-  // eso son ~25 repintados por segundo de un dibujo de 153 trazados. Medido
-  // aquí: 58 ms por cuadro contra los 17 de la página quieta.
+  // Se intentó calibrarlo contra una pantalla quieta de la misma máquina, como
+  // hace la escena de escribir. NO funciona aquí, y el motivo es instructivo: una
+  // página quieta siempre mide ~16,7 ms porque el reloj de `requestAnimationFrame`
+  // va a 60 Hz — mide el REFRESCO, no la capacidad libre de la máquina. Así que
+  // el suelo no sube cuando el contenedor se carga, y normalizar contra él solo
+  // añade ruido (medido: con el contenedor cargado, «escribir» pasó de 17 a 27 ms
+  // y el duelo de 58 a 95, mientras el suelo seguía clavado en 16,6).
   //
-  // Es una decisión de producto tomada con el coste delante, no un descuido: un
-  // duelo parado parece colgado y la clase deja de mirar la pantalla. Y esta
-  // sonda corre SIN tarjeta gráfica, así que castiga el dibujo en lienzo más de
-  // lo que lo hace la pizarra real.
+  // Y el duelo en reposo es CARO A PROPÓSITO desde 2026-09-14: el dueño decidió,
+  // con el dato delante, que la soga se meza recorriendo un tercio de su
+  // animación, porque un duelo parado parece colgado. Sobre el mismo código esta
+  // sonda ha dado 58, 65, 87 y 95 ms según lo ocupado que estuviera el
+  // contenedor. Un techo ajustado ahí no mide la soga: mide el humor de la
+  // máquina, y una red que da rojo sin que nadie toque nada se acaba ignorando.
   //
-  // Lo que esta red sigue cazando es una REGRESIÓN de orden de magnitud —que fue
-  // siempre su propósito declarado arriba—, no si el duelo cabe en 30 fps: con
-  // ×5 sobre la página quieta, el defecto del confeti (128 ms) habría saltado
-  // igual. Si algún día hay que bajar de verdad el coste, se baja cambiando el
-  // DIBUJO (menos trazados al exportar, ver docs/handoff-rendimiento-animaciones.md),
-  // no quitando el movimiento.
-  const techoDuelo = suelo.med ? Math.max(TECHO_REPOSO, +(suelo.med * 5).toFixed(1)) : TECHO_REPOSO;
+  // Por eso el número es 120: cubre esa variación y sigue cazando lo que esta
+  // sonda nació para cazar, que es un defecto de ORDEN DE MAGNITUD (el confeti
+  // sin tope estaba en 128 ms). Si hay que bajar el coste de verdad, se hace en
+  // el DIBUJO — separar el fondo quieto de lo que se mueve, menos trazados al
+  // exportar (docs/handoff-rendimiento-animaciones.md) — no apretando esto.
+  const techoDuelo = TECHO_DUELO;
   if (r.pocos !== undefined) mal(`solo ${r.pocos} fotogramas medidos en el duelo en reposo`);
-  else if (r.med <= techoDuelo) ok(`DUELO EN REPOSO con la cuerda, pizarra del aula (${PIZARRA.width}×${PIZARRA.height} a DPR ${DPR_AULA}, CPU frenada ${FRENO}x): ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps; la antesala quieta, aquí, ${suelo.med} ms; techo ${techoDuelo} ms)`);
-  else mal(`el duelo EN REPOSO va a ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps) y la antesala QUIETA de esta misma página cuesta ${suelo.med} ms (techo ${techoDuelo} ms). `
+  else if (r.med <= techoDuelo) ok(`DUELO EN REPOSO con la cuerda, pizarra del aula (${PIZARRA.width}×${PIZARRA.height} a DPR ${DPR_AULA}, CPU frenada ${FRENO}x): ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps; techo ${techoDuelo} ms)`);
+  else mal(`el duelo EN REPOSO va a ${r.med} ms/fotograma (${Math.round(1000 / r.med)} fps, techo ${techoDuelo} ms). `
          + 'Nadie está tocando nada: mira qué se re-dibuja solo (la soga a más ritmo del declarado, un filtro girando, una sombra en movimiento).');
 
   // …Y LA CUERDA SE MUEVE DE VERDAD. Sin esto, la medida de arriba premia
