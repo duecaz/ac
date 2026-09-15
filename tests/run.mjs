@@ -33,6 +33,7 @@ console.log('\n▶ raceResume'); await import('./raceResume.test.mjs');
 console.log('\n▶ quizAnswer'); await import('./quizAnswer.test.mjs');
 console.log('\n▶ quotas'); await import('./quotas.test.mjs');
 console.log('\n▶ liveLoops'); await import('./liveLoops.test.mjs');
+console.log('\n▶ pbUrl'); await import('./pbUrl.test.mjs');
 console.log('\n▶ roundsLoop'); await import('./roundsLoop.test.mjs');
 console.log('\n▶ liveEnd'); await import('./liveEnd.test.mjs');
 console.log('\n▶ stressTest'); await import('./stressTest.test.mjs');

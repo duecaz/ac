@@ -35,7 +35,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 42 · 5796 | 19 · 3180 | 0.55 |
 | **informes/tareas** | después de clase | 10 · 1388 | 5 · 619 | 0.45 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 91 · 7576 | 13 · 1945 | 0.26 |
-| **infra/común** | todo lo anterior | 194 · 26266 | 77 · 10141 | 0.39 |
+| **infra/común** | todo lo anterior | 194 · 26298 | 78 · 10223 | 0.39 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -110,7 +110,7 @@ graph TD
 | **kernel** | `kernel/contracts/activity.js` (425) · `kernel/contracts/session.js` (354) · `kernel/contracts/template.js` (342) · `kernel/session/vsMachine.js` (286) · `kernel/session/teamsMachine.js` (251) |
 | **plantillas** | `templates/match/player.js` (351) · `templates/diagram/player.js` (306) · `templates/tangram/player.js` (303) · `templates/diagram/editor.js` (241) · `templates/wordsearch/editor.js` (232) |
 | **contenido** | `kernel/content/qaAdapt.js` (169) · `kernel/content/models.js` (155) · `kernel/content/switch.js` (131) · `kernel/content/convert.js` (123) · `kernel/content/sessionItems.js` (37) |
-| **config** | `pocketbase.config.js` (13) |
+| **config** | `pocketbase.config.js` (45) |
 
 ## Los módulos más importados (fan-in)
 

@@ -97,6 +97,51 @@ DURACIÓN de la petición `/api/realtime` en la pestaña Network: ~100 s → ina
 (cubierto por el vigía); unos segundos → el camino QUIC (interruptor). En el caso de
 2026-08-16 fue lo segundo: el interruptor lo resolvió y no hubo que medir nada más.
 
+## MUDANZA A `api.aulareto.com` — la API bajo el dominio de la web (EN CURSO)
+
+Decidido el 2026-09-15, después de que un profe **no pudiera entrar** en el
+colegio: el filtro de su red le sustituía el certificado de `pb.lanube.uno` y
+Chrome cortaba con `ERR_CERT_AUTHORITY_INVALID`, mientras `aulareto.com` cargaba
+sin problema. La causa de fondo no es el certificado (es un Let's Encrypt válido,
+ECDSA bajo ISRG Root X2): es que **la web y su API viven en dominios distintos**,
+así que un colegio tiene que permitir DOS, y el segundo no lo reconoce ningún
+filtro. Con la API bajo `aulareto.com`, permitir un dominio basta.
+
+**NO hace falta otro PocketBase.** Es el MISMO contenedor con un segundo nombre
+público en el túnel, apuntando al mismo `localhost:8090`. Los dos nombres
+conviven; los otros proyectos siguen entrando por `pb.lanube.uno`.
+
+**El interruptor ya está en el código** (`pocketbase.config.js`): `?pb=nuevo`
+apunta la aplicación a `api.aulareto.com` sin cambiárselo a nadie, para probar
+antes de mover el valor por defecto. Es una LISTA CERRADA de nombres, no una URL
+libre: con un parámetro libre, un enlace podría apuntar la pantalla de entrar a
+un servidor falso y quedarse con la contraseña del profe. Lo vigila
+`tests/pbUrl.test.mjs`, verificado en rojo.
+
+### Los pasos, en orden
+
+1. **Comprobar que `aulareto.com` es una zona de Cloudflare** (dash → lista de
+   sitios). Si no lo es, esto NO se puede hacer todavía: el nombre público del
+   túnel exige que la zona esté en Cloudflare, y mover la zona de un dominio que
+   está sirviendo la web es una operación aparte y con cuidado.
+2. **Añadir el nombre público** en Zero Trust → Networks → Tunnels → el túnel de
+   la Pi → Public Hostnames: `api.aulareto.com` → `http://localhost:8090`.
+3. **Replicar los ajustes de zona**, que es donde están las trampas (abajo).
+4. **Probar sin mover nada**: `https://aulareto.com/teacher.html?pb=nuevo#/explore`,
+   entrar con una cuenta y jugar. Y comprobar la cabecera de la hora:
+   `curl.exe -s -D - -o NUL -H "Origin: https://aulareto.com" https://api.aulareto.com/api/health`
+   → tiene que aparecer `access-control-expose-headers: Date`.
+5. **Mover el valor por defecto** en `pocketbase.config.js` (una línea) y dejar
+   `pb.lanube.uno` vivo indefinidamente: lo usan otros proyectos.
+
+### LAS TRES TRAMPAS (los ajustes de Cloudflare son POR ZONA)
+
+| Trampa | Qué pasa si se olvida |
+|---|---|
+| **La Transform Rule de la hora** está escrita como `http.host eq "pb.lanube.uno"` | Con el nombre nuevo NO se aplica: la app recibe `null` en `serverNow` y el modo en vivo vuelve a tener relojes distintos entre profe y alumno (§22-5). Es el fallo que costó meses encontrar. Hay que ampliar la condición a los dos nombres. |
+| **HTTP/3 (with QUIC) está OFF** en la zona `lanube.uno` | En la zona nueva viene ENCENDIDO de fábrica. Con él, Chrome abre el flujo SSE por QUIC y lo aborta una y otra vez: cortes continuos en las dos pantallas. |
+| **El resto de Protocol Optimization** (HTTP/2 ON) y `0-RTT` | Mismo motivo: no se heredan de la otra zona. |
+
 ## El contenedor PocketBase
 
 | Qué | Valor |
