@@ -118,20 +118,50 @@ libre: con un parámetro libre, un enlace podría apuntar la pantalla de entrar 
 un servidor falso y quedarse con la contraseña del profe. Lo vigila
 `tests/pbUrl.test.mjs`, verificado en rojo.
 
+### El terreno, COMPROBADO el 2026-09-15
+
+| Qué | Cómo está |
+|---|---|
+| DNS de `aulareto.com` | **GoDaddy** (`ns43/ns44.domaincontrol.com`) — NO está en Cloudflare |
+| A dónde apunta | directo a **GitHub Pages** (185.199.108-111.153) |
+| Registros MX | **ninguno** — no hay correo en ese dominio |
+| Registros TXT | **ninguno** — no hay verificaciones que perder |
+| DNS de `lanube.uno` | Cloudflare, 7 registros, todos por el túnel `raspberry` |
+
+Eso convierte la mudanza en rutinaria: lo único que hay que preservar son los
+cuatro registros A de la web (y el `www` si existe). **Hay que traer la zona a
+Cloudflare** porque un túnel publica sus nombres con un registro que solo
+funciona dentro del DNS de Cloudflare; desde GoDaddy no se puede crear. Las dos
+salidas cortas no valen: apuntar `api.aulareto.com` a la Pi es imposible (se
+expone por el túnel, sin dirección pública) y un alias de GoDaddy a un nombre de
+Cloudflare falla por certificado.
+
+**LA WEB NO CAMBIA.** Al añadir el dominio, Cloudflare importa los registros; si
+se dejan todos en **«DNS only» (nube gris)**, el tráfico sigue yendo directo a
+GitHub Pages igual que hoy — mismo servidor, mismo certificado, mismo
+comportamiento. Solo el `api` nuevo pasa por Cloudflare, y ese SÍ va proxied
+(nube naranja): es el túnel.
+
 ### Los pasos, en orden
 
-1. **Comprobar que `aulareto.com` es una zona de Cloudflare** (dash → lista de
-   sitios). Si no lo es, esto NO se puede hacer todavía: el nombre público del
-   túnel exige que la zona esté en Cloudflare, y mover la zona de un dominio que
-   está sirviendo la web es una operación aparte y con cuidado.
-2. **Añadir el nombre público** en Zero Trust → Networks → Tunnels → el túnel de
-   la Pi → Public Hostnames: `api.aulareto.com` → `http://localhost:8090`.
-3. **Replicar los ajustes de zona**, que es donde están las trampas (abajo).
-4. **Probar sin mover nada**: `https://aulareto.com/teacher.html?pb=nuevo#/explore`,
-   entrar con una cuenta y jugar. Y comprobar la cabecera de la hora:
-   `curl.exe -s -D - -o NUL -H "Origin: https://aulareto.com" https://api.aulareto.com/api/health`
-   → tiene que aparecer `access-control-expose-headers: Date`.
-5. **Mover el valor por defecto** en `pocketbase.config.js` (una línea) y dejar
+1. **Cloudflare → Add a site → `aulareto.com`** (plan free). Deja que escanee.
+2. **Revisar lo importado**: tienen que estar los cuatro A de `@` a
+   185.199.108/109/110/111.153 y el `www` si lo hay. **Todos en «DNS only»**.
+   Comparar contra la lista de GoDaddy antes de seguir.
+3. **GoDaddy → el dominio → Nameservers → Change → Custom**: poner los dos que
+   dé Cloudflare. Propagación: de minutos a unas horas.
+4. **Esperar y verificar**: `nslookup -type=NS aulareto.com` tiene que devolver
+   los de Cloudflare. Y comprobar que la web sigue abriendo.
+5. **Añadir el nombre público** en Zero Trust → Networks → Tunnels → `raspberry`
+   → Public Hostnames: `api.aulareto.com` → `http://localhost:8090`.
+6. **Replicar los ajustes de zona** (las tres trampas de abajo).
+7. **Probar sin mover el valor por defecto**, con el interruptor que ya existe:
+   `https://aulareto.com/teacher.html?pb=nuevo#/explore` — entrar, jugar, y
+   **probar el modo EN VIVO**, que es donde se ve si la regla de la hora está.
+   Además, por consola:
+   - `curl.exe -sI https://api.aulareto.com/api/health` → 200, `Server: cloudflare`, y **sin** `alt-svc: h3`.
+   - `curl.exe -s -D - -o NUL -H "Origin: https://aulareto.com" https://api.aulareto.com/api/health` → tiene que aparecer `access-control-expose-headers: Date`.
+8. **Mover el valor por defecto** en `pocketbase.config.js` (una línea) y dejar
    `pb.lanube.uno` vivo indefinidamente: lo usan otros proyectos.
 
 ### LAS TRES TRAMPAS (los ajustes de Cloudflare son POR ZONA)
