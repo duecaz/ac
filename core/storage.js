@@ -3,7 +3,7 @@ import { migrate, normalize } from './migrate.js';
 import { mergeRemote } from './storageMerge.js';
 import { lsGet, lsSet, objetoDe } from './ls.js';
 import { getAuthUserId, getAuthName } from './auth.js';
-import { mensajeDe, estadoDe } from './frontera.js';
+import { mensajeDe, estadoDe, esFalloDeRed } from './frontera.js';
 /**
  * @typedef {import('../kernel/contracts/activity.js').Activity} Activity
  * @typedef {import('../kernel/contracts/activity.js').ActivityRow} ActivityRow
@@ -126,14 +126,29 @@ export async function getRemote(id) {
  *  jugar algo público no debe ensuciar «Mis actividades».
  */
 /**
+ * `estricto: true` distingue NO HUBO SERVIDOR de NO EXISTE, y lo pide quien va
+ * a pintarle una pantalla a una persona. Por defecto los dos casos siguen
+ * dando `null` —es lo que esperan los cinco llamadores históricos— pero eso,
+ * dicho a la cara, es mentira: durante el corte del 2026-09-16 el reproductor
+ * decía «Actividad no encontrada» con la actividad intacta en la nube, y el
+ * `catch(() => null)` que lo causaba era justo el fallo mudo que prohíbe R6.
+ */
+/**
  * @param {string} id
- * @param {{cache?: boolean}} [opts]
+ * @param {{cache?: boolean, estricto?: boolean}} [opts]
  * @returns {Promise<Activity|null>}
  */
-export async function getAnywhere(id, { cache = false } = {}) {
+export async function getAnywhere(id, { cache = false, estricto = false } = {}) {
   const local = get(id);
   if (local) return local;
-  const remote = await getRemote(id).catch(() => null);
+  /** @type {Activity|null} */
+  let remote = null;
+  try {
+    remote = await getRemote(id);
+  } catch (e) {
+    if (estricto && esFalloDeRed(e)) throw e;
+    return null;                              // el servidor contestó: no existe
+  }
   if (remote && cache) save(remote);
   return remote;
 }

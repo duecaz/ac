@@ -9,6 +9,7 @@
 import { html, escapeHtml, mount, $$ } from '../core/html.js';
 import { on } from '../core/events.js';
 import { getAnywhere } from '../core/storage.js';
+import { MENSAJE_SIN_SERVIDOR } from '../core/frontera.js';
 import { revisarActividad, pantallaNoListaHtml } from '../core/activityCheck.js';
 import { getTemplate } from '../core/registry.js';
 import { availableModes, getMode, runMode, modeNeedsAuth, modeAuthHint } from '../core/modes.js';
@@ -39,7 +40,17 @@ export async function renderPlayerView(rootSel, id, initialMode = 'solo') {
   // desde cualquier dispositivo/profe). SIN cachear: jugar una actividad pública
   // NO debe ensuciar "Mis actividades" (modelo biblioteca, S2). Se juega en
   // memoria; para tenerla propia se usa "Duplicar".
-  const cargada = await getAnywhere(id);
+  /** @type {import('../kernel/contracts/activity.js').Activity|null} */
+  let cargada = null;
+  try {
+    // `estricto`: que un servidor ausente NO se disfrace de «no existe». Con el
+    // corte del 2026-09-16, esta pantalla le dijo «Actividad no encontrada» a
+    // todo el mundo durante diez horas, con las actividades intactas.
+    cargada = await getAnywhere(id, { estricto: true });
+  } catch (e) {
+    mount(rootSel, html`<div class="alert alert-warning">${MENSAJE_SIN_SERVIDOR} <a href="${destinoTrasJugar('solo').href}">Volver</a></div>`);
+    return;
+  }
   if (!cargada) {
     mount(rootSel, html`<div class="alert alert-warning">Actividad no encontrada. <a href="${destinoTrasJugar('solo').href}">Volver</a></div>`);
     return;

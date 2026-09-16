@@ -17,7 +17,7 @@ const memo = new Map();
 /** @param {string} name @returns {Promise<boolean>} */
 async function sondear(name) {
   try {
-    const r = await fetch(`${PB_URL}/api/collections/${name}/records?perPage=1`);
+    const r = await fetch(`${PB_URL}/api/collections/${name}/records?perPage=1`, { cache: 'no-store' });
     if (r.status === 200) return true;
     const body = await r.json().catch(() => null);
     const msg = (body && typeof body === 'object' && 'message' in body) ? String(body.message) : '';

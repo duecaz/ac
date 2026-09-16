@@ -9,7 +9,7 @@ import { wireActivityCard } from './activityCardWire.js';
 import { listPublic } from '../core/storage.js';
 import { searchActivities } from '../core/search.js';
 import { getTemplate } from '../core/registry.js';
-import { mensajeDe } from '../core/frontera.js';
+import { mensajeParaLaPantalla } from '../core/frontera.js';
 // `q0` = término que llega EN LA URL (`#/explore?q=comas`). Es como aterriza el
 // profe desde el buscador de la portada: si la vista no lo leyera, llegaría a la
 // biblioteca con la caja vacía y tendría que teclearlo otra vez — dos toques
@@ -66,7 +66,7 @@ export async function renderExplore(rootSel, q0 = '') {
     } catch (e) {
       // El aviso de error también pinta: si la vista se fue, no hay dónde.
       const lista = sigoEnPantalla() && document.getElementById('exp-list');
-      if (lista) lista.innerHTML = `<div class="alert alert-danger">${escapeHtml(mensajeDe(e))}</div>`;
+      if (lista) lista.innerHTML = `<div class="alert alert-danger">${escapeHtml(mensajeParaLaPantalla(e))}</div>`;
       return;
     }
     if (!sigoEnPantalla()) return;              // llegó tarde: el profe ya está en otra

@@ -48,3 +48,35 @@ export const estadoDe = (e) => numeroOnulo(Number(saco(e).status));
 /** El texto de un `catch (e)`, sea Error o cualquier otra cosa. */
 /** @param {unknown} e @returns {string} */
 export const mensajeDe = (e) => (e instanceof Error ? e.message : String(e));
+
+/** ¿NO HUBO SERVIDOR? — distinto de «el servidor dijo que no».
+ *
+ *  Un `fetch` que no llega a ninguna parte lanza un `TypeError` sin `status`
+ *  («Failed to fetch»), y PocketBase envuelve ese mismo caso con `status: 0`.
+ *  Las dos formas significan lo mismo: la petición no obtuvo respuesta.
+ *
+ *  Se mira el STATUS y no el texto a propósito: el mensaje del navegador
+ *  cambia con el idioma y con el motor («Failed to fetch» en Chrome, «Load
+ *  failed» en Safari, «NetworkError…» en Firefox), así que una regla escrita
+ *  sobre el texto falla justo en el aparato que no tienes delante. */
+/** @param {unknown} e @returns {boolean} */
+export const esFalloDeRed = (e) => { const s = estadoDe(e); return s === null || s === 0; };
+
+/** LO QUE SE LE DICE A UNA PERSONA cuando no hubo servidor.
+ *
+ *  Está aquí, con un solo dueño, porque el 2026-09-16 una caída de diez horas
+ *  llegó a la pantalla como «Failed to fetch» — en inglés, sin causa y sin nada
+ *  que hacer a continuación. Tres vistas lo contaban de tres maneras.
+ *
+ *  Y DICE «MANTENIMIENTO», A PROPÓSITO (decisión del dueño, 2026-09-16): al
+ *  profe que tiene la clase delante no se le cuenta de quién es la culpa —ni
+ *  red del colegio, ni certificados, ni incidencias— porque no puede hacer nada
+ *  con esa información y solo le sirve para asustarse. El detalle técnico es
+ *  para el reporte de diagnóstico, no para la pantalla. */
+export const MENSAJE_SIN_SERVIDOR =
+  'Estamos en mantenimiento. Vuelve a intentarlo en unos minutos.';
+
+/** El texto para enseñar: la causa de verdad si no hubo servidor, y si no, el
+ *  mensaje que venga del propio error. */
+/** @param {unknown} e @returns {string} */
+export const mensajeParaLaPantalla = (e) => (esFalloDeRed(e) ? MENSAJE_SIN_SERVIDOR : mensajeDe(e));

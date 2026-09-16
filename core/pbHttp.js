@@ -35,7 +35,15 @@ export async function signedFetch(url, opts = {}) {
     const headers = { ...base };
     const token = withAuth ? getAuthToken() : null;
     if (token) headers['Authorization'] = token;
-    return fetch(url, { method: rest.method || 'GET', ...rest, headers });
+    // `no-store`: LA API NUNCA SALE DE LA CACHÉ DEL NAVEGADOR, y no es una
+    // optimización sino una defensa. El 2026-09-16 una regla ajena en
+    // Cloudflare devolvió un 301 a otro dominio para todo el tráfico de la
+    // API; un 301 es «movido PERMANENTEMENTE», así que cada navegador que lo
+    // recibió se lo guardó y siguió redirigiendo solo después de arreglar el
+    // servidor. Borrar la caché arregla UN navegador; esto los arregla todos,
+    // sin que nadie tenga que saber que existe un menú de Chrome. Va antes del
+    // `...rest` para que un llamador con una necesidad distinta pueda pisarlo.
+    return fetch(url, { method: rest.method || 'GET', cache: 'no-store', ...rest, headers });
   };
   const enviadoMs = clock.now();
   let r = await run(true);

@@ -301,7 +301,7 @@ const GOOGLE_TOKEN_KEY = 'ww.google.token'; // { accessToken, expiry } (para Cla
 /** @returns {Promise<OAuthProvider[]>} */
 export async function listOAuthProviders() {
   try {
-    const r = await fetch(`${PB_URL}/api/collections/users/auth-methods`);
+    const r = await fetch(`${PB_URL}/api/collections/users/auth-methods`, { cache: 'no-store' });
     if (!r.ok) return [];
     const data = /** @type {{oauth2?: {providers?: OAuthProvider[]}, authProviders?: OAuthProvider[]}} */ (
       await r.json());
