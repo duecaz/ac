@@ -6,7 +6,7 @@
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { renderEditorJuego } from '../../core/editorJuego.js';
-import { DIBUJOS } from '../../core/bancoDibujos.js';
+import { DIBUJOS, rutaDibujo } from '../../core/bancoDibujos.js';
 import { ensureContent, contenidoColorear as contenido } from './content.js';
 
 /**
@@ -31,8 +31,11 @@ function contentHtml(a) {
       ${DIBUJOS.map(d => `
         <button type="button" class="co-ed-pick ${d.nombre === elegido ? 'co-ed-pick--on' : ''}"
                 data-dibujo="${d.nombre}" aria-pressed="${d.nombre === elegido}">
-          <span class="co-ed-mini"><i class="bi bi-image"></i></span>
+          <span class="co-ed-mini">
+            <img src="${rutaDibujo(d.nombre)}" alt="" loading="lazy" decoding="async">
+          </span>
           <span class="co-ed-label">${escapeHtml(d.label)}</span>
+          <span class="co-ed-tick" aria-hidden="true"><i class="bi bi-check-lg"></i></span>
         </button>`).join('')}
     </div>`;
 }

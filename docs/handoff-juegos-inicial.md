@@ -99,3 +99,102 @@ ajenos; cada test con contra-prueba; `node tools/check-template.mjs <name>` y
 5. **Calidad del banco**: ocho dibujos hechos a mano por un agente. Si se
    quieren ilustraciones profesionales, entran por la misma puerta (zonas
    cerradas con `data-color`) sin tocar código.
+
+---
+
+## 7. COLOREAR, SEGUNDA MIRADA (2026-09-17) — el banco y el gesto
+
+El dueño entró a crear una actividad de Colorear y encontró tres cosas. Las dos
+primeras eran defectos y están arregladas; la tercera es una decisión suya.
+
+### 7a · Lo que estaba roto (arreglado en v1.51.702)
+
+El editor escribía `.co-ed-grid`, `.co-ed-pick`, `.co-ed-mini` y
+`.co-ed-pick--on`, y **ninguna de las cuatro tenía una regla de CSS en ninguna
+hoja**. El markup se escribió y nunca se le puso estilo, así que la rejilla no
+era rejilla, la miniatura era el mismo icono genérico de Bootstrap para los ocho
+dibujos, y «elegido» no se veía porque la clase que lo marca no pintaba nada: el
+profe tenía ocho botones idénticos sin saber cuál había tocado.
+
+Ahora la miniatura es **el SVG de verdad** (~700 B cada uno, y nacen con
+`fill="#ffffff"` y trazo negro: se ve exactamente la lámina que va a repartir), y
+lo elegido lleva **tres señales** —borde grueso, fondo teñido y una marca de
+visto—, no una sola, porque un borde de color es lo primero que se pierde en un
+proyector descalibrado.
+
+> Es una costura de las de §31: markup sin CSS que lo lea. Vale la pena decidir
+> si se vigila con una regla («toda clase que emite un editor tiene una regla en
+> alguna hoja»), porque este mismo fallo es invisible en revisión.
+
+### 7b · El banco no es el problema de la mecánica, es de contenido
+
+Con las miniaturas puestas se ve lo que antes no: **los ocho dibujos no son
+dibujos**. «Gato» es un círculo con dos triángulos y un rombo; «Sol», un rombo
+con un círculo; «Mariposa», cuatro óvalos. El §6.5 ya lo decía sin verlo («ocho
+dibujos hechos a mano por un agente»).
+
+Fuentes libres de verdad, con su licencia comprobada:
+
+| Fuente | Cuánto | Licencia | Sirve tal cual |
+|---|---|---|---|
+| **Openclipart** | ~180.000 | **Dominio público / CC0**, sin atribución | La licencia ideal. Pero su línea suele ser trazo o un `path` compuesto, **no regiones cerradas rellenables** |
+| **OpenMoji** | ~4.000, con variante **de contorno negro ya dibujada** | **CC BY-SA 4.0** | El arte está listo… y el *share-alike* es CONTAGIOSO: la actividad que el profe publique en la biblioteca heredaría la licencia. Eso es una decisión de producto, no de código |
+| publicdomainvectors · freesvg.org | espejos de Openclipart | CC0 | Igual que Openclipart |
+| Freepik · Flaticon | mucho | atribución obligatoria y licencia restrictiva | **Descartadas** para contenido que se publica |
+
+**El cuello de botella no es encontrar dibujos: es convertirlos a zonas
+cerradas** con `data-zona`/`data-color`, que es lo que exige la mecánica actual.
+Tres salidas, con su coste:
+
+1. **Dibujarlos a mano** (lo que se hizo): una hora por dibujo bien hecho.
+2. **Importar y trocear** en Inkscape: cerrar regiones y etiquetarlas, 15-30 min
+   por dibujo con la rutina montada, más una herramienta que valide el contrato.
+3. **Cambiar el gesto** (§7c): si se pinta a mano alzada, **las zonas dejan de
+   hacer falta** y los 180.000 de Openclipart entran sin conversión ninguna.
+
+La tercera es la que de verdad quita el problema, y por eso no es solo una
+cuestión de motricidad.
+
+### 7c · Tocar para rellenar vs. PINTAR con el dedo
+
+Lo que entrena colorear en inicial es **el trazo**: control de dirección, presión
+y no salirse de la raya. Tocar una zona y que se rellene sola entrena *apuntar*,
+que es otra habilidad y mucho más pobre. Con la pantalla táctil delante, pintar
+de verdad es el gesto que corresponde a la ficha «Motricidad fina» que el norte
+§4c ya le asignó a este juego.
+
+> La evidencia publicada sobre colorear y motricidad fina en infantil es amplia,
+> pero la que compara **tableta contra papel** es escasa y de revistas menores:
+> sirve para no ir a ciegas, no para zanjar nada. Lo que sí es firme es qué
+> habilidad entrena cada gesto.
+
+**El coste es menor de lo que parece, y es la razón para mirarlo ahora**: el
+motor de tinta YA ESTÁ HECHO y endurecido contra pizarras reales —
+`core/textCorrectionDraw.js` + `core/penDetector.js` + `core/penCalibration.js`:
+lienzo por DPR, trazos, dos herramientas (dedo/lápiz dibujan, palma borra), el
+veredicto aplazado para que la palma no deje rastro, y su sonda en el preflight
+(`tools/lapiz-sonda.mjs`). Lo que falta no es el dibujo: es **recortar la tinta
+a la silueta** y un scorer nuevo.
+
+Y ahí hay una decisión bonita que el dueño debe tomar:
+
+- **Recortando** la tinta al contorno (`clip-path` con el propio SVG), no se
+  puede salir de la raya: es amable y frustra menos.
+- **Sin recortar**, salirse ES posible — y entonces el marcador puede medir *qué
+  porcentaje quedó dentro*, que es una medida real de motricidad, muy superior
+  al «zonas tocadas» de hoy. Pero castiga al que aún no controla el trazo.
+
+Lo que NO hay que hacer es elegir por el niño en silencio: cabe como **opción de
+partida** (`meta.play.options`, `core/playOptions.js`) con el tope de R2 —
+máximo dos, ya elegida: *«Pintar: tocando / con el dedo»*.
+
+### 7d · Lo que decide el dueño
+
+1. **¿Se añade el trazo libre?** Estimación con el motor de tinta reutilizado:
+   un día para el pincel recortado a la silueta + scorer + red en la sonda del
+   aula. Sin él, el banco seguirá costando una hora por dibujo.
+2. **¿Se acepta CC BY-SA?** Si sí, OpenMoji da mañana mismo ~4.000 contornos ya
+   dibujados. Si no, la vía es Openclipart (CC0) y entonces el trazo libre pasa
+   de «mejora» a «lo que hace viable el banco».
+3. **¿Salirse de la raya puntúa?** Es lo que convierte este juego en una medida
+   de motricidad y no en un pasatiempo.

@@ -198,7 +198,13 @@ body.skin-tv-show .card,
 .vs-skin-tv-show {
   --vss-alto: clamp(72px, 11cqh, 168px);
   --vss-badge: clamp(64px, 9.6cqh, 148px);
-  --vss-badge-size: clamp(1.05rem, 1.6cqh, 2.4rem);
+  /* LA «VS» SE DERIVA DEL MEDALLÓN, no de un tope en `rem`. Estaba en
+     `clamp(1.05rem, 1.6cqh, 2.4rem)`: con el medallón a 148 px la palabra se
+     quedaba en 38, un 26 % del disco, y en la pizarra del aula parecía una
+     pegatina. El tope en `rem` es justo lo que §3 prohíbe —congela el
+     crecimiento—, y aquí se notaba el doble porque este tema agranda el
+     medallón. Ahora crece con él, igual que las iniciales del avatar. */
+  --vss-badge-size: calc(var(--vss-badge) * .44);
   --vss-name-size: clamp(.85rem, 2.6cqh, 2.6rem);
   --vss-score-size: clamp(1.9rem, 6cqh, 5.6rem);
   --vss-av: clamp(2.8rem, 7cqh, 6.8rem);
@@ -262,41 +268,32 @@ body.skin-tv-show .card,
   color: #5a2f00; border: 4px solid #fff; font-weight: 900; letter-spacing: .04em;
   box-shadow: 0 0 0 3px rgba(255,196,0,.4), 0 10px 22px rgba(0,0,0,.65), 0 0 30px rgba(255,196,0,.55);
 }
-/* EL LATIDO, EN UNA CAPA APARTE Y POR OPACIDAD.
-   Aquí el latido era `animation` sobre el `box-shadow` del propio medallón, y
-   una sombra no la mueve el compositor: cambiarla obliga a REPINTAR, sesenta
-   veces por segundo y para siempre. Con el duelo delante eso no se suma, se
-   multiplica, porque la cuerda ya está redibujando su lienzo en cada cuadro.
-   Medido en la pizarra del aula (1280×720 a DPR 3, CPU frenada 12x): el duelo
-   iba a 56 ms/cuadro con TV Show y a 24 con cualquier otro tema — quitando solo
-   esta animación baja a 32, y quitando también el desenfoque de abajo, a 26.
-   El resplandor es ahora un pseudo-elemento propio que solo anima `opacity` y
-   `transform`, que son las dos cosas que el compositor hace gratis. Se ve igual
-   y cuesta ~0. Es la misma lección que el comentario de aquí abajo ya había
-   aprendido con el aro que gira, aplicada al vecino. */
+/* EL MEDALLÓN NO SE MUEVE — decisión del dueño (2026-09-17), con la medida
+   delante y la pizarra antigua probada.
+   El latido animaba `box-shadow` infinito y costaba 23 ms/cuadro él solo;
+   rehecho por `opacity`/`transform` bajó a ~7, que sigue sin ser cero en una
+   pizarra de colegio a DPR 3. La pregunta entonces ya no era técnica: «esa
+   animación no contribuye». Un adorno que se mueve para siempre delante de una
+   clase se paga en cada cuadro de cada partida, y aquí no aportaba nada que la
+   sombra fija no dé. Queda el RESPLANDOR, quieto: se rasteriza una vez y no
+   vuelve a costar. */
 .vs-skin-tv-show .vss-badge::after {
   content: ''; position: absolute; inset: -12px; border-radius: 50%; z-index: -2;
   pointer-events: none;
   background: radial-gradient(circle, rgba(255,196,0,.6) 38%, rgba(255,196,0,.28) 56%, rgba(255,196,0,0) 72%);
-  will-change: opacity, transform;
-  animation: tvs-badge 2.6s ease-in-out infinite;
 }
-/* El aro dorado que gira detrás del medallón. El desenfoque va EN EL GRADIENTE
-   (paradas suaves y sin costura: empieza y acaba en el mismo dorado), no en un
-   `filter: blur(3px)` — un filtro sobre algo que gira sin parar se re-aplica en
-   cada vuelta, y a DPR 3 eso es repintar una región 4K todo el rato. Aquí solo
-   gira `transform`, que es trabajo del compositor; `will-change` le da su capa
-   para que ni siquiera se rasterice dos veces. */
+/* El aro dorado detrás del medallón. YA NO GIRA: giraba `transform`, que es lo
+   barato, y aun así medía ~5 ms/cuadro en la pizarra del aula, porque cualquier
+   capa que se recompone encima del lienzo de la cuerda se suma a lo que ya
+   cuesta redibujarlo. Mismo criterio que el latido: quieto se ve prácticamente
+   igual y no se paga nunca. El desenfoque sigue yendo EN EL GRADIENTE (paradas
+   suaves y sin costura: empieza y acaba en el mismo dorado) y no en un
+   `filter`, que a DPR 3 sería repintar una región 4K. */
 .vs-skin-tv-show .vss-badge::before {
   content: ''; position: absolute; inset: -10px; border-radius: 50%; z-index: -1;
   background: conic-gradient(from 0deg, #ffc400 0%, #ff8a00 20%, #ffc400 40%,
                              #fff3b0 60%, #ffc400 80%, #ff8a00 90%, #ffc400 100%);
-  opacity: .85; will-change: transform; animation: tvs-spin 4s linear infinite;
-}
-@keyframes tvs-spin  { to { transform: rotate(360deg); } }
-@keyframes tvs-badge {
-  0%,100% { opacity: .5; transform: scale(1); }
-  50%     { opacity: 1;  transform: scale(1.14); }
+  opacity: .85;
 }
 
 /* Avatares (foto del colegio) lo MÁS GRANDES posible dentro de la barra */
@@ -474,9 +471,11 @@ body.skin-tv-show .card,
     --vss-name-size: clamp(.7rem, 1.8cqw, 1rem);
     --vss-av: 2.4rem;
   }
-  .vs-skin-tv-show .vss-badge { width: 44px; height: 44px; transform: translateY(-12px); animation: none; }
-  .vs-skin-tv-show .vss-badge::before,
-  .vs-skin-tv-show .vss-badge::after  { animation: none; }
+  /* El medallón se encoge por su TOKEN, no por `width`. La «VS» se deriva de
+     `--vss-badge` (véase arriba), así que fijar solo el ancho dejaba la palabra
+     calculada contra el tamaño GRANDE: 28 px de letra dentro de un disco de 44.
+     Se cambia el token y el disco y la palabra bajan juntos. */
+  .vs-skin-tv-show .vss-badge { --vss-badge: 44px; transform: translateY(-12px); }
   .vs-skin-tv-show .vss-left::after,
   .vs-skin-tv-show .vss-right::after { animation: none; }
   /* AQUÍ EL TEMA REHACÍA LA MAQUETA DEL DUELO en pantalla apretada: dos
@@ -535,9 +534,8 @@ body.skin-tv-show .card,
    descartaba entera y el tema seguía moviéndose igual con la preferencia
    puesta. Lo destapó la medición del latido (2026-09-17). */
 @media (prefers-reduced-motion: reduce) {
-  .vs-skin-tv-show .vss-badge,
-  .vs-skin-tv-show .vss-badge::before,
-  .vs-skin-tv-show .vss-badge::after,
+  /* El medallón ya no figura aquí: desde v1.51.701 no anima NADA, ni el aro ni
+     el latido, así que apagarlo sería apagar algo que no existe. */
   .vs-skin-tv-show .vss-left::after,
   .vs-skin-tv-show .vss-right::after {
     animation: none;

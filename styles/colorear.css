@@ -98,3 +98,62 @@
 .co-play .edu-send .co-listo {
   font-size: max(1rem, 4cqmin);
 }
+
+/* ── EL SELECTOR DE DIBUJO DEL EDITOR ────────────────────────────────────────
+   Formulario, no el juego → px permitidos (lo reconoce `EDITOR_SEL` por el
+   `-ed-` del prefijo, tests/styles.test.mjs).
+
+   ESTE BLOQUE NO EXISTÍA. El editor pintaba `.co-ed-grid`, `.co-ed-pick`,
+   `.co-ed-mini` y `.co-ed-pick--on` y NINGUNA de las cuatro tenía una regla en
+   ninguna hoja: la rejilla no era rejilla, la miniatura era un icono genérico de
+   Bootstrap igual para los ocho dibujos, y «elegido» no se veía porque la clase
+   que lo marca no pintaba nada. El profe entraba a crear la actividad y tenía
+   ocho botones idénticos sin saber cuál había tocado. */
+.co-ed-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 10px;
+}
+.co-ed-pick {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 8px 6px 6px;
+  background: #fff;
+  border: 2px solid #dee2e6;
+  border-radius: 12px;
+  cursor: pointer;
+  /* SIN `box-shadow` en la transición (ley de animaciones): una sombra que
+     cambia obliga a repintar. El realce al pasar por encima va con
+     `border-color` y `transform`, y el resalte de «elegido» aparece de golpe,
+     que para un estado de selección es lo correcto. */
+  transition: border-color .12s ease, transform .12s ease;
+}
+.co-ed-pick:hover  { border-color: #adb5bd; transform: translateY(-2px); }
+.co-ed-pick:focus-visible { outline: 3px solid #0d6efd; outline-offset: 2px; }
+/* LA MINIATURA ES EL DIBUJO DE VERDAD, no un icono. Los SVG del banco nacen con
+   `fill="#ffffff"` y trazo negro —la versión SIN colorear—, que es exactamente
+   lo que el profe va a repartir: la miniatura enseña el encargo, no una idea
+   aproximada de él. Son ~700 bytes cada uno, así que caben los ocho de sobra. */
+.co-ed-mini {
+  display: block; width: 100%; aspect-ratio: 1;
+  background: #f8f9fa; border-radius: 8px; overflow: hidden;
+}
+.co-ed-mini img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.co-ed-label { font-size: .8rem; font-weight: 600; line-height: 1.1; text-align: center; }
+/* ELEGIDO, SIN LUGAR A DUDAS: borde grueso, fondo teñido y una marca de visto.
+   Tres señales y no una sola, porque un borde de color es lo primero que se
+   pierde en un proyector descalibrado o para quien no distingue bien los tonos. */
+.co-ed-pick--on {
+  border-color: #0d6efd; border-width: 3px;
+  background: #e7f1ff;
+  box-shadow: 0 0 0 3px rgba(13,110,253,.18);
+}
+.co-ed-pick--on .co-ed-label { color: #0a58ca; }
+.co-ed-tick {
+  position: absolute; top: -8px; right: -8px;
+  width: 26px; height: 26px; border-radius: 50%;
+  display: none; align-items: center; justify-content: center;
+  background: #0d6efd; color: #fff; font-size: .95rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,.25);
+}
+.co-ed-pick--on .co-ed-tick { display: flex; }
