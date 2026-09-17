@@ -147,11 +147,12 @@ const BASELINE = [
   // tanda del plan (la celebración), así que aquí no se toca.
   'styles/vs.css @keyframes vs-flash-no → background',
   'styles/vs.css @keyframes vs-flash-ok → background',
-  // Latido del medallón «VS» del tema TV: anima `box-shadow` INFINITO. Para
-  // rehacerlo con `transform`/`opacity` hace falta un segundo pseudo-elemento
-  // (el ::before ya es el aro giratorio) y eso cambia el aspecto: es decisión
-  // del dueño, no de quien mide.
-  'themes/tv-show/skin.css @keyframes tvs-badge → box-shadow',
+  // PAGADA (v1.51.700): el latido del medallón «VS» del tema TV animaba
+  // `box-shadow` infinito. Se rehízo con el segundo pseudo-elemento que aquí se
+  // daba por imposible (`::after`, porque el `::before` es el aro giratorio) y
+  // ahora solo anima `opacity`/`transform`. El dueño lo pidió con el dato
+  // delante: con ese tema el duelo iba a 56 ms/cuadro en la pizarra del aula y
+  // a 24 con cualquier otro; sin este latido, a 32.
   // TRANSICIONES DE ESTADO (hover, selección, veredicto): no son bucles, cuestan
   // un puñado de cuadros mientras dura el gesto. Se congelan para que dejen de
   // ser invisibles y solo puedan bajar.
@@ -244,6 +245,62 @@ ok(`baseline sin holgura: las ${BASELINE.length} entradas congeladas siguen exis
   assert.deepStrictEqual(analizar(bueno, 'legitima.css'), [],
     'la ley está DEMASIADO cerrada: una animación legítima de transform/opacity rompería CI');
   ok('contra-prueba: girar, entrar, desvanecer y un filter QUIETO siguen pasando');
+}
+
+// ── UNA REGLA VACÍA NO ES UNA REGLA: es CSS que el navegador TIRA ───────────
+// El tema TV Show llevaba escrito esto:
+//
+//   @media (prefers-reduced-motion: reduce) {
+//     .vs-skin-tv-show .vss-badge,
+//     .vs-skin-tv-show .vss-badge::before,
+//     …
+//     .vs-skin-tv-show .vss-right::after,      ← coma final, y cierra
+//   }
+//
+// Una lista de selectores con coma final y SIN bloque de declaraciones. El
+// navegador descarta la regla entera, así que el tema seguía moviéndose con
+// «reducir movimiento» activado — y nadie podía notarlo leyendo el fichero: ahí
+// pone lo que debería pasar. Esta forma de fallo es silenciosa por definición
+// (el CSS inválido no avisa), y por eso va aquí y no en una revisión.
+/** @param {string} cssCrudo @param {string} fichero */
+function reglasVacias(cssCrudo, fichero) {
+  const css = sinComentarios(cssCrudo);
+  const fallos = [];
+  // Un `}` cuyo contenido no tiene ni `:` ni `{`, precedido de algo que parece
+  // selector. Cubre tanto `sel, }` como `sel { }`.
+  const re = /([^{}]+)\{\s*\}|,\s*\}/g;
+  let m;
+  while ((m = re.exec(css))) {
+    const sel = (m[1] || css.slice(Math.max(0, m.index - 120), m.index)).trim().replace(/\s+/g, ' ');
+    fallos.push(`${fichero} → regla sin declaraciones cerca de «${sel.slice(-70)}»`);
+  }
+  return fallos;
+}
+{
+  const vacias = hojas.flatMap(h => reglasVacias(readFileSync(h.abs, 'utf8'), h.rel));
+  assert.deepStrictEqual(vacias, [],
+    `hay reglas que el navegador descarta enteras (y por tanto no hacen NADA):\n  ${vacias.join('\n  ')}`);
+  ok(`las ${hojas.length} hojas: ninguna regla vacía ni lista de selectores sin cerrar`);
+}
+{
+  // EN ROJO, con las dos formas: la coma final y el bloque vacío.
+  const malo = `
+    @media (prefers-reduced-motion: reduce) {
+      .a, .b::before, .c::after,
+    }
+    .d { }
+  `;
+  const vistos = reglasVacias(malo, 'plantada.css');
+  assert.strictEqual(vistos.length, 2, `la red no ve las dos formas de regla vacía: ${vistos.join(' · ')}`);
+  // CONTRA-PRUEBA: el CSS bien escrito no puede romper CI.
+  assert.deepStrictEqual(reglasVacias(`
+    @media (prefers-reduced-motion: reduce) {
+      .a, .b::before, .c::after { animation: none; }
+    }
+    .d { color: red; }
+    @keyframes k { to { opacity: 1; } }
+  `, 'legitima.css'), [], 'la red está demasiado cerrada: CSS válido rompería CI');
+  ok('EN ROJO: caza la coma final y el bloque vacío, y deja pasar el CSS válido');
 }
 
 console.log(`\nanimaciones.test: ${passed} checks passed`);

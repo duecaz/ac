@@ -261,6 +261,24 @@ body.skin-tv-show .card,
   background: radial-gradient(circle at 38% 30%, #fff7b8, #ffc400 50%, #d98a00 100%);
   color: #5a2f00; border: 4px solid #fff; font-weight: 900; letter-spacing: .04em;
   box-shadow: 0 0 0 3px rgba(255,196,0,.4), 0 10px 22px rgba(0,0,0,.65), 0 0 30px rgba(255,196,0,.55);
+}
+/* EL LATIDO, EN UNA CAPA APARTE Y POR OPACIDAD.
+   Aquí el latido era `animation` sobre el `box-shadow` del propio medallón, y
+   una sombra no la mueve el compositor: cambiarla obliga a REPINTAR, sesenta
+   veces por segundo y para siempre. Con el duelo delante eso no se suma, se
+   multiplica, porque la cuerda ya está redibujando su lienzo en cada cuadro.
+   Medido en la pizarra del aula (1280×720 a DPR 3, CPU frenada 12x): el duelo
+   iba a 56 ms/cuadro con TV Show y a 24 con cualquier otro tema — quitando solo
+   esta animación baja a 32, y quitando también el desenfoque de abajo, a 26.
+   El resplandor es ahora un pseudo-elemento propio que solo anima `opacity` y
+   `transform`, que son las dos cosas que el compositor hace gratis. Se ve igual
+   y cuesta ~0. Es la misma lección que el comentario de aquí abajo ya había
+   aprendido con el aro que gira, aplicada al vecino. */
+.vs-skin-tv-show .vss-badge::after {
+  content: ''; position: absolute; inset: -12px; border-radius: 50%; z-index: -2;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(255,196,0,.6) 38%, rgba(255,196,0,.28) 56%, rgba(255,196,0,0) 72%);
+  will-change: opacity, transform;
   animation: tvs-badge 2.6s ease-in-out infinite;
 }
 /* El aro dorado que gira detrás del medallón. El desenfoque va EN EL GRADIENTE
@@ -277,8 +295,8 @@ body.skin-tv-show .card,
 }
 @keyframes tvs-spin  { to { transform: rotate(360deg); } }
 @keyframes tvs-badge {
-  0%,100% { box-shadow: 0 0 0 3px rgba(255,196,0,.4), 0 10px 22px rgba(0,0,0,.65), 0 0 30px rgba(255,196,0,.55); }
-  50%      { box-shadow: 0 0 0 7px rgba(255,196,0,.18), 0 10px 26px rgba(0,0,0,.7), 0 0 44px rgba(255,196,0,.75); }
+  0%,100% { opacity: .5; transform: scale(1); }
+  50%     { opacity: 1;  transform: scale(1.14); }
 }
 
 /* Avatares (foto del colegio) lo MÁS GRANDES posible dentro de la barra */
@@ -317,8 +335,13 @@ body.skin-tv-show .card,
 .vs-skin-tv-show .vs-stage-canvas::after {
   content: ''; position: absolute; left: 50%; bottom: 6%; transform: translateX(-50%);
   width: 46%; height: 8%; border-radius: 50%; pointer-events: none;
-  background: radial-gradient(ellipse at center, rgba(43,111,255,.45), transparent 70%);
-  filter: blur(4px);
+  /* EL DESENFOQUE VA EN EL GRADIENTE, no en un `filter: blur(4px)`. Este brillo
+     está pegado ENCIMA del lienzo de la cuerda, que se redibuja en cada cuadro,
+     así que un filtro aquí se re-aplica con él: medido, ~6 ms/cuadro en la
+     pizarra del aula. Con más paradas suaves se ve igual y no cuesta nada. */
+  background: radial-gradient(ellipse at center,
+              rgba(43,111,255,.45) 0%, rgba(43,111,255,.30) 38%,
+              rgba(43,111,255,.12) 58%, transparent 74%);
 }
 
 /* ── TECLADOS FLOTANTES en las esquinas inferiores ────────────────────────── */
@@ -452,7 +475,8 @@ body.skin-tv-show .card,
     --vss-av: 2.4rem;
   }
   .vs-skin-tv-show .vss-badge { width: 44px; height: 44px; transform: translateY(-12px); animation: none; }
-  .vs-skin-tv-show .vss-badge::before { animation: none; }
+  .vs-skin-tv-show .vss-badge::before,
+  .vs-skin-tv-show .vss-badge::after  { animation: none; }
   .vs-skin-tv-show .vss-left::after,
   .vs-skin-tv-show .vss-right::after { animation: none; }
   /* AQUÍ EL TEMA REHACÍA LA MAQUETA DEL DUELO en pantalla apretada: dos
@@ -505,12 +529,19 @@ body.skin-tv-show .card,
      elige la familia, el grosor y el color. */
 }
 
-/* Accesibilidad: respeta "reducir movimiento" */
+/* Accesibilidad: respeta "reducir movimiento".
+   ESTA REGLA NO HACÍA NADA: era una lista de selectores con coma final y sin
+   bloque de declaraciones, o sea CSS inválido, así que el navegador la
+   descartaba entera y el tema seguía moviéndose igual con la preferencia
+   puesta. Lo destapó la medición del latido (2026-09-17). */
 @media (prefers-reduced-motion: reduce) {
   .vs-skin-tv-show .vss-badge,
   .vs-skin-tv-show .vss-badge::before,
+  .vs-skin-tv-show .vss-badge::after,
   .vs-skin-tv-show .vss-left::after,
-  .vs-skin-tv-show .vss-right::after,
+  .vs-skin-tv-show .vss-right::after {
+    animation: none;
+  }
 }
 
 /* ════════════════════════════ CELEBRACIÓN DEL GANADOR ═════════════════════
