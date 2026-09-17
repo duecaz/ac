@@ -153,7 +153,7 @@ export function crearSuscripcionSala({ COLL, PLR, playersReady }) {
           // POST connected-but-deaf en despliegues pre-migración.
           const subs = [topic];
           if (await playersReady()) subs.push(PLR);
-          const r = await fetch(`${PB_URL}/api/realtime`, {
+          const r = await fetch(`${PB_URL}/api/realtime`, { cache: 'no-store',
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ clientId, subscriptions: subs }),

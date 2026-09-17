@@ -49,18 +49,37 @@ export const estadoDe = (e) => numeroOnulo(Number(saco(e).status));
 /** @param {unknown} e @returns {string} */
 export const mensajeDe = (e) => (e instanceof Error ? e.message : String(e));
 
-/** ¿NO HUBO SERVIDOR? — distinto de «el servidor dijo que no».
+/** ¿NO HUBO RESPUESTA? — distinto de «el servidor dijo que no».
  *
- *  Un `fetch` que no llega a ninguna parte lanza un `TypeError` sin `status`
- *  («Failed to fetch»), y PocketBase envuelve ese mismo caso con `status: 0`.
- *  Las dos formas significan lo mismo: la petición no obtuvo respuesta.
+ *  Un `fetch` que no llega a ninguna parte lanza un `TypeError` (lo manda la
+ *  especificación, en todos los navegadores) y PocketBase envuelve ese mismo
+ *  caso con `status: 0`. Esas dos formas, y solo esas.
  *
- *  Se mira el STATUS y no el texto a propósito: el mensaje del navegador
- *  cambia con el idioma y con el motor («Failed to fetch» en Chrome, «Load
- *  failed» en Safari, «NetworkError…» en Firefox), así que una regla escrita
- *  sobre el texto falla justo en el aparato que no tienes delante. */
+ *  NO VALE «cualquier error sin status», que es como estaba escrito: un
+ *  `SyntaxError` al parsear, un `ReferenceError` de un defecto nuestro o un
+ *  `AbortError` tampoco traen `status`, y con la regla ancha se le enseñaban al
+ *  profe como «mantenimiento» mientras el error real se tiraba a la basura. Eso
+ *  es exactamente el fallo mudo que prohíbe R6, y encima disfrazado de mensaje
+ *  tranquilizador.
+ *
+ *  Se mira el TIPO y el STATUS, nunca el texto: el mensaje del navegador cambia
+ *  con el idioma y con el motor («Failed to fetch» en Chrome, «Load failed» en
+ *  Safari, «NetworkError…» en Firefox), así que una regla escrita sobre el texto
+ *  falla justo en el aparato que no tienes delante. */
 /** @param {unknown} e @returns {boolean} */
-export const esFalloDeRed = (e) => { const s = estadoDe(e); return s === null || s === 0; };
+export const esFalloDeRed = (e) => estadoDe(e) === 0 || (e instanceof TypeError && estadoDe(e) === null);
+
+/** ¿EL SERVIDOR NO ESTÁ DANDO SERVICIO? — lo que decide qué se enseña.
+ *
+ *  Une los dos casos que para quien mira la pantalla son el MISMO: no hubo
+ *  respuesta, o la hubo y fue un 5xx. Un 502 de una pasarela caída es
+ *  precisamente la forma habitual de una caída, y con la regla anterior el
+ *  reproductor lo contaba como «Actividad no encontrada» y la portada como
+ *  «Aún no hay actividades publicadas» — dos mentiras distintas para el mismo
+ *  corte. Lo que el servidor SÍ contesta con criterio (400, 401, 403, 404) se
+ *  queda fuera: eso no es una caída y tiene su propio mensaje. */
+/** @param {unknown} e @returns {boolean} */
+export const servidorCaido = (e) => { const s = estadoDe(e); return esFalloDeRed(e) || (s !== null && s >= 500); };
 
 /** LO QUE SE LE DICE A UNA PERSONA cuando no hubo servidor.
  *
@@ -79,4 +98,4 @@ export const MENSAJE_SIN_SERVIDOR =
 /** El texto para enseñar: la causa de verdad si no hubo servidor, y si no, el
  *  mensaje que venga del propio error. */
 /** @param {unknown} e @returns {string} */
-export const mensajeParaLaPantalla = (e) => (esFalloDeRed(e) ? MENSAJE_SIN_SERVIDOR : mensajeDe(e));
+export const mensajeParaLaPantalla = (e) => (servidorCaido(e) ? MENSAJE_SIN_SERVIDOR : mensajeDe(e));

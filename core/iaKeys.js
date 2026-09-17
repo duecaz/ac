@@ -79,7 +79,7 @@ const cabeceras = (token, conCuerpo = false) => ({
  */
 export async function listarClaves(token) {
   const r = await fetch(`${PB_URL}/api/collections/${COL}/records?perPage=50&sort=created&fields=${CAMPOS_VISIBLES}`,
-    { headers: cabeceras(token) });
+    { cache: 'no-store', headers: cabeceras(token) });
   if (!r.ok) throw await motivo(r, 'leer las claves');
   const items = (await cuerpoDe(r)).items;
   return Array.isArray(items) ? /** @type {ClaveIA[]} */ (items) : [];
@@ -96,7 +96,7 @@ export async function listarClaves(token) {
  */
 export async function anadirClave(token, { proveedor = 'gemini', clave, etiqueta = '' } = {}) {
   if (!clave) throw new Error('Pega la clave.');
-  const r = await fetch(`${PB_URL}/api/collections/${COL}/records`, {
+  const r = await fetch(`${PB_URL}/api/collections/${COL}/records`, { cache: 'no-store',
     method: 'POST',
     headers: cabeceras(token, true),
     body: JSON.stringify({ proveedor, clave, etiqueta, activa: true }),
@@ -110,7 +110,7 @@ export async function anadirClave(token, { proveedor = 'gemini', clave, etiqueta
  *  @param {string} id
  *  @param {boolean} activa */
 export async function cambiarEstado(token, id, activa) {
-  const r = await fetch(`${PB_URL}/api/collections/${COL}/records/${id}`, {
+  const r = await fetch(`${PB_URL}/api/collections/${COL}/records/${id}`, { cache: 'no-store',
     method: 'PATCH',
     headers: cabeceras(token, true),
     body: JSON.stringify({ activa: !!activa }),
@@ -122,7 +122,7 @@ export async function cambiarEstado(token, id, activa) {
  *  @param {string} token
  *  @param {string} id */
 export async function eliminarClave(token, id) {
-  const r = await fetch(`${PB_URL}/api/collections/${COL}/records/${id}`, {
+  const r = await fetch(`${PB_URL}/api/collections/${COL}/records/${id}`, { cache: 'no-store',
     method: 'DELETE',
     headers: cabeceras(token),
   });
@@ -138,7 +138,7 @@ export async function eliminarClave(token, id) {
  * @returns {Promise<{ok:boolean, motivo:string|null, modelos:string[]}>}
  */
 export async function probarClave(token, id) {
-  const r = await fetch(`${PB_URL}/api/ia/probar`, {
+  const r = await fetch(`${PB_URL}/api/ia/probar`, { cache: 'no-store',
     method: 'POST',
     headers: cabeceras(token, true),
     body: JSON.stringify({ id }),

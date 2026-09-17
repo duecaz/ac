@@ -346,6 +346,33 @@ export function scanNormsSource(path, source) {
                      + 'Escribe el nombre sin comillas.' });
     }
   }
+
+  // ── pb-sin-cache · NINGUNA petición a la API sale de la caché del navegador ──
+  //
+  // El 2026-09-16 una regla ajena en Cloudflare devolvió un 301 a otro dominio
+  // para todo el tráfico de la API. Un 301 es «movido PERMANENTEMENTE», así que
+  // cada navegador que lo recibió se lo guardó y siguió redirigiendo él solo
+  // DESPUÉS de arreglar el servidor: borrar la caché arregla UN navegador, esto
+  // los arregla todos. `core/pbHttp.js` ya va con `no-store`, pero HAY veinte
+  // `fetch` sueltos contra `PB_URL` repartidos por `core/` y los adaptadores
+  // —perfil, claves de IA, auth, el panel de diagnóstico— y taparlos uno a uno
+  // solo aguanta hasta que alguien escriba el veintiuno. Por eso es una regla.
+  //
+  // NO se mira línea a línea: la opción suele caer en la línea siguiente. Se
+  // busca la llamada en el fuente y se comprueba lo que viene detrás.
+  {
+    const limpio = blank(String(source || ''));
+    const re = /fetch\(\s*`\$\{PB_URL\}/g;
+    let m;
+    while ((m = re.exec(limpio))) {
+      const cola = limpio.slice(m.index, m.index + 320);
+      if (/cache\s*:/.test(cola)) continue;
+      out.push({ path, line: limpio.slice(0, m.index).split('\n').length,
+                 rule: 'pb-sin-cache',
+                 text: 'un `fetch` a PocketBase sin `cache: \'no-store\'`: una redirección cacheada '
+                     + 'sobrevive al arreglo del servidor (usa signedFetch de core/pbHttp.js, o pon la opción)' });
+    }
+  }
   return out;
 }
 

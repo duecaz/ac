@@ -3,7 +3,7 @@ import { migrate, normalize } from './migrate.js';
 import { mergeRemote } from './storageMerge.js';
 import { lsGet, lsSet, objetoDe } from './ls.js';
 import { getAuthUserId, getAuthName } from './auth.js';
-import { mensajeDe, estadoDe, esFalloDeRed } from './frontera.js';
+import { mensajeDe, estadoDe, servidorCaido } from './frontera.js';
 /**
  * @typedef {import('../kernel/contracts/activity.js').Activity} Activity
  * @typedef {import('../kernel/contracts/activity.js').ActivityRow} ActivityRow
@@ -146,7 +146,7 @@ export async function getAnywhere(id, { cache = false, estricto = false } = {}) 
   try {
     remote = await getRemote(id);
   } catch (e) {
-    if (estricto && esFalloDeRed(e)) throw e;
+    if (estricto && servidorCaido(e)) throw e;   // ni «no hubo respuesta» ni un 5xx son «no existe»
     return null;                              // el servidor contestó: no existe
   }
   if (remote && cache) save(remote);

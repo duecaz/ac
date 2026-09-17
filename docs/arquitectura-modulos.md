@@ -7,7 +7,7 @@
 > (la suite `layers` comprueba que está al día). Para cambiar el dibujo, cambia
 > el código — que es justo el punto.
 >
-> **366 módulos · 1469 imports internos.**
+> **366 módulos · 1470 imports internos.**
 
 ### Ir a otro documento
 
@@ -30,12 +30,12 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 
 | Tramo del viaje | Cuánto se usa | Módulos · líneas | Suites · líneas | Test/código |
 |---|---|---|---|---|
-| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 2130 | 7 · 1033 | 0.48 |
-| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 15 · 3689 | 13 · 1724 | 0.47 |
+| **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 2131 | 7 · 1033 | 0.48 |
+| **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 15 · 3700 | 13 · 1724 | 0.47 |
 | **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 42 · 5796 | 19 · 3180 | 0.55 |
 | **informes/tareas** | después de clase | 10 · 1388 | 5 · 619 | 0.45 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 91 · 7579 | 13 · 1945 | 0.26 |
-| **infra/común** | todo lo anterior | 194 · 26353 | 79 · 10390 | 0.39 |
+| **infra/común** | todo lo anterior | 194 · 26399 | 79 · 10447 | 0.40 |
 
 > **OJO con el ratio de plantillas**: aquí solo se cuentan las suites de
 > `tests/`. Las 13 mecánicas las juega de verdad `tools/matrix-smoke.mjs` (30/30
@@ -63,7 +63,7 @@ graph TD
   T["<b>plantillas</b><br/><small>UNA mecánica: scorer + render + meta.play</small><br/><small>95 módulos</small>"]
   CO["<b>contenido</b><br/><small>modelos y migración del JSON del usuario</small><br/><small>6 módulos</small>"]
   CF["<b>config</b><br/><small>solo datos</small><br/><small>1 módulos</small>"]
-  V -->|450| C
+  V -->|451| C
   T -->|240| C
   AD -->|29| C
   A -->|24| C
@@ -121,7 +121,7 @@ Un cambio aquí toca a mucha gente: son los que más test necesitan.
 | `core/html.js` | 120 |
 | `core/events.js` | 76 |
 | `core/registry.js` | 53 |
-| `core/frontera.js` | 48 |
+| `core/frontera.js` | 49 |
 | `core/toast.js` | 43 |
 | `core/ids.js` | 30 |
 | `core/clock.js` | 26 |

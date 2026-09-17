@@ -172,7 +172,7 @@ export async function authRefresh() {
   const stored = loadStored();
   if (!stored?.token) return null;
   try {
-    const r = await fetch(`${PB_URL}/api/collections/users/auth-refresh`, {
+    const r = await fetch(`${PB_URL}/api/collections/users/auth-refresh`, { cache: 'no-store',
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: stored.token },
     });
@@ -193,7 +193,7 @@ export async function authRefresh() {
  * @returns {Promise<AuthResponse>}
  */
 async function pbPost(path, body) {
-  const r = await fetch(`${PB_URL}${path}`, {
+  const r = await fetch(`${PB_URL}${path}`, { cache: 'no-store',
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -217,7 +217,7 @@ async function pbPost(path, body) {
  */
 export async function signUp(email, password, name) {
   if (!password || password.length < 8) throw new Error('La contraseña debe tener al menos 8 caracteres.');
-  const r = await fetch(`${PB_URL}/api/collections/users/records`, {
+  const r = await fetch(`${PB_URL}/api/collections/users/records`, { cache: 'no-store',
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password, passwordConfirm: password, name: name || email.split('@')[0] }),
@@ -241,7 +241,7 @@ export async function signUp(email, password, name) {
 // así que el mensaje al usuario debe ser honesto sobre la espera.
 /** @param {string} email */
 export async function requestPasswordReset(email) {
-  const r = await fetch(`${PB_URL}/api/collections/users/request-password-reset`, {
+  const r = await fetch(`${PB_URL}/api/collections/users/request-password-reset`, { cache: 'no-store',
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
@@ -261,7 +261,7 @@ export async function requestPasswordReset(email) {
  */
 export async function createTeacher(email, password, name) {
   const token = getAuthToken();
-  const r = await fetch(`${PB_URL}/api/collections/users/records`, {
+  const r = await fetch(`${PB_URL}/api/collections/users/records`, { cache: 'no-store',
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: token } : {}) },
     body: JSON.stringify({
@@ -382,7 +382,7 @@ export async function completeOAuthLogin(code, returnedState) {
   /** @type {Record<string, string>} */
   const headers = { 'Content-Type': 'application/json' };
   if (linkToken) headers.Authorization = linkToken;
-  const r = await fetch(`${PB_URL}/api/collections/users/auth-with-oauth2`, {
+  const r = await fetch(`${PB_URL}/api/collections/users/auth-with-oauth2`, { cache: 'no-store',
     method: 'POST',
     headers,
     body: JSON.stringify({
@@ -467,7 +467,7 @@ export async function changePassword(oldPassword, newPassword) {
   if (!u.email) throw new Error('Esta cuenta no tiene correo (entró por Google). Pon una contraseña desde tu proveedor.');
   if (!newPassword || newPassword.length < 8) throw new Error('La contraseña nueva debe tener al menos 8 caracteres.');
   const stored = loadStored();
-  const r = await fetch(`${PB_URL}/api/collections/users/records/${u.id}`, {
+  const r = await fetch(`${PB_URL}/api/collections/users/records/${u.id}`, { cache: 'no-store',
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...(stored?.token ? { Authorization: stored.token } : {}) },
     body: JSON.stringify({ oldPassword, password: newPassword, passwordConfirm: newPassword }),

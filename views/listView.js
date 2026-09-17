@@ -10,6 +10,7 @@
 // tanto, registrarla solo añadiría gateo y setup que no aplican.
 import { html, escapeHtml, mount, raizDe, $input } from '../core/html.js';
 import { getAnywhere } from '../core/storage.js';
+import { MENSAJE_SIN_SERVIDOR } from '../core/frontera.js';
 import { cierreHtml } from '../core/podium.js';
 import { renderAntesala } from './antesala.js';
 import { mountVs } from './vsView.js';
@@ -35,7 +36,17 @@ export async function renderListView(rootSel, id) {
   // así que el marco se fija aquí en una constante sin nulo.
   const host = /** @type {Element} */ (raiz);
 
-  const leida = await getAnywhere(id, { cache: true });
+  /** @type {import('../kernel/contracts/activity.js').Activity|null} */
+  let leida = null;
+  try {
+    // `estricto`, igual que el reproductor: una lista que no se pudo TRAER no
+    // es una lista que no EXISTE, y decirle lo segundo al profe le manda a
+    // buscar en sus actividades algo que está perfectamente guardado.
+    leida = await getAnywhere(id, { cache: true, estricto: true });
+  } catch {
+    mount(host, html`<div class="alert alert-warning m-3">${MENSAJE_SIN_SERVIDOR} <a href="${destinoTrasJugar('solo').href}">Volver</a></div>`);
+    return;
+  }
   if (!leida) {
     mount(host, html`<div class="alert alert-warning m-3">Lista no encontrada. <a href="${destinoTrasJugar('solo').href}">Volver</a></div>`);
     return;

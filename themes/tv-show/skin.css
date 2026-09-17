@@ -471,11 +471,21 @@ body.skin-tv-show .card,
     --vss-name-size: clamp(.7rem, 1.8cqw, 1rem);
     --vss-av: 2.4rem;
   }
-  /* El medallón se encoge por su TOKEN, no por `width`. La «VS» se deriva de
-     `--vss-badge` (véase arriba), así que fijar solo el ancho dejaba la palabra
-     calculada contra el tamaño GRANDE: 28 px de letra dentro de un disco de 44.
-     Se cambia el token y el disco y la palabra bajan juntos. */
-  .vs-skin-tv-show .vss-badge { --vss-badge: 44px; transform: translateY(-12px); }
+  /* LOS DOS TOKENS JUNTOS Y EN EL MISMO ELEMENTO, y esto no es estilo: es cómo
+     funcionan las propiedades personalizadas. `--vss-badge-size` es un `calc()`
+     sobre `--vss-badge`, y un custom property se RESUELVE donde se declara —
+     arriba, en `.vs-skin-tv-show`—, así que lo que hereda el descendiente es ya
+     un número. Cambiar aquí solo `--vss-badge` encoge el disco y deja la palabra
+     calculada contra el valor grande. Declarando los dos aquí, el `calc()` usa
+     el valor de ESTE elemento y disco y palabra bajan juntos.
+     Va en `.vss-bar` (0,2,0) y no en el medallón porque es el gancho que el modo
+     documenta para que un tema redeclare sus medidas en vertical: ahí es donde
+     `styles/vs.css` pone las suyas, y con 0,1,0 — así se le gana sin `!important`. */
+  .vs-skin-tv-show .vss-bar {
+    --vss-badge: 44px;
+    --vss-badge-size: calc(var(--vss-badge) * .44);
+  }
+  .vs-skin-tv-show .vss-badge { transform: translateY(-12px); }
   .vs-skin-tv-show .vss-left::after,
   .vs-skin-tv-show .vss-right::after { animation: none; }
   /* AQUÍ EL TEMA REHACÍA LA MAQUETA DEL DUELO en pantalla apretada: dos

@@ -85,7 +85,7 @@ export async function diagnoseDb(onStep) {
     let rtt1 = null;
     try {
       const { ms } = await timed(async () => {
-        const r = await fetch(`${PB_URL}/api/health`);
+        const r = await fetch(`${PB_URL}/api/health`, { cache: 'no-store' });
         // Consumir cabeceras basta; body se descarta.
         await r.text();
       });
@@ -97,7 +97,7 @@ export async function diagnoseDb(onStep) {
     let rtt2 = null;
     try {
       const { ms } = await timed(async () => {
-        const r = await fetch(`${PB_URL}/api/health`);
+        const r = await fetch(`${PB_URL}/api/health`, { cache: 'no-store' });
         await r.text();
       });
       rtt2 = ms;
@@ -119,7 +119,7 @@ export async function diagnoseDb(onStep) {
     // ── 1. Salud del servidor ─────────────────────────────────────────────────
     try {
       const { ms, value } = await timed(async () => {
-        const r = await fetch(`${PB_URL}/api/health`);
+        const r = await fetch(`${PB_URL}/api/health`, { cache: 'no-store' });
         const txt = await r.text();
         if (!r.ok) throw new Error('HTTP ' + r.status);
         try { return JSON.parse(txt); } catch { return { message: 'respuesta no-JSON' }; }

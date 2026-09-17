@@ -15,7 +15,7 @@ import { mountAuthSlot } from '../core/authWidget.js';
 import { toast, TOAST_NORMAL } from '../core/toast.js';
 import { canHost } from '../core/authGate.js';
 import { wireActivityCard } from './activityCardWire.js';
-import { esFalloDeRed, MENSAJE_SIN_SERVIDOR, mensajeDe } from '../core/frontera.js';
+import { servidorCaido, MENSAJE_SIN_SERVIDOR, mensajeDe } from '../core/frontera.js';
 /** @typedef {import('../kernel/contracts/activity.js').Activity} Activity */
 
 /** @param {string} rootSel */
@@ -78,18 +78,19 @@ export async function renderLanding(rootSel) {
       // NO HUBO SERVIDOR ≠ NO HAY NADA PUBLICADO. Decir «vuelve pronto» cuando
       // la API está caída manda a la persona a esperar por algo que no va a
       // pasar solo: el 2026-09-16 la portada dijo eso durante diez horas.
-      setGrid(esFalloDeRed(e)
+      setGrid(servidorCaido(e)
         ? `<p class="text-muted text-center py-4 w-100">${escapeHtml(MENSAJE_SIN_SERVIDOR)}<br><a href="#/juegos">Los juegos funcionan sin conexión</a>.</p>`
         : `<p class="text-muted text-center py-4 w-100">Aún no hay actividades publicadas. ${user ? 'Crea la primera con <a href="#/new">Nueva</a>.' : 'Vuelve pronto.'}</p>`);
       return;
     }
-    // Los contadores son ADORNO: si fallan, la portada se pinta igual. Estaban
-    // fuera del try y una sola caída dejaba el `load()` colgado para siempre,
-    // con el indicador de carga girando y sin un solo mensaje.
-    const [likeCounts, mine] = await Promise.all([
-      fetchLikeCounts().catch(() => /** @type {Record<string, number>} */ ({})),
-      fetchMyLikes().catch(() => /** @type {Set<string>} */ (new Set())),
-    ]);
+    // Los contadores son ADORNO y ya se tragan su propio error por dentro
+    // (`core/likes.js` devuelve `{}` y un `Set` vacío), así que aquí no hace
+    // falta envolverlos: en v1.51.702 llevaban un `.catch()` que NO podía
+    // dispararse nunca, con un motivo escrito que además era falso — decía que
+    // sin él el `load()` se quedaba colgado, y una promesa que no rechaza no
+    // cuelga nada. Un comentario que explica un peligro inexistente enseña a no
+    // leer los comentarios.
+    const [likeCounts, mine] = await Promise.all([fetchLikeCounts(), fetchMyLikes()]);
     myLikes = mine;
     // §4c: los juegos no compiten en las destacadas — su sitio es #/juegos.
     const soloEjercicios = rows.filter(r => getTemplate(r.template)?.meta?.kind !== 'juego');

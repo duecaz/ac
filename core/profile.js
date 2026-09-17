@@ -35,7 +35,7 @@ function setLocalProfile(uid, prof) {
 export async function fetchProfile(ownerId) {
   if (!ownerId) return { ...EMPTY };
   try {
-    const r = await fetch(`${PB_URL}/api/collections/${COLL}/records/${ownerId}`);
+    const r = await fetch(`${PB_URL}/api/collections/${COLL}/records/${ownerId}`, { cache: 'no-store' });
     if (!r.ok) return { ...EMPTY };
     const d = await r.json().catch(() => ({}));
     return { name: d.name || '', school: d.school || '', bio: d.bio || '', avatar: d.avatar || '', banner: d.banner || '' };
@@ -57,11 +57,11 @@ export async function saveProfile(uid, patch) {
   if (!token) return merged; // sin sesión no se sincroniza (queda en local)
   const headers = { 'Content-Type': 'application/json', Authorization: token };
   const bodyObj = { owner: uid, ...merged };
-  let r = await fetch(`${PB_URL}/api/collections/${COLL}/records/${uid}`, {
+  let r = await fetch(`${PB_URL}/api/collections/${COLL}/records/${uid}`, { cache: 'no-store',
     method: 'PATCH', headers, body: JSON.stringify(bodyObj),
   });
   if (r.status === 404) {
-    r = await fetch(`${PB_URL}/api/collections/${COLL}/records`, {
+    r = await fetch(`${PB_URL}/api/collections/${COLL}/records`, { cache: 'no-store',
       method: 'POST', headers, body: JSON.stringify({ id: uid, ...bodyObj }),
     });
   }

@@ -58,7 +58,7 @@ export function createAiSection() {
         if (!box) return;
         try {
           const { PB_URL } = await import('../../pocketbase.config.js');
-          const r = await fetch(`${PB_URL}/api/ia/estado`);
+          const r = await fetch(`${PB_URL}/api/ia/estado`, { cache: 'no-store' });
           if (r.status === 404) {
             box.innerHTML = '<div class="alert alert-warning py-1 px-2 small mb-0">'
               + '<b>El hook no está instalado en la Pi.</b> Copia <code>pb_hooks/aulareto.pb.js</code> '
@@ -239,7 +239,7 @@ export function createAiSection() {
           //    se confunden — «el hook no está» vs «está pero sin clave». Sin esto,
           //    un 404 de PocketBase («The requested resource wasn't found») deja
           //    mirando la clave pensando que está mal escrita.
-          const est = await fetch(`${PB_URL}/api/ia/estado`).catch(() => null);
+          const est = await fetch(`${PB_URL}/api/ia/estado`, { cache: 'no-store' }).catch(() => null);
           if (!est || est.status === 404) {
             throw new Error('El hook NO está instalado en la Pi: falta pb_hooks/aulareto.pb.js '
               + '(y montar ./pb_hooks:/pb_hooks si es Docker). Pasos en docs/handoff-ia-contenido.md §7.');
@@ -274,7 +274,7 @@ export function createAiSection() {
           let extra = '';
           try {
             const { PB_URL } = await import('../../pocketbase.config.js');
-            const est = await fetch(`${PB_URL}/api/ia/estado?modelos=1`);
+            const est = await fetch(`${PB_URL}/api/ia/estado?modelos=1`, { cache: 'no-store' });
             /** @type {{modelos?: unknown, modelosError?: unknown}|null} */
             const d = est.ok ? await est.json() : null;
             const modelos = (d && Array.isArray(d.modelos)) ? /** @type {unknown[]} */ (d.modelos) : [];
