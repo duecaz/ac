@@ -649,6 +649,17 @@ for (const t of seeded) {
       // mando de pantalla completa, en la esquina. Se declara aquí, junto al
       // resto de lo que esta red sabe por plantilla.
       const JUEGOS = new Set(['colorear', 'tangram', 'puzzle']);
+      // DEUDA DECLARADA, y solo puede ENCOGER. Estas seis vuelven a montar el
+      // player entero en cada gesto —cabecera incluida—, así que el reloj
+      // parpadea: lo vio el dueño en Abre Cajas (2026-09-18) y allí se arregló
+      // de raíz (montar una vez, refrescar solo lo que cambia). Las seis
+      // comparten causa: el contrato del shell secuencial dice «renderItem
+      // pinta el ítem» y cada plantilla pinta TODO, cabecera incluida. El
+      // arreglo de verdad es que el shell sea el dueño del marco y `renderItem`
+      // llene solo su hueco — es un cambio de contrato para seis players, no un
+      // parche, y va con su propia verificación visual. Mientras, esta lista
+      // GRITA cada vez que alguien la mira y no deja entrar una séptima.
+      const REHACEN_EL_MARCO = new Set(['quiz', 'memory', 'tildes', 'comas', 'math', 'globos']);
       // LA PIEZA MIDE SU HUECO (rompecabezas). Medido antes de arreglarlo: 117
       // px de pieza contra 234 de hueco en escritorio, 64 contra 191 en móvil.
       // El dueño: «las piezas no están del mismo tamaño que donde encajan» —
@@ -766,7 +777,35 @@ for (const t of seeded) {
             window[k] = (...a) => { window.__wwDialogos.push(`${k}(${String(a[0] ?? '').slice(0, 40)})`); return true; };
           }
         });
+        // 3. JUGAR NO PUEDE REHACER EL MARCO. La cabecera (y con ella el
+        //    RELOJ) es de la plataforma: un gesto del juego cambia el juego, no
+        //    el marco que lo rodea (§23). El dueño lo vio en Abre Cajas:
+        //    «parpadea el reloj cada que escojo una caja» — el player se volvía
+        //    a montar entero en cada clic y el chip del reloj nacía vacío hasta
+        //    el siguiente tic. Se MARCA el nodo antes del gesto: si después la
+        //    marca no está, es que lo destruyeron y volvieron a crearlo.
+        await page.evaluate(() => {
+          const h = document.querySelector('#ww-player-widget .edu-cabecera');
+          if (h) h.dataset.wwMarca = '1';
+        });
         const r = await playRound(page, caja, { ...(hints[t.name] || {}), progressSel: prog, effectSel: efecto });
+        if (mode === 'solo' && status === 'ok') {
+          const marco = await page.evaluate(() => {
+            const h = document.querySelector('#ww-player-widget .edu-cabecera');
+            return { hay: !!h, marca: h ? h.dataset.wwMarca === '1' : null };
+          });
+          // Sin cabecera no hay nada que vigilar (los juegos no la llevan), y si
+          // la hay tiene que ser LA MISMA de antes del gesto.
+          if (marco.hay && !marco.marca && !REHACEN_EL_MARCO.has(t.name)) {
+            status = 'error';
+            detail = 'jugar rehace la cabecera: el reloj parpadea en cada gesto (§23)';
+            hits.push({ label: t.label, mode, control: 'jugar no rehace el marco', estado: detail, mal: true });
+          } else if (marco.hay && !marco.marca) {
+            hits.push({ label: t.label, mode, control: 'jugar no rehace el marco', estado: 'DEUDA declarada: rehace el marco', mal: false });
+          } else {
+            hits.push({ label: t.label, mode, control: 'jugar no rehace el marco', estado: marco.hay ? 'ok' : 'sin cabecera (juego)', mal: false });
+          }
+        }
         const dialogos = await page.evaluate(() => window.__wwDialogos || []);
         if (dialogos.length) { status = 'error'; detail = `§29: la ronda abre diálogo(s) del navegador: ${dialogos.join(' · ')}`; }
         //  2. REVELAR NUNCA SOLO (Equipos). "La clase responde en voz alta

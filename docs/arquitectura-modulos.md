@@ -32,7 +32,7 @@ están donde el profe pasa?** El uso de cada tramo sale de la escena real
 |---|---|---|---|---|
 | **buscar/crear** | **siempre** — toda clase empieza aquí | 14 · 2148 | 7 · 1033 | 0.48 |
 | **jugar en pizarra** | **lo habitual** — solo · VS · equipos, sin móviles | 15 · 3700 | 13 · 1724 | 0.47 |
-| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 42 · 5796 | 19 · 3180 | 0.55 |
+| **jugar en vivo** | algunos colegios (alumnos con su propio móvil) | 42 · 5819 | 19 · 3180 | 0.55 |
 | **informes/tareas** | después de clase | 10 · 1388 | 5 · 619 | 0.45 |
 | **plantillas (mecánicas)** | siempre (es el contenido jugado) | 94 · 8520 | 13 · 1945 | 0.23 |
 | **infra/común** | todo lo anterior | 195 · 26787 | 79 · 11114 | 0.41 |

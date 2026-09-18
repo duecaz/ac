@@ -8,7 +8,7 @@ import { wheelSvg } from '../../core/ruleta/render.js';
 import { girar, SPIN_DUR_PICK } from '../../core/ruleta/spin.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { QL_COLORS, qlBoxesHtml, qlCols } from '../../core/questionLive.js';
-import { cabeceraHtml } from '../../core/playerHud.js';
+import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
 
 
 /**
@@ -66,55 +66,78 @@ function renderBoxes(rootSel, activity, opts = {}) {
   const done = new Set();
   const terminar = () => terminarCajas(ctx, done.size, items.length);
 
-  function paint() {
-    const cols = qlCols(items.length);
+  // SE MONTA UNA VEZ. Antes cada clic volvía a montar el player entero —
+  // cabecera incluida—, y el dueño lo vio: «parpadea el reloj cada que escojo
+  // una caja» (2026-09-18). El reloj no parpadeaba por el reloj: su chip se
+  // destruía y volvía a nacer VACÍO hasta el siguiente tic. La cabecera es de
+  // la PLATAFORMA (§23: la vista posee su render, no el marco que la rodea);
+  // abrir una caja cambia el tablero y el panel, y nada más.
+  mount(rootSel, html`
+    <div class="ab-play text-center py-3 px-2">
+      ${cabeceraHtml({ pagina: `${done.size} / ${items.length}` })}
+      <div class="edu-sec edu-sec--tablero ab-board"
+           style="grid-template-columns:repeat(${qlCols(items.length)},1fr)"></div>
+      <div data-ab-panel></div>
+    </div>`);
+
+  const root = raizDe(rootSel);
+  const tableroOpt = root?.querySelector('.ab-board') ?? null;
+  const panelOpt = root?.querySelector('[data-ab-panel]') ?? null;
+  if (!tableroOpt || !panelOpt) return;   // el marco no llegó a montarse (§23)
+  const tablero = tableroOpt, panel = panelOpt;
+
+  /** La tarjeta de la caja abierta, o la pista de «toca una caja». */
+  function panelHtml() {
+    const item = openIdx !== null ? items[openIdx] : null;
+    if (openIdx === null || !item) {
+      return `<p class="ab-hint text-muted mt-4"><i class="bi bi-hand-index"></i> Toca una caja para ver la pregunta</p>`;
+    }
+    return `
+      <div class="ab-open card border-2 mx-auto mt-4" style="max-width:480px;border-color:${QL_COLORS[openIdx % QL_COLORS.length]};border-width:2px">
+        <div class="card-body">
+          <small class="text-muted d-block mb-2">Caja ${openIdx + 1}</small>
+          ${item.image ? `<img src="${escapeHtml(item.image)}" class="img-fluid rounded mb-3 d-block mx-auto" style="max-height:200px">` : ''}
+          <h4 class="card-title text-center">${escapeHtml(item.question || '')}</h4>
+          <div class="d-flex gap-2 justify-content-center mt-3">
+            <button class="btn btn-success" id="ab-done"><i class="bi bi-check2-circle"></i> Listo</button>
+            <button class="btn btn-outline-secondary" id="ab-close"><i class="bi bi-x-lg"></i> Cerrar</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  /** Lo ÚNICO que cambia al abrir o cerrar una caja: el tablero, el panel y el
+   *  contador de la cabecera (por su dato, no rehaciéndola). */
+  function refrescar() {
     // El tablero, de su dueño (core/questionLive.js). Aquí las cajas SÍ se tocan
     // (no hay sala: el que juega abre la que quiera) y una caja hecha muestra
     // un ✓, porque en Individual no hay puntos que dar.
-    const boxesHtml = qlBoxesHtml(items.length, {
+    tablero.innerHTML = qlBoxesHtml(items.length, {
       done, open: openIdx, cls: 'ab-box',
       pickable: () => true,
       extraStyle: 'border-radius:8px;min-height:64px;font-size:1.4rem;font-weight:700',
     });
-
-    // La caja abierta, en UN dato: `openIdx` suelto obliga a re-comprobar el
-    // nulo en cada interpolación de la plantilla.
-    const abierta = openIdx !== null && items[openIdx] ? { i: openIdx, item: items[openIdx] } : null;
-    mount(rootSel, html`
-      <div class="ab-play text-center py-3 px-2">
-        ${cabeceraHtml({ pagina: `${done.size} / ${items.length}` })}
-        <div class="edu-sec edu-sec--tablero ab-board" style="grid-template-columns:repeat(${cols},1fr)">${boxesHtml}</div>
-        ${abierta != null ? `
-          <div class="ab-open card border-2 mx-auto mt-4" style="max-width:480px;border-color:${QL_COLORS[abierta.i % QL_COLORS.length]};border-width:2px">
-            <div class="card-body">
-              <small class="text-muted d-block mb-2">Caja ${abierta.i + 1}</small>
-              ${abierta.item.image ? `<img src="${escapeHtml(abierta.item.image)}" class="img-fluid rounded mb-3 d-block mx-auto" style="max-height:200px">` : ''}
-              <h4 class="card-title text-center">${escapeHtml(abierta.item.question || '')}</h4>
-              <div class="d-flex gap-2 justify-content-center mt-3">
-                <button class="btn btn-success" id="ab-done"><i class="bi bi-check2-circle"></i> Listo</button>
-                <button class="btn btn-outline-secondary" id="ab-close"><i class="bi bi-x-lg"></i> Cerrar</button>
-              </div>
-            </div>
-          </div>`
-        : `<p class="ab-hint text-muted mt-4"><i class="bi bi-hand-index"></i> Toca una caja para ver la pregunta</p>
-           ${done.size === items.length && items.length > 0 ? '<div class="alert alert-success d-inline-block mt-2"><i class="bi bi-check2-all"></i> ¡Todas respondidas!</div>' : ''}`}
-      </div>
-    `);
-
-    on(rootSel, 'click', '.ab-box:not(.ab-done)', (_, b) => {
-      const i = Number(b.dataset.i);
-      openIdx = openIdx === i ? null : i;
-      paint();
-    });
-    on(rootSel, 'click', '#ab-done', () => {
-      if (openIdx !== null) { done.add(openIdx); openIdx = null; }
-      if (done.size === items.length) { terminar(); return; }
-      paint();
-    });
-    on(rootSel, 'click', '#ab-close', () => { openIdx = null; paint(); });
+    panel.innerHTML = panelHtml();
+    hudSet(root, 'pagina', `${done.size} / ${items.length}`);
   }
 
-  paint();
+  // Los handlers se cablean UNA vez: son delegados sobre la raíz, que ya no se
+  // reemplaza (`core/events.js` los sustituye por (evento, selector), así que
+  // volver a registrarlos no acumulaba, pero sí escondía que el markup entero
+  // se estaba rehaciendo debajo).
+  on(rootSel, 'click', '.ab-box:not(.ab-done)', (_, b) => {
+    const i = Number(b.dataset.i);
+    openIdx = openIdx === i ? null : i;
+    refrescar();
+  });
+  on(rootSel, 'click', '#ab-done', () => {
+    if (openIdx !== null) { done.add(openIdx); openIdx = null; }
+    if (done.size === items.length) { terminar(); return; }
+    refrescar();
+  });
+  on(rootSel, 'click', '#ab-close', () => { openIdx = null; refrescar(); });
+
+  refrescar();
 }
 
 /**
