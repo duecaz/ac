@@ -1634,8 +1634,16 @@ const memoria = [];
   }
 }
 const lista = (/** @type {string[]} */ xs) => xs.slice().sort().join(' · ') || '(ninguna)';
-const memoriaMal = memoria.filter(p => !p.cab || !p.grid || p.cartasVivas !== p.cartas || !p.cartas
-  || lista(p.cambiadas) !== lista(p.esperadas));
+// CERO REMONTADOS ES CONDICIÓN, no un dato para el informe. Se medía y se
+// imprimía, pero no tumbaba nada: un player puede DESCOLGAR su raíz y volver a
+// colgarla —mismos nodos, mismo estado, todo lo demás en verde— y aun así estar
+// pagando el reflow entero en cada toque, que es justo lo que esta campaña vino
+// a quitar de las pizarras lentas. Un número que se enseña y no juzga acaba
+// siendo decoración.
+/** @param {(typeof memoria)[number]} p @returns {boolean} */
+const memoriaFalla = (p) => !p.cab || !p.grid || p.cartasVivas !== p.cartas || !p.cartas
+  || lista(p.cambiadas) !== lista(p.esperadas) || (p.remontes ?? 1) !== 0;
+const memoriaMal = memoria.filter(memoriaFalla);
 
 // Deja el DOM como estaba para lo que venga detrás (el informe no navega más).
 await page.evaluate(() => { location.hash = '#/mine'; });
@@ -1777,8 +1785,7 @@ if (marcoHits.length) {
 if (memoria.length) {
   console.log('\nMEMORIA · qué cambia en cada momento de la partida\n');
   for (const p of memoria) {
-    const mal = !p.cab || !p.grid || p.cartasVivas !== p.cartas || !p.cartas
-      || lista(p.cambiadas) !== lista(p.esperadas);
+    const mal = memoriaFalla(p);
     console.log(`  ${mal ? '❌' : '✅'} ${p.nombre.padEnd(30)} cartas vivas ${p.cartasVivas}/${p.cartas}`
       + ` · nodos ${p.vivos} % de ${p.antes} · el player se rehace ${p.remontes ?? '?'} vez(ces)`
       + ` · cabecera ${p.cab ? 'la misma' : 'REHECHA'} · tablero ${p.grid ? 'el mismo' : 'REHECHO'}`);
