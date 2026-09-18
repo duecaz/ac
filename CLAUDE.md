@@ -85,7 +85,7 @@ es test* — antes de dudar de una convención, mira si hay un test que la fija.
 | **EL NORTE: modelo de 4 capas** (contenido·plantilla·modo·plataforma, dueños y prohibiciones) | **[`docs/leyes.md`](docs/leyes.md) §0** — contrastar TODO diseño contra ese cuadro |
 | **Quién escribe cada colección PB** (dueño único, prohibiciones, deuda) | **[`docs/leyes.md`](docs/leyes.md) §21** — vigilada por la regla `pb-dueno` (`tests/norms.test.mjs`) |
 | **Qué palabra del cliente vale** (afirmación vs veredicto, fase de reglas live) | **[`docs/leyes.md`](docs/leyes.md) §22** — regla `confianza-alumno` + C6 + answer-safety |
-| **Ciclo de vida de una pantalla** (relojes, guards, overlays, disposers) | **[`docs/leyes.md`](docs/leyes.md) §23** — regla `reloj-primitivo`; ejemplar: `views/studentLive.js` |
+| **Ciclo de vida de una pantalla** (relojes, guards, overlays, disposers) | **[`docs/leyes.md`](docs/leyes.md) §23** — regla `reloj-primitivo`; ejemplar: `views/studentLive.js`. El RELOJ y la reanudación son frente aparte, medido y sin ejecutar: **[`docs/handoff-reloj-lifecycle.md`](docs/handoff-reloj-lifecycle.md)** |
 | **Cómo evoluciona el contenido** (migraciones, formatos, ids, editor=CRUD) | **[`docs/leyes.md`](docs/leyes.md) §24** — reglas `id-rid` + contrato versión>1⇒migrate |
 | Entender el sistema de plantillas (crear/validar/jugar, qué módulo hace qué) | **[`docs/sistema-de-plantillas.md`](docs/sistema-de-plantillas.md)** (mapa vivo) |
 | **Crear una actividad nueva** | `node tools/new-template.mjs <name> --model qa [--vs] [--live]` + `templates/HOW_TO_ADD.md` |
