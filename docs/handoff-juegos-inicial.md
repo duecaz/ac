@@ -249,3 +249,103 @@ habría degradado el puzzle EN SILENCIO para no tocar una regla. Ahora son
 3. **Salirse de la raya no puntúa todavía.** La cobertura se mide contra el
    lienzo entero, no contra la silueta. Medirlo contra la figura es lo que
    convertiría esto en una medida de motricidad de verdad.
+
+---
+
+## 8. ROMPECABEZAS Y TANGRAM — diagnóstico y recomendaciones (2026-09-18)
+
+Encargo del dueño: «están horribles, hay mucho que mejorar, busca referencias».
+Esto es análisis y recomendación: **no se ha tocado código**, el dueño decide.
+
+Los dos juegos tienen la misma raíz que tenía Colorear antes de la v1.51.704:
+**el contenido se generó a ciegas**, sin nadie mirando el resultado.
+
+### 8a · Rompecabezas — lo que se ve al jugarlo
+
+Montado con su partida por defecto (casa, 2×2):
+
+1. **DOS DE LAS CUATRO PIEZAS ESTÁN CASI VACÍAS.** El corte es una rejilla N×N
+   sobre el cuadrado entero, y el dibujo no llena el cuadrado: las esquinas
+   superiores del tejado caen en piezas que son un triángulo rojo sobre blanco.
+   Una pieza sin dibujo no se puede reconocer, así que colocarla es adivinar.
+   Es el defecto más grave y no es de arte, es del RECORTE.
+2. **Las piezas no parecen piezas de rompecabezas**: son cuadrados con las
+   esquinas redondeadas. Sin lengüetas ni huecos, nada dice «esto encaja aquí»,
+   y el juego se lee como un puzle deslizante, no como un rompecabezas.
+3. **El fantasma y las piezas no se parecen**: el objetivo se pinta en pastel
+   lavado con contorno gris grueso y las piezas en color saturado con contorno
+   negro. El niño tiene que emparejar dos dibujos que no se ven iguales.
+4. **El tablero enseña líneas discontinuas** de la rejilla y una caja punteada
+   alrededor: parece una ayuda de depuración, no un juego.
+5. **El número de piezas está fijo en 2×2.** Las referencias de producto
+   coinciden bastante: 3 años → 4-8 piezas · 4 años → 20-40 · 5 años → hasta 60.
+   Cuatro es el SUELO de la horquilla, no un punto medio.
+
+### 8b · Tangram — lo que se ve al jugarlo
+
+1. **La silueta no se lee como nada.** La figura «casa» aparece como una mancha
+   gris cuadrada con una muesca y un pico abajo. Si el niño no reconoce la
+   figura, el juego no tiene enunciado.
+2. **Solo hay DOS figuras** (cuadrado y casa), y la deuda ya está escrita en el
+   propio código (`templates/tangram/game/siluetas.js`): faltan gato, barco,
+   cisne, conejo, pez y árbol, y hacen falta coordenadas de referencia — «un
+   intento sin referencia visual, solo por prueba y error, no dio figuras
+   reconocibles». Es exactamente el mismo fallo que el banco de Colorear.
+3. **La silueta no da ninguna pista** de por dónde empezar. Las apps buenas
+   ofrecen un nivel con las aristas internas insinuadas y otro sin ellas.
+
+### 8c · Lo que encontré fuera
+
+| Qué | Dónde | Sirve |
+|---|---|---|
+| **Piezas de rompecabezas de verdad** (lengüetas y huecos con curvas de Bézier cúbicas) | Técnica estándar y bien documentada: [NYC Resistor](https://www.nycresistor.com/2018/01/16/svg-jigsaw-generation-in-clojure/), [generador SVG](https://svg.design/puzzle/), [JigsawDesigner](https://jigsawdesigner.com/en/jigsaw-dieline-generator) | **Sí, y sin depender de nadie**: es geometría pura, la generamos nosotros. Cero assets, cero licencia |
+| **Figuras de tangram con coordenadas** | [KiloGram](https://github.com/lil-lab/kilogram) | **No**: sus imágenes de tangram están excluidas de la licencia MIT y digitalizadas de un libro de 2003 |
+| Tangram en SVG | [freesvg](https://freesvg.org/tangram-vector-graphics) · [Wikimedia](https://commons.wikimedia.org/wiki/File:Tangram.svg) | Solo como DIBUJO (CC0). No traen las 7 piezas con sus posiciones, que es lo que el juego necesita |
+| **Nº de piezas por edad** | [mideerart](https://mideerart.com/blogs/educational-toys/jigsaw-puzzles-kids-age-specific) · [Puzzle Aisle](https://puzzleaisle.com/news/jigsaw-puzzle-piece-count-by-age) | Sí, para decidir la horquilla |
+
+Conclusión de la búsqueda: **para el rompecabezas no hay que buscar nada** —lo
+que falta es geometría que sabemos escribir—; **para el tangram no hay atajo
+libre**, las figuras clásicas son de dominio público como IDEA pero sus
+digitalizaciones no, y lo que necesitamos son coordenadas.
+
+### 8d · Mis recomendaciones, por orden de valor
+
+**1 · Recortar el aire antes de cortar** — medio día. *Lo que más rinde.*
+Calcular la caja real del dibujo (de sus trazos, no de `data-color`) y cortar la
+rejilla SOBRE ella. Arregla las piezas vacías de golpe **y desbloquea las 43
+láminas buenas de OpenMoji para el rompecabezas**, que hoy no puede usarlas —
+es la deuda que dejé escrita en §7e.1. Sin esto, cualquier otra mejora se monta
+sobre piezas que no se reconocen.
+
+**2 · Piezas con lengüeta y hueco** — un día. *Lo que más se nota.*
+Generar el contorno con Bézier en vez de cortar cuadrados. Es lo que hace que un
+rompecabezas parezca un rompecabezas, y de paso resuelve el 8a.2 y el 8a.4: con
+piezas de verdad, las líneas discontinuas del tablero sobran.
+
+**3 · El número de piezas, como opción de partida** — dos horas.
+Con el tope de R2 (máx. 2 opciones, ya elegidas): «Fácil · Normal». Hoy 2×2 es
+el suelo de lo que aguanta un niño de 3 años y se queda corto a los 5.
+
+**4 · Que el fantasma y las piezas se vean iguales** — dos horas.
+Mismo dibujo, misma línea; el objetivo solo más apagado. Emparejar es la
+mecánica: no puede costar trabajo extra.
+
+**5 · El tangram: que las figuras las construya EL DOCENTE** — dos días.
+Es la idea que el propio dueño dejó escrita en §6.3, y sigue siendo la buena:
+arrastra las 7 piezas en el editor y **lo que queda ES la silueta**. Convierte
+el cuello de botella de contenido en una función del producto, y quita la
+dependencia de un dataset que hemos comprobado que no existe con licencia
+usable. Si se quieren figuras esta semana sin esperar a eso, la alternativa es
+transcribir a mano sobre la rejilla que ya existe (1/4 y √2/4): una tarde por
+figura, y el código las acepta tal cual.
+
+**Lo que NO recomiendo**: buscar más bancos de tangram. Ya está mirado y no los
+hay con licencia limpia y coordenadas; seguir buscando es gastar el tiempo que
+cuesta transcribir dos figuras.
+
+### 8e · Lo que decide el dueño
+
+1. ¿Se hace 1+2 (rompecabezas jugable y con aspecto de rompecabezas, ~1,5 días)?
+2. ¿El tangram va por el editor (2 días, estructural) o por transcripción a mano
+   (1 tarde por figura, inmediato)?
+3. ¿Cuántas piezas por defecto? Mi propuesta: 3×3 de base y «Fácil» 2×2.
