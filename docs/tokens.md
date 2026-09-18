@@ -9,7 +9,7 @@
 Los tokens son la INTERFAZ entre el tema y el juego (ley §3: el skin
 cambia tokens, la actividad los consume). Este es el contrato completo.
 
-**200 tokens** en 19 familias.
+**201 tokens** en 19 familias.
 
 ## `--arc-*` (2)
 
@@ -184,7 +184,7 @@ cambia tokens, la actividad los consume). Este es el contrato completo.
 | `--opt-transition` | themes/tv-show/skin.css | styles/opcion.css |
 | `--opt-weight` | themes/tv-show/skin.css | styles/opcion.css · styles/vs.css |
 
-## `--pu-*` (5)
+## `--pu-*` (6)
 
 | Token | Lo DECLARA | Lo CONSUME |
 |---|---|---|
@@ -192,6 +192,7 @@ cambia tokens, la actividad los consume). Este es el contrato completo.
 | `--pu-columnas` | templates/puzzle/player.js | styles/puzzle.css |
 | `--pu-filas` | templates/puzzle/player.js | styles/puzzle.css |
 | `--pu-filas-bandeja` | templates/puzzle/player.js | styles/puzzle.css |
+| `--pu-img` | templates/puzzle/player.js | styles/puzzle.css |
 | `--pu-por-fila` | templates/puzzle/player.js | styles/puzzle.css |
 
 ## `--qh-*` (14)

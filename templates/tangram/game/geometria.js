@@ -21,14 +21,10 @@ import { PIEZAS } from './piezas.js';
  */
 /**
  * DÓNDE ESTÁ UNA PIEZA en el tablero: qué pieza es (id de `PIEZAS`), su
- * traslación, su giro en grados y si está volteada. Es lo que guarda el player
- * por pieza y lo que compara la máscara.
- * @typedef {Object} Colocacion
- * @property {string} pieza
- * @property {number} x
- * @property {number} y
- * @property {number} rot
- * @property {boolean} flip
+ * traslación, su giro en grados y si está volteada. Es lo que guarda el
+ * contenido por pieza y lo que compara la máscara — la forma la declara el
+ * kernel (una sola), aquí solo se le da el nombre corto.
+ * @typedef {import('../../../kernel/contracts/activity.js').TangramColocacion} Colocacion
  */
 /**
  * La parte de una colocación que la transformación necesita — todo opcional

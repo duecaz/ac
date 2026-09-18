@@ -11,72 +11,10 @@ import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
 import { azar, shuffle } from '../../core/azar.js';
 import { rid } from '../../core/ids.js';
 import { celdas, encaja, barajarPosiciones } from './game/rejilla.js';
-import { contornos, TAB, fondoPieza, cajaEncajada, rectNucleo } from './game/contornos.js';
-import { svgParaPuzzle } from './game/imagen.js';
+import { contornos, CAJA, fondoPieza, cajaEncajada, rectNucleo } from './game/contornos.js';
+import { imagenDe } from './cargar.js';
 import { scorePuzzleSubmission } from './scorer.js';
-// Los DOS bancos viven en el mismo módulo (§21b: un banco, un dueño) y se
-// importan estáticos, igual que en Colorear. Nació dinámico («lo escribe otro
-// agente en paralelo») y ese andamio sobrevivió al fichero que esperaba.
-import { rutaDibujoPuzzle, rutaDibujo, temaDe } from '../../core/bancoDibujos.js';
-import { escenaColorDe } from '../../core/escenasDibujo.js';
 import { PUZZLE_POR_DEFECTO } from './content.js';
-
-/**
- * La caja envolvente REAL de un SVG, medida por el navegador: se monta en un
- * contenedor oculto (oculto por `visibility`, no por `display:none` — sin
- * caja de layout `getBBox()` devuelve ceros), se lee `getBBox()` del `<svg>`
- * raíz —en unidades de usuario, es decir, en coordenadas del `viewBox`, con
- * las transformaciones de los hijos ya aplicadas (las láminas de OpenMoji
- * llevan un `scale(1.38889)`, que un parser del texto no vería)— y se quita.
- * Esto es lo ÚNICO que `game/imagen.js` no puede hacer: tiene que seguir
- * siendo puro para que Node pruebe el recorte. El texto es un asset propio del
- * sitio (`assets/juegos/dibujos/`), no contenido del usuario.
- * @param {string} texto
- * @returns {import('./game/imagen.js').Bbox|null}
- */
-function cajaDeSvg(texto) {
-  const cont = document.createElement('div');
-  cont.style.cssText = 'position:absolute;visibility:hidden;width:100px;height:100px;overflow:hidden;';
-  cont.innerHTML = texto;
-  document.body.appendChild(cont);
-  try {
-    const svg = cont.querySelector('svg');
-    const b = svg instanceof SVGGraphicsElement ? svg.getBBox() : null;
-    // Una caja sin área (SVG vacío o sin pintar) no sirve para recortar:
-    // mejor sin caja (viaja tal cual) que un viewBox de lado cero.
-    return b && b.width > 0 && b.height > 0
-      ? { minX: b.x, minY: b.y, maxX: b.x + b.width, maxY: b.y + b.height }
-      : null;
-  } finally {
-    cont.remove();
-  }
-}
-
-/** @param {string} ruta @returns {Promise<string|null>} */
-async function textoDe(ruta) {
-  const res = await fetch(ruta);
-  return res.ok ? res.text() : null;
-}
-
-/** @param {string} nombre @returns {Promise<string|null>} */
-async function imagenDe(nombre) {
-  // Primero el banco CON ZONAS (legado): su caja sale del texto. Si el nombre
-  // no está ahí, la lámina coloreada de OpenMoji: sin zonas, la caja se mide
-  // en el navegador. Si no está en ninguno (contenido viejo), no hay imagen y
-  // el player ya pinta su aviso. En los dos casos la figura se compone sobre
-  // el DECORADO de su tema (§8d del handoff: la imagen llena el marco, o las
-  // esquinas del tablero son piezas en blanco).
-  const escena = escenaColorDe(temaDe(nombre));
-  const conZonas = rutaDibujoPuzzle(nombre);
-  if (conZonas) {
-    const texto = await textoDe(conZonas);
-    return texto === null ? null : svgParaPuzzle(texto, { escena });
-  }
-  const lamina = rutaDibujo(nombre, 'color');
-  if (!lamina) return null;
-  const texto = await textoDe(lamina);
-  return texto === null ? null : svgParaPuzzle(texto, { caja: cajaDeSvg(texto), escena });
-}
 
 /**
  * @typedef {import('./game/rejilla.js').Celda} Celda
@@ -95,16 +33,13 @@ function estiloHueco(c, filas, columnas) {
 // con la sombra —`box-shadow` no sigue al recorte, `filter: drop-shadow` sí—)
 // y dentro la FORMA (`.pu-piece__forma`), recortada por el `<clipPath>` de su
 // contorno y con la imagen entera de fondo desplazada a su celda (la
-// aritmética del fondo para la caja ampliada vive en `game/contornos.js`).
-// `url('...')` con comilla SIMPLE a propósito: la URL viaja dentro de un
-// atributo `style="..."` delimitado con comillas DOBLES — una comilla doble
-// literal ahí cortaría el atributo a mitad de camino. `encodeURIComponent`
-// (game/imagen.js) ya escapa cualquier comilla simple que traiga la imagen.
-/** @param {string} dataUrl @param {string} clipId @param {Celda} c @param {number} filas @param {number} columnas @returns {string} */
-function piezaHtml(dataUrl, clipId, c, filas, columnas) {
+// aritmética del fondo para la caja ampliada vive en `game/contornos.js`). La
+// IMAGEN no va aquí: es la variable `--pu-img` del juego, escrita UNA vez
+// (antes la misma data: URL de ~10 KB iba diez veces en línea, ghost y piezas).
+/** @param {string} clipId @param {Celda} c @param {number} filas @param {number} columnas @returns {string} */
+function piezaHtml(clipId, c, filas, columnas) {
   return `<div class="pu-piece" data-piece="${c.i}" style="aspect-ratio:${filas}/${columnas}">`
-    + `<div class="pu-piece__forma" style="clip-path:url(#${clipId}-${c.i});`
-    + `background-image:url('${dataUrl}');${fondoPieza(c, filas, columnas).css}"></div></div>`;
+    + `<div class="pu-piece__forma" style="clip-path:url(#${clipId}-${c.i});${fondoPieza(c, filas, columnas).css}"></div></div>`;
 }
 
 /**
@@ -130,7 +65,7 @@ export async function renderPuzzlePlayer(rootSel, activity, opts = {}) {
   const porFila = Math.ceil(total / filasBandeja);
 
   mount(rootSel, html`
-    <div class="ww-player pu-play" style="--pu-filas:${filas};--pu-columnas:${columnas};--pu-caja:${1 + 2 * TAB};--pu-filas-bandeja:${filasBandeja};--pu-por-fila:${porFila}">
+    <div class="ww-player pu-play" style="--pu-filas:${filas};--pu-columnas:${columnas};--pu-caja:${CAJA};--pu-filas-bandeja:${filasBandeja};--pu-por-fila:${porFila}">
       ${cabeceraHtml({ pagina: `0 / ${total}` })}
       <div class="edu-sec edu-sec--tablero pu-arena">
         <div class="pu-board" data-pu-board></div>
@@ -169,6 +104,9 @@ export async function renderPuzzlePlayer(rootSel, activity, opts = {}) {
   }
 
   emitGame(GameEvents.QUESTION_SHOWN, { idx: 0, total: 1, item });
+  // `encodeURIComponent` (game/imagen.js) ya escapó las comillas: la URL entra
+  // en la variable tal cual y el fantasma y las piezas la leen del CSS.
+  /** @type {HTMLElement|null} */ (root.querySelector('.pu-play'))?.style.setProperty('--pu-img', `url("${dataUrl}")`);
 
   // Los CONTORNOS (lengüeta y hueco) se deciden con el azar del juego y viven
   // como `<clipPath>` en el tablero, con ids únicos POR MONTAJE (`rid`): el
@@ -178,11 +116,11 @@ export async function renderPuzzlePlayer(rootSel, activity, opts = {}) {
   boardEl.innerHTML = `
     <svg width="0" height="0" aria-hidden="true" class="pu-clips"><defs>${formas.map(f =>
       `<clipPath id="${clipId}-${f.i}" clipPathUnits="objectBoundingBox"><path d="${f.d}"/></clipPath>`).join('')}</defs></svg>
-    <div class="pu-ghost" style="background-image:url(&quot;${dataUrl}&quot;)"></div>
+    <div class="pu-ghost"></div>
     ${rejilla.map(c => `<div class="pu-hueco" data-hueco="${c.i}" style="${estiloHueco(c, filas, columnas)}"></div>`).join('')}`;
 
   const orden = barajarPosiciones(total, shuffle);
-  piecesEl.innerHTML = orden.map(i => piezaHtml(dataUrl, clipId, rejilla[i], filas, columnas)).join('');
+  piecesEl.innerHTML = orden.map(i => piezaHtml(clipId, rejilla[i], filas, columnas)).join('');
 
   let encajadas = 0;
   const maxScore = scorePuzzleSubmission({ value: { encajadas: total, total }, item, activity }).points;

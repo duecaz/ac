@@ -5,13 +5,12 @@
 import { escapeHtml } from '../../core/html.js';
 import { on } from '../../core/events.js';
 import { renderEditorJuego } from '../../core/editorJuego.js';
-import { svgParaPuzzle } from './game/imagen.js';
+import { imagenDe } from './cargar.js';
 import { ensureContent, contenidoPuzzle as contenido } from './content.js';
 // Los DOS bancos viven en el mismo módulo (§21b: un banco, un dueño) y se
 // importan estáticos, igual que en Colorear. Nació dinámico («lo escribe otro
 // agente en paralelo») y ese andamio sobrevivió al fichero que esperaba.
-import { TEMAS, dibujosDe, rutaDibujo, DIBUJOS_PUZZLE, rutaDibujoPuzzle, temaDe } from '../../core/bancoDibujos.js';
-import { escenaColorDe } from '../../core/escenasDibujo.js';
+import { TEMAS, dibujosDe, rutaDibujo, DIBUJOS_PUZZLE } from '../../core/bancoDibujos.js';
 
 /**
  * @typedef {import('../../kernel/contracts/activity.js').Activity} Activity
@@ -73,19 +72,19 @@ function tileHtml(nombre, label, src, activo) {
 
 /** Las miniaturas de los 8 legados: sus SVG nacen en blanco (`fill="#ffffff"`)
  *  y el color viene en `data-color`, así que la miniatura no puede ser el
- *  fichero tal cual como en OpenMoji — pasa por el MISMO pipeline que el juego
- *  (`svgParaPuzzle`, recorte incluido) y se enseña lo que se va a jugar.
+ *  fichero tal cual como en OpenMoji — se carga con `imagenDe`, EL MISMO
+ *  cargador que usa el juego (recorte, color y escena incluidos): se enseña
+ *  lo que se va a jugar.
  *  @param {Element} root @returns {Promise<void>} */
 async function pintarLegados(root) {
   await Promise.all(DIBUJOS_PUZZLE.map(async (d) => {
     const hueco = root.querySelector(`.pu-tile[data-nombre="${d.nombre}"] .co-ed-mini`);
-    const ruta = rutaDibujoPuzzle(d.nombre);
-    if (!hueco || !ruta) return;
+    if (!hueco) return;
     try {
-      const res = await fetch(ruta);
-      if (!res.ok) return;   // sin miniatura el botón sale con la etiqueta, no roto
+      const src = await imagenDe(d.nombre);
+      if (!src) return;   // sin miniatura el botón sale con la etiqueta, no roto
       const img = document.createElement('img');
-      img.src = svgParaPuzzle(await res.text(), { escena: escenaColorDe(temaDe(d.nombre)) });
+      img.src = src;
       img.alt = '';
       hueco.replaceChildren(img);
     } catch {

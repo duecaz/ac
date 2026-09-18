@@ -48,6 +48,7 @@
 }
 .pu-ghost {
   position: absolute; inset: 0;
+  background-image: var(--pu-img);   /* la imagen, escrita UNA vez por el player */
   background-repeat: no-repeat;
   background-size: 100% 100%;
   /* LA PISTA. A .32 el fantasma y las piezas parecían dos dibujos distintos
@@ -59,13 +60,8 @@
 /* LOS HUECOS NO SE DIBUJAN. Una rejilla discontinua encima del fantasma
    troceaba la pista en nueve cajas y el niño buscaba «la caja», no «el trozo
    del dibujo». Solo el hueco DESTINO de la pieza que se arrastra se marca. */
-.pu-hueco {
-  position: absolute;
-  box-sizing: border-box;
-  border: max(1.5px, .35cqmin) dashed transparent;
-  pointer-events: none;
-}
-.pu-hueco--target { border-color: var(--ww-accent, #2563eb); }
+.pu-hueco { position: absolute; box-sizing: border-box; pointer-events: none; }
+.pu-hueco--target { border: max(1.5px, .35cqmin) dashed var(--ww-accent, #2563eb); }
 
 /* LA BANDEJA — piezas barajadas alrededor del tablero (norte: «repartidas
    alrededor»). `flex: 0 0 auto`: HUG de su contenido — la bandeja mide lo que
@@ -121,7 +117,7 @@
      come el tablero, en ninguna ventana (medido apaisado y vertical). Al
      encajar, la caja toma (1+2·TAB) celdas del tablero. */
   width: min(
-    calc(min(100cqw, 62cqh) / var(--pu-columnas, 2) * .55 * var(--pu-caja, 1.6)),
+    calc(min(100cqw, 62cqh) / var(--pu-columnas, 2) * .55 * var(--pu-caja)),
     calc(33cqh / var(--pu-filas-bandeja, 2) * var(--pu-filas, 1) / var(--pu-columnas, 1)),
     calc(90cqw / var(--pu-por-fila, 1))
   );
@@ -138,6 +134,7 @@
    (`background-size`/`-position` en %, calculados en game/contornos.js). */
 .pu-piece__forma {
   width: 100%; height: 100%;
+  background-image: var(--pu-img);
   background-repeat: no-repeat;
 }
 .pu-piece--arrastrando {

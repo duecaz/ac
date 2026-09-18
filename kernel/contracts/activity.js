@@ -232,7 +232,14 @@
  * @property {string} id
  * @property {string} nombre
  * @property {TangramColocacion[]} colocaciones
- * @property {string} [figura]   legado v1 — solo hasta migrar
+ */
+/**
+ * Tangram (v1, solo hasta migrar): el nombre de una silueta del catálogo. Va
+ * aparte para que el tipo v2 no diga «puede traer figura» cuando el runtime
+ * trata un ítem con `figura` como NO migrado.
+ * @typedef {Object} TangramItemV1
+ * @property {string} id
+ * @property {string} figura
  */
 /**
  * @typedef {Object} TangramContent

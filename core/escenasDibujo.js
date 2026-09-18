@@ -166,3 +166,38 @@ export function escenaColorDe(tema) {
 /** Los temas que tienen decorado — lo usa el test para comprobar que no queda
  *  ninguno sin escena. */
 export const TEMAS_CON_ESCENA = Object.keys(ESCENAS);
+
+// ── La figura sobre su escena ────────────────────────────────────────────
+// La composición es UNA para los dos juegos (§21b): Colorear la usaba con un
+// `<g transform="translate scale(0.7)">` y el puzzle con un `<svg>` anidado al
+// 72 %; dos dueños de «dónde se apoya la figura» que ya no coincidían.
+
+/** El lado de la figura dentro del lienzo 100×100 de la escena. */
+const LADO_FIGURA = 72;
+/** Dónde vive la figura: centrada, con aire a los lados y los pies en el
+ *  SUELO (`preserveAspectRatio` alinea por abajo). Es un dato de composición,
+ *  no de estilo: no es CSS ni px. */
+export const CAJA_FIGURA = { x: (100 - LADO_FIGURA) / 2, y: SUELO - LADO_FIGURA, w: LADO_FIGURA, h: LADO_FIGURA };
+
+/**
+ * Compone la figura (un SVG completo) sobre la escena (un fragmento de SVG en
+ * el lienzo 0 0 100 100), devolviendo un SVG completo. Puro: el `<svg>` de la
+ * figura se ANIDA con su `viewBox` tal cual — así un recorte previo del
+ * viewBox sigue mandando y no se reescribe ni una coordenada del dibujo. Sin
+ * escena, o con una figura sin `<svg>` reconocible, la figura viaja tal cual
+ * (contra-prueba en tests/puzzle.test.mjs).
+ * @param {string} figuraSvg
+ * @param {string} escena
+ * @returns {string}
+ */
+export function componerEscena(figuraSvg, escena) {
+  if (!escena) return figuraSvg;
+  const m = String(figuraSvg ?? '').match(/<svg\b([^>]*)>([\s\S]*)<\/svg>\s*$/);
+  if (!m) return figuraSvg;
+  const vb = (m[1].match(/viewBox\s*=\s*"([^"]*)"/) || [])[1] || '0 0 100 100';
+  const { x, y, w, h } = CAJA_FIGURA;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">`
+    + escena
+    + `<svg x="${x}" y="${y}" width="${w}" height="${h}" viewBox="${vb}" preserveAspectRatio="xMidYMax meet">${m[2]}</svg>`
+    + `</svg>`;
+}

@@ -61,7 +61,10 @@
    Sin esto el SVG se comería el `pointerdown` y no se pintaría nada. */
 .co-play #co-linea { pointer-events: none; }
 .co-play #co-tinta { touch-action: none; cursor: crosshair; }
-.co-play .edu-sec--dibujo svg {
+/* SOLO el SVG raíz de la lámina: la figura va ANIDADA como otro <svg> con su
+   caja (`componerEscena`), y un selector descendiente le pisaba el tamaño y
+   la sacaba del decorado (medido: el gato al 100 % del lienzo, cortado). */
+.co-play #co-linea > svg {
   width: 100%;
   height: 100%;
   max-width: 100%;

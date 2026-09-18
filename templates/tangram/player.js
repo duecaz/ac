@@ -34,9 +34,8 @@ import { ensureContent, contenidoTangram } from './content.js';
 
 /** @param {string} nombre @param {number} rot @returns {CajaPieza} */
 function cajaPieza(nombre, rot) {
-  const poly = transformarPieza(PIEZAS[nombre].puntos, { x: 0, y: 0, rot, flip: false });
-  const xs = poly.map(p => p[0]), ys = poly.map(p => p[1]);
-  return { w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys), minx: Math.min(...xs), miny: Math.min(...ys) };
+  const b = bboxDe([transformarPieza(PIEZAS[nombre].puntos, { x: 0, y: 0, rot, flip: false })]);
+  return { w: b.maxx - b.minx, h: b.maxy - b.miny, minx: b.minx, miny: b.miny };
 }
 
 /** Reparte las 7 piezas (a su TAMAÑO REAL, nunca escaladas) en filas de

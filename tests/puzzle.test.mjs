@@ -1,6 +1,7 @@
 // Rompecabezas — motor puro (rejilla + imagen) + scorer + contrato de plantilla.
 // Run: node tests/puzzle.test.mjs
 import assert from 'node:assert';
+import { mulberry32 } from '../core/azar.js';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -19,15 +20,11 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
   const cs = celdas(3, 3);
   assert.strictEqual(cs.length, 9, '3×3 → 9 celdas');
   assert.strictEqual(cs.every((c, i) => c.i === i), true, 'índices 0..8 en orden fila-mayor');
-  // esquinas del bgPos: 0%/0% arriba-izda, 100%/100% abajo-dcha
-  assert.strictEqual(cs[0].bgPos, '0% 0%', 'esquina superior-izquierda en 0% 0%');
-  assert.strictEqual(cs[8].bgPos, '100% 100%', 'esquina inferior-derecha en 100% 100%');
-  assert.strictEqual(cs[2].bgPos, '100% 0%', 'esquina superior-derecha en 100% 0%');
-  assert.strictEqual(cs[6].bgPos, '0% 100%', 'esquina inferior-izquierda en 0% 100%');
+  assert.deepStrictEqual(cs[5], { i: 5, fila: 1, col: 2 }, 'fila y columna de la celda 5 en 3×3');
   // no cuadrada: 2×3 (2 filas, 3 columnas)
   const cs23 = celdas(2, 3);
   assert.strictEqual(cs23.length, 6, '2×3 → 6 celdas');
-  ok('celdas() da la rejilla con bgPos correcto en las esquinas');
+  ok('celdas() da la rejilla en orden fila-mayor');
 }
 
 // ── celdaBajo ────────────────────────────────────────────────────────────────
@@ -375,8 +372,7 @@ const dibujosZonasDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'ass
 // piezas casi vacías en las esquinas — es la FORMA, no el aire. Con el
 // decorado detrás, cada pieza tiene algo que reconocer.
 {
-  const { componerEscena, CAJA_FIGURA } = await import('../templates/puzzle/game/imagen.js');
-  const { escenaColorDe, SUELO } = await import('../core/escenasDibujo.js');
+  const { componerEscena, CAJA_FIGURA, escenaColorDe, SUELO } = await import('../core/escenasDibujo.js');
   const figura = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="10 20 50 50"><!-- crédito --><circle cx="35" cy="45" r="20" fill="#f00"/></svg>';
   const escena = escenaColorDe('animales');
   assert.ok(escena, 'el tema animales tiene escena coloreada');
@@ -430,7 +426,8 @@ const dibujosZonasDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'ass
 const {
   contornos, invertir, TAB, fondoPieza, cajaEncajada, rectNucleo,
 } = await import('../templates/puzzle/game/contornos.js');
-const rndFijo = (semilla) => { let s = semilla >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; };
+// El azar del test es el primitivo del proyecto con semilla (core/azar.js): el mismo que inyecta el player.
+const rndFijo = (semilla) => mulberry32(semilla);
 const tieneCurva = (lado) => lado.some(seg => seg.tipo === 'C');
 
 // (a) 3×3 → 9 piezas; cada path arranca en M y cierra en Z; la caja es la

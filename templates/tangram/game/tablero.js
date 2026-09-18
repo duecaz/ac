@@ -27,13 +27,21 @@ const TOQUE_MAX_MS = 300;      // por debajo de esto, sin desplazamiento, es un 
 const TOQUE_MAX_DIST = 0.06;   // en fracción del lado del tablero — no del cuadrado unidad fijo
 const DOBLE_TOQUE_MS = 400;    // ventana entre dos toques de la MISMA pieza
 
+/** @param {import('./piezas.js').Punto[]} p @returns {string} el atributo `points` */
+const puntosAttr = (p) => p.map(([x, y]) => `${x},${y}`).join(' ');
+
 /** Los polígonos de una silueta como <polygon>s (sin estilo: lo pone el CSS
  *  del grupo que los contenga). Lo comparten el player (la pista gris) y el
  *  editor (la unión que ve el docente y las miniaturas de partida).
  *  @param {import('./piezas.js').Punto[][]} poligonos @returns {string} */
 export function siluetaHtml(poligonos) {
-  return poligonos.map(p => `<polygon points="${p.map(([x, y]) => `${x},${y}`).join(' ')}" />`).join('');
+  return poligonos.map(p => `<polygon points="${puntosAttr(p)}" />`).join('');
 }
+
+/** El `transform` de una pieza: el MISMO {x,y,rot,flip} que usa la geometría,
+ *  así el dibujo y el cálculo de «resuelto» no pueden desincronizarse.
+ *  @param {Colocacion} c @returns {string} */
+const transformDe = (c) => `translate(${c.x},${c.y}) rotate(${c.rot}) ${c.flip ? 'scale(1,-1)' : ''}`;
 
 /**
  * @typedef {import('./geometria.js').Colocacion} Colocacion
@@ -75,24 +83,36 @@ export function montarTablero(svg, capa, { colocaciones, contentW, onCambio, lim
     return { x: t.x, y: t.y };
   }
 
+  /** Repinta las 7 piezas enteras. Se llama al montar, al soltar y cuando el
+   *  que monta cambia las colocaciones por fuera (cargar una figura). */
   function pintar() {
     capa.innerHTML = orden.map(n => {
       const pieza = PIEZAS[n];
       const c = de(n);
       if (!pieza || !c) return '';
-      const escala = c.flip ? 'scale(1,-1)' : '';
-      const pts = pieza.puntos.map(([x, y]) => `${x},${y}`).join(' ');
-      return `<g class="ta-pieza" data-pieza="${n}" transform="translate(${c.x},${c.y}) rotate(${c.rot}) ${escala}">`
-        + `<polygon points="${pts}" fill="${pieza.color}" />`
+      return `<g class="ta-pieza" data-pieza="${n}" transform="${transformDe(c)}">`
+        + `<polygon points="${puntosAttr(pieza.puntos)}" fill="${pieza.color}" />`
         + `</g>`;
     }).join('');
   }
   pintar();
 
-  /** @param {string} n @returns {void} */
+  /** Mueve UNA pieza ya pintada: en el arrastre se llama por cada movimiento
+   *  del puntero y reconstruir las 7 con `innerHTML` a 60-120 Hz era el
+   *  presupuesto entero del cuadro en la pizarra lenta.
+   *  @param {string} n @returns {void} */
+  function moverPieza(n) {
+    const c = de(n), g = capa.querySelector(`.ta-pieza[data-pieza="${n}"]`);
+    if (c && g) g.setAttribute('transform', transformDe(c));
+  }
+
+  /** La pieza tocada pasa a pintarse la última (encima): se MUEVE su nodo, no
+   *  se reconstruye la capa. @param {string} n @returns {void} */
   function traerAlFrente(n) {
     orden = orden.filter(x => x !== n);
     orden.push(n);
+    const g = capa.querySelector(`.ta-pieza[data-pieza="${n}"]`);
+    if (g) capa.appendChild(g);
   }
 
   /** Una pieza soltada fuera de los límites vuelve al borde: en el editor
@@ -105,12 +125,6 @@ export function montarTablero(svg, capa, { colocaciones, contentW, onCambio, lim
       x: Math.min(limites.maxx, Math.max(limites.minx, c.x)),
       y: Math.min(limites.maxy, Math.max(limites.miny, c.y)),
     };
-  }
-
-  /** @param {Colocacion} nueva @returns {void} */
-  function reemplazar(nueva) {
-    const i = colocaciones.findIndex(c => c.pieza === nueva.pieza);
-    if (i >= 0) colocaciones[i] = nueva;
   }
 
   // --- Gestos: un puntero activo a la vez (pizarra/tablet, un dedo). ---
@@ -136,7 +150,6 @@ export function montarTablero(svg, capa, { colocaciones, contentW, onCambio, lim
     gesto.t0 = performance.now();
     gesto.movido = false;
     traerAlFrente(n);
-    pintar();
     capturarPuntero(svg, e.pointerId);
   }
 
@@ -152,7 +165,7 @@ export function montarTablero(svg, capa, { colocaciones, contentW, onCambio, lim
     if (!c) return;
     c.x = gesto.origX + dx;
     c.y = gesto.origY + dy;
-    pintar();
+    moverPieza(gesto.piezaId);
     if (e.cancelable) e.preventDefault();
   }
 
@@ -164,8 +177,9 @@ export function montarTablero(svg, capa, { colocaciones, contentW, onCambio, lim
     const duracion = performance.now() - gesto.t0;
     let cambio = false;
     if (c && gesto.movido) {
-      // ARRASTRE: imán de posición Y rotación al soltar (§ enunciado).
-      reemplazar(acotar(imantar(c)));
+      // ARRASTRE: imán de posición Y rotación al soltar (§ enunciado). Se
+      // muta la MISMA colocación (es el estado del que monta).
+      Object.assign(c, acotar(imantar(c)));
       cambio = true;
     } else if (c && duracion <= TOQUE_MAX_MS) {
       // TOQUE: gira 45°. Si es el SEGUNDO toque de esta pieza dentro de la
@@ -183,7 +197,7 @@ export function montarTablero(svg, capa, { colocaciones, contentW, onCambio, lim
     }
     gesto.activo = null;
     gesto.piezaId = null;
-    pintar();
+    moverPieza(n);
     if (cambio) onCambio();
   }
 

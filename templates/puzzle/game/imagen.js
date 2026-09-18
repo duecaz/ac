@@ -7,7 +7,7 @@
 // `data-color="#rrggbb"` — el color con que ESTE juego la muestra (Colorear la
 // pinta blanca; aquí se pinta con su color real). `svgAColor` aplica ese color
 // como `fill` de la zona, respetando un `fill` previo si lo hubiera.
-import { SUELO } from '../../../core/escenasDibujo.js';
+import { componerEscena } from '../../../core/escenasDibujo.js';
 
 /**
  * La caja envolvente de una zona, en coordenadas del lienzo del SVG.
@@ -91,7 +91,11 @@ export const MARGEN_SIN_ZONAS = 0.06;
  *   habría nada que colorear y leerlo confundiría.
  * - `escena` (opcional): el decorado coloreado del tema (`escenaColorDe`,
  *   core/escenasDibujo.js). Si viene, la figura ya recortada se COMPONE sobre
- *   él (`componerEscena`) y la imagen del tablero pasa a llenar el marco.
+ *   él (`componerEscena`, del mismo módulo: la composición figura+escena es
+ *   UNA para Colorear y para el puzzle) y la imagen pasa a llenar el marco.
+ *   Medido (v1.51.710, sonda por pieza en 3×3): recortar el aire dejaba 39 de
+ *   51 dibujos con alguna pieza casi vacía — un sol es redondo y las esquinas
+ *   no tienen nada; ningún recorte arregla la FORMA, la escena sí.
  * @param {string} texto
  * @param {{caja?: Bbox|null, escena?: string}} [opts]
  * @returns {string} la `data:` URL
@@ -101,43 +105,6 @@ export function svgParaPuzzle(texto, { caja = null, escena = '' } = {}) {
     : tieneZonas(texto) ? svgAColor(viewBoxAjustado(texto))
     : texto;
   return dataUrlDeSvg(escena ? componerEscena(figura, escena) : figura);
-}
-
-// ── La figura sobre su escena ────────────────────────────────────────────
-//
-// MEDIDO (v1.51.710, sonda por pieza en 3×3): recortar el aire dejaba igual
-// 39 de 51 dibujos con alguna pieza casi vacía — un sol es redondo y las
-// esquinas de su cuadrado no tienen nada; el autobús deja la fila de arriba al
-// 0 %. Ningún recorte arregla la FORMA. Lo que hacen los rompecabezas de
-// verdad es que la imagen llene el marco: aquí la figura se apoya sobre el
-// decorado de su tema, y la esquina pasa a ser «el sol» o «la hierba».
-
-/** Dónde vive la figura dentro del lienzo 100×100 de la escena: centrada, con
- *  aire a los lados y los pies en el SUELO (`preserveAspectRatio` alinea por
- *  abajo). Es un dato de composición, no de estilo: no es CSS ni px. */
-export const CAJA_FIGURA = { x: 14, y: SUELO - 72, w: 72, h: 72 };
-
-/**
- * Compone la figura (un SVG completo, ya recortado) sobre la escena (un
- * fragmento de SVG en el lienzo 0 0 100 100). Puro: el `<svg>` de la figura
- * se ANIDA con su `viewBox` tal cual dentro del lienzo — así el recorte que
- * calculó `viewBoxAjustado` sigue mandando y no hay que reescribir ni una
- * coordenada del dibujo. Sin escena, o con una figura sin `<svg>` reconocible,
- * la figura viaja tal cual (contra-prueba en tests/puzzle.test.mjs).
- * @param {string} figuraSvg
- * @param {string} escena
- * @returns {string}
- */
-export function componerEscena(figuraSvg, escena) {
-  if (!escena) return figuraSvg;
-  const m = String(figuraSvg ?? '').match(/<svg\b([^>]*)>([\s\S]*)<\/svg>\s*$/);
-  if (!m) return figuraSvg;
-  const vb = (m[1].match(/viewBox\s*=\s*"([^"]*)"/) || [])[1] || '0 0 100 100';
-  const { x, y, w, h } = CAJA_FIGURA;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">`
-    + escena
-    + `<svg x="${x}" y="${y}" width="${w}" height="${h}" viewBox="${vb}" preserveAspectRatio="xMidYMax meet">${m[2]}</svg>`
-    + `</svg>`;
 }
 
 // ── El recorte del viewBox ───────────────────────────────────────────────
@@ -240,8 +207,12 @@ function bboxDeZonas(zonas) {   // interna: nadie la nombra fuera (§30)
   return { minX, minY, maxX, maxY };
 }
 
+/** Un número con `dec` decimales, sin «-0». Lo comparten el viewBox recortado
+ *  (3 decimales sobre un lienzo de 100) y los contornos (4 sobre [0,1]).
+ *  @param {number} n @param {number} [dec] @returns {number} */
+export const redondea = (n, dec = 3) => Math.round(n * 10 ** dec) / 10 ** dec + 0;
 /** @param {number} n @returns {number} */
-const num = (n) => Math.round(n * 1000) / 1000;
+const num = (n) => redondea(n);
 
 /**
  * Recorta el `viewBox` del SVG a la caja envolvente REAL de sus zonas, con

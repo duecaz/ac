@@ -83,9 +83,10 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
     assert.strictEqual(idsSolucion.size, 7, `${n}: sin piezas repetidas en la solución`);
     for (const id of ORDEN_PIEZAS) assert.ok(idsSolucion.has(id), `${n}: falta ${id} en la solución`);
 
-    const err = xorArea(f.poligonos, f.solucion, PIEZAS);
+    const silueta = poligonosDe(f.solucion, PIEZAS);
+    const err = xorArea(silueta, f.solucion, PIEZAS);
     assert.ok(err < UMBRAL_RESUELTO, `${n}: XOR de su propia solución = ${err.toFixed(4)} (debe ser < ${UMBRAL_RESUELTO})`);
-    assert.ok(estaResuelto(f.poligonos, f.solucion, PIEZAS), `${n}: estaResuelto() debe dar true con su solución`);
+    assert.ok(estaResuelto(silueta, f.solucion, PIEZAS), `${n}: estaResuelto() debe dar true con su solución`);
   }
   ok(`las ${ORDEN_SILUETAS.length} siluetas del catálogo se resuelven con la solución guardada (XOR < 4%)`);
 }
@@ -102,7 +103,8 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
     const f = SILUETAS[n];
     const comps = componentesConexas(f.solucion, PIEZAS);
     assert.strictEqual(comps, 1, `${n}: la solución debe ser 1 sola componente (dio ${comps})`);
-    const w = f.bbox.maxx - f.bbox.minx, h = f.bbox.maxy - f.bbox.miny;
+    const caja = bboxDe(poligonosDe(f.solucion, PIEZAS));
+    const w = caja.maxx - caja.minx, h = caja.maxy - caja.miny;
     const [mayor, menor] = w >= h ? [w, h] : [h, w];
     assert.ok(mayor <= 2 + 1e-6 && menor <= 1.5 + 1e-6,
       `${n}: caja ${w.toFixed(3)}×${h.toFixed(3)} se sale de 2×1.5`);
@@ -122,18 +124,19 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 {
   // La solución del cuadrado sobre la silueta de la casa da un XOR grande
   // (y viceversa) — dos figuras cualesquiera del catálogo no se confunden.
-  const errCruzado = xorArea(SILUETAS.casa.poligonos, SILUETAS.cuadrado.solucion, PIEZAS);
+  const casa = poligonosDe(SILUETAS.casa.solucion, PIEZAS);
+  const errCruzado = xorArea(casa, SILUETAS.cuadrado.solucion, PIEZAS);
   assert.ok(errCruzado > UMBRAL_RESUELTO, `cuadrado sobre casa debería fallar (dio ${errCruzado.toFixed(4)})`);
-  assert.strictEqual(estaResuelto(SILUETAS.casa.poligonos, SILUETAS.cuadrado.solucion, PIEZAS), false);
+  assert.strictEqual(estaResuelto(casa, SILUETAS.cuadrado.solucion, PIEZAS), false);
   ok('contra-prueba: la solución de otra figura NO resuelve la silueta');
 
   // Una solución CORRECTA salvo que una pieza está desplazada 1/4 del lado
   // del cuadrado unidad: no debe dar "resuelto".
-  const figura = SILUETAS.cuadrado;
+  const figura = SILUETAS.cuadrado, cuadrado = poligonosDe(figura.solucion, PIEZAS);
   const desplazada = figura.solucion.map((c, i) => (i === 0 ? { ...c, x: c.x + 0.25 } : c));
-  const errDespl = xorArea(figura.poligonos, desplazada, PIEZAS);
+  const errDespl = xorArea(cuadrado, desplazada, PIEZAS);
   assert.ok(errDespl > UMBRAL_RESUELTO, `pieza desplazada debería fallar (dio ${errDespl.toFixed(4)})`);
-  assert.strictEqual(estaResuelto(figura.poligonos, desplazada, PIEZAS), false);
+  assert.strictEqual(estaResuelto(cuadrado, desplazada, PIEZAS), false);
   ok('contra-prueba: una pieza desplazada 1/4 de lado NO resuelve la figura');
 }
 
@@ -175,32 +178,60 @@ const ok = (m) => { passed++; console.log('  ✓', m); };
 }
 
 // ── (e) poligonosDe = LA derivación de la silueta (§21b). CONTRA-PRUEBA de que
-//     es correcta: para cuadrado y casa debe dar EXACTAMENTE los `poligonos` que
-//     el catálogo declara a mano (tolerancia 1e-6), en el mismo orden que la
-//     solución. Y la caja se DERIVA de esos puntos: coincide con la del catálogo.
+//     es correcta: para cuadrado y casa debe dar EXACTAMENTE los polígonos que
+//     el dueño dio a mano (tolerancia 1e-6), en el mismo orden que la solución.
+//     Ese ORÁCULO vive aquí, no en el catálogo (allí era una segunda fuente de
+//     la misma verdad sin lector de producto). Y la caja se DERIVA de los puntos.
 {
-  for (const n of ['cuadrado', 'casa']) {
-    const f = SILUETAS[n];
+  /** @type {Record<string, {bbox: {minx: number, maxx: number, miny: number, maxy: number}, poligonos: number[][][]}>} */
+  const ORACULO = {
+    cuadrado: {
+      bbox: { minx: 0, maxx: 1, miny: 0, maxy: 1.25 },
+      poligonos: [
+        [[0.5, 0.5], [0, 0], [1, 0]],
+        [[0.5, 0.5], [0, 1], [0, 0]],
+        [[1, 0.5], [0.5, 0.5], [1, 0]],
+        [[0.75, 0.75], [1, 0.5], [1, 1]],
+        [[0.75, 0.75], [0.5, 0.5], [1, 0.5]],
+        [[1, 1], [0.75, 0.75], [0.25, 0.75], [0.5, 1]],
+        [[0.25, 0.75], [0.5, 1], [0.25, 1.25], [0, 1]],
+      ],
+    },
+    casa: {
+      bbox: { minx: -0.146446609, maxx: 1.103553391, miny: -1.060660172, maxy: 0.25 },
+      poligonos: [
+        [[0.707106781, 0], [0, 0], [0.707106781, -0.707106781]],
+        [[0, -0.707106781], [0.707106781, -0.707106781], [0, 0]],
+        [[0.353553391, -1.060660172], [0.707106781, -0.707106781], [0, -0.707106781]],
+        [[0.707106781, -0.353553391], [1.060660172, -0.353553391], [1.060660172, 0], [0.707106781, 0]],
+        [[0.103553391, 0], [0.353553391, 0.25], [0.853553391, 0.25], [0.603553391, 0]],
+        [[0.103553391, 0], [0.353553391, 0.25], [-0.146446609, 0.25]],
+        [[0.853553391, 0.25], [0.603553391, 0], [1.103553391, 0]],
+      ],
+    },
+  };
+  for (const n of /** @type {const} */ (['cuadrado', 'casa'])) {
+    const f = SILUETAS[n], esperados = ORACULO[n];
     const derivados = poligonosDe(f.solucion, PIEZAS);
-    assert.strictEqual(derivados.length, f.poligonos.length, `${n}: un polígono por colocación`);
+    assert.strictEqual(derivados.length, esperados.poligonos.length, `${n}: un polígono por colocación`);
     derivados.forEach((poly, i) => {
-      const esperado = f.poligonos[i];
+      const esperado = esperados.poligonos[i];
       assert.strictEqual(poly.length, esperado.length, `${n}[${i}]: mismo nº de vértices`);
       poly.forEach(([x, y], j) => {
         assert.ok(Math.abs(x - esperado[j][0]) < 1e-6 && Math.abs(y - esperado[j][1]) < 1e-6,
-          `${n}[${i}][${j}]: derivado (${x.toFixed(6)},${y.toFixed(6)}) ≠ catálogo (${esperado[j][0]},${esperado[j][1]})`);
+          `${n}[${i}][${j}]: derivado (${x.toFixed(6)},${y.toFixed(6)}) ≠ oráculo (${esperado[j][0]},${esperado[j][1]})`);
       });
     });
     const caja = bboxDe(derivados);
     for (const k of /** @type {const} */ (['minx', 'miny', 'maxx', 'maxy'])) {
-      assert.ok(Math.abs(caja[k] - f.bbox[k]) < 1e-6, `${n}: bbox.${k} derivada ${caja[k]} ≠ catálogo ${f.bbox[k]}`);
+      assert.ok(Math.abs(caja[k] - esperados.bbox[k]) < 1e-6, `${n}: bbox.${k} derivada ${caja[k]} ≠ oráculo ${esperados.bbox[k]}`);
     }
   }
   // Sin `piezas` explícito usa PIEZAS; una colocación de pieza desconocida se omite, no se inventa.
   assert.strictEqual(poligonosDe(SILUETAS.cuadrado.solucion).length, 7);
   assert.strictEqual(poligonosDe([{ pieza: 'dragon', x: 0, y: 0, rot: 0, flip: false }]).length, 0);
   assert.deepStrictEqual(bboxDe([]), { minx: 0, miny: 0, maxx: 1, maxy: 1 }, 'sin puntos: la caja del cuadrado unidad');
-  ok('poligonosDe(solucion) reproduce los polígonos del catálogo (cuadrado y casa, 1e-6) y bboxDe su caja');
+  ok('poligonosDe(solucion) reproduce el oráculo del dueño (cuadrado y casa, 1e-6) y bboxDe su caja');
 }
 
 // ── (f) MIGRACIÓN v1 → v2 (§24): `{id, figura}` sube a `{id, nombre, colocaciones}`.

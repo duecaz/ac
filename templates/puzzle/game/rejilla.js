@@ -7,13 +7,12 @@
 export const ENCAJA_MIN = 0.5;
 
 /**
- * Una celda del tablero: su índice, su sitio en la rejilla y el
- * `background-position` que le toca a su pieza.
+ * Una celda del tablero: su índice y su sitio en la rejilla. El fondo que le
+ * toca a su pieza lo calcula `fondoPieza` (game/contornos.js), único dueño.
  * @typedef {Object} Celda
  * @property {number} i
  * @property {number} fila
  * @property {number} col
- * @property {string} bgPos
  */
 
 /**
@@ -30,19 +29,12 @@ export const ENCAJA_MIN = 0.5;
  * @param {number} filas
  * @param {number} columnas
  * @returns {Celda[]}
- *   `bgPos` es el `background-position` (en %) que le toca a la pieza de esa
- *   celda sobre la imagen ya escalada a `(columnas*100)% (filas*100)%`: en la
- *   esquina superior-izquierda es "0% 0%" y en la inferior-derecha "100% 100%".
  */
 export function celdas(filas, columnas) {
   /** @type {Celda[]} */
   const out = [];
   for (let fila = 0; fila < filas; fila++) {
-    for (let col = 0; col < columnas; col++) {
-      const px = columnas > 1 ? (col * 100) / (columnas - 1) : 0;
-      const py = filas > 1 ? (fila * 100) / (filas - 1) : 0;
-      out.push({ i: fila * columnas + col, fila, col, bgPos: `${px}% ${py}%` });
-    }
+    for (let col = 0; col < columnas; col++) out.push({ i: fila * columnas + col, fila, col });
   }
   return out;
 }

@@ -28,7 +28,7 @@ import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { on } from '../../core/events.js';
 import { cabeceraHtml } from '../../core/playerHud.js';
 import { rutaDibujo, temaDe } from '../../core/bancoDibujos.js';
-import { escenaDe, SUELO } from '../../core/escenasDibujo.js';
+import { escenaDe, componerEscena } from '../../core/escenasDibujo.js';
 import { observeResize } from '../../core/observeResize.js';
 import { scoreColorearSubmission } from './scorer.js';
 import { ensureContent } from './content.js';
@@ -202,22 +202,18 @@ export async function renderColorearPlayer(rootSel, activity, opts = {}) {
   // ── LA LÁMINA, DENTRO DE SU ESCENA ────────────────────────────────────────
   // La figura se ENCOGE y se APOYA en el suelo del decorado en vez de ocupar el
   // lienzo entero: si no, el campo o el aula quedarían detrás de ella y no se
-  // verían. El factor y el desplazamiento salen de la altura del suelo, así que
-  // cambiar `SUELO` en la escena mueve las dos cosas a la vez.
-  const ESCALA = 0.7;
-  const DESPLAZ = (100 - 100 * ESCALA) / 2;        // centrada a lo ancho
+  // verían. Dónde y cuánto lo decide `componerEscena` (core/escenasDibujo.js),
+  // el mismo que usa el rompecabezas: una sola caja de figura para los dos.
   try {
     const ruta = rutaDibujo(item.dibujo) || rutaDibujo('gato');
     const res = await fetch(`./${ruta}`);
     const svgText = await res.text();
     if (!ctx.alive()) return;   // la ruta ya cambió mientras llegaba el fetch (§23)
     // El SVG traído se mete DENTRO de uno propio, junto al decorado: así los dos
-    // comparten lienzo y el niño pinta debajo de todo por igual.
-    const figura = svgText.replace(/^[\s\S]*?<svg\b[^>]*>/, '').replace(/<\/svg>\s*$/, '');
-    if (linea) linea.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">`
-      + escenaDe(temaDe(item.dibujo))
-      + `<g transform="translate(${DESPLAZ} ${SUELO - 100 * ESCALA}) scale(${ESCALA})">${figura}</g>`
-      + `</svg>`;
+    // comparten lienzo y el niño pinta debajo de todo por igual. Sin tema no
+    // hay decorado: la lámina va sola, sin encoger (la hoja limpia de siempre).
+    const escena = escenaDe(temaDe(item.dibujo));
+    if (linea) linea.innerHTML = escena ? componerEscena(svgText, escena) : svgText;
     medir();
   } catch {
     // Sin la lámina no hay nada que colorear, pero la pantalla NO se queda muda:

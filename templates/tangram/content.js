@@ -57,7 +57,7 @@ function esColocacion(c) {
  * @returns {TangramItem}
  */
 export function normalizarItem(bruto) {
-  const o = esObjeto(bruto) ? /** @type {Partial<TangramItem>} */ (bruto) : {};
+  const o = esObjeto(bruto) ? /** @type {Partial<TangramItem & import('../../kernel/contracts/activity.js').TangramItemV1>} */ (bruto) : {};
   const figura = typeof o.figura === 'string' && SILUETAS[o.figura] ? o.figura : ORDEN_SILUETAS[0];
   const base = colocacionesDePreset(figura);
   /** @type {Map<string, Colocacion>} */
@@ -82,9 +82,9 @@ export function normalizarContenido(c) {
   const items = esObjeto(c) && Array.isArray(/** @type {{items?: unknown}} */ (c).items)
     ? /** @type {unknown[]} */ (/** @type {{items: unknown[]}} */ (c).items) : [];
   if (items.length && items.every(esItemV2)) return /** @type {TangramContent} */ (c);
-  const salida = items.map(it => (esItemV2(it) ? it : normalizarItem(it)));
-  if (!salida.length) salida.push(normalizarItem(null));
-  return { items: salida };
+  // Un v2 bueno que va mezclado con otros vuelve igual por `normalizarItem`
+  // (el test lo fija: M(v2) deepEqual v2), así que no hace falta distinguirlo.
+  return { items: items.length ? items.map(normalizarItem) : [normalizarItem(null)] };
 }
 
 /** ¿Ya está en forma v2 (nombre + 7 colocaciones válidas, una por pieza)?

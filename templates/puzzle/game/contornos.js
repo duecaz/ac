@@ -3,6 +3,8 @@
 // Node. Antes cada pieza era un cuadrado con las esquinas redondeadas y «se
 // leía como un puzle deslizante» (handoff §8d).
 //
+import { redondea } from './imagen.js';
+
 // LA IDEA. Para cada arista INTERIOR (entre dos celdas) se decide con la
 // fuente de azar INYECTADA hacia qué lado sale la lengüeta; las aristas del
 // BORDE del tablero son rectas. La curva de una arista se calcula UNA vez y la
@@ -22,6 +24,10 @@
 /** Margen de la caja alrededor de la celda, en fracción de celda. La cabeza de
  *  la lengüeta llega justo a ese margen (asoma ~0,3 del lado). */
 export const TAB = 0.3;
+/** El lado de la caja de una pieza, en celdas: la celda y una lengüeta por
+ *  lado. Es el ÚNICO sitio donde se escribe `1 + 2·TAB`; el player lo pasa al
+ *  CSS como `--pu-caja`. */
+export const CAJA = 1 + 2 * TAB;
 
 /** @typedef {{x: number, y: number}} Punto */
 /**
@@ -94,8 +100,10 @@ export function invertir(lado) {
     : { tipo: 'L', a: s.p, p: s.a });
 }
 
-/** @param {number} v @returns {string} número corto sin «-0» ni ceros de cola */
-const num = (v) => String(Number(v.toFixed(4)) + 0);
+// El path va normalizado a [0,1]: cuatro decimales (una diezmilésima de la
+// caja) son invisibles y evitan cadenas de 17 cifras en cada <clipPath>.
+/** @param {number} v @returns {string} */
+const num = (v) => String(redondea(v, 4));
 
 /**
  * Los contornos de las `filas × columnas` piezas.
@@ -139,7 +147,7 @@ export function contornos(filas, columnas, rnd) {
         abajo:     fila + 1 < filas ? invertir(h[fila][col]) : ladoRecto(br, bl),
         izquierda: col > 0 ? invertir(v[fila][col - 1]) : ladoRecto(bl, tl),
       };
-      const caja = { x: col - TAB, y: fila - TAB, w: 1 + 2 * TAB, h: 1 + 2 * TAB };
+      const caja = { x: col - TAB, y: fila - TAB, w: CAJA, h: CAJA };
       /** @param {Punto} p */
       const n = (p) => `${num((p.x - caja.x) / caja.w)} ${num((p.y - caja.y) / caja.h)}`;
       let d = `M ${n(tl)}`;
@@ -163,10 +171,9 @@ export function contornos(filas, columnas, rnd) {
  * @returns {{sizeX: number, sizeY: number, posX: number, posY: number, css: string}}
  */
 export function fondoPieza(c, filas, columnas) {
-  const caja = 1 + 2 * TAB;
-  const sizeX = (columnas / caja) * 100, sizeY = (filas / caja) * 100;
-  const posX = ((c.col - TAB) / (columnas - caja)) * 100;
-  const posY = ((c.fila - TAB) / (filas - caja)) * 100;
+  const sizeX = (columnas / CAJA) * 100, sizeY = (filas / CAJA) * 100;
+  const posX = ((c.col - TAB) / (columnas - CAJA)) * 100;
+  const posY = ((c.fila - TAB) / (filas - CAJA)) * 100;
   return { sizeX, sizeY, posX, posY,
     css: `background-size:${sizeX}% ${sizeY}%;background-position:${posX}% ${posY}%;` };
 }
@@ -179,7 +186,7 @@ export function fondoPieza(c, filas, columnas) {
 export function cajaEncajada(c, filas, columnas) {
   return {
     left: ((c.col - TAB) * 100) / columnas, top: ((c.fila - TAB) * 100) / filas,
-    width: ((1 + 2 * TAB) * 100) / columnas, height: ((1 + 2 * TAB) * 100) / filas,
+    width: (CAJA * 100) / columnas, height: (CAJA * 100) / filas,
   };
 }
 
@@ -191,6 +198,6 @@ export function cajaEncajada(c, filas, columnas) {
  * @param {import('./rejilla.js').Rect} caja @returns {import('./rejilla.js').Rect}
  */
 export function rectNucleo(caja) {
-  const mx = (caja.w * TAB) / (1 + 2 * TAB), my = (caja.h * TAB) / (1 + 2 * TAB);
+  const mx = (caja.w * TAB) / CAJA, my = (caja.h * TAB) / CAJA;
   return { x: caja.x + mx, y: caja.y + my, w: caja.w - 2 * mx, h: caja.h - 2 * my };
 }

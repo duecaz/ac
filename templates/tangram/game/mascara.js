@@ -2,7 +2,7 @@
 // una matriz de bits en memoria (sin canvas, sin DOM), así se prueba entera
 // desde Node y el player la reutiliza tal cual sobre un <canvas> oculto real.
 // Se llama UNA vez por soltar pieza, nunca por fotograma (lo dice el enunciado).
-import { poligonosDe } from './geometria.js';
+import { poligonosDe, bboxDe } from './geometria.js';
 
 /**
  * @typedef {import('./piezas.js').Punto} Punto
@@ -102,16 +102,12 @@ function rasterizar(figuras, n, piezas, { ox, oy, w, h }) {
  *  @param {number} [margen]
  *  @returns {Caja} */
 function bboxDeTodo(listasDeFiguras, piezas, margen = 0.15) {
-  let minx = Infinity, miny = Infinity, maxx = -Infinity, maxy = -Infinity;
+  /** @type {Punto[][]} */
+  const poligonos = [];
   for (const figuras of listasDeFiguras) {
-    for (const f of figuras) {
-      for (const [x, y] of puntosDe(f, piezas) || []) {
-        if (x < minx) minx = x; if (x > maxx) maxx = x;
-        if (y < miny) miny = y; if (y > maxy) maxy = y;
-      }
-    }
+    for (const f of figuras) { const p = puntosDe(f, piezas); if (p) poligonos.push(p); }
   }
-  if (!Number.isFinite(minx)) return { ox: 0, oy: 0, w: 1, h: 1 };
+  const { minx, miny, maxx, maxy } = bboxDe(poligonos);   // sin puntos: el cuadrado unidad
   const w0 = Math.max(maxx - minx, 1e-6), h0 = Math.max(maxy - miny, 1e-6);
   const pad = Math.max(w0, h0) * margen;
   return { ox: minx - pad, oy: miny - pad, w: w0 + pad * 2, h: h0 + pad * 2 };
