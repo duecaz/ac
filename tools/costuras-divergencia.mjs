@@ -236,15 +236,39 @@ function segundaCabecera() {
 // «no llama a cabeceraHtml ninguna vez» se mira por PLANTILLA (agregando sus
 // ficheros): un wrapper delgado que delega en otro fichero de la misma
 // plantilla no cuenta como huérfano si el que pinta de verdad sí la llama.
+// LOS JUEGOS NO LLEVAN CABECERA, y eso NO es divergencia: es una decisión
+// escrita del dueño (2026-09-18, «para juegos quita la barra de arriba, solo
+// dejaremos el maximizar»). Un juego de inicial no tiene nada que poner en esa
+// franja —quien toca no lee (norte §1c): ni página, ni racha, ni reloj— y la
+// barra se la comía al tablero. El mando de pantalla completa no se pierde:
+// pasa a la esquina flotante, que es la que el CSS retira cuando SÍ hay
+// cabecera. Se declara por NOMBRE y no por `kind` porque este barrido lee
+// ficheros, no importa la app; si nace un juego nuevo, se apunta aquí — que es
+// justo el momento de preguntarse si de verdad no necesita barra.
+const SIN_CABECERA = { colorear: 'juego de inicial', tangram: 'juego de inicial', puzzle: 'juego de inicial' };
+
 function sinCabecera() {
   const faltan = [];
   for (const p of PLANTILLAS) {
+    if (SIN_CABECERA[p]) continue;
     const ficheros = ficherosDe(p);
     if (!ficheros.length) continue;
     const llama = ficheros.some(f => /\bcabeceraHtml\s*\(/.test(leerSinComentarios(f)));
     if (!llama) faltan.push({ plantilla: p, ficheros });
   }
   return faltan;
+}
+
+/** Una plantilla declarada SIN cabecera que vuelve a pintarla: la excepción
+ *  dejó de serlo y hay que borrarla de la lista (si no, tapa un defecto real).
+ *  @returns {{plantilla: string, ficheros: string[]}[]} */
+function cabeceraDeMas() {
+  const sobran = [];
+  for (const p of Object.keys(SIN_CABECERA)) {
+    const ficheros = ficherosDe(p).filter(f => /\bcabeceraHtml\s*\(/.test(leerSinComentarios(f)));
+    if (ficheros.length) sobran.push({ plantilla: p, ficheros });
+  }
+  return sobran;
 }
 
 // ════════════════════════════════════════════════════════════════════════
@@ -497,7 +521,7 @@ const infoCartelFinPropio = listaCartel.filter(h => FIN_PROPIO[h.plantilla]);
 const infoCartelLegitimo = listaCartel.filter(h => !FIN_PROPIO[h.plantilla] && LEGITIMO_CARTEL[h.fichero]);
 
 const listaCabecera = segundaCabecera();
-const faltaCabecera = sinCabecera();
+const faltaCabecera = [...sinCabecera(), ...cabeceraDeMas()];
 
 const listaCierre = cierrePropio();
 

@@ -8,7 +8,6 @@
 import { html, mount, raizDe, escapeHtml } from '../../core/html.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
-import { cabeceraHtml } from '../../core/playerHud.js';
 import { PIEZAS, ORDEN_PIEZAS } from './game/piezas.js';
 import { transformarPieza, poligonosDe, bboxDe } from './game/geometria.js';
 import { estaResuelto, MARGEN_CAJA } from './game/mascara.js';
@@ -146,7 +145,6 @@ export function renderTangramPlayer(rootSel, activity, opts = {}) {
 
   mount(rootSel, html`
     <div class="ww-player ta-play">
-      ${cabeceraHtml({ fullscreen: true })}
       <div class="edu-sec edu-sec--tablero ta-tablero">
         <svg class="ta-svg" viewBox="${vb.x} ${vb.y} ${vb.w} ${vb.h}" preserveAspectRatio="xMidYMid meet">
           <g class="ta-silueta">${siluetaHtml(siluetaPoligonos)}</g>

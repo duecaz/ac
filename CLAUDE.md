@@ -304,15 +304,15 @@ Y lo que no deriva del código — quién pone los puntos y cómo se gana:
   distintas (`caja:false`) — con 4:3 le cortaba el QR del lobby. Vigilado en `live-smoke`
   (proporción declarada = la del marco · sin scroll en cuatro ventanas).
 - **LA DIAGRAMACIÓN DEL PLAYER: TRES roles** (detalle en
-  `docs/estilos-de-actividad.md` §3b0): **`edu-cabecera`** (UNA, la misma en las
-  13 — `cabeceraHtml` de `core/playerHud.js`: herramientas · página/racha/extra ·
-  RELOJ centrado · pantalla completa; el aspecto lo pone la superficie de debajo,
-  por tokens `--cab-*`) · **el juego** (`edu-sec--*`, subsecciones con nombre que
-  refluyen) · **`edu-send`**. Eran cuatro (los indicadores flotaban y solo 3 de 13
-  llevaban barra: tres tratamientos de la misma franja). El TÍTULO vive en la
-  ANTESALA; el enunciado no es barra. `edu-send` sale del PLAYER, no de
-  `meta.play.submit`: lo vigila `matrix-smoke` montando todas, con 3 excepciones
-  donde el control ES la mecánica (teclado · Girar · caja abierta).
+  `docs/estilos-de-actividad.md` §3b0): **`edu-cabecera`** (UNA en los 10
+  EJERCICIOS — `cabeceraHtml` de `core/playerHud.js`: herramientas ·
+  página/racha/extra · RELOJ · pantalla completa; el aspecto, por tokens
+  `--cab-*`. **Los 3 JUEGOS no la llevan** —dueño, 2026-09-18: nada que poner ahí
+  para quien no lee (§1c) y la franja se comía el tablero; el maximizar pasa a la
+  esquina) · **el juego** (`edu-sec--*`, con nombre) · **`edu-send`**. Eran cuatro
+  (los indicadores flotaban). El TÍTULO vive en la ANTESALA, no en barra. `edu-send`
+  sale del PLAYER, no de `meta.play.submit`: lo vigila `matrix-smoke` montando
+  todas, con 3 excepciones donde el control ES la mecánica (teclado · Girar · caja).
 - **PANTALLA COMPLETA: un solo mando, y lo aloja la CABECERA** cuando esa cabecera
   manda en el marco (Individual/Tarea); entonces la esquina flotante
   (`.ww-fs-btn--corner`, z-index 30) se retira por CSS. En el duelo se montan DOS

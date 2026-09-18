@@ -7,7 +7,6 @@ import { html, mount, escapeHtml, raizDe } from '../../core/html.js';
 import { capturarPuntero } from '../../core/events.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
-import { cabeceraHtml, hudSet } from '../../core/playerHud.js';
 import { azar, shuffle } from '../../core/azar.js';
 import { rid } from '../../core/ids.js';
 import { celdas, encaja, barajarPosiciones } from './game/rejilla.js';
@@ -51,16 +50,20 @@ export async function renderPuzzlePlayer(rootSel, activity, opts = {}) {
   const filas = item.filas || def.filas, columnas = item.columnas || def.columnas;
   const total = filas * columnas;
   const rejilla = celdas(filas, columnas);
-  // LA BANDEJA se DECLARA (el CSS no sabe contar piezas): hasta 6 piezas van
-  // en UNA fila, con más, en DOS de ⌈n/2⌉. El CSS acota el tamaño de la pieza
-  // para que esas filas quepan en la franja y a lo ancho (styles/puzzle.css):
-  // si la bandeja se desbordase, el flex achataría el tablero (medido).
+  // CÓMO SE REPARTE LA BANDEJA — lo declara el player porque el CSS no sabe
+  // contar piezas, y de ahí sale el lado del tablero (styles/puzzle.css): las
+  // piezas van a tamaño 1:1 con su hueco y el tablero ocupa lo que quede.
+  // Dos repartos, porque la forma del hueco manda y esa la sabe el CSS:
+  //   · APAISADO: filas largas (hasta 5), que es donde sobra ancho.
+  //   · VERTICAL: lo más cuadrado posible (⌈√n⌉ por fila) — con el reparto de
+  //     apaisado, en un móvil el tablero se quedaba en 146 px.
   const filasBandeja = total > 6 ? 2 : 1;
   const porFila = Math.ceil(total / filasBandeja);
+  const porFilaV = Math.ceil(Math.sqrt(total));
+  const filasBandejaV = Math.ceil(total / porFilaV);
 
   mount(rootSel, html`
-    <div class="ww-player pu-play" style="--pu-filas:${filas};--pu-columnas:${columnas};--pu-caja:${CAJA};--pu-filas-bandeja:${filasBandeja};--pu-por-fila:${porFila}">
-      ${cabeceraHtml({ pagina: `0 / ${total}` })}
+    <div class="ww-player pu-play" style="--pu-columnas:${columnas};--pu-caja:${CAJA};--pu-filas-bandeja:${filasBandeja};--pu-por-fila:${porFila};--pu-filas-bandeja-v:${filasBandejaV};--pu-por-fila-v:${porFilaV}">
       <div class="edu-sec edu-sec--tablero pu-arena">
         <div class="pu-board" data-pu-board></div>
         <div class="edu-sec edu-sec--piezas pu-pieces" data-pu-pieces></div>
@@ -188,7 +191,6 @@ export async function renderPuzzlePlayer(rootSel, activity, opts = {}) {
       pieza.classList.add('pu-piece--fija');
       boardEl.appendChild(pieza);   // ya no se puede mover: queda fija en su hueco
       encajadas++;
-      hudSet(root, 'pagina', `${encajadas} / ${total}`);
       emitGame(GameEvents.ANSWER_CORRECT, { idx: i, points: 0 });
       if (encajadas >= total) terminar();
     } else {

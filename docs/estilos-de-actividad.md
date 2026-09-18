@@ -132,7 +132,7 @@ Todo player se lee con tres roles — el prefijo `edu-` marca lo nuevo:
 
 | Rol | Qué es | Regla |
 |---|---|---|
-| **`edu-cabecera`** | la CABECERA: herramientas · página/racha/extra · RELOJ centrado · pantalla completa | **una sola**, la misma en todas (`core/playerHud.js`, `cabeceraHtml`). La plantilla aporta SOLO sus herramientas —lápiz/borrador (Tildes/Comas), Aa/Deshacer (Pelotas)—; lo demás lo pone la cabecera. El aspecto lo pone la superficie de debajo, por tokens (`--cab-tinta`/`--cab-fondo`): sobre el marco, los del tema; sobre la hoja de Tildes/Comas, los del papel |
+| **`edu-cabecera`** | la CABECERA: herramientas · página/racha/extra · RELOJ centrado · pantalla completa | **una sola**, la misma en todos los EJERCICIOS (`core/playerHud.js`, `cabeceraHtml`). Los tres JUEGOS (Colorear · Tangram · Rompecabezas) NO la llevan — decisión del dueño (2026-09-18): nada que poner en ella para quien no lee, y la franja se la comía al tablero; el mando de pantalla completa pasa a la esquina. La plantilla aporta SOLO sus herramientas —lápiz/borrador (Tildes/Comas), Aa/Deshacer (Pelotas)—; lo demás lo pone la cabecera. El aspecto lo pone la superficie de debajo, por tokens (`--cab-tinta`/`--cab-fondo`): sobre el marco, los del tema; sobre la hoja de Tildes/Comas, los del papel |
 | **el juego** (`edu-sec`) | todo el alto restante, en subsecciones CON NOMBRE (`edu-sec--enunciado`, `--tablero`, `--texto`, `--pistas`, `--banco`, `--panel`, `--campo`) | refluyen con el contenedor (**ancho estrecho O más alto que ancho**, ver abajo); el **enunciado es la primera subsección**, no una barra |
 | **`edu-send`** | el espacio del botón de enviar | UNO como mucho, y todo control de envío dentro (marcador sobre `ww-bar-actions`/`tc-done-wrap`) |
 

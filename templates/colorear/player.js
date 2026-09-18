@@ -26,7 +26,6 @@ import { html, mount, raizDe } from '../../core/html.js';
 import { runFreeformPlayer } from '../../core/soloPlayer.js';
 import { GameEvents, emitGame } from '../../core/gameEvents.js';
 import { on, capturarPuntero, soltarPuntero } from '../../core/events.js';
-import { cabeceraHtml } from '../../core/playerHud.js';
 import { rutaDibujo, temaDe } from '../../core/bancoDibujos.js';
 import { escenaDe, componerEscena } from '../../core/escenasDibujo.js';
 import { observeResize } from '../../core/observeResize.js';
@@ -75,7 +74,6 @@ export async function renderColorearPlayer(rootSel, activity, opts = {}) {
 
   mount(rootSel, html`
     <div class="ww-player co-play">
-      ${cabeceraHtml({ fullscreen: true })}
       <div class="edu-sec edu-sec--dibujo" aria-label="Dibujo para colorear">
         <!-- LA HOJA. Las láminas son CUADRADAS (viewBox 0 0 100 100) y el hueco
              casi nunca lo es, así que sin una hoja propia el lienzo ocupaba toda

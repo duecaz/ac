@@ -645,6 +645,30 @@ for (const t of seeded) {
       // color. Se mide en pantalla completa (la antesala la pide), que es como se
       // juega en la pizarra. Selectores DECLARADOS por plantilla de inicial.
       const TACTIL = { colorear: '.co-color', tangram: '.ta-pieza', puzzle: '.pu-pieces .pu-piece' };
+      // LOS JUEGOS NO LLEVAN BARRA (decisión del dueño, 2026-09-18): solo el
+      // mando de pantalla completa, en la esquina. Se declara aquí, junto al
+      // resto de lo que esta red sabe por plantilla.
+      const JUEGOS = new Set(['colorear', 'tangram', 'puzzle']);
+      // LA PIEZA MIDE SU HUECO (rompecabezas). Medido antes de arreglarlo: 117
+      // px de pieza contra 234 de hueco en escritorio, 64 contra 191 en móvil.
+      // El dueño: «las piezas no están del mismo tamaño que donde encajan» —
+      // y comparar la pieza con el hueco ES el juego.
+      if (mode === 'solo' && status === 'ok' && t.name === 'puzzle') {
+        const m = await page.evaluate(() => {
+          const b = document.querySelector('.pu-board')?.getBoundingClientRect();
+          const p = document.querySelector('.pu-pieces .pu-piece')?.getBoundingClientRect();
+          const play = document.querySelector('.pu-play');
+          if (!b || !p || !play) return { sin: true };
+          const cs = getComputedStyle(play);
+          const columnas = Number(cs.getPropertyValue('--pu-columnas')) || 2;
+          const caja = Number(cs.getPropertyValue('--pu-caja')) || 1.6;
+          const hueco = (b.width / columnas) * caja;
+          return { pct: +(100 * p.width / hueco).toFixed(0) };
+        });
+        const mal = m.sin ? 'sin tablero o sin piezas' : (Math.abs(m.pct - 100) > 3 ? `la pieza mide el ${m.pct} % de su hueco (tiene que ser el 100 %)` : '');
+        if (mal) { status = 'error'; detail = `escala: ${mal}`; }
+        hits.push({ label: t.label, mode, control: 'la pieza mide su hueco (1:1)', estado: mal || `ok (${m.pct} %)`, mal: !!mal });
+      }
       if (mode === 'solo' && status === 'ok' && TACTIL[t.name]) {
         const m = await page.evaluate((sel) => {
           const marco = document.getElementById('ww-frame')?.getBoundingClientRect();
@@ -944,9 +968,16 @@ for (const t of seeded) {
           const medida = rr || { hud: 0, sec: 0, send: 0, fuera: 0, indicadoresEnBarra: false };
           const fallos = rr ? [] : ['sin #ww-player-widget: no se pudo escanear'];
           if (rr) {
-            // UNA cabecera, ni cero ni dos.
-            if (rr.hud !== 1) {
-              fallos.push(`edu-cabecera: ${rr.hud} (debe ser 1)`);
+            // UNA cabecera, ni cero ni dos… SALVO EN LOS JUEGOS. Decisión del
+            // dueño (2026-09-18): «para juegos quita la barra de arriba, solo
+            // dejaremos el maximizar». Un juego de inicial no tiene nada que
+            // poner ahí —ni página, ni racha, ni reloj: el norte §1(c) dice que
+            // quien toca no lee— y la franja se la come al tablero. El mando de
+            // pantalla completa no desaparece: pasa a la esquina flotante, que
+            // es la que el CSS retira justo cuando hay cabecera.
+            const esJuego = JUEGOS.has(t.name);
+            if (rr.hud !== (esJuego ? 0 : 1)) {
+              fallos.push(`edu-cabecera: ${rr.hud} (en ${esJuego ? 'un juego debe ser 0: solo el mando de pantalla completa' : 'un ejercicio debe ser 1'})`);
             }
             if (rr.sec < 1) fallos.push('sin sección de juego con nombre (edu-sec--*)');
             if (rr.send > 1) fallos.push(`${rr.send} regiones edu-send (como mucho 1)`);
