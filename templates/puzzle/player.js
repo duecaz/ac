@@ -23,12 +23,6 @@ import { PUZZLE_POR_DEFECTO } from './content.js';
  * @typedef {import('../../kernel/contracts/activity.js').PuzzleItem} PuzzleItem
  */
 
-/** @param {Celda} c @param {number} filas @param {number} columnas @returns {string} */
-function estiloHueco(c, filas, columnas) {
-  return `left:${(c.col * 100) / columnas}%;top:${(c.fila * 100) / filas}%;`
-    + `width:${100 / columnas}%;height:${100 / filas}%;`;
-}
-
 // LA PIEZA: una caja exterior (`.pu-piece`, la que se arrastra y se mide,
 // con la sombra —`box-shadow` no sigue al recorte, `filter: drop-shadow` sí—)
 // y dentro la FORMA (`.pu-piece__forma`), recortada por el `<clipPath>` de su
@@ -116,8 +110,7 @@ export async function renderPuzzlePlayer(rootSel, activity, opts = {}) {
   boardEl.innerHTML = `
     <svg width="0" height="0" aria-hidden="true" class="pu-clips"><defs>${formas.map(f =>
       `<clipPath id="${clipId}-${f.i}" clipPathUnits="objectBoundingBox"><path d="${f.d}"/></clipPath>`).join('')}</defs></svg>
-    <div class="pu-ghost"></div>
-    ${rejilla.map(c => `<div class="pu-hueco" data-hueco="${c.i}" style="${estiloHueco(c, filas, columnas)}"></div>`).join('')}`;
+    <div class="pu-ghost"></div>`;
 
   const orden = barajarPosiciones(total, shuffle);
   piecesEl.innerHTML = orden.map(i => piezaHtml(clipId, rejilla[i], filas, columnas)).join('');

@@ -57,11 +57,10 @@
   opacity: .5;
   pointer-events: none;
 }
-/* LOS HUECOS NO SE DIBUJAN. Una rejilla discontinua encima del fantasma
-   troceaba la pista en nueve cajas y el niño buscaba «la caja», no «el trozo
-   del dibujo». Solo el hueco DESTINO de la pieza que se arrastra se marca. */
-.pu-hueco { position: absolute; box-sizing: border-box; pointer-events: none; }
-.pu-hueco--target { border: max(1.5px, .35cqmin) dashed var(--ww-accent, #2563eb); }
+/* LOS HUECOS NO SE DIBUJAN (ni existen en el DOM). Una rejilla discontinua
+   encima del fantasma troceaba la pista en nueve cajas y el niño buscaba «la
+   caja», no «el trozo del dibujo»; y el «hueco destino» que el CSS prometía
+   nunca lo marcaba nadie (§31). La pista es el fantasma, y basta. */
 
 /* LA BANDEJA — piezas barajadas alrededor del tablero (norte: «repartidas
    alrededor»). `flex: 0 0 auto`: HUG de su contenido — la bandeja mide lo que

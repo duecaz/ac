@@ -273,7 +273,7 @@ cambia tokens, la actividad los consume). Este es el contrato completo.
 
 | Token | Lo DECLARA | Lo CONSUME |
 |---|---|---|
-| `--ww-accent` | styles/theme.css · themes/builtin/arcade.js · themes/builtin/classroom.js · themes/builtin/default.js · themes/builtin/jungle.js · themes/builtin/retro.js · themes/builtin/tv-show.js · themes/builtin/vibrante.js | styles/diagram.css · styles/memory.css · styles/player.css · styles/puzzle.css · styles/textCorrection.css · styles/vs.css |
+| `--ww-accent` | styles/theme.css · themes/builtin/arcade.js · themes/builtin/classroom.js · themes/builtin/default.js · themes/builtin/jungle.js · themes/builtin/retro.js · themes/builtin/tv-show.js · themes/builtin/vibrante.js | styles/diagram.css · styles/memory.css · styles/player.css · styles/textCorrection.css · styles/vs.css |
 | `--ww-accent-fg` | — *(solo respaldo)* | styles/player.css |
 | `--ww-accent-ink` | themes/builtin/arcade.js · themes/builtin/classroom.js · themes/builtin/default.js · themes/builtin/jungle.js · themes/builtin/retro.js · themes/builtin/tv-show.js · themes/builtin/vibrante.js | styles/textCorrection.css |
 | `--ww-accent-soft` | — *(solo respaldo)* | styles/player.css |
